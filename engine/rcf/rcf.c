@@ -977,6 +977,15 @@ read_str(char **ptr, char *s)
     *ptr = p;
 }
 
+static void
+set_ta_dead(ta *agent)
+{
+    agent->dead = TRUE;
+    (agent->close)(agent->handle, &set0);
+    answer_all_requests(&(agent->sent), ETADEAD);
+    answer_all_requests(&(agent->pending), ETADEAD);
+}
+
 /**
  * Receive reply from the Test Agent, send answer to user and send pending
  * message if necessary.
@@ -1017,19 +1026,17 @@ process_reply(ta *agent)
 
     if (rc == ETESMALLBUF)
     {
-        ERROR("FATAL ERROR: Too big answer from TA '%s' - increase "
-              "memory constants", agent->name);
-        return -1;
+        ERROR("Too big answer from TA '%s' - increase memory constants", 
+              agent->name);
+        set_ta_dead(agent);
+        return 0;
     }
 
     if (rc != 0 && rc != ETEPENDING)
     {
         ERROR("ERROR: Receiving answer from TA '%s' failed error %d",
               agent->name, rc);
-        agent->dead = TRUE;
-        (agent->close)(agent->handle, &set0);
-        answer_all_requests(&(agent->sent), ETADEAD);
-        answer_all_requests(&(agent->pending), ETADEAD);
+        set_ta_dead(agent);
         return 0;
     }
 
@@ -1092,15 +1099,13 @@ process_reply(ta *agent)
             agent->reboot_timestamp = 0;
             if (!(agent->flags & TA_PROXY))
             {
-                answer_user_request(req);
                 if (init_agent(agent) < 0)
                 {
                     ERROR("Initialization of the TA '%s' "
                           "after reboot failed ", agent->name);
-                    agent->dead = TRUE;
-                    (agent->close)(agent->handle, &set0);
+                    set_ta_dead(agent);
+                    return 0;
                 }
-                return 0;
             }
         }
         else
@@ -1111,7 +1116,11 @@ process_reply(ta *agent)
             }
             else
             {
-                return force_reboot(agent, req);
+                if (force_reboot(agent, req) != 0)
+                {
+                    set_ta_dead(agent);
+                    return 0;
+                }
             }
         }
         answer_user_request(req);
@@ -1119,9 +1128,7 @@ process_reply(ta *agent)
     }
 
     if (error != 0)
-    {
         req->message->error = error;
-    }
 
     if (error == 0 ||
         /*
@@ -1210,13 +1217,14 @@ process_reply(ta *agent)
     return send_pending_command(agent, sid);
 
 bad_protocol:
-    ERROR("FATAL ERROR: bad answer is received from TA '%s'", agent->name);
+    ERROR("Bad answer is received from TA '%s'", agent->name);
     if (req != NULL)
     {
         req->message->error = TE_RC(TE_RCF, ETEIO);
         answer_user_request(req);
     }
-    return -1;
+    set_ta_dead(agent);
+    return 0;
 
 #undef READ_INT
 }
@@ -1268,16 +1276,13 @@ transmit_cmd(ta *agent, usrreq *req)
     {
         if ((rc = (agent->transmit)(agent->handle, cmd, len)) != 0)
         {
-            agent->dead = TRUE;
-            (agent->close)(agent->handle, &set0);
             ERROR("Failed to transmit command "
                   "to TA '%s' errno %d", agent->name, rc);
 
+            set_ta_dead(agent);
+
             if (file != -1)
                 close(file);
-              
-            req->message->error = TE_RC(TE_RCF, ETADEAD);
-            answer_user_request(req);
 
             return 0;
         }
@@ -1854,10 +1859,10 @@ rcf_shutdown()
                 char    answer[16];
                 char   *ba;
                 size_t  len = sizeof(cmd);
-
+                
                 if ((agent->receive)(agent->handle, cmd, &len, &ba) != 0)
                     continue;
-
+                    
                 sprintf(answer, "SID %d 0", agent->sid);
 
                 if (strcmp(cmd, answer) != 0)
@@ -2002,6 +2007,9 @@ main(int argc, char **argv)
         struct timeval  tv = tv0;
         fd_set          set = set0;
         size_t          len;
+        
+        req = NULL;
+        rc = -1;
 
         select(FD_SETSIZE, &set, NULL, NULL, &tv);
         if (reboot_num > 0)
@@ -2073,7 +2081,7 @@ shutdown:
 error:
     if (rc != 0)
         wait_shutdown();
-
+        
 no_ipcs_error:
     free_ta_list();
     if (server != NULL)
@@ -2082,7 +2090,7 @@ no_ipcs_error:
     if (rc != 0)
         ERROR("Error exit");
     else
-        INFO("Exit");
+        RING("Exit");
 
     log_client_close();
 
