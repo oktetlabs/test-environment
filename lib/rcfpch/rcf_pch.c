@@ -1,4 +1,4 @@
-/** @file
+/** @file 
  * @brief RCF Portable Command Handler
  *
  * RCF Portable Commands Handler implementation.
@@ -703,8 +703,8 @@ rcf_pch_run(const char *confstr, const char *info)
                 if (rcf_ch_csap_create(conn, cmd, RCF_MAX_LEN, answer_plen,
                                        ba, len, stack, params) < 0)
                 {
-                    ERROR("rcfpch", "CSAP stack %s (%s) is NOT supported",
-                                      stack, params);
+                    ERROR("CSAP stack %s (%s) is NOT supported", stack, 
+                          params);
                     SEND_ANSWER("%d", EOPNOTSUPP);
                 }
 
