@@ -597,25 +597,42 @@ forward(void *arg)
         return NULL;
     }
 
+    memset(&addr, '\0', sizeof(addr));
+    addr.sun_family = AF_UNIX;
+#ifdef FORK_FORWARD    
+    rc = snprintf(addr.sun_path, sizeof(addr.sun_path),
+                  "%s/te_rcfrpc_pipe_%u", tmp,
+                  (unsigned int)rcf_rpc_pid);
+#else    
+    rc = snprintf(addr.sun_path, sizeof(addr.sun_path),
+                  "%s/te_rcfrpc_pipe_%u_%u", tmp,
+                  (unsigned int)rcf_rpc_pid, (unsigned int)pthread_self());
+#endif            
+    if (rc >= (int)sizeof(addr.sun_path))
+    {
+        rpcs->_errno = TE_RC(TE_RCF_API, E2BIG);
+        ERROR("Too long path to RPC pipe");
+        free(buf);
+        return NULL;
+    }
+    len = sizeof(addr.sun_family) + strlen(addr.sun_path) + 1;
+
+    rc = snprintf(file, sizeof(file), "%s/te_rcfrpc_file_%u_%u", tmp,
+                  (unsigned int)rcf_rpc_pid, (unsigned int)pthread_self());
+    if (rc >= (int)sizeof(file))
+    {
+        rpcs->_errno = TE_RC(TE_RCF_API, E2BIG);
+        ERROR("Too long path to temporary file for RPC data");
+        free(buf);
+        return NULL;
+    }
+
     if ((sock = socket(AF_UNIX, SOCK_STREAM, 0)) < 0)
     {
         rpcs->_errno = TE_RC(TE_RCF_API, errno);
         free(buf);
         return NULL;
     }
-    memset(&addr, '\0', sizeof(addr));
-    addr.sun_family = AF_UNIX;
-#ifdef FORK_FORWARD    
-    sprintf(addr.sun_path, "tmp/te_rcfrpc_pipe_%u",
-            (unsigned int)rcf_rpc_pid);
-#else    
-    sprintf(addr.sun_path, "tmp/te_rcfrpc_pipe_%u_%u",
-            (unsigned int)rcf_rpc_pid, (unsigned int)pthread_self()); 
-#endif            
-    sprintf(file, "%s/te_rcfrpc_file_%u_%u", tmp,
-            (unsigned int)rcf_rpc_pid, (unsigned int)pthread_self());
-    len = sizeof(addr.sun_family) + strlen(addr.sun_path) + 1;
-
     if (bind(sock, (struct sockaddr *)&addr, len) < 0 ||
         listen(sock, 1) < 0)
     {
