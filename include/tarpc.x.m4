@@ -1176,6 +1176,14 @@ typedef struct tarpc_setuid_in tarpc_seteuid_in;
 typedef struct tarpc_setuid_out tarpc_seteuid_out;
 
 
+/* getpid() */
+struct tarpc_getpid_in {
+    struct tarpc_in_arg common;
+};
+
+typedef struct tarpc_int_retval_out tarpc_getpid_out;
+
+
 struct tarpc_simple_sender_in {
     struct tarpc_in_arg common;
     
@@ -1433,6 +1441,7 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(pthread_create)
         RPC_DEF(pthread_cancel)
         RPC_DEF(execve)
+        RPC_DEF(getpid)
         
         RPC_DEF(socket)
         RPC_DEF(dup)

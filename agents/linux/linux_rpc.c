@@ -362,6 +362,38 @@ tarpc_del_server(char *name)
     return 0;
 }
 
+/**
+ * Set correct PID of exec'ed server.
+ *
+ * @param name  name of the server to be deleted
+ * @param pid   new PID
+ *
+ * @return status code
+ */
+int 
+tarpc_set_server_pid(char *name, int pid)
+{
+    srv *cur;
+    
+    VERB("tarpc_set_server_pid '%s' = %d", name, pid);
+    
+    for (cur = srv_list;
+         cur != NULL && strcmp(cur->name, name) != 0;
+         cur = cur->next)
+    {
+        VERB("skip %s", cur->name);
+    }
+         
+    if (cur == NULL)
+    {
+        ERROR("Failed to find RPC Server '%s' to set PID", name);
+        return TE_RC(TE_TA_LINUX, ENOENT);
+    }
+    cur->pid = pid;
+
+    return 0;
+}
+
 static void
 sig_handler(int s)
 {

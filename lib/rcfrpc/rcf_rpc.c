@@ -360,8 +360,10 @@ int
 rcf_rpc_server_exec(rcf_rpc_server *rpcs)
 {
     pid_t old_pid;
-    tarpc_execve_in in;
-    tarpc_execve_in out;
+    tarpc_execve_in     in;
+    tarpc_execve_out    out;
+    tarpc_getpid_in     getpid_in;
+    tarpc_getpid_out    getpid_out;
     
     int rc, rc1;
 
@@ -425,6 +427,35 @@ rcf_rpc_server_exec(rcf_rpc_server *rpcs)
         {
             ERROR("Cannot kill RPC server process");
         }
+        if (pthread_mutex_unlock(&rpcs->lock) != 0)
+            ERROR("pthread_mutex_unlock() failed");
+        return rc;
+    }
+
+
+    memset(&getpid_in, 0, sizeof(getpid_in));
+    memset(&getpid_out, 0, sizeof(getpid_out));
+
+    rcf_rpc_call(rpcs, _getpid,
+                 &getpid_in,  (xdrproc_t)xdr_tarpc_getpid_in, 
+                 &getpid_out, (xdrproc_t)xdr_tarpc_getpid_out);
+                 
+    if (rpcs->_errno != 0)
+    {
+        ERROR("Failed to call getpid() on the RPC server %s", rpcs->name);
+        if (pthread_mutex_unlock(&rpcs->lock) != 0)
+            ERROR("pthread_mutex_unlock() failed");
+        return rpcs->_errno;
+    }
+    rpcs->pid = getpid_out.retval;
+
+    if ((rc = rcf_ta_call(rpcs->ta, 0, "tarpc_set_server_pid", &rc1, 2, 0,
+                          RCF_STRING, rpcs->name,
+                          RCF_INT32, rpcs->pid)) != 0 ||
+         (rc = rc1) != 0)
+    {
+        ERROR("Remote call of tarpc_set_server_pid failed for %s.",
+              rpcs->name);
         if (pthread_mutex_unlock(&rpcs->lock) != 0)
             ERROR("pthread_mutex_unlock() failed");
         return rc;
