@@ -53,6 +53,14 @@ extern char *ta_name;
 /* Auxiliary buffer */
 static char  buf[2048] = {0, };
 
+
+/** Route is direct "local interface" in terms of RFC 1354 */
+#define FORW_TYPE_LOCAL  3
+
+/** Route is indirect "remote destination" in terms of RFC 1354 */
+#define FORW_TYPE_REMOTE 4
+
+
 /* Fast conversion of the network mask to prefix */
 #define MASK2PREFIX(mask, prefix)            \
     switch (ntohl(mask))                     \
@@ -1045,18 +1053,44 @@ arp_list(unsigned int gid, const char *oid, char **list)
     return 0;
 }
 
-/** Get ip address and prefix from the instance name */
-static int
-parse_route_name(char *route, DWORD *addr, int *prefix)
-{
-    char *tmp, *tmp1;
 
-    if ((tmp = strchr(route, '|')) == NULL)
+/** Route entry data structure */
+typedef route_entry {
+    DWORD dst; /**< Destination address */
+    int   prefix; /**< Destination address prefix */
+    DWORD gw; /**< Gwateway address, in case 'forw_type' is 
+                   FORW_TYPE_REMOTE */
+    char  if_index; /**< Interface index, in case 'forw_type' is 
+                         FORW_TYPE_LOCAL */
+    DWORD forw_type; /**< Forward type value () */
+    DWORD metric; /**< Primary route metric */
+} route_entry_t;
+
+/** 
+ * Parse route instance name and returns data structure of 
+ * type 'route_entry_t'
+ *
+ * @param inst_name  Route instance name
+ * @param rt         Routing entry (OUT)
+ */
+static int
+route_parse_inst_name(const char *inst_name, route_entry_t *rt)
+{
+    static char  inst_copy[RCF_MAX_VAL];
+    int          int_val;
+    char        *tmp;
+    char        *tmp1;
+
+    memset(rt, 0, sizeof(*rt));
+    strncpy(inst_copy, inst_name, sizeof(inst_copy));
+    inst_copy[sizeof(inst_copy) - 1] = '\0';
+
+    if ((tmp = strchr(inst_copy, '|')) == NULL)
         return TE_RC(TE_TA_WIN32, ETENOSUCHNAME);
 
     *tmp = 0;
 
-    if ((*addr = inet_addr(route)) == INADDR_NONE)
+    if ((rt->dst = inet_addr(inst_copy)) == INADDR_NONE)
     {
         if (strcmp(route, "255.255.255.255") != 0)
            return TE_RC(TE_TA_WIN32, ETENOSUCHNAME);
@@ -1064,10 +1098,78 @@ parse_route_name(char *route, DWORD *addr, int *prefix)
 
     *tmp++ = '|';
     if (*tmp == '-' ||
-        (*prefix = strtol(tmp, &tmp1, 10), tmp == tmp1 || *tmp1 != 0 ||
-         *prefix > 32))
+        (rt->prefix = strtol(tmp, &tmp1, 10), tmp == tmp1 ||
+         rt->prefix > 32))
     {
         return TE_RC(TE_TA_WIN32, ETENOSUCHNAME);
+    }
+    tmp = tmp1;
+    term_byte = (char *)(tmp + strlen(tmp));
+
+    if ((ptr = strstr(tmp, "gw=")) != NULL)
+    {
+        int rc;
+
+        end_ptr = ptr += strlen("gw=");
+        while (*end_ptr != ',' && *end_ptr != '\0')
+            end_ptr++;
+        *end_ptr = '\0';
+
+        if ((rt->gw = inet_addr(ptr)) == INADDR_NONE)
+        {
+            return TE_RC(TE_TA_WIN32, ETENOSUCHNAME);
+        }
+        if (term_byte != end_ptr)
+            *end_ptr = ',';
+        rt->forw_type = FORW_TYPE_REMOTE;
+
+        assert(strstr(tmp, "dev=") == NULL);
+    }
+    else if ((ptr = strstr(tmp, "dev=")) != NULL)
+    {
+        end_ptr = ptr += strlen("dev=");
+        while (*end_ptr != ',' && *end_ptr != '\0')
+            end_ptr++;
+        *end_ptr = '\0';
+
+        if (sscanf(ptr, "intf%d", &rt->if_index) != 1)
+        {
+            return TE_RC(TE_TA_WIN32, ETENOSUCHNAME);
+        }
+
+        if (term_byte != end_ptr)
+            *end_ptr = ',';
+    }
+    else
+    {
+        /* 
+         * Route can be direct (via interface),
+         * or indirect (via gateway) 
+         */
+        assert(0);
+    }
+
+    if ((ptr = strstr(tmp, "metric=")) != NULL)
+    {
+        end_ptr = ptr += strlen("metric=");
+        while (*end_ptr != ',' && *end_ptr != '\0')
+            end_ptr++;
+        *end_ptr = '\0';
+        
+        if (*ptr == '\0' || *ptr == '-' ||
+            (int_val = strtol(ptr, &end_ptr, 10), *end_ptr != '\0'))
+        {
+            return TE_RC(TE_TA_WIN32, ETENOSUCHNAME);
+        }
+        if (term_byte != end_ptr)
+            *end_ptr = ',';
+        rt->metric = int_val;
+    }
+
+    if (strstr(tmp, "mss=") != NULL || strstr(tmp, "window=") != NULL ||
+        strstr(tmp, "irtt=") != NULL || strstr(tmp, "reject") != NULL)
+    {
+        return TE_RC(TE_TA_WIN32, EOPNOTSUPP);
     }
 
     return 0;
@@ -1089,14 +1191,14 @@ route_get(unsigned int gid, const char *oid, char *value,
           const char *route)
 {
     MIB_IPFORWARDTABLE *table;
-
-    int    prefix, rc, i;
-    DWORD  addr;
+    route_entry_t       rt;
+    int                 rc;
+    int                 i;
 
     UNUSED(gid);
     UNUSED(oid);
 
-    if ((rc = parse_route_name((char *)route, &addr, &prefix)) != 0)
+    if ((rc = route_parse_inst_name(route, &rt)) != 0)
         return rc;
 
     GET_TABLE(MIB_IPFORWARDTABLE, GetIpForwardTable);
@@ -1107,15 +1209,30 @@ route_get(unsigned int gid, const char *oid, char *value,
     {
         int p;
 
-        MASK2PREFIX(table->table[i].dwForwardMask, p);
-        if (table->table[i].dwForwardDest == addr && prefix == p)
+        if (table->table[i].dwForwardType != FORW_TYPE_LOCAL &&
+            table->table[i].dwForwardType != FORW_TYPE_REMOTE)
         {
-            snprintf(value, RCF_MAX_VAL, "gw: %s",
-                    inet_ntoa(*(struct in_addr *)
-                                  &(table->table[i].dwForwardNextHop)));
-            free(table);
-            return 0;
+            continue;
         }
+
+        MASK2PREFIX(table->table[i].dwForwardMask, p);
+        if (table->table[i].dwForwardDest != rt.addr || p != rt.prefix ||
+            table->table[i].dwForwardMetric1 != rt.metric ||
+            (table->table[i].dwForwardType == FORW_TYPE_LOCAL &&
+             table->table[i].dwForwardIfIndex != rt.if_index) ||
+            (table->table[i].dwForwardType == FORW_TYPE_REMOTE &&
+             table->table[i].dwForwardNextHop != rt.gw))
+        {
+            continue;
+        }
+
+        /*
+         * win32 agent does not support values defined for routes
+         * in configuration model.
+         */
+        snprintf(value, RCF_MAX_VAL, "");
+        free(table);
+        return 0;
     }
 
     free(table);
@@ -1137,44 +1254,7 @@ static int
 route_set(unsigned int gid, const char *oid, const char *value,
           const char *route)
 {
-    MIB_IPFORWARDTABLE *table;
-    DWORD dst, gw;
-    int   i, prefix, rc;
-
-    UNUSED(gid);
-    UNUSED(oid);
-
-    if ((rc = parse_route_name((char *)route, &dst, &prefix)) != 0)
-        return rc;
-
-    if ((gw = inet_addr(value)) == INADDR_NONE)
-        return TE_RC(TE_TA_WIN32, EINVAL);
-
-    GET_TABLE(MIB_IPFORWARDTABLE, GetIpForwardTable);
-    if (table == NULL)
-        return TE_RC(TE_TA_WIN32, ENOENT);
-
-    for (i = 0; i < (int)table->dwNumEntries; i++)
-    {
-        int p;
-
-        MASK2PREFIX(table->table[i].dwForwardMask, p);
-        if (table->table[i].dwForwardDest == dst && prefix == p)
-        {
-            table->table[i].dwForwardNextHop = gw;
-            if (SetIpForwardEntry(table->table + i) != 0)
-            {
-                ERROR("SetIpForwardEntry() failed, error %x",
-                      GetLastError());
-                free(table);
-                return TE_RC(TE_TA_WIN32, ETEWIN);
-            }
-            free(table);
-            return 0;
-        }
-    }
-
-    return TE_RC(TE_TA_WIN32, ENOENT);
+    return 0;
 }
 
 /**
@@ -1191,74 +1271,38 @@ static int
 route_add(unsigned int gid, const char *oid, const char *value,
           const char *route)
 {
-    char              val[32];
+    char              val[RCF_MAX_VAL];
     MIB_IPFORWARDROW  entry;
-    int               rc, prefix;
-    char             *term_byte, *ptr, *end_ptr;
+    int               rc;
+    route_entry_t     rt;
 
     UNUSED(gid);
     UNUSED(oid);
 
-    if ((rc = parse_route_name((char *)route, &entry.dwForwardDest,
-                               &prefix)) != 0)
-        return rc;
-
     if (route_get(0, NULL, val, route) == 0)
         return TE_RC(TE_TA_WIN32, EEXIST);
 
-    term_byte = (char *)(value + strlen(value));
+    if ((rc = route_parse_inst_name(route, &rt)) != 0)
+        return rc;
 
-    if ((ptr = strstr(value, "gw: ")) != NULL)
+    entry.dwForwardNextHop = rt.dst;
+    entry.dwForwardMask = PREFIX2MASK(rt.prefix);
+
+    if (rt.forw_type == FORW_TYPE_LOCAL)
     {
-        int rc;
+        entry.dwForwardIfIndex = rt.if_index;        
+    }
+    else
+    {
+        entry.dwForwardNextHop = rt.gw;
 
-        end_ptr = ptr += strlen("gw: ");
-        while (*end_ptr != ' ')
-            end_ptr++;
-        *end_ptr = '\0';
-
-        if ((entry.dwForwardNextHop = inet_addr(value)) == INADDR_NONE)
-        {
-            ERROR("Incorrect format for gateway address: %s", ptr);
-            if (term_byte != end_ptr)
-                *end_ptr = ' ';
-            return TE_RC(TE_TA_WIN32, EINVAL);
-        }
         if ((rc = find_ifindex(entry.dwForwardNextHop,
                                &entry.dwForwardIfIndex)) != 0)
         {
             return rc;
         }
-
-        if (term_byte != end_ptr)
-            *end_ptr = ' ';
-    }
-    if ((ptr = strstr(value, "dev: ")) != NULL)
-    {
-        int if_index;
-
-        end_ptr = ptr += strlen("dev: ");
-        while (*end_ptr != ' ')
-            end_ptr++;
-        *end_ptr = '\0';
-
-        if (sscanf(ptr, "intf%d", &if_index) != 1)
-        {
-            ERROR("The format of 'dev' attribute for the route is "
-                  "incorrect: %s,  expected to be intfN, where N - "
-                  "interface index", ptr);
-            if (term_byte != end_ptr)
-                *end_ptr = ' ';
-            return TE_RC(TE_TA_WIN32, EINVAL);
-        }
-
-        if (term_byte != end_ptr)
-            *end_ptr = ' ';
-
-        entry.dwForwardIfIndex = if_index;
     }
 
-    entry.dwForwardMask = PREFIX2MASK(prefix);
     entry.dwForwardProto = 3;
     if (CreateIpForwardEntry(&entry) != 0)
     {
@@ -1282,13 +1326,14 @@ static int
 route_del(unsigned int gid, const char *oid, const char *route)
 {
     MIB_IPFORWARDTABLE *table;
-    DWORD dst;
-    int   i, prefix, rc;
+
+    int i;
+    int rc;
 
     UNUSED(gid);
     UNUSED(oid);
 
-    if ((rc = parse_route_name((char *)route, &dst, &prefix)) != 0)
+    if ((rc = route_parse_inst_name(route, &rt)) != 0)
         return rc;
 
     GET_TABLE(MIB_IPFORWARDTABLE, GetIpForwardTable);
@@ -1299,19 +1344,32 @@ route_del(unsigned int gid, const char *oid, const char *route)
     {
         int p;
 
-        MASK2PREFIX(table->table[i].dwForwardMask, p);
-        if (table->table[i].dwForwardDest == dst && prefix == p)
+        if (table->table[i].dwForwardType != FORW_TYPE_LOCAL &&
+            table->table[i].dwForwardType != FORW_TYPE_REMOTE)
         {
-            if (DeleteIpForwardEntry(table->table + i) != 0)
-            {
-                ERROR("DeleteIpForwardEntry() failed, error %x",
-                      GetLastError());
-                free(table);
-                return TE_RC(TE_TA_WIN32, ETEWIN);
-            }
-            free(table);
-            return 0;
+            continue;
         }
+
+        MASK2PREFIX(table->table[i].dwForwardMask, p);
+        if (table->table[i].dwForwardDest != rt.addr || p != rt.prefix ||
+            table->table[i].dwForwardMetric1 != rt.metric ||
+            (table->table[i].dwForwardType == FORW_TYPE_LOCAL &&
+             table->table[i].dwForwardIfIndex != rt.if_index) ||
+            (table->table[i].dwForwardType == FORW_TYPE_REMOTE &&
+             table->table[i].dwForwardNextHop != rt.gw))
+        {
+            continue;
+        }
+
+        if (DeleteIpForwardEntry(table->table + i) != 0)
+        {
+            ERROR("DeleteIpForwardEntry() failed, error %x",
+                  GetLastError());
+            free(table);
+            return TE_RC(TE_TA_WIN32, ETEWIN);
+        }
+        free(table);
+        return 0;
     }
 
     return TE_RC(TE_TA_WIN32, ENOENT);
@@ -1333,7 +1391,8 @@ route_list(unsigned int gid, const char *oid, char **list)
 {
     MIB_IPFORWARDTABLE *table;
     int                 i;
-    char               *s = buf;
+    char               *end_ptr = buf + sizeof(buf);
+    char               *ptr = buf;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -1353,10 +1412,40 @@ route_list(unsigned int gid, const char *oid, char **list)
     {
         int prefix;
 
+        if (table->table[i].dwForwardType != FORW_TYPE_LOCAL &&
+            table->table[i].dwForwardType != FORW_TYPE_REMOTE)
+        {
+            continue;
+        }
+
         MASK2PREFIX(table->table[i].dwForwardMask, prefix);
-        s += sprintf(s, "%s|%d ",
-                     inet_ntoa(*(struct in_addr *)&(table->table[i].
-                                   dwForwardDest)), prefix);
+        snprintf(ptr, end_ptr - ptr, "%s|%d",
+                 inet_ntoa(*(struct in_addr *)
+                     &(table->table[i].dwForwardDest)), prefix);
+        ptr += strlen(ptr);
+        
+        if (table->table[i].dwForwardType == FORW_TYPE_REMOTE)
+        {
+            /* Route via gateway */
+            snprintf(ptr, end_ptr - ptr, ",gw=%s",
+                     inet_ntoa(*(struct in_addr *)
+                         &(table->table[i].dwForwardNextHop)));
+        }
+        else
+        {
+            snprintf(ptr, end_ptr - ptr, ",dev=intf%d",
+                     table->table[i].dwForwardIfIndex);
+        }
+        ptr += strlen(ptr);
+        
+        if (table->table[i].dwForwardMetric1 != 0)
+        {
+            snprintf(ptr, end_ptr - ptr, ",metric=%d",
+                     table->table[i].dwForwardMetric1);
+            ptr += strlen(ptr);
+        }
+        snprintf(ptr, end_ptr - ptr, " ");
+        ptr += strlen(ptr);
     }
 
     free(table);
