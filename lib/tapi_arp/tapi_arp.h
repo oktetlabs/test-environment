@@ -254,8 +254,8 @@ extern int tapi_arp_prepare_template(const tapi_arp_frame_t *frame,
  *
  * @returns Status of the operation
  */
-extern int tapi_arp_prepare_pattern_eth_only(uint8_t *src_mac,
-                                             uint8_t *dst_mac,
+extern int tapi_arp_prepare_pattern_eth_only(const uint8_t *src_mac,
+                                             const uint8_t *dst_mac,
                                              asn_value **pattern);
 
 /**
@@ -275,13 +275,13 @@ extern int tapi_arp_prepare_pattern_eth_only(uint8_t *src_mac,
  *
  * @returns Status of the operation
  */
-extern int tapi_arp_prepare_pattern_with_arp(uint8_t *eth_src_mac,
-                                             uint8_t *eth_dst_mac,
-                                             uint16_t *op_code,
-                                             uint8_t *snd_hw_addr,
-                                             uint8_t *snd_proto_addr,
-                                             uint8_t *tgt_hw_addr,
-                                             uint8_t *tgt_proto_addr,
+extern int tapi_arp_prepare_pattern_with_arp(const uint8_t *eth_src_mac,
+                                             const uint8_t *eth_dst_mac,
+                                             const uint16_t *op_code,
+                                             const uint8_t *snd_hw_addr,
+                                             const uint8_t *snd_proto_addr,
+                                             const uint8_t *tgt_hw_addr,
+                                             const uint8_t *tgt_proto_addr,
                                              asn_value **pattern);
 
 #endif /* TAPI_ARP_H__ */
