@@ -232,9 +232,12 @@ tester_out_done(run_item_type type, const char *name,
     /* It's done only once */
     if (columns == 0)
     {
+        char       *term = getenv("TERM");
         const char *cols = getenv("COLUMNS");
         char       *end;
         
+        if ((term == NULL) || (strlen(term) == 0))
+            setenv("TERM", "vt100", TRUE);
         if (cols != NULL)
             columns = strtol(cols, &end, 10);
         if ((end == cols) || (columns == 0))
