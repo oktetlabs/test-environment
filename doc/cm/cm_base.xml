@@ -446,5 +446,9 @@
     <!-- VNC server password.
          Name: empty -->
     <object oid="/agent/vncpasswd" access="read_only" type="string"/>
+    
+    <!-- Tester user.
+         Name: te_tester_<uid> -->
+    <object oid="/agent/user" access="read_create" type="none"/>
 
 </backup>
