@@ -511,7 +511,7 @@ rcf_rpc_server_destroy(rcf_rpc_server *rpcs)
         }
         if (rcf_ta_kill_task(rpcs->ta, 0, rpcs->pid) != 0)
         {
-            ERROR("Cannot connect kill RPC server process");
+            ERROR("Cannot kill RPC server process");
         }
         VERB("Process is killed");
     }
