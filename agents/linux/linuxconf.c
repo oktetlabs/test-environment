@@ -30,9 +30,7 @@
 
 #define TE_LGR_USER     "Linux Conf"
 
-#define __LIBC12_SOURCE__ /* NetBSD unsetenv() work-around */
-
-#ifdef HAVE_CONFIG_H
+#if HAVE_CONFIG_H
 #include "config.h"
 #endif
 
@@ -51,7 +49,7 @@
 #endif
 #include <net/if_arp.h>
 #include <net/route.h>
-#ifdef HAVE_NET_ETHERNET_H
+#if HAVE_NET_ETHERNET_H
 #include <net/ethernet.h>
 #endif
 #include <arpa/inet.h>
