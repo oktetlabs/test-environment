@@ -1930,7 +1930,6 @@ rpc_wait_multiple_events(rcf_rpc_server *rpcs,
 te_bool
 rpc_is_winsock2(rcf_rpc_server *rpcs)
 {
-    int          save_errno;
     rpc_wsaevent hevent;
     char        *value;
     te_bool      result;
@@ -1956,14 +1955,12 @@ rpc_is_winsock2(rcf_rpc_server *rpcs)
         return result;
     }             
 
-    save_errno = rpcs->_errno;
     hevent = rpc_create_event(rpcs);
     if (hevent == NULL)
     {
         if (RPC_ERRNO(rpcs) != RPC_ERPCNOTSUPP)
         {
             ERROR("RPC failed with unexpected error");
-            rpcs->_errno = save_errno;
             return FALSE;
         }
         result = FALSE;
@@ -1973,7 +1970,6 @@ rpc_is_winsock2(rcf_rpc_server *rpcs)
         rpc_close_event(rpcs, hevent);
         result = TRUE;
     }
-    rpcs->_errno = save_errno;
     
     if ((rc = cfg_add_instance_fmt(&handle, CVT_STRING, 
                                    result ? "winsock2" : "berkeley",
