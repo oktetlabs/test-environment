@@ -29,6 +29,8 @@
 #ifndef __TE__TAD_DHCP_IMPL__H__
 #define __TE__TAD_DHCP_IMPL__H__ 
 
+#include "config.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -36,6 +38,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <semaphore.h>
 
 
 #include "te_defs.h"
@@ -43,6 +46,9 @@
 
 #include "asn_usr.h" 
 #include "ndn_ipstack.h"
+
+#include "logger_api.h"
+#include "logger_ta.h"
 
 #include "tad.h"
 
@@ -70,6 +76,19 @@ typedef struct ip4_csap_specific_data
     struct in_addr     src_addr;
     struct in_addr     dst_addr;
 
+    tad_data_unit_t  du_version;
+    tad_data_unit_t  du_header_len;
+    tad_data_unit_t  du_tos;
+    tad_data_unit_t  du_ip_len;
+    tad_data_unit_t  du_ip_ident;
+    tad_data_unit_t  du_flags;
+    tad_data_unit_t  du_ip_offset;
+    tad_data_unit_t  du_ttl;
+    tad_data_unit_t  du_protocol;
+    tad_data_unit_t  du_h_checksum;
+    tad_data_unit_t  du_src_addr;
+    tad_data_unit_t  du_dst_addr;
+
 } ip4_csap_specific_data_t;
 
 
@@ -89,6 +108,34 @@ typedef struct udp_csap_specific_data
     struct sockaddr *low_sa_dest;   /**< Network sockaddr for 'data' CSAP,*/
     size_t           low_sa_dest_len;
 } udp_csap_specific_data_t;
+
+
+/* 
+ * TCP CSAP specific data
+ */
+typedef struct tcp_csap_specific_data
+{
+    unsigned short   local_port;    /**< Local TCP port */
+    unsigned short   remote_port;   /**< Remote TCP port */ 
+
+    unsigned short   src_port;    /**< Source TCP port for current packet*/
+    unsigned short   dst_port;    /**< Dest.  TCP port for current packet*/
+
+    int              socket;        /**< Network socket for 'data' CSAP*/ 
+    struct sockaddr *low_sa_dest;   /**< Network sockaddr for 'data' CSAP,*/
+    size_t           low_sa_dest_len;
+
+    tad_data_unit_t  du_src_port;
+    tad_data_unit_t  du_dst_port;
+    tad_data_unit_t  du_seqn;
+    tad_data_unit_t  du_acqn;
+    tad_data_unit_t  du_hlen;
+    tad_data_unit_t  du_flags;
+    tad_data_unit_t  du_win_size;
+    tad_data_unit_t  du_checksum;
+    tad_data_unit_t  du_urg_p;
+
+} tcp_csap_specific_data_t;
 
 
 

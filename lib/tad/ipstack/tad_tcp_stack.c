@@ -78,6 +78,7 @@
 int 
 tcp_read_cb (csap_p csap_descr, int timeout, char *buf, int buf_len)
 {
+#if 0
     int    rc; 
     int    layer;    
     fd_set read_set;
@@ -123,6 +124,13 @@ tcp_read_cb (csap_p csap_descr, int timeout, char *buf, int buf_len)
     
     /* Note: possibly MSG_TRUNC and other flags are required */
     return recv (spec_data->in, buf, buf_len, 0); 
+#else
+    UNUSED(csap_descr);
+    UNUSED(timeout);
+    UNUSED(buf);
+    UNUSED(buf_len);
+    return 0;
+#endif
 }
 
 /**
@@ -138,6 +146,7 @@ tcp_read_cb (csap_p csap_descr, int timeout, char *buf, int buf_len)
 int 
 tcp_write_cb (csap_p csap_descr, char *buf, int buf_len)
 {
+#if 0
     tcp_csap_specific_data_t * spec_data;
     int layer;    
     int rc;
@@ -170,6 +179,12 @@ tcp_write_cb (csap_p csap_descr, char *buf, int buf_len)
     }
 
     return rc;
+#else
+    UNUSED(csap_descr);
+    UNUSED(buf);
+    UNUSED(buf_len);
+    return 0;
+#endif
 }
 
 /**
@@ -214,6 +229,7 @@ tcp_write_read_cb (csap_p csap_descr, int timeout,
 int 
 tcp_single_init_cb (int csap_id, const asn_value *csap_nds, int layer)
 {
+#if 0
     csap_p   csap_descr;          /**< csap description        */
 
     tcp_csap_specific_data_t *   tcp_spec_data; 
@@ -370,6 +386,12 @@ tcp_single_init_cb (int csap_id, const asn_value *csap_nds, int layer)
     csap_descr->timeout          = 500000;
 
     return 0;
+#else
+    UNUSED(csap_id);
+    UNUSED(csap_nds);
+    UNUSED(layer);
+    return 0;
+#endif
 }
 
 /**
@@ -387,6 +409,7 @@ tcp_single_init_cb (int csap_id, const asn_value *csap_nds, int layer)
 int 
 tcp_single_destroy_cb (int csap_id, int layer)
 {
+#if 0
     csap_p csap_descr = csap_find(csap_id);
 
     tcp_csap_specific_data_t * spec_data = 
@@ -397,6 +420,10 @@ tcp_single_destroy_cb (int csap_id, int layer)
 
     if(spec_data->out >= 0)
         close(spec_data->out);    
+#else
+    UNUSED(csap_id);
+    UNUSED(layer);
+#endif
     return 0;
 }
 
@@ -412,8 +439,36 @@ tcp_single_destroy_cb (int csap_id, int layer)
  * @return zero on success or error code.
  */ 
 int 
-tcp_ip4_init_cb (int csap_id, const asn_value_p csap_nds, int layer)
+tcp_ip4_init_cb (int csap_id, const asn_value *csap_nds, int layer)
 {
+    csap_p csap_descr;      /**< csap description   */ 
+    tcp_csap_specific_data_t *   spec_data; 
+
+    if (csap_nds == NULL)
+        return ETEWRONGPTR;
+
+    if ((csap_descr = csap_find (csap_id)) == NULL)
+        return ETADCSAPNOTEX;
+
+    spec_data = calloc (1, sizeof(tcp_csap_specific_data_t));
+    
+    if (spec_data == NULL)
+    {
+        return ENOMEM;
+    }
+
+    csap_descr->layer_data[layer] = spec_data;
+    csap_descr->get_param_cb[layer] = tcp_get_param_cb;
+
+#if 0 /* TODO right */
+    csap_descr->check_pdus_cb = bridge_eth_check_pdus;
+#endif 
+
+    F_VERB("%s called for csap %d, layer %d\n", __FUNCTION__, csap_id, layer); 
+
+    UNUSED(csap_nds);
+    return 0;
+    return 0;
 }
 
 /**
@@ -431,5 +486,8 @@ tcp_ip4_init_cb (int csap_id, const asn_value_p csap_nds, int layer)
 int 
 tcp_ip4_destroy_cb (int csap_id, int layer)
 {
+    UNUSED(csap_id);
+    UNUSED(layer);
+    return 0;
 }
 

@@ -50,9 +50,11 @@ char* ip4_get_param_cb (csap_p csap_descr, int level, const char *param)
     UNUSED(param);
     return NULL;
 }
-# if 1
+
+
+
 /**
- * Callback for confirm PDU with DHCP CSAP parameters and possibilities.
+ * Callback for confirm PDU with IPv4 CSAP parameters and possibilities.
  *
  * @param csap_id       identifier of CSAP
  * @param layer         numeric index of layer in CSAP type to be processed.
@@ -67,28 +69,52 @@ ip4_confirm_pdu_cb (int csap_id, int layer, asn_value *tmpl_pdu)
     csap_p csap_descr = csap_find(csap_id);
     int len;
 
-    ip4_csap_specific_data_t * ip4_spec_data = 
+    ip4_csap_specific_data_t * spec_data = 
         (ip4_csap_specific_data_t *) csap_descr->layer_data[layer]; 
+
+
+    tad_data_unit_convert(tmpl_pdu, "version",         &spec_data->du_version);
+    tad_data_unit_convert(tmpl_pdu, "header-len",      &spec_data->du_header_len);
+    tad_data_unit_convert(tmpl_pdu, "type-of-service", &spec_data->du_tos);
+    tad_data_unit_convert(tmpl_pdu, "ip-len",          &spec_data->du_ip_len);
+    tad_data_unit_convert(tmpl_pdu, "ip-ident",        &spec_data->du_ip_ident);
+    tad_data_unit_convert(tmpl_pdu, "flags",           &spec_data->du_flags);
+    tad_data_unit_convert(tmpl_pdu, "ip-offset",       &spec_data->du_ip_offset);
+    tad_data_unit_convert(tmpl_pdu, "time-to-live",    &spec_data->du_ttl);
+    tad_data_unit_convert(tmpl_pdu, "protocol",        &spec_data->du_protocol);
+    tad_data_unit_convert(tmpl_pdu, "h-checksum",      &spec_data->du_h_checksum);
+
+    /* Source address */
+
+    rc = tad_data_unit_convert(tmpl_pdu, "src-addr", &spec_data->du_src_addr);
+
     len = sizeof(struct in_addr);
-    rc = asn_read_value_field(tmpl_pdu, &ip4_spec_data->src_addr, 
+    rc = asn_read_value_field(tmpl_pdu, &spec_data->src_addr, 
                                 &len, "src-addr");
     if (rc == EASNINCOMPLVAL)
     {
-        ip4_spec_data->src_addr.s_addr = INADDR_ANY;
+        spec_data->src_addr.s_addr = INADDR_ANY;
         rc = 0;
     }
 
+    /* Destination address */
+    rc = tad_data_unit_convert(tmpl_pdu, "dst-addr", &spec_data->du_dst_addr);
 
     if (rc == 0)
-        rc = asn_read_value_field(tmpl_pdu, &ip4_spec_data->dst_addr, 
+        rc = asn_read_value_field(tmpl_pdu, &spec_data->dst_addr, 
                                 &len, "dst-addr");
     if (rc == EASNINCOMPLVAL)
     {
-        ip4_spec_data->dst_addr.s_addr = INADDR_ANY;
+        spec_data->dst_addr.s_addr = INADDR_ANY;
 
-        /* cannot sent packet without IP address! */
-        if (ip4_spec_data->remote_addr.s_addr == INADDR_ANY)
-            rc = EINVAL;
+        if (csap_descr->command & TAD_OP_SEND)
+        { 
+            /* cannot sent packet without IP address! */
+            if (spec_data->remote_addr.s_addr == INADDR_ANY)
+                rc = EINVAL;
+            else
+                rc = 0;
+        }
         else
             rc = 0;
     } 
@@ -140,7 +166,6 @@ ip4_gen_bin_cb(int csap_id, int layer, const asn_value *tmpl_pdu,
 
     return TE_RC(TE_TAD_CSAP, ETENOSUPP);
 }
-#endif
 
 /**
  * Callback for parse received packet and match it with pattern. 
@@ -161,76 +186,77 @@ int ip4_match_bin_cb (int csap_id, int layer, const asn_value *pattern_pdu,
                        const csap_pkts *  pkt, csap_pkts * payload, 
                        asn_value_p  parsed_packet )
 { 
-    uint8_t     *p = pkt->data;
-    int          rc;
+    csap_p                    csap_descr;
+    ip4_csap_specific_data_t *spec_data;
 
-    UNUSED(csap_id);
+    uint8_t *data;
+    uint8_t  tmp8;
+    int      rc;
+
     UNUSED(pattern_pdu);
-    UNUSED(pkt);
-    UNUSED(layer);
-    UNUSED(payload);
+    UNUSED(parsed_packet);
 
-    fprintf(stdout, "IP match callback called\n");
-    
-#define FILL_IP_HEADER_FIELD(_label, _size) \
-    do {                                                              \
-        uint8_t *mb;                                                  \
-        int len = _size;                                              \
-        rc = 0;                                                       \
-        if (asn_read_value_field(pattern_pdu, mb, &len,               \
-                                 "#ip." _label ".#plain") == 0)       \
-        {                                                             \
-            if (memcmp(p, mb, _size))                                 \
-                rc = ETADNOTMATCH;                                    \
-        }                                                             \
-        if (rc == 0)                                                  \
-            rc = asn_write_value_field(parsed_packet, p, _size,       \
-                                       "#ip." _label ".#plain");      \
-        if (rc)                                                       \
-            return rc;                                                \
-        p += _size;                                                   \
-    } while (0)
+    if ((csap_descr = csap_find(csap_id)) == NULL)
+    {
+        ERROR("null csap_descr for csap id %d", csap_id);
+        return ETADCSAPNOTEX;
+    } 
+    spec_data = (ip4_csap_specific_data_t*)csap_descr->layer_data[layer]; 
 
-#define FILL_IP_HEADER_FLAGS \
-    do {                                                              \
-     uint8_t *mb;                                                     \
-        int len = _size;                                              \
-        rc = 0;                                                       \
-        if (asn_read_value_field(pattern_pdu, mb, &len,               \
-                                 "#ip." _label ".#plain") == 0)       \
-        {                                                             \
-            if (*mb == (*p) >> 5)                                     \
-                rc = ETADNOTMATCH;                                    \
-        }                                                             \
-        if (rc == 0)                                                  \
-            rc = asn_write_value_field(parsed_packet, p, _size,       \
-                                       "#ip." _label ".#plain");      \
-        if (rc)                                                       \
-            return rc;                                                \
-        p += _size;                                                   \
+    data = pkt->data; 
+
+#define CHECK_FIELD(_du_field, _asn_label, _size) \
+    do {                                                        \
+        rc = tad_univ_match_field(&spec_data-> _du_field, NULL, \
+                data, _size, _asn_label);                       \
+        if (rc)                                                 \
+            return rc;                                          \
+        data += _size;                                          \
+    } while(0)
+
+
+    tmp8 = (*data) >> 4;
+    rc = tad_univ_match_field(&spec_data->du_version, NULL, &tmp8, 1, "version");
+    if (rc) return rc;
+
+    tmp8 = (*data) & 0x0f;
+    rc = tad_univ_match_field(&spec_data->du_header_len, NULL, &tmp8, 1, "header-len");
+    if (rc) return rc;
+    data++;
+
+    CHECK_FIELD(du_tos,      "type-of-service", 1); 
+    CHECK_FIELD(du_ip_len,   "ip-len", 2);
+    CHECK_FIELD(du_ip_ident, "ip-ident", 2);
+
+    tmp8 = (*data) >> 5;
+    rc = tad_univ_match_field(&spec_data->du_flags, NULL, &tmp8, 1, "flags");
+    if (rc) return rc;
+
+    *data &= 0x1f; 
+    CHECK_FIELD(du_ip_offset,  "ip-offset", 2);
+    CHECK_FIELD(du_ttl,        "time-to-live", 1);
+    CHECK_FIELD(du_protocol,   "protocol", 1);
+    CHECK_FIELD(du_h_checksum, "h-checksum", 2);
+    CHECK_FIELD(du_src_addr,   "src_addr", 4);
+    CHECK_FIELD(du_dst_addr,   "dst-addr", 4);
+ 
+#undef CHECK_FIELD 
+
+    /* TODO: Process IPv4 options */
+
+    /* passing payload to upper layer */ 
+    {
+        int parsed_len = (data - (uint8_t*)(pkt->data));
+
+        memset (payload, 0 , sizeof(*payload));
+        payload->len = (pkt->len - parsed_len);
+        payload->data = malloc (payload->len);
+        memcpy(payload->data, data, payload->len);
     }
-    /* FILL_TCP_HEADER_FIELD("file",  128); */
     
-    p++;
-    FILL_IP_HEADER_FIELD("type-of-service",         1);
-    FILL_IP_HEADER_FIELD("ip-len",                  2);
-    FILL_IP_HEADER_FIELD("ip-ident",                2);
-    
-#if 0
-    FILL_IP_HEADER_FLAGS;
-    p += 2;
-#endif
 
-    FILL_IP_HEADER_FIELD("time-to-live",            1);
-    FILL_IP_HEADER_FIELD("protocol",                1);
-    FILL_IP_HEADER_FIELD("h-checksum",              2);
-    FILL_IP_HEADER_FIELD("src-addr",                4);
-    FILL_IP_HEADER_FIELD("dst-addr",                4);
-    
-    return 0;
+    return rc;
 }
-#undef FILL_IP_HEADER_FIELD
-#undef FILL_IP_HEADER_FLAGS
 
 /* Now we don't support traffic generating for this CSAP */
 /**

@@ -47,9 +47,17 @@ char* tcp_get_param_cb (csap_p csap_descr, int level, const char *param)
     tcp_csap_specific_data_t *   spec_data; 
     spec_data = (tcp_csap_specific_data_t *) csap_descr->layer_data[level]; 
 
-    if (strcmp (param, "ipaddr") == 0)
+    static char buf[20];
+
+    if (strcmp (param, "local_port") == 0)
     { 
-        return spec_data->ipaddr;
+        sprintf(buf, "%d", (int)spec_data->local_port);
+        return buf;
+    } 
+    if (strcmp (param, "remote_port") == 0)
+    { 
+        sprintf(buf, "%d", (int)spec_data->remote_port);
+        return buf;
     }
     return NULL;
 }
@@ -66,22 +74,23 @@ char* tcp_get_param_cb (csap_p csap_descr, int level, const char *param)
 int 
 tcp_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
 { 
-    int rc;
-    int xid;
-    int len = sizeof (xid);
-    rc = asn_read_value_field(tmpl_pdu, &xid, &len, "xid.#plain");
-    if (rc == EASNINCOMPLVAL)
-    {
-        xid = random();
-        rc = asn_write_value_field(tmpl_pdu, &xid, sizeof(xid), "xid.#plain");
-        if (rc) 
-            return rc;
-    }
-    
-    UNUSED (csap_id);
-    UNUSED (layer);
-    UNUSED (tmpl_pdu);
-    return 0;
+    int rc = 0;
+    csap_p csap_descr = csap_find(csap_id);
+
+    tcp_csap_specific_data_t * spec_data = 
+        (tcp_csap_specific_data_t *) csap_descr->layer_data[layer]; 
+
+    tad_data_unit_convert(tmpl_pdu, "src-port", &spec_data->du_src_port);
+    tad_data_unit_convert(tmpl_pdu, "dst-port", &spec_data->du_dst_port);
+    tad_data_unit_convert(tmpl_pdu, "seqn",     &spec_data->du_seqn);
+    tad_data_unit_convert(tmpl_pdu, "acqn",     &spec_data->du_acqn);
+    tad_data_unit_convert(tmpl_pdu, "hlen",     &spec_data->du_hlen);
+    tad_data_unit_convert(tmpl_pdu, "flags",    &spec_data->du_flags);
+    tad_data_unit_convert(tmpl_pdu, "win-size", &spec_data->du_win_size);
+    tad_data_unit_convert(tmpl_pdu, "checksum", &spec_data->du_checksum);
+    tad_data_unit_convert(tmpl_pdu, "urg-p",    &spec_data->du_urg_p);
+ 
+    return rc;
 }
 
 
@@ -170,7 +179,6 @@ fill_tcp_options(void *buf, asn_value_p options)
 }
 
 
-#define OPTIONS_IMPL 1
 /**
  * Callback for generate binary data to be sent to media.
  *
@@ -194,16 +202,11 @@ fill_tcp_options(void *buf, asn_value_p options)
  * @return zero on success or error code.
  */ 
 int 
-tcp_gen_bin_cb(int csap_id, int layer, const asn_value_p tmpl_pdu,
+tcp_gen_bin_cb(int csap_id, int layer, const asn_value *tmpl_pdu,
                const tad_template_arg_t *args, size_t arg_num, 
-               const csap_pkts_p  up_payload, csap_pkts_p pkts)
+               csap_pkts_p up_payload, csap_pkts_p pkts)
 {
-    int rc;
-    int val_len;
-    int value;
-#if OPTIONS_IMPL
-    asn_value_p options = NULL;
-#endif
+    int rc = 0;
     unsigned char *p; 
 
     UNUSED(up_payload); /* DHCP has no payload */ 
@@ -211,77 +214,14 @@ tcp_gen_bin_cb(int csap_id, int layer, const asn_value_p tmpl_pdu,
     UNUSED(layer); 
     UNUSED(args); 
     UNUSED(arg_num); 
+    UNUSED(tmpl_pdu); 
 
     pkts->len = 236; /* total length of mandatory fields in DHCP message */ 
-#if OPTIONS_IMPL
-    rc = asn_read_component_value(tmpl_pdu, &options, "options"); 
-    pkts->len += 
-        rc ? 0 : sizeof(magic_tcp) + tcp_calculate_options_data(options);
-#endif
 
     pkts->data = malloc(pkts->len);
     pkts->next = NULL;
     
     p = pkts->data;
-
-#define PUT_DHCP_FIELD(_label, _defval, _type) \
-    do {\
-        val_len = sizeof(value);\
-        rc = asn_read_value_field(tmpl_pdu, &value, &val_len, _label);\
-        if (rc == EASNINCOMPLVAL)\
-            value = _defval;\
-        else if (rc)\
-        {\
-            free(pkts->data);\
-            pkts->data = NULL;\
-            pkts->len = 0;\
-            return rc;\
-        }\
-        *((_type *)p) = value;\
-        p += sizeof(_type);\
-    } while(0) 
-
-    PUT_DHCP_FIELD("op",    0,     uint8_t);
-    PUT_DHCP_FIELD("htype", 0,     uint8_t);
-    PUT_DHCP_FIELD("hlen",  0,     uint8_t);
-    PUT_DHCP_FIELD("hops",  0,     uint8_t);
-    PUT_DHCP_FIELD("xid",   0,     uint32_t);
-    PUT_DHCP_FIELD("secs",  0,     uint16_t);
-    PUT_DHCP_FIELD("flags", 0,     uint16_t);
-    PUT_DHCP_FIELD("ciaddr",0,     uint32_t);
-    PUT_DHCP_FIELD("yiaddr",0,     uint32_t);
-    PUT_DHCP_FIELD("siaddr",0,     uint32_t);
-    PUT_DHCP_FIELD("giaddr",0,     uint32_t);
-
-#define PUT_DHCP_LONG_FIELD(_label, _defval, _length) \
-    do {\
-        val_len = _length;\
-        rc = asn_read_value_field(tmpl_pdu, p, &val_len, _label);\
-        if (rc == EASNINCOMPLVAL)\
-            memset(p, _defval, _length);\
-        else if (rc)\
-        {\
-            free(pkts->data);\
-            pkts->data = NULL;\
-            pkts->len = 0;\
-            return rc;\
-        }\
-        p += _length;\
-    } while(0) 
-
-    PUT_DHCP_LONG_FIELD("chaddr", 0,  16);
-    PUT_DHCP_LONG_FIELD("sname",  0,  64);
-    PUT_DHCP_LONG_FIELD("file",   0, 128); 
-
-    memcpy(p, magic_tcp, sizeof(magic_tcp));
-    p += sizeof(magic_tcp);
-
-    if ((rc = fill_tcp_options(p, options)) != 0)
-    {
-        free(pkts->data);
-        pkts->data = NULL;
-        pkts->len = 0;
-    }
     return rc;
 }
 
@@ -301,85 +241,67 @@ tcp_gen_bin_cb(int csap_id, int layer, const asn_value_p tmpl_pdu,
  *
  * @return zero on success or error code.
  */
-int tcp_match_bin_cb (int csap_id, int layer, const asn_value_p pattern_pdu,
+int tcp_match_bin_cb (int csap_id, int layer, const asn_value *pattern_pdu,
                        const csap_pkts *  pkt, csap_pkts * payload, 
                        asn_value_p  parsed_packet )
 { 
-    uint8_t     *p = pkt->data; 
-    int          i;
-    asn_value_p  opt_list;
-    int          rc;
-#define MATCH_BUF_SIZE 20
-    uint8_t      buf[MATCH_BUF_SIZE];
+    csap_p                    csap_descr;
+    tcp_csap_specific_data_t *spec_data;
 
+    uint8_t *data;
+    uint8_t  tmp8;
+    int      rc;
 
-    fprintf (stdout, "DHCP match callback called\n");
+    UNUSED(pattern_pdu);
+    UNUSED(parsed_packet);
 
-    for (i = 0; i < pkt->len; i++)
+    if ((csap_descr = csap_find(csap_id)) == NULL)
     {
-        if ((i & 0xf) == 0) printf ("\n");
-        printf("%02x ", p[i]); 
-    }
-    printf ("\n");
-    fflush(stdout);
-    
-#define FILL_TCP_HEADER_FIELD(_label, _size) \
+        ERROR("null csap_descr for csap id %d", csap_id);
+        return ETADCSAPNOTEX;
+    } 
+    spec_data = (tcp_csap_specific_data_t*)csap_descr->layer_data[layer]; 
+
+    data = pkt->data; 
+
+#define CHECK_FIELD(_du_field, _asn_label, _size) \
     do {                                                        \
-        uint8_t *mb;                                            \
-        int len = _size;                                        \
-        rc = 0;                                                 \
-                                                                \
-        if (asn_read_value_field(pattern_pdu, mb, &len,         \
-                             "#tcp." _label ".#plain") == 0)    \
-        {                                                       \
-            if (memcmp(p, mb, _size))                           \
-                rc = ETADNOTMATCH;                              \
-        }                                                       \
-        if (rc == 0)                                            \
-            rc = asn_write_value_field(parsed_packet, p, _size, \
-                                       "#tcp." _label ".#plain");   \
+        rc = tad_univ_match_field(&spec_data-> _du_field, NULL, \
+                data, _size, _asn_label);                       \
         if (rc)                                                 \
             return rc;                                          \
-        p += _size;                                             \
+        data += _size;                                          \
     } while(0)
 
-#define FILL_TCP_HEADER_FLAGS \
-    do {                                                        \
-        uint8_t *mb;                                            \
-        int len = _size;                                        \
-        rc = 0;                                                 \
-                                                                \
-        if (asn_read_value_field(pattern_pdu, mb, &len,         \
-                                 "#tcp." _label ".#plain") == 0)\
-        {                                                       \
-            if (*mb != *p)                                      \
-                rc = ETADNOTMATCH;                              \
-        }                                                       \
-        if (rc == 0)                                            \
-            rc = asn_write_value_field(parsed_packet, p, _size, \
-                                       "#tcp." _label ".#plain");  \
-        if (rc)                                                 \
-            return rc;                                          \
-        p += _size;                                             \
-    } while(0)
+    CHECK_FIELD(du_src_port, "src-port", 2);
+    CHECK_FIELD(du_dst_port, "dst-port", 2);
+    CHECK_FIELD(du_seqn,     "seqn", 4);
+    CHECK_FIELD(du_acqn,     "acqn", 4);
 
-    FILL_TCP_HEADER_FIELD("src-port",   2);
-    FILL_TCP_HEADER_FIELD("dst-port",   2);
-    FILL_TCP_HEADER_FIELD("seqn",       4);
-    FILL_TCP_HEADER_FIELD("acqn",       4);
-    p++;
-    FILL_TCP_HEADER_FLAGS;
-    p++;
-    FILL_TCP_HEADER_FIELD("win-size",   2);
-    FILL_TCP_HEADER_FIELD("checksum",   2);
-    FILL_TCP_HEADER_FIELD("urg-p",      2);
+    tmp8 = (*data) >> 4;
+    rc = tad_univ_match_field(&spec_data->du_hlen, NULL, &tmp8, 1, "hlen");
+    if (rc) return rc;
+    data ++;
 
-#undef FILL_TCP_HEADER_FIELD
-#undef FILL_TCP_HEADER_FLAGS
+    tmp8 = (*data) & 0x3f;
+    rc = tad_univ_match_field(&spec_data->du_flags, NULL, &tmp8, 1, "flags");
+    if (rc) return rc;
+    data++;
 
-    printf("MATCH CALLBACK OK\n");
-    fflush(stdout);
-    return 0;
+    CHECK_FIELD(du_win_size, "win-size", 2); 
+    CHECK_FIELD(du_checksum, "checksum", 2); 
+    CHECK_FIELD(du_urg_p,    "urg-p", 2);
+ 
+#undef CHECK_FIELD
+
+    /* TODO: Process TCP options */
+
+    /* passing payload to upper layer */ 
+    memset (payload, 0 , sizeof(*payload));
+    payload->len = (pkt->len - (data - (uint8_t*)(pkt->data)));
+    payload->data = malloc (payload->len);
+    memcpy(payload->data, data, payload->len);
+    return rc;
 }
 
 /**
@@ -395,24 +317,14 @@ int tcp_match_bin_cb (int csap_id, int layer, const asn_value_p pattern_pdu,
  *
  * @return zero on success or error code.
  */
-int tcp_gen_pattern_cb (int csap_id, int layer, const asn_value_p tmpl_pdu, 
+int tcp_gen_pattern_cb (int csap_id, int layer, const asn_value *tmpl_pdu, 
                                          asn_value_p   *pattern_pdu)
 {
-    int rc;
-    int xid;
-    int len = sizeof (xid);
-    *pattern_pdu = asn_init_value(ndn_tcp4_message); 
-    rc = asn_read_value_field(tmpl_pdu, &xid, &len, "xid.#plain");
-    if (rc == 0)
-    {
-        rc = asn_write_value_field(*pattern_pdu, &xid, sizeof(xid), "xid.#plain");
-    }
-    /* TODO: DHCP options to be inserted into pattern */
+    int rc = 0;
     UNUSED(csap_id);
     UNUSED(layer);
     UNUSED(tmpl_pdu);
-
-
+    UNUSED(pattern_pdu); 
     return rc;
 }
 

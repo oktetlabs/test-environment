@@ -220,7 +220,7 @@ ip4_single_init_cb (int csap_id, const asn_value *csap_nds, int layer)
 
     UNUSED(local);
 
-    fprintf (stderr, "DHCP INIT called\n");
+    VERB ( "IPv4 INIT called\n");
     if (csap_nds == NULL)
         return ETEWRONGPTR;
 
@@ -326,10 +326,33 @@ ip4_single_destroy_cb (int csap_id, int layer)
 int 
 ip4_eth_init_cb (int csap_id, const asn_value *csap_nds, int layer)
 { 
-    UNUSED(csap_id);
+    csap_p csap_descr;      /**< csap description   */ 
+    ip4_csap_specific_data_t *   spec_data; 
+
+    if (csap_nds == NULL)
+        return ETEWRONGPTR;
+
+    if ((csap_descr = csap_find (csap_id)) == NULL)
+        return ETADCSAPNOTEX;
+
+    spec_data = calloc (1, sizeof(ip4_csap_specific_data_t));
+    
+    if (spec_data == NULL)
+    {
+        return ENOMEM;
+    }
+
+    csap_descr->layer_data[layer] = spec_data;
+    csap_descr->get_param_cb[layer] = ip4_get_param_cb;
+
+#if 0 /* TODO right */
+    csap_descr->check_pdus_cb = bridge_eth_check_pdus;
+#endif 
+
+    F_VERB("%s called for csap %d, layer %d\n", __FUNCTION__, csap_id, layer); 
+
     UNUSED(csap_nds);
-    UNUSED(layer);
-    return ETENOSUPP;
+    return 0;
 }
 
 
