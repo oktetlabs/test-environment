@@ -819,16 +819,8 @@ get_var_arg_attrs(xmlNodePtr node, test_var_arg_values *values,
     else if (rc != ENOENT)
         return rc;
 
-    /* 'foreach' is optional, default value is true */
-    attrs->foreach = TRUE;
-    rc = get_bool_prop(node, "foreach", &attrs->foreach);
-    if (rc != 0 && rc != ENOENT)
-        return rc;
-    if (!attrs->foreach)
-    {
-        ERROR("FALSE value of 'foreach' attribute is not supported yet");
-        return EOPNOTSUPP;
-    }
+    /* 'list' is optional */
+    attrs->list = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("list")));
 
     /* 'type' is optional */
     s = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("type")));
@@ -848,11 +840,27 @@ get_var_arg_attrs(xmlNodePtr node, test_var_arg_values *values,
     s = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("preferred")));
     if (s != NULL)
     {
-        UNUSED(values);
-        ERROR("'preferred' value of variables/attributes is not "
-              "supported yet");
+        test_var_arg_value  *p;
+
+        if (attrs->list == NULL)
+        {
+            WARN("'preferred' attribute is useless without 'list'");
+        }
+        for (p = values->tqh_first; p != NULL; p = p->links.tqe_next)
+        {
+            if (p->id != NULL && strcmp(p->id, s) == 0)
+            {
+                attrs->preferred = p;
+                break;
+            }
+        }
+        if (attrs->preferred == NULL)
+        {
+            ERROR("Value with 'id'='%s' not found to be preferred", s);
+            xmlFree(s);
+            return EINVAL;
+        }
         xmlFree(s);
-        return EOPNOTSUPP;
     }
 
     return 0;

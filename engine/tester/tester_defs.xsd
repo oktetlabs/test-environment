@@ -152,17 +152,16 @@
                 </documentation>
             </annotation>
         </attribute>
-        <attribute name="foreach" type="boolean" default="true">
+        <attribute name="list" type="Name">
             <annotation>
                 <documentation>
-                    Controls enumeration policy for values. If it's
-                    equal to true, each value should be used with each
-                    combination of other parameters. This attribute is
-                    usefull to organize parallel enumeration of two or
-                    more lists. For example, if A = {a1, a2, a3},
-                    B = {b1, b2, b3} and the attribute is false for
-                    both variables/arguments, then following pairs are
-                    used {a1, b1}, {a2, b2}, {a3, b3}.
+                    Controls enumeration policy for values.
+                    This attribute is usefull to organize parallel
+                    enumeration of two or more lists. For example,
+                    if A = {a1, a2, a3}, B = {b1, b2, b3} and the
+                    attribute is false for both variables/arguments,
+                    then following pairs are used {a1, b1}, {a2, b2},
+                    {a3, b3}.
                 </documentation>
             </annotation>
         </attribute>

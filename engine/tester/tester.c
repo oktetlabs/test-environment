@@ -212,6 +212,17 @@ test_var_arg_values_free(test_var_arg_values *values)
 }
 
 /**
+ * Free variable/argument attributes.
+ *
+ * @param attrs     Attributes to be freed
+ */
+static void
+test_var_arg_attrs_free(test_var_arg_attrs *attrs)
+{
+    free(attrs->list);
+}
+
+/**
  * Free reffered variable/argument attributes.
  *
  * @param attrs     Attributes to be freed
@@ -232,7 +243,10 @@ test_session_var_free(test_session_var *p)
 {
     free(p->name);
     if (p->type == TEST_SESSION_VAR_SIMPLE)
+    {
         test_var_arg_values_free(&p->u.var.values);
+        test_var_arg_attrs_free(&p->u.var.attrs);
+    }
     else if (p->type == TEST_SESSION_VAR_REFERRED)
         test_ref_var_arg_attrs_free(&p->u.ref.attrs);
     else
@@ -303,7 +317,10 @@ test_arg_free(test_arg *p)
 {
     free(p->name);
     if (p->type == TEST_ARG_SIMPLE)
+    {
         test_var_arg_values_free(&p->u.arg.values);
+        test_var_arg_attrs_free(&p->u.arg.attrs);
+    }
     else if (p->type == TEST_ARG_REFERRED)
         test_ref_var_arg_attrs_free(&p->u.ref.attrs);
     else

@@ -138,10 +138,10 @@ typedef TAILQ_HEAD(test_var_arg_values,
 
 /** Common attributes of the variable or argument */
 typedef struct test_var_arg_attrs {
-    te_bool             random;
+    te_bool             random;     /**< Random or strict values usage */
     test_var_arg_type  *type;       /**< Pointer to type descriptor */
-    te_bool             foreach;
-    test_var_arg_value *preferred;
+    char               *list;       /**< Name of the iteration list */
+    test_var_arg_value *preferred;  /**< Preferred value for list iteration */
     unsigned int        flags;      /**< TEST_RANDOM_SPECIFIED */
 } test_var_arg_attrs;
 
