@@ -111,7 +111,7 @@ typedef enum {
  * Template iterator plain C structure
  */
 typedef struct {
-    tad_tmpl_iter_type_t type;  /**< Iterator type */
+    tad_tmpl_iter_type_t type; /**< Iterator type */
     union {
         struct {
             size_t length;     /**< Length of sequence */
