@@ -901,9 +901,9 @@ clean_up:
 
 /* See description in tapi_snmp.h */
 int 
-tapi_snmp_set(const char *ta, int sid, int csap_id, 
-              const tapi_snmp_varbind_t *var_binds, 
-              size_t num_vars, int *errstat, int *errindex)
+tapi_snmp_set_vbs(const char *ta, int sid, int csap_id, 
+                  const tapi_snmp_varbind_t *var_binds, 
+                  size_t num_vars, int *errstat, int *errindex)
 {
     FILE         *f;
     unsigned int  timeout, i;
@@ -1026,37 +1026,138 @@ tapi_snmp_set_row(const char *ta, int sid, int csap_id,
     return tapi_snmp_set(ta, sid, csap_id, vb_array, num_vars, errstat, errindex);
 }
 #else
-int 
-tapi_snmp_set_row(const char *ta, int sid, int csap_id, 
-                  int *errstat, int *errindex,
-                  const tapi_snmp_oid_t *common_index, ...)
+
+static int
+tapi_snmp_get_object_type(const tapi_snmp_oid_t *oid,
+                          enum snmp_obj_type *obj_type)
 {
-    va_list ap;
-    int num_vars = 0;
-    int i;
-    int rc;
+    struct tree *entry_node;
+
+    if (obj_type == NULL)
+        return TE_RC(TE_TAPI, EINVAL);
+
+    entry_node = get_tree(oid->id, oid->length, get_tree_head());
+    if (entry_node == NULL)
+    {
+        ERROR("Cannot get entry node");
+        return TE_RC(TE_TAPI, EINVAL);
+    }
+    if (entry_node->indexes != NULL)
+    {
+        VERB("SNMP_OBJ_TBL_ENTRY");
+        *obj_type = SNMP_OBJ_TBL_ENTRY;
+        return 0;
+    }
+
+    /* Try to check if it is a table field by going up to two nodes */
+    if (entry_node->parent == NULL || entry_node->parent->parent == NULL)
+    {
+        VERB("SNMP_OBJ_SCALAR");
+        *obj_type = SNMP_OBJ_SCALAR;
+        return 0;
+    }
+    if (entry_node->parent->indexes != NULL)
+    {
+        VERB("SNMP_OBJ_TBL_FIELD");
+        *obj_type = SNMP_OBJ_TBL_FIELD;
+        return 0;
+    }
+    if (entry_node->child_list != NULL &&
+        entry_node->child_list->indexes != NULL)
+    {
+        VERB("SNMP_OBJ_TBL");
+        *obj_type = SNMP_OBJ_TBL;
+        return 0;
+    }
+
+    VERB("SNMP_OBJ_SCALAR - ");
+    *obj_type = SNMP_OBJ_SCALAR;
+
+    return 0;
+}
+
+
+static int 
+tapi_snmp_set_gen(const char *ta, int sid, int csap_id, 
+                  int *errstat, int *errindex,
+                  const tapi_snmp_oid_t *common_index, va_list ap)
+{
+    int                  num_vars = 0;
+    int                  i;
+    int                  rc;
+    int                  dimention;
     struct tapi_vb_list *vbl; 
     struct tapi_vb_list *vbl_head = NULL; 
     tapi_snmp_varbind_t *vb_array;
     tapi_snmp_varbind_t *vb;
-    tapi_snmp_oid_t oid;
+    tapi_snmp_oid_t      oid;
     tapi_snmp_vartypes_t syntax;
     char *oid_name;
 
-    va_start(ap, common_index);
     while (1) {
         char *oid_name = va_arg(ap, char *);
         
-        if (!oid_name)
+        if (oid_name == NULL)
+        {
+            /* End Of Data mark */
             break;
-        
+        }
+        VERB("%s OID %s", __FUNCTION__, oid_name);
+
         vb = calloc(1, sizeof(tapi_snmp_varbind_t));
         
         if ((rc = tapi_snmp_make_oid(oid_name, &oid)) != 0)
+        {
+            ERROR("Cannot parse %s OID", oid_name);
             return TE_RC(TE_TAPI, rc);
+        }
 
         if ((rc = tapi_snmp_get_syntax(&oid, &syntax)) != 0)
+        {
+            ERROR("Cannot get syntax of %s OID", oid_name);
             return TE_RC(TE_TAPI, rc);
+        }
+
+        if (common_index == NULL)
+        {
+            enum snmp_obj_type obj_type;
+
+            if ((rc = tapi_snmp_get_object_type(&oid, &obj_type)) != 0)
+            {
+                ERROR("Cannot get type of %s object", oid_name);
+                return TE_RC(TE_TAPI, rc);
+            }
+            switch (obj_type)
+            {
+                case SNMP_OBJ_SCALAR:
+                    /* Scalar object - just append zero */
+                    if ((oid.length + 1) >= MAX_OID_LEN)
+                    {
+                        ERROR("Object %s has too long OID", oid_name);
+                        return TE_RC(TE_TAPI, EFAULT);
+                    }
+                    tapi_snmp_oid_append(&oid, 1, 0);
+                    break;
+
+                case SNMP_OBJ_TBL_FIELD:
+                {
+                    int i;
+                    int sub_oid;
+                    tapi_snmp_oid_t *tbl_index;
+
+                    /* Table object - apend index */
+                    tbl_index = va_arg(ap, tapi_snmp_oid_t *);
+                    tapi_snmp_cat_oid(&oid, tbl_index);
+
+                    break;
+                }
+
+                default:
+                    ERROR("It is not allowed to pass objects other than "
+                          "table fields and scalars");
+                    return TE_RC(TE_TAPI, EFAULT);
+            }
+        }
 
         vb->type = syntax;
         vb->name = oid;
@@ -1072,30 +1173,29 @@ tapi_snmp_set_row(const char *ta, int sid, int csap_id,
                 break;
 
             case TAPI_SNMP_OCTET_STR:
-            {
                 vb->oct_string = va_arg(ap, unsigned char *);
                 vb->v_len = va_arg(ap, int);
                 break;
-            }
 
             case TAPI_SNMP_OBJECT_ID:
-            {
                 vb->obj_id = va_arg(ap, tapi_snmp_oid_t *);
                 vb->v_len = vb->obj_id->length;
                 break;
-            }
         }
-        
+
         vbl = calloc(1, sizeof(struct tapi_vb_list));
         vbl->next = vbl_head;
         vbl->vb = vb;
         vbl_head = vbl;
         num_vars++;
     };
-    va_end(ap);
 
-    if (!num_vars)
-        return 0; /* ??? */
+    if (num_vars == 0)
+    {
+        WARN("No one varbind specified for the SET operation");
+        /* @todo Probably we should issue SET operation in this case too ? */
+        return 0;
+    }
 
     vb_array = calloc(num_vars, sizeof(tapi_snmp_varbind_t)); 
 
@@ -1114,8 +1214,37 @@ tapi_snmp_set_row(const char *ta, int sid, int csap_id,
         free(vbl);
     }
 
-    return tapi_snmp_set(ta, sid, csap_id, vb_array, num_vars, errstat, errindex);
+    return tapi_snmp_set_vbs(ta, sid, csap_id, vb_array, num_vars,
+                             errstat, errindex);
 }
+
+int 
+tapi_snmp_set_row(const char *ta, int sid, int csap_id, 
+                  int *errstat, int *errindex,
+                  const tapi_snmp_oid_t *common_index, ...)
+{
+    int     rc;
+    va_list ap;
+
+    va_start(ap, common_index);
+    rc = tapi_snmp_set_gen(ta, sid, csap_id, errstat, errindex,
+                           common_index, ap);
+    va_end(ap);
+}
+
+int 
+tapi_snmp_set(const char *ta, int sid, int csap_id, 
+              int *errstat, int *errindex, ...)
+{
+    int     rc;
+    va_list ap;
+
+    va_start(ap, errindex);
+    rc = tapi_snmp_set_gen(ta, sid, csap_id, errstat, errindex,
+                           NULL, ap);
+    va_end(ap);
+}
+
 #endif
 
 /* See description in tapi_snmp.h */
@@ -1422,8 +1551,8 @@ tapi_snmp_get_table(const char *ta, int sid, int csap_id,
         entry_node = entry_node->child_list;
         if (entry.length == MAX_OID_LEN)
             return TE_RC(TE_TAPI, ENOBUFS);
-        entry.id[entry.length] = entry_node->subid;
-        entry.length++;
+
+        tapi_snmp_oid_append(&entry, 1, entry_node->subid);
     }
     VERB("find Table entry node <%s> with last subid %d\n", 
                      entry_node->label, entry_node->subid);
@@ -1459,8 +1588,7 @@ tapi_snmp_get_table(const char *ta, int sid, int csap_id,
 
         if (index_node)
         {
-            entry.id[entry.length] = index_node->subid;
-            entry.length++;
+            tapi_snmp_oid_append(&entry, 1, entry_node->subid);
         }
         else /* all index nodes are non-accessible, find any element */
         { 
@@ -1478,8 +1606,8 @@ tapi_snmp_get_table(const char *ta, int sid, int csap_id,
                       entry_node->access == MIB_ACCESS_READWRITE )
                    )
                 {
-                    entry.id[entry.length] = entry_node->subid;
-                    entry.length++;
+                    tapi_snmp_oid_append(&entry, 1, entry_node->subid);
+
                     VERB("find accessible entry <%s> with last subid %d\n", 
                              entry_node->label, entry_node->subid);
                     column_found = 1;
@@ -1647,27 +1775,30 @@ tapi_snmp_get_table_dimension(tapi_snmp_oid_t *table_oid, int *dimension)
     memcpy(&entry, table_oid, sizeof(entry));
 
     entry_node = get_tree(entry.id, entry.length, get_tree_head());
-
     if (entry_node == NULL)
     {
         WARN("no entry node found!\n");
         return TE_RC(TE_TAPI, EINVAL);
     }
+    if (entry_node->indexes == NULL && entry_node->child_list == NULL)
+    {
+        /* it is an scalar Object */
+        return 0;
+    }
 
     /* fall down in MIB tree to the table Entry node or leaf. */
-
     while (entry_node->indexes == NULL && entry_node->child_list != NULL)
     {
         entry_node = entry_node->child_list;
         if (entry.length == MAX_OID_LEN)
             return TE_RC(TE_TAPI, ENOBUFS);
-        entry.id[entry.length] = entry_node->subid;
-        entry.length++;
+
+        tapi_snmp_oid_append(&entry, 1, entry_node->subid);
     }
     if (entry_node->indexes == NULL)
     {
         VERB("Very strange, no indices for table %s\n", print_oid(table_oid));
-	return rc;
+	return EFAULT;
     }	    
 
     for (t_index = entry_node->indexes; t_index; t_index = t_index->next)
@@ -1789,8 +1920,7 @@ tapi_snmp_get_table_columns(tapi_snmp_oid_t *table_oid, tapi_snmp_var_access **c
         entry_node = entry_node->child_list;
         if (entry.length == MAX_OID_LEN)
             return TE_RC(TE_TAPI, ENOBUFS);
-        entry.id[entry.length] = entry_node->subid;
-        entry.length++;
+        tapi_snmp_oid_append(&entry, 1, entry_node->subid);
     }
     if (entry_node->indexes == NULL)
     {
@@ -2143,6 +2273,28 @@ cleanup:
 
     free(set);
     return rc;
+}
+
+/* See description in tapi_snmp.h */
+void
+tapi_snmp_oid_append(tapi_snmp_oid_t *oid, int n, ...)
+{
+    int     i;
+    va_list ap;
+    
+    va_start(ap, n);
+    for (i = 0; i < n; i++)
+    {
+        if (oid->length >= MAX_OID_LEN)
+        {
+            ERROR("OID passed to %s is too long - operation has no effect",
+                  __FUNCTION__);
+            return;
+        }
+        oid->id[oid->length] = va_arg(ap, int);
+        oid->length++;
+    }
+    va_end(ap);
 }
 
 /* See description in tapi_snmp.h */

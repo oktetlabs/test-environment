@@ -81,24 +81,41 @@ extern "C" {
     } while (0)	    
 
 /**
+ * Append one SUB ID to OID (macro around tapi_snmp_oid_append()).
+ *
+ * @param oid_     OID to be appended
+ * @param subid_   SUB ID value
+ */
+#define SNMP_OID_APPEND_SUBID(oid_, subid_) \
+    tapi_snmp_oid_append(oid_, 1, subid_)
+
+/**
+ * Macro around tapi_snmp_oid_zero().
+ *
+ * @param oid_     OID to be cleared
+ */
+#define SNMP_OID_ZERO(oid_) \
+    tapi_snmp_oid_zero(oid_)
+
+/**
  * Macro around tapi_snmp_make_table_field_instance().
  * 
  * @param label_    SNMP label - OID string representation
  * @param oid_      Location for parsed OID (OUT)
- * @param ...       Indexes of table field instance
+ * @param ...       Indeces of table field instance
  * 
  */ 
-#define SNMP_MAKE_INSTANCE(label_, oid_, ...)                                         \
-    do                                                                                \
-    {                       	                                                      \
-        int rc_;                                                                      \
-                                                                                      \
-        rc_ = tapi_snmp_make_instance(label_, &oid_, ...);                            \
-        if (rc_ != 0)                                                                 \
-        {                                                                             \
-            TEST_FAIL("snmp make table field instance failed, result\n", label_, rc_);\
-        }                                                                             \
-    } while (0)	    
+#define SNMP_MAKE_INSTANCE(label_, oid_, indeces_...) \
+    do                                                                    \
+    {                       	                                          \
+        int rc_;                                                          \
+                                                                          \
+        rc_ = tapi_snmp_make_instance(label_, &oid_, indeces_);           \
+        if (rc_ != 0)                                                     \
+        {                                                                 \
+            TEST_FAIL("Cannot make instance of %s OID: %X", label_, rc_); \
+        }                                                                 \
+    } while (0)
 
 /**
  * Macro around tapi_snmp_get_syntax().
@@ -656,6 +673,22 @@ extern "C" {
     do {                                                                       \
         CHECK_RC(tapi_snmp_set_row(ta, sid, csap_id, err_stat, err_index,      \
                                    index, values));                            \
+    } while (0)
+
+/**
+ * Macro around tapi_snmp_set()
+ * 
+ * @param ta             Test Agent name
+ * @param sid            RCF Session id.
+ * @param csap_id        identifier of an SNMP CSAP.
+ * @param err_stat       SNMP error status
+ * @param err_index      index of varbind where an error ocured
+ * 
+ */
+#define TAPI_SNMP_SET(ta, sid, csap_id, err_stat, err_index, values...) \
+    do {                                                                \
+        CHECK_RC(tapi_snmp_set(ta, sid, csap_id,                        \
+                               err_stat, err_index, values));           \
     } while (0)
 
 

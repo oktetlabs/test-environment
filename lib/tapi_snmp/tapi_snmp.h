@@ -79,6 +79,13 @@ typedef struct {
     oid    id[MAX_OID_LEN];
 } tapi_snmp_oid_t;
 
+/** SNMP object type */
+enum snmp_obj_type {
+    SNMP_OBJ_SCALAR,
+    SNMP_OBJ_TBL_FIELD,
+    SNMP_OBJ_TBL_ENTRY,
+    SNMP_OBJ_TBL,
+};
 
 /** Type codes for SNMP variable binding values. Really SNMP uses some of 
     ASN.1 codes. Not all possible codes are defined, only usually used 
@@ -283,10 +290,30 @@ extern int tapi_snmp_gen_csap_create(const char *ta, int sid,
  * 
  * @return zero on success or error code.
  */
-extern int tapi_snmp_set(const char *ta, int sid, int csap_id, 
-                         const tapi_snmp_varbind_t *var_binds, 
-                         size_t num_vars, int *errstat, int *errindex);
+extern int tapi_snmp_set_vbs(const char *ta, int sid, int csap_id, 
+                             const tapi_snmp_varbind_t *var_binds, 
+                             size_t num_vars, int *errstat, int *errindex);
 
+
+/**
+ * The same as tapi_snmp_set_vbs, but gets sequence of "varbind groups":
+ * label of MIB leaf and value, which is either integer or pair <char *, int>,
+ * for OCTET_STRING types; ended by NULL.
+ * Passed pointers are considered as 'const',
+ * i.e. OID and data are not changed.
+ *
+ * @param ta            Test Agent name
+ * @param sid           RCF Session id.
+ * @param csap_id       identifier of an SNMP CSAP.
+ * @param errstat       The value of error-status field in response
+ *                      message (OUT), may be zero if not need.
+ * @param errindex      The value of error-index field in response
+ *                      message (OUT), may be zero if not need.
+ * 
+ * @return zero on success or error code.
+ */
+extern int tapi_snmp_set(const char *ta, int sid, int csap_id, 
+                         int *errstat, int *errindex, ...);
 
 /**
  * The function send SNMP-SET request for specified objects to the SNMP agent, 
@@ -296,9 +323,9 @@ extern int tapi_snmp_set(const char *ta, int sid, int csap_id,
  * @param ta            Test Agent name
  * @param sid           RCF Session id.
  * @param csap_id       identifier of an SNMP CSAP.
- * @param errstat       Rhe value of error-status field in response
+ * @param errstat       The value of error-status field in response
  *                      message (OUT), may be zero if not need.
- * @param errindex      Rhe value of error-index field in response
+ * @param errindex      The value of error-index field in response
  *                      message (OUT), may be zero if not need.
  * @param common_index  Common index part of OID, which should be concatened
  *                      to all varbind's OIDs below; may be NULL. 
@@ -306,7 +333,7 @@ extern int tapi_snmp_set(const char *ta, int sid, int csap_id,
  *                      and value, which may be either integer, 
  *                      or pair <char *, int>, for OCTET_STRING types, 
  *                      or tapi_snmp_oid_t*;  ended by NULL.
- *                      Passed pointers are desired as 'const',
+ *                      Passed pointers are considered as 'const',
  *                      i.e. OID and data are not changed.
  * 
  * @return zero on success or error code.
@@ -314,7 +341,6 @@ extern int tapi_snmp_set(const char *ta, int sid, int csap_id,
 extern int tapi_snmp_set_row(const char *ta, int sid, int csap_id, 
                              int *errstat, int *errindex,
                              const tapi_snmp_oid_t *common_index, ...);
-
 
 
 /**
@@ -686,6 +712,26 @@ extern int tapi_snmp_load_mib_with_path(const char *dir_path,
  * @return Status of the operation
  */
 extern int tapi_snmp_load_cfg_mibs(const char *dir_path);
+
+/**
+ * Initialize OID to zero length OID
+ *
+ * @param oid  OID to initialize
+ */
+static inline void tapi_snmp_oid_zero(tapi_snmp_oid_t *oid)
+{
+    oid->length = 0;
+    memset(oid->id, 0, sizeof(oid->id));
+}
+
+/**
+ * Append a set of SUB IDs to the OID
+ *
+ * @param oid  OID to be appended
+ * @param n    Number of SUB IDs to append
+ * @param ...  SUB IDs type of "int"
+ */
+extern void tapi_snmp_oid_append(tapi_snmp_oid_t *oid, int n, ...);
 
 /**
  * Parses text representation of OID to TAPI SNMP OID data structure
