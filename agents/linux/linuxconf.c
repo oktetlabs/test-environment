@@ -1284,7 +1284,7 @@ prefix_set(unsigned int gid, const char *oid, const char *value,
     if ((name = find_net_addr(ifname, addr)) == NULL)
     {
         ERROR("Address '%s' on interface '%s' to set prefix not found",
-              ifname, addr);
+              addr, ifname);
         return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
     }
 
