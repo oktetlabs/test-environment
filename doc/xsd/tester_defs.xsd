@@ -556,7 +556,7 @@
                     </documentation>
                 </annotation>
             </element>
-            <element name="epilogue" type="ProlorueEpilogue" minOccurs="0">
+            <element name="epilogue" type="PrologueEpilogue" minOccurs="0">
                 <annotation>
                     <documentation>
                         Session epilogue. It's recommended to configure
