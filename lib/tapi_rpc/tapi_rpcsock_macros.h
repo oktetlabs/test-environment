@@ -944,7 +944,7 @@
         {                                                               \
             if (!!((#args_)[0]))                                        \
             {                                                           \
-                if (RPC_ERRNO_RPC(err_))                                \
+                if (RPC_ERRNO_RPC(err_) || err_ == 0)                   \
                 {                                                       \
                     ERROR(err_msg_ ": errno is set to %s instead of %s",\
                           args_ + 0, errno_rpc2str(err_),               \
@@ -958,7 +958,7 @@
             }                                                           \
             else                                                        \
             {                                                           \
-                if (RPC_ERRNO_RPC(err_))                                \
+                if (RPC_ERRNO_RPC(err_) || err_ == 0)                   \
                 {                                                       \
                     ERROR(err_msg_ " sets errno to %s instead of %s",   \
                           errno_rpc2str(err_),                          \
