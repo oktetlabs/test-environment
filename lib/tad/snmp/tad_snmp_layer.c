@@ -143,7 +143,9 @@ int snmp_gen_bin_cb(int csap_id, int layer, const asn_value *tmpl_pdu,
 
     if (operation == NDN_SNMP_MSG_GETBULK) 
     {
-        int repeats, r_len = sizeof(repeats);
+        int repeats;
+        int r_len = sizeof(repeats);
+
         rc = asn_read_value_field(tmpl_pdu, &repeats, &r_len, "repeats");
         if (rc) 
             pdu->max_repetitions = SNMP_CSAP_DEF_REPEATS;
@@ -159,17 +161,29 @@ int snmp_gen_bin_cb(int csap_id, int layer, const asn_value *tmpl_pdu,
     for (i = 0; i < num_var_bind; i++)
     {
         asn_value_p var_bind = asn_read_indexed(tmpl_pdu, i, "variable-bindings");
-        unsigned long oid [MAX_OID_LEN];
-        int           oid_len = MAX_OID_LEN;
-        rc = asn_read_value_field(var_bind, oid, &oid_len, "name.#plain");
-        if (rc) break;
+        oid         oid[MAX_OID_LEN];
+        int         oid_len = MAX_OID_LEN;
+        
+        if (var_bind == NULL)
+        {
+            ERROR("Cannot get VarBind %d from PDU", i);
+            rc = EASNGENERAL;
+            break;
+        }
+
+        rc = asn_read_value_field(var_bind, oid, &oid_len, "name");
+        if (rc)
+            break;
 
         switch (operation)
         {
             case NDN_SNMP_MSG_GET:     
             case NDN_SNMP_MSG_GETNEXT:
             case NDN_SNMP_MSG_GETBULK:
-                snmp_add_null_var ( pdu, oid, oid_len ); 
+                if (snmp_add_null_var(pdu, oid, oid_len) == NULL)
+                {
+                    ERROR("Cannot add OID into PDU %d", operation);
+                }
                 break;
 
             case NDN_SNMP_MSG_SET:   
@@ -370,8 +384,14 @@ int snmp_match_bin_cb (int csap_id, int layer, const asn_value_p pattern_pdu,
         printf ("in SNMP MATCH, rc before varbind value write: %x\n", rc);
         printf ("in SNMP MATCH, try to write for label: <%s>\n", os_choice);
 #endif
-        rc = asn_write_value_field(var_bind, vars->val.string, 
-                              vars->val_len, os_choice    );
+
+        rc = asn_write_value_field(var_bind,
+                                   vars->val.string,
+                                   (vars->type != ASN_OBJECT_ID) ?
+                                       vars->val_len :
+                                       vars->val_len / sizeof(oid),
+                                   os_choice);
+        
 #ifdef SNMPDEBUG
         printf ("in SNMP MATCH, rc from varbind value write: %x\n", rc);
 #endif
