@@ -961,7 +961,7 @@ run_test_script(tester_ctx *ctx, test_script *script, test_id id,
     {
         if (snprintf(shell, sizeof(shell),
                      "valgrind --num-callers=16 --leak-check=yes "
-                     "--show-reachable=yes ") >= (int)sizeof(shell))
+                     "--show-reachable=yes --tool=memcheck ") >= (int)sizeof(shell))
         {
             ERROR("Too short buffer is reserved for shell command prefix");
             return ETESMALLBUF;
