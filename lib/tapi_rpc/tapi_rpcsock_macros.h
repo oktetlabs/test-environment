@@ -938,7 +938,7 @@
  */
 #define CHECK_RPC_ERRNO(rpcs_, exp_errno_, err_msg_, args_...) \
     do {                                                                \
-        rpc_errno err_ = RPC_ERRNO(rpcs_);                              \
+        int err_ = RPC_ERRNO(rpcs_);                                    \
                                                                         \
         if (err_ != (exp_errno_))                                       \
         {                                                               \
