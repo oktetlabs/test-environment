@@ -629,6 +629,7 @@ eth_write_cb(csap_p csap_descr, char *buf, int buf_len)
     if (csap_descr == NULL)
     {
         csap_descr->last_errno = EINVAL;
+        F_ERROR("%s: no csap descr", __FUNCTION__);
         return -1;
     }
     
@@ -636,10 +637,12 @@ eth_write_cb(csap_p csap_descr, char *buf, int buf_len)
     
     spec_data = (eth_csap_specific_data_p) csap_descr->layer_data[layer]; 
 
-    F_VERB("Writing data to socket: %d", spec_data->out);
+    F_VERB("%s: writing data to socket: %d", __FUNCTION__, spec_data->out);
 
     if(spec_data->out < 0)
     {
+        F_ERROR("%s: no output socket", __FUNCTION__);
+        csap_descr->last_errno = EINVAL;
         return -1;
     }
 
@@ -686,13 +689,16 @@ eth_write_cb(csap_p csap_descr, char *buf, int buf_len)
                     continue;
 
                 default:
+                    F_ERROR("%s: internal socket error %d", __FUNCTION__, 
+                            csap_descr->last_errno);
                     return -1;
             }
         } 
     }
     if (retries == WRITE_RETRIES)
     {
-        F_ERROR("csap #%d, failed to write data to socket");
+        F_ERROR("csap #%d, too many retries made, failed");
+        csap_descr->last_errno = ENOBUFS;
         return -1;
     }
 
