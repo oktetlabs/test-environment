@@ -2,7 +2,7 @@
 MY_CPPFLAGS=-I$(DESTDIR)/$(prefix)/include \
             -I$(DESTDIR)/$(prefix)/../@host@/include \
             -include te_config.h \
-            -include config.h
+            -include config.h -fno-strict-aliasing
 
 AM_YFLAGS=-d
 
