@@ -28,7 +28,7 @@
  * $Id$
  */
 
-#ifdef HAVE_CONFIG_H
+#if HAVE_CONFIG_H
 #include "config.h"
 #endif
 
@@ -49,7 +49,7 @@
 #include <arpa/inet.h>
 #include <signal.h>
 
-#ifdef WITH_DHCP_SERVER
+#if WITH_DHCP_SERVER
 #include <dhcpctl.h>
 #endif
 
