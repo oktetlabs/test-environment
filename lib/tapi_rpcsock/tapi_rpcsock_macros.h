@@ -32,6 +32,13 @@
 #ifndef __TE_TAPI_RPCSOCK_MACROS_H__
 #define __TE_TAPI_RPCSOCK_MACROS_H__
 
+#ifndef MACRO_ERROR_EXIT
+#define MACRO_ERROR_EXIT        goto cleanup
+#endif
+
+#ifndef MACRO_TEST_ERROR
+#define MACRO_TEST_ERROR        result = EXIT_FAILURE
+#endif
 
 /**
  * All the macros defined in the file expect user having in the calling
@@ -70,7 +77,7 @@
                       TE_RC_GET_ERROR(err_));                             \
             }                                                             \
         }                                                                 \
-        result = EXIT_FAILURE;                                            \
+        MACRO_TEST_ERROR;                                                 \
     } while (0)
 
 
@@ -92,7 +99,7 @@
         if ((retval_) < 0)                                      \
         {                                                       \
             LOG_ERRNO((rpcs_), (retval_), func_, "()");         \
-            goto cleanup;                                       \
+            MACRO_ERROR_EXIT;                                   \
         }                                                       \
     } while (0)
 
@@ -124,7 +131,7 @@
             {                                                   \
                 LOG_ERRNO((rpcs_), (retval_), func_, "()");     \
             }                                                   \
-            goto cleanup;                                       \
+            MACRO_ERROR_EXIT;                                   \
         }                                                       \
     } while (0)
 
@@ -142,7 +149,7 @@
         if ((retval_) == NULL)                                \
         {                                                     \
             LOG_ERRNO((rpcs_), (retval_), func_, "()");       \
-            goto cleanup;                                     \
+            MACRO_ERROR_EXIT;                                 \
         }                                                     \
     } while (0)
 
@@ -161,7 +168,7 @@
         if ((rc_) != 0)                              \
         {                                            \
             LOG_ERRNO((rpcs_), (rc_), func_, "()");  \
-            goto cleanup;                            \
+            MACRO_ERROR_EXIT;                        \
         }                                            \
     } while (0)
     
@@ -225,7 +232,7 @@
         if ((rc_) < 0)                               \
         {                                            \
             LOG_ERRNO(rpcs_, (rc_), close, "()");    \
-            goto cleanup;                            \
+            MACRO_ERROR_EXIT;                        \
         }                                            \
     } while (0)
 
@@ -248,7 +255,7 @@
         {                                            \
             LOG_ERRNO(rpcs_, (rc_), close, "()");    \
             (sockd_) = -1;                           \
-            goto cleanup;                            \
+            MACRO_ERROR_EXIT;                        \
         }                                            \
         (sockd_) = -1;                               \
     } while (0)
@@ -311,8 +318,8 @@
         {                                                                  \
             ERROR("RPC_ACCEPT(): Address and address length parameters "   \
                   "should be both not NULL or both NULL");                 \
-            result = EXIT_FAILURE;                                         \
-            goto cleanup;                                                  \
+            MACRO_TEST_ERROR;                                              \
+            MACRO_ERROR_EXIT;                                              \
         }                                                                  \
                                                                            \
         RPC_FUNC_WITH_RETVAL(rpcs_, new_sockd_, accept,                    \
@@ -358,8 +365,8 @@
             ERROR("RPC_SENDTO(): Address and address length "       \
                   "parameters should be either NULL and zero, "     \
                   "or not NULL and not zero");                      \
-            result = EXIT_FAILURE;                                  \
-            goto cleanup;                                           \
+            MACRO_TEST_ERROR;                                       \
+            MACRO_ERROR_EXIT;                                       \
         }                                                           \
                                                                     \
         RPC_FUNC_WITH_EXACT_RETVAL(rpcs_, sent_, len_, sendto,      \
@@ -537,8 +544,8 @@
         {                                                           \
             ERROR("RPC_GETSOCKNAME(): Address and address length "  \
                   "parameters are not allowed to be NULL");         \
-            result = EXIT_FAILURE;                                  \
-            goto cleanup;                                           \
+            MACRO_TEST_ERROR;                                       \
+            MACRO_ERROR_EXIT;                                       \
         }                                                           \
                                                                     \
         RPC_FUNC_ZERO_RETVAL(rpcs_, getsockname,                    \
@@ -561,8 +568,8 @@
         {                                                           \
             ERROR("RPC_GETPEERNAME(): Address and address length "  \
                   "parameters are not allowed to be NULL");         \
-            result = EXIT_FAILURE;                                  \
-            goto cleanup;                                           \
+            MACRO_TEST_ERROR;                                       \
+            MACRO_ERROR_EXIT;                                       \
         }                                                           \
                                                                     \
         RPC_FUNC_ZERO_RETVAL(rpcs_, getpeername,                    \
@@ -618,7 +625,7 @@
         {                                                 \
             LOG_ERRNO(rpcs_, rc_, signal, "(%s, %s)",     \
                       signum_rpc2str(signum_), handler_); \
-            goto cleanup;                                 \
+            MACRO_ERROR_EXIT;                             \
         }                                                 \
     } while (0)
 
@@ -639,7 +646,7 @@
         {                                                           \
             LOG_ERRNO(rpcs_, rc_, sigprocmask, "(%s)",              \
                       signum_rpc2str(how_));                        \
-            goto cleanup;                                           \
+            MACRO_ERROR_EXIT;                                       \
         }                                                           \
     } while (0)
 
@@ -657,7 +664,7 @@
         if (rc_ == -1)                                   \
         {                                                \
             LOG_ERRNO(rpcs_, rc_, sigpending, "()");     \
-            goto cleanup;                                \
+            MACRO_ERROR_EXIT;                            \
         }                                                \
     } while (0)
 
@@ -710,7 +717,7 @@
             if ((ret_handler_) == NULL)                                 \
             {                                                           \
                 LOG_ERRNO(rpcs_, ret_handler_, signal, "()");           \
-                result = EXIT_FAILURE;                                  \
+                MACRO_TEST_ERROR;                                       \
             }                                                           \
             else if ((old_handler_) != NULL)                            \
             {                                                           \
@@ -718,7 +725,7 @@
                 {                                                       \
                     ERROR("Value returned from rpc_signal() is "        \
                           "not the same as expected ");                 \
-                    result = EXIT_FAILURE;                              \
+                    MACRO_TEST_ERROR;                                   \
                 }                                                       \
                 free(ret_handler_);                                     \
             }                                                           \
@@ -777,8 +784,8 @@
         (set_) = rpc_sigreceived((rpcs_));  \
         if ((set_) == NULL)                 \
         {                                   \
-            result = EXIT_FAILURE;          \
-            goto cleanup;                   \
+            MACRO_TEST_ERROR;               \
+            MACRO_ERROR_EXIT;               \
         }                                   \
     } while (0)
 
@@ -820,8 +827,8 @@
         }                                                               \
         if (rc_ < 0)                                                    \
         {                                                               \
-            result = EXIT_FAILURE;                                      \
-            goto cleanup;                                               \
+            MACRO_TEST_ERROR;                                           \
+            MACRO_ERROR_EXIT;                                           \
         }                                                               \
     } while (0);
 
@@ -849,7 +856,7 @@
                           RPC_NAME(rpcs_), rc_,                     \
                           TE_RC_GET_ERROR(err_));                   \
                 }                                                   \
-                result = EXIT_FAILURE;                              \
+                MACRO_TEST_ERROR;                                   \
             }                                                       \
         }                                                           \
     } while (0)
@@ -901,8 +908,8 @@
                           errno_rpc2str(exp_errno_));                   \
                 }                                                       \
             }                                                           \
-            result = EXIT_FAILURE;                                      \
-            goto cleanup;                                               \
+            MACRO_TEST_ERROR;                                           \
+            MACRO_ERROR_EXIT;                                           \
         }                                                               \
     } while (0)
 
@@ -1120,7 +1127,7 @@
         if ((recv_) < 0)                                                \
         {                                                               \
             LOG_ERRNO((rpcs_), (recv_), socket_to_file, "()");          \
-            goto cleanup;                                               \
+            MACRO_ERROR_EXIT;                                           \
         }                                                               \
     } while (0)
 
@@ -1141,7 +1148,7 @@
         if ((rc_) != 0)                                                 \
         {                                                               \
             LOG_ERRNO((rpcs_), (recv_), simple_receiver, "()");         \
-            goto cleanup;                                               \
+            MACRO_ERROR_EXIT;                                           \
         }                                                               \
     } while (0)
 
