@@ -330,6 +330,7 @@ if test -n "$BUILDER" ; then
     mkdir -p conf
     cp -f ${CONF_DIR}/*.conf conf/
     cp -f ${CONF_DIR}/tests.* conf/
+    cp -f ${CONF_DIR}/tester.conf.* conf/
     # FINAL ${TE_BASE}/configure --prefix=${TE_INSTALL} --with-config=${CONF_BUILDER} 2>&1 | te_builder_log
     if test -n "${QUIET}" ; then
         ${TE_BASE}/configure -q --prefix=${TE_INSTALL} \
