@@ -539,7 +539,8 @@ asn_impl_pt_named_array(const char*text, const asn_type * type,
         pt += p_s;
         if (rc)
         {
-            if (*pt == '}') break;
+            if (*pt == '}') 
+            { pt++; break; }
             return rc;
         }
         rc = asn_impl_find_subtype(type, label_buf, &subtype);
