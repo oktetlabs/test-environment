@@ -41,8 +41,7 @@
 #include "rcf_api.h"
 
 
-const char *te_lgr_entity = "snmptest";
-
+DEFINE_LGR_ENTITY("snmptest");
 
 
 void

@@ -34,16 +34,51 @@
 #ifndef __TE_LOGGER_DEFS_H__
 #define __TE_LOGGER_DEFS_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/**
+ * Every TE process (engine application, test, test agent) must call
+ * this macro in its main C file to define 'te_lgr_entity' global
+ * variable with specified initial value.
+ *
+ * @name name       Logger entity name (e.g. RCF)
+ */
+#define DEFINE_LGR_ENTITY(name) \
+const char *te_lgr_entity = name
+
+/**
+ * Global variable with name of the Logger entity to be used from
+ * libraries to log from this process context.
+ *
+ * @note It MUST be initialized to some value to avoid segmentation fault.
+ */
+extern const char *te_lgr_entity;
 
 /*
  * Default value should be overriden by user in user' module before 
  * inclusion of logger_api.h or like this:
  *     #undef   LGR_ENTITY
  *     #define  LGR_ENTITY <"SOMEENTITY">
+ *
+ * @attention It's highly not recommended to use/define it.
+ *            Use DEFINE_LGR_ENTITY().
  */
 #ifndef LGR_ENTITY
 /** Default entity name */
 #define LGR_ENTITY  te_lgr_entity
+#endif
+
+/*
+ * Default value should be overriden by user in user' module before 
+ * inclusion of logger_api.h or like this:
+ *     #undef   LGR_USER
+ *     #define  LGR_USER <"SOMEUSER">
+ */
+#ifndef LGR_USER
+/** Default entity name */
+#define LGR_USER    "Self"
 #endif
 
 
@@ -133,18 +168,6 @@
  *  #undef LGR_RB_FORCE
  *  #define LGR_RB_FORCE 1
  */
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-/**
- * Global variable with name of the Logger entity to be used from
- * libraries to log from this process context.
- *
- * @note It MUST be initialized to some value to avoid segmentation fault.
- */
-extern const char *te_lgr_entity;
 
 #ifdef __cplusplus
 } /* extern "C" */

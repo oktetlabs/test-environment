@@ -61,9 +61,9 @@
 #include "win32_rpc.h"
 #endif    
 
-
 #define LGR_USER         "Main"
 #include "logger_ta.h"
+
 
 char *my_execname;
 
@@ -88,11 +88,12 @@ char *my_execname;
 extern void *rcf_ch_symbol_addr_auto(const char *name, te_bool is_func);
 extern char *rcf_ch_symbol_name_auto(const void *addr);
 
+
+DEFINE_LGR_ENTITY("(win32)");
+
 char *ta_name = "(win32)";
 
 int ta_pid;
-
-const char *te_lgr_entity = "(win32)";
 
 static pthread_mutex_t ta_lock = PTHREAD_MUTEX_INITIALIZER;
 

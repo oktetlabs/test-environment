@@ -31,7 +31,7 @@
 
 
 /** Global variable with entity name for logging */
-const char *te_lgr_entity = "(unknown)";
+DEFINE_LGR_ENTITY("(unknown)");
 
 /* See description in sockapi-test.h */
 char *test_backup_name = NULL;

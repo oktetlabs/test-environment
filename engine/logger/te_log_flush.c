@@ -71,7 +71,6 @@
 #include "rcf_api.h"
 #include "ipc_client.h"
 
-#define LGR_USER    "Log Flush"
 #include "logger_api.h"
 #include "logger_ten.h"
 
@@ -79,7 +78,7 @@
 #define LGR_TANAMES_LEN 1024
 
 
-const char *te_lgr_entity = "Engine";
+DEFINE_LGR_ENTITY("Log Flush");
 
 
 /**

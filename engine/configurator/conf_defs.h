@@ -77,7 +77,6 @@
 #include "ipc_server.h"
 #include "rcf_api.h"
 
-#define LGR_USER            "Configurator"
 #include "logger_api.h"
 #include "logger_ten.h"
 

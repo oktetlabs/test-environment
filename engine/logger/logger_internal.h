@@ -77,8 +77,6 @@ extern "C" {
 #include "te_errno.h"
 #include "ipc_server.h"
 #include "rcf_api.h"
-
-#define LGR_USER    "Logger"
 #include "logger_api.h"
 
 

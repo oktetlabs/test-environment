@@ -37,8 +37,7 @@
 #define CONF_BACKUP_NAME         "%s/te_cfg_backup_%d_%llu.xml"
 
 
-const char *te_lgr_entity = "Engine";
-
+DEFINE_LGR_ENTITY("Configurator");
 
 static char buf[CFG_BUF_LEN];
 static char tmp_buf[1024];

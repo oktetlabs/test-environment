@@ -28,6 +28,8 @@
  * $Id$
  */
 
+#define LGR_USER    "Linux Conf"
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -59,8 +61,6 @@
 #include "comm_agent.h"
 #include "rcf_ch_api.h"
 #include "rcf_pch.h"
-
-#define LGR_USER    "Linux Conf"
 #include "logger_api.h"
 
 

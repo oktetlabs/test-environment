@@ -38,7 +38,7 @@
 #define SET_MSEC(_poll) ((_poll)%1000000)
 
 
-const char *te_lgr_entity = "Engine";
+DEFINE_LGR_ENTITY("Logger");
 
 /* TA single linked list */
 ta_inst *ta_list = NULL;

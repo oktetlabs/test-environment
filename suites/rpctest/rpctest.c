@@ -43,7 +43,9 @@
 #include "conf_api.h"
 #include "tapi_rpcsock.h"
 
-const char *te_lgr_entity = "rpctest";
+
+DEFINE_LGR_ENTITY("rpctest");
+
 
 static int
 handler(int s)

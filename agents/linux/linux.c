@@ -87,7 +87,7 @@ char *ta_name = "(linux)";
 
 int ta_pid;
 
-const char *te_lgr_entity = "(linux)";
+DEFINE_LGR_ENTITY("(linux)");
 
 static pthread_mutex_t ta_lock = PTHREAD_MUTEX_INITIALIZER;
 

@@ -23,17 +23,21 @@
 #include <signal.h>
 #endif
 
+#include "rcf_api.h"
 #include "conf_api.h"
-
-/** Default user of a test */
-#ifndef LGR_USER
-#define LGR_USER    "Self"
-#endif
 #include "logger_api.h"
 
 
 #ifdef __cplusplus
 extern "C" {
+#endif
+
+/* 
+ * New tests must define TEST_NAME to be used as 'te_lgr_entity',
+ * old tests define LGR_ENTITY.
+ */
+#ifndef TEST_NAME
+#define TEST_NAME   LGR_ENTITY
 #endif
 
 /* 
@@ -79,7 +83,7 @@ extern "C" {
     argv++;                                                         \
                                                                     \
     /* Initialize te_lgr_entity variable */                         \
-    te_lgr_entity = LGR_ENTITY;                                     \
+    te_lgr_entity = TEST_NAME;                                      \
     /*                                                              \
      * Install SIGINT signal handler to exit() with failure status, \
      * if test is terminated by user by Ctrl-C.                     \

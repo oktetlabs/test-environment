@@ -51,8 +51,9 @@ extern void *rcf_ch_symbol_addr_auto(const char *name, te_bool is_func);
 extern char *rcf_ch_symbol_name_auto(const void *addr);
 
 
+DEFINE_LGR_ENTITY("(switch-ctl)");
+
 char *ta_name = "(switch-ctl)";
-const char *te_lgr_entity = "(switch-ctl)";
 
 
 #ifdef HAVE_PTHREAD_H

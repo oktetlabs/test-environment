@@ -82,7 +82,6 @@
 #define RCF_NEED_TYPE_LEN   1
 #include "te_proto.h"
 
-#define LGR_USER        "RCF"
 #include "logger_api.h"
 #include "logger_ten.h"
 
@@ -170,7 +169,7 @@ typedef struct ta {
 } ta;
 
 
-const char *te_lgr_entity = "Engine";
+DEFINE_LGR_ENTITY("RCF");
 
 
 static ta *agents = NULL;       /**< List of Test Agents */

@@ -42,13 +42,12 @@
 #endif
 
 #include "ipc_client.h"
-#include "conf_messages.h"
-
-#define LGR_USER    "Configurator Shutdown"
 #include "logger_api.h"
 
+#include "conf_messages.h"
 
-const char *te_lgr_entity = "Engine";
+
+DEFINE_LGR_ENTITY("Configurator Shutdown");
 
 
 /**
