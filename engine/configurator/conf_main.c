@@ -586,109 +586,6 @@ get_time_ms()
 }
 
 /**
- * Process backup user request.
- *
- * @param msg           message pointer
- */
-static void
-process_backup(cfg_backup_msg *msg)
-{
-    switch (msg->op)
-    {
-        case CFG_BACKUP_CREATE:
-        {
-            sprintf(msg->filename, CONF_BACKUP_NAME,
-                    tmp_dir, getpid(), get_time_ms());
-
-            if ((msg->rc = cfg_backup_create_file(msg->filename)) != 0)
-                return;
-
-            if ((msg->rc = cfg_dh_attach_backup(msg->filename)) != 0)
-                unlink(msg->filename);
-
-            msg->len += strlen(msg->filename) + 1;
-
-            break;
-        }
-
-        case CFG_BACKUP_RESTORE:
-        {
-#if 0        
-            /* Check agents */
-            int rc = rcf_check_agents();
-            
-            if (TE_RC_GET_ERROR(rc) == ETAREBOOTED)
-                cfg_ta_sync("/:", TRUE);
-#endif            
-            /* Try to restore using dynamic history */
-            if ((msg->rc = cfg_dh_restore_backup(msg->filename)) == 0)
-                return;
-
-            WARN("Restoring backup from history failed; "
-                 "restore from the file");
-            msg->rc = parse_config(msg->filename, TRUE);
-            cfg_dh_release_after(msg->filename);
-            
-            break;
-        }
-
-        case CFG_BACKUP_VERIFY:
-        {
-            char diff_file[RCF_MAX_PATH];
-            
-            if ((msg->rc = cfg_backup_create_file(filename)) != 0)
-                return;
-            sprintf(diff_file, "%s/te_cs.diff", getenv("TE_TMP"));
-            sprintf(tmp_buf, "diff -u %s %s >%s 2>&1", msg->filename,
-                             filename, diff_file);
-            msg->rc = ((system(tmp_buf) == 0) ? 0 : ETEBACKUP);
-            if (msg->rc == 0)
-                cfg_dh_release_after(msg->filename);
-            else
-            {
-                if (cs_print_diff)
-                    log_msg((cfg_msg *)msg, TRUE);
-                else
-                    INFO("Backup diff: %tf", diff_file);
-            }
-            unlink(diff_file);            
-            break;
-        }
-
-        case CFG_BACKUP_RELEASE:
-        {
-            msg->rc = cfg_dh_release_backup(msg->filename);
-            break;
-        }
-    }
-}
-
-/**
- * Process reboot user request.
- *
- * @param msg           message pointer
- * @param update_dh     if true, add the command to dynamic history
- */
-static void
-process_reboot(cfg_reboot_msg *msg, te_bool update_dh)
-{
-    if (update_dh && (msg->rc = cfg_dh_add_command((cfg_msg *)msg)) != 0)
-        return;
-
-    msg->rc = rcf_ta_reboot(msg->ta_name, NULL, NULL);
-
-    if (msg->rc == 0 && msg->restore)
-    {
-        if ((msg->rc = cfg_backup_restore_ta(msg->ta_name)) != 0)
-        {
-            ERROR("Restoring of the TA state after reboot failed - "
-                  "cannot continue");
-            cfg_fatal_err = msg->rc;
-        };
-    }
-}
-
-/**
  * Log message.
  *
  * @param msg       Message to be logged
@@ -958,6 +855,109 @@ log_msg(cfg_msg *msg, te_bool before)
             ERROR("Unknown command");
     }
 #undef GET_STRS
+}
+
+/**
+ * Process backup user request.
+ *
+ * @param msg           message pointer
+ */
+static void
+process_backup(cfg_backup_msg *msg)
+{
+    switch (msg->op)
+    {
+        case CFG_BACKUP_CREATE:
+        {
+            sprintf(msg->filename, CONF_BACKUP_NAME,
+                    tmp_dir, getpid(), get_time_ms());
+
+            if ((msg->rc = cfg_backup_create_file(msg->filename)) != 0)
+                return;
+
+            if ((msg->rc = cfg_dh_attach_backup(msg->filename)) != 0)
+                unlink(msg->filename);
+
+            msg->len += strlen(msg->filename) + 1;
+
+            break;
+        }
+
+        case CFG_BACKUP_RESTORE:
+        {
+#if 0        
+            /* Check agents */
+            int rc = rcf_check_agents();
+            
+            if (TE_RC_GET_ERROR(rc) == ETAREBOOTED)
+                cfg_ta_sync("/:", TRUE);
+#endif            
+            /* Try to restore using dynamic history */
+            if ((msg->rc = cfg_dh_restore_backup(msg->filename)) == 0)
+                return;
+
+            WARN("Restoring backup from history failed; "
+                 "restore from the file");
+            msg->rc = parse_config(msg->filename, TRUE);
+            cfg_dh_release_after(msg->filename);
+            
+            break;
+        }
+
+        case CFG_BACKUP_VERIFY:
+        {
+            char diff_file[RCF_MAX_PATH];
+            
+            if ((msg->rc = cfg_backup_create_file(filename)) != 0)
+                return;
+            sprintf(diff_file, "%s/te_cs.diff", getenv("TE_TMP"));
+            sprintf(tmp_buf, "diff -u %s %s >%s 2>&1", msg->filename,
+                             filename, diff_file);
+            msg->rc = ((system(tmp_buf) == 0) ? 0 : ETEBACKUP);
+            if (msg->rc == 0)
+                cfg_dh_release_after(msg->filename);
+            else
+            {
+                if (cs_print_diff)
+                    log_msg((cfg_msg *)msg, TRUE);
+                else
+                    INFO("Backup diff: %tf", diff_file);
+            }
+            unlink(diff_file);            
+            break;
+        }
+
+        case CFG_BACKUP_RELEASE:
+        {
+            msg->rc = cfg_dh_release_backup(msg->filename);
+            break;
+        }
+    }
+}
+
+/**
+ * Process reboot user request.
+ *
+ * @param msg           message pointer
+ * @param update_dh     if true, add the command to dynamic history
+ */
+static void
+process_reboot(cfg_reboot_msg *msg, te_bool update_dh)
+{
+    if (update_dh && (msg->rc = cfg_dh_add_command((cfg_msg *)msg)) != 0)
+        return;
+
+    msg->rc = rcf_ta_reboot(msg->ta_name, NULL, NULL);
+
+    if (msg->rc == 0 && msg->restore)
+    {
+        if ((msg->rc = cfg_backup_restore_ta(msg->ta_name)) != 0)
+        {
+            ERROR("Restoring of the TA state after reboot failed - "
+                  "cannot continue");
+            cfg_fatal_err = msg->rc;
+        };
+    }
 }
 
 /**
