@@ -389,7 +389,7 @@ cfg_add_instance_child_fmt(cfg_handle *p_handle, cfg_val_type type,
         return rc;
     assert(parent_oid != NULL);
 
-    snprintf(oid_fmt, sizeof(oid_fmt), "%s/%s", parent_oid, suboid_fmt);
+    snprintf(oid_fmt, sizeof(oid_fmt), "%s%s", parent_oid, suboid_fmt);
     free(parent_oid);
 
     va_start(ap, suboid_fmt);
