@@ -235,8 +235,8 @@ ndn_forw_drop_to_plain(const asn_value *val, ndn_forw_drop_t *forw_drop)
     {
         forw_drop->type = FORW_DROP_RANDOM;
         d_len = sizeof(forw_drop->rate);
-        rc = asn_read_value_field(val, "#random-rate", 
-                                  &forw_drop->rate, &d_len);
+        rc = asn_read_value_field(val, &forw_drop->rate, &d_len, 
+                                  "#random-rate");
     }
     else
     {
