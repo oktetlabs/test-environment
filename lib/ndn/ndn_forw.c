@@ -223,23 +223,168 @@ const asn_type * const ndn_forw_action = &ndn_forw_action_s;
  *                    Utilities 
  *******************************************************/
 
+/** 
+ * Convert Forwarder-Action ASN value to plain C structrue. 
+ * 
+ * @param val           ASN value of type Forwarder-Action-Delay-Params
+ * @param forw_dealy    converted structure (OUT).
+ *
+ * @return zero on success or error code.
+ */ 
 
+int 
+ndn_forw_delay_to_plain(const asn_value *val, ndn_forw_delay_t *forw_delay)
+{
+    int rc = 0;
+
+    return rc;
+}
 
 /** 
  * Convert Forwarder-Action ASN value to plain C structrue. 
  * 
- * @param pkt           ASN value of type  
+ * @param val           ASN value of type Forwarder-Action-Bandwidth-Params
+ * @param forw_band     converted structure (OUT).
+ *
+ * @return zero on success or error code.
+ */ 
+
+int 
+ndn_forw_band_to_plain(const asn_value *val, ndn_forw_band_t *forw_band)
+{
+    int rc = 0;
+
+    return rc;
+}
+
+/** 
+ * Convert Forwarder-Action ASN value to plain C structrue. 
+ * 
+ * @param val           ASN value of type Forwarder-Action-Reorder-Params
+ * @param forw_reorder    converted structure (OUT).
+ *
+ * @return zero on success or error code.
+ */ 
+
+int 
+ndn_forw_reorder_to_plain(const asn_value *val, ndn_forw_reorder_t *forw_reorder)
+{
+    int rc = 0;
+
+    return rc;
+}
+
+/** 
+ * Convert Forwarder-Action ASN value to plain C structrue. 
+ * 
+ * @param val           ASN value of type Forwarder-Action-Drop-Params
+ * @param forw_drop    converted structure (OUT).
+ *
+ * @return zero on success or error code.
+ */ 
+
+int 
+ndn_forw_drop_to_plain(const asn_value *val, ndn_forw_drop_t *forw_drop)
+{
+    int rc = 0;
+
+    return rc;
+}
+
+/** 
+ * Convert Forwarder-Action ASN value to plain C structrue. 
+ * 
+ * @param val           ASN value of type  
  * @param forw_action   converted structure (OUT).
  *
  * @return zero on success or error code.
  */ 
 int 
-ndn_forw_action_to_plain(const asn_value *pkt, 
-                                ndn_forw_action_plain *forw_action)
+ndn_forw_action_to_plain(const asn_value *val, 
+                               ndn_forw_action_plain *forw_action)
 {
-    int rc = 0;
+    int rc = 0; 
+    int id_len, d_len;
 
-    return rc;
+    const asn_value *subval;
+
+    if (val == NULL || forw_action == NULL) 
+        return EINVAL;
+
+    id_len = asn_get_length(val, "id" );
+    if (id_len <= 0)
+        return EASNGENERAL;
+
+    d_len = id_len + 1;
+    if ((forw_action->id = malloc(d_len)) == NULL )
+        return ENOMEM;
+
+    rc = asn_read_value_field(val, forw_action->id, &d_len, "id");
+    if (rc) return rc;
+
+
+
+
+    rc = asn_get_subvalue(val, &subval, "delay");
+    if (rc == 0) 
+    {
+        rc = ndn_forw_delay_to_plain(subval, &(forw_action->delay));
+        if (rc) return rc;
+    }
+    else if (rc == EASNINCOMPLVAL)
+    {
+        forw_action->delay.type = 0; /* uninitalized, default */
+    }
+    else 
+        return rc;
+
+
+    rc = asn_get_subvalue(val, &subval, "band");
+    if (rc == 0) 
+    {
+        rc = ndn_forw_band_to_plain(subval, &(forw_action->band));
+        if (rc) return rc;
+    }
+    else if (rc == EASNINCOMPLVAL)
+    {
+        forw_action->band.type = 0; /* uninitalized, default */
+    }
+    else 
+        return rc;
+
+
+    rc = asn_get_subvalue(val, &subval, "reorder");
+    if (rc == 0) 
+    {
+        rc = ndn_forw_reorder_to_plain(subval, &(forw_action->reorder));
+        if (rc) return rc;
+    }
+    else if (rc == EASNINCOMPLVAL)
+    {
+        forw_action->reorder.type = 0; /* uninitalized, default */
+    }
+    else 
+        return rc;
+
+
+    rc = asn_get_subvalue(val, &subval, "drop");
+    if (rc == 0) 
+    {
+        rc = ndn_forw_drop_to_plain(subval, &(forw_action->drop));
+        if (rc) return rc;
+    }
+    else if (rc == EASNINCOMPLVAL)
+    {
+        forw_action->drop.type = 0; /* uninitalized, default */
+    }
+    else 
+        return rc;
+
+
+
+
+
+    return 0;
 }
 
 

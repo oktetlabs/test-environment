@@ -48,21 +48,79 @@
 extern "C" {
 #endif
 
+typedef enum {
+    FORW_DELAY_DISABLED,
+    FORW_DELAY_CONSTANT,
+    FORW_DELAY_RANDROM,
+} ndn_forw_delay_type_t;
+
+typedef struct {
+    ndn_forw_delay_type_t type;
+
+    int delay_min;
+    int delay_max;
+} ndn_forw_delay_t;
+
+
+
+
+typedef enum {
+    FORW_BAND_UNLIMITED,
+    FORW_BAND_LIMITED,
+} ndn_forw_band_type_t;
+
+typedef struct {
+    ndn_forw_band_type_t type;
+
+    int bss;
+    int buf_size;
+} ndn_forw_band_t;
+
+
+
+
+typedef enum {
+    FORW_REORDER_DISABLED,
+    FORW_REORDER_RANDROM,
+    FORW_REORDER_REVERSED,
+} ndn_forw_reorder_type_t;
+
+typedef struct {
+    ndn_forw_reorder_type_t type;
+    
+    int timeout;
+    int reorder_size;
+} ndn_forw_reorder_t;
+
+
+
+
+typedef enum {
+    FORW_DROP_DISABLED,
+    FORW_DROP_RANDROM,
+    FORW_DROP_PATTERN,
+} ndn_forw_drop_type_t;
+
+typedef struct {
+    ndn_forw_drop_type_t type;
+
+    int rate;
+} ndn_forw_drop_t;
+
+
+
+
 typedef struct { 
-    char        *id;
+    char               *id;
+    ndn_forw_delay_t    delay;
+    ndn_forw_band_t     band;
+    ndn_forw_reorder_t  reorder;
+    ndn_forw_drop_t     drop;
 } ndn_forw_action_plain;
 
 /* Structure for Ethernet frame header. written according to IEEE 802.3 */
 
-/** 
- * Convert Forwarder-Action ASN value to plain C structure. 
- * 
- * @param pkt           ASN value of type Ethernet Header or Generic-PDU with 
- *                      choice "eth". 
- * @param eth_header    location for converted structure (OUT).
- *
- * @return zero on success or error code.
- */ 
+/* See description in ndn_forw.c */ 
 extern int ndn_forw_action_to_plain(const asn_value *pkt, 
                                 ndn_forw_action_plain *forw_action);
 
