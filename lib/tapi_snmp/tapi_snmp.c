@@ -55,28 +55,24 @@
 #include "logger_api.h"
 
 
-#undef DEBUG 
+/* save or not tmp ndn files */
 #define DEBUG 0
 
-#if DEBUG
-#define LOG(x...) do { printf(x); fflush(stdout); } while (0)
-#else
-#define LOG(x...)
-#endif
 
-
-#if DEBUG
-static void
-print_objid_s (oid *ids, size_t len)
+static inline const char*
+oid2str (const tapi_snmp_oid_t *oid )
 {
+    static char buf[256];
+    char *p = buf; 
     unsigned i;
-    if (ids == NULL)
-        printf ("<null oid>");
-    for(i =0; i < len; i ++)
-        printf (".%d", (int)ids[i]);
-    printf ("\n"); 
-} 
-#endif
+
+    if (oid == NULL)
+        strncpy (buf, sizeof(buf), "<null oid>");
+    for(i =0; i < oid->length; i ++)
+        p += sprintf (p, ".%d", (int)oid->id[i]);
+    return buf;
+}
+
 
 int 
 tapi_snmp_copy_varbind(tapi_snmp_varbind_t *dst, const tapi_snmp_varbind_t *src)
@@ -288,10 +284,7 @@ tapi_snmp_packet_to_plain(asn_value *pkt, tapi_snmp_message_t *snmp_message)
 
         rc = asn_read_value_field (var_bind, &(snmp_message->vars[i].name.id),
                                     &len, "name.#plain"); 
-#if DEBUG
-        printf ("in SNMP handler: var N %d ", i);
-        print_objid(snmp_message->vars[i].name.id, len);
-#endif
+        VERB ("%s; var N %d ,oid %s", i, oid2str(&(snmp_message->vars[i])));
 
         if (rc == 0)
             rc = asn_get_choice(var_bind, "value.#plain", choice_label, CL_MAX);
@@ -308,11 +301,9 @@ tapi_snmp_packet_to_plain(asn_value *pkt, tapi_snmp_message_t *snmp_message)
                 snmp_message->vars[i].type = TAPI_SNMP_NOSUCHOBJ;
             else if ((rc = asn_read_value_field(var_bind, 0, 0,
                                                 "noSuchInstance")) == 0)
-                snmp_message->vars[i].type = TAPI_SNMP_NOSUCHINS;
+                snmp_message->vars[i].type = TAPI_SNMP_NOSUCHINS; 
+            VERB ("read SNMP error fields return 0x%x\n", rc);    
 
-#if DEBUG
-            printf ("read SNMP error fields return 0x%x\n", rc);    
-#endif 
             if (rc == 0)
             {
                 snmp_message->vars[i].v_len   = 0;
@@ -421,8 +412,8 @@ tapi_snmp_csap_create(const char *ta, int sid, const char *snmp_agent,
 
     strcpy(tmp_name, "/tmp/te_snmp_csap_create.XXXXXX"); 
     mktemp(tmp_name);
-#if DEBUG
-    LOG("tmp file: %s\n", tmp_name);
+#if (DEBUG)
+    VERB("tmp file: %s\n", tmp_name);
 #endif
     f = fopen (tmp_name, "w+");
     if (f == NULL)
@@ -447,7 +438,6 @@ tapi_snmp_csap_create(const char *ta, int sid, const char *snmp_agent,
 #endif
 }
 
-#define DEBUG 1
 /* See description in tapi_snmp.h */
 int 
 tapi_snmp_gen_csap_create(const char *ta, int sid, const char *snmp_agent, 
@@ -462,7 +452,7 @@ tapi_snmp_gen_csap_create(const char *ta, int sid, const char *snmp_agent,
     strcpy(tmp_name, "/tmp/te_snmp_csap_create.XXXXXX"); 
     mktemp(tmp_name);
 #if DEBUG
-    LOG("tmp file: %s\n", tmp_name);
+    VERB("tmp file: %s\n", tmp_name);
 #endif
     f = fopen (tmp_name, "w+");
     if (f == NULL)
@@ -502,7 +492,6 @@ tapi_snmp_gen_csap_create(const char *ta, int sid, const char *snmp_agent,
 }
 
 
-#define DEBUG 0
 
 void
 tapi_snmp_pkt_handler(char *fn, void *p)
@@ -511,7 +500,7 @@ tapi_snmp_pkt_handler(char *fn, void *p)
     asn_value_p packet, snmp_message;
 
 #if DEBUG
-    LOG("tapi_snmp_pkt_handler, file: %s\n", fn);
+    VERB("%s, file: %s\n", __FUNCTION__, fn);
 #endif
 
     if (p == NULL)
@@ -520,13 +509,13 @@ tapi_snmp_pkt_handler(char *fn, void *p)
         return;
     }
     rc = asn_parse_dvalue_in_file(fn, ndn_raw_packet, &packet, &s_parsed);
+    VERB("SNMP pkt handler, parse file rc: %x, syms: %d\n", rc, s_parsed);
 #if DEBUG
-    LOG("SNMP pkt handler, parse file rc: %x, syms: %d\n", rc, s_parsed);
     if (rc == 0)
     {
         struct timeval timestamp;
         rc = ndn_get_timestamp(packet, &timestamp);
-        LOG("got timestamp, rc: %x, sec: %d, mcs: %d.\n", 
+        VERB("got timestamp, rc: %x, sec: %d, mcs: %d.\n", 
                 rc, (int)timestamp.tv_sec, (int)timestamp.tv_usec); 
         asn_save_to_file(packet, "/tmp/got_file");
         rc = 0;
@@ -537,15 +526,13 @@ tapi_snmp_pkt_handler(char *fn, void *p)
     {
         tapi_snmp_message_t *plain_msg = (tapi_snmp_message_t *)p;
 
-#if DEBUG
-        LOG("parse SNMP file OK!\n");
-#endif
+        VERB("parse SNMP file OK!\n");
 
         snmp_message = asn_read_indexed (packet, 0, "pdus");
         rc = tapi_snmp_packet_to_plain(snmp_message, plain_msg);
-#if DEBUG
-        LOG("packet to plain rc %d\n", rc);
-#endif
+
+        VERB("packet to plain rc %d\n", rc);
+
         if (plain_msg->num_var_binds == 0) /* abnormal situation in SNMP message */
             plain_msg->err_status = rc;
     } 
@@ -571,7 +558,7 @@ tapi_snmp_operation (const char *ta, int sid, int csap_id,
     strcpy(tmp_name, "/tmp/te_snmp_op.XXXXXX"); 
     mktemp(tmp_name);
 #if DEBUG
-    printf ("tmp file: %s\n", tmp_name);
+    VERB ("tmp file: %s\n", tmp_name);
 #endif
     f = fopen (tmp_name, "w+");
     if (f == NULL)
@@ -780,10 +767,7 @@ tapi_snmp_getbulk(const char *ta, int sid, int csap_id,
             for (i = 0; i < *num; i++)
             {
                 tapi_snmp_copy_varbind(&varbind[i], &msg.vars[i]);
-#if DEBUG
-                printf ("GETBULK, variable: ");
-                print_objid(varbind[i].name.id, varbind[i].name.length); 
-#endif
+                VERB ("GETBULK, variable: %s", oid2str(&(varbind[i].name)));
             }
             tapi_snmp_free_message(&msg);
         }
@@ -807,12 +791,14 @@ tapi_snmp_walk(const char *ta, int sid, int csap_id,
         return TE_RC(TE_TAPI, ETEWRONGPTR); 
 
     next_oid = base_oid = *oid;
+    VERB("%s for oid %s", __FUNCTION__, oid2str(oid));
     
     while (1) 
     {
         rc = tapi_snmp_get(ta, sid, csap_id, &next_oid, TAPI_SNMP_NEXT, &vb);
         if (vb.type == TAPI_SNMP_ENDOFMIB)
         {
+	    VERB("walk is over");
             break; /* walk is finished */ 
         }    
         if (rc)
@@ -820,11 +806,14 @@ tapi_snmp_walk(const char *ta, int sid, int csap_id,
 
         next_oid = vb.name;
 
+        VERB("walk go on, oid %s", oid2str(&next_oid));
+
         if (tapi_snmp_is_sub_oid(&base_oid, &vb.name))
         {
             rc = callback(&vb, userdata);
 
             tapi_snmp_free_varbind(&vb);
+	    VERB("user callback in walk return %x", rc);
 
             if (rc)
                 return rc;
@@ -856,11 +845,8 @@ tapi_snmp_column_list_callback(const tapi_snmp_varbind_t *varbind,
                         calloc(1, sizeof(struct tapi_snmp_column_list_t));
 
     tapi_snmp_copy_varbind(&(l_p->next->vb), varbind);
-#if DEBUG
-    printf ("CALLBACK, got reply with OID: ");
-    print_objid(varbind->name.id, varbind->name.length);
-    printf ("\n");
-#endif
+    VERB ("%s, got reply with OID: %s", 
+            __FUNCTION__, oid2str(&(varbind->name)));
 
     return 0;
 }
@@ -951,24 +937,18 @@ tapi_snmp_get_table(const char *ta, int sid, int csap_id,
 
     memcpy(&entry, table_oid, sizeof(entry));
 
-#if DEBUG
-    printf("GET TABLE for OID: ");
-    print_objid(entry.id, entry.length);
-#endif
+    VERB("GET TABLE called for oid %s", oid2str(&entry)); 
 
     entry_node = get_tree(entry.id, entry.length, get_tree_head());
 
     if (entry_node == NULL)
     {
-#if DEBUG
-        printf ("no entry node found!\n");
-#endif        
+        WARN("no entry node found!\n");
         return TE_RC(TE_TAPI, EINVAL);
     }
-#if DEBUG
-    printf ("find MIB node <%s> with last subid %d\n", 
+
+    VERB("find MIB node <%s> with last subid %d\n", 
                      entry_node->label, entry_node->subid);
-#endif
 
     /* fall down in MIB tree to the table Entry node or leaf. */
 
@@ -980,10 +960,8 @@ tapi_snmp_get_table(const char *ta, int sid, int csap_id,
         entry.id[entry.length] = entry_node->subid;
         entry.length++;
     }
-#if DEBUG
-    printf ("find Table entry node <%s> with last subid %d\n", 
+    VERB("find Table entry node <%s> with last subid %d\n", 
                      entry_node->label, entry_node->subid);
-#endif
 
     if (entry_node->indexes)
     {
@@ -998,9 +976,7 @@ tapi_snmp_get_table(const char *ta, int sid, int csap_id,
             index_node = find_node(t_index->ilabel, entry_node);
             if (index_node == NULL)
             {
-#if DEBUG
-                printf ("strange, node for index not found\n");
-#endif                
+                INFO("strange, node for index not found\n");
                 break;
             }
             if (index_node->access == MIB_ACCESS_READONLY ||
@@ -1039,10 +1015,8 @@ tapi_snmp_get_table(const char *ta, int sid, int csap_id,
                 {
                     entry.id[entry.length] = entry_node->subid;
                     entry.length++;
-#if DEBUG                    
-                    printf ("find accessible entry <%s> with last subid %d\n", 
+                    VERB("find accessible entry <%s> with last subid %d\n", 
                              entry_node->label, entry_node->subid);
-#endif                             
                     column_found = 1;
                 }
             }
@@ -1052,6 +1026,8 @@ tapi_snmp_get_table(const char *ta, int sid, int csap_id,
         table_width = 1;
 
     memset (&ti_list, 0, sizeof(ti_list));
+
+    VERB("in gettable, now walk on %s", oid2str(&entry));
 
     /* Now 'entry' contains OID of table column. */
     rc = tapi_snmp_walk(ta, sid, csap_id, &entry,  &ti_list,
@@ -1066,9 +1042,7 @@ tapi_snmp_get_table(const char *ta, int sid, int csap_id,
 
     *num = table_height;
 
-#if DEBUG
-    printf ("table width: %d, height: %d\n", table_width, table_height);
-#endif
+    INFO("table width: %d, height: %d\n", table_width, table_height);
     if (table_height == 0) 
         return 0;
     
@@ -1101,9 +1075,7 @@ tapi_snmp_get_table(const char *ta, int sid, int csap_id,
                                           sizeof (tapi_snmp_varbind_t));
 
 
-#if DEBUG
-        printf ("res_table: %p\n", res_table);
-#endif
+        VERB("res_table: %p\n", res_table);
         entry.length --; 
         begin_of_portion = entry;
             /* to make 'entry' be OID of table Entry node */
@@ -1115,11 +1087,8 @@ tapi_snmp_get_table(const char *ta, int sid, int csap_id,
             rc = tapi_snmp_getbulk(ta, sid, csap_id, &begin_of_portion, 
                                     &vb_num, vb + got_varbinds);
 
-#if DEBUG
-            printf ("table getbulk return %x, got %d vbs for oid\n  ", 
-                    rc, vb_num);
-            print_objid(begin_of_portion.id, begin_of_portion.length);
-#endif
+            VERB ("table getbulk return %x, got %d vbs for oid %s\n  ", 
+                    rc, vb_num, oid2str(&(begin_of_portion)));
             if (rc) break; 
             rest_varbinds -= vb_num;
             got_varbinds  += vb_num;
@@ -1132,11 +1101,8 @@ tapi_snmp_get_table(const char *ta, int sid, int csap_id,
             }
             begin_of_portion = vb[got_varbinds - 1].name;
         }
-
-#if DEBUG
-        printf ("table cardinality, bulk got %d varbinds.\n", 
+        VERB("table cardinality, bulk got %d varbinds.\n", 
                     table_cardinality);
-#endif
 
         /* ISSUE: fill result entry according to the indexes got 
            in the last Get-Bulk; currently processed only indexes, which 
@@ -1152,43 +1118,29 @@ tapi_snmp_get_table(const char *ta, int sid, int csap_id,
 
             int row_num;
 
-#if DEBUG
-                printf ("table entry oid: ");
-                print_objid(entry.id, entry.length);
-                printf ("ti_len %d\n", ti_len);
-#endif
+            VERB("table entry oid: %s, ti_len %d", oid2str(&entry), ti_len);
+
             for (i = 0; i < table_cardinality; i ++)
             {
                 int table_offset;
-#if DEBUG
-                printf ("try to add varbind with oid: ");
-                print_objid(vb[i].name.id, vb[i].name.length);
-#endif
 
-                if ( !tapi_snmp_is_sub_oid(&entry, &vb[i].name))
+                VERB("try to add varbind with oid %s", oid2str(&(vb[i].name))); 
+
+                if (!tapi_snmp_is_sub_oid(&entry, &vb[i].name))
                 {
-#if DEBUG                
-                    printf ("is not subid\n");
-#endif                    
                     continue;
                 }
 
                 for (index_l_en = ti_list.next, row_num = 0; index_l_en; 
                      index_l_en = index_l_en->next, row_num ++)
                 {
-#if DEBUG
-                printf ("try to compare with index: ");
-                print_objid_s(&(index_l_en->vb.name.id[ti_start]), ti_len);
-#endif 
                     if (memcmp (&(vb[i].name.id[ti_start]), 
                                 &(index_l_en->vb.name.id[ti_start]),
                                 ti_len * sizeof(oid)
                                ) == 0 )
                         break;
                 }
-#if DEBUG
-                printf ("found index_l_en: %p\n", index_l_en); 
-#endif
+                VERB("found index_l_en: %p\n", index_l_en); 
                 if (index_l_en == NULL) 
                     continue; /* just skip this varbind, for which we cannot 
                                  find index... */ 
@@ -1196,20 +1148,13 @@ tapi_snmp_get_table(const char *ta, int sid, int csap_id,
                                       (vb[i].name.id[ti_start - 1] - 1) ;
     
                 res_table[table_offset] = tapi_snmp_vb_to_mem(&vb[i]);
-#if DEBUG
-                printf ("table offset:%d, ptr: %p\n", table_offset, res_table[table_offset]);
-#endif
+                VERB("table offset:%d, ptr: %p\n", table_offset, res_table[table_offset]);
             }
         } 
-    }
-
-    
+    } 
 
     return rc; 
-    
-}
-
-
+} 
 
 
 
@@ -1366,9 +1311,7 @@ tapi_snmp_get_integer(const char *ta, int sid, int csap_id,
             rc = varbind.type;
             break;
         default:
-#if DEBUG
-            printf ("got variable has different type: %d\n", (int)varbind.type);
-#endif
+            VERB("got variable has different type: %d\n", (int)varbind.type);
             tapi_snmp_free_varbind(&varbind);
             rc = EINVAL; /** @todo Cheange it to something like ETESNMPWRONGTYPE */
     } 
