@@ -373,18 +373,22 @@ int snmp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
 
     for (vars = pdu->variables; vars; vars = vars->next_variable)
     {
-        asn_value_p var_bind = asn_init_value(ndn_snmp_var_bind);
+        asn_value_p var_bind = NULL;
         char        os_choice[100]; 
 
-        asn_write_value_field (var_bind, vars->name, vars->name_length, 
-                                "name.#plain");
+        if (parsed_packet != NULL)
+        {
+            var_bind = asn_init_value(ndn_snmp_var_bind);
+            asn_write_value_field (var_bind, vars->name, vars->name_length, 
+                                    "name.#plain");
+        }
+        /* TODO: add match by var binds here */
 
-#ifdef SNMPDEBUG
-        printf (" SNMP MATCH: add variable ");
-        print_objid (vars->name, vars->name_length);
+        if (parsed_packet == NULL)
+            continue;
 
-        printf (" SNMP MATCH: vars type: %d\n", vars->type);
-#endif
+        VERB(" SNMP MATCH: vars type: %d\n", vars->type);
+
         strcpy (os_choice, "value.#plain.");
         switch (vars->type)
         {
@@ -439,10 +443,11 @@ int snmp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
                 asn_free_value(var_bind);
                 return 1;
         }
-#ifdef SNMPDEBUG
-        printf ("in SNMP MATCH, rc before varbind value write: %x\n", rc);
-        printf ("in SNMP MATCH, try to write for label: <%s>\n", os_choice);
-#endif
+        VERB("in SNMP MATCH, rc before varbind value write: %x", rc);
+        VERB("in SNMP MATCH, try to write for label: %s", os_choice);
+
+        if (rc != 0)
+            break;
 
         rc = asn_write_value_field(var_bind,
                                    vars->val.string,
@@ -451,14 +456,12 @@ int snmp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
                                        vars->val_len / sizeof(oid),
                                    os_choice);
         
-#ifdef SNMPDEBUG
-        printf ("in SNMP MATCH, rc from varbind value write: %x\n", rc);
-#endif
+        VERB("in SNMP MATCH, rc from varbind value write: %x", rc);
+
         if (rc == 0)
             rc = asn_insert_indexed(vb_seq, var_bind, -1, "");
-#ifdef SNMPDEBUG
-        printf ("in SNMP MATCH, rc from varbind insert: %x\n", rc);
-#endif
+
+        VERB("in SNMP MATCH, rc from varbind insert: %x", rc);
 
         asn_free_value(var_bind);
 
