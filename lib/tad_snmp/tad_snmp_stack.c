@@ -512,6 +512,11 @@ snmp_single_init_cb (int csap_id, const asn_value_p csap_nds, int layer)
                 r_port ? r_port : l_port);
 
         transport = netsnmp_tdomain_transport(buf, !r_port, "udp");
+        if (transport == NULL)
+        {
+            ERROR("NULL transport!");
+            break;
+        }
 
         ss = snmp_add(&csap_session, transport, NULL, NULL);
 
@@ -523,9 +528,9 @@ snmp_single_init_cb (int csap_id, const asn_value_p csap_nds, int layer)
 
     if (ss == NULL)
     {
-        VERB("open session error\n");
+        ERROR("open session or transport error\n");
 
-        snmp_perror("open session error");
+        snmp_perror("open session or transport error");
 
         free(snmp_spec_data);
         return ETADLOWER;
