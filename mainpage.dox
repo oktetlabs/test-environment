@@ -1,0 +1,34 @@
+/** @mainpage
+
+@section abbreviations Abbreviations
+
+@tdt_start
+
+@tdt_term RCF
+@tdt_def  Remote Control Facility
+
+@tdt_term TA
+@tdt_def  Test Agent
+
+@tdt_term TE
+@tdt_def  Test Environment
+
+@tdt_term TEN
+@tdt_def  Test Engine
+
+@tdt_end
+
+
+@section terminology Terminology
+
+@tdt_start
+
+
+@tdt_end
+
+
+- @link logger_api.h Logger API @endlink
+- @link conf_api.h Configurator API @endlink
+- @link rcf_api.h RCF API @endlink
+
+ */
