@@ -6290,7 +6290,8 @@ rpc_wait_multiple_events(rcf_rpc_server *handle,
 
 int
 rpc_ftp_open(rcf_rpc_server *handle,
-             char *uri, te_bool rdonly, te_bool passive, int offset)
+             char *uri, te_bool rdonly, te_bool passive, int offset,
+             int *sock)
 {
     tarpc_ftp_open_in  in;
     tarpc_ftp_open_out out;
@@ -6309,13 +6310,23 @@ rpc_ftp_open(rcf_rpc_server *handle,
     in.rdonly = rdonly;
     in.passive = passive;
     in.offset = offset;
+    if (sock == NULL)
+        in.sock.sock_len = 0;
+    else
+    {
+        in.sock.sock_val = (tarpc_int *)sock;
+        in.sock.sock_len = 1;
+    }
 
     rcf_rpc_call(handle, _ftp_open, &in, (xdrproc_t)xdr_tarpc_ftp_open_in,
                  &out, (xdrproc_t)xdr_tarpc_ftp_open_out);
 
-    RING("RPC (%s,%s): ftp_open(%s, %s, %s, %d) -> %d (%s)",
+    if (RPC_CALL_OK && sock != NULL)
+        *sock = out.sock;
+
+    RING("RPC (%s,%s): ftp_open(%s, %s, %s, %d, %p) -> %d (%s)",
          handle->ta, handle->name, uri, rdonly ? "get" : "put",
-         passive ? "passive": "active", offset,
+         passive ? "passive": "active", offset, sock,
          out.fd, errno_rpc2str(RPC_ERRNO(handle)));
 
     RETVAL_VAL(out.fd, ftp_open);

@@ -1898,12 +1898,14 @@ struct tarpc_ftp_open_in {
     tarpc_bool  rdonly;        /**< If 1, open to get file */
     tarpc_bool  passive;       /**< If 1, use passive mode */
     int32_t     offset;        /**< File offset */
+    tarpc_int   sock<>;        /**< Pointer on a socket */
 };
 
 struct tarpc_ftp_open_out {
     struct tarpc_out_arg common;
     
     tarpc_int fd;     /**< TCP socket file descriptor */
+    tarpc_int sock;   /**< Value of returning socket */
 };    
 
 program tarpc

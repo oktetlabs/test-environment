@@ -230,18 +230,22 @@ parse_ftp_uri(const char *uri, struct sockaddr *srv,
  * @param flags         O_RDONLY or O_WRONLY
  * @param passive       if 1, passive mode
  * @param offset        file offset
+ * @param sock          pointer on socket
  *
  * @return file descriptor, which may be used for reading/writing data
  */
 int
-ftp_open(char *uri, int flags, int passive, int offset)
+ftp_open(char *uri, int flags, int passive, int offset, int *sock)
 {
     char  buf[1024];
     char *str;
     int   s;
     int   sd = -1;
     int   sd1 = -1;
-    
+    int   new_sock = 0;
+    struct timeval tv;
+    fd_set set;
+
     struct sockaddr_in addr;
     struct sockaddr_in addr1;
     socklen_t          addr1_len = sizeof(addr1);
@@ -293,13 +297,31 @@ ftp_open(char *uri, int flags, int passive, int offset)
         PUT_CMD(_cmd); \
         READ_ANS;      \
     } while (0)
-        
-    VERB("Connecting...");
-    s = socket(AF_INET, SOCK_STREAM, 0);
-    if (connect(s, (struct sockaddr *)&addr, sizeof(addr)) < 0)
-        RET_ERR("connect() failed; errno %d", errno);
-    
-    VERB("Connected");
+
+    if ((sock == NULL) || (*sock == 0))
+    {
+        VERB("Connecting...");
+        s = socket(AF_INET, SOCK_STREAM, 0);
+        if (connect(s, (struct sockaddr *)&addr, sizeof(addr)) < 0)
+            RET_ERR("connect() failed; errno %d", errno);
+        if (sock != NULL)
+        {
+            *sock = s;
+            new_sock = 1;
+        }
+        VERB("Connected");
+    }
+    else
+    {
+        s = *sock;
+
+        FD_ZERO(&set);
+        FD_SET(s, &set);
+        tv.tv_sec = 1;
+        tv.tv_usec = 0;
+        if (select(s + 1, &set, NULL, NULL, &tv) > 0)
+            READ_ANS;
+    }
     /* Determine parameters for PORT command */
     if (!passive)
     {
@@ -322,9 +344,12 @@ ftp_open(char *uri, int flags, int passive, int offset)
     }
 
     /* Read greeting */
-    read(s, buf, sizeof(buf));
-    CMD("USER %s\n", user);
-    CMD("PASS %s\n", passwd);
+    if ((sock == NULL) || (new_sock))
+    {
+        read(s, buf, sizeof(buf));
+        CMD("USER %s\n", user);
+        CMD("PASS %s\n", passwd);
+    }
     if (passive)
         CMD("PASV\n");
     else
@@ -374,7 +399,8 @@ ftp_open(char *uri, int flags, int passive, int offset)
 
         close(sd1);
     }
-    close(s);
+    if (sock == NULL)
+        close(s);
     return sd;
 
 #undef RET_ERR    
@@ -560,7 +586,7 @@ ftp_test(char *uri_get, char *uri_put, int size)
     signal(SIGINT, sigint_handler); 
     
     if (uri_get != NULL && *uri_get != 0 && 
-        (si = ftp_open(uri_get, O_RDONLY, 1, 0)) < 0)
+        (si = ftp_open(uri_get, O_RDONLY, 1, 0, NULL)) < 0)
     {
         ERROR("Failed to open URI %s to read from",
                    uri_get);
@@ -568,7 +594,7 @@ ftp_test(char *uri_get, char *uri_put, int size)
     }
 
     if (uri_put != NULL && *uri_put != 0 && 
-        (so = ftp_open(uri_put, O_WRONLY, 1, 0)) < 0)
+        (so = ftp_open(uri_put, O_WRONLY, 1, 0, NULL)) < 0)
     {
         ERROR("Failed to open URI %s to write to",
                    uri_put);

@@ -967,12 +967,13 @@ extern ssize_t rpc_socket_to_file(rcf_rpc_server *handle,
  * @param rdonly        if TRUE, get file
  * @param passive       if TRUE, passive mode
  * @param offset        file offset
+ * @param sock          Pointer on a socket
  *
  * @return file descriptor, which may be used for reading/writing data
  */
 extern int rpc_ftp_open(rcf_rpc_server *handle,
                         char *uri, te_bool rdonly, te_bool passive,
-                        int offset);
+                        int offset, int *sock);
 
 
 #endif /* __TE_TAPI_RPCSOCK_H__ */
