@@ -1174,7 +1174,7 @@ ds_init_ftp_server(rcf_pch_cfg_object **last)
 void
 ds_shutdown_ftp_server()
 {
-    ta_system("chmod o-w /var/ftp/pub 2>err");
+    ta_system("chmod o-w /var/ftp/pub 2>/dev/null");
     if (daemon_running("ftpserver"))
     {
         daemon_set(0, "ftpserver", "0");
