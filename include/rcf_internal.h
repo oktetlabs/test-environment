@@ -169,7 +169,7 @@ rcf_op_to_string(rcf_op_t op)
 {
     switch (op)
     {
-        case RCFOP_SHUTDOWN:        return "shutdonw";
+        case RCFOP_SHUTDOWN:        return "shutdown";
         case RCFOP_TALIST:          return "TA list";
         case RCFOP_TATYPE:          return "TA type";
         case RCFOP_SESSION:         return "session";
