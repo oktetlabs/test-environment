@@ -111,15 +111,24 @@ typedef int (*csap_confirm_pdu_cb_t)(int csap_id, int layer,
 
 
 
+/**
+ * List of packet fragments, which compose one "message".
+ * This list used for passing prepared/parsed packets from one layer
+ * to another: from low to up during match, and from up to low 
+ * constructing message to be sent. 
+ */
 struct csap_pkts;
 typedef struct csap_pkts * csap_pkts_p;
 typedef struct csap_pkts
 {
-    csap_pkts_p   next;
+    csap_pkts_p   next; /**< Pointer to next message fragment or NULL */
 
-    void  *data;
-    int    len;
-    void (*free_data_cb)(void*);
+    void  *data;        /**< Pointer to data of this fragment */
+    int    len;         /**< Length of this fragment */
+
+    void (*free_data_cb)(void*); /**< Pointer to callback for free 
+                                      fragment data, or NULL if usual 
+                                      free() may be used. */
 } csap_pkts;
 
 /**
