@@ -236,7 +236,7 @@ main(int argc, char *argv[])
             if (rc)
             {
                 ERROR("get subtype for vlan-id failed %x", rc);
-                type = &ndn_data_unit_int16_s;
+                type = ndn_data_unit_int16;
                 rc = 0;
             }
 #if 0

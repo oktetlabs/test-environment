@@ -50,6 +50,7 @@ sys/socket.h \
 sys/select.h \
 sys/poll.h \
 sys/ioctl.h \
+sys/queue.h \
 sys/sendfile.h \
 netinet/in.h \
 netinet/ip.h \
@@ -59,6 +60,7 @@ net/if.h \
 net/ethernet.h \
 arpa/inet.h \
 netdb.h \
+setjmp.h \
 ])
 
 AC_CHECK_HEADERS(ucd-snmp/snmp_impl.h, , ,
