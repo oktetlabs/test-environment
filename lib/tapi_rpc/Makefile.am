@@ -58,7 +58,7 @@ install-exec-hook:
 	touch -c -r .libs/libtapi_rpc.la \
 		$(DESTDIR)/$(prefix)/lib/libtapi_rpc.*
 
-install-data-hook:
+install-data-hook: tarpc.h
 	for i in $(include_HEADERS) ; do \
 	    touch -c -r $(srcdir)/$$i $(DESTDIR)/$(prefix)/include/$$i ; \
 	done
