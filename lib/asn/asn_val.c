@@ -879,7 +879,7 @@ asn_impl_read_value_field  (const asn_value *container,  void *data,
 
     case OID:
     case BIT_STRING:
-        if (container->syntax == OID)
+        if (value->syntax == OID)
             m_len *= sizeof(int);
         else
             m_len = (m_len + 7) >> 3;
