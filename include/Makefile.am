@@ -45,4 +45,4 @@ install-data-hook:
 	for i in $(te_HEADERS) ; do \
 	    touch -c -r $(srcdir)/$$i $(DESTDIR)/$(prefix)/include/$$i ; \
 	done
-	touch -c -r te_config.h $(DESTDIR)/$(prefix)/include/te_config.h
+	touch -c -r $(srcdir)/configure.ac $(DESTDIR)/$(prefix)/include/te_config.h
