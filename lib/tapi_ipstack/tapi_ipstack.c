@@ -587,6 +587,23 @@ tapi_tcp_ip4_pattern_unit(const uint8_t *src_addr, const uint8_t *dst_addr,
     int num;
     asn_value *pu = NULL;
 
+    struct in_addr in_src_addr;
+    struct in_addr in_dst_addr;
+
+    if (src_addr) 
+        in_src_addr.s_addr = *(unsigned long *)src_addr;
+    else
+        in_src_addr.s_addr = 0;
+
+    if (dst_addr) 
+        in_dst_addr.s_addr = *(unsigned long *)dst_addr;
+    else
+        in_dst_addr.s_addr = 0;
+
+    VERB("%s, create pattern unit %s:%u -> %s:%u", __FUNCTION__,
+         inet_ntoa(in_src_addr), (unsigned int)src_port, 
+         inet_ntoa(in_dst_addr), (unsigned int)dst_port);
+
     do {
         if (result_value == NULL) { rc = ETEWRONGPTR; break; }
 
