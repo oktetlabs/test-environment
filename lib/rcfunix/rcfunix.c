@@ -198,9 +198,7 @@ rcfunix_start(char *ta_name, char *ta_type, char *conf_str,
     strcpy(ta->ta_type, ta_type);
 
     if (strcmp(ta_type + strlen(ta_type) - strlen("ctl"), "ctl") == 0)
-        *flags = TA_PROXY;
-    else
-        *flags = 0;
+        *flags |= TA_PROXY;
 
     tmp = getenv("LOGNAME");
     sprintf(ta->exec_name, "ta%s_%s_%u_%u", ta_type,
