@@ -316,7 +316,7 @@ int snmp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
             break;
 
         default:
-            ERROR("%s(): !!! UNKNOWN PDU command %d !!! ",
+            RING("%s(): UNKNOWN PDU command %d ",
                   __FUNCTION__, pdu->command);
             return ETADNOTMATCH;
     }
@@ -389,11 +389,13 @@ int snmp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
         }
 
         pat_vb_num = asn_get_length(pat_vb_list, ""); 
-        VERB("%s: number of varbinds in pattern %d", pat_vb_num);
+        VERB("%s: number of varbinds in pattern %d",
+             __FUNCTION__, pat_vb_num);
 
         for (i = 0; i < pat_vb_num; i++)
         { 
             const asn_value *pat_var_bind;
+            const asn_value *pat_vb_value;
             const oid       *pat_oid;
             const uint8_t   *pat_vb_val_data;
             size_t           pat_oid_len;
@@ -412,6 +414,7 @@ int snmp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
             if (rc == EASNINCOMPLVAL)
             {
                 /* match OID other then plain patterns not supported yet */
+                VERB("SNMP VB match, no name in varbind");
                 rc = 0;
                 continue;
             }
@@ -421,6 +424,8 @@ int snmp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
                  vars != NULL;
                  vars = vars->next_variable)
             {
+                VERB("try to match varbind of type %d", 
+                     vars->type);
                 if (pat_oid_len == vars->name_length && 
                     memcmp(pat_oid, vars->name,
                            pat_oid_len * sizeof(oid)) == 0)
@@ -429,18 +434,18 @@ int snmp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
 
             if (vars == NULL) /* No matching varbind found */
             {
+                VERB("no varbind found for pat num %d", i);
                 rc = ETADNOTMATCH;
                 break;
             }
 
-            pat_value_syntax = asn_get_syntax(pat_var_bind, "value");
+            rc = asn_get_subvalue(pat_var_bind, &pat_vb_value, "value.#plain");
 
-            rc = asn_get_field_data(pat_var_bind, &pat_vb_val_data,
-                                    "value.#plain");
             if (rc == EASNINCOMPLVAL)
             {
+                VERB("There is no value in vb pattern, value matches.");
                 rc = 0; /* value matches - no pattern for it */
-                break;
+                continue;
             }
             else if (rc == EASNOTHERCHOICE)
             {
@@ -452,6 +457,18 @@ int snmp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
             else if (rc != 0)
                 break;
 
+            pat_value_syntax = asn_get_syntax(pat_vb_value, ""); 
+
+            rc = asn_get_field_data(pat_vb_value, &pat_vb_val_data, "");
+            if (rc != 0)
+            {
+                ERROR("Unexpected error getting pat vb value data: %X",
+                      rc);
+                break;
+            }
+            VERB("pattern value ASN syntax %d, got SNMP varbind type %d",
+                 pat_value_syntax, vars->type);
+
             switch (vars->type)
             {
                 case ASN_INTEGER:   
@@ -461,9 +478,12 @@ int snmp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
                     if (pat_value_syntax != INTEGER &&
                         pat_value_syntax != ENUMERATED)
                     {
+                        VERB("SNMP VB match, got int syntax, not match");
                         rc = ETADNOTMATCH;
                         break;
                     }
+                    VERB("SNMP VB match, got int val %d, pat %d", 
+                         *(vars->val.integer), *((int *)pat_vb_val_data));
                     if (*((int *)pat_vb_val_data) != 
                         *(vars->val.integer))
                         rc = ETADNOTMATCH;
@@ -483,22 +503,47 @@ int snmp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
 
                     if (rc != 0)
                     {
+                        VERB("SNMP VB match, got octet str syntax, rc %X",
+                             rc);
+                    } 
+                    else 
+                    {
                         size_t vb_data_len;
 
-                        vb_data_len = asn_get_length(pat_var_bind, "value");
+                        vb_data_len = asn_get_length(pat_vb_value, "");
+
+                        if (pat_value_syntax == OID)
+                            vb_data_len *= 4; 
 
                         if (vb_data_len != vars->val_len)
                         {
+                            VERB("SNMP VB match, length not match"
+                                 "got len %d, pat len %d", 
+                                 vars->val_len, vb_data_len);
                             rc = ETADNOTMATCH;
                             break;
                         }
-                        
-                        if (pat_value_syntax == OID)
-                            vb_data_len *= 4; 
+
                         if (memcmp(pat_vb_val_data, vars->val.string, 
                                    vb_data_len) != 0)
+                        {
+#if 0
+                            char buf[1000], *pt = buf;
+                            int  i;
+
                             rc = ETADNOTMATCH;
+                            pt += sprintf(pt, "got data: ");
+                            for (i = 0; i < vb_data_len; i++)
+                                pt += sprintf(pt, "%02x ", vars->val.string[i]);
+                            pt += sprintf(pt, " pat data: ");
+                            for (i = 0; i < vb_data_len; i++)
+                                pt += sprintf(pt, "%02x ", pat_vb_val_data[i]);
+                            VERB("SNMP VB, fail: %s", buf);
+#endif
+                            rc = ETADNOTMATCH;
+                        }
                     }
+                    VERB("SNMP VB match, values compare rc %X", rc);
                     break;
 
                 default:;
