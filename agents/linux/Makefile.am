@@ -123,7 +123,9 @@ talinuxtmpl_DEPENDENCIES=@TE_DEPENDENCIES@ symtbl.o \
     $(DESTDIR)/$(prefix)/../@host@/lib/libconf_oid.a \
     $(DESTDIR)/$(prefix)/../@host@/lib/libloggerta.a
 
-symtbl.c: $(MY_SYMTBL_OBJECTS) @TE_DEPENDENCIES@
+SYMTBL_LIBS= $(DESTDIR)/$(prefix)/../@host@/lib/lib@TAD@.a
+
+symtbl.c: $(MY_SYMTBL_OBJECTS) $(SYMTBL_LIBS) @TE_DEPENDENCIES@
 	$(srcdir)/../../engine/builder/te_generate_symtbl "${NM}" $@ $^ 
 
 install-exec-hook:
