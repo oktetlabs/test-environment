@@ -32,3 +32,11 @@ to build and run from distributive:
 - automake (at least 1.8)
 - pkg-config (on Debian) or pkgconfig (on RedHat or FC)
 
+
+BASH-completion:
+~~~~~~~~~~~~~~~~
+If you want to use BASH-completion with TE scripts, add in your
+~/.bash_completion file or any appropriate place:
+
+complete -F _configure_func $default ./dispatcher.sh ./run.sh
+
