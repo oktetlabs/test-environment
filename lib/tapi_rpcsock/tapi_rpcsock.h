@@ -235,28 +235,50 @@ rpc_accept(rcf_rpc_server *handle,
     return rpc_accept_gen(handle, s, addr, addrlen,
                           (addrlen == NULL) ? 0 : *addrlen);
 }
+
+typedef enum accept_verdict {
+    CF_REJECT,
+    CF_ACCEPT, 
+    CF_DEFER
+} accept_verdict;    
+
+typedef struct accept_cond {
+    unsigned short port;
+    accept_verdict verdict;
+} accept_cond;    
+
+#define RCF_RPC_MAX_ACCEPT_CONDS    4
+
+/**
+ * WSAAccept() with condition function support. List of conditions
+ * describes the condition function behaivour.
+ */
+extern int rpc_wsa_accept(rcf_rpc_server *handle,
+                          int s, struct sockaddr *addr, 
+                          socklen_t *addrlen, socklen_t raddrlen, 
+                          accept_cond *cond, int cond_num);
 /**
  * Client implementation of AcceptEx()-GetAcceptExSockAddr() call.
  * 
- * @param handle           RPC server handle.
- * @param s                Descriptor of socket that has already been called with
- *                         the listen function.
- * @param s_a              Descriptor of a socket on wich to accept an incomming
- *                         connection.
- * @param buf              Pointer to a buffer that receives the first block of
- *                         data sent.
- * @param rbuflen          Length of buffer passed to the egent.
- * @param len              Length of the buffer passed to the call.
- * @param hevent           Event to be passed to OVERLAPPED structure.
- * @param bytes_received   Number of received data bytes
- * @param laddr            Local address returned by GetAcceptExSockAddr()
- *                         function, wich is called after AcceptEx() returning.
- * @param laddrlen         Size of laddr returned by GetAcceptExSockAddr()
- *                         function.
- * @param raddr            Remote address returned by GetAcceptExSockAddr()
- *                         function, wich is called after AcceptEx() returning. 
- * @param raddrlen         Size of raddr returned by GetAcceptExSockAddr()
- *                         function.
+ * @param handle           RPC server handle
+ * @param s                descriptor of socket that has already been called with
+ *                         the listen function
+ * @param s_a              descriptor of a socket on wich to accept an incomming
+ *                         connection
+ * @param buf              pointer to a buffer that receives the first block of
+ *                         data sent
+ * @param rbuflen          length of buffer passed to the egent
+ * @param len              length of the buffer passed to the call
+ * @param hevent           event to be passed to OVERLAPPED structure
+ * @param bytes_received   number of received data bytes
+ * @param laddr            local address returned by GetAcceptExSockAddr()
+ *                         function, wich is called after AcceptEx() returning
+ * @param laddrlen         size of laddr returned by GetAcceptExSockAddr()
+ *                         function
+ * @param raddr            remote address returned by GetAcceptExSockAddr()
+ *                         function, wich is called after AcceptEx() returning
+ * @param raddrlen         size of raddr returned by GetAcceptExSockAddr()
+ *                         function
  *
  * @retval value returned by AcceptEx() function.
  */

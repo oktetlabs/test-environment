@@ -798,8 +798,113 @@ rpc_accept_gen(rcf_rpc_server *handle,
 
     RETVAL_VAL(out.retval, accept);
 } 
+
+int 
+rpc_wsa_accept(rcf_rpc_server *handle,
+               int s, struct sockaddr *addr, 
+               socklen_t *addrlen, socklen_t raddrlen,
+               accept_cond *cond, int cond_num)
+{
+    rcf_rpc_op       op;
+    socklen_t        save_addrlen = 
+                         (addrlen == NULL) ? (socklen_t)-1 : *addrlen;
+    tarpc_wsa_accept_in  in;
+    tarpc_wsa_accept_out out;
     
-extern int 
+    struct tarpc_accept_cond rpc_cond[RCF_RPC_MAX_ACCEPT_CONDS];
+    
+    if (handle == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        return -1;
+    }
+    
+    if (cond_num > RCF_RPC_MAX_ACCEPT_CONDS)
+    {
+        ERROR("Too many conditions are specified for WSAAccept condition"
+              "function");
+        handle->_errno = TE_RC(TE_RCF, EINVAL);
+        return -1;
+    }
+    
+    if ((cond == NULL && cond_num > 0) ||
+        (cond != NULL && cond_num == 0))
+    {
+        handle->_errno = TE_RC(TE_RCF, EINVAL);
+        return -1;
+    }
+
+    op = handle->op;
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.fd = s;
+    if (addrlen != NULL && handle->op != RCF_RPC_WAIT)
+    {
+        in.len.len_len = 1;
+        in.len.len_val = addrlen;
+    }
+    if (addr != NULL && handle->op != RCF_RPC_WAIT)
+    {
+        if (raddrlen >= SA_COMMON_LEN)
+        {
+            in.addr.sa_family = addr_family_h2rpc(addr->sa_family);
+            in.addr.sa_data.sa_data_len = raddrlen - SA_COMMON_LEN;
+            in.addr.sa_data.sa_data_val = addr->sa_data;
+        }
+        else
+        {
+            in.addr.sa_family = RPC_AF_UNSPEC;
+            in.addr.sa_data.sa_data_len = 0;
+            /* Any not-NULL pointer is suitable here */
+            in.addr.sa_data.sa_data_val = (uint8_t *)addr;
+        }
+    }
+    
+    if (cond != NULL && handle->op != RCF_RPC_WAIT)
+    {
+        int i;
+        
+        in.cond.cond_len = cond_num;
+        in.cond.cond_val = rpc_cond;
+        for (i = 0; i < cond_num; i++)
+        {
+            rpc_cond[i].port = cond[i].port;
+            rpc_cond[i].verdict = cond[i].verdict == CF_ACCEPT ?
+                                  TARPC_CF_ACCEPT :
+                                  cond[i].verdict == CF_REJECT ?
+                                  TARPC_CF_REJECT : TARPC_CF_DEFER;
+        }
+    }
+    
+    rcf_rpc_call(handle, _wsa_accept, &in, (xdrproc_t)xdr_tarpc_accept_in,
+                 &out, (xdrproc_t)xdr_tarpc_accept_out);
+    
+    if (RPC_CALL_OK)
+    {
+        if (addr != NULL && out.addr.sa_data.sa_data_val != NULL)
+        {
+            memcpy(addr->sa_data, out.addr.sa_data.sa_data_val, 
+                   out.addr.sa_data.sa_data_len);
+            addr->sa_family = addr_family_rpc2h(out.addr.sa_family);
+        }
+        
+        if (addrlen != NULL && out.len.len_val != NULL)
+            *addrlen = out.len.len_val[0];
+    }
+    
+    RING("RPC (%s, %s)%s: WSAAccept(%d, %p[%u], %p(%u)) -> %d (%s) "
+         "peer=%s addrlen=%u",
+         handle->ta, handle->name, rpcop2str(op),
+         s, addr, raddrlen, addrlen, save_addrlen,
+         out.retval, errno_rpc2str(RPC_ERRNO(handle)),
+         sockaddr2str(addr), (addrlen == NULL) ? (socklen_t)-1 : *addrlen);
+
+    RETVAL_VAL(out.retval, wsa_accept);
+}               
+
+    
+int 
 rpc_accept_ex(rcf_rpc_server *handle,
               int s, int s_a,
               void *buf,
