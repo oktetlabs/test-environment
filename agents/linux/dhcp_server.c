@@ -1318,8 +1318,7 @@ RCF_PCH_CFG_NODE_RW(node_ds_dhcpserver, "dhcpserver",
 void
 ds_init_dhcp_server(rcf_pch_cfg_object **last)
 {
-    int     rc = 0;
-    te_bool restart = FALSE;
+    int rc = 0;
 
     /* Find DHCP server executable */
     rc = find_file(dhcp_server_n_execs, dhcp_server_execs, TRUE);
@@ -1381,7 +1380,7 @@ ds_init_dhcp_server(rcf_pch_cfg_object **last)
         {
             ERROR("Failed to open '%s' for writing: %s",
                   dhcp_server_leases, strerror(errno));
-            return TE_RC(TE_TA_LINUX, errno);
+            return;
         }
         fclose(f);
     }
