@@ -42,6 +42,12 @@ typedef void *rpc_wsaevent;
 /* Windows WSAOVERLAPPED structure */
 typedef void *rpc_overlapped;
 
+/* Windows HWND */
+typedef void *rpc_hwnd;
+
+/* Windows HANDLE */
+typedef void *rpc_handle;
+
 /* WSASocket() */
 extern int rpc_wsa_socket(rcf_rpc_server *rpcs,
                           rpc_socket_domain domain, rpc_socket_type type,
@@ -156,6 +162,53 @@ extern int rpc_close_event(rcf_rpc_server *rpcs, rpc_wsaevent hevent);
 
 /* WSAResetEvent() */
 extern int rpc_reset_event(rcf_rpc_server *rpcs, rpc_wsaevent hevent);
+
+/* WSASetEvent() */
+extern int rpc_set_event(rcf_rpc_server *rpcs, rpc_wsaevent hevent);
+
+/* WSAAddressToString */
+extern int rpc_wsa_address_to_string(rcf_rpc_server *rpcs,
+                                     struct sockaddr *addr,
+                                     socklen_t addrlen, uint8_t *info,
+                                     int info_len, char *addrstr,
+                                     ssize_t *addrstr_len);
+
+/* WSAAsyncGetHostByAddr */
+rpc_handle
+rpc_wsa_async_get_host_by_addr(rcf_rpc_server *rpcs, rpc_hwnd hwnd,
+                               unsigned int wmsg, char *addr,
+                               ssize_t addrlen, rpc_socket_type type,
+                               uint64_t buf, ssize_t buflen);
+
+/* WSAAsyncGetHostByName */
+rpc_handle
+rpc_wsa_async_get_host_by_name(rcf_rpc_server *rpcs, rpc_hwnd hwnd,
+                               unsigned int wmsg, char *name,
+                               uint64_t buf, ssize_t buflen);
+
+/* WSAAsyncGetProtoByName */
+rpc_handle
+rpc_wsa_async_get_proto_by_name(rcf_rpc_server *rpcs, rpc_hwnd hwnd,
+                                unsigned int wmsg, char *name,
+                                uint64_t buf, ssize_t buflen);
+
+/* WSAAsyncGetProtoByNumber */
+rpc_handle
+rpc_wsa_async_get_proto_by_number(rcf_rpc_server *rpcs, rpc_hwnd hwnd,
+                                  unsigned int wmsg, int number,
+                                  uint64_t buf, ssize_t buflen);
+
+/* WSAAsyncGetServByName */
+rpc_handle
+rpc_wsa_async_get_serv_by_name(rcf_rpc_server *rpcs, rpc_hwnd hwnd,
+                               unsigned int wmsg, char *name, char *proto,
+                               uint64_t buf, ssize_t buflen);
+
+/* WSAAsyncGetServByPort */
+rpc_handle
+rpc_wsa_async_get_serv_by_port(rcf_rpc_server *rpcs, rpc_hwnd hwnd,
+                               unsigned int wmsg, int port, char *proto,
+                               uint64_t buf, ssize_t buflen);
 
 /* Create WSAOVERLAPPED */
 extern rpc_overlapped rpc_create_overlapped(rcf_rpc_server *rpcs,
@@ -288,8 +341,6 @@ extern int rpc_wait_multiple_events(rcf_rpc_server *rpcs,
                                     te_bool alertable, int rcount);
 
 /* Window objects */
-
-typedef void *rpc_hwnd;
 
 /** CreateWIndow() */
 extern rpc_hwnd rpc_create_window(rcf_rpc_server *rpcs);
