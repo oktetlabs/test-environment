@@ -78,10 +78,12 @@ rcf_pch_vread(struct rcf_comm_connection *conn,
     if (strcmp(var, "time") == 0)
     {
         struct timeval tv;
+        time_t         t;
         struct tm     *tm;
 
         gettimeofday(&tv, NULL);
-        tm = localtime(&tv.tv_sec);
+        t = (time_t)(tv.tv_sec);
+        localtime_r(&t, &tm);
 
         SEND_ANSWER("0 %02d:%02d:%02d",
                     tm->tm_hour, tm->tm_min, tm->tm_sec);
@@ -222,12 +224,14 @@ rcf_pch_vwrite(struct rcf_comm_connection *conn,
     if (strcmp(var, "time") == 0)
     {
         struct timeval tv;
+        time_t         t;
         struct tm     *tm;
         
         WARN("My variable =");
         
-	gettimeofday(&tv, NULL);
-        tm = localtime(&tv.tv_sec);
+        gettimeofday(&tv, NULL);
+        t = (time_t)(tv.tv_sec);
+        localtime_r(&t, &tm);
         if (sscanf(va_arg(ap, const char *), "%02d:%02d:%02d",
                    &(tm->tm_hour), &(tm->tm_min), &(tm->tm_sec)) != 3)
         {
@@ -239,8 +243,8 @@ rcf_pch_vwrite(struct rcf_comm_connection *conn,
 #ifndef VGDEBUG /* Valgrind debugging */
         settimeofday(&tv, NULL);
 #else
-        ERROR("Ignore set of time since Valgrind "
-                          "debugging is enabled in build");
+        ERROR("Ignore set of time since Valgrind debugging is enabled "
+              "in build");
 #endif
         va_end(ap);
         SEND_ANSWER("0");
