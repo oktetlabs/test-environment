@@ -138,7 +138,7 @@ extern int ndn_forw_action_asn_to_plain(const asn_value *val,
  * @return zero on success or error code.
  */ 
 extern int ndn_forw_action_plain_to_asn(
-                                ndn_forw_action_plain *forw_action,
+                                const ndn_forw_action_plain *forw_action,
                                 asn_value **val);
 
 extern asn_type ndn_forw_action_s;

@@ -475,7 +475,7 @@ ndn_forw_action_asn_to_plain(const asn_value *val,
  * @return zero on success or error code.
  */ 
 int 
-ndn_forw_action_plain_to_asn(ndn_forw_action_plain *forw_action,
+ndn_forw_action_plain_to_asn(const ndn_forw_action_plain *forw_action,
                              asn_value **result)
 {
     int rc = 0;
@@ -536,7 +536,9 @@ ndn_forw_action_plain_to_asn(ndn_forw_action_plain *forw_action,
                 break; /* nothing to do */
 
             case FORW_DELAY_CONSTANT:
-                forw_action->delay.max = forw_action->delay.min;
+                /* explicetly discard 'const' qualifier */
+                ((ndn_forw_action_plain *)forw_action)->delay.max =
+                    forw_action->delay.min;
                 /* fall through */
             case FORW_DELAY_RAND_CONT:
                 rc = asn_write_value_field(val, &forw_action->delay.min,
