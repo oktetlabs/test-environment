@@ -249,11 +249,12 @@ tarpc_1_freeresult(SVCXPRT *transp, xdrproc_t xdr_result, caddr_t result)
  * with it.
  *
  * @param name  name of the server
+ * @param pid   pid of the server
  *
  * @return status code
  */
 int 
-tarpc_add_server(char *name)
+tarpc_add_server(char *name, int pid)
 {
     struct sockaddr_un addr;
     
@@ -310,6 +311,7 @@ tarpc_add_server(char *name)
     }
     
     tmp->next = srv_list;
+    tmp->pid = pid;
     srv_list = tmp;
 
     VERB("RPC Server '%s' successfully added to the list", name);
