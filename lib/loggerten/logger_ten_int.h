@@ -384,8 +384,8 @@ log_message_va(uint8_t **msg_buf, size_t *msg_buf_len, uint16_t level,
                             log_message_int(msg_buf, msg_buf_len,
                                             TE_LL_ERROR,
                                             te_lgr_entity, TE_LGR_USER,
-                                            "File %s copying error %X",
-                                            tmp, errno);
+                                            "Rename of %s to %s error: %s",
+                                            tmp, new_path, strerror(errno));
                             return;
                         }
 
