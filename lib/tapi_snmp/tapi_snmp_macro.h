@@ -276,7 +276,7 @@ extern "C" {
  *                    entry
  * @param dimension_  Pointer to the location of the table dimension (OUT)
  */ 
-#define SNMP_GET_TABLE_DIMENSION(label_, dimension_) \
+#define TAPI_SNMP_GET_TABLE_DIMENSION(label_, dimension_) \
     do {                                                                 \
         int             rc_;                                             \
         tapi_snmp_oid_t oid_;                                            \
