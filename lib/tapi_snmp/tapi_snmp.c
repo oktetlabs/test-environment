@@ -59,8 +59,8 @@
 #define DEBUG 0
 
 
-static inline const char*
-oid2str (const tapi_snmp_oid_t *oid )
+const char*
+print_oid (const tapi_snmp_oid_t *oid )
 {
     static char buf[256];
     char *p = buf; 
@@ -284,7 +284,7 @@ tapi_snmp_packet_to_plain(asn_value *pkt, tapi_snmp_message_t *snmp_message)
 
         rc = asn_read_value_field (var_bind, &(snmp_message->vars[i].name.id),
                                     &len, "name.#plain"); 
-        VERB ("%s; var N %d ,oid %s", i, oid2str(&(snmp_message->vars[i])));
+        VERB ("%s; var N %d ,oid %s", i, print_oid(&(snmp_message->vars[i])));
 
         if (rc == 0)
             rc = asn_get_choice(var_bind, "value.#plain", choice_label, CL_MAX);
@@ -767,7 +767,7 @@ tapi_snmp_getbulk(const char *ta, int sid, int csap_id,
             for (i = 0; i < *num; i++)
             {
                 tapi_snmp_copy_varbind(&varbind[i], &msg.vars[i]);
-                VERB ("GETBULK, variable: %s", oid2str(&(varbind[i].name)));
+                VERB ("GETBULK, variable: %s", print_oid(&(varbind[i].name)));
             }
             tapi_snmp_free_message(&msg);
         }
@@ -791,7 +791,7 @@ tapi_snmp_walk(const char *ta, int sid, int csap_id,
         return TE_RC(TE_TAPI, ETEWRONGPTR); 
 
     next_oid = base_oid = *oid;
-    VERB("%s for oid %s", __FUNCTION__, oid2str(oid));
+    VERB("%s for oid %s", __FUNCTION__, print_oid(oid));
     
     while (1) 
     {
@@ -806,7 +806,7 @@ tapi_snmp_walk(const char *ta, int sid, int csap_id,
 
         next_oid = vb.name;
 
-        VERB("walk go on, oid %s", oid2str(&next_oid));
+        VERB("walk go on, oid %s", print_oid(&next_oid));
 
         if (tapi_snmp_is_sub_oid(&base_oid, &vb.name))
         {
@@ -846,7 +846,7 @@ tapi_snmp_column_list_callback(const tapi_snmp_varbind_t *varbind,
 
     tapi_snmp_copy_varbind(&(l_p->next->vb), varbind);
     VERB ("%s, got reply with OID: %s", 
-            __FUNCTION__, oid2str(&(varbind->name)));
+            __FUNCTION__, print_oid(&(varbind->name)));
 
     return 0;
 }
@@ -937,7 +937,7 @@ tapi_snmp_get_table(const char *ta, int sid, int csap_id,
 
     memcpy(&entry, table_oid, sizeof(entry));
 
-    VERB("GET TABLE called for oid %s", oid2str(&entry)); 
+    VERB("GET TABLE called for oid %s", print_oid(&entry)); 
 
     entry_node = get_tree(entry.id, entry.length, get_tree_head());
 
@@ -1027,7 +1027,7 @@ tapi_snmp_get_table(const char *ta, int sid, int csap_id,
 
     memset (&ti_list, 0, sizeof(ti_list));
 
-    VERB("in gettable, now walk on %s", oid2str(&entry));
+    VERB("in gettable, now walk on %s", print_oid(&entry));
 
     /* Now 'entry' contains OID of table column. */
     rc = tapi_snmp_walk(ta, sid, csap_id, &entry,  &ti_list,
@@ -1088,7 +1088,7 @@ tapi_snmp_get_table(const char *ta, int sid, int csap_id,
                                     &vb_num, vb + got_varbinds);
 
             VERB ("table getbulk return %x, got %d vbs for oid %s\n  ", 
-                    rc, vb_num, oid2str(&(begin_of_portion)));
+                    rc, vb_num, print_oid(&(begin_of_portion)));
             if (rc) break; 
             rest_varbinds -= vb_num;
             got_varbinds  += vb_num;
@@ -1118,13 +1118,13 @@ tapi_snmp_get_table(const char *ta, int sid, int csap_id,
 
             int row_num;
 
-            VERB("table entry oid: %s, ti_len %d", oid2str(&entry), ti_len);
+            VERB("table entry oid: %s, ti_len %d", print_oid(&entry), ti_len);
 
             for (i = 0; i < table_cardinality; i ++)
             {
                 int table_offset;
 
-                VERB("try to add varbind with oid %s", oid2str(&(vb[i].name))); 
+                VERB("try to add varbind with oid %s", print_oid(&(vb[i].name))); 
 
                 if (!tapi_snmp_is_sub_oid(&entry, &vb[i].name))
                 {

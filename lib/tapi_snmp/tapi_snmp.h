@@ -593,6 +593,16 @@ extern int tapi_snmp_trap_recv_start(const char *ta_name, int sid,
                                      unsigned int timeout, int num);
 
 
+/**
+ * Print SNMP OID struct to string and return pointer to this string. 
+ * Note, that buffer with string is static and behaviour of this function 
+ * in multithread usage may be unpredictable. 
+ *
+ * @param oid       - pointer to structure with OID to be printed. 
+ *
+ * @return pointer to buffer with printed OID. 
+ */
+extern const char* print_oid (const tapi_snmp_oid_t *oid);
 
 #ifdef __cplusplus
 } /* extern "C" */
