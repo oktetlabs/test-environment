@@ -508,6 +508,8 @@ ds_xinetd_service_addr_get(const char *service, char *value)
 
 #ifdef WITH_DHCP_SERVER
 
+extern rcf_pch_cfg_object node_ds_dhcpserver;
+
 /*
  * List of options, which should be quoted automatilally; for other
  * option quotes should be specified in value, if necessary.
@@ -1144,7 +1146,7 @@ init_omapi()
         isc_result_t status = x;                        \
         if (status != ISC_R_SUCCESS)                    \
         {                                               \
-            free_dhcp_data();                           \
+            dhcp_server_shutdown();                     \
             VERB("cannot interact with DHCP daemon\n"); \
             return TE_RC(TE_TA_LINUX, EPERM);           \
         }                                               \
@@ -2169,8 +2171,8 @@ dhcp_server_init()
 
     if (ta_system("/usr/sbin/dhcpd -t >/dev/null 2>&1") != 0)
     {
-        VERB("bad or absent /etc/dhcpd.conf - "
-                  "DHCP will not be available\n");
+        VERB("Bad or absent /etc/dhcpd.conf - DHCP will not be "
+             "available");
         node_ds_dhcpserver.son = NULL;
         return 0;
     }
@@ -2216,7 +2218,7 @@ dhcp_server_init()
 
     if (rc != 0)
     {
-        free_dhcp_data();
+        dhcp_server_shutdown();
         return TE_RC(TE_TA_LINUX, rc);
     }
 
