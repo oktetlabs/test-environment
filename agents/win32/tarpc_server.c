@@ -1010,6 +1010,7 @@ TARPC_FUNC(transmit_file, {},
 
     if (in->overlapped != 0)
     {
+        overlapped = (rpc_overlapped *)in->overlapped;
         rpc_overlapped_free_memory(overlapped);
         if ((overlapped->buffers = calloc(2, sizeof(WSABUF))) == NULL)
         {
