@@ -83,10 +83,23 @@ map_name_to_level(const char *name)
     return 0;
 }
 
+/**
+ * Log host serial output via Logger component
+ *
+ * @param ready       Parameter release semaphore
+ * @param argc        Number of string arguments
+ * @param argv        String arguments:
+ *                    - log user
+ *                    - log level
+ *                    - message interval
+ *                    - tty name
+ *                    - sharing mode (opt)
+ */
 int 
 log_serial(void *ready, int argc, char *argv[])
 {
     char           user[64] = "";
+    char           tmp[PATH_MAX + 16];
     char          *buffer; 
     char          *current;
     char          *fence;
@@ -118,6 +131,36 @@ log_serial(void *ready, int argc, char *argv[])
     if (level == 0)
     {
         ERROR("Error level %s is unknown", argv[1]);
+        sem_post(ready);
+        return TE_RC(TE_TA_LINUX, EINVAL);
+    }
+
+
+    if (argc < 5 || strcmp(argv[4], "exclusive") == 0)
+    {
+        sprintf(tmp, "fuser -s %s", argv[3]);
+        if (ta_system(tmp) == 0)
+        {
+            ERROR("%s is already is use, won't log", argv[3]);
+            sem_post(ready);
+            return TE_RC(TE_TA_LINUX, EBUSY);
+        }
+    }
+    else if (strcmp(argv[4], "force") == 0)
+    {
+        sprintf(tmp, "fuser -s -k %s", argv[3]);
+        if (ta_system(tmp) == 0)
+            WARN("%s was in use, killing the process", argv[3]);
+    }
+    else if (strcmp(argv[4], "shared") == 0)
+    {
+        sprintf(tmp, "fuser -s %s", argv[3]);
+        if (ta_system(tmp) == 0)
+            WARN("%s is in use, logging anyway", argv[3]);
+    }
+    else
+    {
+        ERROR("Invalid sharing mode '%s'", argv[4]);
         sem_post(ready);
         return TE_RC(TE_TA_LINUX, EINVAL);
     }
