@@ -960,6 +960,7 @@ alloc_and_get_var_arg(xmlNodePtr node, te_bool is_var, test_vars_args *list)
         ERROR("malloc(%u) failed", sizeof(*p));
         return ENOMEM;
     }
+    p->handdown = !is_var;
     TAILQ_INIT(&p->values);
     TAILQ_INSERT_TAIL(list, p, links);
 
@@ -974,19 +975,6 @@ alloc_and_get_var_arg(xmlNodePtr node, te_bool is_var, test_vars_args *list)
     ref = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("ref")));
     /* 'value' is optional */
     value = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("value")));
-
-    if (is_var)
-    {
-        /* 'handdown' is optional, default value is false */
-        p->handdown = FALSE;
-        rc = get_bool_prop(node, "handdown", &p->handdown);
-        if (rc != 0 && rc != ENOENT)
-            return rc;
-    }
-    else
-    {
-        p->handdown = TRUE;
-    }
 
     node = xmlNodeChildren(node);
     while ((node != NULL) &&
@@ -1087,10 +1075,14 @@ get_session(xmlNodePtr node, tester_cfg *cfg, test_session *session,
     node = xmlNodeChildren(node);
 
     /* Get information about variables */
-    while (node != NULL &&
-           xmlStrcmp(node->name, CONST_CHAR2XML("var")) == 0)
+    while (node != NULL)
     {
-        rc = alloc_and_get_var_arg(node, TRUE, &session->vars);
+        if (xmlStrcmp(node->name, CONST_CHAR2XML("var")) == 0)
+            rc = alloc_and_get_var_arg(node, TRUE, &session->vars);
+        else if (xmlStrcmp(node->name, CONST_CHAR2XML("arg")) == 0)
+            rc = alloc_and_get_var_arg(node, FALSE, &session->vars);
+        else
+            break;
         if (rc != 0)
             return rc;
         node = xmlNodeNext(node);
