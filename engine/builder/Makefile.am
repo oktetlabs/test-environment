@@ -8,7 +8,7 @@ AM_LDFLAGS=@TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/lib
 
 mybindir=$(prefix)/bin
 
-mybin_PROGRAMS=te_stdouterr
+bin_PROGRAMS=te_stdouterr
 
 te_stdouterr_SOURCES=te_stdouterr.c
 te_stdouterr_LDADD=-llogger_ten -lipc @TE_LDADD@
