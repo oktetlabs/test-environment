@@ -238,6 +238,8 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
                 asn_free_value(*packet);
         }
     }
+    else if (rc == EASNINCOMPLVAL)
+        rc = 0;
 
     if (rc == 0 && csap_descr->command & TAD_COMMAND_RESULTS)
     {
