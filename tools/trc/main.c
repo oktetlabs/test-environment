@@ -37,6 +37,9 @@
 #include <stdlib.h>
 #include <string.h>
 #endif
+#if HAVE_ERRNO_H
+#include <errno.h>
+#endif
 #if HAVE_POPT_H
 #include <popt.h>
 #else
@@ -52,8 +55,8 @@
 te_bool trc_update_db = FALSE;
 /** Should database be initialized from scratch */
 te_bool trc_init_db = FALSE;
-/** Name of the tag to get specific expected result */
-char *trc_tag = NULL;
+/** List of tags to get specific expected result */
+trc_tags tags;
 
 te_bool trc_quiet = FALSE;
 
@@ -78,6 +81,33 @@ enum {
     TRC_OPT_TXT,
     TRC_OPT_TAG,
 };
+
+/**
+ * Add tag in the end of the TRC tags list.
+ *
+ * @param name      Name of the tag
+ *
+ * @return Status code.
+ */
+static int
+trc_add_tag(const char *name)
+{
+    trc_tag *p = calloc(1, sizeof(*p));
+
+    if (p == NULL)
+    {
+        ERROR("calloc(1, %u) failed", 1, sizeof(*p));
+        return ENOMEM;
+    }
+    TAILQ_INSERT_TAIL(&tags, p, links);
+    p->name = strdup(name);
+    if (p->name == NULL)
+    {
+        ERROR("strdup(%s) failed", name);
+        return ENOMEM;
+    }
+    return 0;
+}
 
 /**
  * Process command line options and parameters specified in argv.
@@ -164,7 +194,11 @@ process_cmd_line_opts(int argc, char **argv)
                 break;
             
             case TRC_OPT_TAG:
-                trc_tag = strdup(poptGetOptArg(optCon));
+                if (trc_add_tag(poptGetOptArg(optCon)) != 0)
+                {
+                    poptFreeContext(optCon);
+                    return EXIT_FAILURE;
+                }
                 break;
             
             case TRC_OPT_VERSION:
@@ -310,6 +344,7 @@ main(int argc, char *argv[])
 
     memset(&trc_db, 0, sizeof(trc_db));
     TAILQ_INIT(&trc_db.tests.head);
+    TAILQ_INIT(&tags);
 
     /* Process and validate command-line options */
     if (process_cmd_line_opts(argc, argv) != EXIT_SUCCESS)
@@ -322,6 +357,13 @@ main(int argc, char *argv[])
     if (trc_xml_log_fn == NULL)
     {
         ERROR("Missing name of the file with XML log to analyze");
+        goto exit;
+    }
+
+    /* Add tag of the default result */
+    if (trc_add_tag("result") != 0)
+    {
+        ERROR("Failed to add tag of the default result");
         goto exit;
     }
 

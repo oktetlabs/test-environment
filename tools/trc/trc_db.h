@@ -40,6 +40,17 @@
 #include "te_defs.h"
 
 
+/** Named tag */
+typedef struct trc_tag {
+    TAILQ_ENTRY(trc_tag)    links;  /**< List links */
+
+    char                   *name;   /**< Tag name */
+} trc_tag;
+
+/** List of named tags */
+typedef TAILQ_HEAD(trc_tags, trc_tag) trc_tags;
+
+
 /** Enumeration of possible test results */
 typedef enum trc_test_result {
     TRC_TEST_PASSED,      /**< Test should pass */
@@ -164,7 +175,7 @@ extern te_bool trc_update_db;
 /** Should database be initialized from scratch */
 extern te_bool trc_init_db;
 /** Name of the tag to get specific expected result */
-extern char *trc_tag;
+extern trc_tags tags;
 
 
 /**

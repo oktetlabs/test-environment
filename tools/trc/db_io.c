@@ -241,6 +241,7 @@ alloc_and_get_test_iter(xmlNodePtr node, trc_test_type type, test_iters *iters)
     int         rc;
     test_iter  *p;
     char       *tmp;
+    trc_tag    *tag;
 
     p = calloc(1, sizeof(*p));
     if (p == NULL)
@@ -256,10 +257,11 @@ alloc_and_get_test_iter(xmlNodePtr node, trc_test_type type, test_iters *iters)
     TAILQ_INIT(&p->tests.head);
     TAILQ_INSERT_TAIL(&iters->head, p, links);
     
-    if ((trc_tag == NULL) ||
-        ((rc = get_result(node, trc_tag, &p->exp_result)) == ENOENT))
+    for (tag = tags.tqh_first; tag != NULL; tag = tag->links.tqe_next)
     {
-        rc = get_result(node, "result", &p->exp_result);
+        rc = get_result(node, tag->name, &p->exp_result);
+        if (rc != ENOENT)
+            break;
     }
     if (rc != 0)
     {
