@@ -280,13 +280,6 @@ daemon_set(unsigned int gid, const char *oid, const char *value)
         return TE_RC(TE_TA_LINUX, ETESHCMD);
     }
     
-    if (value[0] == '0')
-    {
-        sprintf(buf, "rm `find /var/run/ -name %s.pid` >/dev/null 2>&1", 
-                daemon_name);
-        ta_system(buf);
-    }
-
     return 0;
 }
 
@@ -1656,7 +1649,6 @@ ds_init_vncserver(rcf_pch_cfg_object **last)
 static char *smtp_servers[] = {
     "sendmail",
     "exim",
-    "exim3",
     "exim4",
     "postfix"
 };    
