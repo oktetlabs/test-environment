@@ -1954,7 +1954,9 @@ tapi_snmp_get_table(const char *ta, int sid, int csap_id,
         }
         else /* all index columns are non-accessible, find any element */
         {
-            tapi_snmp_varbind_t vb;
+            tapi_snmp_varbind_t  vb;
+            struct tree         *tbl_field;
+            oid                  subid;
 
             INFO("Try to find any readable column");
             if (entry_node->child_list == NULL)
@@ -1976,11 +1978,70 @@ tapi_snmp_get_table(const char *ta, int sid, int csap_id,
             {
                 RING("%s: get-next obtain OID '%s' => table is EMPTY",
                      __FUNCTION__, print_oid(&entry));
+                *num = 0;
                 return 0;
             }
             INFO("%s: get-next on entry got %s", 
                  __FUNCTION__, print_oid(&vb.name));
-            tapi_snmp_append_oid(&entry, 1, vb.name.id[entry.length]);
+            
+            VERB("Check if we deal with read-create Table");
+            
+            {
+                int tmp = vb.name.length;
+                
+                VERB("VB OID %s, SubID = %d", print_oid(&vb.name),
+                     vb.name.id[entry.length]);
+                vb.name.length = entry.length + 1;
+                VERB("which is %s", print_oid(&vb.name));
+                vb.name.length = tmp;
+            }
+
+            /* Check if it is read-create table */
+            subid = vb.name.id[entry.length];
+            for (tbl_field = entry_node->child_list;
+                 tbl_field != NULL;
+                 tbl_field = tbl_field->next_peer)
+            {
+                VERB("Check if %s object ours", tbl_field->label);
+                if (tbl_field->subid == subid)
+                {
+                    VERB("Yes, with access = %d", tbl_field->access);
+
+                    /* We found object in MIB tree for returned leaf */
+                    if (tbl_field->access == TAPI_SNMP_MIB_ACCESS_CREATE)
+                    {
+                        /*
+                         * In read-create tables some fields can be
+                         * empty in some lines so that we need to
+                         * go to the last field of the table row, where we
+                         * will get RowStatus field, which is present in
+                         * each row.
+                         *
+                         * In NET-SNMP tree data structure this entry 
+                         * is the first in 'child_list' list, i.e.
+                         * nodes are in reverse order.
+                         */
+
+                        /*
+                         * tbl_field now point to RowStatus field of 
+                         * the table, so let's define the number of
+                         * rows in the table by using this field.
+                         */
+                        tapi_snmp_append_oid(&entry, 1,
+                                             entry_node->child_list->subid);
+                        break;
+                    }
+                }
+            }
+
+            if (tbl_field == NULL)
+            {
+                /*
+                 * This is not read-create Table, so we can use any 
+                 * field to define the number of rows in the table
+                 */
+                tapi_snmp_append_oid(&entry, 1, vb.name.id[entry.length]);
+            }
         }
     }
     else
