@@ -14,10 +14,8 @@
             <arg name="num_pkts">
                 <value>2</value>
                 <value>5</value>
-                <value>20</value>
             </arg>
             <arg name="timeout"> 
-                <value>20000</value><!-- in milliseconds -->
                 <value>2000</value><!-- in milliseconds -->
                 <value>200</value><!-- in milliseconds -->
             </arg>
