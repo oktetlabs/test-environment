@@ -3638,11 +3638,6 @@ rpc_ioctl(rcf_rpc_server *handle,
                 /* Copy flags */
                 in.req.req_val[0].ioctl_request_u.req_arpreq.rpc_arp_flags =
                     arp_fl_h2rpc(((struct arpreq *)arg)->arp_flags);
-                /* Copy device */
-                memcpy(
-                    in.req.req_val[0].ioctl_request_u.req_arpreq.rpc_arp_dev,
-                    ((struct arpreq *)arg)->arp_dev,
-                    sizeof(((struct arpreq *)arg)->arp_dev));
             }
             break;
         case RPC_SIOCDARP:
@@ -3654,11 +3649,18 @@ rpc_ioctl(rcf_rpc_server *handle,
             }
             break;
         case RPC_SIOCGARP:
-            in.access = IOCTL_WR;
+            in.access = IOCTL_RD;
             if (arg != NULL)
             {
                 in.req.req_val[0].type = IOCTL_ARPREQ;
+                /* Copy protocol address */
                 FILL_ARPREQ_ADDR(pa);
+                /* Copy HW address */
+                FILL_ARPREQ_ADDR(ha);
+                 /* Copy device */
+                strcpy(
+                    in.req.req_val[0].ioctl_request_u.req_arpreq.rpc_arp_dev,
+                    ((struct arpreq *)arg)->arp_dev);
             }
             break;
 #undef FILL_ARPREQ_ADDR
@@ -3765,17 +3767,15 @@ rpc_ioctl(rcf_rpc_server *handle,
             }
             case IOCTL_ARPREQ:
             {
-                if (request != RPC_SIOCGARP)
-                    break;
-                ((struct arpreq *)arg)->arp_ha.sa_family =
+               ((struct arpreq *)arg)->arp_ha.sa_family =
                     addr_family_rpc2h(out.req.req_val[0].ioctl_request_u.
                         req_arpreq.rpc_arp_ha.sa_family);
-                 memcpy(((struct arpreq *)arg)->arp_ha.sa_data,
+                memcpy(((struct arpreq *)arg)->arp_ha.sa_data,
                          out.req.req_val[0].ioctl_request_u.
                          req_arpreq.rpc_arp_ha.sa_data.sa_data_val,
                          out.req.req_val[0].ioctl_request_u.
                          req_arpreq.rpc_arp_ha.sa_data.sa_data_len);
-                 ((struct arpreq *)arg)->arp_flags =
+                ((struct arpreq *)arg)->arp_flags =
                      arp_fl_rpc2h(out.req.req_val[0].ioctl_request_u.
                                   req_arpreq.rpc_arp_flags);
                 break;
@@ -3873,16 +3873,15 @@ rpc_ioctl(rcf_rpc_server *handle,
             switch (request)
             {
                 case RPC_SIOCGARP:
+                {
                     snprintf(arpreq_buf + strlen(arpreq_buf),
                              sizeof(arpreq_buf) - strlen(arpreq_buf),
                              "get: ");
-                {
-                     snprintf(arpreq_buf + strlen(arpreq_buf),
+                    snprintf(arpreq_buf + strlen(arpreq_buf),
                              sizeof(arpreq_buf) - strlen(arpreq_buf),
                              "protocol address %s, ",
                               inet_ntoa(SIN(&(((struct arpreq *)arg)->
                                             arp_pa))->sin_addr));
-
                      snprintf(arpreq_buf + strlen(arpreq_buf),
                              sizeof(arpreq_buf) - strlen(arpreq_buf),
                              "HW address: %02x:%02x:%02x:%02x:%02x:%02x ",
@@ -3894,7 +3893,14 @@ rpc_ioctl(rcf_rpc_server *handle,
                              (unsigned char)((struct arpreq *)arg)->arp_ha.sa_data[5]);
                     break;
                 }
+                case RPC_SIOCSARP:
+                case RPC_SIOCDARP:
+                    req_val = "";
+                    break;
+                default:
+                    req_val = " unknown request ";
             }
+            break;
         }
         default:
             req_val = "";
