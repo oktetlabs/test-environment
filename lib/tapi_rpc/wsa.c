@@ -2378,6 +2378,8 @@ void rpc_free_wsabuf(rcf_rpc_server *rpcs, rpc_ptr wsabuf)
 }
 
 /**
+ * WSAConnect() call. Can be used with nonblocking sockets.
+ *
  * @param caller_wsabuf           A pointer to the WSABUF structure in the
  *                                TA virtual address space.
  * @param callee_wsabuf           A pointer to the WSABUF structure in the
