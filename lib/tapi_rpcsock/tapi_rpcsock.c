@@ -5415,7 +5415,7 @@ rpc_peek_message(rcf_rpc_server *handle,
 
     RING("RPC (%s,%s): peek_message(%p) -> %d (%s)",
          handle->ta, handle->name,
-         hwnd, out->retval, errno_rpc2str(RPC_ERRNO(handle)));
+         hwnd, out.retval, errno_rpc2str(RPC_ERRNO(handle)));
          
     *s = out.sock;
     *event = out.event;
@@ -5732,7 +5732,7 @@ rpc_wait_multiple_events(rcf_rpc_server *handle,
          count, events, wait_all ? "true" : "false", timeout, 
          alertable ? "true" : "false", out.retval,
          errno_rpc2str(RPC_ERRNO(handle)));
-
+#if 0
     if (RPC_CALL_OK)
     {
         switch (out.retval)
@@ -5754,6 +5754,6 @@ rpc_wait_multiple_events(rcf_rpc_server *handle,
                              (out.retval - TARCPC_WSA_WAIT_EVENT_0);
         }
     }
-    
+#endif    
     RETVAL_VAL(out.retval, wait_multiple_events);
 }
