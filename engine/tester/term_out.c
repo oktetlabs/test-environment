@@ -54,6 +54,9 @@
 #include "internal.h"
 
 
+/** Default terminal used by Tester, if TERM is unset or empty */
+#define TESTER_TERM_DEF             "dumb"
+
 /** Default number of columns on terminal */
 #define TESTER_TERM_COLUMNS_DEF     80
 
@@ -205,7 +208,7 @@ tester_out_done(run_item_type type, const char *name,
         char       *end;
         
         if ((term == NULL) || (strlen(term) == 0))
-            setenv("TERM", "vt100", TRUE);
+            setenv("TERM", TESTER_TERM_DEF, TRUE);
         if (cols != NULL)
             columns = strtol(cols, &end, 10);
         if ((end == cols) || (columns == 0))
