@@ -288,7 +288,8 @@ timespec2str(const struct timespec *tv)
 /** Return with check (for functions returning 0 or -1) */
 #define RETVAL_RC(_func) \
     do {                                                                \
-        int __retval = out.retval;                                      \
+        int __retval = (out.retval);                                    \
+                                                                        \
         LOG_TE_ERROR(_func);                                            \
         rcf_rpc_free_result(&out, (xdrproc_t)xdr_tarpc_##_func##_out);  \
                                                                         \
@@ -308,35 +309,37 @@ timespec2str(const struct timespec *tv)
 /** Return with check (for functions returning value >= -1) */    
 #define RETVAL_VAL(_retval, _func) \
     do {                                                                \
-        int __retval = _retval;                                         \
+        int __retval = (_retval);                                       \
+                                                                        \
         LOG_TE_ERROR(_func);                                            \
         rcf_rpc_free_result(&out, (xdrproc_t)xdr_tarpc_##_func##_out);  \
                                                                         \
         if (!RPC_CALL_OK)                                               \
             return -1;                                                  \
                                                                         \
-        if ((__retval) < -1)                                            \
+        if (__retval < -1)                                              \
         {                                                               \
             ERROR("function %s returned incorrect value %d",            \
                   #_func, __retval);                                    \
             handle->_errno = TE_RC(TE_TAPI, ETECORRUPTED);              \
             return -1;                                                  \
         }                                                               \
-        return (__retval);                                              \
-    } while(0)
+        return __retval;                                                \
+    } while (0)
 
 /** Return with check (for functions returning pointers) */
 #define RETVAL_PTR(_retval, _func) \
     do {                                                                \
-        int __retval = _retval;                                         \
+        void *__retval = (_retval);                                     \
+                                                                        \
         LOG_TE_ERROR(_func);                                            \
         rcf_rpc_free_result(&out, (xdrproc_t)xdr_tarpc_##_func##_out);  \
                                                                         \
         if (!RPC_CALL_OK)                                               \
             return NULL;                                                \
         else                                                            \
-            return (void *)(__retval);                                  \
-    } while(0)
+            return __retval;                                            \
+    } while (0)
 
 /** Return with check */
 #define RETVAL_VOID(_func) \
