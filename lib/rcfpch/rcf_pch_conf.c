@@ -553,7 +553,7 @@ process_wildcard(struct rcf_comm_connection *conn, char *cbuf,
     VERB("Process wildcard request");
 
     if ((tmp = strdup(oid)) == NULL)
-        SEND_ANSWER("%d", ENOMEM);
+        SEND_ANSWER("%d", TE_RC(TE_RCF_PCH, ENOMEM));
 
     if (strchr(oid, ':') == NULL)
     {
@@ -572,7 +572,7 @@ process_wildcard(struct rcf_comm_connection *conn, char *cbuf,
 
     if ((rc != 0 )|| ((rc = convert_to_answer(list, &tmp)) != 0))
     {
-        SEND_ANSWER("%d", rc);
+        SEND_ANSWER("%d", TE_RC(TE_RCF_PCH, rc));
     }
 
     if ((size_t)snprintf(cbuf + answer_plen, buflen - answer_plen,
@@ -581,7 +581,7 @@ process_wildcard(struct rcf_comm_connection *conn, char *cbuf,
     {
         free(tmp);
         ERROR("Command buffer too small for reply");
-        SEND_ANSWER("%d", E2BIG);
+        SEND_ANSWER("%d", TE_RC(TE_RCF_PCH, E2BIG));
     }
 
     rcf_ch_lock();
@@ -790,9 +790,8 @@ rcf_pch_configure(struct rcf_comm_connection *conn,
         {
             if (op != RCF_CH_CFG_GET)
             {
-                ERROR("Wildcards allowed in get "
-                                     "requests only");
-                SEND_ANSWER("%d", EINVAL);
+                ERROR("Wildcards allowed in get requests only");
+                SEND_ANSWER("%d", TE_RC(TE_RCF_PCH, EINVAL));
             }
 
             rc = process_wildcard(conn, cbuf, buflen, answer_plen, oid);
@@ -804,26 +803,26 @@ rcf_pch_configure(struct rcf_comm_connection *conn,
 
         p_oid = cfg_convert_oid_str(oid);
         VERB("Parsed %s ID with %u parts ptr=0x%x",
-                             (p_oid->inst) ? "instance" : "object",
-                             p_oid->len, p_oid->ids);
+             (p_oid->inst) ? "instance" : "object",
+             p_oid->len, p_oid->ids);
         if (p_oid == NULL)
         {
             /* It may be memory allocation failure, but it's unlikely */
-            ERROR("Failed to convert OID string '%s' "
-                                 "to structured representation", oid);
-            SEND_ANSWER("%d", ETEBADFORMAT);
+            ERROR("Failed to convert OID string '%s' to structured "
+                  "representation", oid);
+            SEND_ANSWER("%d", TE_RC(TE_RCF_PCH, ETEBADFORMAT));
         }
         if (!p_oid->inst)
         {
             cfg_free_oid(p_oid);
             ERROR("Instance identifier expected");
-            SEND_ANSWER("%d", EINVAL);
+            SEND_ANSWER("%d", TE_RC(TE_RCF_PCH, EINVAL));
         }
         if (p_oid->len == 0)
         {
             cfg_free_oid(p_oid);
             ERROR("Zero length OIID");
-            SEND_ANSWER("%d", EINVAL);
+            SEND_ANSWER("%d", TE_RC(TE_RCF_PCH, EINVAL));
         }
 
         memset(inst_names, 0, sizeof(inst_names));
@@ -861,7 +860,7 @@ rcf_pch_configure(struct rcf_comm_connection *conn,
         {
             cfg_free_oid(p_oid);
             VERB("Requested OID not found");
-            SEND_ANSWER("%d", ETENOSUCHNAME);
+            SEND_ANSWER("%d", TE_RC(TE_RCF_PCH, ETENOSUCHNAME));
         }
     }
 
@@ -910,7 +909,7 @@ rcf_pch_configure(struct rcf_comm_connection *conn,
             }
             else
             {
-                SEND_ANSWER("%d", rc);
+                SEND_ANSWER("%d", TE_RC(TE_RCF_PCH, rc));
             }
             break;
         }
@@ -923,7 +922,7 @@ rcf_pch_configure(struct rcf_comm_connection *conn,
                 rc = commit(commit_obj, &p_oid);
             }
             cfg_free_oid(p_oid);
-            SEND_ANSWER("%d", rc);
+            SEND_ANSWER("%d", TE_RC(TE_RCF_PCH, rc));
             break;
 
         case RCF_CH_CFG_ADD:
@@ -934,7 +933,7 @@ rcf_pch_configure(struct rcf_comm_connection *conn,
                 rc = commit(commit_obj, &p_oid);
             }
             cfg_free_oid(p_oid);
-            SEND_ANSWER("%d", rc);
+            SEND_ANSWER("%d", TE_RC(TE_RCF_PCH, rc));
             break;
 
         case RCF_CH_CFG_DEL:
@@ -945,7 +944,7 @@ rcf_pch_configure(struct rcf_comm_connection *conn,
                 rc = commit(commit_obj, &p_oid);
             }
             cfg_free_oid(p_oid);
-            SEND_ANSWER("%d", rc);
+            SEND_ANSWER("%d", TE_RC(TE_RCF_PCH, rc));
             break;
 
         default:
