@@ -660,6 +660,15 @@ tapi_snmp_operation (const char *ta, int sid, int csap_id,
 
 
 /* See description in tapi_snmp.h */
+int 
+tapi_snmp_set(const char *ta, int sid, int csap_id, 
+                         const tapi_snmp_varbind_t *var_binds, 
+                         size_t num_vars, int *errstat, int *errindex)
+{
+    return TE_RC(TE_TAPI, ETENOSUPP);
+}
+
+/* See description in tapi_snmp.h */
 int
 tapi_snmp_set_integer(const char *ta, int sid, int csap_id, 
                       const tapi_snmp_oid_t *oid, int value, int *errstat)

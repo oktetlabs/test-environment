@@ -265,6 +265,27 @@ extern int tapi_snmp_gen_csap_create(const char *ta, int sid,
 
 
 /**
+ * The function send SNMP-SET request to the SNMP agent, associated
+ * with a particular SNMP CSAP. Note, that the function waits for SNMP agent
+ * response.
+ * 
+ * @param ta            Test Agent name
+ * @param sid           RCF Session id.
+ * @param csap_id       identifier of an SNMP CSAP.
+ * @param var_binds     Array with var-binds to be sent in request.
+ * @param num_vars      Number of var-binds in array below.
+ * @param errstat       Rhe value of error-status field in response
+ *                      message (OUT), may be zero if not need.
+ * @param errindex      Rhe value of error-index field in response
+ *                      message (OUT), may be zero if not need.
+ * 
+ * @return zero on success or error code.
+ */
+extern int tapi_snmp_set(const char *ta, int sid, int csap_id, 
+                         const tapi_snmp_varbind_t *var_binds, 
+                         size_t num_vars, int *errstat, int *errindex);
+
+/**
  * The function makes an attempt to set an integer value for an SNMP object
  * by means of SNMP Set request, which is sent to the SNMP agent, associated
  * with a particular SNMP CSAP. Note, that the function waits for SNMP agent
