@@ -453,11 +453,10 @@ int
 rcfunix_connect(rcf_talib_handle handle, fd_set *select_set,
                 struct timeval *select_tm)
 {
-    int rc;
-    
-    char  buf[16];
-    char *tmp;
-    int   len = 16;
+    int     rc;
+    char    buf[16];
+    char   *tmp;
+    size_t  len = 16;
     
     (void)select_tm;
 
