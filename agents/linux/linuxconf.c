@@ -2977,10 +2977,9 @@ user_del(unsigned int gid, const char *oid, const char *user)
     if (!user_exists(user))
         return TE_RC(TE_TA_LINUX, EEXIST);
 
-    sprintf(buf, "/usr/sbin/userdel -r %s >/dev/null 2>&1", user);
+    sprintf(buf, "/usr/sbin/userdel -r %s", user);
             
-    if (ta_system(buf) != 0) 
-        return TE_RC(TE_TA_LINUX, ETESHCMD);
+    ta_system(buf);
         
     return 0;
 }
