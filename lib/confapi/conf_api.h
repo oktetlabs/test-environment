@@ -358,6 +358,43 @@ cfg_add_instance_fmt(cfg_handle *p_handle, cfg_val_type type,
 }
 
 /**
+ * Add child with specified sub-identifier, name and value to the
+ * parent specified by handle.
+ *
+ * @param p_handle      Locatin for handle of new instance
+ * @param type          Type of value
+ * @param val           Value
+ * @param parent        Handle of the parent
+ * @param subid         Sub-identifier
+ * @param name          Instance name or NULL
+ *
+ * @return Status code.
+ */
+static inline int
+cfg_add_instance_child(cfg_handle *p_handle, cfg_val_type type,
+                       const void *val, cfg_handle parent,
+                       const char *subid, const char *name)
+{
+    int         rc;
+    char       *parent_oid;
+    char        oid[CFG_OID_MAX];
+
+    if (subid == NULL)
+        return TE_RC(TE_CONF_API, EINVAL);
+
+    rc = cfg_get_oid_str(parent, &parent_oid);
+    if (rc != 0)
+        return rc;
+    assert(parent_oid != NULL);
+
+    snprintf(oid, sizeof(oid),
+             "%s/%s:%s", parent_oid, subid, (name) ? : "");
+    free(parent_oid);
+
+    return cfg_add_instance_str(oid, p_handle, type, val);
+}
+
+/**
  * Delete an object instance.
  *
  * @param handle            - object instance handle
