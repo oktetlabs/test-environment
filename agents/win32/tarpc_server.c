@@ -31,6 +31,7 @@
 #endif
 
 #include <winsock2.h>
+#include <mswsock.h>
 #define _SYS_SOCKET_H
 #define _NETINET_IN_H
 #include "tarpc.h"
@@ -102,13 +103,6 @@ typedef void (*LPFN_GETACCEPTEXSOCKADDRS)(PVOID lpOutputBuffer,
                                           LPSOCKADDR *RemoteSockaddr,
                                           LPINT RemoteSockaddrLength);  
 /* TransmitFile() */
-typedef struct _TRANSMIT_FILE_BUFFERS {
-  PVOID Head;
-  DWORD HeadLength;
-  PVOID Tail;
-  DWORD TailLength;
-} TRANSMIT_FILE_BUFFERS;
-
 typedef BOOL (*LPFN_TRANSMITFILE)(SOCKET hSocket,
                                   HANDLE hFile,
                                   DWORD nNumberOfBytesToWrite,
@@ -116,6 +110,13 @@ typedef BOOL (*LPFN_TRANSMITFILE)(SOCKET hSocket,
                                   LPOVERLAPPED lpOverlapped,
                                   TRANSMIT_FILE_BUFFERS *lpTransmitBuffers,
                                   DWORD dwFlags);
+/* WSARecvMsg() */
+typedef int (*LPFN_WSARECVMSG)(SOCKET s,
+			                   LPWSAMSG lpMsg,
+            			       LPDWORD lpdwNumberOfBytesRecvd,
+			                   LPWSAOVERLAPPED lpOverlapped,
+                               LPWSAOVERLAPPED_COMPLETION_ROUTINE 
+                               lpCompletionRoutine);
     
 extern int ta_pid;
 extern sigset_t rpcs_received_signals;
@@ -432,6 +433,38 @@ setlibname(char *libname)
   
     return WSAStartup(MAKEWORD(2,2), &data) != 0 ? -1 : 0;
 }
+#if 0
+static const char *
+msghdr2str(const struct WSAMSG *msg)
+{
+    static char buf[256];
+
+    char   *buf_end = buf + sizeof(buf);
+    char   *p = buf;
+    size_t  i;
+
+    p += snprintf(p, buf_end - p, "{name={0x%x,%u},{",
+                  (unsigned int)msg->name, msg->namelen);
+    if (p >= buf_end)
+        return "(too long)";
+    for (i = 0; i < msg->dwBufferCount; ++i)
+    {
+        p += snprintf(p, buf_end - p, "%s{0x%x,%u}",
+                      (i == 0) ? "" : ",",
+                      (unsigned int)msg->lpBuffers[i].buf,
+                      msg->lpBuffers[i].len);
+        if (p >= buf_end)
+            return "(too long)";
+    }
+    p += snprintf(p, buf_end - p, "},control={0x%x,%u},flags=0x%x}",
+                  (unsigned int)msg->Control.buf, msg->Control.len,
+                  msg->dwFlags);
+    if (p >= buf_end)
+        return "(too long)";
+
+    return buf;
+}
+#endif
 
 /*--------------------------------- fork() ---------------------------------*/
 TARPC_FUNC(fork, {},
@@ -856,6 +889,163 @@ TARPC_FUNC(recv,
                                  send_recv_flags_rpc2h(in->flags)));
 }
 )
+
+/*------------------------------ sendmsg() ------------------------------*/
+
+TARPC_FUNC(sendmsg, 
+{
+    if (in->msg.msg_val != NULL && 
+        in->msg.msg_val[0].msg_iov.msg_iov_val != NULL &&
+        in->msg.msg_val[0].msg_iov.msg_iov_len > RCF_RPC_MAX_IOVEC)
+    {
+        ERROR("Too long iovec is provided"); 
+        out->common._errno = TE_RC(TE_TA_WIN32, ENOMEM);
+        return TRUE;
+    }
+},
+{
+    WSABUF buf_arr[RCF_RPC_MAX_IOVEC];
+    
+    unsigned int i;
+
+    memset(buf_arr, 0, sizeof(buf_arr));
+    
+    if (in->msg.msg_val == NULL)
+    {
+        MAKE_CALL(out->retval = WSASendTo(in->s, NULL, 0, NULL, 
+                                          send_recv_flags_rpc2h(in->flags),
+                                          NULL, 0, NULL, NULL));
+    }
+    else
+    {
+        struct tarpc_msghdr *rpc_msg = in->msg.msg_val;
+
+        PREPARE_ADDR(rpc_msg->msg_name, 0);
+        if (rpc_msg->msg_iov.msg_iov_val != NULL)
+        {    
+            for (i = 0; i < rpc_msg->msg_iov.msg_iov_len; i++)
+            {
+                INIT_CHECKED_ARG( 
+                    rpc_msg->msg_iov.msg_iov_val[i].iov_base.iov_base_val,
+                    rpc_msg->msg_iov.msg_iov_val[i].iov_base.iov_base_len, 0);
+                buf_arr[i].buf = 
+                    rpc_msg->msg_iov.msg_iov_val[i].iov_base.iov_base_val;
+                buf_arr[i].len = 
+                    rpc_msg->msg_iov.msg_iov_val[i].iov_len;
+            }
+            INIT_CHECKED_ARG((char *)buf_arr, sizeof(buf_arr), 0);
+        }
+        INIT_CHECKED_ARG(rpc_msg->msg_control.msg_control_val, 
+                         rpc_msg->msg_control.msg_control_len, 0);
+
+        MAKE_CALL(out->retval = WSASendTo(in->s, buf_arr, 
+                                          rpc_msg->msg_iovlen, NULL,         
+                                          send_recv_flags_rpc2h(in->flags),
+                                          a, rpc_msg->msg_namelen, 
+                                          NULL, NULL));
+    }
+}
+)
+
+/*------------------------------ recvmsg() ------------------------------*/
+
+TARPC_FUNC(recvmsg, 
+{
+    if (in->msg.msg_val != NULL && 
+        in->msg.msg_val[0].msg_iov.msg_iov_val != NULL &&
+        in->msg.msg_val[0].msg_iov.msg_iov_len > RCF_RPC_MAX_IOVEC)
+    {
+        ERROR("Too long iovec is provided"); 
+        out->common._errno = TE_RC(TE_TA_WIN32, ENOMEM);
+        return TRUE;
+    }
+    COPY_ARG(msg);
+},
+{
+    LPFN_WSARECVMSG           pf_wsa_recvmsg = NULL;    
+    GUID                      guid_wsa_recvmsg = WSAID_WSARECVMSG; 
+    DWORD                     bytes_returned;
+    WSABUF                    buf_arr[RCF_RPC_MAX_IOVEC];
+    unsigned int              i;
+    
+    memset(buf_arr, 0, sizeof(buf_arr));
+    if (WSAIoctl(in->s, SIO_GET_EXTENSION_FUNCTION_POINTER,
+                 (LPVOID)&guid_wsa_recvmsg, sizeof(GUID),
+                 (LPVOID)&pf_wsa_recvmsg,
+                 sizeof(LPFN_WSARECVMSG),
+                 &bytes_returned, NULL, NULL) == SOCKET_ERROR)
+    {
+        out->retval = -1;
+        ERROR("WSAIoctl() failed");
+        goto finish;     
+    }
+    if (out->msg.msg_val == NULL)
+    {
+        MAKE_CALL(out->retval = (*pf_wsa_recvmsg)(in->s, NULL, NULL,
+                                                  NULL, NULL));  
+    }
+    else
+    {
+        WSAMSG msg;
+        
+        struct tarpc_msghdr *rpc_msg = out->msg.msg_val;
+    
+        memset(&msg, 0, sizeof(msg));
+
+        PREPARE_ADDR(rpc_msg->msg_name, rpc_msg->msg_namelen);
+        msg.namelen = rpc_msg->msg_namelen;
+        msg.name = a;
+
+        msg.dwBufferCount = rpc_msg->msg_iovlen;
+        if (rpc_msg->msg_iov.msg_iov_val != NULL)
+        {    
+            for (i = 0; i < rpc_msg->msg_iov.msg_iov_len; i++)
+            {
+                INIT_CHECKED_ARG(
+                    rpc_msg->msg_iov.msg_iov_val[i].iov_base.iov_base_val,
+                    rpc_msg->msg_iov.msg_iov_val[i].iov_base.iov_base_len, 
+                    rpc_msg->msg_iov.msg_iov_val[i].iov_len);
+                buf_arr[i].buf = 
+                    rpc_msg->msg_iov.msg_iov_val[i].iov_base.iov_base_val;
+                buf_arr[i].len = 
+                    rpc_msg->msg_iov.msg_iov_val[i].iov_len;
+            }
+            msg.lpBuffers = buf_arr;
+
+            INIT_CHECKED_ARG((char *)buf_arr, sizeof(buf_arr), 0);
+        }
+
+        INIT_CHECKED_ARG(rpc_msg->msg_control.msg_control_val, 
+                         rpc_msg->msg_control.msg_control_len, 
+                         rpc_msg->msg_controllen);
+        msg.Control.buf = rpc_msg->msg_control.msg_control_val;
+        msg.Control.len = rpc_msg->msg_controllen;
+
+        msg.dwFlags = send_recv_flags_rpc2h(rpc_msg->msg_flags);
+
+        /*
+         * msg_name, msg_iov, msg_iovlen and msg_control MUST NOT be
+         * changed.
+         *
+         * msg_namelen, msg_controllen and msg_flags MAY be changed.
+         */
+        INIT_CHECKED_ARG((char *)&msg.name, sizeof(msg.name), 0);
+        INIT_CHECKED_ARG((char *)&msg.lpBuffers, sizeof(msg.lpBuffers), 0);
+        INIT_CHECKED_ARG((char *)&msg.dwBufferCount, 
+                         sizeof(msg.dwBufferCount), 0);
+        INIT_CHECKED_ARG((char *)&msg.Control, sizeof(msg.Control), 0);
+        MAKE_CALL(out->retval = (*pf_wsa_recvmsg)(in->s, &msg, NULL,
+                                                  NULL, NULL));  
+        rpc_msg->msg_controllen = msg.Control.len;
+        rpc_msg->msg_flags = send_recv_flags_h2rpc(msg.dwFlags);
+        sockaddr_h2rpc(a, &(rpc_msg->msg_name));
+        rpc_msg->msg_namelen = msg.namelen;
+    }
+    finish:
+    ;
+}
+)
+
 
 /*------------------------------ WSARecvEx() ------------------------------*/
 
