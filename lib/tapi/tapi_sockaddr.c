@@ -290,8 +290,8 @@ sockaddrncmp(const struct sockaddr *a1, socklen_t a1len,
     }
     if (a2 == NULL && a2len != 0)
     {
-        ERROR("%s(): The second address is NULL, but its length is not zero",
-              __FUNCTION__);
+        ERROR("%s(): The second address is NULL, but its length is not "
+              "zero", __FUNCTION__);
     }
 
     if (a1 == NULL && a2 == NULL)
@@ -408,8 +408,8 @@ sockaddr2str(const struct sockaddr *sa)
     uint16_t    port;
 
     /*
-     * Firt time the function is called we start from the second buffer, but
-     * then after a turn we'll use all N_BUFS buffer.
+     * Firt time the function is called we start from the second buffer,
+     * but then after a turn we'll use all N_BUFS buffer.
      */
     if (cur_buf == (char (*)[SOCKADDR2STR_ADDRSTRLEN])buf[N_BUFS - 1])
         cur_buf = (char (*)[SOCKADDR2STR_ADDRSTRLEN])buf[0];
@@ -424,10 +424,14 @@ sockaddr2str(const struct sockaddr *sa)
         return ptr;
     }
 
-    if ((addr_ptr = sockaddr_get_netaddr(sa)) == NULL)
+    if (!sockaddr_is_af_supported(sa))
     {
         return "<Not supported address family>";
     }
+
+    addr_ptr = sockaddr_get_netaddr(sa);
+    assert(addr_ptr != NULL);
+
     port = sockaddr_get_port(sa);
 
     if (inet_ntop(sa->sa_family, addr_ptr,

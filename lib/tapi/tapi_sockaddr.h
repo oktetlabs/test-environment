@@ -45,6 +45,18 @@
 extern "C" {
 #endif
 
+
+/**
+ * Is address family is supported by this TAPI?
+ *
+ * @param af        Address family
+ */
+static inline te_bool
+sockaddr_is_af_supported(int af)
+{
+    return (af == AF_INET) || (af == AF_INET6);   
+}
+
 /**
  * Set "port" part of corresponding struct sockaddr to zero (wildcard)
  *
@@ -82,8 +94,8 @@ extern uint16_t sockaddr_get_port(const struct sockaddr *addr);
 extern void sockaddr_set_port(struct sockaddr *addr, uint16_t port);
 
 /**
- * Returns pointer to network address part of sockaddr structure according to
- * 'sa_family' field of the structure
+ * Returns pointer to network address part of sockaddr structure according
+ * to 'sa_family' field of the structure
  *
  * @param addr  Generic address structure
  *
@@ -103,7 +115,8 @@ extern const void *sockaddr_get_netaddr(const struct sockaddr *addr);
  * @retval  0  on success
  * @retval -1  on failure
  */
-extern int sockaddr_set_netaddr(struct sockaddr *addr, const void *net_addr);
+extern int sockaddr_set_netaddr(struct sockaddr *addr,
+                                const void *net_addr);
 
 /**
  * Set "network address" part of corresponding struct sockaddr to wildcard
