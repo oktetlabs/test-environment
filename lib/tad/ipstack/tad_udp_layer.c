@@ -89,8 +89,15 @@ udp_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
     if (rc == EASNINCOMPLVAL)
     {
         udp_spec_data->dst_port = 0;
-        if (udp_spec_data->remote_port == 0)
+
+        if ((udp_spec_data->remote_port == 0) && 
+            (csap_descr->command & TAD_OP_SEND))
+        {
+            WARN("%s: sending csap #%d, "
+                 "has no dst-port in template and has no remote port",
+                 __FUNCTION__, csap_id);
             rc = EINVAL;
+        }
         else
             rc = 0;
     } 
@@ -101,22 +108,22 @@ udp_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
 /**
  * Callback for generate binary data to be sent to media.
  *
- * @param csap_id       identifier of CSAP
- * @param layer         numeric index of layer in CSAP type to be processed.
- * @param tmpl_pdu      asn_value with PDU. 
- * @param up_payload    pointer to data which is already generated for upper 
- *                      layers and is payload for this protocol level. 
- *                      May be zero.  Presented as list of packets. 
- *                      Almost always this list will contain only one element, 
- *                      but need in fragmentation sometimes may occur. 
- *                      Of cause, on up level only one PDU is passed, 
- *                      but upper layer (if any present) may perform 
- *                      fragmentation, and current layer may have possibility 
- *                      to de-fragment payload.
- * @param pkts          Callback have to fill this structure with list of 
- *                      generated packets. Almost always this list will 
- *                      contain only one element, but necessaty of 
- *                      fragmentation sometimes may occur. (OUT)
+ * @param csap_id     identifier of CSAP
+ * @param layer       numeric index of layer in CSAP type to be processed.
+ * @param tmpl_pdu    asn_value with PDU. 
+ * @param up_payload  pointer to data which is already generated for upper 
+ *                    layers and is payload for this protocol level. 
+ *                    May be zero.  Presented as list of packets. 
+ *                    Almost always this list will contain only one element,
+ *                    but need in fragmentation sometimes may occur. 
+ *                    Of cause, on up level only one PDU is passed, 
+ *                    but upper layer (if any present) may perform 
+ *                    fragmentation, and current layer may have possibility 
+ *                    to de-fragment payload.
+ * @param pkts        Callback have to fill this structure with list of 
+ *                    generated packets. Almost always this list will 
+ *                    contain only one element, but necessaty of 
+ *                    fragmentation sometimes may occur. (OUT)
  *
  * @return zero on success or error code.
  */ 
@@ -142,7 +149,8 @@ udp_gen_bin_cb(int csap_id, int layer, const asn_value *tmpl_pdu,
 
     if (csap_descr->type == TAD_DATA_CSAP)
     {
-        spec_data = (udp_csap_specific_data_t *) csap_descr->layer_data[layer]; 
+        spec_data = (udp_csap_specific_data_t *) 
+                            csap_descr->layer_data[layer];
 
         pkts->data = malloc(up_payload->len);
         if (pkts->data == NULL)

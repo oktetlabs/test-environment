@@ -31,6 +31,8 @@
 #include "config.h"
 #endif
 
+#define TE_LOG_LEVEL 0xff
+
 #include <string.h>
 #include <pthread.h>
 
@@ -191,7 +193,7 @@ rcf_ch_csap_create(struct rcf_comm_connection *handle,
 
     new_csap_id = csap_create(stack);
 
-    INFO("CSAP create, new id: %d", new_csap_id);
+    INFO("CSAP '%s' created, new id: %d", stack, new_csap_id);
 
     if (new_csap_id == 0)
     {
@@ -224,7 +226,8 @@ rcf_ch_csap_create(struct rcf_comm_connection *handle,
         return 0;
     }
     syms = asn_get_length(csap_nds, "");
-    VERB("length of PDU list in NDS: %d", syms); 
+    INFO("length of PDU list in NDS: %d, csap depth %d", 
+          syms, new_csap->depth); 
 
     for (level = 0; level < new_csap->depth; level ++)
     {
@@ -666,7 +669,7 @@ rcf_ch_trrecv_start(struct rcf_comm_connection *handle,
             level_pdu = asn_read_indexed(pattern_unit, level, "pdus"); 
             if (level_pdu == NULL)
             {
-                WARN("Cannot get level pdu No %d", level);
+                WARN("CSAP #%d, cannot get level pdu #%d", csap, level);
                 rc = ETADWRONGNDS;
                 break;
             }
@@ -677,7 +680,8 @@ rcf_ch_trrecv_start(struct rcf_comm_connection *handle,
 
             if (rc) 
             {
-                WARN("confirm pattern pdu fails; 0x%x\n", rc);
+                WARN("%s: csap #%d confirm pattern pdu fails; 0x%x\n", 
+                        __FUNCTION__, csap, rc);
                 break;
             }
             snprintf (label_buf, sizeof(label_buf), "pdus.%d.#%s", 
@@ -689,9 +693,8 @@ rcf_ch_trrecv_start(struct rcf_comm_connection *handle,
 
             if (rc)
             {
-                WARN(
-                    "replace component value with confirmed pdu fails; 0x%x\n", 
-                    rc);
+                WARN("replace component value with confirmed pdu " 
+                     "fails; 0x%x\n", rc);
             } 
         }
         if (sr_flag == 0)

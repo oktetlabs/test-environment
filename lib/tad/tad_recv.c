@@ -193,7 +193,12 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
             const uint8_t *mask = NULL;
             const uint8_t *pat = NULL;
             int mask_len;
+            int fixed_len_flag = 1;
 
+            rc = asn_get_field_data(pattern_unit, &mask, 
+                    "payload.#mask.free-len");
+            if (rc == 0)
+                fixed_len_flag = 0;
 
             rc = asn_get_field_data(pattern_unit, &mask, "payload.#mask.m");
 
@@ -208,9 +213,10 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
                 return rc;
             }
             mask_len = asn_get_length(pattern_unit, "payload.#mask.m");
-            if (mask_len != data_to_check.len)
+            if (mask_len > data_to_check.len || 
+                (fixed_len_flag && mask_len < data_to_check.len))
             {
-                F_RING("Income pld length %d != mask len %d", 
+                F_RING("Income pld length %d wrong, mask len %d", 
                         data_to_check.len, mask_len);
                 rc = ETADNOTMATCH;
             }
