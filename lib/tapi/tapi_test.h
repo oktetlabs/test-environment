@@ -36,18 +36,38 @@
 extern "C" {
 #endif
 
+/* 
+ * Define empty list of test-specific variables 
+ * if test does not care about them.
+ */
+#ifndef TEST_START_VARS
+#define TEST_START_VARS
+#endif
+
+/* Define empty test start procedure if test does not care about it. */
+#ifndef TEST_START_SPECIFIC
+#define TEST_START_SPECIFIC
+#endif
+
+/* Define empty test end procedure if test does not care about it. */
+#ifndef TEST_END_SPECIFIC
+#define TEST_END_SPECIFIC do { } while (0)
+#endif
 
 /**
  * The first action of any test @b main() function.
  *
- * Variable @a rc, @a env and @a result are defined.
+ * Variable @a rc and @a result are defined.
  *
  * @note @b main() must get @a argc and @a argv parameters.
+ * @note To define a set of variables accessed in each test, you should
+ * define TEST_START_VARS macro as the list of additional variables
+ * To define test-specific action define TEST_START_SPECIFIC macro
  */
 #define TEST_START \
     int         rc;                                                 \
     int         result = EXIT_FAILURE;                              \
-    TEST_START_VARS;                                                \
+    TEST_START_VARS                                                 \
                                                                     \
     if (argc < 2)                                                   \
     {                                                               \
@@ -76,14 +96,11 @@ extern "C" {
 
 /**
  * The last action of the test @b main() function.
+ *
+ * @note To define test-specific action define TEST_END_SPECIFIC macro
  */
 #define TEST_END \
-    rc = sockts_free_env(&env);                                     \
-    if (rc != 0)                                                    \
-    {                                                               \
-        ERROR("sockts_free_env() failed: %X", rc);                  \
-        result = EXIT_FAILURE;                                      \
-    }                                                               \
+    TEST_END_SPECIFIC;                                              \
     if (test_backup_name != NULL)                                   \
     {                                                               \
         rc = cfg_restore_backup(test_backup_name);                  \
