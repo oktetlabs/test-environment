@@ -2380,12 +2380,14 @@ void rpc_free_wsabuf(rcf_rpc_server *rpcs, rpc_ptr wsabuf)
 /**
  * WSAConnect() call. Can be used with nonblocking sockets.
  *
- * @param caller_wsabuf           A pointer to the WSABUF structure in the
- *                                TA virtual address space.
- * @param callee_wsabuf           A pointer to the WSABUF structure in the
- *                                TA virtual address space.
- * @param provider_specific_buf   A pointer to the buffer in the TA virtual
- *                                address space.
+ * @param caller_wsabuf          A pointer to the WSABUF structure in the TA
+ *                               virtual address space (can be obtained by
+ *                               a call to rpc_alloc_wsabuf()).
+ * @param callee_wsabuf          A pointer to the WSABUF structure in the
+ *                               TA virtual address space.
+ * @param provider_specific_buf  A pointer to the buffer in the TA virtual
+ *                               address space (can be obtained by a call
+ *                               to rpc_alloc_buf()).
  */
 int
 rpc_wsa_connect(rcf_rpc_server *rpcs, int s, struct sockaddr *addr,
