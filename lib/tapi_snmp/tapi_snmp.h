@@ -110,7 +110,7 @@ typedef enum {
 } tapi_snmp_get_type_t;
 
 /** SNMP variable binding */
-typedef struct {
+typedef struct { 
     tapi_snmp_oid_t      name;   /**< Object identifier of variable. */
     tapi_snmp_vartypes_t type;   /**< Type of variable. */
     size_t               v_len;  /**< length of data in variable value: 
@@ -123,6 +123,8 @@ typedef struct {
         int               integer;
     };
 } tapi_snmp_varbind_t;
+
+
 
 typedef struct {
     ndn_snmp_msg_t type;    /**< type of message */
@@ -300,7 +302,9 @@ extern int tapi_snmp_set(const char *ta, int sid, int csap_id,
  *                      message (OUT), may be zero if not need.
  * @param common_index  Common index part of OID, which should be concatened
  *                      to all varbind's OIDs below; may be NULL. 
- * @param ...           Sequence of pointers to varbinds, ended by NULL.
+ * @param ...           Sequence of "varbind groups": label of MIB leaf
+ *                      and value, which is either integer or pair <char *, int>, 
+ *                      for OCTET_STRING types; ended by NULL.
  *                      Passed pointers are desired as 'const',
  *                      i.e. OID and data are not changed.
  * 
@@ -308,6 +312,47 @@ extern int tapi_snmp_set(const char *ta, int sid, int csap_id,
  */
 extern int tapi_snmp_set_row(const char *ta, int sid, int csap_id, 
                              int *errstat, int *errindex,
+                             const tapi_snmp_oid_t *common_index, ...);
+
+
+
+/**
+ * The function send SNMP-GET request for specified objects to the SNMP agent, 
+ * associated with a particular SNMP CSAP. 
+ * Note, that the function waits for SNMP agent response.
+ * User have to free memory allocated to octet string values.
+ * 
+ * @param ta            Test Agent name
+ * @param sid           RCF Session id.
+ * @param csap_id       identifier of an SNMP CSAP.
+ * @param var_binds     Array with var-binds to be sent in request (IN/OUT).
+ * @param num_vars      Number of var-binds in array below.
+ * 
+ * @return zero on success or error code.
+ */
+extern int tapi_snmp_get(const char *ta, int sid, int csap_id, 
+                         const tapi_snmp_varbind_t *var_binds, 
+                         size_t num_vars);
+
+/**
+ * The function send SNMP-GET request for specified objects to the SNMP agent, 
+ * associated with a particular SNMP CSAP. 
+ * Note, that the function waits for SNMP agent response.
+ * 
+ * @param ta            Test Agent name
+ * @param sid           RCF Session id.
+ * @param csap_id       identifier of an SNMP CSAP.
+ * @param common_index  Common index part of OID, which should be concatened
+ *                      to all varbind's OIDs below; may be NULL. 
+ * @param ...           Sequence of "varbind groups": label of MIB leaf
+ *                      and value, which is either integer or pair <char *, int>, 
+ *                      for OCTET_STRING types; ended by NULL.
+ *                      Passed pointers are desired as 'const',
+ *                      i.e. OID and data are not changed.
+ * 
+ * @return zero on success or error code.
+ */
+extern int tapi_snmp_get_row(const char *ta, int sid, int csap_id, 
                              const tapi_snmp_oid_t *common_index, ...);
 
 
