@@ -94,7 +94,7 @@ usage()
     echo -e '  --trc-update'\\t\\t\\t'Update TRC database'
     echo -e '  --trc-init'\\t\\t\\t'Initialize TRC database (be careful,'
     echo -e \\t\\t\\t\\t'TRC database file will be rewritten)'
-    echo -e '  --cs-print-trees'\\t\\t\\t'Print configurator trees.'
+    echo -e '  --cs-print-trees'\\t\\t'Print configurator trees.'
     echo
 }
 
