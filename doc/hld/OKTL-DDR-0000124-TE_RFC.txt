@@ -1,0 +1,186 @@
+# Document Development Request for TE Router Filter CSAP Design Document
+ID OKTL-0000124
+
+COPYRIGHT Copyright(C) 2004 OKTET Labs.
+# Change copyright notice, if necessary.
+
+# This template contains a text intended to simplify the task of
+# DDR writer. This text is commented by "#" symbols. Optional sections 
+# are marked by this symbol as well - uncomment corresponding keywords 
+# if you use these sections.
+#
+# All sections are started with keywords. All section keywords 
+# should be started from position 0.
+#
+# Content of the section may appear on the same line with the section 
+# keyword or below. 
+#
+# This template should allow tracking of document creation/update
+# process. Moreover, it may be used as memo for Document Requester, 
+# Document Author(s) and Document Reviewers.
+
+DDRAUTH 
+# Author(s) of Document Development Request should be specified here.
+# Any customer or employee may create a DDR. However
+# decision about document creation or update should be made by
+# responsible manager only.
+Alexander Kukuta <Alexander.Kukuta@oktetlabs.ru>
+
+RESPMGR 
+# Responsible manager which is assumed to be a Document Requester
+# and should process the DDR should be specified here.
+# This field may be changed by a person processing the DDR if he/she 
+# decides that this request should be processed by 
+# another manager. Specify name and e-mail address here.
+Elena Vengerova <Elena.Vengerova@oktetlabs.ru>
+
+DOCID 
+# Infolib document identifier should be specified here. If the document
+# does not exist, this item should remain empty until is filled
+# by Document Requester.
+ID OKTL-DDR-0000124-TE_RFC
+
+TITLE 
+# Title of document should be specified here by DDR creator.
+Test Environment Router Filter CSAP Design Document
+
+PURPOSE 
+# Purpose of document creation/update should be specified here.
+# This may be for example: 
+#   estimations, proposals or research for external or internal customer;
+#   design or test specification for the some project;
+#   internal standard;
+#   user guide or reference manual.
+The main purpose of this document is designing of test cases for L5 ip-dev project.
+
+#AUDIENCE
+# This section is optional if the document already exists.
+# Possible document readers (customers, possible partners, end users, 
+# engineers, coders) should be specified here.
+TE development team and QA manager.
+
+#ACCESS
+# This section is optional if the document already exists.
+# Specify here the level of confidentiality of the document: 
+# how it may be distributed (to particular customers, to particular
+# company employees, to all company employees, unrestricted, etc.)
+OKTET Labs development stuff.
+ 
+#TMPL
+# This section is optional.
+# Refer here to the template, which should be used for the document.
+# Provide infolib identifier here.
+
+#FMT
+# This section is optional is template is specified.
+# Specify here format of the document (Word, plain text, Docbook, etc.)
+OOWriter
+
+#COMPLY
+# This section is optional.
+# List here all documents (or part of documents) to which 
+# the document or its new parts should comply. For example:
+#   project requirements document;
+#   standards;
+#   some existing or future HLD documents.
+
+ANNOTATION
+# Specify here what document or its new parts should describe.
+# The size and quality of the annotation depends on 
+# DDR author's laziness only, but he/she should understand
+# that he/she will receive what he/she has ordered. :)
+# If diagrams are desirable, don't forget to mention about it.
+
+Router Filter CSAP functionality and implementation design should be described.
+
+Router Filter CSAP should have the following functionality:
+1. Forward all incoming traffic to one of ethernet port to other ethernet port.
+2. Filter incoming packets by the following criteries:
+    1) MAC source/destination addresses;
+    2) IP source/destination addresses;
+    3) TCP source/destination ports (???).
+3. The following operations should be supported for processing of filtered packets.
+   (all other packets that do not match the filtering pattern should be forwarded)
+    1) delay filtered packets;
+    2) drop filtered packets;
+    3) reorder filtered packets;
+    4) emulate fixed output rate of filtered packets;
+4. Configuration on the fly should be supported. 
+
+Optional features:
+5. Parsing of all filtered packets and sending of filtering log to tester.
+   Log should be in the following format:
+    1) parsed packet header, received/sent timestamp, the operations performed
+       with the packet (delay/reorder/drop/enqueued)
+
+#DETAILS
+# This section is optional.
+# Specify here, which detalisation is required for the document.
+# For example:
+#   black box with provided services description;
+#   black box with API specification;
+#   main parts (subsystems) descriptions and relations between them;
+#   all subsystems description and relations between them;
+#   all API of all subsystems;
+#   all algorithms and state machines;
+#   all external definitions;
+#   structure of sources;
+#   all internal definitions and functions.
+
+Design document should describe all API of all subsystems of Router Filter CSAP.
+
+1. The method of integration with TE should be described in details
+   (will it be standalone implementation or existing Ethernet
+    CSAP will be used for receiving packets).
+
+2. Filtering technique functionality and configuration API should be described.
+
+3. There should be a detailed description for each operation and its parameters.
+
+Detailed diagrams are welcomed.
+
+
+#REFS 
+# Useful materials.
+# This section is optional.
+# Refer here to information items which may help Document Author.
+
+DEADLINE
+# Calendar deadline of the document creation/update.
+# Usually the responsible manager is the person specifying
+# this parameter. However, DDR author may recommend the
+# deadline as well as provide the reasons. If Document Author
+# is not able to complete the work before deadline,
+# he/she should provide Delay Report to Document Requester.
+# When DDR is approved by responsible manager this field
+# should have format described in RFC3339. For example:
+# 2002-05-31
+
+2004-12-06
+
+AUTHOR 
+# Document Author.
+# This section may appear several times if several authors
+# are assigned to the document. The chapter, which should
+# be written (updated) by the author, should be specified 
+# here as well. 
+# This section may be added, changed or removed in any time 
+# by Document Requester only.
+
+Konstantin Ushakov <Konstantin.Ushakov@oktetlabs.ru>
+
+
+#NOTES
+# This section is optional, but desirable.
+# This section should contain description of decisions made by  
+# responsible manager about this DDR. 
+# Each record should contain a date of the note. 
+# The record may contain references to some related information 
+# items (for example, Document Review Records).
+# Notes should look like this:
+#   Author(s) ... is (are) assigned to document creation/update instead ...
+#   Review is scheduled on ...
+#   Deadline is changed to ...
+#   Document is approved at ...
+#   Document Development Process is postponed because ...
+#   Document Development Process is refused because ...
