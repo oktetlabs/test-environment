@@ -32,6 +32,7 @@ unistd.h        \
 string.h        \
 assert.h        \
 errno.h         \
+fcntl.h         \
 sys/types.h     \
 sys/un.h        \
 ctype.h         \

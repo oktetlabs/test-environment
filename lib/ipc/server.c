@@ -33,36 +33,39 @@
 #endif
 
 #include <stdio.h>
-#ifdef HAVE_STDLIB_H
+#if HAVE_STDLIB_H
 #include <stdlib.h>
 #endif
-#ifdef HAVE_STRING_H
+#if HAVE_STRING_H
 #include <string.h>
 #endif
-#ifdef HAVE_ERRNO_H
+#if HAVE_ERRNO_H
 #include <errno.h>
 #endif
-#ifdef HAVE_UNISTD_H
+#if HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-#ifdef HAVE_ASSERT_H
+#if HAVE_ASSERT_H
 #include <assert.h>
 #endif
-#ifdef HAVE_SYS_SOCKET_H
+#if HAVE_FCNTL_H
+#include <fcntl.h>
+#endif
+#if HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif
-#ifdef HAVE_SYS_QUEUE_H
+#if HAVE_SYS_QUEUE_H
 #include <sys/queue.h>
 #endif
 
 #ifndef IPC_UNIX
-#ifdef HAVE_NETINET_IN_H
+#if HAVE_NETINET_IN_H
 #include <netinet/in.h>
 #endif
-#ifdef HAVE_ARPA_INET_H
+#if HAVE_ARPA_INET_H
 #include <arpa/inet.h>
 #endif
-#ifdef HAVE_NETDB_H
+#if HAVE_NETDB_H
 #include <netdb.h>
 #endif
 #endif
@@ -286,11 +289,13 @@ ipc_register_server(const char *name)
     }
 
 #endif
+#if HAVE_FCNTL_H
     /* 
      * Try to set close-on-exec flag, but ignore failures, 
      * since it's not critical.
      */
     (void)fcntl(ipcs->socket, F_SETFD, FD_CLOEXEC);
+#endif
 
     return ipcs;
 }
