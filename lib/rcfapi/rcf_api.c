@@ -525,7 +525,7 @@ int
 rcf_ta_name2type(const char *ta_name, char *ta_type)
 {
     rcf_msg msg;
-    int     anslen = sizeof(msg);
+    size_t  anslen = sizeof(msg);
     INIT_IPC;
     
     if (ta_type == NULL || BAD_TA)
@@ -568,7 +568,7 @@ int
 rcf_ta_create_session(const char *ta_name, int *session)
 {
     rcf_msg msg;
-    int     anslen = sizeof(msg);
+    size_t  anslen = sizeof(msg);
     INIT_IPC;
     
     if (session == NULL || BAD_TA)
@@ -835,7 +835,7 @@ conf_add_set(const char *ta_name, int session, const char *oid,
              const char *val, int opcode)
 {
     rcf_msg msg;
-    int     anslen = sizeof(msg);
+    size_t  anslen = sizeof(msg);
     INIT_IPC;
     
     if (oid == NULL || val == NULL || strlen(oid) >= RCF_MAX_ID ||
@@ -964,7 +964,7 @@ int
 rcf_ta_cfg_group(const char *ta_name, int session, te_bool is_start)
 {
     rcf_msg msg;
-    int     anslen = sizeof(msg);
+    size_t  anslen = sizeof(msg);
     INIT_IPC;
     
     memset((char *)&msg, 0, sizeof(msg));
@@ -1003,7 +1003,7 @@ int
 rcf_ta_get_log(const char *ta_name, char *log_file)
 {
     rcf_msg msg;
-    int     anslen = sizeof(msg);
+    size_t  anslen = sizeof(msg);
     INIT_IPC;
     
     if (log_file == NULL || strlen(log_file) >= RCF_MAX_PATH || BAD_TA)
@@ -1055,7 +1055,7 @@ rcf_ta_get_var(const char *ta_name, int session, const char *var_name,
                int var_type, size_t var_len, void *val)
 {
     rcf_msg  msg;
-    int      anslen = sizeof(msg);
+    size_t   anslen = sizeof(msg);
     uint64_t value;
     char    *tmp;
     INIT_IPC;
@@ -1159,7 +1159,7 @@ rcf_ta_set_var(const char *ta_name, int session, const char *var_name,
                int var_type, const char *val)
 {
     rcf_msg msg;
-    int     anslen = sizeof(msg);
+    size_t  anslen = sizeof(msg);
     INIT_IPC;
     
     if (var_name == NULL || val == NULL || strlen(var_name) >= RCF_MAX_NAME ||
@@ -1240,7 +1240,7 @@ get_put_file(const char *ta_name, int session,
              const char *rfile, const char *lfile, int opcode)
 {
     rcf_msg *msg;
-    int      anslen = sizeof(*msg);
+    size_t   anslen = sizeof(*msg);
     int      error;
     INIT_IPC;
     
@@ -1377,7 +1377,7 @@ rcf_ta_csap_create(const char *ta_name, int session,
     rcf_msg *msg;
     size_t   len = 0;
     int      flags = 0;
-    int      anslen = sizeof(*msg);
+    size_t   anslen = sizeof(*msg);
     INIT_IPC;
     
     if (stack_id == NULL || handle == NULL || BAD_TA)
@@ -1474,7 +1474,7 @@ int
 rcf_ta_csap_destroy(const char *ta_name, int session, int handle)
 {
     rcf_msg msg;
-    int     anslen = sizeof(msg);
+    size_t  anslen = sizeof(msg);
     INIT_IPC;
     
     if (BAD_TA)
@@ -1588,7 +1588,7 @@ rcf_ta_trsend_start(const char *ta_name, int session,
                     rcf_call_mode_t blk_mode)
 {
     rcf_msg msg;
-    int     anslen = sizeof(msg);
+    size_t  anslen = sizeof(msg);
     int     fd;
     csap   *tmp;
     INIT_IPC;
@@ -1683,7 +1683,7 @@ int
 rcf_ta_trsend_stop(const char *ta_name, int handle, int *num)
 {
     rcf_msg msg;
-    int     anslen = sizeof(msg);
+    size_t  anslen = sizeof(msg);
     csap   *tmp;
     INIT_IPC;
     
@@ -1748,7 +1748,7 @@ rcf_ta_trrecv_start(const char *ta_name, int session,
                     unsigned int timeout, int num)
 {
     rcf_msg  msg;
-    int      anslen = sizeof(msg);
+    size_t   anslen = sizeof(msg);
     int      fd;
     int      rc;
     csap    *tmp;
@@ -1849,7 +1849,7 @@ static int
 csap_tr_recv_get(const char *ta_name, int handle, int *num, int opcode)
 {
     rcf_msg msg;
-    int     anslen = sizeof(msg);
+    size_t  anslen = sizeof(msg);
     csap   *tmp;
     
     rcf_pkt_handler handler;
@@ -2043,7 +2043,7 @@ rcf_ta_trsend_recv(const char *ta_name, int session, int handle,
 {
     rcf_msg msg;
     csap   *tmp;
-    int     anslen = sizeof(msg);
+    size_t  anslen = sizeof(msg);
     int     fd;
     INIT_IPC;
     
@@ -2267,7 +2267,7 @@ call_start(const char *ta_name, int session, int priority, const char *rtn,
            int *res, int argc, int argv, va_list ap, int opcode)
 {
     rcf_msg *msg;
-    int      anslen = sizeof(*msg);
+    size_t   anslen = sizeof(*msg);
     
     int error;
     INIT_IPC;
@@ -2381,7 +2381,7 @@ int
 rcf_ta_kill_task(const char *ta_name, int session, pid_t pid)
 {
     rcf_msg msg;
-    int     anslen = sizeof(msg);
+    size_t  anslen = sizeof(msg);
     INIT_IPC;
     
     if (BAD_TA)
