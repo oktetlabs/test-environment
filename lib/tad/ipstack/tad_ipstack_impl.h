@@ -293,7 +293,7 @@ extern int ip4_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu);
  * @return zero on success or error code.
  */ 
 extern int ip4_gen_bin_cb (int csap_id, int layer, const asn_value *tmpl_pdu,
-                           const tad_template_arg_t *args, size_t arg_num, 
+                           const tad_tmpl_arg_t *args, size_t arg_num, 
                            csap_pkts_p up_payload, csap_pkts_p pkts);
 
 
@@ -456,7 +456,7 @@ extern int icmp4_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu);
  * @return zero on success or error code.
  */ 
 extern int icmp4_gen_bin_cb (int csap_id, int layer, const asn_value *tmpl_pdu,
-                           const tad_template_arg_t *args, size_t arg_num, 
+                           const tad_tmpl_arg_t *args, size_t arg_num, 
                            csap_pkts_p up_payload, csap_pkts_p pkts);
 
 
@@ -619,7 +619,7 @@ extern int udp_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu);
  * @return zero on success or error code.
  */ 
 extern int udp_gen_bin_cb (int csap_id, int layer, const asn_value *tmpl_pdu,
-                           const tad_template_arg_t *args, size_t arg_num, 
+                           const tad_tmpl_arg_t *args, size_t arg_num, 
                            csap_pkts_p up_payload, csap_pkts_p pkts);
 
 
@@ -782,7 +782,7 @@ extern int tcp_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu);
  * @return zero on success or error code.
  */ 
 extern int tcp_gen_bin_cb (int csap_id, int layer, const asn_value *tmpl_pdu,
-                           const tad_template_arg_t *args, size_t arg_num, 
+                           const tad_tmpl_arg_t *args, size_t arg_num, 
                            csap_pkts_p up_payload, csap_pkts_p pkts);
 
 

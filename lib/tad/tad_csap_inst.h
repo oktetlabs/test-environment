@@ -204,22 +204,6 @@ typedef enum {
 typedef struct csap_instance *csap_p;
 
 
-
-
-/**
- * Template argument iteration enums and structures
- */ 
-
-
-/**
- * Iteration argument plain C presentation structure
- */
-
-struct tad_template_arg_t;
-
-typedef struct tad_template_arg_t  tad_template_arg_t;
-
-
 /**
  * Type for reference to callback for read parameter value of CSAP.
  *

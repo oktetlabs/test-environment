@@ -65,6 +65,9 @@ extern "C" {
 /* ============= Types and structures definitions =============== */
 
 
+struct tad_tmpl_arg_t;
+
+
 
 /**
  * Type for reference to callback for init CSAP layer.
@@ -149,7 +152,7 @@ typedef struct csap_pkts
  */ 
 typedef int (*csap_gen_bin_cb_t)(int csap_id, int layer,
                                  const asn_value *tmpl_pdu,
-                                 const tad_template_arg_t *args,
+                                 const struct tad_tmpl_arg_t *args,
                                  size_t arg_num,
                                  csap_pkts_p up_payload,
                                  csap_pkts_p pkts);

@@ -334,7 +334,7 @@ tad_int_expr_parse(const char *string, tad_int_expr_t **expr, int *syms)
             p++; 
         if (*p == '-')
         {
-            (*expr)->n_type = EXP_U_MINUS;
+            (*expr)->n_type = TAD_EXPR_U_MINUS;
             (*expr)->d_len = 1; 
             p++;
             while (isspace(*p)) 
@@ -342,7 +342,7 @@ tad_int_expr_parse(const char *string, tad_int_expr_t **expr, int *syms)
         }
         else
         { 
-            (*expr)->n_type = EXP_ADD;
+            (*expr)->n_type = TAD_EXPR_ADD;
             (*expr)->d_len = 2;
         }
 
@@ -362,16 +362,16 @@ tad_int_expr_parse(const char *string, tad_int_expr_t **expr, int *syms)
             switch (*p)
             {
                 case '+':
-                    (*expr)->n_type = EXP_ADD;    
+                    (*expr)->n_type = TAD_EXPR_ADD;    
                     break;
                 case '-': 
-                    (*expr)->n_type = EXP_SUBSTR;
+                    (*expr)->n_type = TAD_EXPR_SUBSTR;
                     break;
                 case '*':
-                    (*expr)->n_type = EXP_MULT;
+                    (*expr)->n_type = TAD_EXPR_MULT;
                     break;
                 case '/':
-                    (*expr)->n_type = EXP_DIV;
+                    (*expr)->n_type = TAD_EXPR_DIV;
                     break;
                 default: 
                     goto parse_error;
@@ -401,7 +401,7 @@ tad_int_expr_parse(const char *string, tad_int_expr_t **expr, int *syms)
         int64_t val = 0;
         char *endptr;
 
-        (*expr)->n_type = CONSTANT;
+        (*expr)->n_type = TAD_EXPR_CONSTANT;
 
         if (*p == '0') /* zero, or octal/hexadecimal number. */
         {
@@ -439,7 +439,7 @@ tad_int_expr_parse(const char *string, tad_int_expr_t **expr, int *syms)
         if (isdigit(*p))
         {
             char *endptr;
-            (*expr)->n_type = ARG_LINK;
+            (*expr)->n_type = TAD_EXPR_ARG_LINK;
             (*expr)->arg_num = strtol(p, &endptr, 10);
             *syms = endptr - string; 
         }
@@ -466,7 +466,8 @@ parse_error:
 static void
 tad_int_expr_free_subtree(tad_int_expr_t *expr)
 {
-    if (expr->n_type != CONSTANT && expr->n_type != ARG_LINK) 
+    if (expr->n_type != TAD_EXPR_CONSTANT &&
+        expr->n_type != TAD_EXPR_ARG_LINK) 
     {
         unsigned i;
 
@@ -500,7 +501,7 @@ tad_int_expr_free(tad_int_expr_t *expr)
  */
 int 
 tad_int_expr_calculate(const tad_int_expr_t *expr, 
-                       const tad_template_arg_t *args, int64_t *result)
+                       const tad_tmpl_arg_t *args, int64_t *result)
 {
     int rc;
 
@@ -509,18 +510,18 @@ tad_int_expr_calculate(const tad_int_expr_t *expr,
 
     switch (expr->n_type)
     {
-        case CONSTANT:
+        case TAD_EXPR_CONSTANT:
             if (expr->d_len == 8)
                 *result = expr->val_i64;
             else
                 *result = expr->val_i32;
             break;
 
-        case ARG_LINK:
+        case TAD_EXPR_ARG_LINK:
             if (args == NULL)
                 return ETEWRONGPTR;
 
-            if (args[expr->arg_num].type != ARG_INT)
+            if (args[expr->arg_num].type != TAD_TMPL_ARG_INT)
                 return EINVAL;
             *result = args[expr->arg_num].arg_int;
             break;
@@ -533,7 +534,7 @@ tad_int_expr_calculate(const tad_int_expr_t *expr,
                 if (rc) 
                     return rc;
 
-                if (expr->n_type != EXP_U_MINUS)
+                if (expr->n_type != TAD_EXPR_U_MINUS)
                 {
                     rc = tad_int_expr_calculate(expr->exprs + 1, args, &r2);
                     if (rc) 
@@ -542,19 +543,19 @@ tad_int_expr_calculate(const tad_int_expr_t *expr,
 
                 switch (expr->n_type)
                 {
-                    case EXP_ADD:
+                    case TAD_EXPR_ADD:
                         *result = r1 + r2; 
                         break;
-                    case EXP_SUBSTR:
+                    case TAD_EXPR_SUBSTR:
                         *result = r1 - r2; 
                         break;
-                    case EXP_MULT:
+                    case TAD_EXPR_MULT:
                         *result = r1 * r2; 
                         break;
-                    case EXP_DIV:
+                    case TAD_EXPR_DIV:
                         *result = r1 / r2; 
                         break;
-                    case EXP_U_MINUS:
+                    case TAD_EXPR_U_MINUS:
                         *result = - r1; 
                         break;
                     default:
@@ -582,7 +583,7 @@ tad_int_expr_constant(int64_t n)
     if (ret == NULL) 
         return NULL; 
 
-    ret->n_type = CONSTANT;
+    ret->n_type = TAD_EXPR_CONSTANT;
     ret->d_len = 8;
 
     ret->val_i64 = n;
@@ -618,7 +619,7 @@ tad_int_expr_constant_arr(uint8_t *arr, size_t len)
 
     memcpy(((uint8_t *)&val) + sizeof(uint64_t) - len, arr, len);
 
-    ret->n_type = CONSTANT;
+    ret->n_type = TAD_EXPR_CONSTANT;
     ret->d_len = 8;
 
     ret->val_i64 = tad_ntohll(val);

@@ -301,8 +301,9 @@ extern int eth_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu);
  *
  * @return zero on success or error code.
  */ 
-extern int eth_gen_bin_cb (int csap_id, int layer, const asn_value *tmpl_pdu,
-                           const tad_template_arg_t *args, size_t  arg_num, 
+extern int eth_gen_bin_cb (int csap_id, int layer,
+                           const asn_value *tmpl_pdu,
+                           const tad_tmpl_arg_t *args, size_t  arg_num, 
                            csap_pkts_p up_payload, csap_pkts_p pkts);
 
 
@@ -321,9 +322,10 @@ extern int eth_gen_bin_cb (int csap_id, int layer, const asn_value *tmpl_pdu,
  *
  * @return zero on success or error code.
  */
-extern int eth_match_bin_cb (int csap_id, int layer, const asn_value *pattern_pdu,
-                             const csap_pkts *  pkt, csap_pkts * payload, 
-                             asn_value_p  parsed_packet );
+extern int eth_match_bin_cb (int csap_id, int layer,
+                             const asn_value *pattern_pdu,
+                             const csap_pkts *pkt, csap_pkts *payload, 
+                             asn_value_p parsed_packet);
 
 /**
  * Callback for generating pattern to filter 
@@ -338,8 +340,9 @@ extern int eth_match_bin_cb (int csap_id, int layer, const asn_value *pattern_pd
  *
  * @return zero on success or error code.
  */
-extern int eth_gen_pattern_cb (int csap_id, int layer, const asn_value *tmpl_pdu, 
-                               asn_value_p   *pattern_pdu);
+extern int eth_gen_pattern_cb(int csap_id, int layer,
+                              const asn_value *tmpl_pdu, 
+                              asn_value_p  *pattern_pdu);
 
 /**
  * Find ethernet interface by its name and initialize specified

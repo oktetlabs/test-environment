@@ -333,8 +333,8 @@ int eth_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
  * @return zero on success or error code.
  */ 
 int eth_gen_bin_cb(int csap_id, int layer, const asn_value *tmpl_pdu,
-                   const tad_template_arg_t *args, size_t  arg_num, 
-                   const csap_pkts_p  up_payload, csap_pkts_p pkts)
+                   const tad_tmpl_arg_t *args, size_t arg_num, 
+                   const csap_pkts_p up_payload, csap_pkts_p pkts)
 {
     csap_p                   csap_descr;
     eth_csap_specific_data_p spec_data;

@@ -73,100 +73,117 @@ extern "C" {
  * Type of iteration argument
  */
 typedef enum {
-    ARG_INT, /**< Integer */
-    ARG_STR, /**< Character string */
-    ARG_OCT, /**< Octet array */
-} arg_type_t;
+    TAD_TMPL_ARG_INT, /**< Integer */
+    TAD_TMPL_ARG_STR, /**< Character string */
+    TAD_TMPL_ARG_OCT, /**< Octet array */
+} tad_tmpl_arg_type_t;
 
 /**
- * Iteration argument plain C presentation structure
+ * Template argument value plain C presentation
  */
-struct tad_template_arg_t { 
-    arg_type_t  type;           /**< Type of argument */
-    size_t      length;         /**< Length of argument data */
-    union {
-        int     arg_int;
-        char    *arg_str;
-        uint8_t *arg_oct;
-    };
-};
+typedef struct tad_tmpl_arg_t { 
+    tad_tmpl_arg_type_t type;  /**< Type of argument */
 
+    size_t      length;        /**< Length of argument data */
+    union {
+        int     arg_int;       /**< Integer value */
+        char    *arg_str;      /**< Pointer to character sting value */
+        uint8_t *arg_oct;      /**< Pointer to octet array value */
+    };
+} tad_tmpl_arg_t;
+
+/**
+ * Type of template iterator.
+ */
 typedef enum {
-    ARG_TMPL_FOR,
-    ARG_TMPL_INT_SEQ,
-    ARG_TMPL_STR_SEQ,
-} arg_tmpl_type_t;   
+    TAD_TMPL_ITER_INT_SEQ,   /**< Explicit sequence of int values */
+    TAD_TMPL_ITER_STR_SEQ,   /**< Explicit sequence of string values */
+    TAD_TMPL_ITER_FOR,       /**< Simple for - arithmetical progression */
+} tad_tmpl_iter_type_t;   
 
-enum {
-    TAD_ARG_SIMPLE_FOR_BEGIN_DEF = 1,
-    TAD_ARG_SIMPLE_FOR_STEP_DEF = 1,
-};
 
+/** Default value of begin of 'simple-for' iterator */
+#define TAD_ARG_SIMPLE_FOR_BEGIN_DEF  1
+/** Default value of step of 'simple-for' iterator */
+#define TAD_ARG_SIMPLE_FOR_STEP_DEF   1
+
+/**
+ * Template iterator plain C structure
+ */
 typedef struct {
-    arg_tmpl_type_t type;
+    tad_tmpl_iter_type_t type;  /**< Iterator type */
     union {
         struct {
-            size_t length;
-            int    last_index; /**< index of last value */ 
-            int  **ints;
-        } int_set;
+            size_t length;     /**< Length of sequence */
+            int    last_index; /**< Index of last value */ 
+            int  **ints;       /**< Array with sequence */
+        } int_seq;             /**< Explicit integer sequence */
         struct {
-            size_t length;
-            int    last_index; /**< index of last value */ 
-            char **strings;
-        } str_set;
+            size_t length;     /**< Length of sequence */
+            int    last_index; /**< Index of last value */ 
+            char **strings;    /**< Array with sequence */
+        } str_seq;             /**< Explicit string sequence */
         struct {
-            int begin;
-            int end;
-            int step;
-        } simple_for;
+            int begin;         /**< Begin of progression */
+            int end;           /**< End of progression */
+            int step;          /**< Step of progression */
+        } simple_for;          /**< Arithmetical progression */
     };
-} tad_template_arg_spec_t;
+} tad_tmpl_iter_spec_t;
 
 
           
+/** 
+ * Type of payload specification in traffic template.
+ */
 typedef enum {
-    TAD_PLD_UNKNOWN,
-    TAD_PLD_BYTES,
-    TAD_PLD_LENGTH,
-    TAD_PLD_SCRIPT,
-    TAD_PLD_FUNCTION,
+    TAD_PLD_UNKNOWN,  /**< Undefined, used when there is no pld spec. */
+    TAD_PLD_BYTES,    /**< Byte sequence */
+    TAD_PLD_LENGTH,   /**< Only length specified, bytes are random */
+    TAD_PLD_SCRIPT,   /**< Special script for generation */
+    TAD_PLD_FUNCTION, /**< Name of function, which generate payload */
 } tad_payload_type;
 
 
 
+/**
+ * Type of node in arithmetical expression presentation tree 
+ */
 typedef enum {
-    CONSTANT = 0, 
-    ARG_LINK,
-    EXP_ADD,
-    EXP_SUBSTR,
-    EXP_MULT,
-    EXP_DIV,
-    EXP_U_MINUS, 
+    TAD_EXPR_CONSTANT = 0, /**< Constant value */
+    TAD_EXPR_ARG_LINK,     /**< Link to some arg value */
+    TAD_EXPR_ADD,          /**< Binary addition node */
+    TAD_EXPR_SUBSTR,       /**< Binary substraction node */
+    TAD_EXPR_MULT,         /**< Binary multiplication node */
+    TAD_EXPR_DIV,          /**< Binary division node */
+    TAD_EXPR_U_MINUS,      /**< Unary minus node */
 } tad_expr_node_type;
 
 typedef struct tad_int_expr_t tad_int_expr_t;
 
 /**
  * Struct for arithmetic (and boolean?) expressions in traffic operations
+ * Expression is constructed with for arithmetical operations from 
+ * constants and "variables", which are references to iterated artuments.
  */
 struct tad_int_expr_t 
 { 
-    tad_expr_node_type  n_type; 
+    tad_expr_node_type  n_type; /**< Node type */
     size_t              d_len;  /**< length of data: 
                                      - for node with operation is length
                                        of array with operands. 
                                      - for constant node is 'sizeof' 
                                        integer variable, may be 4 or 8.  */
     union {
-        int32_t val_i32;
-        int64_t val_i64;
-        int     arg_num;
-        tad_int_expr_t *exprs; /**< array with operands. */
+        int32_t val_i32;        /**< Int 32 value */
+        int64_t val_i64;        /**< Int 64 value */
+        int     arg_num;        /**< Number of referenced argument */
+        tad_int_expr_t *exprs;  /**< Array with operands */
     };
 };
 
 
+/***** Style fixes of review stopped here. Konst. */
 
 typedef struct {
     size_t      length;
@@ -233,7 +250,7 @@ typedef struct {
  */
 extern int tad_tr_send_prepare_bin(csap_p csap_descr, asn_value *nds, 
                                    struct rcf_comm_connection *handle, 
-                                   const tad_template_arg_t *args, 
+                                   const tad_tmpl_arg_t *args, 
                                    size_t arg_num, 
                                    tad_payload_type pld_type, 
                                    const void *pld_data, 
@@ -321,7 +338,7 @@ extern void tad_int_expr_free(tad_int_expr_t *expr);
  * @return status code.
  */
 extern int tad_int_expr_calculate(const tad_int_expr_t *expr, 
-                                  const tad_template_arg_t *args,
+                                  const tad_tmpl_arg_t *args,
                                   int64_t *result);
 
 /**
@@ -346,9 +363,9 @@ extern uint64_t tad_ntohll(uint64_t n);
  * @retval      - zero if iteration finished.
  * @retval      - negative if invalid arguments passed.
  */
-extern int tad_init_tmpl_args(tad_template_arg_spec_t *arg_specs,
+extern int tad_init_tmpl_args(tad_tmpl_iter_spec_t *arg_specs,
                               size_t arg_specs_num, 
-                              tad_template_arg_t *arg_iterated);
+                              tad_tmpl_arg_t *arg_iterated);
 
 
 /**
@@ -362,9 +379,9 @@ extern int tad_init_tmpl_args(tad_template_arg_spec_t *arg_specs,
  * @retval      - zero if iteration finished.
  * @retval      - negative if invalid arguments passed.
  */
-extern int tad_iterate_tmpl_args(tad_template_arg_spec_t *arg_specs,
+extern int tad_iterate_tmpl_args(tad_tmpl_iter_spec_t *arg_specs,
                                  size_t arg_specs_num, 
-                                 tad_template_arg_t *arg_iterated);
+                                 tad_tmpl_arg_t *arg_iterated);
 
 /**
  * Get argument set from template ASN value and put it into plain-C array
@@ -380,7 +397,7 @@ extern int tad_iterate_tmpl_args(tad_template_arg_spec_t *arg_specs,
  * @return zero on success, otherwise error code. 
  */
 extern int tad_get_tmpl_arg_specs(const asn_value *arg_set, 
-                                  tad_template_arg_spec_t *arg_specs,
+                                  tad_tmpl_iter_spec_t *arg_specs,
                                   size_t arg_num);
  
 /**

@@ -83,7 +83,7 @@
 int
 tad_tr_send_prepare_bin(csap_p csap_descr, asn_value_p nds, 
                         struct rcf_comm_connection *handle, 
-                        const tad_template_arg_t *args, size_t arg_num,
+                        const tad_tmpl_arg_t *args, size_t arg_num,
                         tad_payload_type pld_type, const void *pld_data,
                         csap_pkts_p pkts)
 {
@@ -272,9 +272,9 @@ tad_tr_send_thread(void * arg)
     tad_payload_type pld_type = TAD_PLD_UNKNOWN;
     uint8_t     *pld_data = NULL;
 
-    tad_template_arg_spec_t *arg_set_specs = NULL;
-    tad_template_arg_t      *arg_iterated = NULL;
-    int         arg_num; 
+    tad_tmpl_iter_spec_t *arg_set_specs = NULL;
+    tad_tmpl_arg_t       *arg_iterated = NULL;
+    int                   arg_num; 
 
     struct timeval npt; /* Next packet time moment */
 
@@ -396,12 +396,12 @@ tad_tr_send_thread(void * arg)
         if (arg_num <= 0) 
             break;
 
-        arg_set_specs = calloc(arg_num, sizeof(tad_template_arg_spec_t));
+        arg_set_specs = calloc(arg_num, sizeof(tad_tmpl_iter_spec_t));
         rc = tad_get_tmpl_arg_specs(arg_sets, arg_set_specs, arg_num);
 
         VERB("get_tmpl_arg_specs rc: %x\n", rc);
 
-        arg_iterated = calloc(arg_num, sizeof(tad_template_arg_t));
+        arg_iterated = calloc(arg_num, sizeof(tad_tmpl_arg_t));
         if (arg_iterated == NULL)
             rc = ENOMEM;
 
@@ -616,13 +616,14 @@ tad_tr_send_thread(void * arg)
  * @retval      - negative if invalid arguments passed.
  */
 int 
-tad_iterate_tmpl_args(tad_template_arg_spec_t *arg_specs, 
+tad_iterate_tmpl_args(tad_tmpl_iter_spec_t *arg_specs, 
                       size_t arg_specs_num, 
-                      tad_template_arg_t *arg_iterated)
+                      tad_tmpl_arg_t *arg_iterated)
 {
     int dep = arg_specs_num - 1;
-    tad_template_arg_spec_t *arg_spec_p;
     int performed = 0;
+
+    tad_tmpl_iter_spec_t *arg_spec_p;
 
     if (arg_specs == NULL)
         return 0;
@@ -636,7 +637,7 @@ tad_iterate_tmpl_args(tad_template_arg_spec_t *arg_specs,
     {
         switch(arg_spec_p->type)
         {
-            case ARG_TMPL_FOR:
+            case TAD_TMPL_ITER_FOR:
                 if (arg_iterated[dep].arg_int < arg_spec_p->simple_for.end)
                 { 
                     arg_iterated[dep].arg_int += 
@@ -652,8 +653,8 @@ tad_iterate_tmpl_args(tad_template_arg_spec_t *arg_specs,
                        is more clear with this operator. */
                 }
                 break;
-            case ARG_TMPL_INT_SEQ:
-            case ARG_TMPL_STR_SEQ:
+            case TAD_TMPL_ITER_INT_SEQ:
+            case TAD_TMPL_ITER_STR_SEQ:
                 /* TODO: implement other choices in template argument */
                 return ETENOSUPP;
                 break;
@@ -678,7 +679,7 @@ tad_iterate_tmpl_args(tad_template_arg_spec_t *arg_specs,
  */
 int 
 tad_get_tmpl_arg_specs(const asn_value *arg_set, 
-                       tad_template_arg_spec_t *arg_specs, size_t arg_num)
+                       tad_tmpl_iter_spec_t *arg_specs, size_t arg_num)
 {
     const asn_value *arg_val;
     unsigned i; 
@@ -703,7 +704,7 @@ tad_get_tmpl_arg_specs(const asn_value *arg_set,
         if (strcmp(choice, "simple-for") == 0)
         {
             int v_len;
-            arg_specs[i].type = ARG_TMPL_FOR;
+            arg_specs[i].type = TAD_TMPL_ITER_FOR;
             v_len = sizeof(arg_specs[i].simple_for.begin);
             rc = asn_read_value_field (arg_val, 
                                        &(arg_specs[i].simple_for.begin),
@@ -742,8 +743,8 @@ tad_get_tmpl_arg_specs(const asn_value *arg_set,
  * Description see in tad.h
  */
 int 
-tad_init_tmpl_args(tad_template_arg_spec_t *arg_specs, size_t arg_specs_num,
-                   tad_template_arg_t *arg_iterated)
+tad_init_tmpl_args(tad_tmpl_iter_spec_t *arg_specs, size_t arg_specs_num,
+                   tad_tmpl_arg_t *arg_iterated)
 {
     unsigned i;
 
@@ -753,23 +754,23 @@ tad_init_tmpl_args(tad_template_arg_spec_t *arg_specs, size_t arg_specs_num,
     if (arg_iterated == NULL)
         return ETEWRONGPTR;
 
-    memset(arg_iterated, 0, arg_specs_num * sizeof(tad_template_arg_t));
+    memset(arg_iterated, 0, arg_specs_num * sizeof(tad_tmpl_arg_t));
 
     for (i = 0; i < arg_specs_num; i++)
     { 
         switch (arg_specs[i].type)
         {
-            case ARG_TMPL_FOR:
+            case TAD_TMPL_ITER_FOR:
                 arg_iterated[i].arg_int = arg_specs[i].simple_for.begin;
                 /* fall through! */
 
                 /* TODO: init of first iteration parameters to other 
                  * template argument types */
-            case ARG_TMPL_INT_SEQ:
-                arg_iterated[i].type = ARG_INT;
+            case TAD_TMPL_ITER_INT_SEQ:
+                arg_iterated[i].type = TAD_TMPL_ARG_INT;
                 break;
-            case ARG_TMPL_STR_SEQ:
-                arg_iterated[i].type = ARG_STR;
+            case TAD_TMPL_ITER_STR_SEQ:
+                arg_iterated[i].type = TAD_TMPL_ARG_STR;
                 break;
         }
     }

@@ -235,7 +235,7 @@ extern int snmp_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu);
  */ 
 extern int snmp_gen_bin_cb(int csap_id, int layer,
                            const asn_value *tmpl_pdu,
-                           const tad_template_arg_t *args, size_t  arg_num,
+                           const tad_tmpl_arg_t *args, size_t  arg_num,
                            csap_pkts_p  up_payload, csap_pkts_p pkts);
 
 
