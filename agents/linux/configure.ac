@@ -49,6 +49,7 @@ CFLAGS=${CFLAGS}" "${TE_CFLAGS}
 AC_CONFIG_HEADERS([config.h])
 
 AC_CHECK_HEADERS([\
+assert.h \
 string.h \
 strings.h \
 sys/types.h \

@@ -30,6 +30,7 @@ AC_ARG_VAR([TE_LDFLAGS])
 AC_CONFIG_HEADERS([config.h])
 
 AC_CHECK_HEADERS([\
+assert.h \
 stdlib.h \
 stdarg.h \
 string.h \

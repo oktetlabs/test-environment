@@ -51,6 +51,7 @@ AC_ARG_VAR([TE_DEPENDENCIES])
 
 AC_CONFIG_HEADERS([config.h])
 AC_CHECK_HEADERS([\
+assert.h \
 fcntl.h \
 time.h \
 sys/time.h \

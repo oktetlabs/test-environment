@@ -38,6 +38,7 @@ LDFLAGS=${LDFLAGS}" "${TE_LDFLAGS}
 AC_CONFIG_HEADERS([config.h])
 
 AC_CHECK_HEADERS([\
+assert.h \
 sys/types.h \
 string.h \
 time.h \

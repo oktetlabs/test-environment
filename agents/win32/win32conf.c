@@ -32,6 +32,7 @@
 #include "config.h"
 #endif
 
+#include "te_defs.h"
 #include "windows.h"
 #include "iprtrmib.h"
 #include "w32api/iphlpapi.h"

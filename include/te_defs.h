@@ -31,11 +31,16 @@
 #ifndef __TE_DEFS_H__
 #define __TE_DEFS_H__
 
-#include <stdlib.h>
-#include <assert.h>
-
 #ifdef __cplusplus
 extern "C" {
+#endif
+
+#ifdef HAVE_ASSERT_H
+#include <assert.h>
+#endif
+
+#ifdef HAVE_STDLIB_H
+#include <stdlib.h>
 #endif
 
 /** Test Environment copyright to be used in applications output */
@@ -133,7 +138,7 @@ typedef unsigned char te_bool;
 #endif
 
 /** Prefix for tester user name */
-#define TE_USER_PREFIX  "te_tester_"
+#define TE_USER_PREFIX  "te"
 
 /**
  * Generate random number from the range.

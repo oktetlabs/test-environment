@@ -31,6 +31,7 @@ AC_CONFIG_HEADERS([config.h])
 
 AC_CHECK_HEADERS([\
 signal.h \
+assert.h \
 sys/socket.h \
 sys/ioctl.h \
 sys/poll.h \

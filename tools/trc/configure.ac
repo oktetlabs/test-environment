@@ -55,6 +55,7 @@ AC_CONFIG_HEADERS([config.h])
 
 AC_HEADER_STDC
 AC_CHECK_HEADERS([\
+assert.h \
 unistd.h \
 errno.h \
 strings.h \

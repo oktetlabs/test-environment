@@ -27,8 +27,8 @@
  * $Id$
  */
 
-#include "rcf_api.h"
 #include "conf_defs.h"
+#include "rcf_api.h"
 
 
 #define TA_LIST_SIZE    64

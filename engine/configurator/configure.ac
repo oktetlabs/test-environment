@@ -61,6 +61,7 @@ AC_CONFIG_HEADERS([config.h])
 # Check for stdlib.h, stdarg.h, string.h and float.h.
 AC_HEADER_STDC
 AC_CHECK_HEADERS([\
+stdlib.h \
 time.h \
 sys/time.h \
 sys/types.h \
