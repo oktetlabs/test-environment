@@ -1,0 +1,105 @@
+#! /bin/sh
+
+# Test Environment
+#
+# Process builder options passed to dispatcher.sh
+#
+# Copyright (C) 2005 Test Environment authors (see file AUTHORS in the 
+# root directory of the distribution).
+#
+# Test Environment is free software; you can redistribute it and/or 
+# modify it under the terms of the GNU General Public License as 
+# published by the Free Software Foundation; either version 2 of 
+# the License, or (at your option) any later version.
+# 
+# Test Environment is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, 
+# MA  02111-1307  USA
+#
+# Author Elena Vengerova <Elena.Vengerova@oktet.ru>
+# 
+# $Id: te_build_nut 8504 2004-12-15 18:27:09Z helen $
+#
+
+if test -z $1 ; then
+    exit 0 ;
+fi    
+
+while test -n "$1" ; do
+    CFLAGS=
+    case $1 in
+        --log-* )
+            OPT="${1#--log-}" ; CFLAGS=-DTE_LOG_LEVEL=0xFFFF ;;
+
+        --nolog-* )
+            OPT="${1#--nolog-}" ; CFLAGS=-UTE_LOG_LEVEL ;;
+            
+        --* )
+            OPT="${1#--}" ;;
+            
+       *) 
+           echo Invalid option --builder-$1 ; exit 1 ;;
+    esac
+        
+    case $OPT in 
+        include ) 
+            cd ${TE_BUILD}/include ; 
+            if test -n "$CFLAGS" ; then make clean ; fi
+            make CFLAGS=$CFLAGS install || exit 1 
+            ;;
+
+        builder ) 
+            cd ${TE_BUILD}/engine/builder 
+            if test -n "$CFLAGS" ; then make clean ; fi
+            make CFLAGS=$CFLAGS install || exit 1 
+            ;;
+
+        rcf ) 
+            cd ${TE_BUILD}/engine/rcf ; 
+            if test -n "$CFLAGS" ; then make clean ; fi
+            make CFLAGS=$CFLAGS install || exit 1 
+            ;;
+
+        cs ) 
+            cd ${TE_BUILD}/engine/configurator ; 
+            if test -n "$CFLAGS" ; then make clean ; fi
+            make CFLAGS=$CFLAGS install || exit 1 
+            ;;
+
+        tester ) 
+            cd ${TE_BUILD}/engine/tester ; 
+            if test -n "$CFLAGS" ; then make clean ; fi
+            make CFLAGS=$CFLAGS install || exit 1 
+            ;;
+
+        logger ) 
+            cd ${TE_BUILD}/engine/logger ; 
+            if test -n "$CFLAGS" ; then make clean ; fi
+            make CFLAGS=$CFLAGS install || exit 1 
+            ;;
+
+        lib-* )
+            LIBNAME="${OPT#lib-}" ;
+            cd ${TE_BUILD}/lib/${LIBNAME} ;  
+            if test -n "$CFLAGS" ; then make clean ; fi
+            make CFLAGS=$CFLAGS install || exit 1 
+            ;;
+
+        ta-* )
+            TANAME="${OPT#ta-}" ;
+            cd ${TE_BUILD}/agents/${TANAME} ; 
+            if test -n "$CFLAGS" ; then make clean ; fi
+            make CFLAGS=$CFLAGS install || exit 1 
+            ;;
+    esac
+            
+    shift 1
+done    
+
+exit 0

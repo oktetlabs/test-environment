@@ -20,6 +20,7 @@ dist_mybin_SCRIPTS=te_builder_log te_create_inst_dirs te_discover_host \
                    tce_report \
                    te_configure_package te_cross_build \
                    te_build_nuts te_build_nut te_build_suite \
+                   te_builder_opts \
                    te_tests_info.sh
 
 EXTRA_DIST=builder.m4
