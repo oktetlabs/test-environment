@@ -669,7 +669,7 @@ tapi_snmp_gen_csap_create(const char *ta, int sid, const char *snmp_agent,
     FILE *f;
 
     strcpy(tmp_name, "/tmp/te_snmp_csap_create.XXXXXX");
-    mktemp(tmp_name);
+    mkstemp(tmp_name);
 #if DEBUG
     VERB("tmp file: %s\n", tmp_name);
 #endif
@@ -2121,12 +2121,12 @@ tapi_snmp_get_table(const char *ta, int sid, int csap_id,
 
             if (rc) break;
 
-           if (vb_num == 0)
-           {
-              rc = EFAULT;
-              WARN("GETBULK got zero variables!");
-              break;
-           }
+            if (vb_num == 0)
+            {
+                rc = EFAULT;
+                WARN("GETBULK got zero variables!");
+                break;
+            }
 
             rest_varbinds -= vb_num;
             got_varbinds  += vb_num;
@@ -2178,10 +2178,10 @@ tapi_snmp_get_table(const char *ta, int sid, int csap_id,
                 for (index_l_en = ti_list.next, row_num = 0; index_l_en;
                      index_l_en = index_l_en->next, row_num ++)
                 {
-                    if (memcmp (&(vb[i].name.id[ti_start]),
-                                &(index_l_en->vb.name.id[ti_start]),
-                                ti_len * sizeof(oid)
-                               ) == 0 )
+                    if (memcmp(&(vb[i].name.id[ti_start]),
+                               &(index_l_en->vb.name.id[ti_start]),
+                               ti_len * sizeof(oid)
+                              ) == 0 )
                         break;
                 }
 
