@@ -1797,15 +1797,21 @@ TARPC_FUNC(pselect, {},
         tv.tv_sec = in->timeout.timeout_val[0].tv_sec;
         tv.tv_nsec = in->timeout.timeout_val[0].tv_nsec;
     }
-
-    INIT_CHECKED_ARG((char *)(in->sigmask), sizeof(sigset_t), 0);
     INIT_CHECKED_ARG((char *)&tv, sizeof(tv), 0);
 
-    MAKE_CALL(out->retval = func(in->n, (fd_set *)(in->readfds),
+    /* 
+     * The pointer may be a NULL and, therefore, contain uninitialized
+     * data, but we want to check that the data are unchanged even in
+     * this case.
+     */
+    INIT_CHECKED_ARG((char *)(in->sigmask), sizeof(sigset_t), 0);
+
+    MAKE_CALL(out->retval = func(in->n,
+                                 (fd_set *)(in->readfds),
                                  (fd_set *)(in->writefds),
                                  (fd_set *)(in->exceptfds),
-                                 in->timeout.timeout_len == 0 ? NULL :
-                                 &tv, in->sigmask));
+                                 in->timeout.timeout_len == 0 ? NULL : &tv,
+                                 in->sigmask));
 }
 )
 
@@ -2575,6 +2581,7 @@ TARPC_FUNC(getaddrinfo, {},
     struct sockaddr_storage addr;
     struct sockaddr        *a;
 
+    memset(&hints, 0, sizeof(hints));
     if (in->hints.hints_val != NULL)
     {
         info = &hints;
