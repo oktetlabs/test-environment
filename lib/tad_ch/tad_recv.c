@@ -340,6 +340,8 @@ tad_tr_sr_generate_pattern(csap_p csap_descr, asn_value_p template,
     asn_value_p pattern_unit = asn_init_value(ndn_traffic_pattern_unit);
     asn_value_p pdus         = asn_init_value(ndn_generic_pdu_sequence);
 
+    VERB("%s called for csap # %d", __FUNCTION__, csap_descr->id);
+
     rc = asn_write_component_value(pattern_unit, pdus, "pdus");
     if (rc) 
         return rc;
@@ -358,6 +360,9 @@ tad_tr_sr_generate_pattern(csap_p csap_descr, asn_value_p template,
 
         rc = csap_spt_descr->generate_pattern_cb
                     (csap_descr->id, level, level_tmpl_pdu, &level_pattern);
+
+        VERB("%s, lev %d, generate pattern cb rc %X", 
+                __FUNCTION__, level, rc);
 
         if (rc == 0) 
             rc = asn_write_component_value(gen_pattern_pdu, level_pattern, "");
@@ -378,6 +383,7 @@ tad_tr_sr_generate_pattern(csap_p csap_descr, asn_value_p template,
         *pattern = asn_init_value(ndn_traffic_pattern);
         rc = asn_insert_indexed (*pattern, pattern_unit, 0, "");
     }
+    VERB("%s, returns %X", __FUNCTION__, rc);
     return rc;
 }
 
@@ -551,6 +557,7 @@ tad_tr_recv_thread(void * arg)
                 break;
 
             rc = tad_tr_sr_generate_pattern(csap_descr, nds, &pattern);
+            INFO("generate pattern rc %X", rc);
             if (rc)
                 break;
             
@@ -563,6 +570,7 @@ tad_tr_recv_thread(void * arg)
                                     read_buffer, RBUF); 
 
             /* only single packet processed in send_recv command */
+            VERB("write_read cb return d_len %d", d_len);
             gettimeofday (&csap_descr->first_pkt, NULL);
             csap_descr->last_pkt = csap_descr->first_pkt;
 
@@ -574,6 +582,9 @@ tad_tr_recv_thread(void * arg)
                          csap_descr->id, csap_descr->last_errno);
                 break;
             }
+
+            if (d_len == 0)
+                break;
 
             nds = pattern; 
 
