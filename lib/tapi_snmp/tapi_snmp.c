@@ -59,7 +59,6 @@
 /* save or not tmp ndn files */
 #define DEBUG 1
 
-
 const char*
 print_oid (const tapi_snmp_oid_t *oid )
 {
@@ -946,7 +945,7 @@ tapi_snmp_set_vbs(const char *ta, int sid, int csap_id,
     {
         if (i > 0)
             fprintf(f, ", ");
-        rc = tapi_snmp_msg_var_bind(f, var_binds + i); 
+        rc = tapi_snmp_msg_var_bind(f, var_binds + i);
     }
 
     if (rc == 0)
@@ -1154,7 +1153,7 @@ tapi_snmp_set_gen(const char *ta, int sid, int csap_id,
                         ERROR("Object %s has too long OID", oid_name);
                         return TE_RC(TE_TAPI, EFAULT);
                     }
-                    tapi_snmp_oid_append(&oid, 1, 0);
+                    tapi_snmp_append_oid(&oid, 1, 0);
                     break;
 
                 case SNMP_OBJ_TBL_FIELD:
@@ -1216,7 +1215,7 @@ tapi_snmp_set_gen(const char *ta, int sid, int csap_id,
         return 0;
     }
 
-    vb_array = calloc(num_vars, sizeof(tapi_snmp_varbind_t)); 
+    vb_array = calloc(num_vars, sizeof(tapi_snmp_varbind_t));
 
     VERB("in %s: num_vars %d\n", __FUNCTION__, num_vars);
 
@@ -1575,7 +1574,7 @@ tapi_snmp_get_table(const char *ta, int sid, int csap_id,
         if (entry.length == MAX_OID_LEN)
             return TE_RC(TE_TAPI, ENOBUFS);
 
-        tapi_snmp_oid_append(&entry, 1, entry_node->subid);
+        tapi_snmp_append_oid(&entry, 1, entry_node->subid);
     }
     VERB("find Table entry node <%s> with last subid %d\n", 
                      entry_node->label, entry_node->subid);
@@ -1611,7 +1610,7 @@ tapi_snmp_get_table(const char *ta, int sid, int csap_id,
 
         if (index_node)
         {
-            tapi_snmp_oid_append(&entry, 1, entry_node->subid);
+            tapi_snmp_append_oid(&entry, 1, entry_node->subid);
         }
         else /* all index nodes are non-accessible, find any element */
         { 
@@ -1629,7 +1628,7 @@ tapi_snmp_get_table(const char *ta, int sid, int csap_id,
                       entry_node->access == MIB_ACCESS_READWRITE )
                    )
                 {
-                    tapi_snmp_oid_append(&entry, 1, entry_node->subid);
+                    tapi_snmp_append_oid(&entry, 1, entry_node->subid);
 
                     VERB("find accessible entry <%s> with last subid %d\n", 
                              entry_node->label, entry_node->subid);
@@ -1816,7 +1815,7 @@ tapi_snmp_get_table_dimension(tapi_snmp_oid_t *table_oid, int *dimension)
         if (entry.length == MAX_OID_LEN)
             return TE_RC(TE_TAPI, ENOBUFS);
 
-        tapi_snmp_oid_append(&entry, 1, entry_node->subid);
+        tapi_snmp_append_oid(&entry, 1, entry_node->subid);
     }
     if (entry_node->indexes == NULL)
     {
@@ -1943,7 +1942,7 @@ tapi_snmp_get_table_columns(tapi_snmp_oid_t *table_oid, tapi_snmp_var_access **c
         entry_node = entry_node->child_list;
         if (entry.length == MAX_OID_LEN)
             return TE_RC(TE_TAPI, ENOBUFS);
-        tapi_snmp_oid_append(&entry, 1, entry_node->subid);
+        tapi_snmp_append_oid(&entry, 1, entry_node->subid);
     }
     if (entry_node->indexes == NULL)
     {
@@ -2302,7 +2301,7 @@ cleanup:
 
 /* See description in tapi_snmp.h */
 void
-tapi_snmp_oid_append(tapi_snmp_oid_t *oid, int n, ...)
+tapi_snmp_append_oid(tapi_snmp_oid_t *oid, int n, ...)
 {
     int     i;
     va_list ap;

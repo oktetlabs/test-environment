@@ -383,8 +383,8 @@ extern int tapi_snmp_get_row(const char *ta, int sid, int csap_id,
  * @return zero on success or error code.
  */
 extern int tapi_snmp_set_integer(const char *ta, int sid, int csap_id, 
-                                const tapi_snmp_oid_t *oid, 
-                                int value, int *errstat);
+                                 const tapi_snmp_oid_t *oid, 
+                                 int value, int *errstat);
 
 /**
  * The function makes an attempt to set an octet string value for an SNMP
@@ -718,7 +718,7 @@ extern int tapi_snmp_load_cfg_mibs(const char *dir_path);
  *
  * @param oid  OID to initialize
  */
-static inline void tapi_snmp_oid_zero(tapi_snmp_oid_t *oid)
+static inline void tapi_snmp_zero_oid(tapi_snmp_oid_t *oid)
 {
     oid->length = 0;
     memset(oid->id, 0, sizeof(oid->id));
@@ -731,7 +731,7 @@ static inline void tapi_snmp_oid_zero(tapi_snmp_oid_t *oid)
  * @param n    Number of SUB IDs to append
  * @param ...  SUB IDs type of "int"
  */
-extern void tapi_snmp_oid_append(tapi_snmp_oid_t *oid, int n, ...);
+extern void tapi_snmp_append_oid(tapi_snmp_oid_t *oid, int n, ...);
 
 /**
  * Parses text representation of OID to TAPI SNMP OID data structure

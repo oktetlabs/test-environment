@@ -84,10 +84,24 @@ extern "C" {
  * Append one SUB ID to OID (macro around tapi_snmp_oid_append()).
  *
  * @param oid_     OID to be appended
+ * @param len_     The number of sub ids to add
  * @param subid_   SUB ID value
  */
-#define SNMP_OID_APPEND_SUBID(oid_, subid_) \
-    tapi_snmp_oid_append(oid_, 1, subid_)
+#define SNMP_CREATE_OID(oid_, len_, sub_ids_...) \
+    do {                                            \
+        tapi_snmp_zero_oid(oid_);                   \
+        tapi_snmp_append_oid(oid_, len_, sub_ids_); \
+    } while (0)
+
+/**
+ * Append one SUB ID to OID (macro around tapi_snmp_oid_append()).
+ *
+ * @param oid_     OID to be appended
+ * @param subid_   SUB ID value
+ */
+#define SNMP_APPEND_OID_SUBID(oid_, subid_) \
+    tapi_snmp_append_oid(oid_, 1, subid_)
+
 
 /**
  * Macro around tapi_snmp_oid_zero().
