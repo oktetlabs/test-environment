@@ -730,7 +730,7 @@ cfg_find_object_by_instance(cfg_handle instance, cfg_handle *object)
  * @return 0 or EINVAL if pattern format is incorrect some argument is NULL
  */
 int
-cfg_find_pattern(const char *pattern, int *num, cfg_handle **set)
+cfg_find_pattern(const char *pattern, unsigned int *num, cfg_handle **set)
 {
     cfg_pattern_msg *msg;
     char            *alloc_msg = NULL;

@@ -292,11 +292,11 @@ extern int cfg_find_object_by_instance(cfg_handle instance,
  * @return 0 or EINVAL if pattern format is incorrect some argument is NULL
  */
 extern int cfg_find_pattern(const char *pattern,
-                            int *p_num, cfg_handle **p_set);
+                            unsigned int *p_num, cfg_handle **p_set);
 
 /** The same function as cfg_find_pattern, but OID may be format string */
 static inline int
-cfg_find_pattern_fmt(int *p_num, cfg_handle **p_set,
+cfg_find_pattern_fmt(unsigned int *p_num, cfg_handle **p_set,
                      const char *ptrn_fmt, ...)
 {
     va_list ap;
@@ -509,7 +509,7 @@ extern int cfg_set_instance_local(cfg_handle handle,
 
 /** Set instance by the OID. OID may be format string */
 static inline int
-cfg_set_instance_local_fmt(cfg_val_type type, void *val,
+cfg_set_instance_local_fmt(cfg_val_type type, const void *val,
                            const char *oid_fmt, ...)
 {
     _CFG_HANDLE_BY_FMT;
