@@ -155,12 +155,12 @@ sync_ta_instance(char *ta, char *oid)
     cfg_handle    handle = CFG_HANDLE_INVALID;
     cfg_inst_val  val;
     int           rc;
-
+    
     if (obj == NULL)
         return 0;
 
     rc = cfg_db_find(oid, &handle);
-    if (rc != 0 && rc != ENOENT)
+    if (rc != 0 && TE_RC_GET_ERROR(rc) != ENOENT)
         return rc;
 
     VERB("Add TA '%s' object instance '%s'", ta, oid);
@@ -205,7 +205,7 @@ sync_ta_instance(char *ta, char *oid)
                 "failed", cfg_get_buf, obj->type, oid);
         return rc;
     }
-
+    
     if (handle == CFG_HANDLE_INVALID)
         rc = cfg_db_add(oid, &handle, obj->type, val);
     else
@@ -256,31 +256,40 @@ remove_excessive(cfg_instance *inst, char *list)
 static int
 sync_ta_subtree(char *ta, char *oid)
 {
-    char  *list;
-    char  *tmp, *s;
+    char  *tmp;
     char  *next;
     char  *limit;
+    char  *wildcard_oid;
     char **sorted;
     int    n = 0;
+    int    i;
     int    rc;
 
     cfg_handle    handle;
 
     VERB("Synchronize TA '%s' subtree '%s'", ta, oid);
 
+    /* Take all instances from the TA */
+    if ((wildcard_oid = malloc(strlen(oid) + sizeof("/..."))) == NULL)
+    {
+        ERROR("Out of memory");
+        return rc;
+    }
+    sprintf(wildcard_oid, "%s/...", oid);
+
     rc = rcf_ta_cfg_group(ta, 0, TRUE);
     if (rc != 0)
     {
-        ERROR("Failed(0x%x) to start group on TA '%s'", rc, ta);
-        EXIT("%d", rc);
-        return rc;
+        ERROR("Out of memory");
+        free(wildcard_oid);
+        return ENOMEM;
     }
 
-    /* Take all instances from the TA */
     cfg_get_buf[0] = 0;
     while (TRUE)
     {
-        rc = rcf_ta_cfg_get(ta, 0, "*:*", cfg_get_buf, cfg_get_buf_len);
+        rc = rcf_ta_cfg_get(ta, 0, wildcard_oid, cfg_get_buf, 
+                            cfg_get_buf_len);
         if (TE_RC_GET_ERROR(rc) == ETESMALLBUF)
         {
             cfg_get_buf_len <<= 1;
@@ -290,6 +299,7 @@ sync_ta_subtree(char *ta, char *oid)
             {
                 ERROR("Memory allocation failure");
                 rcf_ta_cfg_group(ta, 0, FALSE);
+                free(wildcard_oid);
                 return ENOMEM;
             }
         }
@@ -299,47 +309,30 @@ sync_ta_subtree(char *ta, char *oid)
         {
             ERROR("rcf_ta_cfg_get() failed: TA=%s, error=%x", ta, rc);
             rcf_ta_cfg_group(ta, 0, FALSE);
+            free(wildcard_oid);
             return rc;
         }
     }
+    free(wildcard_oid);
 
     /*
      * At first, remove all instances of the subtree, which do not present
      * in the list.
      */
     rc = cfg_db_find(oid, &handle);
-    if (rc != 0 && rc != ENOENT)
+    if (rc != 0 && TE_RC_GET_ERROR(rc) != ENOENT)
     {
         rcf_ta_cfg_group(ta, 0, FALSE);
         return rc;
     }
 
-    if ((list = malloc(strlen(cfg_get_buf) + 1)) == NULL)
-    {
-        ERROR("Memory allocation failure");
-        rcf_ta_cfg_group(ta, 0, FALSE);
-        return ENOMEM;
-    }
-    
-    /* Remove from the list all entries, which we are not interested in */
-    list[0] = 0;
-    s = list;
-    n = strlen(oid);
-    for (tmp = strtok(cfg_get_buf, " "); 
-         tmp != NULL; 
-         tmp = strtok(NULL, " "))
-    {
-        if (strncmp(oid, tmp, n) == 0)
-            s += sprintf(s, "%s ", tmp);
-    }
-
+    limit = cfg_get_buf + strlen(cfg_get_buf);
+    sprintf(limit, " %s", oid);
     if (rc == 0)
-        remove_excessive(CFG_GET_INST(handle), list);
+        remove_excessive(CFG_GET_INST(handle), cfg_get_buf);
         
-    limit = list + strlen(list);
-
     /* Calculate number of OIDs to be synchronized */
-    for (tmp = list; tmp < limit; tmp = next)
+    for (tmp = cfg_get_buf; tmp < limit; tmp = next)
     {
         next = strchr(tmp, ' ');
         if (next != NULL)
@@ -352,25 +345,28 @@ sync_ta_subtree(char *ta, char *oid)
 
     if ((sorted = (char **)calloc(sizeof(char **) * n, 1)) == NULL)
     {
-        free(list);
         ERROR("Memory allocation failure");
         rcf_ta_cfg_group(ta, 0, FALSE);
         return ENOMEM;
     }
 
     /* Put matching OIDs to the array */
-    for (n = 0, tmp = list; tmp < limit; tmp += strlen(tmp) + 1)
-        if (strncmp(tmp, oid, strlen(oid)) == 0)
-            sorted[n++] = tmp;
+    
+    for (n = 0, tmp = cfg_get_buf; tmp < limit; tmp += strlen(tmp) + 1)
+        if (strcmp_start(oid, tmp) == 0)
+            sorted[n++] = strdup(tmp);
     /*
      * Attention! Temporary solution: assuming that RCF PCH returns
-     * OIDs in the order "closest to the root last".
+     * OIDs in the order "closest to the root first".
      */
-    for (n--; n >= 0; n--)
-        if ((rc = sync_ta_instance(ta, sorted[n])) != 0)
+    for (i = 0; i < n; i++)
+    {
+        if ((rc = sync_ta_instance(ta, sorted[i])) != 0)
             break;
+    }
 
-    free(list);
+    for (i = 0; i < n; i++)
+        free(sorted[i]);
     free(sorted);
     rcf_ta_cfg_group(ta, 0, FALSE);
 
@@ -393,7 +389,7 @@ cfg_ta_sync(char *oid, te_bool subtree)
     te_bool  agt_volatile_sync = FALSE;
     cfg_oid *tmp_oid;
     int      rc = 0;
-
+    
     tmp_oid = cfg_convert_oid_str(oid);
 
     if (tmp_oid == NULL)
@@ -410,7 +406,7 @@ cfg_ta_sync(char *oid, te_bool subtree)
      *
      * It's too dirty way of synchronizing "/agent/volatile" subtree, but
      * so far it works, and it didn't take me too long for that -
-     * the time is money, so when it is required to extend this feture
+     * the time is money, so when it is required to extend this feature
      * we'll do it.
      * What to extend?
      * Synchronizing volatile tree on the particular agent;

@@ -482,11 +482,6 @@ cfg_dh_process_file(xmlNodePtr node)
             free(val_s);
     }
     
-    if ((rc = cfg_ta_sync("/:", TRUE)) != 0)
-    {
-        ERROR("Cannot synchronize database with Test Agents");
-        return rc;
-    }
     return 0;
     
 #undef RETERR    

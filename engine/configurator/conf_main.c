@@ -59,7 +59,7 @@ enum {
 };
 
 
-static void
+/*static */void
 print_tree(cfg_instance *inst, int indent)
 {
     static FILE *f = NULL;
@@ -181,7 +181,11 @@ parse_config(char *file, te_bool restore)
     if (xmlStrcmp(root->name, (const xmlChar *)"backup") == 0)
         rc = cfg_backup_process_file(root, restore);
     else if (xmlStrcmp(root->name, (const xmlChar *)"history") == 0)
+    {
         rc = cfg_dh_process_file(root);
+        if (rc == 0 && (rc = cfg_ta_sync("/:", TRUE)) != 0)
+            ERROR("Cannot synchronize database with Test Agents");
+    }
     else
     {
         ERROR("Incorrect root node '%s' in the configuration file",
@@ -371,8 +375,22 @@ process_add(cfg_add_msg *msg, te_bool update_dh)
     cfg_types[obj->type].free(val);
     if (obj->type != CVT_NONE)
         free(val_str);
+        
+    if (msg->rc != 0)
+        return;
 
-    cfg_ta_sync(oid, TRUE);
+    if ((msg->rc = cfg_ta_sync(oid, TRUE)) != 0)
+    {
+        if ((inst = CFG_GET_INST(handle)) != NULL)
+        {
+            rcf_ta_cfg_del(inst->name, 0, inst->oid); 
+            cfg_db_del(handle);
+        }
+        if (update_dh)
+            cfg_dh_delete_last_command();
+        return;
+    }
+    
     msg->handle = handle;
 }
 
