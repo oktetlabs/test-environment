@@ -2091,7 +2091,8 @@ TARPC_FUNC(ioctl,
                     req_t->rpc_ifr_name.rpc_ifr_name_len =
                         sizeof(req_c->ifr_name);
                     if ((req_t->rpc_ifr_addr.sa_data.sa_data_val =
-                         calloc(1, SA_DATA_MAX_LEN)) == NULL)
+                         calloc(1, sizeof(struct sockaddr) - SA_COMMON_LEN))
+                         == NULL)
                     {
                         /* 
                          * Already allocated memory will be released 
@@ -2103,7 +2104,7 @@ TARPC_FUNC(ioctl,
                         goto finish;
                     }
                     req_t->rpc_ifr_addr.sa_data.sa_data_len =
-                        SA_DATA_MAX_LEN;
+                        sizeof(struct sockaddr) - SA_COMMON_LEN;
                     sockaddr_h2rpc(&(req_c->ifr_addr),
                                    &(req_t->rpc_ifr_addr));
                 }
