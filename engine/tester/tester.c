@@ -67,7 +67,9 @@ enum {
     TESTER_OPT_TIMEOUT,
     TESTER_OPT_VERBOSE,
     TESTER_OPT_QUIET,
-    TESTER_OPT_VERSION
+    TESTER_OPT_VERSION,
+    TESTER_OPT_NO_CS,
+    TESTER_OPT_NOCFGTRACK,
 };
 
 
@@ -489,6 +491,12 @@ process_cmd_line_opts(tester_ctx *ctx, tester_cfgs *cfgs,
         { "nobuild", '\0', POPT_ARG_NONE, NULL, TESTER_OPT_NOBUILD,
           "Don't build any Test Suites.", NULL },
 
+        { "no-cs", '\0', POPT_ARG_NONE, NULL, TESTER_OPT_NO_CS,
+          "Don't interact with Configurator.", NULL },
+
+        { "nocfgtrack", '\0', POPT_ARG_NONE, NULL, TESTER_OPT_NOCFGTRACK,
+          "Don't track configuration changes.", NULL },
+
         { "norandom", '\0', POPT_ARG_NONE, NULL, TESTER_OPT_NORANDOM,
           "Force to run all tests in defined order as well as to get "
           "values of all arguments in defined order. Usefull for "
@@ -549,6 +557,14 @@ process_cmd_line_opts(tester_ctx *ctx, tester_cfgs *cfgs,
 
             case TESTER_OPT_NOBUILD:
                 ctx->flags |= TESTER_NOBUILD;
+                break;
+
+            case TESTER_OPT_NO_CS:
+                ctx->flags |= TESTER_NO_CS;
+                break;
+
+            case TESTER_OPT_NOCFGTRACK:
+                ctx->flags |= TESTER_NOCFGTRACK;
                 break;
 
             case TESTER_OPT_VERBOSE:

@@ -1629,7 +1629,8 @@ iterate_test(tester_ctx *ctx, run_item *test,
     }
 
     /* Create backup to be verified after each iteration */
-    if (test->attrs.track_conf)
+    if (!(ctx->flags & (TESTER_NO_CS | TESTER_NOCFGTRACK)) &&
+        test->attrs.track_conf)
     {
         rc = cfg_create_backup(&backup_name);
         if (rc != 0)
@@ -1692,7 +1693,8 @@ iterate_test(tester_ctx *ctx, run_item *test,
             ERROR("run_test() failed: %X", rc);
         }
 
-        if (test->attrs.track_conf)
+        if (!(ctx->flags & (TESTER_NO_CS | TESTER_NOCFGTRACK)) &&
+            test->attrs.track_conf)
         {
             /* Check configuration backup */
             rc = cfg_verify_backup(backup_name);
