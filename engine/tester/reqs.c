@@ -353,14 +353,19 @@ is_reqs_expr_match(const reqs_expr         *re,
             break;
 
         case TESTER_REQS_EXPR_AND:
-            result = is_reqs_expr_match(re->u.binary.lhv,
-                                        ctx_set, test_set, params,
-                                        force) &&
-                     is_reqs_expr_match(re->u.binary.rhv,
-                                        ctx_set, test_set, params,
-                                        force);
+        {
+            te_bool lhr = is_reqs_expr_match(re->u.binary.lhv,
+                                             ctx_set, test_set, params,
+                                             force);
+            te_bool rhr = (lhr || !*force) ?
+                              is_reqs_expr_match(re->u.binary.rhv,
+                                                 ctx_set, test_set, params,
+                                                 force) : FALSE;
+
+            result = lhr && rhr;
             VERB("%s(): && -> %u(%u)", __FUNCTION__, result, *force);
             break;
+        }
 
         case TESTER_REQS_EXPR_OR:
             result = is_reqs_expr_match(re->u.binary.lhv,
