@@ -78,7 +78,7 @@ if test ! -e Makefile ; then
     TE_INSTALL=${TE_INSTALL} \
     TE_PATH=${TE_PATH} \
     TE_BASE=${TE_BASE} \
-    TE_CFLAGS="-ggdb -Wall -W -I${TE_INSTALL}/${host}/include" \
+    TE_CFLAGS="-O0 -ggdb -Wall -W -I${TE_INSTALL}/${host}/include" \
     TE_LDFLAGS="-L${TE_INSTALL}/${host}/lib" \
     eval ${SOURCES}/configure -q --prefix=${TE_INSTALL_SUITE} --host=${host} || exit 1 
 fi
