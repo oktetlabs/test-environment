@@ -28,16 +28,18 @@
 #ifndef __TE_NDN_GENEREIC_H__
 #define __TE_NDN_GENEREIC_H__
 
+/* for 'struct timeval' */
+#if HAVE_SYS_TIME_H
+#include <sys/time.h>
+#endif
+
+#include "asn_usr.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/* for 'struct timeval' */
-#include <sys/time.h>
-
-#include "asn_usr.h"
-
-/* Macros for ASN tags of protocol choices in PDUs and CSAPs */
+/* Constants for ASN tags of protocol choices in PDUs and CSAPs */
 typedef enum { 
     NDN_TAD_FILE = 1,
     NDN_TAD_SNMP,
