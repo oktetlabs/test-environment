@@ -259,7 +259,6 @@ ftp_open(char *uri, int flags, int passive, int offset)
 #define PUT_CMD(_cmd...) \
     do {                                                \
         sprintf(buf, _cmd);                             \
-        printf("Command %s\n", buf); fflush(stdout);    \
         VERB("%s", buf);                                \
         if (write(s, buf, strlen(buf)) < 0)             \
         {                                               \
@@ -280,7 +279,6 @@ ftp_open(char *uri, int flags, int passive, int offset)
             close(s);                              \
             return -1;                             \
         }                                          \
-        printf("Answer %s\n", buf); fflush(stdout); \
         VERB("%s", buf);                           \
         if (*buf == '4' || *buf == '5')            \
         {                                          \
