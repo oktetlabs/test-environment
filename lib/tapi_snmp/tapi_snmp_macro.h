@@ -582,19 +582,18 @@ extern "C" {
  * @param csap_id        identifier of an SNMP CSAP.
  * @param name           name of an SNMP object the value is to be set.
  * @param value          integer value.
- * @param index          index of table field instance (0 for scalar field).
+ * @param err_stat       SNMP error status
+ * @param sub_id         index of table field instance or 0 for scalar field.
  * 
  */
-#define TAPI_SNMP_SET_INTEGER(ta, sid, csap_id, name, value, index...)         \
+#define TAPI_SNMP_SET_INTEGER(ta, sid, csap_id, name, value,                   \
+                              err_stat, sub_id...)                             \
     do {                                                                       \
         tapi_snmp_oid_t           leaf_oid;                                    \
-        CHECK_RC(tapi_snmp_make_instance(name, &leaf_oid, index));             \
-        rc = tapi_snmp_set_integer(ta, sid, csap_id, &leaf_oid,                \
-                                   (value), &err_stat);                        \
-        if ((rc != 0) || (err_stat != 0)) {                                    \
-          WARN("SNMP set " name " to " #value " = %d failed, rc=%x, err=%x\n", \
-               (value), rc, err_stat);                                         \
-        }                                                                      \
+                                                                               \
+        CHECK_RC(tapi_snmp_make_instance(name, &leaf_oid, sub_id));            \
+        CHECK_RC(tapi_snmp_set_integer((ta), (sid), (csap_id), &leaf_oid,      \
+                                       (value), (err_stat));                   \
     } while (0)
 
 /**
@@ -606,19 +605,18 @@ extern "C" {
  * @param name           name of an SNMP object the value is to be set.
  * @param value          octet string value.
  * @param length         octet string length.
- * @param index          index of table field instance (0 for scalar field).
+ * @param err_stat       SNMP error status
+ * @param sub_id         index of table field instance or 0 for scalar field.
  * 
  */
-#define TAPI_SNMP_SET_OCTETSTRING(ta, sid, csap_id, name, value, length, index...) \
+#define TAPI_SNMP_SET_OCTETSTRING(ta, sid, csap_id, name,                      \
+                                  value, length, err_stat, sub_id...)          \
     do {                                                                       \
         tapi_snmp_oid_t           leaf_oid;                                    \
+                                                                               \
         CHECK_RC(tapi_snmp_make_instance(name, &leaf_oid, index));             \
-        rc = tapi_snmp_set_octetstring(ta, sid, csap_id, &leaf_oid,            \
-                                       (value), (length), &err_stat);          \
-        if ((rc != 0) || (err_stat != 0)) {                                    \
-          WARN("SNMP set " name " to " #value " = %p failed, rc=%x, err=%x\n", \
-               (value), rc, err_stat);                                         \
-        }                                                                      \
+        CHECK_RC(tapi_snmp_set_octetstring((ta), (sid), (csap_id), &leaf_oid,  \
+                                       (value), (length), (err_stat));         \
     } while (0)
 
 /**
@@ -629,12 +627,32 @@ extern "C" {
  * @param csap_id        identifier of an SNMP CSAP.
  * @param name           name of an SNMP object the value is to be set.
  * @param value          display string value.
- * @param index          index of table field instance (0 for scalar field).
+ * @param err_stat       SNMP error status
+ * @param sub_id         index of table field instance or 0 for scalar field.
  * 
  */
-#define TAPI_SNMP_SET_STRING(ta, sid, csap_id, name, value, index...)          \
+#define TAPI_SNMP_SET_STRING(ta, sid, csap_id, name, value,                    \
+                             err_stat, sub_id...)                              \
     TAPI_SNMP_SET_OCTETSTRING(ta, sid, csap_id, name, value,                   \
-                              strlen(value), index)
+                              strlen(value), err_stat, sub_id)
+
+/**
+ * Macro around tapi_snmp_set_row()
+ * 
+ * @param ta             Test Agent name
+ * @param sid            RCF Session id.
+ * @param csap_id        identifier of an SNMP CSAP.
+ * @param err_stat       SNMP error status
+ * @param err_index      index of varbind where an error ocured
+ * @param index          index of table field instance or 0 for scalar field.
+ * 
+ */
+#define TAPI_SNMP_SET_ROW(ta, sid, csap_id, err_stat, err_index, index,        \
+                          values...)                                           \
+    do {                                                                       \
+        CHECK_RC(tapi_snmp_set_row(ta, sid, csap_id, err_stat, err_index,      \
+                                   index, values);                             \
+    } while (0)
 
 
 /**
@@ -648,10 +666,10 @@ extern "C" {
  * @param index          index of table field instance (0 for scalar field).
  * 
  */
-#define TAPI_SNMP_GET_INTEGER(ta, sid, csap_id, name, value, index...)         \
+#define TAPI_SNMP_GET_INTEGER(ta, sid, csap_id, name, value, sub_id...)        \
     do {                                                                       \
         tapi_snmp_oid_t           leaf_oid;                                    \
-        CHECK_RC(tapi_snmp_make_instance(name, &leaf_oid, index));             \
+        CHECK_RC(tapi_snmp_make_instance(name, &leaf_oid, sub_id));            \
         CHECK_RC(tapi_snmp_get_integer(ta, sid, csap_id, &leaf_oid, (value))); \
     } while (0)
 
@@ -667,11 +685,11 @@ extern "C" {
  * @param index          index of table field instance (0 for scalar field).
  * 
  */
-#define TAPI_SNMP_CHECK_INTEGER(ta, sid, csap_id, name, value, index...)       \
+#define TAPI_SNMP_CHECK_INTEGER(ta, sid, csap_id, name, value, sub_id...)      \
     do {                                                                       \
         int                       tmp_value;                                   \
         tapi_snmp_oid_t           leaf_oid;                                    \
-        CHECK_RC(tapi_snmp_make_instance(name, &leaf_oid, index));             \
+        CHECK_RC(tapi_snmp_make_instance(name, &leaf_oid, sub_id));            \
         CHECK_RC(tapi_snmp_get_integer(ta, sid, csap_id, &leaf_oid,            \
                  &tmp_value));                                                 \
         if (value != tmp_value)                                                \
