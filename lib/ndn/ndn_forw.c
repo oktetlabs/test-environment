@@ -27,6 +27,7 @@
  */
 
 #include <stdlib.h>
+#include <string.h>
 #include <stdio.h>
 
 #include "te_defs.h"
@@ -34,7 +35,7 @@
 #include "ndn_internal.h"
 #include "ndn_forw.h"
 
-
+#include "logger_api.h"
 
 
 /*
@@ -333,4 +334,58 @@ ndn_forw_action_to_plain(const asn_value *val,
 }
 
 
+
+/** 
+ * Convert plain C structrue to Forwarder-Action ASN value. 
+ * 
+ * @param forw_action   converted structure.
+ * @param result        location for pointer to ASN value of type (OUT)
+ *
+ * @return zero on success or error code.
+ */ 
+int 
+ndn_forw_action_plain_to_asn(ndn_forw_action_plain *forw_action,
+                             asn_value **result)
+{
+    int rc = 0;
+    asn_value *val = NULL;
+
+    if (result == NULL || forw_action == NULL || forw_action->id == NULL)
+        return ETEWRONGPTR;
+
+    do { 
+        val = asn_init_value(ndn_forw_action);
+
+        rc = asn_write_value_field(val, 
+                        forw_action->id, strlen (forw_action->id), "id"); 
+        if (rc) break;
+                            
+        switch (forw_action->drop.type)
+        {
+        case FORW_DROP_DISABLED:
+            break; /* do nothing */
+        case FORW_DROP_RANDOM:
+            rc = asn_write_value_field(val, 
+                                    &forw_action->drop.rate,
+                                    sizeof(forw_action->drop.rate),
+                                    "drop.#random-rate");
+            break;
+        case FORW_DROP_PATTERN:
+            rc = ETENOSUPP; /* TODO */
+        } 
+        if (rc) break;
+        
+        /* TODO delay and reorder */
+    } while (0);
+
+    if (rc)
+    {
+        ERROR("%s failed %X", __FUNCTION__, rc);
+        asn_free_value(val);
+    }
+    else
+        *result = val;
+
+    return rc;
+}
 

@@ -105,11 +105,30 @@ typedef struct {
     ndn_forw_drop_t     drop;
 } ndn_forw_action_plain;
 
-/* See description in ndn_forw.c */ 
-extern int ndn_forw_action_to_plain(const asn_value *pkt, 
+extern const asn_type * const ndn_forw_action;
+
+/** 
+ * Convert Forwarder-Action ASN value to plain C structrue. 
+ * 
+ * @param val           ASN value of type  
+ * @param forw_action   converted structure (OUT).
+ *
+ * @return zero on success or error code.
+ */ 
+extern int ndn_forw_action_asn_to_plain(const asn_value *val, 
                                 ndn_forw_action_plain *forw_action);
 
-extern const asn_type * const ndn_forw_action;
+/** 
+ * Convert plain C structrue to Forwarder-Action ASN value. 
+ * 
+ * @param forw_action   converted structure.
+ * @param val           location for pointer to ASN value of type (OUT)
+ *
+ * @return zero on success or error code.
+ */ 
+extern int ndn_forw_action_plain_to_asn(
+                                ndn_forw_action_plain *forw_action,
+                                asn_value **val);
 
 extern asn_type ndn_forw_action_s;
 
