@@ -23,24 +23,8 @@ AC_ARG_VAR([TE_CFLAGS])
 AC_CONFIG_HEADERS([te_config.h])
 AH_TOP([#ifndef __TE_CONFIG_H__
 #define __TE_CONFIG_H__
-
-#undef PACKAGE
-#undef PACKAGE_BUGREPORT
-#undef PACKAGE_NAME
-#undef PACKAGE_STRING
-#undef PACKAGE_TARNAME
-#undef PACKAGE_VERSION
-#undef VERSION
 ])
 AH_BOTTOM([
-
-#undef PACKAGE
-#undef PACKAGE_BUGREPORT
-#undef PACKAGE_NAME
-#undef PACKAGE_STRING
-#undef PACKAGE_TARNAME
-#undef PACKAGE_VERSION
-#undef VERSION
 #endif])
 
 AC_HEADER_STDC
@@ -107,3 +91,6 @@ AC_C_INLINE
 AC_CONFIG_FILES([Makefile])
 
 AC_OUTPUT
+
+cat te_config.h | grep -v PACKAGE | grep -v VERSION > te_config.tmp
+mv te_config.tmp te_config.h
