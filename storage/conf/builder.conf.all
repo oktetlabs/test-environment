@@ -35,7 +35,7 @@ TE_LIB_PARMS([tad_ch], [], [], \
               
 TE_TA_TYPE([linux], [linux], [], \
            [--with-rcf-rpc --with-cfg-linux-daemons='ftp echo'], \
-           [], [-lsnmp -lcrypto], \
+           [], [-lexpect -lsnmp -lcrypto], \
            [tad_ch tad_file tad_eth tad_bridge tad_ipstack tad_dhcp tad_snmp \
             tad_cli ndn asn])
 
