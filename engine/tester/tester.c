@@ -421,7 +421,7 @@ process_cmd_line_opts(tester_ctx *ctx, tester_cfgs *cfgs,
           "[REQ|!REQ]" },
 
         { "suite", 's', POPT_ARG_STRING, NULL, TESTER_OPT_SUITE_PATH,
-          "Specify path to the Test Suite.", NULL },
+          "Specify path to the Test Suite.", "NAME:PATH" },
 
         { "timeout", 't', POPT_ARG_INT, &ctx->timeout, TESTER_OPT_TIMEOUT, 
           "Restrict execution time (in seconds).", NULL },
@@ -513,9 +513,32 @@ process_cmd_line_opts(tester_ctx *ctx, tester_cfgs *cfgs,
                 break;
 
             case TESTER_OPT_SUITE_PATH:
-                ERROR("Unsupported options was specified, ignoring %s",
-                      poptGetOptArg(optCon) ? : "(empty)");
+            {
+                const char *opt = poptGetOptArg(optCon);
+                const char *s = index(opt, ':');
+                int name_len;
+                test_suite_info *p = calloc(1, sizeof(*p));
+
+                if ((s == NULL) || ((name_len = (s - opt)) <= 0))
+                {
+                    ERROR("Invalid suite path info: %s", opt);
+                    poptFreeContext(optCon);
+                    return EXIT_FAILURE;
+                }
+                if ((p == NULL) ||
+                    ((p->name = malloc(name_len + 1)) == NULL) ||
+                    ((p->path = strdup(s + 1)) == NULL))
+                {
+                    if (p != NULL)
+                        free(p->name);
+                    ERROR("Memory allocation failed", sizeof(*p));
+                    poptFreeContext(optCon);
+                    return EXIT_FAILURE;
+                }
+                memcpy(p->name, opt, name_len);
+                p->name[name_len] = '\0';
                 break;
+            }
 
             case TESTER_OPT_RUN:
                 rc = tester_run_path_new(&ctx->paths, poptGetOptArg(optCon));
