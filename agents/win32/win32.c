@@ -47,6 +47,7 @@
 #include <signal.h>
 #include <string.h>
 #include <sys/un.h>
+#include <semaphore.h>
 
 #undef ERROR
 
@@ -330,17 +331,16 @@ rcf_ch_start_task(struct rcf_comm_connection *handle,
     SEND_ANSWER("%d", ETENOSUCHNAME);
 }
 
-struct rcf_thread_parameter
-{
-    te_bool active;
+struct rcf_thread_parameter {
+    te_bool   active;
     pthread_t id;
-    void *addr;
-    te_bool is_argv;
-    int argc;
+    void     *addr;
+    te_bool   is_argv;
+    int       argc;
     uint32_t *params;
-    int rc;
-    te_bool sem_created;
-    sem_t params_processed;
+    int       rc;
+    te_bool   sem_created;
+    sem_t     params_processed;
 };
 
 #define TA_MAX_THREADS 16
