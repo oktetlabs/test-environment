@@ -190,7 +190,7 @@ log_message_va(uint8_t **msg_buf, size_t *msg_buf_len, uint16_t level,
                                                                     \
             (*msg_buf_len) <<= 1;                                   \
             (*msg_buf) = realloc(*msg_buf, *msg_buf_len);           \
-            if (new_buf == NULL)                                    \
+            if ((*msg_buf) == NULL)                                 \
             {                                                       \
                 fprintf(stderr, "%s(): realloc(%u) failed",         \
                         __FUNCTION__, *msg_buf_len);                \
