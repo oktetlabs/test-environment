@@ -45,7 +45,6 @@
 #define __TE_LOGGER_TA_H__
 
 #include "logger_ta_internal.h"
-#include "logger_defs.h"
 #include "logger_api.h"
 
 #define LGRF_MESSAGE(_lvl, _lgruser, _fs, _args...) \

@@ -38,6 +38,8 @@
 extern "C" {
 #endif
 
+#include "logger_api.h"
+
 /** 
  * Close IPC with Logger server and release resources.
  */
