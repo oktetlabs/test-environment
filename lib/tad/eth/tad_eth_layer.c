@@ -545,7 +545,7 @@ int eth_match_bin_cb (int csap_id, int layer, const asn_value *pattern_pdu,
 
     data = pkt->data; 
 
-#if 0
+#if 1
     {
         char buf[50], *p = buf;
         int i;

@@ -22,7 +22,7 @@
  *
  * Author: Andrey G. Ivanov  <andron@oktetlabs.ru>
  *
- * @(#) $Id: OKT-DD-0000105-TE_LIB_ST.h,v 1.1 2003/10/28 09:35:41 arybchik Exp $
+ * @(#) $Id$
  */
 
 #ifndef __OKT_DD_0000105_TE_LIB_ST_H__

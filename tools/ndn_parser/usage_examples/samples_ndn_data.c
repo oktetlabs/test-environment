@@ -6,7 +6,7 @@
  * 
  * Author: Konstantin Abramenko <konst@oktetlabs.ru>
  * 
- * $Id: samples_ndn_data.c,v 1.1 2003/10/28 09:35:42 arybchik Exp $
+ * $Id$
  *
  ****************************************************************/
 

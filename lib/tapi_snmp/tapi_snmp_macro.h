@@ -24,7 +24,7 @@
  *
  * @author Renata Sayakhova <Renata.Sayakhova@oktetlabs.ru>
  *
- * $Id: $
+ * $Id$
  */
 #ifndef __TE_TAPI_SNMP_MACRO_H__
 #define __TE_TAPI_SNMP_MACRO_H__ 
@@ -592,8 +592,8 @@ extern "C" {
         VERB("SNMP get: for %s (oid=%s) returns %s = %d, error status %d\n", \
              name, print_oid(&oid), #value, (value), *err_stat);             \
         if (value != tmp_value)                                              \
-            TEST_FAIL("%s value %d differs from %d",                         \
-                      name, value, tmp_value);                               \
+            TEST_FAIL("The value of %s instance is %d, but it is expected "  \
+                      "to be %d", print_oid(&oid), tmp_value, value);        \
     } while (0)
 
 #ifdef __cplusplus

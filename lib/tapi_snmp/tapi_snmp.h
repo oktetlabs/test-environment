@@ -886,7 +886,7 @@ extern int tapi_snmp_cmp_vb(tapi_snmp_varbind_t *vb1,
  *
  * @return pointer to buffer with printed OID. 
  */
-extern const char* print_oid (const tapi_snmp_oid_t *oid);
+extern const char *print_oid(const tapi_snmp_oid_t *oid);
 
 /** Convert SNMP ERROR constants to string format */
 extern const char *snmp_error_h2str(int error_val);

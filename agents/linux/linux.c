@@ -543,6 +543,8 @@ shell(int argc, char * const argv[])
     int             i;
     unsigned int    used = 0;
     int             rc;
+    
+    static int      round = 0;
 
     for (i = 0; (i < argc) && (used < cmdlen); ++i)
     {
@@ -551,11 +553,14 @@ shell(int argc, char * const argv[])
     if (used >= cmdlen)
         return TE_RC(TE_TA_LINUX, ETESMALLBUF);
 
-    VERB("SHELL: run %s", cmdbuf);
+    VERB("SHELL: run %s, errno before the run is %d\n", cmdbuf, errno);
     rc = system(cmdbuf);
     
     if (rc == -1)
+    {
+        VERB("The command fails with errno %d\n", errno);
         return TE_RC(TE_TA_LINUX, errno);
+    }
 
     VERB("Successfully completes");
 
