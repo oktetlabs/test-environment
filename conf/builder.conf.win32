@@ -1,48 +1,28 @@
-# Example of the configuration with Linux and win32 Test Agents
-#
-# TE_HOST([i686-pc-gnu-linux])
-#
-# TE_PLATFORM([], [--with-customer=oktetlabs], [-Dfoo], [-Lbar], 
-#  [ipc bsapi loggerten rcfapi conf_oid confapi comm_net_engine rcfunix  \
-#   comm_net_agent loggerta rcfpch])
-# 
-# TE_TOOLS([rgt])
-#
-# TE_APP([builder rcf logger tester configurator])
-#
-# TE_APP_PARMS([rcf], [--enable-ltdl-install], [-Dfoo], [-Lbar], [mylibrary])
-#
-# TE_LIB_PARMS([mylibrary], [i686-pc-gnu-linux], [/home/tester/mylibrary],
-#              [--with-customer=oktetlabs], [-Dfoo], [-Lbar])
-#
-# TE_TA_TYPE([win32], [i686-pc-cygwin], [win32], \
-#            [--with-rcf-rpc], [-DTAD_CH_DUMMY], \
-#            [-Lbar], [ws2_32 rcfpch conf_oid loggerta comm_net_agent])
-# 
-# TE_NUT([mynut], [LIB], [/home/tester/mynut], [/home/tester/myscriptdir],
-#        [myscriptparamster1 myscriptpaarmeter2])
-#
-# TE_NUT_TCE([mynut], [ta1], [win32], [branch loop], [FILE])
-#
-# TE_NUT_TCE_SOURCES([mynut], [dir1 dir2 dir3/foo.c], [-Dfoo])
-#
-# TE_HOST_EXEC([java])
-#
 
-TE_APP_PARMS([rcf], [--enable-ltdl-install], [], [], [])
+TE_TOOLS([rgt trc])
 
 TE_PLATFORM([], [], [], [],
             [ipc bsapi loggerten rcfapi conf_oid confapi tapi \
-             comm_net_engine rcfunix comm_net_agent loggerta rcfpch \
-             rcfrpc tapi_rpcsock tad])
+             comm_net_agent comm_net_engine loggerta rcfpch rcfunix \
+             asn ndn tad forwarder rcfrpc tapi_rpcsock tapi_tad \
+             tapi_eth tapi_arp tapi_ipstack tapi_dhcp tapi_cli])
+
+TE_LIB_PARMS([tad], [], [],
+             [--with-eth --with-ipstack --with-dhcp --with-cli], [])
+TE_LIB_PARMS([forwarder], [], [${TAD_FORW_DIR}], [], [])
+
+TE_TA_TYPE([linux], [], [],
+           [--with-rcf-rpc \
+            --with-cfg-linux-daemons='ftp Xvfb smtp telnet rsh vncserver dhcp dns'], 
+           [], [], 
+           [forwarder ndn asn comm_net_agent])
 
 TE_PLATFORM([i686-pc-cygwin],[],
-            [-I${CYGWIN_HOME}/include -I${CYGWIN_HOME}/include/ws32api -D__CYGWIN__],
+            [-I${CYGWIN_HOME}/include -I${CYGWIN_HOME}/include/ws32api \
+             -D__CYGWIN__],
             [-L${CYGWIN_HOME}/lib -L${CYGWIN_HOME}/lib/w32api], 
             [comm_net_agent loggerta conf_oid rcfpch tad])
 
-TE_TA_TYPE([linux], [], [], [], [], [], [comm_net_agent])
-
 TE_TA_TYPE([win32], [i686-pc-cygwin], [],
-           [--with-rcf-rpc], [], [],
-           [ws2_32 comm_net_agent])
+           [--with-rcf-rpc], [],
+           [], [ws2_32 rcfpch conf_oid loggerta comm_net_agent])
