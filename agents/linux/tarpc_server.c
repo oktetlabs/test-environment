@@ -376,7 +376,7 @@ _func##_proc(void *arg)                                                 \
                                                                         \
     { _actions }                                                        \
                                                                         \
-    pthread_exit(arg);                                                  \
+    return arg;                                                         \
 }                                                                       \
                                                                         \
 bool_t                                                                  \
@@ -415,7 +415,7 @@ _##_func##_1_svc(tarpc_##_func##_in *in, tarpc_##_func##_out *out,      \
         arg->in = *in;                                                  \
         arg->out = *out;                                                \
         arg->func = func;                                               \
-        sigprocmask(0, NULL, &(arg->mask));                             \
+        sigprocmask(SIG_SETMASK, NULL, &(arg->mask));                   \
                                                                         \
         if (pthread_create(&_tid, NULL, _func##_proc,                   \
                            (void *)arg) != 0)                           \
