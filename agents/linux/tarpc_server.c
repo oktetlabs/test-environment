@@ -166,14 +166,13 @@ static void *dynamic_library_handle = NULL;
 /**
  * Find the function by its name.
  *
- * @param in    for logging
  * @param name  function name
  * @param func  location for function address
  *
  * @return status code
  */
 static int
-find_func(tarpc_in_arg *in, char *name, sock_api_func *func)
+find_func(char *name, sock_api_func *func)
 {
     static void *libc_handle = NULL;
 
@@ -288,8 +287,7 @@ typedef struct checked_arg {
 
 /** Initialise the checked argument and add it into the list */
 static void
-init_checked_arg(tarpc_in_arg *in,
-                 checked_arg **list, char *real_arg,
+init_checked_arg(checked_arg **list, char *real_arg,
                  int len, int len_visible)
 {
     checked_arg *arg;
@@ -318,8 +316,7 @@ init_checked_arg(tarpc_in_arg *in,
 }
 
 #define INIT_CHECKED_ARG(_real_arg, _len, _len_visible) \
-    init_checked_arg((tarpc_in_arg *)in, &list, _real_arg, \
-                     _len, _len_visible)
+    init_checked_arg(&list, _real_arg, _len, _len_visible)
 
 /** Verify that arguments are not corrupted */
 static int
@@ -378,8 +375,7 @@ check_args(checked_arg *list)
  */
 #define FIND_FUNC(_name, _func) \
     do {                                         \
-        int rc = find_func((tarpc_in_arg *)in,   \
-                           _name, &(_func));     \
+        int rc = find_func(_name, &(_func));     \
                                                  \
         if (rc != 0)                             \
         {                                        \
@@ -2766,7 +2762,7 @@ simple_sender(tarpc_simple_sender_in *in, tarpc_simple_sender_out *out)
         return -1;
     }
 
-    if (find_func((tarpc_in_arg *)in, "send", &send_func) != 0)
+    if (find_func("send", &send_func) != 0)
         return -1;
 
     memset(buf, 0xDEADBEEF, sizeof(buf));
@@ -2845,8 +2841,8 @@ simple_receiver(tarpc_simple_receiver_in *in,
 
     out->bytes = 0;
 
-    if (find_func((tarpc_in_arg *)in, "select", &select_func) != 0 ||
-        find_func((tarpc_in_arg *)in, "recv", &recv_func) != 0)
+    if (find_func("select", &select_func) != 0 ||
+        find_func("recv", &recv_func) != 0)
     {
         return -1;
     }
@@ -2925,7 +2921,7 @@ send_traffic(tarpc_send_traffic_in *in,
 
     out->retval= 0;
 
-    if (find_func((tarpc_in_arg *)in, "sendto", &sendto_func) != 0)
+    if (find_func("sendto", &sendto_func) != 0)
     {
         return -1;
     }
@@ -3022,12 +3018,12 @@ flooder(tarpc_flooder_in *in)
     memset(rcv_buf, 0x0, FLOODER_BUF);
     memset(snd_buf, 0xA, FLOODER_BUF);
 
-    if ((find_func((tarpc_in_arg *)in, "select", &select_func) != 0)   ||
-        (find_func((tarpc_in_arg *)in, "pselect", &pselect_func) != 0) ||
-        (find_func((tarpc_in_arg *)in, "poll", &p_func) != 0)          ||
-        (find_func((tarpc_in_arg *)in, "read", &read_func) != 0)       ||
-        (find_func((tarpc_in_arg *)in, "write", &write_func) != 0)     ||
-        (find_func((tarpc_in_arg *)in, "ioctl", &ioctl_func) != 0))
+    if ((find_func("select", &select_func) != 0)   ||
+        (find_func("pselect", &pselect_func) != 0) ||
+        (find_func("poll", &p_func) != 0)          ||
+        (find_func("read", &read_func) != 0)       ||
+        (find_func("write", &write_func) != 0)     ||
+        (find_func("ioctl", &ioctl_func) != 0))
     {
         ERROR("failed to resolve function");
         return -1;
@@ -3399,11 +3395,11 @@ echoer(tarpc_echoer_in *in)
 
     memset(buf, 0x0, FLOODER_BUF);
 
-    if ((find_func((tarpc_in_arg *)in, "select", &select_func) != 0)   ||
-        (find_func((tarpc_in_arg *)in, "pselect", &pselect_func) != 0) ||
-        (find_func((tarpc_in_arg *)in, "poll", &p_func) != 0)          ||
-        (find_func((tarpc_in_arg *)in, "read", &read_func) != 0)       ||
-        (find_func((tarpc_in_arg *)in, "write", &write_func) != 0))
+    if ((find_func("select", &select_func) != 0)   ||
+        (find_func("pselect", &pselect_func) != 0) ||
+        (find_func("poll", &p_func) != 0)          ||
+        (find_func("read", &read_func) != 0)       ||
+        (find_func("write", &write_func) != 0))
     {
         return -1;
     }
@@ -3635,9 +3631,9 @@ aio_read_test(tarpc_aio_read_test_in *in, tarpc_aio_read_test_out *out)
     sock_api_func aio_error_func;
     sock_api_func aio_return_func;
 
-    if (find_func((tarpc_in_arg *)in, "aio_read", &aio_read_func) != 0   ||
-        find_func((tarpc_in_arg *)in, "aio_error", &aio_error_func) != 0 ||
-        find_func((tarpc_in_arg *)in, "aio_return", &aio_return_func) != 0)
+    if (find_func("aio_read", &aio_read_func) != 0   ||
+        find_func("aio_error", &aio_error_func) != 0 ||
+        find_func("aio_return", &aio_return_func) != 0)
     {
         DIAG("Failed to resolve asynchronous IO function");
         return -1;
@@ -3705,8 +3701,10 @@ aio_error_test(tarpc_aio_error_test_in *in, tarpc_aio_error_test_out *out)
     sock_api_func aio_write_func;
     sock_api_func aio_error_func;
 
-    if (find_func((tarpc_in_arg *)in, "aio_write", &aio_write_func) != 0 ||
-        find_func((tarpc_in_arg *)in, "aio_error", &aio_error_func) != 0)
+    UNUSED(in);
+
+    if (find_func("aio_write", &aio_write_func) != 0 ||
+        find_func("aio_error", &aio_error_func) != 0)
     {
         DIAG("Failed to resolve asynchronous IO function");
         return -1;
@@ -3760,9 +3758,9 @@ aio_write_test(tarpc_aio_write_test_in *in, tarpc_aio_write_test_out *out)
     sock_api_func aio_error_func;
     sock_api_func aio_return_func;
 
-    if (find_func((tarpc_in_arg *)in, "aio_write", &aio_write_func) != 0 ||
-        find_func((tarpc_in_arg *)in, "aio_error", &aio_error_func) != 0 ||
-        find_func((tarpc_in_arg *)in, "aio_return", &aio_return_func) != 0)
+    if (find_func("aio_write", &aio_write_func) != 0 ||
+        find_func("aio_error", &aio_error_func) != 0 ||
+        find_func("aio_return", &aio_return_func) != 0)
     {
         DIAG("Failed to resolve asynchronous IO function");
         return -1;
@@ -3826,12 +3824,9 @@ aio_suspend_test(tarpc_aio_suspend_test_in *in,
 
     char aux_buf[8];
 
-    if (find_func((tarpc_in_arg *)in, "aio_read",
-                  &aio_read_func) != 0   ||
-        find_func((tarpc_in_arg *)in, "aio_suspend",
-                  &aio_suspend_func) != 0 ||
-        find_func((tarpc_in_arg *)in, "aio_return",
-                  &aio_return_func) != 0)
+    if (find_func("aio_read", &aio_read_func) != 0   ||
+        find_func("aio_suspend", &aio_suspend_func) != 0 ||
+        find_func("aio_return", &aio_return_func) != 0)
     {
         DIAG("Failed to resolve asynchronous IO function");
         return -1;
@@ -3969,9 +3964,9 @@ socket_to_file(tarpc_socket_to_file_in *in)
     INFO("%s() called with: sock=%d, path=%s, timeout=%ld",
          __FUNCTION__, sock, path, time2run);
 
-    if ((find_func((tarpc_in_arg *)in, "select", &select_func) != 0)   ||
-        (find_func((tarpc_in_arg *)in, "read", &read_func) != 0)       ||
-        (find_func((tarpc_in_arg *)in, "write", &write_func) != 0))
+    if ((find_func("select", &select_func) != 0)   ||
+        (find_func("read", &read_func) != 0)       ||
+        (find_func("write", &write_func) != 0))
     {
         ERROR("Failed to resolve functions addresses");
         rc = -1;
@@ -4195,7 +4190,7 @@ many_send(tarpc_many_send_in *in, tarpc_many_send_out *out)
 
     memset(buf, 0xDEADBEEF, sizeof(max_len));
 
-    if (find_func((tarpc_in_arg *)in, "send", &send_func) != 0)
+    if (find_func("send", &send_func) != 0)
     {
         ERROR("Failed to resolve send() function");
         rc = -1;
@@ -4259,14 +4254,14 @@ overfill_buffers(tarpc_overfill_buffers_in *in,
 
     memset(buf, 0xDEADBEEF, sizeof(max_len));
 
-    if (find_func((tarpc_in_arg *)in, "send", &send_func) != 0)
+    if (find_func("send", &send_func) != 0)
     {
         ERROR("%s(): Failed to resolve send() function", __FUNCTION__);
         rc = -1;
         goto overfill_buffers_exit;
     }
 
-    if (find_func((tarpc_in_arg *)in, "select", &select_func) != 0)
+    if (find_func("select", &select_func) != 0)
     {
         ERROR("%s(): Failed to resolve select() function", __FUNCTION__);
         rc = -1;

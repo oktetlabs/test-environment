@@ -28,6 +28,8 @@
  * $Id$
  */
 
+#define TE_LGR_USER      "Main"
+
 #include "te_config.h"
 #include "config.h"
 
@@ -53,6 +55,7 @@
 #include "comm_agent.h"
 #include "rcf_ch_api.h"
 #include "rcf_pch.h"
+#include "logger_ta.h"
 #include "logfork.h"
 
 #include "linux_internal.h"
@@ -60,9 +63,6 @@
 #ifdef RCF_RPC
 #include "linux_rpc.h"
 #endif    
-
-#define TE_LGR_USER      "Main"
-#include "logger_ta.h"
 
 
 /** Send answer to the TEN */

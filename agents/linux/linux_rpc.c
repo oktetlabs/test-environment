@@ -390,7 +390,6 @@ tarpc_server_create(const char *name)
     
     if (!supervise_started)
     {
-        pthread_t tid;
         int       len;
 
         memset(&ta_log_addr, 0, sizeof(ta_log_addr));
@@ -405,11 +404,15 @@ tarpc_server_create(const char *name)
 #ifdef SUPERVISE_CHILDREN_BY_SIGNAL
         (void)signal(SIGCHLD, sigchld_handler);
 #else
-        if (pthread_create(&tid, NULL, supervise_children, NULL) != 0)
         {
-            ERROR("Cannot create RPC servers supervising thread: %d",
-                  errno);
-            return -1;
+            pthread_t tid;
+
+            if (pthread_create(&tid, NULL, supervise_children, NULL) != 0)
+            {
+                ERROR("Cannot create RPC servers supervising thread: %d",
+                      errno);
+                return -1;
+            }
         }
 #endif
         supervise_started = 1;
@@ -604,23 +607,16 @@ tarpc_server(const void *arg)
     SVCXPRT            *transp;
     struct sockaddr_un  addr;
 
-    tarpc_in_arg  arg1;
-    tarpc_in_arg *in = &arg1;
-    
-    memset(&arg1, 0, sizeof(arg1));
-    arg1.name.name_len = strlen(name) + 1;
-    arg1.name.name_val = strdup(name);
 
     if (logfork_register_user(name) != 0)
     {
-        RING("logfork_register_user() fail to register %s server", name);
-        
-        /* Try again */
-        logfork_register_user(name);
+        fprintf(stderr,
+                "logfork_register_user() fail to register %s server\n",
+                name);
     }
     
-    RING("Started %s (PID %d, TID %u)", name, 
-                    (int)getpid(), (unsigned int)pthread_self());
+    RING("RPC server '%s' started (PID %d, TID %u)",
+         name, (int)getpid(), (unsigned int)pthread_self());
     
     sigemptyset(&rpcs_received_signals);
     signal(SIGTERM, sig_handler);
