@@ -97,6 +97,12 @@
 #include "tarpc.h"
 
 
+/** @name String buffers for snprintf() operations */
+static char str_buf_1[1024];
+static char str_buf_2[1024];
+/*@}*/
+
+
 /**
  * Convert I/O vector to array.
  *
@@ -3256,6 +3262,51 @@ rpc_recvmsg(rcf_rpc_server *handle,
     RETVAL_VAL(out.retval, recvmsg);
 }            
 
+/**
+ * Convert poll() request to string.
+ *
+ * @param ufds      Array with requests per fd
+ * @param ufds      Number of requests per fd
+ * @param buf       Buffer to put string
+ * @param buflen    Length of the buffer
+ */
+static void
+pollreq2str(struct rpc_pollfd *ufds, unsigned int nfds,
+            char *buf, size_t buflen)
+{
+    unsigned int    i;
+    int             rc;
+
+    do {
+        rc = snprintf(buf, buflen, "{");
+        if ((size_t)rc > buflen)
+            break;
+        buflen -= rc;
+        buf += rc;
+        for (i = 0; i < nfds; ++i)
+        {
+            rc = snprintf(buf, buflen, "{%d,%s,%s}",
+                          ufds->fd, 
+                          poll_event_rpc2str(ufds->events),
+                          poll_event_rpc2str(ufds->revents));
+            if ((size_t)rc > buflen)
+                break;
+            buflen -= rc;
+            buf += rc;
+        }
+        rc = snprintf(buf, buflen, "}");
+        if ((size_t)rc > buflen)
+            break;
+        buflen -= rc;
+        buf += rc;
+
+        return;
+
+    } while (0);
+        
+    ERROR("Too small buffer for poll request conversion");
+}
+
 int 
 rpc_poll_gen(rcf_rpc_server *handle,
              struct rpc_pollfd *ufds, unsigned int nfds,
@@ -3283,7 +3334,9 @@ rpc_poll_gen(rcf_rpc_server *handle,
     in.ufds.ufds_val = (struct tarpc_pollfd *)ufds;
     in.timeout = timeout;
     in.nfds = nfds;
-    
+
+    pollreq2str(ufds, rnfds, str_buf_1, sizeof(str_buf_1));
+
     rcf_rpc_call(handle, _poll, &in, (xdrproc_t)xdr_tarpc_poll_in,
                  &out, (xdrproc_t)xdr_tarpc_poll_out);
 
@@ -3292,10 +3345,12 @@ rpc_poll_gen(rcf_rpc_server *handle,
         memcpy(ufds, out.ufds.ufds_val, rnfds * sizeof(ufds[0]));
     }
 
-    INFO("RPC (%s,%s)%s: poll(0x%x, %d, %d) -> %d (%s)",
+    pollreq2str(ufds, rnfds, str_buf_2, sizeof(str_buf_2));
+
+    INFO("RPC (%s,%s)%s: poll(0x%x%s, %d, %d) -> %d (%s) %s",
          handle->ta, handle->name, rpcop2str(op),
-         ufds, nfds, timeout,
-         out.retval, errno_rpc2str(RPC_ERRNO(handle)));
+         ufds, str_buf_1, nfds, timeout,
+         out.retval, errno_rpc2str(RPC_ERRNO(handle)), str_buf_2);
 
     RETVAL_VAL(out.retval, poll);
 }
