@@ -180,6 +180,8 @@ get_pool_item_by_name(struct ipc_client *ipcc, const char *name)
 
     /* Not found. Allocate new */
     (*parent) = calloc(1, sizeof(struct ipc_client_server));
+    if (*parent == NULL)
+        return NULL;
 
 #ifdef IPC_UNIX
     (*parent)->sa.sun_family = AF_UNIX;
@@ -188,6 +190,11 @@ get_pool_item_by_name(struct ipc_client *ipcc, const char *name)
 
     (*parent)->sa_len = sizeof(struct sockaddr_un);
     (*parent)->buffer = calloc(1, IPC_SEGMENT_SIZE);
+    if ((*parent)->buffer == NULL)
+    {
+        free(*parent);
+        return NULL;
+    }
 #else
     strcpy((*parent)->name, name);
 #endif
@@ -203,9 +210,12 @@ get_pool_item_by_name(struct ipc_client *ipcc, const char *name)
 static void
 ipc_free_client_server_pool(struct ipc_client *ipcc)
 {
-    struct ipc_client_server *ipccs = ipcc->pool;
+    struct ipc_client_server *ipccs;
     struct ipc_client_server *tmp;
 
+    assert(ipcc != NULL);
+
+    ipccs = ipcc->pool;
     while (ipccs != NULL)
     {
         tmp = ipccs->next;
@@ -260,7 +270,10 @@ get_datagram(struct ipc_client *ipcc,
                 /* Search for pool item */
                 pool_item = get_pool_item_by_name(ipcc,
                                                   ptr->sa.sun_path + 1);
-
+                if (pool_item == NULL)
+                {
+                    return NULL;
+                }
 #if IPC_CLIENT_DEBUG_POOL
                 printf("Returned first as any\n");
 #endif
@@ -318,6 +331,10 @@ get_datagram(struct ipc_client *ipcc,
 
         /* Find or assign a new item in pool */
         pool_item = get_pool_item_by_name(ipcc, sa.sun_path + 1);
+        if (pool_item == NULL)
+        {
+            return NULL;
+        }
 
         pool_item->fragment_size = r;
 
@@ -363,6 +380,8 @@ get_datagram(struct ipc_client *ipcc,
                                       pool_item->buffer, r,
                                       &sa, sa_len);
                 pool_item->buffer = calloc(1, IPC_SEGMENT_SIZE);
+                if (pool_item->buffer == NULL)
+                    return NULL;
             }
             else
             {
@@ -467,8 +486,17 @@ ipc_init_client(const char *name)
     struct ipc_client *ipcc;
     int s;
 
+    if (name == NULL)
+    {
+        errno = EINVAL;
+        return NULL;
+    }
     /* Check length of the name */
-    assert(strlen(name) < UNIX_PATH_MAX);
+    if (strlen(name) >= UNIX_PATH_MAX)
+    {
+        errno = E2BIG;
+        return NULL;
+    }
 
     /* Create a socket */
     s = socket(PF_UNIX, SOCK_DGRAM, 0);
@@ -488,19 +516,30 @@ ipc_init_client(const char *name)
 
         if (bind(s, (struct sockaddr *)&addr, sizeof(addr)) != 0)
         {
-            perror("bind");
-            fprintf(stderr, "IPC client '%s' init failed: ", name);
-            assert(0);
+            fprintf(stderr, "IPC client '%s' init failed: bind()", name);
+            perror("");
+            close(s);
             return NULL;
         }
     }
 
     ipcc = calloc(1, sizeof(struct ipc_client));
-    assert(ipcc != NULL);
+    if (ipcc == NULL)
+    {
+        close(s);
+        return NULL;
+    }
+
+    ipcc->tmp_buffer = calloc(1, IPC_SEGMENT_SIZE);
+    if (ipcc->tmp_buffer == NULL)
+    {
+        free(ipcc);
+        close(s);
+        return NULL;
+    }
 
     strcpy(ipcc->name, name);
     ipcc->socket = s;
-    ipcc->tmp_buffer = calloc(1, IPC_SEGMENT_SIZE);
     ipcc->pool = NULL;
     TAILQ_INIT(&ipcc->datagrams);
 
@@ -524,9 +563,11 @@ ipc_send_message(struct ipc_client *ipcc, const char *server_name,
 
     KTRC("Send IPC msg from '%s' (thread 0x%x) to '%s' len=%u\n",
          ipcc->name, (unsigned int)pthread_self(), server_name, msg_len);
-    assert(ipcc != NULL);
-    assert(server_name != NULL);
-    assert((msg != NULL) == (msg_len != 0));
+    if ((ipcc == NULL) || (server_name == NULL) ||
+        (msg == NULL) != (msg_len == 0))
+    {
+        return EINVAL;
+    }
 
     memset(&dst, 0, sizeof(dst));
     dst.sun_family = AF_UNIX;
@@ -563,7 +604,7 @@ ipc_send_message(struct ipc_client *ipcc, const char *server_name,
         {
             fprintf(stderr, "IPC client '%s' failed to send message "
                             "to '%s'", ipcc->name, server_name);
-            perror(": ");
+            perror("");
             return errno;
         }
         if (msg_len == 0)
@@ -587,22 +628,19 @@ ipc_receive_answer(struct ipc_client *ipcc, const char *server_name,
     struct ipc_client_server   *server;
 
 
-    assert(ipcc != NULL);
-    assert(buf != NULL);
-    assert(p_buf_len != NULL);
-    assert(*p_buf_len != 0);
-
+    if ((ipcc == NULL) || (server_name == NULL) || (buf == NULL) ||
+        (p_buf_len == NULL) || (*p_buf_len == 0))
+    {
+        return EINVAL;
+    }
     if (strlen(server_name) >= UNIX_PATH_MAX)
     {
-        perror("Too big server name");
-        return -1;
+        return E2BIG;
     }
 
     server = get_pool_item_by_name(ipcc, server_name);
-
     if (server == NULL)
     {
-        perror("get_datagram");
         return errno;
     }
 
@@ -837,11 +875,17 @@ ipc_receive_rest_answer(struct ipc_client *ipcc, const char *server_name,
     struct ipc_client_server *server;
     size_t total_octets_written = 0;
 
-    assert(ipcc != NULL);
-    assert(*p_buf_len != 0);
-    assert(buf != NULL);
+    if ((ipcc == NULL) || (server_name == NULL) || (buf == NULL) ||
+        (p_buf_len == NULL) || (*p_buf_len == 0))
+    {
+        return EINVAL;
+    }
 
     server = get_pool_item_by_name(ipcc, server_name);
+    if (server == NULL)
+    {
+        return errno;
+    }
 
 #if IPC_CLIENT_DEBUG_REASSEMBLING
     printf("ipc_receive_rest_answer (%d)\n", server->octets_returned);
@@ -850,7 +894,7 @@ ipc_receive_rest_answer(struct ipc_client *ipcc, const char *server_name,
     if (server->length == 0)
     {
         perror("Nothing to receive rest");
-        return -1;
+        return ENOENT;
     }
 
 #if IPC_CLIENT_DEBUG_REASSEMBLING
@@ -1056,11 +1100,19 @@ ipc_init_client(const char *client_name)
     UNUSED(client_name);
 
     ipcc = calloc(1, sizeof(struct ipc_client));
+    if (ipcc == NULL)
+        return NULL;
+
     ipcc->pool = NULL;
 
     if (IPC_TCP_CLIENT_BUFFER_SIZE != 0)
     {
         ipcc->out_buffer = calloc(1, IPC_TCP_CLIENT_BUFFER_SIZE);
+        if (ipcc->out_buffer == NULL)
+        {
+            free(ipcc);
+            return NULL;
+        }
     }
     else
     {
@@ -1072,12 +1124,22 @@ ipc_init_client(const char *client_name)
 
 /* See description in ipc_client.h */
 int
-ipc_send_message(struct ipc_client * ipcc, const char *server_name,
-                 const void *message, size_t length)
+ipc_send_message(struct ipc_client *ipcc, const char *server_name,
+                 const void *msg, size_t msg_len)
 {
     struct ipc_client_server *server;
 
+    if ((ipcc == NULL) || (server_name == NULL) ||
+        (msg == NULL) != (msg_len == 0))
+    {
+        return EINVAL;
+    }
+
     server = get_pool_item_by_name(ipcc, server_name);
+    if (server == NULL)
+    {
+        return errno;
+    }
 
     if (server->socket == 0)
     {
@@ -1127,26 +1189,27 @@ ipc_send_message(struct ipc_client * ipcc, const char *server_name,
 
     /* At this point we have established connection. Send data */
 
-    if (length + 8 > IPC_TCP_CLIENT_BUFFER_SIZE)
+    if (msg_len + 8 > IPC_TCP_CLIENT_BUFFER_SIZE)
     {
         /* Message is too long to fit into the internal buffer */
-        long len = length;
+        uint32_t len = msg_len;
+
         if (write_socket(server->socket, (char *)&len, sizeof(len)) != 0)
         {
             perror("write_socket");
             return errno;
         }
 
-        return write_socket(server->socket, message, length);
+        return write_socket(server->socket, msg, msg_len);
     }
     else
     {
-        long len = length;
-        memcpy(ipcc->out_buffer + 4,
-               message,
-               length);
-        memcpy(ipcc->out_buffer, &len, 4);
-        return write_socket(server->socket, ipcc->out_buffer, length + 4);
+        uint32_t len = msg_len;
+
+        memcpy(ipcc->out_buffer, &len, sizeof(len));
+        memcpy(ipcc->out_buffer + sizeof(len), msg, msg_len);
+        return write_socket(server->socket, ipcc->out_buffer,
+                            msg_len + sizeof(len));
     }
 }
 
@@ -1157,13 +1220,17 @@ ipc_receive_answer(struct ipc_client *ipcc, const char *server_name,
 {
     struct ipc_client_server *server;
 
-    assert(ipcc != NULL);
-    assert(server_name != NULL);
-    assert(buf != NULL);
-    assert(p_buf_len != NULL);
-    assert(*p_buf_len != 0);
+    if ((ipcc == NULL) || (server_name == NULL) || (buf == NULL) ||
+        (p_buf_len == NULL) || (*p_buf_len == 0))
+    {
+        return EINVAL;
+    }
 
     server = get_pool_item_by_name(ipcc, server_name);
+    if (server == NULL)
+    {
+        return errno;
+    }
 
     if (server->socket == 0)
     {
@@ -1209,13 +1276,17 @@ ipc_receive_rest_answer(struct ipc_client *ipcc, const char *server_name,
     struct ipc_client_server *server;
     int                       octets_to_read;
 
-    assert(ipcc != NULL);
-    assert(server_name != NULL);
-    assert(buf != NULL);
-    assert(p_buf_len != NULL);
-    assert(*p_buf_len != 0);
+    if ((ipcc == NULL) || (server_name == NULL) || (buf == NULL) ||
+        (p_buf_len == NULL) || (*p_buf_len == 0))
+    {
+        return EINVAL;
+    }
 
     server = get_pool_item_by_name(ipcc, server_name);
+    if (server == NULL)
+    {
+        return errno;
+    }
 
     octets_to_read = MIN(*p_buf_len, server->pending_octets);
 

@@ -320,7 +320,8 @@ ipc_close_server(struct ipc_server *ipcs)
     struct ipc_datagram *p;
 #endif
 
-    assert(ipcs != NULL);
+    if (ipcs == NULL)
+        return 0;
 
     close(ipcs->socket);
 
@@ -381,12 +382,11 @@ ipc_receive_message(struct ipc_server *ipcs,
     size_t  copy_len;             /* Size of data to be copied */
 
 
-    assert(ipcs != NULL);
-    assert(buf != NULL);
-    assert(p_buf_len != NULL);
-    assert(*p_buf_len > 0);
-    assert(p_ipcsc != NULL);
-
+    if ((ipcs == NULL) || (buf == NULL) || (p_ipcsc == NULL) ||
+        (p_buf_len == NULL) || (*p_buf_len <= 0))
+    {
+        return EINVAL;
+    }
 
     KTRC("*p_buf_len=%u *p_ipcsc=0x%x\n", *p_buf_len, *p_ipcsc);
     do {
@@ -513,9 +513,11 @@ ipc_send_answer(struct ipc_server *ipcs, struct ipc_server_client *ipcsc,
 
     KTRC("ipcs=0x%x ipcsc=%s msg=0x%x len=%u\n",
          ipcs, SUN_NAME(&ipcsc->sa), msg, msg_len);
-    assert(ipcs != NULL);
-    assert(ipcsc != NULL);
-    assert((msg != NULL) == (msg_len != 0));
+    if ((ipcs == NULL) || (ipcsc == NULL) ||
+        ((msg == NULL) != (msg_len == 0)))
+    {
+        return EINVAL;
+    }
 
     /* We use ipcs->buffer to construct the datagram */
     ipch = (struct ipc_packet_header *)(ipcs->buffer);
@@ -566,11 +568,11 @@ ipc_receive_message(struct ipc_server *ipcs,
     int                       max_n;
     int                       rc;
 
-    assert(ipcs != NULL);
-    assert(buf != NULL);
-    assert(p_buf_len != 0);
-    assert(*p_buf_len > 0);
-    assert(p_ipcsc != NULL);
+    if ((ipcs == NULL) || (buf == NULL) || (p_ipcsc == NULL) ||
+        (p_buf_len == NULL) || (*p_buf_len <= 0))
+    {
+        return EINVAL;
+    }
 
     while (TRUE)
     {
@@ -732,10 +734,11 @@ ipc_send_answer(struct ipc_server *ipcs, struct ipc_server_client *ipcsc,
 {
     uint32_t len = msg_len;
 
-    assert(ipcs != NULL);
-    assert(ipcsc != NULL);
-    assert(msg != NULL);
-    assert(msg_len > 0);
+    if ((ipcs == NULL) || (ipcsc == NULL) ||
+        ((msg == NULL) != (msg_len == 0)))
+    {
+        return EINVAL;
+    }
 
     if ((msg_len + sizeof(len)) > IPC_TCP_SERVER_BUFFER_SIZE)
     {
@@ -890,7 +893,6 @@ ipc_int_get_datagram(struct ipc_server *ipcs,
 
     assert(ipcs != NULL);
     assert(p_ipcsc != NULL);
-
 
     /* At first try to find appropriate datagram from pool */
     rc = ipc_int_get_datagram_from_pool(ipcs, p_ipcsc);
