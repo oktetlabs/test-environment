@@ -39,6 +39,8 @@ extern "C" {
 #include "conf_types.h"
 #include "conf_oid.h"
 
+#define CFG_VOLATILE    "volatile" /**< Root name for volatile objects */
+
 /**
  * This macro MUST NOT be used out of the header.  It's very context
  * specific and used in inline functions defined in the header.  It
