@@ -1015,16 +1015,17 @@ int
 main(int argc, char **argv)
 {
     int rc = 1;
+    const char *tree_opt = "--cs-print-trees";
 
     ipc_init();
     if ((server = ipc_register_server(CONFIGURATOR_SERVER)) == NULL)
         goto error;
 
     VERB("Starting...");
-    if (argc != 2)
+
+    if (argc < 2 || argc > 3)
     {
-        ERROR("Wrong arguments - configuration file name only "
-              "should be provided");
+        ERROR("Wrong arguments");
         rc = EINVAL;
         goto error;
     }
@@ -1053,11 +1054,18 @@ main(int argc, char **argv)
 
     if ((rc = parse_config(argv[1])) != 0)
         goto error;
-
-#if 0
-    print_otree(&cfg_obj_root, 0);
-    print_tree(&cfg_inst_root, 0);
-#endif
+    
+    if (argc > 2) 
+    {
+        if (strcmp(tree_opt, argv[2]) != 0)
+        {
+            ERROR("Invalid option provided: opt=%s", argv[2]);
+            rc = EINVAL;
+            goto error;
+        }
+        print_otree(&cfg_obj_root, 0);
+        print_tree(&cfg_inst_root, 0);
+    }
 
     while (TRUE)
     {
@@ -1093,16 +1101,9 @@ main(int argc, char **argv)
 
         if (cfg_shutdown)
         {
-#if 1
+
             print_otree(&cfg_obj_root, 0);
             print_tree(&cfg_inst_root, 0);
-#endif
-#if 0
-            printf("Creation backup %d\n",
-                   cfg_backup_create_file("../../backup.xml"));
-            printf("Creation dh %d\n",
-                   cfg_dh_create_file("../../history.xml"));
-#endif
             goto error;
         }
     }
