@@ -261,15 +261,60 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
     {
         rc = asn_get_choice(pattern_unit, "action", label, sizeof(label));
 
-        if (rc == 0 && (strcmp(label, "echo") == 0) && 
-                    csap_descr->echo_cb != NULL)
+        if (rc == 0)
         {
-            rc = csap_descr->echo_cb (csap_descr, data, d_len);
-            if (rc)
-                ERROR( "csap #%d, echo_cb returned %x code.", 
-                            csap_descr->id, rc);
-                /* Have no reason to stop receiving. */
-            rc = 0;
+            if ((strcmp(label, "echo") == 0) && csap_descr->echo_cb != NULL)
+            {
+                rc = csap_descr->echo_cb (csap_descr, data, d_len);
+                if (rc)
+                    ERROR( "csap #%d, echo_cb returned %x code.", 
+                                csap_descr->id, rc);
+                    /* Have no reason to stop receiving. */
+                rc = 0;
+            }
+
+            if ((strcmp(label, "function") == 0))
+            {
+                tad_processing_pkt_method method_addr;
+                char buffer[200] = {0,};
+                int buf_len = sizeof(buffer);
+                char *usr_place;
+
+                rc = asn_read_value_field(pattern_unit, buffer, &buf_len, "action");
+                if (rc)
+                    ERROR( "csap #%d, ASN read value error %X", 
+                                csap_descr->id, rc); 
+                else
+                { 
+                    for (usr_place = buffer; *usr_place; usr_place++)
+                        if (*usr_place == ':')
+                        {
+                            *usr_place = 0;
+                            usr_place++;
+                            break;
+                        }
+                    VERB("function name: \"%s\"", buffer);
+
+                    if (*usr_place)
+                    {
+                        method_addr = (tad_processing_pkt_method) 
+                                    rcf_ch_symbol_addr((char *)buffer, 1);
+
+                        if (method_addr == NULL)
+                            rc = TE_RC(TE_TAD_CH, ETENOSUCHNAME); 
+                        else
+                        {
+                            rc = method_addr(usr_place, data, d_len);
+                            INFO("rc from user method %X", rc);
+                        }
+                    }
+                    else
+                    {
+                        ERROR("Wrong format for 'function', wait for ':'");
+                        rc = TE_RC(TE_TAD_CH, EINVAL);
+                    }
+                }
+            }
         }
         else if (rc)
         {

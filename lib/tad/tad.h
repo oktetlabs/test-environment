@@ -742,6 +742,20 @@ extern int tad_confirm_pdus(csap_p csap_descr, asn_value *pdus);
 extern tad_payload_type tad_payload_asn_label_to_enum(const char *label);
 
 
+/**
+ * Type for reference to user function for some magic processing 
+ * with matched pkt
+ *
+ * @param usr_param   String passed by user
+ * @param pkt         Packet binary data, as it was caught from net.
+ * @param pkt_len     Length of pkt data.
+ *
+ * @return zero on success or error code.
+ */
+typedef int (* tad_processing_pkt_method) (const char *usr_param, 
+                                      const uint8_t *pkt, size_t pkt_len);
+
+
 
 /**
  * Type for reference to user function for generating data to be sent.
