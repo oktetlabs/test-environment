@@ -226,6 +226,7 @@ ndn_forw_drop_to_plain(const asn_value *val, ndn_forw_drop_t *forw_drop)
 {
     char drop_label[40]; 
     size_t d_len;
+    int rc;
 
     rc = asn_get_choice(val, "", drop_label, sizeof(drop_label));
     if (rc) return rc;
