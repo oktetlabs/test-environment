@@ -601,7 +601,9 @@ put_instance(FILE *f, cfg_instance *inst)
     if (inst != &cfg_inst_root && 
         strcmp(inst->obj->subid, "agent") != 0 &&
         strncmp(inst->oid, "/"CFG_VOLATILE":", 
-                strlen("/"CFG_VOLATILE":")) != 0)
+                strlen("/"CFG_VOLATILE":")) != 0 &&
+        strncmp(inst->obj->oid, "/agent/"CFG_VOLATILE, 
+                strlen("/agent/"CFG_VOLATILE)) != 0)
     {
         fprintf(f, "\n  <instance oid=\"%s\" ", inst->oid);
         
