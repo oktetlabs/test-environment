@@ -205,6 +205,9 @@ static int route_del(unsigned int, const char *,
                      const char *);
 static int route_list(unsigned int, const char *, char **);
 
+static int nameserver_get(unsigned int, const char *, char *, 
+                          const char *, ...);
+
 /* Linux Test Agent configuration tree */
 static rcf_pch_cfg_object node_route =
     { "route", 0, NULL, NULL,
@@ -217,6 +220,10 @@ static rcf_pch_cfg_object node_arp =
       (rcf_ch_cfg_get)arp_get, (rcf_ch_cfg_set)arp_set,
       (rcf_ch_cfg_add)arp_add, (rcf_ch_cfg_del)arp_del,
       (rcf_ch_cfg_list)arp_list, NULL, NULL};
+
+RCF_PCH_CFG_NODE_RO(node_dns, "dns", 
+                    NULL, &node_arp,
+                    (rcf_ch_cfg_list)nameserver_get);
 
 RCF_PCH_CFG_NODE_RW(node_status, "status", NULL, NULL,
                     status_get, status_set);
@@ -241,7 +248,7 @@ RCF_PCH_CFG_NODE_RO(node_ifindex, "index", NULL, &node_net_addr,
                     ifindex_get);
 
 RCF_PCH_CFG_NODE_COLLECTION(node_interface, "interface",
-                            &node_ifindex, &node_arp,
+                            &node_ifindex, &node_dns,
                             interface_add, interface_del,
                             interface_list, NULL);
 
@@ -2428,6 +2435,52 @@ route_list(unsigned int gid, const char *oid, char **list)
         return TE_RC(TE_TA_LINUX, ENOMEM);
 
     return 0;
+}
+
+static int
+nameserver_get(unsigned int gid, const char *oid, char *result, 
+               const char *instance, ...)
+{
+    FILE *resolver = NULL;
+    char buf[256];
+    char *found = NULL, *endaddr = NULL;
+    int rc = TE_RC(TE_TA_LINUX, ENOENT);
+    static const char ip_symbols[] = "0123456789.";
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(instance);
+
+    *result = '\0';
+    resolver = fopen("/etc/resolv.conf", "r");
+    if (!resolver)
+    {
+        rc = errno;
+        ERROR("Unable to open '/etc/resolv.conf'");
+        return TE_RC(TE_TA_LINUX, rc);
+    }
+    while ((fgets(buf, sizeof(buf), resolver)) != NULL)
+    {
+        if((found = strstr(buf, "nameserver")) != NULL)
+        {
+            found += strcspn(found, ip_symbols);
+            if(*found != '\0')
+            {
+                endaddr = found + strspn(found, ip_symbols);
+                *endaddr = '\0';
+                if(endaddr - found > RCF_MAX_VAL)
+                    rc = TE_RC(TE_TA_LINUX, ENAMETOOLONG);
+                else
+                {
+                    rc = 0;
+                    memcpy(result, found, endaddr - found);
+                }
+                break;
+            }
+        }
+    }
+    fclose(resolver);
+    return rc;
 }
 
 /**
