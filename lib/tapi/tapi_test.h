@@ -45,6 +45,7 @@
 #include "conf_api.h"
 #include "logger_api.h"
 #include "logger_ten.h"
+#include "tapi_jmp.h"
 
 
 #ifdef __cplusplus
@@ -103,6 +104,11 @@ extern "C" {
      */                                                             \
     (void)signal(SIGINT, sigint_handler);                           \
                                                                     \
+    TAPI_ON_JMP({                                                   \
+        result = (jmp_rc == ETEOK) ? EXIT_SUCCESS : EXIT_FAILURE;   \
+        goto cleanup;                                               \
+    });                                                             \
+                                                                    \
     TEST_START_SPECIFIC
 
 /**
@@ -117,11 +123,13 @@ extern "C" {
 /**
  * Terminate a test with success status.
  */
-#define TEST_SUCCESS \
-    do {                                                            \
-        result = EXIT_SUCCESS;                                      \
-        goto cleanup;                                               \
-    } while (0)
+#define TEST_SUCCESS    (tapi_jmp_do(0))
+
+/**
+ * Terminate a test with failure status. It is assumed that error is
+ * already reported.
+ */
+#define TEST_STOP       (tapi_jmp_do(ETESTFAIL))
 
 /**
  * Terminate a test with failure status, report an error.
@@ -131,18 +139,7 @@ extern "C" {
 #define TEST_FAIL(fmt...) \
     do {                                                            \
         ERROR(fmt);                                                 \
-        result = EXIT_FAILURE;                                      \
-        goto cleanup;                                               \
-    } while (0)
-
-/**
- * Terminate a test with failure status. It is assumed that error is
- * already reported.
- */
-#define TEST_STOP \
-    do {                                                            \
-        result = EXIT_FAILURE;                                      \
-        goto cleanup;                                               \
+        TEST_STOP;                                                  \
     } while (0)
 
 /**
