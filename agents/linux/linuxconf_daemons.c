@@ -2211,7 +2211,7 @@ dhcp_server_init()
 
     if (omapi_port == 0)
     {
-        VERB("no OMAPI port is specified in /etc/dhcpd.conf\n");
+        ERROR("No OMAPI port is specified in /etc/dhcpd.conf\n");
         rc = EINVAL;
     }
 
