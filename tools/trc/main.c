@@ -61,6 +61,8 @@ static char *trc_xml_log_fn = NULL;
 static char *trc_db_fn = NULL;
 /** Name of the file with report in HTML format */
 static char *trc_html_fn = NULL;
+/** Name of the file with report in TXT format */
+static char *trc_txt_fn = NULL;
 
 
 /** TRC tool command line options */
@@ -71,6 +73,7 @@ enum {
     TRC_OPT_INIT,
     TRC_OPT_DB,
     TRC_OPT_HTML,
+    TRC_OPT_TXT,
 };
 
 /**
@@ -106,6 +109,9 @@ process_cmd_line_opts(int argc, char **argv)
 
         { "html", 'h', POPT_ARG_STRING, NULL, TRC_OPT_HTML,
           "Specify name of the file to report in HTML format.",
+          "FILENAME" },
+        { "txt", 't', POPT_ARG_STRING, NULL, TRC_OPT_TXT,
+          "Specify name of the file to report in text format.",
           "FILENAME" },
 
         { "version", '\0', POPT_ARG_NONE, NULL, TRC_OPT_VERSION, 
@@ -144,6 +150,10 @@ process_cmd_line_opts(int argc, char **argv)
 
             case TRC_OPT_HTML:
                 trc_html_fn = strdup(poptGetOptArg(optCon));
+                break;
+            
+            case TRC_OPT_TXT:
+                trc_txt_fn = strdup(poptGetOptArg(optCon));
                 break;
             
             case TRC_OPT_VERSION:
@@ -325,6 +335,25 @@ main(int argc, char *argv[])
     {
         ERROR("Failed to output grand total statistics to stdout");
         /* Try to continue */
+    }
+    if (trc_txt_fn != NULL)
+    {
+        FILE *f = fopen(trc_txt_fn, "w");
+
+        if (f != NULL)
+        {
+            if (trc_stats_to_txt(f, &trc_db.stats) != 0)
+            {
+                ERROR("Failed to output grand total statistics to %s",
+                      trc_txt_fn);
+                /* Continue */
+            }
+        }
+        else
+        {
+            ERROR("Failed to open file '%s' for writing", trc_txt_fn);
+            /* Continue */
+        }
     }
 
     /* Generate report in HTML format */
