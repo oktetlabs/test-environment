@@ -564,6 +564,8 @@ alloc_and_get_requirement(xmlNodePtr node, test_requirements *reqs,
         ERROR("malloc(%u) failed", sizeof(*p));
         return ENOMEM;
     }
+    TAILQ_INSERT_TAIL(reqs, p, links);
+
     p->id = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("id")));
     p->ref = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("ref")));
     if ((p->id == NULL) == (p->ref == NULL))
@@ -596,8 +598,6 @@ alloc_and_get_requirement(xmlNodePtr node, test_requirements *reqs,
               "configurations and scripts");
         return EINVAL;
     }
-
-    TAILQ_INSERT_TAIL(reqs, p, links);
 
     return 0;
 }
