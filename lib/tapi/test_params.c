@@ -43,7 +43,7 @@ sigint_handler(int signum)
 }
 
 
-/** See the description in sockapi-test.h */
+/** See the description in tapi_test.h */
 const char *
 test_get_param(int argc, char *argv[], const char *name)
 {
@@ -74,7 +74,7 @@ test_get_param(int argc, char *argv[], const char *name)
     return NULL;
 }
 
-/** See the description in sockapi-test.h */
+/** See the description in tapi_test.h */
 int
 test_map_param_value(const char *var_name,
                      struct param_map_entry *maps, const char *str_val,
@@ -117,13 +117,13 @@ test_map_param_value(const char *var_name,
     return -1;
 }
 
-/** See the description in sockapi-test.h */
-unsigned char *
-test_get_octet_string_param(const char *str_val, int len)
+/** See the description in tapi_test.h */
+uint8_t *
+test_get_octet_string_param(const char *str_val, size_t len)
 {
-    unsigned char *oct_string, *ptr;
-    char          *nptr, *endptr;
-    int            i = 0;
+    uint8_t        *oct_string, *ptr;
+    const char     *nptr, *endptr;
+    unsigned int    i = 0;
 
     if (str_val == NULL)
     {
@@ -131,7 +131,7 @@ test_get_octet_string_param(const char *str_val, int len)
         return NULL;
     }
 
-    oct_string = (unsigned char *)calloc(len, sizeof(unsigned char *));
+    oct_string = (uint8_t *)calloc(len, sizeof(uint8_t));
     if (oct_string == NULL)
     {
         ERROR("Error in memory allocation");
@@ -147,13 +147,13 @@ test_get_octet_string_param(const char *str_val, int len)
         if (*endptr == ':')
             endptr++;
         nptr = endptr;
-        *ptr++ = (unsigned char)strtol(nptr, &endptr, 16);
+        *ptr++ = (unsigned char)strtol(nptr, (char **)&endptr, 16);
         i++;
     }
 
     if (*endptr != '\0')
     {
-        ERROR("Error in parsing octet string %s or bad given length %d",
+        ERROR("Error in parsing octet string %s or bad given length %u",
               str_val, len);
         free(oct_string);
         return NULL;
@@ -161,29 +161,30 @@ test_get_octet_string_param(const char *str_val, int len)
 
     if (i != len)
     {
-        ERROR("Bad given length %d for octet string %s", len, str_val);
+        ERROR("Bad given length %u for octet string %s", len, str_val);
         free(oct_string);
         return NULL;
     }
+
     return oct_string;
 }
 
-/** See the description in sockapi-test.h */
+/** See the description in tapi_test.h */
 const char*
-print_octet_string (const unsigned char *oct_string, int len)
+print_octet_string(const uint8_t *oct_string, size_t len)
 {
-    static char buf[256];
-    char *p = buf;
-    unsigned i;
+    static char     buf[256];
+
+    char           *p = buf;
+    unsigned int    i;
 
     if (oct_string == NULL || len == 0)
         strncpy (buf, "<null octet string>", sizeof(buf));
 
     memset(buf, 0, sizeof(buf));
 
-    for(i = 0; i < len; i++)
-        p += sprintf (p, " 0x%x", (int)(*oct_string++));
+    for (i = 0; i < len; i++)
+        p += sprintf(p, " 0x%02x", (unsigned int)(*oct_string++));
 
     return buf;
 }
-
