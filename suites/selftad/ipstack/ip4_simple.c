@@ -157,7 +157,8 @@ main(int argc, char *argv[])
 #endif
 
 #if USE_TAPI
-        rc = tapi_ip4_eth_csap_create(ta, sid, "eth0", NULL, NULL, &csap);
+        rc = tapi_ip4_eth_csap_create(ta, sid, "eth0", NULL, NULL,
+                                      NULL, NULL, &csap);
 #else
         rc = asn_parse_value_text("{ ip4:{max-packet-size plain:100000},"
                                   " eth:{device-id plain:\"eth0\"}}", 
@@ -184,7 +185,7 @@ main(int argc, char *argv[])
 
 #if USE_TAPI
         
-        rc = tapi_ip4_eth_recv_start(ta, sid, csap, NULL, 
+        rc = tapi_ip4_eth_recv_start(ta, sid, csap, NULL, NULL, NULL, 
                                      (uint8_t*)&my_addr, 5000, 4);
 #else
         strcpy(path, "/tmp/te_ip4_pattern.XXXXXX"); 
