@@ -1221,6 +1221,8 @@ route_parse_inst_name(const char *inst_name, route_entry_t *rt)
 
         if (term_byte != end_ptr)
             *end_ptr = ',';
+            
+        rt->forw_type = FORW_TYPE_LOCAL;
     }
     else
     {
@@ -1385,6 +1387,7 @@ route_add(unsigned int gid, const char *oid, const char *value,
     entry.dwForwardDest = rt.dst;
     entry.dwForwardNextHop = rt.gw;
     entry.dwForwardMask = PREFIX2MASK(rt.prefix);
+    
 
     if (rt.forw_type == FORW_TYPE_LOCAL)
     {
