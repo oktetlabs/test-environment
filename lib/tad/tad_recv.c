@@ -273,7 +273,7 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
         } 
     }
 
-    /* process action, if it present and requested. */
+    /* process action, if it present. */
     if (rc == 0)
     {
         rc = asn_get_choice(pattern_unit, "action", label, sizeof(label));
@@ -293,17 +293,22 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
             if ((strcmp(label, "function") == 0))
             {
                 tad_processing_pkt_method method_addr;
-                char buffer[200] = {0,};
-                int buf_len = sizeof(buffer);
+
+                char  buffer[200] = {0,};
                 char *usr_place;
+                int   buf_len = sizeof(buffer);
 
                 rc = asn_read_value_field(pattern_unit, buffer, &buf_len, 
                                           "action");
-                if (rc)
+                if (rc != 0)
                     ERROR("csap #%d, ASN read value error %X", 
                           csap_descr->id, rc); 
                 else
                 { 
+                    /* 
+                     * If there is no user string for function after colon,
+                     * valid pointer to zero-length string will be passed.
+                     */
                     for (usr_place = buffer; *usr_place; usr_place++)
                         if (*usr_place == ':')
                         {
@@ -311,26 +316,23 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
                             usr_place++;
                             break;
                         }
-                    INFO("function name: \"%s\"", buffer);
 
-                    if (*usr_place)
+                    VERB("function name: \"%s\"", buffer);
+
+                    method_addr = (tad_processing_pkt_method) 
+                                rcf_ch_symbol_addr((char *)buffer, 1);
+
+                    if (method_addr == NULL)
                     {
-                        method_addr = (tad_processing_pkt_method) 
-                                    rcf_ch_symbol_addr((char *)buffer, 1);
-
-                        if (method_addr == NULL)
-                            rc = TE_RC(TE_TAD_CH, ETENOSUCHNAME); 
-                        else
-                        {
-                            rc = method_addr(usr_place, data, d_len);
-                            INFO("rc from user method %X", rc);
-                            rc = 0;
-                        }
+                        ERROR("No funcion named '%s' found", buffer);
+                        rc = TE_RC(TE_TAD_CH, ETENOSUCHNAME); 
                     }
                     else
                     {
-                        ERROR("Wrong format for 'function', wait for ':'");
-                        rc = TE_RC(TE_TAD_CH, EINVAL);
+                        rc = method_addr(usr_place, data, d_len);
+                        if (rc != 0)
+                            WARN("rc from user method %X", rc);
+                        rc = 0;
                     }
                 }
             }
