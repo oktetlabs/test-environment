@@ -28,7 +28,7 @@
 #
 # Author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
 # 
-# $Id: builder_generate_symtbl,v 1.1 2003/10/28 09:35:41 arybchik Exp $
+# $Id$
 
 . builder.conf.processed
 
@@ -48,6 +48,11 @@ for p in ${TE_BS_PLATFORMS} ; do
         fi
         ${TE_BASE}/engine/builder/te_configure_package LIB $package \
             ${p}_$package $PLATFORM $PKGSRC $PREFIX || exit 1
+        cd lib/${p}_$package
+        make install-data || exit 1
+        cd ../..
+    done
+    for package in $LIBS ; do
         cd lib/${p}_$package
         make install || exit 1
         cd ../..
