@@ -34,38 +34,38 @@
 #define __TE_TAPI_RPCSOCK_DEFS_H__
 
 #include <stdio.h>
-#ifdef HAVE_SYS_SOCKET_H
+#if HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif
-#ifdef HAVE_SYS_POLL_H
+#if HAVE_SYS_POLL_H
 #include <sys/poll.h>
 #endif
-#ifdef HAVE_SYS_IOCTL_H
+#if HAVE_SYS_IOCTL_H
 #include <sys/ioctl.h>
 #endif
-#ifdef HAVE_NETINET_IP_H
+#if HAVE_NETINET_IP_H
 #include <netinet/ip.h>
 #endif
-#ifdef HAVE_NET_IF_ARP_H
+#if HAVE_NET_IF_ARP_H
 #include <net/if_arp.h>
 #endif
-#ifdef HAVE_NETINET_TCP_H
+#if HAVE_NETINET_TCP_H
 #include <netinet/tcp.h>
 #endif
-#ifdef HAVE_SIGNAL_H
+#if HAVE_SIGNAL_H
 #include <signal.h>
 #endif
-#ifdef HAVE_NET_IF_H
+#if HAVE_NET_IF_H
 #include <net/if.h>
 #endif
-#ifdef HAVE_NETDB_H
+#if HAVE_NETDB_H
 #include <netdb.h>
 #endif
 
-#ifdef HAVE_STRING_H
+#if HAVE_STRING_H
 #include <string.h>
 #else
-#ifdef HAVE_STRINGS_H
+#if HAVE_STRINGS_H
 #include <strings.h>
 #endif
 #endif
@@ -1954,6 +1954,8 @@ typedef enum rpc_arp_flags {
             RPC_BIT_MAP_ENTRY(ATF_NETMASK), \
             RPC_BIT_MAP_ENTRY(ATF_DONTPUB)
 
+#if HAVE_NET_IF_ARP_H
+
 static inline int
 arp_fl_rpc2h(rpc_arp_fl flags)
 {
@@ -1976,6 +1978,8 @@ arp_fl_h2rpc(int flags)
            (!!(flags & ATF_NETMASK) * RPC_ATF_NETMASK) |
            (!!(flags & ATF_DONTPUB) * RPC_ATF_DONTPUB);
 }
+
+#endif /* HAVE_NET_IF_ARP_H */
 
 
 #endif /* !__TE_TAPI_RPCSOCK_DEFS_H__ */
