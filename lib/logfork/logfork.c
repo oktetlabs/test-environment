@@ -343,11 +343,15 @@ logfork_register_user(const char *name)
         
     
     if (sendto(clt_sockd, (udp_msg *)&notification, sizeof(notification),
-               0,(struct sockaddr *)&logfork_saddr, sizeof(logfork_saddr)) 
+               0, (struct sockaddr *)&logfork_saddr, sizeof(logfork_saddr)) 
         < 0)
     {
         fprintf(stderr, "logfork_register_user() - cannot send "
-                "notification.\n");
+                "notification: %s\n", strerror(errno));
+        clt_sockd = -1;
+#ifdef HAVE_PTHREAD_H
+        pthread_mutex_unlock(&lock_sockd);
+#endif
         return -1;
     }
     
@@ -366,13 +370,20 @@ logfork_log_message(int level, char *lgruser, const char *fmt, ...)
 {
     udp_msg log_message;
     va_list ap;
-    
+
     memset(&log_message, 0, sizeof(log_message));
     UNUSED(lgruser);
     va_start(ap, fmt);
     vsnprintf(log_message.msg_str.log_msg, 
               sizeof(log_message.msg_str.log_msg), fmt, ap);
     va_end(ap);
+    
+    if (clt_sockd == -1)
+    {
+        fprintf(stderr, "%s(): %s\n", __FUNCTION__,
+                log_message.msg_str.log_msg);
+        return;
+    }
 
     log_message.pid = getpid();
     log_message.log_level = level;
@@ -382,13 +393,16 @@ logfork_log_message(int level, char *lgruser, const char *fmt, ...)
     pthread_mutex_lock(&lock_sockd);
 #endif
     
-    sendto(clt_sockd, (udp_msg *)&log_message, sizeof(log_message), 
-           0, (struct sockaddr *)&logfork_saddr, sizeof(logfork_saddr));
+    if (sendto(clt_sockd,
+               (udp_msg *)&log_message, sizeof(log_message), 0,
+               (struct sockaddr *)&logfork_saddr,
+               sizeof(logfork_saddr)) != sizeof(log_message))
+    {       
+        fprintf(stderr, "%s(): sendto() failed: %s\n",
+                __FUNCTION__, strerror(errno));
+    }
     
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_unlock(&lock_sockd);
 #endif
-
 }
-
-
