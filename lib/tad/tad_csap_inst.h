@@ -173,18 +173,22 @@ extern "C" {
  *
  */
 
+/** Constants used for both "command" and "state" flags. */
 enum {
-    /* These constants used for both "command" and "state" flags. */
     TAD_OP_SEND            =    1,
     TAD_OP_RECV            =    2,  
+};
 
-    /* Constants for "command" flag */
+/** Constants for "command" flag */
+enum {
     TAD_COMMAND_STOP       =    4, 
     TAD_COMMAND_GET        =    8, 
     TAD_COMMAND_WAIT       = 0x10, 
     TAD_COMMAND_RESULTS    = 0x20, 
+};
 
-    /* Constants for "state" flag */
+/** Constants for "state" flag */
+enum {
     TAD_STATE_FOREGROUND   =    4,
     TAD_STATE_COMPLETE     =    8,
 };

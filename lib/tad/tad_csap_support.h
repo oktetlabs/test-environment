@@ -332,7 +332,7 @@ extern int add_csap_spt(csap_spt_type_p spt_descr);
  *
  * @return pointer to structure or NULL if not found. 
  */
-extern csap_spt_type_p find_csap_spt(const char * proto);
+extern csap_spt_type_p find_csap_spt(const char *proto);
 
 #ifdef __cplusplus
 } /* extern "C" */
