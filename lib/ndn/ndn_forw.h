@@ -64,19 +64,6 @@ typedef struct {
 
 
 
-typedef enum {
-    FORW_BAND_UNLIMITED,
-    FORW_BAND_LIMITED,
-} ndn_forw_band_type_t;
-
-typedef struct {
-    ndn_forw_band_type_t type;
-
-    int bss;
-    int buf_size;
-} ndn_forw_band_t;
-
-
 
 
 typedef enum {
@@ -105,20 +92,17 @@ typedef struct {
     ndn_forw_drop_type_t type;
 
     int rate;
+
+    size_t   mask_len;
+    uint8_t *pattern_mask;
 } ndn_forw_drop_t;
-
-
-
 
 typedef struct { 
     char               *id;
     ndn_forw_delay_t    delay;
-    ndn_forw_band_t     band;
     ndn_forw_reorder_t  reorder;
     ndn_forw_drop_t     drop;
 } ndn_forw_action_plain;
-
-/* Structure for Ethernet frame header. written according to IEEE 802.3 */
 
 /* See description in ndn_forw.c */ 
 extern int ndn_forw_action_to_plain(const asn_value *pkt, 

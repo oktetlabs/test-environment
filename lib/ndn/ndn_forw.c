@@ -29,6 +29,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include "te_defs.h"
 #include "asn_impl.h"
 #include "ndn_internal.h"
 #include "ndn_forw.h"
@@ -93,52 +94,16 @@ const asn_type * const ndn_forw_reorder = &ndn_forw_reorder_s;
 
 
 /*
-Forwarder-Drop-Random::= SEQUENCE {
-    rate         [1] DATA-UNIT {INTEGER}
-}
-*/
-static asn_named_entry_t _ndn_forw_drop_random_ne_array [] = 
-{
-    { "rate", &ndn_data_unit_int16_s},
-};
-
-asn_type ndn_forw_drop_random_s =
-{
-    "Forwarder-Drop-Random", {PRIVATE, 100}, SEQUENCE, 
-    sizeof(_ndn_forw_drop_random_ne_array)/sizeof(asn_named_entry_t),
-    {_ndn_forw_drop_random_ne_array}
-};
-
-/*
-Forwarder-Drop-Pattern::= SEQUENCE {
-    bitmask     [1] OCTET STRING,
-    length      [2] INTEGER
-}
-*/
-static asn_named_entry_t _ndn_forw_drop_pattern_ne_array [] = 
-{
-    { "bitmask", &asn_base_octstring_s},
-    { "length",  &asn_base_int16_s},
-};
-
-asn_type ndn_forw_drop_pattern_s =
-{
-    "Forwarder-Drop-Pattern", {PRIVATE, 100}, SEQUENCE, 
-    sizeof(_ndn_forw_drop_pattern_ne_array)/sizeof(asn_named_entry_t),
-    {_ndn_forw_drop_pattern_ne_array}
-};
-
-/*
 Forwarder-Action-Drop-Params ::= CHOICE {
-    random      [0] Forwarder-Drop-Random,
-    pattern     [1] Forwarder-Drop-Pattern
+    random-rate      [0] INTEGER(1..100),
+    pattern-mask     [1] BIT STRING
 } 
 */ 
 
 static asn_named_entry_t _ndn_forw_drop_ne_array [] = 
 {
-    { "random",  &ndn_forw_drop_random_s},
-    { "pattern", &ndn_forw_drop_pattern_s},
+    { "random-rate",  &asn_base_int8_s},
+    { "pattern-mask", &asn_base_bitstring_s},
 };
 
 asn_type ndn_forw_drop_s =
@@ -231,43 +196,6 @@ ndn_forw_delay_to_plain(const asn_value *val, ndn_forw_delay_t *forw_delay)
     return rc;
 }
 
-/** 
- * Convert Forwarder-Action ASN value to plain C structrue. 
- * 
- * @param val           ASN value of type Forwarder-Action-Bandwidth-Params
- * @param forw_band     converted structure (OUT).
- *
- * @return zero on success or error code.
- */ 
-
-int 
-ndn_forw_band_to_plain(const asn_value *val, ndn_forw_band_t *forw_band)
-{
-    int rc = 0;
-    int d_len;
-
-    if (val == NULL || forw_band == NULL) 
-        return EINVAL;
-
-    d_len = sizeof (forw_band->type);
-    rc = asn_read_value_field(val, &(forw_band->type), &d_len, "type"); 
-    if (rc)
-        return rc;
-    if (forw_band->type == 0)
-        return 0;
-
-    d_len = sizeof (forw_band->bss);
-    rc = asn_read_value_field(val, &(forw_band->bss), &d_len, "bss.#plain"); 
-    if (rc)
-        return rc;
-
-    d_len = sizeof (forw_band->buf_size);
-    rc = asn_read_value_field(val, &(forw_band->buf_size), &d_len, "buf-size.#plain"); 
-    if (rc)
-        return rc;
-
-    return rc;
-}
 
 /** 
  * Convert Forwarder-Action ASN value to plain C structrue. 
@@ -281,7 +209,8 @@ ndn_forw_band_to_plain(const asn_value *val, ndn_forw_band_t *forw_band)
 int 
 ndn_forw_reorder_to_plain(const asn_value *val, ndn_forw_reorder_t *forw_reorder)
 {
-    int rc = 0;
+    UNUSED(val);
+    UNUSED(forw_reorder);
 
     return EASNINCOMPLVAL; /* unsupported, imitate absent */
 }
@@ -298,7 +227,8 @@ ndn_forw_reorder_to_plain(const asn_value *val, ndn_forw_reorder_t *forw_reorder
 int 
 ndn_forw_drop_to_plain(const asn_value *val, ndn_forw_drop_t *forw_drop)
 {
-    int rc = 0;
+    UNUSED(val);
+    UNUSED(forw_drop); 
 
     return EASNINCOMPLVAL; /* unsupported, imitate absent */
 }
@@ -334,9 +264,6 @@ ndn_forw_action_to_plain(const asn_value *val,
     rc = asn_read_value_field(val, forw_action->id, &d_len, "id");
     if (rc) return rc;
 
-
-
-
     rc = asn_get_subvalue(val, &subval, "delay");
     if (rc == 0) 
     {
@@ -350,19 +277,6 @@ ndn_forw_action_to_plain(const asn_value *val,
     else 
         return rc;
 
-
-    rc = asn_get_subvalue(val, &subval, "band");
-    if (rc == 0) 
-    {
-        rc = ndn_forw_band_to_plain(subval, &(forw_action->band));
-        if (rc) return rc;
-    }
-    else if (rc == EASNINCOMPLVAL)
-    {
-        forw_action->band.type = 0; /* uninitalized, default */
-    }
-    else 
-        return rc;
 
 
     rc = asn_get_subvalue(val, &subval, "reorder");
