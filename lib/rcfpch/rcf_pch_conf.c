@@ -565,11 +565,11 @@ process_wildcard(struct rcf_comm_connection *conn, char *cbuf,
         }
         else
         {
-            char  *obj_id = strdup(oid);
-            char  *level_all = "/*:*";
-            char  *c = NULL;
-            olist *tmp_list = NULL;
-            olist *level_list = NULL;
+            char   *obj_id = strdup(oid);
+            char   *level_all = "/*:*";
+            char   *c = NULL;
+            olist  *tmp_list = NULL;
+            olist  *level_list = NULL;
 
             if (obj_id == NULL)
             {
@@ -578,7 +578,7 @@ process_wildcard(struct rcf_comm_connection *conn, char *cbuf,
             c = strrchr(obj_id, '/');
             if (c != NULL)
                 *c = 0;
-     
+
             do {
                 char *tmp_id;
                 
@@ -610,7 +610,6 @@ process_wildcard(struct rcf_comm_connection *conn, char *cbuf,
                 
             } while (rc == 0 && level_list != NULL);
 
-            *c = '/';
             free(obj_id);
         }
     } 
