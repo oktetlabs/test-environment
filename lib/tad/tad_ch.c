@@ -191,7 +191,7 @@ rcf_ch_csap_create(struct rcf_comm_connection *handle,
 
     new_csap_id = csap_create(stack);
 
-    VERB("CSAP create, new id: %d", new_csap_id);
+    INFO("CSAP create, new id: %d", new_csap_id);
 
     if (new_csap_id == 0)
     {
@@ -204,7 +204,7 @@ rcf_ch_csap_create(struct rcf_comm_connection *handle,
     if (ba == NULL)
     {
         /* ERROR! NDS is mandatory for CSAP create command. */
-        VERB("missing attached NDS");
+        ERROR("missing attached NDS");
         SEND_ANSWER("%d missing attached NDS", ETADMISSNDS);
         csap_destroy(new_csap_id);
         return 0;
