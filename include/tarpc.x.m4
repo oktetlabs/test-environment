@@ -357,17 +357,17 @@ struct tarpc_wsarecv_ex_in {
     int                 fd;       /**< TA-local socket */
     unsigned char       buf<>;    /**< Buffer for received data */
     tarpc_size_t        len;      /**< Maximum length of expected data */
-    int                 flags;    /**< TA-independent flags */
+    int                 flags<>;  /**< TA-independent flags */
 };
 
 struct tarpc_wsarecv_ex_out {
-    struct tarpc_out_arg    common;
+    struct tarpc_out_arg common;
 
-    tarpc_ssize_t           retval;  /**< Returned length */
+    tarpc_ssize_t        retval;  /**< Returned length */
 
-    unsigned char           buf<>;   /**< Returned buffer with received 
-                                          data */
-    int                     flags;   /**< TA-independent flags */
+    unsigned char        buf<>;   /**< Returned buffer with received 
+                                       data */
+    int                  flags<>; /**< TA-independent flags */
 };
 
 /* sendto() */
