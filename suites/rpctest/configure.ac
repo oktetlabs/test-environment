@@ -1,10 +1,13 @@
 # Process this file with autoconf to produce a configure script.
-AC_INIT(rcf, 0.01, Elena.Vangerova@oktetlabs.ru)
+AC_INIT(rpctest, 0.01, Elena.Vangerova@oktetlabs.ru)
 
 AC_CONFIG_SRCDIR([rpctest.c])
 AC_CONFIG_AUX_DIR(../../aux)
 
-AM_INIT_AUTOMAKE
+AM_INIT_AUTOMAKE([-Wall foreign])
+
+AC_CANONICAL_HOST
+AC_SUBST(host)
 
 # Checks for programs.
 AC_PROG_CC

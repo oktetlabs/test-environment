@@ -1,13 +1,10 @@
 # Process this file with autoconf to produce a configure script.
-AC_INIT(conf, 0.01, Renata.Sayakhova@oktetlabs.ru)
+AC_INIT(conftest, 0.01, Renata.Sayakhova@oktetlabs.ru)
 
 AC_CONFIG_SRCDIR([conftest.c])
 AC_CONFIG_AUX_DIR(../../aux)
 
 AM_INIT_AUTOMAKE([-Wall foreign])
-
-TEST_SUITE="conftest"
-AC_SUBST(TEST_SUITE)
 
 AC_CANONICAL_HOST
 AC_SUBST(host)

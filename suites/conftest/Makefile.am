@@ -7,7 +7,7 @@ AM_CFLAGS =
 AM_LDFLAGS = @TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/lib 
 
 
-tetestdir=$(prefix)/@TEST_SUITE@/$(subdir)
+tetestdir=$(prefix)/@PACKAGE_NAME@/$(subdir)
 
 tetest_DATA=package.xml
 
