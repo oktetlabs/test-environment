@@ -38,6 +38,8 @@
 extern "C" {
 #endif
 
+#include "logger_ta.h"
+
 /* Maximum length of the logging message */
 #define LOGFORK_MAXLEN  256
 
