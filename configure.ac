@@ -95,11 +95,9 @@ if test -z "$with_config" -a -e ${srcdir}/conf/builder.conf ; then
 fi    
 
 if test -n "$with_config" ; then
-    if ! test -e ${srcdir}/conf ; then
-        cp -pR `dirname $with_config` .
-        rm -rf conf/.svn
-        cp -f $with_config conf/builder.conf
-    fi
+    cp -pR `dirname $with_config` .
+    rm -rf conf/.svn
+    cp -f $with_config conf/builder.conf
 fi    
 
 if test -n "$with_config" ; then
