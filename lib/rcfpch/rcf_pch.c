@@ -71,6 +71,8 @@
 #include "te_proto.h"
 #undef RCF_NEED_TYPES
 
+/** Connection with the Test Engine */
+static struct rcf_comm_connection *conn;
 
 /* Buffer for raw log to be transmitted to the TEN */
 static char log_data[RCF_PCH_LOG_BULK];
@@ -356,12 +358,10 @@ transmit_log(struct rcf_comm_connection *conn, char *cbuf,
 int
 rcf_pch_run(const char *confstr, const char *info)
 {
-    struct rcf_comm_connection *conn;
-
-    char   *cmd = NULL;
-    int     rc;
+    char *cmd = NULL;
+    int   rc;
     
-    te_bool  pending = FALSE;
+    te_bool pending = FALSE;
 
 /**
  * Read any integer parameter from the command.
@@ -990,4 +990,11 @@ exit:
 
 #undef READ_INT
 #undef SEND_ANSWER
+}
+
+/** Detach from the Test Engine after fork() */
+void 
+rcf_pch_detach(void)
+{
+    rcf_comm_agent_close(&conn);
 }

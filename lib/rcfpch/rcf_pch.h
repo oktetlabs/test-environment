@@ -63,6 +63,8 @@ extern "C" {
  */
 extern int rcf_pch_run(const char *confstr, const char *info);
 
+/** Detach from the Test Engine after fork() */
+extern void rcf_pch_detach(void);
 
 /** @name Default Command Handlers.
  *
