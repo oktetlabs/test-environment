@@ -409,7 +409,14 @@ xinetd_set(unsigned int gid, const char *oid, const char *value)
     if ((f = fopen(ds_backup(index), "r")) == NULL) 
     {
         rc = TE_RC(TE_TA_LINUX, errno);
-        ERROR("Cannot open file %s for reading", ds_backup(index));
+        ERROR("Cannot open file %s for reading; errno %s", 
+              ds_backup(index), errno);
+        PRINT("No backup");                          
+        {                                            
+            char buf[128];                           
+            sprintf("ls -l %s", ds_backup(index));  
+            ta_system(buf);                          
+        }                                            
         return rc;                                            
     }
 
