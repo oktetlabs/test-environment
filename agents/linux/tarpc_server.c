@@ -1592,13 +1592,13 @@ TARPC_FUNC(fcntl, {},
     int arg = in->arg;
     
     if (in->cmd == RPC_F_GETFD || in->cmd == RPC_F_GETFL || 
-	in->cmd == RPC_F_SETFL)
+        in->cmd == RPC_F_SETFL)
         arg = fcntl_flag_rpc2h(arg);
-	
+        
     if (in->arg != 0)
-	MAKE_CALL(out->retval = func(in->fd, fcntl_rpc2h(in->cmd), arg));
+        MAKE_CALL(out->retval = func(in->fd, fcntl_rpc2h(in->cmd), arg));
     else
-	MAKE_CALL(out->retval = func(in->fd, fcntl_rpc2h(in->cmd)));
+        MAKE_CALL(out->retval = func(in->fd, fcntl_rpc2h(in->cmd)));
 
     if (in->cmd == RPC_F_GETFD || in->cmd == RPC_F_GETFL || 
         in->cmd == RPC_F_SETFL)
