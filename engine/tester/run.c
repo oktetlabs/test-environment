@@ -125,6 +125,7 @@ tester_ctx_clone(const tester_ctx *ctx)
     new_ctx->id      = ctx->id;
     new_ctx->flags   = ctx->flags;
     new_ctx->timeout = ctx->timeout;
+    new_ctx->targets = ctx->targets;
     new_ctx->path    = ctx->path;
 
     TAILQ_INIT(&new_ctx->reqs);
@@ -1655,13 +1656,23 @@ tester_run_config(tester_ctx *ctx, tester_cfg *cfg)
         ERROR("%s(): tester_ctx_clone() failed", __FUNCTION__);
         return ENOMEM;
     }
-    /* Add configuration to context requirements */
-    rc = test_requirements_clone(&cfg->reqs, &ctx->reqs);
-    if (rc != 0)
+    if (cfg->targets != NULL)
     {
-        ERROR("%s(): test_requirements_clone() failed", __FUNCTION__);
-        tester_ctx_free(ctx);
-        return ENOMEM;
+        if (ctx->targets != NULL)
+        {
+            /* Add configuration to context requirements */
+            ctx->targets = reqs_expr_binary(TESTER_REQS_EXPR_AND,
+                                            ctx->targets, cfg->targets);
+            if (ctx->targets == NULL)
+            {
+                tester_ctx_free(ctx);
+                return ENOMEM;
+            }
+        }
+        else
+        {
+            ctx->targets = cfg->targets;
+        }
     }
     /* Add flags set for the root element of the run path */
     ctx->flags |= ctx->path->flags;

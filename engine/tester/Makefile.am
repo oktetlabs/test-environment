@@ -19,8 +19,11 @@ bin_PROGRAMS = te_tester
 te_tester_SOURCES = tester.c parse.c run.c run_path.c term_out.c iters.c \
                     reqs.c reqs_expr.y reqs_expr_lex.l
 
-BUILT_SOURCES = reqs_expr.h reqs_expr.c reqs_expr_lex.c
+BUILT_SOURCES = reqs_expr.h reqs_expr.c reqs_expr_lex.h reqs_expr_lex.c
 CLEANFILES = reqs_expr.h reqs_expr.c reqs_expr_lex.h reqs_expr_lex.c
+
+reqs_expr_lex.h: reqs_expr_lex.c
+
 
 te_tester_LDADD = @TE_LDADD@ -lbsapi -lconfapi -lconf_oid -llogger_ten \
                   -lipc -lpopt -lfl -lpthread

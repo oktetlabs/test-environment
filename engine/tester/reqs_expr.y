@@ -43,8 +43,8 @@ reqs_expr_error(const char *str)
     reqs_expr  *expr;
 }
 
-%left OR;
-%left AND;
+%right OR;
+%right AND;
 %nonassoc NOT;
 
 %token OPEN CLOSE;
@@ -60,7 +60,8 @@ expr:
 
         if ((p == NULL) || ($1 == NULL))
         {
-            /* TODO */
+            ERROR("%s(): calloc(1, %u) failed", __FUNCTION__, sizeof(*p));
+            return -1;
         }
         p->type = TESTER_REQS_EXPR_VALUE;
         p->u.value = $1;
@@ -76,7 +77,8 @@ expr:
 
         if (p == NULL)
         {
-            /* TODO */
+            ERROR("%s(): calloc(1, %u) failed", __FUNCTION__, sizeof(*p));
+            return -1;
         }
         p->type = TESTER_REQS_EXPR_NOT;
         p->u.unary = $2;
@@ -84,29 +86,21 @@ expr:
     }
     | expr AND expr
     {
-        reqs_expr *p = calloc(1, sizeof(*p));
-
-        if (p == NULL)
+        reqs_expr_root = $$ =
+            reqs_expr_binary(TESTER_REQS_EXPR_AND, $1, $3);
+        if (reqs_expr_root == NULL)
         {
-            /* TODO */
+            return -1;
         }
-        p->type = TESTER_REQS_EXPR_AND;
-        p->u.binary.lhv = $1;
-        p->u.binary.rhv = $3;
-        reqs_expr_root = $$ = p;
     }
     | expr OR expr
     {
-        reqs_expr *p = calloc(1, sizeof(*p));
-
-        if (p == NULL)
+        reqs_expr_root = $$ =
+            reqs_expr_binary(TESTER_REQS_EXPR_OR, $1, $3);
+        if (reqs_expr_root == NULL)
         {
-            /* TODO */
+            return -1;
         }
-        p->type = TESTER_REQS_EXPR_OR;
-        p->u.binary.lhv = $1;
-        p->u.binary.rhv = $3;
-        reqs_expr_root = $$ = p;
     }
     ;
 %%

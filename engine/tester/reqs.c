@@ -46,42 +46,53 @@
 #include "logger_api.h"
 
 #include "internal.h"
+#include "reqs.h"
 
 
 /* See description in reqs.h */
 int
-test_requirement_new(test_requirements *reqs, const char *req)
+tester_new_target_reqs(reqs_expr **targets, const char *req)
 {
-    test_requirement *p;
+    int        rc;
+    reqs_expr *parent;
+    reqs_expr *parsed;
 
-    if (req == NULL)
+    if (targets == NULL || req == NULL)
     {
-        ERROR("NULL pointer requirement name");
+        ERROR("%s(): Invalid argument", __FUNCTION__);
         return EINVAL;
     }
-    p = calloc(1, sizeof(*p));
-    if (p != NULL)
+
+    rc = tester_reqs_expr_parse(req, &parsed);
+    if (rc != 0)
     {
-        /* Excluded requirements are started from !, skip it */
-        p->exclude = (req[0] == '!');
-        if (p->exclude)
-            req++;
-        if (strlen(req) == 0)
-        {
-            ERROR("Empty requirement ID");
-            free(p);
-            return EINVAL;
-        }
-        p->id = strdup(req);
-        if (p->id != NULL)
-        {
-            TAILQ_INSERT_TAIL(reqs, p, links);
-            return 0;
-        }
-        free(p);
+        ERROR("Failed to parse requirements expression '%s'", req);
+        return rc;
     }
-    ERROR("%s(): Memory allocation failure", __FUNCTION__);   
-    return ENOMEM;
+
+    if (*targets == NULL)
+    {
+        *targets = parsed;
+    }
+    else
+    {
+        parent = calloc(1, sizeof(*parent));
+        if (parent == NULL)
+        {
+            rc = errno;
+            tester_reqs_expr_free(parsed);
+            ERROR("%s(): calloc(1, %u) failed",
+                  __FUNCTION__, sizeof(*parent));
+            return rc;
+        } 
+
+        parent->type = TESTER_REQS_EXPR_AND;
+        parent->u.binary.lhv = *targets;
+        parent->u.binary.rhv = parsed;
+        *targets = parent;
+    }
+
+    return 0;
 }
 
 
@@ -103,7 +114,6 @@ test_requirement_clone(const test_requirement *r)
         p->id = strdup(r->id);
         if (p->id != NULL)
         {
-            p->exclude = r->exclude;
             return p;
         }
         free(p);
@@ -161,6 +171,62 @@ test_requirements_free(test_requirements *reqs)
 }
 
 
+/* See description in reqs.h */
+reqs_expr *
+reqs_expr_binary(reqs_expr_type type, reqs_expr *lhv, reqs_expr *rhv)
+{
+    reqs_expr *p;
+
+    assert(type == TESTER_REQS_EXPR_AND ||
+           type == TESTER_REQS_EXPR_OR);
+    assert(lhv != NULL);
+    assert(rhv != NULL);
+
+    p = calloc(1, sizeof(*p));
+    if (p == NULL)
+    {
+        ERROR("%s(): calloc(1, %u) failed", __FUNCTION__, sizeof(*p));
+        return NULL;
+    }
+    p->type = type;
+    p->u.binary.lhv = lhv;
+    p->u.binary.rhv = rhv;
+    
+    return p;
+}
+
+/* See description in reqs.h */
+void
+tester_reqs_expr_free(reqs_expr *p)
+{
+    if (p == NULL)
+        return;
+
+    switch (p->type)
+    {
+        case TESTER_REQS_EXPR_VALUE:
+            free(p->u.value);
+            break;
+
+        case TESTER_REQS_EXPR_NOT:
+            tester_reqs_expr_free(p->u.unary);
+            break;
+
+        case TESTER_REQS_EXPR_AND:
+        case TESTER_REQS_EXPR_OR:
+            tester_reqs_expr_free(p->u.binary.lhv);
+            tester_reqs_expr_free(p->u.binary.rhv);
+            break;
+
+        default:
+            ERROR("Invalid type of requirements expression");
+            assert(FALSE);
+            break;
+    }
+    free(p);
+}
+
+
 /**
  * Get requirement identifier in specified context of parameters.
  *
@@ -188,17 +254,237 @@ req_get(const test_requirement *r, const test_params *params)
     return "";
 }
 
+/**
+ * Has the set requirement with specified ID?
+ *
+ * @param req       Requirement ID
+ * @param set       Set of requirements
+ * @param params    Current parameters to interpret references
+ */
+static te_bool
+is_req_in_set(const char *req, const test_requirements *set,
+              const test_params *params)
+{
+    const test_requirement *s;
+
+    assert(req != NULL);
+
+    for (s = (set != NULL) ? set->tqh_first : NULL;
+         s != NULL;
+         s = s->links.tqe_next)
+    {
+        if (strcmp(req, req_get(s, params)) == 0)
+        {
+            return TRUE;
+        }
+    }
+    return FALSE;
+}
+
+/**
+ * Has one of parameters specified requirments in its set?
+ *
+ * @param req       Requirement ID
+ * @param params    Current parameters to interpret references
+ */
+static te_bool
+is_req_in_params(const char *req, const test_params *params)
+{
+    const test_param   *p;
+
+    for (p = params->tqh_first; p != NULL; p = p->links.tqe_next)
+    {
+        if (is_req_in_set(req, p->reqs, params))
+            return TRUE;
+    }
+    return FALSE;
+}
+
+/**
+ * Is union of context, test and parameters requirements match logical
+ * expression of requirements?
+ *
+ * @param re        Logical expression of requirements
+ * @param ctx_set   Context set of requirements
+ * @param test_set  Test set of requirements
+ * @param params    Current parameters
+ */
+static te_bool
+is_reqs_expr_match(const reqs_expr         *re,
+                   const test_requirements *ctx_set,
+                   const test_requirements *test_set,
+                   const test_params       *params,
+                   te_bool                 *force)
+{
+    te_bool result;
+
+    switch (re->type)
+    {
+        case TESTER_REQS_EXPR_VALUE:
+            result = is_req_in_set(re->u.value, ctx_set, params) ||
+                     is_req_in_set(re->u.value, test_set, params) ||
+                     is_req_in_params(re->u.value, params);
+            break;
+
+        case TESTER_REQS_EXPR_NOT:
+            result = !is_reqs_expr_match(re->u.unary,
+                                         ctx_set, test_set, params,
+                                         force);
+            if (!result)
+                *force = TRUE;
+            break;
+
+        case TESTER_REQS_EXPR_AND:
+            result = is_reqs_expr_match(re->u.binary.lhv,
+                                        ctx_set, test_set, params,
+                                        force) &&
+                     is_reqs_expr_match(re->u.binary.rhv,
+                                        ctx_set, test_set, params,
+                                        force);
+            break;
+
+        case TESTER_REQS_EXPR_OR:
+            result = is_reqs_expr_match(re->u.binary.lhv,
+                                        ctx_set, test_set, params,
+                                        force) ||
+                     is_reqs_expr_match(re->u.binary.rhv,
+                                        ctx_set, test_set, params,
+                                        force);
+            break;
+
+        default:
+            ERROR("Invalid type of requirements expression");
+            assert(FALSE);
+            result = FALSE;
+            *force = TRUE;
+            break;
+    }
+    return result;
+}
+
+static void
+reqs_expr_to_string_buf(const reqs_expr *expr, char **buf, ssize_t *left)
+{
+    int out;
+
+    switch (expr->type)
+    {
+        case TESTER_REQS_EXPR_VALUE:
+            out = snprintf(*buf, *left, "%s", expr->u.value);
+            *buf += out; *left -= out;
+            break;
+
+        case TESTER_REQS_EXPR_NOT:
+            out = snprintf(*buf, *left, "!");
+            *buf += out; *left -= out;
+            reqs_expr_to_string_buf(expr->u.unary, buf, left);
+            break;
+
+        case TESTER_REQS_EXPR_AND:
+            reqs_expr_to_string_buf(expr->u.binary.lhv, buf, left);
+            out = snprintf(*buf, *left, "&");
+            *buf += out; *left -= out;
+            reqs_expr_to_string_buf(expr->u.binary.rhv, buf, left);
+            break;
+
+        case TESTER_REQS_EXPR_OR:
+            reqs_expr_to_string_buf(expr->u.binary.lhv, buf, left);
+            out = snprintf(*buf, *left, "|");
+            *buf += out; *left -= out;
+            reqs_expr_to_string_buf(expr->u.binary.rhv, buf, left);
+            break;
+
+        default:
+            ERROR("Invalid type of requirements expression");
+            assert(FALSE);
+            break;
+    }
+}
+
+static const char *
+reqs_expr_to_string(const reqs_expr *expr)
+{
+    static char  buf[1024];
+    char        *s = buf;
+    ssize_t      left = sizeof(buf);
+
+    s[0] = '\0';
+    reqs_expr_to_string_buf(expr, &s, &left);
+
+    return buf;
+}
+
+static void
+reqs_list_to_string_buf(const test_requirements  *reqs,
+                        const test_params        *params,
+                        char                    **buf,
+                        ssize_t                  *left)
+{
+    const test_requirement *p; 
+    int                     out;
+
+    for (p = reqs->tqh_first;
+         p != NULL && *left > 0;
+         p = p->links.tqe_next, *buf += out, *left -= out)
+    {
+        out = snprintf(*buf, *left, "%s%s",
+                       (p == reqs->tqh_first) ? "" : ",",
+                       req_get(p, params));
+    }
+}
+
+static const char *
+reqs_list_to_string(const test_requirements *reqs,
+                    const test_params       *params)
+{
+    static char         bufs[1024][4];
+    static unsigned int index = 0;
+
+    char       *out_buf = bufs[index++ & 0x3];
+    char       *s = out_buf;
+    ssize_t     left = sizeof(out_buf);
+
+    out_buf[0] = '\0';
+    reqs_list_to_string_buf(reqs, params, &s, &left);
+
+    return out_buf;
+}
+
+static const char *
+params_reqs_list_to_string(const test_params *params)
+{
+    static char out_buf[1024];
+
+    const test_param   *p;
+    char               *s;
+    ssize_t             left; 
+    int                 out;
+
+    out_buf[0] = '\0';
+    for (p = params->tqh_first, s = out_buf, left = sizeof(out_buf);
+         p != NULL && left > 0;
+         p = p->links.tqe_next)
+    {
+        if (p->reqs != NULL)
+        {
+            out = snprintf(s, left, "%s= ", p->name);
+            s += out;
+            left -= out;
+            reqs_list_to_string_buf(p->reqs, params, &s, &left);
+        }
+    }
+
+    return out_buf;
+}
+
 /* See description in reqs.h */
 te_bool
 tester_is_run_required(tester_ctx *ctx, const run_item *test,
                        const test_params *params)
 {
     te_bool                     result;
-    test_requirements          *targets = &ctx->reqs;
+    te_bool                     force = FALSE;
     const test_requirements    *reqs;
-    test_requirement           *t, *tn;
-    const test_requirement     *s;
-    const test_param           *p;
 
     switch (test->type)
     {
@@ -218,6 +504,28 @@ tester_is_run_required(tester_ctx *ctx, const run_item *test,
             return FALSE;
     }
 
+    result = is_reqs_expr_match(ctx->targets, &ctx->reqs, reqs, params,
+                                &force);
+    if (!force)
+        result = result || (test->type != RUN_ITEM_SCRIPT);
+    if (!result)
+    {
+        RING("Skipped because of expression: %s\n"
+             "Collected sticky requirements: %s\n"
+             "Test node requirements: %s\n"
+             "Requirements attached to parameters: %s\n",
+             reqs_expr_to_string(ctx->targets),
+             reqs_list_to_string(&ctx->reqs, params),
+             reqs_list_to_string(reqs, params),
+             params_reqs_list_to_string(params));
+    }
+
+    return result;
+#if 0
+    test_requirement           *t, *tn;
+    test_requirements          *targets = &ctx->reqs;
+    const test_requirement     *s;
+    const test_param           *p;
     /*
      * If no requirements specified for a test package/session, run it.
      * If no requirements specified for a test script, skip it.
@@ -299,5 +607,6 @@ tester_is_run_required(tester_ctx *ctx, const run_item *test,
     }
 
     return result;
+#endif
 }
 

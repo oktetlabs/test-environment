@@ -281,7 +281,8 @@ typedef struct tester_cfg {
     char               *descr;          /**< Optional description */
     test_suites_info    suites;         /**< Information about test
                                              suites */
-    test_requirements   reqs;           /**< List of target requirements */
+    reqs_expr          *targets;        /**< Target requirements
+                                             expression */
     test_options        options;        /**< List of options */
     run_items           runs;           /**< List of items to run */
 
@@ -301,10 +302,10 @@ typedef struct tester_ctx {
     unsigned int        flags;      /**< Flags (enum tester_flags) */
     int                 timeout;    /**< Global execution timeout (sec) */
     test_suites_info    suites;     /**< Information about test suites */
-    test_requirements   reqs;       /**< List of target requirements
-                                         specified in command line */
+    reqs_expr          *targets;    /**< Target requirements expression */
     tester_run_path    *path;       /**< Path to run and/or path options */
-
+    test_requirements   reqs;       /**< List of collected sticky
+                                         requirements */
 } tester_ctx;
 
 

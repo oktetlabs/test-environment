@@ -128,7 +128,6 @@ tester_cfg_new(const char *filename)
     p->filename = filename;
     TAILQ_INIT(&p->maintainers);
     TAILQ_INIT(&p->suites);
-    TAILQ_INIT(&p->reqs);
     TAILQ_INIT(&p->options);
     TAILQ_INIT(&p->runs);
 
@@ -390,7 +389,7 @@ tester_cfg_free(tester_cfg *cfg)
     persons_info_free(&cfg->maintainers);
     free(cfg->descr);
     test_suites_info_free(&cfg->suites);
-    test_requirements_free(&cfg->reqs);
+    tester_reqs_expr_free(cfg->targets);
     run_items_free(&cfg->runs);
     free(cfg);
 }
@@ -422,9 +421,8 @@ process_cmd_line_opts(tester_ctx *ctx, tester_cfgs *cfgs,
           "Specify path to the Test Suite.", "NAME:PATH" },
 
         { "req", 'R', POPT_ARG_STRING, NULL, TESTER_OPT_REQ,
-          "Requirement to be tested "
-          "(or excluded, if its first symbol is !).",
-          "[REQ|!REQ]" },
+          "Requirements to be tested (logical expression).",
+          "REQS" },
 
         { "quietskip", '\0', POPT_ARG_NONE, NULL, TESTER_OPT_QUIET_SKIP,
           "Quietly skip tests which do not meet specified requirements.",
@@ -613,11 +611,10 @@ process_cmd_line_opts(tester_ctx *ctx, tester_cfgs *cfgs,
             }
 
             case TESTER_OPT_REQ:
-                rc = test_requirement_new(&ctx->reqs,
-                                          poptGetOptArg(optCon));
+                rc = tester_new_target_reqs(&ctx->targets,
+                                            poptGetOptArg(optCon));
                 if (rc != 0)
                 {
-                    ERROR("test_requirement_new() failed");
                     poptFreeContext(optCon);
                     return EXIT_FAILURE;
                 }

@@ -59,13 +59,15 @@ typedef struct reqs_expr {
     } u;
 } reqs_expr;
 
+/** Target requirements expression */
+typedef reqs_expr target_reqs_expr;
+
+
 /** Element of the list of requirements */
 typedef struct test_requirement {
     TAILQ_ENTRY(test_requirement)   links;  /**< List links */
     char       *id;         /**< Identifier */
     char       *ref;        /**< Reference */
-    te_bool     exclude;    /**< Should test on requirement be 
-                                 included or excluded */
     te_bool     sticky;     /**< Is it sticky requirement? */
 } test_requirement;
 
@@ -89,16 +91,36 @@ struct test_params;
 extern int tester_reqs_expr_parse(const char *str, reqs_expr **expr);
 
 /**
- * Create a new requirement and insert it in the list.
+ * Create a new target requirement and insert it using logical 'and'
+ * with current target.
  *
- * @param reqs      A list of requirements
+ * @param reqs      Location of the targer requirements expression
  * @param req       String requirement
  *
  * @return Status code.
  * @retval 0        Success.
  * @retval ENOMEM   Memory allocation failure.
  */
-extern int test_requirement_new(test_requirements *reqs, const char *req);
+extern int tester_new_target_reqs(reqs_expr **targets, const char *req);
+
+/**
+ * Create binary operation expression.
+ *
+ * @param type      Type of binary operation
+ * @param lhv       Left hand value
+ * @param rhv       Right hand value
+ *
+ * @return Pointer to the result or NULL
+ */
+extern reqs_expr *reqs_expr_binary(reqs_expr_type type,
+                                   reqs_expr *lhv, reqs_expr *rhv);
+
+/**
+ * Free requirements expression.
+ *
+ * @param p         Expression to be freed
+ */
+extern void tester_reqs_expr_free(reqs_expr *p);
 
 /**
  * Clone list of requirements.
