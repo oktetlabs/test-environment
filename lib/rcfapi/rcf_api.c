@@ -449,6 +449,7 @@ rcf_api_thread_ctx_destroy(void *handle)
     } 
 
     msg_buffer_clear(&(rcf_ctx_handle->msg_buf_head));
+    free(rcf_ctx_handle);
 }
 
 /**
