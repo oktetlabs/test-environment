@@ -297,11 +297,6 @@ tapi_cfg_base_add_net_addr(const char *oid, const struct sockaddr *addr,
                 return rc;
             }
         }
-
-        RING("Address %s added to %s",
-             inet_ntop(addr->sa_family, &SIN(addr)->sin_addr,
-                       buf, sizeof(buf)),
-             oid);
     }
     else if (TE_RC_GET_ERROR(rc) == EEXIST)
     {
