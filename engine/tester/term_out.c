@@ -84,17 +84,26 @@ typedef enum {
 } tester_color;
 
 
+/** Number of columns on terminal. To be initialized once. */
 static int columns = 0;
+
+/** By default, assume that terminal may be colored */
+static te_bool tester_is_term_colored = TRUE;
+
+/** Passed verdict */
+static const char *tester_verdict_passed = "PASSED";
 
 #if HAVE_PTHREAD_H
 
+/** Lock to mutual exclude access to terminal in multi-thread Tester */
 static pthread_mutex_t win_lock = PTHREAD_MUTEX_INITIALIZER;
 
+/** ID of the previous test */
 static test_id prev_id = -1;
+/** Length of the line output for previous ID */
 static size_t  prev_len = 0;
 
 #endif
-
 
 
 /**
@@ -130,6 +139,7 @@ colored_verdict(tester_color color, const char *text)
     system("tput sgr0");
     fflush(stdout);
 }
+
 
 /* See description in internal.h */
 void
@@ -210,7 +220,11 @@ tester_out_done(run_item_type type, const char *name,
         char       *end;
         
         if ((term == NULL) || (strlen(term) == 0))
+        {
             setenv("TERM", TESTER_TERM_DEF, TRUE);
+            tester_is_term_colored = FALSE;
+            tester_verdict_passed = "passed";
+        }
         if (cols != NULL)
             columns = strtol(cols, &end, 10);
         if ((end == cols) || (columns == 0))
@@ -254,7 +268,7 @@ tester_out_done(run_item_type type, const char *name,
     /* Map result to color and verdict */
     if (result == ETESTPASS)
     {
-        verdict = "PASSED";
+        verdict = tester_verdict_passed;
         color = TESTER_COLOR_GREEN;
     }
     else
