@@ -383,7 +383,7 @@
     <object oid="/agent/sshd" access="read_create" type="none"/>
 
     <!-- Xvfb daemon.
-         Name: number -->
+         Name: display number -->
     <object oid="/agent/Xvfb" access="read_create" type="none"/>
 
     <!-- SMTP daemon.
@@ -407,5 +407,21 @@
          Value: variable value
          Limit: any -->
     <object oid="/agent/env" access="read_create" type="string"/>
+
+    <!-- TELNET daemon enabling/disabling.
+         Name:  empty
+         Value: 0 (disabled) or 1 (enabled)
+         Limit: 1 -->
+    <object oid="/agent/telnetd" access="read_write" type="integer"/>
+
+    <!-- RSH daemon enabling/disabling.
+         Name:  empty
+         Value: 0 (disabled) or 1 (enabled)
+         Limit: 1 -->
+    <object oid="/agent/rshd" access="read_write" type="integer"/>
+
+    <!-- VNC server.
+         Name: display number -->
+    <object oid="/agent/vncserver" access="read_create" type="none"/>
 
 </backup>
