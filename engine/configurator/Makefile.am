@@ -15,7 +15,7 @@ noinst_PROGRAMS = test_env
 noinst_HEADERS = conf_db.h conf_dh.h conf_backup.h conf_ta.h conf_defs.h
 
 te_cs_SOURCES = conf_db.c conf_dh.c conf_main.c conf_backup.c conf_ta.c \
-		conf_env.c
+                conf_env.c
 
 test_env_SOURCES = conf_env.c test_env.c
 
