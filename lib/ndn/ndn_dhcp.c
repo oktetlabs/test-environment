@@ -39,10 +39,10 @@ static asn_type ndn_dhcpv4_options_s;
 
 static asn_named_entry_t _ndn_dhcpv4_option_ne_array [] = 
 {
-    { "type",    &ndn_data_unit_int8_s },
-    { "length",  &ndn_data_unit_int8_s },
-    { "value",   &ndn_data_unit_octet_string_s },
-    { "options", &ndn_dhcpv4_options_s },
+    { "type",    &ndn_data_unit_int8_s, {PRIVATE, 1} },
+    { "length",  &ndn_data_unit_int8_s, {PRIVATE, 2} },
+    { "value",   &ndn_data_unit_octet_string_s, {PRIVATE, 3} },
+    { "options", &ndn_dhcpv4_options_s, {PRIVATE, 4} },
 };
 
 static asn_type ndn_dhcpv4_option_s = 
@@ -62,21 +62,21 @@ asn_type_p ndn_dhcpv4_options = &ndn_dhcpv4_options_s;
 
 static asn_named_entry_t _ndn_dhcpv4_message_ne_array [] = 
 {
-    { "op",     &ndn_data_unit_int8_s },
-    { "htype",  &ndn_data_unit_int8_s },
-    { "hlen",   &ndn_data_unit_int8_s },
-    { "hops",   &ndn_data_unit_int8_s },
-    { "xid",    &ndn_data_unit_int32_s },
-    { "secs",   &ndn_data_unit_int16_s },
-    { "flags",  &ndn_data_unit_int16_s },
-    { "ciaddr", &ndn_data_unit_ip_address_s },
-    { "yiaddr", &ndn_data_unit_ip_address_s },
-    { "siaddr", &ndn_data_unit_ip_address_s },
-    { "giaddr", &ndn_data_unit_ip_address_s },
-    { "chaddr", &ndn_data_unit_octet_string_s },
-    { "sname",  &ndn_data_unit_octet_string_s },
-    { "file",   &ndn_data_unit_octet_string_s },
-    { "options",  &ndn_dhcpv4_options_s },
+    { "op",     &ndn_data_unit_int8_s, {PRIVATE, 1} },
+    { "htype",  &ndn_data_unit_int8_s, {PRIVATE, 2} },
+    { "hlen",   &ndn_data_unit_int8_s, {PRIVATE, 3} },
+    { "hops",   &ndn_data_unit_int8_s, {PRIVATE, 4} },
+    { "xid",    &ndn_data_unit_int32_s, {PRIVATE, 5} },
+    { "secs",   &ndn_data_unit_int16_s, {PRIVATE, 6} },
+    { "flags",  &ndn_data_unit_int16_s, {PRIVATE, 7} },
+    { "ciaddr", &ndn_data_unit_ip_address_s, {PRIVATE, 8} },
+    { "yiaddr", &ndn_data_unit_ip_address_s, {PRIVATE, 9} },
+    { "siaddr", &ndn_data_unit_ip_address_s, {PRIVATE,10} },
+    { "giaddr", &ndn_data_unit_ip_address_s, {PRIVATE,11} },
+    { "chaddr", &ndn_data_unit_octet_string_s, {PRIVATE,12} },
+    { "sname",  &ndn_data_unit_octet_string_s, {PRIVATE,13} },
+    { "file",   &ndn_data_unit_octet_string_s, {PRIVATE,14} },
+    { "options",  &ndn_dhcpv4_options_s, {PRIVATE,15} },
 };
 
 asn_type ndn_dhcpv4_message_s = 
@@ -110,12 +110,10 @@ asn_type ndn_dhcp_mode_s = {
 
 
 
-
-
 static asn_named_entry_t _ndn_dhcpv4_csap_ne_array [] = 
 {
-    { "mode",   &ndn_dhcp_mode_s },
-    { "iface",  &asn_base_charstring_s },
+    { "mode",   &ndn_dhcp_mode_s, {PRIVATE, 1} },
+    { "iface",  &asn_base_charstring_s, {PRIVATE, 2} },
 };
 
 asn_type ndn_dhcpv4_csap_s =

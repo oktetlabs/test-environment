@@ -33,7 +33,7 @@
 /* CLI-Message definitions */
 static asn_named_entry_t _ndn_cli_message_ne_array [] = 
 {
-    { "message", &ndn_data_unit_char_string_s }
+    { "message", &ndn_data_unit_char_string_s, {PRIVATE, 1} }
 };
 
 asn_type ndn_cli_message_s =
@@ -49,8 +49,8 @@ asn_type_p ndn_cli_message = &ndn_cli_message_s;
 /* CLI-Telnet-Params definitions */
 static asn_named_entry_t _ndn_cli_telnet_params_ne_array [] = 
 {
-    { "host", &ndn_data_unit_char_string_s },
-    { "port", &ndn_data_unit_int16_s }
+    { "host", &ndn_data_unit_char_string_s, {PRIVATE, 1} },
+    { "port", &ndn_data_unit_int16_s, {PRIVATE, 2} }
 };
 
 asn_type ndn_cli_telnet_params_s =
@@ -66,7 +66,7 @@ asn_type_p ndn_cli_telnet_params = &ndn_cli_telnet_params_s;
 /* CLI-Serial-Params definitions */
 static asn_named_entry_t _ndn_cli_serial_params_ne_array [] = 
 {
-    { "device", &ndn_data_unit_char_string_s }
+    { "device", &ndn_data_unit_char_string_s, {PRIVATE, 1} }
 };
 
 asn_type ndn_cli_serial_params_s =
@@ -82,8 +82,8 @@ asn_type_p ndn_cli_serial_params = &ndn_cli_serial_params_s;
 /* CLI-Params definitions */
 static asn_named_entry_t _ndn_cli_params_ne_array [] = 
 {
-    { "telnet", &ndn_cli_telnet_params_s },
-    { "serial", &ndn_cli_serial_params_s }
+    { "telnet", &ndn_cli_telnet_params_s, {PRIVATE, 1} },
+    { "serial", &ndn_cli_serial_params_s, {PRIVATE, 2} }
 };
 
 asn_type ndn_cli_params_s =
@@ -99,13 +99,13 @@ asn_type_p ndn_cli_params = &ndn_cli_params_s;
 /* CLI-CSAP definitions */
 static asn_named_entry_t _ndn_cli_csap_ne_array [] = 
 {
-    { "conn-type", &asn_base_integer_s },
-    { "conn-params", &ndn_cli_params_s }, 
-    { "command-prompt", &ndn_data_unit_char_string_s },
-    { "login-prompt", &ndn_data_unit_char_string_s },
-    { "password-prompt", &ndn_data_unit_char_string_s },
-    { "user", &ndn_data_unit_char_string_s },
-    { "password", &ndn_data_unit_char_string_s },
+    { "conn-type", &asn_base_integer_s, {PRIVATE, 1} },
+    { "conn-params", &ndn_cli_params_s, {PRIVATE, 2} }, 
+    { "command-prompt", &ndn_data_unit_char_string_s, {PRIVATE, 3} },
+    { "login-prompt", &ndn_data_unit_char_string_s, {PRIVATE, 4} },
+    { "password-prompt", &ndn_data_unit_char_string_s, {PRIVATE, 5} },
+    { "user", &ndn_data_unit_char_string_s, {PRIVATE, 6} },
+    { "password", &ndn_data_unit_char_string_s, {PRIVATE, 7} },
 };
 
 asn_type ndn_cli_csap_s =
@@ -116,6 +116,5 @@ asn_type ndn_cli_csap_s =
 };
 
 asn_type_p ndn_cli_csap = &ndn_cli_csap_s;
-
 
 

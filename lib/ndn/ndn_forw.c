@@ -47,8 +47,8 @@ Forwarder-Action-Delay-Params ::= SEQUENCE {
 
 static asn_named_entry_t _ndn_forw_delay_ne_array [] = 
 {
-    { "delay-min",   &ndn_data_unit_int32_s},
-    { "delay-max",   &ndn_data_unit_int32_s},
+    { "delay-min",   &ndn_data_unit_int32_s, {PRIVATE, 1}},
+    { "delay-max",   &ndn_data_unit_int32_s, {PRIVATE, 1}},
 };
 
 asn_type ndn_forw_delay_s =
@@ -79,9 +79,9 @@ static asn_type ndn_forw_reorder_type_s = {
 
 static asn_named_entry_t _ndn_forw_reorder_ne_array [] = 
 {
-    { "type",          &ndn_forw_reorder_type_s},
-    { "timeout",       &ndn_data_unit_int32_s},
-    { "reorder-size",  &ndn_data_unit_int16_s},
+    { "type",          &ndn_forw_reorder_type_s, {PRIVATE, 1}},
+    { "timeout",       &ndn_data_unit_int32_s, {PRIVATE, 1}},
+    { "reorder-size",  &ndn_data_unit_int16_s, {PRIVATE, 1}},
 };
 
 asn_type ndn_forw_reorder_s =
@@ -103,8 +103,8 @@ Forwarder-Action-Drop-Params ::= CHOICE {
 
 static asn_named_entry_t _ndn_forw_drop_ne_array [] = 
 {
-    { "random-rate",  &asn_base_int8_s},
-    { "pattern-mask", &asn_base_bitstring_s},
+    { "random-rate",  &asn_base_int8_s, {PRIVATE, 1}},
+    { "pattern-mask", &asn_base_bitstring_s, {PRIVATE, 1}},
 };
 
 asn_type ndn_forw_drop_s =
@@ -130,10 +130,10 @@ Forwarder-Action ::= SEQUENCE {
 
 static asn_named_entry_t _ndn_forw_action_ne_array [] = 
 {
-    { "id",       &asn_base_charstring_s},
-    { "delay",    &ndn_forw_delay_s },
-    { "reorder",  &ndn_forw_reorder_s },
-    { "drop",     &ndn_forw_drop_s },
+    { "id",       &asn_base_charstring_s, {PRIVATE, 1}},
+    { "delay",    &ndn_forw_delay_s, {PRIVATE, 1} },
+    { "reorder",  &ndn_forw_reorder_s, {PRIVATE, 1} },
+    { "drop",     &ndn_forw_drop_s, {PRIVATE, 1} },
 };
 
 asn_type ndn_forw_action_s =

@@ -37,6 +37,19 @@ extern "C" {
 
 #include "asn_usr.h"
 
+typedef enum { 
+    NDN_TAD_FILE = 1,
+    NDN_TAD_SNMP,
+    NDN_TAD_ETH,
+    NDN_TAD_IP4,
+    NDN_TAD_ICMP4,
+    NDN_TAD_UDP,
+    NDN_TAD_TCP,
+    NDN_TAD_CLI,
+    NDN_TAD_DHCP,
+    NDN_TAD_BRIDGE,
+} ndn_tad_protocols_t;
+
 extern const asn_type * const  ndn_data_unit_int4;
 extern const asn_type * const  ndn_data_unit_int5;
 extern const asn_type * const  ndn_data_unit_int8;

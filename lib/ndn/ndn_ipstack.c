@@ -42,18 +42,18 @@
 
 static asn_named_entry_t _ndn_ip4_header_ne_array [] = 
 {
-    { "version",  &ndn_data_unit_int8_s },
-    { "header-len",     &ndn_data_unit_int8_s },
-    { "type-of-service", &ndn_data_unit_int8_s },
-    { "ip-len", &ndn_data_unit_int16_s },
-    { "ip-ident",  &ndn_data_unit_int16_s },
-    { "flags",  &ndn_data_unit_int8_s },
-    { "ip-offset",  &ndn_data_unit_int16_s },
-    { "time-to-live",  &ndn_data_unit_int8_s },
-    { "protocol",  &ndn_data_unit_int8_s },
-    { "h-checksum",  &ndn_data_unit_int16_s },
-    { "src-addr",  &ndn_data_unit_ip_address_s },
-    { "dst-addr",  &ndn_data_unit_ip_address_s }, 
+    { "version",  &ndn_data_unit_int8_s, {PRIVATE, 1} },
+    { "header-len",     &ndn_data_unit_int8_s, {PRIVATE, 1} },
+    { "type-of-service", &ndn_data_unit_int8_s, {PRIVATE, 1} },
+    { "ip-len", &ndn_data_unit_int16_s, {PRIVATE, 1} },
+    { "ip-ident",  &ndn_data_unit_int16_s, {PRIVATE, 1} },
+    { "flags",  &ndn_data_unit_int8_s, {PRIVATE, 1} },
+    { "ip-offset",  &ndn_data_unit_int16_s, {PRIVATE, 1} },
+    { "time-to-live",  &ndn_data_unit_int8_s, {PRIVATE, 1} },
+    { "protocol",  &ndn_data_unit_int8_s, {PRIVATE, 1} },
+    { "h-checksum",  &ndn_data_unit_int16_s, {PRIVATE, 1} },
+    { "src-addr",  &ndn_data_unit_ip_address_s, {PRIVATE, 1} },
+    { "dst-addr",  &ndn_data_unit_ip_address_s, {PRIVATE, 1} }, 
 };
 
 asn_type ndn_ip4_header_s =
@@ -74,15 +74,15 @@ asn_type_p ndn_ip4_header = &ndn_ip4_header_s;
 
 static asn_named_entry_t _ndn_ip4_csap_ne_array [] = 
 {
-    { "version",         &ndn_data_unit_int8_s },
-    { "type-of-service", &ndn_data_unit_int8_s },
-    { "ip-ident",        &ndn_data_unit_int16_s },
-    { "flags",           &ndn_data_unit_int8_s },
-    { "time-to-live",    &ndn_data_unit_int8_s },
-    { "protocol",        &ndn_data_unit_int8_s },
-    { "local-addr",      &ndn_data_unit_ip_address_s },
-    { "remote-addr",     &ndn_data_unit_ip_address_s }, 
-    { "max-packet-size", &ndn_data_unit_int32_s },
+    { "version",         &ndn_data_unit_int8_s, {PRIVATE, 1} },
+    { "type-of-service", &ndn_data_unit_int8_s, {PRIVATE, 1} },
+    { "ip-ident",        &ndn_data_unit_int16_s, {PRIVATE, 1} },
+    { "flags",           &ndn_data_unit_int8_s, {PRIVATE, 1} },
+    { "time-to-live",    &ndn_data_unit_int8_s, {PRIVATE, 1} },
+    { "protocol",        &ndn_data_unit_int8_s, {PRIVATE, 1} },
+    { "local-addr",      &ndn_data_unit_ip_address_s, {PRIVATE, 1} },
+    { "remote-addr",     &ndn_data_unit_ip_address_s, {PRIVATE, 1} }, 
+    { "max-packet-size", &ndn_data_unit_int32_s, {PRIVATE, 1} },
 };
 
 asn_type ndn_ip4_csap_s =
@@ -102,9 +102,9 @@ asn_type_p ndn_ip4_csap = &ndn_ip4_csap_s;
 
 static asn_named_entry_t _ndn_icmp4_message_ne_array [] = 
 {
-    { "version",  &ndn_data_unit_int8_s },
-    { "ip-len", &ndn_data_unit_int16_s },
-    { "src-addr",  &ndn_data_unit_int32_s },
+    { "version",  &ndn_data_unit_int8_s, {PRIVATE, 1} },
+    { "ip-len", &ndn_data_unit_int16_s, {PRIVATE, 1} },
+    { "src-addr",  &ndn_data_unit_int32_s, {PRIVATE, 1} },
 };
 
 asn_type ndn_icmp4_message_s =
@@ -122,8 +122,8 @@ asn_type_p ndn_icmp4_message = &ndn_icmp4_message_s;
 
 static asn_named_entry_t _ndn_icmp4_csap_ne_array [] = 
 {
-    { "remote-port",    &ndn_data_unit_int16_s },
-    { "local-port",     &ndn_data_unit_int16_s },
+    { "remote-port",    &ndn_data_unit_int16_s, {PRIVATE, 1} },
+    { "local-port",     &ndn_data_unit_int16_s, {PRIVATE, 1} },
 };
 
 asn_type ndn_icmp4_csap_s =
@@ -141,10 +141,10 @@ asn_type ndn_icmp4_csap_s =
 
 static asn_named_entry_t _ndn_udp_header_ne_array [] = 
 {
-    { "src-port", &ndn_data_unit_int16_s },
-    { "dst-port", &ndn_data_unit_int16_s },
-    { "length",   &ndn_data_unit_int16_s },
-    { "checksum", &ndn_data_unit_int16_s },
+    { "src-port", &ndn_data_unit_int16_s, {PRIVATE, 1} },
+    { "dst-port", &ndn_data_unit_int16_s, {PRIVATE, 1} },
+    { "length",   &ndn_data_unit_int16_s, {PRIVATE, 1} },
+    { "checksum", &ndn_data_unit_int16_s, {PRIVATE, 1} },
 };
 
 asn_type ndn_udp_header_s =
@@ -162,8 +162,8 @@ asn_type_p ndn_udp_header = &ndn_udp_header_s;
 
 static asn_named_entry_t _ndn_udp_csap_ne_array [] = 
 {
-    { "local-port",     &ndn_data_unit_int16_s },
-    { "remote-port",    &ndn_data_unit_int16_s },
+    { "local-port",     &ndn_data_unit_int16_s, {PRIVATE, 1} },
+    { "remote-port",    &ndn_data_unit_int16_s, {PRIVATE, 1} },
 };
 
 asn_type ndn_udp_csap_s =
@@ -186,15 +186,15 @@ asn_type_p ndn_udp_csap = &ndn_udp_csap_s;
 
 static asn_named_entry_t _ndn_tcp_header_ne_array [] = 
 {
-    { "src-port", &ndn_data_unit_int16_s },
-    { "dst-port", &ndn_data_unit_int16_s },
-    { "seqn",     &ndn_data_unit_int32_s },
-    { "acqn",     &ndn_data_unit_int32_s },
-    { "hlen",     &ndn_data_unit_int8_s },
-    { "flags",    &ndn_data_unit_int8_s },
-    { "win-size", &ndn_data_unit_int16_s },
-    { "checksum", &ndn_data_unit_int16_s },
-    { "urg-p",    &ndn_data_unit_int16_s },
+    { "src-port", &ndn_data_unit_int16_s, {PRIVATE, 1} },
+    { "dst-port", &ndn_data_unit_int16_s, {PRIVATE, 1} },
+    { "seqn",     &ndn_data_unit_int32_s, {PRIVATE, 1} },
+    { "acqn",     &ndn_data_unit_int32_s, {PRIVATE, 1} },
+    { "hlen",     &ndn_data_unit_int8_s, {PRIVATE, 1} },
+    { "flags",    &ndn_data_unit_int8_s, {PRIVATE, 1} },
+    { "win-size", &ndn_data_unit_int16_s, {PRIVATE, 1} },
+    { "checksum", &ndn_data_unit_int16_s, {PRIVATE, 1} },
+    { "urg-p",    &ndn_data_unit_int16_s, {PRIVATE, 1} },
 };
 
 asn_type ndn_tcp_header_s =
@@ -212,8 +212,8 @@ asn_type_p ndn_tcp_header = &ndn_tcp_header_s;
 
 static asn_named_entry_t _ndn_tcp_csap_ne_array [] = 
 {
-    { "local-port",     &ndn_data_unit_int16_s },
-    { "remote-port",    &ndn_data_unit_int16_s },
+    { "local-port",     &ndn_data_unit_int16_s, {PRIVATE, 1} },
+    { "remote-port",    &ndn_data_unit_int16_s, {PRIVATE, 1} },
 };
 
 asn_type ndn_tcp_csap_s =

@@ -40,27 +40,36 @@ extern asn_type asn_base_real_s;
 extern asn_type asn_base_enum_s;
 extern asn_type asn_base_charstring_s;
 
-extern asn_type ndn_data_unit_intervals_static;
-extern asn_type ndn_data_unit_enum_static;
-extern asn_type ndn_data_unit_mask_static;
-extern asn_type ndn_data_unit_env_static;
+extern asn_type ndn_data_unit_ints_s;
+extern asn_type ndn_data_unit_enum_s;
+extern asn_type ndn_data_unit_mask_s;
+extern asn_type ndn_data_unit_env_s;
 
+typedef enum { 
+    NDN_DU_PLAIN = 1, 
+    NDN_DU_SCRIPT, 
+    NDN_DU_ENUM, 
+    NDN_DU_MASK, 
+    NDN_DU_INTERVALS, 
+    NDN_DU_ENV, 
+    NDN_DU_FUNC, 
+} ndn_data_unit_tags_t;
 
-#define NDN_DATA_UNIT_TYPE(id, asn_t, asn_bt_txt_id) \
+#define NDN_DATA_UNIT_TYPE(id, asn_t, asn_bt_txt_id)                    \
     static asn_named_entry_t _ndn_data_unit_##id##_ne_array [] =        \
     {                                                                   \
-        { "plain",          & asn_t },                                  \
-        { "script",         &asn_base_charstring_s },                   \
-        { "enum",           &ndn_data_unit_enum_static },               \
-        { "mask",           &ndn_data_unit_mask_static },               \
-        { "intervals",      &ndn_data_unit_intervals_static},           \
-        { "env",            &ndn_data_unit_env_static },                \
-        { "function",       &asn_base_charstring_s },                   \
+      {"plain",    & asn_t ,              {PRIVATE, NDN_DU_PLAIN}},     \
+      {"script",   &asn_base_charstring_s,{PRIVATE, NDN_DU_SCRIPT} },   \
+      {"enum",     &ndn_data_unit_enum_s, {PRIVATE, NDN_DU_ENUM} },     \
+      {"mask",     &ndn_data_unit_mask_s, {PRIVATE, NDN_DU_MASK} },     \
+      {"intervals",&ndn_data_unit_ints_s, {PRIVATE, NDN_DU_INTERVALS}}, \
+      {"env",      &ndn_data_unit_env_s,  {PRIVATE, NDN_DU_ENV} },      \
+      {"function", &asn_base_charstring_s,{PRIVATE, NDN_DU_FUNC} },     \
     };                                                                  \
     asn_type ndn_data_unit_##id##_s =                                   \
     {                                                                   \
-        "DATA-UNIT ( " #asn_bt_txt_id " )", {PRIVATE, 1},               \
-        CHOICE, 7, {_ndn_data_unit_##id##_ne_array}                     \
+      "DATA-UNIT ( " #asn_bt_txt_id " )", {PRIVATE, 1},                 \
+      CHOICE, 7, {_ndn_data_unit_##id##_ne_array}                       \
     };                                                                  \
     const asn_type * const ndn_data_unit_##id = &ndn_data_unit_##id##_s;
 

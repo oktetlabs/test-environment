@@ -62,18 +62,18 @@ extern asn_type ndn_bridge_csap_s;
 static asn_named_entry_t _ndn_generic_csap_level_ne_array [] = 
 {
 /* Add here reference to protocol-specific CSAP init params */ 
-    { "file", &ndn_file_csap_s }, 
+    { "file",   &ndn_file_csap_s,       {PRIVATE, NDN_TAD_FILE} }, 
 #ifdef HAS_SNMP
-    { "snmp", &ndn_snmp_csap_s },
+    { "snmp",   &ndn_snmp_csap_s,       {PRIVATE, NDN_TAD_SNMP} },
 #endif
-    { "eth", &ndn_eth_csap_s }, 
-    { "ip4", &ndn_ip4_csap_s },
-    { "icmp4", &ndn_icmp4_csap_s },
-    { "udp", &ndn_udp_csap_s },
-    { "tcp", &ndn_tcp_csap_s }, 
-    { "cli", &ndn_cli_csap_s },
-    { "dhcp", &ndn_dhcpv4_csap_s }, 
-    { "bridge", &ndn_bridge_csap_s },
+    { "eth",    &ndn_eth_csap_s,        {PRIVATE, NDN_TAD_ETH} }, 
+    { "ip4",    &ndn_ip4_csap_s,        {PRIVATE, NDN_TAD_IP4} },
+    { "icmp4",  &ndn_icmp4_csap_s,      {PRIVATE, NDN_TAD_ICMP4} },
+    { "udp",    &ndn_udp_csap_s,        {PRIVATE, NDN_TAD_UDP} },
+    { "tcp",    &ndn_tcp_csap_s,        {PRIVATE, NDN_TAD_TCP} }, 
+    { "cli",    &ndn_cli_csap_s,        {PRIVATE, NDN_TAD_CLI} },
+    { "dhcp",   &ndn_dhcpv4_csap_s,     {PRIVATE, NDN_TAD_DHCP} }, 
+    { "bridge", &ndn_bridge_csap_s,     {PRIVATE, NDN_TAD_BRIDGE} },
 };
 
 asn_type ndn_generic_csap_level_s =
@@ -90,39 +90,30 @@ extern asn_type ndn_file_message_s;
 #ifdef HAS_SNMP
 extern asn_type ndn_snmp_message_s;
 #endif
-extern asn_type ndn_eth_header_s;
-
+extern asn_type ndn_eth_header_s; 
 extern asn_type ndn_ip4_header_s;
 extern asn_type ndn_icmp4_message_s;
 extern asn_type ndn_udp_header_s;
-extern asn_type ndn_tcp_header_s;
-
-extern asn_type ndn_cli_message_s;
-
-extern asn_type ndn_dhcpv4_message_s;
-
+extern asn_type ndn_tcp_header_s; 
+extern asn_type ndn_cli_message_s; 
+extern asn_type ndn_dhcpv4_message_s; 
 extern asn_type ndn_bridge_pdu_s;
 
 
 static asn_named_entry_t _ndn_generic_pdu_ne_array [] = 
 {
-/* Add here reference of protocol-specific CSAP init params */ 
-    { "file", &ndn_file_message_s },
+    { "file",   &ndn_file_message_s,      {PRIVATE, NDN_TAD_FILE} }, 
 #ifdef HAS_SNMP
-    { "snmp", &ndn_snmp_message_s },
+    { "snmp",   &ndn_snmp_message_s,      {PRIVATE, NDN_TAD_SNMP} },
 #endif
-    { "eth", &ndn_eth_header_s },
-
-    { "ip4", &ndn_ip4_header_s },
-    { "icmp4", &ndn_icmp4_message_s },
-    { "udp", &ndn_udp_header_s },
-    { "tcp", &ndn_tcp_header_s },
-
-    { "cli", &ndn_cli_message_s },
-
-    { "dhcp", &ndn_dhcpv4_message_s },
-
-    { "bridge", &ndn_bridge_pdu_s },
+    { "eth",    &ndn_eth_header_s,        {PRIVATE, NDN_TAD_ETH} }, 
+    { "ip4",    &ndn_ip4_header_s,        {PRIVATE, NDN_TAD_IP4} },
+    { "icmp4",  &ndn_icmp4_message_s,     {PRIVATE, NDN_TAD_ICMP4} },
+    { "udp",    &ndn_udp_header_s,        {PRIVATE, NDN_TAD_UDP} },
+    { "tcp",    &ndn_tcp_header_s,        {PRIVATE, NDN_TAD_TCP} }, 
+    { "cli",    &ndn_cli_message_s,       {PRIVATE, NDN_TAD_CLI} },
+    { "dhcp",   &ndn_dhcpv4_message_s,    {PRIVATE, NDN_TAD_DHCP} }, 
+    { "bridge", &ndn_bridge_pdu_s,        {PRIVATE, NDN_TAD_BRIDGE} },
 };
 
 asn_type ndn_generic_pdu_s =

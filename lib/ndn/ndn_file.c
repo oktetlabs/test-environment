@@ -31,9 +31,10 @@
 #include "ndn_file.h"
 
 
+
 static asn_named_entry_t _ndn_file_message_ne_array [] = 
 {
-    { "line", &ndn_data_unit_char_string_s }
+    { "line", &ndn_data_unit_char_string_s, {PRIVATE, 1} }
 };
 
 asn_type ndn_file_message_s =
@@ -54,8 +55,8 @@ asn_type_p ndn_file_message = &ndn_file_message_s;
 
 static asn_named_entry_t _ndn_file_csap_ne_array [] = 
 {
-    { "filename", &ndn_data_unit_char_string_s },
-    { "mode",     &ndn_data_unit_char_string_s }
+    { "filename", &ndn_data_unit_char_string_s, {PRIVATE, 1} },
+    { "mode",     &ndn_data_unit_char_string_s, {PRIVATE, 1} }
 };
 
 asn_type ndn_file_csap_s =

@@ -38,15 +38,15 @@
 
 static asn_named_entry_t _ndn_bpdu_config_ne_array [] = 
 {
-    { "flags",          &ndn_data_unit_int8_s },
-    { "root-id",        &ndn_data_unit_octet_string_s },
-    { "root-path-cost", &ndn_data_unit_int32_s},
-    { "bridge-id",      &ndn_data_unit_octet_string_s},
-    { "port-id",        &ndn_data_unit_int16_s},
-    { "message-age",    &ndn_data_unit_int16_s},
-    { "max-age",        &ndn_data_unit_int16_s},
-    { "hello-time",     &ndn_data_unit_int16_s},
-    { "forward-delay",  &ndn_data_unit_int16_s},
+    { "flags",          &ndn_data_unit_int8_s , { PRIVATE, 1 }},
+    { "root-id",        &ndn_data_unit_octet_string_s , { PRIVATE, 2 }},
+    { "root-path-cost", &ndn_data_unit_int32_s, { PRIVATE, 3 }},
+    { "bridge-id",      &ndn_data_unit_octet_string_s, { PRIVATE, 4 }},
+    { "port-id",        &ndn_data_unit_int16_s, { PRIVATE, 5 }},
+    { "message-age",    &ndn_data_unit_int16_s, { PRIVATE, 6 }},
+    { "max-age",        &ndn_data_unit_int16_s, { PRIVATE, 7 }},
+    { "hello-time",     &ndn_data_unit_int16_s, { PRIVATE, 8 }},
+    { "forward-delay",  &ndn_data_unit_int16_s, { PRIVATE, 9 }},
 };
 
 asn_type ndn_bpdu_config_s =
@@ -60,8 +60,8 @@ asn_type ndn_bpdu_config_s =
 
 static asn_named_entry_t _ndn_bpdu_content_ne_array [] = 
 {
-    { "cfg",   &ndn_bpdu_config_s },
-    { "tcn",   &asn_base_null_s },
+    { "cfg",   &ndn_bpdu_config_s , { PRIVATE, 1 }},
+    { "tcn",   &asn_base_null_s , { PRIVATE, 2 }},
 };
 
 asn_type ndn_bpdu_content_s =
@@ -76,10 +76,10 @@ asn_type ndn_bpdu_content_s =
 
 static asn_named_entry_t _ndn_bridge_pdu_ne_array [] = 
 {
-    { "proto-id",       &ndn_data_unit_int16_s },
-    { "version-id",     &ndn_data_unit_int8_s },
-    { "bpdu-type",      &ndn_data_unit_int8_s},
-    { "content",        &ndn_bpdu_content_s},
+    { "proto-id",       &ndn_data_unit_int16_s , { PRIVATE, 1 }},
+    { "version-id",     &ndn_data_unit_int8_s , { PRIVATE, 2 }},
+    { "bpdu-type",      &ndn_data_unit_int8_s, { PRIVATE, 3 }},
+    { "content",        &ndn_bpdu_content_s, { PRIVATE, 4 }},
 };
 
 asn_type ndn_bridge_pdu_s =
@@ -100,10 +100,10 @@ const asn_type * const ndn_bridge_pdu = &ndn_bridge_pdu_s;
 
 static asn_named_entry_t _ndn_bridge_csap_ne_array [] = 
 {
-    { "proto-id",       &ndn_data_unit_int16_s },
-    { "version-id",     &ndn_data_unit_int8_s },
-    { "bpdu-type",      &ndn_data_unit_int8_s},
-    { "content",        &ndn_bpdu_content_s},
+    { "proto-id",       &ndn_data_unit_int16_s, { PRIVATE, 1 }},
+    { "version-id",     &ndn_data_unit_int8_s, { PRIVATE, 2 }},
+    { "bpdu-type",      &ndn_data_unit_int8_s, { PRIVATE, 3 }},
+    { "content",        &ndn_bpdu_content_s, { PRIVATE, 4 }},
 };
 
 asn_type ndn_bridge_csap_s =

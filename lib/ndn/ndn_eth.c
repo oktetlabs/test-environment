@@ -47,7 +47,6 @@ const asn_type * const ndn_eth_address = &ndn_eth_address_s;
 NDN_DATA_UNIT_TYPE (eth_address, ndn_eth_address_s, Ethernet-Address ) 
 
 
-
 /* 
 VLAN-extended Ethernet header, field 
 CFI 
@@ -69,12 +68,12 @@ static asn_type ndn_vlan_cfi_s = {
 
 static asn_named_entry_t _ndn_eth_header_ne_array [] = 
 {
-    { "src-addr", &ndn_data_unit_eth_address_s},
-    { "dst-addr", &ndn_data_unit_eth_address_s},
-    { "eth-type", &ndn_data_unit_int16_s},
-    { "cfi",      &ndn_vlan_cfi_s},
-    { "priority", &ndn_data_unit_int8_s},
-    { "vlan-id",  &ndn_data_unit_int16_s},
+    { "src-addr", &ndn_data_unit_eth_address_s, {PRIVATE, 1}},
+    { "dst-addr", &ndn_data_unit_eth_address_s, {PRIVATE, 1}},
+    { "eth-type", &ndn_data_unit_int16_s, {PRIVATE, 1}},
+    { "cfi",      &ndn_vlan_cfi_s, {PRIVATE, 1}},
+    { "priority", &ndn_data_unit_int8_s, {PRIVATE, 1}},
+    { "vlan-id",  &ndn_data_unit_int16_s, {PRIVATE, 1}},
 };
 
 asn_type ndn_eth_header_s =
@@ -95,14 +94,14 @@ const asn_type * const ndn_eth_header = &ndn_eth_header_s;
 
 static asn_named_entry_t _ndn_eth_csap_ne_array [] = 
 {
-    { "device-id",   &ndn_data_unit_char_string_s },
-    { "receive-mode",&asn_base_integer_s },
-    { "local-addr",  &ndn_data_unit_eth_address_s },
-    { "remote-addr", &ndn_data_unit_eth_address_s },
-    { "eth-type",    &ndn_data_unit_int16_s },
-    { "cfi",         &ndn_vlan_cfi_s},
-    { "priority",    &ndn_data_unit_int8_s},
-    { "vlan-id",     &ndn_data_unit_int16_s},
+    { "device-id",   &ndn_data_unit_char_string_s, {PRIVATE, 1} },
+    { "receive-mode",&asn_base_integer_s, {PRIVATE, 1} },
+    { "local-addr",  &ndn_data_unit_eth_address_s, {PRIVATE, 1} },
+    { "remote-addr", &ndn_data_unit_eth_address_s, {PRIVATE, 1} },
+    { "eth-type",    &ndn_data_unit_int16_s, {PRIVATE, 1} },
+    { "cfi",         &ndn_vlan_cfi_s, {PRIVATE, 1}},
+    { "priority",    &ndn_data_unit_int8_s, {PRIVATE, 1}},
+    { "vlan-id",     &ndn_data_unit_int16_s, {PRIVATE, 1}},
 };
 
 asn_type ndn_eth_csap_s =
