@@ -110,6 +110,8 @@ static char  buf[2048] = {0, };
 /* TA name pointer */
 extern char *ta_name;
 
+#define METRIC_DEFAULT  20
+
 /*
  * Access routines prototypes (comply to procedure types
  * specified in rcf_ch_api.h).
@@ -1302,6 +1304,9 @@ route_get(unsigned int gid, const char *oid, char *value,
     if ((rc = route_parse_inst_name(route, &rt)) != 0)
         return rc;
 
+    if (rt.metric == 0)
+        rt.metric = METRIC_DEFAULT;
+
     GET_TABLE(MIB_IPFORWARDTABLE, GetIpForwardTable);
     if (table == NULL)
         return TE_RC(TE_TA_WIN32, ENOENT);
@@ -1318,9 +1323,7 @@ route_get(unsigned int gid, const char *oid, char *value,
 
         MASK2PREFIX(table->table[i].dwForwardMask, p);
         if (table->table[i].dwForwardDest != rt.dst || p != rt.prefix ||
-#ifdef WITH_METRIC        
-            table->table[i].dwForwardMetric1 != rt.metric ||
-#endif            
+            table->table[i].dwForwardMetric1 != rt.metric || 
             (table->table[i].dwForwardType == FORW_TYPE_LOCAL &&
              table->table[i].dwForwardIfIndex != rt.if_index) ||
             (table->table[i].dwForwardType == FORW_TYPE_REMOTE &&
@@ -1380,26 +1383,30 @@ route_add(unsigned int gid, const char *oid, const char *value,
 {
     char              val[RCF_MAX_VAL];
     MIB_IPFORWARDROW  entry;
-    int               rc;
     route_entry_t     rt;
-
+    int               rc;
+    int               i;
+    
+    MIB_IPFORWARDTABLE *table;
+    
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(value);
 
-    if (route_get(0, NULL, val, route) == 0)
-        return TE_RC(TE_TA_WIN32, EEXIST);
-
     if ((rc = route_parse_inst_name(route, &rt)) != 0)
         return rc;
         
-#ifndef WITH_METRIC        
-    if (rt.metric != 0)
+    if (rt.metric == METRIC_DEFAULT)
     {
-        ERROR("Route metrics are not supported");
-        return TE_RC(TE_TA_WIN32, EOPNOTSUPP);
+        ERROR("Failed to explicitly assign default metric to the route");
+        return TE_RC(TE_TA_WIN32, EINVAL);
     }
-#endif            
+        
+    if (rt.metric == 0)
+    {
+        WARN("Default metric for the route to %s is assigned", route);
+        rt.metric = METRIC_DEFAULT;
+    }
         
     memset(&entry, 0, sizeof(entry));
     entry.dwForwardDest = rt.dst;
@@ -1408,6 +1415,7 @@ route_add(unsigned int gid, const char *oid, const char *value,
     entry.dwForwardType = rt.forw_type;
     entry.dwForwardNextHop = rt.gw;
     entry.dwForwardIfIndex = rt.if_index;
+    entry.dwForwardMetric1 = rt.metric;
     
     if (entry.dwForwardNextHop == 0)
         entry.dwForwardNextHop = rt.dst;
@@ -1422,11 +1430,33 @@ route_add(unsigned int gid, const char *oid, const char *value,
     }
     
     entry.dwForwardProto = 3;
+    
+    /* Check, if exactly the same route except metric exists */
+    GET_TABLE(MIB_IPFORWARDTABLE, GetIpForwardTable);
+    if (table == NULL)
+        return TE_RC(TE_TA_WIN32, ENOMEM);
+
+    for (i = 0; i < (int)table->dwNumEntries; i++)
+    {
+        if (table->table[i].dwForwardDest == entry.dwForwardDest &&
+            table->table[i].dwForwardMask == entry.dwForwardMask &&
+            table->table[i].dwForwardType == entry.dwForwardType &&
+            table->table[i].dwForwardIfIndex == entry.dwForwardIfIndex &&
+            (table->table[i].dwForwardType != FORW_TYPE_REMOTE ||
+             table->table[i].dwForwardNextHop == entry.dwForwardNextHop))
+        {
+            free(table);
+            return TE_RC(TE_TA_WIN32, EEXIST);
+        }
+    }
+    free(table);
+    
     if ((rc = CreateIpForwardEntry(&entry)) != NO_ERROR)
     {
         ERROR("CreateIpForwardEntry() failed, error %d", rc);
         return TE_RC(TE_TA_WIN32, ETEWIN);
     }
+    
     return 0;
 }
 
@@ -1458,6 +1488,9 @@ route_del(unsigned int gid, const char *oid, const char *route)
     GET_TABLE(MIB_IPFORWARDTABLE, GetIpForwardTable);
     if (table == NULL)
         return TE_RC(TE_TA_WIN32, ENOENT);
+        
+    if (rt.metric == 0)
+        rt.metric = METRIC_DEFAULT;
 
     for (i = 0; i < (int)table->dwNumEntries; i++)
     {
@@ -1470,9 +1503,7 @@ route_del(unsigned int gid, const char *oid, const char *route)
         }
         MASK2PREFIX(table->table[i].dwForwardMask, p);
         if (table->table[i].dwForwardDest != rt.dst || p != rt.prefix ||
-#ifdef WITH_METRIC        
             table->table[i].dwForwardMetric1 != rt.metric ||
-#endif            
             (table->table[i].dwForwardType == FORW_TYPE_LOCAL &&
              table->table[i].dwForwardIfIndex != rt.if_index) ||
             (table->table[i].dwForwardType == FORW_TYPE_REMOTE &&
@@ -1480,7 +1511,7 @@ route_del(unsigned int gid, const char *oid, const char *route)
         {
             continue;
         }
-
+        
         if ((rc = DeleteIpForwardEntry(table->table + i)) != 0)
         {
             ERROR("DeleteIpForwardEntry() failed, error %d", rc);
@@ -1555,14 +1586,12 @@ route_list(unsigned int gid, const char *oid, char **list)
                      (int)(table->table[i].dwForwardIfIndex));
         }
         ptr += strlen(ptr);
-#ifdef WITH_METRIC        
-        if (table->table[i].dwForwardMetric1 != 0)
+        if (table->table[i].dwForwardMetric1 != METRIC_DEFAULT)
         {
             snprintf(ptr, end_ptr - ptr, ",metric=%d",
                      (int)(table->table[i].dwForwardMetric1));
             ptr += strlen(ptr);
         }
-#endif        
         snprintf(ptr, end_ptr - ptr, " ");
         ptr += strlen(ptr);
     }
