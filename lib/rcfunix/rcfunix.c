@@ -288,7 +288,6 @@ rcfunix_start(char *ta_name, char *ta_type, char *conf_str,
 
     if (!ta->is_local)
     {
-        /* Be quite and go to background just before command execution */
         sprintf(cmd, RCFUNIX_SSH " %s \"", ta->host);
     }
     if (ta->sudo)
@@ -318,6 +317,7 @@ rcfunix_start(char *ta_name, char *ta_type, char *conf_str,
     sprintf(cmd + strlen(cmd), " 2>&1 | te_tee %s 100 >ta.%s ", 
             ta->ta_name, ta->ta_name);
 
+    /* Always run in background */
     strcat(cmd, " &");
 
     free(dup);
