@@ -830,7 +830,7 @@ log_msg(cfg_msg *msg, te_bool before)
             uint8_t op = ((cfg_backup_msg *)msg)->op;
 
             if (!before && (op == CFG_BACKUP_VERIFY) &&
-                (msg->rc == ETEBACKUP))
+                (TE_RC_GET_ERROR(msg->rc) == ETEBACKUP))
             {
                 level = TE_LL_INFO;
             }
