@@ -64,19 +64,9 @@
 #include "rcf_api.h"
 #include "rcf_methods.h"
 
-#if 0
-/** Logging user name */
-#define LGR_USER         "RCF UNIX"
-#include "logger_api.h"
-#else
-#define ERROR(x...)
-#define INFO(x...)
-#define VERB(x...)
-#define RING(x...)
-#endif
-
 #include "comm_net_engine.h"
 
+#include "logger_api.h"
 
 /*
  * Configuration string for UNIX TA should have format:
