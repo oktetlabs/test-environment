@@ -116,8 +116,14 @@ builder_build_test_suite(const char *suite, const char *sources)
     if (suite == NULL || *suite == 0 || sources == NULL || *sources == 0)
         return EINVAL;
     
+#if 0
     sprintf(cmd, "te_stdouterr builder.log.%s.1 builder.log.%s.2 "
                  "te_build_suite %s %s", suite, suite, suite, sources);
+#else
+    sprintf(cmd, "te_build_suite %s \"%s\" "
+                 ">builder.log.%s.1 2>builder.log.%s.2",
+            suite, sources, suite, suite);
+#endif
     return system(cmd) == 0 ? 0 : ETESHCMD;
 }
 
