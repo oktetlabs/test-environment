@@ -3,13 +3,14 @@ MY_CPPFLAGS=-I$(DESTDIR)/$(prefix)/include \
             -I$(DESTDIR)/$(prefix)/../@host@/include \
             -I$(DESTDIR)/$(prefix)/../include \
             -include config.h
+AM_YFLAGS=-d
 
 #
 # -lrcfpch must be before @TE_LDADD@ since the last may contain
 # -ltad_ch with names used in -lrcfpch.
 #
 MY_LDADD=symtbl.o -lrcfpch @TE_LDADD@ \
-         -lconf_oid -lcomm_net_agent -lloggerta
+         -lconf_oid -lcomm_net_agent -lloggerta -lfl
 
 #if HAS_NET_SNMP
 #MY_LDADD+= @NET_SNMP_LIBS@
@@ -69,7 +70,11 @@ if CFG_LINUX_DAEMONS
 
 MY_CPPFLAGS+=@DAEMONS_CFLAGS@
 
-MY_SOURCES+=linuxconf_daemons.c dhcp_server.c
+MY_SOURCES+=linuxconf_daemons.c dhcp_server.c dns_server.c \
+			named.conf.y named.lex.l
+
+BUILT_SOURCES=named.conf.h
+CLEANFILES+=named.conf.h
 
 MY_LDADD+=@DAEMONS_LDADD@
 
