@@ -256,6 +256,7 @@ enum {
     WSA_WAIT_EVENT_0
 };
 
+/** Convert 
 static inline const char *
 wsa_wait_rpc2str(int code)
 {
@@ -274,7 +275,7 @@ wsa_wait_rpc2str(int code)
     }
 }
 
-/** WSAWaitForMultipleEvents(), returns -1 if timeout expires */
+/** WSAWaitForMultipleEvents(), return -1 in the case of RPC error */
 extern int rpc_wait_multiple_events(rcf_rpc_server *rpcs,
                                     int count, rpc_wsaevent *events,
                                     te_bool wait_all, uint32_t timeout,
@@ -299,5 +300,26 @@ extern int rpc_wsa_async_select(rcf_rpc_server *rpcs,
 extern int rpc_peek_message(rcf_rpc_server *rpcs,
                             rpc_hwnd hwnd, int *s,
                             rpc_network_event *event);
+
+/**
+ * Check, if RPC server is located on TA with winsock2.
+ *
+ * @param rpcs  RPC server handle
+ *
+ * @return TRUE, if it is definitely known that winsock2 is used and FALSE
+ *         otherwise
+ */
+static inline te_bool
+rpc_is_winsock2(rcf_rpc_server *rpcs)
+{
+    rpc_wsaevent hevent = rpc_create_event(rpcs);
+    
+    if (hevent != NULL)
+    {
+        rpc_close_event(rpcs, hevent);
+        return TRUE;
+    }
+    return FALSE;
+}
 
 #endif /* !__TE_TAPI_RPC_WINSOCK2_H__ */
