@@ -11,7 +11,7 @@ mybindir=$(prefix)/bin
 bin_PROGRAMS=te_stdouterr
 
 te_stdouterr_SOURCES=te_stdouterr.c
-te_stdouterr_LDADD=-llogger_ten -lipc @TE_LDADD@
+te_stdouterr_LDADD=-llogger_ten -lipc @TE_LDADD@ -lpthread
 te_stdouterr_DEPENDENCIES=@TE_DEPENDENCIES@ \
                           $(DESTDIR)/$(prefix)/lib/liblogger_ten.a \
                           $(DESTDIR)/$(prefix)/lib/libipc.a
