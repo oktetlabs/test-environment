@@ -689,7 +689,7 @@ tapi_snmp_operation (const char *ta, int sid, int csap_id,
             case TAPI_SNMP_OBJECT_ID:
             case TAPI_SNMP_OCTET_STR:
             case TAPI_SNMP_IPADDRESS:
-                var_bind.oct_string = data;
+                var_bind.oct_string = (char *)data;
                 break;
             default:
                 var_bind.integer = *((int*)data);
@@ -804,15 +804,15 @@ tapi_snmp_set(const char *ta, int sid, int csap_id,
 
 
 struct tapi_vb_list {
-    const tapi_snmp_varbind_t *vb;
+    tapi_snmp_varbind_t *vb;
     struct tapi_vb_list *next;
 };
 
-
+#if 0
 int 
 tapi_snmp_set_row(const char *ta, int sid, int csap_id, 
-                 int *errstat, int *errindex,
-                 const tapi_snmp_oid_t *common_index, ...)
+                  int *errstat, int *errindex,
+                  const tapi_snmp_oid_t *common_index, ...)
 {
     va_list ap;
     int num_vars = 0;
@@ -857,7 +857,96 @@ tapi_snmp_set_row(const char *ta, int sid, int csap_id,
 
     return tapi_snmp_set(ta, sid, csap_id, vb_array, num_vars, errstat, errindex);
 }
+#else
+int 
+tapi_snmp_set_row(const char *ta, int sid, int csap_id, 
+                  int *errstat, int *errindex,
+                  const tapi_snmp_oid_t *common_index, ...)
+{
+    va_list ap;
+    int num_vars = 0;
+    int i;
+    int rc;
+    struct tapi_vb_list *vbl; 
+    struct tapi_vb_list *vbl_head = NULL; 
+    tapi_snmp_varbind_t *vb_array;
+    tapi_snmp_varbind_t *vb;
+    tapi_snmp_oid_t oid;
+    tapi_snmp_vartypes_t syntax;
+    char *oid_name;
 
+    va_start(ap, common_index);
+    while (1) {
+        char *oid_name = va_arg(ap, char *);
+        
+        if (!oid_name)
+            break;
+        
+        vb = calloc(1, sizeof(tapi_snmp_varbind_t));
+        
+        if ((rc = tapi_snmp_make_oid(oid_name, &oid)) != 0)
+            return TE_RC(TE_TAPI, rc);
+
+        if ((rc = tapi_snmp_get_syntax(&oid, &syntax)) != 0)
+            return TE_RC(TE_TAPI, rc);
+
+        switch (syntax) {
+            case TAPI_SNMP_OTHER:
+            case TAPI_SNMP_INTEGER:
+            case TAPI_SNMP_IPADDRESS:
+            case TAPI_SNMP_COUNTER:
+            case TAPI_SNMP_UNSIGNED:
+            case TAPI_SNMP_TIMETICKS:
+            case TAPI_SNMP_ENDOFMIB:
+            case TAPI_SNMP_NOSUCHOBJ:
+            case TAPI_SNMP_NOSUCHINS:
+                vb->type = syntax;
+                vb->name = oid;
+                vb->integer = va_arg(ap, int);
+                break;
+
+            case TAPI_SNMP_OCTET_STR:
+            case TAPI_SNMP_OBJECT_ID:
+            {
+                vb->type = syntax;
+                vb->name = oid;
+                vb->oct_string = va_arg(ap, char *);
+                vb->v_len = va_arg(ap, int);
+                break;
+            }
+        }
+        
+        vbl = calloc(1, sizeof(struct tapi_vb_list));
+        vbl->next = vbl_head;
+        vbl->vb = vb;
+        vbl_head = vbl;
+        num_vars++;
+    };
+    va_end(ap);
+
+    if (!num_vars)
+        return 0; /* ??? */
+
+    vb_array = calloc(num_vars, sizeof(tapi_snmp_varbind_t)); 
+
+    VERB("in %s: num_vars %d\n", __FUNCTION__, num_vars);
+
+    for (i = (num_vars - 1); i >= 0; i--) {
+        vbl = vbl_head;
+        vbl_head = vbl_head->next;
+
+        vb_array[i] = *(vbl->vb);
+
+        if (common_index)
+            tapi_snmp_cat_oid(&(vb_array[i].name), common_index);
+
+        free(vbl->vb);
+        free(vbl);
+    }
+
+    return tapi_snmp_set(ta, sid, csap_id, vb_array, num_vars, errstat, errindex);
+}
+#endif
 
 /* See description in tapi_snmp.h */
 int
