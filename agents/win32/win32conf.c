@@ -25,7 +25,7 @@
  *
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
  *
- * $Id: win32conf.c 3612 2004-07-19 10:13:31Z arybchik $
+ * $Id$
  */
 
 #ifdef HAVE_CONFIG_H
@@ -1106,7 +1106,7 @@ route_get(unsigned int gid, const char *oid, char *value,
         MASK2PREFIX(table->table[i].dwForwardMask, p);
         if (table->table[i].dwForwardDest == addr && prefix == p)
         {
-            snprintf(value, RCF_MAX_VAL, "%s", 
+            snprintf(value, RCF_MAX_VAL, "gw: %s", 
                     inet_ntoa(*(struct in_addr *)
                                   &(table->table[i].dwForwardNextHop)));
             free(table);
@@ -1186,9 +1186,10 @@ static int
 route_add(unsigned int gid, const char *oid, const char *value,
           const char *route)
 {
-    char             val[32];
-    MIB_IPFORWARDROW entry;
-    int              rc, prefix;
+    char              val[32];
+    MIB_IPFORWARDROW  entry;
+    int               rc, prefix;
+    char             *term_byte;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -1200,14 +1201,58 @@ route_add(unsigned int gid, const char *oid, const char *value,
     if (route_get(0, NULL, val, route) == 0)
         return TE_RC(TE_TA_WIN32, EEXIST);
 
-    if ((entry.dwForwardNextHop = inet_addr(value)) == INADDR_NONE)
-        return TE_RC(TE_TA_WIN32, EINVAL);
-        
-    if ((rc = find_ifindex(entry.dwForwardNextHop, 
-                            &entry.dwForwardIfIndex)) != 0)
+    term_byte = value + strlen(value);
+
+    if ((ptr = strstr(value, "gw: ")) != NULL)
     {
-        return rc;
+        int rc;
+
+        end_ptr = ptr += strlen("gw: ");
+        while (*end_ptr != ' ')
+            end_ptr++;
+        *end_ptr = '\0';
+
+        if ((entry.dwForwardNextHop = inet_addr(value)) == INADDR_NONE)
+        {
+            ERROR("Incorrect format for gateway address: %s", ptr);
+            if (term_byte != end_ptr)
+                *end_ptr = ' ';
+            return TE_RC(TE_TA_WIN32, EINVAL);
+        }
+        if ((rc = find_ifindex(entry.dwForwardNextHop, 
+                               &entry.dwForwardIfIndex)) != 0)
+        {
+            return rc;
+        }
+
+        if (term_byte != end_ptr)
+            *end_ptr = ' ';
     }
+    if ((ptr = strstr(value, "dev: ")) != NULL)
+    {
+        int if_index;
+
+        end_ptr = ptr += strlen("dev: ");
+        while (*end_ptr != ' ')
+            end_ptr++;
+        *end_ptr = '\0';
+        
+        if (sscanf(ptr, "intf%d", &if_index) != 1)
+        {
+            ERROR("The format of 'dev' attribute for the route is "
+                  "incorrect: %s,  expected to be intfN, where N - "
+                  "interface index", ptr);
+            if (term_byte != end_ptr)
+                *end_ptr = ' ';
+            return TE_RC(TE_TA_WIN32, EINVAL);
+        }
+
+        if (term_byte != end_ptr)
+            *end_ptr = ' ';
+
+        entry.dwForwardIfIndex = if_index;
+    }
+
     entry.dwForwardMask = PREFIX2MASK(prefix);
     entry.dwForwardProto = 3;
     if (CreateIpForwardEntry(&entry) != 0)

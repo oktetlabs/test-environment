@@ -75,9 +75,7 @@ extern int tapi_cfg_switch_vlan_del_port(const char *ta_name,
  *
  * @retval 0  - on success
  */
-extern int tapi_cfg_add_route(const char *ta, int addr_family,
-                              const void *dst_addr, int prefix,
-                              const void *gw_addr);
+
 
 /**
  * Delete a particular route identified by destination and gateway addresses
@@ -95,6 +93,15 @@ extern int tapi_cfg_add_route(const char *ta, int addr_family,
 extern int tapi_cfg_del_route(const char *ta, int addr_family,
                               const void *dst_addr, int prefix,
                               const void *gw_addr);
+
+extern int tapi_cfg_add_route_my(const char *ta, int addr_family,
+                                 const void *dst_addr, int prefix,
+                                 const void *gw_addr, const char *dev,
+                                 uint32_t flags,
+                                 int metric, int mss, int win, int irtt);
+
+extern int tapi_cfg_del_route_my(const char *ta, int addr_family,
+                                 const void *dst_addr, int prefix);
 
 /**
  * Add a new static ARP entry on specified agent

@@ -83,8 +83,13 @@
     
     <!-- Routine table entry.
          Name: (network address in human notation)'|'(prefix)
-               for example: 1.2.3.0|24 -->
-    <object oid="/agent/route" access="read_create" type="address"/>
+               for example: 1.2.3.0|24
+         Value: [gw: Gw] [dev: If] [metric: N] [mss: M] [window: W] [irtt: I]
+                [reject] [mod] [dyn] [reinstate]
+
+         See "man route" for the meaning of these attributes
+         -->
+    <object oid="/agent/route" access="read_create" type="string"/>
     
     <!-- DNS server.
          Name:  empty    

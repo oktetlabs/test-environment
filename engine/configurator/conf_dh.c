@@ -306,7 +306,7 @@ cfg_dh_process_file(xmlNodePtr node)
                 if ((oid = xmlGetProp(tmp, (const xmlChar *)"oid")) == NULL)
                     RETERR(EINVAL, "Incorrect %s command format", cmd->name);
 
-                len = sizeof(cfg_msg) + sizeof(cfg_obj_descr) + strlen(oid) + 1;
+                len = sizeof(cfg_register_msg) + strlen(oid) + 1;
                 if ((msg = (cfg_register_msg *)calloc(1, len)) == NULL)
                     RETERR(ENOMEM, "Cannot allocate memory");
                 

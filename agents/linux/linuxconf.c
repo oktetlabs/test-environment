@@ -1764,9 +1764,13 @@ route_get(unsigned int gid, const char *oid, char *value,
         unsigned int mask;
         unsigned int gateway = 0;
         unsigned int flags = 0;
+        int          metric;
+        int          mtu;
+        int          win;
+        int          irtt;
 
-        fscanf(fp, "%x %x %x %d %d %d %x", &addr, &gateway, &flags,
-               (int *)trash, (int *)trash, (int *)trash, &mask);
+        fscanf(fp, "%x %x %x %d %d %d %x %d %d %d", &addr, &gateway, &flags,
+               (int *)trash, (int *)trash, &metric, &mask, &mtu, &win, &irtt);
 
         if (addr != route_addr || mask != route_mask)
         {
@@ -1779,6 +1783,7 @@ route_get(unsigned int gid, const char *oid, char *value,
 
         fclose(fp);
 
+        value[0] = '\0';
         if ((flags & RTF_GATEWAY) == 0)
         {
             int rc = get_addr(ifname, (struct in_addr *)&gateway);
@@ -1788,13 +1793,56 @@ route_get(unsigned int gid, const char *oid, char *value,
                 ERROR("get_addr(%s) failed", ifname);
                 return TE_RC(TE_TA_LINUX, rc);
             }
+            snprintf(value + strlen(value), RCF_MAX_VAL - strlen(value), 
+                     " gw: %d.%d.%d.%d", 
+                     ((unsigned char *)&gateway)[0],
+                     ((unsigned char *)&gateway)[1],
+                     ((unsigned char *)&gateway)[2],
+                     ((unsigned char *)&gateway)[3]);
+        }
+        else
+        {
+            snprintf(value + strlen(value), RCF_MAX_VAL - strlen(value),
+                     " dev: %s", ifname);
         }
 
-        sprintf(value, "%d.%d.%d.%d",
-                ((unsigned char *)&gateway)[0],
-                ((unsigned char *)&gateway)[1],
-                ((unsigned char *)&gateway)[2],
-                ((unsigned char *)&gateway)[3]);
+        if (metric != 0)
+            snprintf(value + strlen(value), RCF_MAX_VAL - strlen(value),
+                     " metric: %d", metric);
+
+#define TE_LC_RTF_SET_FIELD_WITH_VAL(flg_, name_, var_) \
+        do {                                           \
+            if (flags & flg_)                          \
+            {                                          \
+                snprintf(value + strlen(value),        \
+                         RCF_MAX_VAL - strlen(value),  \
+                         " " name_ ": %d", var_);      \
+            }                                          \
+        } while (0)
+
+        TE_LC_RTF_SET_FIELD_WITH_VAL(RTF_MSS, "mss", mtu);
+        TE_LC_RTF_SET_FIELD_WITH_VAL(RTF_WINDOW, "window", win);
+        TE_LC_RTF_SET_FIELD_WITH_VAL(RTF_IRTT, "irtt", irtt);
+
+#undef TE_LC_RTF_SET_FIELD_WITH_VAL
+
+#define TE_LC_RTF_SET_FLAG(flg_, name_) \
+        do {                                           \
+            if (flags & flg_)                          \
+            {                                          \
+                snprintf(value + strlen(value),        \
+                         RCF_MAX_VAL - strlen(value),  \
+                         " " name_);                   \
+            }                                          \
+        } while (0)
+
+        TE_LC_RTF_SET_FLAG(RTF_REJECT, "reject");
+
+        TE_LC_RTF_SET_FLAG(RTF_MODIFIED, "mod");
+        TE_LC_RTF_SET_FLAG(RTF_DYNAMIC, "dyn");
+        TE_LC_RTF_SET_FLAG(RTF_REINSTATE, "reinstate");
+
+#undef TE_LC_RTF_SET_FLAG
 
         *(tmp - 1) = '|';
 
@@ -1844,6 +1892,11 @@ route_add(unsigned int gid, const char *oid, const char *value,
 {
     char *tmp, *tmp1;
     int   prefix;
+    char  ifname[IF_NAMESIZE];
+    char *ptr;
+    char *end_ptr;
+    char *term_byte; /* Pointer to the trailing zero byte in 'value' */
+    int   int_val;
 
 #ifdef __linux__
     struct rtentry rt;
@@ -1875,17 +1928,145 @@ route_add(unsigned int gid, const char *oid, const char *value,
     ((struct sockaddr_in *)&(rt.rt_genmask))->sin_addr.s_addr =
         htonl(PREFIX2MASK(prefix));
 #endif
+    if (prefix == 32)
+        rt.rt_flags |= RTF_HOST;
 
-    rt.rt_gateway.sa_family = AF_INET;
-    if (inet_pton(AF_INET, value,
-                  &(((struct sockaddr_in *)&(rt.rt_gateway))->sin_addr)) <= 0)
+    term_byte = value + strlen(value);
+
+    /* @todo Make a macro to wrap around similar code below */
+    if ((ptr = strstr(value, "gw: ")) != NULL)
     {
-        ERROR("Incorrect format for gateway address: %s", value);
-        return TE_RC(TE_TA_LINUX, EINVAL);
-    }
+        int rc;
 
-    rt.rt_flags = RTF_UP | RTF_STATIC | (prefix == 32 ? RTF_HOST : 0) |
-                  RTF_GATEWAY;
+        end_ptr = ptr += strlen("gw: ");
+        while (*end_ptr != ' ')
+            end_ptr++;
+        *end_ptr = '\0';
+
+        rc = inet_pton(AF_INET, ptr,
+                       &(((struct sockaddr_in *)&(rt.rt_gateway))->sin_addr));
+        if (rc <= 0)
+        {
+            ERROR("Incorrect format for gateway address: %s", ptr);
+            if (term_byte != end_ptr)
+                *end_ptr = ' ';
+            return TE_RC(TE_TA_LINUX, EINVAL);
+        }
+        if (term_byte != end_ptr)
+            *end_ptr = ' ';
+        rt.rt_gateway.sa_family = AF_INET;
+        rt.rt_flags |= RTF_GATEWAY;
+    }
+    if ((ptr = strstr(value, "dev: ")) != NULL)
+    {
+        end_ptr = ptr += strlen("dev: ");
+        while (*end_ptr != ' ')
+            end_ptr++;
+        *end_ptr = '\0';
+        
+        if (strlen(ptr) >= sizeof(ifname))
+        {
+            ERROR("Interface name is too long: %s", ptr);
+            if (term_byte != end_ptr)
+                *end_ptr = ' ';
+            return TE_RC(TE_TA_LINUX, EINVAL);
+        }
+        strcpy(ifname, ptr);
+
+        if (term_byte != end_ptr)
+            *end_ptr = ' ';
+        rt.rt_dev = ifname;
+    }
+    if ((ptr = strstr(value, "metric: ")) != NULL)
+    {
+        end_ptr = ptr += strlen("metric: ");
+        while (*end_ptr != ' ')
+            end_ptr++;
+        *end_ptr = '\0';
+        
+        if (*ptr == '\0' ||
+            (int_val = strtol(ptr, &end_ptr, 10), *end_ptr != '\0'))
+        {
+            ERROR("Incorrect format for route metric: %s", ptr);
+            if (term_byte != end_ptr)
+                *end_ptr = ' ';
+            return TE_RC(TE_TA_LINUX, EINVAL);
+        }
+        if (term_byte != end_ptr)
+            *end_ptr = ' ';
+        rt.rt_metric = int_val + 1;
+    }
+    if ((ptr = strstr(value, "mss: ")) != NULL)
+    {
+        end_ptr = ptr += strlen("mss: ");
+        while (*end_ptr != ' ')
+            end_ptr++;
+        *end_ptr = '\0';
+
+        if (*ptr == '\0' ||
+            (int_val = strtol(ptr, &end_ptr, 10), *end_ptr != '\0'))
+        {
+            ERROR("Incorrect format for route mss: %s", ptr);
+            if (term_byte != end_ptr)
+                *end_ptr = ' ';
+            return TE_RC(TE_TA_LINUX, EINVAL);
+        }
+        if (term_byte != end_ptr)
+            *end_ptr = ' ';
+        /* Don't be confused the structure does not have mss field */
+        rt.rt_mtu = int_val;
+        rt.rt_flags |= RTF_MSS;
+    }
+    if ((ptr = strstr(value, "window: ")) != NULL)
+    {
+        end_ptr = ptr += strlen("window: ");
+        while (*end_ptr != ' ')
+            end_ptr++;
+        *end_ptr = '\0';
+
+        if (*ptr == '\0' ||
+            (int_val = strtol(ptr, &end_ptr, 10), *end_ptr != '\0'))
+        {
+            ERROR("Incorrect format for route window: %s", ptr);
+            if (term_byte != end_ptr)
+                *end_ptr = ' ';
+            return TE_RC(TE_TA_LINUX, EINVAL);
+        }
+        if (term_byte != end_ptr)
+            *end_ptr = ' ';
+        rt.rt_window = int_val;
+        rt.rt_flags |= RTF_WINDOW;
+    }
+    if ((ptr = strstr(value, "irtt: ")) != NULL)
+    {
+        end_ptr = ptr += strlen("irtt: ");
+        while (*end_ptr != ' ')
+            end_ptr++;
+        *end_ptr = '\0';
+
+        if (*ptr == '\0' ||
+            (int_val = strtol(ptr, &end_ptr, 10), *end_ptr != '\0'))
+        {
+            ERROR("Incorrect format for route window: %s", ptr);
+            if (term_byte != end_ptr)
+                *end_ptr = ' ';
+            return TE_RC(TE_TA_LINUX, EINVAL);
+        }
+        if (term_byte != end_ptr)
+            *end_ptr = ' ';
+        rt.rt_irtt = int_val;
+        rt.rt_flags |= RTF_IRTT;
+    }
+    if (strstr(value, "reject") != NULL)
+        rt.rt_flags |= RTF_REJECT;
+    if (strstr(value, "mod") != NULL)
+        rt.rt_flags |= RTF_MODIFIED;
+    if (strstr(value, "dyn") != NULL)
+        rt.rt_flags |= RTF_DYNAMIC;
+    if (strstr(value, "reinstate") != NULL)
+        rt.rt_flags |= RTF_REINSTATE;
+
+    rt.rt_flags |= (RTF_UP | RTF_STATIC);
 
     if (ioctl(s, SIOCADDRT, &rt) < 0)
     {
@@ -1944,6 +2125,9 @@ route_del(unsigned int gid, const char *oid, const char *route)
     ((struct sockaddr_in *)&(rt.rt_genmask))->sin_addr.s_addr =
         htonl(PREFIX2MASK(prefix));
 #endif
+
+    if (prefix == 32)
+        rt.rt_flags |= RTF_HOST;
 
     if (ioctl(s, SIOCDELRT, &rt) < 0)
     {

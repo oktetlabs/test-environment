@@ -47,6 +47,7 @@ arpa/inet.h \
 netinet/in.h \
 net/if.h \
 net/ethernet.h \
+net/route.h \
 ])
 
 AC_C_INLINE

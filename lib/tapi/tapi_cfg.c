@@ -60,6 +60,10 @@
 #include <net/if.h>
 #endif
 
+#ifdef HAVE_NET_ROUTE_H
+#include <net/route.h>
+#endif
+
 #include "te_defs.h"
 #include "te_errno.h"
 #include "te_stdint.h"
@@ -80,7 +84,9 @@ enum tapi_cfg_oper {
 static int tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta,
                              int addr_family,
                              const void *dst_addr, int prefix,
-                             const void *gw_addr);
+                             const void *gw_addr, const char *dev,
+                             uint32_t flags, int metric, int mss, 
+                             int win, int irtt);
 
 static int tapi_cfg_arp_op(enum tapi_cfg_oper op, const char *ta,
                            const void *net_addr, const void *link_addr);
@@ -360,7 +366,7 @@ tapi_cfg_add_route(const char *ta, int addr_family,
                    const void *dst_addr, int prefix, const void *gw_addr)
 {
     return tapi_cfg_route_op(OP_ADD, ta, addr_family,
-                             dst_addr, prefix, gw_addr);
+                             dst_addr, prefix, gw_addr, NULL, 0, 0, 0, 0, 0);
 }
 
 /* See the description in tapi_cfg.h */
@@ -369,7 +375,26 @@ tapi_cfg_del_route(const char *ta, int addr_family,
                    const void *dst_addr, int prefix, const void *gw_addr)
 {
     return tapi_cfg_route_op(OP_DEL, ta, addr_family,
-                             dst_addr, prefix, gw_addr);
+                             dst_addr, prefix, gw_addr, NULL, 0, 0, 0, 0, 0);
+}
+
+int
+tapi_cfg_add_route_my(const char *ta, int addr_family,
+                      const void *dst_addr, int prefix,
+                      const void *gw_addr, const char *dev,
+                      uint32_t flags, int metric, int mss, int win, int irtt)
+{
+    return tapi_cfg_route_op(OP_ADD, ta, addr_family,
+                             dst_addr, prefix, gw_addr, dev,
+                             flags, metric, mss, win, irtt);
+}
+
+int tapi_cfg_del_route_my(const char *ta, int addr_family,
+                          const void *dst_addr, int prefix)
+{
+    return tapi_cfg_route_op(OP_DEL, ta, addr_family,
+                             dst_addr, prefix, NULL, NULL, 0, 0, 0, 0, 0);
+
 }
 
 /* See the description in tapi_cfg.h */
@@ -404,21 +429,69 @@ tapi_cfg_del_arp_entry(const char *ta,
  */                   
 static int
 tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
-                  const void *dst_addr, int prefix, const void *gw_addr)
+                  const void *dst_addr, int prefix, const void *gw_addr,
+                  const char *dev, uint32_t flags,
+                  int metric, int mss, int win, int irtt)
 {
-    struct sockaddr_storage gw_sockaddr;
-    cfg_handle              handle;
-    char                    dst_addr_str[INET6_ADDRSTRLEN];
-    char                    gw_addr_str[INET6_ADDRSTRLEN];
-    int                     rc;
+    cfg_handle  handle;
+    char        dst_addr_str[INET6_ADDRSTRLEN];
+    char        gw_addr_str[INET6_ADDRSTRLEN];
+    int         rc;
+    int         netaddr_size = netaddr_get_size(addr_family);
+    uint8_t    *dst_addr_copy;
+    int         i;
+    int         diff;
+    uint8_t     mask;
 
-    if (prefix < 0 || prefix > (netaddr_get_size(addr_family) << 3))
+    if (netaddr_size < 0)
+    {
+        ERROR("%s() unknown address family value", __FUNCTION__);
+        return TE_RC(TE_TAPI, EINVAL);
+    }
+    
+    if (prefix < 0 || prefix > (netaddr_size << 3))
     {
         ERROR("%s() fails: Incorrect prefix value specified %d", prefix);
         return TE_RC(TE_TAPI, EINVAL);
     }
+
+    if ((dst_addr_copy = (uint8_t *)malloc(netaddr_size)) == NULL)
+    {
+        ERROR("%s() cannot allocate %d bytes for the copy of "
+              "the network address", __FUNCTION__,
+              netaddr_get_size(addr_family));
+
+        return TE_RC(TE_TAPI, ENOMEM);
+    }
+    memcpy(dst_addr_copy, dst_addr, netaddr_size);
     
-    if (inet_ntop(addr_family, dst_addr, dst_addr_str, 
+    /* Check that dst_addr & netmask == dst_addr */
+    for (i = 0; i < netaddr_size; i++)
+    {
+        diff = ((i + 1) << 3) - prefix;
+        
+        if (diff < 0)
+        {
+            /* i-th byte is fully under the mask, so skip it */
+            continue;
+        }
+        if (diff < 8)
+            mask = 0xff << diff;
+        else
+            mask = 0;
+        
+        if ((dst_addr_copy[i] & mask) != dst_addr_copy[i])
+        {
+            WARN("%d-th byte of destination address specified in "
+                 "the route does not cleared according to the prefix "
+                 "prefix length %d, addr[%d] %x expected to be %x.\n"
+                 "Clear these bits.",
+                 i, prefix, i, dst_addr_copy[i], (dst_addr_copy[i] & mask));
+            dst_addr_copy[i] &= mask;
+        }
+    }
+
+    if (inet_ntop(addr_family, dst_addr_copy, dst_addr_str, 
                   sizeof(dst_addr_str)) == NULL)
     {
         ERROR("%s() fails converting binary destination address "
@@ -426,43 +499,72 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
         return TE_RC(TE_TAPI, errno);
     }
 
-    if (inet_ntop(addr_family, gw_addr, gw_addr_str,
-                  sizeof(gw_addr_str)) == NULL)
-    {
-        ERROR("%s() fails converting binary gateway address "
-              "into a character string", __FUNCTION__);
-        return TE_RC(TE_TAPI, errno);
-    }
-    
-    memset(&gw_sockaddr, 0, sizeof(gw_sockaddr));
-    gw_sockaddr.ss_family = addr_family;
-    sockaddr_set_netaddr(SA(&gw_sockaddr), gw_addr);
-
-    RING("%s route on TA %s: %s|%d -> %s",
-         (op == OP_ADD) ? "Adding" : ((op == OP_DEL) ? "Deleting" : "?op?"),
-         ta, dst_addr_str, prefix, gw_addr_str);
-
     switch (op)
     {
         case OP_ADD:
-            if ((rc = cfg_add_instance_fmt(&handle, CVT_ADDRESS, &gw_sockaddr,
+        {
+            char buf[1024];
+
+            buf[0] = '\0';
+
+#define PUT_INTO_BUF(args...) \
+            snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), args)
+
+            if (gw_addr != NULL)
+            {
+                if (inet_ntop(addr_family, gw_addr, gw_addr_str,
+                              sizeof(gw_addr_str)) == NULL)
+                {
+                    ERROR("%s() fails converting binary gateway address "
+                          "into a character string", __FUNCTION__);
+                    return TE_RC(TE_TAPI, errno);
+                }
+                PUT_INTO_BUF(" gw: %s", gw_addr_str);
+            }
+            if (dev != NULL)
+                PUT_INTO_BUF(" dev: %s", dev);
+            if (metric != 0)
+                PUT_INTO_BUF(" metric: %d", metric);
+            if (mss != 0)
+                PUT_INTO_BUF(" mss: %d", mss);
+            if (win != 0)
+                PUT_INTO_BUF(" window: %d", win);
+            if (irtt != 0)
+                PUT_INTO_BUF(" irtt: %d", irtt);
+            if (flags & RTF_REJECT)
+                PUT_INTO_BUF(" reject");
+            if (flags & RTF_MODIFIED)
+                PUT_INTO_BUF(" mod");
+            if (flags & RTF_DYNAMIC)
+                PUT_INTO_BUF(" dyn");
+            if (flags & RTF_REINSTATE)
+                PUT_INTO_BUF(" reinstate");
+
+#undef PUT_INTO_BUF
+
+            RING("Adding route on TA %s: %s|%d -> %s",
+                 ta, dst_addr_str, prefix, buf);
+
+            if ((rc = cfg_add_instance_fmt(&handle, CVT_STRING, buf,
                                            "/agent:%s/route:%s|%d",
                                            ta, dst_addr_str, prefix)) != 0)
             {
-                ERROR("%s() fails adding a new route %s|%d via %s gateway "
-                      "on TA '%s'", __FUNCTION__, dst_addr_str, prefix,
-                      gw_addr_str, ta);
+                ERROR("%s() fails adding a new route %s|%d -> \"%s\" "
+                      "on '%s' Agent", __FUNCTION__, dst_addr_str,
+                      prefix, buf, ta);
                 return TE_RC(TE_TAPI, rc);
             }
             break;
-            
+        }
+
         case OP_DEL:
+            RING("Deleting route on TA %s: %s|%d", ta, dst_addr_str, prefix);
+
             if ((rc = cfg_del_instance_fmt(FALSE, "/agent:%s/route:%s|%d",
                                            ta, dst_addr_str, prefix)) != 0)
             {
-                ERROR("%s() fails deleting route %s|%d via %s gateway "
-                      "on %s agent", __FUNCTION__, dst_addr_str, prefix,
-                      gw_addr_str, ta);
+                ERROR("%s() fails deleting route %s|%d on '%s' agent",
+                      __FUNCTION__, dst_addr_str, prefix, ta);
                 return TE_RC(TE_TAPI, rc);
             }
             break;

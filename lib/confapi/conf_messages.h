@@ -81,10 +81,8 @@ typedef struct cfg_msg {
 typedef struct cfg_register_msg {
     CFG_MSG_FIELDS
     cfg_obj_descr descr;        /**< Object description */
-    union {
-        char          oid[0];   /**< IN: start of the object identifier */
-        cfg_handle    handle;   /**< OUT: handle of created object */
-    };
+    cfg_handle    handle;   /**< OUT: handle of created object */
+    char          oid[0];   /**< IN: start of the object identifier */
 } cfg_register_msg;
 
 typedef struct cfg_find_msg {

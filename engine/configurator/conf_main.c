@@ -189,16 +189,23 @@ process_add(cfg_add_msg *msg, te_bool update_dh)
     char         *val_str = "";
     char         *oid = (char *)msg + msg->oid_offset;
     cfg_inst_val  val;
-
+    char         *inst_name_str = (char *)msg + msg->oid_offset;
+        
     msg->rc = cfg_types[msg->val_type].get_from_msg((cfg_msg *)msg, &val); 
 
     if (msg->rc != 0)
         return;
-    
+
+    /* Get the value of the new instance to log it in case of error */
+    if (cfg_types[msg->val_type].val2str(val, &val_str) != 0)
+        assert(0);
+
     msg->rc = cfg_db_add(oid, &handle, msg->val_type, val);
     
     if (msg->rc != 0)
     {
+        ERROR("Failed to add a new instance %s with value %s into "
+              "configuration database", inst_name_str, val_str);
         cfg_types[msg->val_type].free(val);
         return;
     }
@@ -211,6 +218,8 @@ process_add(cfg_add_msg *msg, te_bool update_dh)
         cfg_db_del(handle);
         cfg_types[obj->type].free(val);
         msg->rc = EACCES;
+        ERROR("Failed to add a new instance %s with value %s because "
+              "object %s is not read-create", inst_name_str, val_str, obj->oid);
         return;
     }
 
@@ -218,6 +227,8 @@ process_add(cfg_add_msg *msg, te_bool update_dh)
     {
         cfg_db_del(handle);
         cfg_types[obj->type].free(val);
+        ERROR("Failed to add a new instance %s with value %s in DH: error=%X",
+              inst_name_str, val_str, msg->rc);
         return;
     }
     
@@ -225,6 +236,10 @@ process_add(cfg_add_msg *msg, te_bool update_dh)
     {
         cfg_types[obj->type].free(val);
         msg->handle = handle;
+        
+        if (obj->type != CVT_NONE)
+            free(val_str);
+
         return;
     }
 
@@ -251,6 +266,8 @@ process_add(cfg_add_msg *msg, te_bool update_dh)
         cfg_db_del(handle);
         if (update_dh)
             cfg_dh_delete_last_command();
+        ERROR("Failed to add a new instance %s with value %s into Test Agent "
+              "error=%X", inst->name, val_str, msg->rc);
     }
     
     cfg_types[obj->type].free(val);
@@ -677,9 +694,18 @@ log_msg(cfg_msg *msg, te_bool before)
             break;
                     
         case CFG_PATTERN:  
-            LGR_MESSAGE(level, TE_LGR_USER,
-                        "Pattern for OID %s%s",
-                        ((cfg_pattern_msg *)msg)->pattern, addon);
+            if (before || msg->rc != 0)
+            {
+                /* 
+                 * Print only when some errors occurred because after
+                 * successful processing of the pattern it is overwritten by
+                 * cfg_process_msg_pattern() function and we cannot get the
+                 * value.
+                 */
+                LGR_MESSAGE(level, TE_LGR_USER,
+                            "Pattern for OID %s%s",
+                            ((cfg_pattern_msg *)msg)->pattern, addon);
+            }
             break;
             
         case CFG_FAMILY:  
@@ -721,7 +747,8 @@ log_msg(cfg_msg *msg, te_bool before)
             LGR_MESSAGE(level, TE_LGR_USER,
                         "Add instance %s value %s%s",
                         (char *)m + m->oid_offset, 
-                        val_str == NULL ? "(unknown)" : val_str, addon);
+                        val_str == NULL ? "(unknown)" : 
+                        (before) ? "(not processed yet)" : val_str, addon);
 
             if (val_str_free)
                 free(val_str);
