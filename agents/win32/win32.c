@@ -683,16 +683,6 @@ main(int argc, char **argv)
     
     char buf[16];
 
-#if 0
-    WSADATA wsaData;
-
-    if (WSAStartup(MAKEWORD(2,0),&wsaData) != 0)
-    {
-        fprintf(stdout, "Socket Initialization Error. Program aborted\n");
-        return -1;
-    }
-#endif
-    
     setvbuf(stdout, NULL, _IONBF, 0);
     setvbuf(stderr, NULL, _IONBF, 0);
     
@@ -704,29 +694,20 @@ main(int argc, char **argv)
 
     my_execname = argv[0];
     
-    fprintf(stdout, "Starting win32 test agent\n");
-
-    fprintf(stdout, "Try to call tarpc_init()\n");
-    
 #ifdef RCF_RPC
     /* After execve */
     if (strcmp(argv[1], "rpcserver") == 0)
     {
-        fprintf(stdout, "Try to call tarpc_init()\n");
         tarpc_init(argc, argv);
         return 0;
     }
 #endif
 
-    fprintf(stdout, "Try to call get_pid()\n");
     ta_pid = getpid();
 
-    fprintf(stdout, "Try to call signal(SIGINT)\n");
     (void)signal(SIGINT, ta_sigint_handler);
-    fprintf(stdout, "Try to call signal(SIGPIPE)\n");
     (void)signal(SIGPIPE, ta_sigpipe_handler);
 
-    fprintf(stdout, "Try to call init_log()\n");
     if ((rc = log_init()) != 0)
     {
         fprintf(stderr, "log_init() failed: error=%d\n", rc);
@@ -738,8 +719,6 @@ main(int argc, char **argv)
 
     sprintf(buf, "PID %u", getpid());
 
-    fprintf(stdout, "Try to call rcf_pch_run(%s, %s)\n", argv[2], buf);
-
     rc = rcf_pch_run(argv[2], buf);
     if (rc != 0)
     {
@@ -747,9 +726,11 @@ main(int argc, char **argv)
         if (retval == 0)
             retval = rc;
     }
-    fprintf(stdout, "rcf_pch_run() returned %d (0x%08x)\n", rc, rc);
 
-    fprintf(stdout, "Try to call log_shutdown()\n");
+#ifdef RCF_RPC
+    tarpc_destroy_all();
+#endif    
+
     rc = log_shutdown();
     if (rc != 0)
     {
@@ -758,14 +739,6 @@ main(int argc, char **argv)
             retval = rc;
     }
 
-#ifdef RCF_RPC
-    fprintf(stdout, "Try to call tarpc_destroy_all()\n");
-    tarpc_destroy_all();
-#endif    
-
-    fprintf(stdout, "Finishing win32 test agent\n");
-
-    fprintf(stdout, "Finish()\n");
 
     return retval;
 }

@@ -134,26 +134,6 @@ sockaddr_h2rpc(struct sockaddr *addr, struct tarpc_sa *rpc_addr)
     }
 }
 
-/**
- * Find the function by its name.
- *
- * @param in    for logging
- * @param name  function name
- * @param func  location for function address
- *
- * @return status code
- */
-static int
-find_func(tarpc_in_arg *in, char *name, sock_api_func *func)
-{
-    if ((*func = rcf_ch_symbol_addr(name, 1)) == NULL)
-    {
-        ERROR("Cannot resolve symbol %s", name);
-        return TE_RC(TE_TA_WIN32, ENOENT);
-    }
-    return 0;
-}
-
 /** Structure for checking of variable-length arguments safity */
 typedef struct checked_arg {
     struct checked_arg *next; /**< Next checked argument in the list */
@@ -248,22 +228,6 @@ check_args(checked_arg *list)
         in->_a.sa_data.sa_data_val = NULL; \
     } while (0)
 
-/** 
- * Find function by its name with check. 
- * out variable is assumed in the context.
- */
-#define FIND_FUNC(_name, _func) \
-    do {                                         \
-        int rc = find_func((tarpc_in_arg *)in,   \
-                           _name, &(_func));     \
-                                                 \
-        if (rc != 0)                             \
-        {                                        \
-             out->common._errno = rc;            \
-             return TRUE;                        \
-        }                                        \
-    } while (0)
-
 /** Wait time specified in the input argument. */
 #define WAIT_START(high, low)                                   \
     do {                                                        \
@@ -344,7 +308,6 @@ _##_func##_1_svc(tarpc_##_func##_in *in, tarpc_##_func##_out *out,      \
     memset(out, 0, sizeof(*out));                                       \
     VERB("PID=%d TID=%d: Entry %s",                                     \
          (int)getpid(), (int)pthread_self(), #_func);                   \
-    FIND_FUNC(#_func, func);                                            \
                                                                         \
     _copy_args                                                          \
                                                                         \
@@ -389,7 +352,6 @@ _##_func##_1_svc(tarpc_##_func##_in *in, tarpc_##_func##_out *out,      \
     }                                                                   \
     if (arg == NULL)                                                    \
     {                                                                   \
-        fprintf(stdout, "%s:%d: xxx_1_svc, arg is NULL\n",__FILE__,__LINE__);\
         out->common._errno = TE_RC(TE_TA_WIN32, EINVAL);                \
         return TRUE;                                                    \
     }                                                                   \
@@ -465,6 +427,8 @@ TARPC_FUNC(execve, {},
 
 TARPC_FUNC(socket, {}, 
 {
+    func = (sock_api_func)WSASocket;
+
     MAKE_CALL(out->fd = WSASocket(domain_rpc2h(in->domain),
                                   socktype_rpc2h(in->type),
                                   proto_rpc2h(in->proto), NULL, 0, 0));
@@ -473,7 +437,7 @@ TARPC_FUNC(socket, {},
 
 /*------------------------------ close() ------------------------------*/
 
-TARPC_FUNC(close, {}, { MAKE_CALL(out->retval = close(in->fd)); })
+TARPC_FUNC(close, {}, { MAKE_CALL(out->retval = closesocket(in->fd)); })
 
 /*------------------------------ bind() ------------------------------*/
 
@@ -986,8 +950,6 @@ TARPC_FUNC(ioctl,
             default:
                 ERROR("incorrect request type %d is received",
                       out->req.req_val[0].type);
-                fprintf(stdout, "incorrect request type %d is received\n",
-                          out->req.req_val[0].type);
                 out->common._errno = TE_RC(TE_TA_WIN32, EINVAL);
                 goto finish;
                 break;
@@ -1209,7 +1171,7 @@ TARPC_FUNC(simple_sender, {}, { MAKE_CALL(out->retval = func((int)in, out)); } )
 int 
 simple_sender(tarpc_simple_sender_in *in, tarpc_simple_sender_out *out)
 {
-    sock_api_func send_func;
+    sock_api_func send_func = send;
     char          buf[1024];
     
     uint64_t sent = 0;
@@ -1231,9 +1193,6 @@ simple_sender(tarpc_simple_sender_in *in, tarpc_simple_sender_out *out)
         return -1;
     }
 
-    if (find_func((tarpc_in_arg *)in, "send", &send_func) != 0)
-        return -1;
-    
     memset(buf, 0xDEADBEEF, sizeof(buf));
     
     for (start = now = time(NULL); 
@@ -1311,8 +1270,8 @@ TARPC_FUNC(simple_receiver, {},
 int 
 simple_receiver(tarpc_simple_receiver_in *in, tarpc_simple_receiver_out *out)
 {
-    sock_api_func select_func;
-    sock_api_func recv_func;
+    sock_api_func select_func = select;
+    sock_api_func recv_func = recv;
     char          buf[1024];
     
     uint64_t received = 0;
@@ -1320,12 +1279,6 @@ simple_receiver(tarpc_simple_receiver_in *in, tarpc_simple_receiver_out *out)
     uint64_t control = 0;
     int start = time(NULL);
 #endif    
-    
-    if (find_func((tarpc_in_arg *)in, "select", &select_func) != 0 ||
-        find_func((tarpc_in_arg *)in, "recv", &recv_func) != 0)
-    {
-        return -1;
-    }
     
     while (TRUE)
     {

@@ -141,8 +141,6 @@ tarpc_server_mapping_add(char *name, unsigned short port)
         }
         srv_tcp_map_initialized++;
     }
-
-    fprintf(stdout, "  try to add mapping: %s -> port %d\n", name, port);
     
     for (map_no = 0; map_no < TARPC_SERVER_MAP_SIZE; map_no++)
         if (srv_tcp_map[map_no].port == 0)
@@ -163,12 +161,9 @@ tarpc_server_mapping_del(char *name)
 {
     int map_no;
     if (!srv_tcp_map_initialized) {
-        fprintf(stdout, "  %s(): port map is not initialized\n", __FUNCTION__);
         return TE_RC(TE_TA_WIN32, EINVAL);
     }
 
-    fprintf(stdout, "  try to remove mapping: %s\n", name);
-    
     for (map_no = 0; map_no < TARPC_SERVER_MAP_SIZE; map_no++)
         if ((srv_tcp_map[map_no].port != 0) &&
             (strncmp(name, srv_tcp_map[map_no].name, TARPC_SERVER_NAME_LEN) == 0))
@@ -189,7 +184,6 @@ tarpc_server_mapping_lookup(char *name)
 {
     int map_no;
     if (!srv_tcp_map_initialized) {
-        fprintf(stdout, "  %s(): port map is not initialized\n", __FUNCTION__);
         return 0;
     }
     
@@ -200,10 +194,8 @@ tarpc_server_mapping_lookup(char *name)
 
     if (map_no >= TARPC_SERVER_MAP_SIZE)
     {
-        fprintf(stdout, "  unresolved mapping: %s\n", name);
         return 0;
     }
-    fprintf(stdout, "  mapping: %s -> port %d\n", name, srv_tcp_map[map_no].port);
 
     return srv_tcp_map[map_no].port;
 }
@@ -256,8 +248,6 @@ create_log_socket()
         return -1;
     }
 
-    fprintf(stdout, "Trying to bind socket\n");
-    
     memset(&ta_log_addr, 0, sizeof(ta_log_addr));
     ta_log_addr.sin_family = AF_INET;
     ta_log_addr.sin_port = 0;
@@ -268,8 +258,6 @@ create_log_socket()
         return -1;
     }
 
-    fprintf(stdout, "Trying to getsockname() on binded socket\n");
-    
     if (getsockname(s, (struct sockaddr *)&ta_log_addr, &len) < 0)
     {
         ERROR("Cannot getsockname for a socket for gathering the log, errno %d",
@@ -278,9 +266,6 @@ create_log_socket()
         return -1;
     }
 
-    fprintf(stdout, "Log socket is binded to port %d\n",
-            ntohs(ta_log_addr.sin_port));
-    
     return s;
 }
 
@@ -294,13 +279,10 @@ gather_log(void *arg)
 
     if (s < 0)
     {
-        fprintf(stdout, "Socket for gathering the log was not created\n");
         ERROR("Socket for gathering the log was not created");
         return NULL;
     }
 
-    fprintf(stdout, "Startting gather_log() routine\n");
-    
     UNUSED(arg);
     while (1)
     {
@@ -345,19 +327,18 @@ tarpc_1_freeresult(SVCXPRT *transp, xdrproc_t xdr_result, caddr_t result)
  * with it.
  *
  * @param name  name of the server
+ * @param pid   pid of the server
  *
  * @return status code
  */
 int 
-tarpc_add_server(char *name)
+tarpc_add_server(char *name, int pid)
 {
     struct sockaddr_in  addr;
     int len = sizeof(struct sockaddr_in);
     
     srv *tmp;
     int  tries = MAX_CONNECT_TRIES;
-
-    fprintf(stdout, "%s:%s():%d\n", __FILE__, __FUNCTION__, __LINE__);
 
     if ((tmp = calloc(1, sizeof(srv))) == NULL)
     {
@@ -378,18 +359,18 @@ tarpc_add_server(char *name)
     memset(&addr, 0, sizeof (addr));
     addr.sin_family = AF_INET;
     if (bind(tmp->sock, &addr, sizeof(addr))) {
-        fprintf(stdout, "cannot bind socket %d to family %d, addr: 0x%08lx:%d, errno=%d\n", tmp->sock,
-            addr.sin_family, ntohl(addr.sin_addr.s_addr), ntohs(addr.sin_port), errno);
+        ERROR("bind failed: %d", errno);
+        free(tmp);
+        return TE_RC(TE_TA_WIN32, errno);
     }
 
     len = sizeof(struct sockaddr_in);
     if (getsockname(tmp->sock, (struct sockaddr *)&addr, &len) < 0)
     {
-        fprintf(stdout, "cannot getsockname for socket %d, errno=%d\n", tmp->sock, errno);
+        ERROR("getsockname failed: %d", errno);
+        free(tmp);
+        return TE_RC(TE_TA_WIN32, errno);
     }
-
-    fprintf(stdout, "socket %d binded to family %d, addr: 0x%08lx:%d\n", tmp->sock,
-            addr.sin_family, ntohl(addr.sin_addr.s_addr), ntohs(addr.sin_port));
 
     memset(&addr, 0, sizeof (addr));
     addr.sin_family = AF_INET;
@@ -399,28 +380,21 @@ tarpc_add_server(char *name)
     if (addr.sin_port == 0)
         return TE_RC(TE_TA_WIN32, EINVAL);
 
-    fprintf(stdout, "try to connect to family %d, addr: 0x%08lx:%d\n",
-            addr.sin_family, ntohl(addr.sin_addr.s_addr), ntohs(addr.sin_port));
-
     while (tries > 0 && connect(tmp->sock, (struct sockaddr *)&addr, sizeof(addr)) < 0)
     {
-        fprintf(stdout, "connection to '%s' failed, errno=%d, retries=%d\n",
-                name, errno, tries);
         usleep(10000);
         tries--;
     }
            
     if (tries == 0)
     {
-        fprintf(stdout, "Cannot connect to RPC Server '%s', errno=%d\n", name, errno);
         ERROR("Cannot connect to RPC Server '%s'", name);
         free(tmp);
         return TE_RC(TE_TA_WIN32, errno);
     }
 
-    fprintf(stdout, "connected successfuly to localhost:%d\n", ntohs(addr.sin_port));
-    
     tmp->next = srv_list;
+    tmp->pid = pid;
     srv_list = tmp;
 
     VERB("RPC Server '%s' successfully added to the list", name);
@@ -496,8 +470,6 @@ tarpc_server(void *arg)
     tarpc_in_arg  arg1;
     tarpc_in_arg *in = &arg1;
 
-    fprintf(stdout, "%s:%s():%d\n", __FILE__, __FUNCTION__, __LINE__);
-    
     memset(&arg1, 0, sizeof(arg1));
     strcpy(arg1.name, (char *)arg);
     rpcserver_name = (char *)arg;
@@ -511,17 +483,14 @@ tarpc_server(void *arg)
     pmap_unset(tarpc, ver0);
     sprintf(pipename, "/tmp/%s_%u", (char *)arg, ta_pid);
 
-    fprintf(stdout, "try to call pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS)\n");
     pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
-    fprintf(stdout, "try to create TCP socket\n");
     if ((sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0) {
         close(ta_rpc_sync_socks[1]);
         RPC_LGR_MESSAGE(ERROR_LVL, "socket() failed");
         return ((SVCXPRT *)NULL);
     }
 
-    fprintf(stdout, "try to call svctcp_create()\n");
     transp = svctcp_create(sock, 1024, 1024);
     if (transp == NULL)
     {
@@ -531,7 +500,6 @@ tarpc_server(void *arg)
         return NULL;
     }
     
-    fprintf(stdout, "try to call getsockname()\n");
     if (getsockname(sock, (struct sockaddr *)&addr, &len) != 0)
     {
         close(sock);
@@ -540,10 +508,6 @@ tarpc_server(void *arg)
         return NULL;
     }
     
-    fprintf(stdout, "RPC server binded to family %d, addr: 0x%08lx:%d\n",
-            addr.sin_family, ntohl(addr.sin_addr.s_addr), ntohs(addr.sin_port));
-    
-    fprintf(stdout, "try to send RPC server port number to parent process\n");
     if (send(ta_rpc_sync_socks[1], &(addr.sin_port), sizeof(addr.sin_port), 0) < 0)
     {
         close(sock);
@@ -553,7 +517,6 @@ tarpc_server(void *arg)
 
     close(ta_rpc_sync_socks[1]);
 
-    fprintf(stdout, "try to call svc_register()\n");
     if (!svc_register(transp, tarpc, ver0, tarpc_1, 0))
     {
         close(sock);
@@ -562,7 +525,6 @@ tarpc_server(void *arg)
         return NULL;
     }
     
-    fprintf(stdout, "try to call svc_run()\n");
     svc_run();
 
     RPC_LGR_MESSAGE(ERROR_LVL, "Unreachable!");
@@ -582,8 +544,6 @@ tarpc_server_create(char *name)
 {
     int  pid;
     
-    fprintf(stdout, "%s:%s():%d\n", __FILE__, __FUNCTION__, __LINE__);
-
     VERB("tarpc_server_create %s", name);
     
     if (!supervise_started)
@@ -593,21 +553,18 @@ tarpc_server_create(char *name)
         ta_log_sock = create_log_socket();
         if (ta_log_sock < 0)
         {
-            fprintf(stdout, "Cannot create RPC log gathering socket: %d\n", errno);
             ERROR("Cannot create RPC log gathering socket: %d", errno);
             return -1;
         }
 
         if (pthread_create(&tid, NULL, supervise_children, NULL) != 0)
         {
-            fprintf(stdout, "Cannot create RPC servers supervising thread: %d\n", errno);
             ERROR("Cannot create RPC servers supervising thread: %d", errno);
             return -1;
         }
 
         if (pthread_create(&tid, NULL, gather_log, NULL) != 0)
         {
-            fprintf(stdout, "Cannot create RPC log gathering thread: %d\n", errno);
             ERROR("Cannot create RPC log gathering thread: %d", errno);
             return -1;
         }
@@ -617,7 +574,6 @@ tarpc_server_create(char *name)
 
     if (socketpair(AF_UNIX, SOCK_STREAM, 0, ta_rpc_sync_socks) < 0)
     {
-        fprintf(stdout, "pipe() failed: %d\n", errno);
         ERROR("pipe() failed: %d", errno);
         return -1;
     }
@@ -625,12 +581,9 @@ tarpc_server_create(char *name)
     pid = fork();
     if (pid < 0)
     {
-        fprintf(stdout, "fork() failed: %d\n", errno);
         ERROR("fork() failed: %d", errno);
         return pid;
     }
-
-    fprintf(stdout, "after fork(): %d\n", pid);
 
     if (pid == 0)
     {
@@ -654,13 +607,11 @@ tarpc_server_create(char *name)
 
         if (select(ta_rpc_sync_socks[0] + 1, &sync_fds, NULL, NULL, &tv) <= 0)
         {
-            fprintf(stdout, "Synchronization with created RPC server is lost\n");
             close(ta_rpc_sync_socks[0]);
             return -1;
         }
         if (recv(ta_rpc_sync_socks[0], &port, sizeof(port), 0) < 0)
         {
-            fprintf(stdout, "Could not retrieve RPC server port\n");
             close(ta_rpc_sync_socks[0]);
             return -1;
         }
@@ -668,10 +619,7 @@ tarpc_server_create(char *name)
         close(ta_rpc_sync_socks[1]);
         
         sprintf(pipename, "/tmp/%s_%u", name, ta_pid);
-        fprintf(stdout, "try to call tarpc_server_mapping_add(%s, %d)\n",
-                pipename, ntohs(port));
         if (tarpc_server_mapping_add(pipename, ntohs(port)) != 0) {
-            fprintf(stdout, "too many tarpc servers created");
             return -1;
         }
     }
