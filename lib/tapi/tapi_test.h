@@ -73,11 +73,6 @@ extern "C" {
     int         result = EXIT_FAILURE;                              \
     TEST_START_VARS                                                 \
                                                                     \
-    if (argc < 2)                                                   \
-    {                                                               \
-        ERROR("Incorrect number of arguments for the test");        \
-        return EXIT_FAILURE;                                        \
-    }                                                               \
     /* Shift programm name */                                       \
     argc--;                                                         \
     argv++;                                                         \
