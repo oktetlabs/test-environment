@@ -604,5 +604,5 @@ rpc_ioctl(rcf_rpc_server *rpcs,
          rpcs->ta, rpcs->name, fd, ioctl_rpc2str(request),
          arg, req_val, out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_VAL(out.retval, ioctl);
+    RETVAL_VAL(ioctl, out.retval);
 }

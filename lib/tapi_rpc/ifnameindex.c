@@ -65,8 +65,8 @@ rpc_if_nametoindex(rcf_rpc_server *rpcs,
     in.ifname.ifname_val = (char *)ifname;
     in.ifname.ifname_len = ifname == NULL ? 0 : strlen(ifname) + 1;
 
-    rcf_rpc_call(rpcs, _if_nametoindex, &in,
-                 (xdrproc_t)xdr_tarpc_if_nametoindex_in,
+    rcf_rpc_call(rpcs, _if_nametoindex,
+                 &in,  (xdrproc_t)xdr_tarpc_if_nametoindex_in,
                  &out, (xdrproc_t)xdr_tarpc_if_nametoindex_out);
 
     RING("RPC (%s,%s): if_nametoindex(%s) -> %d (%s)",
@@ -74,7 +74,7 @@ rpc_if_nametoindex(rcf_rpc_server *rpcs,
          ifname == NULL ? "" : ifname,
          out.ifindex, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_VAL((int)out.ifindex, if_nametoindex);
+    RETVAL_VAL(if_nametoindex, (int)out.ifindex);
 }
 
 char *
@@ -103,7 +103,7 @@ rpc_if_indextoname(rcf_rpc_server *rpcs,
                  &in,  (xdrproc_t)xdr_tarpc_if_indextoname_in,
                  &out, (xdrproc_t)xdr_tarpc_if_indextoname_out);
 
-    if (RPC_CALL_OK)
+    if (RPC_IS_CALL_OK(rpcs))
     {
         if (ifname != NULL && out.ifname.ifname_val != NULL)
             memcpy(ifname, out.ifname.ifname_val, out.ifname.ifname_len);
@@ -114,8 +114,8 @@ rpc_if_indextoname(rcf_rpc_server *rpcs,
          ifindex, out.ifname.ifname_val != NULL ? ifname : "",
          errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_PTR(out.ifname.ifname_val != NULL ? ifname : NULL,
-               if_indextoname);
+    RETVAL_PTR(if_indextoname,
+               out.ifname.ifname_val != NULL ? ifname : NULL);
 }
 
 struct if_nameindex *
@@ -141,7 +141,7 @@ rpc_if_nameindex(rcf_rpc_server *rpcs)
                  &in,  (xdrproc_t)xdr_tarpc_if_nameindex_in,
                  &out, (xdrproc_t)xdr_tarpc_if_nameindex_out);
 
-    if (RPC_CALL_OK && out.ptr.ptr_val != NULL)
+    if (RPC_IS_CALL_OK(rpcs) && out.ptr.ptr_val != NULL)
     {
         int i;
 
@@ -149,7 +149,7 @@ rpc_if_nameindex(rcf_rpc_server *rpcs)
                           sizeof(unsigned int), 1)) == NULL)
         {
             rpcs->_errno = TE_RC(TE_RCF, ENOMEM);
-            RETVAL_PTR(NULL, if_nameindex);
+            RETVAL_PTR(if_nameindex, NULL);
         }
 
         *(unsigned int *)res = out.mem_ptr;
@@ -174,7 +174,7 @@ rpc_if_nameindex(rcf_rpc_server *rpcs)
     RING("RPC (%s,%s): if_nameindex() -> %p (%s)",
          rpcs->ta, rpcs->name, res, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_PTR(res, if_nameindex);
+    RETVAL_PTR(if_nameindex, res);
 }
 
 void

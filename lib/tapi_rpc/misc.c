@@ -228,7 +228,7 @@ rpc_setlibname(rcf_rpc_server *rpcs, const char *libname)
          rpcs->ta, rpcs->name, libname ? : "(NULL)",
          out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_VAL(out.retval, socket);
+    RETVAL_VAL(socket, out.retval);
 }
 
 int
@@ -322,7 +322,7 @@ rpc_send_traffic(rcf_rpc_server *rpcs, int num,
                  &in,  (xdrproc_t)xdr_tarpc_send_traffic_in,
                  &out, (xdrproc_t)xdr_tarpc_send_traffic_out);
 
-    if (RPC_CALL_OK)
+    if (RPC_IS_CALL_OK(rpcs))
     {
         RING("RPC (%s,%s)%s: send_traffic ->%d(%s)",
              rpcs->ta, rpcs->name, rpcop2str(op),
@@ -338,7 +338,7 @@ rpc_send_traffic(rcf_rpc_server *rpcs, int num,
     free(addrs);
     free(ss);
 
-    RETVAL_VAL(out.retval, send_traffic);
+    RETVAL_VAL(send_traffic, out.retval);
 }
 
 /**
@@ -397,8 +397,8 @@ rpc_simple_sender(rcf_rpc_server *rpcs,
     in.time2run = time2run;
     in.ignore_err = ignore_err;
 
-    rcf_rpc_call(rpcs, _simple_sender, &in,
-                 (xdrproc_t)xdr_tarpc_simple_sender_in,
+    rcf_rpc_call(rpcs, _simple_sender,
+                 &in,  (xdrproc_t)xdr_tarpc_simple_sender_in,
                  &out, (xdrproc_t)xdr_tarpc_simple_sender_out);
 
     if (out.retval == 0)
@@ -412,7 +412,7 @@ rpc_simple_sender(rcf_rpc_server *rpcs,
          out.retval, (unsigned long)*sent,
          errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_RC(simple_sender);
+    RETVAL_INT_ZERO_OR_MINUS_ONE(simple_sender, out.retval);
 }
 
 /**
@@ -456,7 +456,7 @@ rpc_simple_receiver(rcf_rpc_server *rpcs,
          s, out.retval, errno_rpc2str(RPC_ERRNO(rpcs)),
          (unsigned long)*received);
 
-    RETVAL_RC(simple_receiver);
+    RETVAL_INT_ZERO_OR_MINUS_ONE(simple_receiver, out.retval);
 }
 
 
@@ -507,8 +507,8 @@ rpc_iomux_flooder(rcf_rpc_server *rpcs,
         in.rx_stat.rx_stat_len = rcvnum;
     }
 
-    rcf_rpc_call(rpcs, _flooder, &in,
-                 (xdrproc_t)xdr_tarpc_flooder_in,
+    rcf_rpc_call(rpcs, _flooder,
+                 &in,  (xdrproc_t)xdr_tarpc_flooder_in,
                  &out, (xdrproc_t)xdr_tarpc_flooder_out);
 
     RING("RPC (%s,%s)%s: "
@@ -518,7 +518,7 @@ rpc_iomux_flooder(rcf_rpc_server *rpcs,
          tx_stat, rx_stat,
          out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    if (RPC_CALL_OK)
+    if (RPC_IS_CALL_OK(rpcs))
     {
         if (tx_stat != NULL)
             memcpy(tx_stat, out.tx_stat.tx_stat_val,
@@ -528,7 +528,7 @@ rpc_iomux_flooder(rcf_rpc_server *rpcs,
                    out.rx_stat.rx_stat_len * sizeof(rx_stat[0]));
     }
 
-    RETVAL_RC(flooder);
+    RETVAL_INT_ZERO_OR_MINUS_ONE(flooder, out.retval);
 }
 
 /* See description in tapi_rpcsock.h */
@@ -572,8 +572,8 @@ rpc_iomux_echoer(rcf_rpc_server *rpcs,
         in.rx_stat.rx_stat_len = socknum;
     }
 
-    rcf_rpc_call(rpcs, _echoer, &in,
-                 (xdrproc_t)xdr_tarpc_echoer_in,
+    rcf_rpc_call(rpcs, _echoer,
+                 &in,  (xdrproc_t)xdr_tarpc_echoer_in,
                  &out, (xdrproc_t)xdr_tarpc_echoer_out);
 
     RING("RPC (%s,%s)%s: echoer(%p, %d, %d, %d) -> %d (%s)",
@@ -581,7 +581,7 @@ rpc_iomux_echoer(rcf_rpc_server *rpcs,
          sockets, socknum, time2run, iomux,
          out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    if (RPC_CALL_OK)
+    if (RPC_IS_CALL_OK(rpcs))
     {
         if (tx_stat != NULL)
             memcpy(tx_stat, out.tx_stat.tx_stat_val,
@@ -591,7 +591,7 @@ rpc_iomux_echoer(rcf_rpc_server *rpcs,
                    out.rx_stat.rx_stat_len * sizeof(rx_stat[0]));
     }
 
-    RETVAL_RC(echoer);
+    RETVAL_INT_ZERO_OR_MINUS_ONE(echoer, out.retval);
 }
 
 ssize_t
@@ -622,9 +622,10 @@ rpc_sendfile(rcf_rpc_server *rpcs, int out_fd, int in_fd,
         in.offset.offset_val = (tarpc_off_t *)offset;
     }
 
-    rcf_rpc_call(rpcs, _sendfile, &in, (xdrproc_t)xdr_tarpc_sendfile_in,
+    rcf_rpc_call(rpcs, _sendfile,
+                 &in,  (xdrproc_t)xdr_tarpc_sendfile_in,
                  &out, (xdrproc_t)xdr_tarpc_sendfile_out);
-    if (RPC_CALL_OK)
+    if (RPC_IS_CALL_OK(rpcs))
     {
         if (offset != NULL && out.offset.offset_val != NULL)
             *offset = out.offset.offset_val[0];
@@ -636,7 +637,7 @@ rpc_sendfile(rcf_rpc_server *rpcs, int out_fd, int in_fd,
          out.retval, errno_rpc2str(RPC_ERRNO(rpcs)),
          (offset != NULL) ? *offset : 0);
 
-    RETVAL_VAL(out.retval, sendfile);
+    RETVAL_VAL(sendfile, out.retval);
 }
 
 
@@ -677,7 +678,7 @@ rpc_socket_to_file(rcf_rpc_server *rpcs, int sock,
          sock, path, timeout,
          out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_VAL(out.retval, socket_to_file);
+    RETVAL_VAL(socket_to_file, out.retval);
 }
 
 int
@@ -710,10 +711,11 @@ rpc_ftp_open(rcf_rpc_server *rpcs,
         in.sock.sock_len = 1;
     }
 
-    rcf_rpc_call(rpcs, _ftp_open, &in, (xdrproc_t)xdr_tarpc_ftp_open_in,
+    rcf_rpc_call(rpcs, _ftp_open,
+                 &in,  (xdrproc_t)xdr_tarpc_ftp_open_in,
                  &out, (xdrproc_t)xdr_tarpc_ftp_open_out);
 
-    if (RPC_CALL_OK && sock != NULL)
+    if (RPC_IS_CALL_OK(rpcs) && sock != NULL)
         *sock = out.sock;
 
     RING("RPC (%s,%s): ftp_open(%s, %s, %s, %d, %p) -> %d (%s)",
@@ -721,7 +723,7 @@ rpc_ftp_open(rcf_rpc_server *rpcs,
          passive ? "passive": "active", offset, sock,
          out.fd, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_VAL(out.fd, ftp_open);
+    RETVAL_VAL(ftp_open, out.fd);
 }
 
 int
@@ -751,7 +753,8 @@ rpc_many_send(rcf_rpc_server *rpcs, int sock,
         in.vector.vector_val = (tarpc_int *)vector;
     }
 
-    rcf_rpc_call(rpcs, _many_send, &in, (xdrproc_t)xdr_tarpc_many_send_in,
+    rcf_rpc_call(rpcs, _many_send,
+                 &in,  (xdrproc_t)xdr_tarpc_many_send_in,
                  &out, (xdrproc_t)xdr_tarpc_many_send_out);
     if (out.retval == 0)
         *sent = out.bytes;
@@ -761,7 +764,7 @@ rpc_many_send(rcf_rpc_server *rpcs, int sock,
          sock, nops, vector,
          out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_RC(many_send);
+    RETVAL_INT_ZERO_OR_MINUS_ONE(many_send, out.retval);
 }
 
 int
@@ -784,8 +787,8 @@ rpc_overfill_buffers(rcf_rpc_server *rpcs, int sock, uint64_t *sent)
 
     in.sock = sock;
 
-    rcf_rpc_call(rpcs, _overfill_buffers, &in,
-                 (xdrproc_t)xdr_tarpc_overfill_buffers_in,
+    rcf_rpc_call(rpcs, _overfill_buffers,
+                 &in,  (xdrproc_t)xdr_tarpc_overfill_buffers_in,
                  &out, (xdrproc_t)xdr_tarpc_overfill_buffers_out);
     if (out.retval == 0)
         *sent = out.bytes;
@@ -795,5 +798,5 @@ rpc_overfill_buffers(rcf_rpc_server *rpcs, int sock, uint64_t *sent)
          sock,
          out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_RC(overfill_buffers);
+    RETVAL_INT_ZERO_OR_MINUS_ONE(overfill_buffers, out.retval);
 }

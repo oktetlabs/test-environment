@@ -83,7 +83,8 @@ rpc_socket(rcf_rpc_server *rpcs,
     in.type = type;
     in.proto = protocol;
 
-    rcf_rpc_call(rpcs, _socket, &in, (xdrproc_t)xdr_tarpc_socket_in,
+    rcf_rpc_call(rpcs, _socket,
+                 &in,  (xdrproc_t)xdr_tarpc_socket_in,
                  &out, (xdrproc_t)xdr_tarpc_socket_out);
 
     RING("RPC (%s,%s): socket(%s, %s, %s) -> %d (%s)",
@@ -91,7 +92,7 @@ rpc_socket(rcf_rpc_server *rpcs,
          domain_rpc2str(domain), socktype_rpc2str(type),
          proto_rpc2str(protocol), out.fd, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_VAL(out.fd, socket);
+    RETVAL_VAL(socket, out.fd);
 }
 
 int
@@ -131,7 +132,8 @@ rpc_bind(rcf_rpc_server *rpcs,
     }
     in.len = addrlen;
 
-    rcf_rpc_call(rpcs, _bind, &in, (xdrproc_t)xdr_tarpc_bind_in,
+    rcf_rpc_call(rpcs, _bind,
+                 &in,  (xdrproc_t)xdr_tarpc_bind_in,
                  &out, (xdrproc_t)xdr_tarpc_bind_out);
 
     RING("RPC (%s,%s): bind(%d, %s, %u) -> %d (%s)",
@@ -139,7 +141,7 @@ rpc_bind(rcf_rpc_server *rpcs,
          s, sockaddr2str(my_addr), addrlen,
          out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_RC(bind);
+    RETVAL_INT_ZERO_OR_MINUS_ONE(bind, out.retval);
 }
 
 int
@@ -179,7 +181,8 @@ rpc_connect(rcf_rpc_server *rpcs,
     }
     in.len = addrlen;
 
-    rcf_rpc_call(rpcs, _connect, &in, (xdrproc_t)xdr_tarpc_connect_in,
+    rcf_rpc_call(rpcs, _connect,
+                 &in,  (xdrproc_t)xdr_tarpc_connect_in,
                  &out, (xdrproc_t)xdr_tarpc_connect_out);
 
     RING("RPC (%s,%s)%s: connect(%d, %s, %u) -> %d (%s)",
@@ -187,7 +190,7 @@ rpc_connect(rcf_rpc_server *rpcs,
          s, sockaddr2str(addr), addrlen,
          out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_RC(connect);
+    RETVAL_INT_ZERO_OR_MINUS_ONE(connect, out.retval);
 }
 
 int
@@ -209,14 +212,15 @@ rpc_listen(rcf_rpc_server *rpcs, int fd, int backlog)
     in.fd = fd;
     in.backlog = backlog;
 
-    rcf_rpc_call(rpcs, _listen, &in, (xdrproc_t)xdr_tarpc_listen_in,
+    rcf_rpc_call(rpcs, _listen,
+                 &in,  (xdrproc_t)xdr_tarpc_listen_in,
                  &out, (xdrproc_t)xdr_tarpc_listen_out);
 
     RING("RPC (%s,%s): listen(%d, %d) -> %d (%s)",
          rpcs->ta, rpcs->name,
          fd, backlog, out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_RC(listen);
+    RETVAL_INT_ZERO_OR_MINUS_ONE(listen, out.retval);
 }
 
 int
@@ -269,10 +273,11 @@ rpc_accept_gen(rcf_rpc_server *rpcs,
         }
     }
 
-    rcf_rpc_call(rpcs, _accept, &in, (xdrproc_t)xdr_tarpc_accept_in,
+    rcf_rpc_call(rpcs, _accept,
+                 &in,  (xdrproc_t)xdr_tarpc_accept_in,
                  &out, (xdrproc_t)xdr_tarpc_accept_out);
 
-    if (RPC_CALL_OK)
+    if (RPC_IS_CALL_OK(rpcs))
     {
         if (addr != NULL && out.addr.sa_data.sa_data_val != NULL)
         {
@@ -292,7 +297,7 @@ rpc_accept_gen(rcf_rpc_server *rpcs,
          out.retval, errno_rpc2str(RPC_ERRNO(rpcs)),
          sockaddr2str(addr), (addrlen == NULL) ? (socklen_t)-1 : *addrlen);
 
-    RETVAL_VAL(out.retval, accept);
+    RETVAL_VAL(accept, out.retval);
 }
 
 ssize_t
@@ -356,10 +361,11 @@ rpc_recvfrom_gen(rcf_rpc_server *rpcs,
     }
     in.flags = flags;
 
-    rcf_rpc_call(rpcs, _recvfrom, &in, (xdrproc_t)xdr_tarpc_recvfrom_in,
+    rcf_rpc_call(rpcs, _recvfrom,
+                 &in,  (xdrproc_t)xdr_tarpc_recvfrom_in,
                  &out, (xdrproc_t)xdr_tarpc_recvfrom_out);
 
-    if (RPC_CALL_OK)
+    if (RPC_IS_CALL_OK(rpcs))
     {
         if (buf != NULL && out.buf.buf_val != NULL)
             memcpy(buf, out.buf.buf_val, out.buf.buf_len);
@@ -384,7 +390,7 @@ rpc_recvfrom_gen(rcf_rpc_server *rpcs,
          sockaddr2str(from),
          (fromlen == NULL) ? (unsigned int)-1 : *fromlen);
 
-    RETVAL_VAL(out.retval, recvfrom);
+    RETVAL_VAL(recvfrom, out.retval);
 }
 
 ssize_t
@@ -422,10 +428,11 @@ rpc_recv_gen(rcf_rpc_server *rpcs,
     }
     in.flags = flags;
 
-    rcf_rpc_call(rpcs, _recv, &in, (xdrproc_t)xdr_tarpc_recv_in,
+    rcf_rpc_call(rpcs, _recv,
+                 &in,  (xdrproc_t)xdr_tarpc_recv_in,
                  &out, (xdrproc_t)xdr_tarpc_recv_out);
 
-    if (RPC_CALL_OK)
+    if (RPC_IS_CALL_OK(rpcs))
     {
         if (buf != NULL && out.buf.buf_val != NULL)
             memcpy(buf, out.buf.buf_val, out.buf.buf_len);
@@ -436,7 +443,7 @@ rpc_recv_gen(rcf_rpc_server *rpcs,
          s, buf, rbuflen, len, send_recv_flags_rpc2str(flags),
          out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_VAL(out.retval, recv);
+    RETVAL_VAL(recv, out.retval);
 }
 
 int
@@ -458,14 +465,15 @@ rpc_shutdown(rcf_rpc_server *rpcs, int s, rpc_shut_how how)
     in.fd = s;
     in.how = how;
 
-    rcf_rpc_call(rpcs, _shutdown, &in, (xdrproc_t)xdr_tarpc_shutdown_in,
+    rcf_rpc_call(rpcs, _shutdown,
+                 &in,  (xdrproc_t)xdr_tarpc_shutdown_in,
                  &out, (xdrproc_t)xdr_tarpc_shutdown_out);
 
     RING("RPC (%s,%s) shutdown(%d, %s) -> %d (%s)",
          rpcs->ta, rpcs->name, s, shut_how_rpc2str(how),
          out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_RC(shutdown);
+    RETVAL_INT_ZERO_OR_MINUS_ONE(shutdown, out.retval);
 }
 
 ssize_t
@@ -515,7 +523,8 @@ rpc_sendto(rcf_rpc_server *rpcs,
     }
     in.flags = flags;
 
-    rcf_rpc_call(rpcs, _sendto, &in, (xdrproc_t)xdr_tarpc_sendto_in,
+    rcf_rpc_call(rpcs, _sendto,
+                 &in,  (xdrproc_t)xdr_tarpc_sendto_in,
                  &out, (xdrproc_t)xdr_tarpc_sendto_out);
 
     RING("RPC (%s,%s)%s: sendto(%d, %p, %u, %s, %s, %u) -> %d (%s)",
@@ -524,7 +533,7 @@ rpc_sendto(rcf_rpc_server *rpcs,
          sockaddr2str(to), tolen,
          out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_VAL(out.retval, sendto);
+    RETVAL_VAL(sendto, out.retval);
 }
 
 ssize_t
@@ -556,7 +565,8 @@ rpc_send(rcf_rpc_server *rpcs,
     }
     in.flags = flags;
 
-    rcf_rpc_call(rpcs, _send, &in, (xdrproc_t)xdr_tarpc_send_in,
+    rcf_rpc_call(rpcs, _send,
+                 &in,  (xdrproc_t)xdr_tarpc_send_in,
                  &out, (xdrproc_t)xdr_tarpc_send_out);
 
     RING("RPC (%s,%s)%s: send(%d, %p, %u, %s) -> %d (%s)",
@@ -564,7 +574,7 @@ rpc_send(rcf_rpc_server *rpcs,
          s, buf, len, send_recv_flags_rpc2str(flags),
          out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_VAL(out.retval, send);
+    RETVAL_VAL(send, out.retval);
 }
 
 ssize_t
@@ -667,7 +677,8 @@ rpc_sendmsg(rcf_rpc_server *rpcs,
         rpc_msg.msg_controllen = msg->msg_controllen;
     }
 
-    rcf_rpc_call(rpcs, _sendmsg, &in, (xdrproc_t)xdr_tarpc_sendmsg_in,
+    rcf_rpc_call(rpcs, _sendmsg,
+                 &in,  (xdrproc_t)xdr_tarpc_sendmsg_in,
                  &out, (xdrproc_t)xdr_tarpc_sendmsg_out);
 
     RING("RPC (%s,%s)%s: sendmsg(%d, %p "
@@ -685,7 +696,7 @@ rpc_sendmsg(rcf_rpc_server *rpcs,
          send_recv_flags_rpc2str(flags),
          out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_VAL(out.retval, sendmsg);
+    RETVAL_VAL(sendmsg, out.retval);
 }
 
 ssize_t
@@ -785,14 +796,15 @@ rpc_recvmsg(rcf_rpc_server *rpcs,
         rpc_msg.msg_controllen = msg->msg_controllen;
     }
 
-    rcf_rpc_call(rpcs, _recvmsg, &in, (xdrproc_t)xdr_tarpc_recvmsg_in,
+    rcf_rpc_call(rpcs, _recvmsg,
+                 &in,  (xdrproc_t)xdr_tarpc_recvmsg_in,
                  &out, (xdrproc_t)xdr_tarpc_recvmsg_out);
 
     snprintf(str_buf, sizeof(str_buf),
              "RPC (%s,%s)%s: recvmsg(%d, %p(",
              rpcs->ta, rpcs->name, rpcop2str(op), s, msg);
 
-    if (RPC_CALL_OK && msg != NULL && out.msg.msg_val != NULL)
+    if (RPC_IS_CALL_OK(rpcs) && msg != NULL && out.msg.msg_val != NULL)
     {
         rpc_msg = out.msg.msg_val[0];
 
@@ -841,7 +853,7 @@ rpc_recvmsg(rcf_rpc_server *rpcs,
 
     RING("%s", str_buf);
 
-    RETVAL_VAL(out.retval, recvmsg);
+    RETVAL_VAL(recvmsg, out.retval);
 }
 
 int
@@ -898,7 +910,7 @@ rpc_getsockname_gen(rcf_rpc_server *rpcs,
                  &in, (xdrproc_t)xdr_tarpc_getsockname_in,
                  &out, (xdrproc_t)xdr_tarpc_getsockname_out);
 
-    if (RPC_CALL_OK)
+    if (RPC_IS_CALL_OK(rpcs))
     {
         if (name != NULL && out.addr.sa_data.sa_data_val != NULL)
         {
@@ -919,7 +931,7 @@ rpc_getsockname_gen(rcf_rpc_server *rpcs,
          sockaddr2str(name),
          (namelen == NULL) ? (unsigned int)-1 : *namelen);
 
-    RETVAL_RC(getsockname);
+    RETVAL_INT_ZERO_OR_MINUS_ONE(getsockname, out.retval);
 }
 
 int
@@ -977,7 +989,7 @@ rpc_getpeername_gen(rcf_rpc_server *rpcs,
                  &in, (xdrproc_t)xdr_tarpc_getpeername_in,
                  &out, (xdrproc_t)xdr_tarpc_getpeername_out);
 
-    if (RPC_CALL_OK)
+    if (RPC_IS_CALL_OK(rpcs))
     {
         if (name != NULL && out.addr.sa_data.sa_data_val != NULL)
         {
@@ -998,7 +1010,7 @@ rpc_getpeername_gen(rcf_rpc_server *rpcs,
          sockaddr2str(name),
          (namelen == NULL) ? (unsigned int)-1 : *namelen);
 
-    RETVAL_RC(getpeername);
+    RETVAL_INT_ZERO_OR_MINUS_ONE(getpeername, out.retval);
 }
 
 int
@@ -1185,7 +1197,7 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
                  &in, (xdrproc_t)xdr_tarpc_getsockopt_in,
                  &out, (xdrproc_t)xdr_tarpc_getsockopt_out);
 
-    if (RPC_CALL_OK)
+    if (RPC_IS_CALL_OK(rpcs))
     {
         if (optlen != NULL)
             *optlen = out.optlen.optlen_val[0];
@@ -1386,7 +1398,7 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
          opt_val_str, optlen == NULL ? 0 : *optlen, out.retval,
          errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_RC(getsockopt);
+    RETVAL_INT_ZERO_OR_MINUS_ONE(getsockopt, out.retval);
 }
 
 int
@@ -1541,5 +1553,5 @@ rpc_setsockopt(rcf_rpc_server *rpcs,
          opt_val_str, optlen,
          out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_RC(setsockopt);
+    RETVAL_INT_ZERO_OR_MINUS_ONE(setsockopt, out.retval);
 }

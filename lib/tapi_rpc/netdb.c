@@ -152,11 +152,11 @@ rpc_gethostbyname(rcf_rpc_server *rpcs, const char *name)
     in.name.name_val = (char *)name;
     in.name.name_len = name == NULL ? 0 : strlen(name) + 1;
 
-    rcf_rpc_call(rpcs, _gethostbyname, &in,
-                 (xdrproc_t)xdr_tarpc_gethostbyname_in,
+    rcf_rpc_call(rpcs, _gethostbyname,
+                 &in,  (xdrproc_t)xdr_tarpc_gethostbyname_in,
                  &out, (xdrproc_t)xdr_tarpc_gethostbyname_out);
 
-    if (RPC_CALL_OK && out.res.res_val != NULL)
+    if (RPC_IS_CALL_OK(rpcs) && out.res.res_val != NULL)
     {
         if ((res = hostent_rpc2h(out.res.res_val)) == NULL)
             rpcs->_errno = TE_RC(TE_RCF, ENOMEM);
@@ -166,7 +166,7 @@ rpc_gethostbyname(rcf_rpc_server *rpcs, const char *name)
          rpcs->ta, rpcs->name,
          name == NULL ? "" : name, res, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_PTR(res, gethostbyname);
+    RETVAL_PTR(gethostbyname, res);
 }
 
 struct hostent *
@@ -195,11 +195,11 @@ rpc_gethostbyaddr(rcf_rpc_server *rpcs,
         in.addr.val.val_len = len;
     }
 
-    rcf_rpc_call(rpcs, _gethostbyaddr, &in,
-                 (xdrproc_t)xdr_tarpc_gethostbyaddr_in,
+    rcf_rpc_call(rpcs, _gethostbyaddr,
+                 &in,  (xdrproc_t)xdr_tarpc_gethostbyaddr_in,
                  &out, (xdrproc_t)xdr_tarpc_gethostbyaddr_out);
 
-    if (RPC_CALL_OK && out.res.res_val != NULL)
+    if (RPC_IS_CALL_OK(rpcs) && out.res.res_val != NULL)
     {
         if ((res = hostent_rpc2h(out.res.res_val)) == NULL)
             rpcs->_errno = TE_RC(TE_RCF, ENOMEM);
@@ -209,7 +209,7 @@ rpc_gethostbyaddr(rcf_rpc_server *rpcs,
          rpcs->ta, rpcs->name,
          addr, len, type, res, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_PTR(res, gethostbyaddr);
+    RETVAL_PTR(gethostbyaddr, res);
 }
 
 /**
@@ -315,11 +315,11 @@ rpc_getaddrinfo(rcf_rpc_server *rpcs,
         in.hints.hints_len = 1;
     }
 
-    rcf_rpc_call(rpcs, _getaddrinfo, &in,
-                 (xdrproc_t)xdr_tarpc_getaddrinfo_in,
+    rcf_rpc_call(rpcs, _getaddrinfo,
+                 &in,  (xdrproc_t)xdr_tarpc_getaddrinfo_in,
                  &out, (xdrproc_t)xdr_tarpc_getaddrinfo_out);
 
-    if (RPC_CALL_OK && out.res.res_val != NULL)
+    if (RPC_IS_CALL_OK(rpcs) && out.res.res_val != NULL)
     {
         int i;
 
@@ -327,7 +327,7 @@ rpc_getaddrinfo(rcf_rpc_server *rpcs,
                            sizeof(int))) == NULL)
         {
             rpcs->_errno = TE_RC(TE_RCF, ENOMEM);
-            RETVAL_RC(getaddrinfo);
+            RETVAL_INT_ZERO_OR_MINUS_ONE(getaddrinfo, out.retval);
         }
         *(int *)list = out.mem_ptr;
         list = (struct addrinfo *)((int *)list + 1);
@@ -343,7 +343,7 @@ rpc_getaddrinfo(rcf_rpc_server *rpcs,
                 }
                 free((int *)list - 1);
                 rpcs->_errno = TE_RC(TE_RCF, ENOMEM);
-                RETVAL_RC(getaddrinfo);
+                RETVAL_INT_ZERO_OR_MINUS_ONE(getaddrinfo, out.retval);
             }
             list[i].ai_next = (i == (int)out.res.res_len - 1) ?
                                   NULL : list + i + 1;
@@ -356,7 +356,7 @@ rpc_getaddrinfo(rcf_rpc_server *rpcs,
          node, service, hints, res, out.retval,
          errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_RC(getaddrinfo);
+    RETVAL_INT_ZERO_OR_MINUS_ONE(getaddrinfo, out.retval);
 }
 
 void

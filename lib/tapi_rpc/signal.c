@@ -87,10 +87,10 @@ rpc_signal(rcf_rpc_server *rpcs,
          errno_rpc2str(RPC_ERRNO(rpcs)));
 
     /* Yes, I know that it's memory leak, but what do you propose?! */
-    if (RPC_CALL_OK && out.handler.handler_val != NULL)
+    if (RPC_IS_CALL_OK(rpcs) && out.handler.handler_val != NULL)
         res = strdup(out.handler.handler_val);
 
-    RETVAL_PTR(res, signal);
+    RETVAL_PTR(signal, res);
 }
 
 int
@@ -114,14 +114,15 @@ rpc_kill(rcf_rpc_server *rpcs, pid_t pid, rpc_signum signum)
     in.signum = signum;
     in.pid = pid;
 
-    rcf_rpc_call(rpcs, _kill, &in, (xdrproc_t)xdr_tarpc_kill_in,
+    rcf_rpc_call(rpcs, _kill,
+                 &in,  (xdrproc_t)xdr_tarpc_kill_in,
                  &out, (xdrproc_t)xdr_tarpc_kill_out);
 
     RING("RPC (%s,%s)%s: kill(%d, %s) -> (%s)",
          rpcs->ta, rpcs->name, rpcop2str(op),
          pid, signum_rpc2str(signum), errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_RC(kill);
+    RETVAL_INT_ZERO_OR_MINUS_ONE(kill, out.retval);
 }
 
 rpc_sigset_t *
@@ -149,7 +150,7 @@ rpc_sigset_new(rcf_rpc_server *rpcs)
          rpcs->ta, rpcs->name,
          out.set, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_PTR(out.set, sigset_new);
+    RETVAL_PTR(sigset_new, out.set);
 }
 
 void
@@ -212,7 +213,7 @@ rpc_sigprocmask(rcf_rpc_server *rpcs,
          rpcs->ta, rpcs->name, how, set, oldset,
          out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_RC(sigprocmask);
+    RETVAL_INT_ZERO_OR_MINUS_ONE(sigprocmask, out.retval);
 }
 
 
@@ -243,7 +244,7 @@ rpc_sigemptyset(rcf_rpc_server *rpcs, rpc_sigset_t *set)
          rpcs->ta, rpcs->name,
          set, out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_RC(sigemptyset);
+    RETVAL_INT_ZERO_OR_MINUS_ONE(sigemptyset, out.retval);
 }
 
 int
@@ -273,7 +274,7 @@ rpc_sigpending(rcf_rpc_server *rpcs, rpc_sigset_t *set)
          rpcs->ta, rpcs->name,
          set, out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_RC(sigpending);
+    RETVAL_INT_ZERO_OR_MINUS_ONE(sigpending, out.retval);
 }
 
 int
@@ -301,7 +302,7 @@ rpc_sigsuspend(rcf_rpc_server *rpcs, const rpc_sigset_t *set)
          rpcs->ta, rpcs->name,
          set, out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_RC(sigsuspend);
+    RETVAL_INT_ZERO_OR_MINUS_ONE(sigsuspend, out.retval);
 }
 
 rpc_sigset_t *
@@ -329,7 +330,7 @@ rpc_sigreceived(rcf_rpc_server *rpcs)
          rpcs->ta, rpcs->name,
          out.set, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_PTR(out.set, sigreceived);
+    RETVAL_PTR(sigreceived, out.set);
 }
 
 int
@@ -359,7 +360,7 @@ rpc_sigfillset(rcf_rpc_server *rpcs, rpc_sigset_t *set)
          rpcs->ta, rpcs->name,
          set, out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_RC(sigfillset);
+    RETVAL_INT_ZERO_OR_MINUS_ONE(sigfillset, out.retval);
 }
 
 int
@@ -391,7 +392,7 @@ rpc_sigaddset(rcf_rpc_server *rpcs, rpc_sigset_t *set, rpc_signum signum)
          signum_rpc2str(signum), set,
          out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_RC(sigaddset);
+    RETVAL_INT_ZERO_OR_MINUS_ONE(sigaddset, out.retval);
 }
 
 int
@@ -423,7 +424,7 @@ rpc_sigdelset(rcf_rpc_server *rpcs, rpc_sigset_t *set, rpc_signum signum)
          signum_rpc2str(signum), set,
          out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_RC(sigdelset);
+    RETVAL_INT_ZERO_OR_MINUS_ONE(sigdelset, out.retval);
 }
 
 int
@@ -458,7 +459,7 @@ rpc_sigismember(rcf_rpc_server *rpcs,
 
     LOG_TE_ERROR(sigismember);
 
-    if (!RPC_CALL_OK)
+    if (!RPC_IS_CALL_OK(rpcs))
         return -1;
 
     if (out.retval != 0 && out.retval != 1 && out.retval != -1)
@@ -539,11 +540,11 @@ rpc_sigaction(rcf_rpc_server *rpcs, rpc_signum signum,
         in_oldact.xx_flags = oldact->mm_flags;
     }
 
-    rcf_rpc_call(rpcs, _sigaction, &in,
-                 (xdrproc_t)xdr_tarpc_sigaction_in,
+    rcf_rpc_call(rpcs, _sigaction,
+                 &in,  (xdrproc_t)xdr_tarpc_sigaction_in,
                  &out, (xdrproc_t)xdr_tarpc_sigaction_out);
 
-    if (RPC_CALL_OK && oldact != NULL)
+    if (RPC_IS_CALL_OK(rpcs) && oldact != NULL)
     {
         struct tarpc_sigaction *out_oldact = out.oldact.oldact_val;
 
@@ -569,5 +570,5 @@ rpc_sigaction(rcf_rpc_server *rpcs, rpc_signum signum,
          signum_rpc2str(signum), act, oldact,
          errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_RC(sigaction);
+    RETVAL_INT_ZERO_OR_MINUS_ONE(sigaction, out.retval);
 }

@@ -83,8 +83,8 @@ rpc_aio_read_test(rcf_rpc_server *rpcs,
     in.diag.diag_val = diag;
     in.diag.diag_len = diag_len;
 
-    rcf_rpc_call(rpcs, _aio_read_test, &in,
-                 (xdrproc_t)xdr_tarpc_aio_read_test_in,
+    rcf_rpc_call(rpcs, _aio_read_test,
+                 &in,  (xdrproc_t)xdr_tarpc_aio_read_test_in,
                  &out, (xdrproc_t)xdr_tarpc_aio_read_test_out);
 
     RING("RPC (%s,%s): "
@@ -93,7 +93,7 @@ rpc_aio_read_test(rcf_rpc_server *rpcs,
          s, signum_rpc2str(signum), timeout, buf, buflen, rlen,
          out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    if (RPC_CALL_OK)
+    if (RPC_IS_CALL_OK(rpcs))
     {
         if (buf != NULL && out.buf.buf_val != NULL)
             memcpy(buf, out.buf.buf_val, out.buf.buf_len);
@@ -101,7 +101,7 @@ rpc_aio_read_test(rcf_rpc_server *rpcs,
         memcpy(diag, out.diag.diag_val, out.diag.diag_len);
     }
 
-    RETVAL_VAL(out.retval, aio_read_test);
+    RETVAL_VAL(aio_read_test, out.retval);
 }
 
 /**
@@ -131,8 +131,8 @@ rpc_aio_error_test(rcf_rpc_server *rpcs,
     in.diag.diag_val = diag;
     in.diag.diag_len = diag_len;
 
-    rcf_rpc_call(rpcs, _aio_error_test, &in,
-                 (xdrproc_t)xdr_tarpc_aio_error_test_in,
+    rcf_rpc_call(rpcs, _aio_error_test,
+                 &in,  (xdrproc_t)xdr_tarpc_aio_error_test_in,
                  &out, (xdrproc_t)xdr_tarpc_aio_error_test_out);
 
     RING("RPC (%s,%s): "
@@ -140,10 +140,10 @@ rpc_aio_error_test(rcf_rpc_server *rpcs,
          rpcs->ta, rpcs->name,
          out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    if (RPC_CALL_OK)
+    if (RPC_IS_CALL_OK(rpcs))
         memcpy(diag, out.diag.diag_val, out.diag.diag_len);
 
-    RETVAL_RC(aio_error_test);
+    RETVAL_INT_ZERO_OR_MINUS_ONE(aio_error_test, out.retval);
 }
 
 /*
@@ -183,8 +183,8 @@ rpc_aio_write_test(rcf_rpc_server *rpcs,
     in.diag.diag_val = diag;
     in.diag.diag_len = diag_len;
 
-    rcf_rpc_call(rpcs, _aio_write_test, &in,
-                 (xdrproc_t)xdr_tarpc_aio_write_test_in,
+    rcf_rpc_call(rpcs, _aio_write_test,
+                 &in,  (xdrproc_t)xdr_tarpc_aio_write_test_in,
                  &out, (xdrproc_t)xdr_tarpc_aio_write_test_out);
 
     RING("RPC (%s,%s): "
@@ -194,10 +194,10 @@ rpc_aio_write_test(rcf_rpc_server *rpcs,
          out.retval,
          errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    if (RPC_CALL_OK)
+    if (RPC_IS_CALL_OK(rpcs))
         memcpy(diag, out.diag.diag_val, out.diag.diag_len);
 
-    RETVAL_VAL(out.retval, aio_write_test);
+    RETVAL_VAL(aio_write_test, out.retval);
 }
 
 /**
@@ -241,8 +241,8 @@ rpc_aio_suspend_test(rcf_rpc_server *rpcs,
     in.diag.diag_val = diag;
     in.diag.diag_len = diag_len;
 
-    rcf_rpc_call(rpcs, _aio_suspend_test, &in,
-                 (xdrproc_t)xdr_tarpc_aio_suspend_test_in,
+    rcf_rpc_call(rpcs, _aio_suspend_test,
+                 &in,  (xdrproc_t)xdr_tarpc_aio_suspend_test_in,
                  &out, (xdrproc_t)xdr_tarpc_aio_suspend_test_out);
 
     RING("RPC (%s,%s): "
@@ -251,7 +251,7 @@ rpc_aio_suspend_test(rcf_rpc_server *rpcs,
          s, s_aux, signum_rpc2str(signum), timeout, buf, buflen,
          out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    if (RPC_CALL_OK)
+    if (RPC_IS_CALL_OK(rpcs))
     {
         if (buf != NULL && out.buf.buf_val != NULL)
             memcpy(buf, out.buf.buf_val, out.buf.buf_len);
@@ -259,6 +259,6 @@ rpc_aio_suspend_test(rcf_rpc_server *rpcs,
         memcpy(diag, out.diag.diag_val, out.diag.diag_len);
     }
 
-    RETVAL_VAL(out.retval, aio_suspend_test);
+    RETVAL_VAL(aio_suspend_test, out.retval);
 }
 

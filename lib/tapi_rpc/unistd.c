@@ -81,10 +81,11 @@ rpc_pipe(rcf_rpc_server *rpcs,
         in.filedes.filedes_val = filedes;
     }
 
-    rcf_rpc_call(rpcs, _pipe, &in, (xdrproc_t)xdr_tarpc_pipe_in,
+    rcf_rpc_call(rpcs, _pipe,
+                 &in,  (xdrproc_t)xdr_tarpc_pipe_in,
                  &out, (xdrproc_t)xdr_tarpc_pipe_out);
 
-    if (RPC_CALL_OK && filedes != NULL)
+    if (RPC_IS_CALL_OK(rpcs) && filedes != NULL)
         memcpy(filedes, out.filedes.filedes_val, sizeof(int) * 2);
 
     RING("RPC (%s,%s): pipe() -> %d %d %d (%s)",
@@ -92,7 +93,7 @@ rpc_pipe(rcf_rpc_server *rpcs,
          out.retval, filedes[0], filedes[1],
          errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_RC(pipe);
+    RETVAL_INT_ZERO_OR_MINUS_ONE(pipe, out.retval);
 }
 
 int
@@ -126,7 +127,7 @@ rpc_socketpair(rcf_rpc_server *rpcs,
                  &in, (xdrproc_t)xdr_tarpc_socketpair_in,
                  &out, (xdrproc_t)xdr_tarpc_socketpair_out);
 
-    if (RPC_CALL_OK && sv != NULL)
+    if (RPC_IS_CALL_OK(rpcs) && sv != NULL)
         memcpy(sv, out.sv.sv_val, sizeof(int) * 2);
 
     RING("RPC (%s,%s): socketpair(%s, %s, %s) -> %d %d %d (%s)",
@@ -135,7 +136,7 @@ rpc_socketpair(rcf_rpc_server *rpcs,
          proto_rpc2str(protocol), out.retval,
          sv[0], sv[1], errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_RC(socketpair);
+    RETVAL_INT_ZERO_OR_MINUS_ONE(socketpair, out.retval);
 }
 
 int
@@ -158,14 +159,15 @@ rpc_close(rcf_rpc_server *rpcs, int fd)
 
     in.fd = fd;
 
-    rcf_rpc_call(rpcs, _close, &in, (xdrproc_t)xdr_tarpc_close_in,
+    rcf_rpc_call(rpcs, _close,
+                 &in,  (xdrproc_t)xdr_tarpc_close_in,
                  &out, (xdrproc_t)xdr_tarpc_close_out);
 
     RING("RPC (%s,%s)%s: close(%d) -> %d (%s)",
          rpcs->ta, rpcs->name, rpcop2str(op),
          fd, out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_RC(close);
+    RETVAL_INT_ZERO_OR_MINUS_ONE(close, out.retval);
 }
 
 int
@@ -198,7 +200,7 @@ rpc_dup(rcf_rpc_server *rpcs,
          rpcs->ta, rpcs->name, rpcop2str(op),
          oldfd, out.fd, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_VAL(out.fd, dup);
+    RETVAL_VAL(dup, out.fd);
 }
 
 int
@@ -232,7 +234,7 @@ rpc_dup2(rcf_rpc_server *rpcs,
          rpcs->ta, rpcs->name, rpcop2str(op),
          oldfd, newfd, out.fd, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_VAL(out.fd, dup);
+    RETVAL_VAL(dup, out.fd);
 }
 
 
@@ -268,11 +270,12 @@ rpc_read_gen(rcf_rpc_server *rpcs,
         in.buf.buf_len = rbuflen;
         in.buf.buf_val = buf;
     }
-    rcf_rpc_call(rpcs, _read, &in, (xdrproc_t)xdr_tarpc_read_in,
+    rcf_rpc_call(rpcs, _read,
+                 &in,  (xdrproc_t)xdr_tarpc_read_in,
                  &out, (xdrproc_t)xdr_tarpc_read_out);
 
 
-    if (RPC_CALL_OK)
+    if (RPC_IS_CALL_OK(rpcs))
     {
         if (buf != NULL && out.buf.buf_val != NULL)
             memcpy(buf, out.buf.buf_val, out.buf.buf_len);
@@ -283,7 +286,7 @@ rpc_read_gen(rcf_rpc_server *rpcs,
          fd, buf, rbuflen, count, out.retval,
          errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_VAL(out.retval, read);
+    RETVAL_VAL(read, out.retval);
 }
 
 int
@@ -313,14 +316,15 @@ rpc_write(rcf_rpc_server *rpcs,
         in.buf.buf_val = (char *)buf;
     }
 
-    rcf_rpc_call(rpcs, _write, &in, (xdrproc_t)xdr_tarpc_write_in,
+    rcf_rpc_call(rpcs, _write,
+                 &in,  (xdrproc_t)xdr_tarpc_write_in,
                  &out, (xdrproc_t)xdr_tarpc_write_out);
 
     RING("RPC (%s,%s)%s: write(%d, %p, %u) -> %d (%s)",
          rpcs->ta, rpcs->name, rpcop2str(op),
          fd, buf, count, out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_VAL(out.retval, write);
+    RETVAL_VAL(write, out.retval);
 }
 
 int
@@ -379,10 +383,12 @@ rpc_readv_gen(rcf_rpc_server *rpcs,
         }
     }
 
-    rcf_rpc_call(rpcs, _readv, &in, (xdrproc_t)xdr_tarpc_readv_in,
+    rcf_rpc_call(rpcs, _readv,
+                 &in,  (xdrproc_t)xdr_tarpc_readv_in,
                  &out, (xdrproc_t)xdr_tarpc_readv_out);
 
-    if (RPC_CALL_OK && iov != NULL && out.vector.vector_val != NULL)
+    if (RPC_IS_CALL_OK(rpcs) &&
+        iov != NULL && out.vector.vector_val != NULL)
     {
         for (i = 0; i < riovcnt; i++)
         {
@@ -403,7 +409,7 @@ rpc_readv_gen(rcf_rpc_server *rpcs,
          fd, iov, riovcnt, iovcnt,
          out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_VAL(out.retval, readv);
+    RETVAL_VAL(readv, out.retval);
 }
 
 int
@@ -452,7 +458,8 @@ rpc_writev(rcf_rpc_server *rpcs,
     in.fd = fd;
     in.count = iovcnt;
 
-    rcf_rpc_call(rpcs, _writev, &in, (xdrproc_t)xdr_tarpc_writev_in,
+    rcf_rpc_call(rpcs, _writev,
+                 &in,  (xdrproc_t)xdr_tarpc_writev_in,
                  &out, (xdrproc_t)xdr_tarpc_writev_out);
 
     RING("RPC (%s,%s)%s: writev(%d, %p, %u) -> %d (%s)",
@@ -460,7 +467,7 @@ rpc_writev(rcf_rpc_server *rpcs,
          fd, iov, iovcnt,
          out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_VAL(out.retval, writev);
+    RETVAL_VAL(writev, out.retval);
 }
 
 
@@ -489,7 +496,7 @@ rpc_fd_set_new(rcf_rpc_server *rpcs)
          rpcs->ta, rpcs->name,
          out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_PTR(out.retval, fd_set_new);
+    RETVAL_PTR(fd_set_new, out.retval);
 }
 
 
@@ -645,7 +652,7 @@ rpc_do_fd_isset(rcf_rpc_server *rpcs, int fd, rpc_fd_set *set)
 
     LOG_TE_ERROR(do_fd_isset);
 
-    if (!RPC_CALL_OK)
+    if (!RPC_IS_CALL_OK(rpcs))
         return -1;
 
     if (out.retval != 0 && out.retval != 1)
@@ -696,17 +703,18 @@ rpc_select(rcf_rpc_server *rpcs,
         timeout_in = *timeout;
     }
 
-    rcf_rpc_call(rpcs, _select, &in, (xdrproc_t)xdr_tarpc_select_in,
+    rcf_rpc_call(rpcs, _select, 
+                 &in,  (xdrproc_t)xdr_tarpc_select_in,
                  &out, (xdrproc_t)xdr_tarpc_select_out);
 
     if (op != RCF_RPC_CALL && timeout != NULL &&
-        out.timeout.timeout_val != NULL && RPC_CALL_OK)
+        out.timeout.timeout_val != NULL && RPC_IS_CALL_OK(rpcs))
     {
         timeout->tv_sec = out.timeout.timeout_val[0].tv_sec;
         timeout->tv_usec = out.timeout.timeout_val[0].tv_usec;
     }
 
-    if (!RPC_CALL_OK)
+    if (!RPC_IS_CALL_OK(rpcs))
         out.retval = -1;
 
     RING("RPC (%s,%s)%s: select(%d, %p, %p, %p, %s (%s)) -> %d (%s)",
@@ -715,7 +723,7 @@ rpc_select(rcf_rpc_server *rpcs,
          timeval2str(timeout_in_ptr), timeval2str(timeout),
          out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_VAL(out.retval, select);
+    RETVAL_VAL(select, out.retval);
 }
 
 int
@@ -755,7 +763,8 @@ rpc_pselect(rcf_rpc_server *rpcs,
         in.timeout.timeout_val = &tv;
     }
 
-    rcf_rpc_call(rpcs, _pselect, &in, (xdrproc_t)xdr_tarpc_pselect_in,
+    rcf_rpc_call(rpcs, _pselect,
+                 &in,  (xdrproc_t)xdr_tarpc_pselect_in,
                  &out, (xdrproc_t)xdr_tarpc_pselect_out);
 
     RING("RPC (%s,%s)%s: pselect(%d, %p, %p, %p, %s, %p) -> %d (%s)",
@@ -764,7 +773,7 @@ rpc_pselect(rcf_rpc_server *rpcs,
          timespec2str(timeout), sigmask,
          out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_VAL(out.retval, pselect);
+    RETVAL_VAL(pselect, out.retval);
 }
 
 /**
@@ -844,10 +853,11 @@ rpc_poll_gen(rcf_rpc_server *rpcs,
 
     pollreq2str(ufds, rnfds, str_buf_1, sizeof(str_buf_1));
 
-    rcf_rpc_call(rpcs, _poll, &in, (xdrproc_t)xdr_tarpc_poll_in,
+    rcf_rpc_call(rpcs, _poll,
+                 &in,  (xdrproc_t)xdr_tarpc_poll_in,
                  &out, (xdrproc_t)xdr_tarpc_poll_out);
 
-    if (RPC_CALL_OK && ufds != NULL && out.ufds.ufds_val != NULL)
+    if (RPC_IS_CALL_OK(rpcs) && ufds != NULL && out.ufds.ufds_val != NULL)
     {
         memcpy(ufds, out.ufds.ufds_val, rnfds * sizeof(ufds[0]));
     }
@@ -859,7 +869,7 @@ rpc_poll_gen(rcf_rpc_server *rpcs,
          ufds, str_buf_1, nfds, timeout,
          out.retval, errno_rpc2str(RPC_ERRNO(rpcs)), str_buf_2);
 
-    RETVAL_VAL(out.retval, poll);
+    RETVAL_VAL(poll, out.retval);
 }
 
 int
@@ -885,7 +895,8 @@ rpc_fcntl(rcf_rpc_server *rpcs, int fd,
     in.cmd = cmd;
     in.arg = arg;
 
-    rcf_rpc_call(rpcs, _fcntl, &in, (xdrproc_t)xdr_tarpc_fcntl_in,
+    rcf_rpc_call(rpcs, _fcntl,
+                 &in,  (xdrproc_t)xdr_tarpc_fcntl_in,
                  &out, (xdrproc_t)xdr_tarpc_fcntl_out);
 
     RING("RPC (%s,%s)%s: fcntl(%d, %s, %d) -> %d (%s)",
@@ -893,7 +904,7 @@ rpc_fcntl(rcf_rpc_server *rpcs, int fd,
          fd, fcntl_rpc2str(cmd),
          arg, out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_VAL(out.retval, fcntl);
+    RETVAL_VAL(fcntl, out.retval);
 }
 
 
@@ -914,14 +925,15 @@ rpc_getuid(rcf_rpc_server *rpcs)
 
     rpcs->op = RCF_RPC_CALL_WAIT;
 
-    rcf_rpc_call(rpcs, _getuid, &in, (xdrproc_t)xdr_tarpc_getuid_in,
+    rcf_rpc_call(rpcs, _getuid,
+                 &in,  (xdrproc_t)xdr_tarpc_getuid_in,
                  &out, (xdrproc_t)xdr_tarpc_getuid_out);
 
     RING("RPC (%s,%s): getuid() -> %d (%s)",
          rpcs->ta, rpcs->name,
          out.uid, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_VAL((int)out.uid, getuid);
+    RETVAL_VAL(getuid, (int)out.uid);
 }
 
 int
@@ -943,14 +955,15 @@ rpc_setuid(rcf_rpc_server *rpcs,
     rpcs->op = RCF_RPC_CALL_WAIT;
     in.uid = uid;
 
-    rcf_rpc_call(rpcs, _setuid, &in, (xdrproc_t)xdr_tarpc_setuid_in,
+    rcf_rpc_call(rpcs, _setuid,
+                 &in,  (xdrproc_t)xdr_tarpc_setuid_in,
                  &out, (xdrproc_t)xdr_tarpc_setuid_out);
 
     RING("RPC (%s,%s): setuid(%d) -> %d (%s)",
          rpcs->ta, rpcs->name,
          uid, out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_RC(setuid);
+    RETVAL_INT_ZERO_OR_MINUS_ONE(setuid, out.retval);
 }
 
 uid_t
@@ -970,14 +983,15 @@ rpc_geteuid(rcf_rpc_server *rpcs)
 
     rpcs->op = RCF_RPC_CALL_WAIT;
 
-    rcf_rpc_call(rpcs, _geteuid, &in, (xdrproc_t)xdr_tarpc_geteuid_in,
+    rcf_rpc_call(rpcs, _geteuid,
+                 &in,  (xdrproc_t)xdr_tarpc_geteuid_in,
                  &out, (xdrproc_t)xdr_tarpc_geteuid_out);
 
     RING("RPC (%s,%s): geteuid() -> %d (%s)",
          rpcs->ta, rpcs->name,
          out.uid, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_VAL((int)out.uid, geteuid);
+    RETVAL_VAL(geteuid, (int)out.uid);
 }
 
 int
@@ -999,12 +1013,13 @@ rpc_seteuid(rcf_rpc_server *rpcs,
     rpcs->op = RCF_RPC_CALL_WAIT;
     in.uid = uid;
 
-    rcf_rpc_call(rpcs, _seteuid, &in, (xdrproc_t)xdr_tarpc_seteuid_in,
+    rcf_rpc_call(rpcs, _seteuid,
+                 &in,  (xdrproc_t)xdr_tarpc_seteuid_in,
                  &out, (xdrproc_t)xdr_tarpc_seteuid_out);
 
     RING("RPC (%s,%s): seteuid() -> %d (%s)",
          rpcs->ta, rpcs->name,
          uid, out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_RC(seteuid);
+    RETVAL_INT_ZERO_OR_MINUS_ONE(seteuid, out.retval);
 }

@@ -52,6 +52,13 @@
 #define RPC_ERRNO(_rpcs) \
     (((_rpcs) != NULL) ? ((_rpcs)->_errno) : TE_RC(TE_RCF_API, EINVAL))
 
+/** Check, if RPC is called successfully */
+#define RPC_IS_CALL_OK(_rpcs) \
+    (((_rpcs) != NULL) && \
+     (((_rpcs)->_errno == 0) || \
+      (((_rpcs)->_errno >= RPC_EPERM) && \
+       ((_rpcs)->_errno <= RPC_EMEDIUMTYPE))))
+
 /**
  * Extract name of the PCO by RCP server handle
  *

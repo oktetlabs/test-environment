@@ -115,14 +115,15 @@ rpc_fopen(rcf_rpc_server *rpcs,
     in.mode.mode_len = strlen(mode) + 1;
     in.mode.mode_val = (char *)mode;
 
-    rcf_rpc_call(rpcs, _fopen, &in, (xdrproc_t)xdr_tarpc_fopen_in,
+    rcf_rpc_call(rpcs, _fopen,
+                 &in,  (xdrproc_t)xdr_tarpc_fopen_in,
                  &out, (xdrproc_t)xdr_tarpc_fopen_out);
 
     RING("RPC (%s,%s): fopen(%s, %s) -> %p (%s)",
          rpcs->ta, rpcs->name,
          path, mode, out.mem_ptr, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_PTR(out.mem_ptr, fopen);
+    RETVAL_PTR(fopen, out.mem_ptr);
 }
 
 FILE *
@@ -152,7 +153,8 @@ rpc_popen(rcf_rpc_server *rpcs,
     in.mode.mode_len = strlen(mode) + 1;
     in.mode.mode_val = (char *)mode_dup;
 
-    rcf_rpc_call(rpcs, _popen, &in, (xdrproc_t)xdr_tarpc_popen_in,
+    rcf_rpc_call(rpcs, _popen,
+                 &in,  (xdrproc_t)xdr_tarpc_popen_in,
                  &out, (xdrproc_t)xdr_tarpc_popen_out);
                  
     free(cmd_dup);
@@ -162,7 +164,7 @@ rpc_popen(rcf_rpc_server *rpcs,
          rpcs->ta, rpcs->name,
          cmd, mode, out.mem_ptr, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_PTR(out.mem_ptr, popen);
+    RETVAL_PTR(popen, out.mem_ptr);
 }
 
 int
@@ -184,14 +186,15 @@ rpc_fileno(rcf_rpc_server *rpcs,
     rpcs->op = RCF_RPC_CALL_WAIT;
     in.mem_ptr = (unsigned int)f;
 
-    rcf_rpc_call(rpcs, _fileno, &in, (xdrproc_t)xdr_tarpc_fileno_in,
+    rcf_rpc_call(rpcs, _fileno,
+                 &in,  (xdrproc_t)xdr_tarpc_fileno_in,
                  &out, (xdrproc_t)xdr_tarpc_fileno_out);
 
     RING("RPC (%s,%s): fileno(%p) -> %d (%s)",
          rpcs->ta, rpcs->name,
          f, out.fd, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_VAL(out.fd, fileno);
+    RETVAL_VAL(fileno, out.fd);
 }
 
 /**
