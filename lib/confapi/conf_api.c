@@ -89,6 +89,9 @@
         }                                                           \
     } while (0)
 
+/** Begining of all agents oid */
+#define AGENT_BOID       "/agent"
+#define BOID_LEN         strlen("/agent")
 
 #ifdef HAVE_PTHREAD_H
 static pthread_mutex_t cfgl_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -950,7 +953,8 @@ cfg_add_instance(const cfg_oid *oid, cfg_handle *handle,
 
     va_list      list;
     cfg_inst_val value;
-    char        *oid2str;
+    char        *oid2str = NULL;
+    char        *valstr = NULL; 
 
     size_t  len;
     int     ret_val = 0;
@@ -997,9 +1001,7 @@ cfg_add_instance(const cfg_oid *oid, cfg_handle *handle,
              assert(0);
     }
     va_end(list);
-
-    cfg_types[type].put_to_msg(value, (cfg_msg *)msg);
-
+    cfg_types[type].put_to_msg(value, (cfg_msg *)msg); 
     oid2str = cfg_convert_oid(oid);
     if (oid2str == NULL)
     {
@@ -1011,17 +1013,28 @@ cfg_add_instance(const cfg_oid *oid, cfg_handle *handle,
     msg->oid_offset = msg->len;
     msg->len += strlen(oid2str) + 1;
     strcpy((char *)msg + msg->oid_offset, oid2str);
-    free(oid2str);
+   
 
     len = CFG_MSG_MAX;
 
     ret_val = ipc_send_message_with_answer(cfgl_ipc_client,
                                            CONFIGURATOR_SERVER,
                                            msg, msg->len, msg, &len);
+    
     if ((ret_val == 0) && ((ret_val = msg->rc) == 0))
     {
         *handle = msg->handle;
+        cfg_types[type].val2str(value, &valstr);
+        if (strncmp(oid2str, AGENT_BOID, BOID_LEN) == 0)
+        {
+            if (valstr == NULL)
+                RING("Instance %s is added.",  oid);
+            else
+                RING("Instance %s with value %s is added", oid, valstr);
+        }
+        free(valstr);
     }
+    free(oid2str);
 
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_unlock(&cfgl_lock);
@@ -1052,9 +1065,11 @@ cfg_add_instance_str(const char *oid, cfg_handle *handle,
     va_list      list;
     cfg_inst_val value;
 
+    char        *valstr = NULL; 
+
     size_t  len;
     int     ret_val = 0;
-
+    
     if (oid == NULL)
     {
         return TE_RC(TE_CONF_API, EINVAL);
@@ -1113,6 +1128,16 @@ cfg_add_instance_str(const char *oid, cfg_handle *handle,
     {
         if (handle != NULL)
             *handle = msg->handle;
+
+        cfg_types[type].val2str(value, &valstr);
+        if (strncmp(oid, AGENT_BOID, BOID_LEN) == 0)
+        {
+            if (valstr == NULL)
+                RING("Instance %s is added.",  oid);
+            else
+                RING("Instance %s with value %s is added", oid, valstr);
+        }
+        free(valstr);
     }
 
 #ifdef HAVE_PTHREAD_H
@@ -1191,12 +1216,17 @@ kill(cfg_handle handle)
 
     int     ret_val = 0;
     size_t  len;
+    
+    char  *oidstr = NULL;
+    
 
-    if (handle == CFG_HANDLE_INVALID)
+    if (handle == CFG_HANDLE_INVALID || 
+        cfg_get_oid_str(handle, &oidstr) != 0)
     {
         return TE_RC(TE_CONF_API, EINVAL);
     }
-
+    
+    
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_lock(&cfgl_lock);
 #endif
@@ -1218,15 +1248,21 @@ kill(cfg_handle handle)
     ret_val = ipc_send_message_with_answer(cfgl_ipc_client,
                                            CONFIGURATOR_SERVER,
                                            msg, msg->len, msg, &len);
-    if (ret_val == 0)
-    {
-        ret_val = msg->rc;
-    }
-
+                                           
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_unlock(&cfgl_lock);
 #endif
 
+    if (ret_val == 0) 
+    {
+        ret_val = msg->rc;
+        if (ret_val == 0 &&  oidstr != NULL && 
+            strncmp(oidstr, AGENT_BOID, BOID_LEN) == 0)
+        {
+            RING("Instance %s is deleted.", oidstr);
+        }
+    }
+    free(oidstr);
     return TE_RC(TE_CONF_API, ret_val);
 }
 
@@ -1243,7 +1279,7 @@ cfg_del_instance(cfg_handle handle, te_bool with_children)
 {
     cfg_handle son;
     int ret_val;
-
+    
     if (handle == CFG_HANDLE_INVALID)
     {
         return TE_RC(TE_CONF_API, EINVAL);
@@ -1282,6 +1318,9 @@ cfg_set_instance_gen(cfg_handle handle, te_bool local, cfg_val_type type,
 {
     cfg_set_msg    *msg;
     cfg_inst_val    value;
+    
+    char    *oidstr = NULL;
+    char    *valstr = NULL;
 
     int     ret_val = 0;
     size_t  len;
@@ -1332,18 +1371,28 @@ cfg_set_instance_gen(cfg_handle handle, te_bool local, cfg_val_type type,
 
     len = CFG_MSG_MAX;
 
-    if ((ret_val = ipc_send_message_with_answer(cfgl_ipc_client,
-                                                CONFIGURATOR_SERVER,
-                                                msg, msg->len,
-                                                msg, &len)) == 0)
-    {
-        ret_val = msg->rc;
-    }
+    ret_val = ipc_send_message_with_answer(cfgl_ipc_client, 
+                                           CONFIGURATOR_SERVER, 
+                                           msg, msg->len, msg, &len);
 
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_unlock(&cfgl_lock);
 #endif
+    
+    if (ret_val == 0)
+    {
+        ret_val = msg->rc;
 
+        cfg_types[type].val2str(value, &valstr);
+        if (ret_val == 0 && cfg_get_oid_str(handle, &oidstr) == 0 && 
+            strncmp(oidstr, AGENT_BOID, BOID_LEN) == 0 && valstr != NULL)
+        {
+            RING("Instance %s value is set to %s.", oidstr, valstr);
+        }
+        free(oidstr);
+        free(valstr);
+        
+    }
     return TE_RC(TE_CONF_API, ret_val);
 }
 
