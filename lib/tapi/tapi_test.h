@@ -164,7 +164,7 @@ extern "C" {
         if ((expr_) == NULL)                                            \
         {                                                               \
             TEST_FAIL("Expression " #expr_ " in file %s line %d is "    \
-                      "expected to be nut NULL, but it is",             \
+                      "expected to be not NULL, but it is",             \
                       __FILE__, __LINE__);                              \
         }                                                               \
     } while (0)
