@@ -33,6 +33,7 @@
 #ifndef __TE_TAPI_RPCSOCK_DEFS_H__
 #define __TE_TAPI_RPCSOCK_DEFS_H__
 
+#include <stdio.h>
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif
