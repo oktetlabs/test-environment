@@ -483,19 +483,20 @@ static int
 args_iterations(test_param_iterations *base_iters, test_args *args,
                 test_param_iterations *iters)
 {
-    test_param_iteration *base_i;
-    test_param_iteration *i;
-    test_param_iteration *i_clone;
-    test_arg             *arg;
-    test_var_arg_value   *v;
-    test_param           *p;
-    const char           *s;
-    tqh_strings           processed_lists;
-    tqe_string           *list;
-    unsigned int          value_i;
-    test_arg             *arg2;
-    te_bool               more_in_list;
-    te_bool               more_in_arg;
+    test_param_iteration       *base_i;
+    test_param_iteration       *i;
+    test_param_iteration       *i_clone;
+    const test_arg             *arg;
+    const test_var_arg_value   *v;
+    const test_var_arg_value   *value;
+    test_param                 *p;
+    const char                 *s;
+    tqh_strings                 processed_lists;
+    tqe_string                 *list;
+    unsigned int                value_i;
+    const test_arg             *arg2;
+    te_bool                     more_in_list;
+    te_bool                     more_in_arg;
 
     ENTRY();
 
@@ -559,6 +560,7 @@ args_iterations(test_param_iterations *base_iters, test_args *args,
                      v != NULL || (list != NULL && more_in_list);
                      ++value_i)
                 {
+                    value = (v) ? : arg_preferred_value(arg);
                     /* All the times except to first, move to the clone */
                     if (i_clone != NULL)
                         i = i_clone;
@@ -574,13 +576,12 @@ args_iterations(test_param_iterations *base_iters, test_args *args,
                     TAILQ_INSERT_AFTER(iters, i, i_clone, links);
                     
                     /* Get argument value and create parameter */
-                    s = get_value((v) ? : arg_preferred_value(arg),
-                                  &i->base->params);
+                    s = get_value(value, &i->base->params);
                     if (s == NULL)
                         return EINVAL;
                     p = test_param_new(arg->name, s, TRUE,
-                                       (v->reqs.tqh_first == NULL) ?
-                                           NULL : &v->reqs);
+                                       (value->reqs.tqh_first == NULL) ?
+                                           NULL : &value->reqs);
                     if (p == NULL)
                     {
                         ERROR("Failed to create new test parameter");
