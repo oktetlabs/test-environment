@@ -28,7 +28,7 @@
  *
  * $Id$
  */
-#define TE_LOG_LEVEL 0xff
+
 #include "te_config.h"
 
 #include <stdio.h>
@@ -60,7 +60,6 @@
 #include "rcf_pch_internal.h"
 
 
-#define TE_LOG_LEVEL 0xff
 /** Structure for temporary storing of instances/objects identifiers */
 typedef struct olist {
     struct olist *next;             /**< Pointer to the next element */
