@@ -159,7 +159,7 @@ system_with_timeout(char *cmd, int timeout)
             
             if (rc != 0)
             {
-                ERROR("Command <%s> failed with return code %d", cmd, rc);
+                INFO("Command <%s> failed with return code %d", cmd, rc);
                 return -1;
             }
             return 0;
@@ -387,6 +387,7 @@ rcfunix_start(char *ta_name, char *ta_type, char *conf_str,
     if (!(*flags & TA_FAKE) &&
         (system_with_timeout(cmd, RCFUNIX_START_TIMEOUT) != 0))
     {
+        ERROR("Failed to start TA %s", ta_name);
         return ETESHCMD;
     }
 
