@@ -529,21 +529,19 @@ cfg_get_inst_name(cfg_handle handle, char **name)
 
 /* See description in conf_api.h */
 int
-cfg_get_inst_name_int(cfg_handle handle, int *name)
+cfg_get_inst_name_type(cfg_handle handle, cfg_val_type type,
+                       cfg_inst_val *val)
 {
     int             rc;
     char           *str;
-    cfg_inst_val    val;
 
     rc = cfg_get_inst_name(handle, &str);
     if (rc != 0)
         return rc;
 
-    rc = cfg_types[CVT_INTEGER].str2val(str, &val);
+    rc = cfg_types[type].str2val(str, val);
     if (rc != 0)
         return rc;
-
-    *name = val.val_int;
 
     return 0;
 }

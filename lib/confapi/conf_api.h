@@ -53,6 +53,11 @@ extern "C" {
 
 #define CFG_VOLATILE    "volatile" /**< Root name for volatile objects */
 
+
+/** Cast to Configurator Instance Value Pointer */
+#define CFG_IVP(x)     ((cfg_inst_val *)(x))
+
+
 /**
  * This macro MUST NOT be used out of the header.  It's very context
  * specific and used in inline functions defined in the header.  It
@@ -196,12 +201,15 @@ extern int cfg_get_inst_name(cfg_handle handle, char **name);
 /**
  * Obtain integer name of object instance by its handle.
  *
- * @param handle    handle of object instance
- * @param name      OUT: location for the name
+ * @param handle    Handle of object instance
+ * @param type      Type instance name
+ * @param val       type == CVT_INTEGER -> (int *)
+ *                  type == CVT_ADDRESS -> (struct sockaddr **)
  *
  * @return 0 or EINVAL if invalid handle is provided
  */
-extern int cfg_get_inst_name_int(cfg_handle handle, int *name);
+extern int cfg_get_inst_name_type(cfg_handle handle, cfg_val_type type,
+                                  cfg_inst_val *val);
 
 /**
  * Obtain name of object instance by its handle.
