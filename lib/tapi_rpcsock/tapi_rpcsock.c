@@ -99,8 +99,8 @@
 
 
 /** @name String buffers for snprintf() operations */
-static char str_buf_1[1024];
-static char str_buf_2[1024];
+static char str_buf_1[4096];
+static char str_buf_2[4096];
 /*@}*/
 
 
@@ -4098,9 +4098,9 @@ pollreq2str(struct rpc_pollfd *ufds, unsigned int nfds,
         for (i = 0; i < nfds; ++i)
         {
             rc = snprintf(buf, buflen, "{%d,%s,%s}",
-                          ufds->fd, 
-                          poll_event_rpc2str(ufds->events),
-                          poll_event_rpc2str(ufds->revents));
+                          ufds[i].fd, 
+                          poll_event_rpc2str(ufds[i].events),
+                          poll_event_rpc2str(ufds[i].revents));
             if ((size_t)rc > buflen)
                 break;
             buflen -= rc;
