@@ -380,17 +380,17 @@ log_get_message(uint32_t length, uint8_t *buffer)
                 int32_t val;
 
                 LGR_CHECK_LENGTH(sizeof(te_log_nfl_t) + sizeof(uint32_t));
-                *((te_log_nfl_t *)tmp_buf) = log_nfl_hton(tmp_length);
+                *((te_log_nfl_t *)tmp_buf) = log_nfl_hton(sizeof(uint32_t));
                 tmp_buf += sizeof(te_log_nfl_t);
                 val = LGR_GET_ARG(header, argn++);
                 LGR_32_TO_NET(val, tmp_buf);
-                tmp_buf += sizeof(int32_t);
+                tmp_buf += sizeof(uint32_t);
                 break;
             }
 
             case 'c':
                 LGR_CHECK_LENGTH(sizeof(te_log_nfl_t) + sizeof(char));
-                *((te_log_nfl_t *)tmp_buf) = log_nfl_hton(tmp_length);
+                *((te_log_nfl_t *)tmp_buf) = log_nfl_hton(sizeof(char));
                 tmp_buf += sizeof(te_log_nfl_t);
                 *tmp_buf = (char)LGR_GET_ARG(header, argn++);
                 tmp_buf++;
