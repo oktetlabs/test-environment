@@ -182,10 +182,10 @@ for i in $SUITES ; do
             fi
             if test -n "$VG_TESTS" ; then
                 valgrind $VG_OPTIONS \
-                ${TE_INSTALL_SUITE}/bin/${SUITEDIR}/${PACKAGEDIR}/${TEST_NAME} \
+                ${TE_INSTALL_SUITE}/${SUITEDIR}/${PACKAGEDIR}/${TEST_NAME} \
                 ${TEST_PARMS} 2>vg.test.${SUITEDIR}.${PACKAGEDIR}.${TEST_NAME}
             else
-                ${TE_INSTALL_SUITE}/bin/${SUITEDIR}/${PACKAGEDIR}/${TEST_NAME} \
+                ${TE_INSTALL_SUITE}/${SUITEDIR}/${PACKAGEDIR}/${TEST_NAME} \
                 ${TEST_PARMS}
             fi
             if test $? -ne 0 ; then
