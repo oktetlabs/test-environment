@@ -30,6 +30,10 @@ RPC_XFILE=${TE_INSTALL}/agents/etc/linux/tarpc.x
 
 AC_SUBST([RPC_XFILE])
 
+AC_CHECK_HEADERS([\
+stdarg.h \
+])
+
 AC_CONFIG_FILES([Makefile])
 
 AC_OUTPUT
