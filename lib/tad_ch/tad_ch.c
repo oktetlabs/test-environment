@@ -366,11 +366,12 @@ rcf_ch_trsend_start(struct rcf_comm_connection *handle,
                     const uint8_t *ba, size_t cmdlen,
                     csap_handle_t csap, te_bool postponed)
 {
-    int         rc;
-    int         syms;
-    asn_value_p nds; 
-    csap_p      csap_descr_p;
-    pthread_t   send_thread;
+    int            rc;
+    int            syms;
+    asn_value_p    nds; 
+    csap_p         csap_descr_p;
+    pthread_t      send_thread;
+    pthread_attr_t pthread_attr;
 
     tad_task_context * send_context;
 
@@ -389,7 +390,7 @@ rcf_ch_trsend_start(struct rcf_comm_connection *handle,
 
     if ((csap_descr_p = csap_find(csap)) == NULL)
     {
-        VERB("CSAP not exists");
+        ERROR("CSAP not exists");
         SEND_ANSWER("%d Wrong CSAP id", TE_RC(TE_TAD_CH, ETADCSAPNOTEX));
         return 0;
     }
@@ -403,8 +404,8 @@ rcf_ch_trsend_start(struct rcf_comm_connection *handle,
     if (rc)
     {
         /* ERROR! NDS is not parsed correctly */
-        VERB("parse error in attached NDS, code 0x%x, symbol: %d",
-             rc, syms);
+        ERROR("parse error in attached NDS, code 0x%x, symbol: %d",
+              rc, syms);
         SEND_ANSWER("%d", TE_RC(TE_TAD_CH, rc));
         return 0;
     } 
@@ -421,13 +422,12 @@ rcf_ch_trsend_start(struct rcf_comm_connection *handle,
 
     CSAP_DA_UNLOCK(csap_descr_p);
 
-
     if (csap_descr_p->check_pdus_cb)
     {
         rc = csap_descr_p->check_pdus_cb(csap_descr_p, nds);
         if (rc) 
         {
-            VERB("send nds check_pdus error: %x", rc);
+            ERROR("send nds check_pdus error: %x", rc);
             SEND_ANSWER("%d", TE_RC(TE_TAD_CH, rc));
             return 0;
         }
@@ -438,13 +438,22 @@ rcf_ch_trsend_start(struct rcf_comm_connection *handle,
     send_context->nds           = nds;
     send_context->rcf_handle    = handle;
     
-
-    rc = pthread_create(&send_thread, NULL, 
-                        (void *)&tad_tr_send_thread, send_context);
-    if (rc) 
+    if ((rc = pthread_attr_init(&pthread_attr)) != 0 ||
+        (rc = pthread_attr_setdetachstate(&pthread_attr,
+                                          PTHREAD_CREATE_DETACHED)) != 0)
     {
-        VERB("send thread create error: %d", rc);
-        SEND_ANSWER("%d send thread create error", TE_RC(TE_TAD_CH, rc));
+        ERROR("Cannot initialize pthread attribute variable: %X", rc);
+        SEND_ANSWER("%d cannot initialize pthread attribute variable",
+                    TE_RC(TE_TAD_CH, rc));
+        free(send_context);
+        return 0;
+    }
+
+    if ((rc = pthread_create(&send_thread, &pthread_attr,
+                             (void *)&tad_tr_send_thread, send_context)) != 0)
+    {
+        ERROR("Cannot create a new SEND thread: %d", rc);
+        SEND_ANSWER("%d cannot create a new SEND thread", TE_RC(TE_TAD_CH, rc));
         free(send_context);
     }
     return 0;
@@ -506,10 +515,10 @@ rcf_ch_trrecv_start(struct rcf_comm_connection *handle,
     csap_p      csap_descr_p;
     int         i, num_units;
 
-    tad_task_context * recv_context;
-
-    char srname [] = "trsend_recv";
-    int  sr_flag = 0;
+    tad_task_context *recv_context;
+    pthread_attr_t    pthread_attr;
+    char              srname[] = "trsend_recv";
+    int               sr_flag = 0;
 
     UNUSED(cmdlen);
 
@@ -696,14 +705,26 @@ rcf_ch_trrecv_start(struct rcf_comm_connection *handle,
         return 0;
     }
 
-    rc = pthread_create(&recv_thread, NULL, tad_tr_recv_thread, recv_context);
-    if (rc) 
+    if ((rc = pthread_attr_init(&pthread_attr)) != 0 ||
+        (rc = pthread_attr_setdetachstate(&pthread_attr,
+                                          PTHREAD_CREATE_DETACHED)) != 0)
     {
-        WARN("recv thread create error; rc 0x%x", rc);
+        ERROR("Cannot initialize pthread attribute variable: %X", rc);
+        SEND_ANSWER("%d cannot initialize pthread attribute variable",
+                    TE_RC(TE_TAD_CH, rc));
+        free(recv_context);
+        return 0;
+    }
+
+    if ((rc = pthread_create(&recv_thread, &pthread_attr,
+                             tad_tr_recv_thread, recv_context)) != 0)
+    {
+        ERROR("recv thread create error; rc 0x%x", rc);
         asn_free_value(recv_context->nds);
         SEND_ANSWER("%d", TE_RC(TE_TAD_CH, rc));
         free(recv_context);
     }
+
     return 0;
 }
 
