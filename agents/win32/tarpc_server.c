@@ -1265,7 +1265,18 @@ TARPC_FUNC(getsockname,
     MAKE_CALL(out->retval = getsockname(in->fd, a,
                                         out->len.len_len == 0 ? NULL :
                                         out->len.len_val));
-    sockaddr_h2rpc(a, &(out->addr));
+                                        
+    if (out->retval == -1)
+    {
+        if (out->common.win_error == RPC_WSAEINVAL)
+        {
+            /* Socket is not bound, work-around */
+            out->retval = 0;
+            out->common.win_error = 0;
+        }
+    }
+    else
+        sockaddr_h2rpc(a, &(out->addr));
 }
 )
 
