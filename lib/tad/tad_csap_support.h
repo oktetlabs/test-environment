@@ -208,6 +208,9 @@ typedef struct csap_layer_neighbour_list_t * csap_layer_neighbour_list_p;
  * This list specifies lower neighbours may present under 
  * that ('current') CSAP layer, which has in it's "CSAP type descriptor" 
  * reference to this list. 
+ *
+ * One 'low neighbour' sturct contains neighbour label and references to 
+ * callbacks performing some actions, which may depend on low layer.
  */
 typedef struct csap_layer_neighbour_list_t
 {
@@ -220,11 +223,21 @@ typedef struct csap_layer_neighbour_list_t
     csap_layer_neighbour_list_p next; /**< pointer to the next possible
                                            neighbour*/
 
-    csap_nbr_init_cb_t    init_cb;
-    csap_nbr_destroy_cb_t destroy_cb;
+    csap_nbr_init_cb_t    init_cb;    /**< Callback for initialize 
+                                           'current' CSAP layer regarding 
+                                           with this low layer. */
+    csap_nbr_destroy_cb_t destroy_cb; /**< Callback for free resources, 
+                                           related to 'current' CSAP layer*/
+
    
 } csap_layer_neighbour_list_t;
 
+/**
+ * Structure for description of particluar CSAP layer type supported
+ * in current TAD build.
+ * It contains some pointers to specific layer-dependent callbacks
+ * and list with supported lower neighbours. 
+ */
 typedef struct csap_spt_type_t 
 {
     char *proto;     /**< symbolic label of related protocol level */
