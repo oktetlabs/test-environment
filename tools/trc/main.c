@@ -235,7 +235,8 @@ trc_collect_tests_stats(test_runs *tests, trc_stats *stats)
 int
 main(int argc, char *argv[])
 {
-    int result = EXIT_FAILURE;
+    int         result = EXIT_FAILURE;
+    trc_stats   stats;
 
     TAILQ_INIT(&trc_db.tests);
 
@@ -259,6 +260,10 @@ main(int argc, char *argv[])
         ERROR("Failed to parse expected testing results database");
         goto exit;
     }
+
+    /* Collect total statistics */
+    memset(&stats, 0, sizeof(stats));
+    trc_collect_tests_stats(&trc_db.tests, &stats);
 
     /* Update expected testing results database, if requested */
     if (trc_update_db && (trc_dump_db(trc_db_fn) != 0))
