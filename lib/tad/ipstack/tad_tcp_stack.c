@@ -83,7 +83,7 @@ tcp_ip4_check_pdus(csap_p csap_descr, asn_value *traffic_nds)
  *      quantity of read octets, or -1 if error occured, 0 if timeout expired. 
  */ 
 int 
-tcp_read_cb (csap_p csap_descr, int timeout, char *buf, int buf_len)
+tcp_read_cb (csap_p csap_descr, int timeout, char *buf, size_t buf_len)
 {
 #if 0
     int    rc; 
@@ -151,7 +151,7 @@ tcp_read_cb (csap_p csap_descr, int timeout, char *buf, int buf_len)
  *      quantity of written octets, or -1 if error occured. 
  */ 
 int 
-tcp_write_cb (csap_p csap_descr, char *buf, int buf_len)
+tcp_write_cb (csap_p csap_descr, char *buf, size_t buf_len)
 {
 #if 0
     tcp_csap_specific_data_t * spec_data;
@@ -210,8 +210,8 @@ tcp_write_cb (csap_p csap_descr, char *buf, int buf_len)
  */ 
 int 
 tcp_write_read_cb (csap_p csap_descr, int timeout,
-                   char *w_buf, int w_buf_len,
-                   char *r_buf, int r_buf_len)
+                   char *w_buf, size_t w_buf_len,
+                   char *r_buf, size_t r_buf_len)
 {
     int rc; 
 
@@ -450,7 +450,7 @@ tcp_ip4_init_cb (int csap_id, const asn_value *csap_nds, int layer)
 {
     csap_p csap_descr;      /**< csap description   */ 
     tcp_csap_specific_data_t *   spec_data; 
-    int val_len;
+    size_t val_len;
 
     if (csap_nds == NULL)
         return ETEWRONGPTR;

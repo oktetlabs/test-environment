@@ -100,8 +100,8 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
     csap_pkts rest_payload;
 
 
-    memset(&rest_payload,  0, sizeof(csap_pkts));
-    memset(&data_to_check, 0, sizeof(csap_pkts));
+    memset(&rest_payload,  0, sizeof(rest_payload));
+    memset(&data_to_check, 0, sizeof(data_to_check));
 
 
     if (csap_descr->state & TAD_STATE_RESULTS)
@@ -155,7 +155,7 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
         else
             free(data_to_check.data);
 
-        memset(&data_to_check, 0, sizeof(csap_pkts));
+        memset(&data_to_check, 0, sizeof(data_to_check));
         if (rc)
         {
             asn_free_value(*packet);
@@ -184,8 +184,8 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
 
         if (rest_payload.len)
         {
-            memcpy(&data_to_check, &rest_payload, sizeof(csap_pkts));
-            memset(&rest_payload, 0, sizeof(csap_pkts));
+            memcpy(&data_to_check, &rest_payload, sizeof(rest_payload));
+            memset(&rest_payload, 0, sizeof(rest_payload));
         }
         else break;
     }
@@ -198,7 +198,8 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
         {
             const uint8_t *mask = NULL;
             const uint8_t *pat = NULL;
-            int mask_len;
+            unsigned int   mask_len;
+
             int fixed_len_flag = 1;
 
             rc = asn_get_field_data(pattern_unit, &mask, 
@@ -354,13 +355,15 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
 }
 
 
-typedef struct received_packets_queue
-{
-    struct received_packets_queue *next;
-    struct received_packets_queue *prev;
+/**
+ * Struct for element in queue of received packets. 
+ */
+typedef struct received_packets_queue_t {
+    struct received_packets_queue_t *next;
+    struct received_packets_queue_t *prev;
 
     asn_value_p pkt;
-} received_packets_queue;
+} received_packets_queue_t;
 
 /**
  * Send received packet to the test via RCF
@@ -374,16 +377,20 @@ typedef struct received_packets_queue
  */
 int
 tad_report_packet( asn_value_p packet, struct rcf_comm_connection *handle, 
-                          char * answer_buffer, int ans_len) 
+                          char *answer_buffer, int ans_len) 
 
 {
-    int rc;
-    int attach_len;
-    char * buffer;
-    char * attach;
+    int   rc;
+    int   attach_len;
+    char *buffer;
+    char *attach;
 
     attach_len = asn_count_txt_len(packet, 0);
 
+    /* 
+     * 20 is upper estimation for "attach" and decimal presentation
+     * of attach length 
+     */
     if ((buffer = calloc(1, ans_len + 20 + attach_len)) == NULL)
         return ENOMEM;
 
@@ -409,29 +416,30 @@ tad_report_packet( asn_value_p packet, struct rcf_comm_connection *handle,
 /**
  * Send received packets in queue to the test via RCF and clear queue. 
  *
- * @param queue_root    queue with received packets; 
- * @param handle        handle of RCF connection;
- * @param answer_buffer buffer with begin of answer;
- * @param ans_len       index of first significant symbols in answer_buffer;
+ * @param queue_root    queue with received packets
+ * @param handle        handle of RCF connection
+ * @param answer_buffer buffer with begin of answer
+ * @param ans_len       index of first significant symbols in answer_buffer
  *
- * @return zero on success, otherwise error code.  
+ * @return zero on success, otherwise error code
  */
 int
-tad_tr_recv_send_results( received_packets_queue * queue_root,
-                          struct rcf_comm_connection *handle, 
-                          char * answer_buffer, int ans_len) 
+tad_tr_recv_send_results(received_packets_queue_t *queue_root,
+                         struct rcf_comm_connection *handle, 
+                         char *answer_buffer, int ans_len) 
 {
     int rc;
-    received_packets_queue * pkt_qelem;
+
+    received_packets_queue_t *pkt_qelem;
 
     for (pkt_qelem = queue_root->next; pkt_qelem != queue_root; 
          pkt_qelem = queue_root->next)
     {
-        if(pkt_qelem->pkt)
+        if(pkt_qelem->pkt != NULL)
         {
             rc = tad_report_packet(pkt_qelem->pkt, handle, 
                                     answer_buffer, ans_len);
-            if (rc) 
+            if (rc != 0) 
                 return rc;
 
             asn_free_value(pkt_qelem->pkt);
@@ -448,15 +456,15 @@ tad_tr_recv_send_results( received_packets_queue * queue_root,
 /**
  * Generate Traffic Pattern NDS by template for trsend_recv command
  *
- * @param csap_descr    structure with CSAP parameters;
- * @param template      Traffic Template;
- * @param pattern       generated Traffic Pattern (OUT);
+ * @param csap_descr    structure with CSAP parameters
+ * @param template      traffic template
+ * @param pattern       generated Traffic Pattern (OUT)
  *
  * @return zero on success, otherwise error code.  
  */
 static int
 tad_tr_sr_generate_pattern(csap_p csap_descr, asn_value_p template, 
-                            asn_value_p * pattern)
+                           asn_value_p *pattern)
 {
     int rc = 0;
     int level;
@@ -467,13 +475,14 @@ tad_tr_sr_generate_pattern(csap_p csap_descr, asn_value_p template,
     VERB("%s called for csap # %d", __FUNCTION__, csap_descr->id);
 
     rc = asn_write_component_value(pattern_unit, pdus, "pdus");
-    if (rc) 
+    if (rc != 0) 
         return rc;
     asn_free_value(pdus);
 
     for (level = 0; level < csap_descr->depth; level ++)
     {
         csap_spt_type_p csap_spt_descr; 
+
         asn_value_p level_tmpl_pdu; 
         asn_value_p level_pattern; 
         asn_value_p gen_pattern_pdu = asn_init_value(ndn_generic_pdu);
@@ -501,7 +510,7 @@ tad_tr_sr_generate_pattern(csap_p csap_descr, asn_value_p template,
         asn_free_value(level_pattern);
         asn_free_value(level_tmpl_pdu);
 
-        if (rc) 
+        if (rc != 0) 
             break;
     } 
 
@@ -516,21 +525,26 @@ tad_tr_sr_generate_pattern(csap_p csap_descr, asn_value_p template,
 
 /**
  * Prepare CSAP for operations 
+ *
+ * @param csap_descr    structure with CSAP parameters
+ * @param pattern       patter of operation, need for check actions
+ *
+ * @return zero on success, otherwise error code
  */
 int 
 tad_prepare_csap(csap_p csap_descr, const asn_value *pattern)
 {
     int  rc;
     int  pu_num, i;
-    char label[20];
     int  echo_need = 0;
+    char label[20];
 
     const asn_value *pu;
 
     if (csap_descr->prepare_recv_cb)
     {
         rc = csap_descr->prepare_recv_cb(csap_descr);
-        if (rc)
+        if (rc != 0)
         {
             ERROR("prepare for recv failed %x", rc);
             return rc;
@@ -543,7 +557,7 @@ tad_prepare_csap(csap_p csap_descr, const asn_value *pattern)
     {
         sprintf(label, "%d", i);
         rc = asn_get_subvalue(pattern, &pu, label);
-        if (rc)
+        if (rc != 0)
             break;
         rc = asn_get_choice(pu, "action", label, sizeof(label));
         if(rc == 0 && (strcmp(label, "echo") == 0))
@@ -557,7 +571,7 @@ tad_prepare_csap(csap_p csap_descr, const asn_value *pattern)
         ((csap_descr->state & TAD_STATE_SEND) || echo_need))
     {
         rc = csap_descr->prepare_send_cb(csap_descr);
-        if (rc)
+        if (rc != 0)
         {
             ERROR("prepare for recv failed %x", rc);
             return rc;
@@ -572,10 +586,10 @@ tad_prepare_csap(csap_p csap_descr, const asn_value *pattern)
  *
  * @param arg      start argument, should be pointer to tad_task_context.
  *
- * @return nothing. 
+ * @return NULL 
  */
-void * 
-tad_tr_recv_thread(void * arg)
+void *
+tad_tr_recv_thread(void *arg)
 {
     struct rcf_comm_connection *handle; 
 
@@ -592,7 +606,7 @@ tad_tr_recv_thread(void * arg)
     asn_value_p   result = NULL;
     asn_value_p   nds = NULL; 
 
-    received_packets_queue received_packets; 
+    received_packets_queue_t received_packets; 
 
     received_packets.pkt = NULL;
     received_packets.next = &received_packets;
@@ -622,7 +636,7 @@ tad_tr_recv_thread(void * arg)
     {
         rc = tad_prepare_csap(csap_descr, nds);
 
-        if (rc)
+        if (rc != 0)
             break; 
 
         strcpy(answer_buffer, csap_descr->answer_prefix);
@@ -642,7 +656,7 @@ tad_tr_recv_thread(void * arg)
     } 
     VERB("trrecv thread for CSAP %d started", csap_descr->id);
 
-    if (rc)
+    if (rc != 0)
     {
         csap_descr->last_errno = rc;
         csap_descr->state |= TAD_STATE_COMPLETE;
@@ -664,7 +678,7 @@ tad_tr_recv_thread(void * arg)
             if (csap_descr->prepare_send_cb)
             {
                 rc = csap_descr->prepare_send_cb(csap_descr);
-                if (rc)
+                if (rc != 0)
                 {
                     ERROR("prepare for send failed %x", rc);
                     break;
@@ -672,21 +686,21 @@ tad_tr_recv_thread(void * arg)
             }
 
             rc = asn_get_subvalue(nds, &pdus, "pdus");
-            if (rc)
+            if (rc != 0)
                 break;
 
             rc = tad_confirm_pdus(csap_descr, (asn_value *)pdus); 
-            if (rc)
+            if (rc != 0)
                 break;
 
             rc = tad_tr_send_prepare_bin(csap_descr, nds, handle, 
                     NULL, 0, TAD_PLD_UNKNOWN, NULL, &packets_root);
-            if (rc)
+            if (rc != 0)
                 break;
 
             rc = tad_tr_sr_generate_pattern(csap_descr, nds, &pattern);
             INFO("generate pattern rc %X", rc);
-            if (rc)
+            if (rc != 0)
                 break;
             
             asn_free_value(nds);
@@ -722,7 +736,7 @@ tad_tr_recv_thread(void * arg)
 
             VERB("match_with_unit returned %d", rc);
 
-            if (rc)
+            if (rc != 0)
             {
                 if (rc == ETADNOTMATCH)
                     rc = 0;
@@ -731,8 +745,8 @@ tad_tr_recv_thread(void * arg)
 
             if (csap_descr->state & TAD_STATE_RESULTS)
             { 
-                received_packets_queue * new_qelem = 
-                            malloc(sizeof(received_packets_queue));
+                received_packets_queue_t *new_qelem = 
+                            malloc(sizeof(*new_qelem));
                 new_qelem->pkt = result;
                 INSQUE(new_qelem, received_packets.prev); 
                 VERB("insert packet in queue");
@@ -744,7 +758,7 @@ tad_tr_recv_thread(void * arg)
         } while (0); 
     } /* finish of 'trsend_recv' special actions */
 
-    if (rc) 
+    if (rc != 0) 
     {
         /* non-zero rc may occure only from trsend_recv special block,
          * this is in foreground mode. */
@@ -790,8 +804,9 @@ tad_tr_recv_thread(void * arg)
                        __FUNCTION__, pkt_count);
             }
 
-            if ((rc = tad_tr_recv_send_results(&received_packets, handle, 
-                                               answer_buffer, ans_len)))
+            rc = tad_tr_recv_send_results(&received_packets, handle, 
+                                          answer_buffer, ans_len);
+            if (rc != 0) 
             {
                 ERROR("send 'trrecv_get' results failed with rc 0x%X\n",
                       rc);
@@ -889,8 +904,7 @@ tad_tr_recv_thread(void * arg)
                                d_len, csap_descr->total_bytes, pkt_count);
                         break;
 
-                    case ETADLESSDATA: /* @todo correct processing of 
-                                          this case should be done */
+                    case ETADLESSDATA: /* @todo fragmentation */
                         rc = 0;
                     case ETADNOTMATCH:
                         continue;
@@ -900,7 +914,7 @@ tad_tr_recv_thread(void * arg)
                               "with code: 0x%x\n", rc);
                         break;
                 }
-                if (rc)
+                if (rc != 0)
                     break;
             }
 
@@ -924,14 +938,14 @@ tad_tr_recv_thread(void * arg)
                 else
                 {
                     F_VERB("Put packet into the queue\n");
-                    received_packets_queue * new_qelem = 
-                                malloc(sizeof(received_packets_queue));
+                    received_packets_queue_t *new_qelem = 
+                                            malloc(sizeof(*new_qelem));
                     new_qelem->pkt = result;
                     INSQUE(new_qelem, received_packets.prev);
                 }
             } 
 
-            if (rc) 
+            if (rc != 0) 
             {
                 csap_descr->last_errno = rc;
                 csap_descr->state |= TAD_STATE_COMPLETE;
@@ -941,12 +955,13 @@ tad_tr_recv_thread(void * arg)
 
             if (csap_descr->num_packets)
             {
-                F_VERB("check for num_pkts.");
+                F_VERB("%s(): check for num_pkts, want %d, got %d",
+                       __FUNCTION__, csap_descr->num_packets, pkt_count);
                 if (csap_descr->num_packets <= pkt_count)
                 {
                     csap_descr->state |= TAD_STATE_COMPLETE;
-                    VERB("CSAP %d status complete",
-                                 csap_descr->id); 
+                    INFO("%s(): CSAP %d status complete", 
+                         __FUNCTION__, csap_descr->id); 
                 }
             }
         } /* if (need packets) */
@@ -956,7 +971,7 @@ tad_tr_recv_thread(void * arg)
 
     rc = tad_tr_recv_send_results(&received_packets, handle, 
                                   answer_buffer, ans_len);
-    if (rc)
+    if (rc != 0)
     {
         ERROR("trrecv thread: send results failed with code 0x%x\n", rc);
         if (csap_descr->last_errno == 0)
@@ -972,7 +987,7 @@ tad_tr_recv_thread(void * arg)
     if (csap_descr->release_cb)
         csap_descr->release_cb(csap_descr);
 
-    memset(&csap_descr->wait_for, 0, sizeof(struct timeval)); 
+    memset(&csap_descr->wait_for, 0, sizeof(csap_descr->wait_for)); 
     asn_free_value(nds);
     free(read_buffer);
 

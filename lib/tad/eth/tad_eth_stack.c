@@ -505,7 +505,7 @@ open_packet_socket(int pkt_type, int if_index, int *sock)
  *      quantity of read octets, or -1 if error occured, 0 if timeout expired. 
  */ 
 int 
-eth_read_cb (csap_p csap_descr, int timeout, char *buf, int buf_len)
+eth_read_cb (csap_p csap_descr, int timeout, char *buf, size_t buf_len)
 {
     eth_csap_specific_data_p spec_data;
     int                      ret_val;
@@ -634,7 +634,7 @@ eth_read_cb (csap_p csap_descr, int timeout, char *buf, int buf_len)
  *      quantity of written octets, or -1 if error occured. 
  */ 
 int 
-eth_write_cb(csap_p csap_descr, char *buf, int buf_len)
+eth_write_cb(csap_p csap_descr, char *buf, size_t buf_len)
 {
     int ret_val = 0;
     eth_csap_specific_data_p spec_data;
@@ -751,8 +751,8 @@ eth_write_cb(csap_p csap_descr, char *buf, int buf_len)
  */ 
 int 
 eth_write_read_cb (csap_p csap_descr, int timeout,
-                   char *w_buf, int w_buf_len,
-                   char *r_buf, int r_buf_len)
+                   char *w_buf, size_t w_buf_len,
+                   char *r_buf, size_t r_buf_len)
 {
     int ret_val; 
 
@@ -814,7 +814,7 @@ eth_single_init_cb (int csap_id, const asn_value *csap_nds, int layer)
     char     device_id[IFNAME_SIZE]; /**< ethernet interface id (e.g. eth0, eth1)      */
     char     local_addr[ETH_ALEN];   /**< local ethernet address                       */
     char     remote_addr[ETH_ALEN];  /**< remote ethernet address                      */    
-    int      val_len;                /**< stores corresponding value length            */
+    size_t   val_len;                /**< stores corresponding value length            */
     
     eth_csap_interface_p iface_p; /**< pointer to interface structure to be used with csap */
     csap_p   csap_descr;          /**< csap description                                    */

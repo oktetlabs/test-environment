@@ -171,7 +171,7 @@ extern char* ip4_get_param_cb (csap_p csap_descr, int level, const char *param);
  * @return 
  *      quantity of read octets, or -1 if error occured, 0 if timeout expired. 
  */ 
-extern int ip4_read_cb (csap_p csap_descr, int timeout, char *buf, int buf_len);
+extern int ip4_read_cb (csap_p csap_descr, int timeout, char *buf, size_t buf_len);
 
 /**
  * Callback for write data to media of DHCP CSAP. 
@@ -183,7 +183,7 @@ extern int ip4_read_cb (csap_p csap_descr, int timeout, char *buf, int buf_len);
  * @return 
  *      quantity of written octets, or -1 if error occured. 
  */ 
-extern int ip4_write_cb (csap_p csap_descr, char *buf, int buf_len);
+extern int ip4_write_cb (csap_p csap_descr, char *buf, size_t buf_len);
 
 /**
  * Callback for write data to media of DHCP CSAP and read
@@ -200,8 +200,8 @@ extern int ip4_write_cb (csap_p csap_descr, char *buf, int buf_len);
  *      quantity of read octets, or -1 if error occured, 0 if timeout expired. 
  */ 
 extern int ip4_write_read_cb (csap_p csap_descr, int timeout,
-                              char *w_buf, int w_buf_len,
-                              char *r_buf, int r_buf_len);
+                              char *w_buf, size_t w_buf_len,
+                              char *r_buf, size_t r_buf_len);
 
 
 /**
@@ -363,7 +363,7 @@ extern char* icmp4_get_param_cb (csap_p csap_descr, int level, const char *param
  * @return 
  *      quantity of read octets, or -1 if error occured, 0 if timeout expired. 
  */ 
-extern int icmp4_read_cb (csap_p csap_descr, int timeout, char *buf, int buf_len);
+extern int icmp4_read_cb (csap_p csap_descr, int timeout, char *buf, size_t buf_len);
 
 /**
  * Callback for write data to media of DHCP CSAP. 
@@ -375,7 +375,7 @@ extern int icmp4_read_cb (csap_p csap_descr, int timeout, char *buf, int buf_len
  * @return 
  *      quantity of written octets, or -1 if error occured. 
  */ 
-extern int icmp4_write_cb (csap_p csap_descr, char *buf, int buf_len);
+extern int icmp4_write_cb (csap_p csap_descr, char *buf, size_t buf_len);
 
 /**
  * Callback for write data to media of DHCP CSAP and read
@@ -392,8 +392,8 @@ extern int icmp4_write_cb (csap_p csap_descr, char *buf, int buf_len);
  *      quantity of read octets, or -1 if error occured, 0 if timeout expired. 
  */ 
 extern int icmp4_write_read_cb (csap_p csap_descr, int timeout,
-                              char *w_buf, int w_buf_len,
-                              char *r_buf, int r_buf_len);
+                              char *w_buf, size_t w_buf_len,
+                              char *r_buf, size_t r_buf_len);
 
 
 /**
@@ -526,7 +526,7 @@ extern char* udp_get_param_cb (csap_p csap_descr, int level, const char *param);
  * @return 
  *      quantity of read octets, or -1 if error occured, 0 if timeout expired. 
  */ 
-extern int udp_read_cb (csap_p csap_descr, int timeout, char *buf, int buf_len);
+extern int udp_read_cb (csap_p csap_descr, int timeout, char *buf, size_t buf_len);
 
 /**
  * Callback for write data to media of DHCP CSAP. 
@@ -538,7 +538,7 @@ extern int udp_read_cb (csap_p csap_descr, int timeout, char *buf, int buf_len);
  * @return 
  *      quantity of written octets, or -1 if error occured. 
  */ 
-extern int udp_ip4_write_cb (csap_p csap_descr, char *buf, int buf_len);
+extern int udp_ip4_write_cb (csap_p csap_descr, char *buf, size_t buf_len);
 
 /**
  * Callback for write data to media of DHCP CSAP and read
@@ -555,8 +555,8 @@ extern int udp_ip4_write_cb (csap_p csap_descr, char *buf, int buf_len);
  *      quantity of read octets, or -1 if error occured, 0 if timeout expired. 
  */ 
 extern int udp_ip4_write_read_cb (csap_p csap_descr, int timeout,
-                              char *w_buf, int w_buf_len,
-                              char *r_buf, int r_buf_len);
+                              char *w_buf, size_t w_buf_len,
+                              char *r_buf, size_t r_buf_len);
 
 
 /**
@@ -689,7 +689,7 @@ extern char* tcp_get_param_cb (csap_p csap_descr, int level, const char *param);
  * @return 
  *      quantity of read octets, or -1 if error occured, 0 if timeout expired. 
  */ 
-extern int tcp_read_cb (csap_p csap_descr, int timeout, char *buf, int buf_len);
+extern int tcp_read_cb (csap_p csap_descr, int timeout, char *buf, size_t buf_len);
 
 /**
  * Callback for write data to media of DHCP CSAP. 
@@ -701,7 +701,7 @@ extern int tcp_read_cb (csap_p csap_descr, int timeout, char *buf, int buf_len);
  * @return 
  *      quantity of written octets, or -1 if error occured. 
  */ 
-extern int tcp_write_cb (csap_p csap_descr, char *buf, int buf_len);
+extern int tcp_write_cb (csap_p csap_descr, char *buf, size_t buf_len);
 
 /**
  * Callback for write data to media of DHCP CSAP and read
@@ -718,8 +718,8 @@ extern int tcp_write_cb (csap_p csap_descr, char *buf, int buf_len);
  *      quantity of read octets, or -1 if error occured, 0 if timeout expired. 
  */ 
 extern int tcp_write_read_cb (csap_p csap_descr, int timeout,
-                              char *w_buf, int w_buf_len,
-                              char *r_buf, int r_buf_len);
+                              char *w_buf, size_t w_buf_len,
+                              char *r_buf, size_t r_buf_len);
 
 
 /**

@@ -74,7 +74,7 @@
  *      quantity of read octets, or -1 if error occured, 0 if timeout expired. 
  */ 
 int 
-icmp4_read_cb (csap_p csap_descr, int timeout, char *buf, int buf_len)
+icmp4_read_cb (csap_p csap_descr, int timeout, char *buf, size_t buf_len)
 {
 #if 0
     int    rc; 
@@ -141,7 +141,7 @@ icmp4_read_cb (csap_p csap_descr, int timeout, char *buf, int buf_len)
  *      quantity of written octets, or -1 if error occured. 
  */ 
 int 
-icmp4_write_cb (csap_p csap_descr, char *buf, int buf_len)
+icmp4_write_cb (csap_p csap_descr, char *buf, size_t buf_len)
 {
 #if 0
     icmp4_csap_specific_data_t * spec_data;
@@ -204,8 +204,8 @@ icmp4_write_cb (csap_p csap_descr, char *buf, int buf_len)
  */ 
 int 
 icmp4_write_read_cb (csap_p csap_descr, int timeout,
-                   char *w_buf, int w_buf_len,
-                   char *r_buf, int r_buf_len)
+                   char *w_buf, size_t w_buf_len,
+                   char *r_buf, size_t r_buf_len)
 {
     int rc; 
 

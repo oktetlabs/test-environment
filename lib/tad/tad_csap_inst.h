@@ -139,12 +139,18 @@
 
 
 /* TODO: this constant should be placed to more appropriate header! */
+/**
+ * Maximum length of RCF message prefix
+ */
 #define MAX_ANS_PREFIX 16
 
 
 
 /* ============= Types and structures definitions =============== */
 
+/**
+ * Pointer type to CSAP instance
+ */
 typedef struct csap_instance *csap_p;
 
 struct csap_spt_type_t;
@@ -186,7 +192,7 @@ typedef int (*csap_low_resource_cb_t)(csap_p csap_descr);
  *          0 if timeout expired. 
  */ 
 typedef int (*csap_read_cb_t)(csap_p csap_descr, int timeout, 
-                              char *buf, int buf_len);
+                              char *buf, size_t buf_len);
 
 /**
  * Callback type to write data to media of CSAP. 
@@ -195,10 +201,10 @@ typedef int (*csap_read_cb_t)(csap_p csap_descr, int timeout,
  * @param buf           Buffer with data to be written.
  * @param buf_len       Length of data in buffer.
  *
- * @return 
- *      quantity of written octets, or -1 if error occured. 
+ * @return quantity of written octets, or -1 if error occured. 
  */ 
-typedef int (*csap_write_cb_t)(csap_p csap_descr, char *buf, int buf_len);
+typedef int (*csap_write_cb_t)(csap_p csap_descr, char *buf,
+                               size_t buf_len);
 
 /**
  * Callback type to write data to media of CSAP and read
@@ -215,8 +221,8 @@ typedef int (*csap_write_cb_t)(csap_p csap_descr, char *buf, int buf_len);
  *         0 if timeout expired. 
  */ 
 typedef int (*csap_write_read_cb_t)(csap_p csap_descr, int timeout,
-                                    char *w_buf, int w_buf_len,
-                                    char *r_buf, int r_buf_len);
+                                    char *w_buf, size_t w_buf_len,
+                                    char *r_buf, size_t r_buf_len);
 
 /**
  * Callback type to check sequence of PDUs in template
@@ -287,6 +293,9 @@ typedef enum {
 
 
 
+/**
+ * CSAP instance support resources and attributes.
+ */
 typedef struct csap_instance {
     int      id;           /**< CSAP id */
 
@@ -309,16 +318,17 @@ typedef struct csap_instance {
     csap_write_read_cb_t write_read_cb; /**< write data and read answer.*/
     csap_check_pdus_cb_t check_pdus_cb; /**< check PDUs sequence */
 
-    csap_low_resource_cb_t prepare_recv_cb; /**< prepare for receive */
-    csap_low_resource_cb_t prepare_send_cb; /**< prepare for send */
-    csap_low_resource_cb_t release_cb; /**< prepare for send */
+    csap_low_resource_cb_t prepare_recv_cb; /**< prepare CSAP for receive */
+    csap_low_resource_cb_t prepare_send_cb; /**< prepare CSAP for send */
+    csap_low_resource_cb_t release_cb;      /**< release all lower non-TAD
+                                                 send/recv resources */
 
     csap_echo_method     echo_cb;/**< method for echo */
 
 
-    int         read_write_layer;/**< number of layer in protocol stack 
+    int         read_write_layer;/**< index of layer in protocol stack 
                                       responsible for read and write 
-                                      operations */
+                                      operations, usually upper or lower */
 
     int         last_errno;      /**< errno of last operation */
     int         timeout;         /**< timeout for read operations in 

@@ -67,7 +67,7 @@
  *      quantity of read octets, or -1 if error occured, 0 if timeout expired. 
  */ 
 int 
-file_read_cb (csap_p csap_descr, int timeout, char *buf, int buf_len)
+file_read_cb (csap_p csap_descr, int timeout, char *buf, size_t buf_len)
 {
     int rc = 0; 
 
@@ -107,7 +107,7 @@ file_read_cb (csap_p csap_descr, int timeout, char *buf, int buf_len)
  *      quantity of written octets, or -1 if error occured. 
  */ 
 int 
-file_write_cb(csap_p csap_descr, char *buf, int buf_len)
+file_write_cb(csap_p csap_descr, char *buf, size_t buf_len)
 {
     int rc; 
 
@@ -143,8 +143,8 @@ file_write_cb(csap_p csap_descr, char *buf, int buf_len)
  */ 
 int 
 file_write_read_cb(csap_p csap_descr, int timeout,
-                   char *w_buf, int w_buf_len,
-                   char *r_buf, int r_buf_len)
+                   char *w_buf, size_t w_buf_len,
+                   char *r_buf, size_t r_buf_len)
 {
     UNUSED(csap_descr);
     UNUSED(timeout);
@@ -168,9 +168,9 @@ file_write_read_cb(csap_p csap_descr, int timeout,
 int 
 file_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
 {
-    char * filename;
+    char  *filename;
     char   mode [8];
-    int    fn_len;
+    size_t fn_len;
     int    rc; 
 
     asn_value_p                 file_csap_spec; 

@@ -209,7 +209,7 @@ extern char* eth_get_param_cb (csap_p csap_descr, int level, const char *param);
  * @return 
  *      quantity of read octets, or -1 if error occured, 0 if timeout expired. 
  */ 
-extern int eth_read_cb (csap_p csap_id, int timeout, char *buf, int buf_len);
+extern int eth_read_cb (csap_p csap_id, int timeout, char *buf, size_t buf_len);
 
 /**
  * Callback for write data to media of ethernet CSAP. 
@@ -221,7 +221,7 @@ extern int eth_read_cb (csap_p csap_id, int timeout, char *buf, int buf_len);
  * @return 
  *      quantity of written octets, or -1 if error occured. 
  */ 
-extern int eth_write_cb (csap_p csap_id, char *buf, int buf_len);
+extern int eth_write_cb (csap_p csap_id, char *buf, size_t buf_len);
 
 /**
  * Callback for write data to media of ethernet CSAP and read
@@ -238,8 +238,8 @@ extern int eth_write_cb (csap_p csap_id, char *buf, int buf_len);
  *      quantity of read octets, or -1 if error occured, 0 if timeout expired. 
  */ 
 extern int eth_write_read_cb (csap_p csap_id, int timeout,
-                              char *w_buf, int w_buf_len,
-                              char *r_buf, int r_buf_len);
+                              char *w_buf, size_t w_buf_len,
+                              char *r_buf, size_t r_buf_len);
 
 
 /**

@@ -68,18 +68,7 @@
 
 
 
-/**
- * Prepare binary data by NDS.
- *
- * @param csap_descr    CSAP description structure;
- * @param nds           ASN value with traffic-template NDS, should be
- *                      preprocessed (all iteration and function calls
- *                      performed);
- * @param handle        handle of RCF connection;
- * @param pkts          packets with generated binary data;
- *
- * @return zero on success, otherwise error code.  
- */
+/* see description in tad_utils.h */
 int
 tad_tr_send_prepare_bin(csap_p csap_descr, asn_value_p nds, 
                         struct rcf_comm_connection *handle, 

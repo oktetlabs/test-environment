@@ -71,6 +71,8 @@ struct tad_tmpl_arg_t;
 
 /**
  * Callback type to init CSAP layer.
+ * This callback depends on lower neighbour in protocol stack of 
+ * particular CSAP. 
  *
  * @param csap_id       Identifier of CSAP.
  * @param csap_nds      Asn_value with CSAP init parameters
@@ -81,11 +83,12 @@ struct tad_tmpl_arg_t;
  */ 
 typedef int (*csap_nbr_init_cb_t)(int csap_id, 
                                   const asn_value *csap_nds, int layer);
+
 /**
  * Callback type to destroy CSAP layer.
- *      This callback should free all undeground media resources used by 
- *      this layer and all memory used for layer-specific data and pointed
- *      in respective structure in 'layer-data' in CSAP instance struct. 
+ * This callback should free all undeground media resources used by 
+ * this layer and all memory used for layer-specific data and pointed
+ * in respective structure in 'layer-data' in CSAP instance struct. 
  *
  * @param csap_id       Identifier of CSAP.
  * @param layer         Numeric index of layer in CSAP type to be processed.
@@ -96,19 +99,27 @@ typedef int (*csap_nbr_init_cb_t)(int csap_id,
 typedef int (*csap_nbr_destroy_cb_t)(int csap_id, int layer);
 
 /**
- * Callback type to confirm PDU with CSAP parameters and possibilities.
+ * Callback type to confirm Traffic Pattern or Template PDU with
+ * CSAP parameters and possibilities.
+ * For example, it checks that there is sufficient information for 
+ * traffic generating, and writes CSAP defaults to Traffic PDU.
  *
- * @param csap_id       Identifier of CSAP
- * @param layer         Numeric index of layer in CSAP type to be processed.
- * @param tmpl_pdu      asn_value with PDU (IN/OUT)
+ * @param csap_id       identifier of CSAP
+ * @param layer         numeric index of layer in CSAP type to be processed
+ * @param traffic_pdu   asn_value with PDU (IN/OUT)
  *
  * @return zero on success or error code.
  */ 
 typedef int (*csap_confirm_pdu_cb_t)(int csap_id, int layer, 
-                                     asn_value *tmpl_pdu); 
+                                     asn_value *traffic_pdu); 
 
 
 
+struct csap_pkts;
+/**
+ * Pointer to packet struct
+ */
+typedef struct csap_pkts *csap_pkts_p;
 
 /**
  * List of packet fragments, which compose one "message".
@@ -116,13 +127,11 @@ typedef int (*csap_confirm_pdu_cb_t)(int csap_id, int layer,
  * to another: from low to up during match, and from up to low 
  * constructing message to be sent. 
  */
-struct csap_pkts;
-typedef struct csap_pkts *csap_pkts_p;
 typedef struct csap_pkts {
-    csap_pkts_p   next; /**< Pointer to next message fragment or NULL */
+    csap_pkts_p next;   /**< Pointer to next message fragment or NULL */
 
-    void  *data;        /**< Pointer to data of this fragment */
-    int    len;         /**< Length of this fragment */
+    void       *data;   /**< Pointer to data of this fragment */
+    size_t      len;    /**< Length of this fragment */
 
     void (*free_data_cb)(void *); /**< Pointer to callback for free 
                                        fragment data, or NULL if usual 
@@ -131,21 +140,26 @@ typedef struct csap_pkts {
 
 /**
  * Callback type to generate binary data to be sent to media.
+ * If some iteration was specified in traffic template, it done on the
+ * upper level of template processing, this callback is called for every
+ * set of iteration parameters values. 
  *
  * @param csap_id       Identifier of CSAP
  * @param layer         Numeric index of layer in CSAP type to be processed.
  * @param tmpl_pdu      Asn_value with PDU. 
- * @param args          Template iteration parameters array, may be used to
- *                      prepare binary data.
+ * @param args          Array with values of template iteration parameters,
+ *                      mast be used to prepare binary data, if references 
+ *                      to these paramters are present in traffic
+ *                      template PDU.
  * @param arg_num       Length of array above. 
  * @param up_payload    Pointer to data which is already generated for 
  *                      upper layers and is payload for this protocol level.
  *                      May be zero.  Presented as list of packets. 
  *                      Almost always this list will contain only one 
  *                      element, but need in fragmentation sometimes may 
- *                      occur. Of cause, on up level only one PDU is passed,
- *                      but upper layer (if any present) may perform 
- *                      fragmentation, and current layer may have 
+ *                      occur. Of cause, to high layer only one PDU
+ *                      is passed, but lower layers (if any present) may
+ *                      perform fragmentation, and current layer may have 
  *                      possibility to de-fragment payload.
  *                      Callback is responsible for freeing of memory, used
  *                      in up_payload list. 
@@ -169,8 +183,10 @@ typedef int (*csap_gen_bin_cb_t)(int csap_id, int layer,
  * @param csap_id       Identifier of CSAP
  * @param layer         Numeric index of layer in CSAP type to be processed.
  * @param pattern_pdu   Pattern NDS 
- * @param pkt           Recevied packet
- * @param payload       Rest upper layer payload, if any exists. (OUT)
+ * @param pkt           Recevied packet, may be list of fragments, which 
+ *                      all should be defragmented by this callback and 
+ *                      information should be put into single PDU
+ * @param payload       Rest upper layer payload, if present (OUT)
  * @param parsed_packet Caller of method should pass here empty asn_value
  *                      instance of ASN type 'Generic-PDU'. Callback 
  *                      have to fill this instance with values from 
@@ -242,6 +258,9 @@ typedef int (*csap_gen_pattern_cb_t)(int csap_id, int layer,
 
 
 struct csap_layer_neighbour_list_t;
+/**
+ * Pointer to neigbour list struct
+ */
 typedef struct csap_layer_neighbour_list_t *csap_layer_neighbour_list_p;
 
 /**

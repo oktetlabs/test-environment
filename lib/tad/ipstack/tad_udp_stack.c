@@ -76,7 +76,7 @@
  *      quantity of read octets, or -1 if error occured, 0 if timeout expired. 
  */ 
 int 
-udp_ip4_read_cb (csap_p csap_descr, int timeout, char *buf, int buf_len)
+udp_ip4_read_cb (csap_p csap_descr, int timeout, char *buf, size_t buf_len)
 {
     int    rc; 
     int    layer;    
@@ -136,7 +136,7 @@ udp_ip4_read_cb (csap_p csap_descr, int timeout, char *buf, int buf_len)
  *      quantity of written octets, or -1 if error occured. 
  */ 
 int 
-udp_ip4_write_cb (csap_p csap_descr, char *buf, int buf_len)
+udp_ip4_write_cb (csap_p csap_descr, char *buf, size_t buf_len)
 {
     udp_csap_specific_data_t * udp_spec_data;
     ip4_csap_specific_data_t * ip4_spec_data;
@@ -246,8 +246,8 @@ udp_ip4_write_cb (csap_p csap_descr, char *buf, int buf_len)
  */ 
 int 
 udp_ip4_write_read_cb (csap_p csap_descr, int timeout,
-                   char *w_buf, int w_buf_len,
-                   char *r_buf, int r_buf_len)
+                   char *w_buf, size_t w_buf_len,
+                   char *r_buf, size_t r_buf_len)
 {
     int rc; 
 
@@ -275,8 +275,9 @@ udp_ip4_init_cb (int csap_id, const asn_value *csap_nds, int layer)
     csap_p   csap_descr;          /**< csap description        */ 
     udp_csap_specific_data_t *   udp_spec_data; 
     struct sockaddr_in local;
+    size_t len; 
     char   opt_label[100];
-    int len, rc; 
+    int    rc; 
 
     if (csap_nds == NULL)
         return TE_RC(TE_TAD_CSAP, ETEWRONGPTR);

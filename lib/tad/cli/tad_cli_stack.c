@@ -640,7 +640,7 @@ free_cli_csap_data(cli_csap_specific_data_p spec_data)
  *      quantity of read octets, or -1 if error occured, 0 if timeout expired. 
  */ 
 int 
-cli_read_cb (csap_p csap_descr, int timeout, char *buf, int buf_len)
+cli_read_cb (csap_p csap_descr, int timeout, char *buf, size_t buf_len)
 {
     UNUSED(csap_descr);
     UNUSED(timeout);
@@ -661,15 +661,15 @@ cli_read_cb (csap_p csap_descr, int timeout, char *buf, int buf_len)
  *      quantity of written octets, or -1 if error occured. 
  */ 
 int 
-cli_write_cb (csap_p csap_descr, char *buf, int buf_len)
+cli_write_cb (csap_p csap_descr, char *buf, size_t buf_len)
 {
     cli_csap_specific_data_p    spec_data;
-    int                         layer;    
+    int     layer;    
 
-    fd_set                      read_set;
-    char                        data = -1;
-    int                         bytes_written = 0;
-    int                         rc = 0;
+    fd_set  read_set;
+    char    data = -1;
+    size_t  bytes_written = 0;
+    int     rc = 0;
     
     if (csap_descr == NULL)
     {
@@ -740,17 +740,17 @@ cli_write_cb (csap_p csap_descr, char *buf, int buf_len)
  */ 
 int 
 cli_write_read_cb (csap_p csap_descr, int timeout,
-                   char *w_buf, int w_buf_len,
-                   char *r_buf, int r_buf_len)
+                   char *w_buf, size_t w_buf_len,
+                   char *r_buf, size_t r_buf_len)
 {
     cli_csap_specific_data_p    spec_data;
-    int                         layer;    
 
-    fd_set                      read_set;
-    char                        data = -1;
-    int                         bytes_written = 0;
-    int                         bytes_read = 0;
-    int                         rc = 0;
+    int    layer;    
+    fd_set read_set;
+    char   data = -1;
+    size_t bytes_written = 0;
+    size_t bytes_read = 0;
+    int    rc = 0;
 
     /* XXX: timeout should be used */
     UNUSED(timeout);

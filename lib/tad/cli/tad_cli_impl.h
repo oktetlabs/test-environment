@@ -145,7 +145,7 @@ typedef struct cli_csap_specific_data
  *     String with textual presentation of parameter value, or NULL 
  *     if error occured. User have to free memory at returned pointer.
  */ 
-extern char* cli_get_param_cb (int csap_id, int level, const char *param);
+extern char *cli_get_param_cb(int csap_id, int level, const char *param);
 
 /**
  * Callback for read data from media of CLI CSAP. 
@@ -158,7 +158,8 @@ extern char* cli_get_param_cb (int csap_id, int level, const char *param);
  * @return 
  *      quantity of read octets, or -1 if error occured, 0 if timeout expired. 
  */ 
-extern int cli_read_cb (csap_p csap_descr, int timeout, char *buf, int buf_len);
+extern int cli_read_cb(csap_p csap_descr, int timeout, char *buf,
+                       size_t buf_len);
 
 /**
  * Callback for write data to media of CLI CSAP. 
@@ -170,7 +171,8 @@ extern int cli_read_cb (csap_p csap_descr, int timeout, char *buf, int buf_len);
  * @return 
  *      quantity of written octets, or -1 if error occured. 
  */ 
-extern int cli_write_cb (csap_p csap_descr, char *buf, int buf_len);
+extern int cli_write_cb(csap_p csap_descr, char *buf, 
+                        size_t buf_len);
 
 /**
  * Callback for write data to media of CLI CSAP and read
@@ -186,9 +188,9 @@ extern int cli_write_cb (csap_p csap_descr, char *buf, int buf_len);
  * @return 
  *      quantity of read octets, or -1 if error occured, 0 if timeout expired. 
  */ 
-extern int cli_write_read_cb (csap_p csap_descr, int timeout,
-                              char *w_buf, int w_buf_len,
-                              char *r_buf, int r_buf_len);
+extern int cli_write_read_cb(csap_p csap_descr, int timeout,
+                             char *w_buf, size_t w_buf_len,
+                             char *r_buf, size_t r_buf_len);
 
 
 /**

@@ -39,10 +39,13 @@
 struct csap_spt_entry;
 typedef struct csap_spt_entry *csap_spt_entry_p;
 
+/**
+ * CSAP protocol layer support DB entry
+ */
 typedef struct csap_spt_entry { 
-    csap_spt_entry_p  next;
-    csap_spt_entry_p  prev;
-    csap_spt_type_p   spt_data;  
+    csap_spt_entry_p  next;     /**< Next descr in queue */
+    csap_spt_entry_p  prev;     /**< Prev layer in queue */
+    csap_spt_type_p   spt_data; /**< Pointer to support descriptor */ 
 } csap_spt_entry_t;
 
 static csap_spt_entry_t csap_spt_root = {

@@ -56,9 +56,9 @@
 
 #ifdef SNMPDEBUG
 void 
-print_oid(unsigned long * subids, int len)
+print_oid(unsigned long * subids, size_t len)
 {
-    int i;
+    unsigned int i;
 
     if (subids == NULL)
         printf(".NULL. :-)");
@@ -132,7 +132,7 @@ snmp_csap_input(
  *      quantity of read octets, or -1 if error occured, 0 if timeout expired. 
  */ 
 int 
-snmp_read_cb (csap_p csap_descr, int timeout, char *buf, int buf_len)
+snmp_read_cb (csap_p csap_descr, int timeout, char *buf, size_t buf_len)
 { 
     int rc = 0; 
     int layer;
@@ -210,7 +210,7 @@ snmp_read_cb (csap_p csap_descr, int timeout, char *buf, int buf_len)
  *      quantity of written octets, or -1 if error occured. 
  */ 
 int 
-snmp_write_cb (csap_p csap_descr, char *buf, int buf_len)
+snmp_write_cb (csap_p csap_descr, char *buf, size_t buf_len)
 {
     int layer;
 
@@ -252,8 +252,8 @@ snmp_write_cb (csap_p csap_descr, char *buf, int buf_len)
  */ 
 int 
 snmp_write_read_cb(csap_p csap_descr, int timeout,
-                   char *w_buf, int w_buf_len,
-                   char *r_buf, int r_buf_len)
+                   char *w_buf, size_t w_buf_len,
+                   char *r_buf, size_t r_buf_len)
 {
     fd_set fdset;
     int    n_fds = 0; 
@@ -387,7 +387,7 @@ snmp_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
     char     snmp_agent[100]; 
     int      timeout;
     int      version;
-    int      v_len;
+    size_t   v_len;
     int      l_port = 0;
     int      r_port = 0;
 

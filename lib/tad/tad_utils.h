@@ -159,6 +159,9 @@ typedef enum {
     TAD_EXPR_U_MINUS,      /**< Unary minus node */
 } tad_expr_node_type;
 
+/**
+ * Type for expression presentation struct
+ */
 typedef struct tad_int_expr_t tad_int_expr_t;
 
 /**
@@ -226,18 +229,20 @@ typedef struct {
 /**
  * Prepare binary data by NDS.
  *
- * @param csap_descr    CSAP description structure;
+ * @param csap_descr    CSAP description structure
  * @param nds           ASN value with traffic-template NDS, should be
  *                      preprocessed (all iteration and function calls
- *                      performed);
- * @param handle        handle of RCF connection;
- * @param args          Template iteration parameters array, may be used to
- *                      prepare binary data.
- * @param arg_num       Length of array above. 
- * @param pld_type      Type of payload in nds, passed to make function more
- *                      fast.
- * @param pld_data      Payload data read from original NDS.
- * @param pkts          packets with generated binary data (OUT).
+ *                      performed)
+ * @param handle        handle of RCF connection
+ * @param args          array with template iteration parameter values,
+ *                      may be used to prepare binary data, 
+ *                      references to interation parameter values may
+ *                      be set in ASN traffic template PDUs
+ * @param arg_num       length of array above
+ * @param pld_type      type of payload in nds, passed to make function
+ *                      more fast
+ * @param pld_data      payload data read from original NDS
+ * @param pkts          packets with generated binary data (OUT)
  *
  * @return zero on success, otherwise error code.  
  */
