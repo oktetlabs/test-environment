@@ -73,8 +73,8 @@ MY_CPPFLAGS+=@DAEMONS_CFLAGS@
 MY_SOURCES+=linuxconf_daemons.c dhcp_server.c dns_server.c 
 #			named.conf.y named.lex.l
 
-BUILT_SOURCES=named.conf.h
-CLEANFILES+=named.conf.h
+#BUILT_SOURCES=named.conf.h
+#CLEANFILES+=named.conf.h
 
 MY_LDADD+=@DAEMONS_LDADD@
 
