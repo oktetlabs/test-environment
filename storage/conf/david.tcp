@@ -1,0 +1,3 @@
+--conf-builder=builder.conf.tcpr
+--conf-tester=tester.tcpr
+--tester-req=IPSTACK
