@@ -404,14 +404,14 @@ extern "C" {
  *                       matrix width is greatest subid of Table entry (OUT)
  *
  */
-#define SNMP_GET_TABLE(ta_, sid_, csap_id_, label_, num_, result_)         \
+#define TAPI_SNMP_GET_TABLE(ta_, sid_, csap_id_, label_, num_, result_) \
     do {                                                                   \
         int             rc_;                                               \
         tapi_snmp_oid_t oid_;                                              \
 	                                                                   \
         SNMP_MAKE_OID(label_, oid_);                                       \
  	rc_ = tapi_snmp_get_table(ta_, sid_, csap_id_, &oid_,              \
-                                  &num_, &result_);                        \
+                                  num_, result_);                          \
 	if (rc_ != 0)                                                      \
 	{                                                                  \
             TEST_FAIL("snmp get table for %s failed, result %X\n",         \
