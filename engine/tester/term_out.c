@@ -126,10 +126,9 @@ colored_verdict(tester_color color, const char *text)
 
     sprintf(buf, "tput setaf %d", color);
     system(buf);
-    printf("%s", text);
+    printf("%s\n", text);
     system("tput sgr0");
-    printf("\n");
-    fflush(stdout);
+    flush(stdout);
 }
 
 /* See description in internal.h */
