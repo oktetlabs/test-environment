@@ -317,7 +317,7 @@ alloc_and_get_test_suite_info(xmlNodePtr node, test_suites_info *suites_info,
 
     if ((p->src != NULL) && (~flags & TESTER_NOBUILD))
     {
-        int rc = tester_build_suite(p);
+        int rc = tester_build_suite(flags, p);
 
         if (rc != 0)
             return rc;

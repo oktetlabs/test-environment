@@ -64,7 +64,8 @@ extern "C" {
  * @retval EINVAL       bad name is specified
  * @retval ETESHCMD     system call failed
  */
-extern int builder_build_nut(char *name, char *sources, char *params);
+extern int builder_build_nut(const char *name, const char *sources,
+                             const char *params);
 
 #ifdef __cplusplus
 }

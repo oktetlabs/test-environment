@@ -71,7 +71,7 @@ static char cmd[MAX_SH_CMD];
  * @retval ETESHCMD     system call failed
  */
 int 
-builder_build_nut(char *name, char *sources, char *params)
+builder_build_nut(const char *name, const char *sources, const char *params)
 {
     if (name == NULL)
         return EINVAL;
@@ -111,7 +111,7 @@ builder_build_nut(char *name, char *sources, char *params)
  * @retval ETESHCMD     system call failed
  */
 int 
-builder_build_test_suite(char *suite, char *sources)
+builder_build_test_suite(const char *suite, const char *sources)
 {
     if (suite == NULL || *suite == 0 || sources == NULL || *sources == 0)
         return EINVAL;

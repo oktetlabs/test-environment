@@ -709,7 +709,7 @@ process_cmd_line_opts(tester_ctx *ctx, tester_cfgs *cfgs,
 
 /* See description in internal.h */
 int
-tester_build_suite(test_suite_info *suite)
+tester_build_suite(unsigned int flags, const test_suite_info *suite)
 {
     int rc;
 
@@ -718,8 +718,18 @@ tester_build_suite(test_suite_info *suite)
     rc = builder_build_test_suite(suite->name, suite->src);
     if (rc != 0)
     {
-        ERROR("Build of Test Suite '%s' from '%s' failed",
-              suite->name, suite->src);
+        const char *te_build = getenv("TE_BUILD");
+
+        ERROR("Build of Test Suite '%s' from '%s' failed, see "
+              "%s/builder.log.%s.{1,2}",
+              suite->name, suite->src, te_build, suite->name);
+        if (flags & TESTER_VERBOSE)
+        {
+            fprintf(stderr,
+                    "Build of Test Suite '%s' from '%s' failed, see\n"
+                    "%s/builder.log.%s.{1,2}\n",
+                    suite->name, suite->src, te_build, suite->name);
+        }
         return rc;
     }
     return 0;
@@ -728,15 +738,16 @@ tester_build_suite(test_suite_info *suite)
 /**
  * Build list of Test Suites.
  *
+ * @param ctx       Tester context
  * @param suites    List of Test Suites
  *
  * @return Status code.
  */
 static int
-tester_build_suites(test_suites_info *suites)
+tester_build_suites(const tester_ctx *ctx, const test_suites_info *suites)
 {
-    int              rc;
-    test_suite_info *suite;
+    int                     rc;
+    const test_suite_info  *suite;
 
     for (suite = suites->tqh_first;
          suite != NULL;
@@ -744,7 +755,7 @@ tester_build_suites(test_suites_info *suites)
     {
         if (suite->src != NULL)
         {
-            rc = tester_build_suite(suite);
+            rc = tester_build_suite(ctx->flags, suite);
             if (rc != 0)
                 return rc;
         }
@@ -788,7 +799,7 @@ main(int argc, char *argv[])
         (ctx.suites.tqh_first != NULL))
     {
         RING("Building Test Suites specified in command line...");
-        rc = tester_build_suites(&ctx.suites);
+        rc = tester_build_suites(&ctx, &ctx.suites);
         if (rc != 0)
         {
             goto exit;

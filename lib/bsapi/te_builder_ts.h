@@ -53,7 +53,7 @@ extern "C" {
  * @retval EINVAL       bad source directory or suite name
  * @retval ETESHCMD     system call failed
  */
-extern int builder_build_test_suite(char *suite, char *sources);
+extern int builder_build_test_suite(const char *suite, const char *sources);
 
 
 #ifdef __cplusplus

@@ -368,11 +368,13 @@ extern int tester_run_config(tester_ctx *ctx, tester_cfg *cfg);
 /**
  * Build Test Suite.
  *
+ * @param flags     Tester context flags
  * @param suite     Test Suites
  *
  * @return Status code.
  */
-extern int tester_build_suite(test_suite_info *suite);
+extern int tester_build_suite(unsigned int flags,
+                              const test_suite_info *suite);
 
 /**
  * Log test start to terminal.
