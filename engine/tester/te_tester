@@ -195,7 +195,7 @@ for i in $SUITES ; do
                 let passed++ ;
                 result=passed ;
             fi
-            te_log_message Engine Dispatcher "Test ${SUITEDIR}/${PACKAGEDIR}/${TEST_NAME} ${result}"
+            te_log_message Engine Tester "Test ${SUITEDIR}/${PACKAGEDIR}/${TEST_NAME} ${result}"
             if [ "${QUIET}" == "no" ]; then
                 if [ "${result}" = "passed" ]; then
                     echo_passed
@@ -206,4 +206,5 @@ for i in $SUITES ; do
         done
     done
 done
+te_log_message Engine Tester "PASSED $passed, FAILED $failed"
 echo "PASSED $passed, FAILED $failed"
