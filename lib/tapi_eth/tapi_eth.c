@@ -540,3 +540,69 @@ tapi_eth_prepare_pattern(const uint8_t *src_mac,
 
     return 0;
 }
+
+/**
+ * Creates ASN value of Traffic-Pattern-Unit type with single Ethernet PDU.
+ *
+ * @param src_mac       Desired source MAC address value, may be NULL
+ *                      for no matching by source MAC. 
+ * @param dst_mac       Desired destination MAC address value, may be NULL
+ *                      for no matching by source MAC. 
+ * @param type          Desired type of Ethernet payload, zero value 
+ *                      used to specify not matching by eth_type field. 
+ * @param pattern_unit  Placeholder for the pattern-unit (OUT)
+ *
+ * @returns zero on success or error status
+ */
+int 
+tapi_eth_prepare_pattern_unit(uint8_t *src_mac, uint8_t *dst_mac,
+                              uint16_t eth_type,
+                              asn_value **pattern_unit)
+{
+    int rc = 0; 
+    int syms;
+
+    asn_value *pat_unit = NULL;
+
+    if (pattern_unit == NULL)
+        return ETEWRONGPTR; 
+
+
+    do {
+        rc = asn_parse_value_text("{ pdus { eth:{ }}}",
+                                  ndn_traffic_pattern_unit, 
+                                  &pat_unit, &syms);
+        if (rc) break;
+
+        if (src_mac)
+            rc = asn_write_value_field(pat_unit, src_mac, ETH_ALEN, 
+                                       "pdus.0.#eth.src-addr.#plain");
+        if (rc) break;
+
+        if (dst_mac)
+            rc = asn_write_value_field(pat_unit, dst_mac, ETH_ALEN, 
+                                       "pdus.0.#eth.dst-addr.#plain");
+        if (rc) break;
+
+        if (eth_type)
+            rc = asn_write_value_field(pat_unit, 
+                                       &eth_type, sizeof(eth_type),
+                                       "pdus.0.#eth.eth-type.#plain");
+        if (rc) break;
+    } while(0);
+
+    if (rc)
+    {
+        ERROR("%s failed %X", __FUNCTION__, rc);
+        asn_free_value(pat_unit);
+        *pattern_unit = NULL;
+    }
+    else
+        *pattern_unit = pat_unit;
+
+    return rc;
+}
+
+
+
+
