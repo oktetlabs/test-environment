@@ -40,8 +40,11 @@
 #else
 #include <poll.h>
 #endif
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
 #include <unistd.h>
 #include <pthread.h>
 #include <semaphore.h>
@@ -84,6 +87,175 @@ map_name_to_level(const char *name)
     return 0;
 }
 
+
+/**
+ * Auxiliary procedure to connect to conserver.
+ *
+ * @return connected socket or -1 if failed
+ *
+ * @param port     A port to connect
+ * @param user     A conserver user name
+ * @param console  A console name
+ *
+ * @sa open_conserver
+ */
+static int
+connect_conserver(int port, const char *user, const char *console)
+{
+    int                sock = socket(PF_INET, SOCK_STREAM, 0);
+    struct sockaddr_in inaddr;
+
+    char               buf[32];
+    int                len;
+
+#define EXPECT_OK \
+    do { \
+        if (read(sock, buf, 4) < 4 || memcmp(buf, "ok\r\n", 4) != 0) \
+        { \
+            ERROR("Conserver sent us non-ok, errno=%d", errno); \
+            close(sock); \
+            return -1; \
+        } \
+    } while(0);
+
+    if (sock < 0)
+    {
+        ERROR("Cannot create socket: errno=%d", errno);
+        return -1;
+    }
+    inaddr.sin_family      = AF_INET;
+    inaddr.sin_port        = htons(port);
+    inaddr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+    VERB("Connecting to conserver at localhost:%d", port);
+    if (connect(sock, (struct sockaddr *)&inaddr, sizeof(inaddr)) < 0)
+    {
+        ERROR("Unable to connect to conserver on port %d: errno=%d", 
+              port, errno);
+        close(sock);
+        return -1;
+    }
+    EXPECT_OK;
+    VERB("Connected");
+    strcpy(buf, "login ");
+    strncat(buf, user, sizeof(buf) - 8);
+    strcat(buf, "\n");
+    len = strlen(buf);
+    if (write(sock, buf, len) < len)
+    {
+        ERROR("Error writing to conserver socket, errno=%d", errno);
+        close(sock);
+        return -1;
+    }
+    EXPECT_OK;
+    VERB("Logged in");
+
+    strcpy(buf, "call ");
+    strncat(buf, console, sizeof(buf) - 7);
+    strcat(buf, "\n");
+    len = strlen(buf);
+    if (write(sock, buf, len) < len)
+    {
+        ERROR("Error writing to conserver socket, errno=%d", errno);
+        close(sock);
+        return -1;
+    }
+    
+    return sock;
+
+#undef EXPECT_OK
+}
+
+
+/**
+ * Connects to conserver listening on a given port at localhost and
+ * authenticates to it.
+ *
+ * @return connected socket (or -1 if failed)
+ *
+ * @param conserver  A colon-separated string of the form:
+ *                   port:user:console
+ */
+static int
+open_conserver(const char *conserver)
+{
+    int   port;
+    int   sock;
+    char  buf[1];
+    char *tmp;
+    char  user[64];
+    char *console;
+    
+
+    port = strtoul(conserver, &tmp, 10);
+    
+    if (port <= 0 || *tmp != ':')
+    {
+        ERROR ("Bad port: \"%s\"", conserver);
+        return -1;
+    }
+    strcpy(user, tmp + 1);
+    console = strchr(user, ':');
+    if (console == NULL)
+    {
+        ERROR ("No console specified: \"%s\"", conserver);
+        return -1;
+    }
+    *console++ = '\0';
+
+    sock = connect_conserver(port, user, console);
+    if (sock < 0)
+        return -1;
+    port = 0;
+    for(;;)
+    {
+        if (read(sock, buf, 1) < 1)
+        {
+            ERROR("Error getting console port, errno=%d", errno);
+            close(sock);
+            return -1;
+        }
+        if (*buf == '\r')
+            continue;
+        if (*buf == '\n')
+            break;
+        if (!isdigit(*buf))
+        {
+            ERROR("Non-numeric response from conserver: %c", *buf);
+            close(sock);
+            return -1;
+            
+        }
+        port = (port * 10) + *buf - '0';
+    }
+
+    close(sock);
+    sock = connect_conserver(port, user, console);
+    if (sock < 0)
+        return -1;
+
+#define SKIP_LINE \
+    do { \
+        for(*buf = '\0'; *buf != '\n'; ) \
+        { \
+            if (read(sock, buf, 1) < 1) \
+            { \
+                ERROR("Error reading from conserver, errno=%d", errno); \
+                close(sock); \
+                return -1; \
+            } \
+       } \
+    } while(0)
+    
+    SKIP_LINE;
+    write(sock, "\xFF\05c;", 4); /* this magic string causes conserver 
+                                   * to actually send us data
+                                   */
+    SKIP_LINE;
+    fcntl(sock, F_SETFL, O_NONBLOCK | fcntl(sock, F_GETFL));
+    return sock;
+}
+
+
 /**
  * Log host serial output via Logger component
  *
@@ -94,6 +266,8 @@ map_name_to_level(const char *name)
  *                    - log level
  *                    - message interval
  *                    - tty name
+ *                    (if it does not start with "/", it is interpreted
+ *                     as a conserver connection designator)
  *                    - sharing mode (opt)
  */
 int 
@@ -141,51 +315,64 @@ log_serial(void *ready, int argc, char *argv[])
     }
 
 
-    if (argc < 5 || strcmp(argv[4], "exclusive") == 0)
+    if (*argv[3] != '/')
     {
-        sprintf(tmp, "fuser -s %s", argv[3]);
-        if (ta_system(tmp) == 0)
+        poller.fd = open_conserver(argv[3]);
+        if (poller.fd < 0)
         {
-            ERROR("%s is already is use, won't log", argv[3]);
             sem_post(ready);
-            return TE_RC(TE_TA_LINUX, EBUSY);
+            return TE_RC(TE_TA_LINUX, errno);
         }
-    }
-    else if (strcmp(argv[4], "force") == 0)
-    {
-        sprintf(tmp, "fuser -s -k %s", argv[3]);
-        if (ta_system(tmp) == 0)
-            WARN("%s was in use, killing the process", argv[3]);
-    }
-    else if (strcmp(argv[4], "shared") == 0)
-    {
-        sprintf(tmp, "fuser -s %s", argv[3]);
-        if (ta_system(tmp) == 0)
-            WARN("%s is in use, logging anyway", argv[3]);
     }
     else
     {
-        ERROR("Invalid sharing mode '%s'", argv[4]);
-        sem_post(ready);
-        return TE_RC(TE_TA_LINUX, EINVAL);
+        if (argc < 5 || strcmp(argv[4], "exclusive") == 0)
+        {
+            sprintf(tmp, "fuser -s %s", argv[3]);
+            if (ta_system(tmp) == 0)
+            {
+                ERROR("%s is already is use, won't log", argv[3]);
+                sem_post(ready);
+                return TE_RC(TE_TA_LINUX, EBUSY);
+            }
+        }
+        else if (strcmp(argv[4], "force") == 0)
+        {
+            sprintf(tmp, "fuser -s -k %s", argv[3]);
+            if (ta_system(tmp) == 0)
+                WARN("%s was in use, killing the process", argv[3]);
+        }
+        else if (strcmp(argv[4], "shared") == 0)
+        {
+            sprintf(tmp, "fuser -s %s", argv[3]);
+            if (ta_system(tmp) == 0)
+                WARN("%s is in use, logging anyway", argv[3]);
+        }
+        else
+        {
+            ERROR("Invalid sharing mode '%s'", argv[4]);
+            sem_post(ready);
+            return TE_RC(TE_TA_LINUX, EINVAL);
+        }
+        
+        interval = strtol(argv[2], NULL, 10);
+        if (interval <= 0)
+        {
+            ERROR("Invalid interval value: %s", argv[2]);
+            sem_post(ready);
+            return TE_RC(TE_TA_LINUX, EINVAL);
+        }
+        poller.fd = open(argv[3], O_RDONLY | O_NOCTTY | O_NONBLOCK);
+        if (poller.fd < 0)
+        {
+            int rc = errno;
+            
+            ERROR("Cannot open %s: %d", argv[3], rc);
+            sem_post(ready);
+            return TE_RC(TE_TA_LINUX, rc);
+        }
     }
     
-    interval = strtol(argv[2], NULL, 10);
-    if (interval <= 0)
-    {
-        ERROR("Invalid interval value: %s", argv[2]);
-        sem_post(ready);
-        return TE_RC(TE_TA_LINUX, EINVAL);
-    }
-    poller.fd = open(argv[3], O_RDONLY | O_NOCTTY | O_NONBLOCK);
-    if (poller.fd < 0)
-    {
-        int rc = errno;
-
-        ERROR("Cannot open %s: %d", argv[3], rc);
-        sem_post(ready);
-        return TE_RC(TE_TA_LINUX, rc);
-    }
     if ((buffer = malloc(TE_LOG_FIELD_MAX + 1)) == NULL)
     {
         int rc = errno;
