@@ -487,6 +487,48 @@ output_regular_log_msg(log_msg *msg)
                     int  default_format = FALSE;
                     int  k;
                    
+                    /* @todo think of better way to implement this! */
+                    if (strstr(msg->fmt_str + i, "%tf") ==
+                            (msg->fmt_str + i))
+                    {
+                        FILE *fd;
+                        char  str[500];
+
+                        if (obstack_next_free(log_obstk) != obstk_base)
+                            OBSTACK_FLUSH();
+
+                        if ((arg = get_next_arg(msg)) == NULL)
+                        {
+                            fprintf(stderr,
+                                    "Too few arguments in the message\n");
+                            print_message_info(msg);
+                            THROW_EXCEPTION;
+                        }
+                        if ((fd = fopen(arg->val, "r")) == NULL)
+                        {
+                            perror("Error during the processing of the log "
+                                   "message");
+                            print_message_info(msg);
+                            THROW_EXCEPTION;
+                        }
+
+                        /* Strart file tag */
+                        fputs("<file>", output_fd);
+                        while (fgets(str, sizeof(str), fd) != NULL)
+                        {
+                            fwrite_string(str);
+                        }
+                        /* End file tag */
+                        fputs("</file>", output_fd);
+
+                        /* shift to the end of "%tf" */
+                        i += 3;
+
+                        fclose(fd);
+                        break;
+                    }
+                   
+
                    /*
                     * %tm[[n].[w]] - memory dump, n - the number of
                     * elements after which "\n" is to be inserted,
@@ -563,41 +605,6 @@ output_regular_log_msg(log_msg *msg)
                     }
 
                     continue;
-                }
-                case 'f':
-                {
-                    FILE *fd;
-                    char  str[500];
-
-                    if (obstack_next_free(log_obstk) != obstk_base)
-                        OBSTACK_FLUSH();
-
-                    if ((arg = get_next_arg(msg)) == NULL)
-                    {
-                        fprintf(stderr,
-                                "Too few arguments in the message\n");
-                        print_message_info(msg);
-                        THROW_EXCEPTION;
-                    }
-                    if ((fd = fopen(arg->val, "r")) == NULL)
-                    {
-                        perror("Error during the processing of the log "
-                               "message");
-                        print_message_info(msg);
-                        THROW_EXCEPTION;
-                    }
-
-                    /* Strart file tag */
-                    fputs("<file>", output_fd);
-                    while (fgets(str, sizeof(str), fd) != NULL)
-                    {
-                        fwrite_string(str);
-                    }
-                    /* End file tag */
-                    fputs("</file>", output_fd);
-
-                    fclose(fd);
-                    break;
                 }
             }
         }
