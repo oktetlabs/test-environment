@@ -5795,7 +5795,7 @@ rpc_aio_suspend_test(rcf_rpc_server *handle,
                  &out, (xdrproc_t)xdr_tarpc_aio_suspend_test_out);
 
     RING("RPC (%s,%s): "
-         "aio_suspend_test(%d, %d, %s, %d, %p, %d, %d) -> %d (%s)",
+         "aio_suspend_test(%d, %d, %s, %d, %p, %d) -> %d (%s)",
          handle->ta, handle->name,
          s, s_aux, signum_rpc2str(signum), timeout, buf, buflen,
          out.retval, errno_rpc2str(RPC_ERRNO(handle)));
