@@ -35,7 +35,6 @@ RESULT=$2
 shift 2
 
 rm -f te_bs_symtbl.tmp
-echo $*
 $NM --demangle --format=bsd --extern-only --defined-only $* \
     >> te_bs_symtbl.tmp
 
