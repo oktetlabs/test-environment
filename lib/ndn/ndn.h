@@ -101,17 +101,19 @@ extern asn_type ndn_generic_csap_level_s;
 /**
  * Match data with DATA-UNIT pattern.  
  *
- * @param data          data to be matched.
- * @param d_len         length of data.
- * @param container     ASN value containing DATA-UNIT pattern as some of 
- *                      subvalues or itself. 
- * @param labels        textual dot-separated labels pointing to DATA-UNIT
- *                      subvalue.
+ * @param pat           ASN value with pattern PDU. 
+ * @param pkt_pdu       ASN value with parsed packet PDU, may be NULL 
+ *                      if parsed packet is not need (OUT). 
+ * @param data          binary data to be matched.
+ * @param d_len         length of data packet to be matched, in bytes. 
+ * @param label         textual label of desired field, which should be 
+ *                      DATA-UNIT{}type.
  *
  * @return zero if matches, errno otherwise.
  */ 
-extern int ndn_match_data_units(void * data, int d_len, asn_value_p pattern, 
-                     const char *labels);
+extern int ndn_match_data_units(const asn_value *pat, asn_value *pkt_pdu,
+                                uint8_t *data, size_t d_len, 
+                                const char *label);
 
 /**
  * Get timestamp from recieved Raw-Packet

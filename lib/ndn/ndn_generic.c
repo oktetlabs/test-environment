@@ -87,7 +87,7 @@ static asn_named_entry_t _ndn_data_unit_mask_ne_array [] =
     { "free-len", &asn_base_null_s, {PRIVATE, 1} }
 }; 
 
- asn_type ndn_data_unit_mask_static = 
+ asn_type ndn_data_unit_mask_s = 
 { "DATA-UNIT-mask", {PRIVATE, 2}, SEQUENCE, 3, {_ndn_data_unit_mask_ne_array} };
 
 
@@ -98,7 +98,7 @@ static asn_named_entry_t _ndn_data_unit_env_ne_array [] =
     { "type", &asn_base_enum_s, {PRIVATE, 1} }
 }; 
 
- asn_type ndn_data_unit_env_static = 
+ asn_type ndn_data_unit_env_s = 
 { "DATA-UNIT-env", {PRIVATE, 2}, SEQUENCE, 
   sizeof(_ndn_data_unit_env_ne_array)/sizeof(asn_named_entry_t), 
   {_ndn_data_unit_env_ne_array} 
@@ -151,7 +151,7 @@ NDN_DATA_UNIT_TYPE (objid,         asn_base_objid_s,      OBJECT IDENTIFIER )
 static asn_named_entry_t _ndn_payload_ne_array [] = 
 {
     { "bytes",    &asn_base_octstring_s, {PRIVATE, 1} },
-    { "mask",     &ndn_data_unit_mask_static, {PRIVATE, 1} },
+    { "mask",     &ndn_data_unit_mask_s, {PRIVATE, 1} },
     { "function", &asn_base_charstring_s, {PRIVATE, 1} },
     { "filename", &asn_base_charstring_s, {PRIVATE, 1} },
     { "length",   &asn_base_integer_s, {PRIVATE, 1} }
@@ -372,27 +372,91 @@ const asn_type * const  ndn_raw_packet = &ndn_raw_packet_s;
 
 
 
-/**
- * Match data with DATA-UNIT pattern.  
- *
- * @param data          data to be matched.
- * @param d_len         length of data.
- * @param pattern       ASN value containing DATA-UNIT pattern as some
- *                      of subvalues or itself. 
- * @param labels        textual dot-separated labels pointing to
- *                      DATA-UNIT subvalue.
- *
- * @return zero if matches, errno otherwise.
- */ 
+/* See description in ndn.h */ 
 int 
-ndn_match_data_units(void * data, int d_len, asn_value_p pattern, 
-                     const char *labels)
+ndn_match_data_units(const asn_value *pat, asn_value *pkt_pdu,
+                     uint8_t *data, size_t d_len, const char *label); 
 {
-    UNUSED (data);
-    UNUSED (d_len);
-    UNUSED (pattern);
-    UNUSED (labels);
-    return 1;
+    asn_syntax_t plain_syntax;
+    const asn_value *du_val;
+    const asn_type *du_type;
+    char choice_label[200];
+    char *choice_ptr;
+    int rc;
+    uint32_t user_int;
+
+    if (pat == NULL || data == NULL || label == NULL)
+        return ETEWRONGPTR; 
+
+    rc = asn_get_subvalue(pattern, &du_val, label);
+    if (rc)
+        return rc;
+
+    choice_ptr = asn_get_choice_ptr(pattern);
+
+    du_type = asn_get_type(du_val);
+
+    plain_syntax = du_type->sp.named_entries[0].type->syntax;
+
+    switch (plain_syntax)
+    {
+    case SYNTAX_UNDEFINED:
+        printf("error getting syntax\n");
+    case INTEGER:
+    case ENUMERATED:
+        switch (d_len)
+        {
+            case 2: 
+                user_int = ntohs(*((uint16_t *)data));
+                break;
+            case 4: 
+                user_int = ntohl(*((uint32_t *)data));
+                break;
+            case 8: 
+                return ETENOSUPP;
+            default:
+                user_int = *((uint8_t *)data);
+        }
+        break;
+    case BOOL:
+    case PR_ASN_NULL:
+    case PRIMITIVE_VAR_LEN:
+    case LONG_INT:
+    case BIT_STRING:
+    case OCT_STRING:
+    case CHAR_STRING:
+    case REAL:
+    case OID:
+    case SEQUENCE:
+    case SEQUENCE_OF:
+    case SET:
+    case SET_OF:
+    case CHOICE:
+    case TAGGED:
+        printf("error getting syntax\n");
+    }
+
+    if (strcmp(choice_ptr, "plain") == 0)
+    {
+        uint8_t *pat_data;
+
+        rc = asn_get_field_data(pattern, &pat_data, "#plain"); 
+        if (rc) return rc;
+        switch (plain_syntax)
+        {
+            case INTEGER:
+            case ENUMERATED:
+                {
+                    uint32_t pat_int = *((uint32_t *)pat_data);
+                    if (pat_int == user_int)
+                        return 0;
+                    else 
+                        return ETADNOTMATCH;
+                }
+            default:
+        }
+    }
+    return 0;
 }
 
 
