@@ -1096,6 +1096,7 @@ rcf_ta_cfg_get(const char *ta_name, int session, const char *oid,
 {
     rcf_msg msg;
     size_t  anslen = sizeof(msg);
+    int     rc;
     INIT_IPC;
 
     if (oid == NULL || val_buf == NULL || strlen(oid) >= RCF_MAX_ID ||
@@ -1110,12 +1111,13 @@ rcf_ta_cfg_get(const char *ta_name, int session, const char *oid,
     msg.opcode = RCFOP_CONFGET;
     msg.sid = session;
     
-    if (send_recv_rcf_ipc_message(ipc_handle,
-                                  &(ctx_handle->msg_buf_head),
-                                  &msg, sizeof(msg), &msg, &anslen)
-        != 0)
+    rc = send_recv_rcf_ipc_message(ipc_handle,
+                                   &(ctx_handle->msg_buf_head),
+                                   &msg, sizeof(msg), &msg, &anslen);
+
+    if (rc != 0)
     {
-        return TE_RC(TE_RCF_API, ETEIO);
+        return TE_RC(TE_RCF_API, rc);
     }
         
     if (msg.error != 0)
