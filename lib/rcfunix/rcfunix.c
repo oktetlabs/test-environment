@@ -140,8 +140,8 @@ rcfunix_start(char *ta_name, char *ta_type, char *conf_str,
     char    *dup;
     char    *shell;
 
-    VERB("Starting TA '%s' type '%s' conf_str '%s'",
-                         ta_name, ta_type, conf_str);
+    RING("Starting TA '%s' type '%s' conf_str '%s'",
+         ta_name, ta_type, conf_str);
 
 /** Get the next token from configuration string */
 #define GET_TOKEN \
