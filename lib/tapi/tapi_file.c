@@ -42,7 +42,7 @@
 #include "rcf_api.h"
 #include "logger_api.h"
 #include "tapi_file.h"
-
+#include "tapi_bufs.h"
 
 /**
  * Create file in the TE temporary directory.
@@ -56,7 +56,7 @@
  * @note the function is not thread-safe 
  */
 char *
-tapi_file_create(int len, char c)
+tapi_file_create_pattern(int len, char c)
 {
     char *pathname = strdup(tapi_file_generate_pathname());
     char  buf[1024];
@@ -86,6 +86,51 @@ tapi_file_create(int len, char c)
         }
         len -= copy_len;
     }
+    if (fclose(f) < 0)
+    {
+        ERROR("fclose() failed: file %s errno=%d", pathname, errno);
+        return NULL;
+    }
+    return pathname;
+}
+
+/**
+ * Create file in the TE temporary directory with the specified content.
+ *
+ * @param len     file length
+ * @param buf     buffer with the file content
+ * @param random  if TRUE, fill buffer with random data
+ *
+ * @return name (memory is allocated) of the file or
+ *         NULL in the case of failure
+ *
+ * @note The function is not thread-safe 
+ */
+char *
+tapi_file_create(int len, char *buf, te_bool random)
+{
+    char *pathname = strdup(tapi_file_generate_pathname());
+    FILE *f;
+    
+    if (pathname == NULL)
+        return NULL;
+        
+    if (random)
+        tapi_fill_buf(buf, len);
+    
+    if ((f = fopen(pathname, "w")) == NULL)
+    {
+        ERROR("Cannot open file %s errno %d\n", pathname, errno);
+        return NULL;
+    }
+    
+    if (fwrite((void *)buf, sizeof(char), len, f) < 0)
+    {
+        fclose(f);
+        ERROR("fwrite() faled: file %s errno %d\n", pathname, errno);
+        return NULL;
+    }
+
     if (fclose(f) < 0)
     {
         ERROR("fclose() failed: file %s errno=%d", pathname, errno);
