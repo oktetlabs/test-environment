@@ -628,6 +628,7 @@ tapi_cfg_net_all_up(void)
             if (rc != 0)
             {
                 ERROR("Failed to get status of %s: %X", oid, rc);
+                free(oid);
                 break;
             }
             if (status != 1)
@@ -638,6 +639,7 @@ tapi_cfg_net_all_up(void)
                 {
                     ERROR("Failed to set status of %s to UP: %X",
                           oid, rc);
+                    free(oid);
                     break;
                 }
             }
@@ -645,6 +647,7 @@ tapi_cfg_net_all_up(void)
             {
                 INFO("Node (interface) %s is already UP", oid);
             }
+            free(oid);
         }
         if (rc != 0)
             break;
