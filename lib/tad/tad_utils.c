@@ -74,9 +74,11 @@ tad_confirm_pdus(csap_p csap_descr, asn_value *pdus)
 
     for (level = 0; (rc == 0) && (level < csap_descr->depth); level ++)
     { 
-        char label[40];
+        char       label[40];
+        asn_value *level_pdu;
+
         csap_spt_type_p csap_spt_descr; 
-        asn_value * level_pdu;
+
         csap_spt_descr = find_csap_spt(csap_descr->proto[level]);
 
         snprintf(label, sizeof(label), "%d.#%s", 
@@ -89,7 +91,7 @@ tad_confirm_pdus(csap_p csap_descr, asn_value *pdus)
         if (rc) 
         {
             ERROR("asn_write_ind rc: %x, write for level %d", 
-                    rc, level);
+                  rc, level);
             break;
         }
 
@@ -98,10 +100,9 @@ tad_confirm_pdus(csap_p csap_descr, asn_value *pdus)
 
         if (rc)
         {
-            ERROR(
-                       "template does not confirm to CSAP; "
-                       "rc: 0x%x, csap id: %d, level: %d\n", 
-                       rc, csap_descr->id, level);
+            ERROR("template does not confirm to CSAP; "
+                  "rc: 0x%x, csap id: %d, level: %d\n", 
+                  rc, csap_descr->id, level);
             break;
         }
     }
@@ -115,10 +116,11 @@ tad_confirm_pdus(csap_p csap_descr, asn_value *pdus)
 
 /**
  * Generic method to match data in incoming packet with DATA_UNIT pattern
- * field. If data matches, it will be written into respective field in pkt_pdu. 
+ * field. If data matches, it will be written into respective field in 
+ * pkt_pdu. 
  * Label of field should be provided by user. If pattern has "plain"
  * type, data will be simply compared. If it is integer, data will be
- * converted from "network byte order" to "host byte order" before matching. 
+ * converted from "network byte order" to "host byte order" before matching.
  *
  * @param pattern_pdu   ASN value with pattern PDU. 
  * @param pkt_pdu       ASN value with parsed packet PDU, may be NULL 
@@ -129,10 +131,15 @@ tad_confirm_pdus(csap_p csap_descr, asn_value *pdus)
  *
  * @return zero on success (that means "data matches to the pattern"),
  *              otherwise error code. 
+ *
+ * This function is depricated, and leaved here only for easy backward 
+ * rollbacks. Use 'ndn_match_data_units' instead. 
+ * This function will be removed just when 'ndn_match_data_units' will 
+ * be completed and debugged.
  */
 int 
-tad_univ_match_field (const tad_data_unit_t *pattern, asn_value *pkt_pdu, 
-                         uint8_t *data, size_t d_len, const char *label)
+tad_univ_match_field(const tad_data_unit_t *pattern, asn_value *pkt_pdu, 
+                     uint8_t *data, size_t d_len, const char *label)
 { 
     char labels_buffer[200];
     int  rc = 0;
@@ -233,7 +240,7 @@ tad_univ_match_field (const tad_data_unit_t *pattern, asn_value *pkt_pdu,
                 F_VERB("univ_match; data IS matched\n");
                 if (pkt_pdu)
                     rc = asn_write_value_field(pkt_pdu, data, d_len, 
-                                            labels_buffer);
+                                               labels_buffer);
             }
             else
             { 
@@ -247,9 +254,11 @@ tad_univ_match_field (const tad_data_unit_t *pattern, asn_value *pkt_pdu,
             else
             {
                 unsigned n;
+
                 const uint8_t *d = data; 
                 const uint8_t *m = pattern->val_mask.mask; 
                 const uint8_t *p = pattern->val_mask.pattern;
+
                 for (n = 0; n < d_len; n++, d++, p++, m++)
                     if ((*d & *m) != (*p & *m))
                     {
@@ -259,18 +268,19 @@ tad_univ_match_field (const tad_data_unit_t *pattern, asn_value *pkt_pdu,
 
                 if (pkt_pdu)
                     rc = asn_write_value_field(pkt_pdu, data, d_len, 
-                                            labels_buffer);
+                                               labels_buffer);
             }
             break;
         case TAD_DU_INT_NM:
             if (pkt_pdu)
-                rc = asn_write_value_field(pkt_pdu, 
-                            &user_int, sizeof(user_int), labels_buffer);
+                rc = asn_write_value_field(pkt_pdu, &user_int, 
+                                           sizeof(user_int), labels_buffer);
             break;
 
         case TAD_DU_DATA_NM:
             if (pkt_pdu)
-                rc = asn_write_value_field(pkt_pdu, data, d_len, labels_buffer); 
+                rc = asn_write_value_field(pkt_pdu, data, d_len, 
+                                           labels_buffer); 
             break;
 
         default:
@@ -291,7 +301,8 @@ tad_univ_match_field (const tad_data_unit_t *pattern, asn_value *pkt_pdu,
  * operations are detected. 
  *
  * @param string        text with expression. 
- * @param expr          place where pointer to new expression will be put (OUT).
+ * @param expr          location for pointer to new expression (OUT).
+ * @param syms          location for number of parsed symbols (OUT).
  *
  * @return status code.
  */
@@ -309,22 +320,26 @@ tad_int_expr_parse(const char *string, tad_int_expr_t **expr, int *syms)
 
     *syms = 0; 
 
-    while (isspace(*p)) p++;
+    while (isspace(*p))
+        p++;
 
     if (*p == '(') 
     {
         tad_int_expr_t *sub_expr;
-        int sub_expr_parsed = 0;
+        int             sub_expr_parsed = 0;
+
         p++;
 
 
-        while (isspace(*p)) p++; 
+        while (isspace(*p)) 
+            p++; 
         if (*p == '-')
         {
             (*expr)->n_type = EXP_U_MINUS;
             (*expr)->d_len = 1; 
             p++;
-            while (isspace(*p)) p++; 
+            while (isspace(*p)) 
+                p++; 
         }
         else
         { 
@@ -347,15 +362,25 @@ tad_int_expr_parse(const char *string, tad_int_expr_t **expr, int *syms)
         { 
             switch (*p)
             {
-                case '+': (*expr)->n_type = EXP_ADD;    break;
-                case '-': (*expr)->n_type = EXP_SUBSTR; break;
-                case '*': (*expr)->n_type = EXP_MULT;   break;
-                case '/': (*expr)->n_type = EXP_DIV;    break;
-                default: goto parse_error;
+                case '+':
+                    (*expr)->n_type = EXP_ADD;    
+                    break;
+                case '-': 
+                    (*expr)->n_type = EXP_SUBSTR;
+                    break;
+                case '*':
+                    (*expr)->n_type = EXP_MULT;
+                    break;
+                case '/':
+                    (*expr)->n_type = EXP_DIV;
+                    break;
+                default: 
+                    goto parse_error;
             }
             p++;
 
-            while (isspace(*p)) p++; 
+            while (isspace(*p))
+                p++; 
 
             rc = tad_int_expr_parse(p, &sub_expr, &sub_expr_parsed);
             if (rc)
@@ -365,7 +390,8 @@ tad_int_expr_parse(const char *string, tad_int_expr_t **expr, int *syms)
             memcpy((*expr)->exprs + 1, sub_expr, sizeof(tad_int_expr_t)); 
             free(sub_expr);
         }
-        while (isspace(*p)) p++; 
+        while (isspace(*p))
+            p++; 
 
         if (*p != ')')
             goto parse_error;
@@ -441,14 +467,14 @@ parse_error:
 static void
 tad_int_expr_free_subtree(tad_int_expr_t *expr)
 {
-    if (expr->n_type != CONSTANT && 
-        expr->n_type != ARG_LINK    ) 
+    if (expr->n_type != CONSTANT && expr->n_type != ARG_LINK) 
     {
         unsigned i;
+
         for (i = 0; i < expr->d_len; i++)
             tad_int_expr_free_subtree(expr->exprs + i);
 
-        free (expr->exprs);
+        free(expr->exprs);
     }
 }
 
@@ -475,7 +501,7 @@ tad_int_expr_free(tad_int_expr_t *expr)
  */
 int 
 tad_int_expr_calculate(const tad_int_expr_t *expr, 
-                      const tad_template_arg_t *args, int64_t *result)
+                       const tad_template_arg_t *args, int64_t *result)
 {
     int rc;
 
@@ -503,6 +529,7 @@ tad_int_expr_calculate(const tad_int_expr_t *expr,
         default: 
             {
                 int64_t r1, r2;
+
                 rc = tad_int_expr_calculate(expr->exprs, args, &r1);
                 if (rc) 
                     return rc;
@@ -517,15 +544,20 @@ tad_int_expr_calculate(const tad_int_expr_t *expr,
                 switch (expr->n_type)
                 {
                     case EXP_ADD:
-                        *result = r1 + r2; break;
+                        *result = r1 + r2; 
+                        break;
                     case EXP_SUBSTR:
-                        *result = r1 - r2; break;
+                        *result = r1 - r2; 
+                        break;
                     case EXP_MULT:
-                        *result = r1 * r2; break;
+                        *result = r1 * r2; 
+                        break;
                     case EXP_DIV:
-                        *result = r1 / r2; break;
+                        *result = r1 / r2; 
+                        break;
                     case EXP_U_MINUS:
-                        *result = - r1; break;
+                        *result = - r1; 
+                        break;
                     default:
                         return EINVAL;
                 }
@@ -561,8 +593,9 @@ tad_int_expr_constant(int64_t n)
 
 /**
  * Initialize tad_int_expr_t structure with single constant value, storing
- * binary array up to 8 bytes length. Array is assumed as "network byte order"
- * and converted to "host byte order" while saveing in 64-bit integer.
+ * binary array up to 8 bytes length. Array is assumed as "network byte 
+ * order" and converted to "host byte order" while saveing 
+ * in 64-bit integer.
  *
  * @param arr   pointer to binary array.
  * @param len   length of array.
@@ -574,7 +607,7 @@ tad_int_expr_t *
 tad_int_expr_constant_arr(uint8_t *arr, size_t len)
 {
     tad_int_expr_t *ret;
-    int64_t val = 0;
+    int64_t         val = 0;
 
     if (len > sizeof(int64_t))
         return NULL;
@@ -584,7 +617,7 @@ tad_int_expr_constant_arr(uint8_t *arr, size_t len)
     if (ret == NULL) 
         return NULL; 
 
-    memcpy (((uint8_t *)&val) + sizeof(uint64_t) - len, arr, len);
+    memcpy(((uint8_t *)&val) + sizeof(uint64_t) - len, arr, len);
 
     ret->n_type = CONSTANT;
     ret->d_len = 8;
@@ -641,8 +674,9 @@ tad_data_unit_convert(const asn_value *pdu_val, const char *label,
                                  tad_data_unit_t *location)
 {
     char choice[20]; 
+    int  rc;
+
     const asn_value *du_field;
-    int rc;
 
     if (pdu_val == NULL || label == NULL || location == NULL)
         return ETEWRONGPTR;
@@ -677,11 +711,13 @@ tad_data_unit_convert(const asn_value *pdu_val, const char *label,
             case ENUMERATED:
                 location->du_type = TAD_DU_INT_NM;
                 break; 
+
             case BIT_STRING:
             case OCT_STRING:
             case CHAR_STRING:
                 location->du_type = TAD_DU_DATA_NM;
                 break; 
+
             default: 
                 return ETENOSUPP;
         }
@@ -705,12 +741,14 @@ tad_data_unit_convert(const asn_value *pdu_val, const char *label,
             case INTEGER:
             case ENUMERATED:
                 {
-                    int val_len = sizeof (location->val_i32);
+                    int val_len = sizeof(location->val_i32);
                     location->du_type = TAD_DU_I32; 
                     rc = asn_read_value_field(du_field, 
                             &location->val_i32, &val_len, "");
                     return rc;
                 }
+                break;
+
             case BIT_STRING:
             case OCT_STRING:
                 location->du_type = TAD_DU_DATA;
@@ -725,13 +763,11 @@ tad_data_unit_convert(const asn_value *pdu_val, const char *label,
             case LONG_INT:
             case REAL:
             case OID:
-                ERROR(
-                        "No yet support for syntax %d", plain_syntax);
+                ERROR("No yet support for syntax %d", plain_syntax);
                 return ETENOSUPP;
 
             default: 
-                ERROR(
-                        "Strange syntax %d", plain_syntax);
+                ERROR("Strange syntax %d", plain_syntax);
                 return EINVAL;
 
         }
@@ -750,14 +786,12 @@ tad_data_unit_convert(const asn_value *pdu_val, const char *label,
                 tad_int_expr_t *expression;
                 int syms;
 
-                rc = tad_int_expr_parse(
-                        script + sizeof(expr_label) - 1,
-                        &expression, &syms);
+                rc = tad_int_expr_parse(script + sizeof(expr_label) - 1,
+                                        &expression, &syms);
                 if (rc)
                 {
-                    ERROR(
-                        "expr script parse error %x, syms %d",
-                        rc, syms);
+                    ERROR("expr script parse error %x, syms %d",
+                          rc, syms);
                     return rc;
                 }
                 location->du_type = TAD_DU_EXPR;
@@ -790,11 +824,11 @@ tad_data_unit_convert(const asn_value *pdu_val, const char *label,
             return ENOMEM;
 
         rc = asn_read_value_field(du_field, location->val_mask.mask, 
-                                 &m_len, "m");
+                                  &m_len, "m");
         if (rc == 0)
         { 
-            rc = asn_read_value_field(du_field, location->val_mask.pattern, 
-                                     &m_len, "v");
+            rc = asn_read_value_field(du_field, location->val_mask.pattern,
+                                      &m_len, "v");
         }
         if (rc)
         {
@@ -807,39 +841,40 @@ tad_data_unit_convert(const asn_value *pdu_val, const char *label,
     }
     else if (strcmp(choice, "intervals") == 0)
     {
-        int i, label_len, num;
+        int    label_len;
+        char   label[50];
+        int    num, i;
         size_t v_len = sizeof(location->val_intervals.begin[0]);
-        char label[50];
 
         location->du_type = TAD_DU_INTERVALS; 
-        num = location->val_intervals.length = asn_get_length(du_field, ""); 
+        num = location->val_intervals.length = 
+                                        asn_get_length(du_field, "");
         location->val_intervals.begin = calloc(num, v_len);
         location->val_intervals.end   = calloc(num, v_len);
 
         rc = 0;
         for (i = 0; i < num; i++)
         {
-            label_len = snprintf (label, sizeof(label), "%d.b", i);
+            label_len = snprintf(label, sizeof(label), "%d.b", i);
             rc = asn_read_value_field(du_field, 
-                            location->val_intervals.begin + i, &v_len,
-                            label);
+                                      location->val_intervals.begin + i, 
+                                      &v_len, label);
             if (rc)
                 break;
 
             label[label_len - 1] = 'e';
 
             rc = asn_read_value_field(du_field, 
-                            location->val_intervals.end + i, &v_len,
-                            label);
+                                      location->val_intervals.end + i,
+                                      &v_len, label);
             if (rc)
                 break;
         }
 
         if (rc)
         {
-            ERROR(
-                    "error reading intervals #%d: %x, label <%s>", 
-                    i, rc, label);
+            ERROR("error reading intervals #%d: %x, label <%s>", 
+                  i, rc, label);
             free(location->val_intervals.begin);
             free(location->val_intervals.end);
             location->du_type = TAD_DU_INT_NM;
@@ -855,7 +890,7 @@ tad_data_unit_convert(const asn_value *pdu_val, const char *label,
 
     /* process string values */ 
     {
-        int len = asn_get_length (du_field, "");
+        int   len = asn_get_length(du_field, "");
         void *d_ptr;
 
         if (len <= 0)
@@ -906,24 +941,24 @@ tad_data_unit_clear(tad_data_unit_t *du)
 
     switch (du->du_type)
     {
-    case TAD_DU_STRING:
-        free(du->val_string);
-        break;
-    case TAD_DU_MASK:
-        free(du->val_mask.mask);
-        /* fall through */
-    case TAD_DU_DATA:
-        free(du->val_mask.pattern);
-        break;
-    case TAD_DU_EXPR:
-        tad_int_expr_free(du->val_int_expr);
-        break;
-    default:
-        /* do nothing */
-        break;
+        case TAD_DU_STRING:
+            free(du->val_string);
+            break;
+        case TAD_DU_MASK:
+            free(du->val_mask.mask);
+            /* fall through */
+        case TAD_DU_DATA:
+            free(du->val_mask.pattern);
+            break;
+        case TAD_DU_EXPR:
+            tad_int_expr_free(du->val_int_expr);
+            break;
+        default:
+            /* do nothing */
+            break;
     }
 
-    memset (du, 0, sizeof(*du));
+    memset(du, 0, sizeof(*du));
 }
 
 
@@ -933,7 +968,7 @@ tad_data_unit_clear(tad_data_unit_t *du)
  *
  * @param data          binary data which should be compared.
  * @param d_len         length of data.
- * @param location      location of data-unit structure to be initialized (OUT)
+ * @param location      location of data-unit structure (OUT)
  *
  * @return error status.
  */
