@@ -1,10 +1,6 @@
 
-AM_CPPFLAGS=-I$(DESTDIR)/$(prefix)/include \
-            -I$(DESTDIR)/$(prefix)/../include
-
-AM_CFLAGS=
-
-AM_LDFLAGS=@TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/lib 
+AM_CPPFLAGS=-I$(DESTDIR)/$(prefix)/include
+AM_LDFLAGS=@TE_LDFLAGS@ 
 
 
 include_HEADERS=tapi_arp.h

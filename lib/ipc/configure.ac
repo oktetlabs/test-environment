@@ -23,26 +23,7 @@ AC_ARG_VAR([TE_CPPFLAGS])
 AC_ARG_VAR([TE_CFLAGS])
 AC_ARG_VAR([TE_LDFLAGS])
 
-
-AC_CONFIG_HEADERS([config.h])
-
-AC_CHECK_HEADERS([ \
-stdlib.h \
-unistd.h \
-string.h \
-assert.h \
-errno.h \
-fcntl.h \
-sys/types.h \
-sys/un.h \
-ctype.h \
-netdb.h \
-sys/socket.h \
-arpa/inet.h \
-netinet/in.h \
-rpc/pmap_clnt.h \
-sys/queue.h \
-])
+AC_CHECK_HEADERS([te_config.h],[],[AC_ERROR([te_config.h is not found])])
 
 AC_CONFIG_FILES([Makefile])
 

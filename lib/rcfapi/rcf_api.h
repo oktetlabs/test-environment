@@ -31,6 +31,8 @@
 #ifndef __TE_RCF_API_H__
 #define __TE_RCF_API_H__
 
+#include "te_config.h"
+
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif

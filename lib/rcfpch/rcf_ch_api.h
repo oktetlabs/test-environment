@@ -33,7 +33,11 @@
 #ifndef __TE_RCF_CH_API_H__
 #define __TE_RCF_CH_API_H__
 
+#include "te_config.h"
+
+#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
+#endif
 
 #include "te_defs.h"
 #include "te_stdint.h"
@@ -42,7 +46,6 @@
 #include "rcf_internal.h"
 #include "comm_agent.h"
 #include "conf_oid.h"
-
 
 #ifdef __cplusplus
 extern "C" {

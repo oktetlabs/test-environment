@@ -28,8 +28,8 @@
 
 . builder.conf.processed
 
-CONFIG_GUESS=`find /usr/share/automake* -name config.guess | tail -n 1` 
-default_host=`$CONFIG_GUESS` 
+SCRIPT_DIR=`dirname $0`
+default_host=`${SCRIPT_DIR}/te_discover_host`
 
 KIND=$1
 PACKAGE=$2
@@ -117,8 +117,8 @@ fi
 
 echo ${PKGSRC}/configure -q --${option}=$PLATFORM --prefix=$PREFIX ${PARMS}
 
-TE_CFLAGS="-DDEBUG -Wall -W -O0 -g -ggdb ${ADD_CFLAGS}" \
-TE_LDFLAGS="${ADD_LDFLAGS}" \
+TE_CFLAGS="-DDEBUG -Wall -W -O0 -g -ggdb ${ADD_CFLAGS} -I${PREFIX}/include" \
+TE_LDFLAGS="${ADD_LDFLAGS} -L${PREFIX}/lib" \
 TE_LDADD="$LDADD" \
 TE_DEPENDENCIES="$DEPENDENCIES" \
 eval ${PKGSRC}/configure --${option}=$PLATFORM '-q --prefix=$PREFIX' ${PARMS} 

@@ -24,20 +24,7 @@ AC_ARG_VAR([TE_LDFLAGS])
 CFLAGS=${CFLAGS}" "${TE_CFLAGS}
 CPPFLAGS=${CPPFLAGS}" "${TE_CFLAGS}
 
-AC_CONFIG_HEADERS([config.h])
-
-AC_CHECK_HEADERS([\
-stdlib.h \
-ctype.h \
-unistd.h \
-assert.h \
-sys/types.h \
-sys/socket.h \
-arpa/inet.h \
-netinet/in.h \
-fcntl.h \
-comm_agent.h \
-])
+AC_CHECK_HEADERS([te_config.h],[],[AC_ERROR([te_config.h is not found])])
 
 AC_CONFIG_FILES([Makefile])
 

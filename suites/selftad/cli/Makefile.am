@@ -7,11 +7,7 @@ dist_tetest_DATA = package.xml \
                    cli-csap.asn cli-filter.asn cli-tmpl01.asn
 
 
-AM_CPPFLAGS = -I$(DESTDIR)/$(prefix)/include \
-              -I$(DESTDIR)/$(prefix)/../include
-
-AM_CFLAGS =
-
+AM_CPPFLAGS = -I$(DESTDIR)/$(prefix)/include 
 AM_LDFLAGS = @TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/lib 
 
 

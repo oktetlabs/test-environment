@@ -81,3 +81,7 @@ dist-hook:
 		rm -f $(distdir)/conf/builder.conf ; \
 	fi
 	cp @TE_BUILDER_CONF@ $(distdir)/conf/builder.conf
+
+install-data:
+	TE_BUILD="." $(srcdir)/engine/builder/te_create_inst_dirs \
+                         $(DESTDIR)/$(prefix)

@@ -27,9 +27,7 @@
  * $Id$
  */
  
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "te_config.h"
 
 #include "ipc_internal.h"
 #include "ipc_server.h"
@@ -54,9 +52,7 @@ ipc_kill(void)
 
 #else
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+#include "te_config.h"
 
 #include <stdio.h>
 

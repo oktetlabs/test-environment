@@ -6,11 +6,8 @@ tetestdir=$(prefix)/@PACKAGE_NAME@/$(subdir)
 dist_tetest_DATA = package.xml
 
 
-AM_CFLAGS = -I$(DESTDIR)/$(prefix)/include \
-            -I$(DESTDIR)/$(prefix)/../include
-
+AM_CFLAGS = -I$(DESTDIR)/$(prefix)/include 
 AM_LDFLAGS = @TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/lib 
-
 
 
 tetest_PROGRAMS = ethtest get_any eth1 eth2 eth3 eth_serial1 eth_serial2

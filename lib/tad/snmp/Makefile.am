@@ -1,11 +1,10 @@
 
 AM_CPPFLAGS=-I$(DESTDIR)/$(prefix)/include \
-            -I$(DESTDIR)/$(prefix)/../include \
             -DCMU_COMPATIBLE -DUCD_COMPATIBLE -I$(top_srcdir)
 
 AM_CFLAGS=@NET_SNMP_CFLAGS@
 
-AM_LDFLAGS=@TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/lib 
+AM_LDFLAGS=@TE_LDFLAGS@ 
 
 
 # Tests (incorrect)

@@ -1,8 +1,7 @@
  
 AUTOMAKE_OPTIONS = foreign 
 
-AM_CFLAGS=@TE_CFLAGS@ -I$(DESTDIR)/$(prefix)/../@host@/include \
-                      -I$(DESTDIR)/$(prefix)/../include
+AM_CFLAGS=@TE_CFLAGS@ -I$(DESTDIR)/$(prefix)/../@host@/include
 
 taisosctl_SOURCES=isosctl.c
 

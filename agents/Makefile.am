@@ -29,5 +29,3 @@ AUTOMAKE_OPTIONS = foreign
 
 SUBDIRS=@TA_SUBDIRS@
 
-install-data-hook:
-	mkdir -p $(DESTDIR)/$(prefix)/agents

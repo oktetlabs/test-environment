@@ -1,10 +1,6 @@
 
-AM_CPPFLAGS = -I$(DESTDIR)/$(prefix)/../include
-
-AM_CFLAGS =
-
+AM_CPPFLAGS = -I$(DESTDIR)/$(prefix)/include
 AM_LDFLAGS = -L$(DESTDIR)/$(prefix)/lib 
-
 
 noinst_HEADERS = trc_log.h trc_db.h trc_xml.h
 

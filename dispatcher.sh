@@ -399,8 +399,7 @@ if test -z "${TE_PATH}" ; then
         eval $TMP
     fi
     if test -z "${host}" ; then
-        CONFIG_GUESS=`find /usr/share/automake* -name config.guess | tail -n 1` 
-        host=`$CONFIG_GUESS` 
+        host=`${TE_BASE}/engine/builder/te_discover_host` 
     fi        
     if test -z "$host" ; then
         echo 'Cannot determine host platform.' >&2

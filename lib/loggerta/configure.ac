@@ -24,21 +24,7 @@ AC_SUBST([TE_LDFLAGS])
 AC_ARG_VAR([TE_CFLAGS])
 AC_ARG_VAR([TE_LDFLAGS])
 
-AC_CONFIG_HEADERS([config.h])
-
-AC_C_INLINE
-
-AC_CHECK_HEADERS([\
-stdlib.h \
-stdarg.h \
-string.h \
-errno.h \
-time.h \
-sys/time.h \
-pthread.h \
-semaphore.h \
-netinet/in.h \
-])
+AC_CHECK_HEADERS([te_config.h],[],[AC_ERROR([te_config.h is not found])])
 
 AC_CONFIG_FILES([Makefile])
 

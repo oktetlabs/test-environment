@@ -40,7 +40,11 @@ pushd $TE_BASE_DIR >/dev/null
 export TE_BASE=`pwd` 
 popd >/dev/null
 
-AC_CANONICAL_HOST
+#AC_CANONICAL_HOST
+
+# Do not use config.guess to avoid problems with 64-bit architecture
+# and i686 tools.
+host=`${TE_BASE}/engine/builder/te_discover_host`
 
 TE_BUILD=`pwd`
 
@@ -143,13 +147,20 @@ done ;
 AC_CONFIG_SUBDIRS(doc)
 
 DUMMY=
- 
-# Configure libraries for each platform
+
+# Process libraries
+mkdir -p include
 mkdir -p lib
 LIB_SUBDIRS=
 LIB_DIST_SUBDIRS=
 for p in ${TE_BS_PLATFORMS} ; do
     PLATFORM=`eval echo '$'${p}'_PLATFORM'`
+    
+    if test $PLATFORM == $host ; then 
+        ${TE_BASE}/engine/builder/te_configure_package INCLUDE include \
+                include $host ${TE_BASE}/include $prefix || exit 1
+    fi
+    
     LIBS=`eval echo '$'${p}'_LIBS'`
     for package in $LIBS ; do
         PKGNAME=${p}_$package
@@ -169,7 +180,7 @@ for p in ${TE_BS_PLATFORMS} ; do
         if test $PLATFORM != $host ; then continue ; fi
         
         if test -z "$no_create" ; then
-             ${TE_BASE}/engine/builder/te_configure_package LIB $package \
+            ${TE_BASE}/engine/builder/te_configure_package LIB $package \
             $PKGNAME $PLATFORM $PKGSRC $prefix || exit 1
             cd lib/$PKGNAME
             make install-data || exit 1
@@ -239,7 +250,7 @@ if test -z "$no_create" ; then
     echo "TE_BS_SUITES=$TE_BS_SUITES" > ${TE_BUILD}/suites/Makefile.suites
 fi    
 
-AC_CONFIG_FILES(Makefile include/Makefile lib/Makefile 
+AC_CONFIG_FILES(Makefile lib/Makefile 
                 engine/Makefile tools/Makefile agents/Makefile suites/Makefile)
 
 AC_OUTPUT

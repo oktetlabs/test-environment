@@ -1,9 +1,5 @@
 
-AM_CPPFLAGS = -I$(DESTDIR)/$(prefix)/../@host@/include \
-              -I$(DESTDIR)/$(prefix)/../include
-
-AM_CFLAGS = 
-
+AM_CPPFLAGS = -I$(DESTDIR)/$(prefix)/../@host@/include 
 AM_LDFLAGS = @TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/../@host@/lib
 
 

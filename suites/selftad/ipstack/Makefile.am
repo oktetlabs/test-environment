@@ -7,9 +7,7 @@ dist_tetest_DATA = package.xml \
                    udp-data-csap.asn udp-filter.asn
 
 
-AM_CFLAGS = -I$(DESTDIR)/$(prefix)/include \
-            -I$(DESTDIR)/$(prefix)/../include
-
+AM_CPPFLAGS = -I$(DESTDIR)/$(prefix)/include 
 AM_LDFLAGS = @TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/lib 
 
 

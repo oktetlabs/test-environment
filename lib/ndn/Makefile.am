@@ -1,10 +1,8 @@
 
 AUTOMAKE_OPTIONS = foreign 
 
-AM_CFLAGS=@TE_CFLAGS@ -I$(DESTDIR)/$(prefix)/include \
-                      -I$(DESTDIR)/$(prefix)/../include
-
-AM_LDFLAGS=@TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/lib 
+AM_CFLAGS=@TE_CFLAGS@ -I$(DESTDIR)/$(prefix)/include 
+AM_LDFLAGS=@TE_LDFLAGS@ 
 
 if HAS_SNMP 
 AM_CFLAGS+=-DHAS_SNMP -DCMU_COMPATIBLE -DUCD_COMPATIBLE

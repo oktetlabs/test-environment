@@ -30,6 +30,8 @@
 #ifndef __TE_RCF_PCH_INTERNAL_H__
 #define __TE_RCF_PCH_INTERNAL_H__
 
+#include "te_config.h"
+
 #include <stdio.h>
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>

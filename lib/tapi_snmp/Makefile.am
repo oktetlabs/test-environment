@@ -1,10 +1,9 @@
 
-AM_CPPFLAGS=-I$(DESTDIR)/$(prefix)/include \
-            -I$(DESTDIR)/$(prefix)/../include
+AM_CPPFLAGS=-I$(DESTDIR)/$(prefix)/include
 
 AM_CFLAGS=@NET_SNMP_CFLAGS@
 
-AM_LDFLAGS=@TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/lib 
+AM_LDFLAGS=@TE_LDFLAGS@ 
 
 
 include_HEADERS=tapi_snmp.h tapi_snmp_iftable.h tapi_snmp_macro.h

@@ -1,10 +1,6 @@
 
-AM_CPPFLAGS=-I$(DESTDIR)/$(prefix)/include \
-            -I$(DESTDIR)/$(prefix)/../include -I$(top_srcdir)
-
-AM_LDFLAGS=@TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/lib 
-
-# VPATH = @srcdir@:@srcdir@/tests
+AM_CPPFLAGS=-I$(DESTDIR)/$(prefix)/include -I$(top_srcdir)
+AM_LDFLAGS=@TE_LDFLAGS@ 
 
 noinst_HEADERS=tad_eth_impl.h
 

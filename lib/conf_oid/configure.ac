@@ -29,12 +29,7 @@ AC_SUBST([TE_LDFLAGS])
 AC_ARG_VAR([TE_CFLAGS])
 AC_ARG_VAR([TE_LDFLAGS])
 
-AC_CONFIG_HEADERS([config.h])
-
-AC_CHECK_HEADERS([\
-string.h \
-strings.h \
-])
+AC_CHECK_HEADERS([te_config.h],[],[AC_ERROR([te_config.h is not found])])
 
 AC_CONFIG_FILES([Makefile])
 

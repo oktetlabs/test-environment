@@ -1,7 +1,6 @@
 
 MY_CPPFLAGS=-I$(DESTDIR)/$(prefix)/include \
             -I$(DESTDIR)/$(prefix)/../@host@/include \
-            -I$(DESTDIR)/$(prefix)/../include \
             -include config.h
 AM_YFLAGS=-d
 

@@ -1,9 +1,7 @@
 
 AUTOMAKE_OPTIONS = foreign 
 
-AM_CPPFLAGS=-I$(DESTDIR)/$(prefix)/include \
-            -I$(DESTDIR)/$(prefix)/../include
-AM_CFLAGS=
+AM_CPPFLAGS=-I$(DESTDIR)/$(prefix)/include 
 AM_LDFLAGS=@TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/lib 
 
 
@@ -16,7 +14,7 @@ te_stdouterr_DEPENDENCIES=@TE_DEPENDENCIES@ \
                           $(DESTDIR)/$(prefix)/lib/libipc.a
 
 mybindir=$(prefix)/bin
-dist_mybin_SCRIPTS=te_builder_log te_create_inst_dirs \
+dist_mybin_SCRIPTS=te_builder_log te_create_inst_dirs te_discover_host \
                    te_generate_symtbl te_rpc_supported \
                    tce_instrument_sources tce_uninstrument_sources \
                    tce_report \

@@ -30,6 +30,8 @@
 #ifndef __TE_CONF_API_H__
 #define __TE_CONF_API_H__
 
+#include "te_config.h"
+
 #include <stdio.h>
 #ifdef STDC_HEADERS
 #include <stdarg.h>

@@ -9,8 +9,7 @@ install-exec-hook:
 
 else
 
-AM_CFLAGS=@TE_CFLAGS@ -I$(DESTDIR)/$(prefix)/../@host@/include \
-                      -I$(DESTDIR)/$(prefix)/../include
+AM_CFLAGS=@TE_CFLAGS@ -I$(DESTDIR)/$(prefix)/../@host@/include 
 AM_LDFLAGS=@TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/../@host@/lib
 
 libtavxworks_a_DEPENDENCIES=@TE_DEPENDENCIES@

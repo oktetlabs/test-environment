@@ -29,22 +29,7 @@ CFLAGS=${CFLAGS}" "${TE_CFLAGS}
 AC_PROG_LIBTOOL
 AC_SUBST([LIBTOOL_DEPS])
 
-AC_CONFIG_HEADERS([config.h])
-
-AC_CHECK_HEADERS([\
-stdlib.h \
-stdio.h \
-unistd.h \
-netdb.h \
-ctype.h \
-sys/types.h \
-sys/socket.h \
-sys/errno.h \
-arpa/inet.h \
-netinet/in.h \
-netinet/tcp.h \
-])
-
+AC_CHECK_HEADERS([te_config.h],[],[AC_ERROR([te_config.h is not found])])
 
 AC_CONFIG_FILES([Makefile])
 

@@ -1,9 +1,8 @@
 
 AUTOMAKE_OPTIONS = foreign 
 
-AM_CFLAGS=@TE_CFLAGS@ -I$(DESTDIR)/$(prefix)/include \
-                      -I$(DESTDIR)/$(prefix)/../include
-AM_LDFLAGS=@TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/lib 
+AM_CFLAGS=@TE_CFLAGS@ -I$(DESTDIR)/$(prefix)/include 
+AM_LDFLAGS=@TE_LDFLAGS@ 
 
 include_HEADERS=conf_api.h conf_types.h conf_messages.h
 

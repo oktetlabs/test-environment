@@ -1,11 +1,6 @@
 
-AM_CPPFLAGS = -I$(DESTDIR)/$(prefix)/include \
-              -I$(DESTDIR)/$(prefix)/../include
-
-# TE_CFLAGS are already included in CFLAGS in configure.ac
-AM_CFLAGS =
-
-AM_LDFLAGS = @TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/lib 
+AM_CPPFLAGS = -I$(DESTDIR)/$(prefix)/include
+AM_LDFLAGS = @TE_LDFLAGS@ 
 
 include_HEADERS = tapi_test.h tapi_bufs.h tapi_cfg.h \
                   tapi_cfg_net.h tapi_cfg_arl.h tapi_cfg_base.h \

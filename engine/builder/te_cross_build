@@ -34,6 +34,10 @@ DUMMY=
 for p in ${TE_BS_PLATFORMS} ; do
     PLATFORM=`eval echo '$'${p}'_PLATFORM'`
     if test $PLATFORM = $host ; then continue ; fi
+    
+    ${TE_BASE}/engine/builder/te_configure_package INCLUDE include \
+        ${p}_include $PLATFORM ${TE_BASE}/include $PREFIX || exit 1
+        
     LIBS=`eval echo '$'${p}'_LIBS'`
     for package in $LIBS ; do
         PKGNAME=${p}_$package

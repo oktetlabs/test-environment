@@ -31,12 +31,11 @@
 #ifndef __TE_CONF_MESSAGES_H__
 #define __TE_CONF_MESSAGES_H__
 
+#include "conf_api.h"
+
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif
-
-#include "conf_api.h"
-
 
 #define CONFIGURATOR_SERVER     "TE_CS"
 

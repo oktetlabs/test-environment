@@ -32,6 +32,8 @@
 #ifndef __TE_LOGGER_TEN_INT_H__
 #define __TE_LOGGER_TEN_INT_H__
 
+#include "te_config.h"
+
 #if HAVE_STDLIB_H
 #include <stdlib.h>
 #endif
