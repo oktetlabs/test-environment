@@ -171,11 +171,12 @@ while test -n "$1" ; do
         --log-dir=*) TE_LOG_DIR="${1#--log-dir=}" ;;
         --log-online) LOG_ONLINE=yes ;;
         
-        --lock-dir) LOCK_DIR="${1#--lock-dir=}" ;;
+        --lock-dir=*) LOCK_DIR="${1#--lock-dir=}" ;;
 
         --no-ts-build) BUILD_TS= ;;
         
-        *)  usage ; 
+        *)  echo "Unknown option: $1" ;
+            usage ;
             exit 1 ;;
     esac
     shift 1 ;
