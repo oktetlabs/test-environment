@@ -51,6 +51,7 @@ extern asn_type ndn_eth_csap_s;
 extern asn_type ndn_ip4_csap_s;
 extern asn_type ndn_icmp4_csap_s;
 extern asn_type ndn_udp_csap_s;
+extern asn_type ndn_tcp_csap_s;
 
 extern asn_type ndn_cli_csap_s;
 
@@ -61,20 +62,17 @@ extern asn_type ndn_bridge_csap_s;
 static asn_named_entry_t _ndn_generic_csap_level_ne_array [] = 
 {
 /* Add here reference to protocol-specific CSAP init params */ 
-    { "file", &ndn_file_csap_s },
-
+    { "file", &ndn_file_csap_s }, 
 #ifdef HAS_SNMP
     { "snmp", &ndn_snmp_csap_s },
 #endif
-    { "eth", &ndn_eth_csap_s },
-
+    { "eth", &ndn_eth_csap_s }, 
     { "ip4", &ndn_ip4_csap_s },
     { "icmp4", &ndn_icmp4_csap_s },
     { "udp", &ndn_udp_csap_s },
-
+    { "tcp", &ndn_tcp_csap_s }, 
     { "cli", &ndn_cli_csap_s },
-    { "dhcp", &ndn_dhcpv4_csap_s },
-
+    { "dhcp", &ndn_dhcpv4_csap_s }, 
     { "bridge", &ndn_bridge_csap_s },
 };
 
@@ -97,6 +95,7 @@ extern asn_type ndn_eth_header_s;
 extern asn_type ndn_ip4_header_s;
 extern asn_type ndn_icmp4_message_s;
 extern asn_type ndn_udp_header_s;
+extern asn_type ndn_tcp_header_s;
 
 extern asn_type ndn_cli_message_s;
 
@@ -117,6 +116,7 @@ static asn_named_entry_t _ndn_generic_pdu_ne_array [] =
     { "ip4", &ndn_ip4_header_s },
     { "icmp4", &ndn_icmp4_message_s },
     { "udp", &ndn_udp_header_s },
+    { "tcp", &ndn_tcp_header_s },
 
     { "cli", &ndn_cli_message_s },
 

@@ -62,6 +62,13 @@
 #include "tad_ipstack_impl.h"
 
 
+int 
+tcp_ip4_check_pdus(csap_p csap_descr, asn_value *traffic_nds)
+{
+    UNUSED(csap_descr);
+    UNUSED(traffic_nds);
+    return 0;
+}
 
  
 /**
@@ -443,6 +450,7 @@ tcp_ip4_init_cb (int csap_id, const asn_value *csap_nds, int layer)
 {
     csap_p csap_descr;      /**< csap description   */ 
     tcp_csap_specific_data_t *   spec_data; 
+    int val_len;
 
     if (csap_nds == NULL)
         return ETEWRONGPTR;
@@ -460,14 +468,15 @@ tcp_ip4_init_cb (int csap_id, const asn_value *csap_nds, int layer)
     csap_descr->layer_data[layer] = spec_data;
     csap_descr->get_param_cb[layer] = tcp_get_param_cb;
 
-#if 0 /* TODO right */
-    csap_descr->check_pdus_cb = bridge_eth_check_pdus;
-#endif 
+    csap_descr->check_pdus_cb = tcp_ip4_check_pdus;
 
-    F_VERB("%s called for csap %d, layer %d\n", __FUNCTION__, csap_id, layer); 
+    val_len = asn_get_length(csap_nds, "");
+
+
+    F_VERB("%s called for csap %d, layer %d, nds array len %d",
+            __FUNCTION__, csap_id, layer, val_len); 
 
     UNUSED(csap_nds);
-    return 0;
     return 0;
 }
 

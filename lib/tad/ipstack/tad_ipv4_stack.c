@@ -329,6 +329,8 @@ ip4_eth_init_cb (int csap_id, const asn_value *csap_nds, int layer)
     csap_p csap_descr;      /**< csap description   */ 
     ip4_csap_specific_data_t *   spec_data; 
 
+    int val_len;
+
     if (csap_nds == NULL)
         return ETEWRONGPTR;
 
@@ -348,8 +350,11 @@ ip4_eth_init_cb (int csap_id, const asn_value *csap_nds, int layer)
 #if 0 /* TODO right */
     csap_descr->check_pdus_cb = bridge_eth_check_pdus;
 #endif 
+    val_len = asn_get_length(csap_nds, "");
+    
 
-    F_VERB("%s called for csap %d, layer %d\n", __FUNCTION__, csap_id, layer); 
+    F_VERB("%s called for csap %d, layer %d, nds array len %d",
+            __FUNCTION__, csap_id, layer, val_len); 
 
     UNUSED(csap_nds);
     return 0;

@@ -32,6 +32,7 @@
 
 #include "tad.h"
 #include "te_errno.h"
+#include "logger_api.h"
 
 
 #ifndef INSQUE
@@ -102,11 +103,15 @@ csap_spt_type_p
 find_csap_spt (const char * proto)
 {
     csap_spt_entry_p spt_entry;
+    VERB("%s, asked proto %s", __FUNCTION__, proto);
 
     for (spt_entry = csap_spt_root.next; 
          spt_entry!= &csap_spt_root; 
          spt_entry = spt_entry->next)
-    {
+    { 
+        if (spt_entry->spt_data)
+            VERB("test proto %s", spt_entry->spt_data->proto);
+
         if (spt_entry->spt_data && 
             (strcmp (spt_entry->spt_data->proto, proto) == 0))
             return spt_entry->spt_data;

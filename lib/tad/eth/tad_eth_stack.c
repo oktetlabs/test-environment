@@ -808,10 +808,9 @@ eth_single_init_cb (int csap_id, const asn_value *csap_nds, int layer)
     if (rc)
     {
         val_len = asn_get_length(csap_nds, "");
-        ERROR(
-            "eth_single_init_cb called for csap %d, layer %d,"
-            "ndn has wrong len %d\n", 
-            csap_id, layer, val_len);
+        ERROR("eth_single_init_cb called for csap %d, layer %d,"
+              "rc %X getting '%s', ndn has len %d\n", 
+              csap_id, layer, rc, str_index_buf, val_len);
         return TE_RC(TE_TAD_CSAP, EINVAL);
     }
 

@@ -231,18 +231,25 @@ rcf_ch_csap_create(struct rcf_comm_connection *handle,
         csap_layer_neighbour_list_p nbr_p; 
         csap_spt_type_p csap_spt_descr; 
         char *lower_proto = NULL;
+        int val_len;
 
-        csap_spt_descr = find_csap_spt (new_csap->proto[level]);
+        csap_spt_descr = find_csap_spt(new_csap->proto[level]);
 
         if (csap_spt_descr == NULL)
         {
+            ERROR("Protocol[%d] '%s' is not supported", 
+                    level, new_csap->proto[level]);
             /* ERROR! asked protocol is not supported. */
             SEND_ANSWER("%d Protocol is not supported", 
                     TE_RC(TE_TAD_CH, EPROTONOSUPPORT));
-            VERB("Protocol is not supported");
+            csap_destroy(new_csap_id); 
             asn_free_value(csap_nds);
             return 0;
         }
+
+        val_len = asn_get_length(csap_nds, "");
+        VERB("CSAP spec array len %d", val_len);
+
 
         if (level + 1 < new_csap->depth)
             lower_proto = new_csap->proto[level + 1];
@@ -257,7 +264,7 @@ rcf_ch_csap_create(struct rcf_comm_connection *handle,
                 if (rc) 
                 {
                     /* Init ERROR!*/
-                    VERB("CSAP init error 0x%x", rc);
+                    ERROR("CSAP init error %X", rc);
                     SEND_ANSWER("%d CSAP init error", TE_RC(TE_TAD_CH, rc));
                     csap_destroy(new_csap_id); 
                     asn_free_value(csap_nds);
@@ -270,9 +277,10 @@ rcf_ch_csap_create(struct rcf_comm_connection *handle,
         {
             /* ERROR! there was not found neighvour -- 
                this stack is not supported.*/
+            ERROR("Protocol stack for low '%s' under '%s' is not supported", 
+                    lower_proto, new_csap->proto[level]);
             SEND_ANSWER("%d Protocol stack is not supported", 
                 TE_RC(TE_TAD_CH, EPROTONOSUPPORT));
-            VERB("Protocol stack is not supported");
             csap_destroy(new_csap_id); 
             asn_free_value(csap_nds);
             return 0;
@@ -327,7 +335,7 @@ rcf_ch_csap_destroy(struct rcf_comm_connection *handle,
         if (csap_spt_descr == NULL)
         {
             /* ERROR! asked protocol is not supported. */
-            VERB("protocol support is not found.");
+            ERROR("protocol support is not found.");
 
             SEND_ANSWER("%d Generic error: protocol support is not found.",
                         TE_RC(TE_TAD_CH, EPROTONOSUPPORT));
