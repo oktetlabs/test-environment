@@ -33,7 +33,7 @@ echo -en \
 "<?xml version=\"1.0\"?>\\n"\
 "<tests-info>\\n"
 
-for i in `find $1 -name *.c` ; do
+for i in `find $1 -maxdepth 1 -name *.c` ; do
     OBJECTIVE=`awk --posix '
     BEGIN { put = 0; }                               \
     {                                                \
