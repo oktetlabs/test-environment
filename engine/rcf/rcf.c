@@ -225,6 +225,9 @@ free_ta_list()
 {
     ta *agent, *next;
 
+    ta_initial_task *task, *nexttask;
+    
+
     for (agent = agents; agent != NULL; agent = next)
     {
         next = agent->next;
@@ -235,6 +238,19 @@ free_ta_list()
         free(agent->name);
         free(agent->type);
         free(agent->conf);
+
+        for (task = agent->initial_tasks; task != NULL; task = nexttask)
+        {
+            nexttask = task->next;
+            for (; task->argc; task->argc--)
+            {
+                free(task->argv[task->argc - 1]);
+            }
+            free(task->entry);
+            free(task->argv);
+            free(task);
+        }
+
         free(agent);
     }
     agents = NULL;
