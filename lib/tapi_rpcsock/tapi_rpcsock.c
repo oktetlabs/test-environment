@@ -5942,8 +5942,8 @@ rpc_get_overlapped_result(rcf_rpc_server *handle,
          "bytes transferred %u",
          handle->ta, handle->name, rpcop2str(op), s, overlapped,
          out.retval ? "true" : "false", errno_rpc2str(RPC_ERRNO(handle)),
-         win_error_rpc2str(out.common.win_error),
-         (bytes != NULL && out.bytes.bytes_val != NULL) ? *bytes : (size_t)-1);
+         win_error_rpc2str(out.common.win_error), 
+         out.bytes.bytes_val != NULL ? *bytes : 0);
 
     RETVAL_VAL(out.retval, get_overlapped_result);
 }
