@@ -53,6 +53,7 @@ te_bool trc_update_db = FALSE;
 /** Should database be initialized from scratch */
 te_bool trc_init_db = FALSE;
 
+te_bool trc_quiet = FALSE;
 
 /** Name of the file with XML log to be analyzed */
 static char *trc_xml_log_fn = NULL;
@@ -64,6 +65,7 @@ static char *trc_db_fn = NULL;
 enum {
     TRC_OPT_VERSION,
     TRC_OPT_UPDATE,
+    TRC_OPT_QUIET,
     TRC_OPT_INIT,
     TRC_OPT_DB,
 };
@@ -92,6 +94,9 @@ process_cmd_line_opts(int argc, char **argv)
         { "init", 'i', POPT_ARG_NONE, NULL, TRC_OPT_INIT,
           "Initialize expected testing results database.", NULL },
 
+        { "quiet", 'q', POPT_ARG_NONE, NULL, TRC_OPT_QUIET,
+          "Be quiet.", NULL },
+
         { "db", 'd', POPT_ARG_STRING, NULL, TRC_OPT_DB,
           "Specify name of the file with expected testing results database.",
           "FILENAME" },
@@ -114,6 +119,10 @@ process_cmd_line_opts(int argc, char **argv)
     {
         switch (rc)
         {
+            case TRC_OPT_QUIET:
+                trc_quiet = TRUE;
+                break;
+
             case TRC_OPT_INIT:
                 trc_init_db = TRUE;
                 /* Fall throught */
@@ -226,6 +235,33 @@ trc_collect_tests_stats(test_runs *tests, trc_stats *stats)
 }
 
 
+static int
+trc_stats_to_txt(FILE *f, const trc_stats *stats)
+{
+    static const char * const fmt =
+"\n"
+"Run (total)                            %4u\n"
+"  Passed, as expected                  %4u\n"
+"  Failed, as expected                  %4u\n"
+"  Passed unexpectedly                  %4u\n"
+"  Failed unexpectedly                  %4u\n"
+"  Aborted (no useful result)           %4u\n"
+"  New (expected result is not known)   %4u\n"
+"Not Run (total)                        %4u\n"
+"  Skipped, as expected                 %4u\n"
+"  Skipped unexpectedly                 %4u\n"
+"\n";
+    fprintf(f, fmt,
+            TRC_STATS_RUN(stats),
+            stats->pass_exp, stats->fail_exp,
+            stats->pass_une, stats->fail_une,
+            stats->aborted, stats->new_run,
+            TRC_STATS_NOT_RUN(stats), stats->skip_exp, stats->skip_une);
+
+    return 0;
+}
+
+
 /**
  * Application entry point.
  *
@@ -272,6 +308,13 @@ main(int argc, char *argv[])
 
     /* Collect total statistics */
     trc_collect_tests_stats(&trc_db.tests, &trc_db.stats);
+
+    /* Output grand total statistics to stdout */
+    if (!trc_quiet && trc_stats_to_txt(stdout, &trc_db.stats) != 0)
+    {
+        ERROR("Failed to output grand total statistics to stdout");
+        /* Try to continue */
+    }
 
     /* Generate report in HTML format */
     if (trc_report_to_html("test.html", &trc_db) != 0)

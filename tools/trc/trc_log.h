@@ -40,6 +40,6 @@
     } while (0)
 
 #define ERROR(fmt_...)     LOG("ERROR: " fmt_)
-#define INFO(fmt_...)      LOG("INFO: " fmt_)
+#define INFO(fmt_...)
 
 #endif /* !__TE_TOOLS_TRC_LOG_H__ */
