@@ -563,9 +563,6 @@ static void
 forward_cleanup(void *unused)
 {
     UNUSED(unused);
-
-    rcf_api_cleanup();
-    log_client_close();
 }
 
 /**
@@ -606,7 +603,6 @@ forward(void *arg)
     if ((buf = (char *)calloc(1, RCF_RPC_MAX_BUF)) == NULL)
     {
         rpcs->_errno = TE_RC(TE_RCF_API, ENOMEM);
-        log_client_close();
         return NULL;
     }
 

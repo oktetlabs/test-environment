@@ -1303,9 +1303,6 @@ error:
     else
         VERB("Exit");
 
-    log_client_close();
-    rcf_api_cleanup();
-
     return rc;
 }
 

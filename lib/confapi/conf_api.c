@@ -86,6 +86,8 @@
                                                                     \
             sprintf(name, "cfg_client_%u", (unsigned int)getpid()); \
             cfgl_ipc_client = ipc_init_client(name);                \
+            if (cfgl_ipc_client != NULL)                            \
+                atexit(cfg_api_cleanup);                            \
         }                                                           \
     } while (0)
 

@@ -799,8 +799,5 @@ exit:
     tester_run_path_free(ctx.path);
     test_requirements_free(&ctx.reqs);
     
-    cfg_api_cleanup();
-    log_client_close();
-
     return result;
 }

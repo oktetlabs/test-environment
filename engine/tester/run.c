@@ -1194,10 +1194,6 @@ run_test_thread(void *args)
 
     EXIT("0x%x", (unsigned int)pthread_self());
 
-#ifdef TESTER_TIMEOUT_SUPPORT
-    log_client_close();
-#endif
-
     return NULL;
 }
 

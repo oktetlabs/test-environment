@@ -42,6 +42,9 @@ extern "C" {
 
 /** 
  * Close IPC with Logger server and release resources.
+ *
+ * Usually user should not worry about calling of the function, since
+ * it is called automatically using atexit() mechanism.
  */
 extern void log_client_close(void);
 

@@ -148,6 +148,7 @@ log_message(uint16_t level, const char *entity_name,
             return;
         }
         te_log_message_tx = log_message_ipc;
+        atexit(log_client_close);
     }
     if (lgr_msg_buf == NULL)
     {

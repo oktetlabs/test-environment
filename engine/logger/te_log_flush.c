@@ -120,13 +120,10 @@ main(void)
         if (res != ETESMALLBUF)
         {
             ERROR("Can not interact with RCF\n");
-            rcf_api_cleanup();
             free(ta_names);
             return 1;
         }
     } while (res == ETESMALLBUF);
-
-    rcf_api_cleanup();
 
     /* Create single linked list of active TA */
     while (names_len != str_len)

@@ -569,7 +569,6 @@ ta_handler(void *ta)
     {
         RING("IPC Server '%s' closed", srv_name);
     }
-    rcf_api_cleanup();
 
     return NULL;
 }
@@ -771,8 +770,6 @@ exit:
         LGR_FREE_FLTR_LIST(&te_el->filters);
         free(te_el);
     }
-
-    rcf_api_cleanup();
 
     if (ipc_kill() != 0)
     {

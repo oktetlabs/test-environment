@@ -813,6 +813,9 @@ extern int rcf_ta_kill_task(const char *ta_name, int session, pid_t pid);
 /**
  * Clean up resources allocated by RCF API.
  * This routine should be called from each thread used RCF API.
+ *
+ * Usually user should not worry about calling of the function, since
+ * it is called automatically using atexit() or similar mechanism.
  */
 extern void rcf_api_cleanup(void);
 

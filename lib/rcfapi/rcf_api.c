@@ -457,6 +457,7 @@ rcf_api_thread_ctx_destroy(void *handle)
 static void
 rcf_api_key_create(void)
 {
+    atexit(rcf_api_cleanup);
     if (pthread_key_create(&key, rcf_api_thread_ctx_destroy) != 0)
     {
         ERROR("pthread_key_create() failed\n");
@@ -491,25 +492,27 @@ get_ctx_handle(te_bool create)
 #endif
     if (handle == NULL && create)
     {
-       char name[RCF_MAX_NAME];
-       handle = calloc(1, sizeof(*handle));
+        char name[RCF_MAX_NAME];
+        handle = calloc(1, sizeof(*handle));
 
-       sprintf(name, "rcf_client_%u_%u", (unsigned int)getpid(), 
-               (unsigned int)pthread_self());
+        sprintf(name, "rcf_client_%u_%u", (unsigned int)getpid(), 
+                (unsigned int)pthread_self());
                
-       if ((handle->ipc_handle = ipc_init_client(name)) == NULL)
-       {
-           ERROR("ipc_init_client() failed\n");
-           fprintf(stderr, "ipc_init_client() failed\n");
-           return NULL;
-       }
-       CIRCLEQ_INIT(&handle->msg_buf_head);
+        if ((handle->ipc_handle = ipc_init_client(name)) == NULL)
+        {
+            ERROR("ipc_init_client() failed\n");
+            fprintf(stderr, "ipc_init_client() failed\n");
+            return NULL;
+        }
+        CIRCLEQ_INIT(&handle->msg_buf_head);
 #ifdef HAVE_PTHREAD_H
-       if (pthread_setspecific(key, (void *)handle) != 0)
-       {
-           ERROR("pthread_setspecific() failed\n");
-           fprintf(stderr, "pthread_setspecific() failed\n");
-       }
+        if (pthread_setspecific(key, (void *)handle) != 0)
+        {
+            ERROR("pthread_setspecific() failed\n");
+            fprintf(stderr, "pthread_setspecific() failed\n");
+        }
+#else
+        atexit(rcf_api_cleanup);
 #endif
     }
 

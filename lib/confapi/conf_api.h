@@ -702,6 +702,9 @@ extern int cfg_create_config(const char *name, te_bool history);
 
 /**
  * Clean up resources allocated by Configurator API.
+ *
+ * Usually user should not worry about calling of the function, since
+ * it is called automatically using atexit() mechanism.
  */
 extern void cfg_api_cleanup(void);
 

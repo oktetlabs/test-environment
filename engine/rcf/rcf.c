@@ -2122,7 +2122,5 @@ no_ipcs_error:
     else
         RING("Exit");
 
-    log_client_close();
-
     return rc < 0 ? 1 : 0;
 }
