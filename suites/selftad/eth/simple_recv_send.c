@@ -60,69 +60,73 @@ local_eth_frame_handler(const ndn_eth_header_plain *header,
     UNUSED(payload);
     UNUSED(userdata);
 
-    printf ("++++ Ethernet frame received\n");
-    printf ("dst: ");
-    for (i = 0; i < ETH_ALEN; i ++ )
-        printf ("%02x ", header->dst_addr[i]);
-    printf ("\nsrc: ");
-    for (i = 0; i < ETH_ALEN; i ++ )
-        printf ("%02x ", header->src_addr[i]);
-
-    printf("\neth_len_type: 0x%x = %d\n",
-           header->eth_type_len,  header->eth_type_len);
-
-    printf("payload len: %d\n", plen);
+    INFO("++++ Ethernet frame received\n");
+    INFO("dst: %tm", header->dst_addr, ETH_ALEN);
+    INFO("src: %tm", header->src_addr, ETH_ALEN); 
+    INFO("eth_len_type: 0x%x = %d",
+           header->eth_type_len,  header->eth_type_len); 
+    INFO("payload len: %d", plen);
 }
 
 int
 main(int argc, char *argv[])
 {
-    char ta[32];
+    char ta[64];
     int  len = sizeof(ta);
-    int  sid;
+    int  sid_a;
+    int  sid_b;
+
+    char *ta_A;
+    char *ta_B;
+
+    csap_handle_t eth_csap = CSAP_INVALID_HANDLE;
+    csap_handle_t eth_listen_csap = CSAP_INVALID_HANDLE;
    
     TEST_START;
  
     if (rcf_get_ta_list(ta, &len) != 0)
         TEST_FAIL("rcf_get_ta_list failed");
 
-    VERB(" Using agent: %s\n", ta);
+    ta_A = ta;
+    ta_B = ta + strlen(ta) + 1;
+    if (ta_B - ta > len)
+        TEST_FAIL("Second TA not found, at least two agents required");
+
+    INFO("Using agent A: '%s', agent B: '%s'", ta_A, ta_B);
     
     /* Session */
-    {
-        if (rcf_ta_create_session(ta, &sid) != 0)
-        {
-            fprintf(stderr, "rcf_ta_create_session failed\n");
-            VERB("rcf_ta_create_session failed\n"); 
-            return 1;
-        }
-        VERB("Test: Created session: %d\n", sid); 
-    }
+    if (rcf_ta_create_session(ta_A, &sid_a) != 0)
+        TEST_FAIL("rcf_ta_create_session failed");
+    VERB("Test: Created A session: %d\n", sid_a); 
+
+    if (rcf_ta_create_session(ta_B, &sid_b) != 0)
+        TEST_FAIL("rcf_ta_create_session failed");
+    VERB("Test: Created B session: %d\n", sid_b); 
 
     /* ETH CSAP tests */
     do {
         int syms = 4;
+        int num_pkts;
         uint16_t eth_type = ETH_P_IP;
         uint8_t payload [2000];
         int p_len = 100; /* for test */
-        csap_handle_t eth_csap;
-        csap_handle_t eth_listen_csap;
         ndn_eth_header_plain plain_hdr;
         asn_value *asn_eth_hdr;
         asn_value *template;
         asn_value *asn_pdus;
         asn_value *asn_pdu;
         asn_value *pattern;
-        char eth_device[] = "lo"; 
+        char eth_device[] = "eth0"; 
 
-        uint8_t rem_addr[6] = {
+        uint8_t mac_a[6] = {
             0x01,0x02,0x03,0x04,0x05,0x06};
-        uint8_t loc_addr[6] = {
-            0xff,0xff,0xff,0xff,0xff,0xff};
+        uint8_t mac_b[6] = {
+            0x16,0x15,0x14,0x13,0x12,0x11};
 
                     
         memset(&plain_hdr, 0, sizeof(plain_hdr));
-        memcpy(plain_hdr.dst_addr, rem_addr, ETH_ALEN);  
+        memcpy(plain_hdr.dst_addr, mac_b, ETH_ALEN);  
+        memcpy(plain_hdr.src_addr, mac_a, ETH_ALEN);  
         memset(payload, 0, sizeof(payload));
         plain_hdr.eth_type_len = ETH_P_IP; 
 
@@ -147,8 +151,8 @@ main(int argc, char *argv[])
             TEST_FAIL("template create error %X", rc);
         VERB("template created successfully");
 
-        rc = tapi_eth_csap_create(ta, sid, eth_device, rem_addr, loc_addr, 
-                              &eth_type, &eth_csap);
+        rc = tapi_eth_csap_create(ta_A, sid_a, eth_device, mac_b, mac_a, 
+                                  &eth_type, &eth_csap);
 
         if (rc)
             TEST_FAIL("csap create error: %x", rc);
@@ -156,8 +160,8 @@ main(int argc, char *argv[])
         VERB("csap created, id: %d\n", (int)eth_csap);
 
 
-        rc = tapi_eth_csap_create(ta, sid, eth_device, rem_addr, loc_addr, 
-                              &eth_type, &eth_listen_csap); 
+        rc = tapi_eth_csap_create(ta_B, sid_b, eth_device, mac_a, mac_b, 
+                                  &eth_type, &eth_listen_csap); 
         if (rc)
             TEST_FAIL("csap for listen create error: %x", rc);
 
@@ -167,47 +171,43 @@ main(int argc, char *argv[])
         rc = asn_parse_value_text("{{ pdus { eth:{ }}}}", 
                             ndn_traffic_pattern, &pattern, &syms); 
         if (rc)
-            TEST_FAIL("parse value text fails %X", rc);
+            TEST_FAIL("parse value text fails %X, sym %d", rc, syms);
 
-        rc = asn_write_value_field(pattern, rem_addr, sizeof(rem_addr), 
-                "0.pdus.0.#eth.dst-addr.#plain"); 
+        rc = tapi_eth_recv_start(ta_B, sid_b, eth_listen_csap, pattern, 
+                                 local_eth_frame_handler, NULL, 1000, 1);
+        VERB("eth recv start rc: %x\n", rc);
+
         if (rc)
-            TEST_FAIL("write dst to pattern failed %X", rc);
+            TEST_FAIL("tapi_eth_recv_start failed 0x%x", rc);
 
-        rc = tapi_eth_send(ta, sid, eth_csap, template);
+        rc = tapi_eth_send(ta_A, sid_a, eth_csap, template);
 
         VERB("tapi_eth_send rc: %x\n", rc);
 
         if (rc)
             TEST_FAIL("Eth frame send error: %x", rc);
 
-#if 1
-        rc = tapi_eth_recv_start(ta, sid, eth_listen_csap, pattern, 
-                local_eth_frame_handler, NULL, 0, 10);
-        VERB("eth recv start rc: %x\n", rc);
-#else
-        syms = 4;
-        rc = tapi_eth_recv_wait(ta, sid, eth_listen_csap, pattern, 
-                local_eth_frame_handler, NULL, 120000, &syms);
-        VERB("eth recv wait rc: %x, num: %d\n", rc, syms);
-#endif
-
-        if (rc)
-            TEST_FAIL("tapi_eth_recv_start failed 0x%x", rc);
-
-        sleep(5);
-
-        rc = rcf_ta_trrecv_stop(ta, sid, eth_listen_csap, &syms);
+        num_pkts = 0;
+        rc = rcf_ta_trrecv_wait(ta_B, sid_b, eth_listen_csap, &num_pkts);
 
         if (rc)
             TEST_FAIL("tapi_eth_recv_stop failed 0x%x", rc);
 
-        VERB("trrecv stop rc: %x, num of pkts: %d\n", rc, syms);
+        INFO("trrecv stop rc: %x, num of pkts: %d\n", rc, num_pkts);
+
+        if (num_pkts != 1)
+            TEST_FAIL("Wrong number of packets caught");
 
     } while (0);
 
     TEST_SUCCESS;
 
 cleanup:
+    if (eth_csap != CSAP_INVALID_HANDLE && 
+        (rc = rcf_ta_csap_destroy(ta_A, sid_a, eth_csap)) != 0)
+
+    if (eth_listen_csap != CSAP_INVALID_HANDLE && 
+        (rc = rcf_ta_csap_destroy(ta_B, sid_b, eth_listen_csap)) != 0)
+
     TEST_END; 
 }
