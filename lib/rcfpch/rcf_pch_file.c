@@ -95,7 +95,7 @@ rcf_pch_file(struct rcf_comm_connection *conn, char *cbuf, size_t buflen,
         void       *addr_ptr;
         void       *addr;
 
-        unsigned long int   len;
+        unsigned long int   len = 0;
 
         if (op == RCFOP_FDEL)
         {
