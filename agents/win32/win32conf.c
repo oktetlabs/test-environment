@@ -1189,7 +1189,7 @@ route_add(unsigned int gid, const char *oid, const char *value,
     char              val[32];
     MIB_IPFORWARDROW  entry;
     int               rc, prefix;
-    char             *term_byte;
+    char             *term_byte, *ptr, *end_ptr;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -1201,7 +1201,7 @@ route_add(unsigned int gid, const char *oid, const char *value,
     if (route_get(0, NULL, val, route) == 0)
         return TE_RC(TE_TA_WIN32, EEXIST);
 
-    term_byte = value + strlen(value);
+    term_byte = (char *)(value + strlen(value));
 
     if ((ptr = strstr(value, "gw: ")) != NULL)
     {
