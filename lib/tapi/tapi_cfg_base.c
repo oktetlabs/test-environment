@@ -79,7 +79,7 @@ tapi_cfg_base_ipv4_fw(const char *ta, te_bool *enabled)
     {
         int new_val = *enabled;
 
-        rc = cfg_set_instance_fmt(val_type, (void *)&new_val,
+        rc = cfg_set_instance_fmt(val_type, (void *)new_val,
                                   "/agent:%s/ip4_fw:", ta);
         if (rc != 0)
         {
