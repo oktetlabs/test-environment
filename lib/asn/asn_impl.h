@@ -160,10 +160,24 @@ struct asn_value
  *
  * @return zero on success, otherwise error code. 
  */ 
-extern int asn_impl_find_subtype (const asn_type * type, char *label, 
+extern int asn_impl_find_subtype(const asn_type * type, char *label, 
                                   const asn_type ** found_type);
 
-
+/**
+ * Find one-depth subvalue in ASN value tree by its label.
+ * This method is applicable only to values with CONSTRAINT syntax. 
+ *
+ * @param container  pointer to ASN value which leaf field is interested;
+ * @param label      textual field label, specifying subvalue of 'container'. 
+ *                   Label for 'SEQUENCE OF' and 'SET OF' subvalues 
+ *                   is decimal notation of its integer index in array.
+ * @param found_val  pointer to found subvalue (OUT).
+ *
+ * @return zero on success, otherwise error code. 
+ */ 
+extern int asn_impl_find_subvalue(const asn_value *container, 
+                                  const char *label, 
+                                  asn_value const **found_val);
 
 /**
  * Insert one-depth subvalue into ASN value tree by its label (if applicable).

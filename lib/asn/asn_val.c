@@ -44,8 +44,6 @@ extern int number_of_digits(int value);
 
 int asn_impl_named_subvalue_index(const asn_type * type, const char *label, int *index);
 
-int asn_impl_find_subvalue (const asn_value * , const char *, asn_value const **);
-
 int asn_impl_fall_down_to_tree_nc (const asn_value *, char *, asn_value const **);
 
 int asn_impl_write_value_field (asn_value_p , const void *, size_t , char *);
@@ -1080,7 +1078,7 @@ asn_impl_write_component_value (asn_value_p container,
  */
 int 
 asn_get_subvalue(const asn_value *container, 
-                const asn_value ** subval, const char *subval_labels)
+                 const asn_value ** subval, const char *subval_labels)
 {
     int rc;
     char *rest_labels;
@@ -1090,7 +1088,13 @@ asn_get_subvalue(const asn_value *container,
 
     if (subval_labels == NULL || *subval_labels == '\0')
     {
-        *subval = container;
+        if (container->syntax == CHOICE)
+        { 
+            if ((*subval = container->data.array[0]) == NULL)
+                return EASNINCOMPLVAL; 
+        }
+        else
+            *subval = container;
         return 0;
     }
 
@@ -1109,7 +1113,7 @@ asn_get_subvalue(const asn_value *container,
  */
 int 
 asn_get_field_data(const asn_value *container, 
-                const uint8_t ** data_ptr, const char *subval_labels)
+                   const uint8_t ** data_ptr, const char *subval_labels)
 {
     const asn_value *subval = container;
     int rc;
@@ -1511,8 +1515,8 @@ asn_impl_fall_down_to_tree_nc (const asn_value *container, char *field_labels,
  * @return zero on success, otherwise error code. 
  */ 
 int
-asn_impl_find_subvalue (const asn_value *container, const char *label, 
-                   asn_value const **found_val)
+asn_impl_find_subvalue(const asn_value *container, const char *label, 
+                       asn_value const **found_val)
 { 
     if( !container || !found_val)
         return ETEWRONGPTR; 

@@ -546,7 +546,8 @@ extern int asn_get_subtype(const asn_type *type,
  * @return zero on success or error code.
  */ 
 extern int asn_get_subvalue(const asn_value *container, 
-                const asn_value ** subval, const char *subval_labels);
+                            const asn_value ** subval, 
+                            const char *subval_labels);
 
 
 /**
