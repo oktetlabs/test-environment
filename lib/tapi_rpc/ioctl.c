@@ -96,7 +96,7 @@ rpc_ioctl(rcf_rpc_server *rpcs,
 
     if (rpcs == NULL)
     {
-        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return -1;
     }
 

@@ -53,7 +53,7 @@ rpc_if_nametoindex(rcf_rpc_server *rpcs,
 
     if (rpcs == NULL)
     {
-        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return 0;
     }
 
@@ -86,7 +86,7 @@ rpc_if_indextoname(rcf_rpc_server *rpcs,
 
     if (rpcs == NULL)
     {
-        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return NULL;
     }
 
@@ -128,7 +128,7 @@ rpc_if_nameindex(rcf_rpc_server *rpcs)
 
     if (rpcs == NULL)
     {
-        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return NULL;
     }
 
@@ -186,7 +186,7 @@ rpc_if_freenameindex(rcf_rpc_server *rpcs,
 
     if (rpcs == NULL)
     {
-        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return;
     }
 

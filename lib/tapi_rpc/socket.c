@@ -71,7 +71,7 @@ rpc_socket(rcf_rpc_server *rpcs,
 
     if (rpcs == NULL)
     {
-        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return -1;
     }
 
@@ -103,7 +103,7 @@ rpc_bind(rcf_rpc_server *rpcs,
 
     if (rpcs == NULL)
     {
-        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return -1;
     }
 
@@ -152,7 +152,7 @@ rpc_connect(rcf_rpc_server *rpcs,
 
     if (rpcs == NULL)
     {
-        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return -1;
     }
 
@@ -198,7 +198,7 @@ rpc_listen(rcf_rpc_server *rpcs, int fd, int backlog)
 
     if (rpcs == NULL)
     {
-        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return -1;
     }
 
@@ -232,7 +232,7 @@ rpc_accept_gen(rcf_rpc_server *rpcs,
 
     if (rpcs == NULL)
     {
-        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return -1;
     }
 
@@ -310,7 +310,7 @@ rpc_recvfrom_gen(rcf_rpc_server *rpcs,
 
     if (rpcs == NULL)
     {
-        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return -1;
     }
 
@@ -398,7 +398,7 @@ rpc_recv_gen(rcf_rpc_server *rpcs,
 
     if (rpcs == NULL)
     {
-        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return -1;
     }
 
@@ -447,7 +447,7 @@ rpc_shutdown(rcf_rpc_server *rpcs, int s, rpc_shut_how how)
 
     if (rpcs == NULL)
     {
-        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return -1;
     }
 
@@ -480,7 +480,7 @@ rpc_sendto(rcf_rpc_server *rpcs,
 
     if (rpcs == NULL)
     {
-        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return -1;
     }
 
@@ -538,7 +538,7 @@ rpc_send(rcf_rpc_server *rpcs,
 
     if (rpcs == NULL)
     {
-        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return -1;
     }
 
@@ -583,7 +583,7 @@ rpc_sendmsg(rcf_rpc_server *rpcs,
 
     if (rpcs == NULL)
     {
-        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return -1;
     }
 
@@ -705,7 +705,7 @@ rpc_recvmsg(rcf_rpc_server *rpcs,
 
     if (rpcs == NULL)
     {
-        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return -1;
     }
 
@@ -858,7 +858,7 @@ rpc_getsockname_gen(rcf_rpc_server *rpcs,
 
     if (rpcs == NULL)
     {
-        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return -1;
     }
     if (namelen != NULL && *namelen > rnamelen)
@@ -936,7 +936,7 @@ rpc_getpeername_gen(rcf_rpc_server *rpcs,
 
     if (rpcs == NULL)
     {
-        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return -1;
     }
 
@@ -1013,7 +1013,7 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
 
     if (rpcs == NULL)
     {
-        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return -1;
     }
 
@@ -1401,7 +1401,7 @@ rpc_setsockopt(rcf_rpc_server *rpcs,
 
     if (rpcs == NULL)
     {
-        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return -1;
     }
 

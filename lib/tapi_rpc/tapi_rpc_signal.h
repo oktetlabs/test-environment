@@ -66,7 +66,7 @@ extern int rpc_sigaction(rcf_rpc_server *rpcs,
 /**
  * Allocate new signal set on RPC server side.
  *
- * @param rpcs      RPC server rpcs
+ * @param rpcs      RPC server handle
  *
  * @return Handle of allocated signal set or NULL.
  */
@@ -75,7 +75,7 @@ extern rpc_sigset_t *rpc_sigset_new(rcf_rpc_server *rpcs);
 /**
  * Free allocated using rpc_sigset_new() signal set.
  *
- * @param rpcs      RPC server rpcs
+ * @param rpcs      RPC server handle
  * @param set       signal set handler
  */
 extern void rpc_sigset_delete(rcf_rpc_server *rpcs, rpc_sigset_t *set);
@@ -84,7 +84,7 @@ extern void rpc_sigset_delete(rcf_rpc_server *rpcs, rpc_sigset_t *set);
  * Get rpcs of set of signals received by special signal handler
  * 'signal_registrar'.
  *
- * @param rpcs      RPC server rpcs
+ * @param rpcs      RPC server handle
  *
  * @return Handle of the signal set (unique for RPC server,
  *         i.e. for each thread).

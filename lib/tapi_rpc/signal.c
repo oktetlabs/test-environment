@@ -62,7 +62,7 @@ rpc_signal(rcf_rpc_server *rpcs,
 
     if (rpcs == NULL)
     {
-        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return NULL;
     }
 
@@ -102,7 +102,7 @@ rpc_kill(rcf_rpc_server *rpcs, pid_t pid, rpc_signum signum)
 
     if (rpcs == NULL)
     {
-        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return -1;
     }
 
@@ -132,7 +132,7 @@ rpc_sigset_new(rcf_rpc_server *rpcs)
 
     if (rpcs == NULL)
     {
-        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return NULL;
     }
 
@@ -160,7 +160,7 @@ rpc_sigset_delete(rcf_rpc_server *rpcs, rpc_sigset_t *set)
 
     if (rpcs == NULL)
     {
-        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return;
     }
 
@@ -192,7 +192,7 @@ rpc_sigprocmask(rcf_rpc_server *rpcs,
 
     if (rpcs == NULL)
     {
-        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return -1;
     }
 
@@ -224,7 +224,7 @@ rpc_sigemptyset(rcf_rpc_server *rpcs, rpc_sigset_t *set)
 
     if (rpcs == NULL)
     {
-        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return -1;
     }
 
@@ -254,7 +254,7 @@ rpc_sigpending(rcf_rpc_server *rpcs, rpc_sigset_t *set)
 
     if (rpcs == NULL)
     {
-        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return -1;
     }
 
@@ -284,7 +284,7 @@ rpc_sigsuspend(rcf_rpc_server *rpcs, const rpc_sigset_t *set)
 
     if (rpcs == NULL)
     {
-        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return -1;
     }
 
@@ -312,7 +312,7 @@ rpc_sigreceived(rcf_rpc_server *rpcs)
 
     if (rpcs == NULL)
     {
-        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return NULL;
     }
 
@@ -340,7 +340,7 @@ rpc_sigfillset(rcf_rpc_server *rpcs, rpc_sigset_t *set)
 
     if (rpcs == NULL)
     {
-        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return -1;
     }
 
@@ -370,7 +370,7 @@ rpc_sigaddset(rcf_rpc_server *rpcs, rpc_sigset_t *set, rpc_signum signum)
 
     if (rpcs == NULL)
     {
-        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return -1;
     }
 
@@ -402,7 +402,7 @@ rpc_sigdelset(rcf_rpc_server *rpcs, rpc_sigset_t *set, rpc_signum signum)
 
     if (rpcs == NULL)
     {
-        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return -1;
     }
 
@@ -435,7 +435,7 @@ rpc_sigismember(rcf_rpc_server *rpcs,
 
     if (rpcs == NULL)
     {
-        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return -1;
     }
 
@@ -487,7 +487,7 @@ rpc_sigaction(rcf_rpc_server *rpcs, rpc_signum signum,
 
     if (rpcs == NULL)
     {
-        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return -1;
     }
     if (act != NULL && act->mm_mask == NULL)

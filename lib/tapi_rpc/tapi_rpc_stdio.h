@@ -54,7 +54,7 @@ extern FILE *rpc_popen(rcf_rpc_server *rpcs,
 /**
  * Execute shell command on the IPC server and read the output.
  *
- * @param rpcs          RPC server rpcs
+ * @param rpcs          RPC server handle
  * @param buf           output buffer
  * @param buflen        output buffer length
  * @param cmd           format of the command to be executed
@@ -69,7 +69,7 @@ extern int rpc_shell(rcf_rpc_server *rpcs,
  * The routine allocates memory for the output buffer and places
  * null-terminated string to it.
  *
- * @param rpcs          RPC server rpcs
+ * @param rpcs          RPC server handle
  * @param buf           location for the command output buffer 
  * @param cmd           format of the command to be executed
  *
@@ -82,7 +82,7 @@ extern int rpc_shell_get_all(rcf_rpc_server *rpcs,
  * Execute shell command on the IPC server and return file descriptor
  * for it's standard input or output.
  *
- * @param rpcs          RPC server rpcs
+ * @param rpcs          RPC server handle
  * @param mode          "r" or "w"
  * @param cmd           format of the command to be executed
  *

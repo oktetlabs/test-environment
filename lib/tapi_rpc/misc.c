@@ -197,7 +197,7 @@ timespec2str(const struct timespec *tv)
 /**
  * Set dynamic library name to be used for additional name resolution.
  *
- * @param rpcs          Existing RPC server rpcs
+ * @param rpcs          Existing RPC server handle
  * @param libname       Name of the dynamic library or NULL
  *
  * @return Status code
@@ -247,7 +247,7 @@ rpc_send_traffic(rcf_rpc_server *rpcs, int num,
 
     if (rpcs == NULL)
     {
-        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return -1;
     }
     if (s == NULL || to == NULL)
@@ -379,7 +379,7 @@ rpc_simple_sender(rcf_rpc_server *rpcs,
 
     if (rpcs == NULL)
     {
-        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return -1;
     }
 
@@ -434,7 +434,7 @@ rpc_simple_receiver(rcf_rpc_server *rpcs,
 
     if (rpcs == NULL)
     {
-        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return -1;
     }
 
@@ -473,7 +473,7 @@ rpc_iomux_flooder(rcf_rpc_server *rpcs,
 
     if (rpcs == NULL)
     {
-        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return -1;
     }
 
@@ -543,7 +543,7 @@ rpc_iomux_echoer(rcf_rpc_server *rpcs,
 
     if (rpcs == NULL)
     {
-        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return -1;
     }
     if (sockets == NULL)
@@ -605,7 +605,7 @@ rpc_sendfile(rcf_rpc_server *rpcs, int out_fd, int in_fd,
 
     if (rpcs == NULL)
     {
-        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return -1;
     }
     op = rpcs->op;
@@ -651,7 +651,7 @@ rpc_socket_to_file(rcf_rpc_server *rpcs, int sock,
 
     if (rpcs == NULL)
     {
-        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return -1;
     }
 
@@ -690,7 +690,7 @@ rpc_ftp_open(rcf_rpc_server *rpcs,
 
     if (rpcs == NULL)
     {
-        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return -1;
     }
 
@@ -739,7 +739,7 @@ rpc_many_send(rcf_rpc_server *rpcs, int sock,
 
     if (rpcs == NULL)
     {
-        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return -1;
     }
 
@@ -778,7 +778,7 @@ rpc_overfill_buffers(rcf_rpc_server *rpcs, int sock, uint64_t *sent)
 
     if (rpcs == NULL)
     {
-        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return -1;
     }
 

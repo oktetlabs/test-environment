@@ -59,7 +59,7 @@ rpc_wsa_socket(rcf_rpc_server *rpcs,
 
     if (rpcs == NULL)
     {
-        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return -1;
     }
 
@@ -99,7 +99,7 @@ rpc_connect_ex(rcf_rpc_server *rpcs,
 
     if (rpcs == NULL)
     {
-        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return -1;
     }
     op = rpcs->op;
@@ -164,7 +164,7 @@ rpc_disconnect_ex(rcf_rpc_server *rpcs, int s,
 
     if (rpcs == NULL)
     {
-        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return -1;
     }
     op = rpcs->op;
@@ -202,7 +202,7 @@ rpc_wsa_accept(rcf_rpc_server *rpcs,
 
     if (rpcs == NULL)
     {
-        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return -1;
     }
 
@@ -304,7 +304,7 @@ rpc_accept_ex(rcf_rpc_server *rpcs, int s, int s_a,
 
     if (rpcs == NULL)
     {
-        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return -1;
     }
 
@@ -350,7 +350,7 @@ rpc_get_accept_addr(rcf_rpc_server *rpcs,
 
     if (rpcs == NULL)
     {
-        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return;
     }
 
@@ -419,7 +419,7 @@ rpc_transmit_file(rcf_rpc_server *rpcs, int s, char *file,
 
     if (rpcs == NULL)
     {
-        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return -1;
     }
 #if 0
@@ -477,7 +477,7 @@ rpc_wsa_recv_ex(rcf_rpc_server *rpcs,
 
     if (rpcs == NULL)
     {
-        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return -1;
     }
 
@@ -538,7 +538,7 @@ rpc_create_event(rcf_rpc_server *rpcs)
 
     if (rpcs == NULL)
     {
-        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return NULL;
     }
 
@@ -566,7 +566,7 @@ rpc_close_event(rcf_rpc_server *rpcs, rpc_wsaevent hevent)
 
     if (rpcs == NULL)
     {
-        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return FALSE;
     }
 
@@ -595,7 +595,7 @@ rpc_reset_event(rcf_rpc_server *rpcs, rpc_wsaevent hevent)
 
     if (rpcs == NULL)
     {
-        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return FALSE;
     }
 
@@ -625,7 +625,7 @@ rpc_create_overlapped(rcf_rpc_server *rpcs, rpc_wsaevent hevent,
 
     if (rpcs == NULL)
     {
-        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return NULL;
     }
 
@@ -657,7 +657,7 @@ rpc_delete_overlapped(rcf_rpc_server *rpcs,
 
     if (rpcs == NULL)
     {
-        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return;
     }
 
@@ -689,7 +689,7 @@ rpc_completion_callback(rcf_rpc_server *rpcs,
 
     if (rpcs == NULL)
     {
-        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return -1;
     }
     if (called == NULL || error == NULL || bytes == NULL ||
@@ -735,7 +735,7 @@ rpc_wsa_event_select(rcf_rpc_server *rpcs,
 
     if (rpcs == NULL)
     {
-        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return -1;
     }
 
@@ -770,7 +770,7 @@ rpc_enum_network_events(rcf_rpc_server *rpcs,
 
     if (rpcs == NULL)
     {
-        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return -1;
     }
 
@@ -812,7 +812,7 @@ rpc_create_window(rcf_rpc_server *rpcs)
 
     if (rpcs == NULL)
     {
-        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return NULL;
     }
 
@@ -840,7 +840,7 @@ rpc_destroy_window(rcf_rpc_server *rpcs, rpc_hwnd hwnd)
 
     if (rpcs == NULL)
     {
-        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return;
     }
 
@@ -871,7 +871,7 @@ rpc_wsa_async_select(rcf_rpc_server *rpcs,
 
     if (rpcs == NULL)
     {
-        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return -1;
     }
 
@@ -905,7 +905,7 @@ rpc_peek_message(rcf_rpc_server *rpcs,
 
     if (rpcs == NULL)
     {
-        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return 0;
     }
 
@@ -954,7 +954,7 @@ rpc_wsa_send(rcf_rpc_server *rpcs,
 
     if (rpcs == NULL)
     {
-        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return -1;
     }
 
@@ -1028,7 +1028,7 @@ rpc_wsa_recv(rcf_rpc_server *rpcs,
 
     if (rpcs == NULL)
     {
-        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return -1;
     }
 
@@ -1129,7 +1129,7 @@ rpc_wsa_send_to(rcf_rpc_server *rpcs, int s, const struct rpc_iovec *iov,
 
     if (rpcs == NULL)
     {
-        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return -1;
     }
 
@@ -1223,7 +1223,7 @@ rpc_wsa_recv_from(rcf_rpc_server *rpcs, int s,
 
     if (rpcs == NULL)
     {
-        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return -1;
     }
 
@@ -1356,7 +1356,7 @@ rpc_wsa_send_disconnect(rcf_rpc_server *rpcs,
 
     if (rpcs == NULL)
     {
-        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return -1;
     }
 
@@ -1400,7 +1400,7 @@ rpc_wsa_recv_disconnect(rcf_rpc_server *rpcs,
 
     if (rpcs == NULL)
     {
-        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return -1;
     }
 
@@ -1460,7 +1460,7 @@ rpc_get_overlapped_result(rcf_rpc_server *rpcs,
 
     if (rpcs == NULL)
     {
-        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return -1;
     }
 
@@ -1533,7 +1533,7 @@ rpc_wsa_duplicate_socket(rcf_rpc_server *rpcs,
 
     if (rpcs == NULL)
     {
-        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return -1;
     }
 
@@ -1592,7 +1592,7 @@ rpc_wait_multiple_events(rcf_rpc_server *rpcs,
 
     if (rpcs == NULL)
     {
-        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return -1;
     }
 

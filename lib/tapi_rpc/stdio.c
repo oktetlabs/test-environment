@@ -102,7 +102,7 @@ rpc_fopen(rcf_rpc_server *rpcs,
 
     if (rpcs == NULL || path == NULL || mode == NULL)
     {
-        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return NULL;
     }
 
@@ -137,7 +137,7 @@ rpc_popen(rcf_rpc_server *rpcs,
 
     if (rpcs == NULL || cmd == NULL || mode == NULL)
     {
-        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         free(cmd_dup);
         free(mode_dup);
         return NULL;
@@ -174,7 +174,7 @@ rpc_fileno(rcf_rpc_server *rpcs,
 
     if (rpcs == NULL)
     {
-        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return -1;
     }
 
@@ -198,7 +198,7 @@ rpc_fileno(rcf_rpc_server *rpcs,
  * Execute shell command on the IPC server and return file descriptor
  * for it's standard input.
  *
- * @param rpcs        RPC server rpcs
+ * @param rpcs        RPC server handle
  * @param mode          "r" or "w"
  * @param cmd           format of the command to be executed
  *
@@ -235,7 +235,7 @@ rpc_cmd_spawn(rcf_rpc_server *rpcs, const char *mode, const char *cmd,...)
 /**
  * Execute shell command on the IPC server and read the output.
  *
- * @param rpcs        RPC server rpcs
+ * @param rpcs        RPC server handle
  * @param buf           output buffer
  * @param buflen        output buffer length
  * @param cmd           format of the command to be executed
@@ -290,7 +290,7 @@ rpc_shell(rcf_rpc_server *rpcs,
  * The routine allocates memory for the output buffer and places
  * null-terminated string to it.
  *
- * @param rpcs        RPC server rpcs
+ * @param rpcs        RPC server handle
  * @param buf           location for the command output buffer 
  * @param cmd           format of the command to be executed
  *
