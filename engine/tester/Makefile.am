@@ -14,7 +14,7 @@ bin_PROGRAMS = te_tester
 
 te_tester_LDADD = @TE_LDADD@ -lconfapi -lconf_oid -llogger_ten -lipc \
                   @XML2_LIBS@ -lpopt -lpthread
-te_tester_DEPENDENCIES = $(LIBLTDL) @TE_DEPENDENCIES@ \
+te_tester_DEPENDENCIES = @TE_DEPENDENCIES@ \
                          $(DESTDIR)/$(prefix)/lib/libconfapi.a \
                          $(DESTDIR)/$(prefix)/lib/libconf_oid.a \
                          $(DESTDIR)/$(prefix)/lib/liblogger_ten.a \
