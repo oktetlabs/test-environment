@@ -30,6 +30,8 @@
 #include <string.h>
 #include <stdio.h>
 
+#define TE_LGR_USER "NDN/Forw"
+
 #include "te_defs.h"
 #include "asn_impl.h"
 #include "ndn_internal.h"
