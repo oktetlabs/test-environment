@@ -62,8 +62,9 @@ extern int asn_tag_equal(asn_tag_t, asn_tag_t);
 
 typedef struct asn_named_entry_t
 {
-    char     * const name;
-    asn_type * const type;
+    char      *const name;
+    asn_type  *const type;
+    asn_tag_t        tag;
 } asn_named_entry_t;
 
 typedef struct asn_enum_entry_t
