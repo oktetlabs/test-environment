@@ -2550,6 +2550,8 @@ _create_window_1_svc(tarpc_create_window_in *in, tarpc_create_window_out *out,
     
     UNUSED(rqstp);
     UNUSED(in);
+
+    memset(out, 0, sizeof(*out));
     
     /* Should not be called in thread to prevent double initialization */
     
@@ -2607,6 +2609,7 @@ _wsa_async_select_1_svc(tarpc_wsa_async_select_in *in,
      */
 
     UNUSED(rqstp);
+    memset(out, 0, sizeof(*out));
     out->retval = WSAAsyncSelect(in->sock, (HWND)(in->hwnd), WM_USER + 1,
                                  network_event_rpc2h(in->event));
     return TRUE;                                 
@@ -2626,6 +2629,7 @@ _peek_message_1_svc(tarpc_peek_message_in *in,
      */
 
     UNUSED(rqstp);
+    memset(out, 0, sizeof(*out));
     
     while ((out->retval = PeekMessage(&msg, (HWND)(in->hwnd), 
                                       0, 0, PM_REMOVE)) != 0 &&
