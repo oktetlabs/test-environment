@@ -47,6 +47,13 @@ usage()
     echo
     echo -e '  --lock-dir=<directory>'\\t'lock file directory (/tmp/te/lock by default)'
     echo
+    echo -e '  --log-html=<dirname>'\\t\\t'Name of the directory with structured HTML logs'
+    echo -e \\t\\t\\t\\t'to be generated (do not generate by default)'
+    echo -e '  --log-plain-html=<filename>'\\t'Name of the file with plain HTML logs'
+    echo -e \\t\\t\\t\\t'to be generated (do not generate by default)'
+    echo -e '  --log-txt=<filename>'\\t\\t'Name of the file with logs in text format'
+    echo -e \\t\\t\\t\\t'to be generated (log.txt by default)'
+    echo
     echo -e '  --no-builder'\\t\\t\\t'Do not build TE'
     echo -e '  --no-tester'\\t\\t\\t'Do not run Tester'
     echo -e '  --no-cs'\\t\\t\\t'Do not run Configurator'
@@ -197,6 +204,12 @@ LOG_STORAGE_DIR=
 # If yes, generate on-line log in the logging directory
 LOG_ONLINE=
 
+# Name of the file with test logs to be genetated
+RGT_LOG_TXT=log.txt
+# Name of the file with plain HTML logs to be genetated
+RGT_LOG_HTML_PLAIN=
+# Name of the directory for structured HTML logs to be genetated
+RGT_LOG_HTML=
 
 # Directory for lock file
 #LOCK_DIR=/var/lock/te
@@ -241,6 +254,10 @@ process_opts()
 
             -q) QUIET=yes ;;
             --live-log)  LIVE_LOG=yes ; TESTER_OPTS="-q ${TESTER_OPTS}" ;;
+
+            --log-txt=*)        RGT_LOG_TXT="${1#--log-txt=}" ;;
+            --log-html=*)       RGT_LOG_HTML="${1#--log-html=}" ;;
+            --log-plain-html=*) RGT_LOG_HTML_PLAIN="${1#--log-plain-html=}" ;;
 
             --vg-tests)  VG_TESTS=yes ;;
             --vg-rcf)    VG_RCF=yes ;;
@@ -638,12 +655,17 @@ fi
 rgt-conv -m postponed ${CONF_RGT} -f ${TE_LOG_DIR}/tmp_raw_log \
                                   -o ${TE_LOG_DIR}/tmp_raw_log.xml
 if test $? -eq 0 ; then
-    rgt-xml2text -f ${TE_LOG_DIR}/tmp_raw_log.xml \
-                 -o ${TE_LOG_DIR}/tmp_raw_log.txt && \
-    rgt-xml2html -f ${TE_LOG_DIR}/tmp_raw_log.xml \
-                 -o ${TE_LOG_DIR}/tmp_raw_log.html
-    if test $? -eq 0 ; then
-        rm -f ${TE_LOG_DIR}/tmp_raw_log.xml
+    if test -n "${RGT_LOG_TXT}" ; then
+        rgt-xml2text -f ${TE_LOG_DIR}/tmp_raw_log.xml \
+                     -o ${TE_LOG_DIR}/${RGT_LOG_TXT}
+    fi
+    if test -n "${RGT_LOG_HTML_PLAIN}" ; then
+        rgt-xml2html -f ${TE_LOG_DIR}/tmp_raw_log.xml \
+                     -o ${TE_LOG_DIR}/${RGT_LOG_HTML_PLAIN}
+    fi
+    if test -n "${RGT_LOG_HTML}" ; then
+        rgt-xml2html -m ${TE_LOG_DIR}/tmp_raw_log.xml \
+                        ${TE_LOG_DIR}/${RGT_LOG_HTML}
     fi
 fi
 
