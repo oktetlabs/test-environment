@@ -1169,43 +1169,46 @@ ds_ftpserver_get(unsigned int gid, const char *oid, char *value)
 #endif
 
 static int
-ds_ftpserver_standalone_set(unsigned int gid, const char *oid, 
+ds_ftpserver_server_set(unsigned int gid, const char *oid, 
                             const char *value)
 {
-    te_bool newval = (strtoul(value, NULL, 10) != 0);
+    te_bool newval = (strncmp(value, "xinetd_", 7) != 0);
     char tmp[2];
 
-    if(!newval && ftp_xinetd_index < 0)
+    if(newval && ftp_xinetd_index < 0)
         return TE_RC(TE_TA_LINUX, ETENOSUPP);
 
     ds_ftpserver_get(gid, oid, tmp);
-    ds_ftpserver_set(gid, oid, "0");
+    if (tmp[0] != '0')
+    {
+        ERROR("Cannot change FTP server type when it's running");
+        return TE_RC(TE_TA_LINUX, ETENOSUPP);
+    }
+
     ftp_standalone = newval;
     ds_ftpserver_update_config();
-    ds_ftpserver_set(gid, oid, tmp);
     UNUSED(gid);
     UNUSED(oid);
     return 0;
 }
 
 static int
-ds_ftpserver_standalone_get(unsigned int gid, const char *oid, char *value)
+ds_ftpserver_server_get(unsigned int gid, const char *oid, char *value)
 {
-    value[0] = (ftp_standalone ? '1' : '0');
-    value[1] = '\0';
+    strcpy(value, ftp_standalone ? "vsftpd" : "xinetd_vsftpd");
     UNUSED(gid);
     UNUSED(oid);
     return 0;
 }
 
 
-RCF_PCH_CFG_NODE_RW(node_ds_ftpserver_standalone, "standalone",
+RCF_PCH_CFG_NODE_RW(node_ds_ftpserver_server, "server",
                     NULL, NULL,
-                    ds_ftpserver_standalone_get, 
-                    ds_ftpserver_standalone_set);
+                    ds_ftpserver_server_get, 
+                    ds_ftpserver_server_set);
 
 RCF_PCH_CFG_NODE_RW(node_ds_ftpserver, "ftpserver",
-                    &node_ds_ftpserver_standalone, NULL,
+                    &node_ds_ftpserver_server, NULL,
                     ds_ftpserver_get, ds_ftpserver_set);
 
 /**
