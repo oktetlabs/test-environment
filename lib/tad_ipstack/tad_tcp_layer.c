@@ -320,128 +320,59 @@ int tcp_match_bin_cb (int csap_id, int layer, const asn_value_p pattern_pdu,
     printf ("\n");
     fflush(stdout);
     
-#define FILL_DHCP_HEADER_FIELD(_label, _size) \
+#define FILL_TCP_HEADER_FIELD(_label, _size) \
     do {                                                        \
         uint8_t *mb;                                            \
         int len = _size;                                        \
         rc = 0;                                                 \
-        if (_size > MATCH_BUF_SIZE)                             \
-            mb = malloc(_size);                                 \
-        else                                                    \
-            mb = buf;                                           \
                                                                 \
         if (asn_read_value_field(pattern_pdu, mb, &len,         \
-                             "#tcp." _label ".#plain") == 0)   \
+                             "#tcp." _label ".#plain") == 0)    \
         {                                                       \
             if (memcmp(p, mb, _size))                           \
                 rc = ETADNOTMATCH;                              \
         }                                                       \
         if (rc == 0)                                            \
             rc = asn_write_value_field(parsed_packet, p, _size, \
-                                   "#tcp." _label ".#plain");  \
-        if (_size > MATCH_BUF_SIZE)                             \
-            free(mb);                                           \
-                                                                \
+                                       "#tcp." _label ".#plain");   \
         if (rc)                                                 \
             return rc;                                          \
         p += _size;                                             \
     } while(0)
 
-    FILL_DHCP_HEADER_FIELD("op",      1);
-    FILL_DHCP_HEADER_FIELD("htype",   1);
-    FILL_DHCP_HEADER_FIELD("hlen",    1);
-    FILL_DHCP_HEADER_FIELD("hops",    1);
-    FILL_DHCP_HEADER_FIELD("xid",     4);
-    FILL_DHCP_HEADER_FIELD("secs",    2);
-    FILL_DHCP_HEADER_FIELD("flags",   2);
-    FILL_DHCP_HEADER_FIELD("ciaddr",  4);
-    FILL_DHCP_HEADER_FIELD("yiaddr",  4);
-    FILL_DHCP_HEADER_FIELD("siaddr",  4);
-    FILL_DHCP_HEADER_FIELD("giaddr",  4); 
-    FILL_DHCP_HEADER_FIELD("chaddr", 16);
-    FILL_DHCP_HEADER_FIELD("sname",  64);
-    FILL_DHCP_HEADER_FIELD("file",  128); 
+#define FILL_TCP_HEADER_FLAGS \
+    do {                                                        \
+        uint8_t *mb;                                            \
+        int len = _size;                                        \
+        rc = 0;                                                 \
+                                                                \
+        if (asn_read_value_field(pattern_pdu, mb, &len,         \
+                                 "#tcp." _label ".#plain") == 0)\
+        {                                                       \
+            if (*mb != *p)                                      \
+                rc = ETADNOTMATCH;                              \
+        }                                                       \
+        if (rc == 0)                                            \
+            rc = asn_write_value_field(parsed_packet, p, _size, \
+                                       "#tcp." _label ".#plain");  \
+        if (rc)                                                 \
+            return rc;                                          \
+        p += _size;                                             \
+    } while(0)
 
-#undef FILL_DHCP_HEADER_FIELD
+    FILL_TCP_HEADER_FIELD("src-port",   2);
+    FILL_TCP_HEADER_FIELD("dst-port",   2);
+    FILL_TCP_HEADER_FIELD("seqn",       4);
+    FILL_TCP_HEADER_FIELD("acqn",       4);
+    p++;
+    FILL_TCP_HEADER_FLAGS;
+    p++;
+    FILL_TCP_HEADER_FIELD("win-size",   2);
+    FILL_TCP_HEADER_FIELD("checksum",   2);
+    FILL_TCP_HEADER_FIELD("urg-p",      2);
 
-    /* check for magic DHCP cookie, see RFC2131, section 3. */
-    if ((((void *)p) + sizeof (magic_tcp)) > (pkt->data + pkt->len) || 
-        memcmp(magic_tcp, p, sizeof(magic_tcp)) != 0)
-    {
-        return 1;
-    }
-    p += sizeof(magic_tcp); 
-
-    opt_list = asn_init_value(ndn_tcp4_options); 
-
-    while (((void *)p) < (pkt->data + pkt->len))
-    {
-        asn_value_p opt = asn_init_value(ndn_tcp4_option);
-        uint8_t     opt_len;
-        uint8_t     opt_type;
-    
-#define FILL_DHCP_OPT_FIELD(_obj, _label, _size) \
-        do {                                                              \
-            rc = asn_write_value_field(_obj, p, _size, _label ".#plain"); \
-            p += _size;                                                   \
-        } while(0);
-
-        opt_type = *p;
-        FILL_DHCP_OPT_FIELD(opt, "type",  1);
-        if (opt_type == 255 || opt_type == 0)
-        {
-            /* END and PAD options don't have length and value */
-            rc = asn_insert_indexed(opt_list, opt, -1, "");
-            asn_free_value(opt);
-            continue;
-        }
-
-        opt_len = *p;
-        FILL_DHCP_OPT_FIELD(opt, "length", 1);
-        FILL_DHCP_OPT_FIELD(opt, "value", opt_len);
-
-        /* possible suboptions.  */
-        switch (opt_type)
-        {
-            case 43:
-            {
-                asn_value_p  sub_opt_list;
-                uint8_t      sub_opt_len;
-                asn_value_p  sub_opt;
-                void        *start_opt_value;
-
-                /* Set pointer to the beginning of the Option data */
-                p -= opt_len;
-                start_opt_value = p;
-                sub_opt_list = asn_init_value(ndn_tcp4_options);
-                while (((void *)p) < (start_opt_value + opt_len))
-                {
-                    sub_opt = asn_init_value(ndn_tcp4_option);
-
-                    
-                    FILL_DHCP_OPT_FIELD(sub_opt, "type",  1);
-                    sub_opt_len = *p;
-                    FILL_DHCP_OPT_FIELD(sub_opt, "length", 1);
-                    FILL_DHCP_OPT_FIELD(sub_opt, "value", sub_opt_len);
-
-                    asn_insert_indexed(sub_opt_list, sub_opt, -1, "");
-                    asn_free_value(sub_opt);
-                }
-                /* rc = asn_insert_indexed(opt, sub_opt_list, -1, ""); */
-                rc = asn_write_component_value(opt, sub_opt_list, "options");
-                break;
-            }
-        }
-        rc = asn_insert_indexed(opt_list, opt, -1, "");
-        asn_free_value(opt);
-    }
-    asn_write_component_value(parsed_packet, opt_list, "#tcp.options");
-    /* TODO real match with patter should be done */
-    UNUSED(csap_id);
-    UNUSED(layer);
-    UNUSED(pattern_pdu);
-
-    memset (payload, 0 , sizeof(*payload));
+#undef FILL_TCP_HEADER_FIELD
+#undef FILL_TCP_HEADER_FLAGS
 
     printf("MATCH CALLBACK OK\n");
     fflush(stdout);

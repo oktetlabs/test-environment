@@ -50,7 +50,7 @@ char* ip4_get_param_cb (csap_p csap_descr, int level, const char *param)
     UNUSED(param);
     return NULL;
 }
-
+# if 0
 /**
  * Callback for confirm PDU with DHCP CSAP parameters and possibilities.
  *
@@ -137,7 +137,7 @@ ip4_gen_bin_cb (int csap_id, int layer, const asn_value_p tmpl_pdu,
 
     return TE_RC(TE_TAD_CSAP, ETENOSUPP);
 }
-
+#endif
 
 /**
  * Callback for parse received packet and match it with pattern. 
@@ -158,16 +158,78 @@ int ip4_match_bin_cb (int csap_id, int layer, const asn_value_p pattern_pdu,
                        const csap_pkts *  pkt, csap_pkts * payload, 
                        asn_value_p  parsed_packet )
 { 
+    uint8_t     *p = pkt->data;
+    int          rc;
+    int          i;
+#define IPV4_MATCH_BUF_SIZE 20
+    uint8_t      buf[IPV4_MATCH_BUF_SIZE];
+
+    fprintf(stdout, "IP match callback called\n");
+    
+#define FILL_IP_HEADER_FIELD(_label, _size) \
+    do {                                                              \
+        uint8_t *mb;                                                  \
+        int len = _size;                                              \
+        rc = 0;                                                       \
+        if (asn_read_value_field(pattern_pdu, mb, &len,               \
+                                 "#ip." _label ".#plain") == 0)       \
+        {                                                             \
+            if (memcmp(p, mb, _size))                                 \
+                rc = ETADNOTMATCH;                                    \
+        }                                                             \
+        if (rc == 0)                                                  \
+            rc = asn_write_value_field(parsed_packet, p, _size,       \
+                                       "#ip." _label ".#plain");      \
+        if (rc)                                                       \
+            return rc;                                                \
+        p += _size;                                                   \
+    } while (0)
+
+#define FILL_IP_HEADER_FLAGS \
+    do {                                                              \
+     uint8_t *mb;                                                     \
+        int len = _size;                                              \
+        rc = 0;                                                       \
+        if (asn_read_value_field(pattern_pdu, mb, &len,               \
+                                 "#ip." _label ".#plain") == 0)       \
+        {                                                             \
+            if (*mb == (*p) >> 5)                                     \
+                rc = ETADNOTMATCH;                                    \
+        }                                                             \
+        if (rc == 0)                                                  \
+            rc = asn_write_value_field(parsed_packet, p, _size,       \
+                                       "#ip." _label ".#plain");      \
+        if (rc)                                                       \
+            return rc;                                                \
+        p += _size;                                                   \
+    }
+    FILL_TCP_HEADER_FIELD("file",  128); 
+    
+    p++;
+    FILL_IP_HEADER_FIELD("type-of-service",         1);
+    FILL_IP_HEADER_FIELD("ip-len",                  2);
+    FILL_IP_HEADER_FIELD("ip-ident",                2);
+    
+#if 0
+    FILL_IP_HEADER_FLAGS;
+    p += 2;
+#endif
+
+    FILL_IP_HEADER_FIELD("time-to-live",            1);
+    FILL_IP_HEADER_FIELD("protocol",                1);
+    FILL_IP_HEADER_FIELD("h-checksum",              2);
+    FILL_IP_HEADER_FIELD("src-addr",                4);
+    FILL_IP_HEADER_FIELD("dst-addr",                4);
+    
     UNUSED(csap_id);
-    UNUSED(layer);
     UNUSED(pattern_pdu);
     UNUSED(pkt);
-    UNUSED(payload);
-    UNUSED(parsed_packet);
-
     return 0;
 }
+#undef FILL_IP_HEADER_FIELD
+#undef FILL_IP_HEADER_FLAGS
 
+/* Now we don't support traffic generating for this CSAP */
 /**
  * Callback for generating pattern to filter 
  * just one response to the packet which will be sent by this CSAP 
@@ -181,6 +243,7 @@ int ip4_match_bin_cb (int csap_id, int layer, const asn_value_p pattern_pdu,
  *
  * @return zero on success or error code.
  */
+#if 0
 int ip4_gen_pattern_cb (int csap_id, int layer, const asn_value_p tmpl_pdu, 
                                          asn_value_p   *pattern_pdu)
 { 
@@ -191,5 +254,6 @@ int ip4_gen_pattern_cb (int csap_id, int layer, const asn_value_p tmpl_pdu,
 
     return ETENOSUPP;
 }
+#endif
 
 
