@@ -6491,3 +6491,41 @@ rpc_shell(rcf_rpc_server *handle,
     
     return rc;
 }          
+
+/**
+ * Execute shell command on the IPC server and return file descriptor
+ * for it's standard input.
+ *
+ * @param handle        RPC server handle
+ * @param cmd           format of the command to be executed
+ *
+ * @return File descriptor or -1 in the case of failure
+ */
+int 
+rpc_cmd_spawn(rcf_rpc_server *handle, const char *cmd,...)
+{
+    FILE *f;
+    int   fd;
+    char  cmdline[RPC_SHELL_CMDLINE_MAX];
+
+    va_list ap;
+
+    va_start(ap, cmd);
+    vsnprintf(cmdline, sizeof(cmdline), cmd, ap);
+    va_end(ap);
+    
+    if ((f = rpc_popen(handle, cmdline, "w")) == NULL)
+    {
+        ERROR("Cannot execute the command: rpc_popen() failed");
+        return -1;
+    }
+    
+    if ((fd = rpc_fileno(handle, f)) < 0)
+    {
+        ERROR("Cannot read command output: rpc_fileno failed");
+        return -1;
+    }
+    
+    return fd;
+}
+
