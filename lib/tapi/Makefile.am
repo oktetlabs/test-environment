@@ -7,13 +7,15 @@ AM_CFLAGS =
 
 AM_LDFLAGS = @TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/lib 
 
-include_HEADERS = tapi_tad.h tapi_cfg.h tapi_cfg_net.h tapi_cfg_arl.h \
-                  tapi_cfg_base.h tapi_sockaddr.h
+include_HEADERS = tapi_test.h tapi_bufs.h tapi_tad.h tapi_cfg.h \
+                  tapi_cfg_net.h tapi_cfg_arl.h tapi_cfg_base.h \
+                  tapi_sockaddr.h
 
 lib_LIBRARIES = libtapi.a
 
-libtapi_a_SOURCES = tapi_tad.c tapi_cfg.c tapi_cfg_net.c tapi_cfg_arl.c \
-                    tapi_cfg_base.c tapi_sockaddr.c
+libtapi_a_SOURCES = tapi_bufs.c tapi_tad.c tapi_cfg.c tapi_cfg_net.c \
+                    tapi_cfg_arl.c tapi_cfg_base.c tapi_sockaddr.c \
+                    test_params.c
 
 
 install-exec-hook:
