@@ -27,12 +27,16 @@
  * @(#) $Id$
  */
 
+#include "config.h"
+
 #include <string.h>
 #include <stdlib.h>
+
 #include "tad_dhcp_impl.h"
 
-#define TE_LGR_USER     "TAPI DHCP"
+#define TE_LGR_USER     "TAD DHCP layer"
 #include "logger_api.h"
+
 
 /**
  * The first four octets of the 'options' field of the DHCP message
@@ -314,22 +318,14 @@ int dhcp_match_bin_cb (int csap_id, int layer, const asn_value *pattern_pdu,
                        asn_value * parsed_packet )
 { 
     uint8_t     *p = pkt->data; 
-    int          i;
     asn_value_p  opt_list;
     int          rc;
 #define MATCH_BUF_SIZE 20
     uint8_t      buf[MATCH_BUF_SIZE];
 
 
-    VERB("DHCP match callback called\n");
+    VERB("DHCP match callback called: %tm", p, pkt->len);
 
-    for (i = 0; i < pkt->len; i++)
-    {
-        if ((i & 0xf) == 0) VERB("\n");
-        VERB("%02x ", p[i]); 
-    }
-    VERB("\n");
-    
 #define FILL_DHCP_HEADER_FIELD(_label, _size) \
     do {                                                        \
         uint8_t *mb;                                            \
@@ -344,7 +340,10 @@ int dhcp_match_bin_cb (int csap_id, int layer, const asn_value *pattern_pdu,
                              "#dhcp." _label ".#plain") == 0)   \
         {                                                       \
             if (memcmp(p, mb, _size))                           \
+            {                                                   \
+                VERB("Opps: " _label);                          \
                 rc = ETADNOTMATCH;                              \
+            }                                                   \
         }                                                       \
         if (rc == 0)                                            \
             rc = asn_write_value_field(parsed_packet, p, _size, \
@@ -374,19 +373,18 @@ int dhcp_match_bin_cb (int csap_id, int layer, const asn_value *pattern_pdu,
 
 #undef FILL_DHCP_HEADER_FIELD
 
+#if 0
     /* check for magic DHCP cookie, see RFC2131, section 3. */
-    printf("before magic %x %x %x %x %x %x\n", p[0], p[1], p[2],
-           p[3], p[4], p[5]);
-    if ((((void *)p) + sizeof (magic_dhcp)) > (pkt->data + pkt->len) || 
+    if ((((void *)p) + sizeof(magic_dhcp)) > (pkt->data + pkt->len) || 
         memcmp(magic_dhcp, p, sizeof(magic_dhcp)) != 0)
     {
+        VERB("DHCP magic does not match");
         return ETADNOTMATCH;
     }
 
     p += sizeof(magic_dhcp); 
 
     opt_list = asn_init_value(ndn_dhcpv4_options); 
-    printf("before loop\n");
 
     while (((void *)p) < (pkt->data + pkt->len))
     {
@@ -455,7 +453,8 @@ int dhcp_match_bin_cb (int csap_id, int layer, const asn_value *pattern_pdu,
     UNUSED(layer);
     UNUSED(pattern_pdu);
 
-    memset (payload, 0 , sizeof(*payload));
+    memset(payload, 0 , sizeof(*payload));
+#endif
 
     VERB("MATCH CALLBACK OK\n");
 
