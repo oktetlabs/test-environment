@@ -30,9 +30,6 @@ usage()
     echo -e '  --conf-rgt=<filename>'\\t\\t'RGT config file (rgt.conf by default)'
     echo -e '  --conf-tester=<filename>'\\t'Tester config file (tester.conf by default)'
     echo
-    echo -e '  --cs-print-trees'\\t\\t'Print configurator trees.'
-    echo -e '  --cs-print-diff'\\t\\t'Log will be performed using INFO log level unconditionally'
-    echo
 #    echo -e '  '--storage='<string>'\\t\\tconfiguration string for the storage
 #    echo -e \\t\\t\\t\\twith data to be updated by Dispatcher
 #    echo -e '  '--update-files='<list>'\\t\\tupdate files and directories specified
@@ -59,6 +56,18 @@ usage()
     echo -e '  --script-tester'\\t\\t'Use script Tester with text configuration files'
     echo -e '  --vg-tests'\\t\\t\\t'Run tests under valgrind (without by default)'
     echo -e \\t\\t\\t\\t'May be used with script Tester only'
+    echo
+    echo -e '  --cs-print-trees'\\t\\t'Print configurator trees.'
+    echo -e '  --cs-print-diff'\\t\\t'Log backup diff unconditionally.'
+    echo
+    echo -e '  --build-cs'\\t\\t\\t'Build configurator.'
+    echo -e '  --build-logger'\\t\\t'Build logger.'
+    echo -e '  --build-rcf'\\t\\t\\t'Build RCF.'
+    echo -e '  --build-tester'\\t\\t'Build tester.'
+    echo -e '  --build-lib-xxx'\\t\\t'Build host library xxx.'
+    echo -e '  --build-ta-xxx'\\t\\t'Build Test Agent xxx.'
+    echo -e '  --build-log-xxx'\\t\\t'Build package with log level 0xFFFF.'
+    echo -e '  --build-nolog-xxx'\\t\\t'Build package with undefined log level.'
     echo
     echo -e '  --tester-fake'\\t\\t\\t'Do not run any test scripts, just emulate'
     echo -e \\t\\t\\t\\t'Usefull for configuration debugging'
@@ -124,6 +133,10 @@ QUIET=
 TESTER_OPTS=
 # No additional TRV options by default
 TRC_OPTS=
+# Configurator options
+CS_OPTS=
+# Building options
+BUILDER_OPTS=
 
 LIVE_LOG=
 
@@ -152,9 +165,6 @@ TESTS=
 
 # Configuration directory
 CONF_DIR=
-
-# Configurator options
-CS_OPTS=
 
 # Directory for raw log file
 TE_LOG_DIR=`pwd`
@@ -262,6 +272,11 @@ process_opts()
             --trc-*) TRC_OPTS="${TRC_OPTS} --${1#--trc-}" ;;
     
             --cs-*) CS_OPTS="${CS_OPTS} --${1#--cs-}" ;;
+
+            --build-*) 
+                BUILDER_OPTS="${BUILDER_OPTS} --${1#--build-}" 
+                BUILDER=
+                ;;
 
             *)  echo "Unknown option: $1" >&2;
                 usage ;
@@ -475,6 +490,8 @@ if test -n "$BUILDER" ; then
         make te || exit_with_log ;
     fi
 fi
+
+te_builder_opts $BUILDER_OPTS || exit_with_log
 
 # Goto the directory where the script was called
 popd >/dev/null
