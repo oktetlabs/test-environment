@@ -285,7 +285,6 @@ logfork_entry(void)
         logfork_cleanup(&proc_list, sockd);
         return;
     }
-    fprintf(stderr, "Address %s\n", inet_ntoa(logfork_saddr.sin_addr));
 
     while (1)
     {         
