@@ -62,7 +62,7 @@
             if (!!((#func_args_value_)[0]))                               \
             {                                                             \
                 ERROR("RPC " #func_  fmt_func_args_                       \
-                      " on %s failed retval=%d, RPC_errno=%X",            \
+                      " on %s failed retval=%d, RPC_errno=0x%X",          \
                       func_args_value_ + 0,                               \
                       RPC_NAME(rpcs_),                                    \
                       (rc_),                                              \
@@ -71,7 +71,7 @@
             else                                                          \
             {                                                             \
                 ERROR("RPC " #func_  fmt_func_args_                       \
-                      " on %s failed retval=%d, RPC_errno=%X",            \
+                      " on %s failed retval=%d, RPC_errno=0x%X",          \
                       RPC_NAME(rpcs_),                                    \
                       (rc_),                                              \
                       TE_RC_GET_ERROR(err_));                             \
@@ -80,6 +80,24 @@
         MACRO_TEST_ERROR;                                                 \
     } while (0)
 
+
+/**
+ * Macro to check errno after call of void function.
+ *
+ * @param _rpcs    RPS server
+ * @param _func    RPC function name to call (without rpc_ prefix)
+ * @param _args    A set of arguments pased to the function
+ */
+#define RPC_FUNC_VOID(_rpcs, _func, _args...) \
+    do {                                                         \
+        rpc_##_func(_rpcs, _args);                               \
+        if (RPC_ERRNO(_rpcs) != 0)                               \
+        {                                                        \
+            ERROR("rpc_" #_func " on %s failed with errno=0x%X", \
+                  RPC_NAME(_rpcs), RPC_ERRNO(_rpcs));            \
+            MACRO_ERROR_EXIT;                                    \
+        }                                                        \
+    } while (0)
 
 /**
  * Macro to check function 'func_' on returning non negative value
@@ -95,7 +113,7 @@
                                                                 \
         (retval_) =  rpc_ ## func_(rpcs_, args_);               \
         err2_ = RPC_ERRNO(rpcs_);                               \
-        VERB("rpc_" #func_ " returns: %d, %X",                  \
+        VERB("rpc_" #func_ " returns: %d, 0x%X",                \
              retval_, TE_RC_GET_ERROR(err2_));                  \
         if ((retval_) < 0)                                      \
         {                                                       \
@@ -117,7 +135,7 @@
                                                                 \
         (retval_) =  rpc_ ## func_(rpcs_);                      \
         err2_ = RPC_ERRNO(rpcs_);                               \
-        VERB("rpc_" #func_ " returns: %d, %X",                  \
+        VERB("rpc_" #func_ " returns: %d, 0x%X",                \
              retval_, TE_RC_GET_ERROR(err2_));                  \
         if ((retval_) < 0)                                      \
         {                                                       \
@@ -142,7 +160,7 @@
                                                                 \
         (retval_) =  rpc_ ## func_(rpcs_, args_);               \
         err2_ = RPC_ERRNO(rpcs_);                               \
-        VERB("rpc_" #func_ " returns: %d, %X",                  \
+        VERB("rpc_" #func_ " returns: %d, 0x%X",                \
              retval_, TE_RC_GET_ERROR(err2_));                  \
         if ((int)(retval_) != (int)(expect_))                   \
         {                                                       \
@@ -898,7 +916,7 @@
                 if (IS_IUT_ERRNO(err_))                             \
                 {                                                   \
                     ERROR("RPC close() on %s failed retval=%d "     \
-                          "RPC_errno=%X",                           \
+                          "RPC_errno=0x%X",                         \
                           RPC_NAME(rpcs_), rc_,                     \
                           TE_RC_GET_ERROR(err_));                   \
                 }                                                   \
@@ -928,15 +946,14 @@
             {                                                           \
                 if (IS_IUT_ERRNO(err_))                                 \
                 {                                                       \
-                    ERROR(err_msg_ " sets errno to %s instead of %s",   \
+                    ERROR(err_msg_ ": errno is set to %s instead of %s",\
                           args_ + 0, errno_rpc2str(err_),               \
                           errno_rpc2str(exp_errno_));                   \
                 }                                                       \
                 else                                                    \
                 {                                                       \
-                    ERROR(err_msg_ " sets errno to %X instead of %s",   \
-                          args_ + 0, TE_RC_GET_ERROR(err_),             \
-                          errno_rpc2str(exp_errno_));                   \
+                    ERROR(err_msg_ " RPC call failure with errno 0x%X", \
+                          args_ + 0, TE_RC_GET_ERROR(err_));            \
                 }                                                       \
             }                                                           \
             else                                                        \
@@ -949,9 +966,8 @@
                 }                                                       \
                 else                                                    \
                 {                                                       \
-                    ERROR(err_msg_ " sets errno to %X instead of %s",   \
-                          TE_RC_GET_ERROR(err_),                        \
-                          errno_rpc2str(exp_errno_));                   \
+                    ERROR(err_msg_ " RPC call failure with errno 0x%X", \
+                          TE_RC_GET_ERROR(err_));                       \
                 }                                                       \
             }                                                           \
             MACRO_TEST_ERROR;                                           \
@@ -986,13 +1002,13 @@
         rpc_do_fd_zero(rpcs_, fds_);                                    \
         if (RPC_ERRNO(rpcs_))                                           \
         {                                                               \
-            TEST_FAIL("rpc_do_fd_zero() fails with RPC_errno: %X",      \
+            TEST_FAIL("rpc_do_fd_zero() fails with RPC_errno: 0x%X",    \
                       RPC_ERRNO(rpcs_));                                \
         }                                                               \
         rpc_do_fd_set(rpcs_, sockd_, fds_);                             \
         if (RPC_ERRNO(rpcs_))                                           \
         {                                                               \
-            TEST_FAIL("rpc_do_fd_set() fails with RPC_errno: %X",       \
+            TEST_FAIL("rpc_do_fd_set() fails with RPC_errno: 0x%X",     \
                       RPC_ERRNO(rpcs_));                                \
         }                                                               \
                                                                         \
@@ -1014,7 +1030,7 @@
         rpc_fd_set_delete(rpcs_, fds_);                                 \
         if (RPC_ERRNO(rpcs_))                                           \
         {                                                               \
-            TEST_FAIL("rpc_fd_set_delete() fails with RPC_errno: %X",   \
+            TEST_FAIL("rpc_fd_set_delete() fails with RPC_errno: 0x%X", \
                       RPC_ERRNO(rpcs_));                                \
         }                                                               \
     } while (0)

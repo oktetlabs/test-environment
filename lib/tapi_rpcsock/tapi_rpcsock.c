@@ -1336,7 +1336,7 @@ rpc_wsa_recv_ex(rcf_rpc_server *handle,
             *flags = out.flags.flags_val[0];
     }
 
-    RING("RPC (%s,%s)%s: WSARecvEx(%d, %p[%u], %x (%u->%u), %s) -> "
+    RING("RPC (%s,%s)%s: WSARecvEx(%d, %p[%u], 0x%X (%u->%u), %s) -> "
          "%d (%s %s)",
          handle->ta, handle->name, rpcop2str(op),
          s, buf, rbuflen, len,
@@ -2194,7 +2194,7 @@ rpc_wsa_event_select(rcf_rpc_server *handle,
                  &in,  (xdrproc_t)xdr_tarpc_event_select_in,
                  &out, (xdrproc_t)xdr_tarpc_event_select_out);
 
-    RING("RPC (%s,%s): event_select(%d, %x, %s) -> %d (%s)",
+    RING("RPC (%s,%s): event_select(%d, 0x%X, %s) -> %d (%s)",
          handle->ta, handle->name,
          s, event_object, network_event_rpc2str(event), out.retval,
          errno_rpc2str(RPC_ERRNO(handle)));
@@ -2237,7 +2237,7 @@ rpc_enum_network_events(rcf_rpc_server *handle,
         if (event != NULL && out.event.event_val != NULL)
             *event = out.event.event_val[0];
     }
-    RING("RPC (%s,%s): enum_network_events(%d, %d, %x) -> %d (%s) "
+    RING("RPC (%s,%s): enum_network_events(%d, %d, 0x%X) -> %d (%s) "
          "returned event %s",
          handle->ta, handle->name, s, event_object, event,
          out.retval, errno_rpc2str(RPC_ERRNO(handle)),
@@ -6652,7 +6652,7 @@ rpc_many_send(rcf_rpc_server *handle, int sock,
     if (vector != NULL && handle->op != RCF_RPC_WAIT)
     {
         in.vector.vector_len = nops;
-        in.vector.vector_val = (size_t *)vector;
+        in.vector.vector_val = (tarpc_int *)vector;
     }
 
     rcf_rpc_call(handle, _many_send, &in, (xdrproc_t)xdr_tarpc_many_send_in,
