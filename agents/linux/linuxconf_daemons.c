@@ -311,6 +311,8 @@ xinetd_set(unsigned int gid, const char *oid, const char *value)
     int   index = ds_lookup(XINETD_ETC_DIR, get_ds_name(oid));
     FILE *f, *g;
     int   rc;
+    
+    te_bool inside = FALSE;
 
     UNUSED(gid);
 
@@ -339,8 +341,13 @@ xinetd_set(unsigned int gid, const char *oid, const char *value)
     {
         if (strstr(buf, "disable") == NULL)
             fwrite(buf, 1, strlen(buf), g);
+            
+        if (strstr(buf, "{") && !inside)
+        {
+            inside = TRUE;
+            fprintf(g, "disable = %s\n", *value == '0' ? "yes" : "no");
+        }
     }
-    fprintf(g, "disable = %s", *value == '0' ? "yes" : "no");
     fclose(f);
     fclose(g);
 
