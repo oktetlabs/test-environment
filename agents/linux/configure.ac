@@ -53,6 +53,32 @@ netinet/in_systm.h \
 sys/un.h \
 ])
 
+#
+# Try to find IP_MTU socket option definition.
+#
+AH_TEMPLATE([MY_IP_MTU],
+    [Cope with strange location of IP_MTU socket option definition])
+
+AC_CHECK_HEADER([sys/socket.h],
+    [AC_MSG_CHECKING([for IP_MTU in sys/socket.h])
+     AC_COMPILE_IFELSE([
+#include <sys/socket.h>
+int a = IP_MTU;],
+         [AC_MSG_RESULT(found)],
+         [AC_MSG_RESULT([not found])
+          AC_CHECK_HEADER([linux/in.h],
+              [AC_MSG_CHECKING([for IP_MTU in linux/in.h])
+               AC_COMPILE_IFELSE([
+#include <sys/socket.h>
+#include <linux/in.h>
+int a = IP_MTU;],
+                   [AC_MSG_RESULT([found])
+                    my_ip_mtu=`grep "#[ \t]*define[ \t][ \t]*IP_MTU\>" \
+                               /usr/include/linux/in.h | sed -s \
+    "s/#[ \t]*define[ \t][ \t]*IP_MTU[ \t][ \t]*\([0-9]*\)[ \t]*$/\1/"`
+                    AC_DEFINE_UNQUOTED([MY_IP_MTU], [$my_ip_mtu])],
+                   [AC_MSG_RESULT([not found])])
+              ], [], [#include <sys/socket.h>])])])
 
 if test -n "$with_cfg_linux_daemons" ; then
     DAEMONS_CFLAGS=-DCFG_LINUX_DAEMONS

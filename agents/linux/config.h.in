@@ -69,6 +69,9 @@
 /* Define to 1 if you have the <unistd.h> header file. */
 #undef HAVE_UNISTD_H
 
+/* Cope with strange location of IP_MTU socket option definition */
+#undef MY_IP_MTU
+
 /* Name of package */
 #undef PACKAGE
 
