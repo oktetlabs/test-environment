@@ -547,8 +547,7 @@ shell(int argc, char * const argv[])
     int             i;
     unsigned int    used = 0;
     int             rc;
-    
-    static int      round = 0;
+
 
     for (i = 0; (i < argc) && (used < cmdlen); ++i)
     {
