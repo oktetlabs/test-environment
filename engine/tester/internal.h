@@ -41,6 +41,8 @@
 #include "logger_api.h"
 #include "logger_ten.h"
 
+#include "tester_flags.h"
+#include "test_params.h"
 #include "run_path.h"
 #include "reqs.h"
 
@@ -81,19 +83,6 @@ typedef struct person_info {
 
 /** Head of the list with information about persons */
 typedef TAILQ_HEAD(persons_info, person_info) persons_info;
-
-
-/** Test real parameter with specified value. */
-typedef struct test_param {
-    TAILQ_ENTRY(test_param) links;  /**< List links */
-
-    char       *name;   /**< Parameter name */
-    char       *value;  /**< Current parameter value */
-    te_bool     clone;  /**< Clone this entry or not */
-} test_param;
-
-/** Head of the test real parameters list */
-typedef TAILQ_HEAD(test_params, test_param) test_params;
 
 
 /** Information about Test Suite */
@@ -342,36 +331,16 @@ typedef struct tester_cfg {
 typedef TAILQ_HEAD(tester_cfgs, tester_cfg) tester_cfgs;
 
 
-/** Flags of the Tester global context */
-enum tester_ctx_flags {
-    TESTER_CTX_NOLOGUES = 0x01,     /**< Prologues/epilogues are disabled */
-    TESTER_CTX_NORANDOM = 0x02,     /**< Disable randomness */
-    TESTER_CTX_NOSIMULT = 0x04,     /**< Disable simultaneousness */
-    TESTER_CTX_FAKE     = 0x08,     /**< Fake run */
-    TESTER_CTX_VERBOSE  = 0x10,     /**< The first level of verbosity:
-                                         output of run path to stdout */
-    TESTER_CTX_VVERB    = 0x20,     /**< The second level of verbosity:
-                                         additional output of test IDs
-                                         on run paths */
-    TESTER_CTX_VVVERB   = 0x40,     /**< The third level of verbosity */
-    TESTER_CTX_INLOGUE  = 0x80,     /**< Is in prologue/epilogue */
-    TESTER_CTX_VALGRIND = 0x100,    /**< Run scripts under valgrind */
-    TESTER_CTX_GDB      = 0x200,    /**< Run scripts under GDB in
-                                         interactive mode */
-    TESTER_CTX_NOBUILD  = 0x1000,   /**< Don't build any Test Suites */
-};
-
-
 /** Tester global context */
 typedef struct tester_ctx {
     unsigned int        id;         /**< ID of the Tester context */
 
-    unsigned int        flags;      /**< Flags (enum tester_ctx_flags) */
+    unsigned int        flags;      /**< Flags (enum tester_flags) */
     int                 timeout;    /**< Global execution timeout (sec) */
     test_suites_info    suites;     /**< Information about test suites */
     test_requirements   reqs;       /**< List of target requirements
                                          specified in command line */
-    tester_run_paths    paths;      /**< List of paths to run */
+    tester_run_path    *path;       /**< Path to run and/or path options */
 
 } tester_ctx;
 
@@ -385,7 +354,6 @@ static inline void
 tester_ctx_free(tester_ctx *ctx)
 {
     test_requirements_free(&ctx->reqs);
-    tester_run_paths_free(&ctx->paths);
     free(ctx);
 }
 

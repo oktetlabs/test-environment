@@ -143,17 +143,10 @@ tester_ctx_clone(const tester_ctx *ctx)
     new_ctx->id      = ctx->id;
     new_ctx->flags   = ctx->flags;
     new_ctx->timeout = ctx->timeout;
+    new_ctx->path    = ctx->path;
 
     TAILQ_INIT(&new_ctx->reqs);
     rc = test_requirements_clone(&ctx->reqs, &new_ctx->reqs);
-    if (rc != 0)
-    {
-        ERROR("%s(): failed to clone requirements: %X", __FUNCTION__, rc);
-        free(new_ctx);
-        return NULL;
-    }
-    TAILQ_INIT(&new_ctx->paths);
-    rc = tester_run_paths_clone(&ctx->paths, &new_ctx->paths);
     if (rc != 0)
     {
         ERROR("%s(): failed to clone requirements: %X", __FUNCTION__, rc);
@@ -731,7 +724,65 @@ args_iterations(test_param_iterations *base_iters, test_args *args,
 static char *
 persons_info_to_string(const persons_info *persons)
 {
-    return strdup("");
+#define TESTER_STR_BULK 4
+    size_t              total = TESTER_STR_BULK;
+    char               *res = malloc(total);
+    char               *s = res;
+    size_t              rest = total;
+    const person_info  *p;
+    int                 printed;
+    te_bool             again;
+
+    if (res == NULL)
+    {
+        ERROR("%s(): Memory allocation failure", __FUNCTION__);
+        return NULL;
+    }
+
+    s[0] = '\0';
+    for (p = persons->tqh_first; p != NULL; p = p->links.tqe_next)
+    {
+        do  {
+            printed = snprintf(s, rest, " %s%smailto:%s",
+                               PRINT_STRING(p->name),
+                               (p->name == NULL) ? "" : " ",
+                               PRINT_STRING(p->mailto));
+            assert(printed > 0);
+            if ((size_t)printed >= rest)
+            {
+                char *t;
+                
+                /* Discard just printed */
+                s[0] = '\0';
+                /* We are going to extend buffer */
+                rest += total;
+                total <<= 1;
+                t = malloc(total);
+                if (t == NULL)
+                {
+                    ERROR("%s(): Memory allocation failure", __FUNCTION__);
+                    return res;
+                }
+                /* Copy early printed to new buffer */
+                strcpy(t, res);
+                /* Substitute */
+                free(res);
+                res = t;
+                /* Locate current pointer */
+                s = res + strlen(res);
+                /* Print the last item again */
+                again = TRUE;
+            }
+            else
+            {
+                rest -= printed;
+                s += printed;
+                again = FALSE;
+            }
+        } while (again);
+    }
+    return res;
+#undef TESTER_STR_BULK
 }
 
 
@@ -832,7 +883,7 @@ log_test_start(const run_item *ri, test_id parent, test_id test,
             LOG_RING(TESTER_FLOW, "$T%d $T%d PACKAGE %s \"%s\"%s%s ARGs%s",
                      parent, test, ri->u.package->name,
                      PRINT_STRING(ri->u.package->descr),
-                     (authors != NULL) ? " AUTHOURS " : "",
+                     (authors != NULL) ? " AUTHOURS" : "",
                      PRINT_STRING(authors), PRINT_STRING(params_str));
             free(authors);
             break;
@@ -942,7 +993,7 @@ run_test_script(tester_ctx *ctx, test_script *script, test_id id,
 
     params_str = test_params_to_string(params);
 
-    if (ctx->flags & TESTER_CTX_GDB)
+    if (ctx->flags & TESTER_GDB)
     {
         if (params_str != NULL)
         {
@@ -985,7 +1036,7 @@ run_test_script(tester_ctx *ctx, test_script *script, test_id id,
             }
         }
     }
-    else if (ctx->flags & TESTER_CTX_VALGRIND)
+    else if (ctx->flags & TESTER_VALGRIND)
     {
         if (snprintf(shell, sizeof(shell),
                      "valgrind --num-callers=16 --leak-check=yes "
@@ -1005,7 +1056,7 @@ run_test_script(tester_ctx *ctx, test_script *script, test_id id,
     }
 
     if (snprintf(cmd, sizeof(cmd), "%s%s%s%s", shell, script->execute,
-                 (ctx->flags & TESTER_CTX_GDB) ? "" : PRINT_STRING(params_str),
+                 (ctx->flags & TESTER_GDB) ? "" : PRINT_STRING(params_str),
                  postfix) >= (int)sizeof(cmd))
     {
         ERROR("Too short buffer is reserved for test script command "
@@ -1018,7 +1069,7 @@ run_test_script(tester_ctx *ctx, test_script *script, test_id id,
     {
         result = ETESTSKIP;
     }
-    else if (ctx->flags & TESTER_CTX_FAKE)
+    else if (ctx->flags & TESTER_FAKE)
     {
         result = ETESTFAKE;
     }
@@ -1129,7 +1180,7 @@ run_test_session(tester_ctx *ctx, test_session *session, test_id id,
     }
 
     /* If fake flag is already set in context */
-    if (ctx->flags & TESTER_CTX_FAKE)
+    if (ctx->flags & TESTER_FAKE)
     {
         result = ETESTFAKE;
     }
@@ -1137,21 +1188,21 @@ run_test_session(tester_ctx *ctx, test_session *session, test_id id,
     do {
         if (session->prologue != NULL)
         {
-            if (ctx->flags & TESTER_CTX_NOLOGUES)
+            if (ctx->flags & TESTER_NOLOGUES)
             {
                 VERB("Prologues are disabled globally");
             }
             else
             {
                 VERB("Running test session prologue...");
-                ctx->flags |= TESTER_CTX_INLOGUE;
+                ctx->flags |= TESTER_INLOGUE;
                 rc = iterate_test(ctx, session->prologue, &iters);
                 if ((rc != 0) && (rc != ETESTFAKE))
                 {
                     result = ETESTPROLOG;
                     break;
                 }
-                ctx->flags &= ~TESTER_CTX_INLOGUE;
+                ctx->flags &= ~TESTER_INLOGUE;
             }
         }
         else
@@ -1192,21 +1243,21 @@ run_test_session(tester_ctx *ctx, test_session *session, test_id id,
 
         if (session->epilogue != NULL)
         {
-            if (ctx->flags & TESTER_CTX_NOLOGUES)
+            if (ctx->flags & TESTER_NOLOGUES)
             {
                 VERB("Epilogues are disabled globally");
             }
             else
             {
                 VERB("Running test session epilogue...");
-                ctx->flags |= TESTER_CTX_INLOGUE;
+                ctx->flags |= TESTER_INLOGUE;
                 rc = iterate_test(ctx, session->epilogue, &iters);
                 if ((rc != 0) && (rc != ETESTFAKE))
                 {
                     result = ETESTEPILOG;
                     break;
                 }
-                ctx->flags &= ~TESTER_CTX_INLOGUE;
+                ctx->flags &= ~TESTER_INLOGUE;
             }
         }
         else
@@ -1242,7 +1293,7 @@ run_test_package(tester_ctx *ctx, test_package *pkg, test_id id,
 
     ENTRY();
 
-    assert(!(ctx->flags & TESTER_CTX_INLOGUE));
+    assert(!(ctx->flags & TESTER_INLOGUE));
 
     ctx = tester_ctx_clone(ctx);
     if (ctx == NULL)
@@ -1530,14 +1581,14 @@ iterate_test(tester_ctx *ctx, run_item *test,
     test_param_iterations   aux_base_iters;
     test_param_iterations   iters;
     test_param_iteration   *i;
-    char                   *backup_name;
+    char                   *backup_name = NULL;
     const char             *run_item_name = test->name;
     const char             *test_name = tester_run_item_name(test);
 
     ENTRY();
 
     if ((run_item_name != NULL || test_name != NULL) &&
-        ctx->paths.tqh_first != NULL && !(ctx->flags & TESTER_CTX_INLOGUE))
+        (ctx->path->paths.tqh_first != NULL))
     {
         ctx = tester_ctx_clone(ctx);
         if (ctx == NULL)
@@ -1552,14 +1603,18 @@ iterate_test(tester_ctx *ctx, run_item *test,
             rc = tester_run_path_forward(ctx, run_item_name);
             if (rc != 0)
             {
-                tester_ctx_free(ctx);
                 if (rc == ENOENT)
                 {
                     /* Silently ignore nodes not of the path */
-                    return 0;
+                    if (~ctx->flags & TESTER_INLOGUE)
+                    {
+                        tester_ctx_free(ctx);
+                        return 0;
+                    }
                 }
                 else
                 {
+                    tester_ctx_free(ctx);
                     ERROR("%s(): tester_run_path_forward() failed",
                           __FUNCTION__);
                     return rc;
@@ -1571,14 +1626,18 @@ iterate_test(tester_ctx *ctx, run_item *test,
             rc = tester_run_path_forward(ctx, test_name);
             if (rc != 0)
             {
-                tester_ctx_free(ctx);
                 if (rc == ENOENT)
                 {
                     /* Silently ignore nodes not of the path */
-                    return 0;
+                    if (~ctx->flags & TESTER_INLOGUE)
+                    {
+                        tester_ctx_free(ctx);
+                        return 0;
+                    }
                 }
                 else
                 {
+                    tester_ctx_free(ctx);
                     ERROR("%s(): tester_run_path_forward() failed",
                           __FUNCTION__);
                     return rc;
@@ -1622,17 +1681,31 @@ iterate_test(tester_ctx *ctx, run_item *test,
         return EINVAL;
     }
 
+    /* Create backup to be verified after each iteration */
+    if (test->attrs.track_conf)
+    {
+        rc = cfg_create_backup(&backup_name);
+        if (rc != 0)
+        {
+            ERROR("Cannot create configuration backup: %X", rc);
+            test_param_iterations_free(&iters);
+            if (ctx_cloned)
+                tester_ctx_free(ctx);
+            return rc;
+        }
+    }
+
     /* Iterate parameters */
     for (i = iters.tqh_first; i != NULL; i = i->links.tqe_next)
     {
         test_id     id = tester_get_id();
         te_bool     test_ctx_cloned = FALSE;
-        tester_ctx *test_ctx;
+        tester_ctx *test_ctx = ctx;
 
-#if 0
-        if (ctx->paths.tqh_first != NULL &&
-            (~(ctx->flags) & TESTER_CTX_INLOGUE))
+        if (ctx->path->params.tqh_first != NULL &&
+            (~(ctx->flags) & TESTER_INLOGUE))
         {
+#if 0
             test_ctx = tester_ctx_clone(ctx);
             if (test_ctx == NULL)
             {
@@ -1641,11 +1714,11 @@ iterate_test(tester_ctx *ctx, run_item *test,
                 break;
             }
             test_ctx_cloned = TRUE;
+#endif
 
-            rc = tester_run_path_forward(test_ctx, script->name);
+            rc = tester_run_path_params_match(test_ctx, &(i->params));
             if (rc != 0)
             {
-                tester_ctx_free(test_ctx);
                 if (rc == ENOENT)
                 {
                     /* Silently ignore nodes not of the path */
@@ -1653,32 +1726,11 @@ iterate_test(tester_ctx *ctx, run_item *test,
                 }
                 else
                 {
-                    ERROR("%s(): tester_run_path_forward() failed",
+                    ERROR("%s(): tester_run_path_params_forward() failed",
                           __FUNCTION__);
                     result = rc;
                     break;
                 }
-            }
-        }
-        else
-#endif
-        {
-            test_ctx_cloned = FALSE;
-            test_ctx = ctx;
-        }
-
-        if (test->attrs.track_conf)
-        {
-            /* Make Configuration backup, if required */
-            rc = cfg_create_backup(&backup_name);
-            if (rc != 0)
-            {
-                ERROR("Cannot create configuration backup: %X", rc);
-                test_param_iterations_free(&iters);
-                if (test_ctx_cloned)
-                    tester_ctx_free(test_ctx);
-                result = rc;
-                break;
             }
         }
 
@@ -1725,7 +1777,6 @@ iterate_test(tester_ctx *ctx, run_item *test,
                 if (TEST_RESULT(result))
                     result = rc;
             }
-            free(backup_name);
         }
         
         log_test_result(test_ctx->id, id, result);
@@ -1739,6 +1790,7 @@ iterate_test(tester_ctx *ctx, run_item *test,
             break;
     }
 
+    free(backup_name);
     test_param_iterations_free(&aux_base_iters);
     test_param_iterations_free(&iters);
     if (ctx_cloned)
@@ -1759,27 +1811,20 @@ iterate_test(tester_ctx *ctx, run_item *test,
 int
 tester_run_config(tester_ctx *ctx, tester_cfg *cfg)
 {
-    int              rc;
-    int              result = 0;
-    const char      *maintainer_name;
-    const char      *maintainer_mailto;
-    run_item        *test;
+    int         rc;
+    int         result = 0;
+    char       *maintainers;
+    run_item   *test;
 
     ENTRY();
 
-    assert(cfg->maintainers.tqh_first != NULL);
-    maintainer_name   = cfg->maintainers.tqh_first->name;
-    maintainer_mailto = cfg->maintainers.tqh_first->mailto;
-    assert(maintainer_mailto != NULL);
-
+    maintainers = persons_info_to_string(&cfg->maintainers);
     INFO("Running configuration:\n"
          "File:        %s\n"
-         "Maintainer:  %s%smailto:%s\n"
+         "Maintainers:%s\n"
          "Description: %s",
-         cfg->filename,
-         maintainer_name ? : "", maintainer_name ? " " : "",
-         maintainer_mailto,
-         cfg->descr ? : "(no description)");
+         cfg->filename, maintainers, cfg->descr ? : "(no description)");
+    free(maintainers);
 
     /* Clone Tester context */
     ctx = tester_ctx_clone(ctx);
@@ -1796,6 +1841,8 @@ tester_run_config(tester_ctx *ctx, tester_cfg *cfg)
         tester_ctx_free(ctx);
         return ENOMEM;
     }
+    /* Add flags set for the root element of the run path */
+    ctx->flags |= ctx->path->flags;
 
     /*
      * Process options. Put options in appropriate context.

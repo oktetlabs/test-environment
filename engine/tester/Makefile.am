@@ -7,7 +7,7 @@ AM_CFLAGS = @XML2_CFLAGS@
 AM_LDFLAGS = @TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/lib 
 
 
-noinst_HEADERS = internal.h run_path.h reqs.h
+noinst_HEADERS = internal.h reqs.h run_path.h tester_flags.h test_params.h
 
 
 bin_PROGRAMS = te_tester

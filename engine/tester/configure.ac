@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.59)
-AC_INIT(tester, 0.4, Andrew.Rybchenko@oktetlabs.ru)
+AC_INIT(tester, 0.5, Andrew.Rybchenko@oktetlabs.ru)
 AC_CONFIG_SRCDIR([tester.c])
 
 AC_CONFIG_AUX_DIR(../../aux)

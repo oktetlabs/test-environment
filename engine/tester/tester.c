@@ -79,17 +79,28 @@ static void run_items_free(run_items *runs);
  * Initialize Tester context.
  *
  * @param ctx           Context to be initialized
+ *
+ * @return Status code.
  */
-static void
+static int
 tester_ctx_init(tester_ctx *ctx)
 {
     memset(ctx, 0, sizeof(*ctx));
     ctx->id = tester_get_id();
     TAILQ_INIT(&ctx->suites);
     TAILQ_INIT(&ctx->reqs);
-    TAILQ_INIT(&ctx->paths);
+    ctx->path = calloc(1, sizeof(*(ctx->path)));
+    if (ctx->path == NULL)
+    {
+        ERROR("%s(): Memory allocation failure", __FUNCTION__);
+        return ENOMEM;
+    }
+    TAILQ_INIT(&ctx->path->params);
+    TAILQ_INIT(&ctx->path->paths);
     /* By default verbosity level is set to 1 */
-    ctx->flags |= TESTER_CTX_VERBOSE;
+    ctx->flags |= TESTER_VERBOSE;
+
+    return 0;
 }
 
 /**
@@ -371,6 +382,37 @@ run_items_free(run_items *runs)
     }
 }
 
+/**
+ * Free test suite information.
+ *
+ * @param p         Information about test suite
+ */
+static void
+test_suite_info_free(test_suite_info *p)
+{
+    free(p->name);
+    free(p->src);
+    free(p->bin);
+    free(p);
+}
+
+/**
+ * Free list of test suites information.
+ *
+ * @param suites    List of with test suites information
+ */
+static void
+test_suites_info_free(test_suites_info *suites)
+{
+    test_suite_info *p;
+
+    while ((p = suites->tqh_first) != NULL)
+    {
+        TAILQ_REMOVE(suites, p, links);
+        test_suite_info_free(p);
+    }
+}
+
 
 /**
  * Free Tester configuration.
@@ -382,6 +424,7 @@ tester_cfg_free(tester_cfg *cfg)
 {
     persons_info_free(&cfg->maintainers);
     free(cfg->descr);
+    test_suites_info_free(&cfg->suites);
     test_requirements_free(&cfg->reqs);
     run_items_free(&cfg->runs);
     free(cfg);
@@ -472,43 +515,43 @@ process_cmd_line_opts(tester_ctx *ctx, tester_cfgs *cfgs,
         switch (rc)
         {
             case TESTER_OPT_NOLOGUES:
-                ctx->flags |= TESTER_CTX_NOLOGUES;
+                ctx->flags |= TESTER_NOLOGUES;
                 break;
 
             case TESTER_OPT_NORANDOM:
-                ctx->flags |= TESTER_CTX_NORANDOM;
+                ctx->flags |= TESTER_NORANDOM;
                 break;
 
             case TESTER_OPT_NOSIMULT:
-                ctx->flags |= TESTER_CTX_NOSIMULT;
+                ctx->flags |= TESTER_NOSIMULT;
                 break;
 
             case TESTER_OPT_FAKE:
-                ctx->flags |= TESTER_CTX_FAKE;
+                ctx->flags |= TESTER_FAKE;
                 break;
 
             case TESTER_OPT_NOBUILD:
-                ctx->flags |= TESTER_CTX_NOBUILD;
+                ctx->flags |= TESTER_NOBUILD;
                 break;
 
             case TESTER_OPT_VERBOSE:
-                if (!(ctx->flags & TESTER_CTX_VERBOSE))
-                    ctx->flags |= TESTER_CTX_VERBOSE;
-                else if (!(ctx->flags & TESTER_CTX_VVERB))
-                    ctx->flags |= TESTER_CTX_VVERB;
-                else if (!(ctx->flags & TESTER_CTX_VVVERB))
-                    ctx->flags |= TESTER_CTX_VVVERB;
+                if (!(ctx->flags & TESTER_VERBOSE))
+                    ctx->flags |= TESTER_VERBOSE;
+                else if (!(ctx->flags & TESTER_VVERB))
+                    ctx->flags |= TESTER_VVERB;
+                else if (!(ctx->flags & TESTER_VVVERB))
+                    ctx->flags |= TESTER_VVVERB;
                 else
                     WARN("Extra 'verbose' option is ignored");
                 break;
 
             case TESTER_OPT_QUIET:
-                if (ctx->flags & TESTER_CTX_VVVERB)
-                    ctx->flags &= ~TESTER_CTX_VVVERB;
-                else if (ctx->flags & TESTER_CTX_VVERB)
-                    ctx->flags &= ~TESTER_CTX_VVERB;
-                else if (ctx->flags & TESTER_CTX_VERBOSE)
-                    ctx->flags &= ~TESTER_CTX_VERBOSE;
+                if (ctx->flags & TESTER_VVVERB)
+                    ctx->flags &= ~TESTER_VVVERB;
+                else if (ctx->flags & TESTER_VVERB)
+                    ctx->flags &= ~TESTER_VVERB;
+                else if (ctx->flags & TESTER_VERBOSE)
+                    ctx->flags &= ~TESTER_VERBOSE;
                 else
                     WARN("Extra 'quiet' option is ignored");
                 break;
@@ -552,14 +595,32 @@ process_cmd_line_opts(tester_ctx *ctx, tester_cfgs *cfgs,
             }
 
             case TESTER_OPT_RUN:
-                rc = tester_run_path_new(&ctx->paths, poptGetOptArg(optCon));
+            case TESTER_OPT_VALGRIND:
+            case TESTER_OPT_GDB:
+            {
+                char *s = strdup(poptGetOptArg(optCon));
+
+                if (s == NULL)
+                {
+                    ERROR("strdup() failed");
+                    poptFreeContext(optCon);
+                    return EXIT_FAILURE;
+                }
+                rc = tester_run_path_new(ctx->path, s,
+                                         (rc == TESTER_OPT_VALGRIND) ?
+                                             TESTER_VALGRIND :
+                                         (rc == TESTER_OPT_GDB) ?
+                                              TESTER_GDB :
+                                         TESTER_RUN);
                 if (rc != 0)
                 {
-                    ERROR("tester_run_path_new() failed");
+                    ERROR("Failed to add new run path '%s'", s);
+                    free(s);
                     poptFreeContext(optCon);
                     return EXIT_FAILURE;
                 }
                 break;
+            }
 
             case TESTER_OPT_REQ:
                 rc = test_requirement_new(&ctx->reqs, poptGetOptArg(optCon));
@@ -571,22 +632,6 @@ process_cmd_line_opts(tester_ctx *ctx, tester_cfgs *cfgs,
                 }
                 break;
             
-            case TESTER_OPT_VALGRIND:
-                ctx->flags |= TESTER_CTX_VALGRIND;
-                if (poptGetOptArg(optCon) != NULL)
-                {
-                    WARN("All test scripts are run under valgrind");
-                }
-                break;
-
-            case TESTER_OPT_GDB:
-                ctx->flags |= TESTER_CTX_GDB;
-                if (poptGetOptArg(optCon) != NULL)
-                {
-                    WARN("All test scripts are run under gdb");
-                }
-                break;
-
             case TESTER_OPT_VERSION:
                 printf("Test Environment: %s\n\n%s\n", PACKAGE_STRING,
                        TE_COPYRIGHT);
@@ -687,30 +732,32 @@ tester_build_suites(test_suites_info *suites)
 int
 main(int argc, char *argv[])
 {
-    int         result = EXIT_SUCCESS;
+    int         result = EXIT_FAILURE;
     int         rc;
     tester_ctx  ctx;
     tester_cfgs cfgs;
     tester_cfg *cfg;
 
     TAILQ_INIT(&cfgs);
-    tester_ctx_init(&ctx);
+    if (tester_ctx_init(&ctx) != 0)
+    {
+        ERROR("Initialization of Tester context failed");
+        goto exit;
+    }
 
     if (process_cmd_line_opts(&ctx, &cfgs, argc, argv) != EXIT_SUCCESS)
     {
         ERROR("Command line options processing failure");
-        result = EXIT_FAILURE;
         goto exit;
     }
     
-    if ((~ctx.flags & TESTER_CTX_NOBUILD) &&
+    if ((~ctx.flags & TESTER_NOBUILD) &&
         (ctx.suites.tqh_first != NULL))
     {
         RING("Building Test Suites specified in command line...");
         rc = tester_build_suites(&ctx.suites);
         if (rc != 0)
         {
-            result = EXIT_FAILURE;
             goto exit;
         }
     }
@@ -721,7 +768,6 @@ main(int argc, char *argv[])
         if (rc != 0)
         {
             ERROR("Preprocessing of Tester configuration files failed");
-            result = EXIT_FAILURE;
             goto exit;
         }
     }
@@ -734,11 +780,11 @@ main(int argc, char *argv[])
         {
             ERROR("Run of configuration from file failed:\n%s",
                   cfg->filename);
-            result = EXIT_FAILURE;
             goto exit;
         }
     }
 
+    result = EXIT_SUCCESS;
     RING("Done");
 
 exit:
@@ -749,7 +795,7 @@ exit:
     }
 
     /* TODO */
-    tester_run_paths_free(&ctx.paths);
+    tester_run_path_free(ctx.path);
     test_requirements_free(&ctx.reqs);
     
     cfg_api_cleanup();

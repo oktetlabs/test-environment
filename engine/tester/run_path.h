@@ -35,41 +35,40 @@
 #include <sys/queue.h>
 #endif 
 
+#include "test_params.h"
+
+
+/* Forwards */
+struct tester_run_path;
+/** Head of the list with run paths */
+typedef TAILQ_HEAD(tester_run_paths, tester_run_path) tester_run_paths;
 
 /** Run path specified in command line */
 typedef struct tester_run_path {
     TAILQ_ENTRY(tester_run_path)    links;  /**< List links */
 
-    char                   *path;   /**< Full path */
-    char                   *pos;    /**< Current position in the path */
+    char               *name;   /**< Path item name */
+    unsigned int        flags;  /**< Path flags (tester_flags) */
+    test_params         params; /**< Specific parameters */
+
+    tester_run_paths    paths;  /**< Children */
 } tester_run_path;
 
-/** Head of the list with run paths */
-typedef TAILQ_HEAD(tester_run_paths, tester_run_path) tester_run_paths;
 
 
 /**
  * Create a new run path item and insert it in the list.
  *
- * @param paths     A list of run path items
+ * @param root      Root of run paths
  * @param path      Path content
+ * @param flags     Flags to be set
  *
  * @return Status code.
  * @retval 0        Success.
  * @retval ENOMEM   Memory allocation failure.
  */
-extern int tester_run_path_new(tester_run_paths *paths, const char *path);
-
-/**
- * Clone set of run path items.
- *
- * @param paths     A set run path items to be cloned
- * @param new_paths A set run path items for clones
- *
- * @return Status code.
- */
-extern int tester_run_paths_clone(const tester_run_paths *paths,
-                                  tester_run_paths *new_paths);
+extern int tester_run_path_new(tester_run_path *root, char *path,
+                               unsigned int flags);
 
 /**
  * Free run path item.
@@ -101,5 +100,18 @@ struct tester_ctx;
  * @retval ENOENT   The node is not on run path
  */
 extern int tester_run_path_forward(struct tester_ctx *ctx, const char *name);
+
+/**
+ * Check whether current parameters match requested in run path.
+ *
+ * @param ctx       Tester context
+ * @param params    Current parameters
+ *
+ * @return Status code.
+ * @retval 0        The node is on run path with current parameters
+ * @retval ENOENT   The node is not on run path
+ */
+extern int tester_run_path_params_match(struct tester_ctx *ctx,
+                                        test_params *params);
 
 #endif /* !__TE_ENGINE_TESTER_RUN_PATH_H__ */

@@ -48,26 +48,252 @@
 #include "internal.h"
 
 
+/**
+ * Get 'name' token from run path.
+ *
+ * @param path      Run path as string
+ * @param params    Whether parameters present?
+ *
+ * @return '\0'-terminated string
+ */
+static char *
+run_path_name_token(char **path, te_bool *params)
+{
+    char   *s;
+    size_t  l;
+
+    assert(path != NULL);
+    assert(*path != NULL);
+
+    /* Start of the string with initial path */
+    s = *path;
+    /* Try to find one of possible separators */
+    l = strcspn(s, "/:");
+    /* If found separator is open paranthesis, parameters follow */
+    *params = (s[l] == ':');
+    /* Move path forward */
+    *path = s + l + (s[l] != '\0');
+    /* Terminate token with '\0' (possibly just overwrite '\0') */
+    s[l] = '\0';
+
+    return s;
+}
+
+/**
+ * Get 'name' of the parameter token from run path.
+ *
+ * @param path      Run path as string
+ *
+ * @return '\0'-terminated string
+ */
+static char *
+run_path_param_name(char **path)
+{
+    char   *s;
+    size_t  l;
+
+    assert(path != NULL);
+    assert(*path != NULL);
+
+    /* Start of the string with initial path */
+    s = *path;
+    /* Try to find one of possible separators */
+    l = strcspn(s, "=");
+    /* Move path forward */
+    *path = s + l + (s[l] != '\0');
+    /* Terminate token with '\0' (possibly just overwrite '\0') */
+    s[l] = '\0';
+
+    return s;
+}
+
+/**
+ * Get 'value' of the parameter token from run path.
+ *
+ * @param path      Run path as string
+ * @param more      Whether more parameters present?
+ *
+ * @return '\0'-terminated string
+ */
+static char *
+run_path_param_value(char **path, te_bool *more)
+{
+    char   *s;
+    size_t  l;
+
+    assert(path != NULL);
+    assert(*path != NULL);
+
+    /* Start of the string with initial path */
+    s = *path;
+    /* Try to find one of possible separators */
+    l = strcspn(s, ",/");
+    /* If found separator is open paranthesis, parameters follow */
+    *more = (s[l] == ',');
+    /* Move path forward */
+    *path = s + l + (s[l] != '\0');
+    /* Terminate token with '\0' (possibly just overwrite '\0') */
+    s[l] = '\0';
+
+    return s;
+}
+
+/**
+ * Compare test parameters for equality.
+ *
+ * @param a     One test parameter
+ * @param b     Another test parameter
+ *
+ * @return Are test parameters equal?
+ */
+static te_bool
+test_param_equal(const test_param *a, const test_param *b)
+{
+    assert(a != NULL);
+    assert(b != NULL);
+    return (strcmp(a->name, b->name) == 0) &&
+           (strcmp(a->value, b->value) == 0);
+}
+
+/**
+ * Compare sets of test parameters for equality.
+ *
+ * @param a     One set of parameters
+ * @param b     Another set of parameters
+ *
+ * @return Are sets equal?
+ */
+static te_bool
+test_params_equal(const test_params *a, const test_params *b)
+{
+    te_bool             found = TRUE;
+    unsigned int        i, j;
+    unsigned int        max_j = 0;
+    const test_param   *p;
+    const test_param   *q;
+
+    assert(a != NULL);
+    assert(b != NULL);
+    for (p = a->tqh_first, i = 0;
+         found && p != NULL;
+         p = p->links.tqe_next, ++i)
+    {
+        found = FALSE;
+        for (q = b->tqh_first, j = 0;
+             q != NULL;
+             q = q->links.tqe_next, ++j)
+        {
+            if (test_param_equal(p, q))
+            {
+                found = TRUE;
+                /* Count all parameters once */
+                if (max_j != 0)
+                    break;
+            }
+        }
+        max_j = j;
+    }
+    return found && (i == max_j);
+}
+
+
+/**
+ * Compare Tester run path items for equality.
+ *
+ * @param a     One run path item
+ * @param b     Another run path item
+ * 
+ * @return Are items equal?
+ */
+static te_bool
+run_path_items_equal(const tester_run_path *a, const tester_run_path *b)
+{
+    assert(a != NULL);
+    assert(b != NULL);
+    return (strcmp(a->name, b->name) == 0) &&
+           test_params_equal(&a->params, &b->params);
+}
+
 /* See description in run_path.h */
 int
-tester_run_path_new(tester_run_paths *paths, const char *path)
+tester_run_path_new(tester_run_path *root, char *path, unsigned int flags)
 {
-    tester_run_path *p = calloc(1, sizeof(*p));
+    tester_run_path *p;
+    tester_run_path *q;
+    te_bool          params;
+    test_param      *param;
 
-    if (p != NULL)
+    assert(root != NULL);
+
+    while ((strlen(path) > 0) && (strcmp(path, "/") != 0))
     {
-        assert(path != NULL);
-        p->path = strdup(path);
-        if (p->path != NULL)
+        VERB("Processing run path '%s'", path);
+        p = calloc(1, sizeof(*p));
+        if (p == NULL)
         {
-            p->pos = p->path;
-            TAILQ_INSERT_TAIL(paths, p, links);
-            return 0;
+            ERROR("%s(): Memory allocation failure", __FUNCTION__);
+            return ENOMEM;
         }
-        free(p);
+
+        TAILQ_INIT(&p->params);
+        TAILQ_INIT(&p->paths);
+        
+        p->name = run_path_name_token(&path, &params);
+        VERB("%s(): Name got '%s', rest '%s'", __FUNCTION__, p->name, path);
+        while (params)
+        {
+            assert(strlen(path) > 0);
+            
+            param = calloc(1, sizeof(*param));
+            if (param == NULL)
+            {
+                ERROR("%s(): Memory allocation failure", __FUNCTION__);
+                return ENOMEM;
+            }
+
+            param->name = run_path_param_name(&path);
+            if (strlen(path) == 0)
+            {
+                ERROR("No value for parameter '%s' on step '%s' specified",
+                      param->name, p->name);
+                return EINVAL;
+            }
+            param->value = run_path_param_value(&path, &params);
+
+            TAILQ_INSERT_TAIL(&p->params, param, links);
+        }
+
+        /* Try to find equal on this path step */
+        for (q = root->paths.tqh_first;
+             q != NULL && !run_path_items_equal(p, q);
+             q = q->links.tqe_next);
+
+        if (q != NULL)
+        {
+            /* Merge flags */
+            q->flags |= p->flags;
+            /* Found */
+            tester_run_path_free(p);
+            /* Follow the previously added */
+            p = q;
+        }
+        else
+        {
+            VERB("New run path node '%s'", p->name);
+            /* Not found */
+            TAILQ_INSERT_TAIL(&root->paths, p, links);
+        }
+        if (flags & TESTER_RUN)
+        {
+            /* Trace run path with corresponding flag */
+            p->flags |= TESTER_RUNPATH;
+        }
+        root = p;
     }
-    ERROR("%s(): Memory allocation failure", __FUNCTION__);   
-    return ENOMEM;
+    /* Terminate the last run item with specified flags */
+    root->flags |= flags;
+    
+    return 0;
 }
 
 
@@ -75,7 +301,17 @@ tester_run_path_new(tester_run_paths *paths, const char *path)
 void
 tester_run_path_free(tester_run_path *path)
 {
-    free(path->path);
+    test_param *p;
+
+    /* 'name' was not allocated */
+
+    while ((p = path->params.tqh_first) != NULL)
+    {
+        TAILQ_REMOVE(&path->params, p, links);
+        /* 'name' and 'value' was not allocated */
+        free(p);
+    }
+    tester_run_paths_free(&path->paths);
     free(path);
 }
 
@@ -95,78 +331,49 @@ tester_run_paths_free(tester_run_paths *paths)
 
 /* See description in run_path.h */
 int
-tester_run_paths_clone(const tester_run_paths *paths,
-                       tester_run_paths *new_paths)
-{
-    int                     rc;
-    const tester_run_path  *p;
-
-    for (p = paths->tqh_first; p != NULL; p = p->links.tqe_next)
-    {
-        /* Clone from the current path position */
-        rc = tester_run_path_new(new_paths, p->pos);
-        if (rc != 0)
-        {
-            ERROR("%s(): tester_run_path_new() failed", __FUNCTION__);
-            return rc;
-        }
-    }
-    return 0;
-}
-
-
-/**
- * Move forward on run path.
- * The function updates Tester context on success.
- *
- * @param ctx       Tester context
- * @param name      Name of the node
- *
- * @return Status code.
- * @retval 0        The node is on run path
- * @retval ENOENT   The node is not on run path
- */
-int
 tester_run_path_forward(tester_ctx *ctx, const char *name)
 {
-    tester_run_paths *paths = &ctx->paths;
-    tester_run_path  *p, *q;
-    char             *s;
+    tester_run_path  *p;
+    te_bool           run_path = FALSE;
 
+    assert(ctx != NULL);
     assert(name != NULL);
-    assert(paths->tqh_first != NULL);
 
-    for (p = paths->tqh_first; p != NULL; p = q)
+    /* Check all children of the current run path node */
+    for (p = ctx->path->paths.tqh_first; p != NULL; p = p->links.tqe_next)
     {
-        q = p->links.tqe_next;
-        s = index(p->pos, '/');
-        if (s != NULL)
-            *s = '\0';
-        if (strcmp(name, p->pos) == 0)
+        run_path = (run_path || (p->flags & TESTER_RUNPATH));
+        if (strcmp(name, p->name) == 0)
         {
-            if ((s == NULL) || (strlen(++s) == 0))
-            {
-                VERB("All tests in '%s' must be run", name);
-                /* Path become empty, all nodes below must be run */
-                tester_run_paths_free(paths);
-                return 0;
-            }
-            else
-                p->pos = s;
-        }
-        else
-        {
-            /* Remove all not matching paths */
-            TAILQ_REMOVE(paths, p, links);
-            tester_run_path_free(p);
+            ctx->flags |= p->flags;
+            ctx->path = p;
+            return 0;
         }
     }
 
-    VERB("Item '%s' processed - paths are%s empty", name,
-         (paths->tqh_first == NULL) ? "" : " not");
-    if (paths->tqh_first != NULL)
-        return 0;
-    else
-        return ENOENT;
+    return (run_path) ? ENOENT : 0;
 }
 
+/* See description in run_path.h */
+int
+tester_run_path_params_match(struct tester_ctx *ctx, test_params *params)
+{
+    te_bool             found = TRUE;
+    const test_param   *p;
+    const test_param   *q;
+
+    for (p = ctx->path->params.tqh_first;
+         found && p != NULL;
+         p = p->links.tqe_next)
+    {
+        found = FALSE;
+        for (q = params->tqh_first;
+             !found && q != NULL;
+             q = q->links.tqe_next)
+        {
+            if (test_param_equal(p, q))
+                found = TRUE;
+        }
+    }
+    return found ? 0 : ENOENT;
+}

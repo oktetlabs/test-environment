@@ -149,11 +149,11 @@ tester_out_start(run_item_type type, const char *name,
     char ids[20] = "";
     char msg[256];
 
-    if ((~flags & TESTER_CTX_VERBOSE) ||
-        ((~flags & TESTER_CTX_VVERB) && (type == RUN_ITEM_SESSION)))
+    if ((~flags & TESTER_VERBOSE) ||
+        ((~flags & TESTER_VVERB) && (type == RUN_ITEM_SESSION)))
         return;
 
-    if (flags & TESTER_CTX_VVERB)
+    if (flags & TESTER_VVERB)
     {
         if (snprintf(ids, sizeof(ids), " %d:%d", parent, self) >=
                 (int)sizeof(ids))
@@ -208,8 +208,8 @@ tester_out_done(run_item_type type, const char *name,
     int         color;
     const char *verdict;
 
-    if ((~flags & TESTER_CTX_VERBOSE) ||
-        ((~flags & TESTER_CTX_VVERB) && (type == RUN_ITEM_SESSION)))
+    if ((~flags & TESTER_VERBOSE) ||
+        ((~flags & TESTER_VVERB) && (type == RUN_ITEM_SESSION)))
         return;
 
     /* It's done only once */
@@ -217,7 +217,7 @@ tester_out_done(run_item_type type, const char *name,
     {
         char       *term = getenv("TERM");
         const char *cols = getenv("COLUMNS");
-        char       *end;
+        char       *end = NULL;
         
         if ((term == NULL) || (strlen(term) == 0))
         {
@@ -231,7 +231,7 @@ tester_out_done(run_item_type type, const char *name,
             columns = TESTER_TERM_COLUMNS_DEF;
     }
 
-    if (flags & TESTER_CTX_VVERB)
+    if (flags & TESTER_VVERB)
     {
         if (snprintf(ids, sizeof(ids), " %d:%d", parent, self) >=
                 (int)sizeof(ids))
