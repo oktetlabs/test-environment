@@ -68,11 +68,11 @@
 #define RCF_FILE_TMP_DEF_DIR    "/tmp/te/"
 
 
-/* See description in rcf_pch.h */
+/* See description in rcf_ch_api.h */
 int
 rcf_pch_file(struct rcf_comm_connection *conn, char *cbuf, size_t buflen,
              size_t answer_plen, const uint8_t *ba, size_t cmdlen,
-             te_bool put, const char *filename)
+             rcf_op_t op, const char *filename)
 {
     size_t  reply_buflen = buflen - answer_plen;
     int     rc;
@@ -81,8 +81,8 @@ rcf_pch_file(struct rcf_comm_connection *conn, char *cbuf, size_t buflen,
 
 
     ENTRY("conn=0x%x cbuf='%s' buflen=%u answer_plen=%u ba=0x%x "
-          "cmdlen=%u put=%d filename=%s\n", conn, cbuf, buflen, 
-          answer_plen, ba, cmdlen, put, filename);
+          "cmdlen=%u op=%d filename=%s\n", conn, cbuf, buflen, 
+          answer_plen, ba, cmdlen, op, filename);
     VERB("Default file processing handler is executed");
 
     if (strncmp(RCF_FILE_MEM_PREFIX, filename,
@@ -98,13 +98,19 @@ rcf_pch_file(struct rcf_comm_connection *conn, char *cbuf, size_t buflen,
 
         unsigned long int   len;
 
+        if (op == RCFOP_FDEL)
+        {
+            ERROR("File delete operation for memory file");
+            rc = EPERM;
+            goto reject;
+        }
 
         VERB("memory access file operation");
         /* Separator must present in get operation only */
-        if (put != (sep == NULL))
+        if ((op == RCFOP_FGET) != (sep != NULL))
         {
             ERROR("Invalid format - %s separator",
-                              (put) ? "extra" : "missing");
+                  op == RCFOP_FGET ? "missing" : "extra");
             rc = ETEBADFORMAT;
             goto reject;
         }
@@ -144,7 +150,7 @@ rcf_pch_file(struct rcf_comm_connection *conn, char *cbuf, size_t buflen,
         }
         /* Address has successfully been recognized */
 
-        if (!put)
+        if (op == RCFOP_FGET)
         {
             len = strtol(sep + 1, &tmp, 10);
             if ((tmp == (sep + 1)) || (*tmp != '\0'))
@@ -157,7 +163,7 @@ rcf_pch_file(struct rcf_comm_connection *conn, char *cbuf, size_t buflen,
             /* Length to read has successfully been recognized */
         }
 
-        if (put)
+        if (op == RCFOP_FPUT)
         {
             size_t  got_len = ((cmdlen <= buflen) ? cmdlen : buflen) -
                                     (ba - (uint8_t *)cbuf);
@@ -242,8 +248,19 @@ rcf_pch_file(struct rcf_comm_connection *conn, char *cbuf, size_t buflen,
                 filename + strlen(RCF_FILE_FTP_PREFIX));
         filename = fname;
     }                
+    
+    if (op == RCFOP_FDEL)
+    {
+        if (unlink(filename) < 0)
+        {
+            rc = errno;
+            goto reject;
+        }
+        SEND_ANSWER("0");
+    }
 
-    fd = open(filename, put ? (O_WRONLY | O_CREAT | O_TRUNC) : O_RDONLY,
+    fd = open(filename, op == RCFOP_FPUT ? (O_WRONLY | O_CREAT | O_TRUNC) 
+                                         : O_RDONLY, 
               S_IRWXU | S_IRWXG | S_IRWXO);
     if (fd < 0)
     {
@@ -252,7 +269,7 @@ rcf_pch_file(struct rcf_comm_connection *conn, char *cbuf, size_t buflen,
         goto reject;
     }
 
-    if (put)
+    if (op == RCFOP_FPUT)
     {
         size_t  rest = (cmdlen > buflen) ? (cmdlen - buflen) : 0;
         size_t  rw_len = ((cmdlen <= buflen) ? cmdlen : buflen) -

@@ -78,6 +78,7 @@ typedef enum {
     RCFOP_VWRITE,           /**< Change variable value */
     RCFOP_FPUT,             /**< Load file to TA */
     RCFOP_FGET,             /**< Load file from TA */
+    RCFOP_FDEL,             /**< Delete file from TA */
     RCFOP_CSAP_CREATE,      /**< Create CSAP */
     RCFOP_CSAP_DESTROY,     /**< Destroy CSAP */
     RCFOP_CSAP_PARAM,       /**< Obtain CSAP parameter value */
@@ -188,6 +189,7 @@ rcf_op_to_string(rcf_op_t op)
         case RCFOP_VWRITE:          return "vwrite";
         case RCFOP_FPUT:            return "fput";
         case RCFOP_FGET:            return "fget";
+        case RCFOP_FDEL:            return "fdel";
         case RCFOP_CSAP_CREATE:     return "csap create";
         case RCFOP_CSAP_DESTROY:    return "csap destroy";
         case RCFOP_CSAP_PARAM:      return "csap param";

@@ -349,7 +349,7 @@ rcf_ch_symbol_addr(const char *name, int is_func)
 int 
 rcf_ch_file(char *cbuf, int buflen, char *ba, int cmdlen, 
             struct rcf_comm_connection *handle, 
-            int answer_plen, int put, char *filename)
+            int answer_plen, rcf_op_t op, char *filename)
 {
     UNUSED(cbuf);
     UNUSED(buflen);
@@ -357,7 +357,7 @@ rcf_ch_file(char *cbuf, int buflen, char *ba, int cmdlen,
     UNUSED(cmdlen);
     UNUSED(handle);
     UNUSED(answer_plen);
-    UNUSED(put);
+    UNUSED(op);
     UNUSED(filename);
     SEND_ANSWER("%d", EOPNOTSUPP);
     return 0;

@@ -379,6 +379,26 @@ extern int rcf_ta_put_file(const char *ta_name, int session,
                            const char *lfile, const char *rfile);
 
 /**
+ * This function deletes file from the Test Agent or NUT served by it.
+ *
+ * @param ta_name       Test Agent name              
+ * @param session       TA session or 0   
+ * @param rfile         full name of the file in the TA/NUT file system
+ *
+ * @return error code
+ *
+ * @retval 0            success
+ * @retval EINVAL       name of non-running TN Test Agent, non-existent
+ *                      session identifier or bad file name are provided
+ * @retval ETEIO        cannot interact with RCF 
+ * @retval ENOENT       no such file
+ * @retval EPERM        operation not permitted
+ * @retval ETAREBOOTED  Test Agent is rebooted
+ * @retval ENOMEM       out of memory
+ */
+extern int rcf_ta_del_file(const char *ta_name, int session, const char *rfile);
+
+/**
  * This function creates CSAP (communication service access point) on the 
  * Test Agent. 
  *

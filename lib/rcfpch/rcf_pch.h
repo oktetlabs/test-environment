@@ -40,6 +40,7 @@
 #include "rcf_common.h"
 #include "comm_agent.h"
 
+#include "rcf_internal.h"
 #include "rcf_ch_api.h"
 
 
@@ -54,9 +55,9 @@ extern "C" {
  * Custom and default command handlers are called when commands via 
  * Test Protocol are received.
  *
- * @param confstr   - configuration string for communication library
- * @param info      - if not NULL, the string to be send to the engine
- *                    after initialisation
+ * @param confstr   configuration string for communication library
+ * @param info      if not NULL, the string to be send to the engine
+ *                  after initialisation
  *
  * @return error code
  */
@@ -73,13 +74,12 @@ extern int rcf_pch_run(const char *confstr, const char *info);
 /**
  * Default vread command handler.
  *
- * @param conn          - connection handle
- * @param cbuf          - command buffer
- * @param buflen        - length of the command buffer
- * @param answer_plen   - number of bytes to be copied from the command
- *                        to answer
- * @param type          - variable type
- * @param var           - variable name
+ * @param conn          connection handle
+ * @param cbuf          command buffer
+ * @param buflen        length of the command buffer
+ * @param answer_plen   number of bytes to be copied from the command to answer
+ * @param type          variable type
+ * @param var           variable name
  *
  * @return 0 or error returned by communication library
  */
@@ -90,14 +90,13 @@ extern int rcf_pch_vread(struct rcf_comm_connection *conn,
 /**
  * Default vwrite command handler.
  *
- * @param conn          - connection handle
- * @param cbuf          - command buffer
- * @param buflen        - length of the command buffer
- * @param answer_plen   - number of bytes to be copied from the command
- *                        to answer
- * @param type          - variable type
- * @param var           - variable name
- * @param ...           - value
+ * @param conn          connection handle
+ * @param cbuf          command buffer
+ * @param buflen        length of the command buffer
+ * @param answer_plen   number of bytes to be copied from the command to answer
+ * @param type          variable type
+ * @param var           variable name
+ * @param ...           value
  *
  * @return 0 or error returned by communication library
  */
@@ -115,20 +114,18 @@ extern void rcf_pch_cfg_init(void);
 /**
  * Default configure command hadler.
  *
- * @param conn          - connection handle
- * @param cbuf          - command buffer
- * @param buflen        - length of the command buffer
- * @param answer_plen   - number of bytes in the command buffer to be
- *                        copied to the answer
- * @param ba            - pointer to location of binary attachment
- *                        in the command buffer or NULL if no binary
- *                        attachment is provided
- * @param cmdlen        - full length of the command including binary
- *                        attachment
+ * @param conn          connection handle
+ * @param cbuf          command buffer
+ * @param buflen        length of the command buffer
+ * @param answer_plen   number of bytes in the command buffer to be
+ *                      copied to the answer
+ * @param ba            pointer to location of binary attachment in the command 
+ *                      buffer or NULL if no binary attachment is provided
+ * @param cmdlen        full length of the command including binary attachment
  *
- * @param op            - configure operation
- * @param oid           - object instance identifier or NULL
- * @param val           - object instance value or NULL
+ * @param op            configure operation
+ * @param oid           object instance identifier or NULL
+ * @param val           object instance value or NULL
  *
  *
  * @return 0 or error returned by communication library
@@ -143,34 +140,32 @@ extern int rcf_pch_configure(struct rcf_comm_connection *conn,
  * Default implementation of agent list accessor.
  * This function complies with rcf_ch_cfg_list protoеype.
  * 
- * @param gid       - group identifier
- * @param oid       - full object instance identifier
- * @param list      - (OUT) location for pointer to string with space
- *                    separated list (should be allocated using 
- *                    malloc())
+ * @param gid       group identifier
+ * @param oid       full object instance identifier
+ * @param list      (OUT) location for pointer to string with space
+ *                  separated list (should be allocated using malloc())
  *
- * @retval 0        - success
- * @retval ENOMEM   - memory allocation failure
+ * @retval 0        success
+ * @retval ENOMEM   memory allocation failure
  */
-extern int rcf_pch_agent_list(unsigned int gid, const char *oid,
-                              char **list);
+extern int rcf_pch_agent_list(unsigned int gid, const char *oid, char **list);
 
 /**
  * Default file processing handler.
  *
- * @param conn          - connection handle
- * @param cbuf          - command buffer
- * @param buflen        - length of the command buffer
- * @param answer_plen   - number of bytes in the command buffer to be
- *                        copied to the answer
- * @param ba            - pointer to location of binary attachment
- *                        in the command buffer or NULL if no binary
- *                        attachment is provided
- * @param cmdlen        - full length of the command including binary
- *                        attachment
+ * @param conn          connection handle
+ * @param cbuf          command buffer
+ * @param buflen        length of the command buffer
+ * @param answer_plen   number of bytes in the command buffer to be
+ *                      copied to the answer
+ * @param ba            pointer to location of binary attachment
+ *                      in the command buffer or NULL if no binary
+ *                      attachment is provided
+ * @param cmdlen        full length of the command including binary
+ *                      attachment
  *
- * @param put           - if TRUE, file should be put
- * @param filename      - full name of the file in TA or NUT file system
+ * @param op            if TRUE, file should be put
+ * @param filename      full name of the file in TA or NUT file system
  *
  *
  * @return 0 or error returned by communication library
@@ -178,23 +173,23 @@ extern int rcf_pch_agent_list(unsigned int gid, const char *oid,
 extern int rcf_pch_file(struct rcf_comm_connection *conn,
                         char *cbuf, size_t buflen, size_t answer_plen,
                         const uint8_t *ba, size_t cmdlen,
-                        te_bool put, const char *filename);
+                        rcf_op_t op, const char *filename);
 
 /**
  * Default routine call handler.
  *
- * @param conn          - connection handle
- * @param cbuf          - command buffer
- * @param buflen        - length of the command buffer
- * @param answer_plen   - number of bytes in the command buffer to be
- *                        copied to the answer
+ * @param conn          connection handle
+ * @param cbuf          command buffer
+ * @param buflen        length of the command buffer
+ * @param answer_plen   number of bytes in the command buffer to be
+ *                      copied to the answer
  *
- * @param rtn           - routine entry point name
- * @param is_argv       - if TRUE, then routine prototype is
- *                        (int argc, char **argv)
- * @param argc          - number of arguments
- * @param params        - pointer to array of RCF_MAX_PARAMS length
- *                        with routine arguments
+ * @param rtn           routine entry point name
+ * @param is_argv       if TRUE, then routine prototype is
+ *                      (int argc, char **argv)
+ * @param argc          number of arguments
+ * @param params        pointer to array of RCF_MAX_PARAMS length
+ *                      with routine arguments
  *
  *
  * @return 0 or error returned by communication library

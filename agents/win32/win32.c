@@ -25,7 +25,7 @@
  *
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
  *
- * $Id: win32.c 4316 2004-08-09 12:08:22Z arybchik $
+ * $Id$
  */
 
 #include <winsock2.h>
@@ -224,7 +224,7 @@ int
 rcf_ch_file(struct rcf_comm_connection *handle,
             char *cbuf, size_t buflen, size_t answer_plen,
             const uint8_t *ba, size_t cmdlen,
-            te_bool put, const char *filename)
+            rcf_op_t op, const char *filename)
 {
     UNUSED(handle);
     UNUSED(cbuf);
@@ -232,7 +232,7 @@ rcf_ch_file(struct rcf_comm_connection *handle,
     UNUSED(answer_plen);
     UNUSED(ba);
     UNUSED(cmdlen);
-    UNUSED(put);
+    UNUSED(op);
     UNUSED(filename);
 
     /* Standard handler is OK */

@@ -721,7 +721,7 @@ rcf_pch_cfg_subtree_init(rcf_pch_cfg_object *p, unsigned int depth)
 }
 
 
-/* See description in rcf_pch.h */
+/* See description in rcf_ch_api.h */
 void
 rcf_pch_cfg_init(void)
 {
@@ -738,7 +738,7 @@ rcf_pch_cfg_init(void)
 }
 
 
-/* See description in rcf_pch.h */
+/* See description in rcf_ch_api.h */
 int
 rcf_pch_agent_list(unsigned int id, const char *oid, char **list)
 {
@@ -749,7 +749,7 @@ rcf_pch_agent_list(unsigned int id, const char *oid, char **list)
 }
 
 
-/* See description in rcf_pch.h */
+/* See description in rcf_ch_api.h */
 int
 rcf_pch_configure(struct rcf_comm_connection *conn,
                   char *cbuf, size_t buflen, size_t answer_plen,

@@ -208,7 +208,7 @@ rcf_pch_vread(struct rcf_comm_connection *conn,
 }
 
 
-/* See description in rcf_pch.h */
+/* See description in rcf_ch_api.h */
 int
 rcf_pch_vwrite(struct rcf_comm_connection *conn,
                char *cbuf, size_t buflen, size_t answer_plen,
@@ -313,7 +313,7 @@ rcf_pch_vwrite(struct rcf_comm_connection *conn,
     SEND_ANSWER("0");
 }
 
-/* See description in rcf_pch.h */
+/* See description in rcf_ch_api.h */
 int
 rcf_pch_call(struct rcf_comm_connection *conn,
              char *cbuf, size_t buflen, size_t answer_plen,

@@ -44,6 +44,7 @@
 #define TE_PROTO_VWRITE         "vwrite"
 #define TE_PROTO_FPUT           "fput"
 #define TE_PROTO_FGET           "fget"
+#define TE_PROTO_FDEL           "fdel"
 #define TE_PROTO_CSAP_CREATE    "csap_create"
 #define TE_PROTO_CSAP_DESTROY   "csap_destroy"
 #define TE_PROTO_CSAP_PARAM     "csap_param"

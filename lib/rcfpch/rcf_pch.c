@@ -286,6 +286,7 @@ get_opcode(char **ptr, rcf_op_t *opcode)
     TRY_CMD(VWRITE);
     TRY_CMD(FPUT);
     TRY_CMD(FGET);
+    TRY_CMD(FDEL);
     TRY_CMD(CSAP_CREATE);
     TRY_CMD(CSAP_PARAM);
     TRY_CMD(CSAP_DESTROY);
@@ -654,6 +655,7 @@ rcf_pch_run(const char *confstr, const char *info)
 
             case RCFOP_FPUT:
             case RCFOP_FGET:
+            case RCFOP_FDEL:
             {
                 char *filename;
                 int   put = opcode == RCFOP_FPUT;
@@ -666,7 +668,7 @@ rcf_pch_run(const char *confstr, const char *info)
                                  ba, len, put, filename);
                 if (rc < 0)
                     rc = rcf_pch_file(conn, cmd, RCF_MAX_LEN, answer_plen,
-                                      ba, len, put, filename);
+                                      ba, len, opcode, filename);
 
                 if (rc != 0)
                     goto communication_problem;

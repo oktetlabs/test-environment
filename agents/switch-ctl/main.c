@@ -225,11 +225,11 @@ int
 rcf_ch_file(struct rcf_comm_connection *handle,
             char *cbuf, size_t buflen, size_t answer_plen,
             const uint8_t *ba, size_t cmdlen,
-            te_bool put, const char *filename)
+            rcf_op_t op, const char *filename)
 {
     UNUSED(ba);
     UNUSED(cmdlen);
-    UNUSED(put);
+    UNUSED(op);
     UNUSED(filename);
 
     SEND_ANSWER("%d", EOPNOTSUPP);

@@ -39,6 +39,7 @@
 #include "te_stdint.h"
 #include "tad_common.h"
 #include "rcf_common.h"
+#include "rcf_internal.h"
 #include "comm_agent.h"
 #include "conf_oid.h"
 
@@ -50,7 +51,7 @@ extern "C" {
 
 /*
  * All functions may return -1 (unsupported). In this case no answer
- * is sent to TEN by handlers - Portable Commands Handler processes
+ * is sent to TEN by handlers Portable Commands Handler processes
  * this situation.
  */
 
@@ -80,16 +81,16 @@ extern void rcf_ch_unlock();
 /**
  * Shutdown the Test Agent (answer should be sent before shutdown).
  *
- * @param handle        - connection handle
- * @param cbuf          - command buffer
- * @param buflen        - length of the command buffer
- * @param answer_plen   - number of bytes in the command buffer to be
- *                        copied to the answer
+ * @param handle        connection handle
+ * @param cbuf          command buffer
+ * @param buflen        length of the command buffer
+ * @param answer_plen   number of bytes in the command buffer to be
+ *                      copied to the answer
  *
  * @return Indication of command support
  *
- * @retval  0   - command is supported
- * @retval -1   - command is not supported
+ * @retval  0   command is supported
+ * @retval -1   command is not supported
  */
 extern int rcf_ch_shutdown(struct rcf_comm_connection *handle,
                            char *cbuf, size_t buflen,
@@ -100,24 +101,23 @@ extern int rcf_ch_shutdown(struct rcf_comm_connection *handle,
  * Reboot the Test Agent or NUT served by it (answer should be sent
  * before reboot).
  *
- * @param handle        - connection handle
- * @param cbuf          - command buffer
- * @param buflen        - length of the command buffer
- * @param answer_plen   - number of bytes in the command buffer to be
- *                        copied to the answer
- * @param ba            - pointer to location of binary attachment
- *                        in the command buffer or NULL if no binary
- *                        attachment is provided
- * @param cmdlen        - full length of the command including binary
- *                        attachment
+ * @param handle        connection handle
+ * @param cbuf          command buffer
+ * @param buflen        length of the command buffer
+ * @param answer_plen   number of bytes in the command buffer to be
+ *                      copied to the answer
+ * @param ba            pointer to location of binary attachment
+ *                      in the command buffer or NULL if no binary
+ *                      attachment is provided
+ * @param cmdlen        full length of the command including binary attachment
  *
- * @param params        - reboot parameters
+ * @param params        reboot parameters
  *
  *
  * @return Indication of command support
  *
- * @retval  0   - command is supported
- * @retval -1   - command is not supported
+ * @retval  0   command is supported
+ * @retval -1   command is not supported
  */
 extern int rcf_ch_reboot(struct rcf_comm_connection *handle,
                          char *cbuf, size_t buflen, size_t answer_plen,
@@ -138,27 +138,26 @@ typedef enum {
 /**
  * Configure the Test Agent or NUT served by it.
  *
- * @param handle        - connection handle
- * @param cbuf          - command buffer
- * @param buflen        - length of the command buffer
- * @param answer_plen   - number of bytes in the command buffer to be
- *                        copied to the answer
- * @param ba            - pointer to location of binary attachment
- *                        in the command buffer or NULL if no binary
- *                        attachment is provided
- * @param cmdlen        - full length of the command including binary
- *                        attachment
+ * @param handle        connection handle
+ * @param cbuf          command buffer
+ * @param buflen        length of the command buffer
+ * @param answer_plen   number of bytes in the command buffer to be
+ *                      copied to the answer
+ * @param ba            pointer to location of binary attachment
+ *                      in the command buffer or NULL if no binary
+ *                      attachment is provided
+ * @param cmdlen        full length of the command including binary attachment
  *
- * @param op            - configure operation
- * @param oid           - object instance identifier or NULL
- * @param val           - object instance value or NULL
+ * @param op            configure operation
+ * @param oid           object instance identifier or NULL
+ * @param val           object instance value or NULL
  *
  *
  * @return Indication of command support or error code
  *
- * @retval  0       - command is supported
- * @retval -1       - command is not supported
- * @retval other    - error returned by communication library
+ * @retval  0       command is supported
+ * @retval -1       command is not supported
+ * @retval other    error returned by communication library
  */
 extern int rcf_ch_configure(struct rcf_comm_connection *handle,
                             char *cbuf, size_t buflen,
@@ -171,21 +170,21 @@ extern int rcf_ch_configure(struct rcf_comm_connection *handle,
 /**
  * Get value of the variable from the Test Agent or NUT served by it.
  *
- * @param handle        - connection handle
- * @param cbuf          - command buffer
- * @param buflen        - length of the command buffer
- * @param answer_plen   - number of bytes in the command buffer to be
- *                        copied to the answer
+ * @param handle        connection handle
+ * @param cbuf          command buffer
+ * @param buflen        length of the command buffer
+ * @param answer_plen   number of bytes in the command buffer to be
+ *                      copied to the answer
  *
- * @param type          - type of the variable
- * @param var           - name of the variable
+ * @param type          type of the variable
+ * @param var           name of the variable
  *
  *
  * @return Indication of command support or error code
  *
- * @retval  0       - command is supported
- * @retval -1       - command is not supported
- * @retval other    - error returned by communication library
+ * @retval  0       command is supported
+ * @retval -1       command is not supported
+ * @retval other    error returned by communication library
  */
 extern int rcf_ch_vread(struct rcf_comm_connection *handle,
                         char *cbuf, size_t buflen, size_t answer_plen,
@@ -195,15 +194,15 @@ extern int rcf_ch_vread(struct rcf_comm_connection *handle,
 /**
  * Change value of the variable on the Test Agent or NUT served by it.
  *
- * @param handle        - connection handle
- * @param cbuf          - command buffer
- * @param buflen        - length of the command buffer
- * @param answer_plen   - number of bytes in the command buffer to be
- *                        copied to the answer
+ * @param handle        connection handle
+ * @param cbuf          command buffer
+ * @param buflen        length of the command buffer
+ * @param answer_plen   number of bytes in the command buffer to be
+ *                      copied to the answer
  *
- * @param type          - type of the variable
- * @param var           - name of the variable
- * @param ...           - new value
+ * @param type          type of the variable
+ * @param var           name of the variable
+ * @param ...           new value
  *
  *
  * @return indication of command support or error code
@@ -248,56 +247,54 @@ extern char *rcf_ch_symbol_name(const void *addr);
  * function returns -1, default command processing (using stdio
  * library) is  performed by caller.
  *
- * @param handle        - connection handle
- * @param cbuf          - command buffer
- * @param buflen        - length of the command buffer
- * @param answer_plen   - number of bytes in the command buffer to be
- *                        copied to the answer
- * @param ba            - pointer to location of binary attachment
- *                        in the command buffer or NULL if no binary
- *                        attachment is provided
- * @param cmdlen        - full length of the command including binary
- *                        attachment
- *
- * @param put           - if TRUE, file should be put
- * @param filename      - full name of the file in TA or NUT file system
+ * @param handle        connection handle
+ * @param cbuf          command buffer
+ * @param buflen        length of the command buffer
+ * @param answer_plen   number of bytes in the command buffer to be
+ *                      copied to the answer
+ * @param ba            pointer to location of binary attachment
+ *                      in the command buffer or NULL if no binary
+ *                      attachment is provided
+ * @param cmdlen        full length of the command including binary attachment
+ * @param opt           RCFOP_FGET, RCFOP_FPUT or RCFOP_FDEL
+ * @param filename      full name of the file in TA or NUT file system
  *
  *
  * @return Indication of command support or error code
  *
- * @retval  0       - command is supported
- * @retval -1       - command is not supported
- * @retval other    - error returned by communication library
+ * @retval  0       command is supported
+ * @retval -1       command is not supported
+ * @retval other    error returned by communication library
  */
 extern int rcf_ch_file(struct rcf_comm_connection *handle,
                        char *cbuf, size_t buflen, size_t answer_plen,
                        const uint8_t *ba, size_t cmdlen,
-                       te_bool put, const char *filename);
+                       rcf_op_t op, const char *filename);
 
 
 /**
  * Create a CSAP (Communication Service Access Point).
  *
- * @param handle        - connection handle
- * @param cbuf          - command buffer
- * @param buflen        - length of the command buffer
- * @param answer_plen   - number of bytes in the command buffer to be
+ * @param handle        connection handle
+ * @param cbuf          command buffer
+ * @param buflen        length of the command buffer
+ * @param answer_plen   number of bytes in the command buffer to be
  *                        copied to the answer
- * @param ba            - pointer to location of binary attachment
+ * @param ba            pointer to location of binary attachment
  *                        in the command buffer or NULL if no binary
  *                        attachment is provided
- * @param cmdlen        - full length of the command including binary
+ * @param cmdlen        full length of the command including binary
  *                        attachment
  *
- * @param stack         - protocol stack identifier
- * @param params        - parameters passed in the command line or NULL
+ * @param stack         protocol stack identifier
+ * @param params        parameters passed in the command line or NULL
  *
  *
  * @return Indication of command support or error code
  *
- * @retval  0       - command is supported
- * @retval -1       - command is not supported
- * @retval other    - error returned by communication library
+ * @retval  0       command is supported
+ * @retval -1       command is not supported
+ * @retval other    error returned by communication library
  */
 extern int rcf_ch_csap_create(struct rcf_comm_connection *handle,
                               char *cbuf, size_t buflen,
@@ -308,20 +305,20 @@ extern int rcf_ch_csap_create(struct rcf_comm_connection *handle,
 /**
  * Delete the CSAP.
  *
- * @param handle        - connection handle
- * @param cbuf          - command buffer
- * @param buflen        - length of the command buffer
- * @param answer_plen   - number of bytes in the command buffer to be
+ * @param handle        connection handle
+ * @param cbuf          command buffer
+ * @param buflen        length of the command buffer
+ * @param answer_plen   number of bytes in the command buffer to be
  *                        copied to the answer
  *
- * @param csap          - CSAP handle
+ * @param csap          CSAP handle
  *
  *
  * @return Indication of command support or error code
  *
- * @retval  0       - command is supported
- * @retval -1       - command is not supported
- * @retval other    - error returned by communication library
+ * @retval  0       command is supported
+ * @retval -1       command is not supported
+ * @retval other    error returned by communication library
  */
 extern int rcf_ch_csap_destroy(struct rcf_comm_connection *handle,
                                char *cbuf, size_t buflen,
@@ -331,20 +328,20 @@ extern int rcf_ch_csap_destroy(struct rcf_comm_connection *handle,
 /**
  * Get CSAP parameter
  *
- * @param handle        - connection handle
- * @param cbuf          - command buffer
- * @param buflen        - length of the command buffer
- * @param answer_plen   - number of bytes in the command buffer to be
+ * @param handle        connection handle
+ * @param cbuf          command buffer
+ * @param buflen        length of the command buffer
+ * @param answer_plen   number of bytes in the command buffer to be
  *
- * @param csap          - CSAP handle
- * @param param         - name of the CSAP-specific parameter
+ * @param csap          CSAP handle
+ * @param param         name of the CSAP-specific parameter
  *
  *
  * @return Indication of command support or error code
  *
- * @retval  0       - command is supported
- * @retval -1       - command is not supported
- * @retval other    - error returned by communication library
+ * @retval  0       command is supported
+ * @retval -1       command is not supported
+ * @retval other    error returned by communication library
  */
 extern int rcf_ch_csap_param(struct rcf_comm_connection *handle,
                              char *cbuf, size_t buflen,
@@ -355,26 +352,26 @@ extern int rcf_ch_csap_param(struct rcf_comm_connection *handle,
 /**
  * "trsend_start" command handler.
  *
- * @param handle        - connection handle
- * @param cbuf          - command buffer
- * @param buflen        - length of the command buffer
- * @param answer_plen   - number of bytes in the command buffer to be
+ * @param handle        connection handle
+ * @param cbuf          command buffer
+ * @param buflen        length of the command buffer
+ * @param answer_plen   number of bytes in the command buffer to be
  *                        copied to the answer
- * @param ba            - pointer to location of binary attachment
+ * @param ba            pointer to location of binary attachment
  *                        in the command buffer or NULL if no binary
  *                        attachment is provided
- * @param cmdlen        - full length of the command including binary
+ * @param cmdlen        full length of the command including binary
  *                        attachment
  *
- * @param csap          - CSAP handle
- * @param postponed     - "postponed" flag value
+ * @param csap          CSAP handle
+ * @param postponed     "postponed" flag value
  *
  *
  * @return Indication of command support or error code
  *
- * @retval  0       - command is supported
- * @retval -1       - command is not supported
- * @retval other    - error returned by communication library
+ * @retval  0       command is supported
+ * @retval -1       command is not supported
+ * @retval other    error returned by communication library
  */
 extern int rcf_ch_trsend_start(struct rcf_comm_connection *handle,
                                char *cbuf, size_t buflen,
@@ -385,20 +382,20 @@ extern int rcf_ch_trsend_start(struct rcf_comm_connection *handle,
 /**
  * "trsend_stop" command handler.
  *
- * @param handle        - connection handle
- * @param cbuf          - command buffer
- * @param buflen        - length of the command buffer
- * @param answer_plen   - number of bytes in the command buffer to be
+ * @param handle        connection handle
+ * @param cbuf          command buffer
+ * @param buflen        length of the command buffer
+ * @param answer_plen   number of bytes in the command buffer to be
  *                        copied to the answer
  *
- * @param csap          - CSAP handle
+ * @param csap          CSAP handle
  *
  *
  * @return Indication of command support or error code
  *
- * @retval  0       - command is supported
- * @retval -1       - command is not supported
- * @retval other    - error returned by communication library
+ * @retval  0       command is supported
+ * @retval -1       command is not supported
+ * @retval other    error returned by communication library
  */
 extern int rcf_ch_trsend_stop(struct rcf_comm_connection *handle,
                               char *cbuf, size_t buflen,
@@ -408,31 +405,31 @@ extern int rcf_ch_trsend_stop(struct rcf_comm_connection *handle,
 /**
  * "trrecv_start" command handler.
  *
- * @param handle        - connection handle
- * @param cbuf          - command buffer
- * @param buflen        - length of the command buffer
- * @param answer_plen   - number of bytes in the command buffer to be
+ * @param handle        connection handle
+ * @param cbuf          command buffer
+ * @param buflen        length of the command buffer
+ * @param answer_plen   number of bytes in the command buffer to be
  *                        copied to the answer
- * @param ba            - pointer to location of binary attachment
+ * @param ba            pointer to location of binary attachment
  *                        in the command buffer or NULL if no binary
  *                        attachment is provided
- * @param cmdlen        - full length of the command including binary
+ * @param cmdlen        full length of the command including binary
  *                        attachment
  *
- * @param csap          - CSAP handle
- * @param num           - number of packets to be sent
+ * @param csap          CSAP handle
+ * @param num           number of packets to be sent
  *                        (0 if number of packets is unlimited)
- * @param results       - if TRUE, received packets should be
+ * @param results       if TRUE, received packets should be
  *                        passed to the TEN
- * @param timeout       - maximum duration (in milliseconds) of
+ * @param timeout       maximum duration (in milliseconds) of
  *                        receiving the traffic
  *
  *
  * @return Indication of command support or error code
  *
- * @retval  0       - command is supported
- * @retval -1       - command is not supported
- * @retval other    - error returned by communication library
+ * @retval  0       command is supported
+ * @retval -1       command is not supported
+ * @retval other    error returned by communication library
  */
 extern int rcf_ch_trrecv_start(struct rcf_comm_connection *handle,
                                char *cbuf, size_t buflen,
@@ -444,20 +441,20 @@ extern int rcf_ch_trrecv_start(struct rcf_comm_connection *handle,
 /**
  * "trrecv_stop" command handler.
  *
- * @param handle        - connection handle
- * @param cbuf          - command buffer
- * @param buflen        - length of the command buffer
- * @param answer_plen   - number of bytes in the command buffer to be
+ * @param handle        connection handle
+ * @param cbuf          command buffer
+ * @param buflen        length of the command buffer
+ * @param answer_plen   number of bytes in the command buffer to be
  *                        copied to the answer
  *
- * @param csap          - CSAP handle
+ * @param csap          CSAP handle
  *
  *
  * @return Indication of command support or error code
  *
- * @retval  0       - command is supported
- * @retval -1       - command is not supported
- * @retval other    - error returned by communication library
+ * @retval  0       command is supported
+ * @retval -1       command is not supported
+ * @retval other    error returned by communication library
  */
 extern int rcf_ch_trrecv_stop(struct rcf_comm_connection *handle,
                               char *cbuf, size_t buflen,
@@ -467,20 +464,20 @@ extern int rcf_ch_trrecv_stop(struct rcf_comm_connection *handle,
 /**
  * "trrecv_get" command handler.
  *
- * @param handle        - connection handle
- * @param cbuf          - command buffer
- * @param buflen        - length of the command buffer
- * @param answer_plen   - number of bytes in the command buffer to be
+ * @param handle        connection handle
+ * @param cbuf          command buffer
+ * @param buflen        length of the command buffer
+ * @param answer_plen   number of bytes in the command buffer to be
  *                        copied to the answer
  *
- * @param csap          - CSAP handle
+ * @param csap          CSAP handle
  *
  *
  * @return Indication of command support or error code
  *
- * @retval  0       - command is supported
- * @retval -1       - command is not supported
- * @retval other    - error returned by communication library
+ * @retval  0       command is supported
+ * @retval -1       command is not supported
+ * @retval other    error returned by communication library
  */
 extern int rcf_ch_trrecv_get(struct rcf_comm_connection *handle,
                              char *cbuf, size_t buflen,
@@ -490,20 +487,20 @@ extern int rcf_ch_trrecv_get(struct rcf_comm_connection *handle,
 /**
  * "trrecv_wait" command handler.
  *
- * @param handle        - connection handle
- * @param cbuf          - command buffer
- * @param buflen        - length of the command buffer
- * @param answer_plen   - number of bytes in the command buffer to be
+ * @param handle        connection handle
+ * @param cbuf          command buffer
+ * @param buflen        length of the command buffer
+ * @param answer_plen   number of bytes in the command buffer to be
  *                        copied to the answer
  *
- * @param csap          - CSAP handle
+ * @param csap          CSAP handle
  *
  *
  * @return Indication of command support or error code
  *
- * @retval  0       - command is supported
- * @retval -1       - command is not supported
- * @retval other    - error returned by communication library
+ * @retval  0       command is supported
+ * @retval -1       command is not supported
+ * @retval other    error returned by communication library
  */
 extern int rcf_ch_trrecv_wait(struct rcf_comm_connection *handle,
                              char *cbuf, size_t buflen,
@@ -513,27 +510,26 @@ extern int rcf_ch_trrecv_wait(struct rcf_comm_connection *handle,
 /**
  * "trsend_recv" command handler.
  *
- * @param handle        - connection handle
- * @param cbuf          - command buffer
- * @param buflen        - length of the command buffer
- * @param answer_plen   - number of bytes in the command buffer to be
+ * @param handle        connection handle
+ * @param cbuf          command buffer
+ * @param buflen        length of the command buffer
+ * @param answer_plen   number of bytes in the command buffer to be
  *                        copied to the answer
- * @param ba            - pointer to location of binary attachment
+ * @param ba            pointer to location of binary attachment
  *                        in the command buffer or NULL if no binary
  *                        attachment is provided
- * @param cmdlen        - full length of the command including binary
+ * @param cmdlen        full length of the command including binary
  *                        attachment
  *
- * @param csap          - CSAP handle
- * @param results       - "results" flag value
- * @param timeout       - timeout value in milliseconds (if > 0)
+ * @param csap          CSAP handle  * @param results "results" flag value
+ * @param timeout       timeout value in milliseconds (if > 0)
  *
  *
  * @return Indication of command support or error code
  *
- * @retval  0       - command is supported
- * @retval -1       - command is not supported
- * @retval other    - error returned by communication library
+ * @retval  0       command is supported
+ * @retval -1       command is not supported
+ * @retval other    error returned by communication library
  */
 extern int rcf_ch_trsend_recv(struct rcf_comm_connection *handle,
                               char *cbuf, size_t buflen,
@@ -551,25 +547,25 @@ extern int rcf_ch_trsend_recv(struct rcf_comm_connection *handle,
  * function using rcf_ch_symbol_addr(), calls a routine
  * rcf_ch_call_routine() to execute the routine and sends an answer.
  *
- * @param handle        - connection handle
- * @param cbuf          - command buffer
- * @param buflen        - length of the command buffer
- * @param answer_plen   - number of bytes in the command buffer to be
+ * @param handle        connection handle
+ * @param cbuf          command buffer
+ * @param buflen        length of the command buffer
+ * @param answer_plen   number of bytes in the command buffer to be
  *                        copied to the answer
  *
- * @param rtn           - routine name
- * @param is_argv       - if TRUE, then routine prototype is
+ * @param rtn           routine name
+ * @param is_argv       if TRUE, then routine prototype is
  *                        (int argc, char **argv)
- * @param argc          - number of arguments
- * @param params        - pointer to array of RCF_MAX_PARAMS length
+ * @param argc          number of arguments
+ * @param params        pointer to array of RCF_MAX_PARAMS length
  *                        with routine arguments
  *
  *
  * @return Indication of command support or error code
  *
- * @retval  0       - command is supported
- * @retval -1       - command is not supported
- * @retval other    - error returned by communication library
+ * @retval  0       command is supported
+ * @retval -1       command is not supported
+ * @retval other    error returned by communication library
  */
 extern int rcf_ch_call(struct rcf_comm_connection *handle,
                        char *cbuf, size_t buflen, size_t answer_plen,
@@ -585,27 +581,27 @@ extern int rcf_ch_call(struct rcf_comm_connection *handle,
  * rcf_ch_call_routine(). This allows to use parameter parser provided
  * by Portable Commands Handler.
  *
- * @param handle        - connection handle
- * @param cbuf          - command buffer
- * @param buflen        - length of the command buffer
- * @param answer_plen   - number of bytes in the command buffer to be
+ * @param handle        connection handle
+ * @param cbuf          command buffer
+ * @param buflen        length of the command buffer
+ * @param answer_plen   number of bytes in the command buffer to be
  *                        copied to the answer
  *
- * @param priority      - priority of the new process or -1 if the
+ * @param priority      priority of the new process or -1 if the
  *                        priority is not specified in the command
- * @param rtn           - routine entry point name
- * @param is_argv       - if TRUE, then routine prototype is
+ * @param rtn           routine entry point name
+ * @param is_argv       if TRUE, then routine prototype is
  *                        (int argc, char **argv)
- * @param argc          - number of arguments
- * @param params        - pointer to array of RCF_MAX_PARAMS length
+ * @param argc          number of arguments
+ * @param params        pointer to array of RCF_MAX_PARAMS length
  *                        with routine arguments
  *
  *
  * @return Indication of command support or error code
  *
- * @retval  0       - command is supported
- * @retval -1       - command is not supported
- * @retval other    - error returned by communication library
+ * @retval  0       command is supported
+ * @retval -1       command is not supported
+ * @retval other    error returned by communication library
  */
 extern int rcf_ch_start_task(struct rcf_comm_connection *handle,
                              char *cbuf, size_t buflen,
@@ -616,20 +612,20 @@ extern int rcf_ch_start_task(struct rcf_comm_connection *handle,
 /**
  * Kill the process on the Test Agent or NUT served by it.
  *
- * @param handle        - connection handle
- * @param cbuf          - command buffer
- * @param buflen        - length of the command buffer
- * @param answer_plen   - number of bytes in the command buffer to be
+ * @param handle        connection handle
+ * @param cbuf          command buffer
+ * @param buflen        length of the command buffer
+ * @param answer_plen   number of bytes in the command buffer to be
  *                        copied to the answer
  *
- * @param pid           - process identifier
+ * @param pid           process identifier
  *
  *
  * @return Indication of command support or error code
  *
- * @retval  0       - command is supported
- * @retval -1       - command is not supported
- * @retval other    - error returned by communication library
+ * @retval  0       command is supported
+ * @retval -1       command is not supported
+ * @retval other    error returned by communication library
  */
 extern int rcf_ch_kill_task(struct rcf_comm_connection *handle,
                             char *cbuf, size_t buflen,
@@ -641,10 +637,10 @@ extern int rcf_ch_kill_task(struct rcf_comm_connection *handle,
 /**
  * Prototype for get instance value routine.
  *
- * @param gid       - group identifier
- * @param oid       - full object instance identifier
- * @param value     - location for the value
- * @param instN     - Nth instance name (maximum 10) or NULL
+ * @param gid       group identifier
+ * @param oid       full object instance identifier
+ * @param value     location for the value
+ * @param instN     Nth instance name (maximum 10) or NULL
  *
  * @return error code
  */
@@ -654,10 +650,10 @@ typedef int (* rcf_ch_cfg_get)(unsigned int gid, const char *oid,
 /**
  * Prototype for set instance value routine.
  *
- * @param gid       - group identifier
- * @param oid       - full object instance identifier
- * @param value     - value to set
- * @param instN     - Nth instance name (maximum 10) or NULL
+ * @param gid       group identifier
+ * @param oid       full object instance identifier
+ * @param value     value to set
+ * @param instN     Nth instance name (maximum 10) or NULL
  *
  * @return error code
  */
@@ -668,10 +664,10 @@ typedef int (* rcf_ch_cfg_set)(unsigned int gid, const char *oid,
 /**
  * Prototype for add instance routine.
  *
- * @param gid       - group identifier
- * @param oid       - full object instance identifier
- * @param value     - value to set or NULL
- * @param instN     - Nth instance name (maximum 10) or NULL
+ * @param gid       group identifier
+ * @param oid       full object instance identifier
+ * @param value     value to set or NULL
+ * @param instN     Nth instance name (maximum 10) or NULL
  *
  * @return error code
  */
@@ -682,9 +678,9 @@ typedef int (* rcf_ch_cfg_add)(unsigned int gid, const char *oid,
 /**
  * Prototype for delete instance routine.
  *
- * @param gid       - group identifier
- * @param oid       - full object instance identifier
- * @param instN     - Nth instance name (maximum 10) or NULL
+ * @param gid       group identifier
+ * @param oid       full object instance identifier
+ * @param instN     Nth instance name (maximum 10) or NULL
  *
  * @return error code
  */
@@ -696,10 +692,10 @@ typedef int (* rcf_ch_cfg_del)(unsigned int gid, const char *oid,
  * allocate memory using malloc().  Caller is responsible for
  * releasing of this memory.
  *
- * @param gid       - group identifier
- * @param oid       - full object instance identifier
- * @param list      - location for the list pointer
- * @param instN     - Nth instance name (maximum 10, father's
+ * @param gid       group identifier
+ * @param oid       full object instance identifier
+ * @param list      location for the list pointer
+ * @param instN     Nth instance name (maximum 10, father's
  *                    instance name is last, if fit in 10)
  *
  * @return error code
@@ -710,8 +706,8 @@ typedef int (* rcf_ch_cfg_list)(unsigned int gid, const char *oid,
 /**
  * Propotype of the commit function.
  *
- * @param gid       - group identifier
- * @param p_oid     - parsed object instance identifier
+ * @param gid       group identifier
+ * @param p_oid     parsed object instance identifier
  *
  * @return Status code.
  */
@@ -756,8 +752,8 @@ typedef struct rcf_pch_cfg_object {
  * Root of the Test Agent configuration tree. RCF PCH function is
  * used as list callback.
  *
- * @param _name     - node name
- * @param _son      - name of the first son
+ * @param _name     node name
+ * @param _son      name of the first son
  */
 #define RCF_PCH_CFG_NODE_AGENT(_name, _son) \
     static rcf_pch_cfg_object _name =                       \
@@ -768,10 +764,10 @@ typedef struct rcf_pch_cfg_object {
 /**
  * Define non-accessible configuration tree node.
  *
- * @param _name     - node name (rcf_pch_cfg_object)
- * @param _subid    - subidentifier name (const char *)
- * @param _son      - pointer to the first son node
- * @param _brother  - pointer to the next brother node
+ * @param _name     node name (rcf_pch_cfg_object)
+ * @param _subid    subidentifier name (const char *)
+ * @param _son      pointer to the first son node
+ * @param _brother  pointer to the next brother node
  */
 #define RCF_PCH_CFG_NODE_NA(_name, _subid, _son, _brother) \
     static rcf_pch_cfg_object _name =                       \
@@ -782,11 +778,11 @@ typedef struct rcf_pch_cfg_object {
  * Define non-accessible configuration tree node with commit 
  * capability.
  *
- * @param _name     - node name (rcf_pch_cfg_object)
- * @param _subid    - subidentifier name (const char *)
- * @param _son      - pointer to the first son node
- * @param _brother  - pointer to the next brother node
- * @param _f_commit - commit function
+ * @param _name     node name (rcf_pch_cfg_object)
+ * @param _subid    subidentifier name (const char *)
+ * @param _son      pointer to the first son node
+ * @param _brother  pointer to the next brother node
+ * @param _f_commit commit function
  */
 #define RCF_PCH_CFG_NODE_NA_COMMIT(_name, _subid, _son, \
                                    _brother, _f_commit)     \
@@ -797,11 +793,11 @@ typedef struct rcf_pch_cfg_object {
 /**
  * Define read-only singleton.
  *
- * @param _name     - node name (rcf_pch_cfg_object)
- * @param _subid    - subidentifier name (const char *)
- * @param _son      - pointer to the first son node
- * @param _brother  - pointer to the next brother node
- * @param _f_get    - get accessor
+ * @param _name     node name (rcf_pch_cfg_object)
+ * @param _subid    subidentifier name (const char *)
+ * @param _son      pointer to the first son node
+ * @param _brother  pointer to the next brother node
+ * @param _f_get    get accessor
  */
 #define RCF_PCH_CFG_NODE_RO(_name, _subid, _son, _brother, _f_get) \
     static rcf_pch_cfg_object _name =                               \
@@ -812,12 +808,12 @@ typedef struct rcf_pch_cfg_object {
 /**
  * Define read-write singleton w/o commit support.
  *
- * @param _name     - node name (rcf_pch_cfg_object)
- * @param _subid    - subidentifier name (const char *)
- * @param _son      - pointer to the first son node
- * @param _brother  - pointer to the next brother node
- * @param _f_get    - get accessor
- * @param _f_set    - set accessor
+ * @param _name     node name (rcf_pch_cfg_object)
+ * @param _subid    subidentifier name (const char *)
+ * @param _son      pointer to the first son node
+ * @param _brother  pointer to the next brother node
+ * @param _f_get    get accessor
+ * @param _f_set    set accessor
  */
 #define RCF_PCH_CFG_NODE_RW(_name, _subid, _son, _brother, \
                             _f_get, _f_set)                 \
@@ -829,13 +825,13 @@ typedef struct rcf_pch_cfg_object {
 /**
  * Define read-write singleton with on-parent commit support.
  *
- * @param _name     - node name (rcf_pch_cfg_object)
- * @param _subid    - subidentifier name (const char *)
- * @param _son      - pointer to the first son node
- * @param _brother  - pointer to the next brother node
- * @param _f_get    - get accessor
- * @param _f_set    - set accessor
- * @param _commit   - pointer to parent with commit function
+ * @param _name     node name (rcf_pch_cfg_object)
+ * @param _subid    subidentifier name (const char *)
+ * @param _son      pointer to the first son node
+ * @param _brother  pointer to the next brother node
+ * @param _f_get    get accessor
+ * @param _f_set    set accessor
+ * @param _commit   pointer to parent with commit function
  */
 #define RCF_PCH_CFG_NODE_RWC(_name, _subid, _son, _brother, \
                              _f_get, _f_set, _commit)       \
@@ -847,14 +843,14 @@ typedef struct rcf_pch_cfg_object {
 /**
  * Define node collection.
  * 
- * @param _name     - node name (rcf_pch_cfg_object)
- * @param _subid    - subidentifier name (const char *)
- * @param _son      - pointer to the first son node
- * @param _brother  - pointer to the next brother node
- * @param _f_add    - add accessor
- * @param _f_del    - delete accessor
- * @param _f_list   - list accessor
- * @param _f_commit - commit function
+ * @param _name     node name (rcf_pch_cfg_object)
+ * @param _subid    subidentifier name (const char *)
+ * @param _son      pointer to the first son node
+ * @param _brother  pointer to the next brother node
+ * @param _f_add    add accessor
+ * @param _f_del    delete accessor
+ * @param _f_list   list accessor
+ * @param _f_commit commit function
  */
 #define RCF_PCH_CFG_NODE_COLLECTION(_name, _subid, _son, _brother, \
                                     _f_add, _f_del, _f_list,        \
