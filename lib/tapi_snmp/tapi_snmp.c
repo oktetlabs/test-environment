@@ -1814,7 +1814,7 @@ tapi_snmp_vb_to_mem (const tapi_snmp_varbind_t *vb)
                 return NULL;
             {
                 uint8_t *ret_val = calloc (1,  4);
-                memcpy (ret_val, &vb->integer, 4);
+                memcpy(ret_val, &vb->integer, 4);
                 return (void *)ret_val;
             }
             break;
@@ -2363,27 +2363,40 @@ tapi_snmp_get_ipaddr(const char *ta, int sid, int csap_id,
     tapi_snmp_varbind_t varbind;
     int                 rc;
 
+    if (oid == NULL || addr == NULL)
+        return TE_RC(TE_TAPI, ETEWRONGPTR);
+
     rc = tapi_snmp_get(ta, sid, csap_id, oid, TAPI_SNMP_EXACT,
                         &varbind, errstatus);
     if (rc != 0)
         return rc;
 
-    if (varbind.type != TAPI_SNMP_OCTET_STR /* TAPI_SNMP_IPADDRESS */)
-    {
-        tapi_snmp_free_varbind(&varbind);
-        /** @todo Cheange it to something like ETESNMPWRONGTYPE */
-        return EINVAL;
-    }
-
     if (varbind.v_len != 4)
     {
-        tapi_snmp_free_varbind(&varbind);
-        return EINVAL;
+        ERROR("%s: expected IP address, but length is %d", 
+              __FUNCTION__, varbind.v_len);
+        rc = EINVAL;
+    }
+    else
+    { 
+        switch (varbind.type)
+        {
+            case TAPI_SNMP_OCTET_STR:
+                memcpy(addr, varbind.oct_string, 4);
+                break;
+
+            case TAPI_SNMP_IPADDRESS:
+                memcpy(addr, &(varbind.integer), 4);
+                break;
+            default:
+                /** @todo Cheange it to something like ETESNMPWRONGTYPE */
+                rc = EINVAL;
+        }
     }
 
-    memcpy(addr, varbind.oct_string, 4);
+    tapi_snmp_free_varbind(&varbind);
 
-    return 0;
+    return TE_RC(TE_TAPI, rc);
 }
 
 /**
