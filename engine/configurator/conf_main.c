@@ -560,10 +560,8 @@ process_backup(cfg_backup_msg *msg)
             msg->rc = ((system(tmp_buf) == 0) ? 0 : ETEBACKUP);
             if (msg->rc == 0)
                 cfg_dh_release_after(msg->filename);
-#if 0                
             else
                 WARN("Backup diff: %tf", diff_file);
-#endif
             unlink(diff_file);            
             break;
         }
