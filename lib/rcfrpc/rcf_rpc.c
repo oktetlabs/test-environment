@@ -81,9 +81,7 @@
 #include "rcf_rpc.h"
 #include "tarpc.h"
 
-#define LGR_USER    "RCF RPC"
-#define LOG_LEVEL   (ERROR_LVL | WARNING_LVL | RING_LVL | \
-                     INFORMATION_LVL/* | VERBOSE_LVL*/)
+#define TE_LGR_USER     "RCF RPC"
 #include "logger_api.h"
 #include "logger_ten.h"
 
@@ -168,7 +166,7 @@ rcf_rpc_server_create(const char *ta, const char *name,
         return rc;
     }
 
-    INFO("RPC server (%s, %s) created, pid %d", 
+    RING("RPC server (%s, %s) created, pid %d", 
          rpcs->ta, rpcs->name, rpcs->pid);
     
     *p_handle = rpcs;
@@ -329,7 +327,7 @@ rcf_rpc_server_fork(rcf_rpc_server *rpcs, const char *name,
     
     *p_new = tmp;
 
-    INFO("RPC (%s, %s) fork() -> '%s' success, ppid %d, pid %d", 
+    RING("RPC (%s, %s) fork() -> '%s' success, ppid %d, pid %d", 
          rpcs->ta, rpcs->name, tmp->name, (int)rpcs->pid, (int)tmp->pid);
 
     return 0;
@@ -415,7 +413,7 @@ rcf_rpc_server_exec(rcf_rpc_server *rpcs)
     if (pthread_mutex_unlock(&rpcs->lock) != 0)
         ERROR("pthread_mutex_unlock() failed");
 
-    INFO("RPC (%s, %s) exec() success, old pid %d, new pid %d", 
+    RING("RPC (%s, %s) exec() success, old pid %d, new pid %d", 
          rpcs->ta, rpcs->name, (int)old_pid, (int)rpcs->pid);
     
     return 0;

@@ -28,7 +28,7 @@
  * $Id$
  */
 
-#define LGR_USER    "TermOut"
+#define TE_LGR_USER     "TermOut"
 
 #if HAVE_CONFIG_H
 #include "config.h"

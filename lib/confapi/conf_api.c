@@ -69,7 +69,7 @@
 #include "rcf_api.h"
 #include "ipc_client.h"
 
-#define LGR_USER        "Configurator API"
+#define TE_LGR_USER     "Configurator API"
 #include "logger_api.h"
 
 /** Maximum space for IPC message */

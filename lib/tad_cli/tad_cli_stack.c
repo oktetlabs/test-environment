@@ -27,11 +27,11 @@
  * $Id$
  */
 
+#define TE_LGR_USER     "TAD CLI STACK"
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
-
-#define LGR_USER "TAD CLI STACK"
 
 #include "tad_cli_impl.h"
 

@@ -39,7 +39,7 @@
 #include "rcf_ch_api.h"
 #include "rcf_pch.h"
 
-#define LGR_USER        "TAD CH"
+#define TE_LGR_USER     "TAD CH"
 #include "logger_ta.h"
 
 #include "tad.h" 

@@ -39,7 +39,7 @@
 #include "comm_agent.h"
 #include "rcf_ch_api.h"
 
-#define LGR_USER         "RCF PCH"
+#define TE_LGR_USER     "RCF PCH"
 #include "logger_ta.h"
 
 /** Size of the log data sent in one request */

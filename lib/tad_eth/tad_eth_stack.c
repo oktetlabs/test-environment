@@ -63,7 +63,7 @@
 #include "tad_eth_impl.h"
 #include "ndn_eth.h" 
 
-#define LGR_USER   "TAD Ethernet"
+#define TE_LGR_USER     "TAD Ethernet"
 #include "logger_ta.h"
 
 

@@ -83,9 +83,7 @@
 #endif
 #include <stdarg.h>
 
-#define LGR_USER    "Sockets RPC TAPI"
-#define LOG_LEVEL   (ERROR_LVL | WARNING_LVL | RING_LVL | \
-                     INFORMATION_LVL/* | VERBOSE_LVL*/)
+#define TE_LGR_USER     "Sockets RPC TAPI"
 #include "logger_api.h"
 
 #include "te_defs.h"
@@ -440,7 +438,7 @@ rpc_socket(rcf_rpc_server *handle,
     rcf_rpc_call(handle, _socket, &in, (xdrproc_t)xdr_tarpc_socket_in,
                  &out, (xdrproc_t)xdr_tarpc_socket_out);
 
-    INFO("RPC (%s,%s): socket(%s, %s, %s) -> %d (%s)",
+    RING("RPC (%s,%s): socket(%s, %s, %s) -> %d (%s)",
          handle->ta, handle->name,
          domain_rpc2str(domain), socktype_rpc2str(type),
          proto_rpc2str(protocol), out.fd, errno_rpc2str(RPC_ERRNO(handle)));
@@ -469,7 +467,7 @@ rpc_close(rcf_rpc_server *handle, int fd)
     rcf_rpc_call(handle, _close, &in, (xdrproc_t)xdr_tarpc_close_in,
                  &out, (xdrproc_t)xdr_tarpc_close_out);
     
-    INFO("RPC (%s,%s)%s: close(%d) -> %d (%s)",
+    RING("RPC (%s,%s)%s: close(%d) -> %d (%s)",
          handle->ta, handle->name, rpcop2str(op),
          fd, out.retval, errno_rpc2str(RPC_ERRNO(handle)));
 
@@ -501,7 +499,7 @@ rpc_dup(rcf_rpc_server *handle,
                  &in,  (xdrproc_t)xdr_tarpc_close_in,
                  &out, (xdrproc_t)xdr_tarpc_close_out);
     
-    INFO("RPC (%s,%s)%s: dup(%d) -> %d (%s)",
+    RING("RPC (%s,%s)%s: dup(%d) -> %d (%s)",
          handle->ta, handle->name, rpcop2str(op),
          oldfd, out.fd, errno_rpc2str(RPC_ERRNO(handle)));
 
@@ -534,7 +532,7 @@ rpc_dup2(rcf_rpc_server *handle,
                  &in,  (xdrproc_t)xdr_tarpc_close_in,
                  &out, (xdrproc_t)xdr_tarpc_close_out);
     
-    INFO("RPC (%s,%s)%s: dup2(%d, %d) -> %d (%s)",
+    RING("RPC (%s,%s)%s: dup2(%d, %d) -> %d (%s)",
          handle->ta, handle->name, rpcop2str(op),
          oldfd, newfd, out.fd, errno_rpc2str(RPC_ERRNO(handle)));
 
@@ -581,7 +579,7 @@ rpc_bind(rcf_rpc_server *handle,
     rcf_rpc_call(handle, _bind, &in, (xdrproc_t)xdr_tarpc_bind_in,
                  &out, (xdrproc_t)xdr_tarpc_bind_out);
 
-    INFO("RPC (%s,%s): bind(%d, %s, %u) -> %d (%s)",
+    RING("RPC (%s,%s): bind(%d, %s, %u) -> %d (%s)",
          handle->ta, handle->name,
          s, sockaddr2str(my_addr), addrlen,
          out.retval, errno_rpc2str(RPC_ERRNO(handle)));
@@ -628,7 +626,7 @@ rpc_connect(rcf_rpc_server *handle,
     rcf_rpc_call(handle, _connect, &in, (xdrproc_t)xdr_tarpc_connect_in,
                  &out, (xdrproc_t)xdr_tarpc_connect_out);
 
-    INFO("RPC (%s,%s)%s: connect(%d, %s, %u) -> %d (%s)",
+    RING("RPC (%s,%s)%s: connect(%d, %s, %u) -> %d (%s)",
          handle->ta, handle->name, rpcop2str(op),
          s, sockaddr2str(addr), addrlen,
          out.retval, errno_rpc2str(RPC_ERRNO(handle)));
@@ -658,7 +656,7 @@ rpc_listen(rcf_rpc_server *handle, int fd, int backlog)
     rcf_rpc_call(handle, _listen, &in, (xdrproc_t)xdr_tarpc_listen_in,
                  &out, (xdrproc_t)xdr_tarpc_listen_out);
 
-    INFO("RPC (%s,%s): listen(%d, %d) -> %d (%s)",
+    RING("RPC (%s,%s): listen(%d, %d) -> %d (%s)",
          handle->ta, handle->name,
          fd, backlog, out.retval, errno_rpc2str(RPC_ERRNO(handle)));
 
@@ -730,7 +728,7 @@ rpc_accept_gen(rcf_rpc_server *handle,
             *addrlen = out.len.len_val[0];
     }
     
-    INFO("RPC (%s,%s)%s: accept(%d, %p[%u], %p(%u)) -> %d (%s) "
+    RING("RPC (%s,%s)%s: accept(%d, %p[%u], %p(%u)) -> %d (%s) "
          "peer=%s addrlen=%u",
          handle->ta, handle->name, rpcop2str(op),
          s, addr, raddrlen, addrlen, save_addrlen,
@@ -819,7 +817,7 @@ rpc_recvfrom_gen(rcf_rpc_server *handle,
             *fromlen = out.fromlen.fromlen_val[0];
     }
     
-    INFO("RPC (%s,%s)%s: recvfrom(%d, %p[%u], %u, %s, %p[%u], %u) "
+    RING("RPC (%s,%s)%s: recvfrom(%d, %p[%u], %u, %s, %p[%u], %u) "
          "-> %d (%s) from=%s fromlen=%u",
          handle->ta, handle->name, rpcop2str(op),
          s, buf, rbuflen, len, send_recv_flags_rpc2str(flags), 
@@ -873,7 +871,7 @@ rpc_recv_gen(rcf_rpc_server *handle,
             memcpy(buf, out.buf.buf_val, out.buf.buf_len);
     }
     
-    INFO("RPC (%s,%s)%s: recv(%d, %p[%u], %u, %s) -> %d (%s)",
+    RING("RPC (%s,%s)%s: recv(%d, %p[%u], %u, %s) -> %d (%s)",
          handle->ta, handle->name, rpcop2str(op),
          s, buf, rbuflen, len, send_recv_flags_rpc2str(flags),
          out.retval, errno_rpc2str(RPC_ERRNO(handle)));
@@ -903,7 +901,7 @@ rpc_shutdown(rcf_rpc_server *handle, int s, rpc_shut_how how)
     rcf_rpc_call(handle, _shutdown, &in, (xdrproc_t)xdr_tarpc_shutdown_in,
                  &out, (xdrproc_t)xdr_tarpc_shutdown_out);
 
-    INFO("RPC (%s,%s) shutdown(%d, %s) -> %d (%s)",
+    RING("RPC (%s,%s) shutdown(%d, %s) -> %d (%s)",
          handle->ta, handle->name, s, shut_how_rpc2str(how),
          out.retval, errno_rpc2str(RPC_ERRNO(handle)));
 
@@ -958,7 +956,7 @@ rpc_sendto(rcf_rpc_server *handle,
     rcf_rpc_call(handle, _sendto, &in, (xdrproc_t)xdr_tarpc_sendto_in,
                  &out, (xdrproc_t)xdr_tarpc_sendto_out);
     
-    INFO("RPC (%s,%s)%s: sendto(%d, %p, %u, %s, %s, %u) -> %d (%s)",
+    RING("RPC (%s,%s)%s: sendto(%d, %p, %u, %s, %s, %u) -> %d (%s)",
          handle->ta, handle->name, rpcop2str(op),
          s, buf, len, send_recv_flags_rpc2str(flags),
          sockaddr2str(to), tolen, out.retval, errno_rpc2str(RPC_ERRNO(handle)));
@@ -996,7 +994,7 @@ rpc_send(rcf_rpc_server *handle,
     rcf_rpc_call(handle, _send, &in, (xdrproc_t)xdr_tarpc_send_in,
                  &out, (xdrproc_t)xdr_tarpc_send_out);
     
-    INFO("RPC (%s,%s)%s: send(%d, %p, %u, %s) -> %d (%s)",
+    RING("RPC (%s,%s)%s: send(%d, %p, %u, %s) -> %d (%s)",
          handle->ta, handle->name, rpcop2str(op),
          s, buf, len, send_recv_flags_rpc2str(flags),
          out.retval, errno_rpc2str(RPC_ERRNO(handle)));
@@ -1045,7 +1043,7 @@ rpc_read_gen(rcf_rpc_server *handle,
             memcpy(buf, out.buf.buf_val, out.buf.buf_len);
     }
 
-    INFO("RPC (%s,%s)%s: read(%d, %p[%u], %u) -> %d (%s)",
+    RING("RPC (%s,%s)%s: read(%d, %p[%u], %u) -> %d (%s)",
          handle->ta, handle->name, rpcop2str(op),
          fd, buf, rbuflen, count, out.retval,
          errno_rpc2str(RPC_ERRNO(handle)));
@@ -1081,7 +1079,7 @@ rpc_write(rcf_rpc_server *handle,
     rcf_rpc_call(handle, _write, &in, (xdrproc_t)xdr_tarpc_write_in,
                  &out, (xdrproc_t)xdr_tarpc_write_out);
     
-    INFO("RPC (%s,%s)%s: write(%d, %p, %u) -> %d (%s)",
+    RING("RPC (%s,%s)%s: write(%d, %p, %u) -> %d (%s)",
          handle->ta, handle->name, rpcop2str(op),
          fd, buf, count, out.retval, errno_rpc2str(RPC_ERRNO(handle)));
 
@@ -1161,7 +1159,7 @@ rpc_readv_gen(rcf_rpc_server *handle,
         }
     }
 
-    INFO("RPC (%s,%s)%s: readv() -> %d (%s)",
+    RING("RPC (%s,%s)%s: readv() -> %d (%s)",
          handle->ta, handle->name, rpcop2str(op),
          out.retval, errno_rpc2str(RPC_ERRNO(handle)));
 
@@ -1215,7 +1213,7 @@ rpc_writev(rcf_rpc_server *handle,
     rcf_rpc_call(handle, _writev, &in, (xdrproc_t)xdr_tarpc_writev_in,
                  &out, (xdrproc_t)xdr_tarpc_writev_out);
 
-    INFO("RPC (%s,%s)%s: writev() -> %d (%s)",
+    RING("RPC (%s,%s)%s: writev() -> %d (%s)",
          handle->ta, handle->name, rpcop2str(op), out.retval,
          errno_rpc2str(RPC_ERRNO(handle)));
     
@@ -1289,7 +1287,7 @@ rpc_getsockname_gen(rcf_rpc_server *handle,
             *namelen = out.len.len_val[0];
     }
     
-    INFO("RPC (%s,%s): getsockname(%d, %p[%u], %u) -> %d (%s) "
+    RING("RPC (%s,%s): getsockname(%d, %p[%u], %u) -> %d (%s) "
          "name=%s namelen=%u",
          handle->ta, handle->name,
          s, name, rnamelen, namelen_save,
@@ -1367,7 +1365,7 @@ rpc_getpeername_gen(rcf_rpc_server *handle,
             *namelen = out.len.len_val[0];
     }
     
-    INFO("RPC (%s,%s): getpeername(%d, %p[%u], %u) -> %d (%s) "
+    RING("RPC (%s,%s): getpeername(%d, %p[%u], %u) -> %d (%s) "
          "name=%s namelen=%u",
          handle->ta, handle->name,
          s, name, rnamelen, namelen_save,
@@ -1398,7 +1396,7 @@ rpc_fd_set_new(rcf_rpc_server *handle)
     rcf_rpc_call(handle, _fd_set_new, &in, (xdrproc_t)xdr_tarpc_fd_set_new_in,
                  &out, (xdrproc_t)xdr_tarpc_fd_set_new_out);
 
-    INFO("RPC (%s,%s): fd_set_new() -> %p (%s)",
+    RING("RPC (%s,%s): fd_set_new() -> %p (%s)",
          handle->ta, handle->name,
          out.retval, errno_rpc2str(RPC_ERRNO(handle)));
 
@@ -1429,7 +1427,7 @@ rpc_fd_set_delete(rcf_rpc_server *handle, rpc_fd_set *set)
                  &in,  (xdrproc_t)xdr_tarpc_fd_set_delete_in,
                  &out, (xdrproc_t)xdr_tarpc_fd_set_delete_out);
 
-    INFO("RPC (%s,%s): fd_set_delete(%p) -> (%s)",
+    RING("RPC (%s,%s): fd_set_delete(%p) -> (%s)",
          handle->ta, handle->name,
          set, errno_rpc2str(RPC_ERRNO(handle)));
 
@@ -1458,7 +1456,7 @@ rpc_do_fd_zero(rcf_rpc_server *handle, rpc_fd_set *set)
     rcf_rpc_call(handle, _do_fd_zero, &in, (xdrproc_t)xdr_tarpc_do_fd_zero_in,
                  &out, (xdrproc_t)xdr_tarpc_do_fd_zero_out);
 
-    INFO("RPC (%s,%s): do_fd_zero(%p) -> (%s)",
+    RING("RPC (%s,%s): do_fd_zero(%p) -> (%s)",
          handle->ta, handle->name,
          set, errno_rpc2str(RPC_ERRNO(handle)));
 
@@ -1488,7 +1486,7 @@ rpc_do_fd_set(rcf_rpc_server *handle, int fd, rpc_fd_set *set)
     rcf_rpc_call(handle, _do_fd_set, &in, (xdrproc_t)xdr_tarpc_do_fd_set_in,
                  &out, (xdrproc_t)xdr_tarpc_do_fd_set_out);
 
-    INFO("RPC (%s,%s): do_fd_set(%d, %p) -> (%s)",
+    RING("RPC (%s,%s): do_fd_set(%d, %p) -> (%s)",
          handle->ta, handle->name,
          fd, set, errno_rpc2str(RPC_ERRNO(handle)));
 
@@ -1518,7 +1516,7 @@ rpc_do_fd_clr(rcf_rpc_server *handle, int fd, rpc_fd_set *set)
     rcf_rpc_call(handle, _do_fd_clr, &in, (xdrproc_t)xdr_tarpc_do_fd_clr_in,
                  &out, (xdrproc_t)xdr_tarpc_do_fd_clr_out);
 
-    INFO("RPC (%s,%s): do_fd_clr(%d, %p) -> (%s)",
+    RING("RPC (%s,%s): do_fd_clr(%d, %p) -> (%s)",
          handle->ta, handle->name,
          fd, set, errno_rpc2str(RPC_ERRNO(handle)));
 
@@ -1549,7 +1547,7 @@ rpc_do_fd_isset(rcf_rpc_server *handle, int fd, rpc_fd_set *set)
                  &in, (xdrproc_t)xdr_tarpc_do_fd_isset_in,
                  &out, (xdrproc_t)xdr_tarpc_do_fd_isset_out);
 
-    INFO("RPC (%s,%s): do_fd_isset(%d, %p) -> %d (%s)",
+    RING("RPC (%s,%s): do_fd_isset(%d, %p) -> %d (%s)",
          handle->ta, handle->name,
          fd, set, out.retval, errno_rpc2str(RPC_ERRNO(handle)));
 
@@ -1560,7 +1558,7 @@ rpc_do_fd_isset(rcf_rpc_server *handle, int fd, rpc_fd_set *set)
                                                           
     if (out.retval != 0 && out.retval != 1)               
     {                                                     
-        INFO("FD_ISSET() returned %d, not boolean value (0 or 1)",
+        RING("FD_ISSET() returned %d, not boolean value (0 or 1)",
              out.retval);
     }                                                     
     return out.retval;                                    
@@ -1617,7 +1615,7 @@ rpc_select(rcf_rpc_server *handle,
     if (!RPC_CALL_OK)
         out.retval = -1;
 
-    INFO("RPC (%s,%s)%s: select(%d, %p, %p, %p, %s (%s)) -> %d (%s)",
+    RING("RPC (%s,%s)%s: select(%d, %p, %p, %p, %s (%s)) -> %d (%s)",
          handle->ta, handle->name, rpcop2str(op),
          n, readfds, writefds, exceptfds,
          timeval2str(timeout_in_ptr), timeval2str(timeout),
@@ -1652,7 +1650,7 @@ rpc_if_nametoindex(rcf_rpc_server *handle,
                  (xdrproc_t)xdr_tarpc_if_nametoindex_in,
                  &out, (xdrproc_t)xdr_tarpc_if_nametoindex_out);
 
-    INFO("RPC (%s,%s): if_nametoindex(%s) -> %d (%s)",
+    RING("RPC (%s,%s): if_nametoindex(%s) -> %d (%s)",
          handle->ta, handle->name, 
          ifname == NULL ? "" : ifname,
          out.ifindex, errno_rpc2str(RPC_ERRNO(handle)));
@@ -1692,7 +1690,7 @@ rpc_if_indextoname(rcf_rpc_server *handle,
             memcpy(ifname, out.ifname.ifname_val, out.ifname.ifname_len);
     }
 
-    INFO("RPC (%s,%s): if_indextoname(%d) -> %d (%s)",
+    RING("RPC (%s,%s): if_indextoname(%d) -> %d (%s)",
          handle->ta, handle->name,
          ifindex, out.ifname.ifname_val != NULL ? ifname : "",
          errno_rpc2str(RPC_ERRNO(handle)));
@@ -1754,7 +1752,7 @@ rpc_if_nameindex(rcf_rpc_server *handle)
         }
     }
 
-    INFO("RPC (%s,%s): if_nameindex() -> %p (%s)",
+    RING("RPC (%s,%s): if_nameindex() -> %p (%s)",
          handle->ta, handle->name, res, errno_rpc2str(RPC_ERRNO(handle)));
     
     RETVAL_PTR(res, if_nameindex);
@@ -1791,7 +1789,7 @@ rpc_if_freenameindex(rcf_rpc_server *handle,
                  (xdrproc_t)xdr_tarpc_if_freenameindex_in,
                  &out, (xdrproc_t)xdr_tarpc_if_freenameindex_out);
 
-    INFO("RPC (%s,%s): if_freenameindex(%p) -> (%s)",
+    RING("RPC (%s,%s): if_freenameindex(%p) -> (%s)",
          handle->ta, handle->name, ptr, errno_rpc2str(RPC_ERRNO(handle)));
 
     LOG_TE_ERROR(if_freenameindex);
@@ -1817,7 +1815,7 @@ rpc_sigset_new(rcf_rpc_server *handle)
     rcf_rpc_call(handle, _sigset_new, &in, (xdrproc_t)xdr_tarpc_sigset_new_in,
                  &out, (xdrproc_t)xdr_tarpc_sigset_new_out);
 
-    INFO("RPC (%s,%s): sigset_new() -> %p (%s)",
+    RING("RPC (%s,%s): sigset_new() -> %p (%s)",
          handle->ta, handle->name, out.set, errno_rpc2str(RPC_ERRNO(handle)));
 
     RETVAL_PTR(out.set, sigset_new);
@@ -1846,7 +1844,7 @@ rpc_sigset_delete(rcf_rpc_server *handle, rpc_sigset_t *set)
                  &in, (xdrproc_t)xdr_tarpc_sigset_delete_in,
                  &out, (xdrproc_t)xdr_tarpc_sigset_delete_out);
 
-    INFO("RPC (%s,%s): sigset_delete(%p) -> (%s)",
+    RING("RPC (%s,%s): sigset_delete(%p) -> (%s)",
          handle->ta, handle->name, set, errno_rpc2str(RPC_ERRNO(handle)));
 
     LOG_TE_ERROR(sigset_delete);
@@ -1878,7 +1876,7 @@ rpc_sigprocmask(rcf_rpc_server *handle,
     
     rcf_rpc_call(handle, _sigprocmask, &in, (xdrproc_t)xdr_tarpc_sigprocmask_in,
                  &out, (xdrproc_t)xdr_tarpc_sigprocmask_out);
-    INFO("RPC (%s,%s): sigprocmask(%d, %p, %p) -> %d (%s)",
+    RING("RPC (%s,%s): sigprocmask(%d, %p, %p) -> %d (%s)",
          handle->ta, handle->name, how, set, oldset,
          out.retval, errno_rpc2str(RPC_ERRNO(handle)));
          
@@ -1908,7 +1906,7 @@ rpc_sigemptyset(rcf_rpc_server *handle, rpc_sigset_t *set)
     rcf_rpc_call(handle, _sigemptyset, &in, (xdrproc_t)xdr_tarpc_sigemptyset_in,
                  &out, (xdrproc_t)xdr_tarpc_sigemptyset_out);
 
-    INFO("RPC (%s,%s): sigemptyset(%p) -> %d (%s)",
+    RING("RPC (%s,%s): sigemptyset(%p) -> %d (%s)",
          handle->ta, handle->name,
          set, out.retval, errno_rpc2str(RPC_ERRNO(handle)));
 
@@ -1937,7 +1935,7 @@ rpc_sigpending(rcf_rpc_server *handle, rpc_sigset_t *set)
     rcf_rpc_call(handle, _sigpending, &in, (xdrproc_t)xdr_tarpc_sigpending_in,
                  &out, (xdrproc_t)xdr_tarpc_sigpending_out);
 
-    INFO("RPC (%s,%s): sigpending(%p) -> %d (%s)",
+    RING("RPC (%s,%s): sigpending(%p) -> %d (%s)",
          handle->ta, handle->name,
          set, out.retval, errno_rpc2str(RPC_ERRNO(handle)));
 
@@ -1964,7 +1962,7 @@ rpc_sigsuspend(rcf_rpc_server *handle, const rpc_sigset_t *set)
     rcf_rpc_call(handle, _sigsuspend, &in, (xdrproc_t)xdr_tarpc_sigsuspend_in,
                  &out, (xdrproc_t)xdr_tarpc_sigsuspend_out);
 
-    INFO("RPC (%s,%s): sigsuspend(%p) -> %d (%s)",
+    RING("RPC (%s,%s): sigsuspend(%p) -> %d (%s)",
          handle->ta, handle->name,
          set, out.retval, errno_rpc2str(RPC_ERRNO(handle)));
 
@@ -1992,7 +1990,7 @@ rpc_sigreceived(rcf_rpc_server *handle)
                  &in, (xdrproc_t)xdr_tarpc_sigreceived_in,
                  &out, (xdrproc_t)xdr_tarpc_sigreceived_out);
 
-    INFO("RPC (%s,%s): sigreceived() -> %p (%s)",
+    RING("RPC (%s,%s): sigreceived() -> %p (%s)",
          handle->ta, handle->name,
          out.set, errno_rpc2str(RPC_ERRNO(handle)));
 
@@ -2021,7 +2019,7 @@ rpc_sigfillset(rcf_rpc_server *handle, rpc_sigset_t *set)
     rcf_rpc_call(handle, _sigfillset, &in, (xdrproc_t)xdr_tarpc_sigfillset_in,
                  &out, (xdrproc_t)xdr_tarpc_sigfillset_out);
 
-    INFO("RPC (%s,%s): sigfillset(%p) -> %d (%s)",
+    RING("RPC (%s,%s): sigfillset(%p) -> %d (%s)",
          handle->ta, handle->name,
          set, out.retval, errno_rpc2str(RPC_ERRNO(handle)));
 
@@ -2051,7 +2049,7 @@ rpc_sigaddset(rcf_rpc_server *handle, rpc_sigset_t *set, rpc_signum signum)
     rcf_rpc_call(handle, _sigaddset, &in, (xdrproc_t)xdr_tarpc_sigaddset_in,
                  &out, (xdrproc_t)xdr_tarpc_sigaddset_out);
 
-    INFO("RPC (%s,%s): sigaddset(%s, %p) -> %d (%s)",
+    RING("RPC (%s,%s): sigaddset(%s, %p) -> %d (%s)",
          handle->ta, handle->name,
          signum_rpc2str(signum), set,
          out.retval, errno_rpc2str(RPC_ERRNO(handle)));
@@ -2082,7 +2080,7 @@ rpc_sigdelset(rcf_rpc_server *handle, rpc_sigset_t *set, rpc_signum signum)
     rcf_rpc_call(handle, _sigdelset, &in, (xdrproc_t)xdr_tarpc_sigdelset_in,
                  &out, (xdrproc_t)xdr_tarpc_sigdelset_out);
 
-    INFO("RPC (%s,%s): sigdelset(%s, %p) -> %d (%s)",
+    RING("RPC (%s,%s): sigdelset(%s, %p) -> %d (%s)",
          handle->ta, handle->name,
          signum_rpc2str(signum), set,
          out.retval, errno_rpc2str(RPC_ERRNO(handle)));
@@ -2115,7 +2113,7 @@ rpc_sigismember(rcf_rpc_server *handle,
                  &in, (xdrproc_t)xdr_tarpc_sigismember_in,
                  &out, (xdrproc_t)xdr_tarpc_sigismember_out);
 
-    INFO("RPC (%s,%s): sigismember(%s, %p) -> %d (%s)",
+    RING("RPC (%s,%s): sigismember(%s, %p) -> %d (%s)",
          handle->ta, handle->name,
          signum_rpc2str(signum), set,
          out.retval, errno_rpc2str(RPC_ERRNO(handle)));
@@ -2162,7 +2160,7 @@ rpc_signal(rcf_rpc_server *handle,
                  &in, (xdrproc_t)xdr_tarpc_signal_in,
                  &out, (xdrproc_t)xdr_tarpc_signal_out);
 
-    INFO("RPC (%s,%s): signal(%s, %s) -> %s (%s)",
+    RING("RPC (%s,%s): signal(%s, %s) -> %s (%s)",
          handle->ta, handle->name,
          signum_rpc2str(signum), (handler != NULL) ? handler : "(null)", 
          out.handler.handler_val != NULL ? out.handler.handler_val : "(null)", 
@@ -2197,7 +2195,7 @@ rpc_kill(rcf_rpc_server *handle, pid_t pid, rpc_signum signum)
     rcf_rpc_call(handle, _kill, &in, (xdrproc_t)xdr_tarpc_kill_in,
                  &out, (xdrproc_t)xdr_tarpc_kill_out);
 
-    INFO("RPC (%s,%s)%s: kill(%d, %s) -> (%s)",
+    RING("RPC (%s,%s)%s: kill(%d, %s) -> (%s)",
          handle->ta, handle->name, rpcop2str(op),
          pid, signum_rpc2str(signum), errno_rpc2str(RPC_ERRNO(handle)));
 
@@ -2580,7 +2578,7 @@ rpc_getsockopt_gen(rcf_rpc_server *handle,
         }
     }
 
-    INFO("RPC (%s,%s): getsockopt(%d, %s, %s, %p(%s), %d) -> %d (%s)",
+    RING("RPC (%s,%s): getsockopt(%d, %s, %s, %p(%s), %d) -> %d (%s)",
          handle->ta, handle->name,
          s, socklevel_rpc2str(level), sockopt_rpc2str(optname), optval, 
          opt_val_str, optlen == NULL ? 0 : *optlen, out.retval,
@@ -2731,7 +2729,7 @@ rpc_setsockopt(rcf_rpc_server *handle,
     rcf_rpc_call(handle, _setsockopt, &in, (xdrproc_t)xdr_tarpc_setsockopt_in,
                  &out, (xdrproc_t)xdr_tarpc_setsockopt_out);
 
-    INFO("RPC (%s,%s): setsockopt(%d, %s, %s, %p(%s), %d) -> %d (%s)",
+    RING("RPC (%s,%s): setsockopt(%d, %s, %s, %p(%s), %d) -> %d (%s)",
          handle->ta, handle->name,
          s, socklevel_rpc2str(level), sockopt_rpc2str(optname), optval,
          opt_val_str, optlen, out.retval, errno_rpc2str(RPC_ERRNO(handle)));
@@ -2777,7 +2775,7 @@ rpc_pselect(rcf_rpc_server *handle,
     rcf_rpc_call(handle, _pselect, &in, (xdrproc_t)xdr_tarpc_pselect_in,
                  &out, (xdrproc_t)xdr_tarpc_pselect_out);
 
-    INFO("RPC (%s,%s)%s: pselect(%d, %p, %p, %p, %s, %p) -> %d (%s)",
+    RING("RPC (%s,%s)%s: pselect(%d, %p, %p, %p, %s, %p) -> %d (%s)",
          handle->ta, handle->name,
          rpcop2str(op), n, readfds, writefds, exceptfds,
          timespec2str(timeout), sigmask,
@@ -3135,7 +3133,7 @@ rpc_ioctl(rcf_rpc_server *handle,
             break;
     }
 
-    INFO("RPC (%s,%s): ioctl(%d, %s, %p(%s)) -> %d (%s)",
+    RING("RPC (%s,%s): ioctl(%d, %s, %p(%s)) -> %d (%s)",
          handle->ta, handle->name, fd, ioctl_rpc2str(request),
          arg, req_val, out.retval, errno_rpc2str(RPC_ERRNO(handle)));
 
@@ -3243,7 +3241,7 @@ rpc_sendmsg(rcf_rpc_server *handle,
     rcf_rpc_call(handle, _sendmsg, &in, (xdrproc_t)xdr_tarpc_sendmsg_in,
                  &out, (xdrproc_t)xdr_tarpc_sendmsg_out);
 
-    INFO("RPC (%s,%s)%s: sendmsg(%d, %p "
+    RING("RPC (%s,%s)%s: sendmsg(%d, %p "
                                     "(msg_name: %p, msg_namelen: %d,"
                                     " msg_iov: %p, msg_iovlen: %d,"
                                     " msg_control: %p, msg_controllen: %d,"
@@ -3409,7 +3407,7 @@ rpc_recvmsg(rcf_rpc_server *handle,
              send_recv_flags_rpc2str(flags),
              out.retval, errno_rpc2str(RPC_ERRNO(handle)));
 
-    INFO("%s", str_buf);
+    RING("%s", str_buf);
     
     RETVAL_VAL(out.retval, recvmsg);
 }            
@@ -3499,7 +3497,7 @@ rpc_poll_gen(rcf_rpc_server *handle,
 
     pollreq2str(ufds, rnfds, str_buf_2, sizeof(str_buf_2));
 
-    INFO("RPC (%s,%s)%s: poll(%p%s, %d, %d) -> %d (%s) %s",
+    RING("RPC (%s,%s)%s: poll(%p%s, %d, %d) -> %d (%s) %s",
          handle->ta, handle->name, rpcop2str(op),
          ufds, str_buf_1, nfds, timeout,
          out.retval, errno_rpc2str(RPC_ERRNO(handle)), str_buf_2);
@@ -3605,7 +3603,7 @@ rpc_gethostbyname(rcf_rpc_server *handle, const char *name)
             handle->_errno = TE_RC(TE_RCF, ENOMEM);
     }
         
-    INFO("RPC (%s,%s): gethostbyname(%s) -> %p (%s)",
+    RING("RPC (%s,%s): gethostbyname(%s) -> %p (%s)",
          handle->ta, handle->name,
          name == NULL ? "" : name, res, errno_rpc2str(RPC_ERRNO(handle)));
     
@@ -3648,7 +3646,7 @@ rpc_gethostbyaddr(rcf_rpc_server *handle,
             handle->_errno = TE_RC(TE_RCF, ENOMEM);
     }
         
-    INFO("RPC (%s,%s): gethostbyaddr(%p, %d, %d) -> %p (%s)",
+    RING("RPC (%s,%s): gethostbyaddr(%p, %d, %d) -> %p (%s)",
          handle->ta, handle->name,
          addr, len, type, res, errno_rpc2str(RPC_ERRNO(handle)));
     
@@ -3793,7 +3791,7 @@ rpc_getaddrinfo(rcf_rpc_server *handle,
         *res = list;
     }
         
-    INFO("RPC (%s,%s): getaddrinfo(%s, %s, %p, %p) -> %d (%s)",
+    RING("RPC (%s,%s): getaddrinfo(%s, %s, %p, %p) -> %d (%s)",
          handle->ta, handle->name,
          node, service, hints, res, out.retval,
          errno_rpc2str(RPC_ERRNO(handle)));
@@ -3825,7 +3823,7 @@ rpc_freeaddrinfo(rcf_rpc_server *handle,
     rcf_rpc_call(handle, _freeaddrinfo, &in, (xdrproc_t)xdr_tarpc_freeaddrinfo_in,
                  &out, (xdrproc_t)xdr_tarpc_freeaddrinfo_out);
 
-    INFO("RPC (%s,%s): freeaddrinfo(%p) -> (%s)",
+    RING("RPC (%s,%s): freeaddrinfo(%p) -> (%s)",
          handle->ta, handle->name,
          res, errno_rpc2str(RPC_ERRNO(handle)));
          
@@ -3855,7 +3853,7 @@ rpc_pipe(rcf_rpc_server *handle,
     rcf_rpc_call(handle, _pipe, &in, (xdrproc_t)xdr_tarpc_pipe_in,
                  &out, (xdrproc_t)xdr_tarpc_pipe_out);
 
-    INFO("RPC (%s,%s): pipe() -> %d %d %d (%s)",
+    RING("RPC (%s,%s): pipe() -> %d %d %d (%s)",
          handle->ta, handle->name,
          out.retval, out.filedes[0], out.filedes[1],
          errno_rpc2str(RPC_ERRNO(handle)));
@@ -3891,7 +3889,7 @@ rpc_socketpair(rcf_rpc_server *handle,
     rcf_rpc_call(handle, _socketpair, &in, (xdrproc_t)xdr_tarpc_socketpair_in,
                  &out, (xdrproc_t)xdr_tarpc_socketpair_out);
 
-    INFO("RPC (%s,%s): socketpair(%s, %s, %s) -> %d %d %d (%s)",
+    RING("RPC (%s,%s): socketpair(%s, %s, %s) -> %d %d %d (%s)",
          handle->ta, handle->name,
          domain_rpc2str(domain), socktype_rpc2str(type),
          proto_rpc2str(protocol), out.retval, 
@@ -3928,7 +3926,7 @@ rpc_fopen(rcf_rpc_server *handle,
     rcf_rpc_call(handle, _fopen, &in, (xdrproc_t)xdr_tarpc_fopen_in,
                  &out, (xdrproc_t)xdr_tarpc_fopen_out);
 
-    INFO("RPC (%s,%s): fopen(%s, %s) -> %p (%s)",
+    RING("RPC (%s,%s): fopen(%s, %s) -> %p (%s)",
          handle->ta, handle->name,
          path, mode, out.mem_ptr, errno_rpc2str(RPC_ERRNO(handle))); 
 
@@ -3957,7 +3955,7 @@ rpc_fileno(rcf_rpc_server *handle,
     rcf_rpc_call(handle, _fileno, &in, (xdrproc_t)xdr_tarpc_fileno_in,
                  &out, (xdrproc_t)xdr_tarpc_fileno_out);
 
-    INFO("RPC (%s,%s): fileno(%p) -> %d (%s)",
+    RING("RPC (%s,%s): fileno(%p) -> %d (%s)",
          handle->ta, handle->name,
          f, out.fd, errno_rpc2str(RPC_ERRNO(handle))); 
 
@@ -3984,7 +3982,7 @@ rpc_getuid(rcf_rpc_server *handle)
     rcf_rpc_call(handle, _getuid, &in, (xdrproc_t)xdr_tarpc_getuid_in,
                  &out, (xdrproc_t)xdr_tarpc_getuid_out);
 
-    INFO("RPC (%s,%s): getuid() -> %d (%s)",
+    RING("RPC (%s,%s): getuid() -> %d (%s)",
          handle->ta, handle->name,
          out.uid, errno_rpc2str(RPC_ERRNO(handle)));
 
@@ -4013,7 +4011,7 @@ rpc_setuid(rcf_rpc_server *handle,
     rcf_rpc_call(handle, _setuid, &in, (xdrproc_t)xdr_tarpc_setuid_in,
                  &out, (xdrproc_t)xdr_tarpc_setuid_out);
 
-    INFO("RPC (%s,%s): setuid(%d) -> %d (%s)",
+    RING("RPC (%s,%s): setuid(%d) -> %d (%s)",
          handle->ta, handle->name,
          uid, out.retval, errno_rpc2str(RPC_ERRNO(handle))); 
 
@@ -4040,7 +4038,7 @@ rpc_geteuid(rcf_rpc_server *handle)
     rcf_rpc_call(handle, _geteuid, &in, (xdrproc_t)xdr_tarpc_geteuid_in,
                  &out, (xdrproc_t)xdr_tarpc_geteuid_out);
 
-    INFO("RPC (%s,%s): geteuid() -> %d (%s)",
+    RING("RPC (%s,%s): geteuid() -> %d (%s)",
          handle->ta, handle->name,
          out.uid, errno_rpc2str(RPC_ERRNO(handle))); 
 
@@ -4069,7 +4067,7 @@ rpc_seteuid(rcf_rpc_server *handle,
     rcf_rpc_call(handle, _seteuid, &in, (xdrproc_t)xdr_tarpc_seteuid_in,
                  &out, (xdrproc_t)xdr_tarpc_seteuid_out);
 
-    INFO("RPC (%s,%s): seteuid() -> %d (%s)",
+    RING("RPC (%s,%s): seteuid() -> %d (%s)",
          handle->ta, handle->name,
          uid, out.retval, errno_rpc2str(RPC_ERRNO(handle))); 
 
@@ -4132,7 +4130,7 @@ rpc_simple_sender(rcf_rpc_server *handle,
     if (out.retval == 0)
         *sent = ((uint64_t)(out.bytes_high) << 32) + out.bytes_low;
         
-    INFO("RPC (%s,%s)%s: "
+    RING("RPC (%s,%s)%s: "
          "simple_sender(%d, %d, %d, %d, %d, %d, %d, %d) -> %d %u (%s)",
          handle->ta, handle->name, rpcop2str(op),
          s, size_min, size_max, size_rnd_once, delay_min, delay_max,
@@ -4176,7 +4174,7 @@ rpc_simple_receiver(rcf_rpc_server *handle,
     if (out.retval == 0)
         *received = ((uint64_t)(out.bytes_high) << 32) + out.bytes_low;
         
-    INFO("RPC (%s,%s)%s: simple_receiver(%d) -> %d %u (%s)",
+    RING("RPC (%s,%s)%s: simple_receiver(%d) -> %d %u (%s)",
          handle->ta, handle->name, rpcop2str(op),
          s, out.retval, (unsigned long)*received, 
          errno_rpc2str(RPC_ERRNO(handle))); 
@@ -4234,7 +4232,7 @@ rpc_iomux_flooder(rcf_rpc_server *handle,
                  (xdrproc_t)xdr_tarpc_flooder_in,
                  &out, (xdrproc_t)xdr_tarpc_flooder_out);
 
-    INFO("RPC (%s,%s)%s: "
+    RING("RPC (%s,%s)%s: "
          "flooder(%p, %d, %p, %d, %d, %d, %d, %p, %p) -> %d (%s)",
          handle->ta, handle->name, rpcop2str(op),
          rcvrs, rcvnum, sndrs, sndnum, bulkszs, time2run, iomux,
@@ -4297,7 +4295,7 @@ rpc_iomux_echoer(rcf_rpc_server *handle,
                  (xdrproc_t)xdr_tarpc_echoer_in,
                  &out, (xdrproc_t)xdr_tarpc_echoer_out);
 
-    INFO("RPC (%s,%s)%s: echoer(%p, %d, %d, %d) -> %d (%s)",
+    RING("RPC (%s,%s)%s: echoer(%p, %d, %d, %d) -> %d (%s)",
          handle->ta, handle->name, rpcop2str(op),
          sockets, socknum, time2run, iomux,
          out.retval, errno_rpc2str(RPC_ERRNO(handle)));
@@ -4360,7 +4358,7 @@ rpc_aio_read_test(rcf_rpc_server *handle,
                  (xdrproc_t)xdr_tarpc_aio_read_test_in,
                  &out, (xdrproc_t)xdr_tarpc_aio_read_test_out);
 
-    INFO("RPC (%s,%s): "
+    RING("RPC (%s,%s): "
          "aio_read_test(%d, %s, %d, %p, %d, %d) -> %d (%s)",
          handle->ta, handle->name,
          s, signum_rpc2str(signum), timeout, buf, buflen, rlen,
@@ -4408,7 +4406,7 @@ rpc_aio_error_test(rcf_rpc_server *handle,
                  (xdrproc_t)xdr_tarpc_aio_error_test_in,
                  &out, (xdrproc_t)xdr_tarpc_aio_error_test_out);
 
-    INFO("RPC (%s,%s): "
+    RING("RPC (%s,%s): "
          "aio_error_test() -> %d (%s)",
          handle->ta, handle->name,
          out.retval, errno_rpc2str(RPC_ERRNO(handle))); 
@@ -4460,7 +4458,7 @@ rpc_aio_write_test(rcf_rpc_server *handle,
                  (xdrproc_t)xdr_tarpc_aio_write_test_in,
                  &out, (xdrproc_t)xdr_tarpc_aio_write_test_out);
 
-    INFO("RPC (%s,%s): "
+    RING("RPC (%s,%s): "
          "aio_write_test(%d, %s, %p, %d) -> %d (%s)",
          handle->ta, handle->name,
          s, signum_rpc2str(signum), buf, buflen, 
@@ -4518,7 +4516,7 @@ rpc_aio_suspend_test(rcf_rpc_server *handle,
                  (xdrproc_t)xdr_tarpc_aio_suspend_test_in,
                  &out, (xdrproc_t)xdr_tarpc_aio_suspend_test_out);
 
-    INFO("RPC (%s,%s): "
+    RING("RPC (%s,%s): "
          "aio_suspend_test(%d, %d, %s, %d, %p, %d, %d) -> %d (%s)",
          handle->ta, handle->name,
          s, s_aux, signum_rpc2str(signum), timeout, buf, buflen, 
@@ -4571,7 +4569,7 @@ rpc_sendfile(rcf_rpc_server *handle, int out_fd, int in_fd,
             *offset = out.offset.offset_val[0];
     }
 
-    INFO("RPC (%s,%s)%s: sendfile(%d, %d, %p(%d), %u) -> %d (%s) offset=%d",
+    RING("RPC (%s,%s)%s: sendfile(%d, %d, %p(%d), %u) -> %d (%s) offset=%d",
          handle->ta, handle->name, rpcop2str(op),
          out_fd, in_fd, offset, start, count,
          out.retval, errno_rpc2str(RPC_ERRNO(handle)),
@@ -4611,7 +4609,7 @@ rpc_socket_to_file(rcf_rpc_server *handle, int sock,
                  &in, (xdrproc_t)xdr_tarpc_socket_to_file_in,
                  &out, (xdrproc_t)xdr_tarpc_socket_to_file_out);
 
-    INFO("RPC (%s,%s)%s: socket_to_file(%d, %s, %u) -> %d (%s)",
+    RING("RPC (%s,%s)%s: socket_to_file(%d, %s, %u) -> %d (%s)",
          handle->ta, handle->name, rpcop2str(op),
          sock, path, timeout,
          out.retval, errno_rpc2str(RPC_ERRNO(handle)));

@@ -41,7 +41,7 @@
 #include "rcf_ch_api.h"
 #include "rcf_pch.h"
 
-#define LGR_USER    "Windows Conf"
+#define TE_LGR_USER     "Windows Conf"
 #include "logger_api.h"
 
 /* TA name pointer */

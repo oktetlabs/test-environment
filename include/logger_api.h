@@ -47,17 +47,17 @@
  * @param _fs       - format string and arguments
  */
 #define LGR_MESSAGE(_lvl, _lgruser, _fs...) \
-    do {                                                   \
-        if (LOG_LEVEL & (_lvl))                            \
-        {                                                  \
-            log_message(_lvl, LGR_ENTITY, _lgruser, _fs);  \
-        }                                                  \
+    do {                                                        \
+        if (LOG_LEVEL & (_lvl))                                 \
+        {                                                       \
+            log_message(_lvl, TE_LGR_ENTITY, _lgruser, _fs);    \
+        }                                                       \
     } while (0)
 
 
 /** @name Logging abnormal/unexpected situations */
 #define LOG_ERROR(_us, _fs...)  LGR_MESSAGE(ERROR_LVL, _us, _fs)
-#define ERROR(_fs...)           LOG_ERROR(LGR_USER, _fs)
+#define ERROR(_fs...)           LOG_ERROR(TE_LGR_USER, _fs)
 /*@}*/
 
 /** 
@@ -65,7 +65,7 @@
  *       feature 
  */
 #define LOG_WARN(_us, _fs...)  LGR_MESSAGE(WARNING_LVL, _us, _fs)
-#define WARN(_fs...)           LOG_WARN(LGR_USER, _fs)
+#define WARN(_fs...)           LOG_WARN(TE_LGR_USER, _fs)
 /*@}*/
 
 /**
@@ -73,23 +73,23 @@
  *       undestand testing results
  */
 #define LOG_RING(_us, _fs...)  LGR_MESSAGE(RING_LVL, _us, _fs)
-#define RING(_fs...)           LOG_RING(LGR_USER, _fs)
+#define RING(_fs...)           LOG_RING(TE_LGR_USER, _fs)
 /*@}*/
 
 /** @name Logging important event for debugging of the test */
 #define LOG_INFO(_us, _fs...)  LGR_MESSAGE(INFORMATION_LVL, _us, _fs)
-#define INFO(_fs...)           LOG_INFO(LGR_USER, _fs)
+#define INFO(_fs...)           LOG_INFO(TE_LGR_USER, _fs)
 /*@}*/
 
 /** @name Logging additional events for detalization of processing */
 #define LOG_VERB(_us, _fs...)  LGR_MESSAGE(VERBOSE_LVL, _us, _fs)
-#define VERB(_fs...)           LOG_VERB(LGR_USER, _fs)
+#define VERB(_fs...)           LOG_VERB(TE_LGR_USER, _fs)
 /*@}*/
 
 /** @name Logging of entry to and exit from function */
 #define _LOG_ENTRY(_us, _fs, _args...) \
     do {                            \
-        log_message(ENTRY_EXIT_LVL, LGR_ENTITY, _us,                    \
+        log_message(ENTRY_EXIT_LVL, TE_LGR_ENTITY, _us,                 \
                     "ENTRY to %s(): " _fs, __FUNCTION__, _args + 0);    \
     } while (0)
 
@@ -103,17 +103,17 @@
             }                                                           \
             else                                                        \
             {                                                           \
-                log_message(ENTRY_EXIT_LVL, LGR_ENTITY, _us,            \
-                            "ENTRY to %s()", __FUNCTION__);       \
+                log_message(ENTRY_EXIT_LVL, TE_LGR_ENTITY, _us,         \
+                            "ENTRY to %s()", __FUNCTION__);             \
             }                                                           \
         }                                                               \
     } while (0)
 
-#define ENTRY(_fs...)  LOG_ENTRY(LGR_USER, _fs)
+#define ENTRY(_fs...)  LOG_ENTRY(TE_LGR_USER, _fs)
 
 #define _LOG_EXIT(_us, _fs, _args...) \
     do {                                                            \
-        log_message(ENTRY_EXIT_LVL, LGR_ENTITY, _us,                \
+        log_message(ENTRY_EXIT_LVL, TE_LGR_ENTITY, _us,             \
                     "EXIT in line %d from %s(): " _fs,              \
                     __LINE__, __FUNCTION__, _args + 0);             \
     } while (0)
@@ -129,14 +129,14 @@
             }                                                       \
             else                                                    \
             {                                                       \
-                log_message(ENTRY_EXIT_LVL, LGR_ENTITY, _us,        \
+                log_message(ENTRY_EXIT_LVL, TE_LGR_ENTITY, _us,     \
                             "EXIT in line %d from %s()",            \
                             __LINE__, __FUNCTION__);                \
             }                                                       \
         }                                                           \
     } while (0)
 
-#define EXIT(_fs...)  LOG_EXIT(LGR_USER, _fs)
+#define EXIT(_fs...)  LOG_EXIT(TE_LGR_USER, _fs)
 /*@}*/
 
 

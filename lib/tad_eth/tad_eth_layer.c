@@ -33,7 +33,7 @@
 
 #include <string.h>
 
-#define LGR_USER   "TAD Ethernet"
+#define TE_LGR_USER     "TAD Ethernet"
 #include "logger_ta.h"
 
 #include "tad_eth_impl.h"

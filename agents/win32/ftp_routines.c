@@ -48,7 +48,7 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 
-#define LGR_USER         "FTP"
+#define TE_LGR_USER      "FTP"
 #include "logger_ta.h"
 
 #define FTP_TEST_LOGIN_MAX      32

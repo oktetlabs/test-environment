@@ -28,7 +28,7 @@
  * $Id$
  */
 
-#define LGR_USER    "Iterations"
+#define TE_LGR_USER     "Iterations"
 
 #if HAVE_CONFIG_H
 #include "config.h"

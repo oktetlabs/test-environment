@@ -57,7 +57,7 @@
 #include "tarpc.h"
 #include "linux_rpc.h"
 
-#define LGR_USER    "RCF RPC"
+#define TE_LGR_USER     "RCF RPC"
 #define LINUX_RPC_INSIDE
 
 #include "linux_rpc_log.h"
@@ -214,7 +214,7 @@ gather_log(void *arg)
             WARN("Failed to receive the logging message from RPC server");
             continue;
         }
-        log_message(*(uint16_t *)log_pkt, "", LGR_USER,
+        log_message(*(uint16_t *)log_pkt, "", TE_LGR_USER,
                     "RPC server %s: %s", log_pkt + sizeof(uint16_t), 
                     log_pkt + RPC_LOG_OVERHEAD);
     }

@@ -10,6 +10,8 @@
  * $Id$
  */
 
+#define TE_LGR_USER     "TAPI Buffers"
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -18,10 +20,8 @@
 #include <stdlib.h>
 #endif
 
-#define LGR_USER        "TAPI Buffers"
+#include "te_defs.h"
 #include "logger_api.h"
-
-#include "tapi_test.h"
 
 
 /* See description in tapi_bufs.h */

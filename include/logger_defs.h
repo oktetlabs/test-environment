@@ -59,26 +59,26 @@ extern const char *te_lgr_entity;
 /*
  * Default value should be overriden by user in user' module before 
  * inclusion of logger_api.h or like this:
- *     #undef   LGR_ENTITY
- *     #define  LGR_ENTITY <"SOMEENTITY">
+ *     #undef   TE_LGR_ENTITY
+ *     #define  TE_LGR_ENTITY <"SOMEENTITY">
  *
  * @attention It's highly not recommended to use/define it.
  *            Use DEFINE_LGR_ENTITY().
  */
-#ifndef LGR_ENTITY
+#ifndef TE_LGR_ENTITY
 /** Default entity name */
-#define LGR_ENTITY  te_lgr_entity
+#define TE_LGR_ENTITY  te_lgr_entity
 #endif
 
 /*
  * Default value should be overriden by user in user' module before 
  * inclusion of logger_api.h or like this:
- *     #undef   LGR_USER
- *     #define  LGR_USER <"SOMEUSER">
+ *     #undef   TE_LGR_USER
+ *     #define  TE_LGR_USER <"SOMEUSER">
  */
-#ifndef LGR_USER
+#ifndef TE_LGR_USER
 /** Default entity name */
-#define LGR_USER    "Self"
+#define TE_LGR_USER     "Self"
 #endif
 
 

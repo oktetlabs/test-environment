@@ -54,7 +54,7 @@
 #include "tapi_stp.h"
 #include "tapi_eth.h"
 
-#define LGR_USER         "TAPI STP"
+#define TE_LGR_USER     "TAPI STP"
 #include "logger_api.h"
 
 

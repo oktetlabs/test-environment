@@ -58,23 +58,23 @@
     
 /**< Logging abnormal/unexpected situations */
 #define LOGF_ERROR(_us, _fs...)  LGRF_MESSAGE(ERROR_LVL, _us, _fs)
-#define F_ERROR(_fs...)          LOGF_ERROR(LGR_USER, _fs)
+#define F_ERROR(_fs...)          LOGF_ERROR(TE_LGR_USER, _fs)
 
 /**< Logging situations same failed initialization of the optional feature */
 #define LOGF_WARN(_us, _fs...)  LGRF_MESSAGE(WARNING_LVL, _us, _fs)
-#define F_WARN(_fs...)          LOGF_WARN(LGR_USER, _fs)
+#define F_WARN(_fs...)          LOGF_WARN(TE_LGR_USER, _fs)
   
 /**< Logging very important event in TE and tests */ 
 #define LOGF_RING(_us, _fs...)  LGRF_MESSAGE(RING_LVL, _us, _fs)
-#define F_RING(_fs...)          LOGF_RING(LGR_USER, _fs)
+#define F_RING(_fs...)          LOGF_RING(TE_LGR_USER, _fs)
 
 /**< Logging important event for debugging of the test */
 #define LOGF_INFO(_us, _fs...)  LGRF_MESSAGE(INFORMATION_LVL, _us, _fs)
-#define F_INFO(_fs...)          LOGF_INFO(LGR_USER, _fs)
+#define F_INFO(_fs...)          LOGF_INFO(TE_LGR_USER, _fs)
    
 /**< Logging additional events for detalization of processing */
 #define LOGF_VERB(_us, _fs...)  LGRF_MESSAGE(VERBOSE_LVL, _us, _fs)
-#define F_VERB(_fs...)          LOGF_VERB(LGR_USER, _fs)
+#define F_VERB(_fs...)          LOGF_VERB(TE_LGR_USER, _fs)
 
 
     
@@ -102,7 +102,7 @@
         }                                                               \
     } while (0)
     
-#define F_ENTRY(_fs...)  LOGF_ENTRY(LGR_USER, _fs)    
+#define F_ENTRY(_fs...)  LOGF_ENTRY(TE_LGR_USER, _fs)    
     
 #define LOGF_SUPEXIT(_us, _fs, _args...) \
     do {                                                        \
@@ -129,7 +129,7 @@
     } while (0)
 
                 
-#define F_EXIT(_fs...)  LOGF_EXIT(LGR_USER, _fs)     
+#define F_EXIT(_fs...)  LOGF_EXIT(TE_LGR_USER, _fs)     
    
 
 #ifdef _cplusplus

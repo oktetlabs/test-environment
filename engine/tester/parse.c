@@ -28,7 +28,7 @@
  * $Id$
  */
 
-#define LGR_USER    "Parser"
+#define TE_LGR_USER     "Parser"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"

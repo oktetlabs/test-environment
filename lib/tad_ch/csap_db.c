@@ -36,7 +36,7 @@
 
 #include "tad.h"
 #include "te_errno.h"
-#define LGR_USER        "TAD CH"
+#define TE_LGR_USER     "TAD CH"
 #include "logger_ta.h"
 
 #ifndef INSQUE

@@ -41,7 +41,7 @@
 
 #include "tapi_sockaddr.h"
 
-#define LGR_USER         "Configuration TAPI"
+#define TE_LGR_USER      "Configuration TAPI"
 #include "logger_api.h"
 
 /* See the description in tapi_sockaddr.h */

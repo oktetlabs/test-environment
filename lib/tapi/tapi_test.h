@@ -32,12 +32,11 @@
 extern "C" {
 #endif
 
-/* 
- * New tests must define TEST_NAME to be used as 'te_lgr_entity',
- * old tests define LGR_ENTITY.
- */
-#ifndef TEST_NAME
-#define TEST_NAME   LGR_ENTITY
+#ifndef TE_LGR_USER
+/* Tests must define TE_TEST_NAME to be used as 'te_lgr_entity'. */
+#ifndef TE_TEST_NAME
+#error TE_TEST_NAME must be defined before include of tapi_test.h
+#endif
 #endif
 
 /* 
@@ -78,7 +77,7 @@ extern "C" {
     argv++;                                                         \
                                                                     \
     /* Initialize te_lgr_entity variable */                         \
-    te_lgr_entity = TEST_NAME;                                      \
+    te_lgr_entity = TE_TEST_NAME;                                   \
     /*                                                              \
      * Install SIGINT signal handler to exit() with failure status, \
      * if test is terminated by user by Ctrl-C.                     \

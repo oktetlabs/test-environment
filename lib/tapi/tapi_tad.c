@@ -52,7 +52,7 @@
 
 #define SEC_USEC_SEPARATOR  '.'
 
-#define LGR_USER    "TAPI TAD"
+#define TE_LGR_USER     "TAPI TAD"
 #include "logger_api.h"
 
 /**

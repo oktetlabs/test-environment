@@ -52,7 +52,8 @@
 #include "rcf_ch_api.h"
 #include "rcf_pch.h"
 
-#define LGR_USER         "Main"
+#define TE_LGR_USER      "Main"
+
 
 char *ta_name;
 

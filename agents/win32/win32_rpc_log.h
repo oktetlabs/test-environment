@@ -75,8 +75,8 @@
     } while (0)
 
 #ifndef WIN32_RPC_INSIDE
-#undef  LGR_USER
-#undef  LGR_MESSAGE
+#undef TE_LGR_USER
+#undef LGR_MESSAGE
 #define LGR_MESSAGE(_lvl, _lgruser, _fs...) RPC_LGR_MESSAGE(_lvl, _fs) 
 #endif
 

@@ -50,7 +50,7 @@
 
 #include "tad_file_impl.h"
 
-#define LGR_USER   "TAD File"
+#define TE_LGR_USER     "TAD File"
 #include "logger_ta.h"
 
 

@@ -29,8 +29,7 @@
  * $Id$
  */
 
-#define LOG_LEVEL   (ERROR_LVL | WARNING_LVL | RING_LVL | INFORMATION_LVL)
-#define LGR_USER    "Configuration TAPI"
+#define TE_LGR_USER     "Configuration TAPI"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -439,7 +438,7 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
     gw_sockaddr.ss_family = addr_family;
     sockaddr_set_netaddr(SA(&gw_sockaddr), gw_addr);
 
-    INFO("%s route on TA %s: %s|%d -> %s",
+    RING("%s route on TA %s: %s|%d -> %s",
          (op == OP_ADD) ? "Adding" : ((op == OP_DEL) ? "Deleting" : "?op?"),
          ta, dst_addr_str, prefix, gw_addr_str);
 

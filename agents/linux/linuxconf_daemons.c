@@ -59,7 +59,7 @@
 #include "rcf_ch_api.h"
 #include "rcf_pch.h"
 
-#define LGR_USER         "Daemons"
+#define TE_LGR_USER      "Daemons"
 #include "logger_ta.h"
 
 #define MAC_ADDR_LEN        6

@@ -53,7 +53,7 @@
 #include "ndn_eth.h"
 #include "tapi_eth.h"
 
-#define LGR_USER         "TAPI Ethernet"
+#define TE_LGR_USER     "TAPI Ethernet"
 #include "logger_api.h"
 
 

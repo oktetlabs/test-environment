@@ -28,7 +28,7 @@
  * $Id$
  */
 
-#define LGR_USER    "Linux Conf"
+#define TE_LGR_USER     "Linux Conf"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"

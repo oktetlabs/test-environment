@@ -49,7 +49,7 @@
 
 #include "tad.h"
 
-#define LGR_USER        "TAD Bridge"
+#define TE_LGR_USER     "TAD Bridge"
 #include "logger_ta.h"
 
 #ifdef __cplusplus

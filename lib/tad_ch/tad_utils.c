@@ -40,7 +40,7 @@
 /* for ntohs, etc */
 #include <netinet/in.h> 
 
-#define LGR_USER        "TAD CH"
+#define TE_LGR_USER     "TAD CH"
 #include "logger_ta.h"
 
 #include "tad.h" 

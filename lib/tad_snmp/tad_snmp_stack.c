@@ -31,7 +31,7 @@
 #include "config.h"
 #endif
 
-#define LGR_USER         "TAD SNMP"
+#define TE_LGR_USER     "TAD SNMP"
 #include "logger_ta.h"
 
 #include <stdio.h>

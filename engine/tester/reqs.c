@@ -28,7 +28,7 @@
  * $Id$
  */
 
-#define LGR_USER    "Requirements"
+#define TE_LGR_USER     "Requirements"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"

@@ -44,7 +44,7 @@
 
 #include "poe_lib.h"
 
-#define LGR_USER         "Main"
+#define TE_LGR_USER      "Main"
 #include "logger_ta.h"
 
 extern void *rcf_ch_symbol_addr_auto(const char *name, te_bool is_func);

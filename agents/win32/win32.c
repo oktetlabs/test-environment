@@ -61,7 +61,7 @@
 #include "win32_rpc.h"
 #endif    
 
-#define LGR_USER         "Main"
+#define TE_LGR_USER      "Main"
 #include "logger_ta.h"
 
 

@@ -57,7 +57,7 @@
 
 #include "poe_lib.h"
 
-#define LGR_USER         "Configurator"
+#define TE_LGR_USER      "Configurator"
 #include "logger_ta.h"
 
 #define VLAN_DEFAULT    1

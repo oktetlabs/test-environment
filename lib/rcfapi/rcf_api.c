@@ -67,7 +67,7 @@
 #include "te_proto.h"
 #include "ipc_client.h"
 
-#define LGR_USER    "RCF API"
+#define TE_LGR_USER     "RCF API"
 #include "logger_api.h"
 
 

@@ -50,7 +50,7 @@
 #endif
 
 #if 1 /* HAVE_LOGGER_API_H */
-#define LGR_USER    "StdOutErr"
+#define TE_LGR_USER     "StdOutErr"
 #include "logger_api.h"
 DEFINE_LGR_ENTITY("Builder");
 #else

@@ -26,7 +26,7 @@
  * $Id$
  */
 
-#define TEST_NAME "snmp_gets"
+#define TE_TEST_NAME    "snmp_gets"
 
 #include "config.h"
 

@@ -24,7 +24,7 @@
 
 #include "te_defs.h"
 
-#define LGR_USER        "TAPI Params"
+#define TE_LGR_USER     "TAPI Params"
 #include "logger_api.h"
 
 #include "tapi_test.h"

@@ -31,7 +31,7 @@
 #include <stdlib.h>
 #include "tad_dhcp_impl.h"
 
-#define LGR_USER         "TAPI DHCP"
+#define TE_LGR_USER     "TAPI DHCP"
 #include "logger_api.h"
 
 /**

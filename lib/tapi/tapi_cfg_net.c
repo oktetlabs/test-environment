@@ -51,7 +51,7 @@
 #include "tapi_cfg.h"
 #include "tapi_cfg_net.h"
 
-#define LGR_USER         "Configuration TAPI"
+#define TE_LGR_USER      "Configuration TAPI"
 #include "logger_api.h"
 
 

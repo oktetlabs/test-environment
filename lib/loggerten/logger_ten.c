@@ -68,7 +68,7 @@
 #include "ipc_client.h"
 #include "logger_ten.h"
 
-#define LGR_USER    "LOGGER TEN"
+#define TE_LGR_USER     "LOGGER TEN"
 #include "logger_api.h"
 
 

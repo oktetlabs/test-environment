@@ -28,7 +28,7 @@
  * $Id$
  */
 
-#define LGR_USER    "Run Path"
+#define TE_LGR_USER     "Run Path"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
