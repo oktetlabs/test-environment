@@ -1,3 +1,4 @@
---conf-builder=builder.conf.ls
+--conf-builder=builder.conf.tcpr
 --conf-tester=tester.tcpr
---tester-req=IPSTACK
+--conf-rcf=rcf.conf.david
+--tester-run=selftad/ipstack
