@@ -20,9 +20,10 @@ CFLAGS=${CFLAGS}" "${TE_CFLAGS}
 AC_SUBST([TE_CFLAGS])
 AC_ARG_VAR([TE_CFLAGS])
 
-AC_CONFIG_HEADERS([te_config.h])
-AH_TOP([#ifndef __TE_CONFIG_H__
-#define __TE_CONFIG_H__
+AC_CONFIG_HEADERS([te_config_internal.h])
+AH_TOP([#ifndef __TE_CONFIG_INTERNAL_H__
+#error te_config_internal.h cannot be included directly
+#else
 ])
 AH_BOTTOM([
 #endif])
@@ -100,6 +101,3 @@ AC_C_INLINE
 AC_CONFIG_FILES([Makefile])
 
 AC_OUTPUT
-
-cat te_config.h | grep -v PACKAGE | grep -v VERSION > te_config.tmp
-mv te_config.tmp te_config.h

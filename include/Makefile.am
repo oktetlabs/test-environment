@@ -31,9 +31,9 @@ te_headers = te_defs.h te_errno.h te_proto.h te_stdint.h \
              comm_agent.h rcf_methods.h rcf_common.h tad_common.h \
              rcf_rpc_defs.h tapi_rpcsock_defs.h \
              te_raw_log.h logger_api.h logger_defs.h logger_int.h \
-             rcf_internal.h ta_rpc_log.h
+             rcf_internal.h ta_rpc_log.h te_config.h
 
-include_HEADERS = te_config.h $(te_headers)
+include_HEADERS = te_config_internal.h $(te_headers)
 
 EXTRA_DIST=tarpc.x.m4 rpc_unsupported.m4
 
@@ -45,4 +45,5 @@ install-data-hook:
 	for i in $(te_headers) ; do \
 	    touch -c -r $(srcdir)/$$i $(DESTDIR)/$(prefix)/include/$$i ; \
 	done
-	touch -c -r $(srcdir)/configure.ac $(DESTDIR)/$(prefix)/include/te_config.h
+	touch -c -r $(srcdir)/configure.ac \
+                    $(DESTDIR)/$(prefix)/include/te_config_internal.h
