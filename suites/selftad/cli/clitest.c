@@ -88,7 +88,7 @@ main(int argc, char *argv[])
             break;
 
         strcpy(path, te_suites);
-        strcat(path, "/selftest/cli_nds/");
+        strcat(path, "/selftad/cli/");
         path_prefix = strlen(path);
         strcpy(path + path_prefix, "cli-csap.asn");
         VERB("csap full path: %s\n", path);

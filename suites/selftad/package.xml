@@ -14,13 +14,13 @@
             <package name="eth"/>
         </run>
         <run>
-            <package name="cli"/>
-        </run>
-        <run>
             <package name="snmp"/>
         </run>
         <run>
             <package name="ipstack"/>
+        </run>
+        <run>
+            <package name="cli"/>
         </run>
     </session>
 

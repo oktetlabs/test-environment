@@ -20,9 +20,5 @@ LDADD = -lndn -lasn -ltapi -lrcfapi -lconfapi -lconf_oid -lipc -lpthread -llogge
  
 #clitest_DEPENDENCIES = ${TE_INSTALL}/i686-pc-linux-gnu/lib/librcfapi.a
 
-#NDS_DIR=${TE_BASE}/storage/nds/self
-
-#clitestdir=${prefix}/selftest/cli_nds
-
-#clitest_DATA=${NDS_DIR}/cli/cli-filter.asn \
-#	     ${NDS_DIR}/cli/cli-csap.asn 
+tetest_DATA=${srcdir}/cli-filter.asn \
+	    ${srcdir}/cli-csap.asn 
