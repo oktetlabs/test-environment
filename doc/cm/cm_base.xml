@@ -110,6 +110,18 @@
          Limit: 1 -->
     <object oid="/agent/dnsserver" access="read_write" type="integer"/>
 
+    <!-- DNS server forwarder
+         Name: empty
+         Value: forwader's address
+         Limit: 1 -->
+    <object oid="/agent/dnsserver/forwarder" access="read_write" type="address"/>
+
+    <!-- DNS server recursive queries
+         Name: empty
+         Value: 0 (disabled) or 1 (enabled)
+         Limit: 1 -->
+    <object oid="/agent/dnsserver/recursive" access="read_write" type="integer"/>
+
     <!-- TFTP server enabling/disabling.
          Name:  empty
          Value: 0 (disabled) or 1 (enabled)
