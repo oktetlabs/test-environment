@@ -68,11 +68,13 @@ cat >> $RESULT <<\EOF
 EOF
 
 awk --posix '
-/^[[:xdigit:]]{8} B|C|D|G|S/ { if ($3 == "") next ; printf "extern int %s;\n", $3 ; next ;}
-/^[[:xdigit:]]{8} T/ { if ($3 == "") next ; printf "extern int %s();\n", $3 ; next ;}
-/^[[:xdigit:]]{16} B|C|D|G|S/ { if ($3 == "") next ; printf "extern int %s;\n", $3 ; next ;}
-/^[[:xdigit:]]{16} T/ { if ($3 == "") next ; printf "extern int %s();\n", $3 ; next ;}
-' te_bs_symtbl.tmp >> $RESULT
+{                                               \
+    if ($3 == "") next ;                        \
+    if ($2 != "T")                              \
+        printf "extern int %s;\n", $3 ;         \
+    else                                        \
+        printf "extern int %s();\n", $3 ;       \
+} ' te_bs_symtbl.tmp >> $RESULT
 
 
 cat >> $RESULT <<\EOF
@@ -85,11 +87,13 @@ static struct {
 EOF
 
 awk --posix '
-/^[[:xdigit:]]{8} C|D|B/ { if ($3 == "") next ; printf "    { \"%s\", 0, &%s },\n", $3, $3 ; next ;}
-/^[[:xdigit:]]{8} T/ { if ($3 == "") next ; printf "    { \"%s\", 1, %s },\n", $3, $3 ; next ;}
-/^[[:xdigit:]]{16} C|D|B/ { if ($3 == "") next ; printf "    { \"%s\", 0, &%s },\n", $3, $3 ; next ;}
-/^[[:xdigit:]]{16} T/ { if ($3 == "") next ; printf "    { \"%s\", 1, %s },\n", $3, $3 ; next ;}
-' te_bs_symtbl.tmp >> $RESULT
+{                                                       \
+    if ($3 == "") next ;                                \
+    if ($2 != "T")                                      \
+        printf "    { \"%s\", 0, &%s },\n", $3, $3 ;    \
+    else                                                \
+        printf "    { \"%s\", 1, %s },\n", $3, $3 ;     \
+} ' te_bs_symtbl.tmp >> $RESULT
 
 cat >> $RESULT <<\EOF
     { "", 0, (void *)0 }
