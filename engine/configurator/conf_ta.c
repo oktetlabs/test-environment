@@ -49,10 +49,10 @@ ta_list_init()
 {
     char *ta;
     int   rc;
-
+    
     if ((cfg_get_buf = (char *)malloc(cfg_get_buf_len)) == NULL)
         return ENOMEM;
-
+        
     while (TRUE)
     {
         if ((cfg_ta_list = (char *)calloc(ta_list_size, 1)) == NULL)
@@ -91,7 +91,7 @@ cfg_ta_add_agent_instances()
     char *ta;
     int   rc;
     int   i = 1;
-
+    
     if (cfg_ta_list == NULL && (rc = ta_list_init()) != 0)
         return rc;
 
@@ -237,6 +237,9 @@ remove_excessive(cfg_instance *inst, char *list)
         next = tmp->brother;
         remove_excessive(tmp, list);
     }
+    
+    if (strcmp(inst->obj->subid, "agent") == 0)
+        return;
 
     for (s = strstr(list, inst->oid); s != NULL; s = strstr(s + 1, inst->oid))
     {
@@ -279,6 +282,7 @@ sync_ta_subtree(char *ta, char *oid)
     }
 
     /* Take all instances from the TA */
+    cfg_get_buf[0] = 0;
     while (TRUE)
     {
         rc = rcf_ta_cfg_get(ta, 0, "*:*", cfg_get_buf, cfg_get_buf_len);
