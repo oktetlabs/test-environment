@@ -49,7 +49,8 @@ register_objects(xmlNodePtr *node)
         xmlChar   *attr = NULL;
         int        len;
         
-        if (xmlStrcmp(cur->name , (const xmlChar *)"text") == 0)
+        if ((xmlStrcmp(cur->name , (const xmlChar *)"comment") == 0) ||
+            (xmlStrcmp(cur->name , (const xmlChar *)"text") == 0))
             continue;
             
         if (xmlStrcmp(cur->name , (const xmlChar *)"object") != 0)
@@ -193,7 +194,8 @@ parse_instances(xmlNodePtr node, cfg_instance **list)
         xmlChar      *oid   = NULL;
         xmlChar      *val_s = NULL;
 
-        if (xmlStrcmp(cur->name , (const xmlChar *)"text") == 0)
+        if ((xmlStrcmp(cur->name , (const xmlChar *)"comment") == 0) ||
+            (xmlStrcmp(cur->name , (const xmlChar *)"text") == 0))
             continue;
         
         if (xmlStrcmp(cur->name , (const xmlChar *)"instance") != 0)

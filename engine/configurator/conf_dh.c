@@ -59,6 +59,149 @@ typedef struct cfg_dh_entry {
 static cfg_dh_entry *first = NULL;
 static cfg_dh_entry *last = NULL;
 
+
+/**
+ * Skip 'comment' nodes.
+ *
+ * @param node      XML node
+ *
+ * @return Current, one of next or NULL.
+ */
+static xmlNodePtr
+xmlNodeSkipExtra(xmlNodePtr node)
+{
+    while ((node != NULL) &&
+           ((xmlStrcmp(node->name, (const xmlChar *)("comment")) == 0) ||
+            (xmlStrcmp(node->name, (const xmlChar *)("text")) == 0)))
+    {
+        node = node->next;
+    }
+    return node;
+}
+
+/**
+ * Go to the next XML node, skip 'comment' nodes.
+ *
+ * @param node      XML node
+ *
+ * @return The next XML node.
+ */
+static xmlNodePtr
+xmlNodeChildren(xmlNodePtr node)
+{
+    assert(node != NULL);
+    return xmlNodeSkipExtra(node->children);
+}
+
+/**
+ * Go to the next XML node, skip 'comment' nodes.
+ *
+ * @param node      XML node
+ *
+ * @return The next XML node.
+ */
+static xmlNodePtr
+xmlNodeNext(xmlNodePtr node)
+{
+    assert(node != NULL);
+    return xmlNodeSkipExtra(node->next);
+}
+
+
+#define RETERR(_rc, _str...)    \
+    do {                        \
+        int _err = _rc;         \
+        ERROR(_str);            \
+        if (oid != NULL)        \
+            xmlFree(oid);       \
+        if (val_s != NULL)      \
+            xmlFree(val_s);     \
+        if (attr != NULL)       \
+            xmlFree(attr);      \
+        if (msg != NULL)        \
+            free(msg);          \
+        return _err;            \
+    } while (0)
+
+/**
+ * Process 'add' command.
+ *
+ * @param node      XML node with add command  children
+ *
+ * @return Status code.
+ */
+static int
+cfg_dh_process_add(xmlNodePtr node)
+{
+    int          rc;
+    size_t       len;
+    cfg_add_msg *msg = NULL;
+    cfg_inst_val val;
+    cfg_object  *obj;
+    xmlChar     *oid = NULL;
+    xmlChar     *val_s = NULL;
+    xmlChar     *attr = NULL;
+    
+    while (node != NULL &&
+           xmlStrcmp(node->name , (const xmlChar *)"instance") == 0)
+    {
+        if ((oid = xmlGetProp(node, (const xmlChar *)"oid")) == NULL)
+            RETERR(EINVAL, "Incorrect add command format");
+
+        if ((obj = cfg_get_object(oid)) == NULL)
+            RETERR(EINVAL, "Cannot find object for instance %s", oid);
+        
+        len = sizeof(cfg_add_msg) + CFG_MAX_INST_VALUE + 
+              strlen(oid) + 1;
+        if ((msg = (cfg_add_msg *)calloc(1, len)) == NULL)
+            RETERR(ENOMEM, "Cannot allocate memory");
+        
+        msg->type = CFG_ADD;
+        msg->len = sizeof(cfg_add_msg);
+        msg->val_type = obj->type;
+        msg->rc = 0;
+        
+        val_s = xmlGetProp(node, (const xmlChar *)"value");
+        if (val_s != NULL && strlen(val_s) >= CFG_MAX_INST_VALUE)
+            RETERR(ENOMEM, "Too long value");
+            
+        if (obj->type != CVT_NONE)
+        {
+            if (val_s == NULL)
+                RETERR(ENOENT, "Value is necessary for %s", oid);
+
+            if ((rc = cfg_types[obj->type].str2val(val_s, &val)) != 0)
+                RETERR(rc, "Value conversion error for %s", oid);
+                
+            cfg_types[obj->type].put_to_msg(val, (cfg_msg *)msg);
+            cfg_types[obj->type].free(val);
+            xmlFree(val_s);
+            val_s = NULL;
+        }
+        else if (val_s != NULL)
+            RETERR(EINVAL, "Value is prohibited for %s", oid);
+        
+        msg->oid_offset = msg->len;
+        msg->len += strlen(oid) + 1;
+        strcpy((char *)msg + msg->oid_offset, oid);
+        cfg_process_msg((cfg_msg **)&msg, TRUE);
+        if (msg->rc != 0)
+            RETERR(msg->rc, "Failed(%d) to execute the add command "
+                            "for instance %s", msg->rc, oid);
+
+        free(msg);
+        msg = NULL;
+        xmlFree(oid);
+        oid = NULL;
+        
+        node = xmlNodeNext(node);
+    }
+    if (node != NULL)
+        RETERR(EINVAL, "Incorrect add command format");
+
+    return 0;
+}
+
 /**
  * Process "history" configuration file - execute all commands
  * and add them to dynamic history. 
@@ -78,32 +221,13 @@ cfg_dh_process_file(xmlNodePtr node)
     if (node == NULL)
         return 0;
 
-#define RETERR(_rc, _str...)    \
-    do {                        \
-        int _err = _rc;         \
-        ERROR(_str);            \
-        if (oid != NULL)        \
-            xmlFree(oid);       \
-        if (val_s != NULL)      \
-            xmlFree(val_s);     \
-        if (attr != NULL)       \
-            xmlFree(attr);      \
-        if (msg != NULL)        \
-            free(msg);          \
-        return _err;            \
-    } while (0)
-
-
-    for (cmd = node->xmlChildrenNode; cmd != NULL; cmd = cmd->next)
+    for (cmd = xmlNodeChildren(node); cmd != NULL; cmd = xmlNodeNext(cmd))
     {
-        xmlNodePtr tmp = cmd->xmlChildrenNode;
+        xmlNodePtr tmp = xmlNodeChildren(cmd);
         xmlChar   *oid   = NULL;
         xmlChar   *val_s = NULL;
         xmlChar   *attr = NULL;
         
-        if (xmlStrcmp(cmd->name , (const xmlChar *)"text") == 0)
-            continue;
-    
         if (xmlStrcmp(cmd->name , (const xmlChar *)"include") == 0)
             continue;
 
@@ -125,8 +249,8 @@ cfg_dh_process_file(xmlNodePtr node)
             if ((attr = xmlGetProp(cmd, (const xmlChar *)"ta")) == NULL)
                 RETERR(EINVAL, "Incorrect reboot command format");
 
-            if ((msg = (cfg_reboot_msg *)malloc(sizeof(*msg) + 
-                                                strlen(attr) + 1)) == NULL)
+            if ((msg = (cfg_reboot_msg *)calloc(1, sizeof(*msg) + 
+                                                   strlen(attr) + 1)) == NULL)
                 RETERR(ENOMEM, "Cannot allocate memory");
             
             msg->type = CFG_REBOOT;
@@ -153,115 +277,77 @@ cfg_dh_process_file(xmlNodePtr node)
             return EINVAL;
         }
         
-        while (tmp != NULL && strcmp(tmp->name, (const xmlChar *)"text") == 0)
-            tmp = tmp->next;
-        
-        if (tmp == NULL || 
-            (oid = xmlGetProp(tmp, (const xmlChar *)"oid")) == NULL)
-        {
-            ERROR("Incorrect %s command format", cmd->name);
-            return EINVAL;
-        }
-        
         if (xmlStrcmp(cmd->name , (const xmlChar *)"register") == 0)
         {
             cfg_register_msg *msg = NULL;
-            
-            if (xmlStrcmp(tmp->name , (const xmlChar *)"object") != 0)
-                RETERR(EINVAL, "Incorrect register command format");
-            
-            len = sizeof(cfg_msg) + sizeof(cfg_obj_descr) + strlen(oid) + 1;
-            if ((msg = (cfg_register_msg *)malloc(len)) == NULL)
-                RETERR(ENOMEM, "Cannot allocate memory");
-            
-            msg->type = CFG_REGISTER;
-            msg->len = len;
-            msg->rc = 0;
-            msg->descr.access = CFG_READ_CREATE;
-            msg->descr.type = CVT_NONE;
-            strcpy(msg->oid, oid);
-            
-            if ((attr = xmlGetProp(tmp, (const xmlChar *)"type")) != NULL)
+
+            while (tmp != NULL &&
+                   xmlStrcmp(tmp->name , (const xmlChar *)"object") == 0)
             {
-                if (strcmp(attr, "integer") == 0)
-                    msg->descr.type = CVT_INTEGER;
-                else if (strcmp(attr, "address") == 0)
-                    msg->descr.type = CVT_ADDRESS;
-                else if (strcmp(attr, "string") == 0)
-                    msg->descr.type = CVT_STRING;
-                else if (strcmp(attr, "none") != 0)
-                    RETERR(EINVAL, "Unsupported object type %s", attr);
-                xmlFree(attr);
-            }
+                if ((oid = xmlGetProp(tmp, (const xmlChar *)"oid")) == NULL)
+                    RETERR(EINVAL, "Incorrect %s command format", cmd->name);
 
-            if ((attr = xmlGetProp(tmp, (const xmlChar *)"access")) != NULL)
-            {
-                if (strcmp(attr, "read_write") == 0)
-                    msg->descr.access = CFG_READ_WRITE;
-                else if (strcmp(attr, "read_only") == 0)
-                    msg->descr.access = CFG_READ_ONLY;
-                else if (strcmp(attr, "read_create") != 0)
-                    RETERR(EINVAL, 
-                           "Wrong value %s of \"access\" attribute", attr);
-                xmlFree(attr);
-            }
-
-            cfg_process_msg((cfg_msg **)&msg, TRUE);
-            if (msg->rc != 0)
-                RETERR(msg->rc, "Failed to execute register command "
-                                "for object %s", oid);
-
-            free(msg);
-        } else if (xmlStrcmp(cmd->name , (const xmlChar *)"add") == 0)
-        {
-            cfg_add_msg *msg = NULL;
-            cfg_inst_val val;
-            cfg_object  *obj;
-            
-            if (xmlStrcmp(tmp->name , (const xmlChar *)"instance") != 0)
-                RETERR(EINVAL, "Incorrect add command format");
-            
-            if ((obj = cfg_get_object(oid)) == NULL)
-                RETERR(EINVAL, "Cannot find object for instance %s", oid);
-            
-            len = sizeof(cfg_add_msg) + CFG_MAX_INST_VALUE + strlen(oid) + 1;
-            if ((msg = (cfg_add_msg *)malloc(len)) == NULL)
-                RETERR(ENOMEM, "Cannot allocate memory");
-            
-            msg->type = CFG_ADD;
-            msg->len = sizeof(cfg_add_msg);
-            msg->val_type = obj->type;
-            msg->rc = 0;
-            
-            val_s = xmlGetProp(tmp, (const xmlChar *)"value");
-            if (val_s != NULL && strlen(val_s) >= CFG_MAX_INST_VALUE)
-                RETERR(ENOMEM, "Too long value");
+                len = sizeof(cfg_msg) + sizeof(cfg_obj_descr) + strlen(oid) + 1;
+                if ((msg = (cfg_register_msg *)calloc(1, len)) == NULL)
+                    RETERR(ENOMEM, "Cannot allocate memory");
                 
-            if (obj->type != CVT_NONE)
-            {
-                if (val_s == NULL)
-                    RETERR(ENOENT, "Value is necessary for %s", oid);
+                msg->type = CFG_REGISTER;
+                msg->len = len;
+                msg->rc = 0;
+                msg->descr.access = CFG_READ_CREATE;
+                msg->descr.type = CVT_NONE;
 
-                if ((rc = cfg_types[obj->type].str2val(val_s, &val)) != 0)
-                    RETERR(rc, "Value conversion error for %s", oid);
-                    
-                cfg_types[obj->type].put_to_msg(val, (cfg_msg *)msg);
-                cfg_types[obj->type].free(val);
-                xmlFree(val_s);
-                val_s = NULL;
+                strcpy(msg->oid, oid);
+                
+                if ((attr = xmlGetProp(tmp, (const xmlChar *)"type")) != NULL)
+                {
+                    if (strcmp(attr, "integer") == 0)
+                        msg->descr.type = CVT_INTEGER;
+                    else if (strcmp(attr, "address") == 0)
+                        msg->descr.type = CVT_ADDRESS;
+                    else if (strcmp(attr, "string") == 0)
+                        msg->descr.type = CVT_STRING;
+                    else if (strcmp(attr, "none") != 0)
+                        RETERR(EINVAL, "Unsupported object type %s", attr);
+                    xmlFree(attr);
+                }
+
+                if ((attr = xmlGetProp(tmp, (const xmlChar *)"access")) != NULL)
+                {
+                    if (strcmp(attr, "read_write") == 0)
+                        msg->descr.access = CFG_READ_WRITE;
+                    else if (strcmp(attr, "read_only") == 0)
+                        msg->descr.access = CFG_READ_ONLY;
+                    else if (strcmp(attr, "read_create") != 0)
+                        RETERR(EINVAL, 
+                               "Wrong value %s of \"access\" attribute", attr);
+                    xmlFree(attr);
+                }
+
+                cfg_process_msg((cfg_msg **)&msg, TRUE);
+                if (msg->rc != 0)
+                    RETERR(msg->rc, "Failed to execute register command "
+                                    "for object %s", oid);
+
+                free(msg);
+                msg = NULL;
+                xmlFree(oid);
+                oid = NULL;
+
+                tmp = xmlNodeNext(tmp);
             }
-            else if (val_s != NULL)
-                RETERR(EINVAL, "Value is prohibited for %s", oid);
-            
-            msg->oid_offset = msg->len;
-            msg->len += strlen(oid) + 1;
-            strcpy((char *)msg + msg->oid_offset, oid);
-            cfg_process_msg((cfg_msg **)&msg, TRUE);
-            if (msg->rc != 0)
-                RETERR(msg->rc, "Failed to execute the add command "
-                                "for instance %s", oid);
-
-            free(msg);
+            if (tmp != NULL)
+                RETERR(EINVAL, "Unexpected node '%s' in register command",
+                       tmp->name);
+        }
+        else if (xmlStrcmp(cmd->name , (const xmlChar *)"add") == 0)
+        {
+            rc = cfg_dh_process_add(tmp);
+            if (rc != 0)
+            {
+                ERROR("Failed to process add command");
+                return rc;
+            }
         } 
         else if (xmlStrcmp(cmd->name , (const xmlChar *)"set") == 0)
         {
@@ -270,77 +356,102 @@ cfg_dh_process_file(xmlNodePtr node)
             cfg_handle   handle;
             cfg_object  *obj;
             
-            if (xmlStrcmp(tmp->name , (const xmlChar *)"instance") != 0)
+            while (tmp != NULL &&
+                   xmlStrcmp(tmp->name , (const xmlChar *)"instance") == 0)
+            {
+                if ((oid = xmlGetProp(tmp, (const xmlChar *)"oid")) == NULL)
+                    RETERR(EINVAL, "Incorrect %s command format", cmd->name);
+
+                if ((rc = cfg_db_find(oid, &handle)) != 0)
+                    RETERR(ENOENT, "Cannot find instance %s", oid);
+                
+                if (!CFG_IS_INST(handle))
+                    RETERR(EINVAL,"OID %s is not instance", oid);
+                
+                len = sizeof(cfg_set_msg) + CFG_MAX_INST_VALUE;
+                if ((msg = (cfg_set_msg *)calloc(1, len)) == NULL)
+                    RETERR(ENOMEM, "Cannot allocate memory");
+                
+                msg->type = CFG_SET;
+                msg->len = sizeof(cfg_set_msg);
+                msg->rc = 0;
+                obj = CFG_GET_INST(handle)->obj;
+                msg->val_type = obj->type;
+                
+                if (obj->type == CVT_NONE)
+                    RETERR(EINVAL, "Cannot perform set for %s", oid);
+
+                if ((val_s = xmlGetProp(tmp, (const xmlChar *)"value")) == NULL)
+                    RETERR(EINVAL, "Value is required for %s", oid);
+                
+                if ((rc = cfg_types[obj->type].str2val(val_s, &val)) != 0)
+                    RETERR(rc, "Value conversion error for %s", oid);
+                
+                cfg_types[obj->type].put_to_msg(val, (cfg_msg *)msg);
+                xmlFree(val_s);
+                cfg_types[obj->type].free(val);
+                cfg_process_msg((cfg_msg **)&msg, TRUE);
+                
+                if (msg->rc != 0)
+                    RETERR(msg->rc, "Failed to execute the set command "
+                                    "for instance %s", oid);
+
+                free(msg);
+                msg = NULL;
+                xmlFree(oid);
+                oid = NULL;
+
+                tmp = xmlNodeNext(tmp);
+            }
+            if (tmp != NULL)
                 RETERR(EINVAL, "Incorrect set command format");
-            
-            if ((rc = cfg_db_find(oid, &handle)) != 0)
-                RETERR(ENOENT, "Cannot find instance %s", oid);
-            
-            if (!CFG_IS_INST(handle))
-                RETERR(EINVAL,"OID %s is not instance", oid);
-            
-            len = sizeof(cfg_set_msg) + CFG_MAX_INST_VALUE;
-            if ((msg = (cfg_set_msg *)malloc(len)) == NULL)
-                RETERR(ENOMEM, "Cannot allocate memory");
-            
-            msg->type = CFG_SET;
-            msg->len = sizeof(cfg_set_msg);
-            msg->rc = 0;
-            obj = CFG_GET_INST(handle)->obj;
-            msg->val_type = obj->type;
-            
-            if (obj->type == CVT_NONE)
-                RETERR(EINVAL, "Cannot perform set for %s", oid);
-
-            if ((val_s = xmlGetProp(tmp, (const xmlChar *)"value")) == NULL)
-                RETERR(EINVAL, "Value is required for %s", oid);
-            
-            if ((rc = cfg_types[obj->type].str2val(val_s, &val)) != 0)
-                RETERR(rc, "Value conversion error for %s", oid);
-            
-            cfg_types[obj->type].put_to_msg(val, (cfg_msg *)msg);
-            xmlFree(val_s);
-            cfg_types[obj->type].free(val);
-            cfg_process_msg((cfg_msg **)&msg, TRUE);
-            
-            if (msg->rc != 0)
-                RETERR(msg->rc, "Failed to execute the set command "
-                                "for instance %s", oid);
-
-            free(msg);
         } 
         else if (xmlStrcmp(cmd->name , (const xmlChar *)"delete") == 0)
         {
             cfg_del_msg *msg = NULL;
-            cfg_handle      handle;
+            cfg_handle   handle;
             
-            if (xmlStrcmp(tmp->name , (const xmlChar *)"ta") != 0)
-                RETERR(EINVAL, "Incorrect delete command format");
-            
-            if ((rc = cfg_db_find(oid, &handle)) != 0)
-                RETERR(rc, "Cannot find instance %s", oid);
-            
-            if (!CFG_IS_INST(handle))
-                RETERR(EINVAL, "OID %s is not instance", oid);
-            
-            if ((msg = (cfg_del_msg *)malloc(sizeof(*msg))) == NULL)
-                RETERR(ENOMEM, "Cannot allocate memory");
-            
-            msg->type = CFG_DEL;
-            msg->len = sizeof(*msg);
-            msg->rc = 0;
-            msg->handle = handle;
-            
-            cfg_process_msg((cfg_msg **)&msg, TRUE);
-            if (msg->rc != 0)
-                RETERR(msg->rc, "Failed to execute the delete command "
-                                "for instance %s", oid);
+            while (tmp != NULL &&
+                   xmlStrcmp(tmp->name , (const xmlChar *)"ta") == 0)
+            {
+                if ((oid = xmlGetProp(tmp, (const xmlChar *)"oid")) == NULL)
+                    RETERR(EINVAL, "Incorrect %s command format", cmd->name);
 
-            free(msg);
+                if ((rc = cfg_db_find(oid, &handle)) != 0)
+                    RETERR(rc, "Cannot find instance %s", oid);
+                
+                if (!CFG_IS_INST(handle))
+                    RETERR(EINVAL, "OID %s is not instance", oid);
+                
+                if ((msg = (cfg_del_msg *)calloc(1, sizeof(*msg))) == NULL)
+                    RETERR(ENOMEM, "Cannot allocate memory");
+                
+                msg->type = CFG_DEL;
+                msg->len = sizeof(*msg);
+                msg->rc = 0;
+                msg->handle = handle;
+                
+                cfg_process_msg((cfg_msg **)&msg, TRUE);
+                if (msg->rc != 0)
+                    RETERR(msg->rc, "Failed to execute the delete command "
+                                    "for instance %s", oid);
+
+                free(msg);
+                msg = NULL;
+                xmlFree(oid);
+                oid = NULL;
+
+                tmp = xmlNodeNext(tmp);
+            }
+            if (tmp != NULL)
+                RETERR(EINVAL, "Incorrect delete command format");
         } 
+        else
+        {
+            assert(FALSE);
+        }
         if (val_s != NULL)
             xmlFree(val_s);
-        xmlFree(oid);
     }
     
     if ((rc = cfg_ta_sync("/:", TRUE)) != 0)
