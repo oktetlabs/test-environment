@@ -424,4 +424,8 @@
          Name: display number -->
     <object oid="/agent/vncserver" access="read_create" type="none"/>
 
+    <!-- VNC server password.
+         Name: empty -->
+    <object oid="/agent/vncpasswd" access="read_only" type="string"/>
+
 </backup>
