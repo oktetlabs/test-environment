@@ -55,17 +55,17 @@
 
     <!-- Configuration of some agent-specific parameters, which can be useful
          from the tests point of view
-	 Name:   empty  -->
+         Name:   empty  -->
     <object oid="/dynamic_conf" access="read_create" type="none"/>
 
     <!-- Specifies a particular Agent
-	 Name:   Agent name whose parameters are specified in sub-tree -->
+         Name:   Agent name whose parameters are specified in sub-tree -->
     <object oid="/dynamic_conf/agent" access="read_create" type="none"/>
     
     <!-- Network interface on the Agent
-         Name:   "eth0"-like -->
+         Name:   "eth0"-like
          Limit:  1  - The model assumes that each agent has exactly 
-	              one interface  -->
+                      one interface  -->
     <object oid="/dynamic_conf/agent/interface" access="read_create" type="none"/>
     
     <!-- Lower bound address in the pool of IPv4 addresses that can be 
