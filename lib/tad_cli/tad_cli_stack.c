@@ -44,10 +44,9 @@
 
 #define EXP_DEBUG
 #undef EXP_DEBUG
-#define TALOGDEBUG
 
 static char cli_programs[][CLI_PROGRAM_NAME_SIZE] = {
-    "millicom",
+    "/tmp/millicom",
     "telnet",
     "ssh" };
 
@@ -131,7 +130,7 @@ int cli_get_asn_integer_value(asn_value * csap_spec,
  *
  * @param spec_data     csap special data structure.
  *
- * @return 0 on success or -1 if failed. 
+ * @return 0 on success, otherwise error code
  */ 
 int cli_session_open(cli_csap_specific_data_p spec_data)
 {
@@ -146,30 +145,33 @@ int cli_session_open(cli_csap_specific_data_p spec_data)
 
     printf("%s()\n", __FUNCTION__);
 
-    spec_data->dbg_file = fopen("logfile.txt", "a+");
+    spec_data->dbg_file = fopen("/tmp/logfile.txt", "a+");
     if (spec_data->dbg_file == NULL)
-    {
-        printf("cannot open debug file");
-        return -EINVAL;
+    { 
+        int loc_errno = errno;
+        printf("cannot open debug file, errno %d\n", loc_errno);
+        return loc_errno;
     }
 
     fprintf(spec_data->dbg_file, "%s()\n", __FUNCTION__);
     fprintf(spec_data->dbg_file, "logfile fileno is %d\n", fileno(spec_data->dbg_file));
     fflush(spec_data->dbg_file);
 
-    dbg = fopen("exp_debug.txt", "a+");
+    dbg = fopen("/tmp/exp_debug.txt", "a+");
     if (dbg == NULL)
     {
-        fprintf(spec_data->dbg_file, "cannot open debug file");
+        int loc_errno = errno;
+        fprintf(spec_data->dbg_file, "cannot open debug file, %d", loc_errno);
         fclose(spec_data->dbg_file);
-        return -EINVAL;
+        return loc_errno;
     }
-    log = fopen("exp_log.txt", "a+");
+    log = fopen("/tmp/exp_log.txt", "a+");
     if (dbg == NULL)
     {
+        int loc_errno = errno;
         fprintf(spec_data->dbg_file, "cannot open log file");
         fclose(spec_data->dbg_file);
-        return -EINVAL;
+        return loc_errno;
     }
 
     fprintf(spec_data->dbg_file, "exp_debugfile fileno is %d\n", fileno(dbg));
@@ -239,7 +241,7 @@ int cli_session_open(cli_csap_specific_data_p spec_data)
     {
         fprintf(spec_data->dbg_file, "exp_spawnl() failed\n");
         fclose(spec_data->dbg_file);
-        return -EINVAL;
+        return EINVAL;
     }
     else {
         fprintf(spec_data->dbg_file, "exp_spawnl() sucessfull, fd=%d\n", spec_data->io);
@@ -250,7 +252,7 @@ int cli_session_open(cli_csap_specific_data_p spec_data)
     {
         fprintf(spec_data->dbg_file, "fdopen(%d) failed\n", spec_data->io);
         fclose(spec_data->dbg_file);
-        return -EINVAL;
+        return EINVAL;
     }
 
     spec_data->session_pid = exp_pid;
@@ -274,6 +276,7 @@ int cli_session_open(cli_csap_specific_data_p spec_data)
 int cli_session_close(cli_csap_specific_data_p spec_data)
 {
     printf("%s()\n", __FUNCTION__);
+    fflush(stdout);
     fprintf(spec_data->dbg_file, "%s()\n", __FUNCTION__);
     fflush(spec_data->dbg_file);
 
@@ -308,6 +311,7 @@ void
 cli_expect_finalize(cli_csap_specific_data_p spec_data)
 {
     printf("%s()\n", __FUNCTION__);
+    fflush(stdout);
 
     /* terminate current CLI session */
     cli_session_close(spec_data);
@@ -326,8 +330,11 @@ cli_expect_wait_for_prompt(cli_csap_specific_data_p spec_data)
     int res;
 
     printf("%s()\n", __FUNCTION__);
+    fflush(stdout);
 
     res = exp_expectv(spec_data->io, spec_data->prompts);
+    printf(" res from expect %d\n", res);
+    fflush(stdout);
 
     switch (res)
     {
@@ -348,12 +355,14 @@ cli_expect_wait_for_prompt(cli_csap_specific_data_p spec_data)
             {
                 /* something wrong with CLI session */
                 printf("something wrong with CLI session\n");
+    fflush(stdout);
                 cli_expect_finalize(spec_data);
             }
             if (write(spec_data->io, "\r", 1) != 1)
             {
                 /* something wrong with CLI session */
                 printf("something wrong with CLI session\n");
+    fflush(stdout);
                 cli_expect_finalize(spec_data);
             }
             break;
@@ -369,6 +378,7 @@ cli_expect_wait_for_prompt(cli_csap_specific_data_p spec_data)
                 cli_expect_finalize(spec_data);
             }
             printf("Write \\r\n");
+    fflush(stdout);
             if (write(spec_data->io, "\r", 1) != 1)
             {
                 /* something wrong with CLI session */
@@ -376,6 +386,7 @@ cli_expect_wait_for_prompt(cli_csap_specific_data_p spec_data)
                 cli_expect_finalize(spec_data);
             }
             printf("Password-prompt processed\n");
+    fflush(stdout);
             break;
 
         case EXP_EOF:
@@ -405,15 +416,19 @@ cli_expect_main(cli_csap_specific_data_p spec_data)
 
     printf("%s()\n", __FUNCTION__);
 
-    if (cli_session_open(spec_data) != 0)
+    if ((rc = cli_session_open(spec_data)) != 0)
     {
+        printf("cli_session_open() returns error %d\n", rc);
+        fflush(stdout);
         cli_expect_finalize(spec_data);
     }
 
     printf("cli_session_open() returns successful\n");
+    fflush(stdout);
     
     /* Tell the CLI CSAP layer that expect session is ready */
     printf("Tell the CLI CSAP layer that expect session is ready\n");
+    fflush(stdout);
     data = '\0';
     if (write(spec_data->sync_c2p[1], pdata, 1) != 1)
     {
@@ -428,12 +443,14 @@ cli_expect_main(cli_csap_specific_data_p spec_data)
 
         /* wait indefinitely */
         printf("wait indefinitely\n");
+    fflush(stdout);
         rc = select(spec_data->sync_p2c[0] + 1, &read_set,
                     NULL, NULL, NULL);
         if (rc == 0)
         {
             /* an error occured on sync pipe or a signal has been delivered */
             printf("an error occured on sync pipe or a signal has been delivered\n");
+    fflush(stdout);
             cli_expect_finalize(spec_data);
         }
     
@@ -474,6 +491,7 @@ cli_expect_main(cli_csap_specific_data_p spec_data)
         } while (data != 0);
 
         printf("\'\n");
+    fflush(stdout);
 
         /* send '\r' to CLI session to finish the command sequence */
         printf("send '\\r' to CLI session to finish the command sequence\n");
@@ -728,6 +746,7 @@ cli_write_read_cb (csap_p csap_descr, int timeout,
     UNUSED(timeout);
 
     printf("In function %s(%d)\n", __FUNCTION__, csap_descr->id);
+    fflush(stdout);
     
     if (csap_descr == NULL)
     {
@@ -754,10 +773,8 @@ cli_write_read_cb (csap_p csap_descr, int timeout,
         }
     }
 
-#ifdef TALOGDEBUG
     printf("Writing %s (%d) bytes to CLI session %d\n",
            w_buf, w_buf_len, spec_data->sync_p2c[1]);
-#endif        
 
     if(spec_data->io < 0)
     {
@@ -796,6 +813,7 @@ cli_write_read_cb (csap_p csap_descr, int timeout,
     
     /* wait forever */
     printf("wait for data from CLI session\n");
+    fflush(stdout);
     do {
         rc = select(spec_data->sync_c2p[0] + 1, &read_set, NULL, NULL, NULL);
     } while ((rc == -1) && (errno == EINTR));
@@ -806,6 +824,8 @@ cli_write_read_cb (csap_p csap_descr, int timeout,
         cli_single_destroy_cb(csap_descr->id, layer);
         return -1;
     }
+    printf ("%s, select return %d\n", __FUNCTION__, rc);
+    fflush(stdout);
 
     do {
         if (read(spec_data->sync_c2p[0], &data, 1) != 1)
@@ -824,6 +844,9 @@ cli_write_read_cb (csap_p csap_descr, int timeout,
     
     if (bytes_read < r_buf_len)
         r_buf[bytes_read] = '\0';
+
+    printf ("%s, read data, return %d\n", __FUNCTION__, bytes_read);
+    fflush(stdout);
     
     return bytes_read;
 }
@@ -855,6 +878,7 @@ cli_single_init_cb (int csap_id, const asn_value * csap_nds, int layer)
                                                     parameters */
     
     printf("%s()\n", __FUNCTION__);
+    VERB("%s() entered\n", __FUNCTION__);
 
     if (csap_nds == NULL)
         return ETEWRONGPTR;
@@ -882,13 +906,13 @@ cli_single_init_cb (int csap_id, const asn_value * csap_nds, int layer)
         goto error;
     }
 
-    printf("  conn-type=%d (using %s)\n", cli_spec_data->conn_type,
+    VERB("  conn-type=%d (using %s)\n", cli_spec_data->conn_type,
            cli_programs[cli_spec_data->conn_type]);
 
     switch (cli_spec_data->conn_type)
     {
         case CLI_CONN_TYPE_SERIAL:
-            printf("  getting device name...\n");
+            VERB("  getting device name...\n");
 
             /* get conn-params.serial.device value (mandatory) */
             if ((rc =
@@ -898,12 +922,12 @@ cli_single_init_cb (int csap_id, const asn_value * csap_nds, int layer)
             {
                 goto error;
             }
-            printf("  device=%s\n", cli_spec_data->device);
+            VERB("  device=%s\n", cli_spec_data->device);
             break;
             
         case CLI_CONN_TYPE_TELNET:
         case CLI_CONN_TYPE_SSH:
-            printf("  getting host name...\n");
+            VERB("  getting host name...\n");
 
             /* get conn-params.telnet.host value (mandatory) */
             if ((rc =
@@ -913,9 +937,9 @@ cli_single_init_cb (int csap_id, const asn_value * csap_nds, int layer)
             {
                 goto error;
             }
-            printf("  host=%s\n", cli_spec_data->host);
+            VERB("  host=%s\n", cli_spec_data->host);
 
-            printf("  getting host port...\n");
+            VERB("  getting host port...\n");
             /* get conn-params.telnet.port value (mandatory) */
 
             tmp_len = sizeof(cli_spec_data->port);
@@ -933,7 +957,7 @@ cli_single_init_cb (int csap_id, const asn_value * csap_nds, int layer)
             {
                 goto error;
             }
-            printf("  port=%d\n", cli_spec_data->port);
+            VERB("  port=%d\n", cli_spec_data->port);
 
             break;
 
@@ -954,7 +978,7 @@ cli_single_init_cb (int csap_id, const asn_value * csap_nds, int layer)
                                  "command-prompt.#plain",
                                  &prompt->pattern)) == 0)
     {
-        printf("  command-prompt=%s\n", prompt->pattern);
+        VERB("  command-prompt=%s\n", prompt->pattern);
         cli_spec_data->prompts_status |= CLI_PROMPT_STATUS_COMMAND;
         prompt->type = exp_glob;
         prompt->value = CLI_COMMAND_PROMPT;
@@ -967,7 +991,7 @@ cli_single_init_cb (int csap_id, const asn_value * csap_nds, int layer)
                                      "command-prompt.#script",
                                      &prompt->pattern)) == 0)
         {
-            printf("  command-prompt=%s\n", prompt->pattern);
+            VERB("  command-prompt=%s\n", prompt->pattern);
             cli_spec_data->prompts_status |= CLI_PROMPT_STATUS_COMMAND;
             prompt->type = exp_regexp;
             prompt->value = CLI_COMMAND_PROMPT;
@@ -985,7 +1009,7 @@ cli_single_init_cb (int csap_id, const asn_value * csap_nds, int layer)
                                  "login-prompt.#plain",
                                  &prompt->pattern)) == 0)
     {
-        printf("  login-prompt=%s\n", prompt->pattern);
+        VERB("  login-prompt=%s\n", prompt->pattern);
         cli_spec_data->prompts_status |= CLI_PROMPT_STATUS_LOGIN;
         prompt->type = exp_glob;
         prompt->value = CLI_LOGIN_PROMPT;
@@ -998,7 +1022,7 @@ cli_single_init_cb (int csap_id, const asn_value * csap_nds, int layer)
                                      "login-prompt.#script",
                                      &prompt->pattern)) == 0)
         {
-            printf("  login-prompt=%s\n", prompt->pattern);
+            VERB("  login-prompt=%s\n", prompt->pattern);
             cli_spec_data->prompts_status |= CLI_PROMPT_STATUS_LOGIN;
             prompt->type = exp_regexp;
             prompt->value = CLI_LOGIN_PROMPT;
@@ -1012,7 +1036,7 @@ cli_single_init_cb (int csap_id, const asn_value * csap_nds, int layer)
                                  "password-prompt.#plain",
                                  &prompt->pattern)) == 0)
     {
-        printf("  password-prompt=%s\n", prompt->pattern);
+        VERB("  password-prompt=%s\n", prompt->pattern);
         cli_spec_data->prompts_status |= CLI_PROMPT_STATUS_PASSWORD;
         prompt->type = exp_glob;
         prompt->value = CLI_PASSWORD_PROMPT;
@@ -1025,7 +1049,7 @@ cli_single_init_cb (int csap_id, const asn_value * csap_nds, int layer)
                                      "password-prompt.#script",
                                      &prompt->pattern)) == 0)
         {
-            printf("  password-prompt=%s\n", prompt->pattern);
+            VERB("  password-prompt=%s\n", prompt->pattern);
             cli_spec_data->prompts_status |= CLI_PROMPT_STATUS_PASSWORD;
             prompt->type = exp_regexp;
             prompt->value = CLI_PASSWORD_PROMPT;
@@ -1048,7 +1072,7 @@ cli_single_init_cb (int csap_id, const asn_value * csap_nds, int layer)
     }
     else
     {
-        printf("  user=%s\n", cli_spec_data->user);
+        VERB("  user=%s\n", cli_spec_data->user);
     }
 
     /* get user value (optional) */
@@ -1064,7 +1088,7 @@ cli_single_init_cb (int csap_id, const asn_value * csap_nds, int layer)
     }
     else
     {
-        printf("  password=%s\n", cli_spec_data->password);
+        VERB("  password=%s\n", cli_spec_data->password);
     }
 
     /* default read timeout */
@@ -1084,10 +1108,14 @@ cli_single_init_cb (int csap_id, const asn_value * csap_nds, int layer)
     if (pipe(cli_spec_data->sync_c2p) == -1)
         goto error;
 
+    INFO("prepare to fork()\n");
     printf("prepare to fork()\n");
+    fflush(stdout);
 
     if ((cli_spec_data->expect_pid = fork()) == -1)
     {
+        rc = errno;
+        ERROR("fork failed, errno %d", rc);
         goto error;
     }
     
@@ -1099,6 +1127,7 @@ cli_single_init_cb (int csap_id, const asn_value * csap_nds, int layer)
 
         printf("child process started, send=%d, recv=%d\n",
                cli_spec_data->sync_c2p[1], cli_spec_data->sync_p2c[0]);
+        fflush(stdout);
 
         cli_expect_main(cli_spec_data);
     }
@@ -1110,8 +1139,12 @@ cli_single_init_cb (int csap_id, const asn_value * csap_nds, int layer)
         
         close(cli_spec_data->sync_p2c[0]);
         close(cli_spec_data->sync_c2p[1]);
+
+        VERB("parent process continues, child_pid=%d, send=%d, recv=%d\n",
+               cli_spec_data->expect_pid, cli_spec_data->sync_p2c[1], cli_spec_data->sync_c2p[0]);
         printf("parent process continues, child_pid=%d, send=%d, recv=%d\n",
                cli_spec_data->expect_pid, cli_spec_data->sync_p2c[1], cli_spec_data->sync_c2p[0]);
+        fflush(stdout);
 
         /* Wait for child initialisation finished */
 
@@ -1125,15 +1158,19 @@ cli_single_init_cb (int csap_id, const asn_value * csap_nds, int layer)
         if (rc == 0)
         {
             printf("select() failed on sync_c2p pipe or a signal has been delivered\n");
+            WARN("select() failed on sync_c2p pipe or a signal has been delivered\n");
             cli_single_destroy_cb(csap_descr->id, layer);
+            rc = ETADLOWER;
             goto error;
         }
 
         printf("read() sync byte from sync_c2p pipe\n");
-        if (read(cli_spec_data->sync_c2p[0], &data, 1) != 1)
+        if ((rc = read(cli_spec_data->sync_c2p[0], &data, 1)) != 1)
         {
             printf("read() failed on sync_c2p pipe\n");
+            WARN("read() failed on sync_c2p pipe, return %d\n", rc);
             cli_single_destroy_cb(csap_descr->id, layer);
+            rc = ETADLOWER;
             goto error;
         }
         
@@ -1145,7 +1182,7 @@ cli_single_init_cb (int csap_id, const asn_value * csap_nds, int layer)
 error:
     free_cli_csap_data(cli_spec_data);
 
-    return rc;
+    return TE_RC(TE_TAD_CSAP, rc);
 }
 
 /**
