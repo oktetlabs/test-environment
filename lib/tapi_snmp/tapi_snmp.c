@@ -58,8 +58,8 @@
 
 
 /* save or not tmp ndn files */
-#define DEBUG 1
-
+/* #define DEBUG 1
+*/
 
 static char log_info_buf[1024 * 24];
 int         log_info_cur_len;
@@ -80,28 +80,6 @@ int         log_info_cur_len;
         log_info_buf[0] = '\0';   \
     } while (0)
 
-static char *tapi_snmp_cur_oid_buf;
-
-#define TAPI_SNMP_OID_BUF_SIZE (1024 * 2)
-static inline char *tapi_snmp_get_next_oid_buf()
-{
-#define TAPI_SNMP_OID_BUF_NUM (4)
-    static int  tapi_snmp_oid_buf_cur = 0;
-    static char tapi_snmp_oid_buf[TAPI_SNMP_OID_BUF_NUM][TAPI_SNMP_OID_BUF_SIZE];
-
-    tapi_snmp_oid_buf_cur++;
-    tapi_snmp_oid_buf_cur %= TAPI_SNMP_OID_BUF_NUM;
-        
-    return tapi_snmp_oid_buf[tapi_snmp_oid_buf_cur];
-}
-
-#define GET_STR_OID(oid_ptr_) \
-    (tapi_snmp_cur_oid_buf = tapi_snmp_get_next_oid_buf(),           \
-     ((oid_ptr_) == NULL) ? "<NULL OID>" :                           \
-       (snprint_objid(tapi_snmp_cur_oid_buf, TAPI_SNMP_OID_BUF_SIZE, \
-                     (oid_ptr_)->id, (oid_ptr_)->length) < 0) ?      \
-        "TAPI_SNMP OID buffer is too short - update it" :            \
-        tapi_snmp_cur_oid_buf)
 
 static int tapi_snmp_get_object_type(const tapi_snmp_oid_t *oid,
                                      enum snmp_obj_type *obj_type);
@@ -109,17 +87,33 @@ static int tapi_snmp_get_object_type(const tapi_snmp_oid_t *oid,
 
 
 const char*
-print_oid (const tapi_snmp_oid_t *oid )
+print_oid(const tapi_snmp_oid_t *oid)
 {
-    static char buf[256];
-    char *p = buf; 
-    unsigned i;
+#define TAPI_SNMP_OID_BUF_SIZE (1024 * 2)
+#define TAPI_SNMP_OID_BUF_NUM (4)
+
+    static char buf[TAPI_SNMP_OID_BUF_NUM][TAPI_SNMP_OID_BUF_SIZE];
+    unsigned    tapi_snmp_oid_buf_cur = 0;
+
+    tapi_snmp_oid_buf_cur++;
+    tapi_snmp_oid_buf_cur %= TAPI_SNMP_OID_BUF_NUM;
 
     if (oid == NULL)
-        strncpy(buf, "<null oid>", sizeof(buf));
-    for(i =0; i < oid->length; i ++)
-        p += sprintf (p, ".%d", (int)oid->id[i]);
-    return buf;
+    {
+        snprintf(buf[tapi_snmp_oid_buf_cur],
+                 TAPI_SNMP_OID_BUF_SIZE, "<null oid>");
+    }
+    else
+    {
+        if (snprint_objid(buf[tapi_snmp_oid_buf_cur], TAPI_SNMP_OID_BUF_SIZE,
+                          oid->id, oid->length) < 0)
+        {
+            snprintf(buf[tapi_snmp_oid_buf_cur],
+                     TAPI_SNMP_OID_BUF_SIZE, "snprint_objid() failed");
+        }
+    }
+
+    return buf[tapi_snmp_oid_buf_cur];
 }
 
 int
@@ -355,8 +349,9 @@ tapi_snmp_packet_to_plain(asn_value *pkt, tapi_snmp_message_t *snmp_message)
 
         rc = asn_read_value_field (var_bind, &(snmp_message->vars[i].name.id),
                                     &len, "name.#plain"); 
+/*
         VERB ("%s; var N %d ,oid %s", __FUNCTION__, i, print_oid(&(snmp_message->vars[i].name)));
-
+*/
         if (rc == 0)
             rc = asn_get_choice(var_bind, "value.#plain", choice_label, CL_MAX);
 
@@ -758,7 +753,7 @@ tapi_snmp_operation(const char *ta, int sid, int csap_id,
 
     TAPI_SNMP_LOG_APPEND("SNMP %s: {\n\t%s (%s): ",
                          ndn_snmp_msg_type_h2str(msg_type),
-                         GET_STR_OID(val_oid),
+                         print_oid(val_oid),
                          snmp_obj_type_h2str(obj_type));
     
     if (msg_type == NDN_SNMP_MSG_SET)
@@ -1472,7 +1467,9 @@ tapi_snmp_getbulk(const char *ta, int sid, int csap_id,
             for (i = 0; i < *num; i++)
             {
                 tapi_snmp_copy_varbind(&varbind[i], &msg.vars[i]);
+/*
                 VERB ("GETBULK, variable: %s", print_oid(&(varbind[i].name)));
+*/
             }
             tapi_snmp_free_message(&msg);
         }
@@ -1811,8 +1808,10 @@ tapi_snmp_get_table(const char *ta, int sid, int csap_id,
             rc = tapi_snmp_getbulk(ta, sid, csap_id, &begin_of_portion, 
                                     &vb_num, vb + got_varbinds, NULL);
 
+/*
             VERB ("table getbulk return %X, asked for %d, got %d vbs for oid %s", 
                     rc, rest_varbinds, vb_num, print_oid(&(begin_of_portion)));
+*/
             if (rc) break; 
 
 	    if (vb_num == 0)
@@ -1832,7 +1831,9 @@ tapi_snmp_get_table(const char *ta, int sid, int csap_id,
                 break;
             }
             begin_of_portion = vb[got_varbinds - 1].name;
-            VERB ("prepare next bulk to oid %s",  print_oid(&begin_of_portion));
+/*
+            VERB("prepare next bulk to oid %s",  print_oid(&begin_of_portion));
+*/
         }
         INFO("table cardinality, bulk got %d varbinds.", 
                     table_cardinality);
@@ -1857,8 +1858,9 @@ tapi_snmp_get_table(const char *ta, int sid, int csap_id,
             {
                 int table_offset;
 
+/*
                 VERB("try to add varbind with oid %s", print_oid(&(vb[i].name))); 
-
+*/
                 if (!tapi_snmp_is_sub_oid(&entry, &vb[i].name))
                 {
                     continue;
@@ -1873,7 +1875,9 @@ tapi_snmp_get_table(const char *ta, int sid, int csap_id,
                                ) == 0 )
                         break;
                 }
+/*
                 VERB("found index_l_en: %x\n", index_l_en); 
+*/
                 if (index_l_en == NULL) 
                     continue; /* just skip this varbind, for which we cannot 
                                  find index... */ 
@@ -1889,14 +1893,18 @@ tapi_snmp_get_table(const char *ta, int sid, int csap_id,
                     index_suffix->length = ti_len;
                     res_table[table_offset] = index_suffix;
 
+/*
                 VERB("add index_suffix for row %d:  %s", 
                         row_num, print_oid(index_suffix)); 
+*/
                 } 
 
                 table_offset += (vb[i].name.id[ti_start - 1] ) ;
     
                 res_table[table_offset] = tapi_snmp_vb_to_mem(&vb[i]);
+/*
                 VERB("table offset:%d, ptr: %x\n", table_offset, res_table[table_offset]);
+*/
             }
         } 
     } 
@@ -2780,8 +2788,8 @@ tapi_snmp_cmp_vb(tapi_snmp_varbind_t *vb1, tapi_snmp_varbind_t *vb2,
             {
                 INFO("'vb1' and 'vb2' has different length of their OIDs:\n"
                      "OID('vb1'): %s - length %d\nOID('vb2'): %s - length %d",
-                     GET_STR_OID(&vb1->name), vb1->name.length,
-                     GET_STR_OID(&vb2->name), vb2->name.length);
+                     print_oid(&vb1->name), vb1->name.length,
+                     print_oid(&vb2->name), vb2->name.length);
                 return -1;
             }
             if (cmp_type == TAPI_SNMP_VB_VMP_OID_ONLY)
@@ -2794,9 +2802,9 @@ tapi_snmp_cmp_vb(tapi_snmp_varbind_t *vb1, tapi_snmp_varbind_t *vb2,
             {
                 INFO("'vb1' and 'vb2' has different types of value:\n"
                      "'vb1': %s - value type: %s\n'vb2': %s - value type: %s",
-                     GET_STR_OID(&vb1->name),
+                     print_oid(&vb1->name),
                      tapi_snmp_val_type_h2str(vb1->type),
-                     GET_STR_OID(&vb2->name),
+                     print_oid(&vb2->name),
                      tapi_snmp_val_type_h2str(vb2->type));
                 return -1;
             }
@@ -2806,8 +2814,8 @@ tapi_snmp_cmp_vb(tapi_snmp_varbind_t *vb1, tapi_snmp_varbind_t *vb2,
                      "different length of values:\n"
                      "'vb1': %s - value len: %d\n'vb2': %s - value len: %d",
                      tapi_snmp_val_type_h2str(vb1->type),
-                     GET_STR_OID(&vb1->name), vb1->v_len,
-                     GET_STR_OID(&vb2->name), vb2->v_len);
+                     print_oid(&vb1->name), vb1->v_len,
+                     print_oid(&vb2->name), vb2->v_len);
                 return -1;
             }
             switch (vb1->type)
@@ -2822,7 +2830,7 @@ tapi_snmp_cmp_vb(tapi_snmp_varbind_t *vb1, tapi_snmp_varbind_t *vb2,
                     {
                         INFO("'vb1' and 'vb2' has different values:\n"
                              "'vb1': %s\n'vb2': %s",
-                             GET_STR_OID(&vb1->name), GET_STR_OID(&vb2->name));
+                             print_oid(&vb1->name), print_oid(&vb2->name));
                          return -1;
                     }
                     break;
@@ -2832,8 +2840,8 @@ tapi_snmp_cmp_vb(tapi_snmp_varbind_t *vb1, tapi_snmp_varbind_t *vb2,
                     {
                         INFO("'vb1' and 'vb2' has different values:\n"
                              "'vb1': %s - %d\n'vb2': %s - %d",
-                             GET_STR_OID(&vb1->name), vb1->integer,
-                             GET_STR_OID(&vb2->name), vb2->integer);
+                             print_oid(&vb1->name), vb1->integer,
+                             print_oid(&vb2->name), vb2->integer);
                          return -1;
                     }
                     break;
