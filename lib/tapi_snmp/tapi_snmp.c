@@ -1205,7 +1205,31 @@ tapi_snmp_get_table_dimension(tapi_snmp_oid_t *table_oid, int *dimension)
         (*dimension)++;
 
     return 0;
-}    
+}
+
+
+/* See description in tapi_snmp.h */
+int
+tapi_snmp_get_syntax(tapi_snmp_oid_t *oid, int *type)
+{
+    struct tree *entry_node;
+    int rc;
+
+    if (oid == NULL)
+        return ETEWRONGPTR;
+
+    entry_node = get_tree(oid->id, oid->length, get_tree_head());
+
+    if (entry_node == NULL)
+    {
+        WARN("no entry node found!\n");
+        return TE_RC(TE_TAPI, EINVAL);
+    }
+
+    *type = entry_node->type;
+    return 0;
+}
+
 
 /* See description in tapi_snmp.h */
 int 

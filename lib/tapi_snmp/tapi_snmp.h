@@ -598,6 +598,17 @@ extern int tapi_snmp_load_mib_with_path(const char *dir_path,
  */
 extern int tapi_snmp_make_oid(const char *oid_str, tapi_snmp_oid_t *oid);
 
+/**
+ * Get SNMP object syntax from MIB.
+ *
+ * @param	oid	OID of SNMP object
+ * @param	syntax	syntax of SNMP object (OUT)
+ *
+ * @return	Status of the operation
+ *
+ */
+extern int tapi_snmp_get_syntax(tapi_snmp_oid_t *oid, int *syntax);
+
 /** 
  * Callback function for the catching of SNMP traps. 
  *

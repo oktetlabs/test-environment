@@ -79,6 +79,30 @@ extern "C" {
             TEST_FAIL("snmp make integer failed for OID, result\n", label_, rc_);     \
         }                                                                             \
     } while (0)	    
+
+/**
+ * Macro around tapi_snmp_get_syntax().
+ * 
+ * @param label_    SNMP label - OID string representation
+ * @param syntax_   Location for syntax 
+ * 
+ */ 
+#define SNMP_GET_SYNTAX(label_, syntax_)                                              \
+    do                                                                                \
+    {                    	                                                      \
+        int             rc_;                                                          \
+        tapi_snmp_oid_t oid_;                                                         \
+	                                                                              \
+        SNMP_MAKE_OID(label_, oid_);                                                  \
+	                                                                              \
+        rc_ = tapi_snmp_get_syntax(&oid_, &syntax_);                                  \
+	if (rc_ != 0)                                                                 \
+	{                                                                             \
+            TEST_FAIL("snmp get syntax failed  OID, result\n", label_, rc_);          \
+        }                                                                             \
+    } while (0)	    
+
+
 	
 
 /**
@@ -409,7 +433,7 @@ extern "C" {
  *
  */ 
 #define SNMP_GET_TABLE_COLUMNS(label_, columns_)                           \
-    do {                                                                   \
+    do                                                                     \
     {                                                                      \
         int             rc_;                                               \
         tapi_snmp_oid_t oid_;                                              \
