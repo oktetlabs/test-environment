@@ -621,9 +621,8 @@ accept_callback(LPWSABUF caller_id, LPWSABUF caller_data, LPQOS sqos,
 {
     accept_cond *cond = (accept_cond *)user_data;
     
-    return CF_ACCEPT;
-    
     struct sockaddr_in *addr;
+
     UNUSED(caller_data);
     UNUSED(sqos);
     UNUSED(gqos);
@@ -633,7 +632,7 @@ accept_callback(LPWSABUF caller_id, LPWSABUF caller_data, LPQOS sqos,
     
     if (cond == NULL)
         return CF_ACCEPT;
-        
+         
     if (caller_id == NULL || caller_id->len == 0)
         return CF_REJECT;
         
@@ -641,7 +640,7 @@ accept_callback(LPWSABUF caller_id, LPWSABUF caller_data, LPQOS sqos,
     
     for (; cond->port != 0; cond++)
         if (cond->port == addr->sin_port)
-            return cond->verdict;
+   	        return cond->verdict;
 
     return CF_REJECT;
 }                
@@ -678,7 +677,7 @@ TARPC_FUNC(wsa_accept,
 
     MAKE_CALL(out->retval = WSAAccept(in->fd, a,
                                       out->len.len_len == 0 ? NULL :
-                                      out->len.len_val,
+                                      out->len.len_val, 
                                       (LPCONDITIONPROC)accept_callback, 
                                       (DWORD)cond)); 
     sockaddr_h2rpc(a, &(out->addr));
