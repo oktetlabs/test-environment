@@ -37,6 +37,8 @@
 #include <string.h>
 #include <sys/time.h>
 #include <sys/types.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 #include <unistd.h>
 
 
@@ -70,9 +72,11 @@ main(int argc, char *argv[])
     char ta[32];
     char *agt_a = ta;
     char *agt_b;
-    int  len = sizeof(ta);
+    unsigned  len = sizeof(ta);
 
+#if !(USE_TAPI)
     char path[1000];
+#endif
 
 
     TEST_START; 
@@ -120,18 +124,23 @@ main(int argc, char *argv[])
 #endif
  
     do {
+#if !(USE_TAPI)
         struct timeval to;
         asn_value *csap_spec, *pattern;
 
-        int sock_src;
-        int sock_dst;
+        int rc_code;
+#else
+        in_addr_t my_addr = inet_addr("195.19.254.40");
+#endif
 
         int csap;
         int num;
-        int timeout = 30;
-        int rc_mod, rc_code;
-
+        int rc_mod;
+#if USE_RPC_CHECK 
+        int sock_src;
+        int sock_dst;
         struct sockaddr_in srv_addr;
+#endif
 
 #if USE_RPC_CHECK
         if ((sock_src = rpc_socket(srv_src, RPC_AF_INET, RPC_SOCK_STREAM, 
@@ -174,8 +183,9 @@ main(int argc, char *argv[])
         } 
 
 #if USE_TAPI
+        
         rc = tapi_ip4_eth_recv_start(ta, sid, csap, NULL, 
-                                     "195.19.254.40", 5000, 4);
+                                     (uint8_t*)&my_addr, 5000, 4);
 #else
         strcpy(path, "/tmp/te_ip4_pattern.XXXXXX"); 
         mkstemp(path); 
@@ -210,7 +220,7 @@ main(int argc, char *argv[])
 
         INFO ("try to wait\n");
         rc = rcf_ta_trrecv_wait(ta, csap, &num);
-        INFO("trrecv_stop: 0x%X num: %d\n", rc, num);
+        INFO("trrecv_wait: 0x%X num: %d\n", rc, num);
 
         rc = rcf_ta_csap_destroy(ta, sid, csap);
         INFO("csap %d destroy: 0x%X ", csap, rc); 
