@@ -1,17 +1,18 @@
 # Process this file with autoconf to produce a configure script.
+
 AC_PREREQ(2.53)
-AC_INIT(tad_eth, 0.01, duke@oktetlabs.ru)
+AC_INIT([tad_eth], 0.1, [konst@oktetlabs.ru])
 
 AC_CONFIG_SRCDIR([tad_eth_csap.c])
-AC_CONFIG_AUX_DIR(../../aux)
+AC_CONFIG_AUX_DIR([../../aux])
 
 AM_INIT_AUTOMAKE
 
 # Checks for programs.
 AC_PROG_CC
 AC_PROG_RANLIB
-
 AC_PROG_INSTALL
+
 
 CFLAGS="${CFLAGS} ${TE_CFLAGS}"
 CPPFLAGS="${CPPFLAGS} ${TE_CFLAGS}"
@@ -26,11 +27,17 @@ AC_ARG_VAR(TE_LDFLAGS)
 AC_ARG_VAR(TE_LDADD)
 AC_ARG_VAR(TE_DEPENDENCIES)
 
-AC_CHECK_HEADERS(unistd.h fcntl.h sys/socket.c sys/types.h sys/time.h \
-                 unistd.h semaphore.h)
 
-AM_CONFIG_HEADER(config.h)
-# AC_CONFIG_FILES([Makefile tests/Makefile])
+AM_CONFIG_HEADER([config.h])
+AC_CHECK_HEADERS([\
+unistd.h \
+fcntl.h \
+sys/socket.c \
+sys/types.h \
+sys/time.h \
+semaphore.h \
+])
+
 AC_CONFIG_FILES([Makefile])
 
 AC_OUTPUT

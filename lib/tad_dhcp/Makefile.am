@@ -1,12 +1,15 @@
 
 AUTOMAKE_OPTIONS = foreign 
 
-AM_CFLAGS=@TE_CFLAGS@ -I$(DESTDIR)/$(prefix)/include \
-                      -I$(DESTDIR)/$(prefix)/../include 
+AM_CPPFLAGS=-I$(DESTDIR)/$(prefix)/include \
+            -I$(DESTDIR)/$(prefix)/../include 
+
+AM_CFLAGS=
 
 AM_LDFLAGS=@TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/lib 
 
-# VPATH = @srcdir@:@srcdir@/tests
+
+noinst_HEADERS=tad_dhcp_impl.h
 
 lib_LIBRARIES=libtad_dhcp.a
 
