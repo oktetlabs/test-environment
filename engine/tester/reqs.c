@@ -198,6 +198,7 @@ tester_is_run_required(tester_ctx *ctx, const run_item *test,
     const test_requirements    *reqs;
     test_requirement           *t, *tn;
     const test_requirement     *s;
+    const test_param           *p;
 
     switch (test->type)
     {
@@ -254,6 +255,36 @@ tester_is_run_required(tester_ctx *ctx, const run_item *test,
                         TAILQ_REMOVE(targets, t, links);
                     }
                     break;
+                }
+            }
+        }
+        for (p = params->tqh_first; p != NULL; p = p->links.tqe_next)
+        {
+            if (p->reqs == NULL)
+                continue;
+
+            for (s = p->reqs->tqh_first; s != NULL; s = s->links.tqe_next)
+            {
+                assert(!s->exclude);
+                assert(!s->sticky);
+
+                if (!(t->exclude))
+                    result = FALSE;
+
+                if (strcmp(t->id, req_get(s, params)) == 0)
+                {
+                    if (t->exclude)
+                    {
+                        if (~ctx->flags & TESTER_QUIET_SKIP)
+                            WARN("Excluded because of requirement '%s'",
+                                 t->id);
+                        return FALSE;
+                    }
+                    else
+                    {
+                        result = TRUE;
+                        break;
+                    }
                 }
             }
         }

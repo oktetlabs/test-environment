@@ -180,7 +180,8 @@ test_param_new(const char *name, const char *value, te_bool clone,
     }
     p->reqs = reqs;
     p->clone = clone;
-    VERB("New parameter: %s=%s", p->name, p->value);
+    VERB("New parameter: %s=%s, clone=%d, reqs=%p",
+         p->name, p->value, p->clone, p->reqs);
 
     return p;
 }
@@ -1644,7 +1645,7 @@ iterate_test(tester_ctx *ctx, run_item *test,
             }
         }
 
-        if ((test->type != RUN_ITEM_SCRIPT) || i->reqs)
+        if (test->type != RUN_ITEM_SCRIPT)
         {
             test_ctx = tester_ctx_clone(ctx);
             if (test_ctx == NULL)
@@ -1654,20 +1655,6 @@ iterate_test(tester_ctx *ctx, run_item *test,
                 break;
             }
             test_ctx_cloned = TRUE;
-        }
-
-        /* Put iteration requirements in context */
-        if (i->reqs)
-        {
-            const test_param *p;
-
-            for (p = i->params.tqh_first;
-                 p != NULL;
-                 p = p->links.tqe_next)
-            {
-                if (p->reqs != NULL)
-                    test_requirements_clone(p->reqs, &test_ctx->reqs);
-            }
         }
 
         if ((test_ctx->flags & TESTER_QUIET_SKIP) &&
