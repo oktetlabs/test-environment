@@ -22,14 +22,21 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
  *
- * Author: Andrew Duka <Andrew.Duka@oktetlabs.ru>
+ * Author: Alexander Kukuta <Alexander.Kukuta@oktetlabs.ru>
  *
  * @(#) $Id$
  */
 
-#include <string.h>
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "tad_cli_impl.h"
 
+#define LGR_USER "TAD CLI LAYER"
+#include "logger_api.h"
+
+#include <stdio.h>
 
 /**
  * Callback for read parameter value of CLI CSAP.

@@ -22,7 +22,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
  *
- * Author: Andrew Duka <Andrew.Duka@oktetlabs.ru>
+ * Author: Alexander Kukuta <Alexander.Kukuta@oktetlabs.ru>
  *
  * $Id$
  */
@@ -31,37 +31,7 @@
 #include "config.h"
 #endif
 
-#ifdef HAVE_STDLIB_H
-#include <stdlib.h>
-#endif /* HAVE_STDLIB_H*/
-
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif /* HAVE_UNISTD_H*/
-
-#ifdef HAVE_SYS_TIME_H
-#include <sys/time.h>
-#endif
-
-#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
-
-#ifdef HAVE_SYS_STAT_H
-#include <sys/stat.h>
-#endif
-
-#ifdef HAVE_FCNTL_H
-#include <fcntl.h>
-#endif /* HAVE_FCNTL_H*/
-
-#ifdef HAVE_STRING_H
-#include <string.h>
-#endif
-
-#include <signal.h>
-#include <expect.h>
-#include <sys/wait.h>
+#define LGR_USER "TAD CLI STACK"
 
 #include "tad_cli_impl.h"
 

@@ -22,29 +22,59 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
  *
- * Author: Andrew Duka <Andrew.Duka@oktetlabs.ru>
+ * Author: Alexander Kukuta <Alexander.Kukuta@oktetlabs.ru>
  *
  * @(#) $Id$
  */
+
 #ifndef __TE__TAD_CLI_IMPL__H__
 #define __TE__TAD_CLI_IMPL__H__ 
 
 #include <stdio.h>
+#ifdef STDC_HEADERS
 #include <stdlib.h>
 #include <string.h>
+#endif
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+#ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
+#endif
+#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
+#endif
+#ifdef HAVE_SYS_STAT_H
+#include <sys/stat.h>
+#endif
+#ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
+#endif
+#ifdef HAVE_SYS_IOCTL_H
 #include <sys/ioctl.h>
+#endif
+#ifdef HAVE_SYS_WAIT_H
+#include <sys/wait.h>
+#endif
+#ifdef HAVE_FCNTL_H
+#include <fcntl.h>
+#endif
+#ifdef HAVE_SIGNAL_H
+#include <signal.h>
+#endif
+#ifdef HAVE_EXPECT_H
 #include <expect.h>
+#elif defined(HAVE_TCL8_4_EXPECT_H)
+#include <tcl8.4/expect.h>
+#else
+#error There is no expect headers in the system.
+#endif
 
 #include "te_errno.h"
-
 #include "asn_usr.h" 
-
 #include "ndn_cli.h"
-
 #include "tad.h"
+#include "logger_api.h"
 
 #define CLI_CONN_TYPE_SERIAL        0 /**< serial CLI connection (millicom) */
 #define CLI_CONN_TYPE_TELNET        1 /**< telnet CLI connection */

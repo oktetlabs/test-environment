@@ -26,9 +26,13 @@ AC_ARG_VAR(TE_LDFLAGS)
 AC_ARG_VAR(TE_LDADD)
 AC_ARG_VAR(TE_DEPENDENCIES)
 
-AC_CHECK_HEADERS(unistd.h fcntl.h sys/socket.c sys/types.h sys/time.h unistd.h)
-
 AM_CONFIG_HEADER(config.h)
+
+AC_STDC_HEADERS
+AC_CHECK_HEADERS([unistd.h fcntl.h sys/socket.c sys/types.h sys/time.h \
+                  sys/wait.h signal.h sys/ioctl.h \
+		  expect.h tcl8.4/expect.h])
+
 # AC_CONFIG_FILES([Makefile tests/Makefile])
 AC_CONFIG_FILES([Makefile])
 

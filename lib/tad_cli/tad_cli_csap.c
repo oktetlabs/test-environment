@@ -22,14 +22,16 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
  *
- * Author: Andrew Duka <Andrew.Duka@oktetlabs.ru>
+ * Author: Alexander Kukuta <Alexander.Kukuta@oktetlabs.ru>
  *
  * @(#) $Id$
  */
 
-#include <string.h>
-#include "tad_cli_impl.h"
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
+#include "tad_cli_impl.h"
 
 csap_layer_neighbour_list_t cli_nbr_list = 
 {
