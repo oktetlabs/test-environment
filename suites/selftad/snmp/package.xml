@@ -5,9 +5,6 @@
 
     <author mailto="Konstantin.Abramenko@oktetlabs.ru"/>
 
-    <requirement ref="TAD_CH"/>
-    <requirement ref="TAD_SNMP"/>
-
     <session random="true">
         <var name="ta" handdown="true">
             <value>Agt_A</value>
@@ -20,7 +17,7 @@
         </var>
 
         <run>
-            <script name="snmptest"/>
+            <script name="snmp_gets"/>
             <arg name="mib_name">
                 <value>SNMPv2-MIB.txt</value>
             </arg>
