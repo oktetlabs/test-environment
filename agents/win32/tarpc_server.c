@@ -3932,7 +3932,6 @@ TARPC_FUNC(wsa_connect, {},
     QOS sqos;
     QOS *psqos = &sqos;
     tarpc_flowspec *fs;
-
     PREPARE_ADDR(in->addr, 0);
 
     memset(&sqos, 0, sizeof(sqos));
@@ -3978,9 +3977,10 @@ TARPC_FUNC(wsa_connect, {},
     }
 
     MAKE_CALL(out->retval = WSAConnect(in->s, a, in->addrlen,
-                                (LPWSABUF)in->caller_wsabuf,
-                                (LPWSABUF)in->callee_wsabuf,
-                                psqos, NULL));
+                                       (LPWSABUF)in->caller_wsabuf,
+                                       (LPWSABUF)in->callee_wsabuf,
+                                        NULL, NULL));
+    /* fifth parameter shouldn't be NULL*/
 }
 )
 
