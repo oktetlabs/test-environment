@@ -129,10 +129,10 @@ struct tarpc_ifreq {
 
 /** struct ifconf */
 struct tarpc_ifconf {
-    /** Interface list returned by the ioctl */
-    tarpc_ifreq     rpc_ifc_req<>;  
     /** Length of the buffer to be passed to ioctl */
     tarpc_int       buflen;
+    /** Interface list returned by the ioctl */
+    tarpc_ifreq     rpc_ifc_req<>;  
 };
 
 /** struct arpreq */
