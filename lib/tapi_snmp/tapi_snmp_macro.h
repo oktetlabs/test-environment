@@ -594,6 +594,8 @@ extern "C" {
         CHECK_RC(tapi_snmp_make_instance(name, &leaf_oid, sub_id));            \
         CHECK_RC(tapi_snmp_set_integer((ta), (sid), (csap_id), &leaf_oid,      \
                                        (value), (err_stat)));                  \
+        INFO("SNMP set: for %s (oid=%s) to %s = %d returns err_stat=0x%x\n",   \
+             name, print_oid(&leaf_oid), #value, (value), err_stat);           \
     } while (0)
 
 /**
@@ -617,6 +619,8 @@ extern "C" {
         CHECK_RC(tapi_snmp_make_instance(name, &leaf_oid, index));             \
         CHECK_RC(tapi_snmp_set_octetstring((ta), (sid), (csap_id), &leaf_oid,  \
                                        (value), (length), (err_stat)));        \
+        INFO("SNMP set: for %s (oid=%s) to %s = %p returns err_stat=0x%x\n",   \
+             name, print_oid(&leaf_oid), #value, (value), (err_stat));         \
     } while (0)
 
 /**
@@ -671,6 +675,8 @@ extern "C" {
         tapi_snmp_oid_t           leaf_oid;                                    \
         CHECK_RC(tapi_snmp_make_instance(name, &leaf_oid, sub_id));            \
         CHECK_RC(tapi_snmp_get_integer(ta, sid, csap_id, &leaf_oid, (value))); \
+        INFO("SNMP get: for %s (oid=%s) returns %s = %d\n",                    \
+             name, print_oid(&leaf_oid), #value, (value));                     \
     } while (0)
 
 
@@ -692,6 +698,8 @@ extern "C" {
         CHECK_RC(tapi_snmp_make_instance(name, &leaf_oid, sub_id));            \
         CHECK_RC(tapi_snmp_get_integer(ta, sid, csap_id, &leaf_oid,            \
                  &tmp_value));                                                 \
+        INFO("SNMP get: for %s (oid=%s) returns %s = %d\n",                    \
+             name, print_oid(&leaf_oid), #value, (value));                     \
         if (value != tmp_value)                                                \
             TEST_FAIL(name " is not equal to %s = %d", #value, value);         \
     } while (0)
