@@ -2196,6 +2196,9 @@ rpc_alloc_buf(rcf_rpc_server *rpcs, size_t size)
     RETVAL_TYPE_PTR(alloc_buf, rpc_ptr, out.retval);
 }
 
+/**
+ * Free a buffer in the TA address space.
+ */
 void
 rpc_free_buf(rcf_rpc_server *rpcs, rpc_ptr buf)
 {
