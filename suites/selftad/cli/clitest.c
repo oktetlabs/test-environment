@@ -39,6 +39,8 @@
 #include "rcf_api.h"
 
 
+const char *te_lgr_entity = "CLI TEST";
+
 void
 trap_handler(char *fn, void *p)
 { 
