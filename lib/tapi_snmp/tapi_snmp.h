@@ -364,6 +364,7 @@ extern int tapi_snmp_set_row(const char *ta, int sid, int csap_id,
  * @return zero on success or error code.
  */
 extern int tapi_snmp_get_row(const char *ta, int sid, int csap_id, 
+                             int *errstatus, int *errindex,
                              const tapi_snmp_oid_t *common_index, ...);
 
 
@@ -447,13 +448,15 @@ extern int tapi_snmp_set_string(const char *ta, int sid, int csap_id,
  *                      given OID. Pointers in structure (for complex long 
  *                      data) are allocated by this method and should be freed
  *                      by user. (OUT)
+ * @param errstatus     the value of error-status field in response
+ *                      message (OUT), may be zero if not need.
  * 
  * @return zero on success or error code.
  */
 extern int tapi_snmp_get(const char *ta, int sid, int csap_id, 
                          const tapi_snmp_oid_t *oid, 
                          tapi_snmp_get_type_t next,
-                         tapi_snmp_varbind_t *varbind);
+                         tapi_snmp_varbind_t *varbind, int *errstatus);
 
 
 /**
@@ -470,12 +473,14 @@ extern int tapi_snmp_get(const char *ta, int sid, int csap_id,
  *                      given OID. Pointers in structures (for complex long 
  *                      data) are allocated by this method and should be freed
  *                      by user. (OUT)
+ * @param errstatus     the value of error-status field in response
+ *                      message (OUT), may be zero if not need.
  * 
  * @return zero on success or error code.
  */
 extern int tapi_snmp_getbulk(const char *ta, int sid, int csap_id, 
                   const tapi_snmp_oid_t *v_oid, 
-                  int *num, tapi_snmp_varbind_t *varbind);
+                  int *num, tapi_snmp_varbind_t *varbind, int *errstatus);
 
 /**
  * The function uses SNMP GetNext requests to query an agent for a tree of
@@ -518,7 +523,8 @@ extern int tapi_snmp_walk(const char *ta, int sid, int csap_id,
  * @return zero on success or error code
  */
 extern int tapi_snmp_get_ipaddr(const char *ta, int sid, int csap_id,
-                                const tapi_snmp_oid_t *oid, void *addr);
+                                const tapi_snmp_oid_t *oid, void *addr, 
+                                int *errstat);
 
 
 /**
@@ -536,7 +542,7 @@ extern int tapi_snmp_get_ipaddr(const char *ta, int sid, int csap_id,
  */
 extern int tapi_snmp_get_date_and_time(const char *ta, int sid, int csap_id, 
                                        const tapi_snmp_oid_t *oid, time_t *val,
-                                       int *offset_from_utc);
+                                       int *offset_from_utc, int *errstat);
 
 /**
  * Sends SNMP Get request on MIB object with type Integer to the SNMP agent,
@@ -551,7 +557,8 @@ extern int tapi_snmp_get_date_and_time(const char *ta, int sid, int csap_id,
  * @return zero on success or error code
  */
 extern int tapi_snmp_get_integer(const char *ta, int sid, int csap_id,
-                                 const tapi_snmp_oid_t *oid, int *val);
+                                 const tapi_snmp_oid_t *oid, int *val, 
+                                 int *errstat);
 
 /**
  * Sends SNMP Get request on MIB object with type DisplayString to
@@ -569,7 +576,8 @@ extern int tapi_snmp_get_integer(const char *ta, int sid, int csap_id,
  */
 extern int tapi_snmp_get_string(const char *ta, int sid, int csap_id,
                                 const tapi_snmp_oid_t *oid,
-                                char *buf, size_t buf_size);
+                                char *buf, size_t buf_size, 
+                                 int *errstat);
 
 /**
  * Sends SNMP Get request on MIB object with type OctetString to
@@ -588,7 +596,8 @@ extern int tapi_snmp_get_string(const char *ta, int sid, int csap_id,
  */
 extern int tapi_snmp_get_oct_string(const char *ta, int sid, int csap_id,
                                     const tapi_snmp_oid_t *oid,
-                                    void *buf, size_t *buf_size);
+                                    void *buf, size_t *buf_size, 
+                                 int *errstat);
 
 /**
  * Sends SNMP Get request on MIB object with type ObjectIdentifier to
@@ -605,7 +614,8 @@ extern int tapi_snmp_get_oct_string(const char *ta, int sid, int csap_id,
  */
 extern int tapi_snmp_get_objid(const char *ta, int sid, int csap_id,
                                const tapi_snmp_oid_t *oid,
-                               tapi_snmp_oid_t *ret_oid);
+                               tapi_snmp_oid_t *ret_oid, 
+                                 int *errstat);
 
 
 /**

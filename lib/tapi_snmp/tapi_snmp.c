@@ -835,6 +835,7 @@ typedef struct tapi_get_row_par_list {
 
 int 
 tapi_snmp_get_row(const char *ta, int sid, int csap_id, 
+                  int *errstatus, int *errindex,
                   const tapi_snmp_oid_t *common_index, ...)
 {
     va_list       ap;
@@ -1451,8 +1452,9 @@ tapi_snmp_set_string(const char *ta, int sid, int csap_id,
 
 /* See description in tapi_snmp.h */
 int
-tapi_snmp_get(const char *ta, int sid, int csap_id, const tapi_snmp_oid_t *v_oid, 
-              tapi_snmp_get_type_t next, tapi_snmp_varbind_t *varbind)
+tapi_snmp_get(const char *ta, int sid, int csap_id, 
+              const tapi_snmp_oid_t *v_oid, tapi_snmp_get_type_t next, 
+              tapi_snmp_varbind_t *varbind, int *errstatus)
 {
     tapi_snmp_message_t msg;
     int rc;
@@ -1478,7 +1480,7 @@ tapi_snmp_get(const char *ta, int sid, int csap_id, const tapi_snmp_oid_t *v_oid
 int
 tapi_snmp_getbulk(const char *ta, int sid, int csap_id, 
                   const tapi_snmp_oid_t *v_oid, 
-                  int *num, tapi_snmp_varbind_t *varbind)
+                  int *num, tapi_snmp_varbind_t *varbind, int *errstatus)
 {
     tapi_snmp_message_t msg;
     int rc;
@@ -1526,7 +1528,7 @@ tapi_snmp_walk(const char *ta, int sid, int csap_id,
     
     while (1) 
     {
-        rc = tapi_snmp_get(ta, sid, csap_id, &next_oid, TAPI_SNMP_NEXT, &vb);
+        rc = tapi_snmp_get(ta, sid, csap_id, &next_oid, TAPI_SNMP_NEXT, &vb, NULL);
         if (vb.type == TAPI_SNMP_ENDOFMIB)
         {
 	    VERB("walk is over");
@@ -1835,7 +1837,7 @@ tapi_snmp_get_table(const char *ta, int sid, int csap_id,
             int vb_num = rest_varbinds;
 
             rc = tapi_snmp_getbulk(ta, sid, csap_id, &begin_of_portion, 
-                                    &vb_num, vb + got_varbinds);
+                                    &vb_num, vb + got_varbinds, NULL);
 
             VERB ("table getbulk return %X, asked for %d, got %d vbs for oid %s", 
                     rc, rest_varbinds, vb_num, print_oid(&(begin_of_portion)));
@@ -2126,12 +2128,13 @@ tapi_snmp_get_table_columns(tapi_snmp_oid_t *table_oid, tapi_snmp_var_access **c
 /* See description in tapi_snmp.h */
 int
 tapi_snmp_get_ipaddr(const char *ta, int sid, int csap_id,
-                     const tapi_snmp_oid_t *oid, void *addr)
+                     const tapi_snmp_oid_t *oid, void *addr, int *errstatus)
 {
     tapi_snmp_varbind_t varbind;
     int                 rc;
 
-    rc = tapi_snmp_get(ta, sid, csap_id, oid, TAPI_SNMP_EXACT, &varbind);
+    rc = tapi_snmp_get(ta, sid, csap_id, oid, TAPI_SNMP_EXACT, 
+                        &varbind, errstatus);
     if (rc != 0)
         return rc;
 
@@ -2239,14 +2242,14 @@ ParseDateAndTime(void *ptr, int len, time_t *time_val, int *offset_from_utc)
 int
 tapi_snmp_get_date_and_time(const char *ta, int sid, int csap_id,
                             const tapi_snmp_oid_t *oid, time_t *val,
-                            int *offset_from_utc)
+                            int *offset_from_utc, int *errstatus)
 {
     int rc;
     uint8_t buf[11];
     size_t  buf_len = sizeof(buf);
 
     if ((rc = tapi_snmp_get_oct_string(ta, sid, csap_id, oid, 
-                                       buf, &buf_len)) != 0)
+                                       buf, &buf_len, errstatus)) != 0)
         return rc;
 
     rc = ParseDateAndTime(buf, buf_len, val, offset_from_utc);
@@ -2255,12 +2258,13 @@ tapi_snmp_get_date_and_time(const char *ta, int sid, int csap_id,
 
 int
 tapi_snmp_get_integer(const char *ta, int sid, int csap_id,
-                      const tapi_snmp_oid_t *oid, int *val)
+                      const tapi_snmp_oid_t *oid, int *val, int *errstatus)
 {
     tapi_snmp_varbind_t varbind;
     int                 rc;
 
-    rc = tapi_snmp_get(ta, sid, csap_id, oid, TAPI_SNMP_EXACT, &varbind);
+    rc = tapi_snmp_get(ta, sid, csap_id, oid, 
+                       TAPI_SNMP_EXACT, &varbind, errstatus);
     if (rc)
         return rc;
 
@@ -2286,13 +2290,15 @@ tapi_snmp_get_integer(const char *ta, int sid, int csap_id,
 }
 
 int
-tapi_snmp_get_string(const char *ta, int sid, int csap_id,
-                     const tapi_snmp_oid_t *oid, char *buf, size_t buf_size)
+tapi_snmp_get_string(const char *ta, int sid, int csap_id, 
+                const tapi_snmp_oid_t *oid, char *buf, size_t buf_size, 
+                int *errstatus)
 {
     int rc;
 
     buf_size--;
-    rc = tapi_snmp_get_oct_string(ta, sid, csap_id, oid, buf, &buf_size);
+    rc = tapi_snmp_get_oct_string(ta, sid, csap_id, oid, 
+                                  buf, &buf_size, errstatus);
     if (rc == 0)
     {
         buf[buf_size] = '\0';
@@ -2304,12 +2310,13 @@ tapi_snmp_get_string(const char *ta, int sid, int csap_id,
 int
 tapi_snmp_get_oct_string(const char *ta, int sid, int csap_id,
                          const tapi_snmp_oid_t *oid,
-                         void *buf, size_t *buf_size)
+                         void *buf, size_t *buf_size, 
+                            int *errstatus)
 {
     tapi_snmp_varbind_t varbind;
     int                 rc;
 
-    rc = tapi_snmp_get(ta, sid, csap_id, oid, TAPI_SNMP_EXACT, &varbind);
+    rc = tapi_snmp_get(ta, sid, csap_id, oid, TAPI_SNMP_EXACT, &varbind, errstatus);
     if (rc != 0)
         return rc;
 
@@ -2334,12 +2341,14 @@ tapi_snmp_get_oct_string(const char *ta, int sid, int csap_id,
 
 int
 tapi_snmp_get_objid(const char *ta, int sid, int csap_id,
-                    const tapi_snmp_oid_t *oid, tapi_snmp_oid_t *ret_oid)
+                    const tapi_snmp_oid_t *oid, tapi_snmp_oid_t *ret_oid, 
+                    int *errstatus)
 {
     tapi_snmp_varbind_t varbind;
     int                 rc;
 
-    rc = tapi_snmp_get(ta, sid, csap_id, oid, TAPI_SNMP_EXACT, &varbind);
+    rc = tapi_snmp_get(ta, sid, csap_id, oid, 
+                       TAPI_SNMP_EXACT, &varbind, errstatus);
     if (rc != 0)
         return rc;
 
