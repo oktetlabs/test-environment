@@ -1275,6 +1275,7 @@ get_put_file(const char *ta_name, int session,
         (strlen(lfile) == 0 && opcode != RCFOP_FDEL) ||
         strlen(rfile) == 0 || BAD_TA)
     {
+        ERROR("Invalid arguments are provided to rcf put/get");
         return TE_RC(TE_RCF_API, EINVAL);
     }
     
@@ -1284,7 +1285,7 @@ get_put_file(const char *ta_name, int session,
     
         if ((fd = open(lfile, O_RDONLY)) < 0)
         {
-            VERB("cannot open file %s for reading\n", lfile);
+            ERROR("cannot open file %s for reading\n", lfile);
             return TE_RC(TE_RCF_API, ENOENT);
         }
         close(fd);
