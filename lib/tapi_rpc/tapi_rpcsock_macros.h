@@ -1207,7 +1207,8 @@
  */
 #define RPC_SIMPLE_RECEIVER(recv_, rpcs_, sockd_, timeout_) \
     do {                                                                \
-        int rc_ = rpc_simple_receiver((rpcs_), (sockd_), &(recv_));     \
+        int rc_ = rpc_simple_receiver((rpcs_), (sockd_),                \
+                                      (timeout_), &(recv_));            \
         if ((rc_) != 0)                                                 \
         {                                                               \
             LOG_ERRNO((rpcs_), (recv_), simple_receiver, "()");         \

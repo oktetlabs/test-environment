@@ -432,7 +432,7 @@ rpc_simple_sender(rcf_rpc_server *rpcs,
  */
 int
 rpc_simple_receiver(rcf_rpc_server *rpcs,
-                    int s, uint64_t *received)
+                    int s, uint32_t time2run, uint64_t *received)
 {
     rcf_rpc_op                op;
     tarpc_simple_receiver_in  in;
@@ -449,6 +449,7 @@ rpc_simple_receiver(rcf_rpc_server *rpcs,
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
     in.s = s;
+    in.time2run = time2run;
 
     rcf_rpc_call(rpcs, _simple_receiver,
                  &in,  (xdrproc_t)xdr_tarpc_simple_receiver_in,
@@ -459,9 +460,9 @@ rpc_simple_receiver(rcf_rpc_server *rpcs,
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(simple_receiver, out.retval);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: simple_receiver(%d) -> %d (%s) "
+    TAPI_RPC_LOG("RPC (%s,%s)%s: simple_receiver(%d, %d) -> %d (%s) "
                  "received=%u", rpcs->ta, rpcs->name, rpcop2str(op), s,
-                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)),
+                 time2run, out.retval, errno_rpc2str(RPC_ERRNO(rpcs)),
                  (unsigned long)*received);
 
     RETVAL_INT_ZERO_OR_MINUS_ONE(simple_receiver, out.retval);

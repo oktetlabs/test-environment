@@ -27,6 +27,8 @@
  * $Id$
  */
 
+#define TE_LOG_LEVEL    0xff
+
 #include "te_config.h"
 #include "config.h"
 
@@ -2750,6 +2752,8 @@ simple_sender(tarpc_simple_sender_in *in, tarpc_simple_sender_out *out)
 
     out->bytes = 0;
 
+    RING("%s() started", __FUNCTION__);
+
     if (in->size_max > (int)sizeof(buf) || in->size_min > in->size_max ||
         in->delay_min > in->delay_max)
     {
@@ -2805,6 +2809,9 @@ simple_sender(tarpc_simple_sender_in *in, tarpc_simple_sender_out *out)
         out->bytes += len;
     }
 
+    RING("simple_sender() stopped, sent %llu bytes",
+         out->bytes);
+
     return 0;
 }
 
@@ -2834,7 +2841,12 @@ simple_receiver(tarpc_simple_receiver_in *in,
     ssize_t         len;
     struct timeval  tv;
 
+    time_t          start;
+    time_t          now;
+
     out->bytes = 0;
+
+    RING("%s() started", __FUNCTION__);
 
     if (find_func("select", &select_func) != 0 ||
         find_func("recv", &recv_func) != 0)
@@ -2842,7 +2854,10 @@ simple_receiver(tarpc_simple_receiver_in *in,
         return -1;
     }
 
-    while (TRUE)
+    for (start = now = time(NULL);
+         (in->time2run != 0) ?
+          ((unsigned int)(now - start) <= in->time2run) : TRUE;
+         now = time(NULL))
     {
         tv.tv_sec = 1;
         tv.tv_usec = 0;
@@ -2857,10 +2872,10 @@ simple_receiver(tarpc_simple_receiver_in *in,
         }
         else if (rc == 0)
         {
-            if (out->bytes > 0)
-                break;
-            else
+            if ((in->time2run != 0) || (out->bytes == 0))
                 continue;
+            else
+                break;
         }
         else if (!FD_ISSET(in->s, &set))
         {
@@ -2890,6 +2905,7 @@ simple_receiver(tarpc_simple_receiver_in *in,
 
     return 0;
 }
+
 
 /*-------------- send_traffic() --------------------------*/
 TARPC_FUNC(send_traffic, {},

@@ -1589,6 +1589,8 @@ struct tarpc_simple_receiver_in {
     struct tarpc_in_arg common;
     
     tarpc_int   s;               /**< Socket to be used */
+
+    uint32_t    time2run;        /**< Receiving duration (in seconds) */
 };
 
 struct tarpc_simple_receiver_out {

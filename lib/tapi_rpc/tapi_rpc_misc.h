@@ -127,7 +127,8 @@ extern int rpc_simple_sender(rcf_rpc_server *handle,
  * @return number of received bytes or -1 in the case of failure
  */
 extern int rpc_simple_receiver(rcf_rpc_server *handle,
-                               int s, uint64_t *received);
+                               int s, uint32_t time2run,
+                               uint64_t *received);
 
 /**
  * Send traffic. Send UDP datagrams from different sockets
