@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<package version="1.0">
+    
+    <description>Tests on TAD IP stack functionality.</description>
+
+    <author mailto="Konstantin.Abramenko@oktetlabs.ru"/>
+
+    <session>
+        <var name="ta" handdown="true">
+            <value>Agt_A</value>
+        </var>
+
+        <run>
+            <script name="udp1"/>
+        </run>
+    </session>
+
+</package>

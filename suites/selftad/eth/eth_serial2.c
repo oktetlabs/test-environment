@@ -16,7 +16,7 @@
 
 #define LOG_LEVEL 3
 
-#include "logger_ten.h"
+#include "logger_api.h"
 #include "conf_api.h"
 #include "rcf_api.h" 
 #include "ndn_eth.h"

@@ -44,7 +44,8 @@
 
 #undef LOG_LEVEL
 #define LOG_LEVEL 255
-#include "logger_ten.h"
+
+#include "logger_api.h"
 
 #define LOG_LEVEL 255
 

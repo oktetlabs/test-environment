@@ -79,6 +79,7 @@ AC_SUBST(NET_SNMP_LIBS)
 AC_DEFINE_UNQUOTED(SUITE_SRCDIR, "$srcdir", [The suite source directory])
 
 
-AC_CONFIG_FILES([Makefile snmp/Makefile])
+AC_CONFIG_FILES([Makefile cli/Makefile \
+		snmp/Makefile eth/Makefile ipstack/Makefile])
 
 AC_OUTPUT

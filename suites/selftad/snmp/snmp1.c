@@ -49,7 +49,7 @@ test_walk_callback(const tapi_snmp_varbind_t *varbind, void *userdata)
 
 
 int
-main()
+main(int argc, char *argv[])
 {
     char ta[32];
     int  len = sizeof(ta);

@@ -7,7 +7,13 @@
 
     <session random="true">
         <run>
+            <package name="cli"/>
+        </run>
+        <run>
             <package name="snmp"/>
+        </run>
+        <run>
+            <package name="ipstack"/>
         </run>
     </session>
 

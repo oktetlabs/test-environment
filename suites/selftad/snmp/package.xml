@@ -24,6 +24,7 @@
             <arg name="mib_object">
                 <value>sysDescr</value>
             </arg>
+            <req id="SNMP"/>
         </run>
 
         <run>

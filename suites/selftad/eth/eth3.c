@@ -41,6 +41,7 @@
 #include "ndn_eth.h"
 #include "tapi_eth.h"
 
+#include "logger_api.h"
 
 void
 local_eth_frame_handler(const ndn_eth_header_plain *header, 

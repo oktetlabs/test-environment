@@ -26,6 +26,8 @@
  * $Id$
  */
 
+#define TE_TEST_NAME    "ipstack/udp1"
+
 #include "config.h"
 
 #include <stdio.h>
@@ -34,11 +36,17 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <unistd.h>
+
+
 #include "te_stdint.h"
 #include "te_errno.h"
 #include "rcf_api.h"
+#include "logger_api.h"
 
-#include "eth_ndn.h"
+#include "tapi_test.h"
+#include "tapi_ipstack.h"
+
+#include "ndn_eth.h"
 #include "ndn_ipstack.h"
 
 void
@@ -46,71 +54,56 @@ udp_handler(char *fn, void *p)
 { 
     int rc, s_parsed;
     asn_value_p packet, eth_header;
-    printf ("ETH handler, file: %s\n", fn);
+    VERB("ETH handler, file: %s\n", fn);
 
     rc = asn_parse_dvalue_in_file(fn, ndn_raw_packet, &packet, &s_parsed);
 
     if (rc == 0)
     {
         ndn_eth_header_plain eh;
-        printf ("parse file OK!\n");
+        VERB("parse file OK!\n");
 
-        eth_header = asn_read_indexed (packet, 0, "pdus");
-        rc = ndn_eth_packet_to_plain (eth_header, &eh);
+        eth_header = asn_read_indexed(packet, 0, "pdus");
+        rc = ndn_eth_packet_to_plain(eth_header, &eh);
         if (rc)
-            printf ("eth_packet to plain fail: %x\n", rc);
+            VERB("eth_packet to plain fail: %x\n", rc);
         else
         {
             int i; 
-            printf ("dst - %02x", eh.dst_addr[0]);
+            VERB("dst - %02x", eh.dst_addr[0]);
             for (i = 1; i < 6; i++)
-                printf (":%02x", eh.dst_addr[i]);
+                VERB(":%02x", eh.dst_addr[i]);
 
-            printf ("\nsrc - %02x", eh.src_addr[0]);
+            VERB("\nsrc - %02x", eh.src_addr[0]);
             for (i = 1; i < 6; i++)
-                printf (":%02x", eh.src_addr[i]);
-            printf ("\ntype - %04x\n", eh.eth_type);
+                VERB (":%02x", eh.src_addr[i]);
+            VERB("\ntype - %04x\n", eh.eth_type_len);
         } 
     }
     else
-        printf ("parse file failed, rc = %x, symbol %d\n", rc, s_parsed); 
+        VERB("parse file failed, rc = %x, symbol %d\n", rc, s_parsed); 
 
 }
 
 int
-main()
+main(int argc, char *argv[])
 {
-    char ta[32];
-    int  len = sizeof(ta);
     int  sid;
+    const char *ta;
+
+    TEST_START;
+    TEST_GET_STRING_PARAM(ta);
     
-    printf("Starting test\n");
-    if (rcf_get_ta_list(ta, &len) != 0)
-    {
-        printf("rcf_get_ta_list failed\n");
-        return 1;
-    }
-    printf("Agent: %s\n", ta);
-    
-    /* Type test */
-    {
-        char type[16];
-        if (rcf_ta_name2type(ta, type) != 0)
-        {
-            printf("rcf_ta_name2type failed\n");
-            return 1;
-        }
-        printf("TA type: %s\n", type); 
-    }
+    INFO("Starting test\n");
     
     /* Session */
     {
         if (rcf_ta_create_session(ta, &sid) != 0)
         {
-            printf("rcf_ta_create_session failed\n");
+            ERROR("rcf_ta_create_session failed\n");
             return 1;
         }
-        printf("Test: Created session: %d\n", sid); 
+        INFO("Test: Created session: %d\n", sid); 
     }
 
     do {
@@ -122,13 +115,13 @@ main()
         int timeout = 30;
         int rc, rc_mod, rc_code;
 
-        printf("let's create Ethernet csap \n"); 
+        INFO("let's create Ethernet csap \n"); 
         rc = tapi_udp4_csap_create(ta, sid, NULL, "127.0.0.1", 
                                     5678, 6789, &csap); 
-        printf("csap_create rc: %d, csap id %d\n", rc, csap); 
+        INFO("csap_create rc: %d, csap id %d\n", rc, csap); 
         if ((rc_mod = TE_RC_GET_MODULE(rc)) != 0)
         {
-            printf ("rc from module %d is 0x%x\n", 
+            INFO ("rc from module %d is 0x%x\n", 
                         rc_mod, TE_RC_GET_ERROR(rc));
         } 
         if (rc) break;
@@ -157,6 +150,8 @@ main()
 
 
     } while(0);
+    TEST_SUCCESS;
 
-    return 0;
+cleanup:
+    TEST_END;
 }

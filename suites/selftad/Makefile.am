@@ -6,5 +6,5 @@ tetestdir=$(prefix)/@PACKAGE_NAME@/$(subdir)
 dist_tetest_DATA = package.xml
 
 
-SUBDIRS = snmp 
+SUBDIRS = cli eth snmp ipstack
 

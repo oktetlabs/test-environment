@@ -7,8 +7,8 @@
 
     <session>
         <run>
-            <script name="clitest">
-                <req id="CLI"/>
+            <script name="ethtest">
+                <req id="ETH"/>
             </script>
         </run>
    </session>
