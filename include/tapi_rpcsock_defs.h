@@ -1459,6 +1459,10 @@ typedef enum rpc_ioctl_code {
 #define IOCTL_MAX 0xFFFFFFFF
 #endif
 
+#if !defined(SIOCINQ) && defined(FIONREAD)
+#define SIOCINQ     FIONREAD
+#endif
+
 static inline int
 ioctl_rpc2h(rpc_ioctl_code code)
 {
