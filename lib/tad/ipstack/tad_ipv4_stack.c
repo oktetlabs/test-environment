@@ -31,6 +31,8 @@
 #include "config.h"
 #endif
 
+#define TE_LGR_USER     "TAD IPv4"
+
 #ifdef HAVE_STDLIB_H
 #include <stdlib.h>
 #endif

@@ -29,6 +29,9 @@
 
 #include <string.h>
 #include <stdlib.h>
+
+#define TE_LGR_USER     "TAD IPv4"
+
 #include "tad_ipstack_impl.h"
 
 
