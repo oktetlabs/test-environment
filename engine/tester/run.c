@@ -55,7 +55,7 @@
 #include "iters.h"
 
 
-#if 0
+#if 1
 /** Tester run path log user */
 #define TESTER_CONTROL             "Control"
 /** Prefix of all messages from Tester:Flow user */
@@ -649,7 +649,7 @@ log_test_start(const run_item *ri, test_id parent, test_id test,
             else
             {
                 LOG_RING(TESTER_CONTROL, TESTER_CONTROL_MSG_PREFIX
-                         "PACKAGE %s \"%s\" AUTHOURS%s ARGs%s",
+                         "PACKAGE %s \"%s\" AUTHORS%s ARGs%s",
                          parent, test, ri->u.package->name,
                          PRINT_STRING(ri->u.package->descr),
                          PRINT_STRING(authors),
@@ -689,7 +689,7 @@ log_test_result(test_id parent, test_id test, int result)
                 break;
 
             case ETESTCORE:
-                LOG_RING(TESTER_CONTROL, TESTER_CONTROL_MSG_PREFIX "DUMPED",
+                LOG_RING(TESTER_CONTROL, TESTER_CONTROL_MSG_PREFIX "CORED",
                          parent, test);
                 break;
 
