@@ -34,11 +34,6 @@
 # $Id$
 #
 
-if test -z "${TE_BASE}" ; then
-    echo TE_BASE environment variable is required
-    exit 1
-fi
-pushd ${TE_BASE}
 for i in `find . -name configure` ; do
     i_status=`svn status $i` || echo "Failed to set SVN status of $i"
     # Remove only 'configure' which are ignored by Subversion
@@ -46,4 +41,3 @@ for i in `find . -name configure` ; do
         rm $i
     fi
 done
-popd
