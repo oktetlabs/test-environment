@@ -87,6 +87,7 @@ tapi_snmp_copy_varbind(tapi_snmp_varbind_t *dst, const tapi_snmp_varbind_t *src)
     d_len = src->v_len;
     switch(src->type)
     {
+        case TAPI_SNMP_OTHER:
         case TAPI_SNMP_INTEGER:
         case TAPI_SNMP_IPADDRESS:
         case TAPI_SNMP_COUNTER:
@@ -224,6 +225,9 @@ tapi_snmp_packet_to_plain(asn_value *pkt, tapi_snmp_message_t *snmp_message)
     if (rc) 
         return TE_RC(TE_TAPI, rc);
 
+    VERB("in %s, errstat %d, errindex %d", __FUNCTION__, 
+            snmp_message->err_status, snmp_message->err_index);
+
     if (snmp_message->type == NDN_SNMP_MSG_TRAP1)
     {
 
@@ -285,7 +289,7 @@ tapi_snmp_packet_to_plain(asn_value *pkt, tapi_snmp_message_t *snmp_message)
 
         rc = asn_read_value_field (var_bind, &(snmp_message->vars[i].name.id),
                                     &len, "name.#plain"); 
-        VERB ("%s; var N %d ,oid %s", __FUNCTION__, i, print_oid(&(snmp_message->vars[i])));
+        VERB ("%s; var N %d ,oid %s", __FUNCTION__, i, print_oid(&(snmp_message->vars[i].name)));
 
         if (rc == 0)
             rc = asn_get_choice(var_bind, "value.#plain", choice_label, CL_MAX);
@@ -544,13 +548,117 @@ tapi_snmp_pkt_handler(char *fn, void *p)
 }
 
 
+
+
+
+
+static int 
+tapi_snmp_msg_head(FILE *f, ndn_snmp_msg_t msg_type)
+{
+    if (f == NULL)
+        return EINVAL;
+
+    fprintf(f, "{pdus{snmp:{type ");
+    switch (msg_type)
+    {
+        case NDN_SNMP_MSG_GET:      fprintf(f,"get, ");      break;
+        case NDN_SNMP_MSG_GETNEXT:  fprintf(f,"get-next, "); break;
+        case NDN_SNMP_MSG_GETBULK:  
+            fprintf(f,"get-bulk, repeats plain:0, "); 
+            break;
+
+        case NDN_SNMP_MSG_SET:      fprintf(f,"set, ");      break;
+        default: 
+            return EINVAL;
+    }
+    fprintf(f,"variable-bindings {");
+
+    return 0;
+}
+
+static int
+tapi_snmp_msg_var_bind(FILE *f, const tapi_snmp_varbind_t *var_bind)
+{
+    unsigned int i;
+
+    if (f == NULL)
+        return EINVAL;
+
+    fprintf(f,"{name plain:{");
+
+    for (i = 0; i < var_bind->name.length; i ++)
+    {
+        fprintf(f, "%lu ", var_bind->name.id[i]);
+    }
+    fprintf (f, "}"); /* close for OID */
+
+    if (var_bind->type != TAPI_SNMP_OTHER)
+    {
+        fprintf (f, ", value plain:");
+        switch (var_bind->type)
+        {
+            case TAPI_SNMP_INTEGER:
+                fprintf (f, "simple:integer-value:%d", var_bind->integer); 
+                break;
+
+            case TAPI_SNMP_OCTET_STR:
+                fprintf (f, "simple:string-value:'"); 
+                for(i = 0; i < var_bind->v_len; i++)
+                    fprintf (f, "%02x ", var_bind->oct_string[i]); 
+                fprintf (f, "'H"); 
+                break;
+
+            case TAPI_SNMP_OBJECT_ID:
+                fprintf (f, "simple:objectID-value:{"); 
+                for (i = 0; i < var_bind->v_len; i++)
+                    fprintf(f, "%lu ", var_bind->obj_id->id[i]
+                            );
+                fprintf (f, "}"); 
+                break;
+
+            case TAPI_SNMP_IPADDRESS:
+                fprintf (f, "application-wide:ipAddress-value:"); 
+                for(i = 0; i < var_bind->v_len; i++)
+                    fprintf (f, "%02x ", var_bind->oct_string[i]); 
+                fprintf (f, "'H"); 
+                break;
+
+            case TAPI_SNMP_COUNTER:
+                fprintf (f, "application-wide:counter-value:%d", 
+                                                var_bind->integer); 
+                break;
+            case TAPI_SNMP_TIMETICKS:
+                fprintf (f, "application-wide:timeticks-value:%d", 
+                                                var_bind->integer); 
+                break;
+            case TAPI_SNMP_UNSIGNED:
+                fprintf (f, "application-wide:unsigned-value:%u", 
+                                                var_bind->integer); 
+                break;
+            default:
+                return ETENOSUPP;
+        } 
+    }
+    fprintf (f, "}"); /* close for var-bind */
+
+    return 0;
+}
+
+static int
+tapi_snmp_msg_tail(FILE *f)
+{ 
+    if (f == NULL) return EINVAL;
+    fprintf (f, "}}}}\n"); 
+    return 0;
+}
+
 /**
  * Internal common procedure for SNMP operations. 
  */
 static int 
 tapi_snmp_operation (const char *ta, int sid, int csap_id, 
                      const tapi_snmp_oid_t *val_oid, ndn_snmp_msg_t msg_type, 
-                     ndn_snmp_objsyn_t syntax, 
+                     tapi_snmp_vartypes_t var_type, 
                      size_t dlen, const void *data, 
                      tapi_snmp_message_t *msg)
 {
@@ -558,7 +666,7 @@ tapi_snmp_operation (const char *ta, int sid, int csap_id,
     unsigned int  timeout;
     char          tmp_name[100];
     int           rc, num;
-    unsigned int  i;
+    tapi_snmp_varbind_t var_bind;
 
     strcpy(tmp_name, "/tmp/te_snmp_op.XXXXXX"); 
     mktemp(tmp_name);
@@ -569,93 +677,53 @@ tapi_snmp_operation (const char *ta, int sid, int csap_id,
     if (f == NULL)
         return TE_RC(TE_TAPI, errno); /* return system errno */
 
-    fprintf(f, "{pdus{snmp:{type ");
-    switch (msg_type)
-    {
-        case NDN_SNMP_MSG_GET:      fprintf(f,"get, ");      break;
-        case NDN_SNMP_MSG_GETNEXT:  fprintf(f,"get-next, "); break;
-        case NDN_SNMP_MSG_GETBULK:  
-            fprintf(f,"get-bulk, repeats plain:%d, ", dlen); 
-            break;
 
-        case NDN_SNMP_MSG_SET:      fprintf(f,"set, ");      break;
-        default: 
-            fclose (f);
-            unlink(tmp_name);
-            return TE_RC(TE_TAPI, EINVAL);
-    }
-    fprintf(f,"variable-bindings {{name plain:{");
-    for (i = 0; i < val_oid->length; i ++)
-    {
-        fprintf(f, "%lu ", val_oid->id[i]);
-    }
-    fprintf (f, "}");
+    var_bind.name = *val_oid;
 
     if (msg_type == NDN_SNMP_MSG_SET)
     {
-        fprintf (f, ", value plain:");
-        switch (syntax)
+        var_bind.type = var_type;
+        var_bind.v_len = dlen;
+        switch(var_type)
         {
-            case NDN_SNMP_OBJSYN_INT:
-                fprintf (f, "simple:integer-value:%d", *((int*)data)); 
+            case TAPI_SNMP_OBJECT_ID:
+            case TAPI_SNMP_OCTET_STR:
+            case TAPI_SNMP_IPADDRESS:
+                var_bind.oct_string = data;
                 break;
-
-            case NDN_SNMP_OBJSYN_STR:
-                fprintf (f, "simple:string-value:'"); 
-                for(i = 0; i < dlen; i++)
-                    fprintf (f, "%02x ", ((uint8_t *)data)[i]); 
-                fprintf (f, "'H"); 
-                break;
-
-            case NDN_SNMP_OBJSYN_OID:
-                fprintf (f, "simple:objectID-value:{"); 
-                for (i = 0; i < dlen; i++)
-                    fprintf(f, "%lu ", ((oid *)data)[i]
-                            );
-                fprintf (f, "}"); 
-                break;
-
-            case NDN_SNMP_OBJSYN_IPADDR:
-                fprintf (f, "application-wide:ipAddress-value:"); 
-                for(i = 0; i < dlen; i++)
-                    fprintf (f, "%02x ", ((uint8_t *)data)[i]); 
-                fprintf (f, "'H"); 
-                break;
-
-            case NDN_SNMP_OBJSYN_COUNTER:
-                fprintf (f, "application-wide:counter-value:%d", 
-                                                        *((int*)data)); 
-                break;
-            case NDN_SNMP_OBJSYN_TIMETICKS:
-                fprintf (f, "application-wide:timeticks-value:%d", 
-                                                        *((int*)data)); 
-                break;
-            case NDN_SNMP_OBJSYN_ARB:
-            case NDN_SNMP_OBJSYN_BIGCOUNTER:
-                return TE_RC(TE_TAPI, ETENOSUPP);
-            case NDN_SNMP_OBJSYN_UINT:
-                fprintf (f, "application-wide:unsigned-value:%u", 
-                                                        *((uint32_t*)data)); 
-                break;
+            default:
+                var_bind.integer = *((int*)data);
         }
-
     }
+    else
+        var_bind.type = TAPI_SNMP_OTHER;
 
-    fprintf (f, "}}}}}\n");
+    rc = tapi_snmp_msg_head(f, msg_type);
+
+    if (rc == 0)
+        rc = tapi_snmp_msg_var_bind(f, &var_bind);
+
+
+    if (rc == 0)
+        rc = tapi_snmp_msg_tail(f);
 
     fclose(f);
-    memset (msg, 0, sizeof (*msg)); 
-    num = 1;
-    timeout = 5000; /** @todo Fix me */
 
-    rc = rcf_ta_trsend_recv(ta, sid, csap_id, tmp_name, tapi_snmp_pkt_handler, 
-                            msg, timeout, &num); 
+    if (rc == 0)
+    {
+        memset (msg, 0, sizeof (*msg)); 
+        num = 1;
+        timeout = 5000; /** @todo Fix me */
 
+        rc = rcf_ta_trsend_recv(ta, sid, csap_id, tmp_name, 
+                                tapi_snmp_pkt_handler, msg, timeout, &num); 
+
+    }
 #if !(DEBUG)
     unlink(tmp_name);
 #endif 
     
-    return rc;
+    return TE_RC(TE_TAPI, rc);
 }
 
 
@@ -665,7 +733,68 @@ tapi_snmp_set(const char *ta, int sid, int csap_id,
                          const tapi_snmp_varbind_t *var_binds, 
                          size_t num_vars, int *errstat, int *errindex)
 {
-    return TE_RC(TE_TAPI, ETENOSUPP);
+    FILE         *f;
+    unsigned int  timeout, i;
+    char          tmp_name[100];
+    int           rc, num;
+    tapi_snmp_message_t msg;
+
+    strcpy(tmp_name, "/tmp/te_snmp_op.XXXXXX"); 
+    mktemp(tmp_name);
+#if DEBUG
+    VERB ("tmp file: %s\n", tmp_name);
+#endif
+    f = fopen (tmp_name, "w+");
+    if (f == NULL)
+        return TE_RC(TE_TAPI, errno); /* return system errno */ 
+
+    rc = tapi_snmp_msg_head(f, NDN_SNMP_MSG_SET);
+
+    for (i = 0; (i < num_vars) && (rc == 0); i ++)
+    {
+        if (i > 0)
+            fprintf(f, ", ");
+        rc = tapi_snmp_msg_var_bind(f, var_binds + i); 
+    }
+
+    if (rc == 0)
+        rc = tapi_snmp_msg_tail(f);
+
+    fclose(f);
+    VERB("file %s written, rc %d", tmp_name, rc);
+
+    if (rc == 0)
+    {
+        memset (&msg, 0, sizeof(msg)); 
+        num = 1;
+        timeout = 5000; /** @todo Fix me */
+
+        rc = rcf_ta_trsend_recv(ta, sid, csap_id, tmp_name, 
+                                tapi_snmp_pkt_handler, &msg, timeout, &num); 
+
+    }
+    if (rc == 0)
+    {
+        if (msg.num_var_binds) /* this is real response from Test Agent*/
+        {
+            if (errstat)
+            {
+                *errstat = msg.err_status;
+                *errindex = msg.err_index;
+              
+                RING("in %s, errstat %d, errindex %d", __FUNCTION__, 
+                                msg.err_status, msg.err_index);
+            }
+            tapi_snmp_free_message(&msg);
+        }
+        else 
+            rc = msg.err_status;
+    } 
+#if !(DEBUG)
+    unlink(tmp_name);
+#endif 
+
+    return TE_RC(TE_TAPI, rc);
 }
 
 /* See description in tapi_snmp.h */
@@ -678,7 +807,7 @@ tapi_snmp_set_integer(const char *ta, int sid, int csap_id,
     int rc;
 
     rc = tapi_snmp_operation(ta, sid, csap_id, oid, 
-                             NDN_SNMP_MSG_SET, NDN_SNMP_OBJSYN_INT, 
+                             NDN_SNMP_MSG_SET, TAPI_SNMP_INTEGER, 
                              sizeof (local_value), &local_value, &msg); 
     if (rc == 0)
     {
@@ -704,7 +833,7 @@ tapi_snmp_set_octetstring(const char *ta, int sid, int csap_id,
     int rc;
 
     rc = tapi_snmp_operation(ta, sid, csap_id, oid, 
-                             NDN_SNMP_MSG_SET, NDN_SNMP_OBJSYN_STR, 
+                             NDN_SNMP_MSG_SET, TAPI_SNMP_OCTET_STR, 
                              size, value, &msg); 
     if (rc == 0)
     {

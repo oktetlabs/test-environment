@@ -84,7 +84,7 @@ typedef struct {
     ASN.1 codes. Not all possible codes are defined, only usually used 
     and supported in TAD SNMP module. */
 typedef enum {
-    TAPI_SNMP_OTHER,	
+    TAPI_SNMP_OTHER     = 0,	
     TAPI_SNMP_INTEGER   = ASN_INTEGER,  /**<    2 */
     TAPI_SNMP_OCTET_STR = ASN_OCTET_STR,/**<    4 */
     TAPI_SNMP_OBJECT_ID = ASN_OBJECT_ID,/**<    6 */
