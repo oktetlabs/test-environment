@@ -555,6 +555,14 @@ process_backup(cfg_backup_msg *msg)
             sprintf(tmp_buf, "diff %s %s >/dev/null 2>&1", msg->filename,
                              filename);
             msg->rc = ((system(tmp_buf) == 0) ? 0 : ETEBACKUP);
+            if (msg->rc == 0)
+                cfg_dh_release_after(msg->filename);
+            break;
+        }
+
+        case CFG_BACKUP_RELEASE:
+        {
+            msg->rc = cfg_dh_release_backup(filename);
             break;
         }
     }
@@ -830,6 +838,7 @@ log_msg(cfg_msg *msg, te_bool before)
                         "%s backup %s%s%s",
                         op == CFG_BACKUP_CREATE ? "Create" :
                         op == CFG_BACKUP_RESTORE ? "Restore" :
+                        op == CFG_BACKUP_RELEASE ? "Release" :
                         op == CFG_BACKUP_VERIFY ? "Verify" : "unknown",
                         op == CFG_BACKUP_CREATE ? "" :
                             ((cfg_backup_msg *)msg)->filename,
@@ -963,6 +972,8 @@ cfg_process_msg(cfg_msg **msg, te_bool update_dh)
             ERROR("Unknown message is received");
             break;
     }
+    
+    (*msg)->rc = TE_RC(TE_CS, (*msg)->rc);
 
     log_msg(*msg, FALSE);
 }

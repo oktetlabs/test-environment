@@ -45,6 +45,7 @@ typedef struct cfg_dh_entry {
     char                *old_oid; /**< OID for delete reversing */
     cfg_val_type         type;    /**< Type of the old_val */
     cfg_inst_val         old_val; /**< Data for reversing delete and set */
+    int                  seq;     /**< Sequence number for debugging */
 } cfg_dh_entry;
 
 static cfg_dh_entry *first = NULL;
@@ -631,6 +632,8 @@ cfg_dh_attach_backup(char *filename)
     
     tmp->next = last->backup;
     last->backup = tmp;
+    
+    VERB("Attach backup %s to command %d", filename, last->seq);
         
     return 0;
 }
@@ -644,9 +647,9 @@ has_backup(cfg_dh_entry *entry, char *filename)
 {
     cfg_backup *tmp;
     
-    for (tmp = entry->backup; 
-         tmp != NULL && strcmp(tmp->filename, filename) != 0;
-         tmp = tmp->next);
+    for (tmp = entry->backup; tmp != NULL; tmp = tmp->next)
+        if (strcmp(tmp->filename, filename) == 0)
+            break;
     
     return tmp != NULL;
 }
@@ -687,6 +690,9 @@ cfg_dh_restore_backup(char *filename)
             return ENOENT;
         }
     }
+    
+    if (filename != NULL && limit != NULL)
+        VERB("Restore backup %s up to command %d", filename, limit->seq);
         
     for (tmp = last; tmp != limit; tmp = prev)
     {
@@ -707,9 +713,8 @@ cfg_dh_restore_backup(char *filename)
                
                 if (rc != 0)
                 {
-                    ERROR("%s(): cfg_db_find() failed: %X",
+                    ERROR("%s(): cfg_db_find() failed: %X", 
                           __FUNCTION__, rc);
-                    RC_UPDATE(result, rc);
                     break;
                 }
                
@@ -794,6 +799,7 @@ cfg_dh_restore_backup(char *filename)
                 break;
             }
         }
+        VERB("Restored command %d", tmp->seq);
         free_dh_entry(tmp);
         if (prev != NULL)
             prev->next = NULL;
@@ -925,10 +931,12 @@ cfg_dh_add_command(cfg_msg *msg)
         first = last = entry;
         entry->next = NULL;
         entry->prev = NULL;
+        entry->seq = 1;
     }
     else
     {
         last->next = entry;
+        entry->seq = last->seq + 1;
         entry->prev = last;
         last = entry;
     }
@@ -938,7 +946,9 @@ cfg_dh_add_command(cfg_msg *msg)
         for (entry = first; entry != NULL; entry = entry->next)
             free_entry_backup(entry);
     }
-
+    
+    VERB("Add command %d", last->seq);
+    
     return 0;
 #undef RETERR    
 }
@@ -969,6 +979,7 @@ cfg_dh_delete_last_command(void)
         last = prev;
     }
 
+    VERB("Delete last command %d", tmp->seq);
     free_dh_entry(tmp);
 }
 
@@ -1069,6 +1080,7 @@ cfg_dh_optimize(void)
          for (; tmp != NULL; tmp = tmp_del)
          {
              tmp_del = tmp->next;
+             VERB("Optimize: delete command %d", tmp->seq);
              free_dh_entry(tmp);
          }
     }
@@ -1108,3 +1120,77 @@ cfg_dh_optimize(void)
             tmp = tmp->next;
     }
 }
+
+/**
+ * Release history after backup.
+ * 
+ * @param filename      name of the backup file
+ */
+void 
+cfg_dh_release_after(char *filename)
+{
+    cfg_dh_entry *limit, *next, *cur;
+    
+    if (filename == NULL)
+        return;
+    
+    for (limit = last; limit != NULL; limit = limit->prev)
+    {
+        if (limit->backup != NULL)
+        {
+            if (has_backup(limit, filename))
+                break;
+            return;
+        }
+    }
+        
+    if (limit == NULL || limit == last)
+        return;
+    
+    for (cur = limit->next; cur != NULL; cur = next)
+    {
+        next = cur->next;
+        VERB("Release after: delete command %d", cur->seq);
+        free_dh_entry(cur);
+    }
+    last = limit;
+    last->next = NULL;
+}
+
+/**
+ * Forget about this backup.
+ * 
+ * @param filename      name of the backup file
+ *
+ * @return status code
+ */
+int
+cfg_dh_release_backup(char *filename)
+{
+    cfg_dh_entry *tmp;
+    
+    for (tmp = first; tmp != NULL; tmp = tmp->next)
+    {
+        cfg_backup *cur, *prev;
+      
+        for (cur = tmp->backup, prev = NULL; 
+             cur != NULL && strcmp(cur->filename, filename) != 0;
+             prev = cur, cur = cur->next);
+             
+        if (cur == NULL)
+            continue;
+        
+        if (prev)
+            prev->next = cur->next;
+        else
+            tmp->backup = cur->next;
+            
+        free(cur->filename);
+        free(cur);
+        
+        return 0;
+    }
+    
+    return ENOENT;
+}
+

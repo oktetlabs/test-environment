@@ -42,7 +42,7 @@ extern "C" {
  *
  * @return status code (errno.h)
  */
-int cfg_dh_process_file(xmlNodePtr node);
+extern int cfg_dh_process_file(xmlNodePtr node);
 
 /**
  * Create "history" configuration file with specified name.
@@ -51,7 +51,7 @@ int cfg_dh_process_file(xmlNodePtr node);
  *
  * @return status code (errno.h)
  */
-int cfg_dh_create_file(char *filename);
+extern int cfg_dh_create_file(char *filename);
 
 /**
  * Attach backup to the last command.
@@ -60,7 +60,7 @@ int cfg_dh_create_file(char *filename);
  *
  * @return status code (see te_errno.h)
  */
-int cfg_dh_attach_backup(char *filename);
+extern int cfg_dh_attach_backup(char *filename);
 
 /**
  * Restore backup with specified name using reversed command
@@ -73,7 +73,7 @@ int cfg_dh_attach_backup(char *filename);
  * @retval ENOENT       there is not command in dynamic history to which
  *                      the specified backup is attached
  */
-int cfg_dh_restore_backup(char *filename);
+extern int cfg_dh_restore_backup(char *filename);
 
 /**
  * Add a command to the history.
@@ -82,22 +82,38 @@ int cfg_dh_restore_backup(char *filename);
  *
  * @return 0 (success) or ENOMEM
  */
-int cfg_dh_add_command(cfg_msg *msg);
+extern int cfg_dh_add_command(cfg_msg *msg);
 
 /**
  * Delete last command from the history.
  */
-void cfg_dh_delete_last_command(void);
+extern void cfg_dh_delete_last_command(void);
 
 /**
  * Destroy dynamic hostory before shut down.
  */
-void cfg_dh_destroy(void);
+extern void cfg_dh_destroy(void);
 
 /**
  * Remove useless command sequences.
  */
-void cfg_dh_optimize(void);
+extern void cfg_dh_optimize(void);
+
+/**
+ * Release history after backup.
+ * 
+ * @param filename      name of the backup file
+ */
+extern void cfg_dh_release_after(char *filename);
+
+/**
+ * Forget about this backup.
+ * 
+ * @param filename      name of the backup file
+ *
+ * @return status code
+ */
+extern int cfg_dh_release_backup(char *filename);
 
 #ifdef __cplusplus
 }
