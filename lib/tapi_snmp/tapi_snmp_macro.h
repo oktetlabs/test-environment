@@ -97,10 +97,10 @@ extern "C" {
  * @param len_     The number of sub ids to add
  * @param subid_   SUB ID value
  */
-#define SNMP_CREATE_OID(oid_, len_, sub_ids_...) \
-    do {                                            \
-        tapi_snmp_zero_oid(oid_);                   \
-        tapi_snmp_append_oid(oid_, len_, sub_ids_); \
+#define TAPI_SNMP_CREATE_OID(oid_, len_, sub_ids_...) \
+    do {                                              \
+        tapi_snmp_zero_oid(oid_);                     \
+        tapi_snmp_append_oid(oid_, len_, sub_ids_);   \
     } while (0)
 
 /**
@@ -109,7 +109,7 @@ extern "C" {
  * @param oid_     OID to be appended
  * @param subid_   SUB ID value
  */
-#define SNMP_APPEND_OID_SUBID(oid_, subid_) \
+#define TAPI_SNMP_APPEND_OID_SUBID(oid_, subid_) \
     tapi_snmp_append_oid(oid_, 1, subid_)
 
 
@@ -118,7 +118,7 @@ extern "C" {
  *
  * @param oid_     OID to be cleared
  */
-#define SNMP_OID_ZERO(oid_) \
+#define TAPI_SNMP_OID_ZERO(oid_) \
     tapi_snmp_oid_zero(oid_)
 
 /**
@@ -150,15 +150,15 @@ extern "C" {
  * @param syntax_   Location for syntax 
  * 
  */ 
-#define SNMP_GET_SYNTAX(label_, syntax_) \
+#define TAPI_SNMP_GET_SYNTAX(label_, syntax_) \
     do                                                                      \
     {                    	                                            \
         int             rc_;                                                \
         tapi_snmp_oid_t oid_;                                               \
 	                                                                    \
-        SNMP_MAKE_OID(label_, oid_);                                        \
+        TAPI_SNMP_MAKE_OID(label_, &oid_);                                  \
 	                                                                    \
-        rc_ = tapi_snmp_get_syntax(&oid_, &syntax_);                        \
+        rc_ = tapi_snmp_get_syntax(&oid_, syntax_);                         \
 	if (rc_ != 0)                                                       \
 	{                                                                   \
             TEST_FAIL("snmp get syntax failed  OID, result\n", label_, rc_);\
@@ -180,19 +180,19 @@ extern "C" {
  *
  */
 #define TAPI_SNMP_GET_TABLE(ta_, sid_, csap_id_, label_, num_, result_) \
-    do {                                                           \
-        int             rc_;                                       \
-        tapi_snmp_oid_t oid_;                                      \
-	                                                           \
-        SNMP_MAKE_OID(label_, oid_);                               \
- 	rc_ = tapi_snmp_get_table(ta_, sid_, csap_id_, &oid_,      \
-                                  num_, result_);                  \
-	if (rc_ != 0)                                              \
-	{                                                          \
-            TEST_FAIL("snmp get table for %s failed, result %X\n", \
-	              label_, rc_);                                \
-        }                                                          \
-    } while (0)        	    
+    do {                                                                \
+        int             rc_;                                            \
+        tapi_snmp_oid_t oid_;                                           \
+	                                                                \
+        TAPI_SNMP_MAKE_OID(label_, &oid_);                              \
+ 	rc_ = tapi_snmp_get_table(ta_, sid_, csap_id_, &oid_,           \
+                                  num_, (void **)result_);              \
+	if (rc_ != 0)                                                   \
+	{                                                               \
+            TEST_FAIL("snmp get table for %s failed, result %X\n",      \
+	              label_, rc_);                                     \
+        }                                                               \
+    } while (0)
 
 /**
  * Extracts subtable so that all the entries in the subtable have
@@ -258,7 +258,7 @@ extern "C" {
         int             rc_;                                       \
         tapi_snmp_oid_t oid_;                                      \
 	                                                           \
-        SNMP_MAKE_OID(label_, oid_);                               \
+        TAPI_SNMP_MAKE_OID(label_, oid_);                          \
  	rc_ = tapi_snmp_get_table_rows(ta_, sid_, csap_id_, &oid_, \
                                        num_, suffixes_, &result_); \
 	if (rc_ != 0)                                              \
@@ -281,7 +281,7 @@ extern "C" {
         int             rc_;                                             \
         tapi_snmp_oid_t oid_;                                            \
 	                                                                 \
-        SNMP_MAKE_OID(label_, oid_);                                     \
+        TAPI_SNMP_MAKE_OID(label_, &oid_);                               \
  	rc_ = tapi_snmp_get_table_dimension(&oid_, dimension_);          \
 	if (rc_ != 0)                                                    \
 	{                                                                \
@@ -298,13 +298,13 @@ extern "C" {
  * @param columns_   Columns of the table.
  *
  */ 
-#define SNMP_GET_TABLE_COLUMNS(label_, columns_) \
+#define TAPI_SNMP_GET_TABLE_COLUMNS(label_, columns_) \
     do                                                                     \
     {                                                                      \
         int             rc_;                                               \
         tapi_snmp_oid_t oid_;                                              \
 	                                                                   \
-        SNMP_MAKE_OID(label_, oid_);                                       \
+        TAPI_SNMP_MAKE_OID(label_, &oid_);                                 \
  	rc_ = tapi_snmp_get_table_columns(&oid_, &columns_);               \
 	if (rc_ != 0)                                                      \
 	{                                                                  \
@@ -356,7 +356,7 @@ extern "C" {
     {                                                          \
 	tapi_snmp_oid_t label_;                                \
 	int             rc_;                                   \
-	SNMP_MAKE_OID(#label_, label_);                        \
+	TAPI_SNMP_MAKE_OID(#label_, label_);                   \
         rc_ = tapi_snmp_make_table_index(&label_, &index_);    \
 	if (rc_)                                               \
             TEST_FAIL("Make table index failed\n");            \

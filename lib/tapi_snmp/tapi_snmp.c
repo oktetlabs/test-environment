@@ -472,7 +472,7 @@ tapi_snmp_packet_to_plain(asn_value *pkt, tapi_snmp_message_t *snmp_message)
 /* See description in tapi_snmp.h */
 int 
 tapi_snmp_csap_create(const char *ta, int sid, const char *snmp_agent, 
-                        const char *community, int snmp_version, int *csap_id)
+                      const char *community, int snmp_version, int *csap_id)
 {
     return tapi_snmp_gen_csap_create(ta, sid, snmp_agent,
                                 community, snmp_version, 0, 0,  -1, csap_id);
@@ -492,6 +492,7 @@ tapi_snmp_csap_create(const char *ta, int sid, const char *snmp_agent,
 
     fprintf(f, "{ snmp:{ community plain:\"%s\", "
              " version plain:%d, "
+             " timeout: 10, "
              " snmp-agent plain:\"%s\"}}\n",
              community, 
              snmp_version - 1, /* convert "human"->ASN SNMP version */
@@ -1781,7 +1782,7 @@ tapi_snmp_get_table(const char *ta, int sid, int csap_id,
     
     table_height = 0;
     for (index_l_en = ti_list.next; index_l_en; index_l_en = index_l_en->next)
-        table_height ++; 
+        table_height++; 
 
     *num = table_height;
 
@@ -1789,15 +1790,16 @@ tapi_snmp_get_table(const char *ta, int sid, int csap_id,
           table_width, table_height, num_columns);
     if (table_height == 0) 
         return 0;
-    
-    *result = calloc (table_height, (table_width + 1) * sizeof(void*));
+
+    *result = calloc(table_height, (table_width + 1) * sizeof(void *));
     if (*result == NULL)
         return TE_RC(TE_TAPI, ENOMEM);
-    
+
     if (table_width == 1)
-    { /* no more SNMP operations need, only one column should be get */ 
-        int i = 0;
-        void **res_table = (void **) *result;
+    {
+        /* No more SNMP operations need, only one column should be got */ 
+        void **res_table = (void **)*result;
+        int    i = 0;
 
         for (index_l_en = ti_list.next, i = 0; 
              index_l_en; index_l_en = index_l_en->next, i++) 
@@ -1815,14 +1817,14 @@ tapi_snmp_get_table(const char *ta, int sid, int csap_id,
         int rest_varbinds = table_cardinality;
         int got_varbinds = 0;
         tapi_snmp_oid_t begin_of_portion;
-        tapi_snmp_varbind_t *vb = calloc (table_cardinality, 
-                                          sizeof (tapi_snmp_varbind_t));
+        tapi_snmp_varbind_t *vb = calloc(table_cardinality, 
+                                         sizeof(tapi_snmp_varbind_t));
 
 
         VERB("res_table: %x", res_table);
         entry.length --; 
         begin_of_portion = entry;
-            /* to make 'entry' be OID of table Entry node */
+        /* to make 'entry' be OID of table Entry node */
 
         while (rest_varbinds)
         {
@@ -1855,7 +1857,6 @@ tapi_snmp_get_table(const char *ta, int sid, int csap_id,
             begin_of_portion = vb[got_varbinds - 1].name;
 
             VERB("prepare next bulk to oid %s",  print_oid(&begin_of_portion));
-
         }
         INFO("table cardinality, bulk got %d varbinds.", 
                     table_cardinality);
@@ -1870,7 +1871,7 @@ tapi_snmp_get_table(const char *ta, int sid, int csap_id,
         {
             int i; 
             int ti_len = vb[0].name.length - ti_start;
-                    /* table index length - number of index suboids.*/
+            /* table index length - number of index suboids.*/
 
             int row_num;
 
