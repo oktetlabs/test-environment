@@ -509,9 +509,9 @@ extern int rpc_enum_network_events(rcf_rpc_server *handle,
 /** Return codes for rpc_wait_multiple_events */
 enum {
     WSA_WAIT_FAILED,
-    WSA_IO_COMPLETION,
+    WAIT_IO_COMPLETION,
     WSA_WAIT_TIMEOUT,
-    WSA_WAIT_EVENT
+    WSA_WAIT_EVENT_0
 };
 
 /** WSAWaitForMultipleEvents(), returns -1 if timeout expires */

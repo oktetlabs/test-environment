@@ -5732,7 +5732,7 @@ rpc_wait_multiple_events(rcf_rpc_server *handle,
          count, events, wait_all ? "true" : "false", timeout, 
          alertable ? "true" : "false", out.retval,
          errno_rpc2str(RPC_ERRNO(handle)));
-#if 0
+
     if (RPC_CALL_OK)
     {
         switch (out.retval)
@@ -5751,9 +5751,9 @@ rpc_wait_multiple_events(rcf_rpc_server *handle,
                 
             default:
                 out.retval = WSA_WAIT_EVENT_0 + 
-                             (out.retval - TARCPC_WSA_WAIT_EVENT_0);
+                             (out.retval - TARPC_WSA_WAIT_EVENT_0);
         }
     }
-#endif    
+    
     RETVAL_VAL(out.retval, wait_multiple_events);
 }
