@@ -806,13 +806,10 @@ test_params_to_string(const test_params *params)
  * @param result    Test result
  */
 static void
-log_test_result(test_id parent, test_id test, int result, te_bool verbose)
+log_test_result(test_id parent, test_id test, int result)
 {
-    const char *verdict;
-
     if (result == ETESTPASS)
     {
-        verdict = "PASSED";
         LOG_RING(TESTER_FLOW, "$T%d $T%d PASSED", parent, test);
     }
     else
@@ -821,29 +818,24 @@ log_test_result(test_id parent, test_id test, int result, te_bool verbose)
         {
             case ETESTKILL:
                 LOG_RING(TESTER_FLOW, "$T%d $T%d KILLED", parent, test);
-                verdict = "KILLED";
                 break;
 
             case ETESTCORE:
                 LOG_RING(TESTER_FLOW, "$T%d $T%d DUMPED", parent, test);
-                verdict = "DUMPED";
                 break;
 
             case ETESTSKIP:
                 LOG_RING(TESTER_FLOW, "$T%d $T%d SKIPPED", parent, test);
-                verdict = "SKIPPED";
                 break;
 
             case ETESTFAKE:
                 LOG_RING(TESTER_FLOW, "$T%d $T%d FAKE", parent, test);
-                verdict = "FAKE";
                 break;
 
             default:
             {
                 const char *reason;
 
-                verdict = "FAILED";
                 switch (result)
                 {
                     case ETESTFAIL:
@@ -874,11 +866,6 @@ log_test_result(test_id parent, test_id test, int result, te_bool verbose)
                 break;
             }
         }
-    }
-
-    if (verbose)
-    {
-        printf("%s\n", verdict);
     }
 }
 
@@ -996,15 +983,9 @@ run_test_script(tester_ctx *ctx, test_script *script, test_id id,
         return ETESMALLBUF;
     }
 
+    tester_out_start(RUN_ITEM_SCRIPT, script->name, ctx->id, id, ctx->flags);
+
     /* Log call */
-    if (ctx->flags & TESTER_CTX_VERBOSE)
-    {
-        if (ctx->flags & TESTER_CTX_VVERB)
-            printf("Starting %d:%d test %s ... ", ctx->id, id, script->name);
-        else
-            printf("Starting test %s ... ", script->name);
-        fflush(stdout);
-    }
     LOG_RING(TESTER_FLOW, "$T%d $T%d TEST %s \"%s\" ARGs%s",
              ctx->id, id, script->name, PRINT_STRING(script->descr),
              PRINT_STRING(params_str));
@@ -1020,7 +1001,7 @@ run_test_script(tester_ctx *ctx, test_script *script, test_id id,
     }
     else
     {
-        ERROR("$T%d system(%s)", id, cmd);
+        VERB("$T%d system(%s)", id, cmd);
         rc = system(cmd);
         if (rc == -1)
         {
@@ -1075,8 +1056,9 @@ run_test_script(tester_ctx *ctx, test_script *script, test_id id,
         }
     }
 
-    log_test_result(ctx->id, id, result,
-                    !!(ctx->flags & TESTER_CTX_VERBOSE));
+    log_test_result(ctx->id, id, result);
+    tester_out_done(RUN_ITEM_SCRIPT, script->name, ctx->id, id, ctx->flags,
+                    result);
 
     EXIT("%X", result);
 
@@ -1156,10 +1138,7 @@ run_test_session(tester_ctx *ctx, test_session *session, test_id id,
 
     if (id != TEST_ID_PKG_MAIN_SESSION)
     {
-        if (ctx->flags & TESTER_CTX_VVERB)
-        {
-            printf("Starting %d:%d session ...\n", parent_id, id);
-        }
+        tester_out_start(RUN_ITEM_SESSION, "", ctx->id, id, ctx->flags);
         /* Log test session bindings and parameters */
         params_str = test_params_to_string(params);
         LOG_RING(TESTER_FLOW, "$T%d $T%d SESSION ARGs%s",
@@ -1256,12 +1235,9 @@ run_test_session(tester_ctx *ctx, test_session *session, test_id id,
 
     if (id != TEST_ID_PKG_MAIN_SESSION)
     {
-        if (ctx->flags & TESTER_CTX_VVERB)
-        {
-            printf("Done %d:%d session ... ", ctx->id, id);
-        }
-        log_test_result(parent_id, id, result,
-                        !!(ctx->flags & TESTER_CTX_VVERB));
+        log_test_result(ctx->id, id, result);
+        tester_out_done(RUN_ITEM_SESSION, "", ctx->id, id, ctx->flags,
+                        result);
     }
 
     EXIT("%d", result);
@@ -1324,15 +1300,7 @@ run_test_package(tester_ctx *ctx, test_package *pkg, test_id id,
         }
     }
 
-    if (ctx->flags & TESTER_CTX_VERBOSE)
-    {
-        if (ctx->flags & TESTER_CTX_VVERB)
-            printf("Starting %d:%d package %s ...\n",
-                   parent_id, id, pkg->name);
-        else
-            printf("Starting package %s ...\n", pkg->name);
-        fflush(stdout);
-    }
+    tester_out_start(RUN_ITEM_PACKAGE, pkg->name, parent_id, id, ctx->flags);
 
     /* Log name, description, author(s) and parameters */
     authors = persons_info_to_string(&pkg->authors);
@@ -1363,15 +1331,9 @@ run_test_package(tester_ctx *ctx, test_package *pkg, test_id id,
         result = ETESTSKIP;
     }
 
-    if (ctx->flags & TESTER_CTX_VERBOSE)
-    {
-        if (ctx->flags & TESTER_CTX_VVERB)
-            printf("Done %d:%d package %s ... ", parent_id, id, pkg->name);
-        else
-            printf("Done package %s ... ", pkg->name);
-    }
-    log_test_result(parent_id, id, result,
-                    !!(ctx->flags & TESTER_CTX_VERBOSE));
+    log_test_result(parent_id, id, result);
+    tester_out_done(RUN_ITEM_PACKAGE, pkg->name, parent_id, id, ctx->flags,
+                    result);
     
     tester_ctx_free(ctx);
 

@@ -394,4 +394,31 @@ extern test_id tester_get_id(void);
 extern int tester_parse_config(tester_cfg *cfg);
 extern int tester_run_config(tester_ctx *ctx, tester_cfg *cfg);
 
+/**
+ * Log test start to terminal.
+ *
+ * @param type      Type of run item
+ * @param name      Name of the test
+ * @param parent    Parent ID
+ * @param self      Self ID of the test
+ * @param flags     Tester context flags
+ */
+extern void tester_out_start(run_item_type type, const char *name,
+                             test_id parent, test_id self,
+                             unsigned int flags);
+
+/**
+ * Log test done to terminal.
+ *
+ * @param type      Type of run item
+ * @param name      Name of the test
+ * @param parent    Parent ID
+ * @param self      Self ID of the test
+ * @param flags     Tester context flags
+ * @param result    Test result
+ */
+extern void tester_out_done(run_item_type type, const char *name,
+                            test_id parent, test_id self,
+                            unsigned int flags, int result);
+
 #endif /* !__TE_ENGINE_TESTER_INTERNAL_H__ */
