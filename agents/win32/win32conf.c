@@ -51,6 +51,10 @@ extern char *ta_name;
 /* Auxiliary buffer */
 static char  buf[2048] = {0, };
 
+#define PRINT(msg...) \
+    do {                                                \
+       printf(msg); printf("\n"); fflush(stdout);       \
+    } while (0)
 
 /** Route is direct "local interface" in terms of RFC 1354 */
 #define FORW_TYPE_LOCAL  3
@@ -1316,7 +1320,9 @@ route_get(unsigned int gid, const char *oid, char *value,
 
         MASK2PREFIX(table->table[i].dwForwardMask, p);
         if (table->table[i].dwForwardDest != rt.dst || p != rt.prefix ||
+#ifdef WITH_METRIC        
             table->table[i].dwForwardMetric1 != rt.metric ||
+#endif            
             (table->table[i].dwForwardType == FORW_TYPE_LOCAL &&
              table->table[i].dwForwardIfIndex != rt.if_index) ||
             (table->table[i].dwForwardType == FORW_TYPE_REMOTE &&
@@ -1388,8 +1394,17 @@ route_add(unsigned int gid, const char *oid, const char *value,
 
     if ((rc = route_parse_inst_name(route, &rt)) != 0)
         return rc;
-
-    entry.dwForwardNextHop = rt.dst;
+        
+#ifndef WITH_METRIC        
+    if (rt.metric != 0)
+    {
+        ERROR("Route metrics are not supported");
+        return TE_RC(TE_TA_WIN32, EOPNOTSUPP);
+    }
+#endif            
+        
+    entry.dwForwardDest = rt.dst;
+    entry.dwForwardNextHop = rt.gw;
     entry.dwForwardMask = PREFIX2MASK(rt.prefix);
 
     if (rt.forw_type == FORW_TYPE_LOCAL)
@@ -1406,7 +1421,7 @@ route_add(unsigned int gid, const char *oid, const char *value,
             return rc;
         }
     }
-
+    
     entry.dwForwardProto = 3;
     if (CreateIpForwardEntry(&entry) != 0)
     {
@@ -1454,10 +1469,11 @@ route_del(unsigned int gid, const char *oid, const char *route)
         {
             continue;
         }
-
         MASK2PREFIX(table->table[i].dwForwardMask, p);
         if (table->table[i].dwForwardDest != rt.dst || p != rt.prefix ||
+#ifdef WITH_METRIC        
             table->table[i].dwForwardMetric1 != rt.metric ||
+#endif            
             (table->table[i].dwForwardType == FORW_TYPE_LOCAL &&
              table->table[i].dwForwardIfIndex != rt.if_index) ||
             (table->table[i].dwForwardType == FORW_TYPE_REMOTE &&
@@ -1541,12 +1557,14 @@ route_list(unsigned int gid, const char *oid, char **list)
                      (int)(table->table[i].dwForwardIfIndex));
         }
         ptr += strlen(ptr);
+#ifdef WITH_METRIC        
         if (table->table[i].dwForwardMetric1 != 0)
         {
             snprintf(ptr, end_ptr - ptr, ",metric=%d",
                      (int)(table->table[i].dwForwardMetric1));
             ptr += strlen(ptr);
         }
+#endif        
         snprintf(ptr, end_ptr - ptr, " ");
         ptr += strlen(ptr);
     }
