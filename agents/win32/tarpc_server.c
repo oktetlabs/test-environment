@@ -3557,6 +3557,116 @@ TARPC_FUNC(wsa_recv_disconnect, {},
 }
 )
 
+/* WSARecvMsg */
+/*--------------- WSARecvMsg -----------------------------*/
+TARPC_FUNC(wsa_recv_msg,
+{
+    if (in->msg.msg_val != NULL &&
+        in->msg.msg_val[0].msg_iov.msg_iov_val != NULL &&
+        in->msg.msg_val[0].msg_iov.msg_iov_len > RCF_RPC_MAX_IOVEC)
+    {
+        ERROR("Too long iovec is provided");
+        out->common._errno = TE_RC(TE_TA_WIN32, ENOMEM);
+        return TRUE;
+    }
+    COPY_ARG(msg);
+    COPY_ARG(bytes_received);
+},
+{
+    WSABUF               buf_arr[RCF_RPC_MAX_IOVEC];
+    WSAMSG               msg;
+    WSAOVERLAPPED        *overlapped;
+    struct tarpc_msghdr  *rpc_msg;
+    unsigned int         i;
+
+    memset(buf_arr, 0, sizeof(buf_arr));
+
+    if (in->overlapped != 0)
+    {
+        overlapped = (WSAOVERLAPPED *)(in->overlapped);
+    }
+    else
+    {
+        overlapped = NULL;
+    }
+
+    rpc_msg = out->msg.msg_val;
+
+    if (rpc_msg == NULL)
+    {
+        MAKE_CALL(out->retval =
+                  (*pf_wsa_recvmsg)(in->s, NULL,
+                      out->bytes_received.bytes_received_len == 0 ?
+                        NULL :
+                        (LPDWORD)(out->bytes_received.bytes_received_val),
+                      overlapped,
+                      in->callback ? (LPWSAOVERLAPPED_COMPLETION_ROUTINE)
+                        completion_callback : NULL));
+    }
+    else
+    {
+        memset(&msg, 0, sizeof(msg));
+
+        PREPARE_ADDR(rpc_msg->msg_name, rpc_msg->msg_namelen);
+        msg.namelen = rpc_msg->msg_namelen;
+        msg.name = a;
+
+        msg.dwBufferCount = rpc_msg->msg_iovlen;
+        if (rpc_msg->msg_iov.msg_iov_val != NULL)
+        {
+            for (i = 0; i < rpc_msg->msg_iov.msg_iov_len; i++)
+            {
+                INIT_CHECKED_ARG(
+                    rpc_msg->msg_iov.msg_iov_val[i].iov_base.iov_base_val,
+                    rpc_msg->msg_iov.msg_iov_val[i].iov_base.iov_base_len,
+                    rpc_msg->msg_iov.msg_iov_val[i].iov_len);
+                buf_arr[i].buf =
+                    rpc_msg->msg_iov.msg_iov_val[i].iov_base.iov_base_val;
+                buf_arr[i].len =
+                    rpc_msg->msg_iov.msg_iov_val[i].iov_len;
+            }
+            msg.lpBuffers = buf_arr;
+
+            INIT_CHECKED_ARG((char *)buf_arr, sizeof(buf_arr), 0);
+        }
+
+        INIT_CHECKED_ARG(rpc_msg->msg_control.msg_control_val,
+                         rpc_msg->msg_control.msg_control_len,
+                         rpc_msg->msg_controllen);
+        msg.Control.buf = rpc_msg->msg_control.msg_control_val;
+        msg.Control.len = rpc_msg->msg_controllen;
+
+        msg.dwFlags = send_recv_flags_rpc2h(rpc_msg->msg_flags);
+
+        /*
+         * msg_name, msg_iov, msg_iovlen and msg_control MUST NOT be
+         * changed.
+         *
+         * msg_namelen, msg_controllen and msg_flags MAY be changed.
+         */
+        INIT_CHECKED_ARG((char *)&msg.name, sizeof(msg.name), 0);
+        INIT_CHECKED_ARG((char *)&msg.lpBuffers, sizeof(msg.lpBuffers), 0);
+        INIT_CHECKED_ARG((char *)&msg.dwBufferCount,
+                         sizeof(msg.dwBufferCount), 0);
+        INIT_CHECKED_ARG((char *)&msg.Control, sizeof(msg.Control), 0);
+            
+        MAKE_CALL(out->retval =
+                  (*pf_wsa_recvmsg)(in->s, &msg,
+                      out->bytes_received.bytes_received_len == 0 ?
+                        NULL :
+                        (LPDWORD)(out->bytes_received.bytes_received_val),
+                      overlapped,
+                      in->callback ? (LPWSAOVERLAPPED_COMPLETION_ROUTINE)
+                        completion_callback : NULL));
+
+        sockaddr_h2rpc(a, &(rpc_msg->msg_name));
+        rpc_msg->msg_namelen = msg.namelen;
+        rpc_msg->msg_controllen = msg.Control.len;
+        rpc_msg->msg_flags = send_recv_flags_h2rpc(msg.dwFlags);
+    }
+}
+)
+
 /*-------------- sigset_t constructor ---------------------------*/
 
 bool_t
@@ -3670,4 +3780,3 @@ TARPC_FUNC(kill, {},
 }
 )
 
-/* WSARecvMsg */
