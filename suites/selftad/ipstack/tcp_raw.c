@@ -26,7 +26,7 @@
  * $Id$
  */
 
-#define TE_TEST_NAME    "ipstack/udp1"
+#define TE_TEST_NAME    "ipstack/tcp_raw"
 
 #include "config.h"
 
@@ -50,14 +50,14 @@
 #include "ndn_ipstack.h"
 
 void
-udp_handler(char *fn, void *p)
+tcp_handler(char *fn, void *p)
 { 
     int rc, s_parsed;
     asn_value_p packet, eth_header;
 
     UNUSED(p);
 
-    VERB("ETH handler, file: %s\n", fn);
+    INFO("TCP handler, file: %s\n", fn);
 
     rc = asn_parse_dvalue_in_file(fn, ndn_raw_packet, &packet, &s_parsed);
 
@@ -68,23 +68,9 @@ udp_handler(char *fn, void *p)
 
         eth_header = asn_read_indexed(packet, 0, "pdus");
         rc = ndn_eth_packet_to_plain(eth_header, &eh);
-        if (rc)
-            VERB("eth_packet to plain fail: %x\n", rc);
-        else
-        {
-            int i; 
-            VERB("dst - %02x", eh.dst_addr[0]);
-            for (i = 1; i < 6; i++)
-                VERB(":%02x", eh.dst_addr[i]);
-
-            VERB("\nsrc - %02x", eh.src_addr[0]);
-            for (i = 1; i < 6; i++)
-                VERB (":%02x", eh.src_addr[i]);
-            VERB("\ntype - %04x\n", eh.eth_type_len);
-        } 
     }
     else
-        VERB("parse file failed, rc = %x, symbol %d\n", rc, s_parsed); 
+        ERROR("parse file failed, rc = %x, symbol %d\n", rc, s_parsed); 
 
 }
 

@@ -22,6 +22,7 @@
  * MA  02111-1307  USA
  *
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
+ * @author Konstantin Abramenko <konst@oktetlabs.ru>
  * 
  * $Id$
  */

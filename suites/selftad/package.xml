@@ -5,7 +5,7 @@
 
     <author mailto="Konstantin.Abramenko@oktetlabs.ru"/>
 
-    <session random="true">
+    <session>
         <run>
             <package name="cli"/>
         </run>

@@ -17,3 +17,7 @@ tetest_PROGRAMS = udp1
 LDADD = -ltapi_ipstack -lndn -lasn -ltapi -lrcfapi -lconfapi -lconf_oid \
           -lipc -lpthread -llogger_ten
 
+NDS_DIR=${TE_BASE}/storage/nds/self
+
+
+tetest_DATA=${NDS_DIR}/ipstack/udp-filter.asn

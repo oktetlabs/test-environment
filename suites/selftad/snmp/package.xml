@@ -20,6 +20,9 @@
             <script name="snmp_gets">
                 <req id="SNMP"/>
             </script>
+            <arg name="ta"/>
+            <arg name="snmp_agt"/>
+            <arg name="snmp_version"/>
             <arg name="mib_name">
                 <value>SNMPv2-MIB.txt</value>
             </arg>
@@ -32,6 +35,9 @@
             <script name="snmp_get_if_table">
                 <req id="SNMP"/>
             </script>
+            <arg name="ta"/>
+            <arg name="snmp_agt"/>
+            <arg name="snmp_version"/>
             <arg name="mib_name">
                 <value>SNMPv2-MIB.txt</value>
             </arg>

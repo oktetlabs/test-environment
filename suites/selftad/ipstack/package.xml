@@ -15,6 +15,9 @@
                 <req id="IPSTACK"/>
                 <req id="UDP"/>
             </script>
+            <arg name="pattern_file">
+                <value>udp-filter.asn</value>
+            </arg>
         </run>
     </session>
 
