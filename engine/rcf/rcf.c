@@ -64,6 +64,9 @@
 #ifdef HAVE_ASSERT_H
 #include <assert.h>
 #endif
+#ifdef HAVE_SIGNAL_H
+#include <signal.h>
+#endif
 
 #include <libxml/xmlmemory.h>
 #include <libxml/parser.h>
@@ -178,6 +181,9 @@ static int reboot_num = 0;      /**< Number of TA which should be
                                      for rebooted */
 static int shutdown_num = 0;    /**< Number of TA which should be 
                                      for shut down */
+
+static te_bool rcf_wait_shutdown = FALSE;   /**< Should RCF go to wait
+                                                 of shut down state */
 
 static struct ipc_server *server = NULL;    /**< IPC Server handle */
 static int server_fd;                       /**< IPC file descriptor 
@@ -1636,6 +1642,20 @@ wait_shutdown()
     }
 }
 
+
+/**
+ * SIGPIPE handler.
+ *
+ * @param sig       Signal number
+ */
+static void
+sigpipe_handler(int sig)
+{
+    UNUSED(sig);
+    rcf_wait_shutdown = TRUE;
+}
+
+
 /**
  * Main routine of the RCF process. Usage: rcf <configuration file name>
  *
@@ -1647,6 +1667,9 @@ main(int argc, char **argv)
     usrreq *req = NULL;
     ta     *agent;
     int     rc;
+
+    /* Register SIGPIPE handler, by default SIGPIPE kills the process */
+    signal(SIGPIPE, sigpipe_handler);
 
     ipc_init();
     if ((server = ipc_register_server(RCF_SERVER)) == NULL)
@@ -1763,6 +1786,10 @@ main(int argc, char **argv)
             {
                 goto shutdown;
             }
+        }
+        if (rcf_wait_shutdown)
+        {
+            goto error;
         }
     }
 

@@ -61,7 +61,15 @@ AC_PROG_LIBTOOL
 AC_CONFIG_SUBDIRS(libltdl)
 
 AM_CONFIG_HEADER(config.h)
-AC_CHECK_HEADERS(fcntl.h time.h sys/time.h string.h strings.h assert.h)
+AC_CHECK_HEADERS([\
+fcntl.h \
+time.h \
+sys/time.h \
+string.h \
+strings.h \
+assert.h \
+signal.h \
+])
 
 AC_CONFIG_FILES([Makefile])
 
