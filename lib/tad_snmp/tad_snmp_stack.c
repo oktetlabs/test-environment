@@ -59,7 +59,7 @@
 
 #undef SNMPDEBUG
 
-#define REAL_SNMP 1
+#define NEW_SNMP_API 1
 
 #ifdef SNMPDEBUG
 void 
@@ -166,10 +166,9 @@ snmp_read_cb (csap_p csap_descr, int timeout, char *buf, int buf_len)
     sel_timeout.tv_sec =  timeout / 1000000L;
     sel_timeout.tv_usec = timeout % 1000000L;
 
-#if REAL_SNMP
     snmp_select_info(&n_fds, &fdset, &sel_timeout, &block); 
-#endif
     VERB("session select info, n_fds: %d\n", n_fds);
+
     if (spec_data->pdu) snmp_free_pdu (spec_data->pdu); 
     spec_data->pdu = 0;
 
@@ -178,9 +177,8 @@ snmp_read_cb (csap_p csap_descr, int timeout, char *buf, int buf_len)
     if (rc > 0) 
     { 
         size_t n_bytes = buf_len;
-#if REAL_SNMP
         snmp_read(&fdset);
-#endif
+
         VERB("after snmp_read\n");
         if (buf_len < sizeof(struct snmp_pdu))
         {
@@ -357,6 +355,7 @@ snmp_single_check_pdus(csap_p csap_descr, asn_value *traffic_nds)
     return 0;
 }
 
+#define COMMUNITY 1
 
 
 /**
@@ -458,6 +457,10 @@ snmp_single_init_cb (int csap_id, const asn_value_p csap_nds, int layer)
     csap_descr->read_write_layer = layer; 
     csap_descr->timeout          = 2000000; 
 
+#if NEW_SNMP_API
+    snmp_sess_init(&csap_session);
+#endif
+
     csap_session.version     = version;
     csap_session.remote_port = r_port; 
     csap_session.local_port  = l_port; 
@@ -480,28 +483,52 @@ snmp_single_init_cb (int csap_id, const asn_value_p csap_nds, int layer)
     VERB("  rem-port:   %d\n", csap_session.remote_port);
     VERB("  loc-port:   %d\n", csap_session.local_port);
     VERB("  timeout:    %d\n", csap_session.timeout);
-    VERB("  peername:   %s\n", snmp_agent );
+    VERB("  peername:   %s\n", csap_session.peername ? 
+                               csap_session.peername : "(null)" );
+#if COMMUNITY
     VERB("  community:  %s\n", csap_session.community);
-
+#endif
     csap_session.callback       = snmp_csap_input;
     csap_session.callback_magic = snmp_spec_data;
-#if REAL_SNMP
-    ss = snmp_open(&csap_session); 
+
+    do {
+#if NEW_SNMP_API
+        char buf[32];
+        netsnmp_transport *transport = NULL; 
+
+        snprintf(buf, sizeof(buf), "%s:%d", 
+                strlen(snmp_agent) ? snmp_agent : "0.0.0.0", l_port);
+
+        transport = netsnmp_tdomain_transport(buf, 1, "udp");
+
+        ss = snmp_add(&csap_session, transport, NULL, NULL);
+#else
+        ss = snmp_open(&csap_session); 
 #endif
+    } while(0);
 
     if (ss == NULL)
     {
         VERB("open session error\n");
 
-#if REAL_SNMP
-#if 1
         snmp_perror("open session error");
-#endif 
-#endif 
+
         free(snmp_spec_data);
         return ETADLOWER;
     }   
+#if 0
     VERB("in init, session: %x\n", ss);
+
+    VERB("OPENED  SNMP session: \n");
+    VERB("  version:    %d\n", ss->version);
+    VERB("  rem-port:   %d\n", ss->remote_port);
+    VERB("  loc-port:   %d\n", ss->local_port);
+    VERB("  timeout:    %d\n", ss->timeout);
+    VERB("  peername:   %s\n", ss->peername);
+#if COMMUNITY
+    VERB("  community:  %s\n", ss->community);
+#endif
+#endif
 
     csap_descr->layer_data[layer] = snmp_spec_data;
     snmp_spec_data->ss  = ss;
