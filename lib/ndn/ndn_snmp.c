@@ -316,3 +316,24 @@ int snmp_asn_syntaxes[] =
     ASN_UNSIGNED
 };
 
+/* See the description in ndn_snmp.h */
+const char *
+ndn_snmp_msg_type_h2str(ndn_snmp_msg_t msg_type)
+{
+#define NDN_SNMP_MSG_H2STR(msg_) \
+        case NDN_SNMP_MSG_ ## msg_: return #msg_
+
+    switch (msg_type)
+    {
+        NDN_SNMP_MSG_H2STR(GET);
+        NDN_SNMP_MSG_H2STR(GETNEXT);
+        NDN_SNMP_MSG_H2STR(RESPONSE);
+        NDN_SNMP_MSG_H2STR(SET);
+        NDN_SNMP_MSG_H2STR(TRAP1);
+        NDN_SNMP_MSG_H2STR(TRAP2);
+        NDN_SNMP_MSG_H2STR(GETBULK);
+    }
+#undef NDN_SNMP_MSG_H2STR
+
+    return "UNKNOWN";
+}

@@ -76,6 +76,15 @@ extern const asn_type * const ndn_snmp_obj_syntax_arbitrary;
 extern const asn_type * const ndn_snmp_obj_syntax_big_counter;
 extern const asn_type * const ndn_snmp_obj_syntax_unsigned;
 
+/**
+ * Convers NDN SNMP Message types from numeric to string format
+ *
+ * @param msg_type  Message type in numeric format
+ *
+ * @return Message type in  string format
+ */
+extern const char *ndn_snmp_msg_type_h2str(ndn_snmp_msg_t msg_type);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

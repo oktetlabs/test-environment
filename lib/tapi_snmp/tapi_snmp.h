@@ -85,6 +85,7 @@ enum snmp_obj_type {
     SNMP_OBJ_TBL_FIELD,
     SNMP_OBJ_TBL_ENTRY,
     SNMP_OBJ_TBL,
+    SNMP_OBJ_UNKNOWN,
 };
 
 /** Type codes for SNMP variable binding values. Really SNMP uses some of 
@@ -812,6 +813,12 @@ tapi_snmp_make_instance(const char *oid_str, tapi_snmp_oid_t *oid, ...);
  * @return pointer to buffer with printed OID. 
  */
 extern const char* print_oid (const tapi_snmp_oid_t *oid);
+
+/** Convert SNMP ERROR constants to string format */
+extern const char *snmp_error_h2str(int error_val);
+
+/** Convert SNMP Object type constants to string format */
+extern const char *snmp_obj_type_h2str(enum snmp_obj_type obj_type);
 
 #ifdef __cplusplus
 } /* extern "C" */

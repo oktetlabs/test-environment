@@ -59,6 +59,38 @@
 /* save or not tmp ndn files */
 #define DEBUG 1
 
+
+static char log_info_buf[1024 * 24];
+int         log_info_cur_len;
+
+#define TAPI_SNMP_LOG_INIT() \
+    log_info_cur_len = 0
+
+#define TAPI_SNMP_LOG_APPEND(x...) \
+    do {                                                             \
+        snprintf(log_info_buf + log_info_cur_len,                    \
+                 sizeof(log_info_buf) - log_info_cur_len, x);        \
+        log_info_cur_len += strlen(log_info_buf + log_info_cur_len); \
+    } while (0);
+
+#define TAPI_SNMP_LOG_FLUSH() \
+    do {                          \
+        INFO("%s", log_info_buf); \
+        log_info_buf[0] = '\0';   \
+    } while (0)
+
+static char tapi_snmp_oid_buf[1024 * 2];
+
+#define GET_STR_OID(oid_ptr_) \
+    (((oid_ptr_) == NULL) ? "<NULL OID>" :                                 \
+      (snprint_objid(tapi_snmp_oid_buf, sizeof(tapi_snmp_oid_buf),         \
+                     (oid_ptr_)->id, (oid_ptr_)->length) < 0) ?            \
+      "TAPI_SNMP OID buffer is too short - update it" : tapi_snmp_oid_buf)
+
+static int tapi_snmp_get_object_type(const tapi_snmp_oid_t *oid,
+                                     enum snmp_obj_type *obj_type);
+
+
 const char*
 print_oid (const tapi_snmp_oid_t *oid )
 {
@@ -655,17 +687,18 @@ tapi_snmp_msg_tail(FILE *f)
  * Internal common procedure for SNMP operations. 
  */
 static int 
-tapi_snmp_operation (const char *ta, int sid, int csap_id, 
-                     const tapi_snmp_oid_t *val_oid, ndn_snmp_msg_t msg_type, 
-                     tapi_snmp_vartypes_t var_type, 
-                     size_t dlen, const void *data, 
-                     tapi_snmp_message_t *msg)
+tapi_snmp_operation(const char *ta, int sid, int csap_id, 
+                    const tapi_snmp_oid_t *val_oid, ndn_snmp_msg_t msg_type, 
+                    tapi_snmp_vartypes_t var_type, 
+                    size_t dlen, const void *data, 
+                    tapi_snmp_message_t *msg)
 {
-    FILE         *f;
-    unsigned int  timeout;
-    char          tmp_name[100];
-    int           rc, num;
-    tapi_snmp_varbind_t var_bind;
+    FILE                *f;
+    unsigned int         timeout;
+    char                 tmp_name[100];
+    int                  rc, num;
+    tapi_snmp_varbind_t  var_bind;
+    enum snmp_obj_type   obj_type;
 
     strcpy(tmp_name, "/tmp/te_snmp_op.XXXXXX"); 
     mktemp(tmp_name);
@@ -676,26 +709,55 @@ tapi_snmp_operation (const char *ta, int sid, int csap_id,
     if (f == NULL)
         return TE_RC(TE_TAPI, errno); /* return system errno */
 
-
     var_bind.name = *val_oid;
 
+    if ((rc = tapi_snmp_get_object_type(val_oid, &obj_type)) != 0)
+    {
+        ERROR("Cannot get the type of %s OID", val_oid);
+        return rc;
+    }
+    
+    TAPI_SNMP_LOG_INIT();
+
+    TAPI_SNMP_LOG_APPEND("SNMP %s: {\n\t%s (%s): ",
+                         ndn_snmp_msg_type_h2str(msg_type),
+                         GET_STR_OID(val_oid),
+                         snmp_obj_type_h2str(obj_type));
+    
     if (msg_type == NDN_SNMP_MSG_SET)
     {
         var_bind.type = var_type;
         var_bind.v_len = dlen;
+
         switch(var_type)
         {
             case TAPI_SNMP_OBJECT_ID:
             case TAPI_SNMP_OCTET_STR:
             case TAPI_SNMP_IPADDRESS:
+            {
+                unsigned int i;
+
                 var_bind.oct_string = (char *)data;
+
+                if (dlen == 0)
+                    TAPI_SNMP_LOG_APPEND("NULL");
+
+                for (i = 0; i < dlen; i++)
+                {
+                    TAPI_SNMP_LOG_APPEND("%02X ", var_bind.oct_string[i]);
+                }
                 break;
+            }
+
             default:
                 var_bind.integer = *((int*)data);
+                TAPI_SNMP_LOG_APPEND("%d", var_bind.integer);
         }
     }
     else
         var_bind.type = TAPI_SNMP_OTHER;
+
+    TAPI_SNMP_LOG_APPEND("\n} ");
 
     rc = tapi_snmp_msg_head(f, msg_type, dlen);
 
@@ -719,6 +781,10 @@ tapi_snmp_operation (const char *ta, int sid, int csap_id,
 
         rc = rcf_ta_trsend_recv(ta, sid, csap_id, tmp_name, 
                                 tapi_snmp_pkt_handler, msg, timeout, &num); 
+
+        TAPI_SNMP_LOG_APPEND("TAPI RESULT: %X, SNMP RESULT: %s, ERR INDEX: %d",
+                             rc, snmp_error_h2str(msg->err_status), 0);
+        TAPI_SNMP_LOG_FLUSH();
 
         if (rc)
             WARN("rcf_ta_trsend_recv rc %X", rc); 
@@ -1040,7 +1106,7 @@ tapi_snmp_set_row(const char *ta, int sid, int csap_id,
         vbl_head = tail;
         if (common_index)
             tapi_snmp_cat_oid(&(vb_array[i].name), common_index);
-    } while (i > 0); 
+    } while (i > 0);
 
     return tapi_snmp_set(ta, sid, csap_id, vb_array, num_vars, errstat, errindex);
 }
@@ -1058,12 +1124,11 @@ tapi_snmp_get_object_type(const tapi_snmp_oid_t *oid,
     entry_node = get_tree(oid->id, oid->length, get_tree_head());
     if (entry_node == NULL)
     {
-        ERROR("Cannot get entry node");
-        return TE_RC(TE_TAPI, EINVAL);
+        *obj_type = SNMP_OBJ_UNKNOWN;
+        return 0;
     }
     if (entry_node->indexes != NULL)
     {
-        VERB("SNMP_OBJ_TBL_ENTRY");
         *obj_type = SNMP_OBJ_TBL_ENTRY;
         return 0;
     }
@@ -1071,25 +1136,21 @@ tapi_snmp_get_object_type(const tapi_snmp_oid_t *oid,
     /* Try to check if it is a table field by going up to two nodes */
     if (entry_node->parent == NULL || entry_node->parent->parent == NULL)
     {
-        VERB("SNMP_OBJ_SCALAR");
         *obj_type = SNMP_OBJ_SCALAR;
         return 0;
     }
     if (entry_node->parent->indexes != NULL)
     {
-        VERB("SNMP_OBJ_TBL_FIELD");
         *obj_type = SNMP_OBJ_TBL_FIELD;
         return 0;
     }
     if (entry_node->child_list != NULL &&
         entry_node->child_list->indexes != NULL)
     {
-        VERB("SNMP_OBJ_TBL");
         *obj_type = SNMP_OBJ_TBL;
         return 0;
     }
 
-    VERB("SNMP_OBJ_SCALAR - ");
     *obj_type = SNMP_OBJ_SCALAR;
 
     return 0;
@@ -1110,16 +1171,24 @@ tapi_snmp_set_gen(const char *ta, int sid, int csap_id,
     tapi_snmp_varbind_t *vb;
     tapi_snmp_oid_t      oid;
     tapi_snmp_vartypes_t syntax;
+    
+    TAPI_SNMP_LOG_INIT();
+    TAPI_SNMP_LOG_APPEND("SNMP %s: {\n",
+                         ndn_snmp_msg_type_h2str(NDN_SNMP_MSG_SET));
+
+    *errstat = 0;
+    *errindex = 0;
 
     while (1) {
         char *oid_name = va_arg(ap, char *);
         
         if (oid_name == NULL)
         {
+            TAPI_SNMP_LOG_APPEND("} ");
             /* End Of Data mark */
             break;
         }
-        VERB("%s OID %s", __FUNCTION__, oid_name);
+        TAPI_SNMP_LOG_APPEND("\t%s", oid_name);
 
         vb = calloc(1, sizeof(tapi_snmp_varbind_t));
         
@@ -1154,6 +1223,8 @@ tapi_snmp_set_gen(const char *ta, int sid, int csap_id,
                         return TE_RC(TE_TAPI, EFAULT);
                     }
                     tapi_snmp_append_oid(&oid, 1, 0);
+
+                    TAPI_SNMP_LOG_APPEND(".0");
                     break;
 
                 case SNMP_OBJ_TBL_FIELD:
@@ -1164,6 +1235,7 @@ tapi_snmp_set_gen(const char *ta, int sid, int csap_id,
                     tbl_index = va_arg(ap, tapi_snmp_oid_t *);
                     tapi_snmp_cat_oid(&oid, tbl_index);
 
+                    TAPI_SNMP_LOG_APPEND("%s", print_oid(tbl_index));
                     break;
                 }
 
@@ -1172,6 +1244,12 @@ tapi_snmp_set_gen(const char *ta, int sid, int csap_id,
                           "table fields and scalars");
                     return TE_RC(TE_TAPI, EFAULT);
             }
+            TAPI_SNMP_LOG_APPEND(" (%s) : ", snmp_obj_type_h2str(obj_type));
+        }
+        else
+        {
+            TAPI_SNMP_LOG_APPEND("%s (%s) : ", print_oid(common_index),
+                                 snmp_obj_type_h2str(SNMP_OBJ_TBL_FIELD));
         }
 
         vb->type = syntax;
@@ -1185,11 +1263,21 @@ tapi_snmp_set_gen(const char *ta, int sid, int csap_id,
             case TAPI_SNMP_UNSIGNED:
             case TAPI_SNMP_TIMETICKS:
                 vb->integer = va_arg(ap, int);
+                TAPI_SNMP_LOG_APPEND("%d", vb->integer);
                 break;
 
             case TAPI_SNMP_OCTET_STR:
                 vb->oct_string = va_arg(ap, unsigned char *);
                 vb->v_len = va_arg(ap, int);
+                
+                if (vb->v_len == 0)
+                    TAPI_SNMP_LOG_APPEND("NULL");
+
+                for (i = 0; i < (int)vb->v_len; i++)
+                {
+                    TAPI_SNMP_LOG_APPEND("%02X ", vb->oct_string[i]);
+                }
+
                 break;
 
             case TAPI_SNMP_OBJECT_ID:
@@ -1200,6 +1288,7 @@ tapi_snmp_set_gen(const char *ta, int sid, int csap_id,
                 ERROR("%s unexpected syntax %d", __FUNCTION__, syntax);
                 return TE_RC(TE_TAPI, EFAULT);
         }
+        TAPI_SNMP_LOG_APPEND("\n");
 
         vbl = calloc(1, sizeof(struct tapi_vb_list));
         vbl->next = vbl_head;
@@ -1232,8 +1321,15 @@ tapi_snmp_set_gen(const char *ta, int sid, int csap_id,
         free(vbl);
     }
 
-    return tapi_snmp_set_vbs(ta, sid, csap_id, vb_array, num_vars,
-                             errstat, errindex);
+    rc = tapi_snmp_set_vbs(ta, sid, csap_id, vb_array, num_vars,
+                           errstat, errindex);
+    
+    TAPI_SNMP_LOG_APPEND("TAPI RESULT: %X, SNMP RESULT: %s, ERR INDEX: %d",
+                         rc, snmp_error_h2str(*errstat), *errindex);
+
+    TAPI_SNMP_LOG_FLUSH();
+
+    return rc;
 }
 
 int 
@@ -1784,9 +1880,8 @@ tapi_snmp_get_table(const char *ta, int sid, int csap_id,
 int 
 tapi_snmp_get_table_dimension(tapi_snmp_oid_t *table_oid, int *dimension)
 {
-    struct tree *entry_node; 
-    int rc = 0; 
-    tapi_snmp_oid_t entry; /* table Entry OID */
+    struct tree       *entry_node; 
+    tapi_snmp_oid_t    entry; /* table Entry OID */
     struct index_list *t_index;
 
     if (table_oid == NULL)
@@ -2526,3 +2621,53 @@ tapi_snmp_make_instance(const char *oid_str, tapi_snmp_oid_t *bin_oid, ...)
     return 0;
 }
 
+#define SNMP_ERR_H2STR(val_) \
+    case SNMP_ERR_ ## val_:  \
+        return #val_
+
+/** Convert SNMP ERROR constants to string format */
+const char *snmp_error_h2str(int error_val)
+{
+    switch (error_val)
+    {
+        SNMP_ERR_H2STR(NOERROR);
+        SNMP_ERR_H2STR(TOOBIG);
+        SNMP_ERR_H2STR(NOSUCHNAME);
+        SNMP_ERR_H2STR(BADVALUE);
+        SNMP_ERR_H2STR(READONLY);
+        SNMP_ERR_H2STR(GENERR);
+
+        SNMP_ERR_H2STR(NOACCESS);
+        SNMP_ERR_H2STR(WRONGTYPE);
+        SNMP_ERR_H2STR(WRONGLENGTH);
+        SNMP_ERR_H2STR(WRONGENCODING);
+        SNMP_ERR_H2STR(WRONGVALUE);
+        SNMP_ERR_H2STR(NOCREATION);
+        SNMP_ERR_H2STR(INCONSISTENTVALUE);
+        SNMP_ERR_H2STR(RESOURCEUNAVAILABLE);
+        SNMP_ERR_H2STR(COMMITFAILED);
+        SNMP_ERR_H2STR(UNDOFAILED);
+        SNMP_ERR_H2STR(AUTHORIZATIONERROR);
+        SNMP_ERR_H2STR(NOTWRITABLE);
+        
+        SNMP_ERR_H2STR(INCONSISTENTNAME);
+        
+        default:
+            return "UNKNOWN";
+    }
+    return "";
+}
+
+const char *
+snmp_obj_type_h2str(enum snmp_obj_type obj_type)
+{
+    switch (obj_type)
+    {
+        case SNMP_OBJ_SCALAR: return "scalar";
+        case SNMP_OBJ_TBL_FIELD: return "tabular";
+        case SNMP_OBJ_TBL_ENTRY: return "table entry";
+        case SNMP_OBJ_TBL: return "table itself";
+        default: return "unknown";
+    }
+    return "";
+}
