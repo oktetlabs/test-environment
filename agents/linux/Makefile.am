@@ -10,7 +10,7 @@ AM_YFLAGS=-d
 # -ltad_ch with names used in -lrcfpch.
 #
 MY_LDADD=symtbl.o -lrcfpch @TE_LDADD@ \
-         -lconf_oid -lcomm_net_agent -lloggerta 
+         -lconf_oid -lcomm_net_agent -lloggerta -lcrypt
 
 #if HAS_NET_SNMP
 #MY_LDADD+= @NET_SNMP_LIBS@

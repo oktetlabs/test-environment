@@ -122,6 +122,8 @@ extern int linuxconf_daemons_init(rcf_pch_cfg_object **last);
 extern void linux_daemons_release();
 #endif
 
+extern char *crypt(const char *key, const char *salt);
+
 /* Auxiliary variables used for during configuration request processing */
 static struct ifreq req;
 
@@ -208,6 +210,10 @@ static int route_list(unsigned int, const char *, char **);
 static int nameserver_get(unsigned int, const char *, char *, 
                           const char *, ...);
 
+static int user_list(unsigned int, const char *, char **);
+static int user_add(unsigned int, const char *, const char *, const char *);
+static int user_del(unsigned int, const char *, const char *);
+
 /* Linux Test Agent configuration tree */
 
 /* Volatile subtree */
@@ -272,7 +278,12 @@ static rcf_pch_cfg_object node_env =
       (rcf_ch_cfg_add)env_add, (rcf_ch_cfg_del)env_del,
       (rcf_ch_cfg_list)env_list, NULL, NULL };
 
-RCF_PCH_CFG_NODE_AGENT(node_agent, &node_env);
+RCF_PCH_CFG_NODE_COLLECTION(node_user, "user",
+                            NULL, &node_env,
+                            user_add, user_del,
+                            user_list, NULL);
+
+RCF_PCH_CFG_NODE_AGENT(node_agent, &node_user);
 
 static te_bool init = FALSE;
 
@@ -717,11 +728,11 @@ interface_add(unsigned int gid, const char *oid, const char *value,
     sprintf(buf, "/sbin/vconfig add %s %d", devname, vid); 
     free(devname);
     
-    return ta_system(buf) < 0 ? TE_RC(TE_TA_LINUX, ETESHCMD) : 0;
+    return ta_system(buf) != 0 ? TE_RC(TE_TA_LINUX, ETESHCMD) : 0;
 }
 
 /**
- * Add VLAN Ethernet device.
+ * Delete VLAN Ethernet device.
  *
  * @param gid           group identifier (unused)
  * @param oid           full object instence identifier (unused)
@@ -740,7 +751,7 @@ interface_del(unsigned int gid, const char *oid, const char *ifname)
         
     sprintf(buf, "/sbin/vconfig rem %s", ifname);
     
-    return (ta_system(buf) < 0) ? TE_RC(TE_TA_LINUX, ETESHCMD) : 0;
+    return (ta_system(buf) != 0) ? TE_RC(TE_TA_LINUX, ETESHCMD) : 0;
 }
 
 
@@ -2755,5 +2766,187 @@ env_list(unsigned int gid, const char *oid, char **list)
     if ((*list = strdup(buf)) == NULL)
         return TE_RC(TE_TA_LINUX, ENOMEM);
 
+    return 0;
+}
+
+/**
+ * Get instance list for object "agent/user".
+ *
+ * @param id            full identifier of the father instance
+ * @param list          location for the list pointer
+ *
+ * @return error code
+ * @retval 0            success
+ * @retval ENOMEM       cannot allocate memory
+ */
+static int
+user_list(unsigned int gid, const char *oid, char **list)
+{
+    FILE *f;
+    char *s = buf;
+    
+    UNUSED(gid);
+    UNUSED(oid);
+    
+    if ((f = fopen("/etc/passwd", "r")) == NULL)
+    {
+        int rc = errno;
+        
+        ERROR("Failed to open file /etc/passwd; errno %d", rc);
+        return TE_RC(TE_TA_LINUX, rc);
+    }
+
+    buf[0] = 0;
+
+    while (fgets(trash, sizeof(trash), f) != NULL)
+    {
+        char *tmp = strstr(trash, TE_USER_PREFIX);
+        char *tmp1;
+        
+        unsigned int uid;
+        
+        if (tmp == NULL)
+            continue;
+            
+        tmp += strlen(TE_USER_PREFIX);
+        uid = strtol(tmp, &tmp1, 10);
+        if (tmp1 == tmp || *tmp1 != ':')
+            continue;
+        s += sprintf(s, TE_USER_PREFIX "%u", uid);
+    }
+    fclose(f);
+    
+    if ((*list = strdup(buf)) == NULL)
+        return TE_RC(TE_TA_LINUX, ENOMEM);
+
+    return 0;
+}
+
+/** Check, if user with the specified name exists */
+static te_bool
+user_exists(const char *user)
+{
+    FILE *f;
+    
+    if ((f = fopen("/etc/passwd", "r")) == NULL)
+    {
+        ERROR("Failed to open file /etc/passwd; errno %d", errno);
+        return FALSE;
+    }
+
+    while (fgets(trash, sizeof(trash), f) != NULL)
+    {
+        char *tmp = strstr(trash, user);
+        
+        if (tmp == NULL)
+            continue;
+            
+        if (*(tmp + strlen(user)) == ':')
+        {
+            fclose(f);
+            return TRUE;
+        }
+    }
+    fclose(f);
+    
+    return FALSE;
+}
+
+/**
+ * Add tester user.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instence identifier (unused)
+ * @param value         value string (unused)
+ * @param user          user name: te_tester_<uid>
+ *
+ * @return error code
+ */
+static int 
+user_add(unsigned int gid, const char *oid, const char *value, 
+         const char *user)
+{
+    char *tmp;
+    char *tmp1;
+    
+    unsigned int uid;
+    
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(value);
+    
+    if (user_exists(user))
+        return TE_RC(TE_TA_LINUX, EEXIST);
+        
+    if (strncmp(user, TE_USER_PREFIX, strlen(TE_USER_PREFIX)) != 0)
+        return TE_RC(TE_TA_LINUX, EINVAL);
+        
+    tmp = (char *)user + strlen(TE_USER_PREFIX);
+    uid = strtol(tmp, &tmp1, 10);
+    if (tmp == tmp1 || *tmp1 != 0)
+        return TE_RC(TE_TA_LINUX, EINVAL);
+    
+    if (ta_system("adduser --help >/dev/null 2>&1") != 0)
+    {
+        /* Red Hat/Fedora */
+        PRINT("Red Hat!");
+        sprintf(buf, "/usr/sbin/adduser -d /tmp/%s -u %u -m -p %s %s ", 
+                user, uid, crypt(user, "salt"), user);
+        if (ta_system(buf) != 0) 
+            return TE_RC(TE_TA_LINUX, ETESHCMD);
+        PRINT("OK!");
+    }
+    else    
+    {
+        /* Debian */
+        PRINT("Debian!");
+        sprintf(buf, "/usr/sbin/adduser --home /tmp/%s --force-badname "
+                     "--disabled-password --gecos \"\" "
+                     "--uid %u %s >/dev/null 2>&1", user, uid, user);     
+        if (ta_system(buf) != 0) 
+            return TE_RC(TE_TA_LINUX, ETESHCMD);
+        sprintf(buf, "echo %s:%s | chpasswd", user, user);
+        if (ta_system(buf) != 0) 
+        {
+            user_del(gid, oid, user);
+            return TE_RC(TE_TA_LINUX, ETESHCMD);
+        }
+    }
+            
+    sprintf(buf, "su - %s -c 'ssh-keygen -t dsa -N \"\" "
+                 "-f /tmp/%s/.ssh/id_dsa' >/dev/null 2>&1", user, user);
+            
+    if (ta_system(buf) != 0) 
+    {
+        user_del(gid, oid, user);
+        return TE_RC(TE_TA_LINUX, ETESHCMD);
+    }
+    
+    return 0;
+}
+
+/**
+ * Delete tester user.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instence identifier (unused)
+ * @param user          user name
+ *
+ * @return error code
+ */
+static int 
+user_del(unsigned int gid, const char *oid, const char *user)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+    
+    if (!user_exists(user))
+        return TE_RC(TE_TA_LINUX, EEXIST);
+
+    sprintf(buf, "/usr/sbin/userdel -r %s >/dev/null 2>&1", user);
+            
+    if (ta_system(buf) != 0) 
+        return TE_RC(TE_TA_LINUX, ETESHCMD);
+        
     return 0;
 }
