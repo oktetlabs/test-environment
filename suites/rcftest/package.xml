@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<package version="1.0">
+    <description>
+        Tests on RCF functionality.
+    </description>
+    <author mailto="Elena.Vengerova@oktetlabs.ru"/>
+    <session>
+        <run>
+            <script name="rcftest"/>
+        </run>
+    </session>
+</package>

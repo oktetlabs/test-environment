@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<package version="1.0">
+    
+    <description>Tests on TAD SNMP functionality.</description>
+
+    <author mailto="Konstantin.Abramenko@oktetlabs.ru"/>
+
+    <requirement ref="TAD_CH"/>
+    <requirement ref="TAD_SNMP"/>
+
+    <session random="true">
+        <var name="ta" handdown="true">
+            <value>Agt_A</value>
+        </var>
+        <var name="snmp_agt" handdown="true">
+            <value>192.168.37.14</value>
+        </var>
+        <var name="snmp_version" handdown="true">
+            <value>2</value>
+        </var>
+
+        <run>
+            <script name="snmptest"/>
+            <arg name="mib_name">
+                <value>SNMPv2-MIB.txt</value>
+            </arg>
+            <arg name="mib_object">
+                <value>sysDescr</value>
+            </arg>
+        </run>
+    </session>
+
+</package>

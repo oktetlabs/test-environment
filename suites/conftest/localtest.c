@@ -11,6 +11,11 @@
 #include "te_errno.h"
 #include "conf_api.h"
 #include "rcf_api.h"
+#include "logger_api.h"
+
+
+DEFINE_LGR_ENTITY("localtest");
+
 
 typedef struct conftest_user_data {
 } conftest_user_data;    
@@ -144,7 +149,6 @@ process_instance(cfg_handle handle)
     char *str;
     
     char *backup;
-    int   backup_len;
     
     int ret_val;
     
@@ -160,7 +164,7 @@ process_instance(cfg_handle handle)
         return ret_val;
     }
     
-    ret_val = cfg_create_backup(&backup, &backup_len);
+    ret_val = cfg_create_backup(&backup);
     if (ret_val != 0)
     {
         fprintf(outerr, "process_instance: cfg_create_backup() failed\n");
@@ -900,9 +904,8 @@ main()
     char *history = "/tmp/history";
     cfg_handle interface;
     char *backup;
-    int backup_len;
     
-    ret_val = cfg_create_backup(&backup, &backup_len);
+    ret_val = cfg_create_backup(&backup);
     if (ret_val != 0)
     {
         fprintf(stderr, "create_backup() failed\n");

@@ -14,8 +14,10 @@ tetest_DATA=package.xml
 tetest_PROGRAMS=conftest localtest
 
 
-MYLDADD = -lconfapi -lipc -lpthread
+MYLDADD = -lconfapi -lconf_oid -llogger_ten -lipc -lpthread
 MYDEPS = ${TE_INSTALL}/@host@/lib/libconfapi.a \
+         ${TE_INSTALL}/@host@/lib/libconf_oid.a \
+         ${TE_INSTALL}/@host@/lib/liblogger_ten.a \
          ${TE_INSTALL}/@host@/lib/libipc.a
 
 

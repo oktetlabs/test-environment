@@ -85,12 +85,6 @@ extern "C" {
      */                                                             \
     (void)signal(SIGINT, sigint_handler);                           \
                                                                     \
-    rc = cfg_create_backup(&test_backup_name);                      \
-    if (rc != 0)                                                    \
-    {                                                               \
-        ERROR("Cannot create configuration backup: %X", rc);        \
-        return EXIT_FAILURE;                                        \
-    }                                                               \
     TEST_START_SPECIFIC
 
 /**
@@ -100,16 +94,7 @@ extern "C" {
  */
 #define TEST_END \
     TEST_END_SPECIFIC;                                              \
-    if (test_backup_name != NULL)                                   \
-    {                                                               \
-        rc = cfg_restore_backup(test_backup_name);                  \
-        if (rc != 0)                                                \
-        {                                                           \
-            ERROR("Failed to restore configuration backup: %X", rc);\
-            result = EXIT_FAILURE;                                  \
-        }                                                           \
-        free(test_backup_name);                                     \
-    }                                                               \
+    cfg_api_cleanup();                                              \
     rcf_api_cleanup();                                              \
     return result
 
@@ -349,13 +334,6 @@ typedef enum sapi_buf_size {
  */
 #define TEST_GET_BUFF_SIZE(var_name_) \
     TEST_GET_ENUM_PARAM(var_name_, BUF_SIZE_MAPPING_LIST)
-
-
-/**
- * Name of the backup created before any test steps - local for the
- * file.
- */
-extern char *test_backup_name;
 
 
 /**

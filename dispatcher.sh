@@ -7,21 +7,22 @@ DISPATCHER=`which $0`
 # dispatcher directory, therefore the following more safe and portable way
 # is chosen.
 DISP_DIRNAME=`dirname $DISPATCHER`
-pushd $DISP_DIRNAME 
+pushd $DISP_DIRNAME >/dev/null
 DISPATCHER_DIR=`pwd`
-popd
+popd >/dev/null
 
 usage()
 {
     echo Usage: dispatcher.sh ['<'generic options'>'] [['<'test options'>' tests ]...
     echo -e Generic options:
-    echo -e '  '-q\\t\\t\\t\\tsuppress part of output messages
-    echo -e '  '--live-log\\t\\t\\trun RGT in live mode
+    echo -e '  '-q\\t\\t\\t\\tSuppress part of output messages
+    echo -e '  '--live-log\\t\\t\\tRun RGT in live mode
     echo
-    echo -e '  '--no-builder\\t\\t\\tdo not build TE
-    echo -e '  '--no-tester\\t\\t\\tdo not run Tester
-    echo -e '  '--no-cs\\t\\t\\tdo not run Configurator
-    echo -e '  '--no-rcf\\t\\t\\tdo not run RCF
+    echo -e '  '--no-builder\\t\\t\\t'Do not build TE'
+    echo -e '  '--no-tester\\t\\t\\t'Do not run Tester'
+    echo -e '  '--no-cs\\t\\t\\t'Do not run Configurator'
+    echo -e '  '--no-rcf\\t\\t\\t'Do not run RCF'
+    echo -e '  '--no-ts-build\\t\\t\\t'Do not build Test Suite sources'
     echo
     echo -e '  '--conf-dir='<directory>'\\t'specify configuration file directory'
     echo -e \\t\\t\\t\\t'(${TE_BASE}/storage/conf or '.' by default)'
@@ -49,15 +50,30 @@ usage()
     echo    
     echo -e '  '--lock-dir='<directory>'\\t'lock file directory (/tmp/te/lock by default)'
     echo
-    echo -e '  '--vg-tests\\t\\t\\t'Run tests under valgrind (without by default)'
     echo -e '  '--vg-rcf\\t\\t\\t'Run RCF under valgrind (without by default)'
     echo -e '  '--vg-cs\\t\\t\\t'Run Configurator under valgrind'
     echo -e \\t\\t\\t\\t'(without by default)'
     echo -e '  '--vg-logger\\t\\t\\t'Run Logger under valgrind (without by default)'
-    echo -e '  '--vg-engine\\t\\t\\t'Run RCF, Configurator and Logger under valgrind'
-    echo -e \\t\\t\\t\\t'(without by default)'
+    echo -e '  '--vg-tester\\t\\t\\t'Run Tester under valgrind (without by default)'
+    echo -e '  '--vg-engine\\t\\t\\t'Run RCF, Configurator, Logger and Tester under'
+    echo -e \\t\\t\\t\\t'valgrind (without by default)'
     echo
-    echo -e '  '--no-ts-build\\t\\t\\t'Do not build Test Suite sources'
+    echo -e '  '--script-tester\\t\\t'Use script Tester with text configuration files'
+    echo -e '  '--vg-tests\\t\\t\\t'Run tests under valgrind (without by default).'
+    echo -e \\t\\t\\t\\t'May be used with script Tester only.'
+    echo
+    echo -e '  --tester-run=[PATH]'\\t\\t'Run a test item defined by PATH.'
+    echo -e '  --tester-req=[REQ|!REQ]'\\t'Requirement to be tested (or excluded,'
+    echo -e \\t\\t\\t\\t'if its first symbol is !).'
+    echo -e '  '--tester-fake\\t\\t\\t'Do not run any test scripts, just emulate test'
+    echo -e \\t\\t\\t\\t'failure. Usefull for configuration debugging.'
+    echo -e '  '--tester-nologues\\t\\t'Disable prologues and epilogues globally.'
+#    echo -e '  '--tester-norandom\\t\\t'Force to run all tests in defined order as well'
+#    echo -e \\t\\t\\t\\t'as to get values of all arguments in defined'
+#    echo -e \\t\\t\\t\\t'order.  Usefull for debugging."'
+#    echo -e '  '--tester-nosimultaneous\\t'Force to run all tests in series.'
+#    echo -e \\t\\t\\t\\t'Usefull for debugging.'
+
     echo
 }
 
@@ -84,12 +100,16 @@ VG_TESTS=
 VG_RCF=
 VG_CS=
 VG_LGR=
+VG_TESTER=
 
 # Subsystems to be initialized
 BUILDER=yes
 TESTER=yes
 RCF=yes
 CONFIGURATOR=yes
+
+# Tester executable extension (set to .sh for script tester)
+TESTER_EXT=
 
 # Whether Test Suite should be built
 BUILD_TS=yes
@@ -141,12 +161,13 @@ while test -n "$1" ; do
         --help ) usage ; exit 0 ;;
 
         -q) QUIET=yes ;;
-        --live-log)  LIVE_LOG=yes ; TESTER_OPTS="${TESTER_OPTS} -q" ;;
+        --live-log)  LIVE_LOG=yes ; TESTER_OPTS="-q ${TESTER_OPTS}" ;;
 
         --vg-tests)  VG_TESTS=yes ;;
         --vg-rcf)    VG_RCF=yes ;;
         --vg-cs)     VG_CS=yes ;;
         --vg-logger) VG_LGR=yes ;;
+        --vg-tester) VG_TESTER=yes ;;
         --vg-engine) VG_RCF=yes; VG_CS=yes; VG_LGR=yes ;;    
     
         --no-builder) BUILDER= ;;
@@ -174,7 +195,11 @@ while test -n "$1" ; do
         --lock-dir=*) LOCK_DIR="${1#--lock-dir=}" ;;
 
         --no-ts-build) BUILD_TS= ;;
-        
+
+        --script-tester) TESTER_EXT=".sh" ;;
+
+        --tester-*) TESTER_OPTS="${TESTER_OPTS} --${1#--tester-}" ;;
+
         *)  echo "Unknown option: $1" ;
             usage ;
             exit 1 ;;
@@ -252,7 +277,9 @@ if test -n "$BUILDER" ; then
 else
     if test -z "${TE_BUILD}" ; then
         export TE_BUILD=`pwd`
-        echo "Guessing TE_BUILD=${TE_BUILD}"
+        if test -z "${QUIET}" ; then
+            echo "Guessing TE_BUILD=${TE_BUILD}"
+        fi
     fi
 fi
 
@@ -269,16 +296,19 @@ mkdir -p ${TE_LOG_DIR}
 if test -z "$TE_INSTALL" ; then
     if test -e $DISPATCHER_DIR/configure.ac ; then
         if test -n "${TE_BUILD}" ; then
-            TE_INSTALL=${TE_BUILD}/inst ;
+            TE_INSTALL=${TE_BUILD}/inst
         else
             TE_INSTALL=$DISPATCHER_DIR/build/inst
         fi
     else
-        TMP=${DISPATCHER_DIR/\/bin/} ;
-        TE_INSTALL=${TMP/\/$HOST/} ;
+        TMP=${DISPATCHER_DIR/\/bin/}
+        TE_INSTALL=${TMP/\/$HOST/}
     fi
-    echo "TE installation directory is $TE_INSTALL - exporting TE_INSTALL." ;
-    export TE_INSTALL=$TE_INSTALL ;
+    if test -z "${QUIET}" ; then
+        echo "Exporting TE installation directory as TE_INSTALL:"
+        echo '    '$TE_INSTALL
+    fi
+    export TE_INSTALL ;
 fi
 
 if test -z "$TE_INSTALL_NUT" ; then
@@ -290,7 +320,10 @@ if test -z "$TE_INSTALL_SUITE" ; then
 fi
 
 # Export PATH
-echo "Exporting path to host executables: ${TE_INSTALL}/$HOST/bin" ;
+if test -z "${QUIET}" ; then
+    echo "Exporting path to host executables:"
+    echo "    ${TE_INSTALL}/$HOST/bin"
+fi
 export PATH=$PATH:${TE_INSTALL}/$HOST/bin ;
 export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${TE_INSTALL}/$HOST/lib
 
@@ -367,6 +400,7 @@ myecho() {
 # Run RGT in live mode in background
 if test -n "$LIVE_LOG" ; then
     rgt-conv -m live -f tmp_raw_log &
+    LIVE_LOG_PID=$!
 fi
 
 te_log_message Engine Dispatcher "Starting TEN applications"
@@ -402,7 +436,13 @@ fi
 
 if test -n "$TESTER" ; then
     myecho "--->>> Start Tester"
-    VG_TESTS=$VG_TESTS te_tester ${TESTER_OPTS} "${CONF_TESTER}" 
+    if test -n "$VG_TESTER" ; then
+        VG_TESTS=$VG_TESTS valgrind $VG_OPTIONS te_tester${TESTER_EXT} \
+            ${TESTER_OPTS} "${CONF_TESTER}" 2>valgrind.tester
+    else
+        VG_TESTS=$VG_TESTS te_tester${TESTER_EXT} ${TESTER_OPTS} \
+            "${CONF_TESTER}" 
+    fi
 fi
 
 if test -n "$CONFIGURATOR" ; then
@@ -428,6 +468,11 @@ myecho "--->>> Shutdown Logger"
 te_log_shutdown
 
 #TODO: TCE
+
+# Wait for RGT in live mode finish
+if test -n "$LIVE_LOG" ; then
+    wait ${LIVE_LOG_PID}
+fi
 
 #te_log_archive --storage="${LOG_STORAGE}" --storage-dir=="${LOG_STORAGE_DIR}" ;
 

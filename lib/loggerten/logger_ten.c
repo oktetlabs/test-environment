@@ -443,6 +443,7 @@ log_message(uint16_t level, const char *entity_name,
             case 'u':
             case 'p':
             case 'r':   /* TE-specific specifier for error codes */
+            case 'T':   /* TE-specific specified for Test ID */
             {
                 int32_t val;
 

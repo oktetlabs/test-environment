@@ -65,9 +65,21 @@
                 Type for requirements declaration.
             </documentation>
         </annotation>
-        <simpleContent>
-            <extension base="Name"/>
-        </simpleContent>
+        <attribute name="id" type="token">
+            <annotation>
+                <documentation>
+                    Requirement ID.
+                </documentation>
+            </annotation>
+        </attribute>
+        <attribute name="ref" type="token">
+            <annotation>
+                <documentation>
+                    Reference to argument value, i.e. requirement ID
+                    depends on argument value and is equal to it.
+                </documentation>
+            </annotation>
+        </attribute>
     </complexType>
 
     <complexType name="Value">
@@ -120,15 +132,6 @@
             <annotation>
                 <documentation> 
                     Specifies variable/argument name.
-                </documentation>
-            </annotation>
-        </attribute>
-        <attribute name="ext" type="Name">
-            <annotation>
-                <documentation>
-                    Reference to external value (name of the
-                    variable of the parent session or name of
-                    the argument passed to the sesiion).
                 </documentation>
             </annotation>
         </attribute>
@@ -388,16 +391,15 @@
             </documentation>
         </annotation>
         <sequence>
-            <element name="description" type="string">
+            <element name="description" type="string" minOccurs="0">
                 <annotation>
                     <documentation>
                         Description of the test provided by the script.
                     </documentation>
                 </annotation>
             </element>
-            <element name="requirement" type="Requirement"
-                                        minOccurs="0"
-                                        maxOccurs="unbounded">
+            <element name="req" type="Requirement"
+                                minOccurs="0" maxOccurs="unbounded">
                 <annotation>
                     <documentation>
                         Complete set of requiremetns verified by the
@@ -405,11 +407,12 @@
                     </documentation>
                 </annotation>
             </element>
-            <element name="execute" type="string">
+            <element name="execute" type="string" minOccurs="0">
                 <annotation>
                     <documentation>
                         Name of the file to execute in current package
-                        directory.
+                        directory. If the element is skipped, it's
+                        equal to the 'name' attribute.
                     </documentation>
                 </annotation>
             </element>
@@ -654,13 +657,17 @@
                 root package declared in Tester configuration file.
             </documentation>
         </annotation>
-        <simpleContent>
-            <extension base="token">
-                <attributeGroup ref="RunItemAttributes"/>
-            </extension>
-        </simpleContent>
+        <attribute name="name" type="token">
+            <annotation>
+                <documentation>
+                    Name of the (sub)package to run.
+                </documentation>
+            </annotation>
+        </attribute>
+        <attributeGroup ref="RunItemAttributes"/>
     </complexType>        
 
+<!--
     <simpleType name="DebuggingLevels">
         <annotation>
             <documentation>
@@ -684,6 +691,7 @@
         </annotation>
         <list itemType="DebuggingLevels"/>
     </simpleType>
+-->
 
     <complexType name="Run">
         <annotation>
@@ -728,6 +736,7 @@
                 </documentation>
             </annotation>
         </attribute>
+<!--
         <attribute name="debugging" type="Debugging" default="none">
             <annotation>
                 <documentation>
@@ -735,6 +744,7 @@
                 </documentation>
             </annotation>
         </attribute>
+-->
         <attribute name="configure" type="boolean"   default="true">
             <annotation>
                 <documentation>

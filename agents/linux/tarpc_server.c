@@ -2449,12 +2449,6 @@ simple_receiver(tarpc_simple_receiver_in *in, tarpc_simple_receiver_out *out)
 #endif        
     }
 
-    {
-        char buf[64] = {0,};
-        sprintf(buf, "Received %llu", received);
-        ERROR(buf);
-    } 
-    
     out->bytes_high = received >> 32;
     out->bytes_low = received & 0xFFFFFFFF;
 

@@ -4,5 +4,6 @@
 #bridge send0
 %suite selftad
 %package snmp
-snmptest
+
+snmptest ta="Agt_A" snmp_agt="192.168.37.14" mib_name="SNMPv2-MIB.txt" mib_object="sysDescr" snmp_version=2
 

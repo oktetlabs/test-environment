@@ -33,6 +33,9 @@
 #include "te_stdint.h"
 #include "te_errno.h"
 #include "rcf_api.h"
+#include "logger_api.h"
+
+DEFINE_LGR_ENTITY("rcftest");
 
 int
 main()

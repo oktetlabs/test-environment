@@ -1,20 +1,24 @@
 
 #EXTRA_DIST = package.dox
 
-AM_CPPFLAGS = -I$(top_srcdir)/lib
+tetestdir=$(prefix)/@PACKAGE_NAME@/$(subdir)
+
+tetest_DATA = package.xml
 
 
-AM_CFLAGS=@TE_CFLAGS@ -I$(DESTDIR)/$(prefix)/include \
-                      -I$(DESTDIR)/$(prefix)/../include -I.
-AM_LDFLAGS=@TE_LDFLAGS@ -L. -L$(DESTDIR)/$(prefix)/lib
+AM_CPPFLAGS = -I. -I$(DESTDIR)/$(prefix)/include \
+              -I$(DESTDIR)/$(prefix)/../include \
+              -I$(top_srcdir)/lib
 
-mybindir=$(prefix)/@PACKAGE_NAME@/$(subdir)
-mydatadir=$(prefix)/@PACKAGE_NAME@/$(subdir)
+AM_CFLAGS = @NET_SNMP_CFLAGS@
 
-mybin_PROGRAMS = snmptest
+AM_LDFLAGS = @TE_LDFLAGS@ -L. -L$(DESTDIR)/$(prefix)/lib
 
-MYLDADD = -ltapi_snmp -lndn -lasn -ltapi -lrcfapi -lconfapi -lconf_oid -lipc -lpthread -llogger_ten
 
-PPFLAGS=@NET_SNMP_CFLAGS@
+tetest_PROGRAMS = snmptest
+
+
+MYLDADD = -ltapi_snmp -lndn -lasn -ltapi -lrcfapi -lconfapi -lconf_oid \
+          -lipc -lpthread -llogger_ten
+
 LDADD=$(MYLDADD) @NET_SNMP_LIBS@
-

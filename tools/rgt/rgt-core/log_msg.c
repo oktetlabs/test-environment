@@ -113,15 +113,29 @@ rgt_process_control_message(log_msg *msg)
         }                                                    \
     }
     
-    PROCESS_NODE("test", NT_TEST, node->node_specific.test.name)
+    PROCESS_NODE("TEST", NT_TEST, node->node_specific.test.name)
     else 
-    PROCESS_NODE("package", NT_PACKAGE, node->node_specific.pkg.name)
+    PROCESS_NODE("PACKAGE", NT_PACKAGE, node->node_specific.pkg.name)
     else
-    PROCESS_NODE("session", NT_SESSION, NULL)
+    PROCESS_NODE("SESSION", NT_SESSION, NULL)
     else if ((res = RES_STATUS_PASS, 
-              strncmp(msg->fmt_str, "%T %T pass", strlen("%T %T pass")) == 0) ||
+              strncmp(msg->fmt_str, "%T %T PASSED",
+                      strlen("%T %T PASSED")) == 0) ||
              (res = RES_STATUS_FAIL, 
-              strncmp(msg->fmt_str, "%T %T fail", strlen("%T %T fail")) == 0))
+              strncmp(msg->fmt_str, "%T %T KILLED",
+                      strlen("%T %T KILLED")) == 0) ||
+             (res = RES_STATUS_FAIL, 
+              strncmp(msg->fmt_str, "%T %T DUMPED",
+                      strlen("%T %T DUMPED")) == 0) ||
+             (res = RES_STATUS_FAIL, 
+              strncmp(msg->fmt_str, "%T %T SKIPPED",
+                      strlen("%T %T SKIPPED")) == 0) ||
+             (res = RES_STATUS_FAIL, 
+              strncmp(msg->fmt_str, "%T %T FAKE",
+                      strlen("%T %T FAKE")) == 0) ||
+             (res = RES_STATUS_FAIL, 
+              strncmp(msg->fmt_str, "%T %T FAILED",
+                      strlen("%T %T FAILED")) == 0))
     {
         if ((node = flow_tree_close_node(parent_id, node_id, 
                             msg->timestamp, &err_code)) == NULL)

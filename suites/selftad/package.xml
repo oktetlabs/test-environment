@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<package version="1.0">
+
+    <description>Tests on TAD functionality.</description>
+
+    <author mailto="Konstantin.Abramenko@oktetlabs.ru"/>
+
+    <session random="true">
+        <run>
+            <package name="snmp"/>
+        </run>
+    </session>
+
+</package>

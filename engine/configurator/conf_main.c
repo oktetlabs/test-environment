@@ -974,6 +974,10 @@ main(int argc, char **argv)
         {
             VERB("operation succeeded.");
         }
+        else if ((msg->type == CFG_BACKUP) && (msg->rc == ETEBACKUP))
+        {
+            INFO("Backup verification failed.");
+        }
         else
         {   
             ERROR("operation failed; errno 0x%x, msg->type = %d", msg->rc,

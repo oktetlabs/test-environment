@@ -14,7 +14,8 @@ tetest_DATA = package.xml ${NDS_DIR}/file-csap.asn ${NDS_DIR}/file-tmpl01.asn
 tetest_PROGRAMS=rcftest
 
 
-rcftest_SOURCES=rcftest.c
-rcftest_LDADD=-lrcfapi -lipc -lpthread
-rcftest_DEPENDENCIES=${TE_INSTALL}/@host@/lib/librcfapi.a
-
+rcftest_SOURCES = rcftest.c
+rcftest_LDADD = -lrcfapi -llogger_ten -lipc -lpthread
+rcftest_DEPENDENCIES = ${TE_INSTALL}/@host@/lib/librcfapi.a \
+                       ${TE_INSTALL}/@host@/lib/liblogger_ten.a \
+                       ${TE_INSTALL}/@host@/lib/libipc.a

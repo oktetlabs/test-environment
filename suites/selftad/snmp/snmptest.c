@@ -36,8 +36,11 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include "tapi_test.h"
+
+#include "te_defs.h"
+#include "te_stdint.h"
 #include "te_errno.h"
+#include "tapi_test.h"
 #include "rcf_api.h"
 #include "logger_api.h"
 #include "tapi_snmp.h"
@@ -93,8 +96,8 @@ main(int argc, char *argv[])
         if ((rc = tapi_snmp_make_oid(mib_object, &oid)) != 0)
         {
             TEST_FAIL("tapi_snmp_make_oid() failed, rc %x\n", rc);
-	    return rc;
-	}
+            return rc;
+        }
 
         rc = tapi_snmp_get(ta, sid, snmp_csap, &oid, TAPI_SNMP_NEXT, &vb);
         if (rc)

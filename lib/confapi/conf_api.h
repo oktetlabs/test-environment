@@ -589,6 +589,10 @@ extern int cfg_restore_backup(const char *name);
  */
 extern int cfg_create_config(const char *name, te_bool history);
 
+/**
+ * Clean up resources allocated by Configurator API.
+ */
+extern void cfg_api_cleanup(void);
 
 #ifdef __cplusplus
 }

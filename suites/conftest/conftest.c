@@ -10,6 +10,11 @@
 #include "te_stdint.h"
 #include "te_errno.h"
 #include "conf_api.h"
+#include "logger_api.h"
+
+
+DEFINE_LGR_ENTITY("conftest");
+
 
 typedef struct conftest_user_data {
 } conftest_user_data;    
@@ -133,14 +138,13 @@ process_instance(cfg_handle handle)
     char *str;
     
     char *backup;
-    int   backup_len;
     
     int ret_val;
     
     if (handle == CFG_HANDLE_INVALID)
         return EINVAL;
         
-    ret_val = cfg_create_backup(&backup, &backup_len);
+    ret_val = cfg_create_backup(&backup);
     if (ret_val != 0)
     {
         fprintf(outerr, "process_instance: cfg_create_backup() failed\n");
@@ -489,7 +493,8 @@ process_family_member(cfg_handle handle)
     ret_val = cfg_get_oid_str(handle, &oid);
     if (ret_val != 0)
     {
-        fprintf(outerr, "process_family_member: cfg_get_oid_str() failed for handle 0x%x\n");
+        fprintf(outerr, "process_family_member: cfg_get_oid_str() "
+                        "failed for handle 0x%x\n", handle);
         return 0;
     }
     ret_val = fprintf(output, "%s\n", oid);
@@ -695,7 +700,6 @@ main()
 {
     int ret_val;
     char *backup;
-    int backup_len;
     char *config_name = "/tmp/config.cfg";
     char *history_name = "/tmp/history.cfg";
     
@@ -715,7 +719,7 @@ main()
         
     printf("Start to test Configurator API\n");
 
-    ret_val = cfg_create_backup(&backup, &backup_len);
+    ret_val = cfg_create_backup(&backup);
     if (ret_val != 0)
     {
         fprintf(outerr, "main: cfg_create_backup() failed\n");

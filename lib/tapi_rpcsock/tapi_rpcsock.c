@@ -4388,6 +4388,7 @@ rpc_sendfile(rcf_rpc_server *handle, int out_fd, int in_fd,
              off_t *offset, size_t count)
 {
     rcf_rpc_op         op = handle->op;
+    off_t              start = (offset != NULL) ? *offset : 0;
     tarpc_sendfile_in  in;
     tarpc_sendfile_out out;
 
@@ -4417,10 +4418,11 @@ rpc_sendfile(rcf_rpc_server *handle, int out_fd, int in_fd,
             *offset = out.offset.offset_val[0];
     }
 
-    INFO("RPC (%s,%s)%s: sendfile(%d, %d, 0x%x, %u) -> %d (%s)",
+    INFO("RPC (%s,%s)%s: sendfile(%d, %d, 0x%x(%d), %u) -> %d (%s) offset=%d",
          handle->ta, handle->name, rpcop2str(op),
-         out_fd, in_fd, *offset, count,
-         out.retval, errno_rpc2str(RPC_ERRNO(handle)));
+         out_fd, in_fd, offset, start, count,
+         out.retval, errno_rpc2str(RPC_ERRNO(handle)),
+         (offset != NULL) ? *offset : 0);
 
     RETVAL_VAL(out.retval, sendfile);
 }

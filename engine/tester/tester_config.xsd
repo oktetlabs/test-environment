@@ -79,15 +79,14 @@
                     </annotation>
                 </element>
 
-                <element name="package" type="PackageInfo"
-                                        minOccurs="0"
-                                        maxOccurs="unbounded">
+                <element name="suite" type="SuiteInfo"
+                                      minOccurs="0" maxOccurs="unbounded">
                     <annotation>
                         <documentation>
                             Information about each Test Package used
                             in this configuration. By default sources
                             of Test Packages are searched in
-                            '&lt;te_base&gt;/packages/&lt;package_name&gt;'
+                            '&lt;te_base&gt;/suites/&lt;suite_name&gt;'
                             directory.
                         </documentation>
                     </annotation>
@@ -129,30 +128,25 @@
 
     </element>
 
-    <complexType name="PackageInfo">
+    <complexType name="SuiteInfo">
         <annotation>
             <documentation>
-                Type of the element to specify information about
-                Test Package.
+                Type of the element to specify information about Test Suite.
             </documentation>
         </annotation>
-        <sequence>
-            <element name="path" type="string"
-                                 minOccurs="0">
-                <annotation>
-                    <documentation>
-                        Absolute or relative path to the Test Package
-                        sources. Absolute path starts from '/'.
-                        Relative path is calculated from Test
-                        Environment base (root directory).
-                    </documentation>
-                </annotation>
-            </element>
-        </sequence>
-        <attribute name="name" type="token">
+        <attribute name="name" type="token" use="required">
             <annotation>
                 <documentation>
-                    Test Package name.
+                    Test Suite name.
+                </documentation>
+            </annotation>
+        </attribute>
+        <attribute name="path" type="string">
+            <annotation>
+                <documentation>
+                    Absolute or relative path to the Test Suite sources.
+                    Absolute path starts from '/'.  Relative path is
+                    calculated from Test Environment base.
                 </documentation>
             </annotation>
         </attribute>

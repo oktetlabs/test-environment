@@ -38,6 +38,13 @@
 extern "C" {
 #endif
 
+/** Test Environment copyright to be used in applications output */
+#define TE_COPYRIGHT \
+"Copyright (C) 2004 Test Environment authors (see file AUTHORS in the root\n"  \
+"directory of the distribution).\n"                                            \
+"This is free software; see the source for copying conditions.  There is NO\n" \
+"warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n"
+    
 
 /** Boolean type to be used everywhere in Test Environment */
 typedef unsigned char te_bool;
@@ -114,8 +121,10 @@ typedef unsigned char te_bool;
 
 
 /** Useful for debugging */
+#if 0 /* BUG here */
 #define malloc(_x)   (((_x) < 0x04000000) ? (malloc)(_x) : \
                                             (({assert(FALSE);}), NULL))
+#endif
 
 
 /**

@@ -103,8 +103,8 @@ typedef struct log_msg {
  * Entity and user names of control messages.
  * These constants were got from OKT-HLD-0000095-TE_TS document.
  */
-#define CMSG_ENTITY_NAME "engine"
-#define CMSG_USER_NAME   "test"
+#define CMSG_ENTITY_NAME "Tester"
+#define CMSG_USER_NAME   "Flow"
 
 /* 
  * Structures that are used for representation of control log messages.

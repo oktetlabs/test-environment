@@ -73,9 +73,8 @@
                 </annotation>
             </element>
 
-            <element name="requirement" type="Requirement"
-                                        minOccurs="0"
-                                        maxOccurs="unbounded">
+            <element name="req" type="Requirement"
+                                 minOccurs="0" maxOccurs="unbounded">
                 <annotation>
                     <documentation>
                         Compete set of requirements verified by the

@@ -33,9 +33,6 @@
 /** Global variable with entity name for logging */
 DEFINE_LGR_ENTITY("(unknown)");
 
-/* See description in sockapi-test.h */
-char *test_backup_name = NULL;
-
 
 /* See description in sockapi-ts.h */
 void

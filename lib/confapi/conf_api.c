@@ -2083,3 +2083,17 @@ cfg_create_config(const char *name, te_bool history)
 #endif
     return TE_RC(TE_CONF_API, ret_val);
 }
+
+
+/* See description in conf_api.h */
+void
+cfg_api_cleanup(void)
+{
+    int rc = ipc_close_client(cfgl_ipc_client);
+
+    if (rc != 0)
+    {
+        ERROR("%s(): ipc_close_client() failed with rc=%d",
+              __FUNCTION__, rc);
+    }
+}

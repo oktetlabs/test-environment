@@ -52,7 +52,6 @@
                                          not available */
 #define ETEFMT          (TE_BASE | 7) /* Invalid format */
 #define ETEENV          (TE_BASE | 8) /* Inappropriate environment */
-#define ETESTFAIL       (TE_BASE | 9) /* Test failed */
 /*@}*/
 
 /** @name Remote Control Facility errno's */
@@ -147,6 +146,24 @@
                                                    initialization failed */
 #define ETEBADTYPE      (CONF_ERRNO_BASE | 5) /**< Type specified by the user
                                                    is incorrect */
+/*@}*/
+
+/** @name Tester errno's */
+#define TESTER_ERRNO_BASE   (7 << 16)
+#define ETESTPASS   (0)                     /**< Test passed */
+#define ETESTFAKE   (TESTER_ERRNO_BASE | 1) /**< Test not really run */
+#define ETESTSKIP   (TESTER_ERRNO_BASE | 2) /**< Test skipped */
+#define ETESTCONF   (TESTER_ERRNO_BASE | 3) /**< Test changes configuration */
+#define ETESTKILL   (TESTER_ERRNO_BASE | 4) /**< Test killed by signal */
+#define ETESTCORE   (TESTER_ERRNO_BASE | 5) /**< Test dumped core */
+#define ETESTPROLOG (TESTER_ERRNO_BASE | 6) /**< Session prologue failed */
+#define ETESTEPILOG (TESTER_ERRNO_BASE | 7) /**< Session epilogue failed */
+#define ETESTALIVE  (TESTER_ERRNO_BASE | 8) /**< Session keep-alive failed */
+#define ETESTFAIL   (TESTER_ERRNO_BASE | 9) /**< Test failed */
+#define ETESTUNEXP  (TESTER_ERRNO_BASE | 10) /**< Test unexpected results */
+
+#define ETESTFAILMIN    ETESTFAKE   /**< Minimum test failure errno */
+#define ETESTFAILMAX    ETESTUNEXP  /**< Maximum test failure errno */
 /*@}*/
 
 

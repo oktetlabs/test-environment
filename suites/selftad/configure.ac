@@ -9,6 +9,8 @@ AC_CONFIG_AUX_DIR(../../aux)
 
 AM_INIT_AUTOMAKE([-Wall foreign])
 
+AC_CANONICAL_HOST
+AC_SUBST(host)
 
 # Checks for programs.
 AC_PROG_CC
@@ -16,7 +18,6 @@ AC_PROG_YACC
 AC_PROG_LEX
 AC_PROG_RANLIB
 AC_PROG_INSTALL
-
 
 CPPFLAGS=${CPPFLAGS}" "${TE_CPPFLAGS}
 CFLAGS=${CFLAGS}" "${TE_CFLAGS}
@@ -76,7 +77,6 @@ AC_SUBST(NET_SNMP_CFLAGS)
 AC_SUBST(NET_SNMP_LIBS)
 
 AC_DEFINE_UNQUOTED(SUITE_SRCDIR, "$srcdir", [The suite source directory])
-
 
 
 AC_CONFIG_FILES([Makefile snmp/Makefile])
