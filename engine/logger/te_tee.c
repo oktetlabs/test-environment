@@ -79,7 +79,7 @@
 #include "te_raw_log.h"
 
 
-DEFINE_LGR_ENTITY("RCF");
+DEFINE_LGR_ENTITY("(Tee)");
 
 
 int
@@ -94,26 +94,27 @@ main (int argc, char *argv[])
     struct pollfd  poller;
 
 #define MAYBE_DO_LOG \
-    do { \
-        if (current != buffer) \
-        { \
-            *current = '\0'; \
+    do {                                                    \
+        if (current != buffer)                              \
+        {                                                   \
+            *current = '\0';                                \
             LGR_MESSAGE(TE_LL_WARN, argv[1], "%s", buffer); \
-            current_timeout = -1; \
-            current = buffer; \
-        } \
+            current_timeout = -1;                           \
+            current = buffer;                               \
+        }                                                   \
     } while (0)
 
-    if (argc != 3)
+    if (argc != 4)
     {
-        ERROR("Usage: te_tee agent-name msg-interval");
+        ERROR("Usage: te_tee lgr-entity lgr-user msg-interval");
         return EXIT_FAILURE;
     }
+    te_lgr_entity = argv[1];
 
-    interval = strtol(argv[2], NULL, 10);
+    interval = strtol(argv[3], NULL, 10);
     if (interval <= 0)
     {
-        ERROR("Invalid interval value: %s", argv[2]);
+        ERROR("Invalid interval value: %s", argv[3]);
         return EXIT_FAILURE;
     }
 
@@ -151,7 +152,7 @@ main (int argc, char *argv[])
             current += len;
             if (current == fence)
             {
-                LGR_MESSAGE(TE_LL_WARN, argv[1], "%s", buffer);
+                LGR_MESSAGE(TE_LL_WARN, argv[2], "%s", buffer);
                 current_timeout = -1;
                 current = buffer;
             }
