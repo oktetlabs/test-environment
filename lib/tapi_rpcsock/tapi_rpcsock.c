@@ -6323,6 +6323,7 @@ rpc_wsa_duplicate_socket(rcf_rpc_server *handle,
     {
         if (info_len != NULL)
             *info_len = out.info.info_len;
+        memcpy(info, out.info.info_val, out.info.info_len);
     }
 
     RETVAL_RC(duplicate_socket);
