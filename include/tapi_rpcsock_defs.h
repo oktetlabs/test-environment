@@ -46,6 +46,9 @@
 #ifdef HAVE_NETINET_IP_H
 #include <netinet/ip.h>
 #endif
+#ifdef HAVE_NET_IF_ARP_H
+#include <net/if_arp.h>
+#endif
 #ifdef HAVE_NETINET_TCP_H
 #include <netinet/tcp.h>
 #endif
@@ -266,6 +269,7 @@ addr_family_rpc2h(rpc_socket_addr_family addr_family)
         RPC2H(AF_LOCAL);
         RPC2H(AF_UNIX);
         RPC2H(AF_UNSPEC);
+        case RPC_AF_ETHER: return AF_LOCAL;
         case RPC_AF_UNKNOWN: return AF_MAX;
         default: return AF_MAX;
     }
@@ -1349,7 +1353,10 @@ typedef enum rpc_ioctl_code {
                                  interface */
     RPC_SIOCSIFMTU,         /**< Set the value of MTU on a network
                                  interface */
-    RPC_SIO_FLUSH,          /**< Flush send queue */                       
+    RPC_SIO_FLUSH,          /**< Flush send queue */
+    RPC_SIOCSARP,           /**< Set ARP mapping */
+    RPC_SIOCDARP,           /**< Delete ARP mapping */ 
+    RPC_SIOCGARP,           /**< Get ARP mapping */
     RPC_SIOUNKNOWN          /**< Invalid ioctl code */
 } rpc_ioctl_code; 
 
@@ -1436,6 +1443,15 @@ ioctl_rpc2h(rpc_ioctl_code code)
 #ifdef SIO_FLUSH
         RPC2H(SIO_FLUSH);
 #endif
+#ifdef SIOCSARP
+        RPC2H(SIOCSARP);
+#endif
+#ifdef SIOCDARP
+        RPC2H(SIOCDARP);
+#endif
+#ifdef SIOCGARP
+        RPC2H(SIOCGARP);
+#endif
         default: return IOCTL_MAX;
     }
 }
@@ -1470,6 +1486,9 @@ ioctl_rpc2str(rpc_ioctl_code code)
         RPC2STR(SIOCSIFMTU);
         RPC2STR(SIO_FLUSH);
         RPC2STR(SIOUNKNOWN);
+        RPC2STR(SIOCSARP);
+        RPC2STR(SIOCDARP);
+        RPC2STR(SIOCGARP);
         default: return "<IOCTL_FATAL_ERROR>";
     }
 }
@@ -1768,7 +1787,7 @@ ai_rc_h2rpc(rpc_ai_rc rc)
 #ifdef IFF_UP
 
 /* ifreq flags */
-typedef enum tarpc_ioctl_flags {
+typedef enum rpc_if_fl {
     RPC_IFF_UP = 0x0001,          /**< Interface is up */
     RPC_IFF_BROADCAST = 0x0002,   /**< Broadcast adress valid */
     RPC_IFF_DEBUG = 0x0004,       /**< Is a loopback net */
@@ -1784,7 +1803,7 @@ typedef enum tarpc_ioctl_flags {
     RPC_IFF_PORTSEL = 0x1000,     /**< Can set media type */
     RPC_IFF_AUTOMEDIA = 0x2000,   /**< Auto media select active */
     RPC_IFF_UNKNOWN = 0x8000,     /**< Unknown flag */
-} rpc_io_fl;
+} rpc_if_fl;
 
 
 #ifdef IFF_MASTER
@@ -1812,14 +1831,14 @@ typedef enum tarpc_ioctl_flags {
 #define IFF_NOTRAILERS      0
 #endif
 
-#define IOCTL_FLAGS_ALL (IFF_UP | IFF_BROADCAST | IFF_DEBUG |    \
-                         IFF_POINTOPOINT | IFF_NOTRAILERS |          \
+#define IF_FLAGS_ALL (IFF_UP | IFF_BROADCAST | IFF_DEBUG |       \
+                         IFF_POINTOPOINT | IFF_NOTRAILERS |      \
                          IFF_RUNNING | IFF_NOARP | IFF_PROMISC | \
                          IFF_ALLMULTI | IFF_MASTER | IFF_SLAVE | \
-                         IFF_MULTICAST | IFF_PORTSEL |               \
+                         IFF_MULTICAST | IFF_PORTSEL |           \
                          IFF_AUTOMEDIA)
 
-#define RPC_IOCTL_FLAGS_ALL \
+#define RPC_IF_FLAGS_ALL \
             (RPC_IFF_UP | RPC_IFF_BROADCAST | RPC_IFF_DEBUG |    \
              RPC_IFF_POINTOPOINT | RPC_IFF_NOTRAILERS |          \
              RPC_IFF_RUNNING | RPC_IFF_NOARP | RPC_IFF_PROMISC | \
@@ -1848,9 +1867,9 @@ typedef enum tarpc_ioctl_flags {
             RPC_BIT_MAP_ENTRY(IFF_UNKNOWN)
 
 static inline int
-if_fl_rpc2h(rpc_io_fl flags)
+if_fl_rpc2h(rpc_if_fl flags)
 {
-    if ((flags & ~RPC_IOCTL_FLAGS_ALL) != 0)
+    if ((flags & ~RPC_IF_FLAGS_ALL) != 0)
         return IFF_UNKNOWN;
     
     return (!!(flags & RPC_IFF_UP) * IFF_UP) |
@@ -1907,5 +1926,56 @@ RPCBITMAP2STR(if_fl, IF_FL_MAPPING_LIST)
 #undef HAVE_IFF_PORTSEL
 
 #endif /* IFF_UP */
+
+
+/* arpreq flags */
+typedef enum rpc_arp_flags {
+    RPC_ATF_COM = 0x0001,         /**< Lookup complete */
+    RPC_ATF_PERM = 0x0002,        /**< Permanent entry */
+    RPC_ATF_PUBL = 0x0004,        /**< Publish entry */
+    RPC_ATF_NETMASK = 0x0008,     /**< Use a netmask */
+    RPC_ATF_DONTPUB = 0x0010      /**< Don't answer */
+} rpc_arp_fl;    
+
+#define ARP_FLAGS_ALL (ATF_COM | ATF_PERM | ATF_PUBL | \
+                       ATF_NETMASK | ATF_DONTPUB)
+
+#define RPC_ARP_FLAGS_ALL \
+            (RPC_ATF_COM | RPC_ATF_PERM | RPC_ATF_PUBL |  \
+             RPC_ATF_NETMASK | RPC_ATF_DONTPUB)
+
+#define ARP_UNKNOWN 0xFFFF
+
+/** List of mapping numerical value to string for 'rpc_io_fl' */
+#define ARP_FL_MAPPING_LIST \
+            RPC_BIT_MAP_ENTRY(ATF_COM), \
+            RPC_BIT_MAP_ENTRY(ATF_PERM), \
+            RPC_BIT_MAP_ENTRY(ATF_PUBL), \
+            RPC_BIT_MAP_ENTRY(ATF_NETMASK), \
+            RPC_BIT_MAP_ENTRY(ATF_DONTPUB)
+
+static inline int
+arp_fl_rpc2h(rpc_arp_fl flags)
+{
+    if ((flags & ~RPC_ARP_FLAGS_ALL) != 0)
+        return ARP_UNKNOWN;
+    
+    return (!!(flags & RPC_ATF_COM) * ATF_COM) |
+           (!!(flags & RPC_ATF_PERM) * ATF_PERM) |
+           (!!(flags & RPC_ATF_PUBL) * ATF_PUBL) |
+           (!!(flags & RPC_ATF_NETMASK) * ATF_NETMASK) |
+           (!!(flags & RPC_ATF_DONTPUB) * ATF_DONTPUB);
+}
+
+static inline int
+arp_fl_h2rpc(int flags)
+{
+    return (!!(flags & ATF_COM) * RPC_ATF_COM) |
+           (!!(flags & ATF_PERM) * RPC_ATF_PERM) |
+           (!!(flags & ATF_PUBL) * RPC_ATF_PUBL) |
+           (!!(flags & ATF_NETMASK) * RPC_ATF_NETMASK) |
+           (!!(flags & ATF_DONTPUB) * RPC_ATF_DONTPUB);
+}
+
 
 #endif /* !__TE_TAPI_RPCSOCK_DEFS_H__ */

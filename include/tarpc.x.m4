@@ -106,6 +106,14 @@ struct tarpc_ifconf {
     int         buflen;  /**< Length of the buffer to be passed to ioctl */
 };
 
+/** struct arpreq */
+struct tarpc_arpreq {
+    struct tarpc_sa rpc_arp_pa;      /**< Protocol address */
+    struct tarpc_sa rpc_arp_ha;      /**< Hardware address */
+    int             rpc_arp_flags;   /**< Flags */
+    char            rpc_arp_dev[16]; /**< Device */
+};
+
 /** struct timespec */
 struct tarpc_timespec {
     long tv_sec;
@@ -1068,7 +1076,9 @@ enum ioctl_type {
     IOCTL_INT = 1,
     IOCTL_TIMEVAL = 2,
     IOCTL_IFREQ = 3,
-    IOCTL_IFCONF = 4
+    IOCTL_IFCONF = 4,
+    IOCTL_ARPREQ = 5
+    
 };
 
 /* Access type of ioctl requests */
@@ -1083,6 +1093,7 @@ union ioctl_request switch (ioctl_type type) {
     case IOCTL_TIMEVAL: tarpc_timeval req_timeval;
     case IOCTL_IFREQ:   tarpc_ifreq   req_ifreq; 
     case IOCTL_IFCONF:  tarpc_ifconf  req_ifconf; 
+    case IOCTL_ARPREQ:  tarpc_arpreq  req_arpreq;
 };
 
 struct tarpc_ioctl_in {
