@@ -61,15 +61,11 @@ AC_HEADER_STDC
 AC_CHECK_HEADERS([\
 unistd.h \
 strings.h \
-curses.h \
 pthread.h \
 sys/types.h \
 sys/wait.h \
 sys/queue.h \
 ])
-
-AC_CHECK_LIB([ncurses], [initscr], [],
-             [AC_MSG_ERROR([Could not find ncurses anywhere])], [])
 
 
 AC_CONFIG_FILES(Makefile)

@@ -33,7 +33,6 @@
 #if HAVE_CONFIG_H
 #include "config.h"
 #endif
-#undef HAVE_CURSES_H
 
 #include <stdio.h>
 #ifdef STDC_HEADERS
@@ -47,9 +46,6 @@
 #endif
 #if HAVE_PTHREAD_H
 #include <pthread.h>
-#endif
-#if HAVE_CURSES_H
-#include <curses.h>
 #endif
 
 #include "te_defs.h"
@@ -74,14 +70,14 @@
 
 /** Colors */
 typedef enum {
-    TESTER_COLOR_BLACK = 0,
-    TESTER_COLOR_DARK_RED = 1,
-    TESTER_COLOR_LIGHT_RED = 3,
-    TESTER_COLOR_GREEN = 2,
-    TESTER_COLOR_DARK_BLUE = 4,
+    TESTER_COLOR_BLACK      = 0,
+    TESTER_COLOR_DARK_RED   = 1,
+    TESTER_COLOR_LIGHT_RED  = 3,
+    TESTER_COLOR_GREEN      = 2,
+    TESTER_COLOR_DARK_BLUE  = 4,
     TESTER_COLOR_LIGHT_BLUE = 5,
-    TESTER_COLOR_GRAY = 6,
-    TESTER_COLOR_WHITE = 8,
+    TESTER_COLOR_GRAY       = 6,
+    TESTER_COLOR_WHITE      = 8,
 } tester_color;
 
 
@@ -96,16 +92,6 @@ static size_t  prev_len = 0;
 
 #endif
 
-
-#if HAVE_CURSES_H
-
-static WINDOW *win = NULL;
-
-#else /* !HAVE_CURSES_H */
-
-static void *win = NULL;
-
-#endif /* !HAVE_CURSES_H */
 
 
 /**
@@ -174,24 +160,6 @@ tester_out_start(run_item_type type, const char *name,
 #if HAVE_PTHREAD_H
     CHECK_RC_ZERO(pthread_mutex_lock(&win_lock));
 #endif
-#if HAVE_CURSES_H
-    if (win != NULL)
-    {
-        if (wrefresh(win) == ERR)
-        {
-            ERROR("Current window refresh failed");
-            win = NULL;
-        }
-    }
-    if (win == NULL)
-    {
-        win = initscr();
-        if (win == NULL)
-        {
-            ERROR("Current window refresh failed");
-        }
-    }
-#endif
 
     if (prev_id != -1)
     {
@@ -254,6 +222,7 @@ tester_out_done(run_item_type type, const char *name,
         }
     }
 
+    /* Prepare message to be output in another line */
     if (snprintf(msg_out, sizeof(msg_out), "Done%s %s %s ",
                  ids, run_item_type_to_string(type), name) >=
             (int)sizeof(msg_out))
@@ -261,6 +230,7 @@ tester_out_done(run_item_type type, const char *name,
         ERROR("Too short buffer for output message");
         /* Continue */
     }
+    /* We have a chance to output in the same line, prepare offset string */
     if (self == prev_id)
     {
         int n_spaces = columns - 10 - prev_len;
@@ -276,6 +246,7 @@ tester_out_done(run_item_type type, const char *name,
         msg_in[n_spaces] = '\0';
     }
 
+    /* Map result to color and verdict */
     if (result == ETESTPASS)
     {
         verdict = "PASSED";
@@ -339,26 +310,9 @@ tester_out_done(run_item_type type, const char *name,
         }
     }
 
+    /* Now lock the terminal (inside Tester application) and make output */
 #if HAVE_PTHREAD_H
     CHECK_RC_ZERO(pthread_mutex_lock(&win_lock));
-#endif
-#if HAVE_CURSES_H
-    if (win != NULL)
-    {
-        if (wrefresh(win) == ERR)
-        {
-            ERROR("Current window refresh failed");
-            win = NULL;
-        }
-    }
-    if (win == NULL)
-    {
-        win = initscr();
-        if (win == NULL)
-        {
-            ERROR("Current window refresh failed");
-        }
-    }
 #endif
 
     msg = (self == prev_id) ? msg_in : msg_out;
