@@ -42,7 +42,12 @@ POPT_CPPFLAGS =
 POPT_LDADD = 
 endif
 
-bin_PROGRAMS = rgt-core
+bin_PROGRAMS = rgt-core rgt-xml-html
+
+rgt_xml_html_SOURCES = main.c
+rgt_xml_html_LDADD = @GLIB_LIBS@ $(POPT_LDADD) -L$(top_builddir)/lib/tmpls -ltmpls -lpopt @XML2_LIBS@
+rgt_xml_html_CFLAGS = @XML2_CFLAGS@ -I$(top_srcdir)/lib/tmpls
+
 rgt_core_SOURCES = filter.c filter.h \
                    flow_tree.c flow_tree.h \
                    log_msg.c log_msg.h \
