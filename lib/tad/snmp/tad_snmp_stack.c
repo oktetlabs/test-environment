@@ -167,30 +167,30 @@ snmp_read_cb (csap_p csap_descr, int timeout, char *buf, int buf_len)
     sel_timeout.tv_usec = timeout % 1000000L;
 
     if (spec_data->sock < 0)
-        snmp_select_info(&n_fds, &fdset, &sel_timeout, &block); 
+        snmp_select_info(&n_fds, &fdset, &sel_timeout, &block);
     else
     {
         FD_SET(spec_data->sock, &fdset);
         n_fds = spec_data->sock + 1;
     }
-
-    VERB("session select info, n_fds: %d\n", n_fds);
-
+    
     if (spec_data->pdu) snmp_free_pdu (spec_data->pdu); 
     spec_data->pdu = 0;
 
-    rc = select (n_fds, &fdset, 0, 0, &sel_timeout);
-    VERB("after select, rc %d\n", rc);
+    rc = select(n_fds, &fdset, 0, 0, &sel_timeout);
+    VERB("%s(): CSAP %d, after select, rc %d\n",
+         __FUNCTION__, csap_descr->id, rc);
+
     if (rc > 0) 
     { 
         size_t n_bytes = buf_len;
+        
         snmp_read(&fdset);
-
-        VERB("after snmp_read\n");
+        
         if (buf_len < sizeof(struct snmp_pdu))
         {
             RING("In %s, buf_len %d less then sizeof struct snmp_pdu %d", 
-                    __FUNCTION__, buf_len, sizeof(struct snmp_pdu));
+                 __FUNCTION__, buf_len, sizeof(struct snmp_pdu));
             n_bytes = buf_len;
         }
         else
@@ -296,24 +296,36 @@ snmp_write_read_cb(csap_p csap_descr, int timeout,
         return 0;
     } 
 
-    snmp_select_info(&n_fds, &fdset, &sel_timeout, &block);
+    if (spec_data->sock < 0)
+        snmp_select_info(&n_fds, &fdset, &sel_timeout, &block);
+    else
+    {
+        FD_SET(spec_data->sock, &fdset);
+        n_fds = spec_data->sock + 1;
+    }
 
-    if (spec_data->pdu) snmp_free_pdu (spec_data->pdu); 
+    if (spec_data->pdu)
+        snmp_free_pdu(spec_data->pdu);
+
     spec_data->pdu = 0;
 
+    rc = select(n_fds, &fdset, 0, 0, &sel_timeout);
+    
+    VERB("%s(): CSAP %d, after select, rc %d\n",
+         __FUNCTION__, csap_descr->id, rc);
 
-    rc = select (n_fds, &fdset, 0, 0, &sel_timeout);
     if (rc > 0) 
     {
         snmp_read(&fdset);
+        
         if (spec_data->pdu)
         {
-            memcpy (r_buf, spec_data->pdu, sizeof (struct snmp_pdu));
-            return sizeof (struct snmp_pdu);
+            memcpy(r_buf, spec_data->pdu, sizeof(struct snmp_pdu));
+            return sizeof(struct snmp_pdu);
         }
         rc = 0;
-    } 
-    
+    }
+
     return rc; 
 }
 
@@ -322,7 +334,7 @@ int
 snmp_single_check_pdus(csap_p csap_descr, asn_value *traffic_nds)
 {
     char choice_label[20];
-    int rc;
+    int  rc;
 
     UNUSED(csap_descr);
 
@@ -520,8 +532,9 @@ snmp_single_init_cb (int csap_id, const asn_value_p csap_nds, int layer)
         }
 
         ss = snmp_add(&csap_session, transport, NULL, NULL);
-
-        snmp_spec_data->sock = transport->sock; 
+        snmp_spec_data->sock = transport->sock;
+        VERB("%s(): CSAP %d, sock = %d", __FUNCTION__, csap_id,
+             snmp_spec_data->sock);
 #else
         ss = snmp_open(&csap_session); 
 #endif
