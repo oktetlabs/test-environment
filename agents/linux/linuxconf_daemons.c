@@ -1755,18 +1755,10 @@ RCF_PCH_CFG_NODE_COLLECTION(node_ds_vncserver, "vncserver",
 void
 ds_init_vncserver(rcf_pch_cfg_object **last)
 {
-    struct stat st;
-    int         fd;
-    
-    /* Real fake password generated during first vncserver spawning */
-    uint8_t passwd[] = { 0xE0, 0xFD, 0x04, 0x72, 0x49, 0x29, 0x35, 0xDA };
+    uint8_t passwd[] = { 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H' };
+    int     fd;
 
-    if (stat("/tmp/.vnc", &st) == 0)
-    {
-        DS_REGISTER(vncpasswd);
-        DS_REGISTER(vncserver);
-        return; /* Already exists, do nothing */
-    }
+    ta_system("rm -rf /tmp/.vnc");
         
     if (mkdir("/tmp/.vnc", 0700) < 0)
     {
