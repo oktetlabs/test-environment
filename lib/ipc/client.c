@@ -516,7 +516,7 @@ ipc_init_client(const char *name)
 
         if (bind(s, (struct sockaddr *)&addr, sizeof(addr)) != 0)
         {
-            fprintf(stderr, "IPC client '%s' init failed: bind()", name);
+            fprintf(stderr, "IPC client '%s' init failed: bind(): ", name);
             perror("");
             close(s);
             return NULL;
@@ -603,7 +603,7 @@ ipc_send_message(struct ipc_client *ipcc, const char *server_name,
         if (r != (int)(ipc_msg_size))
         {
             fprintf(stderr, "IPC client '%s' failed to send message "
-                            "to '%s'", ipcc->name, server_name);
+                            "to '%s': ", ipcc->name, server_name);
             perror("");
             return errno;
         }
