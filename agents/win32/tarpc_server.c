@@ -1273,10 +1273,11 @@ TARPC_FUNC(getsockname,
             /* Socket is not bound, work-around */
             out->retval = 0;
             out->common.win_error = 0;
+            a->ss_family = AF_INET;
         }
     }
-    else
-        sockaddr_h2rpc(a, &(out->addr));
+    
+    sockaddr_h2rpc(a, &(out->addr));
 }
 )
 
