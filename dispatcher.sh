@@ -24,7 +24,7 @@ usage()
     echo -e '  '--no-run\\t\\t\\t'Do not run Logger, RCF, Configurator and Tester'
     echo
     echo -e '  '--conf-dir='<directory>'\\t'specify configuration file directory'
-    echo -e \\t\\t\\t\\t'(${TE_BASE}/storage/conf or '.' by default)'
+    echo -e \\t\\t\\t\\t'(${TE_BASE}/conf or '.' by default)'
     echo
     echo -e '    In configuration files options below <filename> is full name of the'
     echo -e '    configuration file or name of the file in the configuration directory.'
@@ -272,7 +272,7 @@ fi
 
 if test -z "$CONF_DIR" ; then
     if test -n "${TE_BASE}" ; then
-        CONF_DIR=${TE_BASE}/storage/conf ;
+        CONF_DIR=${TE_BASE}/conf ;
     else
         CONF_DIR=`pwd` ;
     fi
