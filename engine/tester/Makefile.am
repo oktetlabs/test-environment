@@ -1,5 +1,6 @@
 
 AM_CPPFLAGS = -I$(DESTDIR)/$(prefix)/include 
+AM_CFLAGS = @XML2_CFLAGS@
 AM_LFLAGS = --header-file=$*.h -o $(LEX_OUTPUT_ROOT).c
 AM_YFLAGS = -d
 
@@ -25,7 +26,7 @@ reqs_expr_lex.h: reqs_expr_lex.c
 
 
 te_tester_LDADD = @TE_LDADD@ -lbsapi -lconfapi -lconf_oid -llogger_ten \
-                  -lipc -lpopt -lfl -lpthread
+                  -lipc @XML2_LIBS@ -lpopt -lfl -lpthread
 te_tester_DEPENDENCIES = @TE_DEPENDENCIES@ \
                          $(DESTDIR)/$(prefix)/lib/libbsapi.a \
                          $(DESTDIR)/$(prefix)/lib/libconfapi.a \
