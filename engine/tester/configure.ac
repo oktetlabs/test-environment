@@ -11,7 +11,8 @@ AM_INIT_AUTOMAKE([1.8.5 foreign -Wall])
 
 # Checks for programs.
 AC_PROG_CC
-
+AC_PROG_LEX
+AC_PROG_YACC
 AC_PROG_INSTALL
 
 
@@ -55,6 +56,7 @@ AC_CONFIG_HEADERS([config.h])
 
 AC_HEADER_STDC
 AC_CHECK_HEADERS([\
+errno.h \
 assert.h \
 unistd.h \
 strings.h \

@@ -38,6 +38,27 @@
 #include "te_defs.h"
 
 
+/** Types of expression elements */
+typedef enum reqs_expr_type {
+    TESTER_REQS_EXPR_VALUE,     /**< Simple value */
+    TESTER_REQS_EXPR_NOT,       /**< Logical 'not' */
+    TESTER_REQS_EXPR_AND,       /**< Logical 'and' */
+    TESTER_REQS_EXPR_OR,        /**< Logical 'or' */
+} reqs_expr_type;
+
+/** Element of the requirements expression */
+typedef struct reqs_expr {
+    reqs_expr_type  type;               /**< Type of expression element */
+    union {
+        char               *value;      /**< Simple value */
+        struct reqs_expr   *unary;      /**< Unary expression */
+        struct {
+            struct reqs_expr   *lhv;        /**< Left hand value */
+            struct reqs_expr   *rhv;        /**< Right hand value */
+        } binary;                       /**< Binary expression */
+    } u;
+} reqs_expr;
+
 /** Element of the list of requirements */
 typedef struct test_requirement {
     TAILQ_ENTRY(test_requirement)   links;  /**< List links */
@@ -56,6 +77,16 @@ struct tester_ctx;
 struct run_item;
 struct test_params;
 
+
+/**
+ * Parse requirements expression.
+ *
+ * @param str       String to be parsed
+ * @param expr      Location for pointer to parsed expression
+ *
+ * @return Status code.
+ */
+extern int tester_reqs_expr_parse(const char *str, reqs_expr **expr);
 
 /**
  * Create a new requirement and insert it in the list.
