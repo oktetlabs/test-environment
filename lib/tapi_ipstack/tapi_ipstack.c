@@ -227,15 +227,11 @@ tapi_udp4_csap_create(const char *ta_name, int sid,
     asn_free_value(csap_udp_level);
     asn_free_value(csap_ip4_level);
 
-    if (rc != 0)
-        return TE_RC(TE_TAPI, rc);
+    if (rc == 0)
+        rc = rcf_ta_csap_create(ta_name, sid, "data.udp", 
+                                csap_fname, udp_csap);
 
-    if ((rc = rcf_ta_csap_create(ta_name, sid, "data.udp.ip4",
-                    csap_fname, udp_csap)) != 0)
-    {
-        return rc;
-    }
-    return 0;
+    return TE_RC(TE_TAPI, rc);
 }
 
 
@@ -372,4 +368,5 @@ tapi_udp4_dgram_send_recv(const char *ta_name, int sid, csap_handle_t csap,
 
     return rc;
 }
+
 
