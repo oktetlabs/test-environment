@@ -495,7 +495,7 @@ reqs_list_to_string_buf(const test_requirements  *reqs,
     char                   *s = *buf;
     int                     out;
 
-    for (p = reqs->tqh_first;
+    for (p = (reqs != NULL) ? reqs->tqh_first : NULL;
          p != NULL && *left > 0;
          p = p->links.tqe_next, s += out, *left -= out)
     {
@@ -585,7 +585,8 @@ tester_is_run_required(const tester_ctx *ctx, const run_item *test,
             break;
 
         case RUN_ITEM_SESSION:
-            return TRUE;
+            reqs = NULL;
+            break;
 
         case RUN_ITEM_PACKAGE:
             reqs = &test->u.package->reqs;
