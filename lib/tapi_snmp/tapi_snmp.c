@@ -91,6 +91,7 @@ static int tapi_snmp_get_object_type(const tapi_snmp_oid_t *oid,
                                      enum snmp_obj_type *obj_type);
 
 
+
 const char*
 print_oid (const tapi_snmp_oid_t *oid )
 {
@@ -105,6 +106,28 @@ print_oid (const tapi_snmp_oid_t *oid )
     return buf;
 }
 
+int
+tapi_snmp_mib_entry_oid(struct tree *entry, tapi_snmp_oid_t *res_oid)
+{
+    int rc = 0;
+    if (entry == NULL || res_oid == NULL)
+        return ETEWRONGPTR;
+
+    INFO("%s: entry %x, par %x, entry label %s", 
+            __FUNCTION__, entry, entry->parent, entry->label);
+
+    if (entry->parent == NULL || entry->parent == entry)
+        res_oid->length = 0;
+    else
+        rc = tapi_snmp_mib_entry_oid(entry->parent, res_oid); 
+
+    if (rc) return rc;
+
+    res_oid->id[res_oid->length] = entry->subid;
+    res_oid->length++;
+
+    return 0;
+}
 
 int 
 tapi_snmp_copy_varbind(tapi_snmp_varbind_t *dst, const tapi_snmp_varbind_t *src)
@@ -1678,24 +1701,40 @@ tapi_snmp_get_table(const char *ta, int sid, int csap_id,
     if (entry_node->indexes)
     {
         struct index_list *t_index;
-        struct tree *index_node;
+        struct tree *index_node = NULL;
         struct tree *leaf;
         int column_found = 0;
 
+        /* Try to find readable index column in table */
         for (t_index = entry_node->indexes; t_index; 
              t_index = t_index->next)
         {
+            tapi_snmp_oid_t index_oid;
+
             index_node = find_node(t_index->ilabel, entry_node);
             if (index_node == NULL)
             {
-                INFO("strange, node for index not found\n");
+                RING("strange, node for index point not found\n");
                 break;
             }
+
+            tapi_snmp_mib_entry_oid(index_node, &index_oid);
+
+            if (!tapi_snmp_is_sub_oid(&entry, &index_oid))
+            {
+                INFO("Index entry <%s> is not in the table", t_index->ilabel);
+                continue;
+            }
+
             if (index_node->access == MIB_ACCESS_READONLY ||
-                index_node->access == MIB_ACCESS_READWRITE )
+                index_node->access == MIB_ACCESS_READWRITE ||
+                index_node->access == MIB_ACCESS_CREATE )
+            {
+                INFO("Find readable column <%s> with access %d", 
+                        index_node->label, index_node->access);
                 break;
-            else
-                index_node = NULL;
+            }
+            index_node = NULL;
         }
 
         for (leaf = entry_node->child_list; leaf; leaf = leaf->next_peer)
@@ -1708,25 +1747,28 @@ tapi_snmp_get_table(const char *ta, int sid, int csap_id,
         {
             tapi_snmp_append_oid(&entry, 1, entry_node->subid);
         }
-        else /* all index nodes are non-accessible, find any element */
+        else /* all index columns are non-accessible, find any element */
         { 
+            INFO("Try to find any readable column"); 
             if (entry_node->child_list == NULL)
             {
                 /* strange, node with indexes without children! */
                 return TE_RC(TE_TAPI, 1);
             }
 
-            for (entry_node = entry_node->child_list; entry_node; 
+            for (entry_node = entry_node->child_list; 
+                 entry_node && !column_found; 
                  entry_node = entry_node->next_peer)
             {
-                if (!column_found && 
-                    ( entry_node->access == MIB_ACCESS_READONLY ||
-                      entry_node->access == MIB_ACCESS_READWRITE )
-                   )
+                INFO("check entry <%s> with access %d", 
+                      entry_node->label, entry_node->access);
+                if ( entry_node->access == MIB_ACCESS_READONLY ||
+                     entry_node->access == MIB_ACCESS_READWRITE ||
+                     entry_node->access == MIB_ACCESS_CREATE)
                 {
                     tapi_snmp_append_oid(&entry, 1, entry_node->subid);
 
-                    VERB("find accessible entry <%s> with last subid %d\n", 
+                    INFO("find accessible entry <%s> with last subid %d\n", 
                              entry_node->label, entry_node->subid);
                     column_found = 1;
                 }
@@ -1738,7 +1780,7 @@ tapi_snmp_get_table(const char *ta, int sid, int csap_id,
 
     memset (&ti_list, 0, sizeof(ti_list));
 
-    VERB("in gettable, now walk on %s", print_oid(&entry));
+    INFO("in gettable, now walk on %s", print_oid(&entry));
 
     /* Now 'entry' contains OID of table column. */
     rc = tapi_snmp_walk(ta, sid, csap_id, &entry,  &ti_list,
@@ -1757,7 +1799,7 @@ tapi_snmp_get_table(const char *ta, int sid, int csap_id,
     if (table_height == 0) 
         return 0;
     
-    *result = calloc (table_height, table_width * sizeof(void*));
+    *result = calloc (table_height, (table_width + 1) * sizeof(void*));
     if (*result == NULL)
         return TE_RC(TE_TAPI, ENOMEM);
     
@@ -1821,7 +1863,7 @@ tapi_snmp_get_table(const char *ta, int sid, int csap_id,
             begin_of_portion = vb[got_varbinds - 1].name;
             VERB ("prepare next bulk to oid %s",  print_oid(&begin_of_portion));
         }
-        VERB("table cardinality, bulk got %d varbinds.", 
+        INFO("table cardinality, bulk got %d varbinds.", 
                     table_cardinality);
 
         /* ISSUE: fill result entry according to the indexes got 
@@ -1864,8 +1906,23 @@ tapi_snmp_get_table(const char *ta, int sid, int csap_id,
                 if (index_l_en == NULL) 
                     continue; /* just skip this varbind, for which we cannot 
                                  find index... */ 
-                table_offset = row_num * table_width + 
-                                      (vb[i].name.id[ti_start - 1] - 1) ;
+                table_offset = row_num * (table_width + 1);
+
+                if (res_table[table_offset] == NULL) /* index field not empty */ 
+                { 
+                    tapi_snmp_oid_t *index_suffix = 
+                        calloc(1, sizeof(tapi_snmp_oid_t));
+
+                    memcpy(index_suffix->id, &(vb[i].name.id[ti_start]),
+                                ti_len * sizeof(oid) ); 
+                    index_suffix->length = ti_len;
+                    res_table[table_offset] = index_suffix;
+
+                VERB("add index_suffix for row %d:  %s", 
+                        row_num, print_oid(index_suffix)); 
+                } 
+
+                table_offset += (vb[i].name.id[ti_start - 1] ) ;
     
                 res_table[table_offset] = tapi_snmp_vb_to_mem(&vb[i]);
                 VERB("table offset:%d, ptr: %x\n", table_offset, res_table[table_offset]);

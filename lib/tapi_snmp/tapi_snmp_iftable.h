@@ -30,6 +30,9 @@
 #define __TE__TAPI_SNMP_IFTABLE_H__ 
 
 typedef struct tapi_snmp_if_table_row_t {
+    tapi_snmp_oid_t *index_suffix;   /* index_suffix */
+#define ifTable_ifIndex (index_suffix->id[0])
+
     int     *ifIndex;                /* InterfaceIndex,*/
     tapi_snmp_oct_string_t *ifDescr; /* DisplayString,*/
     int     *ifType;                 /* IANAifType,*/
