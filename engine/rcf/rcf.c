@@ -204,9 +204,6 @@ static int  names_len = 0;      /**< Length of TA name list */
 static struct timeval tv0;
 static fd_set set0;
 
-/** Unique mark for temporary file names */
-static unsigned int unique_mark = 0;
-
 /** Name of directory for temporary files */
 static char *tmp_dir;
 
@@ -672,6 +669,9 @@ check_reboot()
 static void
 save_attachment(ta *agent, rcf_msg *msg, size_t cmdlen, char *ba)
 {
+    /** Unique mark for temporary file names */
+    static unsigned int unique_mark = 0;
+
     int file = -1;
     size_t write_len;
     int len;
