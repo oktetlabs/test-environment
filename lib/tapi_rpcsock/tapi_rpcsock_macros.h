@@ -632,6 +632,18 @@
 #define RPC_IOCTL(rpcs_, sockd_, req_name_, req_val_) \
             RPC_FUNC_ZERO_RETVAL(rpcs_, ioctl,                       \
                                  (sockd_), (req_name_), (req_val_))
+/**
+ * Call fcntl() function on RPC server.
+ *
+ * @param rc_       Return value depends on the operation or -1 if error
+ * @param rpcs_     RPC server handle
+ * @param sockd_    File(socket) descriptor
+ * @param arg_      Arguments passed to rpc_fcntl() call
+ *
+ * @se In case of failure it jumps to "cleanup" label
+ */
+#define RPC_FCNTL(rc_, rpcs_, sockd_, arg_...) \
+        RPC_FUNC_WITH_RETVAL(rpcs_, rc_, fcntl, (sockd_), arg_)
 
 /**
  * Shutdown socket with specified mode
