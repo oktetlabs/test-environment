@@ -483,7 +483,8 @@ asn_impl_named_subvalue_index(const asn_type * type, const char *label, int *ind
  * @return zero on success, otherwise error code. 
  */ 
 int
-asn_impl_find_subtype (const asn_type * type, char *label, const asn_type ** found_type)
+asn_impl_find_subtype(const asn_type * type, const char *label, 
+                      const asn_type ** found_type)
 { 
 
     if(!label || !type || !found_type)

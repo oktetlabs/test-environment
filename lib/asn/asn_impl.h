@@ -160,7 +160,7 @@ struct asn_value
  *
  * @return zero on success, otherwise error code. 
  */ 
-extern int asn_impl_find_subtype(const asn_type * type, char *label, 
+extern int asn_impl_find_subtype(const asn_type * type, const char *label,
                                   const asn_type ** found_type);
 
 /**
