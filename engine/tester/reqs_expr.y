@@ -43,14 +43,14 @@ reqs_expr_error(const char *str)
     reqs_expr  *expr;
 }
 
-%right OR;
-%right AND;
-%nonassoc NOT;
+%right OR
+%right AND
+%nonassoc NOT
 
-%token OPEN CLOSE;
-%token <str> TOKEN;
+%token OPEN CLOSE
+%token <str> TOKEN
 
-%type <expr> expr;
+%type <expr> expr
 
 %%
 expr:
