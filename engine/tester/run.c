@@ -531,24 +531,17 @@ persons_info_to_string(const persons_info *persons)
             assert(printed > 0);
             if ((size_t)printed >= rest)
             {
-                char *t;
-                
                 /* Discard just printed */
                 s[0] = '\0';
                 /* We are going to extend buffer */
                 rest += total;
                 total <<= 1;
-                t = malloc(total);
-                if (t == NULL)
+                res = realloc(res, total);
+                if (res == NULL)
                 {
                     ERROR("%s(): Memory allocation failure", __FUNCTION__);
-                    return res;
+                    return NULL;
                 }
-                /* Copy early printed to new buffer */
-                strcpy(t, res);
-                /* Substitute */
-                free(res);
-                res = t;
                 /* Locate current pointer */
                 s = res + strlen(res);
                 /* Print the last item again */
@@ -574,8 +567,8 @@ persons_info_to_string(const persons_info *persons)
 static size_t
 test_param_space(const test_param *param)
 {
-    return 1 /* space */ + 1 /* " */ + strlen(param->name) +
-           1 /* = */ + strlen(param->value) + 1 /* " */ + 1 /* \0 */;
+    return 1 /* space */ + strlen(param->name) + 1 /* = */ +
+           1 /* " */ + strlen(param->value) + 1 /* " */ + 1 /* \0 */;
 }
 
 /**
@@ -605,18 +598,14 @@ test_params_to_string(const test_params *params)
         VERB("%s(): parameter %s=%s", __FUNCTION__, p->name, p->value);
         while (rest < req)
         {
-            char *nv = malloc(len += TESTER_STR_BULK);
+            char *nv;
 
+            len += TESTER_STR_BULK;
+            nv = realloc(v, len);
             if (nv == NULL)
             {
-                free(v);
-                ERROR("malloc(%u) failed", len);
+                ERROR("realloc(%p, %u) failed", v, len);
                 return NULL;
-            }
-            if (v != NULL)
-            {
-                strcpy(nv, v);
-                free(v);
             }
             rest += TESTER_STR_BULK;
             v = nv;
