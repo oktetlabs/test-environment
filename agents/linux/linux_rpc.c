@@ -93,11 +93,6 @@ typedef struct srv {
 
 extern void tarpc_1(struct svc_req *rqstp, register SVCXPRT *transp);
 
-/** PID of the TA process */
-struct sockaddr_un ta_log_addr; 
-struct sockaddr   *ta_log_addr_s;
-int                ta_log_addr_len = sizeof(struct sockaddr_un);
-
 static srv *srv_list = NULL;
 static char buf[RCF_RPC_MAX_BUF]; 
 
@@ -390,17 +385,6 @@ tarpc_server_create(const char *name)
     
     if (!supervise_started)
     {
-        int       len;
-
-        memset(&ta_log_addr, 0, sizeof(ta_log_addr));
-        ta_log_addr.sun_family = AF_UNIX;
-        len = snprintf(ta_log_addr.sun_path, PIPENAME_LEN,
-                       "/tmp/te_rpc_log_%d", ta_pid);
-#ifdef HAVE_STRUCT_SOCKADDR_SA_LEN
-        ta_log_addr.sun_len = sizeof(struct sockaddr_un) -
-                                  PIPENAME_LEN + len + 1 /* \0 */;
-#endif
-        ta_log_addr_s = (struct sockaddr *)&ta_log_addr;
 #ifdef SUPERVISE_CHILDREN_BY_SIGNAL
         (void)signal(SIGCHLD, sigchld_handler);
 #else
@@ -453,8 +437,6 @@ tarpc_destroy_all()
             ERROR("Failed to send SIGTERM to PID %d", cur->pid);
         RELEASE_SRV(cur);
     }
-
-    unlink(ta_log_addr.sun_path); 
 }
 
 /**
@@ -587,12 +569,7 @@ tarpc_call(int timeout, const char *name, const char *file)
     return 0;
 }
 
-
-#ifndef LOGFORK_LOG
-#define LOGFORK_LOG  1
-#endif
-
-#include "logfork.h"
+#include "ta_logfork.h"
 
 /**
  * Entry function for RPC server (never returns). Creates the transport
@@ -606,7 +583,6 @@ tarpc_server(const void *arg)
     const char         *name = (const char *)arg;
     SVCXPRT            *transp;
     struct sockaddr_un  addr;
-
 
     if (logfork_register_user(name) != 0)
     {

@@ -6,8 +6,8 @@ MY_CPPFLAGS=-I$(DESTDIR)/$(prefix)/../@host@/include \
 # -lrcfpch must be before @TE_LDADD@ since the last may contain
 # -ltad_ch with names used in -lrcfpch.
 #
-MY_LDADD=symtbl.o $(LIBLTDL) -lrcfpch -l@TAD@ @TE_LDADD@ -lconf_oid \
-         -lloggerta -lpthread -lws2_32 -liphlpapi
+MY_LDADD=symtbl.o $(LIBLTDL) -lrcfpch -llogfork -l@TAD@ @TE_LDADD@ \
+         -lconf_oid -lloggerta -lpthread -lws2_32 -liphlpapi
 MY_LDAFLAGS=-rdynamic -export-dynamic 
 
 MY_SOURCES=win32.c win32conf.c 
@@ -66,10 +66,11 @@ AM_CPPFLAGS=$(MY_CPPFLAGS)
 tawin32_SOURCES=$(MY_SOURCES)
 nodist_tawin32_SOURCES=$(MY_NODIST_SOURCES)
 
-tawin32_LDADD=$(MY_LDADD)
+tawin32_LDADD=$(MY_LDADD) 
 
 tawin32_DEPENDENCIES=@TE_DEPENDENCIES@ symtbl.o \
     $(DESTDIR)/$(prefix)/../@host@/lib/librcfpch.a \
+    $(DESTDIR)/$(prefix)/../@host@/lib/liblogfork.a \
     $(DESTDIR)/$(prefix)/../@host@/lib/lib@TAD@.a \
     $(DESTDIR)/$(prefix)/../@host@/lib/libconf_oid.a \
     $(DESTDIR)/$(prefix)/../@host@/lib/libcomm_net_agent.a \

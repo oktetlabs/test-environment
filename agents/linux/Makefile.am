@@ -118,6 +118,7 @@ talinuxtmpl_LDADD=$(MY_LDADD)
 
 talinuxtmpl_DEPENDENCIES=@TE_DEPENDENCIES@ symtbl.o \
     $(DESTDIR)/$(prefix)/../@host@/lib/librcfpch.a \
+    $(DESTDIR)/$(prefix)/../@host@/lib/liblogfork.a \
     $(DESTDIR)/$(prefix)/../@host@/lib/lib@TAD@.a \
     $(DESTDIR)/$(prefix)/../@host@/lib/libconf_oid.a \
     $(DESTDIR)/$(prefix)/../@host@/lib/libloggerta.a

@@ -59,6 +59,7 @@
 
 #define TE_LGR_USER      "Main"
 #include "logger_ta.h"
+#include "logfork.h"
 
 
 
@@ -284,6 +285,7 @@ rcf_ch_start_task(struct rcf_comm_connection *handle,
 
         if ((pid = fork()) == 0)
         {
+            logfork_register_user(rtn);
             if (is_argv)
                 ((rcf_rtn)(addr))(argc, params);
             else
@@ -309,6 +311,7 @@ rcf_ch_start_task(struct rcf_comm_connection *handle,
 
         if ((pid = fork()) == 0)
         {
+            logfork_register_user(rtn);
             execlp(rtn, rtn, params[0], params[1], params[2], params[3],
                              params[4], params[5], params[6], params[7],
                              params[8], params[9]);
@@ -607,6 +610,8 @@ WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance,
     char  cmd[256] = { 0, };
     char *tmp;
 
+    pthread_t tid;
+
     WSADATA data;
 
     WSAStartup(MAKEWORD(2,2), &data);
@@ -638,6 +643,8 @@ WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance,
     VERB("Started\n");
 
     sprintf(buf, "PID %u", getpid());
+
+    pthread_create(&tid, NULL, (void *)logfork_entry, NULL);
 
 #ifdef RCF_RPC
     wsa_func_handles_discover();

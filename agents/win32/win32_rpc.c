@@ -61,8 +61,7 @@
 #include "win32_rpc.h"
 
 #define TE_LGR_USER     "RCF RPC"
-#define TA_RPC_INSIDE
-#include "ta_rpc_log.h"
+#include "logfork.h"
 
 /** Structure corresponding to one RPC server */
 typedef struct srv {
@@ -82,16 +81,12 @@ typedef struct srv {
 
 extern void tarpc_1(struct svc_req *rqstp, register SVCXPRT *transp);
 
+/** PID of the TA process */
 extern int ta_pid;
 
 #define TARPC_SERVER_SYNC_TIMEOUT       1000000
-/** PID of the TA process */
-struct sockaddr_in ta_log_addr; 
-int                ta_log_addr_len = sizeof(struct sockaddr_in);
-struct sockaddr   *ta_log_addr_s;
-int                ta_log_sock = -1;
-int                ta_rpc_sync_socks[2] = {-1, -1};
 
+static int  ta_rpc_sync_socks[2] = {-1, -1};
 static srv *srv_list = NULL;
 static char buf[RCF_RPC_MAX_BUF]; 
 
@@ -182,72 +177,6 @@ supervise_children(void *arg)
                 WARN("RPC Server with PID %d exited due unknown reason",
                      pid); 
         }
-    }
-}
-
-static int
-create_log_socket()
-{
-    int len = sizeof(ta_log_addr);
-    int s = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-    
-    if (s < 0)
-    {
-        ERROR("Cannot create a socket for gathering the log, errno %d",
-              errno);
-        return -1;
-    }
-
-    memset(&ta_log_addr, 0, sizeof(ta_log_addr));
-    ta_log_addr.sin_family = AF_INET;
-    ta_log_addr.sin_port = 0;
-    ta_log_addr_s = (struct sockaddr *)&ta_log_addr;
-    if (bind(s, (struct sockaddr *)&ta_log_addr, len) < 0)
-    {
-        ERROR("Cannot bind a socket for gathering the log, errno %d",
-              errno);
-        close(s);
-        return -1;
-    }
-
-    if (getsockname(s, (struct sockaddr *)&ta_log_addr, &len) < 0)
-    {
-        ERROR("Cannot getsockname for a socket for gathering the log, "
-              "errno %d", errno);
-        close(s);
-        return -1;
-    }
-
-    return s;
-}
-
-/**
- * Wait for a log from RPC servers.
- */
-static void *
-gather_log(void *arg)
-{
-    int s = ta_log_sock;
-
-    if (s < 0)
-    {
-        ERROR("Socket for gathering the log was not created");
-        return NULL;
-    }
-
-    UNUSED(arg);
-    while (1)
-    {
-        char log_pkt[RPC_LOG_PKT_MAX] = {0, };
-      
-        if (recv(s, log_pkt, sizeof(log_pkt), 0) < (int)RPC_LOG_OVERHEAD)
-        {
-            WARN("Failed to receive the logging message from RPC server");
-            continue;
-        }
-        log_message(*(uint16_t *)log_pkt, "", TE_LGR_USER,
-                    "RPC server %s: %s", log_pkt + sizeof(uint16_t), 
-                    log_pkt + RPC_LOG_OVERHEAD);
     }
 }
 
@@ -433,84 +362,6 @@ sigint_handler(int s)
 }
 
 /**
- * Entry function for RPC server (never returns). Creates the transport
- * and runs main RPC loop (see SUN RPC documentation).
- *
- * @param arg   -1 if the new server is a process or 0 if it's a thread
- */
-void *
-tarpc_server(void *arg)
-{
-    SVCXPRT *transp;
-    int      sock;
-
-    struct sockaddr_in addr;
-    int len = sizeof(struct sockaddr_in);
-
-    tarpc_in_arg  arg1;
-    tarpc_in_arg *in = &arg1;
-    
-    signal(SIGINT, sigint_handler);
-    
-    memset(&arg1, 0, sizeof(arg1));
-    arg1.name.name_val = (char *)arg;
-    arg1.name.name_len = strlen((char *)arg) + 1;
-
-    RPC_LGR_MESSAGE(TE_LL_RING, "Started %s (PID %d, TID %u)", (char *)arg, 
-                    (int)getpid(), (unsigned int)pthread_self());
-
-    sigemptyset(&rpcs_received_signals);
-    
-    pmap_unset(tarpc, ver0);
-
-    pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
-
-    if ((sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0) {
-        close(ta_rpc_sync_socks[1]);
-        RPC_LGR_MESSAGE(TE_LL_ERROR, "socket() failed");
-        return ((SVCXPRT *)NULL);
-    }
-
-    transp = svctcp_create(sock, 1024, 1024);
-    if (transp == NULL)
-    {
-        close(sock);
-        close(ta_rpc_sync_socks[1]);
-        RPC_LGR_MESSAGE(TE_LL_ERROR, "svcunix_create() returned NULL");
-        return NULL;
-    }
-    
-    if (getsockname(sock, (struct sockaddr *)&addr, &len) != 0)
-    {
-        close(sock);
-        close(ta_rpc_sync_socks[1]);
-        RPC_LGR_MESSAGE(TE_LL_ERROR, "getsockname() failed");
-        return NULL;
-    }
-    
-    if (send(ta_rpc_sync_socks[1], &(addr.sin_port), 
-             sizeof(addr.sin_port), 0) < 0)
-    {
-        close(sock);
-        close(ta_rpc_sync_socks[1]);
-        return NULL;
-    }
-    usleep(10000);
-    close(ta_rpc_sync_socks[1]);
-
-    if (!svc_register(transp, tarpc, ver0, tarpc_1, 0))
-    {
-        close(sock);
-        RPC_LGR_MESSAGE(TE_LL_ERROR, "svc_register() failed");
-        return NULL;
-    }
-
-    svc_run();
-    
-    exit(0);
-}
-
-/**
  * Create an RPC server as a new process.
  *
  * @param name          name of the new server
@@ -528,23 +379,10 @@ tarpc_server_create(char *name)
     {
         pthread_t tid;
 
-        ta_log_sock = create_log_socket();
-        if (ta_log_sock < 0)
-        {
-            ERROR("Cannot create RPC log gathering socket: %d", errno);
-            return -1;
-        }
-
         if (pthread_create(&tid, NULL, supervise_children, NULL) != 0)
         {
             ERROR("Cannot create RPC servers supervising thread: %d",
                   errno);
-            return -1;
-        }
-
-        if (pthread_create(&tid, NULL, gather_log, NULL) != 0)
-        {
-            ERROR("Cannot create RPC log gathering thread: %d", errno);
             return -1;
         }
 
@@ -737,5 +575,85 @@ tarpc_call(int timeout, char *name, const char *file)
     fclose(f);
     
     return 0;
+}
+
+#include "ta_logfork.h"
+
+/**
+ * Entry function for RPC server (never returns). Creates the transport
+ * and runs main RPC loop (see SUN RPC documentation).
+ *
+ * @param arg   -1 if the new server is a process or 0 if it's a thread
+ */
+void *
+tarpc_server(void *arg)
+{
+    SVCXPRT *transp;
+    int      sock;
+
+    struct sockaddr_in addr;
+    int len = sizeof(struct sockaddr_in);
+
+    signal(SIGINT, sigint_handler);
+    
+    if (logfork_register_user((char *)arg) != 0)
+    {
+        fprintf(stderr,
+                "logfork_register_user() failed to register %s server\n",
+                (char *)arg);
+    }
+
+    RING("RPC server (PID %d, TID %u) is started", (char *)arg, 
+         (int)getpid(), (unsigned int)pthread_self());
+
+    sigemptyset(&rpcs_received_signals);
+    
+    pmap_unset(tarpc, ver0);
+
+    pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
+
+    if ((sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0) {
+        close(ta_rpc_sync_socks[1]);
+        ERROR("socket() failed");
+        return ((SVCXPRT *)NULL);
+    }
+
+    transp = svctcp_create(sock, 1024, 1024);
+    if (transp == NULL)
+    {
+        close(sock);
+        close(ta_rpc_sync_socks[1]);
+        ERROR("svcunix_create() returned NULL");
+        return NULL;
+    }
+    
+    if (getsockname(sock, (struct sockaddr *)&addr, &len) != 0)
+    {
+        close(sock);
+        close(ta_rpc_sync_socks[1]);
+        ERROR("getsockname() failed");
+        return NULL;
+    }
+    
+    if (send(ta_rpc_sync_socks[1], &(addr.sin_port), 
+             sizeof(addr.sin_port), 0) < 0)
+    {
+        close(sock);
+        close(ta_rpc_sync_socks[1]);
+        return NULL;
+    }
+    usleep(10000);
+    close(ta_rpc_sync_socks[1]);
+
+    if (!svc_register(transp, tarpc, ver0, tarpc_1, 0))
+    {
+        close(sock);
+        ERROR("svc_register() failed");
+        return NULL;
+    }
+
+    svc_run();
+    
+    exit(0);
 }
 

@@ -49,7 +49,7 @@
 
 #include "tapi_rpcsock_defs.h"
 #include "win32_rpc.h"
-#include "ta_rpc_log.h"
+#include "ta_logfork.h"
 
 #define PRINT(msg...) \
     do {                                                \
@@ -386,8 +386,8 @@ typedef struct checked_arg {
 
 /** Initialise the checked argument and add it into the list */
 static void
-init_checked_arg(tarpc_in_arg *in, checked_arg **list,
-                 char *real_arg, int len, int len_visible)
+init_checked_arg(checked_arg **list, char *real_arg, int len, 
+                 int len_visible)
 {
     checked_arg *arg;
 
@@ -415,8 +415,7 @@ init_checked_arg(tarpc_in_arg *in, checked_arg **list,
 }
 
 #define INIT_CHECKED_ARG(_real_arg, _len, _len_visible) \
-    init_checked_arg((tarpc_in_arg *)in, &list, _real_arg, \
-                     _len, _len_visible)
+    init_checked_arg(&list, _real_arg, _len, _len_visible)
 
 /** Verify that arguments are not corrupted */
 static int
@@ -2716,6 +2715,7 @@ TARPC_FUNC(socket_to_file, {},
 TARPC_FUNC(create_event, {},
 {
     UNUSED(list);
+    UNUSED(in);
     out->retval = (tarpc_wsaevent)WSACreateEvent();
 }
 )
@@ -2934,8 +2934,9 @@ completion_callback(DWORD error, DWORD bytes, LPWSAOVERLAPPED overlapped,
 
 TARPC_FUNC(completion_callback, {},
 {
-    pthread_mutex_lock(&completion_lock);
     UNUSED(list);
+    UNUSED(in);
+    pthread_mutex_lock(&completion_lock);
     out->called = completion_called;
     completion_called = 0;
     out->bytes = completion_bytes;

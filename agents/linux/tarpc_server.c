@@ -73,8 +73,7 @@
 #include "linux_rpc.h"
 #include "tapi_rpcsock_defs.h"
 
-#define LOGFORK_LOG  1
-#include "logfork.h"
+#include "ta_logfork.h"
 
 #include "linux_internal.h"
 
@@ -641,34 +640,27 @@ tarpc_init(int argc, char **argv)
 {
     const char *name = argv[2];
     const char *pid = argv[3];
-    const char *log_addr = argv[4];
+    const char *log_sock = argv[4];
     const char *libname = argv[5];
+    
+    int sock;
 
     tarpc_setlibname_in  in_local;
     tarpc_setlibname_in *in = &in_local;
 
-    /*
-     * ATTENTION: It is not allowed to use logging before
-     * initialization of 'ta_log_addr_s' and 'name' in 'in'
-     * variable.
-     */
-
-    if (name == NULL || pid == NULL || log_addr == NULL)
+    if (name == NULL || pid == NULL || log_sock == NULL ||
+        (sock = atoi(log_sock)) <= 0)
     {
         PRINT("%s(): Invalid argument", __FUNCTION__);
         return;
     }
+    
+    logfork_set_sock(sock);
 
     memset(&in_local, 0, sizeof(in_local));
 
     UNUSED(argc);
     ta_pid = atoi(pid);
-#if 0
-    memset(&ta_log_addr, 0, sizeof(ta_log_addr));
-    ta_log_addr.sun_family = AF_UNIX;
-    strcpy(ta_log_addr.sun_path + 1, log_addr);
-    ta_log_addr_s = (struct sockaddr *)&ta_log_addr;
-#endif
 
     /* Emulate setlibname() call */
     in->common.name.name_val = (char *)name;
@@ -712,14 +704,17 @@ TARPC_FUNC(execve, {},
 {
     const char *args[7];
     static char buf[16];
+    static char logsock[16];
     int rc;
+    
+    sprintf(logsock, "%d", logfork_get_sock());
 
     args[0] = ta_execname;
     args[1] = "rpcserver";
     args[2] = strdup(in->common.name.name_val);
     snprintf(buf, sizeof(buf), "%d", ta_pid);
     args[3] = buf;
-    args[4] = ta_log_addr.sun_path + 1;
+    args[4] = logsock;
     args[5] = dynamic_library_name;
     args[6] = NULL;
 
