@@ -795,10 +795,9 @@ tapi_cfg_add_arp_entry(const char *ta,
 
 /* See the description in tapi_cfg.h */
 int
-tapi_cfg_del_arp_entry(const char *ta,
-                       const void *net_addr, const void *link_addr)
+tapi_cfg_del_arp_entry(const char *ta, const void *net_addr)
 {
-    return tapi_cfg_arp_op(OP_DEL, ta, net_addr, link_addr);
+    return tapi_cfg_arp_op(OP_DEL, ta, net_addr, NULL);
 }
 
 /**
@@ -1005,7 +1004,6 @@ static int
 tapi_cfg_arp_op(enum tapi_cfg_oper op, const char *ta,
                 const void *net_addr, const void *link_addr)
 {
-    struct sockaddr lnk_addr;
     cfg_handle      handle;
     char            net_addr_str[INET_ADDRSTRLEN];
     int             rc;
@@ -1018,13 +1016,16 @@ tapi_cfg_arp_op(enum tapi_cfg_oper op, const char *ta,
         return TE_RC(TE_TAPI, errno);
     }
 
-    memset(&lnk_addr, 0, sizeof(lnk_addr));
-    lnk_addr.sa_family = AF_LOCAL;
-    memcpy(&(lnk_addr.sa_data), link_addr, IFHWADDRLEN);
-
     switch (op)
     {
         case OP_ADD:
+        {
+            struct sockaddr lnk_addr;
+
+            memset(&lnk_addr, 0, sizeof(lnk_addr));
+            lnk_addr.sa_family = AF_LOCAL;
+            memcpy(&(lnk_addr.sa_data), link_addr, IFHWADDRLEN);
+
             if ((rc = cfg_add_instance_fmt(&handle, CVT_ADDRESS, &lnk_addr,
                                            "/agent:%s/arp:%s",
                                            ta, net_addr_str)) != 0)
@@ -1042,6 +1043,7 @@ tapi_cfg_arp_op(enum tapi_cfg_oper op, const char *ta,
                 return TE_RC(TE_TAPI, rc);
             }
             break;
+        }
             
         case OP_DEL:
             if ((rc = cfg_del_instance_fmt(FALSE, "/agent:%s/arp:%s",

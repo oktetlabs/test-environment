@@ -238,7 +238,6 @@ extern int tapi_cfg_add_arp_entry(const char *ta,
  *
  * @param ta           Test agent name
  * @param net_addr     IPv4 network address
- * @param link_addr    IEEE 802.3 Link layer address
  *
  * @return Status code
  *
@@ -246,11 +245,10 @@ extern int tapi_cfg_add_arp_entry(const char *ta,
  *
  * @note Currently the function supports only (IPv4 -> IEEE 802.3 ethernet) 
  * entries. In the future it might be extended with an additional parameter
- * hw_type to support different classes of link layer addresses.
+ * address_family to support different classes of link layer addresses.
  */
 extern int tapi_cfg_del_arp_entry(const char *ta,
-                                  const void *net_addr,
-                                  const void *link_addr);
+                                  const void *net_addr);
 
 /**
  * Returns hardware address of specified interface on a particular 
