@@ -51,7 +51,7 @@ main(int argc, char *argv[])
 {
     int snmp_csap = 0;
     int sid;
-    int rc;
+    int err;
     int snmp_version;
     const char *ta;
     const char *mib_object;
