@@ -2,6 +2,11 @@
 
 #include "ndn.h"
 
+char te_lgr_entity[] = "test";
+
+int log_message(void)
+{ ; }
+
 
 
 int 
@@ -21,12 +26,13 @@ main (int argc, char *argv[])
 
     printf ("parse file , rc = %x, symbol %d\n", rc, s_parsed); 
 
+    if (0)
     {
         char eth_src_script[] = "expr:(0x010203040506 + $0)";
         asn_free_subvalue(packet, "0.pdus.0.#eth.dst-addr");
         rc = asn_write_value_field(packet, eth_src_script, 
                 sizeof(eth_src_script), "0.pdus.0.#eth.dst-addr.#script");
-        printf("tempalte write expr %x", rc);
+        printf("tempalte write expr %x\n", rc);
     }
 
 
