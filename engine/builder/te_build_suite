@@ -56,6 +56,9 @@ pushd ${SOURCES} >/dev/null
 if test -e configure.ac ; then 
     if test ! -e configure ; then
         aclocal || exit 1 ;
+        if cat configure.ac | grep -q AC_CONFIG_HEADER ; then
+            autoheader || exit 1 ;
+        fi ;
         autoconf || exit 1 ;
         automake || exit 1 ;
     fi
