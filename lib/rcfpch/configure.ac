@@ -26,7 +26,7 @@ AC_ARG_VAR([TE_CPPFLAGS])
 AC_ARG_VAR([TE_CFLAGS])
 AC_ARG_VAR([TE_LDFLAGS])
 
-AM_CONFIG_HEADER([config.h])
+AC_CONFIG_HEADERS([config.h])
 
 # It's assumed that stdio.h always presents.
 # Check for stdlib.h, stdarg.h, string.h and float.h.

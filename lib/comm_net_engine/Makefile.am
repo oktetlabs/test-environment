@@ -20,7 +20,8 @@ libcomm_net_engine_la_SOURCES = comm_net_engine.c
 
 
 install-exec-hook:
-	touch -c -r .libs/libcomm_net_engine.la $(DESTDIR)/$(prefix)/lib/libcomm_net_engine.*
+	touch -c -r .libs/libcomm_net_engine.la \
+		$(DESTDIR)/$(prefix)/lib/libcomm_net_engine.*
 
 install-data-hook:
 	for i in $(include_HEADERS) ; do \

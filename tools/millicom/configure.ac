@@ -9,7 +9,7 @@ AC_CONFIG_AUX_DIR([../../auxdir])
 AM_INIT_AUTOMAKE([1.8.5 foreign -Wall])
 
 AC_CONFIG_SRCDIR([millicom.c])
-AC_CONFIG_HEADER([config.h])
+AC_CONFIG_HEADERS([config.h])
 
 # Checks for programs.
 AC_PROG_CC

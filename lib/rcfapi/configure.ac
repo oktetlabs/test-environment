@@ -29,11 +29,11 @@ AC_ARG_VAR([TE_CPPFLAGS])
 AC_ARG_VAR([TE_CFLAGS])
 AC_ARG_VAR([TE_LDFLAGS])
 
-AM_CONFIG_HEADER([config.h])
+AC_CONFIG_HEADERS([config.h])
 AC_CHECK_HEADERS([pthread.h fcntl.h])
 
 AH_TEMPLATE(PTHREAD_SETSPECIFIC_BUG,
-            [Workaround for pthread_setspecific() bug present in RedHat 9.0])
+    [Workaround for pthread_setspecific() bug present in RedHat 9.0])
 
 #Checking for the nessecerity of workaround for RH-specific pthread bug
 

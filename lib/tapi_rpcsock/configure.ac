@@ -27,7 +27,7 @@ RPC_XFILE=${srcdir}/../../include/tarpc.x.m4
 
 AC_SUBST([RPC_XFILE])
 
-AM_CONFIG_HEADER([config.h])
+AC_CONFIG_HEADERS([config.h])
 
 AC_CHECK_HEADERS([\
 signal.h \

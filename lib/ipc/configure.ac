@@ -24,7 +24,7 @@ AC_ARG_VAR([TE_CFLAGS])
 AC_ARG_VAR([TE_LDFLAGS])
 
 
-AM_CONFIG_HEADER([config.h])
+AC_CONFIG_HEADERS([config.h])
 
 AC_CHECK_HEADERS([ \
 stdlib.h \

@@ -47,7 +47,7 @@ AM_CONDITIONAL(HAS_SNMP, test x$has_snmp = xtrue )
 
 
 
-AM_CONFIG_HEADER([config.h])
+AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([Makefile])
 
 AC_OUTPUT

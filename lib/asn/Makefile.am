@@ -18,8 +18,8 @@ CFLAGS=@CFLAGS@ $(SNMP_F)
 # Tests (incorrect)
 #
 #VPATH = @srcdir@:@srcdir@/tests
-#TESTS=ndn_set01 oid1 parse00 parse01 parse03 parse04 prn01 prn02 val_set01 \
-#val_set02 val_set03 val_set04 write_ind1
+#TESTS=ndn_set01 oid1 parse00 parse01 parse03 parse04 prn01 prn02 \
+#val_set01 val_set02 val_set03 val_set04 write_ind1
 #check_PROGRAMS=$(TESTS)
 
 extra_DIST= \

@@ -41,7 +41,7 @@ case $host in
 #powerpc-wrs-vxworks | i686-pc-linux-gnu)
 arm-wrs-vxworks )
 
-AM_CONFIG_HEADER([config.h])
+AC_CONFIG_HEADERS([config.h])
 AC_C_INLINE
 just_dist=no ;;
 

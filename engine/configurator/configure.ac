@@ -56,7 +56,7 @@ CPPFLAGS=${CPPFLAGS}" "${TE_CPPFLAGS}
 CFLAGS=${CFLAGS}" "${TE_CFLAGS}
 
 
-AM_CONFIG_HEADER([config.h])
+AC_CONFIG_HEADERS([config.h])
 # It's assumed that stdio.h always presents.
 # Check for stdlib.h, stdarg.h, string.h and float.h.
 AC_HEADER_STDC

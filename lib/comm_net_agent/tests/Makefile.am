@@ -34,7 +34,8 @@ all_html_DATA = $(wildcard html/*)
 doc_DATA=latex/refman.ps latex/refman.pdf
 
 # 
-# This will cause to create all the files in the html and latex subdirectories.
+# This will cause to create all the files in the html and latex 
+# subdirectories.
 # Generally, we don't know the names of all of the files.
 #
 latex/refman.ps: html/index.html

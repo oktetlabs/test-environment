@@ -30,7 +30,7 @@ AC_ARG_VAR([TE_LDFLAGS])
 AC_ARG_VAR([TE_INSTALL])
 
 
-AC_CONFIG_HEADER([config.h])
+AC_CONFIG_HEADERS([config.h])
 
 # It's assumed that stdio.h always presents.
 # Check for stdlib.h, stdarg.h, string.h and float.h.

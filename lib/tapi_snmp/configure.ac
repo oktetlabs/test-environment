@@ -49,7 +49,7 @@ AC_CHECK_HEADERS(net-snmp/definitions.h, ,,
 ##include<ucd-snmp/asn1.h> 
 #)
 
-AM_CONFIG_HEADER([config.h])
+AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([Makefile])
 
 AC_OUTPUT

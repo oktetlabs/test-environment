@@ -4,7 +4,7 @@
 AC_PREREQ([2.59])
 
 AC_INIT(rgt, 0.03, Oleg.Kravtsov@oktetlabs.ru)
-AM_CONFIG_HEADER([config.h])
+AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_SRCDIR([rgt-core/rgt_core.c])
 AC_CONFIG_AUX_DIR([auxdir])
 AM_INIT_AUTOMAKE([1.8.5 foreign -Wall])

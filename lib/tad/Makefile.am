@@ -18,16 +18,23 @@ libtad_core_a_SOURCES=tad_ch.c csap_db.c csap_spt_db.c tad_recv.c \
                       tad_send.c tad_utils.c
 
 
+TAD_FULL_LIBLIST=$(noinst_LIBRARIES)@TAD_LIBLIST@
+
 lib_LIBRARIES=libtad.a
 
 libtad_a_SOURCES=
+libtad_a_DEPENDENCIES=$(TAD_FULL_LIBLIST)
 
-AR_SCRIPT=CREATE libtad.a\nADDLIB libtad_core.a\n@TAD_LIBADD@\nSAVE\nEND\n
+libtad.a: $(libtad_a_DEPENDENCIES)
+	AR_SCRIPT="CREATE $@\n" ; \
+	for i in $(TAD_FULL_LIBLIST) ; do \
+		AR_SCRIPT="$${AR_SCRIPT}ADDLIB $$i\n" ; \
+	done ; \
+	AR_SCRIPT="$${AR_SCRIPT}SAVE\nEND\n" ; \
+	echo -e $${AR_SCRIPT} | $(AR) -M
+	$(RANLIB) $@
 
 install-exec-hook:
-	rm libtad.a
-	echo -e "$(AR_SCRIPT)" | ar -M
-	ranlib libtad.a
 	touch -c -r libtad.a $(DESTDIR)/$(prefix)/lib/libtad.a
 
 install-data-hook:
