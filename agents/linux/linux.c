@@ -54,6 +54,8 @@
 #include "rcf_ch_api.h"
 #include "rcf_pch.h"
 
+#include "linux_internal.h"
+
 #ifdef RCF_RPC
 #include "linux_rpc.h"
 #endif    
@@ -61,7 +63,7 @@
 #define TE_LGR_USER      "Main"
 #include "logger_ta.h"
 
-char *my_execname;
+char *ta_execname;
 
 /** Send answer to the TEN */
 #define SEND_ANSWER(_fmt...) \
@@ -141,7 +143,7 @@ rcf_ch_reboot(struct rcf_comm_connection *handle,
 
     SEND_ANSWER("0");
     /* FIXME Unreachable */
-    system("/sbin/reboot");
+    ta_system("/sbin/reboot");
 }
 
 
@@ -477,7 +479,7 @@ rcf_ch_start_task(struct rcf_comm_connection *handle,
 
         sprintf(check_cmd,
                 "TMP=`which %s 2>/dev/null` ; test -n \"$TMP\" ;", rtn);
-        if (system(check_cmd) != 0)
+        if (ta_system(check_cmd) != 0)
             SEND_ANSWER("%d", ETENOSUCHNAME);
 
         if ((pid = fork()) == 0)
@@ -554,7 +556,7 @@ shell(int argc, char * const argv[])
         return TE_RC(TE_TA_LINUX, ETESMALLBUF);
 
     VERB("SHELL: run %s, errno before the run is %d\n", cmdbuf, errno);
-    rc = system(cmdbuf);
+    rc = ta_system(cmdbuf);
     
     if (rc == -1)
     {
@@ -589,7 +591,7 @@ restart_service(char *service)
     int  rc;
 
     sprintf(cmd, "/etc/rc.d/init.d/%s restart", service);
-    rc = system(cmd);
+    rc = ta_system(cmd);
 
     if (rc < 0)
         rc = EPERM;
@@ -694,7 +696,7 @@ main(int argc, char **argv)
         return -1;
     }
 
-    my_execname = argv[0];
+    ta_execname = argv[0];
     
 #ifdef RCF_RPC
     /* After execve */
@@ -748,6 +750,25 @@ main(int argc, char **argv)
 int
 env()
 {
-    system("env");
+    ta_system("env");
     return 0;
 }
+
+static void
+sig_handler(int s)
+{
+    UNUSED(s);
+}
+
+#if 1 /* This is work-around, additional investigation is necessary */
+int 
+ta_system(char *cmd)
+{
+    void *h = signal(SIGCHLD, sig_handler);
+    int   rc = system(cmd);
+
+    signal(SIGCHLD, h);    
+        
+    return rc;
+}
+#endif
