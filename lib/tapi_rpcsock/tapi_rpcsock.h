@@ -520,7 +520,7 @@ enum {
     WSA_WAIT_EVENT_0
 };
 
-static const char *
+static inline const char *
 wsa_wait_rpc2str(int code)
 {
     static char buf[32];
