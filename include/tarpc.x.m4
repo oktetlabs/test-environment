@@ -34,7 +34,7 @@
 enum tarpc_op {
     TARPC_CALL,       /**< Call non-blocking RPC (if supported) */
     TARPC_WAIT,       /**< Wait until non-blocking RPC is finished */
-    TARPC_CALL_WAIT,  /**< Call blocking RPC */                        
+    TARPC_CALL_WAIT   /**< Call blocking RPC */                        
 };
 
 typedef int32_t     tarpc_int;
