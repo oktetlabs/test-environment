@@ -30,6 +30,8 @@ usage()
     echo -e '  --conf-rgt=<filename>'\\t\\t'RGT config file (rgt.conf by default)'
     echo -e '  --conf-tester=<filename>'\\t'Tester config file (tester.conf by default)'
     echo
+    echo -e '  --env=<filename>'\\t\\t'Name of the file to get shell variables'
+    echo
 #    echo -e '  '--storage='<string>'\\t\\tconfiguration string for the storage
 #    echo -e \\t\\t\\t\\twith data to be updated by Dispatcher
 #    echo -e '  '--update-files='<list>'\\t\\tupdate files and directories specified
@@ -217,6 +219,19 @@ process_opts()
                     process_opts `cat ${OPTS}` ;
                 else
                     echo "File with options ${OPTS} not found" >&2 ;
+                    exit 1 ;
+                fi
+                ;;
+
+            --env=* )
+                ENV_FILE="${1#--env=}" ;
+                if test "${ENV_FILE:0:1}" != "/" ; then 
+                    ENV_FILE="${CONF_DIR}/${ENV_FILE}" ;
+                fi ;
+                if test -f ${ENV_FILE} ; then
+                    . ${ENV_FILE} ;
+                else
+                    echo "File with environment variables ${ENV_FILE} not found" >&2 ;
                     exit 1 ;
                 fi
                 ;;
