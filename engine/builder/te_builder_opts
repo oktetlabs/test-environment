@@ -31,72 +31,63 @@ if test -z $1 ; then
     exit 0 ;
 fi    
 
+##
+# Build set of packages.
+# 
+# @param  string with paths separated by spaces
+# 
+# @return 0 or 1
+# 
+function build() 
+{
+    for i in $1 ; do
+       CURRDIR=`pwd`
+       cd ${TE_BUILD}/$i ;
+       if test -n "$CFLAGS" ; then
+           make clean
+       fi
+       make CFLAGS=$CFLAGS install || exit 1 
+       cd ${CURRDIR}
+    done
+}
+
 while test -n "$1" ; do
     CFLAGS=
     case $1 in
         --log-* )
-            OPT="${1#--log-}" ; CFLAGS=-DTE_LOG_LEVEL=0xFFFF ;;
+            OPT=${1#--log-} ; CFLAGS=-DTE_LOG_LEVEL=0xFFFF ;;
 
         --nolog-* )
-            OPT="${1#--nolog-}" ; CFLAGS=-UTE_LOG_LEVEL ;;
+            OPT=${1#--nolog-} ; CFLAGS=-UTE_LOG_LEVEL ;;
+            
+        --path=*)
+            OPT=${1#--path=} ;;
+
+        --pathlog=* )
+            OPT="${1#--pathlog=}" ; CFLAGS=-DTE_LOG_LEVEL=0xFFFF ;;
+
+        --pathnolog=* )
+            OPT="${1#--pathnolog=}" ; CFLAGS=-UTE_LOG_LEVEL ;;
             
         --* )
             OPT="${1#--}" ;;
             
-       *) 
-           echo Invalid option --builder-$1 ; exit 1 ;;
+        *) 
+           echo Invalid option build option ; exit 1 ;;
     esac
+    
+    echo OPT=$OPT
         
     case $OPT in 
-        include ) 
-            cd ${TE_BUILD}/include ; 
-            if test -n "$CFLAGS" ; then make clean ; fi
-            make CFLAGS=$CFLAGS install || exit 1 
-            ;;
-
-        builder ) 
-            cd ${TE_BUILD}/engine/builder 
-            if test -n "$CFLAGS" ; then make clean ; fi
-            make CFLAGS=$CFLAGS install || exit 1 
-            ;;
-
-        rcf ) 
-            cd ${TE_BUILD}/engine/rcf ; 
-            if test -n "$CFLAGS" ; then make clean ; fi
-            make CFLAGS=$CFLAGS install || exit 1 
-            ;;
-
-        cs ) 
-            cd ${TE_BUILD}/engine/configurator ; 
-            if test -n "$CFLAGS" ; then make clean ; fi
-            make CFLAGS=$CFLAGS install || exit 1 
-            ;;
-
-        tester ) 
-            cd ${TE_BUILD}/engine/tester ; 
-            if test -n "$CFLAGS" ; then make clean ; fi
-            make CFLAGS=$CFLAGS install || exit 1 
-            ;;
-
-        logger ) 
-            cd ${TE_BUILD}/engine/logger ; 
-            if test -n "$CFLAGS" ; then make clean ; fi
-            make CFLAGS=$CFLAGS install || exit 1 
-            ;;
-
-        lib-* )
-            LIBNAME="${OPT#lib-}" ;
-            cd ${TE_BUILD}/lib/${LIBNAME} ;  
-            if test -n "$CFLAGS" ; then make clean ; fi
-            make CFLAGS=$CFLAGS install || exit 1 
-            ;;
-
-        ta-* )
-            TANAME="${OPT#ta-}" ;
-            cd ${TE_BUILD}/agents/${TANAME} ; 
-            if test -n "$CFLAGS" ; then make clean ; fi
-            make CFLAGS=$CFLAGS install || exit 1 
-            ;;
+        include ) build include ;;
+        builder ) build engine/builder ;;
+        rcf )     build engine/rcf ;;
+        cs )      build engine/configurator ;;
+        tester )  build engine/tester ;;
+        logger )  build engine/logger ;;
+        lib-* )   LIBNAME="${OPT#lib-}" ; build lib/${LIBNAME} ;;
+        ta-* )    TANAME="${OPT#ta-}" ; build agents/${TANAME} ;;
+        * )       build ${OPT} ;;
     esac
             
     shift 1
