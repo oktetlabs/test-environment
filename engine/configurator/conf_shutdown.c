@@ -27,8 +27,8 @@
  * $Id$
  */
 
-#include "config.h"
 #include "te_config.h"
+#include "config.h"
 
 #ifdef STDC_HEADERS
 #include <stdlib.h>
