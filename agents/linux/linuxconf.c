@@ -388,7 +388,12 @@ get_addr(const char *ifname, struct in_addr *addr)
 {
     strcpy(req.ifr_name, ifname);
     if (ioctl(s, SIOCGIFADDR, (int)&req) < 0)
+    {
+        /* It's not always called for correct arguments */
+        VERB("ioctl(SIOCGIFADDR) for '%s' failed: %s",
+              ifname, strerror(errno));
         return TE_RC(TE_TA_LINUX, errno);
+    }
     *addr = ((struct sockaddr_in *)&(req.ifr_addr))->sin_addr;
     return 0;
 }
@@ -421,7 +426,10 @@ set_mask(const char *ifname, struct in_addr *mask)
     req.ifr_addr.sa_family = AF_INET;
     ((struct sockaddr_in *)&(req.ifr_addr))->sin_addr = *mask;
     if (ioctl(s, SIOCSIFNETMASK, (int)&req) < 0)
+    {
+        ERROR("ioctl(SIOCSIFNETMASK) failed: %s", strerror(errno));
         return TE_RC(TE_TA_LINUX, errno);
+    }
     return 0;
 }
 
@@ -571,7 +579,10 @@ aliases_list()
 
     memset(buf, 0, sizeof(buf));
     if (ioctl(s, SIOCGIFCONF, (int)&conf) < 0)
+    {
+        ERROR("ioctl(SIOCGIFCONF) failed: %s", strerror(errno));
         return TE_RC(TE_TA_LINUX, errno);
+    }
 
     for (req = conf.ifc_req; *(req->ifr_name) != 0; req++)
     {
@@ -853,15 +864,17 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
     if ((rc = aliases_list()) != 0)
         return TE_RC(TE_TA_LINUX, rc);
 
-    cur = buf;
-    while (cur != NULL)
+    for (cur = buf; strlen(cur) > 0; cur = next)
     {
         next = strchr(cur, ' ');
         if (next != NULL)
-            *next++ = 0;
+        {
+            *next++ = '\0';
+            if (strlen(cur) == 0)
+                continue;
+        }
             
         rc = get_addr(cur, (struct in_addr *)&tmp_addr);
-
         if (rc == 0 && tmp_addr == new_addr)
             return TE_RC(TE_TA_LINUX, EEXIST);
 
@@ -870,23 +883,19 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
             if (rc != 0)
                 break;
             else 
-                goto next;
-            
+                continue;
         }
         
         if (!is_alias_of(cur, ifname))
-            goto next;
+            continue;
 
         if (rc != 0)
             break;
             
         slots[atoi(strchr(cur, ':') + 1)] = 1;
-        
-        next:
-        cur = next;
     }
     
-    if (cur != NULL)
+    if (strlen(cur) != 0)
     {
         strncpy(req.ifr_name, cur, IFNAMSIZ);
     }
@@ -908,7 +917,10 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
     sin.sin_addr.s_addr = new_addr;
     memcpy(&req.ifr_addr, &sin, sizeof(struct sockaddr));
     if (ioctl(s, SIOCSIFADDR, &req) < 0)
+    {
+        ERROR("ioctl(SIOCSIFADDR) failed: %s", strerror(errno));
         return TE_RC(TE_TA_LINUX, errno);
+    }
 
 #elif defined(SIOCALIFADDR)
     {
@@ -967,25 +979,26 @@ find_net_addr(const char *ifname, const char *addr)
     if ((rc = aliases_list()) != 0)
         return NULL;
 
-    cur = buf;
-    while (cur != NULL)
+    for (cur = buf; strlen(cur) > 0; cur = next)
     {
         next = strchr(cur, ' ');
         if (next != NULL)
+        {
             *next++ = 0;
+            if (strlen(cur) == 0)
+                continue;
+        }
             
         if (strcmp(cur, ifname) != 0 && !is_alias_of(cur, ifname))
         {
-            cur = next;
             continue;
         }
 
-        if (get_addr(cur, (struct in_addr *)&tmp_addr) == 0 &&
-            tmp_addr == int_addr)
+        if ((get_addr(cur, (struct in_addr *)&tmp_addr) == 0) &&
+            (tmp_addr == int_addr))
         {
             return cur;
         }
-        cur = next;
     }
     return NULL;
 }
@@ -1053,13 +1066,17 @@ net_addr_del(unsigned int gid, const char *oid,
         memcpy(&req.ifr_addr, &sin, sizeof(struct sockaddr));
 
         if (ioctl(s, SIOCSIFADDR, (int)&req) < 0)
+        {
+            ERROR("ioctl(SIOCSIFADDR) failed: %s", strerror(errno));
             return TE_RC(TE_TA_LINUX, errno);
+        }
     }
     else
     {
         strncpy(req.ifr_name, name, IFNAMSIZ);
         if (ioctl(s, SIOCGIFFLAGS, &req) < 0)
         {
+            ERROR("ioctl(SIOCGIFFLAGS) failed: %s", strerror(errno));
             return TE_RC(TE_TA_LINUX, errno);
         }
 
@@ -1067,6 +1084,7 @@ net_addr_del(unsigned int gid, const char *oid,
         req.ifr_flags &= ~(IFF_UP | IFF_RUNNING);
         if (ioctl(s, SIOCSIFFLAGS, &req) < 0)
         {
+            ERROR("ioctl(SIOCSIFFLAGS) failed: %s", strerror(errno));
             return TE_RC(TE_TA_LINUX, errno);
         }
     }
@@ -1094,7 +1112,6 @@ static int
 net_addr_list(unsigned int gid, const char *oid, char **list,
               const char *ifname)
 {
-    int           rc;
     struct ifconf conf;
     struct ifreq *req;
     char         *name = NULL;
@@ -1113,23 +1130,22 @@ net_addr_list(unsigned int gid, const char *oid, char **list,
     memset(buf, 0, sizeof(buf));
     if (ioctl(s, SIOCGIFCONF, (int)&conf) < 0)
     {
-        rc = errno;
-        ERROR("ioctl() SIOCGIFCONF failed: %d", rc);
-        return TE_RC(TE_TA_LINUX, rc);
+        ERROR("ioctl(SIOCGIFCONF) failed: %d", errno);
+        return TE_RC(TE_TA_LINUX, errno);
     }
 
-    *list = (char *)(calloc(ADDR_LIST_BULK, 1));
+    *list = (char *)calloc(ADDR_LIST_BULK, 1);
     if (*list == NULL)
     {
         ERROR("calloc() failed");
         return TE_RC(TE_TA_LINUX, ENOMEM);
     }
 
-    for (req = conf.ifc_req; *(req->ifr_name) != 0; req++)
+    for (req = conf.ifc_req; strlen(req->ifr_name) != 0; req++)
     {
         if (name != NULL && strcmp(req->ifr_name, name) == 0)
             continue;
-
+    
         name = req->ifr_name;
 
         if (strcmp(name, ifname) != 0 && !is_alias_of(name, ifname))
@@ -1189,7 +1205,8 @@ netmask_get(unsigned int gid, const char *oid, char *value,
     }
     if (ioctl(s, SIOCGIFNETMASK, &req) < 0)
     {
-        ERROR("ioctl(SIOCGIFNETMASK) failed for if=%s addr=%s", ifname, addr);
+        ERROR("ioctl(SIOCGIFNETMASK) failed for if=%s addr=%s: %s",
+              ifname, addr, strerror(errno));
         /* FIXME Mapping to ETENOSUCHNAME */
         return TE_RC(TE_TA_LINUX, errno);
     }
@@ -1460,20 +1477,22 @@ status_set(unsigned int gid, const char *oid, const char *value,
     strncpy(req.ifr_name, ifname, IFNAMSIZ);
     if (ioctl(s, SIOCGIFFLAGS, &req) < 0)
     {
+        ERROR("ioctl(SIOCGIFFLAGS) failed: %s", strerror(errno));
         /* FIXME Mapping to ETENOSUCHNAME */
         return TE_RC(TE_TA_LINUX, errno);
     }
 
     if (strcmp(value, "0") == 0)
-        req.ifr_flags |= (IFF_UP | IFF_RUNNING);
-    else if (strcmp(value, "1") == 0)
         req.ifr_flags &= ~(IFF_UP | IFF_RUNNING);
+    else if (strcmp(value, "1") == 0)
+        req.ifr_flags |= (IFF_UP | IFF_RUNNING);
     else
         return TE_RC(TE_TA_LINUX, EINVAL);
-
+    
     strncpy(req.ifr_name, ifname, IFNAMSIZ);
     if (ioctl(s, SIOCSIFFLAGS, &req) < 0)
     {
+        ERROR("ioctl(SIOCSIFFLAGS) failed: %s", strerror(errno));
         return TE_RC(TE_TA_LINUX, errno);
     }
 
@@ -1588,7 +1607,10 @@ arp_add(unsigned int gid, const char *oid, const char *value,
     arp_req.arp_flags = ATF_PERM | ATF_COM;
 #ifdef SIOCSARP
     if (ioctl(s, SIOCSARP, (int)&arp_req) < 0)
+    {
+        ERROR("ioctl(SIOCSARP) failed: %s", strerror(errno));
         return TE_RC(TE_TA_LINUX, errno);
+    }
 
     return 0;
 #else
@@ -1622,7 +1644,7 @@ arp_del(unsigned int gid, const char *oid, const char *addr)
 #ifdef SIOCDARP
     if (ioctl(s, SIOCDARP, (int)&arp_req) < 0)
     {
-        perror("ioctl");
+        ERROR("ioctl(SIOCDARP) failed: %s", strerror(errno));
         return TE_RC(TE_TA_LINUX, errno);
     }
 
@@ -1755,8 +1777,12 @@ route_get(unsigned int gid, const char *oid, char *value,
         if ((flags & RTF_GATEWAY) == 0)
         {
             int rc = get_addr(ifname, (struct in_addr *)&gateway);
+
             if (rc != 0)
+            {
+                ERROR("get_addr(%s) failed", ifname);
                 return TE_RC(TE_TA_LINUX, rc);
+            }
         }
 
         sprintf(value, "%d.%d.%d.%d",
@@ -1858,7 +1884,7 @@ route_add(unsigned int gid, const char *oid, const char *value,
 
     if (ioctl(s, SIOCADDRT, (int)&rt) < 0)
     {
-        ERROR("ioctl() fails to add a new route");
+        ERROR("ioctl(SIOCADDRT) failed: %s", strerror(errno));
         return TE_RC(TE_TA_LINUX, errno);
     }
 
@@ -1915,7 +1941,10 @@ route_del(unsigned int gid, const char *oid, const char *route)
 #endif
 
     if (ioctl(s, SIOCDELRT, (int)&rt) < 0)
+    {
+        ERROR("ioctl(SIOCDELRT) failed: %s", strerror(errno));
         return TE_RC(TE_TA_LINUX, errno);
+    }
 
     return 0;
 }
