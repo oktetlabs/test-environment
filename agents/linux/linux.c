@@ -744,3 +744,10 @@ main(int argc, char **argv)
     return retval;
 }
 
+/** Print environment to the console */
+int
+env()
+{
+    system("env");
+    return 0;
+}
