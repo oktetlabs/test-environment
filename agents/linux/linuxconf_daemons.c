@@ -1123,203 +1123,6 @@ ds_shutdown_ftp_server()
 
 #endif /* WITH_FTP_SERVER */
 
-/*--------------------------- DNS server ---------------------------------*/
-#ifdef WITH_DNS_SERVER
-
-#define NAMED_CONF           "named.conf"
-
-static int dns_index;
-static te_bool dns_recursive;
-static te_bool named_conf_did_exist;
-static te_bool named_conf_had_options;
-static te_bool named_cond_had_recursion;
-static te_bool named_conf_had_forwarders;
-static char dns_forwarder[64];
-
-/**
- * Initialize DNS server.
- *
- * @return status code
- */
-static void
-dns_server_init(void)
-{
-    FILE *backup = NULL;
-    char *dir = NULL;
-    int   rc = 0;
-
-    if (file_exists("/etc/named/" NAMED_CONF))
-        dir = "/etc/named/";
-    else if (file_exists("/etc/bind" NAMED_CONF))
-        dir = "/etc/bind/";
-    else if (file_exists("/etc/" NAMED_CONF))
-        dir = "/etc/";
-    else
-    {
-        WARN("Failed to locate DNS configuration file");
-        return 0;
-    }
-
-    if (ds_create_backup(dir, NAMED_CONF, &dns_index) != 0)
-        return;
-
-    named_conf_did_exist = TRUE;
-    OPEN_BACKUP(dns_index, backup);
-
-    /* The following is a crude hack. 
-     * But named.conf syntax is complicated enough...
-     */
-    while (fgets(buf, sizeof(buf), backup) != NULL)
-    {
-        if (strstr(buf, "options"))
-            named_conf_had_options = TRUE;
-        if (!strstr(buf, "forwarders"))
-            named_conf_had_forwarders = TRUE;
-        if (!strstr(buf, "recursion"))
-        {
-            named_conf_had_recursion = TRUE;
-            dns_recursive = (strstr(buf, "yes") != NULL);
-        }
-    }
-    fclose(backup);
-    return 0;
-}
-
-static void
-dns_update_config(void)
-{
-    FILE *backup = NULL;
-    FILE *config = NULL;
-    char buf[256];
-
-    ds_config_touch(dns_index);
-    if (named_conf_did_exist)
-        OPEN_BACKUP(dns_index, backup);
-    OPEN_CONFIG(dns_index, config);
-
-    if (!named_conf_had_options)
-    {
-        fprintf(config, "options {\n"
-                      "\trecursion %s;\n", dns_recursive ? "yes" : "no");
-        if (*dns_forwarder != '\0')
-        {
-            fprintf(config, "\tforwarders { %s; };\n", dns_forwarder);
-        }
-        fputs("};\n\n", config);
-    }
-
-    if(backup == NULL)
-    {
-        fclose(config);
-        return 0;
-    }
-    
-    while (fgets(buf, sizeof(buf), backup) != NULL)
-    {
-        if(strstr(buf, "options") != NULL)
-        {
-            fputs(buf, config);
-            if(!named_conf_had_recursion)
-            {
-                fprintf(config, "\n\trecursion %s;\n", 
-                        dns_recursive ? "yes" : "no");
-            }
-            if(!named_conf_had_forwarders)
-            {
-                fprintf(config, "\n\tforwarders { %s; };\n", dns_forwarder);
-            }
-        }
-        else if (named_conf_had_recursion && 
-                 strstr(buf, "recursion") != NULL)
-        {
-            fprintf(config, "\n\trecursion %s;\n", 
-                    dns_recursive ? "yes" : "no");
-            while (strchr(buf, ';') == NULL)
-            {
-                fgets(buf, sizeof(buf), backup);
-            }
-        }
-        else if (named_conf_had_recursion && 
-                 strstr(buf, "forwarders") != NULL)
-        {
-            fprintf(config, "\n\tforwarders { %s; };\n", dns_forwarder);
-            while(strchr(buf, '}') == NULL)
-            {
-                fgets(buf, sizeof(buf), backup);
-            }
-        }
-        else
-        {
-            fputs(buf, config);
-        }
-    }
-
-    fclose(config);
-    fclose(backup);
-    if (daemon_running("dnsserver"))
-    {
-        daemon_set(0, "dnsserver", "0");
-        daemon_set(0, "dnsserver", "1");
-    }
-    return 0;
-}
-
-
-static int
-ds_dns_forwarder_get(unsigned int gid, const char *oid,
-                     char *value, const char *instN, ...)
-{
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(instN);
-    if(*dns_forwarder != '\0')
-        return TE_RC(TE_TA_LINUX, ENOENT);
-    strcpy(value, dns_forwarder);
-    return 0;
-}
-
-static int
-ds_dns_forwarder_set(unsigned int gid, const char *oid,
-                     const char *value, const char *instN, ...)
-{
-    char *tmp;
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(instN);
-    strcpy(dns_forwarder, value);
-    if((tmp = strchr(dns_forwarder, ':')))
-        *tmp = '\0';
-    return dns_update_config();
-}
-
-static int
-ds_dns_recursive_get(unsigned int gid, const char *oid,
-                     char *value, const char *instN, ...)
-{
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(instN);
-    if(dns_recursive )
-        return TE_RC(TE_TA_LINUX, ENOENT);
-    *value = dns_recursive ? '1' : '0';
-    value[1] = '\0';
-    return 0;
-}
-
-static int
-ds_dns_recursive_set(unsigned int gid, const char *oid,
-                     const char *value, const char *instN, ...)
-{
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(instN);
-    dns_recursive = (strtol(value, NULL, 10) != 0);
-    return dns_update_config();
-}
-
-
-#endif /* WITH_DNS_SERVER */
-
 /*--------------------------- SSH daemon ---------------------------------*/
 
 /** 
@@ -2224,22 +2027,6 @@ RCF_PCH_CFG_NODE_RW(node_ds_todudpserver, "todudpserver",
 
 #endif /* WITH_TODUDP_SERVER */
 
-#ifdef WITH_DNS_SERVER
-
-RCF_PCH_CFG_NODE_RW(node_ds_dnsserver_forwarder, "forwarder",
-                    NULL, NULL,
-                    dns_get_forwarder, dns_set_forwarder);
-
-RCF_PCH_CFG_NODE_RW(node_ds_dnsserver_recursive, "recursive",
-                    NULL, &node_ds_dnsserver_forwarder,
-                    dns_get_recursive, dns_set_recursive);
-
-RCF_PCH_CFG_NODE_RW(node_ds_dnsserver, "dnsserver",
-                    &node_ds_dnsserver_recursive, NULL,
-                    daemon_get, daemon_set);
-
-#endif /* WITH_DNS_SERVER */
-
 RCF_PCH_CFG_NODE_COLLECTION(node_ds_sshd, "sshd",
                             NULL, NULL, 
                             ds_sshd_add, ds_sshd_del, ds_sshd_list, NULL);
@@ -2303,8 +2090,9 @@ linuxconf_daemons_init(rcf_pch_cfg_object **last)
 #endif /* WITH_DHCP_SERVER */
 
 #ifdef WITH_DNS_SERVER
-    DS_REGISTER(dns);
-#endif
+    ds_init_dns_server(last);
+#endif /* WITH_DMS_SERVER */
+
 
     DS_REGISTER(sshd);
 
