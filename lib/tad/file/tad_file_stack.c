@@ -27,9 +27,7 @@
  * @(#) $Id$
  */
 
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #ifdef HAVE_STDLIB_H
 #include <stdlib.h>
@@ -46,7 +44,10 @@
 #ifdef HAVE_FCNTL_H
 #include <fcntl.h>
 #endif
+
+#ifdef HAVE_STRING_H
 #include <string.h>
+#endif
 
 #include "tad_file_impl.h"
 
@@ -69,6 +70,8 @@ int
 file_read_cb (csap_p csap_descr, int timeout, char *buf, int buf_len)
 {
     int rc = 0; 
+
+    UNUSED(timeout);
 
     file_csap_specific_data_p spec_data = 
         (file_csap_specific_data_p) csap_descr->layer_data[0]; 
@@ -104,7 +107,7 @@ file_read_cb (csap_p csap_descr, int timeout, char *buf, int buf_len)
  *      quantity of written octets, or -1 if error occured. 
  */ 
 int 
-file_write_cb (csap_p csap_descr, char *buf, int buf_len)
+file_write_cb(csap_p csap_descr, char *buf, int buf_len)
 {
     int rc; 
 
@@ -139,10 +142,16 @@ file_write_cb (csap_p csap_descr, char *buf, int buf_len)
  *      quantity of read octets, or -1 if error occured, 0 if timeout expired. 
  */ 
 int 
-file_write_read_cb (csap_p csap_descr, int timeout,
-                     char *w_buf, int w_buf_len,
-                     char *r_buf, int r_buf_len)
+file_write_read_cb(csap_p csap_descr, int timeout,
+                   char *w_buf, int w_buf_len,
+                   char *r_buf, int r_buf_len)
 {
+    UNUSED(csap_descr);
+    UNUSED(timeout);
+    UNUSED(w_buf);
+    UNUSED(w_buf_len);
+    UNUSED(r_buf);
+    UNUSED(r_buf_len);
     return -1;
 }
 
@@ -157,7 +166,7 @@ file_write_read_cb (csap_p csap_descr, int timeout,
  * @return zero on success or error code.
  */ 
 int 
-file_single_init_cb (int csap_id, const asn_value_p csap_nds, int layer)
+file_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
 {
     char * filename;
     char   mode [8];
@@ -227,7 +236,7 @@ file_single_init_cb (int csap_id, const asn_value_p csap_nds, int layer)
  * @return zero on success or error code.
  */ 
 int 
-file_single_destroy_cb (int csap_id, int layer)
+file_single_destroy_cb(int csap_id, int layer)
 {
     csap_p csap_descr = csap_find(csap_id);
 

@@ -48,7 +48,7 @@ csap_spt_type_t file_csap_spt =
     file_match_bin_cb,
     file_gen_pattern_cb,
 
-    &file_nbr_list
+    &file_nbr_list,
 };
 
 /**
@@ -56,7 +56,8 @@ csap_spt_type_t file_csap_spt =
  *
  * @return zero on success or error code.
  */ 
-int csap_support_file_register (void)
+int
+csap_support_file_register(void)
 { 
     return add_csap_spt(&file_csap_spt);
 }

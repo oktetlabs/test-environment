@@ -26,25 +26,39 @@
  *
  * @(#) $Id$
  */
+#include "config.h"
 
+#ifdef HAVE_STRING_H
 #include <string.h>
+#endif
+
+#ifdef HAVE_STDLIB_H
 #include <stdlib.h>
+#endif
 #include "tad_file_impl.h"
+
+#define TE_LGR_USER     "TAD File"
+#include "logger_ta.h"
 
 
 /**
  * Callback for read parameter value of "file" CSAP.
  *
  * @param csap_id       identifier of CSAP.
- * @param level         Index of level in CSAP stack, which param is wanted.
+ * @param layer         numeric index of layer in CSAP type to be processed.
  * @param param         Protocol-specific name of parameter.
  *
  * @return 
  *     String with textual presentation of parameter value, or NULL 
  *     if error occured. User have to free memory at returned pointer.
  */ 
-char* file_get_param_cb (int csap_id, int level, const char *param)
+char *
+file_get_param_cb(int csap_id, int layer, const char *param)
 {
+    UNUSED(csap_id);
+    UNUSED(layer);
+    UNUSED(param);
+
     return NULL;
 }
 
@@ -57,8 +71,13 @@ char* file_get_param_cb (int csap_id, int level, const char *param)
  *
  * @return zero on success or error code.
  */ 
-int file_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
+int
+file_confirm_pdu_cb(int csap_id, int layer, asn_value_p tmpl_pdu)
 {
+    UNUSED(csap_id);
+    UNUSED(layer);
+    UNUSED(tmpl_pdu);
+
     return 0;
 }
 
@@ -84,13 +103,21 @@ int file_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
  *
  * @return zero on success or error code.
  */ 
-int file_gen_bin_cb (int csap_id, int layer, const asn_value_p tmpl_pdu,
-                     csap_pkts_p  up_payload, csap_pkts_p pkts)
+int
+file_gen_bin_cb(int csap_id, int layer, const asn_value *tmpl_pdu,
+                const tad_template_arg_t *args, size_t arg_num,
+                csap_pkts_p up_payload, csap_pkts_p pkts)
 {
     int rc;
     int line_len;
 
     char *line;
+
+    UNUSED(csap_id);
+    UNUSED(layer);
+    UNUSED(args);
+    UNUSED(arg_num);
+    UNUSED(up_payload); 
 
     line_len = asn_get_length(tmpl_pdu, "line");
     if (line_len <= 0)
@@ -135,9 +162,10 @@ int file_gen_bin_cb (int csap_id, int layer, const asn_value_p tmpl_pdu,
  *
  * @return zero on success or error code.
  */
-int file_match_bin_cb (int csap_id, int layer, const asn_value_p pattern_pdu,
-                       const csap_pkts *  pkt, csap_pkts * payload, 
-                       asn_value_p  parsed_packet )
+int
+file_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
+                  const csap_pkts *pkt, csap_pkts *payload, 
+                  asn_value_p parsed_packet)
 {
     char buf[10000];
 
@@ -145,6 +173,10 @@ int file_match_bin_cb (int csap_id, int layer, const asn_value_p pattern_pdu,
     int line_len = pkt->len;
     int rc;
 
+    UNUSED(csap_id);
+    UNUSED(layer);
+    UNUSED(pattern_pdu);
+    UNUSED(payload);
 
     printf ("file_match. len: %d, line: %s\n", line_len, line);
 
@@ -172,9 +204,15 @@ int file_match_bin_cb (int csap_id, int layer, const asn_value_p pattern_pdu,
  *
  * @return zero on success or error code.
  */
-int file_gen_pattern_cb (int csap_id, int layer, const asn_value_p tmpl_pdu, 
-                                         asn_value_p   *pattern_pdu)
+int
+file_gen_pattern_cb(int csap_id, int layer, const asn_value *tmpl_pdu, 
+                    asn_value_p *pattern_pdu)
 {
+    UNUSED(csap_id);
+    UNUSED(layer);
+    UNUSED(tmpl_pdu);
+    UNUSED(pattern_pdu);
+
     return ETENOSUPP;
 }
 

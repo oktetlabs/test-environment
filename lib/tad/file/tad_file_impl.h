@@ -50,7 +50,7 @@ extern "C" {
  *
  * @return zero on success, otherwise error code. 
  */
-extern int add_csap_spt (csap_spt_type_p spt_descr);
+extern int add_csap_spt(csap_spt_type_p spt_descr);
 
 
 /**
@@ -64,7 +64,7 @@ extern int add_csap_spt (csap_spt_type_p spt_descr);
  *     String with textual presentation of parameter value, or NULL 
  *     if error occured. User have to free memory at returned pointer.
  */ 
-extern char* file_get_param_cb (int csap_id, int level, const char *param);
+extern char* file_get_param_cb(int csap_id, int level, const char *param);
 
 /**
  * Callback for read data from media of 'file' CSAP. 
@@ -77,7 +77,7 @@ extern char* file_get_param_cb (int csap_id, int level, const char *param);
  * @return 
  *      quantity of read octets, or -1 if error occured, 0 if timeout expired. 
  */ 
-extern int file_read_cb (csap_p csap_descr, int timeout, char *buf, int buf_len);
+extern int file_read_cb(csap_p csap_descr, int timeout, char *buf, int buf_len);
 
 /**
  * Callback for write data to media of 'file' CSAP. 
@@ -89,7 +89,7 @@ extern int file_read_cb (csap_p csap_descr, int timeout, char *buf, int buf_len)
  * @return 
  *      quantity of written octets, or -1 if error occured. 
  */ 
-extern int file_write_cb (csap_p csap_descr, char *buf, int buf_len);
+extern int file_write_cb(csap_p csap_descr, char *buf, int buf_len);
 
 /**
  * Callback for write data to media of 'file' CSAP and read
@@ -105,9 +105,9 @@ extern int file_write_cb (csap_p csap_descr, char *buf, int buf_len);
  * @return 
  *      quantity of read octets, or -1 if error occured, 0 if timeout expired. 
  */ 
-extern int file_write_read_cb (csap_p csap_descr, int timeout,
-                     char *w_buf, int w_buf_len,
-                     char *r_buf, int r_buf_len);
+extern int file_write_read_cb(csap_p csap_descr, int timeout,
+                              char *w_buf, int w_buf_len,
+                              char *r_buf, int r_buf_len);
 
 
 /**
@@ -120,7 +120,8 @@ extern int file_write_read_cb (csap_p csap_descr, int timeout,
  *
  * @return zero on success or error code.
  */ 
-extern int file_single_init_cb (int csap_id, const asn_value_p csap_nds, int layer);
+extern int file_single_init_cb(int csap_id, const asn_value *csap_nds,
+                               int layer);
 
 /**
  * Callback for destroy 'file' CSAP layer if single in stack.
@@ -135,7 +136,7 @@ extern int file_single_init_cb (int csap_id, const asn_value_p csap_nds, int lay
  *
  * @return zero on success or error code.
  */ 
-extern int file_single_destroy_cb (int csap_id, int layer);
+extern int file_single_destroy_cb(int csap_id, int layer);
 
 /**
  * Callback for confirm PDU with 'file' CSAP parameters and possibilities.
@@ -146,7 +147,8 @@ extern int file_single_destroy_cb (int csap_id, int layer);
  *
  * @return zero on success or error code.
  */ 
-extern int file_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu); 
+extern int file_confirm_pdu_cb(int csap_id, int layer,
+                               asn_value_p tmpl_pdu); 
 
 /**
  * Callback for generate binary data to be sent to media.
@@ -172,8 +174,10 @@ extern int file_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu);
  *
  * @return zero on success or error code.
  */ 
-extern int file_gen_bin_cb (int csap_id, int layer, const asn_value_p tmpl_pdu,
-                      csap_pkts_p  up_payload, csap_pkts_p pkts);
+extern int file_gen_bin_cb(int csap_id, int layer,
+                           const asn_value *tmpl_pdu,
+                           const tad_template_arg_t *args, size_t arg_num,
+                           csap_pkts_p up_payload, csap_pkts_p pkts);
 
 
 /**
@@ -193,9 +197,10 @@ extern int file_gen_bin_cb (int csap_id, int layer, const asn_value_p tmpl_pdu,
  *
  * @return zero on success or error code.
  */
-extern int file_match_bin_cb (int csap_id, int layer, const asn_value_p pattern_pdu,
-                       const csap_pkts *  pkt, csap_pkts * payload, 
-                       asn_value_p  parsed_packet );
+extern int file_match_bin_cb(int csap_id, int layer,
+                             const asn_value *pattern_pdu,
+                             const csap_pkts *pkt, csap_pkts *payload, 
+                             asn_value_p parsed_packet );
 
 /**
  * Callback for generating pattern to filter 
@@ -210,8 +215,9 @@ extern int file_match_bin_cb (int csap_id, int layer, const asn_value_p pattern_
  *
  * @return zero on success or error code.
  */
-extern int file_gen_pattern_cb (int csap_id, int layer, const asn_value_p tmpl_pdu, 
-                                         asn_value_p   *pattern_pdu);
+extern int file_gen_pattern_cb(int csap_id, int layer,
+                               const asn_value *tmpl_pdu, 
+                               asn_value_p *pattern_pdu);
 
 struct file_csap_specific_data;
 typedef struct file_csap_specific_data *file_csap_specific_data_p;
