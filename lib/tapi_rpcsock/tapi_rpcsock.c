@@ -922,8 +922,9 @@ rpc_wsa_accept(rcf_rpc_server *handle,
         }
     }
     
-    rcf_rpc_call(handle, _wsa_accept, &in, (xdrproc_t)xdr_tarpc_accept_in,
-                 &out, (xdrproc_t)xdr_tarpc_accept_out);
+    rcf_rpc_call(handle, _wsa_accept, 
+                 &in,  (xdrproc_t)xdr_tarpc_wsa_accept_in,
+                 &out, (xdrproc_t)xdr_tarpc_wsa_accept_out);
     
     if (RPC_CALL_OK)
     {
