@@ -471,7 +471,7 @@ extern csap_p csap_find (int csap_id);
  * @return zero on success or error code.
  */ 
 typedef int (*csap_nbr_init_cb_t) (int csap_id, 
-                                   const asn_value_p csap_nds, int layer);
+                                   const asn_value *csap_nds, int layer);
 /**
  * Type for reference to callback for destroy CSAP layer.
  *      This callback should free all undeground media resources used by 
@@ -497,7 +497,7 @@ typedef int (*csap_nbr_destroy_cb_t) (int csap_id, int layer);
  * @return zero on success or error code.
  */ 
 typedef int (*csap_confirm_pdu_cb_t) (int csap_id, int layer, 
-                                        asn_value_p tmpl_pdu); 
+                                        asn_value * tmpl_pdu); 
 
 
 
@@ -518,6 +518,9 @@ typedef struct csap_pkts
  * @param csap_id       identifier of CSAP
  * @param layer         numeric index of layer in CSAP type to be processed.
  * @param tmpl_pdu      asn_value with PDU. 
+ * @param args          Template iteration parameters array, may be used to 
+ *                      prepare binary data.
+ * @param arg_num       Length of array above. 
  * @param up_payload    pointer to data which is already generated for upper 
  *                      layers and is payload for this protocol level. 
  *                      May be zero.  Presented as list of packets. 
@@ -533,13 +536,9 @@ typedef struct csap_pkts
  *                      generated packets. Almost always this list will 
  *                      contain only one element, but need 
  *                      in fragmentation sometimes may occur. (OUT)
- * @param args          Template iteration parameters array, may be used to 
- *                      prepare binary data.
- * @param arg_num       Length of array above. 
  *
  * @return zero on success or error code.
  */ 
-#if 1
 typedef int (* csap_gen_bin_cb_t)
     (int csap_id,   int layer,
      const asn_value *tmpl_pdu,
@@ -548,14 +547,6 @@ typedef int (* csap_gen_bin_cb_t)
      csap_pkts_p    up_payload,
      csap_pkts_p    pkts
     );
-#else
-typedef int (* csap_gen_bin_cb_t)
-    (int csap_id,   int layer,
-     const asn_value *tmpl_pdu,
-     csap_pkts_p    up_payload,
-     csap_pkts_p    pkts
-    );
-#endif
 
 /**
  * Type for reference to callback for parse received packet and match it 
@@ -578,7 +569,7 @@ typedef int (* csap_match_bin_cb_t)
      const asn_value * pattern_pdu,
      const csap_pkts * pkt,
      csap_pkts *       payload,
-     asn_value_p       parsed_packet
+     asn_value *       parsed_packet
     );
 
 
@@ -598,8 +589,8 @@ typedef int (* csap_match_bin_cb_t)
  * @return zero on success or error code.
  */
 typedef int (* csap_gen_pattern_cb_t)   (int csap_id, int layer,
-                                         const asn_value_p tmpl_pdu, 
-                                         asn_value_p   *pattern_pdu);
+                                         const asn_value * tmpl_pdu, 
+                                         asn_value *   *pattern_pdu);
 
 struct csap_layer_neighbour_list_t;
 typedef struct csap_layer_neighbour_list_t * csap_layer_neighbour_list_p;
@@ -668,7 +659,7 @@ extern csap_spt_type_p find_csap_spt (const char * proto);
 typedef struct tad_task_context
 {
     csap_p      csap;
-    asn_value_p nds;
+    asn_value * nds;
 
     struct rcf_comm_connection * rcf_handle;
 } tad_task_context;
@@ -717,7 +708,7 @@ typedef enum {
  *
  * @return zero on success, otherwise error code.  
  */
-extern int tad_tr_send_prepare_bin(csap_p csap_descr, asn_value_p nds, 
+extern int tad_tr_send_prepare_bin(csap_p csap_descr, asn_value * nds, 
                         struct rcf_comm_connection *handle, 
                         const tad_template_arg_t *args, size_t arg_num,
                         tad_payload_type pld_type, const void *pld_data, 

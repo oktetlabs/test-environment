@@ -91,6 +91,10 @@ extern int csap_support_dhcp_register (void);
 extern int csap_support_bridge_register (void);
 #endif
 
+#ifdef WITH_CLI
+extern int csap_support_cli_register (void);
+#endif
+
 
 static void
 check_init(void)
