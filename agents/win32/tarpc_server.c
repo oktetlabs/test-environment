@@ -421,11 +421,10 @@ check_args(checked_arg *list)
     } while (0)
 
 /** Wait time specified in the input argument. */
-#define WAIT_START(high, low)                                   \
+#define WAIT_START(msec_start)                                  \
     do {                                                        \
         struct timeval t;                                       \
                                                                 \
-        uint64_t msec_start = (((uint64_t)high) << 32) + (low); \
         uint64_t msec_now;                                      \
                                                                 \
         gettimeofday(&t, NULL);                                 \
@@ -447,7 +446,7 @@ check_args(checked_arg *list)
         struct timeval t_finish;                                 \
         int           _rc;                                       \
                                                                  \
-        WAIT_START(in->common.start_high, in->common.start_low); \
+        WAIT_START(in->common.start);                            \
         gettimeofday(&t_start, NULL);                            \
         errno = 0;                                               \
         x;                                                       \
