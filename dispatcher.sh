@@ -456,6 +456,7 @@ if test -n "$CONFIGURATOR" ; then
     else
         configurator "${CONF_CONFIGURATOR}" &
     fi
+    CS_PID=$!
 fi
 
 if test -n "$TESTER" ; then
@@ -472,7 +473,7 @@ fi
 if test -n "$CONFIGURATOR" ; then
     te_log_message Engine Dispatcher "Shutdown Configurator"
     myecho "--->>> Shutdown Configurator"
-    conf_shutdown
+    conf_shutdown || kill $CS_PID
 fi
 
 te_log_message Engine Dispatcher "Flush log"
