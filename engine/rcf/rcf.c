@@ -536,6 +536,12 @@ answer_user_request(usrreq *req)
         if (rc != 0)
         {
             ERROR("Cannot send an answer to user: errno %d", rc);
+            RING("Failed msg has: opcode %d; TA %s; SID %d; file %s;", 
+                 req->message->opcode, 
+                 req->message->ta, 
+                 req->message->sid, 
+                 req->message->file 
+                );
         }
     }
     if (!(req->message->flags & INTERMEDIATE_ANSWER))
