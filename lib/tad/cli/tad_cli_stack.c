@@ -436,7 +436,7 @@ cli_expect_main(cli_csap_specific_data_p spec_data)
     printf("Tell the CLI CSAP layer that expect session is ready\n");
     fflush(stdout);
     data = '\0';
-    if (write(spec_data->sync_c2p[1], pdata, 1) != 1)
+    if (write(spec_data->sync_c2p[1], &data, 1) != 1)
     {
         printf("write() failed on sync_c2p pipe\n");
         cli_expect_finalize(spec_data);
@@ -449,14 +449,14 @@ cli_expect_main(cli_csap_specific_data_p spec_data)
 
         /* wait indefinitely */
         printf("wait indefinitely\n");
-    fflush(stdout);
+        fflush(stdout);
         rc = select(spec_data->sync_p2c[0] + 1, &read_set,
                     NULL, NULL, NULL);
         if (rc == 0)
         {
             /* an error occured on sync pipe or a signal has been delivered */
             printf("an error occured on sync pipe or a signal has been delivered\n");
-    fflush(stdout);
+            fflush(stdout);
             cli_expect_finalize(spec_data);
         }
     
