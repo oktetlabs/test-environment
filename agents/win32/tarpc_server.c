@@ -42,6 +42,7 @@
 #include <string.h>
 #include <fcntl.h>
 
+#undef ERROR
 #include "te_defs.h"
 #include "te_errno.h"
 #include "rcf_ch_api.h"
@@ -53,6 +54,9 @@
 
 extern int ta_pid;
 extern sigset_t rpcs_received_signals;
+
+extern HINSTANCE ta_hinstance;
+
 
 /**
  * Convert shutdown parameter from RPC to native representation.
@@ -1945,10 +1949,131 @@ TARPC_FUNC(socket_to_file, {},
 
 /*---------------------------- WSACreateEvent ----------------------------*/
 
-TARPC_FUNC(create_event, {}, { out->retval = WSACreateEvent(); })
+TARPC_FUNC(create_event, {}, 
+{ 
+    UNUSED(list);
+    out->retval = (tarpc_wsaevent)WSACreateEvent(); 
+}
+)
 
 /*---------------------------- WSACloseEvent ----------------------------*/
 
-TARPC_FUNC(close_event, {}, { out->retval = WSACloseEvent(in->hevent); })
+TARPC_FUNC(close_event, {}, 
+{ 
+    UNUSED(list);
+    out->retval = WSACloseEvent((HANDLE)(in->hevent)); 
+}
+)
 
+/*---------------------------- CreateWindow ----------------------------*/
 
+LRESULT CALLBACK 
+message_callback(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+    if (uMsg > WM_USER)
+        printf("Unexpected message %d is received\n", uMsg - WM_USER);
+
+    return DefWindowProc(hwnd, uMsg, wParam, lParam);
+}
+
+bool_t                                                                
+_create_window_1_svc(tarpc_create_window_in *in, tarpc_create_window_out *out, 
+                     struct svc_req *rqstp)                              
+{
+    static te_bool init = FALSE;
+    
+    UNUSED(rqstp);
+    UNUSED(in);
+    
+    /* Should not be called in thread to prevent double initialization */
+    
+    if (!init)
+    {
+        WNDCLASSEX wcex;
+        wcex.cbSize = sizeof(WNDCLASSEX); 
+        wcex.style = CS_HREDRAW | CS_VREDRAW;
+        wcex.lpfnWndProc = (WNDPROC)message_callback;
+        wcex.cbClsExtra = 0;
+        wcex.cbWndExtra = 0;
+        wcex.hInstance = ta_hinstance;
+        wcex.hIcon = NULL;
+        wcex.hCursor = NULL;
+        wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+        wcex.lpszMenuName = NULL;
+        wcex.lpszClassName = "MainWClass";
+        wcex.hIconSm = NULL;
+
+        if (!RegisterClassEx(&wcex))
+        {
+            printf("Failed to register class\n");
+            out->hwnd = 0;
+            return TRUE;
+        }
+        init = TRUE;
+    }
+    
+    out->hwnd = (tarpc_hwnd)CreateWindow("MainWClass", "tawin32", 
+                                         WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, 
+                                         0, CW_USEDEFAULT, 0, NULL, NULL, 
+                                         ta_hinstance, NULL);
+    return TRUE;
+}
+
+/*---------------------------- DestroyWindow ----------------------------*/
+
+TARPC_FUNC(destroy_window, {}, 
+{ 
+    UNUSED(out);
+    UNUSED(list);
+    DestroyWindow((HWND)(in->hwnd)); 
+}
+)
+
+/*---------------------------- WSAAsyncSelect ---------------------------*/
+bool_t                                                                
+_wsa_async_select_1_svc(tarpc_wsa_async_select_in *in, 
+                        tarpc_wsa_async_select_out *out, 
+                        struct svc_req *rqstp)
+{
+    /* 
+     * Should not be called in thread to avoid troubles with threads 
+     * when message is retrieved.
+     */
+
+    UNUSED(rqstp);
+    out->retval = WSAAsyncSelect(in->sock, (HWND)(in->hwnd), WM_USER + 1,
+                                 network_event_rpc2h(in->event));
+    return TRUE;                                 
+}                        
+
+/*-------------------------- PeekMessage ---------------------------------*/
+bool_t                                                                
+_peek_message_1_svc(tarpc_peek_message_in *in, 
+                   tarpc_peek_message_out *out, 
+                   struct svc_req *rqstp)
+{
+    MSG msg;
+    int rc;
+
+    /* 
+     * Should not be called in thread to avoid troubles with threads 
+     * when message is retrieved.
+     */
+
+    UNUSED(rqstp);
+    
+    while ((rc = PeekMessage(&msg, (HWND)(in->hwnd), 0, 0, PM_REMOVE)) != 0 &&
+           msg.message != WM_USER + 1);
+           
+    if (rc != 0)
+    {
+        out->sock = msg.wParam;
+        out->event = network_event_h2rpc(msg.lParam);
+    }
+    else
+    {
+        out->sock = -1;
+    }
+
+    return TRUE;                                 
+}                        

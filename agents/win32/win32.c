@@ -667,6 +667,7 @@ ta_sigpipe_handler(int sig)
     WARN("Test Agent received SIGPIPE signal");
 }
 
+HINSTANCE ta_hinstance;
 
 /**
  * Entry point of the Windows Test Agent.
@@ -683,6 +684,8 @@ WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance,
     char  buf[16];
     char  cmd[256] = { 0, };
     char *tmp;
+    
+    ta_hinstance = hinstance;
     
     setvbuf(stdout, NULL, _IONBF, 0);
     setvbuf(stderr, NULL, _IONBF, 0);
