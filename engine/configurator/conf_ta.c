@@ -199,7 +199,7 @@ sync_ta_instance(char *ta, char *oid)
         }
     }
 
-    if (rc == ENOENT)
+    if (TE_RC_GET_ERROR(rc) == ENOENT)
     {
         if (handle != CFG_HANDLE_INVALID)
             cfg_db_del(handle);
