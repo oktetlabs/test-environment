@@ -259,22 +259,31 @@ int snmp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
                       asn_value *parsed_packet )
 { 
     int type;
-    struct snmp_pdu * pdu = (struct snmp_pdu *)pkt->data;
     int rc;
+
+    struct snmp_pdu      *pdu = (struct snmp_pdu *)pkt->data;
     struct variable_list *vars;
-    asn_value_p           vb_seq = asn_init_value(ndn_snmp_var_bind_seq);
+
+    asn_value *snmp_msg = NULL;
+    asn_value *vb_seq = NULL;
 
     UNUSED(csap_id);
-    UNUSED(pattern_pdu);
 
-    /* Temporary fix for handling SNMP without callback */
-    if (parsed_packet == NULL)
+    if (parsed_packet != NULL)
+    {
+        snmp_msg = asn_init_value(ndn_snmp_message);
+        vb_seq = asn_init_value(ndn_snmp_var_bind_seq);
+    }
+
+    if (parsed_packet == NULL && pattern_pdu == NULL)
         return 0;
 
-    memset (payload, 0, sizeof (csap_pkts)); /* never use buffer for upper payload. */
+    /* never use buffer for upper payload. */
+    if (payload != NULL)
+        memset(payload, 0, sizeof (csap_pkts));
 
     VERB("%s, layer %d, pdu 0x%x, pdu command: <%d>", 
-            __FUNCTION__, layer, pdu, pdu->command);
+         __FUNCTION__, layer, pdu, pdu->command);
 
     switch (pdu->command)
     {
@@ -312,22 +321,25 @@ int snmp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
             return ETADNOTMATCH;
     }
 
-    rc = asn_write_value_field(parsed_packet, &type, sizeof(type), 
-                               "#snmp.type.#plain");
-    if (rc)
-        return rc;
+#define CHECK_FIELD(_asn_label, _size, _data) \
+    do {                                                        \
+        rc = ndn_match_data_units(pattern_pdu, snmp_msg,        \
+                                  _data, _size, _asn_label);    \
+        if (rc)                                                 \
+        {                                                       \
+            F_VERB("%s: field %s not match, rc %X",             \
+                    __FUNCTION__, _asn_label, rc);              \
+            return rc;                                          \
+        }                                                       \
+    } while(0)
 
-    asn_write_value_field(parsed_packet, pdu->community,
-                          pdu->community_len + 1, "#snmp.community.#plain"); 
 
-    asn_write_value_field(parsed_packet, &pdu->reqid,
-                          sizeof(pdu->reqid), "#snmp.request-id.#plain"); 
 
-    asn_write_value_field(parsed_packet, &pdu->errstat,
-                          sizeof(pdu->errstat), "#snmp.err-status.#plain"); 
-
-    asn_write_value_field(parsed_packet, &pdu->errindex,
-                          sizeof(pdu->errindex), "#snmp.err-index.#plain"); 
+    CHECK_FIELD("type", sizeof(type), &type);
+    CHECK_FIELD("community", pdu->community_len + 1, pdu->community); 
+    CHECK_FIELD("request-id", sizeof(pdu->reqid), &pdu->reqid);
+    CHECK_FIELD("err-status", sizeof(pdu->errstat), &pdu->errstat);
+    CHECK_FIELD("err-index",  sizeof(pdu->errindex), &pdu->errindex); 
 
     if (pdu->errstat || pdu->errindex)
         RING("in %s, errstat %d, errindex %d",
@@ -347,6 +359,17 @@ int snmp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
         asn_write_value_field(parsed_packet, pdu->agent_addr,
                               sizeof(pdu->agent_addr), "agent-addr");
     }
+
+    if (parsed_packet != NULL)
+    {
+        rc = asn_write_component_value(parsed_packet, snmp_msg, "#snmp"); 
+        if (rc)
+            ERROR("%s, write SNMP message to packet fails %X\n", 
+                  __FUNCTION__, rc);
+    } 
+
+    
+
 
     for (vars = pdu->variables; vars; vars = vars->next_variable)
     {

@@ -57,6 +57,7 @@
 #define TE_LGR_USER     "TAPI Ethernet"
 #include "logger_api.h"
 
+#define TAPI_DEBUG 1
 
 /**
  * Print ethernet address to the specified file stream

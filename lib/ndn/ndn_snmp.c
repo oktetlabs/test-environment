@@ -164,7 +164,7 @@ asn_type ndn_snmp_error_status_s = {
 asn_type * ndn_snmp_error_status = &ndn_snmp_error_status_s;
 
 
-
+NDN_DATA_UNIT_TYPE (snmp_errstat, ndn_snmp_error_status_s, SnmpErrorStatus) 
 
 asn_enum_entry_t _ndn_snmp_message_type_enum_entries[] = 
 {
@@ -178,7 +178,7 @@ asn_enum_entry_t _ndn_snmp_message_type_enum_entries[] =
 };
 
 asn_type ndn_snmp_message_type_s = {
-    "SnmpErrorStatus",
+    "SnmpMessageType",
     {UNIVERSAL, 10},
     ENUMERATED,
     sizeof(_ndn_snmp_message_type_enum_entries)/sizeof(asn_enum_entry_t),
@@ -188,6 +188,7 @@ asn_type ndn_snmp_message_type_s = {
 const asn_type * const ndn_snmp_message_type = &ndn_snmp_message_type_s;
 
 
+NDN_DATA_UNIT_TYPE(snmp_msgtype, ndn_snmp_message_type_s, SnmpMessageType)
 
 
 static asn_named_entry_t _ndn_snmp_simple_ne_array [] = 
@@ -292,11 +293,11 @@ asn_type * ndn_snmp_var_bind_seq = &ndn_snmp_var_bind_seq_s;
 
 static asn_named_entry_t _ndn_snmp_message_ne_array [] = 
 {
-    { "type",       &ndn_snmp_message_type_s, {PRIVATE, 1} },
+    { "type",       &ndn_data_unit_snmp_msgtype_s, {PRIVATE, 1} },
     { "community",  &ndn_data_unit_char_string_s, {PRIVATE, 1} },
     { "repeats",    &ndn_data_unit_int32_s, {PRIVATE, 1} },
     { "request-id", &ndn_data_unit_int32_s, {PRIVATE, 1} },
-    { "err-status", &ndn_snmp_error_status_s, {PRIVATE, 1} },
+    { "err-status", &ndn_data_unit_snmp_errstat_s, {PRIVATE, 1} },
     { "err-index",  &ndn_data_unit_int32_s, {PRIVATE, 1} },
     { "enterprise", &ndn_snmp_obj_syntax_objid_s, {PRIVATE, 1} },
     { "gen-trap",   &asn_base_integer_s, {PRIVATE, 1} },
