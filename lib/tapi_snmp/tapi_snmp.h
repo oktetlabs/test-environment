@@ -30,15 +30,15 @@
 #ifndef __TE_TAPI_SNMP__H__
 #define __TE_TAPI_SNMP__H__ 
 
-#if HAVE_NET_SNMP_DEFINITIONS_H
 #include <net-snmp/net-snmp-config.h>
 #include <net-snmp/definitions.h> 
-#elif HAVE_UCD_SNMP_SNMP_IMPL_H
+
+#if 0
+/* If there is no NET-SNMP package on your system, but there is UCD-SNMP, 
+ * include these headers: */
 #include <sys/types.h>
 #include <ucd-snmp/asn1.h>
 #include<ucd-snmp/snmp_impl.h>
-#else
-#error This module cannot be compiled without UCD- or NET-SNMP library 
 #endif
 
 
@@ -204,9 +204,10 @@ extern int tapi_snmp_packet_to_plain(asn_value *pkt,
  * Creates usual SNMP CSAP on specified Test Agent and got its handle.
  * 
  * @param ta            Test Agent name.
+ * @param sid           RCF Session ID.
  * @param snmp_agent    Address of SNMP agent.
  * @param community     SNMP community.
- * @param version       SNMP version.
+ * @param snmp_version  SNMP version.
  * @param csap_id       identifier of an SNMP CSAP. (OUT)
  * 
  * @return zero on success or error code.
@@ -215,6 +216,26 @@ extern int tapi_snmp_csap_create(const char *ta, int sid,
                                 const char *snmp_agent, const char *community,
                                 int snmp_version, int *csap_id);
 
+
+/**
+ * Creates generic SNMP CSAP on specified Test Agent and got its handle.
+ * 
+ * @param ta            Test Agent name.
+ * @param sid           RCF Session ID.
+ * @param snmp_agent    Address of SNMP agent.
+ * @param community     SNMP community.
+ * @param snmp_version  SNMP version.
+ * @param rem_port      Remote UDP port.
+ * @param local_port    Local UDP port.
+ * @param timeout       Default timeout, measured in milliseconds. 
+ * @param csap_id       identifier of an SNMP CSAP. (OUT)
+ * 
+ * @return zero on success or error code.
+ */
+extern int tapi_snmp_gen_csap_create(const char *ta, int sid, 
+                        const char *snmp_agent, const char *community, 
+                        int snmp_version, uint16_t rem_port, uint16_t loc_port,
+                        int timeout, int *csap_id);
 
 
 /**

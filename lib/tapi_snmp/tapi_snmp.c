@@ -412,6 +412,9 @@ int
 tapi_snmp_csap_create(const char *ta, int sid, const char *snmp_agent, 
                         const char *community, int snmp_version, int *csap_id)
 {
+    return tapi_snmp_gen_csap_create(ta, sid, snmp_agent,
+                                community, snmp_version, 0, 0,  -1, csap_id);
+#if 0
     int rc;
     char tmp_name[100];
     FILE *f;
@@ -431,6 +434,61 @@ tapi_snmp_csap_create(const char *ta, int sid, const char *snmp_agent,
              community, 
              snmp_version - 1, /* convert "human"->ASN SNMP version */
              snmp_agent);
+    fclose(f);
+
+
+    rc = rcf_ta_csap_create(ta, sid, "snmp", tmp_name, csap_id); 
+
+#if !(DEBUG)
+    unlink(tmp_name);
+#endif
+
+    return rc;
+#endif
+}
+
+/* See description in tapi_snmp.h */
+int 
+tapi_snmp_gen_csap_create(const char *ta, int sid, const char *snmp_agent, 
+                          const char *community, int snmp_version, 
+                          uint16_t rem_port, uint16_t loc_port,
+                          int timeout, int *csap_id)
+{
+    int rc;
+    char tmp_name[100];
+    FILE *f;
+
+    strcpy(tmp_name, "/tmp/te_snmp_csap_create.XXXXXX"); 
+    mktemp(tmp_name);
+#if DEBUG
+    LOG("tmp file: %s\n", tmp_name);
+#endif
+    f = fopen (tmp_name, "w+");
+    if (f == NULL)
+        return TE_RC(TE_TAPI, errno); /* return system errno */
+
+    fprintf(f, "{ snmp:{ version plain:%d ",
+             community, 
+             snmp_version - 1 /* convert "human"->ASN SNMP version */
+             );
+
+    if (rem_port)
+        fprintf(f, ", remote-port plain:%d ", rem_port);
+
+    if (loc_port)
+        fprintf(f, ", local-port plain:%d ", rem_port);
+
+    if (community >= 0)
+        fprintf(f, ", community plain:\"%s\" ", community);
+
+    if (timeout >= 0)
+        fprintf(f, ", timeout plain:%d ", timeout);
+
+    if (snmp_agent)
+        fprintf(f, ", snmp-agent plain:\"%s\" ", snmp_agent);
+
+    fprintf(f,"}}\n");
+
     fclose(f);
 
 
