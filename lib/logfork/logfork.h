@@ -47,8 +47,11 @@ extern "C" {
  * has been sent.
  *
  * @param name  process or thread name
+ *
+ * @retval  0 success
+ * @retval -1 failure
  */
-extern void logfork_register_user(const char *name);
+extern int logfork_register_user(const char *name);
 
 /** 
  * Entry point for log gathering.
@@ -58,8 +61,9 @@ extern void logfork_entry(void);
 /** 
  * Function for logging to be used by forked processes
  *
- * @param level logging level
- * @param fmt   format string
+ * @param level   logging level
+ * @param lgruser logging user
+ * @param fmt     format string
  */
 extern void logfork_log_message(int level, char *lgruser, const char *fmt, ...);
 
@@ -72,6 +76,13 @@ extern void logfork_log_message(int level, char *lgruser, const char *fmt, ...);
 #ifdef LOGFORK_LOG
 
 #undef LGR_MESSAGE
-#define LGR_MESSAGE(_lvl, _lgruser, _fs...)  logfork_log_message(_lvl, _lgruser, _fs) 
+#define LGR_MESSAGE(_lvl, _lgruser, _fs...)  \
+    do {                                               \
+        if (TE_LOG_LEVEL & (_lvl))                     \
+        {                                              \
+            logfork_log_message(_lvl, _lgruser, _fs);  \
+        }                                              \
+    } while (0)
+
 
 #endif

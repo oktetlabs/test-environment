@@ -37,6 +37,14 @@
 #include <stdio.h>
 #endif
 
+#if HAVE_SYS_TYPES_H
+#include <sys/socket.h>
+#endif
+
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+
 #if HAVE_STDLIB_H
 #include <stdlib.h>
 #endif
@@ -64,6 +72,7 @@
 #ifdef HAVE_STDARG_H
 #include <stdarg.h>
 #endif
+
 
 #include "te_defs.h"
 #include "te_stdint.h"
@@ -98,8 +107,6 @@ typedef struct list {
 } list;
 
 
-/** Child processes internal list*/
-static list *proc_list = NULL;
 
 static pthread_mutex_t lock_sockd = PTHREAD_MUTEX_INITIALIZER;
 
@@ -122,10 +129,10 @@ static int clt_sockd = -1;
  * @retval -1   -  not found
  */
 int 
-logfork_find_name_by_pid(pid_t pid, char **name)
+logfork_find_name_by_pid(list **proc_list, char **name, int pid)
 {
-    list *tmp;
-    for (tmp = proc_list ;tmp != NULL; tmp = tmp->next)
+    list *tmp = *proc_list;
+    for (; tmp; tmp = tmp->next)
     {
         if (tmp->pid == pid)
         {
@@ -139,22 +146,38 @@ logfork_find_name_by_pid(pid_t pid, char **name)
 /** 
  * Used to add process info in the internal list
  *
- * @param  elem   element to be added to list
+ * @param  proc_list pointer to the list
+ * @param  name  pointer to searched process name
+ * @param  pid   process pid
+ *
+ * @retval  0    success
+ * @retval  -1   memory allocation failure
  */
-void
-logfork_list_add(list *elem)
+int
+logfork_list_add(list **proc_list, char *name, 
+                 unsigned int pid)
 {  
-    if (proc_list != NULL)
+    list *item = NULL;
+
+    if((item = malloc(sizeof(*item))) == NULL)
     {
-        elem->next = proc_list;
-        proc_list = elem;
+        return -1;
+    }
+    
+    strcpy(item->name, name);
+    item->pid = pid;            
+    if (*proc_list == NULL)
+    {
+        *proc_list = item; 
+        (*proc_list)->next = NULL;
     }
     else
     {
-        proc_list = elem;
-        proc_list->next = NULL;
+        item->next = *proc_list;
+        *proc_list = item;
     }
     
+    return 0;
 }
 
 
@@ -163,32 +186,35 @@ logfork_list_add(list *elem)
  * happens. When everything is going well this routine is never
  * called. Memory is destroyed when TA is going down. 
  *
+ * @param  list   pointer to the list
  */
 void
-logfork_destroy_list(void)
+logfork_destroy_list(list **list)
 {
-    list *tmp;
+    struct list *tmp;
     
-    while (proc_list != NULL)
+    while (*list != NULL)
     {
-        tmp = proc_list->next;
-        free(proc_list);
-        proc_list = tmp;
+        tmp = (*list)->next;
+        free(*list);
+        *list = tmp;
     }
+    list = NULL;
 }
 
 /**
- * Close opened socket and clear the internal list of process info.
+ * Close opened socket and clear the list of process info.
  *
  * @param  sockd  socket descriptor
  *
  */
 
 void
-logfork_cleanup(int sockd)
+logfork_cleanup(list **list, int sockd)
 {
-    if (proc_list != NULL)
-        logfork_destroy_list();
+    struct list *tmp = *list;
+    if (list != NULL)
+        logfork_destroy_list(&tmp);
     
     close(sockd);
 }
@@ -202,13 +228,12 @@ logfork_entry(void)
     int   sockd = -1;
     char *name;
     char  name_pid[LOGFORK_MAXLEN];
-    list *elem;
-    
+    list *proc_list = NULL;
+        
     size_t  addrlen = sizeof(struct sockaddr_in);
     
     udp_msg message;
     size_t  msg_len = sizeof(message);
-    
     
     sockd = socket(PF_INET, SOCK_DGRAM, 0);
     if (sockd < 0)
@@ -225,7 +250,7 @@ logfork_entry(void)
     if (bind(sockd, (struct sockaddr *)&servaddr, sizeof(servaddr)) < 0)
     {
         ERROR("bind() failed; errno %d", errno);
-        logfork_cleanup(sockd);
+        logfork_cleanup(&proc_list, sockd);
         return;
     }
     
@@ -234,58 +259,67 @@ logfork_entry(void)
     if (getsockname(sockd, (struct sockaddr *)&logfork_saddr, &addrlen) < 0)
     {
         ERROR("getsockname(); errno %d", errno);
-        logfork_cleanup(sockd);
+        logfork_cleanup(&proc_list, sockd);
         return;
     }
-    
+
     while (1)
-    {                
-        if (recv(sockd, (udp_msg *)&message, msg_len, 0) <= 0)
+    {         
+        int len;
+        
+        if ((len = recv(sockd, (udp_msg *)&message, msg_len, 0)) <= 0)
         {
             ERROR("recv() failed; errno %d", errno);
             break;
         }
         
+        if (len != sizeof(message))
+        {
+            ERROR("Log message length is %d instead %d", 
+                  len, sizeof(message));
+            continue;
+        }
+        
         /* If udp message */
         if (message.is_notif == 0)
-        {
-            if (logfork_find_name_by_pid(message.pid, &name) == 0)
+        {   
+                        
+            if (logfork_find_name_by_pid(&proc_list, &name, message.pid) == 0)
             {
                 sprintf(name_pid, "%s.%u", name, message.pid);
                 log_message(message.log_level, TE_LGR_USER, name_pid,
                             "%s", message.msg_str.log_msg);
             }
         }
-        else
+        else 
         {
-            if (logfork_find_name_by_pid(message.pid, &name) == 0)
+            if (logfork_find_name_by_pid(&proc_list, &name, message.pid) 
+                == 0)
                 continue;
-                
-            elem = (list *)malloc(sizeof(list *));
-            if (elem == NULL)
+
+            if (logfork_list_add(&proc_list, message.msg_str.name, 
+                                 message.pid) != 0)
             {
-                ERROR("Out of memory");
+                ERROR("Out of Memory");
                 break;
             }
-            elem->pid = message.pid;
-            strcpy(elem->name, message.msg_str.name);
-            logfork_list_add(elem);   
         }
         
     } /* while(1) */
     
-    logfork_cleanup(sockd);
+    logfork_cleanup(&proc_list, sockd);
 }
 
 
 
 /** See description in logfork.h */
-void
+int
 logfork_register_user(const char *name)
 {
     
     udp_msg notification;
     
+    memset(&notification, 0, sizeof(notification));
     strcpy((notification.msg_str.name), name);
     notification.pid = getpid();
     notification.is_notif = 1;
@@ -303,7 +337,7 @@ logfork_register_user(const char *name)
 #ifdef HAVE_PTHREAD_H
             pthread_mutex_unlock(&lock_sockd);
 #endif
-            return;
+            return -1;
         }
     }
         
@@ -314,11 +348,14 @@ logfork_register_user(const char *name)
     {
         fprintf(stderr, "logfork_register_user() - cannot send "
                 "notification.\n");
+        return -1;
     }
     
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_unlock(&lock_sockd);
 #endif
+    
+    return 0;
 }
 
 
@@ -330,6 +367,7 @@ logfork_log_message(int level, char *lgruser, const char *fmt, ...)
     udp_msg log_message;
     va_list ap;
     
+    memset(&log_message, 0, sizeof(log_message));
     UNUSED(lgruser);
     va_start(ap, fmt);
     vsnprintf(log_message.msg_str.log_msg, 
