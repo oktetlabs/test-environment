@@ -258,7 +258,7 @@ typedef struct csap_instance
     struct timeval  last_pkt;    /**< moment of last good packet processed:
                                        matched in RX mode or sent in TX mode. */
 
-    size_t          num_packets; /**< number of good packets to be processed. */
+    unsigned int    num_packets; /**< number of good packets to be processed. */
     size_t          total_bytes; /**< quantity of total processed bytes in 
                                       last operation, for some protocols it is
                                       not sensible, but it is more convenient

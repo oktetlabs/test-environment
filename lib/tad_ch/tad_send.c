@@ -202,9 +202,10 @@ tad_tr_send_prepare_bin(csap_p csap_descr, asn_value_p nds,
             csap_spt_descr = find_csap_spt (csap_descr->proto[level]);
 
             F_VERB("before generate_cb, level: %d, up_pkts: %x\n",
-                    level, up_packets);
-            rc = csap_spt_descr->generate_cb (csap_descr->id, level, level_pdu,
-                                  args, arg_num, up_packets, low_packets);
+                   level, up_packets);
+            rc = csap_spt_descr->generate_cb(csap_descr->id, level, 
+                                             level_pdu, args, arg_num,
+                                             up_packets, low_packets);
         
         }
 

@@ -453,15 +453,15 @@ tad_tr_recv_thread(void * arg)
     tad_task_context *context = arg;
 
 
-    int         rc = 0;
-    csap_p      csap_descr;
-    char        answer_buffer[ANS_BUF];  
-    int         ans_len;
-    asn_value_p result = NULL;
-    asn_value_p nds = NULL; 
-    int         d_len = 0;
-    size_t      pkt_count = 0;
-    char      * read_buffer;
+    int             rc = 0;
+    csap_p          csap_descr;
+    char            answer_buffer[ANS_BUF];  
+    int             ans_len;
+    asn_value_p     result = NULL;
+    asn_value_p     nds = NULL; 
+    int             d_len = 0;
+    unsigned int    pkt_count = 0;
+    char           *read_buffer;
 
     received_packets_queue received_packets; 
 
@@ -676,11 +676,9 @@ tad_tr_recv_thread(void * arg)
             if (csap_descr->command & TAD_COMMAND_GET)
             {
                 csap_descr->command &= ~TAD_COMMAND_GET;
-                SEND_ANSWER("0 %d", pkt_count); /* trrecv_get is finished */
-                VERB(
-                        "trrecv_get #%d OK, pkts: %d, state %x",
-                        csap_descr->id, pkt_count, 
-                        (int)csap_descr->state);
+                SEND_ANSWER("0 %u", pkt_count); /* trrecv_get is finished */
+                VERB("trrecv_get #%d OK, pkts: %u, state %x",
+                     csap_descr->id, pkt_count, (int)csap_descr->state);
             }
         }
         CSAP_DA_UNLOCK(csap_descr);
@@ -746,10 +744,9 @@ tad_tr_recv_thread(void * arg)
                             csap_descr->first_pkt = csap_descr->last_pkt;
                         unit = num_pattern_units; /* to break from 'for' also. */
                         csap_descr->total_bytes += d_len;
-                        pkt_count ++;
-                        F_VERB(
-                                "Match pkt, d_len %d, total %d, pkts %d",
-                                d_len, csap_descr->total_bytes, pkt_count);
+                        pkt_count++;
+                        F_VERB("Match pkt, d_len %d, total %d, pkts %u",
+                               d_len, csap_descr->total_bytes, pkt_count);
                         break;
 
                     case ETADLESSDATA: /* @todo correct processing of 
@@ -837,7 +834,7 @@ tad_tr_recv_thread(void * arg)
     CSAP_DA_LOCK(csap_descr);
     csap_descr->command = 0;
     csap_descr->state   = 0;
-    SEND_ANSWER("%d %d", 
+    SEND_ANSWER("%d %u", 
                 TE_RC(TE_TAD_CSAP, csap_descr->last_errno), pkt_count); 
 
     csap_descr->answer_prefix[0] = '\0';
