@@ -4056,7 +4056,7 @@ TARPC_FUNC(ftp_open, {},
                               in->rdonly ? O_RDONLY : O_WRONLY,
                               in->passive, in->offset,
                               (in->sock.sock_len == 0) ? NULL:
-                              (int)(in->sock.sock_val) ));
+                                  in->sock.sock_val));
     if (in->sock.sock_len > 0)
         out->sock = in->sock.sock_val[0];
 }
