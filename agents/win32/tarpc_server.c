@@ -1160,12 +1160,37 @@ TARPC_FUNC(recvmsg,
 {
     WSABUF       buf_arr[RCF_RPC_MAX_IOVEC];
     unsigned int i;
+    DWORD        bytes;
+    
+    /* 
+     * Attention! WSARecvMsg does not work properly for any connected 
+     * sockets. It hangs (for UDP) or returns WSAEINVAL (for TCP) and
+     * corrupts memory.
+     * Moreover, for unconnected sockets the description of 
+     * msg_name and msg_namelen on the Microsoft site is wrong.
+     *
+     * Microsift is shit! IT MUST DIE!!! 
+     */
+    
+    {
+        struct sockaddr_storage addr;
+        int                     addrlen = sizeof(addr);
+        
+        if (getpeername(in->s, (struct sockaddr *)&addr, &addrlen) == 0)
+        {
+            ERROR("Cannot call WSARecvMsg() on connected socket - "
+                  "it corrupts memory. Exclude this test.");
+            out->retval = -1;
+            goto finish;
+        }
+    }
 
     memset(buf_arr, 0, sizeof(buf_arr));
     if (out->msg.msg_val == NULL)
     {
-        MAKE_CALL(out->retval = (*pf_wsa_recvmsg)(in->s, NULL, NULL,
-                                                  NULL, NULL));
+        MAKE_CALL(out->retval = 
+                      (*pf_wsa_recvmsg)(in->s, NULL, &bytes, NULL,
+                                        NULL) == 0 ? (int)bytes : -1);
     }
     else
     {
@@ -1173,13 +1198,15 @@ TARPC_FUNC(recvmsg,
 
         struct tarpc_msghdr *rpc_msg = out->msg.msg_val;
 
-        memset(&msg, 0, sizeof(msg));
-
         PREPARE_ADDR(rpc_msg->msg_name, rpc_msg->msg_namelen);
+        
+        memset(&msg, 0, sizeof(msg));
         msg.namelen = rpc_msg->msg_namelen;
-        msg.name = a;
+        msg.name = a; 
 
         msg.dwBufferCount = rpc_msg->msg_iovlen;
+        msg.lpBuffers = buf_arr;
+
         if (rpc_msg->msg_iov.msg_iov_val != NULL)
         {
             for (i = 0; i < rpc_msg->msg_iov.msg_iov_len; i++)
@@ -1188,7 +1215,7 @@ TARPC_FUNC(recvmsg,
                     rpc_msg->msg_iov.msg_iov_val[i].iov_base.iov_base_val,
                     rpc_msg->msg_iov.msg_iov_val[i].iov_base.iov_base_len,
                     rpc_msg->msg_iov.msg_iov_val[i].iov_len);
-                buf_arr[i].buf =
+                buf_arr[i].buf = 
                     rpc_msg->msg_iov.msg_iov_val[i].iov_base.iov_base_val;
                 buf_arr[i].len =
                     rpc_msg->msg_iov.msg_iov_val[i].iov_len;
@@ -1203,7 +1230,6 @@ TARPC_FUNC(recvmsg,
                          rpc_msg->msg_controllen);
         msg.Control.buf = rpc_msg->msg_control.msg_control_val;
         msg.Control.len = rpc_msg->msg_controllen;
-
         msg.dwFlags = send_recv_flags_rpc2h(rpc_msg->msg_flags);
 
         /*
@@ -1217,13 +1243,16 @@ TARPC_FUNC(recvmsg,
         INIT_CHECKED_ARG((char *)&msg.dwBufferCount,
                          sizeof(msg.dwBufferCount), 0);
         INIT_CHECKED_ARG((char *)&msg.Control, sizeof(msg.Control), 0);
-        MAKE_CALL(out->retval = (*pf_wsa_recvmsg)(in->s, &msg, NULL,
-                                                  NULL, NULL));
+        MAKE_CALL(out->retval = 
+                      (*pf_wsa_recvmsg)(in->s, &msg, &bytes, NULL,  
+                                        NULL) == 0 ? (int)bytes : -1); 
         rpc_msg->msg_controllen = msg.Control.len;
         rpc_msg->msg_flags = send_recv_flags_h2rpc(msg.dwFlags);
         sockaddr_h2rpc(a, &(rpc_msg->msg_name));
         rpc_msg->msg_namelen = msg.namelen;
     }
+    finish:
+    ;
 }
 )
 
