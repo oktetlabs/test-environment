@@ -567,7 +567,7 @@ rcf_ch_kill_task(struct rcf_comm_connection *handle,
     int p = pid;
     
     for (i = 0; i < tasks_index; i++)
-        if (tasks[i] == pid)
+        if (tasks[i] == (pid_t)pid)
         {
             tasks[i] = -1;
             p = -pid;
