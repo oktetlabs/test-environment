@@ -795,6 +795,42 @@ network_event_h2rpc(unsigned int flags)
            (!!(flags & FD_ADDRESS_LIST_CHANGE) * RPC_FD_ADDRESS_LIST_CHANGE);
 }
 
+/** Convert RPC network event(s) to string */
+static inline const char *
+network_event_rpc2str(rpc_network_event events)
+{
+    static char buf[128];
+    char      * s = buf;
+    
+    buf[0] = 0;
+    
+#define APPEND(_event)                                  \
+    do {                                                \
+        if (events & RPC_##_event)                      \
+        {                                               \
+            if (s == buf)                               \
+                s += sprintf(s, "%s",  #_event);        \
+            else                                        \
+                s += sprintf(s, " |  %s", #_event);     \
+        }                                               \
+    } while (0)
+    
+    APPEND(FD_READ);
+    APPEND(FD_WRITE);
+    APPEND(FD_OOB);
+    APPEND(FD_ACCEPT);
+    APPEND(FD_CONNECT);
+    APPEND(FD_CLOSE);
+    APPEND(FD_QOS);
+    APPEND(FD_GROUP_QOS);
+    APPEND(FD_ROUTING_INTERFACE_CHANGE);
+    APPEND(FD_ADDRESS_LIST_CHANGE);
+
+#undef APPEND
+
+    return buf;
+}
+
 /**
  * TA-independent TransmitFile() flags. 
  */

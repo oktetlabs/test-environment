@@ -2046,9 +2046,9 @@ rpc_wsa_event_select(rcf_rpc_server *handle,
                  &in,  (xdrproc_t)xdr_tarpc_event_select_in,
                  &out, (xdrproc_t)xdr_tarpc_event_select_out);
 
-    RING("RPC (%s,%s): event_select(%d, %d, %x) -> %d (%s)",
+    RING("RPC (%s,%s): event_select(%d, %x, %s) -> %d (%s)",
          handle->ta, handle->name,
-         s, event_object, event, out.retval,
+         s, event_object, network_event_rpc2str(event), out.retval,
          errno_rpc2str(RPC_ERRNO(handle)));
 
     RETVAL_RC(event_select);
@@ -2090,9 +2090,10 @@ rpc_enum_network_events(rcf_rpc_server *handle,
             *event = out.event.event_val[0];
     }
     RING("RPC (%s,%s): enum_network_events(%d, %d, %x) -> %d (%s) "
-         "returned event %x",
-         handle->ta, handle->name, s, event_object, event, out.retval,
-         errno_rpc2str(RPC_ERRNO(handle)), *event);
+         "returned event %s",
+         handle->ta, handle->name, s, event_object, event, 
+         out.retval, errno_rpc2str(RPC_ERRNO(handle)), 
+         network_event_rpc2str(event != NULL ? *event : 0));
 
     RETVAL_RC(enum_network_events);
 }
@@ -5553,9 +5554,10 @@ rpc_wsa_async_select(rcf_rpc_server *handle,
                  &in,  (xdrproc_t)xdr_tarpc_wsa_async_select_in,
                  &out, (xdrproc_t)xdr_tarpc_wsa_async_select_out);
 
-    RING("RPC (%s,%s): wsa_async_select(%p, %d, %x) -> %d (%s)",
+    RING("RPC (%s,%s): wsa_async_select(%p, %d, %s) -> %d (%s)",
          handle->ta, handle->name,
-         hwnd, s, event, out.retval, errno_rpc2str(RPC_ERRNO(handle)));
+         hwnd, s, network_event_rpc2str(event), 
+         out.retval, errno_rpc2str(RPC_ERRNO(handle)));
 
     RETVAL_RC(wsa_async_select);
 }
@@ -5590,9 +5592,10 @@ rpc_peek_message(rcf_rpc_server *handle,
                  &in,  (xdrproc_t)xdr_tarpc_peek_message_in,
                  &out, (xdrproc_t)xdr_tarpc_peek_message_out);
 
-    RING("RPC (%s,%s): peek_message(%p) -> %d (%s)",
+    RING("RPC (%s,%s): peek_message(%p) -> %d (%s) event %s",
          handle->ta, handle->name,
-         hwnd, out.retval, errno_rpc2str(RPC_ERRNO(handle)));
+         hwnd, out.retval, 
+         errno_rpc2str(RPC_ERRNO(handle)), network_event_rpc2str(out.event));
 
     *s = out.sock;
     *event = out.event;
