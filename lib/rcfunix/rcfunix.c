@@ -83,7 +83,7 @@
  * second one is a TCP port.
  */
 
-#define RCFUNIX_SSH     "ssh -q -o BatchMode=yes"
+#define RCFUNIX_SSH     "ssh -q -o BatchMode=yes -o ConnectTimeout=2 "
 
 #define RCFUNIX_SHELL_CMD_MAX   2048
 
@@ -270,7 +270,7 @@ rcfunix_start(char *ta_name, char *ta_type, char *conf_str,
          * Be quite, but DO NOT suppress command output in order
          * to have to see possible problems.
          */
-        sprintf(cmd, "scp -Bpq %s %s:/tmp/%s",
+        sprintf(cmd, "scp -o ConnectTimeout=2 -Bpq %s %s:/tmp/%s",
                 path, ta->host, ta->exec_name);
     }
 
