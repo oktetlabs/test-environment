@@ -510,8 +510,7 @@ process_backup(cfg_backup_msg *msg)
             if ((msg->rc = cfg_dh_restore_backup(msg->filename)) == 0)
                 return;
                 
-            if (msg->rc == ENOENT) /* FIXME */
-                return;
+            return; /* FIXME */
 
 /**
  * If error is returned by @e x, log error message and return from
