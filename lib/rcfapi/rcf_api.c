@@ -2435,7 +2435,7 @@ call_start(const char *ta_name, int session, int priority, const char *rtn,
     free(msg);
     
     if (error == 0)
-        RING("Call/start %s on the TA %s", rtn, ta_name);
+        VERB("Call/start %s on the TA %s", rtn, ta_name);
     
     return error;
 }
