@@ -180,7 +180,7 @@ print_octet_string (const unsigned char *oct_string, int len)
     unsigned i;
 
     if (oct_string == NULL)
-        strncpy (buf, sizeof(buf), "<null octet string>");
+        strncpy (buf, "<null octet string>", sizeof(buf));
 
     for(i = 0; i < len; i++)
         p += sprintf (p, " 0x%x", (int)(*oct_string++));
