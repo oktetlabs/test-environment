@@ -321,25 +321,32 @@ int snmp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
             return ETADNOTMATCH;
     }
 
-#define CHECK_FIELD(_asn_label, _size, _data) \
+#define CHECK_FIELD(asn_label_, data_, size_) \
     do {                                                        \
         rc = ndn_match_data_units(pattern_pdu, snmp_msg,        \
-                                  _data, _size, _asn_label);    \
-        if (rc)                                                 \
+                                  (uint8_t *)data_, size_,      \
+                                  asn_label_);                  \
+        if (rc != 0)                                            \
         {                                                       \
             F_VERB("%s: field %s not match, rc %X",             \
-                    __FUNCTION__, _asn_label, rc);              \
+                    __FUNCTION__, asn_label_, rc);              \
             return rc;                                          \
         }                                                       \
     } while(0)
 
+#define CHECK_INT_FIELD(asn_label_, value_) \
+    do {                                                        \
+        uint32_t net_ordered = htonl((uint32_t)value_);         \
+                                                                \
+        CHECK_FIELD(asn_label_, &net_ordered,                   \
+                    sizeof(net_ordered));                       \
+    } while(0)
 
-
-    CHECK_FIELD("type", sizeof(type), &type);
-    CHECK_FIELD("community", pdu->community_len + 1, pdu->community); 
-    CHECK_FIELD("request-id", sizeof(pdu->reqid), &pdu->reqid);
-    CHECK_FIELD("err-status", sizeof(pdu->errstat), &pdu->errstat);
-    CHECK_FIELD("err-index",  sizeof(pdu->errindex), &pdu->errindex); 
+    CHECK_INT_FIELD("type", type); 
+    CHECK_FIELD("community", pdu->community, pdu->community_len + 1); 
+    CHECK_INT_FIELD("request-id", pdu->reqid);
+    CHECK_INT_FIELD("err-status", pdu->errstat);
+    CHECK_INT_FIELD("err-index", pdu->errindex); 
 
     if (pdu->errstat || pdu->errindex)
         RING("in %s, errstat %d, errindex %d",
@@ -347,15 +354,14 @@ int snmp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
 
     if (type == NDN_SNMP_MSG_TRAP1)
     {
-        CHECK_FIELD("enterprise",  pdu->enterprise_length,
-                    pdu->enterprise);
-        CHECK_FIELD("gen-trap",  sizeof(pdu->trap_type),
-                    &pdu->trap_type); 
-        CHECK_FIELD("spec-trap",  sizeof(pdu->specific_type),
-                    &pdu->specific_type); 
-        CHECK_FIELD("agent-addr",  sizeof(pdu->agent_addr),
-                    pdu->agent_addr);
+        CHECK_FIELD("enterprise", pdu->enterprise, pdu->enterprise_length);
+        CHECK_INT_FIELD("gen-trap", pdu->trap_type); 
+        CHECK_INT_FIELD("spec-trap", pdu->specific_type); 
+        CHECK_FIELD("agent-addr", pdu->agent_addr, sizeof(pdu->agent_addr));
     }
+
+#undef CHECK_INT_FIELD
+#undef CHECK_FIELD
 
     if (parsed_packet != NULL)
     {
@@ -364,9 +370,6 @@ int snmp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
             ERROR("%s, write SNMP message to packet fails %X\n", 
                   __FUNCTION__, rc);
     } 
-
-    
-
 
     for (vars = pdu->variables; vars; vars = vars->next_variable)
     {
