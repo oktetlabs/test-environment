@@ -28,25 +28,8 @@ AC_ARG_VAR([TE_LDFLAGS])
 AC_ARG_VAR([TE_LDADD])
 AC_ARG_VAR([TE_DEPENDENCIES])
 
-# Checks for header files.
-AC_HEADER_STDC
-AC_CHECK_HEADERS([\
-stdlib.h \
-string.h \
-strings.h \
-sys/socket.h \
-unistd.h \
-arpa/inet.h \
-netinet/in.h \
-])
+AC_CONFIG_HEADERS([package.h])
 
-# Checks for library functions.
-AC_FUNC_MALLOC
-AC_FUNC_MEMCMP
-AC_CHECK_FUNCS([inet_ntoa memset])
-
-
-AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([Makefile])
 
 AC_OUTPUT

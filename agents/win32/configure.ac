@@ -44,20 +44,6 @@ AC_SUBST([TAD_LIBS])
 
 AC_CONFIG_HEADERS([config.h])
 
-AC_CHECK_HEADERS([\
-assert.h \
-sys/types.h \
-string.h \
-time.h \
-sys/time.h \
-sys/resource.h \
-sys/socket.h \
-unistd.h \
-pthread.h \
-semaphore.h \
-])
-AC_C_INLINE
-
 AM_CONDITIONAL(CFG_RCF_RPC, test -n "$with_rcf_rpc")
 
 if test -n "$with_rcf_rpc" ; then

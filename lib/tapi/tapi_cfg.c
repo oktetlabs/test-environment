@@ -31,9 +31,7 @@
 
 #define TE_LGR_USER     "Configuration TAPI"
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+#include "te_config.h"
 
 #ifdef HAVE_ASSERT_H
 #include <assert.h>

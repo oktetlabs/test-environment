@@ -31,6 +31,7 @@
 #define __TE_CONF_DEFS_H__
 
 #include "config.h"
+#include "te_config.h"
 
 #include <stdio.h>
 

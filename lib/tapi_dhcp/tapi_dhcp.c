@@ -30,9 +30,7 @@
 
 #define TE_LGR_USER     "TAPI DHCP"
 
-#if HAVE_CONFIG_H
-#include "config.h"
-#endif
+#include "te_config.h"
 
 #include <stdio.h>
 #if HAVE_SYS_TYPES_H

@@ -30,9 +30,8 @@
 
 #define TE_LGR_USER     "Linux Conf"
 
-#if HAVE_CONFIG_H
+#include "te_config.h"
 #include "config.h"
-#endif
 
 #include <sys/types.h>
 #include <stdio.h>

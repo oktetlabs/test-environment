@@ -30,9 +30,8 @@
 #ifndef __TE_TA_LINUXCONF_DAEMONS_H__
 #define __TE_TA_LINUXCONF_DAEMONS_H__
 
-#if HAVE_CONFIG_H
+#include "te_config.h"
 #include "config.h"
-#endif
 
 #include <string.h>
 #include <time.h>

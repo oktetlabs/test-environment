@@ -26,32 +26,7 @@ AC_ARG_VAR([TE_CPPFLAGS])
 AC_ARG_VAR([TE_CFLAGS])
 AC_ARG_VAR([TE_LDFLAGS])
 
-AC_CONFIG_HEADERS([config.h])
-
-# It's assumed that stdio.h always presents.
-# Check for stdlib.h, stdarg.h, string.h and float.h.
-AC_HEADER_STDC
-AC_CHECK_HEADERS([\
-stdarg.h \
-string.h \
-strings.h \
-ctype.h \
-sys/types.h \
-sys/stat.h \
-unistd.h \
-assert.h \
-sys/time.h \
-time.h \
-sys/queue.h \
-sys/socket.h \
-arpa/inet.h \
-netinet/in.h \
-net/if.h \
-net/ethernet.h \
-net/route.h \
-])
-
-AC_C_INLINE
+AC_CONFIG_HEADERS([package.h])
 
 AC_CONFIG_FILES([Makefile])
 

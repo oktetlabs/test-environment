@@ -28,9 +28,8 @@
  * $Id$
  */
 
-#ifdef HAVE_CONFIG_H
+#include "te_config.h"
 #include "config.h"
-#endif
 
 #include <sys/time.h>
 #ifdef HAVE_SYS_RESOURCE_H

@@ -26,9 +26,9 @@
  *
  * $Id$
  */
-#ifdef HAVE_CONFIG_H
+
+#include "te_config.h"
 #include "config.h"
-#endif
 
 #include <winsock2.h>
 #include <winerror.h>
@@ -455,7 +455,7 @@ check_args(checked_arg *list)
         if ((out->common._errno == 0) &&                         \
             (out->common.win_error != 0))                        \
             out->common._errno =                                 \
-            wsa/err2errno(out->common.win_error);                \
+            wsaerr2errno(out->common.win_error);                 \
         gettimeofday(&t_finish, NULL);                           \
         out->common.duration =                                   \
             (t_finish.tv_sec - t_start.tv_sec) * 1000000 +       \

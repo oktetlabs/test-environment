@@ -31,9 +31,7 @@
 /* To get pthread_mutexattr_settype() definition in pthread.h */
 #define _GNU_SOURCE 
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+#include "te_config.h"
 
 #include <stdio.h>
 #include <stdarg.h>

@@ -49,34 +49,6 @@ CFLAGS=${CFLAGS}" "${TE_CFLAGS}
 
 AC_CONFIG_HEADERS([config.h])
 
-AC_CHECK_HEADERS([\
-assert.h \
-string.h \
-strings.h \
-sys/types.h \
-sys/socket.h \
-errno.h \
-unistd.h \
-time.h \
-sys/time.h \
-sys/resource.h \
-pthread.h \
-semaphore.h \
-aio.h \
-net/ethernet.h \
-net/if_dl.h \
-netinet/in.h \
-netinet/in_systm.h \
-sys/un.h \
-sys/poll.h \
-poll.h \
-])
-
-
-AC_CHECK_HEADERS([net/if_arp.h net/route.h], [], [],
-                 [#include <sys/types.h>
-                  #include <sys/socket.h>])
-
 dnl
 dnl Try to find IP_MTU socket option definition.
 dnl

@@ -1,4 +1,5 @@
 %{
+#include "te_config.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include "te_errno.h"

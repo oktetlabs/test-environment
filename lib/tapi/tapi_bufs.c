@@ -30,9 +30,7 @@
 
 #define TE_LGR_USER     "TAPI Buffers"
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+#include "te_config.h"
 
 #ifdef STDC_HEADERS
 #include <stdlib.h>

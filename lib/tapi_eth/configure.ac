@@ -28,20 +28,7 @@ AC_ARG_VAR([TE_LDFLAGS])
 AC_ARG_VAR([TE_LDADD])
 AC_ARG_VAR([TE_DEPENDENCIES])
 
-AC_CONFIG_HEADERS([config.h])
-
-AC_CHECK_HEADERS([\
-stdlib.h \
-string.h \
-strings.h \
-stdint.h \
-sys/socket.h \
-unistd.h \
-arpa/inet.h \
-netinet/in.h \
-netinet/ether.h \
-net/ethernet.h \
-])
+AC_CONFIG_HEADERS([package.h])
 
 AC_CONFIG_FILES([Makefile])
 

@@ -30,9 +30,7 @@
  * $Id$
  */
 
-#if HAVE_CONFIG_H
-#include "config.h"
-#endif
+#include "te_config.h"
 
 #include <stdio.h>
 #ifdef STDC_HEADERS

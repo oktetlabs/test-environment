@@ -29,11 +29,7 @@ AC_ARG_VAR([TE_LDFLAGS])
 AC_ARG_VAR([TE_LDADD])
 AC_ARG_VAR([TE_DEPENDENCIES])
 
-AC_CONFIG_HEADERS([config.h])
-
-AC_CHECK_HEADERS([\
-netinet/ether.h \
-])
+AC_CONFIG_HEADERS([package.h])
 
 AC_CONFIG_FILES([Makefile])
 

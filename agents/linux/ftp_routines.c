@@ -27,9 +27,8 @@
  * $Id$
  */
 
-#ifdef HAVE_CONFIG_H
+#include "te_config.h"
 #include "config.h"
-#endif
 
 #include <stdio.h>
 #include <stdlib.h>

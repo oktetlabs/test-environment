@@ -27,24 +27,7 @@ AC_ARG_VAR([TE_DEPENDENCIES])
 CFLAGS=${CFLAGS}" "${TE_CFLAGS}
 CPPFLAGS=${CPPFLAGS}" "${TE_CFLAGS}
 
-AC_CONFIG_HEADERS([config.h])
-
-# It's assumed that stdio.h always presents.
-# Check for stdlib.h, stdarg.h, string.h and float.h.
-AC_HEADER_STDC
-AC_CHECK_HEADERS([\
-unistd.h \
-errno.h \
-sys/types.h \
-sys/time.h \
-sys/socket.h \
-sys/select.h \
-sys/wait.h \
-sys/stat.h \
-signal.h \
-fcntl.h \
-logger_api.h \
-])
+AC_CONFIG_HEADERS([package.h])
 
 AC_CONFIG_FILES([Makefile])
 

@@ -15,8 +15,6 @@ AC_PROG_CC
 AC_PROG_LIBTOOL
 AC_PROG_INSTALL
 
-AC_CHECK_TOOL(AR, ar)
-
 
 CPPFLAGS=${CPPFLAGS}" "${TE_CPPFLAGS}
 CFLAGS=${CFLAGS}" "${TE_CFLAGS}
@@ -32,16 +30,7 @@ AC_ARG_VAR([TE_LDFLAGS])
 RPC_XFILE=${srcdir}/../../include/tarpc.x.m4
 AC_SUBST([RPC_XFILE])
 
-AC_CONFIG_HEADERS([config.h])
-
-AC_CHECK_HEADERS([\
-pthread.h \
-semaphore.h \
-fcntl.h \
-sys/socket.h \
-semaphore.h \
-sys/wait.h \
-])
+AC_CONFIG_HEADERS([package.h])
 
 AC_CONFIG_FILES([Makefile])
 

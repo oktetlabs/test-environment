@@ -1,5 +1,5 @@
 
-#include "config.h"
+#include "te_config.h"
 
 #ifdef HAVE_STDLIB_H
 #include <stdlib.h>

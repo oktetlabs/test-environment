@@ -26,7 +26,7 @@
  * $Id$
  */
 
-#include "config.h"
+#include "te_config.h"
 
 #include <stdio.h>
 #ifdef HAVE_SYS_TYPES_H

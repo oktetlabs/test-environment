@@ -40,16 +40,19 @@
 
 DEFINE_LGR_ENTITY("Configurator");
 
-static char buf[CFG_BUF_LEN];
-static char tmp_buf[1024];
+static char  buf[CFG_BUF_LEN];
+static char  tmp_buf[1024];
 static char *tmp_dir = NULL;
 static char *filename;
+
 /* If true, shutdown after message processing */
 static te_bool cfg_shutdown = FALSE;
-static int cfg_fatal_err = 0;
+
 static struct ipc_server *server = NULL; /* IPC Server handle */
+
 static te_bool cs_print_tree = FALSE; /* For --cs-print-trees option */
 static te_bool cs_print_diff = FALSE; /* For --cs-print-diff option */
+
 enum {
     CS_OPT_TREE,
     CS_OPT_DIFF,
@@ -919,7 +922,8 @@ process_backup(cfg_backup_msg *msg)
             else
             {
                 if (cs_print_diff)
-                    log_msg((cfg_msg *)msg, TRUE);
+                    log_message(TE_LL_INFO, TE_LGR_ENTITY, TE_LGR_USER,
+                                "Backup diff: %tf", diff_file);
                 else
                     INFO("Backup diff: %tf", diff_file);
             }
@@ -952,11 +956,7 @@ process_reboot(cfg_reboot_msg *msg, te_bool update_dh)
     if (msg->rc == 0 && msg->restore)
     {
         if ((msg->rc = cfg_backup_restore_ta(msg->ta_name)) != 0)
-        {
-            ERROR("Restoring of the TA state after reboot failed - "
-                  "cannot continue");
-            cfg_fatal_err = msg->rc;
-        };
+            ERROR("Restoring of the TA state after reboot failed");
     }
 }
 
@@ -1273,11 +1273,6 @@ main(int argc, char **argv)
         if ((char *)msg != buf)
             free(msg);
 
-        if (cfg_fatal_err != 0)
-        {
-            rc = cfg_fatal_err;
-            goto error;
-        }
 
         if (cfg_shutdown)
             goto error;

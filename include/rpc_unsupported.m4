@@ -5,6 +5,7 @@
  *
  */
 
+#include "te_config.h"
 #include "config.h"
 #include "te_defs.h"
 #include "rcf_rpc_defs.h"

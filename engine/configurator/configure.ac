@@ -57,20 +57,6 @@ CFLAGS=${CFLAGS}" "${TE_CFLAGS}
 
 
 AC_CONFIG_HEADERS([config.h])
-# It's assumed that stdio.h always presents.
-# Check for stdlib.h, stdarg.h, string.h and float.h.
-AC_HEADER_STDC
-AC_CHECK_HEADERS([\
-stdlib.h \
-time.h \
-sys/time.h \
-sys/types.h \
-string.h \
-sys/socket.h \
-strings.h \
-assert.h \
-signal.h \
-])
 
 AC_CHECK_TYPES([xmlError], [], [], [#include <libxml/xmlerror.h>])
 

@@ -28,8 +28,6 @@
 #ifndef __TE_NDN_SNMP_H__
 #define __TE_NDN_SNMP_H__
 
-#include "config.h"
-
 #include "asn_usr.h"
 #include "ndn.h"
 

@@ -30,7 +30,7 @@
 
 #define TE_LGR_USER     "File TAPI"
 
-#include "config.h"
+#include "te_config.h"
 
 #include <stdio.h>
 

@@ -32,9 +32,8 @@
 #define __INSIDE_CYGWIN__
 #endif
 
-#ifdef HAVE_CONFIG_H
+#include "te_config.h"
 #include "config.h"
-#endif
 
 #include <rpc/rpc.h>
 #include <rpc/pmap_clnt.h>

@@ -27,24 +27,7 @@ RPC_XFILE=${srcdir}/../../include/tarpc.x.m4
 
 AC_SUBST([RPC_XFILE])
 
-AC_CONFIG_HEADERS([config.h])
-
-AC_CHECK_HEADERS([\
-signal.h \
-assert.h \
-sys/socket.h \
-sys/ioctl.h \
-sys/poll.h \
-arpa/inet.h \
-netinet/in.h \
-netinet/ip.h \
-netinet/tcp.h \
-net/if.h \
-net/if_arp.h \
-netdb.h \
-fcntl.h \
-semaphore.h \
-])
+AC_CONFIG_HEADERS([package.h])
 
 AC_CONFIG_FILES([Makefile])
 

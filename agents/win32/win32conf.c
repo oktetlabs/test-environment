@@ -28,9 +28,8 @@
  * $Id$
  */
 
-#ifdef HAVE_CONFIG_H
+#include "te_config.h"
 #include "config.h"
-#endif
 
 #include "te_defs.h"
 #include "windows.h"

@@ -55,24 +55,7 @@ AC_ARG_VAR([TE_DEPENDENCIES])
 CPPFLAGS=${CPPFLAGS}" "${TE_CPPFLAGS}
 CFLAGS=${CFLAGS}" "${TE_CFLAGS}
 
-AC_CONFIG_HEADERS([config.h])
-
-AC_CHECK_HEADERS([\
-assert.h \
-stdarg.h \
-string.h \
-strings.h \
-regex.h \
-time.h \
-errno.h \
-sys/time.h \
-pthread.h \
-netinet/in.h \
-signal.h \
-sys/poll.h \
-poll.h \
-fcntl.h \
-])
+AC_CONFIG_HEADERS([package.h])
 
 AC_CONFIG_FILES([Makefile])
 
