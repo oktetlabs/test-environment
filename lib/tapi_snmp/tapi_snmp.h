@@ -675,6 +675,20 @@ extern int tapi_snmp_trap_recv_start(const char *ta_name, int sid,
 
 
 /**
+ * Parses text representation of OID to TAPI SNMP OID data structure then
+ * adds instance indexes to the TAPI SNMP OID data structure.
+ *
+ * @param oid_str  OID string representation
+ * @param oid  Location for parsed OID (OUT)
+ * @param ...  Indexes of table field instance
+ *
+ * @return  Status of the operation
+ */
+int
+tapi_snmp_make_table_field_instance(const char *oid_str, tapi_snmp_oid_t *oid, ...);
+
+
+/**
  * Print SNMP OID struct to string and return pointer to this string. 
  * Note, that buffer with string is static and behaviour of this function 
  * in multithread usage may be unpredictable. 

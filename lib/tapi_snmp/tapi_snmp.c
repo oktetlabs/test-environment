@@ -1804,4 +1804,40 @@ tapi_snmp_trap_recv_start(const char *ta_name, int sid,
     return rc;
 }
 
+/* See description in tapi_snmp.h */
+int
+tapi_snmp_make_table_field_instance(const char *oid_str, tapi_snmp_oid_t *bin_oid, ...)
+{
+    int                 rc = 0;
+    int                 table_dimension;
+    va_list             index_list;
+    
+    va_start(index_list, bin_oid);
+
+    if ((rc = tapi_snmp_make_oid(oid_str, bin_oid)) != 0)
+        return rc;
+
+    /* To get table OID cut two last indexes */
+
+    if (bin_oid->length <= 2)
+        return TE_RC(TE_TAPI, EINVAL);
+
+    bin_oid->length -= 2;
+
+    if ((rc = tapi_snmp_get_table_dimension(bin_oid, &table_dimension)) != 0)
+        return rc;
+
+    /* Return back two last indexes of OID */
+
+    bin_oid->length += 2;
+
+    for (; table_dimension > 0; table_dimension--)
+    {
+        bin_oid->id[bin_oid->length++] = va_arg(index_list, int);
+    }
+
+    va_end(index_list);
+    
+    return rc;
+}
 

@@ -81,6 +81,26 @@ extern "C" {
     } while (0)	    
 
 /**
+ * Macro around tapi_snmp_make_table_field_instance().
+ * 
+ * @param label_    SNMP label - OID string representation
+ * @param oid_      Location for parsed OID (OUT)
+ * @param ...       Indexes of table field instance
+ * 
+ */ 
+#define SNMP_MAKE_TABLE_FIELD_INSTANCE(label_, oid_, ...)                             \
+    do                                                                                \
+    {                       	                                                      \
+        int rc_;                                                                      \
+                                                                                      \
+        rc_ = tapi_snmp_make_table_field_instance(label_, &oid_, ...);                \
+        if (rc_ != 0)                                                                 \
+        {                                                                             \
+            TEST_FAIL("snmp make table field instance failed, result\n", label_, rc_);\
+        }                                                                             \
+    } while (0)	    
+
+/**
  * Macro around tapi_snmp_get_syntax().
  * 
  * @param label_    SNMP label - OID string representation
