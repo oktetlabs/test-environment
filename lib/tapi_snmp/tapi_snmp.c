@@ -824,18 +824,24 @@ tapi_snmp_set_row(const char *ta, int sid, int csap_id,
             struct tapi_vb_list *new_vbl = calloc(1, sizeof(struct tapi_vb_list));
             new_vbl->next = vbl_head;
             new_vbl->vb = vb;
+            vbl_head = new_vbl;
             num_vars ++;
         }
     } while (vb);
+    va_end(ap);
 
     if (!num_vars)
         return 0; /* ??? */
 
     vb_array = calloc(num_vars, sizeof(tapi_snmp_varbind_t)); 
 
+    VERB("in %s: num_vars %d\n", __FUNCTION__, num_vars);
+
     i = num_vars; 
     do {
-        struct tapi_vb_list *tail = vbl_head->next;
+        struct tapi_vb_list *tail; 
+
+        tail = vbl_head->next;
         i--; 
         vb_array[i] = *(vbl_head->vb);
         free(vbl_head);
