@@ -6,11 +6,11 @@ MY_CPPFLAGS=-I$(DESTDIR)/$(prefix)/include \
 AM_YFLAGS=-d
 
 #
-# -lrcfpch must be before -ltad since rcfpch contains references to
-# functions provided by -ltad. @TE_LDADD@ must be after -ltad, since
-# @TE_LDADD@ may contain ASN and NDN libraries.
+# -lrcfpch must be before -l@TAD@ since rcfpch contains references to
+# functions provided by -l@TAD@. @TE_LDADD@ must be after -l@TAD@,
+# since @TE_LDADD@ may contain ASN and NDN libraries.
 #
-MY_LDADD=symtbl.o -lrcfpch -ltad @TE_LDADD@ -lconf_oid -lloggerta -lcrypt
+MY_LDADD=symtbl.o -lrcfpch -l@TAD@ @TE_LDADD@ -lconf_oid -lloggerta -lcrypt
 
 #if HAS_NET_SNMP
 #MY_LDADD+= @NET_SNMP_LIBS@
@@ -113,7 +113,7 @@ talinuxtmpl_LDADD=$(MY_LDADD)
 
 talinuxtmpl_DEPENDENCIES=@TE_DEPENDENCIES@ symtbl.o \
     $(DESTDIR)/$(prefix)/../@host@/lib/librcfpch.a \
-    $(DESTDIR)/$(prefix)/../@host@/lib/libtad.a \
+    $(DESTDIR)/$(prefix)/../@host@/lib/lib@TAD@.a \
     $(DESTDIR)/$(prefix)/../@host@/lib/libconf_oid.a \
     $(DESTDIR)/$(prefix)/../@host@/lib/libloggerta.a
 

@@ -36,6 +36,12 @@ AC_ARG_VAR([TE_LDFLAGS])
 AC_ARG_VAR([TE_LDADD])
 AC_ARG_VAR([TE_DEPENDENCIES])
 
+if test -z "$with_tad" ; then
+    with_tad=tad
+fi
+AC_SUBST([TAD], [$with_tad])
+
+
 CPPFLAGS=${CPPFLAGS}" "${TE_CPPFLAGS}
 CFLAGS=${CFLAGS}" "${TE_CFLAGS}
 
