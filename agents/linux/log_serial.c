@@ -100,7 +100,11 @@ int
 log_serial(void *ready, int argc, char *argv[])
 {
     char           user[64] = "";
+#ifdef PATH_MAX /* to prevent compilation error on CygWin */
     char           tmp[PATH_MAX + 16];
+#else
+    char           tmp[260];
+#endif
     char          *buffer; 
     char          *current;
     char          *fence;
