@@ -118,9 +118,15 @@ static int
 daemon_set(unsigned int gid, const char *oid, const char *value)
 {
     const char *daemon_name = GET_DAEMON_NAME(oid);
+    
+    char value0[2];
+    int  rc;
 
     UNUSED(gid);
 
+    if ((rc = daemon_get(gid, oid, value0)) != 0)
+        return rc;
+    
     if (strlen(value) != 1 || (*value != '0' && *value != '1'))
         return TE_RC(TE_TA_LINUX, EINVAL);
 
@@ -128,6 +134,9 @@ daemon_set(unsigned int gid, const char *oid, const char *value)
     {
         return TE_RC(TE_TA_LINUX, ENOENT);
     }
+
+    if (value0[0] == value[0])
+        return 0;
 
     sprintf(buf, "/etc/init.d/%s %s >/dev/null 2>&1", daemon_name,
             *value == '0' ? "stop" : "start");
