@@ -195,7 +195,8 @@ log_serial(void *ready, int argc, char *argv[])
     *fence  = '\0';
     
     sem_post(ready);
-    pthread_cleanup_push(close, (void *)poller.fd);
+    /* FIXME: Cast of (int) to (void *) is not a good idea really */
+    pthread_cleanup_push((void (*)(void *))close, (void *)poller.fd);
     pthread_cleanup_push(free, buffer);
     for (;;)
     {
