@@ -78,7 +78,7 @@ symtbl.o: $(MY_SYMTBL_OBJECTS) @TE_DEPENDENCIES@
 	${CC} -c -o $@ symtbl.c
 
 install-exec-hook:
-	cd $(DESTDIR)/$(prefix)/bin; ln -s tawin32.exe tawin32
+	cd $(DESTDIR)/$(prefix)/bin; ln -fs tawin32.exe tawin32
 
 uninstall-hook:
 	cd $(DESTDIR)/$(prefix)/bin; rm -f tawin32

@@ -47,6 +47,7 @@
 /* TA name pointer */
 extern char *ta_name;
 
+RCF_PCH_CFG_NODE_AGENT(node_agent, NULL);
 
 /**
  * Get root of the tree of supported objects.
@@ -56,7 +57,7 @@ extern char *ta_name;
 rcf_pch_cfg_object *
 rcf_ch_conf_root()
 {
-            return NULL;
+    return &node_agent;
 }
 
 /**
