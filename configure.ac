@@ -35,7 +35,10 @@ AM_INIT_AUTOMAKE([foreign -Wall])
 AC_PROG_INSTALL
 
 CONFIGURE=`which $0` ;
-TE_BASE=`dirname $CONFIGURE` 
+TE_BASE_DIR=`dirname $CONFIGURE`
+pushd $TE_BASE_DIR >/dev/null
+export TE_BASE=`pwd` 
+popd >/dev/null
 
 AC_CANONICAL_HOST
 
@@ -153,13 +156,12 @@ for p in ${TE_BS_PLATFORMS} ; do
             PKGSRC=${TE_BASE}/lib/$package ; 
         fi
         
-        if test `dirname $PKGSRC` = $TE_BASE/lib ; then
+        if test `dirname $PKGSRC` = ${TE_BASE}/lib ; then
             cd lib
             mkdir -p $PKGNAME
             NAME=`basename $PKGSRC`
             if ! test -e $NAME ; then
                 ln -s $PKGNAME $NAME
-                LIB_DIST_SUBDIRS="$LIB_DIST_SUBDIRS $NAME"
             fi
             cd ..
         fi
@@ -175,6 +177,9 @@ for p in ${TE_BS_PLATFORMS} ; do
         fi
         LIB_SUBDIRS="$LIB_SUBDIRS $PKGNAME"
     done
+done
+for i in `find lib -maxdepth 1 -type l` ; do 
+    LIB_DIST_SUBDIRS="$LIB_DIST_SUBDIRS `basename $i`" ;
 done
 AC_SUBST(LIB_SUBDIRS)
 AC_SUBST(LIB_DIST_SUBDIRS)
@@ -238,4 +243,4 @@ AC_CONFIG_FILES(Makefile include/Makefile lib/Makefile
                 engine/Makefile tools/Makefile agents/Makefile suites/Makefile)
 
 AC_OUTPUT
- 
+
