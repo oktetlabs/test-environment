@@ -144,6 +144,7 @@ typedef struct test_run {
     xmlNodePtr      obj_node;       /**< XML node with objective */
     te_bool         obj_update;     /**< Whether objective of the test
                                          should be updated */
+    char           *obj_link;       /**< Test objective link */
 
     test_iters      iters;          /**< Iterations of the test */
 } test_run;

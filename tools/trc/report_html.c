@@ -271,7 +271,7 @@ static const char * const trc_tests_stats_row =
 "        <P>%s<B>%s</B></P>\n"
 "      </TD>\n"
 "      <TD>\n"
-"        <P>%s</P>\n"
+"        <P>%s%s%s%s%s</P>\n"
 "      </TD>\n"
 "      <TD>\n"
 "        <P ALIGN=RIGHT STYLE=\"margin-left: 0.1in; margin-right: 0.1in\">\n"
@@ -353,7 +353,7 @@ static const char * const trc_test_exp_got_end =
 static const char * const trc_test_exp_got_row =
 "    <TR>\n"
 "      <TD>\n"
-"        <P>%s<B>%s</B></P>\n"
+"        <P>%s<B><A href=\"#%s\">%s</A></B></P>\n"
 "      </TD>\n"
 "      <TD>\n"
 "        <P>%s</P>\n"
@@ -384,8 +384,8 @@ stats_to_html(const trc_stats *stats)
 }
 
 
-static int tests_to_html(const test_runs *tests, unsigned int level,
-                         unsigned int flags);
+static int tests_to_html(const test_run *parent, const test_runs *tests,
+                         unsigned int level, unsigned int flags);
 
 const char *
 trc_test_result_to_string(trc_test_result result)
@@ -447,13 +447,15 @@ iters_to_html(const test_run *test, const test_iters *iters,
              (~flags & TRC_OUT_PACKAGES_ONLY)))
         {
             fprintf(f, trc_test_exp_got_row,
-                    level_str, test->name,
+                    level_str,
+                    test->obj_link ? : "ERROR",
+                    test->name,
                     trc_test_args_to_string(&p->args),
                     trc_test_result_to_string(p->exp_result),
                     trc_test_result_to_string(p->got_result),
                     p->notes ? : "");
         }
-        rc = tests_to_html(&p->tests, level, flags);
+        rc = tests_to_html(test, &p->tests, level, flags);
         if (rc != 0)
             return rc;
     }
@@ -461,7 +463,8 @@ iters_to_html(const test_run *test, const test_iters *iters,
 }
 
 static int
-tests_to_html(const test_runs *tests, unsigned int level, unsigned int flags)
+tests_to_html(const test_run *parent, const test_runs *tests,
+              unsigned int level, unsigned int flags)
 {
     int         rc;
     test_run   *p;
@@ -484,8 +487,33 @@ tests_to_html(const test_runs *tests, unsigned int level, unsigned int flags)
             ((p->type == TRC_TEST_PACKAGE) ||
              (~flags & TRC_OUT_PACKAGES_ONLY)))
         {
+            char *obj_link = NULL;
+
+            if (p->obj_link == NULL)
+            {
+                size_t len;
+
+                len = strlen(p->name) + 2 +
+                      ((parent == NULL) ? strlen("OBJ") :
+                                          strlen(parent->obj_link));
+                obj_link = malloc(len);
+                if (obj_link == NULL)
+                {
+                    ERROR("malloc(%u) failed", len);
+                    return ENOMEM;
+                }
+                sprintf(obj_link, "%s-%s",
+                        (parent) ? parent->obj_link : "OBJ", p->name);
+                p->obj_link = obj_link;
+            }
+
             fprintf(f, trc_tests_stats_row,
-                    level_str, p->name, p->objective ? : "",
+                    level_str, p->name,
+                    obj_link ? "<A name=\"" : "",
+                    obj_link ? : "",
+                    obj_link ? "\">": "",
+                    p->objective ? : "",
+                    obj_link ? "</A>": "",
                     TRC_STATS_RUN(&p->stats),
                     p->stats.pass_exp, p->stats.fail_exp,
                     p->stats.pass_une, p->stats.fail_une,
@@ -544,17 +572,18 @@ trc_report_to_html(const char *filename, trc_database *db)
         goto cleanup;
 
     /* Report for packages */
-    rc = tests_to_html(&db->tests, 0, TRC_OUT_PACKAGES_ONLY | TRC_OUT_STATS);
+    rc = tests_to_html(NULL, &db->tests, 0,
+                       TRC_OUT_PACKAGES_ONLY | TRC_OUT_STATS);
     if (rc != 0)
         goto cleanup;
 
     /* Report with iterations of packages and w/o iterations of tests */
-    rc = tests_to_html(&db->tests, 0, TRC_OUT_STATS);
+    rc = tests_to_html(NULL, &db->tests, 0, TRC_OUT_STATS);
     if (rc != 0)
         goto cleanup;
 
     /* Full report */
-    rc = tests_to_html(&db->tests, 0, 0);
+    rc = tests_to_html(NULL, &db->tests, 0, 0);
     if (rc != 0)
         goto cleanup;
 
