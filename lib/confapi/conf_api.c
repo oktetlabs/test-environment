@@ -1974,9 +1974,21 @@ cfg_verify_backup(const char *name)
  * @return status code (see te_errno.h)
  */
 int 
-cfg_release_backup(const char *name)
+cfg_release_backup(char **name)
 {
-    return cfg_backup(name, CFG_BACKUP_RELEASE);
+    int rc;
+
+    if (name == NULL)
+        return TE_RC(TE_CONF_API, EINVAL);
+
+    rc = cfg_backup(*name, CFG_BACKUP_RELEASE);
+    if (rc == 0)
+    {
+        free(*name);
+        *name = NULL;
+    }
+
+    return rc;
 }
 
 /**

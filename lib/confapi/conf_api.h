@@ -631,15 +631,6 @@ extern int cfg_create_backup(char **name);
 extern int cfg_verify_backup(const char *name);
 
 /**
- * Ask Configurator to forget about the backup, if known.
- *
- * @param name      name returned by cfg_create_backup
- *
- * @return status code
- */
-extern int cfg_release_backup(const char *name);
-
-/**
  * Restore the backup.
  *
  * @param name      name returned by cfg_create_backup
@@ -647,6 +638,16 @@ extern int cfg_release_backup(const char *name);
  * @return status code (see te_errno.h)
  */
 extern int cfg_restore_backup(const char *name);
+
+/**
+ * Ask Configurator to forget about the backup, if known.
+ *
+ * @param name      Location of name returned by cfg_create_backup
+ *                  (set to NULL on success)
+ *
+ * @return status code
+ */
+extern int cfg_release_backup(char **name);
 
 
 /**
