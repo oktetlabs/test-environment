@@ -408,13 +408,14 @@ proc_log_msg_start(struct global_context *ctx, const xmlChar **atts)
 "    <td class='%s'>\n"
 "      <table border='0' cellpadding='0' cellspacing='0'>\n"
 "      <tr>\n"
+"        <td width='50' class='level'>%s</td>\n"
 "        <td width='100' class='entityname'>%s</td>\n"
 "        <td width='100' class='username'>%s</td>\n"
 "        <td width='150' class='timestamp'>%s</td>\n"
 "        <td class='log'>\n",
            level, entity, user,
            level,
-           entity, user, ts);
+           level, entity, user, ts);
 }
 
 static void
@@ -491,6 +492,7 @@ proc_logs_start(struct global_context *ctx, const xmlChar **atts)
 "    <td class='tdsubheading'>\n"
 "        <table border='0' cellpadding='0' cellspacing='0'>\n"
 "        <tr>\n"
+"            <td width='50' class='tdsubhead'>Level</td>\n"
 "            <td width='100' class='tdsubhead'>Entity Name</td>\n"
 "            <td width='100' class='tdsubhead>User Name</td>\n"
 "            <td width='150' class='tdsubhead'>Timestamp</td>\n"
