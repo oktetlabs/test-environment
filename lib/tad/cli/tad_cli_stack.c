@@ -45,7 +45,7 @@
 #define EXP_DEBUG
 #undef EXP_DEBUG
 
-#define DEBUG(x...)
+#define MYDEBUG(x...)
 
 static char cli_programs[][CLI_PROGRAM_NAME_SIZE] = {
     "/tmp/millicom",
@@ -145,13 +145,13 @@ int cli_session_open(cli_csap_specific_data_p spec_data)
     /** -l<use> - user parameter */
     char user_param[CLI_SESSION_PARAM_LENGTH_MAX]; 
 
-    DEBUG("%s()\n", __FUNCTION__);
+    MYDEBUG("%s()\n", __FUNCTION__);
 
     spec_data->dbg_file = fopen("/tmp/logfile.txt", "a+");
     if (spec_data->dbg_file == NULL)
     { 
         int loc_errno = errno;
-        DEBUG("cannot open debug file, errno %d\n", loc_errno);
+        MYDEBUG("cannot open debug file, errno %d\n", loc_errno);
         return loc_errno;
     }
 
@@ -266,7 +266,7 @@ int cli_session_open(cli_csap_specific_data_p spec_data)
     spec_data->session_pid = exp_pid;
     
     fprintf(spec_data->dbg_file, "ExpectPID=%d, fd=%d\n", exp_pid, spec_data->io);
-    DEBUG("ExpectPID=%d, fd=%d\n", exp_pid, spec_data->io);
+    MYDEBUG("ExpectPID=%d, fd=%d\n", exp_pid, spec_data->io);
     fflush(spec_data->dbg_file);
 
     exp_timeout = spec_data->read_timeout;
@@ -283,7 +283,7 @@ int cli_session_open(cli_csap_specific_data_p spec_data)
  */ 
 int cli_session_close(cli_csap_specific_data_p spec_data)
 {
-    DEBUG("%s()\n", __FUNCTION__);
+    MYDEBUG("%s()\n", __FUNCTION__);
     fflush(stdout);
     fprintf(spec_data->dbg_file, "%s()\n", __FUNCTION__);
     fflush(spec_data->dbg_file);
@@ -318,7 +318,7 @@ int cli_session_close(cli_csap_specific_data_p spec_data)
 void
 cli_expect_finalize(cli_csap_specific_data_p spec_data)
 {
-    DEBUG("%s()\n", __FUNCTION__);
+    MYDEBUG("%s()\n", __FUNCTION__);
     fflush(stdout);
 
     /* terminate current CLI session */
@@ -337,11 +337,11 @@ cli_expect_wait_for_prompt(cli_csap_specific_data_p spec_data)
 {
     int res;
 
-    DEBUG("%s()\n", __FUNCTION__);
+    MYDEBUG("%s()\n", __FUNCTION__);
     fflush(stdout);
 
     res = exp_expectv(spec_data->io, spec_data->prompts);
-    DEBUG(" res from expect %d\n", res);
+    MYDEBUG(" res from expect %d\n", res);
     fflush(stdout);
 
     switch (res)
@@ -351,7 +351,7 @@ cli_expect_wait_for_prompt(cli_csap_specific_data_p spec_data)
             if (write(spec_data->io, "\r", 1) != 1)
             {
                 /* something wrong with CLI session */
-                DEBUG("something wrong with CLI session\n");
+                MYDEBUG("something wrong with CLI session\n");
                 cli_expect_finalize(spec_data);
             }
 #endif
@@ -362,48 +362,48 @@ cli_expect_wait_for_prompt(cli_csap_specific_data_p spec_data)
                       strlen(spec_data->user)) != (int) strlen(spec_data->user))
             {
                 /* something wrong with CLI session */
-                DEBUG("something wrong with CLI session\n");
+                MYDEBUG("something wrong with CLI session\n");
     fflush(stdout);
                 cli_expect_finalize(spec_data);
             }
             if (write(spec_data->io, "\r", 1) != 1)
             {
                 /* something wrong with CLI session */
-                DEBUG("something wrong with CLI session\n");
+                MYDEBUG("something wrong with CLI session\n");
     fflush(stdout);
                 cli_expect_finalize(spec_data);
             }
             break;
 
         case CLI_PASSWORD_PROMPT:
-            DEBUG("Write password\n");
+            MYDEBUG("Write password\n");
             if (write(spec_data->io, spec_data->password,
                       strlen(spec_data->password)) !=
                 (int) strlen(spec_data->password))
             {
                 /* something wrong with CLI session */
-                DEBUG("something wrong with CLI session\n");
+                MYDEBUG("something wrong with CLI session\n");
                 cli_expect_finalize(spec_data);
             }
-            DEBUG("Write \\r\n");
+            MYDEBUG("Write \\r\n");
     fflush(stdout);
             if (write(spec_data->io, "\r", 1) != 1)
             {
                 /* something wrong with CLI session */
-                DEBUG("something wrong with CLI session\n");
+                MYDEBUG("something wrong with CLI session\n");
                 cli_expect_finalize(spec_data);
             }
-            DEBUG("Password-prompt processed\n");
+            MYDEBUG("Password-prompt processed\n");
     fflush(stdout);
             break;
 
         case EXP_EOF:
-            DEBUG("EOF detected\n");
+            MYDEBUG("EOF detected\n");
             cli_expect_finalize(spec_data);
             break;
         
         case EXP_TIMEOUT:
-            DEBUG("Expect timeout\n");
+            MYDEBUG("Expect timeout\n");
             break;
 
         default:
@@ -422,25 +422,25 @@ cli_expect_main(cli_csap_specific_data_p spec_data)
     char *pdata = &data;
     fd_set read_set;
 
-    DEBUG("%s()\n", __FUNCTION__);
+    MYDEBUG("%s()\n", __FUNCTION__);
 
     if ((rc = cli_session_open(spec_data)) != 0)
     {
-        DEBUG("cli_session_open() returns error %d\n", rc);
+        MYDEBUG("cli_session_open() returns error %d\n", rc);
         fflush(stdout);
         cli_expect_finalize(spec_data);
     }
 
-    DEBUG("cli_session_open() returns successful\n");
+    MYDEBUG("cli_session_open() returns successful\n");
     fflush(stdout);
     
     /* Tell the CLI CSAP layer that expect session is ready */
-    DEBUG("Tell the CLI CSAP layer that expect session is ready\n");
+    MYDEBUG("Tell the CLI CSAP layer that expect session is ready\n");
     fflush(stdout);
     data = '\0';
     if (write(spec_data->sync_c2p[1], &data, 1) != 1)
     {
-        DEBUG("write() failed on sync_c2p pipe\n");
+        MYDEBUG("write() failed on sync_c2p pipe\n");
         cli_expect_finalize(spec_data);
     } 
 
@@ -450,14 +450,14 @@ cli_expect_main(cli_csap_specific_data_p spec_data)
         FD_SET(spec_data->sync_p2c[0], &read_set);
 
         /* wait indefinitely */
-        DEBUG("wait indefinitely\n");
+        MYDEBUG("wait indefinitely\n");
         fflush(stdout);
         rc = select(spec_data->sync_p2c[0] + 1, &read_set,
                     NULL, NULL, NULL);
         if (rc == 0)
         {
             /* an error occured on sync pipe or a signal has been delivered */
-            DEBUG("an error occured on sync pipe or a signal has been delivered\n");
+            MYDEBUG("an error occured on sync pipe or a signal has been delivered\n");
             fflush(stdout);
             cli_expect_finalize(spec_data);
         }
@@ -467,46 +467,46 @@ cli_expect_main(cli_csap_specific_data_p spec_data)
             if (rc == EXP_EOF)
             {
                 /* something wrong with CLI session */
-                DEBUG("cli_expect_wait_for_prompt() returned EXP_EOF\n");
+                MYDEBUG("cli_expect_wait_for_prompt() returned EXP_EOF\n");
                 cli_expect_finalize(spec_data);
             } else if (rc == EXP_FULLBUFFER) {
-                DEBUG("cli_expect_wait_for_prompt() returned EXP_FULLBUFFER\n");
+                MYDEBUG("cli_expect_wait_for_prompt() returned EXP_FULLBUFFER\n");
             }
             
         } while (rc != CLI_COMMAND_PROMPT);
 
-        DEBUG("Transmit message: \'");
+        MYDEBUG("Transmit message: \'");
         
         do {
             if (read(spec_data->sync_p2c[0], &data, 1) != 1)
             {
                 /* an error occured on sync_p2c pipe */
-                DEBUG("an error occured on sync_p2c pipe\n");
+                MYDEBUG("an error occured on sync_p2c pipe\n");
                 cli_expect_finalize(spec_data);
             }
            
-            DEBUG("%c", data);
+            MYDEBUG("%c", data);
             
             if (data != 0)
             {
                 if (write(spec_data->io, &data, 1) != 1)
                 {
                     /* something wrong with CLI session */
-                    DEBUG("something wrong with CLI session\n");
+                    MYDEBUG("something wrong with CLI session\n");
                     cli_expect_finalize(spec_data);
                 }
             }
         } while (data != 0);
 
-        DEBUG("\'\n");
+        MYDEBUG("\'\n");
     fflush(stdout);
 
         /* send '\r' to CLI session to finish the command sequence */
-        DEBUG("send '\\r' to CLI session to finish the command sequence\n");
+        MYDEBUG("send '\\r' to CLI session to finish the command sequence\n");
         if (write(spec_data->io, "\r", 1) != 1)
         {
             /* something wrong with CLI session pipe */
-            DEBUG("something wrong with CLI session pipe\n");
+            MYDEBUG("something wrong with CLI session pipe\n");
             cli_expect_finalize(spec_data);
         }
 
@@ -515,42 +515,42 @@ cli_expect_main(cli_csap_specific_data_p spec_data)
             if (rc < 0)
             {
                 /* something wrong with CLI session */
-                DEBUG("something wrong with CLI session\n");
+                MYDEBUG("something wrong with CLI session\n");
                 cli_expect_finalize(spec_data);
             }
         } while (rc != CLI_COMMAND_PROMPT);
 
         /* transfer CLI session output to the CSAP layer */
-        DEBUG("transfer CLI session output to the CSAP layer\n");
-        DEBUG("Receive CLI session output: \'");
+        MYDEBUG("transfer CLI session output to the CSAP layer\n");
+        MYDEBUG("Receive CLI session output: \'");
         for (pdata = exp_buffer; pdata < exp_match; pdata++)
         {
             if (write(spec_data->sync_c2p[1], pdata, 1) != 1)
             {
                 /* something wrong with sync_c2p pipe */
-                DEBUG("something wrong with sync_c2p pipe\n");
+                MYDEBUG("something wrong with sync_c2p pipe\n");
                 cli_expect_finalize(spec_data);
             }
-            DEBUG("%c", *pdata);
+            MYDEBUG("%c", *pdata);
         }
-        DEBUG("\'\n");
+        MYDEBUG("\'\n");
 
         /* send '\r' to CLI session to generate another prompt */
-        DEBUG("send '\\r' to CLI session to generate another prompt\n");
+        MYDEBUG("send '\\r' to CLI session to generate another prompt\n");
         if (write(spec_data->io, "\r", 1) != 1)
         {
             /* something wrong with CLI session pipe */
-            DEBUG("something wrong with CLI session pipe\n");
+            MYDEBUG("something wrong with CLI session pipe\n");
             cli_expect_finalize(spec_data);
         }
 
         /* finish transfer */
-        DEBUG("finish transfer\n");
+        MYDEBUG("finish transfer\n");
         data = '\0';
         if (write(spec_data->sync_c2p[1], &data, 1) != 1)
         {
             /* something wrong with sync_c2p pipe */
-            DEBUG("something wrong with sync_c2p pipe\n");
+            MYDEBUG("something wrong with sync_c2p pipe\n");
             cli_expect_finalize(spec_data);
         }
     }
@@ -681,7 +681,7 @@ cli_write_cb (csap_p csap_descr, char *buf, int buf_len)
     spec_data = (cli_csap_specific_data_p) csap_descr->layer_data[layer]; 
 
 #ifdef TALOGDEBUG
-    DEBUG("Writing data to CLI session: %d", spec_data->io);
+    MYDEBUG("Writing data to CLI session: %d", spec_data->io);
 #endif        
 
     if(spec_data->io < 0)
@@ -755,7 +755,7 @@ cli_write_read_cb (csap_p csap_descr, int timeout,
     /* XXX: timeout should be used */
     UNUSED(timeout);
 
-    DEBUG("In function %s(%d)\n", __FUNCTION__, csap_descr->id);
+    MYDEBUG("In function %s(%d)\n", __FUNCTION__, csap_descr->id);
     fflush(stdout);
     
     if (csap_descr == NULL)
@@ -773,22 +773,22 @@ cli_write_read_cb (csap_p csap_descr, int timeout,
         pid = waitpid(spec_data->expect_pid, &status, WNOHANG);
         if (pid < 0)
         {
-            DEBUG("waitpid(%d) error\n", spec_data->expect_pid);
+            MYDEBUG("waitpid(%d) error\n", spec_data->expect_pid);
         } else
         if (pid == 0)
         {
-            DEBUG("the child pid=%d is still alive\n", spec_data->expect_pid);
+            MYDEBUG("the child pid=%d is still alive\n", spec_data->expect_pid);
         } else {
-            DEBUG("the child pid=%d is finished\n", spec_data->expect_pid);
+            MYDEBUG("the child pid=%d is finished\n", spec_data->expect_pid);
         }
     }
 
-    DEBUG("Writing %s (%d) bytes to CLI session %d\n",
+    MYDEBUG("Writing %s (%d) bytes to CLI session %d\n",
            w_buf, w_buf_len, spec_data->sync_p2c[1]);
 
     if(spec_data->io < 0)
     {
-        DEBUG("Not session opened\n");
+        MYDEBUG("Not session opened\n");
         return -1;
     }
 
@@ -800,20 +800,20 @@ cli_write_read_cb (csap_p csap_descr, int timeout,
         pid = waitpid(spec_data->expect_pid, &status, WNOHANG);
         if (pid < 0)
         {
-            DEBUG("waitpid(%d) error\n", spec_data->expect_pid);
+            MYDEBUG("waitpid(%d) error\n", spec_data->expect_pid);
         } else
         if (pid == 0)
         {
-            DEBUG("the child pid=%d is still alive\n", spec_data->expect_pid);
+            MYDEBUG("the child pid=%d is still alive\n", spec_data->expect_pid);
         } else {
-            DEBUG("the child pid=%d is finished\n", spec_data->expect_pid);
+            MYDEBUG("the child pid=%d is finished\n", spec_data->expect_pid);
         }
     }
 
     if (bytes_written != w_buf_len)
     {
         /* something wrong with sync_p2c pipe */
-        DEBUG("something wrong with sync_p2c pipe, %d bytes written\n", bytes_written);
+        MYDEBUG("something wrong with sync_p2c pipe, %d bytes written\n", bytes_written);
         cli_single_destroy_cb(csap_descr->id, layer);
         return -1;
     }
@@ -822,7 +822,7 @@ cli_write_read_cb (csap_p csap_descr, int timeout,
     FD_SET(spec_data->sync_c2p[0], &read_set);
     
     /* wait forever */
-    DEBUG("wait for data from CLI session\n");
+    MYDEBUG("wait for data from CLI session\n");
     fflush(stdout);
     do {
         rc = select(spec_data->sync_c2p[0] + 1, &read_set, NULL, NULL, NULL);
@@ -834,7 +834,7 @@ cli_write_read_cb (csap_p csap_descr, int timeout,
         cli_single_destroy_cb(csap_descr->id, layer);
         return -1;
     }
-    DEBUG ("%s, select return %d\n", __FUNCTION__, rc);
+    MYDEBUG ("%s, select return %d\n", __FUNCTION__, rc);
     fflush(stdout);
 
     do {
@@ -855,7 +855,7 @@ cli_write_read_cb (csap_p csap_descr, int timeout,
     if (bytes_read < r_buf_len)
         r_buf[bytes_read] = '\0';
 
-    DEBUG ("%s, read data, return %d\n", __FUNCTION__, bytes_read);
+    MYDEBUG ("%s, read data, return %d\n", __FUNCTION__, bytes_read);
     fflush(stdout);
     
     return bytes_read;
@@ -887,7 +887,7 @@ cli_single_init_cb (int csap_id, const asn_value * csap_nds, int layer)
     asn_value_p                 cli_csap_spec; /**< ASN value with csap init
                                                     parameters */
     
-    DEBUG("%s()\n", __FUNCTION__); fflush(stdout);
+    MYDEBUG("%s()\n", __FUNCTION__); fflush(stdout);
     VERB("%s() entered\n", __FUNCTION__);
 
     if (csap_nds == NULL)
@@ -1119,7 +1119,7 @@ cli_single_init_cb (int csap_id, const asn_value * csap_nds, int layer)
         goto error;
 
     INFO("prepare to fork()\n");
-    DEBUG("prepare to fork()\n");
+    MYDEBUG("prepare to fork()\n");
     fflush(stdout);
 
     if ((cli_spec_data->expect_pid = fork()) == -1)
@@ -1135,7 +1135,7 @@ cli_single_init_cb (int csap_id, const asn_value * csap_nds, int layer)
         close(cli_spec_data->sync_p2c[1]);
         close(cli_spec_data->sync_c2p[0]);
 
-        DEBUG("child process started, send=%d, recv=%d\n",
+        MYDEBUG("child process started, send=%d, recv=%d\n",
                cli_spec_data->sync_c2p[1], cli_spec_data->sync_p2c[0]);
         fflush(stdout);
 
@@ -1152,7 +1152,7 @@ cli_single_init_cb (int csap_id, const asn_value * csap_nds, int layer)
 
         VERB("parent process continues, child_pid=%d, send=%d, recv=%d\n",
                cli_spec_data->expect_pid, cli_spec_data->sync_p2c[1], cli_spec_data->sync_c2p[0]);
-        DEBUG("parent process continues, child_pid=%d, send=%d, recv=%d\n",
+        MYDEBUG("parent process continues, child_pid=%d, send=%d, recv=%d\n",
                cli_spec_data->expect_pid, cli_spec_data->sync_p2c[1], cli_spec_data->sync_c2p[0]);
         fflush(stdout);
 
@@ -1162,29 +1162,29 @@ cli_single_init_cb (int csap_id, const asn_value * csap_nds, int layer)
         FD_SET(cli_spec_data->sync_c2p[0], &read_set);
 
         /* wait indefinitely */
-        DEBUG("wait indefinitely\n");
+        MYDEBUG("wait indefinitely\n");
         rc = select(cli_spec_data->sync_c2p[0] + 1, &read_set,
                     NULL, NULL, NULL);
         if (rc == 0)
         {
-            DEBUG("select() failed on sync_c2p pipe or a signal has been delivered\n");
+            MYDEBUG("select() failed on sync_c2p pipe or a signal has been delivered\n");
             WARN("select() failed on sync_c2p pipe or a signal has been delivered\n");
             cli_single_destroy_cb(csap_descr->id, layer);
             rc = ETADLOWER;
             goto error;
         }
 
-        DEBUG("read() sync byte from sync_c2p pipe\n");
+        MYDEBUG("read() sync byte from sync_c2p pipe\n");
         if ((rc = read(cli_spec_data->sync_c2p[0], &data, 1)) != 1)
         {
-            DEBUG("read() failed on sync_c2p pipe\n");
+            MYDEBUG("read() failed on sync_c2p pipe\n");
             WARN("read() failed on sync_c2p pipe, return %d\n", rc);
             cli_single_destroy_cb(csap_descr->id, layer);
             rc = ETADLOWER;
             goto error;
         }
         
-        DEBUG("Child is initalised...\n");
+        MYDEBUG("Child is initalised...\n");
     }
     
     return 0;
