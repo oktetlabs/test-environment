@@ -27,42 +27,48 @@
  * @(#) $Id$
  */
 
-#ifdef HAVE_CONFIG_H
+#if HAVE_CONFIG_H
 #include "config.h"
 #endif
 
 #include <stdio.h>
-#include <ctype.h>
-
-#ifdef HAVE_STDLIB_H
+#if HAVE_STDLIB_H
 #include <stdlib.h>
 #endif
-#ifdef HAVE_STRING_H
+#if HAVE_STRING_H
 #include <string.h>
 #endif
-#ifdef HAVE_STRINGS_H
+#if HAVE_STRINGS_H
 #include <strings.h>
 #endif
-#ifdef HAVE_UNISTD_H
+#if HAVE_CTYPE_H
+#include <ctype.h>
+#endif
+#if HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-#ifdef HAVE_SYS_TYPES_H
+#if HAVE_ASSERT_H
+#include <assert.h>
+#endif
+#if HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
-#ifdef HAVE_SYS_SOCKET_H
+#if HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif
-#ifdef  HAVE_ARPA_INET_H
+#if  HAVE_ARPA_INET_H
 #include <arpa/inet.h>
 #endif
-#ifdef HAVE_NETINET_IN_H
+#if HAVE_NETINET_IN_H
 #include <netinet/in.h>
 #endif
-
-#include <assert.h>
+#if HAVE_FCNTL_H
+#include <fcntl.h>
+#endif
 
 #include "te_errno.h"
 #include "comm_agent.h"
+
 
 /** This structure is used to store some context for each connection. */
 struct rcf_comm_connection{
@@ -142,6 +148,14 @@ rcf_comm_agent_init(const char *config_str,
         perror("close(s) error");
         return errno;
     }
+
+#if HAVE_FCNTL_H
+    /* 
+     * Try to set close-on-exec flag, but ignore failures, 
+     * since it's not critical.
+     */
+    (void)fcntl(s1, F_SETFD, FD_CLOEXEC);
+#endif
 
     /* It's time to allocate memory for rcc and fill it */
     *p_rcc = (struct rcf_comm_connection*)calloc(1, sizeof(**p_rcc));

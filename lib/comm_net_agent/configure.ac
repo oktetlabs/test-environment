@@ -28,12 +28,14 @@ AC_CONFIG_HEADERS([config.h])
 
 AC_CHECK_HEADERS([\
 stdlib.h \
-unistd.h \
 ctype.h \
+unistd.h \
+assert.h \
 sys/types.h \
 sys/socket.h \
 arpa/inet.h \
 netinet/in.h \
+fcntl.h \
 comm_agent.h \
 ])
 
