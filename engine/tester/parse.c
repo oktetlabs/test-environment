@@ -40,6 +40,15 @@
 #include <stdlib.h>
 #include <string.h>
 #endif
+#if HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#if HAVE_SYS_STAT_H
+#include <sys/stat.h>
+#endif
+#if HAVE_UNISTD_H
+#include <unistd.h>
+#endif
 #include <strings.h>
 
 #include <libxml/xmlmemory.h>
@@ -59,6 +68,9 @@ enum {
     TESTER_RUN_ITEM_INHERITABLE = 1 << 1,
 };
 
+
+static const test_info * find_test_info(const tests_info *ti,
+                                        const char *name);
 
 static int alloc_and_get_run_item(xmlNodePtr node, tester_cfg *cfg,
                                   unsigned int opts,
@@ -705,13 +717,29 @@ get_script(xmlNodePtr node, tester_cfg *cfg, test_script *script,
 
     node = xmlNodeChildren(node);
 
-    /* Get optional 'description' */
+    /* Get optional 'objective' */
     if (node != NULL &&
-        xmlStrcmp(node->name, CONST_CHAR2XML("description")) == 0)
+        xmlStrcmp(node->name, CONST_CHAR2XML("objective")) == 0)
     {
-        script->descr = XML2CHAR_DUP(node->content);
+        /* FIXME */
+        script->objective = XML2CHAR_DUP(node->content);
         node = xmlNodeNext(node);
     }
+    if (script->objective == NULL)
+    {
+        const test_info *ti = find_test_info(cfg->cur_pkg->ti, script->name);
+
+        if (ti != NULL)
+        {
+            script->objective = strdup(ti->objective);
+            if (script->objective == NULL)
+            {
+                ERROR("strdup(%s) failed", ti->objective);
+                return ENOMEM;
+            }
+        }
+    }
+
     /* Get optional set of tested 'requirement's */
     rc = get_requirements(&node, &script->reqs, FALSE, FALSE);
     if (rc != 0)
@@ -1421,11 +1449,11 @@ get_test_package(xmlNodePtr root, tester_cfg *cfg, test_package *pkg)
             ERROR("Too many children in 'description' element");
             return EINVAL;
         }
-        pkg->descr = XML2CHAR_DUP(node->children->content);
+        pkg->objective = XML2CHAR_DUP(node->children->content);
         node = xmlNodeNext(node);
     }
 #ifndef XML_DOC_ASSUME_VALID
-    if (pkg->descr == NULL)
+    if (pkg->objective == NULL)
     {
         ERROR("'description' is mandatory for any Test Package");
         return EINVAL;
@@ -1633,6 +1661,151 @@ get_tester_config(xmlNodePtr root, tester_cfg *cfg, unsigned int flags)
 
 
 /**
+ * Allocate and get information about test.
+ *
+ * @param node      XML node
+ *
+ * @return Status code.
+ */
+static int
+alloc_and_get_test_info(xmlNodePtr node, tests_info *ti)
+{
+    test_info  *p;
+
+    p = calloc(1, sizeof(*p));
+    if (p == NULL)
+    {
+        ERROR("malloc(%u) failed", sizeof(*p));
+        return ENOMEM;
+    }
+    TAILQ_INSERT_TAIL(ti, p, links);
+
+    p->name = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("name")));
+    if (p->name == NULL)
+    {
+        ERROR("Missing name of the test in info");
+        return EINVAL;
+    }
+
+    node = xmlNodeChildren(node);
+
+    if ((node == NULL) ||
+        (node->children == NULL) ||
+        (xmlStrcmp(node->children->name, CONST_CHAR2XML("text")) != 0) ||
+        (node->children->content == NULL))
+    {
+        ERROR("Missing objective of the test '%s'", p->name);
+        return EINVAL;
+    }
+    if (node->children != node->last)
+    {
+        ERROR("Too many children in 'objective' element");
+        return EINVAL;
+    }
+    p->objective = XML2CHAR_DUP(node->children->content);
+    if (p->objective == NULL)
+    {
+        ERROR("Failed to duplicate string");
+        return ENOMEM;
+    }
+
+    return 0;
+}
+
+/**
+ * Get information about tests.
+ *
+ * @param node      XML document root
+ *
+ * @return Status code.
+ */
+static int
+get_tests_info(xmlNodePtr node, tests_info *ti)
+{
+    int rc;
+
+    if (node == NULL)
+    {
+        VERB("Empty configuration file is provided");
+        return 0;  
+    }
+    if (xmlStrcmp(node->name, CONST_CHAR2XML("tests-info")) != 0)
+    {
+        ERROR("Incorrect root node '%s' in the configuration file",
+              node->name);
+        return EINVAL;
+    }
+    if (node->next != NULL)
+    {
+        ERROR("'tests-info' element must be singleton");
+        return EINVAL;
+    }
+
+    node = xmlNodeChildren(node);
+
+    while (node != NULL &&
+           xmlStrcmp(node->name, CONST_CHAR2XML("test")) == 0)
+    {
+        rc = alloc_and_get_test_info(node, ti);
+        if (rc != 0)
+            return rc;
+        node = xmlNodeNext(node);
+    }
+
+    /* No more */
+    if (node != NULL)
+    {
+        ERROR("Unexpected element '%s' in Tests Info file",
+              XML2CHAR(node->name));
+        return EINVAL;
+    }
+
+    return 0;
+}
+
+
+/**
+ * Find information about a test.
+ *
+ * @param ti        List with information about tests
+ * @param name      Name of the test to find
+ */
+static const test_info *
+find_test_info(const tests_info *ti, const char *name)
+{
+    const test_info *p;
+
+    for (p = (ti != NULL) ? ti->tqh_first : NULL;
+         p != NULL;
+         p = p->links.tqe_next)
+    {
+        if (strcmp(p->name, name) == 0)
+            return p;
+    }
+    return NULL;
+}
+
+/**
+ * Free information about tests.
+ *
+ * @param ti        List with information about tests
+ */
+static void
+tests_info_free(tests_info *ti)
+{
+    test_info *p;
+
+    while ((p = ti->tqh_first) != NULL)
+    {
+        TAILQ_REMOVE(ti, p, links);
+        free(p->name);
+        free(p->objective);
+        free(p);
+    }
+}
+
+
+/**
  * Parse and preprocess Test Package description file.
  *
  * @param cfg       Tester configuration context
@@ -1643,13 +1816,18 @@ get_tester_config(xmlNodePtr root, tester_cfg *cfg, unsigned int flags)
 static int
 parse_test_package(tester_cfg *cfg, test_package *pkg)
 {
-    xmlParserCtxtPtr    parser;
-    xmlDocPtr           doc;
-#if HAVE_XMLERROR
-    xmlError           *err;
-#endif
-    test_package       *cur_pkg_save;
+    xmlParserCtxtPtr    parser = NULL;
+    xmlDocPtr           doc = NULL;
+    test_package       *cur_pkg_save = NULL;
     int                 rc;
+
+    char               *ti_path = NULL;
+    struct stat         st_buf;
+    xmlDocPtr           ti_doc = NULL;
+    tests_info          ti;
+
+
+    TAILQ_INIT(&ti);
 
     pkg->path = name_to_path(cfg, pkg->name, TRUE);
     if (pkg->path == NULL)
@@ -1659,31 +1837,72 @@ parse_test_package(tester_cfg *cfg, test_package *pkg)
         return EINVAL;
     }
 
+    cur_pkg_save = cfg->cur_pkg;
+    cfg->cur_pkg = pkg;
+
+    ti_path = name_to_path(cfg, "tests-info.xml", FALSE);
+    if (ti_path == NULL)
+    {
+        ERROR("Failed to make path to Test Package file by name and "
+              "context");
+        rc = EINVAL;
+        goto cleanup;
+    }
+
     parser = xmlNewParserCtxt();
     if (parser == NULL)
     {
         ERROR("xmlNewParserCtxt() failed");
-        return ENOMEM;
+        rc = ENOMEM;
+        goto cleanup;
     }
+
     if ((doc = xmlCtxtReadFile(parser, pkg->path, NULL,
                                XML_PARSE_NOBLANKS |
                                XML_PARSE_XINCLUDE |
                                XML_PARSE_NONET)) == NULL)
     {
 #if HAVE_XMLERROR
-        err = xmlCtxtGetLastError(parser);
+        xmlError   *err = xmlCtxtGetLastError(parser);
+
         ERROR("Error occured during parsing Test Package file:\n"
               "    %s:%d\n    %s", pkg->path, err->line, err->message);
 #else
         ERROR("Error occured during parsing Test Package file:\n"
               "%s", pkg->path);
 #endif
-        xmlFreeParserCtxt(parser);
-        return EINVAL;
+        rc = EINVAL;
+        goto cleanup;
     }
 
-    cur_pkg_save = cfg->cur_pkg;
-    cfg->cur_pkg = pkg;
+    if (stat(ti_path, &st_buf) == 0)
+    {
+        if ((ti_doc = xmlCtxtReadFile(parser, ti_path, NULL,
+                                      XML_PARSE_NOBLANKS |
+                                      XML_PARSE_NONET)) == NULL)
+        {
+#if HAVE_XMLERROR
+            xmlError   *err = xmlCtxtGetLastError(parser);
+
+            ERROR("Error occured during parsing Tests Info file:\n"
+                  "    %s:%d\n    %s", pkg->path, err->line, err->message);
+#else
+            ERROR("Error occured during parsing Tests Info file:\n"
+                  "%s", pkg->path);
+#endif
+            rc = EINVAL;
+            goto cleanup;
+        }
+
+        rc = get_tests_info(xmlDocGetRootElement(ti_doc), &ti);
+        if (rc != 0)
+        {
+            ERROR("Failed to get information about tests");
+            goto cleanup;
+        }
+        pkg->ti = &ti;
+    }
+
     rc = get_test_package(xmlDocGetRootElement(doc), cfg, pkg);
     if (rc != 0)
     {
@@ -1695,10 +1914,15 @@ parse_test_package(tester_cfg *cfg, test_package *pkg)
         INFO("Test Package '%s' from file '%s' preprocessed successfully",
              pkg->name, pkg->path);
     }
-    cfg->cur_pkg = cur_pkg_save;
     
-    xmlFreeParserCtxt(parser);
+cleanup:
+    pkg->ti = NULL;
+    cfg->cur_pkg = cur_pkg_save;
+    free(ti_path);
+    tests_info_free(&ti);
+    xmlFreeDoc(ti_doc);
     xmlFreeDoc(doc);
+    xmlFreeParserCtxt(parser);
     xmlCleanupParser();
 
     return rc;  
@@ -1717,9 +1941,6 @@ tester_parse_config(tester_cfg *cfg, const tester_ctx *ctx)
 {
     xmlParserCtxtPtr    parser;
     xmlDocPtr           doc;
-#if HAVE_XMLERROR
-    xmlError           *err;
-#endif
     int                 rc;
 
     if (cfg->filename == NULL)
@@ -1739,7 +1960,8 @@ tester_parse_config(tester_cfg *cfg, const tester_ctx *ctx)
                                XML_PARSE_NONET)) == NULL)
     {
 #if HAVE_XMLERROR
-        err = xmlCtxtGetLastError(parser);
+        xmlError   *err = xmlCtxtGetLastError(parser);
+
         ERROR("Error occured during parsing configuration file:\n"
               "    %s:%d\n    %s", cfg->filename, err->line, err->message);
 #else

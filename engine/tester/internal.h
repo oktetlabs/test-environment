@@ -157,7 +157,7 @@ typedef struct run_item_attrs {
 /** Test script */
 typedef struct test_script {
     char               *name;
-    char               *descr;
+    char               *objective;
     char               *execute;
     test_requirements   reqs;
 } test_script;
@@ -199,16 +199,30 @@ typedef struct test_session {
 } test_session;
 
 
+/** Information about test script */
+typedef struct test_info {
+    TAILQ_ENTRY(test_info)  links;  /**< List links */
+
+    char   *name;                   /**< Test name */
+    char   *objective;              /**< Objective of the test */
+} test_info;
+
+/** Head of the list with test info */
+typedef TAILQ_HEAD(tests_info, test_info) tests_info;
+
+
 /** Test package */
 typedef struct test_package {
     TAILQ_ENTRY(test_package)   links;  /**< List links */
 
     char               *name;       /**< Name */
     char               *path;       /**< Path to the Test Package file */
-    char               *descr;      /**< Description */
+    char               *objective;  /**< Description */
     persons_info        authors;    /**< List of authors */
     test_requirements   reqs;       /**< List of requirements */
     test_session        session;    /**< Provided session */
+
+    tests_info         *ti;         /**< Information about scripts */
 } test_package;
 
 /** Head of the list of test packages */

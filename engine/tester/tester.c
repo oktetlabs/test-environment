@@ -176,7 +176,7 @@ static void
 test_script_free(test_script *p)
 {
     free(p->name);
-    free(p->descr);
+    free(p->objective);
     free(p->execute);
     test_requirements_free(&p->reqs);
 }
@@ -283,7 +283,7 @@ test_package_free(test_package *p)
 {
     free(p->name);
     free(p->path);
-    free(p->descr);
+    free(p->objective);
     persons_info_free(&p->authors);
     test_requirements_free(&p->reqs);
     test_session_free(&p->session);

@@ -138,8 +138,12 @@ typedef struct test_run {
 
     trc_test_type   type;           /**< Type of the test */
     char           *name;           /**< Test name */
-    char           *objective;      /**< Test objective */
     char           *notes;          /**< Some notes */
+
+    char           *objective;      /**< Test objective */
+    xmlNodePtr      obj_node;       /**< XML node with objective */
+    te_bool         obj_update;     /**< Whether objective of the test
+                                         should be updated */
 
     test_iters      iters;          /**< Iterations of the test */
 } test_run;

@@ -70,7 +70,6 @@ get_text_content(xmlNodePtr node, const char *name, char **content)
 {
     if (node->children == NULL)
     {
-        *content = strdup("");
         return 0;
     }
     if (node->children != node->last)
@@ -369,6 +368,7 @@ alloc_and_get_test(xmlNodePtr node, test_runs *tests)
 
     node = xmlNodeChildren(node);
 
+    p->obj_node = node;
     rc = get_node_with_text_content(&node, "objective", &p->objective);
     if (rc != 0)
     {
@@ -602,6 +602,10 @@ trc_update_tests(test_runs *tests)
                 return rc;
             }
         }
+        if (p->obj_update)
+        {
+            xmlNodeSetContent(p->obj_node, BAD_CAST p->objective);
+        }
         rc = trc_update_iters(&p->iters);
         if (rc != 0)
             return rc;
@@ -647,7 +651,7 @@ trc_dump_db(const char *filename)
     }
     else
     {
-        printf("DB '%s' with expected testing results has been updated",
+        printf("DB with expected testing results has been updated:\n%s\n",
                filename);
     }
 

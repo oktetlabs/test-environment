@@ -415,6 +415,16 @@ get_test_result(xmlNodePtr root, trc_test_type type, test_runs *tests)
         }
         else
         {
+            if ((test->objective == NULL) && (objective != NULL) &&
+                (strlen(objective) > 0))
+            {
+                test->obj_update = TRUE;
+                test->objective = objective;
+            }
+            else
+            {
+                free(objective);
+            }
             iter = trc_db_find_by_args(&test->iters, &args);
         }
 
