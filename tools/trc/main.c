@@ -312,6 +312,14 @@ trc_collect_tests_stats(test_runs *tests, trc_stats *stats)
 }
 
 
+/**
+ * Output statistics in plain format to a file.
+ *
+ * @param f         File opened for writing
+ * @param stats     Statistics to output
+ *
+ * @retval Status code (always 0).
+ */
 static int
 trc_stats_to_txt(FILE *f, const trc_stats *stats)
 {
@@ -328,6 +336,7 @@ trc_stats_to_txt(FILE *f, const trc_stats *stats)
 "  Skipped, as expected                 %4u\n"
 "  Skipped unexpectedly                 %4u\n"
 "\n";
+
     fprintf(f, fmt,
             TRC_STATS_RUN(stats),
             stats->pass_exp, stats->fail_exp,
