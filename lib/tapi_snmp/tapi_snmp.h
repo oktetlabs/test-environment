@@ -169,15 +169,26 @@ typedef struct tapi_snmp_var_access {
 
 /** Definitions of values for SNMP TruthValue type */
 typedef enum tapi_snmp_truth_value {
-    SNMP_TRUE  = 1,
-    SNMP_FALSE = 2,
+    SNMP_TRUE  = 1, /**< SNMP true value (from SNMPv2-TC) */
+    SNMP_FALSE = 2, /**< SNMP false value (from SNMPv2-TC) */
 } tapi_snmp_truth_value;
 
+/** Type of comparision two VarBinds */
 typedef enum {
-    TAPI_SNMP_VB_VMP_OID_ONLY,
-    TAPI_SNMP_VB_VMP_VALUE_ONLY,
-    TAPI_SNMP_VB_VMP_FULL,
+    TAPI_SNMP_VB_VMP_OID_ONLY, /**< Compare only their OIDs */
+    TAPI_SNMP_VB_VMP_VALUE_ONLY, /**< Compare only their values */
+    TAPI_SNMP_VB_VMP_FULL, /**< Compare both their OIDs and values */
 } tapi_snmp_vb_cmp_type;
+
+/** 
+ * Structure that contains generic part of all SNMP table rows -
+ * INDEX part of row.
+ * It could be useful when casting unknown type of table to get at
+ * least the value of the row index.
+ */
+typedef struct tapi_snmp_common_table_row_s {
+    tapi_snmp_oid_t *index_suffix; /**< index_suffix */
+} tapi_snmp_common_table_row_t;
 
 /**
  * Concatenate two object identifiers and put result into first one. 
