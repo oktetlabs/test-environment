@@ -43,6 +43,7 @@
 #include "te_errno.h"
 
 #include "asn_usr.h" 
+#include "ndn.h"
 #include "ndn_dhcp.h"
 
 #include "tad.h"

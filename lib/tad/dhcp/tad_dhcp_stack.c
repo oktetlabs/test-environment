@@ -157,7 +157,7 @@ dhcp_write_cb (csap_p csap_descr, char *buf, int buf_len)
     layer = csap_descr->read_write_layer;
     spec_data = (dhcp_csap_specific_data_t *) csap_descr->layer_data[layer]; 
     dest.sin_family = AF_INET;
-    dest.sin_port = htons(spec_data->mode == DHCPv4_CSAP_mode_server ? 
+    dest.sin_port = htons(spec_data->mode == DHCP4_CSAP_MODE_SERVER ? 
                           DHCP_CLIENT_PORT : DHCP_SERVER_PORT);
     dest.sin_addr.s_addr = INADDR_BROADCAST;
     
@@ -304,7 +304,7 @@ dhcp_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
     }
 
     local.sin_family = AF_INET;
-    local.sin_port = htons(mode == DHCPv4_CSAP_mode_server ? 
+    local.sin_port = htons(mode == DHCP4_CSAP_MODE_SERVER ? 
                            DHCP_SERVER_PORT : DHCP_CLIENT_PORT); 
     local.sin_addr.s_addr = INADDR_ANY;
 
