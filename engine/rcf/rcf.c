@@ -287,7 +287,7 @@ resolve_ta_methods(ta *agent, char *libname)
     void *handle;
     char name[RCF_MAX_NAME];
 
-    sprintf(name, "lib%s", libname);
+    sprintf(name, "lib%s.so", libname);
     if ((handle = dlopen(name, RTLD_LAZY)) == NULL)
     {
         VERB("FATAL ERROR: Cannot load shared library %s "
