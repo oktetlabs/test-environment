@@ -1130,7 +1130,7 @@ run_test_session(tester_ctx *ctx, test_session *session, test_id id,
         {
             if (ctx->flags & TESTER_NOLOGUES)
             {
-                VERB("Prologues are disabled globally");
+                WARN("Prologues are disabled globally");
             }
             else
             {
@@ -1185,7 +1185,7 @@ run_test_session(tester_ctx *ctx, test_session *session, test_id id,
         {
             if (ctx->flags & TESTER_NOLOGUES)
             {
-                VERB("Epilogues are disabled globally");
+                WARN("Epilogues are disabled globally");
             }
             else
             {
