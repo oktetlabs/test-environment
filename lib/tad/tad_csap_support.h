@@ -197,11 +197,21 @@ typedef int (*csap_gen_pattern_cb_t)(int csap_id, int layer,
                                      const asn_value *tmpl_pdu, 
                                      asn_value **pattern_pdu);
 
+
+
+
 struct csap_layer_neighbour_list_t;
 typedef struct csap_layer_neighbour_list_t * csap_layer_neighbour_list_p;
+
+/**
+ * Structure for description of CSAP lower neighbours supported. 
+ * This list specifies lower neighbours may present under 
+ * that ('current') CSAP layer, which has in it's "CSAP type descriptor" 
+ * reference to this list. 
+ */
 typedef struct csap_layer_neighbour_list_t
 {
-    char * nbr_type; /**< symbolic identifier of neighvour. 
+    char *nbr_type; /**< symbolic identifier of neighvour. 
               May have such values: 
               NULL    - this means that layer which neighbours are listed 
                           is single in stack;
@@ -215,7 +225,7 @@ typedef struct csap_layer_neighbour_list_t
    
 } csap_layer_neighbour_list_t;
 
-typedef struct csap_spt_type 
+typedef struct csap_spt_type_t 
 {
     char *proto;     /**< symbolic label of related protocol level */
 
@@ -228,7 +238,7 @@ typedef struct csap_spt_type
     /* link to the list with possible (lower) neighbours, see description of
        this structure for more details. */ 
     csap_layer_neighbour_list_p neighbours;
-} * csap_spt_type_p, csap_spt_type_t;
+} *csap_spt_type_p, csap_spt_type_t;
 
 
 
