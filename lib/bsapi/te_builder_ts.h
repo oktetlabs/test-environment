@@ -35,31 +35,26 @@ extern "C" {
 /**
  * This function is called by Tester subsystem to build dynamically
  * a Test Suite. Test Suite is installed to 
- * ${TE_INSTALL_SUITE}/bin/path or to ${TE_INSTALL}/suites/bin/path if
- * ${TE_INSTALL_SUITE} is empty (--prefix=${TE_INSTALL_SUITE} or
- * --prefix ${TE_INSTALL}/suites is passed to the Test Suite configure script).
+ * ${TE_INSTALL_SUITE}/bin/<suite>.
  *
  * Test Suite may be linked with TE libraries. If ${TE_INSTALL} or ${TE_BUILD}
  * are not empty necessary compiler and linker flags are passed to
  * Test Suite configure in variables TE_CFLAGS and TE_LDFLAGS.
  *
+ * @param suite         Unique suite name.
  * @param sources       Source location of the Test Suite (Builder will look 
  *                      for configure script in this directory. If the path
  *                      is started from "/" it is considered as absolute.
  *                      Otherwise it is considered as relative from ${TE_BASE}.
  *
- * @param path          Path of Test Suite build directory from ${TE_BUILD}. 
- *                      The directory is created by Builder automatically
- *                      (if does not exist) and configure script of the
- *                      Test Suite is called there.
- *
  * @return error code
  *
  * @retval 0            success
- * @retval EINVAL       bad source directory or path are specified
+ * @retval EINVAL       bad source directory or suite name
  * @retval ETESHCMD     system call failed
  */
-extern int builder_build_test_suite(char *sources, char *path);
+extern int builder_build_test_suite(char *suite, char *sources);
+
 
 #ifdef __cplusplus
 }
