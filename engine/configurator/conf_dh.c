@@ -709,7 +709,8 @@ cfg_dh_restore_backup(char *filename)
                 {
                     ERROR("%s(): cfg_db_find() failed: %X",
                           __FUNCTION__, rc);
-                    return rc;
+                    RC_UPDATE(result, rc);
+                    break;
                 }
                
                 cfg_process_msg(&p_msg, FALSE);
