@@ -41,6 +41,13 @@
 #include "rcf_ch_api.h"
 #include "rcf_pch.h"
 
+#define ARP_TABLE_SIZE   400
+#include "windows.h"
+#include "iprtrmib.h"
+#include "w32api/iphlpapi.h"
+
+
+
 #define TE_LGR_USER     "Windows Conf"
 #include "logger_api.h"
 
@@ -78,3 +85,63 @@ void
 rcf_ch_conf_release()
 {
 }
+
+
+
+/*
+void 
+get_arp_table()
+{
+ULONG nSize = ARP_TABLE_SIZE;
+    
+    PMIB_IPNETTABLE pMib = (PMIB_IPNETTABLE)malloc(sizeof(MIB_IPNETTABLE) +
+                            sizeof(MIB_IPNETROW)*nSize);
+
+    DWORD dwRet = GetIpNetTable(pMib,&nSize,TRUE);     
+
+    if (nSize>ARP_TABLE_SIZE) 
+    {
+        printf("[Warning] Insufficient Memory(allocated %d needed %d)\n",
+               ARP_TABLE_SIZE, nSize);
+          
+        nSize = ARP_TABLE_SIZE;
+    } else 
+    {
+        nSize = (unsigned long)pMib->dwNumEntries ;
+    }
+    printf("ARP Table ( %d Entries) \n", nSize);
+    printf("--------------------------------------------------------\n");
+    printf("Internet Address      Physical Address         Type\n");
+    
+    for (int i = 0; i < nSize; i++) 
+    {
+        char ipaddr[20], macaddr[20];
+        sprintf(ipaddr,"%d.%d.%d.%d", (pMib->table[i].dwAddr&0x0000ff), 
+                ((pMib->table[i].dwAddr&0xff00)>>8),
+                ((pMib->table[i].dwAddr&0xff0000)>>16),
+		(pMib->table[i].dwAddr>>24));
+
+        sprintf(macaddr, "%02x-%02x-%02x-%02x-%02x-%02x",
+                pMib->table[i].bPhysAddr[0],pMib->table[i].bPhysAddr[1],
+		pMib->table[i].bPhysAddr[2],pMib->table[i].bPhysAddr[3],
+		pMib->table[i].bPhysAddr[4],pMib->table[i].bPhysAddr[5]);
+
+        printf("%-20s  %-25s",ipaddr,macaddr);
+        if (pMib->table[i].dwType == 3) 
+	    printf("Dynamic\n");
+        else if (pMib->table[i].dwType == 4) 
+	    printf("Static\n");
+    }
+         
+    return 0;
+
+
+
+
+}
+*/
+
+
+
+
+

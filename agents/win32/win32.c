@@ -682,6 +682,8 @@ main(int argc, char **argv)
     int rc, retval = 0;
     
     char buf[16];
+    
+    printf("Hi!\n");
 
     setvbuf(stdout, NULL, _IONBF, 0);
     setvbuf(stderr, NULL, _IONBF, 0);
