@@ -249,6 +249,9 @@ req_get(const test_requirement *r, const test_params *params)
 {
     const test_param *p;
 
+    assert(r != NULL);
+    assert(params != NULL);
+
     if (r->id != NULL)
     {
         return r->id;
@@ -301,6 +304,7 @@ is_req_in_params(const char *req, const test_params *params)
 {
     const test_param   *p;
 
+    assert(params != NULL);
     for (p = params->tqh_first; p != NULL; p = p->links.tqe_next)
     {
         if (is_req_in_set(req, p->reqs, params))
@@ -327,6 +331,7 @@ is_reqs_expr_match(const reqs_expr         *re,
 {
     te_bool result;
 
+    assert(re != NULL);
     switch (re->type)
     {
         case TESTER_REQS_EXPR_VALUE:
@@ -590,20 +595,27 @@ tester_is_run_required(const tester_ctx *ctx, const run_item *test,
             return FALSE;
     }
 
-    result = is_reqs_expr_match(ctx->targets, &ctx->reqs, reqs, params,
-                                &force);
-    if (!force)
-        result = result || (test->type != RUN_ITEM_SCRIPT);
-    if (!result && !quiet)
+    if (ctx->targets != NULL)
     {
-        RING("Skipped because of expression: %s\n"
-             "Collected sticky requirements: %s\n"
-             "Test node requirements: %s\n"
-             "Requirements attached to parameters:%s\n",
-             reqs_expr_to_string(ctx->targets),
-             reqs_list_to_string(&ctx->reqs, params),
-             reqs_list_to_string(reqs, params),
-             params_reqs_list_to_string(params));
+        result = is_reqs_expr_match(ctx->targets, &ctx->reqs, reqs,
+                                    params, &force);
+        if (!force)
+            result = result || (test->type != RUN_ITEM_SCRIPT);
+        if (!result && !quiet)
+        {
+            RING("Skipped because of expression: %s\n"
+                 "Collected sticky requirements: %s\n"
+                 "Test node requirements: %s\n"
+                 "Requirements attached to parameters:%s\n",
+                 reqs_expr_to_string(ctx->targets),
+                 reqs_list_to_string(&ctx->reqs, params),
+                 reqs_list_to_string(reqs, params),
+                 params_reqs_list_to_string(params));
+        }
+    }
+    else
+    {
+        result = TRUE;
     }
 
     return result;
