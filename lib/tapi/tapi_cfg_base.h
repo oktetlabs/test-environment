@@ -68,6 +68,20 @@ extern int tapi_cfg_base_if_get_mac(const char *oid, uint8_t *mac);
  */
 extern int tapi_cfg_base_if_get_mtu(const char *oid, unsigned int *p_mtu);
 
+/**
+ * Add network address (/net_addr:).
+ *
+ * @param oid       TA interface oid, e.g. /agent:A/interface:eth0
+ * @param sa        Address to add
+ * @param cfg_hndl  Configurator handle of the new address
+ *
+ * @return Status code.
+ * @retval EAFNOSUPPORT     Address family is not supported
+ * @retval EEXIST           Address already exist
+ */
+extern int tapi_cfg_base_add_net_addr(const char *oid,
+                                      const struct sockaddr *sa,
+                                      cfg_handle *cfg_hndl);
 
 #ifdef __cplusplus
 } /* extern "C" */

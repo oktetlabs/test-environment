@@ -31,10 +31,23 @@ AM_CONFIG_HEADER(config.h)
 # It's assumed that stdio.h always presents.
 # Check for stdlib.h, stdarg.h, string.h and float.h.
 AC_HEADER_STDC
-AC_CHECK_HEADERS(ctype.h sys/types.h sys/stat.h unistd.h assert.h \
-                 time.h sys/time.h strings.h sys/queue.h sys/socket.h \
-                 arpa/inet.h netinet/in.h net/if.h net/ethernet.h \
-                 string.h strings.h)
+AC_CHECK_HEADERS([\
+string.h \
+strings.h \
+ctype.h \
+sys/types.h \
+sys/stat.h \
+unistd.h \
+assert.h \
+sys/time.h \
+time.h \
+sys/queue.h \
+sys/socket.h \
+arpa/inet.h \
+netinet/in.h \
+net/if.h \
+net/ethernet.h \
+])
 
 AC_C_INLINE
 

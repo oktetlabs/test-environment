@@ -38,14 +38,23 @@
 #include <stdlib.h>
 #include <string.h>
 #endif
-#ifdef HAVE_ASSERT_H
+#if HAVE_ASSERT_H
 #include <assert.h>
 #endif
-#ifdef HAVE_SYS_SOCKET_H
+#if HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#if HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif
-#ifdef HAVE_NET_ETHERNET_H
+#if HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
+#if HAVE_NET_ETHERNET_H
 #include <net/ethernet.h>
+#endif
+#if HAVE_ARPA_INET_H
+#include <arpa/inet.h>
 #endif
 
 #include "te_defs.h"
@@ -150,6 +159,45 @@ tapi_cfg_base_if_get_mtu(const char *oid, unsigned int *p_mtu)
     }
     assert(mtu >= 0);
     *p_mtu = (unsigned int)mtu;
+
+    return rc;
+}
+
+/* See description in tapi_cfg_base.h */
+int
+tapi_cfg_base_add_net_addr(const char *oid, const struct sockaddr *sa,
+                           cfg_handle *cfg_hndl)
+{
+    char    buf[INET6_ADDRSTRLEN];
+    int     rc;
+
+
+    if (sa->sa_family != AF_INET)
+    {
+        ERROR("AF_INET address family is supported only.");
+        return TE_RC(TE_TAPI, EAFNOSUPPORT);
+    }
+
+    rc = cfg_add_instance_fmt(cfg_hndl, CVT_NONE, NULL,
+                              "%s/net_addr:%s", oid,
+                              inet_ntop(sa->sa_family,
+                                        &SIN(sa)->sin_addr,
+                                        buf, sizeof(buf)));
+    if (rc == 0)
+    {
+        RING("Address %s added to %s",
+             inet_ntop(sa->sa_family, &SIN(sa)->sin_addr, buf, sizeof(buf)),
+             oid);
+    }
+    else if (TE_RC_GET_ERROR(rc) == EEXIST)
+    {
+        WARN("%s already has address %s", oid,
+             inet_ntop(sa->sa_family, &SIN(sa)->sin_addr, buf, sizeof(buf)));
+    }
+    else
+    {
+        ERROR("Failed to add address for %s: %X", oid, rc);
+    }
 
     return rc;
 }
