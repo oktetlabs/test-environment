@@ -229,8 +229,6 @@ rcf_pch_vwrite(struct rcf_comm_connection *conn,
         time_t         t;
         struct tm      tm;
         
-        WARN("My variable =");
-        
         gettimeofday(&tv, NULL);
         t = (time_t)(tv.tv_sec);
         localtime_r(&t, &tm);
