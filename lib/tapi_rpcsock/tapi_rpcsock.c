@@ -2836,6 +2836,7 @@ rpc_ioctl(rcf_rpc_server *handle,
         case RPC_FIONBIO:
         case RPC_SIOCSPGRP:
         case RPC_FIOASYNC:
+        case RPC_SIO_FLUSH:
             in.access = IOCTL_WR;
             if (arg != NULL)
             {
@@ -2871,7 +2872,7 @@ rpc_ioctl(rcf_rpc_server *handle,
         case RPC_SIOCSIFNETMASK:
         case RPC_SIOCSIFBRDADDR: 
         case RPC_SIOCSIFDSTADDR: 
-                in.access = IOCTL_WR;
+            in.access = IOCTL_WR;
             if (arg != NULL)
             {
                 in.req.req_val[0].type = IOCTL_IFREQ;

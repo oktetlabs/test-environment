@@ -1097,6 +1097,7 @@ typedef enum rpc_ioctl_code {
                                  interface */
     RPC_SIOCSIFMTU,         /**< Set the value of MTU on a network
                                  interface */
+    RPC_SIO_FLUSH,          /**< Flush send queue */                       
     RPC_SIOUNKNOWN          /**< Invalid ioctl code */
 } rpc_ioctl_code; 
 
@@ -1180,6 +1181,9 @@ ioctl_rpc2h(rpc_ioctl_code code)
 #ifdef SIOCSIFMTU
         RPC2H(SIOCSIFMTU);
 #endif
+#ifdef SIO_FLUSH
+        RPC2H(SIO_FLUSH);
+#endif
         default: return IOCTL_MAX;
     }
 }
@@ -1190,75 +1194,30 @@ ioctl_rpc2str(rpc_ioctl_code code)
 {
     switch (code)
     {
-#ifdef SIOCGSTAMP
         RPC2STR(SIOCGSTAMP);
-#endif
-#ifdef FIOASYNC
         RPC2STR(FIOASYNC);
-#endif
-#ifdef FIONBIO
         RPC2STR(FIONBIO);
-#endif
-#ifdef FIONREAD
         RPC2STR(FIONREAD);
-#endif
-#ifdef SIOCATMARK
         RPC2STR(SIOCATMARK);
-#endif
-#ifdef SIOCINQ
         RPC2STR(SIOCINQ);
-#endif
-#ifdef SIOCSPGRP
         RPC2STR(SIOCSPGRP);
-#endif
-#ifdef SIOCGPGRP
         RPC2STR(SIOCGPGRP);
-#endif
-#ifdef SIOCGIFCONF
         RPC2STR(SIOCGIFCONF);
-#endif
-#ifdef SIOCGIFFLAGS
         RPC2STR(SIOCGIFFLAGS);
-#endif
-#ifdef SIOCSIFFLAGS
         RPC2STR(SIOCSIFFLAGS);
-#endif
-#ifdef SIOCGIFADDR
         RPC2STR(SIOCGIFADDR);
-#endif
-#ifdef SIOCSIFADDR
         RPC2STR(SIOCSIFADDR);
-#endif
-#ifdef SIOCGIFNETMASK
         RPC2STR(SIOCGIFNETMASK);
-#endif
-#ifdef SIOCSIFNETMASK
         RPC2STR(SIOCSIFNETMASK);
-#endif
-#ifdef SIOCGIFBRDADDR
         RPC2STR(SIOCGIFBRDADDR);
-#endif
-#ifdef SIOCSIFBRDADDR
         RPC2STR(SIOCSIFBRDADDR);
-#endif
-#ifdef SIOCGIFDSTADDR
         RPC2STR(SIOCGIFDSTADDR);
-#endif
-#ifdef SIOCSIFDSTADDR
         RPC2STR(SIOCSIFDSTADDR);
-#endif
-#ifdef SIOCGIFHWADDR
         RPC2STR(SIOCGIFHWADDR);
-#endif
-#ifdef SIOCGIFMTU
         RPC2STR(SIOCGIFMTU);
-#endif
-#ifdef SIOCSIFMTU
         RPC2STR(SIOCSIFMTU);
-#endif
-#ifdef SIOUNKNOWN
+        RPC2STR(SIO_FLUSH);
         RPC2STR(SIOUNKNOWN);
-#endif
         default: return "<IOCTL_FATAL_ERROR>";
     }
 }
