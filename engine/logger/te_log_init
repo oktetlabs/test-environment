@@ -1,9 +1,10 @@
 #!/bin/sh
 
-# Test Environment
-# Logger subsystem
+# Test Environment: Logger subsystem
+#
 # Script takes no arguments, creates and initializes temporary raw log file.
 # This script has to be called before Logging functionality will be used.
+#
 #
 # Copyright (C) 2003 Test Environment authors (see file AUTHORS in the 
 # root directory of the distribution).
@@ -23,24 +24,21 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, 
 # MA  02111-1307  USA
 #
+#
 # Author: Igor B. Vasiliev <Igor.Vasiliev@oktetlabs.ru>
 #
 
 if [ -z ${TE_LOG_DIR} ]; then
-    echo ""
-    echo "TE_LOG_DIR environment variable should be tuned"
-    echo ""
-    exit -1
+    echo "TE_LOG_DIR environment variable must be set" >&2
+    exit 1
 fi
 
 TE_LOG_PATH=${TE_LOG_DIR}
 TE_TMP_LOG=${TE_LOG_PATH}/tmp_raw_log
 
 if [ ${#@} -ne 0 ]; then
-    echo ""
     echo "Usage: te_log_init"
-    echo ""
-    exit -1
+    exit 1
 fi
 
 mkdir -p $TE_LOG_PATH
@@ -49,3 +47,5 @@ rm -rf $TE_TMP_LOG
 # File version is set 1
 echo -ne "\1" > $TE_TMP_LOG
 chmod 666 $TE_TMP_LOG
+
+exit 0
