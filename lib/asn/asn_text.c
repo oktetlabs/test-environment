@@ -1109,7 +1109,7 @@ asn_sprint_enum(const asn_value *value, char *buffer, size_t buf_len)
 {
     int          used;
     unsigned int i;
-    const char  *val_label;
+    const char  *val_label = NULL;
 
     if ((value == NULL) || (buffer == NULL) || (buf_len == 0) )
         return 0;
