@@ -90,7 +90,7 @@ Forwarder-Delay-Discrete ::= SEQUENCE OF Discret-Pair;
 
 asn_type ndn_forw_delay_discr_s =
 {
-    "Discret-Pair", {PRIVATE, 102}, SEQUENCE_OF, 
+    "Forwarder-Delay-Discrete", {PRIVATE, 102}, SEQUENCE_OF, 
     0, {&ndn_forw_discr_pair_s}
 };
 
@@ -270,6 +270,8 @@ ndn_forw_delay_to_plain(const asn_value *val, ndn_forw_delay_t *forw_delay)
         int ar_len;
 
         ar_len = asn_get_length(val, "#discr"); 
+
+        forw_delay->type = FORW_DELAY_RAND_DISCR;
 
         if (ar_len > DELAY_DISCR_MAX)
             ar_len = DELAY_DISCR_MAX;
@@ -547,10 +549,18 @@ ndn_forw_action_plain_to_asn(ndn_forw_action_plain *forw_action,
                 {
                     int i;
                     int ar_len; 
+                    asn_value *delay_discr;
+
+                    rc = asn_parse_value_text("discr:{}", ndn_forw_delay,
+                                              &delay_discr, &ar_len);
+                    RING("parse delay discr rc %X, syms %d", rc, ar_len);
+                    if (rc != 0)
+                        break;
+
 
                     ar_len = forw_action->delay.n_pairs;
 
-                    for (i = 0; i < ar_len; i++)
+                    for (i = 0; i < ar_len && rc == 0; i++)
                     { 
                         asn_value *pair_val = 
                             asn_init_value(ndn_forw_discr_pair);
@@ -571,9 +581,19 @@ ndn_forw_action_plain_to_asn(ndn_forw_action_plain *forw_action,
                         if (rc != 0)
                             break;
 
-                        rc = asn_insert_indexed(val, pair_val, i, 
-                                                "delay.#discr");
+                        rc = asn_insert_indexed(delay_discr, 
+                                                pair_val, i, "#discr");
+                        RING("%s: insert discr.pair N %d to delay, rc: %X",
+                             __FUNCTION__, i, rc);
+                        asn_free_value(pair_val);
                     }
+                    if (rc != 0)
+                        break;
+                    rc = asn_write_component_value(val, delay_discr,
+                                                   "delay"); 
+                    RING("%s: write delay_discr to ftask action, rc: %X",
+                         __FUNCTION__, rc);
+                    asn_free_value(delay_discr);
                 }
                 break;
             default:
@@ -587,7 +607,7 @@ ndn_forw_action_plain_to_asn(ndn_forw_action_plain *forw_action,
         
     } while (0);
 
-    if (rc)
+    if (rc!= 0)
     {
         ERROR("%s failed %X", __FUNCTION__, rc);
         asn_free_value(val);
