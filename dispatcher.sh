@@ -94,7 +94,10 @@ exit_with_log()
     exit 1
 }
 
+
 # Parse options
+
+EXT_OPTS_PROCESSED=
 
 QUIET=
 
@@ -160,57 +163,79 @@ LOG_ONLINE=
 # RedHat does not allow to write usual users in /var/lock directory
 LOCK_DIR=/tmp/te_lock
 
-while test -n "$1" ; do
-    case $1 in 
-        --help ) usage ; exit 0 ;;
+#
+# Process Dispatcher options.
+#
+process_opts()
+{
+    while test -n "$1" ; do
+        case $1 in 
+            --help ) usage ; exit 0 ;;
 
-        -q) QUIET=yes ;;
-        --live-log)  LIVE_LOG=yes ; TESTER_OPTS="-q ${TESTER_OPTS}" ;;
+            --opts=* )
+                EXT_OPTS_PROCESSED=yes
+                OPTS="${1#--opts=}" ;
+                if test "${OPTS:0:1}" != "/" ; then 
+                    OPTS="${CONF_DIR}/${OPTS}" ;
+                fi ;
+                if test -f ${OPTS} ; then
+                    process_opts `cat ${OPTS}` ;
+                else
+                    echo "File with options ${OPTS} not found" >&2 ;
+                    exit 1 ;
+                fi
+                ;;
 
-        --vg-tests)  VG_TESTS=yes ;;
-        --vg-rcf)    VG_RCF=yes ;;
-        --vg-cs)     VG_CS=yes ;;
-        --vg-logger) VG_LGR=yes ;;
-        --vg-tester) VG_TESTER=yes ;;
-        --vg-engine) VG_RCF=yes; VG_CS=yes; VG_LGR=yes ; VG_TESTER=yes ;;    
-    
-        --no-builder) BUILDER= ;;
-        --no-tester) TESTER= ;;
-        --no-cs) CONFIGURATOR= ;;
-        --no-rcf) RCF= ;;
-        --no-run) RCF= ; CONFIGURATOR= ; TESTER= ; LOGGER= ;;
+            -q) QUIET=yes ;;
+            --live-log)  LIVE_LOG=yes ; TESTER_OPTS="-q ${TESTER_OPTS}" ;;
+
+            --vg-tests)  VG_TESTS=yes ;;
+            --vg-rcf)    VG_RCF=yes ;;
+            --vg-cs)     VG_CS=yes ;;
+            --vg-logger) VG_LGR=yes ;;
+            --vg-tester) VG_TESTER=yes ;;
+            --vg-engine) VG_RCF=yes; VG_CS=yes; VG_LGR=yes ; VG_TESTER=yes ;;    
         
-        --conf-dir=*) CONF_DIR="${1#--conf-dir=}" ;;
-        
-        --conf-builder=*) CONF_BUILDER="${1#--conf-builder=}" ;;
-        --conf-logger=*) CONF_LOGGER="${1#--conf-logger=}" ;;
-        --conf-tester=*) CONF_TESTER="${1#--conf-tester=}" ;;
-        --conf-cs=*) CONF_CONFIGURATOR="${1#--conf-cs=}" ;;
-        --conf-rcf=*) CONF_RCF=${1#--conf-rcf=} ;;
-        --conf-rgt=*) CONF_RGT=${1#--conf-rgt=} ;;
-        
-        --storage=*) STORAGE="${1#--storage=}" ;;
-        --update-files=*) UPDATE_FILES="${1#--update-files=}" ;;
-        
-        --log-storage=*) LOG_STORAGE="${1#--log-storage=}" ; ;;
-        --log-storage-dir=*) LOG_STORAGE_DIR="${1#--log-storage-dir=}" ;;
-        --log-dir=*) TE_LOG_DIR="${1#--log-dir=}" ;;
-        --log-online) LOG_ONLINE=yes ;;
-        
-        --lock-dir=*) LOCK_DIR="${1#--lock-dir=}" ;;
+            --no-builder) BUILDER= ;;
+            --no-tester) TESTER= ;;
+            --no-cs) CONFIGURATOR= ;;
+            --no-rcf) RCF= ;;
+            --no-run) RCF= ; CONFIGURATOR= ; TESTER= ; LOGGER= ;;
+            
+            --conf-dir=*) CONF_DIR="${1#--conf-dir=}" ;;
+            
+            --conf-builder=*) CONF_BUILDER="${1#--conf-builder=}" ;;
+            --conf-logger=*) CONF_LOGGER="${1#--conf-logger=}" ;;
+            --conf-tester=*) CONF_TESTER="${1#--conf-tester=}" ;;
+            --conf-cs=*) CONF_CONFIGURATOR="${1#--conf-cs=}" ;;
+            --conf-rcf=*) CONF_RCF=${1#--conf-rcf=} ;;
+            --conf-rgt=*) CONF_RGT=${1#--conf-rgt=} ;;
+            
+            --storage=*) STORAGE="${1#--storage=}" ;;
+            --update-files=*) UPDATE_FILES="${1#--update-files=}" ;;
+            
+            --log-storage=*) LOG_STORAGE="${1#--log-storage=}" ; ;;
+            --log-storage-dir=*) LOG_STORAGE_DIR="${1#--log-storage-dir=}" ;;
+            --log-dir=*) TE_LOG_DIR="${1#--log-dir=}" ;;
+            --log-online) LOG_ONLINE=yes ;;
+            
+            --lock-dir=*) LOCK_DIR="${1#--lock-dir=}" ;;
 
-        --no-ts-build) BUILD_TS= ; TESTER_OPTS="${TESTER_OPTS} --nobuild" ;;
+            --no-ts-build) BUILD_TS= ; TESTER_OPTS="${TESTER_OPTS} --nobuild" ;;
 
-        --script-tester) TESTER_EXT=".sh" ;;
+            --script-tester) TESTER_EXT=".sh" ;;
 
-        --tester-*) TESTER_OPTS="${TESTER_OPTS} --${1#--tester-}" ;;
+            --tester-*) TESTER_OPTS="${TESTER_OPTS} --${1#--tester-}" ;;
 
-        *)  echo "Unknown option: $1" >&2;
-            usage ;
-            exit 1 ;;
-    esac
-    shift 1 ;
-done
+            *)  echo "Unknown option: $1" >&2;
+                usage ;
+                exit 1 ;;
+        esac
+        shift 1 ;
+    done
+}
+
+process_opts $@
 
 
 if test -e ${LOCK_DIR}/ds ; then
