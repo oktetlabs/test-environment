@@ -103,8 +103,8 @@ get_text_content(xmlNodePtr node, const char *name, char **content)
 {
     if (node->children == NULL)
     {
-        ERROR("Empty content of the element '%s'", name);
-        return EINVAL;
+        *content = strdup("");
+        return 0;
     }
     if (node->children != node->last)
     {
@@ -258,15 +258,16 @@ alloc_and_get_test_iter(xmlNodePtr node, test_iters *iters)
         ERROR("Expected result of the test iteration is missing");
         return EINVAL;
     }
-    if (strcmp(tmp, "pass") == 0)
+    INFO("Expected result is '%s'", tmp);
+    if (strcmp(tmp, "passed") == 0)
         p->exp_result = TRC_TEST_PASSED;
-    else if (strcmp(tmp, "fail") == 0)
+    else if (strcmp(tmp, "failed") == 0)
         p->exp_result = TRC_TEST_FAILED;
-    else if (strcmp(tmp, "kill") == 0)
+    else if (strcmp(tmp, "killed") == 0)
         p->exp_result = TRC_TEST_KILLED;
     else if (strcmp(tmp, "cored") == 0)
         p->exp_result = TRC_TEST_CORED;
-    else if (strcmp(tmp, "skip") == 0)
+    else if (strcmp(tmp, "skipped") == 0)
         p->exp_result = TRC_TEST_SKIPPED;
     else if (strcmp(tmp, "UNSPEC") == 0)
         p->exp_result = TRC_TEST_UNSPEC;
@@ -297,7 +298,7 @@ alloc_and_get_test_iter(xmlNodePtr node, test_iters *iters)
 
     /* Get notes */
     rc = get_node_with_text_content(&node, "notes", &p->notes);
-    if (rc != 0)
+    if ((rc != 0) && (rc != ENOENT))
     {
         ERROR("Failed to get notes for the test iteration");
         return rc;
@@ -374,6 +375,7 @@ alloc_and_get_test(xmlNodePtr node, test_runs *tests)
         ERROR("Name of the test is missing");
         return EINVAL;
     }
+    INFO("Parsing test '%s'", p->name);
 
 #if 0
     /* 'package' property is optional, by default it is false */
@@ -424,6 +426,11 @@ get_tests(xmlNodePtr *node, test_runs *tests)
     {
         *node = xmlNodeNext(*node);
     }
+    if (*node != NULL)
+    {
+        ERROR("Unexpected element '%s'", (*node)->name);
+        rc = EINVAL;
+    }
 
     return rc;
 }
@@ -471,16 +478,31 @@ trc_parse_db(const char *filename)
 
     node = xmlDocGetRootElement(trc_db_doc);
 
-    rc = get_tests(&node, &trc_db.tests);
-    if (rc != 0)
+    if (node == NULL)
     {
-        ERROR("Preprocessing of DB with expected testing results in "
-              "file '%s' failed", filename);
+        ERROR("Empty XML document of the DB with expected testing "
+              "results");
+        rc = EINVAL;
+    }
+    else if (xmlStrcmp(node->name, CONST_CHAR2XML("trc_db")) != 0)
+    {
+        ERROR("Unexpected root element of the DB XML file");
+        rc = EINVAL;
     }
     else
     {
-        INFO("DB with expected testing results in file '%s' "
-             "parsed successfully", filename);
+        node = xmlNodeChildren(node);
+        rc = get_tests(&node, &trc_db.tests);
+        if (rc != 0)
+        {
+            ERROR("Preprocessing of DB with expected testing results in "
+                  "file '%s' failed", filename);
+        }
+        else
+        {
+            INFO("DB with expected testing results in file '%s' "
+                 "parsed successfully", filename);
+        }
     }
     
     xmlFreeParserCtxt(parser);
@@ -489,9 +511,91 @@ trc_parse_db(const char *filename)
     return rc;  
 }
 
-int
-trc_update_db_doc(test_runs *test)
+static int
+trc_update_tests(test_runs *tests);
+
+static int
+trc_update_iters(test_iters *iters)
 {
+    int         rc;
+    test_iter  *p;
+
+    for (p = iters->head.tqh_first; p != NULL; p = p->links.tqe_next)
+    {
+        if (p->node == NULL)
+        {
+            INFO("Add node for iteration");                 
+            p->tests.node = xmlNewChild(iters->node, NULL,
+                                        BAD_CAST "iter", NULL);
+            if (p->tests.node == NULL)
+            {
+                ERROR("xmlNewChild() failed");
+                return rc;
+            }
+            xmlNewProp(p->tests.node, BAD_CAST "result",
+                       BAD_CAST "UNSPEC");
+            if (xmlNewChild(p->tests.node, NULL,
+                            BAD_CAST "notes",
+                            BAD_CAST (p->notes ? : "")) == NULL)
+            {
+                ERROR("xmlNewChild() failed for 'notes'");
+                return rc;
+            }
+        }
+        rc = trc_update_tests(&p->tests);
+        if (rc != 0)
+            return rc;
+    }
+    return 0;
+}
+
+static const char *
+trc_test_type_to_str(trc_test_type type)
+{
+    switch (type)
+    {
+        case TRC_TEST_SCRIPT:   return "test";
+        case TRC_TEST_PACKAGE:  return "package";
+        case TRC_TEST_SESSION:  return "session";
+        default: return "OOps";
+    }
+}
+
+static int
+trc_update_tests(test_runs *tests)
+{
+    int         rc;
+    test_run   *p;
+
+    for (p = tests->head.tqh_first; p != NULL; p = p->links.tqe_next)
+    {
+        if (p->node == NULL)
+        {
+            INFO("Add node for '%s'", p->name);                 
+            p->iters.node = xmlNewChild(tests->node, NULL,
+                                        BAD_CAST "test",
+                                        NULL);
+            if (p->iters.node == NULL)
+            {
+                ERROR("xmlNewChild() failed for 'test'");
+                return rc;
+            }
+            xmlNewProp(p->iters.node, BAD_CAST "name",
+                       BAD_CAST p->name);
+            xmlNewProp(p->iters.node, BAD_CAST "type",
+                       BAD_CAST trc_test_type_to_str(p->type));
+            if (xmlNewChild(p->iters.node, NULL,
+                            BAD_CAST "objective",
+                            BAD_CAST (p->objective ? : "")) == NULL)
+            {
+                ERROR("xmlNewChild() failed for 'objective'");
+                return rc;
+            }
+        }
+        rc = trc_update_iters(&p->iters);
+        if (rc != 0)
+            return rc;
+    }
     return 0;
 }
 
@@ -519,8 +623,9 @@ trc_dump_db(const char *filename)
             return ENOMEM;
         }
         xmlDocSetRootElement(trc_db_doc, node);
+        trc_db.tests.node = node;
     }
-    if ((rc = trc_update_db_doc(&trc_db.tests)) != 0)
+    if ((rc = trc_update_tests(&trc_db.tests)) != 0)
     {
         ERROR("Failed to update DB XML document");
         return rc;

@@ -392,7 +392,7 @@ stats_to_html(const trc_stats *stats)
 static int tests_to_html(const test_runs *tests, unsigned int level,
                          unsigned int flags);
 
-static const char *
+const char *
 trc_test_result_to_string(trc_test_result result)
 {
     switch (result)

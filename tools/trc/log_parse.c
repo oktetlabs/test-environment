@@ -358,7 +358,7 @@ get_test_result(xmlNodePtr root, trc_test_type type, test_runs *tests)
     test_run           *test;
     test_iter          *iter;
     te_bool             new_test = FALSE;
-    char               *objective;
+    char               *objective = NULL;
     test_args           args;
 
 
