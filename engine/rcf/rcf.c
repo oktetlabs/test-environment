@@ -639,13 +639,15 @@ static int
 startup_tasks(ta *agent)
 {
     ta_initial_task *task;
-    int i;
+    int              i;
+    char            *args;
     
     for (task = agent->initial_tasks; task; task = task->next)
     {
         sprintf(cmd, "SID %d " TE_PROTO_EXECUTE " ", RCF_STARTUP_SID);
         strcat(cmd, task->mode == RCF_START_THREAD ? "thread " : "fork ");
         strcat(cmd, task->entry);
+        args = cmd + strlen(cmd);
         if (task->argc > 0)
             strcat(cmd, " argv ");
         for (i = 0; i < task->argc; i++)
@@ -653,7 +655,12 @@ startup_tasks(ta *agent)
             strcat(cmd, task->argv[i]);
             strcat(cmd, " ");
         }
-        RING("Running startup task %s", cmd);
+        RING("Running startup task(%s) on TA '%s': entry-point='%s' "
+             "args=%s",
+             (task->mode == RCF_START_FUNC) ? "function" :
+             (task->mode == RCF_START_THREAD) ? "thread" : "fork",
+             agent->name, task->entry, args);
+        VERB("Running startup task %s", cmd);
         (agent->transmit)(agent->handle, cmd, strlen(cmd) + 1);
     }
     return 0;
