@@ -1376,12 +1376,13 @@ iterate_test(tester_ctx *ctx, run_item *test,
     unsigned int            run_iters = 0;
     te_bool                 test_skipped = FALSE;
     test_param_iterations   iters;
-    test_param_iteration   *i;
+    test_param_iteration   *iter;
+    unsigned int            i;
     char                   *backup_name = NULL;
     const char             *run_item_name = test->name;
     const char             *test_name = tester_run_item_name(test);
 
-    ENTRY();
+    RING("iterate=%u", test->iterate);
 
     if ((run_item_name != NULL || test_name != NULL) &&
         (ctx->path->paths.tqh_first != NULL))
@@ -1447,14 +1448,14 @@ iterate_test(tester_ctx *ctx, run_item *test,
     /* Configuration file provided empty list of base iterations */
     if (base_iters == NULL)
     {
-        i = test_param_iteration_new();
-        if (i == NULL)
+        iter = test_param_iteration_new();
+        if (iter == NULL)
         {
             if (ctx_cloned)
                 tester_ctx_free(ctx);
             return ENOMEM;
         }
-        TAILQ_INSERT_TAIL(&iters, i, links);
+        TAILQ_INSERT_TAIL(&iters, iter, links);
     }
     else
     {
@@ -1465,15 +1466,15 @@ iterate_test(tester_ctx *ctx, run_item *test,
              base_i != NULL; 
              base_i = base_i->links.tqe_next)
         {
-            i = test_param_iteration_clone(base_i, FALSE);
-            if (i == NULL)
+            iter = test_param_iteration_clone(base_i, FALSE);
+            if (iter == NULL)
             {
                 ERROR("Cloning of the test parameters iteration failed");
                 if (ctx_cloned)
                     tester_ctx_free(ctx);
                 return ENOMEM;
             }
-            TAILQ_INSERT_TAIL(&iters, i, links);
+            TAILQ_INSERT_TAIL(&iters, iter, links);
         }
     }
 
@@ -1511,16 +1512,19 @@ iterate_test(tester_ctx *ctx, run_item *test,
     }
 
     /* Iterate parameters */
-    for (i = iters.tqh_first; i != NULL; i = i->links.tqe_next)
+    for (i = 0, iter = iters.tqh_first;
+         i < test->iterate && iter != NULL;
+         ++i,
+         (i == test->iterate) ? (iter = iter->links.tqe_next, i = 0) : 0)
     {
         test_id     id = tester_get_id();
         te_bool     test_ctx_cloned = FALSE;
         tester_ctx *test_ctx = ctx;
 
-        if (ctx->path->params.tqh_first != NULL &&
+        if ((i == 0) && (ctx->path->params.tqh_first != NULL) &&
             (~(ctx->flags) & TESTER_INLOGUE))
         {
-            rc = tester_run_path_params_match(test_ctx, &(i->params));
+            rc = tester_run_path_params_match(test_ctx, &(iter->params));
             if (rc != 0)
             {
                 if (rc == ENOENT)
@@ -1538,14 +1542,15 @@ iterate_test(tester_ctx *ctx, run_item *test,
             }
         }
 
-        if ((~test_ctx->flags & TESTER_INLOGUE) &&
+        if ((i == 0) && (~test_ctx->flags & TESTER_INLOGUE) &&
             (test_ctx->flags & TESTER_QUIET_SKIP) &&
-            !tester_is_run_required(test_ctx, test, &(i->params), TRUE))
+            !tester_is_run_required(test_ctx, test, &(iter->params), TRUE))
         {
             /* Silently skip without any logs */
             if (test_ctx_cloned)
                 tester_ctx_free(test_ctx);
             test_skipped = TRUE;
+            rc = ENOENT;
             continue;
         }
 
@@ -1554,11 +1559,11 @@ iterate_test(tester_ctx *ctx, run_item *test,
 
         tester_out_start(test->type, tester_run_item_name(test),
                          ctx->id, id, ctx->flags);
-        log_test_start(test, ctx->id, id, &(i->params));
+        log_test_start(test, ctx->id, id, &(iter->params));
 
-        if ((~test_ctx->flags & TESTER_INLOGUE) &&
+        if ((i == 0) && (~test_ctx->flags & TESTER_INLOGUE) &&
             (~test_ctx->flags & TESTER_QUIET_SKIP) &&
-            !tester_is_run_required(test_ctx, test, &(i->params), FALSE))
+            !tester_is_run_required(test_ctx, test, &(iter->params), FALSE))
         {
             test_result = ETESTSKIP;
         }
@@ -1577,7 +1582,7 @@ iterate_test(tester_ctx *ctx, run_item *test,
             }
 
             /* Run test with specified parameters */
-            test_result = run_test(test_ctx, test, id, &(i->params));
+            test_result = run_test(test_ctx, test, id, &(iter->params));
             if (!TEST_RESULT(test_result))
             {
                 ERROR("run_test() failed: %X", rc);

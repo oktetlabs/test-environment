@@ -683,6 +683,13 @@
                 </documentation>
             </annotation>
         </attribute>
+        <attribute name="iterate" type="Number" default="1">
+            <annotation>
+                <documentation>
+                    Iterate this run item specified number of times.
+                </documentation>
+            </annotation>
+        </attribute>
 <!--
         <attribute name="debugging" type="Debugging" default="none">
             <annotation>

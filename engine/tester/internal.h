@@ -266,6 +266,7 @@ struct run_item {
     } u;                            /**< Type specific data */
     test_vars_args      args;               /**< Arguments */
     run_item_attrs      attrs;              /**< Package run attributes */
+    unsigned int        iterate;            /**< Number of iterations */
     unsigned int        loglevel;           /**< Log level to be used
                                                  by the item */
     te_bool             allow_configure;    /**< Allow configuration

@@ -550,21 +550,24 @@ get_bool_prop(xmlNodePtr node, const char *name, te_bool *value)
  *
  * @param node      Node with 'int' property
  * @param name      Name of the property to get
+ * @param is_signed Is signed value expected
  * @param value     Location for value
  *
  * @return Status code.
  * @retval ENOENT   Property does not exists. Value is not modified.
  */
 static int
-get_int_prop(xmlNodePtr node, const char *name, int *value)
+get_int_prop(xmlNodePtr node, const char *name, te_bool is_signed,
+             int *value)
 {
     xmlChar *s = xmlGetProp(node, CONST_CHAR2XML(name));
+    long     v;
     char    *end;
 
     if (s == NULL)
         return ENOENT;
 
-    *value = strtol(XML2CHAR(s), &end, 16);
+    v = strtol(XML2CHAR(s), &end, 10);
     if (XML2CHAR(s) == end)
     {
         ERROR("Invalid value '%s' of the integer property '%s'",
@@ -573,6 +576,13 @@ get_int_prop(xmlNodePtr node, const char *name, int *value)
         return EINVAL;
     }
     xmlFree(s);
+    if (!is_signed && v < 0)
+    {
+        ERROR("Attribute '%s' may have unsigned integer value, "
+              "but signed is specified (%d)", name, v);
+        return EINVAL;
+    }
+    *value = v;
 
     return 0;
 }
@@ -702,7 +712,7 @@ get_run_item_attrs(xmlNodePtr node, run_item_attrs *attrs)
 
     /* 'timeout' is optional */
     timeout = TESTER_TIMEOUT_DEF;
-    rc = get_int_prop(node, "timeout", &timeout);
+    rc = get_int_prop(node, "timeout", FALSE, &timeout);
     if (rc != 0 && rc != ENOENT)
         return rc;
     attrs->timeout.tv_sec = timeout;
@@ -1318,6 +1328,7 @@ alloc_and_get_run_item(xmlNodePtr node, tester_cfg *cfg, unsigned int opts,
         return ENOMEM;
     }
     TAILQ_INIT(&p->args);
+    p->iterate = 1;
 
     /* Just for corrent clean up in the case of failure */
     p->type = RUN_ITEM_NONE;
@@ -1336,9 +1347,14 @@ alloc_and_get_run_item(xmlNodePtr node, tester_cfg *cfg, unsigned int opts,
         p->name = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("name")));
         VERB("Preprocessing 'run' item '%s'", p->name ? : "(noname)");
 
+        /* 'iterate' is optional */
+        rc = get_int_prop(node, "iterate", FALSE, &p->iterate);
+        if (rc != 0 && rc != ENOENT)
+            return rc;
+
         /* 'loglevel' is optional */
         p->loglevel = 0;
-        rc = get_int_prop(node, "loglevel", &p->loglevel);
+        rc = get_int_prop(node, "loglevel", FALSE, &p->loglevel);
         if (rc != 0 && rc != ENOENT)
             return rc;
 
