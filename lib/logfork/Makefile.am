@@ -4,7 +4,7 @@ AUTOMAKE_OPTIONS = foreign
 AM_CFLAGS=@TE_CFLAGS@ -I$(DESTDIR)/$(prefix)/include
 AM_LDFLAGS=@TE_LDFLAGS@ 
 
-include_HEADERS=logfork.h 
+include_HEADERS=logfork.h ta_logfork.h
 
 lib_LIBRARIES=liblogfork.a
 

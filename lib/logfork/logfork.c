@@ -80,23 +80,27 @@
 #include "logger_ta.h"
 #include "logfork.h"
 
-
-/** 
- * Structure to store notification about
- * child processes 
- */
-typedef struct udp_msg{
-    int        is_notif;                  /**< Is message just notification */
-    
-    pid_t      pid;                       /**< Child process pid */
-    int        log_level;                 /**< Log level */
-    
-    union  msg_str{
-        char    name[LOGFORK_MAXLEN];     /**< Child process name */    
-        char    log_msg[LOGFORK_MAXLEN];  /**< Message */
-    } msg_str;
+/** Common information in the message */
+typedef struct udp_msg {
+    te_bool  is_notif;
+    pid_t    pid;
+    union {
+        struct {
+            char name[LOGFORK_MAXUSER]; /** Logfork user name */
+        } notify;
+        struct {
+            int  log_level;                /**< Log level */
+            char lgr_user[32];             /**< Log user  */
+            char log_msg[LOGFORK_MAXLEN];  /**< Message   */
+        } log;
+    } msg;
 } udp_msg;
 
+/** Macros for fast access to structure fields */
+#define __log_level  msg.log.log_level
+#define __lgr_user   msg.log.lgr_user
+#define __log_msg    msg.log.log_msg 
+#define __name       msg.notify.name
 
 /** Structure to store process info */
 typedef struct list {
@@ -106,8 +110,6 @@ typedef struct list {
     pid_t  pid;
 } list;
 
-
-
 static pthread_mutex_t lock_sockd = PTHREAD_MUTEX_INITIALIZER;
 
 /** Address to which notification listerner is bound */
@@ -116,6 +118,27 @@ static struct sockaddr_in logfork_saddr;
 /** Socket used by all client to register */
 static int clt_sockd = -1;
 
+/** 
+ * Get client socket used for logging. 
+ *
+ * @return socket file descriptor
+ */
+int 
+logfork_get_sock(void)
+{
+    return clt_sockd;
+}
+
+/** 
+ * Set client socket used for logging. 
+ *
+ * @param sock  socket file descriptor
+ */
+void 
+logfork_set_sock(int sock)
+{
+    clt_sockd = sock;
+}
 
 /** 
  * Find process name by its pid in the internal list of
@@ -232,24 +255,24 @@ logfork_entry(void)
         
     size_t  addrlen = sizeof(struct sockaddr_in);
     
-    udp_msg message;
-    size_t  msg_len = sizeof(message);
-    
+    udp_msg msg;
+    size_t  msg_len = sizeof(msg);
+
     sockd = socket(PF_INET, SOCK_DGRAM, 0);
     if (sockd < 0)
     {
-        fprintf(stderr, "log_fork: Cannot create socket.\n");
+        fprintf(stderr, "logfork_entry(): cannot create socket\n");
         return;
     }
 
     memset(&servaddr, 0, sizeof(servaddr));
     servaddr.sin_family = AF_INET;
-    servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
+    servaddr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
     servaddr.sin_port = htons(0);
     
     if (bind(sockd, (struct sockaddr *)&servaddr, sizeof(servaddr)) < 0)
     {
-        ERROR("bind() failed; errno %d", errno);
+        ERROR("logfork_entry(): bind() failed; errno %d", errno);
         logfork_cleanup(&proc_list, sockd);
         return;
     }
@@ -258,49 +281,49 @@ logfork_entry(void)
     
     if (getsockname(sockd, (struct sockaddr *)&logfork_saddr, &addrlen) < 0)
     {
-        ERROR("getsockname(); errno %d", errno);
+        ERROR("logfork_entry(): getsockname() failed ; errno %d", errno);
         logfork_cleanup(&proc_list, sockd);
         return;
     }
+    fprintf(stderr, "Address %s\n", inet_ntoa(logfork_saddr.sin_addr));
 
     while (1)
     {         
         int len;
         
-        if ((len = recv(sockd, (udp_msg *)&message, msg_len, 0)) <= 0)
+        if ((len = recv(sockd, &msg, msg_len, 0)) <= 0)
         {
-            WARN("recv() failed, len=%d; errno %d", len, errno);
+            WARN("logfork_entry(): recv() failed, len=%d; errno %d", 
+                 len, errno);
             continue;
         }
         
-        if (len != sizeof(message))
+        if (len != sizeof(msg))
         {
-            ERROR("Log message length is %d instead %d", 
-                  len, sizeof(message));
+            ERROR("logfork_entry(): log message length is %d instead %d", 
+                  len, sizeof(msg));
             continue;
         }
         
         /* If udp message */
-        if (message.is_notif == 0)
+        if (!msg.is_notif)
         {   
-                        
-            if (logfork_find_name_by_pid(&proc_list, &name, message.pid) == 0)
+            if (logfork_find_name_by_pid(&proc_list, &name, msg.pid) == 0)
             {
-                sprintf(name_pid, "%s.%u", name, message.pid);
-                log_message(message.log_level, TE_LGR_USER, name_pid,
-                            "%s", message.msg_str.log_msg);
+                sprintf(name_pid, "%s.%u", name, msg.pid);
+                log_message(msg.__log_level, TE_LGR_ENTITY, 
+                            strdup(msg.__lgr_user), 
+                            "%s: %s", name_pid, msg.__log_msg);
             }
         }
         else 
         {
-            if (logfork_find_name_by_pid(&proc_list, &name, message.pid) 
-                == 0)
+            if (logfork_find_name_by_pid(&proc_list, &name, msg.pid) == 0)
                 continue;
 
-            if (logfork_list_add(&proc_list, message.msg_str.name, 
-                                 message.pid) != 0)
+            if (logfork_list_add(&proc_list, msg.__name, msg.pid) != 0)
             {
-                ERROR("Out of Memory");
+                ERROR("logfork_entry(): out of Memory");
                 break;
             }
         }
@@ -316,13 +339,12 @@ logfork_entry(void)
 int
 logfork_register_user(const char *name)
 {
+    udp_msg msg;
     
-    udp_msg notification;
-    
-    memset(&notification, 0, sizeof(notification));
-    strcpy((notification.msg_str.name), name);
-    notification.pid = getpid();
-    notification.is_notif = 1;
+    memset(&msg, 0, sizeof(msg));
+    strncpy(msg.__name, name, sizeof(msg.__name) - 1);
+    msg.pid = getpid();
+    msg.is_notif = TRUE;
     
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_lock(&lock_sockd);
@@ -333,18 +355,26 @@ logfork_register_user(const char *name)
         clt_sockd = socket(PF_INET, SOCK_DGRAM, 0);
         if (clt_sockd < 0)
         {
-            fprintf(stderr, "logfork_register_user - socket() failed.\n");
+            fprintf(stderr, "logfork_register_user() - socket() failed\n");
+#ifdef HAVE_PTHREAD_H
+            pthread_mutex_unlock(&lock_sockd);
+#endif
+            return -1;
+        }
+        if (connect(clt_sockd, (struct sockaddr *)&logfork_saddr, 
+                    sizeof(logfork_saddr)) < 0)
+        {
+            fprintf(stderr, "logfork_register_user() - connect() failed\n");
+            close(clt_sockd);
+            clt_sockd = -1;
 #ifdef HAVE_PTHREAD_H
             pthread_mutex_unlock(&lock_sockd);
 #endif
             return -1;
         }
     }
-        
     
-    if (sendto(clt_sockd, (udp_msg *)&notification, sizeof(notification),
-               0, (struct sockaddr *)&logfork_saddr, sizeof(logfork_saddr)) 
-        < 0)
+    if (send(clt_sockd, (udp_msg *)&msg, sizeof(msg), 0) != sizeof(msg))
     {
         fprintf(stderr, "logfork_register_user() - cannot send "
                 "notification: %s\n", strerror(errno));
@@ -368,35 +398,31 @@ logfork_register_user(const char *name)
 void
 logfork_log_message(int level, char *lgruser, const char *fmt, ...)
 {
-    udp_msg log_message;
+    udp_msg msg;
     va_list ap;
 
-    memset(&log_message, 0, sizeof(log_message));
-    UNUSED(lgruser);
+    memset(&msg, 0, sizeof(msg));
     va_start(ap, fmt);
-    vsnprintf(log_message.msg_str.log_msg, 
-              sizeof(log_message.msg_str.log_msg), fmt, ap);
+    vsnprintf(msg.__log_msg, sizeof(msg.__log_msg), fmt, ap);
     va_end(ap);
     
     if (clt_sockd == -1)
     {
-        fprintf(stderr, "%s(): %s\n", __FUNCTION__,
-                log_message.msg_str.log_msg);
+        fprintf(stderr, "%s(): %s %s\n", __FUNCTION__, lgruser,
+                msg.__log_msg);
         return;
     }
 
-    log_message.pid = getpid();
-    log_message.log_level = level;
-    log_message.is_notif = 0;
+    msg.pid = getpid();
+    msg.is_notif = FALSE;
+    strncpy(msg.__lgr_user, lgruser, sizeof(msg.__lgr_user) - 1);
+    msg.__log_level = level;
 
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_lock(&lock_sockd);
 #endif
     
-    if (sendto(clt_sockd,
-               (udp_msg *)&log_message, sizeof(log_message), 0,
-               (struct sockaddr *)&logfork_saddr,
-               sizeof(logfork_saddr)) != sizeof(log_message))
+    if (send(clt_sockd, (udp_msg *)&msg, sizeof(msg), 0) != sizeof(msg))
     {       
         fprintf(stderr, "%s(): sendto() failed: %s\n",
                 __FUNCTION__, strerror(errno));

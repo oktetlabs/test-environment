@@ -30,64 +30,26 @@
  * $Id$
  */ 
 
-#ifndef __TE_LOGFORK_H__
-#define __TE_LOGFORK_H__
-
+#ifndef __TE_TA_LOGFORK_H__
+#define __TE_TA_LOGFORK_H__
     
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 #include "logger_ta.h"
+#include "logfork.h"
 
-/** Maximum length of the logging message */
-#define LOGFORK_MAXLEN   256
-
-/** Maximum length of the lgr user or logfork user */
-#define LOGFORK_MAXUSER  32
-
-/**
- * Register process name and pid, so it would be 
- * possible to know from which process or thread message
- * has been sent.
- *
- * @param name  process or thread name
- *
- * @retval  0 success
- * @retval -1 failure
- */
-extern int logfork_register_user(const char *name);
-
-/** 
- * Entry point for log gathering.
- */
-extern void logfork_entry(void);
-
-/** 
- * Function for logging to be used by forked processes
- *
- * @param level   logging level
- * @param lgruser logging user
- * @param fmt     format string
- */
-extern void logfork_log_message(int level, char *lgruser, const char *fmt, ...);
-
-/** 
- * Get client socket used for logging. 
- *
- * @return socket file descriptor
- */
-extern int logfork_get_sock(void);
-
-/** 
- * Set client socket used for logging. 
- *
- * @param sock  socket file descriptor
- */
-extern void logfork_set_sock(int sock);
+#undef LGR_MESSAGE
+#define LGR_MESSAGE(_lvl, _lgruser, _fs...)  \
+    do {                                               \
+        if (TE_LOG_LEVEL & (_lvl))                     \
+        {                                              \
+            logfork_log_message(_lvl, _lgruser, _fs);  \
+        }                                              \
+    } while (0)
 
 #ifdef __cplusplus
 }  /* extern "C" */
 #endif  
-#endif  /* __TE_LOGFORK_H__*/
-
+#endif  /* __TE_TA_LOGFORK_H__*/
