@@ -114,7 +114,7 @@ static const char *dhcp_server_conf = NULL;
 static const char *dhcp_server_leases = NULL;
 
 /** DHCP server interfaces */
-static const char *dhcp_server_ifs = NULL;
+static char *dhcp_server_ifs = NULL;
 
 
 #ifdef TA_LINUX_ISC_DHCPS_NATIVE_CFG
@@ -459,6 +459,9 @@ ds_dhcpserver_ifs_set(unsigned int gid, const char *oid, const char *value)
 {
     char *copy;
 
+    UNUSED(gid);
+    UNUSED(oid);
+
     /* TODO Check value */
 
     copy = strdup(value);
@@ -504,7 +507,6 @@ ds_##_gh##_add(unsigned int gid, const char *oid, const char *value,    \
                const char *dhcpserver, const char *name)                \
 {                                                                       \
     _gh *gh;                                                            \
-    int  rc;                                                            \
                                                                         \
     UNUSED(gid);                                                        \
     UNUSED(oid);                                                        \
@@ -593,7 +595,6 @@ ds_host_group_set(unsigned int gid, const char *oid, const char *value,
 {
     host  *h;
     group *old;
-    int    rc;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -611,7 +612,7 @@ ds_host_group_set(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_LINUX, EINVAL);
     }
 
-    return TE_RC(TE_TA_LINUX, rc);
+    return 0;
 }
 
 /*
@@ -650,7 +651,6 @@ ds_##_gh##_##_attr##_set(unsigned int gid, const char *oid,     \
 {                                                               \
     _gh  *gh;                                                   \
     char *old_val;                                              \
-    int   rc;                                                   \
                                                                 \
     UNUSED(gid);                                                \
     UNUSED(oid);                                                \
@@ -732,7 +732,6 @@ ds_##_gh##_option_add(unsigned int gid, const char *oid,        \
                       const char *name, const char *optname)    \
 {                                                               \
     _gh *gh;                                                    \
-    int  rc;                                                    \
                                                                 \
     te_dhcp_option *opt;                                        \
                                                                 \
@@ -803,7 +802,6 @@ ds_##_gh##_option_set(unsigned int gid, const char *oid,        \
                       const char *name, const char *optname)    \
 {                                                               \
     _gh *gh;                                                    \
-    int  rc;                                                    \
                                                                 \
     char *old;                                                  \
                                                                 \
@@ -848,7 +846,6 @@ ds_##_gh##_option_del(unsigned int gid, const char *oid,        \
                       const char *optname)                      \
 {                                                               \
     _gh *gh;                                                    \
-    int  rc;                                                    \
                                                                 \
     te_dhcp_option *opt, *prev;                                 \
                                                                 \
