@@ -36,10 +36,12 @@
 #include <sys/time.h>
 #endif
 
+#include <unistd.h>
+
 #include "te_defs.h"
 #include "te_stdint.h"
 #include "tad_common.h"
-
+#include "asn_usr.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -122,6 +124,68 @@ extern int tapi_csap_param_get_timestamp(const char *ta_name, int ta_sid,
                                          csap_handle_t csap_id,
                                          const char *param_name,
                                          struct timeval *p_timestamp);
+
+/**
+ * Creates CSAP (communication service access point) on the Test Agent. 
+ *
+ * @param ta_name       Test Agent name                 
+ * @param session       TA session or 0   
+ * @param stack_id      protocol stack identifier
+ * @param csap_spec     ASN value of type CSAP-spec
+ * @param handle        location for unique CSAP handle
+ *
+ * @return zero on success or error code
+ */
+extern int tapi_tad_csap_create(const char *ta_name, int session,
+                                const char *stack_id, 
+                                const asn_value *csap_spec, int *handle);
+
+/**
+ * This function is used to force sending of traffic via already created
+ * CSAP.
+ * Started sending process may be managed via standard function rcf_ta_*.
+ *
+ * @param ta_name       Test Agent name                 
+ * @param session       TA session or 0   
+ * @param handle        CSAP handle
+ * @param templ         ASN value of type Traffic-Template
+ * @param blk_mode      mode of the operation:
+ *                      in blocking mode it suspends the caller
+ *                      until sending of all the traffic finishes
+ *
+ * @return zero on success or error code
+ */
+extern int tapi_tad_trsend_start(const char *ta_name, int session, 
+                                 int handle, const asn_value *templ,
+                                 rcf_call_mode_t blk_mode);
+
+/**
+ * Start receiving of traffic via already created CSAP. 
+ * Started receiving process may be managed via standard function rcf_ta_*.
+ *
+ * @param ta_name      - Test Agent name.
+ * @param session      - TA session or 0.
+ * @param handle       - CSAP handle.
+ * @param pattern      - ASN value of type Traffic-Pattern
+ * @param handler      - Address of function to be used to process
+ *                       received packets or NULL.
+ * @param user_param   - User parameter to be passed to the handler.
+ * @param timeout      - Timeout for traffic receive operation. After this
+ *                       time interval CSAP stops capturing any traffic on
+ *                       the agent and will be waiting until
+ *                       rcf_ta_trrecv_stop or rcf_ta_trrecv_wait are
+ *                       called.
+ * @param num          - Number of packets that needs to be captured;
+ *                       if it is zero, the number of received packets
+ *                       is not limited.
+ *
+ * @return zero on success or error code
+ */
+extern int tapi_tad_trrecv_start(const char *ta_name, int session,
+                                 int handle, const asn_value *pattern,
+                                 rcf_pkt_handler handler, void *user_param, 
+                                 unsigned int timeout, int num);
+
 
 #ifdef __cplusplus
 } /* extern "C" */

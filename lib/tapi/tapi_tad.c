@@ -258,4 +258,67 @@ tapi_csap_get_status(const char *ta_name, int ta_sid, csap_handle_t csap_id,
     RETURN_RC(0); 
 }
 
+/* Description in tapi_tad.h */
+int 
+tapi_tad_csap_create(const char *ta_name, int session,
+                     const char *stack_id, 
+                     const asn_value *csap_spec, int *handle)
+{
+    int rc = 0;
+    char tmp_file_name[] = "/tmp/te_tapi_tad_csap_create.XXXXXX";
 
+    mkstemp(tmp_file_name);
+
+    asn_save_to_file(csap_spec, tmp_file_name); 
+
+    rc = rcf_ta_csap_create(ta_name, session, stack_id, 
+                            tmp_file_name, handle); 
+
+    unlink(tmp_file_name);
+    if (rc)
+        WARN("Csap create failed with rc %X", rc);
+    return rc;
+}
+
+/* Description in tapi_tad.h */
+int 
+tapi_tad_trsend_start(const char *ta_name, int session, 
+                      int handle, const asn_value *templ,
+                      rcf_call_mode_t blk_mode)
+{
+    int rc = 0;
+    char tmp_file_name[] = "/tmp/te_tapi_tad__trsend_start.XXXXXX";
+
+    mkstemp(tmp_file_name);
+
+    asn_save_to_file(templ, tmp_file_name); 
+
+    rc = rcf_ta_trsend_start(ta_name, session, handle, 
+                             tmp_file_name, blk_mode); 
+    unlink(tmp_file_name);
+    if (rc)
+        WARN("trsend_start failed with rc %X", rc);
+    return rc;
+}
+
+/* Description in tapi_tad.h */
+int 
+tapi_tad_trrecv_start(const char *ta_name, int session, int handle, 
+                      const asn_value *pattern, rcf_pkt_handler handler, 
+                      void *user_param, unsigned int timeout, int num)
+{
+    int rc = 0;
+    char tmp_file_name[] = "/tmp/te_tapi_tad_trsend_start.XXXXXX";
+
+    mkstemp(tmp_file_name);
+
+    asn_save_to_file(pattern, tmp_file_name); 
+
+    rc = rcf_ta_trrecv_start(ta_name, session, handle, 
+                             tmp_file_name, handler, user_param, 
+                             timeout, num); 
+    unlink(tmp_file_name);
+    if (rc)
+        WARN("trrecv_start failed with rc %X", rc);
+    return rc;
+}
