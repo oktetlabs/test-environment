@@ -34,11 +34,31 @@
 #ifdef STDC_HEADERS
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 #endif
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
 
+
+/**
+ * Expands environment variables in a string.
+ * The variable names must be between ${ and }.
+ * Conditional expansion is supported:
+ * - ${NAME:-VALUE} is expanded into VALUE if NAME variable is not set,
+ * otherwise to its value
+ * - ${NAME:+VALUE} is expanded into VALUE if NAME variable is set,
+ * otherwise to an empty string.
+ *
+ * @note The length of anything between ${...} must be less than 128
+ *
+ * @param src     Source string
+ * @param retval  Resulting string (OUT)
+ *
+ * @return 0 if success, an error code otherwise
+ * @retval ENOBUFS The variable name is longer than 128
+ * @retval EINVAL Unmatched ${ found
+ */
 int
 cfg_expand_env_vars(const char *src, char **retval)
 {
@@ -47,6 +67,7 @@ cfg_expand_env_vars(const char *src, char **retval)
     int result_len = 0;
     int len;
     char env_var_name[128];
+    char *default_value;
     char *env_var;
 
     for (;;)
@@ -56,12 +77,16 @@ cfg_expand_env_vars(const char *src, char **retval)
         {
             len = strlen(src) + 1;
             result = realloc(result, result_len + len);
+            if(!result)
+                return errno;
             memcpy(result + result_len, src, len);
             break;
         }
         if(next != src)
         {
             result = realloc(result, result_len + (next - src));
+            if(!result)
+                return errno;
             memcpy(result + result_len, src, next - src);
             result_len += next - src;
         }
@@ -70,20 +95,41 @@ cfg_expand_env_vars(const char *src, char **retval)
         if (!src)
         {
             *retval = NULL;
-            return 1; /* actual error code must be added later */
+            return EINVAL; 
         }
         if ((unsigned)(src - next) > sizeof(env_var_name))
         {
             *retval = NULL;
-            return 2; /* see above */
+            return ENOBUFS; 
         }
         memcpy(env_var_name, next, src - next);
         env_var_name[src - next] = '\0';
+        default_value = strchr(env_var_name, ':');
+        if(default_value)
+        {
+            if(default_value[1] == '+' || default_value[1] == '-')
+            {
+                *default_value++ = '\0';
+            }
+            else
+            {
+                default_value = NULL;
+            }
+        }
         env_var = getenv(env_var_name);
+        if(default_value)
+        {
+            if(*default_value == '+' && env_var)
+                env_var = default_value + 1;
+            else if(*default_value == '-' && !env_var)
+                env_var = default_value + 1;
+        }
         if(env_var != NULL)
         {
             len = strlen(env_var);
             result = realloc(result, result_len + len);
+            if(!result)
+                return errno;
             memcpy(result + result_len, env_var, len);
             result_len += len;
         }

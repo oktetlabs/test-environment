@@ -129,14 +129,55 @@ xmlNodeNext(xmlNodePtr node)
 }
 
 
+extern int 
+cfg_expand_env_vars(const char *src, char **dest);
+
+
+/**
+ * A wrapper around xmlGetProp that expands environment variable
+ * references.
+ *
+ * @param node    XML node
+ * @param name    XML attribute name
+ *
+ * @return The expanded attribute value or NULL if no attribute
+ * or an error occured while expanding.
+ *
+ * @sa cfg_expand_env_vars
+ */
+static char *
+xmlGetProp_exp(xmlNodePtr node, const xmlChar *name)
+{
+    xmlChar *value = xmlGetProp(node, name);
+    if(value)
+    {
+        char *result = NULL;
+        int rc;
+        rc = cfg_expand_env_vars(value, &result);
+        if(rc == 0)
+        {
+            xmlFree(value);
+            value = (xmlChar *)result;
+        }
+        else
+        {
+            ERROR("Error substituting variables in %s '%s': %s", 
+                  name, value, strerror(rc));
+            xmlFree(value);
+            value = NULL;
+        }
+    }
+    return value;
+}
+
 #define RETERR(_rc, _str...)    \
     do {                        \
         int _err = _rc;         \
         ERROR(_str);            \
         if (oid != NULL)        \
-            xmlFree(oid);       \
+            free(oid);       \
         if (val_s != NULL)      \
-            xmlFree(val_s);     \
+            free(val_s);     \
         if (attr != NULL)       \
             xmlFree(attr);      \
         if (msg != NULL)        \
@@ -166,7 +207,7 @@ cfg_dh_process_add(xmlNodePtr node)
     while (node != NULL &&
            xmlStrcmp(node->name , (const xmlChar *)"instance") == 0)
     {
-        if ((oid = xmlGetProp(node, (const xmlChar *)"oid")) == NULL)
+        if ((oid = xmlGetProp_exp(node, (const xmlChar *)"oid")) == NULL)
             RETERR(EINVAL, "Incorrect add command format");
 
         if ((obj = cfg_get_object(oid)) == NULL)
@@ -182,7 +223,7 @@ cfg_dh_process_add(xmlNodePtr node)
         msg->val_type = obj->type;
         msg->rc = 0;
         
-        val_s = xmlGetProp(node, (const xmlChar *)"value");
+        val_s = xmlGetProp_exp(node, (const xmlChar *)"value");
         if (val_s != NULL && strlen(val_s) >= CFG_MAX_INST_VALUE)
             RETERR(ENOMEM, "Too long value");
             
@@ -196,7 +237,7 @@ cfg_dh_process_add(xmlNodePtr node)
                 
             cfg_types[obj->type].put_to_msg(val, (cfg_msg *)msg);
             cfg_types[obj->type].free(val);
-            xmlFree(val_s);
+            free(val_s);
             val_s = NULL;
         }
         else if (val_s != NULL)
@@ -212,7 +253,7 @@ cfg_dh_process_add(xmlNodePtr node)
 
         free(msg);
         msg = NULL;
-        xmlFree(oid);
+        free(oid);
         oid = NULL;
         
         node = xmlNodeNext(node);
@@ -305,7 +346,7 @@ cfg_dh_process_file(xmlNodePtr node)
             while (tmp != NULL &&
                    xmlStrcmp(tmp->name , (const xmlChar *)"object") == 0)
             {
-                if ((oid = xmlGetProp(tmp, (const xmlChar *)"oid")) == NULL)
+                if ((oid = xmlGetProp_exp(tmp, (xmlChar *)"oid")) == NULL)
                     RETERR(EINVAL, "Incorrect %s command format",
                            cmd->name);
 
@@ -356,7 +397,7 @@ cfg_dh_process_file(xmlNodePtr node)
 
                 free(msg);
                 msg = NULL;
-                xmlFree(oid);
+                free(oid);
                 oid = NULL;
 
                 tmp = xmlNodeNext(tmp);
@@ -384,7 +425,7 @@ cfg_dh_process_file(xmlNodePtr node)
             while (tmp != NULL &&
                    xmlStrcmp(tmp->name , (const xmlChar *)"instance") == 0)
             {
-                if ((oid = xmlGetProp(tmp, (const xmlChar *)"oid")) == NULL)
+                if ((oid = xmlGetProp_exp(tmp, (xmlChar *)"oid")) == NULL)
                     RETERR(EINVAL, "Incorrect %s command format",
                            cmd->name);
 
@@ -407,7 +448,7 @@ cfg_dh_process_file(xmlNodePtr node)
                 if (obj->type == CVT_NONE)
                     RETERR(EINVAL, "Cannot perform set for %s", oid);
 
-                val_s = xmlGetProp(tmp, (const xmlChar *)"value");
+                val_s = xmlGetProp_exp(tmp, (const xmlChar *)"value");
                 if (val_s == NULL)
                     RETERR(EINVAL, "Value is required for %s", oid);
                 
@@ -415,7 +456,7 @@ cfg_dh_process_file(xmlNodePtr node)
                     RETERR(rc, "Value conversion error for %s", oid);
                 
                 cfg_types[obj->type].put_to_msg(val, (cfg_msg *)msg);
-                xmlFree(val_s);
+                free(val_s);
                 cfg_types[obj->type].free(val);
                 cfg_process_msg((cfg_msg **)&msg, TRUE);
                 
@@ -425,7 +466,7 @@ cfg_dh_process_file(xmlNodePtr node)
 
                 free(msg);
                 msg = NULL;
-                xmlFree(oid);
+                free(oid);
                 oid = NULL;
 
                 tmp = xmlNodeNext(tmp);
@@ -441,7 +482,7 @@ cfg_dh_process_file(xmlNodePtr node)
             while (tmp != NULL &&
                    xmlStrcmp(tmp->name , (const xmlChar *)"ta") == 0)
             {
-                if ((oid = xmlGetProp(tmp, (const xmlChar *)"oid")) == NULL)
+                if ((oid = xmlGetProp_exp(tmp, (xmlChar *)"oid")) == NULL)
                     RETERR(EINVAL, "Incorrect %s command format",
                            cmd->name);
 
@@ -466,7 +507,7 @@ cfg_dh_process_file(xmlNodePtr node)
 
                 free(msg);
                 msg = NULL;
-                xmlFree(oid);
+                free(oid);
                 oid = NULL;
 
                 tmp = xmlNodeNext(tmp);
@@ -479,7 +520,7 @@ cfg_dh_process_file(xmlNodePtr node)
             assert(FALSE);
         }
         if (val_s != NULL)
-            xmlFree(val_s);
+            free(val_s);
     }
     
     if ((rc = cfg_ta_sync("/:", TRUE)) != 0)
