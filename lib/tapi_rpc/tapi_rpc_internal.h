@@ -138,6 +138,18 @@
         return __retval;                                            \
     } while (0)
 
+#define RETVAL_TYPE_PTR(_func, _type, _retval) \
+    do {                                                            \
+        _type __retval = (_type)(_retval);                          \
+                                                                    \
+        TAPI_RPC_FREE_OUT(_func);                                   \
+                                                                    \
+        if (!RPC_IS_CALL_OK(rpcs))                                  \
+            return (_type)NULL;                                     \
+        else                                                        \
+            return __retval;                                        \
+    } while (0)
+
 /** Return with check (for functions returning 0 or -1) */
 #define RETVAL_INT_ZERO_OR_MINUS_ONE(_func, _retval) \
     do {                                                            \
