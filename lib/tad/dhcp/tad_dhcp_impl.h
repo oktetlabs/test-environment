@@ -121,7 +121,7 @@ extern int dhcp_write_cb (csap_p csap_descr, char *buf, int buf_len);
  * @return 
  *      quantity of read octets, or -1 if error occured, 0 if timeout expired. 
  */ 
-extern int dhcp_write_read_cb (csap_p csap_descr, int timeout,
+extern int dhcp_write_read_cb(csap_p csap_descr, int timeout,
                               char *w_buf, int w_buf_len,
                               char *r_buf, int r_buf_len);
 
@@ -136,7 +136,8 @@ extern int dhcp_write_read_cb (csap_p csap_descr, int timeout,
  *
  * @return zero on success or error code.
  */ 
-extern int dhcp_single_init_cb (int csap_id, const asn_value_p csap_nds, int layer);
+extern int dhcp_single_init_cb(int csap_id, const asn_value *csap_nds,
+                               int layer);
 
 /**
  * Callback for destroy 'file' CSAP layer if single in stack.
@@ -161,7 +162,7 @@ extern int dhcp_single_destroy_cb (int csap_id, int layer);
  *
  * @return zero on success or error code.
  */ 
-extern int dhcp_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu); 
+extern int dhcp_confirm_pdu_cb (int csap_id, int layer, asn_value *tmpl_pdu); 
 
 /**
  * Callback for generate binary data to be sent to media.
@@ -185,7 +186,9 @@ extern int dhcp_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu);
  *
  * @return zero on success or error code.
  */ 
-extern int dhcp_gen_bin_cb (int csap_id, int layer, const asn_value_p tmpl_pdu,
+extern int dhcp_gen_bin_cb(int csap_id, int layer,
+                           const asn_value *tmpl_pdu,
+                           const tad_template_arg_t *args, size_t arg_num,
                            csap_pkts_p up_payload, csap_pkts_p pkts);
 
 
@@ -204,9 +207,9 @@ extern int dhcp_gen_bin_cb (int csap_id, int layer, const asn_value_p tmpl_pdu,
  *
  * @return zero on success or error code.
  */
-extern int dhcp_match_bin_cb (int csap_id, int layer, const asn_value_p pattern_pdu,
+extern int dhcp_match_bin_cb (int csap_id, int layer, const asn_value *pattern_pdu,
                              const csap_pkts *  pkt, csap_pkts * payload, 
-                             asn_value_p  parsed_packet );
+                             asn_value * parsed_packet );
 
 /**
  * Callback for generating pattern to filter 
@@ -221,8 +224,9 @@ extern int dhcp_match_bin_cb (int csap_id, int layer, const asn_value_p pattern_
  *
  * @return zero on success or error code.
  */
-extern int dhcp_gen_pattern_cb (int csap_id, int layer, const asn_value_p tmpl_pdu, 
-                               asn_value_p   *pattern_pdu);
+extern int dhcp_gen_pattern_cb(int csap_id, int layer, 
+                               const asn_value *tmpl_pdu, 
+                               asn_value **pattern_pdu);
 
 /**
  * Find number of DHCP layer in CSAP stack.

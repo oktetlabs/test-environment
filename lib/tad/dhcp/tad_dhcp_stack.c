@@ -59,6 +59,7 @@
 #include <net/if.h>
 #include <sys/ioctl.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
 #include <errno.h>
 #include <string.h>
 
@@ -221,7 +222,7 @@ dhcp_write_read_cb (csap_p csap_descr, int timeout,
  * @return zero on success or error code.
  */ 
 int 
-dhcp_single_init_cb (int csap_id, const asn_value_p csap_nds, int layer)
+dhcp_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
 {
     csap_p   csap_descr;          /**< csap description        */
 
@@ -304,10 +305,10 @@ dhcp_single_init_cb (int csap_id, const asn_value_p csap_nds, int layer)
 
     local.sin_family = AF_INET;
     local.sin_port = htons(mode == DHCPv4_CSAP_mode_server ? 
-                                        DHCP_SERVER_PORT : DHCP_CLIENT_PORT); 
+                           DHCP_SERVER_PORT : DHCP_CLIENT_PORT); 
     local.sin_addr.s_addr = INADDR_ANY;
 
-    if (bind(dhcp_spec_data->in, &local, sizeof(local)) == -1)
+    if (bind(dhcp_spec_data->in, SA(&local), sizeof(local)) == -1)
     {
         perror ("dhcp csap socket bind");
         return errno;
@@ -340,7 +341,7 @@ dhcp_single_init_cb (int csap_id, const asn_value_p csap_nds, int layer)
     }
     ifa = (struct sockaddr_in *) &interface->ifr_addr;
     strncpy(dhcp_spec_data->ipaddr, 
-            inet_ntoa(ifa->sin_addr.s_addr), 
+            inet_ntoa(ifa->sin_addr), 
             INET_ADDRSTRLEN);
 
     if (rc)
@@ -358,7 +359,7 @@ dhcp_single_init_cb (int csap_id, const asn_value_p csap_nds, int layer)
 
     local.sin_addr.s_addr = ifa->sin_addr.s_addr;
 
-    if (bind(dhcp_spec_data->out, &local, sizeof(local)) == -1)
+    if (bind(dhcp_spec_data->out, SA(&local), sizeof(local)) == -1)
     {
         perror ("dhcp csap socket bind");
         return errno;

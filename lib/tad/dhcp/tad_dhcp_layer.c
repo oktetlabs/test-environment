@@ -73,7 +73,7 @@ char* dhcp_get_param_cb (csap_p csap_descr, int level, const char *param)
  * @return zero on success or error code.
  */ 
 int 
-dhcp_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
+dhcp_confirm_pdu_cb (int csap_id, int layer, asn_value *tmpl_pdu)
 { 
     int rc;
     int xid;
@@ -102,7 +102,7 @@ dhcp_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
  * @return number of octets or -1 if error occured.
  */
 int
-dhcp_calculate_options_data (asn_value_p options)
+dhcp_calculate_options_data(asn_value_p options)
 {
     asn_value_p sub_opts;
     int n_opts = asn_get_length(options, "");
@@ -202,8 +202,9 @@ fill_dhcp_options(void *buf, asn_value_p options)
  * @return zero on success or error code.
  */ 
 int 
-dhcp_gen_bin_cb (int csap_id, int layer, const asn_value_p tmpl_pdu,
-                 const csap_pkts_p  up_payload, csap_pkts_p pkts)
+dhcp_gen_bin_cb(int csap_id, int layer, const asn_value *tmpl_pdu,
+                const tad_template_arg_t *args, size_t arg_num,
+                const csap_pkts_p  up_payload, csap_pkts_p pkts)
 {
     int rc;
     int val_len;
@@ -215,6 +216,8 @@ dhcp_gen_bin_cb (int csap_id, int layer, const asn_value_p tmpl_pdu,
 
     UNUSED (up_payload); /* DHCP has no payload */ 
     UNUSED (csap_id); 
+    UNUSED (args); 
+    UNUSED (arg_num); 
     UNUSED (layer); 
     
     pkts->len = 236; /* total length of mandatory fields in DHCP message */ 
@@ -306,9 +309,9 @@ dhcp_gen_bin_cb (int csap_id, int layer, const asn_value_p tmpl_pdu,
  *
  * @return zero on success or error code.
  */
-int dhcp_match_bin_cb (int csap_id, int layer, const asn_value_p pattern_pdu,
+int dhcp_match_bin_cb (int csap_id, int layer, const asn_value *pattern_pdu,
                        const csap_pkts *  pkt, csap_pkts * payload, 
-                       asn_value_p  parsed_packet )
+                       asn_value * parsed_packet )
 { 
     uint8_t     *p = pkt->data; 
     int          i;
@@ -472,8 +475,9 @@ int dhcp_match_bin_cb (int csap_id, int layer, const asn_value_p pattern_pdu,
  *
  * @return zero on success or error code.
  */
-int dhcp_gen_pattern_cb (int csap_id, int layer, const asn_value_p tmpl_pdu, 
-                                         asn_value_p   *pattern_pdu)
+int 
+dhcp_gen_pattern_cb(int csap_id, int layer, const asn_value *tmpl_pdu, 
+                    asn_value **pattern_pdu)
 {
     int rc;
     int xid;
