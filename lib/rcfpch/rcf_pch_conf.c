@@ -557,11 +557,11 @@ process_wildcard(struct rcf_comm_connection *conn, char *cbuf,
         SEND_ANSWER("%d", TE_RC(TE_RCF_PCH, ENOMEM));
     if (strstr(oid, "...") != NULL)
     {
-
         VERB("Create list of instances due to the '...' request");
         if (strchr(oid, ':') == NULL)
         {
             VERB("Feature is not supported yet");
+            rc = EOPNOTSUPP;
         }
         else
         {
