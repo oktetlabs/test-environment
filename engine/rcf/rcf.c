@@ -97,7 +97,7 @@
 
 #define LOG_SID                 1   /**< Session used for Log gathering */
 
-#define RCF_STARTUP_SID         INT_MAX
+
 
 /*
  * TA reboot and RCF shutdown algorithms.
@@ -145,11 +145,11 @@ typedef struct usrreq {
 
 /** A description for a task/thread to be executed at TA startup */
 typedef struct ta_initial_task {
-    enum rcf_start_modes    mode;
-    char                   *entry;
-    int                     argc;
-    char                  **argv;
-    struct ta_initial_task *next;
+    enum rcf_start_modes    mode;          /**< Task execution mode */
+    char                   *entry;         /**< Procedure entry point */
+    int                     argc;          /**< Number of arguments */
+    char                  **argv;          /**< Arguments as strings */
+    struct ta_initial_task *next;          /**< Link to the next task */
 } ta_initial_task;
 
 /** Structure for one Test Agent */
@@ -457,7 +457,8 @@ parse_config(char *filename)
         for (task = cur->xmlChildrenNode; task != NULL; task = task->next)
         {
             if (xmlStrcmp(task->name, (const xmlChar *)"thread") != 0 &&
-                xmlStrcmp(task->name, (const xmlChar *)"task") != 0)
+                xmlStrcmp(task->name, (const xmlChar *)"task") != 0 &&
+                xmlStrcmp(task->name, (const xmlChar *)"function") != 0)
                 continue;
             ta_task = malloc(sizeof(*ta_task));
             if (ta_task == NULL)
@@ -467,7 +468,10 @@ parse_config(char *filename)
             }
             ta_task->mode = 
                 (xmlStrcmp(task->name , (const xmlChar *)"thread") == 0 ?
-                 RCF_START_THREAD : RCF_START_FORK);
+                 RCF_START_THREAD : 
+                 (xmlStrcmp(task->name , (const xmlChar *)"function") == 0 ?
+                  RCF_START_FUNC : RCF_START_FORK));
+            
             if ((attr = xmlGetProp(task, (const xmlChar *)"name")) != NULL)
             {
                 ta_task->entry = strdup((const char *)attr);
@@ -524,33 +528,20 @@ error:
     return -1;
 }
 
+
 /**
- * Send time synchronization command to the Test Agent and wait an answer
+ * Wait for a response from TA
  *
- * @param agent         Test Agent structure
+ * @param agent    Test Agent to interact
  *
  * @return 0 (success) or -1 (failure)
  */
 static int
-synchronize_time(ta *agent)
+consume_answer(ta *agent)
 {
     struct timeval tv;
-    struct tm     *tm;
-    int            rc;
     fd_set         set;
     time_t         t0, t;
-
-    gettimeofday(&tv, NULL);
-    tm = localtime(&tv.tv_sec);
-
-    sprintf(cmd, "%s time string %02d:%02d:%02d", TE_PROTO_VWRITE,
-                  tm->tm_hour, tm->tm_min, tm->tm_sec);
-    if ((rc = (agent->transmit)(agent->handle, cmd, strlen(cmd) + 1)) != 0)
-    {
-        ERROR("Failed to transmit command to TA '%s' errno %d", 
-              agent->name, rc);
-        return -1;
-    }
 
     t = t0 = time(NULL);
     while (t - t0 < RCF_SHUTDOWN_TIMEOUT)
@@ -566,18 +557,52 @@ synchronize_time(ta *agent)
 
             if ((agent->receive)(agent->handle, cmd, &len, &ba) != 0)
                 break;
-            if (strcmp(cmd, "0") != 0)
-            {
-                WARN("Time synchronization failed for TA %s: "
-                     "log may be inconsistent", agent->name);
-            }
             return 0;
         }
+        t = time(NULL);
     }
 
-    ERROR("Failed to receive answer from TA %s", agent->name);
 
+    ERROR("Failed to receive answer from TA %s", agent->name);
     return -1;
+
+}
+
+
+/**
+ * Send time synchronization command to the Test Agent and wait an answer
+ *
+ * @param agent         Test Agent structure
+ *
+ * @return 0 (success) or -1 (failure)
+ */
+static int
+synchronize_time(ta *agent)
+{
+    struct timeval tv;
+    struct tm     *tm;
+    int            rc;
+
+    gettimeofday(&tv, NULL);
+    tm = localtime(&tv.tv_sec);
+
+    sprintf(cmd, "%s time string %02d:%02d:%02d", TE_PROTO_VWRITE,
+                  tm->tm_hour, tm->tm_min, tm->tm_sec);
+    if ((rc = (agent->transmit)(agent->handle, cmd, strlen(cmd) + 1)) != 0)
+    {
+        VERB("Failed to transmit command to TA '%s' errno %d", 
+             agent->name, rc);
+        return -1;
+    }
+
+    rc = consume_answer(agent);
+
+    if (rc == 0 && strcmp(cmd, "0") != 0)
+    {
+        WARN("Time synchronization failed for TA %s: "
+             "log may be inconsistent", agent->name);
+    }
+    return rc;
 }
 
 /**
@@ -632,16 +657,28 @@ answer_all_requests(usrreq *req, int error)
     }
 }
 
+
+void write_str(char *s, int len);
+
+
+/**
+ * Run all registered startup task
+ *
+ * @param agent   Test Agent to interact
+ *
+ * @return 0 (success) or -1 (failure)
+ */
 static int
 startup_tasks(ta *agent)
 {
     ta_initial_task *task;
     int              i;
     char            *args;
+    int rc;
     
     for (task = agent->initial_tasks; task; task = task->next)
     {
-        sprintf(cmd, "SID %d " TE_PROTO_EXECUTE " ", RCF_STARTUP_SID);
+        strcpy(cmd, "SID 0 " TE_PROTO_EXECUTE " ");
         strcat(cmd, task->mode == RCF_START_THREAD ? "thread " : "fork ");
         strcat(cmd, task->entry);
         args = cmd + strlen(cmd);
@@ -649,7 +686,7 @@ startup_tasks(ta *agent)
             strcat(cmd, " argv ");
         for (i = 0; i < task->argc; i++)
         {
-            strcat(cmd, task->argv[i]);
+            write_str(task->argv[i], strlen(task->argv[i]));
             strcat(cmd, " ");
         }
         RING("Running startup task(%s) on TA '%s': entry-point='%s' "
@@ -659,6 +696,15 @@ startup_tasks(ta *agent)
              agent->name, task->entry, args);
         VERB("Running startup task %s", cmd);
         (agent->transmit)(agent->handle, cmd, strlen(cmd) + 1);
+        rc = consume_answer(agent);
+        
+        if (rc != 0 || strncmp(cmd, "SID 0 0", 7) != 0)
+        {
+            WARN("Startup task '%s' failed on %s", task->entry, 
+                 agent->name);
+            return -1;
+        }
+        VERB("Startup task %s succeeded", cmd);
     }
     return 0;
 }
@@ -1046,12 +1092,6 @@ process_reply(ta *agent)
 
     ptr += strlen("SID ");
     READ_INT(sid);
-
-    if (sid == RCF_STARTUP_SID)
-    {
-        VERB("Ignoring answers for a startup command");
-        return;
-    }
 
     if ((req = find_user_request(&(agent->sent), sid)) == NULL)
     {
