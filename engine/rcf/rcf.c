@@ -976,9 +976,10 @@ process_reply(ta *agent)
                 answer_user_request(req);
                 if (init_agent(agent) < 0)
                 {
-                    ERROR("FATAL ERROR: Initialization of the TA '%s' "
+                    ERROR("Initialization of the TA '%s' "
                           "after reboot failed ", agent->name);
-                    return -1;
+                    agent->dead = TRUE;
+                    (agent->close)(agent->handle, &set0);
                 }
                 return 0;
             }
@@ -1088,8 +1089,7 @@ process_reply(ta *agent)
     return send_pending_command(agent, sid);
 
 bad_protocol:
-    ERROR("Bad answer is received from TA '%s'",
-                     agent->name);
+    ERROR("FATAL ERROR: bad answer is received from TA '%s'", agent->name);
     if (req != NULL)
     {
         req->message->error = TE_RC(TE_RCF, ETEIO);
@@ -1147,13 +1147,18 @@ transmit_cmd(ta *agent, usrreq *req)
     {
         if ((rc = (agent->transmit)(agent->handle, cmd, len)) != 0)
         {
-            ERROR("FATAL ERROR: Failed to transmit command "
-                             "to TA '%s' errno %d", agent->name, rc);
+            agent->dead = TRUE;
+            (agent->close)(agent->handle, &set0);
+            ERROR("Failed to transmit command "
+                  "to TA '%s' errno %d", agent->name, rc);
 
             if (file != -1)
                 close(file);
+              
+            req->message->error = TE_RC(TE_RCF, ETADEAD);
+            answer_user_request(req);
 
-            return -1;
+            return 0;
         }
         if (file < 0 || (len = read(file, cmd, sizeof(cmd))) == 0)
             break;
