@@ -166,16 +166,16 @@ main(int argc, char *argv[])
 
         rc = rcf_ta_csap_create(ta, sid, "ip4.eth", path, &csap); 
 #endif
-        INFO("csap_create rc: %d, csap id %d\n", rc, csap); 
         if ((rc_mod = TE_RC_GET_MODULE(rc)) != 0)
         {
-            INFO ("rc from module %d is 0x%x\n", 
+            TEST_FAIL("CSAP create failed, rc from module %d is 0x%x\n", 
                         rc_mod, TE_RC_GET_ERROR(rc));
+
         } 
 
 #if USE_TAPI
         rc = tapi_ip4_eth_recv_start(ta, sid, csap, NULL, 
-                                     "195.19.254.40", 0, 4);
+                                     "195.19.254.40", 5000, 4);
 #else
         strcpy(path, "/tmp/te_ip4_pattern.XXXXXX"); 
         mkstemp(path); 
