@@ -83,6 +83,14 @@ fi
 AC_SUBST(XML2_CFLAGS)
 AC_SUBST(XML2_LIBS)
 
+CFLAGS=${CFLAGS}" "${XML2_CFLAGS}
+AC_CHECK_MEMBERS([\
+struct _xmlSAXHandler._private, \
+struct _xmlSAXHandler.startElementNs, \
+struct _xmlSAXHandler.endElementNs, \
+struct _xmlSAXHandler.serror \
+], [], [], [#include <libxml/parser.h>])
+
 AC_CONFIG_FILES([Makefile
                  lib/Makefile
                  lib/obstack/Makefile

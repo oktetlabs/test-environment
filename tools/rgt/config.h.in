@@ -54,6 +54,18 @@
 /* Define to 1 if you have the <unistd.h> header file. */
 #undef HAVE_UNISTD_H
 
+/* Define to 1 if `endElementNs' is member of `struct _xmlSAXHandler'. */
+#undef HAVE___STRUCT__XMLSAXHANDLER_ENDELEMENTNS
+
+/* Define to 1 if `serror ' is member of `struct _xmlSAXHandler '. */
+#undef HAVE___STRUCT__XMLSAXHANDLER_SERROR___
+
+/* Define to 1 if `startElementNs' is member of `struct _xmlSAXHandler'. */
+#undef HAVE___STRUCT__XMLSAXHANDLER_STARTELEMENTNS
+
+/* Define to 1 if `_private' is member of `struct _xmlSAXHandler'. */
+#undef HAVE___STRUCT__XMLSAXHANDLER__PRIVATE
+
 /* Name of package */
 #undef PACKAGE
 

@@ -498,10 +498,18 @@ static xmlSAXHandler sax_handler = {
     .externalSubset         = NULL, /* externalSubsetDebug, */
     .initialized            = 1,
     /* The following fields are extensions available only on version 2 */
+#if HAVE___STRUCT__XMLSAXHANDLER__PRIVATE
     ._private               = NULL,
+#endif
+#if HAVE___STRUCT__XMLSAXHANDLER_STARTELEMENTNS
     .startElementNs         = NULL,
+#endif
+#if HAVE___STRUCT__XMLSAXHANDLER_ENDELEMENTNS
     .endElementNs           = NULL,
+#endif
+#if HAVE___STRUCT__XMLSAXHANDLER_SERROR___
     .serror                 = NULL
+#endif
 };
 
 /**
