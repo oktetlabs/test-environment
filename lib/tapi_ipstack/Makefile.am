@@ -1,6 +1,6 @@
 
-AM_CFLAGS=-I$(DESTDIR)/$(prefix)/include \
-          -I$(DESTDIR)/$(prefix)/../include
+AM_CPPFLAGS=-I$(DESTDIR)/$(prefix)/include \
+            -I$(DESTDIR)/$(prefix)/../include
 
 AM_CFLAGS=
 
