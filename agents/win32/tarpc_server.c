@@ -1535,6 +1535,22 @@ TARPC_FUNC(setsockopt, {},
         struct linger   linger;
         struct in_addr  addr;
         struct timeval  tv;
+        
+        if (in->optname == RPC_SO_SNDTIMEO || 
+            in->optname == RPC_SO_RCVTIMEO)
+        {
+            static int optval;
+            
+            optval = 
+                in->optval.optval_val[0].option_value_u.
+                opt_timeval.tv_sec * 1000 + 
+                in->optval.optval_val[0].option_value_u.
+                opt_timeval.tv_usec / 1000;
+            
+            opt = (char *)&optval;
+            optlen = sizeof(int);
+            goto call_setsockopt;
+        }
 
         switch (in->optval.optval_val[0].opttype)
         {
@@ -1596,6 +1612,7 @@ TARPC_FUNC(setsockopt, {},
                 opt = NULL;
                 break;
         }
+        call_setsockopt:
         INIT_CHECKED_ARG(opt, optlen, 0);
         MAKE_CALL(out->retval = setsockopt(in->s,
                                            socklevel_rpc2h(in->level),
@@ -1688,12 +1705,25 @@ TARPC_FUNC(getsockopt,
 
             case OPT_TIMEVAL:
             {
-                struct timeval *tv = (struct timeval *)opt;
-
-                out->optval.optval_val[0].option_value_u.
-                    opt_timeval.tv_sec = tv->tv_sec;
-                out->optval.optval_val[0].option_value_u.
-                    opt_timeval.tv_usec = tv->tv_usec;
+                if (in->optname == RPC_SO_SNDTIMEO || 
+                    in->optname == RPC_SO_RCVTIMEO)
+                {
+                    int msec = *(int *)opt;
+                    
+                    out->optval.optval_val[0].option_value_u.
+                        opt_timeval.tv_sec = msec / 1000;
+                    out->optval.optval_val[0].option_value_u.
+                        opt_timeval.tv_usec = (msec % 1000) * 1000;
+                }
+                else
+                {
+                    struct timeval *tv = (struct timeval *)opt;
+                
+                    out->optval.optval_val[0].option_value_u.
+                        opt_timeval.tv_sec = tv->tv_sec;
+                    out->optval.optval_val[0].option_value_u.
+                        opt_timeval.tv_usec = tv->tv_usec;
+                }
                 break;
             }
 
@@ -3602,6 +3632,8 @@ overfill_buffers(tarpc_overfill_buffers_in *in,
     u_long     val = 1;
 
     out->bytes = 0;
+    
+    PRINT("overfill_buffers");
 
     buf = calloc(1, max_len);
     if (buf == NULL)
@@ -3625,10 +3657,12 @@ overfill_buffers(tarpc_overfill_buffers_in *in,
         goto overfill_buffers_exit;
     }
 
+    PRINT("Before loop");
     do {
         do {
             rc = send(in->sock, buf, max_len, 0);
             err = WSAGetLastError();
+            PRINT("Send %d %d", rc, err);
             
             if (rc == -1 && err != WSAEWOULDBLOCK)
             {
@@ -3646,11 +3680,14 @@ overfill_buffers(tarpc_overfill_buffers_in *in,
         }
         else
         {
+            PRINT("Unchanged");
             unchanged++;
-            rc = 0;
-            err = 0;
         }
+        rc = 0;
+        err = 0;
     } while (unchanged != 3);
+    
+    PRINT("After loop");
 
 overfill_buffers_exit:
     val = 0;
@@ -3661,9 +3698,9 @@ overfill_buffers_exit:
         ERROR("%s(): Failed to move socket back to blocking state", 
               __FUNCTION__);
     }
+    PRINT("rc %d err %d", rc, err);
     out->common.win_error = win_error_h2rpc(err);
     out->common._errno = wsaerr2errno(out->common.win_error); 
-
 
     free(buf);
     return rc;
