@@ -8,11 +8,16 @@ AM_CFLAGS =
 AM_LDFLAGS = @TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/lib 
 
 
-bin_PROGRAMS = te_cs te_cs_shutdown
+bin_PROGRAMS = te_cs te_cs_shutdown 
+
+noinst_PROGRAMS = test_env
 
 noinst_HEADERS = conf_db.h conf_dh.h conf_backup.h conf_ta.h conf_defs.h
 
-te_cs_SOURCES = conf_db.c conf_dh.c conf_main.c conf_backup.c conf_ta.c 
+te_cs_SOURCES = conf_db.c conf_dh.c conf_main.c conf_backup.c conf_ta.c \
+		conf_env.c
+
+test_env_SOURCES = conf_env.c test_env.c
 
 te_cs_shutdown_SOURCES = conf_shutdown.c
 
