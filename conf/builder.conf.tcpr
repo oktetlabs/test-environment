@@ -16,12 +16,14 @@ TE_PLATFORM([], [], [], [], \
 
 TE_APP_PARMS([rcf], [--enable-ltdl-install], [], [], [])
 
+TE_LIB_PARMS([forwarder], [], [${TAD_FORW_DIR}], [], [])
+
 TE_LIB_PARMS([tad], [], [], \
              [--with-eth --with-ipstack], [])
               
 TE_TA_TYPE([linux], [linux], [], \
            [--with-rcf-rpc], [], [], \
-           [tad ndn asn])
+           [forwarder tad ndn asn])
 
 #TE_TA_TYPE([linux_lite], [linux], [], [], [-DTAD_CH_DUMMY], [], [])
 
