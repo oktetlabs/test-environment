@@ -50,6 +50,44 @@
 
 /* See description in tapi_cfg_dhcp.h */
 int
+tapi_cfg_dhcps_add_subnet(const char            *ta,
+                          const struct sockaddr *subnet,
+                          int                    prefix_len,
+                          cfg_handle            *handle)
+{
+    int     rc;
+    char   *str;
+
+    if (ta == NULL || subnet == NULL)
+    {
+        ERROR("%s(): Invalid argument", __FUNCTION__);
+        return TE_RC(TE_TAPI, EINVAL);
+    }
+
+    rc = cfg_types[CVT_ADDRESS].val2str(
+             (cfg_inst_val)(struct sockaddr *)subnet, &str);
+    if (rc != 0)
+    {
+        ERROR("%s(): Failed to convert subnet address to string: %X",
+              __FUNCTION__, rc);
+        return rc;
+    }
+
+    /* Add subnet configuration entry */
+    rc = cfg_add_instance_fmt(handle, CVT_INTEGER, (void *)prefix_len,
+                              TE_CFG_TA_DHCP_SERVER_FMT "/subnet:%s",
+                              ta, str);
+    if (rc != 0)
+    {
+        /* Failure is logged in Configurator */
+        return rc;
+    }
+
+    return 0;
+}
+
+/* See description in tapi_cfg_dhcp.h */
+int
 tapi_cfg_dhcps_add_host(const char            *ta,
                         const char            *name,
                         const char            *group,
