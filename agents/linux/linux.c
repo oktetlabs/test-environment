@@ -120,6 +120,8 @@ kill_tasks()
     
     for (i = 0; i < tasks_index; i++)
     {
+        if (tasks[i] == -1)
+            continue;
         kill(-tasks[i], SIGTERM);
         usleep(100);
         kill(-tasks[i], SIGKILL);
@@ -561,14 +563,24 @@ rcf_ch_kill_task(struct rcf_comm_connection *handle,
                  unsigned int pid)
 {
     int kill_errno = 0;
-
-    if (kill(-pid, SIGTERM) != 0)
+    int i;
+    int p = pid;
+    
+    for (i = 0; i < tasks_index; i++)
+        if (tasks[i] == pid)
+        {
+            tasks[i] = -1;
+            p = -pid;
+            break;
+        }
+    
+    if (kill(p, SIGTERM) != 0)
     {
         kill_errno = errno;
         ERROR("Failed to send SIGTERM to process with PID=%u: %X",
               pid, kill_errno);
         /* Just to make sure */
-        kill(-pid, SIGKILL);
+        kill(p, SIGKILL);
     }
     SEND_ANSWER("%d", kill_errno);
 }
