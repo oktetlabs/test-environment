@@ -155,7 +155,7 @@ timeval2str(const struct timeval *tv)
 
     if (tv == NULL)
     {
-        snprintf(ptr, BUF_SIZE, "NULL");
+        snprintf(ptr, BUF_SIZE, "(nil)");
     }
     else
     {
@@ -184,7 +184,7 @@ timespec2str(const struct timespec *tv)
 
     if (tv == NULL)
     {
-        strcpy(buf, "NULL");
+        strcpy(buf, "(nil)");
     }
     else
     {
