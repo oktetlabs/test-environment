@@ -224,10 +224,11 @@
 #define TE_CONF_API         (7)
 #define TE_TA_LINUX         (8)
 #define TE_TA_SWITCH_CTL    (9)
-#define TE_RCF_RPC          (10)
-#define TE_TA_WIN32         (11)
-#define TE_NET_SNMP         (12) /* Errors from net-snmp library */
-#define TE_CS               (13)
+#define TE_RCF_RPC         (10)
+#define TE_TA_WIN32        (11)
+#define TE_NET_SNMP        (12) /* Errors from net-snmp library */
+#define TE_CS              (13)
+#define TE_TA_EXT          (14)
 /*@}*/
 
 
