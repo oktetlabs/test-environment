@@ -132,7 +132,7 @@ fi
 echo ${PKGSRC}/configure -q --${option}=$PLATFORM $add_option \
                          --prefix=$PREFIX ${PARMS}
 
-TE_CFLAGS="-DDEBUG -Wall -W -O0 -g -ggdb ${ADD_CFLAGS} -I${PREFIX}/include" \
+TE_CFLAGS="-ggdb -Wall -W ${ADD_CFLAGS} -I${PREFIX}/include" \
 TE_LDFLAGS="${ADD_LDFLAGS} -L${PREFIX}/lib" \
 TE_LDADD="$LDADD" \
 TE_DEPENDENCIES="$DEPENDENCIES" \
