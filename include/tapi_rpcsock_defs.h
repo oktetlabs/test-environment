@@ -2462,9 +2462,21 @@ typedef enum rpc_sa_flags {
     /* sa_sigaction() is not supported for now */
     RPC_SA_SIGINFO    = 0x20,  /**< In this case, sa_sigaction() should be
                                     set instead of sa_handler */
-    RPC_SA_UNKNOWN    = 0x40   /**< Incorrect flag */
+    RPC_SA_RESTORER   = 0x40,   /** < element is obsolete and
+                                     should not be used
+                                     (but Linux uses yet!) */
+    RPC_SA_UNKNOWN    = 0x80   /**< Incorrect flag */
 } rpc_sa_flags;
 
+#if HAVE_STRUCT_SIGACTION_SA_RESTORER
+#ifndef SA_RESTORER
+#define SA_RESTORER       0x04000000
+#define HAVE_SA_RESTORER  1
+#endif
+#else
+#define HAVE_SA_RESTORER  0
+#define SA_RESTORER       0
+#endif
 
 #ifdef SA_NOCLDSTOP
 #define HAVE_SA_NOCLDSTOP 1
@@ -2527,12 +2539,12 @@ typedef enum rpc_sa_flags {
 #define SA_FLAGS_ALL \
             (SA_NOCLDSTOP | SA_ONESHOT | SA_RESETHAND |  \
              SA_ONSTACK | SA_RESTART | SA_NOMASK |       \
-             SA_NODEFER | SA_SIGINFO)
+             SA_NODEFER | SA_SIGINFO | SA_RESTORER)
 
 #define RPC_SA_FLAGS_ALL \
             (RPC_SA_NOCLDSTOP | RPC_SA_ONESHOT | RPC_SA_RESETHAND |     \
              RPC_SA_ONSTACK | RPC_SA_RESTART | RPC_SA_NOMASK |          \
-             RPC_SA_NODEFER | RPC_SA_SIGINFO)
+             RPC_SA_NODEFER | RPC_SA_SIGINFO | RPC_SA_RESTORER)
 
 #define SA_FLAGS_MAPPING_LIST \
             RPC_BIT_MAP_ENTRY(SA_NOCLDSTOP), \
@@ -2543,6 +2555,7 @@ typedef enum rpc_sa_flags {
             RPC_BIT_MAP_ENTRY(SA_NOMASK),    \
             RPC_BIT_MAP_ENTRY(SA_NODEFER),   \
             RPC_BIT_MAP_ENTRY(SA_SIGINFO),   \
+            RPC_BIT_MAP_ENTRY(SA_RESTORER),  \
             RPC_BIT_MAP_ENTRY(SA_UNKNOWN)
 
 
@@ -2577,6 +2590,9 @@ sigaction_flags_rpc2h(rpc_sa_flags flags)
 #ifdef SA_SIGINFO
         (!!(flags & RPC_SA_SIGINFO) * SA_SIGINFO) |
 #endif
+#ifdef SA_RESTORER
+        (!!(flags & RPC_SA_RESTORER) * SA_RESTORER) |
+#endif
         0;
 }
 
@@ -2608,6 +2624,9 @@ sigaction_flags_h2rpc(int flags)
 #endif
 #ifdef SA_SIGINFO
         (!!(flags & SA_SIGINFO) * RPC_SA_SIGINFO) |
+#endif
+#ifdef SA_RESTORER
+        (!!(flags & SA_RESTORER) * RPC_SA_RESTORER) |
 #endif
         (!!(flags & ~SA_FLAGS_ALL) * RPC_SA_UNKNOWN);
 }
