@@ -372,6 +372,11 @@
          Limit: 1 -->
     <object oid="/agent/ftpserver" access="read_write" type="integer"/>
 
+    <!-- SSH daemon.
+         Name:  port
+         Value: 0 (disabled) or 1 (enabled) -->
+    <object oid="/agent/sshd" access="read_create" type="integer"/>
+
     <!-- Environment variables.
          Name: variable name
          Value: variable value
