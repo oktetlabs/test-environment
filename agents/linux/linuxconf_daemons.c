@@ -1497,7 +1497,7 @@ ds_xvfb_add(unsigned int gid, const char *oid, const char *value,
     if (pid != 0)
         return TE_RC(TE_TA_LINUX, EEXIST);
         
-    sprintf(buf, "Xvfb :%s -ac &", number);
+    sprintf(buf, "Xvfb :%s -ac 2>/dev/null &", number);
 
     if (ta_system(buf) != 0)
     {
@@ -1650,7 +1650,7 @@ ds_vncserver_add(unsigned int gid, const char *oid, const char *value,
     if (vncserver_exists((char *)number))
         return TE_RC(TE_TA_LINUX, EEXIST);
         
-    sprintf(buf, "HOME=/tmp vncserver :%s", number);
+    sprintf(buf, "HOME=/tmp vncserver :%s >/dev/null", number);
 
     if (ta_system(buf) != 0)
     {
@@ -1658,12 +1658,13 @@ ds_vncserver_add(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_LINUX, ETESHCMD);
     }
 
-    sprintf(buf, "HOME=/tmp DISPLAY=:%s xhost +", number);
+    sprintf(buf, "HOME=/tmp DISPLAY=:%s xhost + >/dev/null", number);
 
     if (ta_system(buf) != 0)
     {
         ERROR("Command '%s' failed", buf);
-        sprintf(buf, "HOME=/tmp vncserver -kill :%s", number);
+        sprintf(buf, "HOME=/tmp vncserver -kill :%s >/dev/null 2>&1", 
+                number);
         ta_system(buf);
         return TE_RC(TE_TA_LINUX, ETESHCMD);
     }
@@ -1689,7 +1690,7 @@ ds_vncserver_del(unsigned int gid, const char *oid, const char *number)
     if (!vncserver_exists((char *)number))
         return TE_RC(TE_TA_LINUX, ENOENT);
         
-    sprintf(buf, "HOME=/tmp vncserver -kill :%s", number);
+    sprintf(buf, "HOME=/tmp vncserver -kill :%s >/dev/null 2>&1", number);
 
     if (ta_system(buf) != 0)
     {
@@ -1806,11 +1807,15 @@ static char *smtp_initial;
 static char *smtp_current;
 static char *smtp_current_smarthost;
 
-/* Possible kinds of SMTP servers */
+/** "exim" or "exim4" */
+static char *exim_name = "exim";
+/** Index of the exim name in smtp_servers array */
+static const int exim_name_index = 0;
+
+/* Possible kinds of SMTP servers - do not change order */
 static char *smtp_servers[] = {
+    "exim",      
     "sendmail",
-    "exim",
-    "exim4",
     "postfix"
 };    
 
@@ -2028,8 +2033,6 @@ postfix_smarthost_set(te_bool enable)
     fclose(f);
     fclose(g);
     
-    ta_system("cd " SENDMAIL_CONF_DIR "; make >/dev/null 2>&1");
-    
     return 0;
 }
 
@@ -2040,7 +2043,7 @@ postfix_smarthost_set(te_bool enable)
 #define EXIM4_CONF_DIR   "/etc/exim4/"
 
 /** Smarthost option */
-#define EXIM_SMARTHOST_OPT  "relayhost = te_tester\n"
+#define EXIM_SMARTHOST_OPT  "dc_smarthost='te_tester'\n"
 
 static int exim_index = -1;
 
@@ -2051,19 +2054,18 @@ exim_smarthost_get(te_bool *enable)
     FILE *f;
     int   rc;
 
-    if ((f = fopen(ds_config(postfix_index), "r")) == NULL)
+    if ((f = fopen(ds_config(exim_index), "r")) == NULL)
     {
         rc = TE_RC(TE_TA_LINUX, errno);
-        ERROR("Cannot open file %s for reading",
-              ds_config(postfix_index));
+        ERROR("Cannot open file %s for reading", ds_config(exim_index));
         fclose(f);
         return rc;
     }
 
     while (fgets(buf, sizeof(buf), f) != NULL)
     {
-        if (strncmp(buf, POSTFIX_SMARTHOST_OPT, 
-                    strlen(POSTFIX_SMARTHOST_OPT)) == 0)
+        if (strncmp(buf, EXIM_SMARTHOST_OPT, 
+                    strlen(EXIM_SMARTHOST_OPT)) == 0)
         {
             fclose(f);
             *enable = 1;
@@ -2075,7 +2077,7 @@ exim_smarthost_get(te_bool *enable)
     return 0;
 }
 
-/** Enable/disable smarthost option in the postfix configuration file */
+/** Enable/disable smarthost option in the exim configuration file */
 static int
 exim_smarthost_set(te_bool enable)
 {
@@ -2083,44 +2085,41 @@ exim_smarthost_set(te_bool enable)
     FILE *g = NULL;
     int   rc;
     
-    if (postfix_index < 0)
+    if (exim_index < 0)
     {
-        ERROR("Cannot find postfix configuration file");
+        ERROR("Cannot find exim configuration file");
         return ENOENT;
     }
     
-    ds_config_touch(postfix_index);
-    if ((f = fopen(ds_backup(postfix_index), "r")) == NULL) 
+    ds_config_touch(exim_index);
+    if ((f = fopen(ds_backup(exim_index), "r")) == NULL) 
     {
         rc = TE_RC(TE_TA_LINUX, errno);
-        ERROR("Cannot open file %s for reading", ds_backup(postfix_index));
+        ERROR("Cannot open file %s for reading", ds_backup(exim_index));
         return rc;                                            
     }
 
-    if ((g = fopen(ds_config(postfix_index), "w")) == NULL) 
+    if ((g = fopen(ds_config(exim_index), "w")) == NULL) 
     {
         rc = TE_RC(TE_TA_LINUX, errno);
-        ERROR("Cannot open file %s for writing", ds_config(postfix_index));
+        ERROR("Cannot open file %s for writing", ds_config(exim_index));
         return rc;                                            
     }
 
     while (fgets(buf, sizeof(buf), f) != NULL)
     {
-        if (strstr(buf, "relayhost") == NULL && 
-            strstr(buf, "relaydomains") == NULL)
-        {
+        if (strstr(buf, "dc_smarthost") == NULL)
             fwrite(buf, 1, strlen(buf), g);
-        }
     }
     if (enable != 0)
     {
-        fprintf(g, POSTFIX_SMARTHOST_OPT);
-        fprintf(g, "relaydomains = $mydomain");
+        fprintf(g, EXIM_SMARTHOST_OPT);
     }
     fclose(f);
     fclose(g);
     
-    ta_system("cd " SENDMAIL_CONF_DIR "; make >/dev/null 2>&1");
+    sprintf(buf, "update-%s.conf >/dev/null 2>&1", exim_name);
+    ta_system(buf);
     
     return 0;
 }
@@ -2155,6 +2154,17 @@ ds_smtp_smarthost_get(unsigned int gid, const char *oid, char *value)
         int     rc;
         
         if ((rc = postfix_smarthost_get(&enable)) != 0)
+            return rc;
+            
+        if (enable)
+            strcpy(value, smtp_current_smarthost);
+    }
+    else if (strcmp(smtp_current, exim_name) == 0)
+    {
+        te_bool enable;
+        int     rc;
+        
+        if ((rc = exim_smarthost_get(&enable)) != 0)
             return rc;
             
         if (enable)
@@ -2199,6 +2209,11 @@ ds_smtp_smarthost_set(unsigned int gid, const char *oid,
     else if (strcmp(smtp_current, "postfix") == 0)
     {
         if ((rc = postfix_smarthost_set(addr != 0)) != 0)
+            goto error;
+    }
+    else if (strcmp(smtp_current, exim_name) == 0)
+    {
+        if ((rc = exim_smarthost_set(addr != 0)) != 0)
             goto error;
     }
     else
@@ -2269,6 +2284,8 @@ ds_smtp_server_set(unsigned int gid, const char *oid, const char *value)
                     rc = sendmail_smarthost_set(FALSE);
                 else if (strcmp(smtp_servers[i], "postfix") == 0)
                     rc = postfix_smarthost_set(FALSE);
+                else if (strcmp(smtp_servers[i], "exim") == 0)
+                    rc = exim_smarthost_set(FALSE);
                 
                 if (rc != 0)
                     return rc;
@@ -2327,6 +2344,21 @@ ds_init_smtp(rcf_pch_cfg_object **last)
         return;
     }
 
+    if (file_exists(EXIM_CONF_DIR "update-exim.conf.conf"))
+    {
+        if (ds_create_backup(EXIM_CONF_DIR, "update-exim.conf.conf", 
+                             &exim_index) != 0)
+            return;
+    }
+    else if (file_exists(EXIM4_CONF_DIR "update-exim4.conf.conf"))
+    {
+        exim_name = "exim4";
+        smtp_servers[exim_name_index] = "exim4";
+        if (ds_create_backup(EXIM4_CONF_DIR, "update-exim4.conf.conf", 
+                             &exim_index) != 0)
+            return;                             
+    }
+
     if (file_exists(POSTFIX_CONF_DIR "main.cf") &&
         ds_create_backup(POSTFIX_CONF_DIR, "main.cf", 
                          &postfix_index) != 0)
@@ -2354,6 +2386,11 @@ ds_shutdown_smtp()
     {
         if (file_exists(SENDMAIL_CONF_DIR))
             ta_system("cd " SENDMAIL_CONF_DIR "; make >/dev/null 2>&1");
+    }
+    if (ds_config_changed(exim_index))
+    {
+        sprintf(buf, "update-%s.conf >/dev/null 2>&1", exim_name);
+        ta_system(buf);
     }
     if (smtp_current != NULL)
         daemon_set(0, smtp_current, "0");

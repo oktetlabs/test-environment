@@ -181,6 +181,12 @@ extern void ds_config_touch(int index);
         {                                                       \
             ERROR("Cannot open file %s for reading; errno %d",  \
                   ds_backup(_index), errno);                    \
+            PRINT("No backup");                                 \
+            {                                                   \
+                char buf[128];                                  \
+                sprintf("ls -l %s", ds_backup(_index));         \
+                ta_system(buf);                                 \
+            }                                                   \
             return;                                             \
         }                                                       \
     } while (0)
