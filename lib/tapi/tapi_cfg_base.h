@@ -110,7 +110,7 @@ tapi_cfg_base_if_add_net_addr(const char *ta, const char *ifname,
 
     snprintf(inst_name, sizeof(inst_name),
              "/agent:%s/interface:%s", ta, ifname);
-    return tapi_cfg_base_add_net_addr(inst_name, addr, mask, bcast,
+    return tapi_cfg_base_add_net_addr(inst_name, addr, prefix, set_bcast,
                                       cfg_hndl);
 }
 
