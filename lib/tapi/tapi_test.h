@@ -138,6 +138,15 @@ extern "C" {
         goto cleanup;                                               \
     } while (0)
 
+/**
+ * Terminate a test with failure status. It is assumed that error is
+ * already reported.
+ */
+#define TEST_STOP \
+    do {                                                            \
+        result = EXIT_FAILURE;                                      \
+        goto cleanup;                                               \
+    } while (0)
 
 /**
  * Check an expression passed as the argument against zero.
