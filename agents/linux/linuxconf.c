@@ -157,9 +157,9 @@ static int net_addr_del(unsigned int, const char *,
 static int net_addr_list(unsigned int, const char *, char **,
                          const char *);
 
-static int netmask_get(unsigned int, const char *, char *,
+static int prefix_get(unsigned int, const char *, char *,
                        const char *, const char *);
-static int netmask_set(unsigned int, const char *, const char *,
+static int prefix_set(unsigned int, const char *, const char *,
                        const char *, const char *);
 
 static int broadcast_get(unsigned int, const char *, char *,
@@ -227,11 +227,11 @@ RCF_PCH_CFG_NODE_RO(node_link_addr, "link_addr", NULL, &node_mtu,
 
 RCF_PCH_CFG_NODE_RW(node_broadcast, "broadcast", NULL, NULL,
                     broadcast_get, broadcast_set);
-RCF_PCH_CFG_NODE_RW(node_netmask, "netmask", NULL, &node_broadcast,
-                    netmask_get, netmask_set);
+RCF_PCH_CFG_NODE_RW(node_prefix, "prefix", NULL, &node_broadcast,
+                    prefix_get, prefix_set);
 
 RCF_PCH_CFG_NODE_COLLECTION(node_net_addr, "net_addr",
-                            &node_netmask, &node_link_addr,
+                            &node_prefix, &node_link_addr,
                             net_addr_add, net_addr_del,
                             net_addr_list, NULL);
 
@@ -422,21 +422,24 @@ is_alias_of(const char *candidate, const char *master)
 }
 
 /**
- * Update IPv4 netmask of the interface using ioctl.
+ * Update IPv4 prefix length of the interface using ioctl.
  *
- * @param ifname        interface name (like "eth0")
- * @param addr          netmask pointer (netmask should be in network
- *                      byte order)
+ * @param ifname        Interface name (like "eth0")
+ * @param prefix        Prefix length
  *
  * @return OS errno
  */
 static int
-set_mask(const char *ifname, struct in_addr *mask)
+set_prefix(const char *ifname, unsigned int prefix)
 {
+    uint32_t    mask = PREFIX2MASK(prefix);
+
+    memset(&req, 0, sizeof(req));
+
     strcpy(req.ifr_name, ifname);
 
     req.ifr_addr.sa_family = AF_INET;
-    SIN(&(req.ifr_addr))->sin_addr = *mask;
+    SIN(&(req.ifr_addr))->sin_addr.s_addr = htonl(mask);
     if (ioctl(s, SIOCSIFNETMASK, (int)&req) < 0)
     {
         ERROR("ioctl(SIOCSIFNETMASK) failed: %s", strerror(errno));
@@ -1207,11 +1210,11 @@ net_addr_list(unsigned int gid, const char *oid, char **list,
 }
 
 /**
- * Get netmask of the interface.
+ * Get prefix of the interface.
  *
  * @param gid           group identifier (unused)
  * @param oid           full object instence identifier (unused)
- * @param value         netmask location (netmask is presented in dotted
+ * @param value         prefix location (prefix is presented in dotted
  *                      notation)
  * @param ifname        name of the interface (like "eth0")
  * @param addr          IPv4 address in dotted notation
@@ -1219,9 +1222,11 @@ net_addr_list(unsigned int gid, const char *oid, char **list,
  * @return error code
  */
 static int
-netmask_get(unsigned int gid, const char *oid, char *value,
+prefix_get(unsigned int gid, const char *oid, char *value,
             const char *ifname, const char *addr)
 {
+    unsigned int    prefix;
+
     UNUSED(gid);
     UNUSED(oid);
 
@@ -1239,18 +1244,14 @@ netmask_get(unsigned int gid, const char *oid, char *value,
         return TE_RC(TE_TA_LINUX, errno);
     }
 
-    if (inet_ntop(AF_INET, &SIN(&req.ifr_addr)->sin_addr, value,
-                  RCF_MAX_VAL) == NULL)
-    {
-        ERROR("inet_ntop() failed");
-        return TE_RC(TE_TA_LINUX, errno);
-    }
+    MASK2PREFIX(ntohl(SIN(&req.ifr_addr)->sin_addr.s_addr), prefix);
+    sprintf(value, "%u", prefix);
 
     return 0;
 }
 
 /**
- * Change netmask of the interface.
+ * Change prefix of the interface.
  *
  * @param gid           group identifier (unused)
  * @param oid           full object instence identifier (unused)
@@ -1261,37 +1262,37 @@ netmask_get(unsigned int gid, const char *oid, char *value,
  * @return error code
  */
 static int
-netmask_set(unsigned int gid, const char *oid, const char *value,
+prefix_set(unsigned int gid, const char *oid, const char *value,
             const char *ifname, const char *addr)
 {
     unsigned int prefix;
-    unsigned int mask;
     char        *name;
+    char        *end;
 
     UNUSED(gid);
     UNUSED(oid);
 
     if ((name = find_net_addr(ifname, addr)) == NULL)
     {
-        ERROR("Address '%s' on interface '%s' to set netmask not found",
+        ERROR("Address '%s' on interface '%s' to set prefix not found",
               ifname, addr);
         return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
     }
 
-    if (inet_pton(AF_INET, value, (void *)&mask) <= 0)
+    prefix = strtol(value, &end, 10);
+    if (value == end)
     {
-        ERROR("Failed to convert string '%s' to IPv4 address", value);
+        ERROR("Invalid value '%s' of prefix length", value);
+        return TE_RC(TE_TA_LINUX, ETEFMT);
+    }
+
+    if (prefix > 32)
+    {
+        ERROR("Invalid prefix '%s' to be set", value);
         return TE_RC(TE_TA_LINUX, EINVAL);
     }
 
-    MASK2PREFIX(ntohl(mask), prefix);
-    if (prefix > 32 || mask == 0)
-    {
-        ERROR("Invalid netmask '%s' to be set", value);
-        return TE_RC(TE_TA_LINUX, EINVAL);
-    }
-
-    return set_mask(name, (struct in_addr *)&mask);
+    return set_prefix(name, prefix);
 }
 
 
