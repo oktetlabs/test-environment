@@ -1491,9 +1491,11 @@ mtu_get(unsigned int gid, const char *oid, char *value,
     strcpy(req.ifr_name, ifname);
     if (ioctl(s, SIOCGIFMTU, (int)&req) != 0)
     {
-        ERROR("ioctl(SIOCGIFMTU) failed: %s", strerror(errno));
+        int err = errno;
+        
+        ERROR("ioctl(SIOCGIFMTU) failed: %s", strerror(err));
         /* FIXME Mapping to ETENOSUCHNAME */
-        return TE_RC(TE_TA_LINUX, errno);
+        return TE_RC(TE_TA_LINUX, err);
     }
     sprintf(value, "%d", req.ifr_mtu);
     return 0;
