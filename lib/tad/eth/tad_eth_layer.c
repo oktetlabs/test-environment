@@ -621,13 +621,26 @@ eth_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
         rc = ndn_match_data_units(pattern_pdu, eth_hdr_pdu, 
                                   &cfi, 1, "cfi");
 
-        if (rc == 0)
-            rc = ndn_match_data_units(pattern_pdu, eth_hdr_pdu, 
+        if (rc != 0)
+        {
+            WARN("match of cfi failed %X", rc);
+            rc = ETADNOTMATCH;
+        }
+        rc = ndn_match_data_units(pattern_pdu, eth_hdr_pdu, 
                                   &prio, 1, "priority");
+        if (rc != 0)
+        {
+            WARN("match of priority failed %X", rc);
+            rc = ETADNOTMATCH;
+        }
         
-        if (rc == 0)
-            rc = ndn_match_data_units(pattern_pdu, eth_hdr_pdu, 
-                                    data, 2, "vlan-id");
+        rc = ndn_match_data_units(pattern_pdu, eth_hdr_pdu, 
+                                  data, 2, "vlan-id");
+        if (rc != 0)
+        {
+            WARN("match of vlan-id failed %X", rc);
+            rc = ETADNOTMATCH;
+        }
 
         data += ETH_TAG_EXC_LEN; 
     }
