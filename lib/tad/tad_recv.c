@@ -293,7 +293,7 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
                             usr_place++;
                             break;
                         }
-                    VERB("function name: \"%s\"", buffer);
+                    RING("function name: \"%s\"", buffer);
 
                     if (*usr_place)
                     {
@@ -305,7 +305,7 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
                         else
                         {
                             rc = method_addr(usr_place, data, d_len);
-                            INFO("rc from user method %X", rc);
+                            RING("rc from user method %X", rc);
                         }
                     }
                     else
@@ -680,8 +680,7 @@ tad_tr_recv_thread(void * arg)
             if (d_len < 0)
             {
                 rc = csap_descr->last_errno;
-                F_ERROR(
-                         "CSAP #%d internal write_read error %x", 
+                F_ERROR("CSAP #%d internal write_read error %x", 
                          csap_descr->id, csap_descr->last_errno);
                 break;
             }
@@ -760,9 +759,8 @@ tad_tr_recv_thread(void * arg)
             if ((rc = tad_tr_recv_send_results (&received_packets, handle, 
                                                 answer_buffer, ans_len)))
             {
-                ERROR(
-                       "send results for 'trrecv_get' failed with code 0x%x\n", 
-                       rc);
+                ERROR("send results for 'trrecv_get' failed with code 0x%x\n", 
+                      rc);
                 /**
                  * @todo fix it. 
                  * Really, I don't know yet what to do if this failed. 
@@ -804,14 +802,13 @@ tad_tr_recv_thread(void * arg)
                 {
                     csap_descr->last_errno = ETIMEDOUT; 
                     csap_descr->state |= TAD_STATE_COMPLETE;
-                    VERB(
-                            "CSAP %d status complete by timeout, " 
-                            "wait for: %u.%u, current: %u.%u", 
-                                csap_descr->id, 
-                                (uint32_t)csap_descr->wait_for.tv_sec, 
-                                (uint32_t)csap_descr->wait_for.tv_usec,
-                                (uint32_t)current.tv_sec, 
-                                (uint32_t)current.tv_usec);
+                    VERB("CSAP %d status complete by timeout, " 
+                         "wait for: %u.%u, current: %u.%u", 
+                         csap_descr->id, 
+                         (uint32_t)csap_descr->wait_for.tv_sec, 
+                         (uint32_t)csap_descr->wait_for.tv_usec,
+                         (uint32_t)current.tv_sec, 
+                         (uint32_t)current.tv_usec);
                     continue;
                 }
             }
@@ -920,8 +917,7 @@ tad_tr_recv_thread(void * arg)
                                       answer_buffer, ans_len);
     if (rc)
     {
-        ERROR(
-                   "trrecv thread: send results failed with code 0x%x\n", rc);
+        ERROR("trrecv thread: send results failed with code 0x%x\n", rc);
         if (csap_descr->last_errno == 0)
             csap_descr->last_errno = rc;
         rc = 0;
@@ -930,18 +926,17 @@ tad_tr_recv_thread(void * arg)
     if (csap_descr->release_cb)
         csap_descr->release_cb(csap_descr);
 
-    memset (&csap_descr->wait_for, 0, sizeof (struct timeval)); 
+    memset(&csap_descr->wait_for, 0, sizeof (struct timeval)); 
     asn_free_value(nds);
     free(read_buffer);
 
     CSAP_DA_LOCK(csap_descr);
     csap_descr->command = 0;
     csap_descr->state   = 0;
-    SEND_ANSWER("%d %u", 
-                TE_RC(TE_TAD_CSAP, csap_descr->last_errno), pkt_count); 
+    SEND_ANSWER("%d %u", TE_RC(TE_TAD_CSAP, csap_descr->last_errno), pkt_count);
 
     csap_descr->answer_prefix[0] = '\0';
-    csap_descr->num_packets      = 0;
+    csap_descr->num_packets      = pkt_count;
     csap_descr->last_errno       = 0;
     CSAP_DA_UNLOCK(csap_descr);
 

@@ -762,6 +762,13 @@ rcf_ch_trrecv_stop(struct rcf_comm_connection *handle,
     {
         csap_descr_p->command |= TAD_COMMAND_STOP; 
         CSAP_DA_UNLOCK(csap_descr_p);
+
+        if (csap_descr_p->state & TAD_STATE_FOREGROUND)
+        {
+            /* With some probability number of received packets, 
+             * reported here, may be wrong. */
+            SEND_ANSWER("0 %u", csap_descr_p->num_packets); 
+        }
     }
     else
     {
