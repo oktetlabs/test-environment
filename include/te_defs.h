@@ -43,6 +43,9 @@
 #if HAVE_STRINGS_H
 #include <strings.h>
 #endif
+#if HAVE_UNISTD_H
+#include <unistd.h>
+#endif
 
 
 /** Test Environment copyright to be used in applications output */
@@ -141,6 +144,20 @@ typedef unsigned char te_bool;
 
 /** Prefix for tester user name */
 #define TE_USER_PREFIX  "te"
+
+
+/**
+ * Macro to log RING before sleep and sleep.
+ *
+ * @param x     Seconds to sleep
+ */
+#define SLEEP(x) \
+    do {                                        \
+        unsigned int _to_sleep = (x);           \
+                                                \
+        RING("Sleeping %u seconds", _to_sleep); \
+        (void)sleep(_to_sleep);                 \
+    } while (0)
 
 
 #ifdef __cplusplus
