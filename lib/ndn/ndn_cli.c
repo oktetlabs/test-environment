@@ -99,13 +99,13 @@ asn_type_p ndn_cli_params = &ndn_cli_params_s;
 /* CLI-CSAP definitions */
 static asn_named_entry_t _ndn_cli_csap_ne_array [] = 
 {
-    { "conn-type", &asn_base_integer_s, {PRIVATE, 1} },
-    { "conn-params", &ndn_cli_params_s, {PRIVATE, 2} }, 
+    { "conn-type",      &asn_base_integer_s,          {PRIVATE, 1} },
+    { "conn-params",    &ndn_cli_params_s,            {PRIVATE, 2} }, 
     { "command-prompt", &ndn_data_unit_char_string_s, {PRIVATE, 3} },
-    { "login-prompt", &ndn_data_unit_char_string_s, {PRIVATE, 4} },
-    { "password-prompt", &ndn_data_unit_char_string_s, {PRIVATE, 5} },
-    { "user", &ndn_data_unit_char_string_s, {PRIVATE, 6} },
-    { "password", &ndn_data_unit_char_string_s, {PRIVATE, 7} },
+    { "login-prompt",   &ndn_data_unit_char_string_s, {PRIVATE, 4} },
+    { "password-prompt",&ndn_data_unit_char_string_s, {PRIVATE, 5} },
+    { "user",           &ndn_data_unit_char_string_s, {PRIVATE, 6} },
+    { "password",       &ndn_data_unit_char_string_s, {PRIVATE, 7} },
 };
 
 asn_type ndn_cli_csap_s =
