@@ -471,7 +471,7 @@ ta_handler(void *ta)
         if (feof(ta_file) == 0)
         {
             empty_flag = 0;
-            perror("Logger file failure");
+            ERROR("Invalid file '%s' with logs from TA", log_file);
         }
 
         fclose(ta_file);
