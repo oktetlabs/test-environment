@@ -41,6 +41,7 @@ expect.h \
 fcntl.h \
 inttypes.h \
 limits.h \
+math.h \
 net-snmp/definitions.h \
 net-snmp/session_api.h \
 net/ethernet.h \
@@ -53,6 +54,7 @@ netinet/ether.h \
 netinet/in.h \
 netinet/in_systm.h \
 netinet/ip.h \
+netinet/ip_icmp.h \
 netinet/tcp.h \
 obstack.h \
 poll.h \
