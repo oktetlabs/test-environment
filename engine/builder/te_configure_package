@@ -111,17 +111,21 @@ ADD_LDFLAGS="`eval echo '$'${PLATFORM_NAME}'_LDFLAGS'` `eval echo '$TE_BS_'${KIN
 
 if test "$PLATFORM" = "$default_host" ; then
     option="build"
+    add_option=
 else
     option="host"
+    add_option="--build=$default_host"
 fi        
 
-echo ${PKGSRC}/configure -q --${option}=$PLATFORM --prefix=$PREFIX ${PARMS}
+echo ${PKGSRC}/configure -q --${option}=$PLATFORM $add_option \
+                         --prefix=$PREFIX ${PARMS}
 
 TE_CFLAGS="-DDEBUG -Wall -W -O0 -g -ggdb ${ADD_CFLAGS} -I${PREFIX}/include" \
 TE_LDFLAGS="${ADD_LDFLAGS} -L${PREFIX}/lib" \
 TE_LDADD="$LDADD" \
 TE_DEPENDENCIES="$DEPENDENCIES" \
-eval ${PKGSRC}/configure --${option}=$PLATFORM '-q --prefix=$PREFIX' ${PARMS} 
+eval ${PKGSRC}/configure --${option}=$PLATFORM $add_option \
+                         '-q --prefix=$PREFIX' ${PARMS} 
 
 if test $? -ne 0 ; then
     exit 1 ;
