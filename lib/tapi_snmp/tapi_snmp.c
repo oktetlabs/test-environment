@@ -653,12 +653,6 @@ tapi_snmp_msg_tail(FILE *f)
 }
 
 
-struct tapi_vb_list {
-    tapi_snmp_varbind_t *vb;
-    struct tapi_vb_list *next;
-};
-
-
 /**
  * Internal common procedure for SNMP operations. 
  */
@@ -738,6 +732,23 @@ tapi_snmp_operation (const char *ta, int sid, int csap_id,
     return TE_RC(TE_TAPI, rc);
 }
 
+typedef enum {
+    ROW_PAR_INT,
+    ROW_PAR_OS,
+    ROW_PAR_OBJID
+} row_par_type;
+    
+typedef struct tapi_get_row_par_list { 
+    row_par_type        type;
+    int                *int_place;
+    tapi_snmp_oid_t    *objid_place;
+    unsigned char     **oct_str_place;
+    size_t             *oct_str_len_place;
+
+    struct tapi_get_row_par_list *next;
+} tapi_get_row_par_list_t;
+
+
 int 
 tapi_snmp_get_row(const char *ta, int sid, int csap_id, 
                   const tapi_snmp_oid_t *common_index, ...)
@@ -750,8 +761,9 @@ tapi_snmp_get_row(const char *ta, int sid, int csap_id,
     unsigned int  timeout;
     char          tmp_name[100];
     int           rc, num;
-    struct tapi_vb_list *vbl; 
-    struct tapi_vb_list *vbl_head = NULL; 
+    tapi_snmp_message_t msg;
+    tapi_get_row_par_list_t *gp_head = NULL; 
+    tapi_get_row_par_list_t *get_par; 
 
     strcpy(tmp_name, "/tmp/te_snmp_get_row.XXXXXX"); 
     mktemp(tmp_name);
@@ -772,6 +784,7 @@ tapi_snmp_get_row(const char *ta, int sid, int csap_id,
         tapi_snmp_oid_t      oid;
         tapi_snmp_vartypes_t syntax;
         char                 *oid_name = va_arg(ap, char *);
+
         
         if (!oid_name)
             break;
@@ -782,7 +795,11 @@ tapi_snmp_get_row(const char *ta, int sid, int csap_id,
         if ((rc = tapi_snmp_get_syntax(&oid, &syntax)) != 0)
             return TE_RC(TE_TAPI, rc);
 
-        var_bind.type = syntax;
+        var_bind.type = TAPI_SNMP_OTHER; /* value is not need for GET */
+        rc = tapi_snmp_msg_var_bind(f, &var_bind);
+        if (rc) break;
+
+        get_par = calloc(1, sizeof(*get_par));
 
         switch (syntax) {
             case TAPI_SNMP_OTHER:
@@ -791,39 +808,95 @@ tapi_snmp_get_row(const char *ta, int sid, int csap_id,
             case TAPI_SNMP_COUNTER:
             case TAPI_SNMP_UNSIGNED:
             case TAPI_SNMP_TIMETICKS:
-                var_bind.integer = va_arg(ap, int);
+                get_par->type = ROW_PAR_INT;
+                get_par->int_place = va_arg(ap, int*);
                 break;
 
             case TAPI_SNMP_OCTET_STR:
-            {
-                var_bind.oct_string = va_arg(ap, unsigned char *);
-                var_bind.v_len = va_arg(ap, int);
+                get_par->type = ROW_PAR_OS;
+                get_par->oct_str_place = va_arg(ap, unsigned char **);
+                get_par->oct_str_len_place = va_arg(ap, int*);
                 break;
-            }
 
             case TAPI_SNMP_OBJECT_ID:
-            {
-                var_bind.obj_id = va_arg(ap, tapi_snmp_oid_t *);
-                var_bind.v_len = var_bind.obj_id->length;
+                get_par->type = ROW_PAR_INT;
+                get_par->objid_place = va_arg(ap, tapi_snmp_oid_t *);
                 break;
-            }
         }
         
-        vbl = calloc(1, sizeof(struct tapi_vb_list));
-        vbl->next = vbl_head;
-        vbl_head = vbl;
+        get_par->next = gp_head;
+        gp_head = get_par;
         num_vars++;
     };
     va_end(ap);
 
-    if (!num_vars)
-        return 0; /* ??? */
+    if (rc == 0)
+        rc = tapi_snmp_msg_tail(f);
 
+    if (rc) 
+    {
+        ERROR("prepare in %s failed, rc %X", __FUNCTION__, rc); 
+        goto clean_up;
+    }
+
+    if (!num_vars) /* return 0??? */ 
+        goto clean_up;
 
     VERB("in %s: num_vars %d\n", __FUNCTION__, num_vars);
 
+    memset(&msg, 0, sizeof (msg)); 
 
-     return 0;   
+    rc = rcf_ta_trsend_recv(ta, sid, csap_id, tmp_name, 
+                            tapi_snmp_pkt_handler, &msg, timeout, &num); 
+
+    if (rc)
+    {
+        WARN("rcf_ta_trsend_recv rc %X", rc); 
+        goto clean_up;
+    }
+
+    if (msg.num_var_binds) /* this is real response from Test Agent*/
+    {
+        if ((unsigned int)(num_vars) != msg.num_var_binds)
+
+        i = num_vars;
+        get_par = gp_head;
+        do
+        {
+            unsigned char *buf;
+            size_t len = msg.vars[i].v_len;
+
+            i--;
+            switch(get_par->type)
+            {
+                case ROW_PAR_INT:
+                    *(get_par->int_place) = msg.vars[i].integer;
+                    break;
+                case ROW_PAR_OS:
+                    buf = *(get_par->oct_str_place) = calloc(1, len+1);
+                    memcpy(buf, msg.vars[i].oct_string, len);
+                    break;
+                case ROW_PAR_OBJID:
+                    *(get_par->objid_place) = *(msg.vars[i].obj_id);
+            }
+            VERB ("GET_ROW, variable: %s", print_oid(&(msg.vars[i].name)));
+        } while (i != 0);
+
+        tapi_snmp_free_message(&msg);
+        
+    }
+    else 
+        rc = TE_RC(TE_TAPI, msg.err_status);
+
+clean_up:
+    while (gp_head)
+    { 
+        get_par = gp_head->next;
+        free(gp_head);
+        gp_head = get_par;
+    }
+
+    return TE_RC(TE_TAPI, rc);   
 }
 
 /* See description in tapi_snmp.h */
@@ -895,6 +968,12 @@ tapi_snmp_set(const char *ta, int sid, int csap_id,
 
     return TE_RC(TE_TAPI, rc);
 }
+
+struct tapi_vb_list {
+    tapi_snmp_varbind_t *vb;
+    struct tapi_vb_list *next;
+};
+
 
 
 #if 0
