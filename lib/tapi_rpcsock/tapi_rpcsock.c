@@ -192,6 +192,7 @@ rpcop2str(rcf_rpc_op op)
     switch (op)
     {
         case RCF_RPC_CALL:      return " call";
+        case RCF_RPC_IS_DONE:   return " is done";
         case RCF_RPC_WAIT:      return " wait";
         case RCF_RPC_CALL_WAIT: return "";
         default:                assert(FALSE);
