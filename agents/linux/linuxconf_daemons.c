@@ -1595,7 +1595,7 @@ ds_vncpasswd_get(unsigned int gid, const char *oid, char *value)
     if ((f = fopen("/tmp/.vnc/passwd", "r")) == NULL)
     {
         rc = errno;
-        ERROR("Failed to create /tmp/.vnc directory");
+        ERROR("Failed to open /tmp/.vnc directory");
         return TE_RC(TE_TA_LINUX, errno);
     }
     
@@ -1742,7 +1742,7 @@ RCF_PCH_CFG_NODE_RO(node_ds_vncpasswd, "vncpasswd",
                     NULL, NULL, ds_vncpasswd_get);
 
 RCF_PCH_CFG_NODE_COLLECTION(node_ds_vncserver, "vncserver",
-                            &node_ds_vncpasswd, NULL, 
+                            NULL, NULL, 
                             ds_vncserver_add, ds_vncserver_del, 
                             ds_vncserver_list, NULL);
 
@@ -1759,9 +1759,10 @@ ds_init_vncserver(rcf_pch_cfg_object **last)
     
     /* Real fake password generated during first vncserver spawning */
     uint8_t passwd[] = { 0xE0, 0xFD, 0x04, 0x72, 0x49, 0x29, 0x35, 0xDA };
-    
+
     if (stat("/tmp/.vnc", &st) == 0)
     {
+        DS_REGISTER(vncpasswd);
         DS_REGISTER(vncserver);
         return; /* Already exists, do nothing */
     }
@@ -1791,6 +1792,7 @@ ds_init_vncserver(rcf_pch_cfg_object **last)
         return;
     }
 
+    DS_REGISTER(vncpasswd);
     DS_REGISTER(vncserver);
 }
 
