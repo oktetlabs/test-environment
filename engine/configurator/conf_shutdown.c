@@ -61,8 +61,6 @@ sigint_handler(int sig)
     UNUSED(sig);
     /* FIXME: Error possible here, if main was interrupted during logging */
     RING("Configurator shut down operation interrupted");
-    fprintf(stderr, "ATTENTION: Kill 'configurator' process and make sure\n"
-                    "           that configuration cleaned up\n");
     exit(EXIT_FAILURE);
 }
 
