@@ -63,6 +63,7 @@ string.h \
 strings.h \
 regex.h \
 time.h \
+errno.h \
 sys/time.h \
 pthread.h \
 netinet/in.h \

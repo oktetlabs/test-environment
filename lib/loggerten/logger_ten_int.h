@@ -53,6 +53,9 @@
 #if HAVE_TIME_H
 #include <time.h>
 #endif
+#if HAVE_ERRNO_H
+#include <errno.h>
+#endif
 
 #include "te_stdint.h"
 #include "te_raw_log.h"
@@ -384,7 +387,8 @@ log_message_va(uint8_t **msg_buf, size_t *msg_buf_len, uint16_t level,
                             log_message_int(msg_buf, msg_buf_len,
                                             TE_LL_ERROR,
                                             te_lgr_entity, TE_LGR_USER,
-                                            "File %s copying error");
+                                            "File %s copying error %X",
+                                            tmp, errno);
                             return;
                         }
 

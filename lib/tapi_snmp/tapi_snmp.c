@@ -534,7 +534,7 @@ tapi_snmp_gen_csap_create(const char *ta, int sid, const char *snmp_agent,
 #if DEBUG
     VERB("tmp file: %s\n", tmp_name);
 #endif
-    f = fopen (tmp_name, "w+");
+    f = fopen(tmp_name, "w+");
     if (f == NULL)
         return TE_RC(TE_TAPI, errno); /* return system errno */
 
@@ -560,9 +560,10 @@ tapi_snmp_gen_csap_create(const char *ta, int sid, const char *snmp_agent,
     fprintf(f,"}}\n");
 
     fclose(f);
-
-
+    
     rc = rcf_ta_csap_create(ta, sid, "snmp", tmp_name, csap_id);
+
+    INFO("Create SNMP CSAP %tf with status %X", tmp_name, rc);
 
 #if !(DEBUG)
     unlink(tmp_name);
