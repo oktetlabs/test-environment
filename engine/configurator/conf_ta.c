@@ -277,7 +277,7 @@ sync_ta_subtree(char *ta, char *oid)
     if ((wildcard_oid = malloc(strlen(oid) + sizeof("/..."))) == NULL)
     {
         ERROR("Out of memory");
-        return rc;
+        return ENOMEM;
     }
     sprintf(wildcard_oid, "%s/...", oid);
 

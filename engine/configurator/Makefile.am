@@ -1,5 +1,5 @@
 
-AM_CPPFLAGS = -I$(DESTDIR)/$(prefix)/include 
+AM_CPPFLAGS = -I$(DESTDIR)/$(prefix)/include -fno-strict-aliasing
 AM_CFLAGS = @XML2_CFLAGS@
 AM_LDFLAGS = @TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/lib 
 
