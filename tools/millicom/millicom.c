@@ -18,9 +18,9 @@
 #include <errno.h>
 
 
-#undef DEBUG
+#define DEBUG   1
 
-#ifdef DEBUG
+#if DEBUG
 #define DBG(x) do { \
     x;\
 } while (0)
@@ -35,7 +35,7 @@
 #define BUF_SIZE        32
 
 /** Magic !!! use it if the millicom does work */
-#define MILLICOM_COMPATIBLE_MODE    1
+#define MILLICOM_COMPATIBLE_MODE    0
 
 /**
  * Mapping structure between baud_rate in integer representation and
@@ -183,7 +183,7 @@ main(int argc, char *argv[])
     tty.c_cflag |= (CREAD | CLOCAL | HUPCL | CRTSCTS);
     tty.c_lflag &= ~(XCASE | ECHONL | NOFLSH | ICANON | ISIG | ECHO);
 
-#ifdef MILLICOM_COMPATIBLE_MODE
+#if MILLICOM_COMPATIBLE_MODE
     /* Magic !!! */
     tty.c_oflag = 0;
     tty.c_lflag = 0;
@@ -213,7 +213,10 @@ main(int argc, char *argv[])
         }
 
         if (b_speed != B0)
+        {
+            cfsetispeed(&tty, b_speed);
             cfsetospeed(&tty, b_speed);
+        }
     }
 
     DBG(fprintf(stderr, "Attributes after\n"));
