@@ -27,8 +27,6 @@
  * $Id$
  */
 
-#define TE_LOG_LEVEL    0xff
-
 #include "te_config.h"
 #include "config.h"
 
