@@ -5,7 +5,14 @@
 
     <author mailto="Konstantin.Abramenko@oktetlabs.ru"/>
 
+    <req id="TAD" sticky="true"/> 
+    <req id="TAD_ETH"/> 
+    <req id="TAD_SNMP"/> 
+
     <session>
+        <run>
+            <package name="eth"/>
+        </run>
         <run>
             <package name="cli"/>
         </run>

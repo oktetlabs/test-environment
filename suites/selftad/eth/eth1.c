@@ -27,6 +27,10 @@
  * $Id$
  */
 
+#define TE_TEST_NAME    "eth/minimal"
+
+#define TE_LOG_LEVEL 255
+
 #include "config.h"
 
 #include <stdio.h>
@@ -35,9 +39,12 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include "te_defs.h"
 #include "te_stdint.h"
 #include "te_errno.h"
 #include "rcf_api.h"
+
+#include "tapi_test.h"
 
 #include "ndn_eth.h"
 #include "tapi_eth.h"
@@ -67,13 +74,14 @@ local_eth_frame_handler(const ndn_eth_header_plain *header,
 }
 
 int
-main()
+main(int argc, char *argv[])
 {
     char ta[32];
     int  len = sizeof(ta);
     int  sid;
-    
-    VERB("Starting test\n");
+   
+    TEST_START;
+ 
     if (rcf_get_ta_list(ta, &len) != 0)
     {
         fprintf(stderr, "rcf_get_ta_list failed\n");

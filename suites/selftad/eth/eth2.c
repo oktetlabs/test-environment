@@ -26,6 +26,8 @@
  * $Id$
  */
 
+#define TE_TEST_NAME    "eth/min_vlan"
+
 #include "config.h"
 
 #include <stdio.h>
@@ -34,9 +36,12 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include "te_defs.h"
 #include "te_stdint.h"
 #include "te_errno.h"
 #include "rcf_api.h"
+
+#include "tapi_test.h"
 
 #include "ndn_eth.h"
 #include "tapi_eth.h"
@@ -45,52 +50,53 @@
 
 #include "logger_api.h"
 
-#define TE_LOG_LEVEL 255
-
 void
 local_eth_frame_handler(const ndn_eth_header_plain *header, 
                    const uint8_t *payload, uint16_t plen, 
                    void *userdata)
 {
     int i;
+    char buffer [100];
     UNUSED(payload);
     UNUSED(userdata);
 
-    printf ("++++ Ethernet frame received\n");
-    printf ("dst: ");
+    VERB ("++++ Ethernet frame received\n");
+    sprintf(buffer, "dst: ");
     for (i = 0; i < ETH_ALEN; i ++ )
-        printf ("%02x ", header->dst_addr[i]);
-    printf ("\nsrc: ");
+        sprintf(buffer, "%02x ", header->dst_addr[i]);
+    sprintf(buffer, "src: ");
     for (i = 0; i < ETH_ALEN; i ++ )
-        printf ("%02x ", header->src_addr[i]);
+        sprintf(buffer, "%02x ", header->src_addr[i]);
+    VERB("addrs: %s", buffer);
 
-    printf ("\neth_len_type: 0x%x = %d\n", header->eth_type_len,  header->eth_type_len);
+    VERB("eth_len_type: 0x%x = %d", header->eth_type_len,  header->eth_type_len);
 
     if(header->is_tagged)
     {
-        printf("cfi:     %d\n", (int)header->cfi);
-        printf("prio:    %d\n", (int)header->priority);
-        printf("vlan-id: %d\n", (int)header->vlan_id);
+        VERB("cfi:     %d", (int)header->cfi);
+        VERB("prio:    %d", (int)header->priority);
+        VERB("vlan-id: %d", (int)header->vlan_id);
     }
 
-    printf ("payload len: %d\n", plen);
+    VERB("payload len: %d", plen);
 }
 
 #define EXAMPLE_MULT_PKTS 0
 int
-main()
+main(int argc, char *argv[])
 {
     char ta[32];
     int  len = sizeof(ta);
     int  sid;
+
+    TEST_START;
     
-    printf("Starting test\n");
     if (rcf_get_ta_list(ta, &len) != 0)
     {
-        printf("rcf_get_ta_list failed\n");
+        VERB("rcf_get_ta_list failed\n");
         return 1;
     }
-    printf("Agent: %s\n", ta);
+    VERB("Agent: %s\n", ta);
     
     /* Type test */
     {
@@ -100,7 +106,7 @@ main()
             printf("rcf_ta_name2type failed\n");
             return 1;
         }
-        printf("TA type: %s\n", type); 
+        VERB("TA type: %s\n", type); 
     }
     
     /* Session */
@@ -110,7 +116,7 @@ main()
             printf("rcf_ta_create_session failed\n");
             return 1;
         }
-        printf("Test: Created session: %d\n", sid); 
+        VERB("Test: Created session: %d\n", sid); 
     }
 
     /* CSAP tests */
@@ -191,14 +197,16 @@ main()
                 "payload.#bytes");
 #endif
 
-    VERB("come data: %tm[[6].[1]]\n", rem_addr,  ETH_ALEN);
+#if 0 /* Breaks log parse */
+    VERB("come data: %tm6\n", rem_addr,  ETH_ALEN);
+#endif
 
         if (rc)
         {
             printf ("template create error %x\n", rc);
             return rc;
         }
-        printf ("template created successfully \n");
+        VERB ("template created successfully \n");
         rc = tapi_eth_csap_create(ta, sid, eth_device, rem_addr, loc_addr, 
                               &eth_type, &eth_csap);
 
@@ -208,7 +216,7 @@ main()
             return rc;
         }
         else 
-            printf ("csap created, id: %d\n", (int)eth_csap);
+            VERB ("csap created, id: %d\n", (int)eth_csap);
 
 
 #if 1
@@ -222,7 +230,7 @@ main()
             return rc;
         }
         else 
-            printf ("csap for listen created, id: %d\n", (int)eth_listen_csap);
+            VERB ("csap for listen created, id: %d\n", (int)eth_listen_csap);
 
 
         rc = asn_parse_value_text("{{ pdus { eth:{ }}}}", 
@@ -330,36 +338,39 @@ main()
 
         sleep(2);
 
-    /* Retrieve total TX bytes sent */
-    rc = rcf_ta_csap_param(ta, sid, eth_csap, "total_bytes", 
-                           sizeof(tx_counter_txt), tx_counter_txt);
-    if (rc)
-    {
-        VERB("get total bytes recv rc %x", rc);
-        break;
-    }
-    tx_counter = atoi(tx_counter_txt);
-    printf (" tx_counter: %ld\n", tx_counter);
-   
-    /* Retrieve total RX bytes received */    
-    rc = rcf_ta_csap_param(ta, sid, eth_listen_csap, "total_bytes", 
-                           sizeof(rx_counter_txt), rx_counter_txt);
-    if (rc)
-    {
-        VERB("get total bytes recv rc %x", rc);
-        break;
-    } 
-    rx_counter = atoi(rx_counter_txt);
-    printf (" rx_counter: %ld\n", rx_counter);
+        /* Retrieve total TX bytes sent */
+        rc = rcf_ta_csap_param(ta, sid, eth_csap, "total_bytes", 
+                               sizeof(tx_counter_txt), tx_counter_txt);
+        if (rc)
+        {
+            VERB("get total bytes recv rc %x", rc);
+            break;
+        }
+        tx_counter = atoi(tx_counter_txt);
+        VERB (" tx_counter: %ld\n", tx_counter);
+       
+        /* Retrieve total RX bytes received */    
+        rc = rcf_ta_csap_param(ta, sid, eth_listen_csap, "total_bytes", 
+                               sizeof(rx_counter_txt), rx_counter_txt);
+        if (rc)
+        {
+            VERB("get total bytes recv rc %x", rc);
+            break;
+        } 
+        rx_counter = atoi(rx_counter_txt);
+        VERB (" rx_counter: %ld\n", rx_counter);
 
         rc = rcf_ta_trrecv_stop(ta, eth_listen_csap, &syms);
 
-        printf ("trrecv stop rc: %x, num of pkts: %d\n", rc, syms);
+        VERB ("trrecv stop rc: %x, num of pkts: %d\n", rc, syms);
 
         rcf_ta_csap_destroy(ta, sid, eth_csap);
         rcf_ta_csap_destroy(ta, sid, eth_listen_csap);
 
     } while (0);
 
-    return 0;
+    TEST_SUCCESS;
+
+cleanup:
+    TEST_END; 
 }

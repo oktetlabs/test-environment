@@ -6,19 +6,19 @@
     <author mailto="Konstantin.Abramenko@oktetlabs.ru"/>
 
     <session random="true">
-        <var name="ta" handdown="true">
+        <arg name="ta" handdown="true">
             <value>Agt_A</value>
-        </var>
-        <var name="snmp_agt" handdown="true">
+        </arg>
+        <arg name="snmp_agt" handdown="true">
             <value>192.168.37.14</value>
-        </var>
-        <var name="snmp_version" handdown="true">
+        </arg>
+        <arg name="snmp_version" handdown="true">
             <value>2</value>
-        </var>
+        </arg>
 
         <run>
             <script name="snmp_gets">
-                <req id="SNMP"/>
+                <req id="TAD_SNMP"/>
             </script>
             <arg name="ta"/>
             <arg name="snmp_agt"/>
@@ -33,7 +33,7 @@
 
         <run>
             <script name="snmp_get_if_table">
-                <req id="SNMP"/>
+                <req id="TAD_SNMP"/>
             </script>
             <arg name="ta"/>
             <arg name="snmp_agt"/>

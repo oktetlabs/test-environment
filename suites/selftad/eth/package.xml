@@ -4,12 +4,14 @@
     <description>CLI CSAP tests</description>
     
     <author mailto="Konstantin.Abramenko@oktetlabs.ru"/>
+    <req id="TAD_ETH" sticky="true"/>
 
     <session>
         <run>
-            <script name="ethtest">
-                <req id="ETH"/>
-            </script>
+            <script name="eth1"/>
+        </run>
+        <run>
+            <script name="eth2"/>
         </run>
    </session>
 </package>

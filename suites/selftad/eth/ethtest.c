@@ -37,6 +37,7 @@
 #include "te_stdint.h"
 #include "te_errno.h"
 #include "rcf_api.h"
+#include "logger_api.h"
 
 #include "ndn_eth.h"
 
@@ -45,34 +46,36 @@ eth_handler(char *fn, void *p)
 { 
     int rc, s_parsed;
     asn_value_p packet, eth_header;
-    printf ("ETH handler, file: %s\n", fn);
+    INFO("ETH handler, file: %s\n", fn);
+
+    UNUSED(p);
 
     rc = asn_parse_dvalue_in_file(fn, ndn_raw_packet, &packet, &s_parsed);
 
     if (rc == 0)
     {
         ndn_eth_header_plain eh;
-        printf ("parse file OK!\n");
+        VERB("parse file OK!\n");
 
         eth_header = asn_read_indexed (packet, 0, "pdus");
         rc = ndn_eth_packet_to_plain (eth_header, &eh);
         if (rc)
-            printf ("eth_packet to plain fail: %x\n", rc);
+            ERROR("eth_packet to plain fail: %x\n", rc);
         else
         {
             int i; 
-            printf ("dst - %02x", eh.dst_addr[0]);
+            INFO ("dst - %02x", eh.dst_addr[0]);
             for (i = 1; i < 6; i++)
                 printf (":%02x", eh.dst_addr[i]);
 
-            printf ("\nsrc - %02x", eh.src_addr[0]);
+            INFO ("\nsrc - %02x", eh.src_addr[0]);
             for (i = 1; i < 6; i++)
                 printf (":%02x", eh.src_addr[i]);
-            printf ("\ntype - %04x\n", eh.eth_type);
+            INFO ("\ntype - %04x\n", eh.eth_type_len);
         } 
     }
     else
-        printf ("parse file failed, rc = %x, symbol %d\n", rc, s_parsed); 
+        ERROR("parse file failed, rc = %x, symbol %d\n", rc, s_parsed); 
 
 }
 
@@ -83,33 +86,33 @@ main()
     int  len = sizeof(ta);
     int  sid;
     
-    printf("Starting test\n");
+    INFO("Starting test\n");
     if (rcf_get_ta_list(ta, &len) != 0)
     {
         printf("rcf_get_ta_list failed\n");
         return 1;
     }
-    printf("Agent: %s\n", ta);
+    INFO("Agent: %s\n", ta);
     
     /* Type test */
     {
         char type[16];
         if (rcf_ta_name2type(ta, type) != 0)
         {
-            printf("rcf_ta_name2type failed\n");
+            ERROR("rcf_ta_name2type failed\n");
             return 1;
         }
-        printf("TA type: %s\n", type); 
+        VERB("TA type: %s\n", type); 
     }
     
     /* Session */
     {
         if (rcf_ta_create_session(ta, &sid) != 0)
         {
-            printf("rcf_ta_create_session failed\n");
+            ERROR("rcf_ta_create_session failed\n");
             return 1;
         }
-        printf("Test: Created session: %d\n", sid); 
+        VERB("Test: Created session: %d\n", sid); 
     }
 
     /* CSAP tests */
@@ -140,9 +143,9 @@ main()
 
         strcpy(path + path_prefix, "eth-csap.asn");
 #endif
-        printf("let's create Ethernet csap \n"); 
+        VERB("let's create Ethernet csap \n"); 
         rc =   rcf_ta_csap_create(ta, sid, "eth", path, &handle);
-        printf("csap_create rc: %d, csap id %d\n", rc, handle); 
+        VERB("csap_create rc: %d, csap id %d\n", rc, handle); 
         if (rc) break;
         sleep (2);
 
@@ -152,7 +155,7 @@ main()
 #else
         strcpy(path + path_prefix, "eth-filter.asn");
 #endif
-        printf ("send template full path: %s\n", path);
+        VERB ("send template full path: %s\n", path);
 
 #if 0
         rc = rcf_ta_trrecv_start(ta, sid, handle, path, 0, eth_handler, NULL, 0);
@@ -177,18 +180,16 @@ main()
 #endif
 
 #if 1
-        printf ("wait for exactly 1 packet more:\n");
         rc = rcf_ta_trrecv_start(ta, sid, handle, path, 1, eth_handler, NULL, 1);
-        printf("trrecv_start: 0x%x \n", rc);
+        VERB("trrecv_start: 0x%x \n", rc);
 
 #endif
         num = 1;
-        printf ("sleep %d secs before destroy\n", num);
+        VERB ("sleep %d secs before destroy\n", num);
         sleep (num);
 
 
-        printf ("try to  destroy\n");
-        printf("csap_destroy: %x\n", 
+        VERB("csap_destroy: %x\n", 
                rcf_ta_csap_destroy(ta, sid, handle)); 
 
     } while(0);
