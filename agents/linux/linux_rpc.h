@@ -38,17 +38,6 @@ void tarpc_init(int argc, char **argv);
  */
 extern void tarpc_destroy_all();
 
- 
-#define MY_TRACE(fmt...) \
-    do {                                        \
-        char buf[512] = {0,};                   \
-        char *s = buf;                          \
-        s += sprintf(buf, "echo \"");           \
-        s += sprintf(s, fmt);                   \
-        sprintf(s, "\" >> /tmp/xxx");           \
-        ta_system(buf);                         \
-    } while (0)
-
 /** Socket used by the last started RPC server */
 int rpcserver_sock;
 

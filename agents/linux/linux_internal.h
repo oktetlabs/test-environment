@@ -44,4 +44,9 @@ extern int ftp_open(char *uri, int flags, int passive, int offset);
 /* Work-around for system/waitpid problem */
 extern int ta_system(char *cmd);
 
+#define PRINT(msg...) \
+    do {                                                \
+       printf(msg); printf("\n"); fflush(stdout);       \
+    } while (0)
+
 #endif /* __LINUX_INTERNAL_H__ */

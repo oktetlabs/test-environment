@@ -3382,6 +3382,11 @@ static int
 ds_smtp_get(unsigned int gid, const char *oid, char *value)
 {
     UNUSED(oid);
+    if (smtp_current == NULL)
+    {
+        value[0] = 0;
+        return 0;
+    }
     return daemon_get(gid, smtp_current, value);
 }
 
@@ -3390,6 +3395,8 @@ static int
 ds_smtp_set(unsigned int gid, const char *oid, const char *value)
 {
     UNUSED(oid);
+    if (smtp_current == NULL)
+        return TE_RC(TE_TA_LINUX, EPERM);
     return daemon_set(gid, smtp_current, value);
 }
 
