@@ -142,7 +142,7 @@ CONF_LOGGER=logger.conf
 CONF_TESTER=tester.conf
 CONF_CONFIGURATOR=configurator.conf
 CONF_RCF=rcf.conf
-CONF_RGT=rgt.conf
+CONF_RGT=
 
 # Storage initialization string for files/directories to be updated
 STORAGE=
@@ -280,7 +280,7 @@ fi
 
 for i in BUILDER LOGGER TESTER CONFIGURATOR RCF RGT ; do
     CONF_FILE=`eval echo '$CONF_'$i` ;
-    if test "${CONF_FILE:0:1}" != "/" ; then
+    if test -n ${CONF_FILE} -a "${CONF_FILE:0:1}" != "/" ; then
         eval CONF_$i="${CONF_DIR}/${CONF_FILE}" ;
     fi
 done
@@ -535,8 +535,11 @@ fi
 #te_log_archive --storage="${LOG_STORAGE}" --storage-dir=="${LOG_STORAGE_DIR}" ;
 
 # Create log file in text representation
-rgt-conv -m postponed -f ${TE_LOG_DIR}/tmp_raw_log \
-                      -o ${TE_LOG_DIR}/tmp_raw_log.xml
+if test -n "${CONF_RGT}" ; then
+    CONF_RGT="-c ${CONF_RGT}"
+fi
+rgt-conv -m postponed ${CONF_RGT} -f ${TE_LOG_DIR}/tmp_raw_log \
+                                  -o ${TE_LOG_DIR}/tmp_raw_log.xml
 rgt-xml2text -f ${TE_LOG_DIR}/tmp_raw_log.xml -o ${TE_LOG_DIR}/tmp_raw_log.txt
 rgt-xml2html -f ${TE_LOG_DIR}/tmp_raw_log.xml -o ${TE_LOG_DIR}/tmp_raw_log.html
 rm -f ${TE_LOG_DIR}/tmp_raw_log.xml
