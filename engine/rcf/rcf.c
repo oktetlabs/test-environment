@@ -217,7 +217,6 @@ static char *tmp_dir;
 /* Forward decraration */
 static int send_cmd(ta *agent, usrreq *req);
 
-
 /*
  * Release memory allocated for Test Agents structures.
  */
@@ -353,14 +352,14 @@ parse_config(char *filename)
 
     if ((doc = xmlParseFile(filename)) == NULL)
     {
-        VERB("error occured during parsing configuration file %s\n",
+        ERROR("error occured during parsing configuration file %s\n",
                   filename);
         return -1;
     }
 
     if ((cur = xmlDocGetRootElement(doc)) == NULL)
     {
-        VERB("Empty configuration file");
+        ERROR("Empty configuration file");
         xmlFreeDoc(doc);
         xmlCleanupParser();
         return -1;
@@ -495,7 +494,7 @@ parse_config(char *filename)
                 }
                 else
                 {
-                    INFO("No value attribute in <arg>");
+                    ERROR("No value attribute in <arg>");
                     goto bad_format;
                 }
             }
@@ -667,10 +666,13 @@ startup_tasks(ta *agent)
 static void
 set_ta_dead(ta *agent)
 {
-    agent->dead = TRUE;
-    (agent->close)(agent->handle, &set0);
-    answer_all_requests(&(agent->sent), ETADEAD);
-    answer_all_requests(&(agent->pending), ETADEAD);
+    if (!agent->dead)
+    {
+        agent->dead = TRUE;
+        (agent->close)(agent->handle, &set0);
+        answer_all_requests(&(agent->sent), ETADEAD);
+        answer_all_requests(&(agent->pending), ETADEAD);
+    }
 }
 
 /**
@@ -742,7 +744,8 @@ force_reboot(ta *agent, usrreq *req)
                                                     : NULL);
     if (rc != 0)
     {
-         ERROR("fatal error: cannot reboot TA %s\n", agent->name);
+         ERROR("Cannot reboot TA %s\n", agent->name);
+         set_ta_dead(agent);
          return -1;
     }
     answer_user_request(req);
@@ -753,7 +756,7 @@ force_reboot(ta *agent, usrreq *req)
  * Check if a reboot timer expires for any of Test Agents and perform
  * appropriate actions (see algorithm above).
  */
-static int
+static void
 check_reboot()
 {
     ta *agent;
@@ -769,11 +772,9 @@ check_reboot()
                  req != &(agent->sent) &&
                      req->message->opcode != RCFOP_REBOOT;
                  req = req->next);
-            return force_reboot(agent, req);
+            force_reboot(agent, req);
         }
     }
-
-    return 0;
 }
 
 
@@ -877,10 +878,8 @@ save_attachment(ta *agent, rcf_msg *msg, size_t cmdlen, char *ba)
  *
  * @param agent         Test Agent structure
  * @param sid           session identifier
- *
- * @return 0 (success) or -1 (failure)
  */
-static int
+static void
 send_pending_command(ta *agent, int sid)
 {
     usrreq *req = find_user_request(&(agent->pending), sid);
@@ -889,15 +888,14 @@ send_pending_command(ta *agent, int sid)
     {
         VERB("There is NO pending requests for TA %s:%d",
                          agent->name, sid);
-        return 0;
+        return;
     }
 
     VERB("Send pending command to TA %s:%d", agent->name, sid);
 
     QEL_DELETE(req);
-    QEL_INSERT(&(agent->sent), req);
-
-    return send_cmd(agent, req);
+    if (send_cmd(agent, req) == 0)
+        QEL_INSERT(&(agent->sent), req);
 }
 
 /**
@@ -905,10 +903,8 @@ send_pending_command(ta *agent, int sid)
  * already sent.
  *
  * @param agent     test agent
- *
- * @return 0 (success) or -1 (failure)
  */
-static int
+static void
 send_all_pending_commands(ta *agent)
 {
     usrreq *head;
@@ -924,13 +920,10 @@ send_all_pending_commands(ta *agent)
         {
             /* No requests with such SID sent */
             QEL_DELETE(req);
-            if (send_cmd(agent, req) < 0)
-                return -1;
-            QEL_INSERT(&(agent->sent), req);
+            if (send_cmd(agent, req) == 0)
+                QEL_INSERT(&(agent->sent), req);
         }
     }
-
-    return 0;
 }
 
 
@@ -995,10 +988,8 @@ read_str(char **ptr, char *s)
  * message if necessary.
  *
  * @param agent         Test Agent structure
- *
- * @return 0 (success) or -1 (failure)
  */
-static int
+static void
 process_reply(ta *agent)
 {
     int     rc;
@@ -1033,15 +1024,15 @@ process_reply(ta *agent)
         ERROR("Too big answer from TA '%s' - increase memory constants", 
               agent->name);
         set_ta_dead(agent);
-        return 0;
+        return;
     }
 
     if (rc != 0 && rc != ETEPENDING)
     {
-        ERROR("ERROR: Receiving answer from TA '%s' failed error %d",
+        ERROR("Receiving answer from TA '%s' failed error %d",
               agent->name, rc);
         set_ta_dead(agent);
-        return 0;
+        return;
     }
 
 
@@ -1059,7 +1050,7 @@ process_reply(ta *agent)
     if (sid == RCF_STARTUP_SID)
     {
         VERB("Ignoring answers for a startup command");
-        return 0;
+        return;
     }
 
     if ((req = find_user_request(&(agent->sent), sid)) == NULL)
@@ -1089,7 +1080,7 @@ process_reply(ta *agent)
         msg->file[0] = '\0';
         save_attachment(agent, msg, len, ba);
         answer_user_request(req);
-        return 0;
+        return;
     }
 
     READ_INT(error);
@@ -1103,12 +1094,11 @@ process_reply(ta *agent)
             agent->reboot_timestamp = 0;
             if (!(agent->flags & TA_PROXY))
             {
-                if (init_agent(agent) < 0)
+                if (init_agent(agent) != 0)
                 {
                     ERROR("Initialization of the TA '%s' "
                           "after reboot failed ", agent->name);
-                    set_ta_dead(agent);
-                    return 0;
+                    return;
                 }
             }
         }
@@ -1121,14 +1111,12 @@ process_reply(ta *agent)
             else
             {
                 if (force_reboot(agent, req) != 0)
-                {
-                    set_ta_dead(agent);
-                    return 0;
-                }
+                    return;
             }
         }
         answer_user_request(req);
-        return send_all_pending_commands(agent);
+        send_all_pending_commands(agent);
+        return;
     }
 
     if (error != 0)
@@ -1217,8 +1205,8 @@ process_reply(ta *agent)
     }
 
     answer_user_request(req);
-
-    return send_pending_command(agent, sid);
+    send_pending_command(agent, sid);
+    return;
 
 bad_protocol:
     ERROR("Bad answer is received from TA '%s'", agent->name);
@@ -1228,7 +1216,6 @@ bad_protocol:
         answer_user_request(req);
     }
     set_ta_dead(agent);
-    return 0;
 
 #undef READ_INT
 }
@@ -1253,17 +1240,16 @@ transmit_cmd(ta *agent, usrreq *req)
 
         if ((file = open(req->message->file, O_RDONLY)) < 0)
         {
-            /*
-             * Presence and readability of the file is checked in API
-             * library.
-             */
-            ERROR("FATAL ERROR: Cannot open file '%s'", req->message->file);
+            req->message->error = TE_RC(TE_RCF, errno);
+            ERROR("Cannot open file '%s'", req->message->file);
+            answer_user_request(req);
             return -1;
         }
         if (fstat(file, &st) != 0)
         {
-            ERROR("RCF", "FATAL ERROR: stat() failed for file %s",
-                  req->message->file);
+            req->message->error = TE_RC(TE_RCF, errno);
+            ERROR("RCF", "stat() failed for file %s", req->message->file);
+            answer_user_request(req);
             close(file);
             return -1;
         }
@@ -1279,24 +1265,28 @@ transmit_cmd(ta *agent, usrreq *req)
     {
         if ((rc = (agent->transmit)(agent->handle, cmd, len)) != 0)
         {
-            ERROR("Failed to transmit command "
-                  "to TA '%s' errno %d", agent->name, rc);
+            req->message->error = TE_RC(TE_RCF, rc);
+            ERROR("Failed to transmit command to TA '%s' errno %d", 
+                  agent->name, rc);
 
+            answer_user_request(req);
             set_ta_dead(agent);
 
             if (file != -1)
                 close(file);
 
-            return 0;
+            return -1;
         }
         if (file < 0 || (len = read(file, cmd, sizeof(cmd))) == 0)
             break;
 
         if (len < 0)
         {
-            ERROR("FATAL ERROR: Read from file '%s' failed errno %d", 
+            req->message->error = TE_RC(TE_RCF, errno);
+            ERROR("Read from file '%s' failed errno %d", 
                   req->message->file, errno);
             close(file);
+            answer_user_request(req);
             return -1;
         }
     }
@@ -1613,9 +1603,8 @@ rcf_ta_check()
     for (agent = agents; agent != NULL; agent = agent->next)
     {
         if (agent->dead)
-        {
             continue;
-        }
+
         num_live++;
         sprintf(cmd, "SID %d %s time string", ++agent->sid, TE_PROTO_VREAD);
         (agent->transmit)(agent->handle, cmd, strlen(cmd) + 1);        
@@ -1683,10 +1672,8 @@ rcf_ta_check()
  * put the request to the pending queue.
  *
  * @param req           user request structure
- *
- * @return 0 (success) or -1 (failure)
  */
-static int
+static void
 process_user_request(usrreq *req)
 {
     ta *agent;
@@ -1698,7 +1685,7 @@ process_user_request(usrreq *req)
         msg->data_len = names_len;
         memcpy(msg->data, names, names_len);
         answer_user_request(req);
-        return 0;
+        return;
     }
 
     if (msg->opcode == RCFOP_TACHECK)
@@ -1706,7 +1693,7 @@ process_user_request(usrreq *req)
         rc = rcf_ta_check();
         msg->error = TE_RC(TE_RCF, rc);
         answer_user_request(req);
-        return 0;
+        return;
     }
     
     if ((agent = find_ta_by_name(msg->ta)) == NULL)
@@ -1714,7 +1701,7 @@ process_user_request(usrreq *req)
         ERROR("Unknown TA %s", msg->ta);
         msg->error = TE_RC(TE_RCF, EINVAL);
         answer_user_request(req);
-        return 0;
+        return;
     }
     
     if (agent->dead)
@@ -1722,17 +1709,14 @@ process_user_request(usrreq *req)
         ERROR("Request to dead TA %s", msg->ta);
         msg->error = TE_RC(TE_RCF, ETADEAD);
         answer_user_request(req);
-        return 0;
+        return;
     }
     
     if (msg->opcode == RCFOP_TADEAD)
     {
-        agent->dead = TRUE;
-        (agent->close)(agent->handle, &set0);
-        answer_all_requests(&(agent->sent), ETADEAD);
-        answer_all_requests(&(agent->pending), ETADEAD);
         answer_user_request(req);
-        return 0;
+        set_ta_dead(agent);
+        return;
     }
     
     if (req->message->sid > agent->sid)
@@ -1740,7 +1724,7 @@ process_user_request(usrreq *req)
         ERROR("Invalid SID %d for TA %s", req->message->sid, msg->ta);
         msg->error = TE_RC(TE_RCF, EINVAL);
         answer_user_request(req);
-        return 0;
+        return;
     }
 
     /* Special commands */
@@ -1749,31 +1733,31 @@ process_user_request(usrreq *req)
         case RCFOP_TATYPE:
             strcpy(msg->id, agent->type);
             answer_user_request(req);
-            return 0;
+            return;
 
         case RCFOP_SESSION:
             msg->sid = ++agent->sid;
             answer_user_request(req);
-            return 0;
+            return;
 
         case RCFOP_REBOOT:
             if ((agent->flags & TA_REBOOTABLE) == 0)
             {
                 msg->error = TE_RC(TE_RCF, EPERM);
                 answer_user_request(req);
-                return 0;
+                return;
             }
             if (agent->reboot_timestamp > 0)
             {
                 msg->error = TE_RC(TE_RCF, EINPROGRESS);
                 answer_user_request(req);
-                return 0;
+                return;
             }
             if ((agent->flags & TA_LOCAL) && !(agent->flags & TA_PROXY))
             {
                 msg->error = TE_RC(TE_RCF, ETALOCAL);
                 answer_user_request(req);
-                return 0;
+                return;
             }
             msg->sid = ++agent->sid;
             if (send_cmd(agent, req) != 0)
@@ -1787,16 +1771,17 @@ process_user_request(usrreq *req)
                     ERROR("Cannot reboot TA %s", agent->name);
                     msg->error = TE_RC(TE_RCF, rc);
                     answer_user_request(req);
-                    return 0;
+                    return;
                 }
                 answer_user_request(req);
-                return init_agent(agent);
+                init_agent(agent);
+                return;
             }
             QEL_INSERT(&(agent->sent), req);
             reboot_num++;
             agent->reboot_timestamp = time(NULL);
             VERB("Reboot of TA '%s' initiated", agent->name);
-            return 0;
+            return;
 
         default:
             /* Continue processing below */
@@ -1813,13 +1798,9 @@ process_user_request(usrreq *req)
     }
     else
     {
-        if ((rc = send_cmd(agent, req)) != 0)
-            return -1;
-
-        QEL_INSERT(&(agent->sent), req);
+        if ((rc = send_cmd(agent, req)) == 0)
+            QEL_INSERT(&(agent->sent), req);
     }
-
-    return 0;
 }
 
 /**
@@ -1890,7 +1871,7 @@ rcf_shutdown()
     RING("Test Agents are stopped");
 }
 
-/* Wait for shutdown message in the case of initialization error */
+/** Wait for shutdown message in the case of initialization error */
 static void
 wait_shutdown()
 {
@@ -2036,7 +2017,9 @@ main(int argc, char **argv)
                                           &len, &(req->user))) != 0)
             {
                 ERROR("Failed to receive user request: errno=%d", rc);
-                /* TODO: Free request here */
+                free(req->message);
+                free(req);
+                continue;
             }
             else
             {
@@ -2047,27 +2030,14 @@ main(int argc, char **argv)
                     VERB("Shutdown command is recieved");
                     break;
                 }
-                if (process_user_request(req) != 0)
-                {
-                    ERROR("User request processing failed");
-                    /* TODO: Free request here */
-                    break;
-                }
-                /*
-                 * In the case of success request is always owned by
-                 * process_user_request() function.
-                 */
-                req = NULL;
+                process_user_request(req);
             }
 
         }
         for (agent = agents; agent != NULL; agent = agent->next)
         {
-            if ((agent->is_ready)(agent->handle) &&
-                process_reply(agent) != 0)
-            {
-                goto shutdown;
-            }
+            if ((agent->is_ready)(agent->handle))
+                process_reply(agent);
         } 
 
         if (rcf_wait_shutdown)
@@ -2077,7 +2047,6 @@ main(int argc, char **argv)
         }
     }
 
-shutdown:
     rcf_shutdown();
 
     if (req != NULL && req->message->opcode == RCFOP_SHUTDOWN)
@@ -2099,6 +2068,5 @@ no_ipcs_error:
 
     log_client_close();
 
-    
     return rc < 0 ? 1 : 0;
 }
