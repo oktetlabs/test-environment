@@ -6,7 +6,8 @@ AM_CFLAGS=@NET_SNMP_CFLAGS@
 AM_LDFLAGS=@TE_LDFLAGS@ 
 
 
-include_HEADERS=tapi_snmp.h tapi_snmp_iftable.h tapi_snmp_macro.h
+include_HEADERS=tapi_snmp.h tapi_snmp_iftable.h tapi_snmp_macro.h \
+				tapi_snmp_defs.h
 
 lib_LTLIBRARIES=libtapi_snmp.la 
 
