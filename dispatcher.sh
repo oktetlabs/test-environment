@@ -236,6 +236,25 @@ process_opts()
     done
 }
 
+
+# Export TE_BASE
+if test -z "${TE_BASE}" ; then
+    if test -e ${DISPATCHER_DIR}/configure.ac ; then
+        echo "TE source directory is ${DISPATCHER_DIR} - exporting TE_BASE." ;
+        export TE_BASE=${DISPATCHER_DIR} ;
+    fi
+fi
+
+if test -z "$CONF_DIR" ; then
+    if test -n "${TE_BASE}" ; then
+        CONF_DIR=${TE_BASE}/conf ;
+    else
+        CONF_DIR=`pwd` ;
+    fi
+fi
+
+
+# Process command-line options
 process_opts $@
 
 
@@ -260,22 +279,6 @@ fi
 
 if test -z "${LOG_STORAGE}" ; then
     LOG_STORAGE_DIR=
-fi
-
-# Export TE_BASE
-if test -z "${TE_BASE}" ; then
-    if test -e ${DISPATCHER_DIR}/configure.ac ; then
-        echo "TE source directory is ${DISPATCHER_DIR} - exporting TE_BASE." ;
-        export TE_BASE=${DISPATCHER_DIR} ;
-    fi
-fi
-
-if test -z "$CONF_DIR" ; then
-    if test -n "${TE_BASE}" ; then
-        CONF_DIR=${TE_BASE}/conf ;
-    else
-        CONF_DIR=`pwd` ;
-    fi
 fi
 
 for i in BUILDER LOGGER TESTER CONFIGURATOR RCF RGT ; do
