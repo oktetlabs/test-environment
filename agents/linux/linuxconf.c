@@ -1269,14 +1269,24 @@ netmask_set(unsigned int gid, const char *oid, const char *value,
     UNUSED(oid);
 
     if ((name = find_net_addr(ifname, addr)) == NULL)
+    {
+        ERROR("Address '%s' on interface '%s' to set netmask not found",
+              ifname, addr);
         return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
+    }
 
     if (inet_pton(AF_INET, value, (void *)&mask) <= 0)
+    {
+        ERROR("Failed to convert string '%s' to IPv4 address", value);
         return TE_RC(TE_TA_LINUX, EINVAL);
+    }
 
     MASK2PREFIX(ntohl(mask), prefix);
     if (prefix > 32 || mask == 0)
+    {
+        ERROR("Invalid netmask '%s' to be set", value);
         return TE_RC(TE_TA_LINUX, EINVAL);
+    }
 
     return set_mask(name, (struct in_addr *)&mask);
 }
