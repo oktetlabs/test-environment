@@ -150,6 +150,7 @@ NDN_DATA_UNIT_TYPE (objid,         asn_base_objid_s,      OBJECT IDENTIFIER )
 static asn_named_entry_t _ndn_payload_ne_array [] = 
 {
     { "bytes",    &asn_base_octstring_s },
+    { "mask",     &ndn_data_unit_mask_static },
     { "function", &asn_base_charstring_s },
     { "filename", &asn_base_charstring_s },
     { "length",   &asn_base_integer_s }
