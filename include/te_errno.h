@@ -41,6 +41,7 @@
 
 /** @name Common Test Environment errno's */
 #define TE_BASE         (1 << 16)
+#define ETEOK           (TE_BASE | 0) /* Success when 0 can't be used */
 #define ETESMALLBUF     (TE_BASE | 1) /* Too small buffer is provided
                                          to user */
 #define ETEPENDING      (TE_BASE | 2) /* Pending data retain on
