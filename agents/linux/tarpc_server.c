@@ -1146,7 +1146,7 @@ TARPC_FUNC(if_nametoindex, {},
 }
 )
 
-/*-------------- if_nametoindex() --------------------------------*/
+/*-------------- if_indextoname() --------------------------------*/
 
 TARPC_FUNC(if_indextoname,
 {
