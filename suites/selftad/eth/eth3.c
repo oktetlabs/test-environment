@@ -60,7 +60,8 @@ local_eth_frame_handler(const ndn_eth_header_plain *header,
     for (i = 0; i < ETH_ALEN; i ++ )
         printf ("%02x ", header->src_addr[i]);
 
-    printf ("\neth_len_type: 0x%x = %d\n", header->eth_type_len,  header->eth_type_len);
+    printf ("\neth_len_type: 0x%x = %d\n", header->eth_type_len,
+                header->eth_type_len);
 
     printf ("payload len: %d\n", plen);
 }
@@ -149,7 +150,8 @@ main()
             return rc;
         }
         else 
-            printf ("csap for listen created, id: %d\n", (int)eth_listen_csap);
+            printf ("csap for listen created, id: %d\n",
+                    (int)eth_listen_csap);
 
 
 
@@ -158,8 +160,9 @@ main()
 
         if (rc)
         {
-            fprintf (stderr, "tapi_eth_recv_start failed 0x%x, catched %d\n", 
-                        rc, syms);
+            fprintf(stderr, "tapi_eth_recv_start failed 0x%x, "
+                    "catched %d\n", 
+                    rc, syms);
             return rc;
         } 
 

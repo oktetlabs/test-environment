@@ -140,7 +140,8 @@ main(int argc, char *argv[])
         if (rc) break;
 
 #if 1
-        rc = rcf_ta_trrecv_start(ta, sid, csap, "", 0, udp_handler, NULL, 0);
+        rc = rcf_ta_trrecv_start(ta, sid, csap, "", 0,
+                                 udp_handler, NULL, 0);
         INFO("trrecv_start: 0x%X \n", rc);
         if (rc) break;
 

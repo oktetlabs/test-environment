@@ -16,5 +16,6 @@ AM_LDFLAGS = @TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/lib
 
 tetest_PROGRAMS = create send0 recv0 recv1
 
-LDADD = -lrcfapi -llogger_ten -lipc -lpthread -ltapi_bridge -ltapi_eth -lndn -lasn 
+LDADD = -lrcfapi -llogger_ten -lipc -lpthread -ltapi_bridge -ltapi_eth \
+        -lndn -lasn 
 

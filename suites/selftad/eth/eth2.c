@@ -69,7 +69,8 @@ local_eth_frame_handler(const ndn_eth_header_plain *header,
         sprintf(buffer, "%02x ", header->src_addr[i]);
     VERB("addrs: %s", buffer);
 
-    VERB("eth_len_type: 0x%x = %d", header->eth_type_len,  header->eth_type_len);
+    VERB("eth_len_type: 0x%x = %d", header->eth_type_len,
+                                    header->eth_type_len);
 
     if(header->is_tagged)
     {
@@ -136,10 +137,14 @@ main(int argc, char *argv[])
         char eth_device[] = "eth0";
         char payload_fill_method[100] = "eth_udp_payload";
 
-        unsigned long    tx_counter;    /* returned from CSAP total byte counter */
-        char             tx_counter_txt[20];/* buffer for tx_counter */
-        unsigned long    rx_counter;    /* returned from CSAP total byte counter */
-        char             rx_counter_txt[20];/* buffer for rx_counter */
+        /* returned from CSAP total byte counter */
+        unsigned long    tx_counter;
+        /* buffer for tx_counter */
+        char             tx_counter_txt[20];
+        /* returned from CSAP total byte counter */
+        unsigned long    rx_counter;
+        /* buffer for rx_counter */
+        char             rx_counter_txt[20];
 
 
 #if 0
@@ -170,7 +175,7 @@ main(int argc, char *argv[])
 
 #if EXAMPLE_MULT_PKTS
         rc = asn_parse_value_text("{simple-for:{begin 1}}",
-                            ndn_template_parameter_sequence, &arg_sets, &syms);
+                 ndn_template_parameter_sequence, &arg_sets, &syms);
 
         num_pkts = 20;
         rc = asn_write_value_field (arg_sets, &num_pkts, sizeof(num_pkts), 
@@ -222,15 +227,17 @@ main(int argc, char *argv[])
 #if 1
         eth_type = 0;
 #endif
-        rc = tapi_eth_csap_create_with_mode(ta, sid, eth_device, ETH_RECV_ALL,
-                                      NULL, NULL, &eth_type, &eth_listen_csap);
+        rc = tapi_eth_csap_create_with_mode(ta, sid, eth_device,
+                                            ETH_RECV_ALL, NULL, NULL,
+                                            &eth_type, &eth_listen_csap);
         if (rc)
         {
             printf ("csap for listen create error: %x\n", rc);
             return rc;
         }
         else 
-            VERB ("csap for listen created, id: %d\n", (int)eth_listen_csap);
+            VERB("csap for listen created, id: %d\n",
+                 (int)eth_listen_csap);
 
 
         rc = asn_parse_value_text("{{ pdus { eth:{ }}}}", 
@@ -242,7 +249,7 @@ main(int argc, char *argv[])
         }
 
         rc = asn_write_value_field(pattern, rem_addr, sizeof(rem_addr), 
-                "0.pdus.0.#eth.dst-addr.#plain"); 
+                 "0.pdus.0.#eth.dst-addr.#plain"); 
         if (rc)
         {
             fprintf (stderr, "write dst to pattern failed\n");
@@ -305,7 +312,8 @@ main(int argc, char *argv[])
 
         if (rc)
         {
-            fprintf (stderr, "write intervals to pattern failed, rc %x\n", rc);
+            fprintf(stderr, "write intervals to pattern failed, rc %x\n",
+                    rc);
             return rc;
         } 
 
@@ -322,8 +330,8 @@ main(int argc, char *argv[])
 #endif
         if (rc)
         {
-            fprintf (stderr, "tapi_eth_recv_start failed 0x%x, catched %d\n", 
-                        rc, syms);
+            fprintf(stderr, "tapi_eth_recv_start failed 0x%x, "
+                            "catched %d\n", rc, syms);
             return rc;
         } 
 #endif

@@ -101,7 +101,8 @@ main(int argc, char *argv[])
 
         strcpy(path + path_prefix, "cli-filter.asn");
         VERB("send template full path: %s\n", path);
-        rc = rcf_ta_trsend_recv(ta, sid, handle, path, cli_msg_handler, NULL, &timeout, num);
+        rc = rcf_ta_trsend_recv(ta, sid, handle, path, cli_msg_handler,
+                                NULL, &timeout, num);
         VERB("trsend_recv: 0x%x, timeout: %d, num: %d\n", 
                     rc, timeout, num);
         if (rc) 

@@ -81,8 +81,10 @@ main(int argc, char *argv[])
 
 
     do {
-        tapi_snmp_oid_t walk_oid     = {11, {1,3,6,1,4,1,4491,2,4,5,1}};
-        tapi_snmp_oid_t ctp_num_pkts = {14, {1,3,6,1,4,1,4491,2,4,5,1,2,6, 0}};
+        tapi_snmp_oid_t walk_oid     =
+            {11, {1,3,6,1,4,1,4491,2,4,5,1}};
+        tapi_snmp_oid_t ctp_num_pkts =
+            {14, {1,3,6,1,4,1,4491,2,4,5,1,2,6, 0}};
 
         int errstat;
         int csap;
@@ -102,7 +104,8 @@ main(int argc, char *argv[])
         printf("csap_create rc: %d\n", rc); 
 
         if (rc == 0) 
-            rc = tapi_snmp_get(ta, sid, csap, &root_oid, TAPI_SNMP_NEXT, &vb);
+            rc = tapi_snmp_get(ta, sid, csap, &root_oid, TAPI_SNMP_NEXT,
+                               &vb);
         printf("snmp get next rc: %d\n", rc); 
 
         if (rc == 0) 

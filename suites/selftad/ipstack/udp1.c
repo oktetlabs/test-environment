@@ -162,7 +162,8 @@ main(int argc, char *argv[])
         INFO("prepared path: %s", path); 
 
 #if 1
-        rc = rcf_ta_trrecv_start(ta, sid, csap, path, 0, udp_handler, NULL, 0);
+        rc = rcf_ta_trrecv_start(ta, sid, csap, path, 0,
+                                 udp_handler, NULL, 0);
         INFO("trrecv_start: 0x%X \n", rc);
         if (rc) break;
 

@@ -158,7 +158,8 @@ main()
         VERB ("send template full path: %s\n", path);
 
 #if 0
-        rc = rcf_ta_trrecv_start(ta, sid, handle, path, 0, eth_handler, NULL, 0);
+        rc = rcf_ta_trrecv_start(ta, sid, handle, path, 0,
+                                 eth_handler, NULL, 0);
         printf("trrecv_start: 0x%x \n", rc);
         if (rc) break;
 
@@ -180,7 +181,8 @@ main()
 #endif
 
 #if 1
-        rc = rcf_ta_trrecv_start(ta, sid, handle, path, 1, eth_handler, NULL, 1);
+        rc = rcf_ta_trrecv_start(ta, sid, handle, path, 1,
+                                 eth_handler, NULL, 1);
         VERB("trrecv_start: 0x%x \n", rc);
 
 #endif

@@ -112,7 +112,10 @@ main()
     const char *ps_cfg_file = "PSP-01-Basic.cfg";
     unsigned int i;
 
-    /* Register on receiving DHCP DISCOVER message from WAN-Man MAC address */
+    /* 
+     * Register on receiving DHCP DISCOVER message from 
+     * WAN-Man MAC address
+     */
     /*@todo Create a handle to operate with DHCP CSAP (WAN-Man MAC) */
     if ((rc = dhcpv4_plain_csap_create(ta_name, &dhcp_csap, "eth0")) 
          != 0)
@@ -120,7 +123,8 @@ main()
         TEST_FAIL("Cannot create DHCP CSAP rc = %d\n", rc);
     }
 #if 1
-    if ((rc = dhcpv4_message_start_recv(ta_name, dhcp_csap, DHCPDISCOVER)) != 0)
+    if ((rc = dhcpv4_message_start_recv(ta_name, dhcp_csap,
+                                        DHCPDISCOVER)) != 0)
     {
         TEST_FAIL("dhcpv4_message_start_recv returns %d\n", rc);
     }

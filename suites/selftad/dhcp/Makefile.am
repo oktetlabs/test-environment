@@ -16,5 +16,6 @@ AM_LDFLAGS = @TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/lib
 
 tetest_PROGRAMS = dhcptest
 
-LDADD = -lrcfapi -llogger_ten -lipc -lpthread -lndn -lndn_dhcp -ltapi_dhcp -lndn -lasn 
+LDADD = -lrcfapi -llogger_ten -lipc -lpthread -lndn -lndn_dhcp \
+        -ltapi_dhcp -lndn -lasn 
 

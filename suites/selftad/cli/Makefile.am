@@ -16,7 +16,8 @@ AM_LDFLAGS = @TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/lib
 
 tetest_PROGRAMS = clitest
 
-LDADD = -lndn -lasn -ltapi -lrcfapi -lconfapi -lconf_oid -lipc -lpthread -llogger_ten
+LDADD = -lndn -lasn -ltapi -lrcfapi -lconfapi -lconf_oid -llogger_ten \
+        -lipc -lpthread
  
 #clitest_DEPENDENCIES = ${TE_INSTALL}/i686-pc-linux-gnu/lib/librcfapi.a
 

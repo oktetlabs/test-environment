@@ -122,7 +122,8 @@ main()
         memcpy (plain_bpdu.cfg.root_id, root_id, sizeof(root_id));
 
         asn_bpdu = ndn_bpdu_plain_to_asn(&plain_bpdu);
-        CHECK_STATUS(asn_bpdu == NULL, "Create ASN bpdu from plain fails\n");
+        CHECK_STATUS(asn_bpdu == NULL,
+                     "Create ASN bpdu from plain fails\n");
 
         template = asn_init_value(ndn_traffic_template);
         asn_pdus = asn_init_value(ndn_generic_pdu_sequence);
@@ -167,20 +168,21 @@ main()
             uint8_t p_mask[2]; /* number of bytes in port-id STP field */
             uint8_t port_num = 0x22;
 
-            rc = asn_free_subvalue(pattern, "0.pdus.0.content.#cfg.port-id");
+            rc = asn_free_subvalue(pattern,
+                                   "0.pdus.0.content.#cfg.port-id");
 
             p_mask[0] = 0;
             p_mask[1] = port_num;
 
             if (rc == 0)
                 rc = asn_write_value_field(pattern, p_mask, sizeof(p_mask),
-                                       "0.pdus.0.content.#cfg.port-id.#mask.v");
+                         "0.pdus.0.content.#cfg.port-id.#mask.v");
 
             p_mask[0] = 0;
             p_mask[1] = 0xff; 
             if (rc == 0)
                 rc = asn_write_value_field(pattern, p_mask, sizeof(p_mask),
-                                   "0.pdus.0.content.#cfg.port-id.#mask.m"); 
+                         "0.pdus.0.content.#cfg.port-id.#mask.m"); 
             CHECK_STATUS(rc, "bpdu set port-id mask rc: %x\n", rc); 
         }
 

@@ -123,7 +123,8 @@ main()
 #endif
 
         asn_bpdu = ndn_bpdu_plain_to_asn(&plain_bpdu);
-        CHECK_STATUS(asn_bpdu == NULL, "Create ASN bpdu from plain fails\n");
+        CHECK_STATUS(asn_bpdu == NULL,
+                     "Create ASN bpdu from plain fails\n");
 
         template = asn_init_value(ndn_traffic_template);
         asn_pdus = asn_init_value(ndn_generic_pdu_sequence);

@@ -124,7 +124,8 @@ main()
         printf ("send template full path: %s\n", path);
 
 #if 1
-        rc = rcf_ta_trrecv_start(ta, sid, handle, path, 0, trap_handler, NULL, 0);
+        rc = rcf_ta_trrecv_start(ta, sid, handle, path, 0,
+                                 trap_handler, NULL, 0);
         printf("trrecv_start: 0x%x \n", rc);
         if (rc) break;
 
@@ -147,7 +148,8 @@ main()
 
 #if 1
         printf ("wait for exactly 1 traps more:\n");
-        rc = rcf_ta_trrecv_start(ta, sid, handle, path, 1, trap_handler, NULL, 1);
+        rc = rcf_ta_trrecv_start(ta, sid, handle, path, 1,
+                                 trap_handler, NULL, 1);
         printf("trrecv_start: 0x%x \n", rc);
 
 #endif

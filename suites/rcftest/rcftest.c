@@ -239,16 +239,20 @@ main()
             return 1;
         }
         
-        if (rcf_ta_start_task(ta, sid2, 0, "test_g", &pid1, 3, 0, RCF_INT32, 10, 
-                              RCF_INT32, 20, RCF_STRING, "helen") != 0)
+        if (rcf_ta_start_task(ta, sid2, 0, "test_g", &pid1, 3, 0,
+                              RCF_INT32, 10, 
+                              RCF_INT32, 20,
+                              RCF_STRING, "helen") != 0)
         {
             printf("rcf_ta_start_task failed\n");
             return 1;
         }
         printf("pid = %d\n", pid1);
 
-        if (rcf_ta_start_task(ta, sid, 0, "test_g", &pid2, 3, 0, RCF_INT32, 15, 
-                              RCF_INT32, 15, RCF_STRING, "vvv") != 0)
+        if (rcf_ta_start_task(ta, sid, 0, "test_g", &pid2, 3, 0,
+                              RCF_INT32, 15, 
+                              RCF_INT32, 15,
+                              RCF_STRING, "vvv") != 0)
         {
             printf("rcf_ta_start_task failed\n");
             return 1;
@@ -369,15 +373,18 @@ main()
         unlink("/tmp/localmem");
         unlink("/tmp/localmem2");
         
-        if (rcf_ta_get_file(ta, sid, "/tmp/rfc2428.txt", "/tmp/localrfc") != 0)
+        if (rcf_ta_get_file(ta, sid, "/tmp/rfc2428.txt",
+                            "/tmp/localrfc") != 0)
         {
             printf("rcf_ta_get_file failed\n");
         }
-        if (rcf_ta_put_file(ta, sid, "/tmp/localrfc", "/tmp/remoterfc") != 0)
+        if (rcf_ta_put_file(ta, sid, "/tmp/localrfc",
+                            "/tmp/remoterfc") != 0)
         {
             printf("rcf_ta_put_file failed\n");
         } 
-        if (rcf_ta_get_file(ta, sid, "/memory/test_d:12", "/tmp/localmem") != 0)
+        if (rcf_ta_get_file(ta, sid, "/memory/test_d:12",
+                            "/tmp/localmem") != 0)
         {
             printf("rcf_ta_get_file failed for memory\n");
         } 
@@ -385,7 +392,8 @@ main()
         {
             printf("rcf_ta_put_file failed for memory\n");
         } 
-        if (rcf_ta_get_file(ta, sid, "/memory/test_d:12", "/tmp/localmem2") != 0)
+        if (rcf_ta_get_file(ta, sid, "/memory/test_d:12",
+                            "/tmp/localmem2") != 0)
         {
             printf("rcf_ta_get_file failed for memory\n");
         } 
@@ -406,16 +414,19 @@ main()
         printf("<%s>\n", val); 
   
         printf("configure_add: %d\n", 
-               rcf_ta_cfg_add(ta, sid, "/agent:vcube/interface:eth0:3", ""));
+               rcf_ta_cfg_add(ta, sid, "/agent:vcube/interface:eth0:3",
+                              ""));
         printf("configure_add: %d\n", 
                rcf_ta_cfg_add(ta, sid, 
                "/agent:vcube/interface:eth0:3/net_addr:1.2.3.4", ""));
         printf("configure_set: %d\n", 
-               rcf_ta_cfg_set(ta, sid, "/agent:vcube/interface:eth0:3/status:", 
-               "1"));
+               rcf_ta_cfg_set(ta, sid,
+                              "/agent:vcube/interface:eth0:3/status:", 
+                              "1"));
         printf("configure_get: %d\n", 
-               rcf_ta_cfg_get(ta, sid, "/agent:vcube/interface:eth0:3/link_addr:", 
-               val, sizeof(val)));
+               rcf_ta_cfg_get(ta, sid,
+                              "/agent:vcube/interface:eth0:3/link_addr:", 
+                              val, sizeof(val)));
         printf("HW address: %s\n", val);
         system("/sbin/ifconfig"); 
         printf("configure_del: %d\n", 

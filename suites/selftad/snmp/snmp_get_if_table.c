@@ -122,7 +122,8 @@ main(int argc, char *argv[])
                             print_oid(iftable_result[i].index_suffix));
         #if 1
                 if (iftable_result[i].ifDescr)
-                    INFO(" ifDescr \"%s\"", iftable_result[i].ifDescr->data);
+                    INFO(" ifDescr \"%s\"",
+                         iftable_result[i].ifDescr->data);
         #endif
             }
         }
@@ -180,10 +181,14 @@ main()
         int num;
 
         tapi_snmp_varbind_t vb[100];
-        tapi_snmp_oid_t root_oid     = {11, {1,3,6,1,4,1,4491,2,4,5,1}};
-        tapi_snmp_oid_t ctp_num_pkts = {14, {1,3,6,1,4,1,4491,2,4,5,1,2,6, 0}};
-        tapi_snmp_oid_t ifTable      = {9, {1,3,6,1,2,1,2,2,1}}; 
-        tapi_snmp_oid_t ctp_ping_sent= {14, {1,3,6,1,4,1,4491,2,4,5,1,3,11,0}};
+        tapi_snmp_oid_t root_oid     =
+            {11, {1,3,6,1,4,1,4491,2,4,5,1}};
+        tapi_snmp_oid_t ctp_num_pkts =
+            {14, {1,3,6,1,4,1,4491,2,4,5,1,2,6, 0}};
+        tapi_snmp_oid_t ifTable      =
+            {9, {1,3,6,1,2,1,2,2,1}}; 
+        tapi_snmp_oid_t ctp_ping_sent=
+            {14, {1,3,6,1,4,1,4491,2,4,5,1,3,11,0}};
 
         memset (&vb, 0, sizeof(vb));
         
@@ -201,7 +206,8 @@ main()
 #if 1
         num = 50;
         if (rc == 0) 
-            rc = tapi_snmp_getbulk(ta, sid, csap, &ctp_ping_sent, &num, vb);
+            rc = tapi_snmp_getbulk(ta, sid, csap, &ctp_ping_sent, &num,
+                                   vb);
         printf("snmp getbulk rc: %d\n", rc); 
 
         if (rc == 0)
@@ -231,9 +237,11 @@ main()
                 printf ( "row %d: ", i );
         #if 1
                 if (iftable_result[i].ifIndex)
-                    printf(" ifIndex %d\n", (int) *(iftable_result[i].ifIndex));
+                    printf(" ifIndex %d\n",
+                           (int) *(iftable_result[i].ifIndex));
                 if (iftable_result[i].ifDescr)
-                    printf(" ifDescr \"%s\"\n", iftable_result[i].ifDescr->data);
+                    printf(" ifDescr \"%s\"\n",
+                           iftable_result[i].ifDescr->data);
         #endif
             }
         }

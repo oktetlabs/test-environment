@@ -55,7 +55,7 @@ int main()
 {
     int              rc, syms = 4;
     
-    int              recv_pkts;      /* the number of waned/received packets */
+    int      recv_pkts;      /* the number of waned/received packets */
            
     int              num_pkts = PKTS_TO_PROCESS; /* number of packets
                                                        to be generated */
@@ -66,11 +66,11 @@ int main()
     char            *agent_b;       /* second linux agent name */
     char            *agent_b_if;    /* second agent interface name */
     int              sid_b;         /* session id for second session */
-    csap_handle_t    tx_csap;       /* the CSAP handle for frame transmission */
-    csap_handle_t    rx_csap;       /* the CSAP handle for frame reception */
-    unsigned long    tx_counter;    /* returned from CSAP total byte counter */
+    csap_handle_t    tx_csap;  /* the CSAP handle for frame transmission */
+    csap_handle_t    rx_csap;  /* the CSAP handle for frame reception */
+    unsigned long    tx_counter; /* returned from CSAP total byte counter */
     char             tx_counter_txt[20];/* buffer for tx_counter */
-    unsigned long    rx_counter;    /* returned from CSAP total byte counter */
+    unsigned long    rx_counter; /* returned from CSAP total byte counter */
     char             rx_counter_txt[20];/* buffer for rx_counter */
     
     char       *src_mac = SRC_MAC;
@@ -86,8 +86,10 @@ int main()
 
     uint32_t    eth_payload_length = PAYLOAD_LENGTH;
     
-    asn_value *pattern;  /* ether frame pattern used for recv csap filtering */
-    asn_value *template; /* ether frame template used for traffic generation */
+    asn_value *pattern;
+        /* ether frame pattern used for recv csap filtering */
+    asn_value *template;
+        /* ether frame template used for traffic generation */
 
     /* Test configuration preambule */
 
@@ -117,7 +119,8 @@ int main()
         else
         {
             agent_b = agent_a + agt_a_len + 1; 
-            VERB("number of agent more then one, agent_b: %s\n", agent_b); 
+            VERB("number of agent more then one, agent_b: %s\n",
+                 agent_b); 
         } 
 
         agent_b_if = agent_a_if = strdup("eth0");
@@ -216,7 +219,8 @@ int main()
 #if 1
     if (rc == 0)
         rc = asn_write_value_field(pattern, dst_bin_mac, 
-                                   ETH_ALEN, "0.pdus.0.#eth.dst-addr.#plain");
+                                   ETH_ALEN,
+                                   "0.pdus.0.#eth.dst-addr.#plain");
     if (rc)
     {
         TEST_TERMINATION(" pattern creation error %x", rc);
@@ -253,7 +257,8 @@ int main()
         rc = tapi_csap_get_status(agent_a, sid_a, tx_csap, &status);
         if (rc)
         {
-            TEST_TERMINATION("v1: port A. TX CSAP get status error %x", rc);
+            TEST_TERMINATION("v1: port A. TX CSAP get status error %x",
+                             rc);
         }
         printf ("TX status: %d\n", status);
         fflush (stdout);
@@ -261,7 +266,8 @@ int main()
         rc = rcf_ta_trrecv_get(agent_b, rx_csap, &num);
         if (rc)
         {
-            TEST_TERMINATION("v1: port A. RX CSAP get traffic error %x", rc);
+            TEST_TERMINATION("v1: port A. RX CSAP get traffic error %x",
+                             rc);
         }
         printf ("prev num: %d, RX num: %d\n", prev, num);
         fflush (stdout);
@@ -310,7 +316,8 @@ int main()
     fflush (stdout);
     if (recv_pkts != PKTS_TO_PROCESS)
     {
-        TEST_TERMINATION(" some frames from flow are lost; got %d, should %d",
+        TEST_TERMINATION(" some frames from flow are lost; got %d, "
+                         "should %d",
                 recv_pkts, PKTS_TO_PROCESS);
     }
 

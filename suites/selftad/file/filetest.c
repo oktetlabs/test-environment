@@ -119,7 +119,8 @@ main()
         strcpy(path + path_prefix, "file-filter.asn");
         printf ("receive pattern full path: %s\n", path);
 
-        rc = rcf_ta_trrecv_start(ta, sid, handle, path, 0, trap_handler, NULL, 0);
+        rc = rcf_ta_trrecv_start(ta, sid, handle, path, 0, 
+                                 trap_handler, NULL, 0);
         printf("trrecv_start: 0x%x \n", rc);
         if (rc) break;
 
@@ -138,7 +139,8 @@ main()
 #endif
 
         printf ("wait for exactly 2 traps more:\n");
-        rc = rcf_ta_trrecv_start(ta, sid, handle, path, 2, trap_handler, NULL, 1);
+        rc = rcf_ta_trrecv_start(ta, sid, handle, path, 2,
+                                 trap_handler, NULL, 1);
         printf("trrecv_start: 0x%x \n", rc);
 
 #if 0

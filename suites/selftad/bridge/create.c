@@ -100,8 +100,8 @@ main()
         uint8_t own_addr[6] = {0x01,0x02,0x03,0x04,0x05,0x06};
         uint8_t out_addr[6] = {0xff,0xff,0xff,0xff,0xff,0xff}; 
 
-        rc = tapi_stp_plain_csap_create(ta, sid, eth_device, own_addr, NULL, &csap);
-
+        rc = tapi_stp_plain_csap_create(ta, sid, eth_device, own_addr,
+                                        NULL, &csap);
         printf ("tapi_stp_plain_csap_create rc: %x, csap: %d\n", rc, csap);
 
         if (rc == 0)

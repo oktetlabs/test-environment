@@ -105,7 +105,8 @@ main(int argc, char *argv[])
         if (rc)
             TEST_FAIL("SNMP GET NEXT failed with rc %X", rc);
 
-        INFO("getnext for object %s got oid %s", mib_object, print_oid(&oid));
+        INFO("getnext for object %s got oid %s",
+             mib_object, print_oid(&oid));
 
 
         oid = vb.name;
@@ -119,7 +120,8 @@ main(int argc, char *argv[])
         oid.length = 1;
         oid.id[0] = 0; 
         value = 0;
-        rc = tapi_snmp_get_row(ta, sid, snmp_csap, &oid, "ifNumber", &value, NULL);
+        rc = tapi_snmp_get_row(ta, sid, snmp_csap, &oid, "ifNumber",
+                               &value, NULL);
         if (rc)
             TEST_FAIL("SNMP get_row method failed with rc %X", rc);
 
