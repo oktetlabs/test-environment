@@ -2,21 +2,31 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.53)
-AC_INIT(ta-linux, 0.3, Elena.Vengerova@oktetlabs.ru)
+AC_INIT(ta-linux, 0.4, Elena.Vengerova@oktetlabs.ru)
 AC_CONFIG_SRCDIR([linux.c])
 
 AC_CONFIG_AUX_DIR(../../aux)
 
 AM_INIT_AUTOMAKE([foreign])
 
+AC_CANONICAL_HOST
+
 # Checks for programs.
 AC_PROG_CC
+
+#
+# Ideally it should be done conditionally
+#
+AC_LIBLTDL_INSTALLABLE
+# Check for dlopen support
+AC_LIBTOOL_DLOPEN
+# Configure libtool
+AC_PROG_LIBTOOL
 
 AC_PROG_INSTALL
 
 AC_CHECK_TOOL(NM, nm)
 
-AC_CANONICAL_HOST
 
 AC_SUBST(host)
 AC_SUBST(TE_CPPFLAGS)
@@ -34,11 +44,14 @@ AC_ARG_VAR(TE_DEPENDENCIES)
 CPPFLAGS=${CPPFLAGS}" "${TE_CPPFLAGS}
 CFLAGS=${CFLAGS}" "${TE_CFLAGS}
 
+
 AM_CONFIG_HEADER(config.h)
 
-AC_CHECK_HEADERS(time.h sys/time.h sys/resource.h semaphore.h \
-                 net/if_dl.h netinet/in_systm.h)
+AC_CHECK_HEADERS(time.h sys/time.h sys/resource.h semaphore.h aio.h \
+                 net/ethernet.h net/if_dl.h netinet/in_systm.h sys/un.h)
+
 AC_C_INLINE
+
 
 if test -n "$with_cfg_linux_daemons" ; then
     DAEMONS_CFLAGS=-DCFG_LINUX_DAEMONS
@@ -58,20 +71,10 @@ fi
 AC_SUBST(DAEMONS_CFLAGS)
 AC_SUBST(DAEMONS_LDADD)
 
+
 AM_CONDITIONAL(CFG_LINUX_DAEMONS, test -n "$with_cfg_linux_daemons")
 AM_CONDITIONAL(CFG_RCF_RPC, test -n "$with_rcf_rpc")
 
-AC_LIBLTDL_INSTALLABLE
-# Substitute INCLTDL and LIBLTDL in the Makefiles
-AC_SUBST(INCLTDL)
-AC_SUBST(LIBLTDL)
-# Check for dlopen support
-AC_LIBTOOL_DLOPEN
-# Configure libtool
-AC_PROG_LIBTOOL
-# Configure libltdl
-enable_ltdl_install=yes
-AC_CONFIG_SUBDIRS(libltdl)
 
 #
 # Check for 'sa_len'-like members in 'struct sockaddr'-like structures.
@@ -82,29 +85,51 @@ AC_CHECK_MEMBERS([struct sockaddr.sa_len], [], [],
 
 #
 # POSIX threads are provided by:
-# - -lpthread in Linux
-# - -lc_r in FreeBSD
+# - -lpthread in Linux;
+# - -lc_r in FreeBSD;
+# - -lpthread in NetBSD ('pth' package).
 #
-AC_CHECK_LIB([pthread], [pthread_create], [PTHREAD_LDADD=-lpthread],
-             AC_CHECK_LIB([c_r], [pthread_create], [PTHREAD_LDADD=-lc_r]))
-AC_SUBST(PTHREAD_LDADD)
+AC_SEARCH_LIBS([pthread_create], [pthread c_r], [],
+               AC_MSG_ERROR([No POSIX threads]))
 
 #
-# Asynchronous I/O:
-# - FreeBSD has in -lc
-# - Linux has in -lnsl -lrt
+# POSIX semaphores are provided by:
+# - -lpthread in Linux;
+# - -lc_r in FreeBSD;
+# - -lsemaphore in NetNSD ('pthread-sem' package).
 #
-AC_CHECK_FUNC([aio_read], [],
-              AC_CHECK_LIB([nsl], [aio_read], [AIO_LDADD="-lnsl -lrt"],
-                           AC_MSG_ERROR([Asynchronous I/O not supported]),
-                           [-lrt]))
-AC_SUBST(AIO_LDADD)
+AC_SEARCH_LIBS([sem_init], [pthread c_r semaphore], [],
+               AC_MSG_ERROR([No POSIX semaphores]))
 
-#
-# svc_exit() is provided by -lc in Linux and by -lc_r in FreeBSD
-#
-AC_CHECK_LIB([c_r], [svc_exit])
-AC_CHECK_FUNCS([svc_exit])
+
+if test -n "$with_rcf_rpc" ; then
+    #
+    # FreeBSD 4.x has no svc_exit().
+    # NetBSD has no svcunix_create().
+    #
+    AC_CHECK_FUNCS([svcunix_create svc_exit])
+
+    #
+    # Asynchronous I/O:
+    # - FreeBSD has in -lc;
+    # - Linux has in -lnsl -lrt;
+    # - NetBSD does not have.
+    #
+    AC_CHECK_FUNC([aio_read], [],
+                  AC_CHECK_LIB([nsl], [aio_read], [LIBS="-lnsl -lrt ${LIBS}"],
+                               AC_MSG_WARN([Asynchronous I/O not supported]),
+                               [-lrt]))
+
+    #
+    # libtool is required for RCF RPC only
+    #
+    # Substitute INCLTDL and LIBLTDL in the Makefiles
+    AC_SUBST(INCLTDL)
+    AC_SUBST(LIBLTDL)
+    # Configure libltdl
+    enable_ltdl_install=yes
+    AC_CONFIG_SUBDIRS(libltdl)
+fi
 
 
 AC_ARG_WITH(bsd, [], [TATYPE=freebsd], [TATYPE=linux])

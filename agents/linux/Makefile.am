@@ -1,11 +1,11 @@
 
-SUBDIRS=libltdl
+DIST_SUBDIRS = libltdl
 
 MY_CPPFLAGS=-I$(DESTDIR)/$(prefix)/include \
             -I$(DESTDIR)/$(prefix)/../@host@/include \
             -I$(DESTDIR)/$(prefix)/../include
 
-MY_LDADD=symtbl.o $(LIBLTDL) @TE_LDADD@ -lltdl @PTHREAD_LDADD@
+MY_LDADD=symtbl.o @TE_LDADD@
 MY_LDAFLAGS=-rdynamic -export-dynamic 
 
 MY_SOURCES=linux.c linuxconf.c ftp_routines.c
@@ -33,10 +33,12 @@ noinst_HEADERS=linux_rpc.h linux_rpc_log.h
 
 if CFG_RCF_RPC
 
+SUBDIRS=libltdl
+
 noinst_HEADERS+=tarpc.h
 MY_CPPFLAGS+=-DRCF_RPC -I.
+MY_LDADD+=$(LIBLTDL) -lltdl
 MY_SOURCES+=linux_rpc.c tarpc_xdr.c tarpc_svc.c tarpc_server.c 
-MY_LDADD+=@AIO_LDADD@
 MY_SYMTBL_OBJECTS+=linux_rpc.o tarpc_server.o
 
 CLEANFILES+=tarpc.h
@@ -113,5 +115,5 @@ bin_PROGRAMS=tafreebsd
 endif
 
 symtbl.o: $(MY_SYMTBL_OBJECTS) @TE_DEPENDENCIES@
-	te_generate_symtbl ${NM} symtbl.c $^ 
+	te_generate_symtbl "${NM}" symtbl.c $^ 
 	${CC} -c -o $@ symtbl.c
