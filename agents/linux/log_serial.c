@@ -287,7 +287,6 @@ log_serial(void *ready, int argc, char *argv[])
     int            interval;
     int            current_timeout = -1;
     int            len;
-    int            offset;
     struct pollfd  poller;
     struct timeval tv1, tv2;
 
@@ -418,19 +417,7 @@ log_serial(void *ready, int argc, char *argv[])
                 break;
             }
             VERB("%d bytes actually read", len);
-
-            /* deleting \r that might be inserted by conserver */
-            for (offset = 0, newline = current; 
-                 newline < current + len; 
-                 newline++)
-            {
-                if(*newline == '\r')
-                    offset++;
-                else
-                    newline[-offset] = *newline;
-            }
-            current += len - offset;
-
+            current += len;
             if (current == fence)
             {
                 LGR_MESSAGE(level, user, "%s", buffer);
