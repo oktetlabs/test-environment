@@ -71,8 +71,10 @@
 #include "rcf_pch.h"
 #include "rcf_rpc_defs.h"
 #include "linux_rpc.h"
-#include "ta_rpc_log.h"
 #include "tapi_rpcsock_defs.h"
+
+#define LOGFORK_LOG  1
+#include "logfork.h"
 
 #include "linux_internal.h"
 
@@ -121,10 +123,8 @@ sockaddr_rpc2h(struct tarpc_sa *rpc_addr, struct sockaddr_storage *addr)
 
     if (len < rpc_addr->sa_data.sa_data_len)
     {
-#if 0
         WARN("Strange tarpc_sa length %d is received",
              rpc_addr->sa_data.sa_data_len);
-#endif
     }
     else
         len = rpc_addr->sa_data.sa_data_len;
@@ -667,10 +667,12 @@ tarpc_init(int argc, char **argv)
 
     UNUSED(argc);
     ta_pid = atoi(pid);
+#if 0
     memset(&ta_log_addr, 0, sizeof(ta_log_addr));
     ta_log_addr.sun_family = AF_UNIX;
     strcpy(ta_log_addr.sun_path + 1, log_addr);
     ta_log_addr_s = (struct sockaddr *)&ta_log_addr;
+#endif
 
     /* Emulate setlibname() call */
     in->common.name.name_val = (char *)name;

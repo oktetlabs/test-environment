@@ -11,7 +11,8 @@ AM_YFLAGS=-d
 # functions provided by -l@TAD@. @TE_LDADD@ must be after -l@TAD@,
 # since @TE_LDADD@ may contain ASN and NDN libraries.
 #
-MY_LDADD=symtbl.o -lrcfpch -l@TAD@ @TE_LDADD@ -lconf_oid -lloggerta 
+MY_LDADD=symtbl.o -lrcfpch -llogfork -l@TAD@ @TE_LDADD@ \
+         -lconf_oid -lloggerta 
 
 #if HAS_NET_SNMP
 #MY_LDADD+= @NET_SNMP_LIBS@

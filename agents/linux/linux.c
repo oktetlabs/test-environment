@@ -53,6 +53,7 @@
 #include "comm_agent.h"
 #include "rcf_ch_api.h"
 #include "rcf_pch.h"
+#include "logfork.h"
 
 #include "linux_internal.h"
 
@@ -342,6 +343,7 @@ rcf_ch_start_task(struct rcf_comm_connection *handle,
             rcf_pch_detach();
             /* Set the process group to allow killing all children */
             setpgid(getpid(), getpid());
+            logfork_register_user(rtn);
             if (is_argv)
                 ((rcf_rtn)(addr))(argc, params);
             else
@@ -382,6 +384,7 @@ rcf_ch_start_task(struct rcf_comm_connection *handle,
             rcf_pch_detach();
             /* Set the process group to allow killing all children */
             setpgid(getpid(), getpid());
+            logfork_register_user(rtn);
             execlp(rtn, rtn, params[0], params[1], params[2], params[3],
                              params[4], params[5], params[6], params[7],
                              params[8], params[9]);
@@ -415,16 +418,15 @@ rcf_ch_start_task(struct rcf_comm_connection *handle,
     SEND_ANSWER("%d", ETENOSUCHNAME);
 }
 
-struct rcf_thread_parameter
-{
-    te_bool active;
-    pthread_t id;
-    void *addr;
+struct rcf_thread_parameter {
+    te_bool    active;
+    pthread_t  id;
+    void      *addr;
     te_bool is_argv;
-    int argc;
-    uint32_t *params;
-    int rc;
-    te_bool sem_created;
+    int        argc;
+    uint32_t  *params;
+    int        rc;
+    te_bool    sem_created;
     sem_t params_processed;
 };
 
@@ -727,6 +729,8 @@ main(int argc, char **argv)
 {
     int rc, retval = 0;
     
+    pthread_t tid;
+    
     char buf[16];
     
     if (argc < 3)
@@ -761,6 +765,8 @@ main(int argc, char **argv)
     VERB("Started\n");
 
     sprintf(buf, "PID %u", getpid());
+
+    pthread_create(&tid, NULL, (void *)logfork_entry, NULL);
 
     rc = rcf_pch_run(argv[2], buf);
     if (rc != 0)
@@ -814,3 +820,4 @@ ta_system(char *cmd)
     return rc;
 }
 #endif
+

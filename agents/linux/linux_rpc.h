@@ -30,7 +30,6 @@
 #ifndef __TE_TA_LINUX_RPC_H__
 #define __TE_TA_LINUX_RPC_H__
 
-
 /** Obtain RCF RPC errno code */
 #define RPC_ERRNO errno_h2rpc(errno)
 

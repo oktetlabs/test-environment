@@ -56,11 +56,13 @@
 #include "tarpc.h"
 #include "linux_internal.h"
 #include "linux_rpc.h"
+#include "logger_ta.h"
 
+
+#undef TE_LGR_USER
 #define TE_LGR_USER     "RCF RPC"
-#define TA_RPC_INSIDE
 
-#include "ta_rpc_log.h"
+#include "logfork.h"
 
 
 /** Whether supervise children using SIGCHLD or using thread with wait(). */
@@ -192,46 +194,6 @@ supervise_children(void *arg)
 }
 
 #endif /* !SUPERVISE_CHILDREN_BY_SIGNAL */
-
-
-/**
- * Wait for a log from RPC servers.
- */
-static void *
-gather_log(void *arg)
-{
-    int s = socket(AF_UNIX, SOCK_DGRAM, 0);
-    
-    if (s < 0)
-    {
-        ERROR("Cannot create a socket for gathering the log, errno %d",
-              errno);
-        return NULL;
-    }
-    
-    if (bind(s, (struct sockaddr *)&ta_log_addr, sizeof(ta_log_addr)) < 0)
-    {
-        ERROR("Cannot bind a socket for gathering the log, errno %d",
-              errno);
-        close(s);
-        return NULL;
-    }
-    
-    UNUSED(arg);
-    while (1)
-    {
-        char log_pkt[RPC_LOG_PKT_MAX] = {0, };
-      
-        if (recv(s, log_pkt, sizeof(log_pkt), 0) < (int)RPC_LOG_OVERHEAD)
-        {
-            WARN("Failed to receive the logging message from RPC server");
-            continue;
-        }
-        log_message(*(uint16_t *)log_pkt, "", TE_LGR_USER,
-                    "RPC server %s: %s", log_pkt + sizeof(uint16_t), 
-                    log_pkt + RPC_LOG_OVERHEAD);
-    }
-}
 
 
 /**
@@ -412,100 +374,6 @@ sig_handler(int s)
     exit(1);
 }
 
-
-/**
- * Entry function for RPC server (never returns). Creates the transport
- * and runs main RPC loop (see SUN RPC documentation).
- *
- * @param arg   -1 if the new server is a process or 0 if it's a thread
- */
-void *
-tarpc_server(const void *arg)
-{
-    const char         *name = (const char *)arg;
-    SVCXPRT            *transp;
-    struct sockaddr_un  addr;
-
-    tarpc_in_arg  arg1;
-    tarpc_in_arg *in = &arg1;
-    
-    memset(&arg1, 0, sizeof(arg1));
-    arg1.name.name_len = strlen(name) + 1;
-    arg1.name.name_val = strdup(name);
-
-    RPC_LGR_MESSAGE(TE_LL_RING, "Started %s (PID %d, TID %u)", name, 
-                    (int)getpid(), (unsigned int)pthread_self());
-
-    sigemptyset(&rpcs_received_signals);
-    signal(SIGTERM, sig_handler);
-    
-    pmap_unset(tarpc, ver0);
-
-    memset(&addr, 0, sizeof(addr));
-    addr.sun_family = AF_UNIX;
-    snprintf(addr.sun_path, sizeof(addr.sun_path),
-             "/tmp/terpcs_%s_%u", name, ta_pid);
-
-    pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
-
-#ifdef HAVE_SVCUNIX_CREATE
-    RPC_LGR_MESSAGE(TE_LL_VERB, "%s(): call svcunix_create()",
-                    __FUNCTION__);
-    transp = svcunix_create(RPC_ANYSOCK, 1024, 1024, addr.sun_path);
-    if (transp == NULL)
-    {
-        RPC_LGR_MESSAGE(TE_LL_ERROR, "svcunix_create() returned NULL");
-        return NULL;
-    }
-#else
-    if (1) {
-        int sock = socket(PF_UNIX, SOCK_STREAM, 0);
-
-        if (sock < 0)
-        {
-            RPC_LGR_MESSAGE(TE_LL_ERROR,
-                            "socket(PF_UNIX, SOCK_STREAM, 0) failed");
-            return NULL;
-        }
-        if (bind(sock, SA(&addr), sizeof(addr)) != 0)
-        {
-            RPC_LGR_MESSAGE(TE_LL_ERROR,
-                            "bind() to RPC server address failed");
-            close(sock);
-            return NULL;
-        }
-        if (listen(sock, 2) != 0)
-        {
-            RPC_LGR_MESSAGE(TE_LL_ERROR,
-                            "listen() on RPC server socket failed");
-            close(sock);
-            return NULL;
-        }
-
-        transp = svc_vc_create(sock, 1024, 1024);
-        if (transp == NULL)
-        {
-            RPC_LGR_MESSAGE(TE_LL_ERROR, "svc_vc_create() returned NULL");
-            return NULL;
-        }
-    }
-#endif
-
-    RPC_LGR_MESSAGE(TE_LL_VERB, "%s(): call svc_register()", __FUNCTION__);
-    if (!svc_register(transp, tarpc, ver0, tarpc_1, 0))
-    {
-        RPC_LGR_MESSAGE(TE_LL_ERROR, "svc_register() failed");
-        return NULL;
-    }
-    
-    RPC_LGR_MESSAGE(TE_LL_VERB, "%s(): call svc_run()", __FUNCTION__);
-    svc_run();
-
-    RPC_LGR_MESSAGE(TE_LL_ERROR, "Unreachable!");
-
-    return NULL;
-}
-
 /**
  * Create an RPC server as a new process.
  *
@@ -544,12 +412,6 @@ tarpc_server_create(const char *name)
             return -1;
         }
 #endif
-        if (pthread_create(&tid, NULL, gather_log, NULL) != 0)
-        {
-            ERROR("Cannot create RPC log gathering thread: %d", errno);
-            return -1;
-        }
-
         supervise_started = 1;
     }
 
@@ -722,3 +584,106 @@ tarpc_call(int timeout, const char *name, const char *file)
     return 0;
 }
 
+
+#ifndef LOGFORK_LOG
+#define LOGFORK_LOG  1
+#endif
+
+#include "logfork.h"
+
+/**
+ * Entry function for RPC server (never returns). Creates the transport
+ * and runs main RPC loop (see SUN RPC documentation).
+ *
+ * @param arg   -1 if the new server is a process or 0 if it's a thread
+ */
+void *
+tarpc_server(const void *arg)
+{
+    const char         *name = (const char *)arg;
+    SVCXPRT            *transp;
+    struct sockaddr_un  addr;
+
+    tarpc_in_arg  arg1;
+    tarpc_in_arg *in = &arg1;
+    
+    memset(&arg1, 0, sizeof(arg1));
+    arg1.name.name_len = strlen(name) + 1;
+    arg1.name.name_val = strdup(name);
+
+    if (logfork_register_user(name) != 0)
+    {
+        RING("logfork_register_user() fail to register %s server", name);
+        
+        /* Try again */
+        logfork_register_user(name);
+    }
+    
+    RING("Started %s (PID %d, TID %u)", name, 
+                    (int)getpid(), (unsigned int)pthread_self());
+    
+    sigemptyset(&rpcs_received_signals);
+    signal(SIGTERM, sig_handler);
+    
+    pmap_unset(tarpc, ver0);
+
+    memset(&addr, 0, sizeof(addr));
+    addr.sun_family = AF_UNIX;
+    snprintf(addr.sun_path, sizeof(addr.sun_path),
+             "/tmp/terpcs_%s_%u", name, ta_pid);
+
+    pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
+
+#ifdef HAVE_SVCUNIX_CREATE
+    VERB("%s(): call svcunix_create()", __FUNCTION__);
+    transp = svcunix_create(RPC_ANYSOCK, 1024, 1024, addr.sun_path);
+    if (transp == NULL)
+    {
+        ERROR("svcunix_create() returned NULL");
+        return NULL;
+    }
+#else
+    if (1) {
+        int sock = socket(PF_UNIX, SOCK_STREAM, 0);
+
+        if (sock < 0)
+        {
+            ERROR("socket(PF_UNIX, SOCK_STREAM, 0) failed");
+            return NULL;
+        }
+        if (bind(sock, SA(&addr), sizeof(addr)) != 0)
+        {
+            ERROR("bind() to RPC server address failed");
+            close(sock);
+            return NULL;
+        }
+        if (listen(sock, 2) != 0)
+        {
+            ERROR("listen() on RPC server socket failed");
+            close(sock);
+            return NULL;
+        }
+
+        transp = svc_vc_create(sock, 1024, 1024);
+        if (transp == NULL)
+        {
+            ERROR("svc_vc_create() returned NULL");
+            return NULL;
+        }
+    }
+#endif
+
+    VERB("%s(): call svc_register()", __FUNCTION__);
+    if (!svc_register(transp, tarpc, ver0, tarpc_1, 0))
+    {
+        ERROR("svc_register() failed");
+        return NULL;
+    }
+    
+    VERB("%s(): call svc_run()", __FUNCTION__);
+    svc_run();
+
+    ERROR("Unreachable!");
+
+    return NULL;
+}
