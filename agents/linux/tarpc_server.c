@@ -2502,22 +2502,31 @@ simple_sender(tarpc_simple_sender_in *in, tarpc_simple_sender_out *out)
             break;
             
         usleep(delay);
-        
+
         len = send_func(in->s, buf, size, 0);
 
         if (len < 0)
         {
-            ERROR("send() failed in simple_sender(): errno %x", errno);
-            return -1;
+            if (!in->ignore_err)
+            {
+                ERROR("send() failed in simple_sender(): errno %x", errno);
+                return -1;
+            }
+            else
+            {
+                len = errno = 0;
+                fprintf(stderr, "simple_sender(): errno %x", errno);
+                continue;
+            }
         }
-
+#if 0 /* it's a legal situation if len < size */
         if (len < size)
         {
             ERROR("send() returned %d instead %d in simple_sender()",
                   len, size);
             return -1;
         }
-        
+#endif
         sent += len;
 #ifdef TA_DEBUG
         control += len;
@@ -2529,14 +2538,14 @@ simple_sender(tarpc_simple_sender_in *in, tarpc_simple_sender_out *out)
             system(buf);
             control = 0;
         }
-#endif        
+#endif
     }
 
     out->bytes_high = sent >> 32;
     out->bytes_low = sent & 0xFFFFFFFF;
-    
+
     return 0;
-}                  
+}
 
 /*-------------------------- simple_receiver() --------------------------*/
 TARPC_FUNC(simple_receiver, {}, 
@@ -3797,4 +3806,3 @@ TARPC_FUNC(ftp_open, {},
                              in->passive, in->offset)); 
 }
 )
-

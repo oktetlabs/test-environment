@@ -5025,14 +5025,17 @@ rpc_seteuid(rcf_rpc_server *handle,
  *                          each message
  * @param time2run          how long run (in seconds)
  * @param sent              location for number of sent bytes
+ * @param ignore_err        Ignore errors while run
  *
- * @return number of sent bytes or -1 in the case of failure
+ * @return number of sent bytes or -1 in the case of failure if ignore_err
+ *         set to FALSE or number of sent bytes or 0 if ignore_err set to TRUE
  */
 int
 rpc_simple_sender(rcf_rpc_server *handle,
                   int s, int size_min, int size_max,
                   int size_rnd_once, int delay_min, int delay_max,
-                  int delay_rnd_once, int time2run, uint64_t *sent)
+                  int delay_rnd_once, int time2run, uint64_t *sent,
+                  int ignore_err)
 {
     rcf_rpc_op              op;
     tarpc_simple_sender_in  in;
@@ -5056,6 +5059,7 @@ rpc_simple_sender(rcf_rpc_server *handle,
     in.delay_max = delay_max;
     in.delay_rnd_once = delay_rnd_once;
     in.time2run = time2run;
+    in.ignore_err = ignore_err;
 
     rcf_rpc_call(handle, _simple_sender, &in,
                  (xdrproc_t)xdr_tarpc_simple_sender_in,
@@ -5065,10 +5069,10 @@ rpc_simple_sender(rcf_rpc_server *handle,
         *sent = ((uint64_t)(out.bytes_high) << 32) + out.bytes_low;
 
     RING("RPC (%s,%s)%s: "
-         "simple_sender(%d, %d, %d, %d, %d, %d, %d, %d) -> %d %u (%s)",
+         "simple_sender(%d, %d, %d, %d, %d, %d, %d, %d, %d) -> %d %u (%s)",
          handle->ta, handle->name, rpcop2str(op),
          s, size_min, size_max, size_rnd_once, delay_min, delay_max,
-         delay_rnd_once, time2run,
+         delay_rnd_once, time2run, ignore_err,
          out.retval, (unsigned long)*sent, errno_rpc2str(RPC_ERRNO(handle)));
 
     RETVAL_RC(simple_sender);

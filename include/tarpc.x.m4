@@ -1494,6 +1494,7 @@ struct tarpc_simple_sender_in {
                               if false, random delay is calculated for
                               each message */
     int time2run;        /**< How long run (in seconds) */
+    int ignore_err;      /**< Ignore errors while run > */
 };
 
 struct tarpc_simple_sender_out {

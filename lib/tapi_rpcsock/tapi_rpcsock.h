@@ -727,13 +727,16 @@ extern const char *timespec2str(const struct timespec *tv);
  *                          each message
  * @param time2run          how long run (in seconds)
  * @param sent              location for number of sent bytes
+ * @param ignore_err        Ignore errors while run
  *
- * @return number of sent bytes or -1 in the case of failure
+ * @return number of sent bytes or -1 in the case of failure if ignore_err
+ *         set to FALSE or number of sent bytes or 0 if ignore_err set to TRUE
  */
 extern int rpc_simple_sender(rcf_rpc_server *handle,
                              int s, int size_min, int size_max, 
                              int size_rnd_once, int delay_min, int delay_max,
-                             int delay_rnd_once, int time2run, uint64_t *sent);
+                             int delay_rnd_once, int time2run, uint64_t *sent,
+                             int ignore_err);
 
 
 /**
