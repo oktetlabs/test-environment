@@ -26,6 +26,12 @@
  * $Id$
  */
 
+/** @page example An example test
+ *
+ *  @objective Example smells example whether it's called example or not.
+ *
+ */
+
 #include "config.h"
 
 #define ETHER_ADDR_LEN 6
@@ -35,15 +41,21 @@
             char eth0_oid[128]; \
             int num_interfaces; \
             cfg_handle *interfaces; \
+            struct sockaddr *addr; \
+            cfg_val_type type = CVT_ADDRESS; \
             int len; \
             uint8_t mac[ETHER_ADDR_LEN + 1];
 
 #include <stdarg.h>
 #include <stdio.h>
 #include <signal.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 #include <sys/types.h>
 #include "tapi_test.h"
 #include "tapi_cfg_base.h"
+#include "tapi_sockaddr.h"
 #include "rcf_api.h"
 
 int
@@ -52,6 +64,8 @@ main(int argc, char *argv[])
     TEST_START;
     CHECK_RC(rcf_get_ta_list(ta, &len));
     INFO("Agent is %s", ta);
+    CHECK_RC(cfg_get_instance_fmt(&type, &addr, "/agent:%s/dns:", ta)); 
+    RING("DNS is %s", sockaddr2str(addr));
     snprintf(eth0_oid, sizeof(eth0_oid) - 1, "/agent:%s/interface:*", ta);
     CHECK_RC(cfg_find_pattern(eth0_oid, &num_interfaces, &interfaces));
     {

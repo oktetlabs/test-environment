@@ -33,6 +33,6 @@ example_DEPENDENCIES = \
     ${TE_INSTALL}/@host@/lib/libipc.a \
     ${TE_INSTALL}/@host@/lib/libtapi.a \
     ${TE_INSTALL}/@host@/lib/libconfapi.a \
-    ${TE_INSTALL}/@host@/lib/libconf_types.a \
-    ${TE_INSTALL}/@host@/lib/libconf_oid
+    ${TE_INSTALL}/@host@/lib/libconf_types.a 
+
 
