@@ -108,7 +108,8 @@ extern int ipc_get_server_fd(const struct ipc_server *ipcs);
  * @retval 0            Success
  * @retval ETESMALLBUF  Buffer is too small for the message, the rest
  *                      of the message can be received by
- *                      ipc_receive_rest_message()
+ *                      ipc_receive_message() with this client pointer
+ *                      in *p_ipcsc
  * @retval errno        Other failure
  */
 extern int ipc_receive_message(struct ipc_server *ipcs,
