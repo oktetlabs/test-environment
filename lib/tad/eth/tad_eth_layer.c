@@ -566,7 +566,7 @@ eth_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
 
     data = pkt->data; 
 
-#if 1
+#if 0
     {
         char buf[50], *p = buf;
         int i;
@@ -608,6 +608,8 @@ eth_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
     {
         uint8_t prio;
         uint8_t cfi;
+
+        VERB("VLan info found in Ethernet frame");
 
         data += ETH_TYPE_LEN; 
 
@@ -666,12 +668,20 @@ eth_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
     }
 
     /* passing payload to upper layer */
-    memset (payload, 0 , sizeof(*payload));
+    memset(payload, 0 , sizeof(*payload));
+#if 0
+    /* Correction for number of read bytes was insered to synchronize 
+     * with OS interface statistics, but it cause many side effects, 
+     * therefore it is disabled now. */ 
     payload->len = (pkt->len - ETH_HLEN - ETH_TAILING_CHECKSUM);
-    payload->data = malloc (payload->len);
+#else
+    payload->len = (pkt->len - ETH_HLEN);
+#endif
+    payload->data = malloc(payload->len);
     memcpy(payload->data, pkt->data + ETH_HLEN, payload->len); 
 
-    F_VERB("match: packet matches!\n");
+    F_VERB("Eth csap N %d, packet matches, pkt len %d, pld len %d", 
+           csap_id, pkt->len, payload->len);
 
     asn_free_value(eth_hdr_pdu);
     

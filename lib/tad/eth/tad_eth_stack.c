@@ -1169,8 +1169,15 @@ eth_echo_method (csap_p csap_descr, uint8_t *pkt, size_t len)
     memcpy (tmp_buffer + ETH_ALEN, pkt, ETH_ALEN);
     memcpy (tmp_buffer + 2*ETH_ALEN, pkt + 2*ETH_ALEN, len - 2*ETH_ALEN);
 
+#if 0
+    /* Correction for number of read bytes was insered to synchronize 
+     * with OS interface statistics, but it cause many side effects, 
+     * therefore it is disabled now. */
 
     eth_write_cb (csap_descr, tmp_buffer, len - ETH_TAILING_CHECKSUM);
+#else
+    eth_write_cb (csap_descr, tmp_buffer, len);
+#endif
 
 
 #endif
