@@ -65,8 +65,8 @@ extern "C" {
 /* ============= Types and structures definitions =============== */
 
 
-struct tad_tmpl_arg_t;
-
+/* Forward declaration of type for usage in callback prototypes */
+struct tad_tmpl_arg_t; 
 
 
 /**
@@ -208,6 +208,42 @@ typedef int (*csap_gen_pattern_cb_t)(int csap_id, int layer,
 
 
 
+/*=====================================================================
+ * Structures for CSAP types support specifications. 
+ *
+ * Overview: 
+ *
+ * CSAPs have layered structure, which layer respective to some protocol, 
+ * neighbour layers respective to neighbour protocols. 
+ * CSAP type is sequence of symbolic protocol labels, from upper to lower, 
+ * separated by dots. 
+ * For example, currently supported multy-layered CSAP types are: 
+ * 'bridge.eth', 'ip4.eth', 'tcp.ip4.eth', 'udp.ip4.eth'.
+ *
+ * Lowest layer sends/receives data by means which are not related to TAD,
+ * for example, NET-SNMP library, usual TCP/UDP network socket, 
+ * Ethernet packet socket, etc.
+ *
+ * Layer, which has some under it, only prepares data to be sent or 
+ * matches data, received from lower layer. 
+ *
+ * The following structures hold specification of supported CSAP types. 
+ * They are organized as some heap with 'protocol' specifications, 
+ * which have lists with supported lower layers for particular protocol. 
+ *
+ * For example, having only three supported CSAP types 'udp', 'ip4', 
+ * and 'udp.ip4', we will have the following heap: 
+ *
+ * 'udp', list with two lower neighbours: NULL and 'ip4';
+ * 'ip4', list with one lower neighbour: NULL.
+ *
+ * Note there is impossible to specify support only TWO CSAP types
+ * 'udp.ip4' and 'udp'. Moreover, it is insensible, becouse support of 
+ * IPv4 protol layer (based, for example, on IPv4 raw sockets) is almost
+ * independent on upper protocols.
+ */
+
+
 
 struct csap_layer_neighbour_list_t;
 typedef struct csap_layer_neighbour_list_t * csap_layer_neighbour_list_p;
@@ -220,6 +256,8 @@ typedef struct csap_layer_neighbour_list_t * csap_layer_neighbour_list_p;
  *
  * One 'low neighbour' sturct contains neighbour label and references to 
  * callbacks performing some actions, which may depend on low layer.
+ * These callbacks are responsible for non-TAD external means used for 
+ * traffic operations. 
  */
 typedef struct csap_layer_neighbour_list_t
 {
@@ -257,9 +295,9 @@ typedef struct csap_spt_type_t
     csap_match_bin_cb_t   match_cb;
     csap_gen_pattern_cb_t generate_pattern_cb;
 
-    /* link to the list with possible (lower) neighbours, see description of
-       this structure for more details. */ 
-    csap_layer_neighbour_list_p neighbours;
+    csap_layer_neighbour_list_p neighbours; /**< link to the list with
+                                              possible (lower) neighbours,
+                                               */ 
 } *csap_spt_type_p, csap_spt_type_t;
 
 
