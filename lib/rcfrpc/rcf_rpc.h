@@ -184,6 +184,17 @@ extern void rcf_rpc_call(rcf_rpc_server *rpcs, int proc,
                          void *in_arg, xdrproc_t in_proc, 
                          void *out_arg, xdrproc_t out_proc);
 
+/**
+ * Check whether a function called using non-blocking RPC has been done.
+ *
+ * @param rpcs          existing RPC server handle
+ * @param done          location for the result
+ *
+ * @return status code
+ */
+extern int rcf_rpc_server_is_op_done(rcf_rpc_server *rpcs,
+                                     te_bool *done);
+
 /** Free memory allocated by rcf_rpc_call */
 static inline void
 rcf_rpc_free_result(void *out_arg, xdrproc_t out_proc)

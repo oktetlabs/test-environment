@@ -951,3 +951,36 @@ rcf_rpc_call(rcf_rpc_server *rpcs, int proc,
     unlink(host);
     clnt_destroy(clnt);
 }
+
+
+/* See description in rcf_rpc.h */
+int
+rcf_rpc_server_is_op_done(rcf_rpc_server *rpcs, te_bool *done)
+{
+    tarpc_rpc_is_op_done_in     in;
+    tarpc_rpc_is_op_done_out    out;
+
+    if (rpcs == NULL || done == NULL)
+    {
+        return TE_RC(TE_RCF, EINVAL);
+    }
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    rpcs->op = RCF_RPC_IS_DONE;
+    rcf_rpc_call(rpcs, _rpc_is_op_done,
+                 &in,  (xdrproc_t)xdr_tarpc_rpc_is_op_done_in,
+                 &out, (xdrproc_t)xdr_tarpc_rpc_is_op_done_out);
+    
+    if (rpcs->_errno != 0)
+    {
+        ERROR("Failed to call rpc_is_op_done() on the RPC server %s",
+              rpcs->name);
+        return rpcs->_errno;
+    }
+
+    *done = (out.common.done != 0);
+
+    return 0;
+}
