@@ -6,8 +6,6 @@
     <author mailto="Konstantin.Abramenko@oktetlabs.ru"/>
 
     <session>
-        <req id="TAD_CLI"/> 
-
         <arg name="ta" handdown="true">
             <value>Agt_A</value>
         </arg>
