@@ -1825,6 +1825,22 @@ struct tarpc_fcntl_out {
     int		retval;
 };
 
+/* ftp_open() */
+struct tarpc_ftp_open_in {
+    struct tarpc_in_arg common;
+    
+    char uri<>;         /**< URI to open */
+    int  rdonly;        /**< If 1, open to get file */
+    int  passive;       /**< If 1, use passive mode */
+    int  offset;        /**< File offset */
+};
+
+struct tarpc_ftp_open_out {
+    struct tarpc_out_arg common;
+    
+    int fd;     /**< TCP socket file descriptor */
+};    
+
 program tarpc
 {
     version ver0
@@ -1962,6 +1978,8 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(destroy_window)
         RPC_DEF(wsa_async_select)
         RPC_DEF(peek_message)
+        
+        RPC_DEF(ftp_open)
 
     } = 1;
 } = 1;

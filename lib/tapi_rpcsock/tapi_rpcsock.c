@@ -6036,3 +6036,36 @@ rpc_wait_multiple_events(rcf_rpc_server *handle,
 
     RETVAL_VAL(out.retval, wait_multiple_events);
 }
+
+int 
+rpc_ftp_open(rcf_rpc_server *handle,
+             char *uri, te_bool rdonly, te_bool passive, int offset)
+{
+    tarpc_ftp_open_in  in;
+    tarpc_ftp_open_out out;
+
+    if (handle == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        return -1;
+    }
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.uri.uri_val = uri;
+    in.uri.uri_len = strlen(uri) + 1;
+    in.rdonly = rdonly;
+    in.passive = passive;
+    in.offset = offset;
+
+    rcf_rpc_call(handle, _ftp_open, &in, (xdrproc_t)xdr_tarpc_ftp_open_in,
+                 &out, (xdrproc_t)xdr_tarpc_ftp_open_out);
+
+    RING("RPC (%s,%s): ftp_open(%s, %s, %s, %d) -> %d (%s)",
+         handle->ta, handle->name, uri, rdonly ? "get" : "put",
+         passive ? "passive": "active", offset,
+         out.fd, errno_rpc2str(RPC_ERRNO(handle)));
+
+    RETVAL_VAL(out.fd, ftp_open);
+}             

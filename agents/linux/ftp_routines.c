@@ -225,13 +225,15 @@ parse_ftp_uri(const char *uri, struct sockaddr *srv, char *user, char *passwd,
 /**
  * Open the connection for reading/writing the file.
  *
- * @param uri   FTP uri: ftp://user:password@server/directory/file
- * @param flags O_RDONLY or O_WRONLY
+ * @param uri           FTP uri: ftp://user:password@server/directory/file
+ * @param flags         O_RDONLY or O_WRONLY
+ * @param passive       if 1, passive mode
+ * @param offset        file offset
  *
  * @return file descriptor, which may be used for reading/writing data
  */
 int
-ftp_open(char *uri, int flags)
+ftp_open(char *uri, int flags, int passive, int offset)
 {
     char  buf[1024];
     char *str;
@@ -524,7 +526,7 @@ ftp_test(char *uri_get, char *uri_put, int size)
     signal(SIGINT, sigint_handler); 
     
     if (uri_get != NULL && *uri_get != 0 && 
-        (si = ftp_open(uri_get, O_RDONLY)) < 0)
+        (si = ftp_open(uri_get, O_RDONLY, 1, 0)) < 0)
     {
         ERROR("Failed to open URI %s to read from",
                    uri_get);
@@ -532,7 +534,7 @@ ftp_test(char *uri_get, char *uri_put, int size)
     }
 
     if (uri_put != NULL && *uri_put != 0 && 
-        (so = ftp_open(uri_put, O_WRONLY)) < 0)
+        (so = ftp_open(uri_put, O_WRONLY, 1, 0)) < 0)
     {
         ERROR("Failed to open URI %s to write to",
                    uri_put);

@@ -824,16 +824,16 @@ extern int rpc_aio_suspend_test(rcf_rpc_server *handle,
  * multiplexing.
  *
  * @param handle        RPC server
- * @param rcvrs         Set of receiver sockets
- * @param rcvnum        Number of receiver sockets
- * @param sndrs         Set of sender sockets
- * @param sndnum        Number of sender sockets
- * @param bulkszs       Sizes of data bulks to send for each sender
+ * @param rcvrs         set of receiver sockets
+ * @param rcvnum        number of receiver sockets
+ * @param sndrs         set of sender sockets
+ * @param sndnum        number of sender sockets
+ * @param bulkszs       sizes of data bulks to send for each sender
  *                      (in bytes, 1024 bytes maximum)
- * @param time2run      How long send data (in seconds)
- * @param iomux         Type of I/O Multiplexing function
+ * @param time2run      how long send data (in seconds)
+ * @param iomux         type of I/O Multiplexing function
  *                      (@b select(), @b pselect(), @b poll())
- * @param rx_nonblock   Push all Rx sockets in nonblocking mode
+ * @param rx_nonblock   push all Rx sockets in nonblocking mode
  * @param tx_stat       Tx statistics for set of sender socket to be
  *                      updated (IN/OUT)
  * @param rx_stat       Rx statistics for set of receiver socket to be
@@ -878,10 +878,10 @@ extern int rpc_iomux_echoer(rcf_rpc_server *handle,
  * to the file descriptor opened for writing (processing in kernel land).
  *
  * @param handle        RPC server
- * @param out_fd        File descriptor opened for writing
- * @param in_fd         File descriptor opened for reading
- * @param offset        Pointer to input file pointer position
- * @param count         Number of bytes to copy between file descriptors
+ * @param out_fd        file descriptor opened for writing
+ * @param in_fd         file descriptor opened for reading
+ * @param offset        pointer to input file pointer position
+ * @param count         number of bytes to copy between file descriptors
  *
  * @return    number of bytes written to out_fd
  *            or -1 in the case of failure and appropriate errno
@@ -895,9 +895,9 @@ extern ssize_t rpc_sendfile(rcf_rpc_server *handle,
  * the file. Processing is finished when timeout expired.
  *
  * @param handle        RPC server
- * @param sock          Socket descriptor for data receiving
- * @param path_name     Path name where write received data
- * @param timeout       Timeout to finish processing
+ * @param sock          socket descriptor for data receiving
+ * @param path_name     path name where write received data
+ * @param timeout       timeout to finish processing
  *
  * @return    number of processed bytes
  *            or -1 in the case of failure and appropriate errno
@@ -905,5 +905,21 @@ extern ssize_t rpc_sendfile(rcf_rpc_server *handle,
 extern ssize_t rpc_socket_to_file(rcf_rpc_server *handle,
                                   int sock, const char *path_name,
                                   long timeout);
+
+
+/**
+ * Open the connection for reading/writing the file.
+ *
+ * @param handle        RPC server
+ * @param uri           FTP uri: ftp://user:password@server/directory/file
+ * @param rdonly        if TRUE, get file
+ * @param passive       if TRUE, passive mode
+ * @param offset        file offset
+ *
+ * @return file descriptor, which may be used for reading/writing data
+ */
+extern int rpc_ftp_open(rcf_rpc_server *handle,
+                        char *uri, te_bool rdonly, te_bool passive, int offset);
+
 
 #endif /* __TAPI_RPCSOCK_H__ */

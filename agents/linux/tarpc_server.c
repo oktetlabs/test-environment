@@ -77,6 +77,8 @@
 extern char *my_execname;
 extern int ta_pid;
 
+extern int ftp_open(char *uri, int flags, int passive, int offset);
+
 #if HAVE_AIO_H
 void *dummy = aio_read;
 #endif
@@ -3786,3 +3788,12 @@ local_exit:
     return rc;
 }
 
+/*------------------------------ ftp_open() ------------------------------*/
+
+TARPC_FUNC(ftp_open, {}, 
+{
+    MAKE_CALL(out->fd = func((int)(in->uri.uri_val), 
+                             in->rdonly ? O_RDONLY : O_WRONLY,
+                             in->passive, in->offset)); 
+}
+)
