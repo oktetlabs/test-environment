@@ -45,6 +45,23 @@
 extern "C" {
 #endif
 
+
+/**
+ * Add subnet declaration in DHCP server on the Test Agent.
+ *
+ * @param ta            Test Agent
+ * @param subnet        Subnet address
+ * @param prefix_len    Subnet prefix length
+ * @param handle        Location for handle of the created instance or
+ *                      NULL
+ *
+ * @return Status code
+ */
+extern int tapi_cfg_dhcps_add_subnet(const char            *ta,
+                                     const struct sockaddr *subnet,
+                                     int                    prefix_len,
+                                     cfg_handle            *handle);
+
 /**
  * Add host definition in DHCP server on the Test Agent.
  *
