@@ -1728,7 +1728,7 @@ ds_vncserver_del(unsigned int gid, const char *oid, const char *number)
 static int
 ds_vncserver_list(unsigned int gid, const char *oid, char **list)
 {
-    FILE *f = popen("ls /tmp/.vnc/*.pid", "r");
+    FILE *f = popen("ls /tmp/.vnc/*.pid 2>/dev/null", "r");
     char  line[128];
     char *s = buf;
 
