@@ -57,7 +57,7 @@
 
 
 /* save or not tmp ndn files */
-#define DEBUG 0
+#define DEBUG 1
 
 
 const char*
@@ -564,7 +564,7 @@ tapi_snmp_msg_head(FILE *f, ndn_snmp_msg_t msg_type)
         case NDN_SNMP_MSG_GET:      fprintf(f,"get, ");      break;
         case NDN_SNMP_MSG_GETNEXT:  fprintf(f,"get-next, "); break;
         case NDN_SNMP_MSG_GETBULK:  
-            fprintf(f,"get-bulk, repeats plain:0, "); 
+            fprintf(f,"get-bulk, repeats plain:11, "); 
             break;
 
         case NDN_SNMP_MSG_SET:      fprintf(f,"set, ");      break;
@@ -1281,7 +1281,7 @@ tapi_snmp_get_table(const char *ta, int sid, int csap_id,
                                           sizeof (tapi_snmp_varbind_t));
 
 
-        VERB("res_table: %p\n", res_table);
+        VERB("res_table: %x", res_table);
         entry.length --; 
         begin_of_portion = entry;
             /* to make 'entry' be OID of table Entry node */
@@ -1293,9 +1293,17 @@ tapi_snmp_get_table(const char *ta, int sid, int csap_id,
             rc = tapi_snmp_getbulk(ta, sid, csap_id, &begin_of_portion, 
                                     &vb_num, vb + got_varbinds);
 
-            VERB ("table getbulk return %x, got %d vbs for oid %s\n  ", 
-                    rc, vb_num, print_oid(&(begin_of_portion)));
+            VERB ("table getbulk return %X, asked for %d, got %d vbs for oid %s", 
+                    rc, rest_varbinds, vb_num, print_oid(&(begin_of_portion)));
             if (rc) break; 
+
+	    if (vb_num == 0)
+	    {
+		rc = EFAULT;
+		WARN("GETBULK got zero variables!");
+		break;
+	    }
+
             rest_varbinds -= vb_num;
             got_varbinds  += vb_num;
 
@@ -1306,8 +1314,9 @@ tapi_snmp_get_table(const char *ta, int sid, int csap_id,
                 break;
             }
             begin_of_portion = vb[got_varbinds - 1].name;
+            VERB ("prepare next bulk to oid %s",  print_oid(&begin_of_portion));
         }
-        VERB("table cardinality, bulk got %d varbinds.\n", 
+        VERB("table cardinality, bulk got %d varbinds.", 
                     table_cardinality);
 
         /* ISSUE: fill result entry according to the indexes got 
@@ -1346,7 +1355,7 @@ tapi_snmp_get_table(const char *ta, int sid, int csap_id,
                                ) == 0 )
                         break;
                 }
-                VERB("found index_l_en: %p\n", index_l_en); 
+                VERB("found index_l_en: %x\n", index_l_en); 
                 if (index_l_en == NULL) 
                     continue; /* just skip this varbind, for which we cannot 
                                  find index... */ 
@@ -1354,7 +1363,7 @@ tapi_snmp_get_table(const char *ta, int sid, int csap_id,
                                       (vb[i].name.id[ti_start - 1] - 1) ;
     
                 res_table[table_offset] = tapi_snmp_vb_to_mem(&vb[i]);
-                VERB("table offset:%d, ptr: %p\n", table_offset, res_table[table_offset]);
+                VERB("table offset:%d, ptr: %x\n", table_offset, res_table[table_offset]);
             }
         } 
     } 

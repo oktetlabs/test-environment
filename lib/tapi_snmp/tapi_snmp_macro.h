@@ -503,6 +503,57 @@ extern "C" {
     } while (0)
 
 
+/**
+ * Macro to create varbind of integer type.
+ *
+ * @param	vb_	pointer to allocated varbind
+ * @param	name_	variable object identifier
+ * @param	value_	integer value
+ *
+ */
+#define SNMP_MAKE_INT_VB(vb_, name_, value_) \
+    do                                                             \
+    {                                                              \
+        (vb_).type = TAPI_SNMP_INTEGER;                            \
+        (vb_).name = (name_);                                      \
+        (vb_).integer = (value_);                                  \
+    } while (0)
+
+/**
+ * Macro to create varbind of octet string type.
+ *
+ * @param       vb_     pointer to allocated varbind
+ * @param       name_   variable object identifier
+ * @param	size_	octet string value size
+ * @param       value_  octet string value
+ *
+ */ 
+#define SNMP_MAKE_OCTETSTRING_VB(vb_, name_, size_, value_) \
+    do                                                               \
+    {                                                                \
+        (vb_).type = TAPI_SNMP_OCTET_STR;                            \
+	(vb_).name = (name_);                                        \
+	(vb_).v_len = (size_);                                       \
+        (vb_).oct_string = (value_);                                 \
+    } while (0)
+
+/**
+ * Macro to create varbind of object identifier type.
+ *
+ * @param       vb_     pointer to allocated varbind
+ * @param       name_   variable object identifier
+ * @param       value_  object id value
+ *
+ */
+#define SNMP_MAKE_OBJECTID_VB(vb_, name_, oid_) \
+   do                                                                \
+   {                                                                 \
+        (vb_).type = TAPI_SNMP_OBJECT_ID;                            \
+        (vb_).name = (name_);                                        \
+	(vb_).v_len = ((value_).length);                             \
+	(vb_).obj_id = &(value_);                                    \
+   } while (0)
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
