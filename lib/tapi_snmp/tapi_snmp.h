@@ -619,7 +619,7 @@ extern int tapi_snmp_get_objid(const char *ta, int sid, int csap_id,
  * @param num           Number of raws in table = height of matrix below (OUT)
  * @param result        Pointer to the allocated matrix with results, if only 
  *                      one column should be get, matrix width is 1, otherwise 
- *                      matrix width is greatest subid of Table entry (OUT)
+ *                      matrix width is greatest subid of Table entry + 1. (OUT)
  *
  * @return zero on success or error code
  */
