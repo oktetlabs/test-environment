@@ -51,14 +51,25 @@ extern "C" {
 typedef enum {
     FORW_DELAY_DISABLED,
     FORW_DELAY_CONSTANT,
-    FORW_DELAY_RANDOM,
+    FORW_DELAY_RAND_CONT,
+    FORW_DELAY_RAND_DISCR,
 } ndn_forw_delay_type_t;
 
 typedef struct {
+    int prob;
+    int delay;
+} ndn_delay_discr_pair_t;
+
+
+#define DELAY_DISCR_MAX 0x10
+typedef struct {
     ndn_forw_delay_type_t type;
 
-    int delay_min;
-    int delay_max;
+    int min;
+    int max; 
+
+    size_t n_pairs; 
+    ndn_delay_discr_pair_t discr[DELAY_DISCR_MAX];
 } ndn_forw_delay_t;
 
 

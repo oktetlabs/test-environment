@@ -7,9 +7,21 @@ IMPORTS DATA-UNIT FROM TE-NDN-General;
 
 
 
-Forwarder-Action-Delay-Params ::= SEQUENCE {
-    delay-min [1] DATA-UNIT {INTEGER},
-    delay-max [2] DATA-UNIT {INTEGER}
+Forwarder-Delay-Cont ::= SEQUENCE {
+    delay-min [1] INTEGER,
+    delay-max [2] INTEGER
+}
+
+Discret-Pair ::= SEQUENCE {
+    prob        [1] INTEGER(1..100), 
+    delay       [2] INTEGER -- in microseconds
+}
+
+Forwarder-Delay-Discrete ::= SEQUENCE OF Discret-Pair;
+
+Forwarder-Action-Delay-Params ::= CHOICE {
+    cont  [1] Forwarder-Delay-Cont,
+    discr [2] Forwarder-Delay-Discrete
 }
 
 Forwarder-Action-Reorder-Params ::= SEQUENCE {

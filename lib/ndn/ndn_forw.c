@@ -41,27 +41,85 @@
 
 
 /*
-Forwarder-Action-Delay-Params ::= SEQUENCE {
-    delay-min [1] DATA-UNIT {INTEGER},
-    delay-max [2] DATA-UNIT {INTEGER}
+Forwarder-Delay-Cont ::= SEQUENCE {
+    delay-min [1] INTEGER,
+    delay-max [2] INTEGER
 } 
 */
 
-static asn_named_entry_t _ndn_forw_delay_ne_array [] = 
+static asn_named_entry_t _ndn_forw_delay_cont_ne_array [] = 
 {
-    { "delay-min",   &ndn_data_unit_int32_s, {PRIVATE, 1}},
-    { "delay-max",   &ndn_data_unit_int32_s, {PRIVATE, 1}},
+    { "delay-min",   &asn_base_integer_s, {PRIVATE, 1}},
+    { "delay-max",   &asn_base_integer_s, {PRIVATE, 2}},
+};
+
+asn_type ndn_forw_delay_cont_s =
+{
+    "Forwarder-Delay-Cont", {PRIVATE, 100}, SEQUENCE, 
+    sizeof(_ndn_forw_delay_cont_ne_array)/sizeof(asn_named_entry_t),
+    {_ndn_forw_delay_cont_ne_array}
+};
+
+const asn_type * const ndn_forw_delay_cont = &ndn_forw_delay_cont_s;
+
+/* 
+Discret-Pair ::= SEQUENCE {
+    prob        [1] INTEGER(1..100), 
+    delay       [2] INTEGER -- in microseconds
+} 
+*/
+
+static asn_named_entry_t _ndn_forw_discr_pair_array [] = 
+{
+    { "prob",    &asn_base_int8_s, {PRIVATE, 1}},
+    { "delay",   &asn_base_integer_s, {PRIVATE, 2}},
+};
+
+asn_type ndn_forw_discr_pair_s =
+{
+    "Discret-Pair", {PRIVATE, 101}, SEQUENCE, 
+    sizeof(_ndn_forw_discr_pair_array)/sizeof(asn_named_entry_t),
+    {_ndn_forw_discr_pair_array}
+};
+
+const asn_type * const ndn_forw_discr_pair = &ndn_forw_discr_pair_s;
+
+/*
+Forwarder-Delay-Discrete ::= SEQUENCE OF Discret-Pair;
+*/
+
+asn_type ndn_forw_delay_discr_s =
+{
+    "Discret-Pair", {PRIVATE, 102}, SEQUENCE_OF, 
+    0, {&ndn_forw_discr_pair_s}
+};
+
+/*
+Forwarder-Action-Delay-Params ::= CHOICE {
+    cont  [1] Forwarder-Delay-Cont,
+    discr [2] Forwarder-Delay-Discrete
+} 
+*/
+
+enum {
+    FTASK_DELAY_CONTINOUS = 1,
+    FTASK_DELAY_DISCRETE = 2,
+};
+
+static asn_named_entry_t _ndn_forw_delay_array [] = 
+{
+    { "cont",  &ndn_forw_delay_cont_s,  {PRIVATE, FTASK_DELAY_CONTINOUS}},
+    { "discr", &ndn_forw_delay_discr_s, {PRIVATE, FTASK_DELAY_DISCRETE}},
 };
 
 asn_type ndn_forw_delay_s =
 {
-    "Forwarder-Action-Delay-Params", {PRIVATE, 100}, SEQUENCE, 
-    sizeof(_ndn_forw_delay_ne_array)/sizeof(asn_named_entry_t),
-    {_ndn_forw_delay_ne_array}
+    "Discret-Pair", {PRIVATE, 101}, CHOICE, 
+    sizeof(_ndn_forw_delay_array)/sizeof(asn_named_entry_t),
+    {_ndn_forw_delay_array}
 };
 
 const asn_type * const ndn_forw_delay = &ndn_forw_delay_s;
-
 
 /*
 Forwarder-Action-Reorder-Params ::= SEQUENCE {
@@ -178,25 +236,65 @@ ndn_forw_delay_to_plain(const asn_value *val, ndn_forw_delay_t *forw_delay)
     int rc = 0;
     int d_len; 
 
+    const char *choice_ptr;
+
     if (val == NULL || forw_delay == NULL) 
         return EINVAL;
 
-    d_len = sizeof (forw_delay->delay_min);
-    rc = asn_read_value_field(val, &(forw_delay->delay_min), &d_len, 
-                              "delay-min.#plain"); 
-    if (rc)
-        return rc;
+    choice_ptr = asn_get_choice_ptr(val);
 
-    d_len = sizeof (forw_delay->delay_max);
-    rc = asn_read_value_field(val, &(forw_delay->delay_max), &d_len, 
-                              "delay-max.#plain"); 
-    if (rc)
-        return rc;
+    if (strcmp(choice_ptr, "cont") == 0)
+    {
+        d_len = sizeof(forw_delay->min);
+        rc = asn_read_value_field(val, &(forw_delay->min), &d_len, 
+                                  "#cont.delay-min"); 
+        if (rc)
+            return rc;
 
-    if (forw_delay->delay_max == forw_delay->delay_min)
-        forw_delay->type = FORW_DELAY_CONSTANT;
-    else 
-        forw_delay->type = FORW_DELAY_RANDOM;
+        d_len = sizeof(forw_delay->max);
+        rc = asn_read_value_field(val, &(forw_delay->max), &d_len, 
+                                  "#cont.delay-max"); 
+        if (rc)
+            return rc;
+
+        if (forw_delay->max == forw_delay->min)
+            forw_delay->type = FORW_DELAY_CONSTANT;
+        else 
+            forw_delay->type = FORW_DELAY_RAND_CONT;
+    }
+    else if (strcmp(choice_ptr, "discr") == 0)
+    {
+        char label[50];
+        char *pl;
+        int i;
+        int ar_len;
+
+        ar_len = asn_get_length(val, "#discr"); 
+
+        if (ar_len > DELAY_DISCR_MAX)
+            ar_len = DELAY_DISCR_MAX;
+
+        forw_delay->n_pairs = ar_len;
+
+        for (i = 0; i < ar_len; i++)
+        { 
+            pl = label;
+            pl += snprintf(pl, sizeof(label), "#discr.%d", i);
+            strcpy(pl, ".prob");
+            d_len = sizeof(forw_delay->discr[i].prob);
+            rc = asn_read_value_field(val, &(forw_delay->discr[i].prob),
+                                      &d_len, label);
+            if (rc != 0)
+                break;
+
+            strcpy(pl, ".delay");
+            d_len = sizeof(forw_delay->discr[i].delay);
+            rc = asn_read_value_field(val, &(forw_delay->discr[i].delay),
+                                      &d_len, label);
+            if (rc != 0)
+                break;
+        }
+    }
 
     return rc;
 }
@@ -316,7 +414,7 @@ ndn_forw_action_asn_to_plain(const asn_value *val,
     forw_action->id[id_len] = '\0';
     RING("%s: got id: %s", __FUNCTION__, forw_action->id);
 
-    rc = asn_get_subvalue(val, &subval, "delay");
+    rc = asn_impl_find_subvalue(val, "delay", &subval); 
     RING("%s: get delay: %X", __FUNCTION__, rc); 
     if (rc == 0) 
     {
@@ -386,7 +484,8 @@ ndn_forw_action_plain_to_asn(ndn_forw_action_plain *forw_action,
 
         rc = asn_write_value_field(val, 
                         forw_action->id, strlen (forw_action->id), "id"); 
-        if (rc) break;
+        if (rc != 0)
+            break;
                             
         switch (forw_action->drop.type)
         {
@@ -404,35 +503,87 @@ ndn_forw_action_plain_to_asn(ndn_forw_action_plain *forw_action,
                                            "drop.#pattern-mask");
                 break;
         } 
-        if (rc) break;
+        if (rc)
+            break;
 
         if (forw_action->reorder.type != FORW_REORDER_DISABLED)
         {
             rc = asn_write_value_field(val, &forw_action->reorder.type,
                                        sizeof(forw_action->reorder.type),
                                        "reorder.type");
-            if (rc) break;
+            if (rc != 0)
+                break;
             rc = asn_write_value_field(val, &forw_action->reorder.timeout,
                                        sizeof(forw_action->reorder.timeout),
                                        "reorder.timeout.#plain");
-            if (rc) break;
+            if (rc != 0)
+                break;
             rc = asn_write_value_field(val, &forw_action->reorder.r_size,
                                        sizeof(forw_action->reorder.r_size),
                                        "reorder.reorder-size.#plain");
-            if (rc) break;
+            if (rc != 0)
+                break;
         }
 
-        if (forw_action->delay.type != FORW_DELAY_DISABLED)
+        switch (forw_action->delay.type)
         {
-            rc = asn_write_value_field(val, &forw_action->delay.delay_min,
-                                       sizeof(forw_action->delay.delay_min),
-                                       "delay.delay-min.#plain");
-            if (rc) break;
-            rc = asn_write_value_field(val, &forw_action->delay.delay_max,
-                                       sizeof(forw_action->delay.delay_max),
-                                       "delay.delay-max.#plain");
-            if (rc) break;
+            case FORW_DELAY_DISABLED:
+                break; /* nothing to do */
+
+            case FORW_DELAY_CONSTANT:
+                forw_action->delay.max = forw_action->delay.min;
+                /* fall through */
+            case FORW_DELAY_RAND_CONT:
+                rc = asn_write_value_field(val, &forw_action->delay.min,
+                                           sizeof(forw_action->delay.min),
+                                           "delay.#cont.delay-min");
+                if (rc != 0) 
+                    break;
+                rc = asn_write_value_field(val, &forw_action->delay.max,
+                                           sizeof(forw_action->delay.max),
+                                           "delay.#cont.delay-max");
+                break;
+            case FORW_DELAY_RAND_DISCR:
+                {
+                    int i;
+                    int ar_len; 
+
+                    ar_len = forw_action->delay.n_pairs;
+
+                    for (i = 0; i < ar_len; i++)
+                    { 
+                        asn_value *pair_val = 
+                            asn_init_value(ndn_forw_discr_pair);
+
+                        rc = asn_write_value_field
+                                (pair_val,  
+                                 &forw_action->delay.discr[i].prob,
+                                 sizeof(forw_action->delay.discr[i].prob),
+                                 "prob");
+                        if (rc != 0)
+                            break;
+
+                        rc = asn_write_value_field
+                                (pair_val,
+                                 &forw_action->delay.discr[i].delay,
+                                 sizeof(forw_action->delay.discr[i].delay),
+                                 "delay");
+                        if (rc != 0)
+                            break;
+
+                        rc = asn_insert_indexed(val, pair_val, i, 
+                                                "delay.#discr");
+                    }
+                }
+                break;
+            default:
+                rc = EINVAL;
+                ERROR("unsupported type of delay: %d", 
+                      forw_action->delay.type);
+                break;
         }
+        if (rc != 0) 
+            break;
         
     } while (0);
 
