@@ -1384,14 +1384,15 @@ route_add(unsigned int gid, const char *oid, const char *value,
     }
 #endif            
         
+    memset(&entry, 0, sizeof(entry));
     entry.dwForwardDest = rt.dst;
     entry.dwForwardNextHop = rt.gw;
     entry.dwForwardMask = PREFIX2MASK(rt.prefix);
-    
 
     if (rt.forw_type == FORW_TYPE_LOCAL)
     {
         entry.dwForwardIfIndex = rt.if_index;        
+        entry.dwForwardNextHop = rt.dst;
     }
     else
     {
