@@ -1609,7 +1609,9 @@ TARPC_FUNC(setsockopt, {},
             default:
                 ERROR("incorrect option type %d is received",
                       in->optval.optval_val[0].opttype);
-                opt = NULL;
+                out->common._errno = TE_RC(TE_TA_WIN32, EINVAL);
+                out->retval = -1;
+                goto finish;
                 break;
         }
         call_setsockopt:
@@ -1619,6 +1621,8 @@ TARPC_FUNC(setsockopt, {},
                                            sockopt_rpc2h(in->optname),
                                            opt, in->optlen));
     }
+    finish:
+    ;
 }
 )
 
@@ -1752,7 +1756,7 @@ TARPC_FUNC(ioctl,
     COPY_ARG(req);
 },
 {
-    char *req;
+    char *req = NULL;
     int   reqlen = 0;
 
     static struct timeval req_timeval;
@@ -1788,6 +1792,7 @@ TARPC_FUNC(ioctl,
                 ERROR("incorrect request type %d is received",
                       out->req.req_val[0].type);
                 out->common._errno = TE_RC(TE_TA_WIN32, EINVAL);
+                out->retval = -1;
                 goto finish;
                 break;
         }
@@ -2439,7 +2444,6 @@ echoer(tarpc_echoer_in *in)
     uint32_t *rx_stat = (uint32_t *)(in->rx_stat.rx_stat_val);
 
     int      i;
-    int      rc;
     int      sent;
     int      received;
     char     buf[FLOODER_BUF];
@@ -2493,7 +2497,7 @@ echoer(tarpc_echoer_in *in)
         }
 
         /* Receive data from sockets that are ready */
-        for (i = 0; rc > 0 && i < socknum; i++)
+        for (i = 0; i < socknum; i++)
         {
             if (FD_ISSET(sockets[i], &rfds))
             {
