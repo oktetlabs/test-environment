@@ -6,9 +6,9 @@
     <author mailto="Konstantin.Abramenko@oktetlabs.ru"/>
 
     <session>
-        <var name="ta" handdown="true">
+        <arg name="ta" handdown="true">
             <value>Agt_A</value>
-        </var>
+        </arg>
         <run>
             <script name="clitest">
                 <req id="CLI"/>
