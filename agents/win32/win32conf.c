@@ -412,7 +412,7 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
     UNUSED(oid);
     UNUSED(value);
     
-    if ((a = inet_addr(addr)) == 0 || (a & 0xe0000000) == 0xe0000000)
+    if ((a = inet_addr(addr)) == INADDR_NONE || (a & 0xe0000000) == 0xe0000000)
         return TE_RC(TE_TA_WIN32, EINVAL);
 
     m = (a & htonl(0x80000000)) == 0 ? htonl(0xFF000000) :
@@ -464,7 +464,7 @@ net_addr_del(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(oid);
     
-    if ((a = inet_addr(addr)) == 0)
+    if ((a = inet_addr(addr)) == INADDR_NONE)
         return TE_RC(TE_TA_WIN32, EINVAL);
     
     GET_IF_ENTRY;
@@ -569,8 +569,11 @@ netmask_get(unsigned int gid, const char *oid, char *value,
     UNUSED(gid);
     UNUSED(oid);
     
-    if ((a = inet_addr(addr)) == 0)
-        return TE_RC(TE_TA_WIN32, EINVAL);
+    if ((a = inet_addr(addr)) == INADDR_NONE)
+    {
+        if (strcmp(addr, "255.255.255.255") != 0)
+            return TE_RC(TE_TA_WIN32, EINVAL);
+    }
     
     GET_IF_ENTRY;
     
@@ -605,11 +608,14 @@ netmask_set(unsigned int gid, const char *oid, const char *value,
     UNUSED(gid);
     UNUSED(oid);
     
-    if ((a = inet_addr(addr)) == 0)
+    if ((a = inet_addr(addr)) == INADDR_NONE)
         return TE_RC(TE_TA_WIN32, EINVAL);
 
-    if ((m = inet_addr(value)) == 0)
-        return TE_RC(TE_TA_WIN32, EINVAL);
+    if ((m = inet_addr(value)) == INADDR_NONE)
+    {
+        if (strcmp(addr, "255.255.255.255") != 0)
+            return TE_RC(TE_TA_WIN32, EINVAL);
+    }
 
     MASK2PREFIX(ntohl(m), prefix);
     if (prefix > 32)
@@ -776,7 +782,7 @@ arp_get(unsigned int gid, const char *oid, char *value,
     UNUSED(gid);
     UNUSED(oid);
     
-    if ((a = inet_addr(addr)) == 0)
+    if ((a = inet_addr(addr)) == INADDR_NONE)
         return TE_RC(TE_TA_WIN32, EINVAL);
         
     GET_TABLE(MIB_IPNETTABLE, GetIpNetTable);
@@ -856,7 +862,7 @@ arp_set(unsigned int gid, const char *oid, const char *value,
     UNUSED(gid);
     UNUSED(oid);
 
-    if ((a = inet_addr(addr)) == 0)
+    if ((a = inet_addr(addr)) == INADDR_NONE)
         return TE_RC(TE_TA_WIN32, EINVAL);
         
     GET_TABLE(MIB_IPNETTABLE, GetIpNetTable);
@@ -968,7 +974,7 @@ arp_del(unsigned int gid, const char *oid, const char *addr)
     UNUSED(gid);
     UNUSED(oid);
 
-    if ((a = inet_addr(addr)) == 0)
+    if ((a = inet_addr(addr)) == INADDR_NONE)
         return TE_RC(TE_TA_WIN32, EINVAL);
 
     GET_TABLE(MIB_IPNETTABLE, GetIpNetTable);
@@ -1037,6 +1043,34 @@ arp_list(unsigned int gid, const char *oid, char **list)
     return 0;
 }
 
+/** Get ip address and prefix from the instance name */
+static int
+parse_route_name(char *route, DWORD *addr, int *prefix)
+{
+    char *tmp, *tmp1;
+    
+    if ((tmp = strchr(route, '|')) == NULL)
+        return TE_RC(TE_TA_WIN32, ETENOSUCHNAME);
+
+    *tmp = 0;
+    
+    if ((*addr = inet_addr(route)) == INADDR_NONE)
+    {
+        if (strcmp(route, "255.255.255.255") != 0)
+           return TE_RC(TE_TA_WIN32, ETENOSUCHNAME);
+    }
+        
+    *tmp++ = '|';
+    if (*tmp == '-' ||
+        (*prefix = strtol(tmp, &tmp1, 10), tmp == tmp1 || *tmp1 != 0 ||
+         *prefix > 32))
+    {
+        return TE_RC(TE_TA_WIN32, ETENOSUCHNAME);
+    }
+    
+    return 0;
+}
+
 /**
  * Get route value (gateway IP address).
  *
@@ -1052,9 +1086,39 @@ static int
 route_get(unsigned int gid, const char *oid, char *value,
           const char *route)
 {
+    MIB_IPFORWARDTABLE *table;
+    
+    int    prefix, rc, i;
+    DWORD  addr;
+    
     UNUSED(gid);
     UNUSED(oid);
     
+    if ((rc = parse_route_name((char *)route, &addr, &prefix)) != 0)
+        return rc;
+
+    GET_TABLE(MIB_IPFORWARDTABLE, GetIpForwardTable);
+    if (table == NULL)
+        return TE_RC(TE_TA_WIN32, ENOENT);
+    
+    for (i = 0; i < (int)table->dwNumEntries; i++)
+    {
+        int p;
+        
+        MASK2PREFIX(table->table[i].dwForwardMask, p);
+        if (table->table[i].dwForwardDest == addr && prefix == p)
+        {
+            snprintf(value, RCF_MAX_VAL, "%s", 
+                    inet_ntoa(*(struct in_addr *)
+                                  &(table->table[i].dwForwardNextHop)));
+            free(table);
+            return 0;
+        }
+    }
+
+    free(table);
+
+    return TE_RC(TE_TA_WIN32, ENOENT);
 }
 
 /**
@@ -1127,7 +1191,37 @@ route_del(unsigned int gid, const char *oid, const char *route)
 static int
 route_list(unsigned int gid, const char *oid, char **list)
 {
+    MIB_IPFORWARDTABLE *table;
+    int                 i;
+    
     UNUSED(gid);
     UNUSED(oid);
     
+    GET_TABLE(MIB_IPFORWARDTABLE, GetIpForwardTable);
+    if (table == NULL)
+    {
+        if ((*list = strdup(" ")) == NULL)
+            return TE_RC(TE_TA_WIN32, ENOMEM);
+        else
+            return 0;
+    }
+    
+    buf[0] = 0;
+    
+    for (i = 0; i < (int)table->dwNumEntries; i++)
+    {
+        int prefix;
+        
+        MASK2PREFIX(table->table[i].dwForwardMask, prefix);
+        sprintf("%s:%d ", 
+                inet_ntoa(*(struct in_addr *)&(table->table[i].dwForwardDest)),
+                prefix);
+    }
+
+    free(table);
+
+    if ((*list = strdup(buf)) == NULL)
+        return TE_RC(TE_TA_WIN32, ENOMEM);
+
+    return 0;
 }
