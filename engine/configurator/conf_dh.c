@@ -754,8 +754,12 @@ cfg_dh_restore_backup(char *filename)
                
                 if (rc != 0)
                 {
-                    ERROR("%s(): cfg_db_find() failed: %X", 
-                          __FUNCTION__, rc);
+                    if (rc != ENOENT)
+                    {
+                        ERROR("%s(): cfg_db_find() failed: %X", 
+                              __FUNCTION__, rc);
+                        RC_UPDATE(result, msg.rc);
+                    }
                     break;
                 }
                
