@@ -59,7 +59,7 @@ extern "C" {
 
 
 /** Constants for primary types */
-typedef enum {   
+typedef enum {
     CVT_INTEGER,     /**< Value of the type 'int' */
     CVT_STRING,      /**< Value of the type 'char *' */
     CVT_ADDRESS,     /**< Value of the type 'sockaddr *' */
@@ -68,7 +68,7 @@ typedef enum {
 } cfg_val_type;
 
 
-/** 
+/**
  * Object and object instances handle.
  *
  * Object handle is an index in array of all objects.
@@ -87,7 +87,7 @@ typedef uint32_t cfg_handle;
 
 /**
  * Is it Configurator object instance handle?
- * 
+ *
  * @param _handle   Configurator handle
  */
 #define CFG_IS_INST(_handle)    (_handle & 0xFFFF0000)
@@ -96,12 +96,12 @@ typedef uint32_t cfg_handle;
 typedef struct cfg_obj_descr {
     cfg_val_type type;        /**< Type of the object instance value */
     uint8_t      access;      /**< Access rights */
-    
-#define CFG_READ_ONLY   1 /**< Instance is created automatically by TA 
+
+#define CFG_READ_ONLY   1 /**< Instance is created automatically by TA
                                and cannot be changed */
 #define CFG_READ_WRITE  2 /**< Instance is created automatically by TA,
                                but its value can be changed */
-#define CFG_READ_CREATE 3 /**< Instance may be added, changed and deleted */                             
+#define CFG_READ_CREATE 3 /**< Instance may be added, changed and deleted */
 } cfg_obj_descr;
 
 /**
@@ -142,7 +142,7 @@ extern int cfg_get_object_descr(cfg_handle handle, cfg_obj_descr *descr);
  * Obtain identifier of object or object instance by its handle.
  *
  * @param handle    - handle of object or object instance
- * @param oid       - OUT: location for the oid pointer (memory for the 
+ * @param oid       - OUT: location for the oid pointer (memory for the
  *                    string is allocated by the routine using malloc()
  *
  * @return 0 or EINVAL if invalid handle is provided
@@ -199,7 +199,7 @@ extern int cfg_get_ith_inst_name(const char *str_oid, unsigned int i,
  *
  * @param oid       - object identifier in string representation
  * @param p_handle  - location for object or instance handle
- * 
+ *
  * @return      status code
  */
 extern int cfg_find_str(const char *oid, cfg_handle *p_handle);
@@ -209,9 +209,9 @@ static inline int
 cfg_find_vfmt(cfg_handle *p_handle, const char *oid_fmt, va_list ap)
 {
     char oid[CFG_OID_MAX];
-    
+
     vsnprintf(oid, sizeof(oid), oid_fmt, ap);
-    
+
     return cfg_find_str(oid, p_handle);
 }
 
@@ -221,7 +221,7 @@ cfg_find_fmt(cfg_handle *p_handle, const char *oid_fmt, ...)
 {
     int     rc;
     va_list ap;
-    
+
     va_start(ap, oid_fmt);
     rc = cfg_find_vfmt(p_handle, oid_fmt, ap);
     va_end(ap);
@@ -232,9 +232,9 @@ cfg_find_fmt(cfg_handle *p_handle, const char *oid_fmt, ...)
 /**
  * Find the object or object instance by its object identifier.
  *
- * @param oid       - object identifier 
+ * @param oid       - object identifier
  * @param handle    - location for object or instance handle
- * 
+ *
  * @return status code
  */
 extern int cfg_find(const cfg_oid *oid, cfg_handle *handle);
@@ -246,14 +246,14 @@ extern int cfg_find(const cfg_oid *oid, cfg_handle *handle);
  * @param object    - OUT: localtion for object handle
  *
  * @return status code.
- */ 
-extern int cfg_find_object_by_instance(cfg_handle instance, 
+ */
+extern int cfg_find_object_by_instance(cfg_handle instance,
                                        cfg_handle *object);
 
 /**
  * Find all objects or object instances matching to pattern.
- * 
- * @param pattern   - string object identifier possibly containing '*' 
+ *
+ * @param pattern   - string object identifier possibly containing '*'
  *                    (see Configurator documentation for details)
  * @param p_num     - OUT: number of found objects or object instances
  * @param p_set     - OUT: array of object/object instances handles;
@@ -261,7 +261,7 @@ extern int cfg_find_object_by_instance(cfg_handle instance,
  *
  * @return 0 or EINVAL if pattern format is incorrect some argument is NULL
  */
-extern int cfg_find_pattern(const char *pattern, 
+extern int cfg_find_pattern(const char *pattern,
                             int *p_num, cfg_handle **p_set);
 
 /** The same function as cfg_find_pattern, but OID may be format string */
@@ -271,11 +271,11 @@ cfg_find_pattern_fmt(int *p_num, cfg_handle **p_set,
 {
     va_list ap;
     char    ptrn[CFG_OID_MAX];
-    
+
     va_start(ap, ptrn_fmt);
     vsnprintf(ptrn, sizeof(ptrn), ptrn_fmt, ap);
     va_end(ap);
-    
+
     return cfg_find_pattern(ptrn, p_num, p_set);
 }
 
@@ -319,13 +319,13 @@ extern int cfg_get_father(cfg_handle handle, cfg_handle *father);
  *
  * @return status code (see te_errno.h)
  */
-extern int cfg_add_instance(const cfg_oid *oid, cfg_handle *handle, 
+extern int cfg_add_instance(const cfg_oid *oid, cfg_handle *handle,
                             cfg_val_type type, ...);
 
 /**
  * Create an object instance.
  *
- * @param  oid      - object identifier of the new instance 
+ * @param  oid      - object identifier of the new instance
  *                    (string representation)
  * @param  p_handle - location for handle of the new instance (OUT)
  * @param  type     - value type (necessary for fast processing)
@@ -336,13 +336,16 @@ extern int cfg_add_instance(const cfg_oid *oid, cfg_handle *handle,
  *
  * @return status code (see te_errno.h)
  */
-extern int cfg_add_instance_str(const char *oid, cfg_handle *p_handle, 
+extern int cfg_add_instance_str(const char *oid, cfg_handle *p_handle,
                                 cfg_val_type type, ...);
 
-/** The same function as cfg_add_instance_str, but OID may be format string */
+/**
+ * The same function as cfg_add_instance_str,
+ * but OID may be format string.
+ */
 static inline int
-cfg_add_instance_fmt(cfg_handle *p_handle, cfg_val_type type, void *val,
-                     const char *oid_fmt, ...)
+cfg_add_instance_fmt(cfg_handle *p_handle, cfg_val_type type,
+                     const void *val, const char *oid_fmt, ...)
 {
     va_list ap;
     char    oid[CFG_OID_MAX];
@@ -350,7 +353,7 @@ cfg_add_instance_fmt(cfg_handle *p_handle, cfg_val_type type, void *val,
     va_start(ap, oid_fmt);
     vsnprintf(oid, sizeof(oid), oid_fmt, ap);
     va_end(ap);
-    
+
     return cfg_add_instance_str(oid, p_handle, type, val);
 }
 
@@ -388,7 +391,8 @@ extern int cfg_set_instance(cfg_handle handle, cfg_val_type type, ...);
 
 /** Set instance by the OID. OID may be format string */
 static inline int
-cfg_set_instance_fmt(cfg_val_type type, void *val, const char *oid_fmt, ...)
+cfg_set_instance_fmt(cfg_val_type type, const void *val,
+                     const char *oid_fmt, ...)
 {
     _CFG_HANDLE_BY_FMT;
     return cfg_set_instance(handle, type, val);
@@ -407,7 +411,8 @@ cfg_set_instance_fmt(cfg_val_type type, void *val, const char *oid_fmt, ...)
  *
  * @return status code (see te_errno.h)
  */
-extern int cfg_set_instance_local(cfg_handle handle, cfg_val_type type, ...);
+extern int cfg_set_instance_local(cfg_handle handle,
+                                  cfg_val_type type, ...);
 
 /** Set instance by the OID. OID may be format string */
 static inline int
@@ -421,10 +426,10 @@ cfg_set_instance_local_fmt(cfg_val_type type, void *val,
 /**
  * Commit Configurator database changes to the Test Agent.
  *
- * @param oid       - subtree object identifier or NULL if whole 
+ * @param oid       - subtree object identifier or NULL if whole
  *                    database should be synchronized
  *
- * @return status code (see te_errno.h) 
+ * @return status code (see te_errno.h)
  */
 extern int cfg_commit(const char *oid);
 
@@ -434,11 +439,11 @@ cfg_commit_fmt(const char *oid_fmt, ...)
 {
     va_list ap;
     char    oid[CFG_OID_MAX];
-    
+
     va_start(ap, oid_fmt);
     vsnprintf(oid, sizeof(oid), oid_fmt, ap);
     va_end(ap);
-    
+
     return cfg_commit(oid);
 }
 
@@ -480,7 +485,8 @@ cfg_get_instance_fmt(cfg_val_type *p_type, void *val,
  *
  * @return status code (see te_errno.h)
  */
-extern int cfg_get_instance_sync(cfg_handle handle, cfg_val_type *type, ...);
+extern int cfg_get_instance_sync(cfg_handle handle,
+                                 cfg_val_type *type, ...);
 
 /** Get instance by the OID. OID may be format string */
 static inline int
@@ -500,7 +506,7 @@ cfg_get_instance_sync_fmt(cfg_val_type *type, void *val,
  * @param subtree    - 1 if the subtree of the specified node should
  *                     be synchronized
  *
- * @return status code (see te_errno.h) 
+ * @return status code (see te_errno.h)
  */
 extern int cfg_synchronize(const char *oid, te_bool subtree);
 
@@ -510,11 +516,11 @@ cfg_synchronize_fmt(te_bool subtree, const char *oid_fmt, ...)
 {
     va_list ap;
     char    oid[CFG_OID_MAX];
-    
+
     va_start(ap, oid_fmt);
     vsnprintf(oid, sizeof(oid), oid_fmt, ap);
     va_end(ap);
-    
+
     return cfg_synchronize(oid, subtree);
 }
 
@@ -535,7 +541,7 @@ typedef int (* cfg_inst_handler)(
  *
  * @return status code (see te_errno.h)
  */
-extern int cfg_enumerate(cfg_handle handle, cfg_inst_handler callback, 
+extern int cfg_enumerate(cfg_handle handle, cfg_inst_handler callback,
                          void *user_data);
 
 
