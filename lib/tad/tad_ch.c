@@ -587,7 +587,7 @@ rcf_ch_trrecv_start(struct rcf_comm_connection *handle,
     int               sr_flag = 0;
 #endif
 
-    INFO("%s: csap %d, num %u, timeout %u ms, %s",
+    INFO("%s: csap %d, num %u, timeout %u ms, %s", __FUNCTION__,
          csap, num, timeout, results ? "results" : "");
 
 #ifdef DUMMY_TAD 
