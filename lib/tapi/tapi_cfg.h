@@ -32,6 +32,10 @@
 #ifndef __TE_TAPI_CFG_H_
 #define __TE_TAPI_CFG_H_
 
+#if HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
+
 #include "te_stdint.h"
 #include "conf_api.h"
 
@@ -278,13 +282,28 @@ extern int tapi_cfg_free_entry(cfg_handle *entry);
  *
  * @note Use #tapi_cfg_free_entry function to free allocated entry.
  *
- * @sa tapi_cfg_free_entry
+ * @sa tapi_cfg_free_entry, tapi_cfg_alloc_ip4_addr
  */
 static inline int
 tapi_cfg_alloc_ip4_net(cfg_handle *entry)
 {
     return tapi_cfg_alloc_entry("/ip4_net_pool:", entry);
 }
+
+/**
+ * Allocate IPv4 address from IPv4 subnet got from IPv4 subnets pool.
+ *
+ * @param ip4_net       IPv4 subnet handle
+ * @param entry         Location for Cfgr handle of new entry
+ *
+ * @return Status code.
+ *
+ * @note Use #tapi_cfg_free_entry function to free allocated entry.
+ * 
+ * @sa tapi_cfg_free_entry, tapi_cfg_alloc_ip4_net
+ */
+extern int tapi_cfg_alloc_ip4_addr(cfg_handle ip4_net, cfg_handle *entry,
+                                   struct sockaddr_in **addr);
 
 
 #ifdef __cplusplus

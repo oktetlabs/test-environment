@@ -72,6 +72,7 @@
 
 #include "tapi_sockaddr.h"
 #include "tapi_cfg_base.h"
+#include "tapi_cfg.h"
 
 
 /** Operations with routing/ARP table */
@@ -747,24 +748,18 @@ tapi_cfg_get_hwaddr(const char *ta,
 
 
 /* See the description in tapi_cfg.h */
-int
-tapi_cfg_alloc_entry(const char *parent_oid, cfg_handle *entry)
+static int
+tapi_cfg_alloc_entry_by_handle(cfg_handle parent, cfg_handle *entry)
 {
     int             rc;
     cfg_handle      handle;
     cfg_val_type    type = CVT_INTEGER;
     int             value;
 
-    rc = cfg_find_str(parent_oid, &handle);
-    if (rc != 0)
-    {
-        ERROR("%s: Failed to convert OID '%s' to handle: %X",
-              __FUNCTION__, parent_oid, rc);
-        return rc;
-    }
-    
-    for (rc = cfg_get_son(handle, &handle);
-         rc == 0;
+    *entry = CFG_HANDLE_INVALID;
+
+    for (rc = cfg_get_son(parent, &handle);
+         rc == 0 && handle != CFG_HANDLE_INVALID;
          rc = cfg_get_brother(handle, &handle))
     {
         rc = cfg_get_instance(handle, &type, &value);
@@ -788,16 +783,48 @@ tapi_cfg_alloc_entry(const char *parent_oid, cfg_handle *entry)
 
     if (rc == 0)
     {
-        *entry = handle;
-        INFO("Pool '%s' entry with Cfgr handle 0x%x allocated",
-             parent_oid, *entry);
+        if (handle != CFG_HANDLE_INVALID)
+        {
+            *entry = handle;
+            INFO("Pool 0x%x entry with Cfgr handle 0x%x allocated",
+                 parent, *entry);
+        }
+        else
+        {
+            INFO("No free entries in pool 0x%x", parent);
+            rc = TE_RC(TE_TAPI, ENOENT);
+        }
     }
+#if 0
+    else if (TE_RC_GET_ERROR(rc) == ENOENT)
+    {
+        INFO("No free entries in pool 0x%x", parent);
+    }
+#endif
     else
     {
-        ERROR("Failed to allocate entry in '%s': %X", parent_oid, rc);
+        ERROR("Failed to allocate entry in 0x%x: %X", parent, rc);
     }
 
     return rc;
+}
+
+/* See the description in tapi_cfg.h */
+int
+tapi_cfg_alloc_entry(const char *parent_oid, cfg_handle *entry)
+{
+    int         rc;
+    cfg_handle  parent;
+
+    rc = cfg_find_str(parent_oid, &parent);
+    if (rc != 0)
+    {
+        ERROR("%s: Failed to convert OID '%s' to handle: %X",
+              __FUNCTION__, parent_oid, rc);
+        return rc;
+    }
+    
+    return tapi_cfg_alloc_entry_by_handle(parent, entry);
 }
 
 /* See the description in tapi_cfg.h */
@@ -829,3 +856,156 @@ tapi_cfg_free_entry(cfg_handle *entry)
     return rc;
 }
 
+
+/* See the description in tapi_cfg.h */
+int
+tapi_cfg_alloc_ip4_addr(cfg_handle ip4_net, cfg_handle *entry,
+                        struct sockaddr_in **addr)
+{
+    int             rc;
+    char           *ip4_net_oid;
+    cfg_handle      pool;
+    int             n_entries;
+    cfg_handle      n_entries_hndl;
+    cfg_val_type    val_type;
+    int             prefix;
+    char            buf[INET_ADDRSTRLEN];
+
+
+    rc = cfg_get_oid_str(ip4_net, &ip4_net_oid);
+    if (rc != 0)
+    {
+        ERROR("Failed to get OID by handle 0x%x: %X", ip4_net, rc);
+        return rc;
+    }
+
+    /* Find or create pool of IPv4 subnet addresses */
+    rc = cfg_find_fmt(&pool, "%s/pool:", ip4_net_oid);
+    if (TE_RC_GET_ERROR(rc) == ENOENT)
+    {
+        rc = cfg_add_instance_fmt(&pool, CVT_NONE, NULL,
+                                  "%s/pool:", ip4_net_oid);
+        if (rc != 0)
+        {
+            ERROR("Failed to add object instance '%s/pool:': %X",
+                  ip4_net_oid, rc);
+            free(ip4_net_oid);
+            return rc;
+        }
+    }
+    else if (rc != 0)
+    {
+        ERROR("Failed to find object instance '%s/pool:': %X",
+              ip4_net_oid, rc);
+        free(ip4_net_oid);
+        return rc;
+    }
+    
+    rc = tapi_cfg_alloc_entry_by_handle(pool, entry);
+    if (TE_RC_GET_ERROR(rc) != ENOENT)
+    {
+        free(ip4_net_oid);
+        return rc;
+    }
+    
+    /* No available entries */
+
+    /* Get number of entries in the pool */
+    rc = cfg_find_fmt(&n_entries_hndl, "%s/n_entries:", ip4_net_oid);
+    if (TE_RC_GET_ERROR(rc) == ENOENT)
+    {
+        rc = cfg_add_instance_fmt(&n_entries_hndl, CVT_INTEGER, (void *)0,
+                                  "%s/n_entries:", ip4_net_oid);
+        if (rc != 0)
+        {
+            ERROR("Failed to add object instance '%s/n_entries:': %X",
+                  ip4_net_oid, rc);
+            free(ip4_net_oid);
+            return rc;
+        }
+        n_entries = 0;
+    }
+    else if (rc != 0)
+    {
+        ERROR("Failed to find object instance '%s/n_entries:': %X",
+              ip4_net_oid, rc);
+        free(ip4_net_oid);
+        return rc;
+    }
+    else
+    {
+        rc = cfg_get_instance(n_entries_hndl, CVT_INTEGER, &n_entries);
+        if (rc != 0)
+        {
+            ERROR("Failed to get number of entries in the pool: %X",
+                  rc);
+            free(ip4_net_oid);
+            return rc;
+        }
+    }
+
+    /* Create one more entry */
+    n_entries++;
+
+    /* Get network prefix length */
+    val_type = CVT_INTEGER;
+    rc = cfg_get_instance_fmt(&val_type, &prefix,
+                              "%s/prefix:", ip4_net_oid);
+    if (rc != 0)
+    {
+        ERROR("Failed to get prefix length of '%s': %X",
+              ip4_net_oid, rc);
+        free(ip4_net_oid);
+        return rc;
+    }
+
+    /* Check for sufficient space */
+    assert((prefix >= 0) && (prefix <= 32));
+    if (n_entries > ((1 << ((sizeof(struct in_addr) << 3) - prefix)) - 2))
+    {
+        ERROR("All addresses of the subnet '%s' are used",
+              ip4_net_oid);
+        free(ip4_net_oid);
+        return TE_RC(TE_TAPI, ENOENT);
+    }
+
+    /* Update number of entries ASAP */
+    rc = cfg_set_instance(n_entries_hndl, CVT_INTEGER, n_entries);
+    if (rc != 0)
+    {
+        ERROR("Failed to get number of entries in the pool: %X",
+              rc);
+        free(ip4_net_oid);
+        return rc;
+    }
+
+    /* Get subnet address */
+    rc = cfg_get_inst_name_type(ip4_net, CVT_ADDRESS,
+                                (cfg_inst_val *)addr);
+    if (rc != 0)
+    {
+        ERROR("Failed to get IPv4 subnet address from '%s': %X",
+              ip4_net_oid, rc);
+        free(ip4_net_oid);
+        return rc;
+    }
+
+    /* Make address from subnet address */
+    (*addr)->sin_addr.s_addr =
+        htonl(ntohl((*addr)->sin_addr.s_addr) + n_entries);
+
+    /* Add used entry in the pool */
+    rc = cfg_add_instance_fmt(entry, CVT_INTEGER, (void *)1,
+                              "%s/pool:/entry:%s", ip4_net_oid,
+                              inet_ntop(AF_INET, &(*addr)->sin_addr,
+                                        buf, sizeof(buf)));
+    if (rc != 0)
+    {
+        ERROR("Failed to add entry in IPv4 subnet pool '%s': %X",
+              ip4_net_oid, rc);
+        free(ip4_net_oid);
+        return rc;
+    }
+
+    return 0;
+}
