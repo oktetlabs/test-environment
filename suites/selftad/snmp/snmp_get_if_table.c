@@ -26,6 +26,8 @@
  * $Id$
  */
 
+#define TE_TEST_NAME    "snmp/snmp_get_if_table"
+
 #include "config.h"
 
 #include <stdio.h>
