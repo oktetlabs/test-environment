@@ -264,7 +264,7 @@ static int
 sync_ta_subtree(char *ta, char *oid)
 {
     char  *list;
-    char  *tmp;
+    char  *tmp, *s;
     char  *next;
     char  *limit;
     char **sorted;
@@ -321,16 +321,28 @@ sync_ta_subtree(char *ta, char *oid)
         return rc;
     }
 
-    if ((list = strdup(cfg_get_buf)) == NULL)
+    if ((list = malloc(strlen(cfg_get_buf) + 1)) == NULL)
     {
         ERROR("Memory allocation failure");
         rcf_ta_cfg_group(ta, 0, FALSE);
         return ENOMEM;
     }
+    
+    /* Remove from the list all entries, which we are not interested in */
+    list[0] = 0;
+    s = list;
+    n = strlen(oid);
+    for (tmp = strtok(cfg_get_buf, " "); 
+         tmp != NULL; 
+         tmp = strtok(NULL, " "))
+    {
+        if (strncmp(oid, tmp, n) == 0)
+            s += sprintf(s, "%s ", tmp);
+    }
 
     if (rc == 0)
         remove_excessive(CFG_GET_INST(handle), list);
-
+        
     limit = list + strlen(list);
 
     /* Calculate number of OIDs to be synchronized */
