@@ -515,6 +515,12 @@ process_backup(cfg_backup_msg *msg)
 
         case CFG_BACKUP_RESTORE:
         {
+            /* Check agents */
+            int rc = rcf_check_agents();
+            
+            if (TE_RC_GET_ERROR(rc) == ETAREBOOTED)
+                cfg_ta_sync("/agent", TRUE);
+            
             /* Try to restore using dynamic history */
             if ((msg->rc = cfg_dh_restore_backup(msg->filename)) == 0)
                 return;
