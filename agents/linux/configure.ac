@@ -155,6 +155,12 @@ AC_CHECK_MEMBERS([struct sockaddr.sa_len], [], [],
                   #include <sys/socket.h>])
 
 dnl
+dnl Check for 'sa_restorer' member in 'struct sigaction'.
+dnl
+AC_CHECK_MEMBERS([struct sigaction.sa_restorer], [], [],
+                 [#include <signal.h>])
+
+dnl
 dnl POSIX threads are provided by:
 dnl - -lpthread in Linux;
 dnl - -lc_r in FreeBSD;

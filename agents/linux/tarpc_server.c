@@ -1389,6 +1389,7 @@ TARPC_FUNC(sigaction,
                 get_name2handler(in_act->xx_handler.xx_handler_val,
                                  &out->retval);
         out->common._errno = TE_RC(TE_TA_LINUX, out->retval);
+#if HAVE_STRUCT_SIGACTION_SA_RESTORER
         if (out->retval == 0)
         {
             act.sa_restorer =
@@ -1397,6 +1398,7 @@ TARPC_FUNC(sigaction,
                                      &out->retval);
             out->common._errno = TE_RC(TE_TA_LINUX, out->retval);
         }
+#endif
         if (out->retval == 0)
             p_act = &act;
 
@@ -1416,6 +1418,7 @@ TARPC_FUNC(sigaction,
                 get_handler2name(oldact.sa_handler,
                                  out_oldact->xx_handler.xx_handler_val,
                                  &(out_oldact->xx_handler.xx_handler_len));
+#if HAVE_STRUCT_SIGACTION_SA_RESTORER
             if (out->retval == 0)
             {
                 out->retval =
@@ -1424,6 +1427,7 @@ TARPC_FUNC(sigaction,
                                    &(out_oldact->xx_restorer.
                                                          xx_restorer_len));
             }
+#endif
 
             if (out->retval == 0)
             {
