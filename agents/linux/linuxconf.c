@@ -2901,7 +2901,7 @@ user_add(unsigned int gid, const char *oid, const char *value,
         if (ta_system(buf) != 0) 
             return TE_RC(TE_TA_LINUX, ETESHCMD);
     }
-    sprintf(buf, "echo %s:%s | chpasswd", user, user);
+    sprintf(buf, "echo %s:%s | /usr/sbin/chpasswd", user, user);
     if (ta_system(buf) != 0) 
     {
         user_del(gid, oid, user);
