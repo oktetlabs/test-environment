@@ -1725,8 +1725,6 @@ rpc_wait_multiple_events(rcf_rpc_server *rpcs,
 te_bool
 rpc_is_winsock2(rcf_rpc_server *rpcs)
 {
-    static te_bool registered = FALSE;
-    
     rpc_wsaevent hevent;
     char        *value;
     te_bool      result;
@@ -1761,20 +1759,6 @@ rpc_is_winsock2(rcf_rpc_server *rpcs)
         result = TRUE;
     }
     
-    /* Check, if object is registered */
-    if (!registered && cfg_find_str("/volatile/ta_sockets", &handle) != 0)
-    {
-        cfg_obj_descr descr = { CVT_STRING, CFG_READ_CREATE } ;
-        
-        if ((rc = cfg_register_object_str("/volatile/ta_sockets", &descr,
-                                          &handle) != 0))
-        {
-            ERROR("Failed to register object /volatile/ta_sockets;"
-                  " rc = 0x%x", rc);
-            return result;
-        }
-    }
-    registered = TRUE;
     if ((rc = cfg_add_instance_fmt(&handle, CVT_STRING, 
                                    result ? "winsock2" : "berkeley",
                                    "/volatile:/ta_sockets:%s", 
