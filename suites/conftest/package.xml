@@ -1,15 +1,13 @@
 <?xml version="1.0"?>
 <package version="1.0">
-    <description>
-        Tests on Configurator functionality.
-    </description>
+    <description>Tests on Configurator functionality.</description>
     <author mailto="Renata.Sayakhova@oktetlabs.ru"/>
     <session>
         <run>
-            <script name="conftest"/>
+            <script name="localtest"/>
         </run>
         <run>
-            <script name="localtest"/>
+            <script name="conftest"/>
         </run>
     </session>
 </package>
