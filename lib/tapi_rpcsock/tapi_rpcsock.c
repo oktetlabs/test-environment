@@ -84,6 +84,9 @@
 #else
 #error "We have no semaphores"
 #endif
+#ifdef HAVE_FCNTL_H
+#include <fcntl.h>
+#endif
 #include <stdarg.h>
 
 #define TE_LGR_USER     "Sockets RPC TAPI"
@@ -1995,12 +1998,12 @@ rpc_completion_callback(rcf_rpc_server *handle,
     if (handle == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        return;
+        return -1;
     }
     if (called == NULL || error == NULL || bytes == NULL || overlapped == NULL)
     {
         handle->_errno = TE_RC(TE_RCF, EINVAL);
-        return;
+        return -1;
     }
 
     handle->op = RCF_RPC_CALL_WAIT;
@@ -2356,6 +2359,40 @@ rpc_select(rcf_rpc_server *handle,
          out.retval, errno_rpc2str(RPC_ERRNO(handle)));
 
     RETVAL_VAL(out.retval, select);
+}
+
+int
+rpc_fcntl(rcf_rpc_server *handle, int fd, 
+	    int cmd, int arg)
+{
+    tarpc_fcntl_in  in;
+    tarpc_fcntl_out out;
+    rcf_rpc_op      op;
+    
+    if (handle == NULL)
+    {
+	ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+	return -1;
+    }
+
+    op = handle->op;
+    
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+    
+    in.fd = fd;
+    in.cmd = cmd;
+    in.arg = arg;
+    
+    rcf_rpc_call(handle, _fcntl, &in, (xdrproc_t)xdr_tarpc_fcntl_in,
+		 &out, (xdrproc_t)xdr_tarpc_fcntl_out);
+
+    RING("RPC (%s,%s)%s: fcntl(%d, %s, %d) -> %d (%s)",
+         handle->ta, handle->name, rpcop2str(op),
+         fd, fcntl_rpc2str(cmd), 
+	 arg, out.retval, errno_rpc2str(RPC_ERRNO(handle)));
+    
+    RETVAL_VAL(out.retval, fcntl);		
 }
 
 

@@ -375,6 +375,9 @@ rpc_poll(rcf_rpc_server *handle,
 
 extern int rpc_ioctl(rcf_rpc_server *handle,
                      int fd, rpc_ioctl_code request, ...);
+		     
+extern int rpc_fcntl(rcf_rpc_server *handle, int fd,
+		     int cmd, int arg);		     
 
 
 extern int rpc_getsockopt_gen(rcf_rpc_server *handle,

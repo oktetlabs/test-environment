@@ -41,6 +41,7 @@ netinet/tcp.h \
 net/if.h \
 net/if_arp.h \
 netdb.h \
+fcntl.h \
 semaphore.h \
 ])
 
