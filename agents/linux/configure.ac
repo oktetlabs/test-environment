@@ -93,6 +93,18 @@ AC_SEARCH_LIBS([pthread_create], [pthread c_r], [],
 AC_SEARCH_LIBS([sem_init], [pthread c_r semaphore], [],
                AC_MSG_ERROR([No POSIX semaphores]))
 
+if test -n "$with_rcf_rpc" -o -n "$with_cfg_linux_daemons" ; then
+    #
+    # Dynamic linker functions are provided by:
+    # - -ldl in Linux;
+    # - -lc in FreeBSD;
+    # - N/A for NetBSD, since automatically included in every dynamically
+    #   linked program.
+    #
+    AC_CHECK_FUNC([dlopen], [],
+                  AC_CHECK_LIB([dl], [dlopen], [],
+                               AC_MSG_ERROR([No dynamic linker API found])))
+fi
 
 if test -n "$with_rcf_rpc" ; then
     #

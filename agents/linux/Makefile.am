@@ -22,7 +22,6 @@ CLEANFILES=symtbl.c
 if CFG_RCF_RPC
 
 MY_CPPFLAGS+=-DRCF_RPC -I.
-MY_LDADD+=-ldl
 MY_SOURCES+=linux_rpc.c tarpc_server.c 
 MY_NODIST_SOURCES=tarpc_xdr.c tarpc_svc.c
 MY_SYMTBL_OBJECTS+=linux_rpc.o tarpc_server.o
@@ -59,7 +58,7 @@ MY_CPPFLAGS+=@DAEMONS_CFLAGS@
 
 MY_SOURCES+=linuxconf_daemons.c 
 
-MY_LDADD+=@DAEMONS_LDADD@ -ldl
+MY_LDADD+=@DAEMONS_LDADD@
 
 endif
 
