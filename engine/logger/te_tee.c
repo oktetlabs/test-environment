@@ -79,7 +79,7 @@
 #include "te_raw_log.h"
 
 
-DEFINE_LGR_ENTITY("Tee");
+DEFINE_LGR_ENTITY("RCF");
 
 
 int
