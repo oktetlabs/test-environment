@@ -58,6 +58,7 @@
 #include <sys/socket.h>
 #endif
 
+#include "te_errno.h"
 #include "rcf_api.h"
 #include "ndn_bridge.h"
 #include "tapi_stp.h"
