@@ -80,7 +80,6 @@
                                 </xsd:documentation>
                             </xsd:annotation>
                         </xsd:attribute>
-                    </xsd:complexType>
 
                         <xsd:attribute name="synch_time" type="xsd:string"
                                        default="no">
