@@ -242,6 +242,18 @@ daemon_running(const char *daemon)
     return enable[0] == '1';        
 }    
 
+/**
+ * Find the first existing file in the list.
+ *
+ * @param n         Number of entries
+ * @param files     Array with file names
+ * @param exec      Should the file be executable
+ *
+ * @return Index of the found file or -1
+ */
+extern int find_file(unsigned int n, const char * const *files,
+                     te_bool exec);
+
 
 /* Initialisation/shutdown function for daemons/services */
 extern void ds_init_dhcp_server(rcf_pch_cfg_object **last);

@@ -46,6 +46,38 @@ static char buf[2048];
 /** /etc/hosts backup index */
 static int hosts_index;
 
+
+/**
+ * Find the first existing file in the list.
+ *
+ * @param n         Number of entries
+ * @param files     Array with file names
+ * @param exec      Should the file be executable
+ *
+ * @return Index of the found file or -1
+ */
+int
+find_file(unsigned int n, const char * const *files, te_bool exec)
+{
+    unsigned int    i;
+    struct stat     st;
+
+    assert(files != NULL);
+    for (i = 0; i < n; ++i)
+    {
+        if (files[i] != NULL &&
+            stat(files[i], &st) == 0 &&
+            ((st.st_mode & S_IFMT) == S_IFREG ||
+             (st.st_mode & S_IFMT) == S_IFLNK) &&
+            (exec == !!(st.st_mode & S_IXUSR)))
+        {
+            return i;
+        }
+    }
+
+    return -1;
+}
+
 /** 
  * Get configuration file name for the daemon/service.
  *

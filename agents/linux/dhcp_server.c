@@ -31,20 +31,79 @@
 
 #include "linuxconf_daemons.h"
 
+
+/** Default OMAPI port to be used to control DHCP server */
+#define DHCP_SERVER_OMAPI_PORT      5000
+
+
+/** List of known possible locations of DHCP server scripts */
+static const char *dhcp_server_scripts[] = {
+    "/etc/init.d/dhcpd",
+    "/etc/init.d/dhcp3-server"
+};
+
+/** Number of known possible locations of DHCP server scripts */
+static unsigned int dhcp_server_n_scripts =
+    sizeof(dhcp_server_scripts) / sizeof(dhcp_server_scripts[0]);
+
+/** DHCP server script name */
+static const char *dhcp_server_script = NULL;
+
+
+/** List of known possible locations of DHCP server executables */
+static const char *dhcp_server_execs[] = {
+    "/usr/sbin/dhcpd",
+    "/usr/sbin/dhcpd3"
+};
+
+/** Number of known possible locations of DHCP server executables */
+static unsigned int dhcp_server_n_execs =
+    sizeof(dhcp_server_execs) / sizeof(dhcp_server_execs[0]);
+
+/** DHCP server executable name */
+static const char *dhcp_server_exec = NULL;
+
+
+/** List of known possible locations of DHCP server configuration file */
+static const char *dhcp_server_confs[] = {
+    "/etc/dhcpd.conf",
+    "/etc/dhcp3/dhcpd.conf"
+};
+
+/** Number of known possible locations of DHCP server executables */
+static unsigned int dhcp_server_n_confs =
+    sizeof(dhcp_server_confs) / sizeof(dhcp_server_confs[0]);
+
+/** DHCP server configuration file name */
+static const char *dhcp_server_conf = NULL;
+
+
+/** Index of the DHCP server configuration file backup */
+static int dhcp_server_conf_backup = -1;
+
+
 /** Auxiliary buffer */
 static char buf[2048];
 
-/*
+/**
  * List of options, which should be quoted automatilally; for other
  * option quotes should be specified in value, if necessary.
  */
 static char *quoted_options[] = {
-    "bootfile-name", "domain-name", "extension-path-name", "merit-dump",
-    "nis-domain", "nisplus-domain", "root-path", "uap-servers",
-    "tftp-server-name", "uap-servers", "fqdn.fqdn"
+    "bootfile-name",
+    "domain-name",
+    "extension-path-name",
+    "merit-dump",
+    "nis-domain",
+    "nisplus-domain",
+    "root-path",
+    "uap-servers",
+    "tftp-server-name",
+    "uap-servers",
+    "fqdn.fqdn"
 };
 
-/* Definitions of types for DHCP configuring */
+/** Definitions of types for DHCP configuring */
 typedef struct dhcp_option {
     struct dhcp_option *next;
 
@@ -52,7 +111,7 @@ typedef struct dhcp_option {
     char               *value;
 } dhcp_option;
 
-/* Release all memory allocated for option structure */
+/** Release all memory allocated for option structure */
 #define FREE_OPTION(_opt) \
     do {                        \
         free(_opt->name);       \
@@ -684,6 +743,63 @@ init_omapi()
 #undef CHECKERR
 }
 
+
+/** Is DHCP server daemon running */
+static te_bool
+ds_dhcpserver_is_run(void)
+{
+    sprintf(buf, "killall -CONT %s >/dev/null 2>&1", dhcp_server_exec);
+    return (ta_system(buf) == 0);
+}
+
+/** Get DHCP server daemon on/off */
+static int
+ds_dhcpserver_get(unsigned int gid, const char *oid, char *value)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+
+    sprintf(value, "%u", ds_dhcpserver_is_run());
+
+    return 0;
+}
+
+/** Stop DHCP server */
+static int
+ds_dhcpserver_stop(void)
+{
+    sprintf(buf, "%s stop >/dev/null 2>&1", dhcp_server_script);
+    if (ta_system(buf) != 0)
+    {
+        ERROR("Command '%s' failed", buf);
+        return TE_RC(TE_TA_LINUX, ETESHCMD);
+    }
+    return 0;
+}
+
+/** Start DHCP server */
+static int
+ds_dhcpserver_start(void)
+{
+    int rc;
+
+    sprintf(buf, "%s start >/dev/null 2>&1", dhcp_server_script);
+    if (ta_system(buf) != 0)
+    {
+        ERROR("Command '%s' failed", buf);
+        return TE_RC(TE_TA_LINUX, ETESHCMD);
+    }
+    
+    rc = init_omapi();
+    if ((rc != 0) &&
+        (ds_dhcpserver_stop() != 0))
+    {
+        ERROR("Failed to roll back DHCP server start");
+    }
+
+    return TE_RC(TE_TA_LINUX, rc);
+}
+
 /** On/off DHCP server */
 static int
 ds_dhcpserver_set(unsigned int gid, const char *oid, const char *value)
@@ -706,24 +822,16 @@ ds_dhcpserver_set(unsigned int gid, const char *oid, const char *value)
     if (*val == *value)
         return 0;
 
-    sprintf(buf, "/etc/init.d/dhcpd %s >/dev/null 2>&1",
-            *value == '0' ? "stop" : "start");
-
-    if (ta_system(buf) != 0)
+    if (*value == '1')
     {
-        ERROR("Command '%s' failed", buf);
-        return TE_RC(TE_TA_LINUX, ETESHCMD);
+        rc = ds_dhcpserver_start();
+    }
+    else
+    {
+        rc = ds_dhcpserver_stop();
     }
 
-    if (0 && *value == '1' && *val != *value)
-    {
-        rc = init_omapi();
-        if (rc != 0)
-            ta_system("/etc/init.d/dhcpd stop >/dev/null 2>&1");
-        return TE_RC(TE_TA_LINUX, rc);
-    }
-
-    return 0;
+    return TE_RC(TE_TA_LINUX, rc);
 }
 
 #define CHECKSTATUS(x) \
@@ -1837,13 +1945,14 @@ static rcf_pch_cfg_object node_ds_client =
 RCF_PCH_CFG_NODE_RW(node_ds_dhcpserver, "dhcpserver",
                     &node_ds_client,
                     NULL,
-                    daemon_get, ds_dhcpserver_set);
+                    ds_dhcpserver_get, ds_dhcpserver_set);
 #else
 RCF_PCH_CFG_NODE_RW(node_ds_dhcpserver, "dhcpserver",
                     &node_ds_host,
                     NULL,
-                    daemon_get, ds_dhcpserver_set);
+                    ds_dhcpserver_get, ds_dhcpserver_set);
 #endif
+
 
 /**
  * (Re)initialize host & group lists parsing dhcpd.conf
@@ -1853,25 +1962,78 @@ RCF_PCH_CFG_NODE_RW(node_ds_dhcpserver, "dhcpserver",
 void
 ds_init_dhcp_server(rcf_pch_cfg_object **last)
 {
-    int  rc = 0;
+    int     rc = 0;
+    te_bool restart = FALSE;
 
-    if (ta_system("/usr/sbin/dhcpd -t >/dev/null 2>&1") != 0)
+    /* Find DHCP server executable */
+    rc = find_file(dhcp_server_n_execs, dhcp_server_execs, TRUE);
+    if (rc < 0)
     {
-        WARN("bad or absent /etc/dhcpd.conf - "
-                  "DHCP will not be available\n");
-        node_ds_dhcpserver.son = NULL;
+        WARN("Failed to find DHCP server executable"
+             " - DHCP will not be available");
+        return;
+    }
+    dhcp_server_exec = dhcp_server_execs[rc];
+
+    /* Find DHCP server script */
+    rc = find_file(dhcp_server_n_scripts, dhcp_server_scripts, TRUE);
+    if (rc < 0)
+    {
+        WARN("Failed to find DHCP server script"
+             " - DHCP will not be available");
+        return;
+    }
+    dhcp_server_script = dhcp_server_scripts[rc];
+
+    /* Find DHCP server configuration file */
+    rc = find_file(dhcp_server_n_confs, dhcp_server_confs, FALSE);
+    if (rc < 0)
+    {
+        WARN("Failed to find DHCP server configuration file"
+             " - DHCP will not be available");
+        return;
+    }
+    dhcp_server_conf = dhcp_server_confs[rc];
+
+    /* Test existing configuration file */
+    snprintf(buf, sizeof(buf), "%s -t >/dev/null 2>&1", 
+             dhcp_server_exec);
+    if (ta_system(buf) != 0)
+    {
+        WARN("Bad found DHCP server configution file '%s'"
+             " - DHCP will not be available", dhcp_server_conf);
         return;
     }
 
+    /* Initialize DHCP server control interface */
     if (dhcpctl_initialize() != ISC_R_SUCCESS)
     {
-        WARN("dhcpctl_initialize() failed\n");
+        WARN("dhcpctl_initialize() failed"
+             " - DHCP will not be available");
         return;
     }
 
-    f = fopen("/etc/dhcpd.conf", "r");
-    *buf = 0;
+    /* Parse found configuration file */ 
+    f = fopen(dhcp_server_conf, "r");
+    if (f == NULL)
+    {
+        WARN("Failed to open DHCP server configuration file '%s' "
+             "for reading - DHCP will not be available",
+             dhcp_server_conf);
+        return;
+    }
 
+    /* Create DHCP server configuration file backup */
+    rc = ds_create_backup(NULL, dhcp_server_conf,
+                          &dhcp_server_conf_backup);
+    if (rc != 0)
+    {
+        WARN("Failed to create DHCP server backup"
+             " - DHCP will not be available");
+        return;
+    }
+
+    *buf = 0;
     while (rc == 0)
     {
         if ((rc = get_token()) != 0)
@@ -1894,23 +2056,46 @@ ds_init_dhcp_server(rcf_pch_cfg_object **last)
     if (rc == EOF)
         rc = 0;
 
-    if (omapi_port == 0)
-    {
-        WARN("no OMAPI port is specified in /etc/dhcpd.conf\n");
-        rc = EINVAL;
-    }
-
     fclose(f);
 
     if (rc != 0)
     {
+        WARN("Failed to parse DHCP server configuration file '%s'"
+             " - DHCP will not be available", dhcp_server_conf);
         ds_shutdown_dhcp_server();
         return;
     }
+
+    if (omapi_port != 0)
+    {
+        WARN("OMAPI port is specified in %s", dhcp_server_conf);
+    }
+    else
+    {
+        omapi_port = DHCP_SERVER_OMAPI_PORT;
+
+        f = fopen(dhcp_server_conf, "a");
+        if (f == NULL)
+        {
+            WARN("Failed to open DHCP server configuration file '%s' "
+                 "to append - DHCP will not be available",
+                 dhcp_server_conf);
+            ds_shutdown_dhcp_server();
+            return;
+        }
+        fprintf(f, "omapi-port %u;\n", omapi_port);
+        fclose(f);
+
+        restart = TRUE;
+    }
     
-    sprintf(buf, "killall -CONT dhcpd >/dev/null 2>&1");
-    if (ta_system(buf) == 0)
+    if (ds_dhcpserver_is_run())
+    {
+        if (restart)
+        {
+        }
         init_omapi();
+    }
 
     DS_REGISTER(dhcpserver);
 }
