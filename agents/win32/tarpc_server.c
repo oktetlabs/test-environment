@@ -3633,7 +3633,7 @@ overfill_buffers(tarpc_overfill_buffers_in *in,
 {
     ssize_t    rc = 0;
     int        err = 0;
-    size_t     max_len = 1024;
+    size_t     max_len = 1;
     uint8_t   *buf = NULL;
     uint64_t   total = 0;
     int        unchanged = 0;
