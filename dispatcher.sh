@@ -69,9 +69,9 @@ usage()
     echo -e '  --cs-print-trees'\\t\\t'Print configurator trees.'
     echo -e '  --cs-print-diff'\\t\\t'Log backup diff unconditionally.'
     echo
-    echo -e '  --build=path'\\t\\t'Build package specified in the path.'
+    echo -e '  --build=path'\\t\\t\\t'Build package specified in the path.'
     echo -e '  --build-log=path'\\t\\t'Build package with log level 0xFFFF.'
-    echo -e '  --build-nolog=path'\\t'Build package with undefined log level.'
+    echo -e '  --build-nolog=path'\\t\\t'Build package with undefined log level.'
     echo -e '  --build-cs'\\t\\t\\t'Build configurator.'
     echo -e '  --build-logger'\\t\\t'Build logger.'
     echo -e '  --build-rcf'\\t\\t\\t'Build RCF.'
