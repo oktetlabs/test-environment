@@ -95,14 +95,17 @@ icmp4_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
  * @return zero on success or error code.
  */ 
 int 
-icmp4_gen_bin_cb (int csap_id, int layer, const asn_value_p tmpl_pdu,
+icmp4_gen_bin_cb(int csap_id, int layer, const asn_value *tmpl_pdu,
+                 const tad_template_arg_t *args, size_t arg_num, 
                  const csap_pkts_p  up_payload, csap_pkts_p pkts)
 { 
-    UNUSED (up_payload); /* DHCP has no payload */ 
-    UNUSED (tmpl_pdu); 
-    UNUSED (pkts); 
-    UNUSED (csap_id); 
-    UNUSED (layer); 
+    UNUSED(up_payload); /* DHCP has no payload */ 
+    UNUSED(tmpl_pdu); 
+    UNUSED(pkts); 
+    UNUSED(args); 
+    UNUSED(arg_num); 
+    UNUSED(csap_id); 
+    UNUSED(layer); 
     return TE_RC(TE_TAD_CSAP, ETENOSUPP);
 }
 
@@ -122,7 +125,7 @@ icmp4_gen_bin_cb (int csap_id, int layer, const asn_value_p tmpl_pdu,
  *
  * @return zero on success or error code.
  */
-int icmp4_match_bin_cb (int csap_id, int layer, const asn_value_p pattern_pdu,
+int icmp4_match_bin_cb (int csap_id, int layer, const asn_value *pattern_pdu,
                        const csap_pkts *  pkt, csap_pkts * payload, 
                        asn_value_p  parsed_packet )
 { 
@@ -149,12 +152,13 @@ int icmp4_match_bin_cb (int csap_id, int layer, const asn_value_p pattern_pdu,
  *
  * @return zero on success or error code.
  */
-int icmp4_gen_pattern_cb (int csap_id, int layer, const asn_value_p tmpl_pdu, 
+int icmp4_gen_pattern_cb (int csap_id, int layer, const asn_value *tmpl_pdu, 
                                          asn_value_p   *pattern_pdu)
 {
     UNUSED(csap_id);
     UNUSED(layer);
     UNUSED(tmpl_pdu); 
+    UNUSED(pattern_pdu); 
     return ETENOSUPP;
 }
 

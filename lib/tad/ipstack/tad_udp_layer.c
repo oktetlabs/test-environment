@@ -121,12 +121,11 @@ udp_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
  * @return zero on success or error code.
  */ 
 int 
-udp_gen_bin_cb (int csap_id, int layer, const asn_value_p tmpl_pdu,
-                 const csap_pkts_p  up_payload, csap_pkts_p pkts)
+udp_gen_bin_cb(int csap_id, int layer, const asn_value *tmpl_pdu,
+               const tad_template_arg_t *args, size_t arg_num, 
+               const csap_pkts_p  up_payload, csap_pkts_p pkts)
 {
     int rc;
-    int val_len;
-    int value;
     csap_p csap_descr;
     udp_csap_specific_data_t *spec_data;
  
@@ -135,9 +134,12 @@ udp_gen_bin_cb (int csap_id, int layer, const asn_value_p tmpl_pdu,
         return TE_RC(TE_TAD_CSAP, ETADCSAPNOTEX);
     }
  
+    UNUSED(args); 
+    UNUSED(arg_num); 
+    UNUSED(up_payload); 
+    UNUSED(layer); 
+    UNUSED(tmpl_pdu); 
 
-    UNUSED (up_payload); 
-    UNUSED (layer); 
     if (csap_descr->type == TAD_DATA_CSAP)
     {
         spec_data = (udp_csap_specific_data_t *) csap_descr->layer_data[layer]; 
@@ -178,7 +180,7 @@ udp_gen_bin_cb (int csap_id, int layer, const asn_value_p tmpl_pdu,
  *
  * @return zero on success or error code.
  */
-int udp_match_bin_cb (int csap_id, int layer, const asn_value_p pattern_pdu,
+int udp_match_bin_cb (int csap_id, int layer, const asn_value *pattern_pdu,
                        const csap_pkts *  pkt, csap_pkts * payload, 
                        asn_value_p  parsed_packet )
 { 
@@ -205,7 +207,7 @@ int udp_match_bin_cb (int csap_id, int layer, const asn_value_p pattern_pdu,
  *
  * @return zero on success or error code.
  */
-int udp_gen_pattern_cb (int csap_id, int layer, const asn_value_p tmpl_pdu, 
+int udp_gen_pattern_cb (int csap_id, int layer, const asn_value *tmpl_pdu, 
                                          asn_value_p   *pattern_pdu)
 { 
     UNUSED(pattern_pdu);

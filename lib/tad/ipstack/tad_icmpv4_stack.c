@@ -122,6 +122,10 @@ icmp4_read_cb (csap_p csap_descr, int timeout, char *buf, int buf_len)
     /* Note: possibly MSG_TRUNC and other flags are required */
     return recv (spec_data->in, buf, buf_len, 0); 
 #else
+    UNUSED(csap_descr);
+    UNUSED(timeout);
+    UNUSED(buf);
+    UNUSED(buf_len);
     return -1;
 #endif
 }
@@ -177,6 +181,9 @@ icmp4_write_cb (csap_p csap_descr, char *buf, int buf_len)
 
     return rc;
 #else
+    UNUSED(csap_descr);
+    UNUSED(buf);
+    UNUSED(buf_len);
     return -1;
 #endif
 }
@@ -221,9 +228,11 @@ icmp4_write_read_cb (csap_p csap_descr, int timeout,
  * @return zero on success or error code.
  */ 
 int 
-icmp4_single_init_cb (int csap_id, const asn_value_p csap_nds, int layer)
+icmp4_single_init_cb (int csap_id, const asn_value *csap_nds, int layer)
 { 
     csap_p   csap_descr;          /**< csap descriptor        */ 
+
+    UNUSED(csap_nds);
 
     if ((csap_descr = csap_find (csap_id)) == NULL)
         return TE_RC(TE_TAD_CSAP, ETADCSAPNOTEX);
@@ -257,6 +266,8 @@ int
 icmp4_single_destroy_cb (int csap_id, int layer)
 {
     csap_p csap_descr = csap_find(csap_id);
+    UNUSED(layer);
+    UNUSED(csap_descr);
     return 0;
 }
 

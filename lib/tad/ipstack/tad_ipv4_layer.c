@@ -61,7 +61,7 @@ char* ip4_get_param_cb (csap_p csap_descr, int level, const char *param)
  * @return zero on success or error code.
  */ 
 int 
-ip4_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
+ip4_confirm_pdu_cb (int csap_id, int layer, asn_value *tmpl_pdu)
 { 
     int rc;
     csap_p csap_descr = csap_find(csap_id);
@@ -119,18 +119,21 @@ ip4_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
  * @return zero on success or error code.
  */ 
 int 
-ip4_gen_bin_cb (int csap_id, int layer, const asn_value_p tmpl_pdu,
-                 const csap_pkts_p  up_payload, csap_pkts_p pkts)
+ip4_gen_bin_cb(int csap_id, int layer, const asn_value *tmpl_pdu,
+               const tad_template_arg_t *args, size_t arg_num, 
+               const csap_pkts_p  up_payload, csap_pkts_p pkts)
 {
     csap_p csap_descr;
 
     if ((csap_descr = csap_find(csap_id)) == NULL)
         return TE_RC(TE_TAD_CSAP, EINVAL);
 
-    UNUSED (up_payload); /* DHCP has no payload */ 
-    UNUSED (layer); 
-    UNUSED (tmpl_pdu); 
-    UNUSED (pkts); 
+    UNUSED(up_payload); /* DHCP has no payload */ 
+    UNUSED(layer); 
+    UNUSED(tmpl_pdu); 
+    UNUSED(args); 
+    UNUSED(arg_num); 
+    UNUSED(pkts); 
 
     if (csap_descr->type == TAD_DATA_CSAP)
         return 0;
@@ -154,15 +157,18 @@ ip4_gen_bin_cb (int csap_id, int layer, const asn_value_p tmpl_pdu,
  *
  * @return zero on success or error code.
  */
-int ip4_match_bin_cb (int csap_id, int layer, const asn_value_p pattern_pdu,
+int ip4_match_bin_cb (int csap_id, int layer, const asn_value *pattern_pdu,
                        const csap_pkts *  pkt, csap_pkts * payload, 
                        asn_value_p  parsed_packet )
 { 
     uint8_t     *p = pkt->data;
     int          rc;
-    int          i;
-#define IPV4_MATCH_BUF_SIZE 20
-    uint8_t      buf[IPV4_MATCH_BUF_SIZE];
+
+    UNUSED(csap_id);
+    UNUSED(pattern_pdu);
+    UNUSED(pkt);
+    UNUSED(layer);
+    UNUSED(payload);
 
     fprintf(stdout, "IP match callback called\n");
     
@@ -221,9 +227,6 @@ int ip4_match_bin_cb (int csap_id, int layer, const asn_value_p pattern_pdu,
     FILL_IP_HEADER_FIELD("src-addr",                4);
     FILL_IP_HEADER_FIELD("dst-addr",                4);
     
-    UNUSED(csap_id);
-    UNUSED(pattern_pdu);
-    UNUSED(pkt);
     return 0;
 }
 #undef FILL_IP_HEADER_FIELD
@@ -244,7 +247,7 @@ int ip4_match_bin_cb (int csap_id, int layer, const asn_value_p pattern_pdu,
  * @return zero on success or error code.
  */
 #if 1
-int ip4_gen_pattern_cb (int csap_id, int layer, const asn_value_p tmpl_pdu, 
+int ip4_gen_pattern_cb (int csap_id, int layer, const asn_value *tmpl_pdu, 
                                          asn_value_p   *pattern_pdu)
 { 
     UNUSED(pattern_pdu);

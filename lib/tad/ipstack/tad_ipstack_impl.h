@@ -164,7 +164,7 @@ extern int ip4_write_read_cb (csap_p csap_descr, int timeout,
  *
  * @return zero on success or error code.
  */ 
-extern int ip4_eth_init_cb (int csap_id, const asn_value_p csap_nds, int layer);
+extern int ip4_eth_init_cb (int csap_id, const asn_value *csap_nds, int layer);
 
 
 
@@ -178,7 +178,7 @@ extern int ip4_eth_init_cb (int csap_id, const asn_value_p csap_nds, int layer);
  *
  * @return zero on success or error code.
  */ 
-extern int ip4_single_init_cb (int csap_id, const asn_value_p csap_nds, int layer);
+extern int ip4_single_init_cb (int csap_id, const asn_value *csap_nds, int layer);
 
 /**
  * Callback for destroy 'file' CSAP layer if single in stack.
@@ -242,7 +242,8 @@ extern int ip4_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu);
  *
  * @return zero on success or error code.
  */ 
-extern int ip4_gen_bin_cb (int csap_id, int layer, const asn_value_p tmpl_pdu,
+extern int ip4_gen_bin_cb (int csap_id, int layer, const asn_value *tmpl_pdu,
+                           const tad_template_arg_t *args, size_t arg_num, 
                            csap_pkts_p up_payload, csap_pkts_p pkts);
 
 
@@ -261,7 +262,7 @@ extern int ip4_gen_bin_cb (int csap_id, int layer, const asn_value_p tmpl_pdu,
  *
  * @return zero on success or error code.
  */
-extern int ip4_match_bin_cb (int csap_id, int layer, const asn_value_p pattern_pdu,
+extern int ip4_match_bin_cb (int csap_id, int layer, const asn_value *pattern_pdu,
                              const csap_pkts *  pkt, csap_pkts * payload, 
                              asn_value_p  parsed_packet );
 
@@ -278,7 +279,7 @@ extern int ip4_match_bin_cb (int csap_id, int layer, const asn_value_p pattern_p
  *
  * @return zero on success or error code.
  */
-extern int ip4_gen_pattern_cb (int csap_id, int layer, const asn_value_p tmpl_pdu, 
+extern int ip4_gen_pattern_cb (int csap_id, int layer, const asn_value *tmpl_pdu, 
                                asn_value_p   *pattern_pdu);
 
 
@@ -355,7 +356,7 @@ extern int icmp4_write_read_cb (csap_p csap_descr, int timeout,
  *
  * @return zero on success or error code.
  */ 
-extern int icmp4_single_init_cb (int csap_id, const asn_value_p csap_nds, int layer);
+extern int icmp4_single_init_cb (int csap_id, const asn_value *csap_nds, int layer);
 
 /**
  * Callback for destroy 'file' CSAP layer if single in stack.
@@ -404,7 +405,8 @@ extern int icmp4_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu);
  *
  * @return zero on success or error code.
  */ 
-extern int icmp4_gen_bin_cb (int csap_id, int layer, const asn_value_p tmpl_pdu,
+extern int icmp4_gen_bin_cb (int csap_id, int layer, const asn_value *tmpl_pdu,
+                           const tad_template_arg_t *args, size_t arg_num, 
                            csap_pkts_p up_payload, csap_pkts_p pkts);
 
 
@@ -423,7 +425,7 @@ extern int icmp4_gen_bin_cb (int csap_id, int layer, const asn_value_p tmpl_pdu,
  *
  * @return zero on success or error code.
  */
-extern int icmp4_match_bin_cb (int csap_id, int layer, const asn_value_p pattern_pdu,
+extern int icmp4_match_bin_cb (int csap_id, int layer, const asn_value *pattern_pdu,
                              const csap_pkts *  pkt, csap_pkts * payload, 
                              asn_value_p  parsed_packet );
 
@@ -440,7 +442,7 @@ extern int icmp4_match_bin_cb (int csap_id, int layer, const asn_value_p pattern
  *
  * @return zero on success or error code.
  */
-extern int icmp4_gen_pattern_cb (int csap_id, int layer, const asn_value_p tmpl_pdu, 
+extern int icmp4_gen_pattern_cb (int csap_id, int layer, const asn_value *tmpl_pdu, 
                                asn_value_p   *pattern_pdu);
 
 
@@ -517,7 +519,7 @@ extern int udp_ip4_write_read_cb (csap_p csap_descr, int timeout,
  *
  * @return zero on success or error code.
  */ 
-extern int udp_ip4_init_cb (int csap_id, const asn_value_p csap_nds, int layer);
+extern int udp_ip4_init_cb (int csap_id, const asn_value *csap_nds, int layer);
 
 /**
  * Callback for destroy 'udp' CSAP layer if over 'ip4' in stack.
@@ -566,7 +568,8 @@ extern int udp_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu);
  *
  * @return zero on success or error code.
  */ 
-extern int udp_gen_bin_cb (int csap_id, int layer, const asn_value_p tmpl_pdu,
+extern int udp_gen_bin_cb (int csap_id, int layer, const asn_value *tmpl_pdu,
+                           const tad_template_arg_t *args, size_t arg_num, 
                            csap_pkts_p up_payload, csap_pkts_p pkts);
 
 
@@ -585,7 +588,7 @@ extern int udp_gen_bin_cb (int csap_id, int layer, const asn_value_p tmpl_pdu,
  *
  * @return zero on success or error code.
  */
-extern int udp_match_bin_cb (int csap_id, int layer, const asn_value_p pattern_pdu,
+extern int udp_match_bin_cb (int csap_id, int layer, const asn_value *pattern_pdu,
                              const csap_pkts *  pkt, csap_pkts * payload, 
                              asn_value_p  parsed_packet );
 
@@ -602,14 +605,14 @@ extern int udp_match_bin_cb (int csap_id, int layer, const asn_value_p pattern_p
  *
  * @return zero on success or error code.
  */
-extern int udp_gen_pattern_cb (int csap_id, int layer, const asn_value_p tmpl_pdu, 
+extern int udp_gen_pattern_cb (int csap_id, int layer, const asn_value *tmpl_pdu, 
                                asn_value_p   *pattern_pdu);
 
 
 
 
 /*
- * IP callbacks
+ * TCP callbacks
  */ 
 
 /**
@@ -679,7 +682,7 @@ extern int tcp_write_read_cb (csap_p csap_descr, int timeout,
  *
  * @return zero on success or error code.
  */ 
-extern int tcp_single_init_cb (int csap_id, const asn_value_p csap_nds, int layer);
+extern int tcp_single_init_cb (int csap_id, const asn_value *csap_nds, int layer);
 
 /**
  * Callback for destroy 'file' CSAP layer if single in stack.
@@ -728,7 +731,8 @@ extern int tcp_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu);
  *
  * @return zero on success or error code.
  */ 
-extern int tcp_gen_bin_cb (int csap_id, int layer, const asn_value_p tmpl_pdu,
+extern int tcp_gen_bin_cb (int csap_id, int layer, const asn_value *tmpl_pdu,
+                           const tad_template_arg_t *args, size_t arg_num, 
                            csap_pkts_p up_payload, csap_pkts_p pkts);
 
 
@@ -747,7 +751,7 @@ extern int tcp_gen_bin_cb (int csap_id, int layer, const asn_value_p tmpl_pdu,
  *
  * @return zero on success or error code.
  */
-extern int tcp_match_bin_cb (int csap_id, int layer, const asn_value_p pattern_pdu,
+extern int tcp_match_bin_cb (int csap_id, int layer, const asn_value *pattern_pdu,
                              const csap_pkts *  pkt, csap_pkts * payload, 
                              asn_value_p  parsed_packet );
 
@@ -764,10 +768,36 @@ extern int tcp_match_bin_cb (int csap_id, int layer, const asn_value_p pattern_p
  *
  * @return zero on success or error code.
  */
-extern int tcp_gen_pattern_cb (int csap_id, int layer, const asn_value_p tmpl_pdu, 
+extern int tcp_gen_pattern_cb (int csap_id, int layer, const asn_value *tmpl_pdu, 
                                asn_value_p   *pattern_pdu);
 
 
+
+/**
+ * Callback for init 'tcp' CSAP layer if over 'ip4' in stack.
+ *
+ * @param csap_id       identifier of CSAP.
+ * @param csap_nds      asn_value with CSAP init parameters
+ * @param layer         numeric index of layer in CSAP type to be processed. 
+ *                      Layers are counted from zero, from up to down.
+ *
+ * @return zero on success or error code.
+ */ 
+extern int tcp_ip4_init_cb (int csap_id, const asn_value *csap_nds, int layer);
+
+/**
+ * Callback for destroy 'tcp' CSAP layer if over 'ip4' in stack.
+ *      This callback should free all undeground media resources used by 
+ *      this layer and all memory used for layer-specific data and pointed 
+ *      in respective structure in 'layer-data' in CSAP instance struct. 
+ *
+ * @param csap_id       identifier of CSAP.
+ * @param layer         numeric index of layer in CSAP type to be processed. 
+ *                      Layers are counted from zero, from up to down.
+ *
+ * @return zero on success or error code.
+ */ 
+extern int tcp_ip4_destroy_cb (int csap_id, int layer);
 
 
 

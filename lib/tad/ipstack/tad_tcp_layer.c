@@ -194,8 +194,9 @@ fill_tcp_options(void *buf, asn_value_p options)
  * @return zero on success or error code.
  */ 
 int 
-tcp_gen_bin_cb (int csap_id, int layer, const asn_value_p tmpl_pdu,
-                 const csap_pkts_p  up_payload, csap_pkts_p pkts)
+tcp_gen_bin_cb(int csap_id, int layer, const asn_value_p tmpl_pdu,
+               const tad_template_arg_t *args, size_t arg_num, 
+               const csap_pkts_p  up_payload, csap_pkts_p pkts)
 {
     int rc;
     int val_len;
@@ -205,9 +206,11 @@ tcp_gen_bin_cb (int csap_id, int layer, const asn_value_p tmpl_pdu,
 #endif
     unsigned char *p; 
 
-    UNUSED (up_payload); /* DHCP has no payload */ 
-    UNUSED (csap_id); 
-    UNUSED (layer); 
+    UNUSED(up_payload); /* DHCP has no payload */ 
+    UNUSED(csap_id); 
+    UNUSED(layer); 
+    UNUSED(args); 
+    UNUSED(arg_num); 
 
     pkts->len = 236; /* total length of mandatory fields in DHCP message */ 
 #if OPTIONS_IMPL

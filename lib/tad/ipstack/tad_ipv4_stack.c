@@ -207,16 +207,18 @@ ip4_write_read_cb (csap_p csap_descr, int timeout,
  * @return zero on success or error code.
  */ 
 int 
-ip4_single_init_cb (int csap_id, const asn_value_p csap_nds, int layer)
+ip4_single_init_cb (int csap_id, const asn_value *csap_nds, int layer)
 {
     csap_p   csap_descr;          /**< csap descriptor        */ 
 
     ip4_csap_specific_data_t *   ip4_spec_data; 
     struct sockaddr_in local;
 
-    int             opt = 1;
-    int             mode, len, rc;
-    char        opt_label[100];
+    int   opt = 1;
+    int   len, rc;
+    char  opt_label[100];
+
+    UNUSED(local);
 
     fprintf (stderr, "DHCP INIT called\n");
     if (csap_nds == NULL)
@@ -322,8 +324,11 @@ ip4_single_destroy_cb (int csap_id, int layer)
  * @return zero on success or error code.
  */ 
 int 
-ip4_eth_init_cb (int csap_id, const asn_value_p csap_nds, int layer)
+ip4_eth_init_cb (int csap_id, const asn_value *csap_nds, int layer)
 { 
+    UNUSED(csap_id);
+    UNUSED(csap_nds);
+    UNUSED(layer);
     return ETENOSUPP;
 }
 
@@ -345,6 +350,8 @@ ip4_eth_init_cb (int csap_id, const asn_value_p csap_nds, int layer)
 int 
 ip4_eth_destroy_cb (int csap_id, int layer)
 { 
+    UNUSED(csap_id);
+    UNUSED(layer);
     return 0;
 }
 

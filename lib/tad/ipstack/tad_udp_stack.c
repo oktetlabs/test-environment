@@ -196,7 +196,8 @@ udp_ip4_write_cb (csap_p csap_descr, char *buf, int buf_len)
     if (new_port || new_addr)
     {
         /* need rebind socket */
-        if (bind(udp_spec_data->socket, &source, sizeof(source)) == -1)
+        if (bind(udp_spec_data->socket, 
+                 (struct sockaddr *)&source, sizeof(source)) == -1)
         {
             perror ("udp csap socket bind");
             csap_descr->last_errno = errno;
@@ -220,7 +221,7 @@ udp_ip4_write_cb (csap_p csap_descr, char *buf, int buf_len)
     source.sin_port = htons(udp_spec_data->local_port);
     source.sin_addr = ip4_spec_data->local_addr; 
 
-    if (bind(udp_spec_data->socket, &source, sizeof(source)) == -1)
+    if (bind(udp_spec_data->socket, (struct sockaddr *)&source, sizeof(source)) == -1)
     {
         perror ("udp csap socket reverse bind");
         rc = csap_descr->last_errno = errno;
@@ -269,7 +270,7 @@ udp_ip4_write_read_cb (csap_p csap_descr, int timeout,
  * @return zero on success or error code.
  */ 
 int 
-udp_ip4_init_cb (int csap_id, const asn_value_p csap_nds, int layer)
+udp_ip4_init_cb (int csap_id, const asn_value *csap_nds, int layer)
 {
     csap_p   csap_descr;          /**< csap description        */ 
     udp_csap_specific_data_t *   udp_spec_data; 
@@ -341,7 +342,8 @@ udp_ip4_init_cb (int csap_id, const asn_value_p csap_nds, int layer)
 
         if ((rc == 0 ||            /* there is some meaning IP-address */
              local.sin_port != 0 ) /* there is some meaning UDP-port */
-            && bind(udp_spec_data->socket, &local, sizeof(local)) == -1)
+            && bind(udp_spec_data->socket, 
+                    (struct sockaddr *)&local, sizeof(local)) == -1)
         {
             perror ("udp csap socket bind");
             free(udp_spec_data);

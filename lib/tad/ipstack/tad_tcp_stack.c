@@ -212,7 +212,7 @@ tcp_write_read_cb (csap_p csap_descr, int timeout,
  * @return zero on success or error code.
  */ 
 int 
-tcp_single_init_cb (int csap_id, const asn_value_p csap_nds, int layer)
+tcp_single_init_cb (int csap_id, const asn_value *csap_nds, int layer)
 {
     csap_p   csap_descr;          /**< csap description        */
 
@@ -400,4 +400,36 @@ tcp_single_destroy_cb (int csap_id, int layer)
     return 0;
 }
 
+
+/**
+ * Callback for init 'tcp' CSAP layer if over 'ip4' in stack.
+ *
+ * @param csap_id       identifier of CSAP.
+ * @param csap_nds      asn_value with CSAP init parameters
+ * @param layer         numeric index of layer in CSAP type to be processed. 
+ *                      Layers are counted from zero, from up to down.
+ *
+ * @return zero on success or error code.
+ */ 
+int 
+tcp_ip4_init_cb (int csap_id, const asn_value_p csap_nds, int layer)
+{
+}
+
+/**
+ * Callback for destroy 'tcp' CSAP layer if over 'ip4' in stack.
+ *      This callback should free all undeground media resources used by 
+ *      this layer and all memory used for layer-specific data and pointed 
+ *      in respective structure in 'layer-data' in CSAP instance struct. 
+ *
+ * @param csap_id       identifier of CSAP.
+ * @param layer         numeric index of layer in CSAP type to be processed. 
+ *                      Layers are counted from zero, from up to down.
+ *
+ * @return zero on success or error code.
+ */ 
+int 
+tcp_ip4_destroy_cb (int csap_id, int layer)
+{
+}
 

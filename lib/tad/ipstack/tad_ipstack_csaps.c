@@ -96,6 +96,29 @@ csap_spt_type_t udp_csap_spt =
     &udp_nbr_ip4
 };
 
+/*
+ * TCP
+ */
+
+csap_layer_neighbour_list_t tcp_nbr_ip4 = 
+{
+    "ip4",
+    NULL, /* next */
+    tcp_ip4_init_cb,
+    tcp_ip4_destroy_cb,
+};
+
+csap_spt_type_t tcp_csap_spt = 
+{
+    "tcp",
+    tcp_confirm_pdu_cb,
+    tcp_gen_bin_cb,
+    tcp_match_bin_cb,
+    tcp_gen_pattern_cb,
+
+    &tcp_nbr_ip4
+};
+
 /**
  * Register ipstack CSAP callbacks and support structures in TAD Command Handler.
  *
@@ -105,6 +128,10 @@ int csap_support_ipstack_register (void)
 { 
     int rc;
     rc = add_csap_spt(&ip4_csap_spt);
+    if (rc) 
+        return rc;
+
+    rc = add_csap_spt(&tcp_csap_spt);
     if (rc) 
         return rc;
 
