@@ -1000,9 +1000,6 @@ typedef enum rpc_sockopt {
     RPC_IP_HDRINCL,         /**< If enabled, the user supplies an IP
                                  header in front of the user data */
 
-    RPC_IP_MTU,             /**< Retrive the current known path MTU
-                                 of the current connected socket */
-
     RPC_IP_MULTICAST_IF,    /**< Set the local device for a multicast
                                  socket */
     RPC_IP_MULTICAST_LOOP,  /**< Whether sent multicast packets
@@ -1014,8 +1011,7 @@ typedef enum rpc_sockopt {
                                  with every packet from the socket */
     RPC_IP_PKTINFO,         /**< Whether the IP_PKTINFO message
                                  should be passed or not */
-    RPC_IP_MTU_DISCOVER,    /**< Enable/disable Path MTU discover
-                                 on the socket */
+
 #if 0                                 
     RPC_IP_RECVDSTADDR,     /**< Whether to pass destination address
                                  with UDP datagram to the user in an
@@ -1049,6 +1045,11 @@ typedef enum rpc_sockopt {
                                  (TTL) field that is sent in every
                                  packet originating from the socket */
 
+    RPC_IP_MTU,             /**< Retrive the current known path MTU
+                                 of the current connected socket */
+    RPC_IP_MTU_DISCOVER,    /**< Enable/disable Path MTU discover
+                                 on the socket */
+
     RPC_TCP_MAXSEG,         /**< Set/get the maximum segment size for
                                  outgoing TCP packets */
     RPC_TCP_NODELAY,        /**< Enable/disable the Nagle algorithm */
@@ -1069,31 +1070,63 @@ sockopt_rpc2h(rpc_sockopt opt)
 {
     switch (opt)
     {
+#ifdef SO_ACCEPTCONN
         RPC2H(SO_ACCEPTCONN);
+#endif
 #ifdef SO_ACCEPTFILTER
         RPC2H(SO_ACCEPTFILTER);
 #endif
 #ifdef SO_BINDTODEVICE
         RPC2H(SO_BINDTODEVICE);
 #endif
+#ifdef SO_BROADCAST
         RPC2H(SO_BROADCAST);
+#endif
+#ifdef SO_DEBUG
         RPC2H(SO_DEBUG);
+#endif
+#ifdef SO_DONTROUTE
         RPC2H(SO_DONTROUTE);
+#endif
+#ifdef SO_ERROR
         RPC2H(SO_ERROR);
+#endif
+#ifdef SO_KEEPALIVE
         RPC2H(SO_KEEPALIVE);
+#endif
+#ifdef SO_LINGER
         RPC2H(SO_LINGER);
+#endif
+#ifdef SO_OOBINLINE
         RPC2H(SO_OOBINLINE);
+#endif
 #ifdef SO_PRIORITY
         RPC2H(SO_PRIORITY);
 #endif
+#ifdef SO_RCVBUF
         RPC2H(SO_RCVBUF);
+#endif
+#ifdef SO_RCVLOWAT
         RPC2H(SO_RCVLOWAT);
+#endif
+#ifdef SO_RCVTIMEO
         RPC2H(SO_RCVTIMEO);
+#endif
+#ifdef SO_REUSEADDR
         RPC2H(SO_REUSEADDR);
+#endif
+#ifdef SO_SNDBUF
         RPC2H(SO_SNDBUF);
+#endif
+#ifdef SO_SNDLOWAT
         RPC2H(SO_SNDLOWAT);
+#endif
+#ifdef SO_SNDTIMEO
         RPC2H(SO_SNDTIMEO);
+#endif
+#ifdef SO_TYPE
         RPC2H(SO_TYPE);
+#endif
 #ifdef IP_ADD_MEMBERSHIP
         RPC2H(IP_ADD_MEMBERSHIP);
 #endif
@@ -1135,6 +1168,12 @@ sockopt_rpc2h(rpc_sockopt opt)
 #endif
 #ifdef IP_TTL
         RPC2H(IP_TTL);
+#endif
+#ifdef IP_MTU
+        RPC2H(IP_MTU);
+#endif
+#ifdef IP_MTU_DISCOVER
+        RPC2H(IP_MTU_DISCOVER);
 #endif
 #ifdef TCP_MAXSEG
         RPC2H(TCP_MAXSEG);
@@ -1235,6 +1274,12 @@ sockopt_h2rpc(int opt_type, int opt)
                 H2RPC(IP_RETOPTS);
                 H2RPC(IP_TOS);
                 H2RPC(IP_TTL);
+#ifdef IP_MTU
+                H2RPC(IP_MTU);
+#endif
+#ifdef IP_MTU_DISCOVER
+                H2RPC(IP_MTU_DISCOVER);
+#endif
                 default: return RPC_SOCKOPT_MAX;
             }
             break;
@@ -1283,6 +1328,8 @@ sockopt_rpc2str(rpc_sockopt opt)
         RPC2STR(IP_RETOPTS);
         RPC2STR(IP_TOS);
         RPC2STR(IP_TTL);
+        RPC2STR(IP_MTU);
+        RPC2STR(IP_MTU_DISCOVER);
         RPC2STR(TCP_MAXSEG);
         RPC2STR(TCP_NODELAY);
         RPC2STR(TCP_KEEPIDLE);
