@@ -1,7 +1,5 @@
 
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #ifdef HAVE_STDLIB_H
 #include <stdlib.h>
@@ -388,26 +386,17 @@ tapi_udp4_dgram_send_recv(const char *ta_name, int sid, csap_handle_t csap,
  */
 int
 tapi_ip4_eth_csap_create(const char *ta_name, int sid, const char *eth_dev,
-                         const char *loc_addr_str, const char *rem_addr_str,
+                         const uint8_t *loc_addr, const uint8_t *rem_addr,
                          csap_handle_t *ip4_csap)
 {
-    int         rc;
+    int         rc = 0;
     char        csap_fname[100] = "/tmp/te_ip4_csap.XXXXXX";
-    asn_value_p csap_ip4_level;
-    asn_value_p csap_eth_level;
-    asn_value_p csap_spec;
-    asn_value_p csap_level_spec;
-
-    struct in_addr loc_addr = {0,};
-    struct in_addr rem_addr = {0,};
+    asn_value_p csap_ip4_level = NULL;
+    asn_value_p csap_eth_level = NULL;
+    asn_value_p csap_spec = NULL;
+    asn_value_p csap_level_spec = NULL;
 
     unsigned short ip_eth = 0x0800;
-
-    if ((loc_addr_str && inet_aton(loc_addr_str, &loc_addr) == 0) ||
-        (rem_addr_str && inet_aton(rem_addr_str, &rem_addr) == 0))
-    {
-        return TE_RC(TE_TAPI, EINVAL);
-    }
 
     csap_spec       = asn_init_value(ndn_csap_spec);
     csap_level_spec = asn_init_value(ndn_generic_csap_level);
@@ -415,46 +404,63 @@ tapi_ip4_eth_csap_create(const char *ta_name, int sid, const char *eth_dev,
     csap_eth_level  = asn_init_value(ndn_eth_csap);
 
 
-    rc = asn_write_value_field(csap_ip4_level,
-                               &loc_addr, sizeof(loc_addr),
-                                "local-addr.#plain");
-    rc = asn_write_value_field(csap_ip4_level,
-                               &rem_addr, sizeof(rem_addr),
-                                "remote-addr.#plain");
-    rc = asn_write_component_value(csap_level_spec,
-                                   csap_ip4_level, "#ip4");
+    do {
+        if (loc_addr)
+            rc = asn_write_value_field(csap_ip4_level,
+                                   loc_addr, 4, "local-addr.#plain");
+        if (rc) break;
 
-    rc = asn_insert_indexed(csap_spec, csap_level_spec, 0, "");
+        if (rem_addr)
+            rc = asn_write_value_field(csap_ip4_level,
+                                   rem_addr, 4, "remote-addr.#plain");
+        if (rc) break;
+        rc = asn_write_component_value(csap_level_spec,
+                                       csap_ip4_level, "#ip4");
+        if (rc) break;
 
-    rc = asn_free_subvalue(csap_level_spec, "#ip4");
-    csap_level_spec = asn_init_value(ndn_generic_csap_level);
+        rc = asn_insert_indexed(csap_spec, csap_level_spec, 0, "");
+        if (rc) break;
 
+        asn_free_value(csap_level_spec);
 
-    rc = asn_write_value_field(csap_eth_level, 
-                            eth_dev, strlen(eth_dev),
-                                "device-id.#plain"); 
-    rc = asn_write_value_field(csap_eth_level, 
-                            &ip_eth, sizeof(ip_eth),
-                                "eth-type.#plain");
-    rc = asn_write_component_value(csap_level_spec,
-                                   csap_eth_level, "#eth"); 
+        csap_level_spec = asn_init_value(ndn_generic_csap_level);
 
-    rc = asn_insert_indexed(csap_spec, csap_level_spec, 1, "");
+        if (eth_dev)
+            rc = asn_write_value_field(csap_eth_level, 
+                                eth_dev, strlen(eth_dev),
+                                    "device-id.#plain"); 
+        if (rc) break;
+        rc = asn_write_value_field(csap_eth_level, 
+                                &ip_eth, sizeof(ip_eth),
+                                    "eth-type.#plain");
+        if (rc) break;
+        rc = asn_write_component_value(csap_level_spec,
+                                       csap_eth_level, "#eth"); 
+        if (rc) break;
 
-    if (rc == 0)
-    {
+        rc = asn_insert_indexed(csap_spec, csap_level_spec, 1, "");
+        if (rc) break;
+
         mktemp(csap_fname);
         rc = asn_save_to_file(csap_spec, csap_fname);
-        VERB("TAPI: udp create csap, save to file %s, rc: %x\n",
+        VERB("TAPI: ip4.eth create csap, save to file %s, rc: %x\n",
                 csap_fname, rc);
-    }
+        if (rc) break;
+
+
+        rc = rcf_ta_csap_create(ta_name, sid, "ip4.eth", 
+                                csap_fname, ip4_csap); 
+    } while (0);
 
     asn_free_value(csap_spec);
     asn_free_value(csap_ip4_level);
+    asn_free_value(csap_eth_level);
+    asn_free_value(csap_level_spec);
 
-    if (rc == 0)
-        rc = rcf_ta_csap_create(ta_name, sid, "ip4.eth", 
-                                csap_fname, ip4_csap);
+
+#if 0
+    unlink(csap_fname); 
+#endif
 
     return TE_RC(TE_TAPI, rc);
 }
@@ -464,23 +470,14 @@ tapi_ip4_eth_csap_create(const char *ta_name, int sid, const char *eth_dev,
 /* see description in tapi_ipstack.h */
 int
 tapi_ip4_eth_recv_start(const char *ta_name, int sid, csap_handle_t csap,
-                        const char *src_addr_str, const char *dst_addr_str,
+                        const uint8_t *src_addr, const uint8_t *dst_addr,
                         unsigned int timeout, int num)
 {
     char  template_fname[] = "/tmp/te_ip4_eth_recv.XXXXXX";
     int   rc;
     FILE *f;
 
-    struct in_addr src_addr = {0,};
-    struct in_addr dst_addr = {0,};
     uint8_t *b;
-
-    if ((src_addr_str && inet_aton(src_addr_str, &src_addr) == 0) ||
-        (dst_addr_str && inet_aton(dst_addr_str, &dst_addr) == 0))
-    {
-        ERROR("%s: src or dst IP address wrong", __FUNCTION__);
-        return TE_RC(TE_TAPI, EINVAL);
-    }
 
     mktemp(template_fname);
 
@@ -492,17 +489,15 @@ tapi_ip4_eth_recv_start(const char *ta_name, int sid, csap_handle_t csap,
     }
 
     fprintf(f,    "{{ pdus { ip4:{" );
-    b = &src_addr;
 
-    if (src_addr_str)
+    if ((b = src_addr))
         fprintf(f, "src-addr plain:'%02x %02x %02x %02x'H", 
                 b[0], b[1], b[2], b[3]);
 
-    if (src_addr_str && dst_addr_str)
+    if (src_addr && dst_addr)
         fprintf(f, ",\n   ");
 
-    b = &dst_addr;
-    if (dst_addr_str)
+    if ((b = dst_addr))
         fprintf(f, " dst-addr plain:'%02x %02x %02x %02x'H", 
                 b[0], b[1], b[2], b[3]);
 
@@ -520,3 +515,54 @@ tapi_ip4_eth_recv_start(const char *ta_name, int sid, csap_handle_t csap,
 
     return rc;
 }
+
+
+int 
+tapi_tcp_ip4_eth_csap_create(const char *ta_name, int sid, 
+                         const char *eth_dev,
+                         const uint8_t *loc_addr, const uint8_t *rem_addr,
+                         uint16_t loc_port, uint16_t rem_port,
+                         csap_handle_t *tcp_csap)
+{
+    char  csap_fname[] = "/tmp/te_tcp_csap.XXXXXX";
+    int   rc;
+    FILE *f;
+
+    uint8_t *b;
+
+    asn_value *csap_spec;
+
+
+    do {
+        int num = 0;
+
+        mktemp(csap_fname);
+
+        rc = asn_parse_value_text("{ tcp:{local-port plain:0}, "
+                                    "ip4:{max-packet-size plain:100000},"
+                                    " eth:{device-id plain:\"eth0\"}}", 
+                                      ndn_csap_spec, &csap_spec, &num); 
+        if (rc) break; 
+
+        UNUSED(eth_dev);
+        UNUSED(loc_addr);
+        UNUSED(rem_addr);
+        UNUSED(loc_port);
+        UNUSED(rem_port);
+
+        rc = asn_save_to_file(csap_spec, csap_fname);
+        VERB("TAPI: udp create csap, save to file %s, rc: %x\n",
+                csap_fname, rc);
+        if (rc) break;
+
+
+        rc = rcf_ta_csap_create(ta_name, sid, "tcp.ip4.eth", 
+                                csap_fname, tcp_csap); 
+    } while (0);
+
+    asn_free_value(csap_spec);
+    unlink(csap_fname);
+
+    return TE_RC(TE_TAPI, rc);
+}
+
