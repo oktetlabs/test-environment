@@ -328,7 +328,7 @@ log_message_va(uint8_t **msg_buf, size_t *msg_buf_len, uint16_t level,
                 break;
             }
 
-            case 't': /* %tm, %tb, %te, %tf */
+            case 't': /* %tm, %tf */
                 if (*++p_fs != 0 )
                 {
                     if (*p_fs == 'm')
@@ -350,6 +350,7 @@ log_message_va(uint8_t **msg_buf, size_t *msg_buf_len, uint16_t level,
                         LGR_CHECK_BUF_LEN(TE_LOG_NFL_SZ + tmp_length);
                         LGR_NFL_PUT(tmp_length, msg_ptr);
                         memcpy(msg_ptr, dump, tmp_length);
+                        msg_ptr += tmp_length;
                         break;
                     }
                     else if (*p_fs == 'f')
