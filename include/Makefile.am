@@ -42,7 +42,7 @@ all: install
 install-data-hook:
 	TE_BUILD=.. ; $(srcdir)/../engine/builder/te_create_inst_dirs \
                           $(DESTDIR)/$(prefix)/..
-	for i in $(te_HEADERS) ; do \
+	for i in $(te_headers) ; do \
 	    touch -c -r $(srcdir)/$$i $(DESTDIR)/$(prefix)/include/$$i ; \
 	done
 	touch -c -r $(srcdir)/configure.ac $(DESTDIR)/$(prefix)/include/te_config.h
