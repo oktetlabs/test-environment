@@ -3,6 +3,7 @@
  *
  * Implementation of Tester API for Bridge STP CSAP.
  *
+ *
  * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
  * root directory of the distribution).
  *
@@ -16,38 +17,46 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public License
- * along with this program; if not, write to the Free Software
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
+ *
  *
  * @author Konstantin Abramenko <konst@oktetlabs.ru>
  *
  * $Id$
  */ 
 
-#ifdef HAVE_CONFIG_H
+#if HAVE_CONFIG_H
 #include "config.h"
 #endif
 
-#ifdef HAVE_STDLIB_H
+#include <stdio.h>
+#if HAVE_STDLIB_H
 #include <stdlib.h>
 #endif
-#ifdef HAVE_STRING_H 
+#if HAVE_STRING_H 
 #include <string.h> 
 #endif 
-#ifdef HAVE_STRINGS_H 
+#if HAVE_STRINGS_H 
 #include <strings.h> 
 #endif
-
-
-#include <stdio.h>
-#include <assert.h>
-
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <sys/socket.h>
+#if HAVE_UNISTD_H
 #include <unistd.h>
+#endif
+#if HAVE_ASSERT_H
+#include <assert.h>
+#endif
+#if HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
+#if HAVE_ARP_INET_H
+#include <arpa/inet.h>
+#endif
+#if HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif
 
 #include "rcf_api.h"
 #include "ndn_bridge.h"
@@ -58,10 +67,14 @@
 #include "logger_api.h"
 
 
-/* Bridge Group Address according to IEEE 802.1D, Table 7.9 */
-static uint8_t bridge_group_addr[ETH_ALEN] = {0x01, 0x80, 0xC2, 0x00, 0x00, 0x00};
-
 #define TAPI_STP_DEBUG 0
+
+
+/** Bridge Group Address according to IEEE 802.1D, Table 7.9 */
+static uint8_t bridge_group_addr[ETH_ALEN] =
+    {0x01, 0x80, 0xC2, 0x00, 0x00, 0x00};
+
+
 /**
  * Creates STP CSAP that can be used for sending/receiving
  * Configuration and Notification BPDUs specified in 
@@ -71,23 +84,22 @@ static uint8_t bridge_group_addr[ETH_ALEN] = {0x01, 0x80, 0xC2, 0x00, 0x00, 0x00
  * local/remote MAC addresses on Ethernet layer. 
  *
  * @param ta_name        Test Agent name where CSAP will be created
- * @param sid            RCF session;
+ * @param sid            RCF session
  * @param ifname         Name of an interface the CSAP is attached to
  *                       (frames are sent/captured from/on this interface)
- * @param own_mac_addr   - Default source MAC address  of outgoing BPDUs; 
- *                         should be NULL for RX CSAP.
- * @param peer_mac_addr  - Source MAC address of incoming into the CSAP BPDU;
- *                         should be NULL for TX CSAP. 
+ * @param own_mac_addr   Default source MAC address  of outgoing BPDUs 
+ *                       should be NULL for RX CSAP
+ * @param peer_mac_addr  Source MAC address of incoming into the CSAP BPDU
+ *                       should be NULL for TX CSAP 
  * @param stp_csap       Created STP CSAP (OUT)
  *
  * @return Status of the operation
  */
 int 
-tapi_stp_plain_csap_create(const char *ta_name, int sid,
-                                      const char *ifname,
-                                      const uint8_t *own_mac_addr,
-                                      const uint8_t *peer_mac_addr,
-                                      csap_handle_t *stp_csap)
+tapi_stp_plain_csap_create(const char *ta_name, int sid, const char *ifname,
+                           const uint8_t *own_mac_addr,
+                           const uint8_t *peer_mac_addr,
+                           csap_handle_t *stp_csap)
 {
     FILE *f;
     char  tmp_name[100];
@@ -161,8 +173,8 @@ tapi_stp_plain_csap_create(const char *ta_name, int sid,
  *
  * @return  Status of the operation
  * @retval EINVAL  This code is returned if "peer_mac_addr" value wasn't
- *                 specified on creating the CSAP and "dst_mac_addr" parameter
- *                 is NULL.
+ *                 specified on creating the CSAP and "dst_mac_addr"
+ *                 parameter is NULL.
  * @retval 0       BPDU is sent
  */
 int 
@@ -198,15 +210,15 @@ tapi_stp_bpdu_send(const char *ta_name, int sid,
     return rc;
 }
 
-struct tapi_pkt_handler_data
-{
+struct tapi_pkt_handler_data {
+
     tapi_stp_bpdu_callback user_callback; /**< User callback */
-    void                  *user_data; /**< Pointer to the user data passed in 
-                                           tapi_stp_bpdu_recv_start function */
-    int                    current_call; /**< Number of already received 
-                                              packets */
-    int                    total_num; /**< Total number of the packets 
-                                           user wants to receive */
+
+    void   *user_data;      /**< Pointer to the user data passed in 
+                                 tapi_stp_bpdu_recv_start function */
+    int     current_call;   /**< Number of already received packets */
+    int     total_num;      /**< Total number of the packets user wants
+                                 to receive */
 };
 
 
@@ -323,7 +335,8 @@ tapi_stp_bpdu_recv_start(const char *ta_name, int sid,
 
     ERROR("time to wait: %d", timeout);
     rc = rcf_ta_trrecv_start(ta_name, sid, stp_csap, tmp_name, 
-                             (callback != NULL) ? tapi_bpdu_pkt_handler : NULL, 
+                             (callback != NULL) ? tapi_bpdu_pkt_handler :
+                                                  NULL, 
                              (callback != NULL) ? (void *)i_data : NULL,
                              timeout, num);
 
