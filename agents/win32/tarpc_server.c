@@ -1947,7 +1947,7 @@ simple_sender(tarpc_simple_sender_in *in, tarpc_simple_sender_out *out)
         ERROR(buf);
     }
 
-    out->bytes = sent
+    out->bytes = sent;
 
     return 0;
 }
