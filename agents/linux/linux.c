@@ -544,7 +544,6 @@ shell(int argc, char * const argv[])
     unsigned int    used = 0;
     int             rc;
 
-
     for (i = 0; (i < argc) && (used < cmdlen); ++i)
     {
         used += snprintf(cmdbuf + used, cmdlen - used, "%s ", argv[i]);
@@ -552,9 +551,13 @@ shell(int argc, char * const argv[])
     if (used >= cmdlen)
         return TE_RC(TE_TA_LINUX, ETESMALLBUF);
 
+    VERB("SHELL: run %s", cmdbuf);
     rc = system(cmdbuf);
+    
     if (rc == -1)
         return TE_RC(TE_TA_LINUX, errno);
+
+    VERB("Successfully completes");
 
 #ifdef WCOREDUMP
     if (WCOREDUMP(rc))
