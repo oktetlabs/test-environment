@@ -36,6 +36,9 @@
 /* Windows Event Objects */
 typedef void *rpc_wsaevent;
 
+/* Windows WSAOVERLAPPED structure */
+typedef void *rpc_overlapped;
+
 /**
  * Set dynamic library name to be used for additional name resolution.
  *
@@ -214,10 +217,10 @@ extern int rpc_connect_ex(rcf_rpc_server *handle,
                           socklen_t addrlen,
                           void *buf, ssize_t len_buf,
                           ssize_t *bytes_sent,
-                          rpc_wsaevent hevent);
+                          rpc_overlapped overlapped);
 
 extern int rpc_disconnect_ex(rcf_rpc_server *handle, int s,
-                             rpc_wsaevent hevent, int flags);
+                             rpc_overlapped overlapped, int flags);
                              
 extern int rpc_listen(rcf_rpc_server *handle,
                       int s, int backlog);
@@ -269,7 +272,7 @@ extern int rpc_wsa_accept(rcf_rpc_server *handle,
  *                         data sent
  * @param rbuflen          length of buffer passed to the egent
  * @param len              length of the buffer passed to the call
- * @param hevent           event to be passed to OVERLAPPED structure
+ * @param overlapped       WSAOVERLAPPED structure
  * @param bytes_received   number of received data bytes
  * @param laddr            local address returned by GetAcceptExSockAddr()
  *                         function, wich is called after AcceptEx() returning
@@ -288,14 +291,14 @@ rpc_accept_ex(rcf_rpc_server *handle,
               void *buf,
               size_t len,
               size_t rbuflen,
-              rpc_wsaevent hevent,
+              rpc_overlapped overlapped,
               size_t *bytes_received,
               struct sockaddr *laddr, socklen_t *laddrlen,
               struct sockaddr *raddr, socklen_t *raddrlen);
 
 extern int rpc_transmit_file(rcf_rpc_server *handle, int s, char *file,
-                             ssize_t len, ssize_t len_per_send, ssize_t offset,
-                             ssize_t offset_high, rpc_wsaevent hevent,
+                             ssize_t len, ssize_t len_per_send, 
+                             rpc_overlapped overlapped,
                              void *head, ssize_t head_len,
                              void *tail, ssize_t tail_len, ssize_t flags);              
 
@@ -416,6 +419,16 @@ extern int rpc_close_event(rcf_rpc_server *handle, rpc_wsaevent hevent);
 
 /* WSAResetEvent() */
 extern int rpc_reset_event(rcf_rpc_server *handle, rpc_wsaevent hevent);	
+
+/* Create WSAOVERLAPPED */
+extern rpc_overlapped rpc_create_overlapped(rcf_rpc_server *handle,
+                                            rpc_wsaevent hevent,
+                                            unsigned int offset,
+                                            unsigned int offset_high);
+
+/* Delete WSAOVERLAPPED */
+extern void rpc_delete_overlapped(rcf_rpc_server *handle, 
+                                  rpc_overlapped overlapped);
 
 /* WSAEventSelect() */
 extern int 

@@ -124,10 +124,13 @@ typedef unsigned int tarpc_sigset_t;
 typedef unsigned int tarpc_fd_set;
 /** RPC off_t analog */
 typedef long int tarpc_off_t;
+
 /** Handle of the 'WSAEvent' or 0 */
 typedef unsigned int tarpc_wsaevent;
 /** Handle of the window */
 typedef unsigned int tarpc_hwnd;
+/** WSAOVERLAPPED structure */
+typedef unsigned int tarpc_overlapped;
 
 /** Function outputs nothing */
 struct tarpc_void_out {
@@ -461,7 +464,7 @@ struct tarpc_connect_ex_in {
     tarpc_socklen_t         len;      /**< Length to be passed to connectEx() */
     char                    buf<>;    /**< Buffer for data to be sent */
     tarpc_size_t            len_buf;  /**< Size of data passed to connectEx() */
-    tarpc_wsaevent          hevent;   /**< Event to be passed to OVERLAPPED */
+    tarpc_overlapped        overlapped; /**< WSAOVERLAPPED structure */
     tarpc_size_t            len_sent<>; /**< Returned by the function
                                              size of sent data from buf */
 };                                               
@@ -478,9 +481,9 @@ struct tarpc_connect_ex_out {
 struct tarpc_disconnect_ex_in {
     struct tarpc_in_arg    common;
     
-    int                    fd;     /**< TA-local socket */   
-    tarpc_wsaevent         hevent; /**< Event to be passed to OVERLAPPED */
-    int                    flags;  /**< Function call processing flag */
+    int               fd;         /**< TA-local socket */   
+    tarpc_overlapped  overlapped; /**< WSAOVERLAPPED structure */
+    int               flags;      /**< Function call processing flag */
 };
 
 typedef struct tarpc_int_retval_out tarpc_disconnect_ex_out;     
@@ -563,8 +566,7 @@ struct tarpc_accept_ex_in {
                                                of data */
     tarpc_size_t            len;          /**< Length of data to be received */
  
-    tarpc_wsaevent          hevent;       /**< Event to be passed
-                                               to OVERLAPPED */
+    tarpc_overlapped        overlapped;   /**< WSAOVERLAPPED structure */
     tarpc_size_t            count<>;      /**< Location for
                                                count of received bytes */ 
     struct tarpc_sa         laddr;        /**< Pointer to the sockaddr structure
@@ -627,8 +629,7 @@ struct tarpc_transmit_file_in {
                                                to OVERLAPPED. High-oreder
                                                word of the file position
                                                at wich to start to transfer */                                               
-    tarpc_wsaevent          hevent;       /**< Event to be passed
-                                               to OVERLAPPED */
+    tarpc_overlapped        overlapped;   /**< WSAOVERLAPPED structure */
     char                    head<>;       /**< Buffer to be transmitted before
                                                the file data is transmitted */
     tarpc_size_t            head_len;     /**< Length of head in bytes */
@@ -704,14 +705,13 @@ struct tarpc_create_event_out {
     tarpc_wsaevent       retval;
 };
 
-
 /* WSACloseEvent() */
 struct tarpc_close_event_in {
     struct tarpc_in_arg common;
     tarpc_wsaevent hevent;
 };
-
 typedef struct tarpc_int_retval_out tarpc_close_event_out;
+
 
 /* WSAResetEvent() */
 struct tarpc_reset_event_in {
@@ -720,6 +720,26 @@ struct tarpc_reset_event_in {
 };
 
 typedef struct tarpc_int_retval_out tarpc_reset_event_out;
+
+/* Create/delete WSAOVERLAPPED structure */
+struct tarpc_create_overlapped_in {
+    struct tarpc_in_arg common;
+    tarpc_wsaevent      hevent;
+    unsigned int        offset;
+    unsigned int        offset_high;
+};
+
+struct tarpc_create_overlapped_out {
+    struct tarpc_out_arg common;
+    tarpc_overlapped     retval;
+};
+
+struct tarpc_delete_overlapped_in {
+    struct tarpc_in_arg common;
+    tarpc_overlapped     overlapped;
+};
+typedef struct tarpc_void_out tarpc_delete_overlapped_out;
+
 
 /* WSAEventSelect() */
 
@@ -1795,6 +1815,9 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(event_select)
         RPC_DEF(enum_network_events)
         RPC_DEF(transmit_file)
+
+        RPC_DEF(create_overlapped)
+        RPC_DEF(delete_overlapped)
         
         RPC_DEF(create_window)
         RPC_DEF(destroy_window)

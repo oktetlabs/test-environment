@@ -332,6 +332,13 @@ timespec2str(const struct timespec *tv)
             return (void *)(_retval);                                   \
     } while(0)
 
+/** Return with check */
+#define RETVAL_VOID(_func) \
+    do {                                                                \
+        LOG_TE_ERROR(_func);                                            \
+        rcf_rpc_free_result(&out, (xdrproc_t)xdr_tarpc_##_func##_out);  \
+    } while(0)
+
 
 /**
  * Set dynamic library name to be used for additional name resolution.
@@ -601,7 +608,7 @@ extern int rpc_connect_ex(rcf_rpc_server *handle,
                           socklen_t addrlen,
                           void *buf, ssize_t len_buf,
                           ssize_t *bytes_sent,
-                          rpc_wsaevent hevent)
+                          rpc_overlapped overlapped)
 {
     rcf_rpc_op        op;
     tarpc_connect_ex_in  in;
@@ -647,14 +654,14 @@ extern int rpc_connect_ex(rcf_rpc_server *handle,
     in.buf.buf_val = buf;
     in.len_sent.len_sent_val = bytes_sent;
     in.len_buf = len_buf;
-    in.hevent = (tarpc_wsaevent)hevent;
+    in.overlapped = (tarpc_overlapped)overlapped;
 
     rcf_rpc_call(handle, _connect_ex, &in, (xdrproc_t)xdr_tarpc_connect_ex_in,
                  &out, (xdrproc_t)xdr_tarpc_connect_ex_out);
 
     RING("RPC (%s,%s)%s: connect_ex(%d, %s, %u, ..., %p, ...) -> %s (%s)",
          handle->ta, handle->name, rpcop2str(op),
-         s, sockaddr2str(addr), addrlen, hevent,
+         s, sockaddr2str(addr), addrlen, overlapped,
          out.retval ? "true" : "false", errno_rpc2str(RPC_ERRNO(handle)));
          
     if (bytes_sent != NULL)
@@ -664,7 +671,7 @@ extern int rpc_connect_ex(rcf_rpc_server *handle,
 }         
 
 extern int rpc_disconnect_ex(rcf_rpc_server *handle, int s,
-                             rpc_wsaevent hevent, int flags)
+                             rpc_overlapped overlapped, int flags)
 {
     rcf_rpc_op        op;
     tarpc_disconnect_ex_in  in;
@@ -680,7 +687,7 @@ extern int rpc_disconnect_ex(rcf_rpc_server *handle, int s,
     memset(&out, 0, sizeof(out));
     
     in.fd = s;
-    in.hevent = (tarpc_wsaevent)hevent;
+    in.overlapped = (tarpc_overlapped)overlapped;
     in.flags = flags; 
     rcf_rpc_call(handle, _disconnect_ex, &in,
                  (xdrproc_t)xdr_tarpc_disconnect_ex_in,
@@ -688,7 +695,7 @@ extern int rpc_disconnect_ex(rcf_rpc_server *handle, int s,
 
     RING("RPC (%s,%s)%s: disconnect_ex(%d, %p, %d) -> %s (%s)",
          handle->ta, handle->name, rpcop2str(op),
-         s, hevent, flags,
+         s, overlapped, flags,
 	 out.retval ? "true" : "false", errno_rpc2str(RPC_ERRNO(handle)));
 
     RETVAL_VAL(out.retval, disconnect_ex);
@@ -910,7 +917,7 @@ rpc_accept_ex(rcf_rpc_server *handle,
               void *buf,
               size_t len,
               size_t rbuflen,
-              rpc_wsaevent hevent,
+              rpc_overlapped overlapped,
               size_t *bytes_received,
               struct sockaddr *laddr, socklen_t *laddrlen,
               struct sockaddr *raddr, socklen_t *raddrlen)
@@ -963,7 +970,7 @@ rpc_accept_ex(rcf_rpc_server *handle,
     else
         in.count.count_len = 1;     
     in.count.count_val = bytes_received;
-    in.hevent = (tarpc_wsaevent)hevent;
+    in.overlapped = (tarpc_overlapped)overlapped;
     in.laddr_len.laddr_len_len = laddrlen == NULL ? 0 : 1;
     in.laddr_len.laddr_len_val = laddrlen;    
     in.raddr_len.raddr_len_len = raddrlen == NULL ? 0 : 1;
@@ -999,7 +1006,7 @@ rpc_accept_ex(rcf_rpc_server *handle,
          "laddr=%s laddrlen=%u ",
          "raddr=%s raddrlen=%u ",
          handle->ta, handle->name, rpcop2str(op),
-         s, s_a, len, hevent,
+         s, s_a, len, overlapped,
          out.retval ? "true" : "false", errno_rpc2str(RPC_ERRNO(handle)),
          sockaddr2str(laddr), (laddrlen == NULL) ? (socklen_t)-1 : *laddrlen,
          sockaddr2str(raddr), (raddrlen == NULL) ? (socklen_t)-1 : *raddrlen);
@@ -1008,8 +1015,8 @@ rpc_accept_ex(rcf_rpc_server *handle,
 }             
 
 extern int rpc_transmit_file(rcf_rpc_server *handle, int s, char *file,
-                             ssize_t len, ssize_t len_per_send, ssize_t offset,
-                             ssize_t offset_high, rpc_wsaevent hevent,
+                             ssize_t len, ssize_t len_per_send, 
+                             rpc_overlapped overlapped,
                              void *head, ssize_t head_len,
                              void *tail, ssize_t tail_len, ssize_t flags)
 {
@@ -1040,9 +1047,7 @@ extern int rpc_transmit_file(rcf_rpc_server *handle, int s, char *file,
     in.file.file_val = file;    
     in.len = len;
     in.len_per_send = len_per_send;
-    in.offset = offset;
-    in.offset_high = offset_high;
-    in.hevent = (tarpc_wsaevent)hevent; 
+    in.overlapped = (tarpc_overlapped)overlapped; 
     if (head == NULL)
         in.head.head_len = 0;
     in.head.head_val = head;
@@ -1056,9 +1061,9 @@ extern int rpc_transmit_file(rcf_rpc_server *handle, int s, char *file,
                  (xdrproc_t)xdr_tarpc_transmit_file_in,
                  &out, (xdrproc_t)xdr_tarpc_transmit_file_out);
 
-    RING("RPC (%s,%s)%s: transmit_file(%d, ..., %p, ...) -> %s (%s)",
+    RING("RPC (%s,%s)%s: transmit_file(%d, %s, %d, %d, %p, ...) -> %s (%s)",
          handle->ta, handle->name, rpcop2str(op),
-         s, hevent,
+         s, file, len, len_per_send, overlapped,
          out.retval ? "true" : "false", errno_rpc2str(RPC_ERRNO(handle)));
 
     RETVAL_VAL(out.retval, transmit_file);
@@ -1803,6 +1808,66 @@ rpc_reset_event(rcf_rpc_server *handle, rpc_wsaevent hevent)
     RETVAL_VAL(out.retval, reset_event);
 }
 
+rpc_overlapped 
+rpc_create_overlapped(rcf_rpc_server *handle, rpc_wsaevent hevent,
+                      unsigned int offset, unsigned int offset_high)
+{
+    tarpc_create_overlapped_in  in;
+    tarpc_create_overlapped_out out;
+
+    if (handle == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        return NULL;
+    }
+
+    handle->op = RCF_RPC_CALL_WAIT;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+    in.hevent = (tarpc_wsaevent)hevent;
+    in.offset = offset;
+    in.offset_high = offset_high;
+
+    rcf_rpc_call(handle, _create_overlapped, &in, 
+		 (xdrproc_t)xdr_tarpc_create_overlapped_in,
+                 &out, (xdrproc_t)xdr_tarpc_create_overlapped_out);
+    
+    RING("RPC (%s,%s): create_overlapped(%p) -> %p (%s)",
+         handle->ta, handle->name, hevent,
+         out.retval, errno_rpc2str(RPC_ERRNO(handle)));
+	 
+    RETVAL_PTR(out.retval, create_overlapped);
+}
+
+void
+rpc_delete_overlapped(rcf_rpc_server *handle, 
+                      rpc_overlapped overlapped)
+{
+    tarpc_delete_overlapped_in  in;
+    tarpc_delete_overlapped_out out;
+
+    if (handle == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        return;
+    }
+
+    handle->op = RCF_RPC_CALL_WAIT;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+    in.overlapped = (tarpc_overlapped)overlapped;
+
+    rcf_rpc_call(handle, _delete_overlapped, &in, (xdrproc_t)xdr_tarpc_delete_overlapped_in,
+                 &out, (xdrproc_t)xdr_tarpc_delete_overlapped_out);
+    
+    RING("RPC (%s,%s): delete_overlapped(%p)",
+         handle->ta, handle->name, overlapped);
+ 
+    RETVAL_VOID(delete_overlapped);
+}                      
+
 int 
 rpc_event_select(rcf_rpc_server *handle,
                      int s, rpc_wsaevent event_object, rpc_network_event event)
@@ -1936,7 +2001,7 @@ rpc_fd_set_delete(rcf_rpc_server *handle, rpc_fd_set *set)
          handle->ta, handle->name,
          set, errno_rpc2str(RPC_ERRNO(handle)));
 
-    LOG_TE_ERROR(fd_set_delete);
+    RETVAL_VOID(fd_set_delete);
 }
 
 void 
@@ -1965,7 +2030,7 @@ rpc_do_fd_zero(rcf_rpc_server *handle, rpc_fd_set *set)
          handle->ta, handle->name,
          set, errno_rpc2str(RPC_ERRNO(handle)));
 
-    LOG_TE_ERROR(do_fd_zero);
+    RETVAL_VOID(do_fd_zero);
 }
 
 void 
@@ -1995,7 +2060,7 @@ rpc_do_fd_set(rcf_rpc_server *handle, int fd, rpc_fd_set *set)
          handle->ta, handle->name,
          fd, set, errno_rpc2str(RPC_ERRNO(handle)));
 
-    LOG_TE_ERROR(do_fd_set);
+    RETVAL_VOID(do_fd_set);
 }
 
 void 
@@ -2025,7 +2090,7 @@ rpc_do_fd_clr(rcf_rpc_server *handle, int fd, rpc_fd_set *set)
          handle->ta, handle->name,
          fd, set, errno_rpc2str(RPC_ERRNO(handle)));
 
-    LOG_TE_ERROR(do_fd_clr);
+    RETVAL_VOID(do_fd_clr);
 }
 
 int
@@ -2299,7 +2364,7 @@ rpc_if_freenameindex(rcf_rpc_server *handle,
     RING("RPC (%s,%s): if_freenameindex(%p) -> (%s)",
          handle->ta, handle->name, ptr, errno_rpc2str(RPC_ERRNO(handle)));
 
-    LOG_TE_ERROR(if_freenameindex);
+    RETVAL_VOID(if_freenameindex);
 }                     
 
 rpc_sigset_t *
@@ -2354,7 +2419,7 @@ rpc_sigset_delete(rcf_rpc_server *handle, rpc_sigset_t *set)
     RING("RPC (%s,%s): sigset_delete(%p) -> (%s)",
          handle->ta, handle->name, set, errno_rpc2str(RPC_ERRNO(handle)));
 
-    LOG_TE_ERROR(sigset_delete);
+    RETVAL_VOID(sigset_delete);
 }
 
 
@@ -4347,7 +4412,7 @@ rpc_freeaddrinfo(rcf_rpc_server *handle,
          
     free((int *)res - 1); 
 
-    LOG_TE_ERROR(freeaddrinfo); 
+    RETVAL_VOID(freeaddrinfo); 
 }                 
 
 int 
@@ -5201,7 +5266,7 @@ rpc_destroy_window(rcf_rpc_server *handle, rpc_hwnd hwnd)
          handle->ta, handle->name,
          hwnd, errno_rpc2str(RPC_ERRNO(handle)));
 
-    LOG_TE_ERROR(destroy_window);
+    RETVAL_VOID(destroy_window);
 }
 
 int 

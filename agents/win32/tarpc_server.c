@@ -102,14 +102,13 @@ typedef void (*LPFN_GETACCEPTEXSOCKADDRS)(PVOID lpOutputBuffer,
                                           LPSOCKADDR *RemoteSockaddr,
                                           LPINT RemoteSockaddrLength);  
 /* TransmitFile() */
-#if 1
 typedef struct _TRANSMIT_FILE_BUFFERS {
   PVOID Head;
   DWORD HeadLength;
   PVOID Tail;
   DWORD TailLength;
 } TRANSMIT_FILE_BUFFERS;
-#endif
+
 typedef BOOL (*LPFN_TRANSMITFILE)(SOCKET hSocket,
                                   HANDLE hFile,
                                   DWORD nNumberOfBytesToWrite,
@@ -122,7 +121,6 @@ extern int ta_pid;
 extern sigset_t rpcs_received_signals;
 
 extern HINSTANCE ta_hinstance;
-
 
 /**
  * Convert shutdown parameter from RPC to native representation.
@@ -517,7 +515,6 @@ TARPC_FUNC(connect, {},
 )
 
 /*------------------------------ ConnectEx() ------------------------------*/
-
 TARPC_FUNC(connect_ex, 
 {
     COPY_ARG(len_sent);
@@ -525,14 +522,10 @@ TARPC_FUNC(connect_ex,
 {
     LPFN_CONNECTEX   pf_connect_ex = NULL;    
     GUID             guid_connect_ex = WSAID_CONNECTEX; 
-    OVERLAPPED       overlapped;
     DWORD            bytes_returned;
     
     PREPARE_ADDR(in->addr, 0);
     INIT_CHECKED_ARG(in->buf.buf_val, in->buf.buf_len, 0);
-    memset(&overlapped, 0, sizeof(overlapped));
-    if (in->hevent != 0)
-        overlapped.hEvent = (HANDLE)(in->hevent);
     if (WSAIoctl(in->fd, SIO_GET_EXTENSION_FUNCTION_POINTER,
                  (LPVOID)&guid_connect_ex, sizeof(GUID),
                  (LPVOID)&pf_connect_ex, sizeof(LPFN_CONNECTEX),
@@ -549,7 +542,7 @@ TARPC_FUNC(connect_ex,
                                    in->len_buf,
                                    out->len_sent.len_sent_len == 0 ? NULL :
                                    (LPDWORD)(out->len_sent.len_sent_val),
-                                   in->hevent != 0 ? &overlapped : NULL));
+                                   (LPWSAOVERLAPPED)(in->overlapped)));
    finish:
    ;     
 }
@@ -561,12 +554,8 @@ TARPC_FUNC(disconnect_ex, {},
 {
     LPFN_DISCONNECTEX   pf_disconnect_ex = NULL;    
     GUID                guid_disconnect_ex = WSAID_DISCONNECTEX; 
-    OVERLAPPED          overlapped;
     DWORD               bytes_returned;
     
-    memset(&overlapped, 0, sizeof(overlapped));
-    if (in->hevent != 0)
-         overlapped.hEvent = (HANDLE)(in->hevent);
     if (WSAIoctl(in->fd, SIO_GET_EXTENSION_FUNCTION_POINTER,
                  (LPVOID)&guid_disconnect_ex, sizeof(GUID),
                  (LPVOID)&pf_disconnect_ex,
@@ -579,8 +568,7 @@ TARPC_FUNC(disconnect_ex, {},
     }
     MAKE_CALL(out->retval = 
                   (*pf_disconnect_ex)(in->fd, 
-                                      in->hevent == 0 ? NULL :
-                                      &overlapped,
+                                      (LPWSAOVERLAPPED)(in->overlapped),
                                       transmit_file_flags_rpc2h(in->flags), 
                                       0));
     finish:
@@ -689,6 +677,7 @@ TARPC_FUNC(wsa_accept,
 }
 )
 
+
 /*------------------------------ AcceptEx() ------------------------------*/
 
 TARPC_FUNC(accept_ex, 
@@ -707,7 +696,6 @@ TARPC_FUNC(accept_ex,
     GUID                      guid_get_accept_ex_sockaddrs =
                                                      WSAID_GETACCEPTEXSOCKADDRS; 
     DWORD                     bytes_returned;
-    OVERLAPPED                overlapped;
     char                     *mybuf;
     struct sockaddr_storage   l_addr;
     struct sockaddr          *l_a;      
@@ -727,10 +715,6 @@ TARPC_FUNC(accept_ex,
         out->retval = 0;
         return 0;        
     }
-    memset(&overlapped, 0, sizeof(overlapped));
-    if (in->hevent != 0)
-         overlapped.hEvent = (HANDLE)(in->hevent);
-
     if (WSAIoctl(in->fd, SIO_GET_EXTENSION_FUNCTION_POINTER,
                  (LPVOID)&guid_accept_ex, sizeof(GUID),
                  (LPVOID)&pf_accept_ex, sizeof(LPFN_ACCEPTEX),
@@ -760,8 +744,7 @@ TARPC_FUNC(accept_ex,
                                             + 16,
                                             out->count.count_len == 0 ? NULL :
                                             (LPDWORD)out->count.count_val,
-                                            in->hevent != 0 ? &overlapped 
-                                                            : NULL));
+                                            (LPWSAOVERLAPPED)(in->overlapped)));
     if (!out->retval)
     {
         ERROR("AcceptEx() failed");
@@ -794,22 +777,12 @@ TARPC_FUNC(transmit_file, {},
     LPFN_TRANSMITFILE         pf_transmit_file = NULL;    
     GUID                      guid_transmit_file = WSAID_TRANSMITFILE; 
     DWORD                     bytes_returned;
-    OVERLAPPED                overlapped;
-    OVERLAPPED               *poverlapped = NULL;
     TRANSMIT_FILE_BUFFERS     transmit_buffers;
     DWORD                     flags;
     HANDLE                    file = NULL;
  
     INIT_CHECKED_ARG(in->head.head_val, in->head.head_len, 0);
     INIT_CHECKED_ARG(in->tail.tail_val, in->tail.tail_len, 0);
-    if (in->hevent != 0 || in->offset != 0 || in->offset_high != 0)
-    {
-        memset(&overlapped, 0, sizeof(overlapped));
-        overlapped.hEvent = (HANDLE)(in->hevent);
-        overlapped.Offset = (DWORD)(in->offset);    
-        overlapped.OffsetHigh = (DWORD)(in->offset_high);             
-        poverlapped = &overlapped;
-    }
     memset(&transmit_buffers, 0, sizeof(transmit_buffers));
     if (in->head.head_len != 0)
          transmit_buffers.Head = in->head.head_val; 
@@ -832,11 +805,11 @@ TARPC_FUNC(transmit_file, {},
         file = CreateFile(in->file.file_val, FILE_READ_DATA,
                           FILE_SHARE_DELETE, NULL, OPEN_ALWAYS,
                           FILE_ATTRIBUTE_NORMAL, NULL);
-    MAKE_CALL(out->retval = (*pf_transmit_file)(in->fd, file, 
-                                                in->len, in->len_per_send,
-                                                poverlapped,
-                                                &transmit_buffers,
-                                                flags));
+    MAKE_CALL(out->retval = 
+        (*pf_transmit_file)(in->fd, file, 
+                            in->len, in->len_per_send,
+                            (LPWSAOVERLAPPED)(in->overlapped),
+                            &transmit_buffers, flags));
     finish:
     ;
 }
@@ -2503,4 +2476,31 @@ _peek_message_1_svc(tarpc_peek_message_in *in,
     return TRUE;                                 
 }
 
-               
+/*-------------------------- Create WSAOVERLAPPED --------------------------*/
+
+TARPC_FUNC(create_overlapped, {}, 
+{ 
+    UNUSED(list);
+    if ((out->retval = 
+         (tarpc_overlapped)calloc(1, sizeof(WSAOVERLAPPED))) == 0)
+    {
+        out->common._errno = TE_RC(TE_TA_WIN32, ENOMEM); 
+    }
+    else
+    {
+        ((WSAOVERLAPPED *)(out->retval))->hEvent = (WSAEVENT)(in->hevent);
+        ((WSAOVERLAPPED *)(out->retval))->Offset = in->offset;
+        ((WSAOVERLAPPED *)(out->retval))->OffsetHigh = in->offset_high;
+    }        
+}
+)
+
+/*------------------------- Delete WSAOVERLAPPED ----------------------------*/
+
+TARPC_FUNC(delete_overlapped, {}, 
+{ 
+    UNUSED(list);
+    UNUSED(out);
+    free((void *)(in->overlapped));
+}
+)
