@@ -160,15 +160,14 @@ const asn_type * const ndn_forw_reorder = &ndn_forw_reorder_s;
 
 /*
 Forwarder-Action-Drop-Params ::= CHOICE {
-    random-rate      [0] INTEGER(e..100),
-    r
+    random-rate      [0] INTEGER(0..100),
     pattern-mask     [1] BIT STRING
 } 
 */ 
 
 static asn_named_entry_t _ndn_forw_drop_ne_array [] = 
 {
-    { "random-rate",  &asn_base_int8_s, {PRIVATE, 1}},
+    { "random-rate",  &asn_base_int8_s, {PRIVATE, 0}},
     { "pattern-mask", &asn_base_bitstring_s, {PRIVATE, 1}},
 };
 
@@ -335,6 +334,8 @@ ndn_forw_reorder_to_plain(const asn_value *val,
     d_len = sizeof (forw_reorder->r_size);
     rc = asn_read_value_field(val, &forw_reorder->r_size, &d_len, 
                               "reorder-size"); 
+    VERB("%s: reorder: type %d, timeout %d, size %d", __FUNCTION__,
+         forw_reorder->type, forw_reorder->timeout, forw_reorder->r_size);
     return rc;
 }
 
@@ -401,7 +402,7 @@ ndn_forw_action_asn_to_plain(const asn_value *val,
         return EINVAL;
 
     id_len = asn_get_length(val, "id");
-    RING("%s: length of id %d", __FUNCTION__, id_len);
+    VERB("%s: length of id %d", __FUNCTION__, id_len);
 
     if (id_len <= 0)
         return EASNGENERAL;
@@ -414,10 +415,10 @@ ndn_forw_action_asn_to_plain(const asn_value *val,
     if (rc) return rc;
 
     forw_action->id[id_len] = '\0';
-    RING("%s: got id: %s", __FUNCTION__, forw_action->id);
+    VERB("%s: got id: %s", __FUNCTION__, forw_action->id);
 
     rc = asn_impl_find_subvalue(val, "delay", &subval); 
-    RING("%s: get delay: %X", __FUNCTION__, rc); 
+    VERB("%s: get delay: %X", __FUNCTION__, rc); 
     if (rc == 0) 
     {
         rc = ndn_forw_delay_to_plain(subval, &(forw_action->delay));
@@ -434,10 +435,11 @@ ndn_forw_action_asn_to_plain(const asn_value *val,
 
 
     rc = asn_get_subvalue(val, &subval, "reorder");
-    RING("%s: get reorder: %X", __FUNCTION__, rc); 
+    VERB("%s: get reorder: %X", __FUNCTION__, rc); 
     if (rc == 0) 
     {
         rc = ndn_forw_reorder_to_plain(subval, &(forw_action->reorder));
+        VERB("%s: reorder to plain: %X", __FUNCTION__, rc); 
         if (rc) return rc;
     }
     else if (rc == EASNINCOMPLVAL)
@@ -553,7 +555,7 @@ ndn_forw_action_plain_to_asn(ndn_forw_action_plain *forw_action,
 
                     rc = asn_parse_value_text("discr:{}", ndn_forw_delay,
                                               &delay_discr, &ar_len);
-                    RING("parse delay discr rc %X, syms %d", rc, ar_len);
+                    VERB("parse delay discr rc %X, syms %d", rc, ar_len);
                     if (rc != 0)
                         break;
 
@@ -583,7 +585,7 @@ ndn_forw_action_plain_to_asn(ndn_forw_action_plain *forw_action,
 
                         rc = asn_insert_indexed(delay_discr, 
                                                 pair_val, i, "#discr");
-                        RING("%s: insert discr.pair N %d to delay, rc: %X",
+                        VERB("%s: insert discr.pair N %d to delay, rc: %X",
                              __FUNCTION__, i, rc);
                         asn_free_value(pair_val);
                     }
@@ -591,7 +593,7 @@ ndn_forw_action_plain_to_asn(ndn_forw_action_plain *forw_action,
                         break;
                     rc = asn_write_component_value(val, delay_discr,
                                                    "delay"); 
-                    RING("%s: write delay_discr to ftask action, rc: %X",
+                    VERB("%s: write delay_discr to ftask action, rc: %X",
                          __FUNCTION__, rc);
                     asn_free_value(delay_discr);
                 }
