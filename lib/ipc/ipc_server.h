@@ -31,8 +31,6 @@
 #ifndef __TE_IPC_SERVER_H__
 #define __TE_IPC_SERVER_H__
 
-#include "te_config.h"
-
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif

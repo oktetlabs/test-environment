@@ -31,8 +31,6 @@
 #ifndef __TE_LOGGER_TA_INTERNAL_H__
 #define __TE_LOGGER_TA_INTERNAL_H__
 
-#include "te_config.h"
-
 #if HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
