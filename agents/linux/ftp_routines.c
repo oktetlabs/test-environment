@@ -237,14 +237,15 @@ parse_ftp_uri(const char *uri, struct sockaddr *srv,
 int
 ftp_open(char *uri, int flags, int passive, int offset, int *sock)
 {
-    char  buf[1024];
-    char *str;
-    int   s;
-    int   sd = -1;
-    int   sd1 = -1;
-    int   new_sock = 0;
-    struct timeval tv;
+    char   buf[1024];
+    char  *str;
+    int    s;
+    int    sd = -1;
+    int    sd1 = -1;
+    int    new_sock = 0;
     fd_set set;
+    
+    struct timeval tv;
 
     struct sockaddr_in addr;
     struct sockaddr_in addr1;
@@ -254,6 +255,8 @@ ftp_open(char *uri, int flags, int passive, int offset, int *sock)
     char user[FTP_TEST_LOGIN_MAX];
     char passwd[FTP_TEST_PASSWD_MAX];
     char file[FTP_TEST_PATHNAME_MAX];
+    
+    printf("ftp_open %s %d\n", uri, flags); fflush(stdout);
     
     if (parse_ftp_uri(uri, (struct sockaddr *)&addr,
                       user, passwd, file) != 0 ||
@@ -314,7 +317,7 @@ ftp_open(char *uri, int flags, int passive, int offset, int *sock)
     else
     {
         s = *sock;
-
+        
         FD_ZERO(&set);
         FD_SET(s, &set);
         tv.tv_sec = 1;
