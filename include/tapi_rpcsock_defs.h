@@ -490,24 +490,81 @@ typedef enum rpc_recv_flags {
                          RPC_MSG_CTRUNC | RPC_MSG_ERRQUEUE |              \
                          RPC_MSG_MCAST | RPC_MSG_BCAST)
 
+#ifdef MSG_OOB
+#define HAVE_MSG_OOB    1
+#else
+#define HAVE_MSG_OOB    0
+#define MSG_OOB         0
+#endif
+
+#ifdef MSG_PEEK
+#define HAVE_MSG_PEEK   1
+#else
+#define HAVE_MSG_PEEK   0
+#define MSG_PEEK        0
+#endif
+
+#ifdef MSG_DONTROUTE
+#define HAVE_MSG_DONTROUTE      1
+#else
+#define HAVE_MSG_DONTROUTE      0
+#define MSG_DONTROUTE           0
+#endif
+
+#ifdef MSG_DONTWAIT
+#define HAVE_MSG_DONTWAIT       1
+#else
+#define HAVE_MSG_DONTWAIT       0
+#define MSG_DONTWAIT            0
+#endif
+
+#ifdef MSG_WAITALL
+#define HAVE_MSG_WAITALL        1
+#else
+#define HAVE_MSG_WAITALL        0
+#define MSG_WAITALL             0
+#endif
+
 #ifdef MSG_NOSIGNAL
 #define HAVE_MSG_NOSIGNAL   1
 #else
 #define HAVE_MSG_NOSIGNAL   0
 #define MSG_NOSIGNAL        0
 #endif
+
+#ifdef MSG_TRUNC
+#define HAVE_MSG_TRUNC   1
+#else
+#ifdef HAVE_MSG_PARTIAL
+#define MSG_TRUNC MSG_PARTIAL
+#define HAVE_MSG_TRUNC   1
+#else
+#define HAVE_MSG_TRUNC   0
+#define MSG_TRUNC        0
+#endif
+#endif
+
+#ifdef MSG_CTRUNC
+#define HAVE_MSG_CTRUNC      1
+#else
+#define HAVE_MSG_CTRUNC      0
+#define MSG_CTRUNC           0
+#endif
+
 #ifdef MSG_ERRQUEUE
 #define HAVE_MSG_ERRQUEUE   1
 #else
 #define HAVE_MSG_ERRQUEUE   0
 #define MSG_ERRQUEUE        0
 #endif
+
 #ifdef MSG_MCAST
 #define HAVE_MSG_MCAST      1
 #else
 #define HAVE_MSG_MCAST      0
 #define MSG_MCAST           0
 #endif
+
 #ifdef MSG_BCAST
 #define HAVE_MSG_BCAST      1
 #else
@@ -562,16 +619,31 @@ send_recv_flags_rpc2h(rpc_send_recv_flags flags)
     WARN_IF_UNSUPP(flags, MSG_BCAST);
 #endif
 
-    return (!!(flags & RPC_MSG_OOB) * MSG_OOB) |
+    return 
+#if HAVE_MSG_OOB
+           (!!(flags & RPC_MSG_OOB) * MSG_OOB) |
+#endif
+#if HAVE_MSG_PEEK
            (!!(flags & RPC_MSG_PEEK) * MSG_PEEK) |
+#endif
+#if HAVE_MSG_DONTROUTE
            (!!(flags & RPC_MSG_DONTROUTE) * MSG_DONTROUTE) |
+#endif
+#if HAVE_MSG_DONTWAIT
            (!!(flags & RPC_MSG_DONTWAIT) * MSG_DONTWAIT) |
+#endif
+#if HAVE_MSG_WAITALL
            (!!(flags & RPC_MSG_WAITALL) * MSG_WAITALL) |
+#endif
 #if HAVE_MSG_NOSIGNAL
            (!!(flags & RPC_MSG_NOSIGNAL) * MSG_NOSIGNAL) |
 #endif
+#if HAVE_MSG_TRUNC
            (!!(flags & RPC_MSG_TRUNC) * MSG_TRUNC) |
+#endif           
+#if HAVE_MSG_CTRUNC
            (!!(flags & RPC_MSG_CTRUNC) * MSG_CTRUNC) |
+#endif           
 #if HAVE_MSG_ERRQUEUE
            (!!(flags & RPC_MSG_ERRQUEUE) * MSG_ERRQUEUE) |
 #endif
@@ -821,7 +893,9 @@ sockopt_rpc2h(rpc_sockopt opt)
 #ifdef IP_RECVERR
         RPC2H(IP_RECVERR);
 #endif
+#ifdef IP_RECVOPTS
         RPC2H(IP_RECVOPTS);
+#endif        
 #ifdef IP_RECVTOS
         RPC2H(IP_RECVTOS);
 #endif
@@ -1229,7 +1303,6 @@ ioctl_rpc2str(rpc_ioctl_code code)
 /**< Maximum length of buffer for sa_data_val in tarpc_sockaddr */
 #define SA_DATA_MAX_LEN  (sizeof(struct sockaddr_storage) - SA_COMMON_LEN)
 
-
 /** TA-independent signal constants */
 typedef enum rpc_signum {
     RPC_SIGHUP,
@@ -1286,6 +1359,8 @@ signum_rpc2h(rpc_signum s)
         default: return _SIG_MAXSIG;
 #elif defined(_NSIG)
         default: return _NSIG;
+#elif defined(NSIG)
+        default: return NSIG;
 #else
 #error There is no way to convert unknown/unsupported/unused signal number!
 #endif
