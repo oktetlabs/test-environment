@@ -13,7 +13,7 @@ AM_CFLAGS = @NET_SNMP_CFLAGS@
 AM_LDFLAGS = @TE_LDFLAGS@ -L. -L$(DESTDIR)/$(prefix)/lib
 
 
-tetest_PROGRAMS = snmp_gets snmp_get_if_table
+tetest_PROGRAMS = snmp_gets snmp_get_if_table walk
 
 
 MYLDADD = -ltapi_snmp -lndn -lasn -ltapi -lrcfapi -lconfapi -lconf_oid \

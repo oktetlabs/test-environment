@@ -47,6 +47,25 @@
 #include "logger_api.h"
 #include "tapi_snmp.h"
 
+int
+walk_cb(tapi_snmp_varbind_t *vb, void *userdata)
+{
+    int *counter = (int *)userdata;
+
+    if (vb == NULL)
+    {
+        ERROR("%s: zero varbind ptr passed!", __FUNCTION__);
+        return ETEWRONGPTR;
+    }
+    INFO("%s: oid %s received, type %d(%s), len %d", 
+         __FUNCTION__, print_oid(&vb->name), 
+         vb->type, tapi_snmp_val_type_h2str(vb->type), vb->v_len);
+
+    if (counter != NULL)
+        *counter++;
+
+    return 0;
+}
 
 int
 main(int argc, char *argv[])
@@ -56,13 +75,13 @@ main(int argc, char *argv[])
     int err;
     int snmp_version;
     const char *ta;
-    const char *mib_object;
+    const char *mib_table;
     const char *mib_name;
     const char *snmp_agt;
 
     TEST_START;
     TEST_GET_STRING_PARAM(ta);
-    TEST_GET_STRING_PARAM(mib_object);
+    TEST_GET_STRING_PARAM(mib_table);
     TEST_GET_STRING_PARAM(mib_name);
     TEST_GET_STRING_PARAM(snmp_agt);
     TEST_GET_INT_PARAM(snmp_version);
@@ -77,10 +96,10 @@ main(int argc, char *argv[])
     }
 
     do {
-        tapi_snmp_varbind_t vb;
         tapi_snmp_oid_t oid;
+
         int timeout = 30;
-        int value;
+        int number;
 
         rc = tapi_snmp_csap_create(ta, sid, snmp_agt, "public", 
                                    snmp_version, &snmp_csap); 
@@ -93,35 +112,16 @@ main(int argc, char *argv[])
                                                 mib_name)) != 0)
             TEST_FAIL("snmp_load_mib(%s) failed, rc %x\n", mib_name, rc);
 
-        if ((rc = tapi_snmp_make_oid(mib_object, &oid)) != 0)
+        if ((rc = tapi_snmp_make_oid(mib_table, &oid)) != 0)
             TEST_FAIL("tapi_snmp_make_oid() failed, rc %x\n", rc);
 
-        rc = tapi_snmp_get(ta, sid, snmp_csap, &oid, TAPI_SNMP_NEXT,
-                           &vb, &err);
+        number = 0;
+        rc = tapi_snmp_walk(ta, sid, snmp_csap, &oid, &number, walk_cb);
+
         if (rc)
-            TEST_FAIL("SNMP GET NEXT failed with rc %X", rc);
+            TEST_FAIL("SNMP WALK failed with rc %X", rc); 
 
-        INFO("getnext for object %s got oid %s",
-             mib_object, print_oid(&oid));
-
-
-        oid = vb.name;
-        rc = tapi_snmp_get(ta, sid, snmp_csap, &oid, TAPI_SNMP_EXACT,
-                           &vb, &err);
-        if (rc)
-            TEST_FAIL("SNMP GET failed with rc %X", rc);
-
-        INFO("get for object %s got oid %s", mib_object, print_oid(&oid));
-
-        oid.length = 1;
-        oid.id[0] = 0; 
-        value = 0;
-        rc = tapi_snmp_get_row(ta, sid, snmp_csap, &oid, "ifNumber",
-                               &value, NULL);
-        if (rc)
-            TEST_FAIL("SNMP get_row method failed with rc %X", rc);
-
-        INFO("get row for ifNumber got value %d", value); 
+        INFO("SNMP walk passed, got %d varbinds", number);
 
     } while(0);
 

@@ -28,6 +28,9 @@
             </arg>
             <arg name="mib_object">
                 <value>sysDescr</value>
+                <value>sysObjectID</value>
+                <value>ifNumber</value>
+                <value>ifType</value>
             </arg>
         </run>
 
@@ -40,6 +43,23 @@
             <arg name="snmp_version"/>
             <arg name="mib_name">
                 <value>SNMPv2-MIB.txt</value>
+            </arg>
+        </run>
+
+        <run>
+            <script name="walk">
+                <req id="TAD_SNMP"/>
+            </script>
+            <arg name="ta"/>
+            <arg name="snmp_agt"/>
+            <arg name="snmp_version"/>
+            <arg name="mib_name">
+                <value>SNMPv2-MIB.txt</value>
+            </arg>
+            <arg name="mib_table">
+                <value>ifTable</value>
+                <value>atTable</value>
+                <value>ipAddrTable</value>
             </arg>
         </run>
     </session>
