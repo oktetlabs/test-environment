@@ -33,7 +33,7 @@
 #endif
 
 /* To get obstack_printf() definition, it must help, but does not work :( */
-#define __USE_GNU
+#define _GNU_SOURCE
 #include <stdio.h>
 
 #if HAVE_TIME_H
