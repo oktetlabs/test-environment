@@ -1658,7 +1658,8 @@ tester_run_config(tester_ctx *ctx, tester_cfg *cfg)
     /*
      * Process options. Put options in appropriate context.
      */
-    WARN("Options in Tester configuration files are ignored.");
+    if (cfg->options.tqh_first != NULL)
+        WARN("Options in Tester configuration files are ignored.");
 
     /*
      * Run all listed tests.
