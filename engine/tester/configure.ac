@@ -30,15 +30,12 @@ fi
 AC_MSG_CHECKING(for libxml2 library)
 if ${XML_CONFIG} --libs print >/dev/null 2>&1
 then
-    XML2_LIBS="$XML2_LIBS `$XML_CONFIG --libs`"
-    XML2_CFLAGS="$XML2_CFLAGS `$XML_CONFIG --cflags`"
+    CFLAGS=${CFLAGS}" "`$XML_CONFIG --cflags`
+    LIBS=${LIBS}" "`$XML_CONFIG --libs`
     AC_MSG_RESULT(found)
 else
     AC_MSG_ERROR([Could not find libxml2 anywhere, check ftp://xmlsoft.org/.])
 fi
-
-AC_SUBST(XML2_CFLAGS)
-AC_SUBST(XML2_LIBS)
 
 
 AC_SUBST(TE_CFLAGS)
@@ -52,7 +49,6 @@ AC_ARG_VAR(TE_LDADD)
 AC_ARG_VAR(TE_DEPENDENCIES)
 
 CFLAGS=${CFLAGS}" "${TE_CFLAGS}
-CPPFLAGS=${CPPFLAGS}" "${TE_CFLAGS}
 
 
 AM_CONFIG_HEADER(config.h)
@@ -67,6 +63,8 @@ sys/wait.h \
 sys/queue.h \
 popt.h \
 ])
+
+AC_CHECK_TYPES([xmlError], [], [], [#include <libxml/xmlerror.h>])
 
 
 AC_CONFIG_FILES(Makefile)

@@ -1728,7 +1728,9 @@ parse_test_package(tester_cfg *cfg, test_package *pkg)
 {
     xmlParserCtxtPtr    parser;
     xmlDocPtr           doc;
+#if HAVE_XMLERROR
     xmlError           *err;
+#endif
     test_package       *cur_pkg_save;
     int                 rc;
 
@@ -1751,9 +1753,14 @@ parse_test_package(tester_cfg *cfg, test_package *pkg)
                                XML_PARSE_XINCLUDE |
                                XML_PARSE_NONET)) == NULL)
     {
+#if HAVE_XMLERROR
         err = xmlCtxtGetLastError(parser);
         ERROR("Error occured during parsing Test Package file:\n"
               "    %s:%d\n    %s", pkg->path, err->line, err->message);
+#else
+        ERROR("Error occured during parsing Test Package file:\n"
+              "%s", pkg->path);
+#endif
         xmlFreeParserCtxt(parser);
         return EINVAL;
     }
@@ -1793,7 +1800,9 @@ tester_parse_config(tester_cfg *cfg, const tester_ctx *ctx)
 {
     xmlParserCtxtPtr    parser;
     xmlDocPtr           doc;
+#if HAVE_XMLERROR
     xmlError           *err;
+#endif
     int                 rc;
 
     if (cfg->filename == NULL)
@@ -1812,9 +1821,14 @@ tester_parse_config(tester_cfg *cfg, const tester_ctx *ctx)
                                XML_PARSE_XINCLUDE |
                                XML_PARSE_NONET)) == NULL)
     {
+#if HAVE_XMLERROR
         err = xmlCtxtGetLastError(parser);
         ERROR("Error occured during parsing configuration file:\n"
               "    %s:%d\n    %s", cfg->filename, err->line, err->message);
+#else
+        ERROR("Error occured during parsing configuration file:\n"
+              "%s", cfg->filename);
+#endif
         xmlFreeParserCtxt(parser);
         return EINVAL;
     }
