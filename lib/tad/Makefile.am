@@ -40,6 +40,15 @@ mypkgdir=$(libdir)/pkgconfig
 mypkg_DATA = te-@with_name@.pc
 CLEANFILES = te-@with_name@.pc
 
+te-@with_name@.pc:
+	echo -n -e "\
+	Name: te-$(with_name)\n\
+	Description: Traffic Application Domain for TE\n\
+	Version: $(PACKAGE_VERSION)\n\
+	Requires:\n\
+	Libs: $(TA_TAD_LIBS)\n\
+	Cflags: \n" > $@
+
 install-exec-hook:
 	touch -c -r lib@with_name@.a $(DESTDIR)/$(prefix)/lib/lib@with_name@.a
 

@@ -141,6 +141,7 @@ AC_ARG_WITH([cli],,
 AC_SUBST([TAD_LIBLIST])
 AC_SUBST([TAD_SUBDIRS])
 AC_SUBST([TAD_CH_DEFS])
+AC_SUBST([TA_TAD_LIBS])
 
 AM_CONDITIONAL(DUMMY_TAD, test -z "$TAD_LIBLIST")
 
@@ -164,16 +165,6 @@ fi
 if test x$w_eth = xtrue; then 
     AC_CHECK_HEADERS([netinet/ether.h])
 fi
-
-
-cat > te-$with_name.pc <<EOF
-Name: te-$with_name
-Description: Traffic Application Domain for TE
-Version: $PACKAGE_VERSION
-Requires:
-Libs: $TA_TAD_LIBS
-Cflags: 
-EOF
 
 AC_SUBST([NET_SNMP_CFLAGS])
 AC_SUBST([NET_SNMP_LIBS])
