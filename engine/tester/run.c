@@ -1382,7 +1382,7 @@ iterate_test(tester_ctx *ctx, run_item *test,
     const char             *run_item_name = test->name;
     const char             *test_name = tester_run_item_name(test);
 
-    RING("iterate=%u", test->iterate);
+    ENTRY("iterate=%u", test->iterate);
 
     if ((run_item_name != NULL || test_name != NULL) &&
         (ctx->path->paths.tqh_first != NULL))
