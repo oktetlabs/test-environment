@@ -83,7 +83,7 @@
  * second one is a TCP port.
  */
 
-#define RCFUNIX_SSH     "ssh -q -o BatchMode=yes -o ConnectTimeout=10 "
+#define RCFUNIX_SSH     "ssh -q -o BatchMode=yes -o ConnectTimeout=20 "
 
 #define RCFUNIX_SHELL_CMD_MAX   2048
 
@@ -109,6 +109,62 @@ typedef struct unix_ta {
     
     struct rcf_net_connection *conn;  /**< Connection handle */
 } unix_ta;
+
+/**
+ * Execute the command without forever blocking.
+ *
+ * @param cmd           command to be executed
+ * @param timeout       timeout in seconds
+ *
+ * @return 0 (success) or -1 (failure)
+ */   
+static int
+system_with_timeout(char *cmd, int timeout)
+{
+    FILE *f = popen(cmd, "r");
+    int   fd;
+    char  buf[64] = { 0, };
+    
+    if (f == NULL)
+    {
+        ERROR("popen() for the command <%s> failed", cmd);
+        return -1;
+    }
+    fd = fileno(f);
+    
+    while (1)
+    {
+        struct timeval tv;
+        fd_set set;
+        
+        tv.tv_sec = timeout;
+        tv.tv_usec = 0;
+        
+        FD_ZERO(&set);
+        FD_SET(fd, &set);
+        
+        if (select(fd + 1, &set, 0, 0, &tv) == 0)
+        {
+            ERROR("Command <%s> timed out", cmd);
+            return -1;
+        }
+        
+        if (read(fd, buf, sizeof(buf)) == 0)
+        {
+            int rc = pclose(f);
+            
+            if (rc != 0)
+            {
+                ERROR("Command <%s> failed with return code %d", cmd, rc);
+                return -1;
+            }
+            return 0;
+        }
+    }
+    
+    /* Unreachable */
+    return -1;
+}
 
 
 /**
@@ -270,12 +326,12 @@ rcfunix_start(char *ta_name, char *ta_type, char *conf_str,
          * Be quite, but DO NOT suppress command output in order
          * to have to see possible problems.
          */
-        sprintf(cmd, "scp -o ConnectTimeout=2 -Bpq %s %s:/tmp/%s",
+        sprintf(cmd, "scp -o ConnectTimeout=20 -Bpq %s %s:/tmp/%s",
                 path, ta->host, ta->exec_name);
     }
 
     VERB("Copy image '%s' to the %s:/tmp", ta->exec_name, ta->host);
-    if (!(*flags & TA_FAKE) && system(cmd) != 0)
+    if (!(*flags & TA_FAKE) && system_with_timeout(cmd, 10) != 0)
     {
         ERROR("Failed to copy TA image %s to the %s:/tmp",
               ta->exec_name, ta->host);
@@ -323,11 +379,8 @@ rcfunix_start(char *ta_name, char *ta_type, char *conf_str,
     free(dup);
 
     VERB("Command to start TA: %s", cmd);
-    if (!(*flags & TA_FAKE) && (system(cmd) != 0))
-    {
-        ERROR("Command '%s' failed", cmd);
+    if (!(*flags & TA_FAKE) && (system_with_timeout(cmd, 5) != 0))
         return ETESHCMD;
-    }
 
     *handle = (rcf_talib_handle)ta;
 
@@ -362,6 +415,8 @@ rcfunix_reboot(rcf_talib_handle handle, char *parms)
 
     (void)parms;
     
+    RING("Reboot method is called for TA %s", ta->ta_name);
+    
     if (ta->flags & TA_FAKE)
     {
         free(ta);
@@ -379,11 +434,11 @@ rcfunix_reboot(rcf_talib_handle handle, char *parms)
         {
             sprintf(cmd, RCFUNIX_SSH " %s \"%skill %d\" >/dev/null 2>&1",
                     ta->host, ta->sudo ? "sudo " : "" , ta->pid);
-            system(cmd);
+            system_with_timeout(cmd, 5);
     
             sprintf(cmd, RCFUNIX_SSH " %s \"%skill -9 %d\" >/dev/null 2>&1",
                     ta->host, ta->sudo ? "sudo " : "" , ta->pid);
-            system(cmd);
+            system_with_timeout(cmd, 5);
         }
     }
 
@@ -393,7 +448,7 @@ rcfunix_reboot(rcf_talib_handle handle, char *parms)
     else
         sprintf(cmd, RCFUNIX_SSH " %s \"%skillall %s\" >/dev/null 2>&1",
                 ta->host, ta->sudo ? "sudo " : "" , ta->exec_name);
-    system(cmd);
+    system_with_timeout(cmd, 5);
 
     if (ta->is_local)
         sprintf(cmd, "%skillall -9 %s >/dev/null 2>&1",
@@ -401,14 +456,14 @@ rcfunix_reboot(rcf_talib_handle handle, char *parms)
     else
         sprintf(cmd, RCFUNIX_SSH " %s \"%skillall -9 %s\" >/dev/null 2>&1",
                 ta->host, ta->sudo ? "sudo " : "" , ta->exec_name);
-    system(cmd);
+    system_with_timeout(cmd, 5);
 
     if (ta->is_local)
         sprintf(cmd, "rm -f /tmp/%s", ta->exec_name);
     else
         sprintf(cmd, RCFUNIX_SSH " %s \"rm -f /tmp/%s\"",
                 ta->host, ta->exec_name);
-    system(cmd);
+    system_with_timeout(cmd, 5);
 
     free(ta);
 
