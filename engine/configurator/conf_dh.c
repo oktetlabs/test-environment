@@ -28,28 +28,18 @@
  */
 
 #include "conf_defs.h"
-
-/* Release memory allocated for dynamic history entry */
-#define FREE_ENTRY(_entry) \
-    do {                                                    \
-        if (_entry->type != CVT_NONE)                       \
-            cfg_types[_entry->type].free(_entry->old_val);  \
-                                                            \
-        if (_entry->backup != NULL)                         \
-            free(_entry->backup);                           \
-                                                            \
-        if (_entry->old_oid != NULL)                        \
-            free(_entry->old_oid);                          \
-        free(_entry->cmd);                                  \
-        free(_entry);                                       \
-    } while (0)
-
+  
+/** Backup descriptor */  
+typedef struct cfg_backup {
+    struct cfg_backup *next;     /**< Next backup associated with this point */
+    char              *filename; /**< backup filename */
+} cfg_backup;    
 
 /** Configurator dynamic history entry */
 typedef struct cfg_dh_entry {
     struct cfg_dh_entry *next;    /**< Link to the next entry */
     struct cfg_dh_entry *prev;    /**< Link to the previous entry */
-    char                *backup;  /**< Name of the backup file or NULL */
+    cfg_backup          *backup;  /**< List of associated backups */
     cfg_msg             *cmd;     /**< Register, add, delete or set command */
     char                *old_oid; /**< OID for delete reversing */
     cfg_val_type         type;    /**< Type of the old_val */
@@ -59,6 +49,35 @@ typedef struct cfg_dh_entry {
 static cfg_dh_entry *first = NULL;
 static cfg_dh_entry *last = NULL;
 
+
+/** Release memory allocated for backup list */
+static inline void
+free_entry_backup(cfg_dh_entry *entry)
+{
+    cfg_backup *tmp;                                                 
+                                                                     
+    for (tmp = entry->backup; tmp != NULL; tmp = entry->backup) 
+    {                                                                
+        entry->backup = entry->backup->next;                       
+        free(tmp->filename);                                        
+        free(tmp);                                                  
+    }                                                                
+} 
+
+/** Release memory allocated for dynamic history entry */
+static inline void
+free_dh_entry(cfg_dh_entry *entry)
+{
+    if (entry->type != CVT_NONE)                       
+        cfg_types[entry->type].free(entry->old_val);  
+                                                        
+    free_entry_backup(entry);                          
+                                                        
+    if (entry->old_oid != NULL)                        
+        free(entry->old_oid);                          
+    free(entry->cmd);                                  
+    free(entry);                                       
+}
 
 /**
  * Skip 'comment' nodes.
@@ -586,13 +605,37 @@ cfg_dh_create_file(char *filename)
 int 
 cfg_dh_attach_backup(char *filename)
 {
+    cfg_backup *tmp;
+    
     if (last == NULL)
         return ENOENT;
         
-    if ((last->backup = strdup(filename)) == NULL)
+    if ((tmp = (cfg_backup *)malloc(sizeof(*tmp))) == NULL)
         return ENOMEM;
         
+    if ((tmp->filename = strdup(filename)) == NULL)
+    {
+        free(tmp);
+        return ENOMEM;
+    }
+    
+    tmp->next = last->backup;
+    last->backup = tmp;
+        
     return 0;
+}
+
+/** Returns TRUE, if backup with specified name is associated with DH entry */
+static te_bool
+has_backup(cfg_dh_entry *entry, char *filename)
+{
+    cfg_backup *tmp;
+    
+    for (tmp = entry->backup; 
+         tmp != NULL && strcmp(tmp->filename, filename) != 0;
+         tmp = tmp->next);
+         
+    return tmp != NULL;
 }
 
 /**
@@ -622,7 +665,7 @@ cfg_dh_restore_backup(char *filename)
     if (filename != NULL)
     {
         for (limit = first; limit != NULL; limit = limit->next)
-            if (limit->backup != NULL && strcmp(limit->backup, filename) == 0)
+            if (limit->backup != NULL && has_backup(limit, filename) == 0)
                 break;
             
         if (limit == NULL)
@@ -735,7 +778,7 @@ cfg_dh_restore_backup(char *filename)
                 break;
             }
         }
-        FREE_ENTRY(tmp);
+        free_dh_entry(tmp);
         if (prev != NULL)
             prev->next = NULL;
         last = prev;
@@ -869,11 +912,7 @@ cfg_dh_add_command(cfg_msg *msg)
     if (msg->type == CFG_REBOOT)
     {
         for (entry = first; entry != NULL; entry = entry->next)
-            if (entry->backup != NULL)
-            {
-                free(entry->backup);
-                entry->backup = NULL;
-            }
+            free_entry_backup(entry);
     }
 
     return 0;
@@ -906,7 +945,7 @@ cfg_dh_delete_last_command(void)
         last = prev;
     }
 
-    FREE_ENTRY(tmp);
+    free_dh_entry(tmp);
 }
 
 /**
@@ -920,7 +959,7 @@ cfg_dh_destroy(void)
     for (tmp = first; tmp != NULL; tmp = next)
     {
         next = tmp->next;
-        FREE_ENTRY(tmp);
+        free_dh_entry(tmp);
     }
     
     last = first = NULL;
@@ -1005,7 +1044,7 @@ cfg_dh_optimize(void)
          for (; tmp != NULL; tmp = tmp_del)
          {
              tmp_del = tmp->next;
-             FREE_ENTRY(tmp);
+             free_dh_entry(tmp);
          }
     }
 
@@ -1034,7 +1073,7 @@ cfg_dh_optimize(void)
             else
                 first = tmp->next;
             tmp->next->prev = tmp->prev;
-            FREE_ENTRY(tmp);
+            free_dh_entry(tmp);
             tmp = next;
         }
         else
