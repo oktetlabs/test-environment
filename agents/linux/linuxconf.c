@@ -1840,7 +1840,10 @@ arp_del(unsigned int gid, const char *oid,
     if (ioctl(s, SIOCDARP, &arp_req) < 0)
     {
         ERROR("ioctl(SIOCDARP) failed: %s", strerror(errno));
-        return TE_RC(TE_TA_LINUX, errno);
+        if (errno == ENXIO || errno == ENETDOWN || errno == ENETUNREACH)
+            return TE_RC(TE_TA_LINUX, ENOENT);
+        else            
+            return TE_RC(TE_TA_LINUX, errno);
     }
 
     return 0;
