@@ -2073,8 +2073,7 @@ arp_fl_h2rpc(int flags)
 
 /** TA-independent Winsock Error codes */
 typedef enum rpc_win_error {
-    RPC_WINERROR_UNKNOWN,
-    RPC_WSAEACCES,
+    RPC_WSAEACCES = 1,
     RPC_WSAEFAULT,
     RPC_WSAEINVAL,
     RPC_WSAEMFILE,
@@ -2124,8 +2123,8 @@ typedef enum rpc_win_error {
     RPC_WSA_OPERATION_ABORTED,
     RPC_WSAEINVALIDPROCTABLE,
     RPC_WSAEINVALIDPROVIDER,
-    RPC_WSAEPROVIDERFAILEDINIT
-    
+    RPC_WSAEPROVIDERFAILEDINIT,
+    RPC_WINERROR_UNKNOWN
 } rpc_win_error;
 
 
