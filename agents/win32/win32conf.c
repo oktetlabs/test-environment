@@ -55,7 +55,7 @@ static char  buf[2048] = {0, };
 
 /* Fast conversion of the network mask to prefix */
 #define MASK2PREFIX(mask, prefix)            \
-    switch (mask)                            \
+    switch (ntohl(mask))                     \
     {                                        \
         case 0x0: prefix = 0; break;         \
         case 0x80000000: prefix = 1; break;  \
@@ -95,7 +95,7 @@ static char  buf[2048] = {0, };
     }
 
 /* Fast conversion of the prefix to network mask */
-#define PREFIX2MASK(prefix) (prefix == 0 ? 0 : (~0) << (32 - (prefix)))
+#define PREFIX2MASK(prefix) htonl(prefix == 0 ? 0 : (~0) << (32 - (prefix)))
 
 /* TA name pointer */
 extern char *ta_name;
@@ -192,6 +192,9 @@ RCF_PCH_CFG_NODE_COLLECTION(node_interface, "interface",
 RCF_PCH_CFG_NODE_AGENT(node_agent, &node_interface);
 
 static MIB_IFROW if_entry;
+
+//#undef ERROR
+//#define ERROR(_msg...) do { printf(_msg); printf("\n"); fflush(stdout); } while (0)
 
 /** Update information in if_entry. Local variable ifname should exist */
 #define GET_IF_ENTRY \
@@ -514,6 +517,7 @@ net_addr_list(unsigned int gid, const char *oid, char **list,
 {
     MIB_IPADDRTABLE *table;
     int              i;
+    char            *s = buf;
     
     UNUSED(gid);
     UNUSED(oid);
@@ -535,15 +539,15 @@ net_addr_list(unsigned int gid, const char *oid, char **list,
         if (table->table[i].dwIndex != if_entry.dwIndex)
             continue;
         
-        sprintf("%s ", 
-                inet_ntoa(*(struct in_addr *)&(table->table[i].dwAddr)));
+        s += sprintf(s, "%s ", 
+                     inet_ntoa(*(struct in_addr *)&(table->table[i].dwAddr)));
     }
 
     free(table);
 
     if ((*list = strdup(buf)) == NULL)
         return TE_RC(TE_TA_WIN32, ENOMEM);
-
+        
     return 0;
 }
 
@@ -673,10 +677,10 @@ link_addr_get(unsigned int gid, const char *oid, char *value,
     GET_IF_ENTRY;
     
     if (if_entry.dwPhysAddrLen != 6)
-        return TE_RC(TE_TA_WIN32, ETENOSUCHNAME);
-
-    snprintf(value, RCF_MAX_VAL, "%02x:%02x:%02x:%02x:%02x:%02x",
-             ptr[0], ptr[1], ptr[2], ptr[3], ptr[4], ptr[5]);
+        snprintf(value, RCF_MAX_VAL, "00:00:00:00:00:00");
+    else
+        snprintf(value, RCF_MAX_VAL, "%02x:%02x:%02x:%02x:%02x:%02x",
+                 ptr[0], ptr[1], ptr[2], ptr[3], ptr[4], ptr[5]);
     
     return 0;
 }
@@ -1005,6 +1009,7 @@ arp_list(unsigned int gid, const char *oid, char **list)
 {
     MIB_IPNETTABLE *table;
     int             i;
+    char           *s = buf;
     
     UNUSED(gid);
     UNUSED(oid);
@@ -1024,15 +1029,15 @@ arp_list(unsigned int gid, const char *oid, char **list)
     {
         if (table->table[i].dwPhysAddrLen != 6 || table->table[i].dwType < 3)
             continue;
-        sprintf("%s ", 
-                inet_ntoa(*(struct in_addr *)&(table->table[i].dwAddr)));
+        s += sprintf(s, "%s ", 
+                     inet_ntoa(*(struct in_addr *)&(table->table[i].dwAddr)));
     }
 
     free(table);
 
     if ((*list = strdup(buf)) == NULL)
         return TE_RC(TE_TA_WIN32, ENOMEM);
-
+        
     return 0;
 }
 
@@ -1278,10 +1283,11 @@ route_list(unsigned int gid, const char *oid, char **list)
 {
     MIB_IPFORWARDTABLE *table;
     int                 i;
+    char               *s = buf;
     
     UNUSED(gid);
     UNUSED(oid);
-    
+
     GET_TABLE(MIB_IPFORWARDTABLE, GetIpForwardTable);
     if (table == NULL)
     {
@@ -1298,9 +1304,9 @@ route_list(unsigned int gid, const char *oid, char **list)
         int prefix;
         
         MASK2PREFIX(table->table[i].dwForwardMask, prefix);
-        sprintf("%s:%d ", 
-                inet_ntoa(*(struct in_addr *)&(table->table[i].dwForwardDest)),
-                prefix);
+        s += sprintf(s, "%s|%d ", 
+                     inet_ntoa(*(struct in_addr *)&(table->table[i].
+                                                    dwForwardDest)), prefix);
     }
 
     free(table);
