@@ -74,7 +74,7 @@ int
 main(void)
 {
     const char         *name = "confshutdown_client";
-    struct ipc_client  *ipcc;
+    struct ipc_client  *ipcc = NULL;
     cfg_shutdown_msg    msg = { CFG_SHUTDOWN, sizeof(msg), 0 };
     size_t              anslen = sizeof(msg);
     int                 result = EXIT_SUCCESS;
@@ -82,9 +82,9 @@ main(void)
 
     signal(SIGINT, sigint_handler);
 
-    if ((ipcc = ipc_init_client(name)) == NULL)
+    if ((rc = ipc_init_client(name, &ipcc)) != 0)
     {
-        ERROR("Failed to initialize IPC client: %s", name);
+        ERROR("Failed to initialize IPC client '%s': %X", name, rc);
         return EXIT_FAILURE;
     }
 

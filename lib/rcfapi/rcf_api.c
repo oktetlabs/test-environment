@@ -493,18 +493,29 @@ get_ctx_handle(te_bool create)
 #endif
     if (handle == NULL && create)
     {
+        int  rc;
         char name[RCF_MAX_NAME];
+
         handle = calloc(1, sizeof(*handle));
+        if (handle == NULL)
+        {
+            ERROR("%s(): calloc(1, %u) failed",
+                  __FUNCTION__, sizeof(*handle));
+            return NULL;
+        }
 
         sprintf(name, "rcf_client_%u_%u", (unsigned int)getpid(), 
                 (unsigned int)pthread_self());
-               
-        if ((handle->ipc_handle = ipc_init_client(name)) == NULL)
+
+        rc = ipc_init_client(name, &(handle->ipc_handle));
+        if (rc != 0)
         {
             ERROR("ipc_init_client() failed\n");
             fprintf(stderr, "ipc_init_client() failed\n");
             return NULL;
         }
+        assert(handle->ipc_handle != NULL);
+
         CIRCLEQ_INIT(&handle->msg_buf_head);
 #ifdef HAVE_PTHREAD_H
         if (pthread_setspecific(key, (void *)handle) != 0)
@@ -544,8 +555,9 @@ static struct {
 thread_ctx_t *
 get_ctx_handle(te_bool create)
 {
-    pthread_t mine = pthread_self();
-    int       i;
+    pthread_t   mine = pthread_self();
+    int         i;
+    int         rc;
     
     pthread_mutex_lock(&rcf_lock);
     for (i = 0; i < RCF_MAX_THREADS; i++)
@@ -570,13 +582,15 @@ get_ctx_handle(te_bool create)
                 snprintf(name, RCF_MAX_NAME, "rcf_client_%u_%u",
                          (unsigned int)getpid(), (unsigned int)mine);
                    
-                if ((handles[i].handle.ipc_handle =
-                     ipc_init_client(name)) == NULL)
+                rc = ipc_init_client(name,
+                                     &(handles[i].handle.ipc_handle));
+                if (rc != 0)
                 {
                     pthread_mutex_unlock(&rcf_lock);
                     fprintf(stderr, "ipc_init_client() failed\n");
                     return NULL;
                 }
+                assert(handles[i].handle.ipc_handle != NULL);
                 CIRCLEQ_INIT(&(handles[i].handle.msg_buf_head));
                 pthread_mutex_unlock(&rcf_lock);
                 return &(handles[i].handle);

@@ -1218,8 +1218,9 @@ main(int argc, char **argv)
     int rc = 1;
 
     ipc_init();
-    if ((server = ipc_register_server(CONFIGURATOR_SERVER)) == NULL)
+    if (ipc_register_server(CONFIGURATOR_SERVER, &server) != 0)
         goto error;
+    assert(server != NULL);
 
     VERB("Starting...");
 

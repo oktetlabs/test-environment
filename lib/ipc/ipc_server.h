@@ -31,9 +31,10 @@
 #ifndef __TE_IPC_SERVER_H__
 #define __TE_IPC_SERVER_H__
 
-#ifdef HAVE_SYS_TYPES_H
+#if HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -56,8 +57,7 @@ typedef struct ipc_server_client ipc_server_client;
  * other functions in the IPC server library. This function must be
  * called only once.
  *
- * @retval 0        - success
- * @retval errno    - failure
+ * @return Status code.
  */
 extern int ipc_init(void);
 
@@ -65,18 +65,20 @@ extern int ipc_init(void);
 /**
  * Register IPC server.
  *
- * @param name  - name of the server (must be less than UNIX_PATH_MAX)
+ * @param name          Name of the server (must be less than UNIX_PATH_MAX)
+ * @param p_ipcs        Location for IPC server handle
  *
- * @return Pointer to the ipc_server structure, or NULL, if error occured.
+ * @return Status code.
  */
-extern struct ipc_server *ipc_register_server(const char *name);
+extern int ipc_register_server(const char *name,
+                               struct ipc_server **p_ipcs);
 
 
 /**
  * Get a file descriptor of the server.
  *
- * @param ipcs  - pointer to the ipc_server structure returned by
- *                ipc_register_server().
+ * @param ipcs          Pointer to the ipc_server structure returned
+ *                      by ipc_register_server().
  *
  * @return IPC server file descriptor.
  *
@@ -89,25 +91,25 @@ extern int ipc_get_server_fd(const struct ipc_server *ipcs);
 /**
  * Receive a message from IPC client.
  *
- * @param ipcs          - pointer to the ipc_server structure returned
- *                        by ipc_register_server()
- * @param buf           - buffer for the message
- * @param p_buf_len     - pointer to the variable to store:
+ * @param ipcs          Pointer to the ipc_server structure returned
+ *                      by ipc_register_server()
+ * @param buf           Buffer for the message
+ * @param p_buf_len     Pointer to the variable to store:
  *                          on entry - length of the buffer,
  *                          on exit - length of the received message
- *                                    (or full length of the message if
- *                                     ETESMALLBUF returned).
- * @param p_ipcsc       - location for the pointer to ipc_server_client()
- *                        structure.  This variable will point to internal
- *                        IPC library data, user MUST NOT free it.
+ *                                    (or the rest length of the message
+ *                                     if ETESMALLBUF returned).
+ * @param p_ipcsc       Location for the pointer to ipc_server_client()
+ *                      structure.  This variable will point to internal
+ *                      IPC library data, user MUST NOT free it.
  *
  * @return Status code.
  *
- * @retval 0            - success
- * @retval ETESMALLBUF  - buffer is too small for the message, the rest
- *                        of the message can be received by
- *                        ipc_receive_rest_message()
- * @retval errno        - other failure
+ * @retval 0            Success
+ * @retval ETESMALLBUF  Buffer is too small for the message, the rest
+ *                      of the message can be received by
+ *                      ipc_receive_rest_message()
+ * @retval errno        Other failure
  */
 extern int ipc_receive_message(struct ipc_server *ipcs,
                                void *buf, size_t *p_buf_len,
@@ -115,48 +117,16 @@ extern int ipc_receive_message(struct ipc_server *ipcs,
 
 
 /**
- * Receive the rest of the message from IPC client.
- *
- * @param ipcs          - pointer to the ipc_server structure returned
- *                        by ipc_register_server()
- * @param buf           - buffer for the message
- * @param p_buf_len     - pointer to the variable to store:
- *                          on entry - length of the buffer;
- *                          on exit - length of the received message
- *                                    (or full length of the message if
- *                                     ETESMALLBUF returned).
- * @param ipcsc         - pointer to the ipc_server_client structure
- *                        returned by the ipc_receive_message()
- *                        function
- *
- * @return Status code.
- *
- * @retval 0            - success
- * @retval ETESMALLBUF  - buffer is too small for the rest of the
- *                        message, the part of the message is written
- *                        to the buffer, the ipc_receive_rest_message
- *                        should be called again
- * @retval errno        - other failure
- */
-extern int ipc_receive_rest_message(struct ipc_server *ipcs,
-                                    void *buf, size_t *p_buf_len,
-                                    struct ipc_server_client *ipcsc);
-
-
-/**
  * Send an answer to the client.
  *
- * @param ipcs      - pointer to the ipc_server structure returned
- *                    by ipc_register_server()
- * @param ipcsc     - variable returned by ipc_receive_message() with
- *                    pointer ipc_server_client structure
- * @param msg       - pointer to message to send
- * @param msg_len   - length of the message to send
+ * @param ipcs          Pointer to the ipc_server structure returned
+ *                      by ipc_register_server()
+ * @param ipcsc         Variable returned by ipc_receive_message() with
+ *                      pointer ipc_server_client structure
+ * @param msg           Pointer to message to send
+ * @param msg_len       Length of the message to send
  *
  * @return Status code.
- *
- * @retval 0        - success
- * @retval errno    - failure
  */
 extern int ipc_send_answer(struct ipc_server *ipcs,
                            struct ipc_server_client *ipcsc,
@@ -166,13 +136,10 @@ extern int ipc_send_answer(struct ipc_server *ipcs,
 /**
  * Close the server. Free all resources allocated by the server.
  *
- * @param ipcs      - pointer to the ipc_server structure returned
- *                    by ipc_register_server()
+ * @param ipcs          Pointer to the ipc_server structure returned
+ *                      by ipc_register_server()
  *
  * @return Status code.
- *
- * @retval 0        - success
- * @retval errno    - failure
  */
 extern int ipc_close_server(struct ipc_server *ipcs);
 
@@ -181,8 +148,7 @@ extern int ipc_close_server(struct ipc_server *ipcs);
  * Close IPC library. No other IPC library functions except 
  * ipc_init() must be called after this function.
  *
- * @retval 0        - success
- * @retval errno    - failure
+ * @return Status code.
  */
 extern int ipc_kill(void);
 

@@ -50,30 +50,31 @@ typedef struct ipc_client ipc_client;
 /**
  * Initialize IPC library for the client.
  *
- * @param client_name   - unique name of the client (must be less than
- *                        UNIX_PATH_MAX)
+ * @param client_name   Unique name of the client (must be less than
+ *                      UNIX_PATH_MAX)
+ * @param p_client      Location for client handle
  *
- * @return Pointer to the ipc_client structure on success, or NULL
- *         on error.
+ * @return Status code.
  */
-extern struct ipc_client *ipc_init_client(const char *client_name);
+extern int ipc_init_client(const char *client_name,
+                           struct ipc_client **p_client);
 
 
 /**
  * Send the message to the server with specified name.
  *
- * @param ipcc          - pointer to the ipc_client structure returned
- *                        by ipc_init_client()
- * @param server_name   - name of the server, this name must be
- *                        registered by ipc_register_server()
- * @param msg           - pointer to message to send
- * @param msg_len       - length of the message to send
+ * @param ipcc          Pointer to the ipc_client structure returned
+ *                      by ipc_init_client()
+ * @param server_name   Name of the server, this name must be
+ *                      registered by ipc_register_server()
+ * @param msg           Pointer to message to send
+ * @param msg_len       Length of the message to send
  *
  *
  * @return Status code.
  *
- * @retval 0            - success
- * @retval errno        - failure
+ * @retval 0            Success
+ * @retval errno        Failure
  *
  * @todo
  *      It must NOT fail, if server has not been registered yet.
@@ -87,14 +88,14 @@ extern int ipc_send_message(struct ipc_client *ipcc,
  * Send the message to the server with specified name and wait for the
  * answer.
  *
- * @param ipcc          - pointer to the ipc_client structure returned
- *                        by ipc_init_client()
- * @param server_name   - name of the server, this name must be
- *                        registered by ipc_register_server().
- * @param msg           - pointer to message to send
- * @param msg_len       - length of the message to send
- * @param recv_buf      - pointer to the buffer for answer.
- * @param p_buf_len     - pointer to the variable to store:
+ * @param ipcc          Pointer to the ipc_client structure returned
+ *                      by ipc_init_client()
+ * @param server_name   Name of the server, this name must be
+ *                      registered by ipc_register_server().
+ * @param msg           Pointer to message to send
+ * @param msg_len       Length of the message to send
+ * @param recv_buf      Pointer to the buffer for answer.
+ * @param p_buf_len     Pointer to the variable to store:
  *                          on entry - length of the buffer;
  *                          on exit - length of the message received
  *                                    (or full length of the message
@@ -102,13 +103,13 @@ extern int ipc_send_message(struct ipc_client *ipcc,
  *
  * @return Status code.
  *
- * @retval 0            - success
- * @retval ETESMALLBUF  - receive buffer is too small for the message,
- *                        whole buffer is filled up, *p_buf_len
- *                        contains whole answer length,
- *                        ipc_receive_rest_answer() must be used to
- *                        receive the rest of the message.
- * @retval errno        - failure
+ * @retval 0            Success
+ * @retval ETESMALLBUF  Receive buffer is too small for the message,
+ *                      whole buffer is filled up, *p_buf_len
+ *                      contains whole answer length,
+ *                      ipc_receive_rest_answer() must be used to
+ *                      receive the rest of the message.
+ * @retval errno        Failure
  */
 extern int ipc_send_message_with_answer(struct ipc_client *ipcc,
                                         const char *server_name,
@@ -121,12 +122,12 @@ extern int ipc_send_message_with_answer(struct ipc_client *ipcc,
 /**
  * Receive (or wait for) the message from the server with specified name.
  *
- * @param ipcc          - pointer to the ipc_client structure returned
- *                        by ipc_init_client()
- * @param server_name   - name of the server, this name must be
- *                        registered by ipc_register_server()
- * @param buf           - pointer to the buffer for answer
- * @param p_buf_len     - pointer to the variable to store:
+ * @param ipcc          Pointer to the ipc_client structure returned
+ *                      by ipc_init_client()
+ * @param server_name   Name of the server, this name must be
+ *                      registered by ipc_register_server()
+ * @param buf           Pointer to the buffer for answer
+ * @param p_buf_len     Pointer to the variable to store:
  *                          on entry - length of the buffer;
  *                          on exit - length of the message received
  *                                    (or full length of the message
@@ -134,13 +135,13 @@ extern int ipc_send_message_with_answer(struct ipc_client *ipcc,
  *
  * @return Status code.
  *
- * @retval 0            - success
- * @retval ETESMALLBUF  - receive buffer is too small for the message,
- *                        whole buffer is filled up, *p_buf_len
- *                        contains whole answer length,
- *                        ipc_receive_rest_answer() must be used to
- *                        receive the rest of the message.
- * @retval errno        - failure
+ * @retval 0            Success
+ * @retval ETESMALLBUF  Receive buffer is too small for the message,
+ *                      whole buffer is filled up, *p_buf_len
+ *                      contains whole answer length,
+ *                      ipc_receive_rest_answer() must be used to
+ *                      receive the rest of the message.
+ * @retval errno        Failure
  */
 extern int ipc_receive_answer(struct ipc_client *ipcc,
                               const char *server_name,
@@ -150,12 +151,12 @@ extern int ipc_receive_answer(struct ipc_client *ipcc,
 /**
  * Receive the rest of the message from the server with specified name.
  *
- * @param ipcc          - pointer to the ipc_client structure returned
- *                        by ipc_init_client()
- * @param server_name   - name of the server, this name must be
- *                        registered by ipc_register_server()
- * @param buf           - pointer to the buffer for answer
- * @param p_buf_len     - pointer to the variable to store:
+ * @param ipcc          Pointer to the ipc_client structure returned
+ *                      by ipc_init_client()
+ * @param server_name   Name of the server, this name must be
+ *                      registered by ipc_register_server()
+ * @param buf           Pointer to the buffer for answer
+ * @param p_buf_len     Pointer to the variable to store:
  *                          on entry - length of the buffer;
  *                          on exit - length of the message received
  *                                    (or full length of the message
@@ -163,29 +164,28 @@ extern int ipc_receive_answer(struct ipc_client *ipcc,
  *
  * @return Status code.
  *
- * @retval 0            - success
- * @retval ETESMALLBUF  - receive buffer is too small for the message,
- *                        whole buffer is filled up, *p_buf_len
- *                        contains whole answer length,
- *                        ipc_receive_rest_answer() must be used to
- *                        receive the rest of the message.
- * @retval errno        - failure
+ * @retval 0            Success
+ * @retval ETESMALLBUF  Receive buffer is too small for the message,
+ *                      whole buffer is filled up, *p_buf_len
+ *                      contains whole answer length,
+ *                      ipc_receive_rest_answer() must be used to
+ *                      receive the rest of the message.
+ * @retval errno        Failure
  */
 extern int ipc_receive_rest_answer(struct ipc_client *ipcc,
                                    const char *server_name,
                                    void *buf, size_t *p_buf_len);
 
-
 /**
  * Close IPC client.
  *
- * @param ipcc      - pointer to the ipc_client structure returned
- *                    by ipc_init_client()
+ * @param ipcc          Pointer to the ipc_client structure returned
+ *                      by ipc_init_client()
  *
  * @return Status code.
  *
- * @retval 0        - success
- * @retval errno    - failure
+ * @retval 0            Success
+ * @retval errno        Failure
  */
 extern int ipc_close_client(struct ipc_client *ipcc);
 

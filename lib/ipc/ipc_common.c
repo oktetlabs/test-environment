@@ -57,7 +57,7 @@ ipc_remember_datagram(struct ipc_datagrams *p_pool, void *data, size_t len,
 
     p = calloc(1, sizeof(*p));
     if (p == NULL)
-        return ENOMEM;
+        return TE_RC(TE_IPC, ENOMEM);
 
     p->buffer = data;
     p->octets = len;

@@ -22,7 +22,8 @@
  * MA  02111-1307  USA
  *
  *
- * @author Andrey Ivanov <andron@oktetlabs.ru>
+ * @author Andrey Ivanov <andron@oktet.ru>
+ * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  *
  * $Id$
  */

@@ -2015,8 +2015,9 @@ main(int argc, char **argv)
     signal(SIGPIPE, sigpipe_handler);
 
     ipc_init();
-    if ((server = ipc_register_server(RCF_SERVER)) == NULL)
+    if (ipc_register_server(RCF_SERVER, &server) != 0)
         goto no_ipcs_error;
+    assert(server != NULL);
 
     FD_ZERO(&set0);
     server_fd = ipc_get_server_fd(server);

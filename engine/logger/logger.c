@@ -45,7 +45,10 @@
 #include "logger_internal.h"
 
 
-#define LGR_MAX_BUF 0x4000    /* FIXME */
+#define LGR_TA_MAX_BUF      0x4000 /* FIXME */
+
+/** Initial (minimum) Logger message buffer size */
+#define LGR_MSG_BUF_MIN     0x100
 
 #define FREAD(_fd, _buf, _len) \
     fread((_buf), sizeof(uint8_t), (_len), (_fd))
@@ -135,31 +138,84 @@ static void *
 te_handler(void)
 {
     char                        err_buf[BUFSIZ];
-    static struct ipc_server   *srv;
+    struct ipc_server          *srv = NULL;
     struct ipc_server_client   *ipcsc_p;
-    char                        buf[LGR_MAX_BUF];
     size_t                      buf_len;
+    char                       *buf;
+    size_t                      len;
+    int                         rc;
 
 
-    /* Register TEN server */
-    srv = ipc_register_server(LGR_SRV_NAME);
-    if (srv == NULL)
+    buf_len = LGR_MSG_BUF_MIN;
+    buf = malloc(buf_len);
+    if (buf == NULL)
     {
-        strerror_r(errno, err_buf, sizeof(err_buf));
-        ERROR("IPC server '%s' registration failed: %s\n",
-              LGR_SRV_NAME, err_buf);
+        ERROR("%s(): malloc() failed", __FUNCTION__);
         return NULL;
     }
+
+    /* Register TEN server */
+    rc = ipc_register_server(LGR_SRV_NAME, &srv);
+    if (rc != 0)
+    {
+        ERROR("IPC server '%s' registration failed: %X",
+              LGR_SRV_NAME, rc);
+        return NULL;
+    }
+    assert(srv != NULL);
     INFO("IPC server '%s' registered\n", LGR_SRV_NAME);
 
     while (TRUE) /* Forever loop */
     {
-        buf_len = LGR_MAX_BUF;
+        len = buf_len;
         ipcsc_p = NULL;
-        if (ipc_receive_message(srv, buf, &buf_len, &ipcsc_p) != 0)
+        rc = ipc_receive_message(srv, buf, &len, &ipcsc_p);
+        if (rc != 0)
         {
-            ERROR("Message receiving failure\n");
-            break;
+            size_t received;
+            size_t total;
+
+            if (rc != TE_RC(TE_IPC, ETESMALLBUF))
+            {
+                ERROR("Message receiving failure: %X", rc);
+                break;
+            }
+            
+            received = buf_len;
+            total = buf_len + len;
+            /* Increase buffer length until message does not fit in it */
+            do {
+                /* Double size of the buffer */
+                buf_len = buf_len << 1;
+            } while (buf_len < total);
+            
+            /* Reallocate the buffer */
+            buf = realloc(buf, buf_len);
+            if (buf == NULL)
+            {
+                ERROR("%s(): realloc(p, %u) failed",
+                      __FUNCTION__, buf_len);
+                break;
+            }
+
+            /* Receive the rest of the message */
+            len = buf_len - received;
+            rc = ipc_receive_message(srv, buf + received, &len, &ipcsc_p);
+            if (rc != 0)
+            {
+                ERROR("Failed to receive the rest of the message "
+                      "from client: %X", rc);
+                break;
+            }
+            if (received + len != total)
+            {
+                ERROR("Invalid length of the rest of the message "
+                      "in comparison with declared first: total=%u, "
+                      "first=%u, rest=%u", total, received, len);
+                break;
+            }
+            /* 'len' should contain full length of the message */
+            len = total;
         }
 
         if (strncmp((buf + sizeof(te_log_nfl_t)), LGR_SHUTDOWN,
@@ -201,7 +257,7 @@ te_handler(void)
 
             if (log_flag == LGR_INCLUDE)
 #endif
-                lgr_register_message(buf, buf_len);
+                lgr_register_message(buf, len);
         }
     } /* end of forever loop */
 
@@ -264,7 +320,7 @@ ta_handler(void *ta)
     /* TA and IPC server data and related variables */
     ta_inst            *inst = (ta_inst *)ta;
     char                srv_name[LGR_MAX_NAME] = LGR_SRV_FOR_TA_PREFIX;
-    struct ipc_server  *srv;
+    struct ipc_server  *srv = NULL;
     int                 fd_server;
     fd_set              rfds;
     int                 rc;
@@ -286,17 +342,18 @@ ta_handler(void *ta)
     char                log_file[RCF_MAX_PATH];
     struct stat         log_file_stat;
     FILE               *ta_file;
-    uint8_t             buf[LGR_MAX_BUF];
+    uint8_t             buf[LGR_TA_MAX_BUF];
 
 
     /* Register IPC Server for the TA */
     strcat(srv_name, inst->agent);
-    srv = ipc_register_server(srv_name);
-    if (srv == NULL)
+    rc = ipc_register_server(srv_name, &srv);
+    if (rc != 0)
     {
-        ERROR("Failed to register IPC server '%s'", srv_name);
+        ERROR("Failed to register IPC server '%s': %X", srv_name, rc);
         return NULL;
     }
+    assert(srv != NULL);
     fd_server = ipc_get_server_fd(srv);
 
     /* Do not allow to poll in flood mode */
@@ -655,7 +712,7 @@ main(int argc, char *argv[])
         memset(ta_names, 0, names_len * sizeof(char));
         res = rcf_get_ta_list(ta_names, &names_len);
 
-    } while (res == ETESMALLBUF);
+    } while (TE_RC_GET_ERROR(res) == ETESMALLBUF);
 
     if (res != 0)
     {

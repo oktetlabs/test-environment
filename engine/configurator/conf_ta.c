@@ -64,7 +64,7 @@ ta_list_init()
 
         free(cfg_ta_list);
         cfg_ta_list = NULL;
-        if (rc != ETESMALLBUF)
+        if (TE_RC_GET_ERROR(rc) != ETESMALLBUF)
             return rc;
 
         ta_list_size += TA_LIST_SIZE;
@@ -172,7 +172,7 @@ sync_ta_instance(char *ta, char *oid)
     while (TRUE)
     {
         rc = rcf_ta_cfg_get(ta, 0, oid, cfg_get_buf, cfg_get_buf_len);
-        if (rc == ETESMALLBUF)
+        if (TE_RC_GET_ERROR(rc) == ETESMALLBUF)
         {
             cfg_get_buf_len <<= 1;
 

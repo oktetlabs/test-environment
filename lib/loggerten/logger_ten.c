@@ -112,9 +112,8 @@ log_message_ipc(const void *msg, size_t len)
 {
     if (ipc_send_message(lgr_client, LGR_SRV_NAME, msg, len) != 0)
     {
-        fprintf(stderr, "Failed to send message to IPC server '%s': ",
-                LGR_SRV_NAME);
-        perror("");
+        fprintf(stderr, "Failed to send message to IPC server '%s': %s",
+                LGR_SRV_NAME, strerror(errno));
     }
 }
 
@@ -132,6 +131,7 @@ log_message(uint16_t level, const char *entity_name,
     
     if (lgr_client == NULL)
     {
+        int  rc;
         char name[32];
 
         if (snprintf(name, sizeof(name), "lgr_client_%u",
@@ -139,14 +139,15 @@ log_message(uint16_t level, const char *entity_name,
         {
             fprintf(stderr, "ERROR: Logger client name truncated");
         }
-        lgr_client = ipc_init_client(name);
-        if (lgr_client == NULL)
+        rc = ipc_init_client(name, &lgr_client);
+        if (rc != 0)
         {
 #ifdef HAVE_PTHREAD_H
             pthread_mutex_unlock(&lgr_lock);
 #endif
             return;
         }
+        assert(lgr_client != NULL);
         te_log_message_tx = log_message_ipc;
         atexit(log_client_close);
     }
@@ -229,12 +230,13 @@ log_flush_ten(const char *ta_name)
         return EINVAL;
     }
 
-    log_client = ipc_init_client("LOGGER_FLUSH_CLIENT");
-    if (log_client == NULL)
+    rc = ipc_init_client("LOGGER_FLUSH_CLIENT", &log_client);
+    if (rc != 0)
     {
-        ERROR("Failed to initialize log flush client");
-        return errno;
+        ERROR("Failed to initialize log flush client: %X", rc);
+        return rc;
     }
+    assert(log_client != NULL);
 
     strcpy(ta_srv, LGR_SRV_FOR_TA_PREFIX);
     strcat(ta_srv, ta_name);

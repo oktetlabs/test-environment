@@ -48,19 +48,21 @@ main(void)
     int                 result = EXIT_SUCCESS;
     te_log_nfl_t        nfl = strlen(LGR_SHUTDOWN);
     uint8_t             mess[TE_LOG_NFL_SZ + nfl];
-    struct ipc_client  *log_client;
+    struct ipc_client  *log_client = NULL;
+    int                 rc;
 
 
     /* Prepare message with entity name LGR_SHUTDOWN */
     *(te_log_nfl_t *)mess = nfl;
     memcpy(mess + TE_LOG_NFL_SZ, LGR_SHUTDOWN, nfl);
 
-    log_client = ipc_init_client("LOGGER_SHUTDOWN_CLIENT");
-    if (log_client == NULL)
+    rc = ipc_init_client("LOGGER_SHUTDOWN_CLIENT", &log_client);
+    if (rc != 0)
     {
-        fprintf(stderr, "ipc_init_client() failed\n");
+        fprintf(stderr, "ipc_init_client() failed: %X\n", rc);
         return EXIT_FAILURE;
     }
+    assert(log_client != NULL);
     if (ipc_send_message(log_client, LGR_SRV_NAME, mess, sizeof(mess)) != 0)
     {
         fprintf(stderr, "ipc_send_message() failed\n");
