@@ -30,6 +30,10 @@
 
 #include "te_config.h"
 
+#if HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
+
 #include "logger_ta.h"
 
 
