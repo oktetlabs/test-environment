@@ -138,7 +138,7 @@ extern int tapi_file_create_ta(const char *ta, const char *filename,
  * @note the function is not thread-safe
  */
 extern int tapi_file_read_ta(const char *ta, const char *filename, 
-                             char *pbuf);
+                             char **pbuf);
 
 /*
  * Copy file from the one TA to other.
