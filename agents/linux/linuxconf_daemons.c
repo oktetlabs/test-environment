@@ -210,12 +210,6 @@ ds_create_backup(const char *dir, const char *name, int *index)
         free(ds[n_ds].backup);
         return TE_RC(TE_TA_LINUX, ENOENT); 
     }
-    else
-    {
-        PRINT("Backup created:");
-        sprintf(buf, "ls -l %s", ds[n_ds].backup);
-        ta_system(buf);
-    }
     if (index != NULL)                                        
         *index = n_ds;
     n_ds++;
