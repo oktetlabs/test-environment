@@ -236,7 +236,9 @@ rcf_rpc_server_thread_create(rcf_rpc_server *rpcs, const char *name,
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
-    strcpy(in.name, name);
+
+    in.name.name_len = strlen(name) + 1;
+    in.name.name_val = (char *)name;
 
     if ((tmp = (rcf_rpc_server *)calloc(1, sizeof(*tmp))) == NULL)
         return TE_RC(TE_RCF_API, ENOMEM);
@@ -308,7 +310,9 @@ rcf_rpc_server_fork(rcf_rpc_server *rpcs, const char *name,
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
-    strcpy(in.name, name);
+
+    in.name.name_len = strlen(name) + 1;
+    in.name.name_val = (char *)name;
 
     rcf_rpc_call(rpcs, _fork, &in, (xdrproc_t)xdr_tarpc_fork_in, 
                  &out, (xdrproc_t)xdr_tarpc_fork_out);
@@ -912,7 +916,9 @@ rcf_rpc_call(rcf_rpc_server *rpcs, int proc,
         return;
     }
 
-    strcpy(in->name, rpcs->name);
+    in->name.name_len = strlen(rpcs->name) + 1;
+    in->name.name_val = rpcs->name;
+
     in->start = rpcs->start;
     in->op = rpcs->op;
     in->tid = rpcs->tid0;

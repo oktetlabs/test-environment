@@ -83,7 +83,7 @@ extern int ta_log_addr_len;            /**< Logging server address length */
                                                                         \
         *(uint16_t *)_str = _lvl;                                       \
         _str += sizeof(uint16_t);                                       \
-        strcpy(_str, ((tarpc_in_arg *)in)->name);                       \
+        strcpy(_str, ((tarpc_in_arg *)in)->name.name_val);              \
         _str += RCF_RPC_NAME_LEN;                                       \
         snprintf(_str, RPC_LOG_MSG_MAX, _fs);                           \
         sendto(_s, _buf, sizeof(_buf), 0,                               \

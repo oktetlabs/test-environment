@@ -68,7 +68,7 @@ typedef uint32_t    tarpc_op;
  *            parameters to this structure.
  */
 struct tarpc_in_arg {
-    char            name[16];   /**< Server name */
+    char            name<>;     /**< Server name */
     tarpc_op        op;         /**< RPC operation */
     uint64_t        start;
     uint32_t        tid;        /**< Thread identifier (for checking and 
@@ -121,12 +121,10 @@ struct tarpc_timeval {
 
 /** struct ifreq */
 struct tarpc_ifreq {
-#define IFNAMESIZE 16
-
-    char            rpc_ifr_name[IFNAMESIZE]; /**< Interface name */
-    struct tarpc_sa rpc_ifr_addr;  /**< Different interface addresses */
-    tarpc_int       rpc_ifr_flags; /**< Interface flags */
-    uint32_t        rpc_ifr_mtu;   /**< Interface MTU */
+    char            rpc_ifr_name<>; /**< Interface name */
+    struct tarpc_sa rpc_ifr_addr;   /**< Different interface addresses */
+    tarpc_int       rpc_ifr_flags;  /**< Interface flags */
+    uint32_t        rpc_ifr_mtu;    /**< Interface MTU */
 };
 
 /** struct ifconf */
@@ -139,10 +137,10 @@ struct tarpc_ifconf {
 
 /** struct arpreq */
 struct tarpc_arpreq {
-    struct tarpc_sa rpc_arp_pa;      /**< Protocol address */
-    struct tarpc_sa rpc_arp_ha;      /**< Hardware address */
-    tarpc_int       rpc_arp_flags;   /**< Flags */
-    char            rpc_arp_dev[16]; /**< Device */
+    struct tarpc_sa rpc_arp_pa;     /**< Protocol address */
+    struct tarpc_sa rpc_arp_ha;     /**< Hardware address */
+    tarpc_int       rpc_arp_flags;  /**< Flags */
+    char            rpc_arp_dev<>;  /**< Device */
 };
 
 /** struct timespec */
@@ -1037,7 +1035,7 @@ union option_value switch (option_type opttype) {
     case OPT_LINGER:  struct option_value_linger opt_linger;
     case OPT_TIMEVAL: struct tarpc_timeval opt_timeval;
     case OPT_MREQN:   struct option_value_mreqn  opt_mreqn;
-    case OPT_IPADDR:  char opt_ipaddr[4];
+    case OPT_IPADDR:  uint32_t opt_ipaddr;
     case OPT_STRING:  char opt_string<>;
     case OPT_TCP_INFO: struct option_value_tcp_info opt_tcp_info;
 };
@@ -1738,7 +1736,7 @@ struct tarpc_aio_suspend_test_out {
 struct tarpc_fork_in {
     struct tarpc_in_arg common;
     
-    char        name[16];
+    char        name<>;
 };
 
 struct tarpc_fork_out {
@@ -1750,7 +1748,7 @@ struct tarpc_fork_out {
 struct tarpc_pthread_create_in {
     struct tarpc_in_arg common;
     
-    char name[16];
+    char name<>;
 };
 
 struct tarpc_pthread_create_out {
@@ -1925,7 +1923,7 @@ struct tarpc_many_send_in {
     struct tarpc_in_arg common;
 
     tarpc_int       sock;
-    tarpc_int       vector<>;
+    tarpc_size_t    vector<>;
 };
 
 struct tarpc_many_send_out {

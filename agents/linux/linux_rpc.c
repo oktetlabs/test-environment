@@ -437,7 +437,9 @@ tarpc_server(const void *arg)
     tarpc_in_arg *in = &arg1;
     
     memset(&arg1, 0, sizeof(arg1));
-    strcpy(arg1.name, name);
+    arg1.name.name_len = strlen(name) + 1;
+    arg1.name.name_val = strdup(name);
+    assert(arg1.name.name_val != NULL);
     rpcserver_name = name;
 
     RPC_LGR_MESSAGE(TE_LL_RING, "Started %s (PID %d, TID %u)", name, 

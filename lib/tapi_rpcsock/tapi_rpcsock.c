@@ -3334,7 +3334,7 @@ rpc_getsockopt_gen(rcf_rpc_server *handle,
                 val.opttype = OPT_IPADDR;
                 if (roptlen >= sizeof(struct in_addr))
                 {
-                    memcpy(val.option_value_u.opt_ipaddr,
+                    memcpy(&val.option_value_u.opt_ipaddr,
                            optval, sizeof(struct in_addr));
                 }
                 else
@@ -3525,7 +3525,7 @@ rpc_getsockopt_gen(rcf_rpc_server *handle,
                         char addr_buf[INET_ADDRSTRLEN];
 
                         memcpy(optval,
-                               out.optval.optval_val[0].option_value_u.
+                               &out.optval.optval_val[0].option_value_u.
                                    opt_ipaddr,
                                sizeof(struct in_addr));
                         snprintf(opt_val_str, sizeof(opt_val_str),
@@ -3923,10 +3923,12 @@ rpc_ioctl(rcf_rpc_server *handle,
                         ((struct ifreq *)arg)->ifr_addr.sa_data;
                 in.req.req_val[0].ioctl_request_u.req_ifreq.rpc_ifr_addr.
                     sa_data.sa_data_len = sizeof(struct sockaddr);
-                memcpy(in.req.req_val[0].ioctl_request_u.req_ifreq.
-                           rpc_ifr_name,
-                       ((struct ifreq *)arg)->ifr_name,
-                       sizeof(((struct ifreq *)arg)->ifr_name));
+                in.req.req_val[0].ioctl_request_u.req_ifreq.
+                    rpc_ifr_name.rpc_ifr_name_val =
+                    ((struct ifreq *)arg)->ifr_name;
+                in.req.req_val[0].ioctl_request_u.req_ifreq.
+                    rpc_ifr_name.rpc_ifr_name_len =
+                    sizeof(((struct ifreq *)arg)->ifr_name);
             }
             break;
 
@@ -3941,10 +3943,12 @@ rpc_ioctl(rcf_rpc_server *handle,
             if (arg != NULL)
             {
                 in.req.req_val[0].type = IOCTL_IFREQ;
-                memcpy(in.req.req_val[0].ioctl_request_u.
-                           req_ifreq.rpc_ifr_name,
-                       ((struct ifreq *)arg)->ifr_name,
-                       sizeof(((struct ifreq *)arg)->ifr_name));
+                in.req.req_val[0].ioctl_request_u.req_ifreq.
+                    rpc_ifr_name.rpc_ifr_name_val =
+                    ((struct ifreq *)arg)->ifr_name;
+                in.req.req_val[0].ioctl_request_u.req_ifreq.
+                    rpc_ifr_name.rpc_ifr_name_len =
+                    sizeof(((struct ifreq *)arg)->ifr_name);
 
                 in.req.req_val[0].ioctl_request_u.req_ifreq.rpc_ifr_addr.
                     sa_data.sa_data_val =
@@ -3962,10 +3966,12 @@ rpc_ioctl(rcf_rpc_server *handle,
                 in.req.req_val[0].type = IOCTL_IFREQ;
                 in.req.req_val[0].ioctl_request_u.req_ifreq.rpc_ifr_flags =
                     if_fl_h2rpc((uint32_t)((struct ifreq *)arg)->ifr_flags);
-                memcpy(in.req.req_val[0].ioctl_request_u.req_ifreq.
-                           rpc_ifr_name,
-                       ((struct ifreq *)arg)->ifr_name,
-                       sizeof(((struct ifreq *)arg)->ifr_name));
+                in.req.req_val[0].ioctl_request_u.req_ifreq.
+                    rpc_ifr_name.rpc_ifr_name_val =
+                    ((struct ifreq *)arg)->ifr_name;
+                in.req.req_val[0].ioctl_request_u.req_ifreq.
+                    rpc_ifr_name.rpc_ifr_name_len =
+                    sizeof(((struct ifreq *)arg)->ifr_name);
             }
             break;
 
@@ -3976,10 +3982,12 @@ rpc_ioctl(rcf_rpc_server *handle,
                 in.req.req_val[0].type = IOCTL_IFREQ;
                 in.req.req_val[0].ioctl_request_u.req_ifreq.rpc_ifr_mtu =
                     ((struct ifreq *)arg)->ifr_mtu;
-                memcpy(in.req.req_val[0].ioctl_request_u.req_ifreq.
-                           rpc_ifr_name,
-                       ((struct ifreq *)arg)->ifr_name,
-                       sizeof(((struct ifreq *)arg)->ifr_name));
+                in.req.req_val[0].ioctl_request_u.req_ifreq.
+                    rpc_ifr_name.rpc_ifr_name_val =
+                    ((struct ifreq *)arg)->ifr_name;
+                in.req.req_val[0].ioctl_request_u.req_ifreq.
+                    rpc_ifr_name.rpc_ifr_name_len =
+                    sizeof(((struct ifreq *)arg)->ifr_name);
             }
             break;
 #define FILL_ARPREQ_ADDR(type_) \
@@ -4027,9 +4035,12 @@ rpc_ioctl(rcf_rpc_server *handle,
                 /* Copy HW address */
                 FILL_ARPREQ_ADDR(ha);
                  /* Copy device */
-                strcpy(in.req.req_val[0].ioctl_request_u.
-                           req_arpreq.rpc_arp_dev,
-                       ((struct arpreq *)arg)->arp_dev);
+                in.req.req_val[0].ioctl_request_u.req_arpreq.
+                    rpc_arp_dev.rpc_arp_dev_val =
+                    ((struct arpreq *)arg)->arp_dev;
+                in.req.req_val[0].ioctl_request_u.req_arpreq.
+                    rpc_arp_dev.rpc_arp_dev_len =
+                    sizeof(((struct arpreq *)arg)->arp_dev);
             }
             break;
 #undef FILL_ARPREQ_ADDR
@@ -4116,7 +4127,8 @@ rpc_ioctl(rcf_rpc_server *handle,
 
                 for (i = 0; i < n; i++, req++, rpc_req++)
                 {
-                    strcpy(req->ifr_name, rpc_req->rpc_ifr_name);
+                    strcpy(req->ifr_name,
+                           rpc_req->rpc_ifr_name.rpc_ifr_name_val);
                     req->ifr_addr.sa_family =
                         addr_family_rpc2h(rpc_req->rpc_ifr_addr.sa_family);
 
@@ -6640,7 +6652,7 @@ rpc_many_send(rcf_rpc_server *handle, int sock,
     if (vector != NULL && handle->op != RCF_RPC_WAIT)
     {
         in.vector.vector_len = nops;
-        in.vector.vector_val = vector;
+        in.vector.vector_val = (size_t *)vector;
     }
 
     rcf_rpc_call(handle, _many_send, &in, (xdrproc_t)xdr_tarpc_many_send_in,

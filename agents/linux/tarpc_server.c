@@ -622,7 +622,7 @@ TARPC_FUNC(fork, {},
 #ifdef HAVE_SVC_EXIT
         svc_exit();
 #endif
-        tarpc_server(in->name);
+        tarpc_server(in->name.name_val);
         exit(EXIT_FAILURE);
     }
 }
@@ -632,7 +632,7 @@ TARPC_FUNC(fork, {},
 TARPC_FUNC(pthread_create, {},
 {
     MAKE_CALL(out->retval = func((int)&(out->tid), NULL, tarpc_server,
-                                 strdup(in->name)));
+                                 strdup(in->name.name_val)));
 }
 )
 
@@ -666,7 +666,8 @@ tarpc_init(int argc, char **argv)
         ERROR("Invalid RPC server name");
         return;
     }
-    strcpy(in->common.name, name);
+    in->common.name.name_val = (char *)name;
+    in->common.name.name_len = strlen(name) + 1;
     if (libname == NULL)
     {
         ERROR("Invalid dynamic library name");
@@ -679,7 +680,7 @@ tarpc_init(int argc, char **argv)
     }
     else
     {
-        in->libname.libname_len = strlen(libname);
+        in->libname.libname_len = strlen(libname) + 1;
         in->libname.libname_val = (char *)libname;
     }
     setlibname(in);
@@ -1564,7 +1565,7 @@ TARPC_FUNC(setsockopt, {},
                 opt = (char *)&addr;
 
                 memcpy(&addr,
-                       in->optval.optval_val[0].option_value_u.opt_ipaddr,
+                       &in->optval.optval_val[0].option_value_u.opt_ipaddr,
                        sizeof(struct in_addr));
                 optlen = sizeof(addr);
                 break;
@@ -1702,7 +1703,7 @@ TARPC_FUNC(getsockopt,
             {
                 struct in_addr *addr = (struct in_addr *)opt;
 
-                memcpy(out->optval.optval_val[0].option_value_u.opt_ipaddr,
+                memcpy(&out->optval.optval_val[0].option_value_u.opt_ipaddr,
                        addr, sizeof(*addr));
                 break;
             }
@@ -1867,7 +1868,7 @@ TARPC_FUNC(ioctl,
                 /* Copy the whole 'ifr_name' buffer, not just strcpy() */
                 memcpy(req_ifreq.ifr_name,
                        out->req.req_val[0].ioctl_request_u.req_ifreq.
-                       rpc_ifr_name,
+                       rpc_ifr_name.rpc_ifr_name_val,
                        sizeof(req_ifreq.ifr_name));
 
                 INIT_CHECKED_ARG(req_ifreq.ifr_name,
@@ -1951,7 +1952,7 @@ TARPC_FUNC(ioctl,
                      /* Copy device */
                     strcpy(req_arpreq.arp_dev,
                            out->req.req_val[0].ioctl_request_u.
-                           req_arpreq.rpc_arp_dev);
+                           req_arpreq.rpc_arp_dev.rpc_arp_dev_val);
                 }
 #endif /* !__linux__ */
                 break;
@@ -2064,7 +2065,9 @@ TARPC_FUNC(ioctl,
 
                 for (i = 0; i < n; i++, req_t++, req_c++)
                 {
-                    strcpy(req_t->rpc_ifr_name, req_c->ifr_name);
+                    req_t->rpc_ifr_name.rpc_ifr_name_val = req_c->ifr_name;
+                    req_t->rpc_ifr_name.rpc_ifr_name_len =
+                        sizeof(req_c->ifr_name);
                     if ((req_t->rpc_ifr_addr.sa_data.sa_data_val =
                          calloc(1, SA_DATA_MAX_LEN)) == NULL)
                     {
@@ -4121,8 +4124,8 @@ TARPC_FUNC(many_send,{},
 int
 many_send(tarpc_many_send_in *in, tarpc_many_send_out *out)
 {
-    int            rc = 0;
-    int            i;
+    ssize_t        rc = 0;
+    unsigned int   i;
     sock_api_func  send_func;
     size_t         max_len = 0;
     uint8_t       *buf = NULL;
@@ -4138,11 +4141,11 @@ many_send(tarpc_many_send_in *in, tarpc_many_send_out *out)
         goto many_send_exit;
     }
 
-    for (i = 0; i < (int)in->vector.vector_len; i++)
+    for (i = 0; i < in->vector.vector_len; i++)
     {
         if (in->vector.vector_val[i] == 0)
         {
-            ERROR("%s(): Invalid data length %d to be sent "
+            ERROR("%s(): Invalid data length %u to be sent "
                   "by %d send() call", __FUNCTION__,
                   in->vector.vector_val[i], i);
             out->common._errno = TE_RC(TE_TA_LINUX, EINVAL);
@@ -4172,12 +4175,12 @@ many_send(tarpc_many_send_in *in, tarpc_many_send_out *out)
 
     for (i = 0; i < in->vector.vector_len; i++)
     {
-        RING("%s(): [%d] send(%d, %p, %d, 0)", __FUNCTION__, i,
+        RING("%s(): [%d] send(%d, %p, %u, 0)", __FUNCTION__, i,
              in->sock, buf, in->vector.vector_val[i]);
         rc = send_func(in->sock, buf, in->vector.vector_val[i], 0);
-        if (rc == -1 || rc != in->vector.vector_val[i])
+        if (rc != (ssize_t)in->vector.vector_val[i])
         {
-           ERROR("%s(): send(%d, %p, %d, 0) failed: %X", __FUNCTION__,
+           ERROR("%s(): send(%d, %p, %u, 0) failed: %X", __FUNCTION__,
                  in->sock, buf, in->vector.vector_val[i], errno);
             rc = -1;
             goto many_send_exit;
