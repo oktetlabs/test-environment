@@ -258,7 +258,7 @@ snmp_write_read_cb (csap_p csap_descr, int timeout,
 {
     fd_set fdset;
     int    n_fds = 0; 
-    int    block;
+    int    block = 0;
     struct timeval sel_timeout; 
 
     int layer;
@@ -569,11 +569,6 @@ snmp_single_destroy_cb (int csap_id, int layer)
         struct snmp_session *s = spec_data->ss;
 
         snmp_close(s);
-
-        if (s->community) free(s->community);
-        if (s->peername) free(s->peername);
-
-        free(s);
     }
 
     return 0;
