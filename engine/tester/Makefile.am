@@ -27,6 +27,3 @@ te_tester_DEPENDENCIES = @TE_DEPENDENCIES@ \
 
 
 dist_bin_SCRIPTS = te_tester.sh
-
-
-EXTRA_DIST = tester_config.xsd test_package.xsd tester_defs.xsd

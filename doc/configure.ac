@@ -32,6 +32,6 @@ AC_CONFIG_AUX_DIR(../aux)
 
 AM_INIT_AUTOMAKE([foreign -Wall])
 
-AC_CONFIG_FILES(Makefile guides/Makefile hld/Makefile)
+AC_CONFIG_FILES(Makefile guides/Makefile hld/Makefile xsd/Makefile)
 
 AC_OUTPUT

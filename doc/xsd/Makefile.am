@@ -2,7 +2,8 @@
 
 # Test Environment
 #
-# doc/ Makefile
+# doc/xsd Makefile
+#
 #
 # Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
 # root directory of the distribution).
@@ -23,10 +24,12 @@
 # MA  02111-1307  USA
 #
 #
-# Author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
+# Author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
 
-AUTOMAKE_OPTIONS = foreign 
-
-SUBDIRS=hld guides xsd
-
-EXTRA_DIST=OKTL-REQ-0000043-TE.doc
+EXTRA_DIST = \
+	rcf_config.xsd \
+	logger_config.xsd \
+	cs_config.xsd \
+	tester_config.xsd \
+	test_package.xsd \
+	tester_defs.xsd
