@@ -3,7 +3,7 @@ AM_CPPFLAGS = -I$(DESTDIR)/$(prefix)/include \
               -I$(DESTDIR)/$(prefix)/../include
 
 AM_CFLAGS =
-AM_LFLAGS = --header-file=$*.h --outfile=$(LEX_OUTPUT_ROOT).c
+AM_LFLAGS = --header-file=$*.h -o $(LEX_OUTPUT_ROOT).c
 AM_YFLAGS = -d
 
 AM_LDFLAGS = -L$(DESTDIR)/$(prefix)/lib 
