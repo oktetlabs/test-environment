@@ -362,7 +362,8 @@ ds_dhcpserver_script_stop(void)
 static int
 ds_dhcpserver_stop(void)
 {
-    sprintf(buf, "killall %s >/dev/null 2>&1", dhcp_server_exec);
+    ENTRY("%s()", __FUNCTION__);
+    sprintf(buf, "killall %s", dhcp_server_exec);
     if (ta_system(buf) != 0)
     {
         ERROR("Command '%s' failed", buf);
@@ -392,6 +393,7 @@ ds_dhcpserver_start(void)
 {
     int rc;
 
+    ENTRY("%s()", __FUNCTION__);
     rc = ds_dhcpserver_save_conf();
     if (rc != 0)
     {
@@ -431,25 +433,27 @@ ds_dhcpserver_start(void)
 static int
 ds_dhcpserver_set(unsigned int gid, const char *oid, const char *value)
 {
-    char val[2];
-    int  rc;
+    te_bool is_run = ds_dhcpserver_is_run();
+    te_bool do_run;
+    int     rc;
 
+    UNUSED(gid);
     UNUSED(oid);
-
-    if ((rc = daemon_get(gid, "dhcpserver", val)) != 0)
-        return TE_RC(TE_TA_LINUX, rc);
+    ENTRY("%s(): value=%s", __FUNCTION__, value);
 
     if (strlen(value) != 1 || (*value != '0' && *value != '1'))
         return TE_RC(TE_TA_LINUX, EINVAL);
+
+    do_run = (*value == '1');
 
     /*
      * We don't need to change state of DHCP Server:
      * The current state is the same as desired.
      */
-    if (*val == *value)
+    if (is_run == do_run)
         return 0;
 
-    if (*value == '1')
+    if (do_run)
     {
 #ifdef TA_LINUX_ISC_DHCPS_NATIVE_CFG
         rc = ds_dhcpserver_script_start();
@@ -1484,9 +1488,8 @@ ds_init_dhcp_server(rcf_pch_cfg_object **last)
     }
     dhcp_server_conf = dhcp_server_confs[rc];
 
-    /* Test existing configuration file */
-    snprintf(buf, sizeof(buf), "%s -t >/dev/null 2>&1", 
-             dhcp_server_exec);
+    /* Test existing configuration file and leases DB */
+    snprintf(buf, sizeof(buf), "%s -q -t -T", dhcp_server_exec);
     if (ta_system(buf) != 0)
     {
         WARN("Bad found DHCP server configution file '%s'"
