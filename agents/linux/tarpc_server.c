@@ -158,7 +158,7 @@ sockaddr_h2rpc(struct sockaddr *addr, struct tarpc_sa *rpc_addr)
     }
 }
 
-static te_bool dynamic_library_ok = FALSE;
+static te_bool dynamic_library_set = FALSE;
 static char *dynamic_library_name = NULL;
 static void *dynamic_library_handle = NULL;
 
@@ -175,10 +175,11 @@ find_func(char *name, sock_api_func *func)
 {
     static void *libc_handle = NULL;
 
-    if (!dynamic_library_ok)
+    if (!dynamic_library_set)
     {
-        ERROR("Invalid dynamic library handle");
-        return TE_RC(TE_TA_LINUX, EINVAL);
+        dynamic_library_set = TRUE;
+        dynamic_library_name = "(NULL)";
+        RING("Dynamic library is set to NULL implicitly");
     }
     if (libc_handle == NULL)
     {
@@ -189,7 +190,7 @@ find_func(char *name, sock_api_func *func)
         }
     }
 
-    if ((dynamic_library_ok &&
+    if (((dynamic_library_handle == NULL) ||
          (*func = dlsym(dynamic_library_handle, name)) == NULL) &&
         (*func = dlsym(libc_handle, name)) == NULL)
     {
@@ -540,7 +541,7 @@ setlibname(const tarpc_setlibname_in *in)
 {
     const char *libname;
 
-    if (dynamic_library_ok)
+    if (dynamic_library_set)
     {
         ERROR("Dynamic library has already been set to %s",
               dynamic_library_name);
@@ -559,7 +560,7 @@ setlibname(const tarpc_setlibname_in *in)
         ERROR("strdup(%s) failed", libname ? : "(nil)");
         return TE_RC(TE_TA_LINUX, ENOMEM);
     }
-    dynamic_library_ok = TRUE;
+    dynamic_library_set = TRUE;
     return 0;
 }
 
