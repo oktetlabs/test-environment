@@ -2673,7 +2673,11 @@ const char *snmp_error_h2str(int error_val)
         SNMP_ERR_H2STR(INCONSISTENTNAME);
         
         default:
-            return "UNKNOWN";
+	{
+            static char buf[255];
+	    snprintf(buf, sizeof(buf), "UNKNOWN (%d)", error_val);
+            return buf;
+	}
     }
     return "";
 }
