@@ -411,8 +411,11 @@ remove_csap(const char *ta_name, int handle)
 #endif    
 
     cs = find_csap(ta_name, handle);
-
-    QEL_DELETE(cs);
+    
+    if (cs != NULL)
+        QEL_DELETE(cs);
+    else
+        WARN("Csap %d: traffic operation handler not found", handle);
 
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_unlock(&rcf_lock);
