@@ -50,15 +50,16 @@
          Limit:  depends on Test Agent (may be limited to 1 for IPv4) -->
     <object oid="/agent/interface/net_addr" access="read_create" type="none"/>
     
-    <!-- Network mask for the network address.
+    <!-- Network prefix for the address.
          Name:  empty
          Limit: 1 -->
-    <object oid="/agent/interface/net_addr/netmask"
-            access="read_write" type="address"/>
+    <object oid="/agent/interface/net_addr/prefix"
+            access="read_write" type="integer"/>
+
     <!-- Broadcast address which corresponds to this network address.
          Name:  empty
          Limit: 1 -->
-    <object oid="/agent/interface/net_addr/netmask"
+    <object oid="/agent/interface/net_addr/broadcast"
             access="read_write" type="address"/>
     
     <!-- Link layer address for the interface (MAC, NSAP, E.164, VPI/VCI, DLCI).
