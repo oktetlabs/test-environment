@@ -72,13 +72,14 @@
 #include "logger_api.h"
 
 
-/* Busy CSAPs state */
+/** Busy CSAPs state */
 #define CSAP_SEND       1
 #define CSAP_RECV       2
 #define CSAP_SENDRECV   3
 
-/* Number of symbols for of int32_t + spaces */
+/** Number of symbols for of int32_t + spaces */
 #define RCF_MAX_INT     12
+
 
 /* CSAP structure for checking is the CSAP busy or not */
 typedef struct traffic_op {
@@ -1343,6 +1344,7 @@ rcf_ta_get_log(const char *ta_name, char *log_file)
     strcpy(msg.file, log_file);
     strcpy(msg.ta, ta_name);
     msg.opcode = RCFOP_GET_LOG;
+    msg.sid = RCF_TA_GET_LOG_SID;
     
     if (send_recv_rcf_ipc_message(ipc_handle,
                                   &(ctx_handle->msg_buf_head),

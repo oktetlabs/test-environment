@@ -46,6 +46,8 @@ extern "C" {
 /** IPC RCF Server name */
 #define RCF_SERVER      "TE_RCF"
 
+/** Special SID for TA get log operation */
+#define RCF_TA_GET_LOG_SID      1
 
 /** @name Message flags */
 #define BINARY_ATTACHMENT       1   /**< Binary attachment is provided;

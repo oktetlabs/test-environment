@@ -1443,8 +1443,6 @@ send_cmd(ta *agent, usrreq *req)
 {
     rcf_msg *msg = req->message;
 
-    sprintf(cmd, "SID %d ",
-            msg->opcode == RCFOP_GET_LOG ? LOG_SID : msg->sid);
     switch (msg->opcode)
     {
         case RCFOP_REBOOT:
@@ -1488,7 +1486,11 @@ send_cmd(ta *agent, usrreq *req)
             break;
 
         case RCFOP_GET_LOG:
-            msg->sid = LOG_SID;
+            if (msg->sid != LOG_SID)
+            {
+                msg->error = TE_RC(TE_RCF, EINVAL);
+                return -1;
+            }
             strcat(cmd, TE_PROTO_GET_LOG);
             break;
 
