@@ -262,12 +262,16 @@ daemon_get(unsigned int gid, const char *oid, char *value)
     {
         return TE_RC(TE_TA_LINUX, ENOENT);
     }
-    sprintf(buf, "find /var/run/ -name %s.pid | grep pid >/dev/null 2>&1", 
-            daemon_name);
-    if (ta_system(buf) == 0)
+    
+    if (strcmp(daemon_name, "sendmail") == 0)
     {
-         sprintf(value, "1");
-         return 0;
+        sprintf(buf, "find /var/run/ -name %s.pid | grep pid "
+                     ">/dev/null 2>&1", daemon_name);
+        if (ta_system(buf) == 0)
+        {
+            sprintf(value, "1");
+            return 0;
+        }
     }
     sprintf(buf, "killall -CONT %s >/dev/null 2>&1", daemon_name);
     if (ta_system(buf) == 0)
@@ -1820,7 +1824,7 @@ sendmail_smarthost_set(te_bool enable)
     fclose(f);
     fclose(g);
     
-    ta_system("cd " SENDMAIL_CONF_DIR "; make");
+    ta_system("cd " SENDMAIL_CONF_DIR "; make >/dev/null 2>&1");
     
     return 0;
 }
@@ -2022,7 +2026,7 @@ ds_shutdown_smtp()
     if (ds_config_changed(sendmail_index))
     {
         if (file_exists(SENDMAIL_CONF_DIR))
-            ta_system("cd " SENDMAIL_CONF_DIR "; make");
+            ta_system("cd " SENDMAIL_CONF_DIR "; make >/dev/null 2>&1");
     }
     if (smtp_current != NULL)
         daemon_set(0, smtp_current, "0");
