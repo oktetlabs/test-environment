@@ -607,7 +607,7 @@ struct tarpc_get_accept_addr_in {
     struct tarpc_in_arg    common;
 
     int             fd;          /**< TA-local socket */
-    char            buf<>;	 /**< Buffer with addresses */
+    char            buf<>;       /**< Buffer with addresses */
     int             buflen;      /**< Length of the buffer
                                       passed to the AcceptEx() */
     struct tarpc_sa laddr;       /**< Local address */
@@ -1780,7 +1780,7 @@ struct tarpc_get_overlapped_result_out {
     int                  bytes<>;     /**< Transferred bytes */
     int                  flags<>;     /**< Flags             */
     struct tarpc_iovec   vector<>;    /**< Buffer to receive buffers resulted
-            			           from overlapped operation */
+                                           from overlapped operation */
 };    
 
 
@@ -1815,15 +1815,15 @@ struct tarpc_wait_multiple_events_out {
 struct tarpc_fcntl_in {
     struct tarpc_in_arg common;
     
-    int			fd;
-    int         	cmd;
-    int			arg;
+    int fd;
+    int cmd;
+    int arg;
 };
 
 struct tarpc_fcntl_out {
     struct tarpc_out_arg common;
     
-    int		retval;
+    int retval;
 };
 
 /* ftp_open() */
@@ -1901,7 +1901,7 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(setsockopt)
 
         RPC_DEF(ioctl) 
-	RPC_DEF(fcntl)
+        RPC_DEF(fcntl)
 
         RPC_DEF(getsockname)
         RPC_DEF(getpeername)
@@ -1962,7 +1962,7 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(connect_ex)
         RPC_DEF(wsa_accept)
         RPC_DEF(accept_ex)
-	RPC_DEF(get_accept_addr)
+        RPC_DEF(get_accept_addr)
         RPC_DEF(disconnect_ex)
         RPC_DEF(reset_event)     
         RPC_DEF(event_select)
