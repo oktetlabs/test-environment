@@ -82,7 +82,7 @@ typedef BOOL (PASCAL FAR *LPFN_CONNECTEX)(SOCKET s,
                                           LPDWORD lpdwBytesSent,
                                           LPOVERLAPPED lpOverlapped);
 /* DisconnectEx() */
-typedef BOOL (*LPFN_DISCONNECTEX)(SOCKET hSocket,
+typedef BOOL (PASCAL FAR *LPFN_DISCONNECTEX)(SOCKET hSocket,
                                   LPOVERLAPPED lpOverlapped,
                                   DWORD dwFlags,
                                   DWORD reserved);
@@ -452,6 +452,10 @@ check_args(checked_arg *list)
         x;                                                       \
         out->common.win_error = win_error_h2rpc(GetLastError()); \
         out->common._errno = RPC_ERRNO;                          \
+        if ((out->common._errno == 0) &&                         \
+            (out->common.win_error != 0))                        \
+            out->common._errno =                                 \
+            wsa/err2errno(out->common.win_error);                \
         gettimeofday(&t_finish, NULL);                           \
         out->common.duration =                                   \
             (t_finish.tv_sec - t_start.tv_sec) * 1000000 +       \
@@ -1210,7 +1214,7 @@ TARPC_FUNC(wsa_recv_ex,
 
     MAKE_CALL(out->retval = WSARecvEx(in->fd, in->len == 0 ? NULL :
                                       out->buf.buf_val,
-                      in->len,
+                                      in->len,
                                       out->flags.flags_len == 0 ? NULL :
                                       out->flags.flags_val));
 
@@ -1273,6 +1277,7 @@ TARPC_FUNC(getsockname,
             /* Socket is not bound, work-around */
             out->retval = 0;
             out->common.win_error = 0;
+            memset(a, 0, sizeof(struct sockaddr_in));
             a->sa_family = AF_INET;
             *out->len.len_val = sizeof(struct sockaddr_in);
         }
@@ -1677,9 +1682,11 @@ TARPC_FUNC(ioctl,
 
     if (in->access == IOCTL_WR)
         INIT_CHECKED_ARG(req, reqlen, 0);
+    printf("we are making the call\n");
     MAKE_CALL(out->retval = WSAIoctl(in->s, ioctl_rpc2h(in->code), req,
                                      reqlen, req, reqlen, &ret_num,
                                      NULL, NULL));
+    printf("we've made the call\n");
     if (req != NULL)
     {
         switch(out->req.req_val[0].type)
@@ -1699,6 +1706,7 @@ TARPC_FUNC(ioctl,
                break;
         }
     }
+    printf("all is well with agent");
     finish:
     ;
 }
@@ -3114,3 +3122,216 @@ TARPC_FUNC(wait_multiple_events, {},
 )
 
 /* @TODO WSASendTo, WSARecvFrom, WSASendDisconnect, WSARecvDisconnect */
+/**
+ *Translates WSAError to errno.
+ */ 
+int 
+wsaerr2errno(int wsaerr)
+{
+    int err = 0;
+    
+    switch (wsaerr)
+    {
+        case RPC_WSAEACCES:
+        {
+            err = RPC_EACCES;
+            break;
+        }    
+        
+        case RPC_WSAEFAULT:
+        {
+            err = RPC_EFAULT;
+            break;
+        }
+        
+        case RPC_WSAEINVAL:
+        {
+            err = RPC_EINVAL;
+            break;
+        }    
+        
+        case RPC_WSAEMFILE:
+        {
+            err = RPC_EMFILE;
+            break;
+        }    
+        
+        case RPC_WSAEWOULDBLOCK:
+        {
+            err = RPC_EWOULDBLOCK;
+            break;
+        }    
+        
+        case RPC_WSAEINPROGRESS:
+        {
+            err = RPC_EINPROGRESS;
+            break;
+        }    
+        
+        case RPC_WSAEALREADY:
+        {
+            err = RPC_EALREADY;
+            break;
+        }
+        
+        case RPC_WSAENOTSOCK:
+        {
+            err = RPC_ENOTSOCK;
+            break;
+        }    
+        
+        case RPC_WSAEDESTADDRREQ:
+        {
+            err = RPC_EDESTADDRREQ;
+            break;
+        }    
+        
+        case RPC_WSAEMSGSIZE:
+        {
+            err = RPC_EMSGSIZE;
+            break;
+        }
+        
+        case RPC_WSAEPROTOTYPE:
+        {
+            err = RPC_EPROTOTYPE;
+            break;
+        }    
+        
+        case RPC_WSAENOPROTOOPT:
+        {
+            err = RPC_ENOPROTOOPT;
+            break;
+        }    
+        
+        case RPC_WSAEPROTONOSUPPORT:
+        {
+            err = RPC_EPROTONOSUPPORT;
+            break;
+        }    
+        
+        case RPC_WSAESOCKTNOSUPPORT:
+        {
+            err = RPC_ESOCKTNOSUPPORT;
+            break;
+        }    
+        
+        case RPC_WSAEOPNOTSUPP:
+        {
+            err = RPC_EOPNOTSUPP;
+            break;
+        } 
+        
+        case RPC_WSAEPFNOSUPPORT:
+        {
+            err = RPC_EPFNOSUPPORT;
+            break;
+        } 
+        
+        case RPC_WSAEAFNOSUPPORT:
+        {
+            err = RPC_EAFNOSUPPORT;
+            break;
+        } 
+        
+        case RPC_WSAEADDRINUSE:
+        {
+            err = RPC_EADDRINUSE;
+            break;
+        } 
+        
+        case RPC_WSAEADDRNOTAVAIL:
+        {
+            err = RPC_EADDRNOTAVAIL;
+            break;
+        } 
+        
+        case RPC_WSAENETDOWN:
+        {
+            err = RPC_ENETDOWN;
+            break;
+        } 
+        
+        case RPC_WSAENETUNREACH:
+        {
+            err = RPC_ENETUNREACH;
+            break;
+        } 
+        
+        case RPC_WSAENETRESET:
+        {
+            err = RPC_ENETRESET;
+            break;
+        } 
+        
+        case RPC_WSAECONNABORTED:
+        {
+            err = RPC_ECONNABORTED;
+            break;
+        } 
+        
+        case RPC_WSAECONNRESET:
+        {
+            err = RPC_ECONNRESET;
+            break;
+        }
+        
+        case RPC_WSAENOBUFS:
+        {
+            err = RPC_ENOBUFS;
+            break;
+        } 
+
+        case RPC_WSAEISCONN:
+        {
+            err = RPC_EISCONN;
+            break;
+        } 
+        
+        case RPC_WSAENOTCONN:
+        {
+            err = RPC_ENOTCONN;
+            break;
+        } 
+        
+        case RPC_WSAESHUTDOWN:
+        {
+            err = RPC_ESHUTDOWN;
+            break;
+        } 
+        
+        case RPC_WSAETIMEDOUT:
+        {
+            err = RPC_ETIMEDOUT;
+            break;
+        } 
+        
+        case RPC_WSAECONNREFUSED:
+        {
+            err = RPC_ECONNREFUSED;
+            break;
+        } 
+        
+        case RPC_WSAEHOSTDOWN:
+        {
+            err = RPC_EHOSTDOWN;
+            break;
+        } 
+        
+        case RPC_WSAEHOSTUNREACH:
+        {
+            err = RPC_EHOSTUNREACH;
+            break;
+        } 
+ 
+        default:
+        {
+            err = RPC_EINVAL; 
+        }
+    }    
+
+    
+    return err;    
+}
+
+
