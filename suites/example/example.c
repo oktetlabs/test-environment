@@ -70,14 +70,17 @@ main(int argc, char *argv[])
     CHECK_RC(rcf_get_ta_list(ta, &len));
     INFO("Agent is %s", ta);
 
+#if 0
     CHECK_RC(cfg_set_instance_fmt(CVT_INTEGER, (void *)0, "/agent:%s/ftpserver:", ta));
     CHECK_RC(cfg_set_instance_fmt(CVT_STRING, "xinetd_vsftpd", "/agent:%s/ftpserver:/server:", ta));
     CHECK_RC(cfg_set_instance_fmt(CVT_INTEGER, (void *)1, "/agent:%s/ftpserver:", ta));
     CHECK_RC(cfg_set_instance_fmt(CVT_INTEGER, (void *)0, "/agent:%s/ftpserver:", ta));
     CHECK_RC(cfg_set_instance_fmt(CVT_STRING, "vsftpd", "/agent:%s/ftpserver:/server:", ta));
     CHECK_RC(cfg_set_instance_fmt(CVT_INTEGER, (void *)1, "/agent:%s/ftpserver:", ta));
+#endif
 
 
+    sleep(30);
     snprintf(eth0_oid, sizeof(eth0_oid) - 1, "/agent:%s/interface:*", ta);
     CHECK_RC(cfg_find_pattern(eth0_oid, &num_interfaces, &interfaces));
     {

@@ -28,6 +28,7 @@
  */
 
 #include "conf_defs.h"
+#include "te_expand.h"
   
 /** Backup descriptor */  
 typedef struct cfg_backup {
@@ -126,48 +127,6 @@ xmlNodeNext(xmlNodePtr node)
 {
     assert(node != NULL);
     return xmlNodeSkipExtra(node->next);
-}
-
-
-extern int 
-cfg_expand_env_vars(const char *src, char **dest);
-
-
-/**
- * A wrapper around xmlGetProp that expands environment variable
- * references.
- *
- * @param node    XML node
- * @param name    XML attribute name
- *
- * @return The expanded attribute value or NULL if no attribute
- * or an error occured while expanding.
- *
- * @sa cfg_expand_env_vars
- */
-static char *
-xmlGetProp_exp(xmlNodePtr node, const xmlChar *name)
-{
-    xmlChar *value = xmlGetProp(node, name);
-    if(value)
-    {
-        char *result = NULL;
-        int rc;
-        rc = cfg_expand_env_vars(value, &result);
-        if(rc == 0)
-        {
-            xmlFree(value);
-            value = (xmlChar *)result;
-        }
-        else
-        {
-            ERROR("Error substituting variables in %s '%s': %s", 
-                  name, value, strerror(rc));
-            xmlFree(value);
-            value = NULL;
-        }
-    }
-    return value;
 }
 
 #define RETERR(_rc, _str...)    \

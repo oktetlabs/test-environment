@@ -87,6 +87,8 @@
 #include "logger_api.h"
 #include "logger_ten.h"
 
+#include "te_expand.h"
+
 
 #define RCF_SELECT_TIMEOUT      1   /**< Default select timeout
                                          in seconds */
@@ -384,7 +386,7 @@ parse_config(char *filename)
 
     for (cur = cur->xmlChildrenNode; cur != NULL; cur = cur->next)
     {
-        xmlChar *attr;
+        char *attr;
 
         if (xmlStrcmp(cur->name , (const xmlChar *)"ta") != 0)
             continue;
@@ -396,10 +398,9 @@ parse_config(char *filename)
         agents = agent;
         agent->flags = 0;
 
-        if ((attr = xmlGetProp(cur, (const xmlChar *)"name")) != NULL)
+        if ((attr = xmlGetProp_exp(cur, (const xmlChar *)"name")) != NULL)
         {
-            agent->name = strdup((const char *)attr);
-            xmlFree(attr);
+            agent->name = attr;
         }
         else
             goto bad_format;
@@ -414,58 +415,59 @@ parse_config(char *filename)
         name_ptr += strlen(agent->name) + 1;
         names_len += strlen(agent->name) + 1;
 
-        if ((attr = xmlGetProp(cur, (const xmlChar *)"type")) != NULL)
+        if ((attr = xmlGetProp_exp(cur, (const xmlChar *)"type")) != NULL)
         {
-            agent->type = strdup((const char *)attr);
-            xmlFree(attr);
+            agent->type = attr;
         }
         else
             goto bad_format;
 
 
-        if ((attr = xmlGetProp(cur, (const xmlChar *)"rcflib")) != NULL)
+        if ((attr = xmlGetProp_exp(cur, (const xmlChar *)"rcflib")) != NULL)
         {
             if (resolve_ta_methods(agent, (char *)attr) != 0)
             {
-                xmlFree(attr);
+                free(attr);
                 goto error;
             }
-            xmlFree(attr);
+            free(attr);
         }
         else
             goto bad_format;
 
-        if ((attr = xmlGetProp(cur, (const xmlChar *)"synch_time")) != NULL)
+        if ((attr = xmlGetProp_exp(cur, (const xmlChar *)"synch_time")) 
+            != NULL)
         {
             agent->enable_synch_time = (strcmp(attr, "yes") == 0);
-            xmlFree(attr);
+            free(attr);
         }
         else
             agent->enable_synch_time = FALSE;
 
-        if ((attr = xmlGetProp(cur, (const xmlChar *)"confstr")) != NULL)
+        if ((attr = xmlGetProp_exp(cur, (const xmlChar *)"confstr")) 
+            != NULL)
         {
-            agent->conf = strdup((const char *)attr);
-            xmlFree(attr);
+            agent->conf = attr;
         }
         else
             agent->conf = strdup("");
 
-        if ((attr = xmlGetProp(cur, (const xmlChar *)"rebootable")) != NULL)
+        if ((attr = xmlGetProp_exp(cur, (const xmlChar *)"rebootable")) 
+            != NULL)
         {
             if (strcmp(attr, "yes") == 0)
                 agent->flags = TA_REBOOTABLE;
-            xmlFree(attr);
+           free(attr);
         }
        
-        if ((attr = xmlGetProp(cur, (const xmlChar *)"fake")) != NULL)
+        if ((attr = xmlGetProp_exp(cur, (const xmlChar *)"fake")) != NULL)
         {
             if (strcmp(attr, "yes") == 0)
             {
                 /* TA is already running under gdb */
                 agent->flags |= TA_FAKE;
             }
-            xmlFree(attr);
+            free(attr);
         }
 
         for (task = cur->xmlChildrenNode; task != NULL; task = task->next)
@@ -486,10 +488,10 @@ parse_config(char *filename)
                  (xmlStrcmp(task->name , (const xmlChar *)"function") == 0 ?
                   RCF_START_FUNC : RCF_START_FORK));
             
-            if ((attr = xmlGetProp(task, (const xmlChar *)"name")) != NULL)
+            if ((attr = xmlGetProp_exp(task, (const xmlChar *)"name")) 
+                != NULL)
             {
-                ta_task->entry = strdup((const char *)attr);
-                xmlFree(attr);
+                ta_task->entry = attr;
             }
             else
             {
@@ -503,12 +505,10 @@ parse_config(char *filename)
             {
                 if (xmlStrcmp(arg->name, (const xmlChar *)"arg") != 0)
                     continue;
-                if ((attr = xmlGetProp(arg, (const xmlChar *)"value")) 
+                if ((attr = xmlGetProp_exp(arg, (const xmlChar *)"value")) 
                     != NULL)
                 {
-                    ta_task->argv[ta_task->argc++] = 
-                        strdup((const char *)attr);
-                    xmlFree(attr);
+                    ta_task->argv[ta_task->argc++] = attr;
                 }
                 else
                 {

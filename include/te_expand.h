@@ -1,7 +1,6 @@
 /** @file
- * @brief Configurator
+ * @brief Environment variable expansion
  *
- * Using environment variables in config files
  *
  * Copyright (C) 2005 Test Environment authors (see file AUTHORS in the
  * root directory of the distribution).
@@ -26,6 +25,8 @@
  *
  * $Id$
  */
+#ifndef __TE_EXPAND_H__
+#define __TE_EXPAND_H__
 
 #include "te_config.h"
 
@@ -37,7 +38,10 @@
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
+#include <libxml/xmlmemory.h>
+#include <libxml/parser.h>
 
+/* Attention: this file must be included AFTER logging related headers */
 
 /**
  * Expands environment variables in a string.
@@ -57,7 +61,7 @@
  * @retval ENOBUFS The variable name is longer than 128
  * @retval EINVAL Unmatched ${ found
  */
-int
+static inline int
 cfg_expand_env_vars(const char *src, char **retval)
 {
     const char *next = NULL;
@@ -137,3 +141,43 @@ cfg_expand_env_vars(const char *src, char **retval)
     return 0;
 }
 
+
+/**
+ * A wrapper around xmlGetProp that expands environment variable
+ * references.
+ *
+ * @param node    XML node
+ * @param name    XML attribute name
+ *
+ * @return The expanded attribute value or NULL if no attribute
+ * or an error occured while expanding.
+ *
+ * @sa cfg_expand_env_vars
+ */
+static inline char *
+xmlGetProp_exp(xmlNodePtr node, const xmlChar *name)
+{
+    xmlChar *value = xmlGetProp(node, name);
+    if(value)
+    {
+        char *result = NULL;
+        int rc;
+        rc = cfg_expand_env_vars(value, &result);
+        if(rc == 0)
+        {
+            xmlFree(value);
+            value = (xmlChar *)result;
+        }
+        else
+        {
+            ERROR("Error substituting variables in %s '%s': %s", 
+                  name, value, strerror(rc));
+            xmlFree(value);
+            value = NULL;
+        }
+    }
+    return value;
+}
+
+
+#endif /* !__TE_EXPAND_H__ */
