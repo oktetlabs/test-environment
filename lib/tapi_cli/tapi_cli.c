@@ -57,7 +57,7 @@
 #define TAPI_CLI_CSAP_INIT_FILENAME_MAXLEN  128
 
 #undef TAPI_DEBUG
-#define TAPI_DEBUG  1
+#define TAPI_DEBUG  0
 
 
 /** CLI CSAP type names */
