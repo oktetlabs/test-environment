@@ -839,7 +839,8 @@ log_test_result(test_id parent, test_id test, int result)
                 switch (result)
                 {
                     case ETESTFAIL:
-                        reason = "TODO - from test";
+                        /* TODO Reason from test */
+                        reason = "";
                         break;
 
                     case ETESTCONF:
@@ -1711,6 +1712,7 @@ int
 tester_run_config(tester_ctx *ctx, tester_cfg *cfg)
 {
     int         rc;
+    int         result = 0;
     const char *maintainer_name;
     const char *maintainer_mailto;
     run_item   *test;
@@ -1760,15 +1762,18 @@ tester_run_config(tester_ctx *ctx, tester_cfg *cfg)
          test = test->links.tqe_next)
     {
         rc = iterate_test(ctx, test, NULL);
-        if (rc != 0)
+        if (!TEST_RESULT(rc))
         {
-            ERROR("TODO");
-            tester_ctx_free(ctx);
-            return rc;
+            ERROR("iterate_test() failed: %X", rc);
+            result = ETESTUNEXP;
+        }
+        else if (result < rc)
+        {
+            result = rc;
         }
     }
 
     tester_ctx_free(ctx);
 
-    return 0;
+    return result;
 }
