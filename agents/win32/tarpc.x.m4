@@ -146,6 +146,29 @@ struct tarpc_socket_out {
 };
 
 
+/* dup() */
+
+struct tarpc_dup_in {
+    struct tarpc_in_arg common;
+
+    int oldfd;
+};
+
+typedef struct tarpc_socket_out tarpc_dup_out;
+
+
+/* dup2() */
+
+struct tarpc_dup2_in {
+    struct tarpc_in_arg common;
+
+    int oldfd;
+    int newfd;
+};
+
+typedef struct tarpc_socket_out tarpc_dup2_out;
+
+
 /* close() */
 
 struct tarpc_close_in {
@@ -1343,6 +1366,8 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter])
         RPC_DEF(execve);
         
         RPC_DEF(socket);
+        RPC_DEF(dup);
+        RPC_DEF(dup2);
         RPC_DEF(close);
         RPC_DEF(shutdown);
 

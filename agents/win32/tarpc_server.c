@@ -2235,12 +2235,17 @@ TARPC_FUNC(___func, {},                                         \
 }                                                               \
 )
 
+TARPC_FUNC_UNSUPPORTED(sendmsg); /* Should be   */
+TARPC_FUNC_UNSUPPORTED(recvmsg); /* implemented */
+TARPC_FUNC_UNSUPPORTED(flooder);
+TARPC_FUNC_UNSUPPORTED(echoer);
+TARPC_FUNC_UNSUPPORTED(sendfile);
+TARPC_FUNC_UNSUPPORTED(socket_to_file);
+
 TARPC_FUNC_UNSUPPORTED(write);
 TARPC_FUNC_UNSUPPORTED(read);
 TARPC_FUNC_UNSUPPORTED(writev);
 TARPC_FUNC_UNSUPPORTED(readv);
-TARPC_FUNC_UNSUPPORTED(sendmsg);
-TARPC_FUNC_UNSUPPORTED(recvmsg);
 TARPC_FUNC_UNSUPPORTED(pselect);
 TARPC_FUNC_UNSUPPORTED(poll);
 TARPC_FUNC_UNSUPPORTED_NORETVAL(if_nametoindex);
@@ -2261,11 +2266,9 @@ TARPC_FUNC_UNSUPPORTED(sigsuspend);
 TARPC_FUNC_UNSUPPORTED(sigprocmask);
 TARPC_FUNC_UNSUPPORTED(getaddrinfo);
 TARPC_FUNC_UNSUPPORTED_NORETVAL(freeaddrinfo);
-TARPC_FUNC_UNSUPPORTED(flooder);
-TARPC_FUNC_UNSUPPORTED(echoer);
 TARPC_FUNC_UNSUPPORTED(aio_read_test);
 TARPC_FUNC_UNSUPPORTED(aio_error_test);
 TARPC_FUNC_UNSUPPORTED(aio_write_test);
 TARPC_FUNC_UNSUPPORTED(aio_suspend_test);
-TARPC_FUNC_UNSUPPORTED(sendfile);
-TARPC_FUNC_UNSUPPORTED(socket_to_file);
+TARPC_FUNC_UNSUPPORTED_NORETVAL(dup);
+TARPC_FUNC_UNSUPPORTED_NORETVAL(dup2);
