@@ -2354,12 +2354,6 @@ simple_sender(tarpc_simple_sender_in *in, tarpc_simple_sender_out *out)
         }
 #endif        
     }
-    
-    {
-        char buf[64] = {0,};
-        sprintf(buf, "Sent %llu", sent);
-        ERROR(buf);
-    } 
 
     out->bytes_high = sent >> 32;
     out->bytes_low = sent & 0xFFFFFFFF;
