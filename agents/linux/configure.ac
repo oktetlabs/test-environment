@@ -238,7 +238,6 @@ if test -n "$with_rcf_rpc" ; then
             [AC_ERROR([There is no xdr_uint64_t or xdr_u_int64_t!])])])
 fi
 
-echo Host=$host
 export PKG_CONFIG_PATH=$DESTDIR/$prefix/../$host/lib/pkgconfig/
 
 PKG_CHECK_MODULES(TAD, te-$with_tad)
