@@ -26,7 +26,7 @@
  * $Id$
  */
 
-#define TE_TEST_NAME    "ipstack/udp1"
+#define TE_TEST_NAME    "ipstack/tcp_simple"
 
 #define TE_LOG_LEVEL 0xff
 
@@ -45,54 +45,21 @@
 #include "rcf_api.h"
 #include "logger_api.h"
 
+#include "rcf_rpc.h"
+#include "conf_api.h"
+#include "tapi_rpcsock.h"
+
 #include "tapi_test.h"
 #include "tapi_ipstack.h"
 
 #include "ndn_eth.h"
 #include "ndn_ipstack.h"
 
-void
-udp_handler(char *fn, void *p)
-{ 
-    int rc, s_parsed;
-    asn_value_p packet, eth_header;
-
-    UNUSED(p);
-
-    VERB("ETH handler, file: %s\n", fn);
-
-    rc = asn_parse_dvalue_in_file(fn, ndn_raw_packet, &packet, &s_parsed);
-
-    if (rc == 0)
-    {
-        ndn_eth_header_plain eh;
-        VERB("parse file OK!\n");
-
-        eth_header = asn_read_indexed(packet, 0, "pdus");
-        rc = ndn_eth_packet_to_plain(eth_header, &eh);
-        if (rc)
-            VERB("eth_packet to plain fail: %x\n", rc);
-        else
-        {
-            int i; 
-            VERB("dst - %02x", eh.dst_addr[0]);
-            for (i = 1; i < 6; i++)
-                VERB(":%02x", eh.dst_addr[i]);
-
-            VERB("\nsrc - %02x", eh.src_addr[0]);
-            for (i = 1; i < 6; i++)
-                VERB (":%02x", eh.src_addr[i]);
-            VERB("\ntype - %04x\n", eh.eth_type_len);
-        } 
-    }
-    else
-        VERB("parse file failed, rc = %x, symbol %d\n", rc, s_parsed); 
-
-}
 
 int
 main(int argc, char *argv[])
 {
+    rcf_rpc_server *srv_src, *srv_dst;
     int  sid;
     char ta[32];
     char *agt_a = ta;
@@ -100,13 +67,9 @@ main(int argc, char *argv[])
     int  len = sizeof(ta);
 
     char path[1000];
-    int  path_prefix;
-
-    char *pattern_file;
 
 
     TEST_START; 
-    TEST_GET_STRING_PARAM(pattern_file);
     
     if ((rc = rcf_get_ta_list(ta, &len)) != 0)
         TEST_FAIL("rcf_get_ta_list failed: %X", rc);
@@ -125,44 +88,78 @@ main(int argc, char *argv[])
     {
         if (rcf_ta_create_session(ta, &sid) != 0)
         {
-            ERROR("rcf_ta_create_session failed\n");
+            TEST_FAIL("rcf_ta_create_session failed");
             return 1;
         }
-        INFO("Test: Created session: %d\n", sid); 
+        INFO("Test: Created session: %d", sid); 
     }
 
+    if ((rc = rcf_rpc_server_create(agt_b, "FIRST", &srv_src)) != 0)
+    {
+        TEST_FAIL("Cannot create server %x", rc);
+    }
+    srv_src->def_timeout = 5000;
+    
+    rpc_setlibname(srv_src, NULL);
+
+
+    if ((rc = rcf_rpc_server_create(agt_a, "SECOND", &srv_dst)) != 0)
+    {
+        TEST_FAIL("Cannot create server %x", rc);
+    }
+    srv_dst->def_timeout = 5000;
+    
+    rpc_setlibname(srv_dst, NULL);
+ 
     do {
         struct timeval to;
+        asn_value *csap_spec, *pattern;
 
         int csap;
         int num;
         int timeout = 30;
         int rc_mod, rc_code;
 
-        char *te_suites = getenv("TE_INSTALL_SUITE");
+        rc = asn_parse_value_text("{tcp:{local-port plain:0}, "
+                                  " ip4:{max-packet-size plain:100000},"
+                                  " eth:{device-id plain:\"eth0\"}}", 
+                                  ndn_csap_spec, &csap_spec, &num);
+        VERB("CSAP spec parse rc %X, syms %d", rc, num);
+        if (rc)
+            TEST_FAIL("ASN error"); 
 
-        if (te_suites)
-            INFO("te_suites: %s\n", te_suites);
+        strcpy(path, "/tmp/te_tcp_csap_create.XXXXXX"); 
+        mkstemp(path); 
+        VERB("file name for csap spec: '%s'", path);
 
-        INFO("let's create UDP data csap \n"); 
-        rc = tapi_udp4_csap_create(ta, sid, NULL, "0.0.0.0", 
-                                    5678, 0, &csap); 
+        asn_save_to_file(csap_spec, path);
+
+
+        rc = rcf_ta_csap_create(ta, sid, "tcp.ip4.eth", path, &csap); 
         INFO("csap_create rc: %d, csap id %d\n", rc, csap); 
         if ((rc_mod = TE_RC_GET_MODULE(rc)) != 0)
         {
             INFO ("rc from module %d is 0x%x\n", 
                         rc_mod, TE_RC_GET_ERROR(rc));
         } 
-        if (rc) break;
 
-        strcpy(path, te_suites);
-        strcat(path, "/selftad/ipstack/");
-        strcat(path, pattern_file);
+        strcpy(path, "/tmp/te_tcp_pattern.XXXXXX"); 
+        mkstemp(path); 
+        VERB("file name for tcp pattern: '%s'", path);
 
-        INFO("prepared path: %s", path); 
+        num = 0; 
+        rc = asn_parse_value_text(
+"{{ action function:\"test\","
+" pdus {tcp:{src-port plain:6100},"
+" ip4:{protocol plain:6}, eth:{eth-type plain:2048}}}}",
+                                  ndn_traffic_pattern, &pattern, &num);
+        VERB("Pattern parse rc %X, syms %d", rc, num);
+        if (rc)
+            TEST_FAIL("ASN error"); 
 
+        asn_save_to_file(pattern, path);
 #if 1
-        rc = rcf_ta_trrecv_start(ta, sid, csap, path, 0, udp_handler, NULL, 0);
+        rc = rcf_ta_trrecv_start(ta, sid, csap, path, 0, NULL, NULL, 0);
         INFO("trrecv_start: 0x%X \n", rc);
         if (rc) break;
 

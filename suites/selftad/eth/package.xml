@@ -8,10 +8,14 @@
 
     <session>
         <run>
-            <script name="eth1"/>
+            <script name="eth1">
+                <req id="TAD_ETH"/> 
+            </script>
         </run>
         <run>
-            <script name="eth2"/>
+            <script name="eth2">
+                <req id="TAD_ETH"/> 
+            </script>
         </run>
    </session>
 </package>

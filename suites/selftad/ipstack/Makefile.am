@@ -12,9 +12,9 @@ AM_CFLAGS = -I$(DESTDIR)/$(prefix)/include \
 AM_LDFLAGS = @TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/lib 
 
 
-tetest_PROGRAMS = udp1
+tetest_PROGRAMS = udp1 tcp_simple
 
-LDADD = -ltapi_ipstack -lndn -lasn -ltapi -lrcfapi -lconfapi -lconf_oid \
-          -lipc -lpthread -llogger_ten
+LDADD = -ltapi_rpcsock -ltapi_ipstack -lndn -lasn -ltapi -lrcfrpc -lrcfapi \
+	-lconfapi -lconf_oid -lipc -lpthread -llogger_ten
 
 tetest_DATA=${srcdir}/udp-filter.asn

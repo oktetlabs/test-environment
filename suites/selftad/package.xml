@@ -7,7 +7,10 @@
 
     <req id="TAD" sticky="true"/> 
     <req id="TAD_ETH"/> 
+    <req id="TAD_CLI"/> 
+    <req id="TAD_TCP"/>
     <req id="TAD_SNMP"/> 
+    <req id="TAD_IPSTACK"/> 
 
     <session>
         <run>

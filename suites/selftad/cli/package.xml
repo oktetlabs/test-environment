@@ -5,13 +5,15 @@
     
     <author mailto="Konstantin.Abramenko@oktetlabs.ru"/>
 
+    <req id="TAD_CLI" sticky="true"/>
+
     <session>
         <arg name="ta" handdown="true">
             <value>Agt_A</value>
         </arg>
         <run>
             <script name="clitest">
-                <req id="CLI"/>
+                <req id="TAD_CLI"/> 
             </script>
         </run>
    </session>

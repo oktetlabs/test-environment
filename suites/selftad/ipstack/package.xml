@@ -4,6 +4,7 @@
     <description>Tests on TAD IP stack functionality.</description>
 
     <author mailto="Konstantin.Abramenko@oktetlabs.ru"/>
+    <req id="TAD_IPSTACK" sticky="true"/>
 
     <session>
         <var name="ta" handdown="true">
@@ -12,12 +13,17 @@
 
         <run>
             <script name="udp1">
-                <req id="IPSTACK"/>
-                <req id="UDP"/>
+                <req id="TAD_UDP"/>
             </script>
             <arg name="pattern_file">
                 <value>udp-filter.asn</value>
             </arg>
+        </run>
+
+        <run>
+            <script name="tcp_simple">
+                <req id="TAD_TCP"/>
+            </script>
         </run>
     </session>
 
