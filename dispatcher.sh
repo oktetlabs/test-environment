@@ -170,7 +170,7 @@ while test -n "$1" ; do
         --vg-cs)     VG_CS=yes ;;
         --vg-logger) VG_LGR=yes ;;
         --vg-tester) VG_TESTER=yes ;;
-        --vg-engine) VG_RCF=yes; VG_CS=yes; VG_LGR=yes ;;    
+        --vg-engine) VG_RCF=yes; VG_CS=yes; VG_LGR=yes ; VG_TESTER=yes ;;    
     
         --no-builder) BUILDER= ;;
         --no-tester) TESTER= ;;
