@@ -67,13 +67,14 @@ main(int argc, char *argv[])
     TEST_START;
     CHECK_RC(rcf_get_ta_list(ta, &len));
     INFO("Agent is %s", ta);
-#if 0
-    CHECK_RC(rcf_ta_start_thread(ta, 0, -1, "log_serial", &shell_tid,
-                                 4, TRUE, "test", "RING", "2000", "/dev/ttyS0"
-                                 ));
-    RING("Got TID %d", shell_tid);
-#endif
-    sleep(30);
+
+    CHECK_RC(cfg_set_instance_fmt(CVT_INTEGER, (void *)0, "/agent:%s/ftpserver:", ta));
+    CHECK_RC(cfg_set_instance_fmt(CVT_STRING, "xinetd_vsftpd", "/agent:%s/ftpserver:/server:", ta));
+    CHECK_RC(cfg_set_instance_fmt(CVT_INTEGER, (void *)1, "/agent:%s/ftpserver:", ta));
+    CHECK_RC(cfg_set_instance_fmt(CVT_INTEGER, (void *)0, "/agent:%s/ftpserver:", ta));
+    CHECK_RC(cfg_set_instance_fmt(CVT_STRING, "vsftpd", "/agent:%s/ftpserver:/server:", ta));
+    CHECK_RC(cfg_set_instance_fmt(CVT_INTEGER, (void *)1, "/agent:%s/ftpserver:", ta));
+
 
     snprintf(eth0_oid, sizeof(eth0_oid) - 1, "/agent:%s/interface:*", ta);
     CHECK_RC(cfg_find_pattern(eth0_oid, &num_interfaces, &interfaces));
