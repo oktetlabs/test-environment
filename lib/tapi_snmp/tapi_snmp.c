@@ -987,7 +987,10 @@ tapi_snmp_get_row(const char *ta, int sid, int csap_id,
         
     }
     else 
-        rc = TE_RC(TE_TAPI, msg.err_status);
+    {
+        if (errstatus) *errstatus = msg.err_status;
+        if (errindex)  *errindex  = msg.err_index;
+    }
 
 clean_up:
 
@@ -1065,7 +1068,8 @@ tapi_snmp_set_vbs(const char *ta, int sid, int csap_id,
             }
             tapi_snmp_free_message(&msg);
         }
-        else 
+        else /* abnormal situation, msg is not correct SNMP response, 
+                err_status simply used for passing error code. */
             rc = msg.err_status;
     } 
 #if !(DEBUG)
@@ -1082,56 +1086,6 @@ struct tapi_vb_list {
 
 
 
-#if 0
-int 
-tapi_snmp_set_row(const char *ta, int sid, int csap_id, 
-                  int *errstat, int *errindex,
-                  const tapi_snmp_oid_t *common_index, ...)
-{
-    va_list ap;
-    int num_vars = 0;
-    int i;
-    struct tapi_vb_list *vbl_head = NULL; 
-    const tapi_snmp_varbind_t *vb;
-    tapi_snmp_varbind_t *vb_array;
-
-    va_start(ap, common_index);
-    do {
-        vb = va_arg(ap, const tapi_snmp_varbind_t *);
-        if (vb)
-        {
-            struct tapi_vb_list *new_vbl = calloc(1, sizeof(struct tapi_vb_list));
-            new_vbl->next = vbl_head;
-            new_vbl->vb = vb;
-            vbl_head = new_vbl;
-            num_vars ++;
-        }
-    } while (vb);
-    va_end(ap);
-
-    if (!num_vars)
-        return 0; /* ??? */
-
-    vb_array = calloc(num_vars, sizeof(tapi_snmp_varbind_t)); 
-
-    VERB("in %s: num_vars %d\n", __FUNCTION__, num_vars);
-
-    i = num_vars; 
-    do {
-        struct tapi_vb_list *tail; 
-
-        tail = vbl_head->next;
-        i--; 
-        vb_array[i] = *(vbl_head->vb);
-        free(vbl_head);
-        vbl_head = tail;
-        if (common_index)
-            tapi_snmp_cat_oid(&(vb_array[i].name), common_index);
-    } while (i > 0);
-
-    return tapi_snmp_set(ta, sid, csap_id, vb_array, num_vars, errstat, errindex);
-}
-#else
 
 static int
 tapi_snmp_get_object_type(const tapi_snmp_oid_t *oid,
@@ -1384,8 +1338,6 @@ tapi_snmp_set(const char *ta, int sid, int csap_id,
     return rc;
 }
 
-#endif
-
 /* See description in tapi_snmp.h */
 int
 tapi_snmp_set_integer(const char *ta, int sid, int csap_id, 
@@ -1406,7 +1358,8 @@ tapi_snmp_set_integer(const char *ta, int sid, int csap_id,
                 *errstat = msg.err_status;
             tapi_snmp_free_message(&msg);
         }
-        else 
+        else /* abnormal situation, msg is not correct SNMP response, 
+                err_status simply used for passing error code. */ 
             rc = TE_RC(TE_TAPI, msg.err_status);
     } 
     return rc;
@@ -1432,7 +1385,8 @@ tapi_snmp_set_octetstring(const char *ta, int sid, int csap_id,
                 *errstat = msg.err_status;
             tapi_snmp_free_message(&msg);
         }
-        else 
+        else /* abnormal situation, msg is not correct SNMP response, 
+                err_status simply used for passing error code. */
             rc = TE_RC(TE_TAPI, msg.err_status);
     } 
     return rc; 
@@ -1469,8 +1423,8 @@ tapi_snmp_get(const char *ta, int sid, int csap_id,
             tapi_snmp_copy_varbind(varbind, msg.vars);
             tapi_snmp_free_message(&msg);
         }
-        else 
-            rc = TE_RC(TE_TAPI, msg.err_status);
+        else if (errstatus) 
+            *errstatus = msg.err_status;
     }
 
     return rc;
@@ -1504,8 +1458,8 @@ tapi_snmp_getbulk(const char *ta, int sid, int csap_id,
             }
             tapi_snmp_free_message(&msg);
         }
-        else 
-            rc = TE_RC(TE_TAPI, msg.err_status);
+        else if (errstatus) 
+            *errstatus = msg.err_status;
     } 
     return rc;
 }
