@@ -133,6 +133,218 @@ static LPFN_GETACCEPTEXSOCKADDRS pf_get_accept_ex_sockaddrs = NULL;
 static LPFN_TRANSMITFILE         pf_transmit_file = NULL;
 static LPFN_WSARECVMSG           pf_wsa_recvmsg = NULL;
 
+/**
+ * Translates WSAError to errno.
+ */ 
+static int 
+wsaerr2errno(int wsaerr)
+{
+    int err = 0;
+    
+    switch (wsaerr)
+    {
+        case RPC_WSAEACCES:
+        {
+            err = RPC_EACCES;
+            break;
+        }    
+        
+        case RPC_WSAEFAULT:
+        {
+            err = RPC_EFAULT;
+            break;
+        }
+        
+        case RPC_WSAEINVAL:
+        {
+            err = RPC_EINVAL;
+            break;
+        }    
+        
+        case RPC_WSAEMFILE:
+        {
+            err = RPC_EMFILE;
+            break;
+        }    
+        
+        case RPC_WSAEWOULDBLOCK:
+        {
+            err = RPC_EAGAIN;
+            break;
+        }    
+        
+        case RPC_WSAEINPROGRESS:
+        {
+            err = RPC_EINPROGRESS;
+            break;
+        }    
+        
+        case RPC_WSAEALREADY:
+        {
+            err = RPC_EALREADY;
+            break;
+        }
+        
+        case RPC_WSAENOTSOCK:
+        {
+            err = RPC_ENOTSOCK;
+            break;
+        }    
+        
+        case RPC_WSAEDESTADDRREQ:
+        {
+            err = RPC_EDESTADDRREQ;
+            break;
+        }    
+        
+        case RPC_WSAEMSGSIZE:
+        {
+            err = RPC_EMSGSIZE;
+            break;
+        }
+        
+        case RPC_WSAEPROTOTYPE:
+        {
+            err = RPC_EPROTOTYPE;
+            break;
+        }    
+        
+        case RPC_WSAENOPROTOOPT:
+        {
+            err = RPC_ENOPROTOOPT;
+            break;
+        }    
+        
+        case RPC_WSAEPROTONOSUPPORT:
+        {
+            err = RPC_EPROTONOSUPPORT;
+            break;
+        }    
+        
+        case RPC_WSAESOCKTNOSUPPORT:
+        {
+            err = RPC_ESOCKTNOSUPPORT;
+            break;
+        }    
+        
+        case RPC_WSAEOPNOTSUPP:
+        {
+            err = RPC_EOPNOTSUPP;
+            break;
+        } 
+        
+        case RPC_WSAEPFNOSUPPORT:
+        {
+            err = RPC_EPFNOSUPPORT;
+            break;
+        } 
+        
+        case RPC_WSAEAFNOSUPPORT:
+        {
+            err = RPC_EAFNOSUPPORT;
+            break;
+        } 
+        
+        case RPC_WSAEADDRINUSE:
+        {
+            err = RPC_EADDRINUSE;
+            break;
+        } 
+        
+        case RPC_WSAEADDRNOTAVAIL:
+        {
+            err = RPC_EADDRNOTAVAIL;
+            break;
+        } 
+        
+        case RPC_WSAENETDOWN:
+        {
+            err = RPC_ENETDOWN;
+            break;
+        } 
+        
+        case RPC_WSAENETUNREACH:
+        {
+            err = RPC_ENETUNREACH;
+            break;
+        } 
+        
+        case RPC_WSAENETRESET:
+        {
+            err = RPC_ENETRESET;
+            break;
+        } 
+        
+        case RPC_WSAECONNABORTED:
+        {
+            err = RPC_ECONNABORTED;
+            break;
+        } 
+        
+        case RPC_WSAECONNRESET:
+        {
+            err = RPC_ECONNRESET;
+            break;
+        }
+        
+        case RPC_WSAENOBUFS:
+        {
+            err = RPC_ENOBUFS;
+            break;
+        } 
+
+        case RPC_WSAEISCONN:
+        {
+            err = RPC_EISCONN;
+            break;
+        } 
+        
+        case RPC_WSAENOTCONN:
+        {
+            err = RPC_ENOTCONN;
+            break;
+        } 
+        
+        case RPC_WSAESHUTDOWN:
+        {
+            err = RPC_ESHUTDOWN;
+            break;
+        } 
+        
+        case RPC_WSAETIMEDOUT:
+        {
+            err = RPC_ETIMEDOUT;
+            break;
+        } 
+        
+        case RPC_WSAECONNREFUSED:
+        {
+            err = RPC_ECONNREFUSED;
+            break;
+        } 
+        
+        case RPC_WSAEHOSTDOWN:
+        {
+            err = RPC_EHOSTDOWN;
+            break;
+        } 
+        
+        case RPC_WSAEHOSTUNREACH:
+        {
+            err = RPC_EHOSTUNREACH;
+            break;
+        } 
+ 
+        default:
+        {
+            err = RPC_EINVAL; 
+        }
+    }    
+
+    
+    return err;    
+}
+
 void 
 wsa_func_handles_discover()
 {
@@ -336,10 +548,8 @@ sockaddr_rpc2h(struct tarpc_sa *rpc_addr, struct sockaddr_storage *addr)
 
     if (len < rpc_addr->sa_data.sa_data_len)
     {
-#if 0
         WARN("Strange tarpc_sa length %d is received",
              rpc_addr->sa_data.sa_data_len);
-#endif
     }
     else
         len = rpc_addr->sa_data.sa_data_len;
@@ -503,7 +713,7 @@ check_args(checked_arg *list)
         if ((out->common._errno == 0) &&                         \
             (out->common.win_error != 0))                        \
             out->common._errno =                                 \
-            wsaerr2errno(out->common.win_error);                 \
+                wsaerr2errno(out->common.win_error);             \
         gettimeofday(&t_finish, NULL);                           \
         out->common.duration =                                   \
             (t_finish.tv_sec - t_start.tv_sec) * 1000000 +       \
@@ -3167,217 +3377,6 @@ TARPC_FUNC(wait_multiple_events, {},
 }
 )
 
-/**
- * Translates WSAError to errno.
- */ 
-static int 
-wsaerr2errno(int wsaerr)
-{
-    int err = 0;
-    
-    switch (wsaerr)
-    {
-        case RPC_WSAEACCES:
-        {
-            err = RPC_EACCES;
-            break;
-        }    
-        
-        case RPC_WSAEFAULT:
-        {
-            err = RPC_EFAULT;
-            break;
-        }
-        
-        case RPC_WSAEINVAL:
-        {
-            err = RPC_EINVAL;
-            break;
-        }    
-        
-        case RPC_WSAEMFILE:
-        {
-            err = RPC_EMFILE;
-            break;
-        }    
-        
-        case RPC_WSAEWOULDBLOCK:
-        {
-            err = RPC_EWOULDBLOCK;
-            break;
-        }    
-        
-        case RPC_WSAEINPROGRESS:
-        {
-            err = RPC_EINPROGRESS;
-            break;
-        }    
-        
-        case RPC_WSAEALREADY:
-        {
-            err = RPC_EALREADY;
-            break;
-        }
-        
-        case RPC_WSAENOTSOCK:
-        {
-            err = RPC_ENOTSOCK;
-            break;
-        }    
-        
-        case RPC_WSAEDESTADDRREQ:
-        {
-            err = RPC_EDESTADDRREQ;
-            break;
-        }    
-        
-        case RPC_WSAEMSGSIZE:
-        {
-            err = RPC_EMSGSIZE;
-            break;
-        }
-        
-        case RPC_WSAEPROTOTYPE:
-        {
-            err = RPC_EPROTOTYPE;
-            break;
-        }    
-        
-        case RPC_WSAENOPROTOOPT:
-        {
-            err = RPC_ENOPROTOOPT;
-            break;
-        }    
-        
-        case RPC_WSAEPROTONOSUPPORT:
-        {
-            err = RPC_EPROTONOSUPPORT;
-            break;
-        }    
-        
-        case RPC_WSAESOCKTNOSUPPORT:
-        {
-            err = RPC_ESOCKTNOSUPPORT;
-            break;
-        }    
-        
-        case RPC_WSAEOPNOTSUPP:
-        {
-            err = RPC_EOPNOTSUPP;
-            break;
-        } 
-        
-        case RPC_WSAEPFNOSUPPORT:
-        {
-            err = RPC_EPFNOSUPPORT;
-            break;
-        } 
-        
-        case RPC_WSAEAFNOSUPPORT:
-        {
-            err = RPC_EAFNOSUPPORT;
-            break;
-        } 
-        
-        case RPC_WSAEADDRINUSE:
-        {
-            err = RPC_EADDRINUSE;
-            break;
-        } 
-        
-        case RPC_WSAEADDRNOTAVAIL:
-        {
-            err = RPC_EADDRNOTAVAIL;
-            break;
-        } 
-        
-        case RPC_WSAENETDOWN:
-        {
-            err = RPC_ENETDOWN;
-            break;
-        } 
-        
-        case RPC_WSAENETUNREACH:
-        {
-            err = RPC_ENETUNREACH;
-            break;
-        } 
-        
-        case RPC_WSAENETRESET:
-        {
-            err = RPC_ENETRESET;
-            break;
-        } 
-        
-        case RPC_WSAECONNABORTED:
-        {
-            err = RPC_ECONNABORTED;
-            break;
-        } 
-        
-        case RPC_WSAECONNRESET:
-        {
-            err = RPC_ECONNRESET;
-            break;
-        }
-        
-        case RPC_WSAENOBUFS:
-        {
-            err = RPC_ENOBUFS;
-            break;
-        } 
-
-        case RPC_WSAEISCONN:
-        {
-            err = RPC_EISCONN;
-            break;
-        } 
-        
-        case RPC_WSAENOTCONN:
-        {
-            err = RPC_ENOTCONN;
-            break;
-        } 
-        
-        case RPC_WSAESHUTDOWN:
-        {
-            err = RPC_ESHUTDOWN;
-            break;
-        } 
-        
-        case RPC_WSAETIMEDOUT:
-        {
-            err = RPC_ETIMEDOUT;
-            break;
-        } 
-        
-        case RPC_WSAECONNREFUSED:
-        {
-            err = RPC_ECONNREFUSED;
-            break;
-        } 
-        
-        case RPC_WSAEHOSTDOWN:
-        {
-            err = RPC_EHOSTDOWN;
-            break;
-        } 
-        
-        case RPC_WSAEHOSTUNREACH:
-        {
-            err = RPC_EHOSTUNREACH;
-            break;
-        } 
- 
-        default:
-        {
-            err = RPC_EINVAL; 
-        }
-    }    
-
-    
-    return err;    
-}
 
 /*----------------- WSASendTo() -------------------------*/
 TARPC_FUNC(wsa_send_to,
