@@ -310,7 +310,7 @@ main()
         printf("trsend_start: 0x%x\n", rc);
         if (rc) break;
 
-        rc = rcf_ta_trsend_stop(ta, handle, &num);
+        rc = rcf_ta_trsend_stop(ta, sid, handle, &num);
         printf("trsend_stop: 0x%x, num: %d\n", rc, num);
         if (rc) break;
 
@@ -335,7 +335,7 @@ main()
                rcf_ta_trsend_start(ta, sid, handle, "/tmp/template", 0));
 
         printf("trsend_stop: %d\n", 
-               rcf_ta_trsend_stop(ta, handle, &num));
+               rcf_ta_trsend_stop(ta, sid, handle, &num));
 
         printf("trsend_recv: %d\n", 
                rcf_ta_trsend_recv(ta, sid, handle, "/tmp/template", 0, 0,
