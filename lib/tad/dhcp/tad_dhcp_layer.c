@@ -232,7 +232,7 @@ dhcp_gen_bin_cb(int csap_id, int layer, const asn_value *tmpl_pdu,
     
     p = pkts->data;
 
-#define PUT_DHCP_FIELD(_label, _defval, _type) \
+#define PUT_DHCP_FIELD(_label, _defval, _type, _conv) \
     do {\
         val_len = sizeof(value);\
         rc = asn_read_value_field(tmpl_pdu, &value, &val_len, _label);\
@@ -245,21 +245,21 @@ dhcp_gen_bin_cb(int csap_id, int layer, const asn_value *tmpl_pdu,
             pkts->len = 0;\
             return rc;\
         }\
-        *((_type *)p) = value;\
+        *((_type *)p) = _conv(value);\
         p += sizeof(_type);\
     } while(0) 
 
-    PUT_DHCP_FIELD("op",    0,     uint8_t);
-    PUT_DHCP_FIELD("htype", 0,     uint8_t);
-    PUT_DHCP_FIELD("hlen",  0,     uint8_t);
-    PUT_DHCP_FIELD("hops",  0,     uint8_t);
-    PUT_DHCP_FIELD("xid",   0,     uint32_t);
-    PUT_DHCP_FIELD("secs",  0,     uint16_t);
-    PUT_DHCP_FIELD("flags", 0,     uint16_t);
-    PUT_DHCP_FIELD("ciaddr",0,     uint32_t);
-    PUT_DHCP_FIELD("yiaddr",0,     uint32_t);
-    PUT_DHCP_FIELD("siaddr",0,     uint32_t);
-    PUT_DHCP_FIELD("giaddr",0,     uint32_t);
+    PUT_DHCP_FIELD("op",     0, uint8_t, (uint8_t));
+    PUT_DHCP_FIELD("htype",  0, uint8_t, (uint8_t));
+    PUT_DHCP_FIELD("hlen",   0, uint8_t, (uint8_t));
+    PUT_DHCP_FIELD("hops",   0, uint8_t, (uint8_t));
+    PUT_DHCP_FIELD("xid",    0, uint32_t, htonl);
+    PUT_DHCP_FIELD("secs",   0, uint16_t, htons);
+    PUT_DHCP_FIELD("flags",  0, uint16_t, htons);
+    PUT_DHCP_FIELD("ciaddr", 0, uint32_t, htonl);
+    PUT_DHCP_FIELD("yiaddr", 0, uint32_t, htonl);
+    PUT_DHCP_FIELD("siaddr", 0, uint32_t, htonl);
+    PUT_DHCP_FIELD("giaddr", 0, uint32_t, htonl);
 
 #define PUT_DHCP_LONG_FIELD(_label, _defval, _length) \
     do {\
