@@ -58,6 +58,9 @@
 #define TAPI_CLI_CSAP_STR_MAXLEN            512
 #define TAPI_CLI_CSAP_INIT_FILENAME_MAXLEN  128
 
+#undef TAPI_DEBUG
+#define TAPI_DEBUG  1
+
 
 /**
  * Add prompts parameters to CLI CSAP initialisation string
@@ -142,8 +145,8 @@ tapi_cli_csap_local_create(const char *ta_name, int sid,
 
     len += snprintf(buf + len, buf_size - len,
                     "{ cli : { conn-type %d,"
-                    "          conn-params %s : { device plain : \"%s\" }",
-                    type, tapi_cli_csap_type_name[type], device);
+                    "          conn-params serial : { device plain : \"%s\" }",
+                    type, device);
 
     len += tapi_cli_csap_add_prompts(buf + len, buf_size - len,
                                      command_prompt, login_prompt, login_name,
@@ -195,9 +198,9 @@ tapi_cli_csap_remote_create(const char *ta_name, int sid,
 
     len += snprintf(buf + len, buf_size - len,
                     "{ cli : { conn-type %d,"
-                    "          conn-params %s : { host plain : \"%s\","
-                    "                             port plain : %d }",
-                    type, tapi_cli_csap_type_name[type], host, port);
+                    "          conn-params telnet : { host plain : \"%s\","
+                    "                                 port plain : %d }",
+                    type, host, port);
 
     len += tapi_cli_csap_add_prompts(buf + len, buf_size - len,
                                      command_prompt, login_prompt, login_name,

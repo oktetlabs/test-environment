@@ -64,23 +64,23 @@ static const char *tapi_cli_redhat_cprompt_dflt = "\\]\\$\\ ";
 /** Default command prompt on debian is '...$ ' */
 static const char *tapi_cli_debian_cprompt_dflt = "\\$\\ ";
 
-/** Default login prompt for serial console is 'Login: ' */
-static const char *tapi_cli_serial_lprompt_dflt = "Login: ";
+/** Default login prompt for serial console is '[L|l]ogin: ' */
+static const char *tapi_cli_serial_lprompt_dflt = "ogin: ";
 
-/** Default password prompt for serial console is 'Password: ' */
-static const char *tapi_cli_serial_pprompt_dflt = "Password: ";
+/** Default password prompt for serial console is '[P|p]assword: ' */
+static const char *tapi_cli_serial_pprompt_dflt = "assword: ";
 
 /** Default login prompt for telnet console is 'Login: ' */
-static const char *tapi_cli_telnet_lprompt_dflt = "Login: ";
+static const char *tapi_cli_telnet_lprompt_dflt = "ogin: ";
 
-/** Default password prompt for telnet console is 'Password: ' */
-static const char *tapi_cli_telnet_pprompt_dflt = "Password: ";
+/** Default password prompt for telnet console is '[P|p]assword: ' */
+static const char *tapi_cli_telnet_pprompt_dflt = "assword: ";
 
 /** There is no default login prompt for ssh console */
 static const char *tapi_cli_ssh_lprompt_dflt = NULL;
 
-/** Default password prompt for ssh console is 'Password: ' */
-static const char *tapi_cli_ssh_pprompt_dflt = "Password: ";
+/** Default password prompt for ssh console is '[P|p]assword: ' */
+static const char *tapi_cli_ssh_pprompt_dflt = "assword: ";
 
 /**
  * Create common CLI CSAP on local device (using millicom).
@@ -184,9 +184,10 @@ extern int tapi_cli_send_recv(const char *ta_name, int sid,
                                     cprompt, cli_csap)                         \
     do {                                                                       \
         CHECK_RC(                                                              \
-            tapi_cli_csap_remote_create(ta_name, sid, device, cprompt          \
-                                        tapi_cli_serial_lprompt_dflt, user,    \
-                                        tapi_cli_serial_pprompt_dflt, pwd)     \
+            tapi_cli_csap_local_create(ta_name, sid, device, cprompt,          \
+                                       tapi_cli_serial_lprompt_dflt, user,     \
+                                       tapi_cli_serial_pprompt_dflt, pwd,      \
+                                       cli_csap)                               \
         );                                                                     \
     } while (0)
 
@@ -197,9 +198,9 @@ extern int tapi_cli_send_recv(const char *ta_name, int sid,
             tapi_cli_csap_remote_create(ta_name, sid,                          \
                                         TAPI_CLI_CSAP_TYPE_TELNET,             \
                                         host, TAPI_CLI_TELNET_PORT_DFLT,       \
-                                        cprompt, NULL, user,                   \
-                                        tapi_cli_telnet_pprompt_dflt,          \
-                                        pwd)                                   \
+                                        cprompt, tapi_cli_telnet_lprompt_dflt, \
+                                        user, tapi_cli_telnet_pprompt_dflt,    \
+                                        pwd, cli_csap)                         \
         );                                                                     \
     } while (0)
 
