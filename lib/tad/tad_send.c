@@ -52,6 +52,7 @@
     do {                                                            \
         struct rcf_comm_connection *handle = context->rcf_handle;   \
         int r_c;                                                    \
+                                                                    \
         if (snprintf(answer_buffer + ans_len,                       \
                      RBUF - ans_len, _fmt) >= RBUF - ans_len)       \
         {                                                           \
@@ -81,18 +82,19 @@
  */
 int
 tad_tr_send_prepare_bin(csap_p csap_descr, asn_value_p nds, 
-        struct rcf_comm_connection *handle, 
-        const tad_template_arg_t *args, size_t arg_num,
-        tad_payload_type pld_type, const void *pld_data, csap_pkts_p pkts)
+                        struct rcf_comm_connection *handle, 
+                        const tad_template_arg_t *args, size_t arg_num,
+                        tad_payload_type pld_type, const void *pld_data,
+                        csap_pkts_p pkts)
 {
     csap_pkts *up_packets  = NULL;
     csap_pkts *low_packets = NULL;
 
-    int level = 0;
-    int rc = 0;
+    int  level = 0;
+    int  rc = 0;
     char pld_label[10] = "";
 
-    UNUSED (handle);
+    UNUSED(handle);
 
     if (pld_type == TAD_PLD_UNKNOWN || pld_data == NULL)
     {
@@ -106,7 +108,7 @@ tad_tr_send_prepare_bin(csap_p csap_descr, asn_value_p nds,
             pld_type = tad_payload_asn_label_to_enum(pld_label);
             if (pld_data == NULL)
             {
-                int pld_data_len = asn_get_length (nds, "payload");
+                int      pld_data_len = asn_get_length(nds, "payload");
                 uint8_t *pld_data_local = malloc(pld_data_len);
 
                 if (pld_data_local == NULL) 
@@ -131,16 +133,17 @@ tad_tr_send_prepare_bin(csap_p csap_descr, asn_value_p nds,
                 return EINVAL;
 
 
-            rc = function_addr(csap_descr->id, -1 /*payload is strange level*/,
-                                nds); 
+            rc = function_addr(csap_descr->id, -1 /* payload */,
+                               nds); 
             if (rc)
                 return TE_RC(TE_TAD_CH, rc); 
 
         } /* fall through! */
         case TAD_PLD_BYTES:
         {
-            int d_len = asn_get_length(nds, "payload.#bytes");
+            int   d_len = asn_get_length(nds, "payload.#bytes");
             void *data = malloc(d_len);
+
             rc = asn_read_value_field(nds, data, &d_len, "payload.#bytes");
             if (rc)
             {
@@ -151,14 +154,14 @@ tad_tr_send_prepare_bin(csap_p csap_descr, asn_value_p nds,
             memset(up_packets, 0, sizeof(csap_pkts));
             up_packets->data = data;
             up_packets->len  = d_len;
+            break;
         }
-        break;
         case TAD_PLD_LENGTH:
         {
             int d_len, l;
             void *data;
 
-            l = sizeof (d_len);
+            l = sizeof(d_len);
             rc = asn_read_value_field(nds, &d_len, &l, "payload.#length");
             if (rc)
                 return TE_RC(TE_TAD_CH, rc);
@@ -169,11 +172,10 @@ tad_tr_send_prepare_bin(csap_p csap_descr, asn_value_p nds,
             up_packets->data = data;
             up_packets->len  = d_len;
             memset(data, 0x5a, d_len);
+            break;
         }
-        break;
         default:
-        ;
-        break;
+            break;
         /* TODO: processing of other choices should be inserted here. */
     } 
 
@@ -181,11 +183,12 @@ tad_tr_send_prepare_bin(csap_p csap_descr, asn_value_p nds,
 
     for (level = 0; rc == 0 && level < csap_descr->depth; level ++)
     { 
-        csap_spt_type_p csap_spt_descr; 
+        csap_spt_type_p  csap_spt_descr; 
         const asn_value *level_pdu = NULL; 
-        char label[20];
 
-        sprintf (label, "pdus.%d", level);
+        char  label[20];
+
+        sprintf(label, "pdus.%d", level);
 
         low_packets = malloc(sizeof(csap_pkts));
         memset(low_packets, 0, sizeof(csap_pkts));
@@ -199,7 +202,7 @@ tad_tr_send_prepare_bin(csap_p csap_descr, asn_value_p nds,
 
         if (rc == 0)
         {
-            csap_spt_descr = find_csap_spt (csap_descr->proto[level]);
+            csap_spt_descr = find_csap_spt(csap_descr->proto[level]);
 
             F_VERB("before generate_cb, level: %d, up_pkts: %x\n",
                    level, up_packets);
@@ -222,10 +225,9 @@ tad_tr_send_prepare_bin(csap_p csap_descr, asn_value_p nds,
 
         if (rc) 
         {
-            ERROR(
-                       "generate binary data error; "
-                       "rc: 0x%x, csap id: %d, level: %d\n", 
-                       rc, csap_descr->id, level);
+            ERROR("generate binary data error; "
+                  "rc: 0x%x, csap id: %d, level: %d\n", 
+                  rc, csap_descr->id, level);
 
             rc = TE_RC(TE_TAD_CSAP, rc);
         }
@@ -236,8 +238,7 @@ tad_tr_send_prepare_bin(csap_p csap_descr, asn_value_p nds,
 
     if (csap_descr->depth)
     {
-        memcpy (pkts, low_packets, sizeof (*pkts));
-
+        memcpy(pkts, low_packets, sizeof(*pkts)); 
         free(low_packets);
     }
     return TE_RC(TE_TAD_CH, rc);
@@ -248,7 +249,7 @@ tad_tr_send_prepare_bin(csap_p csap_descr, asn_value_p nds,
 /**
  * Start routine for trsend thread. 
  *
- * @param arg      start argument, should be pointer to tad_task_context struct.
+ * @param arg      start argument, should be pointer to tad_task_context.
  *
  * @return nothing. 
  */
@@ -294,7 +295,7 @@ tad_tr_send_thread(void * arg)
         return NULL;
     }
     strcpy(answer_buffer, csap_descr->answer_prefix);
-    ans_len = strlen (answer_buffer);
+    ans_len = strlen(answer_buffer);
 
     do {
         const asn_value *arg_sets;
@@ -312,7 +313,7 @@ tad_tr_send_thread(void * arg)
             }
         }
 
-        rc = asn_get_subvalue (nds, &pdus, "pdus");
+        rc = asn_get_subvalue(nds, &pdus, "pdus");
         if (rc)
             break;
 
@@ -349,7 +350,7 @@ tad_tr_send_thread(void * arg)
             case TAD_PLD_LENGTH:
                 if (pld_spec_len <= 0)
                     break;
-                pld_data = calloc (1, pld_spec_len); 
+                pld_data = calloc(1, pld_spec_len); 
 
                 rc = asn_read_value_field(nds, 
                         pld_data, &pld_spec_len, "payload");
@@ -370,6 +371,7 @@ tad_tr_send_thread(void * arg)
             case TAD_PLD_UNKNOWN:
             default: 
                 pld_data = NULL;
+                break;
         }
 
         if (rc)
@@ -390,12 +392,12 @@ tad_tr_send_thread(void * arg)
         if (arg_num <= 0) 
             break;
 
-        arg_set_specs = calloc(arg_num, sizeof (tad_template_arg_spec_t));
+        arg_set_specs = calloc(arg_num, sizeof(tad_template_arg_spec_t));
         rc = tad_get_tmpl_arg_specs(arg_sets, arg_set_specs, arg_num);
 
         VERB("get_tmpl_arg_specs rc: %x\n", rc);
 
-        arg_iterated = calloc(arg_num, sizeof (tad_template_arg_t));
+        arg_iterated = calloc(arg_num, sizeof(tad_template_arg_t));
         if (arg_iterated == NULL)
             rc = ENOMEM;
 
@@ -408,6 +410,7 @@ tad_tr_send_thread(void * arg)
 
         {
             size_t v_len = sizeof(delay);
+
             rc = asn_read_value_field(nds, &delay, &v_len, "delays");
         }
 
@@ -443,13 +446,14 @@ tad_tr_send_thread(void * arg)
                  (csap_descr->command & TAD_COMMAND_STOP))
             {
                 strcpy(answer_buffer, csap_descr->answer_prefix);
-                ans_len = strlen (answer_buffer); 
+                ans_len = strlen(answer_buffer); 
                 break;
             }
 
-            rc = tad_tr_send_prepare_bin(csap_descr, nds, handle, arg_iterated,
-                        arg_num, pld_type, pld_data, &packets_root);
-            F_VERB("send_prepare_bin rc: %x\n", rc);
+            rc = tad_tr_send_prepare_bin(csap_descr, nds, handle, 
+                                         arg_iterated, arg_num, pld_type,
+                                         pld_data, &packets_root);
+            F_VERB("send_prepare_bin rc: %X\n", rc);
 
             if (rc)
                 break;
@@ -470,7 +474,8 @@ tad_tr_send_thread(void * arg)
                 F_VERB("calc of delay, current moment: %u.%u", 
                         cm.tv_sec, cm.tv_usec);
 
-                /* calculate moment until we should wait before next get log */
+                /* calculate moment until we should wait before next 
+                 * get log */
                 npt.tv_sec  += delay / 1000;
                 npt.tv_usec += delay * 1000;
 
@@ -482,7 +487,8 @@ tad_tr_send_thread(void * arg)
                 F_VERB("wait for next send moment: %u.%u", 
                         npt.tv_sec, npt.tv_usec);
 
-                /* calculate delay of waiting we should wait before next get log */
+                /* calculate delay of waiting we should wait before 
+                 * next get log */
                 if (npt.tv_sec >= cm.tv_sec)
                     tv_delay.tv_sec  = npt.tv_sec  - cm.tv_sec;
 
@@ -534,7 +540,8 @@ tad_tr_send_thread(void * arg)
             if (rc)
                 break;
             
-        } while (tad_iterate_tmpl_args(arg_set_specs, arg_num, arg_iterated) > 0);
+        } while (tad_iterate_tmpl_args(arg_set_specs, 
+                                       arg_num, arg_iterated) > 0);
     }
 
     /* Release all resources, finish task */
@@ -573,14 +580,14 @@ tad_tr_send_thread(void * arg)
         while(1) 
         {
             struct timeval wait_for_stop_delay = {0, 30000};
-            select (0, NULL, NULL, NULL, &wait_for_stop_delay);
+            select(0, NULL, NULL, NULL, &wait_for_stop_delay);
 
             if (csap_descr->command & TAD_COMMAND_STOP)
             {
                 csap_descr->command = 0;
                 csap_descr->state = 0;
                 strcpy(answer_buffer, csap_descr->answer_prefix);
-                ans_len = strlen (answer_buffer); 
+                ans_len = strlen(answer_buffer); 
                 SEND_ANSWER("%d",  TE_RC(TE_TAD_CH, rc)); 
                 break;
             }
@@ -605,8 +612,9 @@ tad_tr_send_thread(void * arg)
  * @retval      - negative if invalid arguments passed.
  */
 int 
-tad_iterate_tmpl_args(tad_template_arg_spec_t *arg_specs, size_t arg_specs_num, 
-                                  tad_template_arg_t *arg_iterated)
+tad_iterate_tmpl_args(tad_template_arg_spec_t *arg_specs, 
+                      size_t arg_specs_num, 
+                      tad_template_arg_t *arg_iterated)
 {
     int dep = arg_specs_num - 1;
     tad_template_arg_spec_t *arg_spec_p;
@@ -627,14 +635,17 @@ tad_iterate_tmpl_args(tad_template_arg_spec_t *arg_specs, size_t arg_specs_num,
             case ARG_TMPL_FOR:
                 if (arg_iterated[dep].arg_int < arg_spec_p->simple_for.end)
                 { 
-                    arg_iterated[dep].arg_int += arg_spec_p->simple_for.step;
+                    arg_iterated[dep].arg_int += 
+                        arg_spec_p->simple_for.step;
                     performed = 1;
                 }
                 else
                 {
-                    arg_iterated[dep].arg_int = arg_spec_p->simple_for.begin; 
-                    continue; /* formally, it's unnecessary here, but algorithm
-                                 is more clear with this operator. */
+                    arg_iterated[dep].arg_int = 
+                        arg_spec_p->simple_for.begin;
+                    continue; 
+                    /* formally, it's unnecessary here, but algorithm
+                       is more clear with this operator. */
                 }
                 break;
             case ARG_TMPL_INT_SEQ:
@@ -654,16 +665,16 @@ tad_iterate_tmpl_args(tad_template_arg_spec_t *arg_specs, size_t arg_specs_num,
  * @param arg_set       ASN value of type "SEQENCE OF Template-Parameter",
  *                      which is subvalue with label 'arg-sets' in
  *                      Traffic-Template.
- * @param arg_specs     memory block for arg_spec array. should be allocated by 
- *                      user. 
+ * @param arg_specs     memory block for arg_spec array. should be 
+ *                      allocated by user. 
  * @param arg_num       length of arg_spec array, i.e. quantity of
  *                      Template-Arguments in template.
  *
  * @return zero on success, otherwise error code. 
  */
 int 
-tad_get_tmpl_arg_specs (const asn_value *arg_set, 
-                           tad_template_arg_spec_t *arg_specs, size_t arg_num)
+tad_get_tmpl_arg_specs(const asn_value *arg_set, 
+                       tad_template_arg_spec_t *arg_specs, size_t arg_num)
 {
     const asn_value *arg_val;
     unsigned i; 
@@ -691,19 +702,24 @@ tad_get_tmpl_arg_specs (const asn_value *arg_set,
             arg_specs[i].type = ARG_TMPL_FOR;
             v_len = sizeof(arg_specs[i].simple_for.begin);
             rc = asn_read_value_field (arg_val, 
-                    &(arg_specs[i].simple_for.begin), &v_len, "begin");
+                                       &(arg_specs[i].simple_for.begin),
+                                       &v_len, "begin");
             if (rc)
-                arg_specs[i].simple_for.begin = TAD_ARG_SIMPLE_FOR_BEGIN_DEF; 
+                arg_specs[i].simple_for.begin = 
+                    TAD_ARG_SIMPLE_FOR_BEGIN_DEF;
 
             v_len = sizeof(arg_specs[i].simple_for.step);
-            rc = asn_read_value_field (arg_val, 
-                    &(arg_specs[i].simple_for.step), &v_len, "step");
+            rc = asn_read_value_field(arg_val, 
+                                      &(arg_specs[i].simple_for.step),
+                                      &v_len, "step");
             if (rc)
-                arg_specs[i].simple_for.step = TAD_ARG_SIMPLE_FOR_STEP_DEF; 
+                arg_specs[i].simple_for.step = 
+                    TAD_ARG_SIMPLE_FOR_STEP_DEF; 
 
             v_len = sizeof(arg_specs[i].simple_for.end);
-            rc = asn_read_value_field (arg_val, 
-                    &(arg_specs[i].simple_for.end), &v_len, "end");
+            rc = asn_read_value_field(arg_val, 
+                                      &(arg_specs[i].simple_for.end),
+                                      &v_len, "end");
             if (rc)
                 break; /* There is no default for end of 'simple-for' */
         }
@@ -722,8 +738,8 @@ tad_get_tmpl_arg_specs (const asn_value *arg_set,
  * Description see in tad.h
  */
 int 
-tad_init_tmpl_args(tad_template_arg_spec_t *arg_specs, size_t arg_specs_num, 
-                            tad_template_arg_t *arg_iterated)
+tad_init_tmpl_args(tad_template_arg_spec_t *arg_specs, size_t arg_specs_num,
+                   tad_template_arg_t *arg_iterated)
 {
     unsigned i;
 
@@ -733,7 +749,7 @@ tad_init_tmpl_args(tad_template_arg_spec_t *arg_specs, size_t arg_specs_num,
     if (arg_iterated == NULL)
         return ETEWRONGPTR;
 
-    memset (arg_iterated, 0, arg_specs_num * sizeof (tad_template_arg_t));
+    memset(arg_iterated, 0, arg_specs_num * sizeof(tad_template_arg_t));
 
     for (i = 0; i < arg_specs_num; i++)
     { 
