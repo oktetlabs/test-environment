@@ -98,6 +98,24 @@ xmlNodeSkipComment(xmlNodePtr node)
 }
 
 /**
+ * Skip 'text' nodes.
+ *
+ * @param node      XML node
+ *
+ * @return Current, one of next or NULL.
+ */
+static xmlNodePtr
+xmlNodeSkipText(xmlNodePtr node)
+{
+    while ((node != NULL) &&
+           (xmlStrcmp(node->name, CONST_CHAR2XML("text")) == 0))
+    {
+        node = node->next;
+    }
+    return node;
+}
+
+/**
  * Go to the next XML node, skip 'comment' nodes.
  *
  * @param node      XML node
@@ -1764,7 +1782,7 @@ get_tests_info(xmlNodePtr node, tests_info *ti)
         return EINVAL;
     }
 
-    node = xmlNodeChildren(node);
+    node = xmlNodeSkipText(xmlNodeChildren(node));
 
     while (node != NULL &&
            xmlStrcmp(node->name, CONST_CHAR2XML("test")) == 0)
