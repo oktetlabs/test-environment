@@ -306,9 +306,14 @@ if test -z "$TE_INSTALL" ; then
 fi
 
 if test -z "${TE_PATH}" ; then
-    TMP=`find . ${TE_INSTALL} -name dispatcher.sh 2>/dev/null`
+    TMP=`find ${TE_INSTALL} -name dispatcher.sh 2>/dev/null`
     if test -n "${TMP}" ; then
-        TE_PATH=`dirname ${TMP}`
+        TMP=`dirname ${TMP}`
+        TE_PATH=${TE_PATH/%\/bin/}
+        if test x${TE_PATH} = x${TMP} ; then
+            echo "dispatcher.sh is found in unexpected path."
+            exit_with_log
+        fi
     fi
 fi    
 
