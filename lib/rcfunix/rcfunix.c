@@ -289,19 +289,11 @@ rcfunix_start(char *ta_name, char *ta_type, char *conf_str,
     if (!ta->is_local)
     {
         /* Be quite and go to background just before command execution */
-        sprintf(cmd, RCFUNIX_SSH " -f %s \"", ta->host);
+        sprintf(cmd, RCFUNIX_SSH " %s \"", ta->host);
     }
     if (ta->sudo)
     {
         strcat(cmd, "sudo ");
-        /* 
-         * It's very strange but -b options does not work together
-         * with SSH on remote host. Use it for local hosts only.
-         */
-        if (ta->is_local)
-        {
-            strcat(cmd, "-b ");
-        }
     }
     if (shell != NULL)
     {
