@@ -261,17 +261,28 @@ daemon_get(unsigned int gid, const char *oid, char *value)
     {
         return TE_RC(TE_TA_LINUX, ENOENT);
     }
-    
+
     if (strcmp(daemon_name, "sendmail") == 0)
     {
-        sprintf(buf, "find /var/run/ -name %s.pid 2>/dev/null | grep pid "
-                     ">/dev/null 2>&1", daemon_name);
-        if (ta_system(buf) == 0)
+        if (ta_system("find /var/run/ -name sendmail.pid 2>/dev/null "
+                      "| grep pid >/dev/null 2>&1") == 0)
         {
             sprintf(value, "1");
             return 0;
         }
+        /* Fall through to daemon_get() */
     }
+    else if (strcmp(daemon_name, "postfix") == 0)
+    {
+        if (ta_system("ps ax | grep '/usr/lib/postfix/master'"
+                      "| grep -v grep") == 0)
+        {
+            sprintf(value, "1");
+            return 0;
+        }
+        /* Fall through to daemon_get() */
+    }
+    
     sprintf(buf, "killall -CONT %s >/dev/null 2>&1", daemon_name);
     if (ta_system(buf) == 0)
     {
@@ -1194,7 +1205,7 @@ RCF_PCH_CFG_NODE_RW(node_ds_ftpserver_standalone, "standalone",
                     ds_ftpserver_standalone_set);
 
 RCF_PCH_CFG_NODE_RW(node_ds_ftpserver, "ftpserver",
-                    NULL, &node_ds_ftpserver_standalone,
+                    &node_ds_ftpserver_standalone, NULL,
                     ds_ftpserver_get, ds_ftpserver_set);
 
 /**
@@ -1776,10 +1787,11 @@ ds_init_vncserver(rcf_pch_cfg_object **last)
 
 #ifdef WITH_SMTP
 
-/** sendmail configuration location */
-#define SENDMAIL_CONF_DIR   "/etc/mail/"
-
 #define SMTP_EMPTY_SMARTHOST    "0.0.0.0"
+
+static char *smtp_initial;
+static char *smtp_current;
+static char *smtp_current_smarthost;
 
 /* Possible kinds of SMTP servers */
 static char *smtp_servers[] = {
@@ -1788,12 +1800,6 @@ static char *smtp_servers[] = {
     "exim4",
     "postfix"
 };    
-
-static int sendmail_index = -1;
-
-static char *smtp_initial;
-static char *smtp_current;
-static char *smtp_current_smarthost;
 
 /** 
  * Update /etc/hosts with entry te_tester <IP>. 
@@ -1837,7 +1843,15 @@ update_etc_hosts(char *ip)
     return 0;
 }
 
+/*---------------------- sendmail staff ------------------------------*/
+
+/** sendmail configuration location */
+#define SENDMAIL_CONF_DIR   "/etc/mail/"
+
+/** Smarthost option */
 #define SENDMAIL_SMARTHOST_OPT  "define(`SMART_HOST',`te_tester')\n"
+
+static int sendmail_index = -1;
 
 /** Check if smarthost option presents in the sendmail configuration file */
 static int
@@ -1905,8 +1919,8 @@ sendmail_smarthost_set(te_bool enable)
             fwrite(buf, 1, strlen(buf), g);
     }
     if (enable != 0)
-        fwrite(SENDMAIL_SMARTHOST_OPT, 1, 
-               strlen(SENDMAIL_SMARTHOST_OPT), g);
+        fprintf(g, SENDMAIL_SMARTHOST_OPT);
+
     fclose(f);
     fclose(g);
     
@@ -1914,6 +1928,99 @@ sendmail_smarthost_set(te_bool enable)
     
     return 0;
 }
+
+/*---------------------- postfix staff ------------------------------*/
+
+/** postfix configuration location */
+#define POSTFIX_CONF_DIR   "/etc/postfix/"
+
+/** Smarthost option */
+#define POSTFIX_SMARTHOST_OPT  "relayhost = te_tester\n"
+
+static int postfix_index = -1;
+
+/** Check if ost option presents in the postfix configuration file */
+static int
+postfix_smarthost_get(te_bool *enable)
+{
+    FILE *f;
+    int   rc;
+
+    if ((f = fopen(ds_config(postfix_index), "r")) == NULL)
+    {
+        rc = TE_RC(TE_TA_LINUX, errno);
+        ERROR("Cannot open file %s for reading",
+              ds_config(postfix_index));
+        fclose(f);
+        return rc;
+    }
+
+    while (fgets(buf, sizeof(buf), f) != NULL)
+    {
+        if (strncmp(buf, POSTFIX_SMARTHOST_OPT, 
+                    strlen(POSTFIX_SMARTHOST_OPT)) == 0)
+        {
+            fclose(f);
+            *enable = 1;
+            return 0;
+        }
+    }
+    *enable = 0;
+    fclose(f);
+    return 0;
+}
+
+/** Enable/disable smarthost option in the postfix configuration file */
+static int
+postfix_smarthost_set(te_bool enable)
+{
+    FILE *f = NULL;
+    FILE *g = NULL;
+    int   rc;
+    
+    if (postfix_index < 0)
+    {
+        ERROR("Cannot find postfix configuration file");
+        return ENOENT;
+    }
+    
+    ds_config_touch(postfix_index);
+    if ((f = fopen(ds_backup(postfix_index), "r")) == NULL) 
+    {
+        rc = TE_RC(TE_TA_LINUX, errno);
+        ERROR("Cannot open file %s for reading", ds_backup(postfix_index));
+        return rc;                                            
+    }
+
+    if ((g = fopen(ds_config(postfix_index), "w")) == NULL) 
+    {
+        rc = TE_RC(TE_TA_LINUX, errno);
+        ERROR("Cannot open file %s for writing", ds_config(postfix_index));
+        return rc;                                            
+    }
+
+    while (fgets(buf, sizeof(buf), f) != NULL)
+    {
+        if (strstr(buf, "relayhost") == NULL && 
+            strstr(buf, "relaydomains") == NULL)
+        {
+            fwrite(buf, 1, strlen(buf), g);
+        }
+    }
+    if (enable != 0)
+    {
+        fprintf(g, POSTFIX_SMARTHOST_OPT);
+        fprintf(g, "relaydomains = $mydomain");
+    }
+    fclose(f);
+    fclose(g);
+    
+    ta_system("cd " SENDMAIL_CONF_DIR "; make >/dev/null 2>&1");
+    
+    return 0;
+}
+
+/*------------------ Common mail staff --------------------------*/
 
 /** Get SMTP smarthost */
 static int
@@ -1932,6 +2039,17 @@ ds_smtp_smarthost_get(unsigned int gid, const char *oid, char *value)
         int     rc;
         
         if ((rc = sendmail_smarthost_get(&enable)) != 0)
+            return rc;
+            
+        if (enable)
+            strcpy(value, smtp_current_smarthost);
+    }
+    else if (strcmp(smtp_current, "postfix") == 0)
+    {
+        te_bool enable;
+        int     rc;
+        
+        if ((rc = postfix_smarthost_get(&enable)) != 0)
             return rc;
             
         if (enable)
@@ -1973,6 +2091,11 @@ ds_smtp_smarthost_set(unsigned int gid, const char *oid,
         if ((rc = sendmail_smarthost_set(addr != 0)) != 0)
             goto error;
     }
+    else if (strcmp(smtp_current, "postfix") == 0)
+    {
+        if ((rc = postfix_smarthost_set(addr != 0)) != 0)
+            goto error;
+    }
     else
         goto error;
         
@@ -2002,6 +2125,21 @@ ds_smtp_server_get(unsigned int gid, const char *oid, char *value)
     return 0;
 }
 
+/** Check if SMTP server is enabled */
+static int
+ds_smtp_get(unsigned int gid, const char *oid, char *value)
+{
+    UNUSED(oid);
+
+    if (smtp_current == NULL)
+    {
+        value[0] = 0;
+        return 0;
+    }
+    
+    return daemon_get(gid, smtp_current, value);
+}
+
 /** Set SMTP server program */
 static int
 ds_smtp_server_set(unsigned int gid, const char *oid, const char *value)
@@ -2018,10 +2156,14 @@ ds_smtp_server_set(unsigned int gid, const char *oid, const char *value)
     {
         if (strcmp(smtp_servers[i], value) == 0)
         {
-            if (smtp_current == NULL && 
-                strcmp(smtp_servers[i], "sendmail") == 0)
+            if (smtp_current == NULL)
             {
-                int rc = sendmail_smarthost_set(FALSE);
+                int rc = 0;
+                
+                if (strcmp(smtp_servers[i], "sendmail") == 0)
+                    rc = sendmail_smarthost_set(FALSE);
+                else if (strcmp(smtp_servers[i], "postfix") == 0)
+                    rc = postfix_smarthost_set(FALSE);
                 
                 if (rc != 0)
                     return rc;
@@ -2032,19 +2174,6 @@ ds_smtp_server_set(unsigned int gid, const char *oid, const char *value)
     }
     
     return TE_RC(TE_TA_LINUX, EINVAL);
-}
-
-/** Check if SMTP server is enabled */
-static int
-ds_smtp_get(unsigned int gid, const char *oid, char *value)
-{
-    UNUSED(oid);
-    if (smtp_current == NULL)
-    {
-        value[0] = 0;
-        return 0;
-    }
-    return daemon_get(gid, smtp_current, value);
 }
 
 /** Enable/disable SMTP server */
@@ -2089,6 +2218,13 @@ ds_init_smtp(rcf_pch_cfg_object **last)
     if (file_exists(SENDMAIL_CONF_DIR "sendmail.mc") &&
         ds_create_backup(SENDMAIL_CONF_DIR, "sendmail.mc", 
                          &sendmail_index) != 0)
+    {
+        return;
+    }
+
+    if (file_exists(POSTFIX_CONF_DIR "main.cf") &&
+        ds_create_backup(POSTFIX_CONF_DIR, "main.cf", 
+                         &postfix_index) != 0)
     {
         return;
     }
