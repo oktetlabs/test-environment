@@ -800,6 +800,27 @@ extern int rpc_simple_receiver(rcf_rpc_server *handle,
                                int s, uint64_t *received);
 
 /**
+ * Send traffic. Send UDP datagrams from different sockets
+ * toward different addresses.
+ *
+ * @param handle        RPC server
+ * @param num           Number of UDP datagrams to being sent
+ * @param s             List of sockets (num)
+ * @param buf           Buffer to being sent
+ * @param len           buffer size
+ * @param flags         flags passed to sendto()
+ * @param to            List of sockaddr-s (num)
+ * @param tolen         Address size
+ * 
+ * @return 0 in case of success, -1 in case of failure
+ */ 
+int
+rpc_send_traffic(rcf_rpc_server *handle, int num,
+                 int *s, const void *buf, size_t len,
+                 int flags,
+                 struct sockaddr *to, socklen_t tolen);
+
+/**
  * Asynchronous read test procedure.
  *
  * @param handle            RPC server

@@ -1601,6 +1601,18 @@ struct tarpc_simple_receiver_out {
     uint64_t    bytes;      /**< Number of received bytes */
 };
 
+struct tarpc_send_traffic_in {
+    struct tarpc_in_arg common;
+    tarpc_int           num;    /**< Number of packets to be sent */
+    tarpc_int           fd<>;     /**< List of sockets */
+    uint8_t             buf<>;  /**< Buffer */
+    tarpc_size_t        len;    /**< Buffer length */
+    tarpc_int           flags;  /**< Flags */ 
+    struct tarpc_sa     to<>;     /**< List of addresses */
+    tarpc_socklen_t     tolen;  /**< Address length */
+};
+typedef struct tarpc_ssize_t_retval_out tarpc_send_traffic_out;
+
 /*
  * IOMUX functions
  */
@@ -2012,6 +2024,7 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
 
         RPC_DEF(simple_sender)
         RPC_DEF(simple_receiver)
+        RPC_DEF(send_traffic)
         RPC_DEF(flooder)
         RPC_DEF(echoer)
         

@@ -1377,6 +1377,116 @@ rpc_shutdown(rcf_rpc_server *handle, int s, rpc_shut_how how)
     RETVAL_RC(shutdown);
 }
 
+int
+rpc_send_traffic(rcf_rpc_server *handle, int num,
+                 int *s, const void *buf, size_t len,
+                 int flags,
+                 struct sockaddr *to, socklen_t tolen)
+{
+    rcf_rpc_op             op;
+    tarpc_send_traffic_in  in;
+    tarpc_send_traffic_out out;
+    
+    int i;
+    int             *ss    = NULL;
+    struct sockaddr *addrs = NULL;
+
+    if (handle == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        return -1;
+    }
+    if (s == NULL || to == NULL)
+    {
+        ERROR("%s(): Invalid pointers to sockets and addresses",
+              __FUNCTION__);
+        return -1;
+    }
+    op = handle->op;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    /* Num */
+    in.num = num;
+    
+    /* Sockets */
+    ss = (int *)calloc(num, sizeof(int));
+    in.fd.fd_val = (tarpc_int *)ss;
+    if (in.fd.fd_val == NULL)
+    {
+        ERROR("%s(): Memory allocation failure", __FUNCTION__);
+        return -1;
+    }
+    in.fd.fd_len = num;
+    for (i = 0; i < num; i++)
+        in.fd.fd_val[i] = *(s + i);
+
+    /* Length */
+    in.len = len;
+    
+    /* Adresses */
+    addrs = (struct sockaddr *)calloc(num, sizeof(struct sockaddr));
+    in.to.to_val = (struct tarpc_sa *)addrs;
+    if (in.to.to_val == NULL)
+    {
+        ERROR("%s(): Memory allocation failure", __FUNCTION__);
+        return -1;
+    }
+    in.to.to_len = num;
+    for (i = 0; i < num; i++)
+    {    
+        if ((to + i) != NULL && handle->op != RCF_RPC_WAIT)
+        {
+            if (tolen >= SA_COMMON_LEN)
+            {
+                in.to.to_val[i].sa_family = 
+                    addr_family_h2rpc((to + i)->sa_family);
+                in.to.to_val[i].sa_data.sa_data_len = tolen - SA_COMMON_LEN;
+                in.to.to_val[i].sa_data.sa_data_val = 
+                    (uint8_t *)((to + i)->sa_data);
+            }
+            else
+            {
+                in.to.to_val[i].sa_family = RPC_AF_UNSPEC;
+                in.to.to_val[i].sa_data.sa_data_len = 0;
+                /* Any no-NULL pointer is suitable here */
+                in.to.to_val[i].sa_data.sa_data_val = (uint8_t *)(to + i);
+            }
+        }
+    }
+    
+    in.tolen = tolen;
+    if (buf != NULL && handle->op != RCF_RPC_WAIT)
+    {
+        in.buf.buf_len = len;
+        in.buf.buf_val = (char *)buf;
+    }
+    in.flags = flags;
+
+    rcf_rpc_call(handle, _send_traffic, &in, 
+                 (xdrproc_t)xdr_tarpc_send_traffic_in,
+                 &out, 
+                 (xdrproc_t)xdr_tarpc_send_traffic_out);
+
+    RING("RPC (%s,%s)%s: send_traffic ->%d(%s)",
+         handle->ta, handle->name, rpcop2str(op),
+         out.retval, errno_rpc2str(RPC_ERRNO(handle)));
+
+    for (i = 0; i < num; i++)
+    {
+        RING("send_traffic to %s",    
+             sockaddr2str(to + i));
+    }
+
+    if (addrs != NULL)
+        free(addrs);
+    if (ss != NULL)
+        free(ss);
+
+    RETVAL_VAL(out.retval, send_traffic);
+}
+
 ssize_t
 rpc_sendto(rcf_rpc_server *handle,
            int s, const void *buf, size_t len,

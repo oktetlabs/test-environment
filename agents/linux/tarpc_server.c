@@ -2866,6 +2866,47 @@ simple_receiver_exit:
     return 0;
 }
 
+/*-------------- send_traffic() --------------------------*/
+TARPC_FUNC(send_traffic, {},
+{
+    MAKE_CALL(out->retval = func((int)in, out));
+}
+)
+
+/**
+ * Send traffic.
+ *
+ * @param in                input RPC argument
+ *
+ * @return 0 in case if success,  -1 in the case of failure
+ */
+int
+send_traffic(tarpc_send_traffic_in *in,
+            tarpc_send_traffic_out *out)
+{
+    sock_api_func sendto_func;
+    int           num = in->num;
+    int           i;
+    checked_arg  *list = NULL;
+
+    out->retval= 0;
+
+    if (find_func((tarpc_in_arg *)in, "sendto", &sendto_func) != 0)
+    {
+        return -1;
+    }
+
+    for (i = 0; i < num; i++)
+    {
+        PREPARE_ADDR(in->to.to_val[i], 0);
+        INIT_CHECKED_ARG(in->buf.buf_val, in->buf.buf_len, in->len);
+        if (sendto_func(in->fd.fd_val[i], in->buf.buf_val, in->len,
+                        send_recv_flags_rpc2h(in->flags),
+                        a, in->tolen) == -1)
+            return -1;
+    }
+    return 0;
+}
 
 #define FLOODER_ECHOER_WAIT_FOR_RX_EMPTY        1
 #define FLOODER_BUF                             4096
