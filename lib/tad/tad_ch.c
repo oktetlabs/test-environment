@@ -745,8 +745,9 @@ rcf_ch_trrecv_start(struct rcf_comm_connection *handle,
 
             if (rc) 
             {
-                WARN("%s(): csap %d confirm pattern pdu fails; 0x%x", 
-                     __FUNCTION__, csap, rc);
+                WARN("%s(): csap %d confirm pat pdu lev %d(%s), fails: %x",
+                     __FUNCTION__, csap, level,
+                     csap_descr_p->proto[level], rc);
                 break;
             }
             snprintf(label_buf, sizeof(label_buf), "pdus.%d.#%s", 

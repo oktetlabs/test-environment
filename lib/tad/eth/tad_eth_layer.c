@@ -116,7 +116,7 @@ int eth_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
     
     if (spec_data->du_dst_addr.du_type == TAD_DU_UNDEF)
     {
-        if (csap_descr->command & TAD_OP_RECV)
+        if (csap_descr->command == TAD_OP_RECV)
         {
             if (spec_data->local_addr != NULL)
             {
@@ -171,7 +171,7 @@ int eth_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
 
     if (spec_data->du_src_addr.du_type == TAD_DU_UNDEF)
     {
-        if (csap_descr->command & TAD_OP_RECV)
+        if (csap_descr->command == TAD_OP_RECV)
         {
             if (spec_data->remote_addr != NULL)
             {
@@ -272,7 +272,7 @@ int eth_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
         CHECK_VLAN_FIELD (du_priority,  "priority", is_prio);
         CHECK_VLAN_FIELD (du_vlan_id,   "vlan-id",  is_vlan_id);
 
-        if ((csap_descr->command & TAD_OP_SEND) && 
+        if ((csap_descr->state & TAD_STATE_SEND) && 
             (is_cfi || is_prio || is_vlan_id ||
              spec_data->cfi >= 0 || spec_data->vlan_id >= 0 || 
              spec_data->priority >= 0)

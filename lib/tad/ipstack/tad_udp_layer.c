@@ -91,7 +91,7 @@ udp_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
         udp_spec_data->dst_port = 0;
 
         if ((udp_spec_data->remote_port == 0) && 
-            (csap_descr->command & TAD_OP_SEND))
+            (csap_descr->state & TAD_OP_SEND))
         {
             WARN("%s: sending csap #%d, "
                  "has no dst-port in template and has no remote port",

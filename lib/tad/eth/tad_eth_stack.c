@@ -125,7 +125,7 @@ eth_release(csap_p csap_descr)
     layer = csap_descr->read_write_layer; 
     spec_data = (eth_csap_specific_data_p) csap_descr->layer_data[layer]; 
 
-    if (spec_data->in >= 0 && csap_descr->command & TAD_OP_RECV)
+    if (spec_data->in >= 0)
     {
         VERB("%s: CSAP %d, close input socket %d", 
              __FUNCTION__, csap_descr->id, spec_data->in);
@@ -139,7 +139,7 @@ eth_release(csap_p csap_descr)
         spec_data->in = -1;
     }
 
-    if (spec_data->out >= 0 && csap_descr->command & TAD_OP_SEND)
+    if (spec_data->out >= 0)
     {
         VERB("%s: CSAP %d, close output socket %d", 
              __FUNCTION__, csap_descr->id, spec_data->out);

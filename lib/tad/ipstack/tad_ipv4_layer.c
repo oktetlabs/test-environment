@@ -112,11 +112,13 @@ ip4_confirm_pdu_cb (int csap_id, int layer, asn_value *tmpl_pdu)
     {
         spec_data->dst_addr.s_addr = INADDR_ANY;
 
-        if (csap_descr->command & TAD_OP_SEND)
+        if (csap_descr->state & TAD_OP_SEND)
         { 
-            /* cannot sent packet without IP address! */
             if (spec_data->remote_addr.s_addr == INADDR_ANY)
+            {
+                WARN("%s(): cannot send without dst IP address, EINVAL");
                 rc = EINVAL;
+            }
             else
                 rc = 0;
         }

@@ -82,7 +82,7 @@ int bridge_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
     } 
 
     VERB("bridge confirm called\n");
-    if (csap_descr->command & TAD_OP_RECV)
+    if (csap_descr->command == TAD_OP_RECV)
     {
         VERB("Noting to do with RX CSAP\n");
         return 0;
