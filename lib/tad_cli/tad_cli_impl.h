@@ -317,6 +317,7 @@ extern int open_raw_socket(int cli_type, int pkt_type, int if_index, int *sock);
  */ 
 extern void free_cli_csap_data(cli_csap_specific_data_p spec_data);
 
+#if 0
 /**
  * Find number of CLI layer in CSAP stack.
  *
@@ -326,6 +327,7 @@ extern void free_cli_csap_data(cli_csap_specific_data_p spec_data);
  * @return number of layer (start from zero) or -1 if not found. 
  */ 
 extern int find_csap_layer(csap_p csap_descr, char *layer_name);
+#endif
 
 
 

@@ -557,6 +557,7 @@ cli_expect_main(cli_csap_specific_data_p spec_data)
  **************************************************************************/
 
 
+#if 0
 /**
  * Find number of CLI layer in CSAP stack.
  *
@@ -574,6 +575,7 @@ find_csap_layer(csap_p csap_descr, char *layer_name)
             return i;
     return -1;
 }
+#endif
 
 
 /**
