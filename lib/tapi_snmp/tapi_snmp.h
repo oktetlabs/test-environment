@@ -129,12 +129,19 @@ typedef enum tapi_snmp_gen_trap_t {
     TAPI_SNMP_TRAP_ENTERPRISESPECIFIC = SNMP_TRAP_ENTERPRISESPECIFIC,
 } tapi_snmp_gen_trap_t;
 
-typedef enum {
+typedef enum tapi_snmp_mib_access {
     TAPI_SNMP_MIB_ACCESS_READONLY   = MIB_ACCESS_READONLY, /* 18 */
     TAPI_SNMP_MIB_ACCESS_READWRITE  = MIB_ACCESS_READWRITE, /* 19 */
     TAPI_SNMP_MIB_ACCESS_CREATE     = MIB_ACCESS_CREATE, /* 48 */
-    
 } tapi_snmp_mib_access;       
+
+typedef enum tapi_snmp_mib_status {
+    TAPI_SNMP_MIB_STATUS_MANDATORY  = MIB_STATUS_MANDATORY,
+    TAPI_SNMP_MIB_STATUS_OPTIONAL   = MIB_STATUS_OPTIONAL,
+    TAPI_SNMP_MIB_STATUS_OBSOLETE   = MIB_STATUS_OBSOLETE,
+    TAPI_SNMP_MIB_STATUS_DEPRECATED = MIB_STATUS_DEPRECATED,
+    TAPI_SNMP_MIB_STATUS_CURRENT    = MIB_STATUS_CURRENT,
+} tapi_snmp_mib_status;
 
 typedef enum {
     TAPI_SNMP_EXACT,
@@ -190,6 +197,7 @@ typedef struct tapi_snmp_var_access {
     char                          label[MAX_LABLE_LEN];
     tapi_snmp_oid_t               oid;
     tapi_snmp_mib_access          access;
+    tapi_snmp_mib_status          status;
 } tapi_snmp_var_access;    
 
 /** Definitions of values for SNMP TruthValue type */
@@ -346,7 +354,7 @@ extern int tapi_snmp_gen_csap_create(const char *ta, int sid,
  * @return zero on success or error code.
  */
 extern int tapi_snmp_set_vbs(const char *ta, int sid, int csap_id, 
-                             const tapi_snmp_varbind_t *var_binds, 
+                             const tapi_snmp_varbind_t *var_binds,
                              size_t num_vars, int *errstat, int *errindex);
 
 /**
@@ -1039,6 +1047,10 @@ extern const char *snmp_error_h2str(int error_val);
 
 /** Convert SNMP Object type constants to string format */
 extern const char *snmp_obj_type_h2str(enum snmp_obj_type obj_type);
+
+/** Convert SNMP MIB Object status constants to string format */
+extern const char *tapi_snmp_obj_status_h2str(
+                       enum tapi_snmp_mib_status obj_status);
 
 /** Convert SNMP TruthValue constants to string format */
 extern const char *tapi_snmp_truth_value_h2str(

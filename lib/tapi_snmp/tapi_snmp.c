@@ -375,6 +375,8 @@ tapi_snmp_packet_to_plain(asn_value *pkt, tapi_snmp_message_t *snmp_message)
     size_t       len;
     unsigned int i;
 
+    asn_save_to_file(pkt, "/tmp/te_snmp_pkt.asn");
+
     len = sizeof(snmp_message->type);
     rc = asn_read_value_field(pkt, &snmp_message->type, &len, "type");
     if (rc != 0)
@@ -1247,8 +1249,8 @@ tapi_snmp_set_vbs(const char *ta, int sid, int csap_id,
                 *errstat = msg.err_status;
                 *errindex = msg.err_index;
 
-                RING("in %s, errstat %d, errindex %d", __FUNCTION__,
-                                msg.err_status, msg.err_index);
+                INFO("in %s, errstat %d, errindex %d", __FUNCTION__,
+                     msg.err_status, msg.err_index);
             }
             tapi_snmp_free_message(&msg);
         }
@@ -2350,6 +2352,7 @@ tapi_snmp_get_table_columns(tapi_snmp_oid_t *table_oid,
        if (rc)
            return TE_RC(TE_TAPI, rc);
        columns_p->access = entry_node->access;
+       columns_p->status = entry_node->status;
        VERB("    %s, %s", columns_p->label, print_oid(&(columns_p->oid)));
        columns_p->next = *columns;
        *columns = columns_p;
@@ -3291,6 +3294,38 @@ tapi_snmp_val_type_h2str(enum tapi_snmp_vartypes_t type)
     }
 
     return "IMPOSSIBLE";
+}
+
+const char *
+tapi_snmp_obj_status_h2str(enum tapi_snmp_mib_status obj_status)
+{
+    switch (obj_status)
+    {
+#define TAPI_SNMP_OBJ_STATUS_H2STR(val_) \
+        case TAPI_SNMP_MIB_STATUS_ ## val_:  \
+            return #val_
+            
+        TAPI_SNMP_OBJ_STATUS_H2STR(MANDATORY);
+        TAPI_SNMP_OBJ_STATUS_H2STR(OPTIONAL);
+        TAPI_SNMP_OBJ_STATUS_H2STR(OBSOLETE);
+        TAPI_SNMP_OBJ_STATUS_H2STR(DEPRECATED);
+        TAPI_SNMP_OBJ_STATUS_H2STR(CURRENT);
+
+
+#undef TAPI_SNMP_OBJ_STATUS_H2STR
+        default:
+        {
+            static char buf[255];
+
+            snprintf(buf, sizeof(buf), "UNKNOWN (%d)", obj_status);
+            return buf;
+        }
+    }
+
+    return "IMPOSSIBLE";
+    
+
+
 }
 
 const char *
