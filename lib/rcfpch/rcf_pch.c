@@ -299,7 +299,6 @@ get_opcode(char **ptr, rcf_op_t *opcode)
     TRY_CMD(TRRECV_GET);
     TRY_CMD(TRRECV_WAIT);
     TRY_CMD(TRSEND_RECV);
-    TRY_CMD(START);
     TRY_CMD(EXECUTE);
     TRY_CMD(KILL);
 
@@ -891,56 +890,81 @@ rcf_pch_run(const char *confstr, const char *info)
                 char    *rtn;
                 int      argc;
                 te_bool  is_argv;
+                int      priority = -1;
+                enum rcf_start_modes mode; 
 
-                if (*ptr == 0 || ba != NULL ||
-                    transform_str(&ptr, &rtn) != 0 ||
-                    parse_parameters(ptr, &is_argv, &argc, param) != 0)
+                if (strncmp(ptr, "function ", 9) == 0)
+                {
+                    mode = RCF_START_FUNC;
+                    ptr += 9;
+                }
+                else if(strncmp(ptr, "thread ", 7) == 0)
+                {
+                    mode = RCF_START_THREAD;
+                    ptr += 7;
+                }
+                else if(strncmp(ptr, "fork ", 5) == 0)
+                {
+                    mode = RCF_START_FORK;
+                    ptr += 5;
+                }
+                else
                 {
                     goto bad_protocol;
                 }
-
-                rc = rcf_ch_call(conn, cmd, RCF_MAX_LEN, answer_plen,
-                                 rtn, is_argv, argc, param);
-                if (rc < 0)
-                    rc = rcf_pch_call(conn, cmd, RCF_MAX_LEN, answer_plen,
-                                      rtn, is_argv, argc, param);
-
-                if (rc != 0)
-                    goto communication_problem;
-
-                break;
-            }
-
-            case RCFOP_START:
-            {
-                uint32_t param[RCF_MAX_PARAMS];
-                char    *rtn;
-                te_bool  is_argv;
-                int      priority = -1;
-                int      argc;
+                SKIP_SPACES(ptr);
 
                 if (*ptr == 0 || ba != NULL ||
                     transform_str(&ptr, &rtn) != 0)
+                {
                     goto bad_protocol;
+                }
 
                 if (isdigit(*ptr))
                     READ_INT(priority);
 
                 if (parse_parameters(ptr, &is_argv, &argc, param) != 0)
-                    goto bad_protocol;
-
-                if (rcf_ch_start_task(conn, cmd, RCF_MAX_LEN, answer_plen,
-                                      priority, rtn, is_argv,
-                                      argc, param) < 0)
                 {
-                    ERROR("rcf_ch_start_task() returns - no support "
-                          "for %s(%d)", rtn, priority);
-                    SEND_ANSWER("%d", EOPNOTSUPP);
+                    goto bad_protocol;
                 }
 
+                switch(mode)
+                {
+                    case RCF_START_FUNC:
+                        rc = rcf_ch_call(conn, cmd, RCF_MAX_LEN, 
+                                         answer_plen,
+                                         rtn, is_argv, argc, param);
+                        if (rc < 0)
+                            rc = rcf_pch_call(conn, cmd, RCF_MAX_LEN, 
+                                              answer_plen,
+                                              rtn, is_argv, argc, param);
+
+                        if (rc != 0)
+                            goto communication_problem;
+                        
+                        break;
+                    case RCF_START_THREAD:
+                    case RCF_START_FORK:
+                        if ((mode == RCF_START_FORK ? rcf_ch_start_task :
+                             rcf_ch_start_task_thr)
+                            (conn, cmd, RCF_MAX_LEN, answer_plen,
+                             priority, rtn, is_argv,
+                             argc, param) < 0)
+                        {
+                            ERROR("%s() returns - no support "
+                                  "for %s(%d)", 
+                                  (mode == RCF_START_FORK ? 
+                                   "rcf_ch_start_task" : 
+                                   "rcf_ch_start_task_thr"),
+                                  rtn, priority);
+                            SEND_ANSWER("%d", EOPNOTSUPP);
+                        }                        
+                        break;
+                    default:
+                        SEND_ANSWER("%d", EOPNOTSUPP);
+                }
                 break;
             }
-
             case RCFOP_KILL:
             {
                 unsigned int pid;

@@ -66,6 +66,8 @@ net/if_dl.h \
 netinet/in.h \
 netinet/in_systm.h \
 sys/un.h \
+sys/poll.h \
+poll.h \
 ])
 
 

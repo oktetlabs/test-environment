@@ -46,6 +46,7 @@
             cfg_val_type type = CVT_ADDRESS; \
             int flag; \
             int len; \
+            int shell_tid; \
             uint8_t mac[ETHER_ADDR_LEN + 1];
 
 #include <stdarg.h>
@@ -66,26 +67,13 @@ main(int argc, char *argv[])
     TEST_START;
     CHECK_RC(rcf_get_ta_list(ta, &len));
     INFO("Agent is %s", ta);
-    CHECK_RC(cfg_get_instance_fmt(&type, &addr, "/agent:%s/dns:", ta)); 
-    RING("DNS is %s", sockaddr2str(addr));
-    type = CVT_INTEGER;
-    CHECK_RC(cfg_get_instance_fmt(&type, &flag, "/agent:%s/dnsserver:", ta));
-    RING("DNS server is %s", flag ? "running" : "not running");
-    type = CVT_STRING;
-    CHECK_RC(cfg_get_instance_fmt(&type, &dirname, "/agent:%s/dnsserver:/directory:", ta));
-    RING("DNS server directory is %s", dirname);
-    free(addr);
-    free(dirname);
-    type = CVT_ADDRESS;
-    CHECK_RC(cfg_get_instance_fmt(&type, &addr, "/agent:%s/dnsserver:/forwarder:", ta));
-    RING("DNS server forwarder is %s", sockaddr2str(addr));
-    free(addr);
-    type = CVT_INTEGER;
-    CHECK_RC(cfg_get_instance_fmt(&type, &flag, "/agent:%s/dnsserver:/recursive:", ta));
-    RING("DNS server is %s", flag ? "recursive" : "not recursive");
-    flag = 1;
-    CHECK_RC(cfg_set_instance_fmt(type, &flag, "/agent:%s/dnsserver:/recursive:", ta));
-
+#if 0
+    CHECK_RC(rcf_ta_start_thread(ta, 0, -1, "log_serial", &shell_tid,
+                                 4, TRUE, "test", "RING", "2000", "/dev/ttyS0"
+                                 ));
+    RING("Got TID %d", shell_tid);
+#endif
+    sleep(30);
 
     snprintf(eth0_oid, sizeof(eth0_oid) - 1, "/agent:%s/interface:*", ta);
     CHECK_RC(cfg_find_pattern(eth0_oid, &num_interfaces, &interfaces));

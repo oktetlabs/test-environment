@@ -90,8 +90,7 @@ typedef enum {
     RCFOP_TRRECV_GET,       /**< Get received packets */
     RCFOP_TRRECV_WAIT,      /**< Wait for finish receiving packets */
     RCFOP_TRSEND_RECV,      /**< Send one packet and receive an answer */
-    RCFOP_START,            /**< Start the process */
-    RCFOP_EXECUTE,          /**< Exucute a routine */
+    RCFOP_EXECUTE,          /**< Execute a routine in various contexts */
     RCFOP_KILL,             /**< Kill the process */
     RCFOP_CONFGRP_START,    /**< Start of configuration group */
     RCFOP_CONFGRP_END,      /**< End of configuration group */
@@ -135,8 +134,7 @@ typedef struct rcf_msg {
                                    RCFOP_TALIST (list of names);
                                    RCFOP_TAREBOOT (parameters);
                                    RCFOP_CSAP_CREATE (parameters);
-                                   RCFOP_START and RCFOP_EXECUTE
-                                   (parameters);
+                                   RCFOP_EXECUTE (parameters);
                                    RCFOP_GET and RCFOP_PUT (remote file) */
 } rcf_msg;
 
@@ -205,12 +203,20 @@ rcf_op_to_string(rcf_op_t op)
         case RCFOP_TRRECV_GET:      return "trrecv get";
         case RCFOP_TRRECV_WAIT:     return "trrecv wait";
         case RCFOP_TRSEND_RECV:     return "trsendrecv";
-        case RCFOP_START:           return "start";
         case RCFOP_EXECUTE:         return "execute";
         case RCFOP_KILL:            return "kill";
         default:                    return "(unknown)";
     }
 }
+
+/** 
+ * The ways a function may be called on TA
+ */
+enum rcf_start_modes { 
+    RCF_START_FUNC,    /**< Execute a function in the same context */
+    RCF_START_THREAD,  /**< Execute a function in another thread */
+    RCF_START_FORK     /**< Execute a function in a forked process */
+};
 
 #ifdef __cplusplus
 }

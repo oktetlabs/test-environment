@@ -43,6 +43,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <pthread.h>
+#include <semaphore.h>
 #include <signal.h>
 #include <string.h>
 #include <sys/un.h>
@@ -130,7 +131,7 @@ static void
 kill_tasks(void)
 {
     unsigned int i;
-    
+
     for (i = 0; i < tasks_index; i++)
     {
         if (tasks[i] != 0)
@@ -409,6 +410,123 @@ rcf_ch_start_task(struct rcf_comm_connection *handle,
     SEND_ANSWER("%d", ETENOSUCHNAME);
 }
 
+struct rcf_thread_parameter
+{
+    te_bool active;
+    pthread_t id;
+    void *addr;
+    te_bool is_argv;
+    int argc;
+    uint32_t *params;
+    int rc;
+    te_bool sem_created;
+    sem_t params_processed;
+};
+
+#define TA_MAX_THREADS 16
+static struct rcf_thread_parameter thread_pool[TA_MAX_THREADS];
+static pthread_mutex_t thread_pool_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+static void *
+rcf_ch_thread_wrapper(void *arg)
+{
+    struct rcf_thread_parameter *parm = arg;
+
+    if (parm->is_argv)
+        parm->rc = ((rcf_thr_rtn)(parm->addr))(&parm->params_processed, 
+                                               parm->argc, parm->params);
+    else
+    {
+        parm->rc = ((rcf_thr_rtn)(parm->addr))(&parm->params_processed,
+                                               parm->params[0], 
+                                               parm->params[1], 
+                                               parm->params[2], 
+                                               parm->params[3], 
+                                               parm->params[4], 
+                                               parm->params[5],
+                                               parm->params[6], 
+                                               parm->params[7], 
+                                               parm->params[8], 
+                                               parm->params[9]);
+    }
+    VERB("thread is terminating");
+    pthread_mutex_lock(&thread_pool_mutex);
+    parm->active = FALSE;
+    pthread_mutex_unlock(&thread_pool_mutex);
+    return NULL;
+}
+
+/* See description in rcf_ch_api.h */
+int
+rcf_ch_start_task_thr(struct rcf_comm_connection *handle,
+                  char *cbuf, size_t buflen, size_t answer_plen,
+                  int priority, const char *rtn, te_bool is_argv,
+                  int argc, uint32_t *params)
+{
+    void *addr = rcf_ch_symbol_addr(rtn, TRUE);
+    struct rcf_thread_parameter *iter;
+    int   id;
+
+    if (addr != NULL)
+    {
+        VERB("start thread with entry point '%s'", rtn);
+
+        pthread_mutex_lock(&thread_pool_mutex);
+        for (iter = thread_pool; 
+             iter < thread_pool + TA_MAX_THREADS;
+             iter++)
+        {
+            if (!iter->active)
+            {
+                int rc;
+
+                iter->addr = addr;
+                iter->argc = argc;
+                iter->is_argv = is_argv;
+                iter->params = params;
+                iter->rc = 0;
+                if (!iter->sem_created)
+                {
+                    sem_init(&iter->params_processed, FALSE, 0);
+                    iter->sem_created = TRUE;
+                }
+                if ((rc = pthread_create(&iter->id, NULL, 
+                                         rcf_ch_thread_wrapper,iter)) != 0)
+                {
+                    pthread_mutex_unlock(&thread_pool_mutex);
+                    SEND_ANSWER("%d", rc);                    
+                }
+                VERB("started thread %d", iter - thread_pool);
+                iter->active = TRUE;
+                sem_wait(&iter->params_processed);
+                pthread_mutex_unlock(&thread_pool_mutex);
+                SEND_ANSWER("0 %d", iter - thread_pool);
+            }
+        }
+        pthread_mutex_unlock(&thread_pool_mutex);
+        SEND_ANSWER("%d", ETOOMANY);
+    }
+
+    SEND_ANSWER("%d", ETENOSUCHNAME);
+}
+
+/* Kill all the threads started by rcf_ch_start_task_thr */
+static void 
+kill_threads(void)
+{
+    struct rcf_thread_parameter *iter;
+
+    for (iter = thread_pool; 
+         iter < thread_pool + TA_MAX_THREADS;
+         iter++)
+    {
+        if (iter->active)
+        {
+            pthread_cancel(iter->id);
+            pthread_join(iter->id, NULL);
+        }
+    }
+}
 
 /* See description in rcf_ch_api.h */
 int
@@ -658,6 +776,7 @@ main(int argc, char **argv)
             retval = rc;
     }
 
+    kill_threads();
     kill_tasks();
     
     return retval;

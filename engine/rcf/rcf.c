@@ -32,6 +32,7 @@
 #include "config.h"
 #endif
 
+#include <limits.h>
 #include <stdio.h>
 #include <ctype.h>
 #ifdef HAVE_SYS_TYPES_H
@@ -96,6 +97,7 @@
 
 #define LOG_SID                 1   /**< Session used for Log gathering */
 
+#define RCF_STARTUP_SID         INT_MAX
 
 /*
  * TA reboot and RCF shutdown algorithms.
@@ -141,6 +143,15 @@ typedef struct usrreq {
     struct ipc_server_client *user;
 } usrreq;
 
+/** A description for a task/thread to be executed at TA startup */
+typedef struct ta_initial_task {
+    enum rcf_start_modes    mode;
+    char                   *entry;
+    int                     argc;
+    char                  **argv;
+    struct ta_initial_task *next;
+} ta_initial_task;
+
 /** Structure for one Test Agent */
 typedef struct ta {
     struct ta          *next;               /**< Link to the next TA */
@@ -161,6 +172,7 @@ typedef struct ta {
 
     void               *dlhandle;           /**< Dynamic library handle */
     te_bool             dead;               /**< TA is dead */
+    ta_initial_task    *initial_tasks;      /**< Startup tasks */
 
     /** @name Methods */
     rcf_talib_start     start;              /**< Start TA */
@@ -332,9 +344,12 @@ parse_config(char *filename)
 {
     char *name_ptr = names;
     ta   *agent;
+    ta_initial_task *ta_task = NULL;
 
     xmlDocPtr  doc;
     xmlNodePtr cur;
+    xmlNodePtr task;
+    xmlNodePtr arg;
 
     if ((doc = xmlParseFile(filename)) == NULL)
     {
@@ -440,6 +455,54 @@ parse_config(char *filename)
             xmlFree(attr);
         }
 
+        for (task = cur->xmlChildrenNode; task != NULL; task = task->next)
+        {
+            if (xmlStrcmp(task->name, (const xmlChar *)"thread") != 0 &&
+                xmlStrcmp(task->name, (const xmlChar *)"task") != 0)
+                continue;
+            ta_task = malloc(sizeof(*ta_task));
+            if (ta_task == NULL)
+            {
+                ERROR("malloc failed: %d", errno);
+                goto error;
+            }
+            ta_task->mode = 
+                (xmlStrcmp(task->name , (const xmlChar *)"thread") == 0 ?
+                 RCF_START_THREAD : RCF_START_FORK);
+            if ((attr = xmlGetProp(task, (const xmlChar *)"name")) != NULL)
+            {
+                ta_task->entry = strdup((const char *)attr);
+                xmlFree(attr);
+            }
+            else
+            {
+                INFO("No name attribute in <task>/<thread>");
+                goto bad_format;
+            }
+
+            ta_task->argc = 0;
+            ta_task->argv = malloc(sizeof(*ta_task->argv) * RCF_MAX_PARAMS);
+            for (arg = task->xmlChildrenNode; arg != NULL; arg = arg->next)
+            {
+                if (xmlStrcmp(arg->name, (const xmlChar *)"arg") != 0)
+                    continue;
+                if ((attr = xmlGetProp(arg, (const xmlChar *)"value")) 
+                    != NULL)
+                {
+                    ta_task->argv[ta_task->argc++] = 
+                        strdup((const char *)attr);
+                    xmlFree(attr);
+                }
+                else
+                {
+                    INFO("No value attribute in <arg>");
+                    goto bad_format;
+                }
+            }
+            ta_task->next = agent->initial_tasks;
+            agent->initial_tasks = ta_task;
+        }
+
         agent->sent.prev = agent->sent.next = &(agent->sent);
         agent->pending.prev = agent->pending.next = &(agent->pending);
 
@@ -452,7 +515,7 @@ parse_config(char *filename)
     return 0;
 
 bad_format:
-    VERB("Wrong configuration file format");
+    ERROR("Wrong configuration file format");
 
 error:
     xmlFreeDoc(doc);
@@ -572,6 +635,30 @@ answer_all_requests(usrreq *req, int error)
     }
 }
 
+static int
+startup_tasks(ta *agent)
+{
+    ta_initial_task *task;
+    int i;
+    
+    for (task = agent->initial_tasks; task; task = task->next)
+    {
+        sprintf(cmd, "SID %d " TE_PROTO_EXECUTE " ", RCF_STARTUP_SID);
+        strcat(cmd, task->mode == RCF_START_THREAD ? "thread " : "fork ");
+        strcat(cmd, task->entry);
+        if (task->argc > 0)
+            strcat(cmd, " argv ");
+        for (i = 0; i < task->argc; i++)
+        {
+            strcat(cmd, task->argv[i]);
+            strcat(cmd, " ");
+        }
+        RING("Running startup task %s", cmd);
+        (agent->transmit)(agent->handle, cmd, strlen(cmd) + 1);
+    }
+    return 0;
+}
+
 /**
  * Initialize Test Agent or recovery it after reboot.
  *
@@ -607,10 +694,12 @@ init_agent(ta *agent)
         return -1;
     }
     VERB("Connected with TA %s", agent->name);
-    if (agent->enable_synch_time)
-        return synchronize_time(agent);
-    else
-        return 0;
+    rc = (agent->enable_synch_time ? synchronize_time(agent) : 0);
+    if (rc == 0)
+    {
+        rc = startup_tasks(agent);
+    }
+    return rc;
 }
 
 /**
@@ -948,6 +1037,13 @@ process_reply(ta *agent)
 
     ptr += strlen("SID ");
     READ_INT(sid);
+
+    if (sid == RCF_STARTUP_SID)
+    {
+        VERB("Ignoring answers for a startup command");
+        return 0;
+    }
+
     if ((req = find_user_request(&(agent->sent), sid)) == NULL)
     {
         ERROR("Can't find user request with SID %d", sid);
@@ -1065,7 +1161,6 @@ process_reply(ta *agent)
                 break;
 
             case RCFOP_CSAP_CREATE:
-            case RCFOP_START:
                 READ_INT(msg->handle);
                 break;
 
@@ -1092,7 +1187,10 @@ process_reply(ta *agent)
                 break;
 
             case RCFOP_EXECUTE:
-                READ_INT(msg->intparm);
+                if(msg->handle == RCF_START_FUNC)
+                    READ_INT(msg->intparm);
+                else
+                    READ_INT(msg->handle);
                 break;
 
             default:
@@ -1416,13 +1514,24 @@ send_cmd(ta *agent, usrreq *req)
             msg->num = 0;
             break;
 
-        case RCFOP_START:
         case RCFOP_EXECUTE:
-            strcat(cmd, msg->opcode == RCFOP_START ? TE_PROTO_START
-                                                   : TE_PROTO_EXECUTE);
+            strcat(cmd, TE_PROTO_EXECUTE);
             strcat(cmd, " ");
+            switch((enum rcf_start_modes)msg->handle)
+            {
+                case RCF_START_FUNC:
+                    strcat(cmd, "function ");
+                    break;
+                case RCF_START_THREAD:
+                    strcat(cmd, "thread ");
+                    break;                  
+                case RCF_START_FORK:
+                    strcat(cmd, "fork ");
+                    break;
+            }
             strncat(cmd, msg->id, RCF_MAX_NAME);
-            if (msg->opcode == RCFOP_START && msg->intparm >= 0)
+            strcat(cmd, " ");
+            if (msg->intparm >= 0)
                 sprintf(cmd + strlen(cmd), " %d", msg->intparm);
 
             if (msg->num > 0)

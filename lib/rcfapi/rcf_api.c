@@ -2378,13 +2378,15 @@ make_params(int argc,  int argv, char *data, int *data_len, va_list ap)
  * @param argv          if 1, parameters in ap are char *;
  *                      otherwise pairs: type, value.
  * @param ap            list of additional parameters
- * @param opcode        RCFOP_START or RCFOP_EXECUTE
+ * @param mode          start mode (rfc_start_func, rfc_start_thread,
+ *                      rcf_start_fork)
  *
  * @return error code
  */
 static int
 call_start(const char *ta_name, int session, int priority, const char *rtn, 
-           int *res, int argc, int argv, va_list ap, int opcode)
+           int *res, int argc, int argv, va_list ap, 
+           enum rcf_start_modes mode)
 {
     rcf_msg *msg;
     size_t   anslen = sizeof(*msg);
@@ -2398,13 +2400,13 @@ call_start(const char *ta_name, int session, int priority, const char *rtn,
     if ((msg = (rcf_msg *)calloc(RCF_MAX_LEN, 1)) == NULL)
         return TE_RC(TE_RCF_API, ENOMEM);
 
-    msg->opcode = opcode;
+    msg->opcode = RCFOP_EXECUTE;
     msg->sid = session;
     strcpy(msg->ta, ta_name);
     strcpy(msg->id, rtn);
     
-    if (opcode == RCFOP_START)
-        msg->intparm = priority;
+    msg->intparm = priority;
+    msg->handle = mode;
         
     if (argc != 0)
     {
@@ -2432,7 +2434,7 @@ call_start(const char *ta_name, int session, int priority, const char *rtn,
         
     error = msg->error;
     if (error == 0)
-        *res = opcode == RCFOP_START ? msg->handle : msg->intparm;
+        *res = (mode == RCF_START_FUNC ? msg->intparm : msg->handle);
         
     free(msg);
     
@@ -2451,7 +2453,7 @@ rcf_ta_call(const char *ta_name, int session, const char *rtn, int *rc,
     va_start(ap, argv);
     
     error = call_start(ta_name, session, 0, rtn, rc, argc, argv, ap, 
-                       RCFOP_EXECUTE);
+                       RCF_START_FUNC);
     
     va_end(ap);
     
@@ -2470,12 +2472,31 @@ rcf_ta_start_task(const char *ta_name, int session, int priority,
     va_start(ap, argv);
     
     error = call_start(ta_name, session, priority, rtn, pid, argc, argv, ap,
-                       RCFOP_START);
+                       RCF_START_FORK);
     
     va_end(ap);
     
     return error;
 }
+
+/* See description in rcf_api.h */
+int 
+rcf_ta_start_thread(const char *ta_name, int session, int priority,
+                  const char *rtn, int *tid, int argc, te_bool argv, ...)
+{
+    int     error;
+    va_list ap;
+    
+    va_start(ap, argv);
+    
+    error = call_start(ta_name, session, priority, rtn, tid, argc, argv, ap,
+                       RCF_START_THREAD);
+    
+    va_end(ap);
+    
+    return error;
+}
+
                                 
 /**
  * This function is used to kill a process on the Test Agent or 

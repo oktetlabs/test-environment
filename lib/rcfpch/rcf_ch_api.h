@@ -58,6 +58,9 @@ extern "C" {
 /** Generic routine prototype */
 typedef int (* rcf_rtn)(int32_t arg, ...);
 
+/** Generic threaded routine prototype */
+typedef int (* rcf_thr_rtn)(void *sem, int32_t arg, ...);
+
 
 /**
  * Initialize structures.
@@ -611,6 +614,20 @@ extern int rcf_ch_start_task(struct rcf_comm_connection *handle,
                              size_t answer_plen, int priority,
                              const char *rtn, te_bool is_argv,
                              int argc, uint32_t *params);
+
+/**
+ * This function is similar to rcf_ch_start_task_thr, but
+ * it is assumed that a new task will be run as a thread, 
+ * not as a forked process
+ *
+ * @sa rcf_ch_start_task
+ */
+extern int rcf_ch_start_task_thr(struct rcf_comm_connection *handle,
+                                 char *cbuf, size_t buflen,
+                                 size_t answer_plen, int priority,
+                                 const char *rtn, te_bool is_argv,
+                                 int argc, uint32_t *params);
+
 
 /**
  * Kill the process on the Test Agent or NUT served by it.

@@ -804,6 +804,16 @@ extern int rcf_ta_call(const char *ta_name, int session,
 extern int rcf_ta_start_task(const char *ta_name, int session,
                              int priority,  const char *rtn,
                              pid_t *pid, int argc, te_bool argv, ...);
+
+/**
+ * This function is similar to rcf_ta_start_task, but
+ * the task should be started as a separate thread, not a process
+ *
+ * @sa rcf_ta_start_task
+ */
+extern int rcf_ta_start_thread(const char *ta_name, int session,
+                               int priority,  const char *rtn,
+                               int *tid, int argc, te_bool argv, ...);
                                 
 /**
  * This function is used to kill a process on the Test Agent or 

@@ -16,8 +16,8 @@ MY_LDADD=symtbl.o -lrcfpch -l@TAD@ @TE_LDADD@ -lconf_oid -lloggerta
 #MY_LDADD+= @NET_SNMP_LIBS@
 #endif
 
-MY_SOURCES=linux.c linuxconf.c ftp_routines.c
-MY_SYMTBL_OBJECTS=linux.o ftp_routines.o
+MY_SOURCES=linux.c linuxconf.c ftp_routines.c log_serial.c
+MY_SYMTBL_OBJECTS=linux.o ftp_routines.o log_serial.o
 
 noinst_HEADERS=linux_rpc.h linux_internal.h linuxconf_daemons.h
 

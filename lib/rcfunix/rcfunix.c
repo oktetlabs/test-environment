@@ -289,7 +289,7 @@ rcfunix_start(char *ta_name, char *ta_type, char *conf_str,
     if (!ta->is_local)
     {
         /* Be quite and go to background just before command execution */
-        sprintf(cmd + strlen(cmd), RCFUNIX_SSH " -f %s \"", ta->host);
+        sprintf(cmd, RCFUNIX_SSH " -f %s \"", ta->host);
     }
     if (ta->sudo)
     {
