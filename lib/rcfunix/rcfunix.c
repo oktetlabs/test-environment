@@ -85,8 +85,7 @@
  * second one is a TCP port.
  */
 
-#define RCFUNIX_SSH     "ssh -q -o BatchMode=yes -o SetupTimeOut=10 " \
-                        "-o ServerAliveInterval=30"
+#define RCFUNIX_SSH     "ssh -q -o BatchMode=yes -o ServerAliveInterval=30"
 
 #define RCFUNIX_SHELL_CMD_MAX   2048
 
