@@ -227,6 +227,7 @@ rcf_pch_vwrite(struct rcf_comm_connection *conn,
     {
         unsigned sec, usec;
         struct timeval tv;
+
         VERB("synchronizing time");
         if (sscanf(va_arg(ap, const char *), "%u:%u", &sec, &usec) != 2)
         {
