@@ -1,0 +1,48 @@
+
+# Process this file with autoconf to produce a configure script.
+
+AC_PREREQ(2.53)
+AC_INIT(tapi_arp, 0.01, oleg@oktetlabs.ru)
+
+AC_CONFIG_SRCDIR([tapi_arp.c])
+
+AC_CONFIG_AUX_DIR(../../aux)
+
+AM_INIT_AUTOMAKE([foreign -Wall])
+
+# Checks for programs.
+AC_PROG_CC
+AC_PROG_LIBTOOL
+AC_PROG_INSTALL
+
+CFLAGS="${CFLAGS} ${TE_CFLAGS}"
+CPPFLAGS="${CPPFLAGS} ${TE_CFLAGS}"
+
+AC_SUBST(TE_CFLAGS)
+AC_SUBST(TE_LDFLAGS)
+AC_SUBST(TE_LDADD)
+AC_SUBST(TE_DEPENDENCIES)
+
+AC_ARG_VAR(TE_CFLAGS)
+AC_ARG_VAR(TE_LDFLAGS)
+AC_ARG_VAR(TE_LDADD)
+AC_ARG_VAR(TE_DEPENDENCIES)
+
+AM_CONFIG_HEADER([config.h])
+
+AC_CHECK_HEADERS([stdlib.h        \
+                  string.h        \
+                  strings.h       \
+                  stdint.h        \
+                  sys/socket.h    \
+                  unistd.h        \
+                  arpa/inet.h     \
+                  netinet/in.h    \
+                  netinet/ether.h \
+                  net/if_arp.h    \
+                  net/ethernet.h  \
+                 ])
+
+AC_CONFIG_FILES([Makefile])
+
+AC_OUTPUT
