@@ -122,7 +122,7 @@ TRC_OPTS=
 
 LIVE_LOG=
 
-VG_OPTIONS="--tool=memcheck --leak-check=yes --show-reachable=yes --num-callers=8"
+VG_OPTIONS="--tool=memcheck --leak-check=yes --show-reachable=yes --num-callers=32"
 VG_TESTS=
 VG_RCF=
 VG_CS=
