@@ -65,6 +65,9 @@
 
 #include "tad_dhcp_impl.h"
 
+#define TE_LGR_USER     "TAD DHCP stack"
+#include "logger_ta.h"
+
  
 /**
  * Callback for read data from media of dhcpernet CSAP. 
@@ -120,6 +123,7 @@ dhcp_read_cb (csap_p csap_descr, int timeout, char *buf, int buf_len)
     }
     
     rc = select(spec_data->in + 1, &read_set, NULL, NULL, &timeout_val); 
+    VERB("%s(): select = %d", __FUNCTION__, rc);
     
     if (rc == 0)
         return 0;
@@ -257,7 +261,7 @@ dhcp_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
     }
     
     
-    dhcp_spec_data->ipaddr = malloc (INET_ADDRSTRLEN + 1);
+    dhcp_spec_data->ipaddr = malloc(INET_ADDRSTRLEN + 1);
     dhcp_spec_data->mode = mode;
 
     /* opening incoming socket */
@@ -266,20 +270,52 @@ dhcp_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
     {
         return errno;
     }
+
+    opt = 1;
     if (setsockopt(dhcp_spec_data->in, SOL_SOCKET, SO_REUSEADDR, 
-                   (void *) &opt, sizeof(opt)) == -1)
+                   (void *)&opt, sizeof(opt)) != 0)
     {
         return errno;
     }
 
+    local.sin_family = AF_INET;
+    local.sin_port = htons(mode == DHCP4_CSAP_MODE_SERVER ? 
+                           DHCP_SERVER_PORT : DHCP_CLIENT_PORT); 
+    local.sin_addr.s_addr = INADDR_ANY;
+
+    if (bind(dhcp_spec_data->in, SA(&local), sizeof(local)) != 0)
+    {
+        perror ("dhcp csap socket bind");
+        return errno;
+    }
+    /* 
+     * shutdown(SHUT_WR) looks reasonable here, but it can't be
+     * called on not connected socket.
+     */
+
+
+    /* opening outgoing socket */
+    dhcp_spec_data->out = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP); 
+    if (dhcp_spec_data->out < 0)
+    {
+        return errno;
+    }
+
+    opt = 1;
+    if (setsockopt(dhcp_spec_data->out, SOL_SOCKET, SO_REUSEADDR, 
+                   (void *)&opt, sizeof(opt)) != 0)
+    {
+        return errno;
+    } 
 
     len = IFNAMSIZ;
-    rc = asn_read_value_field(csap_nds, interface->ifr_ifrn.ifrn_name, &len, 
-                                "0.iface");
+    rc = asn_read_value_field(csap_nds, interface->ifr_ifrn.ifrn_name,
+                              &len, "0.iface");
     if (rc == 0)
     {
-        if (setsockopt(dhcp_spec_data->in, SOL_SOCKET, SO_BINDTODEVICE,
-                       (char *)interface, sizeof(struct ifreq)) < 0) 
+        if (setsockopt(dhcp_spec_data->out, SOL_SOCKET, SO_BINDTODEVICE,
+                       interface->ifr_ifrn.ifrn_name,
+                       strlen(interface->ifr_ifrn.ifrn_name) + 1) != 0) 
         {
             perror("setsockopt, BINDTODEVICE");
             rc  = errno;
@@ -296,45 +332,7 @@ dhcp_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
         return rc;
     }
 
-    if (setsockopt(dhcp_spec_data->in, SOL_SOCKET, SO_BROADCAST, 
-                   (void *) &opt, sizeof(opt)) == -1)
-    {
-        dhcp_single_destroy_cb(csap_id, layer);
-        return errno;
-    }
-
-    local.sin_family = AF_INET;
-    local.sin_port = htons(mode == DHCP4_CSAP_MODE_SERVER ? 
-                           DHCP_SERVER_PORT : DHCP_CLIENT_PORT); 
-    local.sin_addr.s_addr = INADDR_ANY;
-
-    if (bind(dhcp_spec_data->in, SA(&local), sizeof(local)) == -1)
-    {
-        perror ("dhcp csap socket bind");
-        return errno;
-    }
-
-
-    /* opening outgoing socket */
-    dhcp_spec_data->out = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP); 
-    if (dhcp_spec_data->out < 0)
-    {
-        return errno;
-    }
-    if (setsockopt(dhcp_spec_data->out, SOL_SOCKET, SO_REUSEADDR, 
-                   (void *) &opt, sizeof(opt)) == -1)
-    {
-        return errno;
-    } 
-
-    if (setsockopt(dhcp_spec_data->out, SOL_SOCKET, SO_BINDTODEVICE,
-                   (char *)interface, sizeof(struct ifreq)) < 0) 
-    {
-        perror("setsockopt, BINDTODEVICE");
-        rc  = errno;
-    }
-
-    if (ioctl(dhcp_spec_data->in, SIOCGIFADDR, interface) < 0)
+    if (ioctl(dhcp_spec_data->in, SIOCGIFADDR, interface) != 0)
     {
         perror ("ioctl get ifaddr");
         return errno;
@@ -350,8 +348,9 @@ dhcp_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
         return rc;
     }
 
+    opt = 1;
     if (setsockopt(dhcp_spec_data->out, SOL_SOCKET, SO_BROADCAST, 
-                   (void *) &opt, sizeof(opt)) == -1)
+                   (void *)&opt, sizeof(opt)) != 0)
     {
         dhcp_single_destroy_cb(csap_id, layer);
         return errno;
@@ -359,11 +358,15 @@ dhcp_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
 
     local.sin_addr.s_addr = ifa->sin_addr.s_addr;
 
-    if (bind(dhcp_spec_data->out, SA(&local), sizeof(local)) == -1)
+    if (bind(dhcp_spec_data->out, SA(&local), sizeof(local)) != 0)
     {
         perror ("dhcp csap socket bind");
         return errno;
     }
+    /* 
+     * shutdown(SHUT_RD) looks reasonable here, but it can't be
+     * called on not connected socket.
+     */
 
     free(interface);
 
