@@ -226,6 +226,18 @@ dnl            AC_ERROR([There is no xdr_uint8_t or xdr_u_int8_t!])))
         [AC_CHECK_FUNC([xdr_u_int16_t],
             [AC_DEFINE([xdr_uint16_t], [xdr_u_int16_t])],
             [AC_ERROR([There is no xdr_uint16_t or xdr_u_int16_t!])])])
+
+    AH_TEMPLATE([xdr_uint32_t], [RPC XDR for unsigned 32bit width type])
+    AC_CHECK_FUNC([xdr_uint32_t], [],
+        [AC_CHECK_FUNC([xdr_u_int32_t],
+            [AC_DEFINE([xdr_uint32_t], [xdr_u_int32_t])],
+            [AC_ERROR([There is no xdr_uint32_t or xdr_u_int32_t!])])])
+
+    AH_TEMPLATE([xdr_uint64_t], [RPC XDR for unsigned 64bit width type])
+    AC_CHECK_FUNC([xdr_uint64_t], [],
+        [AC_CHECK_FUNC([xdr_u_int64_t],
+            [AC_DEFINE([xdr_uint64_t], [xdr_u_int64_t])],
+            [AC_ERROR([There is no xdr_uint64_t or xdr_u_int64_t!])])])
 fi
 
 
