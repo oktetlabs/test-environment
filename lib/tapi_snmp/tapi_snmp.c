@@ -1207,10 +1207,41 @@ tapi_snmp_get_table_dimension(tapi_snmp_oid_t *table_oid, int *dimension)
     return 0;
 }
 
+static tapi_snmp_vartypes_t net_snmp_convert[] = 
+{
+    /* TYPE_OTHER          0*/ TAPI_SNMP_OTHER,   
+    /* TYPE_OBJID          1*/ TAPI_SNMP_OBJECT_ID,
+    /* TYPE_OCTETSTR       2*/ TAPI_SNMP_OCTET_STR,
+    /* TYPE_INTEGER        3*/ TAPI_SNMP_INTEGER,
+    /* TYPE_NETADDR        4*/ TAPI_SNMP_OCTET_STR,
+    /* TYPE_IPADDR         5*/ TAPI_SNMP_IPADDRESS,
+    /* TYPE_COUNTER        6*/ TAPI_SNMP_COUNTER,
+    /* TYPE_GAUGE          7*/ TAPI_SNMP_INTEGER,
+    /* TYPE_TIMETICKS      8*/ TAPI_SNMP_TIMETICKS,
+    /* TYPE_OPAQUE         9*/ TAPI_SNMP_OCTET_STR,
+    /* TYPE_NULL           10*/ TAPI_SNMP_OTHER,
+    /* TYPE_COUNTER64      11*/ TAPI_SNMP_INTEGER,
+    /* TYPE_BITSTRING      12*/ TAPI_SNMP_OCTET_STR,
+    /* TYPE_NSAPADDRESS    13*/ TAPI_SNMP_OCTET_STR,
+    /* TYPE_UINTEGER       14*/ TAPI_SNMP_UNSIGNED,
+    /* TYPE_UNSIGNED32     15*/ TAPI_SNMP_UNSIGNED,
+    /* TYPE_INTEGER32      16*/ TAPI_SNMP_INTEGER,
+    /* 17 */                    TAPI_SNMP_OTHER, 
+    /* 18 */                    TAPI_SNMP_OTHER,
+    /* 19 */                    TAPI_SNMP_OTHER,
+    /* TYPE_TRAPTYPE       20*/ TAPI_SNMP_OTHER,
+    /* TYPE_NOTIFTYPE      21*/ TAPI_SNMP_OTHER,
+    /* TYPE_OBJGROUP       22*/ TAPI_SNMP_OTHER,
+    /* TYPE_NOTIFGROUP     23*/ TAPI_SNMP_OTHER,
+    /* TYPE_MODID          24*/ TAPI_SNMP_OTHER,
+    /* TYPE_AGENTCAP       25*/ TAPI_SNMP_OTHER,
+    /* TYPE_MODCOMP        26*/ TAPI_SNMP_OTHER
+}; 
+
 
 /* See description in tapi_snmp.h */
 int
-tapi_snmp_get_syntax(tapi_snmp_oid_t *oid, int *type)
+tapi_snmp_get_syntax(tapi_snmp_oid_t *oid, tapi_snmp_vartypes_t *type)
 {
     struct tree *entry_node;
     int rc;
@@ -1226,7 +1257,9 @@ tapi_snmp_get_syntax(tapi_snmp_oid_t *oid, int *type)
         return TE_RC(TE_TAPI, EINVAL);
     }
 
-    *type = entry_node->type;
+    VERB("%s, label %s, syntax %d", __FUNCTION__, entry_node->label, entry_node->type);
+
+    *type = net_snmp_convert[entry_node->type];
     return 0;
 }
 

@@ -115,10 +115,9 @@ extern "C" {
  * @param value_         integer value.
  * 
  */
-#define SNMP_SET_INTEGER(ta_, sid_, csap_id_, label_, value_)              \
+#define SNMP_SET_INTEGER(ta_, sid_, csap_id_, label_, value_, errstat_) \
     do {                                                                   \
         int             rc_;                                               \
-        int             errstat_;	                                   \
         tapi_snmp_oid_t oid_;                                              \
 	                                                                   \
         SNMP_MAKE_OID(label_, oid_);                                       \
@@ -142,10 +141,9 @@ extern "C" {
  * @param size           octet string size.
  * 
  */
-#define SNMP_SET_OCTETSTRING(ta_, sid_, csap_id_, label_, value_, size_)      \
+#define SNMP_SET_OCTETSTRING(ta_, sid_, csap_id_, label_, value_, size_, errstat_) \
     do {                                                                      \
         int             rc_;                                                  \
-        int             errstat_;                                             \
 	                                                                      \
         tapi_snmp_oid_t oid_;                                                 \
         SNMP_MAKE_OID(label_, oid_);                                          \
@@ -169,10 +167,9 @@ extern "C" {
  * @param value_         zero-terminated string.
  * 
  */
-#define SNMP_SET_STRING(ta_, sid_, csap_id_, label_, value_)               \
+#define SNMP_SET_STRING(ta_, sid_, csap_id_, label_, value_, errstat_)     \
     do {                                                                   \
         int             rc_;                                               \
-        int             errstat_;                                          \
         tapi_snmp_oid_t oid_;                                              \
 	                                                                   \
         SNMP_MAKE_OID(label_, oid_);                                       \
