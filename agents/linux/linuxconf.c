@@ -2907,6 +2907,9 @@ user_add(unsigned int gid, const char *oid, const char *value,
         user_del(gid, oid, user);
         return TE_RC(TE_TA_LINUX, ETESHCMD);
     }
+    ta_system("sync");
+    sleep(1);
+    ta_system("sync");
             
     sprintf(buf, "su - %s -c 'ssh-keygen -t dsa -N \"\" "
                  "-f /tmp/%s/.ssh/id_dsa' >/dev/null 2>&1", user, user);

@@ -69,6 +69,7 @@
 #include "te_errno.h"
 #include "tarpc.h"
 #include "rcf_ch_api.h"
+#include "rcf_pch.h"
 #include "rcf_rpc_defs.h"
 #include "linux_rpc.h"
 #include "ta_rpc_log.h"
@@ -617,6 +618,7 @@ TARPC_FUNC(fork, {},
 
     if (out->pid == 0)
     {
+        rcf_pch_detach();
 #ifdef HAVE_SVC_EXIT
         svc_exit();
 #endif

@@ -333,6 +333,7 @@ rcf_ch_start_task(struct rcf_comm_connection *handle,
 
         if ((pid = fork()) == 0)
         {
+            rcf_pch_detach();
             /* Set the process group to allow killing all children */
             setpgid(getpid(), getpid());
             if (is_argv)
@@ -372,6 +373,7 @@ rcf_ch_start_task(struct rcf_comm_connection *handle,
 
         if ((pid = fork()) == 0)
         {
+            rcf_pch_detach();
             /* Set the process group to allow killing all children */
             setpgid(getpid(), getpid());
             execlp(rtn, rtn, params[0], params[1], params[2], params[3],

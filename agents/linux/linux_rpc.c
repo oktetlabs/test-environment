@@ -568,6 +568,7 @@ tarpc_server_create(char *name)
     if (pid == 0)
     {
         /* Child */
+        rcf_pch_detach();
         tarpc_server(name);
         exit(EXIT_FAILURE);
     }
