@@ -30,13 +30,6 @@
  */
 
 
-/** Types of RPC operations */
-enum tarpc_op {
-    TARPC_CALL,       /**< Call non-blocking RPC (if supported) */
-    TARPC_WAIT,       /**< Wait until non-blocking RPC is finished */
-    TARPC_CALL_WAIT   /**< Call blocking RPC */                        
-};
-
 typedef int32_t     tarpc_int;
 typedef uint32_t    tarpc_uint;
 typedef uint8_t     tarpc_bool;
@@ -65,6 +58,8 @@ typedef uint32_t    tarpc_hwnd;
 /** WSAOVERLAPPED structure */
 typedef uint32_t    tarpc_overlapped;
 
+typedef uint32_t    tarpc_op;
+
 /**
  * Input arguments common for all RPC calls.
  *
@@ -74,7 +69,7 @@ typedef uint32_t    tarpc_overlapped;
  */
 struct tarpc_in_arg {
     char            name[16];   /**< Server name */
-    enum tarpc_op   op;         /**< RPC operation */
+    tarpc_op        op;         /**< RPC operation */
     uint64_t        start;
     uint32_t        tid;        /**< Thread identifier (for checking and 
                                      waiting) */

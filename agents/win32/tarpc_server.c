@@ -500,13 +500,13 @@ _##_func##_1_svc(tarpc_##_func##_in *in, tarpc_##_func##_out *out,      \
                                                                         \
     _copy_args                                                          \
                                                                         \
-    if (in->common.op == TARPC_CALL_WAIT)                               \
+    if (in->common.op == RCF_RPC_CALL_WAIT)                             \
     {                                                                   \
         _actions                                                        \
         return TRUE;                                                    \
     }                                                                   \
                                                                         \
-    if (in->common.op == TARPC_CALL)                                    \
+    if (in->common.op == RCF_RPC_CALL)                                  \
     {                                                                   \
         pthread_t _tid;                                                 \
                                                                         \

@@ -27,7 +27,7 @@
  * $Id$
  */
 
-#ifdef HAVE_CONFIG_H
+#if HAVE_CONFIG_H
 #include "config.h"
 #endif
 
@@ -428,98 +428,109 @@ check_args(checked_arg *list)
             out->common._errno = _rc;                            \
     } while (0)
 
-#define TARPC_FUNC(_func, _copy_args, _actions)                         \
-                                                                        \
-typedef struct _func##_arg {                                            \
-    sock_api_func       func;                                           \
-    tarpc_##_func##_in  in;                                             \
-    tarpc_##_func##_out out;                                            \
-    sigset_t            mask;                                           \
-} _func##_arg;                                                          \
-                                                                        \
-static void *                                                           \
-_func##_proc(void *arg)                                                 \
-{                                                                       \
-    sock_api_func       func = ((_func##_arg *)arg)->func;              \
-    tarpc_##_func##_in  *in = &(((_func##_arg *)arg)->in);              \
-    tarpc_##_func##_out *out = &(((_func##_arg *)arg)->out);            \
-    checked_arg         *list = NULL;                                   \
-                                                                        \
-    VERB("Entry thread %s", #_func);                                    \
-                                                                        \
-    sigprocmask(SIG_SETMASK, &(((_func##_arg *)arg)->mask), NULL);      \
-                                                                        \
-    { _actions }                                                        \
-                                                                        \
-    return arg;                                                         \
-}                                                                       \
-                                                                        \
-bool_t                                                                  \
-_##_func##_1_svc(tarpc_##_func##_in *in, tarpc_##_func##_out *out,      \
-                 struct svc_req *rqstp)                                 \
-{                                                                       \
-    sock_api_func func;                                                 \
-    checked_arg  *list = NULL;                                          \
-    _func##_arg  *arg;                                                  \
-    enum xdr_op  op = XDR_FREE;                                         \
-                                                                        \
-    UNUSED(rqstp);                                                      \
-    memset(out, 0, sizeof(*out));                                       \
-    VERB("PID=%d TID=%d: Entry %s",                                     \
-         (int)getpid(), (int)pthread_self(), #_func);                   \
-    FIND_FUNC(#_func, func);                                            \
-                                                                        \
-    _copy_args                                                          \
-                                                                        \
-    if (in->common.op == TARPC_CALL_WAIT)                               \
-    {                                                                   \
-        _actions                                                        \
-        return TRUE;                                                    \
-    }                                                                   \
-                                                                        \
-    if (in->common.op == TARPC_CALL)                                    \
-    {                                                                   \
-        pthread_t _tid;                                                 \
-                                                                        \
-        if ((arg = malloc(sizeof(*arg))) == NULL)                       \
-        {                                                               \
-            out->common._errno = TE_RC(TE_TA_LINUX, ENOMEM);            \
-            return TRUE;                                                \
-        }                                                               \
-                                                                        \
-        arg->in = *in;                                                  \
-        arg->out = *out;                                                \
-        arg->func = func;                                               \
-        sigprocmask(SIG_SETMASK, NULL, &(arg->mask));                   \
-                                                                        \
-        if (pthread_create(&_tid, NULL, _func##_proc,                   \
-                           (void *)arg) != 0)                           \
-        {                                                               \
-            free(arg);                                                  \
-            out->common._errno = TE_RC(TE_TA_LINUX, errno);             \
-        }                                                               \
-                                                                        \
-        memset(in, 0, sizeof(*in));                                     \
-        memset(out, 0, sizeof(*out));                                   \
-        out->common.tid = _tid;                                         \
-                                                                        \
-        return TRUE;                                                    \
-    }                                                                   \
-                                                                        \
-    if (pthread_join(in->common.tid, (void **)&(arg)) != 0)             \
-    {                                                                   \
-        out->common._errno = TE_RC(TE_TA_LINUX, errno);                 \
-        return TRUE;                                                    \
-    }                                                                   \
-    if (arg == NULL)                                                    \
-    {                                                                   \
-        out->common._errno = TE_RC(TE_TA_LINUX, EINVAL);                \
-        return TRUE;                                                    \
-    }                                                                   \
-    xdr_tarpc_##_func##_out((XDR *)&op, out);                           \
-    *out = arg->out;                                                    \
-    free(arg);                                                          \
-    return TRUE;                                                        \
+#define TARPC_FUNC(_func, _copy_args, _actions)                     \
+                                                                    \
+typedef struct _func##_arg {                                        \
+    sock_api_func       func;                                       \
+    tarpc_##_func##_in  in;                                         \
+    tarpc_##_func##_out out;                                        \
+    sigset_t            mask;                                       \
+    te_bool             done;                                       \
+} _func##_arg;                                                      \
+                                                                    \
+static void *                                                       \
+_func##_proc(void *arg)                                             \
+{                                                                   \
+    _func##_arg         *data = (_func##_arg *)arg;                 \
+    sock_api_func        func = data->func;                         \
+    tarpc_##_func##_in  *in = &(data->in);                          \
+    tarpc_##_func##_out *out = &(data->out);                        \
+    checked_arg         *list = NULL;                               \
+                                                                    \
+    VERB("Entry thread %s", #_func);                                \
+                                                                    \
+    sigprocmask(SIG_SETMASK, &(data->mask), NULL);                  \
+                                                                    \
+    { _actions }                                                    \
+                                                                    \
+    data->done = TRUE;                                              \
+                                                                    \
+    return arg;                                                     \
+}                                                                   \
+                                                                    \
+bool_t                                                              \
+_##_func##_1_svc(tarpc_##_func##_in *in, tarpc_##_func##_out *out,  \
+                 struct svc_req *rqstp)                             \
+{                                                                   \
+    sock_api_func  func;                                            \
+    checked_arg   *list = NULL;                                     \
+    _func##_arg   *arg;                                             \
+    enum xdr_op    op = XDR_FREE;                                   \
+                                                                    \
+    UNUSED(rqstp);                                                  \
+    memset(out, 0, sizeof(*out));                                   \
+    VERB("PID=%d TID=%d: Entry %s",                                 \
+         (int)getpid(), (int)pthread_self(), #_func);               \
+                                                                    \
+    FIND_FUNC(#_func, func);                                        \
+                                                                    \
+    _copy_args                                                      \
+                                                                    \
+    if (in->common.op == RCF_RPC_CALL_WAIT)                         \
+    {                                                               \
+        VERB("%s(): CALL-WAIT", #_func);                            \
+        _actions                                                    \
+        return TRUE;                                                \
+    }                                                               \
+                                                                    \
+    if (in->common.op == RCF_RPC_CALL)                              \
+    {                                                               \
+        pthread_t _tid;                                             \
+                                                                    \
+        VERB("%s(): CALL", #_func);                                 \
+        if ((arg = malloc(sizeof(*arg))) == NULL)                   \
+        {                                                           \
+            out->common._errno = TE_RC(TE_TA_LINUX, ENOMEM);        \
+            return TRUE;                                            \
+        }                                                           \
+                                                                    \
+        arg->in   = *in;                                            \
+        arg->out  = *out;                                           \
+        arg->func = func;                                           \
+        sigprocmask(SIG_SETMASK, NULL, &(arg->mask));               \
+        arg->done = FALSE;                                          \
+                                                                    \
+        if (pthread_create(&_tid, NULL, _func##_proc,               \
+                           (void *)arg) != 0)                       \
+        {                                                           \
+            free(arg);                                              \
+            out->common._errno = TE_RC(TE_TA_LINUX, errno);         \
+        }                                                           \
+                                                                    \
+        memset(in,  0, sizeof(*in));                                \
+        memset(out, 0, sizeof(*out));                               \
+        out->common.tid = _tid;                                     \
+        out->common.done = (tarpc_ptr)&arg->done;                   \
+                                                                    \
+        return TRUE;                                                \
+    }                                                               \
+                                                                    \
+    VERB("%s(): WAIT", #_func);                                     \
+    assert(in->common.op == RCF_RPC_WAIT);                          \
+    if (pthread_join(in->common.tid, (void **)&(arg)) != 0)         \
+    {                                                               \
+        out->common._errno = TE_RC(TE_TA_LINUX, errno);             \
+        return TRUE;                                                \
+    }                                                               \
+    if (arg == NULL)                                                \
+    {                                                               \
+        out->common._errno = TE_RC(TE_TA_LINUX, EINVAL);            \
+        return TRUE;                                                \
+    }                                                               \
+    xdr_tarpc_##_func##_out((XDR *)&op, out);                       \
+    *out = arg->out;                                                \
+    free(arg);                                                      \
+    return TRUE;                                                    \
 }
 
 
@@ -569,6 +580,33 @@ _setlibname_1_svc(tarpc_setlibname_in *in, tarpc_setlibname_out *out,
     out->retval = setlibname(in);
     out->common._errno = RPC_ERRNO;
     out->common.duration = 0;
+    return TRUE;
+}
+
+
+/*-------------- rpc_is_op_done() -----------------------------*/
+
+bool_t
+_rpc_is_op_done_1_svc(tarpc_rpc_is_op_done_in  *in,
+                      tarpc_rpc_is_op_done_out *out,
+                      struct svc_req           *rqstp)
+{
+    te_bool *is_done = (te_bool *)(in->common.done);
+
+    UNUSED(rqstp);
+
+    memset(out, 0, sizeof(*out));
+
+    if ((is_done != NULL) && (in->common.op != RCF_RPC_IS_DONE))
+    {
+        out->common._errno = 0;
+        out->common.done = (*is_done) ? in->common.done : 0;
+    }
+    else
+    {
+        out->common._errno = TE_RC(TE_TA_LINUX, EINVAL);
+    }
+
     return TRUE;
 }
 
