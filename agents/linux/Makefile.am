@@ -84,7 +84,7 @@ AM_CPPFLAGS=$(MY_CPPFLAGS)
 # host which does not have required dynamically linked libraries.
 # Use -static.
 #
-AM_LDFLAGS=-static @TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/../@host@/lib
+AM_LDFLAGS=@TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/../@host@/lib
 
 bin_PROGRAMS=talinuxtmpl
 
