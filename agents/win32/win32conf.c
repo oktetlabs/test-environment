@@ -28,9 +28,6 @@
  * $Id$
  */
 
-#include "te_config.h"
-#include "config.h"
-
 #include "te_defs.h"
 #include "windows.h"
 #include "iprtrmib.h"

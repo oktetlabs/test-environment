@@ -30,9 +30,6 @@
 
 #include <winsock2.h>
 
-#include "te_config.h"
-#include "config.h"
-
 #ifdef HAVE_SYS_RESOURCE_H
 #include <sys/resource.h>
 #endif

@@ -1,5 +1,6 @@
 
-MY_CPPFLAGS=-I$(DESTDIR)/$(prefix)/../@host@/include -include config.h
+MY_CPPFLAGS=-I$(DESTDIR)/$(prefix)/../@host@/include \
+            -include te_config.h -include config.h
 
 #
 # -lrcfpch must be before @TE_LDADD@ since the last may contain

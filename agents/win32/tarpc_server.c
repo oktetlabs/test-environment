@@ -27,9 +27,6 @@
  * $Id$
  */
 
-#include "te_config.h"
-#include "config.h"
-
 #include <winsock2.h>
 #include <winerror.h>
 #include <mswsock.h>
