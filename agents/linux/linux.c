@@ -636,7 +636,7 @@ ta_rtn_unlink(char *arg)
     int rc = unlink(arg);
 
     VERB("%s(): arg=%s rc=%d errno=%d", __FUNCTION__,
-         (arg == NULL) ? "(null)" : "" /*arg*/, rc, errno);
+         (arg == NULL) ? "(null)" : arg, rc, errno);
     return (rc == 0) ? 0 : errno;
 }
 
