@@ -1,13 +1,18 @@
 #!/bin/sh
 
-RAW_LOG_FILE=$1
-DB_FILE=$2
-HTML_FILE=$3
+OPTS=""
+while test ${1#-} != $1 ; do
+    OPTS="$OPTS $1"
+    shift 1
+done
 
-if test $# -lt 2 -o $# -gt 3; then
-    echo "USAGE: te_trc.sh <raw-log> <trc-db> [<html-report>]"
+if test -z "$1" -o -n "$2" ; then
+    echo "USAGE: te_trc.sh <te_trc options> <raw_log_file>"
+    te_trc --help
     exit 1
 fi
+
+RAW_LOG_FILE=$1
 
 RGT_FILTER=`mktemp`
 echo -e \
@@ -20,10 +25,7 @@ XML_LOG_FILE=`mktemp`
 
 rgt-conv --no-cntrl-msg -m postponed -c $RGT_FILTER -f $RAW_LOG_FILE -o $XML_LOG_FILE
 if test $? -eq 0 ; then
-    if test -n "$HTML_FILE" ; then
-        HTML_FILE="--html=$HTML_FILE"
-    fi
-    te_trc --db=$DB_FILE $HTML_FILE $XML_LOG_FILE
+    te_trc ${OPTS} $XML_LOG_FILE
 fi
 
 rm $XML_LOG_FILE
