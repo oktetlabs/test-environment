@@ -83,7 +83,7 @@
  * second one is a TCP port.
  */
 
-#define RCFUNIX_SSH     "ssh -q -o BatchMode=yes -o ConnectTimeout=2 "
+#define RCFUNIX_SSH     "ssh -q -o BatchMode=yes -o ConnectTimeout=10 "
 
 #define RCFUNIX_SHELL_CMD_MAX   2048
 
