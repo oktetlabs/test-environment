@@ -94,8 +94,6 @@ extern "C" {
 #define LGR_MAX_NAME            (strlen(LGR_SRV_FOR_TA_PREFIX) + \
                                  RCF_MAX_PATH)
 
-/** Logger flush command */
-#define LGR_FLUSH               "LGR-FLUSH"
 /** Logger shutdown command */
 #define LGR_SHUTDOWN            "LGR-SHUTDOWN"
 
