@@ -8,6 +8,11 @@ MY_CPPFLAGS=-I$(DESTDIR)/$(prefix)/include \
 # -ltad_ch with names used in -lrcfpch.
 #
 MY_LDADD=symtbl.o -lrcfpch @TE_LDADD@ -lconf_oid -lcomm_net_agent -lloggerta
+
+if HAS_NET_SNMP
+MY_LDADD+= @NET_SNMP_LIBS@
+endif
+
 MY_LDAFLAGS=-rdynamic -export-dynamic 
 
 MY_SOURCES=linux.c linuxconf.c ftp_routines.c
