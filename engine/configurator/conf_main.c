@@ -1055,7 +1055,7 @@ main(int argc, char **argv)
     if ((rc = parse_config(argv[1])) != 0)
         goto error;
     
-    if (argc > 2) 
+    if (argc > 2 && argv[2][0] != 0) 
     {
         if (strcmp(tree_opt, argv[2]) != 0)
         {
