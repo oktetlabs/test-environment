@@ -49,10 +49,9 @@ main(int argc, char *argv[])
             struct index_list *il;
             printf("   INDEX list: ");
             for (il = entry_node->indexes; il; il = il->next)
-                printf ("label: %s; simplied: %d; ", il->ilabel, (int)il->isimplied);
+                printf ("label: %s; simplied: %d; ",
+                        il->ilabel, (int)il->isimplied);
             printf("\n");
         }
     }
-
-
 }
