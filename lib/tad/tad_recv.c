@@ -311,7 +311,7 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
                             usr_place++;
                             break;
                         }
-                    RING("function name: \"%s\"", buffer);
+                    INFO("function name: \"%s\"", buffer);
 
                     if (*usr_place)
                     {
@@ -323,7 +323,7 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
                         else
                         {
                             rc = method_addr(usr_place, data, d_len);
-                            RING("rc from user method %X", rc);
+                            INFO("rc from user method %X", rc);
                             rc = 0;
                         }
                     }
@@ -871,7 +871,8 @@ tad_tr_recv_thread(void * arg)
                 rc = tad_tr_recv_match_with_unit(read_buffer, d_len, 
                                                  csap_descr,
                                                  pattern_unit, &result); 
-                F_VERB("Match pkt return %x, unit %d", rc, unit);
+                F_VERB("csap %d, Match pkt return %x, unit %d", 
+                       csap_descr->id, rc, unit);
                 switch (rc)
                 {
                     case 0: /* received data matches to this pattern unit */
