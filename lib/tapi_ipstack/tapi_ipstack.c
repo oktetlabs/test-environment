@@ -17,6 +17,7 @@
 #include <assert.h>
 
 #include <netinet/in.h>
+#include <netinet/ether.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <unistd.h>
@@ -27,6 +28,7 @@
 
 #include "tapi_ipstack.h"
 #include "ndn_ipstack.h"
+#include "ndn_eth.h"
 
 
 typedef struct {
@@ -252,6 +254,10 @@ tapi_udp4_dgram_send(const char *ta_name, int sid,
     int         rc;
     const char  templ_fname[] = "/tmp/te_udp4_send.XXXXXX";
 
+    /* TODO! */
+
+    UNUSED(udp_dgram);
+
 
     if ((rc = rcf_ta_trsend_start(ta_name, sid, csap, templ_fname,
                                   RCF_MODE_BLOCKING)) != 0)
@@ -329,7 +335,9 @@ tapi_udp4_dgram_start_recv(const char *ta_name,  int sid,
     cb_data->callback_data = user_data;
 
     mktemp(pattern_fname);
+
     /* TODO: here should be creation of pattern */
+    UNUSED(udp_dgram);
 
     /** Recevie unlimited number of packets */
     rc = rcf_ta_trrecv_start(ta_name, sid, csap, pattern_fname,
@@ -353,20 +361,162 @@ tapi_udp4_dgram_send_recv(const char *ta_name, int sid, csap_handle_t csap,
     char            template_fname[] = "/tmp/te_udp4_send_recv.XXXXXX";
     udp4_cb_data_t *cb_data = calloc(1, sizeof(*cb_data));
     int             rc;
-    int             sid;
 
     mktemp(template_fname);
 
     tapi_udp4_prepare_tmpl_file(template_fname, dgram_send);
 
-    rc = rcf_ta_create_session(ta_name, &sid);
-    if (rc == 0)
-        rc = rcf_ta_trsend_recv(ta_name, sid, csap, template_fname,
+    rc = rcf_ta_trsend_recv(ta_name, sid, csap, template_fname,
                                 udp4_pkt_handler, cb_data, timeout, NULL);
 
     unlink(template_fname);
+
+    /* TODO usage */
+    UNUSED(dgram_recv);
 
     return rc;
 }
 
 
+/**
+ * Creates 'ip4.eth' CSAP
+ *
+ * @param ta_name   Test Agent name
+ * @param ip4_csap  Location for the DHCPv4 CSAP handle (OUT)
+ *
+ * @return  Status of the operation
+ */
+int
+tapi_ip4_eth_csap_create(const char *ta_name, int sid, const char *eth_dev,
+                         const char *loc_addr_str, const char *rem_addr_str,
+                         csap_handle_t *ip4_csap)
+{
+    int         rc;
+    char        csap_fname[100] = "/tmp/te_ip4_csap.XXXXXX";
+    asn_value_p csap_ip4_level;
+    asn_value_p csap_eth_level;
+    asn_value_p csap_spec;
+    asn_value_p csap_level_spec;
+
+    struct in_addr loc_addr = {0,};
+    struct in_addr rem_addr = {0,};
+
+    unsigned short ip_eth = 0x0800;
+
+    if ((loc_addr_str && inet_aton(loc_addr_str, &loc_addr) == 0) ||
+        (rem_addr_str && inet_aton(rem_addr_str, &rem_addr) == 0))
+    {
+        return TE_RC(TE_TAPI, EINVAL);
+    }
+
+    csap_spec       = asn_init_value(ndn_csap_spec);
+    csap_level_spec = asn_init_value(ndn_generic_csap_level);
+    csap_ip4_level  = asn_init_value(ndn_ip4_csap);
+    csap_eth_level  = asn_init_value(ndn_eth_csap);
+
+
+    rc = asn_write_value_field(csap_ip4_level,
+                               &loc_addr, sizeof(loc_addr),
+                                "local-addr.#plain");
+    rc = asn_write_value_field(csap_ip4_level,
+                               &rem_addr, sizeof(rem_addr),
+                                "remote-addr.#plain");
+    rc = asn_write_component_value(csap_level_spec,
+                                   csap_ip4_level, "#ip4");
+
+    rc = asn_insert_indexed(csap_spec, csap_level_spec, 0, "");
+
+    rc = asn_free_subvalue(csap_level_spec, "#ip4");
+    csap_level_spec = asn_init_value(ndn_generic_csap_level);
+
+
+    rc = asn_write_value_field(csap_eth_level, 
+                            eth_dev, strlen(eth_dev),
+                                "device-id.#plain"); 
+    rc = asn_write_value_field(csap_eth_level, 
+                            &ip_eth, sizeof(ip_eth),
+                                "eth-type.#plain");
+    rc = asn_write_component_value(csap_level_spec,
+                                   csap_eth_level, "#eth"); 
+
+    rc = asn_insert_indexed(csap_spec, csap_level_spec, 1, "");
+
+    if (rc == 0)
+    {
+        mktemp(csap_fname);
+        rc = asn_save_to_file(csap_spec, csap_fname);
+        VERB("TAPI: udp create csap, save to file %s, rc: %x\n",
+                csap_fname, rc);
+    }
+
+    asn_free_value(csap_spec);
+    asn_free_value(csap_ip4_level);
+
+    if (rc == 0)
+        rc = rcf_ta_csap_create(ta_name, sid, "ip4.eth", 
+                                csap_fname, ip4_csap);
+
+    return TE_RC(TE_TAPI, rc);
+}
+
+
+
+/* see description in tapi_ipstack.h */
+int
+tapi_ip4_eth_recv_start(const char *ta_name, int sid, csap_handle_t csap,
+                        const char *src_addr_str, const char *dst_addr_str,
+                        unsigned int timeout, int num)
+{
+    char  template_fname[] = "/tmp/te_ip4_eth_recv.XXXXXX";
+    int   rc;
+    FILE *f;
+
+    struct in_addr src_addr = {0,};
+    struct in_addr dst_addr = {0,};
+    uint8_t *b;
+
+    if ((src_addr_str && inet_aton(src_addr_str, &src_addr) == 0) ||
+        (dst_addr_str && inet_aton(dst_addr_str, &dst_addr) == 0))
+    {
+        ERROR("%s: src or dst IP address wrong", __FUNCTION__);
+        return TE_RC(TE_TAPI, EINVAL);
+    }
+
+    mktemp(template_fname);
+
+    f = fopen (template_fname, "w+");
+    if (f == NULL)
+    {
+        ERROR("fopen() of %s failed(%d)", template_fname, errno);
+        return TE_RC(TE_TAPI, errno); /* return system errno */
+    }
+
+    fprintf(f,    "{{ pdus { ip4:{" );
+    b = &src_addr;
+
+    if (src_addr_str)
+        fprintf(f, "src-addr plain:'%02x %02x %02x %02x'H", 
+                b[0], b[1], b[2], b[3]);
+
+    if (src_addr_str && dst_addr_str)
+        fprintf(f, ",\n   ");
+
+    b = &dst_addr;
+    if (dst_addr_str)
+        fprintf(f, " dst-addr plain:'%02x %02x %02x %02x'H", 
+                b[0], b[1], b[2], b[3]);
+
+    fprintf(f,    " },\n" ); /* closing  'ip4' */
+    fprintf(f,        "   eth:{eth-type plain:2048}");
+    fprintf(f, " }}}\n");
+    fclose(f);
+
+    rc = rcf_ta_trrecv_start(ta_name, sid, csap, template_fname,
+                                NULL, NULL, timeout, num);
+
+#if 0
+    unlink(template_fname); 
+#endif
+
+    return rc;
+}

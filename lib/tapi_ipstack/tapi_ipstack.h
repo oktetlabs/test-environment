@@ -145,4 +145,46 @@ extern int tapi_udp4_dgram_send_recv(const char *ta_name, int sid,
                                      const udp4_datagram *dgram_send,
                                      udp4_datagram *dgram_recv);
 
+
+
+/**
+ * Creates 'ip4.eth' CSAP
+ *
+ * @param ta_name       Test Agent name
+ * @param sid           RCF SID
+ * @param loc_addr_str  Character string with local IP address (or NULL)
+ * @param rem_addr_str  Character string with remote IP address (or NULL)
+ * @param ip4_csap      Location for the IPv4 CSAP handle (OUT)
+ *
+ * @return  Status of the operation
+ */
+extern int tapi_ip4_eth_csap_create(const char *ta_name, int sid, 
+                         const char *eth_dev,
+                         const char *loc_addr_str, const char *rem_addr_str,
+                         csap_handle_t *ip4_csap);
+
+
+/**
+ * Start receiving of IPv4 packets 'ip4.eth' CSAP, non-block
+ * method. It cannot report received packets, only count them.
+ *
+ * Started receiving process may be controlled by rcf_ta_trrecv_get, 
+ * rcf_ta_trrecv_wait, and rcf_ta_trrecv_stop methods.
+ * 
+ * @param ta            Test Agent name
+ * @param sid           RCF SID
+ * @param csap          Identifier of an SNMP CSAP (OUT)
+ * @param src_addr_str  Character string with source IP address (or NULL)
+ * @param dst_addr_str  Character string with dest. IP address (or NULL)
+ * @param timeout       Timeout of operation (in milliseconds, 
+ *                      zero for infinitive)
+ * @param num           nubmer of packets to be caugth
+ * 
+ * @return Zero on success or error code.
+ */
+extern int tapi_ip4_eth_recv_start(const char *ta_name, int sid, 
+                        csap_handle_t csap,
+                        const char *src_addr_str, const char *dst_addr_str,
+                        unsigned int timeout, int num)
+
 #endif /* !__TE_LIB_TAPI_IPSTACK_H__ */
