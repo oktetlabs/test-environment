@@ -54,11 +54,13 @@
 #include <poll.h>
 #endif
 
-#define TE_LGR_USER     "Tee"
+#define TE_LGR_USER     "Self"
 #include "logger_api.h"
-DEFINE_LGR_ENTITY("Tester");
 #include "logger_ten.h"
 #include "te_raw_log.h"
+
+
+DEFINE_LGR_ENTITY("Tee");
 
 
 int
@@ -157,4 +159,6 @@ main (int argc, char *argv[])
             MAYBE_DO_LOG;
         }
     }
+
+    return EXIT_SUCCESS;
 }
