@@ -7,7 +7,7 @@ TE_LIB_PARMS([tad], [], [], [--with-cli], [], [])
 TE_PLATFORM([], [], [], [], \
     [ipc bsapi loggerten rcfapi conf_oid confapi tapi \
      comm_net_engine rcfunix loggerta rcfpch comm_net_agent \
-     tad asn ndn])
+     tad asn ndn tapi_cli])
 
 TE_TOOLS([rgt millicom])
 
