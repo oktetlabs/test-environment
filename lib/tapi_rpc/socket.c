@@ -1640,7 +1640,6 @@ tapi_rpc_get_rw_ability(te_bool *answer, rcf_rpc_server *rpcs,
     *answer = (rc == 1);
     result = 0;
     
-cleanup:
     rpc_fd_set_delete(rpcs, fds);
     if (RPC_ERRNO(rpcs))                                           
     {                                                               
