@@ -1007,6 +1007,11 @@ extern void tad_data_unit_clear(tad_data_unit_t *du);
  *
  * @return zero on success (that means "data matches to the pattern"),
  *              otherwise error code. 
+ *
+ * This function is depricated, and leaved here only for easy backward 
+ * rollbacks. Use 'ndn_match_data_units' instead. 
+ * This function will be removed just when 'ndn_match_data_units' will 
+ * be completed and debugged.
  */
 extern int tad_univ_match_field(const tad_data_unit_t *pattern,
                                 asn_value *pkt_pdu, uint8_t *data, 
