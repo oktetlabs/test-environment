@@ -94,7 +94,7 @@ typedef struct csap {
 static csap csaps = { &csaps, &csaps, "", 0, 0, 0, NULL, NULL };
 
 /* Forward declaration */
-static int csap_tr_recv_get(const char *ta_name, int handle, 
+static int csap_tr_recv_get(const char *ta_name, int session, int handle, 
                             int *num, int opcode);
 
 /* If pthread mutexes are supported - OK; otherwise hope for best... */
@@ -1870,6 +1870,8 @@ rcf_ta_trrecv_start(const char *ta_name, int session,
  * see description of these functions for details.
  *
  * @param ta_name       Test Agent name                 
+ * @param session       TA session or -1, denoting session associated with
+ *                      specified CSAP and TA. 
  * @param handle        CSAP handle
  * @param num           location where number of received packets 
  *                      should be placed
@@ -1879,7 +1881,7 @@ rcf_ta_trrecv_start(const char *ta_name, int session,
  * @return error code
  */
 static int
-csap_tr_recv_get(const char *ta_name, int handle, int *num, int opcode)
+csap_tr_recv_get(const char *ta_name, int session, int handle, int *num, int opcode)
 {
     rcf_msg msg;
     size_t  anslen = sizeof(msg);
@@ -1918,7 +1920,11 @@ csap_tr_recv_get(const char *ta_name, int handle, int *num, int opcode)
         return TE_RC(TE_RCF_API, EINVAL);
     }
 
-    msg.sid = tmp->sid;
+    if (session == -1)
+        msg.sid = tmp->sid;
+    else
+        msg.sid = session;
+
     handler = tmp->handler;
     user_param = tmp->user_param;
 #ifdef HAVE_PTHREAD_H
@@ -1971,7 +1977,7 @@ csap_tr_recv_get(const char *ta_name, int handle, int *num, int opcode)
 int
 rcf_ta_trrecv_wait(const char *ta_name, int handle, int *num)
 {
-    return csap_tr_recv_get(ta_name, handle, num, RCFOP_TRRECV_WAIT);
+    return csap_tr_recv_get(ta_name, -1, handle, num, RCFOP_TRRECV_WAIT);
 }
                       
 /**
@@ -2001,7 +2007,14 @@ rcf_ta_trrecv_wait(const char *ta_name, int handle, int *num)
 int 
 rcf_ta_trrecv_stop(const char *ta_name, int handle, int *num)
 {
-    return csap_tr_recv_get(ta_name, handle, num, RCFOP_TRRECV_STOP);
+    return csap_tr_recv_get(ta_name, -1, handle, num, RCFOP_TRRECV_STOP);
+}
+
+/* See description in rcf_api.h */
+int 
+rcf_ta_trrecv_stop_sess(const char *ta_name, int session, int handle, int *num)
+{
+    return csap_tr_recv_get(ta_name, session, handle, num, RCFOP_TRRECV_STOP);
 }
 
 /**
@@ -2032,7 +2045,7 @@ rcf_ta_trrecv_stop(const char *ta_name, int handle, int *num)
 int 
 rcf_ta_trrecv_get(const char *ta_name, int handle, int *num)
 {
-    return csap_tr_recv_get(ta_name, handle, num, RCFOP_TRRECV_GET);
+    return csap_tr_recv_get(ta_name, -1, handle, num, RCFOP_TRRECV_GET);
 }
 
 /**

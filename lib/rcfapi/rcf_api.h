@@ -631,6 +631,33 @@ extern int rcf_ta_trrecv_wait(const char *ta_name,
 extern int rcf_ta_trrecv_stop(const char *ta_name, int handle, int *num);
 
 /**
+ * This function is used to stop receiving of traffic started by
+ * rcf_ta_trrecv_start. It is similar to rcf_ta_trrecv_stop, but it takes 
+ * session identifier especially for stop operation. It is useful for 
+ * stop blocked receive process. 
+ *
+ * @param ta_name       Test Agent name                 
+ * @param session       TA session or 0
+ * @param handle        CSAP handle
+ * @param num           location where number of received packets 
+ *                      should be placed
+ *
+ * @return error code
+ *
+ * @retval 0            success
+ * @retval EINVAL       name of non-running TN Test Agent or non-existent
+ *                      session identifier is provided
+ * @retval ETEIO        cannot interact with RCF 
+ * @retval EBADF        no such CSAP
+ * @retval EALREADY     traffic receiving is not in progress now
+ * @retval ETAREBOOTED  Test Agent is rebooted
+ * @retval ENOMEM       out of memory
+ *
+ * @sa rcf_ta_trrecv_start
+ */
+extern int rcf_ta_trrecv_stop_sess(const char *ta_name, int session, int handle, int *num);
+
+/**
  * This function is used to force processing of received packets 
  * without stopping of traffic receiving (handler specified in
  * rcf_ta_trrecv_start is used for packets processing).
