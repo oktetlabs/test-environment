@@ -32,6 +32,10 @@
 #include <time.h>
 #endif
 
+#ifdef HAVE_STDARG_H
+#include <stdarg.h>
+#endif
+
 #include "te_defs.h"
 #include "te_errno.h"
 #include "te_stdint.h"
@@ -43,10 +47,10 @@
 /**
  * Create file in the TE temporary directory.
  *
- * @param len   File length
- * @param c     File content
+ * @param len   file length
+ * @param c     file content pattern
  *
- * @return Name (memory is allocated) of the file or
+ * @return name (memory is allocated) of the file or
  *         NULL in the case of failure
  *
  * @note the function is not thread-safe 
@@ -96,3 +100,61 @@ tapi_file_create(int len, char c)
     }
     return strdup(pathname);
 }
+
+/**
+ * Create file in the specified directory on the TA.
+ *
+ * @param ta            Test Agent name
+ * @param filename      pathname of the file
+ * @param fmt           format string for the file content
+ *
+ * @return 0 (success) or -1 (failure)
+ *
+ * @note the function is not thread-safe
+ */
+int 
+tapi_file_create_ta(const char *ta, const char *filename, 
+                    const char *fmt, ...)
+{
+    char  pathname[RCF_MAX_PATH];
+    char *te_tmp;
+    FILE *f;
+    int   rc;
+
+    va_list ap;
+
+    if ((te_tmp = getenv("TE_TMP")) == NULL)
+    {
+        ERROR("TE_TMP is empty");
+        return -1;
+    }
+    sprintf(pathname, "%s/%s", getenv("TE_TMP"), tapi_file_generate_name());
+
+    if ((f = fopen(pathname, "w")) == NULL)
+    {
+        ERROR("Cannot open file %s errno %d\n", pathname, errno);
+        return -1;
+    }
+
+    va_start(ap, fmt);
+    vfprintf(f, fmt, ap);
+    va_end(ap);
+    
+    if (fclose(f) < 0)
+    {
+        ERROR("fclose() failed: file %s errno=%d", pathname, errno);
+        unlink(pathname);
+        return -1;
+    }
+    
+    if ((rc = rcf_ta_put_file(ta, 0, pathname, filename)) != 0)
+    {
+        ERROR("Cannot put file %s on ta %s; errno %d", filename, ta, errno);
+        unlink(pathname);
+        return -1;
+    }
+
+    unlink(pathname);
+    return 0;
+}
+

@@ -46,15 +46,29 @@ tapi_file_generate_name(void)
 /**
  * Create file in the TE temporary directory.
  *
- * @param len   File length
- * @param c     File content
+ * @param len   file length
+ * @param c     file content pattern
  *
- * @return Name (memory is allocated) of the file or
+ * @return name (memory is allocated) of the file or
  *         NULL in the case of failure.
  *
  * @note The function is not thread-safe 
  */
 extern char *tapi_file_create(int len, char c);
+
+/**
+ * Create file in the specified directory on the TA.
+ *
+ * @param ta            Test Agent name
+ * @param filename      pathname of the file
+ * @param fmt           format string for the file content
+ *
+ * @return 0 (success) or -1 (failure)
+ *
+ * @note the function is not thread-safe
+ */
+extern int tapi_file_create_ta(const char *ta, const char *filename, 
+                               const char *fmt, ...);
 
 #ifdef __cplusplus
 } /* extern "C" */
