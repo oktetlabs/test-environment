@@ -279,6 +279,10 @@ int snmp_match_bin_cb (int csap_id, int layer, const asn_value_p pattern_pdu,
     asn_write_value_field(parsed_packet, &pdu->errindex,
                           sizeof(pdu->errindex), "#snmp.err-index.#plain"); 
 
+    if (pdu->errstat || pdu->errindex)
+        RING("in %s, errstat %d, errindex %d",
+                __FUNCTION__, pdu->errstat, pdu->errindex);
+
     if (type == NDN_SNMP_MSG_TRAP1)
     {
         asn_write_value_field(parsed_packet, pdu->enterprise, 
