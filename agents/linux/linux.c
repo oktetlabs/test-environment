@@ -528,9 +528,20 @@ rcf_ch_start_task(struct rcf_comm_connection *handle,
                                   params[9]);
             exit(0);
         }
+        else if (pid > 0)
+        {
+            store_pid(pid);
+            SEND_ANSWER("%d %d", 0, pid);
+        }
+        else
+        {
+            int save_errno = errno;
 
-        store_pid(pid);
-        SEND_ANSWER("%d %d", 0, pid);
+            ERROR("%s(): fork() failed", __FUNCTION__);
+            SEND_ANSWER("%d", save_errno);
+        }
+        /* Unreachable */
+        assert(0);
     }
 
     /* Try shell process */
@@ -552,6 +563,15 @@ rcf_ch_start_task(struct rcf_comm_connection *handle,
                              params[8], params[9]);
             exit(0);
         }
+        else if (pid < 0)
+        {
+            int save_errno = errno;
+
+            ERROR("%s(): fork() failed", __FUNCTION__);
+            SEND_ANSWER("%d", save_errno);
+            /* Unreachable */
+            assert(0);
+        }
 #ifdef HAVE_SYS_RESOURCE_H
         if (setpriority(PRIO_PROCESS, pid, priority) != 0)
         {
@@ -564,6 +584,8 @@ rcf_ch_start_task(struct rcf_comm_connection *handle,
 #endif
         store_pid(pid);
         SEND_ANSWER("%d %d", 0, pid);
+        /* Unreachable */
+        assert(0);
     }
 
     SEND_ANSWER("%d", ETENOSUCHNAME);
