@@ -1904,12 +1904,13 @@ tapi_snmp_get_table(const char *ta, int sid, int csap_id,
     if (entry_node->indexes)
     {
         struct index_list *t_index;
-        struct tree *index_node = NULL;
+        struct tree *index_node;
         struct tree *leaf;
 
         /* Try to find readable index column in table */
-        for (t_index = entry_node->indexes; t_index;
-             t_index = t_index->next)
+        for (t_index = entry_node->indexes, index_node = NULL; 
+             t_index != NULL;
+             t_index = t_index->next, index_node = NULL)
         {
             tapi_snmp_oid_t index_oid;
 
@@ -1935,7 +1936,6 @@ tapi_snmp_get_table(const char *ta, int sid, int csap_id,
                         index_node->label, index_node->access);
                 break;
             }
-            index_node = NULL;
         }
 
         for (leaf = entry_node->child_list; leaf; leaf = leaf->next_peer)
@@ -1976,6 +1976,8 @@ tapi_snmp_get_table(const char *ta, int sid, int csap_id,
                      __FUNCTION__, print_oid(&entry));
                 return 0;
             }
+            INFO("%s: get-next on entry got %s", 
+                 __FUNCTION__, print_oid(&vb.name));
             tapi_snmp_append_oid(&entry, 1, vb.name.id[entry.length]);
         }
     }
