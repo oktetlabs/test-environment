@@ -385,7 +385,10 @@ tapi_udp4_dgram_send_recv(const char *ta_name, int sid, csap_handle_t csap,
  */
 int
 tapi_ip4_eth_csap_create(const char *ta_name, int sid, const char *eth_dev,
-                         const uint8_t *loc_addr, const uint8_t *rem_addr,
+                         const uint8_t *loc_mac_addr,
+                         const uint8_t *rem_mac_addr,
+                         const uint8_t *loc_ip4_addr, 
+                         const uint8_t *rem_ip4_addr,
                          csap_handle_t *ip4_csap)
 {
     int         rc = 0;
@@ -404,21 +407,24 @@ tapi_ip4_eth_csap_create(const char *ta_name, int sid, const char *eth_dev,
 
 
     do {
-        if (loc_addr)
-            rc = asn_write_value_field(csap_ip4_level,
-                                   loc_addr, 4, "local-addr.#plain");
-        if (rc) break;
+        if ((loc_ip4_addr != NULL) && 
+            (rc = asn_write_value_field(csap_ip4_level,
+                                        loc_ip4_addr, 4,
+                                        "local-addr.#plain")) != 0)
+            break;
 
-        if (rem_addr)
-            rc = asn_write_value_field(csap_ip4_level,
-                                   rem_addr, 4, "remote-addr.#plain");
-        if (rc) break;
+        if ((rem_ip4_addr != NULL) &&
+            (rc = asn_write_value_field(csap_ip4_level,
+                                        rem_ip4_addr, 4,
+                                        "remote-addr.#plain")) != 0)
+            break;
+
         rc = asn_write_component_value(csap_level_spec,
                                        csap_ip4_level, "#ip4");
-        if (rc) break;
+        if (rc != 0) break;
 
         rc = asn_insert_indexed(csap_spec, csap_level_spec, 0, "");
-        if (rc) break;
+        if (rc != 0) break;
 
         asn_free_value(csap_level_spec);
 
@@ -428,23 +434,32 @@ tapi_ip4_eth_csap_create(const char *ta_name, int sid, const char *eth_dev,
             rc = asn_write_value_field(csap_eth_level, 
                                 eth_dev, strlen(eth_dev),
                                     "device-id.#plain"); 
-        if (rc) break;
+        if (rc != 0) break;
         rc = asn_write_value_field(csap_eth_level, 
                                 &ip_eth, sizeof(ip_eth),
                                     "eth-type.#plain");
-        if (rc) break;
+        if (loc_mac_addr) 
+            rc = asn_write_value_field(csap_eth_level,
+                                       loc_mac_addr, 6,
+                                       "local-addr.#plain");
+        if (rem_mac_addr) 
+            rc = asn_write_value_field(csap_eth_level,
+                                       rem_mac_addr, 6,
+                                       "remote-addr.#plain");
+
+        if (rc != 0) break;
         rc = asn_write_component_value(csap_level_spec,
                                        csap_eth_level, "#eth"); 
-        if (rc) break;
+        if (rc != 0) break;
 
         rc = asn_insert_indexed(csap_spec, csap_level_spec, 1, "");
-        if (rc) break;
+        if (rc != 0) break;
 
         mktemp(csap_fname);
         rc = asn_save_to_file(csap_spec, csap_fname);
         VERB("TAPI: ip4.eth create csap, save to file %s, rc: %x\n",
                 csap_fname, rc);
-        if (rc) break;
+        if (rc != 0) break;
 
 
         rc = rcf_ta_csap_create(ta_name, sid, "ip4.eth", 
@@ -469,7 +484,10 @@ tapi_ip4_eth_csap_create(const char *ta_name, int sid, const char *eth_dev,
 /* see description in tapi_ipstack.h */
 int
 tapi_ip4_eth_recv_start(const char *ta_name, int sid, csap_handle_t csap,
-                        const uint8_t *src_addr, const uint8_t *dst_addr,
+                        const uint8_t *src_mac_addr,
+                        const uint8_t *dst_mac_addr,
+                        const uint8_t *src_ip4_addr,
+                        const uint8_t *dst_ip4_addr,
                         unsigned int timeout, int num)
 {
     char  template_fname[] = "/tmp/te_ip4_eth_recv.XXXXXX";
@@ -489,20 +507,31 @@ tapi_ip4_eth_recv_start(const char *ta_name, int sid, csap_handle_t csap,
 
     fprintf(f,    "{{ pdus { ip4:{" );
 
-    if ((b = src_addr))
+    if ((b = src_ip4_addr))
         fprintf(f, "src-addr plain:'%02x %02x %02x %02x'H", 
                 b[0], b[1], b[2], b[3]);
 
-    if (src_addr && dst_addr)
+    if (src_ip4_addr && dst_ip4_addr)
         fprintf(f, ",\n   ");
 
-    if ((b = dst_addr))
+    if ((b = dst_ip4_addr))
         fprintf(f, " dst-addr plain:'%02x %02x %02x %02x'H", 
                 b[0], b[1], b[2], b[3]);
 
     fprintf(f,    " },\n" ); /* closing  'ip4' */
-    fprintf(f,        "   eth:{eth-type plain:2048}");
-    fprintf(f, " }}}\n");
+    fprintf(f, "   eth:{eth-type plain:2048");
+
+    if ((b = src_mac_addr))
+        fprintf(f, ",\n    "
+                "src-addr plain:'%02x %02x %02x %02x %02x %02x'H", 
+                b[0], b[1], b[2], b[3], b[4], b[5]);
+
+    if ((b = dst_mac_addr))
+        fprintf(f, ",\n    "
+                "dst-addr plain:'%02x %02x %02x %02x %02x %02x'H", 
+                b[0], b[1], b[2], b[3], b[4], b[5]);
+    fprintf(f, "}\n");
+    fprintf(f, "}}}\n");
     fclose(f);
 
     rc = rcf_ta_trrecv_start(ta_name, sid, csap, template_fname,

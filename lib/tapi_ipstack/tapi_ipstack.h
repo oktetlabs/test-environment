@@ -152,16 +152,21 @@ extern int tapi_udp4_dgram_send_recv(const char *ta_name, int sid,
  *
  * @param ta_name       Test Agent name
  * @param sid           RCF SID
- * @param loc_addr      Local IP address in network order (or NULL)
- * @param rem_addr      Remote IP address in network order (or NULL)
+ * @param loc_mac_addr  Local MAC address (or NULL)
+ * @param rem_mac_addr  Remote MAC address (or NULL)
+ * @param loc_ip4_addr  Local IP address in network order (or NULL)
+ * @param rem_ip4_addr  Remote IP address in network order (or NULL)
  * @param ip4_csap      Location for the IPv4 CSAP handle (OUT)
  *
  * @return  Status of the operation
  */
 extern int tapi_ip4_eth_csap_create(const char *ta_name, int sid, 
-                         const char *eth_dev,
-                         const uint8_t *loc_addr, const uint8_t *rem_addr,
-                         csap_handle_t *ip4_csap);
+                                    const char *eth_dev,
+                                    const uint8_t *loc_mac_addr, 
+                                    const uint8_t *rem_mac_addr, 
+                                    const uint8_t *loc_ip4_addr,
+                                    const uint8_t *rem_ip4_addr,
+                                    csap_handle_t *ip4_csap);
 
 
 /**
@@ -174,8 +179,10 @@ extern int tapi_ip4_eth_csap_create(const char *ta_name, int sid,
  * @param ta            Test Agent name
  * @param sid           RCF SID
  * @param csap          Identifier of CSAP
- * @param src_addr      Source IP address in network order (or NULL)
- * @param dst_addr      Destination IP address in network order (or NULL)
+ * @param src_mac_addr  Source MAC address (or NULL)
+ * @param dst_mac_addr  Destination MAC address (or NULL)
+ * @param src_ip4_addr  Source IP address in network order (or NULL)
+ * @param dst_ip4_addr  Destination IP address in network order (or NULL)
  * @param timeout       Timeout of operation (in milliseconds, 
  *                      zero for infinitive)
  * @param num           nubmer of packets to be caugth
@@ -183,9 +190,12 @@ extern int tapi_ip4_eth_csap_create(const char *ta_name, int sid,
  * @return Zero on success or error code.
  */
 extern int tapi_ip4_eth_recv_start(const char *ta_name, int sid, 
-                        csap_handle_t csap,
-                        const uint8_t *src_addr, const uint8_t *dst_addr,
-                        unsigned int timeout, int num);
+                                   csap_handle_t csap,
+                                   const uint8_t *src_mac_addr,
+                                   const uint8_t *dst_mac_addr,
+                                   const uint8_t *src_ip4_addr,
+                                   const uint8_t *dst_ip4_addr,
+                                   unsigned int timeout, int num);
 
 
 
@@ -206,10 +216,12 @@ extern int tapi_ip4_eth_recv_start(const char *ta_name, int sid,
  * @return  Status of the operation
  */
 extern int tapi_tcp_ip4_eth_csap_create(const char *ta_name, int sid, 
-                         const char *eth_dev,
-                         const uint8_t *loc_addr, const uint8_t *rem_addr,
-                         uint16_t loc_port, uint16_t rem_port,
-                         csap_handle_t *tcp_csap);
+                                        const char *eth_dev,
+                                        const uint8_t *loc_addr,
+                                        const uint8_t *rem_addr,
+                                        uint16_t loc_port,
+                                        uint16_t rem_port,
+                                        csap_handle_t *tcp_csap);
 
 
 /**
