@@ -90,6 +90,7 @@ typedef struct rcf_rpc_server {
     uint64_t        duration;   /**< Call Duration in microseconds */
     enum clnt_stat  stat;
     int             _errno;
+    int             win_error;  /**< Value returned by GetLastError() */
     
     pthread_mutex_t lock;
     int             tid0;       /**< Identifier of thread performing

@@ -1866,7 +1866,49 @@ rpc_delete_overlapped(rcf_rpc_server *handle,
          handle->ta, handle->name, overlapped);
  
     RETVAL_VOID(delete_overlapped);
-}                      
+}   
+
+void 
+rpc_completion_callback(rcf_rpc_server *handle, 
+                        int *called, int *error, int *bytes,
+                        rpc_overlapped *overlapped)
+{
+    tarpc_completion_callback_in  in;
+    tarpc_completion_callback_out out;
+
+    if (handle == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        return;
+    }
+    if (called == NULL || error == NULL || bytes == NULL || overlapped == NULL)
+    {
+        handle->_errno = TE_RC(TE_RCF, EINVAL);
+        return;
+    }
+
+    handle->op = RCF_RPC_CALL_WAIT;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    rcf_rpc_call(handle, _completion_callback, &in, (xdrproc_t)xdr_tarpc_completion_callback_in,
+                 &out, (xdrproc_t)xdr_tarpc_completion_callback_out);
+    
+    RING("RPC (%s,%s): completion_callback() -> %d %d %d %p",
+         handle->ta, handle->name, out.called, out.error, out.bytes,
+         out.overlapped);
+
+    if (RPC_CALL_OK)
+    {
+        *called = out.called;
+        *error = out.error;
+        *bytes = out.bytes;
+        *overlapped = (rpc_overlapped)(out.overlapped);
+    }
+ 
+    RETVAL_VOID(completion_callback);
+}                        
 
 int 
 rpc_event_select(rcf_rpc_server *handle,

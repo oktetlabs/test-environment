@@ -322,6 +322,7 @@ check_args(checked_arg *list)
         gettimeofday(&t_start, NULL);                            \
         errno = 0;                                               \
         x;                                                       \
+        out->common.win_error = GetLastError();                  \
         out->common._errno = RPC_ERRNO;                          \
         gettimeofday(&t_finish, NULL);                           \
         out->common.duration =                                   \
@@ -2504,3 +2505,38 @@ TARPC_FUNC(delete_overlapped, {},
     free((void *)(in->overlapped));
 }
 )
+
+/*------------------- Completion callback-related staff ---------------------*/
+static int completion_called = 0;
+static int completion_error = 0;
+static int completion_bytes = 0;
+static tarpc_overlapped completion_overlapped = 0;
+static pthread_mutex_t completion_lock = PTHREAD_MUTEX_INITIALIZER;
+
+static void
+completion_callback(DWORD error, DWORD bytes, LPWSAOVERLAPPED overlapped,
+                    DWORD flags)
+{
+    UNUSED(flags);
+    pthread_mutex_lock(&completion_lock);
+    completion_called++;
+    completion_error = error;
+    completion_bytes = bytes;
+    completion_overlapped = (tarpc_overlapped)overlapped;
+    pthread_mutex_unlock(&completion_lock);
+}
+
+TARPC_FUNC(completion_callback, {}, 
+{ 
+    pthread_mutex_lock(&completion_lock);
+    UNUSED(list);
+    out->called = completion_called;
+    completion_called = 0;
+    out->bytes = completion_bytes;
+    completion_bytes = 0;
+    out->error = completion_error;
+    out->overlapped = completion_overlapped;
+    pthread_mutex_unlock(&completion_lock);
+}
+)
+                    

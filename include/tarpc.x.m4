@@ -72,6 +72,7 @@ struct tarpc_out_arg {
                                  RPC client want to check status or
                                  wait for finish of the initiated
                                  operation. */
+    unsigned long win_error;/**< Windows error as is */                                 
 };
 
 
@@ -791,6 +792,20 @@ struct tarpc_destroy_window_in {
 };
 
 typedef struct tarpc_void_out tarpc_destroy_window_out;
+
+/* Get completion callback result */
+struct tarpc_completion_callback_in {
+    struct tarpc_in_arg common;
+};
+
+struct tarpc_completion_callback_out {
+    struct tarpc_out_arg common;
+    int                  called;        /**< 1 if callback was called    */
+    int                  error;         /**< Error code (as is for now)  */
+    int                  bytes;         /**< Number of bytes transferred */
+    tarpc_overlapped     overlapped;    /**< Overlapped passed to callback */
+};
+
 
 /* WSAAsyncSelect */
 struct tarpc_wsa_async_select_in {
@@ -1815,6 +1830,7 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(event_select)
         RPC_DEF(enum_network_events)
         RPC_DEF(transmit_file)
+        RPC_DEF(completion_callback)
 
         RPC_DEF(create_overlapped)
         RPC_DEF(delete_overlapped)

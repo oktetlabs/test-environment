@@ -930,6 +930,7 @@ rcf_rpc_call(rcf_rpc_server *rpcs, int proc,
     {
         rpcs->duration = out->duration; 
         rpcs->_errno = out->_errno;
+        rpcs->win_error = out->win_error;
         rpcs->tid0 = out->tid;
         if (rpcs->op == RCF_RPC_CALL)
             rpcs->op = RCF_RPC_WAIT;

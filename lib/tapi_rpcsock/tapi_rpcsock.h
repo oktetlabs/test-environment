@@ -430,6 +430,19 @@ extern rpc_overlapped rpc_create_overlapped(rcf_rpc_server *handle,
 extern void rpc_delete_overlapped(rcf_rpc_server *handle, 
                                   rpc_overlapped overlapped);
 
+/**
+ * Get result of completion callback (if called).
+ *
+ * @param handle     handle of RPC server
+ * @param called     number of callback calls since last call of this function
+ * @param bytes      number of tramsmitted bytes reported to last callback
+ * @param error      overlapped operation error reported to the last callback
+ * @param overlapped overlapped object reported to the last callback
+ */
+extern void rpc_completion_callback(rcf_rpc_server *handle, 
+                                    int *called, int *error, int *bytes,
+                                    rpc_overlapped *overlapped);
+
 /* WSAEventSelect() */
 extern int 
 rpc_event_select(rcf_rpc_server *handle,
