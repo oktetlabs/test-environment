@@ -1277,6 +1277,25 @@ ds_ftpserver_get(unsigned int gid, const char *oid, char *value)
 #define ds_ftpserver_get daemon_get
 #endif
 
+/** 
+ * Check, if daemon/service is running (enabled).
+ *
+ * @param daemon    daemon/service name
+ *
+ * @return TRUE, if daemon is running
+ */
+static inline te_bool
+ftpserver_running()
+{
+    char enable[2];
+    
+    if (ds_ftpserver_get(0, "ftpserver", enable) != 0)
+        return 0;
+        
+    return enable[0] == '1';        
+}    
+
+
 static int
 ds_ftpserver_server_set(unsigned int gid, const char *oid, 
                             const char *value)
@@ -1410,10 +1429,10 @@ ds_init_ftp_server(rcf_pch_cfg_object **last)
         ERROR("Cannot chmod /var/ftp/pub");
         return;
     }
-    if (daemon_running("ftpserver"))
+    if (ftpserver_running())
     {
-        daemon_set(0, "ftpserver", "0");
-        daemon_set(0, "ftpserver", "1");
+        ds_ftpserver_set(0, "ftpserver", "0");
+        ds_ftpserver_set(0, "ftpserver", "1");
     }
     DS_REGISTER(ftpserver);
 }
@@ -1423,10 +1442,10 @@ void
 ds_shutdown_ftp_server()
 {
     ta_system("chmod o-w /var/ftp/pub 2>/dev/null");
-    if (daemon_running("ftpserver"))
+    if (ftpserver_running())
     {
-        daemon_set(0, "ftpserver", "0");
-        daemon_set(0, "ftpserver", "1");
+        ds_ftpserver_set(0, "ftpserver", "0");
+        ds_ftpserver_set(0, "ftpserver", "1");
     }
 }
 
