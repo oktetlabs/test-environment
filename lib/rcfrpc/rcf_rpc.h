@@ -55,9 +55,7 @@
 /** Check, if RPC is called successfully */
 #define RPC_IS_CALL_OK(_rpcs) \
     (((_rpcs) != NULL) && \
-     (((_rpcs)->_errno == 0) || \
-      (((_rpcs)->_errno >= RPC_EPERM) && \
-       ((_rpcs)->_errno <= RPC_EMEDIUMTYPE))))
+     (((_rpcs)->_errno == 0) || RPC_ERRNO_RPC((_rpcs)->_errno)))
 
 /**
  * Extract name of the PCO by RCP server handle
