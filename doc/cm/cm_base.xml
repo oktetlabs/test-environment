@@ -382,6 +382,32 @@
          Name:  port -->
     <object oid="/agent/sshd" access="read_create" type="none"/>
 
+    <!-- SSH port forwarder.
+         Name: local port 
+         Value: <remote port>:<SSH daemon IP>:<SSH daemon port>
+         -->
+    <object oid="/agent/ssh_fwd" access="read_create" type="string"/>
+
+    <!-- Xvfb daemon.
+         Name: number -->
+    <object oid="/agent/Xvfb" access="read_create" type="none"/>
+
+    <!-- SMTP daemon.
+         Name: empty
+         Value: 0 (disabled) or 1 (enabled)
+         -->
+    <object oid="/agent/smtp" access="read_create" type="none"/>
+
+    <!-- SMTP daemon program to be used (i.e. sendmail).
+         Name: empty
+         Value: program name -->
+    <object oid="/agent/smtp/server" access="read_write" type="string"/>
+
+    <!-- Smart host for mail forwarding.
+         Name: empty
+         Value: smart host IP address -->
+    <object oid="/agent/smtp/smarthost" access="read_create" type="address"/>
+
     <!-- Environment variables.
          Name: variable name
          Value: variable value
