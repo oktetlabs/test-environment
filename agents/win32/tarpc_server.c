@@ -421,50 +421,20 @@ _##_func##_1_svc(tarpc_##_func##_in *in, tarpc_##_func##_out *out,      \
     free(arg);                                                          \
     return TRUE;                                                        \
 }
-/**
- * The routine called via RCF to set the name of socket library.
- */
-int
-setlibname(char *libname)                            
+
+bool_t
+_setlibname_1_svc(tarpc_setlibname_in *in, tarpc_setlibname_out *out,
+                 struct svc_req *rqstp)
 {
-    WSADATA data;                               
-    
-    UNUSED(libname);
-  
-    return WSAStartup(MAKEWORD(2,2), &data) != 0 ? -1 : 0;
+    UNUSED(rqstp);
+    UNUSED(in);
+    UNUSED(out);
+    errno = 0;
+    out->retval = 0;
+    out->common._errno = 0;
+    out->common.duration = 0;
+    return TRUE;
 }
-#if 0
-static const char *
-msghdr2str(const struct WSAMSG *msg)
-{
-    static char buf[256];
-
-    char   *buf_end = buf + sizeof(buf);
-    char   *p = buf;
-    size_t  i;
-
-    p += snprintf(p, buf_end - p, "{name={0x%x,%u},{",
-                  (unsigned int)msg->name, msg->namelen);
-    if (p >= buf_end)
-        return "(too long)";
-    for (i = 0; i < msg->dwBufferCount; ++i)
-    {
-        p += snprintf(p, buf_end - p, "%s{0x%x,%u}",
-                      (i == 0) ? "" : ",",
-                      (unsigned int)msg->lpBuffers[i].buf,
-                      msg->lpBuffers[i].len);
-        if (p >= buf_end)
-            return "(too long)";
-    }
-    p += snprintf(p, buf_end - p, "},control={0x%x,%u},flags=0x%x}",
-                  (unsigned int)msg->Control.buf, msg->Control.len,
-                  msg->dwFlags);
-    if (p >= buf_end)
-        return "(too long)";
-
-    return buf;
-}
-#endif
 
 /*--------------------------------- fork() ---------------------------------*/
 TARPC_FUNC(fork, {},
