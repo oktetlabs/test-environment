@@ -223,14 +223,17 @@ log_flush_ten(const char *ta_name)
                    (ta_name != NULL) ? strlen(ta_name) : 0];
     char    answer[strlen(msg)];
     size_t  answer_len = sizeof(answer);
+    char    clnt_name[64];
 
     if (ta_name == NULL)
     {
         ERROR("Invalid TA name");
         return EINVAL;
     }
+    
+    snprintf(clnt_name, "LOGGER_FLUSH_%s", ta_name);
 
-    rc = ipc_init_client("LOGGER_FLUSH_CLIENT", &log_client);
+    rc = ipc_init_client(clnt_name, &log_client);
     if (rc != 0)
     {
         ERROR("Failed to initialize log flush client: %X", rc);
