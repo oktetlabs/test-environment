@@ -525,11 +525,12 @@ lgr_rb_view_head(struct lgr_rb *ring_buffer, uint32_t position)
 {
     printf("unused:%d, head:%d, tail:%d elements:%d, mark:%d, "
            "sequence:%d\n",
-           LGR_RB_UNUSED(ring_buffer), LGR_RB_HEAD(ring_buffer),
-           LGR_RB_TAIL(ring_buffer),
-           LGR_GET_ELEMENTS_FIELD(ring_buffer, position),
-           LGR_GET_MARK_FIELD(ring_buffer, position),
-           LGR_GET_SEQUENCE_FIELD(ring_buffer, position));
+           (int)LGR_RB_UNUSED(ring_buffer), 
+           (int)LGR_RB_HEAD(ring_buffer),
+           (int)LGR_RB_TAIL(ring_buffer),
+           (int)LGR_GET_ELEMENTS_FIELD(ring_buffer, position),
+           (int)LGR_GET_MARK_FIELD(ring_buffer, position),
+           (int)LGR_GET_SEQUENCE_FIELD(ring_buffer, position));
 }
 
 /**
