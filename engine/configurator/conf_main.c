@@ -186,6 +186,8 @@ parse_config(char *file)
  * and synchronize it if necessary.
  *
  * @param inst_name  Instance name
+ *
+ * @return Status code
  */
 static int
 cfg_sync_agt_volatile(const char *inst_name)
@@ -292,6 +294,8 @@ process_add(cfg_add_msg *msg, te_bool update_dh)
 
     inst = CFG_GET_INST(handle);
     obj = inst->obj;
+    if (cfg_instance_volatile(inst))
+        update_dh = FALSE;
 
     if (obj->access != CFG_READ_CREATE)
     {
@@ -382,6 +386,8 @@ process_set(cfg_set_msg *msg, te_bool update_dh)
         return;
     }
     obj = inst->obj;
+    if (cfg_instance_volatile(inst))
+        update_dh = FALSE;
 
     if ((msg->rc = cfg_types[obj->type].
                    get_from_msg((cfg_msg *)msg, &val)) != 0)
@@ -487,6 +493,8 @@ process_del(cfg_del_msg *msg, te_bool update_dh)
         return;
     }
     obj = inst->obj;
+    if (cfg_instance_volatile(inst))
+        update_dh = FALSE;
 
     if (obj->access != CFG_READ_CREATE)
     {

@@ -898,34 +898,6 @@ cfg_dh_add_command(cfg_msg *msg)
     {
         case CFG_REGISTER:
         case CFG_ADD:
-        {
-            if (msg->type == CFG_REGISTER)
-            {
-                cfg_register_msg *m = (cfg_register_msg *)msg;
-                
-                if (strncmp(m->oid, "/"CFG_VOLATILE"/", 
-                            strlen("/"CFG_VOLATILE"/")) == 0 ||
-                    strcmp(m->oid, CFG_VOLATILE) == 0)
-                {
-                    free(entry->cmd);
-                    free(entry);
-                    return 0;
-                }
-            }
-            else
-            {
-                cfg_add_msg *m = (cfg_add_msg *)msg;
-                
-                if (strncmp((char *)m + m->oid_offset, "/"CFG_VOLATILE":", 
-                            strlen("/"CFG_VOLATILE":")) == 0)
-                {
-                    free(entry->cmd);
-                    free(entry);
-                    return 0;
-                }
-            }
-        }
-        /* Fall through */
         case CFG_REBOOT:
             entry->type = CVT_NONE;
             break;
@@ -935,13 +907,6 @@ cfg_dh_add_command(cfg_msg *msg)
         {
             cfg_instance *inst = CFG_GET_INST(((cfg_del_msg *)msg)->handle);
             
-            if (strncmp(inst->oid, "/volatile:", strlen("/volatile:")) == 0)
-            {
-                free(entry->cmd);
-                free(entry);
-                return 0;
-            }
-    
             if (inst == NULL)
             {
                 ERROR("Failed to get instance by handle 0x%08x",

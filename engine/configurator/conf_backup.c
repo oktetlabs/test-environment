@@ -598,12 +598,8 @@ put_object(FILE *f, cfg_object *obj)
 static int
 put_instance(FILE *f, cfg_instance *inst)
 {
-    if (inst != &cfg_inst_root && 
-        strcmp(inst->obj->subid, "agent") != 0 &&
-        strncmp(inst->oid, "/"CFG_VOLATILE":", 
-                strlen("/"CFG_VOLATILE":")) != 0 &&
-        strncmp(inst->obj->oid, "/agent/"CFG_VOLATILE, 
-                strlen("/agent/"CFG_VOLATILE)) != 0)
+    if (inst != &cfg_inst_root && strcmp(inst->obj->subid, "agent") != 0 &&
+        !cfg_instance_volatile(inst))
     {
         fprintf(f, "\n  <instance oid=\"%s\" ", inst->oid);
         
