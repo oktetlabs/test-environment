@@ -520,7 +520,7 @@ tarpc_server_create(char *name)
 #endif
         ta_log_addr_s = (struct sockaddr *)&ta_log_addr;
 #ifdef SUPERVISE_CHILDREN_BY_SIGNAL
-        /* (void)signal(SIGCHLD, sigchld_handler); */
+        (void)signal(SIGCHLD, sigchld_handler);
 #else
         if (pthread_create(&tid, NULL, supervise_children, NULL) != 0)
         {
