@@ -25,8 +25,8 @@
  *
  * $Id$
  */ 
-#ifndef __PROTEOS__ASN_LIB__DUMMY_NDN__H__
-#define __PROTEOS__ASN_LIB__DUMMY_NDN__H__
+#ifndef __TE__NDN_DUMMY__H__
+#define __TE__NDN_DUMMY__H__
 
 #include "asn_usr.h"
 #include "ndn.h"
@@ -44,4 +44,4 @@ extern asn_type_p ndn_file_csap;
 } /* extern "C" */
 #endif
 
-#endif /* __PROTEOS__ASN_LIB__DUMMY_NDN__H__ */
+#endif /* __TE__NDN_DUMMY__H__ */

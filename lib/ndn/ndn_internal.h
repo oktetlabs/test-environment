@@ -26,7 +26,8 @@
  * $Id$
  */ 
 
-#ifndef NDN_DATA_UNIT_TYPE
+#ifndef __TE__NDN_INTERNAL__H__ 
+#define __TE__NDN_INTERNAL__H__ 
 
 
 extern asn_type asn_base_boolean_s;
@@ -64,4 +65,4 @@ extern asn_type ndn_data_unit_env_static;
     const asn_type * const ndn_data_unit_##id = &ndn_data_unit_##id##_s;
 
 
-#endif /* NDN_DATA_UNIT_TYPE */
+#endif /* __TE__NDN_INTERNAL__H__ */

@@ -25,8 +25,8 @@
  *
  * $Id$
  */ 
-#ifndef __PROTEOS_TAPI_IPSTACK_NDN__H__
-#define __PROTEOS_TAPI_IPSTACK_NDN__H__
+#ifndef __TE__NDN_IPSTACK__H__
+#define __TE__NDN_IPSTACK__H__
 
 
 #include "asn_usr.h"
@@ -55,4 +55,4 @@ extern asn_type_p ndn_tcp_csap;
 } /* extern "C" */
 #endif
 
-#endif /* __PROTEOS_TAPI_IPSTACK_NDN__H__ */
+#endif /* __TE__NDN_IPSTACK__H__ */

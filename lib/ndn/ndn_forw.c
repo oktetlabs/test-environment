@@ -216,7 +216,7 @@ ndn_forw_reorder_to_plain(const asn_value *val, ndn_forw_reorder_t *forw_reorder
 /** 
  * Convert Forwarder-Action ASN value to plain C structrue. 
  * 
- * @param val           ASN value of type Forwarder-Action-Drop-Params
+ * @param val          ASN value of type Forwarder-Action-Params
  * @param forw_drop    converted structure (OUT).
  *
  * @return zero on success or error code.
@@ -229,7 +229,9 @@ ndn_forw_drop_to_plain(const asn_value *val, ndn_forw_drop_t *forw_drop)
     size_t d_len;
     int rc;
 
-    rc = asn_get_choice(val, "", drop_label, sizeof(drop_label));
+    rc = asn_get_choice(val, "drop", drop_label, sizeof(drop_label));
+    RING("%s: get choice: %X", __FUNCTION__, rc); 
+
     if (rc) return rc;
 
     if (strcmp(drop_label, "random-rate") == 0)
@@ -237,16 +239,22 @@ ndn_forw_drop_to_plain(const asn_value *val, ndn_forw_drop_t *forw_drop)
         forw_drop->type = FORW_DROP_RANDOM;
         d_len = sizeof(forw_drop->rate);
         rc = asn_read_value_field(val, &forw_drop->rate, &d_len, 
-                                  "#random-rate");
+                                  "drop.#random-rate");
+
+    RING("%s: get random-rate: %X", __FUNCTION__, rc); 
     }
     else
     {
         forw_drop->type = FORW_DROP_PATTERN;
-        forw_drop->mask_len = d_len = asn_get_length(val, "#pattern-mask"); 
+        forw_drop->mask_len = d_len = 
+                        asn_get_length(val, "drop.#pattern-mask"); 
 
         forw_drop->pattern_mask = calloc ((d_len >> 3) + 1, 1);
 
-        rc = asn_read_value_field(val, forw_drop->pattern_mask, &d_len, "");
+        rc = asn_read_value_field(val, forw_drop->pattern_mask, &d_len, 
+                                 "drop");
+
+    RING("%s: get pattern-mask: %X", __FUNCTION__, rc); 
     } 
 
     return rc; 
@@ -261,7 +269,7 @@ ndn_forw_drop_to_plain(const asn_value *val, ndn_forw_drop_t *forw_drop)
  * @return zero on success or error code.
  */ 
 int 
-ndn_forw_action_to_plain(const asn_value *val, 
+ndn_forw_action_asn_to_plain(const asn_value *val, 
                                ndn_forw_action_plain *forw_action)
 {
     int rc = 0; 
@@ -273,6 +281,8 @@ ndn_forw_action_to_plain(const asn_value *val,
         return EINVAL;
 
     id_len = asn_get_length(val, "id");
+    RING("%s: length of id %d", __FUNCTION__, id_len);
+
     if (id_len <= 0)
         return EASNGENERAL;
 
@@ -284,8 +294,10 @@ ndn_forw_action_to_plain(const asn_value *val,
     if (rc) return rc;
 
     forw_action->id[id_len] = '\0';
+    RING("%s: got id: %s", __FUNCTION__, forw_action->id);
 
     rc = asn_get_subvalue(val, &subval, "delay");
+    RING("%s: get delay: %X", __FUNCTION__, rc); 
     if (rc == 0) 
     {
         rc = ndn_forw_delay_to_plain(subval, &(forw_action->delay));
@@ -302,6 +314,7 @@ ndn_forw_action_to_plain(const asn_value *val,
 
 
     rc = asn_get_subvalue(val, &subval, "reorder");
+    RING("%s: get reorder: %X", __FUNCTION__, rc); 
     if (rc == 0) 
     {
         rc = ndn_forw_reorder_to_plain(subval, &(forw_action->reorder));
@@ -316,13 +329,8 @@ ndn_forw_action_to_plain(const asn_value *val,
         return rc;
 
 
-    rc = asn_get_subvalue(val, &subval, "drop");
-    if (rc == 0) 
-    {
-        rc = ndn_forw_drop_to_plain(subval, &(forw_action->drop));
-        if (rc) return rc;
-    }
-    else if (rc == EASNINCOMPLVAL)
+    rc = ndn_forw_drop_to_plain(val, &(forw_action->drop));
+    if (rc == EASNINCOMPLVAL)
     {
         forw_action->drop.type = 0; /* uninitalized, default */
         rc = 0;

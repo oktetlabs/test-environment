@@ -25,8 +25,8 @@
  *
  * $Id$
  */ 
-#ifndef __PROTEOS__ASN_LIB__ETH_NDN__H__
-#define __PROTEOS__ASN_LIB__ETH_NDN__H__
+#ifndef __TE__NDN_ETH__H__
+#define __TE__NDN_ETH__H__
 
 #ifdef HAVE_NETINET_ETHER_H
 #include <netinet/ether.h>
@@ -108,4 +108,4 @@ extern asn_type ndn_eth_address_s;
 } /* extern "C" */
 #endif
 
-#endif /* __PROTEOS__ASN_LIB__ETH_NDN__H__ */
+#endif /* __TE__NDN_ETH__H__ */

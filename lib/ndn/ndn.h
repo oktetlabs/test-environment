@@ -25,8 +25,8 @@
  *
  * $Id$
  */ 
-#ifndef __PROTEOS__ASN_LIB__NDN_GEN__H__
-#define __PROTEOS__ASN_LIB__NDN_GEN__H__
+#ifndef __TE__NDN_GENEREIC__H__
+#define __TE__NDN_GENEREIC__H__
 
 #ifdef __cplusplus
 extern "C" {
@@ -116,6 +116,6 @@ extern int ndn_get_timestamp(const asn_value *packet, struct timeval *ts);
 #endif
 
 
-#endif /*  __PROTEOS__ASN_LIB__NDN_GEN__H__*/
+#endif /*  __TE__NDN_GENEREIC__H__*/
 
 

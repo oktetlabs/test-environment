@@ -25,8 +25,8 @@
  *
  * $Id$
  */ 
-#ifndef __PROTEOS__ASN_LIB__DUMMY_NDN__H__
-#define __PROTEOS__ASN_LIB__DUMMY_NDN__H__
+#ifndef __TE__NDN_DUMMY__H__
+#define __TE__NDN_DUMMY__H__
 
 #include "asn_usr.h"
 #include "ndn.h"
@@ -50,4 +50,4 @@ typedef enum dhcp_csap_mode {
 } /* extern "C" */
 #endif
 
-#endif /* __PROTEOS__ASN_LIB__DUMMY_NDN__H__ */
+#endif /* __TE__NDN_DUMMY__H__ */

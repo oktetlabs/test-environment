@@ -25,8 +25,8 @@
  *
  * $Id$
  */ 
-#ifndef __PROTEOS_TAPI_SNMP_NDN__H__
-#define __PROTEOS_TAPI_SNMP_NDN__H__
+#ifndef __TE__NDN_SNMP__H__
+#define __TE__NDN_SNMP__H__
 
 #include "config.h"
 
@@ -90,4 +90,4 @@ extern const char *ndn_snmp_msg_type_h2str(ndn_snmp_msg_t msg_type);
 } /* extern "C" */
 #endif
 
-#endif /* __PROTEOS_TAPI_SNMP_NDN__H__ */
+#endif /* __TE__NDN_SNMP__H__ */
