@@ -50,18 +50,19 @@
 static struct timeval tv_zero = {0,0};
 
 #define SEND_ANSWER(_fmt...) \
-    do {                                                                    \
-        int r_c;                                                            \
-        if ((size_t)snprintf(cbuf + answer_plen, buflen - answer_plen,      \
-                             _fmt) >= (buflen - answer_plen))               \
-        {                                                                   \
-            VERB("answer is truncated\n");                  \
-        }                                                                   \
-        rcf_ch_lock();                                                      \
-        r_c = rcf_comm_agent_reply(handle, cbuf, strlen(cbuf) + 1);         \
-        rcf_ch_unlock();                                                    \
-        if (r_c)                                                            \
-            fprintf(stderr, "error from rcf_comm_agent_reply: 0x%x\n", r_c);\
+    do {                                                                   \
+        int r_c;                                                           \
+                                                                           \
+        if ((size_t)snprintf(cbuf + answer_plen, buflen - answer_plen,     \
+                             _fmt) >= (buflen - answer_plen))              \
+        {                                                                  \
+            VERB("answer is truncated\n");                                 \
+        }                                                                  \
+        rcf_ch_lock();                                                     \
+        r_c = rcf_comm_agent_reply(handle, cbuf, strlen(cbuf) + 1);        \
+        rcf_ch_unlock();                                                   \
+        if (r_c)                                                           \
+            fprintf(stderr, "rc from rcf_comm_agent_reply: 0x%X\n", r_c);  \
     } while (0)
 
 
@@ -76,23 +77,23 @@ extern int csap_support_ipstack_register(void);
 #endif
 
 #ifdef WITH_FILE
-extern int csap_support_file_register (void);
+extern int csap_support_file_register(void);
 #endif
 
 #ifdef WITH_SNMP
-extern int csap_support_snmp_register (void);
+extern int csap_support_snmp_register(void);
 #endif
 
 #ifdef WITH_DHCP
-extern int csap_support_dhcp_register (void);
+extern int csap_support_dhcp_register(void);
 #endif
 
 #ifdef WITH_BRIDGE
-extern int csap_support_bridge_register (void);
+extern int csap_support_bridge_register(void);
 #endif
 
 #ifdef WITH_CLI
-extern int csap_support_cli_register (void);
+extern int csap_support_cli_register(void);
 #endif
 
 
@@ -102,7 +103,7 @@ check_init(void)
     if (is_initialized) return;
 
     csap_db_init();
-    init_csap_spt ();
+    init_csap_spt();
 #ifdef WITH_ETH
     csap_support_eth_register();
 #endif 
@@ -175,7 +176,7 @@ rcf_ch_csap_create(struct rcf_comm_connection *handle,
                    const uint8_t *ba, size_t cmdlen,
                    const char *stack, const char *params)
 {
-    csap_p new_csap;
+    csap_p      new_csap;
     asn_value_p csap_nds;
 
     int new_csap_id; 
@@ -183,8 +184,8 @@ rcf_ch_csap_create(struct rcf_comm_connection *handle,
     int syms; 
     int rc; 
 
-    UNUSED (cmdlen);
-    UNUSED (params);
+    UNUSED(cmdlen);
+    UNUSED(params);
 
 
     check_init();
@@ -278,7 +279,7 @@ rcf_ch_csap_create(struct rcf_comm_connection *handle,
         {
             /* ERROR! there was not found neighvour -- 
                this stack is not supported.*/
-            ERROR("Protocol stack for low '%s' under '%s' is not supported", 
+            ERROR("Protocol stack for low '%s' under '%s' is not supported",
                     lower_proto, new_csap->proto[level]);
             SEND_ANSWER("%d Protocol stack is not supported", 
                 TE_RC(TE_TAD_CH, EPROTONOSUPPORT));
@@ -300,17 +301,17 @@ rcf_ch_csap_destroy(struct rcf_comm_connection *handle,
                     csap_handle_t csap)
 {
     csap_p csap_descr_p;
+
     int level;
-    int rc;
-
+    int rc; 
     
-    VERB("CSAP %d\n", csap);
-
     check_init();
+
+    VERB("Destroy CSAP %d\n", csap); 
 
     if ((csap_descr_p = csap_find(csap)) == NULL)
     {
-        VERB("CSAP not exists");
+        WARN("CSAP not exists");
         SEND_ANSWER("%d CSAP not exists", TE_RC(TE_TAD_CH, ETADCSAPNOTEX));
         return 0;
     }
@@ -318,9 +319,10 @@ rcf_ch_csap_destroy(struct rcf_comm_connection *handle,
     CSAP_DA_LOCK(csap_descr_p);
     if (csap_descr_p->command)
     {
-        SEND_ANSWER("%d Specified CSAP is busy", TE_RC(TE_TAD_CH, ETADCSAPSTATE));
+        SEND_ANSWER("%d Specified CSAP is busy", 
+                    TE_RC(TE_TAD_CH, ETADCSAPSTATE));
         CSAP_DA_UNLOCK(csap_descr_p);
-        VERB("CSAP is busy");
+        WARN("CSAP is busy");
         return 0;
     } 
     CSAP_DA_UNLOCK(csap_descr_p);
@@ -331,7 +333,7 @@ rcf_ch_csap_destroy(struct rcf_comm_connection *handle,
         csap_spt_type_p csap_spt_descr; 
         char *lower_proto = NULL;
 
-        csap_spt_descr = find_csap_spt (csap_descr_p->proto[level]);
+        csap_spt_descr = find_csap_spt(csap_descr_p->proto[level]);
 
         if (csap_spt_descr == NULL)
         {
@@ -360,7 +362,7 @@ rcf_ch_csap_destroy(struct rcf_comm_connection *handle,
             }
         }
     }
-    csap_destroy (csap);
+    csap_destroy(csap);
     
     SEND_ANSWER("0");
 
@@ -382,18 +384,19 @@ rcf_ch_trsend_start(struct rcf_comm_connection *handle,
     pthread_t      send_thread;
     pthread_attr_t pthread_attr;
 
-    tad_task_context * send_context;
+    tad_task_context *send_context;
 
-    UNUSED (cmdlen);
+    UNUSED(cmdlen);
 
-    VERB("CSAP %d\n", csap);
+    VERB("trsend_start CSAP %d\n", csap);
 
     check_init();
 
     if (ba == NULL)
     {
         VERB("missing attached NDS");
-        SEND_ANSWER("%d missing attached NDS", TE_RC(TE_TAD_CH, ETADMISSNDS));
+        SEND_ANSWER("%d missing attached NDS", 
+                    TE_RC(TE_TAD_CH, ETADMISSNDS));
         return 0;
     }
 
@@ -421,7 +424,7 @@ rcf_ch_trsend_start(struct rcf_comm_connection *handle,
 
     CSAP_DA_LOCK(csap_descr_p);
 
-    strncpy (csap_descr_p->answer_prefix, cbuf, MAX_ANS_PREFIX - 1);
+    strncpy(csap_descr_p->answer_prefix, cbuf, MAX_ANS_PREFIX - 1);
     csap_descr_p->answer_prefix[answer_plen] = 0; 
 
     csap_descr_p->state = csap_descr_p->command = TAD_OP_SEND;
@@ -458,11 +461,13 @@ rcf_ch_trsend_start(struct rcf_comm_connection *handle,
         return 0;
     }
 
-    if ((rc = pthread_create(&send_thread, &pthread_attr,
-                             (void *)&tad_tr_send_thread, send_context)) != 0)
+    rc = pthread_create(&send_thread, &pthread_attr, 
+                        (void *)&tad_tr_send_thread, send_context);
+    if (rc != 0)
     {
         ERROR("Cannot create a new SEND thread: %d", rc);
-        SEND_ANSWER("%d cannot create a new SEND thread", TE_RC(TE_TAD_CH, rc));
+        SEND_ANSWER("%d cannot create a new SEND thread", 
+                    TE_RC(TE_TAD_CH, rc));
         free(send_context);
     }
     return 0;
@@ -475,9 +480,9 @@ rcf_ch_trsend_stop(struct rcf_comm_connection *handle,
                    char *cbuf, size_t buflen, size_t answer_plen,
                    csap_handle_t csap)
 {
-    csap_p      csap_descr_p;
+    csap_p csap_descr_p;
 
-    VERB("CSAP %d", csap);
+    VERB("trsend_stop CSAP %d", csap);
 
     check_init(); 
 
@@ -674,7 +679,8 @@ rcf_ch_trrecv_start(struct rcf_comm_connection *handle,
 
             csap_spt_descr = find_csap_spt (csap_descr_p->proto[level]);
 
-            rc = csap_spt_descr->confirm_cb(csap_descr_p->id, level, level_pdu);
+            rc = csap_spt_descr->confirm_cb(csap_descr_p->id, level, 
+                                            level_pdu);
 
             if (rc) 
             {
@@ -685,7 +691,8 @@ rcf_ch_trrecv_start(struct rcf_comm_connection *handle,
             snprintf (label_buf, sizeof(label_buf), "pdus.%d.#%s", 
                     level, csap_descr_p->proto[level]);
 
-            rc = asn_write_component_value(pattern_unit, level_pdu, label_buf);
+            rc = asn_write_component_value(pattern_unit, level_pdu, 
+                                           label_buf);
 
             asn_free_value(level_pdu);
 
@@ -786,10 +793,10 @@ rcf_ch_trrecv_stop(struct rcf_comm_connection *handle,
 /* See description in rcf_ch_api.h */
 int
 rcf_ch_trrecv_wait(struct rcf_comm_connection *handle,
-                  char *cbuf, size_t buflen, size_t answer_plen,
-                  csap_handle_t csap)
+                   char *cbuf, size_t buflen, size_t answer_plen,
+                   csap_handle_t csap)
 {
-    csap_p      csap_descr_p;
+    csap_p csap_descr_p;
 
     VERB("CSAP %d", csap);
 
@@ -811,11 +818,10 @@ rcf_ch_trrecv_wait(struct rcf_comm_connection *handle,
     }
     else
     {
-        ERROR(
-            "Inappropriate command, CSAP %d is not receiving; "
-            "command %x; state %x ",
-            csap_descr_p->id, 
-            (int)csap_descr_p->command, (int)csap_descr_p->state);
+        ERROR("Inappropriate command, CSAP %d is not receiving; "
+              "command %x; state %x ",
+              csap_descr_p->id, 
+              (int)csap_descr_p->command, (int)csap_descr_p->state);
         CSAP_DA_UNLOCK(csap_descr_p);
         SEND_ANSWER("%d 0", TE_RC(TE_TAD_CH, ETADCSAPSTATE));
     }
@@ -902,7 +908,7 @@ rcf_ch_csap_param(struct rcf_comm_connection *handle,
     else if (strcmp(param, CSAP_PARAM_TOTAL_BYTES) == 0)
     {
         VERB("CSAP get_param, get total bytes %d\n", 
-                            csap_descr_p->total_bytes);
+             csap_descr_p->total_bytes);
         SEND_ANSWER("0 %u", csap_descr_p->total_bytes);
     }
     else if (strcmp(param, CSAP_PARAM_FIRST_PACKET_TIME) == 0)
@@ -925,13 +931,13 @@ rcf_ch_csap_param(struct rcf_comm_connection *handle,
     {
         VERB("CSAP does not support get_param\n");
         SEND_ANSWER("%d CSAP does not support get_param", 
-                TE_RC(TE_TAD_CH, ETENOSUPP));
+                    TE_RC(TE_TAD_CH, ETENOSUPP));
     }
     else
     {
         int layer = csap_descr_p->read_write_layer;
-        char *param_value = csap_descr_p->get_param_cb[layer]
-                                        (csap_descr_p, layer, param);
+        char *param_value = csap_descr_p->get_param_cb[layer](csap_descr_p,
+                                                              layer, param);
         if (param_value)
         {
             VERB("got value: <%s>\n", param_value);
@@ -942,7 +948,7 @@ rcf_ch_csap_param(struct rcf_comm_connection *handle,
         {
             VERB("CSAP return error for get_param\n");
             SEND_ANSWER("%d CSAP return error for get_param", 
-                TE_RC(TE_TAD_CH, ETENOSUPP));
+                        TE_RC(TE_TAD_CH, ETENOSUPP));
         }
     }
 
@@ -958,6 +964,7 @@ rcf_ch_trsend_recv(struct rcf_comm_connection *handle,
                    te_bool results, unsigned int timeout)
 { 
     csap_p csap_descr_p;
+
     UNUSED(cmdlen);
 
     VERB("CSAP %d", csap);
@@ -980,7 +987,8 @@ rcf_ch_trsend_recv(struct rcf_comm_connection *handle,
     CSAP_DA_UNLOCK(csap_descr_p);
 
     return rcf_ch_trrecv_start(handle, cbuf, buflen, answer_plen, ba,
-               cmdlen, csap, 1 /* one packet */, results, timeout);
+                               cmdlen, csap, 1 /* one packet */, 
+                               results, timeout);
 }
 
 

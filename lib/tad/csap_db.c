@@ -39,14 +39,6 @@
 #include "logger_ta.h"
 #include "logger_api.h"
 
-#ifndef INSQUE
-/* macros to insert element p into queue _after_ element q */
-#define INSQUE(p, q) {(p)->prev = q; (p)->next = (q)->next; \
-                      (q)->next = p; (p)->next->prev = p; }
-/* macros to remove element p from queue  */
-#define REMQUE(p) {(p)->prev->next = (p)->next; (p)->next->prev = (p)->prev; \
-                   (p)->next = (p)->prev = p; }
-#endif
 
 
 /*
@@ -101,30 +93,37 @@ csap_db_init()
 int 
 csap_db_clear()
 {
-    return 1; /* i think, it is not necessary now.. */ 
+    return ETENOSUPP; /* I think, it is not necessary now. */ 
 }
 
 #define MAX_CSAP_DEPTH 200
 /**
  * Create new CSAP. 
- *      This method does not perform any actions related to CSAP functionality,
- *      neither processing of CSAP init parameters, nor initialyzing some 
- *      communication media units (for example, sockets, etc.).
- *      It only allocates memory for csap_instance sturture, set fields
- *      'id', 'depth' and 'proto' in it and allocates memory for 'layer_data'.
+ * This method does not perform any actions related to CSAP functionality,
+ * neither processing of CSAP init parameters, nor initialyzing some 
+ * communication media units (for example, sockets, etc.).
+ * It only allocates memory for csap_instance sturture, set fields
+ * 'id', 'depth' and 'proto' in it and allocates memory for 'layer_data'.
  * 
- * @param type  Type of CSAP: dot-separated sequence of textual layer labels.
+ * @param type  Type of CSAP: dot-separated sequence of textual 
+ *              layer labels.
  *
  * @return identifier of new CSAP or zero if error occured.
  */ 
 int 
 csap_create(const char *type)
 {
+    int   depth = 0; 
+    int   i; 
+    int   next_id = start_position;
     char *csap_type = strdup(type);
-    int depth = 0, i, next_id = start_position;
-    csap_p new_csap = calloc(1, sizeof(csap_instance));
-    csap_db_entry_p dp, new_dp = calloc(1, sizeof(csap_db_entry)); 
+
+    csap_db_entry_p dp;
+    csap_db_entry_p new_dp = calloc(1, sizeof(csap_db_entry)); 
+    csap_p          new_csap = calloc(1, sizeof(csap_instance));
+
     char *layer_protos[MAX_CSAP_DEPTH];
+
     VERB("In csap_create: %s\n", csap_type);
 
     if ((new_csap == NULL) || (new_dp == NULL)) 
@@ -134,9 +133,13 @@ csap_create(const char *type)
     }
     new_dp->rec = new_csap;
 
-    /* Find free identifier, set it to new CSAP and insert structure to DB. */
-    for (dp = root_csap_db.next; dp!=&root_csap_db; dp = dp->next, next_id++)
-        if ( next_id < dp->rec->id) break;
+    /* Find free identifier, set it to new CSAP and insert structure. */
+
+    for (dp = root_csap_db.next; 
+         dp!=&root_csap_db; 
+         dp = dp->next, next_id++)
+        if (next_id < dp->rec->id) 
+            break;
 
     VERB("In csap_create, new id: %d\n", next_id);
     new_csap->id = next_id;
@@ -160,6 +163,7 @@ csap_create(const char *type)
         if (csap_type[i] == '.') 
         {
             char *next_layer = &csap_type[i + 1];
+
             csap_type[i] = 0;
             layer_protos[depth] = next_layer;
             depth++; 
@@ -172,16 +176,23 @@ csap_create(const char *type)
     /* Allocate memory for stack arrays */ 
     if ((new_csap->proto        = calloc(depth, sizeof(char*)))==NULL ||
         (new_csap->layer_data   = calloc(depth, sizeof(void*)))==NULL ||
-        (new_csap->get_param_cb = calloc(depth, sizeof(csap_get_param_cb_t) 
-                                                       ))==NULL 
-       )
+        (new_csap->get_param_cb = calloc(depth, 
+                                         sizeof(csap_get_param_cb_t) 
+                                                             ))==NULL   )
     { 
         errno = ENOMEM;
-        REMQUE(new_dp); free(new_dp); csap_free(new_csap); 
+        REMQUE(new_dp); 
+
+        free(new_dp); 
+        free(new_csap->proto);
+        free(new_csap->layer_data);
+        free(new_csap->get_param_cb);
+        csap_free(new_csap); 
+
         return 0; 
     }
 
-    memcpy ( new_csap->proto, layer_protos, sizeof(char *) * depth);
+    memcpy(new_csap->proto, layer_protos, sizeof(char *) *depth);
 
     for (i = 0; i < depth; i++)
         VERB("In csap_create, layer %d: %s\n", i, new_csap->proto[i]);
@@ -199,13 +210,15 @@ csap_create(const char *type)
  *    Pointer to structure with CSAP DB entry or NULL if not found. 
  */ 
 static csap_db_entry_p
-csap_db_entry_find (int id)
+csap_db_entry_find(int id)
 {
     csap_db_entry_p dp;
 
-    for ( dp = root_csap_db.next; ; dp = dp->next)
-        if ((dp == &root_csap_db) || (dp->rec->id > id)) return NULL; 
-        else if (dp->rec->id == id) return dp;
+    for (dp = root_csap_db.next; ; dp = dp->next)
+        if ((dp == &root_csap_db) || (dp->rec->id > id)) 
+            return NULL; 
+        else if (dp->rec->id == id) 
+            return dp;
 
     return NULL;
 }
@@ -225,23 +238,24 @@ csap_free(csap_p csap_descr)
         return;
 
     VERB("called for # %d, ptrs pr %x, l %x, g_p %x", 
-            csap_descr->id, csap_descr->proto, csap_descr->layer_data, 
-            csap_descr->get_param_cb);
+         csap_descr->id, csap_descr->proto, csap_descr->layer_data, 
+         csap_descr->get_param_cb);
     
     /* memory for protocol layer sub-ids was allocated
        in csap_create as single interval by strdup */ 
-    free (csap_descr->proto[0]);
+    free(csap_descr->proto[0]);
 
-    free (csap_descr->proto); 
+    free(csap_descr->proto); 
 
     if (csap_descr->layer_data)
     {
         int i;
+
         for (i = 0; i < csap_descr->depth; i++)
             if (csap_descr->layer_data[i]) 
                 free(csap_descr->layer_data[i]);
 
-        free (csap_descr->layer_data);
+        free(csap_descr->layer_data);
     }
 
     free (csap_descr->get_param_cb);
@@ -251,26 +265,27 @@ csap_free(csap_p csap_descr)
 
 /**
  * Destroy CSAP.
- *      Before call this DB method, all protocol-specific data in 'layer-data'
- *      and underground media resources should be freed. 
- *      This method will free all non-NULL pointers in 'layer-data', but 
- *      does not know nothing about what structures are pointed by them, 
- *      therefore if there are some more pointers in that structures, 
- *      memory may be lost. 
+ * Before call this DB method, all protocol-specific data in 'layer-data'
+ * and underground media resources should be freed. 
+ * This method will free all non-NULL pointers in 'layer-data', but 
+ * does not know nothing about what structures are pointed by them, 
+ * therefore if there are some more pointers in that structures, 
+ * memory may be lost. 
  *
  * @param csap_id       Identifier of CSAP to be destroyed.
  *
  * @return zero on success, otherwise error code 
  */ 
 int
-csap_destroy (int csap_id)
+csap_destroy(int csap_id)
 {
-    csap_p c_p;
-    csap_db_entry_p dp = csap_db_entry_find (csap_id); 
+    csap_p          c_p;
+    csap_db_entry_p dp = csap_db_entry_find(csap_id); 
 
     VERB("called for #1", csap_id);
 
-    if (dp == NULL) return 1; /* correct error code should be returned! */ 
+    if (dp == NULL)
+        return EINVAL;
 
     c_p = dp->rec;
     csap_free(c_p);
@@ -286,15 +301,19 @@ csap_destroy (int csap_id)
  *
  * @param csap_id       Identifier of CSAP 
  *
- * @return 
- *    Pointer to structure with internal CSAP information or NULL if not found. 
- *    Change data in this structure if you really know what does it mean!
+ * @return      Pointer to structure with internal CSAP information 
+ *              or NULL if not found. 
+ *
+ * Change data in this structure if you really know what does it mean!
  */ 
 csap_p
-csap_find (int csap_id)
+csap_find(int csap_id)
 {
-    csap_db_entry_p dp = csap_db_entry_find (csap_id);
-    if (dp == NULL) return NULL;
+    csap_db_entry_p dp = csap_db_entry_find(csap_id);
+
+    if (dp == NULL) 
+        return NULL;
+
     return dp->rec;
 }
 

@@ -35,16 +35,6 @@
 #include "logger_api.h"
 
 
-#ifndef INSQUE
-/* macros to insert element p into queue _after_ element q */
-#define INSQUE(p, q) {(p)->prev = q; (p)->next = (q)->next; \
-                      (q)->next = p; (p)->next->prev = p; }
-/* macros to remove element p from queue  */
-#define REMQUE(p) {(p)->prev->next = (p)->next; (p)->next->prev = (p)->prev; \
-                   (p)->next = (p)->prev = p; }
-#endif
-
-
 struct csap_spt_entry;
 typedef struct csap_spt_entry * csap_spt_entry_p;
 
@@ -62,11 +52,12 @@ static csap_spt_entry_t csap_spt_root;
  * @return zero on success, otherwise error code. 
  */
 int 
-init_csap_spt (void)
+init_csap_spt(void)
 {
     csap_spt_root.next = &csap_spt_root;
     csap_spt_root.prev = &csap_spt_root;
     csap_spt_root.spt_data = NULL;
+
     return 0;
 }
 
@@ -80,14 +71,15 @@ init_csap_spt (void)
  * @todo check for uniqueness of protocol labels. 
  */
 int 
-add_csap_spt (csap_spt_type_p spt_descr)
+add_csap_spt(csap_spt_type_p spt_descr)
 {
     csap_spt_entry_p new_spt_entry = malloc(sizeof(csap_spt_entry_t));
 
-    if (new_spt_entry == NULL) return ENOMEM;
+    if (new_spt_entry == NULL) 
+        return ENOMEM;
 
     new_spt_entry->spt_data = spt_descr;
-    INSQUE (new_spt_entry, &csap_spt_root);
+    INSQUE(new_spt_entry, &csap_spt_root);
 
     return 0;
 }
@@ -100,9 +92,10 @@ add_csap_spt (csap_spt_type_p spt_descr)
  * @return pointer to structure or NULL if not found. 
  */
 csap_spt_type_p 
-find_csap_spt (const char * proto)
+find_csap_spt(const char *proto)
 {
     csap_spt_entry_p spt_entry;
+
     VERB("%s, asked proto %s", __FUNCTION__, proto);
 
     for (spt_entry = csap_spt_root.next; 
