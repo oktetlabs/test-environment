@@ -3612,6 +3612,7 @@ socket_to_file(tarpc_socket_to_file_in *in)
         (find_func((tarpc_in_arg *)in, "read", &read_func) != 0)       ||
         (find_func((tarpc_in_arg *)in, "write", &write_func) != 0))
     {
+        ERROR("Failed to resolve functions addresses");
         rc = -1;
         goto local_exit;
     }
@@ -3747,6 +3748,10 @@ socket_to_file(tarpc_socket_to_file_in *in)
     } while (time2run_not_expired || session_rx);
 
 local_exit:
+    RING("Stop to get data from socket %d and put to file %s, %s, received %u",
+         sock, path,
+         (!time2run_not_expired) ? "timeout expired" : "unexpected failure",
+         total);
     INFO("%s(): %s", __FUNCTION__, (rc == 0) ? "OK" : "FAILED");
 
     if (file_d != -1)
