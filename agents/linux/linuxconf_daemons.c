@@ -174,7 +174,7 @@ create_backup(char *dir, char *name, int *index)
         
     if (ta_system(buf) != 0)
     {                                                              
-        ERROR("cannot create backup file %s", SERVICE_BACKUP(n_serv));
+        ERROR("Cannot create backup file %s", SERVICE_BACKUP(n_serv));
         return 0;                                                  
     }                      
     if (index != NULL)                                        
