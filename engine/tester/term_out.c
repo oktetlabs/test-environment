@@ -128,7 +128,7 @@ colored_verdict(tester_color color, const char *text)
     system(buf);
     printf("%s\n", text);
     system("tput sgr0");
-    flush(stdout);
+    fflush(stdout);
 }
 
 /* See description in internal.h */
