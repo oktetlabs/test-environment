@@ -270,7 +270,17 @@ postponed_process_start_event(node_info_t *node, const char *node_name)
         fprintf(output_fd, " err=\"%s\"", node->result.err);
     }
     fprintf(output_fd, ">\n");
-    fprintf(output_fd, "<meta>\n");
+
+    if (node->descr.n_branches > 1)
+    {
+        fprintf(output_fd, "<meta nbranches=\"%d\">\n",
+                node->descr.n_branches);
+    }
+    else
+    {
+        fprintf(output_fd, "<meta>\n");
+    }
+
     print_ts_info(node);
 
     if (node->descr.objective != NULL)
@@ -279,16 +289,29 @@ postponed_process_start_event(node_info_t *node, const char *node_name)
         fwrite_string(NULL, node->descr.objective);
         fputs("</objective>\n", output_fd);
     }
-    if (node->descr.author)
+    if (node->descr.authors)
     {
-        fputs("<author>", output_fd);
-        fwrite_string(NULL, node->descr.author);
-        fputs("</author>\n", output_fd);
-    }
-    if (node->descr.n_branches > 0)
-    {
-        fprintf(output_fd, "<n-branches>%d</n-branches>\n",
-                node->descr.n_branches);
+        char *author = node->descr.authors;
+        char *ptr;
+
+        fputs("<authors>", output_fd);
+
+        /* Authors are separated with a space */
+        do {
+            if ((ptr = strchr(author, ' ')) != NULL)
+            {
+                *ptr = '\0';
+                ptr++;
+            }
+
+            fputs("<author email=\"", output_fd);
+            author += strlen("mailto:");
+            fwrite_string(NULL, author);
+            fputs("\"/>", output_fd);
+            author = ptr;
+        } while (ptr != NULL);
+
+        fputs("</authors>\n", output_fd);
     }
 
     print_params(node);
@@ -524,7 +547,7 @@ output_regular_log_msg(log_msg *msg)
                         }
 
                         /* Strart file tag */
-                        fputs("<file>", output_fd);
+                        fprintf(output_fd, "<file name=\"%s\">", arg->val);
                         while (fgets(str, sizeof(str), fd) != NULL)
                         {
                             fwrite_string(NULL, str);

@@ -412,10 +412,10 @@ create_node_by_msg(log_msg *msg, node_type_t type,
                       "%s (%d %d)", msg->fmt_str, node_id, parent_id);
             return NULL;
         }
-        node->descr.author =
+        node->descr.authors =
             (char *)node_info_obstack_copy0(arg->val, arg->len);
-        while (isspace(*node->descr.author))
-            node->descr.author++;
+        while (isspace(*node->descr.authors))
+            node->descr.authors++;
 
         fmt_str += strlen("%s");
     }

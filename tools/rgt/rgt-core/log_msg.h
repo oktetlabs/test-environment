@@ -157,7 +157,7 @@ typedef struct result_info {
 typedef struct node_descr {
     char *name;       /**< Entry name */
     char *objective;  /**< Objectives of the entry */
-    char *author;     /**< Entry author */
+    char *authors;    /**< Entry authors */
     int   n_branches; /**< Number of branches in the entry */
 } node_descr_t;
 
