@@ -34,6 +34,7 @@
 #include <string.h>
 #include <sys/time.h>
 #include <sys/types.h>
+#include <netinet/ether.h> 
 #include <unistd.h>
 #include "te_stdint.h"
 #include "te_errno.h"

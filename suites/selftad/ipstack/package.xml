@@ -12,18 +12,24 @@
         </var>
 
         <run>
+            <script name="ip4_simple">
+                <req id="TAD_IP4"/>
+            </script>
+        </run> 
+
+        <run>
+            <script name="tcp_simple">
+                <req id="TAD_TCP"/>
+            </script>
+        </run>
+
+        <run>
             <script name="udp1">
                 <req id="TAD_UDP"/>
             </script>
             <arg name="pattern_file">
                 <value>udp-filter.asn</value>
             </arg>
-        </run>
-
-        <run>
-            <script name="tcp_simple">
-                <req id="TAD_TCP"/>
-            </script>
         </run>
     </session>
 

@@ -15,6 +15,7 @@
  */
 
 #define TE_LOG_LEVEL 3
+#include "config.h"
 
 #include "logger_api.h"
 #include "conf_api.h"

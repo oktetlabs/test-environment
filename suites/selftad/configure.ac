@@ -52,7 +52,9 @@ sys/sendfile.h \
 netinet/in.h \
 netinet/ip.h \
 netinet/tcp.h \
+netinet/ether.h \
 net/if.h \
+net/ethernet.h \
 arpa/inet.h \
 netdb.h \
 ])
