@@ -113,11 +113,12 @@ main(int argc, char *argv[])
         asn_value *asn_pdus;
         asn_value *asn_pdu;
         asn_value *pattern;
-        char eth_device[] = "lo";
+        char eth_device[] = "lo"; 
 
-
-        uint8_t rem_addr[6] = {0x01,0x02,0x03,0x04,0x05,0x06};
-        uint8_t loc_addr[6] = {0xff,0xff,0xff,0xff,0xff,0xff};
+        uint8_t rem_addr[6] = {
+            0x01,0x02,0x03,0x04,0x05,0x06};
+        uint8_t loc_addr[6] = {
+            0xff,0xff,0xff,0xff,0xff,0xff};
 
                     
         memset(&plain_hdr, 0, sizeof(plain_hdr));

@@ -97,28 +97,14 @@ main(int argc, char *argv[])
     
     if (rcf_get_ta_list(ta, &len) != 0)
     {
-        VERB("rcf_get_ta_list failed\n");
-        return 1;
+        TEST_FAIL("rcf_get_ta_list failed\n");
     }
     VERB("Agent: %s\n", ta);
-    
-    /* Type test */
-    {
-        char type[16];
-        if (rcf_ta_name2type(ta, type) != 0)
-            TEST_FAIL("rcf_ta_name2type failed\n");
+       
+    if (rcf_ta_create_session(ta, &sid) != 0)
+        TEST_FAIL("rcf_ta_create_session failed\n");
+    VERB("Test: Created session: %d\n", sid); 
 
-        VERB("TA type: %s\n", type); 
-    }
-    
-    /* Session */
-    {
-        if (rcf_ta_create_session(ta, &sid) != 0)
-            TEST_FAIL("rcf_ta_create_session failed\n");
-        VERB("Test: Created session: %d\n", sid); 
-    }
-
-    /* CSAP tests */
     do {
         int       syms = 4;
         uint16_t  eth_type = ETH_P_IP;
@@ -198,8 +184,8 @@ main(int argc, char *argv[])
                                        "payload.#bytes");
 #endif
 
-#if 0 /* Breaks log parse */
-    VERB("come data: %tm6\n", rem_addr,  ETH_ALEN);
+#if 1
+    VERB("come data from addr: %tm", rem_addr,  ETH_ALEN);
 #endif
 
         if (rc)
@@ -268,7 +254,7 @@ main(int argc, char *argv[])
 #if 1
             rc = asn_parse_value_text("intervals: { { b 16, e 20} }", 
                     type,  &ints_seq, &parsed);
-            if (rc) break;
+            if (rc != 0) break;
             VERB("parse intervals ok");
             rc = asn_write_component_value(pattern, ints_seq,
                         "0.pdus.0.#eth.vlan-id");
