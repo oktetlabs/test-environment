@@ -1017,6 +1017,7 @@ process_reply(ta *agent)
             case RCFOP_CONFDEL:
             case RCFOP_VWRITE:
             case RCFOP_FPUT:
+            case RCFOP_FDEL:
             case RCFOP_CSAP_DESTROY:
             case RCFOP_KILL:
                 break;
@@ -1323,8 +1324,10 @@ send_cmd(ta *agent, usrreq *req)
 
         case RCFOP_FPUT:
         case RCFOP_FGET:
-            strcat(cmd, msg->opcode == RCFOP_FPUT ? TE_PROTO_FPUT
-                                                  : TE_PROTO_FGET);
+        case RCFOP_FDEL:
+            strcat(cmd, msg->opcode == RCFOP_FPUT ? TE_PROTO_FPUT :
+                        msg->opcode == RCFOP_FDEL ? TE_PROTO_FDEL :
+                                                    TE_PROTO_FGET);
             strcat(cmd, " ");
             strncat(cmd, msg->data, RCF_MAX_PATH);
             break;
