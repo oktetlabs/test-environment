@@ -1274,6 +1274,7 @@ TARPC_FUNC(getsockname,
             out->retval = 0;
             out->common.win_error = 0;
             a->sa_family = AF_INET;
+            *out->len.len_val = sizeof(struct sockaddr_in);
         }
     }
     
