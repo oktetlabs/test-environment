@@ -140,7 +140,6 @@ rcf_ch_reboot(struct rcf_comm_connection *handle,
     UNUSED(params);
 
     SEND_ANSWER("0");
-    /* FIXME Unreachable */
     system("/sbin/reboot");
 }
 
