@@ -210,6 +210,12 @@ ds_create_backup(const char *dir, const char *name, int *index)
         free(ds[n_ds].backup);
         return TE_RC(TE_TA_LINUX, ENOENT); 
     }
+    else
+    {
+        PRINT("Backup created:");
+        sprintf(buf, "ls -l %s", ds[n_ds].backup);
+        ta_system(buf);
+    }
     if (index != NULL)                                        
         *index = n_ds;
     n_ds++;
@@ -1610,8 +1616,10 @@ ds_vncpasswd_get(unsigned int gid, const char *oid, char *value)
 static te_bool
 vncserver_exists(char *number)
 {
-    sprintf(buf, "ls /tmp/.vnc/*.pid | grep %s >/dev/null 2>&1", number);
-    return system(buf) == 0;
+    sprintf(buf, 
+            "ls /tmp/.vnc/*.pid 2>/dev/null | grep %s >/dev/null 2>&1",
+            number);
+    return ta_system(buf) == 0;
 }
 
 /**
@@ -1650,13 +1658,13 @@ ds_vncserver_add(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_LINUX, ETESHCMD);
     }
 
-    sprintf(buf, "DISPLAY=:%s xhost +", number);
+    sprintf(buf, "HOME=/tmp DISPLAY=:%s xhost +", number);
 
     if (ta_system(buf) != 0)
     {
         ERROR("Command '%s' failed", buf);
-        sprintf(buf, "vncserver -kill :%s", number);
-        system(buf);
+        sprintf(buf, "HOME=/tmp vncserver -kill :%s", number);
+        ta_system(buf);
         return TE_RC(TE_TA_LINUX, ETESHCMD);
     }
     
@@ -1717,12 +1725,11 @@ ds_vncserver_list(unsigned int gid, const char *oid, char **list)
         char *tmp;
         int   n;
 
-        if ((tmp  = strstr(tmp, ":")) == NULL || (n = atoi(tmp + 1)) == 0)
+        if ((tmp  = strstr(line, ":")) == NULL || (n = atoi(tmp + 1)) == 0)
             continue;
         
         s += sprintf(s, "%u ", n);
     }
-    
     fclose(f);
     
     if ((*list = strdup(buf)) == NULL)
@@ -1731,8 +1738,8 @@ ds_vncserver_list(unsigned int gid, const char *oid, char **list)
     return 0;
 }
 
-RCF_PCH_CFG_NODE_RW(node_ds_vncpasswd, "vncpasswd",
-                    NULL, NULL, ds_vncpasswd_get, NULL);
+RCF_PCH_CFG_NODE_RO(node_ds_vncpasswd, "vncpasswd",
+                    NULL, NULL, ds_vncpasswd_get);
 
 RCF_PCH_CFG_NODE_COLLECTION(node_ds_vncserver, "vncserver",
                             &node_ds_vncpasswd, NULL, 
@@ -1759,21 +1766,22 @@ ds_init_vncserver(rcf_pch_cfg_object **last)
         return; /* Already exists, do nothing */
     }
         
-    if (mkdir("/tmp/.vnc", 0751) < 0)
+    if (mkdir("/tmp/.vnc", 0700) < 0)
     {
         WARN("Failed to create /tmp/.vnc directory");
         return;
     } 
     
-    if ((fd = open("/tmp/.vnc/passwd", O_CREAT, 0600)) <= 0)
+    if ((fd = open("/tmp/.vnc/passwd", O_CREAT | O_WRONLY, 0600)) <= 0)
     {
-        WARN("Failed to create file /tmp/.vnc/passwd");
+        WARN("Failed to create file /tmp/.vnc/passwd; errno %x", errno);
         return;
     }
     
     if (write(fd, passwd, sizeof(passwd)) < 0)
     {
-        WARN("write() failed for the file /tmp/.vnc/passwd");
+        WARN("write() failed for the file /tmp/.vnc/passwd; errno %x", 
+             errno);
         return;
     }
     
@@ -1976,6 +1984,98 @@ postfix_smarthost_get(te_bool *enable)
 /** Enable/disable smarthost option in the postfix configuration file */
 static int
 postfix_smarthost_set(te_bool enable)
+{
+    FILE *f = NULL;
+    FILE *g = NULL;
+    int   rc;
+    
+    if (postfix_index < 0)
+    {
+        ERROR("Cannot find postfix configuration file");
+        return ENOENT;
+    }
+    
+    ds_config_touch(postfix_index);
+    if ((f = fopen(ds_backup(postfix_index), "r")) == NULL) 
+    {
+        rc = TE_RC(TE_TA_LINUX, errno);
+        ERROR("Cannot open file %s for reading", ds_backup(postfix_index));
+        return rc;                                            
+    }
+
+    if ((g = fopen(ds_config(postfix_index), "w")) == NULL) 
+    {
+        rc = TE_RC(TE_TA_LINUX, errno);
+        ERROR("Cannot open file %s for writing", ds_config(postfix_index));
+        return rc;                                            
+    }
+
+    while (fgets(buf, sizeof(buf), f) != NULL)
+    {
+        if (strstr(buf, "relayhost") == NULL && 
+            strstr(buf, "relaydomains") == NULL)
+        {
+            fwrite(buf, 1, strlen(buf), g);
+        }
+    }
+    if (enable != 0)
+    {
+        fprintf(g, POSTFIX_SMARTHOST_OPT);
+        fprintf(g, "relaydomains = $mydomain");
+    }
+    fclose(f);
+    fclose(g);
+    
+    ta_system("cd " SENDMAIL_CONF_DIR "; make >/dev/null 2>&1");
+    
+    return 0;
+}
+
+/*---------------------- exim staff ------------------------------*/
+
+/** postfix configuration location */
+#define EXIM_CONF_DIR   "/etc/exim/"
+#define EXIM4_CONF_DIR   "/etc/exim4/"
+
+/** Smarthost option */
+#define EXIM_SMARTHOST_OPT  "relayhost = te_tester\n"
+
+static int exim_index = -1;
+
+/** Check if ost option presents in the postfix configuration file */
+static int
+exim_smarthost_get(te_bool *enable)
+{
+    FILE *f;
+    int   rc;
+
+    if ((f = fopen(ds_config(postfix_index), "r")) == NULL)
+    {
+        rc = TE_RC(TE_TA_LINUX, errno);
+        ERROR("Cannot open file %s for reading",
+              ds_config(postfix_index));
+        fclose(f);
+        return rc;
+    }
+
+    while (fgets(buf, sizeof(buf), f) != NULL)
+    {
+        if (strncmp(buf, POSTFIX_SMARTHOST_OPT, 
+                    strlen(POSTFIX_SMARTHOST_OPT)) == 0)
+        {
+            fclose(f);
+            *enable = 1;
+            return 0;
+        }
+    }
+    *enable = 0;
+    fclose(f);
+    return 0;
+}
+
+/** Enable/disable smarthost option in the postfix configuration file */
+static int
+exim_smarthost_set(te_bool enable)
 {
     FILE *f = NULL;
     FILE *g = NULL;
