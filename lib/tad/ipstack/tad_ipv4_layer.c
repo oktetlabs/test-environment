@@ -210,7 +210,11 @@ int ip4_match_bin_cb (int csap_id, int layer, const asn_value *pattern_pdu,
         rc = tad_univ_match_field(&spec_data-> _du_field, NULL, \
                 data, _size, _asn_label);                       \
         if (rc)                                                 \
+        {                                                       \
+            VERB("%s: field %s not match, rc %X",               \
+                    __FUNCTION__, _asn_label, rc);              \
             return rc;                                          \
+        }                                                       \
         data += _size;                                          \
     } while(0)
 
@@ -253,6 +257,8 @@ int ip4_match_bin_cb (int csap_id, int layer, const asn_value *pattern_pdu,
         payload->data = malloc (payload->len);
         memcpy(payload->data, data, payload->len);
     }
+
+    VERB("%s, return %X", __FUNCTION__, rc);
     
 
     return rc;
