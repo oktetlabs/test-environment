@@ -173,14 +173,6 @@ ndn_forw_delay_to_plain(const asn_value *val, ndn_forw_delay_t *forw_delay)
     if (val == NULL || forw_delay == NULL) 
         return EINVAL;
 
-    d_len = sizeof (forw_delay->type);
-    rc = asn_read_value_field(val, &(forw_delay->type), &d_len, "type");
-
-    if (rc)
-        return rc;
-    if (forw_delay->type == 0)
-        return 0;
-
     d_len = sizeof (forw_delay->delay_min);
     rc = asn_read_value_field(val, &(forw_delay->delay_min), &d_len, 
                                     "delay_min.#plain"); 
@@ -192,6 +184,11 @@ ndn_forw_delay_to_plain(const asn_value *val, ndn_forw_delay_t *forw_delay)
                                     "delay_max.#plain"); 
     if (rc)
         return rc;
+
+    if (forw_delay->delay_max == forw_delay->delay_min)
+        forw_delay->type = FORW_DELAY_CONSTANT;
+    else 
+        forw_delay->type = FORW_DELAY_RANDROM;
 
     return rc;
 }
@@ -227,10 +224,30 @@ ndn_forw_reorder_to_plain(const asn_value *val, ndn_forw_reorder_t *forw_reorder
 int 
 ndn_forw_drop_to_plain(const asn_value *val, ndn_forw_drop_t *forw_drop)
 {
-    UNUSED(val);
-    UNUSED(forw_drop); 
+    char drop_label[40]; 
+    size_t d_len;
 
-    return EASNINCOMPLVAL; /* unsupported, imitate absent */
+    rc = asn_get_choice(val, "", drop_label, sizeof(drop_label));
+    if (rc) return rc;
+
+    if (strcmp(drop_label, "random-rate") == 0)
+    {
+        forw_drop->type = FORW_DROP_RANDROM;
+        d_len = sizeof(forw_drop->rate);
+        rc = asn_read_value_field(val, "#random-rate", 
+                                  &forw_drop->rate, &d_len);
+    }
+    else
+    {
+        forw_drop->type = FORW_DROP_PATTERN;
+        forw_drop->mask_len = d_len = asn_get_length(val, "#pattern-mask"); 
+
+        forw_drop->pattern_mask = calloc ((d_len >> 3) + 1, 1);
+
+        rc = asn_read_value_field(val, forw_drop->pattern_mask, &d_len, "");
+    } 
+
+    return rc; 
 }
 
 /** 
@@ -253,7 +270,7 @@ ndn_forw_action_to_plain(const asn_value *val,
     if (val == NULL || forw_action == NULL) 
         return EINVAL;
 
-    id_len = asn_get_length(val, "id" );
+    id_len = asn_get_length(val, "id");
     if (id_len <= 0)
         return EASNGENERAL;
 
@@ -264,6 +281,8 @@ ndn_forw_action_to_plain(const asn_value *val,
     rc = asn_read_value_field(val, forw_action->id, &d_len, "id");
     if (rc) return rc;
 
+    forw_action->id[id_len] = '\0';
+
     rc = asn_get_subvalue(val, &subval, "delay");
     if (rc == 0) 
     {
@@ -273,6 +292,7 @@ ndn_forw_action_to_plain(const asn_value *val,
     else if (rc == EASNINCOMPLVAL)
     {
         forw_action->delay.type = 0; /* uninitalized, default */
+        rc = 0;
     }
     else 
         return rc;
@@ -288,6 +308,7 @@ ndn_forw_action_to_plain(const asn_value *val,
     else if (rc == EASNINCOMPLVAL)
     {
         forw_action->reorder.type = 0; /* uninitalized, default */
+        rc = 0;
     }
     else 
         return rc;
@@ -302,13 +323,10 @@ ndn_forw_action_to_plain(const asn_value *val,
     else if (rc == EASNINCOMPLVAL)
     {
         forw_action->drop.type = 0; /* uninitalized, default */
+        rc = 0;
     }
     else 
-        return rc;
-
-
-
-
+        return rc; 
 
     return 0;
 }

@@ -93,8 +93,9 @@ typedef struct {
 
     int rate;
 
-    size_t   mask_len;
+    size_t   mask_len; /* length of mask in bits */
     uint8_t *pattern_mask;
+
 } ndn_forw_drop_t;
 
 typedef struct { 
