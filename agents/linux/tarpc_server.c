@@ -2840,14 +2840,13 @@ int
 simple_receiver(tarpc_simple_receiver_in *in,
                 tarpc_simple_receiver_out *out)
 {
-    sock_api_func select_func;
-    sock_api_func recv_func;
-    char          buf[1024];
-
-#ifdef TA_DEBUG
-    uint64_t control = 0;
-    int start = time(NULL);
-#endif
+    sock_api_func   select_func;
+    sock_api_func   recv_func;
+    char            buf[1024];
+    fd_set          set;
+    int             rc;
+    ssize_t         len;
+    struct timeval  tv;
 
     out->bytes = 0;
 
@@ -2859,44 +2858,49 @@ simple_receiver(tarpc_simple_receiver_in *in,
 
     while (TRUE)
     {
-        struct timeval tv = { 1, 0 };
-        fd_set         set;
-        int            len;
-
+        tv.tv_sec = 1;
+        tv.tv_usec = 0;
         FD_ZERO(&set);
         FD_SET(in->s, &set);
-        if (select_func(in->s + 1, &set, NULL, NULL, &tv) < 0)
+
+        rc = select_func(in->s + 1, &set, NULL, NULL, &tv);
+        if (rc < 0)
         {
             ERROR("select() failed in simple_receiver(): errno %x", errno);
             return -1;
         }
-        if (!FD_ISSET(in->s, &set))
+        else if (rc == 0)
         {
             if (out->bytes > 0)
                 break;
             else
                 continue;
         }
+        else if (!FD_ISSET(in->s, &set))
+        {
+            ERROR("select() waited for reading on the socket, "
+                  "returned %d, but the socket in not in set", rc);
+            return -1;
+        }
 
         len = recv_func(in->s, buf, sizeof(buf), 0);
-
         if (len < 0)
         {
             ERROR("recv() failed in simple_receiver(): errno %x", errno);
             return -1;
         }
-
         if (len == 0)
         {
-            RING("recv() returned 0 in simple_receiver() because of peer "
-                 "shutdown");
-            goto simple_receiver_exit;
+            RING("recv() returned 0 in simple_receiver() because of "
+                 "peer shutdown");
+            break;
         }
 
         out->bytes += len;
     }
 
-simple_receiver_exit:
+    RING("simple_receiver() stopped, received %llu bytes",
+         out->bytes);
 
     return 0;
 }
