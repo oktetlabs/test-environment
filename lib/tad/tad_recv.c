@@ -224,7 +224,7 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
             if (mask_len > data_to_check.len || 
                 (fixed_len_flag && mask_len < data_to_check.len))
             {
-                F_RING("Income pld length %d wrong, mask len %d", 
+                F_VERB("Match payload fails, got pld len %d, mask len %d", 
                         data_to_check.len, mask_len);
                 rc = ETADNOTMATCH;
             }
@@ -241,7 +241,9 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
                         break;
                     }
                 if (rc != 0)
-                    F_RING("pld byte [%d] is %x; dont match", i, (int)*d);
+                    F_VERB("Match payload fails, byte [%d] got %x;"
+                           " expected %x, mask %x",
+                           i, (int)*d, (int)(*pat), (int)(*mask));
             }
         }
 

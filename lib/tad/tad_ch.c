@@ -739,8 +739,8 @@ rcf_ch_trrecv_start(struct rcf_comm_connection *handle,
                         __FUNCTION__, csap, rc);
                 break;
             }
-            snprintf (label_buf, sizeof(label_buf), "pdus.%d.#%s", 
-                    level, csap_descr_p->proto[level]);
+            snprintf(label_buf, sizeof(label_buf), "pdus.%d.#%s", 
+                     level, csap_descr_p->proto[level]);
 
             rc = asn_write_component_value(pattern_unit, level_pdu, 
                                            label_buf);
