@@ -177,7 +177,7 @@ eth_frame_callback(const ndn_eth_header_plain *header,
 
     if (!plen_minimal && plen > 0)
     {
-        WARN("ARP frame has some data after ARP header, plen %d", plen);
+        INFO("ARP frame has some data after ARP header, plen %d", plen);
         if ((arp_frame.data = (uint8_t *)malloc(plen)) == NULL)
         {
             ERROR("Cannot allocate memory under ARP payload");
