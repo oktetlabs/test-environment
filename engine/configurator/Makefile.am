@@ -16,7 +16,7 @@ test_env_SOURCES = conf_env.c test_env.c
 te_cs_shutdown_SOURCES = conf_shutdown.c
 
 te_cs_LDADD = @TE_LDADD@ -lrcfapi  -lconf_types -lconf_oid -llogger_ten \
-              -lipcserver -lipc -lpthread
+              -lipcserver -lipc -lpthread -lpopt
 
 te_cs_shutdown_LDADD = @TE_LDADD@ -llogger_ten -lipc -lpthread
 

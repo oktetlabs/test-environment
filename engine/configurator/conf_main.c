@@ -28,6 +28,7 @@
  * $Id$
  */
 
+#include <popt.h>
 #include "conf_defs.h"
 
 #include <libxml/xinclude.h>
@@ -47,6 +48,12 @@ static char *filename;
 static te_bool cfg_shutdown = FALSE;
 static int cfg_fatal_err = 0;
 static struct ipc_server *server = NULL; /* IPC Server handle */
+static te_bool cs_print_tree = FALSE; /* For --cs-print-trees option */
+static te_bool cs_print_diff = FALSE; /* For --cs-print-diff option */
+enum {
+    CS_OPT_TREE,
+    CS_OPT_DIFF,
+};
 
 
 static void
@@ -638,7 +645,12 @@ process_backup(cfg_backup_msg *msg)
             if (msg->rc == 0)
                 cfg_dh_release_after(msg->filename);
             else
-                INFO("Backup diff: %tf", diff_file);
+            {
+                if (cs_print_diff)
+                    log_msg((cfg_msg *)msg, TRUE);
+                else
+                    INFO("Backup diff: %tf", diff_file);
+            }
             unlink(diff_file);            
             break;
         }
@@ -1110,6 +1122,68 @@ wait_shutdown()
     }
 }
 
+/**
+ * Process command line options and parameters specified in argv.
+ * The procedure contains "Option table" that should be updated 
+ * if some new options are going to be added.
+ *
+ * @param argc  Number of elements in array "argv".
+ * @param argv  Array of strings that represents all command line arguments
+ *
+ * @return EXIT_SUCCESS or EXIT_FAILURE
+ */
+static int
+process_cmd_line_opts(int argc, char **argv)
+{
+    poptContext  optCon;
+    int          rc;
+    
+    /* Option Table */
+    struct poptOption options_table[] = {
+        { "print-trees", '\0', POPT_ARG_NONE, NULL, CS_OPT_TREE + 1,
+          "Update expected testing results database.", NULL },
+
+        { "print-diff", '\0', POPT_ARG_NONE, NULL, CS_OPT_DIFF + 1,
+          "Initialize expected testing results database.", NULL },
+
+        POPT_AUTOHELP
+        
+        { NULL, 0, 0, NULL, 0, NULL, 0 },
+    };
+    
+    /* Process command line options */
+    optCon = poptGetContext(NULL, argc, (const char **)argv,
+                            options_table, 0);
+      
+    while ((rc = poptGetNextOpt(optCon)) >= 0)
+    {
+        switch (rc)
+        {
+            case (CS_OPT_TREE + 1):
+                cs_print_tree = TRUE;
+                break;
+
+            case (CS_OPT_DIFF + 1):
+                cs_print_diff = TRUE;
+                break;
+               
+            default:
+                ERROR("Unexpected option number %d", rc);
+                poptFreeContext(optCon);
+                return EXIT_FAILURE;
+        }
+    }
+    if (rc < -1)
+    {
+        /* An error occurred during option processing */
+        ERROR("%s: %s", poptBadOption(optCon, POPT_BADOPTION_NOALIAS),
+              poptStrerror(rc));
+        poptFreeContext(optCon);
+        return EXIT_FAILURE;
+    }
+    poptFreeContext(optCon);
+    return EXIT_SUCCESS;
+}
 
 /**
  * Main loop of the Configurator: initialization and processing user
@@ -1125,7 +1199,6 @@ int
 main(int argc, char **argv)
 {
     int rc = 1;
-    const char *tree_opt = "--cs-print-trees";
 
     ipc_init();
     if ((server = ipc_register_server(CONFIGURATOR_SERVER)) == NULL)
@@ -1133,7 +1206,7 @@ main(int argc, char **argv)
 
     VERB("Starting...");
 
-    if (argc < 2 || argc > 3)
+    if (argc < 2)
     {
         ERROR("Wrong arguments");
         rc = EINVAL;
@@ -1165,14 +1238,11 @@ main(int argc, char **argv)
     if ((rc = parse_config(argv[1], FALSE)) != 0)
         goto error;
     
-    if (argc > 2 && argv[2][0] != 0) 
+    if ((rc = process_cmd_line_opts(argc, argv)) != EXIT_SUCCESS)
+        goto error;
+     
+    if (cs_print_tree)
     {
-        if (strcmp(tree_opt, argv[2]) != 0)
-        {
-            ERROR("Invalid option provided: opt=%s", argv[2]);
-            rc = EINVAL;
-            goto error;
-        }
         print_otree(&cfg_obj_root, 0);
         print_tree(&cfg_inst_root, 0);
     }

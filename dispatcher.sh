@@ -31,6 +31,7 @@ usage()
     echo -e '  --conf-tester=<filename>'\\t'Tester config file (tester.conf by default)'
     echo
     echo -e '  --cs-print-trees'\\t\\t'Print configurator trees.'
+    echo -e '  --cs-print-diff'\\t\\t'Log will be performed using INFO log level unconditionally'
     echo
 #    echo -e '  '--storage='<string>'\\t\\tconfiguration string for the storage
 #    echo -e \\t\\t\\t\\twith data to be updated by Dispatcher
@@ -152,8 +153,8 @@ TESTS=
 # Configuration directory
 CONF_DIR=
 
-# Configurator option
-CFG_OPT=
+# Configurator options
+CS_OPTS=
 
 # Directory for raw log file
 TE_LOG_DIR=`pwd`
@@ -260,7 +261,7 @@ process_opts()
                 ;;
             --trc-*) TRC_OPTS="${TRC_OPTS} --${1#--trc-}" ;;
     
-            --cs-print-trees) CFG_OPT="--cs-print-trees" ;;
+            --cs-*) CS_OPTS="${CS_OPTS} --${1#--cs-}" ;;
 
             *)  echo "Unknown option: $1" >&2;
                 usage ;
@@ -524,9 +525,9 @@ if test -n "$CONFIGURATOR" ; then
     myecho "--->>> Start Configurator"
     if test -n "$VG_CS" ; then
         valgrind $VG_OPTIONS te_cs "${CONF_CONFIGURATOR}" \
-            "${CFG_OPT}" 2>valgrind.cs &
+            ${CS_OPTS} 2>valgrind.cs &
     else
-        te_cs "${CONF_CONFIGURATOR}" "${CFG_OPT}" &
+        te_cs "${CONF_CONFIGURATOR}" ${CS_OPTS} &
     fi
     CS_PID=$!
 fi
