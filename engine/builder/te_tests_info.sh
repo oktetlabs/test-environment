@@ -54,6 +54,7 @@ for i in `find $1 -name *.c` ; do
     OBJECTIVE=`echo $OBJECTIVE | sed -e "s/@a //g"`
     OBJECTIVE=`echo $OBJECTIVE | sed -e "s/@b //g"`
     OBJECTIVE=`echo $OBJECTIVE | sed -e "s/@c //g"`
+    OBJECTIVE=`echo $OBJECTIVE | sed -e "s/@e //g"`
     OBJECTIVE=`echo $OBJECTIVE | sed -e "s/@p //g"`
     if test -n "${OBJECTIVE}" ; then
         TEST_NAME=`basename $i`
