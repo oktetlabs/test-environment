@@ -26,7 +26,7 @@
  * $Id$
  */
 
-#define LGR_ENTITY "snmptest"
+#define TEST_NAME "snmp_gets"
 
 #include "config.h"
 
@@ -36,102 +36,97 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include "te_stdint.h"
+#include "tapi_test.h"
 #include "te_errno.h"
 #include "rcf_api.h"
+#include "logger_api.h"
+#include "tapi_snmp.h"
 
-
-DEFINE_LGR_ENTITY("snmptest");
-
-
-void
-snmp_pkt_handler(char *fn, void *p)
-{ 
-    char cmd[0x1000] = "cat ";
-    printf ("snmp pkt handler, file: %s\n", fn);
-    strcat (cmd, fn);
-    system(cmd); 
-}
 
 int
-main()
+main(int argc, char *argv[])
 {
-    char ta[32];
-    int  len = sizeof(ta);
-    int  sid;
-    
-    printf("Starting test\n");
-    if (rcf_get_ta_list(ta, &len) != 0)
-    {
-        printf("rcf_get_ta_list failed\n");
-        return 1;
-    }
-    printf("Agent: %s\n", ta);
-    
-    /* Type test */
-    {
-        char type[16];
-        if (rcf_ta_name2type(ta, type) != 0)
-        {
-            printf("rcf_ta_name2type failed\n");
-            return 1;
-        }
-        printf("TA type: %s\n", type); 
-    }
+    int snmp_csap = 0;
+    int sid;
+    int snmp_version;
+    const char *ta;
+    const char *mib_object;
+    const char *mib_name;
+    const char *snmp_agt;
+
+    TEST_START;
+    TEST_GET_STRING_PARAM(ta);
+    TEST_GET_STRING_PARAM(mib_object);
+    TEST_GET_STRING_PARAM(mib_name);
+    TEST_GET_STRING_PARAM(snmp_agt);
+    TEST_GET_INT_PARAM(snmp_version);
     
     /* Session */
     {
-        if (rcf_ta_create_session(ta, &sid) != 0)
+        if ((rc = rcf_ta_create_session(ta, &sid)) != 0)
         {
-            printf("rcf_ta_create_session failed\n");
-            return 1;
+            TEST_FAIL("Session create error %X", rc);
         }
-        printf("Test: Created session: %d\n", sid); 
+        VERB("Session created %d", sid);
     }
 
-    /* CSAP tests */
     do {
-        char path[1000];
-        int  path_prefix;
-
-        char val[64];
-        int handle = 20;
-        int num;
+        tapi_snmp_varbind_t vb;
+        tapi_snmp_oid_t oid;
         int timeout = 30;
-        int rc;
-        char *te_suites = getenv("TE_INSTALL_SUITE");
+        int value;
 
-        if (te_suites)
-            printf ("te_suites: %s\n", te_suites);
-        else 
-            break;
+        rc = tapi_snmp_csap_create(ta, sid, snmp_agt, "public", 
+                                   snmp_version, &snmp_csap); 
+        if (rc) 
+            TEST_FAIL("Csap create error %X", rc);
+        VERB("New csap %d", snmp_csap); 
 
-        strcpy (path, te_suites);
-        strcat (path, "/selftest/snmp_nds/");
-        path_prefix = strlen(path);
+        
+        if ((rc = tapi_snmp_load_mib_with_path("/usr/share/snmp/mibs", 
+                                                mib_name)) != 0)
+        {
+            TEST_FAIL("snmp_load_mib(%s) failed, rc %x\n", mib_name, rc);
+            return rc;
+        }
 
-        strcat (path, "local-csap.asn"); 
-        rc =   rcf_ta_csap_create(ta, sid, "snmp", path, &handle);
-        printf("csap_create rc: %d\n", rc);
+        if ((rc = tapi_snmp_make_oid(mib_object, &oid)) != 0)
+        {
+            TEST_FAIL("tapi_snmp_make_oid() failed, rc %x\n", rc);
+	    return rc;
+	}
 
-        if (rc) break;
+        rc = tapi_snmp_get(ta, sid, snmp_csap, &oid, TAPI_SNMP_NEXT, &vb);
+        if (rc)
+            TEST_FAIL("SNMP GET NEXT failed with rc %X", rc);
 
-        strcpy(path + path_prefix, "local-sd-get.asn");
-        printf ("send template full path: %s\n", path);
-
-        rc = rcf_ta_trsend_recv(ta, sid, handle, path, snmp_pkt_handler, NULL,
-                                  &timeout, &num);
-        printf("trsend_recv: 0x%x, timeout: %d, num: %d\n", 
-                    rc, timeout, num);
-        if (rc) break;
+        INFO("getnext for object %s got oid %s", mib_object, print_oid(&oid));
 
 
-        printf("try to destroy\n"); 
+        oid = vb.name;
+        rc = tapi_snmp_get(ta, sid, snmp_csap, &oid, TAPI_SNMP_EXACT, &vb);
+        if (rc)
+            TEST_FAIL("SNMP GET failed with rc %X", rc);
 
-        printf("csap_destroy: %d\n", 
-               rcf_ta_csap_destroy(ta, sid, handle)); 
+        INFO("get for object %s got oid %s", mib_object, print_oid(&oid));
+
+        oid.length = 1;
+        oid.id[0] = 0; 
+        value = 0;
+        rc = tapi_snmp_get_row(ta, sid, snmp_csap, &oid, "ifNumber", &value, NULL);
+        if (rc)
+            TEST_FAIL("SNMP get_row method failed with rc %X", rc);
+
+        INFO("get row for ifNumber got value %d", value);
+
+
+
+        rcf_ta_csap_destroy(ta, sid, snmp_csap); 
 
     } while(0);
 
-    return 0;
+    TEST_SUCCESS;
+
+cleanup:
+    TEST_END;
 }

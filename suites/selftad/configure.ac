@@ -1,7 +1,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.53)
-AC_INIT([tests], 0.1, Konstantin.Abramenko@oktetlabs.ru)
+AC_INIT([selftad], 0.1, Konstantin.Abramenko@oktetlabs.ru)
 
 AC_CONFIG_SRCDIR([configure.ac])
 
