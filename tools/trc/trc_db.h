@@ -163,6 +163,8 @@ extern trc_database trc_db;
 extern te_bool trc_update_db;
 /** Should database be initialized from scratch */
 extern te_bool trc_init_db;
+/** Name of the tag to get specific expected result */
+extern char *trc_tag;
 
 
 /**

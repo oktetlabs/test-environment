@@ -190,6 +190,42 @@ get_test_args(xmlNodePtr *node, test_args *args)
     return rc;
 }
 
+/**
+ * Get the result.
+ *
+ * @param node      XML node
+ * @param name      Name of XML property to get.
+ * @param result    Location for got result
+ *
+ * @return Status code.
+ */
+static int
+get_result(xmlNodePtr node, const char *name, trc_test_result *result)
+{
+    char *tmp;
+
+    tmp = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML(name)));
+    if (tmp == NULL)
+        return ENOENT;
+    INFO("Expected result is '%s'", tmp);
+    if (strcmp(tmp, "PASSED") == 0)
+        *result = TRC_TEST_PASSED;
+    else if (strcmp(tmp, "FAILED") == 0)
+        *result = TRC_TEST_FAILED;
+    else if (strcmp(tmp, "SKIPPED") == 0)
+        *result = TRC_TEST_SKIPPED;
+    else if (strcmp(tmp, "UNSPEC") == 0)
+        *result = TRC_TEST_UNSPEC;
+    else
+    {
+        ERROR("Unknown result '%s' of the test iteration", tmp);
+        free(tmp);
+        return EINVAL;
+    }
+    free(tmp);
+
+    return 0;
+}
 
 /**
  * Allocate and get test iteration.
@@ -219,29 +255,17 @@ alloc_and_get_test_iter(xmlNodePtr node, trc_test_type type, test_iters *iters)
     TAILQ_INIT(&p->args.head);
     TAILQ_INIT(&p->tests.head);
     TAILQ_INSERT_TAIL(&iters->head, p, links);
-
-    tmp = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("result")));
-    if (tmp == NULL)
+    
+    if ((trc_tag == NULL) ||
+        ((rc = get_result(node, trc_tag, &p->exp_result)) == ENOENT))
     {
-        ERROR("Expected result of the test iteration is missing");
-        return EINVAL;
+        rc = get_result(node, "result", &p->exp_result);
     }
-    INFO("Expected result is '%s'", tmp);
-    if (strcmp(tmp, "PASSED") == 0)
-        p->exp_result = TRC_TEST_PASSED;
-    else if (strcmp(tmp, "FAILED") == 0)
-        p->exp_result = TRC_TEST_FAILED;
-    else if (strcmp(tmp, "SKIPPED") == 0)
-        p->exp_result = TRC_TEST_SKIPPED;
-    else if (strcmp(tmp, "UNSPEC") == 0)
-        p->exp_result = TRC_TEST_UNSPEC;
-    else
+    if (rc != 0)
     {
-        ERROR("Unknown result '%s' of the test iteration", tmp);
-        free(tmp);
-        return EINVAL;
+        ERROR("Expected result of the test iteration is missing/invalid");
+        return rc;
     }
-    free(tmp);
 
     tmp = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("n")));
     if (tmp != NULL)

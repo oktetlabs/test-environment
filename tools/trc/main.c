@@ -52,6 +52,8 @@
 te_bool trc_update_db = FALSE;
 /** Should database be initialized from scratch */
 te_bool trc_init_db = FALSE;
+/** Name of the tag to get specific expected result */
+char *trc_tag = NULL;
 
 te_bool trc_quiet = FALSE;
 
@@ -74,6 +76,7 @@ enum {
     TRC_OPT_DB,
     TRC_OPT_HTML,
     TRC_OPT_TXT,
+    TRC_OPT_TAG,
 };
 
 /**
@@ -113,6 +116,10 @@ process_cmd_line_opts(int argc, char **argv)
         { "txt", 't', POPT_ARG_STRING, NULL, TRC_OPT_TXT,
           "Specify name of the file to report in text format.",
           "FILENAME" },
+
+        { "tag", 'T', POPT_ARG_STRING, NULL, TRC_OPT_TAG,
+          "Name of the tag to get specific expected result.",
+          "TAG" },
 
         { "version", '\0', POPT_ARG_NONE, NULL, TRC_OPT_VERSION, 
           "Display version information.", NULL },
@@ -154,6 +161,10 @@ process_cmd_line_opts(int argc, char **argv)
             
             case TRC_OPT_TXT:
                 trc_txt_fn = strdup(poptGetOptArg(optCon));
+                break;
+            
+            case TRC_OPT_TAG:
+                trc_tag = strdup(poptGetOptArg(optCon));
                 break;
             
             case TRC_OPT_VERSION:
