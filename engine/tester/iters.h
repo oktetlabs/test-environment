@@ -43,11 +43,10 @@
 /** Test parameters iteration entry */
 typedef struct test_param_iteration {
     TAILQ_ENTRY(test_param_iteration)   links;  /**< List links */
-    test_params                         params; /**< List of parameters */
-    const struct test_params           *base;   /**< Base parameters */
-    te_bool                             reqs;   /**< Do parameters have
-                                                     associated
-                                                     requirements? */
+    test_params                 params;     /**< List of parameters */
+    const struct test_params   *base;       /**< Base parameters */
+    te_bool                     has_reqs;   /**< Do parameters have
+                                                 associated requirements? */
 } test_param_iteration;
 
 /** List of test parameters iterations */

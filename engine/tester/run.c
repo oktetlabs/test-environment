@@ -409,7 +409,7 @@ vars_args_iterations(test_vars_args        *vas,
                     EXIT("ENOMEM");
                     return ENOMEM;
                 }
-                i->reqs = (i->reqs || (tp->reqs != NULL));
+                i->has_reqs = (i->has_reqs || (tp->reqs != NULL));
                 /* Update current iteration */
                 test_params_add(&i->params, tp);
                 
