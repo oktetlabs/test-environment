@@ -644,6 +644,7 @@ fi
 if test -n "${CONF_RGT}" ; then
     CONF_RGT="-c ${CONF_RGT}"
 fi
+# Generate XML log do not taking into account control messages
 rgt-conv -m postponed ${CONF_RGT} -f ${TE_LOG_DIR}/tmp_raw_log \
                                   -o ${TE_LOG_DIR}/tmp_raw_log.xml
 if test $? -eq 0 ; then
@@ -656,6 +657,7 @@ if test $? -eq 0 ; then
                      -o ${TE_LOG_DIR}/${RGT_LOG_HTML_PLAIN}
     fi
 fi
+# Generate XML log taking into account control messages
 rgt-conv --no-cntrl-msg ${CONF_RGT} -f ${TE_LOG_DIR}/tmp_raw_log \
                                     -o ${TE_LOG_DIR}/tmp_raw_log2.xml
 if test $? -eq 0 ; then
