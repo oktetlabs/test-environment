@@ -887,7 +887,7 @@ rcf_ch_csap_param(struct rcf_comm_connection *handle,
     {
         VERB("CSAP get_param, get total bytes %d\n", 
                             csap_descr_p->total_bytes);
-        SEND_ANSWER("0 %zu", csap_descr_p->total_bytes);
+        SEND_ANSWER("0 %u", csap_descr_p->total_bytes);
     }
     else if (strcmp(param, CSAP_PARAM_FIRST_PACKET_TIME) == 0)
     {
