@@ -1577,7 +1577,8 @@ iterate_test(tester_ctx *ctx, run_item *test,
 {
     te_bool                 ctx_cloned = FALSE;
     int                     rc;
-    int                     result = ETESTPASS;
+    int                     test_result = ETESTPASS;
+    int                     all_result = ETESTPASS;
     test_param_iterations   aux_base_iters;
     test_param_iterations   iters;
     test_param_iteration   *i;
@@ -1710,7 +1711,7 @@ iterate_test(tester_ctx *ctx, run_item *test,
             if (test_ctx == NULL)
             {
                 ERROR("%s(): tester_ctx_clone() failed", __FUNCTION__);
-                result = ENOMEM;
+                all_result = ENOMEM;
                 break;
             }
             test_ctx_cloned = TRUE;
@@ -1728,7 +1729,7 @@ iterate_test(tester_ctx *ctx, run_item *test,
                 {
                     ERROR("%s(): tester_run_path_params_forward() failed",
                           __FUNCTION__);
-                    result = rc;
+                    all_result = rc;
                     break;
                 }
             }
@@ -1739,15 +1740,10 @@ iterate_test(tester_ctx *ctx, run_item *test,
         log_test_start(test, test_ctx->id, id, &(i->params));
 
         /* Run test with specified parameters */
-        rc = run_test(test_ctx, test, id, &(i->params));
-        if (!TEST_RESULT(rc))
+        test_result = run_test(test_ctx, test, id, &(i->params));
+        if (!TEST_RESULT(test_result))
         {
             ERROR("run_test() failed: %X", rc);
-            result = rc;
-        }
-        else if (result < rc)
-        {
-            result = rc;
         }
 
         if (test->attrs.track_conf)
@@ -1762,32 +1758,40 @@ iterate_test(tester_ctx *ctx, run_item *test,
                 if (rc != 0)
                 {
                     ERROR("Cannot restore configuration backup: %X", rc);
-                    if (TEST_RESULT(result))
-                        result = rc;
+                    if (TEST_RESULT(test_result))
+                        test_result = rc;
                 }
                 else
                 {
                     INFO("Configuration successfully restored using backup");
-                    RC_UPDATE(result, ETESTCONF);
+                    RC_UPDATE(test_result, ETESTCONF);
                 }
             }
             else if (rc != 0)
             {
                 ERROR("Cannot verify configuration backup: %X", rc);
-                if (TEST_RESULT(result))
-                    result = rc;
+                if (TEST_RESULT(test_result))
+                    test_result = rc;
             }
         }
         
-        log_test_result(test_ctx->id, id, result);
+        log_test_result(test_ctx->id, id, test_result);
         tester_out_done(test->type, tester_run_item_name(test),
-                        test_ctx->id, id, test_ctx->flags, result);
+                        test_ctx->id, id, test_ctx->flags, test_result);
 
         if (test_ctx_cloned)
             tester_ctx_free(test_ctx);
-
-        if (!TEST_RESULT(result))
+        
+        /* Update result of all iterations */
+        if (!TEST_RESULT(test_result))
+        {
+            all_result = test_result;
             break;
+        }
+        else if (all_result < test_result)
+        {
+            all_result = test_result;
+        }
     }
 
     free(backup_name);
@@ -1796,7 +1800,7 @@ iterate_test(tester_ctx *ctx, run_item *test,
     if (ctx_cloned)
         tester_ctx_free(ctx);
 
-    return result;
+    return all_result;
 }
 
 
