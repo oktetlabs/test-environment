@@ -424,12 +424,17 @@
          Name:  empty
          Value: 0 (disabled) or 1 (enabled)
          Limit: 1 -->
+
     <object oid="/agent/ftpserver" access="read_write" type="integer"/>
     <!-- FTP server standalone or via inetd
          Name:  empty
-         Value: 0 (inetd) or 1 (standalone)
+         Value: name of server we are testing:
+                vsftpd
+                xinetd_vsftpd
+                proftpd
+                wuftpd
          Limit: 1 -->
-    <object oid="/agent/ftpserver/standalone" access="read_write" type="integer"/>
+    <object oid="/agent/ftpserver/server" access="read_write" type="string"/>
 
 
     <!-- SSH daemon.

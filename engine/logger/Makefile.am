@@ -8,7 +8,7 @@ AM_CFLAGS = @XML2_CFLAGS@
 AM_LDFLAGS = @TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/lib 
 
 
-bin_PROGRAMS = te_logger te_log_shutdown te_log_flush
+bin_PROGRAMS = te_logger te_log_shutdown te_log_flush te_tee
 
 noinst_HEADERS = logger_internal.h
 
@@ -34,6 +34,13 @@ te_log_flush_DEPENDENCIES = @TE_DEPENDENCIES@ \
                             $(DESTDIR)/$(prefix)/lib/libipc.a \
                             $(DESTDIR)/$(prefix)/lib/liblogger_ten.a \
                             $(DESTDIR)/$(prefix)/lib/librcfapi.a
+
+
+te_tee_SOURCES=te_tee.c
+te_tee_LDADD=-llogger_ten -lipc @TE_LDADD@ -lpthread
+te_tee_DEPENDENCIES=@TE_DEPENDENCIES@ \
+                    $(DESTDIR)/$(prefix)/lib/liblogger_ten.a \
+                    $(DESTDIR)/$(prefix)/lib/libipc.a
 
 
 mybindir=$(prefix)/bin

@@ -69,6 +69,9 @@ sys/time.h \
 pthread.h \
 netinet/in.h \
 signal.h \
+sys/poll.h \
+poll.h \
+fcntl.h \
 ])
 
 AC_CONFIG_FILES([Makefile])
