@@ -136,10 +136,11 @@
                         </documentation>
                     </annotation>
                 </attribute>
-                <attribute name="req" type="Name">
+                <attribute name="reqs" type="Name">
                     <annotation>
                         <documentation>
-                            Requirement ID associated with this value.
+                            Comman separated list of requirement IDs
+                            associated with this value.
                         </documentation>
                     <annotation>
                 </attribute>
