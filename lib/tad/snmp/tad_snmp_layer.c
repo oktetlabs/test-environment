@@ -394,7 +394,6 @@ int snmp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
         for (i = 0; i < pat_vb_num; i++)
         { 
             const asn_value *pat_var_bind;
-            const asn_value *pat_var_bind_value;
             const oid       *pat_oid;
             const uint8_t   *pat_vb_val_data;
             size_t           pat_oid_len;
@@ -407,7 +406,8 @@ int snmp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
                 break;
             } 
 
-            rc = asn_get_field_data(pat_var_bind, (const uint8_t *)&pat_oid,
+            rc = asn_get_field_data(pat_var_bind, 
+                                    (const uint8_t **)&pat_oid,
                                     "name.#plain");
             if (rc == EASNINCOMPLVAL)
             {
@@ -501,7 +501,7 @@ int snmp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
                     }
                     break;
 
-                default:
+                default:;
             }
         }
 
