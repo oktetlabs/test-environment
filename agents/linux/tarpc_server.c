@@ -3784,6 +3784,7 @@ aio_write_test(tarpc_aio_write_test_in *in, tarpc_aio_write_test_out *out)
         return -1;
     }
 
+    memset(&cb, 0, sizeof(cb));
     cb.aio_fildes = in->s;
     cb.aio_buf = in->buf.buf_val;
     cb.aio_nbytes = in->buf.buf_len;
@@ -3792,7 +3793,7 @@ aio_write_test(tarpc_aio_write_test_in *in, tarpc_aio_write_test_out *out)
 
     if (aio_write_func((int)&cb) < 0)
     {
-        DIAG("aio_write() failed");
+        DIAG("aio_write() failed: %s", strerror(errno));
         return -1;
     }
 
