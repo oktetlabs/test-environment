@@ -62,6 +62,7 @@ pwd.h \
 regex.h \
 rpc/pmap_clnt.h \
 semaphore.h \
+setjmp.h \
 signal.h \
 stdarg.h \
 stdint.h \
