@@ -1215,18 +1215,20 @@ tapi_cfg_add_ip4_net(struct sockaddr_in *ip4_net_addr, int prefix,
     {
         cfg_val_type        val_type;
         char               *net_oid;
+        struct sockaddr    *sa;
         struct sockaddr_in *net_addr;
         int                 net_prefix;
         struct in_addr      net_mask;
 
         rc = cfg_get_inst_name_type(net, CVT_ADDRESS, 
-                                    (cfg_inst_val *)&net_addr);
+                                    (cfg_inst_val *)&sa);
         if (rc != 0)
         {
             ERROR("%s: Cannot get pool net name by handle 0x%x "
                   "as address: %X", __FUNCTION__, net, rc);
             return rc;
         }
+        net_addr = SIN(sa);
         rc = cfg_get_oid_str(net, &net_oid);
         if (rc != 0)
         {
