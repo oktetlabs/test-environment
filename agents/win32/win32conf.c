@@ -210,6 +210,48 @@ static MIB_IFROW if_entry;
 
 #define RETURN_BUF
 
+/** 
+ * Allocate memory and get some SNMP-like table; variable table of the
+ * type _type should be defined.
+ */
+#define GET_TABLE(_type, _func) \
+    do {                                                                \
+        DWORD size = 0, rc;                                             \
+                                                                        \
+        if ((table = (_type *)malloc(sizeof(_type))) == NULL)           \
+            return TE_RC(TE_TA_WIN32, ENOMEM);                          \
+                                                                        \
+        if ((rc = _func(table, &size, 0)) == ERROR_INSUFFICIENT_BUFFER) \
+        {                                                               \
+            table = (_type *)realloc(table, size);                      \
+        }                                                               \
+        else if (rc == NO_ERROR)                                        \
+        {                                                               \
+            free(table);                                                \
+            table = NULL;                                               \
+        }                                                               \
+        else                                                            \
+        {                                                               \
+            ERROR("%s failed, error %x", #_func, GetLastError());       \
+            free(table);                                                \
+            return TE_RC(TE_TA_WIN32, ETEWIN);                          \
+        }                                                               \
+                                                                        \
+        if (_func(table, &size, 0) != NO_ERROR)                         \
+        {                                                               \
+            ERROR("%s failed, error %x", #_func, GetLastError());       \
+            free(table);                                                \
+            return TE_RC(TE_TA_WIN32, ETEWIN);                          \
+        }                                                               \
+                                                                        \
+        if (table->dwNumEntries == 0)                                   \
+        {                                                               \
+            free(table);                                                \
+            table = NULL;                                               \
+        }                                                               \
+    } while (0)
+   
+
 /**
  * Get root of the tree of supported objects.
  *
@@ -254,48 +296,21 @@ static int
 interface_list(unsigned int gid, const char *oid, char **list)
 {
     MIB_IFTABLE *table;
-    
-    DWORD size = 0, rc;
-    char *s = buf;
-    int   i;
+    char        *s = buf;
+    int          i;
 
     UNUSED(gid);
     UNUSED(oid);
-
-    if ((table = (MIB_IFTABLE *)malloc(sizeof(MIB_IFTABLE))) == NULL)
-        return TE_RC(TE_TA_WIN32, ENOMEM);
-
-    if ((rc = GetIfTable(table, &size, 0)) == ERROR_INSUFFICIENT_BUFFER) 
+    
+    GET_TABLE(MIB_IFTABLE, GetIfTable);
+    if (table == NULL)
     {
-        table = (MIB_IFTABLE *)realloc(table, size);
-    }
-    else if (rc == NO_ERROR)
-    {
-        free(table);
         if ((*list = strdup(" ")) == NULL)
             return TE_RC(TE_TA_WIN32, ENOMEM);
         else
             return 0;
     }
-    else
-    {
-        ERROR("GetIfTable() failed, error %x", GetLastError());
-        free(table);
-        return TE_RC(TE_TA_WIN32, ETEWIN);
-    }
-    
-    if (GetIfTable(table, &size, 0) != NO_ERROR) 
-    {
-        ERROR("GetIfTable() failed, error %x", GetLastError());
-        free(table);
-        return TE_RC(TE_TA_WIN32, ETEWIN);
-    }
-    
-    if (table->dwNumEntries == 0)
-    {
-        ERROR("GetIfTable() returned");
-    }
-    
+
     buf[0] = 0;
     
     for (i = 0; i < (int)table->dwNumEntries; i++)
@@ -335,7 +350,7 @@ ifindex_get(unsigned int gid, const char *oid, char *value,
 
 typedef struct added_ip_addr {
     struct added_ip_addr *next;
-    struct in_addr        addr;
+    DWORD                 addr;
     uint32_t              ifindex;
     ULONG                 nte_context;
 } added_ip_addr;
@@ -343,48 +358,32 @@ typedef struct added_ip_addr {
 static added_ip_addr *list = NULL;
 
 /** Check, if IP address exist for the current if_entry */
-static te_bool
-ip_addr_exist(struct in_addr addr, MIB_IPADDRROW *data)
+static int
+ip_addr_exist(DWORD addr, MIB_IPADDRROW *data)
 {
     MIB_IPADDRTABLE *table;
-    DWORD            size = 0, rc;
     int              i;
     
-    if ((table = (MIB_IPADDRTABLE *)malloc(sizeof(MIB_IPADDRTABLE))) == NULL)
-        return FALSE;
+    GET_TABLE(MIB_IPADDRTABLE, GetIpAddrTable);
+    
+    if (table == NULL)
+        return TE_RC(TE_TA_WIN32, ENOENT);
 
-    if ((rc = GetIpAddrTable(table, &size, 0)) == ERROR_INSUFFICIENT_BUFFER) 
-        table = (MIB_IPADDRTABLE *)realloc(table, size);
-    else
-    {
-        if (rc != NO_ERROR)
-            ERROR("GetIpAddrTable() failed, error %x", GetLastError());
-        free(table);
-        return FALSE;
-    }
-    
-    if (GetIpAddrTable(table, &size, 0) != NO_ERROR) 
-    {
-        ERROR("GetIpAddrTable() failed, error %x", GetLastError());
-        free(table);
-        return FALSE;
-    }
-    
     for (i = 0; i < (int)table->dwNumEntries; i++)
     {
         if (table->table[i].dwIndex == if_entry.dwIndex &&
-            table->table[i].dwAddr == addr.s_addr)
+            table->table[i].dwAddr == addr)
         {
             if (data != NULL)
                 *data = table->table[i];
             free(table);
-            return TRUE;
+            return 0;
         }
     }
 
     free(table);
 
-    return FALSE;
+    return TE_RC(TE_TA_WIN32, ENOENT);
 }
 
 /**
@@ -402,7 +401,7 @@ static int
 net_addr_add(unsigned int gid, const char *oid, const char *value,
              const char *ifname, const char *addr)
 {
-    struct in_addr a, m;
+    DWORD a, m;
 
     ULONG nte_context;
     ULONG nte_instance;
@@ -413,14 +412,12 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
     UNUSED(oid);
     UNUSED(value);
     
-    if ((a.s_addr = inet_addr(addr)) == 0 || 
-        (a.s_addr & 0xe0000000) == 0xe0000000)
-    {
+    if ((a = inet_addr(addr)) == 0 || (a & 0xe0000000) == 0xe0000000)
         return TE_RC(TE_TA_WIN32, EINVAL);
-    }
-    m.s_addr = (a.s_addr & htonl(0x80000000)) == 0 ? htonl(0xFF000000) :
-               (a.s_addr & htonl(0xC0000000)) == htonl(0x80000000) ? 
-               htonl(0xFFFF0000) : htonl(0xFFFFFF00);
+
+    m = (a & htonl(0x80000000)) == 0 ? htonl(0xFF000000) :
+        (a & htonl(0xC0000000)) == htonl(0x80000000) ? 
+        htonl(0xFFFF0000) : htonl(0xFFFFFF00);
     
     GET_IF_ENTRY;
     
@@ -462,24 +459,27 @@ net_addr_del(unsigned int gid, const char *oid,
 {
     added_ip_addr *cur, *prev;
     
-    struct in_addr a;
+    DWORD a;
 
     UNUSED(gid);
     UNUSED(oid);
     
-    if ((a.s_addr = inet_addr(addr)) == 0)
+    if ((a = inet_addr(addr)) == 0)
         return TE_RC(TE_TA_WIN32, EINVAL);
     
     GET_IF_ENTRY;
 
     for (prev = NULL, cur = list; 
          cur != NULL && 
-         !(cur->addr.s_addr == a.s_addr && cur->ifindex == if_entry.dwIndex);
+         !(cur->addr == a && cur->ifindex == if_entry.dwIndex);
          prev = cur, cur = cur->next);
          
     if (cur == NULL)
-        return ip_addr_exist(a, NULL) ? TE_RC(TE_TA_WIN32, EPERM) :
-                                        TE_RC(TE_TA_WIN32, ENOENT);
+    {
+        int rc = ip_addr_exist(a, NULL);
+        
+        return rc == 0 ? TE_RC(TE_TA_WIN32, EPERM) : rc;
+    }
                                   
     if (DeleteIPAddress(cur->nte_context) != NO_ERROR)
     {
@@ -513,41 +513,19 @@ net_addr_list(unsigned int gid, const char *oid, char **list,
               const char *ifname)
 {
     MIB_IPADDRTABLE *table;
-    DWORD            size = 0, rc;
     int              i;
-    struct in_addr   addr;
     
     UNUSED(gid);
     UNUSED(oid);
     
     GET_IF_ENTRY;
-
-    if ((table = (MIB_IPADDRTABLE *)malloc(sizeof(MIB_IPADDRTABLE))) == NULL)
-        return TE_RC(TE_TA_WIN32, ENOMEM);
-
-    if ((rc = GetIpAddrTable(table, &size, 0)) == ERROR_INSUFFICIENT_BUFFER) 
+    GET_TABLE(MIB_IPADDRTABLE, GetIpAddrTable);
+    if (table == NULL)
     {
-        table = (MIB_IPADDRTABLE *)realloc(table, size);
-    }
-    else if (rc == NO_ERROR)
-    {
-        free(table);
         if ((*list = strdup(" ")) == NULL)
             return TE_RC(TE_TA_WIN32, ENOMEM);
         else
             return 0;
-    }
-    else
-    {
-        ERROR("GetIpAddrTable() failed, error %x", GetLastError());
-        free(table);
-        return TE_RC(TE_TA_WIN32, ETEWIN);
-    }
-    
-    if (GetIpAddrTable(table, &size, 0) != NO_ERROR) 
-    {
-        ERROR("GetIpAddrTable() failed, error %x", GetLastError());
-        return TE_RC(TE_TA_WIN32, ETEWIN);
     }
     
     buf[0] = 0;
@@ -556,10 +534,9 @@ net_addr_list(unsigned int gid, const char *oid, char **list,
     {
         if (table->table[i].dwIndex != if_entry.dwIndex)
             continue;
-            
-        addr.s_addr = table->table[i].dwAddr;
         
-        sprintf("%s ", inet_ntoa(addr));
+        sprintf("%s ", 
+                inet_ntoa(*(struct in_addr *)&(table->table[i].dwAddr)));
     }
 
     free(table);
@@ -586,18 +563,19 @@ netmask_get(unsigned int gid, const char *oid, char *value,
             const char *ifname, const char *addr)
 {
     MIB_IPADDRROW data;
-    struct in_addr a;
+    DWORD         a;
+    int           rc;
 
     UNUSED(gid);
     UNUSED(oid);
     
-    if ((a.s_addr = inet_addr(addr)) == 0)
+    if ((a = inet_addr(addr)) == 0)
         return TE_RC(TE_TA_WIN32, EINVAL);
     
     GET_IF_ENTRY;
     
-    if (!ip_addr_exist(a, &data))
-        return TE_RC(TE_TA_WIN32, ENOENT);
+    if ((rc = ip_addr_exist(a, &data)) != 0)
+        return rc;
     
     snprintf(value, RCF_MAX_VAL, "%s", 
             inet_ntoa(*(struct in_addr *)&(data.dwMask)));
@@ -620,20 +598,20 @@ netmask_set(unsigned int gid, const char *oid, const char *value,
             const char *ifname, const char *addr)
 {
     added_ip_addr *cur;
-    struct in_addr a, m;
+    DWORD          a, m;
     uint8_t        prefix;
     ULONG          nte_instance;
 
     UNUSED(gid);
     UNUSED(oid);
     
-    if ((a.s_addr = inet_addr(addr)) == 0)
+    if ((a = inet_addr(addr)) == 0)
         return TE_RC(TE_TA_WIN32, EINVAL);
 
-    if ((m.s_addr = inet_addr(value)) == 0)
+    if ((m = inet_addr(value)) == 0)
         return TE_RC(TE_TA_WIN32, EINVAL);
 
-    MASK2PREFIX(ntohl(m.s_addr), prefix);
+    MASK2PREFIX(ntohl(m), prefix);
     if (prefix > 32)
         return TE_RC(TE_TA_WIN32, EINVAL);
 
@@ -641,12 +619,15 @@ netmask_set(unsigned int gid, const char *oid, const char *value,
     
     for (cur = list; 
          cur != NULL && 
-         !(cur->addr.s_addr == a.s_addr && cur->ifindex == if_entry.dwIndex);
+         !(cur->addr == a && cur->ifindex == if_entry.dwIndex);
          cur = cur->next);
          
     if (cur == NULL)
-        return ip_addr_exist(a, NULL) ? TE_RC(TE_TA_WIN32, EPERM) :
-                                        TE_RC(TE_TA_WIN32, ENOENT);
+    {
+        int rc = ip_addr_exist(a, NULL);
+        
+        return rc == 0 ? TE_RC(TE_TA_WIN32, EPERM) : rc;
+    }
                                   
     if (DeleteIPAddress(cur->nte_context) != NO_ERROR)
     {
@@ -789,7 +770,6 @@ arp_get(unsigned int gid, const char *oid, char *value,
         const char *addr)
 {
     MIB_IPNETTABLE *table;
-    DWORD           size = 0, rc;
     DWORD           a;
     int             i;
 
@@ -798,31 +778,10 @@ arp_get(unsigned int gid, const char *oid, char *value,
     
     if ((a = inet_addr(addr)) == 0)
         return TE_RC(TE_TA_WIN32, EINVAL);
-    
-    if ((table = (MIB_IPNETTABLE *)malloc(sizeof(MIB_IPNETTABLE))) == NULL)
-        return TE_RC(TE_TA_WIN32, ENOMEM);
-
-    if ((rc = GetIpNetTable(table, &size, 0)) == ERROR_INSUFFICIENT_BUFFER) 
-    {
-        table = (MIB_IPNETTABLE *)realloc(table, size);
-    }
-    else if (rc == NO_ERROR)
-    {
-        free(table);
+        
+    GET_TABLE(MIB_IPNETTABLE, GetIpNetTable);
+    if (table == NULL)
         return TE_RC(TE_TA_WIN32, ENOENT);
-    }
-    else
-    {
-        free(table);
-        ERROR("GetIpNetTable() failed, error %x", GetLastError());
-        return TE_RC(TE_TA_WIN32, ETEWIN);
-    }
-    
-    if (GetIpNetTable(table, &size, NO_ERROR) != NO_ERROR) 
-    {
-        ERROR("GetIpNetTable() failed, error %x", GetLastError());
-        return TE_RC(TE_TA_WIN32, ETEWIN);
-    }
     
     buf[0] = 0;
     
@@ -855,34 +814,11 @@ static int
 find_ifindex(DWORD addr, DWORD *ifindex)
 {
     MIB_IPADDRTABLE *table;
-    DWORD            size = 0;
     int              i;
-    int              rc;
-
-    if ((table = (MIB_IPADDRTABLE *)malloc(sizeof(MIB_IPADDRTABLE))) == NULL)
-        return TE_RC(TE_TA_WIN32, ENOMEM);
-
-    if ((rc = GetIpAddrTable(table, &size, 0)) == ERROR_INSUFFICIENT_BUFFER) 
-    {
-        table = (MIB_IPADDRTABLE *)realloc(table, size);
-    }
-    else if (rc == NO_ERROR)
-    {
-        free(table);
+    
+    GET_TABLE(MIB_IPADDRTABLE, GetIpAddrTable);
+    if (table == NULL)
         return TE_RC(TE_TA_WIN32, ENOENT);
-    }
-    else
-    {
-        free(table);
-        ERROR("GetIpAddrTable() failed, error %x", GetLastError());
-        return TE_RC(TE_TA_WIN32, ETEWIN);
-    }
-
-    if (GetIpAddrTable(table, &size, 0) != NO_ERROR) 
-    {
-        ERROR("GetIpAddrTable() failed, error %x", GetLastError());
-        return TE_RC(TE_TA_WIN32, ETEWIN);
-    }
     
     for (i = 0; i < (int)table->dwNumEntries; i++)
     {
@@ -913,41 +849,19 @@ arp_set(unsigned int gid, const char *oid, const char *value,
         const char *addr)
 {
     MIB_IPNETTABLE *table;
-    DWORD            size = 0, rc;
-    int              i, k, res;
-    DWORD            a;
-    int              int_mac[6];
+    int             i, k, res;
+    DWORD           a;
+    int             int_mac[6];
     
     UNUSED(gid);
     UNUSED(oid);
 
     if ((a = inet_addr(addr)) == 0)
         return TE_RC(TE_TA_WIN32, EINVAL);
-    
-    if ((table = (MIB_IPNETTABLE *)malloc(sizeof(MIB_IPNETTABLE))) == NULL)
-        return TE_RC(TE_TA_WIN32, ENOMEM);
-
-    if ((rc = GetIpNetTable(table, &size, 0)) == ERROR_INSUFFICIENT_BUFFER) 
-    {
-        table = (MIB_IPNETTABLE *)realloc(table, size);
-    }
-    else if (rc == NO_ERROR)
-    {
-        free(table);
+        
+    GET_TABLE(MIB_IPNETTABLE, GetIpNetTable);
+    if (table == NULL)
         return TE_RC(TE_TA_WIN32, ENOENT);
-    }
-    else
-    {
-        free(table);
-        ERROR("GetIpNetTable() failed, error %x", GetLastError());
-        return TE_RC(TE_TA_WIN32, ETEWIN);
-    }
-    
-    if (GetIpNetTable(table, &size, 0) != NO_ERROR) 
-    {
-        ERROR("GetIpNetTable() failed, error %x", GetLastError());
-        return TE_RC(TE_TA_WIN32, ETEWIN);
-    }
     
     for (i = 0; i < (int)table->dwNumEntries; i++)
     {
@@ -1048,40 +962,18 @@ static int
 arp_del(unsigned int gid, const char *oid, const char *addr)
 {
     MIB_IPNETTABLE *table;
-    DWORD            size = 0, rc;
-    int              i;
-    DWORD            a;
+    int             i;
+    DWORD           a;
     
     UNUSED(gid);
     UNUSED(oid);
 
     if ((a = inet_addr(addr)) == 0)
         return TE_RC(TE_TA_WIN32, EINVAL);
-    
-    if ((table = (MIB_IPNETTABLE *)malloc(sizeof(MIB_IPNETTABLE))) == NULL)
-        return TE_RC(TE_TA_WIN32, ENOMEM);
 
-    if ((rc = GetIpNetTable(table, &size, 0)) == ERROR_INSUFFICIENT_BUFFER) 
-    {
-        table = (MIB_IPNETTABLE *)realloc(table, size);
-    }
-    else if (rc == NO_ERROR)
-    {
-        free(table);
+    GET_TABLE(MIB_IPNETTABLE, GetIpNetTable);
+    if (table == NULL)
         return TE_RC(TE_TA_WIN32, ENOENT);
-    }
-    else
-    {
-        free(table);
-        ERROR("GetIpNetTable() failed, error %x", GetLastError());
-        return TE_RC(TE_TA_WIN32, ETEWIN);
-    }
-    
-    if (GetIpNetTable(table, &size, 0) != NO_ERROR) 
-    {
-        ERROR("GetIpNetTable() failed, error %x", GetLastError());
-        return TE_RC(TE_TA_WIN32, ETEWIN);
-    }
     
     for (i = 0; i < (int)table->dwNumEntries; i++)
     {
@@ -1113,39 +1005,18 @@ static int
 arp_list(unsigned int gid, const char *oid, char **list)
 {
     MIB_IPNETTABLE *table;
-    DWORD            size = 0, rc;
-    int              i;
-    struct in_addr   addr;
+    int             i;
     
     UNUSED(gid);
     UNUSED(oid);
     
-    if ((table = (MIB_IPNETTABLE *)malloc(sizeof(MIB_IPNETTABLE))) == NULL)
-        return TE_RC(TE_TA_WIN32, ENOMEM);
-
-    if ((rc = GetIpNetTable(table, &size, 0)) == ERROR_INSUFFICIENT_BUFFER) 
+    GET_TABLE(MIB_IPNETTABLE, GetIpNetTable);
+    if (table == NULL)
     {
-        table = (MIB_IPNETTABLE *)realloc(table, size);
-    }
-    else if (rc == NO_ERROR)
-    {
-        free(table);
         if ((*list = strdup(" ")) == NULL)
             return TE_RC(TE_TA_WIN32, ENOMEM);
         else
             return 0;
-    }
-    else
-    {
-        free(table);
-        ERROR("GetIpNetTable() failed, error %x", GetLastError());
-        return TE_RC(TE_TA_WIN32, ETEWIN);
-    }
-    
-    if (GetIpNetTable(table, &size, 0) != NO_ERROR) 
-    {
-        ERROR("GetIpNetTable() failed, error %x", GetLastError());
-        return TE_RC(TE_TA_WIN32, ETEWIN);
     }
     
     buf[0] = 0;
@@ -1154,8 +1025,8 @@ arp_list(unsigned int gid, const char *oid, char **list)
     {
         if (table->table[i].dwPhysAddrLen != 6 || table->table[i].dwType < 3)
             continue;
-        addr.s_addr = table->table[i].dwAddr;
-        sprintf("%s ", inet_ntoa(addr));
+        sprintf("%s ", 
+                inet_ntoa(*(struct in_addr *)&(table->table[i].dwAddr)));
     }
 
     free(table);
