@@ -275,6 +275,12 @@ daemon_set(unsigned int gid, const char *oid, const char *value)
         ERROR("Command '%s' failed", buf);
         return TE_RC(TE_TA_LINUX, ETESHCMD);
     }
+    
+    if (value[0] == '0')
+    {
+        sprintf(buf, "rm `find /var/run/ -name %s.pid`", daemon_name);
+        ta_system(buf);
+    }
 
     return 0;
 }
