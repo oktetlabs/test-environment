@@ -28,6 +28,9 @@
  * $Id$
  */
 
+/* To get pthread_mutexattr_settype() definition in pthread.h */
+#define _GNU_SOURCE 
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
