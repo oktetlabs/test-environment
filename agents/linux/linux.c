@@ -89,10 +89,43 @@ char *ta_name = "(linux)";
 
 int ta_pid;
 
+/** Tasks to be killed during TA shutdown */
+static int    tasks_len;
+static int    tasks_index;
+static pid_t *tasks; 
+
 DEFINE_LGR_ENTITY("(linux)");
 
 static pthread_mutex_t ta_lock = PTHREAD_MUTEX_INITIALIZER;
 
+/** Add the talk pid into the list */
+static void
+store_pid(pid_t pid)
+{
+    if (tasks_index == tasks_len)
+    {
+        tasks_len += 32;
+        tasks = realloc(tasks, tasks_len * sizeof(pid_t));
+    }
+    if (tasks == NULL)
+        return;
+    tasks[tasks_index++] = pid;
+}
+
+/** Kill all tasks started using rcf_ch_start_task() */
+static void
+kill_tasks()
+{
+    int i;
+    
+    for (i = 0; i < tasks_index; i++)
+    {
+        kill(-tasks[i], SIGTERM);
+        usleep(100);
+        kill(-tasks[i], SIGKILL);
+    }
+    free(tasks);
+}
 
 /* See description in rcf_ch_api.h */
 int
@@ -468,6 +501,8 @@ rcf_ch_start_task(struct rcf_comm_connection *handle,
 
         if ((pid = fork()) == 0)
         {
+            /* Set the process group to allow killing all children */
+            setpgid(getpid(), getpid());
             if (is_argv)
                 ((rcf_rtn)(addr))(argc, params);
             else
@@ -478,6 +513,7 @@ rcf_ch_start_task(struct rcf_comm_connection *handle,
             exit(0);
         }
 
+        store_pid(pid);
         SEND_ANSWER("%d %d", 0, pid);
     }
 
@@ -493,6 +529,8 @@ rcf_ch_start_task(struct rcf_comm_connection *handle,
 
         if ((pid = fork()) == 0)
         {
+            /* Set the process group to allow killing all children */
+            setpgid(getpid(), getpid());
             execlp(rtn, rtn, params[0], params[1], params[2], params[3],
                              params[4], params[5], params[6], params[7],
                              params[8], params[9]);
@@ -508,6 +546,7 @@ rcf_ch_start_task(struct rcf_comm_connection *handle,
         UNUSED(priority);
         ERROR("Unable to set task priority, ignore it.");
 #endif
+        store_pid(pid);
         SEND_ANSWER("%d %d", 0, pid);
     }
 
@@ -523,13 +562,13 @@ rcf_ch_kill_task(struct rcf_comm_connection *handle,
 {
     int kill_errno = 0;
 
-    if (kill(pid, SIGTERM) != 0)
+    if (kill(-pid, SIGTERM) != 0)
     {
         kill_errno = errno;
         ERROR("Failed to send SIGTERM to process with PID=%u: %X",
               pid, kill_errno);
         /* Just to make sure */
-        kill(pid, SIGKILL);
+        kill(-pid, SIGKILL);
     }
     SEND_ANSWER("%d", kill_errno);
 }
@@ -742,7 +781,7 @@ main(int argc, char **argv)
 #ifdef RCF_RPC
     tarpc_destroy_all();
 #endif    
-    
+
     rc = log_shutdown();
     if (rc != 0)
     {
@@ -751,6 +790,8 @@ main(int argc, char **argv)
             retval = rc;
     }
 
+    kill_tasks();
+    
     return retval;
 }
 
