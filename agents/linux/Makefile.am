@@ -9,7 +9,7 @@ AM_YFLAGS=-d
 # -lrcfpch must be before @TE_LDADD@ since the last may contain
 # -ltad_ch with names used in -lrcfpch.
 #
-MY_LDADD=symtbl.o -lrcfpch @TE_LDADD@ \
+MY_LDADD=symtbl.o -lrcfpch -ltad @TE_LDADD@ \
          -lconf_oid -lcomm_net_agent -lloggerta -lcrypt
 
 #if HAS_NET_SNMP
@@ -106,6 +106,7 @@ talinuxtmpl_LDADD=$(MY_LDADD)
 
 talinuxtmpl_DEPENDENCIES=@TE_DEPENDENCIES@ symtbl.o \
     $(DESTDIR)/$(prefix)/../@host@/lib/librcfpch.a \
+    $(DESTDIR)/$(prefix)/../@host@/lib/libtad.a \
     $(DESTDIR)/$(prefix)/../@host@/lib/libconf_oid.a \
     $(DESTDIR)/$(prefix)/../@host@/lib/libcomm_net_agent.a \
     $(DESTDIR)/$(prefix)/../@host@/lib/libloggerta.a
