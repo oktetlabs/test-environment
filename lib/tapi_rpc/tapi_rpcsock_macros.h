@@ -57,7 +57,7 @@
     do {                                                                  \
         int err_ = RPC_ERRNO(rpcs_);                                      \
                                                                           \
-        if (IS_IUT_ERRNO(err_))                                           \
+        if (RPC_ERRNO_RPC(err_))                                          \
         {                                                                 \
             if (!!((#func_args_value_)[0]))                               \
             {                                                             \
@@ -913,7 +913,7 @@
             {                                                       \
                 int err_ = RPC_ERRNO(rpcs_);                        \
                                                                     \
-                if (IS_IUT_ERRNO(err_))                             \
+                if (RPC_ERRNO_RPC(err_))                            \
                 {                                                   \
                     ERROR("RPC close() on %s failed retval=%d "     \
                           "RPC_errno=0x%X",                         \
@@ -944,7 +944,7 @@
         {                                                               \
             if (!!((#args_)[0]))                                        \
             {                                                           \
-                if (IS_IUT_ERRNO(err_))                                 \
+                if (RPC_ERRNO_RPC(err_))                                \
                 {                                                       \
                     ERROR(err_msg_ ": errno is set to %s instead of %s",\
                           args_ + 0, errno_rpc2str(err_),               \
@@ -958,7 +958,7 @@
             }                                                           \
             else                                                        \
             {                                                           \
-                if (IS_IUT_ERRNO(err_))                                 \
+                if (RPC_ERRNO_RPC(err_))                                \
                 {                                                       \
                     ERROR(err_msg_ " sets errno to %s instead of %s",   \
                           errno_rpc2str(err_),                          \

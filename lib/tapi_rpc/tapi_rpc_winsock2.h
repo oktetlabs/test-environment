@@ -256,7 +256,7 @@ enum {
     WSA_WAIT_EVENT_0
 };
 
-/** Convert 
+/** Convert WSAWaitForMultipleEvents() return code to the string */
 static inline const char *
 wsa_wait_rpc2str(int code)
 {
