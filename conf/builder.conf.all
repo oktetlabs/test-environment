@@ -22,7 +22,7 @@ TE_LIB_PARMS([tad], [], [], \
               
 TE_TA_TYPE([linux], [linux], [], \
            [--with-rcf-rpc --with-cfg-linux-daemons='ftp echo'], \
-           [], [], [tad ndn asn])
+           [], [-lexpect], [tad ndn asn])
 
 TE_TA_TYPE([linux_lite], [linux], [], [], [-DTAD_CH_DUMMY], [], [])
 

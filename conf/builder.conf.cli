@@ -11,6 +11,5 @@ TE_PLATFORM([], [], [], [], \
 
 TE_TOOLS([rgt millicom])
 
-TE_TA_TYPE([linux], [linux], [], [], [-DTAD_CH_DUMMY], [], \
-           [rcfpch conf_oid comm_net_agent loggerta])
+TE_TA_TYPE([linux], [linux], [], [], [], [-lexpect], [tad ndn asn])
 
