@@ -429,7 +429,7 @@ asn_impl_pt_objid(const char*text, const asn_type *type, asn_value_p *parsed, in
 
     while (isspace(*pt)) pt++;
 
-    while(1)
+    while(*pt != '}')
     { 
         parsed_ints[cur_index] = strtol (pt, &endptr, 10);
         *parsed_syms += (p_s = endptr - pt);
@@ -443,13 +443,13 @@ asn_impl_pt_objid(const char*text, const asn_type *type, asn_value_p *parsed, in
         while (isspace(*pt)) pt++;
         cur_index++;
 
-        if (*pt == '}') break; 
     }
     pt ++;
     *parsed = asn_init_value(type);
     *parsed_syms = pt - text;
 
-    rc = asn_write_value_field(*parsed, parsed_ints, cur_index, ""); 
+    if (cur_index)
+        rc = asn_write_value_field(*parsed, parsed_ints, cur_index, ""); 
     if (rc) asn_free_value(*parsed); 
 
     return rc;
