@@ -37,7 +37,7 @@ TE_LOG_PATH=${TE_LOG_DIR}
 TE_TMP_LOG=${TE_LOG_PATH}/tmp_raw_log
 
 if [ ${#@} -ne 0 ]; then
-    echo "Usage: te_log_init"
+    echo "Usage: te_log_init" >&2
     exit 1
 fi
 
