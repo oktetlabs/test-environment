@@ -40,6 +40,7 @@
 #include <signal.h>
 #include <string.h>
 #include <fcntl.h>
+#include <pwd.h>
 
 #undef ERROR
 #include "te_defs.h"
@@ -1981,6 +1982,51 @@ TARPC_FUNC(fileno, {},
     MAKE_CALL(out->fd = fileno((FILE *)in->mem_ptr));
 }
 )
+
+/*-------------- getpwnam() --------------------------------*/
+#define PUT_STR(_field) \
+        do {                                                            \
+            out->passwd._field._field##_val = strdup(pw->pw_##_field);  \
+            if (out->passwd._field._field##_val == NULL)                \
+            {                                                           \
+                out->common._errno = TE_RC(TE_TA_LINUX, ENOMEM);        \
+                goto finish;                                            \
+            }                                                           \
+            out->passwd._field._field##_len =                           \
+                strlen(out->passwd._field._field##_val) + 1;            \
+        } while (0)
+TARPC_FUNC(getpwnam, {}, 
+{ 
+    struct passwd *pw;
+    
+    MAKE_CALL(pw = getpwnam(in->name.name_val));
+    
+    if (pw != NULL)
+    {
+            
+        PUT_STR(name);
+        PUT_STR(passwd);
+        out->passwd.uid = pw->pw_uid;
+        out->passwd.gid = pw->pw_gid;
+        PUT_STR(gecos);
+        PUT_STR(dir);
+        PUT_STR(shell);
+
+    } 
+    finish:
+    if (out->common._errno != 0)
+    {
+        free(out->passwd.name.name_val);
+        free(out->passwd.passwd.passwd_val);
+        free(out->passwd.gecos.gecos_val);
+        free(out->passwd.dir.dir_val);
+        free(out->passwd.shell.shell_val);
+        memset(&(out->passwd), 0, sizeof(out->passwd));
+    }
+    ;
+}
+)
+#undef PUT_STR
 
 /*-------------- getuid() --------------------------------*/
 TARPC_FUNC(getuid, {}, { MAKE_CALL(out->uid = getuid()); })
