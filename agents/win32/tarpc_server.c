@@ -3185,8 +3185,7 @@ wsaerr2errno(int wsaerr)
         
         case RPC_WSAENOTSOCK:
         {
-            /* FIXME */
-            err = RPC_EBADF;
+            err = RPC_ENOTSOCK;
             break;
         }    
         
