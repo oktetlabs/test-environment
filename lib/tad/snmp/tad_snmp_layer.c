@@ -260,6 +260,10 @@ int snmp_match_bin_cb (int csap_id, int layer, const asn_value_p pattern_pdu,
     UNUSED(csap_id);
     UNUSED(pattern_pdu);
 
+    /* Temporary fix for handling SNMP without callback */
+    if (parsed_packet == NULL)
+        return 0;
+
     memset (payload, 0, sizeof (csap_pkts)); /* never use buffer for upper payload. */
 
     VERB("%s, layer %d, pdu 0x%x, pdu command: <%d>", 
@@ -267,20 +271,45 @@ int snmp_match_bin_cb (int csap_id, int layer, const asn_value_p pattern_pdu,
 
     switch (pdu->command)
     {
-        case SNMP_MSG_GET:     type = NDN_SNMP_MSG_GET;     break;
-        case SNMP_MSG_GETNEXT: type = NDN_SNMP_MSG_GETNEXT; break;
-        case SNMP_MSG_RESPONSE:type = NDN_SNMP_MSG_RESPONSE;break;
-        case SNMP_MSG_SET:     type = NDN_SNMP_MSG_SET;     break;
-        case SNMP_MSG_TRAP:    type = NDN_SNMP_MSG_TRAP1;   break; 
-        case SNMP_MSG_TRAP2:   type = NDN_SNMP_MSG_TRAP2;   break; 
-        case SNMP_MSG_GETBULK: type = NDN_SNMP_MSG_GETBULK; break;
-        default: 
+        case SNMP_MSG_GET:
+            type = NDN_SNMP_MSG_GET;
+            break;
+
+        case SNMP_MSG_GETNEXT:
+            type = NDN_SNMP_MSG_GETNEXT;
+            break;
+
+        case SNMP_MSG_RESPONSE:
+            type = NDN_SNMP_MSG_RESPONSE;
+            break;
+
+        case SNMP_MSG_SET:
+            type = NDN_SNMP_MSG_SET;
+            break;
+
+        case SNMP_MSG_TRAP:
+            type = NDN_SNMP_MSG_TRAP1;
+            break;
+
+        case SNMP_MSG_TRAP2:
+            type = NDN_SNMP_MSG_TRAP2;
+            break;
+
+        case SNMP_MSG_GETBULK:
+            type = NDN_SNMP_MSG_GETBULK;
+            break;
+
+        default:
+            ERROR("%s(): !!! UNKNOWN PDU command %d !!! ",
+                  __FUNCTION__, pdu->command);
             return ETADNOTMATCH;
-    } 
- 
+    }
+
     rc = asn_write_value_field(parsed_packet, &type, sizeof(type), 
-                                "#snmp.type.#plain"); 
-    if (rc) return rc;
+                               "#snmp.type.#plain");
+    if (rc)
+        return rc;
+
     asn_write_value_field(parsed_packet, pdu->community,
                           pdu->community_len + 1, "#snmp.community.#plain"); 
 
