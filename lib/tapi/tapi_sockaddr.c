@@ -419,7 +419,7 @@ sockaddr2str(const struct sockaddr *sa)
 
     if (sa == NULL)
     {
-        snprintf(ptr, SOCKADDR2STR_ADDRSTRLEN, "NULL");
+        snprintf(ptr, SOCKADDR2STR_ADDRSTRLEN, "(nil)");
         return ptr;
     }
 
