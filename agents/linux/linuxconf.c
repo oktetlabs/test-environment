@@ -47,7 +47,9 @@
 #endif
 #include <net/if_arp.h>
 #include <net/route.h>
+#ifdef HAVE_NET_ETHERNET_H
 #include <net/ethernet.h>
+#endif
 #include <arpa/inet.h>
 
 #include "te_stdint.h"
