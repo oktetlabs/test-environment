@@ -149,7 +149,7 @@ main(int argc, char *argv[])
 
         num = 0; 
         rc = asn_parse_value_text(
-"{{ action function:\"test\","
+"{{ action function:\"tadf_forw_packet:a\","
 " pdus {tcp:{dst-port plain:6100},"
 " ip4:{protocol plain:6}, eth:{eth-type plain:2048}}}}",
                                   ndn_traffic_pattern, &pattern, &num);
