@@ -53,7 +53,7 @@ extern "C" {
 #define TE_LOG_FIELD_MAX        ((1 << (TE_LOG_NFL_SZ * 8)) - 1)
 
 /**< TODO: WHAT IS THIS? */
-#define LGR_FILE_MAX            7
+#define LGR_FILE_MAX            32
 
 
 #if (TE_LOG_NFL_SZ == 1)

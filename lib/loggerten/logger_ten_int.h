@@ -351,8 +351,9 @@ log_message_va(uint8_t **msg_buf, size_t *msg_buf_len, uint16_t level,
                     }
                     else if (*p_fs == 'f')
                     {
-                        char new_path[TE_LOG_FIELD_MAX] = "";
-                        char templ[LGR_FILE_MAX] = "XXXXXX";
+                        /* FIXME */
+                        char new_path[256] = "";
+                        char templ[LGR_FILE_MAX] = "tmp_raw_log.XXXXXX";
                         char *tmp = va_arg(ap, char *);
                         int  fd;
 
@@ -376,6 +377,7 @@ log_message_va(uint8_t **msg_buf, size_t *msg_buf_len, uint16_t level,
                         }
 
                         strcat(new_path, te_log_dir);
+                        strcat(new_path, "/");
                         strcat(new_path, templ);
                         if (rename(tmp, new_path) != 0)
                         {
@@ -386,7 +388,7 @@ log_message_va(uint8_t **msg_buf, size_t *msg_buf_len, uint16_t level,
                             return;
                         }
 
-                        LGR_PUT_STR(templ, tmp_length);
+                        LGR_PUT_STR(new_path, tmp_length);
                         break;
                     }
                 }
