@@ -9,7 +9,7 @@ lib_LTLIBRARIES=librcfunix.la
 
 librcfunix_la_SOURCES=rcfunix.c
 
-librcfunix_la_LDFLAGS=-lcomm_net_engine
+librcfunix_la_LDFLAGS=-lcomm_net_engine 
 
 install-exec-hook:
 	touch -c -r .libs/librcfunix.a $(DESTDIR)/$(prefix)/lib/librcfunix.a

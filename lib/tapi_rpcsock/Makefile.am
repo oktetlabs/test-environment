@@ -15,9 +15,10 @@ CLEANFILES=tarpc.x tarpc.h
 
 tapi_rpcsock.o: tarpc.h
 
-tarpc.h: @RPC_XFILE@
-	cp @RPC_XFILE@ tarpc.x
-	$(RM) -f tarpc.h
+tarpc.x: @RPC_XFILE@
+	m4 @RPC_XFILE@ > tarpc.x
+
+tarpc.h: tarpc.x
 	rpcgen -h -M tarpc.x -o tarpc.h
 
 tarpc_xdr.c: tarpc.h
