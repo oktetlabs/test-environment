@@ -150,7 +150,7 @@ main(int argc, char *argv[])
         num = 0; 
         rc = asn_parse_value_text(
 "{{ action function:\"test\","
-" pdus {tcp:{src-port plain:6100},"
+" pdus {tcp:{dst-port plain:6100},"
 " ip4:{protocol plain:6}, eth:{eth-type plain:2048}}}}",
                                   ndn_traffic_pattern, &pattern, &num);
         VERB("Pattern parse rc %X, syms %d", rc, num);
@@ -164,14 +164,14 @@ main(int argc, char *argv[])
         if (rc) break;
 
 #if 1
-        sleep(1);
+        sleep(5);
         INFO ("try to get\n");
         rc = rcf_ta_trrecv_get(ta, csap, &num);
         INFO("trrecv_get: 0x%X num: %d\n", rc, num);
         if (rc) break;
 
 #endif
-        num = 1;
+        num = 10;
         INFO ("sleep %d secs before stop\n", num);
         sleep (num);
 
