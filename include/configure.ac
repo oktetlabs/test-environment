@@ -56,6 +56,7 @@ obstack.h \
 poll.h \
 popt.h \
 pthread.h \
+pwd.h \
 regex.h \
 rpc/pmap_clnt.h \
 semaphore.h \
