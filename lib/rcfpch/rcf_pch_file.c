@@ -27,9 +27,7 @@
  * $Id$
  */
 
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include <stdio.h>
 #ifdef STDC_HEADERS
@@ -79,7 +77,7 @@ rcf_pch_file(struct rcf_comm_connection *conn, char *cbuf, size_t buflen,
     size_t  reply_buflen = buflen - answer_plen;
     int     rc;
     int     fd = -1;
-    char   *fname = NULL;
+    char    fname[RCF_MAX_PATH];
 
 
     ENTRY("conn=0x%x cbuf='%s' buflen=%u answer_plen=%u ba=0x%x "
@@ -205,10 +203,8 @@ rcf_pch_file(struct rcf_comm_connection *conn, char *cbuf, size_t buflen,
         }
         /* Unreachable */
         assert(FALSE);
-    }
-
-    if (strncmp(RCF_FILE_TMP_PREFIX, filename,
-                strlen(RCF_FILE_TMP_PREFIX)) == 0)
+    } else if (strncmp(RCF_FILE_TMP_PREFIX, filename,
+                       strlen(RCF_FILE_TMP_PREFIX)) == 0)
     {
         VERB("temporary file operation");
 #ifdef HAVE_DIRENT_H
@@ -231,23 +227,21 @@ rcf_pch_file(struct rcf_comm_connection *conn, char *cbuf, size_t buflen,
             closedir(dir);
         }
         /* Substiute filename */
-        fname = (char *)malloc(strlen(filename) -
-                               strlen(RCF_FILE_TMP_PREFIX) +
-                               strlen(RCF_FILE_TMP_DEF_DIR) + 1);
-        if (fname == NULL)
-        {
-            rc = ENOMEM;
-            goto reject;
-        }
-        strcpy(fname, RCF_FILE_TMP_DEF_DIR);
-        strcat(fname, filename + strlen(RCF_FILE_TMP_PREFIX));
+        sprintf(fname, RCF_FILE_TMP_DEF_DIR "%s", 
+                filename + strlen(RCF_FILE_TMP_PREFIX));
         filename = fname;
 #else
         rc = ENOENT;
         goto reject;
 #endif
-    }
-
+    } else if (strncmp(RCF_FILE_FTP_PREFIX, filename, 
+                       strlen(RCF_FILE_FTP_PREFIX)) == 0)
+    {
+        
+        sprintf(fname, "/var/ftp/pub/%s", 
+                filename + strlen(RCF_FILE_FTP_PREFIX));
+        filename = fname;
+    }                
 
     fd = open(filename, put ? (O_WRONLY | O_CREAT | O_TRUNC) : O_RDONLY,
               S_IRWXU | S_IRWXG | S_IRWXO);
