@@ -156,6 +156,20 @@ rand_range(int min, int max)
 }
 #endif
 
+/**
+ * Check that string starts fro the specified substring.
+ *
+ * @param pattern       pattern which str should begin from
+ * @param str           string to be checked
+ *
+ * @return result of strncmp
+ */
+static inline int
+strcmp_start(char *pattern, char *str)
+{
+    return strncmp(pattern, str, strlen(pattern));
+}
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
