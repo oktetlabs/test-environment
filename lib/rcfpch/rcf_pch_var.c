@@ -184,7 +184,7 @@ rcf_pch_vread(struct rcf_comm_connection *conn,
 
             memcpy((void *)&val, addr, sizeof(uint64_t));
             /* FIXME */
-            SEND_ANSWER("0 %llu", (unsigned long long int))val);
+            SEND_ANSWER("0 %llu", (unsigned long long int)val);
         }
 
         case RCF_STRING:

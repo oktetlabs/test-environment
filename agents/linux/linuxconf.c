@@ -840,12 +840,13 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
              const char *ifname, const char *addr)
 {
     unsigned int  new_addr;
-    unsigned int  tmp_addr;
+#ifdef __linux__
     int           rc;
     char         *cur;
     char         *next;
     char          slots[32] = { 0, };
     struct        sockaddr_in sin;
+#endif
 
     UNUSED(gid);
     UNUSED(oid);
@@ -868,6 +869,8 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
 
     for (cur = buf; strlen(cur) > 0; cur = next)
     {
+        unsigned int  tmp_addr;
+
         next = strchr(cur, ' ');
         if (next != NULL)
         {
