@@ -40,6 +40,7 @@
 #include "te_stdint.h"
 #include "tad_common.h"
 #include "asn_usr.h"
+#include "ndn_dhcp.h"
 
 #ifndef true
 #define true 1
@@ -106,41 +107,42 @@ struct dhcp_option {
 
 /** Structure of DHCP message */
 struct dhcp_message {
-    uint8_t  op; /**< Message op code */
-    uint8_t  htype; /**< Hardware address type */ 
-    uint8_t  hlen; /**< Hardware address length */
-    uint8_t  hops; /**< Client sets to zero, optionally used by relay agents
-                        when booting via a relay agent */ 
-    uint32_t xid; /**< Transaction ID */
-    uint16_t secs; /**< Seconds elapsed since client began address 
-                        acquisition or renewal process */
-    uint16_t flags; /**< Flags */
-    uint32_t ciaddr; /**< Client IP address */
-    uint32_t yiaddr; /**< 'your' (client) IP address */
-    uint32_t siaddr; /**< IP address of next server to use in bootstrap */
-    uint32_t giaddr; /**< Relay agent IP address, used in booting via 
-                          a relay agent */
+    uint8_t  op;        /**< Message op code */
+    uint8_t  htype;     /**< Hardware address type */ 
+    uint8_t  hlen;      /**< Hardware address length */
+    uint8_t  hops;      /**< Client sets to zero, optionally used by
+                             relay agents when booting via a relay agent */
+    uint32_t xid;       /**< Transaction ID */
+    uint16_t secs;      /**< Seconds elapsed since client began address 
+                             acquisition or renewal process */
+    uint16_t flags;     /**< Flags */
+    uint32_t ciaddr;    /**< Client IP address */
+    uint32_t yiaddr;    /**< 'your' (client) IP address */
+    uint32_t siaddr;    /**< IP address of next server to use in
+                             bootstrap */
+    uint32_t giaddr;    /**< Relay agent IP address, used in booting via 
+                             a relay agent */
 
     uint8_t chaddr[DHCPV4_HDR_CHADDR_SIZE]; /**< Client hardware address */
-    uint8_t sname[DHCPV4_HDR_SNAME_SIZE]; /**< Optional server host name */
-    uint8_t file[DHCPV4_HDR_FILE_SIZE]; /**< Boot file name */
+    uint8_t sname[DHCPV4_HDR_SNAME_SIZE];   /**< Server host name */
+    uint8_t file[DHCPV4_HDR_FILE_SIZE];     /**< Boot file name */
 
-    bool     is_op_set; /**< Is message op code has been set */
-    bool     is_htype_set; /**< Is message htype has been set */
-    bool     is_hlen_set; /**< Is message hlen has been set */
-    bool     is_hops_set; /**< Is message hops has been set */
-    bool     is_xid_set; /**< Is message xid has been set */
-    bool     is_secs_set; /**< Is message secs has been set */
-    bool     is_flags_set; /**< Is message flags has been set */
-    bool     is_ciaddr_set; /**< Is message ciaddr has been set */
-    bool     is_yiaddr_set; /**< Is message yiaddr has been set */
-    bool     is_siaddr_set; /**< Is message siaddr has been set */
-    bool     is_giaddr_set; /**< Is message giaddr has been set */
-    bool     is_chaddr_set; /**< Is message chaddr has been set */
-    bool     is_sname_set; /**< Is message sname has been set */
-    bool     is_file_set; /**< Is message file has been set */
+    bool     is_op_set;         /**< Is message op code has been set */
+    bool     is_htype_set;      /**< Is message htype has been set */
+    bool     is_hlen_set;       /**< Is message hlen has been set */
+    bool     is_hops_set;       /**< Is message hops has been set */
+    bool     is_xid_set;        /**< Is message xid has been set */
+    bool     is_secs_set;       /**< Is message secs has been set */
+    bool     is_flags_set;      /**< Is message flags has been set */
+    bool     is_ciaddr_set;     /**< Is message ciaddr has been set */
+    bool     is_yiaddr_set;     /**< Is message yiaddr has been set */
+    bool     is_siaddr_set;     /**< Is message siaddr has been set */
+    bool     is_giaddr_set;     /**< Is message giaddr has been set */
+    bool     is_chaddr_set;     /**< Is message chaddr has been set */
+    bool     is_sname_set;      /**< Is message sname has been set */
+    bool     is_file_set;       /**< Is message file has been set */
 
-    struct dhcp_option *opts; /**< List of DHCP options */
+    struct dhcp_option *opts;   /**< List of DHCP options */
 };
 
 /**
@@ -254,7 +256,39 @@ extern int ndn_dhcpv4_packet_to_plain(asn_value_p pkt,
 extern int ndn_dhcpv4_plain_to_packet(const struct dhcp_message *dhcp_msg,
                                       asn_value_p *pkt);
 
+/**
+ * Creates DHCP message of specified type.
+ * It fills the following fields as:
+ * op    - According to 'msg_type'
+ * htype - Ethernet (10Mb)
+ * hlen  - MACADDR_LEN
+ *
+ * All other fields are left unspecified
+ *
+ * @param msg_type  Type of the DHCP message to be created
+ *
+ * @return Pointer to the message handle or NULL if there is not enough
+ *         memory
+ *
+ * @se It adds Option 53 in DHCP message with value 'msg_type'
+ */
 extern struct dhcp_message *dhcpv4_message_create(uint8_t msg_type);
+
+/**
+ * Creates DHCP BOOTP message with specified operation set.
+ * It fills the following fields as:
+ * op    - According to 'op'
+ * htype - Ethernet (10Mb)
+ * hlen  - MACADDR_LEN
+ *
+ * All other fields are left unspecified
+ *
+ * @param op        Operation
+ *
+ * @return Pointer to the message handle or NULL
+ */
+extern struct dhcp_message *dhcpv4_bootp_message_create(uint8_t op);
+
 extern void dhcpv4_message_destroy(struct dhcp_message *);
 
 extern int tapi_dhcpv4_plain_csap_create(const char *ta_name,

@@ -52,6 +52,7 @@
 
 #include "rcf_api.h"
 #include "conf_api.h"
+#include "ndn.h"
 #include "ndn_dhcp.h"
 #include "tapi_dhcp.h"
 
@@ -393,51 +394,50 @@ ndn_dhcpv4_add_opts(asn_value_p container, struct dhcp_option *opt)
 }
 
 
-/**
- * Creates DHCP message of specified type.
- * It fills the following fields as:
- * op    - According to 'msg_type'
- * htype - Ethernet (10Mb)
- * hlen  - MACADDR_LEN
- *
- * All other fields are left unspecified
- *
- * @param msg_type  Type of the DHCP message to be created
- *
- * @return Pointer to the message handle or NULL if there is not enough
- *         memory
- *
- * @se It adds Option 53 in DHCP message with value 'msg_type'
- */
+/* See description in tapi_dhcp.h */
 struct dhcp_message *
-dhcpv4_message_create(uint8_t msg_type)
+dhcpv4_bootp_message_create(uint8_t op)
 {
     struct dhcp_message *dhcp_msg;
-    struct dhcp_option  *opt;
 
-    dhcp_msg = (struct dhcp_message *)malloc(sizeof(*dhcp_msg));
+    dhcp_msg = (struct dhcp_message *)calloc(1, sizeof(*dhcp_msg));
     if (dhcp_msg == NULL)
         return NULL;
 
-    memset(dhcp_msg, 0, sizeof(*dhcp_msg));
-    if (msg_type == DHCPDISCOVER || msg_type == DHCPREQUEST ||
-        msg_type == DHCPDECLINE || msg_type == DHCPRELEASE)
-    {
-        dhcp_msg->op = DHCP_OP_CODE_BOOTREQUEST;
-    }
-    else if (msg_type == DHCPOFFER || msg_type == DHCPACK ||
-             msg_type == DHCPNAK)
-    {
-        dhcp_msg->op = DHCP_OP_CODE_BOOTREPLY;
-    }
-    else
-        assert(0);
-
+    dhcp_msg->op = op;
     dhcp_msg->is_op_set = true;
     dhcp_msg->htype = DHCP_HW_TYPE_ETHERNET_10MB;
     dhcp_msg->is_htype_set = true;
     dhcp_msg->hlen = MACADDR_LEN;
     dhcp_msg->is_hlen_set = true;
+
+    return dhcp_msg;
+}
+
+/* See description in tapi_dhcp.h */
+struct dhcp_message *
+dhcpv4_message_create(uint8_t msg_type)
+{
+    uint8_t              op;
+    struct dhcp_message *dhcp_msg;
+    struct dhcp_option  *opt;
+
+    if (msg_type == DHCPDISCOVER || msg_type == DHCPREQUEST ||
+        msg_type == DHCPDECLINE || msg_type == DHCPRELEASE)
+    {
+        op = DHCP_OP_CODE_BOOTREQUEST;
+    }
+    else if (msg_type == DHCPOFFER || msg_type == DHCPACK ||
+             msg_type == DHCPNAK)
+    {
+        op = DHCP_OP_CODE_BOOTREPLY;
+    }
+    else
+        assert(0);
+
+    dhcp_msg = dhcpv4_bootp_message_create(op);
+    if (dhcp_msg == NULL)
+        return NULL;
 
     if ((opt = (struct dhcp_option *)malloc(sizeof(*opt))) == NULL ||
         (opt->val = (uint8_t *)malloc(1)) == NULL)
