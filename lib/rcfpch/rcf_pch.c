@@ -387,7 +387,7 @@ rcf_pch_run(const char *confstr, const char *info)
  */
 #define SEND_ANSWER(_fmt...) \
     do {                                                            \
-        int len;                                                    \
+        size_t len;                                                 \
                                                                     \
         while (pending)                                             \
         {                                                           \
@@ -399,9 +399,9 @@ rcf_pch_run(const char *confstr, const char *info)
             pending = (rc == ETEPENDING);                           \
         }                                                           \
         len = RCF_MAX_LEN - answer_plen;                            \
-        if (snprintf(cmd + answer_plen, len, _fmt) >= len)          \
+        if (snprintf(cmd + answer_plen, len, _fmt) >= (int)len)     \
         {                                                           \
-            ERROR("Answer truncated");                  \
+            ERROR("Answer truncated");                              \
             cmd[RCF_MAX_LEN - 1] = '\0';                            \
         }                                                           \
         rcf_ch_lock();                                              \

@@ -303,27 +303,29 @@ sockaddrncmp(const struct sockaddr *a1, socklen_t a1len,
     /* Compare 'sa_family' field */
 
 #define CMP_FIELD(field_name_, field_addr_, field_size_) \
-    do {                                                                    \
-        unsigned int i;                                                     \
-                                                                            \
-        if ((socklen_t)((uint32_t)(field_addr_) - (uint32_t)a1) >= min_len) \
-        {                                                                   \
-            RING("No one byte of '" field_name_ "' field can be compared"); \
-            return 0;                                                       \
-        }                                                                   \
-        for (i = ((uint32_t)(field_addr_) - (uint32_t)a1);                  \
-             i < (((uint32_t)(field_addr_) - (uint32_t)a1) +                \
-                     (field_size_)) &&                                      \
-             i < min_len;                                                   \
-             i++)                                                           \
-        {                                                                   \
-            if (((unsigned char *)a1)[i] != ((unsigned char *)a2)[i])       \
-            {                                                               \
-                return -1;                                                  \
-            }                                                               \
-        }                                                                   \
-        if (i == min_len)                                                   \
-            return 0;                                                       \
+    do {                                                                \
+        unsigned int i;                                                 \
+                                                                        \
+        if ((socklen_t)((uint8_t *)(field_addr_) - (uint8_t *)a1) >=    \
+                min_len)                                                \
+        {                                                               \
+            RING("No one byte of '" field_name_ "' field can be "       \
+                 "compared");                                           \
+            return 0;                                                   \
+        }                                                               \
+        for (i = ((uint8_t *)(field_addr_) - (uint8_t *)a1);            \
+             i < (((uint8_t *)(field_addr_) - (uint8_t *)a1) +          \
+                     (field_size_)) &&                                  \
+             i < min_len;                                               \
+             i++)                                                       \
+        {                                                               \
+            if (((uint8_t *)a1)[i] != ((uint8_t *)a2)[i])               \
+            {                                                           \
+                return -1;                                              \
+            }                                                           \
+        }                                                               \
+        if (i == min_len)                                               \
+            return 0;                                                   \
     } while (0)
 
     CMP_FIELD("sa_family", &(a1->sa_family), sizeof(a1->sa_family));
@@ -337,7 +339,7 @@ sockaddrncmp(const struct sockaddr *a1, socklen_t a1len,
             /*
              * AF_INET address contains port and IPv4 address
              */
-            if ((uint32_t)&(in_a1->sin_port) < (uint32_t)&(in_a1->sin_addr))
+            if ((size_t)&(in_a1->sin_port) < (size_t)&(in_a1->sin_addr))
             {
                 /* Compare port first */
                 CMP_FIELD("sin_port", &(in_a1->sin_port),

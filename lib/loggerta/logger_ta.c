@@ -648,14 +648,15 @@ log_message_print(const char *us, const char *fs, ...)
                  */
                 if ((*++p_str != 0) && (*p_str == 'm'))
                 {
-                    int i;
-                    int line_feed;
-                    int type;
-                    int8_t *addr;
-                    uint8_t length;
-                    char aux_str[LGR_AUX_STR_LEN];
-                    addr = (int8_t *)va_arg(ap, int);
-                    length = (int8_t)va_arg(ap, int);
+                    unsigned int    i;
+                    int             line_feed;
+                    int             type;
+                    uint8_t        *addr;
+                    uint32_t        length;
+                    char            aux_str[LGR_AUX_STR_LEN];
+                    
+                    addr = va_arg(ap, uint8_t *);
+                    length = va_arg(ap, uint32_t);
 
                     memset(tmp_str, 0, LGR_MAX_FIELD_LENGTH);
                     strncpy(tmp_str, beg_str, (p_str - beg_str - 1));
@@ -669,18 +670,18 @@ log_message_print(const char *us, const char *fs, ...)
                     LGR_GET_DIGITS(aux_str, beg_str, p_str);
                     type = atoi(aux_str);
 
-                    length = (int)(length / type);
-                    for (i = 0; i < length; i++)
+                    length /= type;
+                    for (i = 0; i < length; ++i)
                     {
-                         if ((i != 0) && (i%line_feed == 0))
+                         if ((i != 0) && (i % line_feed == 0))
                              fprintf(stderr,"\n");
 
                          if (type == 1)
                              fprintf(stderr, "%hhx ", addr[i]);
                          else if (type == 2)
-                             fprintf(stderr, "%hx ", ((short *)addr)[i]);
+                             fprintf(stderr, "%hx ", ((uint16_t *)addr)[i]);
                          else if (type == 4)
-                             fprintf(stderr, "%x ", ((int *)addr)[i]);
+                             fprintf(stderr, "%x ", ((uint32_t *)addr)[i]);
                     }
                     fprintf(stderr,"\n");
 
