@@ -1906,7 +1906,6 @@ tapi_snmp_get_table(const char *ta, int sid, int csap_id,
         struct index_list *t_index;
         struct tree *index_node = NULL;
         struct tree *leaf;
-        int column_found = 0;
 
         /* Try to find readable index column in table */
         for (t_index = entry_node->indexes; t_index;
@@ -1942,7 +1941,7 @@ tapi_snmp_get_table(const char *ta, int sid, int csap_id,
         for (leaf = entry_node->child_list; leaf; leaf = leaf->next_peer)
         {
             if (check_access_readable(leaf->access))
-                num_columns ++;
+                num_columns++;
             if ((unsigned int)table_width < leaf->subid)
                 table_width = leaf->subid;
         }
@@ -1953,30 +1952,31 @@ tapi_snmp_get_table(const char *ta, int sid, int csap_id,
         }
         else /* all index columns are non-accessible, find any element */
         {
+            tapi_snmp_varbind_t vb;
+
             INFO("Try to find any readable column");
             if (entry_node->child_list == NULL)
             {
-                /* strange, node with indexes without children! */
-                return TE_RC(TE_TAPI, 1);
+                WARN("Node in MIB with indexes without children");
+                return TE_RC(TE_TAPI, ETENOSUCHNAME);
             }
 
-            for (entry_node = entry_node->child_list;
-                 entry_node && !column_found;
-                 entry_node = entry_node->next_peer)
+            rc = tapi_snmp_get(ta, sid, csap_id, &entry, TAPI_SNMP_NEXT,
+                               &vb, NULL);
+            if (rc != 0)
             {
-                INFO("check entry <%s> with access %d",
-                      entry_node->label, entry_node->access);
-                if ( entry_node->access == MIB_ACCESS_READONLY ||
-                     entry_node->access == MIB_ACCESS_READWRITE ||
-                     entry_node->access == MIB_ACCESS_CREATE)
-                {
-                    tapi_snmp_append_oid(&entry, 1, entry_node->subid);
+                ERROR("%s: get next to find first column fails %X", 
+                      __FUNCTION__, rc);
+                return TE_RC(TE_TAPI, rc);
+            } 
 
-                    INFO("find accessible entry <%s> with last subid %d\n",
-                         entry_node->label, entry_node->subid);
-                    column_found = 1;
-                }
+            if (!tapi_snmp_is_sub_oid(&entry, &vb.name))
+            {
+                RING("%s: get-next obtain OID '%s' => table is EMPTY",
+                     __FUNCTION__, print_oid(&entry));
+                return 0;
             }
+            tapi_snmp_append_oid(&entry, 1, vb.name.id[entry.length]);
         }
     }
     else
@@ -1990,7 +1990,7 @@ tapi_snmp_get_table(const char *ta, int sid, int csap_id,
     rc = tapi_snmp_walk(ta, sid, csap_id, &entry,  &ti_list,
                         tapi_snmp_column_list_callback);
 
-    if (rc)
+    if (rc != 0)
         return rc;
 
     table_height = 0;
