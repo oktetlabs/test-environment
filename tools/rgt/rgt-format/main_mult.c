@@ -328,17 +328,23 @@ control_node_start(struct global_context *ctx, const xmlChar **atts,
             fname, name, result);
 
     fprintf(depth_ctx->fd,
-            "<i><b>%s</b></i>: <b>%s</b><br/>\n",
-            node_type, name);
+            "<i><b>%s</b></i>: <b>%s</b></b> -- %s<br/>\n",
+            node_type, name, result);
 
     fprintf(ctx->js_fd,
             "a%d = insDoc(a%d, g%s(%s'%s', '%s'))\n"
             "a%d.xID = 'n_%d_%d'\n",
-            
             ctx->depth, ctx->depth - 1, tree_func_name,
             strcmp(node_type, "Test") == 0 ? "'R', " : "",
             name, fname,
             ctx->depth, ctx->depth, depth_ctx->seq);
+
+    if (strcmp(tree_func_name, "Lnk") == 0)
+    {
+        fprintf(ctx->js_fd,
+                "a%d.iconSrc = ICONPATH + \"ftv%s2doc.gif\"\n",
+                ctx->depth, result);
+    }
 }
 
 static void
@@ -468,7 +474,8 @@ proc_meta_param_start(struct global_context *ctx, const xmlChar **atts)
 
     assert(name != NULL && value != NULL);
 
-    fprintf(depth_ctx->fd, "<tr><td>%s</td><td>%s</td></tr>\n",
+    fprintf(depth_ctx->fd, "<tr><td bgcolor='#F8FEF6'><b>%s</b></td>"
+                               "<td bgcolor='#F8FEF6'><i>%s</i></td></tr>\n",
             name, value);
 }
 
@@ -620,7 +627,7 @@ proc_meta_authors_start(struct global_context *ctx, const xmlChar **atts)
     DEF_DEPTH_CTX;
     UNUSED(atts);
 
-    fprintf(depth_ctx->fd, "<table><tr><th>Authors</th><th>E-mail</th></tr>");
+    fprintf(depth_ctx->fd, "<b>Authors:</b></br><table>");
 }
 
 static void
@@ -638,7 +645,13 @@ proc_meta_params_start(struct global_context *ctx, const xmlChar **atts)
     DEF_DEPTH_CTX;
     UNUSED(atts);
 
-    fprintf(depth_ctx->fd, "<table>\n");
+    fprintf(depth_ctx->fd, "<b>Parameters:</b></br>"
+"<table border='0' cellpadding='0' cellspacing='0'>\n"
+"<tr>\n"
+"    <td bgcolor='#000000'>\n"
+"        <table border='0' cellpadding='4' cellspacing='1'>\n"
+            "<tr><td bgcolor='#F8FEF6'><b>Name</b></td>"
+                "<td bgcolor='#F8FEF6'><b>Value</b></td></tr>\n");
 }
 
 static void
@@ -647,7 +660,7 @@ proc_meta_params_end(struct global_context *ctx, const xmlChar **atts)
     DEF_DEPTH_CTX;
     UNUSED(atts);
 
-    fprintf(depth_ctx->fd, "</table>\n");
+    fprintf(depth_ctx->fd, "</table></td></tr></table></br>\n");
 }
 
 static void

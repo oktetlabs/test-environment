@@ -42,7 +42,13 @@ ftv2mnode.gif \
 ftv2node.gif \
 ftv2plastnode.gif \
 ftv2pnode.gif \
-ftv2vertline.gif
+ftv2vertline.gif \
+ftvFAILED2doc.gif \
+ftvPASSED2doc.gif \
+ftvCORED2doc.gif \
+ftvSKIPPED2doc.gif \
+ftvKILLED2doc.gif \
+ftvFAKED2doc.gif
 
 EXTRA_DIST=arrow.gif
 
