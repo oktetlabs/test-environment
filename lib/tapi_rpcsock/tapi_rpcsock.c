@@ -1950,7 +1950,7 @@ rpc_completion_callback(rcf_rpc_server *handle,
 }                        
 
 int 
-rpc_event_select(rcf_rpc_server *handle,
+rpc_wsa_event_select(rcf_rpc_server *handle,
                      int s, rpc_wsaevent event_object, rpc_network_event event)
 {
     tarpc_event_select_in  in;
