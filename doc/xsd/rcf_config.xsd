@@ -89,6 +89,16 @@
                                 </xsd:documentation>
                             </xsd:annotation>
                         </xsd:attribute>
+
+                        <xsd:attribute name="rebootable" type="xsd:string"
+                                       default="no">
+                            <xsd:annotation>
+                                <xsd:documentation>
+                                    Indicate rebootability of TA.    
+                                </xsd:documentation>
+                            </xsd:annotation>
+                        </xsd:attribute>
+
                     </xsd:complexType>
                 </xsd:element>
 
