@@ -229,12 +229,10 @@ snmp_write_cb (csap_p csap_descr, char *buf, int buf_len)
     spec_data = (snmp_csap_specific_data_p) csap_descr->layer_data[layer]; 
     ss = spec_data->ss;
 
-#if REAL_SNMP
     if (!snmp_send(ss, pdu))
     {
         VERB("send SNMP pdu failed\n");
     } 
-#endif
 
     return 1;
 }
@@ -284,16 +282,12 @@ snmp_write_read_cb (csap_p csap_descr, int timeout,
     sel_timeout.tv_sec  = (ss->timeout) / 1000000L;
     sel_timeout.tv_usec = (ss->timeout) % 1000000L;
 
-#if REAL_SNMP
-
-
     if (!snmp_send(ss, pdu)){
         VERB("send pdu failed\n");
         return 0;
     } 
 
     snmp_select_info(&n_fds, &fdset, &sel_timeout, &block);
-#endif
 
     if (spec_data->pdu) snmp_free_pdu (spec_data->pdu); 
     spec_data->pdu = 0;
@@ -302,9 +296,7 @@ snmp_write_read_cb (csap_p csap_descr, int timeout,
     rc = select (n_fds, &fdset, 0, 0, &sel_timeout);
     if (rc > 0) 
     {
-#if REAL_SNMP
         snmp_read(&fdset);
-#endif
         if (spec_data->pdu)
         {
             memcpy (r_buf, spec_data->pdu, sizeof (struct snmp_pdu));
@@ -325,6 +317,8 @@ snmp_single_check_pdus(csap_p csap_descr, asn_value *traffic_nds)
 
     UNUSED(csap_descr);
 
+    VERB("%s callback, CSAP # %d", __FUNCTION__, csap_descr->id); 
+
     if (traffic_nds == NULL)
     {
         ERROR("%s: NULL traffic nds!", __FUNCTION__);
@@ -333,6 +327,8 @@ snmp_single_check_pdus(csap_p csap_descr, asn_value *traffic_nds)
 
     rc = asn_get_choice(traffic_nds, "pdus.0", choice_label, 
                         sizeof(choice_label));
+
+    VERB("%s callback, got choice rc %X", __FUNCTION__, rc); 
 
     if (rc && rc != EASNINCOMPLVAL)
         return TE_RC(TE_TAD_CSAP, rc);
@@ -350,6 +346,8 @@ snmp_single_check_pdus(csap_p csap_descr, asn_value *traffic_nds)
     } 
     else if (strcmp (choice_label, "snmp") != 0)
     {
+        WARN("%s callback, got unexpected choice %s", 
+                __FUNCTION__, choice_label); 
         return ETADWRONGNDS;
     }
     return 0;
@@ -377,8 +375,8 @@ snmp_single_init_cb (int csap_id, const asn_value_p csap_nds, int layer)
     int      timeout;
     int      version;
     int      v_len;
-    int      l_port;
-    int      r_port;
+    int      l_port = 0;
+    int      r_port = 0;
 
     csap_p csap_descr;
 
@@ -422,14 +420,18 @@ snmp_single_init_cb (int csap_id, const asn_value_p csap_nds, int layer)
 
     v_len = sizeof(r_port); 
     rc = asn_read_value_field(snmp_csap_spec, &r_port, &v_len, "remote-port.#plain");
-    if (rc == EASNINCOMPLVAL) 
-    {
-        if (l_port == SNMP_CSAP_DEF_LOCPORT)
+    if (l_port == SNMP_CSAP_DEF_LOCPORT) 
+    { 
+        if (rc == EASNINCOMPLVAL) 
             r_port = SNMP_CSAP_DEF_REMPORT;
         else 
-            r_port = 0;
+            if (rc) return rc;
+    } else {
+        r_port = 0;
+        if (rc == 0) 
+            RING("Init of SNMP CSAP, local port set to %d, "
+                 "ignoring remote port", l_port);
     }
-    else if (rc) return rc;
 
     v_len = sizeof(snmp_agent);
     rc = asn_read_value_field(snmp_csap_spec, snmp_agent, &v_len, "snmp-agent.#plain");
@@ -497,9 +499,10 @@ snmp_single_init_cb (int csap_id, const asn_value_p csap_nds, int layer)
         netsnmp_transport *transport = NULL; 
 
         snprintf(buf, sizeof(buf), "%s:%d", 
-                strlen(snmp_agent) ? snmp_agent : "0.0.0.0", l_port);
+                (r_port && strlen(snmp_agent)) ? snmp_agent : "0.0.0.0", 
+                r_port ? r_port : l_port);
 
-        transport = netsnmp_tdomain_transport(buf, 1, "udp");
+        transport = netsnmp_tdomain_transport(buf, !r_port, "udp");
 
         ss = snmp_add(&csap_session, transport, NULL, NULL);
 #else

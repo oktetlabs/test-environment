@@ -74,6 +74,7 @@ int snmp_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
     UNUSED(csap_id);
     UNUSED(layer);
     UNUSED(tmpl_pdu);
+    VERB("%s, csap %d, layer %d", __FUNCTION__, csap_id, layer);
     return 0;
 }
 
@@ -116,10 +117,15 @@ int snmp_gen_bin_cb(int csap_id, int layer, const asn_value *tmpl_pdu,
     UNUSED(arg_num);
     UNUSED(csap_id);
     UNUSED(up_payload); 
+
     VERB("%s, layer %d", __FUNCTION__, layer);
+
+    memset(pkts, 0, sizeof(*pkts));
 
     rc = asn_read_value_field(tmpl_pdu, &operation, &operation_len, "type");
     if (rc) return rc;
+
+    VERB("%s, operation %d", __FUNCTION__, operation);
     switch (operation)
     {
         case NDN_SNMP_MSG_GET:     ucd_snmp_op = SNMP_MSG_GET;     break;
@@ -132,6 +138,7 @@ int snmp_gen_bin_cb(int csap_id, int layer, const asn_value *tmpl_pdu,
             return ETADWRONGNDS;
     } 
     pdu = snmp_pdu_create(ucd_snmp_op);
+    VERB("%s, snmp pdu created 0x%x", __FUNCTION__, pdu);
 
 
     if (operation == NDN_SNMP_MSG_GETBULK) 
@@ -205,6 +212,7 @@ int snmp_gen_bin_cb(int csap_id, int layer, const asn_value *tmpl_pdu,
         pkts->len  = sizeof(*pdu);
         pkts->free_data_cb = snmp_free_pdu;
     }
+    VERB("%s rc %X", __FUNCTION__, rc);
 
     return rc;
 }
@@ -240,8 +248,8 @@ int snmp_match_bin_cb (int csap_id, int layer, const asn_value_p pattern_pdu,
 
     memset (payload, 0, sizeof (csap_pkts)); /* never use buffer for upper payload. */
 
-    VERB("match callback, layer %d, pdu command: <%d>", 
-                layer, pdu->command);
+    VERB("%s, layer %d, pdu 0x%x, pdu command: <%d>", 
+            __FUNCTION__, layer, pdu, pdu->command);
 
     switch (pdu->command)
     {
@@ -253,7 +261,7 @@ int snmp_match_bin_cb (int csap_id, int layer, const asn_value_p pattern_pdu,
         case SNMP_MSG_TRAP2:   type = NDN_SNMP_MSG_TRAP2;   break; 
         case SNMP_MSG_GETBULK: type = NDN_SNMP_MSG_GETBULK; break;
         default: 
-            return ETADWRONGNDS;
+            return ETADNOTMATCH;
     } 
  
     rc = asn_write_value_field(parsed_packet, &type, sizeof(type), 
@@ -402,13 +410,11 @@ int snmp_match_bin_cb (int csap_id, int layer, const asn_value_p pattern_pdu,
  */
 int snmp_gen_pattern_cb (int csap_id, int layer, const asn_value_p tmpl_pdu, 
                                          asn_value_p   *pattern_pdu)
-{
-
-    UNUSED(csap_id);
+{ 
     UNUSED(tmpl_pdu);
 
     *pattern_pdu = asn_init_value (ndn_snmp_message);
-    VERB("'generate pattern' callback, layer %d", layer); 
+    VERB("%s callback, CSAP # %d, layer %d", __FUNCTION__, csap_id, layer); 
     return 0;
 }
 
