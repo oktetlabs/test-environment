@@ -1486,6 +1486,7 @@ process_user_request(usrreq *req)
         (agent->close)(agent->handle, &set0);
         answer_all_requests(&(agent->sent), ETADEAD);
         answer_all_requests(&(agent->pending), ETADEAD);
+        answer_user_request(req);
         return 0;
     }
     
