@@ -761,7 +761,7 @@ static int
 alloc_and_get_value(xmlNodePtr node, test_var_arg_values *values)
 {
     test_var_arg_value *p;
-    char               *ref;
+    char               *tmp;
 
     p = calloc(1, sizeof(*p));
     if (p == NULL)
@@ -769,13 +769,14 @@ alloc_and_get_value(xmlNodePtr node, test_var_arg_values *values)
         ERROR("malloc(%u) failed", sizeof(*p));
         return ENOMEM;
     }
+    TAILQ_INIT(&p->reqs);
     TAILQ_INSERT_TAIL(values, p, links);
     
     /* 'id' is optional */
     p->id = xmlGetProp(node, CONST_CHAR2XML("id"));
     /* 'ref' is optional */
-    ref = xmlGetProp(node, CONST_CHAR2XML("ref"));
-    if (ref != NULL)
+    tmp = xmlGetProp(node, CONST_CHAR2XML("ref"));
+    if (tmp != NULL)
     {
         test_var_arg_value *q;
 
@@ -783,16 +784,16 @@ alloc_and_get_value(xmlNodePtr node, test_var_arg_values *values)
              q != NULL && p->ref == NULL;
              q = q->links.tqe_next)
         {
-            if (q->id != NULL && strcmp(q->id, ref) == 0)
+            if (q->id != NULL && strcmp(q->id, tmp) == 0)
                 p->ref = q;
         }
         if (p->ref == NULL)
         {
-            ERROR("Reference to unknown value '%s'", ref);
-            free(ref);
+            ERROR("Reference to unknown value '%s'", tmp);
+            free(tmp);
             return EINVAL;
         }
-        free(ref);
+        free(tmp);
         if (p->ref == p)
         {
             ERROR("Self-reference of the value '%s'", p->id);
@@ -801,8 +802,37 @@ alloc_and_get_value(xmlNodePtr node, test_var_arg_values *values)
     }
     /* 'ext' is optional */
     p->ext = xmlGetProp(node, CONST_CHAR2XML("ext"));
-    /* 'req' is optional */
-    p->req = xmlGetProp(node, CONST_CHAR2XML("req"));
+    /* 'reqs' is optional */
+    tmp = xmlGetProp(node, CONST_CHAR2XML("reqs"));
+    if (tmp != NULL)
+    {
+        char       *s = tmp;
+        te_bool     end;
+
+        do {
+            size_t              len = strcspn(s, ",");
+            test_requirement   *req = calloc(1, sizeof(*req));
+
+            if (req == NULL)
+            {
+                ERROR("malloc(%u) failed", sizeof(*req));
+                free(tmp);
+                return ENOMEM;
+            }
+            req->id = strndup(s, len);
+            if (req->id == NULL)
+            {
+                ERROR("strndup() failed");
+                free(tmp);
+                return ENOMEM;
+            }
+            TAILQ_INSERT_TAIL(&p->reqs, req, links); 
+
+            end = (s[len] == '\0');
+            s += len + (end ? 0 : 1);
+        } while (!end);
+        free(tmp);
+    }
     
     /* Simple text content is represented as 'text' elements */
     if (node->children != NULL)
@@ -821,9 +851,15 @@ alloc_and_get_value(xmlNodePtr node, test_var_arg_values *values)
         p->value = XML2CHAR_DUP(node->children->content);
     }
 
-    if (((!!(p->ref)) + (!!(p->ext) + (!!(p->value)))) != 1)
+    if (((!!(p->ref)) + (!!(p->ext) + (!!(p->value)))) > 1)
     {
-        ERROR("Too many sources of value");
+        ERROR("Too many sources of value: ref=%p ext=%s value=%s",
+              p->ref, (p->ext) ? : "(empty)", (p->value) ? : "(empty)");
+        return EINVAL;
+    }
+    else if (((!!(p->ref)) + (!!(p->ext) + (!!(p->value)))) == 0)
+    {
+        ERROR("There is no source of value");
         return EINVAL;
     }
 
