@@ -26,8 +26,8 @@
  * $Id$
  */ 
 
-#ifndef __TE__NDN_INTERNAL__H__ 
-#define __TE__NDN_INTERNAL__H__ 
+#ifndef __TE_NDN_INTERNAL_H__ 
+#define __TE_NDN_INTERNAL_H__ 
 
 
 extern asn_type asn_base_boolean_s;
@@ -74,4 +74,4 @@ typedef enum {
     const asn_type * const ndn_data_unit_##id = &ndn_data_unit_##id##_s;
 
 
-#endif /* __TE__NDN_INTERNAL__H__ */
+#endif /* __TE_NDN_INTERNAL_H__ */

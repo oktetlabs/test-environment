@@ -28,8 +28,8 @@
  * $Id$
  */
 
-#ifndef __TE__LIB__IPC_INTERNAL_H__
-#define __TE__LIB__IPC_INTERNAL_H__
+#ifndef __TE_IPC_INTERNAL_H__
+#define __TE_IPC_INTERNAL_H__
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -196,4 +196,4 @@ extern uint16_t ipc_pmap_process_command(
 
 #endif
 
-#endif /* !__TE__LIB__IPC_INTERNAL_H__ */
+#endif /* !__TE_IPC_INTERNAL_H__ */

@@ -26,8 +26,9 @@
  *
  * @(#) $Id$
  */
-#ifndef __TE__TAD_DHCP_IMPL__H__
-#define __TE__TAD_DHCP_IMPL__H__ 
+
+#ifndef __TE_TAD_DHCP_IMPL_H__
+#define __TE_TAD_DHCP_IMPL_H__ 
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -234,12 +235,7 @@ extern int dhcp_gen_pattern_cb (int csap_id, int layer, const asn_value_p tmpl_p
 extern int find_csap_layer(csap_p csap_descr, char *layer_name);
 
 
-
-
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
-
-
-#endif /*  __TE__TAD_ETH_IMPL__H__ */
-
+#endif /* __TE_TAD_DHCP_IMPL_H__ */

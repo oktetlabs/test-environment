@@ -28,8 +28,8 @@
  * $Id$
  */
 
-#ifndef __FILTER_FLOW_TREE_H__
-#define __FILTER_FLOW_TREE_H__
+#ifndef __TE_RGT_FILTER_FLOW_TREE_H__
+#define __TE_RGT_FILTER_FLOW_TREE_H__
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -179,5 +179,5 @@ flow_tree_check_parent_list(enum flow_tree_set_name set_name,
 }
 #endif
 
-#endif /* __FILTER_FLOW_TREE_H__ */
+#endif /* __TE_RGT_FILTER_FLOW_TREE_H__ */
 

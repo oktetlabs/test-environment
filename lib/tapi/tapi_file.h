@@ -10,8 +10,8 @@
  * $Id$
  */
 
-#ifndef __TE_LIB_TAPI_FILE_H__
-#define __TE_LIB_TAPI_FILE_H__
+#ifndef __TE_TAPI_FILE_H__
+#define __TE_TAPI_FILE_H__
 
 #include <stdio.h>
 #if HAVE_SYS_TYPES_H
@@ -59,4 +59,4 @@ extern char *tapi_file_create(int len, char c);
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
-#endif /* !__TE_LIB_TAPI_FILE_H__ */
+#endif /* !__TE_TAPI_FILE_H__ */

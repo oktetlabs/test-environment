@@ -28,8 +28,8 @@
  * $Id$
  */
 
-#ifndef __TE_TOOLS_TRC_XML_H__
-#define __TE_TOOLS_TRC_XML_H__
+#ifndef __TE_TRC_XML_H__
+#define __TE_TRC_XML_H__
 
 #include <libxml/xmlmemory.h>
 #include <libxml/parser.h>
@@ -99,4 +99,4 @@ xmlNodeNext(xmlNodePtr node)
 extern int get_text_content(xmlNodePtr node, const char *name,
                             char **content);
 
-#endif /* !__TE_TOOLS_TRC_XML_H__ */
+#endif /* !__TE_TRC_XML_H__ */

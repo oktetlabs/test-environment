@@ -27,8 +27,8 @@
  * @(#) $Id$
  */
 
-#ifndef __TE__TAD_CLI_IMPL__H__
-#define __TE__TAD_CLI_IMPL__H__ 
+#ifndef __TE_TAD_CLI_IMPL_H__
+#define __TE_TAD_CLI_IMPL_H__ 
 
 #include <stdio.h>
 #ifdef STDC_HEADERS
@@ -330,12 +330,7 @@ extern int find_csap_layer(csap_p csap_descr, char *layer_name);
 #endif
 
 
-
-
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
-
-
-#endif /*  __TE__TAD_CLI_IMPL__H__ */
-
+#endif /*  __TE_TAD_CLI_IMPL_H__ */

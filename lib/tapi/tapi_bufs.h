@@ -10,8 +10,8 @@
  * $Id$
  */
 
-#ifndef __TE_LIB_TAPI_BUFS_H__
-#define __TE_LIB_TAPI_BUFS_H__
+#ifndef __TE_TAPI_BUFS_H__
+#define __TE_TAPI_BUFS_H__
 
 #ifdef HAVE_SYS_TYPE_H
 #include <sys/type.h>
@@ -76,4 +76,4 @@ tapi_make_buf_min(size_t min, size_t *p_len)
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
-#endif /* !__TE_LIB_TAPI_BUFS_H__ */
+#endif /* !__TE_TAPI_BUFS_H__ */

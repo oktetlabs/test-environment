@@ -25,8 +25,8 @@
  *
  * $Id$
  */ 
-#ifndef __TE__NDN_DUMMY__H__
-#define __TE__NDN_DUMMY__H__
+#ifndef __TE_NDN_FILE_H__
+#define __TE_NDN_FILE_H__
 
 #include "asn_usr.h"
 #include "ndn.h"
@@ -44,4 +44,4 @@ extern asn_type_p ndn_file_csap;
 } /* extern "C" */
 #endif
 
-#endif /* __TE__NDN_DUMMY__H__ */
+#endif /* __TE_NDN_FILE_H__ */

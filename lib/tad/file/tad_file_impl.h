@@ -26,8 +26,9 @@
  *
  * @(#) $Id$
  */
-#ifndef __TE__TAD_FILE_IMPL__H__
-#define __TE__TAD_FILE_IMPL__H__ 
+
+#ifndef __TE_TAD_FILE_IMPL_H__
+#define __TE_TAD_FILE_IMPL_H__ 
 
 #include "te_errno.h"
 
@@ -223,7 +224,4 @@ typedef struct file_csap_specific_data
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
-
-
-#endif /*  __TE__TAD_FILE_IMPL__H__ */
-
+#endif /* __TE_TAD_FILE_IMPL_H__ */

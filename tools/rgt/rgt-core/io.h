@@ -27,8 +27,8 @@
  * $Id$
  */
 
-#ifndef RGT_CORE_IO_H__
-#define RGT_CORE_IO_H__
+#ifndef __TE_RGT_CORE_IO_H__
+#define __TE_RGT_CORE_IO_H__
 
 #if HAVE_UNISTD_H
 #include <unistd.h>
@@ -75,5 +75,5 @@ size_t universal_read(FILE *fd, void *buf, size_t count,
 }
 #endif
 
-#endif /* RGT_CORE_IO_H__ */
+#endif /* __TE_RGT_CORE_IO_H__ */
 

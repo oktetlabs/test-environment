@@ -41,8 +41,8 @@
  * $Id$
  */ 
 
-#ifndef __LGR_LOGGER_TA_H__
-#define __LGR_LOGGER_TA_H__
+#ifndef __TE_LOGGER_TA_H__
+#define __TE_LOGGER_TA_H__
 
 #include "logger_ta_internal.h"
 #include "logger_defs.h"

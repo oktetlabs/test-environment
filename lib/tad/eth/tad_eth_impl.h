@@ -26,8 +26,8 @@
  *
  * @(#) $Id$
  */
-#ifndef __TE__TAD_ETH_IMPL__H__
-#define __TE__TAD_ETH_IMPL__H__ 
+#ifndef __TE_TAD_ETH_IMPL_H__
+#define __TE_TAD_ETH_IMPL_H__ 
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -417,7 +417,4 @@ extern int eth_echo_method (csap_p csap_descr, uint8_t *pkt, size_t len);
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
-
-
-#endif /*  __TE__TAD_ETH_IMPL__H__ */
-
+#endif /*  __TE_TAD_ETH_IMPL_H__ */

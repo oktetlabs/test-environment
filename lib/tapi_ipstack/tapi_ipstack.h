@@ -1,6 +1,6 @@
 
-#ifndef __TE_LIB_TAPI_IPSTACK_H__
-#define __TE_LIB_TAPI_IPSTACK_H__
+#ifndef __TE_TAPI_IPSTACK_H__
+#define __TE_TAPI_IPSTACK_H__
 
 #include <assert.h>
 #include <netinet/in.h>
@@ -255,5 +255,4 @@ extern int tapi_tcp_ip4_pattern_unit(
                         uint16_t src_port, uint16_t dst_port,
                         asn_value **result_value);
 
-#endif /* !__TE_LIB_TAPI_IPSTACK_H__ */
-
+#endif /* !__TE_TAPI_IPSTACK_H__ */

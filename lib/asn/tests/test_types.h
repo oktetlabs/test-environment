@@ -25,8 +25,8 @@
  *
  * $Id$
  */ 
-#ifndef __TE__ASN_LIB__TEST_TYPES__H__
-#define __TE__ASN_LIB__TEST_TYPES__H__
+#ifndef __TE_ASN_TESTS_TYPES_H__
+#define __TE_ASN_TESTS_TYPES_H__
 
 #include "te_errno.h"
 #include "asn_impl.h"
@@ -128,4 +128,4 @@ asn_type at_our_names = {
     {_at_our_names_enum_entries}
 };
 
-#endif /* __TE__ASN_LIB__TEST_TYPES__H__ */
+#endif /* __TE_ASN_TESTS_TYPES_H__ */

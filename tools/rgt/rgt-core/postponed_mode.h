@@ -29,8 +29,8 @@
  */
 
 
-#ifndef __RGT_POSTPONED_MODE_H__
-#define __RGT_POSTPONED_MODE_H__
+#ifndef __TE_RGT_POSTPONED_MODE_H__
+#define __TE_RGT_POSTPONED_MODE_H__
 
 #ifdef __cplusplus
 extern "C" {
@@ -47,5 +47,5 @@ int postponed_process_close();
 }
 #endif
 
-#endif /* __RGT_POSTPONED_MODE_H__ */
+#endif /* __TE_RGT_POSTPONED_MODE_H__ */
 

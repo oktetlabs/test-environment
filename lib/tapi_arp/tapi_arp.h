@@ -26,8 +26,8 @@
  * $Id$
  */ 
 
-#ifndef TAPI_ARP_H__
-#define TAPI_ARP_H__
+#ifndef __TE_TAPI_ARP_H__
+#define __TE_TAPI_ARP_H__
 
 #include <stdio.h>
 #ifdef HAVE_ASSERT_H
@@ -284,4 +284,4 @@ extern int tapi_arp_prepare_pattern_with_arp(const uint8_t *eth_src_mac,
                                              const uint8_t *tgt_proto_addr,
                                              asn_value **pattern);
 
-#endif /* TAPI_ARP_H__ */
+#endif /* __TE_TAPI_ARP_H__ */

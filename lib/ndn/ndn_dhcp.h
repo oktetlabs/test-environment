@@ -25,8 +25,8 @@
  *
  * $Id$
  */ 
-#ifndef __TE__NDN_DUMMY__H__
-#define __TE__NDN_DUMMY__H__
+#ifndef __TE_NDN_DHCP_H__
+#define __TE_NDN_DHCP_H__
 
 #include "asn_usr.h"
 #include "ndn.h"
@@ -50,4 +50,4 @@ typedef enum dhcp_csap_mode {
 } /* extern "C" */
 #endif
 
-#endif /* __TE__NDN_DUMMY__H__ */
+#endif /* __TE_NDN_DHCP_H__ */

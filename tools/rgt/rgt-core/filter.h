@@ -29,8 +29,8 @@
  */
 
 
-#ifndef __RGT_FILTER_H_
-#define __RGT_FILTER_H_
+#ifndef __TE_RGT_FILTER_H__
+#define __TE_RGT_FILTER_H__
 
 #include "rgt_common.h"
 
@@ -102,4 +102,4 @@ extern enum node_fltr_mode rgt_filter_check_branch(const char *path);
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
-#endif /* __RGT_FILTER_H_ */
+#endif /* __TE_RGT_FILTER_H__ */

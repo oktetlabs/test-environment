@@ -27,8 +27,8 @@
  * $Id$
  */
 
-#ifndef __LOG_MSG_H__
-#define __LOG_MSG_H__
+#ifndef __TE_RGT_LOG_MSG_H__
+#define __TE_RGT_LOG_MSG_H__
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -266,4 +266,4 @@ extern void free_log_msg(log_msg *msg);
 }
 #endif
 
-#endif /* __LOG_MSG_H__ */
+#endif /* __TE_RGT_LOG_MSG_H__ */

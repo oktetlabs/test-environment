@@ -25,8 +25,8 @@
  *
  * $Id$
  */ 
-#ifndef __TE__ASN_LIB__USER_API__H__
-#define __TE__ASN_LIB__USER_API__H__
+#ifndef __TE_ASN_USR_H__
+#define __TE_ASN_USR_H__
 
 #include <stdlib.h>
 #include <stdint.h>
@@ -617,4 +617,4 @@ extern const asn_type * const asn_base_objid;
 } /* for 'extern "C" {' */
 #endif
 
-#endif /* __TE__ASN_LIB__USER_API__H__ */
+#endif /* __TE_ASN_USR_H__ */

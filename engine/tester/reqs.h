@@ -28,8 +28,8 @@
  * $Id$
  */
 
-#ifndef __TE_ENGINE_TESTER_REQS_H__
-#define __TE_ENGINE_TESTER_REQS_H__
+#ifndef __TE_TESTER_REQS_H__
+#define __TE_TESTER_REQS_H__
 
 #ifdef HAVE_SYS_QUEUE_H
 #include <sys/queue.h>
@@ -101,4 +101,4 @@ extern te_bool tester_is_run_required(struct tester_ctx *ctx,
                                       const struct run_item *test,
                                       const struct test_params *params);
 
-#endif /* !__TE_ENGINE_TESTER_REQS_H__ */
+#endif /* !__TE_TESTER_REQS_H__ */

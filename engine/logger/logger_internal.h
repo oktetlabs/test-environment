@@ -28,8 +28,8 @@
  * $Id$
  */
 
-#ifndef __LGR_LOGGER_INTERNAL_H__
-#define __LGR_LOGGER_INTERNAL_H__
+#ifndef __TE_LOGGER_INTERNAL_H__
+#define __TE_LOGGER_INTERNAL_H__
 #ifdef _cplusplus
 extern "C" {
 #endif
@@ -192,4 +192,4 @@ extern void lgr_register_message(const void *buf_mess, size_t buf_len);
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
-#endif /* __LGR_LOGGER_INTERNAL_H__ */
+#endif /* __TE_LOGGER_INTERNAL_H__ */

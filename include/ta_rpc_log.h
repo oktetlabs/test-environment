@@ -28,8 +28,8 @@
  * $Id$
  */
  
-#ifndef __TA_RPC_LOG_H__
-#define __TA_RPC_LOG_H__
+#ifndef __TE_TA_RPC_LOG_H__
+#define __TE_TA_RPC_LOG_H__
 
 #include <stdio.h>
 #if HAVE_UNISTD_H
@@ -87,4 +87,4 @@ extern int ta_log_addr_len;            /**< Logging server address length */
 #define LGR_MESSAGE(_lvl, _lgruser, _fs...) RPC_LGR_MESSAGE(_lvl, _fs) 
 #endif
 
-#endif /* __TA_RPC_LOG_H__ */
+#endif /* __TE_TA_RPC_LOG_H__ */

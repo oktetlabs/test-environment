@@ -28,8 +28,8 @@
  * $Id$
  */
 
-#ifndef __TE_ENGINE_TESTER_ITERS_H__
-#define __TE_ENGINE_TESTER_ITERS_H__
+#ifndef __TE_TESTER_ITERS_H__
+#define __TE_TESTER_ITERS_H__
 
 #if HAVE_SYS_QUEUE_H
 #include <sys/queue.h>
@@ -92,4 +92,4 @@ extern void test_param_iteration_free(test_param_iteration *p);
  */
 extern void test_param_iterations_free(test_param_iterations *iters);
 
-#endif /* !__TE_ENGINE_TESTER_ITERS_H__ */
+#endif /* !__TE_TESTER_ITERS_H__ */

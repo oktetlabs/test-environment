@@ -25,8 +25,8 @@
  * $Id$
  */
 
-#ifndef __RGT_COMMON_H__
-#define __RGT_COMMON_H__
+#ifndef __TE_RGT_COMMON_H__
+#define __TE_RGT_COMMON_H__
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -216,5 +216,5 @@ extern FILE *output_fd;
 }
 #endif
 
-#endif /* __RGT_COMMON_H__ */
+#endif /* __TE_RGT_COMMON_H__ */
 

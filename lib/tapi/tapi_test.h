@@ -13,8 +13,8 @@
  * $Id$
  */
 
-#ifndef __TE_LIB_TAPI_TEST_PARAMS_H__
-#define __TE_LIB_TAPI_TEST_PARAMS_H__
+#ifndef __TE_TAPI_TEST_H__
+#define __TE_TAPI_TEST_H__
 
 #ifdef STDC_HEADERS
 #include <stdlib.h>
@@ -411,4 +411,4 @@ extern void sigint_handler(int signum);
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
-#endif /* !__TE_LIB_TAPI_TEST_PARAMS_H__ */
+#endif /* !__TE_TAPI_TEST_H__ */

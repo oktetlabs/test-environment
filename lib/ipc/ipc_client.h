@@ -28,8 +28,8 @@
  * $Id$
  */
 
-#ifndef __TE__LIB__IPC_CLIENT_H__
-#define __TE__LIB__IPC_CLIENT_H__
+#ifndef __TE_IPC_CLIENT_H__
+#define __TE_IPC_CLIENT_H__
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -193,4 +193,4 @@ extern int ipc_close_client(struct ipc_client *ipcc);
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
-#endif /* !__TE__LIB__IPC_CLIENT_H__ */
+#endif /* !__TE_IPC_CLIENT_H__ */

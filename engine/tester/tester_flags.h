@@ -28,8 +28,8 @@
  * $Id$
  */
 
-#ifndef __TE_ENGINE_TESTER_TESTER_FLAGS_H__
-#define __TE_ENGINE_TESTER_TESTER_FLAGS_H__
+#ifndef __TE_TESTER_FLAGS_H__
+#define __TE_TESTER_FLAGS_H__
 
 
 /** Flags of the Tester global context */
@@ -61,4 +61,4 @@ enum tester_flags {
     
 };
 
-#endif /* !__TE_ENGINE_TESTER_TESTER_FLAGS_H__ */
+#endif /* !__TE_TESTER_FLAGS_H__ */

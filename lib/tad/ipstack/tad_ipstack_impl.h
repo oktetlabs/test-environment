@@ -26,8 +26,9 @@
  *
  * @(#) $Id$
  */
-#ifndef __TE__TAD_DHCP_IMPL__H__
-#define __TE__TAD_DHCP_IMPL__H__ 
+
+#ifndef __TE_TAD_DHCP_IMPL_H__
+#define __TE_TAD_DHCP_IMPL_H__ 
 
 #include "config.h"
 
@@ -847,14 +848,7 @@ extern int tcp_ip4_init_cb (int csap_id, const asn_value *csap_nds, int layer);
 extern int tcp_ip4_destroy_cb (int csap_id, int layer);
 
 
-
-
-
-
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
-
-
 #endif /*  __TE__TAD_ETH_IMPL__H__ */
-

@@ -28,9 +28,8 @@
  * $Id$
  */
 
-
-#ifndef __RGT_LIVE_MODE_H__
-#define __RGT_LIVE_MODE_H__
+#ifndef __TE_RGT_LIVE_MODE_H__
+#define __TE_RGT_LIVE_MODE_H__
 
 #ifdef __cplusplus
 extern "C" {
@@ -44,5 +43,5 @@ live_mode_init(f_process_ctrl_log_msg ctrl_proc[CTRL_EVT_LAST][NT_LAST],
 }
 #endif
 
-#endif /* __RGT_LIVE_MODE_H__ */
+#endif /* __TE_RGT_LIVE_MODE_H__ */
 

@@ -25,8 +25,8 @@
  *
  * $Id$
  */ 
-#ifndef __TE__NDN_FORW_H__
-#define __TE__NDN_FORW_H__
+#ifndef __TE_NDN_FORW_H__
+#define __TE_NDN_FORW_H__
 
 #ifdef HAVE_NETINET_ETHER_H
 #include <netinet/ether.h>
@@ -137,4 +137,4 @@ extern asn_type ndn_forw_action_s;
 } /* extern "C" */
 #endif
 
-#endif /* __TE__NDN_FORW_H__ */
+#endif /* __TE_NDN_FORW_H__ */

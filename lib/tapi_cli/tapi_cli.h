@@ -28,8 +28,8 @@
  * $Id: $
  */
 
-#ifndef __TE_LIB_TAPI_DHCP_H__
-#define __TE_LIB_TAPI_DHCP_H__
+#ifndef __TE_TAPI_CLI_H__
+#define __TE_TAPI_CLI_H__
 
 #include <stdio.h>
 #if HAVE_ASSERT_H
@@ -215,4 +215,4 @@ extern int tapi_cli_send_recv(const char *ta_name, int sid,
         );                                                                     \
     } while (0)
 
-#endif /* __TE_LIB_TAPI_DHCP_H__ */
+#endif /* __TE_TAPI_CLI_H__ */

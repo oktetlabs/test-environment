@@ -28,8 +28,8 @@
  * $Id$
  */
 
-#ifndef __TE_TOOLS_TRC_DB_H__
-#define __TE_TOOLS_TRC_DB_H__
+#ifndef __TE_TRC_DB_H__
+#define __TE_TRC_DB_H__
 
 #if HAVE_SYS_QUEUE_H
 #include <sys/queue.h>
@@ -213,4 +213,4 @@ extern int trc_parse_log(const char *filename);
  */
 extern int trc_report_to_html(const char *filename, trc_database *db);
 
-#endif /* !__TE_TOOLS_TRC_DB_H__ */
+#endif /* !__TE_TRC_DB_H__ */

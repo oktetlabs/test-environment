@@ -28,8 +28,8 @@
  * $Id$
  */
 
-#ifndef __TAPI_RPCSOCK_H__
-#define __TAPI_RPCSOCK_H__
+#ifndef __TE_TAPI_RPCSOCK_H__
+#define __TE_TAPI_RPCSOCK_H__
 
 #include "tapi_rpcsock_defs.h"
 
@@ -975,4 +975,4 @@ extern int rpc_ftp_open(rcf_rpc_server *handle,
                         int offset);
 
 
-#endif /* __TAPI_RPCSOCK_H__ */
+#endif /* __TE_TAPI_RPCSOCK_H__ */

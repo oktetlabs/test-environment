@@ -25,8 +25,8 @@
  *
  * $Id$
  */ 
-#ifndef __TE__NDN_SNMP__H__
-#define __TE__NDN_SNMP__H__
+#ifndef __TE_NDN_SNMP_H__
+#define __TE_NDN_SNMP_H__
 
 #include "config.h"
 
@@ -90,4 +90,4 @@ extern const char *ndn_snmp_msg_type_h2str(ndn_snmp_msg_t msg_type);
 } /* extern "C" */
 #endif
 
-#endif /* __TE__NDN_SNMP__H__ */
+#endif /* __TE_NDN_SNMP_H__ */

@@ -27,8 +27,8 @@
  * $Id$
  */
  
-#ifndef __LINUX_RPC_H__
-#define __LINUX_RPC_H__
+#ifndef __TE_TA_LINUX_RPC_H__
+#define __TE_TA_LINUX_RPC_H__
 
 /** Function to start RPC server after execve */
 void tarpc_init(int argc, char **argv);
@@ -53,4 +53,4 @@ extern struct sockaddr_un ta_log_addr;
 /** Obtain RCF RPC errno code */
 #define RPC_ERRNO errno_h2rpc(errno)
 
-#endif /* __LINUX_RPC_H__ */
+#endif /* __TE_TA_LINUX_RPC_H__ */

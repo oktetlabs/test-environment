@@ -1,6 +1,6 @@
 
-#ifndef RGT_MEMORY_H__
-#define RGT_MEMORY_H__
+#ifndef __TE_RGT_MEMORY_H__
+#define __TE_RGT_MEMORY_H__
 
 #include "log_msg.h"
 
@@ -17,4 +17,4 @@ void free_node_info(node_info_t *);
 void *node_info_obstack_alloc(int size);
 void *node_info_obstack_copy0(const void *address, int size);
 
-#endif /* RGT_MEMORY_H__ */
+#endif /* __TE_RGT_MEMORY_H__ */

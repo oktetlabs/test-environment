@@ -25,8 +25,8 @@
  *
  * $Id$
  */ 
-#ifndef __TE__NDN_BRIDGE__H__
-#define __TE__NDN_BRIDGE__H__
+#ifndef __TE_NDN_BRIDGE_H__
+#define __TE_NDN_BRIDGE_H__
 
 
 #include "te_stdint.h"
@@ -120,4 +120,4 @@ extern asn_type ndn_bridge_csap_s;
 } /* extern "C" */
 #endif
 
-#endif /* __TE__NDN_BRIDGE__H__ */
+#endif /* __TE_NDN_BRIDGE_H__ */

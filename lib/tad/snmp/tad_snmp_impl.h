@@ -26,8 +26,9 @@
  *
  * @(#) $Id$
  */
-#ifndef __TE__TAD_SNMP_IMPL__H__
-#define __TE__TAD_SNMP_IMPL__H__ 
+
+#ifndef __TE_TAD_SNMP_IMPL_H__
+#define __TE_TAD_SNMP_IMPL_H__ 
 
 #include<stdio.h>
 #include<sys/types.h>
@@ -272,7 +273,4 @@ typedef struct snmp_csap_specific_data
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
-
-
-#endif /*  __TE__TAD_SNMP_IMPL__H__ */
-
+#endif /*  __TE_TAD_SNMP_IMPL_H__ */

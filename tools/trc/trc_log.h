@@ -28,8 +28,8 @@
  * $Id$
  */
 
-#ifndef __TE_TOOLS_TRC_LOG_H__
-#define __TE_TOOLS_TRC_LOG_H__
+#ifndef __TE_TRC_LOG_H__
+#define __TE_TRC_LOG_H__
 
 #include <stdio.h>
 
@@ -42,4 +42,4 @@
 #define ERROR(fmt_...)     LOG("ERROR: " fmt_)
 #define INFO(fmt_...)
 
-#endif /* !__TE_TOOLS_TRC_LOG_H__ */
+#endif /* !__TE_TRC_LOG_H__ */

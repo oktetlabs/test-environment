@@ -26,8 +26,9 @@
  *
  * @(#) $Id$
  */
-#ifndef __TE__TAD_BRIDGE_IMPL__H__
-#define __TE__TAD_BRIDGE_IMPL__H__ 
+
+#ifndef __TE_TAD_BRIDGE_IMPL_H__
+#define __TE_TAD_BRIDGE_IMPL_H__ 
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -193,7 +194,4 @@ extern void free_bridge_csap_data(bridge_csap_specific_data_p spec_data, char is
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
-
-
-#endif /*  __TE__TAD_BRIDGE_IMPL__H__ */
-
+#endif /*  __TE_TAD_BRIDGE_IMPL_H__ */

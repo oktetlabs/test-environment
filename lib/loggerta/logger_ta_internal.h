@@ -28,8 +28,8 @@
  * $Id$
  */
 
-#ifndef __LGR_LOGGER_TA_INTERNAL_H__
-#define __LGR_LOGGER_TA_INTERNAL_H__
+#ifndef __TE_LOGGER_TA_INTERNAL_H__
+#define __TE_LOGGER_TA_INTERNAL_H__
 
 #include <stdio.h>
 #if HAVE_STDARG_H
@@ -685,4 +685,4 @@ extern void log_message_print(const char *us, const char *fs, ...);
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
-#endif /* __LGR_LOGGER_TEN_INTERNAL_H__ */
+#endif /* __TE_LOGGER_TA_INTERNAL_H__ */

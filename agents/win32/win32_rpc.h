@@ -24,11 +24,11 @@
  *
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
  *
- * $Id: win32_rpc.h 3672 2004-07-20 00:00:04Z helen $
+ * $Id$
  */
  
-#ifndef __WIN32_RPC_H__
-#define __WIN32_RPC_H__
+#ifndef __TE_TA_WIN32_RPC_H__
+#define __TE_TA_WIN32_RPC_H__
 
 /**
  * Destroy all RPC server processes and release the list of RPC servers.
@@ -62,4 +62,4 @@ extern int                ta_log_sock;
 /** Obtain RCF RPC errno code */
 #define RPC_ERRNO errno_h2rpc(errno)
 
-#endif /* __WIN32_RPC_H__ */
+#endif /* __TE_TA_WIN32_RPC_H__ */

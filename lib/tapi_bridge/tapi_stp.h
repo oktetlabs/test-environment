@@ -28,8 +28,8 @@
  * $Id$
  */ 
 
-#ifndef TAPI_BRIDGE_STP_H__
-#define TAPI_BRIDGE_STP_H__
+#ifndef __TE_TAPI_BRIDGE_STP_H__
+#define __TE_TAPI_BRIDGE_STP_H__
 
 #include <sys/time.h>
 
@@ -134,4 +134,4 @@ extern int tapi_stp_bpdu_recv_start(const char *ta_name, int sid,
                                     unsigned int timeout, int num);
 
 
-#endif /* TAPI_BRIDGE_STP_H__ */
+#endif /* __TE_TAPI_BRIDGE_STP_H__ */

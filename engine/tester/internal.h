@@ -28,8 +28,8 @@
  * $Id$
  */
 
-#ifndef __TE_ENGINE_TESTER_INTERNAL_H__
-#define __TE_ENGINE_TESTER_INTERNAL_H__
+#ifndef __TE_TESTER_INTERNAL_H__
+#define __TE_TESTER_INTERNAL_H__
 
 #ifdef HAVE_SYS_QUEUE_H
 #include <sys/queue.h>
@@ -366,4 +366,4 @@ extern void tester_out_done(run_item_type type, const char *name,
                             test_id parent, test_id self,
                             unsigned int flags, int result);
 
-#endif /* !__TE_ENGINE_TESTER_INTERNAL_H__ */
+#endif /* !__TE_TESTER_INTERNAL_H__ */

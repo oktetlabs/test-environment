@@ -28,8 +28,8 @@
  * $Id$
  */
 
-#ifndef __TE_LIB_TAPI_DHCP_H__
-#define __TE_LIB_TAPI_DHCP_H__
+#ifndef __TE_TAPI_ETH_H__
+#define __TE_TAPI_ETH_H__
 
 #include <stdio.h>
 #if HAVE_ASSERT_H
@@ -279,4 +279,4 @@ extern int tapi_eth_prepare_pattern_unit(uint8_t *src_mac,
  */
 extern void tapi_eth_fprint_mac(FILE *f, const uint8_t *addr);
 
-#endif /* __TE_LIB_TAPI_DHCP_H__ */
+#endif /* __TE_TAPI_ETH_H__ */

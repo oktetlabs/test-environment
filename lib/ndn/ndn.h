@@ -25,8 +25,8 @@
  *
  * $Id$
  */ 
-#ifndef __TE__NDN_GENEREIC__H__
-#define __TE__NDN_GENEREIC__H__
+#ifndef __TE_NDN_GENEREIC_H__
+#define __TE_NDN_GENEREIC_H__
 
 #ifdef __cplusplus
 extern "C" {
@@ -132,6 +132,4 @@ extern int ndn_get_timestamp(const asn_value *packet, struct timeval *ts);
 #endif
 
 
-#endif /*  __TE__NDN_GENEREIC__H__*/
-
-
+#endif /*  __TE_NDN_GENEREIC_H__*/

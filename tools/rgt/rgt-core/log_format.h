@@ -27,8 +27,8 @@
  * $Id$
  */
 
-#ifndef RGT_CORE_LOG_FORMAT_H__
-#define RGT_CORE_LOG_FORMAT_H__
+#ifndef __TE_RGT_CORE_LOG_FORMAT_H__
+#define __TE_RGT_CORE_LOG_FORMAT_H__
 
 #include <stdio.h>
 #include "log_msg.h"
@@ -88,4 +88,4 @@ int fetch_log_msg_v1(log_msg **msg, FILE *fd);
 }
 #endif
 
-#endif /* RGT_CORE_LOG_FORMAT_H__ */
+#endif /* __TE_RGT_CORE_LOG_FORMAT_H__ */

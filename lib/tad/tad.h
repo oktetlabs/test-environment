@@ -27,8 +27,9 @@
  *
  * $Id$
  */
-#ifndef __TE__TAD_CH__IMPL__H__
-#define __TE__TAD_CH__IMPL__H__ 
+
+#ifndef __TE_TAD_H__
+#define __TE_TAD_H__ 
 
 #include <sys/time.h>
 #include <unistd.h>
@@ -1020,6 +1021,4 @@ extern int tad_univ_match_field(const tad_data_unit_t *pattern,
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
-
-#endif /*  __TE__TAD_CH__IMPL__H__ */
-
+#endif /*  __TE_TAD_H__ */

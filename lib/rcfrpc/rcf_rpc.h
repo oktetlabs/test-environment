@@ -30,8 +30,8 @@
  * $Id$
  */
 
-#ifndef __RCF_RPC_H__
-#define __RCF_RPC_H__
+#ifndef __TE_RCF_RPC_H__
+#define __TE_RCF_RPC_H__
 
 #undef MAX
 #undef MIN
@@ -193,4 +193,4 @@ rcf_rpc_free_result(void *out_arg, xdrproc_t out_proc)
     out_proc((XDR *)&op, out_arg);
 }
 
-#endif /* !__RCF_RPC_H__ */
+#endif /* !__TE_RCF_RPC_H__ */

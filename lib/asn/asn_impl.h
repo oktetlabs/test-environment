@@ -27,8 +27,8 @@
  * $Id$
  */ 
 
-#ifndef __TE__ASN_LIB__IMPLEM__H__
-#define __TE__ASN_LIB__IMPLEM__H__
+#ifndef __TE_ASN_IMPL_H__
+#define __TE_ASN_IMPL_H__
 
 #include "asn_usr.h"
 
@@ -202,4 +202,4 @@ extern int asn_impl_insert_subvalue (asn_value_p container, const char *label,
 #endif
 
 
-#endif /* __TE__ASN_LIB__IMPLEM__H__ */
+#endif /* __TE_ASN_IMPL_H__ */

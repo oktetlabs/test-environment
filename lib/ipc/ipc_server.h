@@ -28,8 +28,8 @@
  * $Id$
  */
 
-#ifndef __TE__LIB__IPC_SERVER_H__
-#define __TE__LIB__IPC_SERVER_H__
+#ifndef __TE_IPC_SERVER_H__
+#define __TE_IPC_SERVER_H__
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -191,4 +191,4 @@ extern int ipc_kill(void);
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
-#endif /* !__TE__LIB__IPC_SERVER_H__ */
+#endif /* !__TE_IPC_SERVER_H__ */

@@ -28,8 +28,8 @@
  * $Id$
  */
 
-#ifndef __TE_ENGINE_TESTER_RUN_PATH_H__
-#define __TE_ENGINE_TESTER_RUN_PATH_H__
+#ifndef __TE_TESTER_RUN_PATH_H__
+#define __TE_TESTER_RUN_PATH_H__
 
 #ifdef HAVE_SYS_QUEUE_H
 #include <sys/queue.h>
@@ -115,4 +115,4 @@ extern int tester_run_path_forward(struct tester_ctx *ctx,
 extern int tester_run_path_params_match(struct tester_ctx *ctx,
                                         test_params *params);
 
-#endif /* !__TE_ENGINE_TESTER_RUN_PATH_H__ */
+#endif /* !__TE_TESTER_RUN_PATH_H__ */

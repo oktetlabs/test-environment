@@ -48,8 +48,8 @@
  * $Id$
  */
 
-#ifndef RGT_TMPLS_LIB_H_
-#define RGT_TMPLS_LIB_H_
+#ifndef __TE_RGT_TMPLS_LIB_H__
+#define __TE_RGT_TMPLS_LIB_H__
 
 #include <stdio.h>
 
@@ -128,4 +128,4 @@ void rgt_tmpls_lib_free(struct log_tmpl *tmpls, int tmpl_num);
 int rgt_tmpls_lib_output(FILE *out_fd, struct log_tmpl *tmpl,
                          const char **vars, const char **user_vars);
 
-#endif /* RGT_TMPLS_LIB_H_ */
+#endif /* __TE_RGT_TMPLS_LIB_H__ */

@@ -25,8 +25,8 @@
  *
  * $Id$
  */ 
-#ifndef __TE__NDN_IPSTACK__H__
-#define __TE__NDN_IPSTACK__H__
+#ifndef __TE_NDN_IPSTACK_H__
+#define __TE_NDN_IPSTACK_H__
 
 
 #include "asn_usr.h"
@@ -55,4 +55,4 @@ extern asn_type_p ndn_tcp_csap;
 } /* extern "C" */
 #endif
 
-#endif /* __TE__NDN_IPSTACK__H__ */
+#endif /* __TE_NDN_IPSTACK_H__ */

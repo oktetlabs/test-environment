@@ -27,8 +27,8 @@
  * $Id$
  */
  
-#ifndef __LINUX_INTERNAL_H__
-#define __LINUX_INTERNAL_H__
+#ifndef __TE_TA_LINUX_INTERNAL_H__
+#define __TE_TA_LINUX_INTERNAL_H__
 
 /** TA name pointer */
 extern char *ta_name;
@@ -49,4 +49,4 @@ extern int ta_system(char *cmd);
        printf(msg); printf("\n"); fflush(stdout);       \
     } while (0)
 
-#endif /* __LINUX_INTERNAL_H__ */
+#endif /* __TE_TA_LINUX_INTERNAL_H__ */
