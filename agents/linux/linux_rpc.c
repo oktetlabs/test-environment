@@ -28,7 +28,9 @@
  * $Id$
  */
 
-#ifdef HAVE_CONFIG_H
+#define TE_LOG_LEVEL 0xff
+
+#if HAVE_CONFIG_H
 #include "config.h"
 #endif
 
@@ -40,7 +42,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/socket.h>
-#ifdef HAVE_SYS_UN_H
+#if HAVE_SYS_UN_H
 #include <sys/un.h>
 #endif
 #include <pthread.h>
@@ -439,6 +441,7 @@ tarpc_server(const void *arg)
     pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
 #ifdef HAVE_SVCUNIX_CREATE
+    VERB("%s(): call svcunix_create()", __FUNCTION__);
     transp = svcunix_create(RPC_ANYSOCK, 1024, 1024, addr.sun_path);
     if (transp == NULL)
     {
@@ -479,12 +482,14 @@ tarpc_server(const void *arg)
     }
 #endif
 
+    VERB("%s(): call svc_register()", __FUNCTION__);
     if (!svc_register(transp, tarpc, ver0, tarpc_1, 0))
     {
         RPC_LGR_MESSAGE(TE_LL_ERROR, "svc_register() failed");
         return NULL;
     }
     
+    VERB("%s(): call svc_run()", __FUNCTION__);
     svc_run();
 
     RPC_LGR_MESSAGE(TE_LL_ERROR, "Unreachable!");
@@ -648,8 +653,8 @@ tarpc_call(int timeout, const char *name, const char *file)
     }
     if (len == 0)
     {
-        ERROR("RPC client connection closed, "
-              "it's likely that RPC server '%s' dead", name);
+        ERROR("RPC client connection closed, it's likely that RPC "
+              "server '%s' is dead", name);
         return TE_RC(TE_TA_LINUX, EIO);
     }
     /* Read the rest of data, if exist */
@@ -685,7 +690,7 @@ tarpc_call(int timeout, const char *name, const char *file)
         if (n == 0)
         {
             ERROR("RPC client connection closed after got of some data, "
-                  "it's likely that RPC server '%s' dead", name);
+                  "it's likely that RPC server '%s' is dead", name);
             return TE_RC(TE_TA_LINUX, EIO);
         }
         len += n;
