@@ -556,7 +556,7 @@ init_agent(ta *agent)
     answer_all_requests(&(agent->sent), ETAREBOOTED);
     answer_all_requests(&(agent->pending), ETAREBOOTED);
     VERB("Start TA %s type=%s confstr='%s'",
-                     agent->name, agent->type, agent->conf);
+         agent->name, agent->type, agent->conf);
     if ((rc = (agent->start)(agent->name, agent->type,
                              agent->conf, &(agent->handle),
                              &(agent->flags))) != 0)
@@ -946,14 +946,14 @@ process_reply(ta *agent)
             agent->reboot_timestamp = 0;
             if (!(agent->flags & TA_PROXY))
             {
+                answer_user_request(req);
                 error = init_agent(agent);
                 if (error != 0)
                 {
-                    ERROR("FATAL ERROR: Initialization "
-                              "of the TA '%s' after reboot failed ",
-                              agent->name);
-                    return rc;
+                    ERROR("FATAL ERROR: Initialization of the TA '%s' "
+                          "after reboot failed ", agent->name);
                 }
+                return error;
             }
         }
         else
