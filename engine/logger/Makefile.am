@@ -10,7 +10,7 @@ AM_LDFLAGS = @TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/lib
 
 bin_PROGRAMS = te_logger te_log_shutdown te_log_flush
 
-noinst_HEADERS = logger_prc_internal.h logger_internal.h
+noinst_HEADERS = logger_internal.h
 
 
 te_logger_SOURCES = logger.c logger_cnf.c logger_prc.c

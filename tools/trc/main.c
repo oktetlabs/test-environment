@@ -124,7 +124,7 @@ process_cmd_line_opts(int argc, char **argv)
                 break;
 
             case TRC_OPT_DB:
-                trc_db_fn = poptGetOptArg(optCon);
+                trc_db_fn = strdup(poptGetOptArg(optCon));
                 break;
             
             case TRC_OPT_VERSION:
@@ -150,7 +150,7 @@ process_cmd_line_opts(int argc, char **argv)
     }
 
     /* Get Tester configuration file names */
-    trc_xml_log_fn = poptGetArg(optCon);
+    trc_xml_log_fn = strdup(poptGetArg(optCon));
 
     if (poptGetArg(optCon) != NULL)
     {
@@ -236,8 +236,8 @@ int
 main(int argc, char *argv[])
 {
     int         result = EXIT_FAILURE;
-    trc_stats   stats;
 
+    memset(&trc_db, 0, sizeof(trc_db));
     TAILQ_INIT(&trc_db.tests);
 
     /* Process and validate command-line options */
@@ -262,8 +262,14 @@ main(int argc, char *argv[])
     }
 
     /* Collect total statistics */
-    memset(&stats, 0, sizeof(stats));
-    trc_collect_tests_stats(&trc_db.tests, &stats);
+    trc_collect_tests_stats(&trc_db.tests, &trc_db.stats);
+
+    /* Generate report in HTML format */
+    if (report_to_html("test.html", &trc_db) != 0)
+    {
+        ERROR("Failed to generate report in HTML format");
+        goto exit;
+    }
 
     /* Update expected testing results database, if requested */
     if (trc_update_db && (trc_dump_db(trc_db_fn) != 0))

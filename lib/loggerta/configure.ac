@@ -28,7 +28,15 @@ AM_CONFIG_HEADER(config.h)
 
 AC_C_INLINE
 
-AC_CHECK_HEADERS(time.h sys/time.h netinet/in.h semaphore.h)
+AC_CHECK_HEADERS([\
+stdlib.h \
+stdarg.h \
+string.h \
+time.h \
+sys/time.h \
+semaphore.h \
+netinet/in.h \
+])
 
 AC_CONFIG_FILES(Makefile)
 

@@ -29,7 +29,8 @@ AUTOMAKE_OPTIONS = foreign
 
 include_HEADERS = te_defs.h te_errno.h te_proto.h te_stdint.h \
                   comm_agent.h rcf_methods.h rcf_common.h tad_common.h \
-                  rcf_rpc_defs.h tapi_rpcsock_defs.h logger_api.h logger_defs.h \
+                  rcf_rpc_defs.h tapi_rpcsock_defs.h \
+                  te_raw_log.h logger_api.h logger_defs.h logger_int.h \
                   rcf_internal.h ta_rpc_log.h
 
 EXTRA_DIST=tarpc.x.m4 rpc_unsupported.m4

@@ -49,31 +49,31 @@
 #include "logger_api.h"
 
 #define LGRF_MESSAGE(_lvl, _lgruser, _fs, _args...) \
-    do {                                                                \
-        if (LOG_LEVEL & (_lvl))                                         \
-        {                                                               \
-            log_message_fast(_lvl, _lgruser, _fs, LARG12(_args));       \
-        }                                                               \
+    do {                                                            \
+        if (TE_LOG_LEVEL & (_lvl))                                  \
+        {                                                           \
+            log_message_fast(_lvl, _lgruser, _fs, LARG12(_args));   \
+        }                                                           \
     } while (0) 
     
 /**< Logging abnormal/unexpected situations */
-#define LOGF_ERROR(_us, _fs...)  LGRF_MESSAGE(ERROR_LVL, _us, _fs)
+#define LOGF_ERROR(_us, _fs...)  LGRF_MESSAGE(TE_LL_ERROR, _us, _fs)
 #define F_ERROR(_fs...)          LOGF_ERROR(TE_LGR_USER, _fs)
 
 /**< Logging situations same failed initialization of the optional feature */
-#define LOGF_WARN(_us, _fs...)  LGRF_MESSAGE(WARNING_LVL, _us, _fs)
+#define LOGF_WARN(_us, _fs...)  LGRF_MESSAGE(TE_LL_WARN, _us, _fs)
 #define F_WARN(_fs...)          LOGF_WARN(TE_LGR_USER, _fs)
   
 /**< Logging very important event in TE and tests */ 
-#define LOGF_RING(_us, _fs...)  LGRF_MESSAGE(RING_LVL, _us, _fs)
+#define LOGF_RING(_us, _fs...)  LGRF_MESSAGE(TE_LL_RING, _us, _fs)
 #define F_RING(_fs...)          LOGF_RING(TE_LGR_USER, _fs)
 
 /**< Logging important event for debugging of the test */
-#define LOGF_INFO(_us, _fs...)  LGRF_MESSAGE(INFORMATION_LVL, _us, _fs)
+#define LOGF_INFO(_us, _fs...)  LGRF_MESSAGE(TE_LL_INFO, _us, _fs)
 #define F_INFO(_fs...)          LOGF_INFO(TE_LGR_USER, _fs)
    
 /**< Logging additional events for detalization of processing */
-#define LOGF_VERB(_us, _fs...)  LGRF_MESSAGE(VERBOSE_LVL, _us, _fs)
+#define LOGF_VERB(_us, _fs...)  LGRF_MESSAGE(TE_LL_VERB, _us, _fs)
 #define F_VERB(_fs...)          LOGF_VERB(TE_LGR_USER, _fs)
 
 
@@ -81,7 +81,7 @@
 /**< Logging of entry to and exit from function */    
 #define LOGF_SUPENTRY(_us, _fs, _args...) \
     do {                                              \
-        log_message_fast(ENTRY_EXIT_LVL, _us,         \
+        log_message_fast(TE_LL_ENTRY_EXIT, _us,       \
                          "ENTRY to %s(): " _fs,       \
                          4, (uint32_t)__FUNCTION__,   \
                          LARG10(_args));              \
@@ -90,12 +90,12 @@
 
 #define LOGF_ENTRY(_us, _fs...) \
     do {                                                                \
-        if (LOG_LEVEL & ENTRY_EXIT_LVL)                                 \
+        if (TE_LOG_LEVEL & TE_LL_ENTRY_EXIT)                            \
         {                                                               \
             if (!!(#_fs[0]))                                            \
                 LOGF_SUPENTRY(_us, _fs);                                \
             else                                                        \
-                log_message_fast(ENTRY_EXIT_LVL, _us,                   \
+                log_message_fast(TE_LL_ENTRY_EXIT, _us,                 \
                                  "ENTRY to %s()",                       \
                                  4, (uint32_t)__FUNCTION__,             \
                                  LARG10());                             \
@@ -106,7 +106,7 @@
     
 #define LOGF_SUPEXIT(_us, _fs, _args...) \
     do {                                                        \
-        log_message_fast(ENTRY_EXIT_LVL, _us,                   \
+        log_message_fast(TE_LL_ENTRY_EXIT, _us,                 \
                          "EXIT in line %d from %s(): " _fs,     \
                          4, __LINE__,                           \
                          4, (uint32_t)__FUNCTION__,             \
@@ -115,12 +115,12 @@
   
 #define LOGF_EXIT(_us, _fs...)                                  \
     do {                                                        \
-        if (LOG_LEVEL & ENTRY_EXIT_LVL)                         \
+        if (TE_LOG_LEVEL & TE_LL_ENTRY_EXIT)                    \
         {                                                       \
             if (!!(#_fs[0]))                                    \
                 LOGF_SUPEXIT(_us, _fs);                         \
             else                                                \
-                log_message_fast(ENTRY_EXIT_LVL, _us,           \
+                log_message_fast(TE_LL_ENTRY_EXIT, _us,         \
                                  "EXIT in line %d from %s()",   \
                                  4, __LINE__,                   \
                                  4, (uint32_t)__FUNCTION__,     \

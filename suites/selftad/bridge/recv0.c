@@ -43,11 +43,11 @@
 #include "ndn_bridge.h"
 #include "tapi_stp.h"
 
-#undef LOG_LEVEL
-#define LOG_LEVEL 255
+#undef TE_LOG_LEVEL
+#define TE_LOG_LEVEL 255
 #include "logger_ten.h"
 
-#define LOG_LEVEL 255
+#define TE_LOG_LEVEL 255
 
 #define CHECK_STATUS(_rc, x...) \
     do if (_rc) {\

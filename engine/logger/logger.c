@@ -28,8 +28,26 @@
  * $Id$
  */
 
+#if HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#if HAVE_SYS_TIME_H
+#include <sys/time.h>
+#endif
+#if HAVE_TIME_H
+#include <time.h>
+#endif
+#if HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
+
+#include "te_raw_log.h"
+#include "logger_int.h"
 #include "logger_internal.h"
-#include "logger_prc_internal.h"
+
+
+#define LGR_MAX_BUF 0x4000    /* FIXME */
 
 #define FREAD(_fd, _buf, _len) \
     fread((_buf), sizeof(char), (_len), (_fd))
@@ -40,25 +58,18 @@
 
 DEFINE_LGR_ENTITY("Logger");
 
-/* TA single linked list */
-ta_inst *ta_list = NULL;
-
 /* TEN entities linked list */
 te_inst *te_list = NULL;
 
-/* This flag will be set 0 on shutdown */
-uint32_t run_logger = 1;
+/* TA single linked list */
+ta_inst *ta_list = NULL;
 
-/* MUTual  EXclusion device */
-pthread_mutex_t mutex;   /* = PTHREAD_MUTEX_INITIALIZER;*/
-
-struct ipc_server *srv;
 
 /* Temporary raw log file */
-FILE *raw_file;
+static FILE *raw_file;
 
-char te_log_path[LGR_FIELD_MAX];
-char te_log_tmp[LGR_FIELD_MAX];
+char te_log_dir[TE_LOG_FIELD_MAX];
+static char te_log_tmp[TE_LOG_FIELD_MAX];
 
 
 /**
@@ -100,10 +111,13 @@ lgr_message_filter(const char *user_name, re_fltr *filters)
  * @param buf_len   Log message length.
  */
 void
-lgr_register_message(char *buf_mess, size_t buf_len)
+lgr_register_message(const void *buf_mess, size_t buf_len)
 {
+    /* MUTual  EXclusion device */
+    static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+
     pthread_mutex_lock(&mutex);
-    if (buf_len != fwrite(buf_mess, sizeof(char), buf_len, raw_file))
+    if (fwrite(buf_mess, buf_len, 1, raw_file) != 1)
     {
         perror("fwrite() failure");
     } 
@@ -120,55 +134,81 @@ lgr_register_message(char *buf_mess, size_t buf_len)
 static void * 
 te_handler(void)
 {
+    char                        err_buf[BUFSIZ];
+    static struct ipc_server   *srv;
     struct ipc_server_client   *ipcsc_p;
     char                        buf_mess[LGR_MAX_BUF];
     size_t                      buf_len;
 
-    while (run_logger)
+
+    /* Register TEN server */
+    srv = ipc_register_server(LGR_SRV_NAME);
+    if (srv == NULL)
+    {
+        strerror_r(errno, err_buf, sizeof(err_buf));
+        ERROR("IPC server '%s' registration failed: %s\n",
+              LGR_SRV_NAME, err_buf);
+        return NULL;
+    }
+    INFO("IPC server '%s' registered\n", LGR_SRV_NAME);
+
+    while (TRUE) /* Forever loop */
     {
         buf_len = LGR_MAX_BUF;
         ipcsc_p = NULL;
-        if(ipc_receive_message(srv, buf_mess, &buf_len, &ipcsc_p) != 0)
+        if (ipc_receive_message(srv, buf_mess, &buf_len, &ipcsc_p) != 0)
         {
             ERROR("Message receiving failure\n");
+            break;
         }
         
-        if (!strncmp((buf_mess + 1), LGR_SHUTDOWN, (uint8_t)*buf_mess))
+        if (strncmp((buf_mess + sizeof(te_log_nfl_t)), LGR_SHUTDOWN,
+                    *(te_log_nfl_t *)buf_mess) == 0)
         {
-            run_logger = 0;
             RING("Logger shutdown ...\n");
+            break;
         }
         else 
         {
             uint32_t          log_flag = LGR_INCLUDE;
-            struct te_inst   *tmp_el;
-            char              tmp_name[LGR_FIELD_MAX];
+            struct te_inst   *te_el;
+            char              tmp_name[TE_LOG_FIELD_MAX];
             uint32_t          len = buf_mess[0];
 
             memcpy(tmp_name, buf_mess, len);
             tmp_name[len] = 0;
 
-            tmp_el = te_list;
-            while (tmp_el != NULL)
+            te_el = te_list;
+            while (te_el != NULL)
             {
-                if (!strcmp(tmp_el->entity, tmp_name))
+                if (!strcmp(te_el->entity, tmp_name))
                 {
                     char *tmp_pnt;
-                    len = LGR_NFL_FLD + buf_mess[0] + LGR_VER_FLD + 
-                          LGR_TIMESTAMP_FLD + LGR_MESS_LENGTH_FLD;
+
+                    len = TE_LOG_NFL_SZ + buf_mess[0] + TE_LOG_VERSION_SZ + 
+                          TE_LOG_TIMESTAMP_SZ + TE_LOG_MSG_LEN_SZ;
                     tmp_pnt = buf_mess + len + 1;
                     len = buf_mess[len];
                     memcpy(tmp_name, tmp_pnt, len);
-                    log_flag = lgr_message_filter(tmp_name, &tmp_el->filters);
+                    log_flag = lgr_message_filter(tmp_name, &te_el->filters);
                     break;
                 }
-                tmp_el = tmp_el->next;
+                te_el = te_el->next;
             }           
 
             if (log_flag == LGR_INCLUDE)
                 lgr_register_message(buf_mess, buf_len);
         }
+    } /* end of forever loop */
+
+    INFO("Close IPC server '%s'\n", LGR_SRV_NAME);
+    if (ipc_close_server(srv) != 0)
+    {
+        strerror_r(errno, err_buf, sizeof(err_buf));
+        ERROR("IPC server '%s' shutdown failed: %s\n",
+              LGR_SRV_NAME, err_buf);
     }
+
     return NULL;
 }
 
@@ -189,7 +229,7 @@ ta_handler(void *ta)
     fd_set              rfds;     
     int                 fd_server;
     struct ipc_server  *srv;
-    char                ta_srv[LGR_MAX_NAME] = "TE_LOGGER-";
+    char                ta_srv[LGR_MAX_NAME] = LGR_SRV_FOR_TA_PREFIX;
     char                buf_mess[LGR_MAX_BUF] = { 0, };
     size_t              buf_len = sizeof(buf_mess);
     uint32_t            empty_flag  = 0; /* Set if file is empty */
@@ -306,13 +346,13 @@ ta_handler(void *ta)
         }
 
         do {
-            char     *p_buf = buf_mess;
-            uint16_t  len;
-            char      tmp_name[LGR_FIELD_MAX];
-            uint32_t  log_flag = LGR_INCLUDE;
-            uint32_t  sequence = 0;
-            uint16_t  log_level;
-            uint32_t  rc = 0;
+            char               *p_buf = buf_mess;
+            te_log_level_t      log_level;
+            te_log_msg_len_t    len;
+            char                tmp_name[TE_LOG_FIELD_MAX];
+            uint32_t            log_flag = LGR_INCLUDE;
+            uint32_t            sequence = 0;
+            uint32_t            rc = 0;
 
             /* Add TA name and corresponding NFL to the message */
             msg_count++;
@@ -335,8 +375,9 @@ ta_handler(void *ta)
             inst->sequence += sequence;
 
 
-            /* Get LGR_MESS_LENGTH value */
-            len = LGR_VER_FLD + LGR_TIMESTAMP_FLD + LGR_LEVEL_FLD + LGR_MESS_LENGTH_FLD;
+            /* Read control fields value */
+            len = TE_LOG_VERSION_SZ + TE_LOG_TIMESTAMP_SZ + \
+                  TE_LOG_LEVEL_SZ + TE_LOG_MSG_LEN_SZ;
             if (FREAD(ta_file, p_buf, len) != len)
             {
                 empty_flag = 1; /* File is empty or reading error */            
@@ -344,22 +385,34 @@ ta_handler(void *ta)
             }
 
             /* Get message timestamp value */
-            assert((LGR_TIMESTAMP_FLD / 2) == sizeof(uint32_t));
-            memcpy(&tv_msg.tv_sec, p_buf + LGR_VER_FLD, sizeof(uint32_t));
+            assert(TE_LOG_TIMESTAMP_SZ == sizeof(uint32_t) * 2);
+            memcpy(&tv_msg.tv_sec, p_buf + TE_LOG_VERSION_SZ,
+                   sizeof(uint32_t));
             tv_msg.tv_sec = ntohl(tv_msg.tv_sec);
-            memcpy(&tv_msg.tv_usec, p_buf + LGR_VER_FLD + sizeof(uint32_t),
+            memcpy(&tv_msg.tv_usec,
+                   p_buf + TE_LOG_VERSION_SZ + sizeof(uint32_t),
                    sizeof(uint32_t));
             tv_msg.tv_usec = ntohl(tv_msg.tv_usec);
 
             /* Get message level value */
-            memcpy(&log_level, p_buf + LGR_VER_FLD + 2 * sizeof(uint32_t),
-                   LGR_LEVEL_FLD);
+            memcpy(&log_level,
+                   p_buf + TE_LOG_VERSION_SZ + TE_LOG_TIMESTAMP_SZ,
+                   TE_LOG_LEVEL_SZ);
             log_level = htons(log_level);
 
-            p_buf += (len - LGR_MESS_LENGTH_FLD);
-            memcpy(&len, p_buf, LGR_MESS_LENGTH_FLD);
+            /* Get message length */
+            p_buf += (len - TE_LOG_MSG_LEN_SZ);
+            memcpy(&len, p_buf, TE_LOG_MSG_LEN_SZ);
+#if (TE_LOG_MSG_LEN_SZ == 1)
+            /* Do nothing */
+#elif (TE_LOG_MSG_LEN_SZ == 2)
             len = ntohs(len);
-            p_buf += LGR_MESS_LENGTH_FLD;
+#elif (TE_LOG_MSG_LEN_SZ == 4)
+            len = ntohl(len);
+#else
+#error Such TE_LOG_MSG_LEN_SZ is not supported here.
+#endif
+            p_buf += TE_LOG_MSG_LEN_SZ;
 
             /* Copy the rest of the message to the buffer */
             if (FREAD(ta_file, p_buf, len) != len)
@@ -453,6 +506,7 @@ response_to_flush:
     {
         ERROR("Failed to close IPC server '%s': %X", ta_srv, errno);
     }
+    rcf_api_cleanup();
 
     return NULL;
 }
@@ -465,12 +519,14 @@ response_to_flush:
  * 
  * @return Operation status.
  * 
- * @retval  0   Success.
- * @retval -1   Failure.
+ * @retval EXIT_SUCCESS     Success.
+ * @retval EXIT_FAILURE     Failure.
  */
 int
 main(int argc, char *argv[])
 {
+    int         result = EXIT_FAILURE;
+    char        err_buf[BUFSIZ];
     char       *ta_names = NULL;
     size_t      names_len;
     size_t      str_len = 0;    
@@ -480,44 +536,65 @@ main(int argc, char *argv[])
     ta_inst    *ta_el;
     char       *te_tmp = NULL;
 
-    pthread_mutex_init(&mutex,  NULL);
 
     /* Get environment variable value for temporary TE location. */
     te_tmp = getenv("TE_LOG_DIR");
     if (te_tmp == NULL)
     {
         fprintf(stderr, "TE_LOG_DIR is not defined\n");
-        return -1;
+        return EXIT_FAILURE;
     }
 
     /* Form full names for temporary log location and temporary log file */
-    strcpy(te_log_path, te_tmp);
-    strcpy(te_log_tmp, te_log_path);
+    strcpy(te_log_dir, te_tmp);
+    strcpy(te_log_tmp, te_log_dir);
     strcat(te_log_tmp, "/tmp_raw_log");
 
+    /* Open raw log file for addition */
     raw_file = fopen(te_log_tmp, "ab");
     if (raw_file == NULL)
     {
         perror("fopen() failure");
-        return -1;
+        return EXIT_FAILURE;
+    }
+    /* Futher we must goto 'exit' in the case of failure */
+
+
+    /* Log file must be processed before start of messages processing */
+    INFO("Logger configuration file parsing\n");    
+    /* Parse configuration file */
+    if (argc < 1)
+    {
+        ERROR("No Logger configuration file passed\n");    
+        goto exit;
+    }
+    if (configParser(argv[1]) != 0)
+    {
+        ERROR("Logger configuration file failure\n");
+        goto exit;
     }
 
-    ipc_init();
-    srv = ipc_register_server(LGR_SRV_NAME);
     
-    INFO("%s server creation\n", LGR_SRV_NAME);
-    /* Create separate thread for log message server */
+    /* Initialize IPC before any servers creation */
+    if (ipc_init() != 0)
+    {
+        strerror_r(errno, err_buf, sizeof(err_buf));
+        ERROR("IPC initialization failed: %s\n", err_buf);
+        goto exit;
+    }
+
+    /* ASAP create separate thread for log message server */
     res = pthread_create(&te_thread, NULL, (void *)&te_handler, NULL);
     if (res != 0)
     {
-        char err_buf[BUFSIZ];
         strerror_r(errno, err_buf, sizeof(err_buf));
-        ERROR("Server: pthread_create() failed: %s\n", 
-            err_buf);
-        return -1;
+        ERROR("Server: pthread_create() failed: %s\n", err_buf);
+        goto exit;
     }
+    /* Further we must goto 'join_te_srv' in the case of failure */
 
-    INFO("RCF request about list of active TA\n");
+
+    INFO("Request RCF about list of active TA\n");
     /* Get list of active TA */
     do {
         ++scale;
@@ -526,7 +603,7 @@ main(int argc, char *argv[])
         if (ta_names == NULL)
         {
             ERROR("Memory allocation failure");
-            return -1;
+            goto join_te_srv;
         }
         memset(ta_names, 0, names_len * sizeof(char));
         res = rcf_get_ta_list(ta_names, &names_len); 
@@ -535,59 +612,41 @@ main(int argc, char *argv[])
 
     if (res != 0)
     {
-        ERROR("Failed to get list of active TA from RCF");
+        ERROR("Failed to get list of active TA from RCF\n");
         /* Continue processing with empty list of Test Agents */
         ta_names[0] = '\0';
         names_len = 0;
     }
-
-    INFO("Active TA: %s\n", ta_names);
 
     /* Create single linked list of active TA */
     while (names_len != str_len)
     {
         char       *aux_str;
         size_t      tmp_len;
-        ta_inst    *tmp_el;
     
-        tmp_el = (struct ta_inst *)malloc(sizeof(struct ta_inst));
-        memset(tmp_el, 0, sizeof(struct ta_inst));  
+        ta_el = (struct ta_inst *)malloc(sizeof(struct ta_inst));
+        memset(ta_el, 0, sizeof(struct ta_inst));  
+        ta_el->thread_run = FALSE;
         aux_str = ta_names + str_len;
         tmp_len = strlen(aux_str) + 1;
-        memcpy(tmp_el->agent, aux_str, tmp_len); 
+        memcpy(ta_el->agent, aux_str, tmp_len); 
         str_len += tmp_len;
 
-        tmp_el->filters.next = tmp_el->filters.last = &tmp_el->filters;
+        ta_el->filters.next = ta_el->filters.last = &ta_el->filters;
 
-        res = rcf_ta_name2type(tmp_el->agent, tmp_el->type);
+        res = rcf_ta_name2type(ta_el->agent, ta_el->type);
         if (res != 0)
         {
             ERROR("Cannot interact with RCF\n");
             free(ta_names);
-            return -1;
+            goto join_te_srv;
         }
    
-        tmp_el->next = ta_list;
-        ta_list = tmp_el;
+        ta_el->next = ta_list;
+        ta_list = ta_el;
     }
     free(ta_names);
-    /* There are no interactions with RCF from main thread */
-    rcf_api_cleanup();
 
-    INFO("Logger configuration file parsing\n");    
-    /* Parse configuration file */
-    if (argc < 1)
-    {
-        ERROR("No Logger configuration file passed\n");    
-        return -1;
-    }
-    
-    if (configParser(argv[1]) != 0)
-    {
-        ERROR("Logger configuration file failure\n");
-        return -1;
-    }
-    
     INFO("TA handlers creation\n");
     /* Create threads according to active TA list */
     ta_el = ta_list;
@@ -597,54 +656,76 @@ main(int argc, char *argv[])
                              (void *)&ta_handler, (void *)ta_el);
         if (res != 0)
         {
-            char err_buf[BUFSIZ];
             strerror_r(errno, err_buf, sizeof(err_buf));
             ERROR("Logger(client): pthread_create() failed: %s\n", err_buf);
-            return -1;
+            goto join_te_srv;
         }
+        ta_el->thread_run = TRUE;
         ta_el = ta_el->next;
     }
-    while (run_logger == 1)
+
+    result = EXIT_SUCCESS;
+
+join_te_srv:
+    INFO("Joining Logger TEN server\n");
+    if (pthread_join(te_thread, NULL) != 0)
     {
-        /* Logger process is active */
-        sleep(1);
+        strerror_r(errno, err_buf, sizeof(err_buf));
+        ERROR("pthread_join() failed: %s", err_buf);
+        result = EXIT_FAILURE;
     }
 
-    ipc_close_server(srv);
-    ipc_kill();
-    
-#if 0 /* do not turn on!! kill :-[=] */
-    pthread_join(te_thread, NULL); 
-    while(ta_list != NULL)
-    {
-        ta_inst *tmp_el;
-        tmp_el = ta_list;
-        ta_list = tmp_el->next;
-        pthread_join(tmp_el->thread, NULL);
-    }
-#endif
-    
+exit:
     /* Release all memory on shutdown */     
-    while(ta_list != NULL)
+    while (ta_list != NULL)
     {
-        ta_inst *tmp_el;
-        tmp_el = ta_list;
-        ta_list = tmp_el->next;
-        LGR_FREE_FLTR_LIST(&tmp_el->filters);
-        free(tmp_el);
+        ta_el = ta_list;
+        ta_list = ta_el->next;
+
+#if 0
+        if (ta_el->thread_run &&
+            pthread_join(ta_el->thread, NULL) != 0)
+        {
+            strerror_r(errno, err_buf, sizeof(err_buf));
+            ERROR("pthread_join() failed: %s\n", err_buf);
+            result = EXIT_FAILURE;
+        }
+#endif
+
+        LGR_FREE_FLTR_LIST(&ta_el->filters);
+        free(ta_el);
+    }
+    while (te_list != NULL)
+    {
+        te_inst *te_el;
+
+        te_el = te_list;
+        te_list = te_el->next;
+        LGR_FREE_FLTR_LIST(&te_el->filters);
+        free(te_el);
     }
 
-    while(te_list != NULL)
+    rcf_api_cleanup();
+
+    if (ipc_kill() != 0)
     {
-        te_inst *tmp_el;
-        tmp_el = te_list;
-        te_list = tmp_el->next;
-        LGR_FREE_FLTR_LIST(&tmp_el->filters);
-        free(tmp_el);
+        strerror_r(errno, err_buf, sizeof(err_buf));
+        ERROR("IPC termination failed: %s\n", err_buf);
+        result = EXIT_FAILURE;
     }
+    
     RING("Shutdown is completed\n");
-    fflush(raw_file);
-    return fclose(raw_file);
+
+    if (fflush(raw_file) != 0)
+    {
+        perror("fflush() failed");
+        result = EXIT_FAILURE;
+    }
+    if (fclose(raw_file) != 0)
+    {
+        perror("fclose() failed");
+        result = EXIT_FAILURE;
+    }
+
+    return result;
 }
-
-

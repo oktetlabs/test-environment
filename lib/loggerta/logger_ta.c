@@ -217,6 +217,23 @@ resume:
 
 
 /**
+ * Convert NFL from host to net order.
+ */
+static inline te_log_nfl_t
+log_nfl_hton(te_log_nfl_t val)
+{
+#if (TE_LOG_NFL_SZ == 1)
+    return val;
+#elif (TE_LOG_LEVEL_SZ == 2)
+    return htons(val);
+#elif (TE_LOG_LEVEL_SZ == 4)
+    return htonl(val);
+#else
+#error Such TE_LOG_NFL_SZ is not supported
+#endif
+}
+
+/**
  * Get message from log buffer.
  * On success the processed message will be removed from log buffer.
  *
@@ -235,7 +252,7 @@ log_get_message(uint32_t length, uint8_t *buffer)
     static char     *skip_flags, *skip_width;
     static int      n_calls = 0;
     lgr_mess_header header;
-    uint8_t  *ring_last = log_buffer.rb + LGR_TOTAL_RB_BYTES;
+    uint8_t        *ring_last = log_buffer.rb + LGR_TOTAL_RB_BYTES;
 
     n_calls++;
 
@@ -243,14 +260,14 @@ log_get_message(uint32_t length, uint8_t *buffer)
     skip_width = "*0123456789";
 
     if (length < LGR_RB_ELEMENT_LEN)
-        return mess_length;
+        return 0;
 
     LGR_LOCK(key);
 
     if (LGR_RB_UNUSED(&log_buffer) == LGR_TOTAL_RB_EL)
     {
         LGR_UNLOCK(key);
-        return mess_length;
+        return 0;
     }
 
     LGR_SET_MARK_FIELD(&log_buffer, log_buffer.head, 1);
@@ -263,13 +280,13 @@ log_get_message(uint32_t length, uint8_t *buffer)
 
 
 #define LGR_CHECK_LENGTH(_field_length) \
-    do {                                                        \
-        if (mess_length + (_field_length) > length)             \
-        {                                                       \
-            LGR_SET_MARK_FIELD(&log_buffer, log_buffer.head, 0);\
-            return 0;                                           \
-        }                                                       \
-        mess_length += (_field_length);                         \
+    do {                                                            \
+        if (mess_length + (_field_length) > length)                 \
+        {                                                           \
+            LGR_SET_MARK_FIELD(&log_buffer, log_buffer.head, 0);    \
+            return 0;                                               \
+        }                                                           \
+        mess_length += (_field_length);                             \
     } while (0)
         
     /* Write message sequence number */
@@ -278,42 +295,54 @@ log_get_message(uint32_t length, uint8_t *buffer)
     tmp_buf += sizeof(uint32_t);
 
     /* Write current log version */
-    LGR_CHECK_LENGTH(1);
-    *tmp_buf = LGR_LOG_VERSION;
+    LGR_CHECK_LENGTH(TE_LOG_VERSION_SZ);
+#if (TE_LOG_VERSION_SZ != 1)
+#error Such TE_LOG_VERSION_SZ is not supported here.
+#endif
+    *tmp_buf = TE_LOG_VERSION;
     tmp_buf++;
 
     /* Write timestamp */
-    LGR_CHECK_LENGTH(LGR_TIMESTAMP_FLD);
+    LGR_CHECK_LENGTH(TE_LOG_TIMESTAMP_SZ);
     *((uint32_t *)tmp_buf) = htonl(header.timestamp.tv_sec);
     tmp_buf += sizeof(uint32_t);
     *((uint32_t *)tmp_buf) = htonl(header.timestamp.tv_usec);
     tmp_buf += sizeof(uint32_t);
 
     /* Write log level */
-    LGR_CHECK_LENGTH(sizeof(uint16_t));
-    *((uint16_t *)tmp_buf) = htons(header.level);
-    tmp_buf += sizeof(uint16_t);
+    LGR_CHECK_LENGTH(TE_LOG_LEVEL_SZ);
+    *((te_log_level_t *)tmp_buf) = 
+#if (TE_LOG_LEVEL_SZ == 1)
+        header.level;
+#elif (TE_LOG_LEVEL_SZ == 2)
+        htons(header.level);
+#elif (TE_LOG_LEVEL_SZ == 4)
+        htonl(header.level);
+#else
+#error Such TE_LOG_LEVEL_SZ is not supported
+#endif
+    tmp_buf += sizeof(te_log_level_t);
 
     /* Keep in mind log message length field location */
     mess_length_location = tmp_buf;
-    LGR_CHECK_LENGTH(sizeof(uint16_t));
-    tmp_buf += sizeof(uint16_t);
+    LGR_CHECK_LENGTH(sizeof(te_log_msg_len_t));
+    tmp_buf += sizeof(te_log_msg_len_t);
 
     /* Write user name and corresponding (NFL) next field length */
     fs = header.user_name;
     tmp_length = strlen(fs);
-    LGR_CHECK_LENGTH(tmp_length + 1);
-    *tmp_buf = (uint8_t)tmp_length;
-    tmp_buf++;
+    LGR_CHECK_LENGTH(sizeof(te_log_nfl_t) + tmp_length);
+    *((te_log_nfl_t *)tmp_buf) = log_nfl_hton(tmp_length);
+    tmp_buf += sizeof(te_log_nfl_t);
     strncpy(tmp_buf, fs, tmp_length);
     tmp_buf += tmp_length;
 
     /* Write format string and corresponding NFL */
     fs = header.fs;
     tmp_length = strlen(fs);
-    LGR_CHECK_LENGTH(tmp_length + 1);
-    *tmp_buf = (uint8_t)tmp_length;
-    tmp_buf++;
+    LGR_CHECK_LENGTH(sizeof(te_log_nfl_t) + tmp_length);
+    *((te_log_nfl_t *)tmp_buf) = log_nfl_hton(tmp_length);
+    tmp_buf += sizeof(te_log_nfl_t);
     strncpy(tmp_buf, fs, tmp_length);
     tmp_buf += tmp_length;
 
@@ -350,9 +379,9 @@ log_get_message(uint32_t length, uint8_t *buffer)
             {
                 int32_t val;
 
-                LGR_CHECK_LENGTH(sizeof(uint32_t) + 1);
-                *tmp_buf = (uint8_t)sizeof(int32_t);
-                tmp_buf++;
+                LGR_CHECK_LENGTH(sizeof(te_log_nfl_t) + sizeof(uint32_t));
+                *((te_log_nfl_t *)tmp_buf) = log_nfl_hton(tmp_length);
+                tmp_buf += sizeof(te_log_nfl_t);
                 val = LGR_GET_ARG(header, argn++);
                 LGR_32_TO_NET(val, tmp_buf);
                 tmp_buf += sizeof(int32_t);
@@ -360,22 +389,22 @@ log_get_message(uint32_t length, uint8_t *buffer)
             }
 
             case 'c':
-                LGR_CHECK_LENGTH(sizeof(uint8_t) + 1);
-                *tmp_buf = (uint8_t)sizeof(int8_t);
-                tmp_buf++;
+                LGR_CHECK_LENGTH(sizeof(te_log_nfl_t) + sizeof(char));
+                *((te_log_nfl_t *)tmp_buf) = log_nfl_hton(tmp_length);
+                tmp_buf += sizeof(te_log_nfl_t);
                 *tmp_buf = (char)LGR_GET_ARG(header, argn++);
                 tmp_buf++;
                 break;
 
             case 's':
             {
-                uint8_t *arglen_location;
+                te_log_nfl_t *arglen_location;
                 char *arg_str = (char *)LGR_GET_ARG(header, argn++);
 
-                LGR_CHECK_LENGTH(1);
-                arglen_location = tmp_buf;
+                LGR_CHECK_LENGTH(sizeof(te_log_nfl_t));
+                arglen_location = (te_log_nfl_t *)tmp_buf;
+                tmp_buf += sizeof(te_log_nfl_t);
                 *arglen_location = 0;
-                tmp_buf++;
 
                 if (arg_str == NULL)
                     break;
@@ -386,21 +415,11 @@ log_get_message(uint32_t length, uint8_t *buffer)
                         arg_str = (char *)log_buffer.rb;
 
                     LGR_CHECK_LENGTH(1);
-#if 0
-                    if ((tmp_length + mess_length) > length)
-                    {
-                        LGR_SET_MARK_FIELD(&log_buffer, log_buffer.head, 0);
-                        return 0;
-                    }
-#endif
                     *tmp_buf = *arg_str;
                     tmp_buf++; arg_str++; tmp_length++;
                 } while (*arg_str != '\0');
 
-                *arglen_location = tmp_length;
-#if 0
-                mess_length += tmp_length;
-#endif
+                *arglen_location = log_nfl_hton(tmp_length);
                 break;
             }
 
@@ -412,17 +431,10 @@ log_get_message(uint32_t length, uint8_t *buffer)
                     mem_addr = (uint8_t *)LGR_GET_ARG(header, argn++);
                     tmp_length = LGR_GET_ARG(header, argn++);
 
-                    LGR_CHECK_LENGTH(1 + tmp_length);
-#if 0
-                    if((tmp_length + mess_length) > length)
-                    {
-                        LGR_SET_MARK_FIELD(&log_buffer, log_buffer.head, 0);
-                        return 0;
-                    }
-#endif
+                    LGR_CHECK_LENGTH(sizeof(te_log_nfl_t) + tmp_length);
 
-                    *tmp_buf = (uint8_t)tmp_length;
-                    tmp_buf++;
+                    *((te_log_nfl_t *)tmp_buf) = log_nfl_hton(tmp_length);
+                    tmp_buf += sizeof(te_log_nfl_t);
 
                     if (tmp_length == 0)
                         break;
@@ -430,6 +442,7 @@ log_get_message(uint32_t length, uint8_t *buffer)
                     if ((mem_addr + tmp_length) > ring_last)
                     {
                         uint32_t piece1, piece2;
+
                         piece1 = (uint32_t)(ring_last - mem_addr);
                         piece2 = tmp_length - piece1;
                         memcpy(tmp_buf, mem_addr, piece1);
@@ -449,26 +462,23 @@ log_get_message(uint32_t length, uint8_t *buffer)
                 break;
         }
     }
+#undef LGR_CHECK_LENGTH
 
     /** Fill in message length field without message sequence */
-    *((uint16_t *)mess_length_location) = htons((uint16_t)(mess_length - 17));
-
-    LGR_LOCK(key);
-
-    LGR_SET_MARK_FIELD(&log_buffer, log_buffer.head, 0);
-
-#if 0
-    if ((n_calls & 15) == 0)
-        printf ("unused: %d\n", log_buffer.unused);
-
-    if (log_buffer.unused == 0)
-    {
-        printf ("buffer full! head: %d, tail: %d\n", log_buffer.head, log_buffer.tail); 
-    }
+    *((te_log_msg_len_t *)mess_length_location) =
+#if (TE_LOG_MSG_LEN_SZ == 1)
+        mess_length;
+#elif (TE_LOG_MSG_LEN_SZ == 2)
+        htons(mess_length);
+#elif (TE_LOG_MSG_LEN_SZ == 4)
+        htonl(mess_length);
+#else
+#error Such TE_LOG_MSG_LEN_SZ is not supported
 #endif
 
+    LGR_LOCK(key);
+    LGR_SET_MARK_FIELD(&log_buffer, log_buffer.head, 0);
     lgr_rb_remove_oldest(&log_buffer);
-
     LGR_UNLOCK(key);
 
     return mess_length;
@@ -584,7 +594,7 @@ log_message_print(const char *us, const char *fs, ...)
     char *beg_str;
     struct timeval tv;
     uint32_t narg = 0;
-    char tmp_str[LGR_MAX_FIELD_LENGTH];
+    char tmp_str[TE_LOG_FIELD_MAX];
 
     static char *skip_flags, *skip_width;
 
@@ -658,7 +668,7 @@ log_message_print(const char *us, const char *fs, ...)
                     addr = va_arg(ap, uint8_t *);
                     length = va_arg(ap, uint32_t);
 
-                    memset(tmp_str, 0, LGR_MAX_FIELD_LENGTH);
+                    memset(tmp_str, 0, TE_LOG_FIELD_MAX);
                     strncpy(tmp_str, beg_str, (p_str - beg_str - 1));
                     fprintf(stderr, tmp_str);
                     beg_str = p_str;
@@ -699,7 +709,7 @@ log_message_print(const char *us, const char *fs, ...)
 
     if (1)
     {
-        memset(tmp_str, 0, LGR_MAX_FIELD_LENGTH);
+        memset(tmp_str, 0, TE_LOG_FIELD_MAX);
         strncpy(tmp_str, beg_str, (p_str - beg_str + 1));
         fprintf(stderr, tmp_str);
     }

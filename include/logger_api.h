@@ -48,7 +48,7 @@
  */
 #define LGR_MESSAGE(_lvl, _lgruser, _fs...) \
     do {                                                        \
-        if (LOG_LEVEL & (_lvl))                                 \
+        if (TE_LOG_LEVEL & (_lvl))                              \
         {                                                       \
             log_message(_lvl, TE_LGR_ENTITY, _lgruser, _fs);    \
         }                                                       \
@@ -56,7 +56,7 @@
 
 
 /** @name Logging abnormal/unexpected situations */
-#define LOG_ERROR(_us, _fs...)  LGR_MESSAGE(ERROR_LVL, _us, _fs)
+#define LOG_ERROR(_us, _fs...)  LGR_MESSAGE(TE_LL_ERROR, _us, _fs)
 #define ERROR(_fs...)           LOG_ERROR(TE_LGR_USER, _fs)
 /*@}*/
 
@@ -64,7 +64,7 @@
  * @name Logging situations same failed initialization of the optional
  *       feature 
  */
-#define LOG_WARN(_us, _fs...)  LGR_MESSAGE(WARNING_LVL, _us, _fs)
+#define LOG_WARN(_us, _fs...)  LGR_MESSAGE(TE_LL_WARN, _us, _fs)
 #define WARN(_fs...)           LOG_WARN(TE_LGR_USER, _fs)
 /*@}*/
 
@@ -72,30 +72,30 @@
  * @name Logging very important event in TE and tests required to
  *       undestand testing results
  */
-#define LOG_RING(_us, _fs...)  LGR_MESSAGE(RING_LVL, _us, _fs)
+#define LOG_RING(_us, _fs...)  LGR_MESSAGE(TE_LL_RING, _us, _fs)
 #define RING(_fs...)           LOG_RING(TE_LGR_USER, _fs)
 /*@}*/
 
 /** @name Logging important event for debugging of the test */
-#define LOG_INFO(_us, _fs...)  LGR_MESSAGE(INFORMATION_LVL, _us, _fs)
+#define LOG_INFO(_us, _fs...)  LGR_MESSAGE(TE_LL_INFO, _us, _fs)
 #define INFO(_fs...)           LOG_INFO(TE_LGR_USER, _fs)
 /*@}*/
 
 /** @name Logging additional events for detalization of processing */
-#define LOG_VERB(_us, _fs...)  LGR_MESSAGE(VERBOSE_LVL, _us, _fs)
+#define LOG_VERB(_us, _fs...)  LGR_MESSAGE(TE_LL_VERB, _us, _fs)
 #define VERB(_fs...)           LOG_VERB(TE_LGR_USER, _fs)
 /*@}*/
 
 /** @name Logging of entry to and exit from function */
 #define _LOG_ENTRY(_us, _fs, _args...) \
     do {                            \
-        log_message(ENTRY_EXIT_LVL, TE_LGR_ENTITY, _us,                 \
+        log_message(TE_LL_ENTRY_EXIT, TE_LGR_ENTITY, _us,               \
                     "ENTRY to %s(): " _fs, __FUNCTION__, _args + 0);    \
     } while (0)
 
 #define LOG_ENTRY(_us, _fs...) \
     do {                                                                \
-        if (LOG_LEVEL & ENTRY_EXIT_LVL)                                 \
+        if (TE_LOG_LEVEL & TE_LL_ENTRY_EXIT)                            \
         {                                                               \
             if (!!(#_fs[0]))                                            \
             {                                                           \
@@ -103,7 +103,7 @@
             }                                                           \
             else                                                        \
             {                                                           \
-                log_message(ENTRY_EXIT_LVL, TE_LGR_ENTITY, _us,         \
+                log_message(TE_LL_ENTRY_EXIT, TE_LGR_ENTITY, _us,       \
                             "ENTRY to %s()", __FUNCTION__);             \
             }                                                           \
         }                                                               \
@@ -113,7 +113,7 @@
 
 #define _LOG_EXIT(_us, _fs, _args...) \
     do {                                                            \
-        log_message(ENTRY_EXIT_LVL, TE_LGR_ENTITY, _us,             \
+        log_message(TE_LL_ENTRY_EXIT, TE_LGR_ENTITY, _us,           \
                     "EXIT in line %d from %s(): " _fs,              \
                     __LINE__, __FUNCTION__, _args + 0);             \
     } while (0)
@@ -121,7 +121,7 @@
 
 #define LOG_EXIT(_us, _fs...) \
     do {                                                            \
-        if (LOG_LEVEL & ENTRY_EXIT_LVL)                             \
+        if (TE_LOG_LEVEL & TE_LL_ENTRY_EXIT)                        \
         {                                                           \
             if (!!(#_fs[0]))                                        \
             {                                                       \
@@ -129,7 +129,7 @@
             }                                                       \
             else                                                    \
             {                                                       \
-                log_message(ENTRY_EXIT_LVL, TE_LGR_ENTITY, _us,     \
+                log_message(TE_LL_ENTRY_EXIT, TE_LGR_ENTITY, _us,   \
                             "EXIT in line %d from %s()",            \
                             __LINE__, __FUNCTION__);                \
             }                                                       \

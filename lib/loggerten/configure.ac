@@ -28,8 +28,19 @@ AC_ARG_VAR(TE_LDFLAGS)
 
 AM_CONFIG_HEADER(config.h)
 
-AC_CHECK_HEADERS(stdlib.h string.h strings.h sys/types.h time.h sys/time.h \
-                 netinet/in.h sys/stat.h pthread.h)
+AC_CHECK_HEADERS([\
+stdlib.h \
+stdarg.h \
+string.h \
+strings.h \
+errno.h \
+unistd.h \
+sys/types.h \
+time.h \
+sys/time.h \
+netinet/in.h \
+sys/stat.h \
+pthread.h])
 
 
 AH_TEMPLATE(PTHREAD_SETSPECIFIC_BUG,

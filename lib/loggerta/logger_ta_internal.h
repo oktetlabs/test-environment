@@ -30,47 +30,46 @@
 
 #ifndef __LGR_LOGGER_TA_INTERNAL_H__
 #define __LGR_LOGGER_TA_INTERNAL_H__
-#ifdef _cplusplus
-extern "C" {
-#endif
 
 #include <stdio.h>
+#if HAVE_STDARG_H
 #include <stdarg.h>
-#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
 #endif
-#ifdef HAVE_STDLIB_H
+#if HAVE_STDLIB_H
 #include <stdlib.h>
 #endif
-#ifdef HAVE_TIME_H
+#if HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#if HAVE_TIME_H
 #include <time.h>
 #endif
-#ifdef HAVE_SYS_TIME_H
+#if HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
-#ifdef HAVE_STRING_H
+#if HAVE_STRING_H
 #include <string.h>
 #endif
-#ifdef HAVE_STRINGS_H
+#if HAVE_STRINGS_H
 #include <strings.h>
 #endif
-#ifdef HAVE_NETINET_IN_H
+#if HAVE_NETINET_IN_H
 #include <netinet/in.h>
 #endif
-#ifdef HAVE_SEMAPHORE_H
+#if HAVE_SEMAPHORE_H
 #include <semaphore.h>
 #endif
 
 #include "te_defs.h"
 #include "te_stdint.h"
+#include "te_raw_log.h"
+#include "logger_defs.h"
+#include "logger_int.h"
 
 
-/**
- * Maximum length in bytes for one argument defined
- * into the raw log file format
- */
-#define LGR_MAX_FIELD_LENGTH   0xff
-
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /*
  * Following macro should be used to protect the
@@ -92,10 +91,7 @@ extern sem_t lgr_lock;
 
 
 /** Create timestamp */
-#define LGR_TIMESTAMP(_tval) \
-    do {                           \
-        gettimeofday(_tval, NULL); \
-    } while (0)
+#define LGR_TIMESTAMP(_tval)    gettimeofday(_tval, NULL)
 
 
 /** Maximum arguments processed in this implementation */
@@ -130,7 +126,7 @@ extern sem_t lgr_lock;
 #define LARG11(a, args...) !!(#a[0]) * 4, (uint32_t)(a +0), LARG10(args)
 #define LARG12(a, args...) !!(#a[0]) * 4, (uint32_t)(a +0), LARG11(args)
 
-#ifdef TALOGDEBUG
+#if TALOGDEBUG
 #define LOGF_PUT(_us, _fs...) log_message_print(_us, _fs)
 #else
 #define LOGF_MESS(_lvl, _us, _fs, _args...) log_message_fast(_lvl, _us, \
@@ -143,19 +139,19 @@ extern sem_t lgr_lock;
  */
 
 /* Wait until unused resources in ring buffer */
-#define LGR_RB_FORCE      0
+#define LGR_RB_FORCE            0
 
 /* Length of separate element into the ring buffer  */
-#define LGR_RB_ELEMENT_LEN sizeof(struct lgr_mess_header)
+#define LGR_RB_ELEMENT_LEN      sizeof(struct lgr_mess_header)
 
 /* Maximum message length in bytes TODO: 3595*/
-#define LGR_RB_BIG_MESSAGE_LEN    3597
+#define LGR_RB_BIG_MESSAGE_LEN  3597
 
 /* Maximum number of big messages to be logged into Ring Buffer */
 #if 0
-#define LGR_MAX_BIG_MESSAGES      100
+#define LGR_MAX_BIG_MESSAGES    100
 #else
-#define LGR_MAX_BIG_MESSAGES      1000
+#define LGR_MAX_BIG_MESSAGES    1000
 #endif
 
 /* Total of the ring buffer elements */
@@ -219,7 +215,7 @@ extern sem_t lgr_lock;
 
 #define LGR_DEBUG_PRT(_b, _e, _t) \
     do {                                           \
-        memset(tmp_str, 0, LGR_MAX_FIELD_LENGTH);  \
+        memset(tmp_str, 0, TE_LOG_FIELD_MAX);  \
         strncpy(tmp_str, (_b), ((_e) - (_b) + 1)); \
         fprintf(stdout, tmp_str, va_arg(ap, _t));  \
         (_b) = (_e);                               \
@@ -289,7 +285,7 @@ typedef struct lgr_mess_header {
     uint32_t        mark;           /**< Flag: message is marked as
                                          processed at this time */
     struct timeval  timestamp;
-    uint16_t        level;          /**< Log level mask to be passed 
+    te_log_level_t  level;          /**< Log level mask to be passed 
                                          in raw log*/
     const char     *user_name;      /**< User_name string location */
     const char     *fs;             /**< Format string location */
@@ -492,8 +488,8 @@ lgr_rb_allocate_and_copy(struct lgr_rb *ring_buffer,
     uint32_t tail;
     uint32_t need_elements;
 
-    if (length > LGR_MAX_FIELD_LENGTH)
-        length = LGR_MAX_FIELD_LENGTH;
+    if (length > TE_LOG_FIELD_MAX)
+        length = TE_LOG_FIELD_MAX;
 
     need_elements = (length % LGR_RB_ELEMENT_LEN) ?
                      (uint32_t)(length / LGR_RB_ELEMENT_LEN) + 1 :

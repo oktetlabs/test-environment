@@ -126,6 +126,26 @@ static struct debug_msg {
         }                                                                     \
     } while (0)
 
+/* 
+ * Macro to convert "next field length" field from network to
+ * host byte order.
+ */
+#if TE_LOG_NFL_SZ == 4
+#define RGT_NFL_NTOH(val_) \
+    do {                    \
+        val_ = ntohl(val_); \
+    } while (0)
+#elif TE_LOG_NFL_SZ == 2
+#define RGT_NFL_NTOH(val_) \
+    do {                    \
+        val_ = ntohs(val_); \
+    } while (0)
+#elif TE_LOG_NFL_SZ == 1
+/* Do nothing in case of 1 byte */
+#define NFL_NTOH(val_)
+#else
+#error TE_LOG_NFL_SZ is expected to be 1, 2 or 4
+#endif
 
 /**
  * Extracts the next log message from a raw log file version 1.
@@ -147,11 +167,12 @@ static struct debug_msg {
 int
 fetch_log_msg_v1(log_msg **msg, FILE *fd)
 {
-    uint8_t   nflen; /* Next field length */
-    uint32_t  timestamp[2];
-    uint16_t  log_level;
-    uint16_t  msg_len;
-    uint8_t  *msg_content;
+    te_log_nfl_t      nflen; /* Next field length */
+    uint8_t           log_ver[TE_LOG_VERSION_SZ];
+    uint32_t          timestamp[2];
+    te_log_level_t    log_level;
+    te_log_msg_len_t  msg_len;
+    uint8_t          *msg_content;
 
     char     *entity_name;
     char     *user_name;
@@ -165,8 +186,10 @@ fetch_log_msg_v1(log_msg **msg, FILE *fd)
      */
     cur_msg_offset = ftell(fd);
 
+    assert(sizeof(nflen) == TE_LOG_NFL_SZ);
+
     /* Read length of entity name */
-    if (universal_read(fd, &nflen, 1, rgt_rmode) == 0)
+    if (universal_read(fd, &nflen, TE_LOG_NFL_SZ, rgt_rmode) == 0)
     {
         /*
          * There are no messages left (rgt operation mode is postponed)
@@ -174,6 +197,7 @@ fetch_log_msg_v1(log_msg **msg, FILE *fd)
          */
         return 0;
     }
+    RGT_NFL_NTOH(nflen);
 
     *msg = alloc_log_msg();
     obstk = (*msg)->obstk;
@@ -193,27 +217,46 @@ fetch_log_msg_v1(log_msg **msg, FILE *fd)
      * Just ignore (TODO: more useful processing)
      */
     LOG_FORMAT_DEBUG_SET(RLF_V1_RLM_VERSION);
-    READ(fd, &nflen, 1);
-    
+    READ(fd, &log_ver, sizeof(log_ver));
+
     /* Read timestamp */
     LOG_FORMAT_DEBUG_SET(RLF_V1_RLM_TIMESTAMP);
-    READ(fd, timestamp, 8);
+    assert(sizeof(timestamp) == TE_LOG_TIMESTAMP_SZ);
+    READ(fd, timestamp, TE_LOG_TIMESTAMP_SZ);
 
     /* Read log level */
     LOG_FORMAT_DEBUG_SET(RLF_V1_RLM_LOGLEVEL);
-    READ(fd, &log_level, 2);
+    assert(sizeof(log_level) == TE_LOG_LEVEL_SZ);
+    READ(fd, &log_level, sizeof(log_level));
+#if TE_LOG_LEVEL_SZ == 2
     log_level = ntohs(log_level);
+#elif TE_LOG_LEVEL_SZ == 4
+    log_level = ntohl(log_level);
+#elif TE_LOG_LEVEL_SZ == 1
+    /* Do nothing */
+#else
+#error TE_LOG_LEVEL_SZ is expected to be 1, 2, or 4
+#endif
     
     /* Read log msg len: It is placed in Network byte order */
     LOG_FORMAT_DEBUG_SET(RLF_V1_RLM_REST_LEN);
-    READ(fd, &msg_len, 2);
+    assert(sizeof(msg_len) == TE_LOG_MSG_LEN_SZ);
+    READ(fd, &msg_len, sizeof(msg_len));
+#if TE_LOG_MSG_LEN_SZ == 2
     msg_len = ntohs(msg_len);
+#elif TE_LOG_MSG_LEN_SZ == 4
+    msg_len = ntohl(msg_len);
+#elif TE_LOG_MSG_LEN_SZ == 1
+    /* Do nothing */
+#else
+#error TE_LOG_MSG_LEN_SZ is expected to be 1, 2, or 4
+#endif
 
     /* 
-     * 1 bytes for "User name" field length and 
-     * 1 byte for "Format string" field length.
+     * sizeof(nflen) bytes for "User name" field length and 
+     * sizeof(nflen) bytes for "Format string" field length.
      */
-    if (msg_len < 2)
+    if (msg_len < (2 * sizeof(nflen)))
     {
         /* Log message should be at least two bytes */
         LOG_FORMAT_DEBUG_SET(RLF_V1_RLM_REST_LEN_VALUE);
@@ -229,11 +272,24 @@ fetch_log_msg_v1(log_msg **msg, FILE *fd)
     msg_content = (uint8_t *)obstack_alloc(obstk, msg_len);
     LOG_FORMAT_DEBUG_SET(RLF_V1_RLM_WHOLE);
     READ(fd, msg_content, msg_len);
-    nflen = *(msg_content++);
 
-    if (msg_len < nflen + 1)
+    /* Read the length of "User name" field */
+    memcpy(&nflen, msg_content, sizeof(nflen));
+    RGT_NFL_NTOH(nflen);
+    msg_content += sizeof(nflen);
+
+    /*
+     * [          NFL        |  User Name  |         ...         ]
+     * 
+     * | <- sizeof(nflen) -> | <- nflen -> | rest of the message |
+     * | <--------------------- msg_len -----------------------> |
+     *                       ^
+     *                       |
+     *                  msg_content
+     */
+    if (msg_len < (sizeof(nflen) + nflen))
     {
-        /* User name length is out of the log message */
+        /* "User name" length is out of the log message */
         LOG_FORMAT_DEBUG_SET(RLF_V1_RLM_USER_NAME_LEN);
         PRINT_ERROR;
         THROW_EXCEPTION;
@@ -241,17 +297,38 @@ fetch_log_msg_v1(log_msg **msg, FILE *fd)
 
     user_name = (char *)obstack_copy0(obstk, msg_content, nflen);
     msg_content += nflen;
-    msg_len -= (nflen + 2);
-    nflen = *(msg_content++);
+    /*
+     * Strip the length of NFL for "User Name" and "User Name" itself from
+     * unprocessed message length.
+     */
+    msg_len -= (sizeof(nflen) + nflen);
+
+    /* Check that there is a room for "format string length" field */
+    if (msg_len < sizeof(nflen))
+    {
+        /* "Format string" length is out of the log message */
+        LOG_FORMAT_DEBUG_SET(RLF_V1_RLM_FORMAT_STRING_LEN);
+        PRINT_ERROR;
+        THROW_EXCEPTION;
+    }
+
+    /* Read the length of "format string" field */
+    memcpy(&nflen, msg_content, sizeof(nflen));
+    RGT_NFL_NTOH(nflen);
+    msg_content += sizeof(nflen);
 
     /*
-     * Now msg_len is a number of bytes started from format string 
-     * to the rest of the message.
+     * [          NFL        |  Format String  |         ...         ]
+     * 
+     * | <- sizeof(nflen) -> | <--- nflen ---> | rest of the message |
+     * | <--------------------- msg_len ---------------------------> |
+     *                       ^
+     *                       |
+     *                  msg_content
      */
-
-    if (msg_len < nflen)
+    if (msg_len < (sizeof(nflen) + nflen))
     {
-        /* Format string length is out of the log message */
+        /* "Format string" length is out of the log message */
         LOG_FORMAT_DEBUG_SET(RLF_V1_RLM_FORMAT_STRING_LEN);
         PRINT_ERROR;
         THROW_EXCEPTION;
@@ -259,15 +336,28 @@ fetch_log_msg_v1(log_msg **msg, FILE *fd)
 
     fmt_str = (char *)obstack_copy0(obstk, msg_content, nflen);
     msg_content += nflen;
-    msg_len -= nflen;
-    
+    msg_len -= (sizeof(nflen) + nflen);
+
     /* Process format string arguments */
     (*msg)->args_count = 0;
-    while (msg_len-- > 0)
-    {
-        nflen = *(msg_content++);
 
-        if (msg_len < nflen)
+    
+    while (msg_len > 0)
+    {
+        /* Get the length of "Argument value" field */
+        if (msg_len < sizeof(nflen))
+        {
+            /* "Argument value" length is out of the log message */
+            LOG_FORMAT_DEBUG_SET(RLF_V1_RLM_ARG_LEN);
+            PRINT_ERROR;
+            THROW_EXCEPTION;
+        }
+        /* Read the length of "Argument value" field */
+        memcpy(&nflen, msg_content, sizeof(nflen));
+        RGT_NFL_NTOH(nflen);
+        msg_content += sizeof(nflen);
+
+        if (msg_len < (sizeof(nflen) + nflen))
         {
             /* Argument length field is out of the log message length */
             LOG_FORMAT_DEBUG_SET(RLF_V1_RLM_ARG_LEN);
@@ -286,12 +376,14 @@ fetch_log_msg_v1(log_msg **msg, FILE *fd)
          * account (according to the len field).
          */
         (*arg)->val = (uint8_t *)obstack_copy0(obstk, msg_content, nflen);
+        msg_content += nflen;
+        msg_len -= (sizeof(nflen) + nflen);
 
         arg = &((*arg)->next);
-        msg_len -= nflen;
-        msg_content += nflen;
         (*msg)->args_count++;
     }
+
+    assert(msg_len == 0);
 
     *arg = NULL;
 
@@ -301,35 +393,31 @@ fetch_log_msg_v1(log_msg **msg, FILE *fd)
     (*msg)->timestamp[1] = ntohl(timestamp[1]);
     (*msg)->fmt_str = fmt_str;
     (*msg)->cur_arg = (*msg)->args;
-    (*msg)->txt_msg = NULL; 
+    (*msg)->txt_msg = NULL;
 
 
-#ifdef HAVE_LOGGER_DEFS_H
     switch (log_level)
     {
-#define LGLVL_CASE(lvl_) \
-        case lvl_ ## _LVL:                          \
-            (*msg)->level = LGLVL_ ## lvl_ ## _STR; \
+#define RGT_LL_CASE(lvl_) \
+        case TE_LL_ ## lvl_:                         \
+            (*msg)->level = RGT_LL_ ## lvl_ ## _STR; \
             break
 
-        LGLVL_CASE(ERROR);
-        LGLVL_CASE(WARNING);
-        LGLVL_CASE(RING);
-        LGLVL_CASE(INFORMATION);
-        LGLVL_CASE(VERBOSE);
-        LGLVL_CASE(ENTRY_EXIT);
+        RGT_LL_CASE(ERROR);
+        RGT_LL_CASE(WARN);
+        RGT_LL_CASE(RING);
+        RGT_LL_CASE(INFO);
+        RGT_LL_CASE(VERB);
+        RGT_LL_CASE(ENTRY_EXIT);
 
-#undef LGLVL_CASE
+#undef RGT_LL_CASE
         default:
             /* Print error message but continue processing */
             LOG_FORMAT_DEBUG_SET(RLF_V1_RLM_UNKNOWN_LOGLEVEL);
             PRINT_ERROR;
 
-            (*msg)->level = LGLVL_UNKNOWN_STR;
+            (*msg)->level = RGT_LL_UNKNOWN_STR;
     }
-#else
-    (*msg)->level = LGLVL_EMPTY_STR;
-#endif
 
     obstk = NULL;
 

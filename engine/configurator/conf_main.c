@@ -577,17 +577,17 @@ log_msg(cfg_msg *msg, te_bool before)
     
     if (before)
     {
-        level = VERBOSE_LVL;
+        level = TE_LL_VERB;
         addon = " ...";
     }
     else if (msg->rc == 0)
     {
-        level = INFORMATION_LVL;
+        level = TE_LL_INFO;
         addon = " OK";
     }
     else
     {
-        level = ERROR_LVL;
+        level = TE_LL_ERROR;
         addon = buf;
         snprintf(buf, sizeof(buf), " FAILED (errno=0x%x)", msg->rc);
     }
@@ -653,7 +653,7 @@ log_msg(cfg_msg *msg, te_bool before)
                                         
         case CFG_FIND:
             if (!before && TE_RC_GET_ERROR(msg->rc) == ENOENT)
-                level = INFORMATION_LVL;
+                level = TE_LL_INFO;
             LGR_MESSAGE(level, TE_LGR_USER,
                         "Find OID %s%s", ((cfg_find_msg *)msg)->oid, addon);
             break;
@@ -700,6 +700,7 @@ log_msg(cfg_msg *msg, te_bool before)
             cfg_add_msg *m = (cfg_add_msg *)msg;
             cfg_inst_val val;
             char        *val_str;
+            te_bool      val_str_free = FALSE;
             
             if (m->val_type == CVT_NONE)
             {
@@ -713,6 +714,8 @@ log_msg(cfg_msg *msg, te_bool before)
             {
                 if (cfg_types[m->val_type].val2str(val, &val_str) != 0)
                     val_str = NULL;
+                else
+                    val_str_free = TRUE;
                 cfg_types[m->val_type].free(val);
             }
             LGR_MESSAGE(level, TE_LGR_USER,
@@ -720,7 +723,8 @@ log_msg(cfg_msg *msg, te_bool before)
                         (char *)m + m->oid_offset, 
                         val_str == NULL ? "(unknown)" : val_str, addon);
 
-            free(val_str);
+            if (val_str_free)
+                free(val_str);
             break;
         }
         
@@ -735,6 +739,7 @@ log_msg(cfg_msg *msg, te_bool before)
             cfg_set_msg *m = (cfg_set_msg *)msg;
             cfg_inst_val val;
             char        *val_str = NULL;
+            te_bool      val_str_free = FALSE;
             
             GET_STRS(cfg_set_msg);
             
@@ -744,13 +749,16 @@ log_msg(cfg_msg *msg, te_bool before)
             {
                 if (cfg_types[m->val_type].val2str(val, &val_str) != 0)
                     val_str = NULL;
+                else
+                    val_str_free = TRUE;
                 cfg_types[m->val_type].free(val);
             }
             LGR_MESSAGE(level, TE_LGR_USER,
                         "Set for %s%s value %s%s", s1, s2,
                         val_str == NULL ? "(unknown)" : val_str, addon);
                     
-            free(val_str);
+            if (val_str_free)
+                free(val_str);
             break;
         }
         
@@ -781,7 +789,7 @@ log_msg(cfg_msg *msg, te_bool before)
             if (!before && (op == CFG_BACKUP_VERIFY) &&
                 (msg->rc == ETEBACKUP))
             {
-                level = INFORMATION_LVL;
+                level = TE_LL_INFO;
             }
             LGR_MESSAGE(level, TE_LGR_USER,
                         "%s backup %s%s%s",

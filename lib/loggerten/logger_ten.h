@@ -50,8 +50,10 @@ extern void log_client_close(void);
  *
  * @param ta_name   - the name of separate TA whose local log should 
  *                    be flushed
+ *
+ * @return Status code
  */
-extern void log_flush_ten(const char *ta_name);
+extern int log_flush_ten(const char *ta_name);
 
 #ifdef __cplusplus
 } /* extern "C" */

@@ -540,9 +540,15 @@ if test -n "${CONF_RGT}" ; then
 fi
 rgt-conv -m postponed ${CONF_RGT} -f ${TE_LOG_DIR}/tmp_raw_log \
                                   -o ${TE_LOG_DIR}/tmp_raw_log.xml
-rgt-xml2text -f ${TE_LOG_DIR}/tmp_raw_log.xml -o ${TE_LOG_DIR}/tmp_raw_log.txt
-rgt-xml2html -f ${TE_LOG_DIR}/tmp_raw_log.xml -o ${TE_LOG_DIR}/tmp_raw_log.html
-rm -f ${TE_LOG_DIR}/tmp_raw_log.xml
+if test $? -eq 0 ; then
+    rgt-xml2text -f ${TE_LOG_DIR}/tmp_raw_log.xml \
+                 -o ${TE_LOG_DIR}/tmp_raw_log.txt && \
+    rgt-xml2html -f ${TE_LOG_DIR}/tmp_raw_log.xml \
+                 -o ${TE_LOG_DIR}/tmp_raw_log.html
+    if test $? -eq 0 ; then
+        rm -f ${TE_LOG_DIR}/tmp_raw_log.xml
+    fi
+fi
 
 rm -f ${LOCK_DIR}/ds
 rm -rf ${TE_TMP}

@@ -65,7 +65,7 @@ extern int              ta_log_addr_len;  /**< Logging server address length */
         int   _s;                                                       \
         char *_str = _buf;                                              \
                                                                         \
-        if (((_lvl) & LOG_LEVEL) == 0)                                  \
+        if (((_lvl) & TE_LOG_LEVEL) == 0)                               \
             break;                                                      \
                                                                         \
         if ((_s = socket(ta_log_addr_s->sa_family, SOCK_DGRAM, 0)) < 0) \

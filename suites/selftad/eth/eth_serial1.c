@@ -16,8 +16,6 @@
  */
 #include <linux/if_ether.h>
 
-#define LOG_LEVEL 1
-
 #include "logger_api.h"
 #include "conf_api.h"
 #include "rcf_api.h" 

@@ -115,7 +115,7 @@ rgt_process_control_message(log_msg *msg)
     
     PROCESS_NODE("TEST", NT_TEST, node->node_specific.test.name)
     else 
-    PROCESS_NODE("PACKAGE", NT_PACKAGE, node->node_specific.pkg.name)
+    PROCESS_NODE("PACKAGE", NT_SESSION, node->node_specific.pkg.name)
     else
     PROCESS_NODE("SESSION", NT_SESSION, NULL)
     else if ((res = RES_STATUS_PASS, 
@@ -131,8 +131,8 @@ rgt_process_control_message(log_msg *msg)
               strncmp(msg->fmt_str, "%T %T SKIPPED",
                       strlen("%T %T SKIPPED")) == 0) ||
              (res = RES_STATUS_FAIL, 
-              strncmp(msg->fmt_str, "%T %T FAKE",
-                      strlen("%T %T FAKE")) == 0) ||
+              strncmp(msg->fmt_str, "%T %T FAKED",
+                      strlen("%T %T FAKED")) == 0) ||
              (res = RES_STATUS_FAIL, 
               strncmp(msg->fmt_str, "%T %T FAILED",
                       strlen("%T %T FAILED")) == 0))

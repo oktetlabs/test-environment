@@ -47,17 +47,30 @@ typedef enum test_result_e {
     TEST_UNSPEC     /**< Expected test result is not specified yet */
 } test_result;
 
+typedef enum trc_test_type {
+    TRC_TEST_SCRIPT,
+    TRC_TEST_SESSION,
+    TRC_TEST_PACKAGE,
+} trc_test_type;
+
 
 /** Testing results conparator statistics */
 typedef struct trc_stats {
     unsigned int    not_run;
-    unsigned int    new_run;
     unsigned int    skipped;
     unsigned int    pass_exp;
     unsigned int    pass_une;
     unsigned int    fail_exp;
     unsigned int    fail_une;
+    unsigned int    aborted;
+    unsigned int    new_run;
 } trc_stats;
+
+#define TRC_STATS_RUN(s) \
+    ((s)->pass_exp + (s)->pass_une + (s)->fail_exp + (s)->fail_une + \
+     (s)->aborted + (s)->new_run)
+
+#define TRC_STATS_NOT_RUN(s)    ((s)->not_run + (s)->skipped)
 
 
 /** Test argument */
@@ -108,9 +121,10 @@ typedef struct test_run {
     xmlNodePtr      node;           /**< XML node with this element */
     trc_stats       stats;          /**< Statistics */
 
+    trc_test_type   type;           /**< Type of the test */
     char           *name;           /**< Test name */
     char           *objective;      /**< Test objective */
-    te_bool         is_package;     /**< Is it a package or a session? */
+    char           *notes;          /**< Some notes */
 
     test_iters      iters;          /**< Iterations of the test */
 } test_run;
@@ -119,6 +133,7 @@ typedef struct test_run {
 /** Testing results comparison database */
 typedef struct trc_database {
     test_runs   tests;
+    trc_stats   stats;
 } trc_database;
 
 

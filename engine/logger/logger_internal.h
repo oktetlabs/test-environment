@@ -131,6 +131,7 @@ typedef struct ta_inst {
     char            type[RCF_MAX_NAME];  /**< Type assigned for TA or NULL */
     uint32_t        sequence;            /**< Incoming message sequence nmbr */
     int             polling;             /**< Polling parameter value */
+    te_bool         thread_run;          /**< Is thread running? */
     pthread_t       thread;              /**< Thread identifier */
     int             flush_log;           /**< 0 - normal processing;
                                               1 - flush TA local log */
@@ -158,8 +159,15 @@ typedef struct te_inst {
  * @retval   0          Success.
  * @retval   Negative   Failure.
  */
-int configParser(const char *file_name);
+extern int configParser(const char *file_name);
 
+/**
+ * Register the log message in the raw log file.
+ *
+ * @param buf_mess  Log message location.
+ * @param buf_len   Log message length.
+ */
+extern void lgr_register_message(const void *buf_mess, size_t buf_len);
 
 #ifdef __cplusplus
 }

@@ -52,9 +52,19 @@ AC_ARG_VAR(TE_DEPENDENCIES)
 CPPFLAGS=${CPPFLAGS}" "${TE_CPPFLAGS}
 CFLAGS=${CFLAGS}" "${TE_CFLAGS}
 
-AM_CONFIG_HEADER(config.h)
+AM_CONFIG_HEADER([config.h])
 
-AC_CHECK_HEADERS(te_errno.h regex.h time.h sys/time.h pthread.h netinet/in.h signal.h)
+AC_CHECK_HEADERS([\
+stdarg.h \
+string.h \
+strings.h \
+regex.h \
+time.h \
+sys/time.h \
+pthread.h \
+netinet/in.h \
+signal.h \
+])
 
 AC_CONFIG_FILES(Makefile)
 

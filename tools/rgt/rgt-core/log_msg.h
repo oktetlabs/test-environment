@@ -39,26 +39,27 @@ extern "C" {
 #include "io.h"
 
 /* Check if we have definitions from Test Envirounment */
+#ifdef HAVE_TE_RAW_LOG_H
+#include "te_raw_log.h"
+#else
+#error RGT cannot be built without te_raw_log.h file exported by TE sources
+#endif
 #ifdef HAVE_LOGGER_DEFS_H
 #include "logger_defs.h"
+#else
+#error RGT cannot be built without logger_defs.h file exported by TE sources
 #endif
 
-
-#ifdef HAVE_LOGGER_DEFS_H
 
 /** @name A set of macros used in string representation of log level */
-#define LGLVL_ERROR_STR       "ERROR"
-#define LGLVL_WARNING_STR     "WARN"
-#define LGLVL_RING_STR        "RING"
-#define LGLVL_INFORMATION_STR "INFO"
-#define LGLVL_VERBOSE_STR     "VERB"
-#define LGLVL_ENTRY_EXIT_STR  "ENTRY/EXIT"
-#define LGLVL_UNKNOWN_STR     "UNKNOWN"
+#define RGT_LL_ERROR_STR       "ERROR"
+#define RGT_LL_WARN_STR        "WARN"
+#define RGT_LL_RING_STR        "RING"
+#define RGT_LL_INFO_STR        "INFO"
+#define RGT_LL_VERB_STR        "VERB"
+#define RGT_LL_ENTRY_EXIT_STR  "ENTRY/EXIT"
+#define RGT_LL_UNKNOWN_STR     "UNKNOWN"
 /*@}*/
-#else
-/** Macro for dummy log level represenation */
-#define LGLVL_EMPTY_STR ""
-#endif
 
 /* Forward declaration */
 struct log_msg;

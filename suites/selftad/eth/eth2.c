@@ -41,11 +41,11 @@
 #include "ndn_eth.h"
 #include "tapi_eth.h"
 
-#define LOG_LEVEL 255
+#define TE_LOG_LEVEL 255
 
 #include "logger_api.h"
 
-#define LOG_LEVEL 255
+#define TE_LOG_LEVEL 255
 
 void
 local_eth_frame_handler(const ndn_eth_header_plain *header, 

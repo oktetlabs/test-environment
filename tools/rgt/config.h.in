@@ -48,6 +48,9 @@
 /* Define to 1 if you have the <tcl.h> header file. */
 #undef HAVE_TCL_H
 
+/* Define to 1 if you have the <te_raw_log.h> header file. */
+#undef HAVE_TE_RAW_LOG_H
+
 /* Define to 1 if you have the <time.h> header file. */
 #undef HAVE_TIME_H
 

@@ -31,9 +31,14 @@
 #include "config.h"
 #endif
 
+#include <stdio.h>
+#include <stdlib.h>
+
+#include "te_stdint.h"
+#include "te_raw_log.h"
+#include "logger_int.h"
 #include "ipc_client.h"
 #include "logger_internal.h"
-#include "logger_prc_internal.h"
 
 
 /**
@@ -42,12 +47,16 @@
 int
 main(void)
 {
-    int result = EXIT_SUCCESS;
-    struct ipc_client *log_client;
-    char mess[sizeof(LGR_SHUTDOWN) + 1] = { 0, };
-    
-    mess[0] = strlen(LGR_SHUTDOWN);
-    memcpy(mess + 1, LGR_SHUTDOWN, (int)mess[0]);
+    int                 result = EXIT_SUCCESS;
+    te_log_nfl_t        nfl = strlen(LGR_SHUTDOWN);
+    uint8_t             mess[TE_LOG_NFL_SZ + nfl];
+    struct ipc_client  *log_client;
+
+
+    /* Prepare message with entity name LGR_SHUTDOWN */
+    *(te_log_nfl_t *)mess = nfl;
+    memcpy(mess + TE_LOG_NFL_SZ, LGR_SHUTDOWN, nfl);
+
     log_client = ipc_init_client("LOGGER_SHUTDOWN_CLIENT");
     if (log_client == NULL)
     {

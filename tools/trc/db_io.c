@@ -419,11 +419,13 @@ alloc_and_get_test(xmlNodePtr node, test_runs *tests)
         return EINVAL;
     }
 
+#if 0
     /* 'package' property is optional, by default it is false */
     p->is_package = FALSE;
     rc = get_bool_prop(node, "package", &p->is_package);
     if (rc != 0 && rc != ENOENT)
         return rc;
+#endif
 
     node = xmlNodeChildren(node);
     

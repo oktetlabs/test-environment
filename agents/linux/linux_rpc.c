@@ -422,7 +422,7 @@ tarpc_server(const void *arg)
     strcpy(arg1.name, name);
     rpcserver_name = name;
 
-    RPC_LGR_MESSAGE(RING_LVL, "Started %s (PID %d, TID %u)", name, 
+    RPC_LGR_MESSAGE(TE_LL_RING, "Started %s (PID %d, TID %u)", name, 
                     (int)getpid(), (unsigned int)pthread_self());
 
     sigemptyset(&rpcs_received_signals);
@@ -441,7 +441,7 @@ tarpc_server(const void *arg)
     transp = svcunix_create(RPC_ANYSOCK, 1024, 1024, addr.sun_path);
     if (transp == NULL)
     {
-        RPC_LGR_MESSAGE(ERROR_LVL, "svcunix_create() returned NULL");
+        RPC_LGR_MESSAGE(TE_LL_ERROR, "svcunix_create() returned NULL");
         return NULL;
     }
 #else
@@ -450,20 +450,20 @@ tarpc_server(const void *arg)
 
         if (sock < 0)
         {
-            RPC_LGR_MESSAGE(ERROR_LVL,
+            RPC_LGR_MESSAGE(TE_LL_ERROR,
                             "socket(PF_UNIX, SOCK_STREAM, 0) failed");
             return NULL;
         }
         if (bind(sock, SA(&addr), sizeof(addr)) != 0)
         {
-            RPC_LGR_MESSAGE(ERROR_LVL,
+            RPC_LGR_MESSAGE(TE_LL_ERROR,
                             "bind() to RPC server address failed");
             close(sock);
             return NULL;
         }
         if (listen(sock, 2) != 0)
         {
-            RPC_LGR_MESSAGE(ERROR_LVL,
+            RPC_LGR_MESSAGE(TE_LL_ERROR,
                             "listen() on RPC server socket failed");
             close(sock);
             return NULL;
@@ -472,7 +472,7 @@ tarpc_server(const void *arg)
         transp = svc_vc_create(sock, 1024, 1024);
         if (transp == NULL)
         {
-            RPC_LGR_MESSAGE(ERROR_LVL, "svc_vc_create() returned NULL");
+            RPC_LGR_MESSAGE(TE_LL_ERROR, "svc_vc_create() returned NULL");
             return NULL;
         }
     }
@@ -480,13 +480,13 @@ tarpc_server(const void *arg)
 
     if (!svc_register(transp, tarpc, ver0, tarpc_1, 0))
     {
-        RPC_LGR_MESSAGE(ERROR_LVL, "svc_register() failed");
+        RPC_LGR_MESSAGE(TE_LL_ERROR, "svc_register() failed");
         return NULL;
     }
     
     svc_run();
 
-    RPC_LGR_MESSAGE(ERROR_LVL, "Unreachable!");
+    RPC_LGR_MESSAGE(TE_LL_ERROR, "Unreachable!");
 
     return NULL;
 }

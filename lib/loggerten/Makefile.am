@@ -8,7 +8,7 @@ AM_CFLAGS =
 AM_LDFLAGS = @TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/lib 
 
 
-include_HEADERS = logger_ten.h
+include_HEADERS = logger_ten.h logger_ten_int.h
 
 
 lib_LIBRARIES = liblogger_ten.a
@@ -21,7 +21,7 @@ install-exec-hook:
 
 install-data-hook:
 	for i in $(include_HEADERS) ; do \
-	    touch -c -r $(srcdir)/$$i $(DESTDIR)/$(prefix)/include/$$i ; \
+		touch -c -r $(srcdir)/$$i $(DESTDIR)/$(prefix)/include/$$i ; \
 	done
 
 all: install

@@ -12,7 +12,7 @@ noinst_HEADERS = trc_log.h trc_db.h
 bin_PROGRAMS = te_trc
 
 
-te_trc_SOURCES = main.c db_io.c
+te_trc_SOURCES = main.c db_io.c report_html.c
 
 te_trc_LDADD = @TE_LDADD@ -lpopt
 

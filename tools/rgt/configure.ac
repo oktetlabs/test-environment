@@ -137,6 +137,7 @@ AC_CHECK_HEADERS([signal.h            \
                   tcl.h               \
                   obstack.h           \
                   assert.h            \
+                  te_raw_log.h        \
                   logger_defs.h       \
                   ])
 

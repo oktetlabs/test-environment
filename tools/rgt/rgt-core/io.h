@@ -67,7 +67,7 @@ enum read_mode {
  * @retval 0     An error occurs, or the end-of-file is reached.
  *               User has to check it with feof() or ferror().
  */
-int universal_read(FILE *fd, void *buf, size_t count, enum read_mode rmode);
+size_t universal_read(FILE *fd, void *buf, size_t count, enum read_mode rmode);
 
 #ifdef __cplusplus
 }

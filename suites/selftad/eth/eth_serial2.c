@@ -14,7 +14,7 @@
  * @author Konstantin Abramenko <konst@oktetlabs.ru>
  */
 
-#define LOG_LEVEL 3
+#define TE_LOG_LEVEL 3
 
 #include "logger_api.h"
 #include "conf_api.h"
