@@ -613,6 +613,82 @@ TARPC_FUNC(accept,
 }
 )
 
+/*------------------------------ WSAAccept() ------------------------------*/
+
+typedef struct accept_cond {
+     unsigned short port;
+     int            verdict;
+} accept_cond;
+
+static int
+accept_callback(LPWSABUF caller_id, LPWSABUF caller_data, LPQOS sqos,
+                LPQOS gqos, LPWSABUF callee_id, LPWSABUF callee_data, 
+                GROUP *g, DWORD_PTR user_data)
+{
+    accept_cond *cond = (accept_cond *)user_data;
+    
+    struct sockaddr_in *addr;
+    
+    UNUSED(caller_data);
+    UNUSED(sqos);
+    UNUSED(gqos);
+    UNUSED(callee_id);
+    UNUSED(callee_data);
+    UNUSED(g);
+    
+    if (cond == NULL)
+        return CF_ACCEPT;
+        
+    if (caller_id == NULL || caller_id->len == 0)
+        return CF_REJECT;
+        
+    addr = (struct sockaddr_in *)(caller_id->buf);
+    
+    for (; cond->port != 0; cond++)
+        if (cond->port == addr->sin_port)
+            return cond->verdict;
+            
+    return CF_REJECT;
+}                
+
+TARPC_FUNC(wsa_accept, 
+{
+    COPY_ARG(len);
+    COPY_ARG_ADDR(addr);
+},
+{
+    accept_cond *cond = NULL;
+    
+    PREPARE_ADDR(out->addr, out->len.len_len == 0 ? 0 : *out->len.len_val);
+    
+    if (in->cond.cond_len != 0)
+    {
+        unsigned int i;
+        
+        if ((cond = calloc(in->cond.cond_len + 1, sizeof(accept_cond))) == NULL)
+        {
+            out->common._errno = TE_RC(TE_TA_WIN32, ENOMEM); 
+            return TRUE;
+        }
+        for (i = 0; i < in->cond.cond_len; i++)
+        {
+            cond[i].port = in->cond.cond_val[i].port;
+            cond[i].verdict = in->cond.cond_val[i].verdict == TARPC_CF_ACCEPT ?
+                              CF_ACCEPT :
+                              in->cond.cond_val[i].verdict == TARPC_CF_REJECT ?
+                              CF_REJECT : CF_DEFER;
+        }
+    }
+
+    MAKE_CALL(out->retval = WSAAccept(in->fd, a,
+                                      out->len.len_len == 0 ? NULL :
+                                      out->len.len_val, 
+                                      (LPCONDITIONPROC)accept_callback, 
+                                      (DWORD)cond));
+    sockaddr_h2rpc(a, &(out->addr));
+}
+)
+
 /*------------------------------ AcceptEx() ------------------------------*/
 
 TARPC_FUNC(accept_ex, 
