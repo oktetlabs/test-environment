@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.59])
-AC_INIT(tapi_arp, 0.01, oleg@oktetlabs.ru)
+AC_INIT([tapi_arp], [0.01], [oleg@oktetlabs.ru])
 
 AC_CONFIG_SRCDIR([tapi_arp.c])
 
@@ -30,18 +30,19 @@ AC_ARG_VAR([TE_DEPENDENCIES])
 
 AM_CONFIG_HEADER([config.h])
 
-AC_CHECK_HEADERS([stdlib.h        \
-                  string.h        \
-                  strings.h       \
-                  stdint.h        \
-                  sys/socket.h    \
-                  unistd.h        \
-                  arpa/inet.h     \
-                  netinet/in.h    \
-                  netinet/ether.h \
-                  net/if_arp.h    \
-                  net/ethernet.h  \
-                 ])
+AC_CHECK_HEADERS([\
+stdlib.h        \
+string.h        \
+strings.h       \
+stdint.h        \
+sys/socket.h    \
+unistd.h        \
+arpa/inet.h     \
+netinet/in.h    \
+netinet/ether.h \
+net/if_arp.h    \
+net/ethernet.h  \
+])
 
 AC_CONFIG_FILES([Makefile])
 

@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.59])
-AC_INIT(logger, 0.02, Igor.Vasiliev@oktetlabs.ru)
+AC_INIT([te_logger], [0.02], [Igor.Vasiliev@oktetlabs.ru])
 AC_CONFIG_SRCDIR([te_log_init])
 
 AC_CONFIG_AUX_DIR([../../auxdir])
@@ -34,8 +34,8 @@ else
     AC_MSG_ERROR([Could not find libxml2 anywhere, check ftp://xmlsoft.org/.])
 fi
 
-AC_SUBST(XML2_CFLAGS)
-AC_SUBST(XML2_LIBS)
+AC_SUBST([XML2_CFLAGS])
+AC_SUBST([XML2_LIBS])
 
 AC_SUBST([TE_CPPFLAGS])
 AC_SUBST([TE_CFLAGS])

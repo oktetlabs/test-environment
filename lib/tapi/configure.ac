@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.59])
-AC_INIT(tapi, 0.1, Andrew.Rybchenko@oktetlabs.ru)
+AC_INIT([tapi], [0.1], [Andrew.Rybchenko@oktetlabs.ru])
 
 AC_CONFIG_SRCDIR([tapi_tad.h])
 

@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.53)
-AC_INIT(tapi_ipstack, 0.01, konst@oktetlabs.ru)
+AC_INIT([tapi_ipstack], [0.01], [konst@oktetlabs.ru])
 
 AC_CONFIG_SRCDIR([tapi_ipstack.c])
 

@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.53)
-AC_INIT(ipclib, 0.2, Andrew.Rybchenko@oktetlabs.ru)
+AC_INIT([te_ipc], [0.2], [Andrew.Rybchenko@oktetlabs.ru])
 
 AC_CONFIG_SRCDIR([ipc_internal.h])
 
@@ -27,21 +27,21 @@ AC_ARG_VAR([TE_LDFLAGS])
 AM_CONFIG_HEADER([config.h])
 
 AC_CHECK_HEADERS([ \
-stdlib.h        \
-unistd.h        \
-string.h        \
-assert.h        \
-errno.h         \
-fcntl.h         \
-sys/types.h     \
-sys/un.h        \
-ctype.h         \
-netdb.h         \
-sys/socket.h    \
-arpa/inet.h     \
-netinet/in.h    \
+stdlib.h \
+unistd.h \
+string.h \
+assert.h \
+errno.h \
+fcntl.h \
+sys/types.h \
+sys/un.h \
+ctype.h \
+netdb.h \
+sys/socket.h \
+arpa/inet.h \
+netinet/in.h \
 rpc/pmap_clnt.h \
-sys/queue.h     \
+sys/queue.h \
 ])
 
 AC_CONFIG_FILES([Makefile])

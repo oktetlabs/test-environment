@@ -27,14 +27,14 @@ CPPFLAGS=${CPPFLAGS}" "${TE_CFLAGS}
 AM_CONFIG_HEADER([config.h])
 
 AC_CHECK_HEADERS([\
-stdlib.h              \
-unistd.h              \
-ctype.h               \
-sys/types.h           \
-sys/socket.h          \
-arpa/inet.h           \
-netinet/in.h          \
-comm_agent.h          \
+stdlib.h \
+unistd.h \
+ctype.h \
+sys/types.h \
+sys/socket.h \
+arpa/inet.h \
+netinet/in.h \
+comm_agent.h \
 ])
 
 AC_CONFIG_FILES([Makefile])

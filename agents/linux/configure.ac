@@ -1,8 +1,8 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-AC_PREREQ(2.53)
-AC_INIT(ta-linux, 0.4, Elena.Vengerova@oktetlabs.ru)
+AC_PREREQ([2.59])
+AC_INIT([ta-linux], [0.4], [Elena.Vengerova@oktetlabs.ru])
 AC_CONFIG_SRCDIR([linux.c])
 
 AC_CONFIG_AUX_DIR([../../auxdir])
@@ -13,14 +13,15 @@ AC_CANONICAL_HOST
 
 # Checks for programs.
 AC_PROG_CC
+AC_C_INLINE
 
 AC_PROG_INSTALL
 
 AC_CHECK_TOOL(NM, nm)
 
 
-AC_SUBST(host)
-AC_SUBST(with_name)
+AC_SUBST([host])
+AC_SUBST([with_name])
 AC_SUBST([TE_CPPFLAGS])
 AC_SUBST([TE_CFLAGS])
 AC_SUBST([TE_LDFLAGS])
@@ -51,8 +52,6 @@ net/if_dl.h \
 netinet/in_systm.h \
 sys/un.h \
 ])
-
-AC_C_INLINE
 
 
 if test -n "$with_cfg_linux_daemons" ; then

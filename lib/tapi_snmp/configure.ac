@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.59])
-AC_INIT([tapi_snmp], 0.01, konst@oktetlabs.ru)
+AC_INIT([tapi_snmp], [0.01], [konst@oktetlabs.ru])
 
 AC_CONFIG_SRCDIR([tapi_snmp.c])
 

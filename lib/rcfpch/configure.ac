@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.59])
-AC_INIT(rcfpch, 0.02, Elena.Vengerova@oktetlabs.ru)
+AC_INIT([rcfpch], [0.02], [Elena.Vengerova@oktetlabs.ru])
 
 AC_CONFIG_SRCDIR([rcf_pch.h])
 
@@ -31,9 +31,20 @@ AM_CONFIG_HEADER([config.h])
 # It's assumed that stdio.h always presents.
 # Check for stdlib.h, stdarg.h, string.h and float.h.
 AC_HEADER_STDC
-AC_CHECK_HEADERS(ctype.h sys/types.h sys/stat.h unistd.h assert.h \
-                 dirent.h time.h sys/time.h fcntl.h strings.h sys/queue.h \
-                 semaphore.h)
+AC_CHECK_HEADERS([\
+ctype.h \
+sys/types.h \
+sys/stat.h \
+unistd.h \
+assert.h \
+dirent.h \
+time.h \
+sys/time.h \
+fcntl.h \
+strings.h \
+sys/queue.h \
+semaphore.h \
+])
 
 AC_C_INLINE
 

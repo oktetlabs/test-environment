@@ -1,5 +1,5 @@
 # Process this file with autoconf to produce a configure script.
-AC_INIT(rcf, 0.01, Elena.Vangerova@oktetlabs.ru)
+AC_INIT([te_rcf], [0.01], [Elena.Vangerova@oktetlabs.ru])
 
 AC_CONFIG_SRCDIR([rcf.c])
 AC_CONFIG_AUX_DIR([../../auxdir])
@@ -33,8 +33,8 @@ else
     AC_MSG_ERROR([Could not find libxml2 anywhere, check ftp://xmlsoft.org/.])
 fi
 
-AC_SUBST(XML2_CFLAGS)
-AC_SUBST(XML2_LIBS)
+AC_SUBST([XML2_CFLAGS])
+AC_SUBST([XML2_LIBS])
 
 
 AC_SUBST([TE_CFLAGS])

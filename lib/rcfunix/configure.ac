@@ -1,5 +1,5 @@
 # Process this file with autoconf to produce a configure script.
-AC_INIT(rcf_unix, 0.01, Elena.Vengerova@oktetlabs.ru)
+AC_INIT([rcf_unix], [0.01], [Elena.Vengerova@oktetlabs.ru])
 
 AC_CONFIG_SRCDIR([rcfunix.c])
 AC_CONFIG_AUX_DIR([../../auxdir])

@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.59])
-AC_INIT(ta-isosctl, 0.01, Elena.Vengerova@oktetlabs.ru)
+AC_INIT([ta-isosctl], [0.01], [Elena.Vengerova@oktetlabs.ru])
 AC_CONFIG_SRCDIR([isosctl.c])
 
 AC_CONFIG_AUX_DIR([../../auxdir])
@@ -18,7 +18,7 @@ AC_CHECK_TOOL(NM, nm)
 
 AC_CANONICAL_HOST
 
-AC_SUBST(host)
+AC_SUBST([host])
 AC_SUBST([TE_CFLAGS])
 AC_SUBST([TE_LDFLAGS])
 AC_SUBST([TE_LDADD])
@@ -34,7 +34,10 @@ CPPFLAGS=${CPPFLAGS}" "${TE_CFLAGS}
 
 AM_CONFIG_HEADER([config.h])
 
-AC_CHECK_HEADERS(time.h sys/time.h)
+AC_CHECK_HEADERS([\
+time.h \
+sys/time.h \
+])
 AC_C_INLINE
                             
 AC_CONFIG_FILES([Makefile])

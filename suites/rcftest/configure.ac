@@ -1,5 +1,5 @@
 # Process this file with autoconf to produce a configure script.
-AC_INIT(rcftest, 0.01, Elena.Vangerova@oktetlabs.ru)
+AC_INIT([rcftest], [0.01], [Elena.Vangerova@oktetlabs.ru])
 
 AC_CONFIG_SRCDIR([rcftest.c])
 AC_CONFIG_AUX_DIR([../../auxdir])

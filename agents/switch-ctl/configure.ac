@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.59])
-AC_INIT(ta-switch-ctl, 0.1, Andrew.Rybchenko@oktetlabs.ru)
+AC_INIT([ta-switch-ctl], [0.1], [Andrew.Rybchenko@oktetlabs.ru])
 AC_CONFIG_SRCDIR([main.c])
 
 AC_CONFIG_AUX_DIR([../../auxdir])
@@ -11,16 +11,13 @@ AM_INIT_AUTOMAKE([-Wall foreign])
 
 # Checks for programs.
 AC_PROG_CC
-
 AC_PROG_INSTALL
-
 
 AC_CHECK_TOOL(NM, nm)
 
-
 AC_CANONICAL_HOST
 
-AC_SUBST(host)
+AC_SUBST([host])
 AC_SUBST([TE_CPPFLAGS])
 AC_SUBST([TE_CFLAGS])
 AC_SUBST([TE_LDFLAGS])
@@ -39,7 +36,13 @@ CFLAGS=${CFLAGS}" "${TE_CFLAGS}
 AM_CONFIG_HEADER([config.h])
 
 AC_HEADER_STDC
-AC_CHECK_HEADERS(time.h sys/time.h netinet/in.h assert.h semaphore.h)
+AC_CHECK_HEADERS([\
+time.h \
+sys/time.h \
+netinet/in.h \
+assert.h \
+semaphore.h \
+])
 AC_C_INLINE
 
 AC_CONFIG_FILES([Makefile])

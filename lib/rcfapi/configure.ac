@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.59])
-AC_INIT(rcfapi, 0.02, Elena.Vengerova@oktetlabs.ru)
+AC_INIT([rcfapi], [0.02], [Elena.Vengerova@oktetlabs.ru])
 
 AC_CONFIG_SRCDIR([rcf_api.h])
 

@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 #AC_PREREQ([2.59])
-AC_INIT(asn, 0.90, konst@oktetlabs.ru)
+AC_INIT([asn], [0.90], [konst@oktetlabs.ru])
 
 AC_CONFIG_SRCDIR([asn_val.c])
 
