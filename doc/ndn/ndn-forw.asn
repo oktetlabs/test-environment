@@ -12,30 +12,15 @@ Forwarder-Action-Delay-Params ::= SEQUENCE {
     delay-max [2] DATA-UNIT {INTEGER}
 }
 
-Forwarder-Action-Bandwidth-Params ::= SEQUENCE {
-    type      [0] INTEGER{unlimited(0), limited(1)},
-    bps       [1] DATA-UNIT{INTEGER },
-    buf-size  [2] DATA-UNIT{INTEGER }
-}
-
 Forwarder-Action-Reorder-Params ::= SEQUENCE {
     type            [0] INTEGER {disabled(0), random(1), reversed(2)},
     timeout         [1] DATA-UNIT {INTEGER},
     reorder-size    [2] DATA-UNIT {INTEGER}
 }
 
-Forwarder-Drop-Random::= SEQUENCE {
-    rate         [1] DATA-UNIT {INTEGER}
-}
-
-Forwarder-Drop-Pattern::= SEQUENCE {
-    bitmask     [1] OCTET STRING,
-    length      [2] INTEGER
-}
-
 Forwarder-Action-Drop-Params ::= CHOICE {
-    random      [0] Forwarder-Drop-Random,
-    pattern     [1] Forwarder-Drop-Pattern
+    random-rate  [0] INTEGER(1..100),
+    pattern-mask [1] BIT STRING
 }
 
 Forwarder-Action ::= SEQUENCE {
