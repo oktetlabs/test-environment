@@ -7,7 +7,7 @@ MY_CPPFLAGS=-I$(DESTDIR)/$(prefix)/../@host@/include \
 # -ltad_ch with names used in -lrcfpch.
 #
 MY_LDADD=symtbl.o $(LIBLTDL) -lrcfpch -l@TAD@ @TE_LDADD@ -lconf_oid \
-         -lcomm_net_agent -lloggerta -lpthread 
+         -lloggerta -lpthread -lws2_32 -liphlpapi
 MY_LDAFLAGS=-rdynamic -export-dynamic 
 
 MY_SOURCES=win32.c win32conf.c 
