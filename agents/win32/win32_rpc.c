@@ -507,7 +507,7 @@ tarpc_server(void *arg)
     strcpy(arg1.name, (char *)arg);
     rpcserver_name = (char *)arg;
 
-    RPC_LGR_MESSAGE(RING_LVL, "Started %s (PID %d, TID %u)", (char *)arg, 
+    RPC_LGR_MESSAGE(TE_LL_RING, "Started %s (PID %d, TID %u)", (char *)arg, 
                     (int)getpid(), (unsigned int)pthread_self());
 
     sigemptyset(&rpcs_received_signals);
@@ -520,7 +520,7 @@ tarpc_server(void *arg)
 
     if ((sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0) {
         close(ta_rpc_sync_socks[1]);
-        RPC_LGR_MESSAGE(ERROR_LVL, "socket() failed");
+        RPC_LGR_MESSAGE(TE_LL_ERROR, "socket() failed");
         return ((SVCXPRT *)NULL);
     }
 
@@ -529,7 +529,7 @@ tarpc_server(void *arg)
     {
         close(sock);
         close(ta_rpc_sync_socks[1]);
-        RPC_LGR_MESSAGE(ERROR_LVL, "svcunix_create() returned NULL");
+        RPC_LGR_MESSAGE(TE_LL_ERROR, "svcunix_create() returned NULL");
         return NULL;
     }
     
@@ -537,7 +537,7 @@ tarpc_server(void *arg)
     {
         close(sock);
         close(ta_rpc_sync_socks[1]);
-        RPC_LGR_MESSAGE(ERROR_LVL, "getsockname() failed");
+        RPC_LGR_MESSAGE(TE_LL_ERROR, "getsockname() failed");
         return NULL;
     }
     
@@ -554,13 +554,13 @@ tarpc_server(void *arg)
     {
         close(sock);
         tarpc_server_mapping_del(pipename);
-        RPC_LGR_MESSAGE(ERROR_LVL, "svc_register() failed");
+        RPC_LGR_MESSAGE(TE_LL_ERROR, "svc_register() failed");
         return NULL;
     }
     
     svc_run();
 
-    RPC_LGR_MESSAGE(ERROR_LVL, "Unreachable!");
+    RPC_LGR_MESSAGE(TE_LL_ERROR, "Unreachable!");
 
     return NULL;
 }
