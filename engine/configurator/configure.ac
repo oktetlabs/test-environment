@@ -27,17 +27,14 @@ else
 fi
 
 AC_MSG_CHECKING(for libxml2 library)
-if ${XML_CONFIG} --libs print > /dev/null 2>&1
+if ${XML_CONFIG} --libs print >/dev/null 2>&1
 then
-    XML2_LIBS="$XML2_LIBS `$XML_CONFIG --libs`"
-    XML2_CFLAGS="$XML2_CFLAGS `$XML_CONFIG --cflags`"
+    CFLAGS=${CFLAGS}" "`$XML_CONFIG --cflags`
+    LIBS=${LIBS}" "`$XML_CONFIG --libs`
     AC_MSG_RESULT(found)
 else
     AC_MSG_ERROR([Could not find libxml2 anywhere, check ftp://xmlsoft.org/.])
 fi
-
-AC_SUBST(XML2_CFLAGS)
-AC_SUBST(XML2_LIBS)
 
 
 AC_SUBST(TE_CPPFLAGS)
@@ -60,8 +57,18 @@ AM_CONFIG_HEADER(config.h)
 # It's assumed that stdio.h always presents.
 # Check for stdlib.h, stdarg.h, string.h and float.h.
 AC_HEADER_STDC
-AC_CHECK_HEADERS(te_errno.h time.h sys/time.h sys/types.h string.h \
-                 sys/socket.h strings.h assert.h signal.h)
+AC_CHECK_HEADERS([\
+time.h \
+sys/time.h \
+sys/types.h \
+string.h \
+sys/socket.h \
+strings.h \
+assert.h \
+signal.h \
+])
+
+AC_CHECK_TYPES([xmlError], [], [], [#include <libxml/xmlerror.h>])
 
 AC_CONFIG_FILES(Makefile)
 

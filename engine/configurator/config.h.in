@@ -36,14 +36,14 @@
 /* Define to 1 if you have the <sys/types.h> header file. */
 #undef HAVE_SYS_TYPES_H
 
-/* Define to 1 if you have the <te_errno.h> header file. */
-#undef HAVE_TE_ERRNO_H
-
 /* Define to 1 if you have the <time.h> header file. */
 #undef HAVE_TIME_H
 
 /* Define to 1 if you have the <unistd.h> header file. */
 #undef HAVE_UNISTD_H
+
+/* Define to 1 if the system has the type `xmlError'. */
+#undef HAVE_XMLERROR
 
 /* Name of package */
 #undef PACKAGE
