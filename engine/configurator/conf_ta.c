@@ -385,6 +385,7 @@ sync_ta_subtree(char *ta, char *oid)
 int
 cfg_ta_sync(char *oid, te_bool subtree)
 {
+    te_bool  agt_volatile_sync = FALSE;
     cfg_oid *tmp_oid;
     int      rc = 0;
 
@@ -398,8 +399,24 @@ cfg_ta_sync(char *oid, te_bool subtree)
         cfg_free_oid(tmp_oid);
         return EINVAL;
     }
+    
+    /*
+     * Note Author: Oleg.Kravtsov@oktetlabs.ru
+     *
+     * It's too dirty way of synchronizing "/agent/volatile" subtree, but
+     * so far it works, and it didn't take me too long for that -
+     * the time is money, so when it is required to extend this feture
+     * we'll do it.
+     * What to extend?
+     * Synchronizing volatile tree on the particular agent;
+     * Synchronizing a particular part of volatile subtree;
+     */
+    if (strcmp(oid, "/agent:*/"CFG_VOLATILE":") == 0)
+    {
+        agt_volatile_sync = TRUE;
+    }
 
-    if (tmp_oid->len == 1)
+    if (tmp_oid->len == 1 || agt_volatile_sync)
     {
         char *ta;
 
@@ -409,7 +426,8 @@ cfg_ta_sync(char *oid, te_bool subtree)
         {
             char agent_oid[CFG_SUBID_MAX + CFG_INST_NAME_MAX + 3];
 
-            sprintf(agent_oid, "/agent:%s", ta);
+            sprintf(agent_oid, "/agent:%s%s", ta,
+                    agt_volatile_sync ? "/"CFG_VOLATILE":" : "");
             if ((rc = sync_ta_subtree(ta, agent_oid)) != 0)
                 break;
         }

@@ -186,13 +186,13 @@ static int mtu_set(unsigned int, const char *, const char *,
                    const char *);
 
 static int arp_get(unsigned int, const char *, char *,
-                   const char *);
+                   const char *, const char *);
 static int arp_set(unsigned int, const char *, const char *,
-                   const char *);
+                   const char *, const char *);
 static int arp_add(unsigned int, const char *, const char *,
-                   const char *);
+                   const char *, const char *);
 static int arp_del(unsigned int, const char *,
-                   const char *);
+                   const char *, const char *);
 static int arp_list(unsigned int, const char *, char **);
 
 static int route_get(unsigned int, const char *, char *,
@@ -209,8 +209,19 @@ static int nameserver_get(unsigned int, const char *, char *,
                           const char *, ...);
 
 /* Linux Test Agent configuration tree */
+
+/* Volatile subtree */
+static rcf_pch_cfg_object node_volatile_arp =
+    { "arp", 0, NULL, NULL,
+      (rcf_ch_cfg_get)arp_get, (rcf_ch_cfg_set)arp_set,
+      (rcf_ch_cfg_add)arp_add, (rcf_ch_cfg_del)arp_del,
+      (rcf_ch_cfg_list)arp_list, NULL, NULL};
+
+RCF_PCH_CFG_NODE_NA(node_volatile, "volatile", &node_volatile_arp, NULL);
+
+/* Non-volatile subtree */
 static rcf_pch_cfg_object node_route =
-    { "route", 0, NULL, NULL,
+    { "route", 0, NULL, &node_volatile,
       (rcf_ch_cfg_get)route_get, (rcf_ch_cfg_set)route_set,
       (rcf_ch_cfg_add)route_add, (rcf_ch_cfg_del)route_del,
       (rcf_ch_cfg_list)route_list, NULL, NULL};
@@ -275,7 +286,16 @@ rcf_pch_cfg_object *
 rcf_ch_conf_root()
 {
 #ifdef CFG_LINUX_DAEMONS
-    rcf_pch_cfg_object *tail = &node_route;
+    rcf_pch_cfg_object *tail = &node_volatile;
+
+    if (!init && tail->brother != NULL)
+    {
+        ERROR("The last element in configuration tree has brother, "
+              "which is very strange - you must have forgotten to "
+              "update 'tail' variable in %s:%d", __FILE__, __LINE__);
+        return NULL;
+    }
+
 #endif
 
     if (!init)
@@ -1650,22 +1670,44 @@ status_set(unsigned int gid, const char *oid, const char *value,
 /**
  * Get ARP entry value (hardware address corresponding to IPv4).
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
- * @param value         location for the value
- *                      (XX:XX:XX:XX:XX:XX is returned)
- * @param addr          IPv4 address in the dotted notation
+ * @param gid            group identifier (unused)
+ * @param oid            full object instence identifier (unused)
+ * @param value          location for the value
+ *                       (XX:XX:XX:XX:XX:XX is returned)
+ * @param addr           IPv4 address in the dotted notation
+ * @param addr_volatile  IPv4 address in case of volatile ARP subtree,
+ *                       in this case @p addr parameter points to zero
+ *                       length string
  *
  * @return error code
  */
 static int
 arp_get(unsigned int gid, const char *oid, char *value,
-        const char *addr)
+        const char *addr, const char *addr_volatile)
 {
-    FILE *fp;
+    te_bool  volatile_entry = FALSE;
+    FILE    *fp;
 
     UNUSED(gid);
-    UNUSED(oid);
+
+    /* 
+     * Determine which subtree we are working with
+     * (volatile or non-volatile).
+     */
+    if (strstr(oid, node_volatile.sub_id) != NULL)
+    {
+        /*
+         * Volatile subtree, as soon as its instance names are
+         * /agent:NAME/volatile:/arp:ADDR,
+         * in which case we have:
+         * + addr          - "" (empty string 'volatile' instance name);
+         * + addr_volatile - "ADDR" (dynamic ARP entry name).
+         */
+        volatile_entry = TRUE;
+        addr = addr_volatile;
+
+        assert(strlen(addr_volatile) > 0);
+    }
 
     if ((fp = fopen("/proc/net/arp", "r")) == NULL)
     {
@@ -1678,13 +1720,32 @@ arp_get(unsigned int gid, const char *oid, char *value,
     {
         if (strcmp(buf, addr) == 0)
         {
-            char flags[8];
-            fscanf(fp, "%s %s %s", buf, flags, value);
+            unsigned int flags = 0;
+
+            if (fscanf(fp, "%s %x %s", buf, &flags, value) != 3)
+            {
+                fclose(fp);
+                ERROR("Failed to parse ARP entry values");
+                return TE_RC(TE_TA_LINUX, EFAULT);
+            }
             fclose(fp);
-            if (strcmp(flags, "0x0") == 0)
+            
+            if (flags == 0)
+            {
                 return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
+            }
             else
+            {
+                if (!(volatile_entry ^ (flags & ATF_PERM)))
+                {
+                    ERROR("%s ARP entry %s ATF_PERM flag",
+                          volatile_entry ? "Volatile" : "Non-volatile",
+                          (flags & ATF_PERM) ? "has" : "does not have");
+                    return TE_RC(TE_TA_LINUX, EFAULT);
+                }
+
                 return 0;
+            }
         }
         fgets(buf, sizeof(buf), fp);
     }
@@ -1697,47 +1758,58 @@ arp_get(unsigned int gid, const char *oid, char *value,
 /**
  * Change already existing ARP entry.
  *
- * @param gid           group identifier
- * @param oid           full object instence identifier (unused)
- * @param value         new value pointer ("XX:XX:XX:XX:XX:XX")
- * @param addr          IPv4 address in the dotted notation
+ * @param gid            group identifier
+ * @param oid            full object instence identifier (unused)
+ * @param value          new value pointer ("XX:XX:XX:XX:XX:XX")
+ * @param addr           IPv4 address in the dotted notation
+ * @param addr_volatile  IPv4 address in case of volatile ARP subtree,
+ *                       in this case @p addr parameter points to zero
+ *                       length string
  *
  * @return error code
  */
 static int
 arp_set(unsigned int gid, const char *oid, const char *value,
-        const char *addr)
+        const char *addr, const char *addr_volatile)
 {
     char val[RCF_MAX_VAL];
 
-    if (arp_get(gid, oid, val, addr) != 0)
+    if (arp_get(gid, oid, val, addr, addr_volatile) != 0)
         return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
 
-    return arp_add(gid, oid, value, addr);
+    return arp_add(gid, oid, value, addr, addr_volatile);
 }
 
 /**
  * Add a new ARP entry.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
- * @param value         new entry value pointer ("XX:XX:XX:XX:XX:XX")
- * @param addr          IPv4 address in the dotted notation
+ * @param gid            group identifier (unused)
+ * @param oid            full object instence identifier (unused)
+ * @param value          new entry value pointer ("XX:XX:XX:XX:XX:XX")
+ * @param addr           IPv4 address in the dotted notation
+ * @param addr_volatile  IPv4 address in case of volatile ARP subtree,
+ *                       in this case @p addr parameter points to zero
+ *                       length string
  *
  * @return error code
  */
 static int
 arp_add(unsigned int gid, const char *oid, const char *value,
-        const char *addr)
+        const char *addr, const char *addr_volatile)
 {
+    te_bool       volatile_entry = FALSE;
     struct arpreq arp_req;
-
-    int int_addr[6];
-    int res;
-    int i;
+    int           int_addr[6];
+    int           res;
+    int           i;
 
     UNUSED(gid);
-    UNUSED(oid);
+
+    if (strstr(oid, node_volatile.sub_id) != NULL)
+    {
+        volatile_entry = TRUE;
+        addr = addr_volatile;
+    }
 
     res = sscanf(value, "%2x:%2x:%2x:%2x:%2x:%2x%s",
                  int_addr, int_addr + 1, int_addr + 2, int_addr + 3,
@@ -1755,7 +1827,11 @@ arp_add(unsigned int gid, const char *oid, const char *value,
     arp_req.arp_ha.sa_family = AF_LOCAL;
     for (i = 0; i < 6; i++)
         (arp_req.arp_ha.sa_data)[i] = (unsigned char)(int_addr[i]);
-    arp_req.arp_flags = ATF_PERM | ATF_COM;
+    
+    arp_req.arp_flags = ATF_COM;
+    if (!volatile_entry)
+        arp_req.arp_flags |= ATF_PERM;
+
 #ifdef SIOCSARP
     if (ioctl(s, SIOCSARP, &arp_req) < 0)
     {
@@ -1772,22 +1848,28 @@ arp_add(unsigned int gid, const char *oid, const char *value,
 /**
  * Delete ARP entry.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
- * @param value         value string (unused)
- * @param addr          IPv4 address in the dotted notation
+ * @param gid            group identifier (unused)
+ * @param oid            full object instence identifier (unused)
+ * @param value          value string (unused)
+ * @param addr           IPv4 address in the dotted notation
+ * @param addr_volatile  IPv4 address in case of volatile ARP subtree,
+ *                       in this case @p addr parameter points to zero
+ *                       length string
  *
  * @return error code
  */
 static int
-arp_del(unsigned int gid, const char *oid, const char *addr)
+arp_del(unsigned int gid, const char *oid,
+        const char *addr, const char *addr_volatile)
 {
     struct arpreq arp_req;
 
     UNUSED(gid);
-    UNUSED(oid);
 
-    memset (&arp_req, 0, sizeof(arp_req));
+    if (strstr(oid, node_volatile.sub_id) != NULL)
+        addr = addr_volatile;
+
+    memset(&arp_req, 0, sizeof(arp_req));
     arp_req.arp_pa.sa_family = AF_INET;
     if (inet_pton(AF_INET, addr, &SIN(&(arp_req.arp_pa))->sin_addr) <= 0)
         return TE_RC(TE_TA_LINUX, EINVAL);
@@ -1806,10 +1888,10 @@ arp_del(unsigned int gid, const char *oid, const char *addr)
 }
 
 /**
- * Get instance list for object "agent/arp".
+ * Get instance list for object "agent/arp" and "agent/volatile/arp".
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instence identifier
  * @param list          location for the list pointer
  *
  * @return error code
@@ -1817,9 +1899,18 @@ arp_del(unsigned int gid, const char *oid, const char *addr)
 static int
 arp_list(unsigned int gid, const char *oid, char **list)
 {
+
 #ifdef __linux__
-    char *ptr = buf;
-    FILE *fp;
+    te_bool  volatile_entry = FALSE;
+    char    *ptr = buf;
+    FILE    *fp;
+
+    /* 
+     * Determine which subtree we are working with
+     * (volatile or non-volatile).
+     */
+    if (strstr(oid, node_volatile.sub_id) != NULL)
+        volatile_entry = TRUE;
 
     if ((fp = fopen("/proc/net/arp", "r")) == NULL)
     {
@@ -1834,13 +1925,15 @@ arp_list(unsigned int gid, const char *oid, char **list)
         unsigned int flags = 0;
 
         fscanf(fp, "%s %x", trash, &flags);
-        if (flags & ATF_COM)
+        if ((flags & ATF_COM) &&
+            (volatile_entry ^ (flags & ATF_PERM)))
         {
             sprintf(ptr + strlen(ptr), " ");
             ptr += strlen(ptr);
         }
         else
-            *ptr = 0;
+            *ptr = '\0';
+
         fgets(trash, sizeof(trash), fp);
     }
     fclose(fp);
@@ -1849,7 +1942,6 @@ arp_list(unsigned int gid, const char *oid, char **list)
 #endif
 
     UNUSED(gid);
-    UNUSED(oid);
 
     if ((*list = strdup(buf)) == NULL)
         return TE_RC(TE_TA_LINUX, ENOMEM);

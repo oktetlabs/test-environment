@@ -251,6 +251,17 @@ extern int tapi_cfg_del_arp_entry(const char *ta,
                                   const void *net_addr);
 
 /**
+ * Clenup dynamic ARP entries on the Agent.
+ *
+ * @param ta           Test agent name
+ *
+ * @return Status code
+ *
+ * @retval 0  - on success
+ */
+extern int tapi_cfg_del_arp_dynamic(const char *ta);
+
+/**
  * Returns hardware address of specified interface on a particular 
  * test agent.
  * 

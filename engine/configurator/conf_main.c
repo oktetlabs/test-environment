@@ -182,6 +182,70 @@ parse_config(char *file)
 }
 
 /**
+ * Decides whether "/agent/volatile" subtree should be synchronized or not
+ * and synchronize it if necessary.
+ *
+ * @param inst_name  Instance name
+ */
+static int
+cfg_sync_agt_volatile(const char *inst_name)
+{
+    cfg_oid *oid = NULL;
+
+    /* 
+     * Synchronize "/agent/volatile" subtree in case user wants 
+     * to get all instances or if pattern includes "/agent/volatile"
+     * subtree.
+     */
+    if (strcmp(inst_name, "*:*") == 0 ||
+        ((oid = cfg_convert_oid_str(inst_name)) != NULL && oid->inst))
+    {
+        int         rc;
+        uint32_t    i;
+        te_bool     sync_volatile = TRUE;
+        const char *subids[] = {
+            "agent",
+            CFG_VOLATILE,
+        };
+
+        /* Check that the pattern is /[agent|*]/[volatile|*] */
+        for (i = sizeof(subids) / sizeof(subids[0]);
+             oid != NULL && sync_volatile && i >= 1;
+             i--)
+        {
+            if (oid->len >= (i + 1))
+            {
+#define CFG_GET_SUBID(i_) ((((cfg_inst_subid *)(oid->ids))[i_]).subid)
+
+                    sync_volatile = 
+                        (CFG_GET_SUBID(i)[0] == '*') ||
+                        (strcmp(subids[i - 1], CFG_GET_SUBID(i)) == 0);
+
+#undef CFG_GET_SUBID
+            }
+        }
+
+        /*
+         * Currently, we synchronize the whole "/agent/volatile" 
+         * subtree, do not get the particular subtree of it.
+         */
+        if (sync_volatile)
+        {
+            if ((rc = cfg_ta_sync("/agent:*/"CFG_VOLATILE":", FALSE)) != 0)
+            {
+                ERROR("Cannot synchronize /agent/"CFG_VOLATILE
+                      " subtree, errno 0x%X", rc);
+                cfg_free_oid(oid);
+                return rc;
+            }
+        }
+    }
+    cfg_free_oid(oid);
+
+    return 0;
+}
+
+/**
  * Process add user request.
  *
  * @param msg           message pointer
@@ -206,6 +270,14 @@ process_add(cfg_add_msg *msg, te_bool update_dh)
     /* Get the value of the new instance to log it in case of error */
     if (cfg_types[msg->val_type].val2str(val, &val_str) != 0)
         assert(0);
+
+    /* Synchronize /agent/volatile subtree if necessary */
+    if ((msg->rc = cfg_sync_agt_volatile(inst_name_str)) != 0)
+    {
+        ERROR("Cannot synchronize /agent/volatile subtree, "
+              "errno 0x%X", msg->rc);
+        return;
+    }
 
     msg->rc = cfg_db_add(oid, &handle, msg->val_type, val);
     
@@ -526,7 +598,7 @@ process_backup(cfg_backup_msg *msg)
             int rc = rcf_check_agents();
             
             if (TE_RC_GET_ERROR(rc) == ETAREBOOTED)
-                cfg_ta_sync("/agent", TRUE);
+                cfg_ta_sync("/:", TRUE);
             
             /* Try to restore using dynamic history */
             if ((msg->rc = cfg_dh_restore_backup(msg->filename)) == 0)
@@ -910,6 +982,14 @@ cfg_process_msg(cfg_msg **msg, te_bool update_dh)
             break;
 
         case CFG_FIND:
+            /* Synchronize /agent/volatile subtree if necessary */
+            if (((*msg)->rc = cfg_sync_agt_volatile(
+                                  ((cfg_find_msg *)*msg)->oid)) != 0)
+            {
+                ERROR("Cannot synchronize /agent/volatile subtree, "
+                      "errno 0x%X", (*msg)->rc);
+                break;
+            }
             cfg_process_msg_find((cfg_find_msg *)*msg);
             break;
 
@@ -926,6 +1006,15 @@ cfg_process_msg(cfg_msg **msg, te_bool update_dh)
             break;
 
         case CFG_PATTERN:
+            /* Synchronize /agent/volatile subtree if necessary */
+            if (((*msg)->rc = cfg_sync_agt_volatile(
+                                  ((cfg_pattern_msg *)*msg)->pattern)) != 0)
+            {
+                ERROR("Cannot synchronize /agent/volatile subtree, "
+                      "errno 0x%X", (*msg)->rc);
+                break;
+            }
+
             *msg = (cfg_msg *)cfg_process_msg_pattern(
                                   (cfg_pattern_msg *)*msg);
             break;
