@@ -30,8 +30,11 @@
 #ifndef __TE_TAPI_SNMP__H__
 #define __TE_TAPI_SNMP__H__ 
 
+#if HAVE_NET_SNMP_DEFINITIONS_H
 #include <net-snmp/net-snmp-config.h>
 #include <net-snmp/definitions.h> 
+#include <net-snmp/mib_api.h> 
+#endif
 
 #if 0
 /* If there is no NET-SNMP package on your system, but there is UCD-SNMP, 
@@ -65,6 +68,11 @@ this length can be exceeded only for "string" table indixes. */
 #define MAX_OID_LEN 40
 #endif
 
+#ifndef MAX_LABLE_LEN
+#define MAX_LABLE_LEN 50
+#endif
+	
+	
 /** SNMP Object Identifier */
 typedef struct {
     size_t length;
@@ -87,6 +95,13 @@ typedef enum {
     TAPI_SNMP_NOSUCHINS = SNMP_NOSUCHINSTANCE, /**< 0x81  = 129*/
     TAPI_SNMP_ENDOFMIB  = SNMP_ENDOFMIBVIEW,   /**< 0x82  = 130*/
 } tapi_snmp_vartypes_t;
+
+typedef enum {
+    TAPI_SNMP_MIB_ACCESS_READONLY   = MIB_ACCESS_READONLY, /* 18 */
+    TAPI_SNMP_MIB_ACCESS_READWRITE  = MIB_ACCESS_READWRITE, /* 19 */
+    TAPI_SNMP_MIB_ACCESS_CREATE     = MIB_ACCESS_CREATE, /* 48 */
+    
+} tapi_snmp_mib_access;	
 
 typedef enum {
     TAPI_SNMP_EXACT,
@@ -130,6 +145,16 @@ typedef struct {
     size_t   len;       /**< length of the octet string */
     uint8_t  data[0];   /**< pointer to the first octet */
 } tapi_snmp_oct_string_t;
+
+/**
+ * Structure to contain snmp variable mib access
+ */ 
+typedef struct tapi_snmp_var_access {
+    struct tapi_snmp_var_access  *next; /* Pointer to the next peer in sense of MIB structure */	
+    char                          label[MAX_LABLE_LEN];
+    tapi_snmp_oid_t               oid;
+    tapi_snmp_mib_access          access;
+} tapi_snmp_var_access;    
 
 /**
  * Concatenate two object identifiers and put result into first one. 
@@ -529,6 +554,20 @@ extern int tapi_snmp_get_table_rows(const char *ta, int sid, int csap_id,
  * @return zero on success or error code
  */
 extern int tapi_snmp_get_table_dimension(tapi_snmp_oid_t *table_oid, int *dimension);
+
+
+/**
+ * Get SNMP table columns.
+ * 
+ * @param table_oid     OID of SNMP table Entry object, or one leaf in this 
+ *                      entry
+ * @param columns       Pointer to the allocated array of columns (OUT)
+ *
+ * @return zero on success or error code
+ */
+extern int tapi_snmp_get_table_columns(tapi_snmp_oid_t *table_oid, tapi_snmp_var_access **columns);
+
+
 
 /**
  * Loads all text OIDs from MIB file

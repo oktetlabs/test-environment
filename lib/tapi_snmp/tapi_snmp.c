@@ -1202,6 +1202,69 @@ tapi_snmp_get_table_dimension(tapi_snmp_oid_t *table_oid, int *dimension)
     return 0;
 }    
 
+/* See description in tapi_snmp.h */
+int 
+tapi_snmp_get_table_columns(tapi_snmp_oid_t *table_oid, tapi_snmp_var_access **columns)
+{
+    struct tree *entry_node; 
+    int rc = 0; 
+    tapi_snmp_oid_t entry; /* table Entry OID */
+    struct index_list *t_index;
+    tapi_snmp_var_access *columns_p;
+
+    if (table_oid == NULL)
+        return ETEWRONGPTR;
+
+    *columns = NULL;
+
+    memcpy(&entry, table_oid, sizeof(entry));
+
+    entry_node = get_tree(entry.id, entry.length, get_tree_head());
+
+    if (entry_node == NULL)
+    {
+        WARN("no entry node found!\n");
+        return TE_RC(TE_TAPI, EINVAL);
+    }
+
+    /* fall down in MIB tree to the table Entry node or leaf. */
+
+    while (entry_node->indexes == NULL && entry_node->child_list != NULL)
+    {
+        entry_node = entry_node->child_list;
+        if (entry.length == MAX_OID_LEN)
+            return TE_RC(TE_TAPI, ENOBUFS);
+        entry.id[entry.length] = entry_node->subid;
+        entry.length++;
+    }
+    if (entry_node->indexes == NULL)
+    {
+        VERB("Very strange, cannot find entry for table %s\n", oid2str(table_oid));
+	return rc;
+    }	    
+
+    if (entry_node->child_list == NULL)
+    {
+        /* strange, node with indexes without children! */
+        return TE_RC(TE_TAPI, 1);
+    }
+
+    for (entry_node = entry_node->child_list; entry_node; entry_node = entry_node->next_peer)
+    {
+        columns_p = (tapi_snmp_var_access *)calloc(1, sizeof(tapi_snmp_var_access));
+	if (columns_p == NULL)
+	    return TE_RC(TE_TAPI, ENOMEM);
+
+	strcpy(columns_p->label, entry_node->label);
+	rc = tapi_snmp_make_oid(columns_p->label, &(columns_p->oid));
+	if (rc)
+	    return TE_RC(TE_TAPI, rc);	
+	columns_p->access = entry_node->access;
+	columns_p->next = *columns;
+	*columns = columns_p;
+    } 	
+    return 0;
+}	
 
 /* See description in tapi_snmp.h */
 int
