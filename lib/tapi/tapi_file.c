@@ -58,19 +58,12 @@
 char *
 tapi_file_create(int len, char c)
 {
-    static char pathname[RCF_MAX_PATH];
-
+    char *pathname = strdup(tapi_file_generate_pathname());
     char  buf[1024];
-    char *te_tmp;
     FILE *f;
     
-    if ((te_tmp = getenv("TE_TMP")) == NULL)
-    {
-        ERROR("TE_TMP is empty");
+    if (pathname == NULL)
         return NULL;
-    }
-
-    sprintf(pathname, "%s/%s", getenv("TE_TMP"), tapi_file_generate_name());
     
     if ((f = fopen(pathname, "w")) == NULL)
     {
@@ -98,7 +91,7 @@ tapi_file_create(int len, char c)
         ERROR("fclose() failed: file %s errno=%d", pathname, errno);
         return NULL;
     }
-    return strdup(pathname);
+    return pathname;
 }
 
 /**

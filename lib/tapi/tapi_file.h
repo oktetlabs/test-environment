@@ -44,6 +44,30 @@ tapi_file_generate_name(void)
 }
 
 /**
+ * Generate unique pathname for file on the engine.
+ *
+ * @return generated name
+ *
+ * @note the function is not thread-safe
+ */
+static inline char *
+tapi_file_generate_pathname(void)
+{
+    static char  pathname[RCF_MAX_PATH];
+    static char *te_tmp;
+    
+    if (te_tmp == NULL && (te_tmp = getenv("TE_TMP")) == NULL)
+    {
+        ERROR("TE_TMP is empty");
+        return NULL;
+    }
+
+    sprintf(pathname, "%s/%s", te_tmp, tapi_file_generate_name());
+    
+    return pathname;
+}
+
+/**
  * Create file in the TE temporary directory.
  *
  * @param len   file length
