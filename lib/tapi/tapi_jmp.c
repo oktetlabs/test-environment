@@ -233,7 +233,7 @@ tapi_jmp_do(int val)
 
     if ((p = ctx->stack.lh_first) == NULL)
     {
-        ERROR("%s(): Jumps stack is empty");
+        ERROR("%s(): Jumps stack is empty", __FUNCTION__);
         return TE_RC(TE_TAPI, ENOENT);
     }
     LIST_REMOVE(p, links);
