@@ -293,7 +293,7 @@ xinetd_get(unsigned int gid, const char *oid, char *value)
         if (tmp == NULL || (comment != NULL && comment < tmp))
             continue;
             
-        if (strstr(tmp, "yes") == 0)
+        if (strstr(tmp, "yes") != NULL)
         {
             strcpy(value, "0");
             break;
