@@ -27,7 +27,7 @@
  * @author Elena Vengerova <Elena.Vengerova@oktetlabs.ru>
  * @author Oleg Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
  *
- * $Id: tapi_rpc.h 1708 2004-05-29 07:58:45Z arybchik $
+ * $Id$
  */
  
 #ifndef __TE_TAPI_RPCSOCK_DEFS_H__
@@ -675,7 +675,7 @@ typedef enum rpc_network_event {
                                                    the specified destination */
     RPC_FD_ADDRESS_LIST_CHANGE      = 0x200, /**< Local address list changes for
                                                   the address family of
-						  the socket */
+                                                  the socket */
 } rpc_network_event;
 
 #ifdef FD_READ
@@ -774,7 +774,7 @@ network_event_rpc2h(rpc_network_event flags)
            (!!(flags & RPC_FD_QOS) * FD_QOS) |
            (!!(flags & RPC_FD_GROUP_QOS) * FD_GROUP_QOS) |
            (!!(flags & RPC_FD_ROUTING_INTERFACE_CHANGE) *
-	                                        FD_ROUTING_INTERFACE_CHANGE) |
+                                                FD_ROUTING_INTERFACE_CHANGE) |
            (!!(flags & RPC_FD_ADDRESS_LIST_CHANGE) * FD_ADDRESS_LIST_CHANGE); 
 }
 
@@ -2195,10 +2195,11 @@ win_error_rpc2str(int win_err)
         RPC2STR(WSAEINVALIDPROCTABLE);
         RPC2STR(WSAEINVALIDPROVIDER);
         RPC2STR(WSAEPROVIDERFAILEDINIT);
-	case 0: return "";
+        case 0: return "";
         default: return "WINERROR_UNKNOWN";
     } 
 }
+
 
 typedef enum rpc_fcntl_command {
     RPC_F_DUPFD,
@@ -2228,11 +2229,10 @@ typedef enum rpc_fcntl_arg
     RPC_O_UNKNOWN = 0x8000
 }rpc_fcntl_flag; 
 
-#define O_UNKNOWN	0xFFFFFFFF
+#define O_UNKNOWN        0xFFFFFFFF
 #define RPC_FCNTL_FLAGS_ALL \
-	(RPC_O_ASYNC | RPC_O_APPEND | \
-	RPC_O_NONBLOCK | RPC_FASYNC)
-	
+    (RPC_O_ASYNC | RPC_O_APPEND | RPC_O_NONBLOCK | RPC_FASYNC)
+        
 /** Convert RPC fcntl args to native ones. */
 static inline int
 fcntl_flag_rpc2h(rpc_fcntl_flag flags)
@@ -2243,16 +2243,16 @@ fcntl_flag_rpc2h(rpc_fcntl_flag flags)
         return 0;
     return 0 
 #ifdef O_ASYNC
-	| (!!(flags & RPC_O_ASYNC) * O_ASYNC)
+        | (!!(flags & RPC_O_ASYNC) * O_ASYNC)
 #endif
 #ifdef O_APPEND
-	| (!!(flags & RPC_O_APPEND) * O_APPEND) 
+        | (!!(flags & RPC_O_APPEND) * O_APPEND) 
 #endif
 #ifdef O_NONBLOCK
-	| (!!(flags & RPC_O_NONBLOCK) * O_NONBLOCK) 
+        | (!!(flags & RPC_O_NONBLOCK) * O_NONBLOCK) 
 #endif
 #ifdef FASYNC
-	| (!!(flags & RPC_FASYNC) * FASYNC)
+        | (!!(flags & RPC_FASYNC) * FASYNC)
 #endif
         ;
 }
@@ -2261,23 +2261,24 @@ fcntl_flag_rpc2h(rpc_fcntl_flag flags)
 static inline rpc_fcntl_flag
 fcntl_flag_h2rpc(int flags)
 {
+    UNUSED(flags);
     return 0
 #ifdef O_ASYNC
-	| (!!(flags & O_ASYNC) * RPC_O_ASYNC) 
-#endif	
+        | (!!(flags & O_ASYNC) * RPC_O_ASYNC) 
+#endif        
 #ifdef O_APPEND
-	| (!!(flags & O_APPEND) * RPC_O_APPEND) 
-#endif	
+        | (!!(flags & O_APPEND) * RPC_O_APPEND) 
+#endif        
 #ifdef O_NONBLOCK
-	| (!!(flags & O_NONBLOCK) * RPC_O_NONBLOCK) 
-#endif	
+        | (!!(flags & O_NONBLOCK) * RPC_O_NONBLOCK) 
+#endif        
 #ifdef FASYNC
         | (!!(flags & FASYNC) * RPC_FASYNC)
 #endif
-    ;	
+    ;        
 }
 
-#define F_UNKNOWN	0xFFFFFFFF
+#define F_UNKNOWN        0xFFFFFFFF
 
 /** Convert RPC fcntl commands to native ones. */
 static inline int
@@ -2286,49 +2287,49 @@ fcntl_rpc2h(rpc_fcntl_command cmd)
     switch(cmd)
     {
 #ifdef F_DUPFD
-	RPC2H(F_DUPFD);
+        RPC2H(F_DUPFD);
 #endif
 #ifdef F_GETFD
-	RPC2H(F_GETFD);
+        RPC2H(F_GETFD);
 #endif
 #ifdef F_SETFD
-	RPC2H(F_SETFD);
+        RPC2H(F_SETFD);
 #endif
 #ifdef F_GETFL
-	RPC2H(F_GETFL);
+        RPC2H(F_GETFL);
 #endif
 #ifdef F_SETFL
-	RPC2H(F_SETFL);
+        RPC2H(F_SETFL);
 #endif
 #ifdef F_GETLK
-	RPC2H(F_GETLK);
+        RPC2H(F_GETLK);
 #endif
 #ifdef F_SETLK
-	RPC2H(F_SETLK);
+        RPC2H(F_SETLK);
 #endif
 #ifdef F_SETLKW
-	RPC2H(F_SETLKW);
+        RPC2H(F_SETLKW);
 #endif
 #ifdef F_GETOWN
-	RPC2H(F_GETOWN);
+        RPC2H(F_GETOWN);
 #endif
 #ifdef F_SETOWN
-	RPC2H(F_SETOWN);
+        RPC2H(F_SETOWN);
 #endif
 #ifdef F_GETSIG
-	RPC2H(F_GETSIG);
+        RPC2H(F_GETSIG);
 #endif
 #ifdef F_SETSIG
-	RPC2H(F_SETSIG);
+        RPC2H(F_SETSIG);
 #endif
 #ifdef F_GETLEASE
-	RPC2H(F_GETLEASE);
+        RPC2H(F_GETLEASE);
 #endif
 #ifdef F_SETLEASE
-	RPC2H(F_SETLEASE);
+        RPC2H(F_SETLEASE);
 #endif
 #ifdef F_NOTIFY
-	RPC2H(F_NOTIFY);
+        RPC2H(F_NOTIFY);
 #endif
         default: return F_UNKNOWN;
     }
@@ -2354,7 +2355,7 @@ fcntl_rpc2str(rpc_fcntl_command cmd)
         RPC2STR(F_SETLEASE);
         RPC2STR(F_GETLEASE);
         RPC2STR(F_NOTIFY);
-	default: return "F_UNKNOWN";
+        default: return "F_UNKNOWN";
     }
 }
 
