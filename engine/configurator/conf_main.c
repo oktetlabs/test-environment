@@ -635,7 +635,7 @@ log_msg(cfg_msg *msg, te_bool before)
     {
         level = TE_LL_ERROR;
         addon = buf;
-        snprintf(buf, sizeof(buf), " FAILED (errno=0x%x)", msg->rc);
+        snprintf(buf, sizeof(buf), " failed (errno=0x%x)", msg->rc);
     }
 /**
  * Construct strings to be printed for handle identification.
