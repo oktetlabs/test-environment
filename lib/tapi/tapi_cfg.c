@@ -734,12 +734,7 @@ tapi_cfg_del_route_tmp(const char *ta, int addr_family,
 int
 tapi_cfg_del_route(cfg_handle *rt_hndl)
 {
-    int           rc;
-    char         *ta;
-    cfg_val_type  type = CVT_STRING;
-    char         *rt_name;
-    char         *rt_val;
-    cfg_handle    agt_hndl;
+    int rc;
 
     if (rt_hndl == NULL)
         return EINVAL;
@@ -747,35 +742,6 @@ tapi_cfg_del_route(cfg_handle *rt_hndl)
     if (*rt_hndl == CFG_HANDLE_INVALID)
         return 0;
     
-    if ((rc = cfg_get_father(*rt_hndl, &agt_hndl)) != 0)
-    {
-        ERROR("%s: Cannot get handle of the parent node", __FUNCTION__);
-        return rc;
-    }
-    if ((rc = cfg_get_inst_name(*rt_hndl, &rt_name)) != 0)
-    {
-        ERROR("%s: Route handle cannot be processed", __FUNCTION__);
-        return rc;
-    }
-    if ((rc = cfg_get_inst_name(agt_hndl, &ta)) != 0)
-    {
-        ERROR("%s: Cannot get Test Agent name", __FUNCTION__);
-        free(rt_name);
-        return rc;
-    }
-    if ((rc = cfg_get_instance(*rt_hndl, &type, &rt_val)) != 0)
-    {
-        ERROR("%s: Cannot get the value of the route", __FUNCTION__);
-        free(ta);
-        free(rt_name);
-        return rc;
-    }
-    
-    RING("Deleting route on TA %s: %s %s", ta, rt_name, rt_val);
-    free(rt_val);
-    free(ta);
-    free(rt_name);
-
     rc = cfg_del_instance(*rt_hndl, FALSE);
     if (rc == 0)
     {
@@ -972,9 +938,6 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
         PUT_INTO_BUF(rt_val, " dyn");
     if (flags & RTF_REINSTATE)
         PUT_INTO_BUF(rt_val, " reinstate");
-
-    RING("%s route on TA %s: %s %s", op == OP_ADD ? "Adding" : "Deleting",
-         ta, route_inst_name, rt_val);
 
     switch (op)
     {
