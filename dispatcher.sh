@@ -427,6 +427,7 @@ fi
 
 export TE_LOG_DIR=${TE_LOG_DIR}
 mkdir -p ${TE_LOG_DIR}
+export TE_LOG_RAW=${TE_LOG_DIR}/tmp_raw_log
 
 # Export TE_INSTALL
 TE_PATH=
@@ -517,7 +518,7 @@ if test -n "$BUILDER" ; then
             echo "Calling aclocal/autoconf/automake in `pwd`" \
                 >>${TE_BUILD_LOG}
         else
-            echo "Calling aclocal/autoheader/autoconf/automake in `pwd`"
+            echo "Calling aclocal/autoconf/automake in `pwd`"
         fi
         aclocal -I ${TE_BASE}/auxdir || exit_with_log
         autoconf || exit_with_log
@@ -559,7 +560,7 @@ myecho() {
 
 # Run RGT in live mode in background
 if test -n "$LIVE_LOG" ; then
-    rgt-conv -m live -f tmp_raw_log &
+    rgt-conv -m live -f ${TE_LOG_RAW} &
     LIVE_LOG_PID=$!
 fi
 
@@ -643,35 +644,39 @@ fi
 
 #te_log_archive --storage="${LOG_STORAGE}" --storage-dir=="${LOG_STORAGE_DIR}" ;
 
-# Create log file in text representation
+#
+# RGT processing of the raw log
+#
 if test -n "${CONF_RGT}" ; then
     CONF_RGT="-c ${CONF_RGT}"
 fi
 if test -n "${RGT_LOG_TXT}" -o -n "${RGT_LOG_HTML_PLAIN}" ; then
     # Generate XML log do not taking into account control messages
+    LOG_XML_PLAIN="log_plain.xml"
     rgt-conv -m postponed ${CONF_RGT} \
-        -f ${TE_LOG_DIR}/tmp_raw_log -o tmp_raw_log.xml
-    if test $? -eq 0 ; then
+        -f ${TE_LOG_RAW} -o ${LOG_XML_PLAIN}
+    if test $? -eq 0 -a -e ${LOG_XML_PLAIN} ; then
         if test -n "${RGT_LOG_TXT}" ; then
-            rgt-xml2text -f tmp_raw_log.xml -o ${RGT_LOG_TXT}
+            rgt-xml2text -f ${LOG_XML_PLAIN} -o ${RGT_LOG_TXT}
         fi
         if test -n "${RGT_LOG_HTML_PLAIN}" ; then
-            rgt-xml2html -f tmp_raw_log.xml -o ${RGT_LOG_HTML_PLAIN}
+            rgt-xml2html -f ${LOG_XML_PLAIN} -o ${RGT_LOG_HTML_PLAIN}
         fi
     fi
 fi
 if test -n "${RGT_LOG_HTML}" ; then
     # Generate XML log taking into account control messages
+    LOG_XML_STRUCT="log_struct.xml"
     rgt-conv --no-cntrl-msg -m postponed ${CONF_RGT} \
-        -f ${TE_LOG_DIR}/tmp_raw_log -o tmp_raw_log2.xml
-    if test $? -eq 0 ; then
-        rgt-xml2html -m tmp_raw_log2.xml ${RGT_LOG_HTML}
+        -f ${TE_LOG_RAW} -o ${LOG_XML_STRUCT}
+    if test $? -eq 0 -a -e ${LOG_XML_STRUCT} ; then
+        rgt-xml2html -m ${LOG_XML_STRUCT} ${RGT_LOG_HTML}
     fi
 fi
 
 # Run TRC, if any its option is provided
 if test -n "${TRC_OPTS}" ; then
-    te_trc.sh ${TRC_OPTS} ${TE_LOG_DIR}/tmp_raw_log
+    te_trc.sh ${TRC_OPTS} ${TE_LOG_RAW}
 fi
 
 rm -f ${LOCK_DIR}/ds
