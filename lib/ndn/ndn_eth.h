@@ -54,11 +54,11 @@ typedef struct ndn_eth_header_plain
 {
     uint8_t  dst_addr [ETH_ALEN]; /**< Destination MAC address */
     uint8_t  src_addr [ETH_ALEN]; /**< Source MAC address */ 
-    uint16_t eth_type_len;         /**< Ethernet Length/Type */
-    int      is_tagged;         /**< BOOL, flag - is frame tagged. */
-    int      cfi;              /**< BOOL, Canonical Format Indicator*/
-    uint8_t  priority;         /**< Prioriy */
-    uint16_t vlan_id;                /**< Ethernet Length/Type */
+    uint16_t eth_type_len;        /**< Ethernet Length/Type */
+    int      is_tagged;           /**< BOOL, flag - is frame tagged. */
+    int      cfi;                 /**< BOOL, Canonical Format Indicator*/
+    uint8_t  priority;            /**< Prioriy */
+    uint16_t vlan_id;             /**< Ethernet Length/Type */
 } ndn_eth_header_plain;
 
 
@@ -74,14 +74,14 @@ enum eth_csap_receive_mode {
 /** 
  * Convert Ehternet-Header ASN value to plain C structure. 
  * 
- * @param pkt           ASN value of type Ethernet Header or Generic-PDU with 
- *                      choice "eth". 
+ * @param pkt           ASN value of type Ethernet Header or 
+ *                      Generic-PDU with choice "eth". 
  * @param eth_header    location for converted structure (OUT).
  *
  * @return zero on success or error code.
  */ 
 extern int ndn_eth_packet_to_plain(const asn_value *pkt, 
-                                ndn_eth_header_plain *eth_header);
+                                   ndn_eth_header_plain *eth_header);
 
 
 /** 
@@ -91,7 +91,8 @@ extern int ndn_eth_packet_to_plain(const asn_value *pkt,
  *
  * @return pointer to new ASN value object or NULL.
  */ 
-extern asn_value *ndn_eth_plain_to_packet(const ndn_eth_header_plain *eth_header);
+extern asn_value *ndn_eth_plain_to_packet(const ndn_eth_header_plain 
+                                          *eth_header);
 
 extern const asn_type * const ndn_eth_header;
 extern const asn_type * const ndn_eth_csap;

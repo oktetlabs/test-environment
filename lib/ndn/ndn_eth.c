@@ -38,8 +38,10 @@
 asn_type ndn_eth_address_s =
 {
     "Ethernet-Address", 
-    {PRIVATE, 500}, OCT_STRING, 
-    6, {NULL}
+    {PRIVATE, 500}, 
+    OCT_STRING, 
+    6, 
+    {NULL}
 };
 
 const asn_type * const ndn_eth_address = &ndn_eth_address_s;
@@ -50,6 +52,7 @@ NDN_DATA_UNIT_TYPE (eth_address, ndn_eth_address_s, Ethernet-Address )
 /* 
 VLAN-extended Ethernet header, field 
 CFI 
+
 CFI-Mode ::= INTEGER {false(0), true(1)}
  */
 static asn_enum_entry_t _ndn_vlan_cfi_enum_entries[] = 
@@ -117,33 +120,34 @@ const asn_type * const ndn_eth_csap = &ndn_eth_csap_s;
 /** 
  * Convert Ehternet-Header ASN value to plain C structrue. 
  * 
- * @param pkt           ASN value of type Ethernet Header or Generic-PDU with 
- *                      choice "eth". 
+ * @param pkt           ASN value of type Ethernet Header or Generic-PDU 
+ *                      with choice "eth". 
  * @param eth_header    converted structure (OUT).
  *
  * @return zero on success or error code.
  */ 
 int 
-ndn_eth_packet_to_plain(const asn_value *pkt, ndn_eth_header_plain *eth_header)
+ndn_eth_packet_to_plain(const asn_value *pkt, 
+                        ndn_eth_header_plain *eth_header)
 {
     int rc;
     int val;
     int len;
 
-    len = 6;
-    rc = asn_read_value_field (pkt, eth_header->dst_addr, &len, 
-                                    "dst-addr.#plain"); 
-    len = 6;
+    len = ETH_ALEN;
+    rc = asn_read_value_field(pkt, eth_header->dst_addr, &len, 
+                              "dst-addr.#plain"); 
+    len = ETH_ALEN;
     if (rc == 0) 
-        rc = asn_read_value_field (pkt, eth_header->src_addr, &len, 
-                                    "src-addr.#plain"); 
+        rc = asn_read_value_field(pkt, eth_header->src_addr, &len, 
+                                  "src-addr.#plain"); 
     len = 2;
     if (rc == 0) 
-        rc = asn_read_value_field (pkt, &eth_header->eth_type_len, &len, 
-                                    "eth-type.#plain"); 
+        rc = asn_read_value_field(pkt, &eth_header->eth_type_len, &len, 
+                                  "eth-type.#plain"); 
     len = sizeof(val);
     if (rc == 0) 
-        rc = asn_read_value_field (pkt, &val, &len, "cfi"); 
+        rc = asn_read_value_field(pkt, &val, &len, "cfi"); 
 
     if (rc == EASNINCOMPLVAL)
     {
@@ -159,13 +163,13 @@ ndn_eth_packet_to_plain(const asn_value *pkt, ndn_eth_header_plain *eth_header)
     eth_header->cfi = val;
 
     len = sizeof(eth_header->priority);
-    rc = asn_read_value_field (pkt, &eth_header->priority, &len, 
-                                    "priority.#plain"); 
+    rc = asn_read_value_field(pkt, &eth_header->priority, &len, 
+                              "priority.#plain"); 
 
     len = sizeof(eth_header->vlan_id);
     if (rc == 0)
-        rc = asn_read_value_field (pkt, &eth_header->vlan_id, &len, 
-                                    "vlan-id.#plain"); 
+        rc = asn_read_value_field(pkt, &eth_header->vlan_id, &len, 
+                                  "vlan-id.#plain"); 
 
     return rc;
 }
@@ -196,27 +200,27 @@ ndn_eth_plain_to_packet(const ndn_eth_header_plain *eth_header)
                                "dst-addr.#plain");
     if (rc == 0) 
         rc = asn_write_value_field(asn_eth_hdr, eth_header->src_addr, 
-                               sizeof(eth_header->src_addr) , 
-                               "src-addr.#plain");
+                                   sizeof(eth_header->src_addr) , 
+                                   "src-addr.#plain");
 
     if (rc == 0) 
-        rc = asn_write_value_field(asn_eth_hdr, &eth_header->eth_type_len, 
-                               sizeof(eth_header->eth_type_len), 
-                               "eth-type.#plain"); 
+        rc = asn_write_value_field(asn_eth_hdr, &eth_header->eth_type_len,
+                                   sizeof(eth_header->eth_type_len), 
+                                   "eth-type.#plain"); 
     if (rc == 0 && eth_header->is_tagged)
     {
         rc = asn_write_value_field(asn_eth_hdr, &eth_header->cfi, 
-                               sizeof(eth_header->cfi), 
-                               "cfi.#plain"); 
+                                   sizeof(eth_header->cfi), 
+                                   "cfi.#plain"); 
 
         if (rc == 0)
-            rc = asn_write_value_field(asn_eth_hdr, &eth_header->priority, 
-                               sizeof(eth_header->priority), 
-                               "priority.#plain"); 
+            rc = asn_write_value_field(asn_eth_hdr, &eth_header->priority,
+                                       sizeof(eth_header->priority), 
+                                       "priority.#plain"); 
         if (rc == 0)
             rc = asn_write_value_field(asn_eth_hdr, &eth_header->vlan_id, 
-                               sizeof(eth_header->vlan_id), 
-                               "vlan-id.#plain"); 
+                                       sizeof(eth_header->vlan_id), 
+                                       "vlan-id.#plain"); 
     }
 
     if (rc)
