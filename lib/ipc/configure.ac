@@ -23,6 +23,9 @@ AC_ARG_VAR([TE_CPPFLAGS])
 AC_ARG_VAR([TE_CFLAGS])
 AC_ARG_VAR([TE_LDFLAGS])
 
+CPPFLAGS=${CPPFLAGS}" "${TE_CFLAGS}
+CFLAGS=${CFLAGS}" "${TE_CFLAGS}
+
 AC_CHECK_HEADERS([te_config.h],[],[AC_ERROR([te_config.h is not found])])
 
 AC_CONFIG_FILES([Makefile])
