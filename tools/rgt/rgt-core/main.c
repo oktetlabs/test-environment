@@ -60,6 +60,7 @@ typedef enum parser_state {
     
     RGT_XML2HTML_STATE_START_TS,
     RGT_XML2HTML_STATE_END_TS,
+    RGT_XML2HTML_STATE_AUTHORS,
     RGT_XML2HTML_STATE_AUTHOR,
     RGT_XML2HTML_STATE_OBJECTIVE,
     RGT_XML2HTML_STATE_PARAMS,
@@ -117,6 +118,7 @@ typedef struct depth_context {
     /* @todo User DATA */
     FILE *fd; /**< File descriptor of the node currently being processed
                    on the particular depth */
+    char *level; /**< Log level */
 } depth_context_t;
 
 /** 
@@ -143,8 +145,17 @@ typedef struct global_context {
 
 static struct global_context global_ctx;
 
+
+#define DEF_DEPTH_CTX \
+    depth_context_t *depth_ctx =                           \
+        &g_array_index(ctx->depth_info,                    \
+                       depth_context_t, (ctx->depth - 1))
+
 static const xmlChar *get_attr_value(const xmlChar **atts, const xmlChar *name)
 {
+    if (atts == NULL)
+        return NULL;
+
     while (*atts != NULL)
     {
         if (strcmp(name, *atts) == 0)
@@ -160,24 +171,67 @@ static const xmlChar *get_attr_value(const xmlChar **atts, const xmlChar *name)
 } 
 
 static void
-write_document_header(FILE *fd)
+write_document_header(FILE *fd, const char *obj_name)
 {
     fprintf(fd,
-            "<html><head>"
-            "<script>\n"
-            "function activate_link(name, doc_name)\n"
-            "{\n"
-            "    parent.treeframe.activate_node(name);\n"
-            "    document.location.href=doc_name;\n"
-            "}\n"
-            "</script>\n"
-            "</head><body>");
+"<html>\n"
+"<head>\n"
+"<title>Logs from %s</title>\n"
+"<link rel='stylesheet' type='text/css' href='style.css'>\n"
+"<script>\n"
+"var hide = new Array();\n"
+"\n"
+"function getAllLogs()\n"
+"{\n"
+"    if (document.getElementsByTagName)\n"
+"    {\n"
+"        return document.getElementsByTagName(\"div\");\n"
+"    }\n"
+"    else if (document.getElementsById)\n"
+"    {\n"
+"        alert(\"Extend sources with getElementsById\");\n"
+"    }\n"
+"    else\n"
+"    {\n"
+"        alert(\"Not supported\");\n"
+"    }\n"
+"}\n"
+"\n"
+"function open_filter_window()\n"
+"{\n"
+"    window.open(\"filter_conf.html\", \"parwin\", \"dependent,toolbar=no,menubar=no,status=no,width=400,height=300,screenX=300,screenY=100,scrollbars=no\");\n"
+"}\n"
+"\n"
+"function activate_link(name, doc_name)\n"
+"{\n"
+"    parent.treeframe.activate_node(name);\n"
+"    document.location.href=doc_name;\n"
+"}\n"
+"\n"
+"</script>\n"
+"\n"
+"</head>\n"
+"\n"
+"<body>\n"
+
+"<table border='0' cellpadding='0' cellspacing='0' width='100%%'>\n"
+"<tr class='tdheading'>\n"
+"    <td width='100%%' class='heading' height='25'>&nbsp;&nbsp;&nbsp;Logs from %s</td>\n"
+"</table>\n"
+"<br>\n"
+"\n"
+"<form name='form0'>\n"
+"    <input type='button' value='Log Filter' onClick='javascript:open_filter_window()'>\n"
+"</form>\n"
+"<br/>",
+obj_name, obj_name);
+
 }
 
 static void
 write_document_footer(FILE *fd)
 {
-    fprintf(fd, "</body></html>");
+    fprintf(fd, "</body></html>\n");
 }
 
 static void
@@ -194,7 +248,7 @@ proc_document_start(struct global_context *ctx, const xmlChar **atts)
     {
         exit(1);
     }
-    write_document_header(depth_ctx->fd);
+    write_document_header(depth_ctx->fd, "TE start-up");
 
     if ((ctx->js_fd = fopen("oleg.js", "w")) == NULL)
     {
@@ -229,6 +283,7 @@ static void
 control_node_start(struct global_context *ctx, const xmlChar **atts,
                    const char *node_type, const char *tree_func_name /* make it user data (void *)*/)
 {
+    static char      obj_name[255];
     depth_context_t *prev_depth_ctx;
     const xmlChar   *name = get_attr_value(atts, "name");
     const xmlChar   *result = get_attr_value(atts, "result");
@@ -236,6 +291,9 @@ control_node_start(struct global_context *ctx, const xmlChar **atts,
     depth_context_t *depth_ctx;
 
     assert(global_ctx.depth >= 2);
+
+    snprintf(obj_name, sizeof(obj_name), "%s %s", node_type,
+             ((name != NULL) ? (const char *)name : "<anonimous>"));
 
     if (name == NULL)
         name = "session";
@@ -253,7 +311,7 @@ control_node_start(struct global_context *ctx, const xmlChar **atts,
         fprintf(stderr, "Cannot create %s file: %s\n", fname, strerror(errno));
         exit(1);
     }
-    write_document_header(depth_ctx->fd);
+    write_document_header(depth_ctx->fd, obj_name);
     
     fprintf(stderr, "File %s (%p) opened in array element %d\n",
             fname, depth_ctx->fd, (ctx->depth - 1));
@@ -330,27 +388,50 @@ proc_test_end(struct global_context *ctx, const xmlChar **atts)
 static void
 proc_log_msg_start(struct global_context *ctx, const xmlChar **atts)
 {
-    depth_context_t *depth_ctx;
-
-    assert(ctx->depth >= 1);
-    depth_ctx = &g_array_index(ctx->depth_info,
-                               depth_context_t, (ctx->depth - 1));
-
-    rgt_tmpls_lib_output(depth_ctx->fd,
-            &html_tmpls[LOG_PART_LOG_MSG_START], (const char **)atts, user_vars);
+    DEF_DEPTH_CTX;
+    const char *level = get_attr_value(atts, "level");
+    const char *entity = get_attr_value(atts, "entity");
+    const char *user = get_attr_value(atts, "user");
+    const char *ts = get_attr_value(atts, "ts");
+    
+    depth_ctx->level = strdup(level);
+    assert(depth_ctx->level != NULL);
+    
+    fprintf(depth_ctx->fd, 
+"<div level='%s' entityname='%s' username='%s'>\n"
+"  <table border='0' cellpadding='0' cellspacing='0' width='100%%'>\n"
+"  <tr>\n"
+"    <td class='%s'>\n"
+"      <table border='0' cellpadding='0' cellspacing='0'>\n"
+"      <tr>\n"
+"        <td width='100' class='entityname'>%s</td>\n"
+"        <td width='100' class='username'>%s</td>\n"
+"        <td width='150' class='timestamp'>%s</td>\n"
+"        <td class='log'>\n",
+           level, entity, user,
+           level,
+           entity, user, ts);
 }
 
 static void
 proc_log_msg_end(struct global_context *ctx, const xmlChar **atts)
 {
-    depth_context_t *depth_ctx;
+    DEF_DEPTH_CTX;
+    UNUSED(atts);
 
-    assert(ctx->depth >= 1);
-    depth_ctx = &g_array_index(ctx->depth_info,
-                               depth_context_t, (ctx->depth - 1));
-
-    rgt_tmpls_lib_output(depth_ctx->fd,
-            &html_tmpls[LOG_PART_LOG_MSG_END], (const char **)atts, user_vars);
+    fprintf(depth_ctx->fd, 
+"        </td>\n"
+"      </tr>\n"
+"      </table>\n"
+"    </td>\n"
+"  </tr>\n"
+"  <tr>\n"
+"    <td class='%s'>&nbsp;</td>\n"
+"  </tr>\n"
+"  </table>\n"
+"</div>\n", depth_ctx->level);
+    
+    free(depth_ctx->level);
 }
 
 static void
@@ -376,17 +457,13 @@ proc_branch_end(struct global_context *ctx, const xmlChar **atts)
 static void
 proc_meta_param_start(struct global_context *ctx, const xmlChar **atts)
 {
-    depth_context_t *depth_ctx;
+    DEF_DEPTH_CTX;
     const xmlChar   *name = get_attr_value(atts, "name");
     const xmlChar   *value = get_attr_value(atts, "value");
 
     assert(name != NULL && value != NULL);
 
-    assert(ctx->depth >= 1);
-    depth_ctx = &g_array_index(ctx->depth_info,
-                               depth_context_t, (ctx->depth - 1));
-
-    fprintf(depth_ctx->fd, "<tr><td>%s</td><td>%s</td></tr>",
+    fprintf(depth_ctx->fd, "<tr><td>%s</td><td>%s</td></tr>\n",
             name, value);
 }
 
@@ -401,8 +478,26 @@ proc_meta_param_end(struct global_context *ctx, const xmlChar **atts)
 static void
 proc_logs_start(struct global_context *ctx, const xmlChar **atts)
 {
-    UNUSED(ctx);
+    DEF_DEPTH_CTX;
     UNUSED(atts);
+
+    fprintf(depth_ctx->fd, 
+"<table border='0' cellpadding='0' cellspacing='0' width='100%%'>\n"
+"<tr>\n"
+"    <td class='tdsubheading'>\n"
+"        <table border='0' cellpadding='0' cellspacing='0'>\n"
+"        <tr>\n"
+"            <td width='100' class='tdsubhead'>Entity Name</td>\n"
+"            <td width='100' class='tdsubhead>User Name</td>\n"
+"            <td width='150' class='tdsubhead'>Timestamp</td>\n"
+"            <td class='tdsubhead'>Log content</td>\n"
+"        </tr>\n"
+"        </table>\n"
+"    </td>\n"
+"</tr>\n"
+"</table>\n"
+"<br>\n");
+
 }
 
 static void
@@ -434,69 +529,76 @@ proc_meta_end(struct global_context *ctx, const xmlChar **atts)
 static void
 proc_meta_start_ts_start(struct global_context *ctx, const xmlChar **atts)
 {
-    depth_context_t *depth_ctx;
-
+    DEF_DEPTH_CTX;
     UNUSED(atts);
 
-    depth_ctx = &g_array_index(ctx->depth_info,
-                               depth_context_t, (ctx->depth - 1));
     fprintf(depth_ctx->fd, "<b>start time</b>:");
 }
 
 static void
 proc_meta_start_ts_end(struct global_context *ctx, const xmlChar **atts)
 {
-    UNUSED(ctx);
+    DEF_DEPTH_CTX;
     UNUSED(atts);
+
+    fprintf(depth_ctx->fd, "<br/>\n");
 }
 
 static void
 proc_meta_end_ts_start(struct global_context *ctx, const xmlChar **atts)
 {
-    depth_context_t *depth_ctx;
-
+    DEF_DEPTH_CTX;
     UNUSED(atts);
 
-    depth_ctx = &g_array_index(ctx->depth_info,
-                               depth_context_t, (ctx->depth - 1));
     fprintf(depth_ctx->fd, "<b>end time</b>:");
 }
 
 static void
 proc_meta_end_ts_end(struct global_context *ctx, const xmlChar **atts)
 {
-    UNUSED(ctx);
+    DEF_DEPTH_CTX;
     UNUSED(atts);
+
+    fprintf(depth_ctx->fd, "<br/>\n");
 }
 
 static void
 proc_meta_objective_start(struct global_context *ctx, const xmlChar **atts)
 {
-    depth_context_t *depth_ctx;
-
+    DEF_DEPTH_CTX;
     UNUSED(atts);
 
-    depth_ctx = &g_array_index(ctx->depth_info,
-                               depth_context_t, (ctx->depth - 1));
     fprintf(depth_ctx->fd, "<b>objective</b>:");
 }
 
 static void
 proc_meta_objective_end(struct global_context *ctx, const xmlChar **atts)
 {
-    UNUSED(ctx);
+    DEF_DEPTH_CTX;
     UNUSED(atts);
+
+    fprintf(depth_ctx->fd, "<br/>\n");
 }
 
 static void
 proc_meta_author_start(struct global_context *ctx, const xmlChar **atts)
 {
-    depth_context_t *depth_ctx;
-    UNUSED(atts);
+    DEF_DEPTH_CTX;
+    const xmlChar *email = get_attr_value(atts, "email");
+    char          *name = strdup(email);
+    char          *ptr;
 
-    depth_ctx = &g_array_index(ctx->depth_info,
-                               depth_context_t, (ctx->depth - 1));
-    fprintf(depth_ctx->fd, "<b>authors</b>:");
+    ptr = strchr(name, '@');
+    if (ptr == NULL)
+        assert(0);
+    
+    *ptr = '\0';
+
+    fprintf(depth_ctx->fd, "<tr><td><b>%s</b></td>"
+                           "<td><a href=\"mailto:%s\">%s</a></td></tr>",
+            name, email, email);
+
+    free(name);
 }
 
 static void
@@ -507,27 +609,39 @@ proc_meta_author_end(struct global_context *ctx, const xmlChar **atts)
 }
 
 static void
-proc_meta_params_start(struct global_context *ctx, const xmlChar **atts)
+proc_meta_authors_start(struct global_context *ctx, const xmlChar **atts)
 {
-    depth_context_t *depth_ctx;
+    DEF_DEPTH_CTX;
     UNUSED(atts);
 
-    depth_ctx = &g_array_index(ctx->depth_info,
-                               depth_context_t, (ctx->depth - 1));
+    fprintf(depth_ctx->fd, "<table><tr><th>Authors</th><th>E-mail</th></tr>");
+}
 
-    fprintf(depth_ctx->fd, "<table>");
+static void
+proc_meta_authors_end(struct global_context *ctx, const xmlChar **atts)
+{
+    DEF_DEPTH_CTX;
+    UNUSED(atts);
+    
+    fprintf(depth_ctx->fd, "</table>\n");
+}
+
+static void
+proc_meta_params_start(struct global_context *ctx, const xmlChar **atts)
+{
+    DEF_DEPTH_CTX;
+    UNUSED(atts);
+
+    fprintf(depth_ctx->fd, "<table>\n");
 }
 
 static void
 proc_meta_params_end(struct global_context *ctx, const xmlChar **atts)
 {
-    depth_context_t *depth_ctx;
+    DEF_DEPTH_CTX;
     UNUSED(atts);
 
-    depth_ctx = &g_array_index(ctx->depth_info,
-                               depth_context_t, (ctx->depth - 1));
-
-    fprintf(depth_ctx->fd, "</table>");
+    fprintf(depth_ctx->fd, "</table>\n");
 }
 
 
@@ -797,15 +911,23 @@ rgt_log_end_element(void *user_data, const xmlChar *tag)
             break;
 
         case RGT_XML2HTML_STATE_OBJECTIVE:
+            assert(strcmp(tag, "objective") == 0);
             assert(ctx->depth >= 1);
             proc_meta_objective_end(ctx, NULL);
             ctx->state = RGT_XML2HTML_STATE_META;
             break;
 
-        case RGT_XML2HTML_STATE_AUTHOR:
+        case RGT_XML2HTML_STATE_AUTHORS:
+            assert(strcmp(tag, "authors") == 0);
             assert(ctx->depth >= 1);
-            proc_meta_author_end(ctx, NULL);
+            proc_meta_authors_end(ctx, NULL);
             ctx->state = RGT_XML2HTML_STATE_META;
+            break;
+
+        case RGT_XML2HTML_STATE_AUTHOR:
+            assert(strcmp(tag, "author") == 0);
+            proc_meta_author_end(ctx, NULL);
+            ctx->state = RGT_XML2HTML_STATE_AUTHORS;
             break;
 
         case RGT_XML2HTML_STATE_PARAMS:
@@ -898,10 +1020,10 @@ rgt_log_start_element(void *user_data,
                 proc_meta_objective_start(ctx, atts);
                 ctx->state = RGT_XML2HTML_STATE_OBJECTIVE;
             }
-            else if (strcmp(tag, "author") == 0)
+            else if (strcmp(tag, "authors") == 0)
             {
-                proc_meta_author_start(ctx, atts);
-                ctx->state = RGT_XML2HTML_STATE_AUTHOR;
+                proc_meta_authors_start(ctx, atts);
+                ctx->state = RGT_XML2HTML_STATE_AUTHORS;
             }
             else if (strcmp(tag, "params") == 0)
             {
@@ -914,6 +1036,12 @@ rgt_log_start_element(void *user_data,
                 assert(0);
             }
 
+            break;
+            
+        case RGT_XML2HTML_STATE_AUTHORS:
+            assert(strcmp(tag, "author") == 0);
+            proc_meta_author_start(ctx, atts);
+            ctx->state = RGT_XML2HTML_STATE_AUTHOR;
             break;
 
         case RGT_XML2HTML_STATE_PARAMS:
@@ -987,7 +1115,6 @@ rgt_log_characters(void *user_data, const xmlChar *ch, int len)
         case RGT_XML2HTML_STATE_START_TS:
         case RGT_XML2HTML_STATE_END_TS:
         case RGT_XML2HTML_STATE_OBJECTIVE:
-        case RGT_XML2HTML_STATE_AUTHOR:
         case RGT_XML2HTML_STATE_LOG_MSG:
         {
             assert(ctx->depth >= 1);
