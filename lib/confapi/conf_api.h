@@ -29,15 +29,27 @@
 
 #ifndef __TE_CONF_API_H__
 #define __TE_CONF_API_H__
+
+#include <stdio.h>
+#ifdef STDC_HEADERS
+#include <stdarg.h>
+#else
+#if HAVE_STDARG_H
+#include <stdarg.h>
+#endif
+#endif
+#if HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+
+#include "te_errno.h"
+#include "conf_types.h"
+#include "conf_oid.h"
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include <stdio.h>
-#include <sys/types.h>
-#include <stdarg.h>
-#include "conf_types.h"
-#include "conf_oid.h"
 
 #define CFG_VOLATILE    "volatile" /**< Root name for volatile objects */
 
