@@ -105,9 +105,9 @@ typedef struct unix_ta {
     te_bool  sudo;                    /**< Manipulate process using sudo */
     te_bool  is_local;                /**< TA is started on the local PC */
     uint32_t pid;                     /**< TA pid */
-    int      flags;
+    int      flags;                   /**< Flags */
     
-    struct rcf_net_connection *conn;  /**< connection handle */
+    struct rcf_net_connection *conn;  /**< Connection handle */
 } unix_ta;
 
 
