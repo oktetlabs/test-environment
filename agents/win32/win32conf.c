@@ -62,6 +62,11 @@ static char  buf[2048] = {0, };
 /** Route is indirect "remote destination" in terms of RFC 1354 */
 #define FORW_TYPE_REMOTE 4
 
+/** Static ARP entry */
+#define ARP_STATIC      4
+
+/** Dynamic ARP entry */
+#define ARP_DYNAMIC     3
 
 /** Fast conversion of the network mask to prefix */
 #define MASK2PREFIX(mask, prefix)            \
@@ -151,13 +156,13 @@ static int mtu_get(unsigned int, const char *, char *,
                    const char *);
 
 static int arp_get(unsigned int, const char *, char *,
-                   const char *);
+                   const char *, const char *);
 static int arp_set(unsigned int, const char *, const char *,
-                   const char *);
+                   const char *, const char *);
 static int arp_add(unsigned int, const char *, const char *,
-                   const char *);
+                   const char *, const char *);
 static int arp_del(unsigned int, const char *,
-                   const char *);
+                   const char *, const char *);
 static int arp_list(unsigned int, const char *, char **);
 
 static int route_get(unsigned int, const char *, char *,
@@ -170,9 +175,18 @@ static int route_del(unsigned int, const char *,
                      const char *);
 static int route_list(unsigned int, const char *, char **);
 
+/* Volatile subtree */
+static rcf_pch_cfg_object node_volatile_arp =
+    { "arp", 0, NULL, NULL,
+      (rcf_ch_cfg_get)arp_get, (rcf_ch_cfg_set)arp_set,
+      (rcf_ch_cfg_add)arp_add, (rcf_ch_cfg_del)arp_del,
+      (rcf_ch_cfg_list)arp_list, NULL, NULL};
+
+RCF_PCH_CFG_NODE_NA(node_volatile, "volatile", &node_volatile_arp, NULL);
+
 /* win32 Test Agent configuration tree */
 static rcf_pch_cfg_object node_route =
-    { "route", 0, NULL, NULL,
+    { "route", 0, NULL, &node_volatile,
       (rcf_ch_cfg_get)route_get, (rcf_ch_cfg_set)route_set,
       (rcf_ch_cfg_add)route_add, (rcf_ch_cfg_del)route_del,
       (rcf_ch_cfg_list)route_list, NULL, NULL};
@@ -274,6 +288,48 @@ static MIB_IFROW if_entry;
         }                                                               \
     } while (0)
 
+/** Find an interface for destination IP */
+static int
+find_ifindex(DWORD addr, DWORD *ifindex)
+{
+    MIB_IPFORWARDTABLE *table;
+    
+    DWORD index = 0;
+    DWORD mask_max = 0;
+    int   i;
+
+    GET_TABLE(MIB_IPFORWARDTABLE, GetIpForwardTable);
+    
+    if (table == NULL)
+        return TE_RC(TE_TA_WIN32, ENOENT);
+
+    for (i = 0; i < (int)table->dwNumEntries; i++)
+    {
+        if ((table->table[i].dwForwardDest & 
+             table->table[i].dwForwardMask) !=
+            (addr &  table->table[i].dwForwardMask))
+        {
+            continue;
+        }
+        
+        if (ntohl(table->table[i].dwForwardMask) > mask_max || index == 0)
+        {
+            mask_max = table->table[i].dwForwardMask;
+            index = table->table[i].dwForwardIfIndex;
+            if (mask_max == 0xFFFFFFFF)
+                break;
+        }
+    }
+    free(table);
+
+    if (index == 0)
+        return TE_RC(TE_TA_WIN32, ENOENT);
+        
+    *ifindex = index;
+    
+    return 0;
+}
+
 
 /**
  * Get root of the tree of supported objects.
@@ -308,6 +364,7 @@ rcf_ch_conf_release()
 /**
  * Get instance list for object "agent/interface".
  *
+ * @param gid           group identifier (unused)
  * @param id            full identifier of the father instance
  * @param list          location for the list pointer
  *
@@ -404,6 +461,7 @@ ip_addr_exist(DWORD addr, MIB_IPADDRROW *data)
  * Configure IPv4 address for the interface.
  * If the address does not exist, alias interface is created.
  *
+ * @param gid           group identifier (unused)
  * @param oid           full object instence identifier (unused)
  * @param value         value string (unused)
  * @param ifname        name of the interface (like "eth0")
@@ -449,6 +507,7 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
 /**
  * Clear interface address of the down interface.
  *
+ * @param gid           group identifier (unused)
  * @param oid           full object instence identifier (unused)
  * @param ifname        name of the interface (like "eth0")
  * @param addr          IPv4 address in dotted notation
@@ -516,6 +575,7 @@ net_addr_del(unsigned int gid, const char *oid,
 /**
  * Get instance list for object "agent/interface/net_addr".
  *
+ * @param gid           group identifier (unused)
  * @param id            full identifier of the father instance
  * @param list          location for the list pointer
  * @param ifname        interface name
@@ -568,6 +628,7 @@ net_addr_list(unsigned int gid, const char *oid, char **list,
 /**
  * Get netmask (prefix) of the interface address.
  *
+ * @param gid           group identifier (unused)
  * @param oid           full object instence identifier (unused)
  * @param value         netmask location (netmask is presented in dotted
  *                      notation)
@@ -609,6 +670,7 @@ prefix_get(unsigned int gid, const char *oid, char *value,
 /**
  * Change netmask (prefix) of the interface address.
  *
+ * @param gid           group identifier (unused)
  * @param oid           full object instence identifier (unused)
  * @param value         pointer to the new network mask in dotted notation
  * @param ifname        name of the interface (like "eth0")
@@ -666,6 +728,7 @@ prefix_set(unsigned int gid, const char *oid, const char *value,
 /**
  * Get broadcast address of the interface address.
  *
+ * @param gid           group identifier (unused)
  * @param oid           full object instence identifier (unused)
  * @param value         netmask location (netmask is presented in dotted
  *                      notation)
@@ -707,6 +770,7 @@ broadcast_get(unsigned int gid, const char *oid, char *value,
 /**
  * Change broadcast address of the interface address - does nothing.
  *
+ * @param gid           group identifier (unused)
  * @param oid           full object instence identifier (unused)
  * @param value         pointer to the new network mask in dotted notation
  * @param ifname        name of the interface (like "eth0")
@@ -743,6 +807,7 @@ broadcast_set(unsigned int gid, const char *oid, const char *value,
  * Get hardware address of the interface.
  * Only MAC addresses are supported now.
  *
+ * @param gid           group identifier (unused)
  * @param oid           full object instence identifier (unused)
  * @param value         location for hardware address (address is returned
  *                      as XX:XX:XX:XX:XX:XX)
@@ -773,6 +838,7 @@ link_addr_get(unsigned int gid, const char *oid, char *value,
 /**
  * Get MTU of the interface.
  *
+ * @param gid           group identifier (unused)
  * @param oid           full object instence identifier (unused)
  * @param value         value location
  * @param ifname        name of the interface (like "eth0")
@@ -796,6 +862,7 @@ mtu_get(unsigned int gid, const char *oid, char *value,
 /**
  * Get status of the interface ("0" - down or "1" - up).
  *
+ * @param gid           group identifier (unused)
  * @param oid           full object instence identifier (unused)
  * @param value         value location
  * @param ifname        name of the interface (like "eth0")
@@ -824,6 +891,7 @@ status_get(unsigned int gid, const char *oid, char *value,
  * state, it is de-installed and information about it is stored in the
  * list of down interfaces.
  *
+ * @param gid           group identifier (unused)
  * @param oid           full object instence identifier (unused)
  * @param value         new value pointer
  * @param ifname        name of the interface (like "eth0")
@@ -855,23 +923,45 @@ status_set(unsigned int gid, const char *oid, const char *value,
 /**
  * Get ARP entry value (hardware address corresponding to IPv4).
  *
- * @param oid           full object instence identifier (unused)
- * @param value         location for the value
- *                      (XX:XX:XX:XX:XX:XX is returned)
- * @param addr          IPv4 address in the dotted notation
+ * @param gid            group identifier (unused)
+ * @param oid            full object instence identifier (unused)
+ * @param value          location for the value
+ *                       (XX:XX:XX:XX:XX:XX is returned)
+ * @param addr           IPv4 address in the dotted notation
+ * @param addr_volatile  IPv4 address in case of volatile ARP subtree,
+ *                       in this case @p addr parameter points to zero
+ *                       length string
  *
  * @return error code
  */
 static int
 arp_get(unsigned int gid, const char *oid, char *value,
-        const char *addr)
+        const char *addr, const char *addr_volatile)
 {
     MIB_IPNETTABLE *table;
     DWORD           a;
     int             i;
+    DWORD           type = ARP_STATIC;
 
     UNUSED(gid);
     UNUSED(oid);
+    
+    /* 
+     * Determine which subtree we are working with
+     * (volatile or non-volatile).
+     */
+    if (strstr(oid, node_volatile.sub_id) != NULL)
+    {
+        /*
+         * Volatile subtree, as soon as its instance names are
+         * /agent:NAME/volatile:/arp:ADDR,
+         * in which case we have:
+         * + addr          - "" (empty string 'volatile' instance name);
+         * + addr_volatile - "ADDR" (dynamic ARP entry name).
+         */
+        type = ARP_DYNAMIC;
+        addr = addr_volatile;
+    }
     
     if ((a = inet_addr(addr)) == INADDR_NONE)
         return TE_RC(TE_TA_WIN32, EINVAL);
@@ -884,12 +974,11 @@ arp_get(unsigned int gid, const char *oid, char *value,
 
     for (i = 0; i < (int)table->dwNumEntries; i++)
     {
-        if (a == table->table[i].dwAddr)
+        if (a == table->table[i].dwAddr && table->table[i].dwType == type)
         {
             uint8_t *ptr = table->table[i].bPhysAddr;
 
-            if (table->table[i].dwPhysAddrLen != 6 ||
-                table->table[i].dwType < 3)
+            if (table->table[i].dwPhysAddrLen != 6)
             {
                 free(table);
                 return TE_RC(TE_TA_WIN32, ENOENT);
@@ -906,127 +995,51 @@ arp_get(unsigned int gid, const char *oid, char *value,
     return TE_RC(TE_TA_WIN32, ENOENT);
 }
 
-/** Find an interface for ARP entry */
-static int
-find_ifindex(DWORD addr, DWORD *ifindex)
-{
-    MIB_IPFORWARDTABLE *table;
-    
-    DWORD index = 0;
-    DWORD mask_max = 0;
-    int   i;
-
-    GET_TABLE(MIB_IPFORWARDTABLE, GetIpForwardTable);
-    
-    if (table == NULL)
-        return TE_RC(TE_TA_WIN32, ENOENT);
-
-    for (i = 0; i < (int)table->dwNumEntries; i++)
-    {
-        if ((table->table[i].dwForwardDest & 
-             table->table[i].dwForwardMask) !=
-            (addr &  table->table[i].dwForwardMask))
-        {
-            continue;
-        }
-        
-        if (ntohl(table->table[i].dwForwardMask) > mask_max || index == 0)
-        {
-            mask_max = table->table[i].dwForwardMask;
-            index = table->table[i].dwForwardIfIndex;
-            if (mask_max == 0xFFFFFFFF)
-                break;
-        }
-    }
-    free(table);
-
-    if (index == 0)
-        return TE_RC(TE_TA_WIN32, ENOENT);
-        
-    *ifindex = index;
-    
-    return 0;
-}
-
 
 
 /**
  * Change already existing ARP entry.
  *
- * @param oid           full object instence identifier (unused)
- * @param value         new value pointer ("XX:XX:XX:XX:XX:XX")
- * @param addr          IPv4 address in the dotted notation
+ * @param gid            group identifier (unused)
+ * @param oid            full object instence identifier (unused)
+ * @param value          new value pointer ("XX:XX:XX:XX:XX:XX")
+ * @param addr           IPv4 address in the dotted notation
+ * @param addr_volatile  IPv4 address in case of volatile ARP subtree,
+ *                       in this case @p addr parameter points to zero
+ *                       length string
  *
  * @return error code
  */
 static int
 arp_set(unsigned int gid, const char *oid, const char *value,
-        const char *addr)
+        const char *addr, const char *addr_volatile)
 {
-    MIB_IPNETTABLE *table;
-    int             i, k;
-    DWORD           a;
-    int             int_mac[6];
-    int             rc;
+    int rc;
 
-    UNUSED(gid);
-    UNUSED(oid);
+    if ((rc = arp_del(gid, oid, addr, addr_volatile)) != 0)
+        return rc;
 
-    if ((a = inet_addr(addr)) == INADDR_NONE)
-        return TE_RC(TE_TA_WIN32, EINVAL);
-
-    GET_TABLE(MIB_IPNETTABLE, GetIpNetTable);
-    if (table == NULL)
-        return TE_RC(TE_TA_WIN32, ENOENT);
-
-    for (i = 0; i < (int)table->dwNumEntries; i++)
-    {
-        if (table->table[i].dwAddr == a)
-            break;
-    }
-    if (i == (int)table->dwNumEntries)
-    {
-        free(table);
-        return TE_RC(TE_TA_WIN32, ENOENT);
-    }
-
-    if (sscanf(value, "%2x:%2x:%2x:%2x:%2x:%2x%s", int_mac, int_mac + 1,
-           int_mac + 2, int_mac + 3, int_mac + 4, int_mac + 5, buf) != 6)
-    {
-        return TE_RC(TE_TA_WIN32, EINVAL);
-    }
-
-    for (k = 0; k < 6; k++)
-        table->table[i].bPhysAddr[k] = (unsigned char)int_mac[k];
-
-    if ((rc = SetIpNetEntry(table->table + i)) != NO_ERROR)
-    {
-        ERROR("SetIpNetEntry() failed, error %d", rc);
-        free(table);
-        return TE_RC(TE_TA_WIN32, ETEWIN);
-    }
-
-    free(table);
-
-    return 0;
+    return arp_add(gid, oid, value, addr, addr_volatile);
 }
 
 /**
  * Add a new ARP entry.
  *
- * @param oid           full object instence identifier (unused)
- * @param value         new entry value pointer ("XX:XX:XX:XX:XX:XX")
- * @param addr          IPv4 address in the dotted notation
+ * @param gid            group identifier (unused)
+ * @param oid            full object instence identifier (unused)
+ * @param value          new entry value pointer ("XX:XX:XX:XX:XX:XX")
+ * @param addr           IPv4 address in the dotted notation
+ * @param addr_volatile  IPv4 address in case of volatile ARP subtree,
+ *                       in this case @p addr parameter points to zero
+ *                       length string
  *
  * @return error code
  */
 static int
 arp_add(unsigned int gid, const char *oid, const char *value,
-        const char *addr)
+        const char *addr, const char *addr_volatile)
 {
-#ifdef FOR_FUTURE
     char           val[32];
-#endif    
     MIB_IPNETROW   entry;
     int            int_mac[6];
     int            rc;
@@ -1034,11 +1047,19 @@ arp_add(unsigned int gid, const char *oid, const char *value,
 
     UNUSED(gid);
     UNUSED(oid);
-
-#if FOR_FUTURE /* Volatile ARP should be implemented */
-    if (arp_get(0, NULL, val, addr) == 0)
+    
+    if (arp_get(0, NULL, val, addr, addr_volatile) == 0)
         return TE_RC(TE_TA_WIN32, EEXIST);
-#endif        
+
+    memset(&entry, 0, sizeof(entry));
+    
+    if (strstr(oid, node_volatile.sub_id) != NULL)
+    {
+        entry.dwType = ARP_DYNAMIC;
+        addr = addr_volatile;
+    }
+    else
+        entry.dwType = ARP_STATIC;
 
     if (sscanf(value, "%2x:%2x:%2x:%2x:%2x:%2x%s", int_mac, int_mac + 1,
             int_mac + 2, int_mac + 3, int_mac + 4, int_mac + 5, buf) != 6)
@@ -1053,7 +1074,6 @@ arp_add(unsigned int gid, const char *oid, const char *value,
     if ((rc = find_ifindex(entry.dwAddr, &entry.dwIndex)) != 0)
         return rc;
     entry.dwPhysAddrLen = 6;
-    entry.dwType = 4;
     if ((rc = CreateIpNetEntry(&entry)) != NO_ERROR)
     {
         ERROR("CreateIpNetEntry() failed, error %d", rc);
@@ -1065,22 +1085,33 @@ arp_add(unsigned int gid, const char *oid, const char *value,
 /**
  * Delete ARP entry.
  *
- * @param oid           full object instence identifier (unused)
- * @param value         value string (unused)
- * @param addr          IPv4 address in the dotted notation
+ * @param gid            group identifier (unused)
+ * @param oid            full object instence identifier (unused)
+ * @param addr           IPv4 address in the dotted notation
+ * @param addr_volatile  IPv4 address in case of volatile ARP subtree,
+ *                       in this case @p addr parameter points to zero
+ *                       length string
  *
  * @return error code
  */
 static int
-arp_del(unsigned int gid, const char *oid, const char *addr)
+arp_del(unsigned int gid, const char *oid, const char *addr, 
+        const char *addr_volatile)
 {
     MIB_IPNETTABLE *table;
     int             i;
     DWORD           a;
     int             rc;
+    DWORD           type = ARP_STATIC;
 
     UNUSED(gid);
     UNUSED(oid);
+
+    if (strstr(oid, node_volatile.sub_id) != NULL)
+    {
+        type = ARP_DYNAMIC;
+        addr = addr_volatile;
+    }
 
     if ((a = inet_addr(addr)) == INADDR_NONE)
         return TE_RC(TE_TA_WIN32, EINVAL);
@@ -1091,7 +1122,7 @@ arp_del(unsigned int gid, const char *oid, const char *addr)
 
     for (i = 0; i < (int)table->dwNumEntries; i++)
     {
-        if (table->table[i].dwAddr == a)
+        if (table->table[i].dwAddr == a && table->table[i].dwType == type)
         {
             if ((rc = DeleteIpNetEntry(table->table + i)) != 0)
             {
@@ -1110,6 +1141,7 @@ arp_del(unsigned int gid, const char *oid, const char *addr)
 /**
  * Get instance list for object "agent/arp".
  *
+ * @param gid           group identifier (unused)
  * @param oid           full object instence identifier (unused)
  * @param list          location for the list pointer
  *
@@ -1121,9 +1153,13 @@ arp_list(unsigned int gid, const char *oid, char **list)
     MIB_IPNETTABLE *table;
     int             i;
     char           *s = buf;
+    DWORD           type = ARP_STATIC;
 
     UNUSED(gid);
     UNUSED(oid);
+
+    if (strstr(oid, node_volatile.sub_id) != NULL)
+        type = ARP_DYNAMIC;
 
     GET_TABLE(MIB_IPNETTABLE, GetIpNetTable);
     if (table == NULL)
@@ -1139,7 +1175,7 @@ arp_list(unsigned int gid, const char *oid, char **list)
     for (i = 0; i < (int)table->dwNumEntries; i++)
     {
         if (table->table[i].dwPhysAddrLen != 6 ||
-            table->table[i].dwType < 3)
+            table->table[i].dwType != type)
             continue;
         s += sprintf(s, "%s ",
                  inet_ntoa(*(struct in_addr *)&(table->table[i].dwAddr)));
@@ -1281,6 +1317,7 @@ route_parse_inst_name(const char *inst_name, route_entry_t *rt)
 /**
  * Get route value (gateway IP address).
  *
+ * @param gid           group identifier (unused)
  * @param oid           full object instence identifier (unused)
  * @param value         value location (IPv4 address is returned in
  *                      dotted notation)
@@ -1349,6 +1386,7 @@ route_get(unsigned int gid, const char *oid, char *value,
 /**
  * Change already existing route.
  *
+ * @param gid           group identifier (unused)
  * @param oid           full object instence identifier (unused)
  * @param value         value string (unused)
  * @param route         route instance name:
@@ -1370,6 +1408,7 @@ route_set(unsigned int gid, const char *oid, const char *value,
 /**
  * Add a new route.
  *
+ * @param gid           group identifier (unused)
  * @param oid           full object instence identifier (unused)
  * @param value         value string (unused)
  * @param route         route instance name:
@@ -1381,7 +1420,6 @@ static int
 route_add(unsigned int gid, const char *oid, const char *value,
           const char *route)
 {
-    char              val[RCF_MAX_VAL];
     MIB_IPFORWARDROW  entry;
     route_entry_t     rt;
     int               rc;
@@ -1464,6 +1502,7 @@ route_add(unsigned int gid, const char *oid, const char *value,
 /**
  * Delete a route.
  *
+ * @param gid           group identifier (unused)
  * @param oid           full object instence identifier (unused)
  * @param route         route instance name:
  *                      <IPv4 address in dotted notation>'|'<prefix length>
@@ -1528,6 +1567,7 @@ route_del(unsigned int gid, const char *oid, const char *route)
 /**
  * Get instance list for object "agent/route".
  *
+ * @param gid           group identifier (unused)
  * @param id            full identifier of the father instance
  * @param list          location for the list pointer
  *
