@@ -451,6 +451,7 @@ rpc_socket(rcf_rpc_server *handle,
 int 
 rpc_close(rcf_rpc_server *handle, int fd)
 {
+    rcf_rpc_op      op = handle->op;
     tarpc_close_in  in;
     tarpc_close_out out;
 
@@ -463,14 +464,13 @@ rpc_close(rcf_rpc_server *handle, int fd)
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
 
-    handle->op = RCF_RPC_CALL_WAIT;
     in.fd = fd;
 
     rcf_rpc_call(handle, _close, &in, (xdrproc_t)xdr_tarpc_close_in,
                  &out, (xdrproc_t)xdr_tarpc_close_out);
     
-    INFO("RPC (%s,%s): close(%d) -> %d (%s)",
-         handle->ta, handle->name,
+    INFO("RPC (%s,%s)%s: close(%d) -> %d (%s)",
+         handle->ta, handle->name, rpcop2str(op),
          fd, out.retval, errno_rpc2str(RPC_ERRNO(handle)));
 
     RETVAL_RC(close);
