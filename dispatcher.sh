@@ -1,5 +1,7 @@
 #! /bin/sh
 
+TE_RUN_DIR=`pwd`
+
 DISPATCHER=`which $0` 
 
 # which somewhere may give only relative, but not absolute path to the 
@@ -92,6 +94,7 @@ usage()
     echo -e '  --trc-update'\\t\\t\\t'Update TRC database'
     echo -e '  --trc-init'\\t\\t\\t'Initialize TRC database (be careful,'
     echo -e \\t\\t\\t\\t'TRC database file will be rewritten)'
+    echo -e '  --cs-print-trees'\\t\\t\\t'Print configurator trees.'
     echo
 }
 
@@ -145,6 +148,9 @@ TESTS=
 # Configuration directory
 CONF_DIR=
 
+# Configurator option
+CFG_OPT=
+
 # Directory for raw log file
 TE_LOG_DIR=`pwd`
 
@@ -170,6 +176,7 @@ LOG_STORAGE_DIR=
 
 # If yes, generate on-line log in the logging directory
 LOG_ONLINE=
+
 
 # Directory for lock file
 #LOCK_DIR=/var/lock/te
@@ -248,6 +255,8 @@ process_opts()
                 TRC_OPTS="${TRC_OPTS} --db=${TRC_DB}" ;
                 ;;
             --trc-*) TRC_OPTS="${TRC_OPTS} --${1#--trc-}" ;;
+    
+            --cs-print-trees) CFG_OPT="--cs-print-trees" ;;
 
             *)  echo "Unknown option: $1" >&2;
                 usage ;
@@ -429,13 +438,14 @@ fi
 te_log_init
 
 # Build Test Environment
+TE_BUILD_LOG=${TE_RUN_DIR}/build.log
 if test -n "$BUILDER" ; then
     for i in `find $TE_BASE -name configure.ac` ; do 
         pushd `dirname $i` >/dev/null
         if test ! -e configure ; then
             if test -n "${QUIET}" ; then
                 echo "Calling aclocal/autoconf/automake in `pwd`" \
-                    >>${TE_BUILD}/build.log
+                    >>${TE_BUILD_LOG}
             else
                 echo "Calling aclocal/autoconf/automake in `pwd`"
             fi
@@ -449,15 +459,18 @@ if test -n "$BUILDER" ; then
     # FINAL ${TE_BASE}/configure --prefix=${TE_INSTALL} --with-config=${CONF_BUILDER} 2>&1 | te_builder_log
     if test -n "${QUIET}" ; then
         ${TE_BASE}/configure -q --prefix=${TE_INSTALL} \
-            --with-config=${CONF_BUILDER} >${TE_BUILD}/build.log || \
+            --with-config=${CONF_BUILDER} >${TE_BUILD_LOG} || \
             exit_with_log ;
-        make te >>${TE_BUILD}/build.log || exit_with_log ;
+        make te >>${TE_BUILD_LOG} || exit_with_log ;
     else
         ${TE_BASE}/configure -q --prefix=${TE_INSTALL} \
             --with-config=${CONF_BUILDER} || exit_with_log ;
         make te || exit_with_log ;
     fi
 fi
+
+# Goto the directory where the script was called
+popd >/dev/null
 
 
 if test -n "${SUITE_SOURCES}" -a -n "${BUILD_TS}" ; then
@@ -507,9 +520,10 @@ if test -n "$CONFIGURATOR" ; then
     te_log_message Engine Dispatcher "Start Configurator"
     myecho "--->>> Start Configurator"
     if test -n "$VG_CS" ; then
-        valgrind $VG_OPTIONS te_cs "${CONF_CONFIGURATOR}" 2>valgrind.cs &
+        valgrind $VG_OPTIONS te_cs "${CONF_CONFIGURATOR}" \
+            "${CFG_OPT}" 2>valgrind.cs &
     else
-        te_cs "${CONF_CONFIGURATOR}" &
+        te_cs "${CONF_CONFIGURATOR}" "${CFG_OPT}" &
     fi
     CS_PID=$!
 fi
@@ -583,7 +597,5 @@ fi
 
 rm -f ${LOCK_DIR}/ds
 rm -rf ${TE_TMP}
-
-popd >/dev/null
 
 exit 0
