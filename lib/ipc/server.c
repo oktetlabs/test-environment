@@ -314,7 +314,7 @@ ipc_get_server_fd(const struct ipc_server *ipcs)
 int
 ipc_close_server(struct ipc_server *ipcs)
 {
-    struct ipc_server_client *ipcsc, *tmp;
+    struct ipc_server_client *ipcsc;
 #ifdef IPC_UNIX
     struct ipc_datagram *p;
 #endif
@@ -832,7 +832,6 @@ static int
 ipc_int_get_datagram_from_pool(struct ipc_server *ipcs,
                                struct ipc_server_client **p_ipcsc)
 {
-    int                         rc;
     struct ipc_datagram        *p;
     struct ipc_server_client   *ipcsc = *p_ipcsc;
 
