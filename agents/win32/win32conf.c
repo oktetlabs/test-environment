@@ -121,10 +121,16 @@ static int net_addr_del(unsigned int, const char *,
 static int net_addr_list(unsigned int, const char *, char **,
                          const char *);
 
-static int netmask_get(unsigned int, const char *, char *,
+static int prefix_get(unsigned int, const char *, char *,
                        const char *, const char *);
-static int netmask_set(unsigned int, const char *, const char *,
+static int prefix_set(unsigned int, const char *, const char *,
                        const char *, const char *);
+
+
+static int broadcast_get(unsigned int, const char *, char *,
+                         const char *, const char *);
+static int broadcast_set(unsigned int, const char *, const char *,
+                         const char *, const char *);
 
 static int link_addr_get(unsigned int, const char *, char *,
                          const char *);
@@ -182,11 +188,15 @@ RCF_PCH_CFG_NODE_RW(node_mtu, "mtu", NULL, &node_status,
 RCF_PCH_CFG_NODE_RO(node_link_addr, "link_addr", NULL, &node_mtu,
                     link_addr_get);
 
-RCF_PCH_CFG_NODE_RW(node_netmask, "netmask", NULL, NULL,
-                    netmask_get, netmask_set);
+
+RCF_PCH_CFG_NODE_RW(node_broadcast, "broadcast", NULL, NULL,
+                    broadcast_get, broadcast_set);
+RCF_PCH_CFG_NODE_RW(node_prefix, "prefix", NULL, &node_broadcast,
+                    prefix_get, prefix_set);
+
 
 RCF_PCH_CFG_NODE_COLLECTION(node_net_addr, "net_addr",
-                            &node_netmask, &node_link_addr,
+                            &node_prefix, &node_link_addr,
                             net_addr_add, net_addr_del,
                             net_addr_list, NULL);
 
@@ -453,6 +463,7 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
     return 0;
 }
 
+
 /**
  * Clear interface address of the down interface.
  *
@@ -559,7 +570,7 @@ net_addr_list(unsigned int gid, const char *oid, char **list,
 }
 
 /**
- * Get netmask of the interface.
+ * Get netmask (prefix) of the interface address.
  *
  * @param oid           full object instence identifier (unused)
  * @param value         netmask location (netmask is presented in dotted
@@ -570,12 +581,13 @@ net_addr_list(unsigned int gid, const char *oid, char **list,
  * @return error code
  */
 static int
-netmask_get(unsigned int gid, const char *oid, char *value,
+prefix_get(unsigned int gid, const char *oid, char *value,
             const char *ifname, const char *addr)
 {
     MIB_IPADDRROW data;
     DWORD         a;
     int           rc;
+    int           prefix;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -591,14 +603,15 @@ netmask_get(unsigned int gid, const char *oid, char *value,
     if ((rc = ip_addr_exist(a, &data)) != 0)
         return rc;
 
-    snprintf(value, RCF_MAX_VAL, "%s",
-            inet_ntoa(*(struct in_addr *)&(data.dwMask)));
+    MASK2PREFIX(data.dwMask, prefix);
+
+    snprintf(value, RCF_MAX_VAL, "%d", prefix);
 
     return 0;
 }
 
 /**
- * Change netmask of the interface.
+ * Change netmask (prefix) of the interface address.
  *
  * @param oid           full object instence identifier (unused)
  * @param value         pointer to the new network mask in dotted notation
@@ -608,13 +621,14 @@ netmask_get(unsigned int gid, const char *oid, char *value,
  * @return error code
  */
 static int
-netmask_set(unsigned int gid, const char *oid, const char *value,
+prefix_set(unsigned int gid, const char *oid, const char *value,
             const char *ifname, const char *addr)
 {
     added_ip_addr *cur;
     DWORD          a, m;
     uint8_t        prefix;
     ULONG          nte_instance;
+    char          *end;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -622,15 +636,20 @@ netmask_set(unsigned int gid, const char *oid, const char *value,
     if ((a = inet_addr(addr)) == INADDR_NONE)
         return TE_RC(TE_TA_WIN32, EINVAL);
 
-    if ((m = inet_addr(value)) == INADDR_NONE)
+    prefix = strtol(value, &end, 10);
+    if (value == end || *end != 0)
     {
-        if (strcmp(addr, "255.255.255.255") != 0)
-            return TE_RC(TE_TA_WIN32, EINVAL);
+        ERROR("Invalid value '%s' of prefix length", value);
+        return TE_RC(TE_TA_WIN32, ETEFMT);
     }
 
-    MASK2PREFIX(ntohl(m), prefix);
     if (prefix > 32)
+    {
+        ERROR("Invalid prefix '%s' to be set", value);
         return TE_RC(TE_TA_WIN32, EINVAL);
+    }
+
+    m = PREFIX2MASK(prefix);
 
     GET_IF_ENTRY;
 
@@ -659,6 +678,82 @@ netmask_set(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_WIN32, ETEWIN);
     }
 
+    return 0;
+}
+
+/**
+ * Get broadcast address of the interface address.
+ *
+ * @param oid           full object instence identifier (unused)
+ * @param value         netmask location (netmask is presented in dotted
+ *                      notation)
+ * @param ifname        name of the interface (like "eth0")
+ * @param addr          IPv4 address in dotted notation
+ *
+ * @return error code
+ */
+static int
+broadcast_get(unsigned int gid, const char *oid, char *value,
+              const char *ifname, const char *addr)
+{
+    MIB_IPADDRROW data;
+    DWORD         a;
+    DWORD         b;
+    int           rc;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if ((a = inet_addr(addr)) == INADDR_NONE)
+    {
+        if (strcmp(addr, "255.255.255.255") != 0)
+            return TE_RC(TE_TA_WIN32, EINVAL);
+    }
+
+    GET_IF_ENTRY;
+
+    if ((rc = ip_addr_exist(a, &data)) != 0)
+        return rc;
+
+    b = (~data.dwMask) | (a & data.dwMask);
+
+    snprintf(value, RCF_MAX_VAL, "%s", inet_ntoa(*(struct in_addr *)&b));
+
+    return 0;
+}
+
+/**
+ * Change broadcast address of the interface address - does nothing.
+ *
+ * @param oid           full object instence identifier (unused)
+ * @param value         pointer to the new network mask in dotted notation
+ * @param ifname        name of the interface (like "eth0")
+ * @param addr          IPv4 address in dotted notation
+ *
+ * @return error code
+ */
+static int
+broadcast_set(unsigned int gid, const char *oid, const char *value,
+              const char *ifname, const char *addr)
+{
+    MIB_IPADDRROW data;
+    DWORD         a;
+    int           rc;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(value);
+
+    if ((a = inet_addr(addr)) == INADDR_NONE)
+    {
+        if (strcmp(addr, "255.255.255.255") != 0)
+            return TE_RC(TE_TA_WIN32, EINVAL);
+    }
+
+    GET_IF_ENTRY;
+
+    if ((rc = ip_addr_exist(a, &data)) != 0)
+        return rc;
     return 0;
 }
 
@@ -853,6 +948,7 @@ find_ifindex(DWORD addr, DWORD *ifindex)
     free(table);
     return TE_RC(TE_TA_WIN32, ENOENT);
 }
+
 
 
 /**
@@ -1055,7 +1151,7 @@ arp_list(unsigned int gid, const char *oid, char **list)
 
 
 /** Route entry data structure */
-typedef route_entry {
+typedef struct route_entry {
     DWORD dst; /**< Destination address */
     int   prefix; /**< Destination address prefix */
     DWORD gw; /**< Gwateway address, in case 'forw_type' is 
@@ -1070,8 +1166,8 @@ typedef route_entry {
  * Parse route instance name and returns data structure of 
  * type 'route_entry_t'
  *
- * @param inst_name  Route instance name
- * @param rt         Routing entry (OUT)
+ * @param inst_name  route instance name
+ * @param rt         routing entry (OUT)
  */
 static int
 route_parse_inst_name(const char *inst_name, route_entry_t *rt)
@@ -1080,6 +1176,9 @@ route_parse_inst_name(const char *inst_name, route_entry_t *rt)
     int          int_val;
     char        *tmp;
     char        *tmp1;
+    char        *term_byte;
+    char        *ptr;
+    char        *end_ptr;
 
     memset(rt, 0, sizeof(*rt));
     strncpy(inst_copy, inst_name, sizeof(inst_copy));
@@ -1092,7 +1191,7 @@ route_parse_inst_name(const char *inst_name, route_entry_t *rt)
 
     if ((rt->dst = inet_addr(inst_copy)) == INADDR_NONE)
     {
-        if (strcmp(route, "255.255.255.255") != 0)
+        if (strcmp(inst_copy, "255.255.255.255") != 0)
            return TE_RC(TE_TA_WIN32, ETENOSUCHNAME);
     }
 
@@ -1216,7 +1315,7 @@ route_get(unsigned int gid, const char *oid, char *value,
         }
 
         MASK2PREFIX(table->table[i].dwForwardMask, p);
-        if (table->table[i].dwForwardDest != rt.addr || p != rt.prefix ||
+        if (table->table[i].dwForwardDest != rt.dst || p != rt.prefix ||
             table->table[i].dwForwardMetric1 != rt.metric ||
             (table->table[i].dwForwardType == FORW_TYPE_LOCAL &&
              table->table[i].dwForwardIfIndex != rt.if_index) ||
@@ -1255,6 +1354,7 @@ route_set(unsigned int gid, const char *oid, const char *value,
           const char *route)
 {
     return 0;
+
 }
 
 /**
@@ -1327,9 +1427,10 @@ route_del(unsigned int gid, const char *oid, const char *route)
 {
     MIB_IPFORWARDTABLE *table;
 
-    int i;
-    int rc;
-
+    int            i;
+    int            rc;
+    route_entry_t  rt;
+    
     UNUSED(gid);
     UNUSED(oid);
 
@@ -1351,7 +1452,7 @@ route_del(unsigned int gid, const char *oid, const char *route)
         }
 
         MASK2PREFIX(table->table[i].dwForwardMask, p);
-        if (table->table[i].dwForwardDest != rt.addr || p != rt.prefix ||
+        if (table->table[i].dwForwardDest != rt.dst || p != rt.prefix ||
             table->table[i].dwForwardMetric1 != rt.metric ||
             (table->table[i].dwForwardType == FORW_TYPE_LOCAL &&
              table->table[i].dwForwardIfIndex != rt.if_index) ||
@@ -1423,7 +1524,6 @@ route_list(unsigned int gid, const char *oid, char **list)
                  inet_ntoa(*(struct in_addr *)
                      &(table->table[i].dwForwardDest)), prefix);
         ptr += strlen(ptr);
-        
         if (table->table[i].dwForwardType == FORW_TYPE_REMOTE)
         {
             /* Route via gateway */
@@ -1437,7 +1537,6 @@ route_list(unsigned int gid, const char *oid, char **list)
                      table->table[i].dwForwardIfIndex);
         }
         ptr += strlen(ptr);
-        
         if (table->table[i].dwForwardMetric1 != 0)
         {
             snprintf(ptr, end_ptr - ptr, ",metric=%d",
