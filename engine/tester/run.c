@@ -145,14 +145,14 @@ tester_ctx_clone(const tester_ctx *ctx)
  *
  * @param name      Parameter name
  * @param value     Parameter value
- * @param req       Associated requirement
  * @param clone     Should the parameter be cloned?
+ * @param reqs      Associated requirements
  *
  * @return Poiner to allocated test parameter or NULL.
  */
 static test_param *
-test_param_new(const char *name, const char *value, const char *req,
-               te_bool clone)
+test_param_new(const char *name, const char *value, te_bool clone,
+               const test_requirements *reqs)
 {
     test_param *p;
 
@@ -169,18 +169,16 @@ test_param_new(const char *name, const char *value, const char *req,
         return NULL;
     }
 
-    p->name = strdup(name);
+    p->name = name;
     p->value = strdup(value);
-    if (p->name == NULL || p->value == NULL)
+    if (p->value == NULL)
     {
         ERROR("strdup() failed");
-        free(p->name);
-        free(p->value);
         free(p);
         EXIT("ENOMEM");
         return NULL;
     }
-    p->req = req;
+    p->reqs = reqs;
     p->clone = clone;
     VERB("New parameter: %s=%s", p->name, p->value);
 
@@ -406,14 +404,16 @@ vars_iterations(test_params *params, test_session_vars *vars,
                     s = get_value(value, &i->base->params);
                     if (s == NULL)
                         return EINVAL;
-                    p = test_param_new(var->name, s, value->req,
-                                       var->handdown);
+                    p = test_param_new(var->name, s, var->handdown,
+                                       (value->reqs.tqh_first == NULL) ?
+                                           NULL : &value->reqs);
                     if (p == NULL)
                     {
                         ERROR("Failed to create new test parameter");
                         EXIT("ENOMEM");
                         return ENOMEM;
                     }
+                    i->reqs = (i->reqs || (p->reqs != NULL));
                     /* If one more value exist */
                     if (value->links.tqe_next != NULL)
                     {
@@ -449,7 +449,7 @@ vars_iterations(test_params *params, test_session_vars *vars,
                 s = get_refvar_value(var, params);
                 if (s == NULL)
                     return EINVAL;
-                p = test_param_new(var->name, s, NULL, var->handdown);
+                p = test_param_new(var->name, s, var->handdown, NULL);
                 if (p == NULL)
                 {
                     ERROR("Failed to create new test parameter");
@@ -577,13 +577,16 @@ args_iterations(test_param_iterations *base_iters, test_args *args,
                                   &i->base->params);
                     if (s == NULL)
                         return EINVAL;
-                    p = test_param_new(arg->name, s, v->req, TRUE);
+                    p = test_param_new(arg->name, s, TRUE,
+                                       (v->reqs.tqh_first == NULL) ?
+                                           NULL : &v->reqs);
                     if (p == NULL)
                     {
                         ERROR("Failed to create new test parameter");
                         EXIT("ENOMEM");
                         return ENOMEM;
                     }
+                    i->reqs = (i->reqs || (p->reqs != NULL));
                     /* Update current iteration */
                     test_params_add(&i->params, p);
                     
@@ -615,7 +618,7 @@ args_iterations(test_param_iterations *base_iters, test_args *args,
                             more_in_list = (more_in_list || more_in_arg);
                             /* Create parameter and add it in iteration */
                             /* FIXME: Requirement here */
-                            p = test_param_new(arg2->name, s, NULL, TRUE);
+                            p = test_param_new(arg2->name, s, TRUE, NULL);
                             if (p == NULL)
                             {
                                 ERROR("Failed to create new test parameter");
@@ -640,7 +643,7 @@ args_iterations(test_param_iterations *base_iters, test_args *args,
                 s = get_refarg_value(arg, &i->base->params);
                 if (s == NULL)
                     return EINVAL;
-                p = test_param_new(arg->name, s, NULL, TRUE);
+                p = test_param_new(arg->name, s, TRUE, NULL);
                 if (p == NULL)
                 {
                     ERROR("Failed to create new test parameter");
@@ -1620,8 +1623,8 @@ iterate_test(tester_ctx *ctx, run_item *test,
         te_bool     test_ctx_cloned = FALSE;
         tester_ctx *test_ctx = ctx;
 
-        if (ctx->path->params.tqh_first != NULL &&
-            (~(ctx->flags) & TESTER_INLOGUE))
+        if (test_ctx->path->params.tqh_first != NULL &&
+            (~(test_ctx->flags) & TESTER_INLOGUE))
         {
             rc = tester_run_path_params_match(test_ctx, &(i->params));
             if (rc != 0)
@@ -1641,7 +1644,7 @@ iterate_test(tester_ctx *ctx, run_item *test,
             }
         }
 
-        if (test->type != RUN_ITEM_SCRIPT)
+        if ((test->type != RUN_ITEM_SCRIPT) || i->reqs)
         {
             test_ctx = tester_ctx_clone(ctx);
             if (test_ctx == NULL)
@@ -1653,8 +1656,22 @@ iterate_test(tester_ctx *ctx, run_item *test,
             test_ctx_cloned = TRUE;
         }
 
-        if ((ctx->flags & TESTER_QUIET_SKIP) &&
-            !tester_is_run_required(ctx, test, &(i->params)))
+        /* Put iteration requirements in context */
+        if (i->reqs)
+        {
+            const test_param *p;
+
+            for (p = i->params.tqh_first;
+                 p != NULL;
+                 p = p->links.tqe_next)
+            {
+                if (p->reqs != NULL)
+                    test_requirements_clone(p->reqs, &test_ctx->reqs);
+            }
+        }
+
+        if ((test_ctx->flags & TESTER_QUIET_SKIP) &&
+            !tester_is_run_required(test_ctx, test, &(i->params)))
         {
             /* Silently skip without any logs */
             if (test_ctx_cloned)
@@ -1666,8 +1683,8 @@ iterate_test(tester_ctx *ctx, run_item *test,
                          test_ctx->id, id, test_ctx->flags);
         log_test_start(test, test_ctx->id, id, &(i->params));
 
-        if ((~ctx->flags & TESTER_QUIET_SKIP) &&
-            !tester_is_run_required(ctx, test, &(i->params)))
+        if ((~test_ctx->flags & TESTER_QUIET_SKIP) &&
+            !tester_is_run_required(test_ctx, test, &(i->params)))
         {
             test_result = ETESTSKIP;
         }
@@ -1680,7 +1697,7 @@ iterate_test(tester_ctx *ctx, run_item *test,
                 ERROR("run_test() failed: %X", rc);
             }
 
-            if (!(ctx->flags & (TESTER_NO_CS | TESTER_NOCFGTRACK)) &&
+            if (!(test_ctx->flags & (TESTER_NO_CS | TESTER_NOCFGTRACK)) &&
                 test->attrs.track_conf)
             {
                 /* Check configuration backup */

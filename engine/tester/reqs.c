@@ -129,7 +129,7 @@ test_requirement_free(test_requirement *req)
 /* See description in reqs.h */
 int
 test_requirements_clone(const test_requirements *reqs,
-                      test_requirements *new_reqs)
+                        test_requirements *new_reqs)
 {
     test_requirement  *p;
     test_requirement  *q;

@@ -130,6 +130,8 @@ test_param_iteration_new(void)
     }
     
     TAILQ_INIT(&p->params);
+    p->base = NULL;
+    p->reqs = FALSE;
 
     return p;
 }
@@ -164,6 +166,7 @@ test_param_iteration_clone(const test_param_iteration *i)
         }
     }
     ic->base = (i->base) ? : i;
+    ic->reqs = i->reqs;
     EXIT("OK 0x%x", (size_t)ic);
     return ic;
 }
