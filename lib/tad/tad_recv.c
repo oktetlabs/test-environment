@@ -138,15 +138,16 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
 
         sprintf(label + sizeof("pdus") - 1, ".%d", level);
         rc = asn_get_subvalue(pattern_unit, &level_pdu, label); 
-        VERB(
-            "get subval with pattern unit for label %s rc %x", label, rc);
+        VERB("get subval with pattern unit for label %s rc 0x%x",
+             label, rc);
 
         csap_spt_descr = find_csap_spt(csap_descr->proto[level]);
 
         rc = csap_spt_descr->match_cb(csap_descr->id, level, level_pdu, 
                         &data_to_check, &rest_payload, parsed_pdu); 
 
-        VERB("match cb for lev %d returned %d", level, rc);
+        VERB("match cb 0x%x for lev %d returned 0x%x",
+             csap_spt_descr->match_cb, level, rc);
 
         if (data_to_check.free_data_cb) 
             data_to_check.free_data_cb(data_to_check.data);
