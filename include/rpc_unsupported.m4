@@ -10,7 +10,7 @@
 #include "te_defs.h"
 #include "rcf_rpc_defs.h"
 #include "tarpc.h"
-#include "ta_rpc_log.h"
+#include "logfork.h"
 #include "rpc_supported.h"
 
 changequote([,])
