@@ -15,6 +15,18 @@
             <script name="clitest">
                 <req id="TAD_CLI"/> 
             </script>
+            <script name="tapi_cli_test">
+                <req id="TAD_CLI"/> 
+                <arg name="host">
+                    <value>melkor</value>
+                </arg>
+                <arg name="user">
+                    <value>TesterCLI</value>
+                </arg>
+                <arg name="passwd">
+                    <value>TesterCLI</value>
+                </arg>
+            </script>
         </run>
    </session>
 </package>
