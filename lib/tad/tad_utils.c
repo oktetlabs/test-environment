@@ -47,7 +47,7 @@
 #include "logger_ta.h"
 
 /**
- * Description see in tad.h
+ * Description see in tad_utils.h
  */
 tad_payload_type 
 tad_payload_asn_label_to_enum(const char *label)
@@ -63,7 +63,7 @@ tad_payload_asn_label_to_enum(const char *label)
 }
 
 /**
- * Description see in tad.h
+ * Description see in tad_utils.h
  */
 int 
 tad_confirm_pdus(csap_p csap_descr, asn_value *pdus)
@@ -111,6 +111,8 @@ tad_confirm_pdus(csap_p csap_descr, asn_value *pdus)
 
 
 
+#if 0 /* This function is not used at all now, leave it in sources
+         until respective NDN method will be complete. */
 
 
 /**
@@ -289,7 +291,7 @@ tad_univ_match_field(const tad_data_unit_t *pattern, asn_value *pkt_pdu,
 }
 
 
-
+#endif
 
 
 /**
@@ -683,50 +685,23 @@ tad_data_unit_convert(const asn_value *pdu_val, const char *label,
 
     rc = asn_get_subvalue(pdu_val, &du_field, label);
 
-    VERB("get subvalue %s rc %x", label, rc);
-
-    if (rc)
+    if (rc != 0)
     {
-        const asn_type *type = asn_get_type(pdu_val);
-        const asn_type *s_type = NULL; 
-
-        char       labels_buffer[200];
-        asn_syntax plain_syntax;
-     
-        strcpy(labels_buffer, label);
-        strcat(labels_buffer, ".#plain");
- 
-        rc = asn_get_subtype(type, &s_type, labels_buffer);
-        if (rc)
+        if (rc == EASNINCOMPLVAL)
         {
-            ERROR(
-                    "get subtype %s in pattern rc %x", labels_buffer, rc);
+            memset(location, 0, sizeof(*location));
+            location->du_type = TAD_DU_UNDEF; 
+            return 0;
+        }
+        else
+        {
+            WARN("%s: get subvalue %s failed %X", __FUNCTION__, label, rc);
             return rc;
         }
-
-        plain_syntax = asn_get_syntax_of_type(s_type); 
-        switch (plain_syntax)
-        {
-            case BOOL:
-            case INTEGER:
-            case ENUMERATED:
-                location->du_type = TAD_DU_INT_NM;
-                break; 
-
-            case BIT_STRING:
-            case OCT_STRING:
-            case CHAR_STRING:
-                location->du_type = TAD_DU_DATA_NM;
-                break; 
-
-            default: 
-                return ETENOSUPP;
-        }
-        return 0;
     } 
 
     rc = asn_get_choice(pdu_val, label, choice, sizeof(choice));
-    if (rc)
+    if (rc != 0)
     {
         F_ERROR("rc from get choice: %x", rc);
         return rc;
@@ -752,7 +727,7 @@ tad_data_unit_convert(const asn_value *pdu_val, const char *label,
 
             case BIT_STRING:
             case OCT_STRING:
-                location->du_type = TAD_DU_DATA;
+                location->du_type = TAD_DU_OCTS;
                 /* get data later */
                 break;
 
@@ -776,112 +751,38 @@ tad_data_unit_convert(const asn_value *pdu_val, const char *label,
     else if (strcmp(choice, "script") == 0)
     {
         const uint8_t *script;
+        char expr_label[] = "expr:";
 
         rc = asn_get_field_data(du_field, &script, "");
-        if (rc == 0)
-        {
-            char expr_label[] = "expr:";
-            if (strncmp(expr_label, script,
-                        sizeof(expr_label)-1) == 0)
-            {
-                tad_int_expr_t *expression;
-                int syms;
-
-                rc = tad_int_expr_parse(script + sizeof(expr_label) - 1,
-                                        &expression, &syms);
-                if (rc)
-                {
-                    ERROR("expr script parse error %x, syms %d",
-                          rc, syms);
-                    return rc;
-                }
-                location->du_type = TAD_DU_EXPR;
-                location->val_int_expr = expression;
-
-                return 0;
-            }
-            else
-            {
-                ERROR("not supported type of script");
-                return ETENOSUPP;
-            }
-        } 
-        else
+        if (rc != 0)
         {
             ERROR("rc from asn_get for 'script': %x", rc);
             return rc;
         }
-    }
-    else if (strcmp(choice, "mask") == 0)
-    {
-        int m_len = asn_get_length(du_field, "v");
-        location->du_type = TAD_DU_MASK; 
 
-        location->val_mask.length  = m_len;
-        location->val_mask.mask    = calloc(1, m_len);
-        location->val_mask.pattern = calloc(1, m_len);
-        if (location->val_mask.mask == NULL || 
-            location->val_mask.pattern == NULL)
-            return ENOMEM;
-
-        rc = asn_read_value_field(du_field, location->val_mask.mask, 
-                                  &m_len, "m");
-        if (rc == 0)
-        { 
-            rc = asn_read_value_field(du_field, location->val_mask.pattern,
-                                      &m_len, "v");
-        }
-        if (rc)
+        if (strncmp(expr_label, script, sizeof(expr_label)-1) == 0)
         {
-            free(location->val_mask.mask);
-            free(location->val_mask.pattern);
-            ERROR("rc from asn_read for 'mask': %x", rc);
-            return rc;
+            tad_int_expr_t *expression;
+            int syms;
+
+            rc = tad_int_expr_parse(script + sizeof(expr_label) - 1,
+                                    &expression, &syms);
+            if (rc != 0)
+            {
+                ERROR("expr script parse error %x, syms %d",
+                      rc, syms);
+                return rc;
+            }
+            location->du_type = TAD_DU_EXPR;
+            location->val_int_expr = expression;
+
+            return 0;
         }
-        return 0;
-    }
-    else if (strcmp(choice, "intervals") == 0)
-    {
-        int    label_len;
-        char   label[50];
-        int    num, i;
-        size_t v_len = sizeof(location->val_intervals.begin[0]);
-
-        location->du_type = TAD_DU_INTERVALS; 
-        num = location->val_intervals.length = 
-                                        asn_get_length(du_field, "");
-        location->val_intervals.begin = calloc(num, v_len);
-        location->val_intervals.end   = calloc(num, v_len);
-
-        rc = 0;
-        for (i = 0; i < num; i++)
+        else
         {
-            label_len = snprintf(label, sizeof(label), "%d.b", i);
-            rc = asn_read_value_field(du_field, 
-                                      location->val_intervals.begin + i, 
-                                      &v_len, label);
-            if (rc)
-                break;
-
-            label[label_len - 1] = 'e';
-
-            rc = asn_read_value_field(du_field, 
-                                      location->val_intervals.end + i,
-                                      &v_len, label);
-            if (rc)
-                break;
+            ERROR("not supported type of script");
+            return ETENOSUPP;
         }
-
-        if (rc)
-        {
-            ERROR("error reading intervals #%d: %x, label <%s>", 
-                  i, rc, label);
-            free(location->val_intervals.begin);
-            free(location->val_intervals.end);
-            location->du_type = TAD_DU_INT_NM;
-        }
-
-        return rc;
     }
     else
     {
@@ -912,16 +813,12 @@ tad_data_unit_convert(const asn_value *pdu_val, const char *label,
             return rc;
         } 
 
-        if (location->du_type == TAD_DU_DATA)
-        {
-            location->val_mask.length = len;
-            location->val_mask.mask = NULL;
-            location->val_mask.pattern = d_ptr;
-        }
+        location->val_data.len = len;
+
+        if (location->du_type == TAD_DU_OCTS)
+            location->val_data.oct_str = d_ptr;
         else
-        {
-            location->val_string = d_ptr;
-        }
+            location->val_data.char_str = d_ptr;
     }
 
     return 0;
@@ -943,17 +840,17 @@ tad_data_unit_clear(tad_data_unit_t *du)
     switch (du->du_type)
     {
         case TAD_DU_STRING:
-            free(du->val_string);
+            free(du->val_data.char_str);
             break;
-        case TAD_DU_MASK:
-            free(du->val_mask.mask);
-            /* fall through */
-        case TAD_DU_DATA:
-            free(du->val_mask.pattern);
+
+        case TAD_DU_OCTS:
+            free(du->val_data.oct_str);
             break;
+
         case TAD_DU_EXPR:
             tad_int_expr_free(du->val_int_expr);
             break;
+
         default:
             /* do nothing */
             break;
@@ -980,14 +877,12 @@ tad_data_unit_from_bin(const uint8_t *data, size_t d_len,
     if (data == NULL || location == NULL)
         return ETEWRONGPTR;
 
-    if ((location->val_mask.pattern = malloc(d_len)) == NULL)
+    if ((location->val_data.oct_str = malloc(d_len)) == NULL)
         return ENOMEM;
 
-    location->du_type = TAD_DU_DATA;
-    location->val_mask.length = d_len;
-    location->val_mask.mask = NULL;
-
-    memcpy(location->val_mask.pattern, data, d_len);
+    location->du_type = TAD_DU_OCTS;
+    location->val_data.len = d_len; 
+    memcpy(location->val_data.oct_str, data, d_len);
 
     return 0;
 }

@@ -114,7 +114,7 @@ int eth_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
         return rc; 
     }
     
-    if (spec_data->du_dst_addr.du_type == TAD_DU_DATA_NM)
+    if (spec_data->du_dst_addr.du_type == TAD_DU_UNDEF)
     {
         if (csap_descr->command & TAD_OP_RECV)
         {
@@ -169,7 +169,7 @@ int eth_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
         return rc; 
     }
 
-    if (spec_data->du_src_addr.du_type == TAD_DU_DATA_NM)
+    if (spec_data->du_src_addr.du_type == TAD_DU_UNDEF)
     {
         if (csap_descr->command & TAD_OP_RECV)
         {
@@ -226,7 +226,7 @@ int eth_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
         return rc; 
     }
 
-    if (spec_data->du_eth_type.du_type == TAD_DU_INT_NM && 
+    if (spec_data->du_eth_type.du_type == TAD_DU_UNDEF && 
         spec_data->eth_type > 0)
     {
         spec_data->du_eth_type.du_type = TAD_DU_I32;     
@@ -257,7 +257,7 @@ int eth_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
         F_VERB(\
                     "success " label " convert; du type: %d",   \
                     (int) spec_data-> c_du_field .du_type);     \
-        if (spec_data-> c_du_field .du_type != TAD_DU_INT_NM)   \
+        if (spec_data-> c_du_field .du_type != TAD_DU_UNDEF)   \
             flag = 1;                                           \
     } while (0)
 
@@ -362,9 +362,9 @@ int eth_gen_bin_cb(int csap_id, int layer, const asn_value *tmpl_pdu,
 
     spec_data = (eth_csap_specific_data_p) csap_descr->layer_data[layer]; 
 
-    is_tagged = (spec_data->du_cfi     .du_type > TAD_DU_INT_NM && 
-                 spec_data->du_priority.du_type > TAD_DU_INT_NM &&
-                 spec_data->du_vlan_id .du_type > TAD_DU_INT_NM); 
+    is_tagged = (spec_data->du_cfi     .du_type != TAD_DU_UNDEF && 
+                 spec_data->du_priority.du_type != TAD_DU_UNDEF &&
+                 spec_data->du_vlan_id .du_type != TAD_DU_UNDEF); 
 
     if (is_tagged)
         frame_size += ETH_TAG_EXC_LEN + ETH_TYPE_LEN;
@@ -412,8 +412,8 @@ int eth_gen_bin_cb(int csap_id, int layer, const asn_value *tmpl_pdu,
                 }                                                       \
             }                                                           \
                 break;                                                  \
-            case TAD_DU_DATA:                                           \
-                if (spec_data-> c_du_field .val_mask.pattern == NULL)   \
+            case TAD_DU_OCTS:                                           \
+                if (spec_data-> c_du_field .val_data.oct_str == NULL)   \
                 {                                                       \
                     ERROR(\
                                 "Have no binary data to be sent");      \
@@ -421,7 +421,7 @@ int eth_gen_bin_cb(int csap_id, int layer, const asn_value *tmpl_pdu,
                 }                                                       \
                 else                                                    \
                 {                                                       \
-                    memcpy(p, spec_data-> c_du_field .val_mask.pattern, \
+                    memcpy(p, spec_data-> c_du_field .val_data.oct_str, \
                             length);                                    \
                     p += length;                                        \
                 }                                                       \
@@ -499,8 +499,7 @@ int eth_gen_bin_cb(int csap_id, int layer, const asn_value *tmpl_pdu,
     }
 
     VERB("put eth-type");  
-    if (spec_data->du_eth_type.du_type == TAD_DU_INT_NM || 
-        spec_data->du_eth_type.du_type == TAD_DU_DATA_NM )
+    if (spec_data->du_eth_type.du_type == TAD_DU_UNDEF)
     { /* ethernet type-len field is not specified neither in csap, 
          nor in template put length of payload to the frame. */
         VERB("not specified, put payload length");  

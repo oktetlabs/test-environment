@@ -84,9 +84,9 @@ typedef enum {
 typedef struct tad_tmpl_arg_t { 
     tad_tmpl_arg_type_t type;  /**< Type of argument */
 
-    size_t      length;        /**< Length of argument data */
+    size_t       length;       /**< Length of argument data */
     union {
-        int     arg_int;       /**< Integer value */
+        int      arg_int;      /**< Integer value */
         char    *arg_str;      /**< Pointer to character sting value */
         uint8_t *arg_oct;      /**< Pointer to octet array value */
     };
@@ -166,61 +166,54 @@ typedef struct tad_int_expr_t tad_int_expr_t;
  * Expression is constructed with for arithmetical operations from 
  * constants and "variables", which are references to iterated artuments.
  */
-struct tad_int_expr_t 
-{ 
-    tad_expr_node_type  n_type; /**< Node type */
+struct tad_int_expr_t { 
+    tad_expr_node_type  n_type; /**< node type */
     size_t              d_len;  /**< length of data: 
                                      - for node with operation is length
                                        of array with operands. 
                                      - for constant node is 'sizeof' 
                                        integer variable, may be 4 or 8.  */
     union {
-        int32_t val_i32;        /**< Int 32 value */
-        int64_t val_i64;        /**< Int 64 value */
-        int     arg_num;        /**< Number of referenced argument */
-        tad_int_expr_t *exprs;  /**< Array with operands */
+        int32_t val_i32;        /**< int 32 value */
+        int64_t val_i64;        /**< int 64 value */
+        int     arg_num;        /**< number of referenced argument */
+        tad_int_expr_t *exprs;  /**< array with operands */
     };
 };
 
+/**
+ * Struct for octet or character string handling.
+ */
+typedef struct tad_du_data_t {
+    size_t len;             /**< length */
+    union {
+        uint8_t *oct_str;   /**< pointer to octet string */
+        char    *char_str;  /**< pointer to character string */
+    };
+} tad_du_data_t;
 
-/***** Style fixes of review stopped here. Konst. */
-
-typedef struct {
-    size_t      length;
-    uint8_t    *mask;
-    uint8_t    *pattern;
-} tad_match_mask_t;
-
-typedef struct {
-    size_t      length;
-    int32_t    *begin;
-    int32_t    *end;
-} tad_match_intervals_t;
-
+/**
+ * Types of data unit, which may occure in traffic generaing template.
+ */
 typedef enum {
-    TAD_DU_DATA_NM,/* label for octet string value which should not be 
-                      matched this is default zero value for "undef" 
-                      data_unit.*/
-    TAD_DU_INT_NM, /* label for int value which should not be matched */
-    TAD_DU_I32,
-    TAD_DU_I64, 
-    TAD_DU_STRING,
-    TAD_DU_DATA,
-    TAD_DU_MASK, 
-    TAD_DU_INTERVALS, 
-    TAD_DU_EXPR,
-    TAD_DU_SCRIPT,
+    TAD_DU_UNDEF,  /**< leaf is undefined, should be taken from default */
+    TAD_DU_I32,    /**< uxplicit 32-bit integer value */
+    TAD_DU_I64,    /**< uxplicit 64-bit integer value */
+    TAD_DU_STRING, /**< character string */
+    TAD_DU_OCTS,   /**< octet string */
+    TAD_DU_EXPR,   /**< arithmetic expression */
 } tad_du_type_t;
 
+/**
+ * Handler of message field data unit
+ */
 typedef struct {
-    tad_du_type_t       du_type; 
+    tad_du_type_t       du_type;        /**< Type of data unit */
     union {
-        int32_t                val_i32;
-        int64_t                val_i64;
-        char                  *val_string;
-        tad_match_mask_t       val_mask; /**< used for both MASK and DATA */
-        tad_match_intervals_t  val_intervals;
-        tad_int_expr_t        *val_int_expr;
+        int32_t         val_i32;        /**< 32-bit integer */
+        int64_t         val_i64;        /**< 64-bit integer */
+        tad_du_data_t   val_data;       /**< character or octet string */
+        tad_int_expr_t *val_int_expr;   /**< arithmetic expression */
     };
 } tad_data_unit_t;
 
