@@ -2270,6 +2270,9 @@ tapi_snmp_get_integer(const char *ta, int sid, int csap_id,
     switch (varbind.type) 
     {
         case TAPI_SNMP_INTEGER:
+        case TAPI_SNMP_COUNTER:
+        case TAPI_SNMP_UNSIGNED:
+        case TAPI_SNMP_TIMETICKS:
             *val = varbind.integer;
             break;
         case TAPI_SNMP_NOSUCHOBJ:
