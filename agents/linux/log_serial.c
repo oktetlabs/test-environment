@@ -281,12 +281,14 @@ log_serial(void *ready, int argc, char *argv[])
 #endif
     char          *buffer; 
     char          *current;
+    char          *newline;
     char          *fence;
     te_log_level_t level;
     int            interval;
     int            current_timeout = -1;
     int            len;
     struct pollfd  poller;
+    struct timeval tv1, tv2;
 
 #define MAYBE_DO_LOG \
     do { \
@@ -314,6 +316,13 @@ log_serial(void *ready, int argc, char *argv[])
         return TE_RC(TE_TA_LINUX, EINVAL);
     }
 
+    interval = strtol(argv[2], NULL, 10);
+    if (interval <= 0)
+    {
+        ERROR("Invalid interval value: %s", argv[2]);
+        sem_post(ready);
+        return TE_RC(TE_TA_LINUX, EINVAL);
+    }
 
     if (*argv[3] != '/')
     {
@@ -355,13 +364,6 @@ log_serial(void *ready, int argc, char *argv[])
             return TE_RC(TE_TA_LINUX, EINVAL);
         }
         
-        interval = strtol(argv[2], NULL, 10);
-        if (interval <= 0)
-        {
-            ERROR("Invalid interval value: %s", argv[2]);
-            sem_post(ready);
-            return TE_RC(TE_TA_LINUX, EINVAL);
-        }
         poller.fd = open(argv[3], O_RDONLY | O_NOCTTY | O_NONBLOCK);
         if (poller.fd < 0)
         {
@@ -393,9 +395,17 @@ log_serial(void *ready, int argc, char *argv[])
     {
         poller.revents = 0;
         poller.events = POLLIN;
+        gettimeofday(&tv1, NULL);
         poll(&poller, 1, current_timeout);
+        gettimeofday(&tv2, NULL);
         VERB("something is available");
         pthread_testcancel(); 
+        if (current_timeout >= 0)
+        {
+            current_timeout -= (tv2.tv_sec * 1000 + tv2.tv_usec / 1000) -
+                               (tv1.tv_sec * 1000 + tv1.tv_usec / 1000);
+        }
+
         if (poller.revents & POLLIN)
         {
             VERB("trying to read %d bytes", fence - current);
@@ -406,6 +416,7 @@ log_serial(void *ready, int argc, char *argv[])
                 ERROR("Error reading from terminal: %d", errno);
                 break;
             }
+            VERB("%d bytes actually read", len);
             current += len;
             if (current == fence)
             {
@@ -413,10 +424,20 @@ log_serial(void *ready, int argc, char *argv[])
                 current_timeout = -1;
                 current = buffer;
             }
+            else if ((newline = memchr(buffer, '\n', current - buffer)) 
+                     != NULL)
+            {
+                *newline = '\0';
+                LGR_MESSAGE(level, user, "%s", buffer);
+                memmove(buffer, newline + 1, current - newline - 1);
+                current = buffer + (current - newline - 1);    
+                current_timeout = -1;
+            }
             else
             {
                 if (current_timeout < 0)
                     current_timeout = interval;
+                VERB("timeout will be %d", current_timeout);
             }
         }
         else if (poller.revents & POLLERR)
@@ -431,7 +452,7 @@ log_serial(void *ready, int argc, char *argv[])
             RING("Terminal hung up");
             break;
         }
-        else
+        else if (current_timeout <= 0)
         {
             VERB("timeout");
             MAYBE_DO_LOG;
