@@ -135,7 +135,7 @@ typedef struct param {
 typedef enum result_status {
     RES_STATUS_PASSED, 
     RES_STATUS_KILLED, 
-    RES_STATUS_DUMPED, 
+    RES_STATUS_CORED, 
     RES_STATUS_SKIPPED, 
     RES_STATUS_FAKED, 
     RES_STATUS_FAILED, 

@@ -140,8 +140,8 @@ rgt_process_control_message(log_msg *msg)
               strncmp(fmt_str, "PASSED", strlen("PASSED")) == 0) ||
              (res = RES_STATUS_KILLED, 
               strncmp(fmt_str, "KILLED", strlen("KILLED")) == 0) ||
-             (res = RES_STATUS_DUMPED, 
-              strncmp(fmt_str, "DUMPED", strlen("DUMPED")) == 0) ||
+             (res = RES_STATUS_CORED, 
+              strncmp(fmt_str, "CORED", strlen("CORED")) == 0) ||
              (res = RES_STATUS_SKIPPED, 
               strncmp(fmt_str, "SKIPPED", strlen("SKIPPED")) == 0) ||
              (res = RES_STATUS_FAKED, 

@@ -255,7 +255,7 @@ postponed_process_start_event(node_info_t *node, const char *node_name)
 
         NODE_RES_CASE(PASSED);
         NODE_RES_CASE(KILLED);
-        NODE_RES_CASE(DUMPED);
+        NODE_RES_CASE(CORED);
         NODE_RES_CASE(SKIPPED);
         NODE_RES_CASE(FAKED);
         NODE_RES_CASE(FAILED);
