@@ -62,6 +62,9 @@ usage()
     echo -e '  --cs-print-trees'\\t\\t'Print configurator trees.'
     echo -e '  --cs-print-diff'\\t\\t'Log backup diff unconditionally.'
     echo
+    echo -e '  --build=path'\\t\\t'Build package specified in the path.'
+    echo -e '  --build-log=path'\\t\\t'Build package with log level 0xFFFF.'
+    echo -e '  --build-nolog=path'\\t'Build package with undefined log level.'
     echo -e '  --build-cs'\\t\\t\\t'Build configurator.'
     echo -e '  --build-logger'\\t\\t'Build logger.'
     echo -e '  --build-rcf'\\t\\t\\t'Build RCF.'
@@ -288,8 +291,23 @@ process_opts()
     
             --cs-*) CS_OPTS="${CS_OPTS} --${1#--cs-}" ;;
 
+            --build-log=*) 
+                BUILDER_OPTS="${BUILDER_OPTS} --pathlog=${1#--build-log=}"
+                BUILDER=
+                ;;
+
+            --build-nolog=*) 
+                BUILDER_OPTS="${BUILDER_OPTS} --pathnolog=${1#--build-nolog=}"
+                BUILDER=
+                ;;
+                
             --build-*) 
                 BUILDER_OPTS="${BUILDER_OPTS} --${1#--build-}" 
+                BUILDER=
+                ;;
+
+            --build=*) 
+                BUILDER_OPTS="${BUILDER_OPTS} --path=${1#--build=}"
                 BUILDER=
                 ;;
 
@@ -320,7 +338,7 @@ fi
 
 
 # Process command-line options
-process_opts $@
+process_opts "$@"
 
 
 if test -e ${LOCK_DIR}/ds ; then
