@@ -45,6 +45,7 @@ typedef struct test_requirement {
     char       *ref;        /**< Reference */
     te_bool     exclude;    /**< Should test on requirement be 
                                  included or excluded */
+    te_bool     sticky;     /**< Is it sticky requirement? */
 } test_requirement;
 
 typedef TAILQ_HEAD(test_requirements, test_requirement) test_requirements;

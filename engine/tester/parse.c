@@ -575,6 +575,12 @@ alloc_and_get_requirement(xmlNodePtr node, test_requirements *reqs)
     if (rc != 0 && rc != ENOENT)
         return rc;
 
+    /* 'sticky' is optional, default value is false */
+    p->sticky = FALSE;
+    rc = get_bool_prop(node, "sticky", &p->sticky);
+    if (rc != 0 && rc != ENOENT)
+        return rc;
+
     TAILQ_INSERT_TAIL(reqs, p, links);
 
     return 0;

@@ -80,6 +80,25 @@
                 </documentation>
             </annotation>
         </attribute>
+        <attribute name="exclude" type="boolean" default="false">
+            <annotation>
+                <documentation>
+                    The attribute may be specified in set of requirements
+                    in configuration file (to be tested). If it is true,
+                    tests marked with the requirement should be excluded
+                    from testing.
+                </documentation>
+            </annotation>
+        </attribute>
+        <attribute name="sticky" type="boolean" default="false">
+            <annotation>
+                <documentation>
+                    This attribute may be usefull in a test package set
+                    of requirements. If it is true, it means that ALL
+                    descendants test the requirement.
+                </documentation>
+            </annotation>
+        </attribute>
     </complexType>
 
     <complexType name="Value">
