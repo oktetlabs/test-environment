@@ -1115,11 +1115,38 @@ ds_echoserver_addr_set(unsigned int gid, const char *oid, const char *value)
 
 #ifdef WITH_FTP_SERVER
 
-#define FTPD_CONF           "vsftpd.conf"
 
-static int ftp_index;
-static int ftp_xinetd_index = -1;
-static te_bool ftp_standalone = TRUE;
+enum ftp_server_kinds { FTP_VSFTPD, FTP_WUFTPD, FTP_PROFTPD };
+
+
+static int                    ftp_indices[] = {-1, -1, -1};
+static int                    ftp_xinetd_index = -1;
+static te_bool                ftp_standalone   = TRUE;
+static enum ftp_server_kinds  ftp_server_kind  = FTP_VSFTPD;
+
+#define VSFTPD_CONF  "vsftpd.conf"
+#define WUFTPD_CONF  "ftpaccess"
+#define PROFTPD_CONF "proftpd.conf"
+static const char *const ftp_config_files[] = {VSFTPD_CONF, 
+                                               WUFTPD_CONF,
+                                               PROFTPD_CONF};
+static const char *const ftp_config_dirs[]  = {"/etc/vsftpd/", 
+                                               "/etc/wu-ftpd/",
+                                               "/etc/proftpd/"};
+
+static const char *const ftpd_conf_names[][2] = 
+                                            {{"xinetd_vsftpd", "vsftpd"},
+                                             {"xinetd_wuftpd", "wuftpd"},
+                                             {"xinetd_proftpd", "proftpd"},
+                                            };
+
+const char *
+get_ftp_daemon_name(void)
+{
+    static const char *const ftpd_names[] = {"vsftpd", "wu-ftpd"};
+    return ftpd_names[ftp_server_kind];
+}
+
 
 static void
 ds_ftpserver_update_config(void)
@@ -1128,28 +1155,92 @@ ds_ftpserver_update_config(void)
     FILE *g = NULL;
     
     /* Enable anonymous upload for ftp */
-    ds_config_touch(ftp_index);
-    OPEN_BACKUP(ftp_index, f);
-    OPEN_CONFIG(ftp_index, g);
+    ds_config_touch(ftp_indices[ftp_server_kind]);
+    OPEN_CONFIG(ftp_indices[ftp_server_kind], g);
 
-    while (fgets(buf, sizeof(buf), f) != NULL)
+    switch (ftp_server_kind)
     {
-        if (strstr(buf, "anonymous_enable") != NULL ||
-            strstr(buf, "anon_mkdir_write_enable") != NULL ||
-            strstr(buf, "write_enable") != NULL ||
-            strstr(buf, "anon_upload_enable") != NULL ||
-            strstr(buf, "listen") != NULL)
+        case FTP_VSFTPD:
+            OPEN_BACKUP(ftp_indices[ftp_server_kind], f);
+            while (fgets(buf, sizeof(buf), f) != NULL)
+            {
+                if (strstr(buf, "anonymous_enable") != NULL ||
+                    strstr(buf, "anon_mkdir_write_enable") != NULL ||
+                    strstr(buf, "write_enable") != NULL ||
+                    strstr(buf, "anon_upload_enable") != NULL ||
+                    strstr(buf, "listen") != NULL)
+                {
+                    continue;
+                }
+                fwrite(buf, 1, strlen(buf), g);
+            }
+            fprintf(g, "anonymous_enable=YES\n");
+            fprintf(g, "anon_mkdir_write_enable=YES\n");
+            fprintf(g, "write_enable=YES\n");
+            fprintf(g, "anon_upload_enable=YES\n");
+            fprintf(g, "listen=%s\n", ftp_standalone ? "YES" : "NO");
+            fclose(f);
+            break;
+        case FTP_WUFTPD:
+            fputs("passwd-check none\n"
+                  "class all real,guest,anonymous *\n"
+                  "overwrite yes anonymous\n"
+                  "upload /var/ftp/ /pub yes ftp daemon 0666 dirs\n", 
+                  g);
+
+            break;
+        case FTP_PROFTPD:
         {
-            continue;
+            te_bool inside_anonymous = FALSE;
+            
+            OPEN_BACKUP(ftp_indices[ftp_server_kind], f);
+            while (fgets(buf, sizeof(buf), f) != NULL)
+            {
+                if (inside_anonymous)
+                {
+                    if (strstr(buf, "</Anonymous>") != NULL)
+                        inside_anonymous = FALSE;
+                }
+                else if (strstr(buf, "<Anonymous"))
+                {
+                    inside_anonymous = TRUE;
+                }
+                else if (strstr(buf, "ServerType") == NULL &&
+                         strstr(buf, "AllowOverwrite") == NULL)
+                {
+                    fputs(buf, g);
+                }
+                         
+            }
+            fprintf(g, "\nServerType %s\n", 
+                    ftp_standalone ? "standalone" : "inetd");
+            fputs("AllowOverwrite on\n"
+                  "<Anonymous ~ftp>\n"
+                  "\tUser ftp\n"
+                  "\tGroup nogroup\n"
+                  "\tUserAlias anonymous ftp\n"
+                  "\tDirFakeUser on ftp\n"
+                  "\tDirFakeGroup on nogroup\n"
+                  "\tRequireValidShell off\n"
+                  "\t<Directory *>\n"
+                  "\t\t<Limit WRITE>\n"
+                  "\t\t\tDenyAll\n"
+                  "\t\t</Limit>\n"
+                  "\t</Directory>\n"
+                  "\t<Directory pub>\n"
+                  "\t\t<Limit STOR WRITE READ>\n"
+                  "\t\t\tAllowAll\n"
+                  "\t\t</Limit>\n"
+                  "\t</Directory>\n"
+                  "</Anonymous>\n\n", g);
+            fclose(f);
+            break;
         }
-        fwrite(buf, 1, strlen(buf), g);
+        default:
+            /* should not go here */
+            assert(0);
     }
-    fprintf(g, "anonymous_enable=YES\n");
-    fprintf(g, "anon_mkdir_write_enable=YES\n");
-    fprintf(g, "write_enable=YES\n");
-    fprintf(g, "anon_upload_enable=YES\n");
-    fprintf(g, "listen=%s\n", ftp_standalone ? "YES" : "NO");
-    fclose(f);
+    
     fclose(g);
 }
 
@@ -1179,16 +1270,41 @@ ds_ftpserver_server_set(unsigned int gid, const char *oid,
                             const char *value)
 {
     te_bool newval = (strncmp(value, "xinetd_", 7) != 0);
-    char tmp[2];
+    int     newkind;
+    char    tmp[2];
 
-    if(newval && ftp_xinetd_index < 0)
+    if (strcmp(value, "vsftpd") != 0 &&
+        strcmp(value, "xinetd_vsftpd") != 0 &&
+        strcmp(value, "wuftpd") != 0 &&
+        strcmp(value, "proftpd") != 0 &&
+        strcmp(value, "xinetd_proftpd") != 0)
+    {
+        ERROR("Invalid server name: %s", value);
         return TE_RC(TE_TA_LINUX, ETENOSUPP);
+    }
+
+
+    if (newval && ftp_xinetd_index < 0)
+    {
+        ERROR("xinetd is not supported");
+        return TE_RC(TE_TA_LINUX, ETENOSUPP);
+    }
 
     ds_ftpserver_get(gid, oid, tmp);
     if (tmp[0] != '0')
     {
         ERROR("Cannot change FTP server type when it's running");
         return TE_RC(TE_TA_LINUX, EPERM);
+    }
+
+    newkind = (strstr(value, "vsftpd") != NULL ? FTP_VSFTPD : 
+               (strstr(value, "wuftpd") != NULL ? FTP_WUFTPD :
+                FTP_PROFTPD));
+
+    if (ftp_indices[newkind] < 0)
+    {
+        ERROR("This server is not installed");
+        return TE_RC(TE_TA_LINUX, ETENOSUPP);
     }
 
     ftp_standalone = newval;
@@ -1201,7 +1317,7 @@ ds_ftpserver_server_set(unsigned int gid, const char *oid,
 static int
 ds_ftpserver_server_get(unsigned int gid, const char *oid, char *value)
 {
-    strcpy(value, ftp_standalone ? "vsftpd" : "xinetd_vsftpd");
+    strcpy(value, ftpd_conf_names[ftp_server_kind][ftp_standalone]);
     UNUSED(gid);
     UNUSED(oid);
     return 0;
@@ -1217,6 +1333,38 @@ RCF_PCH_CFG_NODE_RW(node_ds_ftpserver, "ftpserver",
                     &node_ds_ftpserver_server, NULL,
                     ds_ftpserver_get, ds_ftpserver_set);
 
+
+static te_bool
+ftp_create_backup(enum ftp_server_kinds kind)
+{
+    const char *dir = NULL;
+    static char tmp[PATH_MAX + 1];
+    
+    strcpy(tmp, ftp_config_dirs[kind]);
+    strcat(tmp, ftp_config_files[kind]);
+    
+    if (file_exists(tmp))
+    {
+        dir = ftp_config_dirs[kind];
+    }
+    else
+    {
+        strcpy(tmp, "/etc/");
+        strcat(tmp, ftp_config_files[kind]);
+        if (!file_exists(tmp))
+            return FALSE;
+        dir = "/etc/";
+    }
+
+    if (ds_create_backup(dir, ftp_config_files[kind], 
+                         &ftp_indices[kind]) != 0)
+        return FALSE;
+    ftp_server_kind = kind;
+    return TRUE;
+    
+}
+
+
 /**
  * Initialize FTP daemon.
  *
@@ -1225,22 +1373,11 @@ RCF_PCH_CFG_NODE_RW(node_ds_ftpserver, "ftpserver",
 void
 ds_init_ftp_server(rcf_pch_cfg_object **last)
 {
-    char *dir = NULL;
 
-    struct stat stat_buf;
+    ftp_create_backup(FTP_PROFTPD);
+    ftp_create_backup(FTP_WUFTPD);
+    ftp_create_backup(FTP_VSFTPD);
 
-    if (stat("/etc/vsftpd/" FTPD_CONF, &stat_buf) == 0)
-        dir = "/etc/vsftpd/";
-    else if (stat("/etc/" FTPD_CONF, &stat_buf) == 0)
-        dir = "/etc/";
-    else
-    {
-        WARN("Failed to locate VSFTPD configuration file");
-        return;
-    }
-   
-    if (ds_create_backup(dir, FTPD_CONF, &ftp_index) != 0)
-        return;
 
 #ifdef WITH_XINETD
     if (file_exists(XINETD_ETC_DIR "ftp"))
