@@ -1675,7 +1675,7 @@ main(int argc, char **argv)
     if ((server = ipc_register_server(RCF_SERVER)) == NULL)
     {
         rc = 1;
-        goto error;
+        goto no_ipcs_error;
     }
 
     FD_ZERO(&set0);
@@ -1803,6 +1803,7 @@ error:
     if (rc != 0)
         wait_shutdown();
 
+no_ipcs_error:
     free_ta_list();
     if (server != NULL)
         ipc_close_server(server);
