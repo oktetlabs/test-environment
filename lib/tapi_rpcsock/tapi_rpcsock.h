@@ -51,7 +51,7 @@ extern int rpc_setlibname(rcf_rpc_server *rpcs, const char *libname);
 
 
 /*
- * All functions have the same prototype and semantics of parameters
+ * Most functions have the same prototype and semantics of parameters
  * and return code as Linux implementation of Berkeley Socket API
  * functions.
  *
@@ -72,10 +72,28 @@ extern int rpc_socket(rcf_rpc_server *handle,
                       rpc_socket_domain domain, rpc_socket_type type,
                       rpc_socket_proto protocol);
 
+/* WSASocket() */
 extern int rpc_wsa_socket(rcf_rpc_server *handle,
-                         rpc_socket_domain domain, rpc_socket_type type,
-                         rpc_socket_proto protocol, 
-                         uint8_t *info, int info_len, te_bool overlapped);
+                          rpc_socket_domain domain, rpc_socket_type type,
+                          rpc_socket_proto protocol, 
+                          uint8_t *info, int info_len, te_bool overlapped);
+
+/**
+ * WSADuplicateSocket(). Protocol info is copied to the Test Engine
+ * and then back  to the TA (in rpc_wsa_socket() function) as is.
+ *
+ * @param handle        RPC Server handle
+ * @param s             old socket
+ * @param pid           destination process PID
+ * @param info          buffer for protocol info or NULL
+ * @param info_len      buffer length location (IN)/protocol info length
+ *                      location (OUT)
+ *
+ * @return value returned by WSADuplicateSocket() function
+ */ 
+extern int rpc_wsa_duplicate_socket(rcf_rpc_server *handle,            
+                                    int s, int pid, 
+                                    uint8_t *info, int *info_len);
 
 extern int rpc_close(rcf_rpc_server *handle,
                      int fd);
@@ -288,7 +306,7 @@ extern int rpc_wsa_accept(rcf_rpc_server *handle,
  * @param raddrlen         size of raddr returned by GetAcceptExSockAddr()
  *                         function
  *
- * @retval value returned by AcceptEx() function.
+ * @return value returned by AcceptEx() function.
  */
 extern int 
 rpc_accept_ex(rcf_rpc_server *handle,
@@ -477,12 +495,12 @@ rpc_event_select(rcf_rpc_server *handle,
 /**
  * Client implementation of WSAEnumNetworkEvent().
  * 
- * @param handle           RPC server handle.
- * @param s                Socket descriptor.
- * @param event_object     Optional handle identifying an associated event object to be reset.
- * @param event            Network events that occurred.
+ * @param handle           RPC server handle
+ * @param s                socket descriptor
+ * @param event_object     event object to be reset
+ * @param event            network events that occurred
  *
- * @retval value returned by AcceptEx() function.
+ * @return value returned by WSAEnumNetworkEvent() function
  */
 extern int 
 rpc_enum_network_events(rcf_rpc_server *handle,

@@ -5632,3 +5632,59 @@ rpc_get_overlapped_result(rcf_rpc_server *handle,
     RETVAL_VAL(out.retval, get_overlapped_result);
 }
                           
+int 
+rpc_wsa_duplicate_socket(rcf_rpc_server *handle,            
+                         int s, int pid, uint8_t *info, int *info_len)
+{
+    rcf_rpc_op op;
+    
+    tarpc_duplicate_socket_in  in;
+    tarpc_duplicate_socket_out out;
+    
+    if (handle == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        return -1;
+    }
+    
+    if ((info == NULL) != (info_len == NULL))
+    {
+        handle->_errno = TE_RC(TE_RCF, EINVAL);
+        return -1;
+    }
+    
+    if (info_len != NULL && *info_len == 0)
+    {
+        handle->_errno = TE_RC(TE_RCF, EINVAL);
+        return -1;
+    }
+
+    op = handle->op;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.s = s;
+    in.pid = pid;
+    if (info_len != NULL)
+    {
+        in.info.info_len = *info_len;
+        in.info.info_val = info;
+    }
+    
+    rcf_rpc_call(handle, _duplicate_socket, &in, 
+                 (xdrproc_t)xdr_tarpc_duplicate_socket_in,
+                 &out, (xdrproc_t)xdr_tarpc_duplicate_socket_out);
+    
+    RING("RPC (%s,%s)%s: duplicate_socket(%d, %d) -> %d (%s)",
+         handle->ta, handle->name, rpcop2str(op), s, pid, 
+         out.retval, errno_rpc2str(RPC_ERRNO(handle)));
+         
+    if (RPC_CALL_OK)
+    {
+        if (info_len != NULL)
+            *info_len = out->info.info_len;
+    }
+
+    RETVAL_RC(duplicate_socket);
+}

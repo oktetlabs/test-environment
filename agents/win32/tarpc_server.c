@@ -2653,5 +2653,28 @@ TARPC_FUNC(get_overlapped_result,
 }
 )
 
+/*-------------------------------- getpid() --------------------------------*/
+TARPC_FUNC(getpid, {}, { MAKE_CALL(out->retval = getpid()); })
+
+/*------------------------- WSADuplicateSocket() ---------------------------*/
+TARPC_FUNC(duplicate_socket, 
+{
+    if (in->info.info_len != 0 && in->info.info_len < sizeof(WSAPROTOCOL_INFO))
+    {
+        ERROR("Too short buffer for protocol info is provided"); 
+        out->common._errno = TE_RC(TE_TA_WIN32, ENOMEM);
+        return TRUE;
+    }
+    COPY_ARG(info);
+}, 
+{ 
+    MAKE_CALL(out->retval = 
+                  WSADuplicateSocket(in->s, in->pid, 
+                                     in->info.info_len == 0 ? NULL :
+                                     (LPWSAPROTOCOL_INFO)(in->info.info_val))); 
+    out->info.info_len = sizeof(WSAPROTOCOL_INFO);
+}
+)
+
 /* @TODO WSARecvEx, WSASendTo, WSARecvFrom, WSASendDisconnect,
    WSARecvDisconnect, WSADuplicateSocket */

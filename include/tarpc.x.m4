@@ -189,6 +189,21 @@ struct tarpc_socket_out {
     int fd;     /**< TA-local socket */
 };
 
+/* WSADuplicateSocket() */
+struct tarpc_duplicate_socket_in {
+    struct tarpc_in_arg common;
+    
+    int  s;             /**< Old socket */
+    int  pid;           /**< Destination process PID */
+    char info<>;        /**< Location for protocol info */
+};
+   
+struct tarpc_duplicate_socket_out {
+    struct tarpc_out_arg common;
+
+    int  retval;
+    char info<>;
+};
 
 /* dup() */
 
@@ -1790,6 +1805,7 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(getpid)
         
         RPC_DEF(socket)
+        RPC_DEF(duplicate_socket)
         RPC_DEF(dup)
         RPC_DEF(dup2)
         RPC_DEF(close)
@@ -1884,6 +1900,8 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
 
         RPC_DEF(create_event)
         RPC_DEF(close_event)
+        RPC_DEF(create_overlapped)
+        RPC_DEF(delete_overlapped)
 
         RPC_DEF(wsarecv_ex)
         RPC_DEF(connect_ex)
@@ -1896,8 +1914,6 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(transmit_file)
         RPC_DEF(completion_callback)
 
-        RPC_DEF(create_overlapped)
-        RPC_DEF(delete_overlapped)
         RPC_DEF(wsa_send)
         RPC_DEF(wsa_recv)
         RPC_DEF(get_overlapped_result)
