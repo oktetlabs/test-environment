@@ -109,19 +109,11 @@ int
 tapi_file_create_ta(const char *ta, const char *filename, 
                     const char *fmt, ...)
 {
-    char  pathname[RCF_MAX_PATH];
-    char *te_tmp;
+    char *pathname = tapi_file_generate_pathname();
     FILE *f;
     int   rc;
 
     va_list ap;
-
-    if ((te_tmp = getenv("TE_TMP")) == NULL)
-    {
-        ERROR("TE_TMP is empty");
-        return -1;
-    }
-    sprintf(pathname, "%s/%s", getenv("TE_TMP"), tapi_file_generate_name());
 
     if ((f = fopen(pathname, "w")) == NULL)
     {
@@ -139,10 +131,9 @@ tapi_file_create_ta(const char *ta, const char *filename,
         unlink(pathname);
         return -1;
     }
-    
     if ((rc = rcf_ta_put_file(ta, 0, pathname, filename)) != 0)
     {
-        ERROR("Cannot put file %s on ta %s; errno %d", filename, ta, errno);
+        ERROR("Cannot put file %s on TA %s; errno %d", filename, ta, rc);
         unlink(pathname);
         return -1;
     }
@@ -151,3 +142,36 @@ tapi_file_create_ta(const char *ta, const char *filename,
     return 0;
 }
 
+/*
+ * Copy file from the one TA to other.
+ *
+ * @param ta_src        source Test Agent
+ * @param src           source file name
+ * @param ta_dst        destination Test Agent
+ * @param dst           destination file name
+ *
+ * @return Status code
+ */
+int
+tapi_file_copy_ta(const char *ta_src, const char *src,
+                  const char *ta_dst, const char *dst)
+{
+    char *pathname = tapi_file_generate_pathname();
+    int   rc;
+
+    if ((rc = rcf_ta_get_file(ta_src, 0, src, pathname)) != 0)
+    {
+        ERROR("Cannot get file %s from TA %s; errno %d", src, ta_src, rc);
+        return rc;
+    }
+
+    if ((rc = rcf_ta_put_file(ta_dst, 0, pathname, dst)) != 0)
+    {
+        ERROR("Cannot put file %s to TA %s; errno %d", dst, ta_dst, rc);
+        unlink(pathname);
+        return rc;
+    }
+    unlink(pathname);
+    return 0;
+}
+                  

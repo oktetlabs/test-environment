@@ -94,6 +94,19 @@ extern char *tapi_file_create(int len, char c);
 extern int tapi_file_create_ta(const char *ta, const char *filename, 
                                const char *fmt, ...);
 
+/*
+ * Copy file from the one TA to other.
+ *
+ * @param ta_src        source Test Agent
+ * @param src           source file name
+ * @param ta_dst        destination Test Agent
+ * @param dst           destination file name
+ *
+ * @return Status code
+ */
+extern int tapi_file_copy_ta(const char *ta_src, const char *src,
+                             const char *ta_dst, const char *dst);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
