@@ -15,8 +15,8 @@ AM_LDFLAGS = @TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/lib
 
 tetest_PROGRAMS = ethtest get_any eth1 eth2 eth3 eth_serial1 eth_serial2
 
-LDADD= -ltapi -ltapi_eth -lndn -lasn -lconfapi -lrcfapi -lconf_oid \
-       -llogger_ten -lipc -lpthread
+LDADD= -ltapi -ltapi_eth -ltapi_tad -lndn -lasn -lconfapi -lrcfapi \
+       -lconf_oid -llogger_ten -lipc -lpthread
 
 TESTS_DEPS = ${TE_INSTALL}/i686-pc-linux-gnu/lib/libconfapi.a \
              ${TE_INSTALL}/i686-pc-linux-gnu/lib/librcfapi.a \
