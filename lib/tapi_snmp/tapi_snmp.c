@@ -375,6 +375,7 @@ tapi_snmp_packet_to_plain(asn_value *pkt, tapi_snmp_message_t *snmp_message)
     size_t       len;
     unsigned int i;
 
+    memset(snmp_message, 0, sizeof(*snmp_message));
     asn_save_to_file(pkt, "/tmp/te_snmp_pkt.asn");
 
     len = sizeof(snmp_message->type);
