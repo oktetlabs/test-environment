@@ -4050,8 +4050,10 @@ rpc_ioctl(rcf_rpc_server *handle,
             return -1;
     }
 
-    rcf_rpc_call(handle, _ioctl, &in, (xdrproc_t)xdr_tarpc_ioctl_in,
+    rcf_rpc_call(handle, _ioctl,
+                 &in,  (xdrproc_t)xdr_tarpc_ioctl_in,
                  &out, (xdrproc_t)xdr_tarpc_ioctl_out);
+
     if (out.retval == 0 && out.req.req_val != NULL && in.access == IOCTL_RD)
     {
         switch (in.req.req_val[0].type)
