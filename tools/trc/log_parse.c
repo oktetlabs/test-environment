@@ -109,23 +109,31 @@ trc_db_find_by_args(test_iters *iters, const test_args *args)
  *
  * @param iter      Test iteration
  */
-void
+static void
 iter_stats_update_by_result(test_iter *iter)
 {
-    switch (iter->got_result)
+    if (iter->got_result == TRC_TEST_UNSPEC)
     {
-        case TRC_TEST_FAKED:
-        case TRC_TEST_SKIPPED:
-            /* Keep not run statistics */
-            break;
-        default:
-            iter->stats.not_run--;
+        ERROR("Unexpected got result value");
+        return;
     }
+    if (iter->got_result == TRC_TEST_FAKED)
+    {
+        return;
+    }
+    iter->stats.not_run--;
 
     switch (iter->exp_result)
     {
         case TRC_TEST_UNSPEC:
-            iter->stats.new_run++;
+            switch (iter->got_result)
+            {
+                case TRC_TEST_SKIPPED:
+                    iter->stats.new_not_run++;
+                    break;
+                default:
+                    iter->stats.new_run++;
+            }
             break;
 
         case TRC_TEST_PASSED:
@@ -140,11 +148,10 @@ iter_stats_update_by_result(test_iter *iter)
                 case TRC_TEST_SKIPPED:
                     iter->stats.skip_une++;
                     break;
-                case TRC_TEST_FAKED:
-                    break;
                 default:
                     iter->stats.aborted++;
             }
+            break;
 
         case TRC_TEST_FAILED:
             switch (iter->got_result)
@@ -158,11 +165,10 @@ iter_stats_update_by_result(test_iter *iter)
                 case TRC_TEST_SKIPPED:
                     iter->stats.skip_une++;
                     break;
-                case TRC_TEST_FAKED:
-                    break;
                 default:
                     iter->stats.aborted++;
             }
+            break;
 
         case TRC_TEST_SKIPPED:
             switch (iter->got_result)
@@ -176,15 +182,13 @@ iter_stats_update_by_result(test_iter *iter)
                 case TRC_TEST_SKIPPED:
                     iter->stats.skip_exp++;
                     break;
-                case TRC_TEST_FAKED:
-                    break;
                 default:
                     iter->stats.aborted++;
             }
+            break;
 
         default:
-            /* It must not happen, but */
-            iter->stats.aborted++;
+            ERROR("Invalid expected testing result %u", iter->exp_result);
     }
 }
 
@@ -211,6 +215,12 @@ get_result(xmlNodePtr node, trc_test_result *value)
         *value = TRC_TEST_FAILED;
     else if (xmlStrcmp(s, CONST_CHAR2XML("skip")) == 0)
         *value = TRC_TEST_SKIPPED;
+    else if (xmlStrcmp(s, CONST_CHAR2XML("killed")) == 0)
+        *value = TRC_TEST_KILLED;
+    else if (xmlStrcmp(s, CONST_CHAR2XML("cored")) == 0)
+        *value = TRC_TEST_CORED;
+    else if (xmlStrcmp(s, CONST_CHAR2XML("faked")) == 0)
+        *value = TRC_TEST_FAKED;
     else if (xmlStrcmp(s, CONST_CHAR2XML("UNSPEC")) == 0)
         *value = TRC_TEST_UNSPEC;
     else
@@ -352,7 +362,7 @@ static int
 get_test_result(xmlNodePtr root, trc_test_type type, test_runs *tests)
 {
     int                 rc = 0;
-    xmlNodePtr          node;
+    xmlNodePtr          node = NULL;
     char               *name;
     trc_test_result     result;
     test_run           *test;
@@ -363,81 +373,100 @@ get_test_result(xmlNodePtr root, trc_test_type type, test_runs *tests)
 
 
     name = xmlGetProp(root, CONST_CHAR2XML("name"));
-    if (name == NULL)
+    if ((name == NULL) && (type != TRC_TEST_SESSION))
     {
-        ERROR("Missing name of the test package");
+        ERROR("Missing name of the test package/script");
         return EINVAL;
     }
-    test = trc_db_find_by_name(tests, name);
-    if (test == NULL)
+    if (name != NULL)
     {
-        new_test = TRUE;
-        test = calloc(1, sizeof(*test));
+        test = trc_db_find_by_name(tests, name);
         if (test == NULL)
         {
-            ERROR("calloc() failed");
-            return errno;
+            new_test = TRUE;
+            test = calloc(1, sizeof(*test));
+            if (test == NULL)
+            {
+                ERROR("calloc() failed");
+                return errno;
+            }
+            test->type = type;
+            test->name = name;
+            TAILQ_INIT(&test->iters.head);
+            TAILQ_INSERT_TAIL(&tests->head, test, links);
         }
-        test->type = type;
-        test->name = name;
-        TAILQ_INIT(&test->iters.head);
-        TAILQ_INSERT_TAIL(&tests->head, test, links);
-    }
 
-    node = xmlNodeChildren(root);
+        node = xmlNodeChildren(root);
 
-    TAILQ_INIT(&args.head);
-    rc = get_meta(node, &objective, &args);
-    if (rc != 0)
-    {
-        ERROR("Failed to get meta data");
-        return rc;
-    }
-    node = xmlNodeNext(node);
+        memset(&args, 0, sizeof(args));
+        TAILQ_INIT(&args.head);
 
-    if (new_test)
-    {
-        test->objective = objective;
-        iter = NULL;
-    }
-    else
-    {
-        iter = trc_db_find_by_args(&test->iters, &args);
-    }
+        rc = get_meta(node, &objective, &args);
+        if (rc != 0)
+        {
+            ERROR("Failed to get meta data");
+            return rc;
+        }
+        node = xmlNodeNext(node);
 
-    if (iter == NULL)
-    {
-        new_test = TRUE;
-        iter = calloc(1, sizeof(*iter));
+        if (new_test)
+        {
+            test->objective = objective;
+            iter = NULL;
+        }
+        else
+        {
+            iter = trc_db_find_by_args(&test->iters, &args);
+        }
+
         if (iter == NULL)
         {
-            ERROR("calloc() failed");
-            return errno;
+            new_test = TRUE;
+            iter = calloc(1, sizeof(*iter));
+            if (iter == NULL)
+            {
+                ERROR("calloc() failed");
+                return errno;
+            }
+            iter->args = args;
+            iter->exp_result = TRC_TEST_UNSPEC;
+            if (type == TRC_TEST_SCRIPT)
+                iter->stats.not_run = 1;
+            TAILQ_INIT(&iter->tests.head);
+            TAILQ_INSERT_TAIL(&test->iters.head, iter, links);
         }
-        iter->args = args;
-        iter->exp_result = TRC_TEST_UNSPEC;
-        iter->stats.not_run = 1;
-        TAILQ_INIT(&iter->tests.head);
-        TAILQ_INSERT_TAIL(&test->iters.head, iter, links);
+        else
+        {
+            /* free args */
+        }
+
+        rc = get_result(root, &iter->got_result);
+        if (rc != 0)
+        {
+            ERROR("Failed to get the result");
+            return rc;
+        }
+
+        if (test->type == TRC_TEST_SCRIPT)
+            iter_stats_update_by_result(iter);
+
+        tests = &iter->tests;
     }
     else
     {
-        /* free args */
-    }
+        node = xmlNodeChildren(root);
 
-    rc = get_result(root, &iter->got_result);
-    if (rc != 0)
-    {
-        ERROR("Failed to get the result");
-        return rc;
+        while (node != NULL &&
+               xmlStrcmp(node->name, CONST_CHAR2XML("branch")) != 0)
+        {
+            node = xmlNodeNext(node);
+        }
     }
-
-    iter_stats_update_by_result(iter);
 
     while (node != NULL &&
            xmlStrcmp(node->name, CONST_CHAR2XML("branch")) == 0)
     {
-        rc = get_logs(xmlNodeChildren(node), &iter->tests);
+        rc = get_logs(xmlNodeChildren(node), tests);
         if (rc != 0)
             return rc;
         node = xmlNodeNext(node);
@@ -461,19 +490,19 @@ get_logs(xmlNodePtr node, test_runs *tests)
 
     while (node != NULL)
     {
-        if (xmlStrcmp(node->name, CONST_CHAR2XML("pkg")) != 0)
+        if (xmlStrcmp(node->name, CONST_CHAR2XML("pkg")) == 0)
         {
             rc = get_test_result(node, TRC_TEST_PACKAGE, tests);
             if (rc != 0)
                 break;
         }
-        else if (xmlStrcmp(node->name, CONST_CHAR2XML("session")) != 0)
+        else if (xmlStrcmp(node->name, CONST_CHAR2XML("session")) == 0)
         {
             rc = get_test_result(node, TRC_TEST_SESSION, tests);
             if (rc != 0)
                 break;
         }
-        else if (xmlStrcmp(node->name, CONST_CHAR2XML("test")) != 0)
+        else if (xmlStrcmp(node->name, CONST_CHAR2XML("test")) == 0)
         {
             rc = get_test_result(node, TRC_TEST_SCRIPT, tests);
             if (rc != 0)

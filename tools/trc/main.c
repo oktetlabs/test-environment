@@ -177,15 +177,17 @@ static void trc_collect_tests_stats(test_runs *tests, trc_stats *stats);
 static void
 trc_stats_add(trc_stats *stats, const trc_stats *add)
 {
-    stats->not_run += add->not_run;
-    stats->new_run += add->new_run;
     stats->pass_exp += add->pass_exp;
     stats->pass_une += add->pass_une;
     stats->fail_exp += add->fail_exp;
     stats->fail_une += add->fail_une;
+    stats->aborted += add->aborted;
+    stats->new_run += add->new_run;
+
+    stats->not_run += add->not_run;
     stats->skip_exp += add->skip_exp;
     stats->skip_une += add->skip_une;
-    stats->aborted += add->aborted;
+    stats->new_not_run += add->new_not_run;
 }
 
 /**

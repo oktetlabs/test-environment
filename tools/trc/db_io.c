@@ -234,7 +234,7 @@ get_test_args(xmlNodePtr *node, test_args *args)
  * @return Status code.
  */
 static int
-alloc_and_get_test_iter(xmlNodePtr node, test_iters *iters)
+alloc_and_get_test_iter(xmlNodePtr node, trc_test_type type, test_iters *iters)
 {
     int         rc;
     test_iter  *p;
@@ -247,7 +247,9 @@ alloc_and_get_test_iter(xmlNodePtr node, test_iters *iters)
         return errno;
     }
     p->node = node;
-    p->stats.not_run = 1;
+    if (type == TRC_TEST_SCRIPT)
+        p->stats.not_run = 1;
+    p->got_result = TRC_TEST_UNSPEC;
     TAILQ_INIT(&p->args.head);
     TAILQ_INIT(&p->tests.head);
     TAILQ_INSERT_TAIL(&iters->head, p, links);
@@ -263,10 +265,6 @@ alloc_and_get_test_iter(xmlNodePtr node, test_iters *iters)
         p->exp_result = TRC_TEST_PASSED;
     else if (strcmp(tmp, "failed") == 0)
         p->exp_result = TRC_TEST_FAILED;
-    else if (strcmp(tmp, "killed") == 0)
-        p->exp_result = TRC_TEST_KILLED;
-    else if (strcmp(tmp, "cored") == 0)
-        p->exp_result = TRC_TEST_CORED;
     else if (strcmp(tmp, "skipped") == 0)
         p->exp_result = TRC_TEST_SKIPPED;
     else if (strcmp(tmp, "UNSPEC") == 0)
@@ -327,7 +325,7 @@ alloc_and_get_test_iter(xmlNodePtr node, test_iters *iters)
  * @return Status code
  */
 static int
-get_test_iters(xmlNodePtr *node, test_iters *iters)
+get_test_iters(xmlNodePtr *node, trc_test_type type, test_iters *iters)
 {
     int rc = 0;
 
@@ -336,7 +334,7 @@ get_test_iters(xmlNodePtr *node, test_iters *iters)
 
     while (*node != NULL &&
            xmlStrcmp((*node)->name, CONST_CHAR2XML("iter")) == 0 &&
-           (rc = alloc_and_get_test_iter(*node, iters)) == 0)
+           (rc = alloc_and_get_test_iter(*node, type, iters)) == 0)
     {
         *node = xmlNodeNext(*node);
     }
@@ -375,15 +373,29 @@ alloc_and_get_test(xmlNodePtr node, test_runs *tests)
         ERROR("Name of the test is missing");
         return EINVAL;
     }
-    INFO("Parsing test '%s'", p->name);
-
-#if 0
-    /* 'package' property is optional, by default it is false */
-    p->is_package = FALSE;
-    rc = get_bool_prop(node, "package", &p->is_package);
-    if (rc != 0 && rc != ENOENT)
-        return rc;
-#endif
+    tmp = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("type")));
+    if (p->name == NULL)
+    {
+        p->type = TRC_TEST_SCRIPT;
+    }
+    else if (strcmp(tmp, "package") == 0)
+    {
+        p->type = TRC_TEST_PACKAGE;
+    }
+    else if (strcmp(tmp, "session") == 0)
+    {
+        p->type = TRC_TEST_SESSION;
+    }
+    else if (strcmp(tmp, "script") == 0)
+    {
+        p->type = TRC_TEST_SCRIPT;
+    }
+    else
+    {
+        ERROR("Invalid type '%s' of the test '%s'", tmp, p->name);
+        return EINVAL;
+    }
+    INFO("Parsing test '%s' type=%d", p->name, p->type);
 
     node = xmlNodeChildren(node);
     
@@ -394,7 +406,7 @@ alloc_and_get_test(xmlNodePtr node, test_runs *tests)
         return rc;
     }
 
-    rc = get_test_iters(&node, &p->iters);
+    rc = get_test_iters(&node, p->type, &p->iters);
     if (rc != 0)
     {
         ERROR("Failed to get iterations of the test '%s'", p->name);
@@ -524,6 +536,8 @@ trc_update_iters(test_iters *iters)
     {
         if (p->node == NULL)
         {
+            test_arg *a;
+
             INFO("Add node for iteration");                 
             p->tests.node = xmlNewChild(iters->node, NULL,
                                         BAD_CAST "iter", NULL);
@@ -534,6 +548,20 @@ trc_update_iters(test_iters *iters)
             }
             xmlNewProp(p->tests.node, BAD_CAST "result",
                        BAD_CAST "UNSPEC");
+            for (a = p->args.head.tqh_first;
+                 a != NULL;
+                 a = a->links.tqe_next)
+            {
+                xmlNodePtr arg = xmlNewChild(p->tests.node, NULL,
+                                            BAD_CAST "arg",
+                                            BAD_CAST a->value);
+                if (arg == NULL)
+                {
+                    ERROR("xmlNewChild() failed for 'arg'");
+                    return rc;
+                }
+                xmlNewProp(arg, BAD_CAST "name", BAD_CAST a->name);
+            }
             if (xmlNewChild(p->tests.node, NULL,
                             BAD_CAST "notes",
                             BAD_CAST (p->notes ? : "")) == NULL)
@@ -554,7 +582,7 @@ trc_test_type_to_str(trc_test_type type)
 {
     switch (type)
     {
-        case TRC_TEST_SCRIPT:   return "test";
+        case TRC_TEST_SCRIPT:   return "script";
         case TRC_TEST_PACKAGE:  return "package";
         case TRC_TEST_SESSION:  return "session";
         default: return "OOps";
@@ -586,7 +614,7 @@ trc_update_tests(test_runs *tests)
                        BAD_CAST trc_test_type_to_str(p->type));
             if (xmlNewChild(p->iters.node, NULL,
                             BAD_CAST "objective",
-                            BAD_CAST (p->objective ? : "")) == NULL)
+                            BAD_CAST p->objective) == NULL)
             {
                 ERROR("xmlNewChild() failed for 'objective'");
                 return rc;

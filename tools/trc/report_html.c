@@ -216,7 +216,7 @@ static const char * const trc_tests_stats_start =
 "      <TD ROWSPAN=2>\n"
 "        <P><B>Objective</B></P>\n"
 "      </TD>\n"
-"      <TD COLSPAN=7>\n"
+"      <TD COLSPAN=6>\n"
 "        <P ALIGN=CENTER><B>Run</B></P>\n"
 "      </TD>\n"
 "      <TD COLSPAN=3>\n"
@@ -231,10 +231,10 @@ static const char * const trc_tests_stats_start =
 "        <P><B>Total</B></P>\n"
 "      </TD>\n"
 "      <TD>\n"
-"        <P>Passed, as expected</P>\n"
+"        <P>Passed expect</P>\n"
 "      </TD>\n"
 "      <TD>\n"
-"        <P>Failed, as expected</P>\n"
+"        <P>Failed expect</P>\n"
 "      </TD>\n"
 "      <TD>\n"
 "        <P>Passed unexp</P>\n"
@@ -243,16 +243,13 @@ static const char * const trc_tests_stats_start =
 "        <P>Failed unexp</P>\n"
 "      </TD>\n"
 "      <TD>\n"
-"        <P>Aborted</P>\n"
-"      </TD>\n"
-"      <TD>\n"
-"        <P>New</P>\n"
+"        <P>Aborted, New</P>\n"
 "      </TD>\n"
 "      <TD>\n"
 "        <P><B>Total</B></P>\n"
 "      </TD>\n"
 "      <TD>\n"
-"        <P>Skipped, as expected</P>\n"
+"        <P>Skipped expect</P>\n"
 "      </TD>\n"
 "      <TD>\n"
 "        <P>Skipped unexp</P>\n"
@@ -268,7 +265,7 @@ static const char * const trc_tests_stats_end =
 static const char * const trc_tests_stats_row =
 "    <TR>\n"
 "      <TD>\n"
-"        <P><B>%s</B></P>\n"
+"        <P>%s<B>%s</B></P>\n"
 "      </TD>\n"
 "      <TD>\n"
 "        <P>%s</P>\n"
@@ -276,11 +273,6 @@ static const char * const trc_tests_stats_row =
 "      <TD>\n"
 "        <P ALIGN=RIGHT STYLE=\"margin-left: 0.1in; margin-right: 0.1in\">\n"
 "          <B>%u</B>\n"
-"        </P>\n"
-"      </TD>\n"
-"      <TD>\n"
-"        <P ALIGN=RIGHT STYLE=\"margin-left: 0.1in; margin-right: 0.1in\">\n"
-"          %u\n"
 "        </P>\n"
 "      </TD>\n"
 "      <TD>\n"
@@ -358,7 +350,7 @@ static const char * const trc_test_exp_got_end =
 static const char * const trc_test_exp_got_row =
 "    <TR>\n"
 "      <TD>\n"
-"        <P><B>%s</B></P>\n"
+"        <P>%s<B>%s</B></P>\n"
 "      </TD>\n"
 "      <TD>\n"
 "        <P>%s</P>\n"
@@ -416,12 +408,34 @@ trc_test_result_to_string(trc_test_result result)
     }
 }
 
+static char trc_args_buf[0x10000];
+
+static const char *
+trc_test_args_to_string(const test_args *args)
+{
+    test_arg *p;
+    char     *s = trc_args_buf;
+
+    for (p = args->head.tqh_first; p != NULL; p = p->links.tqe_next)
+    {
+        s += sprintf(s, "%s=%s\n", p->name, p->value);
+    }
+    return trc_args_buf;
+}
+
+
 static int
 iters_to_html(const test_run *test, const test_iters *iters,
               unsigned int level, unsigned int flags)
 {
     int         rc;
     test_iter  *p;
+    char        level_str[64] = { 0, };
+    char       *s;
+    unsigned int i;
+
+    for (s = level_str, i = 0; i < level; ++i)
+        s += sprintf(s, "*-");
 
     for (p = iters->head.tqh_first; p != NULL; p = p->links.tqe_next)
     {
@@ -430,12 +444,13 @@ iters_to_html(const test_run *test, const test_iters *iters,
              (~flags & TRC_OUT_PACKAGES_ONLY)))
         {
             fprintf(f, trc_test_exp_got_row,
-                    test->name, "ARGS",
+                    level_str, test->name,
+                    trc_test_args_to_string(&p->args),
                     trc_test_result_to_string(p->exp_result),
                     trc_test_result_to_string(p->got_result),
                     p->notes ? : "");
         }
-        rc = tests_to_html(&p->tests, level + 1, flags);
+        rc = tests_to_html(&p->tests, level, flags);
         if (rc != 0)
             return rc;
     }
@@ -447,6 +462,9 @@ tests_to_html(const test_runs *tests, unsigned int level, unsigned int flags)
 {
     int         rc;
     test_run   *p;
+    char        level_str[64] = { 0, };
+    char       *s;
+    unsigned int i;
 
     if (level == 0)
     {
@@ -455,6 +473,8 @@ tests_to_html(const test_runs *tests, unsigned int level, unsigned int flags)
         else
             WRITE_STR(trc_test_exp_got_start);
     }
+    for (s = level_str, i = 0; i < level; ++i)
+        s += sprintf(s, "*-");
     for (p = tests->head.tqh_first; p != NULL; p = p->links.tqe_next)
     {
         if ((flags & TRC_OUT_STATS) &&
@@ -462,11 +482,11 @@ tests_to_html(const test_runs *tests, unsigned int level, unsigned int flags)
              (~flags & TRC_OUT_PACKAGES_ONLY)))
         {
             fprintf(f, trc_tests_stats_row,
-                    p->name, p->objective ? : "",
+                    level_str, p->name, p->objective ? : "",
                     TRC_STATS_RUN(&p->stats),
                     p->stats.pass_exp, p->stats.fail_exp,
                     p->stats.pass_une, p->stats.fail_une,
-                    p->stats.aborted, p->stats.new_run,
+                    p->stats.aborted + p->stats.new_run,
                     TRC_STATS_NOT_RUN(&p->stats),
                     p->stats.skip_exp, p->stats.skip_une,
                     p->notes ? : "");

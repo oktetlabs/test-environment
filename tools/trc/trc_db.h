@@ -60,22 +60,24 @@ typedef enum trc_test_type {
 
 /** Testing results conparator statistics */
 typedef struct trc_stats {
-    unsigned int    not_run;
     unsigned int    pass_exp;
     unsigned int    pass_une;
     unsigned int    fail_exp;
     unsigned int    fail_une;
-    unsigned int    skip_exp;
-    unsigned int    skip_une;
     unsigned int    aborted;
     unsigned int    new_run;
+    unsigned int    not_run;
+    unsigned int    skip_exp;
+    unsigned int    skip_une;
+    unsigned int    new_not_run;
 } trc_stats;
 
 #define TRC_STATS_RUN(s) \
     ((s)->pass_exp + (s)->pass_une + (s)->fail_exp + (s)->fail_une + \
      (s)->aborted + (s)->new_run)
 
-#define TRC_STATS_NOT_RUN(s)    ((s)->not_run + (s)->skip_exp + (s)->skip_une)
+#define TRC_STATS_NOT_RUN(s) \
+    ((s)->not_run + (s)->skip_exp + (s)->skip_une + (s)->new_not_run)
 
 
 /** Test argument */
