@@ -1459,10 +1459,6 @@ typedef enum rpc_ioctl_code {
 #define IOCTL_MAX 0xFFFFFFFF
 #endif
 
-#ifndef SIOCINQ
-#define SIOCINQ FIONREAD
-#endif
-
 static inline int
 ioctl_rpc2h(rpc_ioctl_code code)
 {
@@ -2545,6 +2541,7 @@ typedef enum rpc_sa_flags {
             RPC_BIT_MAP_ENTRY(SA_SIGINFO),   \
             RPC_BIT_MAP_ENTRY(SA_UNKNOWN)
 
+
 /** Convert RPC sigaction flags to native flags */
 static inline int
 sigaction_flags_rpc2h(rpc_sa_flags flags)
@@ -2552,29 +2549,63 @@ sigaction_flags_rpc2h(rpc_sa_flags flags)
     if ((flags & ~RPC_SA_FLAGS_ALL) != 0)
         return SA_FLAGS_UNKNOWN;
     return
-           (!!(flags & RPC_SA_NOCLDSTOP) * SA_NOCLDSTOP) |
-           (!!(flags & RPC_SA_ONESHOT) * SA_ONESHOT) |
-           (!!(flags & RPC_SA_RESETHAND) * SA_RESETHAND) |
-           (!!(flags & RPC_SA_ONSTACK) * SA_ONSTACK) |
-           (!!(flags & RPC_SA_RESTART) * SA_RESTART) |
-           (!!(flags & RPC_SA_NOMASK) * SA_NOMASK) |
-           (!!(flags & RPC_SA_NODEFER) * SA_NODEFER) |
-           (!!(flags & RPC_SA_SIGINFO) * SA_SIGINFO);
+#ifdef SA_NOCLDSTOP
+        (!!(flags & RPC_SA_NOCLDSTOP) * SA_NOCLDSTOP) |
+#endif
+#ifdef SA_ONESHOT
+        (!!(flags & RPC_SA_ONESHOT) * SA_ONESHOT) |
+#endif
+#ifdef SA_RESETHAND
+        (!!(flags & RPC_SA_RESETHAND) * SA_RESETHAND) |
+#endif
+#ifdef SA_ONSTACK
+        (!!(flags & RPC_SA_ONSTACK) * SA_ONSTACK) |
+#endif
+#ifdef SA_RESTART
+        (!!(flags & RPC_SA_RESTART) * SA_RESTART) |
+#endif
+#ifdef SA_NOMASK
+        (!!(flags & RPC_SA_NOMASK) * SA_NOMASK) |
+#endif
+#ifdef SA_NODEFER
+        (!!(flags & RPC_SA_NODEFER) * SA_NODEFER) |
+#endif
+#ifdef SA_SIGINFO
+        (!!(flags & RPC_SA_SIGINFO) * SA_SIGINFO) |
+#endif
+        0;
 }
 
 /** Convert native sigaction flags to RPC flags */
 static inline rpc_send_recv_flags
 sigaction_flags_h2rpc(int flags)
 {
-    return (!!(flags & SA_NOCLDSTOP) * RPC_SA_NOCLDSTOP) |
-           (!!(flags & SA_ONESHOT) * RPC_SA_ONESHOT) |
-           (!!(flags & SA_RESETHAND) * RPC_SA_RESETHAND) |
-           (!!(flags & SA_ONSTACK) * RPC_SA_ONSTACK) |
-           (!!(flags & SA_RESTART) * RPC_SA_RESTART) |
-           (!!(flags & SA_NOMASK) * RPC_SA_NOMASK) |
-           (!!(flags & SA_NODEFER) * RPC_SA_NODEFER) |
-           (!!(flags & SA_SIGINFO) * RPC_SA_SIGINFO) |
-           (!!(flags & ~SA_FLAGS_ALL) * RPC_SA_UNKNOWN);
+    return
+#ifdef SA_NOCLDSTOP
+        (!!(flags & SA_NOCLDSTOP) * RPC_SA_NOCLDSTOP) |
+#endif
+#ifdef SA_ONESHOT
+        (!!(flags & SA_ONESHOT) * RPC_SA_ONESHOT) |
+#endif
+#ifdef SA_RESETHAND
+        (!!(flags & SA_RESETHAND) * RPC_SA_RESETHAND) |
+#endif
+#ifdef SA_ONSTACK
+        (!!(flags & SA_ONSTACK) * RPC_SA_ONSTACK) |
+#endif
+#ifdef SA_RESTART
+        (!!(flags & SA_RESTART) * RPC_SA_RESTART) |
+#endif
+#ifdef SA_NOMASK
+        (!!(flags & SA_NOMASK) * RPC_SA_NOMASK) |
+#endif
+#ifdef SA_NODEFER
+        (!!(flags & SA_NODEFER) * RPC_SA_NODEFER) |
+#endif
+#ifdef SA_SIGINFO
+        (!!(flags & SA_SIGINFO) * RPC_SA_SIGINFO) |
+#endif
+        (!!(flags & ~SA_FLAGS_ALL) * RPC_SA_UNKNOWN);
 }
 
 #endif /* !__TE_TAPI_RPCSOCK_DEFS_H__ */
