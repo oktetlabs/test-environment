@@ -1603,7 +1603,7 @@ tapi_snmp_load_mib_with_path(const char *dir_path, const char *mib_file)
 int
 tapi_snmp_load_cfg_mibs(const char *dir_path)
 {
-    const char * const  mibs_ptrn = "/mibs:/load:*";
+    const char * const  mibs_ptrn = "/snmp:/mibs:/load:*";
     unsigned int        num;
     cfg_handle         *set = NULL;
     char               *mib_name;

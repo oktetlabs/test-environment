@@ -611,7 +611,7 @@ extern int tapi_snmp_load_mib_with_path(const char *dir_path,
     tapi_snmp_load_mib_with_path(SUITE_SRCDIR "/mibs", mib_file_)
 
 /**
- * Load all mibs specified in configurator.conf file in "/mibs/load" list.
+ * Load all mibs specified in configurator.conf file in "/snmp/mibs/load" list.
  *
  * @param dir_path  Path to directory where to search MIB files
  *
