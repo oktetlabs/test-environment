@@ -749,7 +749,7 @@ log_message_fast(uint16_t level, const char *user_name,
                  int argl11, uint32_t arg11, int argl12, uint32_t arg12)
 {
     ta_lgr_lock_key key;
-    int             position;
+    uint32_t        position;
     int             res;
 
     struct lgr_mess_header *message;
