@@ -104,7 +104,7 @@ typedef struct test_arg {
 /** Head of the list with test arguments */
 typedef struct test_args {
     TAILQ_HEAD(_test_args, test_arg) head;
-    xmlNodePtr                       node;   /**< XML node with this element */
+    xmlNodePtr  node;   /**< XML node with this element */
 } test_args;
 
 
@@ -114,7 +114,7 @@ struct test_run;
 /** Head of the list with tests */
 typedef struct test_runs {
     TAILQ_HEAD(_test_runs, test_run) head;;
-    xmlNodePtr                       node;   /**< XML node with this element */
+    xmlNodePtr  node;   /**< XML node with this element */
 } test_runs;
 
 

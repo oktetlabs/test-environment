@@ -163,13 +163,12 @@ rgt_filter_check_message(const char *level,
  * included from the log report.
  *
  * @param   path  Path (name) of the branch to be checked.
- *                Path is formed from names of packages and/or test of the 
- *                execution flow separated by '/'. For example path "/a/b/c/d"
- *                means that execution flow is 
+ *                Path is formed from names of packages and/or test
+ *                of the execution flow separated by '/'. For example
+ *                path "/a/b/c/d" means that execution flow is
  *                pkg "a" -> pkg "b" -> pkg "c" -> [test | pkg] "d"
  *
  * @return  Returns filtering mode for the branch.
- *
  */
 enum node_fltr_mode
 rgt_filter_check_branch(const char *path)

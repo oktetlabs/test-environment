@@ -66,8 +66,9 @@ struct log_msg;
 
 /** 
  * Structure that represents argument in its raw representation
- * There must be some more information given to determine which type of data 
- * it consists of. (This information can be obtained form format string)
+ * There must be some more information given to determine which type
+ * of data it consists of. (This information can be obtained form
+ * format string)
  */
 typedef struct msg_arg {
     struct msg_arg *next; /**< Pointer to the next argument */
@@ -79,7 +80,8 @@ typedef struct msg_arg {
 
 /** Structure that keeps log message in an universal format */
 typedef struct log_msg {
-    struct obstack *obstk;    /**< Internal field: Obstack for the message */
+    struct obstack *obstk;    /**< Internal field: 
+                                   Obstack for the message */
 
     char       *entity;       /**< Entity name of the message */
     char       *user;         /**< User name of the message */
@@ -143,8 +145,9 @@ typedef enum result_status {
 /** Structure for keeping session/package/test result information */
 typedef struct result_info {
     enum result_status  status; /**< Result status */
-    char               *err;    /**< An error message in the case of status 
-                                     field different from RES_STATUS_PASS */
+    char               *err;    /**< An error message in the case of
+                                     status field different from
+                                     RES_STATUS_PASS */
 } result_info_t;
 
 /**
@@ -174,7 +177,8 @@ typedef int (* f_process_reg_log_msg)(log_msg *);
 enum ctrl_event_type {
     CTRL_EVT_START,  /**< Strart control message */
     CTRL_EVT_END,    /**< End control message */
-    CTRL_EVT_LAST    /**< Last marker - the biggest value of the all evements */
+    CTRL_EVT_LAST    /**< Last marker - the biggest value of the all
+                          evements */
 };
 
 /** External declarations of a set of message processing functions */
@@ -215,9 +219,9 @@ extern void rgt_process_regular_message(log_msg *msg);
  * Processes event occured on a node of the flow tree.
  * Currently the only event that is actually processed is MORE_BRANCHES.
  *
- * @params type   Type of a node on which an event has occured.
- * @param  evt    Type of an event.
- * @param  node   User-specific data that is passed on  creation of the node.
+ * @param type   Type of a node on which an event has occured.
+ * @param evt    Type of an event.
+ * @param node   User-specific data that is passed on creation of the node.
  *
  * @return  Nothing.
  */
@@ -227,9 +231,9 @@ extern void rgt_process_event(node_type_t type, enum event_type evt,
 extern void log_msg_init_arg(log_msg *msg);
 
 /**
- * Return pointer to the log message argument. The first call of the function
- * returns pointer to the first argument. The second call returns pointer to 
- * the second argument and so on.
+ * Return pointer to the log message argument. The first call of the
+ * function returns pointer to the first argument. The second call
+ * returns pointer to the second argument and so on.
  *
  * @param  msg  Message which argument we are going to obtain
  *
@@ -238,7 +242,8 @@ extern void log_msg_init_arg(log_msg *msg);
 extern msg_arg *get_next_arg(log_msg *msg);
 
 /**
- * Allocates a new log_msg structure from global memory pool for log messages.
+ * Allocates a new log_msg structure from global memory pool for log
+ * messages.
  *
  * @return An address of log_msg structure.
  */

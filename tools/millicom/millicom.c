@@ -33,8 +33,8 @@
 #define BUF_SIZE        32
 
 /**
- * Mapping structure between baud_rate in integer representation and baud_rate
- * bits in cflag field of struct termios
+ * Mapping structure between baud_rate in integer representation and
+ * baud_rate bits in cflag field of struct termios
  */
 typedef struct speed_mapping_s {
     unsigned int speed;
@@ -42,8 +42,8 @@ typedef struct speed_mapping_s {
 } speed_mapping_t;
 
 /**
- * Mapping table between baud_rate in integer representation and baud_rate bits
- * in cflag field of struct termios
+ * Mapping table between baud_rate in integer representation and
+ * baud_rate bits in cflag field of struct termios
  */
 static speed_mapping_t speed_map[] = {
     {0, B0},
@@ -225,12 +225,14 @@ main(int argc, char *argv[])
         while ((len = fread(buf, 1, BUF_SIZE, stdin)) > 0) {
             DBG(fprintf(stderr, "\nRead from stdin: %d bytes", len));
             if (write(tty_fd, buf, len) != len) {
-                fprintf(stderr, "I/O error: failed write to \"%s\"\n", argv[1]);
+                fprintf(stderr, "I/O error: failed write to \"%s\"\n",
+                        argv[1]);
                 goto err;
             }
         }
         if ((len < 0) && (errno != EAGAIN)) {
-            fprintf(stderr, "I/O error: failed read from stdin, rc=%d, errno=%d\n",
+            fprintf(stderr,
+                    "I/O error: failed read from stdin, rc=%d, errno=%d\n",
                    len, errno );
             goto err;
         }
@@ -245,7 +247,9 @@ main(int argc, char *argv[])
             }
         }
         if ((len < 0) && (errno != EAGAIN)) {
-            fprintf(stderr, "I/O error: failed read from \"%s\", rc=%d, errno=%d\n",
+            fprintf(stderr,
+                    "I/O error: failed read from \"%s\", rc=%d, "
+                    "errno=%d\n",
                    argv[1], len, errno);
             goto err;
         }

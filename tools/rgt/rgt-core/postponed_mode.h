@@ -36,9 +36,9 @@
 extern "C" {
 #endif
 
-void
-postponed_mode_init(f_process_ctrl_log_msg ctrl_proc[CTRL_EVT_LAST][NT_LAST], 
-                    f_process_reg_log_msg  *reg_proc);
+void postponed_mode_init(f_process_ctrl_log_msg
+                             ctrl_proc[CTRL_EVT_LAST][NT_LAST], 
+                         f_process_reg_log_msg *reg_proc);
 
 int postponed_process_open();
 int postponed_process_close();

@@ -34,12 +34,13 @@
 #include "log_format.h"
 
 /**
- * Determines RLF version of the format and returns pointer to the function
- * that should be used for extracting log messages from a raw log file.
+ * Determines RLF version of the format and returns pointer to the
+ * function that should be used for extracting log messages from
+ * a raw log file.
  *
  * @param  fd   Raw log file descriptor.
- * @param  err  Pointer to the pointer on string that can be set to an error 
- *              message string if the function returns NULL.
+ * @param  err  Pointer to the pointer on string that can be set to
+ *              an error message string if the function returns NULL.
  *
  * @return  pointer to the log message extracting function.
  * 

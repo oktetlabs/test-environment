@@ -82,16 +82,17 @@ extern void rgt_filter_destroy();
 extern enum node_fltr_mode rgt_filter_check_message(const char *level,
                                                     const char *entity,
                                                     const char *user,
-                                                    const uint32_t *timestamp);
+                                                    const uint32_t
+                                                        *timestamp);
 
 /**
  * Verifies if the whole branch of execution flow should be excluded or 
  * included from the log report.
  *
  * @param   path  Path (name) of the branch to be checked.
- *                Path is formed from names of packages and/or test of the 
- *                execution flow separated by '/'. For example path "/a/b/c/d"
- *                means that execution flow is 
+ *                Path is formed from names of packages and/or test
+ *                of the execution flow separated by '/'. For example
+ *                path "/a/b/c/d" means that execution flow is 
  *                pkg "a" -> pkg "b" -> pkg "c" -> [test | pkg] "d"
  *
  * @return  Returns filtering mode for the branch.

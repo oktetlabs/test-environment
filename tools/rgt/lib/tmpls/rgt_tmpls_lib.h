@@ -6,20 +6,21 @@
  *
  * There is a set of templates each for a particular log piece(s) such as
  * document start/end, log start/end and so on.
- * The templates can be constant or parametrized strings, which contain places
- * that should be filled in with appropriate values gathered from the parsing 
- * context. For example parametrized template is needed for start log message
- * parts, which should be expanded with log level, entity and user name of 
- * a log message.
- * The places where context-specific values should be output is marked with
- * a pair of "@@" signs (doubled "at" sign) and the name of a context variable
- * between them, whose value should be expanded there.
+ * The templates can be constant or parametrized strings, which contain
+ * places that should be filled in with appropriate values gathered
+ * from the parsing context. For example parametrized template is needed
+ * for start log message parts, which should be expanded with log level,
+ * entity and user name of a log message.
+ * The places where context-specific values should be output is marked
+ * with a pair of "@@" signs (doubled "at" sign) and the name of a context
+ * variable between them, whose value should be expanded there.
  *
  * For example:
  *
  * This an example of how a parametrized template might look:
  * <p>
- * Here @@user@@ should be inserted a value of context-specific variable "user"
+ * Here @@user@@ should be inserted a value of context-specific
+ * variable "user"
  * </p>
  *
  *
@@ -79,8 +80,8 @@ enum e_log_part {
 #define RGT_TMPLS_NUM         12
 
 /**
- * Each template before using is parsed onto blocks each block can be whether
- * a constant sting or a variable value.
+ * Each template before using is parsed onto blocks each block can be
+ * whether a constant sting or a variable value.
  * For example the following single line template:
  *  The value of A is @@A@@, the value of B is @@B@@.
  * Will be split into five blocks:

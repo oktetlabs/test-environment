@@ -42,8 +42,8 @@
 /**
  * Attempts to read up to count bytes from file descriptor fd into
  * the buffer starting at buf.
- * If read_mode equals to RMODE_BLOCKING and there is not enough data in file
- * it blocks until count bytes available for read.
+ * If read_mode equals to RMODE_BLOCKING and there is not enough data
+ * in file it blocks until count bytes available for read.
  * If read_mode equals to RMODE_NONBLOCKING it doesn't block in any cases.
  *
  * @param  fd      File descriptor used for reading.

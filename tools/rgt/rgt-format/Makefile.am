@@ -45,9 +45,11 @@ pkgdata_DATA = $(RGT_FORMAT_UTILS_TMPLS)
 bin_PROGRAMS = rgt-xml-translator
 rgt_xml_translator_SOURCES = main.c
 rgt_xml_translator_CFLAGS = -I$(top_srcdir) @TE_CFLAGS@ \
-                            $(POPT_CPPFLAGS) -I$(top_srcdir)/lib/tmpls @XML2_CFLAGS@
+                            $(POPT_CPPFLAGS) -I$(top_srcdir)/lib/tmpls \
+                            @XML2_CFLAGS@
 rgt_xml_translator_LDADD = $(POPT_LDADD) @TE_LDFLAGS@ \
-                           -L$(top_builddir)/lib/tmpls -ltmpls -lpopt @XML2_LIBS@
+                           -L$(top_builddir)/lib/tmpls -ltmpls -lpopt \
+                           @XML2_LIBS@
 AM_CFLAGS = -W -Wall -ggdb -O0
 
 bin_SCRIPTS = $(RGT_FORMAT_UTILS)
@@ -58,18 +60,19 @@ CLEANFILES=$(RGT_FORMAT_UTILS) $(RGT_FORMAT_UTILS_TMPLS)
 
 $(RGT_FORMAT_UTILS): $(top_srcdir)/rgt-format/rgt-xml.in
 	for i in $(RGT_FORMAT_UTILS) ; do \
-            cat $(top_srcdir)/rgt-format/rgt-xml.in | \
-            sed "s,\@SHELL\@,${SHELL},g; s,\@PACKAGE\@,${PACKAGE},g; \
-                 s/\@TE_COPYRIGHT\@/${TE_COPYRIGHT}/g; \
-                 s,\@UTIL_FORMAT\@,$${i#rgt-},g; \
-                 s,\@UTIL_DIR\@,${pkgdatadir}/$${i#rgt-},g; \
-                 s,\@VERSION\@,${VERSION},g; s,\@bindir\@,${bindir},g; \
-                 s,\@pkgdatadir\@,${pkgdatadir},g; s,@utility@,$${i},g" > $${i} ; \
-        done
+		cat $(top_srcdir)/rgt-format/rgt-xml.in | \
+			sed "s,\@SHELL\@,${SHELL},g; s,\@PACKAGE\@,${PACKAGE},g; \
+				 s/\@TE_COPYRIGHT\@/${TE_COPYRIGHT}/g; \
+				 s,\@UTIL_FORMAT\@,$${i#rgt-},g; \
+				 s,\@UTIL_DIR\@,${pkgdatadir}/$${i#rgt-},g; \
+				 s,\@VERSION\@,${VERSION},g; s,\@bindir\@,${bindir},g; \
+				 s,\@pkgdatadir\@,${pkgdatadir},g; \
+				 s,@utility@,$${i},g" > $${i} ; \
+	done
 
 $(RGT_FORMAT_UTILS_TMPLS): $(top_srcdir)/lib/tmpls/tmpl_files.inc.in
 	for i in $(RGT_FORMAT_UTILS) ; do \
-            cat $(top_srcdir)/lib/tmpls/tmpl_files.inc.in | \
-            sed "s,\@datadir\@,${datadir},g; s,@subdir@,${subdir},g; \
-                 s,@utility@,$${i#rgt-},g" > $${i}.tmpls ; \
-        done
+		cat $(top_srcdir)/lib/tmpls/tmpl_files.inc.in | \
+			sed "s,\@datadir\@,${datadir},g; s,@subdir@,${subdir},g; \
+				 s,@utility@,$${i#rgt-},g" > $${i}.tmpls ; \
+	done

@@ -54,8 +54,10 @@ rgt_core_SOURCES = filter.c filter.h \
                    postponed_mode.c postponed_mode.h \
                    rgt_core.c rgt_common.h
 
-rgt_core_LDADD = @GLIB_LIBS@ $(OBSTACK_LDADD) $(POPT_LDADD) -lpopt @TCL_LIB_SPEC@ -lm -ldl
-AM_CPPFLAGS = @GLIB_CFLAGS@ -I$(top_srcdir) $(OBSTACK_CPPFLAGS) $(POPT_CPPFLAGS) @TCL_CFLAGS@
+rgt_core_LDADD = @GLIB_LIBS@ $(OBSTACK_LDADD) $(POPT_LDADD) -lpopt \
+                 @TCL_LIB_SPEC@ -lm -ldl
+AM_CPPFLAGS = @GLIB_CFLAGS@ -I$(top_srcdir) $(OBSTACK_CPPFLAGS) \
+              $(POPT_CPPFLAGS) @TCL_CFLAGS@
 
 AM_CFLAGS = -W -Wall -ggdb -O0 
 bin_SCRIPTS = rgt-filter-prepare rgt-conv

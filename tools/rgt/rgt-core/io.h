@@ -42,18 +42,19 @@ extern "C" {
 
 /** Modes of reading raw log file */
 enum read_mode {
-    RMODE_BLOCKING,    /**< Blocking mode. Read operation in this mode blocks 
-                            caller until all bytes read */
-    RMODE_NONBLOCKING, /**< Nonblocking mode. If number of bytes caller wants 
-                            to read less than actually available in file, 
-                            it reads only them without waiting for more data. */
+    RMODE_BLOCKING,    /**< Blocking mode. Read operation in this mode
+                            blocks caller until all bytes read */
+    RMODE_NONBLOCKING, /**< Nonblocking mode. If number of bytes caller
+                            wants to read less than actually available
+                            in file, it reads only them without waiting
+                            for more data. */
 }; 
 
 /**
  * Attempts to read up to count bytes from file descriptor fd into
  * the buffer starting at buf.
- * If read_mode equals to RMODE_BLOCKING and there is not enough data in file
- * it blocks until count bytes available for read.
+ * If read_mode equals to RMODE_BLOCKING and there is not enough data
+ * in file it blocks until count bytes available for read.
  * If read_mode equals to RMODE_NONBLOCKING it doesn't block in any cases.
  *
  * @param  fd      File descriptor used for reading.
@@ -67,7 +68,8 @@ enum read_mode {
  * @retval 0     An error occurs, or the end-of-file is reached.
  *               User has to check it with feof() or ferror().
  */
-size_t universal_read(FILE *fd, void *buf, size_t count, enum read_mode rmode);
+size_t universal_read(FILE *fd, void *buf, size_t count,
+                      enum read_mode rmode);
 
 #ifdef __cplusplus
 }

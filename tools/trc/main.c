@@ -137,7 +137,8 @@ process_cmd_line_opts(int argc, char **argv)
           "Be quiet.", NULL },
 
         { "db", 'd', POPT_ARG_STRING, NULL, TRC_OPT_DB,
-          "Specify name of the file with expected testing results database.",
+          "Specify name of the file with expected testing results "
+          "database.",
           "FILENAME" },
 
         { "html", 'h', POPT_ARG_STRING, NULL, TRC_OPT_HTML,

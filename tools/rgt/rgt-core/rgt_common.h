@@ -127,9 +127,9 @@ extern "C" {
 #define ESUCCESS 0
 #endif
 
-/*****************************************************************************/
-/*                  RGT-specific definitions                                 */
-/*****************************************************************************/
+/*************************************************************************/
+/*                  RGT-specific definitions                             */
+/*************************************************************************/
 
 /** The stack context of the main procedure */
 extern jmp_buf rgt_mainjmp;
@@ -165,7 +165,8 @@ typedef enum node_type {
 enum e_rgt_op_mode {
     RGT_OP_MODE_LIVE      = 0, /**< Live operation mode */
     RGT_OP_MODE_POSTPONED = 1, /**< Postponed operation mode */
-    RGT_OP_MODE_DEFAULT   = RGT_OP_MODE_POSTPONED /**< Default operation mode */
+    RGT_OP_MODE_DEFAULT   = RGT_OP_MODE_POSTPONED /**< Default operation
+                                                       mode */
 };
 
 /** RGT operation mode in string and numerical representations */
@@ -177,17 +178,19 @@ extern int                 process_control_msg;
 
 /** The structure keeps statistic on processing raw log file */
 struct rgt_statistics {
-    uint32_t n_logs; /**< Total number of log messages */
-    uint32_t n_test_pass; /**< Total number of passed tests */
-    uint32_t n_test_fail; /**< Total number of failed tests */
-    uint32_t n_pkg_pass; /**< Total number of passed packages */
-    uint32_t n_pkg_fail; /**< Total number of failed packages */
-    uint32_t n_sess_pass; /**< Total number of passed sessions */
-    uint32_t n_sess_fail; /**< Total number of failed sessions */
-    uint32_t log_start[2]; /**< The timestamp value of the oldest message */
-    uint32_t log_end[2]; /**< The timestamp value of the most recent message */
-    uint16_t n_files; /**< Total number of files logged */
-    uint16_t n_mem; /**< Total number of memory dumps logged */
+    uint32_t n_logs;        /**< Total number of log messages */
+    uint32_t n_test_pass;   /**< Total number of passed tests */
+    uint32_t n_test_fail;   /**< Total number of failed tests */
+    uint32_t n_pkg_pass;    /**< Total number of passed packages */
+    uint32_t n_pkg_fail;    /**< Total number of failed packages */
+    uint32_t n_sess_pass;   /**< Total number of passed sessions */
+    uint32_t n_sess_fail;   /**< Total number of failed sessions */
+    uint32_t log_start[2];  /**< The timestamp value of the oldest
+                                 message */
+    uint32_t log_end[2];    /**< The timestamp value of the most
+                                 recent message */
+    uint16_t n_files;       /**< Total number of files logged */
+    uint16_t n_mem;         /**< Total number of memory dumps logged */
     
     /**
      * The following fields are counted only when RGT works 

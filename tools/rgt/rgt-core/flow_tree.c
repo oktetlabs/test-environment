@@ -50,7 +50,11 @@
 /* Forward declaration */
 struct node_t;
 
-/**< Status of the session branch [TODO: Remove this field from all sources] */
+/**
+ * Status of the session branch
+ * 
+ * @todo Remove this field from all sources.
+ */
 enum branch_status {
     BSTATUS_ACTIVE, /**< Branch is active: 
                          There is at least one non closed node. */
@@ -76,7 +80,8 @@ typedef struct node_t {
     struct node_t *next;   /**< For package node used as a pointer 
                                 to the session underneath */
 
-    node_id_t      id;     /**< Node id (key that is used by g_hash routines) */
+    node_id_t      id;     /**< Node id (key that is used by g_hash
+                                outines) */
     struct node_t *self;   /**< Pointer to this structure (self pointer) */
     char          *name;   /**< Node name */
     
@@ -90,9 +95,10 @@ typedef struct node_t {
 
     int n_branches;        /**< Number of branches under the node */
     int n_active_branches; /**< Number of active branches */
-    int more_branches;     /**< Flag that indicates if the node can append more
-                                branches. It is set to false just after first
-                                close event for any children node arrives. */
+    int more_branches;     /**< Flag that indicates if the node can append
+                                more branches. It is set to false just
+                                after first close event for any children
+                                node arrives. */
     branch_info *branches; /**< Array of branches */
 
     void *user_data;  /**< User-specific data associated with a node */
@@ -170,8 +176,8 @@ flow_tree_init()
  * Frees control messages linked with each node and regular messages that 
  * belong to the node and goes after it.
  *
- * @param  cur_node  The root of the flow tree subtree for which the operation
- *                   is applied.
+ * @param  cur_node  The root of the flow tree subtree for which
+ *                   the operation is applied.
  *
  * @return  Nothing.
  */
@@ -246,9 +252,9 @@ flow_tree_destroy()
  *
  * @return Pointer to the user data structure.
  *
- * @retval NULL  The function returns NULL if the node is rejected by filters
- *               or if an error occures. In the last case it also updates 
- *               err_code parameter with appropriate code.
+ * @retval NULL  The function returns NULL if the node is rejected
+ *               by filters or if an error occures. In the last case
+ *               it also updates err_code parameter with appropriate code.
  */
 void *
 flow_tree_add_node(node_id_t parent_id, node_id_t node_id, 
@@ -306,12 +312,13 @@ flow_tree_add_node(node_id_t parent_id, node_id_t node_id,
         /* TODO: Clarification (comments) */
         /* Define filtering mode by filter module */
         cur_node->name = (char *)obstack_alloc(obstk, 
-                                               str_len + 1 + node_name_len + 1);
+                                     str_len + 1 + node_name_len + 1);
         memcpy(cur_node->name, par_node->name, str_len);
         cur_node->name[str_len] = '/';
         memcpy(cur_node->name + 1 + str_len, node_name, node_name_len + 1);
 
-        if ((fmode = rgt_filter_check_branch(cur_node->name)) != NFMODE_DEFAULT)
+        if ((fmode = rgt_filter_check_branch(cur_node->name)) !=
+                 NFMODE_DEFAULT)
         {
             cur_node->fmode = fmode;
         }
@@ -328,7 +335,8 @@ flow_tree_add_node(node_id_t parent_id, node_id_t node_id,
 
         /* Create new branch */
         par_node->branches = 
-            realloc(old_ptr, sizeof(branch_info) * (par_node->n_branches + 1));
+            realloc(old_ptr, sizeof(branch_info) *
+                             (par_node->n_branches + 1));
         if (par_node->branches == NULL)
         {
             par_node->branches = old_ptr;
@@ -348,9 +356,12 @@ flow_tree_add_node(node_id_t parent_id, node_id_t node_id,
 
         /* Commmon part */
         par_node->branches[par_node->n_branches - 1].last_el = cur_node;
-        par_node->branches[par_node->n_branches - 1].status = BSTATUS_ACTIVE;
-        par_node->branches[par_node->n_branches - 1].start_ts = cur_node->start_ts;
-        par_node->branches[par_node->n_branches - 1].end_ts = cur_node->end_ts;
+        par_node->branches[par_node->n_branches - 1].status =
+            BSTATUS_ACTIVE;
+        par_node->branches[par_node->n_branches - 1].start_ts =
+            cur_node->start_ts;
+        par_node->branches[par_node->n_branches - 1].end_ts =
+            cur_node->end_ts;
 
         if (new_node_type != NT_TEST)
         {
@@ -415,8 +426,8 @@ flow_tree_add_node(node_id_t parent_id, node_id_t node_id,
  * @return  Pointer to the user specific data (passed in add_node routine)
  *
  * @retval  pointer  The node was successfully closed
- * @retval  NULL     The node was rejected by filters on creation or an error
- *                   occurs
+ * @retval  NULL     The node was rejected by filters on creation or
+ *                   an error occurs
  */
 void *
 flow_tree_close_node(node_id_t parent_id, node_id_t node_id,
@@ -524,9 +535,9 @@ closed_tree_get_mode(node_t *node, uint32_t *ts)
             }
 
             /*
-             * If we never be here while "for" performs then cur_node is equal
-             * to NULL after the "for" finishes. Otherwise "res" variable will
-             * be updated correctly.
+             * If we never be here while "for" performs then cur_node is
+             * equal to NULL after the "for" finishes. Otherwise "res"
+             * variable will be updated correctly.
              */
 
             cur_node = node->branches[i].last_el;
@@ -571,8 +582,8 @@ closed_tree_get_mode(node_t *node, uint32_t *ts)
         if (cur_node == NULL)
         {
             /*
-             * message is outside of the all branches but inside the SESSION,
-             * so we have to return session filtering mode.
+             * message is outside of the all branches but inside
+             * the SESSION, so we have to return session filtering mode.
              */
             return node->fmode;
         }
@@ -709,7 +720,8 @@ flow_tree_wander(node_t *cur_node)
         
         /* Output messages that belongs to the node */
         if (cur_node->msg_att != NULL)
-            g_slist_foreach(cur_node->msg_att, wrapper_process_regular_msg, NULL);
+            g_slist_foreach(cur_node->msg_att,
+                            wrapper_process_regular_msg, NULL);
     }
 
     if (cur_node->type != NT_TEST)
@@ -720,14 +732,20 @@ flow_tree_wander(node_t *cur_node)
         for (i = 0; i < cur_node->n_branches; i++)
         {
             /* Call branch-start routine */
-            if (cur_node->fmode == NFMODE_INCLUDE && cur_node->user_data != NULL)
+            if (cur_node->fmode == NFMODE_INCLUDE &&
+                cur_node->user_data != NULL)
+            {
                 ctrl_msg_proc[CTRL_EVT_START][NT_BRANCH](NULL);
+            }
             
             flow_tree_wander(cur_node->branches[i].first_el);
             
             /* Call branch-end routine */
-            if (cur_node->fmode == NFMODE_INCLUDE && cur_node->user_data != NULL)
+            if (cur_node->fmode == NFMODE_INCLUDE &&
+                cur_node->user_data != NULL)
+            {
                 ctrl_msg_proc[CTRL_EVT_END][NT_BRANCH](NULL);
+            }
         }
     }
 
@@ -749,8 +767,8 @@ flow_tree_wander(node_t *cur_node)
 
 /**
  * Goes through the flow tree and calls callback functions for each node.
- * First it calls start node callback, then calls message processing callback
- * for all messages attached to the node and goes to the subtree.
+ * First it calls start node callback, then calls message processing 
+ * callback for all messages attached to the node and goes to the subtree.
  * After that it calls end node callback and message processing callback
  * for all messages attached after the node.
  *
@@ -782,25 +800,26 @@ flow_tree_trace()
 static gint
 timestamp_cmp(gconstpointer a, gconstpointer b)
 {
-    return TIMESTAMP_CMP((((log_msg *)a)->timestamp), (((log_msg *)b)->timestamp));
+    return TIMESTAMP_CMP((((log_msg *)a)->timestamp),
+                         (((log_msg *)b)->timestamp));
 }
 
 
 #ifdef FLOW_TREE_LIBRARY_DEBUG
 
 /* 
- * These routines are auxiluary in debugging of the library and should not be
- * compiled while it's build for working binaries.
+ * These routines are auxiluary in debugging of the library and should
+ * not be compiled while it's build for working binaries.
  */
 
 /**
- * Verifies if paritular set of nodes (close or new) equals to user specified
- * set of nodes.
+ * Verifies if paritular set of nodes (close or new) equals to user
+ * specified set of nodes.
  *
  * @param   set_name    Name of the set that will be verified.
- * @param   user_set    User prepared set of nodes that is compared with actual
- *                      set. It has to be in the following format:
- *                      "node_id:node_id: ... :node_id".
+ * @param   user_set    User prepared set of nodes that is compared
+ *                      with actual set. It has to be in the following
+ *                      format: "node_id:node_id: ... :node_id".
  *
  * @return  Verdict of the verification.
  *
@@ -821,8 +840,11 @@ flow_tree_check_set(enum flow_tree_set_name set_name, const char *user_set)
     while ((*cur_ptr) != '\0')
     {
         id = (node_id_t)strtol(user_set, (char **)&cur_ptr, 0);
-        if ((user_set == cur_ptr) || ((*cur_ptr) != '\0' && (*cur_ptr) != ':'))
+        if ((user_set == cur_ptr) ||
+            ((*cur_ptr) != '\0' && (*cur_ptr) != ':'))
+        {
             return -1;
+        }
 
         if (g_hash_table_lookup(check_set, &id) == NULL)
             return 0;
@@ -858,8 +880,11 @@ flow_tree_check_parent_list(enum flow_tree_set_name set_name,
     while ((*cur_ptr) != '\0' && cur_node != NULL)
     {
         id = (node_id_t)strtol(par_list, (char **)&cur_ptr, 0);
-        if ((par_list == cur_ptr) || ((*cur_ptr) != '\0' && (*cur_ptr) != ':'))
+        if ((par_list == cur_ptr) ||
+            ((*cur_ptr) != '\0' && (*cur_ptr) != ':'))
+        {
             return -1;
+        }
 
         if (cur_node->id != id)
             return 0;
@@ -882,7 +907,8 @@ enum buf_status {
 
 /** Internal representation of buffer */
 struct user_buf {
-    char            *buf;    /**< Pointer to the current position in buffer */
+    char            *buf;    /**< Pointer to the current position
+                                  in buffer */
     gint             len;    /**< Length of the rest of the buffer */
     enum buf_status  status; /**< Buffer status */
 };

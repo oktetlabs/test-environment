@@ -108,11 +108,14 @@ rgt_process_control_message(log_msg *msg)
     fmt_str += strlen("%u %u ");
 
     if ((node_type = NT_TEST,
-         strncmp(fmt_str, CNTR_MSG_TEST, strlen(CNTR_MSG_TEST)) == 0) ||
+         strncmp(fmt_str, CNTR_MSG_TEST,
+                 strlen(CNTR_MSG_TEST)) == 0) ||
         (node_type = NT_PACKAGE,
-         strncmp(fmt_str, CNTR_MSG_PACKAGE, strlen(CNTR_MSG_PACKAGE)) == 0) ||
+         strncmp(fmt_str, CNTR_MSG_PACKAGE,
+                 strlen(CNTR_MSG_PACKAGE)) == 0) ||
         (node_type = NT_SESSION,
-         strncmp(fmt_str, CNTR_MSG_SESSION, strlen(CNTR_MSG_SESSION)) == 0))
+         strncmp(fmt_str, CNTR_MSG_SESSION,
+                 strlen(CNTR_MSG_SESSION)) == 0))
     {
         if ((node = create_node_by_msg(msg, node_type,
                                        node_id, parent_id)) == NULL)
@@ -153,7 +156,8 @@ rgt_process_control_message(log_msg *msg)
         /** @todo Process trailing "%s" */
 
         if ((node = flow_tree_close_node(parent_id, node_id, 
-                                         msg->timestamp, &err_code)) == NULL)
+                                         msg->timestamp,
+                                         &err_code)) == NULL)
         {
             free_log_msg(msg);
             if (err_code != ESUCCESS)
@@ -167,7 +171,8 @@ rgt_process_control_message(log_msg *msg)
         if (res == RES_STATUS_FAILED)
         {
             if ((arg = get_next_arg(msg)) != NULL)
-                node->result.err = node_info_obstack_copy0(arg->val, arg->len);
+                node->result.err = node_info_obstack_copy0(arg->val,
+                                                           arg->len);
         }
 
         evt_type = CTRL_EVT_END;
@@ -188,15 +193,14 @@ rgt_process_control_message(log_msg *msg)
 }
 
 /**
- * Filters log message and in the case of successful filtering processes it.
- * In the live mode it calls log message processing function and frees message.
- * In postponed mode it inserts message in the flow tree object.
+ * Filters log message and in the case of successful filtering processes
+ * it. In the live mode it calls log message processing function and
+ * frees message. In postponed mode it inserts message in the flow tree
+ * object.
  *
- * @param  msg   Log message to be processed
+ * @param msg   Log message to be processed
  *
- * @return  Nothing
- *
- * @todo  Don't free log message but rather use it for storing the next one.
+ * @todo Don't free log message but rather use it for storing the next one.
  */
 void
 rgt_process_regular_message(log_msg *msg)
@@ -209,7 +213,10 @@ rgt_process_regular_message(log_msg *msg)
          */
         if (flow_tree_filter_message(msg) == NFMODE_INCLUDE)
         {
-            /* Check filter by level, entity name, user name and timestamp */
+            /*
+             * Check filter by level, entity name, user name and
+             * timestamp.
+             */
             if (rgt_filter_check_message(msg->level, msg->entity, 
                     msg->user, msg->timestamp) == NFMODE_INCLUDE)
             {
@@ -244,11 +251,11 @@ log_msg_init_arg(log_msg *msg)
 }
 
 /**
- * Return pointer to the log message argument. The first call of the function
- * returns pointer to the first argument. The second call returns pointer to 
- * the second argument and so on.
+ * Return pointer to the log message argument. The first call of the
+ * function returns pointer to the first argument. The second call
+ * returns pointer to the second argument and so on.
  *
- * @param  msg  Message which argument we are going to obtain
+ * @param msg       Message which argument we are going to obtain
  *
  * @return Pointer to an argument of a message
  */
@@ -271,11 +278,10 @@ get_next_arg(log_msg *msg)
  * Processes event occured on a node of the flow tree.
  * Currently the only event that is actually processed is MORE_BRANCHES.
  *
- * @param type   Type of a node on which an event has occured.
- * @param evt    Type of an event.
- * @param node   User-specific data that is passed on  creation of the node.
- *
- * @return  Nothing.
+ * @param type      Type of a node on which an event has occured.
+ * @param evt       Type of an event.
+ * @param node      User-specific data that is passed on creation
+ *                  of the node.
  */
 void
 rgt_process_event(node_type_t type, enum event_type evt, node_info_t *node)
@@ -295,9 +301,9 @@ rgt_process_event(node_type_t type, enum event_type evt, node_info_t *node)
     }
 }
 
-/******************************************************************************/
-/*           Static routines                                                  */
-/******************************************************************************/
+/*************************************************************************/
+/*           Static routines                                             */
+/*************************************************************************/
 
 /**
  * Creates node_info_t structure for an appropriate control log message.
@@ -351,7 +357,8 @@ create_node_by_msg(log_msg *msg, node_type_t type,
                       "%s (%d %d)", msg->fmt_str, node_id, parent_id);
             return NULL;
         }
-        node->descr.name = (char *)node_info_obstack_copy0(arg->val, arg->len);
+        node->descr.name = (char *)node_info_obstack_copy0(arg->val,
+                                                           arg->len);
 
         fmt_str += strlen("%s");
     }
@@ -466,8 +473,10 @@ create_node_by_msg(log_msg *msg, node_type_t type,
             if (*(param_lst++) != '"')
             {
                 FMT_TRACE("Missing quote mark at the beginning of "
-                          "%s parameter value in control message %s (%d %d)",
-                          (*p_prm)->name, msg->fmt_str, node_id, parent_id);
+                          "%s parameter value in control message %s "
+                          "(%d %d)",
+                          (*p_prm)->name, msg->fmt_str, node_id,
+                          parent_id);
                 return NULL;
             }
             (*p_prm)->val = param_lst;

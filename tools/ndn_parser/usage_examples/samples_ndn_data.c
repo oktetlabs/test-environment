@@ -56,26 +56,27 @@ struct Ethernet_Header_Packet {
     unsigned char eth_type[2];
 };
 
-int ASN_value_to_Ethernet_Header_Packet (ASN_value_p eth_header, 
-                                         struct Ethernet_Header_Packet *pkt);
-int Ethernet_Header_Packet_to_ASN_value (ASN_value_p *eth_header_p, 
-                                         struct Ethernet_Header_Packet *pkt);
+int ASN_value_to_Ethernet_Header_Packet(ASN_value_p eth_header, 
+                                        struct Ethernet_Header_Packet *pkt);
+int Ethernet_Header_Packet_to_ASN_value(ASN_value_p *eth_header_p, 
+                                        struct Ethernet_Header_Packet *pkt);
 
 /* This functions finds Ethernet Header PDU in passed Raw-Packet ASN value,
  * and puts it into structure pointed by pkt.
  * Return code: zero on success, otherwise - error code. 
  */ 
-int Find_Ethernet_Header_in_Raw_Packet (ASN_value_p raw_packet, 
-                                        struct Ethernet_Header_Packet *pkt);
+int Find_Ethernet_Header_in_Raw_Packet(ASN_value_p raw_packet, 
+                                       struct Ethernet_Header_Packet *pkt);
 
-/* ============== Universal Value handling Approach ======================= */
+/* ============== Universal Value handling Approach ==================== */
 
 
 /* ---------------- pre-written declarations ---------------- */
 
 /* 
  * DATA-UNIT operating functions. 
- * These funcion has common prefix "NDN_data_unit_{write/read}_<choice-name>"
+ * These funcion has common prefix
+ * "NDN_data_unit_{write/read}_<choice-name>"
  * where <choice-name> is name of choice in ASN DATA-UNIT type. 
  * some choices with same data syntax are joined and denoted as 'string' 
  * pseudo-choice-name. 
@@ -99,7 +100,8 @@ int Find_Ethernet_Header_in_Raw_Packet (ASN_value_p raw_packet,
 typedef enum  {DU_script,DU_env, DU_function } ASN_DU_string_choices;
 
 extern int NDN_data_unit_write_string(ASN_value_p, const char *field_name, 
-                                      ASN_DU_string_choice, const char *user_data);
+                                      ASN_DU_string_choice,
+                                      const char *user_data);
 extern int NDN_data_unit_read_string(ASN_value_p, const char *field_name, 
                                       ASN_DU_string_choice,
                                       int *len, char *user_data);
@@ -121,10 +123,14 @@ typedef struct {
     int max;
 } NDN_DU_interval;
 
-extern int NDN_data_unit_write_intervals(ASN_value_p, const char *field_name, 
-                                      int len,  NDN_DU_interval *user_data);
-extern int NDN_data_unit_read_intervals(ASN_value_p, const char *field_name, 
-                                      int *len,  NDN_DU_interval *user_data);
+extern int NDN_data_unit_write_intervals(ASN_value_p,
+                                         const char *field_name, 
+                                         int len,
+                                         NDN_DU_interval *user_data);
+extern int NDN_data_unit_read_intervals(ASN_value_p,
+                                        const char *field_name, 
+                                        int *len,
+                                        NDN_DU_interval *user_data);
 
 /* declarations of globals with common NDN ASN.1 types specifications. */
 
@@ -213,7 +219,8 @@ universal_handling_usage_example(void)
 
         /* use eth_pkt, for example to constract new Traffic-Template */ 
 
-        ASN_value_p tmpl = ASN_parse_file(ndn_Traffic_Pattern, "eth_template.asn"); 
+        ASN_value_p tmpl = ASN_parse_file(ndn_Traffic_Pattern,
+                                          "eth_template.asn"); 
         eth_header = ASN_init_value(ndn_Ethernet_Header); 
         ASN_write_value_field(eth_header, 6, eth_pkt.src_addr, 
                                 "dst-addr", "plain");

@@ -53,7 +53,8 @@ static void get_error_point(const char *file, unsigned long offset,
  * @se  If an error occures the function output error message into stderr
  */
 int
-rgt_tmpls_lib_parse(const char **files, struct log_tmpl *tmpls, int tmpl_num)
+rgt_tmpls_lib_parse(const char **files, struct log_tmpl *tmpls,
+                    int tmpl_num)
 {
     FILE *fd;
     int   i;
@@ -95,7 +96,8 @@ rgt_tmpls_lib_parse(const char **files, struct log_tmpl *tmpls, int tmpl_num)
 
         if (fread(tmpls[i].raw_ptr, 1, fsize, fd) != (size_t )fsize)
         {
-            fprintf(stderr, "Cannot read the whole template %s\n", files[i]);
+            fprintf(stderr, "Cannot read the whole template %s\n",
+                    files[i]);
             fclose(fd);
             rgt_tmpls_lib_free(tmpls, tmpl_num);
             return 1;
@@ -154,7 +156,10 @@ rgt_tmpls_lib_parse(const char **files, struct log_tmpl *tmpls, int tmpl_num)
                     return 1;
                 }
 
-                /* Check that variable name hasn't got any space characters */
+                /* 
+                 * Check that variable name hasn't got any space
+                 * characters
+                 */
                 for (p_tmp = var_ptr; p_tmp != end_var_ptr; p_tmp++)
                 {
                     if (isspace(*p_tmp))
@@ -283,10 +288,12 @@ rgt_tmpls_lib_output(FILE *out_fd, struct log_tmpl *tmpl,
                     int n_col;
                 
                     get_error_point(tmpl->fname,
-                                    tmpl->blocks[i].var_name - tmpl->raw_ptr,
+                                    tmpl->blocks[i].var_name -
+                                        tmpl->raw_ptr,
                                     &n_row, &n_col);
-                    fprintf(stderr, "Variable %s isn't specified in context\n"
-                            "%s:%d:%d\n",
+                    fprintf(stderr, "Variable %s isn't specified in "
+                                    "context\n"
+                                    "%s:%d:%d\n",
                             tmpl->blocks[i].var_name,
                             tmpl->fname, n_row, n_col);
                     return 1;
@@ -302,15 +309,16 @@ rgt_tmpls_lib_output(FILE *out_fd, struct log_tmpl *tmpl,
  * Determines a line and column in a file by offset from the beginning.
  *
  * @param  file    File name
- * @param  offset  Offset from the beginning of the file which line and column
- *                 to be determined
+ * @param  offset  Offset from the beginning of the file which line and
+ *                 column to be determined
  * @param  n_row   Placeholder for line number
  * @param  n_col   Placeholder for column number
  *
  * @return  Nothing
  */
 static void
-get_error_point(const char *file, unsigned long offset, int *n_row, int *n_col)
+get_error_point(const char *file, unsigned long offset, int *n_row,
+                int *n_col)
 {
     unsigned long  n_total = 0;
     int            ch;

@@ -252,9 +252,14 @@ process_mem_row(struct global_context *ctx, const xmlChar *name,
 
         assert((ctx->mem_dump.mem_width - ctx->mem_dump.cur_num) >= 0);
 
-        for (i = 0; i < (ctx->mem_dump.mem_width - ctx->mem_dump.cur_num); i++)
-            rgt_tmpls_lib_output(out_fd, &html_tmpls[LOG_PART_MEM_ELEM_EMPTY], 
+        for (i = 0;
+             i < (ctx->mem_dump.mem_width - ctx->mem_dump.cur_num);
+             i++)
+        {
+            rgt_tmpls_lib_output(out_fd,
+                                 &html_tmpls[LOG_PART_MEM_ELEM_EMPTY], 
                                  NULL, user_vars);
+        }
 
         rgt_tmpls_lib_output(out_fd, &html_tmpls[LOG_PART_MEM_ROW_END],
                              NULL, user_vars);
@@ -294,7 +299,8 @@ process_mem_elem(struct global_context *ctx, const xmlChar *name,
  * @return Nothing
  */
 static void
-rgt_log_start_element(void *user_data, const xmlChar *name, const xmlChar **atts)
+rgt_log_start_element(void *user_data, const xmlChar *name,
+                      const xmlChar **atts)
 {
     struct global_context *ctx = (struct global_context *)user_data;
 
@@ -467,7 +473,10 @@ rgt_log_characters(void *user_data, const xmlChar *ch, int len)
     }
 }
 
-/** The structure specifies all types callback routines that should be called */
+/**
+ * The structure specifies all types callback routines that should be
+ * called.
+ */
 static xmlSAXHandler sax_handler = {
     .internalSubset         = NULL,
     .isStandalone           = NULL,
@@ -522,7 +531,8 @@ static xmlSAXHandler sax_handler = {
  *
  * @return  Nothing.
  *
- * @se  Frees popt Context (specified in optCon) and exits with specified code.
+ * @se  Frees popt Context (specified in optCon) and exits with specified
+ *      code.
  */
 static void
 usage(poptContext optCon, int exitcode, char *error, char *addl)
@@ -545,11 +555,12 @@ usage(poptContext optCon, int exitcode, char *error, char *addl)
 
 /**
  * Process command line options and parameters specified in argv.
- * The procedure contains "Option table" that should be updated if some new
- * options are going to be added.
+ * The procedure contains "Option table" that should be updated if some
+ * new options are going to be added.
  *
  * @param  argc   Number of elements in array "argv".
- * @param  argv   Array of strings that represents all command line arguments.
+ * @param  argv   Array of strings that represents all command line
+ *                arguments.
  *
  * @return  Nothing.
  *
@@ -590,7 +601,8 @@ process_cmd_line_opts(int argc, char **argv)
           
         { "with-var", 'w', POPT_ARG_STRING, NULL, 'w', 
            "Specify variable to be used in parsing context"
-           "in form \"var_name@@var_value\", for example \"name@@oleg\"", NULL },
+           "in form \"var_name@@var_value\", for example \"name@@oleg\"",
+           NULL },
 
         { "version", 'v', POPT_ARG_NONE, NULL, 'v', 
           "Display version information.", NULL },
@@ -601,10 +613,11 @@ process_cmd_line_opts(int argc, char **argv)
     };
 
     /* Process command line options */
-    optCon = poptGetContext(NULL, argc, (const char **)argv, optionsTable, 0);
+    optCon = poptGetContext(NULL, argc, (const char **)argv, optionsTable,
+                            0);
 
     poptSetOtherOptionHelp(optCon,
-                           "[OPTIONS...] [<xml report file>] [<output file>]");
+        "[OPTIONS...] [<xml report file>] [<output file>]");
 
     while ((rc = poptGetNextOpt(optCon)) >= 0)
     {
@@ -653,7 +666,8 @@ process_cmd_line_opts(int argc, char **argv)
             {
                 free(user_vars);
                 printf("There is no value specified for %s variable\n"
-                       "Variable value starts after \"@@\" marker\n", param);
+                       "Variable value starts after \"@@\" marker\n",
+                       param);
                 poptFreeContext(optCon);
                 exit(1);
             }
@@ -711,7 +725,8 @@ process_cmd_line_opts(int argc, char **argv)
         str_buf = (char *)malloc(fsize += 1 /* Under trailing '\0' */);
         assert(str_buf != NULL);
 
-        while ((str = fgets(str_buf + cur_len, fsize - cur_len, fd)) != NULL)
+        while ((str = fgets(str_buf + cur_len, fsize - cur_len, fd))
+                    != NULL)
         {
             if (tmpl_index == RGT_TMPLS_NUM)
                 break;
@@ -743,7 +758,8 @@ process_cmd_line_opts(int argc, char **argv)
         }
     }
 
-    if (xml_file_name == NULL && (xml_file_name = poptGetArg(optCon)) == NULL)
+    if (xml_file_name == NULL &&
+        (xml_file_name = poptGetArg(optCon)) == NULL)
     {
         free(str_buf);
         free(user_vars);

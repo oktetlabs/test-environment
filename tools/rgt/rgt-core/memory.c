@@ -4,10 +4,16 @@
 
 #include "memory.h"
 
-/* Pointer to an abstack that is used for allocation log_msg data structure */
+/** 
+ * Pointer to an abstack that is used for allocation log_msg data
+ * structure.
+ */
 static struct obstack *log_msg_obstk = NULL;
 
-/* Pointer to an abstack that is used for allocation node_info data structure */
+/**
+ * Pointer to an abstack that is used for allocation node_info data
+ * structure.
+ */
 static struct obstack *node_info_obstk = NULL;
 
 static void
@@ -17,7 +23,10 @@ internal_obstack_alloc_failed()
     THROW_EXCEPTION;
 }
 
-/* These two definitions are for correct working of "obstack_init" function */
+/** 
+ * These two definitions are for correct working of "obstack_init"
+ * function.
+ */
 #define obstack_chunk_alloc malloc
 #define obstack_chunk_free  free
 
@@ -100,7 +109,8 @@ void destroy_node_info_pool()
 node_info_t *
 alloc_node_info()
 {
-    return (node_info_t *)obstack_alloc(node_info_obstk, sizeof(node_info_t));
+    return (node_info_t *)obstack_alloc(node_info_obstk,
+                                        sizeof(node_info_t));
 }
 
 void

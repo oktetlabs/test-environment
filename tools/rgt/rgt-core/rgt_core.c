@@ -115,14 +115,13 @@ jmp_buf rgt_mainjmp;
 /**
  * Print "usage" how to.
  *
- * @param  optCon    Context for parsing command line arguments.
- * @param  exitcode  Code that is passed to the "exit" call.
- * @param  error     Error message string.
- * @param  addl      Additional notes that is output.
+ * @param optCon    Context for parsing command line arguments.
+ * @param exitcode  Code that is passed to the "exit" call.
+ * @param error     Error message string.
+ * @param addl      Additional notes that is output.
  *
- * @return  Nothing.
- *
- * @se  Frees popt Context (specified in optCon) and exits with specified code.
+ * @se Frees popt Context (specified in optCon) and exits with specified
+ *     code.
  */
 static void
 usage(poptContext optCon, int exitcode, char *error, char *addl)
@@ -149,7 +148,8 @@ usage(poptContext optCon, int exitcode, char *error, char *addl)
  * options are going to be added.
  *
  * @param  argc   Number of elements in array "argv".
- * @param  argv   Array of strings that represents all command line arguments.
+ * @param  argv   Array of strings that represents all command line
+ *                arguments.
  *
  * @return  Nothing.
  *
@@ -161,7 +161,8 @@ usage(poptContext optCon, int exitcode, char *error, char *addl)
  *      raw_file_name    - Name of the Raw log file.
  *      output_file_name - Name of the output file.
  *      rgt_op_mode_str  - The mode of the rgt operation in string format.
- *      rgt_op_mode      - The mode of the rgt operation in numerical format.
+ *      rgt_op_mode      - The mode of the rgt operation in numerical
+ *                         format.
  *      rgt_rmode        - Read mode that should be used in READ calls.
  *
  *    In the case of an error it calls exit() function with code 1.
@@ -192,7 +193,8 @@ process_cmd_line_opts(int argc, char **argv)
     };
     
     /* Process command line options */
-    optCon = poptGetContext(NULL, argc, (const char **)argv, optionsTable, 0);
+    optCon = poptGetContext(NULL, argc, (const char **)argv, optionsTable,
+                            0);
   
     poptSetOtherOptionHelp(optCon, 
         "[OPTION...] <filter file> [<raw log file>] [<output file>]");
@@ -206,7 +208,8 @@ process_cmd_line_opts(int argc, char **argv)
                  strcmp(rgt_op_mode_str, RGT_OP_MODE_POSTPONED_STR) != 0))
             {
                 usage(optCon, 1, "Specify mode of operation", 
-                      RGT_OP_MODE_LIVE_STR " or " RGT_OP_MODE_POSTPONED_STR);
+                      RGT_OP_MODE_LIVE_STR " or "
+                      RGT_OP_MODE_POSTPONED_STR);
             }
             rgt_op_mode = 
                 strcmp(rgt_op_mode_str, RGT_OP_MODE_LIVE_STR) == 0 ?

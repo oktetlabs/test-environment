@@ -103,8 +103,9 @@ static void output_regular_log_msg(log_msg *msg);
 
 
 void
-postponed_mode_init(f_process_ctrl_log_msg ctrl_proc[CTRL_EVT_LAST][NT_LAST],
-                    f_process_reg_log_msg  *reg_proc)
+postponed_mode_init(f_process_ctrl_log_msg
+                        ctrl_proc[CTRL_EVT_LAST][NT_LAST],
+                    f_process_reg_log_msg *reg_proc)
 {
     ctrl_proc[CTRL_EVT_START][NT_SESSION] = postponed_process_sess_start;
     ctrl_proc[CTRL_EVT_END][NT_SESSION] = postponed_process_sess_end;
@@ -178,7 +179,7 @@ postponed_process_open()
 
     fprintf(output_fd, "<?xml version=\"1.0\"?>\n");
     fprintf(output_fd, "<proteos:log_report "
-                       "xmlns:proteos=\"http://www.oktetlabs.ru/proteos\">\n");
+            "xmlns:proteos=\"http://www.oktetlabs.ru/proteos\">\n");
 
     return 0;
 }
@@ -210,7 +211,8 @@ print_params(node_info_t *node)
         fprintf(output_fd, "<params>\n");
         while (prm != NULL)
         {
-            fprintf(output_fd, "<param name=\"%s\" value=\"%s\"/>\n", prm->name, prm->val);
+            fprintf(output_fd, "<param name=\"%s\" value=\"%s\"/>\n",
+                    prm->name, prm->val);
             prm = prm->next;
         }
         fprintf(output_fd, "</params>\n");
@@ -436,7 +438,8 @@ output_regular_log_msg(log_msg *msg)
 
                     if ((arg = get_next_arg(msg)) == NULL)
                     {
-                        fprintf(stderr, "Too few arguments in the message:\n");
+                        fprintf(stderr,
+                                "Too few arguments in the message:\n");
                         print_message_info(msg);
                         THROW_EXCEPTION;
                     }
@@ -444,7 +447,8 @@ output_regular_log_msg(log_msg *msg)
                     *((uint32_t *)arg->val) = 
                         ntohl(*(uint32_t *)arg->val);
 
-                    obstack_printf(log_obstk, format, *((uint32_t *)arg->val));
+                    obstack_printf(log_obstk, format,
+                                   *((uint32_t *)arg->val));
                     i++;
 
                     continue;
@@ -453,7 +457,8 @@ output_regular_log_msg(log_msg *msg)
                 {
                     if ((arg = get_next_arg(msg)) == NULL)
                     {
-                        fprintf(stderr, "Too few arguments in the message\n");
+                        fprintf(stderr,
+                                "Too few arguments in the message\n");
                         print_message_info(msg);
                         THROW_EXCEPTION;
                     }
@@ -483,11 +488,12 @@ output_regular_log_msg(log_msg *msg)
                     int  k;
                    
                    /*
-                    * %tm[[n].[w]] - memory dump, n - the number of elements 
-                    * after which "\n" is to be inserted , w - width (in bytes)
-                    * of the element.
+                    * %tm[[n].[w]] - memory dump, n - the number of
+                    * elements after which "\n" is to be inserted,
+                    * w - width (in bytes) of the element.
                     */
-                    if (strstr(msg->fmt_str + i, "%tm") != (msg->fmt_str + i))
+                    if (strstr(msg->fmt_str + i, "%tm") !=
+                            (msg->fmt_str + i))
                     {
                         /* Invalid format just output as it is */
                         fprintf(stderr, "WARNING: Invalid format for "
@@ -498,12 +504,14 @@ output_regular_log_msg(log_msg *msg)
 
                     if ((arg = get_next_arg(msg)) == NULL)
                     {
-                        fprintf(stderr, "Too few arguments in the message\n");
+                        fprintf(stderr,
+                                "Too few arguments in the message\n");
                         print_message_info(msg);
                         THROW_EXCEPTION;
                     }
 
-                    obstack_grow(log_obstk, "<mem-dump>", strlen("<mem-dump>"));
+                    obstack_grow(log_obstk,
+                                 "<mem-dump>", strlen("<mem-dump>"));
                     if (sscanf(msg->fmt_str + i, "%%tm[[%d].[%d]]", 
                                &n_tuples, &tuple_width) != 2)
                     {
@@ -521,7 +529,8 @@ output_regular_log_msg(log_msg *msg)
                              j++)
                         {
                             /* Start a block in a row */
-                            obstack_grow(log_obstk, "<elem>", strlen("<elem>"));
+                            obstack_grow(log_obstk, "<elem>",
+                                         strlen("<elem>"));
                             for (k = 0; 
                                  k < tuple_width && cur_pos < arg->len;
                                  k++, cur_pos++)
@@ -531,12 +540,14 @@ output_regular_log_msg(log_msg *msg)
                                 obstack_grow(log_obstk, one_byte_str, 2);
                             }
                             /* End a block in a row */
-                            obstack_grow(log_obstk, "</elem>", strlen("</elem>"));
+                            obstack_grow(log_obstk, "</elem>",
+                                         strlen("</elem>"));
                         }
                         /* End a memory table row */
                         obstack_grow(log_obstk, "</row>", strlen("</row>"));
                     }
-                    obstack_grow(log_obstk, "</mem-dump>", strlen("</mem-dump>"));
+                    obstack_grow(log_obstk, "</mem-dump>",
+                                 strlen("</mem-dump>"));
 
                     /* shift to the end of "%tm" */
                     i += 3;
@@ -563,13 +574,15 @@ output_regular_log_msg(log_msg *msg)
 
                     if ((arg = get_next_arg(msg)) == NULL)
                     {
-                        fprintf(stderr, "Too few arguments in the message\n");
+                        fprintf(stderr,
+                                "Too few arguments in the message\n");
                         print_message_info(msg);
                         THROW_EXCEPTION;
                     }
                     if ((fd = fopen(arg->val, "r")) == NULL)
                     {
-                        perror("Error during the processing of the log message");
+                        perror("Error during the processing of the log "
+                               "message");
                         print_message_info(msg);
                         THROW_EXCEPTION;
                     }

@@ -59,22 +59,21 @@ AM_PATH_GLIB($GLIB_REQUIRED_VERSION, :,
  make only 'dist' target."), )
 
 LIBXML_CONFIG_PREFIX=""
-AC_ARG_WITH(libxml-prefix,
-        [  --with-libxml-prefix=[PFX]        Specify location of libxml config (not including bin directory)],
-        LIBXML_CONFIG_PREFIX=$withval
-)
+AC_ARG_WITH([libxml-prefix],
+    [--with-libxml-prefix=[PFX] \
+     Specify location of libxml config (not including bin directory)],
+    LIBXML_CONFIG_PREFIX=$withval)
 if test "x$LIBXML_CONFIG_PREFIX" != "x"
 then
-        XML_CONFIG=${LIBXML_CONFIG_PREFIX}/bin/xml2-config
+    XML_CONFIG=${LIBXML_CONFIG_PREFIX}/bin/xml2-config
 else
-        XML_CONFIG=xml2-config
+    XML_CONFIG=xml2-config
 fi
 
 TE_HEADERS_PATH=""
-AC_ARG_WITH(te-headers-path,
-        [  --with-te-headers-path=[PATH]        Specify location of TE headers],
-        CFLAGS="$CFLAGS -I$withval"
-)
+AC_ARG_WITH([te-headers-path],
+   [  --with-te-headers-path=[PATH]        Specify location of TE headers],
+   CFLAGS="$CFLAGS -I$withval")
 
 
 AC_MSG_CHECKING(for libxml2 library)
@@ -84,7 +83,7 @@ then
     XML2_CFLAGS="$XML2_CFLAGS `$XML_CONFIG --cflags`"
     AC_MSG_RESULT(found)
 else
-    AC_MSG_ERROR([Could not find libxml2 anywhere, check ftp://xmlsoft.org/.])
+    AC_MSG_ERROR([Could not find libxml2, check ftp://xmlsoft.org/.])
 fi
 
 AC_SUBST(XML2_CFLAGS)
@@ -155,9 +154,10 @@ AC_TYPE_OFF_T
 AC_TYPE_SIZE_T
 
 dnl Set some constants for the package
-TE_COPYRIGHT="Copyright (C) 2003 Test Environment authors (see file AUTHORS in the root directory of the distribution)."
+TE_COPYRIGHT="Copyright (C) 2003 Test Environment authors "\
+"(see file AUTHORS in the root directory of the distribution)."
 AC_DEFINE_UNQUOTED([TE_COPYRIGHT], "${TE_COPYRIGHT}",
-          [Generic Copyrigth string])
+                   [Generic Copyrigth string])
 
 AC_SUBST([TE_COPYRIGHT])
 AC_SUBST([TE_CFLAGS])

@@ -1,6 +1,6 @@
 /** @file
  * @brief Test Environment: Raw log format specific functions.
- * 
+ *
  * Declarations of raw log file format version specific routines.
  *
  * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
@@ -40,11 +40,11 @@ extern "C" {
 /* Current version supported */
 #define RGT_RLF_V1  (1)
 
-/** 
- * Type of function that is used for extracting log messages from a raw log file
- * Such function is responsible for only raw-level parsing and it doesn't 
- * generates the complete log string, so that it shouldn't fill "txt_msg" 
- * field of "log_msg" structure.
+/**
+ * Type of function that is used for extracting log messages from
+ * a raw log file. Such function is responsible for only raw-level
+ * parsing and it doesn't generates the complete log string, so that
+ * it shouldn't fill "txt_msg" field of "log_msg" structure.
  */
 typedef int (* f_fetch_log_msg)(log_msg **msg, FILE *fd);
 
@@ -53,11 +53,11 @@ typedef int (* f_fetch_log_msg)(log_msg **msg, FILE *fd);
  * that should be used for extracting log messages from a raw log file.
  *
  * @param  fd   Raw log file descriptor.
- * @param  err  Pointer to the pointer on string that can be set to an error 
- *              message string if the function returns NULL.
+ * @param  err  Pointer to the pointer on string that can be set to
+ *              an error message string if the function returns NULL.
  *
  * @return  pointer to the log message extracting function.
- * 
+ *
  * @retval  !NULL   Pointer to the log message extracting function.
  * @retval  NULL    Unknown format of RLF.
  */
@@ -66,7 +66,8 @@ rgt_define_rlf_format(FILE *fd, char **err);
 
 /**
  * Extracts the next log message from a raw log file version 1.
- * The format of raw log file version 1 can be found in OKT-HLD-0000095-TE_TS.
+ * The format of raw log file version 1 can be found in
+ * OKT-HLD-0000095-TE_TS.
  *
  * @param  msg        Storage for log message to be extracted.
  * @param  fd         File descriptor of the raw log file.
@@ -77,8 +78,8 @@ rgt_define_rlf_format(FILE *fd, char **err);
  * @retval  0   There is no log messages left.
  *
  * @se
- *   If the structure of a log message doesn't comfim to the specification, 
- *   this function never returns, but rather it throws an exception with 
+ *   If the structure of a log message doesn't comfim to the specification,
+ *   this function never returns, but rather it throws an exception with
  *   longjmp call.
  */
 int fetch_log_msg_v1(log_msg **msg, FILE *fd);

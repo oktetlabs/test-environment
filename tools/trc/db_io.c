@@ -236,7 +236,8 @@ get_result(xmlNodePtr node, const char *name, trc_test_result *result)
  * @return Status code.
  */
 static int
-alloc_and_get_test_iter(xmlNodePtr node, trc_test_type type, test_iters *iters)
+alloc_and_get_test_iter(xmlNodePtr node, trc_test_type type,
+                        test_iters *iters)
 {
     int         rc;
     test_iter  *p;

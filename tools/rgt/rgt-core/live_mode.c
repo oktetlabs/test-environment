@@ -141,7 +141,8 @@ live_process_end_event(node_info_t *node, const char *node_name)
 {
     fprintf(output_fd, "| %s complited %-55s %s\n", node_name,
             node->descr.name,
-            (node->result.status == RES_STATUS_PASSED) ? "PASSED" : "FAILED");
+            (node->result.status == RES_STATUS_PASSED) ?
+                "PASSED" : "FAILED");
     fprintf(output_fd, "|- Date: ");
     print_ts(node->end_ts);
     fprintf(output_fd, "\n\n");
@@ -242,7 +243,8 @@ rgt_expand_regular_log_msg(log_msg *msg)
 
                     if ((arg = get_next_arg(msg)) == NULL)
                     {
-                        fprintf(stderr, "Too few arguments in the message");
+                        fprintf(stderr,
+                                "Too few arguments in the message");
                         free_log_msg(msg);
                         THROW_EXCEPTION;
                     }
@@ -263,7 +265,8 @@ rgt_expand_regular_log_msg(log_msg *msg)
                 {
                     if ((arg = get_next_arg(msg)) == NULL)
                     {
-                        fprintf(stderr, "Too few arguments in the message");
+                        fprintf(stderr,
+                                "Too few arguments in the message");
                         free_log_msg(msg);
                         THROW_EXCEPTION;
                     }
@@ -296,7 +299,8 @@ rgt_expand_regular_log_msg(log_msg *msg)
  *                 the element.
  */
                     
-                    if (strstr(msg->fmt_str + i, "%tm") != (msg->fmt_str + i))
+                    if (strstr(msg->fmt_str + i, "%tm") !=
+                            (msg->fmt_str + i))
                     {
                         /* Invalid format just output as it is */
                         fprintf(stderr, "WARNING: Invalid format for "

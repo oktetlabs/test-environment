@@ -37,16 +37,19 @@
 
 /** Indeces of the error events */
 enum e_error_msg_index {
-    RLF_V1_RLM_ENTITY_NAME       = 0, /**< Entity name is too short */
-    RLF_V1_RLM_VERSION           = 1, /**< There is no log version field */
-    RLF_V1_RLM_TIMESTAMP         = 2, /**< Timestamp field is too short */
-    RLF_V1_RLM_LOGLEVEL          = 3, /**< Log Level field is too short */
-    RLF_V1_RLM_REST_LEN          = 4, /**< Message length field is too short */
-    RLF_V1_RLM_REST_LEN_VALUE    = 5, /**< Message length field is incorrect */
-    RLF_V1_RLM_WHOLE             = 6, /**< Message is truncated */
-    RLF_V1_RLM_USER_NAME_LEN     = 7, /**< User name is out of message */
-    RLF_V1_RLM_FORMAT_STRING_LEN = 8, /**< Format string is out of message */
-    RLF_V1_RLM_ARG_LEN           = 9, /**< Agrument is out of message */
+    RLF_V1_RLM_ENTITY_NAME       = 0,  /**< Entity name is too short */
+    RLF_V1_RLM_VERSION           = 1,  /**< There is no log version field */
+    RLF_V1_RLM_TIMESTAMP         = 2,  /**< Timestamp field is too short */
+    RLF_V1_RLM_LOGLEVEL          = 3,  /**< Log Level field is too short */
+    RLF_V1_RLM_REST_LEN          = 4,  /**< Message length field is too
+                                            short */
+    RLF_V1_RLM_REST_LEN_VALUE    = 5,  /**< Message length field is
+                                            incorrect */
+    RLF_V1_RLM_WHOLE             = 6,  /**< Message is truncated */
+    RLF_V1_RLM_USER_NAME_LEN     = 7,  /**< User name is out of message */
+    RLF_V1_RLM_FORMAT_STRING_LEN = 8,  /**< Format string is out
+                                            of message */
+    RLF_V1_RLM_ARG_LEN           = 9,  /**< Agrument is out of message */
     RLF_V1_RLM_UNKNOWN_LOGLEVEL  = 10, /**< Unknown log level value */
 };
 
@@ -63,8 +66,8 @@ static long cur_msg_offset;
 static enum e_error_msg_index cur_error_index;
 
 /** 
- * This is an array of error messages each corresponding to an appropriate error 
- * index of enum "e_error_msg_index".
+ * This is an array of error messages each corresponding
+ * to an appropriate error index of enum "e_error_msg_index".
  * DON'T CHANGE THE ORDER OF THESE MESSAGES!
  */
 static struct debug_msg {
@@ -85,7 +88,8 @@ static struct debug_msg {
     {"*** Value of the log message length or format string "
      "length is incorrect: \n"
      "*** Format string length is out of the log message."},
-    {"*** Value of the log message length or argument length is incorrect: \n"
+    {"*** Value of the log message length or argument length is "
+     "incorrect: \n"
      "*** Argument length is out of the log message."},
     {"*** Value of log level is unkown."},
 };
@@ -117,13 +121,13 @@ static struct debug_msg {
  * @se It may never return control.
  */
 #define READ(_fd, _buf, _len) \
-    do {                                                                      \
-        if (universal_read((_fd), (_buf), (_len), rgt_rmode) != (_len))       \
-        {                                                                     \
-            /* Error: File is truncated */                                    \
-            PRINT_ERROR;                                                      \
-            THROW_EXCEPTION;                                                  \
-        }                                                                     \
+    do {                                                                \
+        if (universal_read((_fd), (_buf), (_len), rgt_rmode) != (_len)) \
+        {                                                               \
+            /* Error: File is truncated */                              \
+            PRINT_ERROR;                                                \
+            THROW_EXCEPTION;                                            \
+        }                                                               \
     } while (0)
 
 /* 
@@ -149,7 +153,8 @@ static struct debug_msg {
 
 /**
  * Extracts the next log message from a raw log file version 1.
- * The format of raw log file version 1 can be found in OKT-HLD-0000095-TE_TS.
+ * The format of raw log file version 1 can be found in
+ * OKT-HLD-0000095-TE_TS.
  *
  * @param  msg        Storage for log message to be extracted.
  * @param  fd         File descriptor of the raw log file.
@@ -160,7 +165,7 @@ static struct debug_msg {
  * @retval  0   There is no log messages left.
  *
  * @se
- *   If the structure of a log message doesn't comfim to the specification, 
+ *   If the structure of a log message doesn't comfim to the specification,
  *   this function never returns, but rather it throws an exception with 
  *   longjmp call.
  */

@@ -23,7 +23,8 @@ echo -e \
 
 XML_LOG_FILE=`mktemp /tmp/tmp.XXXXXX`
 
-rgt-conv --no-cntrl-msg -m postponed -c $RGT_FILTER -f $RAW_LOG_FILE -o $XML_LOG_FILE
+rgt-conv --no-cntrl-msg -m postponed -c $RGT_FILTER -f $RAW_LOG_FILE \
+         -o $XML_LOG_FILE
 if test $? -eq 0 ; then
     te_trc ${OPTS} $XML_LOG_FILE
 fi

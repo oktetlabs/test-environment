@@ -113,8 +113,8 @@ void flow_tree_attach_message(log_msg *msg);
 
 /**
  * Goes through the flow tree and calls callback functions for each node.
- * First it calls start node callback, then calls message processing callback
- * for all messages attached to the node and goes to the subtree.
+ * First it calls start node callback, then calls message processing
+ * callback for all messages attached to the node and goes to the subtree.
  * After that it calls end node callback and message processing callback
  * for all messages attached after the node.
  *
@@ -126,8 +126,8 @@ void flow_tree_trace();
 #ifdef FLOW_TREE_LIBRARY_DEBUG
 
 /* 
- * These routines are auxiluary in debugging of the library and should not be
- * compiled while it's build for working binaries.
+ * These routines are auxiluary in debugging of the library and should
+ * not be compiled while it's build for working binaries.
  */
 
 enum flow_tree_set_name {
@@ -136,13 +136,13 @@ enum flow_tree_set_name {
 };
 
 /**
- * Verifies if paritular set of nodes (close or new) equals to user specified
- * set of nodes.
+ * Verifies if paritular set of nodes (close or new) equals to user
+ * specified set of nodes.
  *
  * @param   set_name    Name of the set that will be verified.
- * @param   user_set    User prepared set of nodes that is compared with actual
- *                      set. It have to be in the following format:
- *                      "node_id:node_id: ... :node_id".
+ * @param   user_set    User prepared set of nodes that is compared
+ *                      with actual set. It have to be in the following
+ *                      format: "node_id:node_id: ... :node_id".
  *
  * @return  Verdict of the verification.
  *
