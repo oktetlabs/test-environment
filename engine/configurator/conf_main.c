@@ -947,7 +947,7 @@ main(int argc, char **argv)
     if ((rc = parse_config(argv[1])) != 0)
         goto error;
 
-#if 1
+#if 0
     print_otree(&cfg_obj_root, 0);
     print_tree(&cfg_inst_root, 0);
 #endif    
