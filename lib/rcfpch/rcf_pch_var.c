@@ -124,7 +124,7 @@ rcf_pch_vread(struct rcf_comm_connection *conn,
             int8_t val;
 
             memcpy((void *)&val, addr, sizeof(int8_t));
-            SEND_ANSWER("0 %d", val);
+            SEND_ANSWER("0 %d", (int)val);
         }
 
         case RCF_UINT8:
@@ -132,7 +132,7 @@ rcf_pch_vread(struct rcf_comm_connection *conn,
             uint8_t val;
 
             memcpy((void *)&val, addr, sizeof(uint8_t));
-            SEND_ANSWER("0 %u", val);
+            SEND_ANSWER("0 %u", (unsigned int)val);
         }
 
         case RCF_INT16:
@@ -140,7 +140,7 @@ rcf_pch_vread(struct rcf_comm_connection *conn,
             int16_t val;
 
             memcpy((void *)&val, addr, sizeof(int16_t));
-            SEND_ANSWER("0 %d", val);
+            SEND_ANSWER("0 %d", (int)val);
         }
 
         case RCF_UINT16:
@@ -148,7 +148,7 @@ rcf_pch_vread(struct rcf_comm_connection *conn,
             uint16_t val;
 
             memcpy((void *)&val, addr, sizeof(uint16_t));
-            SEND_ANSWER("0 %u", val);
+            SEND_ANSWER("0 %u", (unsigned int)val);
         }
 
         case RCF_INT32:
@@ -156,7 +156,8 @@ rcf_pch_vread(struct rcf_comm_connection *conn,
             int32_t val;
 
             memcpy((void *)&val, addr, sizeof(int32_t));
-            SEND_ANSWER("0 %d", val);
+            /* FIXME */
+            SEND_ANSWER("0 %d", (int)val);
         }
 
         case RCF_UINT32:
@@ -164,7 +165,8 @@ rcf_pch_vread(struct rcf_comm_connection *conn,
             uint32_t val;
 
             memcpy((void *)&val, addr, sizeof(uint32_t));
-            SEND_ANSWER("0 %u", val);
+            /* FIXME */
+            SEND_ANSWER("0 %u", (unsigned int)val);
         }
 
         case RCF_INT64:
@@ -172,7 +174,8 @@ rcf_pch_vread(struct rcf_comm_connection *conn,
             int64_t val;
 
             memcpy((void *)&val, addr, sizeof(int64_t));
-            SEND_ANSWER("0 %lld", val);
+            /* FIXME */
+            SEND_ANSWER("0 %lld", (long long int)val);
         }
 
         case RCF_UINT64:
@@ -180,7 +183,8 @@ rcf_pch_vread(struct rcf_comm_connection *conn,
             uint64_t val;
 
             memcpy((void *)&val, addr, sizeof(uint64_t));
-            SEND_ANSWER("0 %llu", val);
+            /* FIXME */
+            SEND_ANSWER("0 %llu", (unsigned long long int))val);
         }
 
         case RCF_STRING:
