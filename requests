@@ -1,17 +1,4 @@
 
-1. Andrew Rybchenko 18.07.2003
-
-For agents specify: src directory (absolute or relative), executable name,
-RCF library name, type, flags.
-
-Executable name is passed to agent's confugure in shell variable
-TE_AGENT_EXEC_NAME.
-
-For all agents (in est_environment/agents or external) directory
-is created in build/agents/<agent_exec_name> from which configure
-is called.
-
-
 2. Andrew Rybchenko 11.08.2003
 
 The flag characters (see 'man 3 printf') should be supported by
@@ -43,11 +30,6 @@ CSAP handle (It makes the code more portable).
 >>>> So why don't we use "uint32_t" instead of "cfg_handle"?
 >>>> I can't understand the difference.
 >>>> And why casp handle can't be an address?
-
-4. Elena Vengerova 08.12.2003
-
-It seems that only one TA type may be built for non-host platform.
-Obviously it's OK for 99% of projects, but should be fixed.
 
 5. Oleg Kravtsov 16.03.2004
 
