@@ -381,8 +381,7 @@ tapi_eth_pkt_handler(char *fn, void *user_param)
     rc = asn_parse_dvalue_in_file(fn, ndn_raw_packet, &frame_val, &syms);
     if (rc)
     {
-        fprintf(stderr,
-                "Parse value from file %s failed, rc %x, syms: %d\n",
+        ERROR("Parse value from file %s failed, rc %x, syms: %d\n",
                 fn, rc, syms);
         return;
     }
@@ -390,21 +389,21 @@ tapi_eth_pkt_handler(char *fn, void *user_param)
     eth_hdr_val = asn_read_indexed (frame_val, 0, "pdus");
     if (eth_hdr_val == NULL)
     {
-        fprintf (stderr, "tapi eth int cb, read_indexed error\n");
+        ERROR("tapi eth int cb, read_indexed error\n");
         return;
     }
 
     rc = ndn_eth_packet_to_plain(eth_hdr_val, &header);
     if (rc)
     {
-        fprintf(stderr, "tapi eth int cb, packet to plain error %x\n", rc);
+        ERROR("tapi eth int cb, packet to plain error %x\n", rc);
         return;
     }
 
     p_len = asn_get_length(frame_val, "payload.#bytes");
     if (p_len < 0)
     {
-        fprintf (stderr, "tapi eth int cb, get_len error \n");
+        ERROR( "tapi eth int cb, get_len error \n");
         return;
     }
 
@@ -413,7 +412,7 @@ tapi_eth_pkt_handler(char *fn, void *user_param)
 
     if (rc)
     {
-        fprintf (stderr, "tapi eth int cb, read payload error %x\n", rc);
+        ERROR( "tapi eth int cb, read payload error %x\n", rc);
         return;
     }
 
