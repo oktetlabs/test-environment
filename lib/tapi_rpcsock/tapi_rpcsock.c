@@ -91,7 +91,9 @@
 #include "te_errno.h"
 #include "rcf_api.h"
 #include "rcf_rpc.h"
+#include "tapi_sockaddr.h"
 #include "tapi_rpcsock.h"
+
 #include "tarpc.h"
 #include "tapi_sockaddr.h"
 
