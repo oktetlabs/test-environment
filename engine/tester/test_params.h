@@ -37,15 +37,18 @@
 
 #include "te_defs.h"
 
+#include "reqs.h"
+
 
 /** Test real parameter with specified value. */
 typedef struct test_param {
     TAILQ_ENTRY(test_param) links;  /**< List links */
 
-    char       *name;   /**< Parameter name */
+    const char *name;   /**< Parameter name */
     char       *value;  /**< Current parameter value */
-    const char *req;    /**< Requirement ID or NULL */
     te_bool     clone;  /**< Clone this entry or not */
+
+    const test_requirements    *reqs;   /**< Associated requirements */
 } test_param;
 
 /** Head of the test real parameters list */
