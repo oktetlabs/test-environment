@@ -46,7 +46,7 @@ extern void tarpc_destroy_all();
         s += sprintf(buf, "echo \"");           \
         s += sprintf(s, fmt);                   \
         sprintf(s, "\" >> /tmp/xxx");           \
-        system(buf);                            \
+        ta_system(buf);                         \
     } while (0)
 
 /** Socket used by the last started RPC server */

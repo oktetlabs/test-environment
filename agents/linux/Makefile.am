@@ -18,7 +18,7 @@ MY_LDAFLAGS=-rdynamic -export-dynamic
 MY_SOURCES=linux.c linuxconf.c ftp_routines.c
 MY_SYMTBL_OBJECTS=linux.o ftp_routines.o
 
-noinst_HEADERS=linux_rpc.h 
+noinst_HEADERS=linux_rpc.h linux_internal.h
 
 CLEANFILES=symtbl.c
 

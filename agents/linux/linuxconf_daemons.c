@@ -62,6 +62,8 @@
 #define TE_LGR_USER      "Daemons"
 #include "logger_ta.h"
 
+#include "linux_internal.h"
+
 #define MAC_ADDR_LEN        6
 
 /** Directory where all TE temporary files are located */
@@ -106,7 +108,7 @@ daemon_get(unsigned int gid, const char *oid, char *value)
         return TE_RC(TE_TA_LINUX, ENOENT);
     }
     sprintf(buf, "killall -CONT %s >/dev/null 2>&1", daemon_name);
-    sprintf(value, "%s", system(buf) == 0 ? "1" : "0");
+    sprintf(value, "%s", ta_system(buf) == 0 ? "1" : "0");
     
     return 0;
 }
@@ -130,7 +132,7 @@ daemon_set(unsigned int gid, const char *oid, const char *value)
     sprintf(buf, "/etc/init.d/%s %s >/dev/null 2>&1", daemon_name,
             *value == '0' ? "stop" : "start");
 
-    if (system(buf) != 0)
+    if (ta_system(buf) != 0)
     {
         ERROR("Command '%s' failed", buf);
         return TE_RC(TE_TA_LINUX, ETESHCMD);
@@ -185,13 +187,13 @@ xinetd_set(unsigned int gid, const char *oid, const char *value)
     sprintf(buf, "/sbin/chkconfig %s %s >/dev/null 2>&1", daemon_name,
             *value == '0' ? "off" : "on");
     
-    if (system(buf) != 0)
+    if (ta_system(buf) != 0)
     {
         ERROR("Command '%s' failed", buf);
         return TE_RC(TE_TA_LINUX, ETESHCMD);
     }
         
-    system("/etc/init.d/xinetd reload >/dev/null 2>&1");
+    ta_system("/etc/init.d/xinetd reload >/dev/null 2>&1");
     
     return 0;
 }
@@ -289,8 +291,8 @@ ds_xinetd_service_addr_set(const char *service, const char *value)
     fclose(g);
 
     /* Update service configuration file */
-    system(cmd);
-    system("/etc/init.d/xinetd reload >/dev/null 2>&1");
+    ta_system(cmd);
+    ta_system("/etc/init.d/xinetd reload >/dev/null 2>&1");
 
     FREE_BUFFERS;
 
@@ -1040,7 +1042,7 @@ ds_dhcpserver_set(unsigned int gid, const char *oid, const char *value)
     sprintf(buf, "/etc/init.d/dhcpd %s >/dev/null 2>&1", 
             *value == '0' ? "stop" : "start");
     
-    if (system(buf) != 0)
+    if (ta_system(buf) != 0)
     {
         ERROR("Command '%s' failed", buf);
         return TE_RC(TE_TA_LINUX, ETESHCMD);
@@ -1050,7 +1052,7 @@ ds_dhcpserver_set(unsigned int gid, const char *oid, const char *value)
     {
         rc = init_omapi(); 
         if (rc != 0)
-            system("/etc/init.d/dhcpd stop >/dev/null 2>&1");
+            ta_system("/etc/init.d/dhcpd stop >/dev/null 2>&1");
         return TE_RC(TE_TA_LINUX, rc);
     }
         
@@ -2014,7 +2016,7 @@ init_dhcp_data()
 {
     int  rc = 0;
 
-    if (system("/usr/sbin/dhcpd -t >/dev/null 2>&1") != 0) 
+    if (ta_system("/usr/sbin/dhcpd -t >/dev/null 2>&1") != 0) 
     {
         VERB("bad or absent /etc/dhcpd.conf - "
                   "DHCP will not be available\n");
@@ -2067,7 +2069,7 @@ init_dhcp_data()
     }
         
     sprintf(buf, "killall -CONT dhcpd >/dev/null 2>&1");
-    if (system(buf) != 0)
+    if (ta_system(buf) != 0)
         return 0;
         
     init_omapi();
@@ -2258,7 +2260,7 @@ ds_tftpserver_addr_set(unsigned int gid, const char *oid, const char *value)
     fclose(f);
     fclose(g);
     
-    system("/etc/init.d/xinetd reload >/dev/null 2>&1");
+    ta_system("/etc/init.d/xinetd reload >/dev/null 2>&1");
     
     return 0;
 }
@@ -2771,10 +2773,10 @@ restore_backup()
     {                                                              
         sprintf(buf, "mv " TE_TMP_PATH "%s" TE_TMP_BKP_SUFFIX " "
                 XINETD_ETC_DIR "%s >/dev/null 2>&1", services[i], services[i]); 
-        system(buf);                                          
+        ta_system(buf);                                          
     }                                                              
 
-    system("/etc/init.d/xinetd reload >/dev/null 2>&1");
+    ta_system("/etc/init.d/xinetd reload >/dev/null 2>&1");
 
 #ifdef WITH_FTP_SERVER    
     if (ftpd_conf != NULL)
@@ -2783,11 +2785,11 @@ restore_backup()
         char    cmd[256]; /* FIXME */
 
         sprintf(cmd, "mv " FTPD_CONF_BACKUP " %s", ftpd_conf);
-        if (system(cmd) != 0)
+        if (ta_system(cmd) != 0)
         {
-            
+            ERROR("\"%s\" failed", cmd);
         }
-        system("chmod o-w /var/ftp/pub");
+        ta_system("chmod o-w /var/ftp/pub");
         daemon_get(0, "ftpserver", ftp_enable);
         if (*ftp_enable == '1')
         {
@@ -2838,7 +2840,7 @@ ftpd_init(void)
         char cmd[256]; /* FIXME */
 
         sprintf(cmd, "cp -a %s " FTPD_CONF_BACKUP, ftpd_conf);
-        if (system(cmd) != 0)
+        if (ta_system(cmd) != 0)
         {        
             ERROR("Cannot create backup file " FTPD_CONF_BACKUP);
             restore_backup();                                           
@@ -2880,7 +2882,7 @@ ftpd_init(void)
     fprintf(g, "anon_upload_enable=YES\n");
     fclose(f);
     fclose(g);
-    system("chmod o+w /var/ftp/pub");
+    ta_system("chmod o+w /var/ftp/pub");
     daemon_get(0, "ftpserver", ftp_enable);
     if (*ftp_enable == '1')
     {
@@ -2920,7 +2922,7 @@ linuxconf_daemons_init(rcf_pch_cfg_object **last)
             return TE_RC(TE_TA_LINUX, EMFILE);                             \
         }                                                                  \
                                                                            \
-        if (system("cp " XINETD_ETC_DIR serv_name_ " "                     \
+        if (ta_system("cp " XINETD_ETC_DIR serv_name_ " "                  \
                    TE_TMP_PATH serv_name_ TE_TMP_BKP_SUFFIX                \
                    " >/dev/null 2>&1") != 0)                               \
         {                                                                  \

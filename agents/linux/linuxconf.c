@@ -62,6 +62,7 @@
 #include "rcf_ch_api.h"
 #include "rcf_pch.h"
 #include "logger_api.h"
+#include "linux_internal.h"
 
 
 #ifndef IF_NAMESIZE
@@ -118,9 +119,6 @@
 extern int linuxconf_daemons_init(rcf_pch_cfg_object **last);
 extern void linux_daemons_release();
 #endif
-
-/* TA name pointer */
-extern char *ta_name;
 
 /* Auxiliary variables used for during configuration request processing */
 static struct ifreq req;
@@ -685,7 +683,7 @@ interface_add(unsigned int gid, const char *oid, const char *value,
     sprintf(buf, "/sbin/vconfig add %s %d", devname, vid); 
     free(devname);
     
-    return system(buf) < 0 ? TE_RC(TE_TA_LINUX, ETESHCMD) : 0;
+    return ta_system(buf) < 0 ? TE_RC(TE_TA_LINUX, ETESHCMD) : 0;
 }
 
 /**
@@ -708,7 +706,7 @@ interface_del(unsigned int gid, const char *oid, const char *ifname)
         
     sprintf(buf, "/sbin/vconfig rem %s", ifname);
     
-    return (system(buf) < 0) ? TE_RC(TE_TA_LINUX, ETESHCMD) : 0;
+    return (ta_system(buf) < 0) ? TE_RC(TE_TA_LINUX, ETESHCMD) : 0;
 }
 
 
@@ -829,7 +827,7 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
         sprintf(trash, "/sbin/ifconfig %s:%d %s up", ifname, n, addr);
     }
 
-    if (system(trash) != 0)
+    if (ta_system(trash) != 0)
         return TE_RC(TE_TA_LINUX, ETESHCMD);
         
     return 0;
@@ -1039,7 +1037,7 @@ net_addr_del(unsigned int gid, const char *oid,
     else
         sprintf(trash, "/sbin/ifconfig %s down", name);
 
-    return system(trash) != 0 ? TE_RC(TE_TA_LINUX, ETESHCMD) : 0;
+    return ta_system(trash) != 0 ? TE_RC(TE_TA_LINUX, ETESHCMD) : 0;
 }
 #else
 static int
@@ -1466,7 +1464,7 @@ status_set(unsigned int gid, const char *oid, const char *value,
 
     sprintf(buf, "/sbin/ifconfig %s %s", ifname, status == 1 ? "up" : "down");
 
-    if (system(buf) != 0)
+    if (ta_system(buf) != 0)
         return TE_RC(TE_TA_LINUX, ETESHCMD);
 
     return 0;
@@ -1931,7 +1929,7 @@ route_add(unsigned int gid, const char *oid, const char *value,
     if (prefix == 32)
         rt.rt_flags |= RTF_HOST;
 
-    term_byte = value + strlen(value);
+    term_byte = (char *)(value + strlen(value));
 
     /* @todo Make a macro to wrap around similar code below */
     if ((ptr = strstr(value, "gw: ")) != NULL)

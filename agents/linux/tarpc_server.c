@@ -74,10 +74,7 @@
 #include "ta_rpc_log.h"
 #include "tapi_rpcsock_defs.h"
 
-extern char *my_execname;
-extern int ta_pid;
-
-extern int ftp_open(char *uri, int flags, int passive, int offset);
+#include "linux_internal.h"
 
 #if HAVE_AIO_H
 void *dummy = aio_read;
@@ -602,7 +599,7 @@ TARPC_FUNC(execve, {},
     const char *args[7];
     static char buf[16];
     
-    args[0] = my_execname;
+    args[0] = ta_execname;
     args[1] = "rpcserver";
     args[2] = rpcserver_name;
     sprintf(buf, "%u", ta_pid);
@@ -613,7 +610,7 @@ TARPC_FUNC(execve, {},
     
     sleep(1);
     close(rpcserver_sock);
-    MAKE_CALL(func((int)my_execname, args, NULL)); 
+    MAKE_CALL(func((int)ta_execname, args, NULL)); 
 }
 )
 
@@ -2534,7 +2531,7 @@ simple_sender(tarpc_simple_sender_in *in, tarpc_simple_sender_out *out)
             char buf[128];
             sprintf(buf, "echo \"Intermediate %llu time %d %d %d\" >> /tmp/sender", 
                     sent, now, start, in->time2run);
-            system(buf);
+            ta_system(buf);
             control = 0;
         }
 #endif
@@ -2623,7 +2620,7 @@ simple_receiver(tarpc_simple_receiver_in *in, tarpc_simple_receiver_out *out)
             char buf[128];
             sprintf(buf, "echo \"Intermediate %llu time %d\" >> /tmp/receiver", 
                     received, time(NULL) - start);
-            system(buf);
+            ta_system(buf);
             control = 0;
         }
 #endif        

@@ -55,6 +55,7 @@
 #include "rcf_pch.h"
 #include "rcf_rpc_defs.h"
 #include "tarpc.h"
+#include "linux_internal.h"
 #include "linux_rpc.h"
 
 #define TE_LGR_USER     "RCF RPC"
@@ -90,8 +91,6 @@ typedef struct srv {
     } while (0)
 
 extern void tarpc_1(struct svc_req *rqstp, register SVCXPRT *transp);
-
-extern int ta_pid;
 
 /** PID of the TA process */
 struct sockaddr_un ta_log_addr; 
