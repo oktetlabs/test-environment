@@ -58,7 +58,7 @@ static int get_tests(xmlNodePtr *node, test_runs *tests);
 
 /**
  * Get text content of the node.
- * 
+ *
  * @param node      Location of the XML node pointer
  * @param name      Expected name of the XML node
  * @param content   Location for the result
@@ -103,7 +103,7 @@ get_text_content(xmlNodePtr node, const char *name, char **content)
 
 /**
  * Get node with text content.
- * 
+ *
  * @param node      Location of the XML node pointer
  * @param name      Expected name of the XML node
  * @param content   Location for the result
@@ -213,7 +213,7 @@ alloc_and_get_test_iter(xmlNodePtr node, trc_test_type type, test_iters *iters)
         ERROR("calloc(1, %u) failed", sizeof(*p));
         return errno;
     }
-    p->node = node;
+    p->node = p->tests.node = node;
     if (type == TRC_TEST_SCRIPT)
         p->stats.not_run = 1;
     p->got_result = TRC_TEST_UNSPEC;
@@ -255,7 +255,7 @@ alloc_and_get_test_iter(xmlNodePtr node, trc_test_type type, test_iters *iters)
     p->args.node = node;
 
     node = xmlNodeChildren(node);
-    
+
     /* Get arguments of the iteration */
     rc = get_test_args(&node, &p->args);
     if (rc != 0)
@@ -330,10 +330,10 @@ alloc_and_get_test(xmlNodePtr node, test_runs *tests)
         ERROR("calloc(1, %u) failed", sizeof(*p));
         return errno;
     }
-    p->node = node;
+    p->node = p->iters.node = node;
     TAILQ_INIT(&p->iters.head);
     TAILQ_INSERT_TAIL(&tests->head, p, links);
-    
+
     p->name = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("name")));
     if (p->name == NULL)
     {
@@ -365,7 +365,7 @@ alloc_and_get_test(xmlNodePtr node, test_runs *tests)
     INFO("Parsing test '%s' type=%d", p->name, p->type);
 
     node = xmlNodeChildren(node);
-    
+
     rc = get_node_with_text_content(&node, "objective", &p->objective);
     if (rc != 0)
     {
@@ -482,11 +482,11 @@ trc_parse_db(const char *filename)
                  "parsed successfully", filename);
         }
     }
-    
+
     xmlFreeParserCtxt(parser);
     xmlCleanupParser();
 
-    return rc;  
+    return rc;
 }
 
 static int
@@ -504,7 +504,7 @@ trc_update_iters(test_iters *iters)
         {
             test_arg *a;
 
-            INFO("Add node for iteration");                 
+            INFO("Add node for iteration %p node=%p", iters, iters->node);
             p->tests.node = xmlNewChild(iters->node, NULL,
                                         BAD_CAST "iter", NULL);
             if (p->tests.node == NULL)
@@ -565,7 +565,7 @@ trc_update_tests(test_runs *tests)
     {
         if (p->node == NULL)
         {
-            INFO("Add node for '%s'", p->name);                 
+            INFO("Add node for '%s'", p->name);
             p->iters.node = xmlNewChild(tests->node, NULL,
                                         BAD_CAST "test",
                                         NULL);
