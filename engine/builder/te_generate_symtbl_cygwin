@@ -28,9 +28,9 @@
 #
 # Author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
 # 
-# $Id: builder_generate_symtbl,v 1.1 2003/10/28 09:35:41 arybchik Exp $
+# $Id$
 
-NM=$1 --demangle
+NM="$1 --demangle"
 RESULT=$2
 shift 2
 
