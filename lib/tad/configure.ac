@@ -135,6 +135,7 @@ AC_SUBST([TAD_LIBLIST])
 AC_SUBST([TAD_SUBDIRS])
 AC_SUBST([TAD_CH_DEFS])
 
+AM_CONDITIONAL(DUMMY_TAD, test -z "$TAD_LIBLIST")
 
 if test x$w_snmp = xtrue; then 
     AC_MSG_CHECKING(for net-snmp library)

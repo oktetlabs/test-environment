@@ -14,8 +14,14 @@ include_HEADERS=tad.h
 
 noinst_LIBRARIES=libtad_core.a
 
+if DUMMY_TAD
+AM_CPPFLAGS+= -DDUMMY_TAD
+libtad_core_a_SOURCES=tad_ch.c
+else 
 libtad_core_a_SOURCES=tad_ch.c csap_db.c csap_spt_db.c tad_recv.c \
                       tad_send.c tad_utils.c
+endif 
+
 
 
 TAD_FULL_LIBLIST=$(noinst_LIBRARIES)@TAD_LIBLIST@

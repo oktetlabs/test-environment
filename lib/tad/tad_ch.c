@@ -42,8 +42,9 @@
 #define TE_LGR_USER     "TAD CH"
 #include "logger_ta.h"
 
-#include "tad.h"
 
+#ifndef DUMMY_TAD
+#include "tad.h"
 #include "ndn.h" 
 
 
@@ -65,6 +66,7 @@ static struct timeval tv_zero = {0,0};
             fprintf(stderr, "rc from rcf_comm_agent_reply: 0x%X\n", r_c);  \
     } while (0)
 
+#endif
 
 static int is_initialized = 0;
 
@@ -102,6 +104,7 @@ check_init(void)
 {
     if (is_initialized) return;
 
+#ifndef DUMMY_TAD
     csap_db_init();
     init_csap_spt();
 #ifdef WITH_ETH
@@ -125,6 +128,8 @@ check_init(void)
 #ifdef WITH_BRIDGE
     csap_support_bridge_register();
 #endif
+#endif /* DUMMY_TAD */
+
     is_initialized = 1;
 }
 
@@ -134,6 +139,7 @@ tad_ch_init(void)
     check_init();
 }
 
+#ifndef DUMMY_TAD 
 
 /**
  * Safe compare two strings. Almost equivalent to standard "strcmp", but
@@ -168,6 +174,7 @@ strcmp_imp(const char *l, const char *r)
     return strcmp(l, r);
 }
 
+#endif /* DUMMY_TAD */
 
 /* See description in rcf_ch_api.h */
 int
@@ -176,6 +183,17 @@ rcf_ch_csap_create(struct rcf_comm_connection *handle,
                    const uint8_t *ba, size_t cmdlen,
                    const char *stack, const char *params)
 {
+#ifdef DUMMY_TAD 
+    UNUSED(handle);
+    UNUSED(cbuf);
+    UNUSED(buflen);
+    UNUSED(answer_plen);
+    UNUSED(ba);
+    UNUSED(cmdlen);
+
+    VERB("CSAP create: stack <%s> params <%s>\n", stack, params);
+    return -1;
+#else
     csap_p      new_csap;
     asn_value_p csap_nds;
 
@@ -290,8 +308,8 @@ rcf_ch_csap_create(struct rcf_comm_connection *handle,
     }
     SEND_ANSWER("0 %d", new_csap_id); 
     asn_free_value(csap_nds);
-
-    return 0;
+    return 0; 
+#endif
 }
 
 /* See description in rcf_ch_api.h */
@@ -300,6 +318,15 @@ rcf_ch_csap_destroy(struct rcf_comm_connection *handle,
                     char *cbuf, size_t buflen, size_t answer_plen,
                     csap_handle_t csap)
 {
+#ifdef DUMMY_TAD 
+    UNUSED(handle);
+    UNUSED(cbuf);
+    UNUSED(buflen);
+    UNUSED(answer_plen);
+
+    VERB("CSAP destroy: handle %d\n", csap);
+    return -1;
+#else
     csap_p csap_descr_p;
 
     int level;
@@ -367,6 +394,7 @@ rcf_ch_csap_destroy(struct rcf_comm_connection *handle,
     SEND_ANSWER("0");
 
     return 0;
+#endif
 }
 
 
@@ -377,6 +405,18 @@ rcf_ch_trsend_start(struct rcf_comm_connection *handle,
                     const uint8_t *ba, size_t cmdlen,
                     csap_handle_t csap, te_bool postponed)
 {
+#ifdef DUMMY_TAD 
+    UNUSED(handle);
+    UNUSED(cbuf);
+    UNUSED(buflen);
+    UNUSED(answer_plen);
+    UNUSED(ba);
+    UNUSED(cmdlen);
+
+    VERB("TRSEND start: handle %d %s\n",
+         csap, postponed ? "postponed" : "");
+    return -1;
+#else
     int            rc;
     int            syms;
     asn_value_p    nds; 
@@ -471,6 +511,7 @@ rcf_ch_trsend_start(struct rcf_comm_connection *handle,
         free(send_context);
     }
     return 0;
+#endif
 }
 
 
@@ -480,6 +521,15 @@ rcf_ch_trsend_stop(struct rcf_comm_connection *handle,
                    char *cbuf, size_t buflen, size_t answer_plen,
                    csap_handle_t csap)
 {
+#ifdef DUMMY_TAD 
+    UNUSED(handle);
+    UNUSED(cbuf);
+    UNUSED(buflen);
+    UNUSED(answer_plen);
+
+    VERB("TRSEND stop handle %d\n", csap);
+    return -1;
+#else
     csap_p csap_descr_p;
 
     VERB("trsend_stop CSAP %d", csap);
@@ -511,6 +561,7 @@ rcf_ch_trsend_stop(struct rcf_comm_connection *handle,
     }
 
     return 0;
+#endif
 }
 
 
@@ -521,6 +572,22 @@ rcf_ch_trrecv_start(struct rcf_comm_connection *handle,
                     const uint8_t *ba, size_t cmdlen, csap_handle_t csap,
                     unsigned int num, te_bool results, unsigned int timeout)
 {
+#ifdef DUMMY_TAD 
+    UNUSED(handle);
+    UNUSED(cbuf);
+    UNUSED(buflen);
+    UNUSED(answer_plen);
+    UNUSED(ba);
+    UNUSED(cmdlen);
+    UNUSED(csap);
+    UNUSED(num);
+    UNUSED(results);
+    UNUSED(timeout);
+
+    VERB("TRRECV start: handle %d num %u timeout %u %s\n",
+         csap, num, timeout, results ? "results" : "");
+    return -1;
+#else
     char        label_buf[20];
     pthread_t   recv_thread;
     int         syms;
@@ -742,6 +809,7 @@ rcf_ch_trrecv_start(struct rcf_comm_connection *handle,
     }
 
     return 0;
+#endif
 }
 
 
@@ -751,6 +819,15 @@ rcf_ch_trrecv_stop(struct rcf_comm_connection *handle,
                    char *cbuf, size_t buflen, size_t answer_plen,
                    csap_handle_t csap)
 {
+#ifdef DUMMY_TAD 
+    UNUSED(handle);
+    UNUSED(cbuf);
+    UNUSED(buflen);
+    UNUSED(answer_plen);
+
+    VERB("TRRECV stop handle %d\n", csap);
+    return -1;
+#else
     csap_p      csap_descr_p;
 
     VERB("CSAP %d", csap);
@@ -787,6 +864,7 @@ rcf_ch_trrecv_stop(struct rcf_comm_connection *handle,
         SEND_ANSWER("%d 0", TE_RC(TE_TAD_CH, ETADCSAPSTATE));
     }
     return 0;
+#endif
 }
 
 
@@ -796,6 +874,17 @@ rcf_ch_trrecv_wait(struct rcf_comm_connection *handle,
                    char *cbuf, size_t buflen, size_t answer_plen,
                    csap_handle_t csap)
 {
+#ifdef DUMMY_TAD 
+    UNUSED(handle);
+    UNUSED(cbuf);
+    UNUSED(buflen);
+    UNUSED(answer_plen);
+    UNUSED(csap);
+
+    VERB("TRRECV wait: handle %d \n", csap);
+    
+    return -1;
+#else
     csap_p csap_descr_p;
 
     VERB("CSAP %d", csap);
@@ -826,6 +915,7 @@ rcf_ch_trrecv_wait(struct rcf_comm_connection *handle,
         SEND_ANSWER("%d 0", TE_RC(TE_TAD_CH, ETADCSAPSTATE));
     }
     return 0;
+#endif
 }
 
 /* See description in rcf_ch_api.h */
@@ -834,6 +924,15 @@ rcf_ch_trrecv_get(struct rcf_comm_connection *handle,
                   char *cbuf, size_t buflen, size_t answer_plen,
                   csap_handle_t csap)
 {
+#ifdef DUMMY_TAD 
+    UNUSED(handle);
+    UNUSED(cbuf);
+    UNUSED(buflen);
+    UNUSED(answer_plen);
+
+    VERB("TRRECV get handle %d\n", csap);
+    return -1;
+#else
     csap_p      csap_descr_p;
 
     check_init();
@@ -864,6 +963,7 @@ rcf_ch_trrecv_get(struct rcf_comm_connection *handle,
     }
 
     return 0;
+#endif
 }
 
 
@@ -873,6 +973,15 @@ rcf_ch_csap_param(struct rcf_comm_connection *handle,
                   char *cbuf, size_t buflen, size_t answer_plen,
                   csap_handle_t csap, const char *param)
 {
+#ifdef DUMMY_TAD
+    UNUSED(handle);
+    UNUSED(cbuf);
+    UNUSED(buflen);
+    UNUSED(answer_plen);
+
+    VERB("CSAP param: handle %d param <%s>\n", csap, param);
+    return -1;
+#else
     csap_p csap_descr_p;
 
     check_init();
@@ -953,6 +1062,7 @@ rcf_ch_csap_param(struct rcf_comm_connection *handle,
     }
 
     return 0;
+#endif
 }
 
 
@@ -963,6 +1073,18 @@ rcf_ch_trsend_recv(struct rcf_comm_connection *handle,
                    const uint8_t *ba, size_t cmdlen, csap_handle_t csap,
                    te_bool results, unsigned int timeout)
 { 
+#ifdef DUMMY_TAD 
+    UNUSED(handle);
+    UNUSED(cbuf);
+    UNUSED(buflen);
+    UNUSED(answer_plen);
+    UNUSED(ba);
+    UNUSED(cmdlen);
+
+    VERB("TRSEND recv: handle %d timeout %d %s\n",
+                        csap, timeout, results ? "results" : "");
+    return -1;
+#else
     csap_p csap_descr_p;
 
     UNUSED(cmdlen);
@@ -989,6 +1111,7 @@ rcf_ch_trsend_recv(struct rcf_comm_connection *handle,
     return rcf_ch_trrecv_start(handle, cbuf, buflen, answer_plen, ba,
                                cmdlen, csap, 1 /* one packet */, 
                                results, timeout);
+#endif
 }
 
 
