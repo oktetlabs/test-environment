@@ -464,15 +464,14 @@ log_get_message(uint32_t length, uint8_t *buffer)
     }
 #undef LGR_CHECK_LENGTH
 
-    mess_length -= LGR_UNACCOUNTED_LEN + sizeof(uint32_t);
     /** Fill in message length field without message sequence */
     *((te_log_msg_len_t *)mess_length_location) =
 #if (TE_LOG_MSG_LEN_SZ == 1)
-        mess_length;
+        mess_length - (LGR_UNACCOUNTED_LEN + sizeof(uint32_t));
 #elif (TE_LOG_MSG_LEN_SZ == 2)
-        htons(mess_length);
+        htons(mess_length - (LGR_UNACCOUNTED_LEN + sizeof(uint32_t)));
 #elif (TE_LOG_MSG_LEN_SZ == 4)
-        htonl(mess_length);
+        htonl(mess_length - (LGR_UNACCOUNTED_LEN + sizeof(uint32_t)));
 #else
 #error Such TE_LOG_MSG_LEN_SZ is not supported
 #endif
