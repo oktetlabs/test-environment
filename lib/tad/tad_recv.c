@@ -584,10 +584,10 @@ tad_tr_recv_thread(void * arg)
     int           rc = 0;
     csap_p        csap_descr;
     char          answer_buffer[ANS_BUF];  
-    int           ans_len;
+    int           ans_len = 0;
     int           d_len = 0;
     unsigned int  pkt_count = 0;
-    char         *read_buffer;
+    char         *read_buffer = NULL;
 
     asn_value_p   result = NULL;
     asn_value_p   nds = NULL; 

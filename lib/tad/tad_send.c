@@ -274,7 +274,7 @@ tad_tr_send_thread(void * arg)
 
     tad_tmpl_iter_spec_t *arg_set_specs = NULL;
     tad_tmpl_arg_t       *arg_iterated = NULL;
-    int                   arg_num; 
+    int                   arg_num = 0; 
 
     struct timeval npt; /* Next packet time moment */
 
@@ -683,7 +683,7 @@ tad_get_tmpl_arg_specs(const asn_value *arg_set,
 {
     const asn_value *arg_val;
     unsigned i; 
-    int rc;
+    int rc = 0;
     char lab[20];
     char choice[20];
 
