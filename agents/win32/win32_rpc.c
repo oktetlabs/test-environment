@@ -470,15 +470,19 @@ tarpc_destroy_all()
  * @return status code
  */
 int 
-tarpc_call(int timeout, char *name, const char *file)
+tarpc_call(int timeout, const char *name, const char *file)
 {
     FILE *f;
     int   len;
-    srv *cur;
+    srv  *cur;
     
-    struct timeval tv;
-    fd_set         set;
+    struct timeval  tv;
+    fd_set          set;
 
+    te_bool         more_frags;
+    uint32_t        frag_len;
+    size_t          known_len;
+    
     VERB("tarpc_call entry");
 
     for (cur = srv_list; 
@@ -508,58 +512,102 @@ tarpc_call(int timeout, char *name, const char *file)
     }
     fclose(f);
     
-    if (write(cur->sock, buf, len) < len)
+    if (send(cur->sock, buf, len, 0) < len)
     {
-        ERROR("Failed to write data to the RPC pipe");
+        ERROR("Failed to write data to the RPC pipe: %s", strerror(errno));
         return TE_RC(TE_TA_WIN32, errno);
     }
     tv.tv_sec = timeout / 1000;
     tv.tv_usec = (timeout % 1000) * 1000;
     FD_ZERO(&set);
     FD_SET(cur->sock, &set);
+    VERB("Server %s timeout %d", cur->name, timeout);
     if (select(cur->sock + 1, &set, NULL, NULL, &tv) <= 0)
     {
         ERROR("Timeout ocurred during reading from RPC pipe");
         return TE_RC(TE_TA_WIN32, ETERPCTIMEOUT);
     }
-    
-    if ((len = read(cur->sock, buf, RCF_RPC_MAX_BUF)) <= 0)
+    if ((len = recv(cur->sock, buf, RCF_RPC_MAX_BUF, 0)) < 0)
     {
         ERROR("Failed to read data from the RPC pipe; errno %d", errno);
         return TE_RC(TE_TA_WIN32, errno);
     }
-    /* Read the rest of data, if exist */
-    while (1)
+    else if (len == 0)
     {
-        int n;
-        
-        tv.tv_sec = RCF_RPC_EOR_TIMEOUT / 1000000;
-        tv.tv_usec = RCF_RPC_EOR_TIMEOUT % 1000000;
-        FD_ZERO(&set);
-        FD_SET(cur->sock, &set);
-        if (select(cur->sock + 1, &set, NULL, NULL, &tv) <= 0)
-        {
-            if (len == 0)
-            {
-                VERB("Cannot read data from RPC client");
-                return TE_RC(TE_TA_WIN32, ENODATA);
-            }
-            else
-                break;
-        }
-        if (len == RCF_RPC_MAX_BUF)
-        {
-            VERB("RPC data are too long - increase RCF_RPC_MAX_BUF");
-            return TE_RC(TE_TA_WIN32, ENOMEM);
-        }
-        
-        if ((n = read(cur->sock, buf + len, RCF_RPC_MAX_BUF - len)) < 0)
-        {
-            VERB("Cannot read data from RPC client");
-            return TE_RC(TE_TA_WIN32, errno);
-        }
-        len += n;
+        ERROR("RPC client connection closed, it's likely that RPC "
+              "server '%s' is dead", name);
+        return TE_RC(TE_TA_WIN32, EIO);
     }
+    else if ((size_t)len < sizeof(frag_len))
+    {
+        ERROR("Too small(%d) the first fragment of RPC data", len);
+        return TE_RC(TE_TA_WIN32, EIO);
+    }
+
+    known_len = sizeof(frag_len);
+    do {
+        memcpy(&frag_len, buf + known_len - sizeof(frag_len),
+               sizeof(frag_len));
+        frag_len = ntohl(frag_len);
+        more_frags = !(frag_len & 0x80000000);
+        frag_len &= ~0x80000000;
+        known_len += frag_len;
+        if (more_frags)
+            known_len += sizeof(frag_len);
+        if (known_len > RCF_RPC_MAX_BUF)
+        {
+            ERROR("Too big RPC data: len=%u, max=%u - increase "
+                  "RCF_RPC_MAX_BUF", frag_len, RCF_RPC_MAX_BUF);
+            return TE_RC(TE_TA_WIN32, E2BIG);
+        }
+
+        /* Read the rest of data, if exist */
+        while ((uint32_t)len < known_len)
+        {
+            ssize_t n;
+            
+            tv.tv_sec = RCF_RPC_EOR_TIMEOUT / 1000000;
+            tv.tv_usec = RCF_RPC_EOR_TIMEOUT % 1000000;
+            FD_ZERO(&set);
+            FD_SET(cur->sock, &set);
+            if (select(cur->sock + 1, &set, NULL, NULL, &tv) <= 0)
+            {
+                if (len == 0)
+                {
+                    ERROR("Cannot read data as RPC client");
+                }
+                else
+                {
+                    ERROR("Failed to wait for the next fragment: "
+                          "got %u, expected at least %u", len, known_len);
+                }
+                return TE_RC(TE_TA_WIN32, EIO);
+            }
+            
+            if ((n = recv(cur->sock, buf + len, 
+                          RCF_RPC_MAX_BUF - len, 0)) < 0)
+            {
+                ERROR("Cannot read data from RPC client");
+                return TE_RC(TE_TA_WIN32, errno);
+            }
+            if (n == 0)
+            {
+                ERROR("RPC client connection closed after got of some "
+                      "data, it's likely that RPC server '%s' is dead",
+                      name);
+                return TE_RC(TE_TA_WIN32, EIO);
+            }
+            len += n;
+        }
+    } while (more_frags);
+    
+    if ((uint32_t)len != known_len)
+    {
+        ERROR("Invalid length of received RPC data: got=%u, expected=%u",
+              len, known_len);
+        return TE_RC(TE_TA_WIN32, EIO);
+    }
+
     if ((f = fopen(file, "w")) == NULL)
     {
         ERROR("Failed to open file with RPC data for writing");
