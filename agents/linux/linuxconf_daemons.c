@@ -431,7 +431,7 @@ xinetd_set(unsigned int gid, const char *oid, const char *value)
     fclose(f);
     fclose(g);
 
-    ta_system("/etc/init.d/xinetd reload >/dev/null 2>&1");
+    ta_system("/etc/init.d/xinetd restart >/dev/null 2>&1");
 
     return 0;
 }
@@ -531,7 +531,7 @@ ds_xinetd_service_addr_set(const char *service, const char *value)
 
     /* Update service configuration file */
     ta_system(cmd);
-    ta_system("/etc/init.d/xinetd reload >/dev/null 2>&1");
+    ta_system("/etc/init.d/xinetd restart >/dev/null 2>&1");
 
     FREE_BUFFERS;
 
@@ -750,7 +750,7 @@ ds_tftpserver_addr_set(unsigned int gid, const char *oid, const char *value)
     fclose(f);
     fclose(g);
 
-    ta_system("/etc/init.d/xinetd reload >/dev/null 2>&1");
+    ta_system("/etc/init.d/xinetd restart >/dev/null 2>&1");
 
     return 0;
 }
@@ -2671,6 +2671,6 @@ linux_daemons_release()
     ds_shutdown_smtp();
 #endif
 
-    ta_system("/etc/init.d/xinetd reload >/dev/null 2>&1");
+    ta_system("/etc/init.d/xinetd restart >/dev/null 2>&1");
 }
 
