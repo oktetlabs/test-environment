@@ -73,6 +73,7 @@ extern int tapi_cfg_base_if_get_mtu(const char *oid, unsigned int *p_mtu);
  *
  * @param oid       TA interface oid, e.g. /agent:A/interface:eth0
  * @param sa        Address to add
+ * @param mask      Address mask or NULL
  * @param cfg_hndl  Configurator handle of the new address
  *
  * @return Status code.
@@ -81,6 +82,7 @@ extern int tapi_cfg_base_if_get_mtu(const char *oid, unsigned int *p_mtu);
  */
 extern int tapi_cfg_base_add_net_addr(const char *oid,
                                       const struct sockaddr *sa,
+                                      const struct sockaddr *mask,
                                       cfg_handle *cfg_hndl);
 
 #ifdef __cplusplus

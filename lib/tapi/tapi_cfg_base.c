@@ -92,7 +92,8 @@ tapi_cfg_base_ipv4_fw(const char *ta, te_bool *enabled)
                                   "/agent:%s/ip4_fw:", ta);
         if (rc != 0)
         {
-            ERROR("Failed to configure IPv4 forwarding on '%s': %X", ta, rc);
+            ERROR("Failed to configure IPv4 forwarding on '%s': %X",
+                  ta, rc);
             return rc;
         }
         *enabled = val;
@@ -165,7 +166,9 @@ tapi_cfg_base_if_get_mtu(const char *oid, unsigned int *p_mtu)
 
 /* See description in tapi_cfg_base.h */
 int
-tapi_cfg_base_add_net_addr(const char *oid, const struct sockaddr *sa,
+tapi_cfg_base_add_net_addr(const char *oid,
+                           const struct sockaddr *sa,
+                           const struct sockaddr *mask,
                            cfg_handle *cfg_hndl)
 {
     char    buf[INET6_ADDRSTRLEN];
@@ -185,6 +188,30 @@ tapi_cfg_base_add_net_addr(const char *oid, const struct sockaddr *sa,
                                         buf, sizeof(buf)));
     if (rc == 0)
     {
+        if (mask != NULL)
+        {
+            rc = cfg_set_instance_fmt(CVT_ADDRESS, mask,
+                                      "%s/net_addr:%s/netmask:", oid,
+                                      inet_ntop(sa->sa_family,
+                                                &SIN(sa)->sin_addr,
+                                                buf, sizeof(buf)));
+            if (rc != 0)
+            {
+                int rc2;
+
+                ERROR("Failed to set address mask: %X", rc);
+                rc2 = cfg_del_instance_fmt(TRUE, 
+                                           "%s/net_addr:%s", oid,
+                                           inet_ntop(sa->sa_family,
+                                                     &SIN(sa)->sin_addr,
+                                                     buf, sizeof(buf)));
+                if (rc2 != 0)
+                {
+                    ERROR("Failed to delete address to rollback: %X", rc2);
+                }
+                return rc;
+            }
+        }
         RING("Address %s added to %s",
              inet_ntop(sa->sa_family, &SIN(sa)->sin_addr, buf, sizeof(buf)),
              oid);
@@ -192,7 +219,8 @@ tapi_cfg_base_add_net_addr(const char *oid, const struct sockaddr *sa,
     else if (TE_RC_GET_ERROR(rc) == EEXIST)
     {
         WARN("%s already has address %s", oid,
-             inet_ntop(sa->sa_family, &SIN(sa)->sin_addr, buf, sizeof(buf)));
+             inet_ntop(sa->sa_family, &SIN(sa)->sin_addr,
+                       buf, sizeof(buf)));
     }
     else
     {
