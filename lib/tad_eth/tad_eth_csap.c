@@ -1,8 +1,9 @@
 /** @file
- * @brief Test Environment: 
+ * @brief TAD: Ethernet
  *
- * Traffic Application Domain Command Handler
- * Ethernet CSAP support description structures. 
+ * Traffic Application Domain Command Handler Ethernet CSAP support
+ * description structures. 
+ *
  *
  * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
  * root directory of the distribution).
@@ -22,12 +23,14 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
  *
- * Author: Konstantin Abramenko <konst@oktetlabs.ru>
  *
- * @(#) $Id$
+ * @author Konstantin Abramenko <konst@oktetlabs.ru>
+ *
+ * $Id$
  */
 
 #include <string.h>
+
 #include "tad_eth_impl.h"
 
 
@@ -50,13 +53,15 @@ csap_spt_type_t eth_csap_spt =
     &eth_nbr_list
 };
 
+
 /**
- * Register ethernet CSAP callbacks and support structures in TAD Command Handler.
+ * Register Ethernet CSAP callbacks and support structures in TAD
+ * Command Handler.
  *
  * @return zero on success or error code.
  */ 
-int csap_support_eth_register (void)
+int
+csap_support_eth_register(void)
 { 
     return add_csap_spt(&eth_csap_spt);
 }
-
