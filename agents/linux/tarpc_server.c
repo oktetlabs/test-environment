@@ -1824,13 +1824,12 @@ TARPC_FUNC(fcntl, {},
         in->cmd == RPC_F_SETFL)
         arg = fcntl_flag_rpc2h(arg);
 
-    if (in->arg != 0)
-        MAKE_CALL(out->retval = func(in->fd, fcntl_rpc2h(in->cmd), arg));
-    else
+    if (in->cmd == RPC_F_GETFD || in->cmd == RPC_F_GETFL)
         MAKE_CALL(out->retval = func(in->fd, fcntl_rpc2h(in->cmd)));
+    else
+        MAKE_CALL(out->retval = func(in->fd, fcntl_rpc2h(in->cmd), arg));
 
-    if (in->cmd == RPC_F_GETFD || in->cmd == RPC_F_GETFL ||
-        in->cmd == RPC_F_SETFL)
+    if (in->cmd == RPC_F_GETFL || in->cmd == RPC_F_SETFL)
         out->retval = fcntl_flag_h2rpc(out->retval);
 }
 )
