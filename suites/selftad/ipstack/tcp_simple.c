@@ -115,10 +115,27 @@ main(int argc, char *argv[])
         struct timeval to;
         asn_value *csap_spec, *pattern;
 
+        int sock_src;
+        int sock_dst;
+
         int csap;
         int num;
         int timeout = 30;
         int rc_mod, rc_code;
+
+        struct sockaddr_in srv_addr;
+
+        if ((sock_src = rpc_socket(srv_src, RPC_AF_INET, RPC_SOCK_STREAM, 
+                            RPC_IPPROTO_TCP)) < 0 || srv_src->_errno != 0)
+        {
+            TEST_FAIL("Calling of RPC socket() failed %x", srv_src->_errno);
+        }
+
+        if ((sock_dst = rpc_socket(srv_dst, RPC_AF_INET, RPC_SOCK_STREAM, 
+                            RPC_IPPROTO_TCP)) < 0 || srv_dst->_errno != 0)
+        {
+            TEST_FAIL("Calling of RPC socket() failed %x", srv_dst->_errno);
+        }
 
         rc = asn_parse_value_text("{tcp:{local-port plain:0}, "
                                   " ip4:{max-packet-size plain:100000},"
@@ -191,5 +208,15 @@ main(int argc, char *argv[])
     TEST_SUCCESS;
 
 cleanup:
+    if (srv_dst && (rcf_rpc_server_destroy(srv_dst) != 0))
+    {
+        WARN("Cannot delete dst RPC server\n");
+    }
+
+    if (srv_src && (rcf_rpc_server_destroy(srv_src) != 0))
+    {
+        WARN("Cannot delete src RPC server\n");
+    }
+
     TEST_END;
 }
