@@ -37,6 +37,13 @@ Generic options:
 
   --lock-dir=<directory>        lock file directory (/tmp/te/lock by default)
 
+  --log-html=<dirname>          Name of the directory with structured HTML logs
+                                to be generated (do not generate by default)
+  --log-plain-html=<filename>   Name of the file with plain HTML logs
+                                to be generated (do not generate by default)
+  --log-txt=<filename>          Name of the file with logs in text format
+                                to be generated (log.txt by default)
+
   --no-builder                  Do not build TE
   --no-tester                   Do not run Tester
   --no-cs                       Do not run Configurator
@@ -52,6 +59,9 @@ Generic options:
   --cs-print-trees              Print configurator trees.
   --cs-print-diff               Log backup diff unconditionally.
 
+  --build=path                  Build package specified in the path.
+  --build-log=path              Build package with log level 0xFFFF.
+  --build-nolog=path            Build package with undefined log level.
   --build-cs                    Build configurator.
   --build-logger                Build logger.
   --build-rcf                   Build RCF.
