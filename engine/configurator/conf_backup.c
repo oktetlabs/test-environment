@@ -63,7 +63,7 @@ register_objects(xmlNodePtr *node)
             return EINVAL;
         }
         
-        len = sizeof(cfg_msg) + sizeof(cfg_obj_descr) + strlen(oid) + 1;
+        len = sizeof(cfg_register_msg) + strlen(oid) + 1;
         if ((msg = (cfg_register_msg *)malloc(len)) == NULL)
         {
             xmlFree(oid);
