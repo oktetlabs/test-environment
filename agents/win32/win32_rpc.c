@@ -25,7 +25,7 @@
  *
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
  *
- * $Id: win32_rpc.c 3921 2004-07-22 18:39:49Z arybchik $
+ * $Id$
  */
 
 #ifndef __INSIDE_CYGWIN__
@@ -189,7 +189,8 @@ supervise_children(void *arg)
                 ERROR("RPC Server with PID %d core dumped", pid);
 #endif
             else
-                WARN("RPC Server with PID %d exited due unknown reason", pid); 
+                WARN("RPC Server with PID %d exited due unknown reason",
+                     pid); 
         }
     }
 }
@@ -202,7 +203,8 @@ create_log_socket()
     
     if (s < 0)
     {
-        ERROR("Cannot create a socket for gathering the log, errno %d", errno);
+        ERROR("Cannot create a socket for gathering the log, errno %d",
+              errno);
         return -1;
     }
 
@@ -212,15 +214,16 @@ create_log_socket()
     ta_log_addr_s = (struct sockaddr *)&ta_log_addr;
     if (bind(s, (struct sockaddr *)&ta_log_addr, len) < 0)
     {
-        ERROR("Cannot bind a socket for gathering the log, errno %d", errno);
+        ERROR("Cannot bind a socket for gathering the log, errno %d",
+              errno);
         close(s);
         return -1;
     }
 
     if (getsockname(s, (struct sockaddr *)&ta_log_addr, &len) < 0)
     {
-        ERROR("Cannot getsockname for a socket for gathering the log, errno %d",
-              errno);
+        ERROR("Cannot getsockname for a socket for gathering the log, "
+              "errno %d", errno);
         close(s);
         return -1;
     }
@@ -337,7 +340,7 @@ tarpc_add_server(char *name, int pid)
     if (addr.sin_port == 0)
         return TE_RC(TE_TA_WIN32, EINVAL);
 
-    while (tries > 0 && connect(tmp->sock, (struct sockaddr *)&addr, sizeof(addr)) < 0)
+    while (tries > 0 && connect(tmp->sock, SA(&addr), sizeof(addr)) < 0)
     {
         usleep(10000);
         tries--;
@@ -544,7 +547,8 @@ tarpc_server_create(char *name)
 
         if (pthread_create(&tid, NULL, supervise_children, NULL) != 0)
         {
-            ERROR("Cannot create RPC servers supervising thread: %d", errno);
+            ERROR("Cannot create RPC servers supervising thread: %d",
+                  errno);
             return -1;
         }
 
@@ -589,7 +593,8 @@ tarpc_server_create(char *name)
         tv.tv_sec = TARPC_SERVER_SYNC_TIMEOUT / 1000000;
         tv.tv_usec = TARPC_SERVER_SYNC_TIMEOUT % 1000000;
 
-        if (select(ta_rpc_sync_socks[0] + 1, &sync_fds, NULL, NULL, &tv) <= 0)
+        if (select(ta_rpc_sync_socks[0] + 1,
+                   &sync_fds, NULL, NULL, &tv) <= 0)
         {
             close(ta_rpc_sync_socks[0]);
             return -1;
