@@ -18,7 +18,7 @@ echo -e \
 
 XML_LOG_FILE=`mktemp`
 
-rgt-conv -m postponed -c $RGT_FILTER -f $RAW_LOG_FILE -o $XML_LOG_FILE
+rgt-conv --no-cntrl-msg -m postponed -c $RGT_FILTER -f $RAW_LOG_FILE -o $XML_LOG_FILE
 if test $? -eq 0 ; then
     if test -n "$HTML_FILE" ; then
         HTML_FILE="--html=$HTML_FILE"
