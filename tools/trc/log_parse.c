@@ -575,10 +575,12 @@ trc_parse_log(const char *filename)
     if (node == NULL)
     {
         ERROR("Empty XML log file");
+        rc = ENOENT;
     }
     else if (xmlStrcmp(node->name, CONST_CHAR2XML("log_report")) != 0)
     {
         ERROR("Unexpected root element of the XML log file");
+        rc = EINVAL;
     }
     else
     {

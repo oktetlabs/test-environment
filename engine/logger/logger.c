@@ -526,9 +526,6 @@ ta_handler(void *ta)
                 WARN("TA %s: Lost %d messages", inst->agent, lost);
             inst->sequence = sequence;
 
-            /* Message is started */
-            flush_msg_max--;
-
             /* Read control fields value */
             len = TE_LOG_VERSION_SZ + TE_LOG_TIMESTAMP_SZ + \
                   TE_LOG_LEVEL_SZ + TE_LOG_MSG_LEN_SZ;
@@ -540,6 +537,9 @@ ta_handler(void *ta)
             /* Get message timestamp value */
             if (do_flush)
             {
+                /* Message is started */
+                flush_msg_max--;
+
                 assert(TE_LOG_TIMESTAMP_SZ == sizeof(uint32_t) * 2);
                 memcpy(&msg_ts.tv_sec,
                        p_buf + TE_LOG_VERSION_SZ,

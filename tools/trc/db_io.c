@@ -258,7 +258,9 @@ alloc_and_get_test_iter(xmlNodePtr node, trc_test_type type,
     TAILQ_INIT(&p->tests.head);
     TAILQ_INSERT_TAIL(&iters->head, p, links);
     
-    for (tag = tags.tqh_first; tag != NULL; tag = tag->links.tqe_next)
+    for (rc = ENOENT, tag = tags.tqh_first;
+         tag != NULL;
+         tag = tag->links.tqe_next)
     {
         rc = get_result(node, tag->name, &p->exp_result);
         if (rc != ENOENT)
@@ -526,8 +528,7 @@ trc_parse_db(const char *filename)
     return rc;
 }
 
-static int
-trc_update_tests(test_runs *tests);
+static int trc_update_tests(test_runs *tests);
 
 static int
 trc_update_iters(test_iters *iters)
@@ -547,7 +548,7 @@ trc_update_iters(test_iters *iters)
             if (p->tests.node == NULL)
             {
                 ERROR("xmlNewChild() failed");
-                return rc;
+                return ENOMEM;
             }
             xmlNewProp(p->tests.node, BAD_CAST "result",
                        BAD_CAST "UNSPEC");
@@ -561,7 +562,7 @@ trc_update_iters(test_iters *iters)
                 if (arg == NULL)
                 {
                     ERROR("xmlNewChild() failed for 'arg'");
-                    return rc;
+                    return ENOMEM;
                 }
                 xmlNewProp(arg, BAD_CAST "name", BAD_CAST a->name);
             }
@@ -570,7 +571,7 @@ trc_update_iters(test_iters *iters)
                             BAD_CAST p->notes) == NULL)
             {
                 ERROR("xmlNewChild() failed for 'notes'");
-                return rc;
+                return ENOMEM;
             }
         }
         rc = trc_update_tests(&p->tests);
@@ -609,7 +610,7 @@ trc_update_tests(test_runs *tests)
             if (p->iters.node == NULL)
             {
                 ERROR("xmlNewChild() failed for 'test'");
-                return rc;
+                return ENOMEM;
             }
             xmlNewProp(p->iters.node, BAD_CAST "name",
                        BAD_CAST p->name);
@@ -620,13 +621,13 @@ trc_update_tests(test_runs *tests)
                             BAD_CAST p->objective) == NULL)
             {
                 ERROR("xmlNewChild() failed for 'objective'");
-                return rc;
+                return ENOMEM;
             }
             if (xmlNewChild(p->iters.node, NULL,
                             BAD_CAST "notes", NULL) == NULL)
             {
                 ERROR("xmlNewChild() failed for 'notes'");
-                return rc;
+                return ENOMEM;
             }
         }
         if (p->obj_update)
