@@ -54,6 +54,10 @@
 #include <stdarg.h>
 #endif
 
+#ifdef HAVE_SYS_STAT_H
+#include <sys/stat.h>
+#endif
+
 #include "te_defs.h"
 #include "te_errno.h"
 #include "te_stdint.h"
@@ -213,7 +217,7 @@ tapi_file_create_ta(const char *ta, const char *filename,
  * @param ta_dst        destination Test Agent
  * @param dst           destination file name
  *
- * @return Status code
+ * @return 0 (success) or -1 (failure)
  */
 int
 tapi_file_copy_ta(const char *ta_src, const char *src,
@@ -225,16 +229,76 @@ tapi_file_copy_ta(const char *ta_src, const char *src,
     if ((rc = rcf_ta_get_file(ta_src, 0, src, pathname)) != 0)
     {
         ERROR("Cannot get file %s from TA %s; errno %d", src, ta_src, rc);
-        return rc;
+        return -1;
     }
 
     if ((rc = rcf_ta_put_file(ta_dst, 0, pathname, dst)) != 0)
     {
         ERROR("Cannot put file %s to TA %s; errno %d", dst, ta_dst, rc);
         unlink(pathname);
-        return rc;
+        return -1;
     }
     unlink(pathname);
     return 0;
 }
                   
+/**
+ * Read file content from the TA.
+ *
+ * @param ta            Test Agent name
+ * @param filename      pathname of the file
+ * @param pbuf          location for buffer allocated by the routine
+ *
+ * @return 0 (success) or -1 (failure)
+ *
+ * @note the function is not thread-safe
+ */
+int 
+tapi_file_read_ta(const char *ta, const char *filename, char *pbuf)
+{
+    char *pathname = tapi_file_generate_pathname();
+    int   rc;
+    char *buf;
+    FILE *f;
+    
+    struct stat st;
+
+    if ((rc = rcf_ta_get_file(ta, 0, filename, pathname)) != 0)
+    {
+        ERROR("Cannot get file %s from TA %s; errno %d", filename, ta, rc);
+        return -1;
+    }
+    
+    if (stat(pathname, &st) != 0)
+    {
+        ERROR("Failed to stat file %s; errno %d", pathname, errno);
+        return -1;
+    }
+    if ((buf = calloc(st.st_size + 1, 1)) == NULL)
+    {
+        ERROR("Out of memory");
+        unlink(pathname);
+        return -1;
+    } 
+    
+    if ((f = fopen(pathname, "r")) == NULL)
+    {
+        ERROR("Failed to open file %s; errno %d", pathname, errno);
+        unlink(pathname);
+        return -1;
+    }
+    
+    if (fread(buf, 1, st.st_size, f) != st.st_size)
+    {
+        ERROR("Failed to read from file %s", pathname);
+        unlink(pathname);
+        return -1;
+    }
+    
+    fclose(f);
+    unlink(pathname);
+    
+    *pbuf = buf;
+    
+    return 0;
+}

@@ -126,6 +126,20 @@ extern char *tapi_file_create(size_t len, char *buf, te_bool random);
 extern int tapi_file_create_ta(const char *ta, const char *filename, 
                                const char *fmt, ...);
 
+/**
+ * Read file content from the TA.
+ *
+ * @param ta            Test Agent name
+ * @param filename      pathname of the file
+ * @param pbuf          location for buffer allocated by the routine
+ *
+ * @return 0 (success) or -1 (failure)
+ *
+ * @note the function is not thread-safe
+ */
+extern int tapi_file_read_ta(const char *ta, const char *filename, 
+                             char *pbuf);
+
 /*
  * Copy file from the one TA to other.
  *
@@ -134,7 +148,7 @@ extern int tapi_file_create_ta(const char *ta, const char *filename,
  * @param ta_dst        destination Test Agent
  * @param dst           destination file name
  *
- * @return Status code
+ * @return 0 (success) or -1 (failure)
  */
 extern int tapi_file_copy_ta(const char *ta_src, const char *src,
                              const char *ta_dst, const char *dst);
