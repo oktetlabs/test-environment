@@ -2984,6 +2984,7 @@ flooder(tarpc_flooder_in *in)
     te_bool         session_rx;
 
 
+    INFO("%d flooder start", getpid());
     memset(rcv_buf, 0x0, FLOODER_BUF);
     memset(snd_buf, 0xA, FLOODER_BUF);
 
@@ -2994,6 +2995,7 @@ flooder(tarpc_flooder_in *in)
         (find_func((tarpc_in_arg *)in, "write", &write_func) != 0)     ||
         (find_func((tarpc_in_arg *)in, "ioctl", &ioctl_func) != 0))
     {
+        ERROR("failed to resolve function");
         return -1;
     }
 
@@ -3005,7 +3007,7 @@ flooder(tarpc_flooder_in *in)
 
         for (i = 0; i < rcvnum; ++i)
         {
-            if ((ioctl(rcvrs[i], FIONBIO, &on)) != 0)
+            if ((ioctl_func(rcvrs[i], FIONBIO, &on)) != 0)
             {
                 ERROR("%s(): ioctl(FIONBIO) failed: %X",
                       __FUNCTION__, errno);
@@ -3146,7 +3148,9 @@ flooder(tarpc_flooder_in *in)
                     {
                         session_rx = TRUE;
                         if (rx_stat != NULL)
+                        {
                             rx_stat[i] += received;
+                        }
                         if (!time2run_not_expired)
                             VERB("FD=%d Rx=%d", rcvrs[i], received);
                     }
@@ -3197,7 +3201,9 @@ flooder(tarpc_flooder_in *in)
                     {
                         session_rx = TRUE;
                         if (rx_stat != NULL)
+                        {
                             rx_stat[i] += received;
+                        }
                         if (!time2run_not_expired)
                             VERB("FD=%d Rx=%d", ufds[i].fd, received);
                     }
@@ -3279,7 +3285,7 @@ flooder(tarpc_flooder_in *in)
 
         for (i = 0; i < rcvnum; ++i)
         {
-            if ((ioctl(rcvrs[i], FIONBIO, &off)) != 0)
+            if ((ioctl_func(rcvrs[i], FIONBIO, &off)) != 0)
             {
                 ERROR("%s(): ioctl(FIONBIO) failed: %X",
                       __FUNCTION__, errno);
