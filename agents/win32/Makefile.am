@@ -76,8 +76,11 @@ tawin32_SOURCES=$(MY_SOURCES)
 
 tawin32_LDADD=$(MY_LDADD)
 
-tawin32_DEPENDENCIES=@TE_DEPENDENCIES@ symtbl.o
-
+tawin32_DEPENDENCIES=@TE_DEPENDENCIES@ symtbl.o \
+    $(DESTDIR)/$(prefix)/../@host@/lib/librcfpch.a \
+    $(DESTDIR)/$(prefix)/../@host@/lib/libconf_oid.a \
+    $(DESTDIR)/$(prefix)/../@host@/lib/libcomm_net_agent.a \
+    $(DESTDIR)/$(prefix)/../@host@/lib/libloggerta.a
 
 #
 # Static linkage may be required, since agent may be copied to another

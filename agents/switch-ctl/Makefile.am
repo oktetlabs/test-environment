@@ -18,7 +18,11 @@ taswitch_ctl_LDADD = symtbl.o -lrcfpch @TE_LDADD@ -lconf_oid \
 
 taswitch_ctl_SOURCES = main.c conf.c
 
-taswitch_ctl_DEPENDENCIES = @TE_DEPENDENCIES@ symtbl.o
+taswitch_ctl_DEPENDENCIES = @TE_DEPENDENCIES@ symtbl.o \
+    $(DESTDIR)/$(prefix)/../@host@/lib/librcfpch.a \
+    $(DESTDIR)/$(prefix)/../@host@/lib/libconf_oid.a \
+    $(DESTDIR)/$(prefix)/../@host@/lib/libcomm_net_agent.a \
+    $(DESTDIR)/$(prefix)/../@host@/lib/libloggerta.a
 
 
 symtbl.o: main.o conf.o @TE_DEPENDENCIES@

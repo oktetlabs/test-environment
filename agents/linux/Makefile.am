@@ -102,7 +102,11 @@ talinux_SOURCES=$(MY_SOURCES)
 
 talinux_LDADD=$(MY_LDADD)
 
-talinux_DEPENDENCIES=@TE_DEPENDENCIES@ symtbl.o
+talinux_DEPENDENCIES=@TE_DEPENDENCIES@ symtbl.o \
+    $(DESTDIR)/$(prefix)/../@host@/lib/librcfpch.a \
+    $(DESTDIR)/$(prefix)/../@host@/lib/libconf_oid.a \
+    $(DESTDIR)/$(prefix)/../@host@/lib/libcomm_net_agent.a \
+    $(DESTDIR)/$(prefix)/../@host@/lib/libloggerta.a
 
 bin_PROGRAMS=talinux
 
@@ -112,7 +116,11 @@ tafreebsd_SOURCES=$(MY_SOURCES)
 
 tafreebsd_LDADD=$(MY_LDADD)
 
-tafreebsd_DEPENDENCIES=@TE_DEPENDENCIES@ symtbl.o
+tafreebsd_DEPENDENCIES=@TE_DEPENDENCIES@ symtbl.o \
+    $(DESTDIR)/$(prefix)/../@host@/lib/librcfpch.a \
+    $(DESTDIR)/$(prefix)/../@host@/lib/libconf_oid.a \
+    $(DESTDIR)/$(prefix)/../@host@/lib/libcomm_net_agent.a \
+    $(DESTDIR)/$(prefix)/../@host@/lib/libloggerta.a
 
 bin_PROGRAMS=tafreebsd
 
