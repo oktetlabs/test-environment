@@ -9,20 +9,20 @@ IMPORTS DATA-UNIT FROM TE-NDN-General;
 
 Forwarder-Action-Delay-Params ::= SEQUENCE {
     type      [0] INTEGER {disabled(0), constant(1), random(2)},
-    delay_min [1] DATA-UNIT {INTEGER},
-    delay_max [2] DATA-UNIT {INTEGER}
+    delay-min [1] DATA-UNIT {INTEGER},
+    delay-max [2] DATA-UNIT {INTEGER}
 }
 
 Forwarder-Action-Bandwidth-Params ::= SEQUENCE {
     type      [0] INTEGER{unlimited(0), limited(1)},
     bps       [1] DATA-UNIT{INTEGER },
-    buf_size  [2] DATA-UNIT{INTEGER }
+    buf-size  [2] DATA-UNIT{INTEGER }
 }
 
 Forwarder-Action-Reorder-Params ::= SEQUENCE {
     type            [0] INTEGER {disabled(0), random(1), reversed(2)},
     timeout         [1] DATA-UNIT {INTEGER},
-    reorder_size    [2] DATA-UNIT {INTEGER}
+    reorder-size    [2] DATA-UNIT {INTEGER}
 }
 
 Forwarder-Action-Drop-Params ::= SEQUENCE {
@@ -31,7 +31,7 @@ Forwarder-Action-Drop-Params ::= SEQUENCE {
 }
 
 Forwarder-Action ::= SEQUENCE {
-    id        [0] DATA-UNIT {UniversalString},
+    id        [0] UniversalString,
     delay     [1] Forwarder-Action-Delay-Params OPTIONAL,
     bandwidth [2] Forwarder-Action-Bandwidth-Params OPTIONAL,
     reorder   [3] Forwarder-Action-Reorder-Params OPTIONAL,
