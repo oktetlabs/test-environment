@@ -1075,6 +1075,12 @@ tapi_cfg_alloc_entry_by_handle(cfg_handle parent, cfg_handle *entry)
     cfg_val_type    type = CVT_INTEGER;
     int             value;
 
+    if (entry == NULL)
+    {
+        ERROR("%s(): Invalid argument", __FUNCTION__);
+        return TE_RC(TE_TAPI, EINVAL);
+    }
+
     *entry = CFG_HANDLE_INVALID;
 
     for (rc = cfg_get_son(parent, &handle);
@@ -1178,12 +1184,13 @@ tapi_cfg_free_entry(cfg_handle *entry)
 
 /* See the description in tapi_cfg.h */
 int
-tapi_cfg_alloc_ip4_addr(cfg_handle ip4_net, cfg_handle *entry,
+tapi_cfg_alloc_ip4_addr(cfg_handle ip4_net, cfg_handle *p_entry,
                         struct sockaddr_in **addr)
 {
     int             rc;
     char           *ip4_net_oid;
     cfg_handle      pool;
+    cfg_handle      entry;
     int             n_entries;
     cfg_handle      n_entries_hndl;
     cfg_val_type    val_type;
@@ -1220,10 +1227,25 @@ tapi_cfg_alloc_ip4_addr(cfg_handle ip4_net, cfg_handle *entry,
         return rc;
     }
     
-    rc = tapi_cfg_alloc_entry_by_handle(pool, entry);
+    rc = tapi_cfg_alloc_entry_by_handle(pool, &entry);
     if (TE_RC_GET_ERROR(rc) != ENOENT)
     {
         free(ip4_net_oid);
+        if (rc == 0)
+        {
+            /* Get address */
+            rc = cfg_get_inst_name_type(entry, CVT_ADDRESS,
+                                        (cfg_inst_val *)addr);
+            if (rc != 0)
+            {
+                ERROR("Failed to get IPv4 address as instance name of "
+                      "0x%x: %X", entry, rc);
+            }
+            else if (p_entry != NULL)
+            {
+                *p_entry = entry;
+            }
+        }
         return rc;
     }
     
@@ -1314,7 +1336,7 @@ tapi_cfg_alloc_ip4_addr(cfg_handle ip4_net, cfg_handle *entry,
         htonl(ntohl((*addr)->sin_addr.s_addr) + n_entries);
 
     /* Add used entry in the pool */
-    rc = cfg_add_instance_fmt(entry, CVT_INTEGER, (void *)1,
+    rc = cfg_add_instance_fmt(&entry, CVT_INTEGER, (void *)1,
                               "%s/pool:/entry:%s", ip4_net_oid,
                               inet_ntop(AF_INET, &(*addr)->sin_addr,
                                         buf, sizeof(buf)));
@@ -1325,6 +1347,10 @@ tapi_cfg_alloc_ip4_addr(cfg_handle ip4_net, cfg_handle *entry,
         free(ip4_net_oid);
         return rc;
     }
+    free(ip4_net_oid);
+
+    if (p_entry != NULL)
+        *p_entry = entry;
 
     return 0;
 }

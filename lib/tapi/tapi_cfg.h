@@ -339,7 +339,8 @@ tapi_cfg_alloc_ip4_net(cfg_handle *entry)
  * Allocate IPv4 address from IPv4 subnet got from IPv4 subnets pool.
  *
  * @param ip4_net       IPv4 subnet handle
- * @param entry         Location for Cfgr handle of new entry
+ * @param p_entry       Location for Cfgr handle of new entry
+ * @param addr          Location for allocated address
  *
  * @return Status code.
  *
@@ -347,7 +348,8 @@ tapi_cfg_alloc_ip4_net(cfg_handle *entry)
  * 
  * @sa tapi_cfg_free_entry, tapi_cfg_alloc_ip4_net
  */
-extern int tapi_cfg_alloc_ip4_addr(cfg_handle ip4_net, cfg_handle *entry,
+extern int tapi_cfg_alloc_ip4_addr(cfg_handle           ip4_net,
+                                   cfg_handle          *p_entry,
                                    struct sockaddr_in **addr);
 
 
