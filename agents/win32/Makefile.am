@@ -10,8 +10,8 @@ MY_LDADD=symtbl.o $(LIBLTDL) -lrcfpch @TE_LDADD@ -lconf_oid \
          -lcomm_net_agent -lloggerta -lpthread 
 MY_LDAFLAGS=-rdynamic -export-dynamic 
 
-MY_SOURCES=win32.c win32conf.c ftp_routines.c
-MY_SYMTBL_OBJECTS=win32.o ftp_routines.o
+MY_SOURCES=win32.c win32conf.c 
+MY_SYMTBL_OBJECTS=win32.o 
 
 noinst_HEADERS=win32_rpc.h 
 
