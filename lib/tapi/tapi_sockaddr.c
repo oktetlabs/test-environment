@@ -424,7 +424,7 @@ sockaddr2str(const struct sockaddr *sa)
         return ptr;
     }
 
-    if (!sockaddr_is_af_supported(sa))
+    if (!sockaddr_is_af_supported(sa->sa_family))
     {
         return "<Not supported address family>";
     }
