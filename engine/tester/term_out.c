@@ -308,19 +308,19 @@ tester_out_done(run_item_type type, const char *name,
                 switch (result)
                 {
                     case ETESTFAIL:
-                        color = TESTER_COLOR_LIGHT_RED;
+                        color = TESTER_COLOR_DARK_RED;
                         break;
 
                     case ETESTCONF:
-                        color = TESTER_COLOR_DARK_RED;
+                        color = TESTER_COLOR_LIGHT_RED;
                         break;
 
                     case ETESTPROLOG:
-                        color = TESTER_COLOR_DARK_RED;
+                        color = TESTER_COLOR_LIGHT_RED;
                         break;
 
                     case ETESTEPILOG:
-                        color = TESTER_COLOR_DARK_RED;
+                        color = TESTER_COLOR_LIGHT_RED;
                         break;
 
                     case ETESTUNEXP:
