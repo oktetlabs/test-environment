@@ -1078,7 +1078,7 @@
  */
 #define CHECK_READABILITY(rpcs_, sockd_, should_be_readable_) \
     do {                                                                \
-        te_bool         answer_;                                        \
+        te_bool         answer_ = !(should_be_readable_);               \
                                                                         \
         GET_READABILITY(answer_, rpcs_, sockd_, 1);                     \
         if (should_be_readable_ == TRUE && answer_ == FALSE)            \
