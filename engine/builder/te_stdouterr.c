@@ -218,5 +218,16 @@ main(int argc, char *const argv[])
         }
     } while (child_run);
 
-    return status;
+    if (WIFSIGNALED(status))
+    {
+        ERROR("'%s' was killed by signal %d", cmd, WTERMSIG(status));
+    }
+#ifdef WCOREDUMP
+    if (WCOREDUMP(status))
+    {
+        ERROR("'%s' dumped core", cmd);
+    }
+#endif
+
+    return WIFEXITED(status) ? WEXITSTATUS(status) : EXIT_FAILURE;
 }
