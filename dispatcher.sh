@@ -62,7 +62,8 @@ usage()
     echo -e '  '--vg-tests\\t\\t\\t'Run tests under valgrind (without by default).'
     echo -e \\t\\t\\t\\t'May be used with script Tester only.'
     echo
-    echo -e '  --tester-fake'\\t\\t\\t'Do not run any test scripts, just emulate test'
+    echo -e '  --tester-fake'\\t\\t\\t'Do not run any test scripts, just emulate.'
+    echo -e \\t\\t\\t\\t'Usefull for configuration debugging.'
     echo -e '  --tester-nobuild'\\t\\t'Do not build Test Suite sources'
     echo -e '  --tester-no-cs'\\t\\t'Do not interact with Configurator.'
     echo -e '  --tester-nocfgtrack'\\t\\t'Do not track configuration changes.'
@@ -76,7 +77,6 @@ usage()
     echo -e '  --tester-req=[REQ|!REQ]'\\t'Requirement to be tested (or excluded,'
     echo -e '  --tester-run=[PATH]'\\t\\t'Run a test item defined by PATH.'
     echo -e \\t\\t\\t\\t'if its first symbol is !).'
-    echo -e \\t\\t\\t\\t'failure. Usefull for configuration debugging.'
     echo -e '  --tester-vg=[PATH]'\\t\\t'Run test scripts in specified path under'
     echo -e \\t\\t\\t\\t'valgrind.'
     echo -e '  --tester-gdb=[PATH]'\\t\\t'Run test scripts in specified path under gdb.'
