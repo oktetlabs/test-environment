@@ -57,7 +57,7 @@ test_get_param(int argc, char *argv[], const char *name)
     {
         if (strncmp(argv[i], name, strlen(name)) != 0)
             continue;
-        
+
         ptr = argv[i] + strlen(name);
         while (isspace(*ptr))
             ptr++;
@@ -93,10 +93,10 @@ test_map_param_value(const char *var_name,
             return 0;
         }
     }
-    
+
     {
         char buf[2048];
-        
+
         snprintf(buf, sizeof(buf),
                  "'%s' parameter has incorrect value '%s'. "
                  "It can have the following value: {",
@@ -113,7 +113,7 @@ test_map_param_value(const char *var_name,
             buf[strlen(buf) - 2] = '\0';
         }
         snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "}");
-        
+
         ERROR(buf);
     }
 
@@ -131,44 +131,45 @@ test_get_octet_string_param(const char *str_val, int len)
     if (str_val == NULL)
     {
         ERROR("Invalid parameter: NULL pointer");
-	return NULL;
+        return NULL;
     }
 
     oct_string = (unsigned char *)calloc(len, sizeof(unsigned char *));
     if (oct_string == NULL)
     {
         ERROR("Error in memory allocation");
-	return NULL;
+        return NULL;
     }
     ptr = oct_string;
     nptr = NULL;
     endptr = str_val;
-    
-    while ((nptr != endptr) && (endptr) && (i < len)) 
+
+    while ((nptr != endptr) && (endptr) && (i < len))
     {
-        /* How should I fight args list ?*/	    
+        /* How should I fight args list ?*/
         if (*endptr == ':')
-            endptr++; 		
-        nptr = endptr;	    
+            endptr++;
+        nptr = endptr;
         *ptr++ = (unsigned char)strtol(nptr, &endptr, 16);
-	i++;
+        i++;
     }
 
     if (*endptr != '\0')
     {
-        ERROR("Error in parsing octet string %s or bad given length %d", str_val, len);
-	free(oct_string);
-	return NULL;
+        ERROR("Error in parsing octet string %s or bad given length %d",
+              str_val, len);
+        free(oct_string);
+        return NULL;
     }
 
     if (i != len)
     {
         ERROR("Bad given length %d for octet string %s", len, str_val);
-	free(oct_string);
-	return NULL;
+        free(oct_string);
+        return NULL;
     }
     return oct_string;
-}	
+}
 
 /** See the description in sockapi-test.h */
 const char*
@@ -180,7 +181,7 @@ print_octet_string (const unsigned char *oct_string, int len)
 
     if (oct_string == NULL)
         strncpy (buf, sizeof(buf), "<null octet string>");
-    
+
     for(i = 0; i < len; i++)
         p += sprintf (p, " 0x%x", (int)(*oct_string++));
 
