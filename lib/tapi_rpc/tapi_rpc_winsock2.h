@@ -181,6 +181,30 @@ extern int rpc_wsa_recv(rcf_rpc_server *rpcs,
                         int *bytes_received, rpc_overlapped overlapped,
                         te_bool callback);
 
+/* WSASendTo */
+extern int rpc_wsa_send_to(rcf_rpc_server *handle, int s,
+                           const struct rpc_iovec *iov,
+                           size_t iovcnt, rpc_send_recv_flags flags,
+                           int *bytes_sent, const struct sockaddr *to,
+                           socklen_t tolen, rpc_overlapped overlapped,
+                           te_bool callback);
+
+/* WSARecvFrom */
+extern int rpc_wsa_recv_from(rcf_rpc_server *handle, int s,
+                             const struct rpc_iovec *iov, size_t iovcnt,
+                             size_t riovcnt, rpc_send_recv_flags *flags,
+                             int *bytes_received, struct sockaddr *from,
+                             socklen_t *fromlen, rpc_overlapped overlapped,
+                             te_bool callback);
+
+/* WSASendDisconnect */
+extern int rpc_wsa_send_disconnect(rcf_rpc_server *handle,
+                                   int s, const struct rpc_iovec *iov);
+
+/* WSARecvDisconnect */
+extern int rpc_wsa_recv_disconnect(rcf_rpc_server *handle,
+                                   int s, const struct rpc_iovec *iov);
+
 /* WSAGetOverlappedResult() */
 extern int rpc_get_overlapped_result(rcf_rpc_server *rpcs,
                                      int s, rpc_overlapped overlapped,

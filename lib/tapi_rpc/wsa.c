@@ -1114,6 +1114,339 @@ rpc_wsa_recv(rcf_rpc_server *rpcs,
 }
 
 int
+rpc_wsa_send_to(rcf_rpc_server *rpcs, int s, const struct rpc_iovec *iov,
+                size_t iovcnt, rpc_send_recv_flags flags, int *bytes_sent,
+                const struct sockaddr *to, socklen_t tolen,
+                rpc_overlapped overlapped, te_bool callback)
+{
+    rcf_rpc_op            op;
+    tarpc_wsa_send_to_in  in;
+    tarpc_wsa_send_to_out out;
+
+    struct tarpc_iovec iovec_arr[RCF_RPC_MAX_IOVEC];
+
+    size_t i;
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        return -1;
+    }
+
+    op = rpcs->op;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+    memset(iovec_arr, 0, sizeof(iovec_arr));
+
+    if (iovcnt > RCF_RPC_MAX_IOVEC)
+    {
+        rpcs->_errno = TE_RC(TE_RCF, ENOMEM);
+        return -1;
+    }
+
+    for (i = 0; i < iovcnt && iov != NULL; i++)
+    {
+        iovec_arr[i].iov_base.iov_base_val = iov[i].iov_base;
+        iovec_arr[i].iov_base.iov_base_len = iov[i].iov_rlen;
+        iovec_arr[i].iov_len = iov[i].iov_len;
+    }
+
+    if (iov != NULL)
+    {
+        in.vector.vector_val = iovec_arr;
+        in.vector.vector_len = iovcnt;
+    }
+
+    in.s = s;
+    in.count = iovcnt;
+    in.overlapped = (tarpc_overlapped)overlapped;
+    in.callback = callback;
+    if (bytes_sent != NULL)
+    {
+        in.bytes_sent.bytes_sent_len = 1;
+        in.bytes_sent.bytes_sent_val = bytes_sent;
+    }
+    in.flags = flags;
+
+    if (to != NULL && rpcs->op != RCF_RPC_WAIT)
+    {
+        if (tolen >= SA_COMMON_LEN)
+        {
+            in.to.sa_family = addr_family_h2rpc(to->sa_family);
+            in.to.sa_data.sa_data_len = tolen - SA_COMMON_LEN;
+            in.to.sa_data.sa_data_val = (uint8_t *)(to->sa_data);
+        }
+        else
+        {
+            in.to.sa_family = RPC_AF_UNSPEC;
+            in.to.sa_data.sa_data_len = 0;
+            /* Any no-NULL pointer is suitable here */
+            in.to.sa_data.sa_data_val = (uint8_t *)to;
+        }
+    }
+    in.tolen = tolen;
+
+    rcf_rpc_call(rpcs, _wsa_send_to, &in,
+                 (xdrproc_t)xdr_tarpc_wsa_send_to_in,
+                 &out, (xdrproc_t)xdr_tarpc_wsa_send_to_out);
+
+    RING("RPC (%s,%s)%s: wsa_send_to(%s, %u) -> %d (%s)",
+         rpcs->ta, rpcs->name, rpcop2str(op),
+         sockaddr2str(to), tolen,         
+         out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
+
+    if (RPC_CALL_OK)
+    {
+        if (bytes_sent != NULL && out.bytes_sent.bytes_sent_val != NULL)
+            *bytes_sent = out.bytes_sent.bytes_sent_val[0];
+    }
+
+    RETVAL_RC(wsa_send_to);
+}
+
+int
+rpc_wsa_recv_from(rcf_rpc_server *rpcs, int s,
+                  const struct rpc_iovec *iov, size_t iovcnt,
+                  size_t riovcnt, rpc_send_recv_flags *flags,
+                  int *bytes_received, struct sockaddr *from,
+                  socklen_t *fromlen, rpc_overlapped overlapped,
+                  te_bool callback)
+{
+    rcf_rpc_op              op;
+    tarpc_wsa_recv_from_in  in;
+    tarpc_wsa_recv_from_out out;
+
+    struct tarpc_iovec iovec_arr[RCF_RPC_MAX_IOVEC];
+
+    size_t i;
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        return -1;
+    }
+
+    op = rpcs->op;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+    memset(iovec_arr, 0, sizeof(iovec_arr));
+
+    if (riovcnt > RCF_RPC_MAX_IOVEC)
+    {
+        rpcs->_errno = TE_RC(TE_RCF, ENOMEM);
+        return -1;
+    }
+
+    if (iov != NULL && iovcnt > riovcnt)
+    {
+        rpcs->_errno = TE_RC(TE_RCF, EINVAL);
+        return -1;
+    }
+
+    in.s = s;
+    in.count = iovcnt;
+    in.overlapped = (tarpc_overlapped)overlapped;
+    in.callback = callback;
+    if (bytes_received != NULL)
+    {
+        in.bytes_received.bytes_received_len = 1;
+        in.bytes_received.bytes_received_val = bytes_received;
+    }
+    if (flags != NULL)
+    {
+        in.flags.flags_len = 1;
+        in.flags.flags_val = (int *)flags;
+    }
+
+    if (iov != NULL)
+    {
+        in.vector.vector_len = riovcnt;
+        in.vector.vector_val = iovec_arr;
+        for (i = 0; i < riovcnt; i++)
+        {
+            VERB("IN wsa_recv_from() I/O vector #%d: %p[%u] %u",
+                 i, iov[i].iov_base, iov[i].iov_rlen, iov[i].iov_len);
+            iovec_arr[i].iov_base.iov_base_val = iov[i].iov_base;
+            iovec_arr[i].iov_base.iov_base_len = iov[i].iov_rlen;
+            iovec_arr[i].iov_len = iov[i].iov_len;
+        }
+    }
+
+    if (fromlen != NULL && rpcs->op != RCF_RPC_WAIT)
+    {
+        in.fromlen.fromlen_len = 1;
+        in.fromlen.fromlen_val = fromlen;
+    }
+    if (from != NULL && rpcs->op != RCF_RPC_WAIT)
+    {
+        if ((fromlen != NULL) && (*fromlen >= SA_COMMON_LEN))
+        {
+            in.from.sa_family = addr_family_h2rpc(from->sa_family);
+            in.from.sa_data.sa_data_len = *fromlen - SA_COMMON_LEN;
+            in.from.sa_data.sa_data_val = from->sa_data;
+        }
+        else
+        {
+            in.from.sa_family = RPC_AF_UNSPEC;
+            in.from.sa_data.sa_data_len = 0;
+            /* Any not-NULL pointer is suitable here */
+            in.from.sa_data.sa_data_val = (uint8_t *)from;
+        }
+    }
+
+    rcf_rpc_call(rpcs, _wsa_recv_from, &in,
+                 (xdrproc_t)xdr_tarpc_wsa_recv_from_in,
+                 &out, (xdrproc_t)xdr_tarpc_wsa_recv_from_out);
+
+    if (RPC_CALL_OK)
+    {
+        if (iov != NULL && out.vector.vector_val != NULL)
+        {
+            for (i = 0; i < riovcnt; i++)
+            {
+                ((struct rpc_iovec *)iov)[i].iov_len =
+                    out.vector.vector_val[i].iov_len;
+                if ((iov[i].iov_base != NULL) &&
+                   (out.vector.vector_val[i].iov_base.iov_base_val != NULL))
+                {
+                    memcpy(iov[i].iov_base,
+                           out.vector.vector_val[i].iov_base.iov_base_val,
+                           iov[i].iov_rlen);
+                }
+            }
+            if (bytes_received != NULL &&
+                out.bytes_received.bytes_received_val != NULL)
+            {
+                *bytes_received = out.bytes_received.bytes_received_val[0];
+            }
+            if (flags != NULL && out.flags.flags_val != NULL)
+                *flags = out.flags.flags_val[0];
+        }
+
+        if (from != NULL && out.from.sa_data.sa_data_val != NULL)
+        {
+            memcpy(from->sa_data, out.from.sa_data.sa_data_val,
+                   out.from.sa_data.sa_data_len);
+            from->sa_family = addr_family_rpc2h(out.from.sa_family);
+        }
+
+        if (fromlen != NULL && out.fromlen.fromlen_val != NULL)
+            *fromlen = out.fromlen.fromlen_val[0];    
+    }
+
+    RING("RPC (%s,%s)%s: wsa_recv_from(%s, %u) -> %d (%s %s)",
+         rpcs->ta, rpcs->name, rpcop2str(op), sockaddr2str(from),
+         (fromlen == NULL) ? (unsigned int)-1 : *fromlen,
+         out.retval, errno_rpc2str(RPC_ERRNO(rpcs)),
+         win_error_rpc2str(out.common.win_error));
+
+    RETVAL_RC(wsa_recv_from);
+}
+
+int
+rpc_wsa_send_disconnect(rcf_rpc_server *rpcs,
+                        int s, const struct rpc_iovec *iov)
+{
+    rcf_rpc_op                    op;
+    tarpc_wsa_send_disconnect_in  in;
+    tarpc_wsa_send_disconnect_out out;
+    struct tarpc_iovec            iovec_arr;
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        return -1;
+    }
+
+    op = rpcs->op;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+    memset(&iovec_arr, 0, sizeof(iovec_arr));
+
+    in.s = s;
+
+    if (iov != NULL)
+    {
+        iovec_arr.iov_base.iov_base_val = iov->iov_base;
+        iovec_arr.iov_base.iov_base_len = iov->iov_rlen;
+        iovec_arr.iov_len = iov->iov_len;
+
+        in.vector.vector_val = &iovec_arr;
+        in.vector.vector_len = 1;
+    }
+
+    rcf_rpc_call(rpcs, _wsa_send_disconnect, &in,
+                 (xdrproc_t)xdr_tarpc_wsa_send_disconnect_in,
+                 &out, (xdrproc_t)xdr_tarpc_wsa_send_disconnect_out);
+
+    RING("RPC (%s,%s)%s: wsa_send_disconnect() -> %d (%s)",
+         rpcs->ta, rpcs->name, rpcop2str(op), out.retval,
+         errno_rpc2str(RPC_ERRNO(rpcs)));
+
+    RETVAL_RC(wsa_send_disconnect);
+}
+
+int
+rpc_wsa_recv_disconnect(rcf_rpc_server *rpcs,
+                        int s, const struct rpc_iovec *iov)
+{
+    rcf_rpc_op                    op;
+    tarpc_wsa_recv_disconnect_in  in;
+    tarpc_wsa_recv_disconnect_out out;
+    struct tarpc_iovec            iovec_arr;
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        return -1;
+    }
+
+    op = rpcs->op;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+    memset(&iovec_arr, 0, sizeof(iovec_arr));
+
+    in.s = s;
+
+    if (iov != NULL)
+    {
+        iovec_arr.iov_base.iov_base_val = iov->iov_base;
+        iovec_arr.iov_base.iov_base_len = iov->iov_rlen;
+        iovec_arr.iov_len = iov->iov_len;
+
+        in.vector.vector_val = &iovec_arr;
+        in.vector.vector_len = 1;
+    }
+
+    rcf_rpc_call(rpcs, _wsa_recv_disconnect, &in,
+                 (xdrproc_t)xdr_tarpc_wsa_recv_disconnect_in,
+                 &out, (xdrproc_t)xdr_tarpc_wsa_recv_disconnect_out);
+
+    if (RPC_CALL_OK && iov != NULL && out.vector.vector_val != NULL)
+    {
+        ((struct rpc_iovec *)iov)->iov_len = out.vector.vector_val->iov_len;
+        if ((iov->iov_base != NULL) &&
+            (out.vector.vector_val->iov_base.iov_base_val != NULL))
+        {
+            memcpy(iov->iov_base,
+                   out.vector.vector_val->iov_base.iov_base_val,
+                   iov->iov_rlen);
+        }
+    }
+
+    RING("RPC (%s,%s)%s: wsa_recv_disconnect() -> %d (%s %s)",
+         rpcs->ta, rpcs->name, rpcop2str(op),
+         out.retval, errno_rpc2str(RPC_ERRNO(rpcs)),
+         win_error_rpc2str(out.common.win_error));
+
+    RETVAL_RC(wsa_recv_disconnect);
+}
+
+int
 rpc_get_overlapped_result(rcf_rpc_server *rpcs,
                           int s, rpc_overlapped overlapped,
                           int *bytes, te_bool wait,

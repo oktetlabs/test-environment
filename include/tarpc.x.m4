@@ -1900,6 +1900,80 @@ struct tarpc_wait_multiple_events_out {
     tarpc_wait_code      retval;
 };    
 
+/* WSASendTo */
+struct tarpc_wsa_send_to_in {
+    struct tarpc_in_arg common;
+    tarpc_int           s;              /**< TA-local socket */
+    struct tarpc_iovec  vector<>;       /**< Buffers */
+    tarpc_size_t        count;          /**< Number of buffers */
+    tarpc_int           bytes_sent<>;   /**< Location for sent bytes num */
+    tarpc_int           flags;          /**< Flags */
+    struct tarpc_sa     to;             /**< Target address */
+    tarpc_socklen_t     tolen;          /**< Target address lenght */
+    tarpc_overlapped    overlapped;     /**< WSAOVERLAPPED structure pointer */
+    tarpc_bool          callback;       /**< If 1, completion callback should be 
+                                             specified */
+};
+
+struct tarpc_wsa_send_to_out {
+    struct tarpc_out_arg common;
+    tarpc_int            retval;
+    tarpc_int            bytes_sent<>;
+};
+
+/* WSARecvFrom */
+struct tarpc_wsa_recv_from_in {
+    struct tarpc_in_arg common;
+    tarpc_int           s;              /**< TA-local socket */
+    struct tarpc_iovec  vector<>;       /**< Buffers */
+    tarpc_size_t        count;          /**< Number of buffers */
+    tarpc_int           bytes_received<>;   
+                                        /**< Location for received bytes num */
+    tarpc_int           flags<>;        /**< Flags */
+    struct tarpc_sa     from;           /**< Address to be passed as location
+                                             for data source address */
+    tarpc_int           fromlen<>;      /**< Maximum expected length of the
+                                             address */
+    tarpc_overlapped    overlapped;     /**< WSAOVERLAPPED structure pointer */
+    tarpc_bool          callback;       /**< If 1, completion callback
+                                             should be specified */
+};
+
+struct tarpc_wsa_recv_from_out {
+    struct tarpc_out_arg common;
+    tarpc_int            retval;
+    struct tarpc_iovec   vector<>;       
+    tarpc_int            bytes_received<>;   
+    tarpc_int            flags<>;
+    struct tarpc_sa      from;          /**< Source address returned by the 
+                                             function */
+    tarpc_int            fromlen<>;     /**< Length of the source address
+                                             returned by the function */
+};
+
+/* WSASendDisconnect */
+struct tarpc_wsa_send_disconnect_in {
+    struct tarpc_in_arg common;
+    tarpc_int           s;              /**< TA-local socket */
+    struct tarpc_iovec  vector<>;       /**< Outgoing disconnect data */
+};
+
+typedef struct tarpc_ssize_t_retval_out tarpc_wsa_send_disconnect_out;
+
+/* WSARecvDisconnect */
+struct tarpc_wsa_recv_disconnect_in {
+    struct tarpc_in_arg common;
+    tarpc_int           s;              /**< TA-local socket */
+    struct tarpc_iovec  vector<>;       /**< Buffer for incoming
+                                             disconnect data */
+};
+
+struct tarpc_wsa_recv_disconnect_out {
+    struct tarpc_out_arg common;
+    tarpc_ssize_t        retval;
+    struct tarpc_iovec   vector<>;      /**< Incoming disconnect data */
+};
+
 /* ftp_open() */
 struct tarpc_ftp_open_in {
     struct tarpc_in_arg common;
@@ -2070,7 +2144,11 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(wsa_recv_ex)
         RPC_DEF(get_overlapped_result)
         RPC_DEF(wait_multiple_events)
-        
+        RPC_DEF(wsa_send_to)
+        RPC_DEF(wsa_recv_from)
+        RPC_DEF(wsa_send_disconnect)
+        RPC_DEF(wsa_recv_disconnect)
+
         RPC_DEF(create_window)
         RPC_DEF(destroy_window)
         RPC_DEF(wsa_async_select)
