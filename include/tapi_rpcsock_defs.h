@@ -620,39 +620,17 @@ send_recv_flags_rpc2h(rpc_send_recv_flags flags)
 #endif
 
     return 
-#if HAVE_MSG_OOB
            (!!(flags & RPC_MSG_OOB) * MSG_OOB) |
-#endif
-#if HAVE_MSG_PEEK
            (!!(flags & RPC_MSG_PEEK) * MSG_PEEK) |
-#endif
-#if HAVE_MSG_DONTROUTE
            (!!(flags & RPC_MSG_DONTROUTE) * MSG_DONTROUTE) |
-#endif
-#if HAVE_MSG_DONTWAIT
            (!!(flags & RPC_MSG_DONTWAIT) * MSG_DONTWAIT) |
-#endif
-#if HAVE_MSG_WAITALL
            (!!(flags & RPC_MSG_WAITALL) * MSG_WAITALL) |
-#endif
-#if HAVE_MSG_NOSIGNAL
            (!!(flags & RPC_MSG_NOSIGNAL) * MSG_NOSIGNAL) |
-#endif
-#if HAVE_MSG_TRUNC
            (!!(flags & RPC_MSG_TRUNC) * MSG_TRUNC) |
-#endif           
-#if HAVE_MSG_CTRUNC
            (!!(flags & RPC_MSG_CTRUNC) * MSG_CTRUNC) |
-#endif           
-#if HAVE_MSG_ERRQUEUE
            (!!(flags & RPC_MSG_ERRQUEUE) * MSG_ERRQUEUE) |
-#endif
-#if HAVE_MSG_MCAST
            (!!(flags & RPC_MSG_MCAST) * MSG_MCAST) |
-#endif
-#if HAVE_MSG_BCAST
            (!!(flags & RPC_MSG_BCAST) * MSG_BCAST) |
-#endif
            (!!(flags & RPC_MSG_UNKNOWN) * MSG_MAX) |
            (!!(flags & ~RPC_MSG_ALL) * MSG_MAX);
 }
@@ -673,6 +651,144 @@ send_recv_flags_h2rpc(int flags)
            (!!(flags & MSG_BCAST) * RPC_MSG_BCAST) |
            (!!(flags & MSG_ERRQUEUE) * RPC_MSG_ERRQUEUE) |
            (!!(flags & ~MSG_ALL) * RPC_MSG_UNKNOWN);
+}
+
+
+/**
+ * TA-independent network event flags. 
+ */
+typedef enum rpc_network_event_flags {
+    RPC_FD_READ      = 1,     /**< Readiness for reading */
+    RPC_FD_WRITE     = 2,     /**< Readiness for writing */
+    RPC_FD_OOB       = 4,     /**< Arrival of out-of-band data */
+    RPC_FD_ACCEPT    = 8,     /**< Incoming connections */
+    RPC_FD_CONNECT   = 0x10,  /**< Completed connection or
+                                    multipoint join operation */
+    RPC_FD_CLOSE     = 0x20,  /**< Socket closure */
+    RPC_FD_QOS       = 0x40,  /**< Socket QOS changes */
+    RPC_FD_GROUP_QOS = 0x80,  /**< Reserved. Socket group QOS changes */
+    RPC_FD_ROUTING_INTERFACE_CHANGE = 0x100, /**< Routing interface change for
+                                                   the specified destination */
+    RPC_FD_ADDRESS_LIST_CHANGE      = 0x200, /**< Local address list changes for
+                                                  the address family of
+						  the socket */
+} rpc_network_event_flags;
+
+#ifdef FD_READ
+#define HAVE_FD_READ    1
+#else
+#define HAVE_FD_READ    0
+#define FD_READ         0
+#endif
+
+#ifdef FD_WRITE
+#define HAVE_FD_WRITE   1
+#else
+#define HAVE_FD_WRITE   0
+#define FD_WRITE        0
+#endif
+
+#ifdef FD_OOB
+#define HAVE_FD_OOB     1
+#else
+#define HAVE_FD_OOB     0
+#define FD_OOB          0
+#endif
+
+#ifdef FD_ACCEPT
+#define HAVE_FD_ACCEPT  1
+#else
+#define HAVE_FD_ACCEPT  0
+#define FD_ACCEPT       0
+#endif
+
+#ifdef FD_CONNECT
+#define HAVE_FD_CONNECT 1
+#else
+#define HAVE_FD_CONNECT 0
+#define FD_CONNECT      0
+#endif
+
+#ifdef FD_CLOSE
+#define HAVE_FD_CLOSE   1
+#else
+#define HAVE_FD_CLOSE   0
+#define FD_CLOSE        0
+#endif
+
+#ifdef FD_QOS
+#define HAVE_FD_QOS     1
+#else
+#define HAVE_FD_QOS     0
+#define FD_QOS          0
+#endif
+
+#ifdef FD_GROUP_QOS
+#define HAVE_FD_GROUP_QOS    1
+#else
+#define HAVE_FD_GROUP_QOS    0
+#define FD_GROUP_QOS         0
+#endif
+
+#ifdef FD_ROUTING_INTERFACE_CHANGE
+#define HAVE_FD_ROUTING_INTERFACE_CHANGE   1
+#else
+#define HAVE_FD_ROUTING_INTERFACE_CHANGE   0
+#define FD_ROUTING_INTERFACE_CHANGE        0
+#endif
+
+#ifdef FD_ADDRESS_LIST_CHANGE
+#define HAVE_FD_ADDRESS_LIST_CHANGE        1
+#else
+#define HAVE_FD_ADDRESS_LIST_CHANGE        0
+#define FD_ADDRESS_LIST_CHANGE             0
+#endif
+
+#define NETW_EVENT_FLAGS_MAPPING_LIST \
+            RPC_BIT_MAP_ENTRY(FD_READ),                      \
+            RPC_BIT_MAP_ENTRY(FD_WRITE),                     \
+            RPC_BIT_MAP_ENTRY(FD_OOB),                       \
+            RPC_BIT_MAP_ENTRY(FD_ACCEPT),                    \
+            RPC_BIT_MAP_ENTRY(FD_CONNECT),                   \
+            RPC_BIT_MAP_ENTRY(FD_CLOSE),                     \
+            RPC_BIT_MAP_ENTRY(FD_QOS),                       \
+            RPC_BIT_MAP_ENTRY(FD_GROUP_QOS),                 \
+            RPC_BIT_MAP_ENTRY(FD_ROUTING_INTERFACE_CHANGE),  \
+            RPC_BIT_MAP_ENTRY(FD_ADDRESS_LIST_CHANGE)
+
+/** Convert RPC network evenet flags to native flags */
+static inline int
+send_network_event_flags_rpc2h(rpc_network_event_flags flags)
+{
+    return 
+           (!!(flags & RPC_FD_READ) * FD_READ) |
+           (!!(flags & RPC_FD_WRITE) * FD_WRITE) |
+           (!!(flags & RPC_FD_OOB) * FD_OOB) |
+           (!!(flags & RPC_FD_ACCEPT) * FD_ACCEPT) |
+           (!!(flags & RPC_FD_CONNECT) * FD_CONNECT) |
+           (!!(flags & RPC_FD_CLOSE) * FD_CLOSE) |
+           (!!(flags & RPC_FD_QOS) * FD_QOS) |
+           (!!(flags & RPC_FD_GROUP_QOS) * FD_GROUP_QOS) |
+           (!!(flags & RPC_FD_ROUTING_INTERFACE_CHANGE) *
+	                                        FD_ROUTING_INTERFACE_CHANGE) |
+           (!!(flags & RPC_FD_ADDRESS_LIST_CHANGE) * FD_ADDRESS_LIST_CHANGE); 
+}
+
+/** Convert native network evenet flags to RPC flags */
+static inline rpc_network_event_flags
+send_network_event_flags_h2rpc(int flags)
+{
+    return (!!(flags & FD_READ) * RPC_FD_READ) |
+           (!!(flags & FD_WRITE) * RPC_FD_WRITE) |
+           (!!(flags & FD_OOB) * RPC_FD_OOB) |
+           (!!(flags & FD_ACCEPT) * RPC_FD_ACCEPT) |
+           (!!(flags & FD_CONNECT) * RPC_FD_CONNECT) |
+           (!!(flags & FD_CLOSE) * RPC_FD_CLOSE) |
+           (!!(flags & FD_QOS) * RPC_FD_QOS) |
+           (!!(flags & FD_GROUP_QOS) * RPC_FD_GROUP_QOS) |
+           (!!(flags & FD_ROUTING_INTERFACE_CHANGE) *
+                                            RPC_FD_ROUTING_INTERFACE_CHANGE) |
+           (!!(flags & FD_ADDRESS_LIST_CHANGE) * RPC_FD_ADDRESS_LIST_CHANGE);
 }
 
 /**
