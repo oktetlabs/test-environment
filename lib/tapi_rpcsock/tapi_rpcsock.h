@@ -719,14 +719,16 @@ extern int rpc_shell(rcf_rpc_server *handle,
 
 /**
  * Execute shell command on the IPC server and return file descriptor
- * for it's standard input.
+ * for it's standard input or output.
  *
  * @param handle        RPC server handle
+ * @param mode          "r" or "w"
  * @param cmd           format of the command to be executed
  *
  * @return File descriptor or -1 in the case of failure
  */
-extern int rpc_cmd_spawn(rcf_rpc_server *handle, const char *cmd,...);
+extern int rpc_cmd_spawn(rcf_rpc_server *handle, const char *mode,
+                         const char *cmd,...);
 
 extern int rpc_fileno(rcf_rpc_server *handle,
                       FILE *f);

@@ -6497,12 +6497,13 @@ rpc_shell(rcf_rpc_server *handle,
  * for it's standard input.
  *
  * @param handle        RPC server handle
+ * @param mode          "r" or "w"
  * @param cmd           format of the command to be executed
  *
  * @return File descriptor or -1 in the case of failure
  */
 int 
-rpc_cmd_spawn(rcf_rpc_server *handle, const char *cmd,...)
+rpc_cmd_spawn(rcf_rpc_server *handle, const char *mode, const char *cmd,...)
 {
     FILE *f;
     int   fd;
@@ -6514,7 +6515,7 @@ rpc_cmd_spawn(rcf_rpc_server *handle, const char *cmd,...)
     vsnprintf(cmdline, sizeof(cmdline), cmd, ap);
     va_end(ap);
     
-    if ((f = rpc_popen(handle, cmdline, "w")) == NULL)
+    if ((f = rpc_popen(handle, cmdline, mode)) == NULL)
     {
         ERROR("Cannot execute the command: rpc_popen() failed");
         return -1;
