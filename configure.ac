@@ -144,6 +144,15 @@ for i in $TE_BS_HOST_EXEC ; do
     fi
 done ;
 
+WORK_DIR=`pwd`
+cd ${TE_BASE}/doc
+if test ! -e configure ; then
+    echo "Calling aclocal/autoheader/autoconf/automake in `pwd`"
+    aclocal -I ${TE_BASE}/auxdir || exit 1 ;
+    autoconf || exit 1 ;
+    automake || exit 1 ;
+fi
+cd ${WORK_DIR}
 AC_CONFIG_SUBDIRS(doc)
 
 DUMMY=

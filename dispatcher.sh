@@ -511,24 +511,18 @@ te_log_init
 # Build Test Environment
 TE_BUILD_LOG=${TE_RUN_DIR}/build.log
 if test -n "$BUILDER" ; then
-    for i in `find $TE_BASE -name configure.ac` ; do 
-        pushd `dirname $i` >/dev/null
-        if test ! -e configure ; then
-            if test -n "${QUIET}" ; then
-                echo "Calling aclocal/autoconf/automake in `pwd`" \
-                    >>${TE_BUILD_LOG}
-            else
-                echo "Calling aclocal/autoheader/autoconf/automake in `pwd`"
-            fi
-            aclocal -I ${TE_BASE}/auxdir || exit_with_log
-            if cat configure.ac | grep -q AC_CONFIG_HEADER ; then
-                autoheader || exit_with_log
-            fi
-            autoconf || exit_with_log
-            automake || exit_with_log
+    cd ${TE_BASE}
+    if test ! -e configure ; then
+        if test -n "${QUIET}" ; then
+            echo "Calling aclocal/autoconf/automake in `pwd`" \
+                >>${TE_BUILD_LOG}
+        else
+            echo "Calling aclocal/autoheader/autoconf/automake in `pwd`"
         fi
-        popd >/dev/null
-    done    
+        aclocal -I ${TE_BASE}/auxdir || exit_with_log
+        autoconf || exit_with_log
+        automake || exit_with_log
+    fi
     cd ${TE_BUILD}
     # FINAL ${TE_BASE}/configure --prefix=${TE_INSTALL} --with-config=${CONF_BUILDER} 2>&1 | te_builder_log
     if test -n "${QUIET}" ; then
@@ -546,8 +540,7 @@ fi
 te_builder_opts $BUILDER_OPTS || exit_with_log
 
 # Goto the directory where the script was called
-popd >/dev/null
-
+cd ${TE_RUN_DIR}
 
 if test -n "${SUITE_SOURCES}" -a -n "${BUILD_TS}" ; then
     te_build_suite `basename ${SUITE_SOURCES}` $SUITE_SOURCES || exit_with_log

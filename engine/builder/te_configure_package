@@ -38,6 +38,18 @@ PLATFORM=$4
 PKGSRC=$5
 PREFIX=$6
 
+pushd ${PKGSRC} >/dev/null
+if test ! -e configure ; then
+    echo "Calling aclocal/autoheader/autoconf/automake in `pwd`"
+    aclocal -I ${TE_BASE}/auxdir || exit 1 ;
+    if cat configure.ac | grep -q AC_CONFIG_HEADER ; then
+        autoheader || exit 1 ;
+    fi ;
+    autoconf || exit 1 ;
+    automake || exit 1 ;
+fi
+popd >/dev/null
+
 # Create list of linked libraries and dependencies for the package
 process_libs()
 {
