@@ -698,29 +698,29 @@ check_args(checked_arg *list)
  * Declare and initialise time variables; execute the code and store
  * duration and errno in the output argument.
  */
-#define MAKE_CALL(x)                                             \
-    do {                                                         \
-        struct timeval t_start;                                  \
-        struct timeval t_finish;                                 \
-        int           _rc;                                       \
-                                                                 \
-        WAIT_START(in->common.start);                            \
-        gettimeofday(&t_start, NULL);                            \
-        errno = 0;                                               \
-        x;                                                       \
-        out->common.win_error = win_error_h2rpc(GetLastError()); \
-        out->common._errno = RPC_ERRNO;                          \
-        if ((out->common._errno == 0) &&                         \
-            (out->common.win_error != 0))                        \
-            out->common._errno =                                 \
-                wsaerr2errno(out->common.win_error);             \
-        gettimeofday(&t_finish, NULL);                           \
-        out->common.duration =                                   \
-            (t_finish.tv_sec - t_start.tv_sec) * 1000000 +       \
-            t_finish.tv_usec - t_start.tv_usec;                  \
-        _rc = check_args(list);                                  \
-        if (out->common._errno == 0 && _rc != 0)                 \
-            out->common._errno = _rc;                            \
+#define MAKE_CALL(x)                                                \
+    do {                                                            \
+        struct timeval t_start;                                     \
+        struct timeval t_finish;                                    \
+        int           _rc;                                          \
+                                                                    \
+        WAIT_START(in->common.start);                               \
+        gettimeofday(&t_start, NULL);                               \
+        errno = 0;                                                  \
+        WSASetLastError(0);                                         \
+        x;                                                          \
+        out->common.win_error = win_error_h2rpc(WSAGetLastError()); \
+        out->common._errno = RPC_ERRNO;                             \
+        if (out->common.win_error != 0)                             \
+            out->common._errno =                                    \
+                wsaerr2errno(out->common.win_error);                \
+        gettimeofday(&t_finish, NULL);                              \
+        out->common.duration =                                      \
+            (t_finish.tv_sec - t_start.tv_sec) * 1000000 +          \
+            t_finish.tv_usec - t_start.tv_usec;                     \
+        _rc = check_args(list);                                     \
+        if (out->common._errno == 0 && _rc != 0)                    \
+            out->common._errno = _rc;                               \
     } while (0)
 
 #define TARPC_FUNC(_func, _copy_args, _actions)                         \
@@ -3641,8 +3641,6 @@ overfill_buffers(tarpc_overfill_buffers_in *in,
 
     out->bytes = 0;
     
-    PRINT("overfill_buffers");
-
     buf = calloc(1, max_len);
     if (buf == NULL)
     {
@@ -3665,12 +3663,10 @@ overfill_buffers(tarpc_overfill_buffers_in *in,
         goto overfill_buffers_exit;
     }
 
-    PRINT("Before loop");
     do {
         do {
             rc = send(in->sock, buf, max_len, 0);
             err = WSAGetLastError();
-            PRINT("Send %d %d", rc, err);
             
             if (rc == -1 && err != WSAEWOULDBLOCK)
             {
@@ -3679,7 +3675,7 @@ overfill_buffers(tarpc_overfill_buffers_in *in,
             }
             if (rc != -1)
                 out->bytes += rc;
-        } while (errno != WSAEWOULDBLOCK);
+        } while (err != WSAEWOULDBLOCK);
 
         if (total != out->bytes)
         {
@@ -3688,15 +3684,12 @@ overfill_buffers(tarpc_overfill_buffers_in *in,
         }
         else
         {
-            PRINT("Unchanged");
             unchanged++;
         }
         rc = 0;
         err = 0;
     } while (unchanged != 3);
     
-    PRINT("After loop");
-
 overfill_buffers_exit:
     val = 0;
     if (ioctlsocket(in->sock, FIONBIO, &val) < 0)
@@ -3706,7 +3699,6 @@ overfill_buffers_exit:
         ERROR("%s(): Failed to move socket back to blocking state", 
               __FUNCTION__);
     }
-    PRINT("rc %d err %d", rc, err);
     out->common.win_error = win_error_h2rpc(err);
     out->common._errno = wsaerr2errno(out->common.win_error); 
 
