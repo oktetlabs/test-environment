@@ -34,6 +34,17 @@
 #include "tapi_rpcsock_defs.h"
 
 
+/**
+ * Set dynamic library name to be used for additional name resolution.
+ *
+ * @param rpcs          Existing RPC server handle
+ * @param libname       Name of the dynamic library or NULL
+ *
+ * @return Status code
+ */
+extern int rpc_setlibname(rcf_rpc_server *rpcs, const char *libname);
+
+
 /*
  * All functions have the same prototype and semantics of parameters
  * and return code as Linux implementation of Berkeley Socket API

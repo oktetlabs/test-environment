@@ -386,6 +386,43 @@ timespec2str(const struct timespec *tv)
     } while(0)
 
 
+/**
+ * Set dynamic library name to be used for additional name resolution.
+ *
+ * @param rpcs          Existing RPC server handle
+ * @param libname       Name of the dynamic library or NULL
+ *
+ * @return Status code
+ */
+int 
+rpc_setlibname(rcf_rpc_server *handle, const char *libname)
+{
+    tarpc_setlibname_in  in;
+    tarpc_setlibname_out out;
+
+    if (handle == NULL)
+    {
+        return TE_RC(TE_RCF, EINVAL);
+    }
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.libname.libname_len = (libname == NULL) ? 0 : (strlen(libname) + 1);
+    in.libname.libname_val = (char *)libname;
+
+    handle->op = RCF_RPC_CALL_WAIT;
+    rcf_rpc_call(handle, _setlibname,
+                 &in,  (xdrproc_t)xdr_tarpc_setlibname_in, 
+                 &out, (xdrproc_t)xdr_tarpc_setlibname_out);
+                 
+    RING("RPC (%s, %s) setlibname(%s) -> %d (%s)", 
+         handle->ta, handle->name, libname ? : "(NULL)", 
+         out.retval, errno_rpc2str(RPC_ERRNO(handle)));
+
+    RETVAL_VAL(out.retval, socket);
+}
+
 int 
 rpc_socket(rcf_rpc_server *handle,
            rpc_socket_domain domain, rpc_socket_type type,
