@@ -50,7 +50,6 @@ extern "C" {
 typedef struct tapi_jmp_point {
     LIST_ENTRY(tapi_jmp_point)  links;      /**< List links */
 
-    te_bool         enabled;    /** Are jumps enalbed or disabled? */
     jmp_buf         env;        /**< Stack context, if jumps are
                                      enabled */
     const char     *file;       /**< Name of the file where the point
@@ -59,34 +58,43 @@ typedef struct tapi_jmp_point {
                                      point is added */
 } tapi_jmp_point;
 
-#define TAPI_ON_JMP(rc, x) \
-    do  {                                                               \
-        tapi_jmp_point *p = tapi_jmp_alloc(TRUE, __FILE__, __LINE__);   \
-                                                                        \
-        if (p == NULL || (rc = setjmp(p->env)) != 0)                    \
-        {                                                               \
-            x;                                                          \
-        }                                                               \
+
+/**
+ * Create jump point with actions to be done in the case of jump.
+ *
+ * @param x         Actions to be done in the case of long jump
+ *                  (it is assumed that it does return, goto or exit)
+ */
+#define TAPI_ON_JMP(x) \
+    do {                                                        \
+        tapi_jmp_point *p = tapi_jmp_push(__FILE__, __LINE__);  \
+        int             jmp_rc = EFAULT;                        \
+                                                                \
+        if (p == NULL || (jmp_rc = setjmp(p->env)) != 0)        \
+        {                                                       \
+            x;                                                  \
+            ERROR("%s:%u: Unexpected after jump actions");      \
+        }                                                       \
     } while (0)
 
 /**
- * Allocate long jump point (saved stack context for non-local goto).
+ * Allocate and push long jump point in a stack (saved stack context
+ * for non-local goto).
  *
  * The routine is thread-safe using per thread stacks of jump points.
  *
- * @param enabled   Point with enabled/disabled jump
  * @param file      Name of the file where jump point is set
  * @param lineno    Number of line in the file
  *
  * @return Pointer to allocated long jump point.
  *
- * @sa tapi_jmp_do, tapi_jmp_pop
+ * @sa tapi_jmp_do
  */
-extern tapi_jmp_point *tapi_jmp_alloc(te_bool enabled, const char *file,
-                                      unsigned int lineno);
+extern tapi_jmp_point *tapi_jmp_push(const char *file,
+                                     unsigned int lineno);
 
 /**
- * Do does non-local goto a stack context saved using tapi_jmp_push().
+ * Do non-local goto a stack context saved using tapi_jmp_push().
  *
  * The routine is thread-safe using per thread stacks of jump points.
  *
@@ -96,7 +104,7 @@ extern tapi_jmp_point *tapi_jmp_alloc(te_bool enabled, const char *file,
  * @return Status code
  * @retval ENOENT   Stack of of jump points is empty
  *
- * @sa tapi_jmp_push, tapi_jmp_pop
+ * @sa tapi_jmp_push
  */
 extern int tapi_jmp_do(int val);
 

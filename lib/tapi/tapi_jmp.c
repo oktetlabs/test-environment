@@ -179,7 +179,7 @@ tapi_jmp_get_ctx(te_bool create)
 
 /* See description in tapi_jmp.h */
 tapi_jmp_point *
-tapi_jmp_alloc(te_bool enabled, const char *file, unsigned int lineno)
+tapi_jmp_push(const char *file, unsigned int lineno)
 {
     tapi_jmp_ctx   *ctx = tapi_jmp_get_ctx(TRUE);
     tapi_jmp_point *p;
@@ -198,11 +198,10 @@ tapi_jmp_alloc(te_bool enabled, const char *file, unsigned int lineno)
         return NULL;
     }
     LIST_INSERT_HEAD(&ctx->stack, p, links);
-    p->enabled = enabled;
     p->file    = file;
     p->lineno  = lineno;
 
-    INFO("%s(): %s:%u=%u", __FUNCTION__, file, lineno, enabled);
+    INFO("%s(): %s:%u", __FUNCTION__, file, lineno);
     return p;
 }
 
@@ -238,24 +237,17 @@ tapi_jmp_do(int val)
         return TE_RC(TE_TAPI, ENOENT);
     }
     LIST_REMOVE(p, links);
-    if (p->enabled)
-    {
-        /* 
-         * We can't free point here, since 'env' should be used
-         * in the function which never returns.
-         */
-        LIST_INSERT_HEAD(&ctx->garbage, p, links);
-        INFO("%s(): GOTO %s:%u rc=%x",
-             __FUNCTION__, p->file, p->lineno, (unsigned int)val);
-        longjmp(p->env, val);
-        /* Unreachable */
-        assert(FALSE);
-    }
-    else
-    {
-        INFO("%s(): Jumps are disabled at %s:%d - ignore",
-              __FUNCTION__, p->file, p->lineno);
-        free(p);
-        return 0;
-    }
+
+    /* 
+     * We can't free point here, since 'env' should be used
+     * in the function which never returns.
+     */
+    LIST_INSERT_HEAD(&ctx->garbage, p, links);
+
+    INFO("%s(): GOTO %s:%u rc=%x",
+         __FUNCTION__, p->file, p->lineno, (unsigned int)val);
+    longjmp(p->env, val);
+
+    /* Unreachable */
+    assert(FALSE);
 }
