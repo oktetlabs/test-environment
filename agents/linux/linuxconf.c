@@ -30,6 +30,8 @@
 
 #define TE_LGR_USER     "Linux Conf"
 
+#define __LIBC12_SOURCE__ /* NetBSD unsetenv() work-around */
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
