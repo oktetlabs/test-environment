@@ -81,7 +81,7 @@ struct asn_type
     const char * name;   /**< ASN.1 name of type, if any assigned. */
 
     asn_tag_t    tag;    /**< tag value of type. */
-    asn_syntax_t syntax; /**< syntax of type, that is "type" of value itself. */
+    asn_syntax   syntax; /**< syntax of type, that is "type" of value itself. */
 
     size_t       len; /**< size of value, if any specified. 
                            Whereas clause SIZE may not be used with
@@ -115,7 +115,7 @@ struct asn_value
 {
     const asn_type * asn_type; /**< ASN.1 type of value. */
     asn_tag_t        tag;      /**< ASN.1 tag of value. */
-    asn_syntax_t     syntax;   /**< ASN.1 syntax of value. */
+    asn_syntax       syntax;   /**< ASN.1 syntax of value. */
 
     char        * name;     /**< name of value itself or field label, 
                                  may be NULL or empty string. */

@@ -36,6 +36,7 @@
 #include <string.h>
 
 #include "te_defs.h"
+#include "te_errno.h" 
 
 #include "asn_impl.h"
 #include "ndn.h"
@@ -390,7 +391,7 @@ int
 ndn_match_data_units(const asn_value *pattern, asn_value *pkt_pdu,
                      uint8_t *data, size_t d_len, const char *label)
 {
-    asn_syntax_t      plain_syntax;
+    asn_syntax        plain_syntax;
     const asn_value  *du_val;
     const asn_type   *val_type;
     const asn_type   *du_type;

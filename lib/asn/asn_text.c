@@ -826,22 +826,13 @@ asn_parse_value_text(const char *text, const asn_type *type,
     } 
 }
 
-/**
- * Parse ASN.1 text with "Value assignment" (see ASN.1 specification) 
- * and create new ASN value instance with internal presentation 
- * of this value. If type of ASN value in 'string' is not known 
- * for module, string will not parsed and NULL will be returned. 
- * Name of value is stored in field 'name' of asn_value structure. 
- *
- * @param string        text to be parsed;
- *
- * @return pointer to new ASN_value instance or NULL if error occurred. 
- */ 
-asn_value_p 
-asn_parse_value_assign_text(const char *string)
+/* See description in asn_usr.h */
+int
+asn_parse_value_assign_text(const char *string, asn_value **value)
 {
     UNUSED(string);
-    return NULL;
+    UNUSED(value);
+    return ETENOSUPP;
 }
 
 /**

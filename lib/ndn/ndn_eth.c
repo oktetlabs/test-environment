@@ -29,6 +29,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include "te_defs.h"
+#include "te_errno.h"
+
 #include "asn_impl.h"
 #include "ndn_internal.h"
 #include "ndn_eth.h"

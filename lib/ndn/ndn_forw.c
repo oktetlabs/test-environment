@@ -33,6 +33,7 @@
 #define TE_LGR_USER "NDN/Forw"
 
 #include "te_defs.h"
+#include "te_errno.h"
 #include "asn_impl.h"
 #include "ndn_internal.h"
 #include "ndn_forw.h"

@@ -689,8 +689,9 @@ tad_data_unit_convert(const asn_value *pdu_val, const char *label,
     {
         const asn_type *type = asn_get_type(pdu_val);
         const asn_type *s_type = NULL; 
-        char labels_buffer[200];
-        asn_syntax_t plain_syntax;
+
+        char       labels_buffer[200];
+        asn_syntax plain_syntax;
      
         strcpy(labels_buffer, label);
         strcat(labels_buffer, ".#plain");
@@ -733,7 +734,7 @@ tad_data_unit_convert(const asn_value *pdu_val, const char *label,
 
     if (strcmp(choice, "plain") == 0)
     {
-        asn_syntax_t plain_syntax = asn_get_syntax(du_field, "");
+        asn_syntax plain_syntax = asn_get_syntax(du_field, "");
 
         switch (plain_syntax)
         {

@@ -49,6 +49,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
+#include "te_errno.h"
 #include "rcf_api.h"
 #include "ndn_eth.h"
 #include "tapi_arp.h"

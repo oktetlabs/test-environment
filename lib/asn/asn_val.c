@@ -31,6 +31,7 @@
 #include <string.h> 
 
 #include "asn_impl.h" 
+#include "te_errno.h"
 
 
 #define ASN_STOP_AT_CHOICE 1
@@ -408,18 +409,12 @@ asn_get_type(const asn_value *value)
     return value->asn_type;
 }
 
-/**
- * Obtain textual label of ASN type to which specified value belongs. 
- *
- * @param value       ASN value which type is interested. 
- *
- * @return plain string with type name or NULL if error occurred. 
- */
-const char* 
-asn_get_type_name(const asn_value *value)
+/* See description in asn_usr.h */
+const char * 
+asn_get_type_name(const asn_type *type)
 {
-    if (!value) return NULL;
-    return value->asn_type->name;
+    if (!type) return NULL;
+    return type->name;
 }
 
 /**
@@ -1648,11 +1643,8 @@ asn_get_choice(const asn_value *container, const char *subval_labels,
         rc = asn_impl_fall_down_to_tree_nc(container, corrected_labels, &val); 
         free (corrected_labels);
 
-        if (rc && rc != ASN_STOP_AT_CHOICE)
-        { 
-            printf ("internall fall error\n");
+        if (rc != 0 && rc != ASN_STOP_AT_CHOICE)
             return rc; 
-        }
     }
     else 
         val = container;
@@ -1702,7 +1694,7 @@ asn_get_tag (const asn_value_p container )
  *
  * @return syntax of specified leaf in value.
  */
-asn_syntax_t 
+asn_syntax   
 asn_get_syntax_of_type(const asn_type *type)
 {
     if (type == NULL)
@@ -1721,7 +1713,7 @@ asn_get_syntax_of_type(const asn_type *type)
  *
  * @return syntax of specified leaf in value.
  */
-asn_syntax_t 
+asn_syntax   
 asn_get_syntax(const asn_value *value, const char *subval_labels)
 {
     const asn_value *val;
