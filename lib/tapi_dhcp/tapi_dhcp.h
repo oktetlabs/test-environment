@@ -29,60 +29,50 @@
 #ifndef __TE_TAPI_DHCP_H__
 #define __TE_TAPI_DHCP_H__
 
-#ifdef HAVE_SEMAPHORE_H
-#include <semaphore.h>
-#else
-#error "We have no semaphores"
-#endif
+#if HAVE_ASSERT_H
 #include <assert.h>
+#endif
+#if HAVE_NETINET_IN_H
 #include <netinet/in.h>
+#endif
 
+#include "te_defs.h"
 #include "te_stdint.h"
 #include "tad_common.h"
 #include "asn_usr.h"
 #include "ndn_dhcp.h"
 
-#ifndef true
-#define true 1
-#endif
-#ifndef false
-#define false 0
-#endif
-#ifndef bool
-#define bool unsigned int
-#endif
-
-#define MACADDR_LEN 6
 
 #define CONST_STRING_LENGTH(str_) (sizeof(str_) - 1)
 
-/** Types of DHCP Options */
 
-/** Name of the host */
-#define DHCP_OPT_HOSTNAME     12
-/** DHCP Message Type */
-#define DHCP_OPT_MESSAGE_TYPE 53
-/** Server Identifier */
-#define DHCP_OPT_SERVER_ID    54
+/** @name Types of DHCP Options */
+#define DHCP_OPT_HOSTNAME       12  /**< Name of the host */
+#define DHCP_OPT_MESSAGE_TYPE   53  /**< DHCP Message Type */
+#define DHCP_OPT_SERVER_ID      54  /**< Server Identifier */
+/*@}*/
+
 
 /**
  * Value used in DHCP 'htype' field for Ethernet (10Mb) hardware type
  * [RFC 1700]
  */
-#define DHCP_HW_TYPE_ETHERNET_10MB 1
+#define DHCP_HW_TYPE_ETHERNET_10MB  1
 
-/** Type of the DHCP message (It is used as a value of Option 53) */
-#define DHCPDISCOVER 1
-#define DHCPOFFER    2
-#define DHCPREQUEST  3
-#define DHCPDECLINE  4
-#define DHCPACK      5
-#define DHCPNAK      6
-#define DHCPRELEASE  7
+/** @name Type of the DHCP message (It is used as a value of Option 53) */
+#define DHCPDISCOVER    1
+#define DHCPOFFER       2
+#define DHCPREQUEST     3
+#define DHCPDECLINE     4
+#define DHCPACK         5
+#define DHCPNAK         6
+#define DHCPRELEASE     7
+/*@}*/
 
-/** Values of message op code */
-#define DHCP_OP_CODE_BOOTREQUEST  1
-#define DHCP_OP_CODE_BOOTREPLY    2
+/** @name Values of message op code */
+#define DHCP_OP_CODE_BOOTREQUEST    1
+#define DHCP_OP_CODE_BOOTREPLY      2
+/*@}*/
 
 /** BROADCAST flag */
 #define FLAG_BROADCAST 0x8000
@@ -127,20 +117,20 @@ struct dhcp_message {
     uint8_t sname[DHCPV4_HDR_SNAME_SIZE];   /**< Server host name */
     uint8_t file[DHCPV4_HDR_FILE_SIZE];     /**< Boot file name */
 
-    bool     is_op_set;         /**< Is message op code has been set */
-    bool     is_htype_set;      /**< Is message htype has been set */
-    bool     is_hlen_set;       /**< Is message hlen has been set */
-    bool     is_hops_set;       /**< Is message hops has been set */
-    bool     is_xid_set;        /**< Is message xid has been set */
-    bool     is_secs_set;       /**< Is message secs has been set */
-    bool     is_flags_set;      /**< Is message flags has been set */
-    bool     is_ciaddr_set;     /**< Is message ciaddr has been set */
-    bool     is_yiaddr_set;     /**< Is message yiaddr has been set */
-    bool     is_siaddr_set;     /**< Is message siaddr has been set */
-    bool     is_giaddr_set;     /**< Is message giaddr has been set */
-    bool     is_chaddr_set;     /**< Is message chaddr has been set */
-    bool     is_sname_set;      /**< Is message sname has been set */
-    bool     is_file_set;       /**< Is message file has been set */
+    te_bool  is_op_set;         /**< Is message op code has been set */
+    te_bool  is_htype_set;      /**< Is message htype has been set */
+    te_bool  is_hlen_set;       /**< Is message hlen has been set */
+    te_bool  is_hops_set;       /**< Is message hops has been set */
+    te_bool  is_xid_set;        /**< Is message xid has been set */
+    te_bool  is_secs_set;       /**< Is message secs has been set */
+    te_bool  is_flags_set;      /**< Is message flags has been set */
+    te_bool  is_ciaddr_set;     /**< Is message ciaddr has been set */
+    te_bool  is_yiaddr_set;     /**< Is message yiaddr has been set */
+    te_bool  is_siaddr_set;     /**< Is message siaddr has been set */
+    te_bool  is_giaddr_set;     /**< Is message giaddr has been set */
+    te_bool  is_chaddr_set;     /**< Is message chaddr has been set */
+    te_bool  is_sname_set;      /**< Is message sname has been set */
+    te_bool  is_file_set;       /**< Is message file has been set */
 
     struct dhcp_option *opts;   /**< List of DHCP options */
 };
@@ -152,10 +142,10 @@ struct dhcp_message {
  * @param field_  Field name whose value to be got
  */
 #define dhcpv4_message_get_field(msg_, field_) \
-            ((((msg_)->is_ ## field_ ## _set != true) ? assert(0) : 0), \
+            ((((msg_)->is_ ## field_ ## _set != TRUE) ? assert(0) : 0), \
              ((msg_)->field_))
 
-/** Get field macros */
+/** @name Get field macros */
 #define dhcpv4_message_get_op(msg_) \
             dhcpv4_message_get_field(msg_, op)
 #define dhcpv4_message_get_htype(msg_) \
@@ -176,6 +166,7 @@ struct dhcp_message {
             dhcpv4_message_get_field(msg_, giaddr)
 #define dhcpv4_message_get_chaddr(msg_) \
             dhcpv4_message_get_field(msg_, chaddr)
+/*@}*/
 
 /**
  * Sets a new value in dhcp_message structure
@@ -186,7 +177,7 @@ struct dhcp_message {
  * @param value_  Pointer to the new value
  */
 #define dhcpv4_message_set_simple_field(msg_, field_, value_) \
-            ((msg_)->is_ ## field_ ## _set = true,                       \
+            ((msg_)->is_ ## field_ ## _set = TRUE,                       \
              memcpy(&((msg_)->field_), value_, sizeof((msg_)->field_)))
 
 /**
@@ -198,10 +189,10 @@ struct dhcp_message {
  * @param value_  Pointer to the new value
  */
 #define dhcpv4_message_set_array_field(msg_, field_, value_) \
-            ((msg_)->is_ ## field_ ## _set = true,                       \
+            ((msg_)->is_ ## field_ ## _set = TRUE,                       \
              memcpy(((msg_)->field_), value_, sizeof((msg_)->field_)))
 
-/** Set field macros */
+/** @name Set field macros */
 #define dhcpv4_message_set_op(msg_, value_) \
             dhcpv4_message_set_simple_field(msg_, op, value_)
 #define dhcpv4_message_set_htype(msg_, value_) \
@@ -224,6 +215,7 @@ struct dhcp_message {
             dhcpv4_message_set_simple_field(msg_, siaddr, value_)
 #define dhcpv4_message_set_giaddr(msg_, value_) \
             dhcpv4_message_set_simple_field(msg_, giaddr, value_)
+/*@}*/
 
 /**
  * Note that 'value_' MUST be a pointer to a buffer with at 
@@ -247,7 +239,7 @@ struct dhcp_message {
                 size_t str_len = strlen(value_);           \
                                                            \
                 assert(str_len < sizeof((msg_)->file));    \
-                (msg_)->is_file_set = true;                \
+                (msg_)->is_file_set = TRUE;                \
                 memcpy((msg_)->file, value_, str_len + 1); \
             } while (0)
 
@@ -261,7 +253,7 @@ extern int ndn_dhcpv4_plain_to_packet(const struct dhcp_message *dhcp_msg,
  * It fills the following fields as:
  * op    - According to 'msg_type'
  * htype - Ethernet (10Mb)
- * hlen  - MACADDR_LEN
+ * hlen  - ETHER_ADDR_LEN
  *
  * All other fields are left unspecified
  *
@@ -279,7 +271,7 @@ extern struct dhcp_message *dhcpv4_message_create(uint8_t msg_type);
  * It fills the following fields as:
  * op    - According to 'op'
  * htype - Ethernet (10Mb)
- * hlen  - MACADDR_LEN
+ * hlen  - ETHER_ADDR_LEN
  *
  * All other fields are left unspecified
  *
@@ -306,9 +298,9 @@ extern struct dhcp_message *dhcpv4_message_capture(const char *ta_name,
                                                    csap_handle_t dhcp_csap,
                                                    unsigned int *timeout);
 extern struct dhcp_message *tapi_dhcpv4_send_recv(const char *ta_name,
-                                                  csap_handle_t dhcp_csap,
-                      const struct dhcp_message *dhcp_msg, int *tv,
-                      const char **err_msg);
+                                csap_handle_t dhcp_csap,
+                                const struct dhcp_message *dhcp_msg,
+                                unsigned int *tv, const char **err_msg);
 extern int tapi_dhcpv4_csap_get_ipaddr(const char *ta_name,
                                        csap_handle_t dhcp_csap, void *addr);
 
@@ -335,7 +327,7 @@ extern int dhcpv4_message_add_option(struct dhcp_message *dhcp_msg,
                                      const void *val);
 extern int dhcpv4_message_insert_option(struct dhcp_message *dhcp_msg,
                                         struct dhcp_option *opt);
-extern bool dhcpv4_option55_has_code(const struct dhcp_option *opt,
-                                     uint8_t type);
+extern te_bool dhcpv4_option55_has_code(const struct dhcp_option *opt,
+                                        uint8_t type);
 
 #endif /* !__TE_TAPI_DHCP_H__ */

@@ -3,6 +3,7 @@
  *
  * Implementation of TAPI DHCP library.
  *
+ *
  * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
  * root directory of the distribution).
  *
@@ -21,42 +22,72 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
  *
+ *
  * @author Oleg Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
  *
  * $Id$
  */
 
-#ifdef HAVE_CONFIG_H
+#define TE_LGR_USER     "TAPI DHCP"
+
+#if HAVE_CONFIG_H
 #include "config.h"
 #endif
 
-#include <stdlib.h>
-#include <string.h>
-/*#endif
-#ifdef HAVE_STRINGS_H
-#include <strings.h>
-#endif*/
-
-/* #ifdef HAVE_PTHREAD_H */
-#include <pthread.h>
-/* #endif */
-
-
 #include <stdio.h>
+#if HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#if HAVE_STDLIB_H
+#include <stdlib.h>
+#endif
+#if HAVE_STRING_H
+#include <string.h>
+#endif
+#if HAVE_STRINGS_H
+#include <strings.h>
+#endif
+#if HAVE_ASSERT_H
 #include <assert.h>
-
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <sys/socket.h>
+#endif
+#if HAVE_UNISTD_H
 #include <unistd.h>
+#endif
+#if HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif
+#if HAVE_PTHREAD_H
+#include <pthread.h>
+#endif
+#if HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
+#if HAVE_ARPA_INET_H
+#include <arpa/inet.h>
+#endif
+#if HAVE_NET_ETHERNET_H
+#include <net/ethernet.h>
+#endif
 
+#include "te_errno.h"
+#include "logger_api.h"
 #include "rcf_api.h"
-#include "conf_api.h"
 #include "ndn.h"
 #include "ndn_dhcp.h"
 #include "tapi_dhcp.h"
 
-#define cfg_free_instance_value(ptr_) free(ptr_)
+
+#define CHECK_RC(expr_) \
+    do {                                                \
+        int rc_ = (expr_);                              \
+                                                        \
+        if (rc_ != 0)                                   \
+        {                                               \
+            ERROR("%s():%u: " #expr_ " FAILED rc=0x%x", \
+                  __FUNCTION__, __LINE__, rc_);         \
+            return rc_;                                 \
+        }                                               \
+    } while (0)
 
 struct dhcp_rcv_pkt_info {
     struct dhcp_message *dhcp_msg;
@@ -70,7 +101,7 @@ struct dhcp_rcv_pkt_info {
 /** */
 static struct dhcp_rcv_pkt_info rcv_pkt;
 /** Indicates if TAPI DHCP can issue request on receiving DHCP packet */
-static bool rcv_op_busy = false;
+static te_bool rcv_op_busy = FALSE;
 
 /* If pthread mutexes are supported - OK; otherwise hope for the best... */
 #ifdef HAVE_PTHREAD_H
@@ -79,21 +110,22 @@ static pthread_mutex_t tapi_dhcp_lock = PTHREAD_MUTEX_INITIALIZER;
 
 static int ndn_dhcpv4_option_to_plain(asn_value_p dhcp_opt,
                                       struct dhcp_option **opt_p);
-static void ndn_dhcpv4_add_opts(asn_value_p container,
-                                struct dhcp_option *opt);
+static int ndn_dhcpv4_add_opts(asn_value_p container,
+                               struct dhcp_option *opt);
 static void dhcp_options_destroy(struct dhcp_option *opt);
+
 
 /**
  * Convert DHCPv4 ASN value to plain C structrue
  *
- * @param pkt           ASN value of type DHCPv4 message or Generic-PDU
- *                      with choice "dhcp"
- * @param dhcp_msg      converted structure (OUT)
+ * @param[in]   pkt         ASN value of type DHCPv4 message or
+ *                          Generic-PDU with choice "dhcp"
+ * @param[out]  dhcp_msg    Converted structure
  *
- * @return zero on success or error code
+ * @return Zero on success or error code
  *
- * @se Function allocates memory under dhcp_message data structure, which
- * should be freed with dhcpv4_message_destroy
+ * @se Function allocates memory under dhcp_message data structure,
+ *     which should be freed with dhcpv4_message_destroy
  */
 int
 ndn_dhcpv4_packet_to_plain(asn_value_p pkt, struct dhcp_message **dhcp_msg)
@@ -122,14 +154,14 @@ ndn_dhcpv4_packet_to_plain(asn_value_p pkt, struct dhcp_message **dhcp_msg)
             rc = asn_read_value_field(pkt, (ptr_),                 \
                                       &len, #field_ ".#plain");    \
             if (rc == 0)                                           \
-                (*dhcp_msg)->is_ ## field_ ## _set = true;         \
+                (*dhcp_msg)->is_ ## field_ ## _set = TRUE;         \
             if (rc == EASNINCOMPLVAL)                              \
             {                                                      \
                 /*                                                 \
                  * Field name is valid but the value               \
                  * is not specified                                \
                  */                                                \
-                (*dhcp_msg)->is_ ## field_ ## _set = false;        \
+                (*dhcp_msg)->is_ ## field_ ## _set = FALSE;        \
                 rc = 0;                                            \
             }                                                      \
         }                                                          \
@@ -192,10 +224,10 @@ ndn_dhcpv4_packet_to_plain(asn_value_p pkt, struct dhcp_message **dhcp_msg)
 /**
  * Convert DHCPv4 Option ASN value to plain C structrue
  *
- * @param dhcp_opt      ASN value of type DHCPv4 option
- * @param opt_p         converted structure (OUT)
+ * @param[in]   dhcp_opt    ASN value of type DHCPv4 option
+ * @param[out]  opt_p       Converted structure
  *
- * @return zero on success or error code
+ * @return Zero on success or error code
  */
 static int
 ndn_dhcpv4_option_to_plain(asn_value_p dhcp_opt, struct dhcp_option **opt_p)
@@ -294,14 +326,10 @@ ndn_dhcpv4_option_to_plain(asn_value_p dhcp_opt, struct dhcp_option **opt_p)
 }
 
 /**
- * Converts
+ * Convert C structure to DHCPv4 ASN value
  *
- */
-/**
- * Convert C structrue to DHCPv4 ASN value
- *
- * @param dhcp_msg      DHCP message in plain C data structure
- * @param pkt           Placeholder for the new ASN.1 DHCP packet (OUT)
+ * @param[in]   dhcp_msg    DHCP message in plain C data structure
+ * @param[out]  pkt         Placeholder for the new ASN.1 DHCP packet
  *
  * @return Zero on success or error code
  */
@@ -319,7 +347,7 @@ ndn_dhcpv4_plain_to_packet(const struct dhcp_message *dhcp_msg,
 #define PKT_SET_VALUE(ptr_, field_) \
     do {                                                          \
         len = sizeof((dhcp_msg)->field_);                         \
-        if (rc == 0 && (dhcp_msg)->is_ ## field_ ## _set == true) \
+        if (rc == 0 && (dhcp_msg)->is_ ## field_ ## _set == TRUE) \
         {                                                         \
             rc = asn_write_value_field(*pkt, (ptr_),              \
                                        len, #field_ ".#plain");   \
@@ -354,43 +382,41 @@ ndn_dhcpv4_plain_to_packet(const struct dhcp_message *dhcp_msg,
 #undef PKT_SET_VALUE
 
     if (rc == 0)
-        ndn_dhcpv4_add_opts(*pkt, dhcp_msg->opts);
+        rc = ndn_dhcpv4_add_opts(*pkt, dhcp_msg->opts);
     return rc;
 }
 
-static void
+static int
 ndn_dhcpv4_add_opts(asn_value_p container, struct dhcp_option *opt)
 {
     asn_value_p dhcp_opt, opts;
-    int         rc = 0;
-
 
     opts = asn_init_value(ndn_dhcpv4_options);
     dhcp_opt = asn_init_value(ndn_dhcpv4_option);
 
     if (opt != NULL)
-        rc = asn_write_component_value(container, opts, "options");
+        CHECK_RC(asn_write_component_value(container, opts, "options"));
 
-    if (rc)
-        printf ("insert indexed rc: %x\n", rc);
-
-    while (opt != NULL)
+    for (; opt != NULL; opt = opt->next)
     {
-        rc = asn_write_value_field(dhcp_opt, &(opt->type),
-                                   sizeof(opt->type), "type.#plain");
-        rc = asn_write_value_field(dhcp_opt, &(opt->len),
-                                   sizeof(opt->len), "length.#plain");
-        rc = asn_write_value_field(dhcp_opt, opt->val,
-                                   opt->val_len, "value.#plain");
+        CHECK_RC(asn_write_value_field(dhcp_opt,
+                                       &(opt->type), sizeof(opt->type),
+                                       "type.#plain"));
+        CHECK_RC(asn_write_value_field(dhcp_opt,
+                                       &(opt->len), sizeof(opt->len),
+                                       "length.#plain"));
+        CHECK_RC(asn_write_value_field(dhcp_opt,
+                                       opt->val, opt->val_len,
+                                       "value.#plain"));
 
-        ndn_dhcpv4_add_opts(dhcp_opt, opt->subopts);
-        rc = asn_insert_indexed(container, dhcp_opt, -1, "options");
-        if (rc)
-            printf ("insert indexed rc: %x\n", rc);
-        asn_free_subvalue(dhcp_opt, "options");
-        opt = opt->next;
+        CHECK_RC(ndn_dhcpv4_add_opts(dhcp_opt, opt->subopts));
+        CHECK_RC(asn_insert_indexed(container, dhcp_opt, -1, "options"));
+        CHECK_RC(asn_free_subvalue(dhcp_opt, "options"));
     }
+
     asn_free_value(dhcp_opt);
+
+    return 0;
 }
 
 
@@ -405,11 +431,11 @@ dhcpv4_bootp_message_create(uint8_t op)
         return NULL;
 
     dhcp_msg->op = op;
-    dhcp_msg->is_op_set = true;
+    dhcp_msg->is_op_set = TRUE;
     dhcp_msg->htype = DHCP_HW_TYPE_ETHERNET_10MB;
-    dhcp_msg->is_htype_set = true;
-    dhcp_msg->hlen = MACADDR_LEN;
-    dhcp_msg->is_hlen_set = true;
+    dhcp_msg->is_htype_set = TRUE;
+    dhcp_msg->hlen = ETHER_ADDR_LEN;
+    dhcp_msg->is_hlen_set = TRUE;
 
     return dhcp_msg;
 }
@@ -732,10 +758,10 @@ dhcpv4_message_fill_reply_from_req(struct dhcp_message *dhcp_rep,
  * @param type  Option type to check if Option 55 has it in the list
  *
  * @return Result of the checking
- * @retval true   Option 55 contains option code 'type' in its list
- * @retval false  Option 55 does not contain option code 'type' in its list
+ * @retval TRUE   Option 55 contains option code 'type' in its list
+ * @retval FALSE  Option 55 does not contain option code 'type' in its list
  */
-bool
+te_bool
 dhcpv4_option55_has_code(const struct dhcp_option *opt, uint8_t type)
 {
     unsigned int i;
@@ -743,9 +769,9 @@ dhcpv4_option55_has_code(const struct dhcp_option *opt, uint8_t type)
     for (i = 0; i < opt->val_len; i++)
     {
         if (opt->val[i] == type)
-            return true;
+            return TRUE;
     }
-    return false;
+    return FALSE;
 }
 
 
@@ -823,36 +849,24 @@ dhcpv4_prepare_traffic_template(const struct dhcp_message *dhcp_msg,
     asn_value_p asn_traffic;
     asn_value_p asn_pdus;
     asn_value_p asn_pdu;
-    int         rc;
 
     /* Create ASN.1 representation of DHCP message */
-    if ((rc = ndn_dhcpv4_plain_to_packet(dhcp_msg, &asn_dhcp_msg)) != 0)
-    {
-        printf("ndn_dhcpv4_plain_to_packet returns %d\n", rc);
-        return rc;
-    }
+    CHECK_RC(ndn_dhcpv4_plain_to_packet(dhcp_msg, &asn_dhcp_msg));
 
     asn_traffic = asn_init_value(ndn_traffic_template);
     asn_pdus = asn_init_value(ndn_generic_pdu_sequence);
     asn_pdu = asn_init_value(ndn_generic_pdu);
 
-    rc = asn_write_component_value(asn_pdu, asn_dhcp_msg, "#dhcp");
-    if (rc == 0)
-        rc = asn_insert_indexed(asn_pdus, asn_pdu, -1, "");
-    if (rc == 0)
-        rc = asn_write_component_value(asn_traffic, asn_pdus, "pdus");
-
-    if (rc != 0)
-        return rc;
+    CHECK_RC(asn_write_component_value(asn_pdu, asn_dhcp_msg, "#dhcp"));
+    CHECK_RC(asn_insert_indexed(asn_pdus, asn_pdu, -1, ""));
+    CHECK_RC(asn_write_component_value(asn_traffic, asn_pdus, "pdus"));
 
     /* @todo Generate temporary file name */
     *templ_fname = "./tmp_ndn_send.dat";
 
-    if ((rc = asn_save_to_file(asn_traffic, *templ_fname)) != 0)
-    {
-        printf("asn_save_to_file returns %d\n", rc);
-    }
-    return rc;
+    CHECK_RC(asn_save_to_file(asn_traffic, *templ_fname));
+
+    return 0;
 }
 
 /**
@@ -948,31 +962,33 @@ dhcp_pkt_handler(char *pkt_fname, void *user_param)
     asn_value_p               pkt;
     asn_value_p               dhcp_pkt;
 
-    printf("dhcp_pkt_handler\n");
-    fflush(stdout);
-
+    rc = asn_parse_dvalue_in_file(pkt_fname, ndn_raw_packet, &pkt,
+                                  &s_parsed);
+    if (rc != 0)
     {
-        char buf[200];
-        sprintf(buf, "cp %s rcv_file_ndn.asn", pkt_fname);
-        system(buf);
-    }
-
-    if ((rc = asn_parse_dvalue_in_file(pkt_fname, ndn_raw_packet,
-                                       &pkt, &s_parsed)) != 0)
-    {
-        fprintf(stderr, "asn_parse_dvalue_in_file fails, rc = %x\n", rc);
+        ERROR("Failed to parse ASN.1 text file to ASN.1 value: "
+              "rc=0x%x", rc);
         return;
     }
 
     dhcp_pkt = asn_read_indexed(pkt, 0, "pdus");
+    if (dhcp_pkt == NULL)
+    {
+        ERROR("Failed to get 'pdus' from packet");
+        return;
+    }
+
     rc = ndn_dhcpv4_packet_to_plain(dhcp_pkt, &dhcp_msg);
     if (rc != 0)
     {
-        fprintf(stderr, "ndn_dhcpv4_packet_to_plain fails, rc = %x\n", rc);
+        ERROR("Failed to convert DHCP packet from ASN.1 value to C "
+              "structure: rc=0x%x", rc);
         return;
     }
+
     rcv_pkt->dhcp_msg = dhcp_msg;
 }
+
 
 /**
  * Start receiving DHCP message of specified type in backgroung
@@ -1001,7 +1017,7 @@ dhcpv4_message_start_recv(const char *ta_name, csap_handle_t dhcp_csap,
 #endif
         return EBUSY;
     }
-    rcv_op_busy = true;
+    rcv_op_busy = TRUE;
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_unlock(&tapi_dhcp_lock);
 #endif
@@ -1024,7 +1040,7 @@ dhcpv4_message_start_recv(const char *ta_name, csap_handle_t dhcp_csap,
 #ifdef HAVE_PTHREAD_H
         pthread_mutex_lock(&tapi_dhcp_lock);
 #endif
-        rcv_op_busy = false;
+        rcv_op_busy = FALSE;
 #ifdef HAVE_PTHREAD_H
         pthread_mutex_unlock(&tapi_dhcp_lock);
 #endif
@@ -1058,7 +1074,7 @@ dhcpv4_message_capture(const char *ta_name, csap_handle_t dhcp_csap,
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_lock(&tapi_dhcp_lock);
 #endif
-    rcv_op_busy = false;
+    rcv_op_busy = FALSE;
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_unlock(&tapi_dhcp_lock);
 #endif
@@ -1068,8 +1084,8 @@ dhcpv4_message_capture(const char *ta_name, csap_handle_t dhcp_csap,
 
 struct dhcp_message *
 tapi_dhcpv4_send_recv(const char *ta_name, csap_handle_t dhcp_csap,
-                      const struct dhcp_message *dhcp_msg, int *tv,
-                      const char **err_msg)
+                      const struct dhcp_message *dhcp_msg,
+                      unsigned int *tv, const char **err_msg)
 {
     struct dhcp_message      *msg = NULL;
     const char               *templ_fname;
@@ -1088,7 +1104,7 @@ tapi_dhcpv4_send_recv(const char *ta_name, csap_handle_t dhcp_csap,
 #endif
         return NULL;
     }
-    rcv_op_busy = true;
+    rcv_op_busy = TRUE;
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_unlock(&tapi_dhcp_lock);
 #endif
@@ -1126,7 +1142,7 @@ free_rcv_op:
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_lock(&tapi_dhcp_lock);
 #endif
-    rcv_op_busy = false;
+    rcv_op_busy = FALSE;
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_unlock(&tapi_dhcp_lock);
 #endif

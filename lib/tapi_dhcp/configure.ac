@@ -31,7 +31,16 @@ AC_ARG_VAR([TE_DEPENDENCIES])
 AC_CONFIG_HEADERS([config.h])
 
 AC_CHECK_HEADERS([\
-semaphore.h \
+sys/types.h \
+stdlib.h \
+string.h \
+strings.h \
+assert.h \
+unistd.h \
+sys/socket.h \
+netinet/in.h \
+arpa/inet.h \
+net/ethernet.h \
 pthread.h \
 ])
 
