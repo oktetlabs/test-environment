@@ -116,7 +116,7 @@ wait_child_and_log(void)
     int status;
     int pid;
     
-    if ((pid = wait(&status)) > 0)
+    if ((pid = waitpid(-1, &status, WNOHANG)) > 0)
     {
         if (WIFEXITED(status))
             VERB("RPC Server process with PID %d is deleted", pid);
@@ -134,6 +134,14 @@ wait_child_and_log(void)
 #endif
         else
             WARN("RPC Server with PID %d exited due unknown reason", pid); 
+    }
+    else if (pid == 0)
+    {
+        WARN("No child was available");
+    }
+    else
+    {
+        ERROR("waitpid() failed with errno %d", errno);
     }
 }
 
