@@ -383,7 +383,7 @@ rpc_setlibname(rcf_rpc_server *handle, const char *libname)
                  &in,  (xdrproc_t)xdr_tarpc_setlibname_in,
                  &out, (xdrproc_t)xdr_tarpc_setlibname_out);
 
-    RING("RPC (%s, %s) setlibname(%s) -> %d (%s)",
+    RING("RPC (%s,%s) setlibname(%s) -> %d (%s)",
          handle->ta, handle->name, libname ? : "(NULL)",
          out.retval, errno_rpc2str(RPC_ERRNO(handle)));
 
@@ -848,7 +848,7 @@ rpc_accept_gen(rcf_rpc_server *handle,
             *addrlen = out.len.len_val[0];
     }
 
-    RING("RPC (%s, %s)%s: accept(%d, %p[%u], %p(%u)) -> %d (%s) "
+    RING("RPC (%s,%s)%s: accept(%d, %p[%u], %p(%u)) -> %d (%s) "
          "peer=%s addrlen=%u",
          handle->ta, handle->name, rpcop2str(op),
          s, addr, raddrlen, addrlen, save_addrlen,
@@ -953,7 +953,7 @@ rpc_wsa_accept(rcf_rpc_server *handle,
             *addrlen = out.len.len_val[0];
     }
 
-    RING("RPC (%s, %s)%s: WSAAccept(%d, %p[%u], %p(%u)) -> %d (%s) "
+    RING("RPC (%s,%s)%s: WSAAccept(%d, %p[%u], %p(%u)) -> %d (%s) "
          "peer=%s addrlen=%u",
          handle->ta, handle->name, rpcop2str(op),
          s, addr, raddrlen, addrlen, save_addrlen,
@@ -4443,7 +4443,7 @@ rpc_recvmsg(rcf_rpc_server *handle,
                  &out, (xdrproc_t)xdr_tarpc_recvmsg_out);
 
     snprintf(str_buf, sizeof(str_buf),
-             "RPC (%s, %s)%s: recvmsg(%d, %p(",
+             "RPC (%s,%s)%s: recvmsg(%d, %p(",
              handle->ta, handle->name, rpcop2str(op), s, msg);
 
     if (RPC_CALL_OK && msg != NULL && out.msg.msg_val != NULL)
