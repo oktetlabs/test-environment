@@ -174,7 +174,7 @@ snmp_read_cb (csap_p csap_descr, int timeout, char *buf, int buf_len)
         n_fds = spec_data->sock + 1;
     }
     
-    if (spec_data->pdu) snmp_free_pdu (spec_data->pdu); 
+    if (spec_data->pdu) snmp_free_pdu(spec_data->pdu); 
     spec_data->pdu = 0;
 
     rc = select(n_fds, &fdset, 0, 0, &sel_timeout);
@@ -187,18 +187,17 @@ snmp_read_cb (csap_p csap_descr, int timeout, char *buf, int buf_len)
         
         snmp_read(&fdset);
         
-        if (buf_len < sizeof(struct snmp_pdu))
+        if (n_bytes < sizeof(struct snmp_pdu))
         {
             RING("In %s, buf_len %d less then sizeof struct snmp_pdu %d", 
                  __FUNCTION__, buf_len, sizeof(struct snmp_pdu));
-            n_bytes = buf_len;
         }
         else
             n_bytes = sizeof(struct snmp_pdu);
 
         if (spec_data->pdu)
         {
-            memcpy (buf, spec_data->pdu, n_bytes);
+            memcpy(buf, spec_data->pdu, n_bytes);
             return n_bytes;
         }
         rc = 0;

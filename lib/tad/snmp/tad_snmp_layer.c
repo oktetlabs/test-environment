@@ -40,6 +40,11 @@
 #include "te_stdint.h"
 #include "tad_snmp_impl.h"
 
+void
+tad_snmp_free_pdu(void *ptr)
+{
+    snmp_free_pdu((struct snmp_pdu *)ptr);
+}
 
 /**
  * Callback for read parameter value of "snmp" CSAP.
@@ -69,7 +74,8 @@ char* snmp_get_param_cb (int csap_id, int level, const char *param)
  *
  * @return zero on success or error code.
  */ 
-int snmp_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
+int
+snmp_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
 {
     UNUSED(csap_id);
     UNUSED(layer);
@@ -100,9 +106,10 @@ int snmp_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
  *
  * @return zero on success or error code.
  */ 
-int snmp_gen_bin_cb(int csap_id, int layer, const asn_value *tmpl_pdu,
-                    const tad_template_arg_t *args, size_t  arg_num, 
-                    csap_pkts_p  up_payload, csap_pkts_p pkts)
+int
+snmp_gen_bin_cb(int csap_id, int layer, const asn_value *tmpl_pdu,
+                const tad_template_arg_t *args, size_t  arg_num, 
+                csap_pkts_p up_payload, csap_pkts_p pkts)
 {
     int rc; 
     int operation;
@@ -224,7 +231,7 @@ int snmp_gen_bin_cb(int csap_id, int layer, const asn_value *tmpl_pdu,
         pkts->next = 0;
         pkts->data = pdu;
         pkts->len  = sizeof(*pdu);
-        pkts->free_data_cb = snmp_free_pdu;
+        pkts->free_data_cb = tad_snmp_free_pdu;
     }
     VERB("%s rc %X", __FUNCTION__, rc);
 
@@ -247,9 +254,9 @@ int snmp_gen_bin_cb(int csap_id, int layer, const asn_value *tmpl_pdu,
  *
  * @return zero on success or error code.
  */
-int snmp_match_bin_cb (int csap_id, int layer, const asn_value_p pattern_pdu,
-                       const csap_pkts *  pkt, csap_pkts * payload,
-                       asn_value_p  parsed_packet )
+int snmp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
+                      const csap_pkts *pkt, csap_pkts *payload,
+                      asn_value *parsed_packet )
 { 
     int type;
     struct snmp_pdu * pdu = (struct snmp_pdu *)pkt->data;
@@ -461,8 +468,8 @@ int snmp_match_bin_cb (int csap_id, int layer, const asn_value_p pattern_pdu,
  *
  * @return zero on success or error code.
  */
-int snmp_gen_pattern_cb (int csap_id, int layer, const asn_value_p tmpl_pdu, 
-                                         asn_value_p   *pattern_pdu)
+int snmp_gen_pattern_cb(int csap_id, int layer, const asn_value *tmpl_pdu, 
+                        asn_value_p *pattern_pdu)
 { 
     UNUSED(tmpl_pdu);
 
