@@ -148,6 +148,26 @@ int tapi_cfg_base_if_down(const char *ta, const char *iface)
 
 }
 
+static inline 
+int tapi_cfg_base_if_arp_enable(const char *ta, const char * iface)
+{
+    int arp_use = 1; /* enable */
+
+    return cfg_set_instance_fmt(CVT_INTEGER, (void *)arp_use,
+                                "/agent:%s/interface:%s/arp:",
+                                ta, iface);
+}
+
+static inline 
+int tapi_cfg_base_if_arp_disable(const char *ta, const char * iface)
+{
+    int arp_use = 0; /* enable */
+
+    return cfg_set_instance_fmt(CVT_INTEGER, (void *)arp_use,
+                                "/agent:%s/interface:%s/arp:",
+                                ta, iface);
+}
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

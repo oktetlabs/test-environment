@@ -132,6 +132,11 @@ static int status_get(unsigned int, const char *, char *,
 static int status_set(unsigned int, const char *, const char *,
                       const char *);
 
+static int arp_use_get(unsigned int, const char *, char *,
+                       const char *);
+static int arp_use_set(unsigned int, const char *, const char *,
+                       const char *);
+
 static int mtu_get(unsigned int, const char *, char *,
                    const char *);
 static int mtu_set(unsigned int, const char *, const char *,
@@ -198,7 +203,10 @@ RCF_PCH_CFG_NODE_RW(node_status, "status", NULL, NULL,
 RCF_PCH_CFG_NODE_RW(node_mtu, "mtu", NULL, &node_status,
                     mtu_get, mtu_set);
 
-RCF_PCH_CFG_NODE_RO(node_link_addr, "link_addr", NULL, &node_mtu,
+RCF_PCH_CFG_NODE_RW(node_arp_use, "arp", NULL, &node_mtu,
+                    arp_use_get, arp_use_set);
+
+RCF_PCH_CFG_NODE_RO(node_link_addr, "link_addr", NULL, &node_arp_use,
                     link_addr_get);
 
 RCF_PCH_CFG_NODE_RW(node_broadcast, "broadcast", NULL, NULL,
@@ -1399,6 +1407,7 @@ link_addr_get(unsigned int gid, const char *oid, char *value,
 
 #ifdef SIOCGIFHWADDR
 
+
     strcpy(req.ifr_name, ifname);
     if (ioctl(s, SIOCGIFHWADDR, (int)&req) < 0)
     {
@@ -1521,6 +1530,78 @@ mtu_set(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_LINUX, errno);
     }
 
+    return 0;
+}
+
+/**
+ * Get ARP use on the interface ("0" - arp disable, "1" - arp enable)
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instence identifier (unused)
+ * @param value         value location
+ * @param ifname        name of the interface (like "eth0")
+ *
+ * @return error code
+ */
+static int
+arp_use_get(unsigned int gid, const char *oid, char *value,
+            const char *ifname)
+{
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    strcpy(req.ifr_name, ifname);
+    if (ioctl(s, SIOCGIFFLAGS, (int)&req) != 0)
+    {
+        ERROR("ioctl(SIOCGIFFLAGS) failed: %s", strerror(errno));
+        /* FIXME Mapping to ETENOSUCHNAME */
+        return TE_RC(TE_TA_LINUX, errno);
+    }
+
+    sprintf(value, "%d", (req.ifr_flags & IFF_NOARP) != IFF_NOARP);
+
+    return 0;
+}
+
+/**
+ * Change ARP use on the interface ("0" - arp disable, "1" - arp enable)
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instence identifier (unused)
+ * @param value         value location
+ * @param ifname        name of the interface (like "eth0")
+ *
+ * @return error code
+ */
+static int
+arp_use_set(unsigned int gid, const char *oid, const char *value,
+            const char *ifname)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+
+    strncpy(req.ifr_name, ifname, IFNAMSIZ);
+    if (ioctl(s, SIOCGIFFLAGS, &req) < 0)
+    {
+        ERROR("ioctl(SIOCGIFFLAGS) failed: %s", strerror(errno));
+        /* FIXME Mapping to ETENOSUCHNAME */
+        return TE_RC(TE_TA_LINUX, errno);
+    }
+
+    if (strcmp(value, "1") == 0)
+        req.ifr_flags &= (~IFF_NOARP);
+    else if (strcmp(value, "0") == 0)
+        req.ifr_flags |= (IFF_NOARP);
+    else
+        return TE_RC(TE_TA_LINUX, EINVAL);
+    
+    strncpy(req.ifr_name, ifname, IFNAMSIZ);
+    if (ioctl(s, SIOCSIFFLAGS, &req) < 0)
+    {
+        ERROR("ioctl(SIOCSIFFLAGS) failed: %s", strerror(errno));
+        return TE_RC(TE_TA_LINUX, errno);
+    }
     return 0;
 }
 
