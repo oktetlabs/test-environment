@@ -11,7 +11,7 @@ include_HEADERS=tapi_snmp.h tapi_snmp_iftable.h tapi_snmp_macro.h
 
 lib_LTLIBRARIES=libtapi_snmp.la 
 
-libtapi_snmp_a_SOURCES=tapi_snmp.c  
+libtapi_snmp_la_SOURCES=tapi_snmp.c  
 
 
 # Tests (incorrect)
