@@ -47,6 +47,7 @@
             int flag; \
             int len; \
             int shell_tid; \
+            struct sockaddr_in host_addr; \
             uint8_t mac[ETHER_ADDR_LEN + 1];
 
 #include <stdarg.h>
@@ -70,17 +71,15 @@ main(int argc, char *argv[])
     CHECK_RC(rcf_get_ta_list(ta, &len));
     INFO("Agent is %s", ta);
 
-#if 0
-    CHECK_RC(cfg_set_instance_fmt(CVT_INTEGER, (void *)0, "/agent:%s/ftpserver:", ta));
-    CHECK_RC(cfg_set_instance_fmt(CVT_STRING, "xinetd_vsftpd", "/agent:%s/ftpserver:/server:", ta));
-    CHECK_RC(cfg_set_instance_fmt(CVT_INTEGER, (void *)1, "/agent:%s/ftpserver:", ta));
-    CHECK_RC(cfg_set_instance_fmt(CVT_INTEGER, (void *)0, "/agent:%s/ftpserver:", ta));
-    CHECK_RC(cfg_set_instance_fmt(CVT_STRING, "vsftpd", "/agent:%s/ftpserver:/server:", ta));
-    CHECK_RC(cfg_set_instance_fmt(CVT_INTEGER, (void *)1, "/agent:%s/ftpserver:", ta));
-#endif
+    CHECK_RC(cfg_set_instance_fmt(CVT_INTEGER, (void *)0, "/agent:%s/smtp:", ta));
+    CHECK_RC(cfg_set_instance_fmt(CVT_STRING, "qmail", "/agent:%s/smtp:/server:", ta));
+    host_addr.sin_family = AF_INET;
+    host_addr.sin_addr.s_addr = 0xdeadbeeef;
+    CHECK_RC(cfg_set_instance_fmt(CVT_ADDRESS, &host_addr, "/agent:%s/smtp:/smarthost:", ta));
+    CHECK_RC(cfg_set_instance_fmt(CVT_INTEGER, (void *)1, "/agent:%s/smtp:", ta));
 
-
-    sleep(30);
+    sleep(120);
+    CHECK_RC(cfg_set_instance_fmt(CVT_INTEGER, (void *)0, "/agent:%s/smtp:", ta));
     snprintf(eth0_oid, sizeof(eth0_oid) - 1, "/agent:%s/interface:*", ta);
     CHECK_RC(cfg_find_pattern(eth0_oid, &num_interfaces, &interfaces));
     {

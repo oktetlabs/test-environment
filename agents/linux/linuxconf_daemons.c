@@ -1945,7 +1945,8 @@ static char *exim_name = "exim";
 static char *smtp_servers[] = {
     "exim",      
     "sendmail",
-    "postfix"
+    "postfix",
+    "qmail"
 };    
 
 /** 
@@ -2098,7 +2099,6 @@ postfix_smarthost_get(te_bool *enable)
         rc = TE_RC(TE_TA_LINUX, errno);
         ERROR("Cannot open file %s for reading",
               ds_config(postfix_index));
-        fclose(f);
         return rc;
     }
 
@@ -2167,7 +2167,7 @@ postfix_smarthost_set(te_bool enable)
 
 /*---------------------- exim staff ------------------------------*/
 
-/** postfix configuration location */
+/** exim configuration location */
 #define EXIM_CONF_DIR   "/etc/exim/"
 #define EXIM4_CONF_DIR   "/etc/exim4/"
 
@@ -2253,6 +2253,75 @@ exim_smarthost_set(te_bool enable)
     return 0;
 }
 
+/*------------------ qmail staff --------------------------*/
+
+/** qmail configuration location */
+#define QMAIL_CONF_DIR   "/var/qmail/control/"
+
+/** Smarthost option */
+#define QMAIL_SMARTHOST_OPT  ":te_tester\n"
+
+static int qmail_index = -1;
+
+/** Check if ost option presents in the postfix configuration file */
+static int
+qmail_smarthost_get(te_bool *enable)
+{
+    FILE *f;
+    int   rc;
+
+    if ((f = fopen(ds_config(qmail_index), "r")) == NULL)
+    {
+        rc = errno;
+        WARN("Cannot open file %s for reading: %d",
+              ds_config(qmail_index), rc);
+        return 0;
+    }
+
+    *enable = 0;
+    while (fgets(buf, sizeof(buf), f) != NULL)
+    {
+        if (strcmp(buf, QMAIL_SMARTHOST_OPT) == 0)
+        {
+            *enable = 1;
+            break;
+        }
+    }
+    fclose(f);
+    return 0;
+}
+
+/** Enable/disable smarthost option in the qmail configuration file */
+static int
+qmail_smarthost_set(te_bool enable)
+{
+    FILE *g = NULL;
+    int   rc;
+    
+    if (qmail_index < 0)
+    {
+        ERROR("Cannot find qmail configuration file");
+        return ENOENT;
+    }
+    
+    ds_config_touch(qmail_index);
+    if ((g = fopen(ds_config(qmail_index), "w")) == NULL) 
+    {
+        rc = TE_RC(TE_TA_LINUX, errno);
+        ERROR("Cannot open file %s for writing", ds_config(postfix_index));
+        return rc;                                            
+    }
+
+    if (enable != 0)
+    {
+        fputs(QMAIL_SMARTHOST_OPT, g);
+    }
+    fclose(g);
+    
+    return 0;
+}
+
+
 /*------------------ Common mail staff --------------------------*/
 
 /** Get SMTP smarthost */
@@ -2299,7 +2368,18 @@ ds_smtp_smarthost_get(unsigned int gid, const char *oid, char *value)
         if (enable)
             strcpy(value, smtp_current_smarthost);
     }
-    
+    else if (strcmp(smtp_current, "qmail") == 0)
+    {
+        te_bool enable;
+        int     rc;
+        
+        if ((rc = qmail_smarthost_get(&enable)) != 0)
+            return rc;
+            
+        if (enable)
+            strcpy(value, smtp_current_smarthost);
+    }
+
     return 0;
 }
 
@@ -2343,6 +2423,11 @@ ds_smtp_smarthost_set(unsigned int gid, const char *oid,
     else if (strcmp(smtp_current, "exim") == 0)
     {
         if ((rc = exim_smarthost_set(addr != 0)) != 0)
+            goto error;
+    }
+    else if (strcmp(smtp_current, "qmail") == 0)
+    {
+        if ((rc = qmail_smarthost_set(addr != 0)) != 0)
             goto error;
     }
     else
@@ -2421,6 +2506,8 @@ ds_smtp_server_set(unsigned int gid, const char *oid, const char *value)
                     rc = postfix_smarthost_set(FALSE);
                 else if (strcmp(smtp_servers[i], "exim") == 0)
                     rc = exim_smarthost_set(FALSE);
+                else if (strcmp(smtp_servers[i], "qmail") == 0)
+                    rc = qmail_smarthost_set(FALSE);
                 
                 if (rc != 0)
                     return rc;
@@ -2503,6 +2590,14 @@ ds_init_smtp(rcf_pch_cfg_object **last)
     {
         return;
     }
+
+    if (file_exists(QMAIL_CONF_DIR "smtproutes") &&
+        ds_create_backup(QMAIL_CONF_DIR, "smtproutes", 
+                         &qmail_index) != 0)
+    {
+        return;
+    }
+
         
     smtp_current_smarthost = strdup(SMTP_EMPTY_SMARTHOST);
     for (i = 0; i < sizeof(smtp_servers) / sizeof(char *); i++)
@@ -2525,12 +2620,12 @@ ds_init_smtp(rcf_pch_cfg_object **last)
 void
 ds_shutdown_smtp()
 {
-    if (ds_config_changed(sendmail_index))
+    if (sendmail_index >= 0 && ds_config_changed(sendmail_index))
     {
         if (file_exists(SENDMAIL_CONF_DIR))
             ta_system("cd " SENDMAIL_CONF_DIR "; make >/dev/null 2>&1");
     }
-    if (ds_config_changed(exim_index))
+    if (exim_index >= 0 && ds_config_changed(exim_index))
     {
         sprintf(buf, "update-%s.conf >/dev/null 2>&1", exim_name);
         ta_system(buf);
