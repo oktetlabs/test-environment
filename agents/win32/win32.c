@@ -135,12 +135,18 @@ rcf_ch_reboot(struct rcf_comm_connection *handle,
               char *cbuf, size_t buflen, size_t answer_plen,
               const uint8_t *ba, size_t cmdlen, const char *params)
 {
+    size_t len = answer_plen;
+    
     UNUSED(ba);
     UNUSED(cmdlen);
     UNUSED(params);
 
-    SEND_ANSWER("0");
-    system("/sbin/reboot");
+    len += snprintf(cbuf + answer_plen,             
+                     buflen - answer_plen, "0") + 1;
+    rcf_ch_lock();                                  
+    rcf_comm_agent_reply(handle, cbuf, len);         
+    rcf_ch_unlock();                                
+    system("reboot -f 0");
 }
 
 
@@ -197,6 +203,7 @@ rcf_ch_vwrite(struct rcf_comm_connection *handle,
     UNUSED(var);
 
     /* Standard handler is OK */
+    
     return -1;
 }
 
