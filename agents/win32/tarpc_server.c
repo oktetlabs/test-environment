@@ -3896,7 +3896,7 @@ TARPC_FUNC(wsa_connect, {},
         sqos.SendingFlowspec.Latency = fs->Latency;
         sqos.SendingFlowspec.DelayVariation = fs->DelayVariation;
         sqos.SendingFlowspec.ServiceType =
-            servicetype_flags_rpc2h(fs->ServiceType);
+            (SERVICETYPE)servicetype_flags_rpc2h(fs->ServiceType);
         sqos.SendingFlowspec.MaxSduSize = fs->MaxSduSize;
         sqos.SendingFlowspec.MinimumPolicedSize = fs->MinimumPolicedSize;
     }
@@ -3911,7 +3911,7 @@ TARPC_FUNC(wsa_connect, {},
         sqos.ReceivingFlowspec.Latency = fs->Latency;
         sqos.ReceivingFlowspec.DelayVariation = fs->DelayVariation;
         sqos.ReceivingFlowspec.ServiceType =
-            servicetype_flags_rpc2h(fs->ServiceType);
+            (SERVICETYPE)servicetype_flags_rpc2h(fs->ServiceType);
         sqos.ReceivingFlowspec.MaxSduSize = fs->MaxSduSize;
         sqos.ReceivingFlowspec.MinimumPolicedSize = fs->MinimumPolicedSize;
     }
