@@ -2889,17 +2889,14 @@ user_add(unsigned int gid, const char *oid, const char *value,
     if (ta_system("adduser --help >/dev/null 2>&1") != 0)
     {
         /* Red Hat/Fedora */
-        PRINT("Red Hat!");
         sprintf(buf, "/usr/sbin/adduser -d /tmp/%s -u %u -m -p %s %s ", 
                 user, uid, crypt(user, "salt"), user);
         if (ta_system(buf) != 0) 
             return TE_RC(TE_TA_LINUX, ETESHCMD);
-        PRINT("OK!");
     }
     else    
     {
         /* Debian */
-        PRINT("Debian!");
         sprintf(buf, "/usr/sbin/adduser --home /tmp/%s --force-badname "
                      "--disabled-password --gecos \"\" "
                      "--uid %u %s >/dev/null 2>&1", user, uid, user);     
