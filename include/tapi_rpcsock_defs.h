@@ -1054,6 +1054,7 @@ typedef enum rpc_sockopt {
     RPC_TCP_MAXSEG,         /**< Set/get the maximum segment size for
                                  outgoing TCP packets */
     RPC_TCP_NODELAY,        /**< Enable/disable the Nagle algorithm */
+    RPC_TCP_CORK,           /**< Enable/disable delay pushing to the net */
     RPC_TCP_KEEPIDLE,       /**< Start sending keepalive probes after 
                                  this period */
     RPC_TCP_KEEPINTVL,      /**< Interval between keepalive probes */
@@ -1185,6 +1186,9 @@ sockopt_rpc2h(rpc_sockopt opt)
 #endif
 #ifdef TCP_NODELAY
         RPC2H(TCP_NODELAY);
+#endif
+#ifdef TCP_CORK
+        RPC2H(TCP_CORK);
 #endif
 #ifdef TCP_KEEPIDLE
         RPC2H(TCP_KEEPIDLE);
@@ -1337,6 +1341,7 @@ sockopt_rpc2str(rpc_sockopt opt)
         RPC2STR(IP_MTU_DISCOVER);
         RPC2STR(TCP_MAXSEG);
         RPC2STR(TCP_NODELAY);
+        RPC2STR(TCP_CORK);
         RPC2STR(TCP_KEEPIDLE);
         RPC2STR(TCP_KEEPINTVL);
         RPC2STR(TCP_KEEPCNT);
