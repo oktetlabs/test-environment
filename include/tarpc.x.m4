@@ -1976,6 +1976,27 @@ struct tarpc_wsa_recv_disconnect_out {
     struct tarpc_iovec   vector<>;      /**< Incoming disconnect data */
 };
 
+/* WSARecvMsg */
+struct tarpc_wsa_recv_msg_in {
+    struct tarpc_in_arg common;
+
+    tarpc_int           s;
+    struct tarpc_msghdr msg<>;
+    tarpc_int           bytes_received<>;   
+                                        /**< Location for received bytes num */
+    tarpc_overlapped    overlapped;     /**< WSAOVERLAPPED structure pointer */
+    tarpc_bool          callback;       /**< If 1, completion callback
+                                             should be specified */
+};                
+
+struct tarpc_wsa_recv_msg_out {
+    struct tarpc_out_arg common;
+
+    tarpc_ssize_t        retval;
+    struct tarpc_msghdr  msg<>;
+    tarpc_int            bytes_received<>;
+};
+
 /* ftp_open() */
 struct tarpc_ftp_open_in {
     struct tarpc_in_arg common;
@@ -2165,6 +2186,7 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(wsa_recv_from)
         RPC_DEF(wsa_send_disconnect)
         RPC_DEF(wsa_recv_disconnect)
+        RPC_DEF(wsa_recv_msg)
 
         RPC_DEF(create_window)
         RPC_DEF(destroy_window)
