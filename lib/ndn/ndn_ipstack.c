@@ -173,5 +173,54 @@ asn_type ndn_udp_csap_s =
     {_ndn_udp_csap_ne_array}
 };
 
-asn_type_p ndn_udp_csap = &ndn_udp_csap_s;
+
+
+
+
+
+
+/*
+ * TCP
+ */ 
+
+static asn_named_entry_t _ndn_tcp_header_ne_array [] = 
+{
+    { "src-port", &ndn_data_unit_int16_s },
+    { "dst-port", &ndn_data_unit_int16_s },
+    { "seqn",     &ndn_data_unit_int32_s },
+    { "acqn",     &ndn_data_unit_int32_s },
+    { "hlen",     &ndn_data_unit_int8_s },
+    { "flags",    &ndn_data_unit_int8_s },
+    { "win-size", &ndn_data_unit_int16_s },
+    { "checksum", &ndn_data_unit_int16_s },
+    { "urg-p",    &ndn_data_unit_int16_s },
+};
+
+asn_type ndn_tcp_header_s =
+{
+    "TCP-Header", {PRIVATE, 100}, SEQUENCE, 
+    sizeof(_ndn_tcp_header_ne_array)/sizeof(asn_named_entry_t),
+    {_ndn_tcp_header_ne_array}
+};
+
+asn_type_p ndn_tcp_header = &ndn_tcp_header_s;
+
+
+
+
+
+static asn_named_entry_t _ndn_tcp_csap_ne_array [] = 
+{
+    { "local-port",     &ndn_data_unit_int16_s },
+    { "remote-port",    &ndn_data_unit_int16_s },
+};
+
+asn_type ndn_tcp_csap_s =
+{
+    "UDP-CSAP", {PRIVATE, 101}, SEQUENCE, 
+    sizeof(_ndn_tcp_csap_ne_array)/sizeof(asn_named_entry_t),
+    {_ndn_tcp_csap_ne_array}
+};
+
+asn_type_p ndn_tcp_csap = &ndn_tcp_csap_s;
 
