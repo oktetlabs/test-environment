@@ -269,12 +269,14 @@ interface_list(unsigned int gid, const char *oid, char **list)
     else
     {
         ERROR("GetIfTable() failed, error %x", GetLastError());
+        free(table);
         return TE_RC(TE_TA_WIN32, ETEWIN);
     }
     
     if (GetIfTable(table, &size, 0) != NO_ERROR) 
     {
         ERROR("GetIfTable() failed, error %x", GetLastError());
+        free(table);
         return TE_RC(TE_TA_WIN32, ETEWIN);
     }
     
@@ -283,8 +285,10 @@ interface_list(unsigned int gid, const char *oid, char **list)
         ERROR("GetIfTable() returned");
     }
     
-    for (i = 0; i < table->dwNumEntries; i++)
-        s += sprintf(s, "intf%d ", table->table[i].dwIndex);
+    buf[0] = 0;
+    
+    for (i = 0; i < (int)table->dwNumEntries; i++)
+        s += sprintf(s, "intf%lu ", table->table[i].dwIndex);
         
     free(table);
 
@@ -308,11 +312,66 @@ static int
 ifindex_get(unsigned int gid, const char *oid, char *value,
             const char *ifname)
 {
+    UNUSED(gid);
+    UNUSED(oid);
+    
     GET_IF_ENTRY;
     
-    sprintf(value, "%d", if_entry.dwIndex);
+    sprintf(value, "%lu", if_entry.dwIndex);
     
     return 0;
+}
+
+typedef struct added_ip_addr {
+    struct added_ip_addr *next;
+    struct in_addr        addr;
+    uint32_t              ifindex;
+    ULONG                 nte_context;
+} added_ip_addr;
+
+static added_ip_addr *list = NULL;
+
+/** Check, if IP address exist for the current if_entry */
+static te_bool
+ip_addr_exist(struct in_addr addr, MIB_IPADDRROW *data)
+{
+    MIB_IPADDRTABLE *table;
+    DWORD            size = 0;
+    int              i;
+    
+    table = (MIB_IPADDRTABLE *)malloc(sizeof(MIB_IFTABLE));
+
+    if (GetIpAddrTable(table, &size, 0) == ERROR_INSUFFICIENT_BUFFER) 
+        table = (MIB_IPADDRTABLE *)realloc(table, size);
+    else
+    {
+        ERROR("GetIpAddrTable() failed, error %x", GetLastError());
+        free(table);
+        return FALSE;
+    }
+    
+    if (GetIpAddrTable(table, &size, 0) != NO_ERROR) 
+    {
+        ERROR("GetIpAddrTable() failed, error %x", GetLastError());
+        free(table);
+        return FALSE;
+    }
+    
+    for (i = 0; i < (int)table->dwNumEntries; i++)
+    {
+        if (table->table[i].dwIndex == if_entry.dwIndex &&
+            table->table[i].dwAddr == addr.s_addr)
+        {
+            if (data != NULL)
+                *data = table->table[i];
+            free(table);
+            return TRUE;
+        }
+    }
+
+    free(table);
+
+    return FALSE;
 }
 
 /**
@@ -330,7 +389,47 @@ static int
 net_addr_add(unsigned int gid, const char *oid, const char *value,
              const char *ifname, const char *addr)
 {
-        
+    struct in_addr a, m;
+
+    ULONG nte_context;
+    ULONG nte_instance;
+    
+    added_ip_addr *tmp;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(value);
+    
+    if ((a.s_addr = inet_addr(addr)) == 0 || 
+        (a.s_addr & 0xe0000000) == 0xe0000000)
+    {
+        return TE_RC(TE_TA_WIN32, EINVAL);
+    }
+    m.s_addr = (a.s_addr & htonl(0x80000000)) == 0 ? htonl(0xFF000000) :
+               (a.s_addr & htonl(0xC0000000)) == htonl(0x80000000) ? 
+               htonl(0xFFFF0000) : htonl(0xFFFFFF00);
+    
+    GET_IF_ENTRY;
+    
+    if (AddIPAddress(*(IPAddr *)&a, *(IPAddr *)&m, 
+                     if_entry.dwIndex, &nte_context, &nte_instance) != 0)
+    {
+        ERROR("AddIpAddr() failed, error %x", GetLastError());
+        return TE_RC(TE_TA_WIN32, ETEWIN);
+    }
+    
+    if ((tmp = (added_ip_addr *)calloc(sizeof(*tmp), 1)) == NULL)
+    {
+        DeleteIPAddress(nte_context);
+        return TE_RC(TE_TA_WIN32, ENOMEM);
+    }
+    
+    tmp->addr = a;
+    tmp->ifindex = if_entry.dwIndex;
+    tmp->nte_context = nte_context;
+    tmp->next = list;
+    list = tmp;
+    
     return 0;
 }
 
@@ -348,6 +447,40 @@ static int
 net_addr_del(unsigned int gid, const char *oid,
              const char *ifname, const char *addr)
 {
+    added_ip_addr *cur, *prev;
+    
+    struct in_addr a;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    
+    if ((a.s_addr = inet_addr(addr)) == 0)
+        return TE_RC(TE_TA_WIN32, EINVAL);
+    
+    GET_IF_ENTRY;
+
+    for (prev = NULL, cur = list; 
+         cur != NULL && 
+         !(cur->addr.s_addr == a.s_addr && cur->ifindex == if_entry.dwIndex);
+         prev = cur, cur = cur->next);
+         
+    if (cur == NULL)
+        return ip_addr_exist(a, NULL) ? TE_RC(TE_TA_WIN32, EPERM) :
+                                        TE_RC(TE_TA_WIN32, ENOENT);
+                                  
+    if (DeleteIPAddress(cur->nte_context) != 0)
+    {
+        ERROR("DeleteIPAddr() failed, error %x", GetLastError());
+        return TE_RC(TE_TA_WIN32, ETEWIN);
+    }
+    
+    if (prev)
+        prev->next = cur->next;
+    else
+        list = cur->next;
+    free(cur);
+    
+    return 0;
 }
 
 /**
@@ -366,6 +499,50 @@ static int
 net_addr_list(unsigned int gid, const char *oid, char **list,
               const char *ifname)
 {
+    MIB_IPADDRTABLE *table;
+    DWORD            size = 0;
+    int              i;
+    struct in_addr   addr;
+    
+    UNUSED(gid);
+    UNUSED(oid);
+    
+    GET_IF_ENTRY;
+
+    table = (MIB_IPADDRTABLE *)malloc(sizeof(MIB_IFTABLE));
+
+    if (GetIpAddrTable(table, &size, 0) == ERROR_INSUFFICIENT_BUFFER) 
+        table = (MIB_IPADDRTABLE *)realloc(table, size);
+    else
+    {
+        ERROR("GetIpAddrTable() failed, error %x", GetLastError());
+        return TE_RC(TE_TA_WIN32, ETEWIN);
+    }
+    
+    if (GetIpAddrTable(table, &size, 0) != NO_ERROR) 
+    {
+        ERROR("GetIpAddrTable() failed, error %x", GetLastError());
+        return TE_RC(TE_TA_WIN32, ETEWIN);
+    }
+    
+    buf[0] = 0;
+    
+    for (i = 0; i < (int)table->dwNumEntries; i++)
+    {
+        if (table->table[i].dwIndex != if_entry.dwIndex)
+            continue;
+            
+        addr.s_addr = table->table[i].dwAddr;
+        
+        sprintf("%s ", inet_ntoa(addr));
+    }
+
+    free(table);
+
+    if ((*list = strdup(buf)) == NULL)
+        return TE_RC(TE_TA_WIN32, ENOMEM);
+
+    return 0;
 }
 
 /**
@@ -383,6 +560,24 @@ static int
 netmask_get(unsigned int gid, const char *oid, char *value,
             const char *ifname, const char *addr)
 {
+    MIB_IPADDRROW data;
+    struct in_addr a;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    
+    if ((a.s_addr = inet_addr(addr)) == 0)
+        return TE_RC(TE_TA_WIN32, EINVAL);
+    
+    GET_IF_ENTRY;
+    
+    if (!ip_addr_exist(a, &data))
+        return TE_RC(TE_TA_WIN32, ENOENT);
+    
+    snprintf(value, RCF_MAX_VAL, "%s", 
+            inet_ntoa(*(struct in_addr *)&(data.dwMask)));
+
+    return 0;
 }
 
 /**
@@ -399,6 +594,49 @@ static int
 netmask_set(unsigned int gid, const char *oid, const char *value,
             const char *ifname, const char *addr)
 {
+    added_ip_addr *cur;
+    struct in_addr a, m;
+    uint8_t        prefix;
+    ULONG          nte_instance;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    
+    if ((a.s_addr = inet_addr(addr)) == 0)
+        return TE_RC(TE_TA_WIN32, EINVAL);
+
+    if ((m.s_addr = inet_addr(value)) == 0)
+        return TE_RC(TE_TA_WIN32, EINVAL);
+
+    MASK2PREFIX(ntohl(m.s_addr), prefix);
+    if (prefix > 32)
+        return TE_RC(TE_TA_LINUX, EINVAL);
+
+    GET_IF_ENTRY;
+    
+    for (cur = list; 
+         cur != NULL && 
+         !(cur->addr.s_addr == a.s_addr && cur->ifindex == if_entry.dwIndex);
+         cur = cur->next);
+         
+    if (cur == NULL)
+        return ip_addr_exist(a, NULL) ? TE_RC(TE_TA_WIN32, EPERM) :
+                                        TE_RC(TE_TA_WIN32, ENOENT);
+                                  
+    if (DeleteIPAddress(cur->nte_context) != 0)
+    {
+        ERROR("DeleteIPAddr() failed, error %x", GetLastError());
+        return TE_RC(TE_TA_WIN32, ETEWIN);
+    }
+    
+    if (AddIPAddress(*(IPAddr *)&a, *(IPAddr *)&m, 
+                     cur->ifindex, &cur->nte_context, &nte_instance) != 0)
+    {
+        ERROR("AddIpAddr() failed, error %x", GetLastError());
+        return TE_RC(TE_TA_WIN32, ETEWIN);
+    }
+    
+    return 0;
 }
 
 /**
@@ -416,6 +654,9 @@ link_addr_get(unsigned int gid, const char *oid, char *value,
               const char *ifname)
 {
     uint8_t *ptr = if_entry.bPhysAddr;
+    
+    UNUSED(gid);
+    UNUSED(oid);
     
     GET_IF_ENTRY;
     
@@ -441,9 +682,12 @@ static int
 mtu_get(unsigned int gid, const char *oid, char *value,
         const char *ifname)
 {
+    UNUSED(gid);
+    UNUSED(oid);
+    
     GET_IF_ENTRY;
     
-    sprintf(value, "%d", if_entry.dwMtu);
+    sprintf(value, "%lu", if_entry.dwMtu);
     
     return 0;
 }
@@ -461,6 +705,9 @@ static int
 status_get(unsigned int gid, const char *oid, char *value,
            const char *ifname)
 {
+    UNUSED(gid);
+    UNUSED(oid);
+    
     GET_IF_ENTRY;
     
     sprintf(value, "%d", 
@@ -485,8 +732,10 @@ static int
 status_set(unsigned int gid, const char *oid, const char *value,
            const char *ifname)
 {
-    GET_IF_ENTRY;
+    UNUSED(gid);
+    UNUSED(oid);
     
+    GET_IF_ENTRY;
     
     if (strcmp(value, "0") == 0)
         if_entry.dwAdminStatus = MIB_IF_ADMIN_STATUS_DOWN;
@@ -514,6 +763,9 @@ static int
 arp_get(unsigned int gid, const char *oid, char *value,
         const char *addr)
 {
+    UNUSED(gid);
+    UNUSED(oid);
+    
 }
 
 /**
@@ -529,6 +781,9 @@ static int
 arp_set(unsigned int gid, const char *oid, const char *value,
         const char *addr)
 {
+    UNUSED(gid);
+    UNUSED(oid);
+    
 }
 
 /**
@@ -544,6 +799,9 @@ static int
 arp_add(unsigned int gid, const char *oid, const char *value,
         const char *addr)
 {
+    UNUSED(gid);
+    UNUSED(oid);
+    
 }
 
 /**
@@ -558,6 +816,9 @@ arp_add(unsigned int gid, const char *oid, const char *value,
 static int
 arp_del(unsigned int gid, const char *oid, const char *addr)
 {
+    UNUSED(gid);
+    UNUSED(oid);
+    
 }
 
 /**
@@ -571,6 +832,9 @@ arp_del(unsigned int gid, const char *oid, const char *addr)
 static int
 arp_list(unsigned int gid, const char *oid, char **list)
 {
+    UNUSED(gid);
+    UNUSED(oid);
+    
 }
 
 /**
@@ -588,6 +852,9 @@ static int
 route_get(unsigned int gid, const char *oid, char *value,
           const char *route)
 {
+    UNUSED(gid);
+    UNUSED(oid);
+    
 }
 
 /**
@@ -604,6 +871,9 @@ static int
 route_set(unsigned int gid, const char *oid, const char *value,
           const char *route)
 {
+    UNUSED(gid);
+    UNUSED(oid);
+    
 }
 
 /**
@@ -620,6 +890,9 @@ static int
 route_add(unsigned int gid, const char *oid, const char *value,
           const char *route)
 {
+    UNUSED(gid);
+    UNUSED(oid);
+    
 }
 
 
@@ -635,6 +908,9 @@ route_add(unsigned int gid, const char *oid, const char *value,
 static int
 route_del(unsigned int gid, const char *oid, const char *route)
 {
+    UNUSED(gid);
+    UNUSED(oid);
+    
 }
 
 /**
@@ -651,4 +927,7 @@ route_del(unsigned int gid, const char *oid, const char *route)
 static int
 route_list(unsigned int gid, const char *oid, char **list)
 {
+    UNUSED(gid);
+    UNUSED(oid);
+    
 }
