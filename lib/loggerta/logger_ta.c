@@ -95,9 +95,9 @@ log_message(uint16_t level, const char *entity_name,
     log_entries_slow++;
 
     memset(&header, 0, sizeof(struct lgr_mess_header));
-    header.user_name = user_name;
+    header.user_name = (user_name != NULL) ? user_name : null_str;
     header.level = level;
-    header.fs = form_str;
+    header.fs = (form_str != NULL) ? form_str : null_str;
     va_start(ap, form_str);
     for (p_str = form_str; *p_str; p_str++)
     {
