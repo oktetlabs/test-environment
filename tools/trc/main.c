@@ -66,6 +66,8 @@ static char *trc_xml_log_fn = NULL;
 static char *trc_db_fn = NULL;
 /** Name of the file with report in HTML format */
 static char *trc_html_fn = NULL;
+/** Name of the file with brief report in HTML format */
+static char *trc_brief_html_fn = NULL;
 /** Name of the file with report in TXT format */
 static char *trc_txt_fn = NULL;
 
@@ -78,6 +80,7 @@ enum {
     TRC_OPT_INIT,
     TRC_OPT_DB,
     TRC_OPT_HTML,
+    TRC_OPT_BRIEF_HTML,
     TRC_OPT_TXT,
     TRC_OPT_TAG,
 };
@@ -144,6 +147,9 @@ process_cmd_line_opts(int argc, char **argv)
         { "html", 'h', POPT_ARG_STRING, NULL, TRC_OPT_HTML,
           "Specify name of the file to report in HTML format.",
           "FILENAME" },
+        { "brief-html", '\0', POPT_ARG_STRING, NULL, TRC_OPT_BRIEF_HTML,
+          "Specify name of the file for brief report in HTML format",
+          "FILENAME" },
         { "txt", 't', POPT_ARG_STRING, NULL, TRC_OPT_TXT,
           "Specify name of the file to report in text format.",
           "FILENAME" },
@@ -188,6 +194,10 @@ process_cmd_line_opts(int argc, char **argv)
 
             case TRC_OPT_HTML:
                 trc_html_fn = strdup(poptGetOptArg(optCon));
+                break;
+
+            case TRC_OPT_BRIEF_HTML:
+                trc_brief_html_fn = strdup(poptGetOptArg(optCon));
                 break;
             
             case TRC_OPT_TXT:
@@ -410,9 +420,18 @@ main(int argc, char *argv[])
         }
     }
 
+    /* Generate brief report in HTML format */
+    if (trc_brief_html_fn != NULL &&
+        trc_report_to_html(trc_brief_html_fn, &trc_db,
+                           TRC_OUT_PACKAGES_ONLY_STATS) != 0)
+    {
+        ERROR("Failed to generate brief report in HTML format");
+        goto exit;
+    }
+
     /* Generate report in HTML format */
     if (trc_html_fn != NULL &&
-        trc_report_to_html(trc_html_fn, &trc_db) != 0)
+        trc_report_to_html(trc_html_fn, &trc_db, TRC_OUT_ALL) != 0)
     {
         ERROR("Failed to generate report in HTML format");
         goto exit;

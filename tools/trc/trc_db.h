@@ -205,12 +205,28 @@ extern int trc_dump_db(const char *filename);
  */
 extern int trc_parse_log(const char *filename);
 
+/** Output flags */
+enum trc_out_flags {
+    TRC_OUT_TOTAL_STATS         = 0x01,
+    TRC_OUT_PACKAGES_ONLY_STATS = 0x02,
+    TRC_OUT_FULL_STATS          = 0x04,
+    TRC_OUT_FULL                = 0x08,
+};
+
+/** All output flags */
+#define TRC_OUT_ALL (TRC_OUT_TOTAL_STATS | TRC_OUT_PACKAGES_ONLY_STATS | \
+                     TRC_OUT_FULL_STATS | TRC_OUT_FULL)
+
 /**
  * Prepare TRC report in HTML format.
  *
  * @param filename      Name of the file to put report
  * @param db            DB to be processed
+ * @param flags         Flags to control content (trc_out_flags)
+ *
+ * @return Status code
  */
-extern int trc_report_to_html(const char *filename, trc_database *db);
+extern int trc_report_to_html(const char *filename, trc_database *db,
+                              unsigned int flags);
 
 #endif /* !__TE_TRC_DB_H__ */
