@@ -813,7 +813,7 @@ struct tarpc_create_window_in {
 };
 
 struct tarpc_create_window_out {
-    struct tarpc_in_arg common;
+    struct tarpc_out_arg common;
     tarpc_hwnd          hwnd;
 };
 

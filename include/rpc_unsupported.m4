@@ -22,9 +22,9 @@ _$1_1_svc(tarpc_$1_in *in, tarpc_$1_out *out, struct svc_req *rqstp)
 {                  
     UNUSED(rqstp);
     UNUSED(in);
-    UNUSED(out);
-    ERROR("Unsupported function '$1' is called");
-    return FALSE;
+    out->common._errno = TE_RC(TE_RCF, ETENOSUPP);
+    WARN("Unsupported function '$1' is called");
+    return TRUE;
 }
 #endif
 ])
