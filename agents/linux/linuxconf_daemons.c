@@ -67,6 +67,36 @@
 
 #define MAC_ADDR_LEN        6
 
+/** Directory where xinetd service configuration files are located */
+#define XINETD_ETC_DIR      "/etc/xinetd.d/"
+
+/** sendmail configuration location */
+#define SENDMAIL_CONF_DIR   "/etc/mail/"
+
+#define GET_DAEMON_NAME(_oid) \
+    ((strstr(_oid, "dhcpserver") != NULL) ? "dhcpd" :                  \
+     (strstr(_oid, "dnsserver") != NULL) ? "named" :                   \
+     (strstr(_oid, "todudpserver") != NULL) ? "time-udp" :             \
+     (strstr(_oid, "tftpserver") != NULL) ? "tftp" :                   \
+     (strstr(_oid, "ftpserver") != NULL) ? "vsftpd" :                  \
+     (strstr(_oid, "echoserver") != NULL) ? "echo" : _oid)
+
+/* Auxiliary buffer */
+static char  buf[2048] = {0, };
+
+static inline int
+file_exists(char *file)
+{
+    struct stat st;
+    
+    return stat(file, &st) == 0;
+}
+
+/*--------------- Backup of configuration files --------------------*/
+
+/** Maximum number of services the implemntation supports */
+#define LINUX_SERVICE_MAX    16
+
 /** Directory where all TE temporary files are located */
 #define TE_TMP_PATH         "/tmp/"
 
@@ -76,25 +106,103 @@
 /** Suffix for temporary files */
 #define TE_TMP_FILE_SUFFIX  ".tmpf"
 
-/** Directory where xinetd service configuration files are located */
-#define XINETD_ETC_DIR      "/etc/xinetd.d/"
+/* Array of service names */
+struct {
+    char *config_file;
+    char *backup;
+} services[LINUX_SERVICE_MAX];
 
-/** Directory where vsftpd configuration file is located */
-#define FTPD_CONF           "vsftpd.conf"
-#define FTPD_CONF_BACKUP    TE_TMP_PATH FTPD_CONF TE_TMP_BKP_SUFFIX
-/** Full name of the FTP daemon configuration file */
-static const char *ftpd_conf = NULL;
+#define SERVICE_CONFIG(_index)  services[_index].config_file
+#define SERVICE_BACKUP(_index)  services[_index].backup
 
-#define GET_DAEMON_NAME(_oid) \
-    ((strstr(_oid, "dhcpserver") != NULL) ? "dhcpd" :                  \
-     (strstr(_oid, "dnsserver") != NULL) ? "named" :                   \
-     (strstr(_oid, "todudpserver") != NULL) ? "time-udp" :             \
-     (strstr(_oid, "tftpserver") != NULL) ? "tftp" :                   \
-     (strstr(_oid, "ftpserver") != NULL) ? "vsftpd" :                  \
-     (strstr(_oid, "echoserver") != NULL) ? "echo" : NULL)
+/* Open backup for reading */
+#define OPEN_BACKUP(_index, _f) \
+    do {                                                        \
+        if ((_f = fopen(SERVICE_BACKUP(_index), "r")) == NULL)  \
+        {                                                       \
+            int rc = TE_RC(TE_TA_LINUX, errno);                 \
+            ERROR("Cannot open file %s for reading",            \
+                  SERVICE_BACKUP(_index));                      \
+            return rc;                                          \
+        }                                                       \
+    } while (0)
 
-/* Auxiliary buffer */
-static char  buf[2048] = {0, };
+/* Open config for writing */
+#define OPEN_CONFIG(_index, _f) \
+    do {                                                        \
+        if ((_f = fopen(SERVICE_CONFIG(_index), "w")) == NULL)  \
+        {                                                       \
+            int rc = TE_RC(TE_TA_LINUX, errno);                 \
+            ERROR("Cannot open file %s for writing",            \
+                  SERVICE_CONFIG(_index));                      \
+            return rc;                                          \
+        }                                                       \
+    } while (0)
+
+/* Number of services registered */
+static unsigned int n_serv = 0;
+
+/*
+ * Creates a copy of service configuration file in TMP directory
+ * to restore it after Agent finishes
+ *
+ * @param dir      configuration directory (with trailing '/')
+ * @param name     backup file name
+ * @param index    index in the services array
+ *
+ * @return status code
+ */
+static int
+create_backup(char *dir, char *name, int *index)
+{
+    if (n_serv == sizeof(services) / sizeof(services[0]))          
+    {                                                              
+        ERROR("Too many services of xinetd are registered\n");     
+        return TE_RC(TE_TA_LINUX, EMFILE);                         
+    }
+    sprintf(buf, TE_TMP_PATH"%s"TE_TMP_BKP_SUFFIX, name);
+    SERVICE_BACKUP(n_serv) = strdup(buf);
+    sprintf(buf, "%s%s", dir, name);
+    SERVICE_CONFIG(n_serv) = strdup(buf);
+    
+    if (SERVICE_BACKUP(n_serv) == NULL || 
+        SERVICE_CONFIG(n_serv) == NULL)
+    {
+        ERROR("Too many services of xinetd are registered\n");     
+        return TE_RC(TE_TA_LINUX, ENOMEM);
+    }
+    
+    sprintf(buf, "cp %s %s >/dev/null 2>&1", 
+            SERVICE_CONFIG(n_serv), SERVICE_BACKUP(n_serv));
+        
+    if (ta_system(buf) != 0)
+    {                                                              
+        ERROR("cannot create backup file %s", SERVICE_BACKUP(n_serv));
+        return 0;                                                  
+    }                      
+    if (index != NULL)                                        
+        *index = n_serv;
+    n_serv++;
+    return 0;                               
+} 
+
+/** Restore initial state of the FTP daemon */
+static void
+restore_backup()
+{
+    unsigned int i;
+
+    for (i = 0; i < n_serv; i++)
+    {
+        sprintf(buf, "mv %s %s >/dev/null 2>&1", 
+                SERVICE_BACKUP(i), SERVICE_CONFIG(i));
+        ta_system(buf);
+        free(SERVICE_BACKUP(i));
+        free(SERVICE_CONFIG(i));
+    }
+    
+    n_serv = 0;
+}
 
 /* Get current state daemon or xinetd service */
 static int
@@ -150,6 +258,19 @@ daemon_set(unsigned int gid, const char *oid, const char *value)
 
     return 0;
 }
+
+static inline int
+daemon_running(const char *daemon)
+{
+    char enable[2];
+    
+    if (daemon_get(0, daemon, enable) != 0)
+        return 0;
+        
+    return enable[0] == '1';        
+}
+
+#ifdef WITH_XINETD
 
 /* Get current state of xinetd service */
 static int
@@ -376,6 +497,7 @@ ds_xinetd_service_addr_get(const char *service, char *value)
     return 0;
 }
 
+#endif /* WITH_XINETD */
 
 #ifdef WITH_DHCP_SERVER
 
@@ -442,8 +564,6 @@ static unsigned short omapi_port = 0;
 /* Auxiliary variables for OMAPI using */
 static dhcpctl_handle conn = NULL;
 static dhcpctl_handle lo = NULL;         /* Lease object */
-
-static int init_dhcp_data();
 
 /* Check, if the option should be quoted */
 static te_bool
@@ -522,7 +642,7 @@ free_group(group * g)
 }
 /* Release all memory allocated for DHCP data */
 static void
-free_dhcp_data(void)
+dhcp_server_shutdown(void)
 {
     host  *host, *host_tmp;
     group *group, *group_tmp;
@@ -2032,9 +2152,11 @@ GET_INT_LEASE_ATTR("cltt")
 
 /**
  * (Re)initialize host & group lists parsing dhcpd.conf
+ *
+ * @return status code
  */
 static int
-init_dhcp_data()
+dhcp_server_init()
 {
     int  rc = 0;
 
@@ -2143,6 +2265,8 @@ print_dhcp_data()
 
 #ifdef WITH_TFTP_SERVER
 
+static int tfpt_server_index;
+
 /**
  * Get address which TFTP daemon should bind to.
  *
@@ -2162,7 +2286,7 @@ ds_tftpserver_addr_get(unsigned int gid, const char *oid, char *value)
     UNUSED(gid);
     UNUSED(oid);
 
-    if ((f = fopen("/etc/xinetd.d/tftp", "r")) == NULL)
+    if ((f = fopen(services[tftp_server_index]->config_file, "r")) == NULL)
         return TE_RC(TE_TA_LINUX, errno);
 
     while (fgets(buf, sizeof(buf), f) != NULL)
@@ -2490,6 +2614,39 @@ ds_tftpserver_time_get(unsigned int gid, const char *oid, char *value)
     return TE_RC(TE_TA_LINUX, rc);
 }
 
+/** 
+ * Patch TFTP server configuration file.
+ *
+ * @return status code
+ */
+static int
+tftp_server_init()
+{
+    FILE *f = NULL;
+    FILE *g = NULL;
+
+    /* Set -v option to tftp */
+    OPEN_BACKUP(tftp_index, f);
+    OPEN_CONFIG(tftp_index, g);
+
+    while (fgets(buf, sizeof(buf), f) != NULL)
+    {
+        if (strstr(buf, "server_args") != NULL &&
+            strstr(buf, "-vv") == NULL)
+        {
+            char *tmp = strchr(buf, '\n');
+            if (tmp == NULL)
+                tmp = buf + strlen(buf);
+            sprintf(tmp, " -vv\n");
+        }
+        fwrite(buf, 1, strlen(buf), g);
+    }
+    fclose(f);
+    fclose(g);
+    
+    return 0;
+}
+
 #endif /* WITH_TFTP_SERVER */
 
 #ifdef WITH_TODUDP_SERVER
@@ -2580,6 +2737,87 @@ ds_echoserver_addr_set(unsigned int gid, const char *oid, const char *value)
 
 #endif /* WITH_ECHO_SERVER */
 
+#ifdef WITH_FTP_SERVER
+
+#define FTPD_CONF           "vsftpd.conf"
+
+static int ftp_index;
+
+/**
+ * Initialize FTP daemon.
+ *
+ * @return status code
+ */
+int
+ftp_server_init(void)
+{
+    FILE *f = NULL;
+    FILE *g = NULL;
+    
+    char *dir = NULL;
+    int   rc;
+
+    struct stat stat_buf;
+
+    if (stat("/etc/vsftpd/" FTPD_CONF, &stat_buf) == 0)
+        dir = "/etc/vsftpd";
+    else if (stat("/etc/" FTPD_CONF, &stat_buf) == 0)
+        dir = "/etc";
+    else
+    {
+        ERROR("Failed to locate VSFTPD configuration file");
+        return TE_RC(TE_TA_LINUX, ETENOSUPP);
+    }
+    
+    if ((rc = create_backup(dir, FTPD_CONF, &ftp_index)) != 0)
+        return rc;
+
+    /* Enable anonymous upload for ftp */
+    OPEN_BACKUP(ftp_index, f);
+    OPEN_CONFIG(ftp_index, g);
+
+    while (fgets(buf, sizeof(buf), f) != NULL)
+    {
+        if (strstr(buf, "anonymous_enable") != NULL ||
+            strstr(buf, "anon_mkdir_write_enable") != NULL ||
+            strstr(buf, "write_enable") != NULL ||
+            strstr(buf, "anon_upload_enable") != NULL)
+        {
+            continue;
+        }
+        fwrite(buf, 1, strlen(buf), g);
+    }
+    fprintf(g, "anonymous_enable=YES\n");
+    fprintf(g, "anon_mkdir_write_enable=YES\n");
+    fprintf(g, "write_enable=YES\n");
+    fprintf(g, "anon_upload_enable=YES\n");
+    fclose(f);
+    fclose(g);
+    ta_system("mkdir -p /var/ftp/pub");
+    ta_system("chmod o+w /var/ftp/pub");
+    if (daemon_running("ftpserver"))
+    {
+        daemon_set(0, "ftpserver", "0");
+        daemon_set(0, "ftpserver", "1");
+    }
+
+    return 0;
+}
+
+/* Restart FTP server, if necesary */
+static void
+ftp_server_shutdown()
+{
+    ta_system("chmod o-w /var/ftp/pub");
+    if (daemon_running("ftpserver"))
+    {
+        daemon_set(0, "ftpserver", "0");
+        daemon_set(0, "ftpserver", "1");
+    }
+}
+
+#endif /* WITH_FTP_SERVER */
+
 /*--------------------------- SSH daemon ---------------------------------*/
 
 /** 
@@ -2627,8 +2865,8 @@ sshd_exists(char *port)
  * @return error code
  */
 static int
-sshd_add(unsigned int gid, const char *oid, const char *value,
-         const char *port)
+ds_sshd_add(unsigned int gid, const char *oid, const char *value,
+            const char *port)
 {
     uint32_t pid = sshd_exists((char *)port);
     uint32_t p;
@@ -2666,7 +2904,7 @@ sshd_add(unsigned int gid, const char *oid, const char *value,
  * @return error code
  */
 static int
-sshd_del(unsigned int gid, const char *oid, const char *port)
+ds_sshd_del(unsigned int gid, const char *oid, const char *port)
 {
     uint32_t pid = sshd_exists((char *)port);
 
@@ -2699,7 +2937,7 @@ sshd_del(unsigned int gid, const char *oid, const char *port)
  * @return error code
  */
 static int
-sshd_list(unsigned int gid, const char *oid, char **list)
+ds_sshd_list(unsigned int gid, const char *oid, char **list)
 {
     FILE *f = popen("ps ax | grep 'sshd -p' | grep -v grep", "r");
     char  line[128];
@@ -2747,7 +2985,6 @@ xvfb_exists(char *number)
     while (fgets(line, sizeof(line), f) != NULL)
     {
         char *tmp = strstr(line, "Xvfb");
-        int   n;
 
         if ((tmp  = strstr(tmp, ":")) == NULL)
             continue;
@@ -2777,8 +3014,8 @@ xvfb_exists(char *number)
  * @return error code
  */
 static int
-xvfb_add(unsigned int gid, const char *oid, const char *value,
-         const char *number)
+ds_xvfb_add(unsigned int gid, const char *oid, const char *value,
+            const char *number)
 {
     uint32_t pid = xvfb_exists((char *)number);
     uint32_t n;
@@ -2816,7 +3053,7 @@ xvfb_add(unsigned int gid, const char *oid, const char *value,
  * @return error code
  */
 static int
-xvfb_del(unsigned int gid, const char *oid, const char *number)
+ds_xvfb_del(unsigned int gid, const char *oid, const char *number)
 {
     uint32_t pid = xvfb_exists((char *)number);
 
@@ -2849,7 +3086,7 @@ xvfb_del(unsigned int gid, const char *oid, const char *number)
  * @return error code
  */
 static int
-xvfb_list(unsigned int gid, const char *oid, char **list)
+ds_xvfb_list(unsigned int gid, const char *oid, char **list)
 {
     FILE *f = popen("ps ax | grep 'Xvfb' | grep -v grep", "r");
     char  line[128];
@@ -2877,6 +3114,286 @@ xvfb_list(unsigned int gid, const char *oid, char **list)
     
     return 0;
 }
+
+#ifdef WITH_SMTP
+
+#define SMTP_EMPTY_SMARTHOST    "0.0.0.0"
+
+/* Possible kinds of SMTP servers */
+static char *smtp_servers[] = {
+    "sendmail",
+    "exim",
+    "exim4"
+};    
+
+static int hosts_index;
+static int sendmail_index = -1;
+
+static char *smtp_initial;
+static char *smtp_current;
+static char *smtp_current_smarthost;
+
+/** Initialize SMTP-related variables */
+static int
+smtp_init()
+{
+    unsigned int i;
+    
+    smtp_current_smarthost = strdup(SMTP_EMPTY_SMARTHOST);
+    for (i = 0; i < sizeof(smtp_servers) / sizeof(char *); i++)
+    {
+        if (daemon_running(smtp_servers[i]))
+        {
+            smtp_current = smtp_initial = smtp_servers[i];
+            break;
+        }
+    }
+    return 0;
+}
+
+/** Restore SMTP */
+static void
+smtp_shutdown()
+{
+    if (file_exists(SENDMAIL_CONF_DIR))
+        ta_system("cd " SENDMAIL_CONF_DIR "; make");
+    if (smtp_current != NULL)
+        daemon_set(0, smtp_current, "0");
+    if (smtp_initial != NULL)
+        daemon_set(0, smtp_initial, "1");
+    free(smtp_current_smarthost);        
+}
+
+/** 
+ * Update /etc/hosts with entry te_tester <IP>. 
+ *
+ * @return status code
+ */
+static int
+update_etc_hosts(char *ip)
+{
+    FILE *f = NULL;
+    FILE *g = NULL;
+    
+    if (strcmp(ip, SMTP_EMPTY_SMARTHOST) == 0)
+        return 0;
+
+    OPEN_BACKUP(hosts_index, f);
+    OPEN_CONFIG(hosts_index, g);
+
+    while (fgets(buf, sizeof(buf), f) != NULL)
+    {
+        if (strstr(buf, "te_tester") == NULL)
+            fwrite(buf, 1, strlen(buf), g);
+    }
+    fprintf(g, "%s te_tester", ip);
+    fclose(f);
+    fclose(g);
+    
+    return 0;
+}
+
+#define SENDMAIL_SMARTHOST_OPT  "define(`SMART_HOST',`te_tester')"
+
+/** Check if smarthost option presents in the sendmail configuration file */
+static int
+sendmail_smarthost_get(te_bool *enable)
+{
+    FILE *f;
+    int   rc;
+
+    if ((f = fopen(SERVICE_CONFIG(sendmail_index), "r")) == NULL)
+    {
+        rc = TE_RC(TE_TA_LINUX, errno);
+        ERROR("Cannot open file %s for reading",
+              SERVICE_CONFIG(sendmail_index));
+        fclose(f);
+        return rc;
+    }
+
+    while (fgets(buf, sizeof(buf), f) != NULL)
+    {
+        if (strncmp(buf, SENDMAIL_SMARTHOST_OPT, 
+                    strlen(SENDMAIL_SMARTHOST_OPT)) == 0)
+        {
+            fclose(f);
+            *enable = 1;
+            return 0;
+        }
+    }
+    *enable = 0;
+    fclose(f);
+    return 0;
+}
+
+/** Enable/disable smarthost option in the sendmail configuration file */
+static int
+sendmail_smarthost_set(te_bool enable)
+{
+    FILE *f = NULL;
+    FILE *g = NULL;
+    
+    if (sendmail_index < 0)
+    {
+        ERROR("Cannot find sendmail configuration file");
+        return ENOENT;
+    }
+    
+    OPEN_BACKUP(sendmail_index, f);
+    OPEN_CONFIG(sendmail_index, g);
+
+    while (fgets(buf, sizeof(buf), f) != NULL)
+    {
+        if (strstr(buf, SENDMAIL_SMARTHOST_OPT) == NULL)
+            fwrite(buf, 1, strlen(buf), g);
+    }
+    if (enable != 0)
+        fwrite(SENDMAIL_SMARTHOST_OPT, 1, 
+               strlen(SENDMAIL_SMARTHOST_OPT), g);
+    fclose(f);
+    fclose(g);
+    
+    ta_system("cd " SENDMAIL_CONF_DIR "; make");
+    
+    return 0;
+}
+
+/** Get SMTP smarthost */
+static int
+ds_smtp_smarthost_get(unsigned int gid, const char *oid, char *value)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+
+    strcpy(value, SMTP_EMPTY_SMARTHOST);
+    if (smtp_current == NULL)
+        return 0;
+        
+    if (strcmp(smtp_current, "sendmail") == 0)
+    {
+        te_bool enable;
+        int     rc;
+        
+        if ((rc = sendmail_smarthost_get(&enable)) != 0)
+            return rc;
+            
+        if (enable)
+            strcpy(value, smtp_current_smarthost);
+    }
+    
+    return 0;
+}
+
+/** Set SMTP smarthost */
+static int
+ds_smtp_smarthost_set(unsigned int gid, const char *oid,
+                      const char *value)
+{
+    uint32_t addr;
+    char    *new_host = NULL;
+    int      rc;
+    
+    UNUSED(gid);
+    UNUSED(oid);
+    
+    if (inet_pton(AF_INET, value, (void *)&addr) <= 0)
+        return TE_RC(TE_TA_LINUX, EINVAL);
+    
+    if (smtp_current == NULL)
+        return TE_RC(TE_TA_LINUX, EPERM);
+
+    if ((new_host = strdup(value)) == NULL)
+        return TE_RC(TE_TA_LINUX, ENOMEM);
+        
+    if ((rc = update_etc_hosts(new_host)) != 0)
+    {
+         free(new_host);
+         return rc;
+    }
+    
+    if (strcmp(smtp_current, "sendmail") == 0)
+    {
+        if ((rc = sendmail_smarthost_set(addr != 0)) != 0)
+            goto error;
+    }
+    else
+        goto error;
+        
+    free(smtp_current_smarthost);
+    smtp_current_smarthost = new_host;
+
+    return 0;
+    
+error:
+    update_etc_hosts(smtp_current_smarthost);
+    free(new_host);    
+    return rc;
+}
+
+/** Get SMTP server program */
+static int
+ds_smtp_server_get(unsigned int gid, const char *oid, char *value)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+    
+    if (smtp_current == NULL)
+        value[0] = 0;
+    else
+        strcpy(value, smtp_current);
+
+    return 0;
+}
+
+/** Set SMTP server program */
+static int
+ds_smtp_server_set(unsigned int gid, const char *oid, const char *value)
+{
+    unsigned int i;
+    
+    UNUSED(gid);
+    UNUSED(oid);
+    
+    if (smtp_current != NULL && daemon_running(smtp_current))
+        return TE_RC(TE_TA_LINUX, EPERM);
+
+    for (i = 0; i < sizeof(smtp_servers) / sizeof(char *); i++)
+    {
+        if (strcmp(smtp_servers[i], value) == 0)
+        {
+            if (smtp_current == NULL && 
+                strcmp(smtp_servers[i], "sendmail") == 0)
+            {
+                int rc = sendmail_smarthost_set(FALSE);
+                
+                if (rc != 0)
+                    return rc;
+            }
+            smtp_current = smtp_servers[i];
+            return 0;
+        }
+    }
+    
+    return TE_RC(TE_TA_LINUX, EINVAL);
+}
+
+/** Check if SMTP server is enabled */
+static int
+ds_smtp_get(unsigned int gid, const char *oid, char *value)
+{
+    UNUSED(oid);
+    return daemon_get(gid, smtp_current, value);
+}
+
+/** Enable/disable SMTP server */
+static int
+ds_smtp_set(unsigned int gid, const char *oid, const char *value)
+{
+    UNUSED(oid);
+    return daemon_set(gid, smtp_current, value);
+}
+
+#endif /* WITH_SMTP */
 
 /*
  * Daemons configuration tree in reverse order.
@@ -3080,155 +3597,28 @@ RCF_PCH_CFG_NODE_RW(node_ds_ftpserver, "ftpserver",
 
 RCF_PCH_CFG_NODE_COLLECTION(node_ds_sshd, "sshd",
                             NULL, NULL, 
-                            sshd_add, sshd_del, sshd_list, NULL);
+                            ds_sshd_add, ds_sshd_del, ds_sshd_list, NULL);
 
 RCF_PCH_CFG_NODE_COLLECTION(node_ds_xvfb, "Xvfb",
                             NULL, NULL, 
-                            xvfb_add, xvfb_del, xvfb_list, NULL);
+                            ds_xvfb_add, ds_xvfb_del, ds_xvfb_list, NULL);
 
-/**
- * Maximum number of xinetd services the implemntation supports
- * @todo Rename it to something pretty and move in somewhere generic place
- */
-#define XINETD_SERVICE_MAX 10
-/* Array of service names */
-static char *services[XINETD_SERVICE_MAX];
-/* number of services registered */
-static unsigned int    n_serv = 0;
-static unsigned int    max_serv_name = 0;
+#ifdef WITH_SMTP
 
-/** Restore initial state of the FTP daemon */
-static void
-restore_backup()
-{
-    unsigned int i;
+RCF_PCH_CFG_NODE_RW(node_ds_smtp_smarthost, "smarthost",
+                    NULL, NULL,
+                    ds_smtp_smarthost_get, ds_smtp_smarthost_set);
 
-    for (i = 0; i < n_serv; i++)
-    {
-        sprintf(buf, "mv " TE_TMP_PATH "%s" TE_TMP_BKP_SUFFIX " "
-                XINETD_ETC_DIR "%s >/dev/null 2>&1",
-                services[i], services[i]);
-        ta_system(buf);
-    }
+RCF_PCH_CFG_NODE_RW(node_ds_smtp_server, "server",
+                    NULL, &node_ds_smtp_smarthost,
+                    ds_smtp_server_get, ds_smtp_server_set);
 
-    ta_system("/etc/init.d/xinetd reload >/dev/null 2>&1");
+RCF_PCH_CFG_NODE_RW(node_ds_smtp, "smtp",
+                    &node_ds_smtp_server, NULL,
+                    ds_smtp_get, ds_smtp_set);
 
-#ifdef WITH_FTP_SERVER
-    if (ftpd_conf != NULL)
-    {
-        char    ftp_enable[2];
-        char    cmd[256]; /* FIXME */
+#endif /* WITH_SMTP */
 
-        sprintf(cmd, "mv " FTPD_CONF_BACKUP " %s", ftpd_conf);
-        if (ta_system(cmd) != 0)
-        {
-            ERROR("\"%s\" failed", cmd);
-        }
-        ta_system("chmod o-w /var/ftp/pub");
-        daemon_get(0, "ftpserver", ftp_enable);
-        if (*ftp_enable == '1')
-        {
-            daemon_set(0, "ftpserver", "0");
-            daemon_set(0, "ftpserver", "1");
-        }
-    }
-
-#endif /* WITH_FTP_SERVER */
-}
-
-
-#ifdef WITH_FTP_SERVER
-/**
- * Initialize FTP daemon.
- *
- * @return Status code.
- */
-int
-ftpd_init(void)
-{
-    FILE *f = NULL;
-    FILE *g = NULL;
-    char  ftp_enable[2];
-
-    do {
-        struct stat stat_buf;
-
-        ftpd_conf = "/etc/vsftpd/" FTPD_CONF;
-        if (stat(ftpd_conf, &stat_buf) == 0)
-            break;
-
-        ftpd_conf = "/etc/" FTPD_CONF;
-        if (stat(ftpd_conf, &stat_buf) == 0)
-            break;
-
-        ftpd_conf = NULL;
-
-    } while (FALSE);
-
-    if (ftpd_conf == NULL)
-    {
-        ERROR("Failed to locate VSFTPD configuration file");
-        return TE_RC(TE_TA_LINUX, ETENOSUPP);
-    }
-
-    {
-        char cmd[256]; /* FIXME */
-
-        sprintf(cmd, "cp -a %s " FTPD_CONF_BACKUP, ftpd_conf);
-        if (ta_system(cmd) != 0)
-        {
-            ERROR("Cannot create backup file " FTPD_CONF_BACKUP);
-            restore_backup();
-            return TE_RC(TE_TA_LINUX, errno);
-        }
-    }
-    /* Enable anonymous upload for ftp */
-    if ((f = fopen(FTPD_CONF_BACKUP , "r")) == NULL)
-    {
-        ERROR("Failed to open backup file " FTPD_CONF_BACKUP
-                  "for reading");
-        restore_backup();
-        return TE_RC(TE_TA_LINUX, errno);
-    }
-
-    if ((g = fopen(ftpd_conf, "w")) == NULL)
-    {
-        ERROR("Failed to open configuration file '%s' for writing",
-                  ftpd_conf);
-        restore_backup();
-        fclose(f);
-        return TE_RC(TE_TA_LINUX, errno);
-    }
-
-    while (fgets(buf, sizeof(buf), f) != NULL)
-    {
-        if (strstr(buf, "anonymous_enable") != NULL ||
-            strstr(buf, "anon_mkdir_write_enable") != NULL ||
-            strstr(buf, "write_enable") != NULL ||
-            strstr(buf, "anon_upload_enable") != NULL)
-        {
-            continue;
-        }
-        fwrite(buf, 1, strlen(buf), g);
-    }
-    fprintf(g, "anonymous_enable=YES\n");
-    fprintf(g, "anon_mkdir_write_enable=YES\n");
-    fprintf(g, "write_enable=YES\n");
-    fprintf(g, "anon_upload_enable=YES\n");
-    fclose(f);
-    fclose(g);
-    ta_system("mkdir -p /var/ftp/pub");
-    ta_system("chmod o+w /var/ftp/pub");
-    daemon_get(0, "ftpserver", ftp_enable);
-    if (*ftp_enable == '1')
-    {
-        daemon_set(0, "ftpserver", "0");
-        daemon_set(0, "ftpserver", "1");
-    }
-
-    return 0;
-}
-#endif /* WITH_FTP_SERVER */
 
 /**
  * Initializes linuxconf_daemons support.
@@ -3241,100 +3631,51 @@ ftpd_init(void)
 int
 linuxconf_daemons_init(rcf_pch_cfg_object **last)
 {
-
-
-/*
- * Creates a copy of xinetd service configuration file in TMP directory
- * to restore it after Agent finishes
- *
- * @param serv_name_  Service name - filename from /etc/xinetd.d/ directory
- */
-#define CREATE_XINETD_SERVICE_BACKUP(serv_name_) \
-    do {                                                                   \
-        if (n_serv == sizeof(services) / sizeof(services[0]))              \
-        {                                                                  \
-            restore_backup();                                              \
-            ERROR("Too many services of xinetd are registered\n");         \
-            return TE_RC(TE_TA_LINUX, EMFILE);                             \
-        }                                                                  \
-                                                                           \
-        if (ta_system("cp " XINETD_ETC_DIR serv_name_ " "                  \
-                   TE_TMP_PATH serv_name_ TE_TMP_BKP_SUFFIX                \
-                   " >/dev/null 2>&1") != 0)                               \
-        {                                                                  \
-            restore_backup();                                              \
-            ERROR("cannot create backup file "                             \
-                      TE_TMP_PATH serv_name_ TE_TMP_BKP_SUFFIX "\n");      \
-            return 0;                                                      \
-        }                                                                  \
-        if (max_serv_name < strlen(serv_name_))                            \
-        {                                                                  \
-            max_serv_name = strlen(serv_name_);                            \
-        }                                                                  \
-        services[n_serv++] = serv_name_;                                   \
+#define CHECK_RC(_x) \
+    do {                        \
+        int _rc = _x;           \
+        if (_rc != 0)           \
+        {                       \
+            restore_backup();   \
+            return _rc;         \
+        }                       \
     } while (0)
 
-
 #ifdef WITH_ECHO_SERVER
-    CREATE_XINETD_SERVICE_BACKUP("echo");
+    CHECK_RC(create_backup(XINETD_ETC_DIR, "echo", NULL));
 #endif /* WITH_ECHO_SERVER */
 
 #ifdef WITH_TODUDP_SERVER
-    CREATE_XINETD_SERVICE_BACKUP("daytime-udp");
+    CHECK_RC(create_backup(XINETD_ETC_DIR, "daytime-udp", NULL));
 #endif /* WITH_TODUDP_SERVER */
 
+#ifdef WITH_SMTP
+    if (file_exists(SENDMAIL_CONF_DIR "sendmail.mc"))
+        CHECK_RC(create_backup(SENDMAIL_CONF_DIR, "sendmail.mc", 
+                               &sendmail_index));
+        
+    CHECK_RC(create_backup("/etc/", "hosts", &hosts_index));
+    CHECK_RC(smtp_init());
+    
+    (*last)->brother = &node_ds_smtp;
+    *last = &node_ds_smtp; 
+#endif /* WITH_SMTP */
+
 #ifdef WITH_TFTP_SERVER
-    {
-    FILE *f = NULL;
-    FILE *g = NULL;
-
-    CREATE_XINETD_SERVICE_BACKUP("tftp");
-
-    /* Set -v option to tftp */
-    if ((f = fopen(TE_TMP_PATH "tftp" TE_TMP_BKP_SUFFIX, "r")) == NULL)
-    {
-        restore_backup();
-        return 0;
-    }
-
-    if ((g = fopen(XINETD_ETC_DIR "tftp", "w")) == NULL)
-    {
-        restore_backup();
-        fclose(f);
-        return 0;
-    }
-
-    while (fgets(buf, sizeof(buf), f) != NULL)
-    {
-        if (strstr(buf, "server_args") != NULL &&
-            strstr(buf, "-vv") == NULL)
-        {
-            char *tmp = strchr(buf, '\n');
-            if (tmp == NULL)
-                tmp = buf + strlen(buf);
-            sprintf(tmp, " -vv\n");
-        }
-        fwrite(buf, 1, strlen(buf), g);
-    }
-    fclose(f);
-    fclose(g);
-    }
+    CHECK_RC(create_backup(XINETD_ETC_DIR, "tftp", &tftp_index));
+    CHECK_RC(tftp_server_init());
+    (*last)->brother = &node_ds_tftpserver;
+    *last = &node_ds_tftpserver;
 #endif /* WITH_TFTP_SERVER */
 
 #ifdef WITH_FTP_SERVER
-    if (ftpd_init() == 0)
-    {
-        (*last)->brother = &node_ds_ftpserver;
-        *last = &node_ds_ftpserver;
-    }
+    CHECK_RC(ftp_server_init());
+    (*last)->brother = &node_ds_ftpserver;
+    *last = &node_ds_ftpserver;
 #endif /* WITH_FTP_SERVER */
 
 #ifdef WITH_DHCP_SERVER
-    if (init_dhcp_data() != 0)
-    {
-        restore_backup();
-        return 1;
-    }
+    CHECK_RC(dhcp_server_init());
 #endif /* WITH_DHCP_SERVER */
 
 #ifdef WITH_DNS_SERVER
@@ -3357,11 +3698,6 @@ linuxconf_daemons_init(rcf_pch_cfg_object **last)
     *last = &node_ds_todudpserver;
 #endif
 
-#ifdef WITH_TFTP_SERVER
-    (*last)->brother = &node_ds_tftpserver;
-    *last = &node_ds_tftpserver;
-#endif
-
     (*last)->brother = &node_ds_sshd;
     *last = &node_ds_sshd;
 
@@ -3371,14 +3707,9 @@ linuxconf_daemons_init(rcf_pch_cfg_object **last)
     (*last)->brother = &node_ds_xvfb;
     *last = &node_ds_xvfb;
 
-#ifdef WITH_SMTP
-/*    (*last)->brother = &node_ds_smtp;
-    *last = &node_ds_smtp; */
-#endif
-
     return 0;
 
-#undef CREATE_XINETD_SERVICE_BACKUP
+#undef CHECK_RC
 }
 
 /**
@@ -3387,9 +3718,20 @@ linuxconf_daemons_init(rcf_pch_cfg_object **last)
 void
 linux_daemons_release()
 {
-#ifdef WITH_DHCP_SERVER
-    free_dhcp_data();
-#endif /* WITH_DHCP_SERVER */
     restore_backup();
+    
+#ifdef WITH_DHCP_SERVER
+    dhcp_server_shutdown();
+#endif /* WITH_DHCP_SERVER */
+
+#ifdef WITH_FTP_SERVER
+    ftp_server_shutdown();
+#endif    
+
+#ifdef WITH_SMTP
+    smtp_shutdown();
+#endif
+
+    ta_system("/etc/init.d/xinetd reload >/dev/null 2>&1");
 }
 

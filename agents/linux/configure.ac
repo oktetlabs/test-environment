@@ -81,30 +81,36 @@ int a = IP_MTU;],
               ], [], [#include <sys/socket.h>])])])
 
 if test -n "$with_cfg_linux_daemons" ; then
-    DAEMONS_CFLAGS=-DCFG_LINUX_DAEMONS
-    for i in $with_cfg_linux_daemons ; do
-        case $i in 
-            tftp)
-                DAEMONS_CFLAGS="$DAEMONS_CFLAGS -DWITH_TFTP_SERVER" ;;
-            ftp)
-                DAEMONS_CFLAGS="$DAEMONS_CFLAGS -DWITH_FTP_SERVER" ;;
-            dns)
-                DAEMONS_CFLAGS="$DAEMONS_CFLAGS -DWITH_DNS_SERVER" ;;
-            echo)
-                DAEMONS_CFLAGS="$DAEMONS_CFLAGS -DWITH_ECHO_SERVER" ;;
-            todudp)
-                DAEMONS_CFLAGS="$DAEMONS_CFLAGS -DWITH_TODUDP_SERVER" ;;
-            dhcp)
-                DAEMONS_CFLAGS="$DAEMONS_CFLAGS -DWITH_DHCP_SERVER" ;
-                DAEMONS_LDADD="-ldhcpctl -lomapi -ldst" ;;
-            smtp)
-                DAEMONS_CFLAGS="$DAEMONS_CFLAGS -DWITH_SMTP" ;;
-            sshd) ;;
-            ssh_fwd) ;;
-            Xvfb) ;;
-            *)  ;; 
-        esac
-    done
+  DAEMONS_CFLAGS=-DCFG_LINUX_DAEMONS
+  for i in $with_cfg_linux_daemons ; do
+    case $i in 
+        tftp)
+            DAEMONS_CFLAGS="$DAEMONS_CFLAGS -DWITH_TFTP_SERVER"
+            DAEMONS_CFLAGS="$DAEMONS_CFLAGS -DWITH_XINETD" 
+            ;;
+        ftp)
+            DAEMONS_CFLAGS="$DAEMONS_CFLAGS -DWITH_FTP_SERVER" ;;
+        dns)
+            DAEMONS_CFLAGS="$DAEMONS_CFLAGS -DWITH_DNS_SERVER" ;;
+        echo)
+            DAEMONS_CFLAGS="$DAEMONS_CFLAGS -DWITH_ECHO_SERVER"
+            DAEMONS_CFLAGS="$DAEMONS_CFLAGS -DWITH_XINETD" 
+            ;;
+        todudp)
+            DAEMONS_CFLAGS="$DAEMONS_CFLAGS -DWITH_TODUDP_SERVER"
+            DAEMONS_CFLAGS="$DAEMONS_CFLAGS -DWITH_XINETD" 
+            ;;
+        dhcp)
+            DAEMONS_CFLAGS="$DAEMONS_CFLAGS -DWITH_DHCP_SERVER" ;
+            DAEMONS_LDADD="-ldhcpctl -lomapi -ldst" ;;
+        smtp)
+            DAEMONS_CFLAGS="$DAEMONS_CFLAGS -DWITH_SMTP" ;;
+        sshd) ;;
+        ssh_fwd) ;;
+        Xvfb) ;;
+        *)  ;; 
+    esac
+  done
 fi
 AC_SUBST([DAEMONS_CFLAGS])
 AC_SUBST([DAEMONS_LDADD])
