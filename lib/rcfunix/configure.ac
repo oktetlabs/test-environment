@@ -8,6 +8,7 @@ AM_INIT_AUTOMAKE
 
 # Checks for programs.
 AC_PROG_CC
+AC_PROG_LIBTOOL
 AC_PROG_INSTALL
 
 CFLAGS="${CFLAGS} ${TE_CFLAGS}"
@@ -23,12 +24,14 @@ AC_ARG_VAR(TE_LDFLAGS)
 AC_ARG_VAR(TE_LDADD)
 AC_ARG_VAR(TE_DEPENDENCIES)
 
-# Configure libtool
-AC_PROG_LIBTOOL
 
-AC_CHECK_HEADERS(sys/time.h signal.h time.h)
+AC_CHECK_HEADERS([\
+sys/time.h \
+time.h \
+signal.h \
+])
 
-AM_CONFIG_HEADER(config.h)
+AM_CONFIG_HEADER([config.h])
 AC_CONFIG_FILES([Makefile])
 
 AC_OUTPUT

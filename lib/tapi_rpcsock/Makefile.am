@@ -6,13 +6,13 @@ AM_LDFLAGS=-L$(DESTDIR)/$(prefix)/lib
 
 include_HEADERS=tapi_rpcsock.h tapi_rpcsock_macros.h
 
-lib_LIBRARIES=libtapi_rpcsock.a
+lib_LTLIBRARIES=libtapi_rpcsock.la
 
-libtapi_rpcsock_a_SOURCES=tapi_rpcsock.c tarpc_xdr.c
+libtapi_rpcsock_la_SOURCES=tapi_rpcsock.c tarpc_xdr.c
 
 CLEANFILES=tarpc.x tarpc.h tarpc_xdr.c
 
-tapi_rpcsock.o: tarpc.h
+tapi_rpcsock.lo: tarpc.h
 
 tarpc.x: @RPC_XFILE@
 	m4 @RPC_XFILE@ > tarpc.x
@@ -30,7 +30,7 @@ tarpc_xdr.c: tarpc.h
 	mv tarpc_xdr.c.new tarpc_xdr.c
 
 install-exec-hook:
-	touch -c -r libtapi_rpcsock.a $(DESTDIR)/$(prefix)/lib/libtapi_rpcsock.a
+	touch -c -r .libs/libtapi_rpcsock.a $(DESTDIR)/$(prefix)/lib/libtapi_rpcsock.a
 
 install-data-hook:
 	for i in $(include_HEADERS) ; do \

@@ -12,16 +12,17 @@ include_HEADERS = ipc_server.h ipc_client.h
 noinst_HEADERS = ipc_internal.h
 
 
-lib_LIBRARIES = libipc.a libipcserver.a
+lib_LTLIBRARIES = libipc.la libipcserver.la
 
-libipcserver_a_SOURCES = server.c portmap_server.c portmap_common.c ipc_common.c
+libipcserver_la_SOURCES = server.c portmap_server.c portmap_common.c \
+                          ipc_common.c
 
-libipc_a_SOURCES = client.c portmap_common.c ipc_common.c
+libipc_la_SOURCES = client.c portmap_common.c ipc_common.c
 
 
 install-exec-hook:
-	touch -c -r libipc.a $(DESTDIR)/$(prefix)/lib/libipc.a
-	touch -c -r libipcserver.a $(DESTDIR)/$(prefix)/lib/libipcserver.a
+	touch -c -r .libs/libipc.a $(DESTDIR)/$(prefix)/lib/libipc.a
+	touch -c -r .libs/libipcserver.a $(DESTDIR)/$(prefix)/lib/libipcserver.a
 
 install-data-hook:
 	for i in $(include_HEADERS) ; do \

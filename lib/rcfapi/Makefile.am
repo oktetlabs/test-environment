@@ -7,13 +7,13 @@ AM_LDFLAGS = @TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/lib
 
 include_HEADERS=rcf_api.h 
 
-lib_LIBRARIES=librcfapi.a
+lib_LTLIBRARIES=librcfapi.la
 
-librcfapi_a_SOURCES=rcf_api.c
+librcfapi_la_SOURCES=rcf_api.c
 
 
 install-exec-hook:
-	touch -c -r librcfapi.a $(DESTDIR)/$(prefix)/lib/librcfapi.a
+	touch -c -r .libs/librcfapi.a $(DESTDIR)/$(prefix)/lib/librcfapi.a
 
 install-data-hook:
 	for i in $(include_HEADERS) ; do \

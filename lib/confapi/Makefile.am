@@ -7,14 +7,14 @@ AM_LDFLAGS=@TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/lib
 
 include_HEADERS=conf_api.h conf_types.h conf_messages.h
 
-lib_LIBRARIES=libconfapi.a libconf_types.a 
+lib_LTLIBRARIES=libconfapi.la libconf_types.la
 
-libconfapi_a_SOURCES=conf_api.c conf_types.c 
-libconf_types_a_SOURCES=conf_types.c
+libconfapi_la_SOURCES=conf_api.c conf_types.c 
+libconf_types_la_SOURCES=conf_types.c
 
 install-exec-hook:
-	touch -c -r libconfapi.a $(DESTDIR)/$(prefix)/lib/libconfapi.a
-	touch -c -r libconf_types.a $(DESTDIR)/$(prefix)/lib/libconf_types.a
+	touch -c -r .libs/libconfapi.a $(DESTDIR)/$(prefix)/lib/libconfapi.a
+	touch -c -r .libs/libconf_types.a $(DESTDIR)/$(prefix)/lib/libconf_types.a
 
 install-data-hook:
 	for i in $(include_HEADERS) ; do \

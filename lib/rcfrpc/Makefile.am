@@ -8,13 +8,13 @@ AM_LDFLAGS = @TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/lib
 
 include_HEADERS=rcf_rpc.h
 
-lib_LIBRARIES=librcfrpc.a
+lib_LTLIBRARIES=librcfrpc.la
 
-librcfrpc_a_SOURCES=rcf_rpc.c tarpc_xdr.c
+librcfrpc_la_SOURCES=rcf_rpc.c tarpc_xdr.c
 
 CLEANFILES=tarpc.x tarpc.h tarpc_xdr.c
 
-rcf_rpc.o: tarpc.h
+rcf_rpc.lo: tarpc.h
 
 tarpc.x: @RPC_XFILE@
 	m4 @RPC_XFILE@ > tarpc.x
@@ -33,7 +33,7 @@ tarpc_xdr.c: tarpc.h
 
 
 install-exec-hook:
-	touch -c -r librcfrpc.a $(DESTDIR)/$(prefix)/lib/librcfrpc.a
+	touch -c -r .libs/librcfrpc.a $(DESTDIR)/$(prefix)/lib/librcfrpc.a
 
 install-data-hook:
 	for i in $(include_HEADERS) ; do \

@@ -11,16 +11,16 @@ include_HEADERS = tapi_test.h tapi_bufs.h tapi_tad.h tapi_cfg.h \
                   tapi_cfg_net.h tapi_cfg_arl.h tapi_cfg_base.h \
                   tapi_sockaddr.h
 
-lib_LIBRARIES = libtapi.a
+lib_LTLIBRARIES = libtapi.la
 
-libtapi_a_SOURCES = tapi_bufs.c tapi_tad.c tapi_cfg.c tapi_cfg_net.c \
-                    tapi_cfg_arl.c tapi_cfg_base.c tapi_sockaddr.c \
-                    test_params.c
+libtapi_la_SOURCES = tapi_bufs.c tapi_tad.c tapi_cfg.c tapi_cfg_net.c \
+                     tapi_cfg_arl.c tapi_cfg_base.c tapi_sockaddr.c \
+                     test_params.c
 
 
 install-exec-hook:
 	for i in $(lib_LIBRARIES) ; do \
-	    touch -c -r $$i $(DESTDIR)/$(prefix)/lib/$$i ; \
+	    touch -c -r .libs/$$i $(DESTDIR)/$(prefix)/lib/$$i ; \
 	done
 
 install-data-hook:
