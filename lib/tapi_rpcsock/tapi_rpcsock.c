@@ -1462,25 +1462,25 @@ rpc_send_traffic(rcf_rpc_server *handle, int num,
     }
     in.flags = flags;
 
-    rcf_rpc_call(handle, _send_traffic, &in, 
-                 (xdrproc_t)xdr_tarpc_send_traffic_in,
-                 &out, 
-                 (xdrproc_t)xdr_tarpc_send_traffic_out);
+    rcf_rpc_call(handle, _send_traffic,
+                 &in,  (xdrproc_t)xdr_tarpc_send_traffic_in,
+                 &out, (xdrproc_t)xdr_tarpc_send_traffic_out);
 
-    RING("RPC (%s,%s)%s: send_traffic ->%d(%s)",
-         handle->ta, handle->name, rpcop2str(op),
-         out.retval, errno_rpc2str(RPC_ERRNO(handle)));
-
-    for (i = 0; i < num; i++)
+    if (RPC_CALL_OK)
     {
-        RING("send_traffic to %s",    
-             sockaddr2str(to + i));
+        RING("RPC (%s,%s)%s: send_traffic ->%d(%s)",
+             handle->ta, handle->name, rpcop2str(op),
+             out.retval, errno_rpc2str(RPC_ERRNO(handle)));
+
+        for (i = 0; i < num; i++)
+        {
+            RING("send_traffic to %s - done",
+                 sockaddr2str(to + i));
+        }
     }
 
-    if (addrs != NULL)
-        free(addrs);
-    if (ss != NULL)
-        free(ss);
+    free(addrs);
+    free(ss);
 
     RETVAL_VAL(out.retval, send_traffic);
 }
