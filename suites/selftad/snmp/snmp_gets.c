@@ -51,6 +51,7 @@ main(int argc, char *argv[])
 {
     int snmp_csap = 0;
     int sid;
+    int rc;
     int snmp_version;
     const char *ta;
     const char *mib_object;
@@ -99,7 +100,8 @@ main(int argc, char *argv[])
             return rc;
         }
 
-        rc = tapi_snmp_get(ta, sid, snmp_csap, &oid, TAPI_SNMP_NEXT, &vb);
+        rc = tapi_snmp_get(ta, sid, snmp_csap, &oid, TAPI_SNMP_NEXT,
+                           &vb, &err);
         if (rc)
             TEST_FAIL("SNMP GET NEXT failed with rc %X", rc);
 
@@ -107,7 +109,8 @@ main(int argc, char *argv[])
 
 
         oid = vb.name;
-        rc = tapi_snmp_get(ta, sid, snmp_csap, &oid, TAPI_SNMP_EXACT, &vb);
+        rc = tapi_snmp_get(ta, sid, snmp_csap, &oid, TAPI_SNMP_EXACT,
+                           &vb, &err);
         if (rc)
             TEST_FAIL("SNMP GET failed with rc %X", rc);
 
