@@ -272,23 +272,22 @@ extern "C" {
 /**
  * Macro around tapi_snmp_get_table_dimension().
  *
- * @param label_     OID of SNMP table Entry object, or one leaf in this
- *                   entry
- * @param dimension  Table dimension
- *
+ * @param label_      OID of SNMP table Entry object, or one leaf in this
+ *                    entry
+ * @param dimension_  Pointer to the location of the table dimension (OUT)
  */ 
 #define SNMP_GET_TABLE_DIMENSION(label_, dimension_) \
-    do {                                                                   \
-        int             rc_;                                               \
-        tapi_snmp_oid_t oid_;                                              \
-	                                                                   \
-        SNMP_MAKE_OID(label_, oid_);                                       \
- 	rc_ = tapi_snmp_get_table_dimension(&oid_, &dimension_);           \
-	if (rc_ != 0)                                                      \
-	{                                                                  \
-            TEST_FAIL("snmp get table dimension failed for %s failed, "    \
-                      "result %X\n", label_, rc_);                         \
-        }                                                                  \
+    do {                                                                 \
+        int             rc_;                                             \
+        tapi_snmp_oid_t oid_;                                            \
+	                                                                 \
+        SNMP_MAKE_OID(label_, oid_);                                     \
+ 	rc_ = tapi_snmp_get_table_dimension(&oid_, dimension_);          \
+	if (rc_ != 0)                                                    \
+	{                                                                \
+            TEST_FAIL("snmp get table dimension failed for %s failed, "  \
+                      "result %X\n", label_, rc_);                       \
+        }                                                                \
     } while (0)
 
 /**
