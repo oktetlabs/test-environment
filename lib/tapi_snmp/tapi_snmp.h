@@ -605,6 +605,19 @@ extern int tapi_snmp_get_table_dimension(tapi_snmp_oid_t *table_oid, int *dimens
 
 
 /**
+ * Make table index.
+ *
+ * @param	tbl	Table OID
+ * @param	index	Table index pointer
+ * @param	...	Values to be inserted in index.id
+ *
+ * @return zero on success or error code
+ * 
+ */ 
+extern int tapi_snmp_make_table_index(tapi_snmp_oid_t *tbl, tapi_snmp_oid_t *index, ...);
+	
+
+/**
  * Get SNMP table columns.
  * 
  * @param table_oid     OID of SNMP table Entry object, or one leaf in this 

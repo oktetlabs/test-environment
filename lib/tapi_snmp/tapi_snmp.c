@@ -1417,6 +1417,32 @@ tapi_snmp_get_table_dimension(tapi_snmp_oid_t *table_oid, int *dimension)
     return 0;
 }
 
+/* See description in tapi_snmp.h */
+int 
+tapi_snmp_make_table_index(tapi_snmp_oid_t *tbl, tapi_snmp_oid_t *index, ...)
+{
+    int dimension;
+    int i = 0;
+    int rc;
+
+    va_list list;
+
+    rc = tapi_snmp_get_table_dimension(tbl, &dimension);
+    if (rc)
+    {
+        return rc;	    
+    }
+
+    va_start(list, index);
+    index->length = dimension;
+    while (i < dimension)
+    {
+        index->id[i++] = va_arg(list, oid);    
+    }
+    va_end(list);
+    return 0;
+}
+
 static tapi_snmp_vartypes_t net_snmp_convert[] = 
 {
     /* TYPE_OTHER          0*/ TAPI_SNMP_OTHER,   

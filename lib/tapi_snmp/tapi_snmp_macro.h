@@ -514,7 +514,9 @@ extern "C" {
 #define SNMP_MAKE_INT_VB(vb_, name_, value_) \
     do                                                             \
     {                                                              \
+        tapi_snmp_oid_t name_;                                     \
         (vb_).type = TAPI_SNMP_INTEGER;                            \
+	SNMP_MAKE_OID(#name_, name_);                              \
         (vb_).name = (name_);                                      \
         (vb_).integer = (value_);                                  \
     } while (0)
@@ -531,7 +533,9 @@ extern "C" {
 #define SNMP_MAKE_OCTETSTRING_VB(vb_, name_, size_, value_) \
     do                                                               \
     {                                                                \
+	tapi_snmp_oid_t name_;                                       \
         (vb_).type = TAPI_SNMP_OCTET_STR;                            \
+	SNMP_MAKE_OID(#name_, name_);                                \
 	(vb_).name = (name_);                                        \
 	(vb_).v_len = (size_);                                       \
         (vb_).oct_string = (value_);                                 \
@@ -546,14 +550,29 @@ extern "C" {
  *
  */
 #define SNMP_MAKE_OBJECTID_VB(vb_, name_, oid_) \
-   do                                                                \
-   {                                                                 \
+    do                                                                \
+    {                                                                 \
+        tapi_snmp_oid_t name_;                                       \
         (vb_).type = TAPI_SNMP_OBJECT_ID;                            \
+	SNMP_MAKE_OID(#name_, name_);                                \
         (vb_).name = (name_);                                        \
 	(vb_).v_len = ((value_).length);                             \
 	(vb_).obj_id = &(value_);                                    \
-   } while (0)
+    } while (0)
 
+
+#define SNMP_MAKE_TBL_INDEX(label_, index_... ) \
+    do                                                  \
+    {                                                   \
+	tapi_snmp_oid_t label_;                         \
+	int             rc_;                            \
+	SNMP_MAKE_OID(#label_, label_);                 \
+        rc_ = tapi_snmp_make_table_index(&label_, &index_);  \
+	if (rc_)                                              \
+            TEST_FAIL("Make table index failed\n");           \
+    } while (0)	
+	
+   
 
 /**
  * Macro around tapi_snmp_set_integer()
