@@ -463,6 +463,17 @@ dhcp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
         asn_free_value(opt_list);
     }
 
+    if (parsed_packet)
+    {
+        rc = asn_write_component_value(parsed_packet, dhcp_message_pdu,
+                                       "#dhcp"); 
+        if (rc)
+            ERROR("%s, write DHCP message to packet fails %X\n", 
+                  __FUNCTION__, rc);
+    } 
+
+    asn_free_value(dhcp_message_pdu); 
+
     memset(payload, 0 , sizeof(*payload));
 
     VERB("MATCH CALLBACK OK\n");
