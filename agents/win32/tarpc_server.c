@@ -2182,7 +2182,7 @@ flooder(tarpc_flooder_in *in)
     uint32_t *rx_stat = (uint32_t *)(in->rx_stat.rx_stat_val);
 
     int      i;
-    int      rc;
+    int      rc, err;
     int      sent;
     int      received;
     char     rcv_buf[FLOODER_BUF];
@@ -2272,11 +2272,11 @@ flooder(tarpc_flooder_in *in)
                 if (FD_ISSET(sndrs[i], &wfds))
                 {
                     sent = send(sndrs[i], snd_buf, bulkszs, 0);
-                    if ((sent < 0) &&
-                        (errno != EAGAIN) && (errno != EWOULDBLOCK))
+                    err = WSAGetLastError();
+                    if (sent < 0 && err != WSAEWOULDBLOCK)
                     {
-                        ERROR("%s(): write() failed: %X",
-                              __FUNCTION__, errno);
+                        ERROR("%s(): write() failed: %d",
+                              __FUNCTION__, err);
                         return -1;
                     }
                     if ((sent > 0) && (tx_stat != NULL))
@@ -2293,10 +2293,10 @@ flooder(tarpc_flooder_in *in)
             if (FD_ISSET(rcvrs[i], &rfds))
             {
                 received = recv(rcvrs[i], rcv_buf, sizeof(rcv_buf), 0);
-                if ((received < 0) &&
-                    (errno != EAGAIN) && (errno != EWOULDBLOCK))
+                err = WSAGetLastError();
+                if (received < 0 && err != WSAEWOULDBLOCK)
                 {
-                    ERROR("%s(): read() failed: %X", __FUNCTION__, errno);
+                    ERROR("%s(): read() failed: %d", __FUNCTION__, err);
                     return -1;
                 }
                 if (received > 0)
@@ -2587,7 +2587,7 @@ socket_to_file(tarpc_socket_to_file_in *in)
     char    *path = in->path.path_val;
     long     time2run = in->timeout;
 
-    int      rc = 0;
+    int      rc = 0, err;
     int      file_d = -1;
     int      written;
     int      received;
@@ -2664,22 +2664,20 @@ socket_to_file(tarpc_socket_to_file_in *in)
                 INFO("socket_to_file(): select observes data for "
                      "reading on the socket=%d", sock);
                 received = recv(sock, buffer, sizeof(buffer), 0);
-                INFO("socket_to_file(): read() retrieve %d bytes",
-                     received);
-                if ((received < 0) &&
-                    (errno != EAGAIN) && (errno != EWOULDBLOCK))
+                err = WSAGetLastError();
+                if (received < 0 && err != WSAEWOULDBLOCK)
                 {
-                    ERROR("%s(): read() failed: %X", __FUNCTION__, errno);
+                    ERROR("%s(): read() failed: %d", __FUNCTION__, err);
                     rc = -1;
                     goto local_exit;
                 }
-                if ((received < 0) && ((errno == EAGAIN) ||
-                                       (errno == EWOULDBLOCK)))
+                INFO("socket_to_file(): read() retrieve %d bytes",
+                     received);
+                if (received < 0)
                 {
                     next_read = FALSE;
                 }
-
-                if (received > 0)
+                else
                 {
                     total += received;
                     INFO("socket_to_file(): write retrieved data to file");
@@ -2688,8 +2686,8 @@ socket_to_file(tarpc_socket_to_file_in *in)
                          written);
                     if (written < 0)
                     {
-                        ERROR("%s(): write() failed: %X",
-                              __FUNCTION__, errno);
+                        ERROR("%s(): write() failed: %d", 
+                              __FUNCTION__, err);
                         rc = -1;
                         goto local_exit;
                     }
@@ -3605,3 +3603,89 @@ TARPC_FUNC(kill, {},
 }
 )
 
+/*-------------- overfill_buffers() -----------------------------*/
+int
+overfill_buffers(tarpc_overfill_buffers_in *in,
+                 tarpc_overfill_buffers_out *out)
+{
+    ssize_t    rc = 0;
+    int        err = 0;
+    size_t     max_len = 4096;
+    uint8_t   *buf = NULL;
+    uint64_t   total = 0;
+    int        unchanged = 0;
+    u_long     val = 1;
+
+    out->bytes = 0;
+
+    buf = calloc(1, max_len);
+    if (buf == NULL)
+    {
+        ERROR("%s(): No enough memory", __FUNCTION__);
+        out->common._errno = TE_RC(TE_TA_WIN32, ENOMEM);
+        rc = -1;
+        goto overfill_buffers_exit;
+    }
+
+    memset(buf, 0xDEADBEEF, sizeof(max_len));
+    
+    /* ATTENTION! socket is assumed in blocking state */
+    
+    if (ioctlsocket(in->sock, FIONBIO, &val) < 0)
+    {
+        err = WSAGetLastError();
+        rc = -1;
+        ERROR("%s(): Failed to move socket to non-blocking state", 
+              __FUNCTION__);
+        goto overfill_buffers_exit;
+    }
+
+    do {
+        do {
+            rc = send(in->sock, buf, max_len, 0);
+            err = WSAGetLastError();
+            
+            if (rc == -1 && err != WSAEWOULDBLOCK)
+            {
+                ERROR("%s(): send() failed", __FUNCTION__);
+                goto overfill_buffers_exit;
+            }
+            if (rc != -1)
+                out->bytes += rc;
+        } while (errno != WSAEWOULDBLOCK);
+
+        if (total != out->bytes)
+        {
+            total = out->bytes;
+            unchanged = 0;
+        }
+        else
+        {
+            unchanged++;
+            rc = 0;
+            err = 0;
+        }
+    } while (unchanged != 3);
+
+overfill_buffers_exit:
+    val = 0;
+    if (ioctlsocket(in->sock, FIONBIO, &val) < 0)
+    {
+        err = WSAGetLastError();
+        rc = -1;
+        ERROR("%s(): Failed to move socket back to blocking state", 
+              __FUNCTION__);
+    }
+    out->common.win_error = win_error_h2rpc(err);
+    out->common._errno = wsaerr2errno(out->common.win_error); 
+
+
+    free(buf);
+    return rc;
+}
+
+TARPC_FUNC(overfill_buffers,{},
+{
+    MAKE_CALL(out->retval = overfill_buffers(in, out));
+}
+)
