@@ -77,7 +77,7 @@ const asn_type * const  ndn_interval_sequence = &ndn_data_unit_ints_s;
 
 
 
-asn_type ndn_data_unit_enum_static = 
+asn_type ndn_data_unit_enum_s = 
 { "DATA-UNIT-enum", {PRIVATE, 2}, SET_OF, 1,
    {&asn_base_integer_s} 
 };
@@ -381,12 +381,12 @@ int
 ndn_match_data_units(const asn_value *pattern, asn_value *pkt_pdu,
                      uint8_t *data, size_t d_len, const char *label)
 {
-    asn_syntax_t plain_syntax;
-    const asn_value *du_val;
-    const asn_type *du_type;
-    char choice_label[200];
-    char *choice_ptr;
-    int rc;
+    asn_syntax_t      plain_syntax;
+    const asn_value  *du_val;
+    const asn_type   *du_type;
+    const char       *choice_ptr;
+
+    int      rc;
     uint32_t user_int;
 
     if (pattern == NULL || data == NULL || label == NULL)
