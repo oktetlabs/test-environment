@@ -122,17 +122,10 @@
                 <attribute name="ref" type="Name">
                     <annotation>
                         <documentation>
-                            Identifier of another value of the
-                            argument.
-                        </documentation>
-                    </annotation>
-                </attribute>
-                <attribute name="ext" type="Name">
-                    <annotation>
-                        <documentation>
-                            Reference to external value (name of the
+                            Identifier of another value of the argument
+                            or reference to external value (name of the
                             variable of the parent session or name of
-                            the argument passed to the sesiion).
+                            the argument passed to the sesiion). 
                         </documentation>
                     </annotation>
                 </attribute>
@@ -220,7 +213,7 @@
                 </documentation>
             </annotation>
         </attribute>
-        <attribute name="refer" type="Name">  
+        <attribute name="ref" type="Name">  
             <annotation>
                 <documentation>
                     Name of the argument passed to the session to get
@@ -372,13 +365,13 @@
                 <keyref name="arg_value_refer" refer="vars">
                     <annotation>
                         <documentation>
-                            If 'ext' attribute is defined for 'value'
+                            If 'ref' attribute is defined for 'value'
                             child element, it must refer to one of
                             variables.
                         </documentation>
                     </annotation>
-                    <selector xpath="value[@ext]"/>
-                    <field    xpath="@ext"/>
+                    <selector xpath="value[@ref]"/>
+                    <field    xpath="@ref"/>
                 </keyref>
             </element>
         </choice>
