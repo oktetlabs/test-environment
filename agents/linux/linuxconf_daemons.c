@@ -1159,7 +1159,7 @@ ds_ftpserver_set(unsigned int gid, const char *oid, const char *value)
 {
     UNUSED(oid);
     return ftp_standalone ? daemon_set(gid, "ftpserver", value) : 
-        xinetd_set(gid, "ftp", value);
+           xinetd_set(gid, "ftp", value);
 }
 
 static int
@@ -1167,7 +1167,7 @@ ds_ftpserver_get(unsigned int gid, const char *oid, char *value)
 {
     UNUSED(oid);
     return ftp_standalone ? daemon_get(gid, "ftpserver", value) :
-        xinetd_get(gid, "ftp", value);
+           xinetd_get(gid, "ftp", value);
 }
 #else
 #define ds_ftpserver_set daemon_set
@@ -1188,7 +1188,7 @@ ds_ftpserver_server_set(unsigned int gid, const char *oid,
     if (tmp[0] != '0')
     {
         ERROR("Cannot change FTP server type when it's running");
-        return TE_RC(TE_TA_LINUX, ETENOSUPP);
+        return TE_RC(TE_TA_LINUX, EPERM);
     }
 
     ftp_standalone = newval;
