@@ -28,9 +28,14 @@
 #define DBG(x...)
 #endif
 
+/** Minimum amount of arguments required by the millicom */
 #define MIN_ARG_COUNT   2
 
+/** Buffer size in bytes used by the millicom I/O routines */
 #define BUF_SIZE        32
+
+/** Magic !!! use it if the millicom does work */
+#define MILLICOM_COMPATIBLE_MODE    1
 
 /**
  * Mapping structure between baud_rate in integer representation and
@@ -177,6 +182,13 @@ main(int argc, char *argv[])
     tty.c_oflag &= ~OPOST;
     tty.c_cflag |= (CREAD | CLOCAL | HUPCL | CRTSCTS);
     tty.c_lflag &= ~(XCASE | ECHONL | NOFLSH | ICANON | ISIG | ECHO);
+
+#ifdef MILLICOM_COMPATIBLE_MODE
+    /* Magic !!! */
+    tty.c_oflag = 0;
+    tty.c_lflag = 0;
+#endif
+
     tty.c_cc[VTIME] = 5;
     tty.c_cc[VMIN] = 1;
 
@@ -184,9 +196,9 @@ main(int argc, char *argv[])
     cfsetispeed(&tty, B0);
 
     if (argc > 2) {
-        int     i;
-        int     speed;
-        speed_t b_speed = B0;
+        unsigned int i;
+        unsigned int speed;
+        speed_t      b_speed = B0;
 
         if ((sscanf(argv[2], "-speed=%d", &speed)) != 1) {
             fprintf(stderr, "Error: invalid speed parameter\n");
@@ -219,6 +231,25 @@ main(int argc, char *argv[])
         ssize_t len;
         struct timeval tv;
         char buf[BUF_SIZE];
+        fd_set  read_fds;
+        fd_set  except_fds;
+        int     max_fileno;
+
+        FD_ZERO(&read_fds);
+        FD_SET(fileno(stdin), &read_fds);
+        FD_SET(tty_fd, &read_fds);
+
+        FD_ZERO(&except_fds);
+        FD_SET(fileno(stdin), &except_fds);
+        FD_SET(tty_fd, &except_fds);
+
+        max_fileno = (fileno(stdin) > tty_fd) ? fileno(stdin) : tty_fd;
+
+        if (select(max_fileno + 1, &read_fds, NULL, &except_fds, NULL) < 0)
+        {
+            fprintf(stderr, "Millicom session has been closed\n");
+            goto err;
+        }
 
         /* Read from stdin if available and write to TTY */
         DBG(fprintf(stderr, "\nstdin->tty\n"));
@@ -233,7 +264,7 @@ main(int argc, char *argv[])
         if ((len < 0) && (errno != EAGAIN)) {
             fprintf(stderr,
                     "I/O error: failed read from stdin, rc=%d, errno=%d\n",
-                   len, errno );
+                    (int)len, errno);
             goto err;
         }
         
