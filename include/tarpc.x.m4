@@ -587,27 +587,11 @@ struct tarpc_accept_ex_in {
     int                     fd_a;         /**< TA-local socket to wich the
                                                connection will be actually
                                                made */
-    char                    buf<>;        /**< Buffer to receive first block 
-                                               of data */
-    tarpc_size_t            len;          /**< Length of data to be received */
- 
+    int                     buflen;       /**< Length of the buffer
+                                               passed to the AcceptEx() */
     tarpc_overlapped        overlapped;   /**< WSAOVERLAPPED structure */
     tarpc_size_t            count<>;      /**< Location for
                                                count of received bytes */ 
-    struct tarpc_sa         laddr;        /**< Pointer to the sockaddr structure
-                                               that receives the local address of
-                                               the connection 
-                                               returned by 
-                                               GetAcceptExSockAddrs function */
-    tarpc_socklen_t         laddr_len<>;  /**< Size fo the local address
-                                               in bytes */
-    struct tarpc_sa         raddr;        /**< Pointer to the sockaddr structure
-                                               that receives the remote address
-                                               of the connection 
-                                               returned by 
-                                               GetAcceptExSockAddrs function */
-    tarpc_socklen_t         raddr_len<>;  /**< Size fo the remote address
-                                               in bytes */
 };
 
 struct tarpc_accept_ex_out {
@@ -617,22 +601,24 @@ struct tarpc_accept_ex_out {
 
     tarpc_size_t            count<>;      /**< Location for
                                                count of received bytes */ 
-    char                    buf<>;        /**< Buffer to receive first block 
-                                               of data */
-    struct tarpc_sa         laddr;        /**< Pointer to the sockaddr structure
-                                               that receives the local address of
-                                               the connection 
-                                               returned by 
-                                               GetAcceptExSockAddrs function */
-    tarpc_socklen_t         laddr_len<>;  /**< Size fo the local address
-                                               in bytes */
-    struct tarpc_sa         raddr;        /**< Pointer to the sockaddr structure
-                                               that receives the remote address
-                                               of the connection 
-                                               returned by 
-                                               GetAcceptExSockAddrs function */
-    tarpc_socklen_t         raddr_len<>;  /**< Size fo the remote address
-                                               in bytes */
+};
+
+struct tarpc_get_accept_addr_in {
+    struct tarpc_in_arg    common;
+
+    int             fd;          /**< TA-local socket */
+    char            buf<>;	 /**< Buffer with addresses */
+    int             buflen;      /**< Length of the buffer
+                                      passed to the AcceptEx() */
+    struct tarpc_sa laddr;       /**< Local address */
+    struct tarpc_sa raddr;       /**< Remote address */
+};
+
+struct tarpc_get_accept_addr_out {
+    struct tarpc_out_arg    common;
+
+    struct tarpc_sa laddr;       /**< Local address */
+    struct tarpc_sa raddr;       /**< Remote address */
 };
 
 /* TransmitFile() */
@@ -657,10 +643,8 @@ struct tarpc_transmit_file_in {
     tarpc_overlapped        overlapped;   /**< WSAOVERLAPPED structure */
     char                    head<>;       /**< Buffer to be transmitted before
                                                the file data is transmitted */
-    tarpc_size_t            head_len;     /**< Length of head in bytes */
     char                    tail<>;       /**< Buffer to be transmitted after
                                                the file data is transmitted */
-    tarpc_size_t            tail_len;     /**< Length of tail in bytes */
     tarpc_size_t            flags;        /**< Parameter of TransmitFile() */
 };
 
@@ -1961,6 +1945,7 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(connect_ex)
         RPC_DEF(wsa_accept)
         RPC_DEF(accept_ex)
+	RPC_DEF(get_accept_addr)
         RPC_DEF(disconnect_ex)
         RPC_DEF(reset_event)     
         RPC_DEF(event_select)
