@@ -28,12 +28,6 @@
  * $Id$
  */
 
-#if 1
-#define LOG_LEVEL   (ERROR_LVL | WARNING_LVL | RING_LVL | INFORMATION_LVL)
-#else
-#define LOG_LEVEL   0xff
-#endif
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -1711,7 +1705,7 @@ iterate_test(tester_ctx *ctx, run_item *test,
                 }
                 else
                 {
-                    INFO("Configuration successfully restored using backup");
+                    RING("Configuration successfully restored using backup");
                     RC_UPDATE(test_result, ETESTCONF);
                 }
             }
@@ -1771,7 +1765,7 @@ tester_run_config(tester_ctx *ctx, tester_cfg *cfg)
     ENTRY();
 
     maintainers = persons_info_to_string(&cfg->maintainers);
-    INFO("Running configuration:\n"
+    RING("Running configuration:\n"
          "File:        %s\n"
          "Maintainers:%s\n"
          "Description: %s",
