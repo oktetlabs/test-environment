@@ -41,6 +41,7 @@ AC_CHECK_HEADERS([\
 time.h \
 sys/time.h \
 sys/resource.h \
+pthread.h \
 semaphore.h \
 ])
 AC_C_INLINE
