@@ -299,9 +299,9 @@ tad_tr_send_thread(void * arg)
 
     do {
         const asn_value *arg_sets;
-        char pld_label[10] = "";
-        int pld_spec_len;
 
+        char pld_label[10] = "";
+        int  pld_spec_len; 
 
         if (csap_descr->prepare_send_cb)
         {
@@ -362,7 +362,11 @@ tad_tr_send_thread(void * arg)
                                     rcf_ch_symbol_addr((char *)pld_data, 1);
 
                     if (function_addr == NULL)
+                    {
+                        ERROR("Function %s for pld generation NOT found",
+                              (char *)pld_data);
                         rc = TE_RC(TE_TAD_CH, ETENOSUCHNAME); 
+                    }
                     free(pld_data);
                     pld_data = (uint8_t *) function_addr;
                 }
