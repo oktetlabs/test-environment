@@ -113,9 +113,6 @@ tapi_snmp_mib_entry_oid(struct tree *entry, tapi_snmp_oid_t *res_oid)
     if (entry == NULL || res_oid == NULL)
         return ETEWRONGPTR;
 
-    INFO("%s: entry %x, par %x, entry label %s", 
-            __FUNCTION__, entry, entry->parent, entry->label);
-
     if (entry->parent == NULL || entry->parent == entry)
         res_oid->length = 0;
     else
