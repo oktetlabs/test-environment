@@ -287,7 +287,13 @@
           Limit: 1 -->
      <object oid="/agent/dhcpserver/lease/cltt" access="read_only"
              type="integer"/>
-             
+
+    <!-- Subnet declaration for the DHCP server.
+         Name: IPv4 subnet
+         Value: IPv4 subnet prefix length -->
+    <object oid="/agent/dhcpserver/subnet"
+            access="read_create" type="integer"/>
+
      <!-- Host declaration for the DHCP server.
           Name:  human readable name -->
      <object oid="/agent/dhcpserver/host" access="read_create"/>
