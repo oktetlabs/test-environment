@@ -128,9 +128,19 @@ AC_SUBST([TAD_CH_DEFS])
 # Checks for header files.
 AC_HEADER_STDC
 AC_HEADER_SYS_WAIT
-AC_CHECK_HEADERS([arpa/inet.h fcntl.h limits.h netinet/in.h stdlib.h \
-                  string.h sys/ioctl.h sys/socket.h sys/time.h unistd.h\
-                  semaphore.h])
+AC_CHECK_HEADERS([\
+stdlib.h \
+string.h \
+unistd.h\
+limits.h \
+fcntl.h \
+sys/time.h \
+sys/socket.h \
+sys/ioctl.h \
+arpa/inet.h \
+netinet/in.h \
+semaphore.h \
+])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
