@@ -32,8 +32,8 @@
 #include <config.h>
 #endif
 
-/* To get obstack_printf() definition, it must help, but does not work :( */
-#define _GNU_SOURCE
+/* To get obstack_printf() definition */
+#define _GNU_SOURCE 1
 #include <stdio.h>
 
 #if HAVE_TIME_H
