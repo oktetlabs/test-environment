@@ -57,6 +57,13 @@
 #define TE_LGR_USER     "TAPI ARP"
 #include "logger_api.h"
 
+/* Forward declaration of static functions */
+static uint8_t *tapi_arp_create_bin_arp_pkt(const tapi_arp_hdr_t *arp_hdr,
+                                            const uint8_t *data,
+                                            size_t data_len,
+                                            size_t *pkt_len);
+
+
 /* See the description in tapi_arp.h */
 int
 tapi_arp_csap_create(const char *ta_name, int sid, const char *device,
@@ -198,90 +205,102 @@ tapi_arp_recv_start(const char *ta_name, int sid, csap_handle_t arp_csap,
                                (cb != NULL) ? i_data : NULL, timeout, num);
 }
 
-/**
- * Create ARP header in binary format based on 
- * the 'tapi_arp_hdr_t' data structure.
- *
- * @param arp_hdr   ARP packet header
- * @param data      Pointer to the raw data that should go after ARP header
- * @param data_len  The length of the data
- * @param pkt_len   Binary ARP packet length (OUT)
- *
- * @return Pointer to the binary data formed, or NULL if there is not enough
- *         memory to allocate.
- */
-static uint8_t *
-tapi_arp_create_bin_arp_pkt(const tapi_arp_hdr_t *arp_hdr,
-                            const uint8_t *data, size_t data_len,
-                            size_t *pkt_len)
+
+typedef struct arp_frame_cb_info {
+    tapi_arp_frame_t *frames;
+    int               num;
+    int               rc;
+} arp_frame_cb_info_t;
+
+static void
+arp_frame_callback(const tapi_arp_frame_t *arp_frame, void *userdata)
 {
-    uint8_t   *arp_pkt;
-    uint32_t   arp_pkt_len;
-    uint16_t  short_var;
-    uint8_t  *arp_pkt_start;
+    arp_frame_cb_info_t *info = (arp_frame_cb_info_t *)userdata;
+    tapi_arp_frame_t    *tmp_ptr = info->frames;
 
-    if (arp_hdr == NULL || pkt_len == NULL)
+    assert((arp_frame->data == NULL && arp_frame->data_len == 0) ||
+           (arp_frame->data != NULL && arp_frame->data_len != 0));
+
+    if (info->rc != 0)
+        return;
+
+    /* Copy ARP frame because it is freed after returning from the function */
+    info->num++;
+    info->frames = 
+        (tapi_arp_frame_t *)realloc(info->frames,
+                                    sizeof(tapi_arp_frame_t) * info->num);
+    if (info->frames == NULL)
     {
-        assert(0);
-        return NULL;
+        info->frames = tmp_ptr;
+        info->num--;
+        info->rc = ENOMEM;
+        return;
     }
-
-    assert((data == NULL && data_len == 0) ||
-           (data != NULL && data_len != 0));
-
-    /* Allocate memory under ARP packet */
-#define ARP_FIELD_SIZE(fld_) sizeof(arp_hdr->fld_)
-    arp_pkt_len = ARP_FIELD_SIZE(hard_type) + ARP_FIELD_SIZE(proto_type) +
-                  ARP_FIELD_SIZE(hard_size) + ARP_FIELD_SIZE(proto_size) +
-                  ARP_FIELD_SIZE(op_code) + arp_hdr->hard_size * 2 +
-                  arp_hdr->proto_size * 2 + data_len;
-#undef ARP_FIELD_SIZE
-
-    if ((arp_pkt_start = arp_pkt = (uint8_t *)malloc(arp_pkt_len)) == NULL)
-        return NULL;
-
-#define ARP_FILL_SHORT_VAR(fld_) \
-    do {                                                \
-        short_var = htons(arp_hdr->fld_);               \
-        memcpy(arp_pkt, &short_var, sizeof(short_var)); \
-        arp_pkt += sizeof(short_var);                   \
-    } while (0)
-
-    ARP_FILL_SHORT_VAR(hard_type);
-    ARP_FILL_SHORT_VAR(proto_type);
-
-    *(arp_pkt++) = arp_hdr->hard_size;
-    *(arp_pkt++) = arp_hdr->proto_size;
-
-    ARP_FILL_SHORT_VAR(op_code);
-
-#undef ARP_FILL_SHORT_VAR
-
-#define ARP_FILL_ARRAY(fld_, size_fld_) \
-   do {                                \
-        memcpy(arp_pkt, arp_hdr->fld_, \
-               arp_hdr->size_fld_);    \
-        arp_pkt += arp_hdr->size_fld_; \
-    } while (0)
-
-    ARP_FILL_ARRAY(snd_hw_addr, hard_size);
-    ARP_FILL_ARRAY(snd_proto_addr, proto_size);
-    ARP_FILL_ARRAY(tgt_hw_addr, hard_size);
-    ARP_FILL_ARRAY(tgt_proto_addr, proto_size);
-
-#undef ARP_FILL_ARRAY
-    if (data != NULL)
+    memcpy(&info->frames[info->num - 1], arp_frame, sizeof(*arp_frame));
+    if (arp_frame->data != NULL)
     {
-        memcpy(arp_pkt, data, data_len);
-        arp_pkt += data_len;
+        /* Allocate memory under ARP payload - which is not usual */
+        info->frames[info->num - 1].data = 
+            (uint8_t *)malloc(arp_frame->data_len);
+        if (info->frames[info->num - 1].data == NULL)
+        {
+            info->rc = ENOMEM;
+            return;
+        }
+        memcpy(info->frames[info->num - 1].data, arp_frame->data,
+               arp_frame->data_len);
     }
-
-    assert((arp_pkt - arp_pkt_start) == arp_pkt_len);
-
-    *pkt_len = arp_pkt_len;
-
-    return arp_pkt_start;
 }
+
+/* See the description in tapi_arp.h */
+int
+tapi_arp_recv(const char *ta_name, int sid, csap_handle_t arp_csap,
+              const asn_value *pattern, unsigned int timeout,
+              tapi_arp_frame_t **frames, int *num)
+{
+    int                 rc;
+    arp_frame_cb_info_t info;
+    int                 num_tmp;
+    
+    if (frames == NULL || num == NULL)
+        return EINVAL;
+
+    memset(&info, 0, sizeof(info));
+    
+    rc = tapi_arp_recv_start(ta_name, sid, arp_csap, pattern,
+                             arp_frame_callback, &info, timeout, *num);
+    
+    if (rc != 0)
+    {
+        ERROR("tapi_arp_recv_start() returns %X", rc);
+        return rc;
+    }
+    /* Wait until all the packets received or timeout */
+    rc = rcf_ta_trrecv_wait(ta_name, arp_csap, &num_tmp);
+
+    if (rc != 0 || info.rc != 0)
+    {
+        int i;
+        
+        ERROR("rcf_ta_trrecv_wait() returns %X, info.rc %X", rc, info.rc);
+        for (i = 0; i < info.num; i++)
+        {
+            free(info.frames[i].data);
+        }
+        free(info.frames);
+
+        return (rc != 0) ? rc : info.rc;
+    }
+    WARN("info.num = %d, num_tmp = %d", info.num, num_tmp);
+    
+    assert(info.num == num_tmp);
+
+    *num = info.num;
+    *frames = info.frames;
+
+    return 0;
+}
+
 
 /* See the description in tapi_arp.h */
 int
@@ -389,8 +408,13 @@ tapi_arp_prepare_pattern_eth_only(uint8_t *src_mac, uint8_t *dst_mac,
 
     if (src_mac == NULL)
     {
-        rc = asn_remove_indexed(frame_hdr, 1, "");
-        WARN("asn_remove_indexed returns %x\n", rc);
+        rc = asn_free_subvalue(frame_hdr, "src-addr");
+        WARN("asn_free_subvalue() returns %x\n", rc);
+    }
+    if (dst_mac == NULL)
+    {
+        rc = asn_free_subvalue(frame_hdr, "dst-addr");
+        WARN("asn_free_subvalue() returns %x\n", rc);
     }
 
     rc = asn_parse_value_text("{{ pdus { eth:{ }}}}",
@@ -435,6 +459,7 @@ tapi_arp_prepare_pattern_with_arp(uint8_t *eth_src_mac,
                           { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
     uint8_t           all_one_ip[sizeof(struct in_addr)] = 
                           { 0xff, 0xff, 0xff, 0xff };
+    size_t            const_hdr_part_len;
     
     if ((rc = tapi_arp_prepare_pattern_eth_only(eth_src_mac, eth_dst_mac,
                                                 &eth_pattern)) != 0)
@@ -471,6 +496,20 @@ tapi_arp_prepare_pattern_with_arp(uint8_t *eth_src_mac,
         free(arp_pkt);
         return ENOMEM;
     }
+    /*
+     * Set the first 6 bytes of mask with 0xff - we expect exact matching
+     * for constant fields
+     */
+    const_hdr_part_len = sizeof(arp_frame.arp_hdr.hard_type) + 
+                         sizeof(arp_frame.arp_hdr.proto_type) +
+                         sizeof(arp_frame.arp_hdr.hard_size) + 
+                         sizeof(arp_frame.arp_hdr.proto_size);
+
+    assert(const_hdr_part_len < arp_pkt_len);
+    assert(const_hdr_part_len == 6);
+
+    memset(pkt_mask, 0xff, const_hdr_part_len);
+
     {
         size_t  i;
         char buf[1024] = { 0, };
@@ -482,7 +521,19 @@ tapi_arp_prepare_pattern_with_arp(uint8_t *eth_src_mac,
         }
         WARN("MASK is %s", buf);
     }
-    /* @todo Create MASK and add it to traffic pattern */
+    
+    if (rc == 0)
+        rc = asn_write_value_field(eth_pattern, arp_pkt, arp_pkt_len,
+                                   "0.payload.#mask.v"); 
+    if (rc == 0)
+        rc = asn_write_value_field(eth_pattern, pkt_mask, arp_pkt_len,
+                                   "0.payload.#mask.m");
+
+    if (rc != 0)
+    {
+        ERROR("Cannot create ARP header pattern: %X", rc);
+        return rc;
+    }
 
     *pattern = eth_pattern;
 
@@ -490,4 +541,92 @@ tapi_arp_prepare_pattern_with_arp(uint8_t *eth_src_mac,
     free(arp_pkt);
 
     return 0;
+}
+
+
+/* Static routines */
+
+/**
+ * Create ARP header in binary format based on 
+ * the 'tapi_arp_hdr_t' data structure.
+ *
+ * @param arp_hdr   ARP packet header
+ * @param data      Pointer to the raw data that should go after ARP header
+ * @param data_len  The length of the data
+ * @param pkt_len   Binary ARP packet length (OUT)
+ *
+ * @return Pointer to the binary data formed, or NULL if there is not enough
+ *         memory to allocate.
+ */
+static uint8_t *
+tapi_arp_create_bin_arp_pkt(const tapi_arp_hdr_t *arp_hdr,
+                            const uint8_t *data, size_t data_len,
+                            size_t *pkt_len)
+{
+    uint8_t   *arp_pkt;
+    uint32_t   arp_pkt_len;
+    uint16_t  short_var;
+    uint8_t  *arp_pkt_start;
+
+    if (arp_hdr == NULL || pkt_len == NULL)
+    {
+        assert(0);
+        return NULL;
+    }
+
+    assert((data == NULL && data_len == 0) ||
+           (data != NULL && data_len != 0));
+
+    /* Allocate memory under ARP packet */
+#define ARP_FIELD_SIZE(fld_) sizeof(arp_hdr->fld_)
+    arp_pkt_len = ARP_FIELD_SIZE(hard_type) + ARP_FIELD_SIZE(proto_type) +
+                  ARP_FIELD_SIZE(hard_size) + ARP_FIELD_SIZE(proto_size) +
+                  ARP_FIELD_SIZE(op_code) + arp_hdr->hard_size * 2 +
+                  arp_hdr->proto_size * 2 + data_len;
+#undef ARP_FIELD_SIZE
+
+    if ((arp_pkt_start = arp_pkt = (uint8_t *)malloc(arp_pkt_len)) == NULL)
+        return NULL;
+
+#define ARP_FILL_SHORT_VAR(fld_) \
+    do {                                                \
+        short_var = htons(arp_hdr->fld_);               \
+        memcpy(arp_pkt, &short_var, sizeof(short_var)); \
+        arp_pkt += sizeof(short_var);                   \
+    } while (0)
+
+    ARP_FILL_SHORT_VAR(hard_type);
+    ARP_FILL_SHORT_VAR(proto_type);
+
+    *(arp_pkt++) = arp_hdr->hard_size;
+    *(arp_pkt++) = arp_hdr->proto_size;
+
+    ARP_FILL_SHORT_VAR(op_code);
+
+#undef ARP_FILL_SHORT_VAR
+
+#define ARP_FILL_ARRAY(fld_, size_fld_) \
+   do {                                \
+        memcpy(arp_pkt, arp_hdr->fld_, \
+               arp_hdr->size_fld_);    \
+        arp_pkt += arp_hdr->size_fld_; \
+    } while (0)
+
+    ARP_FILL_ARRAY(snd_hw_addr, hard_size);
+    ARP_FILL_ARRAY(snd_proto_addr, proto_size);
+    ARP_FILL_ARRAY(tgt_hw_addr, hard_size);
+    ARP_FILL_ARRAY(tgt_proto_addr, proto_size);
+
+#undef ARP_FILL_ARRAY
+    if (data != NULL)
+    {
+        memcpy(arp_pkt, data, data_len);
+        arp_pkt += data_len;
+    }
+
+    assert((arp_pkt - arp_pkt_start) == arp_pkt_len);
+
+    *pkt_len = arp_pkt_len;
+
+    return arp_pkt_start;
 }
