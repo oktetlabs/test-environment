@@ -377,6 +377,10 @@ if test -n "$BUILDER" ; then
     fi
 fi
 
+if test -n ${SUITE_SOURCES} ; then
+    te_build_suite `basename ${SUITE_SOURCES}` $SUITE_SOURCES
+fi    
+
 cd ${STARTING_DIR}
 
 rm -f valgrind.* vg.*
