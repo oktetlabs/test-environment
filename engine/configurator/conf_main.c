@@ -526,7 +526,7 @@ process_backup(cfg_backup_msg *msg)
                 return;
             sprintf(tmp_buf, "diff %s %s >/dev/null 2>&1", msg->filename, 
                              filename);
-            msg->rc = system(tmp_buf) == 0 ? 0 : ETEBACKUP;
+            msg->rc = ((system(tmp_buf) == 0) ? 0 : ETEBACKUP);
         }
     }
 }
