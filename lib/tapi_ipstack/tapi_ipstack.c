@@ -23,6 +23,8 @@
 
 #include "rcf_api.h"
 #include "conf_api.h"
+#include "logger_api.h"
+
 #include "tapi_ipstack.h"
 #include "ndn_ipstack.h"
 
@@ -212,7 +214,7 @@ tapi_udp4_csap_create(const char *ta_name, int sid,
     {
         mktemp(csap_fname); 
         rc = asn_save_to_file(csap_spec, csap_fname);
-        printf ("TAPI: udp create csap, save to file %s, rc: %x\n", 
+        VERB("TAPI: udp create csap, save to file %s, rc: %x\n", 
                 csap_fname, rc); 
     }
 
