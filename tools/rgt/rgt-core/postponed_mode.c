@@ -127,7 +127,7 @@ print_ts(FILE *fd, uint32_t *ts)
     struct tm  tm, *tm_tmp;
     size_t     res;
     
-    if ((tm_tmp = gmtime((time_t *)&(ts[0]))) == NULL)
+    if ((tm_tmp = localtime((time_t *)&(ts[0]))) == NULL)
     {
         fprintf(stderr, "Incorrect timestamp specified\n");
         THROW_EXCEPTION;
