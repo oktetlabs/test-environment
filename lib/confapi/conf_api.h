@@ -400,8 +400,9 @@ cfg_add_instance_child_fmt(cfg_handle *p_handle, cfg_val_type type,
     va_list     ap;
     int         rc;
     char       *parent_oid;
-    char        oid_fmt[CFG_OID_MAX];
-    char        oid[CFG_OID_MAX];
+    char       *oid_fmt;
+    char       *oid;
+
 
     if (suboid_fmt == NULL)
         return TE_RC(TE_CONF_API, EINVAL);
@@ -411,14 +412,34 @@ cfg_add_instance_child_fmt(cfg_handle *p_handle, cfg_val_type type,
         return rc;
     assert(parent_oid != NULL);
 
-    snprintf(oid_fmt, sizeof(oid_fmt), "%s%s", parent_oid, suboid_fmt);
+    oid_fmt = malloc(CFG_OID_MAX);
+    if (oid_fmt == NULL)
+    {
+        free(parent_oid);
+        return TE_RC(TE_CONF_API, ENOMEM);
+    }
+    oid = malloc(CFG_OID_MAX);
+    if (oid == NULL)
+    {
+        free(oid_fmt);
+        free(parent_oid);
+        return TE_RC(TE_CONF_API, ENOMEM);
+    }
+
+    snprintf(oid_fmt, CFG_OID_MAX, "%s%s", parent_oid, suboid_fmt);
     free(parent_oid);
 
     va_start(ap, suboid_fmt);
-    vsnprintf(oid, sizeof(oid), oid_fmt, ap);
+    vsnprintf(oid, CFG_OID_MAX, oid_fmt, ap);
     va_end(ap);
 
-    return cfg_add_instance_str(oid, p_handle, type, val);
+    free(oid_fmt);
+
+    rc = cfg_add_instance_str(oid, p_handle, type, val);
+
+    free(oid);
+
+    return rc;
 }
 
 /**

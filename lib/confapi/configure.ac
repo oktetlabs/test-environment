@@ -28,6 +28,7 @@ AC_CONFIG_HEADERS([config.h])
 
 AC_CHECK_HEADERS([\
 pthread.h \
+stdarg.h \
 string.h \
 strings.h \
 sys/socket.h \
