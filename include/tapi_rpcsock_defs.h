@@ -864,6 +864,70 @@ transmit_file_flags_rpc2h(rpc_transmit_file_flags flags)
 }
 
 /**
+ * TA-independent SERVICETYPE flags. 
+ */
+typedef enum rpc_servicetype_flags {
+    RPC_SERVICETYPE_NOTRAFFIC             = 0x00000000,
+    RPC_SERVICETYPE_BESTEFFORT            = 0x00000001,
+    RPC_SERVICETYPE_CONTROLLEDLOAD        = 0x00000002,
+    RPC_SERVICETYPE_GUARANTEED            = 0x00000003,
+    RPC_SERVICETYPE_NETWORK_UNAVAILABLE   = 0x00000004,
+    RPC_SERVICETYPE_GENERAL_INFORMATION   = 0x00000005,
+    RPC_SERVICETYPE_NOCHANGE              = 0x00000006,
+    RPC_SERVICETYPE_NONCONFORMING         = 0x00000009,
+    RPC_SERVICETYPE_NETWORK_CONTROL       = 0x0000000A,
+    RPC_SERVICETYPE_QUALITATIVE           = 0x0000000D,
+    RPC_SERVICE_NO_TRAFFIC_CONTROL        = 0x81000000,
+    RPC_SERVICE_NO_QOS_SIGNALING          = 0x40000000
+} rpc_servicetype_flags;
+
+#ifndef SERVICETYPE_NOTRAFFIC
+#define SERVICETYPE                         int
+#define SERVICETYPE_NOTRAFFIC               0
+#define SERVICETYPE_BESTEFFORT              0
+#define SERVICETYPE_CONTROLLEDLOAD          0
+#define SERVICETYPE_GUARANTEED              0
+#define SERVICETYPE_NETWORK_UNAVAILABLE     0
+#define SERVICETYPE_GENERAL_INFORMATION     0
+#define SERVICETYPE_NOCHANGE                0
+#define SERVICETYPE_NONCONFORMING           0
+#define SERVICETYPE_NETWORK_CONTROL         0
+#define SERVICETYPE_QUALITATIVE             0
+#define SERVICE_NO_TRAFFIC_CONTROL          0
+#define SERVICE_NO_QOS_SIGNALING            0
+#endif
+
+static inline SERVICETYPE
+servicetype_flags_rpc2h(rpc_servicetype_flags flags)
+{
+    return (SERVICETYPE)
+        (!!(flags & RPC_SERVICETYPE_NOTRAFFIC)
+            * SERVICETYPE_NOTRAFFIC) |
+        (!!(flags & RPC_SERVICETYPE_BESTEFFORT)
+            * SERVICETYPE_BESTEFFORT) |
+        (!!(flags & RPC_SERVICETYPE_CONTROLLEDLOAD)
+            * SERVICETYPE_CONTROLLEDLOAD) |
+        (!!(flags & RPC_SERVICETYPE_GUARANTEED)
+            * SERVICETYPE_GUARANTEED) |
+        (!!(flags & RPC_SERVICETYPE_NETWORK_UNAVAILABLE)
+            * SERVICETYPE_NETWORK_UNAVAILABLE) |
+        (!!(flags & RPC_SERVICETYPE_GENERAL_INFORMATION)
+            * SERVICETYPE_GENERAL_INFORMATION) |
+        (!!(flags & RPC_SERVICETYPE_NOCHANGE)
+            * SERVICETYPE_NOCHANGE) |
+        (!!(flags & RPC_SERVICETYPE_NONCONFORMING)
+            * SERVICETYPE_NONCONFORMING) |
+        (!!(flags & RPC_SERVICETYPE_NETWORK_CONTROL)
+            * SERVICETYPE_NETWORK_CONTROL) |
+        (!!(flags & RPC_SERVICETYPE_QUALITATIVE)
+            * SERVICETYPE_QUALITATIVE) |
+        (!!(flags & RPC_SERVICE_NO_TRAFFIC_CONTROL)
+            * SERVICE_NO_TRAFFIC_CONTROL) |
+        (!!(flags & RPC_SERVICE_NO_QOS_SIGNALING)
+            * SERVICE_NO_QOS_SIGNALING);
+}
+
+/**
  * send_recv_flags_rpc2str()
  */
 RPCBITMAP2STR(send_recv_flags, SEND_RECV_FLAGS_MAPPING_LIST)
