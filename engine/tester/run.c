@@ -1603,8 +1603,8 @@ iterate_test(tester_ctx *ctx, run_item *test,
         if (rc != 0)
         {
             ERROR("cfg_release_backup() failed: %X", rc);
-            if (TEST_RESULT(test_result))
-                test_result = rc;
+            if (TEST_RESULT(all_result))
+                all_result = rc;
         }
     }
 
