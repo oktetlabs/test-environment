@@ -58,6 +58,8 @@
 #define FTP_PORT                21
 #define FTP_DATA_PORT           20
 
+#define FTP_USER_PORT           30002
+
 static void
 sigint_handler(int n)
 {
@@ -240,9 +242,16 @@ ftp_open(char *uri, int flags, int passive, int offset)
     char *str;
     int   s;
     int   sd = -1;
+    int   sd1 = -1;
     int   i;
+    int   temp;
+    
+    unsigned char    inaddr[4];
+    unsigned char    portaddr[2];
     
     struct sockaddr_in addr;
+    struct sockaddr_in addr1;
+    socklen_t          addr1_len;
     
     char user[FTP_TEST_LOGIN_MAX];
     char passwd[FTP_TEST_PASSWD_MAX];
@@ -304,11 +313,36 @@ ftp_open(char *uri, int flags, int passive, int offset)
         return -1;
     }
     
+    /* Determine parameters for PORT command */
+    if (!(passive))
+    {
+
+        if (getsockname(s, (struct sockaddr *)&addr1, &addr1_len) < 0)
+        {
+            ERROR("getsockname() failed %d", errno);
+            close(s);
+            return -1;
+        }
+        temp = addr1.sin_addr.s_addr;
+        for (i = 0; i < 4; i++)
+        {
+            inaddr[i] = temp % 256;
+            temp = temp / 256;
+        }
+        portaddr[1] = FTP_USER_PORT % 256;
+        portaddr[0] = FTP_USER_PORT / 256;
+    }
+
     /* Read greeting */
     read(s, buf, sizeof(buf));
     CMD("USER %s\n", user);
     CMD("PASS %s\n", passwd);
-    CMD("PASV\n");
+    if (passive)
+        CMD("PASV\n");
+    else
+        PUT_CMD("PORT %d,%d,%d,%d,%d,%d",
+                 inaddr[0], inaddr[1], inaddr[2], inaddr[3],
+                 portaddr[0], portaddr[1]);
     
     if ((str = strchr(buf, '(')) == NULL)
     {
@@ -333,16 +367,53 @@ ftp_open(char *uri, int flags, int passive, int offset)
     else
         PUT_CMD("STOR %s\n", file);
     
-    sd = socket(AF_INET, SOCK_STREAM, 0);
-    if (connect(sd, (struct sockaddr *)&addr, sizeof(addr)) < 0)
+    if (passive)
     {
-        ERROR("connect() 2 failed %d", errno);
-        close(sd);
-        close(s);
-        return -1;
+        sd = socket(AF_INET, SOCK_STREAM, 0);
+        if (connect(sd, (struct sockaddr *)&addr, sizeof(addr)) < 0)
+        {
+             ERROR("connect() 2 failed %d", errno);
+             close(sd);
+             close(s);
+             return -1;
+        }
+    }
+    else
+    {
+        sd1 = socket(AF_INET, SOCK_STREAM, 0);
+ 
+        memset(&addr1, 0, sizeof(addr1));
+        addr1.sin_family = AF_INET;
+        addr1.sin_port = htons(FTP_USER_PORT);
+
+        if( bind(sd1, (struct sockaddr *)&addr1, sizeof(addr1)) < 0)
+        {
+            ERROR(" bind() failed %d", errno);
+            close(sd1);
+            close(s);
+            return -1;
+        }
+        
+        if (listen(sd1, 1) < 0)
+        {
+            ERROR(" listen() failed %d", errno);
+            close(sd1);
+            close(s);
+            return -1;
+        }
+
+        if ( (sd = accept(sd1, NULL, NULL)) < 0)
+        {
+            printf("error accept() failed %d", errno);
+            close(sd1);
+            close(s);
+            return -1;
+        }  
     }
     READ_ANS;
     close(s);
+    if (!(passive))
+        close(sd1);
     return sd;
     
 #undef READ_ANS
