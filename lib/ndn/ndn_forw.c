@@ -35,24 +35,6 @@
 
 
 
-asn_type ndn_eth_address_s =
-{
-    "Ethernet-Address", 
-    {PRIVATE, 500}, OCT_STRING, 
-    6, {NULL}
-};
-
-const asn_type * const ndn_eth_address = &ndn_eth_address_s;
-
-NDN_DATA_UNIT_TYPE (eth_address, ndn_eth_address_s, Ethernet-Address ) 
-
-
-static asn_enum_entry_t _ndn_vlan_cfi_enum_entries[] = 
-{
-    {"false", 0},
-    {"true", 1},
-}; 
-
 
 /*
 Forwarder-Action-Delay-Params ::= SEQUENCE {
