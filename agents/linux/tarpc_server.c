@@ -597,7 +597,7 @@ _rpc_is_op_done_1_svc(tarpc_rpc_is_op_done_in  *in,
 
     memset(out, 0, sizeof(*out));
 
-    if ((is_done != NULL) && (in->common.op != RCF_RPC_IS_DONE))
+    if ((is_done != NULL) && (in->common.op == RCF_RPC_IS_DONE))
     {
         out->common._errno = 0;
         out->common.done = (*is_done) ? in->common.done : 0;
