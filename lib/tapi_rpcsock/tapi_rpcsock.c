@@ -3991,30 +3991,61 @@ rpc_ioctl(rcf_rpc_server *handle,
             switch (request)
             {
                 case RPC_SIOCGARP:
+                case RPC_SIOCSARP:
                 {
+                    static char flags[10];
+                    int arp_flags = ((struct arpreq *)arg)->arp_flags;
+
                     snprintf(arpreq_buf + strlen(arpreq_buf),
                              sizeof(arpreq_buf) - strlen(arpreq_buf),
-                             "get: ");
+                             "get/set: ");
                     snprintf(arpreq_buf + strlen(arpreq_buf),
                              sizeof(arpreq_buf) - strlen(arpreq_buf),
                              "protocol address %s, ",
                               inet_ntoa(SIN(&(((struct arpreq *)arg)->
                                             arp_pa))->sin_addr));
-                     snprintf(arpreq_buf + strlen(arpreq_buf),
+                    snprintf(arpreq_buf + strlen(arpreq_buf),
                              sizeof(arpreq_buf) - strlen(arpreq_buf),
-                             "HW address: %02x:%02x:%02x:%02x:%02x:%02x ",
+                             "HW address: family %d, "
+                             "addr %02x:%02x:%02x:%02x:%02x:%02x ",
+                             ((struct arpreq *)arg)->arp_ha.sa_family,
                              (unsigned char)((struct arpreq *)arg)->arp_ha.sa_data[0],
                              (unsigned char)((struct arpreq *)arg)->arp_ha.sa_data[1],
                              (unsigned char)((struct arpreq *)arg)->arp_ha.sa_data[2],
                              (unsigned char)((struct arpreq *)arg)->arp_ha.sa_data[3],
                              (unsigned char)((struct arpreq *)arg)->arp_ha.sa_data[4],
                              (unsigned char)((struct arpreq *)arg)->arp_ha.sa_data[5]);
+                    {
+                         if (arp_flags & ATF_COM)
+                             strcat(flags, "C");
+                         if (arp_flags & ATF_PERM)
+                             strcat(flags, "M");
+                         if (arp_flags & ATF_PUBL)
+                             strcat(flags, "P");
+                         if (arp_flags & ATF_MAGIC)
+                             strcat(flags, "A");
+                         if (arp_flags & ATF_DONTPUB)
+                             strcat(flags, "!");
+                         if (arp_flags & ATF_USETRAILERS)
+                             strcat(flags, "T");
+                    }
+                    snprintf(arpreq_buf + strlen(arpreq_buf),
+                             sizeof(arpreq_buf) - strlen(arpreq_buf),
+                             "arp flags %s", flags);     
                     break;
                 }
-                case RPC_SIOCSARP:
                 case RPC_SIOCDARP:
-                    req_val = "";
-                    break;
+                {
+                     snprintf(arpreq_buf + strlen(arpreq_buf),
+                             sizeof(arpreq_buf) - strlen(arpreq_buf),
+                             "delete: ");
+                    snprintf(arpreq_buf + strlen(arpreq_buf),
+                             sizeof(arpreq_buf) - strlen(arpreq_buf),
+                             "protocol address %s, ",
+                              inet_ntoa(SIN(&(((struct arpreq *)arg)->
+                                            arp_pa))->sin_addr));
+                    break; 
+                }
                 default:
                     req_val = " unknown request ";
             }
