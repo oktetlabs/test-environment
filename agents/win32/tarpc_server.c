@@ -2569,7 +2569,7 @@ _create_window_1_svc(tarpc_create_window_in *in, tarpc_create_window_out *out,
 
         if (!RegisterClassEx(&wcex))
         {
-            printf("Failed to register class\n");
+            ERROR("Failed to register class\n");
             out->hwnd = 0;
             return TRUE;
         }

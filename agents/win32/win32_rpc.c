@@ -52,6 +52,8 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 
+#undef ERROR
+
 #include "te_defs.h"
 #include "te_errno.h"
 #include "comm_agent.h"
@@ -66,17 +68,12 @@
 #define TA_RPC_INSIDE
 #include "ta_rpc_log.h"
 
-/** Maximum length of the pipe address */
-#define PIPENAME_LEN    sizeof(((struct sockaddr_un *)0)->sun_path)
-
 /** Structure corresponding to one RPC server */
 typedef struct srv {
     struct srv *next;   /**< Next server */
     char        name[RCF_RPC_NAME_LEN]; /**< Name of the server */
     int         pid;    /**< Process identifier */
-    char        pipename[PIPENAME_LEN]; 
-                        /**< Name of the pipe to interact with the server */
-    int         sock;   /**< Pipe itself */
+    int         sock;   /**< Socket to interact with the server */
 } srv;
 
 
@@ -84,7 +81,6 @@ typedef struct srv {
 #define RELEASE_SRV(_s) \
     do {                        \
         close((_s)->sock);      \
-        unlink((_s)->pipename); \
         free(_s);               \
     } while (0)
 
@@ -118,84 +114,46 @@ sigset_t rpcs_received_signals;
 #define TARPC_SERVER_MAP_SIZE   256
 
 typedef struct srv_tcp_mapping {
-    char            name[TARPC_SERVER_NAME_LEN];
-    unsigned short  port;
+    int            pid;
+    unsigned short port;
 } srv_tcp_mapping;
 
 /* Mapping table between AF_UNIX and AF_INET sockets */
 static srv_tcp_mapping  srv_tcp_map[TARPC_SERVER_MAP_SIZE];
 
-static int              srv_tcp_map_initialized = 0;
-
-
-/* Add mapping record between AF_UNIX and AF_INET sockets */
+/* Add mapping record between pid and RPC server port */
 static int
-tarpc_server_mapping_add(char *name, unsigned short port)
+tarpc_server_mapping_add(int pid, unsigned short port)
 {
     int map_no;
-    if (!srv_tcp_map_initialized) {
-        for (map_no = 0; map_no < TARPC_SERVER_MAP_SIZE; map_no++)
-        {
-            *(srv_tcp_map[map_no].name) = '\0';
-            srv_tcp_map[map_no].port = 0;
-        }
-        srv_tcp_map_initialized++;
-    }
     
     for (map_no = 0; map_no < TARPC_SERVER_MAP_SIZE; map_no++)
-        if (srv_tcp_map[map_no].port == 0)
+        if (srv_tcp_map[map_no].pid == 0)
             break;
 
     if (map_no >= TARPC_SERVER_MAP_SIZE)
         return TE_RC(TE_TA_WIN32, ETOOMANY);
 
-    strncpy(srv_tcp_map[map_no].name, name, TARPC_SERVER_NAME_LEN);
+    srv_tcp_map[map_no].pid = pid;
     srv_tcp_map[map_no].port = port;
-    
-    return 0;
-}
-
-/* Delete mapping record between AF_UNIX and AF_INET sockets */
-static int
-tarpc_server_mapping_del(char *name)
-{
-    int map_no;
-    if (!srv_tcp_map_initialized) {
-        return TE_RC(TE_TA_WIN32, EINVAL);
-    }
-
-    for (map_no = 0; map_no < TARPC_SERVER_MAP_SIZE; map_no++)
-        if ((srv_tcp_map[map_no].port != 0) &&
-            (strncmp(name, srv_tcp_map[map_no].name, TARPC_SERVER_NAME_LEN) == 0))
-            break;
-
-    if (map_no >= TARPC_SERVER_MAP_SIZE)
-        return TE_RC(TE_TA_WIN32, EINVAL);
-
-    srv_tcp_map[map_no].port = 0;
-    *(srv_tcp_map[map_no].name) = '\0';
     
     return 0;
 }
 
 /* Lookup for mapping between AF_UNIX and AF_INET sockets */
 static unsigned short
-tarpc_server_mapping_lookup(char *name)
+tarpc_server_mapping_lookup(int pid)
 {
     int map_no;
-    if (!srv_tcp_map_initialized) {
-        return 0;
-    }
     
     for (map_no = 0; map_no < TARPC_SERVER_MAP_SIZE; map_no++)
-        if ((srv_tcp_map[map_no].port != 0) &&
-            (strncmp(name, srv_tcp_map[map_no].name, TARPC_SERVER_NAME_LEN) == 0))
+        if (srv_tcp_map[map_no].pid == pid)
             break;
 
     if (map_no >= TARPC_SERVER_MAP_SIZE)
-    {
         return 0;
-    }
+
+    srv_tcp_map[map_no].pid = 0;
 
     return srv_tcp_map[map_no].port;
 }
@@ -340,15 +298,13 @@ tarpc_add_server(char *name, int pid)
     
     srv *tmp;
     int  tries = MAX_CONNECT_TRIES;
-
+    
     if ((tmp = calloc(1, sizeof(srv))) == NULL)
     {
         ERROR("calloc() failed");
         return TE_RC(TE_TA_WIN32, ENOMEM);
     }
     strcpy(tmp->name, name);
-
-    sprintf(tmp->pipename, "/tmp/%s_%u", name, ta_pid);
 
     if ((tmp->sock = socket(AF_INET, SOCK_STREAM, 0)) < 0)
     {
@@ -376,7 +332,7 @@ tarpc_add_server(char *name, int pid)
     memset(&addr, 0, sizeof (addr));
     addr.sin_family = AF_INET;
     addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-    addr.sin_port = htons(tarpc_server_mapping_lookup(tmp->pipename));
+    addr.sin_port = htons(tarpc_server_mapping_lookup(pid));
 
     if (addr.sin_port == 0)
         return TE_RC(TE_TA_WIN32, EINVAL);
@@ -480,7 +436,7 @@ static void
 sigint_handler(int s)
 {
     UNUSED(s);
-    exit(1);
+    exit(0);
 }
 
 /**
@@ -493,7 +449,6 @@ void *
 tarpc_server(void *arg)
 {
     SVCXPRT *transp;
-    char     pipename[PIPENAME_LEN] = { 0, };
     int      sock;
 
     struct sockaddr_in addr;
@@ -501,6 +456,8 @@ tarpc_server(void *arg)
 
     tarpc_in_arg  arg1;
     tarpc_in_arg *in = &arg1;
+    
+    signal(SIGINT, sigint_handler);
     
     memset(&arg1, 0, sizeof(arg1));
     strcpy(arg1.name, (char *)arg);
@@ -510,10 +467,8 @@ tarpc_server(void *arg)
                     (int)getpid(), (unsigned int)pthread_self());
 
     sigemptyset(&rpcs_received_signals);
-    signal(SIGINT, sigint_handler);
     
     pmap_unset(tarpc, ver0);
-    sprintf(pipename, "/tmp/%s_%u", (char *)arg, ta_pid);
 
     pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
@@ -540,27 +495,25 @@ tarpc_server(void *arg)
         return NULL;
     }
     
-    if (send(ta_rpc_sync_socks[1], &(addr.sin_port), sizeof(addr.sin_port), 0) < 0)
+    if (send(ta_rpc_sync_socks[1], &(addr.sin_port), 
+             sizeof(addr.sin_port), 0) < 0)
     {
         close(sock);
         close(ta_rpc_sync_socks[1]);
         return NULL;
     }
-
+    usleep(10000);
     close(ta_rpc_sync_socks[1]);
 
     if (!svc_register(transp, tarpc, ver0, tarpc_1, 0))
     {
         close(sock);
-        tarpc_server_mapping_del(pipename);
         RPC_LGR_MESSAGE(TE_LL_ERROR, "svc_register() failed");
         return NULL;
     }
-    
+
     svc_run();
     
-    printf("exit!\n");
-
     exit(0);
 }
 
@@ -629,7 +582,6 @@ tarpc_server_create(char *name)
         struct timeval tv;
         fd_set sync_fds;
         unsigned short port;
-        char pipename[PIPENAME_LEN] = { 0, };
 
         FD_ZERO(&sync_fds);
         FD_SET(ta_rpc_sync_socks[0], &sync_fds);
@@ -650,10 +602,8 @@ tarpc_server_create(char *name)
         close(ta_rpc_sync_socks[0]);
         close(ta_rpc_sync_socks[1]);
         
-        sprintf(pipename, "/tmp/%s_%u", name, ta_pid);
-        if (tarpc_server_mapping_add(pipename, ntohs(port)) != 0) {
+        if (tarpc_server_mapping_add(pid, ntohs(port)) != 0)
             return -1;
-        }
     }
     
     VERB("RPC Server '%s' is created", name);

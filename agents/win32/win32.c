@@ -39,9 +39,6 @@
 #endif
 #include <sys/types.h>
 #include <sys/wait.h>
-#if 0
-#include <sys/socket.h>
-#endif
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -50,6 +47,8 @@
 #include <signal.h>
 #include <string.h>
 #include <sys/un.h>
+
+#undef ERROR
 
 #include "te_defs.h"
 #include "te_errno.h"
@@ -453,6 +452,8 @@ rcf_ch_start_task(struct rcf_comm_connection *handle,
 {
     void *addr = rcf_ch_symbol_addr(rtn, TRUE);
     int   pid;
+    
+    UNUSED(priority);
 
     VERB("Start task handler is executed");
 
@@ -518,7 +519,7 @@ rcf_ch_kill_task(struct rcf_comm_connection *handle,
                  char *cbuf, size_t buflen, size_t answer_plen,
                  unsigned int pid)
 {
-#if 0    
+#if 1    
     kill(pid, SIGTERM); 
     kill(pid, SIGKILL); 
 #endif    
@@ -685,9 +686,12 @@ WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance,
     char  cmd[256] = { 0, };
     char *tmp;
 
-    WSADATA data;                               
+    WSADATA data;
 
     WSAStartup(MAKEWORD(2,2), &data);
+    
+    UNUSED(hPrevInstance);
+    UNUSED(nCmdShow);
     
     ta_hinstance = hinstance;
     
@@ -734,8 +738,6 @@ WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance,
             retval = rc;
     }
     
-    printf("I'm exit\n");
-
     return retval;
 }
 
