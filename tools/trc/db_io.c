@@ -646,6 +646,11 @@ trc_dump_db(const char *filename)
         ERROR("xmlSaveFormatFileEnc(%s) failed", filename);
         return EINVAL;
     }
+    else
+    {
+        printf("DB '%s' with expected testing results has been updated",
+               filename);
+    }
 
     return 0;
 }
