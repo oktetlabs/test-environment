@@ -21,8 +21,8 @@ libipc_la_SOURCES = client.c portmap_common.c ipc_common.c
 
 
 install-exec-hook:
-	touch -c -r .libs/libipc.a $(DESTDIR)/$(prefix)/lib/libipc.a
-	touch -c -r .libs/libipcserver.a $(DESTDIR)/$(prefix)/lib/libipcserver.a
+	touch -c -r .libs/libipc.la $(DESTDIR)/$(prefix)/lib/libipc.*
+	touch -c -r .libs/libipcserver.la $(DESTDIR)/$(prefix)/lib/libipcserver.*
 
 install-data-hook:
 	for i in $(include_HEADERS) ; do \

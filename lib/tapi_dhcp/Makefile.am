@@ -27,7 +27,7 @@ libtapi_dhcp_la_SOURCES=tapi_dhcp.c
 
 
 install-exec-hook:
-	touch -c -r .libs/libtapi_dhcp.a $(DESTDIR)/$(prefix)/lib/libtapi_dhcp.a
+	touch -c -r .libs/libtapi_dhcp.la $(DESTDIR)/$(prefix)/lib/libtapi_dhcp.*
 
 install-data-hook:
 	for i in $(include_HEADERS) ; do \

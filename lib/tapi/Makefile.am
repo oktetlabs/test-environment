@@ -19,9 +19,7 @@ libtapi_la_SOURCES = tapi_bufs.c tapi_tad.c tapi_cfg.c tapi_cfg_net.c \
 
 
 install-exec-hook:
-	for i in $(lib_LIBRARIES) ; do \
-	    touch -c -r .libs/$$i $(DESTDIR)/$(prefix)/lib/$$i ; \
-	done
+	touch -c -r .libs/libtapi.la $(DESTDIR)/$(prefix)/lib/libtapi.*
 
 install-data-hook:
 	for i in $(include_HEADERS) ; do \

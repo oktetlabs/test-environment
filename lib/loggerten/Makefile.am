@@ -17,7 +17,7 @@ liblogger_ten_la_SOURCES = logger_ten.c
 
 
 install-exec-hook:
-	touch -c -r .libs/liblogger_ten.a ${prefix}/lib/liblogger_ten.a
+	touch -c -r .libs/liblogger_ten.la ${prefix}/lib/liblogger_ten.*
 
 install-data-hook:
 	for i in $(include_HEADERS) ; do \

@@ -15,7 +15,7 @@ libtapi_eth_la_SOURCES=tapi_eth.c
 
 
 install-exec-hook:
-	touch -c -r .libs/libtapi_eth.a $(DESTDIR)/$(prefix)/lib/libtapi_eth.a
+	touch -c -r .libs/libtapi_eth.la $(DESTDIR)/$(prefix)/lib/libtapi_eth.*
 
 install-data-hook:
 	for i in $(include_HEADERS) ; do \

@@ -31,7 +31,8 @@ tarpc_xdr.c: tarpc.h
 	mv tarpc_xdr.c.new tarpc_xdr.c
 
 install-exec-hook:
-	touch -c -r .libs/libtapi_rpcsock.a $(DESTDIR)/$(prefix)/lib/libtapi_rpcsock.a
+	touch -c -r .libs/libtapi_rpcsock.la \
+		$(DESTDIR)/$(prefix)/lib/libtapi_rpcsock.*
 
 install-data-hook:
 	for i in $(include_HEADERS) ; do \

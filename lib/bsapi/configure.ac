@@ -2,18 +2,17 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.53)
-AC_INIT(bsapi,  0.01, Elena.Vengerova@oktetlabs.ru)
+AC_INIT([bsapi],  0.01, Elena.Vengerova@oktetlabs.ru)
 
 AC_CONFIG_SRCDIR([bsapi.c])
 
 AC_CONFIG_AUX_DIR(../../aux)
 
-AM_INIT_AUTOMAKE
+AM_INIT_AUTOMAKE([foreign -Wall])
 
 # Checks for programs.
 AC_PROG_CC
-AC_PROG_RANLIB
-
+AC_PROG_LIBTOOL
 AC_PROG_INSTALL
 
 AC_CHECK_TOOL(AR, ar)

@@ -33,7 +33,7 @@ tarpc_xdr.c: tarpc.h
 
 
 install-exec-hook:
-	touch -c -r .libs/librcfrpc.a $(DESTDIR)/$(prefix)/lib/librcfrpc.a
+	touch -c -r .libs/librcfrpc.la $(DESTDIR)/$(prefix)/lib/librcfrpc.*
 
 install-data-hook:
 	for i in $(include_HEADERS) ; do \

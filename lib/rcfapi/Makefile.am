@@ -13,7 +13,7 @@ librcfapi_la_SOURCES=rcf_api.c
 
 
 install-exec-hook:
-	touch -c -r .libs/librcfapi.a $(DESTDIR)/$(prefix)/lib/librcfapi.a
+	touch -c -r .libs/librcfapi.la $(DESTDIR)/$(prefix)/lib/librcfapi.*
 
 install-data-hook:
 	for i in $(include_HEADERS) ; do \

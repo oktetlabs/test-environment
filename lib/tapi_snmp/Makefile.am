@@ -28,7 +28,7 @@ LDFLAGS=-static
 
 
 install-exec-hook:
-	touch -c -r .libs/libtapi_snmp.a $(DESTDIR)/$(prefix)/lib/libtapi_snmp.a
+	touch -c -r .libs/libtapi_snmp.la $(DESTDIR)/$(prefix)/lib/libtapi_snmp.*
 
 install-data-hook:
 	for i in $(include_HEADERS) ; do \

@@ -15,8 +15,8 @@ libtapi_ipstack_la_SOURCES=tapi_ipstack.c
 
 
 install-exec-hook:
-	touch -c -r .libs/libtapi_ipstack.a \
-		$(DESTDIR)/$(prefix)/lib/libtapi_ipstack.a
+	touch -c -r .libs/libtapi_ipstack.la \
+		$(DESTDIR)/$(prefix)/lib/libtapi_ipstack.*
 
 install-data-hook:
 	for i in $(include_HEADERS) ; do \
