@@ -74,6 +74,8 @@ usage()
     echo -e '  --tester-suite=[NAME:PATH]'\\t'Specify location of Test Sutie sources.'
     echo -e '  --tester-req=[REQ|!REQ]'\\t'Requirement to be tested (or excluded,'
     echo -e \\t\\t\\t\\t'if its first symbol is !).'
+    echo -e '  --tester-quietskip'\\t\\t'Quietly skip tests which do not meet'
+    echo -e \\t\\t\\t\\t'specified requirements.'
     echo -e '  --tester-run=[PATH]'\\t\\t'Run a test item defined by PATH.'
     echo -e '  --tester-vg=[PATH]'\\t\\t'Run test scripts in specified path under'
     echo -e \\t\\t\\t\\t'valgrind.'

@@ -70,6 +70,7 @@ enum {
     TESTER_OPT_VERSION,
     TESTER_OPT_NO_CS,
     TESTER_OPT_NOCFGTRACK,
+    TESTER_OPT_QUIET_SKIP,
 };
 
 
@@ -478,6 +479,10 @@ process_cmd_line_opts(tester_ctx *ctx, tester_cfgs *cfgs,
           "Requirement to be tested (or excluded, if its first symbol is !).",
           "[REQ|!REQ]" },
 
+        { "quietskip", '\0', POPT_ARG_NONE, NULL, TESTER_OPT_QUIET_SKIP,
+          "Quietly skip tests which do not meet specified requirements.",
+          NULL },
+
         { "run", 'r', POPT_ARG_STRING, NULL, TESTER_OPT_RUN,
           "Run Test Suite with specified arguments.", "PATH" },
 
@@ -564,6 +569,10 @@ process_cmd_line_opts(tester_ctx *ctx, tester_cfgs *cfgs,
 
             case TESTER_OPT_NOCFGTRACK:
                 ctx->flags |= TESTER_NOCFGTRACK;
+                break;
+
+            case TESTER_OPT_QUIET_SKIP:
+                ctx->flags |= TESTER_QUIET_SKIP;
                 break;
 
             case TESTER_OPT_VERBOSE:

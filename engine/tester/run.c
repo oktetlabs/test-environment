@@ -1007,11 +1007,7 @@ run_test_script(tester_ctx *ctx, test_script *script, test_id id,
     }
     free(params_str);
 
-    if (!tester_is_run_required(ctx, &script->reqs, params))
-    {
-        result = ETESTSKIP;
-    }
-    else if (ctx->flags & TESTER_FAKE)
+    if (ctx->flags & TESTER_FAKE)
     {
         result = ETESTFAKE;
     }
@@ -1097,12 +1093,6 @@ run_test_session(tester_ctx *ctx, test_session *session, test_id id,
 
     ENTRY();
 
-    ctx = tester_ctx_clone(ctx);
-    if (ctx == NULL)
-    {
-        ERROR("%s(): tester_ctx_clone() failed", __FUNCTION__);
-        return ENOMEM;
-    }
     ctx->id = id;
 
     /* Create list of iterations */
@@ -1111,13 +1101,11 @@ run_test_session(tester_ctx *ctx, test_session *session, test_id id,
     if (rc != 0)
     {
         ERROR("Failed to create a list of parameters iterations");
-        tester_ctx_free(ctx);
         return rc;
     }
     if (iters.tqh_first == NULL)
     {
         ERROR("Empty list of parameters iterations");
-        tester_ctx_free(ctx);
         return EINVAL;
     }
 
@@ -1211,7 +1199,6 @@ run_test_session(tester_ctx *ctx, test_session *session, test_id id,
     EXIT("%d", result);
 
     test_param_iterations_free(&iters);
-    tester_ctx_free(ctx);
 
     return result;
 }
@@ -1237,34 +1224,16 @@ run_test_package(tester_ctx *ctx, test_package *pkg, test_id id,
 
     assert(!(ctx->flags & TESTER_INLOGUE));
 
-    ctx = tester_ctx_clone(ctx);
-    if (ctx == NULL)
-    {
-        ERROR("%s(): tester_ctx_clone() failed", __FUNCTION__);
-        return ENOMEM;
-    }
     ctx->id = id;
 
-    /* Check requirements */
-    if (tester_is_run_required(ctx, &pkg->reqs, params))
-    {
-        /* Run test session provided by the package */
-        result = run_test_session(ctx, &pkg->session, 
+    /* Run test session provided by the package */
+    result = run_test_session(ctx, &pkg->session, 
 #if 1
-                                  TEST_ID_PKG_MAIN_SESSION,
+                              TEST_ID_PKG_MAIN_SESSION,
 #else
-                                  tester_get_id(),
+                              tester_get_id(),
 #endif
-                                  params);
-    }
-    else
-    {
-        /* Log that test package is skipped because of 'reason' */
-        VERB("Test Package '%s' skipped", pkg->name);
-        result = ETESTSKIP;
-    }
-
-    tester_ctx_free(ctx);
+                              params);
 
     return result;
 }
@@ -1649,17 +1618,6 @@ iterate_test(tester_ctx *ctx, run_item *test,
         if (ctx->path->params.tqh_first != NULL &&
             (~(ctx->flags) & TESTER_INLOGUE))
         {
-#if 0
-            test_ctx = tester_ctx_clone(ctx);
-            if (test_ctx == NULL)
-            {
-                ERROR("%s(): tester_ctx_clone() failed", __FUNCTION__);
-                all_result = ENOMEM;
-                break;
-            }
-            test_ctx_cloned = TRUE;
-#endif
-
             rc = tester_run_path_params_match(test_ctx, &(i->params));
             if (rc != 0)
             {
@@ -1678,47 +1636,79 @@ iterate_test(tester_ctx *ctx, run_item *test,
             }
         }
 
+        if (test->type != RUN_ITEM_SCRIPT)
+        {
+            test_ctx = tester_ctx_clone(ctx);
+            if (test_ctx == NULL)
+            {
+                ERROR("%s(): tester_ctx_clone() failed", __FUNCTION__);
+                all_result = ENOMEM;
+                break;
+            }
+            test_ctx_cloned = TRUE;
+        }
+
+        if ((ctx->flags & TESTER_QUIET_SKIP) &&
+            !tester_is_run_required(ctx, test, &(i->params)))
+        {
+            /* Silently skip without any logs */
+            if (test_ctx_cloned)
+                tester_ctx_free(test_ctx);
+            continue;
+        }
+
         tester_out_start(test->type, tester_run_item_name(test),
                          test_ctx->id, id, test_ctx->flags);
         log_test_start(test, test_ctx->id, id, &(i->params));
 
-        /* Run test with specified parameters */
-        test_result = run_test(test_ctx, test, id, &(i->params));
-        if (!TEST_RESULT(test_result))
+        if ((~ctx->flags & TESTER_QUIET_SKIP) &&
+            !tester_is_run_required(ctx, test, &(i->params)))
         {
-            ERROR("run_test() failed: %X", rc);
+            test_result = ETESTSKIP;
         }
-
-        if (!(ctx->flags & (TESTER_NO_CS | TESTER_NOCFGTRACK)) &&
-            test->attrs.track_conf)
+        else
         {
-            /* Check configuration backup */
-            rc = cfg_verify_backup(backup_name);
-            if (TE_RC_GET_ERROR(rc) == ETEBACKUP)
+            /* Run test with specified parameters */
+            test_result = run_test(test_ctx, test, id, &(i->params));
+            if (!TEST_RESULT(test_result))
             {
-                /* If backup is not OK, restore it */
-                WARN("Current configuration differs from backup - restore");
-                rc = cfg_restore_backup(backup_name);
-                if (rc != 0)
+                ERROR("run_test() failed: %X", rc);
+            }
+
+            if (!(ctx->flags & (TESTER_NO_CS | TESTER_NOCFGTRACK)) &&
+                test->attrs.track_conf)
+            {
+                /* Check configuration backup */
+                rc = cfg_verify_backup(backup_name);
+                if (TE_RC_GET_ERROR(rc) == ETEBACKUP)
                 {
-                    ERROR("Cannot restore configuration backup: %X", rc);
+                    /* If backup is not OK, restore it */
+                    WARN("Current configuration differs from backup - "
+                         "restore");
+                    rc = cfg_restore_backup(backup_name);
+                    if (rc != 0)
+                    {
+                        ERROR("Cannot restore configuration backup: "
+                              "%X", rc);
+                        if (TEST_RESULT(test_result))
+                            test_result = rc;
+                    }
+                    else
+                    {
+                        RING("Configuration successfully restored "
+                             "using backup");
+                        RC_UPDATE(test_result, ETESTCONF);
+                    }
+                }
+                else if (rc != 0)
+                {
+                    ERROR("Cannot verify configuration backup: %X", rc);
                     if (TEST_RESULT(test_result))
                         test_result = rc;
                 }
-                else
-                {
-                    RING("Configuration successfully restored using backup");
-                    RC_UPDATE(test_result, ETESTCONF);
-                }
-            }
-            else if (rc != 0)
-            {
-                ERROR("Cannot verify configuration backup: %X", rc);
-                if (TEST_RESULT(test_result))
-                    test_result = rc;
             }
         }
-        
+
         log_test_result(test_ctx->id, id, test_result);
         tester_out_done(test->type, tester_run_item_name(test),
                         test_ctx->id, id, test_ctx->flags, test_result);

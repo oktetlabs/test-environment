@@ -536,13 +536,16 @@ get_int_prop(xmlNodePtr node, const char *name, int *value)
 /**
  * Get requirement.
  *
- * @param node      Node with requirement
- * @param reqs      List of requirements
+ * @param node          Node with requirement
+ * @param reqs          List of requirements
+ * @param allow_exclude Allow exclude requirements
+ * @param allow_sticky  Allow sticky requirements
  *
  * @return Status code.
  */
 static int
-alloc_and_get_requirement(xmlNodePtr node, test_requirements *reqs)
+alloc_and_get_requirement(xmlNodePtr node, test_requirements *reqs,
+                          te_bool allow_exclude, te_bool allow_sticky)
 {
     int                 rc;
     test_requirement   *p;
@@ -574,12 +577,24 @@ alloc_and_get_requirement(xmlNodePtr node, test_requirements *reqs)
     rc = get_bool_prop(node, "exclude", &p->exclude);
     if (rc != 0 && rc != ENOENT)
         return rc;
+    if (rc == 0 && !allow_exclude)
+    {
+        ERROR("'exclude' requirements are not allowed for packages and "
+              "scripts");
+        return EINVAL;
+    }
 
     /* 'sticky' is optional, default value is false */
     p->sticky = FALSE;
     rc = get_bool_prop(node, "sticky", &p->sticky);
     if (rc != 0 && rc != ENOENT)
         return rc;
+    if (rc == 0 && !allow_sticky)
+    {
+        ERROR("'sticky' requirements are not allowed for "
+              "configurations and scripts");
+        return EINVAL;
+    }
 
     TAILQ_INSERT_TAIL(reqs, p, links);
 
@@ -589,13 +604,16 @@ alloc_and_get_requirement(xmlNodePtr node, test_requirements *reqs)
 /**
  * Get (possibly empty) set of requirements.
  *
- * @param node      Location of the XML node pointer
- * @param reqs      List of requirements to be updated
+ * @param node          Location of the XML node pointer
+ * @param reqs          List of requirements to be updated
+ * @param allow_exclude Allow exclude requirements
+ * @param allow_sticky  Allow sticky requirements
  *
  * @return Status code.
  */
 static int
-get_requirements(xmlNodePtr *node, test_requirements *reqs)
+get_requirements(xmlNodePtr *node, test_requirements *reqs,
+                 te_bool allow_exclude, te_bool allow_sticky)
 {
     int rc;
 
@@ -606,7 +624,8 @@ get_requirements(xmlNodePtr *node, test_requirements *reqs)
     while (*node != NULL &&
            xmlStrcmp((*node)->name, CONST_CHAR2XML("req")) == 0)
     {
-        rc = alloc_and_get_requirement(*node, reqs);
+        rc = alloc_and_get_requirement(*node, reqs,
+                                       allow_exclude, allow_sticky);
         if (rc != 0)
             return rc;
         (*node) = xmlNodeNext(*node);
@@ -693,7 +712,7 @@ get_script(xmlNodePtr node, tester_cfg *cfg, test_script *script,
         node = xmlNodeNext(node);
     }
     /* Get optional set of tested 'requirement's */
-    rc = get_requirements(&node, &script->reqs);
+    rc = get_requirements(&node, &script->reqs, FALSE, FALSE);
     if (rc != 0)
     {
         ERROR("Failed to get requirements of the script '%s'",
@@ -1549,7 +1568,7 @@ get_test_package(xmlNodePtr root, tester_cfg *cfg, test_package *pkg)
     }
 
     /* Information about requirements is optional */
-    rc = get_requirements(&node, &pkg->reqs);
+    rc = get_requirements(&node, &pkg->reqs, FALSE, TRUE);
     if (rc != 0)
     {
         ERROR("Failed to get information about Test Package requirements");
@@ -1692,7 +1711,7 @@ get_tester_config(xmlNodePtr root, tester_cfg *cfg, unsigned int flags)
     }
 
     /* Get optional information about requirements to be tested */
-    rc = get_requirements(&node, &cfg->reqs);
+    rc = get_requirements(&node, &cfg->reqs, TRUE, FALSE);
     if (rc != 0)
     {
         ERROR("Failed to get requirements of the Tester configuration");

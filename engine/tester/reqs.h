@@ -53,6 +53,7 @@ typedef TAILQ_HEAD(test_requirements, test_requirement) test_requirements;
 
 /* Forwards */
 struct tester_ctx;
+struct run_item;
 struct test_params;
 
 
@@ -90,14 +91,14 @@ extern void test_requirements_free(test_requirements *reqs);
  * Determine whether running of the test required.
  *
  * @param ctx       Tester context
- * @param reqs      Requirements coverted by the test
+ * @param test      Test to be checked
  * @param params    List of real test parameters
  *
  * @retval TRUE     Run is required
  * @retval FALSE    Run is not required
  */
 extern te_bool tester_is_run_required(struct tester_ctx *ctx,
-                                      test_requirements *reqs,
+                                      const struct run_item *test,
                                       const struct test_params *params);
 
 #endif /* !__TE_ENGINE_TESTER_REQS_H__ */

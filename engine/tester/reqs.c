@@ -170,7 +170,7 @@ test_requirements_free(test_requirements *reqs)
  * @return Requirement ID.
  */
 static const char *
-req_get(test_requirement *r, const test_params *params)
+req_get(const test_requirement *r, const test_params *params)
 {
     const test_param *p;
 
@@ -190,43 +190,77 @@ req_get(test_requirement *r, const test_params *params)
 
 /* See description in reqs.h */
 te_bool
-tester_is_run_required(tester_ctx *ctx, test_requirements *reqs,
+tester_is_run_required(tester_ctx *ctx, const run_item *test,
                        const test_params *params)
 {
-    te_bool            result = TRUE;
-    test_requirements *targets = &ctx->reqs;
-    test_requirement  *t;
-    test_requirement  *s;
+    te_bool                     result = TRUE;
+    test_requirements          *targets = &ctx->reqs;
+    const test_requirements    *reqs;
+    test_requirement           *t, *tn;
+    const test_requirement     *s;
 
-    for (t = targets->tqh_first; t != NULL; t = t->links.tqe_next)
+    switch (test->type)
     {
+        case RUN_ITEM_SCRIPT:
+            reqs = &test->u.script.reqs;
+            break;
+
+        case RUN_ITEM_SESSION:
+            return TRUE;
+
+        case RUN_ITEM_PACKAGE:
+            reqs = &test->u.package->reqs;
+            break;
+
+        default:
+            assert(FALSE);
+            return FALSE;
+    }
+
+    for (t = targets->tqh_first; t != NULL; t = tn)
+    {
+        tn = t->links.tqe_next;
+
         assert(t->id != NULL);
-        /* 
-         * It's NOT exclude requirement and list of test requirements
-         * is not empty, therefore, one of requirements must be complied.
-         */
-        if (!(t->exclude) && (reqs->tqh_first != NULL))
-            result = FALSE;
+        assert(!t->sticky);
+
         for (s = reqs->tqh_first; s != NULL; s = s->links.tqe_next)
         {
             assert(s->exclude == FALSE);
+            assert((test->type != RUN_ITEM_SCRIPT) || !(s->sticky));
+
+            /* 
+             * It's NOT exclude target requirement and list of non-sticky
+             * test requirementsis not empty, therefore, one of
+             * requirements must be complied.
+             */
+            if (!(t->exclude) && !(s->sticky))
+                result = FALSE;
+
             if (strcmp(t->id, req_get(s, params)) == 0)
             {
                 if (t->exclude)
                 {
-                    WARN("Excluded because of requirement '%s'", t->id);
+                    if (~ctx->flags & TESTER_QUIET_SKIP)
+                        WARN("Excluded because of requirement '%s'", t->id);
                     return FALSE;
                 }
                 else
                 {
                     result = TRUE;
+                    if (s->sticky)
+                    {
+                        /* Remove this target requirement from the list */
+                        TAILQ_REMOVE(targets, t, links);
+                    }
                     break;
                 }
             }
         }
         if (result == FALSE)
         {
-            WARN("No matching requirement for '%s' found", t->id);
+            if (~ctx->flags & TESTER_QUIET_SKIP)
+                WARN("No matching requirement for '%s' found", t->id);
             return FALSE;
         }
     }
