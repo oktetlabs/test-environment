@@ -1,16 +1,29 @@
 
+AM_CPPFLAGS = -I$(DESTDIR)/$(prefix)/include \
+              -I$(DESTDIR)/$(prefix)/../include
 
-AUTOMAKE_OPTIONS = foreign 
+AM_CFLAGS =
 
-AM_CFLAGS=@TE_CFLAGS@ -I$(DESTDIR)/$(prefix)/include \
-                      -I$(DESTDIR)/$(prefix)/../include
-AM_LDFLAGS=@TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/lib 
+AM_LDFLAGS = @TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/lib 
 
-bin_PROGRAMS=conftest
 
-conftest_SOURCES=conftest.c
+tetestdir=$(prefix)/@TEST_SUITE@/$(subdir)
 
-conftest_LDADD=-lconfapi -lipc -lpthread
+tetest_DATA=package.xml
 
-conftest_DEPENDENCIES=${TE_INSTALL}/i686-pc-linux-gnu/lib/libconfapi.a
+tetest_PROGRAMS=conftest localtest
+
+
+MYLDADD = -lconfapi -lipc -lpthread
+MYDEPS = ${TE_INSTALL}/@host@/lib/libconfapi.a \
+         ${TE_INSTALL}/@host@/lib/libipc.a
+
+
+conftest_SOURCES = conftest.c
+conftest_LDADD = $(MYLDADD)
+conftest_DEPENDENCIES = $(MYDEPS)
+
+localtest_SOURCES = localtest.c
+localtest_LDADD = $(MYLDADD)
+localtest_DEPENDENCIES = $(MYDEPS)
 
