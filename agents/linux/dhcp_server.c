@@ -165,7 +165,7 @@ static char *isc_dhcp_quoted_options[] = {
         free(_opt);             \
     } while (0)
 
-static te_dhcp_server_subnet *subnets = NULL;
+static TAILQ_HEAD(te_dhcp_server_subnets, te_dhcp_server_subnet) subnets;
 
 static host *hosts = NULL;
 
@@ -258,9 +258,10 @@ free_group(group * g)
 static int
 ds_dhcpserver_save_conf(void)
 {
-    host           *h;
-    te_dhcp_option *opt;
-    FILE           *f = fopen(dhcp_server_conf, "w");
+    te_dhcp_server_subnet  *s;
+    host                   *h;
+    te_dhcp_option         *opt;
+    FILE                   *f = fopen(dhcp_server_conf, "w");
 
     if (f == NULL)
     {
@@ -270,9 +271,26 @@ ds_dhcpserver_save_conf(void)
     }
 
     fprintf(f, "deny unknown-clients;\n\n");
-    fprintf(f, "subnet 10.17.19.0 netmask 255.255.255.0 {\n");
-    fprintf(f, "}\n\n");
+    
+    fprintf(f, "\n");
+    for (s = subnets.tqh_first; s != NULL; s = s->links.tqe_next)
+    {
+        struct in_addr  mask;
 
+        mask.s_addr = htonl(PREFIX2MASK(s->prefix_len));
+        fprintf(f, "subnet %s netmask %s {\n",
+                s->subnet, inet_ntop(AF_INET, &mask, buf, sizeof(buf)));
+        for (opt = s->options; opt != NULL; opt = opt->next)
+        {
+            te_bool quoted = is_quoted(opt->name);
+
+            fprintf(f, "\toption %s %s%s%s;\n", opt->name,
+                    quoted ? "\"" : "", opt->value, quoted ? "\"" : "");
+        }
+        fprintf(f, "}\n");
+    }
+
+    fprintf(f, "\n");
     for (h = hosts; h != NULL; h = h->next)
     {
         fprintf(f, "host %s {\n", h->name);
@@ -295,6 +313,7 @@ ds_dhcpserver_save_conf(void)
         }
         fprintf(f, "}\n");
     }
+    fprintf(f, "\n");
 
     if (fclose(f) != 0)
     {
@@ -485,6 +504,142 @@ ds_dhcpserver_ifs_set(unsigned int gid, const char *oid, const char *value)
     return 0;
 }
 
+
+static void
+free_subnet(te_dhcp_server_subnet *s)
+{
+    free(s->subnet);
+    /*  TODO: free options here */
+    free(s);
+}
+
+static te_dhcp_server_subnet *
+find_subnet(const char *subnet)
+{
+    te_dhcp_server_subnet  *s;
+
+    for (s = subnets.tqh_first;
+         s != NULL && strcmp(s->subnet, subnet) != 0;
+         s = s->links.tqe_next);
+
+    return s;
+}
+
+static int
+ds_subnet_get(unsigned int gid, const char *oid, char *value,
+              const char *dhcpserver, const char *subnet)
+{
+    te_dhcp_server_subnet  *s;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(dhcpserver);
+
+    if ((s = find_subnet(subnet)) == NULL)
+        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
+
+    sprintf(value, "%d", s->prefix_len);
+
+    return 0;
+}
+
+static int
+ds_subnet_set(unsigned int gid, const char *oid, const char *value,
+              const char *dhcpserver, const char *subnet)
+{
+    te_dhcp_server_subnet  *s;
+    int                     prefix_len;
+    char                   *end;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(dhcpserver);
+
+    if ((s = find_subnet(subnet)) == NULL)
+        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
+
+    prefix_len = strtol(value, &end, 10);
+    if (value == end || *end != '\0')
+        return TE_RC(TE_TA_LINUX, ETEFMT);
+
+    s->prefix_len = prefix_len;
+
+    return 0;
+}
+
+static int
+ds_subnet_add(unsigned int gid, const char *oid, const char *value,
+              const char *dhcpserver, const char *subnet)
+{
+    te_dhcp_server_subnet  *s;
+    int                     prefix_len;
+    char                   *end;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(dhcpserver);
+
+    if ((s = find_subnet(subnet)) != NULL)
+        return TE_RC(TE_TA_LINUX, EEXIST);
+
+    prefix_len = strtol(value, &end, 10);
+    if (value == end || *end != '\0')
+        return TE_RC(TE_TA_LINUX, ETEFMT);
+
+    if ((s = calloc(1, sizeof(*s))) == NULL)
+        return TE_RC(TE_TA_LINUX, ENOMEM);
+
+    if ((s->subnet = strdup(subnet)) == NULL)
+    {
+        free(s);
+        return TE_RC(TE_TA_LINUX, ENOMEM);
+    }
+    s->prefix_len = prefix_len;
+
+    TAILQ_INSERT_TAIL(&subnets, s, links);
+
+    return 0;
+}
+
+static int
+ds_subnet_del(unsigned int gid, const char *oid,
+              const char *dhcpserver, const char *subnet)
+{
+    te_dhcp_server_subnet  *s;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(dhcpserver);
+
+    if ((s = find_subnet(subnet)) == NULL)
+        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
+
+    TAILQ_REMOVE(&subnets, s, links);
+    free_subnet(s);
+
+    return 0;
+    
+}
+
+static int
+ds_subnet_list(unsigned int gid, const char *oid, char **list)
+{
+    te_dhcp_server_subnet  *s;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    
+    *buf = '\0';
+    for (s = subnets.tqh_first; s != NULL; s = s->links.tqe_next)
+    {
+        sprintf(buf + strlen(buf), "%s ",  s->subnet);
+    }
+
+    return (*list = strdup(buf)) == NULL ?
+               TE_RC(TE_TA_LINUX, ENOMEM) : 0;
+}
+
+
 /** Definition of list method for host and groups */
 #define LIST_METHOD(_gh) \
 static int \
@@ -495,7 +650,7 @@ ds_##_gh##_list(unsigned int gid, const char *oid, char **list) \
     UNUSED(oid);                                                \
     UNUSED(gid);                                                \
                                                                 \
-    *buf = 0;                                                   \
+    *buf = '\0';                                                \
                                                                 \
     for (gh = _gh##s; gh != NULL; gh = gh->next)                \
     {                                                           \
@@ -1152,103 +1307,6 @@ GET_INT_LEASE_ATTR("cltt")
 
 #endif /* TA_LINUX_ISC_DHCPS_LEASES_SUPPORTED */
 
-static void
-print_dhcp_data()
-{
-    host *h;
-    group *g;
-    te_dhcp_option *opt;
-
-    for (h = hosts; h != NULL; h = h->next)
-    {
-        printf("Host: %s\n", h->name);
-        if (h->group)
-            printf("\tgroup: %s\n", h->group->name);
-        if (h->chaddr)
-            printf("\tchaddr: %s\n", h->chaddr);
-        if (h->client_id)
-            printf("\tclient_id: %s\n", h->client_id);
-        if (h->ip_addr)
-            printf("\tip_addr: %s\n", h->ip_addr);
-        if (h->next_server)
-            printf("\tnext_server: %s\n", h->next_server);
-        if (h->filename)
-            printf("\tfilename: %s\n", h->filename);
-        for (opt = h->options; opt != NULL; opt = opt->next)
-            printf("\t%s: %s\n", opt->name, opt->value);
-    }
-
-    for (g = groups; g != NULL; g = g->next)
-    {
-        printf("Group: %s\n", g->name);
-        if (g->next_server)
-            printf("\tnext_server: %s\n", g->next_server);
-        if (g->filename)
-            printf("\tfilename: %s\n", g->filename);
-        for (opt = g->options; opt != NULL; opt = opt->next)
-            printf("\t%s: %s\n", opt->name, opt->value);
-    }
-}
-
-static rcf_pch_cfg_object node_ds_group_option =
-    { "option", 0, NULL, NULL,
-      (rcf_ch_cfg_get)ds_group_option_get,
-      (rcf_ch_cfg_set)ds_group_option_set,
-      (rcf_ch_cfg_add)ds_group_option_add,
-      (rcf_ch_cfg_del)ds_group_option_del,
-      (rcf_ch_cfg_list)ds_group_option_list, NULL, NULL };
-
-RCF_PCH_CFG_NODE_RW(node_ds_group_file, "file",
-                    NULL, &node_ds_group_option,
-                    ds_group_filename_get, ds_group_filename_set);
-
-RCF_PCH_CFG_NODE_RW(node_ds_group_next, "next",
-                    NULL, &node_ds_group_file,
-                    ds_group_next_server_get, ds_group_next_server_set);
-
-static rcf_pch_cfg_object node_ds_group =
-    { "group", 0, &node_ds_group_next, NULL,
-      NULL, NULL,
-      (rcf_ch_cfg_add)ds_group_add, (rcf_ch_cfg_del)ds_group_del,
-      (rcf_ch_cfg_list)ds_group_list, NULL, NULL };
-
-static rcf_pch_cfg_object node_ds_host_option =
-    { "option", 0, NULL, NULL,
-      (rcf_ch_cfg_get)ds_host_option_get,
-      (rcf_ch_cfg_set)ds_host_option_set,
-      (rcf_ch_cfg_add)ds_host_option_add,
-      (rcf_ch_cfg_del)ds_host_option_del,
-      (rcf_ch_cfg_list)ds_host_option_list, NULL, NULL };
-
-RCF_PCH_CFG_NODE_RW(node_ds_host_file, "file",
-                    NULL, &node_ds_host_option,
-                    ds_host_filename_get, ds_host_filename_set);
-
-RCF_PCH_CFG_NODE_RW(node_ds_host_next, "next",
-                    NULL, &node_ds_host_file,
-                    ds_host_next_server_get, ds_host_next_server_set);
-
-RCF_PCH_CFG_NODE_RW(node_ds_host_ip_addr, "ip-address",
-                    NULL, &node_ds_host_next,
-                    ds_host_ip_addr_get, ds_host_ip_addr_set);
-
-RCF_PCH_CFG_NODE_RW(node_ds_host_client_id, "client-id",
-                    NULL, &node_ds_host_ip_addr,
-                    ds_host_client_id_get, ds_host_client_id_set);
-
-RCF_PCH_CFG_NODE_RW(node_ds_host_chaddr, "chaddr",
-                    NULL, &node_ds_host_client_id,
-                    ds_host_chaddr_get, ds_host_chaddr_set);
-
-RCF_PCH_CFG_NODE_RW(node_ds_host_group, "group",
-                    NULL, &node_ds_host_chaddr,
-                    ds_host_group_get, ds_host_group_set);
-
-static rcf_pch_cfg_object node_ds_host =
-    { "host", 0, &node_ds_host_group, &node_ds_group,
-      NULL, NULL,
-      (rcf_ch_cfg_add)ds_host_add, (rcf_ch_cfg_del)ds_host_del,
-      (rcf_ch_cfg_list)ds_host_list, NULL, NULL};
 
 #ifdef TA_LINUX_ISC_DHCPS_LEASES_SUPPORTED
 RCF_PCH_CFG_NODE_RO(node_ds_lease_cltt, "cltt",
@@ -1300,15 +1358,82 @@ static rcf_pch_cfg_object node_ds_client =
 
 #endif /* TA_LINUX_ISC_DHCPS_LEASES_SUPPORTED */
 
+static rcf_pch_cfg_object node_ds_group_option =
+    { "option", 0, NULL, NULL,
+      (rcf_ch_cfg_get)ds_group_option_get,
+      (rcf_ch_cfg_set)ds_group_option_set,
+      (rcf_ch_cfg_add)ds_group_option_add,
+      (rcf_ch_cfg_del)ds_group_option_del,
+      (rcf_ch_cfg_list)ds_group_option_list, NULL, NULL };
+
+RCF_PCH_CFG_NODE_RW(node_ds_group_file, "file",
+                    NULL, &node_ds_group_option,
+                    ds_group_filename_get, ds_group_filename_set);
+
+RCF_PCH_CFG_NODE_RW(node_ds_group_next, "next",
+                    NULL, &node_ds_group_file,
+                    ds_group_next_server_get, ds_group_next_server_set);
+
 #if TA_LINUX_ISC_DHCPS_LEASES_SUPPORTED
-RCF_PCH_CFG_NODE_RW(node_ds_dhcpserver_ifs, "interfaces",
-                    NULL, &node_ds_client,
-                    ds_dhcpserver_ifs_get, ds_dhcpserver_ifs_set);
+RCF_PCH_CFG_NODE_COLLECTION(node_ds_group, "group",
+                            &node_ds_group_next, &node_ds_client,
+                            ds_group_add, ds_group_del,
+                            ds_group_list, NULL);
 #else
-RCF_PCH_CFG_NODE_RW(node_ds_dhcpserver_ifs, "interfaces",
-                    NULL, &node_ds_host,
-                    ds_dhcpserver_ifs_get, ds_dhcpserver_ifs_set);
+RCF_PCH_CFG_NODE_COLLECTION(node_ds_group, "group",
+                            &node_ds_group_next, NULL,
+                            ds_group_add, ds_group_del,
+                            ds_group_list, NULL);
 #endif
+
+static rcf_pch_cfg_object node_ds_host_option =
+    { "option", 0, NULL, NULL,
+      (rcf_ch_cfg_get)ds_host_option_get,
+      (rcf_ch_cfg_set)ds_host_option_set,
+      (rcf_ch_cfg_add)ds_host_option_add,
+      (rcf_ch_cfg_del)ds_host_option_del,
+      (rcf_ch_cfg_list)ds_host_option_list, NULL, NULL };
+
+RCF_PCH_CFG_NODE_RW(node_ds_host_file, "file",
+                    NULL, &node_ds_host_option,
+                    ds_host_filename_get, ds_host_filename_set);
+
+RCF_PCH_CFG_NODE_RW(node_ds_host_next, "next",
+                    NULL, &node_ds_host_file,
+                    ds_host_next_server_get, ds_host_next_server_set);
+
+RCF_PCH_CFG_NODE_RW(node_ds_host_ip_addr, "ip-address",
+                    NULL, &node_ds_host_next,
+                    ds_host_ip_addr_get, ds_host_ip_addr_set);
+
+RCF_PCH_CFG_NODE_RW(node_ds_host_client_id, "client-id",
+                    NULL, &node_ds_host_ip_addr,
+                    ds_host_client_id_get, ds_host_client_id_set);
+
+RCF_PCH_CFG_NODE_RW(node_ds_host_chaddr, "chaddr",
+                    NULL, &node_ds_host_client_id,
+                    ds_host_chaddr_get, ds_host_chaddr_set);
+
+RCF_PCH_CFG_NODE_RW(node_ds_host_group, "group",
+                    NULL, &node_ds_host_chaddr,
+                    ds_host_group_get, ds_host_group_set);
+
+RCF_PCH_CFG_NODE_COLLECTION(node_ds_host, "host",
+                            &node_ds_host_group, &node_ds_group,
+                            ds_host_add, ds_host_del,
+                            ds_host_list, NULL);
+
+static rcf_pch_cfg_object node_ds_subnet =
+    { "subnet", 0, NULL, &node_ds_host,
+      (rcf_ch_cfg_get)ds_subnet_get,
+      (rcf_ch_cfg_set)ds_subnet_set,
+      (rcf_ch_cfg_add)ds_subnet_add,
+      (rcf_ch_cfg_del)ds_subnet_del,
+      (rcf_ch_cfg_list)ds_subnet_list, NULL, NULL };
+
+RCF_PCH_CFG_NODE_RW(node_ds_dhcpserver_ifs, "interfaces",
+                    NULL, &node_ds_subnet,
+                    ds_dhcpserver_ifs_get, ds_dhcpserver_ifs_set);
 
 RCF_PCH_CFG_NODE_RW(node_ds_dhcpserver, "dhcpserver",
                     &node_ds_dhcpserver_ifs, NULL,
@@ -1325,6 +1450,8 @@ void
 ds_init_dhcp_server(rcf_pch_cfg_object **last)
 {
     int rc = 0;
+
+    TAILQ_INIT(&subnets);
 
     /* Find DHCP server executable */
     rc = find_file(dhcp_server_n_execs, dhcp_server_execs, TRUE);

@@ -72,51 +72,6 @@
 #endif
 
 
-/* Fast conversion of the network mask to prefix */
-#define MASK2PREFIX(mask, prefix)            \
-    switch (mask)                            \
-    {                                        \
-        case 0x0: prefix = 0; break;         \
-        case 0x80000000: prefix = 1; break;  \
-        case 0xc0000000: prefix = 2; break;  \
-        case 0xe0000000: prefix = 3; break;  \
-        case 0xf0000000: prefix = 4; break;  \
-        case 0xf8000000: prefix = 5; break;  \
-        case 0xfc000000: prefix = 6; break;  \
-        case 0xfe000000: prefix = 7; break;  \
-        case 0xff000000: prefix = 8; break;  \
-        case 0xff800000: prefix = 9; break;  \
-        case 0xffc00000: prefix = 10; break; \
-        case 0xffe00000: prefix = 11; break; \
-        case 0xfff00000: prefix = 12; break; \
-        case 0xfff80000: prefix = 13; break; \
-        case 0xfffc0000: prefix = 14; break; \
-        case 0xfffe0000: prefix = 15; break; \
-        case 0xffff0000: prefix = 16; break; \
-        case 0xffff8000: prefix = 17; break; \
-        case 0xffffc000: prefix = 18; break; \
-        case 0xffffe000: prefix = 19; break; \
-        case 0xfffff000: prefix = 20; break; \
-        case 0xfffff800: prefix = 21; break; \
-        case 0xfffffc00: prefix = 22; break; \
-        case 0xfffffe00: prefix = 23; break; \
-        case 0xffffff00: prefix = 24; break; \
-        case 0xffffff80: prefix = 25; break; \
-        case 0xffffffc0: prefix = 26; break; \
-        case 0xffffffe0: prefix = 27; break; \
-        case 0xfffffff0: prefix = 28; break; \
-        case 0xfffffff8: prefix = 29; break; \
-        case 0xfffffffc: prefix = 30; break; \
-        case 0xfffffffe: prefix = 31; break; \
-        case 0xffffffff: prefix = 32; break; \
-         /* Error indication */              \
-        default: prefix = 33; break;         \
-    }
-
-/* Fast conversion of the prefix to network mask */
-#define PREFIX2MASK(prefix) (prefix == 0 ? 0 : (~0) << (32 - (prefix)))
-
-
 #ifdef CFG_LINUX_DAEMONS
 extern int linuxconf_daemons_init(rcf_pch_cfg_object **last);
 extern void linux_daemons_release();

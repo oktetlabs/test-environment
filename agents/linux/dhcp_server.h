@@ -54,7 +54,7 @@ typedef struct group {
 } group;
 
 typedef struct te_dhcp_server_subnet {
-    struct te_dhcp_server_subnet *next;
+    TAILQ_ENTRY(te_dhcp_server_subnet)  links;
 
     char               *subnet;
     int                 prefix_len;
