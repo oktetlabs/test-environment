@@ -392,7 +392,7 @@ ta_handler(void *ta)
         *log_file = '\0';
         if ((rc = rcf_ta_get_log(inst->agent, log_file)) != 0)
         {
-            if (rc == ETAREBOOTED)
+            if (TE_RC_GET_ERROR(rc) == ETAREBOOTED)
             {
                 /* 
                  * Ignore error if TA is rebooted by RCF, but terminate
