@@ -324,7 +324,7 @@ rcf_rpc_server_fork(rcf_rpc_server *rpcs, const char *name,
     tmp->op = RCF_RPC_CALL_WAIT;
     tmp->pid = out.pid;
     tmp->def_timeout = rpcs->def_timeout;
-    if ((rc = rpc_server_sem_init(rpcs)) != 0)
+    if ((rc = rpc_server_sem_init(tmp)) != 0)
         return rc;
 
     if ((rc = rcf_ta_call(rpcs->ta, 0, "tarpc_add_server", &rc1, 2, 0,
