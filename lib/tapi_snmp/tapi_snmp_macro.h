@@ -527,21 +527,24 @@ extern "C" {
  * @param csap_id        identifier of an SNMP CSAP
  * @param name           name of an SNMP object the value is to be set
  * @param value          Location for returned value
- * @param size		 size of returned value
- * @param err_stat	 error status
+ * @param size	         size of returned value
+ * @param err_stat       error status
  * @param subid          index of table field instance (0 for scalar field)
  *
  */ 
-#define TAPI_SNMP_GET_OCTETSTRING(ta, sid, csap_id, name, value, size, err_stat, sub_id...) \
-    do                                                                                   \
-    {                                                                                    \
-        tapi_snmp_oid_t       oid;                                                       \
-	                                                                                 \
-        CHECK_RC(tapi_snmp_make_instance(name, &oid, sub_id));                           \
-        CHECK_RC(tapi_snmp_get_oct_string(ta, sid, csap_id, &oid,                        \
-                 (value), size, err_stat));                                              \
-        VERB("SNMP get octetstring: for %s (oid = %s) returns %s = %s, error status %d", \
-             name, print_oid(&oid), #value, print_octet_string(value, *size), *err_stat);\
+#define TAPI_SNMP_GET_OCTETSTRING(ta, sid, csap_id, name, value,               \
+                                  size, err_stat, sub_id...)                   \
+    do                                                                         \
+    {                                                                          \
+        tapi_snmp_oid_t       oid;                                             \
+	                                                                           \
+        CHECK_RC(tapi_snmp_make_instance(name, &oid, sub_id));                 \
+        CHECK_RC(tapi_snmp_get_oct_string(ta, sid, csap_id, &oid,              \
+                 (value), size, err_stat));                                    \
+        VERB("SNMP get octetstring: for %s (oid = %s) "                        \
+             "returns %s = %s, error status %d",                               \
+             name, print_oid(&oid), #value,                                    \
+             print_octet_string(value, *size), *err_stat);                     \
     } while (0) 	    
 
 		
@@ -559,10 +562,10 @@ extern "C" {
 #define TAPI_SNMP_WALK(ta, sid, csap_id, name, userdata, callback) \
     do                                                                        \
     {                                                                         \
-	tapi_snmp_oid_t           oid;                                        \
-	                                                                      \
-	CHECK_RC(tapi_snmp_make_oid(name, &oid));                             \
-	CHECK_RC(tapi_snmp_walk(ta, sid, csap_id, &oid, userdata, callback)); \
+        tapi_snmp_oid_t           oid;                                        \
+                                                                              \
+        CHECK_RC(tapi_snmp_make_oid(name, &oid));                             \
+        CHECK_RC(tapi_snmp_walk(ta, sid, csap_id, &oid, userdata, callback)); \
     } while (0)
 
 
@@ -590,7 +593,8 @@ extern "C" {
         VERB("SNMP get: for %s (oid=%s) returns %s = %d, error status %d\n", \
              name, print_oid(&oid), #value, (value), *err_stat);             \
         if (value != tmp_value)                                              \
-            TEST_FAIL("%s is not equal to %s = %d", name, #value, value);    \
+            TEST_FAIL("%s value %d differs from %d",                         \
+                      name, value, tmp_value);                               \
     } while (0)
 
 #ifdef __cplusplus
