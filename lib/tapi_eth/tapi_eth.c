@@ -296,6 +296,9 @@ tapi_internal_eth_send(const char *ta_name, int sid, csap_handle_t eth_csap,
     if (rc)
         return TE_RC(TE_TAPI, rc);
 
+    VERB("Eth send, CSAP # %d, traffic template in file %s", 
+         eth_csap, tmp_name);
+
     rc = rcf_ta_trsend_start(ta_name, sid, eth_csap, tmp_name, blk_mode);
     if (rc != 0)
     {
@@ -304,6 +307,7 @@ tapi_internal_eth_send(const char *ta_name, int sid, csap_handle_t eth_csap,
     }
 
 #if !(TAPI_DEBUG)
+    VERB("Eth send, CSAP # %d, remove file %s", eth_csap, tmp_name);
     unlink(tmp_name);
 #endif
 
