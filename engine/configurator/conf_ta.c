@@ -183,8 +183,12 @@ sync_ta_instance(char *ta, char *oid)
                 return ENOMEM;
             }
         }
-        else if (TE_RC_GET_ERROR(rc) == ENOENT || rc == 0)
+        else if (TE_RC_GET_ERROR(rc) == ENOENT || rc == 0 ||
+                 (TE_RC_GET_ERROR(rc) == ETENOSUCHNAME &&
+                  strstr(oid, "/"CFG_VOLATILE":") != NULL))
+        {
             break;
+        }
         else
         {
             ERROR("Failed(0x%x) to get '%s' from TA '%s'", rc, oid, ta);
