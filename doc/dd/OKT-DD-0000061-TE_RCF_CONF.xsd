@@ -80,6 +80,16 @@
                             </xsd:annotation>
                         </xsd:attribute>       
                     </xsd:complexType>
+
+                        <xsd:attribute name="synch_time" type="xsd:string" 
+                                       default="no">
+                            <xsd:annotation>
+                                <xsd:documentation>
+                                    Enable/disable time synchronization.
+                                </xsd:documentation>
+                            </xsd:annotation>
+                        </xsd:attribute>       
+                    </xsd:complexType>
                 </xsd:element>                                                                 
 
             </xsd:sequence>
