@@ -2602,16 +2602,17 @@ ds_init_smtp(rcf_pch_cfg_object **last)
     smtp_current_smarthost = strdup(SMTP_EMPTY_SMARTHOST);
     for (i = 0; i < sizeof(smtp_servers) / sizeof(char *); i++)
     {
-        if (daemon_running(smtp_servers[i]))
+        smtp_current = smtp_servers[i];
+        if (strcmp(smtp_current, "exim") == 0)
+            smtp_current_daemon = exim_name;
+        else
+            smtp_current_daemon = smtp_current;
+        if (daemon_running(smtp_current_daemon))
         {
-            smtp_current = smtp_servers[i];
-            if (strcmp(smtp_current, "exim") == 0)
-                smtp_current_daemon = exim_name;
-            else
-                smtp_current_daemon = smtp_current;
             smtp_initial = smtp_current_daemon;
             break;
         }
+        smtp_current = NULL;
     }
     DS_REGISTER(smtp);
 }
