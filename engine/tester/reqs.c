@@ -268,9 +268,6 @@ tester_is_run_required(tester_ctx *ctx, const run_item *test,
                 assert(!s->exclude);
                 assert(!s->sticky);
 
-                if (!(t->exclude))
-                    result = FALSE;
-
                 if (strcmp(t->id, req_get(s, params)) == 0)
                 {
                     if (t->exclude)
