@@ -620,7 +620,7 @@ process_backup(cfg_backup_msg *msg)
             WARN("Restoring backup from history failed; "
                  "restore from the file");
             msg->rc = parse_config(msg->filename, TRUE);
-            cfg_dh_destroy();
+            cfg_dh_release_after(msg->filename);
             
             break;
         }
