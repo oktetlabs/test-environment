@@ -84,6 +84,7 @@ typedef struct traffic_op {
 
     char            ta[RCF_MAX_NAME];   /**< Test Agent name */
     csap_handle_t   csap_id;    /**< CSAP handle returned by the TA */
+    int             num_users;  /**< Number of pending requests for CSAP */
     int             state;      /**< CSAP_SEND, CSAP_RECV or
                                      CSAP_SENDRECV */
     int             sid;        /**< Session identifier */
@@ -91,9 +92,23 @@ typedef struct traffic_op {
     void           *user_param; /**< handler parameter */
 } traffic_op_t;
 
+typedef struct msg_buf_entry {
+    struct msg_buf_entry *next; 
+    rcf_msg              *message;
+} msg_buf_entry_t;
+
+typedef struct msg_buf_head {
+    struct msg_buf_entry *first; 
+} msg_buf_head_t;
+
+typedef struct thread_ctx {
+    struct ipc_client *ipc_handle;
+    msg_buf_head_t     msg_buf_head;
+} thread_ctx_t;
+
 /* Busy CSAPs list anchor */
 static traffic_op_t traffic_ops = { &traffic_ops, &traffic_ops, 
-                                    "", 0, 0, 0, NULL, NULL };
+                                    "", 0, 0, 0, 0, NULL, NULL };
 
 /* Forward declaration */
 static int csap_tr_recv_get(const char *ta_name, int session, 
@@ -117,9 +132,11 @@ static pthread_mutex_t  rcf_lock = PTHREAD_MUTEX_INITIALIZER;
 
 /* Declare and initialize (or obtain old) IPC library handle. */
 #define INIT_IPC \
-    struct ipc_client *ipc_handle = get_ipc_handle(TRUE);   \
-    if (ipc_handle == NULL)                                 \
-        return TE_RC(TE_RCF_API, ETEIO)
+    thread_ctx_t *ctx_handle = get_ctx_handle(TRUE);            \
+    struct ipc_client *ipc_handle;                              \
+    if (ctx_handle == NULL || ctx_handle->ipc_handle == NULL)   \
+        return TE_RC(TE_RCF_API, ETEIO);                        \
+    ipc_handle = ctx_handle->ipc_handle
 
 
 /* Validate TA name argument */
@@ -142,6 +159,178 @@ validate_type(int var_type, int var_len)
              rcf_type_len[var_type] != var_len) ? 1 : 0);
 }
 
+/**
+ * Clear RCF message buffer
+ *
+ * @param buf_head      head of buffer list 
+ *
+ * @return zero on success or error code
+ */
+static int
+msg_buffer_clear(msg_buf_head_t *buf_head)
+{
+    msg_buf_entry_t *next_entry;
+
+    if (buf_head == NULL)
+        return 0;
+
+    while (buf_head->first)
+    {
+        next_entry = buf_head->first->next;
+        free(buf_head->first->message);
+        free(buf_head->first);
+        buf_head->first = next_entry;
+    }
+    return 0;
+}
+
+/**
+ * Add RCF message to the buffer
+ *
+ * @param buf_head      head of buffer list 
+ * @param message       message to be stored
+ *
+ * @return zero on success or error code
+ */
+static int
+msg_buffer_insert(msg_buf_head_t *buf_head, rcf_msg *message)
+{
+    msg_buf_entry_t *buf_entry = calloc(1, sizeof(*buf_entry));
+    size_t           msg_len;
+
+    if (buf_head == NULL)
+        return ETEWRONGPTR;
+
+    if (buf_entry == NULL)
+        return ENOMEM;
+
+    if (message == NULL)
+        return 0; /* nothing to do */
+
+    msg_len = sizeof(rcf_msg) + message->data_len;
+    if ((buf_entry->message = (rcf_msg *)calloc(1, msg_len)) == NULL)
+        return ENOMEM;
+
+    memcpy(buf_entry->message, message, msg_len);
+
+    buf_entry->next = buf_head->first;
+    buf_head->first = buf_entry;
+
+    return 0;
+}
+
+/**
+ * Find message in RCF message buffer with desired SID, and remove 
+ * it from buffer.
+ *
+ * @param msg_buf       - RCF message buffer head
+ * @param session       - SID which message must have
+ *
+ * @return pointer to found message or zero if not found
+ * After ussage of message pointer should be freed. 
+ */
+rcf_msg *
+msg_buffer_find(msg_buf_head_t *msg_buf, int session)
+{
+    msg_buf_entry_t *buf_entry, *prev_entry;
+
+    if (msg_buf == NULL)
+        return NULL; 
+
+    for (buf_entry = msg_buf->first, prev_entry = NULL;
+         buf_entry;
+         prev_entry = buf_entry, buf_entry = buf_entry->next)
+    { 
+        if (buf_entry->message->sid == session)
+            break;
+    }
+
+    if (buf_entry)
+    {
+        rcf_msg *msg = buf_entry->message;
+
+        if (prev_entry)
+            prev_entry->next = buf_entry->next;
+        else 
+            msg_buf->first = buf_entry->next;
+        free(buf_entry);
+        return msg;
+    }
+
+    return NULL;
+}
+
+/**
+ * Wait for IPC RCF message with desired SID. 
+ *
+ * @param ipcc          - pointer to the ipc_client structure returned
+ *                        by ipc_init_client()
+ * @param msg_buf       - message buffer head
+ * @param session       - SID
+ * @param buf           - pointer to the buffer for answer
+ * @param p_buf_len     - pointer to the variable to store:
+ *                          on entry - length of the buffer;
+ *                          on exit - length of the message received
+ *                                    (or full length of the message
+ *                                     if ETESMALLBUF is returned).  
+ * 
+ * @return zero on success or error code
+ */
+static inline int
+wait_ipc_message_with_sid(struct ipc_client *ipcc, 
+                          msg_buf_head_t *msg_buf, int session,
+                          rcf_msg *buf, size_t *p_buf_len)
+{
+    int rc;
+    rcf_msg *message;
+
+    if (ipcc == NULL || msg_buf == NULL || p_buf_len == NULL)
+        return ETEWRONGPTR;
+
+    if ((message = msg_buffer_find(msg_buf, session)) != NULL)
+    {
+        size_t len = sizeof(*message) + message->data_len;
+        
+        if (len > *p_buf_len)
+        {
+            RING("%s: message will be truncated to len %d", 
+                 __FUNCTION__, *p_buf_len);
+            len = *p_buf_len;
+        }
+        else 
+            *p_buf_len = len;
+
+        VERB("Message found: TA %s, SID %d flags %x;"
+             " waiting for SID %d", 
+             message->ta, message->sid, message->flags, session);
+
+        memcpy(buf, message, len); 
+        free(message);
+        return 0; 
+    }
+
+    message = (rcf_msg *)buf;
+
+    do {
+        if ((rc = ipc_receive_answer(ipcc, RCF_SERVER,
+                                     (char *)buf, p_buf_len)) != 0)
+        {
+            return TE_RC(TE_RCF_API, rc);
+        }
+
+        VERB("Message cought: TA %s, SID %d flags %x;"
+             " waiting for SID %d", 
+             message->ta, message->sid, message->flags, session);
+
+        if (message->sid == session)
+            break;
+
+        msg_buffer_insert(msg_buf, message);
+    } while (1);
+
+    return 0;
+ }
+
 
 #ifndef PTHREAD_SETSPECIFIC_BUG
 
@@ -154,11 +343,18 @@ validate_type(int var_type, int var_len)
 static void
 rcf_api_thread_ctx_destroy(void *handle)
 {
-    if (ipc_close_client((struct ipc_client *)handle) != 0)
+    thread_ctx_t *rcf_ctx_handle = (thread_ctx_t *)handle;
+
+    if (handle == NULL)
+        return;
+
+    if (ipc_close_client(rcf_ctx_handle->ipc_handle) != 0)
     {
         ERROR("%s(): ipc_close_client() failed", __FUNCTION__);
         fprintf(stderr, "ipc_close_client() failed\n");
-    }
+    } 
+
+    msg_buffer_clear(&(rcf_ctx_handle->msg_buf_head));
 }
 
 /**
@@ -176,19 +372,19 @@ rcf_api_key_create(void)
 #endif /* HAVE_PTHREAD_H */
 
 /**
- * Find thread IPC handle or initialize a new one.
+ * Find thread context handle or initialize a new one.
  *
- * @param create    Create IPC client, if it is not exist or not
+ * @param create    Create context client, if it is not exist or not
  *
- * @return IPC handle or NULL if IPC library returned an error
+ * @return context handle or NULL if some error occured
  */
-struct ipc_client *
-get_ipc_handle(te_bool create)
+thread_ctx_t *
+get_ctx_handle(te_bool create)
 {
 #ifdef HAVE_PTHREAD_H
-    struct ipc_client          *handle;
+    thread_ctx_t          *handle;
 #else
-    static struct ipc_client   *handle = NULL;
+    static thread_ctx_t   *handle = NULL;
 #endif
 
 #ifdef HAVE_PTHREAD_H
@@ -197,16 +393,17 @@ get_ipc_handle(te_bool create)
         ERROR("pthread_once() failed\n");
         return NULL;
     }
-    handle = (struct ipc_client *)pthread_getspecific(key);
+    handle = (thread_ctx_t *)pthread_getspecific(key);
 #endif
     if (handle == NULL && create)
     {
        char name[RCF_MAX_NAME];
+       handle = calloc(1, sizeof(*handle));
 
        sprintf(name, "rcf_client_%u_%u", (unsigned int)getpid(), 
                (unsigned int)pthread_self());
                
-       if ((handle = ipc_init_client(name)) == NULL)
+       if ((handle->ipc_handle = ipc_init_client(name)) == NULL)
        {
            ERROR("ipc_init_client() failed\n");
            fprintf(stderr, "ipc_init_client() failed\n");
@@ -234,8 +431,8 @@ get_ipc_handle(te_bool create)
 
 /** Work-around against bug in RedHat */
 static struct {
-    pthread_t          tid;
-    struct ipc_client *handle;
+    pthread_t     tid;
+    thread_ctx_t  ctx_handle;
 } handles[RCF_MAX_THREADS];
 
 /**
@@ -245,8 +442,8 @@ static struct {
  *
  * @return IPC handle or NULL if IPC library returned an error
  */
-struct ipc_client *
-get_ipc_handle(te_bool create)
+thread_ctx_t *
+get_ctx_handle(te_bool create)
 {
     pthread_t mine = pthread_self();
     int       i;
@@ -274,14 +471,16 @@ get_ipc_handle(te_bool create)
                 snprintf(name, RCF_MAX_NAME, "rcf_client_%u_%u",
                          (unsigned int)getpid(), (unsigned int)mine);
                    
-                if ((handles[i].handle = ipc_init_client(name)) == NULL)
+                if ((handles[i].handle.ipc_handle =
+                     ipc_init_client(name)) == NULL)
                 {
                     pthread_mutex_unlock(&rcf_lock);
                     fprintf(stderr, "ipc_init_client() failed\n");
                     return NULL;
                 }
+                handles[i].handle.msg_buf_head.first = NULL;
                 pthread_mutex_unlock(&rcf_lock);
-                return handles[i].handle;
+                return &(handles[i].handle);
             }
         }
         fprintf(stderr, "too many threads\n");
@@ -295,20 +494,22 @@ get_ipc_handle(te_bool create)
  * Free IPC client handle.
  */
 static void
-free_ipc_handle(void)
+free_ctx_handle(void)
 {
     pthread_t mine = pthread_self();
     int       i;
 
     pthread_mutex_lock(&rcf_lock);
     for (i = 0; i < RCF_MAX_THREADS; i++)
-    {
-         if (handles[i].tid == mine)
-         {
-             handles[i].tid = 0;
-             handles[i].handle = NULL;
-             break;
-         }
+    { 
+        if (handles[i].tid == mine)
+        { 
+            handles[i].tid = 0;
+            handles[i].handle.ipc_handle = NULL;
+            /* @todo clean message buffer */
+            msg_buffer_clear(&(handles[i].handle.msg_buf_head));
+            break;
+        }
     }
     pthread_mutex_unlock(&rcf_lock);
 }
@@ -324,7 +525,7 @@ void
 rcf_api_cleanup(void)
 {
 #if HAVE_PTHREAD_H && !PTHREAD_SETSPECIFIC_BUG
-    rcf_api_thread_ctx_destroy(get_ipc_handle(FALSE));
+    rcf_api_thread_ctx_destroy(get_ctx_handle(FALSE));
     /* Write NULL to key value */
     if (pthread_setspecific(key, NULL) != 0)
     {
@@ -332,7 +533,7 @@ rcf_api_cleanup(void)
         fprintf(stderr, "pthread_setspecific() failed\n");
     }
 #else
-    struct ipc_client *ipcc = get_ipc_handle(FALSE);
+    struct ipc_client *ipcc = get_ctx_handle(FALSE);
 
     if (ipc_close_client(ipcc) != 0)
     {
@@ -340,7 +541,7 @@ rcf_api_cleanup(void)
         fprintf(stderr, "ipc_close_client() failed\n");
     }
 #if PTHREAD_SETSPECIFIC_BUG
-    free_ipc_handle();
+    free_ctx_handle();
 #endif
 #endif
 }
@@ -420,7 +621,8 @@ remove_traffic_op(const char *ta_name, csap_handle_t csap_id)
     if (cs != NULL)
         QEL_DELETE(cs);
     else
-        WARN("Csap %d: traffic operation handler not found", csap_id);
+        WARN("%s: csap %d, traffic operation handler not found",
+             __FUNCTION__, csap_id);
 
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_unlock(&rcf_lock);
@@ -796,6 +998,19 @@ rcf_ta_cfg_get(const char *ta_name, int session, const char *oid,
     {
         return TE_RC(TE_RCF_API, ETEIO);
     }
+
+    if (msg.sid != session)
+    {
+        int rc;
+
+        anslen = sizeof(msg);
+        msg_buffer_insert(&(ctx_handle->msg_buf_head), &msg);
+        rc = wait_ipc_message_with_sid(ipc_handle,
+                                       &(ctx_handle->msg_buf_head),
+                                       session, &msg, &anslen);
+        if (rc != 0)
+            return TE_RC(TE_RCF_API, rc);
+    }
         
     if (msg.error != 0)
         return msg.error;    
@@ -878,6 +1093,19 @@ conf_add_set(const char *ta_name, int session, const char *oid,
                                      &msg, &anslen) != 0)
     {
         return TE_RC(TE_RCF_API, ETEIO);
+    }
+
+    if (msg.sid != session)
+    {
+        int rc;
+        
+        anslen = sizeof(msg);
+        msg_buffer_insert(&(ctx_handle->msg_buf_head), &msg);
+        rc = wait_ipc_message_with_sid(ipc_handle,
+                                       &(ctx_handle->msg_buf_head),
+                                       session, &msg, &anslen);
+        if (rc != 0)
+            return TE_RC(TE_RCF_API, rc);
     }
         
     return msg.error;    
@@ -979,6 +1207,19 @@ rcf_ta_cfg_del(const char *ta_name, int session, const char *oid)
     {
         return TE_RC(TE_RCF_API, ETEIO);
     }
+
+    if (msg.sid != session)
+    {
+        int rc;
+        
+        anslen = sizeof(msg);
+        msg_buffer_insert(&(ctx_handle->msg_buf_head), &msg);
+        rc = wait_ipc_message_with_sid(ipc_handle,
+                                       &(ctx_handle->msg_buf_head),
+                                       session, &msg, &anslen);
+        if (rc != 0)
+            return TE_RC(TE_RCF_API, rc);
+    }
         
     return msg.error;    
 }
@@ -1001,6 +1242,19 @@ rcf_ta_cfg_group(const char *ta_name, int session, te_bool is_start)
                                      &msg, &anslen) != 0)
     {
         return TE_RC(TE_RCF_API, ETEIO);
+    }
+
+    if (msg.sid != session)
+    {
+        int rc;
+        
+        anslen = sizeof(msg);
+        msg_buffer_insert(&(ctx_handle->msg_buf_head), &msg);
+        rc = wait_ipc_message_with_sid(ipc_handle,
+                                       &(ctx_handle->msg_buf_head),
+                                       session, &msg, &anslen);
+        if (rc != 0)
+            return TE_RC(TE_RCF_API, rc);
     }
         
     return msg.error;    
@@ -1105,6 +1359,19 @@ rcf_ta_get_var(const char *ta_name, int session, const char *var_name,
                                      &msg, &anslen) != 0)
     {
         return TE_RC(TE_RCF_API, ETEIO);
+    }
+
+    if (msg.sid != session)
+    {
+        int rc;
+        
+        anslen = sizeof(msg);
+        msg_buffer_insert(&(ctx_handle->msg_buf_head), &msg);
+        rc = wait_ipc_message_with_sid(ipc_handle,
+                                       &(ctx_handle->msg_buf_head),
+                                       session, &msg, &anslen);
+        if (rc != 0)
+            return TE_RC(TE_RCF_API, rc);
     }
     
     if (msg.error != 0)    
@@ -1251,6 +1518,19 @@ rcf_ta_set_var(const char *ta_name, int session, const char *var_name,
         return TE_RC(TE_RCF_API, ETEIO);
     }
 
+    if (msg.sid != session)
+    {
+        int rc;
+        
+        anslen = sizeof(msg);
+        msg_buffer_insert(&(ctx_handle->msg_buf_head), &msg);
+        rc = wait_ipc_message_with_sid(ipc_handle,
+                                       &(ctx_handle->msg_buf_head),
+                                       session, &msg, &anslen);
+        if (rc != 0)
+            return TE_RC(TE_RCF_API, rc);
+    }
+
     return msg.error;
 }
 
@@ -1316,6 +1596,19 @@ get_put_file(const char *ta_name, int session,
         free(msg);
         return TE_RC(TE_RCF_API, ETEIO);
     }    
+
+    if (msg->sid != session)
+    {
+        int rc;
+        
+        anslen = sizeof(*msg);
+        msg_buffer_insert(&(ctx_handle->msg_buf_head), msg);
+        rc = wait_ipc_message_with_sid(ipc_handle,
+                                       &(ctx_handle->msg_buf_head),
+                                       session, msg, &anslen);
+        if (rc != 0)
+            return TE_RC(TE_RCF_API, rc);
+    }
     
     error = msg->error;
     free(msg);
@@ -1560,7 +1853,20 @@ rcf_ta_csap_destroy(const char *ta_name, int session,
     {
         return TE_RC(TE_RCF_API, ETEIO);
     }
-    
+   
+    if (msg.sid != session)
+    {
+        int rc;
+        
+        anslen = sizeof(msg);
+        msg_buffer_insert(&(ctx_handle->msg_buf_head), &msg);
+        rc = wait_ipc_message_with_sid(ipc_handle,
+                                       &(ctx_handle->msg_buf_head),
+                                       session, &msg, &anslen);
+        if (rc != 0)
+            return TE_RC(TE_RCF_API, rc);
+    }
+ 
     return msg.error;
 }
 
@@ -1611,7 +1917,20 @@ rcf_ta_csap_param(const char *ta_name, int session, csap_handle_t csap_id,
     {
         return TE_RC(TE_RCF_API, ETEIO);
     }
-    
+   
+    if (msg.sid != session)
+    {
+        int rc;
+        
+        anslen = sizeof(msg);
+        msg_buffer_insert(&(ctx_handle->msg_buf_head), &msg);
+        rc = wait_ipc_message_with_sid(ipc_handle,
+                                       &(ctx_handle->msg_buf_head),
+                                       session, &msg, &anslen);
+        if (rc != 0)
+            return TE_RC(TE_RCF_API, rc);
+    }
+ 
     if (msg.error != 0)    
         return msg.error;
   
@@ -1722,6 +2041,19 @@ rcf_ta_trsend_start(const char *ta_name, int session,
     {
         remove_traffic_op(ta_name, csap_id);
         return TE_RC(TE_RCF_API, ETEIO);
+    } 
+
+    if (msg.sid != session)
+    {
+        int rc;
+        
+        anslen = sizeof(msg);
+        msg_buffer_insert(&(ctx_handle->msg_buf_head), &msg);
+        rc = wait_ipc_message_with_sid(ipc_handle,
+                                       &(ctx_handle->msg_buf_head),
+                                       session, &msg, &anslen);
+        if (rc != 0)
+            return TE_RC(TE_RCF_API, rc);
     }
 
     if ((msg.error != 0) || (blk_mode == RCF_MODE_BLOCKING))
@@ -1801,6 +2133,19 @@ rcf_ta_trsend_stop(const char *ta_name, int session,
                                      &msg, &anslen) != 0)
     {
         return TE_RC(TE_RCF_API, ETEIO);
+    }
+
+    if (msg.sid != session)
+    {
+        int rc;
+        
+        anslen = sizeof(msg);
+        msg_buffer_insert(&(ctx_handle->msg_buf_head), &msg);
+        rc = wait_ipc_message_with_sid(ipc_handle,
+                                       &(ctx_handle->msg_buf_head),
+                                       session, &msg, &anslen);
+        if (rc != 0)
+            return TE_RC(TE_RCF_API, rc);
     }
         
     if (msg.error == 0)
@@ -1887,12 +2232,26 @@ rcf_ta_trrecv_start(const char *ta_name, int session,
         return TE_RC(TE_RCF_API, rc);
     }
 
+    if (msg.sid != session)
+    {
+        int rc;
+        
+        anslen = sizeof(msg);
+        msg_buffer_insert(&(ctx_handle->msg_buf_head), &msg);
+        rc = wait_ipc_message_with_sid(ipc_handle,
+                                       &(ctx_handle->msg_buf_head),
+                                       session, &msg, &anslen);
+        if (rc != 0)
+            return TE_RC(TE_RCF_API, rc);
+    }
+
     while (msg.flags & INTERMEDIATE_ANSWER)
     {
         handler(msg.file, user_param);
         anslen = sizeof(msg);
-        if ((rc = ipc_receive_answer(ipc_handle, RCF_SERVER,
-                                     (char *)&msg, &anslen)) != 0)
+        if ((rc = wait_ipc_message_with_sid(ipc_handle, 
+                                            &(ctx_handle->msg_buf_head),
+                                            session, &msg, &anslen)) != 0)
         {
             return TE_RC(TE_RCF_API, rc);
         }
@@ -1962,6 +2321,9 @@ csap_tr_recv_get(const char *ta_name, int session, csap_handle_t csap_id,
         return TE_RC(TE_RCF_API, EINVAL);
     }
 
+    if (tr_op != NULL)
+        tr_op->num_users++;
+
     msg.sid = session;
 
     handler    = (tr_op != NULL) ? tr_op->handler    : NULL;
@@ -1986,13 +2348,27 @@ csap_tr_recv_get(const char *ta_name, int session, csap_handle_t csap_id,
         return TE_RC(TE_RCF_API, ETEIO);
     }
 
+    if (msg.sid != session)
+    {
+        int rc;
+        
+        anslen = sizeof(msg);
+        msg_buffer_insert(&(ctx_handle->msg_buf_head), &msg);
+        rc = wait_ipc_message_with_sid(ipc_handle,
+                                       &(ctx_handle->msg_buf_head),
+                                       session, &msg, &anslen);
+        if (rc != 0)
+            return TE_RC(TE_RCF_API, rc);
+    }
+
     while ((msg.flags & INTERMEDIATE_ANSWER))
     {
         handler(msg.file, user_param);
 
         anslen = sizeof(msg);
-        if ((rc = ipc_receive_answer(ipc_handle, RCF_SERVER, 
-                                     &msg, &anslen)) != 0)
+        if ((rc = wait_ipc_message_with_sid(ipc_handle,
+                                            &(ctx_handle->msg_buf_head),
+                                            session, &msg, &anslen)) != 0)
         {
             ERROR("%s: IPC receive answer fails, rc %X", 
                   __FUNCTION__, rc);
@@ -2005,11 +2381,17 @@ csap_tr_recv_get(const char *ta_name, int session, csap_handle_t csap_id,
         *num = msg.num;
     }
 
-    if (opcode != RCFOP_TRRECV_GET)
+    if (tr_op != NULL)
+        tr_op->num_users--;
+
+    if ((opcode != RCFOP_TRRECV_GET) &&
+        (tr_op != NULL) && (tr_op->num_users == 0))
     {
-        /* for STOP and WAIT request descr should be removed */
-        /* @todo investigate of consistant removing csap request record 
-         * in case of error. */
+        /* 
+         * For STOP and WAIT request descr should be removed 
+         * @todo investigate of consistant removing csap request record 
+         * in case of error. 
+         */
         remove_traffic_op(ta_name, csap_id);
     }
     if (msg.error)
@@ -2215,12 +2597,27 @@ rcf_ta_trsend_recv(const char *ta_name, int session, csap_handle_t csap_id,
         remove_traffic_op(ta_name, csap_id);
         return TE_RC(TE_RCF_API, ETEIO);
     }
+
+    if (msg.sid != session)
+    {
+        int rc;
+        
+        anslen = sizeof(msg);
+        msg_buffer_insert(&(ctx_handle->msg_buf_head), &msg);
+        rc = wait_ipc_message_with_sid(ipc_handle,
+                                       &(ctx_handle->msg_buf_head),
+                                       session, &msg, &anslen);
+        if (rc != 0)
+            return TE_RC(TE_RCF_API, rc);
+    }
     
     while (msg.flags & INTERMEDIATE_ANSWER)
     {
         handler(msg.file, user_param);
         anslen = sizeof(msg);
-        if (ipc_receive_answer(ipc_handle, RCF_SERVER, &msg, &anslen) != 0)
+        if (wait_ipc_message_with_sid(ipc_handle,
+                                      &(ctx_handle->msg_buf_head),
+                                      session, &msg, &anslen) != 0)
         {
             return TE_RC(TE_RCF_API, ETEIO);
         }
@@ -2427,6 +2824,19 @@ call_start(const char *ta_name, int session, int priority, const char *rtn,
         free(msg);
         return TE_RC(TE_RCF_API, ETEIO);
     }
+
+    if (msg->sid != session)
+    {
+        int rc;
+        
+        anslen = sizeof(*msg);
+        msg_buffer_insert(&(ctx_handle->msg_buf_head), msg);
+        rc = wait_ipc_message_with_sid(ipc_handle,
+                                       &(ctx_handle->msg_buf_head),
+                                       session, msg, &anslen);
+        if (rc != 0)
+            return TE_RC(TE_RCF_API, rc);
+    }
         
     error = msg->error;
     if (error == 0)
@@ -2538,6 +2948,19 @@ rcf_ta_kill_task(const char *ta_name, int session, pid_t pid)
                                      &msg, &anslen) != 0)
     {
         return TE_RC(TE_RCF_API, ETEIO);
+    }
+
+    if (msg.sid != session)
+    {
+        int rc;
+        
+        anslen = sizeof(msg);
+        msg_buffer_insert(&(ctx_handle->msg_buf_head), &msg);
+        rc = wait_ipc_message_with_sid(ipc_handle,
+                                       &(ctx_handle->msg_buf_head),
+                                       session, &msg, &anslen);
+        if (rc != 0)
+            return TE_RC(TE_RCF_API, rc);
     }
     
     return msg.error;
