@@ -31,6 +31,7 @@
 #include "config.h"
 #endif
 
+#include <limits.h>
 #include <sys/time.h>
 #include <sys/types.h>
 #include <fcntl.h>
