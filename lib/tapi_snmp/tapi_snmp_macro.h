@@ -593,7 +593,7 @@ extern "C" {
                                                                                \
         CHECK_RC(tapi_snmp_make_instance(name, &leaf_oid, sub_id));            \
         CHECK_RC(tapi_snmp_set_integer((ta), (sid), (csap_id), &leaf_oid,      \
-                                       (value), (err_stat));                   \
+                                       (value), (err_stat)));                  \
     } while (0)
 
 /**
@@ -616,7 +616,7 @@ extern "C" {
                                                                                \
         CHECK_RC(tapi_snmp_make_instance(name, &leaf_oid, index));             \
         CHECK_RC(tapi_snmp_set_octetstring((ta), (sid), (csap_id), &leaf_oid,  \
-                                       (value), (length), (err_stat));         \
+                                       (value), (length), (err_stat)));        \
     } while (0)
 
 /**
@@ -651,7 +651,7 @@ extern "C" {
                           values...)                                           \
     do {                                                                       \
         CHECK_RC(tapi_snmp_set_row(ta, sid, csap_id, err_stat, err_index,      \
-                                   index, values);                             \
+                                   index, values));                            \
     } while (0)
 
 
