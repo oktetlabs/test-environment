@@ -2,7 +2,8 @@
 
 # Test Environment
 #
-# doc/ Makefile
+# doc/ndn Makefile
+#
 #
 # Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
 # root directory of the distribution).
@@ -23,10 +24,16 @@
 # MA  02111-1307  USA
 #
 #
-# Author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
+# Author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
 
-AUTOMAKE_OPTIONS = foreign 
-
-SUBDIRS=hld guides xsd cm ndn
-
-EXTRA_DIST=OKTL-REQ-0000043-TE.doc
+EXTRA_DIST = \
+	ndn-atm.asn \
+	ndn-bridge.asn \
+	ndn-cli.asn \
+	ndn-dhcp4.asn \
+	ndn-eth.asn \
+	ndn-file.asn \
+	ndn-forw.asn \
+	ndn-gen.asn \
+	ndn-snmp.asn \
+	ndn-tcp-ip.asn
