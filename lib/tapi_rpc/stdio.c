@@ -71,9 +71,9 @@ rpc_fopen(rcf_rpc_server *rpcs,
 
     rpcs->op = RCF_RPC_CALL_WAIT;
     in.path.path_len = strlen(path) + 1;
-    in.path.path_val = (char *)path;
+    in.path.path_val = (char *)strdup(path);    /* FIXME */
     in.mode.mode_len = strlen(mode) + 1;
-    in.mode.mode_val = (char *)mode;
+    in.mode.mode_val = (char *)strdup(mode);    /* FIXME */
 
     rcf_rpc_call(rpcs, _fopen,
                  &in,  (xdrproc_t)xdr_tarpc_fopen_in,
