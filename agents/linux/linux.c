@@ -724,6 +724,10 @@ main(int argc, char **argv)
             retval = rc;
     }
 
+#ifdef RCF_RPC
+    tarpc_destroy_all();
+#endif    
+    
     rc = log_shutdown();
     if (rc != 0)
     {
@@ -732,10 +736,6 @@ main(int argc, char **argv)
             retval = rc;
     }
 
-#ifdef RCF_RPC
-    tarpc_destroy_all();
-#endif    
-    
     return retval;
 }
 
