@@ -90,7 +90,6 @@ struct tarpc_timespec {
     long tv_sec;
     long tv_nsec;
 };
-
 /** RPC size_t analog */
 typedef unsigned int tarpc_size_t;
 /** RPC pid_t analog */
@@ -105,6 +104,8 @@ typedef unsigned int tarpc_sigset_t;
 typedef unsigned int tarpc_fd_set;
 /** RPC off_t analog */
 typedef long int tarpc_off_t;
+/** Handle of the 'WSAEvent' or 0 */
+typedef unsigned int tarpc_wsaevent;
 /** Function outputs nothing */
 struct tarpc_void_out {
     struct tarpc_out_arg    common;
@@ -116,6 +117,9 @@ struct tarpc_int_retval_out {
 
     int                     retval;
 };
+
+
+
 
 /** Function outputs 'ssize_t' return value only */
 struct tarpc_ssize_t_retval_out {
@@ -190,6 +194,7 @@ struct tarpc_shutdown_in {
 };
 
 typedef struct tarpc_int_retval_out tarpc_shutdown_out;
+
 
 
 
@@ -480,7 +485,38 @@ struct tarpc_do_fd_zero_in {
     tarpc_fd_set        set;
 };
 
+
 typedef struct tarpc_void_out tarpc_do_fd_zero_out;
+
+
+
+
+/** Function outputs 'wsaevent' return value only */
+struct tarpc_wsaevent_retval_out {
+    struct tarpc_out_arg    common;
+
+    tarpc_wsaevent                     retval;
+};
+
+
+
+/* WSACreateEvent()*/
+struct tarpc_create_event_in {
+    struct tarpc_in_arg common;
+};
+
+typedef struct tarpc_wsaevent_retval_out tarpc_create_event_out;
+
+
+/* WSACloseEvent()*/
+struct tarpc_close_event_in {
+    struct tarpc_in_arg common;
+    tarpc_wsaevent hevent;
+};
+
+typedef struct tarpc_int_retval_out tarpc_close_event_out;
+
+
 
 
 /* FD_SET() */
@@ -1457,6 +1493,12 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter])
         
         RPC_DEF(sendfile);
         RPC_DEF(socket_to_file);
+
+        RPC_DEF(create_event);
+	RPC_DEF(close_event);
+
+
+	
 
     } = 1;
 } = 1;
