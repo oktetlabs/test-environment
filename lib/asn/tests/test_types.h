@@ -31,6 +31,8 @@
 #include "te_errno.h"
 #include "asn_impl.h"
 
+char *te_lgr_entity = "test";
+
 /* 
 PlainSeq1 ::= [APPLICATION 1] SEQUENCE {
     number INTEGER,
