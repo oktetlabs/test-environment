@@ -70,6 +70,11 @@ extern int rpc_socket(rcf_rpc_server *handle,
 extern int rpc_close(rcf_rpc_server *handle,
                      int fd);
 
+extern int rpc_dup(rcf_rpc_server *handle,
+                   int oldfd);
+extern int rpc_dup2(rcf_rpc_server *handle,
+                    int oldfd, int newfd);
+
 extern int rpc_shutdown(rcf_rpc_server *handle,
                         int s, rpc_shut_how how);
 

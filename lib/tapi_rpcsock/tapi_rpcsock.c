@@ -476,6 +476,71 @@ rpc_close(rcf_rpc_server *handle, int fd)
     RETVAL_RC(close);
 }
 
+int
+rpc_dup(rcf_rpc_server *handle,
+        int oldfd)
+{
+    rcf_rpc_op      op = handle->op;
+    tarpc_dup_in    in;
+    tarpc_dup_out   out;
+
+    if (handle == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        return -1;
+    }
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    handle->op = RCF_RPC_CALL_WAIT;
+    
+    in.oldfd = oldfd;
+
+    rcf_rpc_call(handle, _dup,
+                 &in,  (xdrproc_t)xdr_tarpc_close_in,
+                 &out, (xdrproc_t)xdr_tarpc_close_out);
+    
+    INFO("RPC (%s,%s)%s: dup(%d) -> %d (%s)",
+         handle->ta, handle->name, rpcop2str(op),
+         oldfd, out.fd, errno_rpc2str(RPC_ERRNO(handle)));
+
+    RETVAL_VAL(out.fd, dup);
+}
+
+int
+rpc_dup2(rcf_rpc_server *handle,
+         int oldfd, int newfd)
+{
+    rcf_rpc_op      op = handle->op;
+    tarpc_dup2_in   in;
+    tarpc_dup2_out  out;
+
+    if (handle == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        return -1;
+    }
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    handle->op = RCF_RPC_CALL_WAIT;
+    
+    in.oldfd = oldfd;
+    in.newfd = newfd;
+
+    rcf_rpc_call(handle, _dup,
+                 &in,  (xdrproc_t)xdr_tarpc_close_in,
+                 &out, (xdrproc_t)xdr_tarpc_close_out);
+    
+    INFO("RPC (%s,%s)%s: dup2(%d, %d) -> %d (%s)",
+         handle->ta, handle->name, rpcop2str(op),
+         oldfd, newfd, out.fd, errno_rpc2str(RPC_ERRNO(handle)));
+
+    RETVAL_VAL(out.fd, dup);
+}
+
 int 
 rpc_bind(rcf_rpc_server *handle,
          int s, const struct sockaddr *my_addr, socklen_t addrlen)

@@ -535,6 +535,14 @@ TARPC_FUNC(socket, {},
 }
 )
 
+/*------------------------------ dup() --------------------------------*/
+
+TARPC_FUNC(dup, {}, { MAKE_CALL(out->fd = func(in->oldfd)); })
+
+/*------------------------------ dup2() -------------------------------*/
+
+TARPC_FUNC(dup2, {}, { MAKE_CALL(out->fd = func(in->oldfd, in->newfd)); })
+
 /*------------------------------ close() ------------------------------*/
 
 TARPC_FUNC(close, {}, { MAKE_CALL(out->retval = func(in->fd)); })
