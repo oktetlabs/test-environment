@@ -11,7 +11,7 @@ AM_LDFLAGS=@TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/lib
 
 noinst_HEADERS=tad_dhcp_impl.h
 
-lib_LIBRARIES=libtad_dhcp.a
+noinst_LIBRARIES=libtad_dhcp.a
 
 libtad_dhcp_a_SOURCES=tad_dhcp_stack.c tad_dhcp_layer.c tad_dhcp_csap.c 
 

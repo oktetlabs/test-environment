@@ -11,7 +11,7 @@ AM_LDFLAGS=@TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/lib
 
 noinst_HEADERS=tad_ipstack_impl.h
 
-lib_LIBRARIES=libtad_ipstack.a
+noinst_LIBRARIES=libtad_ipstack.a
 
 libtad_ipstack_a_SOURCES=tad_ipstack_csaps.c \
                          tad_ipv4_layer.c \

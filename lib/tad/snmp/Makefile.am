@@ -20,9 +20,12 @@ AM_LDFLAGS=@TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/lib
 
 noinst_HEADERS=tad_snmp_impl.h
 
-lib_LIBRARIES=libtad_snmp.a
+noinst_LIBRARIES=libtad_snmp.a
+
 
 libtad_snmp_a_SOURCES=tad_snmp_stack.c tad_snmp_layer.c tad_snmp_csap.c 
+
+#libtad_snmp_a_LIBADD= @NET_SNMP_LIBS@
 
 
 install-exec-hook:

@@ -11,7 +11,7 @@ AM_LDFLAGS=@TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/lib
 
 noinst_HEADERS=tad_cli_impl.h
 
-lib_LIBRARIES=libtad_cli.a
+noinst_LIBRARIES=libtad_cli.a
 
 libtad_cli_a_SOURCES=tad_cli_stack.c tad_cli_layer.c tad_cli_csap.c 
 
