@@ -10,7 +10,7 @@
             <value>Agt_A</value>
         </arg>
         <arg name="snmp_agt" handdown="true">
-            <value>192.168.37.14</value>
+            <value>192.168.37.18</value>
         </arg>
         <arg name="snmp_version" handdown="true">
             <value>2</value>
