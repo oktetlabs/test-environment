@@ -26,12 +26,12 @@ endif
 
 TAD_FULL_LIBLIST=$(noinst_LIBRARIES)@TAD_LIBLIST@
 
-lib_LIBRARIES=libtad.a
+lib_LIBRARIES=lib@with_name@.a
 
-libtad_a_SOURCES=
-libtad_a_DEPENDENCIES=$(TAD_FULL_LIBLIST)
+lib@with_name@_a_SOURCES=
+lib@with_name@_a_DEPENDENCIES=$(TAD_FULL_LIBLIST)
 
-libtad.a: $(libtad_a_DEPENDENCIES)
+lib@with_name@.a: $(lib@with_name@_a_DEPENDENCIES)
 	AR_SCRIPT="CREATE $@\n" ; \
 	for i in $(TAD_FULL_LIBLIST) ; do \
 		AR_SCRIPT="$${AR_SCRIPT}ADDLIB $$i\n" ; \
@@ -41,7 +41,7 @@ libtad.a: $(libtad_a_DEPENDENCIES)
 	$(RANLIB) $@
 
 install-exec-hook:
-	touch -c -r libtad.a $(DESTDIR)/$(prefix)/lib/libtad.a
+	touch -c -r lib@with_name@.a $(DESTDIR)/$(prefix)/lib/lib@with_name@.a
 
 install-data-hook:
 	for i in $(include_HEADERS) ; do \
