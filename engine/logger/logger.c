@@ -141,7 +141,7 @@ te_handler(void)
     struct ipc_server          *srv = NULL;
     struct ipc_server_client   *ipcsc_p;
     size_t                      buf_len;
-    char                       *buf;
+    uint8_t                    *buf;
     size_t                      len;
     int                         rc;
 
@@ -204,7 +204,7 @@ te_handler(void)
             if (rc != 0)
             {
                 ERROR("Failed to receive the rest of the message "
-                      "from client: %X", rc);
+                      "from client, rest=%u: %X", len, rc);
                 break;
             }
             if (received + len != total)
