@@ -2,7 +2,8 @@
  * @brief Test Environment:
  *
  * Communication library - Test Agent side
- * Definition of routines provided for library user *
+ * Implementation of routines provided for library user
+ *
  *
  * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
  * root directory of the distribution).
@@ -22,9 +23,10 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
  *
- * Author: Andrey Ivanov <andron@oktetlabs.ru>
  *
- * @(#) $Id$
+ * @author Andrey Ivanov <andron@oktet.ru>
+ *
+ * $Id$
  */
 
 #include "te_config.h"
@@ -69,14 +71,16 @@
 
 
 /** This structure is used to store some context for each connection. */
-struct rcf_comm_connection{
+struct rcf_comm_connection {
     int     socket;          /**< Connection socket */
     size_t  bytes_to_read;   /**< Number of bytes of attachment to read */
 };
 
+
 /* Static function declaration. See implementation for comments */
 static int find_attach(char *buf, size_t len);
 static int read_socket(int socket, void *buffer, size_t len);
+
 
 /**
  * Wait for incoming connection from the Test Engine side of the
@@ -116,6 +120,7 @@ rcf_comm_agent_init(const char *config_str,
     if (rc < 0)
     {
         perror("setsockopt() error");
+        (void)close(s);
         return errno;
     }
 
@@ -123,6 +128,7 @@ rcf_comm_agent_init(const char *config_str,
     if (rc < 0)
     {
         perror("bind() error");
+        (void)close(s);
         return errno;
     }
 
@@ -130,6 +136,7 @@ rcf_comm_agent_init(const char *config_str,
     if (rc != 0)
     {
         perror("listen() error");
+        (void)close(s);
         return errno;
     }
 
@@ -137,6 +144,7 @@ rcf_comm_agent_init(const char *config_str,
     if (s1 < 0)
     {
         perror("accept() error");
+        (void)close(s);
         return errno;
     }
 
@@ -144,6 +152,7 @@ rcf_comm_agent_init(const char *config_str,
     if (close(s) < 0)
     {
         perror("close(s) error");
+        (void)close(s1);
         return errno;
     }
 
@@ -161,6 +170,7 @@ rcf_comm_agent_init(const char *config_str,
     if ((*p_rcc) == NULL)
     {
         perror("memory allocation error");
+        (void)close(s1);
         return errno;
     }
 
@@ -400,6 +410,9 @@ rcf_comm_agent_reply(struct rcf_comm_connection *rcc, const void *buffer,
 int
 rcf_comm_agent_close(struct rcf_comm_connection **p_rcc)
 {
+    if (p_rcc == NULL)
+        return EINVAL;
+
     if (*p_rcc == NULL)
         return 0;
 
@@ -513,7 +526,7 @@ find_attach(char *buf, size_t len)
 }
 
 /**
- * Read specified number of bytes (not less) from the connection
+ * Read specified number of bytes (not less) from the connection.
  *
  * @param socket        Connection socket
  * @param buf           Buffer to store the data
@@ -534,8 +547,13 @@ read_socket(int socket, void *buffer, size_t len)
         r = recv(socket, buffer, len, 0);
         if (r < 0)
         {
-            perror ("read socket: ");
+            perror("recv() from socket");
             return errno;
+        }
+        else if (r == 0)
+        {
+            fprintf(stderr, "recv() returned 0, connection is closed");
+            return EPIPE;
         }
         assert((size_t)r <= len);
 
