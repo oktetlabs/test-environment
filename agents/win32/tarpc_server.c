@@ -26,7 +26,6 @@
  *
  * $Id: tarpc_server.c 4215 2004-08-04 06:37:49Z igorv $
  */
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -42,9 +41,6 @@
 #include <signal.h>
 #include <string.h>
 #include <fcntl.h>
-
-#include "win32_dummy.h"
-
 
 #include "te_defs.h"
 #include "te_errno.h"
@@ -1331,22 +1327,8 @@ TARPC_FUNC(simple_receiver, {},
 }
 )
 
-#if NOT_YET
-
 #define FLOODER_ECHOER_WAIT_FOR_RX_EMPTY        1
 #define FLOODER_BUF                             4096
-
-/*-------------------------- flooder() --------------------------*/
-TARPC_FUNC(flooder, {},
-{
-    MAKE_CALL(out->retval = func((int)in));
-    COPY_ARG(tx_stat);
-    COPY_ARG(rx_stat);
-}
-)
-
-typedef int (*flood_api_func)(struct pollfd *ufds,
-                              unsigned int nfds, int timeout);
 
 /**
  * Routine which receives data from specified set of sockets and sends data 
@@ -1368,22 +1350,12 @@ typedef int (*flood_api_func)(struct pollfd *ufds,
 int
 flooder(tarpc_flooder_in *in)
 {
-    sock_api_func select_func;
-    sock_api_func pselect_func;
-    sock_api_func p_func;
-    sock_api_func write_func;
-    sock_api_func read_func;
-    sock_api_func ioctl_func;
-
-    flood_api_func poll_func;
-
     int        *rcvrs = in->rcvrs.rcvrs_val;
     int         rcvnum = in->rcvrs.rcvrs_len;
     int        *sndrs = in->sndrs.sndrs_val;
     int         sndnum = in->sndrs.sndrs_len;
     int         bulkszs = in->bulkszs;
     int         time2run = in->time2run;
-    iomux_func  iomux = in->iomux;
     te_bool     rx_nb = in->rx_nonblock;
 
     unsigned long   *tx_stat = in->tx_stat.tx_stat_val;
@@ -1397,14 +1369,11 @@ flooder(tarpc_flooder_in *in)
     char     snd_buf[FLOODER_BUF];
 
     fd_set          rfds, wfds;
-    struct pollfd   ufds[RPC_POLL_NFDS_MAX] = { {0, 0, 0}, };
-    int             ufds_elements = (sndnum >= rcvnum) ? sndnum: rcvnum;
     int             max_descr = 0;
 
     struct timeval  timeout;
     struct timeval  timestamp;
     struct timeval  call_timeout;
-    struct timespec ts;
     te_bool         time2run_not_expired = TRUE;
     te_bool         session_rx;
 
@@ -1412,25 +1381,13 @@ flooder(tarpc_flooder_in *in)
     memset(rcv_buf, 0x0, FLOODER_BUF);
     memset(snd_buf, 0xA, FLOODER_BUF);
 
-    if ((find_func((tarpc_in_arg *)in, "select", &select_func) != 0)   ||
-        (find_func((tarpc_in_arg *)in, "pselect", &pselect_func) != 0) ||
-        (find_func((tarpc_in_arg *)in, "poll", &p_func) != 0)          ||
-        (find_func((tarpc_in_arg *)in, "read", &read_func) != 0)       ||
-        (find_func((tarpc_in_arg *)in, "write", &write_func) != 0)     ||
-        (find_func((tarpc_in_arg *)in, "ioctl", &ioctl_func) != 0))
-    {
-        return -1;
-    }
-
-    poll_func = (flood_api_func)p_func;
-
     if (rx_nb)
     {
-        int on = 1;
+        u_long on = 1;
 
         for (i = 0; i < rcvnum; ++i)
         {
-            if ((ioctl(rcvrs[i], FIONBIO, &on)) != 0)
+            if ((ioctlsocket(rcvrs[i], FIONBIO, &on)) != 0)
             {
                 ERROR("%s(): ioctl(FIONBIO) failed: %X", __FUNCTION__, errno);
                 return -1;
@@ -1450,33 +1407,6 @@ flooder(tarpc_flooder_in *in)
             max_descr = sndrs[i];
     }
 
-    /* 
-     * FIXME
-     * If 'b_array' does not contain all descriptors in 'l_array',
-     * the last will be missing.
-     */
-    if (iomux == FUNC_POLL)
-    {
-        int  j;
-        int *b_array = (sndnum >= rcvnum) ? sndrs: rcvrs;
-        int  b_length = (sndnum >= rcvnum) ? sndnum: rcvnum;
-        int  b_flag = (sndnum >= rcvnum) ? POLLOUT: POLLIN;
-        int *l_array = (sndnum >= rcvnum) ? rcvrs: sndrs;
-        int  l_length = (sndnum >= rcvnum) ? rcvnum: sndnum;
-        int  l_flag = (sndnum >= rcvnum) ? POLLIN: POLLOUT;
-
-        for (i = 0; i < b_length; i++)
-        {
-            ufds[i].fd = b_array[i];
-            ufds[i].events = b_flag;
-            for (j = 0; j < l_length; j ++)
-            {
-                if (ufds[i].fd == l_array[j])
-                    ufds[i].events |= l_flag;
-            }
-        }
-    }
-
     if (gettimeofday(&timeout, NULL))
     {
         ERROR("%s(): gettimeofday(timeout) failed: %X", __FUNCTION__, errno);
@@ -1493,107 +1423,38 @@ flooder(tarpc_flooder_in *in)
     do {
         session_rx = FALSE;
 
-        /* If select() or pselect() should be used as iomux function */
-        if (iomux == FUNC_SELECT ||
-            iomux == FUNC_PSELECT)
+        /* Prepare sets of file descriptors */
+        FD_ZERO(&rfds);
+        FD_ZERO(&wfds);
+        for (i = 0; time2run_not_expired && (i < sndnum); ++i)
+            FD_SET((unsigned int)sndrs[i], &wfds);
+        for (i = 0; i < rcvnum; ++i)
+            FD_SET((unsigned int)rcvrs[i], &rfds);
+
+        if (select(max_descr + 1, &rfds,
+                   time2run_not_expired ? &wfds : NULL,
+                   NULL, &call_timeout) < 0)
         {
-            /* Prepare sets of file descriptors */
-            FD_ZERO(&rfds);
-            FD_ZERO(&wfds);
-            for (i = 0; time2run_not_expired && (i < sndnum); ++i)
-                FD_SET(sndrs[i], &wfds);
-            for (i = 0; i < rcvnum; ++i)
-                FD_SET(rcvrs[i], &rfds);
-
-            if (iomux == FUNC_SELECT)
-            {
-                rc = select_func(max_descr + 1, &rfds,
-                                 time2run_not_expired ? &wfds : NULL,
-                                 NULL, &call_timeout);
-            }
-            else
-            {
-                ts.tv_sec  = call_timeout.tv_sec;
-                ts.tv_nsec = call_timeout.tv_usec * 1000;
-                rc = pselect_func(max_descr + 1, &rfds,
-                                  time2run_not_expired ? &wfds : NULL,
-                                  NULL, &ts, NULL);
-            }
-            if (rc < 0)
-            {
-                ERROR("%s(): (p)select() failed: %X", __FUNCTION__, errno);
-                return -1;
-            }
-
-            /*
-             * Send data to sockets that are ready for sending
-             * if time is not expired.
-             */
-            if (time2run_not_expired && (rc > 0))
-            {
-                for (i = 0; i < sndnum; i++)
-                {
-                    if (FD_ISSET(sndrs[i], &wfds))
-                    {
-                        sent = write_func(sndrs[i], snd_buf, bulkszs);
-                        if ((sent < 0) &&
-                            (errno != EAGAIN) && (errno != EWOULDBLOCK))
-                        {
-                            ERROR("%s(): write() failed: %X",
-                                  __FUNCTION__, errno);
-                            return -1;
-                        }
-                        if ((sent > 0) && (tx_stat != NULL))
-                        {
-                            tx_stat[i] += sent;
-                        }
-                    }
-                }
-            }
-
-            /* Receive data from sockets that are ready */
-            for (i = 0; rc > 0 && i < rcvnum; i++)
-            {
-                if (FD_ISSET(rcvrs[i], &rfds))
-                {
-                    received = read_func(rcvrs[i], rcv_buf, sizeof(rcv_buf));
-                    if ((received < 0) &&
-                        (errno != EAGAIN) && (errno != EWOULDBLOCK))
-                    {
-                        ERROR("%s(): read() failed: %X", __FUNCTION__, errno);
-                        return -1;
-                    }
-                    if (received > 0)
-                    {
-                        session_rx = TRUE;
-                        if (rx_stat != NULL)
-                            rx_stat[i] += received;
-                        if (!time2run_not_expired)
-                            VERB("FD=%d Rx=%d", ufds[i].fd, received);
-                    }
-                }
-            }
+            ERROR("%s(): (p)select() failed: %X", __FUNCTION__, errno);
+            return -1;
         }
-        else if (iomux == FUNC_POLL) /* poll() should be used as iomux */
+
+        /*
+         * Send data to sockets that are ready for sending
+         * if time is not expired.
+         */
+        if (time2run_not_expired && (rc > 0))
         {
-            rc = poll_func(ufds, ufds_elements, call_timeout.tv_sec * 1000 +
-                                                call_timeout.tv_usec / 1000);
-
-            if (rc < 0)
+            for (i = 0; i < sndnum; i++)
             {
-                ERROR("%s(): poll() failed: %X", __FUNCTION__, errno);
-                return -1;
-            }
-
-            for (i = 0; (rc > 0) && i < ufds_elements; i++)
-            {
-                if (time2run_not_expired && (ufds[i].revents & POLLOUT))
+                if (FD_ISSET(sndrs[i], &wfds))
                 {
-                    sent = write_func(ufds[i].fd, snd_buf, bulkszs);
+                    sent = send(sndrs[i], snd_buf, bulkszs, 0);
                     if ((sent < 0) &&
                         (errno != EAGAIN) && (errno != EWOULDBLOCK))
                     {
-                        ERROR("%s(): write() failed: %X", __FUNCTION__, errno);
+                        ERROR("%s(): write() failed: %X",
+                              __FUNCTION__, errno);
                         return -1;
                     }
                     if ((sent > 0) && (tx_stat != NULL))
@@ -1601,40 +1462,31 @@ flooder(tarpc_flooder_in *in)
                         tx_stat[i] += sent;
                     }
                 }
-                if (ufds[i].revents & POLLIN)
-                {
-                    received = read_func(ufds[i].fd, rcv_buf, sizeof(rcv_buf));
-                    if ((received < 0) &&
-                        (errno != EAGAIN) && (errno != EWOULDBLOCK))
-                    {
-                        ERROR("%s(): read() failed: %X", __FUNCTION__, errno);
-                        return -1;
-                    }
-                    if (received > 0)
-                    {
-                        session_rx = TRUE;
-                        if (rx_stat != NULL)
-                            rx_stat[i] += received;
-                        if (!time2run_not_expired)
-                            VERB("FD=%d Rx=%d", ufds[i].fd, received);
-                    }
-                }
-#ifdef DEBUG
-                if ((!time2run_not_expired) &&
-                    (ufds[i].revents & ~POLLIN))
-                {
-                    WARN("poll() returned unexpected events: 0x%x",
-                         ufds[i].revents);
-                }
-#endif
             }
         }
-        else
-        {
-            ERROR("%s(): unknown iomux() function", __FUNCTION__);
-            return -1;
-        }
 
+        /* Receive data from sockets that are ready */
+        for (i = 0; rc > 0 && i < rcvnum; i++)
+        {
+            if (FD_ISSET(rcvrs[i], &rfds))
+            {
+                received = recv(rcvrs[i], rcv_buf, sizeof(rcv_buf), 0);
+                if ((received < 0) &&
+                    (errno != EAGAIN) && (errno != EWOULDBLOCK))
+                {
+                    ERROR("%s(): read() failed: %X", __FUNCTION__, errno);
+                    return -1;
+                }
+                if (received > 0)
+                {
+                    session_rx = TRUE;
+                    if (rx_stat != NULL)
+                        rx_stat[i] += received;
+                    if (!time2run_not_expired)
+                        VERB("FD=%d Rx=%d", rcvrs[i], received);
+                }
+            }
+        }
 
         if (time2run_not_expired)
         {
@@ -1661,11 +1513,6 @@ flooder(tarpc_flooder_in *in)
             if (call_timeout.tv_sec < 0)
             {
                 time2run_not_expired = FALSE;
-                /* Clean up POLLOUT requests for all descriptors */
-                for (i = 0; i < ufds_elements; ++i)
-                {
-                    ufds[i].events &= ~POLLOUT;
-                }
                 /* Just to make sure that we'll get all from buffers */
                 session_rx = TRUE;
                 INFO("%s(): time2run expired", __FUNCTION__);
@@ -1692,11 +1539,11 @@ flooder(tarpc_flooder_in *in)
     
     if (rx_nb)
     {
-        int off = 0;
+        u_long off = 0;
 
         for (i = 0; i < rcvnum; ++i)
         {
-            if ((ioctl(rcvrs[i], FIONBIO, &off)) != 0)
+            if ((ioctlsocket((unsigned int)rcvrs[i], FIONBIO, &off)) != 0)
             {
                 ERROR("%s(): ioctl(FIONBIO) failed: %X", __FUNCTION__, errno);
                 return -1;
@@ -1712,14 +1559,22 @@ flooder(tarpc_flooder_in *in)
     return 0;
 }
 
-/*-------------------------- echoer() --------------------------*/
-TARPC_FUNC(echoer, {},
+/*-------------------------- flooder() --------------------------*/
+TARPC_FUNC(flooder, {},
 {
-    MAKE_CALL(out->retval = func((int)in));
+    if (in->iomux != FUNC_SELECT)
+    {
+       ERROR("Unsipported iomux type for flooder");
+       out->retval = TE_RC(TE_TA_WIN32, ENOTSUP); 
+       return 0;
+    }
+    MAKE_CALL(out->retval = flooder(in));
     COPY_ARG(tx_stat);
     COPY_ARG(rx_stat);
 }
 )
+
+/*-------------------------- echoer() --------------------------*/
 
 /**
  * Routine which receives data from specified set of
@@ -1738,18 +1593,9 @@ TARPC_FUNC(echoer, {},
 int
 echoer(tarpc_echoer_in *in)
 {
-    sock_api_func select_func;
-    sock_api_func pselect_func;
-    sock_api_func p_func;
-    sock_api_func write_func;
-    sock_api_func read_func;
-
-    flood_api_func poll_func;
-
     int        *sockets = in->sockets.sockets_val;
     int         socknum = in->sockets.sockets_len;
     int         time2run = in->time2run;
-    iomux_func  iomux = in->iomux;
 
     unsigned long   *tx_stat = in->tx_stat.tx_stat_val;
     unsigned long   *rx_stat = in->rx_stat.rx_stat_val;
@@ -1761,30 +1607,16 @@ echoer(tarpc_echoer_in *in)
     char     buf[FLOODER_BUF];
 
     fd_set          rfds;
-    struct pollfd   ufds[RPC_POLL_NFDS_MAX] = { {0, 0, 0}, };
-    int             ufds_elements = socknum;
     int             max_descr = 0;
 
     struct timeval  timeout;
     struct timeval  timestamp;
     struct timeval  call_timeout;
-    struct timespec ts;
     te_bool         time2run_not_expired = TRUE;
     te_bool         session_rx;
 
-
     memset(buf, 0x0, FLOODER_BUF);
 
-    if ((find_func((tarpc_in_arg *)in, "select", &select_func) != 0)   ||
-        (find_func((tarpc_in_arg *)in, "pselect", &pselect_func) != 0) ||
-        (find_func((tarpc_in_arg *)in, "poll", &p_func) != 0)          ||
-        (find_func((tarpc_in_arg *)in, "read", &read_func) != 0)       ||
-        (find_func((tarpc_in_arg *)in, "write", &write_func) != 0))
-    {
-        return -1;
-    }
-
-    poll_func = (flood_api_func)p_func;
 
     /* Calculate max descriptor */
     for (i = 0; i < socknum; i++)
@@ -1793,14 +1625,6 @@ echoer(tarpc_echoer_in *in)
             max_descr = sockets[i];
     }
 
-    if (iomux == FUNC_POLL)
-    {
-        for (i = 0; i < socknum; i++)
-        {
-            ufds[i].fd = sockets[i];
-            ufds[i].events = POLLIN;
-        }
-    }
 
     if (gettimeofday(&timeout, NULL))
     {
@@ -1818,102 +1642,43 @@ echoer(tarpc_echoer_in *in)
     do {
         session_rx = FALSE;
 
-        /* If select() or pselect() should be used as iomux function */
-        if (iomux == FUNC_SELECT ||
-            iomux == FUNC_PSELECT)
+        /* Prepare sets of file descriptors */
+        FD_ZERO(&rfds);
+        for (i = 0; i < socknum; i++)
+            FD_SET((unsigned int)sockets[i], &rfds);
+
+        if (select(max_descr + 1, &rfds, NULL, NULL, &call_timeout) < 0)
         {
-            /* Prepare sets of file descriptors */
-            FD_ZERO(&rfds);
-            for (i = 0; i < socknum; i++)
-                FD_SET(sockets[i], &rfds);
-
-            if (iomux == FUNC_SELECT)
-            {
-                rc = select_func(max_descr + 1, &rfds, NULL, NULL,
-                                 &call_timeout);
-            }
-            else
-            {
-                ts.tv_sec  = call_timeout.tv_sec;
-                ts.tv_nsec = call_timeout.tv_usec * 1000;
-                rc = pselect_func(max_descr + 1, &rfds, NULL, NULL, &ts,
-                                  NULL);
-            }
-            if (rc < 0)
-            {
-                ERROR("%s(): (p)select() failed: %X", __FUNCTION__, errno);
-                return -1;
-            }
-
-            /* Receive data from sockets that are ready */
-            for (i = 0; (rc > 0) && i < socknum; i++)
-            {
-                if (FD_ISSET(sockets[i], &rfds))
-                {
-                    received = read_func(sockets[i], buf, sizeof(buf));
-                    if (received < 0)
-                    {
-                        ERROR("%s(): read() failed: %X", __FUNCTION__, errno);
-                        return -1;
-                    }
-                    if (rx_stat != NULL)
-                        rx_stat[i] += received;
-                    session_rx = TRUE;
-
-                    sent = write_func(sockets[i], buf, received);
-                    if (sent < 0)
-                    {
-                        ERROR("%s(): write() failed: %X",
-                              __FUNCTION__, errno);
-                        return -1;
-                    }
-                    if (tx_stat != NULL)
-                        tx_stat[i] += sent;
-                }
-            }
-        }
-        else if (iomux == FUNC_POLL) /* poll() should be used as iomux */
-        {
-            rc = poll_func(ufds, ufds_elements, call_timeout.tv_sec * 1000 +
-                                                call_timeout.tv_usec / 1000);
-
-            if (rc < 0)
-            {
-                ERROR("%s(): poll() failed: %X", __FUNCTION__, errno);
-                return -1;
-            }
-
-            for (i = 0; i < ufds_elements; i++)
-            {
-                if (ufds[i].revents & POLLIN)
-                {
-                    received = read_func(ufds[i].fd, buf, sizeof(buf));
-                    if (received < 0)
-                    {
-                        ERROR("%s(): read() failed: %X", __FUNCTION__, errno);
-                        return -1;
-                    }
-                    if (rx_stat != NULL)
-                        rx_stat[i] += received;
-                    session_rx = TRUE;
-
-                    sent = write_func(ufds[i].fd, buf, received);
-                    if (sent < 0)
-                    {
-                        ERROR("%s(): write() failed: %X", __FUNCTION__, errno);
-                        return -1;
-                    }
-                    if (tx_stat != NULL)
-                        tx_stat[i] += sent;
-                }
-            }
-        }
-        else
-        {
-            ERROR("%s(): unknown iomux() function", __FUNCTION__);
+            ERROR("%s(): select() failed: %X", __FUNCTION__, errno);
             return -1;
         }
 
+        /* Receive data from sockets that are ready */
+        for (i = 0; rc > 0 && i < socknum; i++)
+        {
+            if (FD_ISSET(sockets[i], &rfds))
+            {
+                received = recv(sockets[i], buf, sizeof(buf), 0);
+                if (received < 0)
+                {
+                    ERROR("%s(): read() failed: %X", __FUNCTION__, errno);
+                    return -1;
+                }
+                if (rx_stat != NULL)
+                    rx_stat[i] += received;
+                session_rx = TRUE;
+
+                sent = send(sockets[i], buf, received, 0);
+                if (sent < 0)
+                {
+                    ERROR("%s(): write() failed: %X",
+                          __FUNCTION__, errno);
+                    return -1;
+                }
+                if (tx_stat != NULL)
+                    tx_stat[i] += sent;
+            }
+        }
 
         if (time2run_not_expired)
         {
@@ -1968,36 +1733,22 @@ echoer(tarpc_echoer_in *in)
     return 0;
 }
 
-
-/** Macro for producing of diagnostic messages sent to the engine */
-#define DIAG(fmt...) \
-    do {                                                        \
-        snprintf(out->diag.diag_val, out->diag.diag_len, fmt);  \
-        errno = 0;                                              \
-    } while (0)
-
-/*------------------------------ sendfile() ------------------------------*/
-
-TARPC_FUNC(sendfile,
+TARPC_FUNC(echoer, {},
 {
-    COPY_ARG(offset);
-},
-{
-    MAKE_CALL(out->retval =
-        func(in->out_fd, in->in_fd,
-             out->offset.offset_len == 0 ? NULL : out->offset.offset_val,
-             in->count));
+    if (in->iomux != FUNC_SELECT)
+    {
+       ERROR("Unsipported iomux type for echoer");
+       out->retval = TE_RC(TE_TA_WIN32, ENOTSUP); 
+       return 0;
+    }
+    MAKE_CALL(out->retval = echoer(in));
+    COPY_ARG(tx_stat);
+    COPY_ARG(rx_stat);
 }
 )
 
 /*------------------------------ socket_to_file() ------------------------------*/
 #define SOCK2FILE_BUF_LEN  4096
-
-TARPC_FUNC(socket_to_file, {},
-{
-   MAKE_CALL(out->retval = func((int)in));
-}
-)
 
 /**
  * Routine which receives data from socket and write data
@@ -2008,10 +1759,6 @@ TARPC_FUNC(socket_to_file, {},
 int
 socket_to_file(tarpc_socket_to_file_in *in)
 {
-    sock_api_func select_func;
-    sock_api_func write_func;
-    sock_api_func read_func;
-
     int      sock = in->sock;
     char    *path = in->path.path_val;
     long     time2run = in->timeout;
@@ -2030,26 +1777,19 @@ socket_to_file(tarpc_socket_to_file_in *in)
     struct timeval  call_timeout;
     te_bool         time2run_not_expired = TRUE;
     te_bool         next_read;
+    
     path[in->path.path_len] = '\0';
     INFO("socket_to_file() called with: sock=%d, path=%s, timeout=%ld",
          sock, path, time2run);
     {
-        int on = 1;
+        u_long on = 1;
 
-        if ((ioctl(sock, FIONBIO, &on)) != 0)
+        if ((ioctlsocket(sock, FIONBIO, &on)) != 0)
         {
             ERROR("%s(): ioctl(FIONBIO) failed: %X", __FUNCTION__, errno);
             rc = -1;
             goto local_exit;
         }
-    }
-
-    if ((find_func((tarpc_in_arg *)in, "select", &select_func) != 0)   ||
-        (find_func((tarpc_in_arg *)in, "read", &read_func) != 0)       ||
-        (find_func((tarpc_in_arg *)in, "write", &write_func) != 0))
-    {
-        rc = -1;
-        goto local_exit;
     }
 
     file_d = open(path, O_CREAT | O_RDWR, S_IRWXU | S_IRWXG | S_IRWXO);
@@ -2079,9 +1819,9 @@ socket_to_file(tarpc_socket_to_file_in *in)
     do {
         /* Prepare sets of file descriptors */
         FD_ZERO(&rfds);
-        FD_SET(sock, &rfds);
+        FD_SET((unsigned int)sock, &rfds);
 
-        rc = select_func(sock + 1, &rfds, NULL, NULL, &call_timeout);
+        rc = select(sock + 1, &rfds, NULL, NULL, &call_timeout);
         if (rc < 0)
         {
             ERROR("%s(): select() failed: %X", __FUNCTION__, errno);
@@ -2097,7 +1837,7 @@ socket_to_file(tarpc_socket_to_file_in *in)
             do {
                 INFO("socket_to_file(): select observes data for "
                      "reading on the socket=%d", sock);
-                received = read_func(sock, buffer, sizeof(buffer));
+                received = recv(sock, buffer, sizeof(buffer), 0);
                 INFO("socket_to_file(): read() retrieve %d bytes", received);
                 if ((received < 0) &&
                     (errno != EAGAIN) && (errno != EWOULDBLOCK))
@@ -2184,9 +1924,9 @@ local_exit:
         close(file_d);
 
     {
-        int off = 1;
+        u_long off = 1;
 
-        if ((ioctl(sock, FIONBIO, &off)) != 0)
+        if ((ioctlsocket(sock, FIONBIO, &off)) != 0)
         {
             ERROR("%s(): ioctl(FIONBIO, off) failed: %X", __FUNCTION__, errno);
             rc = -1;
@@ -2201,7 +1941,12 @@ local_exit:
     return rc;
 }
 
-#endif
+TARPC_FUNC(socket_to_file, {},
+{
+   MAKE_CALL(out->retval = socket_to_file(in));
+}
+)
+
 
 /* Unsupported stuff */
 
@@ -2225,11 +1970,8 @@ TARPC_FUNC(___func, {},                                         \
 
 TARPC_FUNC_UNSUPPORTED(sendmsg); /* Should be   */
 TARPC_FUNC_UNSUPPORTED(recvmsg); /* implemented */
-TARPC_FUNC_UNSUPPORTED(flooder);
-TARPC_FUNC_UNSUPPORTED(echoer);
-TARPC_FUNC_UNSUPPORTED(sendfile);
-TARPC_FUNC_UNSUPPORTED(socket_to_file);
 
+TARPC_FUNC_UNSUPPORTED(sendfile);
 TARPC_FUNC_UNSUPPORTED(socketpair);
 TARPC_FUNC_UNSUPPORTED(pipe);
 TARPC_FUNC_UNSUPPORTED(write);

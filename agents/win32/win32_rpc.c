@@ -52,8 +52,6 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 
-#include "win32_dummy.h"
-
 #include "te_defs.h"
 #include "te_errno.h"
 #include "comm_agent.h"
@@ -358,7 +356,7 @@ tarpc_add_server(char *name, int pid)
 
     memset(&addr, 0, sizeof (addr));
     addr.sin_family = AF_INET;
-    if (bind(tmp->sock, &addr, sizeof(addr))) {
+    if (bind(tmp->sock, (struct sockaddr *)&addr, sizeof(addr))) {
         ERROR("bind failed: %d", errno);
         free(tmp);
         return TE_RC(TE_TA_WIN32, errno);
