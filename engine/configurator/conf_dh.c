@@ -634,7 +634,7 @@ has_backup(cfg_dh_entry *entry, char *filename)
     for (tmp = entry->backup; 
          tmp != NULL && strcmp(tmp->filename, filename) != 0;
          tmp = tmp->next);
-         
+    
     return tmp != NULL;
 }
 
@@ -658,19 +658,19 @@ cfg_dh_restore_backup(char *filename)
     
     int rc;
     int result = 0;
-
+    
     cfg_dh_optimize();
     
     /* At first, look for an instance with the backup */
     if (filename != NULL)
     {
         for (limit = first; limit != NULL; limit = limit->next)
-            if (limit->backup != NULL && !has_backup(limit, filename))
+            if (limit->backup != NULL && has_backup(limit, filename))
                 break;
             
         if (limit == NULL)
         {
-            ERROR("Position of the backup in dynamic history not found");
+            ERROR("Position of the backup in dynamic history is not found");
             return ENOENT;
         }
     }

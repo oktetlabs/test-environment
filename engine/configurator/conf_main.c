@@ -1055,7 +1055,7 @@ main(int argc, char **argv)
             
         if (cfg_shutdown)
         {
-#if 0
+#if 1
             print_otree(&cfg_obj_root, 0);
             print_tree(&cfg_inst_root, 0);
 #endif    
