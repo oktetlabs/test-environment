@@ -90,7 +90,7 @@ int asn_parse_value_text(const char*text, const asn_type *type,
                          asn_value_p *parsed, int *parsed_syms);
 
 
-#define PARSE_BUF 0x400
+#define PARSE_BUF 0x1000
 
 /**
  * Parse label in ASN.1 text, that is "valuereference" according to ASN.1 
@@ -213,7 +213,7 @@ asn_impl_pt_charstring(const char*text, const asn_type *type,
  * @return zero on success, otherwise error code.
  */ 
 int 
-asn_impl_pt_octstring(const char*text, const asn_type *type, 
+asn_impl_pt_octstring(const char *text, const asn_type *type, 
                       asn_value_p *parsed, int *syms_parsed)
 {
     const char *pt = text; 
@@ -237,6 +237,7 @@ asn_impl_pt_octstring(const char*text, const asn_type *type,
     if (*pt != '\'')
     {
         /* ERROR! there are no OCTET string */
+        *syms_parsed = pt - text;
         return EASNTXTNOTOCTSTR;
     } 
     pt++; 
@@ -250,6 +251,7 @@ asn_impl_pt_octstring(const char*text, const asn_type *type,
         if ((octstr_len && (b_num == octstr_len) ) || 
             (b_num == PARSE_BUF))
         {
+            *syms_parsed = pt - text;
             return EASNTXTPARSE;
         }
 
@@ -264,15 +266,19 @@ asn_impl_pt_octstring(const char*text, const asn_type *type,
 
         byte = strtol(txt_buf, &end_ptr, 16);
         if (*end_ptr) /* There are not two hexadecimal digits. */
+        {
+            *syms_parsed = pt - text;
             return EASNTXTNOTOCTSTR;
+        }
 
         buffer[b_num] = byte; b_num++;
     } 
-    pt ++;
+    pt++;
 
     if (*pt != 'H')
     {
         /* ERROR! there are no OCTET string */
+        *syms_parsed = pt - text;
         return EASNTXTNOTOCTSTR;
     } 
 
@@ -548,7 +554,10 @@ asn_impl_pt_named_array(const char *text, const asn_type *type,
     while (isspace(*pt))
         pt++; 
     if (*pt != '{')
+    {
+        *parsed_syms = pt - text;
         return EASNTXTPARSE; 
+    }
 
     pt++;
 
@@ -568,6 +577,7 @@ asn_impl_pt_named_array(const char *text, const asn_type *type,
         {
             if (*pt == '}') 
             { pt++; break; }
+            *parsed_syms = pt - text;
             return rc;
         }
         rc = asn_impl_find_subtype(type, label_buf, &subtype);
