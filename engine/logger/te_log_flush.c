@@ -102,11 +102,11 @@ sigint_handler(int sig)
 int
 main(void)
 {
-    char *ta_names = NULL;
-    int   names_len;
-    int   scale = 0;
-    int   res;
-    int   str_len = 0;
+    char           *ta_names = NULL;
+    size_t          names_len;
+    unsigned int    scale = 0;
+    size_t          str_len = 0;
+    int             res;
 
     signal(SIGINT, sigint_handler);
 
