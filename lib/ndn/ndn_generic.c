@@ -93,8 +93,11 @@ static asn_named_entry_t _ndn_data_unit_mask_ne_array [] =
     { "free-len", &asn_base_null_s, {PRIVATE, 1} }
 }; 
 
- asn_type ndn_data_unit_mask_s = 
-{ "DATA-UNIT-mask", {PRIVATE, 2}, SEQUENCE, 3, {_ndn_data_unit_mask_ne_array} };
+asn_type ndn_data_unit_mask_s = 
+{ 
+    "DATA-UNIT-mask", {PRIVATE, 2}, SEQUENCE, 3, 
+    {_ndn_data_unit_mask_ne_array} 
+};
 
 
 
@@ -145,10 +148,10 @@ NDN_DATA_UNIT_TYPE (int4,          asn_base_int4_s,       INTEGER(0..15))
 NDN_DATA_UNIT_TYPE (int8,          asn_base_int8_s,       INTEGER(0..255))
 NDN_DATA_UNIT_TYPE (int16,         asn_base_int16_s,      INTEGER(0..65535))
 NDN_DATA_UNIT_TYPE (octet_string,  asn_base_octstring_s,  OCTET STRING)
-NDN_DATA_UNIT_TYPE (octet_string6, ndn_octet_string6_s,   OCTET STRING (6) ) 
+NDN_DATA_UNIT_TYPE (octet_string6, ndn_octet_string6_s,   OCTET STRING (6))
 NDN_DATA_UNIT_TYPE (char_string,   asn_base_charstring_s, UniversalString )
 NDN_DATA_UNIT_TYPE (ip_address,    ndn_ip_address_s,      IpAddress )
-NDN_DATA_UNIT_TYPE (objid,         asn_base_objid_s,      OBJECT IDENTIFIER )
+NDN_DATA_UNIT_TYPE (objid,         asn_base_objid_s,      OBJECT IDENTIFIER)
 
 
 
@@ -182,20 +185,20 @@ const asn_type * const  ndn_csap_spec = &ndn_csap_spec_s;
 
 
 
-
-
-
-
-
-
 static asn_type ndn_integer_seq_s = 
-{ "SEQENCE OF INTEGER", {PRIVATE, 20}, SEQUENCE_OF, 0, {&asn_base_integer_s} };
+{ 
+    "SEQENCE OF INTEGER", {PRIVATE, 20}, SEQUENCE_OF, 0,
+    {&asn_base_integer_s} 
+};
 
 static asn_type ndn_chstring_seq_s = 
-{ "SEQENCE OF UniversalString", {PRIVATE, 20}, SEQUENCE_OF, 0, {&asn_base_charstring_s} };
+{ 
+    "SEQENCE OF UniversalString", {PRIVATE, 20}, SEQUENCE_OF, 0,
+    {&asn_base_charstring_s} 
+};
 
 
-static asn_named_entry_t _ndn_template_parameter_simple_for_ne_array [] = 
+static asn_named_entry_t _ndn_template_parameter_simple_for_ne_array [] =
 {
     { "begin",  &asn_base_integer_s, {PRIVATE, 1} },
     { "end",    &asn_base_integer_s, {PRIVATE, 1} },
@@ -203,9 +206,11 @@ static asn_named_entry_t _ndn_template_parameter_simple_for_ne_array [] =
 }; 
 
 static asn_type ndn_template_parameter_simple_for_s = 
-{ "Templ-Param-simple-for", {PRIVATE, 20}, SEQUENCE, 
-  sizeof(_ndn_template_parameter_simple_for_ne_array)/sizeof(asn_named_entry_t), 
-  {_ndn_template_parameter_simple_for_ne_array} 
+{ 
+    "Templ-Param-simple-for", {PRIVATE, 20}, SEQUENCE, 
+    sizeof(_ndn_template_parameter_simple_for_ne_array)/
+        sizeof(asn_named_entry_t), 
+    {_ndn_template_parameter_simple_for_ne_array} 
 };
 
 
@@ -239,7 +244,8 @@ static asn_type ndn_generic_pdu_sequence_s =
   SEQUENCE_OF, 1, {&ndn_generic_pdu_s} 
 };
 
-const asn_type * const ndn_generic_pdu_sequence = &ndn_generic_pdu_sequence_s;
+const asn_type * const ndn_generic_pdu_sequence = 
+                            &ndn_generic_pdu_sequence_s;
 
 
 
@@ -304,11 +310,12 @@ static asn_named_entry_t _ndn_traffic_pattern_unit_ne_array [] =
 
 asn_type ndn_traffic_pattern_unit_s =
 { "Traffic-Pattern-Unit", {PRIVATE, 20}, SEQUENCE, 
-   sizeof(_ndn_traffic_pattern_unit_ne_array)/sizeof(asn_named_entry_t), 
+   sizeof(_ndn_traffic_pattern_unit_ne_array)/sizeof(asn_named_entry_t),
   {_ndn_traffic_pattern_unit_ne_array}
 };
 
-const asn_type * const  ndn_traffic_pattern_unit = &ndn_traffic_pattern_unit_s;
+const asn_type * const  ndn_traffic_pattern_unit = 
+                            &ndn_traffic_pattern_unit_s;
 
 
 /*
@@ -556,12 +563,13 @@ ndn_get_timestamp(const asn_value *packet, struct timeval *ts)
     int rc, len;
 
     len = sizeof(ts->tv_sec);
-    rc = asn_read_value_field(packet, &ts->tv_sec, &len, "received.seconds");
+    rc = asn_read_value_field(packet, &ts->tv_sec, &len, 
+                              "received.seconds");
 
     len = sizeof(ts->tv_usec);
     if (rc == 0)
         rc = asn_read_value_field(packet, &ts->tv_usec, &len, 
-                                                "received.micro-seconds");
+                                  "received.micro-seconds");
     return rc;
 }
 

@@ -53,10 +53,13 @@ static asn_type ndn_dhcpv4_option_s =
 };
 
 static asn_type ndn_dhcpv4_options_s =
-{ "DHCPv4-Options", {PRIVATE, 601}, SEQUENCE_OF, 0, {&ndn_dhcpv4_option_s} };
+{ 
+    "DHCPv4-Options", {PRIVATE, 601}, SEQUENCE_OF, 
+    0, {&ndn_dhcpv4_option_s} 
+};
 
 
-asn_type_p ndn_dhcpv4_option = &ndn_dhcpv4_option_s;
+asn_type_p ndn_dhcpv4_option  = &ndn_dhcpv4_option_s;
 asn_type_p ndn_dhcpv4_options = &ndn_dhcpv4_options_s;
 
 
