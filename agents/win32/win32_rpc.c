@@ -455,7 +455,6 @@ tarpc_server(void *arg)
     memset(&arg1, 0, sizeof(arg1));
     arg1.name.name_val = (char *)arg;
     arg1.name.name_len = strlen((char *)arg) + 1;
-    rpcserver_name = (char *)arg;
 
     RPC_LGR_MESSAGE(TE_LL_RING, "Started %s (PID %d, TID %u)", (char *)arg, 
                     (int)getpid(), (unsigned int)pthread_self());
