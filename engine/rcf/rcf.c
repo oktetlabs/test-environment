@@ -1726,7 +1726,7 @@ rcf_ta_check()
             if (reb_success)
             {
                 ERROR("Cannot reboot TA '%s'", agent->name);
-                dead = TRUE;
+                set_ta_dead(agent);
             }
             else
                 agent->dead = FALSE;
