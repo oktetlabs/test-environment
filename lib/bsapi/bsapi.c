@@ -82,8 +82,9 @@ builder_build_nut(char *name, char *sources, char *params)
     if (params == NULL)
         params = "";
 
-    snprintf(cmd, sizeof(cmd), "te_build_nut %s  %s \"%s\"", 
-             name, sources, params);
+    snprintf(cmd, sizeof(cmd), 
+             "te_build_nut %s  %s \"%s\" >builder.log.%s 2>&1", 
+             name, sources, params, name);
 
     return system(cmd) != 0 ? ETESHCMD : 0;
 }
@@ -115,7 +116,8 @@ builder_build_test_suite(char *suite, char *sources)
     if (suite == NULL || *suite == 0 || sources == NULL || *sources == 0)
         return EINVAL;
     
-    sprintf(cmd, "te_build_suite %s %s", suite, sources);
+    sprintf(cmd, "te_build_suite %s %s >builder.log.%s 2>&1", suite, sources,
+            suite);
     return system(cmd) == 0 ? 0 : ETESHCMD;
 }
 
