@@ -3606,3 +3606,24 @@ local_exit:
     }
     return rc;
 }
+
+#define TARPC_FUNC_UNSUPPORTED(___func) \
+TARPC_FUNC(___func, {},                                         \
+{                                                               \
+   UNUSED(list);                                                \
+   ERROR("Unsipported function %s is called", #___func);        \
+   out->retval = TE_RC(TE_TA_WIN32, ENOTSUP);                   \
+}                                                               \
+)
+
+#define TARPC_FUNC_UNSUPPORTED_NORETVAL(___func) \
+TARPC_FUNC(___func, {},                                         \
+{                                                               \
+   UNUSED(list);                                                \
+   UNUSED(out);                                                 \
+   ERROR("Unsipported function %s is called", #___func);        \
+}                                                               \
+)
+
+TARPC_UNSUPPORTED(create_event);
+TARPC_UNSUPPORTED(close_event);
