@@ -45,7 +45,7 @@
                 
                 For nodes of Agent type the value is in the following format:
                 /agent:<agent name>/interface:<interface name>
-                E.g.: /agent:A/interace:eth0
+                E.g.: /agent:A/interface:eth0
 
                 For nodes of type bridge the value is in the following format:
                 /agent:<agent name>/port:<port id>
