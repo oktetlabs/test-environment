@@ -6,7 +6,6 @@ AM_CPPFLAGS=-I$(DESTDIR)/$(prefix)/include \
 AM_CFLAGS=
 AM_LDFLAGS=@TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/lib 
 
-mybindir=$(prefix)/bin
 
 bin_PROGRAMS=te_stdouterr
 
@@ -16,13 +15,11 @@ te_stdouterr_DEPENDENCIES=@TE_DEPENDENCIES@ \
                           $(DESTDIR)/$(prefix)/lib/liblogger_ten.a \
                           $(DESTDIR)/$(prefix)/lib/libipc.a
 
-mybin_SCRIPTS=te_builder_log te_generate_symtbl te_generate_symtbl_cygwin \
-              te_build_suite tce_report tce_instrument_sources \
-              tce_uninstrument_sources te_configure_package te_cross_build \
-              te_build_nut te_build_nuts te_create_inst_dirs
+mybindir=$(prefix)/bin
+dist_mybin_SCRIPTS=te_builder_log te_create_inst_dirs \
+                   te_generate_symtbl te_generate_symtbl_cygwin \
+                   tce_instrument_sources tce_uninstrument_sources tce_report \
+                   te_configure_package te_cross_build \
+                   te_build_nuts te_build_nut te_build_suite
 
-EXTRA_DIST=builder.m4 te_builder_log te_generate_symtbl \
-           te_generate_symtbl_cygwin te_build_suite tce_report \
-           tce_instrument_sources tce_uninstrument_sources \
-           te_configure_package te_cross_build \
-           te_build_nut te_build_nuts te_create_inst_dirs
+EXTRA_DIST=builder.m4

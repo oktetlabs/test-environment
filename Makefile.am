@@ -29,13 +29,15 @@ AUTOMAKE_OPTIONS = foreign
 
 host=@host@
 
-SUBDIRS=include doc lib tools engine agents suites
+SUBDIRS = include doc lib tools engine agents suites
 
 mybindir=$(prefix)/$(host)/bin
+dist_mybin_SCRIPTS = dispatcher.sh
 
-mybin_SCRIPTS=dispatcher.sh 
 
-EXTRA_DIST=dispatcher.sh conf
+DISTCLEANFILES = builder.conf.processed 
+
+EXTRA_DIST = conf
 
 if SUITE_SCRIPTS_PROVIDED
 
@@ -43,12 +45,11 @@ EXTRA_DIST+=@SUITE_SCRIPTS_EXTRA_DIST@
 
 @SUITE_SCRIPTS_EXTRA_DIST@:
 	for i in @SUITE_SCRIPTS@ ; do   \
-            cp $$i . ;                   \
-        done
+		cp $$i . ;                  \
+	done
 
 endif
 
-DISTCLEANFILES=builder.conf.processed 
 
 all: install-data
 
