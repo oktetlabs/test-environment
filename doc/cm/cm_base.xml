@@ -84,7 +84,7 @@
          Limit: 1 -->
     <object oid="/agent/interface/status" access="read_write" type="integer"/>
     
-    <!-- ARP entry.
+    <!-- Static ARP entries.
          Name:  IPv4 address in dotted notation -->
     <object oid="/agent/arp" access="read_create" type="address"/>
     
@@ -102,6 +102,20 @@
          Name:  empty    
          Limit: 1 -->
     <object oid="/agent/dns" access="read_create" type="address"/>
+
+    <!-- ************** Agent volatile subtree ************** -->
+    
+    <!-- Volatile subtree of the Test Agent.
+         It consists of the information that can be changed in run-time 
+         by the Operation System and can't be predicted from Test Agent
+         point of view (for example it might be dynamic ARP entries). 
+         Name:  empty
+         Limit: 1 -->
+    <object oid="/agent/volatile" access="read_create" type="none"/>
+
+    <!-- Dynamic ARP entries.
+         Name:  IPv4 address in dotted notation -->
+    <object oid="/agent/volatile/arp" access="read_create" type="address"/>
 
     <!-- ************** Daemons running on the Test Agent ************** -->
     
