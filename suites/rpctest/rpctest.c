@@ -54,7 +54,7 @@ handler(int s)
 }
 
 int
-main()
+main(void)
 {
     char ta[32];
     int  len = sizeof(ta);
@@ -66,9 +66,6 @@ main()
     int  s;
     int  rc;
     
-    unsigned int        num;
-    cfg_handle         *bebe;
-    
     struct sockaddr_in addr;
     
     char buf[16];
@@ -76,19 +73,16 @@ main()
     
     signal(SIGINT, handler);
     
-    cfg_find_pattern("/bebe:*", &num, &bebe);
-    
     if (rcf_get_ta_list(ta, &len) != 0)
     {
-        printf("rcf_get_ta_list failed\n");
-        return 1;
+        ERROR("rcf_get_ta_list() failed\n");
+        return EXIT_FAILURE;
     }
-    printf("Agent: %s\n", ta);
 
     if ((rc = rcf_rpc_server_create(ta, "FIRST", &srv)) != 0)
     {
-        printf("Cannot create server %x\n", rc);
-        return 1;
+        ERROR("Cannot create server %x\n", rc);
+        return EXIT_FAILURE;
     }
     srv->def_timeout = 5000;
     
@@ -96,23 +90,23 @@ main()
     
     if ((rc = rcf_rpc_server_thread_create(srv, "SECOND", &srv1)) != 0)
     {
-        printf("Cannot create server %x\n", rc);
-        return 1;
+        ERROR("Cannot create server %x\n", rc);
+        return EXIT_FAILURE;
     }
     srv1->def_timeout = 5000;
 
     if ((s = rpc_socket(srv, RPC_AF_INET, RPC_SOCK_DGRAM, 
                         RPC_IPPROTO_UDP)) < 0 || srv->_errno != 0)
     {
-        printf("Calling of RPC socket() failed %x\n", srv->_errno);
-        return 1;
+        ERROR("Calling of RPC socket() failed %x\n", srv->_errno);
+        return EXIT_FAILURE;
     }
 
     if ((s = rpc_socket(srv1, RPC_AF_INET, RPC_SOCK_DGRAM, 
                         RPC_IPPROTO_UDP)) < 0 || srv1->_errno != 0)
     {
-        printf("Calling of RPC socket() failed %x\n", srv1->_errno);
-        return 1;
+        ERROR("Calling of RPC socket() failed %x\n", srv1->_errno);
+        return EXIT_FAILURE;
     }
     
     memset(&addr, 0, sizeof(addr));
@@ -123,46 +117,48 @@ main()
     if (rpc_bind(srv, s, (struct sockaddr *)&addr, sizeof(addr)) < 0 ||
         srv->_errno != 0)
     {
-        printf("Calling of RPC bind() failed %x %d\n", srv->_errno,
+        ERROR("Calling of RPC bind() failed %x %d\n", srv->_errno,
                srv->stat);
-        return 1;
+        return EXIT_FAILURE;
     }
     
+#if 0
     memset(&addr, 0, sizeof(addr));
     srv->op = RCF_RPC_CALL;
     if (rpc_recvfrom(srv, s, buf, 16, 0, &addr, &fromlen) < 0 ||
         srv->_errno != 0)
     {
-        printf("Calling of RPC recvfrom() failed %x\n", srv->_errno);
-        return 1;
+        ERROR("Calling of RPC recvfrom() failed %x\n", srv->_errno);
+        return EXIT_FAILURE;
     }
-    printf("Calling wait\n");
+    ERROR("Calling wait\n");
     srv->op = RCF_RPC_WAIT;
     if (rpc_recvfrom(srv, s, buf, 16, 0, &addr, &fromlen) < 0 ||
         srv->_errno != 0)
     {
-        printf("Calling of RPC recvfrom() failed %x\n", srv->_errno);
-        return 1;
-    } 
-
-    printf("Received: %s from %s\n", buf, inet_ntoa(addr.sin_addr));  
+        ERROR("Calling of RPC recvfrom() failed %x\n", srv->_errno);
+        return EXIT_FAILURE;
+    }
+    ERROR("Received: %s from %s\n", buf, inet_ntoa(addr.sin_addr));  
+#endif
     
     if (rpc_close(srv, s) < 0 || srv->_errno != 0)
     {
-        printf("Calling of RPC close() failed %x\n", srv->_errno);
-        return 1;
+        ERROR("Calling of RPC close() failed %x\n", srv->_errno);
+        return EXIT_FAILURE;
     }
     
     if (rcf_rpc_server_destroy(srv1) != 0)
     {
-        printf("Cannot delete server\n");
-        return 1;
+        ERROR("Cannot delete server\n");
+        return EXIT_FAILURE;
     }
 
     if (rcf_rpc_server_destroy(srv) != 0)
     {
-        printf("Cannot delete server\n");
-        return 1;
+        ERROR("Cannot delete server\n");
+        return EXIT_FAILURE;
     }
-    return 0;
+
+    return EXIT_SUCCESS;
 }
