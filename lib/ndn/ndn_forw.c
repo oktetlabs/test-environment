@@ -38,25 +38,15 @@
 
 /*
 Forwarder-Action-Delay-Params ::= SEQUENCE {
-    type      [0] INTEGER {disabled(0), constant(1), random(2)},
     delay-min [1] DATA-UNIT {INTEGER},
     delay-max [2] DATA-UNIT {INTEGER}
 } 
 */
 
-static asn_enum_entry_t _ndn_delay_type_enum_entries[] = 
-{ {"disabled", 0}, {"constant", 1}, {"random",   2}, };
-static asn_type ndn_forw_delay_type_s = {
-    "Forw-Delay-Type", {APPLICATION, 15}, ENUMERATED,
-    sizeof(_ndn_delay_type_enum_entries)/sizeof(asn_enum_entry_t), 
-    {_ndn_delay_type_enum_entries}
-};
-
 static asn_named_entry_t _ndn_forw_delay_ne_array [] = 
 {
-    { "type",        &ndn_forw_delay_type_s},
-    { "delay-min",   &ndn_data_unit_int16_s},
-    { "delay-max",   &ndn_data_unit_int16_s},
+    { "delay-min",   &ndn_data_unit_int32_s},
+    { "delay-max",   &ndn_data_unit_int32_s},
 };
 
 asn_type ndn_forw_delay_s =
@@ -67,38 +57,6 @@ asn_type ndn_forw_delay_s =
 };
 
 const asn_type * const ndn_forw_delay = &ndn_forw_delay_s;
-
-
-/*
-Forwarder-Action-Bandwidth-Params ::= SEQUENCE {
-    type      [0] INTEGER{unlimited(0), limited(1)},
-    bps       [1] DATA-UNIT{INTEGER },
-    buf-size  [2] DATA-UNIT{INTEGER }
-}
-*/
-static asn_enum_entry_t _ndn_band_type_enum_entries[] = 
-{ {"disabled", 0}, {"constant", 1}, {"random",   2}, };
-static asn_type ndn_forw_band_type_s = {
-    "Forw-Delay-Type", {APPLICATION, 15}, ENUMERATED,
-    sizeof(_ndn_band_type_enum_entries)/sizeof(asn_enum_entry_t), 
-    {_ndn_band_type_enum_entries}
-};
-
-static asn_named_entry_t _ndn_forw_band_ne_array [] = 
-{
-    { "type",      &ndn_forw_band_type_s},
-    { "bps",       &ndn_data_unit_int16_s},
-    { "buf-size",  &ndn_data_unit_int16_s},
-};
-
-asn_type ndn_forw_band_s =
-{
-    "Forwarder-Action-Bandwidth-Params", {PRIVATE, 100}, SEQUENCE, 
-    sizeof(_ndn_forw_band_ne_array)/sizeof(asn_named_entry_t),
-    {_ndn_forw_band_ne_array}
-};
-
-const asn_type * const ndn_forw_band = &ndn_forw_delay_s;
 
 
 /*
@@ -120,7 +78,7 @@ static asn_type ndn_forw_reorder_type_s = {
 static asn_named_entry_t _ndn_forw_reorder_ne_array [] = 
 {
     { "type",          &ndn_forw_reorder_type_s},
-    { "timeout",       &ndn_data_unit_int16_s},
+    { "timeout",       &ndn_data_unit_int32_s},
     { "reorder-size",  &ndn_data_unit_int16_s},
 };
 
@@ -135,28 +93,57 @@ const asn_type * const ndn_forw_reorder = &ndn_forw_reorder_s;
 
 
 /*
-Forwarder-Action-Drop-Params ::= SEQUENCE {
-    type      [0] INTEGER {disabled(0), random(1), pattern(2)},
-    rate      [1] DATA-UNIT {INTEGER},
+Forwarder-Drop-Random::= SEQUENCE {
+    rate         [1] DATA-UNIT {INTEGER}
 }
-*/ 
-static asn_enum_entry_t _ndn_drop_type_enum_entries[] = 
-{ {"disabled", 0}, {"random", 1}, {"pattern", 2}, };
-static asn_type ndn_forw_drop_type_s = {
-    "Forw-Drop-Type", {APPLICATION, 15}, ENUMERATED,
-    sizeof(_ndn_drop_type_enum_entries)/sizeof(asn_enum_entry_t), 
-    {_ndn_drop_type_enum_entries}
+*/
+static asn_named_entry_t _ndn_forw_drop_random_ne_array [] = 
+{
+    { "rate", &ndn_data_unit_int16_s},
 };
+
+asn_type ndn_forw_drop_random_s =
+{
+    "Forwarder-Drop-Random", {PRIVATE, 100}, SEQUENCE, 
+    sizeof(_ndn_forw_drop_random_ne_array)/sizeof(asn_named_entry_t),
+    {_ndn_forw_drop_random_ne_array}
+};
+
+/*
+Forwarder-Drop-Pattern::= SEQUENCE {
+    bitmask     [1] OCTET STRING,
+    length      [2] INTEGER
+}
+*/
+static asn_named_entry_t _ndn_forw_drop_pattern_ne_array [] = 
+{
+    { "bitmask", &asn_base_octstring_s},
+    { "length",  &asn_base_int16_s},
+};
+
+asn_type ndn_forw_drop_pattern_s =
+{
+    "Forwarder-Drop-Pattern", {PRIVATE, 100}, SEQUENCE, 
+    sizeof(_ndn_forw_drop_pattern_ne_array)/sizeof(asn_named_entry_t),
+    {_ndn_forw_drop_pattern_ne_array}
+};
+
+/*
+Forwarder-Action-Drop-Params ::= CHOICE {
+    random      [0] Forwarder-Drop-Random,
+    pattern     [1] Forwarder-Drop-Pattern
+} 
+*/ 
 
 static asn_named_entry_t _ndn_forw_drop_ne_array [] = 
 {
-    { "type", &ndn_forw_drop_type_s},
-    { "rate", &ndn_data_unit_int16_s},
+    { "random",  &ndn_forw_drop_random_s},
+    { "pattern", &ndn_forw_drop_pattern_s},
 };
 
 asn_type ndn_forw_drop_s =
 {
-    "Forwarder-Action-Drop-Params", {PRIVATE, 100}, SEQUENCE, 
+    "Forwarder-Action-Drop-Params", {PRIVATE, 100}, CHOICE, 
     sizeof(_ndn_forw_drop_ne_array)/sizeof(asn_named_entry_t),
     {_ndn_forw_drop_ne_array}
 };
@@ -169,7 +156,6 @@ const asn_type * const ndn_forw_drop = &ndn_forw_drop_s;
 Forwarder-Action ::= SEQUENCE {
     id        [0] UniversalString,
     delay     [1] Forwarder-Action-Delay-Params OPTIONAL,
-    bandwidth [2] Forwarder-Action-Bandwidth-Params OPTIONAL,
     reorder   [3] Forwarder-Action-Reorder-Params OPTIONAL,
     drop      [4] Forwarder-Action-Drop-Params OPTIONAL
 }
@@ -178,11 +164,10 @@ Forwarder-Action ::= SEQUENCE {
 
 static asn_named_entry_t _ndn_forw_action_ne_array [] = 
 {
-    { "id",          &asn_base_charstring_s},
-    { "delay",       &ndn_forw_delay_s },
-    { "bandwidth",   &ndn_forw_band_s },
-    { "reorder",     &ndn_forw_reorder_s },
-    { "drop",        &ndn_forw_drop_s },
+    { "id",       &asn_base_charstring_s},
+    { "delay",    &ndn_forw_delay_s },
+    { "reorder",  &ndn_forw_reorder_s },
+    { "drop",     &ndn_forw_drop_s },
 };
 
 asn_type ndn_forw_action_s =
