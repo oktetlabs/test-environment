@@ -37,8 +37,9 @@
 #endif
 
 #ifndef MACRO_TEST_ERROR
-#define MACRO_TEST_ERROR        (tapi_jmp_do(EXIT_FAILURE))
+#define MACRO_TEST_ERROR        (result = EXIT_FAILURE)
 #endif
+
 
 /**
  * All the macros defined in the file expect user having in the calling
