@@ -53,6 +53,8 @@ echo >> $RESULT
 awk --posix '
 /^[[:xdigit:]]{8} B|C|D|G|S/ { printf "extern int %s;\n", $3 ; next ;}
 /^[[:xdigit:]]{8} T/ { printf "extern int %s();\n", $3 ; next ;}
+/^[[:xdigit:]]{16} B|C|D|G|S/ { printf "extern int %s;\n", $3 ; next ;}
+/^[[:xdigit:]]{16} T/ { printf "extern int %s();\n", $3 ; next ;}
 ' te_bs_symtbl.tmp >> $RESULT
 
 
@@ -68,6 +70,8 @@ EOF
 awk --posix '
 /^[[:xdigit:]]{8} C|D|B/ { printf "    { \"%s\", 0, &%s },\n", $3, $3 ; next ;}
 /^[[:xdigit:]]{8} T/ { printf "    { \"%s\", 1, %s },\n", $3, $3 ; next ;}
+/^[[:xdigit:]]{16} C|D|B/ { printf "    { \"%s\", 0, &%s },\n", $3, $3 ; next ;}
+/^[[:xdigit:]]{16} T/ { printf "    { \"%s\", 1, %s },\n", $3, $3 ; next ;}
 ' te_bs_symtbl.tmp >> $RESULT
 
 cat >> $RESULT <<\EOF
