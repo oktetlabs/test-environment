@@ -4,7 +4,7 @@ AUTOMAKE_OPTIONS = foreign
 AM_CPPFLAGS=-I$(DESTDIR)/$(prefix)/include -I$(DESTDIR)/$(prefix)/../include
 AM_LDFLAGS=-L$(DESTDIR)/$(prefix)/lib
 
-include_HEADERS=tapi_rpcsock.h
+include_HEADERS=tapi_rpcsock.h tapi_rpcsock_macros.h
 
 lib_LIBRARIES=libtapi_rpcsock.a
 
