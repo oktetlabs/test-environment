@@ -35,9 +35,6 @@
 #define RPC_ERRNO errno_h2rpc(errno)
 
 
-/** Socket used by the last started RPC server */
-extern int rpcserver_sock;
-
 /** Logging path */
 extern struct sockaddr_un ta_log_addr;
 

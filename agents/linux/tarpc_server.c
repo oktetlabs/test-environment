@@ -728,13 +728,6 @@ TARPC_FUNC(execve, {},
     /* Wait until main thread sends answer to non-blocking RPC call */
     sleep(1);
 
-    /* Close current RPC server socket after send of the last reply */ 
-    if (close(rpcserver_sock) != 0)
-    {
-        rc = errno;
-        ERROR("close() failed: errno=%d", rc);
-    }
-
     VERB("execve() args: %s, %s, %s, %s, %s, %s",
          args[0], args[1], args[2], args[3], args[4], args[5]);
     /* Call execve() */

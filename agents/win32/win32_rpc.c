@@ -92,12 +92,6 @@ struct sockaddr   *ta_log_addr_s;
 int                ta_log_sock = -1;
 int                ta_rpc_sync_socks[2] = {-1, -1};
 
-/** Socket used by the last started RPC server */
-int rpcserver_sock = -1;
-
-/** Name of the last started RPC server */
-char *rpcserver_name = "";
-
 static srv *srv_list = NULL;
 static char buf[RCF_RPC_MAX_BUF]; 
 

@@ -96,9 +96,6 @@ struct sockaddr_un ta_log_addr;
 struct sockaddr   *ta_log_addr_s;
 int                ta_log_addr_len = sizeof(struct sockaddr_un);
 
-/** Socket used by the last started RPC server */
-int rpcserver_sock = -1;
-
 static srv *srv_list = NULL;
 static char buf[RCF_RPC_MAX_BUF]; 
 

@@ -46,11 +46,6 @@ extern void tarpc_destroy_all();
         system(buf);                            \
     } while (0)
 
-/** Socket used by the last started RPC server */
-int rpcserver_sock;
-
-/** Name of the last started RPC server */
-extern char *rpcserver_name;
 
 /** RPC server entry point */
 void *tarpc_server(void *arg);
