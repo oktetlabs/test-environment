@@ -60,7 +60,7 @@
 #include "te_stdint.h"
 
 /** The name of server process providing logging facilities */
-#define LGR_SRV_NAME "LOGGER"
+#define LGR_SRV_NAME "TE_LOGGER"
 
 /** Default client name */
 #define LGR_CLIENT_NAME "LOGGER-TEN"

@@ -435,9 +435,9 @@ if test -n "$RCF" ; then
     te_log_message Engine Dispatcher "Start RCF"
     myecho "--->>> Start RCF"
     if test -n "$VG_RCF" ; then
-        valgrind $VG_OPTIONS rcf "${CONF_RCF}" 2>valgrind.rcf &
+        valgrind $VG_OPTIONS te_rcf "${CONF_RCF}" 2>valgrind.rcf &
     else
-        rcf "${CONF_RCF}" &
+        te_rcf "${CONF_RCF}" &
     fi
 fi
 
@@ -453,10 +453,9 @@ if test -n "$CONFIGURATOR" ; then
     te_log_message Engine Dispatcher "Start Configurator"
     myecho "--->>> Start Configurator"
     if test -n "$VG_CS" ; then
-        valgrind $VG_OPTIONS configurator "${CONF_CONFIGURATOR}" \
-            2>valgrind.cfg &
+        valgrind $VG_OPTIONS te_cs "${CONF_CONFIGURATOR}" 2>valgrind.cs &
     else
-        configurator "${CONF_CONFIGURATOR}" &
+        te_cs "${CONF_CONFIGURATOR}" &
     fi
     CS_PID=$!
 fi
@@ -475,7 +474,7 @@ fi
 if test -n "$CONFIGURATOR" ; then
     te_log_message Engine Dispatcher "Shutdown Configurator"
     myecho "--->>> Shutdown Configurator"
-    conf_shutdown || kill $CS_PID
+    te_cs_shutdown || kill $CS_PID
 fi
 
 te_log_message Engine Dispatcher "Flush log"
@@ -485,7 +484,7 @@ te_log_flush
 if test -n "$RCF" ; then
     te_log_message Engine Dispatcher "Shutdown RCF"
     myecho "--->>> Shutdown RCF"
-    rcf_shutdown 
+    te_rcf_shutdown 
 fi
 
 #TODO: TCE

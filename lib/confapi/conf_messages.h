@@ -38,7 +38,7 @@
 #include "conf_api.h"
 
 
-#define CONFIGURATOR_SERVER     "Configurator"
+#define CONFIGURATOR_SERVER     "TE_CS"
 
 /** Message types */
 enum {

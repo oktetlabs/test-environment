@@ -42,7 +42,7 @@ extern "C" {
 #endif 
 
 /** IPC RCF Server name */
-#define RCF_SERVER      "rcf"
+#define RCF_SERVER      "TE_RCF"
 
 
 /** @name Message flags */

@@ -189,7 +189,7 @@ ta_handler(void *ta)
     fd_set              rfds;     
     int                 fd_server;
     struct ipc_server  *srv;
-    char                ta_srv[LGR_MAX_NAME] = "LOGGER-";
+    char                ta_srv[LGR_MAX_NAME] = "TE_LOGGER-";
     char                buf_mess[LGR_MAX_BUF] = { 0, };
     size_t              buf_len = sizeof(buf_mess);
     uint32_t            empty_flag  = 0; /* Set if file is empty */

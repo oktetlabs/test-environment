@@ -73,7 +73,7 @@
 
 
 /** The name of server process providing logging facilities */
-#define LGR_SRV_NAME    "LOGGER"
+#define LGR_SRV_NAME    "TE_LOGGER"
 
 /** Maximum logger message length */
 #define LGR_MAX_BUF     3851 
@@ -596,8 +596,8 @@ log_flush_ten(const char *ta_name)
 {
     static struct ipc_client *log_client;
 
-    char    ta_srv[LGR_FIELD_MAX] = "LOGGER-";
-    char    mess[LGR_FIELD_MAX] = "LOGGER-FLUSH";
+    char    ta_srv[LGR_FIELD_MAX] = "TE_LOGGER-";
+    char    mess[LGR_FIELD_MAX] = "TE_LOGGER-FLUSH";
     char    answer[LGR_FIELD_MAX];
     size_t  answer_len = LGR_FIELD_MAX;
 
