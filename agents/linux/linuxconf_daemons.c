@@ -1657,7 +1657,8 @@ static char *smtp_servers[] = {
     "sendmail",
     "exim",
     "exim3",
-    "exim4"
+    "exim4",
+    "postfix"
 };    
 
 static int sendmail_index = -1;
