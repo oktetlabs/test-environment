@@ -351,7 +351,7 @@ int bridge_match_bin_cb (int csap_id, int layer, const asn_value *pattern_pdu,
  *
  * @return zero on success or error code.
  */
-int bridge_gen_pattern_cb (int csap_id, int layer, const asn_value_p tmpl_pdu, 
+int bridge_gen_pattern_cb (int csap_id, int layer, const asn_value *tmpl_pdu, 
                                          asn_value_p   *pattern_pdu)
 {
 

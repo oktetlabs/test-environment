@@ -91,7 +91,7 @@ extern char* bridge_get_param_cb (int csap_id, int level, const char *param);
  *
  * @return zero on success or error code.
  */ 
-extern int bridge_eth_init_cb (int csap_id, const asn_value_p csap_nds, int layer);
+extern int bridge_eth_init_cb (int csap_id, const asn_value *csap_nds, int layer);
 
 /**
  * Callback for destroy 'bridge' CSAP layer over 'eth' in stack.
@@ -177,7 +177,7 @@ extern int bridge_match_bin_cb (int csap_id, int layer, const asn_value *pattern
  *
  * @return zero on success or error code.
  */
-extern int bridge_gen_pattern_cb (int csap_id, int layer, const asn_value_p tmpl_pdu, 
+extern int bridge_gen_pattern_cb (int csap_id, int layer, const asn_value *tmpl_pdu, 
                                asn_value_p   *pattern_pdu);
 
 

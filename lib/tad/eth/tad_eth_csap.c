@@ -50,7 +50,7 @@ csap_spt_type_t eth_csap_spt =
     eth_match_bin_cb,
     eth_gen_pattern_cb,
 
-    &eth_nbr_list
+    &eth_nbr_list,
 };
 
 

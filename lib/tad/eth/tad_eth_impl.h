@@ -250,7 +250,7 @@ extern int eth_write_read_cb (csap_p csap_id, int timeout,
  *
  * @return zero on success or error code.
  */ 
-extern int eth_single_init_cb (int csap_id, const asn_value_p csap_nds, int layer);
+extern int eth_single_init_cb (int csap_id, const asn_value *csap_nds, int layer);
 
 /**
  * Callback for destroy 'file' CSAP layer if single in stack.
@@ -336,7 +336,7 @@ extern int eth_match_bin_cb (int csap_id, int layer, const asn_value *pattern_pd
  *
  * @return zero on success or error code.
  */
-extern int eth_gen_pattern_cb (int csap_id, int layer, const asn_value_p tmpl_pdu, 
+extern int eth_gen_pattern_cb (int csap_id, int layer, const asn_value *tmpl_pdu, 
                                asn_value_p   *pattern_pdu);
 
 /**

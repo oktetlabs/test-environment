@@ -777,7 +777,7 @@ eth_single_check_pdus(csap_p csap_descr, asn_value *traffic_nds)
  * @return zero on success or error code.
  */ 
 int 
-eth_single_init_cb (int csap_id, const asn_value_p csap_nds, int layer)
+eth_single_init_cb (int csap_id, const asn_value *csap_nds, int layer)
 {
     int      rc; 
     char     choice[100] = "";
