@@ -123,29 +123,31 @@ mi_set_agent_params(char *agent, int sid, int payload_length,
 
 int main()
 {
-    char             error_msg_buf[255];
-    int              rc, syms = 4;
-    
     tad_csap_status_t status;         /* Status of TX CSAP */
 
-    int              recv_pkts;  /* the number of waned/received packets */
-           
-    int              num_pkts = PKTS_TO_PROCESS; /* number of packets
-                                                       to be generated */
+    char  error_msg_buf[255];
+    int   rc, syms = 4;
     
-    char            *agent_a;       /* first linux agent name */ 
-    char            *agent_b;       /* second linux agent name */ 
+
+    int   recv_pkts;  /* the number of waned/received packets */
+           
+    int   num_pkts = PKTS_TO_PROCESS; /* number of packets
+                                                       to be generated */
+   
+    char *agent_a;       /* first linux agent name */ 
+    char *agent_b;       /* second linux agent name */ 
+
     char *agent_a_if;    /* first agent interface name */ 
-    int sid_a;         /* session id for first agent */ 
+    int   sid_a;         /* session id for first agent */ 
     char *agent_b_if;    /* second agent interface name */ 
-    int sid_b;         /* session id for second session */ 
-    csap_handle_t tx_csap;    /* the CSAP handle for frame transmission */
-    csap_handle_t    rx_csap;    /* the CSAP handle for frame reception */
+    int   sid_b;         /* session id for second session */ 
+
+    csap_handle_t    tx_csap; /* the CSAP handle for frame transmission */
+    csap_handle_t    rx_csap; /* the CSAP handle for frame reception */
     unsigned long    tx_counter;/* returned from CSAP total byte counter */
     char             tx_counter_txt[20];/* buffer for tx_counter */
-    unsigned long    rx_counter
-        /* returned from CSAP total byte counter */ char
-    rx_counter_txt[20];/* buffer for rx_counter */
+    unsigned long    rx_counter; /* returned from CSAP total byte counter*/
+    char             rx_counter_txt[20];/* buffer for rx_counter */
     
     char       *src_mac = SRC1_MAC;
     char       *dst_mac = DST1_MAC;
@@ -159,10 +161,8 @@ int main()
     int        test_state;
     size_t     pld_len = PAYLOAD_LENGTH;
     
-    asn_value *pattern;
-        /* ether frame pattern used for recv csap filtering */
-    asn_value *template; 
-        /* ether frame template used for traffic generation */
+    asn_value *pattern; /* eth frame pattern  for filtering */
+    asn_value *template;/* eth frame template for traffic generation */
 
     /* Test configuration preambule */
 
@@ -358,7 +358,7 @@ int main()
                            sizeof(tx_counter_txt), tx_counter_txt);
     if (rc)
     {
-        TEST_TERMINATION(" total TX counter retrieving error %x", rc);     
+        TEST_TERMINATION(" total TX counter retrieving error %x", rc);
     }
     tx_counter = atoi(tx_counter_txt);
    
@@ -367,7 +367,7 @@ int main()
                            sizeof(rx_counter_txt), rx_counter_txt);
     if (rc)
     {
-        TEST_TERMINATION(" total RX counter retrieving error %x", rc);     
+        TEST_TERMINATION(" total RX counter retrieving error %x", rc);
     } 
     rx_counter = atoi(rx_counter_txt);
 
