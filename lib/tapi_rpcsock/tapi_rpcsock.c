@@ -168,7 +168,7 @@ rpc_iovec_cmp(size_t v1len, const struct rpc_iovec *v1, size_t v1cnt,
     {
         result = (memcmp(array1, array2, v1len) == 0) ? 0 : -1;
     }
-    
+
     free(array1);
     free(array2);
 
@@ -257,7 +257,7 @@ const char *
 timespec2str(const struct timespec *tv)
 {
     static char buf[32];
-    
+
     if (tv == NULL)
     {
         strcpy(buf, "NULL");
@@ -284,7 +284,7 @@ timespec2str(const struct timespec *tv)
                   errno_rpc2str(RPC_ERRNO(handle)));            \
         }                                                       \
     } while (FALSE)
-    
+
 /** Return with check (for functions returning 0 or -1) */
 #define RETVAL_RC(_func) \
     do {                                                                \
@@ -306,7 +306,7 @@ timespec2str(const struct timespec *tv)
         return __retval;                                                \
     } while(0)
 
-/** Return with check (for functions returning value >= -1) */    
+/** Return with check (for functions returning value >= -1) */
 #define RETVAL_VAL(_retval, _func) \
     do {                                                                \
         int __retval = (_retval);                                       \
@@ -330,7 +330,7 @@ timespec2str(const struct timespec *tv)
 /** Return with check (for functions returning pointers) */
 #define RETVAL_PTR(_retval, _func) \
     do {                                                                \
-        void *__retval = (_retval);                                     \
+        void *__retval = (void *)(_retval);                             \
                                                                         \
         LOG_TE_ERROR(_func);                                            \
         rcf_rpc_free_result(&out, (xdrproc_t)xdr_tarpc_##_func##_out);  \
@@ -357,7 +357,7 @@ timespec2str(const struct timespec *tv)
  *
  * @return Status code
  */
-int 
+int
 rpc_setlibname(rcf_rpc_server *handle, const char *libname)
 {
     tarpc_setlibname_in  in;
@@ -376,17 +376,17 @@ rpc_setlibname(rcf_rpc_server *handle, const char *libname)
 
     handle->op = RCF_RPC_CALL_WAIT;
     rcf_rpc_call(handle, _setlibname,
-                 &in,  (xdrproc_t)xdr_tarpc_setlibname_in, 
+                 &in,  (xdrproc_t)xdr_tarpc_setlibname_in,
                  &out, (xdrproc_t)xdr_tarpc_setlibname_out);
-                 
-    RING("RPC (%s, %s) setlibname(%s) -> %d (%s)", 
-         handle->ta, handle->name, libname ? : "(NULL)", 
+
+    RING("RPC (%s, %s) setlibname(%s) -> %d (%s)",
+         handle->ta, handle->name, libname ? : "(NULL)",
          out.retval, errno_rpc2str(RPC_ERRNO(handle)));
 
     RETVAL_VAL(out.retval, socket);
 }
 
-int 
+int
 rpc_socket(rcf_rpc_server *handle,
            rpc_socket_domain domain, rpc_socket_type type,
            rpc_socket_proto protocol)
@@ -417,12 +417,12 @@ rpc_socket(rcf_rpc_server *handle,
          proto_rpc2str(protocol), out.fd, errno_rpc2str(RPC_ERRNO(handle)));
 
     RETVAL_VAL(out.fd, socket);
-}           
+}
 
-int 
+int
 rpc_wsa_socket(rcf_rpc_server *handle,
                rpc_socket_domain domain, rpc_socket_type type,
-               rpc_socket_proto protocol, uint8_t *info, int info_len, 
+               rpc_socket_proto protocol, uint8_t *info, int info_len,
                te_bool overlapped)
 {
     tarpc_socket_in  in;
@@ -454,9 +454,9 @@ rpc_wsa_socket(rcf_rpc_server *handle,
          proto_rpc2str(protocol), out.fd, errno_rpc2str(RPC_ERRNO(handle)));
 
     RETVAL_VAL(out.fd, socket);
-}           
+}
 
-int 
+int
 rpc_close(rcf_rpc_server *handle, int fd)
 {
     rcf_rpc_op      op;
@@ -478,7 +478,7 @@ rpc_close(rcf_rpc_server *handle, int fd)
 
     rcf_rpc_call(handle, _close, &in, (xdrproc_t)xdr_tarpc_close_in,
                  &out, (xdrproc_t)xdr_tarpc_close_out);
-    
+
     RING("RPC (%s,%s)%s: close(%d) -> %d (%s)",
          handle->ta, handle->name, rpcop2str(op),
          fd, out.retval, errno_rpc2str(RPC_ERRNO(handle)));
@@ -505,13 +505,13 @@ rpc_dup(rcf_rpc_server *handle,
     memset(&out, 0, sizeof(out));
 
     handle->op = RCF_RPC_CALL_WAIT;
-    
+
     in.oldfd = oldfd;
 
     rcf_rpc_call(handle, _dup,
                  &in,  (xdrproc_t)xdr_tarpc_close_in,
                  &out, (xdrproc_t)xdr_tarpc_close_out);
-    
+
     RING("RPC (%s,%s)%s: dup(%d) -> %d (%s)",
          handle->ta, handle->name, rpcop2str(op),
          oldfd, out.fd, errno_rpc2str(RPC_ERRNO(handle)));
@@ -538,14 +538,14 @@ rpc_dup2(rcf_rpc_server *handle,
     memset(&out, 0, sizeof(out));
 
     handle->op = RCF_RPC_CALL_WAIT;
-    
+
     in.oldfd = oldfd;
     in.newfd = newfd;
 
     rcf_rpc_call(handle, _dup,
                  &in,  (xdrproc_t)xdr_tarpc_close_in,
                  &out, (xdrproc_t)xdr_tarpc_close_out);
-    
+
     RING("RPC (%s,%s)%s: dup2(%d, %d) -> %d (%s)",
          handle->ta, handle->name, rpcop2str(op),
          oldfd, newfd, out.fd, errno_rpc2str(RPC_ERRNO(handle)));
@@ -553,13 +553,13 @@ rpc_dup2(rcf_rpc_server *handle,
     RETVAL_VAL(out.fd, dup);
 }
 
-int 
+int
 rpc_bind(rcf_rpc_server *handle,
          int s, const struct sockaddr *my_addr, socklen_t addrlen)
 {
     tarpc_bind_in  in;
     tarpc_bind_out out;
-    
+
     if (handle == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
@@ -570,7 +570,7 @@ rpc_bind(rcf_rpc_server *handle,
     memset(&out, 0, sizeof(out));
 
     handle->op = RCF_RPC_CALL_WAIT;
-    
+
     in.fd = s;
     if (my_addr != NULL)
     {
@@ -589,7 +589,7 @@ rpc_bind(rcf_rpc_server *handle,
         }
     }
     in.len = addrlen;
-    
+
     rcf_rpc_call(handle, _bind, &in, (xdrproc_t)xdr_tarpc_bind_in,
                  &out, (xdrproc_t)xdr_tarpc_bind_out);
 
@@ -599,16 +599,16 @@ rpc_bind(rcf_rpc_server *handle,
          out.retval, errno_rpc2str(RPC_ERRNO(handle)));
 
     RETVAL_RC(bind);
-}         
+}
 
-int 
+int
 rpc_connect(rcf_rpc_server *handle,
             int s, const struct sockaddr *addr, socklen_t addrlen)
 {
     rcf_rpc_op        op;
     tarpc_connect_in  in;
     tarpc_connect_out out;
-    
+
     if (handle == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
@@ -618,7 +618,7 @@ rpc_connect(rcf_rpc_server *handle,
     op = handle->op;
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
-    
+
     in.fd = s;
     if (addr != NULL)
     {
@@ -637,7 +637,7 @@ rpc_connect(rcf_rpc_server *handle,
         }
     }
     in.len = addrlen;
-    
+
     rcf_rpc_call(handle, _connect, &in, (xdrproc_t)xdr_tarpc_connect_in,
                  &out, (xdrproc_t)xdr_tarpc_connect_out);
 
@@ -647,9 +647,9 @@ rpc_connect(rcf_rpc_server *handle,
          out.retval, errno_rpc2str(RPC_ERRNO(handle)));
 
     RETVAL_RC(connect);
-}         
+}
 
-int 
+int
 rpc_connect_ex(rcf_rpc_server *handle,
                int s, const struct sockaddr *addr,
                socklen_t addrlen,
@@ -660,7 +660,7 @@ rpc_connect_ex(rcf_rpc_server *handle,
     rcf_rpc_op        op;
     tarpc_connect_ex_in  in;
     tarpc_connect_ex_out out;
-    
+
     if (handle == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
@@ -669,7 +669,7 @@ rpc_connect_ex(rcf_rpc_server *handle,
     op = handle->op;
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
-    
+
     in.fd = s;
     if (addr != NULL)
     {
@@ -694,8 +694,8 @@ rpc_connect_ex(rcf_rpc_server *handle,
         in.buf.buf_len = len_buf;
 
     if (bytes_sent == NULL)
-        in.len_sent.len_sent_len = 0; 
-    else        
+        in.len_sent.len_sent_len = 0;
+    else
         in.len_sent.len_sent_len = 1;
 
     in.buf.buf_val = buf;
@@ -710,12 +710,12 @@ rpc_connect_ex(rcf_rpc_server *handle,
          handle->ta, handle->name, rpcop2str(op),
          s, sockaddr2str(addr), addrlen, overlapped,
          out.retval ? "true" : "false", errno_rpc2str(RPC_ERRNO(handle)));
-         
+
     if (bytes_sent != NULL)
         *bytes_sent = out.len_sent.len_sent_val[0];
 
     RETVAL_VAL(out.retval, connect_ex);
-}         
+}
 
 extern int rpc_disconnect_ex(rcf_rpc_server *handle, int s,
                              rpc_overlapped overlapped, int flags)
@@ -723,7 +723,7 @@ extern int rpc_disconnect_ex(rcf_rpc_server *handle, int s,
     rcf_rpc_op        op;
     tarpc_disconnect_ex_in  in;
     tarpc_disconnect_ex_out out;
-    
+
     if (handle == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
@@ -732,10 +732,10 @@ extern int rpc_disconnect_ex(rcf_rpc_server *handle, int s,
     op = handle->op;
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
-    
+
     in.fd = s;
     in.overlapped = (tarpc_overlapped)overlapped;
-    in.flags = flags; 
+    in.flags = flags;
     rcf_rpc_call(handle, _disconnect_ex, &in,
                  (xdrproc_t)xdr_tarpc_disconnect_ex_in,
                  &out, (xdrproc_t)xdr_tarpc_disconnect_ex_out);
@@ -743,17 +743,17 @@ extern int rpc_disconnect_ex(rcf_rpc_server *handle, int s,
     RING("RPC (%s,%s)%s: disconnect_ex(%d, %p, %d) -> %s (%s)",
          handle->ta, handle->name, rpcop2str(op),
          s, overlapped, flags,
-	 out.retval ? "true" : "false", errno_rpc2str(RPC_ERRNO(handle)));
+         out.retval ? "true" : "false", errno_rpc2str(RPC_ERRNO(handle)));
 
     RETVAL_VAL(out.retval, disconnect_ex);
-}         
+}
 
-int 
+int
 rpc_listen(rcf_rpc_server *handle, int fd, int backlog)
 {
     tarpc_listen_in  in;
     tarpc_listen_out out;
-    
+
     if (handle == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
@@ -766,7 +766,7 @@ rpc_listen(rcf_rpc_server *handle, int fd, int backlog)
     handle->op = RCF_RPC_CALL_WAIT;
     in.fd = fd;
     in.backlog = backlog;
-    
+
     rcf_rpc_call(handle, _listen, &in, (xdrproc_t)xdr_tarpc_listen_in,
                  &out, (xdrproc_t)xdr_tarpc_listen_out);
 
@@ -777,17 +777,17 @@ rpc_listen(rcf_rpc_server *handle, int fd, int backlog)
     RETVAL_RC(listen);
 }
 
-int 
+int
 rpc_accept_gen(rcf_rpc_server *handle,
                int s, struct sockaddr *addr, socklen_t *addrlen,
                socklen_t raddrlen)
 {
     rcf_rpc_op       op;
-    socklen_t        save_addrlen = 
+    socklen_t        save_addrlen =
                          (addrlen == NULL) ? (socklen_t)-1 : *addrlen;
     tarpc_accept_in  in;
     tarpc_accept_out out;
-    
+
     if (handle == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
@@ -803,7 +803,7 @@ rpc_accept_gen(rcf_rpc_server *handle,
         handle->_errno = TE_RC(TE_RCF, EINVAL);
         return -1;
     }
-    
+
     in.fd = s;
     if (addrlen != NULL && handle->op != RCF_RPC_WAIT)
     {
@@ -826,23 +826,23 @@ rpc_accept_gen(rcf_rpc_server *handle,
             in.addr.sa_data.sa_data_val = (uint8_t *)addr;
         }
     }
-    
+
     rcf_rpc_call(handle, _accept, &in, (xdrproc_t)xdr_tarpc_accept_in,
                  &out, (xdrproc_t)xdr_tarpc_accept_out);
-    
+
     if (RPC_CALL_OK)
     {
         if (addr != NULL && out.addr.sa_data.sa_data_val != NULL)
         {
-            memcpy(addr->sa_data, out.addr.sa_data.sa_data_val, 
+            memcpy(addr->sa_data, out.addr.sa_data.sa_data_val,
                    out.addr.sa_data.sa_data_len);
             addr->sa_family = addr_family_rpc2h(out.addr.sa_family);
         }
-        
+
         if (addrlen != NULL && out.len.len_val != NULL)
             *addrlen = out.len.len_val[0];
     }
-    
+
     RING("RPC (%s, %s)%s: accept(%d, %p[%u], %p(%u)) -> %d (%s) "
          "peer=%s addrlen=%u",
          handle->ta, handle->name, rpcop2str(op),
@@ -851,28 +851,28 @@ rpc_accept_gen(rcf_rpc_server *handle,
          sockaddr2str(addr), (addrlen == NULL) ? (socklen_t)-1 : *addrlen);
 
     RETVAL_VAL(out.retval, accept);
-} 
+}
 
-int 
+int
 rpc_wsa_accept(rcf_rpc_server *handle,
-               int s, struct sockaddr *addr, 
+               int s, struct sockaddr *addr,
                socklen_t *addrlen, socklen_t raddrlen,
                accept_cond *cond, int cond_num)
 {
     rcf_rpc_op       op;
-    socklen_t        save_addrlen = 
+    socklen_t        save_addrlen =
                          (addrlen == NULL) ? (socklen_t)-1 : *addrlen;
     tarpc_wsa_accept_in  in;
     tarpc_wsa_accept_out out;
-    
+
     struct tarpc_accept_cond rpc_cond[RCF_RPC_MAX_ACCEPT_CONDS];
-    
+
     if (handle == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return -1;
     }
-    
+
     if (cond_num > RCF_RPC_MAX_ACCEPT_CONDS)
     {
         ERROR("Too many conditions are specified for WSAAccept condition"
@@ -880,7 +880,7 @@ rpc_wsa_accept(rcf_rpc_server *handle,
         handle->_errno = TE_RC(TE_RCF, EINVAL);
         return -1;
     }
-    
+
     if ((cond == NULL && cond_num > 0) ||
         (cond != NULL && cond_num == 0))
     {
@@ -914,11 +914,11 @@ rpc_wsa_accept(rcf_rpc_server *handle,
             in.addr.sa_data.sa_data_val = (uint8_t *)addr;
         }
     }
-    
+
     if (cond != NULL && handle->op != RCF_RPC_WAIT)
     {
         int i;
-        
+
         in.cond.cond_len = cond_num;
         in.cond.cond_val = rpc_cond;
         for (i = 0; i < cond_num; i++)
@@ -930,24 +930,24 @@ rpc_wsa_accept(rcf_rpc_server *handle,
                                   TARPC_CF_REJECT : TARPC_CF_DEFER;
         }
     }
-    
-    rcf_rpc_call(handle, _wsa_accept, 
+
+    rcf_rpc_call(handle, _wsa_accept,
                  &in,  (xdrproc_t)xdr_tarpc_wsa_accept_in,
                  &out, (xdrproc_t)xdr_tarpc_wsa_accept_out);
-    
+
     if (RPC_CALL_OK)
     {
         if (addr != NULL && out.addr.sa_data.sa_data_val != NULL)
         {
-            memcpy(addr->sa_data, out.addr.sa_data.sa_data_val, 
+            memcpy(addr->sa_data, out.addr.sa_data.sa_data_val,
                    out.addr.sa_data.sa_data_len);
             addr->sa_family = addr_family_rpc2h(out.addr.sa_family);
         }
-        
+
         if (addrlen != NULL && out.len.len_val != NULL)
             *addrlen = out.len.len_val[0];
     }
-    
+
     RING("RPC (%s, %s)%s: WSAAccept(%d, %p[%u], %p(%u)) -> %d (%s) "
          "peer=%s addrlen=%u",
          handle->ta, handle->name, rpcop2str(op),
@@ -956,10 +956,10 @@ rpc_wsa_accept(rcf_rpc_server *handle,
          sockaddr2str(addr), (addrlen == NULL) ? (socklen_t)-1 : *addrlen);
 
     RETVAL_VAL(out.retval, wsa_accept);
-}               
+}
 
-    
-int 
+
+int
 rpc_accept_ex(rcf_rpc_server *handle,
               int s, int s_a,
               void *buf,
@@ -974,7 +974,7 @@ rpc_accept_ex(rcf_rpc_server *handle,
 
     tarpc_accept_ex_in  in;
     tarpc_accept_ex_out out;
-    
+
     if (handle == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
@@ -984,15 +984,15 @@ rpc_accept_ex(rcf_rpc_server *handle,
     op = handle->op;
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
-    
+
     in.fd = s;
-    in.fd_a = s_a;    
+    in.fd_a = s_a;
     if (laddrlen != NULL && handle->op != RCF_RPC_WAIT)
         in.laddr_len.laddr_len_len = sizeof(socklen_t);
     if (raddrlen != NULL && handle->op != RCF_RPC_WAIT)
         in.raddr_len.raddr_len_len = sizeof(socklen_t);
     in.laddr_len.laddr_len_val = laddrlen;
-    in.raddr_len.raddr_len_val = raddrlen;    
+    in.raddr_len.raddr_len_val = raddrlen;
     if (laddr != NULL && handle->op != RCF_RPC_WAIT)
     {
         in.laddr.sa_family = RPC_AF_UNSPEC;
@@ -1016,31 +1016,31 @@ rpc_accept_ex(rcf_rpc_server *handle,
     if (bytes_received == NULL)
         in.count.count_len = 0;
     else
-        in.count.count_len = 1;     
+        in.count.count_len = 1;
     in.count.count_val = bytes_received;
     in.overlapped = (tarpc_overlapped)overlapped;
     in.laddr_len.laddr_len_len = laddrlen == NULL ? 0 : 1;
-    in.laddr_len.laddr_len_val = laddrlen;    
+    in.laddr_len.laddr_len_val = laddrlen;
     in.raddr_len.raddr_len_len = raddrlen == NULL ? 0 : 1;
-    in.raddr_len.raddr_len_val = raddrlen;                
+    in.raddr_len.raddr_len_val = raddrlen;
 
     rcf_rpc_call(handle, _accept_ex, &in, (xdrproc_t)xdr_tarpc_accept_ex_in,
                  &out, (xdrproc_t)xdr_tarpc_accept_ex_out);
-    
+
     if (RPC_CALL_OK)
     {
         if (laddr != NULL && out.laddr.sa_data.sa_data_val != NULL)
         {
-            memcpy(laddr->sa_data, out.laddr.sa_data.sa_data_val, 
+            memcpy(laddr->sa_data, out.laddr.sa_data.sa_data_val,
                    out.laddr.sa_data.sa_data_len);
             laddr->sa_family = addr_family_rpc2h(out.laddr.sa_family);
         }
         if (laddrlen != NULL && out.laddr_len.laddr_len_val != NULL)
             *laddrlen = out.laddr_len.laddr_len_val[0];
-       
+
         if (raddr != NULL && out.raddr.sa_data.sa_data_val != NULL)
         {
-            memcpy(raddr->sa_data, out.raddr.sa_data.sa_data_val, 
+            memcpy(raddr->sa_data, out.raddr.sa_data.sa_data_val,
                    out.raddr.sa_data.sa_data_len);
             raddr->sa_family = addr_family_rpc2h(out.raddr.sa_family);
         }
@@ -1060,11 +1060,11 @@ rpc_accept_ex(rcf_rpc_server *handle,
          sockaddr2str(raddr), (raddrlen == NULL) ? (socklen_t)-1 : *raddrlen);
 
     RETVAL_VAL(out.retval, accept_ex);
-}             
+}
 
-int 
+int
 rpc_transmit_file(rcf_rpc_server *handle, int s, char *file,
-                  ssize_t len, ssize_t len_per_send, 
+                  ssize_t len, ssize_t len_per_send,
                   rpc_overlapped overlapped,
                   void *head, ssize_t head_len,
                   void *tail, ssize_t tail_len, ssize_t flags)
@@ -1072,7 +1072,7 @@ rpc_transmit_file(rcf_rpc_server *handle, int s, char *file,
     rcf_rpc_op        op;
     tarpc_transmit_file_in  in;
     tarpc_transmit_file_out out;
-    
+
     if (handle == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
@@ -1081,30 +1081,30 @@ rpc_transmit_file(rcf_rpc_server *handle, int s, char *file,
 #if 0
     if ((buf != NULL) && (bytes_sent == NULL))
     {
-        return -1;  
+        return -1;
     }
-#endif    
+#endif
     op = handle->op;
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
-    
+
     in.fd = s;
-    if (file == NULL)   
+    if (file == NULL)
         in.file.file_len = 0;
     else
         in.file.file_len = strlen(file) + 1;
-    in.file.file_val = file;    
+    in.file.file_val = file;
     in.len = len;
     in.len_per_send = len_per_send;
-    in.overlapped = (tarpc_overlapped)overlapped; 
+    in.overlapped = (tarpc_overlapped)overlapped;
     if (head == NULL)
         in.head.head_len = 0;
     in.head.head_val = head;
-    in.head_len = head_len;      
+    in.head_len = head_len;
     if (tail == NULL)
         in.tail.tail_len = 0;
     in.tail.tail_val = tail;
-    in.tail_len = tail_len;      
+    in.tail_len = tail_len;
     in.flags = flags;
     rcf_rpc_call(handle, _transmit_file, &in,
                  (xdrproc_t)xdr_tarpc_transmit_file_in,
@@ -1116,23 +1116,23 @@ rpc_transmit_file(rcf_rpc_server *handle, int s, char *file,
          out.retval ? "true" : "false", errno_rpc2str(RPC_ERRNO(handle)));
 
     RETVAL_VAL(out.retval, transmit_file);
-}         
+}
 
 
 
-ssize_t 
+ssize_t
 rpc_recvfrom_gen(rcf_rpc_server *handle,
-                 int s, void *buf, size_t len, rpc_send_recv_flags flags, 
+                 int s, void *buf, size_t len, rpc_send_recv_flags flags,
                  struct sockaddr *from, socklen_t *fromlen,
                  size_t rbuflen, socklen_t rfrombuflen)
 {
     rcf_rpc_op         op;
-    socklen_t          save_fromlen = 
+    socklen_t          save_fromlen =
                            (fromlen == NULL) ? (socklen_t)-1 : *fromlen;
 
     tarpc_recvfrom_in  in;
     tarpc_recvfrom_out out;
-    
+
     if (handle == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
@@ -1141,16 +1141,16 @@ rpc_recvfrom_gen(rcf_rpc_server *handle,
 
     op = handle->op;
 
-    if ((fromlen != NULL && *fromlen > rfrombuflen) || 
+    if ((fromlen != NULL && *fromlen > rfrombuflen) ||
         (buf != NULL && len > rbuflen))
     {
         handle->_errno = TE_RC(TE_RCF, EINVAL);
         return -1;
     }
-    
+
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
-    
+
     in.fd = s;
     in.len = len;
     if (fromlen != NULL && handle->op != RCF_RPC_WAIT)
@@ -1180,47 +1180,47 @@ rpc_recvfrom_gen(rcf_rpc_server *handle,
         in.buf.buf_val = buf;
     }
     in.flags = flags;
-    
+
     rcf_rpc_call(handle, _recvfrom, &in, (xdrproc_t)xdr_tarpc_recvfrom_in,
                  &out, (xdrproc_t)xdr_tarpc_recvfrom_out);
-    
+
     if (RPC_CALL_OK)
     {
         if (buf != NULL && out.buf.buf_val != NULL)
             memcpy(buf, out.buf.buf_val, out.buf.buf_len);
-        
+
         if (from != NULL && out.from.sa_data.sa_data_val != NULL)
         {
-            memcpy(from->sa_data, out.from.sa_data.sa_data_val, 
+            memcpy(from->sa_data, out.from.sa_data.sa_data_val,
                    out.from.sa_data.sa_data_len);
             from->sa_family = addr_family_rpc2h(out.from.sa_family);
         }
-        
+
         if (fromlen != NULL && out.fromlen.fromlen_val != NULL)
             *fromlen = out.fromlen.fromlen_val[0];
     }
-    
+
     RING("RPC (%s,%s)%s: recvfrom(%d, %p[%u], %u, %s, %p[%u], %u) "
          "-> %d (%s) from=%s fromlen=%u",
          handle->ta, handle->name, rpcop2str(op),
-         s, buf, rbuflen, len, send_recv_flags_rpc2str(flags), 
+         s, buf, rbuflen, len, send_recv_flags_rpc2str(flags),
          from, rfrombuflen, save_fromlen,
          out.retval, errno_rpc2str(RPC_ERRNO(handle)),
          sockaddr2str(from),
          (fromlen == NULL) ? (unsigned int)-1 : *fromlen);
 
     RETVAL_VAL(out.retval, recvfrom);
-}             
+}
 
-ssize_t 
+ssize_t
 rpc_recv_gen(rcf_rpc_server *handle,
-                 int s, void *buf, size_t len, rpc_send_recv_flags flags, 
+                 int s, void *buf, size_t len, rpc_send_recv_flags flags,
                  size_t rbuflen)
 {
     rcf_rpc_op     op;
     tarpc_recv_in  in;
     tarpc_recv_out out;
-    
+
     if (handle == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
@@ -1231,13 +1231,13 @@ rpc_recv_gen(rcf_rpc_server *handle,
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
-    
+
     if (buf != NULL && len > rbuflen)
     {
         handle->_errno = TE_RC(TE_RCF, EINVAL);
         return -1;
     }
-    
+
     in.fd = s;
     in.len = len;
     if (buf != NULL && handle->op != RCF_RPC_WAIT)
@@ -1246,30 +1246,30 @@ rpc_recv_gen(rcf_rpc_server *handle,
         in.buf.buf_val = buf;
     }
     in.flags = flags;
-    
+
     rcf_rpc_call(handle, _recv, &in, (xdrproc_t)xdr_tarpc_recv_in,
                  &out, (xdrproc_t)xdr_tarpc_recv_out);
-    
+
     if (RPC_CALL_OK)
     {
         if (buf != NULL && out.buf.buf_val != NULL)
             memcpy(buf, out.buf.buf_val, out.buf.buf_len);
     }
-    
+
     RING("RPC (%s,%s)%s: recv(%d, %p[%u], %u, %s) -> %d (%s)",
          handle->ta, handle->name, rpcop2str(op),
          s, buf, rbuflen, len, send_recv_flags_rpc2str(flags),
          out.retval, errno_rpc2str(RPC_ERRNO(handle)));
 
     RETVAL_VAL(out.retval, recv);
-}             
+}
 
-int 
+int
 rpc_shutdown(rcf_rpc_server *handle, int s, rpc_shut_how how)
 {
     tarpc_shutdown_in  in;
     tarpc_shutdown_out out;
-    
+
     if (handle == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
@@ -1282,7 +1282,7 @@ rpc_shutdown(rcf_rpc_server *handle, int s, rpc_shut_how how)
     handle->op = RCF_RPC_CALL_WAIT;
     in.fd = s;
     in.how = how;
-    
+
     rcf_rpc_call(handle, _shutdown, &in, (xdrproc_t)xdr_tarpc_shutdown_in,
                  &out, (xdrproc_t)xdr_tarpc_shutdown_out);
 
@@ -1293,7 +1293,7 @@ rpc_shutdown(rcf_rpc_server *handle, int s, rpc_shut_how how)
     RETVAL_RC(shutdown);
 }
 
-ssize_t 
+ssize_t
 rpc_sendto(rcf_rpc_server *handle,
            int s, const void *buf, size_t len,
            int flags,
@@ -1302,7 +1302,7 @@ rpc_sendto(rcf_rpc_server *handle,
     rcf_rpc_op       op;
     tarpc_sendto_in  in;
     tarpc_sendto_out out;
-    
+
     if (handle == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
@@ -1313,7 +1313,7 @@ rpc_sendto(rcf_rpc_server *handle,
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
-    
+
     in.fd = s;
     in.len = len;
     if (to != NULL && handle->op != RCF_RPC_WAIT)
@@ -1339,10 +1339,10 @@ rpc_sendto(rcf_rpc_server *handle,
         in.buf.buf_val = (char *)buf;
     }
     in.flags = flags;
-    
+
     rcf_rpc_call(handle, _sendto, &in, (xdrproc_t)xdr_tarpc_sendto_in,
                  &out, (xdrproc_t)xdr_tarpc_sendto_out);
-    
+
     RING("RPC (%s,%s)%s: sendto(%d, %p, %u, %s, %s, %u) -> %d (%s)",
          handle->ta, handle->name, rpcop2str(op),
          s, buf, len, send_recv_flags_rpc2str(flags),
@@ -1351,7 +1351,7 @@ rpc_sendto(rcf_rpc_server *handle,
     RETVAL_VAL(out.retval, sendto);
 }
 
-ssize_t 
+ssize_t
 rpc_send(rcf_rpc_server *handle,
            int s, const void *buf, size_t len,
            int flags)
@@ -1359,7 +1359,7 @@ rpc_send(rcf_rpc_server *handle,
     rcf_rpc_op     op;
     tarpc_send_in  in;
     tarpc_send_out out;
-    
+
     if (handle == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
@@ -1370,7 +1370,7 @@ rpc_send(rcf_rpc_server *handle,
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
-    
+
     in.fd = s;
     in.len = len;
     if (buf != NULL && handle->op != RCF_RPC_WAIT)
@@ -1379,10 +1379,10 @@ rpc_send(rcf_rpc_server *handle,
         in.buf.buf_val = (char *)buf;
     }
     in.flags = flags;
-    
+
     rcf_rpc_call(handle, _send, &in, (xdrproc_t)xdr_tarpc_send_in,
                  &out, (xdrproc_t)xdr_tarpc_send_out);
-    
+
     RING("RPC (%s,%s)%s: send(%d, %p, %u, %s) -> %d (%s)",
          handle->ta, handle->name, rpcop2str(op),
          s, buf, len, send_recv_flags_rpc2str(flags),
@@ -1390,16 +1390,16 @@ rpc_send(rcf_rpc_server *handle,
 
     RETVAL_VAL(out.retval, send);
 }
-           
 
-int 
+
+int
 rpc_read_gen(rcf_rpc_server *handle,
              int fd, void *buf, size_t count, size_t rbuflen)
 {
     rcf_rpc_op     op;
     tarpc_read_in  in;
     tarpc_read_out out;
-    
+
     if (handle == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
@@ -1416,7 +1416,7 @@ rpc_read_gen(rcf_rpc_server *handle,
         handle->_errno = TE_RC(TE_RCF, EINVAL);
         return -1;
     }
-    
+
     in.fd = fd;
     in.len = count;
     if (buf != NULL && handle->op != RCF_RPC_WAIT)
@@ -1426,8 +1426,8 @@ rpc_read_gen(rcf_rpc_server *handle,
     }
     rcf_rpc_call(handle, _read, &in, (xdrproc_t)xdr_tarpc_read_in,
                  &out, (xdrproc_t)xdr_tarpc_read_out);
-    
-    
+
+
     if (RPC_CALL_OK)
     {
         if (buf != NULL && out.buf.buf_val != NULL)
@@ -1442,14 +1442,14 @@ rpc_read_gen(rcf_rpc_server *handle,
     RETVAL_VAL(out.retval, read);
 }
 
-int 
+int
 rpc_write(rcf_rpc_server *handle,
           int fd, const void *buf, size_t count)
 {
     rcf_rpc_op      op;
     tarpc_write_in  in;
     tarpc_write_out out;
-    
+
     if (handle == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
@@ -1460,7 +1460,7 @@ rpc_write(rcf_rpc_server *handle,
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
-    
+
     in.fd = fd;
     in.len = count;
     if (buf != NULL && handle->op != RCF_RPC_WAIT)
@@ -1468,10 +1468,10 @@ rpc_write(rcf_rpc_server *handle,
         in.buf.buf_len = count;
         in.buf.buf_val = (char *)buf;
     }
-    
+
     rcf_rpc_call(handle, _write, &in, (xdrproc_t)xdr_tarpc_write_in,
                  &out, (xdrproc_t)xdr_tarpc_write_out);
-    
+
     RING("RPC (%s,%s)%s: write(%d, %p, %u) -> %d (%s)",
          handle->ta, handle->name, rpcop2str(op),
          fd, buf, count, out.retval, errno_rpc2str(RPC_ERRNO(handle)));
@@ -1479,7 +1479,7 @@ rpc_write(rcf_rpc_server *handle,
     RETVAL_VAL(out.retval, write);
 }
 
-int 
+int
 rpc_readv_gen(rcf_rpc_server *handle,
               int fd, const struct rpc_iovec *iov,
               size_t iovcnt, size_t riovcnt)
@@ -1489,9 +1489,9 @@ rpc_readv_gen(rcf_rpc_server *handle,
     tarpc_readv_out out;
 
     struct tarpc_iovec iovec_arr[RCF_RPC_MAX_IOVEC];
-    
+
     size_t i;
-    
+
     if (handle == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
@@ -1503,13 +1503,13 @@ rpc_readv_gen(rcf_rpc_server *handle,
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
     memset(iovec_arr, 0, sizeof(iovec_arr));
-    
+
     if (riovcnt > RCF_RPC_MAX_IOVEC)
     {
         handle->_errno = TE_RC(TE_RCF, ENOMEM);
         return -1;
     }
-    
+
     if (iov != NULL && iovcnt > riovcnt)
     {
         handle->_errno = TE_RC(TE_RCF, EINVAL);
@@ -1537,12 +1537,12 @@ rpc_readv_gen(rcf_rpc_server *handle,
 
     rcf_rpc_call(handle, _readv, &in, (xdrproc_t)xdr_tarpc_readv_in,
                  &out, (xdrproc_t)xdr_tarpc_readv_out);
-    
+
     if (RPC_CALL_OK && iov != NULL && out.vector.vector_val != NULL)
     {
         for (i = 0; i < riovcnt; i++)
         {
-            ((struct rpc_iovec *)iov)[i].iov_len = 
+            ((struct rpc_iovec *)iov)[i].iov_len =
                 out.vector.vector_val[i].iov_len;
             if ((iov[i].iov_base != NULL) &&
                 (out.vector.vector_val[i].iov_base.iov_base_val != NULL))
@@ -1560,8 +1560,8 @@ rpc_readv_gen(rcf_rpc_server *handle,
 
     RETVAL_VAL(out.retval, readv);
 }
-          
-int 
+
+int
 rpc_writev(rcf_rpc_server *handle,
            int fd, const struct rpc_iovec *iov, size_t iovcnt)
 {
@@ -1570,9 +1570,9 @@ rpc_writev(rcf_rpc_server *handle,
     tarpc_writev_out out;
 
     struct tarpc_iovec iovec_arr[RCF_RPC_MAX_IOVEC];
-    
+
     size_t i;
-    
+
     if (handle == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
@@ -1584,7 +1584,7 @@ rpc_writev(rcf_rpc_server *handle,
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
     memset(iovec_arr, 0, sizeof(iovec_arr));
-    
+
     if (iovcnt > RCF_RPC_MAX_IOVEC)
     {
         handle->_errno = TE_RC(TE_RCF, ENOMEM);
@@ -1597,27 +1597,27 @@ rpc_writev(rcf_rpc_server *handle,
         iovec_arr[i].iov_base.iov_base_len = iov[i].iov_rlen;
         iovec_arr[i].iov_len = iov[i].iov_len;
     }
-    
+
     if (iov != NULL)
     {
         in.vector.vector_val = iovec_arr;
         in.vector.vector_len = iovcnt;
     }
-    
+
     in.fd = fd;
     in.count = iovcnt;
-    
+
     rcf_rpc_call(handle, _writev, &in, (xdrproc_t)xdr_tarpc_writev_in,
                  &out, (xdrproc_t)xdr_tarpc_writev_out);
 
     RING("RPC (%s,%s)%s: writev() -> %d (%s)",
          handle->ta, handle->name, rpcop2str(op), out.retval,
          errno_rpc2str(RPC_ERRNO(handle)));
-    
-    RETVAL_VAL(out.retval, writev);
-}           
 
-int 
+    RETVAL_VAL(out.retval, writev);
+}
+
+int
 rpc_getsockname_gen(rcf_rpc_server *handle,
                     int s, struct sockaddr *name,
                     socklen_t *namelen,
@@ -1639,11 +1639,11 @@ rpc_getsockname_gen(rcf_rpc_server *handle,
         handle->_errno = TE_RC(TE_RCF, EINVAL);
         return -1;
     }
-    
+
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
     handle->op = RCF_RPC_CALL_WAIT;
-    
+
     in.fd = s;
     if (namelen != NULL && handle->op != RCF_RPC_WAIT)
     {
@@ -1666,23 +1666,23 @@ rpc_getsockname_gen(rcf_rpc_server *handle,
             in.addr.sa_data.sa_data_val = (uint8_t *)name;
         }
     }
-    
+
     rcf_rpc_call(handle, _getsockname, &in, (xdrproc_t)xdr_tarpc_getsockname_in,
                  &out, (xdrproc_t)xdr_tarpc_getsockname_out);
-    
+
     if (RPC_CALL_OK)
     {
         if (name != NULL && out.addr.sa_data.sa_data_val != NULL)
         {
-            memcpy(name->sa_data, out.addr.sa_data.sa_data_val, 
+            memcpy(name->sa_data, out.addr.sa_data.sa_data_val,
                    out.addr.sa_data.sa_data_len);
             name->sa_family = addr_family_rpc2h(out.addr.sa_family);
         }
-        
+
         if (namelen != NULL && out.len.len_val != NULL)
             *namelen = out.len.len_val[0];
     }
-    
+
     RING("RPC (%s,%s): getsockname(%d, %p[%u], %u) -> %d (%s) "
          "name=%s namelen=%u",
          handle->ta, handle->name,
@@ -1692,9 +1692,9 @@ rpc_getsockname_gen(rcf_rpc_server *handle,
          (namelen == NULL) ? (unsigned int)-1 : *namelen);
 
     RETVAL_RC(getsockname);
-}             
+}
 
-int 
+int
 rpc_getpeername_gen(rcf_rpc_server *handle,
                     int s, struct sockaddr *name,
                     socklen_t *namelen,
@@ -1717,11 +1717,11 @@ rpc_getpeername_gen(rcf_rpc_server *handle,
         handle->_errno = TE_RC(TE_RCF, EINVAL);
         return -1;
     }
-    
+
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
     handle->op = RCF_RPC_CALL_WAIT;
-    
+
     in.fd = s;
     if (namelen != NULL && handle->op != RCF_RPC_WAIT)
     {
@@ -1744,23 +1744,23 @@ rpc_getpeername_gen(rcf_rpc_server *handle,
             in.addr.sa_data.sa_data_val = (uint8_t *)name;
         }
     }
-    
+
     rcf_rpc_call(handle, _getpeername, &in, (xdrproc_t)xdr_tarpc_getpeername_in,
                  &out, (xdrproc_t)xdr_tarpc_getpeername_out);
-    
+
     if (RPC_CALL_OK)
     {
         if (name != NULL && out.addr.sa_data.sa_data_val != NULL)
         {
-            memcpy(name->sa_data, out.addr.sa_data.sa_data_val, 
+            memcpy(name->sa_data, out.addr.sa_data.sa_data_val,
                    out.addr.sa_data.sa_data_len);
             name->sa_family = addr_family_rpc2h(out.addr.sa_family);
         }
-        
+
         if (namelen != NULL && out.len.len_val != NULL)
             *namelen = out.len.len_val[0];
     }
-    
+
     RING("RPC (%s,%s): getpeername(%d, %p[%u], %u) -> %d (%s) "
          "name=%s namelen=%u",
          handle->ta, handle->name,
@@ -1770,10 +1770,10 @@ rpc_getpeername_gen(rcf_rpc_server *handle,
          (namelen == NULL) ? (unsigned int)-1 : *namelen);
 
     RETVAL_RC(getpeername);
-}             
+}
 
 
-rpc_wsaevent 
+rpc_wsaevent
 rpc_create_event(rcf_rpc_server *handle)
 {
     tarpc_create_event_in  in;
@@ -1790,14 +1790,14 @@ rpc_create_event(rcf_rpc_server *handle)
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
 
-    rcf_rpc_call(handle, _create_event, &in, 
-		 (xdrproc_t)xdr_tarpc_create_event_in,
+    rcf_rpc_call(handle, _create_event, &in,
+                 (xdrproc_t)xdr_tarpc_create_event_in,
                  &out, (xdrproc_t)xdr_tarpc_create_event_out);
-    
+
     RING("RPC (%s,%s): create_event() -> %p (%s)",
-         handle->ta, handle->name, 
+         handle->ta, handle->name,
          out.retval, errno_rpc2str(RPC_ERRNO(handle)));
-	 
+
     RETVAL_PTR(out.retval, create_event);
 }
 
@@ -1821,9 +1821,9 @@ rpc_close_event(rcf_rpc_server *handle, rpc_wsaevent hevent)
 
     rcf_rpc_call(handle, _close_event, &in, (xdrproc_t)xdr_tarpc_close_event_in,
                  &out, (xdrproc_t)xdr_tarpc_close_event_out);
-    
+
     RING("RPC (%s,%s): close_event(%p) -> %s (%s)",
-         handle->ta, handle->name, hevent, 
+         handle->ta, handle->name, hevent,
          out.retval ? "true" : "false", errno_rpc2str(RPC_ERRNO(handle)));
 
     RETVAL_VAL(out.retval, close_event);
@@ -1849,15 +1849,15 @@ rpc_reset_event(rcf_rpc_server *handle, rpc_wsaevent hevent)
 
     rcf_rpc_call(handle, _reset_event, &in, (xdrproc_t)xdr_tarpc_reset_event_in,
                  &out, (xdrproc_t)xdr_tarpc_reset_event_out);
-    
+
     RING("RPC (%s,%s): reset_event(%p) -> %s (%s)",
-         handle->ta, handle->name, hevent, 
+         handle->ta, handle->name, hevent,
          out.retval ? "true" : "false", errno_rpc2str(RPC_ERRNO(handle)));
 
     RETVAL_VAL(out.retval, reset_event);
 }
 
-rpc_overlapped 
+rpc_overlapped
 rpc_create_overlapped(rcf_rpc_server *handle, rpc_wsaevent hevent,
                       unsigned int offset, unsigned int offset_high)
 {
@@ -1878,19 +1878,19 @@ rpc_create_overlapped(rcf_rpc_server *handle, rpc_wsaevent hevent,
     in.offset = offset;
     in.offset_high = offset_high;
 
-    rcf_rpc_call(handle, _create_overlapped, &in, 
-		 (xdrproc_t)xdr_tarpc_create_overlapped_in,
+    rcf_rpc_call(handle, _create_overlapped, &in,
+                 (xdrproc_t)xdr_tarpc_create_overlapped_in,
                  &out, (xdrproc_t)xdr_tarpc_create_overlapped_out);
-    
+
     RING("RPC (%s,%s): create_overlapped(%p) -> %p (%s)",
          handle->ta, handle->name, hevent,
          out.retval, errno_rpc2str(RPC_ERRNO(handle)));
-	 
+
     RETVAL_PTR(out.retval, create_overlapped);
 }
 
 void
-rpc_delete_overlapped(rcf_rpc_server *handle, 
+rpc_delete_overlapped(rcf_rpc_server *handle,
                       rpc_overlapped overlapped)
 {
     tarpc_delete_overlapped_in  in;
@@ -1910,15 +1910,15 @@ rpc_delete_overlapped(rcf_rpc_server *handle,
 
     rcf_rpc_call(handle, _delete_overlapped, &in, (xdrproc_t)xdr_tarpc_delete_overlapped_in,
                  &out, (xdrproc_t)xdr_tarpc_delete_overlapped_out);
-    
+
     RING("RPC (%s,%s): delete_overlapped(%p)",
          handle->ta, handle->name, overlapped);
- 
-    RETVAL_VOID(delete_overlapped);
-}   
 
-void 
-rpc_completion_callback(rcf_rpc_server *handle, 
+    RETVAL_VOID(delete_overlapped);
+}
+
+void
+rpc_completion_callback(rcf_rpc_server *handle,
                         int *called, int *error, int *bytes,
                         rpc_overlapped *overlapped)
 {
@@ -1943,7 +1943,7 @@ rpc_completion_callback(rcf_rpc_server *handle,
 
     rcf_rpc_call(handle, _completion_callback, &in, (xdrproc_t)xdr_tarpc_completion_callback_in,
                  &out, (xdrproc_t)xdr_tarpc_completion_callback_out);
-    
+
     RING("RPC (%s,%s): completion_callback() -> %d %d %d %p",
          handle->ta, handle->name, out.called, out.error, out.bytes,
          out.overlapped);
@@ -1955,17 +1955,17 @@ rpc_completion_callback(rcf_rpc_server *handle,
         *bytes = out.bytes;
         *overlapped = (rpc_overlapped)(out.overlapped);
     }
- 
-    RETVAL_VOID(completion_callback);
-}                        
 
-int 
+    RETVAL_VOID(completion_callback);
+}
+
+int
 rpc_wsa_event_select(rcf_rpc_server *handle,
                      int s, rpc_wsaevent event_object, rpc_network_event event)
 {
     tarpc_event_select_in  in;
     tarpc_event_select_out out;
-    
+
     if (handle == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
@@ -1980,27 +1980,27 @@ rpc_wsa_event_select(rcf_rpc_server *handle,
     in.fd = s;
     in.event_object = (tarpc_wsaevent)event_object;
     in.event = event;
-    
+
     rcf_rpc_call(handle, _event_select,
                  &in,  (xdrproc_t)xdr_tarpc_event_select_in,
                  &out, (xdrproc_t)xdr_tarpc_event_select_out);
 
     RING("RPC (%s,%s): event_select(%d, %d, %x) -> %d (%s)",
          handle->ta, handle->name,
-         s, event_object, event, out.retval, 
+         s, event_object, event, out.retval,
          errno_rpc2str(RPC_ERRNO(handle)));
 
     RETVAL_RC(event_select);
 }
 
-int 
+int
 rpc_enum_network_events(rcf_rpc_server *handle,
-                        int s, rpc_wsaevent event_object, 
+                        int s, rpc_wsaevent event_object,
                         rpc_network_event *event)
 {
     tarpc_enum_network_events_in  in;
     tarpc_enum_network_events_out out;
-    
+
     if (handle == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
@@ -2017,7 +2017,7 @@ rpc_enum_network_events(rcf_rpc_server *handle,
     if (event == NULL)
         in.event.event_len = 0;
     else
-        in.event.event_len = 1;    
+        in.event.event_len = 1;
     in.event.event_val = event;
 
     rcf_rpc_call(handle, _enum_network_events,
@@ -2030,9 +2030,9 @@ rpc_enum_network_events(rcf_rpc_server *handle,
     }
     RING("RPC (%s,%s): enum_network_events(%d, %d, %x) -> %d (%s) "
          "returned event %x",
-         handle->ta, handle->name, s, event_object, event, out.retval, 
-         errno_rpc2str(RPC_ERRNO(handle)), *event); 
-         
+         handle->ta, handle->name, s, event_object, event, out.retval,
+         errno_rpc2str(RPC_ERRNO(handle)), *event);
+
     RETVAL_RC(enum_network_events);
 }
 
@@ -2043,7 +2043,7 @@ rpc_fd_set_new(rcf_rpc_server *handle)
 {
     tarpc_fd_set_new_in  in;
     tarpc_fd_set_new_out out;
-    
+
     if (handle == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
@@ -2054,7 +2054,7 @@ rpc_fd_set_new(rcf_rpc_server *handle)
     memset(&out, 0, sizeof(out));
 
     handle->op = RCF_RPC_CALL_WAIT;
-    
+
     rcf_rpc_call(handle, _fd_set_new, &in, (xdrproc_t)xdr_tarpc_fd_set_new_in,
                  &out, (xdrproc_t)xdr_tarpc_fd_set_new_out);
 
@@ -2063,15 +2063,15 @@ rpc_fd_set_new(rcf_rpc_server *handle)
          out.retval, errno_rpc2str(RPC_ERRNO(handle)));
 
     RETVAL_PTR(out.retval, fd_set_new);
-}           
+}
 
 
-void 
+void
 rpc_fd_set_delete(rcf_rpc_server *handle, rpc_fd_set *set)
 {
     tarpc_fd_set_delete_in  in;
     tarpc_fd_set_delete_out out;
-    
+
     if (handle == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
@@ -2084,7 +2084,7 @@ rpc_fd_set_delete(rcf_rpc_server *handle, rpc_fd_set *set)
     handle->op = RCF_RPC_CALL_WAIT;
 
     in.set = (tarpc_fd_set)set;
-    
+
     rcf_rpc_call(handle, _fd_set_delete,
                  &in,  (xdrproc_t)xdr_tarpc_fd_set_delete_in,
                  &out, (xdrproc_t)xdr_tarpc_fd_set_delete_out);
@@ -2096,12 +2096,12 @@ rpc_fd_set_delete(rcf_rpc_server *handle, rpc_fd_set *set)
     RETVAL_VOID(fd_set_delete);
 }
 
-void 
+void
 rpc_do_fd_zero(rcf_rpc_server *handle, rpc_fd_set *set)
 {
     tarpc_do_fd_zero_in  in;
     tarpc_do_fd_zero_out out;
-    
+
     if (handle == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
@@ -2114,7 +2114,7 @@ rpc_do_fd_zero(rcf_rpc_server *handle, rpc_fd_set *set)
     handle->op = RCF_RPC_CALL_WAIT;
 
     in.set = (tarpc_fd_set)set;
-    
+
     rcf_rpc_call(handle, _do_fd_zero, &in, (xdrproc_t)xdr_tarpc_do_fd_zero_in,
                  &out, (xdrproc_t)xdr_tarpc_do_fd_zero_out);
 
@@ -2125,12 +2125,12 @@ rpc_do_fd_zero(rcf_rpc_server *handle, rpc_fd_set *set)
     RETVAL_VOID(do_fd_zero);
 }
 
-void 
+void
 rpc_do_fd_set(rcf_rpc_server *handle, int fd, rpc_fd_set *set)
 {
     tarpc_do_fd_set_in  in;
     tarpc_do_fd_set_out out;
-    
+
     if (handle == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
@@ -2144,7 +2144,7 @@ rpc_do_fd_set(rcf_rpc_server *handle, int fd, rpc_fd_set *set)
 
     in.set = (tarpc_fd_set)set;
     in.fd = fd;
-    
+
     rcf_rpc_call(handle, _do_fd_set, &in, (xdrproc_t)xdr_tarpc_do_fd_set_in,
                  &out, (xdrproc_t)xdr_tarpc_do_fd_set_out);
 
@@ -2155,12 +2155,12 @@ rpc_do_fd_set(rcf_rpc_server *handle, int fd, rpc_fd_set *set)
     RETVAL_VOID(do_fd_set);
 }
 
-void 
+void
 rpc_do_fd_clr(rcf_rpc_server *handle, int fd, rpc_fd_set *set)
 {
     tarpc_do_fd_clr_in  in;
     tarpc_do_fd_clr_out out;
-    
+
     if (handle == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
@@ -2174,7 +2174,7 @@ rpc_do_fd_clr(rcf_rpc_server *handle, int fd, rpc_fd_set *set)
 
     in.set = (tarpc_fd_set)set;
     in.fd = fd;
-    
+
     rcf_rpc_call(handle, _do_fd_clr, &in, (xdrproc_t)xdr_tarpc_do_fd_clr_in,
                  &out, (xdrproc_t)xdr_tarpc_do_fd_clr_out);
 
@@ -2190,7 +2190,7 @@ rpc_do_fd_isset(rcf_rpc_server *handle, int fd, rpc_fd_set *set)
 {
     tarpc_do_fd_isset_in  in;
     tarpc_do_fd_isset_out out;
-    
+
     if (handle == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
@@ -2204,7 +2204,7 @@ rpc_do_fd_isset(rcf_rpc_server *handle, int fd, rpc_fd_set *set)
 
     in.set = (tarpc_fd_set)set;
     in.fd = fd;
-    
+
     rcf_rpc_call(handle, _do_fd_isset,
                  &in, (xdrproc_t)xdr_tarpc_do_fd_isset_in,
                  &out, (xdrproc_t)xdr_tarpc_do_fd_isset_out);
@@ -2215,18 +2215,18 @@ rpc_do_fd_isset(rcf_rpc_server *handle, int fd, rpc_fd_set *set)
 
     LOG_TE_ERROR(do_fd_isset);
 
-    if (!RPC_CALL_OK)                     
-        return -1;                                        
-                                                          
-    if (out.retval != 0 && out.retval != 1)               
-    {                                                     
+    if (!RPC_CALL_OK)
+        return -1;
+
+    if (out.retval != 0 && out.retval != 1)
+    {
         RING("FD_ISSET() returned %d, not boolean value (0 or 1)",
              out.retval);
-    }                                                     
-    return out.retval;                                    
+    }
+    return out.retval;
 }
 
-int 
+int
 rpc_select(rcf_rpc_server *handle,
            int n, rpc_fd_set *readfds, rpc_fd_set *writefds,
            rpc_fd_set *exceptfds, struct timeval *timeout)
@@ -2236,9 +2236,9 @@ rpc_select(rcf_rpc_server *handle,
     tarpc_select_out out;
     struct timeval   timeout_in;
     struct timeval  *timeout_in_ptr = NULL;
-    
+
     struct tarpc_timeval tv;
-    
+
     if (handle == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
@@ -2249,23 +2249,23 @@ rpc_select(rcf_rpc_server *handle,
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
-    
+
     in.n = n;
     in.readfds = (tarpc_fd_set)readfds;
     in.writefds = (tarpc_fd_set)writefds;
     in.exceptfds = (tarpc_fd_set)exceptfds;
-    
+
     if (timeout != NULL && handle->op != RCF_RPC_WAIT)
     {
         tv.tv_sec = timeout->tv_sec;
         tv.tv_usec = timeout->tv_usec;
         in.timeout.timeout_len = 1;
         in.timeout.timeout_val = &tv;
-        
+
         timeout_in_ptr = &timeout_in;
         timeout_in = *timeout;
     }
-    
+
     rcf_rpc_call(handle, _select, &in, (xdrproc_t)xdr_tarpc_select_in,
                  &out, (xdrproc_t)xdr_tarpc_select_out);
 
@@ -2286,16 +2286,16 @@ rpc_select(rcf_rpc_server *handle,
          out.retval, errno_rpc2str(RPC_ERRNO(handle)));
 
     RETVAL_VAL(out.retval, select);
-}         
+}
 
 
-unsigned int 
+unsigned int
 rpc_if_nametoindex(rcf_rpc_server *handle,
                    const char *ifname)
 {
     tarpc_if_nametoindex_in  in;
     tarpc_if_nametoindex_out out;
-    
+
     if (handle == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
@@ -2306,29 +2306,29 @@ rpc_if_nametoindex(rcf_rpc_server *handle,
     memset(&out, 0, sizeof(out));
 
     handle->op = RCF_RPC_CALL_WAIT;
-    
+
     in.ifname.ifname_val = (char *)ifname;
     in.ifname.ifname_len = ifname == NULL ? 0 : strlen(ifname) + 1;
 
-    rcf_rpc_call(handle, _if_nametoindex, &in, 
+    rcf_rpc_call(handle, _if_nametoindex, &in,
                  (xdrproc_t)xdr_tarpc_if_nametoindex_in,
                  &out, (xdrproc_t)xdr_tarpc_if_nametoindex_out);
 
     RING("RPC (%s,%s): if_nametoindex(%s) -> %d (%s)",
-         handle->ta, handle->name, 
+         handle->ta, handle->name,
          ifname == NULL ? "" : ifname,
          out.ifindex, errno_rpc2str(RPC_ERRNO(handle)));
-                 
-    RETVAL_VAL((int)out.ifindex, if_nametoindex);  
-}                   
 
-char * 
+    RETVAL_VAL((int)out.ifindex, if_nametoindex);
+}
+
+char *
 rpc_if_indextoname(rcf_rpc_server *handle,
                    unsigned int ifindex, char *ifname)
 {
     tarpc_if_indextoname_in  in;
     tarpc_if_indextoname_out out;
-    
+
     if (handle == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
@@ -2344,10 +2344,10 @@ rpc_if_indextoname(rcf_rpc_server *handle,
     in.ifname.ifname_val = ifname;
     in.ifname.ifname_len = ifname == NULL ? 0 : strlen(ifname) + 1;
 
-    rcf_rpc_call(handle, _if_indextoname, &in, 
+    rcf_rpc_call(handle, _if_indextoname, &in,
                  (xdrproc_t)xdr_tarpc_if_indextoname_in,
                  &out, (xdrproc_t)xdr_tarpc_if_indextoname_out);
-                 
+
     if (RPC_CALL_OK)
     {
         if (ifname != NULL && out.ifname.ifname_val != NULL)
@@ -2358,19 +2358,19 @@ rpc_if_indextoname(rcf_rpc_server *handle,
          handle->ta, handle->name,
          ifindex, out.ifname.ifname_val != NULL ? ifname : "",
          errno_rpc2str(RPC_ERRNO(handle)));
-                 
+
     RETVAL_PTR(out.ifname.ifname_val != NULL ? ifname : NULL,
                if_indextoname);
-}                   
+}
 
-struct if_nameindex * 
+struct if_nameindex *
 rpc_if_nameindex(rcf_rpc_server *handle)
 {
     tarpc_if_nameindex_in  in;
     tarpc_if_nameindex_out out;
-    
+
     struct if_nameindex *res = NULL;
-    
+
     if (handle == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
@@ -2382,32 +2382,32 @@ rpc_if_nameindex(rcf_rpc_server *handle)
 
     handle->op = RCF_RPC_CALL_WAIT;
 
-    rcf_rpc_call(handle, _if_nameindex, &in, 
+    rcf_rpc_call(handle, _if_nameindex, &in,
                  (xdrproc_t)xdr_tarpc_if_nameindex_in,
                  &out, (xdrproc_t)xdr_tarpc_if_nameindex_out);
-                 
+
     if (RPC_CALL_OK && out.ptr.ptr_val != NULL)
     {
         int i;
-        
-        if ((res = calloc(sizeof(*res) * out.ptr.ptr_len + 
+
+        if ((res = calloc(sizeof(*res) * out.ptr.ptr_len +
                           sizeof(unsigned int), 1)) == NULL)
         {
             handle->_errno = TE_RC(TE_RCF, ENOMEM);
             RETVAL_PTR(NULL, if_nameindex);
         }
-        
+
         *(unsigned int *)res = out.mem_ptr;
         res = (struct if_nameindex *)((unsigned int *)res + 1);
-        
+
         for (i = 0; i < (int)out.ptr.ptr_len - 1; i++)
         {
-            if ((res[i].if_name = 
+            if ((res[i].if_name =
                  strdup(out.ptr.ptr_val[i].ifname.ifname_val)) == NULL)
             {
                 for (i--; i >= 0; i--)
                     free(res[i].if_name);
-                
+
                 res = (struct if_nameindex *)((unsigned int *)res - 1);
                 free(res);
                 handle->_errno = TE_RC(TE_RCF, ENOMEM);
@@ -2418,17 +2418,17 @@ rpc_if_nameindex(rcf_rpc_server *handle)
 
     RING("RPC (%s,%s): if_nameindex() -> %p (%s)",
          handle->ta, handle->name, res, errno_rpc2str(RPC_ERRNO(handle)));
-    
+
     RETVAL_PTR(res, if_nameindex);
 }
 
-void 
+void
 rpc_if_freenameindex(rcf_rpc_server *handle,
                      struct if_nameindex *ptr)
 {
     tarpc_if_freenameindex_in  in;
     tarpc_if_freenameindex_out out;
-    
+
     if (handle == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
@@ -2437,7 +2437,7 @@ rpc_if_freenameindex(rcf_rpc_server *handle,
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
-    
+
     handle->op = RCF_RPC_CALL_WAIT;
 
     if (ptr == NULL)
@@ -2449,7 +2449,7 @@ rpc_if_freenameindex(rcf_rpc_server *handle,
         free(p);
     }
 
-    rcf_rpc_call(handle, _if_freenameindex, &in, 
+    rcf_rpc_call(handle, _if_freenameindex, &in,
                  (xdrproc_t)xdr_tarpc_if_freenameindex_in,
                  &out, (xdrproc_t)xdr_tarpc_if_freenameindex_out);
 
@@ -2457,14 +2457,14 @@ rpc_if_freenameindex(rcf_rpc_server *handle,
          handle->ta, handle->name, ptr, errno_rpc2str(RPC_ERRNO(handle)));
 
     RETVAL_VOID(if_freenameindex);
-}                     
+}
 
 rpc_sigset_t *
 rpc_sigset_new(rcf_rpc_server *handle)
 {
     tarpc_sigset_new_in  in;
     tarpc_sigset_new_out out;
-    
+
     if (handle == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
@@ -2475,7 +2475,7 @@ rpc_sigset_new(rcf_rpc_server *handle)
     memset(&out, 0, sizeof(out));
 
     handle->op = RCF_RPC_CALL_WAIT;
-    
+
     rcf_rpc_call(handle, _sigset_new, &in, (xdrproc_t)xdr_tarpc_sigset_new_in,
                  &out, (xdrproc_t)xdr_tarpc_sigset_new_out);
 
@@ -2485,12 +2485,12 @@ rpc_sigset_new(rcf_rpc_server *handle)
     RETVAL_PTR(out.set, sigset_new);
 }
 
-void 
+void
 rpc_sigset_delete(rcf_rpc_server *handle, rpc_sigset_t *set)
 {
     tarpc_sigset_delete_in  in;
     tarpc_sigset_delete_out out;
-    
+
     if (handle == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
@@ -2503,7 +2503,7 @@ rpc_sigset_delete(rcf_rpc_server *handle, rpc_sigset_t *set)
     handle->op = RCF_RPC_CALL_WAIT;
 
     in.set = (tarpc_sigset_t)set;
-    
+
     rcf_rpc_call(handle, _sigset_delete,
                  &in, (xdrproc_t)xdr_tarpc_sigset_delete_in,
                  &out, (xdrproc_t)xdr_tarpc_sigset_delete_out);
@@ -2515,14 +2515,14 @@ rpc_sigset_delete(rcf_rpc_server *handle, rpc_sigset_t *set)
 }
 
 
-int 
+int
 rpc_sigprocmask(rcf_rpc_server *handle,
                 rpc_sighow how, const rpc_sigset_t *set,
                 rpc_sigset_t *oldset)
 {
     tarpc_sigprocmask_in  in;
     tarpc_sigprocmask_out out;
-    
+
     if (handle == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
@@ -2537,23 +2537,23 @@ rpc_sigprocmask(rcf_rpc_server *handle,
     in.set = (tarpc_sigset_t)set;
     in.oldset = (tarpc_sigset_t)oldset;
     in.how = how;
-    
+
     rcf_rpc_call(handle, _sigprocmask, &in, (xdrproc_t)xdr_tarpc_sigprocmask_in,
                  &out, (xdrproc_t)xdr_tarpc_sigprocmask_out);
     RING("RPC (%s,%s): sigprocmask(%d, %p, %p) -> %d (%s)",
          handle->ta, handle->name, how, set, oldset,
          out.retval, errno_rpc2str(RPC_ERRNO(handle)));
-         
+
     RETVAL_RC(sigprocmask);
-}                
+}
 
 
-int 
+int
 rpc_sigemptyset(rcf_rpc_server *handle, rpc_sigset_t *set)
 {
     tarpc_sigemptyset_in  in;
     tarpc_sigemptyset_out out;
-    
+
     if (handle == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
@@ -2566,7 +2566,7 @@ rpc_sigemptyset(rcf_rpc_server *handle, rpc_sigset_t *set)
     handle->op = RCF_RPC_CALL_WAIT;
 
     in.set = (tarpc_sigset_t)set;
-    
+
     rcf_rpc_call(handle, _sigemptyset, &in, (xdrproc_t)xdr_tarpc_sigemptyset_in,
                  &out, (xdrproc_t)xdr_tarpc_sigemptyset_out);
 
@@ -2577,12 +2577,12 @@ rpc_sigemptyset(rcf_rpc_server *handle, rpc_sigset_t *set)
     RETVAL_RC(sigemptyset);
 }
 
-int 
+int
 rpc_sigpending(rcf_rpc_server *handle, rpc_sigset_t *set)
 {
     tarpc_sigpending_in  in;
     tarpc_sigpending_out out;
-    
+
     if (handle == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
@@ -2595,7 +2595,7 @@ rpc_sigpending(rcf_rpc_server *handle, rpc_sigset_t *set)
     handle->op = RCF_RPC_CALL_WAIT;
 
     in.set = (tarpc_sigset_t)set;
-    
+
     rcf_rpc_call(handle, _sigpending, &in, (xdrproc_t)xdr_tarpc_sigpending_in,
                  &out, (xdrproc_t)xdr_tarpc_sigpending_out);
 
@@ -2606,7 +2606,7 @@ rpc_sigpending(rcf_rpc_server *handle, rpc_sigset_t *set)
     RETVAL_RC(sigpending);
 }
 
-int 
+int
 rpc_sigsuspend(rcf_rpc_server *handle, const rpc_sigset_t *set)
 {
     tarpc_sigsuspend_in  in;
@@ -2622,7 +2622,7 @@ rpc_sigsuspend(rcf_rpc_server *handle, const rpc_sigset_t *set)
     memset(&out, 0, sizeof(out));
 
     in.set = (tarpc_sigset_t)set;
-    
+
     rcf_rpc_call(handle, _sigsuspend, &in, (xdrproc_t)xdr_tarpc_sigsuspend_in,
                  &out, (xdrproc_t)xdr_tarpc_sigsuspend_out);
 
@@ -2638,7 +2638,7 @@ rpc_sigreceived(rcf_rpc_server *handle)
 {
     tarpc_sigreceived_in  in;
     tarpc_sigreceived_out out;
-    
+
     if (handle == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
@@ -2649,7 +2649,7 @@ rpc_sigreceived(rcf_rpc_server *handle)
     memset(&out, 0, sizeof(out));
 
     handle->op = RCF_RPC_CALL_WAIT;
-    
+
     rcf_rpc_call(handle, _sigreceived,
                  &in, (xdrproc_t)xdr_tarpc_sigreceived_in,
                  &out, (xdrproc_t)xdr_tarpc_sigreceived_out);
@@ -2661,12 +2661,12 @@ rpc_sigreceived(rcf_rpc_server *handle)
     RETVAL_PTR(out.set, sigreceived);
 }
 
-int 
+int
 rpc_sigfillset(rcf_rpc_server *handle, rpc_sigset_t *set)
 {
     tarpc_sigfillset_in  in;
     tarpc_sigfillset_out out;
-    
+
     if (handle == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
@@ -2679,7 +2679,7 @@ rpc_sigfillset(rcf_rpc_server *handle, rpc_sigset_t *set)
     handle->op = RCF_RPC_CALL_WAIT;
 
     in.set = (tarpc_sigset_t)set;
-    
+
     rcf_rpc_call(handle, _sigfillset, &in, (xdrproc_t)xdr_tarpc_sigfillset_in,
                  &out, (xdrproc_t)xdr_tarpc_sigfillset_out);
 
@@ -2690,12 +2690,12 @@ rpc_sigfillset(rcf_rpc_server *handle, rpc_sigset_t *set)
     RETVAL_RC(sigfillset);
 }
 
-int 
+int
 rpc_sigaddset(rcf_rpc_server *handle, rpc_sigset_t *set, rpc_signum signum)
 {
     tarpc_sigaddset_in  in;
     tarpc_sigaddset_out out;
-    
+
     if (handle == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
@@ -2709,7 +2709,7 @@ rpc_sigaddset(rcf_rpc_server *handle, rpc_sigset_t *set, rpc_signum signum)
 
     in.set = (tarpc_sigset_t)set;
     in.signum = signum;
-    
+
     rcf_rpc_call(handle, _sigaddset, &in, (xdrproc_t)xdr_tarpc_sigaddset_in,
                  &out, (xdrproc_t)xdr_tarpc_sigaddset_out);
 
@@ -2721,12 +2721,12 @@ rpc_sigaddset(rcf_rpc_server *handle, rpc_sigset_t *set, rpc_signum signum)
     RETVAL_RC(sigaddset);
 }
 
-int 
+int
 rpc_sigdelset(rcf_rpc_server *handle, rpc_sigset_t *set, rpc_signum signum)
 {
     tarpc_sigdelset_in  in;
     tarpc_sigdelset_out out;
-    
+
     if (handle == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
@@ -2740,7 +2740,7 @@ rpc_sigdelset(rcf_rpc_server *handle, rpc_sigset_t *set, rpc_signum signum)
 
     in.set = (tarpc_sigset_t)set;
     in.signum = signum;
-    
+
     rcf_rpc_call(handle, _sigdelset, &in, (xdrproc_t)xdr_tarpc_sigdelset_in,
                  &out, (xdrproc_t)xdr_tarpc_sigdelset_out);
 
@@ -2752,13 +2752,13 @@ rpc_sigdelset(rcf_rpc_server *handle, rpc_sigset_t *set, rpc_signum signum)
     RETVAL_RC(sigdelset);
 }
 
-int 
+int
 rpc_sigismember(rcf_rpc_server *handle,
                 const rpc_sigset_t *set, rpc_signum signum)
 {
     tarpc_sigismember_in  in;
     tarpc_sigismember_out out;
-    
+
     if (handle == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
@@ -2772,7 +2772,7 @@ rpc_sigismember(rcf_rpc_server *handle,
 
     in.set = (tarpc_sigset_t)set;
     in.signum = signum;
-    
+
     rcf_rpc_call(handle, _sigismember,
                  &in, (xdrproc_t)xdr_tarpc_sigismember_in,
                  &out, (xdrproc_t)xdr_tarpc_sigismember_out);
@@ -2784,27 +2784,27 @@ rpc_sigismember(rcf_rpc_server *handle,
 
     LOG_TE_ERROR(sigismember);
 
-    if (!RPC_CALL_OK)                     
-        return -1;                                        
-                                                          
+    if (!RPC_CALL_OK)
+        return -1;
+
     if (out.retval != 0 && out.retval != 1 && out.retval != -1)
-    {                                                     
-        ERROR("FD_ISSET returned incorrect value %d", out.retval);                            
-        handle->_errno = TE_RC(TE_TAPI, ETECORRUPTED);    
-        return -1;                                        
-    }                                                     
-    return out.retval;                                   
+    {
+        ERROR("FD_ISSET returned incorrect value %d", out.retval);
+        handle->_errno = TE_RC(TE_TAPI, ETECORRUPTED);
+        return -1;
+    }
+    return out.retval;
 }
-                
+
 char *
 rpc_signal(rcf_rpc_server *handle,
            rpc_signum signum, const char *handler)
 {
     tarpc_signal_in  in;
     tarpc_signal_out out;
-    
+
     char *res = NULL;
-    
+
     if (handle == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
@@ -2819,31 +2819,31 @@ rpc_signal(rcf_rpc_server *handle,
     in.signum = signum;
     in.handler.handler_val = (char *)handler;
     in.handler.handler_len = handler == NULL ? 0 : strlen(handler) + 1;
-    
+
     rcf_rpc_call(handle, _signal,
                  &in, (xdrproc_t)xdr_tarpc_signal_in,
                  &out, (xdrproc_t)xdr_tarpc_signal_out);
 
     RING("RPC (%s,%s): signal(%s, %s) -> %s (%s)",
          handle->ta, handle->name,
-         signum_rpc2str(signum), (handler != NULL) ? handler : "(null)", 
-         out.handler.handler_val != NULL ? out.handler.handler_val : "(null)", 
+         signum_rpc2str(signum), (handler != NULL) ? handler : "(null)",
+         out.handler.handler_val != NULL ? out.handler.handler_val : "(null)",
          errno_rpc2str(RPC_ERRNO(handle)));
 
     /* Yes, I know that it's memory leak, but what do you propose?! */
     if (RPC_CALL_OK && out.handler.handler_val != NULL)
         res = strdup(out.handler.handler_val);
 
-    RETVAL_PTR(res, signal);        
-}           
+    RETVAL_PTR(res, signal);
+}
 
-int 
+int
 rpc_kill(rcf_rpc_server *handle, pid_t pid, rpc_signum signum)
 {
     rcf_rpc_op     op;
     tarpc_kill_in  in;
     tarpc_kill_out out;
-    
+
     if (handle == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
@@ -2857,7 +2857,7 @@ rpc_kill(rcf_rpc_server *handle, pid_t pid, rpc_signum signum)
 
     in.signum = signum;
     in.pid = pid;
-    
+
     rcf_rpc_call(handle, _kill, &in, (xdrproc_t)xdr_tarpc_kill_in,
                  &out, (xdrproc_t)xdr_tarpc_kill_out);
 
@@ -2868,7 +2868,7 @@ rpc_kill(rcf_rpc_server *handle, pid_t pid, rpc_signum signum)
     RETVAL_RC(kill);
 }
 
-int 
+int
 rpc_getsockopt_gen(rcf_rpc_server *handle,
                    int s, rpc_socklevel level, rpc_sockopt optname,
                    void *optval, socklen_t *optlen, socklen_t roptlen)
@@ -2877,7 +2877,7 @@ rpc_getsockopt_gen(rcf_rpc_server *handle,
     tarpc_getsockopt_out  out;
     struct option_value   val;
     char                  opt_val_str[4096] = {};
-    
+
     if (handle == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
@@ -2916,9 +2916,9 @@ rpc_getsockopt_gen(rcf_rpc_server *handle,
                 val.opttype = OPT_LINGER;
                 if (roptlen >= sizeof(struct linger))
                 {
-                    val.option_value_u.opt_linger.l_onoff = 
+                    val.option_value_u.opt_linger.l_onoff =
                         ((struct linger *)optval)->l_onoff;
-                    val.option_value_u.opt_linger.l_linger = 
+                    val.option_value_u.opt_linger.l_linger =
                         ((struct linger *)optval)->l_linger;
                 }
                 else
@@ -2947,7 +2947,7 @@ rpc_getsockopt_gen(rcf_rpc_server *handle,
                 }
                 break;
 
-            case RPC_IP_ADD_MEMBERSHIP: 
+            case RPC_IP_ADD_MEMBERSHIP:
             case RPC_IP_DROP_MEMBERSHIP:
                 val.opttype = OPT_MREQN;
                 if (roptlen >= sizeof(struct ip_mreqn))
@@ -2958,7 +2958,7 @@ rpc_getsockopt_gen(rcf_rpc_server *handle,
                     memcpy(val.option_value_u.opt_mreqn.imr_address,
                            &(((struct ip_mreqn *)optval)->imr_address),
                            sizeof(((struct ip_mreqn *)optval)->imr_address));
-                    val.option_value_u.opt_mreqn.imr_ifindex = 
+                    val.option_value_u.opt_mreqn.imr_ifindex =
                           ((struct ip_mreqn *)optval)->imr_ifindex;
                 }
                 else
@@ -2983,7 +2983,7 @@ rpc_getsockopt_gen(rcf_rpc_server *handle,
                          sockopt_rpc2str(optname), sizeof(struct in_addr));
                 }
                 break;
-            
+
             case RPC_TCP_INFO:
                 val.opttype = OPT_TCP_INFO;
                 if (roptlen >= sizeof(struct tcp_info))
@@ -2991,7 +2991,7 @@ rpc_getsockopt_gen(rcf_rpc_server *handle,
 #define COPY_TCP_INFO_FIELD(_name) \
                     val.option_value_u.opt_tcp_info._name = \
                         ((struct tcp_info *)optval)->_name
-                    
+
                     COPY_TCP_INFO_FIELD(tcpi_state);
                     COPY_TCP_INFO_FIELD(tcpi_ca_state);
                     COPY_TCP_INFO_FIELD(tcpi_retransmits);
@@ -3030,7 +3030,7 @@ rpc_getsockopt_gen(rcf_rpc_server *handle,
                          sockopt_rpc2str(optname), sizeof(struct tcp_info));
                 }
                 break;
-                
+
             default:
                 val.opttype = OPT_INT;
                 if (roptlen >= sizeof(int))
@@ -3049,7 +3049,7 @@ rpc_getsockopt_gen(rcf_rpc_server *handle,
 
     rcf_rpc_call(handle, _getsockopt, &in, (xdrproc_t)xdr_tarpc_getsockopt_in,
                  &out, (xdrproc_t)xdr_tarpc_getsockopt_out);
-                 
+
     if (RPC_CALL_OK)
     {
         if (optlen != NULL)
@@ -3064,7 +3064,7 @@ rpc_getsockopt_gen(rcf_rpc_server *handle,
                     if (optlen != NULL)
                     {
                         char *buf;
-                        
+
                         if ((buf = (char *)malloc(*optlen + 1)) == NULL)
                         {
                             ERROR("No memory available");
@@ -3077,9 +3077,9 @@ rpc_getsockopt_gen(rcf_rpc_server *handle,
                                option_value_u.opt_string.opt_string_val,
                                *optlen);
                         memcpy(buf, optval, *optlen);
-                        snprintf(opt_val_str, sizeof(opt_val_str), 
+                        snprintf(opt_val_str, sizeof(opt_val_str),
                                  "{ %s%s }",
-                                 buf, (strlen(buf) == *optlen) ? 
+                                 buf, (strlen(buf) == *optlen) ?
                                  " without trailing zero" : "");
 
                         free(buf);
@@ -3092,11 +3092,11 @@ rpc_getsockopt_gen(rcf_rpc_server *handle,
                     {
                         ((struct linger *)optval)->l_onoff =
                             out.optval.optval_val[0].option_value_u.
-                                opt_linger.l_onoff; 
+                                opt_linger.l_onoff;
                         ((struct linger *)optval)->l_linger =
                            out.optval.optval_val[0].option_value_u.
                                 opt_linger.l_linger;
-                        snprintf(opt_val_str, sizeof(opt_val_str), 
+                        snprintf(opt_val_str, sizeof(opt_val_str),
                                  "{ l_onoff: %d, l_linger: %d }",
                                  ((struct linger *)optval)->l_onoff,
                                  ((struct linger *)optval)->l_linger);
@@ -3113,21 +3113,21 @@ rpc_getsockopt_gen(rcf_rpc_server *handle,
                         ((struct timeval *)optval)->tv_usec =
                             out.optval.optval_val[0].option_value_u.
                                 opt_timeval.tv_usec;
-    
-                        snprintf(opt_val_str, sizeof(opt_val_str), 
+
+                        snprintf(opt_val_str, sizeof(opt_val_str),
                                  "{ tv_sec: %ld, tv_usec: %ld }",
                                  ((struct timeval *)optval)->tv_sec,
                                  ((struct timeval *)optval)->tv_usec);
                     }
                     break;
 
-                case RPC_IP_ADD_MEMBERSHIP: 
+                case RPC_IP_ADD_MEMBERSHIP:
                 case RPC_IP_DROP_MEMBERSHIP:
                     if (roptlen >= sizeof(struct ip_mreqn))
                     {
                         char addr_buf1[INET_ADDRSTRLEN];
                         char addr_buf2[INET_ADDRSTRLEN];
-                    
+
                         memcpy(&(((struct ip_mreqn *)optval)->imr_multiaddr),
                                out.optval.optval_val[0].option_value_u.
                                    opt_mreqn.imr_multiaddr,
@@ -3141,10 +3141,10 @@ rpc_getsockopt_gen(rcf_rpc_server *handle,
                         ((struct ip_mreqn *)optval)->imr_ifindex =
                             val.option_value_u.opt_mreqn.imr_ifindex;
 
-                        snprintf(opt_val_str, sizeof(opt_val_str), 
+                        snprintf(opt_val_str, sizeof(opt_val_str),
                                  "{ imr_multiaddr: %s, imr_address: %s, "
                                  "imr_ifindex: %d}",
-                                 inet_ntop(AF_INET, 
+                                 inet_ntop(AF_INET,
                                      &(((struct ip_mreqn *)optval)->
                                          imr_multiaddr),
                                      addr_buf1, sizeof(addr_buf1)),
@@ -3155,7 +3155,7 @@ rpc_getsockopt_gen(rcf_rpc_server *handle,
                                  ((struct ip_mreqn *)optval)->imr_ifindex);
                     }
                     break;
-                
+
                 case RPC_IP_MULTICAST_IF:
                     if (roptlen >= sizeof(struct in_addr))
                     {
@@ -3165,13 +3165,13 @@ rpc_getsockopt_gen(rcf_rpc_server *handle,
                                out.optval.optval_val[0].option_value_u.
                                    opt_ipaddr,
                                sizeof(struct in_addr));
-                        snprintf(opt_val_str, sizeof(opt_val_str), 
+                        snprintf(opt_val_str, sizeof(opt_val_str),
                                  "{ addr: %s }",
                                  inet_ntop(AF_INET, optval,
                                            addr_buf, sizeof(addr_buf)));
                     }
                     break;
-            
+
                 case RPC_TCP_INFO:
                     if (roptlen >= sizeof(struct tcp_info))
                     {
@@ -3187,7 +3187,7 @@ rpc_getsockopt_gen(rcf_rpc_server *handle,
                                      out.optval.optval_val[0].               \
                                          option_value_u.opt_tcp_info._name); \
                         } while (0)
-                    
+
                     snprintf(opt_val_str, sizeof(opt_val_str), "{ ");
                     COPY_TCP_INFO_FIELD(tcpi_state);
                     COPY_TCP_INFO_FIELD(tcpi_ca_state);
@@ -3234,7 +3234,7 @@ rpc_getsockopt_gen(rcf_rpc_server *handle,
                 default:
                     if (roptlen >= sizeof(int))
                     {
-                        *(int *)optval = 
+                        *(int *)optval =
                             out.optval.optval_val[0].option_value_u.opt_int;
                         snprintf(opt_val_str, sizeof(opt_val_str), "%d",
                                  *(int *)optval);
@@ -3246,14 +3246,14 @@ rpc_getsockopt_gen(rcf_rpc_server *handle,
 
     RING("RPC (%s,%s): getsockopt(%d, %s, %s, %p(%s), %d) -> %d (%s)",
          handle->ta, handle->name,
-         s, socklevel_rpc2str(level), sockopt_rpc2str(optname), optval, 
+         s, socklevel_rpc2str(level), sockopt_rpc2str(optname), optval,
          opt_val_str, optlen == NULL ? 0 : *optlen, out.retval,
          errno_rpc2str(RPC_ERRNO(handle)));
 
     RETVAL_RC(getsockopt);
-}                   
+}
 
-int 
+int
 rpc_setsockopt(rcf_rpc_server *handle,
                int s, rpc_socklevel level, rpc_sockopt optname,
                const void *optval, socklen_t optlen)
@@ -3262,7 +3262,7 @@ rpc_setsockopt(rcf_rpc_server *handle,
     tarpc_setsockopt_out out;
     struct option_value  val;
     char                 opt_val_str[128] = {};
-    
+
     if (handle == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
@@ -3270,14 +3270,14 @@ rpc_setsockopt(rcf_rpc_server *handle,
     }
 
     memset(&in, 0, sizeof(in));
-    memset(&out, 0, sizeof(out)); 
+    memset(&out, 0, sizeof(out));
 
     in.s = s;
     in.level = level;
     in.optname = optname;
     in.optlen = optlen;
     handle->op = RCF_RPC_CALL_WAIT;
-    
+
     if (optval != NULL)
     {
         in.optval.optval_len = 1;
@@ -3292,7 +3292,7 @@ rpc_setsockopt(rcf_rpc_server *handle,
                 val.option_value_u.opt_string.opt_string_len = optlen;
                 val.option_value_u.opt_string.opt_string_val = (char *)optval;
                 val.opttype = OPT_STRING;
-                    
+
                 if ((buf = (char *)malloc(optlen + 1)) == NULL)
                 {
                     ERROR("No memory available");
@@ -3301,23 +3301,23 @@ rpc_setsockopt(rcf_rpc_server *handle,
                 buf[optlen] = '\0';
 
                 memcpy(buf, optval, optlen);
-                snprintf(opt_val_str, sizeof(opt_val_str), 
+                snprintf(opt_val_str, sizeof(opt_val_str),
                          "{ %s%s }",
-                         buf, (strlen(buf) == optlen) ? 
+                         buf, (strlen(buf) == optlen) ?
                          " without trailing zero" : "");
                 free(buf);
-    
+
                 break;
             }
 
             case RPC_SO_LINGER:
-                val.option_value_u.opt_linger.l_onoff = 
+                val.option_value_u.opt_linger.l_onoff =
                     ((struct linger *)optval)->l_onoff;
-                val.option_value_u.opt_linger.l_linger = 
+                val.option_value_u.opt_linger.l_linger =
                     ((struct linger *)optval)->l_linger;
                 val.opttype = OPT_LINGER;
 
-                snprintf(opt_val_str, sizeof(opt_val_str), 
+                snprintf(opt_val_str, sizeof(opt_val_str),
                          "{ l_onoff: %d, l_linger: %d }",
                          ((struct linger *)optval)->l_onoff,
                          ((struct linger *)optval)->l_linger);
@@ -3331,13 +3331,13 @@ rpc_setsockopt(rcf_rpc_server *handle,
                     ((struct timeval *)optval)->tv_usec;
                 val.opttype = OPT_TIMEVAL;
 
-                snprintf(opt_val_str, sizeof(opt_val_str), 
+                snprintf(opt_val_str, sizeof(opt_val_str),
                          "{ tv_sec: %ld, tv_usec: %ld }",
                          ((struct timeval *)optval)->tv_sec,
                          ((struct timeval *)optval)->tv_usec);
                 break;
 
-            case RPC_IP_ADD_MEMBERSHIP: 
+            case RPC_IP_ADD_MEMBERSHIP:
             case RPC_IP_DROP_MEMBERSHIP:
             {
                 char addr_buf1[INET_ADDRSTRLEN];
@@ -3349,14 +3349,14 @@ rpc_setsockopt(rcf_rpc_server *handle,
                 memcpy(val.option_value_u.opt_mreqn.imr_address,
                        (char *)&(((struct ip_mreqn *)optval)->imr_address),
                        sizeof(((struct ip_mreqn *)optval)->imr_address));
-                val.option_value_u.opt_mreqn.imr_ifindex = 
+                val.option_value_u.opt_mreqn.imr_ifindex =
                        ((struct ip_mreqn *)optval)->imr_ifindex;
                 val.opttype = OPT_MREQN;
-                
-                snprintf(opt_val_str, sizeof(opt_val_str), 
+
+                snprintf(opt_val_str, sizeof(opt_val_str),
                          "{ imr_multiaddr: %s, imr_address: %s, "
                          "imr_ifindex: %d}",
-                         inet_ntop(AF_INET, 
+                         inet_ntop(AF_INET,
                                    (char *)&(((struct ip_mreqn *)optval)->imr_multiaddr),
                                    addr_buf1, sizeof(addr_buf1)),
                          inet_ntop(AF_INET,
@@ -3369,19 +3369,19 @@ rpc_setsockopt(rcf_rpc_server *handle,
             case RPC_IP_MULTICAST_IF:
             {
                 char addr_buf[INET_ADDRSTRLEN];
-                
+
                 memcpy(&(val.option_value_u.opt_ipaddr), optval,
                        sizeof(struct in_addr));
                 val.opttype = OPT_IPADDR;
 
-                snprintf(opt_val_str, sizeof(opt_val_str), 
+                snprintf(opt_val_str, sizeof(opt_val_str),
                          "{ addr: %s } ",
                          inet_ntop(AF_INET, (char *)optval,
                                    addr_buf, sizeof(addr_buf)));
-                
+
                 break;
             }
-            
+
             default:
                 val.option_value_u.opt_int = *(int *)optval;
                 val.opttype = OPT_INT;
@@ -3401,9 +3401,9 @@ rpc_setsockopt(rcf_rpc_server *handle,
          opt_val_str, optlen, out.retval, errno_rpc2str(RPC_ERRNO(handle)));
 
     RETVAL_RC(setsockopt);
-}               
+}
 
-int 
+int
 rpc_pselect(rcf_rpc_server *handle,
             int n, rpc_fd_set *readfds, rpc_fd_set *writefds,
             rpc_fd_set *exceptfds, struct timespec *timeout,
@@ -3412,9 +3412,9 @@ rpc_pselect(rcf_rpc_server *handle,
     rcf_rpc_op        op;
     tarpc_pselect_in  in;
     tarpc_pselect_out out;
-    
+
     struct tarpc_timespec tv;
-    
+
     if (handle == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
@@ -3425,13 +3425,13 @@ rpc_pselect(rcf_rpc_server *handle,
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
-    
+
     in.n = n;
     in.readfds = (tarpc_fd_set)readfds;
     in.writefds = (tarpc_fd_set)writefds;
     in.exceptfds = (tarpc_fd_set)exceptfds;
     in.sigmask = (tarpc_sigset_t)sigmask;
-    
+
     if (timeout != NULL && handle->op != RCF_RPC_WAIT)
     {
         tv.tv_sec = timeout->tv_sec;
@@ -3439,7 +3439,7 @@ rpc_pselect(rcf_rpc_server *handle,
         in.timeout.timeout_len = 1;
         in.timeout.timeout_val = &tv;
     }
-    
+
     rcf_rpc_call(handle, _pselect, &in, (xdrproc_t)xdr_tarpc_pselect_in,
                  &out, (xdrproc_t)xdr_tarpc_pselect_out);
 
@@ -3452,18 +3452,18 @@ rpc_pselect(rcf_rpc_server *handle,
     RETVAL_VAL(out.retval, pselect);
 }
 
-int 
+int
 rpc_ioctl(rcf_rpc_server *handle,
           int fd, rpc_ioctl_code request, ...)
 {
     tarpc_ioctl_in  in;
     tarpc_ioctl_out out;
-    
+
     ioctl_request   req;
     va_list         ap;
     int             *arg;
     const char      *req_val;
-    
+
     if (handle == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
@@ -3473,14 +3473,14 @@ rpc_ioctl(rcf_rpc_server *handle,
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
     handle->op = RCF_RPC_CALL_WAIT;
-    
+
     va_start(ap, request);
     arg = va_arg(ap, int *);
     va_end(ap);
-    
+
     in.s = fd;
     in.code = request;
-    
+
     if (arg != NULL)
     {
         memset(&req, 0, sizeof(req));
@@ -3496,9 +3496,9 @@ rpc_ioctl(rcf_rpc_server *handle,
             if (arg != NULL)
             {
                 in.req.req_val[0].type = IOCTL_TIMEVAL;
-                in.req.req_val[0].ioctl_request_u.req_timeval.tv_sec = 
+                in.req.req_val[0].ioctl_request_u.req_timeval.tv_sec =
                     ((struct timeval *)arg)->tv_sec;
-                in.req.req_val[0].ioctl_request_u.req_timeval.tv_usec = 
+                in.req.req_val[0].ioctl_request_u.req_timeval.tv_usec =
                     ((struct timeval *)arg)->tv_usec;
             }
             break;
@@ -3527,21 +3527,21 @@ rpc_ioctl(rcf_rpc_server *handle,
                 in.req.req_val[0].ioctl_request_u.req_int = *arg;
             }
             break;
-        
+
         case RPC_SIOCGIFCONF:
             in.access = IOCTL_RD;
-	    if (arg != NULL)
+            if (arg != NULL)
             {
-	        in.req.req_val[0].type = IOCTL_IFCONF;
+                in.req.req_val[0].type = IOCTL_IFCONF;
                 in.req.req_val[0].ioctl_request_u.req_ifconf.buflen =
                     ((struct ifconf *)arg)->ifc_len;
             }
             break;
-        
+
         case RPC_SIOCSIFADDR:
         case RPC_SIOCSIFNETMASK:
-        case RPC_SIOCSIFBRDADDR: 
-        case RPC_SIOCSIFDSTADDR: 
+        case RPC_SIOCSIFBRDADDR:
+        case RPC_SIOCSIFDSTADDR:
             in.access = IOCTL_WR;
             if (arg != NULL)
             {
@@ -3551,7 +3551,7 @@ rpc_ioctl(rcf_rpc_server *handle,
                         addr_family_h2rpc(
                             ((struct ifreq *)arg)->ifr_addr.sa_family);
                 in.req.req_val[0].ioctl_request_u.req_ifreq.rpc_ifr_addr.
-                    sa_data.sa_data_val = 
+                    sa_data.sa_data_val =
                         ((struct ifreq *)arg)->ifr_addr.sa_data;
                 in.req.req_val[0].ioctl_request_u.req_ifreq.rpc_ifr_addr.
                     sa_data.sa_data_len = sizeof(struct sockaddr);
@@ -3561,11 +3561,11 @@ rpc_ioctl(rcf_rpc_server *handle,
                        sizeof(((struct ifreq *)arg)->ifr_name));
             }
             break;
-                                    
+
         case RPC_SIOCGIFADDR:
         case RPC_SIOCGIFNETMASK:
-        case RPC_SIOCGIFBRDADDR: 
-        case RPC_SIOCGIFDSTADDR: 
+        case RPC_SIOCGIFBRDADDR:
+        case RPC_SIOCGIFDSTADDR:
         case RPC_SIOCGIFHWADDR:
         case RPC_SIOCGIFFLAGS:
         case RPC_SIOCGIFMTU:
@@ -3578,20 +3578,20 @@ rpc_ioctl(rcf_rpc_server *handle,
                        sizeof(((struct ifreq *)arg)->ifr_name));
 
                 in.req.req_val[0].ioctl_request_u.req_ifreq.rpc_ifr_addr.
-                    sa_data.sa_data_val = 
+                    sa_data.sa_data_val =
                         ((struct ifreq *)arg)->ifr_addr.sa_data;
                 in.req.req_val[0].ioctl_request_u.req_ifreq.rpc_ifr_addr.
                     sa_data.sa_data_len = sizeof(struct sockaddr) -
                                           SA_COMMON_LEN;
             }
-            break;            
-            
+            break;
+
         case RPC_SIOCSIFFLAGS:
             in.access = IOCTL_WR;
             if (arg != NULL)
             {
                 in.req.req_val[0].type = IOCTL_IFREQ;
-                in.req.req_val[0].ioctl_request_u.req_ifreq.rpc_ifr_flags = 
+                in.req.req_val[0].ioctl_request_u.req_ifreq.rpc_ifr_flags =
                     if_fl_h2rpc((uint32_t)((struct ifreq *)arg)->ifr_flags);
                 memcpy(in.req.req_val[0].ioctl_request_u.req_ifreq.
                            rpc_ifr_name,
@@ -3601,7 +3601,7 @@ rpc_ioctl(rcf_rpc_server *handle,
             break;
 
         case RPC_SIOCSIFMTU:
-            in.access = IOCTL_WR;            
+            in.access = IOCTL_WR;
             if (arg != NULL)
             {
                 in.req.req_val[0].type = IOCTL_IFREQ;
@@ -3677,14 +3677,14 @@ rpc_ioctl(rcf_rpc_server *handle,
             case IOCTL_INT:
                 *((int *)arg) = out.req.req_val[0].ioctl_request_u.req_int;
                 break;
-                
+
             case IOCTL_TIMEVAL:
                 ((struct timeval *)arg)->tv_sec =
                     out.req.req_val[0].ioctl_request_u.req_timeval.tv_sec;
                 ((struct timeval *)arg)->tv_usec =
                     out.req.req_val[0].ioctl_request_u.req_timeval.tv_usec;
                 break;
-                
+
             case IOCTL_IFREQ:
                 switch (request)
                 {
@@ -3694,68 +3694,68 @@ rpc_ioctl(rcf_rpc_server *handle,
                     case RPC_SIOCGIFDSTADDR:
                     case RPC_SIOCGIFHWADDR:
                         ((struct ifreq *)arg)->ifr_addr.sa_family =
-                        addr_family_rpc2h(out.req.req_val[0].ioctl_request_u.               
+                        addr_family_rpc2h(out.req.req_val[0].ioctl_request_u.
                         req_ifreq.rpc_ifr_addr.sa_family);
 
                         memcpy(((struct ifreq *)arg)->ifr_addr.sa_data,
                                out.req.req_val[0].ioctl_request_u.
                                req_ifreq.rpc_ifr_addr.sa_data.sa_data_val,
                                out.req.req_val[0].ioctl_request_u.
-                               req_ifreq.rpc_ifr_addr.sa_data.sa_data_len);               
-                                            
+                               req_ifreq.rpc_ifr_addr.sa_data.sa_data_len);
+
                         break;
-                        
+
                     case RPC_SIOCGIFMTU:
                         ((struct ifreq *)arg)->ifr_mtu = out.req.req_val[0].
                             ioctl_request_u.req_ifreq.rpc_ifr_mtu;
                         break;
-                        
+
                     case RPC_SIOCGIFFLAGS:
-                        ((struct ifreq *)arg)->ifr_flags = 
+                        ((struct ifreq *)arg)->ifr_flags =
                             if_fl_rpc2h((uint32_t)(unsigned short int)
                                 out.req.req_val[0].ioctl_request_u.
                                     req_ifreq.rpc_ifr_flags);
                         break;
-                        
+
                     default:
-                        break;                   
+                        break;
                 }
                 break;
-                
+
             case IOCTL_IFCONF:
             {
                 struct tarpc_ifreq *rpc_req =
                     out.req.req_val[0].ioctl_request_u.req_ifconf.
                     rpc_ifc_req.rpc_ifc_req_val;
-                        
+
                 struct ifreq *req = ((struct ifconf *)arg)->ifc_req;
                 uint32_t n = ((struct ifconf *)arg)->ifc_len / sizeof(*req);
                 uint32_t i;
                 int      max_addrlen = sizeof(req->ifr_addr) - SA_COMMON_LEN;
-                    
-                ((struct ifconf *)arg)->ifc_len = 
+
+                ((struct ifconf *)arg)->ifc_len =
                     out.req.req_val[0].ioctl_request_u.req_ifconf.buflen;
-                    
+
                 if (req == NULL)
                    break;
-                    
+
                 if (n > ((struct ifconf *)arg)->ifc_len / sizeof(*req))
                     n = ((struct ifconf *)arg)->ifc_len / sizeof(*req);
-                    
+
                 for (i = 0; i < n; i++, req++, rpc_req++)
                 {
                     strcpy(req->ifr_name, rpc_req->rpc_ifr_name);
-                    req->ifr_addr.sa_family = 
+                    req->ifr_addr.sa_family =
                         addr_family_rpc2h(rpc_req->rpc_ifr_addr.sa_family);
-                        
+
                     if (rpc_req->rpc_ifr_addr.sa_data.sa_data_val != NULL)
                     {
                         int copy_len = rpc_req->rpc_ifr_addr.sa_data.
                                        sa_data_len;
-                                       
+
                         if (copy_len > max_addrlen)
                             copy_len = max_addrlen;
-                                       
+
                         memcpy(req->ifr_addr.sa_data,
                                rpc_req->rpc_ifr_addr.sa_data.sa_data_val,
                                copy_len);
@@ -3782,7 +3782,7 @@ rpc_ioctl(rcf_rpc_server *handle,
             }
         }
     }
-    
+
     switch (in.req.req_val[0].type)
     {
         case IOCTL_TIMEVAL:
@@ -3822,7 +3822,7 @@ rpc_ioctl(rcf_rpc_server *handle,
                              ((request == RPC_SIOCGIFADDR) ? "addr" :
                               (request == RPC_SIOCGIFNETMASK) ? "netmask" :
                               (request == RPC_SIOCGIFBRDADDR) ? "braddr" :
-                              (request == RPC_SIOCGIFDSTADDR) ? "dstaddr" : 
+                              (request == RPC_SIOCGIFDSTADDR) ? "dstaddr" :
                               ""),
                               inet_ntoa(SIN(&(((struct ifreq *)arg)->
                                             ifr_addr))->sin_addr));
@@ -3839,7 +3839,7 @@ rpc_ioctl(rcf_rpc_server *handle,
                              (unsigned char)((struct ifreq *)arg)->ifr_hwaddr.sa_data[4],
                              (unsigned char)((struct ifreq *)arg)->ifr_hwaddr.sa_data[5]);
                     break;
-                
+
                 case RPC_SIOCGIFMTU:
                 case RPC_SIOCSIFMTU:
                     snprintf(ifreq_buf + strlen(ifreq_buf),
@@ -3867,7 +3867,7 @@ rpc_ioctl(rcf_rpc_server *handle,
         {
             static char arpreq_buf[1024];
             snprintf(arpreq_buf, sizeof(arpreq_buf), " ARP entry ");
- 
+
             req_val = arpreq_buf;
 
             switch (request)
@@ -3882,7 +3882,7 @@ rpc_ioctl(rcf_rpc_server *handle,
                              "protocol address %s, ",
                               inet_ntoa(SIN(&(((struct arpreq *)arg)->
                                             arp_pa))->sin_addr));
-                     
+
                      snprintf(arpreq_buf + strlen(arpreq_buf),
                              sizeof(arpreq_buf) - strlen(arpreq_buf),
                              "HW address: %02x:%02x:%02x:%02x:%02x:%02x ",
@@ -3908,20 +3908,20 @@ rpc_ioctl(rcf_rpc_server *handle,
     RETVAL_VAL(out.retval, ioctl);
 }
 
-ssize_t 
+ssize_t
 rpc_sendmsg(rcf_rpc_server *handle,
             int s, const struct rpc_msghdr *msg, rpc_send_recv_flags flags)
 {
     rcf_rpc_op        op;
     tarpc_sendmsg_in  in;
     tarpc_sendmsg_out out;
-    
+
     struct tarpc_msghdr rpc_msg;
 
     struct tarpc_iovec iovec_arr[RCF_RPC_MAX_IOVEC];
-    
+
     size_t i;
-    
+
     if (handle == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
@@ -3936,12 +3936,12 @@ rpc_sendmsg(rcf_rpc_server *handle,
     memset(&rpc_msg, 0, sizeof(rpc_msg));
     in.s = s;
     in.flags = flags;
-    
+
     if (msg != NULL && handle->op != RCF_RPC_WAIT)
-    {    
+    {
         in.msg.msg_val = &rpc_msg;
         in.msg.msg_len = 1;
-        
+
         if (msg->msg_riovlen > RCF_RPC_MAX_IOVEC)
         {
             handle->_errno = TE_RC(TE_RCF, ENOMEM);
@@ -3950,7 +3950,7 @@ rpc_sendmsg(rcf_rpc_server *handle,
                   msg->msg_riovlen, RCF_RPC_MAX_IOVEC);
             return -1;
         }
-        
+
         if (((msg->msg_iov != NULL) &&
              (msg->msg_iovlen > msg->msg_riovlen)) ||
             ((msg->msg_name != NULL) &&
@@ -3969,23 +3969,23 @@ rpc_sendmsg(rcf_rpc_server *handle,
             iovec_arr[i].iov_base.iov_base_len = msg->msg_iov[i].iov_rlen;
             iovec_arr[i].iov_len = msg->msg_iov[i].iov_len;
         }
-    
+
         if (msg->msg_iov != NULL)
         {
             rpc_msg.msg_iov.msg_iov_val = iovec_arr;
             rpc_msg.msg_iov.msg_iov_len = msg->msg_riovlen;
         }
         rpc_msg.msg_iovlen = msg->msg_iovlen;
-        
+
         if (msg->msg_name != NULL)
         {
             if (msg->msg_rnamelen >= SA_COMMON_LEN)
             {
                 rpc_msg.msg_name.sa_family = addr_family_h2rpc(
                     ((struct sockaddr *)(msg->msg_name))->sa_family);
-                rpc_msg.msg_name.sa_data.sa_data_len = 
+                rpc_msg.msg_name.sa_data.sa_data_len =
                     msg->msg_rnamelen - SA_COMMON_LEN;
-                rpc_msg.msg_name.sa_data.sa_data_val = 
+                rpc_msg.msg_name.sa_data.sa_data_val =
                     ((struct sockaddr *)(msg->msg_name))->sa_data;
             }
             else
@@ -3996,10 +3996,10 @@ rpc_sendmsg(rcf_rpc_server *handle,
                 rpc_msg.msg_name.sa_data.sa_data_val =
                     (uint8_t *)(msg->msg_name);
             }
-        } 
+        }
         rpc_msg.msg_namelen = msg->msg_namelen;
         rpc_msg.msg_flags = (int)msg->msg_flags;
-        
+
         if (msg->msg_control != NULL)
         {
             rpc_msg.msg_control.msg_control_val = msg->msg_control;
@@ -4007,7 +4007,7 @@ rpc_sendmsg(rcf_rpc_server *handle,
         }
         rpc_msg.msg_controllen = msg->msg_controllen;
     }
-    
+
     rcf_rpc_call(handle, _sendmsg, &in, (xdrproc_t)xdr_tarpc_sendmsg_in,
                  &out, (xdrproc_t)xdr_tarpc_sendmsg_out);
 
@@ -4017,7 +4017,7 @@ rpc_sendmsg(rcf_rpc_server *handle,
                                     " msg_control: %p, msg_controllen: %d,"
                                     " msg_flags: %s)"
          ", %s) -> %d (%s)",
-         handle->ta, handle->name, rpcop2str(op), 
+         handle->ta, handle->name, rpcop2str(op),
          s, msg,
          msg->msg_name, msg->msg_namelen,
          msg->msg_iov, msg->msg_iovlen,
@@ -4025,11 +4025,11 @@ rpc_sendmsg(rcf_rpc_server *handle,
          send_recv_flags_rpc2str(msg->msg_flags),
          send_recv_flags_rpc2str(flags),
          out.retval, errno_rpc2str(RPC_ERRNO(handle)));
-    
-    RETVAL_VAL(out.retval, sendmsg);
-}            
 
-ssize_t 
+    RETVAL_VAL(out.retval, sendmsg);
+}
+
+ssize_t
 rpc_recvmsg(rcf_rpc_server *handle,
             int s, struct rpc_msghdr *msg, rpc_send_recv_flags flags)
 {
@@ -4037,13 +4037,13 @@ rpc_recvmsg(rcf_rpc_server *handle,
     rcf_rpc_op        op;
     tarpc_recvmsg_in  in;
     tarpc_recvmsg_out out;
-    
+
     struct tarpc_msghdr rpc_msg;
 
     struct tarpc_iovec iovec_arr[RCF_RPC_MAX_IOVEC];
-    
+
     size_t i;
-    
+
     if (handle == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
@@ -4058,12 +4058,12 @@ rpc_recvmsg(rcf_rpc_server *handle,
     memset(&rpc_msg, 0, sizeof(rpc_msg));
     in.s = s;
     in.flags = flags;
-    
+
     if (msg != NULL && handle->op != RCF_RPC_WAIT)
-    {    
+    {
         in.msg.msg_val = &rpc_msg;
         in.msg.msg_len = 1;
-        
+
         if (msg->msg_riovlen > RCF_RPC_MAX_IOVEC)
         {
             handle->_errno = TE_RC(TE_RCF, ENOMEM);
@@ -4072,7 +4072,7 @@ rpc_recvmsg(rcf_rpc_server *handle,
                   msg->msg_riovlen, RCF_RPC_MAX_IOVEC);
             return -1;
         }
-        
+
         if (msg->msg_iovlen > msg->msg_riovlen ||
             msg->msg_namelen > msg->msg_rnamelen ||
             msg->msg_controllen > msg->msg_rcontrollen)
@@ -4087,23 +4087,23 @@ rpc_recvmsg(rcf_rpc_server *handle,
             iovec_arr[i].iov_base.iov_base_len = msg->msg_iov[i].iov_rlen;
             iovec_arr[i].iov_len = msg->msg_iov[i].iov_len;
         }
-    
+
         if (msg->msg_iov != NULL)
         {
             rpc_msg.msg_iov.msg_iov_val = iovec_arr;
             rpc_msg.msg_iov.msg_iov_len = msg->msg_riovlen;
         }
         rpc_msg.msg_iovlen = msg->msg_iovlen;
-        
+
         if (msg->msg_name != NULL)
         {
             if (msg->msg_rnamelen >= SA_COMMON_LEN)
             {
                 rpc_msg.msg_name.sa_family = addr_family_h2rpc(
                     ((struct sockaddr *)(msg->msg_name))->sa_family);
-                rpc_msg.msg_name.sa_data.sa_data_len = 
+                rpc_msg.msg_name.sa_data.sa_data_len =
                     msg->msg_rnamelen - SA_COMMON_LEN;
-                rpc_msg.msg_name.sa_data.sa_data_val = 
+                rpc_msg.msg_name.sa_data.sa_data_val =
                     ((struct sockaddr *)(msg->msg_name))->sa_data;
             }
             else
@@ -4114,10 +4114,10 @@ rpc_recvmsg(rcf_rpc_server *handle,
                 rpc_msg.msg_name.sa_data.sa_data_val =
                     (uint8_t *)(msg->msg_name);
             }
-        } 
+        }
         rpc_msg.msg_namelen = msg->msg_namelen;
         rpc_msg.msg_flags = msg->msg_flags;
-        
+
         if (msg->msg_control != NULL)
         {
             rpc_msg.msg_control.msg_control_val = msg->msg_control;
@@ -4125,7 +4125,7 @@ rpc_recvmsg(rcf_rpc_server *handle,
         }
         rpc_msg.msg_controllen = msg->msg_controllen;
     }
-    
+
     rcf_rpc_call(handle, _recvmsg, &in, (xdrproc_t)xdr_tarpc_recvmsg_in,
                  &out, (xdrproc_t)xdr_tarpc_recvmsg_out);
 
@@ -4142,27 +4142,27 @@ rpc_recvmsg(rcf_rpc_server *handle,
             ((struct sockaddr *)(msg->msg_name))->sa_family =
                 addr_family_rpc2h(rpc_msg.msg_name.sa_family);
             memcpy(((struct sockaddr *)(msg->msg_name))->sa_data,
-                   rpc_msg.msg_name.sa_data.sa_data_val, 
+                   rpc_msg.msg_name.sa_data.sa_data_val,
                    rpc_msg.msg_name.sa_data.sa_data_len);
         }
         msg->msg_namelen = rpc_msg.msg_namelen;
-        
+
         for (i = 0; i < msg->msg_riovlen && msg->msg_iov != NULL; i++)
         {
             msg->msg_iov[i].iov_len = rpc_msg.msg_iov.msg_iov_val[i].iov_len;
-            memcpy(msg->msg_iov[i].iov_base, 
-                   rpc_msg.msg_iov.msg_iov_val[i].iov_base.iov_base_val, 
+            memcpy(msg->msg_iov[i].iov_base,
+                   rpc_msg.msg_iov.msg_iov_val[i].iov_base.iov_base_val,
                    msg->msg_iov[i].iov_rlen);
         }
         if (msg->msg_control != NULL)
         {
-            memcpy(msg->msg_control, rpc_msg.msg_control.msg_control_val, 
+            memcpy(msg->msg_control, rpc_msg.msg_control.msg_control_val,
                    msg->msg_rcontrollen);
         }
         msg->msg_controllen = rpc_msg.msg_controllen;
 
         msg->msg_flags = (rpc_send_recv_flags)rpc_msg.msg_flags;
-        
+
         snprintf(str_buf + strlen(str_buf),
                  sizeof(str_buf) - strlen(str_buf),
                  "msg_name: %p, msg_namelen: %d, "
@@ -4180,9 +4180,9 @@ rpc_recvmsg(rcf_rpc_server *handle,
              out.retval, errno_rpc2str(RPC_ERRNO(handle)));
 
     RING("%s", str_buf);
-    
+
     RETVAL_VAL(out.retval, recvmsg);
-}            
+}
 
 /**
  * Convert poll() request to string.
@@ -4208,7 +4208,7 @@ pollreq2str(struct rpc_pollfd *ufds, unsigned int nfds,
         for (i = 0; i < nfds; ++i)
         {
             rc = snprintf(buf, buflen, "{%d,%s,%s}",
-                          ufds[i].fd, 
+                          ufds[i].fd,
                           poll_event_rpc2str(ufds[i].events),
                           poll_event_rpc2str(ufds[i].revents));
             if ((size_t)rc > buflen)
@@ -4225,11 +4225,11 @@ pollreq2str(struct rpc_pollfd *ufds, unsigned int nfds,
         return;
 
     } while (0);
-        
+
     ERROR("Too small buffer for poll request conversion");
 }
 
-int 
+int
 rpc_poll_gen(rcf_rpc_server *handle,
              struct rpc_pollfd *ufds, unsigned int nfds,
              int timeout, unsigned int rnfds)
@@ -4237,7 +4237,7 @@ rpc_poll_gen(rcf_rpc_server *handle,
     rcf_rpc_op       op;
     tarpc_poll_in  in;
     tarpc_poll_out out;
-    
+
     if (handle == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
@@ -4248,11 +4248,11 @@ rpc_poll_gen(rcf_rpc_server *handle,
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
-    
+
     /**
      * @attention It's assumed that rpc_pollfd is the same as tarpc_pollfd.
-     * It's OK, because both structures are independent from particular 
-     * Socket API and used on the same host. 
+     * It's OK, because both structures are independent from particular
+     * Socket API and used on the same host.
      */
     in.ufds.ufds_len = rnfds;
     in.ufds.ufds_val = (struct tarpc_pollfd *)ufds;
@@ -4292,34 +4292,34 @@ static struct hostent *
 hostent_rpc2h(tarpc_hostent *rpc_he)
 {
     struct hostent *he;
-    
+
     if ((he = calloc(1, sizeof(*he))) == NULL)
         return NULL;
-    
+
     if (rpc_he->h_aliases.h_aliases_val != NULL &&
-        (he->h_aliases = calloc(rpc_he->h_aliases.h_aliases_len, 
+        (he->h_aliases = calloc(rpc_he->h_aliases.h_aliases_len,
                                 sizeof(char *))) == NULL)
     {
         free(he);
         return NULL;
     }
-    
+
     if (rpc_he->h_addr_list.h_addr_list_val != NULL &&
-        (he->h_addr_list = calloc(rpc_he->h_addr_list.h_addr_list_len, 
+        (he->h_addr_list = calloc(rpc_he->h_addr_list.h_addr_list_len,
                                   sizeof(char *))) == NULL)
     {
         free(he->h_aliases);
         free(he);
     }
-        
+
     he->h_name = rpc_he->h_name.h_name_val;
     rpc_he->h_name.h_name_val = NULL;
     rpc_he->h_name.h_name_len = 0;
-    
+
     if (he->h_aliases != NULL)
     {
         unsigned int i;
-        
+
         for (i = 0; i < rpc_he->h_aliases.h_aliases_len; i++)
         {
             he->h_aliases[i] = rpc_he->h_aliases.h_aliases_val[i].name.name_val;
@@ -4331,19 +4331,19 @@ hostent_rpc2h(tarpc_hostent *rpc_he)
     if (he->h_addr_list != NULL)
     {
         unsigned int i;
-        
+
         for (i = 0; i < rpc_he->h_addr_list.h_addr_list_len; i++)
         {
-            he->h_addr_list[i] = 
+            he->h_addr_list[i] =
                 rpc_he->h_addr_list.h_addr_list_val[i].val.val_val;
             rpc_he->h_addr_list.h_addr_list_val[i].val.val_val = NULL;
             rpc_he->h_addr_list.h_addr_list_val[i].val.val_len = 0;
         }
     }
-    
+
     he->h_length = rpc_he->h_length;
     he->h_addrtype = domain_rpc2h(rpc_he->h_addrtype);
-    
+
     return he;
 }
 
@@ -4352,9 +4352,9 @@ rpc_gethostbyname(rcf_rpc_server *handle, const char *name)
 {
     tarpc_gethostbyname_in  in;
     tarpc_gethostbyname_out out;
-    
+
     struct hostent *res = NULL;
-    
+
     if (handle == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
@@ -4367,20 +4367,20 @@ rpc_gethostbyname(rcf_rpc_server *handle, const char *name)
     in.name.name_val = (char *)name;
     in.name.name_len = name == NULL ? 0 : strlen(name) + 1;
 
-    rcf_rpc_call(handle, _gethostbyname, &in, 
+    rcf_rpc_call(handle, _gethostbyname, &in,
                  (xdrproc_t)xdr_tarpc_gethostbyname_in,
                  &out, (xdrproc_t)xdr_tarpc_gethostbyname_out);
-                 
+
     if (RPC_CALL_OK && out.res.res_val != NULL)
     {
         if ((res = hostent_rpc2h(out.res.res_val)) == NULL)
             handle->_errno = TE_RC(TE_RCF, ENOMEM);
     }
-        
+
     RING("RPC (%s,%s): gethostbyname(%s) -> %p (%s)",
          handle->ta, handle->name,
          name == NULL ? "" : name, res, errno_rpc2str(RPC_ERRNO(handle)));
-    
+
     RETVAL_PTR(res, gethostbyname);
 }
 
@@ -4390,7 +4390,7 @@ rpc_gethostbyaddr(rcf_rpc_server *handle,
 {
     tarpc_gethostbyaddr_in  in;
     tarpc_gethostbyaddr_out out;
-    
+
     struct hostent *res = NULL;
 
     if (handle == NULL)
@@ -4403,31 +4403,31 @@ rpc_gethostbyaddr(rcf_rpc_server *handle,
     memset(&out, 0, sizeof(out));
 
     in.type = type;
-    
+
     if (addr != NULL)
     {
         in.addr.val.val_val = (char *)addr;
         in.addr.val.val_len = len;
     }
 
-    rcf_rpc_call(handle, _gethostbyaddr, &in, 
+    rcf_rpc_call(handle, _gethostbyaddr, &in,
                  (xdrproc_t)xdr_tarpc_gethostbyaddr_in,
                  &out, (xdrproc_t)xdr_tarpc_gethostbyaddr_out);
-                 
+
     if (RPC_CALL_OK && out.res.res_val != NULL)
     {
         if ((res = hostent_rpc2h(out.res.res_val)) == NULL)
             handle->_errno = TE_RC(TE_RCF, ENOMEM);
     }
-        
+
     RING("RPC (%s,%s): gethostbyaddr(%p, %d, %d) -> %p (%s)",
          handle->ta, handle->name,
          addr, len, type, res, errno_rpc2str(RPC_ERRNO(handle)));
-    
-    RETVAL_PTR(res, gethostbyaddr);
-}                           
 
-/** 
+    RETVAL_PTR(res, gethostbyaddr);
+}
+
+/**
  * Convert RPC addrinfo to the host native one.
  *
  * @param rpc_ai        RPC addrinfo structure
@@ -4444,31 +4444,31 @@ ai_rpc2h(struct tarpc_ai *ai_rpc, struct addrinfo *ai)
     ai->ai_socktype = socktype_rpc2h(ai_rpc->socktype);
     ai->ai_protocol = proto_rpc2h(ai_rpc->protocol);
     ai->ai_addrlen = ai_rpc->addrlen + SA_COMMON_LEN;
-    
+
     if (ai_rpc->addr.sa_data.sa_data_val != NULL)
     {
-        if ((ai->ai_addr = calloc(1, ai_rpc->addr.sa_data.sa_data_len + 
+        if ((ai->ai_addr = calloc(1, ai_rpc->addr.sa_data.sa_data_len +
                                   SA_COMMON_LEN)) == NULL)
         {
             return -1;
         }
         ai->ai_addr->sa_family = addr_family_rpc2h(ai_rpc->addr.sa_family);
-        memcpy(ai->ai_addr->sa_data, ai_rpc->addr.sa_data.sa_data_val, 
+        memcpy(ai->ai_addr->sa_data, ai_rpc->addr.sa_data.sa_data_val,
                ai_rpc->addr.sa_data.sa_data_len);
     }
-    
+
     if (ai_rpc->canonname.canonname_val != NULL)
     {
         ai->ai_canonname = ai_rpc->canonname.canonname_val;
         ai_rpc->canonname.canonname_val = NULL;
         ai_rpc->canonname.canonname_len = 0;
     }
-    
+
     return 0;
 }
 
 
-int 
+int
 rpc_getaddrinfo(rcf_rpc_server *handle,
                 const char *node, const char *service,
                 const struct addrinfo *hints,
@@ -4476,7 +4476,7 @@ rpc_getaddrinfo(rcf_rpc_server *handle,
 {
     tarpc_getaddrinfo_in  in;
     tarpc_getaddrinfo_out out;
-    
+
     struct addrinfo *list = NULL;
     struct tarpc_ai  rpc_hints;
 
@@ -4500,7 +4500,7 @@ rpc_getaddrinfo(rcf_rpc_server *handle,
         in.service.service_val = (char *)service;
         in.service.service_len = strlen(service) + 1;
     }
-    
+
     if (hints != NULL)
     {
         rpc_hints.flags = ai_flags_h2rpc(hints->ai_flags);
@@ -4508,36 +4508,36 @@ rpc_getaddrinfo(rcf_rpc_server *handle,
         rpc_hints.socktype = socktype_h2rpc(hints->ai_socktype);
         rpc_hints.protocol = proto_h2rpc(hints->ai_protocol);
         rpc_hints.addrlen = hints->ai_addrlen - SA_COMMON_LEN;
-    
+
         if (hints->ai_addr != NULL)
         {
             rpc_hints.addr.sa_family =
                 addr_family_h2rpc(hints->ai_addr->sa_family);
             rpc_hints.addr.sa_data.sa_data_val = hints->ai_addr->sa_data;
-            rpc_hints.addr.sa_data.sa_data_len = 
+            rpc_hints.addr.sa_data.sa_data_len =
                 hints->ai_addrlen > SA_COMMON_LEN ?
                 hints->ai_addrlen - SA_COMMON_LEN : 0;
         }
-    
+
         if (hints->ai_canonname != NULL)
         {
             rpc_hints.canonname.canonname_val = hints->ai_canonname;
             rpc_hints.canonname.canonname_len = strlen(hints->ai_canonname) + 1;
         }
-    
+
         in.hints.hints_val = &rpc_hints;
         in.hints.hints_len = 1;
     }
 
-    rcf_rpc_call(handle, _getaddrinfo, &in, 
+    rcf_rpc_call(handle, _getaddrinfo, &in,
                  (xdrproc_t)xdr_tarpc_getaddrinfo_in,
                  &out, (xdrproc_t)xdr_tarpc_getaddrinfo_out);
-                 
+
     if (RPC_CALL_OK && out.res.res_val != NULL)
     {
         int i;
-        
-        if ((list = calloc(1, out.res.res_len * sizeof(*list) + 
+
+        if ((list = calloc(1, out.res.res_len * sizeof(*list) +
                            sizeof(int))) == NULL)
         {
             handle->_errno = TE_RC(TE_RCF, ENOMEM);
@@ -4545,7 +4545,7 @@ rpc_getaddrinfo(rcf_rpc_server *handle,
         }
         *(int *)list = out.mem_ptr;
         list = (struct addrinfo *)((int *)list + 1);
-        
+
         for (i = 0; i < (int)out.res.res_len; i++)
         {
             if (ai_rpc2h(out.res.res_val, list + i) < 0)
@@ -4559,27 +4559,27 @@ rpc_getaddrinfo(rcf_rpc_server *handle,
                 handle->_errno = TE_RC(TE_RCF, ENOMEM);
                 RETVAL_RC(getaddrinfo);
             }
-            list[i].ai_next = (i == (int)out.res.res_len - 1) ? NULL 
+            list[i].ai_next = (i == (int)out.res.res_len - 1) ? NULL
                                                               : list + i + 1;
         }
         *res = list;
     }
-        
+
     RING("RPC (%s,%s): getaddrinfo(%s, %s, %p, %p) -> %d (%s)",
          handle->ta, handle->name,
          node, service, hints, res, out.retval,
          errno_rpc2str(RPC_ERRNO(handle)));
-    
-    RETVAL_RC(getaddrinfo);
-}                
 
-void 
+    RETVAL_RC(getaddrinfo);
+}
+
+void
 rpc_freeaddrinfo(rcf_rpc_server *handle,
                  struct addrinfo *res)
 {
     tarpc_freeaddrinfo_in  in;
     tarpc_freeaddrinfo_out out;
-    
+
     if (handle == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
@@ -4593,20 +4593,20 @@ rpc_freeaddrinfo(rcf_rpc_server *handle,
 
     if (res != NULL)
         in.mem_ptr = *((int *)res - 1);
-    
+
     rcf_rpc_call(handle, _freeaddrinfo, &in, (xdrproc_t)xdr_tarpc_freeaddrinfo_in,
                  &out, (xdrproc_t)xdr_tarpc_freeaddrinfo_out);
 
     RING("RPC (%s,%s): freeaddrinfo(%p) -> (%s)",
          handle->ta, handle->name,
          res, errno_rpc2str(RPC_ERRNO(handle)));
-         
-    free((int *)res - 1); 
 
-    RETVAL_VOID(freeaddrinfo); 
-}                 
+    free((int *)res - 1);
 
-int 
+    RETVAL_VOID(freeaddrinfo);
+}
+
+int
 rpc_pipe(rcf_rpc_server *handle,
          int filedes[2])
 {
@@ -4636,10 +4636,10 @@ rpc_pipe(rcf_rpc_server *handle,
         memcpy(filedes, out.filedes, sizeof(out.filedes));
 
     RETVAL_RC(pipe);
-}     
-                
-int 
-rpc_socketpair(rcf_rpc_server *handle, 
+}
+
+int
+rpc_socketpair(rcf_rpc_server *handle,
                rpc_socket_domain domain, rpc_socket_type type,
                rpc_socket_proto protocol, int sv[2])
 {
@@ -4666,17 +4666,17 @@ rpc_socketpair(rcf_rpc_server *handle,
     RING("RPC (%s,%s): socketpair(%s, %s, %s) -> %d %d %d (%s)",
          handle->ta, handle->name,
          domain_rpc2str(domain), socktype_rpc2str(type),
-         proto_rpc2str(protocol), out.retval, 
-         out.sv[0], out.sv[1], errno_rpc2str(RPC_ERRNO(handle))); 
+         proto_rpc2str(protocol), out.retval,
+         out.sv[0], out.sv[1], errno_rpc2str(RPC_ERRNO(handle)));
 
     if (RPC_CALL_OK && sv != NULL)
         memcpy(sv, out.sv, sizeof(out.sv));
 
     RETVAL_RC(socketpair);
-}           
+}
 
 FILE *
-rpc_fopen(rcf_rpc_server *handle, 
+rpc_fopen(rcf_rpc_server *handle,
           const char *path, const char *mode)
 {
     tarpc_fopen_in  in;
@@ -4702,13 +4702,13 @@ rpc_fopen(rcf_rpc_server *handle,
 
     RING("RPC (%s,%s): fopen(%s, %s) -> %p (%s)",
          handle->ta, handle->name,
-         path, mode, out.mem_ptr, errno_rpc2str(RPC_ERRNO(handle))); 
+         path, mode, out.mem_ptr, errno_rpc2str(RPC_ERRNO(handle)));
 
     RETVAL_PTR(out.mem_ptr, fopen);
-}      
+}
 
-int 
-rpc_fileno(rcf_rpc_server *handle, 
+int
+rpc_fileno(rcf_rpc_server *handle,
            FILE *f)
 {
     tarpc_fileno_in  in;
@@ -4731,12 +4731,12 @@ rpc_fileno(rcf_rpc_server *handle,
 
     RING("RPC (%s,%s): fileno(%p) -> %d (%s)",
          handle->ta, handle->name,
-         f, out.fd, errno_rpc2str(RPC_ERRNO(handle))); 
+         f, out.fd, errno_rpc2str(RPC_ERRNO(handle)));
 
     RETVAL_VAL(out.fd, fileno);
-}       
+}
 
-uid_t 
+uid_t
 rpc_getuid(rcf_rpc_server *handle)
 {
     tarpc_getuid_in  in;
@@ -4764,7 +4764,7 @@ rpc_getuid(rcf_rpc_server *handle)
 }
 
 int
-rpc_setuid(rcf_rpc_server *handle, 
+rpc_setuid(rcf_rpc_server *handle,
            uid_t uid)
 {
     tarpc_setuid_in  in;
@@ -4787,12 +4787,12 @@ rpc_setuid(rcf_rpc_server *handle,
 
     RING("RPC (%s,%s): setuid(%d) -> %d (%s)",
          handle->ta, handle->name,
-         uid, out.retval, errno_rpc2str(RPC_ERRNO(handle))); 
+         uid, out.retval, errno_rpc2str(RPC_ERRNO(handle)));
 
     RETVAL_RC(setuid);
-}       
+}
 
-uid_t 
+uid_t
 rpc_geteuid(rcf_rpc_server *handle)
 {
     tarpc_geteuid_in  in;
@@ -4814,13 +4814,13 @@ rpc_geteuid(rcf_rpc_server *handle)
 
     RING("RPC (%s,%s): geteuid() -> %d (%s)",
          handle->ta, handle->name,
-         out.uid, errno_rpc2str(RPC_ERRNO(handle))); 
+         out.uid, errno_rpc2str(RPC_ERRNO(handle)));
 
     RETVAL_VAL((int)out.uid, geteuid);
 }
 
 int
-rpc_seteuid(rcf_rpc_server *handle, 
+rpc_seteuid(rcf_rpc_server *handle,
             uid_t uid)
 {
     tarpc_seteuid_in  in;
@@ -4843,13 +4843,13 @@ rpc_seteuid(rcf_rpc_server *handle,
 
     RING("RPC (%s,%s): seteuid() -> %d (%s)",
          handle->ta, handle->name,
-         uid, out.retval, errno_rpc2str(RPC_ERRNO(handle))); 
+         uid, out.retval, errno_rpc2str(RPC_ERRNO(handle)));
 
     RETVAL_RC(seteuid);
-}        
+}
 
 /**
- * Simple sender. 
+ * Simple sender.
  *
  * @param handle            RPC server
  * @param s                 a socket to be user for sending
@@ -4870,9 +4870,9 @@ rpc_seteuid(rcf_rpc_server *handle,
  *
  * @return number of sent bytes or -1 in the case of failure
  */
-int 
+int
 rpc_simple_sender(rcf_rpc_server *handle,
-                  int s, int size_min, int size_max, 
+                  int s, int size_min, int size_max,
                   int size_rnd_once, int delay_min, int delay_max,
                   int delay_rnd_once, int time2run, uint64_t *sent)
 {
@@ -4899,25 +4899,25 @@ rpc_simple_sender(rcf_rpc_server *handle,
     in.delay_rnd_once = delay_rnd_once;
     in.time2run = time2run;
 
-    rcf_rpc_call(handle, _simple_sender, &in, 
+    rcf_rpc_call(handle, _simple_sender, &in,
                  (xdrproc_t)xdr_tarpc_simple_sender_in,
                  &out, (xdrproc_t)xdr_tarpc_simple_sender_out);
 
     if (out.retval == 0)
         *sent = ((uint64_t)(out.bytes_high) << 32) + out.bytes_low;
-        
+
     RING("RPC (%s,%s)%s: "
          "simple_sender(%d, %d, %d, %d, %d, %d, %d, %d) -> %d %u (%s)",
          handle->ta, handle->name, rpcop2str(op),
          s, size_min, size_max, size_rnd_once, delay_min, delay_max,
          delay_rnd_once, time2run,
-         out.retval, (unsigned long)*sent, errno_rpc2str(RPC_ERRNO(handle))); 
- 
+         out.retval, (unsigned long)*sent, errno_rpc2str(RPC_ERRNO(handle)));
+
     RETVAL_RC(simple_sender);
-}                  
+}
 
 /**
- * Simple receiver. 
+ * Simple receiver.
  *
  * @param handle            RPC server
  * @param s                 a socket to be user for receiving
@@ -4925,8 +4925,8 @@ rpc_simple_sender(rcf_rpc_server *handle,
  *
  * @return number of received bytes or -1 in the case of failure
  */
-int 
-rpc_simple_receiver(rcf_rpc_server *handle, 
+int
+rpc_simple_receiver(rcf_rpc_server *handle,
                     int s, uint64_t *received)
 {
     rcf_rpc_op                op;
@@ -4945,17 +4945,17 @@ rpc_simple_receiver(rcf_rpc_server *handle,
     memset(&out, 0, sizeof(out));
     in.s = s;
 
-    rcf_rpc_call(handle, _simple_receiver, &in, 
+    rcf_rpc_call(handle, _simple_receiver, &in,
                  (xdrproc_t)xdr_tarpc_simple_receiver_in,
                  &out, (xdrproc_t)xdr_tarpc_simple_receiver_out);
 
     if (out.retval == 0)
         *received = ((uint64_t)(out.bytes_high) << 32) + out.bytes_low;
-        
+
     RING("RPC (%s,%s)%s: simple_receiver(%d) -> %d %u (%s)",
          handle->ta, handle->name, rpcop2str(op),
-         s, out.retval, (unsigned long)*received, 
-         errno_rpc2str(RPC_ERRNO(handle))); 
+         s, out.retval, (unsigned long)*received,
+         errno_rpc2str(RPC_ERRNO(handle)));
 
     RETVAL_RC(simple_receiver);
 }
@@ -4964,7 +4964,7 @@ rpc_simple_receiver(rcf_rpc_server *handle,
 /* See description in tapi_rpcsock.h */
 int
 rpc_iomux_flooder(rcf_rpc_server *handle,
-                  int *sndrs, int sndnum, int *rcvrs, int rcvnum, 
+                  int *sndrs, int sndnum, int *rcvrs, int rcvnum,
                   int bulkszs, int time2run, int iomux, te_bool rx_nonblock,
                   unsigned long *tx_stat, unsigned long *rx_stat)
 {
@@ -5008,7 +5008,7 @@ rpc_iomux_flooder(rcf_rpc_server *handle,
         in.rx_stat.rx_stat_len = rcvnum;
     }
 
-    rcf_rpc_call(handle, _flooder, &in, 
+    rcf_rpc_call(handle, _flooder, &in,
                  (xdrproc_t)xdr_tarpc_flooder_in,
                  &out, (xdrproc_t)xdr_tarpc_flooder_out);
 
@@ -5073,7 +5073,7 @@ rpc_iomux_echoer(rcf_rpc_server *handle,
         in.rx_stat.rx_stat_len = socknum;
     }
 
-    rcf_rpc_call(handle, _echoer, &in, 
+    rcf_rpc_call(handle, _echoer, &in,
                  (xdrproc_t)xdr_tarpc_echoer_in,
                  &out, (xdrproc_t)xdr_tarpc_echoer_out);
 
@@ -5110,7 +5110,7 @@ rpc_iomux_echoer(rcf_rpc_server *handle,
  *
  * @return number of received bytes or -1 in the case of failure
  */
-int 
+int
 rpc_aio_read_test(rcf_rpc_server *handle,
                   int s, rpc_signum signum, int timeout,
                   char *buf, int buflen, int rlen,
@@ -5136,7 +5136,7 @@ rpc_aio_read_test(rcf_rpc_server *handle,
     in.diag.diag_val = diag;
     in.diag.diag_len = diag_len;
 
-    rcf_rpc_call(handle, _aio_read_test, &in, 
+    rcf_rpc_call(handle, _aio_read_test, &in,
                  (xdrproc_t)xdr_tarpc_aio_read_test_in,
                  &out, (xdrproc_t)xdr_tarpc_aio_read_test_out);
 
@@ -5144,18 +5144,18 @@ rpc_aio_read_test(rcf_rpc_server *handle,
          "aio_read_test(%d, %s, %d, %p, %d, %d) -> %d (%s)",
          handle->ta, handle->name,
          s, signum_rpc2str(signum), timeout, buf, buflen, rlen,
-         out.retval, errno_rpc2str(RPC_ERRNO(handle))); 
+         out.retval, errno_rpc2str(RPC_ERRNO(handle)));
 
     if (RPC_CALL_OK)
     {
         if (buf != NULL && out.buf.buf_val != NULL)
             memcpy(buf, out.buf.buf_val, out.buf.buf_len);
-            
+
         memcpy(diag, out.diag.diag_val, out.diag.diag_len);
     }
 
     RETVAL_VAL(out.retval, aio_read_test);
-}                  
+}
 
 /**
  * Asynchronous error processing test procedure.
@@ -5166,7 +5166,7 @@ rpc_aio_read_test(rcf_rpc_server *handle,
  *
  * @return number of received bytes or -1 in the case of failure
  */
-int 
+int
 rpc_aio_error_test(rcf_rpc_server *handle,
                    char *diag, int diag_len)
 {
@@ -5184,20 +5184,20 @@ rpc_aio_error_test(rcf_rpc_server *handle,
     in.diag.diag_val = diag;
     in.diag.diag_len = diag_len;
 
-    rcf_rpc_call(handle, _aio_error_test, &in, 
+    rcf_rpc_call(handle, _aio_error_test, &in,
                  (xdrproc_t)xdr_tarpc_aio_error_test_in,
                  &out, (xdrproc_t)xdr_tarpc_aio_error_test_out);
 
     RING("RPC (%s,%s): "
          "aio_error_test() -> %d (%s)",
          handle->ta, handle->name,
-         out.retval, errno_rpc2str(RPC_ERRNO(handle))); 
+         out.retval, errno_rpc2str(RPC_ERRNO(handle)));
 
     if (RPC_CALL_OK)
         memcpy(diag, out.diag.diag_val, out.diag.diag_len);
 
     RETVAL_RC(aio_error_test);
-}                   
+}
 
 /*
  * Asynchronous write test procedure.
@@ -5212,12 +5212,12 @@ rpc_aio_error_test(rcf_rpc_server *handle,
  *
  * @return number of sent bytes or -1 in the case of failure
  */
-int 
+int
 rpc_aio_write_test(rcf_rpc_server *handle,
-                   int s, rpc_signum signum, 
-                   char *buf, int buflen, 
+                   int s, rpc_signum signum,
+                   char *buf, int buflen,
                    char *diag, int diag_len)
-{                   
+{
     tarpc_aio_write_test_in  in;
     tarpc_aio_write_test_out out;
 
@@ -5236,23 +5236,23 @@ rpc_aio_write_test(rcf_rpc_server *handle,
     in.diag.diag_val = diag;
     in.diag.diag_len = diag_len;
 
-    rcf_rpc_call(handle, _aio_write_test, &in, 
+    rcf_rpc_call(handle, _aio_write_test, &in,
                  (xdrproc_t)xdr_tarpc_aio_write_test_in,
                  &out, (xdrproc_t)xdr_tarpc_aio_write_test_out);
 
     RING("RPC (%s,%s): "
          "aio_write_test(%d, %s, %p, %d) -> %d (%s)",
          handle->ta, handle->name,
-         s, signum_rpc2str(signum), buf, buflen, 
-         out.retval, 
-         errno_rpc2str(RPC_ERRNO(handle))); 
+         s, signum_rpc2str(signum), buf, buflen,
+         out.retval,
+         errno_rpc2str(RPC_ERRNO(handle)));
 
     if (RPC_CALL_OK)
         memcpy(diag, out.diag.diag_val, out.diag.diag_len);
 
     RETVAL_VAL(out.retval, aio_write_test);
 }
-                   
+
 /**
  * Susending on asynchronous events test procedure.
  *
@@ -5268,12 +5268,12 @@ rpc_aio_write_test(rcf_rpc_server *handle,
  *
  * @return number of received bytes or -1 in the case of failure
  */
-int 
+int
 rpc_aio_suspend_test(rcf_rpc_server *handle,
-                     int s, int s_aux, rpc_signum signum, 
-                     int timeout, char *buf, int buflen, 
+                     int s, int s_aux, rpc_signum signum,
+                     int timeout, char *buf, int buflen,
                      char *diag, int diag_len)
-{                     
+{
     tarpc_aio_suspend_test_in  in;
     tarpc_aio_suspend_test_out out;
 
@@ -5294,26 +5294,26 @@ rpc_aio_suspend_test(rcf_rpc_server *handle,
     in.diag.diag_val = diag;
     in.diag.diag_len = diag_len;
 
-    rcf_rpc_call(handle, _aio_suspend_test, &in, 
+    rcf_rpc_call(handle, _aio_suspend_test, &in,
                  (xdrproc_t)xdr_tarpc_aio_suspend_test_in,
                  &out, (xdrproc_t)xdr_tarpc_aio_suspend_test_out);
 
     RING("RPC (%s,%s): "
          "aio_suspend_test(%d, %d, %s, %d, %p, %d, %d) -> %d (%s)",
          handle->ta, handle->name,
-         s, s_aux, signum_rpc2str(signum), timeout, buf, buflen, 
-         out.retval, errno_rpc2str(RPC_ERRNO(handle))); 
+         s, s_aux, signum_rpc2str(signum), timeout, buf, buflen,
+         out.retval, errno_rpc2str(RPC_ERRNO(handle)));
 
     if (RPC_CALL_OK)
     {
         if (buf != NULL && out.buf.buf_val != NULL)
             memcpy(buf, out.buf.buf_val, out.buf.buf_len);
-            
+
         memcpy(diag, out.diag.diag_val, out.diag.diag_len);
     }
 
     RETVAL_VAL(out.retval, aio_suspend_test);
-}                    
+}
 
 
 ssize_t
@@ -5402,12 +5402,12 @@ rpc_socket_to_file(rcf_rpc_server *handle, int sock,
     RETVAL_VAL(out.retval, socket_to_file);
 }
 
-rpc_hwnd 
+rpc_hwnd
 rpc_create_window(rcf_rpc_server *handle)
 {
     tarpc_create_window_in  in;
     tarpc_create_window_out out;
-    
+
     if (handle == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
@@ -5419,7 +5419,7 @@ rpc_create_window(rcf_rpc_server *handle)
 
     handle->op = RCF_RPC_CALL_WAIT;
 
-    rcf_rpc_call(handle, _create_window, 
+    rcf_rpc_call(handle, _create_window,
                  &in, (xdrproc_t)xdr_tarpc_create_window_in,
                  &out, (xdrproc_t)xdr_tarpc_create_window_out);
 
@@ -5430,12 +5430,12 @@ rpc_create_window(rcf_rpc_server *handle)
     RETVAL_PTR(out.hwnd, create_window);
 }
 
-void 
+void
 rpc_destroy_window(rcf_rpc_server *handle, rpc_hwnd hwnd)
 {
     tarpc_destroy_window_in  in;
     tarpc_destroy_window_out out;
-    
+
     if (handle == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
@@ -5448,7 +5448,7 @@ rpc_destroy_window(rcf_rpc_server *handle, rpc_hwnd hwnd)
     handle->op = RCF_RPC_CALL_WAIT;
 
     in.hwnd = (tarpc_hwnd)hwnd;
-    
+
     rcf_rpc_call(handle, _destroy_window,
                  &in,  (xdrproc_t)xdr_tarpc_destroy_window_in,
                  &out, (xdrproc_t)xdr_tarpc_destroy_window_out);
@@ -5460,13 +5460,13 @@ rpc_destroy_window(rcf_rpc_server *handle, rpc_hwnd hwnd)
     RETVAL_VOID(destroy_window);
 }
 
-int 
+int
 rpc_wsa_async_select(rcf_rpc_server *handle,
                      int s, rpc_hwnd hwnd, rpc_network_event event)
 {
     tarpc_wsa_async_select_in  in;
     tarpc_wsa_async_select_out out;
-    
+
     if (handle == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
@@ -5481,7 +5481,7 @@ rpc_wsa_async_select(rcf_rpc_server *handle,
     in.hwnd = (tarpc_hwnd)hwnd;
     in.sock = s;
     in.event = event;
-    
+
     rcf_rpc_call(handle, _wsa_async_select,
                  &in,  (xdrproc_t)xdr_tarpc_wsa_async_select_in,
                  &out, (xdrproc_t)xdr_tarpc_wsa_async_select_out);
@@ -5492,20 +5492,20 @@ rpc_wsa_async_select(rcf_rpc_server *handle,
 
     RETVAL_RC(wsa_async_select);
 }
-                 
-int 
+
+int
 rpc_peek_message(rcf_rpc_server *handle,
                      rpc_hwnd hwnd, int *s, rpc_network_event *event)
 {
     tarpc_peek_message_in  in;
     tarpc_peek_message_out out;
-    
+
     if (handle == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return 0;
     }
-    
+
     if (s == NULL || event == NULL)
     {
         ERROR("Null pointer is passed to rpc_peek_msg");
@@ -5518,7 +5518,7 @@ rpc_peek_message(rcf_rpc_server *handle,
     handle->op = RCF_RPC_CALL_WAIT;
 
     in.hwnd = (tarpc_hwnd)hwnd;
-    
+
     rcf_rpc_call(handle, _peek_message,
                  &in,  (xdrproc_t)xdr_tarpc_peek_message_in,
                  &out, (xdrproc_t)xdr_tarpc_peek_message_out);
@@ -5526,18 +5526,18 @@ rpc_peek_message(rcf_rpc_server *handle,
     RING("RPC (%s,%s): peek_message(%p) -> %d (%s)",
          handle->ta, handle->name,
          hwnd, out.retval, errno_rpc2str(RPC_ERRNO(handle)));
-         
+
     *s = out.sock;
     *event = out.event;
 
     RETVAL_VAL(out.retval, wsa_async_select);
 }
-          
-int 
+
+int
 rpc_wsa_send(rcf_rpc_server *handle,
              int s, const struct rpc_iovec *iov,
-             size_t iovcnt, rpc_send_recv_flags flags, 
-             int *bytes_sent, rpc_overlapped overlapped, 
+             size_t iovcnt, rpc_send_recv_flags flags,
+             int *bytes_sent, rpc_overlapped overlapped,
              te_bool callback)
 {
     rcf_rpc_op       op;
@@ -5545,9 +5545,9 @@ rpc_wsa_send(rcf_rpc_server *handle,
     tarpc_wsa_send_out out;
 
     struct tarpc_iovec iovec_arr[RCF_RPC_MAX_IOVEC];
-    
+
     size_t i;
-    
+
     if (handle == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
@@ -5559,7 +5559,7 @@ rpc_wsa_send(rcf_rpc_server *handle,
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
     memset(iovec_arr, 0, sizeof(iovec_arr));
-    
+
     if (iovcnt > RCF_RPC_MAX_IOVEC)
     {
         handle->_errno = TE_RC(TE_RCF, ENOMEM);
@@ -5572,13 +5572,13 @@ rpc_wsa_send(rcf_rpc_server *handle,
         iovec_arr[i].iov_base.iov_base_len = iov[i].iov_rlen;
         iovec_arr[i].iov_len = iov[i].iov_len;
     }
-    
+
     if (iov != NULL)
     {
         in.vector.vector_val = iovec_arr;
         in.vector.vector_len = iovcnt;
     }
-    
+
     in.s = s;
     in.count = iovcnt;
     in.overlapped = (tarpc_overlapped)overlapped;
@@ -5589,23 +5589,23 @@ rpc_wsa_send(rcf_rpc_server *handle,
         in.bytes_sent.bytes_sent_val = bytes_sent;
     }
     in.flags = flags;
-    
+
     rcf_rpc_call(handle, _wsa_send, &in, (xdrproc_t)xdr_tarpc_wsa_send_in,
                  &out, (xdrproc_t)xdr_tarpc_wsa_send_out);
 
     RING("RPC (%s,%s)%s: wsa_send() -> %d (%s)",
          handle->ta, handle->name, rpcop2str(op), out.retval,
          errno_rpc2str(RPC_ERRNO(handle)));
-    
-    RETVAL_RC(wsa_send);
-}             
 
-int 
+    RETVAL_RC(wsa_send);
+}
+
+int
 rpc_wsa_recv(rcf_rpc_server *handle,
              int s, const struct rpc_iovec *iov,
              size_t iovcnt, size_t riovcnt,
-             rpc_send_recv_flags *flags, 
-             int *bytes_received, rpc_overlapped overlapped, 
+             rpc_send_recv_flags *flags,
+             int *bytes_received, rpc_overlapped overlapped,
              te_bool callback)
 {
     rcf_rpc_op      op;
@@ -5613,9 +5613,9 @@ rpc_wsa_recv(rcf_rpc_server *handle,
     tarpc_wsa_recv_out out;
 
     struct tarpc_iovec iovec_arr[RCF_RPC_MAX_IOVEC];
-    
+
     size_t i;
-    
+
     if (handle == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
@@ -5627,13 +5627,13 @@ rpc_wsa_recv(rcf_rpc_server *handle,
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
     memset(iovec_arr, 0, sizeof(iovec_arr));
-    
+
     if (riovcnt > RCF_RPC_MAX_IOVEC)
     {
         handle->_errno = TE_RC(TE_RCF, ENOMEM);
         return -1;
     }
-    
+
     if (iov != NULL && iovcnt > riovcnt)
     {
         handle->_errno = TE_RC(TE_RCF, EINVAL);
@@ -5671,12 +5671,12 @@ rpc_wsa_recv(rcf_rpc_server *handle,
 
     rcf_rpc_call(handle, _wsa_recv, &in, (xdrproc_t)xdr_tarpc_wsa_recv_in,
                  &out, (xdrproc_t)xdr_tarpc_wsa_recv_out);
-    
+
     if (RPC_CALL_OK && iov != NULL && out.vector.vector_val != NULL)
     {
         for (i = 0; i < riovcnt; i++)
         {
-            ((struct rpc_iovec *)iov)[i].iov_len = 
+            ((struct rpc_iovec *)iov)[i].iov_len =
                 out.vector.vector_val[i].iov_len;
             if ((iov[i].iov_base != NULL) &&
                 (out.vector.vector_val[i].iov_base.iov_base_val != NULL))
@@ -5693,19 +5693,19 @@ rpc_wsa_recv(rcf_rpc_server *handle,
          out.retval, errno_rpc2str(RPC_ERRNO(handle)));
 
     RETVAL_RC(wsa_recv);
-}             
+}
 
-int 
+int
 rpc_get_overlapped_result(rcf_rpc_server *handle,
                           int s, rpc_overlapped overlapped,
                           int *bytes, te_bool wait,
                           rpc_send_recv_flags *flags)
 {
     rcf_rpc_op op;
-    
+
     tarpc_get_overlapped_result_in  in;
     tarpc_get_overlapped_result_out out;
-    
+
     if (handle == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
@@ -5731,38 +5731,38 @@ rpc_get_overlapped_result(rcf_rpc_server *handle,
         in.flags.flags_val = (int *)flags;
     }
 
-    rcf_rpc_call(handle, _get_overlapped_result, &in, 
+    rcf_rpc_call(handle, _get_overlapped_result, &in,
                  (xdrproc_t)xdr_tarpc_get_overlapped_result_in,
                  &out, (xdrproc_t)xdr_tarpc_get_overlapped_result_out);
-    
+
     RING("RPC (%s,%s)%s: get_overlapped_result(%d, %p, ...) -> %s (%s)",
-         handle->ta, handle->name, rpcop2str(op), s, overlapped, 
+         handle->ta, handle->name, rpcop2str(op), s, overlapped,
          out.retval ? "true" : "false", errno_rpc2str(RPC_ERRNO(handle)));
 
     RETVAL_VAL(out.retval, get_overlapped_result);
 }
-                          
-int 
-rpc_wsa_duplicate_socket(rcf_rpc_server *handle,            
+
+int
+rpc_wsa_duplicate_socket(rcf_rpc_server *handle,
                          int s, int pid, uint8_t *info, int *info_len)
 {
     rcf_rpc_op op;
-    
+
     tarpc_duplicate_socket_in  in;
     tarpc_duplicate_socket_out out;
-    
+
     if (handle == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return -1;
     }
-    
+
     if ((info == NULL) != (info_len == NULL))
     {
         handle->_errno = TE_RC(TE_RCF, EINVAL);
         return -1;
     }
-    
+
     if (info_len != NULL && *info_len == 0)
     {
         handle->_errno = TE_RC(TE_RCF, EINVAL);
@@ -5781,15 +5781,15 @@ rpc_wsa_duplicate_socket(rcf_rpc_server *handle,
         in.info.info_len = *info_len;
         in.info.info_val = info;
     }
-    
-    rcf_rpc_call(handle, _duplicate_socket, &in, 
+
+    rcf_rpc_call(handle, _duplicate_socket, &in,
                  (xdrproc_t)xdr_tarpc_duplicate_socket_in,
                  &out, (xdrproc_t)xdr_tarpc_duplicate_socket_out);
-    
+
     RING("RPC (%s,%s)%s: duplicate_socket(%d, %d) -> %d (%s)",
-         handle->ta, handle->name, rpcop2str(op), s, pid, 
+         handle->ta, handle->name, rpcop2str(op), s, pid,
          out.retval, errno_rpc2str(RPC_ERRNO(handle)));
-         
+
     if (RPC_CALL_OK)
     {
         if (info_len != NULL)
@@ -5801,8 +5801,8 @@ rpc_wsa_duplicate_socket(rcf_rpc_server *handle,
 
 int
 rpc_wait_multiple_events(rcf_rpc_server *handle,
-                        int count, rpc_wsaevent *events, 
-                        te_bool wait_all, uint32_t timeout, 
+                        int count, rpc_wsaevent *events,
+                        te_bool wait_all, uint32_t timeout,
                         te_bool alertable, int rcount)
 {
     rcf_rpc_op       op;
@@ -5825,14 +5825,14 @@ rpc_wait_multiple_events(rcf_rpc_server *handle,
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
-    
+
     in.count = count;
     in.events.events_len = rcount;
     in.events.events_val = (tarpc_wsaevent *)events;
     in.wait_all = wait_all;
     in.timeout = timeout;
     in.alertable = alertable;
-    
+
     rcf_rpc_call(handle, _wait_multiple_events,
                  &in, (xdrproc_t)xdr_tarpc_wait_multiple_events_in,
                  &out, (xdrproc_t)xdr_tarpc_wait_multiple_events_out);
@@ -5841,29 +5841,29 @@ rpc_wait_multiple_events(rcf_rpc_server *handle,
     {
         switch (out.retval)
         {
-            case TARPC_WSA_WAIT_FAILED: 
+            case TARPC_WSA_WAIT_FAILED:
                 out.retval = WSA_WAIT_FAILED;
                 break;
-                
+
             case TARPC_WAIT_IO_COMPLETION:
                 out.retval = WAIT_IO_COMPLETION;
-                break; 
-                
+                break;
+
             case TARPC_WSA_WAIT_TIMEOUT:
                 out.retval = WSA_WAIT_TIMEOUT;
                 break;
-                
+
             default:
-                out.retval = WSA_WAIT_EVENT_0 + 
+                out.retval = WSA_WAIT_EVENT_0 +
                              (out.retval - TARPC_WSA_WAIT_EVENT_0);
         }
     }
 
     RING("RPC (%s,%s)%s: wait_multiple_events(%d, %p, %s, %d, %s) -> %d (%s)",
-         handle->ta, handle->name, rpcop2str(op), 
-         count, events, wait_all ? "true" : "false", timeout, 
+         handle->ta, handle->name, rpcop2str(op),
+         count, events, wait_all ? "true" : "false", timeout,
          alertable ? "true" : "false", out.retval,
          errno_rpc2str(RPC_ERRNO(handle)));
-         
+
     RETVAL_VAL(out.retval, wait_multiple_events);
 }
