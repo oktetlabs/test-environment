@@ -1814,7 +1814,7 @@ tapi_snmp_vb_to_mem (const tapi_snmp_varbind_t *vb)
                 return NULL;
             {
                 uint8_t *ret_val = calloc (1,  4);
-                memcpy (ret_val, vb->oct_string, 4);
+                memcpy (ret_val, &vb->oct_string, 4);
                 return (void *)ret_val;
             }
             break;
