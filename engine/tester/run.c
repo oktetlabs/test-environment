@@ -68,7 +68,7 @@
 
 #define TEST_RESULT(_rc) \
     (((_rc) == ETESTPASS) || \
-     (((_rc) >= ETESTFAILMIN) && ((_rc) <= ETESTFAILMAX)))
+     (((_rc) >= ETESTRESULTMIN) && ((_rc) <= ETESTRESULTMAX)))
 
 /** Print string which may be NULL. */
 #define PRINT_STRING(_str)  ((_str) ? : "")
@@ -696,6 +696,11 @@ log_test_result(test_id parent, test_id test, int result)
                          parent, test);
                 break;
 
+            case ETESTEMPTY:
+                LOG_RING(TESTER_CONTROL, TESTER_CONTROL_MSG_PREFIX "EMPTY",
+                         parent, test);
+                break;
+
             default:
             {
                 const char *reason;
@@ -913,7 +918,7 @@ static int
 run_test_session(tester_ctx *ctx, test_session *session, test_id id,
                  test_params *params)
 {
-    int                     result = ETESTPASS;
+    int                     result = ETESTEMPTY;
     int                     rc;
     test_param_iteration   *base_i;
     test_param_iterations   iters;
@@ -937,19 +942,14 @@ run_test_session(tester_ctx *ctx, test_session *session, test_id id,
     rc = vars_args_iterations(&session->vars, &iters);
     if (rc != 0)
     {
-        ERROR("Failed to create a list of parameters iterations");
+        ERROR("Failed to create a list of parameters iterations "
+              "for ID=%u", id);
         return rc;
     }
     if (iters.tqh_first == NULL)
     {
         ERROR("Empty list of parameters iterations");
         return EINVAL;
-    }
-
-    /* If fake flag is already set in context */
-    if (ctx->flags & TESTER_FAKE)
-    {
-        result = ETESTFAKE;
     }
 
     do {
@@ -998,13 +998,18 @@ run_test_session(tester_ctx *ctx, test_session *session, test_id id,
             }
 
             rc = iterate_test(ctx, test, &iters);
-            if ((rc != 0) && (rc != ETESTFAKE) && (rc != ETESTSKIP))
+            if ((rc != 0) && (rc != ETESTEMPTY) &&
+                (rc != ETESTFAKE) && (rc != ETESTSKIP))
             {
                 /* 
                  * Other results except success and skip are mapped 
                  * to ETESTFAIL. 
                  */
                 result = ETESTFAIL;
+            }
+            else if (result == ETESTEMPTY)
+            {
+                result = rc;
             }
         }
 
@@ -1315,7 +1320,9 @@ iterate_test(tester_ctx *ctx, run_item *test,
     te_bool                 ctx_cloned = FALSE;
     int                     rc;
     int                     test_result = ETESTPASS;
-    int                     all_result = ETESTPASS;
+    int                     all_result = ETESTEMPTY;
+    unsigned int            run_iters = 0;
+    te_bool                 test_skipped = FALSE;
     test_param_iterations   iters;
     test_param_iteration   *i;
     char                   *backup_name = NULL;
@@ -1346,7 +1353,7 @@ iterate_test(tester_ctx *ctx, run_item *test,
                     if (~ctx->flags & TESTER_INLOGUE)
                     {
                         tester_ctx_free(ctx);
-                        return 0;
+                        return all_result;
                     }
                 }
                 else
@@ -1369,7 +1376,7 @@ iterate_test(tester_ctx *ctx, run_item *test,
                     if (~ctx->flags & TESTER_INLOGUE)
                     {
                         tester_ctx_free(ctx);
-                        return 0;
+                        return all_result;
                     }
                 }
                 else
@@ -1497,10 +1504,12 @@ iterate_test(tester_ctx *ctx, run_item *test,
             /* Silently skip without any logs */
             if (test_ctx_cloned)
                 tester_ctx_free(test_ctx);
-            if (all_result < ETESTSKIP)
-                all_result = ETESTSKIP;
+            test_skipped = TRUE;
             continue;
         }
+
+        /* Test is considered here as run, if such event is logged */
+        run_iters++;
 
         tester_out_start(test->type, tester_run_item_name(test),
                          ctx->id, id, ctx->flags);
@@ -1567,7 +1576,7 @@ iterate_test(tester_ctx *ctx, run_item *test,
             all_result = test_result;
             break;
         }
-        else if (all_result < test_result)
+        else if ((all_result < test_result) || (all_result == ETESTEMPTY))
         {
             all_result = test_result;
         }
@@ -1577,6 +1586,10 @@ iterate_test(tester_ctx *ctx, run_item *test,
     test_param_iterations_free(&iters);
     if (ctx_cloned)
         tester_ctx_free(ctx);
+
+    if (test_skipped && ((all_result == ETESTPASS) ||
+                         (all_result == ETESTEMPTY)))
+        all_result = ETESTSKIP;
 
     return all_result;
 }

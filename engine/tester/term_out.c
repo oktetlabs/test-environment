@@ -295,6 +295,11 @@ tester_out_done(run_item_type type, const char *name,
                 color = TESTER_COLOR_GRAY;
                 break;
 
+            case ETESTEMPTY:
+                verdict = "EMPTY";
+                color = TESTER_COLOR_GRAY;
+                break;
+
             default:
             {
                 verdict = "FAILED";

@@ -137,6 +137,7 @@ typedef enum result_status {
     RES_STATUS_SKIPPED, 
     RES_STATUS_FAKED, 
     RES_STATUS_FAILED, 
+    RES_STATUS_EMPTY,
 } result_status_t;
 
 /** Structure for keeping session/package/test result information */

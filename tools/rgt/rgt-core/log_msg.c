@@ -143,6 +143,10 @@ rgt_process_control_message(log_msg *msg)
               strncmp(fmt_str, "SKIPPED", strlen("SKIPPED")) == 0) ||
              (res = RES_STATUS_FAKED, 
               strncmp(fmt_str, "FAKED", strlen("FAKED")) == 0) ||
+#if 1
+             (res = RES_STATUS_PASSED, 
+              strncmp(fmt_str, "EMPTY", strlen("EMPTY")) == 0) ||
+#endif
              (res = RES_STATUS_FAILED, 
               strncmp(fmt_str, "FAILED", strlen("FAILED")) == 0))
     {
