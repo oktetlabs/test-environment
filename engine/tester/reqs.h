@@ -152,9 +152,9 @@ extern void test_requirements_free(test_requirements *reqs);
  * @retval TRUE     Run is required
  * @retval FALSE    Run is not required
  */
-extern te_bool tester_is_run_required(struct tester_ctx *ctx,
-                                      const struct run_item *test,
+extern te_bool tester_is_run_required(const struct tester_ctx  *ctx,
+                                      const struct run_item    *test,
                                       const struct test_params *params,
-                                      te_bool quiet);
+                                      te_bool                   quiet);
 
 #endif /* !__TE_TESTER_REQS_H__ */

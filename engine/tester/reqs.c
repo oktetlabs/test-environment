@@ -557,7 +557,7 @@ params_reqs_list_to_string(const test_params *params)
 
 /* See description in reqs.h */
 te_bool
-tester_is_run_required(tester_ctx *ctx, const run_item *test,
+tester_is_run_required(const tester_ctx *ctx, const run_item *test,
                        const test_params *params, te_bool quiet)
 {
     te_bool                     result;
