@@ -53,10 +53,6 @@ typedef struct test_param_iteration {
 typedef TAILQ_HEAD(test_param_iterations, test_param_iteration)
     test_param_iterations;
 
-typedef struct list_iteration {
-    TAILQ_ENTRY(list_iteration) links;  /**< List links */
-} list_iteration;
-
 
 /**
  * Allocate new test parameter iteration with empty set of parameters.

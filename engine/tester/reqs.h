@@ -56,7 +56,7 @@ typedef struct reqs_expr {
             struct reqs_expr   *lhv;        /**< Left hand value */
             struct reqs_expr   *rhv;        /**< Right hand value */
         } binary;                       /**< Binary expression */
-    } u;
+    } u;                                /**< Type specific data */
 } reqs_expr;
 
 /** Target requirements expression */
@@ -71,6 +71,7 @@ typedef struct test_requirement {
     te_bool     sticky;     /**< Is it sticky requirement? */
 } test_requirement;
 
+/** Head of the list of requirements */
 typedef TAILQ_HEAD(test_requirements, test_requirement) test_requirements;
 
 
@@ -94,7 +95,7 @@ extern int tester_reqs_expr_parse(const char *str, reqs_expr **expr);
  * Create a new target requirement and insert it using logical 'and'
  * with current target.
  *
- * @param reqs      Location of the targer requirements expression
+ * @param targets   Location of the targer requirements expression
  * @param req       String requirement
  *
  * @return Status code.
@@ -146,12 +147,14 @@ extern void test_requirements_free(test_requirements *reqs);
  * @param ctx       Tester context
  * @param test      Test to be checked
  * @param params    List of real test parameters
+ * @param quiet     Be quiet
  *
  * @retval TRUE     Run is required
  * @retval FALSE    Run is not required
  */
 extern te_bool tester_is_run_required(struct tester_ctx *ctx,
                                       const struct run_item *test,
-                                      const struct test_params *params);
+                                      const struct test_params *params,
+                                      te_bool quiet);
 
 #endif /* !__TE_TESTER_REQS_H__ */

@@ -28,9 +28,11 @@
  * $Id$
  */
 
+/** Logging user name to be used here */
 #define TE_LGR_USER     "Parser"
 
-#define _GNU_SOURCE
+/** To get strndup() */
+#define _GNU_SOURCE     1
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -58,8 +60,17 @@
 #include "internal.h"
 
 
+/** 
+ * Cast 'const char *' to 'const xmlChar *' required by libxml2
+ * routines.
+ */
+
 #define CONST_CHAR2XML  (const xmlChar *)
+
+/** Cast 'xmlChar *' to 'char *' used in Tester data structures. */
 #define XML2CHAR(p)     ((char *)p)
+
+/** Duplicate 'xmlChar *' as 'char *' */
 #define XML2CHAR_DUP(p) XML2CHAR(xmlStrdup(p))
 
 
@@ -2011,6 +2022,7 @@ cleanup:
  * Parse Tester configuratin file.
  *
  * @param cfg   Tester configuratin with not parsed file
+ * @param ctx   Global context
  *
  * @return Status code
  */

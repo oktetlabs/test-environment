@@ -28,9 +28,10 @@
  * $Id$
  */
 
+/** Logging user name to be used here */
 #define TE_LGR_USER     "Requirements"
 
-#ifdef HAVE_CONFIG_H
+#if HAVE_CONFIG_H
 #include "config.h"
 #endif
 
@@ -362,10 +363,21 @@ is_reqs_expr_match(const reqs_expr         *re,
     return result;
 }
 
+
+/**
+ * Print requirements expression to buffer provided by caller.
+ *
+ * @param expr      Requirements expression
+ * @param buf       Location of the pointer to the buffer
+ * @param left      Location of the space left in the buffer
+ * @param prev_op   Previous operation
+ */
 static void
-reqs_expr_to_string_buf(const reqs_expr *expr, char **buf, ssize_t *left)
+reqs_expr_to_string_buf(const reqs_expr *expr, char **buf, ssize_t *left,
+                        reqs_expr_type prev_op)
 {
-    int out;
+    int     out;
+    te_bool enclose;
 
     switch (expr->type)
     {
@@ -377,21 +389,49 @@ reqs_expr_to_string_buf(const reqs_expr *expr, char **buf, ssize_t *left)
         case TESTER_REQS_EXPR_NOT:
             out = snprintf(*buf, *left, "!");
             *buf += out; *left -= out;
-            reqs_expr_to_string_buf(expr->u.unary, buf, left);
+            reqs_expr_to_string_buf(expr->u.unary, buf, left,
+                                    TESTER_REQS_EXPR_NOT);
             break;
 
         case TESTER_REQS_EXPR_AND:
-            reqs_expr_to_string_buf(expr->u.binary.lhv, buf, left);
-            out = snprintf(*buf, *left, "&");
+            enclose = (prev_op == TESTER_REQS_EXPR_NOT);
+            if (enclose)
+            {
+                out = snprintf(*buf, *left, "(");
+                *buf += out; *left -= out;
+            }
+            reqs_expr_to_string_buf(expr->u.binary.lhv, buf, left,
+                                    TESTER_REQS_EXPR_AND);
+            out = snprintf(*buf, *left, " & ");
             *buf += out; *left -= out;
-            reqs_expr_to_string_buf(expr->u.binary.rhv, buf, left);
+            reqs_expr_to_string_buf(expr->u.binary.rhv, buf, left,
+                                    TESTER_REQS_EXPR_AND);
+            if (enclose)
+            {
+                out = snprintf(*buf, *left, ")");
+                *buf += out; *left -= out;
+            }
             break;
 
         case TESTER_REQS_EXPR_OR:
-            reqs_expr_to_string_buf(expr->u.binary.lhv, buf, left);
-            out = snprintf(*buf, *left, "|");
+            enclose = (prev_op == TESTER_REQS_EXPR_NOT ||
+                       prev_op == TESTER_REQS_EXPR_AND);
+            if (enclose)
+            {
+                out = snprintf(*buf, *left, "(");
+                *buf += out; *left -= out;
+            }
+            reqs_expr_to_string_buf(expr->u.binary.lhv, buf, left,
+                                    TESTER_REQS_EXPR_OR);
+            out = snprintf(*buf, *left, " | ");
             *buf += out; *left -= out;
-            reqs_expr_to_string_buf(expr->u.binary.rhv, buf, left);
+            reqs_expr_to_string_buf(expr->u.binary.rhv, buf, left,
+                                    TESTER_REQS_EXPR_OR);
+            if (enclose)
+            {
+                out = snprintf(*buf, *left, ")");
+                *buf += out; *left -= out;
+            }
             break;
 
         default:
@@ -401,19 +441,36 @@ reqs_expr_to_string_buf(const reqs_expr *expr, char **buf, ssize_t *left)
     }
 }
 
+/**
+ * Print requirements expression to static buffer.
+ *
+ * @param expr      Requirements expression
+ *
+ * @return Pointer to the static buffer with printed expression
+ */
 static const char *
 reqs_expr_to_string(const reqs_expr *expr)
 {
-    static char  buf[1024];
-    char        *s = buf;
-    ssize_t      left = sizeof(buf);
+    static char buf[1024];
+
+    char       *s = buf;
+    ssize_t     left = sizeof(buf);
 
     s[0] = '\0';
-    reqs_expr_to_string_buf(expr, &s, &left);
+    reqs_expr_to_string_buf(expr, &s, &left, TESTER_REQS_EXPR_VALUE);
 
     return buf;
 }
 
+
+/**
+ * Print list of requirements into string.
+ *
+ * @param reqs      List of requirements
+ * @param params    Parameters context to get referred requirements ID
+ * @param buf       Location of the pointer to the buffer
+ * @param left      Location of the space left in the buffer
+ */
 static void
 reqs_list_to_string_buf(const test_requirements  *reqs,
                         const test_params        *params,
@@ -421,28 +478,39 @@ reqs_list_to_string_buf(const test_requirements  *reqs,
                         ssize_t                  *left)
 {
     const test_requirement *p; 
+    char                   *s = *buf;
     int                     out;
 
     for (p = reqs->tqh_first;
          p != NULL && *left > 0;
-         p = p->links.tqe_next, *buf += out, *left -= out)
+         p = p->links.tqe_next, s += out, *left -= out)
     {
-        out = snprintf(*buf, *left, "%s%s",
-                       (p == reqs->tqh_first) ? "" : ",",
+        out = snprintf(s, *left, "%s%s",
+                       (p == reqs->tqh_first) ? "" : ", ",
                        req_get(p, params));
     }
+    *buf = s;
 }
 
+/**
+ * Print list of requirements into string.
+ *
+ * @param reqs      List of requirements
+ * @param params    Parameters context to get referred requirements ID
+ *
+ * @return Pointer to one of few static buffers with printed
+ *         requirements
+ */
 static const char *
 reqs_list_to_string(const test_requirements *reqs,
                     const test_params       *params)
 {
-    static char         bufs[1024][4];
+    static char         bufs[4][1024];
     static unsigned int index = 0;
 
     char       *out_buf = bufs[index++ & 0x3];
     char       *s = out_buf;
-    ssize_t     left = sizeof(out_buf);
+    ssize_t     left = sizeof(bufs[0]);
 
     out_buf[0] = '\0';
     reqs_list_to_string_buf(reqs, params, &s, &left);
@@ -450,6 +518,15 @@ reqs_list_to_string(const test_requirements *reqs,
     return out_buf;
 }
 
+/**
+ * Print requirements attached to each parameter in the list.
+ *
+ * @param params        List of test parameters
+ *
+ * @return Pointer to the static buffer with printed requirements per
+ *         test parameter. Parameter is skipped, if it has no attached
+ *         requirements.
+ */
 static const char *
 params_reqs_list_to_string(const test_params *params)
 {
@@ -467,7 +544,7 @@ params_reqs_list_to_string(const test_params *params)
     {
         if (p->reqs != NULL)
         {
-            out = snprintf(s, left, "%s= ", p->name);
+            out = snprintf(s, left, " %s=", p->name);
             s += out;
             left -= out;
             reqs_list_to_string_buf(p->reqs, params, &s, &left);
@@ -477,10 +554,11 @@ params_reqs_list_to_string(const test_params *params)
     return out_buf;
 }
 
+
 /* See description in reqs.h */
 te_bool
 tester_is_run_required(tester_ctx *ctx, const run_item *test,
-                       const test_params *params)
+                       const test_params *params, te_bool quiet)
 {
     te_bool                     result;
     te_bool                     force = FALSE;
@@ -508,12 +586,12 @@ tester_is_run_required(tester_ctx *ctx, const run_item *test,
                                 &force);
     if (!force)
         result = result || (test->type != RUN_ITEM_SCRIPT);
-    if (!result)
+    if (!result && !quiet)
     {
         RING("Skipped because of expression: %s\n"
              "Collected sticky requirements: %s\n"
              "Test node requirements: %s\n"
-             "Requirements attached to parameters: %s\n",
+             "Requirements attached to parameters:%s\n",
              reqs_expr_to_string(ctx->targets),
              reqs_list_to_string(&ctx->reqs, params),
              reqs_list_to_string(reqs, params),
@@ -521,92 +599,4 @@ tester_is_run_required(tester_ctx *ctx, const run_item *test,
     }
 
     return result;
-#if 0
-    test_requirement           *t, *tn;
-    test_requirements          *targets = &ctx->reqs;
-    const test_requirement     *s;
-    const test_param           *p;
-    /*
-     * If no requirements specified for a test package/session, run it.
-     * If no requirements specified for a test script, skip it.
-     */
-    result = (test->type != RUN_ITEM_SCRIPT);
-    for (t = targets->tqh_first; t != NULL; t = tn)
-    {
-        tn = t->links.tqe_next;
-
-        assert(t->id != NULL);
-        assert(!t->sticky);
-
-        for (s = reqs->tqh_first; s != NULL; s = s->links.tqe_next)
-        {
-            assert(s->exclude == FALSE);
-            assert((test->type != RUN_ITEM_SCRIPT) || !(s->sticky));
-
-            /* 
-             * It's NOT exclude target requirement and list of non-sticky
-             * test requirementsis not empty, therefore, one of
-             * requirements must be complied.
-             */
-            if (result && !(t->exclude) && !(s->sticky))
-                result = FALSE;
-
-            if (strcmp(t->id, req_get(s, params)) == 0)
-            {
-                if (t->exclude)
-                {
-                    if (~ctx->flags & TESTER_QUIET_SKIP)
-                        WARN("Excluded because of requirement '%s'", t->id);
-                    return FALSE;
-                }
-                else
-                {
-                    result = TRUE;
-                    if (s->sticky)
-                    {
-                        /* Remove this target requirement from the list */
-                        TAILQ_REMOVE(targets, t, links);
-                    }
-                    break;
-                }
-            }
-        }
-        for (p = params->tqh_first; p != NULL; p = p->links.tqe_next)
-        {
-            if (p->reqs == NULL)
-                continue;
-
-            for (s = p->reqs->tqh_first; s != NULL; s = s->links.tqe_next)
-            {
-                assert(!s->exclude);
-                assert(!s->sticky);
-
-                if (strcmp(t->id, req_get(s, params)) == 0)
-                {
-                    if (t->exclude)
-                    {
-                        if (~ctx->flags & TESTER_QUIET_SKIP)
-                            WARN("Excluded because of requirement '%s'",
-                                 t->id);
-                        return FALSE;
-                    }
-                    else
-                    {
-                        result = TRUE;
-                        break;
-                    }
-                }
-            }
-        }
-        if (result == FALSE)
-        {
-            if (~ctx->flags & TESTER_QUIET_SKIP)
-                WARN("No matching requirement for '%s' found", t->id);
-            return FALSE;
-        }
-    }
-
-    return result;
-#endif
 }
-

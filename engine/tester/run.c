@@ -63,9 +63,10 @@
 /** Size of the Tester shell command buffer */
 #define TESTER_CMD_BUF_SZ   1024
 
-/** Size of the bulk used to allocate space for test parameters string */
-#define TEST_PARAM_STR_BULK 32
+/** Size of the bulk used to allocate space for a string */
+#define TESTER_STR_BULK 64
 
+/** Is return code a test result or TE error? */
 #define TEST_RESULT(_rc) \
     (((_rc) == ETESTPASS) || \
      (((_rc) >= ETESTRESULTMIN) && ((_rc) <= ETESTRESULTMAX)))
@@ -475,7 +476,6 @@ vars_args_iterations(test_vars_args        *vas,
 static char *
 persons_info_to_string(const persons_info *persons)
 {
-#define TESTER_STR_BULK 64
     size_t              total = TESTER_STR_BULK;
     char               *res = malloc(total);
     char               *s = res;
@@ -533,7 +533,6 @@ persons_info_to_string(const persons_info *persons)
         } while (again);
     }
     return res;
-#undef TESTER_STR_BULK
 }
 
 
@@ -576,7 +575,7 @@ test_params_to_string(const test_params *params)
         VERB("%s(): parameter %s=%s", __FUNCTION__, p->name, p->value);
         while (rest < req)
         {
-            char *nv = malloc(len += TEST_PARAM_STR_BULK);
+            char *nv = malloc(len += TESTER_STR_BULK);
 
             if (nv == NULL)
             {
@@ -589,7 +588,7 @@ test_params_to_string(const test_params *params)
                 strcpy(nv, v);
                 free(v);
             }
-            rest += TEST_PARAM_STR_BULK;
+            rest += TESTER_STR_BULK;
             v = nv;
         }
         rest -= sprintf(v + (len - rest), " %s=\"%s\"", p->name, p->value);
@@ -1513,7 +1512,7 @@ iterate_test(tester_ctx *ctx, run_item *test,
 
         if ((~ctx->flags & TESTER_INLOGUE) &&
             (test_ctx->flags & TESTER_QUIET_SKIP) &&
-            !tester_is_run_required(test_ctx, test, &(i->params)))
+            !tester_is_run_required(test_ctx, test, &(i->params), TRUE))
         {
             /* Silently skip without any logs */
             if (test_ctx_cloned)
@@ -1531,7 +1530,7 @@ iterate_test(tester_ctx *ctx, run_item *test,
 
         if ((~ctx->flags & TESTER_INLOGUE) &&
             (~test_ctx->flags & TESTER_QUIET_SKIP) &&
-            !tester_is_run_required(test_ctx, test, &(i->params)))
+            !tester_is_run_required(test_ctx, test, &(i->params), FALSE))
         {
             test_result = ETESTSKIP;
         }

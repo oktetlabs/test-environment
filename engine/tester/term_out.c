@@ -28,6 +28,7 @@
  * $Id$
  */
 
+/** Logger user name to be used here */
 #define TE_LGR_USER     "TermOut"
 
 #if HAVE_CONFIG_H
@@ -60,6 +61,7 @@
 /** Default number of columns on terminal */
 #define TESTER_TERM_COLUMNS_DEF     80
 
+/** Log, if the result is not zero. */
 #define CHECK_RC_ZERO(_x) \
     do {                            \
         int _rc = (_x);             \

@@ -28,6 +28,7 @@
  * $Id$
  */
 
+/** Logging user name to be used here */
 #define TE_LGR_USER     "Iterations"
 
 #if HAVE_CONFIG_H

@@ -49,6 +49,7 @@
 #include "internal.h"
 
 
+/** Logging entity name of the Tester subsystem */
 DEFINE_LGR_ENTITY("Tester");
 
 

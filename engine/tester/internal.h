@@ -122,11 +122,12 @@ typedef struct test_var_arg_type {
 typedef struct test_var_arg_value {
     TAILQ_ENTRY(test_var_arg_value) links;  /**< List links */
 
-    char                       *id;
-    struct test_var_arg_value  *ref;
-    char                       *ext;
-    test_requirements           reqs;
-    char                       *value;
+    char                       *id;     /**< Identifier */
+    struct test_var_arg_value  *ref;    /**< Reference to another value */
+    char                       *ext;    /**< Reference to external
+                                             value */
+    test_requirements           reqs;   /**< Attached requirements */
+    char                       *value;  /**< Plain value */
 } test_var_arg_value;
 
 /** List of value of the variable or argument */
@@ -157,28 +158,30 @@ typedef enum tester_track_conf {
 
 /** Attributes of any run item */
 typedef struct run_item_attrs {
-    struct timeval      timeout;
-    tester_track_conf   track_conf;
+    struct timeval      timeout;        /**< Execution timeout */
+    tester_track_conf   track_conf;     /**< Type of configurations
+                                             changes tracking */
 } run_item_attrs;
 
 
 /** Test script */
 typedef struct test_script {
-    char               *name;
-    char               *objective;
-    char               *execute;
-    test_requirements   reqs;
+    char               *name;       /**< Name of the script */
+    char               *objective;  /**< Objective */
+    char               *execute;    /**< Full path to executable */
+    test_requirements   reqs;       /**< Set of requirements */
 } test_script;
 
 
 /** Test session variable */
 typedef struct test_var_arg {
-    TAILQ_ENTRY(test_var_arg)   links;
+    TAILQ_ENTRY(test_var_arg)   links;  /**< List links */
 
     char                   *name;       /**< Name */
-    te_bool                 handdown;
+    te_bool                 handdown;   /**< Handdown session variable
+                                             to all children */
     test_var_arg_values     values;     /**< Values */
-    test_var_arg_attrs      attrs;
+    test_var_arg_attrs      attrs;      /**< Attributes */
 } test_var_arg;
 
 /** List of test session variables */
@@ -186,6 +189,7 @@ typedef TAILQ_HEAD(test_vars_args, test_var_arg) test_vars_args;
 
 /* Forwards */
 struct run_item;
+/** Unified run item */
 typedef struct run_item run_item;
 
 /** List of run itens */
@@ -246,6 +250,7 @@ typedef enum run_item_type {
 } run_item_type;
 
 
+/** Is forcerandom specified? */
 #define TESTER_RUN_ITEM_FORCERANDOM     (1 << 0)
 
 /** Unified run item */
@@ -255,17 +260,20 @@ struct run_item {
     char               *name;       /**< Optinal name of the run item */
     run_item_type       type;       /**< Type of the run item */
     union {
-        test_script     script;
-        test_session    session;
-        test_package   *package;
-    } u;
+        test_script     script;     /**< Test script */
+        test_session    session;    /**< Test session */
+        test_package   *package;    /**< Test package */
+    } u;                            /**< Type specific data */
     test_vars_args      args;               /**< Arguments */
     run_item_attrs      attrs;              /**< Package run attributes */
-    unsigned int        loglevel;
-    te_bool             allow_configure;    
-    te_bool             allow_keepalive;
-    te_bool             forcerandom;
-    unsigned int        flags;
+    unsigned int        loglevel;           /**< Log level to be used
+                                                 by the item */
+    te_bool             allow_configure;    /**< Allow configuration
+                                                 activities in run item */
+    te_bool             allow_keepalive;    /**< Allow keep-alive
+                                                 validations inside */
+    te_bool             forcerandom;        /**< Forced randomness */
+    unsigned int        flags;              /**< Flags */
 };
 
 /* Forward */

@@ -28,6 +28,7 @@
  * $Id$
  */
 
+/** Logging user name to be used here */
 #define TE_LGR_USER     "Run Path"
 
 #ifdef HAVE_CONFIG_H
