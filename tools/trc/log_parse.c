@@ -212,20 +212,18 @@ get_result(xmlNodePtr node, trc_test_result *value)
 
     if (s == NULL)
         return ENOENT;
-    if (xmlStrcmp(s, CONST_CHAR2XML("pass")) == 0)
+    if (xmlStrcmp(s, CONST_CHAR2XML("PASSED")) == 0)
         *value = TRC_TEST_PASSED;
-    else if (xmlStrcmp(s, CONST_CHAR2XML("fail")) == 0)
+    else if (xmlStrcmp(s, CONST_CHAR2XML("FAILED")) == 0)
         *value = TRC_TEST_FAILED;
-    else if (xmlStrcmp(s, CONST_CHAR2XML("skip")) == 0)
+    else if (xmlStrcmp(s, CONST_CHAR2XML("SKIPPED")) == 0)
         *value = TRC_TEST_SKIPPED;
-    else if (xmlStrcmp(s, CONST_CHAR2XML("killed")) == 0)
+    else if (xmlStrcmp(s, CONST_CHAR2XML("KILLED")) == 0)
         *value = TRC_TEST_KILLED;
-    else if (xmlStrcmp(s, CONST_CHAR2XML("cored")) == 0)
+    else if (xmlStrcmp(s, CONST_CHAR2XML("CORED")) == 0)
         *value = TRC_TEST_CORED;
-    else if (xmlStrcmp(s, CONST_CHAR2XML("faked")) == 0)
+    else if (xmlStrcmp(s, CONST_CHAR2XML("FAKED")) == 0)
         *value = TRC_TEST_FAKED;
-    else if (xmlStrcmp(s, CONST_CHAR2XML("UNSPEC")) == 0)
-        *value = TRC_TEST_UNSPEC;
     else
     {
         ERROR("Invalid value '%s' of the result", XML2CHAR(s));

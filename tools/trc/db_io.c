@@ -228,11 +228,11 @@ alloc_and_get_test_iter(xmlNodePtr node, trc_test_type type, test_iters *iters)
         return EINVAL;
     }
     INFO("Expected result is '%s'", tmp);
-    if (strcmp(tmp, "passed") == 0)
+    if (strcmp(tmp, "PASSED") == 0)
         p->exp_result = TRC_TEST_PASSED;
-    else if (strcmp(tmp, "failed") == 0)
+    else if (strcmp(tmp, "FAILED") == 0)
         p->exp_result = TRC_TEST_FAILED;
-    else if (strcmp(tmp, "skipped") == 0)
+    else if (strcmp(tmp, "SKIPPED") == 0)
         p->exp_result = TRC_TEST_SKIPPED;
     else if (strcmp(tmp, "UNSPEC") == 0)
         p->exp_result = TRC_TEST_UNSPEC;
@@ -262,11 +262,14 @@ alloc_and_get_test_iter(xmlNodePtr node, trc_test_type type, test_iters *iters)
         return rc;
 
     /* Get notes */
-    rc = get_node_with_text_content(&node, "notes", &p->notes);
-    if ((rc != 0) && (rc != ENOENT))
+    if (node != NULL)
     {
-        ERROR("Failed to get notes for the test iteration");
-        return rc;
+        rc = get_node_with_text_content(&node, "notes", &p->notes);
+        if ((rc != 0) && (rc != ENOENT))
+        {
+            ERROR("Failed to get notes for the test iteration");
+            return rc;
+        }
     }
 
     /* Get sub-tests */
@@ -368,6 +371,13 @@ alloc_and_get_test(xmlNodePtr node, test_runs *tests)
 
     rc = get_node_with_text_content(&node, "objective", &p->objective);
     if (rc != 0)
+    {
+        ERROR("Failed to get objective of the test '%s'", p->name);
+        return rc;
+    }
+
+    rc = get_node_with_text_content(&node, "notes", &p->notes);
+    if ((rc != 0) && (rc != ENOENT))
     {
         ERROR("Failed to get objective of the test '%s'", p->name);
         return rc;
@@ -583,6 +593,13 @@ trc_update_tests(test_runs *tests)
                             BAD_CAST p->objective) == NULL)
             {
                 ERROR("xmlNewChild() failed for 'objective'");
+                return rc;
+            }
+            if (xmlNewChild(p->iters.node, NULL,
+                            BAD_CAST "notes",
+                            BAD_CAST "") == NULL)
+            {
+                ERROR("xmlNewChild() failed for 'notes'");
                 return rc;
             }
         }
