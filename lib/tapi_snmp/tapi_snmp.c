@@ -1192,7 +1192,7 @@ tapi_snmp_get_table_dimension(tapi_snmp_oid_t *table_oid, int *dimension)
     }
     if (entry_node->indexes == NULL)
     {
-        VERB("Very strange, no indices for table %s\n", oid2str(table_oid));
+        VERB("Very strange, no indices for table %s\n", print_oid(table_oid));
 	return rc;
     }	    
 
@@ -1239,7 +1239,7 @@ tapi_snmp_get_table_columns(tapi_snmp_oid_t *table_oid, tapi_snmp_var_access **c
     }
     if (entry_node->indexes == NULL)
     {
-        VERB("Very strange, cannot find entry for table %s\n", oid2str(table_oid));
+        VERB("Very strange, cannot find entry for table %s\n", print_oid(table_oid));
 	return rc;
     }	    
 
@@ -1248,7 +1248,7 @@ tapi_snmp_get_table_columns(tapi_snmp_oid_t *table_oid, tapi_snmp_var_access **c
         /* strange, node with indexes without children! */
         return TE_RC(TE_TAPI, 1);
     }
-
+    VERB("Table leaves:   \n");
     for (entry_node = entry_node->child_list; entry_node; entry_node = entry_node->next_peer)
     {
         columns_p = (tapi_snmp_var_access *)calloc(1, sizeof(tapi_snmp_var_access));
@@ -1260,6 +1260,7 @@ tapi_snmp_get_table_columns(tapi_snmp_oid_t *table_oid, tapi_snmp_var_access **c
 	if (rc)
 	    return TE_RC(TE_TAPI, rc);	
 	columns_p->access = entry_node->access;
+	VERB("    %s, %s", columns_p->label, print_oid(&(columns_p->oid)));
 	columns_p->next = *columns;
 	*columns = columns_p;
     } 	
@@ -1504,7 +1505,7 @@ tapi_snmp_load_mib_with_path(const char *dir_path, const char *mib_file)
     char *full_path;
     int   dir_path_len;
     int   mib_file_len;
-    
+
     if (!snmp_lib_initialized)
     {
         init_snmp("");
