@@ -135,16 +135,30 @@ ds_config_touch(int index)
  * @return status code
  */
 int
-ds_create_backup(char *dir, char *name, int *index)
+ds_create_backup(const char *dir, const char *name, int *index)
 {
+    const char *filename;
+
+    if (name == NULL)
+    {
+        ERROR("%s(): Invalid parameter", __FUNCTION__);
+        return TE_RC(TE_TA_LINUX, ENOMEM);
+    }
+
+    filename = strrchr(name, '/');
+    if (filename == NULL)
+        filename = name;
+    else
+        filename++;
+
     if (n_ds == sizeof(ds) / sizeof(ds[0]))          
     {                                                              
         WARN("Too many services of xinetd are registered\n");     
         return TE_RC(TE_TA_LINUX, EMFILE);                         
     }
-    sprintf(buf, TE_TMP_PATH"%s"TE_TMP_BKP_SUFFIX, name);
+    sprintf(buf, TE_TMP_PATH"%s"TE_TMP_BKP_SUFFIX, filename);
     ds[n_ds].backup = strdup(buf);
-    sprintf(buf, "%s%s", dir, name);
+    sprintf(buf, "%s%s", dir ? : "", name);
     ds[n_ds].config_file = strdup(buf);
     ds[n_ds].changed = FALSE; 
     
@@ -2096,7 +2110,6 @@ linuxconf_daemons_init(rcf_pch_cfg_object **last)
 #ifdef WITH_DNS_SERVER
     ds_init_dns_server(last);
 #endif /* WITH_DMS_SERVER */
-
 
     DS_REGISTER(sshd);
 

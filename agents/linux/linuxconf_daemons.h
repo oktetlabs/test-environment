@@ -127,7 +127,7 @@ file_exists(char *file)
  *
  * @return Status code
  */
-extern int ds_create_backup(char *dir, char *name, int *index);
+extern int ds_create_backup(const char *dir, const char *name, int *index);
 
 /** Restore initial state of the services */
 extern void ds_restore_backup();
