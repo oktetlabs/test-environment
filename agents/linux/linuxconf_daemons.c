@@ -105,12 +105,14 @@ file_exists(char *file)
 
 /* Array of service names */
 struct {
-    char *config_file;
-    char *backup;
+    char   *config_file;
+    char   *backup;
+    te_bool changed;
 } services[LINUX_SERVICE_MAX];
 
 #define SERVICE_CONFIG(_index)  services[_index].config_file
 #define SERVICE_BACKUP(_index)  services[_index].backup
+#define SERVICE_CHANGED(_index) services[_index].changed
 
 /* Open backup for reading */
 #define OPEN_BACKUP(_index, _f) \
@@ -161,6 +163,7 @@ create_backup(char *dir, char *name, int *index)
     SERVICE_BACKUP(n_serv) = strdup(buf);
     sprintf(buf, "%s%s", dir, name);
     SERVICE_CONFIG(n_serv) = strdup(buf);
+    SERVICE_CHANGED(n_serv) = FALSE; 
     
     if (SERVICE_BACKUP(n_serv) == NULL || 
         SERVICE_CONFIG(n_serv) == NULL)
@@ -191,8 +194,15 @@ restore_backup()
 
     for (i = 0; i < n_serv; i++)
     {
-        sprintf(buf, "mv %s %s >/dev/null 2>&1", 
-                SERVICE_BACKUP(i), SERVICE_CONFIG(i));
+        if (SERVICE_CHANGED(i))
+        {
+            sprintf(buf, "mv %s %s >/dev/null 2>&1", 
+                    SERVICE_BACKUP(i), SERVICE_CONFIG(i));
+        }
+        else
+        {
+            sprintf(buf, "rm %s >/dev/null 2>&1", SERVICE_BACKUP(i));
+        }
         ta_system(buf);
         free(SERVICE_BACKUP(i));
         free(SERVICE_CONFIG(i));
@@ -2621,6 +2631,8 @@ tftp_server_init()
 {
     FILE *f = NULL;
     FILE *g = NULL;
+    
+    SERVICE_CHANGED(tftp_index) = TRUE;
 
     /* Set -v option to tftp */
     OPEN_BACKUP(tftp_index, f);
@@ -2770,6 +2782,7 @@ ftp_server_init(void)
         return rc;
 
     /* Enable anonymous upload for ftp */
+    SERVICE_CHANGED(ftp_index) = TRUE;
     OPEN_BACKUP(ftp_index, f);
     OPEN_CONFIG(ftp_index, g);
 
@@ -3155,8 +3168,11 @@ smtp_init()
 static void
 smtp_shutdown()
 {
-    if (file_exists(SENDMAIL_CONF_DIR))
-        ta_system("cd " SENDMAIL_CONF_DIR "; make");
+    if (SERVICE_CHANGED(sendmail_index))
+    {
+        if (file_exists(SENDMAIL_CONF_DIR))
+            ta_system("cd " SENDMAIL_CONF_DIR "; make");
+    }
     if (smtp_current != NULL)
         daemon_set(0, smtp_current, "0");
     if (smtp_initial != NULL)
@@ -3239,6 +3255,7 @@ sendmail_smarthost_set(te_bool enable)
         return ENOENT;
     }
     
+    SERVICE_CHANGED(sendmail_index) = TRUE;
     OPEN_BACKUP(sendmail_index, f);
     OPEN_CONFIG(sendmail_index, g);
 
