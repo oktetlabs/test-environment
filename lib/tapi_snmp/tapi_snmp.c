@@ -1423,7 +1423,8 @@ tapi_snmp_get(const char *ta, int sid, int csap_id,
             tapi_snmp_copy_varbind(varbind, msg.vars);
             tapi_snmp_free_message(&msg);
         }
-        else if (errstatus) 
+
+        if (errstatus) 
             *errstatus = msg.err_status;
     }
 
