@@ -1181,11 +1181,137 @@ tapi_cfg_free_entry(cfg_handle *entry)
     return rc;
 }
 
-
 /* See the description in tapi_cfg.h */
 int
-tapi_cfg_alloc_ip4_addr(cfg_handle ip4_net, cfg_handle *p_entry,
-                        struct sockaddr_in **addr)
+tapi_cfg_add_ip4_net(struct sockaddr_in *ip4_net_addr, int prefix, 
+                     int state, cfg_handle *entry)
+{
+    int        rc;
+    cfg_handle pool;
+    cfg_handle net;
+    cfg_handle handle;
+    char       buf[INET_ADDRSTRLEN];
+    char       oid[64];
+    struct sockaddr_in addr;
+
+    *entry = CFG_HANDLE_INVALID;
+    rc = cfg_find_str("/ip4_net_pool:", &pool);
+    if (rc != 0)
+    {
+        ERROR("%s: Failed to find /ip4_net_pool instance: %X",
+              __FUNCTION__, rc);
+        return rc;
+    }
+
+    memcpy(&addr, ip4_net_addr, sizeof(addr));
+    addr.sin_addr.s_addr = htonl(ntohl(addr.sin_addr.s_addr)
+                                       & PREFIX2MASK(prefix));
+    inet_ntop(addr.sin_family, &addr.sin_addr, buf, sizeof(buf));
+
+    /* Check for interference with existing nets in the pool */
+    for (rc = cfg_get_son(pool, &net);
+         rc == 0 && net != CFG_HANDLE_INVALID;
+         rc = cfg_get_brother(net, &net))
+    {
+        cfg_val_type        val_type;
+        char               *net_oid;
+        struct sockaddr_in *net_addr;
+        int                 net_prefix;
+        struct in_addr      net_mask;
+
+        rc = cfg_get_inst_name_type(net, CVT_ADDRESS, 
+                                    (cfg_inst_val *)&net_addr);
+        if (rc != 0)
+        {
+            ERROR("%s: Cannot get pool net name by handle 0x%x "
+                  "as address: %X", __FUNCTION__, net, rc);
+            return rc;
+        }
+        rc = cfg_get_oid_str(net, &net_oid);
+        if (rc != 0)
+        {
+            ERROR("%s: Cannot get pool net OID by handle 0x%x: %X",
+                  __FUNCTION__, net, rc);
+            free(net_addr);
+            return rc;
+        }
+        val_type = CVT_INTEGER;
+        rc = cfg_get_instance_fmt(&val_type, &net_prefix,
+                                  "%s/prefix:", net_oid);
+        if (rc != 0)
+        {
+            ERROR("%s: Cannot get pool net prefix for %s: %X",
+                  __FUNCTION__, net_oid, rc);
+            free(net_addr);
+            free(net_oid);
+            return rc;
+        }
+        
+        /* Compare net from pool with net to be added */
+        net_mask.s_addr = htonl(PREFIX2MASK(net_prefix < prefix ? 
+                                            net_prefix : prefix));
+        if ((net_addr->sin_addr.s_addr & net_mask.s_addr) ==
+            (addr.sin_addr.s_addr & net_mask.s_addr))
+        {
+            ERROR("%s: Cannot add network %s/%d to pool: it interferes "
+                  "with %s", __FUNCTION__, buf, prefix, net_oid);
+            free(net_addr);
+            free(net_oid);
+            return EEXIST;
+        }
+
+        free(net_addr);
+        free(net_oid);
+    }
+
+    /* Add new entry to the pool */
+    snprintf(oid, sizeof(oid), "/ip4_net_pool:/entry:%s", buf);
+    rc = cfg_add_instance_str(oid, &net, CVT_INTEGER, (void *)state);
+    if (rc != 0)
+    {
+        ERROR("%s: Failed to add %s to the pool: %X",
+              __FUNCTION__, oid, rc);
+        return rc;
+    }
+    rc = cfg_add_instance_fmt(&handle, CVT_INTEGER, (void *)prefix,
+                              "%s/prefix:", oid);
+    if (rc != 0)
+    {
+        ERROR("%s: Failed to add %s/prefix to the pool: %X",
+              __FUNCTION__, oid, rc);
+        return rc;
+    }
+    rc = cfg_add_instance_fmt(&handle, CVT_INTEGER, (void *)0,
+                              "%s/n_entries:", oid);
+    if (rc != 0)
+    {
+        ERROR("%s: Failed to add %s/n_instance to the pool: %X",
+              __FUNCTION__, oid, rc);
+        return rc;
+    }
+
+    *entry = net;
+    RING("Network %s/%d is added to the pool", buf, prefix);
+
+    return 0;
+}
+
+/**
+ * Internal implementation of tapi_cfg_add_ip4_addr() and
+ * tapi_cfg_alloc_ip4_addr(). Add new entry in IPv4 subnet
+ * from IPv4 subnets pool.
+ *
+ * @param ip4_net       IPv4 subnet handle
+ * @param ip4_addr      IPv4 address to add or NULL to allocate any
+ *                      free address from pool
+ * @param p_entry       Location for Cfgr handle of new entry
+ * @param addr          Location for added address
+ *
+ * @return Status code.
+ */
+static int
+tapi_cfg_insert_ip4_addr(cfg_handle ip4_net, struct sockaddr_in *ip4_addr,
+                         cfg_handle *p_entry, struct sockaddr_in **addr)
 {
     int             rc;
     char           *ip4_net_oid;
@@ -1196,6 +1322,7 @@ tapi_cfg_alloc_ip4_addr(cfg_handle ip4_net, cfg_handle *p_entry,
     cfg_val_type    val_type;
     int             prefix;
     char            buf[INET_ADDRSTRLEN];
+    int             entry_state;
 
 
     rc = cfg_get_oid_str(ip4_net, &ip4_net_oid);
@@ -1310,16 +1437,6 @@ tapi_cfg_alloc_ip4_addr(cfg_handle ip4_net, cfg_handle *p_entry,
         return TE_RC(TE_TAPI, ENOENT);
     }
 
-    /* Update number of entries ASAP */
-    rc = cfg_set_instance(n_entries_hndl, CVT_INTEGER, n_entries);
-    if (rc != 0)
-    {
-        ERROR("Failed to get number of entries in the pool: %X",
-              rc);
-        free(ip4_net_oid);
-        return rc;
-    }
-
     /* Get subnet address */
     rc = cfg_get_inst_name_type(ip4_net, CVT_ADDRESS,
                                 (cfg_inst_val *)addr);
@@ -1331,15 +1448,56 @@ tapi_cfg_alloc_ip4_addr(cfg_handle ip4_net, cfg_handle *p_entry,
         return rc;
     }
 
-    /* Make address from subnet address */
-    (*addr)->sin_addr.s_addr =
-        htonl(ntohl((*addr)->sin_addr.s_addr) + n_entries);
+    if (ip4_addr == NULL)
+    {
+        /* Dynamic allocation of IP */
+        /* TODO: Optimize free address search */
+        do
+        {
+            /* Make address from subnet address */
+            (*addr)->sin_addr.s_addr =
+                htonl(ntohl((*addr)->sin_addr.s_addr) + 1);
+            inet_ntop(AF_INET, &(*addr)->sin_addr, buf, sizeof(buf));
+
+            /* Check if the entry already exists */
+            val_type = CVT_INTEGER;
+            rc = cfg_get_instance_fmt(&val_type, &entry_state,
+                                      "%s/pool:/entry:%s",
+                                      ip4_net_oid, buf);
+        } while (rc == 0);
+    }
+    else
+    {
+        /* Insert predefined IP */
+        uint32_t    mask = PREFIX2MASK(prefix);
+
+        inet_ntop(AF_INET, &ip4_addr->sin_addr, buf, sizeof(buf));
+        if ((ntohl(ip4_addr->sin_addr.s_addr) & mask) !=
+            (ntohl((*addr)->sin_addr.s_addr) & mask))
+        {
+            ERROR("Cannot add address %s to '%s': does not fit",
+                  buf, ip4_net_oid);
+            free(ip4_net_oid);
+            return EINVAL;
+        }
+        
+        /* Check if the entry already exists */
+        val_type = CVT_INTEGER;
+        rc = cfg_get_instance_fmt(&val_type, &entry_state,
+                                  "%s/pool:/entry:%s", ip4_net_oid, buf);
+    }
+
+    if (TE_RC_GET_ERROR(rc) != ENOENT)
+    {
+        ERROR("Failed to get '%s/pool:/entry:%s' instance while "
+              "checking for free address: %X", ip4_net_oid, buf, rc);
+        free(ip4_net_oid);
+        return rc;
+    }
 
     /* Add used entry in the pool */
     rc = cfg_add_instance_fmt(&entry, CVT_INTEGER, (void *)1,
-                              "%s/pool:/entry:%s", ip4_net_oid,
-                              inet_ntop(AF_INET, &(*addr)->sin_addr,
-                                        buf, sizeof(buf)));
+                              "%s/pool:/entry:%s", ip4_net_oid, buf);
     if (rc != 0)
     {
         ERROR("Failed to add entry in IPv4 subnet pool '%s': %X",
@@ -1347,10 +1505,43 @@ tapi_cfg_alloc_ip4_addr(cfg_handle ip4_net, cfg_handle *p_entry,
         free(ip4_net_oid);
         return rc;
     }
+
+    /* Update number of entries ASAP */
+    rc = cfg_set_instance(n_entries_hndl, CVT_INTEGER, n_entries);
+    if (rc != 0)
+    {
+        ERROR("Failed to get number of entries in the pool: %X",
+              rc);
+        free(ip4_net_oid);
+        return rc;
+    }
+    RING("Address %s is added to pool entry '%s'", buf, ip4_net_oid);
     free(ip4_net_oid);
 
     if (p_entry != NULL)
         *p_entry = entry;
 
     return 0;
+}
+
+/* See the description in tapi_cfg.h */
+int
+tapi_cfg_add_ip4_addr(cfg_handle ip4_net, struct sockaddr_in *ip4_addr,
+                      cfg_handle *p_entry)
+{
+    int rc;
+    struct sockaddr_in *addr = NULL;
+    
+    rc = tapi_cfg_insert_ip4_addr(ip4_net, ip4_addr, p_entry, &addr);
+    free(addr);
+
+    return rc;
+}
+
+/* See the description in tapi_cfg.h */
+int
+tapi_cfg_alloc_ip4_addr(cfg_handle ip4_net, cfg_handle *p_entry,
+                        struct sockaddr_in **addr)
+{
+    return tapi_cfg_insert_ip4_addr(ip4_net, NULL, p_entry, addr);
 }

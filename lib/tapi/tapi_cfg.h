@@ -336,6 +336,20 @@ tapi_cfg_alloc_ip4_net(cfg_handle *entry)
 }
 
 /**
+ * Add entry to IPv4 subnets pool.
+ *
+ * @param ip4_net_addr  Network address (or any network node address)
+ * @param prefix        Network address prefix
+ * @param state         Pool entry initial state (0 or 1)
+ * @param entry         Location for Cfgr handle of new entry
+ *
+ * @return Status code.
+ */
+extern int
+tapi_cfg_add_ip4_net(struct sockaddr_in *ip4_net_addr, int prefix,
+                             int state, cfg_handle *entry);
+
+/**
  * Allocate IPv4 address from IPv4 subnet got from IPv4 subnets pool.
  *
  * @param ip4_net       IPv4 subnet handle
@@ -352,6 +366,18 @@ extern int tapi_cfg_alloc_ip4_addr(cfg_handle           ip4_net,
                                    cfg_handle          *p_entry,
                                    struct sockaddr_in **addr);
 
+/**
+ * Add IPv4 address to IPv4 subnet from IPv4 subnets pool.
+ *
+ * @param ip4_net       IPv4 subnet handle
+ * @param ip4_addr      IPv4 address to add in pool
+ * @param p_entry       Location for Cfgr handle of new entry
+ *
+ * @return Status code.
+ */
+extern int tapi_cfg_add_ip4_addr(cfg_handle           ip4_net,
+                                 struct sockaddr_in  *ip4_addr,
+                                 cfg_handle          *p_entry);
 
 #ifdef __cplusplus
 } /* extern "C" */
