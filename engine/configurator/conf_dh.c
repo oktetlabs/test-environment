@@ -614,6 +614,7 @@ cfg_dh_restore_backup(char *filename)
     cfg_dh_entry *prev;
     
     int rc;
+    int result = 0;
 
     cfg_dh_optimize();
     
@@ -638,22 +639,21 @@ cfg_dh_restore_backup(char *filename)
                 
             case CFG_ADD:
             {
-               cfg_del_msg msg = { CFG_DEL, sizeof(msg), 0, 0};
-               cfg_msg    *p_msg = (cfg_msg *)&msg;
+                cfg_del_msg msg = { CFG_DEL, sizeof(msg), 0, 0};
+                cfg_msg    *p_msg = (cfg_msg *)&msg;
                
-               rc = cfg_db_find((char *)(tmp->cmd) + 
-                                ((cfg_add_msg *)(tmp->cmd))->oid_offset, 
-                                &(msg.handle));
+                rc = cfg_db_find((char *)(tmp->cmd) + 
+                                 ((cfg_add_msg *)(tmp->cmd))->oid_offset, 
+                                 &(msg.handle));
                
-               if (rc != 0)
-                   return rc;
+                if (rc != 0)
+                    return rc;
                
-               cfg_process_msg(&p_msg, FALSE);
+                cfg_process_msg(&p_msg, FALSE);
                
-               if (msg.rc != 0)
-                   return msg.rc;
-               
-               break;
+                if (msg.rc != 0)
+                    RC_UPDATE(result, msg.rc);
+                break;
             }
                 
             case CFG_SET:
@@ -681,7 +681,7 @@ cfg_dh_restore_backup(char *filename)
                 rc = msg->rc;
                 free(msg);
                 if (rc != 0)
-                    return rc;
+                    RC_UPDATE(result, rc);
                 break;
             }
                 
@@ -709,7 +709,7 @@ cfg_dh_restore_backup(char *filename)
                 rc = msg->rc;
                 free(msg);
                 if (rc != 0)
-                    return rc;
+                    RC_UPDATE(result, rc);
                 break;
             }
         }
@@ -720,7 +720,7 @@ cfg_dh_restore_backup(char *filename)
     }
     if (limit == NULL)
         first = NULL;
-    return 0;
+    return result;
 }
 
 /**
