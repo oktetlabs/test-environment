@@ -1619,7 +1619,7 @@ arp_add(unsigned int gid, const char *oid, const char *value,
 
     return 0;
 #else
-    return EOPNOTSUPP;
+    return TE_RC(TE_TA_LINUX, EOPNOTSUPP);
 #endif 
 }
 
@@ -1655,7 +1655,7 @@ arp_del(unsigned int gid, const char *oid, const char *addr)
 
     return 0;
 #else
-    return EOPNOTSUPP;
+    return TE_RC(TE_TA_LINUX, EOPNOTSUPP);
 #endif 
 }
 
