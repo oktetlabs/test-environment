@@ -241,7 +241,9 @@ remove_excessive(cfg_instance *inst, char *list)
     if (strcmp(inst->obj->subid, "agent") == 0)
         return;
 
-    for (s = strstr(list, inst->oid); s != NULL; s = strstr(s + 1, inst->oid))
+    for (s = strstr(list, inst->oid);
+         s != NULL;
+         s = strstr(s + 1, inst->oid))
     {
         if (*(s + len) == ' ' || *(s + len) == 0)
             break;
@@ -416,8 +418,10 @@ cfg_ta_sync(char *oid, te_bool subtree)
     {
         char *ta = ((cfg_inst_subid *)(tmp_oid->ids))[1].name;
 
-        if (strcmp(((cfg_inst_subid *)(tmp_oid->ids))[1].subid, "agent") == 0)
-            rc = subtree ? sync_ta_subtree(ta, oid) : sync_ta_instance(ta, oid);
+        if (strcmp(((cfg_inst_subid *)(tmp_oid->ids))[1].subid,
+                   "agent") == 0)
+            rc = subtree ? sync_ta_subtree(ta, oid) :
+                           sync_ta_instance(ta, oid);
     }
     cfg_free_oid(tmp_oid);
 

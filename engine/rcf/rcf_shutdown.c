@@ -75,7 +75,8 @@ main(void)
     msg.opcode = RCFOP_SHUTDOWN;
 
     rc = ipc_send_message_with_answer(handle, RCF_SERVER, (char *)&msg,
-                                      sizeof(rcf_msg), (char *)&msg, &anslen);
+                                      sizeof(rcf_msg), (char *)&msg,
+                                      &anslen);
     if (rc != 0)
     {
         fprintf(stderr, "RCF shut down failed\n");

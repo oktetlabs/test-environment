@@ -81,7 +81,8 @@ main(int argc, char **argv)
     strcpy(msg.ta, argv[1]);
 
     rc = ipc_send_message_with_answer(handle, RCF_SERVER, (char *)&msg,
-                                      sizeof(rcf_msg), (char *)&msg, &anslen);
+                                      sizeof(rcf_msg), (char *)&msg,
+                                      &anslen);
     if (rc != 0)
     {
         fprintf(stderr, "RCF shut down failed\n");

@@ -28,7 +28,7 @@
  *
  * $Id$
  */
- 
+
 #include "logger_internal.h"
 
 #ifndef UNUSED
@@ -86,7 +86,7 @@ lgr_insert_filter(const char *entity, const char* rexp, uint32_t type)
             return;
         }
         te_el = te_el->next;
-    }    
+    }
 
     te_el = (te_inst *)malloc(sizeof(struct te_inst));
     memset(te_el, 0, sizeof(struct te_inst));
@@ -99,32 +99,32 @@ lgr_insert_filter(const char *entity, const char* rexp, uint32_t type)
 
 
 /**
- * User call back called when an opening tag has been processed. 
+ * User call back called when an opening tag has been processed.
  *
  * @param  name  Element name
  * @param  ctxt  XML parser context
  */
 static void
-startElementLGR(void *ctx ATTRIBUTE_UNUSED, 
-                const xmlChar *name, 
+startElementLGR(void *ctx ATTRIBUTE_UNUSED,
+                const xmlChar *name,
                 const xmlChar **atts)
 {
-    ta_inst *tmp_el;            
+    ta_inst *tmp_el;
 
-    UNUSED(ctx);   
- 
-    if (!strcmp(name, "polling") && 
-        (atts != NULL) && 
-        (atts[0] != NULL) && 
+    UNUSED(ctx);
+
+    if (!strcmp(name, "polling") &&
+        (atts != NULL) &&
+        (atts[0] != NULL) &&
         (atts[1] != NULL))
     {
         /* Get default polling value and assign it to the all TA */
         if (!strcmp(atts[0], "default"))
         {
             uint32_t dft;
-        
+
             dft = (uint32_t)strtoul(atts[1], NULL, 0);
-            
+
             tmp_el = ta_list;
             while (tmp_el != NULL)
             {
@@ -133,47 +133,47 @@ startElementLGR(void *ctx ATTRIBUTE_UNUSED,
             }
         }
     }
-    else if (!strcmp(name, "type") && 
+    else if (!strcmp(name, "type") &&
              (atts != NULL) &&
              (atts[0] != NULL) &&
-             (atts[1] != NULL) && 
+             (atts[1] != NULL) &&
              (atts[2] != NULL) &&
              (atts[3] != NULL))
     {
-        /* 
-         * Get polling value for separate TA type 
-         * and assign it to the appropriate TA 
-         */    
+        /*
+         * Get polling value for separate TA type
+         * and assign it to the appropriate TA
+         */
         if (!strcmp(atts[0], "type") &&
             !strcmp(atts[2], "value"))
-        { 
+        {
             uint32_t    val;
-            regmatch_t  pmatch[1];              
+            regmatch_t  pmatch[1];
             regex_t    *cmp_buffer;
-            uint32_t   str_len; 
+            uint32_t   str_len;
 
-            memset(pmatch,0, sizeof(regmatch_t)); 
+            memset(pmatch,0, sizeof(regmatch_t));
             cmp_buffer = (regex_t *)malloc(sizeof(*cmp_buffer));
-            memset(cmp_buffer, 0, sizeof(cmp_buffer));            
+            memset(cmp_buffer, 0, sizeof(cmp_buffer));
 
             val = (uint32_t)strtoul(atts[3], NULL, 0);
             if (regcomp(cmp_buffer, atts[1], REG_EXTENDED) != 0 )
             {
                 ERROR("RegExpr compilation failure\n");
                 return;
-            }             
-            
+            }
+
             tmp_el = ta_list;
             while (tmp_el != NULL)
             {
-                regmatch_t pmatch[1];       
+                regmatch_t pmatch[1];
 
                 if (regexec(cmp_buffer, tmp_el->type, 1, pmatch, 0) == 0)
                 {
-                    str_len = strlen(tmp_el->type);                                             
+                    str_len = strlen(tmp_el->type);
                     if ((str_len - (pmatch->rm_eo - pmatch->rm_so) == 0))
-                        tmp_el->polling = val;                   
-        
+                        tmp_el->polling = val;
+
                 }
                 tmp_el = tmp_el->next;
             }
@@ -183,12 +183,12 @@ startElementLGR(void *ctx ATTRIBUTE_UNUSED,
     else if (!strcmp(name, "agent") &&
              (atts != NULL) &&
              (atts[0] != NULL) &&
-             (atts[1] != NULL) && 
+             (atts[1] != NULL) &&
              (atts[2] != NULL) &&
              (atts[3] != NULL))
     {
-        /* Get polling value for separate TA and assign it */        
-        if (!strcmp(atts[0], "agent") && 
+        /* Get polling value for separate TA and assign it */
+        if (!strcmp(atts[0], "agent") &&
             !strcmp(atts[2], "value"))
         {
 
@@ -207,7 +207,7 @@ startElementLGR(void *ctx ATTRIBUTE_UNUSED,
     else if (!strcmp(name, "include") &&
              (atts != NULL) &&
              (atts[0] != NULL) &&
-             (atts[1] != NULL) && 
+             (atts[1] != NULL) &&
              (atts[2] != NULL) &&
              (atts[3] != NULL))
     {
@@ -216,13 +216,13 @@ startElementLGR(void *ctx ATTRIBUTE_UNUSED,
     else if (!strcmp(name, "exclude") &&
              (atts != NULL) &&
              (atts[0] != NULL) &&
-             (atts[1] != NULL) && 
+             (atts[1] != NULL) &&
              (atts[2] != NULL) &&
              (atts[3] != NULL))
     {
         lgr_insert_filter(atts[1], atts[3], LGR_EXCLUDE);
-    } 
-} 
+    }
+}
 
 xmlSAXHandler loggerSAXHandlerStruct = {
     NULL, /*internalSubsetLGR*/
@@ -266,7 +266,7 @@ xmlSAXHandlerPtr loggerSAXHandler = &loggerSAXHandlerStruct;
  * Parse logger configuration file.
  *
  * @param file_name     - XML configuration file full name
- * 
+ *
  * @return Status information
  *
  * @retval 0            Success.
@@ -276,9 +276,9 @@ int
 configParser(const char *file_name)
 {
     int res = 0;
-    
+
     res = xmlSAXUserParseFile(loggerSAXHandler, NULL, file_name);
     xmlCleanupParser();
     xmlMemoryDump();
-    return res;  
+    return res;
 }

@@ -142,7 +142,8 @@ typedef struct test_var_arg_attrs {
     te_bool             random;     /**< Random or strict values usage */
     test_var_arg_type  *type;       /**< Pointer to type descriptor */
     char               *list;       /**< Name of the iteration list */
-    test_var_arg_value *preferred;  /**< Preferred value for list iteration */
+    test_var_arg_value *preferred;  /**< Preferred value for list 
+                                         iteration */
     unsigned int        flags;      /**< TEST_RANDOM_SPECIFIED */
 } test_var_arg_attrs;
 
@@ -278,7 +279,8 @@ typedef struct tester_cfg {
                                              configuration */
     persons_info        maintainers;    /**< Configuration maintainers */
     char               *descr;          /**< Optional description */
-    test_suites_info    suites;         /**< Information about test suites */
+    test_suites_info    suites;         /**< Information about test
+                                             suites */
     test_requirements   reqs;           /**< List of target requirements */
     test_options        options;        /**< List of options */
     run_items           runs;           /**< List of items to run */

@@ -14,7 +14,8 @@ noinst_HEADERS = internal.h reqs.h run_path.h tester_flags.h test_params.h \
 bin_PROGRAMS = te_tester
 
 
-te_tester_SOURCES = tester.c parse.c run.c run_path.c reqs.c term_out.c iters.c
+te_tester_SOURCES = tester.c parse.c run.c run_path.c reqs.c term_out.c \
+                    iters.c
 
 te_tester_LDADD = @TE_LDADD@ -lbsapi -lconfapi -lconf_oid -llogger_ten \
                   -lipc -lpopt -lpthread

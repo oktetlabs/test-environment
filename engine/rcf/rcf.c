@@ -88,7 +88,9 @@
 #include "logger_api.h"
 #include "logger_ten.h"
 
-#define RCF_SELECT_TIMEOUT      1   /**< Default select timeout in seconds */
+
+#define RCF_SELECT_TIMEOUT      1   /**< Default select timeout
+                                         in seconds */
 #define RCF_REBOOT_TIMEOUT      60  /**< TA reboot timeout in seconds */
 #define RCF_SHUTDOWN_TIMEOUT    5   /**< TA shutdown timeout in seconds */
 
@@ -103,7 +105,8 @@
  *     reboot_num++; ta.reboot_timestamp = time(NULL);
  *     wait until time() - ta.reboot_timestamp > RCF_REBOOT_TIMESTAMP or
  *     response from TA is received;
- *     (if other reboot requests from user are received, reply EINPROGRESS).
+ *     (if other reboot requests from user are received
+ *     reply EINPROGRESS).
  *     reboot_num--; ta.reboot_timestamp = 0;
  *
  *     If the agent is not proxy or timeout occurred:
@@ -121,8 +124,8 @@
  * RCF shutdown:
  *     send a shutdown command to TA with first free SID to all Test Aents;
  *     shutdown_num = ta_num;
- *     wait until time(NULL) - ta.reboot_timestamp > RCF_SHUTDOWN_TIMESTAMP or
- *     response from all TA is received (set flag TA_DOWN and decriment
+ *     wait until time(NULL) - ta.reboot_timestamp > RCF_SHUTDOWN_TIMESTAMP
+ *     or response from all TA is received (set flag TA_DOWN and decriment
  *     shutdown_num every time when response is received);
  *     for all TA with TA_DOWN flag clear ta.reboot();
  *     response to all sent and pending requests (EIO);
@@ -146,13 +149,14 @@ typedef struct usrreq {
 /** Structure for one Test Agent */
 typedef struct ta {
     struct ta          *next;               /**< Link to the next TA */
-    rcf_talib_handle    handle;             /**< Test Agent handle returted by 
-                                                 start() method */
+    rcf_talib_handle    handle;             /**< Test Agent handle returted
+                                                 by start() method */
     char               *name;               /**< Test Agent name */
     char               *type;               /**< Test Agent type */
     te_bool             enable_synch_time;  /**< Enable synchronize time */ 
     char               *conf;               /**< Configuration string */
-    usrreq              sent;               /**< User requests sent to the TA */
+    usrreq              sent;               /**< User requests sent
+                                                 to the TA */
     usrreq              pending;            /**< Pending user requests */
     int                 flags;              /**< Test Agent flags */
     int                 reboot_timestamp;   /**< Time of reboot command
@@ -274,7 +278,8 @@ find_user_request(usrreq *req, int sid)
 }
 
 /**
- * Load shared library to control the Test Agent and resolve method routines.
+ * Load shared library to control the Test Agent and resolve method
+ * routines.
  *
  * @param agent         Test Agent structure
  * @param libname       name of the shared library (without "lib" prefix)
@@ -640,7 +645,8 @@ check_reboot()
         {
             usrreq *req;
             for (req = agent->sent.next;
-                 req != &(agent->sent) && req->message->opcode != RCFOP_REBOOT;
+                 req != &(agent->sent) &&
+                     req->message->opcode != RCFOP_REBOOT;
                  req = req->next);
             return force_reboot(agent, req);
         }
@@ -708,8 +714,8 @@ save_attachment(ta *agent, rcf_msg *msg, size_t cmdlen, char *ba)
         rc = (agent->receive)(agent->handle, cmd, &maxlen, NULL);
         if (rc != 0 && rc != ETEPENDING)
         {
-            ERROR("failed receive rest of binary attachment TA %s - cutting\n",
-                  agent->name);
+            ERROR("Failed receive rest of binary attachment TA %s - "
+                  "cutting\n", agent->name);
 
             if (file >= 0)
                 close(file);
@@ -723,8 +729,8 @@ save_attachment(ta *agent, rcf_msg *msg, size_t cmdlen, char *ba)
          * size_t is painless.
          */
         if (file > 0 &&
-            write(file, cmd,
-                  ((size_t)len < sizeof(cmd)) ? (size_t)len : sizeof(cmd)) < 0)
+            write(file, cmd, ((size_t)len < sizeof(cmd)) ?
+                                 (size_t)len : sizeof(cmd)) < 0)
         {
             ERROR("cannot write to file %s errno %d - skipping\n",
                       msg->file, errno);
@@ -850,8 +856,8 @@ read_str(char **ptr, char *s)
         if (tmp - s == RCF_MAX_VAL - 1)
         {
             cut = 1;
-            ERROR(
-                "too long string value is received  in the answer - cutting\n");
+            ERROR("Too long string value is received in the answer - "
+                  "cutting\n");
         }
     }
 
@@ -999,8 +1005,8 @@ process_reply(ta *agent)
 
     if (error == 0 ||
         /*
-         * In case of TRRECV_STOP and TRRECV_WAIT we should get actual number
-         * of received packets.
+         * In case of TRRECV_STOP and TRRECV_WAIT we should get actual
+         * number of received packets.
          */
         msg->opcode == RCFOP_TRRECV_STOP ||
         msg->opcode == RCFOP_TRRECV_WAIT)
@@ -1258,7 +1264,8 @@ send_cmd(ta *agent, usrreq *req)
 {
     rcf_msg *msg = req->message;
 
-    sprintf(cmd, "SID %d ", msg->opcode == RCFOP_GET_LOG ? LOG_SID : msg->sid);
+    sprintf(cmd, "SID %d ",
+            msg->opcode == RCFOP_GET_LOG ? LOG_SID : msg->sid);
     switch (msg->opcode)
     {
         case RCFOP_REBOOT:
@@ -1375,8 +1382,8 @@ send_cmd(ta *agent, usrreq *req)
 
         case RCFOP_TRRECV_STOP:
         case RCFOP_TRRECV_GET:
-            strcat(cmd, msg->opcode == RCFOP_TRRECV_STOP ? TE_PROTO_TRRECV_STOP
-                                                         : TE_PROTO_TRRECV_GET);
+            strcat(cmd, msg->opcode == RCFOP_TRRECV_STOP ?
+                            TE_PROTO_TRRECV_STOP : TE_PROTO_TRRECV_GET);
             sprintf(cmd + strlen(cmd), " %u", msg->handle);
             break;
 

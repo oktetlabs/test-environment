@@ -18,8 +18,10 @@ te_stdouterr_DEPENDENCIES=@TE_DEPENDENCIES@ \
 mybindir=$(prefix)/bin
 dist_mybin_SCRIPTS=te_builder_log te_create_inst_dirs \
                    te_generate_symtbl te_rpc_supported \
-                   tce_instrument_sources tce_uninstrument_sources tce_report \
+                   tce_instrument_sources tce_uninstrument_sources \
+                   tce_report \
                    te_configure_package te_cross_build \
-                   te_build_nuts te_build_nut te_build_suite te_tests_info.sh
+                   te_build_nuts te_build_nut te_build_suite \
+                   te_tests_info.sh
 
 EXTRA_DIST=builder.m4

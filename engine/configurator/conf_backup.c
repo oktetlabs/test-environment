@@ -280,9 +280,11 @@ delete_with_children(cfg_instance *inst)
 
 
 /**
- * Return all read/create instances, not mentioned in the configuration file.
+ * Return all read/create instances, not mentioned in the configuration
+ * file.
  *
- * @param root  root of subtree for which excessive entries should be removed
+ * @param root  root of subtree for which excessive entries should
+ *              be removed
  * @param list  list of instances mentioned in the configuration file
  *
  * @return status code (see te_errno.h)

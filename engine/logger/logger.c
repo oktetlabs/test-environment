@@ -1,9 +1,9 @@
 /** @file
  * @brief TE project. Logger subsystem.
- * 
- * Logger executable module. 
  *
- *  
+ * Logger executable module.
+ *
+ *
  * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
  * root directory of the distribution).
  *
@@ -51,7 +51,7 @@
 
 #define FREAD(_fd, _buf, _len) \
     fread((_buf), sizeof(char), (_len), (_fd))
-    
+
 #define SET_SEC(_poll)  ((_poll)/1000000)
 #define SET_MSEC(_poll) ((_poll)%1000000)
 
@@ -120,7 +120,7 @@ lgr_register_message(const void *buf_mess, size_t buf_len)
     if (fwrite(buf_mess, buf_len, 1, raw_file) != 1)
     {
         perror("fwrite() failure");
-    } 
+    }
     fflush(raw_file);
     pthread_mutex_unlock(&mutex);
 }
@@ -131,7 +131,7 @@ lgr_register_message(const void *buf_mess, size_t buf_len)
  * All log messages from TEN entities will be processed by
  * this routine.
  */
-static void * 
+static void *
 te_handler(void)
 {
     char                        err_buf[BUFSIZ];
@@ -161,14 +161,14 @@ te_handler(void)
             ERROR("Message receiving failure\n");
             break;
         }
-        
+
         if (strncmp((buf_mess + sizeof(te_log_nfl_t)), LGR_SHUTDOWN,
                     *(te_log_nfl_t *)buf_mess) == 0)
         {
             RING("Logger shutdown ...\n");
             break;
         }
-        else 
+        else
         {
 #if 0
             uint32_t          log_flag = LGR_INCLUDE;
@@ -187,16 +187,17 @@ te_handler(void)
                     char *tmp_pnt;
 
                     /* BUG here */
-                    len = TE_LOG_NFL_SZ + buf_mess[0] + 
+                    len = TE_LOG_NFL_SZ + buf_mess[0] +
                           LGR_UNACCOUNTED_LEN;
                     tmp_pnt = buf_mess + len + 1;
                     len = buf_mess[len];
                     memcpy(tmp_name, tmp_pnt, len);
-                    log_flag = lgr_message_filter(tmp_name, &te_el->filters);
+                    log_flag = lgr_message_filter(tmp_name,
+                                                  &te_el->filters);
                     break;
                 }
                 te_el = te_el->next;
-            }           
+            }
 
             if (log_flag == LGR_INCLUDE)
 #endif
@@ -219,7 +220,7 @@ te_handler(void)
  * This is an entry point of TA log message gatherer.
  * This routine periodically polls appropriate TA to get
  * TA local log. Besides, log is solicited if flush is requested.
- * 
+ *
  * @param  ta   Location of TA parameters.
  */
 static void *
@@ -228,8 +229,8 @@ ta_handler(void *ta)
     struct timeval      tv, tv_msg;
     char                log_file[RCF_MAX_PATH];
     ta_inst            *inst = (ta_inst *)ta;
-    FILE               *ta_file = NULL; 
-    fd_set              rfds;     
+    FILE               *ta_file = NULL;
+    fd_set              rfds;
     int                 fd_server;
     struct ipc_server  *srv;
     char                ta_srv[LGR_MAX_NAME] = LGR_SRV_FOR_TA_PREFIX;
@@ -239,7 +240,7 @@ ta_handler(void *ta)
     uint32_t            tstamp_flag = 0; /* Set if timestamp */
     uint32_t            flush_flag = 0;  /* Set if flush is detected */
 
-    strcat(ta_srv, inst->agent); 
+    strcat(ta_srv, inst->agent);
     srv = ipc_register_server(ta_srv);
     if (srv == NULL)
     {
@@ -249,7 +250,7 @@ ta_handler(void *ta)
     fd_server = ipc_get_server_fd(srv);
 
     gettimeofday(&tv, NULL);
-   
+
     while (1)
     {
         int rc;
@@ -261,13 +262,13 @@ ta_handler(void *ta)
 #if 0
         static int get_log_count = 0;
 #endif
-        
+
         /* Watch stdin (fd 0) to see when it has input. */
         FD_ZERO(&rfds);
         FD_SET(fd_server, &rfds);
 
         polling = inst->polling *1000;
-            
+
 
         if (flush_flag == 0)
         {
@@ -277,7 +278,7 @@ ta_handler(void *ta)
 
             /* calculate moment until we should wait before next get log */
             tv.tv_sec  += SET_SEC (polling);
-            tv.tv_usec += SET_MSEC(polling); 
+            tv.tv_usec += SET_MSEC(polling);
 
             if (tv.tv_usec >= 1000000)
             {
@@ -285,7 +286,10 @@ ta_handler(void *ta)
                 tv.tv_sec ++;
             }
 
-            /* calculate delay of waiting we should wait before next get log */
+            /*
+             * Calculate delay of waiting we should wait
+             * before next get log.
+             */
             if (tv.tv_sec >= cm.tv_sec)
                 delay.tv_sec  = tv.tv_sec  - cm.tv_sec;
 
@@ -295,35 +299,21 @@ ta_handler(void *ta)
             {
                 delay.tv_usec = (tv.tv_usec + 1000000) - cm.tv_usec;
                 delay.tv_sec--;
-            } 
-            cm = delay; 
+            }
+            cm = delay;
             select(FD_SETSIZE, &rfds, NULL, NULL, &delay);
 
             /* Get time for filtering incoming messages */
         }
 
         gettimeofday(&tv, NULL);
-#if 0
-        printf("Logger " 
-        "-- GET LOG fl_flag %d; before request: %d, time: %u.%u; delay %u.%u\n", 
-                flush_flag, get_log_count, tv.tv_sec, tv.tv_usec, cm.tv_sec, cm.tv_usec);
-#endif
         *log_file = 0;
         if ((rc = rcf_ta_get_log(inst->agent, log_file)) != 0)
         {
             if (rc == ETAREBOOTED)
                 continue;
-            break; 
+            break;
         }
-#if 0
-        {
-            struct timeval ltv;
-        gettimeofday(&ltv, NULL);
-        printf("Logger " "-- GET LOG after request: %d, sec %u, usec %u\n", 
-                get_log_count, ltv.tv_sec, ltv.tv_usec);
-        }
-        get_log_count++;
-#endif
         rc = stat(log_file, &log_file_stat);
         if (rc < 0)
         {
@@ -334,7 +324,7 @@ ta_handler(void *ta)
         if (log_file_stat.st_size != 0)
         {
             if ((ta_file = fopen(log_file, "r")) == NULL)
-                ERROR("TA:%s, fopen(%s) failure\n", inst->agent, log_file); 
+                ERROR("TA:%s, fopen(%s) failure\n", inst->agent, log_file);
         }
 
         if ((ta_file == NULL) || (log_file_stat.st_size == 0))
@@ -384,7 +374,7 @@ ta_handler(void *ta)
                   TE_LOG_LEVEL_SZ + TE_LOG_MSG_LEN_SZ;
             if (FREAD(ta_file, p_buf, len) != len)
             {
-                empty_flag = 1; /* File is empty or reading error */            
+                empty_flag = 1; /* File is empty or reading error */
                 break;
             }
 
@@ -439,21 +429,13 @@ ta_handler(void *ta)
                     /* Check timestamp value */
                     if (tv_msg.tv_sec > tv.tv_sec)
                     {
-#if 0
-        printf("Logger " "GET LOG %d; msg tv: %u.%u, flush finish.\n", 
-                get_log_count, tv_msg.tv_sec, tv_msg.tv_usec);
-#endif
                         flush_flag = 0;
                         tstamp_flag = 1;
-                    } 
+                    }
                     else if (tv_msg.tv_sec == tv.tv_sec)
                     {
                         if (tv_msg.tv_usec > tv.tv_usec)
                         {
-#if 0
-        printf("Logger " "GET LOG %d; msg tv: %u.%u, flush finish.\n", 
-                get_log_count, tv_msg.tv_sec, tv_msg.tv_usec);
-#endif
                             flush_flag = 0;
                             tstamp_flag = 1;
                         }
@@ -462,11 +444,6 @@ ta_handler(void *ta)
                 lgr_register_message(buf_mess, p_buf - buf_mess);
             }
         } while (1);
-
-#if 0
-        printf("Logger " "GET LOG %d; got %d log messages from TA\n", 
-                get_log_count, msg_count);
-#endif
 
         if (feof(ta_file) == 0)
         {
@@ -482,7 +459,7 @@ ta_handler(void *ta)
         /* No messages are in the agent buffer by this time */
         if ((flush_flag == 1) && (empty_flag == 1))
         {
-            ERROR("GET LOG %d; empty, flush finish", get_log_count) 
+            ERROR("GET LOG %d; empty, flush finish", get_log_count)
             flush_flag = 0;
             empty_flag = 0;
             tstamp_flag = 1;
@@ -518,12 +495,12 @@ response_to_flush:
 
 /**
  * This is an entry point of Logger process running on TEN side.
- * 
+ *
  * @param argc  Argument count.
  * @param argv  Argument vector.
- * 
+ *
  * @return Operation status.
- * 
+ *
  * @retval EXIT_SUCCESS     Success.
  * @retval EXIT_FAILURE     Failure.
  */
@@ -534,7 +511,7 @@ main(int argc, char *argv[])
     char        err_buf[BUFSIZ];
     char       *ta_names = NULL;
     size_t      names_len;
-    size_t      str_len = 0;    
+    size_t      str_len = 0;
     int         res = 0;
     int         scale = 0;
     pthread_t   te_thread;
@@ -566,11 +543,11 @@ main(int argc, char *argv[])
 
 
     /* Log file must be processed before start of messages processing */
-    INFO("Logger configuration file parsing\n");    
+    INFO("Logger configuration file parsing\n");
     /* Parse configuration file */
     if (argc < 1)
     {
-        ERROR("No Logger configuration file passed\n");    
+        ERROR("No Logger configuration file passed\n");
         goto exit;
     }
     if (configParser(argv[1]) != 0)
@@ -579,7 +556,7 @@ main(int argc, char *argv[])
         goto exit;
     }
 
-    
+
     /* Initialize IPC before any servers creation */
     if (ipc_init() != 0)
     {
@@ -611,7 +588,7 @@ main(int argc, char *argv[])
             goto join_te_srv;
         }
         memset(ta_names, 0, names_len * sizeof(char));
-        res = rcf_get_ta_list(ta_names, &names_len); 
+        res = rcf_get_ta_list(ta_names, &names_len);
 
     } while (res == ETESMALLBUF);
 
@@ -628,13 +605,13 @@ main(int argc, char *argv[])
     {
         char       *aux_str;
         size_t      tmp_len;
-    
+
         ta_el = (struct ta_inst *)malloc(sizeof(struct ta_inst));
-        memset(ta_el, 0, sizeof(struct ta_inst));  
+        memset(ta_el, 0, sizeof(struct ta_inst));
         ta_el->thread_run = FALSE;
         aux_str = ta_names + str_len;
         tmp_len = strlen(aux_str) + 1;
-        memcpy(ta_el->agent, aux_str, tmp_len); 
+        memcpy(ta_el->agent, aux_str, tmp_len);
         str_len += tmp_len;
 
         ta_el->filters.next = ta_el->filters.last = &ta_el->filters;
@@ -646,7 +623,7 @@ main(int argc, char *argv[])
             free(ta_names);
             goto join_te_srv;
         }
-   
+
         ta_el->next = ta_list;
         ta_list = ta_el;
     }
@@ -681,7 +658,7 @@ join_te_srv:
     }
 
 exit:
-    /* Release all memory on shutdown */     
+    /* Release all memory on shutdown */
     while (ta_list != NULL)
     {
         ta_el = ta_list;
@@ -718,7 +695,7 @@ exit:
         ERROR("IPC termination failed: %s\n", err_buf);
         result = EXIT_FAILURE;
     }
-    
+
     RING("Shutdown is completed\n");
 
     if (fflush(raw_file) != 0)

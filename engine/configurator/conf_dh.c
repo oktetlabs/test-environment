@@ -31,7 +31,7 @@
   
 /** Backup descriptor */  
 typedef struct cfg_backup {
-    struct cfg_backup *next;     /**< Next backup associated with this point */
+    struct cfg_backup *next; /**< Next backup associated with this point */
     char              *filename; /**< backup filename */
 } cfg_backup;    
 
@@ -40,7 +40,8 @@ typedef struct cfg_dh_entry {
     struct cfg_dh_entry *next;    /**< Link to the next entry */
     struct cfg_dh_entry *prev;    /**< Link to the previous entry */
     cfg_backup          *backup;  /**< List of associated backups */
-    cfg_msg             *cmd;     /**< Register, add, delete or set command */
+    cfg_msg             *cmd;     /**< Register, add, delete or set
+                                       command */
     char                *old_oid; /**< OID for delete reversing */
     cfg_val_type         type;    /**< Type of the old_val */
     cfg_inst_val         old_val; /**< Data for reversing delete and set */
@@ -269,7 +270,7 @@ cfg_dh_process_file(xmlNodePtr node)
                 RETERR(EINVAL, "Incorrect reboot command format");
 
             if ((msg = (cfg_reboot_msg *)calloc(1, sizeof(*msg) + 
-                                                   strlen(attr) + 1)) == NULL)
+                                                strlen(attr) + 1)) == NULL)
                 RETERR(ENOMEM, "Cannot allocate memory");
             
             msg->type = CFG_REBOOT;
@@ -304,7 +305,8 @@ cfg_dh_process_file(xmlNodePtr node)
                    xmlStrcmp(tmp->name , (const xmlChar *)"object") == 0)
             {
                 if ((oid = xmlGetProp(tmp, (const xmlChar *)"oid")) == NULL)
-                    RETERR(EINVAL, "Incorrect %s command format", cmd->name);
+                    RETERR(EINVAL, "Incorrect %s command format",
+                           cmd->name);
 
                 len = sizeof(cfg_register_msg) + strlen(oid) + 1;
                 if ((msg = (cfg_register_msg *)calloc(1, len)) == NULL)
@@ -318,7 +320,8 @@ cfg_dh_process_file(xmlNodePtr node)
 
                 strcpy(msg->oid, oid);
                 
-                if ((attr = xmlGetProp(tmp, (const xmlChar *)"type")) != NULL)
+                attr = xmlGetProp(tmp, (const xmlChar *)"type");
+                if (attr != NULL)
                 {
                     if (strcmp(attr, "integer") == 0)
                         msg->descr.type = CVT_INTEGER;
@@ -331,7 +334,8 @@ cfg_dh_process_file(xmlNodePtr node)
                     xmlFree(attr);
                 }
 
-                if ((attr = xmlGetProp(tmp, (const xmlChar *)"access")) != NULL)
+                attr = xmlGetProp(tmp, (const xmlChar *)"access");
+                if (attr != NULL)
                 {
                     if (strcmp(attr, "read_write") == 0)
                         msg->descr.access = CFG_READ_WRITE;
@@ -339,7 +343,8 @@ cfg_dh_process_file(xmlNodePtr node)
                         msg->descr.access = CFG_READ_ONLY;
                     else if (strcmp(attr, "read_create") != 0)
                         RETERR(EINVAL, 
-                               "Wrong value %s of \"access\" attribute", attr);
+                               "Wrong value %s of 'access' attribute",
+                               attr);
                     xmlFree(attr);
                 }
 
@@ -379,7 +384,8 @@ cfg_dh_process_file(xmlNodePtr node)
                    xmlStrcmp(tmp->name , (const xmlChar *)"instance") == 0)
             {
                 if ((oid = xmlGetProp(tmp, (const xmlChar *)"oid")) == NULL)
-                    RETERR(EINVAL, "Incorrect %s command format", cmd->name);
+                    RETERR(EINVAL, "Incorrect %s command format",
+                           cmd->name);
 
                 if ((rc = cfg_db_find(oid, &handle)) != 0)
                     RETERR(ENOENT, "Cannot find instance %s", oid);
@@ -400,7 +406,8 @@ cfg_dh_process_file(xmlNodePtr node)
                 if (obj->type == CVT_NONE)
                     RETERR(EINVAL, "Cannot perform set for %s", oid);
 
-                if ((val_s = xmlGetProp(tmp, (const xmlChar *)"value")) == NULL)
+                val_s = xmlGetProp(tmp, (const xmlChar *)"value");
+                if (val_s == NULL)
                     RETERR(EINVAL, "Value is required for %s", oid);
                 
                 if ((rc = cfg_types[obj->type].str2val(val_s, &val)) != 0)
@@ -434,7 +441,8 @@ cfg_dh_process_file(xmlNodePtr node)
                    xmlStrcmp(tmp->name , (const xmlChar *)"ta") == 0)
             {
                 if ((oid = xmlGetProp(tmp, (const xmlChar *)"oid")) == NULL)
-                    RETERR(EINVAL, "Incorrect %s command format", cmd->name);
+                    RETERR(EINVAL, "Incorrect %s command format",
+                           cmd->name);
 
                 if ((rc = cfg_db_find(oid, &handle)) != 0)
                     RETERR(rc, "Cannot find instance %s", oid);
@@ -524,12 +532,14 @@ cfg_dh_create_file(char *filename)
                 fprintf(f, "    <object oid=\"%s\" "
                         "access=\"%s\" type=\"%s\"/>\n",
                         msg->oid, 
-                        msg->descr.access == CFG_READ_CREATE ? "read_create" :
-                        msg->descr.access == CFG_READ_WRITE ? "read_write" :
-                                                              "read_only",
-                        msg->descr.type == CVT_NONE ? "none" :
+                        msg->descr.access == CFG_READ_CREATE ?
+                            "read_create" :
+                        msg->descr.access == CFG_READ_WRITE ?
+                            "read_write" : "read_only",
+                        msg->descr.type == CVT_NONE ?    "none" :
                         msg->descr.type == CVT_INTEGER ? "integer" :
-                        msg->descr.type == CVT_ADDRESS ? "address" : "string");
+                        msg->descr.type == CVT_ADDRESS ? "address" :
+                                                         "string");
                 fprintf(f, "  </register>\n");
                 break;
             }
@@ -625,7 +635,10 @@ cfg_dh_attach_backup(char *filename)
     return 0;
 }
 
-/** Returns TRUE, if backup with specified name is associated with DH entry */
+/**
+ * Returns TRUE, if backup with specified name is associated 
+ * with DH entry.
+ */
 static te_bool
 has_backup(cfg_dh_entry *entry, char *filename)
 {
@@ -694,7 +707,8 @@ cfg_dh_restore_backup(char *filename)
                
                 if (rc != 0)
                 {
-                    ERROR("%s(): cfg_db_find() failed: %X", __FUNCTION__, rc);
+                    ERROR("%s(): cfg_db_find() failed: %X",
+                          __FUNCTION__, rc);
                     return rc;
                 }
                
@@ -710,8 +724,9 @@ cfg_dh_restore_backup(char *filename)
                 
             case CFG_SET:
             {
-                cfg_set_msg *msg = (cfg_set_msg *)calloc(sizeof(cfg_set_msg) + 
-                                                         CFG_MAX_INST_VALUE, 1);
+                cfg_set_msg *msg =
+                    (cfg_set_msg *)calloc(sizeof(cfg_set_msg) + 
+                                          CFG_MAX_INST_VALUE, 1);
                                                          
                 if (msg == NULL)
                 {
@@ -1008,7 +1023,8 @@ cfg_dh_optimize(void)
          {
              char *tmp_oid;
              
-             if (tmp_del->backup != NULL || tmp_del->cmd->type == CFG_REBOOT)
+             if (tmp_del->backup != NULL ||
+                 tmp_del->cmd->type == CFG_REBOOT)
                  break;
                  
              if (tmp_del->cmd->type == CFG_DEL && 
@@ -1068,7 +1084,10 @@ cfg_dh_optimize(void)
             cfg_inst_val  next_old_val = next->old_val;
             cfg_val_type  type = ((cfg_set_msg *)(tmp->cmd))->val_type;
             
-            /* Copy old value of this command to old value of the next command */
+            /*
+             * Copy old value of this command to old value
+             * of the next command.
+             */
             if (cfg_types[type].copy(tmp->old_val, &next->old_val) != 0)
             {
                 next->old_val = next_old_val;

@@ -91,7 +91,7 @@ extern int cfg_inst_seq_num;
     (CFG_INST_HANDLE_VALID(_handle) ? \
      cfg_all_inst[CFG_INST_HANDLE_TO_INDEX(_handle)] : NULL)
 
-/*-------------------- User request processing ----------------------------*/
+/*----------------- User request processing ----------------------------*/
 
 /* SIze of the buffer requered for messages and responses except pattern */
 #define CFG_BUF_LEN \
@@ -102,8 +102,8 @@ extern int cfg_inst_seq_num;
  * Process message with user request.
  *
  * @param msg   message pointer (it is assumed that message buffer
- *              length is long enough, for example for cfg_process_msg_get_oid
- *              it should be >= CFG_RECV_BUF_LEN)
+ *              length is long enough, for example for
+ *              cfg_process_msg_get_oid it should be >= CFG_RECV_BUF_LEN)
  */
 extern void cfg_process_msg_register(cfg_register_msg *msg);
 extern void cfg_process_msg_find(cfg_find_msg *msg);

@@ -113,7 +113,8 @@ cfg_db_destroy(void)
     {
         if (cfg_all_inst[i] != NULL)
         {
-            cfg_types[cfg_all_inst[i]->obj->type].free(cfg_all_inst[i]->val);
+            cfg_types[cfg_all_inst[i]->obj->type].
+                free(cfg_all_inst[i]->val);
             free(cfg_all_inst[i]->oid);
             free(cfg_all_inst[i]);
         }
@@ -138,7 +139,8 @@ cfg_db_destroy(void)
  * Process message with user request.
  *
  * @param msg   message pointer (it is assumed that message buffer
- *              length is long enough, for example for cfg_process_msg_get_oid
+ *              length is long enough, for example for
+ *              cfg_process_msg_get_oid
  *              it should be >= CFG_RECV_BUF_LEN)
  */
 void 
@@ -190,7 +192,8 @@ cfg_process_msg_register(cfg_register_msg *msg)
     if (i == cfg_all_obj_size)
     {
         void *tmp = realloc(cfg_all_obj, 
-                            sizeof(void *) * (cfg_all_obj_size + CFG_OBJ_NUM));
+                        sizeof(void *) * (cfg_all_obj_size + CFG_OBJ_NUM));
+
         if (tmp == NULL)
         {
             cfg_free_oid(oid);
@@ -204,7 +207,8 @@ cfg_process_msg_register(cfg_register_msg *msg)
         cfg_all_obj_size += CFG_OBJ_NUM;
     }
     
-    if ((cfg_all_obj[i] = (cfg_object *)calloc(sizeof(cfg_object), 1)) == NULL)
+    if ((cfg_all_obj[i] =
+             (cfg_object *)calloc(sizeof(cfg_object), 1)) == NULL)
     {
         cfg_free_oid(oid);
         msg->rc = ENOMEM;
@@ -243,7 +247,8 @@ cfg_process_msg_get_descr(cfg_get_descr_msg *msg)
 {
     cfg_object *obj;
 
-    if (CFG_IS_INST(msg->handle) || (obj = CFG_GET_OBJ(msg->handle)) == NULL)
+    if (CFG_IS_INST(msg->handle) ||
+        (obj = CFG_GET_OBJ(msg->handle)) == NULL)
     {
         msg->rc = EINVAL;
         return;
@@ -374,36 +379,36 @@ cfg_process_msg_pattern(cfg_pattern_msg *msg)
 
 /* Put the handle to the handles array of the message */
 #define PUT_HANDLE(_handle) \
-    do {                                                                       \
-        if (num == num_max)                                                    \
-        {                                                                      \
-            num_max += ALLOC_STEP;                                             \
-            if (tmp == msg)                                                    \
-            {                                                                  \
-                tmp = (cfg_pattern_msg *)malloc(sizeof(*msg) +                 \
-                                                num_max * sizeof(cfg_handle)); \
-                if (tmp == NULL)                                               \
-                {                                                              \
-                    msg->rc = ENOMEM;                                          \
-                    return msg;                                                \
-                }                                                              \
-                memcpy(tmp, msg, sizeof(*msg) +                                \
-                                 (num_max - ALLOC_STEP) * sizeof(cfg_handle)); \
-            }                                                                  \
-            else                                                               \
-            {                                                                  \
-                void *tmp1 = realloc(tmp, sizeof(*msg) +                       \
-                                          num_max * sizeof(cfg_handle));       \
-                if (tmp1 == NULL)                                              \
-                {                                                              \
-                    free(tmp);                                                 \
-                    msg->rc = ENOMEM;                                          \
-                    return msg;                                                \
-                }                                                              \
-                tmp = (cfg_pattern_msg *)tmp1;                                 \
-            }                                                                  \
-        }                                                                      \
-        tmp->handles[num++] = _handle;                                         \
+    do {                                                            \
+        if (num == num_max)                                         \
+        {                                                           \
+            num_max += ALLOC_STEP;                                  \
+            if (tmp == msg)                                         \
+            {                                                       \
+                tmp = (cfg_pattern_msg *)malloc(sizeof(*msg) +      \
+                    num_max * sizeof(cfg_handle));                  \
+                if (tmp == NULL)                                    \
+                {                                                   \
+                    msg->rc = ENOMEM;                               \
+                    return msg;                                     \
+                }                                                   \
+                memcpy(tmp, msg, sizeof(*msg) +                     \
+                    (num_max - ALLOC_STEP) * sizeof(cfg_handle));   \
+            }                                                       \
+            else                                                    \
+            {                                                       \
+                void *tmp1 = realloc(tmp,                           \
+                    sizeof(*msg) + num_max * sizeof(cfg_handle));   \
+                if (tmp1 == NULL)                                   \
+                {                                                   \
+                    free(tmp);                                      \
+                    msg->rc = ENOMEM;                               \
+                    return msg;                                     \
+                }                                                   \
+                tmp = (cfg_pattern_msg *)tmp1;                      \
+            }                                                       \
+        }                                                           \
+        tmp->handles[num++] = _handle;                              \
     } while(0)
 
 #define RETERR(_rc) \
@@ -451,7 +456,8 @@ cfg_process_msg_pattern(cfg_pattern_msg *msg)
                 continue;
             }
             
-            if ((tmp_oid = cfg_convert_oid_str(cfg_all_inst[i]->oid)) == NULL)
+            tmp_oid = cfg_convert_oid_str(cfg_all_inst[i]->oid);
+            if (tmp_oid == NULL)
                 RETERR(ENOMEM);
                 
             if (tmp_oid->len != oid->len)
@@ -493,7 +499,8 @@ cfg_process_msg_pattern(cfg_pattern_msg *msg)
                 continue;
             }
             
-            if ((tmp_oid = cfg_convert_oid_str(cfg_all_obj[i]->oid)) == NULL)
+            tmp_oid = cfg_convert_oid_str(cfg_all_obj[i]->oid);
+            if (tmp_oid == NULL)
                 RETERR(ENOMEM);
                 
             if (tmp_oid->len != oid->len)
@@ -505,8 +512,11 @@ cfg_process_msg_pattern(cfg_pattern_msg *msg)
             s2 = (cfg_object_subid *)(tmp_oid->ids);
             for (k = 0; k < oid->len; k++, s1++, s2++)
             {
-                if (s1->subid[0] != '*' && pattern_match(s1->subid, s2->subid) != 0) 
+                if (s1->subid[0] != '*' &&
+                    pattern_match(s1->subid, s2->subid) != 0) 
+                {
                     break;
+                }
             }
             cfg_free_oid(tmp_oid);
             if (k == oid->len)
@@ -535,7 +545,8 @@ cfg_process_msg_pattern(cfg_pattern_msg *msg)
  * @return status code (see te_errno.h)
  */
 int 
-cfg_db_add(char *oid_s, cfg_handle *handle, cfg_val_type type, cfg_inst_val val)
+cfg_db_add(char *oid_s, cfg_handle *handle,
+           cfg_val_type type, cfg_inst_val val)
 {
     cfg_oid        *oid = cfg_convert_oid_str(oid_s);
     cfg_object     *obj;
@@ -605,7 +616,8 @@ cfg_db_add(char *oid_s, cfg_handle *handle, cfg_val_type type, cfg_inst_val val)
     if (i == cfg_all_inst_size)
     {
         void *tmp = realloc(cfg_all_inst, 
-                            sizeof(void *) * (cfg_all_inst_size + CFG_INST_NUM));
+            sizeof(void *) * (cfg_all_inst_size + CFG_INST_NUM));
+
         if (tmp == NULL)
             RET(ENOMEM);
             

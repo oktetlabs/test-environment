@@ -422,7 +422,8 @@ process_cmd_line_opts(tester_ctx *ctx, tester_cfgs *cfgs,
           "Specify path to the Test Suite.", "NAME:PATH" },
 
         { "req", 'R', POPT_ARG_STRING, NULL, TESTER_OPT_REQ,
-          "Requirement to be tested (or excluded, if its first symbol is !).",
+          "Requirement to be tested "
+          "(or excluded, if its first symbol is !).",
           "[REQ|!REQ]" },
 
         { "quietskip", '\0', POPT_ARG_NONE, NULL, TESTER_OPT_QUIET_SKIP,
@@ -456,7 +457,8 @@ process_cmd_line_opts(tester_ctx *ctx, tester_cfgs *cfgs,
           "Disable prologues and epilogues globally.", NULL },
 
         { "nosimultaneous", '\0', POPT_ARG_NONE, NULL, TESTER_OPT_NOSIMULT,
-          "Force to run all tests in series. Usefull for debugging.", NULL },
+          "Force to run all tests in series. Usefull for debugging.",
+          NULL },
 
         { "fake", 'T', POPT_ARG_NONE, NULL, TESTER_OPT_FAKE,
           "Don't run any test scripts, just emulate test failure.", NULL },
@@ -483,7 +485,8 @@ process_cmd_line_opts(tester_ctx *ctx, tester_cfgs *cfgs,
     optCon = poptGetContext(NULL, argc, (const char **)argv,
                             options_table, 0);
   
-    poptSetOtherOptionHelp(optCon, "[OPTIONS] <cfg-file1> [<cfg-file2> ...]");
+    poptSetOtherOptionHelp(optCon,
+                           "[OPTIONS] <cfg-file1> [<cfg-file2> ...]");
 
     while ((rc = poptGetNextOpt(optCon)) >= 0)
     {
@@ -610,7 +613,8 @@ process_cmd_line_opts(tester_ctx *ctx, tester_cfgs *cfgs,
             }
 
             case TESTER_OPT_REQ:
-                rc = test_requirement_new(&ctx->reqs, poptGetOptArg(optCon));
+                rc = test_requirement_new(&ctx->reqs,
+                                          poptGetOptArg(optCon));
                 if (rc != 0)
                 {
                     ERROR("test_requirement_new() failed");

@@ -44,8 +44,8 @@ static char tmp_buf[1024];
 static char *tmp_dir = NULL;
 static char *filename;
 /* If true, shutdown after message processing */
-static te_bool cfg_shutdown = FALSE; 
-static int cfg_fatal_err = 0; 
+static te_bool cfg_shutdown = FALSE;
+static int cfg_fatal_err = 0;
 static struct ipc_server *server = NULL; /* IPC Server handle */
 
 
@@ -54,19 +54,19 @@ print_tree(cfg_instance *inst, int indent)
 {
     int i;
     static FILE *f;
-    
+
     if (f == NULL && (f = fopen("instances", "w")) == NULL)
     {
         printf("Cannot open file instances\n");
         return;
     }
-    
+
     for (i = 0; i < indent; i++)
         fprintf(f, " ");
     fprintf(f, "%s\n", inst->oid);
     for (inst = inst->son; inst != NULL; inst = inst->brother)
         print_tree(inst, indent + 2);
-        
+
     if (indent == 0)
     {
         fclose(f);
@@ -80,13 +80,13 @@ print_otree(cfg_object *obj, int indent)
     int i;
 
     static FILE *f;
-    
+
     if (f == NULL && (f = fopen("objects", "w")) == NULL)
     {
         printf("Cannot open file objects\n");
         return;
     }
-    
+
     for (i = 0; i < indent; i++)
         fprintf(f, " ");
     fprintf(f, "%s\n", obj->oid);
@@ -115,10 +115,10 @@ parse_config(char *file)
     xmlNodePtr  root;
     int         rc;
     int         subst;
-    
+
     if (file == NULL)
         return 0;
-        
+
     if ((doc = xmlParseFile(file)) == NULL)
     {
 #if HAVE_XMLERROR
@@ -155,14 +155,14 @@ parse_config(char *file)
         VERB("Empty configuration file is provided");
         xmlFreeDoc(doc);
         xmlCleanupParser();
-        return 0;  
+        return 0;
     }
-    
+
     if (xmlStrcmp(root->name, (const xmlChar *)"backup") == 0)
         rc = cfg_backup_process_file(root);
     else if (xmlStrcmp(root->name, (const xmlChar *)"history") == 0)
         rc = cfg_dh_process_file(root);
-    else 
+    else
     {
         ERROR("Incorrect root node '%s' in the configuration file",
               root->name);
@@ -171,7 +171,7 @@ parse_config(char *file)
 
     xmlFreeDoc(doc);
     xmlCleanupParser();
-    return rc;  
+    return rc;
 }
 
 /**
@@ -180,7 +180,7 @@ parse_config(char *file)
  * @param msg           message pointer
  * @param update_dh     if true, add the command to dynamic history
  */
-static void 
+static void
 process_add(cfg_add_msg *msg, te_bool update_dh)
 {
     cfg_handle    handle;
@@ -190,8 +190,8 @@ process_add(cfg_add_msg *msg, te_bool update_dh)
     char         *oid = (char *)msg + msg->oid_offset;
     cfg_inst_val  val;
     char         *inst_name_str = (char *)msg + msg->oid_offset;
-        
-    msg->rc = cfg_types[msg->val_type].get_from_msg((cfg_msg *)msg, &val); 
+
+    msg->rc = cfg_types[msg->val_type].get_from_msg((cfg_msg *)msg, &val);
 
     if (msg->rc != 0)
         return;
@@ -201,7 +201,7 @@ process_add(cfg_add_msg *msg, te_bool update_dh)
         assert(0);
 
     msg->rc = cfg_db_add(oid, &handle, msg->val_type, val);
-    
+
     if (msg->rc != 0)
     {
         ERROR("Failed to add a new instance %s with value %s into "
@@ -209,17 +209,18 @@ process_add(cfg_add_msg *msg, te_bool update_dh)
         cfg_types[msg->val_type].free(val);
         return;
     }
-    
+
     inst = CFG_GET_INST(handle);
     obj = inst->obj;
-    
+
     if (obj->access != CFG_READ_CREATE)
     {
         cfg_db_del(handle);
         cfg_types[obj->type].free(val);
         msg->rc = EACCES;
         ERROR("Failed to add a new instance %s with value %s because "
-              "object %s is not read-create", inst_name_str, val_str, obj->oid);
+              "object %s is not read-create", inst_name_str, val_str,
+              obj->oid);
         return;
     }
 
@@ -227,16 +228,16 @@ process_add(cfg_add_msg *msg, te_bool update_dh)
     {
         cfg_db_del(handle);
         cfg_types[obj->type].free(val);
-        ERROR("Failed to add a new instance %s with value %s in DH: error=%X",
-              inst_name_str, val_str, msg->rc);
+        ERROR("Failed to add a new instance %s with value %s in DH: "
+              "error=%X", inst_name_str, val_str, msg->rc);
         return;
     }
-    
+
     if (strncmp(oid, "/agent:", strlen("/agent:")) != 0) /* Success */
     {
         cfg_types[obj->type].free(val);
         msg->handle = handle;
-        
+
         if (obj->type != CVT_NONE)
             free(val_str);
 
@@ -258,22 +259,22 @@ process_add(cfg_add_msg *msg, te_bool update_dh)
             return;
         }
     }
-    
+
     msg->rc = rcf_ta_cfg_add(inst->name, 0, oid, val_str);
-    
+
     if (msg->rc != 0)
     {
         cfg_db_del(handle);
         if (update_dh)
             cfg_dh_delete_last_command();
-        ERROR("Failed to add a new instance %s with value %s into Test Agent "
+        ERROR("Failed to add a new instance %s with value %s into TA "
               "error=%X", inst->name, val_str, msg->rc);
     }
-    
+
     cfg_types[obj->type].free(val);
     if (obj->type != CVT_NONE)
         free(val_str);
-        
+
     cfg_ta_sync(oid, TRUE);
     msg->handle = handle;
 }
@@ -284,7 +285,7 @@ process_add(cfg_add_msg *msg, te_bool update_dh)
  * @param msg           message pointer
  * @param update_dh     if true, add the command to dynamic history
  */
-static void 
+static void
 process_set(cfg_set_msg *msg, te_bool update_dh)
 {
     cfg_handle    handle = msg->handle;
@@ -305,8 +306,8 @@ process_set(cfg_set_msg *msg, te_bool update_dh)
     if ((msg->rc = cfg_types[obj->type].
                    get_from_msg((cfg_msg *)msg, &val)) != 0)
         return;
-        
-    if (obj->access != CFG_READ_WRITE && 
+
+    if (obj->access != CFG_READ_WRITE &&
         obj->access != CFG_READ_CREATE)
     {
         cfg_types[obj->type].free(val);
@@ -320,7 +321,7 @@ process_set(cfg_set_msg *msg, te_bool update_dh)
         cfg_types[obj->type].free(val);
         return;
     }
-    
+
     if (update_dh && (msg->rc = cfg_dh_add_command((cfg_msg *)msg)) != 0)
     {
         ERROR("Failed to add command in DH: error=%d", msg->rc);
@@ -328,7 +329,7 @@ process_set(cfg_set_msg *msg, te_bool update_dh)
         cfg_types[obj->type].free(old_val);
         return;
     }
-    
+
     if ((msg->rc = cfg_db_set(handle, val)) != 0)
     {
         ERROR("Failed to set new value in DB: error=%d", msg->rc);
@@ -338,7 +339,7 @@ process_set(cfg_set_msg *msg, te_bool update_dh)
             cfg_dh_delete_last_command();
         return;
     }
-    
+
     if (strncmp(inst->oid, "/agent:", strlen("/agent:")) != 0) /* Success */
     {
         cfg_types[obj->type].free(val);
@@ -356,7 +357,7 @@ process_set(cfg_set_msg *msg, te_bool update_dh)
 
     while (strcmp(inst->obj->subid, "agent") != 0)
         inst = inst->father;
-    
+
     if (obj->type != CVT_NONE)
     {
         msg->rc = cfg_types[obj->type].val2str(val, &val_str);
@@ -370,16 +371,17 @@ process_set(cfg_set_msg *msg, te_bool update_dh)
             return;
         }
     }
-    
-    msg->rc = rcf_ta_cfg_set(inst->name, 0, CFG_GET_INST(handle)->oid, val_str);
-    
+
+    msg->rc = rcf_ta_cfg_set(inst->name, 0,
+                             CFG_GET_INST(handle)->oid, val_str);
+
     if (msg->rc != 0)
     {
         if (update_dh)
             cfg_dh_delete_last_command();
         cfg_db_set(handle, old_val);
     }
-    
+
     cfg_types[obj->type].free(old_val);
     cfg_types[obj->type].free(val);
     if (obj->type != CVT_NONE)
@@ -392,7 +394,7 @@ process_set(cfg_set_msg *msg, te_bool update_dh)
  * @param msg           message pointer
  * @param update_dh     if true, add the command to dynamic history
  */
-static void 
+static void
 process_del(cfg_del_msg *msg, te_bool update_dh)
 {
     cfg_handle    handle = msg->handle;
@@ -405,7 +407,7 @@ process_del(cfg_del_msg *msg, te_bool update_dh)
         return;
     }
     obj = inst->obj;
-    
+
     if (obj->access != CFG_READ_CREATE)
     {
         ERROR("Only READ-CREATE objects can be removed from "
@@ -413,24 +415,24 @@ process_del(cfg_del_msg *msg, te_bool update_dh)
         msg->rc = EACCES;
         return;
     }
-    
+
     if ((msg->rc = cfg_db_del_check(handle)) != 0)
         return;
 
     if (update_dh && (msg->rc = cfg_dh_add_command((cfg_msg *)msg)) != 0)
         return;
-    
-    if (strncmp(inst->oid, "/agent:", strlen("/agent:")) != 0) 
+
+    if (strncmp(inst->oid, "/agent:", strlen("/agent:")) != 0)
     {
         cfg_db_del(handle);
         return;
     }
-    
+
     while (strcmp(inst->obj->subid, "agent") != 0)
         inst = inst->father;
-    
+
     msg->rc = rcf_ta_cfg_del(inst->name, 0, CFG_GET_INST(handle)->oid);
-    
+
     if (msg->rc != 0)
     {
         if (update_dh)
@@ -462,7 +464,7 @@ process_get(cfg_get_msg *msg)
 
     if (msg->sync && (msg->rc = cfg_ta_sync(inst->oid, FALSE)) != 0)
         return;
-    
+
     msg->val_type = obj->type;
     msg->len = sizeof(*msg);
     cfg_types[obj->type].put_to_msg(inst->val, (cfg_msg *)msg);
@@ -490,26 +492,26 @@ process_backup(cfg_backup_msg *msg)
     {
         case CFG_BACKUP_CREATE:
         {
-            sprintf(msg->filename, CONF_BACKUP_NAME, 
+            sprintf(msg->filename, CONF_BACKUP_NAME,
                     tmp_dir, getpid(), get_time_ms());
-                    
+
             if ((msg->rc = cfg_backup_create_file(msg->filename)) != 0)
                 return;
-                
+
             if ((msg->rc = cfg_dh_attach_backup(msg->filename)) != 0)
                 unlink(msg->filename);
-                
+
             msg->len += strlen(msg->filename) + 1;
-            
+
             break;
         }
-        
+
         case CFG_BACKUP_RESTORE:
         {
             /* Try to restore using dynamic history */
             if ((msg->rc = cfg_dh_restore_backup(msg->filename)) == 0)
                 return;
-                
+
             return; /* FIXME */
 
 /**
@@ -527,23 +529,23 @@ process_backup(cfg_backup_msg *msg)
              return;                                                \
          }                                                          \
      } while (0)
-            
+
             /* Re-initialize the Configurator with specified backup file */
-            
+
             cfg_dh_destroy();
             CHECKERR(cfg_db_init());
             CHECKERR(cfg_ta_reboot_all());
             CHECKERR(parse_config(msg->filename));
 
-#undef CHECKERR            
+#undef CHECKERR
             break;
         }
-        
+
         case CFG_BACKUP_VERIFY:
         {
             if ((msg->rc = cfg_backup_create_file(filename)) != 0)
                 return;
-            sprintf(tmp_buf, "diff %s %s >/dev/null 2>&1", msg->filename, 
+            sprintf(tmp_buf, "diff %s %s >/dev/null 2>&1", msg->filename,
                              filename);
             msg->rc = ((system(tmp_buf) == 0) ? 0 : ETEBACKUP);
             break;
@@ -562,9 +564,9 @@ process_reboot(cfg_reboot_msg *msg, te_bool update_dh)
 {
     if (update_dh && (msg->rc = cfg_dh_add_command((cfg_msg *)msg)) != 0)
         return;
-        
+
     msg->rc = rcf_ta_reboot(msg->ta_name, NULL, NULL);
-    
+
     if (msg->rc == 0 && msg->restore)
     {
         if ((msg->rc = cfg_backup_restore_ta(msg->ta_name)) != 0)
@@ -590,7 +592,7 @@ log_msg(cfg_msg *msg, te_bool before)
     char        buf[32];
     char       *s1;
     char       *s2;
-    
+
     if (before)
     {
         level = TE_LL_VERB;
@@ -651,7 +653,7 @@ log_msg(cfg_msg *msg, te_bool before)
         case CFG_REGISTER:
         {
             cfg_register_msg *m = (cfg_register_msg *)msg;
-            
+
             LGR_MESSAGE(level, TE_LGR_USER,
                         "Register object %s (%s, %s)%s",
                         m->oid,
@@ -659,43 +661,43 @@ log_msg(cfg_msg *msg, te_bool before)
                         m->descr.type == CVT_STRING ? "string" :
                         m->descr.type == CVT_INTEGER ? "integer" :
                         m->descr.type == CVT_ADDRESS ? "address" :
-                        "unknown type", 
+                        "unknown type",
                         m->descr.access == CFG_READ_WRITE ? "read/write" :
                         m->descr.access == CFG_READ_ONLY ? "read/only" :
                         m->descr.access == CFG_READ_CREATE ? "read/create" :
                         "unknown access", addon);
             break;
         }
-                                        
+
         case CFG_FIND:
             if (!before && TE_RC_GET_ERROR(msg->rc) == ENOENT)
                 level = TE_LL_INFO;
             LGR_MESSAGE(level, TE_LGR_USER,
                         "Find OID %s%s", ((cfg_find_msg *)msg)->oid, addon);
             break;
-            
+
         case CFG_GET_DESCR:
             GET_STRS(cfg_get_descr_msg);
             LGR_MESSAGE(level, TE_LGR_USER,
                         "Get descr for %s%s%s", s1, s2, addon);
             break;
-                    
+
         case CFG_GET_OID:
             GET_STRS(cfg_get_oid_msg);
             LGR_MESSAGE(level, TE_LGR_USER,
                         "Get OID for %s%s%s", s1, s2, addon);
             break;
-                    
-        case CFG_GET_ID:  
+
+        case CFG_GET_ID:
             GET_STRS(cfg_get_id_msg);
             LGR_MESSAGE(level, TE_LGR_USER,
                         "Get ID for %s%s%s", s1, s2, addon);
             break;
-                    
-        case CFG_PATTERN:  
+
+        case CFG_PATTERN:
             if (before || msg->rc != 0)
             {
-                /* 
+                /*
                  * Print only when some errors occurred because after
                  * successful processing of the pattern it is overwritten by
                  * cfg_process_msg_pattern() function and we cannot get the
@@ -706,11 +708,11 @@ log_msg(cfg_msg *msg, te_bool before)
                             ((cfg_pattern_msg *)msg)->pattern, addon);
             }
             break;
-            
-        case CFG_FAMILY:  
+
+        case CFG_FAMILY:
             GET_STRS(cfg_family_msg);
             LGR_MESSAGE(level, TE_LGR_USER,
-                        "Get family (get %s) for %s%s%s", 
+                        "Get family (get %s) for %s%s%s",
                         ((cfg_family_msg *)msg)->who == CFG_FATHER ?
                             "father" :
                         ((cfg_family_msg *)msg)->who == CFG_BROTHER ?
@@ -719,14 +721,14 @@ log_msg(cfg_msg *msg, te_bool before)
                             "son" : "unknown member",
                         s1, s2, addon);
             break;
-            
+
         case CFG_ADD:
         {
             cfg_add_msg *m = (cfg_add_msg *)msg;
             cfg_inst_val val;
             char        *val_str;
             te_bool      val_str_free = FALSE;
-            
+
             if (m->val_type == CVT_NONE)
             {
                 val_str = "(none)";
@@ -735,7 +737,7 @@ log_msg(cfg_msg *msg, te_bool before)
             {
                 val_str = NULL;
             }
-            else 
+            else
             {
                 if (cfg_types[m->val_type].val2str(val, &val_str) != 0)
                     val_str = NULL;
@@ -745,33 +747,33 @@ log_msg(cfg_msg *msg, te_bool before)
             }
             LGR_MESSAGE(level, TE_LGR_USER,
                         "Add instance %s value %s%s",
-                        (char *)m + m->oid_offset, 
-                        val_str == NULL ? "(unknown)" : 
+                        (char *)m + m->oid_offset,
+                        val_str == NULL ? "(unknown)" :
                         (before) ? "(not processed yet)" : val_str, addon);
 
             if (val_str_free)
                 free(val_str);
             break;
         }
-        
+
         case CFG_DEL:
             GET_STRS(cfg_del_msg);
             LGR_MESSAGE(level, TE_LGR_USER,
                         "Delete %s%s%s", s1, s2, addon);
             break;
-            
-        case CFG_SET:      
+
+        case CFG_SET:
         {
             cfg_set_msg *m = (cfg_set_msg *)msg;
             cfg_inst_val val;
             char        *val_str = NULL;
             te_bool      val_str_free = FALSE;
-            
+
             GET_STRS(cfg_set_msg);
-            
+
             if (cfg_types[m->val_type].get_from_msg(msg, &val) != 0)
                 val_str = NULL;
-            else 
+            else
             {
                 if (cfg_types[m->val_type].val2str(val, &val_str) != 0)
                     val_str = NULL;
@@ -782,36 +784,36 @@ log_msg(cfg_msg *msg, te_bool before)
             LGR_MESSAGE(level, TE_LGR_USER,
                         "Set for %s%s value %s%s", s1, s2,
                         val_str == NULL ? "(unknown)" : val_str, addon);
-                    
+
             if (val_str_free)
                 free(val_str);
             break;
         }
-        
-        case CFG_GET:      
+
+        case CFG_GET:
             GET_STRS(cfg_get_msg);
             LGR_MESSAGE(level, TE_LGR_USER,
                         "Get %s%s%s", s1, s2, addon);
             break;
-            
+
         case CFG_SYNC:
             LGR_MESSAGE(level, TE_LGR_USER,
                         "Synchronize %s%s%s",
-                        ((cfg_sync_msg *)msg)->oid, 
+                        ((cfg_sync_msg *)msg)->oid,
                         ((cfg_sync_msg *)msg)->subtree ? " (subtree)" : "",
                         addon);
             break;
-            
+
         case CFG_REBOOT:
             LGR_MESSAGE(level, TE_LGR_USER,
                         "Reboot Test Agent %s%s",
                         ((cfg_reboot_msg *)msg)->ta_name, addon);
             break;
-            
+
         case CFG_BACKUP:
         {
             uint8_t op = ((cfg_backup_msg *)msg)->op;
-            
+
             if (!before && (op == CFG_BACKUP_VERIFY) &&
                 (msg->rc == ETEBACKUP))
             {
@@ -827,7 +829,7 @@ log_msg(cfg_msg *msg, te_bool before)
                         op == CFG_BACKUP_CREATE ? "" : " ", addon);
             break;
         }
-                    
+
         case CFG_CONFIG:
             LGR_MESSAGE(level, TE_LGR_USER,
                         "Create configuration file %s (%s)%s",
@@ -835,7 +837,7 @@ log_msg(cfg_msg *msg, te_bool before)
                         ((cfg_config_msg *)msg)->history ?
                             "history" : "backup", addon);
             break;
-            
+
         case CFG_SHUTDOWN:
             LGR_MESSAGE(level, TE_LGR_USER,
                         "Shutdown command%s", addon);
@@ -844,7 +846,7 @@ log_msg(cfg_msg *msg, te_bool before)
         default:
             ERROR("Unknown command");
     }
-#undef GET_STRS    
+#undef GET_STRS
 }
 
 /**
@@ -871,64 +873,65 @@ cfg_process_msg(cfg_msg **msg, te_bool update_dh)
             if ((*msg)->rc != 0 && update_dh)
                 cfg_dh_delete_last_command();
             break;
-            
+
         case CFG_FIND:
             cfg_process_msg_find((cfg_find_msg *)*msg);
             break;
-            
+
         case CFG_GET_DESCR:
             cfg_process_msg_get_descr((cfg_get_descr_msg *)*msg);
             break;
-            
+
         case CFG_GET_OID:
             cfg_process_msg_get_oid((cfg_get_oid_msg *)*msg);
             break;
-            
+
         case CFG_GET_ID:
             cfg_process_msg_get_id((cfg_get_id_msg *)*msg);
             break;
-            
+
         case CFG_PATTERN:
-            *msg = (cfg_msg *)cfg_process_msg_pattern((cfg_pattern_msg *)*msg);
+            *msg = (cfg_msg *)cfg_process_msg_pattern(
+                                  (cfg_pattern_msg *)*msg);
             break;
-            
+
         case CFG_FAMILY:
             cfg_process_msg_family((cfg_family_msg *)*msg);
             break;
-            
+
         case CFG_ADD:
             process_add((cfg_add_msg *)(*msg), update_dh);
             break;
-            
+
         case CFG_DEL:
             process_del((cfg_del_msg *)(*msg), update_dh);
             break;
-        
+
         case CFG_SET:
             process_set((cfg_set_msg *)(*msg), update_dh);
             break;
-            
+
         case CFG_COMMIT:
             (*msg)->rc = cfg_tas_commit(((cfg_commit_msg *)(*msg))->oid);
             break;
- 
+
         case CFG_GET:
             process_get((cfg_get_msg *)(*msg));
             break;
-        
+
         case CFG_SYNC:
-            (*msg)->rc = cfg_ta_sync(((cfg_sync_msg *)(*msg))->oid, 
+            (*msg)->rc = cfg_ta_sync(((cfg_sync_msg *)(*msg))->oid,
                                      ((cfg_sync_msg *)(*msg))->subtree);
             break;
-            
+
         case CFG_REBOOT:
             process_reboot((cfg_reboot_msg *)(*msg), update_dh);
             break;
-            
+
         case CFG_BACKUP:
             process_backup((cfg_backup_msg *)(*msg));
             break;
-        
+
         case CFG_CONFIG:
             if (((cfg_config_msg *)(*msg))->history)
             {
@@ -941,14 +944,14 @@ cfg_process_msg(cfg_msg **msg, te_bool update_dh)
                                  ((cfg_config_msg *)(*msg))->filename);
             }
             break;
-        
+
         case CFG_SHUTDOWN:
             /* Remove commands initiated by configuration file */
             INFO("Restoring backup");
             cfg_dh_restore_backup(NULL);
             cfg_shutdown = TRUE;
             break;
-            
+
         default: /* Should not occur */
             ERROR("Unknown message is received");
             break;
@@ -965,25 +968,26 @@ wait_shutdown()
     while (TRUE)
     {
         struct ipc_server_client *user = NULL;
-        
+
         cfg_msg *msg = (cfg_msg *)buf;
         size_t   len = CFG_BUF_LEN;
         int      rc;
-        
+
         if ((rc = ipc_receive_message(server, buf, &len, &user)) != 0)
         {
             ERROR("Failed receive user request: errno=%d", rc);
             continue;
         }
-        
+
         if (msg->type != CFG_SHUTDOWN)
             msg->rc = ETENOCONF;
-        
-        if ((rc = ipc_send_answer(server, user, (char *)msg, msg->len)) != 0)
+
+        rc = ipc_send_answer(server, user, (char *)msg, msg->len);
+        if (rc != 0)
         {
             ERROR("Cannot send an answer to user: errno=%d", rc);
         }
-        
+
         if (msg->type == CFG_SHUTDOWN)
             return;
     }
@@ -1008,7 +1012,7 @@ main(int argc, char **argv)
     ipc_init();
     if ((server = ipc_register_server(CONFIGURATOR_SERVER)) == NULL)
         goto error;
-    
+
     VERB("Starting...");
     if (argc != 2)
     {
@@ -1017,15 +1021,15 @@ main(int argc, char **argv)
         rc = EINVAL;
         goto error;
     }
-    
+
     if ((tmp_dir = getenv("TE_TMP")) == NULL)
     {
         ERROR("Fatal error: TE_TMP is empty");
         rc = ENOENT;
         goto error;
     }
-    
-    if ((filename = (char *)malloc(strlen(tmp_dir) + 
+
+    if ((filename = (char *)malloc(strlen(tmp_dir) +
                                    strlen("/te_cfg_tmp.xml") + 1)) == NULL)
     {
         ERROR("No enough memory");
@@ -1033,86 +1037,87 @@ main(int argc, char **argv)
         goto error;
     }
     sprintf(filename, "%s/te_cfg_tmp.xml", tmp_dir);
-    
+
     if ((rc = cfg_db_init()) != 0)
     {
         ERROR("Fatal error: cannot initialize database");
         goto error;
     }
-    
+
     if ((rc = parse_config(argv[1])) != 0)
         goto error;
 
 #if 0
     print_otree(&cfg_obj_root, 0);
     print_tree(&cfg_inst_root, 0);
-#endif    
+#endif
 
     while (TRUE)
     {
         struct ipc_server_client *user = NULL;
-        
+
         cfg_msg *msg = (cfg_msg *)buf;
         size_t   len = CFG_BUF_LEN;
-        
+
         if ((rc = ipc_receive_message(server, buf, &len, &user)) != 0)
         {
             ERROR("Failed receive user request: errno=0x%x", rc);
             continue;
         }
-        
+
         msg->rc = 0;
-        
+
         cfg_process_msg(&msg, TRUE);
-        
-        if ((rc = ipc_send_answer(server, user, (char *)msg, msg->len)) != 0)
+
+        rc = ipc_send_answer(server, user, (char *)msg, msg->len);
+        if (rc != 0)
         {
             ERROR("Cannot send an answer to user: errno=0x%x", rc);
         }
-        
+
         if ((char *)msg != buf)
             free(msg);
-            
+
         if (cfg_fatal_err != 0)
         {
             rc = cfg_fatal_err;
             goto error;
         }
-            
+
         if (cfg_shutdown)
         {
 #if 1
             print_otree(&cfg_obj_root, 0);
             print_tree(&cfg_inst_root, 0);
-#endif    
-#if 0        
-            printf("Creation backup %d\n", 
+#endif
+#if 0
+            printf("Creation backup %d\n",
                    cfg_backup_create_file("../../backup.xml"));
-            printf("Creation dh %d\n", 
+            printf("Creation dh %d\n",
                    cfg_dh_create_file("../../history.xml"));
-#endif                   
+#endif
             goto error;
         }
     }
-    
+
 error:
     VERB("Destroy history");
     cfg_dh_destroy();
-    
+
     VERB("Destroy database");
     cfg_db_destroy();
-    
+
     VERB("Free resources");
     free(cfg_ta_list);
     free(cfg_get_buf);
-    
+
     if ((rc != 0) && (server != NULL))
         wait_shutdown();
-    
+
     VERB("Closing server");
     if (server != NULL)
         ipc_close_server(server);
-        
+
     free(filename);
 
     if (rc != 0)

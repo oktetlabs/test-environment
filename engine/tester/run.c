@@ -76,16 +76,16 @@
 
 /** Test parameters grouped in one pointer */
 typedef struct test_thread_params {
-    tester_ctx     *ctx;        /**< Tester context */
-    run_item       *test;       /**< Test to be run */
-    test_id         id;         /**< Test ID */
-    test_params    *params;     /**< Test parameters */
+    tester_ctx     *ctx;    /**< Tester context */
+    run_item       *test;   /**< Test to be run */
+    test_id         id;     /**< Test ID */
+    test_params    *params; /**< Test parameters */
 
 #ifdef TESTER_TIMEOUT_SUPPORT
-    int             pipe;       /**< One side of the pipe for notification */
+    int             pipe;   /**< One side of the pipe for notification */
 #endif
     
-    int             rc;         /**< Test result */
+    int             rc;     /**< Test result */
 } test_thread_params;
 
 
@@ -436,7 +436,8 @@ vars_args_iterations(test_vars_args        *vas,
                         more_in_list = (more_in_list || more_in_arg);
                         /* Create parameter and add it in iteration */
                         /* FIXME: Requirement here */
-                        tp = test_param_new(va2->name, s, va->handdown, NULL);
+                        tp = test_param_new(va2->name, s, va->handdown,
+                                            NULL);
                         if (tp == NULL)
                         {
                             ERROR("Failed to create new test parameter");
@@ -677,27 +678,32 @@ log_test_result(test_id parent, test_id test, int result)
         switch (result)
         {
             case ETESTKILL:
-                LOG_RING(TESTER_CONTROL, TESTER_CONTROL_MSG_PREFIX "KILLED",
+                LOG_RING(TESTER_CONTROL,
+                         TESTER_CONTROL_MSG_PREFIX "KILLED",
                          parent, test);
                 break;
 
             case ETESTCORE:
-                LOG_RING(TESTER_CONTROL, TESTER_CONTROL_MSG_PREFIX "CORED",
+                LOG_RING(TESTER_CONTROL,
+                         TESTER_CONTROL_MSG_PREFIX "CORED",
                          parent, test);
                 break;
 
             case ETESTSKIP:
-                LOG_RING(TESTER_CONTROL, TESTER_CONTROL_MSG_PREFIX "SKIPPED",
+                LOG_RING(TESTER_CONTROL,
+                         TESTER_CONTROL_MSG_PREFIX "SKIPPED",
                          parent, test);
                 break;
 
             case ETESTFAKE:
-                LOG_RING(TESTER_CONTROL, TESTER_CONTROL_MSG_PREFIX "FAKED",
+                LOG_RING(TESTER_CONTROL,
+                         TESTER_CONTROL_MSG_PREFIX "FAKED",
                          parent, test);
                 break;
 
             case ETESTEMPTY:
-                LOG_RING(TESTER_CONTROL, TESTER_CONTROL_MSG_PREFIX "EMPTY",
+                LOG_RING(TESTER_CONTROL,
+                         TESTER_CONTROL_MSG_PREFIX "EMPTY",
                          parent, test);
                 break;
 
@@ -777,14 +783,16 @@ run_test_script(tester_ctx *ctx, test_script *script, test_id id,
                          TESTER_GDB_FILENAME_FMT, id) >=
                     (int)sizeof(gdb_init))
             {
-                ERROR("Too short buffer is reserved for GDB init file name");
+                ERROR("Too short buffer is reserved for GDB init file "
+                      "name");
                 return ETESMALLBUF;
             }
             /* TODO Clean up */
             f = fopen(gdb_init, "w");
             if (f == NULL)
             {
-                ERROR("Failed to create GDB init file: %s", strerror(errno));
+                ERROR("Failed to create GDB init file: %s",
+                      strerror(errno));
                 return errno;
             }
             fprintf(f, "set args %s\n", params_str);
@@ -797,15 +805,18 @@ run_test_script(tester_ctx *ctx, test_script *script, test_id id,
                          "gdb -x %s ", gdb_init) >=
                     (int)sizeof(shell))
             {
-                ERROR("Too short buffer is reserved for shell command prefix");
+                ERROR("Too short buffer is reserved for shell command "
+                      "prefix");
                 return ETESMALLBUF;
             }
         }
         else
         {
-            if (snprintf(shell, sizeof(shell), "gdb ") >= (int)sizeof(shell))
+            if (snprintf(shell, sizeof(shell), "gdb ") >=
+                    (int)sizeof(shell))
             {
-                ERROR("Too short buffer is reserved for shell command prefix");
+                ERROR("Too short buffer is reserved for shell command "
+                      "prefix");
                 return ETESMALLBUF;
             }
         }
@@ -821,7 +832,8 @@ run_test_script(tester_ctx *ctx, test_script *script, test_id id,
             return ETESMALLBUF;
         }
         if (snprintf(postfix, sizeof(postfix),
-                     " 2>" TESTER_VG_FILENAME_FMT, id) >= (int)sizeof(postfix))
+                     " 2>" TESTER_VG_FILENAME_FMT, id) >=
+                (int)sizeof(postfix))
         {
             ERROR("Too short buffer is reserved for test script "
                   "command postfix");
@@ -1550,7 +1562,8 @@ iterate_test(tester_ctx *ctx, run_item *test,
                         if (TEST_RESULT(test_result))
                             test_result = rc;
                     }
-                    else if (test->attrs.track_conf == TESTER_TRACK_CONF_YES)
+                    else if (test->attrs.track_conf ==
+                                 TESTER_TRACK_CONF_YES)
                     {
                         RING("Configuration successfully restored "
                              "using backup");

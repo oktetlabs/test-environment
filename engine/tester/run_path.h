@@ -99,7 +99,8 @@ struct tester_ctx;
  * @retval 0        The node is on run path
  * @retval ENOENT   The node is not on run path
  */
-extern int tester_run_path_forward(struct tester_ctx *ctx, const char *name);
+extern int tester_run_path_forward(struct tester_ctx *ctx,
+                                   const char *name);
 
 /**
  * Check whether current parameters match requested in run path.

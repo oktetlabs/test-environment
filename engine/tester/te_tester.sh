@@ -37,7 +37,8 @@ esac
 # Get a sane screen width
 [ -z "${COLUMNS:-}" ] && COLUMNS=80
 
-[ -z "${CONSOLETYPE:-}" ] && [ -x /sbin/consoletype ] && CONSOLETYPE="`/sbin/consoletype`"
+[ -z "${CONSOLETYPE:-}" ] && [ -x /sbin/consoletype ] && \
+    CONSOLETYPE="`/sbin/consoletype`"
 
 if [ -f /etc/sysconfig/i18n -a -z "${NOLOCALE:-}" ] ; then
   . /etc/sysconfig/i18n
@@ -135,7 +136,7 @@ BEGIN { suite = 1; package = 1; suite_n=2 ; package_n=2 ; test_n = 1; }
     test_n = 2;
     printf("SUITE_%d_PACKAGES=\"${SUITE_%d_PACKAGES} %d\"\n", 
            suite, suite, package); 
-    printf("PACKAGEDIR_%d_%d=%s\n", suite, package, $2); 
+    printf("PKGDIR_%d_%d=%s\n", suite, package, $2); 
     next;
 }
 {
@@ -143,8 +144,8 @@ BEGIN { suite = 1; package = 1; suite_n=2 ; package_n=2 ; test_n = 1; }
         next;
     test=test_n;
     test_n++;
-    printf("SUITE_%d_%d_TESTS=\"${SUITE_%d_%d_TESTS} %d\"\n", suite, package,
-           suite, package, test);
+    printf("SUITE_%d_%d_TESTS=\"${SUITE_%d_%d_TESTS} %d\"\n",
+           suite, package, suite, package, test);
     printf("TEST_%d_%d_%d_NAME=\"%s\"\n", suite, package, test, $1);
     printf("TEST_%d_%d_%d_PARMS=\"%s\"\n", suite, package, test, 
            gensub($1, " ", 1));
@@ -162,7 +163,6 @@ fi
 
 # Valgrind options for MemCheck
 VG_OPTIONS="--num-callers=8"
-#VG_OPTIONS="--tool=memcheck --leak-check=yes --show-reachable=yes --num-callers=8"
 # Valgrind options for threads safety
 #VG_OPTIONS="--tool=helgrind --num-callers=8"
 
@@ -172,20 +172,20 @@ for i in $SUITES ; do
     SUITEDIR=`eval echo '$SUITEDIR_'$i` ;        
     PACKAGES=`eval echo '$SUITE_'$i'_PACKAGES'` ;
     for j in ${PACKAGES} ; do
-        PACKAGEDIR=`eval echo '$PACKAGEDIR_'$i'_'$j` ;
+        PKGDIR=`eval echo '$PKGDIR_'$i'_'$j` ;
         TESTS=`eval echo '$SUITE_'$i'_'$j'_TESTS'` ; 
         for k in $TESTS ; do
             TEST_NAME=`eval echo '$TEST_'$i'_'$j'_'$k'_NAME'` ;
             TEST_PARMS=`eval echo '$TEST_'$i'_'$j'_'$k'_PARMS'` ;
             if [ "${QUIET}" == "no" ]; then
-                echo -n "Starting test ${SUITEDIR}/${PACKAGEDIR}/${TEST_NAME}"
+                echo -n "Starting test ${SUITEDIR}/${PKGDIR}/${TEST_NAME}"
             fi
             if test -n "$VG_TESTS" ; then
                 valgrind $VG_OPTIONS \
-                ${TE_INSTALL_SUITE}/${SUITEDIR}/${PACKAGEDIR}/${TEST_NAME} \
-                ${TEST_PARMS} 2>vg.test.${SUITEDIR}.${PACKAGEDIR}.${TEST_NAME}
+                ${TE_INSTALL_SUITE}/${SUITEDIR}/${PKGDIR}/${TEST_NAME} \
+                ${TEST_PARMS} 2>vg.test.${SUITEDIR}.${PKGDIR}.${TEST_NAME}
             else
-                ${TE_INSTALL_SUITE}/${SUITEDIR}/${PACKAGEDIR}/${TEST_NAME} \
+                ${TE_INSTALL_SUITE}/${SUITEDIR}/${PKGDIR}/${TEST_NAME} \
                 ${TEST_PARMS}
             fi
             if test $? -ne 0 ; then
@@ -195,7 +195,8 @@ for i in $SUITES ; do
                 let passed++ ;
                 result=passed ;
             fi
-            te_log_message Engine Tester "Test ${SUITEDIR}/${PACKAGEDIR}/${TEST_NAME} ${result}"
+            te_log_message Engine Tester \
+                "Test ${SUITEDIR}/${PKGDIR}/${TEST_NAME} ${result}"
             if [ "${QUIET}" == "no" ]; then
                 if [ "${result}" = "passed" ]; then
                     echo_passed

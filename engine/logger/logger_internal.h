@@ -22,11 +22,11 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
  *
- * 
+ *
  * @author Igor B. Vasiliev <Igor.Vasiliev@oktetlabs.ru>
  *
  * $Id$
- */ 
+ */
 
 #ifndef __LGR_LOGGER_INTERNAL_H__
 #define __LGR_LOGGER_INTERNAL_H__
@@ -126,25 +126,29 @@ typedef struct re_fltr {
 
 /** Node of the TA single linked list */
 typedef struct ta_inst {
-    struct ta_inst *next;                /**< Pointer to the next structure */
+    struct ta_inst *next;                /**< Pointer to the next
+                                              structure */
     char            agent[RCF_MAX_NAME]; /**< TA name */
-    char            type[RCF_MAX_NAME];  /**< Type assigned for TA or NULL */
-    uint32_t        sequence;            /**< Incoming message sequence nmbr */
+    char            type[RCF_MAX_NAME];  /**< Type assigned for TA or
+                                              NULL */
+    uint32_t        sequence;            /**< Incoming message sequence
+                                              nmbr */
     int             polling;             /**< Polling parameter value */
     te_bool         thread_run;          /**< Is thread running? */
     pthread_t       thread;              /**< Thread identifier */
     int             flush_log;           /**< 0 - normal processing;
                                               1 - flush TA local log */
-    struct re_fltr  filters;             /**< Filters formed within Logger 
+    struct re_fltr  filters;             /**< Filters formed within Logger
                                               configuration file parsing */
 } ta_inst;
 
 
 /** Node of the TEN entities single linked list */
 typedef struct te_inst {
-    struct te_inst *next;                 /**< Pointer to the next structure */
+    struct te_inst *next;                 /**< Pointer to the next 
+                                               structure */
     char            entity[RCF_MAX_NAME]; /**< TEN entity name */
-    struct re_fltr  filters;              /**< Filters formed within Logger 
+    struct re_fltr  filters;              /**< Filters formed within Logger
                                                configuration file parsing */
 } te_inst;
 
@@ -153,7 +157,7 @@ typedef struct te_inst {
  * Parse logger configuration file.
  *
  * @param  fileName  XML configuration file full name.
- * 
+ *
  * @return  Status information
  *
  * @retval   0          Success.

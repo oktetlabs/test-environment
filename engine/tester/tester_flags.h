@@ -55,7 +55,8 @@ enum tester_flags {
 
     TESTER_NOBUILD      = 0x1000,   /**< Don't build any Test Suites */
     TESTER_NO_CS        = 0x2000,   /**< Don't interact with Configurator */
-    TESTER_NOCFGTRACK   = 0x4000,   /**< Don't track configuration changes */
+    TESTER_NOCFGTRACK   = 0x4000,   /**< Don't track configuration 
+                                         changes */
     TESTER_INLOGUE      = 0x8000,   /**< Is in prologue/epilogue */
     
 };

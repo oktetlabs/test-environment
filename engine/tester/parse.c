@@ -281,7 +281,8 @@ alloc_and_get_tqe_string(xmlNodePtr node, tqh_strings *strs)
  * @return Status code.
  */
 static int
-alloc_and_get_test_suite_info(xmlNodePtr node, test_suites_info *suites_info,
+alloc_and_get_test_suite_info(xmlNodePtr node,
+                              test_suites_info *suites_info,
                               unsigned int flags)
 {
     test_suite_info *p;
@@ -456,7 +457,8 @@ alloc_and_get_option(xmlNodePtr node, test_options *opts)
 
     /* Get optional information about contexts */
     for (q = xmlNodeChildren(node);
-         (q != NULL) && (xmlStrcmp(q->name, CONST_CHAR2XML("context")) == 0);
+         (q != NULL) &&
+             (xmlStrcmp(q->name, CONST_CHAR2XML("context")) == 0);
          q = xmlNodeNext(q))
     {
         rc = alloc_and_get_tqe_string(q, &p->contexts);
@@ -743,7 +745,8 @@ get_script(xmlNodePtr node, tester_cfg *cfg, test_script *script,
     }
     if (script->objective == NULL)
     {
-        const test_info *ti = find_test_info(cfg->cur_pkg->ti, script->name);
+        const test_info *ti = find_test_info(cfg->cur_pkg->ti,
+                                             script->name);
 
         if (ti != NULL)
         {
@@ -879,7 +882,8 @@ alloc_and_get_value(xmlNodePtr node, test_var_arg_values *values)
     /* Simple text content is represented as 'text' elements */
     if (node->children != NULL)
     {
-        if ((xmlStrcmp(node->children->name, CONST_CHAR2XML("text")) != 0) ||
+        if ((xmlStrcmp(node->children->name,
+                       CONST_CHAR2XML("text")) != 0) ||
             (node->children->content == NULL))
         {
             ERROR("'value' content is empty or not 'text'");
@@ -1454,7 +1458,8 @@ get_test_package(xmlNodePtr root, tester_cfg *cfg, test_package *pkg)
     {
         /* Simple text content is represented as 'text' elements */
         if ((node->children == NULL) ||
-            (xmlStrcmp(node->children->name, CONST_CHAR2XML("text")) != 0) ||
+            (xmlStrcmp(node->children->name,
+                       CONST_CHAR2XML("text")) != 0) ||
             (node->children->content == NULL))
         {
             ERROR("'description' content is empty or not 'text'");
@@ -1559,7 +1564,8 @@ get_tester_config(xmlNodePtr root, tester_cfg *cfg, unsigned int flags)
 #ifndef XML_DOC_ASSUME_VALID
     if (s == NULL)
     {
-        ERROR("'version' of the Tester configuration file is not specified");
+        ERROR("'version' of the Tester configuration file is not "
+              "specified");
         return EINVAL;
     }
 #endif
@@ -1601,7 +1607,8 @@ get_tester_config(xmlNodePtr root, tester_cfg *cfg, unsigned int flags)
             return EINVAL;
         }
         /* Simple text content is represented as 'text' elements */
-        if ((xmlStrcmp(node->children->name, CONST_CHAR2XML("text")) != 0) ||
+        if ((xmlStrcmp(node->children->name,
+                       CONST_CHAR2XML("text")) != 0) ||
             (node->children->content == NULL))
         {
             ERROR("Tester configuration 'description' content is "
