@@ -3562,3 +3562,5 @@ TARPC_FUNC(wsa_recv_disconnect, {},
     ;
 }
 )
+
+/* WSARecvMsg */
