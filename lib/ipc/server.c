@@ -181,7 +181,7 @@ ipc_register_server(const char *name)
     ipcs = calloc(1, sizeof(*ipcs));
     if (ipcs == NULL)
     {
-        errno = ENOMEM;
+        perror("ipc_register_server(): calloc() error");
         return NULL;
     }
 
@@ -194,7 +194,7 @@ ipc_register_server(const char *name)
     ipcs->buffer = calloc(1, IPC_SEGMENT_SIZE);
     if (ipcs->buffer == NULL)
     {
-        errno = ENOMEM;
+        perror("ipc_register_server(): calloc() error");
         free(ipcs);
         return NULL;
     }
@@ -235,17 +235,29 @@ ipc_register_server(const char *name)
     if (IPC_TCP_SERVER_BUFFER_SIZE != 0)
     {
         ipcs->out_buffer = calloc(1, IPC_TCP_SERVER_BUFFER_SIZE);
-        assert(ipcs->out_buffer != NULL);
+        if (ipcs->out_buffer == NULL)
+        {
+            perror("ipc_register_server(): calloc() error");
+            free(ipcs);
+            return NULL;
+        }
     }
-
 
     /* Create a socket */
     ipcs->socket = socket(AF_INET, SOCK_STREAM, 0);
-    assert(ipcs->socket != -1);
+    if (ipcs->socket < 0)
+    {
+        perror("ipc_register_server(): socket() error");
+        free(ipcs->out_buffer);
+        free(ipcs);
+        return NULL;
+    }
 
     if (listen(ipcs->socket, SOMAXCONN) != 0)
     {
         perror("listen() error");
+        close(ipcs->socket);
+        free(ipcs->out_buffer);
         free(ipcs);
         return NULL;
     }
@@ -258,18 +270,27 @@ ipc_register_server(const char *name)
                         &addr_len) != 0)
         {
             perror("getsockname() error");
+            close(ipcs->socket);
+            free(ipcs->out_buffer);
             free(ipcs);
             return NULL;
         }
         if (ipc_pmap_register_server(name, addr.sin_port) != 0)
         {
-            perror("can not register server's port");
+            perror("Cannot register server's port");
+            close(ipcs->socket);
+            free(ipcs->out_buffer);
             free(ipcs);
             return NULL;
         }
     }
 
 #endif
+    /* 
+     * Try to set close-on-exec flag, but ignore failures, 
+     * since it's not critical.
+     */
+    (void)fcntl(ipcs->socket, F_SETFD, FD_CLOEXEC);
 
     return ipcs;
 }
