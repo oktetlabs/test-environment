@@ -719,6 +719,7 @@ tapi_cfg_del_arp_entry(const char *ta, const void *net_addr)
     return tapi_cfg_arp_op(OP_DEL, ta, net_addr, NULL);
 }
 
+/* See the description in tapi_cfg.h */
 int
 tapi_cfg_del_arp_dynamic(const char *ta)
 {
@@ -726,6 +727,7 @@ tapi_cfg_del_arp_dynamic(const char *ta)
     int         num;
     int         i;
     int         rc;
+    int         result = 0;
 
     if ((rc = cfg_find_pattern_fmt(&num, &hndls,
                                    "/agent:%s/volatile:/arp:*", ta)) != 0)
@@ -736,13 +738,13 @@ tapi_cfg_del_arp_dynamic(const char *ta)
     {
         if ((rc = cfg_del_instance(hndls[i], FALSE)) != 0)
         {
-            return rc;
+            RC_UPDATE(result, rc);
         }
     }
 
     free(hndls);
 
-    return 0;
+    return result;
 }
 
 /**
