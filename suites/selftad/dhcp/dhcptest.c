@@ -58,41 +58,54 @@
  * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  */
 
-#include "config.h"
-/*
-#ifdef HAVE_STDLIB_H
-*/
-#include <stdlib.h>
-/*
-#endif
-#ifdef HAVE_STRING_H
-*/
-#include <string.h>
-/*
-#endif
-#ifdef HAVE_STRINGS_H
-#include <strings.h>
-#endif
-*/
+#define TE_TEST_NAME    "dhcp/simple"
 
+#include "te_config.h"
+#include "config.h"
+
+#ifdef HAVE_STDIO_H
 #include <stdio.h>
+#endif 
+
+#ifdef HAVE_STDLIB_H
+#include <stdlib.h>
+#endif
+
+#ifdef HAVE_STRING_H
+#include <string.h>
+#endif
+
+#ifdef HAVE_NET_ETHERNET_H
+#include <net/ethernet.h>
+#endif
+
+#ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>
+#endif
+
+#ifdef HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif
+
+#ifdef HAVE_ARPA_INET_H
+#include <arpa/inet.h>
+#endif
+
 #include <sys/time.h>
 #include <unistd.h>
 
 #include "conf_api.h"
+#include "ndn_dhcp.h"
+#include "tapi_test.h"
+
 #include "tapi_dhcp.h"
 
-#define TEST_FAIL(_args...) \
-    do {                               \
-        fprintf(stderr, _args);        \
-        exit(1);                       \
-    } while (0)
 
 int
-main()
+main(int argc, char *argv[])
 {
-    int rc;
+    char ta[32];
+    int  len = sizeof(ta);
     
     struct dhcp_message *dhcp_req;
     struct dhcp_message *dhcp_ack;
@@ -102,9 +115,8 @@ main()
     csap_handle_t        dhcp_csap_tx;
 
     struct timeval tv = {10, 0}; /* 10 sec */
-    const char *ta_name = "valens";
 
-    uint8_t ps_wan_man_mac[MACADDR_LEN];
+    uint8_t  ps_wan_man_mac[ETHER_ADDR_LEN];
     uint32_t ps_wan_man_addr;
     uint32_t tftp_serv_addr = inet_addr("192.168.249.2");
     uint32_t dhcp_serv_addr = inet_addr("192.168.249.2");
@@ -112,21 +124,33 @@ main()
     const char *ps_cfg_file = "PSP-01-Basic.cfg";
     unsigned int i;
 
+    TEST_START;
+
+    if (rcf_get_ta_list(ta, &len) != 0)
+    {
+        VERB("rcf_get_ta_list failed\n");
+        return 1;
+    }
+    VERB("Agent: %s\n", ta);
+
     /* 
      * Register on receiving DHCP DISCOVER message from 
      * WAN-Man MAC address
      */
     /*@todo Create a handle to operate with DHCP CSAP (WAN-Man MAC) */
-    if ((rc = dhcpv4_plain_csap_create(ta_name, &dhcp_csap, "eth0")) 
+    if ((rc = tapi_dhcpv4_plain_csap_create(ta, &dhcp_csap,
+                                            DHCP4_CSAP_MODE_SERVER,
+                                            "eth0")) 
+
          != 0)
     {
-        TEST_FAIL("Cannot create DHCP CSAP rc = %d\n", rc);
+        TEST_FAIL("Cannot create DHCP CSAP rc = %X", rc);
     }
 #if 1
-    if ((rc = dhcpv4_message_start_recv(ta_name, dhcp_csap,
+    if ((rc = dhcpv4_message_start_recv(ta, dhcp_csap,
                                         DHCPDISCOVER)) != 0)
     {
-        TEST_FAIL("dhcpv4_message_start_recv returns %d\n", rc);
+        TEST_FAIL("dhcpv4_message_start_recv returns %X", rc);
     }
 
     /* Reboot the PS */
@@ -138,7 +162,10 @@ main()
     fflush(stdout);
 #endif
     
-    return 0;
+    TEST_SUCCESS;
+
+cleanup:
+    TEST_END; 
 }
 
 
