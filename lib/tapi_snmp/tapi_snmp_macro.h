@@ -92,8 +92,7 @@ extern "C" {
  * 
  */
 #define SNMP_SET_INTEGER(ta_, sid_, csap_id_, label_, value_)              \
-    do                                                                     \
-    {                                                                      \
+    do {                                                                   \
         int             rc_;                                               \
         int             errstat_;	                                   \
         tapi_snmp_oid_t oid_;                                              \
@@ -104,7 +103,7 @@ extern "C" {
 	if (rc_ != 0)                                                      \
 	{                                                                  \
             TEST_FAIL("snmp set integer failed, result %X, errstat %X\n",  \
-		       rc_, errstat_);                                     \
+		      rc_, errstat_);                                      \
         }                                                                  \
     } while (0)        	    
 
@@ -120,8 +119,7 @@ extern "C" {
  * 
  */
 #define SNMP_SET_OCTETSTRING(ta_, sid_, csap_id_, label_, value_, size_)      \
-    do                                                                        \
-    {                                                                         \
+    do {                                                                      \
         int             rc_;                                                  \
         int             errstat_;                                             \
 	                                                                      \
@@ -148,8 +146,7 @@ extern "C" {
  * 
  */
 #define SNMP_SET_STRING(ta_, sid_, csap_id_, label_, value_)               \
-    do                                                                     \
-    {                                                                      \
+    do {                                                                   \
         int             rc_;                                               \
         int             errstat_;                                          \
         tapi_snmp_oid_t oid_;                                              \
@@ -177,8 +174,7 @@ extern "C" {
  * 
  */
 #define SNMP_WALK(ta_, sid_, csap_id_, label_, userdata_, callback_)       \
-    do                                                                     \
-    {                                                                      \
+    do {                                                                   \
         int             rc_;                                               \
         tapi_snmp_oid_t oid_;                                              \
 	                                                                   \
@@ -193,8 +189,7 @@ extern "C" {
 
 #undef SNMP_WALK
 #define SNMP_WALK(ta_, sid_, csap_id_, label_, userdata_, callback_)       \
-    do                                                                     \
-    {                                                                      \
+    do {                                                                   \
         int             rc_;                                               \
         tapi_snmp_oid_t oid_;                                              \
                                                                            \
@@ -215,8 +210,7 @@ extern "C" {
  *                       
  */
 #define SNMP_GET_IPADDR(ta_, sid_, csap_id_, label_, addr_)                \
-    do                                                                     \
-    {                                                                      \
+    do {                                                                   \
         int             rc_;                                               \
         tapi_snmp_oid_t oid_;                                              \
 	                                                                   \
@@ -241,8 +235,7 @@ extern "C" {
  * 
  */
 #define SNMP_GET_INTEGER(ta_, sid_, csap_id_, label_, val_)                \
-    do                                                                     \
-    {                                                                      \
+    do {                                                                   \
         int             rc_;                                               \
         tapi_snmp_oid_t oid_;                                              \
 	                                                                   \
@@ -268,8 +261,7 @@ extern "C" {
  *                       
  */
 #define SNMP_GET_STRING(ta_, sid_, csap_id_, label_, buf_, bufsize_)       \
-    do                                                                     \
-    {                                                                      \
+    do {                                                                   \
         int             rc_;                                               \
         tapi_snmp_oid_t oid_;                                              \
 	                                                                   \
@@ -296,8 +288,7 @@ extern "C" {
  *                       
  */
 #define SNMP_GET_OCTETSTRING(ta_, sid_, csap_id_, label_, buf_, bufsize_)  \
-    do                                                                     \
-    {                                                                      \
+    do {                                                                   \
         int             rc_;                                               \
         tapi_snmp_oid_t oid_;                                              \
 	                                                                   \
@@ -322,8 +313,7 @@ extern "C" {
  *
  */
 #define SNMP_GET_OBJID(ta_, sid_, csap_id_, label_, ret_oid_)              \
-    do                                                                     \
-    {                                                                      \
+    do {                                                                   \
         int             rc_;                                               \
         tapi_snmp_oid_t oid_;                                              \
 	                                                                   \
@@ -352,8 +342,7 @@ extern "C" {
  *
  */
 #define SNMP_GET_TABLE(ta_, sid_, csap_id_, label_, num_, result_)         \
-    do                                                                     \
-    {                                                                      \
+    do {                                                                   \
         int             rc_;                                               \
         tapi_snmp_oid_t oid_;                                              \
 	                                                                   \
@@ -381,9 +370,9 @@ extern "C" {
  *                       matrix width is greatest subid of Table entry (OUT)
  * 
  */
-#define SNMP_GET_TABLE_ROWS(ta_, sid_, csap_id_, label_, num_, suffixes_, result_) \
-    do                                                                     \
-    {                                                                      \
+#define SNMP_GET_TABLE_ROWS(ta_, sid_, csap_id_, label_, num_, \
+                            suffixes_, result_)                            \
+    do {                                                                   \
         int             rc_;                                               \
         tapi_snmp_oid_t oid_;                                              \
 	                                                                   \
@@ -392,8 +381,8 @@ extern "C" {
                                        num_, suffixes_, &result_);         \
 	if (rc_ != 0)                                                      \
 	{                                                                  \
-            TEST_FAIL("snmp get table rows failed for %s failed, result %X\n",    \
-	              label_, rc_);                                        \
+            TEST_FAIL("snmp get table rows failed for %s failed, "         \
+                      "result %X\n", label_, rc_);                         \
         }                                                                  \
     } while (0)        	    
 
@@ -407,8 +396,7 @@ extern "C" {
  *
  */ 
 #define SNMP_GET_TABLE_DIMENSION(label_, dimension_)                       \
-    do                                                                     \
-    {                                                                      \
+    do {                                                                   \
         int             rc_;                                               \
         tapi_snmp_oid_t oid_;                                              \
 	                                                                   \
@@ -416,10 +404,10 @@ extern "C" {
  	rc_ = tapi_snmp_get_table_dimension(&oid_, &dimension_);           \
 	if (rc_ != 0)                                                      \
 	{                                                                  \
-            TEST_FAIL("snmp get table dimension failed for %s failed, result %X\n",    \
-	              label_, rc_);                                        \
+            TEST_FAIL("snmp get table dimension failed for %s failed, "    \
+                      "result %X\n", label_, rc_);                         \
         }                                                                  \
-    } while (0)        	    
+    } while (0)
 
 /**
  * Macro around tapi_snmp_get_table_columns().
@@ -430,7 +418,7 @@ extern "C" {
  *
  */ 
 #define SNMP_GET_TABLE_COLUMNS(label_, columns_)                           \
-    do                                                                     \
+    do {                                                                   \
     {                                                                      \
         int             rc_;                                               \
         tapi_snmp_oid_t oid_;                                              \
@@ -439,13 +427,11 @@ extern "C" {
  	rc_ = tapi_snmp_get_table_columns(&oid_, &columns_);               \
 	if (rc_ != 0)                                                      \
 	{                                                                  \
-            TEST_FAIL("snmp get table columns failed for %s failed, result %X\n",    \
-	              label_, rc_);                                        \
+            TEST_FAIL("snmp get table columns failed for %s failed, "      \
+                      "result %X\n", label_, rc_);                         \
         }                                                                  \
-    } while (0)        	    
-
-
-    
+    } while (0)
+  
    
 /**
  * Macro around tapi_snmp_load_mib_with_path().
@@ -455,9 +441,9 @@ extern "C" {
  *
  */
 #define SNMP_LOAD_MIB_WITH_PATH(dir_path_, mib_file_)                      \
-    do                                                                     \
-    {                                                                      \
+    do {                                                                   \
        	int rc_;                                                           \
+                                                                           \
         rc_ = tapi_snmp_load_mib_with_path(dir_path_,                      \
 			                   mib_file_);                     \
 	if (rc_ != 0)                                                      \
@@ -473,15 +459,15 @@ extern "C" {
  * @param mib_file_  File name of the MIB file.
  * 
  */
-#define SNMP_LOAD_MIB(mib_file_)                                            \
-    do                                                                      \
-    {                                                                       \
-       	int rc_;                                                            \
-        rc_ = tapi_snmp_load_mib(mib_file_);                                \
-	if (rc_ != 0)                                                       \
-        {                                                                   \
-            TEST_FAIL("Loading mib failed, result %X\n", rc_);\
-        }                                                                   \
+#define SNMP_LOAD_MIB(mib_file_) \
+    do {                                                       \
+       	int rc_;                                               \
+                                                               \
+        rc_ = tapi_snmp_load_mib(mib_file_);                   \
+	if (rc_ != 0)                                          \
+        {                                                      \
+            TEST_FAIL("Loading mib failed, result %X\n", rc_); \
+        }                                                      \
     } while (0)
 
 
