@@ -3579,7 +3579,7 @@ rpc_ioctl(rcf_rpc_server *handle,
             {
                 in.req.req_val[0].type = IOCTL_IFREQ;
                 in.req.req_val[0].ioctl_request_u.req_ifreq.rpc_ifr_flags = 
-                    if_fl_h2rpc((uint32_t)(unsigned short int)((struct ifreq *)arg)->ifr_flags);
+                    if_fl_h2rpc((uint32_t)((struct ifreq *)arg)->ifr_flags);
                 memcpy(in.req.req_val[0].ioctl_request_u.req_ifreq.
                            rpc_ifr_name,
                        ((struct ifreq *)arg)->ifr_name,
