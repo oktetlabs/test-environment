@@ -104,6 +104,27 @@
     } while (0)
 
 /**
+ * Macro to check function 'func_' on returning non negative value
+ * 
+ * @param rpcs_    RPS server
+ * @param retval_  Return value (OUT)
+ * @param func_    RPC function name to call (without rpc_ prefix)
+ */
+#define RPC_FUNC_WITH_RETVAL0(rpcs_, retval_, func_)            \
+    do {                                                        \
+        int err2_ = RPC_ERRNO(rpcs_);                           \
+                                                                \
+        (retval_) =  rpc_ ## func_(rpcs_);                      \
+        VERB("rpc_" #func_ " returns: %d, %X",                  \
+             retval_, TE_RC_GET_ERROR(err2_));                  \
+        if ((retval_) < 0)                                      \
+        {                                                       \
+            LOG_ERRNO((rpcs_), (retval_), func_, "()");         \
+            MACRO_ERROR_EXIT;                                   \
+        }                                                       \
+    } while (0)
+
+/**
  * Macro to check function 'func_' on returning exactly specified value.
  * 
  * @param rpcs_     RPS server
