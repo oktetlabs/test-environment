@@ -707,7 +707,10 @@ tapi_snmp_operation (const char *ta, int sid, int csap_id,
     if (rc == 0)
         rc = tapi_snmp_msg_tail(f);
 
-    fclose(f);
+    if (rc)
+        WARN("%s: prepare NDS file error, rc %X", __FUNCTION__, rc);
+
+    fclose(f); 
 
     if (rc == 0)
     {
@@ -718,6 +721,8 @@ tapi_snmp_operation (const char *ta, int sid, int csap_id,
         rc = rcf_ta_trsend_recv(ta, sid, csap_id, tmp_name, 
                                 tapi_snmp_pkt_handler, msg, timeout, &num); 
 
+        if (rc)
+            WARN("rcf_ta_trsend_recv rc %X", rc); 
     }
 #if !(DEBUG)
     unlink(tmp_name);
