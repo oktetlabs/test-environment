@@ -4121,9 +4121,11 @@ TARPC_FUNC(many_send,{},
 int
 many_send(tarpc_many_send_in *in, tarpc_many_send_out *out)
 {
-    int            rc, i;
+    int            rc = 0;
+    int            i;
     sock_api_func  send_func;
-    uint8_t        buf[32768];
+    size_t         max_len = 0;
+    uint8_t       *buf = NULL;
 
     out->bytes = 0;
 
@@ -4132,7 +4134,8 @@ many_send(tarpc_many_send_in *in, tarpc_many_send_out *out)
         ERROR("%s(): Invalid number of send() operations to be executed",
               __FUNCTION__);
         out->common._errno = TE_RC(TE_TA_LINUX, EINVAL);
-        return -1;
+        rc = -1;
+        goto many_send_exit;
     }
 
     for (i = 0; i < (int)in->vector.vector_len; i++)
@@ -4143,16 +4146,28 @@ many_send(tarpc_many_send_in *in, tarpc_many_send_out *out)
                   "by %d send() call", __FUNCTION__,
                   in->vector.vector_val[i], i);
             out->common._errno = TE_RC(TE_TA_LINUX, EINVAL);
-            return -1;
+            rc = -1;
+            goto many_send_exit;
         }
+        max_len = MAX(max_len, in->vector.vector_val[i]);
     }
 
-    memset(buf, 0xDEADBEEF, sizeof(buf));
+    buf = malloc(max_len);
+    if (buf == NULL)
+    {
+        ERROR("%s(): No enough memory", __FUNCTION__);
+        out->common._errno = TE_RC(TE_TA_LINUX, ENOMEM);
+        rc = -1;
+        goto many_send_exit;
+    }
+
+    memset(buf, 0xDEADBEEF, sizeof(max_len));
 
     if (find_func((tarpc_in_arg *)in, "send", &send_func) != 0)
     {
         ERROR("Failed to resolve send() function");
-        return -1;
+        rc = -1;
+        goto many_send_exit;
     }
 
     for (i = 0; i < in->vector.vector_len; i++)
@@ -4164,10 +4179,16 @@ many_send(tarpc_many_send_in *in, tarpc_many_send_out *out)
         {
            ERROR("%s(): send(%d, %p, %d, 0) failed: %X", __FUNCTION__,
                  in->sock, buf, in->vector.vector_val[i], errno);
-            return -1;
+            rc = -1;
+            goto many_send_exit;
         }
         out->bytes += rc;
+        rc = 0;
     }
-    return 0;
+
+many_send_exit:
+
+    free(buf);
+    return rc;
 }
 
