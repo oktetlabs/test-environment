@@ -2017,9 +2017,12 @@ route_get(unsigned int gid, const char *oid, char *value,
              mtu, win, irtt);
 
         if ((rt.rt_dev != NULL && strcmp(rt.rt_dev, ifname) != 0) ||
-            addr != route_addr || gateway != route_gw || 
-            rt.rt_metric != metric  || mask != route_mask ||
-            rt.rt_mtu != mtu || rt.rt_window != win ||
+            addr != route_addr ||
+            gateway != route_gw || 
+            (unsigned int)rt.rt_metric != metric ||
+            mask != route_mask ||
+            rt.rt_mtu != (unsigned long int)mtu ||
+            rt.rt_window != (unsigned long int)win ||
             rt.rt_irtt != irtt ||
             ((rt.rt_flags & RTF_REJECT) ^ (flags & RTF_REJECT)))
         {
