@@ -724,7 +724,7 @@ args_iterations(test_param_iterations *base_iters, test_args *args,
 static char *
 persons_info_to_string(const persons_info *persons)
 {
-#define TESTER_STR_BULK 4
+#define TESTER_STR_BULK 64
     size_t              total = TESTER_STR_BULK;
     char               *res = malloc(total);
     char               *s = res;
