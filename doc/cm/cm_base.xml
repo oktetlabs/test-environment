@@ -384,7 +384,7 @@
 
     <!-- SSH port forwarder.
          Name: local port 
-         Value: <remote port>:<SSH daemon IP>:<SSH daemon port>
+         Value: <remote port>'|'<SSH daemon IP>'|'<SSH daemon port>
          -->
     <object oid="/agent/ssh_fwd" access="read_create" type="string"/>
 
