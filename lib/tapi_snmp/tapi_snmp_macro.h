@@ -594,8 +594,8 @@ extern "C" {
         CHECK_RC(tapi_snmp_make_instance(name, &leaf_oid, sub_id));            \
         CHECK_RC(tapi_snmp_set_integer((ta), (sid), (csap_id), &leaf_oid,      \
                                        (value), (err_stat)));                  \
-        INFO("SNMP set: for %s (oid=%s) to %s = %d returns err_stat=0x%x\n",   \
-             name, print_oid(&leaf_oid), #value, (value), err_stat);           \
+	VERB("SNMP set integer, set %s to %d, error status %d",                \
+	     name, value, *err_stat);                                          \
     } while (0)
 
 /**
@@ -616,11 +616,11 @@ extern "C" {
     do {                                                                       \
         tapi_snmp_oid_t           leaf_oid;                                    \
                                                                                \
-        CHECK_RC(tapi_snmp_make_instance(name, &leaf_oid, index));             \
+        CHECK_RC(tapi_snmp_make_instance(name, &leaf_oid, sub_id));            \
         CHECK_RC(tapi_snmp_set_octetstring((ta), (sid), (csap_id), &leaf_oid,  \
                                        (value), (length), (err_stat)));        \
-        INFO("SNMP set: for %s (oid=%s) to %s = %p returns err_stat=0x%x\n",   \
-             name, print_oid(&leaf_oid), #value, (value), (err_stat));         \
+	VERB("SNMP set octetstring, set %s to %s, error status %d", name,      \
+             print_octet_string(value, length), *err_stat);                    \
     } while (0)
 
 /**

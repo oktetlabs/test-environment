@@ -2294,48 +2294,59 @@ tapi_snmp_trap_recv_start(const char *ta_name, int sid,
 int
 tapi_snmp_make_instance(const char *oid_str, tapi_snmp_oid_t *bin_oid, ...)
 {
-    int                 rc = 0;
-    int                 table_dimension;
-    va_list             index_list;
+    int                 rc;
+    int                 dimension = 0;
+    va_list             list;
+    struct tree        *entry_node; 
+    struct index_list  *t_index;
+
+    tapi_snmp_oid_t     bin_index;
+
+    bin_index.length = 0;
     
-
-    if ((rc = tapi_snmp_make_oid(oid_str, bin_oid)) != 0)
-        return rc;
-
-    /* To get table OID cut two last indexes */
-
-    if (bin_oid->length <= 2)
+    entry_node = find_tree_node(oid_str, -1);
+    if (entry_node == NULL)
     {
-        /* This oid is not table field */
-        bin_oid->id[bin_oid->length++] = 0;
-        return rc;
+        ERROR("Bad oid string %s", oid_str);	    
+	return ETEWRONGPTR;    
+    }	
+
+    /* This node must be scalar or table leaf */
+    if (entry_node->parent == NULL)
+    {
+        ERROR("Parent doesn't exist, strange");
+	return -1;
+    }
+    t_index = entry_node->parent->indexes;
+    while (t_index)
+    {
+	dimension++;    
+	t_index = t_index->next;
     }
 
-    bin_oid->length -= 2;
-
-    if ((rc = tapi_snmp_get_table_dimension(bin_oid, &table_dimension)) != 0)
-        return rc;
-
-    /* Return back two last indexes of OID */
-
-    bin_oid->length += 2;
-    
-    if (table_dimension == 0)
+    rc = tapi_snmp_make_oid(oid_str, bin_oid);
+    if (rc)
     {
-        /* This oid is not table field */
-        bin_oid->id[bin_oid->length++] = 0;
-        return rc;
+	ERROR("Make oid failed for %s oid string", oid_str);    
+        return rc;	    
     }
-
-    va_start(index_list, bin_oid);
-
-    for (; table_dimension > 0; table_dimension--)
-    {
-        bin_oid->id[bin_oid->length++] = va_arg(index_list, int);
-    }
-
-    va_end(index_list);
     
-    return rc;
+    if (dimension == 0)
+    {
+        VERB("Make instance %s.0", oid_str);
+	bin_oid->id[bin_oid->length++] = 0;
+	return 0;
+    }
+    
+    va_start(list, bin_oid);
+
+    for (; dimension > 0; dimension--)
+    {
+        bin_oid->id[bin_oid->length++] = bin_index.id[bin_index.length++] = va_arg(list, int);
+    }
+    va_end(list);
+    VERB("Make instance %s%s", oid_str, print_oid(&bin_index));
+    
+    return 0;
 }
 
