@@ -281,6 +281,9 @@ test_session_free(test_session *p)
 static void
 test_package_free(test_package *p)
 {
+    if (p == NULL)
+        return;
+
     free(p->name);
     free(p->path);
     free(p->objective);

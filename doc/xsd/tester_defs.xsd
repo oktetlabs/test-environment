@@ -289,6 +289,19 @@
         </element>
     </group>
 
+    <simpleType name="TrackConfType">
+        <annotation>
+            <documentation>
+                Types of configuration changes tracking.
+            </documentation>
+        </annotation>
+        <restriction base="token">
+            <enumeration value="silent"/>
+            <enumeration value="yes"/>
+            <enumeration value="no"/>
+        </restriction>
+    </simpleType>
+
     <attributeGroup name="RunItemAttributes">
         <annotation>
             <documentation>
@@ -303,7 +316,7 @@
                 </documentation>
             </annotation>
         </attribute>
-        <attribute name="track_conf" type="boolean" default="true">
+        <attribute name="track_conf" type="TrackConfType" default="yes">
             <annotation>
                 <documentation>
                     Tracks changes of the configuration. Enabled by

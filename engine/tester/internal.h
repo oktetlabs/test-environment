@@ -147,10 +147,17 @@ typedef struct test_var_arg_attrs {
 } test_var_arg_attrs;
 
 
+/** Types of Tester configuration tracking */
+typedef enum tester_track_conf {
+    TESTER_TRACK_CONF_YES,
+    TESTER_TRACK_CONF_NO,
+    TESTER_TRACK_CONF_SILENT,
+} tester_track_conf;
+
 /** Attributes of any run item */
 typedef struct run_item_attrs {
-    struct timeval  timeout;
-    te_bool         track_conf;
+    struct timeval      timeout;
+    tester_track_conf   track_conf;
 } run_item_attrs;
 
 

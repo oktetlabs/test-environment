@@ -659,8 +659,9 @@ get_requirements(xmlNodePtr *node, test_requirements *reqs,
 static int
 get_run_item_attrs(xmlNodePtr node, run_item_attrs *attrs)
 {
-    int rc;
-    int timeout;
+    int     rc;
+    int     timeout;
+    char   *s;
 
     /* Main session of the test package is not direct run item */
     if (attrs == NULL)
@@ -676,11 +677,26 @@ get_run_item_attrs(xmlNodePtr node, run_item_attrs *attrs)
     attrs->timeout.tv_sec = timeout;
     attrs->timeout.tv_usec = 0;
 
-    /* 'track_conf' is optional, default value is true */
-    attrs->track_conf = TRUE;
-    rc = get_bool_prop(node, "track_conf", &attrs->track_conf);
-    if (rc != 0 && rc != ENOENT)
-        return rc;
+    /* 'track_conf' is optional, default value is 'yes' */
+    attrs->track_conf = TESTER_TRACK_CONF_YES;
+    s = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("track_conf")));
+    if (s != NULL)
+    {
+        if (xmlStrcmp(s, CONST_CHAR2XML("yes")) == 0)
+            attrs->track_conf = TESTER_TRACK_CONF_YES;
+        else if (xmlStrcmp(s, CONST_CHAR2XML("no")) == 0)
+            attrs->track_conf = TESTER_TRACK_CONF_NO;
+        else if (xmlStrcmp(s, CONST_CHAR2XML("silent")) == 0)
+            attrs->track_conf = TESTER_TRACK_CONF_SILENT;
+        else
+        {
+            ERROR("Invalid value '%s' of 'track_conf' property",
+                  XML2CHAR(s));
+            xmlFree(s);
+            return EINVAL;
+        }
+        xmlFree(s);
+    }
 
     return 0;
 }
@@ -1150,7 +1166,7 @@ get_session(xmlNodePtr node, tester_cfg *cfg, test_session *session,
         if (rc != 0)
             return rc;
         /* TODO */
-        session->prologue->attrs.track_conf = FALSE;
+        session->prologue->attrs.track_conf = TESTER_TRACK_CONF_NO;
         node = xmlNodeNext(node);
     }
     /* Get 'epilogue' handler */
@@ -1163,7 +1179,7 @@ get_session(xmlNodePtr node, tester_cfg *cfg, test_session *session,
         if (rc != 0)
             return rc;
         /* TODO */
-        session->prologue->attrs.track_conf = FALSE;
+        session->prologue->attrs.track_conf = TESTER_TRACK_CONF_NO;
         node = xmlNodeNext(node);
     }
     /* Get 'run' items */

@@ -1445,7 +1445,7 @@ iterate_test(tester_ctx *ctx, run_item *test,
 
     /* Create backup to be verified after each iteration */
     if (!(ctx->flags & (TESTER_NO_CS | TESTER_NOCFGTRACK)) &&
-        test->attrs.track_conf)
+        test->attrs.track_conf != TESTER_TRACK_CONF_NO)
     {
         rc = cfg_create_backup(&backup_name);
         if (rc != 0)
@@ -1530,15 +1530,18 @@ iterate_test(tester_ctx *ctx, run_item *test,
             }
 
             if (!(ctx->flags & (TESTER_NO_CS | TESTER_NOCFGTRACK)) &&
-                test->attrs.track_conf)
+                test->attrs.track_conf != TESTER_TRACK_CONF_NO)
             {
                 /* Check configuration backup */
                 rc = cfg_verify_backup(backup_name);
                 if (TE_RC_GET_ERROR(rc) == ETEBACKUP)
                 {
-                    /* If backup is not OK, restore it */
-                    WARN("Current configuration differs from backup - "
-                         "restore");
+                    if (test->attrs.track_conf == TESTER_TRACK_CONF_YES)
+                    {
+                        /* If backup is not OK, restore it */
+                        WARN("Current configuration differs from "
+                             "backup - restore");
+                    }
                     rc = cfg_restore_backup(backup_name);
                     if (rc != 0)
                     {
@@ -1547,7 +1550,7 @@ iterate_test(tester_ctx *ctx, run_item *test,
                         if (TEST_RESULT(test_result))
                             test_result = rc;
                     }
-                    else
+                    else if (test->attrs.track_conf == TESTER_TRACK_CONF_YES)
                     {
                         RING("Configuration successfully restored "
                              "using backup");
