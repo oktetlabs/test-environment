@@ -86,9 +86,9 @@ MY_LDADD+=-lfl
 endif
 
 if CFG_LINUX_DAEMONS_ISC_DHCP_SERVER
-MY_SOURCES+=isc-dhcp-server.conf.y isc-dhcp-server.lex.l
-BUILT_SOURCES+=isc-dhcp-server.conf.h
-MY_LDADD+=-lfl
+#MY_SOURCES+=isc-dhcp-server.conf.y isc-dhcp-server.lex.l
+#BUILT_SOURCES+=isc-dhcp-server.conf.h
+#MY_LDADD+=-lfl
 endif
 
 endif
