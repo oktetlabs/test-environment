@@ -126,8 +126,10 @@ colored_verdict(tester_color color, const char *text)
 
     sprintf(buf, "tput setaf %d", color);
     system(buf);
-    printf("%s\n", text);
+    printf("%s", text);
     system("tput sgr0");
+    printf("\n");
+    fflush(stdout);
 }
 
 /* See description in internal.h */
@@ -167,6 +169,7 @@ tester_out_start(run_item_type type, const char *name,
     if (prev_id != -1)
     {
         printf("\n");
+        fflush(stdout);
     }
 
     prev_id = self;
