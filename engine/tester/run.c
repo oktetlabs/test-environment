@@ -301,236 +301,60 @@ get_ith_value(const test_var_arg_values *values, unsigned int value_i,
 }
 
 /**
- * Get test session reffered variable value.
- *
- * @param var       Reffered variable
- * @param params    Parameters passed to test session
- *
- * @return Parameter value or NULL.
- */
-static const char *
-get_refvar_value(const test_session_var *var, const test_params *params)
-{
-    const char *refer;
-
-    assert(var->type == TEST_SESSION_VAR_REFERRED);
-    refer = (var->u.ref.attrs.refer) ? : var->name;
-
-    return get_ref_value(refer, params);
-}
-
-/**
- * Get run item reffered argument value.
- *
- * @param arg       Reffered argument
- * @param param     Parameters context
- *
- * @return Parameter value or NULL.
- */
-static const char *
-get_refarg_value(const test_arg *arg, const test_params *params)
-{
-    const char *refer;
-
-    assert(arg->type == TEST_ARG_REFERRED);
-    refer = (arg->u.ref.attrs.refer) ? : arg->name;
-
-    return get_ref_value(refer, params);
-}
-
-/**
  * Get argument preferred value.
  *
- * @param arg       Simple argument pointer
+ * @param p     Variable/argument pointer
  */
 static const test_var_arg_value *
-arg_preferred_value(const test_arg *arg)
+var_arg_preferred_value(const test_var_arg *p)
 {
-    assert(arg != NULL);
-    assert(arg->type == TEST_ARG_SIMPLE);
+    assert(p != NULL);
 
-    return (arg->u.arg.attrs.preferred) ? : arg->u.arg.values.tqh_first;
-}
-
-
-/**
- * Create a list of iterations based on session variables and passed 
- * to the session parameters (arguments).
- *
- * @param params    Current parameters
- * @param vars      Parent test session variables
- * @param iters     Head of the list of parameters iterations
- *
- * @return Status code.
- */
-static int
-vars_iterations(test_params *params, test_session_vars *vars,
-                test_param_iterations *iters)
-{
-    test_param_iteration *i;
-    test_param_iteration *i_clone;
-    test_session_var     *var;
-    test_var_arg_value   *value;
-    test_param           *p;
-    const char           *s;
-
-    ENTRY();
-
-    assert(vars != NULL);
-    assert(iters != NULL);
-    /* Variables iteration must start from empty list */
-    assert(iters->tqh_first == NULL);
-    
-    i = test_param_iteration_new();
-    if (i == NULL)
-    {
-        ERROR("Failed to create new test parameters iteration");
-        EXIT("ENOMEM");
-        return ENOMEM;
-    }
-    /* Insert one iteration with empty set of parametes */
-    TAILQ_INSERT_TAIL(iters, i, links);
-
-    /* Each for each set of iterations */
-    for (var = vars->tqh_first; var != NULL; var = var->links.tqe_next)
-    {
-        for (i = iters->tqh_first; i != NULL; i = i->links.tqe_next)
-        {
-            if (var->type == TEST_SESSION_VAR_SIMPLE)
-            {
-                for (value = var->u.var.values.tqh_first;
-                     value != NULL;
-                     value = value->links.tqe_next)
-                {
-                    s = get_value(value, &i->base->params);
-                    if (s == NULL)
-                        return EINVAL;
-                    p = test_param_new(var->name, s, var->handdown,
-                                       (value->reqs.tqh_first == NULL) ?
-                                           NULL : &value->reqs);
-                    if (p == NULL)
-                    {
-                        ERROR("Failed to create new test parameter");
-                        EXIT("ENOMEM");
-                        return ENOMEM;
-                    }
-                    i->reqs = (i->reqs || (p->reqs != NULL));
-                    /* If one more value exist */
-                    if (value->links.tqe_next != NULL)
-                    {
-                        /* Clone current iteration before update */
-                        i_clone = test_param_iteration_clone(i);
-                        if (i_clone == NULL)
-                        {
-                            ERROR("Cloning of the iteration failed");
-                            EXIT("ENOMEM");
-                            return ENOMEM;
-                        }
-                    }
-                    else
-                    {
-                        /* 
-                         * It is the last value, 
-                         * there is no necessity to clone.
-                         */
-                        i_clone = NULL;
-                    }
-                    /* Update current iteration */
-                    test_params_add(&i->params, p);
-                    if (i_clone != NULL)
-                    {
-                        /* Insert clone after current iteration */
-                        TAILQ_INSERT_AFTER(iters, i, i_clone, links);
-                        i = i_clone;
-                    }
-                }
-            }
-            else if (var->type == TEST_SESSION_VAR_REFERRED)
-            {
-                s = get_refvar_value(var, params);
-                if (s == NULL)
-                    return EINVAL;
-                p = test_param_new(var->name, s, var->handdown, NULL);
-                if (p == NULL)
-                {
-                    ERROR("Failed to create new test parameter");
-                    EXIT("ENOMEM");
-                    return ENOMEM;
-                }
-                test_params_add(&i->params, p);
-            }
-            else
-            {
-                assert(FALSE);
-            }
-        }
-    }
-
-    EXIT("OK");
-    return 0;
+    return (p->attrs.preferred) ? : p->values.tqh_first;
 }
 
 /**
  * Create a list of parameters iterations.
  *
- * @param base_iters    Base list of iterations
- * @param args          Test arguments
- * @param iters         Head of the list of parameters iterations
+ * @param vas       Test variables or arguments
+ * @param iters     Head of the list of parameters iterations
  *
  * @return Status code.
  */
 static int
-args_iterations(test_param_iterations *base_iters, test_args *args,
-                test_param_iterations *iters)
+vars_args_iterations(test_vars_args        *vas,
+                     test_param_iterations *iters)
 {
-    test_param_iteration       *base_i;
     test_param_iteration       *i;
     test_param_iteration       *i_clone;
-    const test_arg             *arg;
+    const test_var_arg         *va;
     const test_var_arg_value   *v;
     const test_var_arg_value   *value;
-    test_param                 *p;
+    test_param                 *tp;
     const char                 *s;
     tqh_strings                 processed_lists;
     tqe_string                 *list;
     unsigned int                value_i;
-    const test_arg             *arg2;
+    const test_var_arg         *va2;
     te_bool                     more_in_list;
     te_bool                     more_in_arg;
 
     ENTRY();
 
-    assert(base_iters != NULL);
-    assert(base_iters->tqh_first != NULL);
-    assert(args != NULL);
+    assert(vas != NULL);
     assert(iters != NULL);
-    assert(iters->tqh_first == NULL);
-
-    /* Clone base list of iterations */
-    for (base_i = base_iters->tqh_first; 
-         base_i != NULL; 
-         base_i = base_i->links.tqe_next)
-    {
-        i = test_param_iteration_clone(base_i);
-        if (i == NULL)
-        {
-            ERROR("Cloning of the test parameters iteration failed");
-            return ENOMEM;
-        }
-        TAILQ_INSERT_TAIL(iters, i, links);
-    }
+    assert(iters->tqh_first != NULL);
 
     TAILQ_INIT(&processed_lists);
 
     /* Each for each set of iterations */
-    for (arg = args->tqh_first; arg != NULL; arg = arg->links.tqe_next)
+    for (va = vas->tqh_first; va != NULL; va = va->links.tqe_next)
     {
-        if (arg->type == TEST_ARG_SIMPLE && arg->u.arg.attrs.list != NULL)
+        if (va->attrs.list != NULL)
         {
             /* Check that such list is not processed yet */
             for (list = processed_lists.tqh_first;
-                 list != NULL &&
-                    strcmp(list->v, arg->u.arg.attrs.list) != 0;
+                 list != NULL && strcmp(list->v, va->attrs.list) != 0;
                  list = list->links.tqe_next);
             if (list != NULL)
             {
@@ -544,7 +368,7 @@ args_iterations(test_param_iterations *base_iters, test_args *args,
                 EXIT("ENOMEM");
                 return ENOMEM;
             }
-            list->v = arg->u.arg.attrs.list;
+            list->v = va->attrs.list;
             TAILQ_INSERT_HEAD(&processed_lists, list, links);
         }
         else
@@ -553,110 +377,84 @@ args_iterations(test_param_iterations *base_iters, test_args *args,
         }
         for (i = iters->tqh_first; i != NULL; i = i->links.tqe_next)
         {
-            if (arg->type == TEST_ARG_SIMPLE)
+            for (v = va->values.tqh_first, value_i = 0,
+                     more_in_list = FALSE, i_clone = NULL;
+                 v != NULL || (list != NULL && more_in_list);
+                 ++value_i)
             {
-                for (v = arg->u.arg.values.tqh_first, value_i = 0,
-                         more_in_list = FALSE, i_clone = NULL;
-                     v != NULL || (list != NULL && more_in_list);
-                     ++value_i)
-                {
-                    value = (v) ? : arg_preferred_value(arg);
-                    /* All the times except to first, move to the clone */
-                    if (i_clone != NULL)
-                        i = i_clone;
-                    /* Clone current iteration before update */
-                    i_clone = test_param_iteration_clone(i);
-                    if (i_clone == NULL)
-                    {
-                        ERROR("Cloning of the iteration failed");
-                        EXIT("ENOMEM");
-                        return ENOMEM;
-                    }
-                    /* Insert clone after current iteration */
-                    TAILQ_INSERT_AFTER(iters, i, i_clone, links);
-                    
-                    /* Get argument value and create parameter */
-                    s = get_value(value, &i->base->params);
-                    if (s == NULL)
-                        return EINVAL;
-                    p = test_param_new(arg->name, s, TRUE,
-                                       (value->reqs.tqh_first == NULL) ?
-                                           NULL : &value->reqs);
-                    if (p == NULL)
-                    {
-                        ERROR("Failed to create new test parameter");
-                        EXIT("ENOMEM");
-                        return ENOMEM;
-                    }
-                    i->reqs = (i->reqs || (p->reqs != NULL));
-                    /* Update current iteration */
-                    test_params_add(&i->params, p);
-                    
-                    /* Add values for all parameters from the same list */
-                    if (list != NULL)
-                    {
-                        for (arg2 = arg->links.tqe_next,
-                                 more_in_list = FALSE;
-                             arg2 != NULL;
-                             arg2 = arg2->links.tqe_next)
-                        {
-                            if (arg2->type != TEST_ARG_SIMPLE ||
-                                arg2->u.arg.attrs.list == NULL ||
-                                strcmp(arg->u.arg.attrs.list,
-                                       arg2->u.arg.attrs.list) != 0)
-                            {
-                                continue;
-                            }
-                            /* Argument from the same list */
-
-                            /* Get its i-th value */
-                            s = get_ith_value(&arg2->u.arg.values,
-                                              value_i,
-                                              arg_preferred_value(arg2),
-                                              &i->base->params,
-                                              &more_in_arg);
-                            if (s == NULL)
-                                return EINVAL;
-                            more_in_list = (more_in_list || more_in_arg);
-                            /* Create parameter and add it in iteration */
-                            /* FIXME: Requirement here */
-                            p = test_param_new(arg2->name, s, TRUE, NULL);
-                            if (p == NULL)
-                            {
-                                ERROR("Failed to create new test parameter");
-                                EXIT("ENOMEM");
-                                return ENOMEM;
-                            }
-                            test_params_add(&i->params, p);
-                        }
-                    }
-                    if (v != NULL)
-                        v = v->links.tqe_next;
-                }
-                /* Free the last not used iteration clone */
+                value = (v) ? : var_arg_preferred_value(va);
+                /* All the times except to first, move to the clone */
                 if (i_clone != NULL)
+                    i = i_clone;
+                /* Clone current iteration before update */
+                i_clone = test_param_iteration_clone(i);
+                if (i_clone == NULL)
                 {
-                    TAILQ_REMOVE(iters, i_clone, links);
-                    test_param_iteration_free(i_clone);
+                    ERROR("Cloning of the iteration failed");
+                    EXIT("ENOMEM");
+                    return ENOMEM;
                 }
-            }
-            else if (arg->type == TEST_ARG_REFERRED)
-            {
-                s = get_refarg_value(arg, &i->base->params);
+                /* Insert clone after current iteration */
+                TAILQ_INSERT_AFTER(iters, i, i_clone, links);
+                
+                /* Get argument value and create parameter */
+                s = get_value(value, i->base);
                 if (s == NULL)
                     return EINVAL;
-                p = test_param_new(arg->name, s, TRUE, NULL);
-                if (p == NULL)
+                tp = test_param_new(va->name, s, va->handdown,
+                                    (value->reqs.tqh_first == NULL) ?
+                                        NULL : &value->reqs);
+                if (tp == NULL)
                 {
                     ERROR("Failed to create new test parameter");
                     EXIT("ENOMEM");
                     return ENOMEM;
                 }
-                test_params_add(&i->params, p);
+                i->reqs = (i->reqs || (tp->reqs != NULL));
+                /* Update current iteration */
+                test_params_add(&i->params, tp);
+                
+                /* Add values for all parameters from the same list */
+                if (list != NULL)
+                {
+                    for (va2 = va->links.tqe_next, more_in_list = FALSE;
+                         va2 != NULL;
+                         va2 = va2->links.tqe_next)
+                    {
+                        if (va2->attrs.list == NULL ||
+                            strcmp(va->attrs.list, va2->attrs.list) != 0)
+                        {
+                            continue;
+                        }
+                        /* Argument from the same list */
+
+                        /* Get its i-th value */
+                        s = get_ith_value(&va2->values, value_i,
+                                          var_arg_preferred_value(va2),
+                                          i->base, &more_in_arg);
+                        if (s == NULL)
+                            return EINVAL;
+                        more_in_list = (more_in_list || more_in_arg);
+                        /* Create parameter and add it in iteration */
+                        /* FIXME: Requirement here */
+                        tp = test_param_new(va2->name, s, va->handdown, NULL);
+                        if (tp == NULL)
+                        {
+                            ERROR("Failed to create new test parameter");
+                            EXIT("ENOMEM");
+                            return ENOMEM;
+                        }
+                        test_params_add(&i->params, tp);
+                    }
+                }
+                if (v != NULL)
+                    v = v->links.tqe_next;
             }
-            else
+            /* Free the last not used iteration clone */
+            if (i_clone != NULL)
             {
-                assert(FALSE);
+                TAILQ_REMOVE(iters, i_clone, links);
+                test_param_iteration_free(i_clone);
             }
         }
     }
@@ -1098,16 +896,26 @@ run_test_session(tester_ctx *ctx, test_session *session, test_id id,
 {
     int                     result = ETESTPASS;
     int                     rc;
-    run_item               *test;
+    test_param_iteration   *base_i;
     test_param_iterations   iters;
+    run_item               *test;
+
 
     ENTRY();
 
     ctx->id = id;
 
-    /* Create list of iterations */
+    /* Create base list of iterations with only one iteration */
     TAILQ_INIT(&iters);
-    rc = vars_iterations(params, &session->vars, &iters);
+    base_i = test_param_iteration_new();
+    if (base_i == NULL)
+        return ENOMEM;
+    base_i->base = params;
+    /* FIXME: base_i.reqs */
+    TAILQ_INSERT_TAIL(&iters, base_i, links);
+
+    /* Create list of iterations */
+    rc = vars_args_iterations(&session->vars, &iters);
     if (rc != 0)
     {
         ERROR("Failed to create a list of parameters iterations");
@@ -1500,7 +1308,6 @@ iterate_test(tester_ctx *ctx, run_item *test,
     int                     rc;
     int                     test_result = ETESTPASS;
     int                     all_result = ETESTPASS;
-    test_param_iterations   aux_base_iters;
     test_param_iterations   iters;
     test_param_iteration   *i;
     char                   *backup_name = NULL;
@@ -1568,7 +1375,7 @@ iterate_test(tester_ctx *ctx, run_item *test,
         }
     }
 
-    TAILQ_INIT(&aux_base_iters);
+    TAILQ_INIT(&iters);
 
     /* Configuration file provided empty list of base iterations */
     if (base_iters == NULL)
@@ -1580,13 +1387,31 @@ iterate_test(tester_ctx *ctx, run_item *test,
                 tester_ctx_free(ctx);
             return ENOMEM;
         }
-        TAILQ_INSERT_TAIL(&aux_base_iters, i, links);
-        base_iters = &aux_base_iters;
+        TAILQ_INSERT_TAIL(&iters, i, links);
+    }
+    else
+    {
+        test_param_iteration   *base_i;
+
+        /* Clone base list of iterations */
+        for (base_i = base_iters->tqh_first; 
+             base_i != NULL; 
+             base_i = base_i->links.tqe_next)
+        {
+            i = test_param_iteration_clone(base_i);
+            if (i == NULL)
+            {
+                ERROR("Cloning of the test parameters iteration failed");
+                if (ctx_cloned)
+                    tester_ctx_free(ctx);
+                return ENOMEM;
+            }
+            TAILQ_INSERT_TAIL(&iters, i, links);
+        }
     }
 
     /* Create list of iterations */
-    TAILQ_INIT(&iters);
-    rc = args_iterations(base_iters, &test->args, &iters);
+    rc = vars_args_iterations(&test->args, &iters);
     if (rc != 0)
     {
         ERROR("Failed to create a list of parameters iterations");
@@ -1739,7 +1564,6 @@ iterate_test(tester_ctx *ctx, run_item *test,
     }
 
     free(backup_name);
-    test_param_iterations_free(&aux_base_iters);
     test_param_iterations_free(&iters);
     if (ctx_cloned)
         tester_ctx_free(ctx);

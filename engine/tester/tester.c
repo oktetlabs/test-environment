@@ -226,34 +226,16 @@ test_var_arg_attrs_free(test_var_arg_attrs *attrs)
 }
 
 /**
- * Free reffered variable/argument attributes.
- *
- * @param attrs     Attributes to be freed
- */
-static void
-test_ref_var_arg_attrs_free(test_ref_var_arg_attrs *attrs)
-{
-    free(attrs->refer);
-}
-
-/**
  * Free session variable.
  *
  * @param p         Session variable to be freed.
  */
 static void
-test_session_var_free(test_session_var *p)
+test_var_arg_free(test_var_arg *p)
 {
     free(p->name);
-    if (p->type == TEST_SESSION_VAR_SIMPLE)
-    {
-        test_var_arg_values_free(&p->u.var.values);
-        test_var_arg_attrs_free(&p->u.var.attrs);
-    }
-    else if (p->type == TEST_SESSION_VAR_REFERRED)
-        test_ref_var_arg_attrs_free(&p->u.ref.attrs);
-    else
-        assert(0);
+    test_var_arg_values_free(&p->values);
+    test_var_arg_attrs_free(&p->attrs);
     free(p);
 }
 
@@ -263,14 +245,14 @@ test_session_var_free(test_session_var *p)
  * @param vars      List of session variables to be freed
  */
 static void
-test_session_vars_free(test_session_vars *vars)
+test_vars_args_free(test_vars_args *vars)
 {
-    test_session_var *p;
+    test_var_arg *p;
 
     while ((p = vars->tqh_first) != NULL)
     {
         TAILQ_REMOVE(vars, p, links);
-        test_session_var_free(p);
+        test_var_arg_free(p);
     }
 }
 
@@ -283,14 +265,13 @@ static void
 test_session_free(test_session *p)
 {
     free(p->name);
-    test_session_vars_free(&p->vars);
+    test_vars_args_free(&p->vars);
     run_item_free(p->exception);
     run_item_free(p->keepalive);
     run_item_free(p->prologue);
     run_item_free(p->epilogue);
     run_items_free(&p->run_items);
 }
-
 
 /**
  * Free test package.
@@ -307,45 +288,6 @@ test_package_free(test_package *p)
     test_requirements_free(&p->reqs);
     test_session_free(&p->session);
     free(p);
-}
-
-
-/**
- * Free session argument.
- *
- * @param p         Argument to be freed.
- */
-static void
-test_arg_free(test_arg *p)
-{
-    free(p->name);
-    if (p->type == TEST_ARG_SIMPLE)
-    {
-        test_var_arg_values_free(&p->u.arg.values);
-        test_var_arg_attrs_free(&p->u.arg.attrs);
-    }
-    else if (p->type == TEST_ARG_REFERRED)
-        test_ref_var_arg_attrs_free(&p->u.ref.attrs);
-    else
-        assert(0);
-    free(p);
-}
-
-/**
- * Free list of arguments.
- *
- * @param args      List of arguments to be freed
- */
-static void
-test_args_free(test_args *args)
-{
-    test_arg *p;
-
-    while ((p = args->tqh_first) != NULL)
-    {
-        TAILQ_REMOVE(args, p, links);
-        test_arg_free(p);
-    }
 }
 
 /**
@@ -380,7 +322,7 @@ run_item_free(run_item *run)
         default:
             assert(0);
     }
-    test_args_free(&run->args);
+    test_vars_args_free(&run->args);
     free(run);
 }
 

@@ -165,7 +165,7 @@ test_param_iteration_clone(const test_param_iteration *i)
             TAILQ_INSERT_TAIL(&ic->params, pc, links);
         }
     }
-    ic->base = (i->base) ? : i;
+    ic->base = (i->base) ? : &i->params;
     ic->reqs = i->reqs;
     EXIT("OK 0x%x", (size_t)ic);
     return ic;

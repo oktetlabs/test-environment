@@ -44,7 +44,7 @@
 typedef struct test_param_iteration {
     TAILQ_ENTRY(test_param_iteration)   links;  /**< List links */
     test_params                         params; /**< List of parameters */
-    const struct test_param_iteration  *base;   /**< Base iteration */
+    const struct test_params           *base;   /**< Base parameters */
     te_bool                             reqs;   /**< Do parameters have
                                                      associated
                                                      requirements? */

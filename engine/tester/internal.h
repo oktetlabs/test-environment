@@ -146,58 +146,6 @@ typedef struct test_var_arg_attrs {
     unsigned int        flags;      /**< TEST_RANDOM_SPECIFIED */
 } test_var_arg_attrs;
 
-/** Common attributes of referred variable or referred argument */
-typedef struct test_ref_var_arg_attrs {
-    char               *refer;
-} test_ref_var_arg_attrs;
-
-
-/** Referred variable */
-typedef struct test_ref_var {
-    test_ref_var_arg_attrs  attrs;
-} test_ref_var;
-
-/** Simple variable */
-typedef struct test_simple_var {
-    test_var_arg_values     values;
-    test_var_arg_attrs      attrs;
-} test_simple_var;
-
-
-/** Referred variable */
-typedef struct test_ref_arg {
-    test_ref_var_arg_attrs  attrs;
-} test_ref_arg;
-
-/** Simple argument */
-typedef struct test_simple_arg {
-    test_var_arg_values     values;
-    test_var_arg_attrs      attrs;
-} test_simple_arg;
-
-
-/** Types of arguments */
-typedef enum test_arg_type {
-    TEST_ARG_SIMPLE,
-    TEST_ARG_REFERRED
-} test_arg_type;
-
-
-/** Unified argument */
-typedef struct test_arg {
-    TAILQ_ENTRY(test_arg) links;
-
-    char               *name;       /**< Name */
-    test_arg_type       type;
-    union {
-        test_simple_arg arg;
-        test_ref_arg    ref;
-    } u;
-} test_arg;
-
-/** Head of the list of arguments */
-typedef TAILQ_HEAD(test_args, test_arg) test_args;
-
 
 /** Attributes of any run item */
 typedef struct run_item_attrs {
@@ -215,27 +163,18 @@ typedef struct test_script {
 } test_script;
 
 
-/** Types of test session variables */
-typedef enum test_session_var_type {
-    TEST_SESSION_VAR_SIMPLE,
-    TEST_SESSION_VAR_REFERRED
-} test_session_var_type;
-
 /** Test session variable */
-typedef struct test_session_var {
-    TAILQ_ENTRY(test_session_var)   links;
+typedef struct test_var_arg {
+    TAILQ_ENTRY(test_var_arg)   links;
 
     char                   *name;       /**< Name */
-    test_session_var_type   type;
     te_bool                 handdown;
-    union {
-        test_simple_var     var;
-        test_ref_var        ref;
-    } u;
-} test_session_var;
+    test_var_arg_values     values;     /**< Values */
+    test_var_arg_attrs      attrs;
+} test_var_arg;
 
 /** List of test session variables */
-typedef TAILQ_HEAD(test_session_vars, test_session_var) test_session_vars;
+typedef TAILQ_HEAD(test_vars_args, test_var_arg) test_vars_args;
 
 /* Forwards */
 struct run_item;
@@ -247,16 +186,16 @@ typedef TAILQ_HEAD(run_items, run_item) run_items;
 
 /** Test session */
 typedef struct test_session {
-    char               *name;           /**< Name */
-    test_session_vars   vars;           /**< List of variables */
-    run_item           *exception;      /**< Exception handler */
-    run_item           *keepalive;      /**< Keep-alive handler */
-    run_item           *prologue;       /**< Prologue */
-    run_item           *epilogue;       /**< Epilogue */
-    run_items           run_items;      /**< List of run items */
-    te_bool             simultaneous;   /**< Run all items simultaneously */
-    te_bool             random;         /**< Run items in random order */
-    unsigned int        flags;          /**< TEST_RANDOM_SPECIFIED */
+    char           *name;           /**< Name */
+    test_vars_args  vars;           /**< List of variables */
+    run_item       *exception;      /**< Exception handler */
+    run_item       *keepalive;      /**< Keep-alive handler */
+    run_item       *prologue;       /**< Prologue */
+    run_item       *epilogue;       /**< Epilogue */
+    run_items       run_items;      /**< List of run items */
+    te_bool         simultaneous;   /**< Run all items simultaneously */
+    te_bool         random;         /**< Run items in random order */
+    unsigned int    flags;          /**< TEST_RANDOM_SPECIFIED */
 } test_session;
 
 
@@ -298,7 +237,7 @@ struct run_item {
         test_session    session;
         test_package   *package;
     } u;
-    test_args           args;               /**< Arguments */
+    test_vars_args      args;               /**< Arguments */
     run_item_attrs      attrs;              /**< Package run attributes */
     unsigned int        loglevel;
     te_bool             allow_configure;    
