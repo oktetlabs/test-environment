@@ -3,8 +3,8 @@ tetestdir=$(prefix)/@PACKAGE_NAME@/$(subdir)
 
 dist_tetest_DATA = package.xml
 
-NDS_DIR=${TE_BASE}/storage/nds
-tetest_DATA = ${NDS_DIR}/file-csap.asn ${NDS_DIR}/file-tmpl01.asn
+#NDS_DIR=${TE_BASE}/storage/nds
+#tetest_DATA = ${NDS_DIR}/file-csap.asn ${NDS_DIR}/file-tmpl01.asn
 
 
 AM_CPPFLAGS = -I$(DESTDIR)/$(prefix)/include \
