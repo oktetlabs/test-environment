@@ -562,7 +562,7 @@ process_backup(cfg_backup_msg *msg)
 
         case CFG_BACKUP_RELEASE:
         {
-            msg->rc = cfg_dh_release_backup(filename);
+            msg->rc = cfg_dh_release_backup(msg->filename);
             break;
         }
     }
