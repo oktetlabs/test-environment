@@ -194,10 +194,11 @@ int ip4_match_bin_cb (int csap_id, int layer, const asn_value *pattern_pdu,
 
     uint8_t *data;
     uint8_t  tmp8;
-    int      rc;
+    int      rc = 0;
+    asn_value *ip4_header_pdu = NULL;
 
-    UNUSED(pattern_pdu);
-    UNUSED(parsed_packet);
+    if (parsed_packet)
+        ip4_header_pdu = asn_init_value(ndn_ip4_header);
 
     if ((csap_descr = csap_find(csap_id)) == NULL)
     {
@@ -208,10 +209,10 @@ int ip4_match_bin_cb (int csap_id, int layer, const asn_value *pattern_pdu,
 
     data = pkt->data; 
 
-#define CHECK_FIELD(_du_field, _asn_label, _size) \
+#define CHECK_FIELD(_asn_label, _size) \
     do {                                                        \
-        rc = tad_univ_match_field(&spec_data-> _du_field, NULL, \
-                data, _size, _asn_label);                       \
+        rc = ndn_match_data_units(pattern_pdu, ip4_header_pdu,  \
+                                  data, _size, _asn_label);     \
         if (rc)                                                 \
         {                                                       \
             VERB("%s: field %s not match, rc %X",               \
@@ -223,29 +224,32 @@ int ip4_match_bin_cb (int csap_id, int layer, const asn_value *pattern_pdu,
 
 
     tmp8 = (*data) >> 4;
-    rc = tad_univ_match_field(&spec_data->du_version, NULL, &tmp8, 1, "version");
+    rc = ndn_match_data_units(pattern_pdu, ip4_header_pdu, 
+                              &tmp8, 1, "version");
     if (rc) return rc;
 
     tmp8 = (*data) & 0x0f;
-    rc = tad_univ_match_field(&spec_data->du_header_len, NULL, &tmp8, 1, "header-len");
+    rc = ndn_match_data_units(pattern_pdu, ip4_header_pdu, 
+                              &tmp8, 1, "header-len");
     if (rc) return rc;
     data++;
 
-    CHECK_FIELD(du_tos,      "type-of-service", 1); 
-    CHECK_FIELD(du_ip_len,   "ip-len", 2);
-    CHECK_FIELD(du_ip_ident, "ip-ident", 2);
+    CHECK_FIELD("type-of-service", 1); 
+    CHECK_FIELD("ip-len", 2);
+    CHECK_FIELD("ip-ident", 2);
 
     tmp8 = (*data) >> 5;
-    rc = tad_univ_match_field(&spec_data->du_flags, NULL, &tmp8, 1, "flags");
+    rc = ndn_match_data_units(pattern_pdu, ip4_header_pdu, 
+                              &tmp8, 1, "flags");
     if (rc) return rc;
 
     *data &= 0x1f; 
-    CHECK_FIELD(du_ip_offset,  "ip-offset", 2);
-    CHECK_FIELD(du_ttl,        "time-to-live", 1);
-    CHECK_FIELD(du_protocol,   "protocol", 1);
-    CHECK_FIELD(du_h_checksum, "h-checksum", 2);
-    CHECK_FIELD(du_src_addr,   "src_addr", 4);
-    CHECK_FIELD(du_dst_addr,   "dst-addr", 4);
+    CHECK_FIELD("ip-offset", 2);
+    CHECK_FIELD("time-to-live", 1);
+    CHECK_FIELD("protocol", 1);
+    CHECK_FIELD("h-checksum", 2);
+    CHECK_FIELD("src_addr", 4);
+    CHECK_FIELD("dst-addr", 4);
  
 #undef CHECK_FIELD 
 
@@ -260,6 +264,16 @@ int ip4_match_bin_cb (int csap_id, int layer, const asn_value *pattern_pdu,
         payload->data = malloc (payload->len);
         memcpy(payload->data, data, payload->len);
     }
+
+    if (parsed_packet)
+    {
+        rc = asn_write_component_value(parsed_packet, ip4_header_pdu, "#ip4"); 
+        if (rc)
+            ERROR("%s, write IPv4 header to packet fails %X\n", 
+                  __FUNCTION__, rc);
+    } 
+
+    asn_free_value(ip4_header_pdu);
 
     VERB("%s, return %X", __FUNCTION__, rc);
     
