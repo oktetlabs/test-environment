@@ -34,11 +34,11 @@
 
 #define NAMED_CONF           "named.conf"
 
-static int dns_index;
+static int     dns_index;
 static te_bool dns_recursive;
 static te_bool named_conf_was_running;
-static char dns_forwarder[64] = "0.0.0.0";
-static char dns_directory[PATH_MAX];
+static char    dns_forwarder[64] = "0.0.0.0";
+static char    dns_directory[PATH_MAX];
 
 
 static int
@@ -83,7 +83,7 @@ ds_dns_forwarder_get(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(instN);
-    if(*dns_forwarder == '\0')
+    if (*dns_forwarder == '\0')
         return TE_RC(TE_TA_LINUX, ENOENT);
     strcpy(value, dns_forwarder);
     return 0;
@@ -93,7 +93,7 @@ static int
 ds_dns_forwarder_set(unsigned int gid, const char *oid,
                      const char *value, const char *instN, ...)
 {
-    if(named_conf_was_running)
+    if (named_conf_was_running)
     {
         WARN("DNS server was running");
         return TE_RC(TE_TA_LINUX, ENOSYS);
@@ -121,7 +121,7 @@ static int
 ds_dns_directory_set(unsigned int gid, const char *oid,
                      const char *value, const char *instN, ...)
 {
-    if(named_conf_was_running)
+    if (named_conf_was_running)
     {
         WARN("DNS server was running");
         return TE_RC(TE_TA_LINUX, ENOSYS);
@@ -200,9 +200,10 @@ RCF_PCH_CFG_NODE_RW(node_ds_dnsserver, "dnsserver",
 void
 ds_init_dns_server(rcf_pch_cfg_object **last)
 {
-    char *dir = NULL;
-    int   rc = 0;
+    char         *dir = NULL;
+    int          rc = 0;
     extern FILE *yyin;
+
     extern int yyparse(void);
 
     if (file_exists("/etc/named/" NAMED_CONF))
