@@ -169,7 +169,8 @@ extern int snmp_write_read_cb (csap_p csap_descr, int timeout,
  *
  * @return zero on success or error code.
  */ 
-extern int snmp_single_init_cb (int csap_id, const asn_value_p csap_nds, int layer);
+extern int snmp_single_init_cb(int csap_id, const asn_value *csap_nds,
+                               int layer);
 
 /**
  * Callback for destroy 'snmp' CSAP layer if single in stack.

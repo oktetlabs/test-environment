@@ -387,7 +387,7 @@ snmp_single_check_pdus(csap_p csap_descr, asn_value *traffic_nds)
  * @return zero on success or error code.
  */ 
 int 
-snmp_single_init_cb (int csap_id, const asn_value_p csap_nds, int layer)
+snmp_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
 {
     int      rc;
     char     community[COMMUNITY_MAX_LEN]; 
