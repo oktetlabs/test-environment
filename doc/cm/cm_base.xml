@@ -396,7 +396,7 @@
          Name: empty
          Value: 0 (disabled) or 1 (enabled)
          -->
-    <object oid="/agent/smtp" access="read_create" type="none"/>
+    <object oid="/agent/smtp" access="read_create" type="integer"/>
 
     <!-- SMTP daemon program to be used (i.e. sendmail).
          Name: empty
