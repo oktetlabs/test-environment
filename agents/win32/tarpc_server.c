@@ -426,13 +426,13 @@ bool_t
 _setlibname_1_svc(tarpc_setlibname_in *in, tarpc_setlibname_out *out,
                  struct svc_req *rqstp)
 {
+    WSADATA data;                               
+
+    WSAStartup(MAKEWORD(2,2), &data);
+    
     UNUSED(rqstp);
     UNUSED(in);
-    UNUSED(out);
-    errno = 0;
-    out->retval = 0;
-    out->common._errno = 0;
-    out->common.duration = 0;
+    memset(out, 0, sizeof(*out));
     return TRUE;
 }
 
@@ -489,11 +489,15 @@ _sigreceived_1_svc(tarpc_sigreceived_in *in, tarpc_sigreceived_out *out,
 
 TARPC_FUNC(socket, {}, 
 {
+    printf("Here!\n");
+    ERROR("Here!\n");
     MAKE_CALL(out->fd = WSASocket(domain_rpc2h(in->domain),
                                   socktype_rpc2h(in->type),
                                   proto_rpc2h(in->proto), 
                                   (LPWSAPROTOCOL_INFO)(in->info.info_val), 0,  
                                   in->flags ? WSA_FLAG_OVERLAPPED : 0));
+    printf("Result %d error %d\n", out->fd, out->common.win_error);
+    ERROR("Result %d error %d\n", out->fd, out->common.win_error);
 }
 )
 

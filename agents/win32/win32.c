@@ -684,6 +684,10 @@ WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance,
     char  buf[16];
     char  cmd[256] = { 0, };
     char *tmp;
+
+    WSADATA data;                               
+
+    WSAStartup(MAKEWORD(2,2), &data);
     
     ta_hinstance = hinstance;
     
