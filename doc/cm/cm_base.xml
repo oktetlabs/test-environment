@@ -194,6 +194,12 @@
          Limit: 1 -->
     <object oid="/agent/dhcpserver" access="read_write" type="integer"/>
 
+    <!-- DHCP server interfaces.
+         Name: empty
+         Value: Space separated list of interfaces -->
+    <object oid="/agent/dhcpserver/interfaces"
+            access="read_write" type="string"/>
+
     <!-- DHCP server operates in three term areas: its clients, which may
          obtain some resources, resource configured for particular
          clients and resources really distributed within clients. 
