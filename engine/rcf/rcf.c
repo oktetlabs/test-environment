@@ -145,29 +145,30 @@ typedef struct usrreq {
 
 /** Structure for one Test Agent */
 typedef struct ta {
-    struct ta          *next;       /**< Link to the next TA */
-    rcf_talib_handle    handle;     /**< Test Agent handle returted by 
-                                         start() method */
-    char               *name;       /**< Test Agent name */
-    char               *type;       /**< Test Agent type */
-    char               *conf;       /**< Configuration string */
-    usrreq              sent;       /**< User requests sent to the TA */
-    usrreq              pending;    /**< Pending user requests */
-    int                 flags;      /**< Test Agent flags */
+    struct ta          *next;               /**< Link to the next TA */
+    rcf_talib_handle    handle;             /**< Test Agent handle returted by 
+                                                 start() method */
+    char               *name;               /**< Test Agent name */
+    char               *type;               /**< Test Agent type */
+    te_bool             enable_synch_time;  /**< Enable synchronize time */ 
+    char               *conf;               /**< Configuration string */
+    usrreq              sent;               /**< User requests sent to the TA */
+    usrreq              pending;            /**< Pending user requests */
+    int                 flags;              /**< Test Agent flags */
     int                 reboot_timestamp;   /**< Time of reboot command
                                                  sending (in seconds) */
-    int                 sid;        /**< Free session identifier 
-                                         (starts from 2) */
+    int                 sid;                /**< Free session identifier 
+                                                 (starts from 2) */
 
-    lt_dlhandle         dlhandle;   /**< Dynamic library handle */
+    lt_dlhandle         dlhandle;           /**< Dynamic library handle */
 
     /** @name Methods */
-    rcf_talib_start     start;      /**< Start TA */
-    rcf_talib_reboot    reboot;     /**< Reboot TA */
-    rcf_talib_connect   connect;    /**< Connect to TA */
-    rcf_talib_transmit  transmit;   /**< Transmit to TA */
-    rcf_talib_is_ready  is_ready;   /**< Is data from TA pending */
-    rcf_talib_receive   receive;    /**< Receive from TA */
+    rcf_talib_start     start;              /**< Start TA */
+    rcf_talib_reboot    reboot;             /**< Reboot TA */
+    rcf_talib_connect   connect;            /**< Connect to TA */
+    rcf_talib_transmit  transmit;           /**< Transmit to TA */
+    rcf_talib_is_ready  is_ready;           /**< Is data from TA pending */
+    rcf_talib_receive   receive;            /**< Receive from TA */
     /*@}*/
 } ta;
 
@@ -405,6 +406,14 @@ parse_config(char *filename)
         }
         else
             goto bad_format;
+	
+        if ((attr = xmlGetProp(cur, (const xmlChar *)"synch_time")) != NULL)
+        {
+            agent->enable_synch_time = (strcmp(attr, "yes") == 0);
+            xmlFree(attr);
+        }
+        else
+            agent->enable_synch_time = FALSE;
 
         if ((attr = xmlGetProp(cur, (const xmlChar *)"confstr")) != NULL)
         {
@@ -574,7 +583,14 @@ init_agent(ta *agent)
         return 1;
     }
     VERB("Connected with TA %s", agent->name);
-    return synchronize_time(agent);
+    if (agent->enable_synch_time)
+    {
+        return synchronize_time(agent);
+    }
+    else
+    {
+        return 0;
+    }
 }
 
 /**
