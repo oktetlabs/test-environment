@@ -174,8 +174,8 @@ free_group(group * g)
     }
 }
 /* Release all memory allocated for DHCP data */
-static void
-ds_shutdown_dhcp_server(void)
+void
+ds_shutdown_dhcp_server()
 {
     host  *host, *host_tmp;
     group *group, *group_tmp;
@@ -670,7 +670,7 @@ init_omapi()
         isc_result_t status = x;                        \
         if (status != ISC_R_SUCCESS)                    \
         {                                               \
-            free_dhcp_data();                           \
+            ds_shutdown_dhcp_server();                  \
             VERB("cannot interact with DHCP daemon\n"); \
             return TE_RC(TE_TA_LINUX, EPERM);           \
         }                                               \
@@ -1851,7 +1851,7 @@ RCF_PCH_CFG_NODE_RW(node_ds_dhcpserver, "dhcpserver",
  * @return status code
  */
 void
-ds_init_dhcp_server()
+ds_init_dhcp_server(rcf_pch_cfg_object **last)
 {
     int  rc = 0;
 
@@ -1904,7 +1904,7 @@ ds_init_dhcp_server()
 
     if (rc != 0)
     {
-        free_dhcp_data();
+        ds_shutdown_dhcp_server();
         return;
     }
     

@@ -166,8 +166,16 @@ ds_restore_backup()
     n_ds = 0;
 }
 
-/* Get current state daemon or xinetd service */
-static int
+/**
+ * Get current state daemon or xinetd service.
+ *
+ * @param gid   unused
+ * @param oid   daemon name
+ * @param value value location
+ *
+ * @return Status code
+ */
+int
 daemon_get(unsigned int gid, const char *oid, char *value)
 {
     const char *daemon_name = get_ds_name(oid);
@@ -184,8 +192,16 @@ daemon_get(unsigned int gid, const char *oid, char *value)
     return 0;
 }
 
-/* On/off daemon */
-static int
+/**
+ * Get current state daemon or xinetd service.
+ *
+ * @param gid   unused
+ * @param oid   daemon name
+ * @param value value location
+ *
+ * @return Status code
+ */
+int
 daemon_set(unsigned int gid, const char *oid, const char *value)
 {
     const char *daemon_name = get_ds_name(oid);
@@ -219,17 +235,6 @@ daemon_set(unsigned int gid, const char *oid, const char *value)
     }
 
     return 0;
-}
-
-static inline int
-daemon_running(const char *daemon)
-{
-    char enable[2];
-    
-    if (daemon_get(0, daemon, enable) != 0)
-        return 0;
-        
-    return enable[0] == '1';        
 }
 
 #ifdef WITH_XINETD

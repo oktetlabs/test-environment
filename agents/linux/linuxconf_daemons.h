@@ -130,7 +130,7 @@ file_exists(char *file)
 extern int ds_create_backup(char *dir, char *name, int *index);
 
 /** Restore initial state of the services */
-static void ds_restore_backup();
+extern void ds_restore_backup();
 
 /** 
  * Get configuration file name for the daemon/service.
@@ -187,6 +187,49 @@ extern void ds_config_touch(int index);
             return;                                             \
         }                                                       \
     } while (0)
+
+/* Daemon handling */
+
+/**
+ * Get current state daemon or xinetd service.
+ *
+ * @param gid   unused
+ * @param oid   daemon name
+ * @param value value location
+ *
+ * @return Status code
+ */
+extern int daemon_get(unsigned int gid, const char *oid, char *value);
+
+/**
+ * Start/stop daemon or xinetd service.
+ *
+ * @param gid   unused
+ * @param oid   daemon name
+ * @param value new value 
+ *
+ * @return Status code
+ */
+extern int daemon_set(unsigned int gid, const char *oid, const char *value);
+
+/** 
+ * Check, if daemon/service is running (enabled).
+ *
+ * @param daemon    daemon/service name
+ *
+ * @return TRUE, if daemon is running
+ */
+static inline te_bool
+daemon_running(const char *daemon)
+{
+    char enable[2];
+    
+    if (daemon_get(0, daemon, enable) != 0)
+        return 0;
+        
+    return enable[0] == '1';        
+}    
+
 
 /* Initialisation/shutdown function for daemons/services */
 extern void ds_init_dhcp_server(rcf_pch_cfg_object **last);
