@@ -145,7 +145,7 @@ test_param_iteration_clone(const test_param_iteration *i)
     test_param           *p;
     test_param           *pc;
 
-    ENTRY("0x%x", (unsigned int)i);
+    ENTRY("0x%x", (size_t)i);
 
     if (ic == NULL)
     {
