@@ -284,7 +284,7 @@ tapi_snmp_packet_to_plain(asn_value *pkt, tapi_snmp_message_t *snmp_message)
 
         rc = asn_read_value_field (var_bind, &(snmp_message->vars[i].name.id),
                                     &len, "name.#plain"); 
-        VERB ("%s; var N %d ,oid %s", i, print_oid(&(snmp_message->vars[i])));
+        VERB ("%s; var N %d ,oid %s", __FUNCTION__, i, print_oid(&(snmp_message->vars[i])));
 
         if (rc == 0)
             rc = asn_get_choice(var_bind, "value.#plain", choice_label, CL_MAX);
@@ -362,7 +362,7 @@ tapi_snmp_packet_to_plain(asn_value *pkt, tapi_snmp_message_t *snmp_message)
 
         }
         else if (rc == 0 && strcmp(choice_label, "application-wide") == 0)
-        {
+		{
             rc = asn_get_choice(var_bind, "value.#plain.#application-wide", 
                                         choice_label, CL_MAX);
 
@@ -370,6 +370,10 @@ tapi_snmp_packet_to_plain(asn_value *pkt, tapi_snmp_message_t *snmp_message)
             {
                 snmp_message->vars[i].type = TAPI_SNMP_IPADDRESS;
             }
+            else if (strcmp(choice_label, "unsigned-value") == 0)
+            {
+                snmp_message->vars[i].type = TAPI_SNMP_UNSIGNED;
+            } 
             else if (strcmp(choice_label, "counter-value") == 0)
             {
                 snmp_message->vars[i].type = TAPI_SNMP_COUNTER;
@@ -786,7 +790,7 @@ tapi_snmp_walk(const char *ta, int sid, int csap_id,
     int rc;
     tapi_snmp_varbind_t vb;
     tapi_snmp_oid_t base_oid, next_oid;
-    
+
     if (ta == NULL || oid == NULL)
         return TE_RC(TE_TAPI, ETEWRONGPTR); 
 
@@ -810,6 +814,7 @@ tapi_snmp_walk(const char *ta, int sid, int csap_id,
 
         if (tapi_snmp_is_sub_oid(&base_oid, &vb.name))
         {
+
             rc = callback(&vb, userdata);
 
             tapi_snmp_free_varbind(&vb);

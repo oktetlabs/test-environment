@@ -187,15 +187,6 @@ extern "C" {
         }                                                                  \
     } while (0)        	    
 
-#undef SNMP_WALK
-#define SNMP_WALK(ta_, sid_, csap_id_, label_, userdata_, callback_)       \
-    do {                                                                   \
-        int             rc_;                                               \
-        tapi_snmp_oid_t oid_;                                              \
-                                                                           \
-        SNMP_MAKE_OID(label_, oid_);                                       \
-    } while (0)	    
-		    
 	
 
 /**
