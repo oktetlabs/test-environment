@@ -298,7 +298,7 @@ ftp_open(char *uri, int flags, int passive, int offset, int *sock)
         READ_ANS;      \
     } while (0)
 
-    if ((sock == NULL) || (*sock == 0))
+    if ((sock == NULL) || (*sock == -1))
     {
         VERB("Connecting...");
         s = socket(AF_INET, SOCK_STREAM, 0);
