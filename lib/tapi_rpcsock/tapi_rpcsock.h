@@ -1037,7 +1037,6 @@ extern int rpc_ftp_open(rcf_rpc_server *handle,
  * @return file descriptor, which may be used for reading/writing data
  */
 extern int rpc_many_send(rcf_rpc_server *handle, int sock,
-                         int *vector, int nops, uint64_t *sent);
-
+                         const int *vector, int nops, uint64_t *sent);
 
 #endif /* __TE_TAPI_RPCSOCK_H__ */
