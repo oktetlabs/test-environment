@@ -86,8 +86,8 @@ else
     AC_MSG_ERROR([Could not find libxml2, check ftp://xmlsoft.org/.])
 fi
 
-AC_SUBST(XML2_CFLAGS)
-AC_SUBST(XML2_LIBS)
+AC_SUBST([XML2_CFLAGS])
+AC_SUBST([XML2_LIBS])
 
 CFLAGS=${CFLAGS}" "${XML2_CFLAGS}
 AC_CHECK_MEMBERS([\

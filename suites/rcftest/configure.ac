@@ -7,7 +7,7 @@ AC_CONFIG_AUX_DIR([../../auxdir])
 AM_INIT_AUTOMAKE([1.8.5 foreign -Wall])
 
 AC_CANONICAL_HOST
-AC_SUBST(host)
+AC_SUBST([host])
 
 # Checks for programs.
 AC_PROG_CC
