@@ -501,11 +501,10 @@ ipc_receive_message(struct ipc_server *ipcs,
         /* Calculate number of octets rest in the current message */
         assert(client->msg_rest >= copy_len);
         client->msg_rest -= copy_len;
+        /* Calculate number of octets rest in the current fragment */
+        client->frag_rest = data_size - copy_len;
 
     } while ((buf_len > 0) && (client->msg_rest > 0));
-
-    /* Calculate number of octets rest in the current fragment */
-    client->frag_rest = data_size - copy_len;
 
     if (client->msg_rest > 0)
     {
