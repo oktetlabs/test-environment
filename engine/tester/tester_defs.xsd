@@ -141,13 +141,23 @@
         </simpleContent>
     </complexType>
 
-    <attributeGroup name="VarArgAttributes">
+    <complexType name="TestParameter">
         <annotation>
             <documentation>
-                Common attributes for session variables and arguments
-                passed to run item.
+                Representation of test parameter: session variable or
+                an argument passed to the item to run.
             </documentation>
         </annotation>
+        <sequence>
+            <element name="value" type="Value"
+                                  minOccurs="0" maxOccurs="unbounded">
+                <annotation>
+                    <documentation>
+                         Set of variable values.
+                    </documentation>
+                </annotation>
+            </element>
+        </sequence>
         <attribute name="name" type="Name" use="required">
             <annotation>
                 <documentation> 
@@ -197,114 +207,25 @@
                 </documentation>
             </annotation>
         </attribute>
-    </attributeGroup>
-
-    <attributeGroup name="RefVarArgAttributes">
-        <annotation>
-            <documentation>
-                Set of attributes common for 'ReferredVariable' and
-                'ReferredArgument' types.
-            </documentation>
-        </annotation>
-        <attribute name="name" type="Name" use="required">
-            <annotation>
-                <documentation>
-                    Local name of the variable.
-                </documentation>
-            </annotation>
-        </attribute>
         <attribute name="ref" type="Name">  
             <annotation>
                 <documentation>
-                    Name of the argument passed to the session to get
-                    its value. If this attribute is not specified it's
-                    assumed that it equals to the 'name' attribute.
+                    Name of the argument passed to the session or name
+                    of session variable to get the value. If this
+                    attribute and any other sources of value are not
+                    specified it's assumed that it equals to the 'name'
+                    attribute.
                 </documentation>
             </annotation>
         </attribute>
-    </attributeGroup>
-
-    <complexType name="ReferredVariable">
-        <annotation>
-            <documentation>
-                Declares variables with single value. Value is equal
-                to value of the argument passed to the session.
-            </documentation>
-        </annotation>
-        <attribute name="handdown" type="boolean" default="false">
+        <attribute name="value" type="String">  
             <annotation>
                 <documentation>
-                    Is it necessary to pass value of the variable to
-                    each run item of the session? If the attribute is
-                    true, then variable automatically becomes an
-                    argument for each run item of the session.
+                    Value of the parameter, if only one value is
+                    specified.
                 </documentation>
             </annotation>
         </attribute>
-        <attributeGroup ref="RefVarArgAttributes"/>
-    </complexType>
-    
-    <complexType name="Variable">
-        <annotation>
-            <documentation>
-                Representation of session variable to map externally
-                provided values as well as to declare internal
-                variables.
-            </documentation>
-        </annotation>
-        <sequence>
-            <element name="value" type="Value"
-                                  minOccurs="0" maxOccurs="unbounded">
-                <annotation>
-                    <documentation>
-                         Set of variable values.
-                    </documentation>
-                </annotation>
-            </element>
-        </sequence>
-        <attribute name="handdown" type="boolean" default="false">
-            <annotation>
-                <documentation>
-                    Is it necessary to pass value of the variable to
-                    each run item of the session? If the attribute is
-                    true, then variable automatically becomes an
-                    argument for each run item of the session.
-                </documentation>
-            </annotation>
-        </attribute>
-        <attributeGroup ref="VarArgAttributes"/>
-    </complexType>
-
-    <complexType name="ReferredArgument">
-        <annotation>
-            <documentation>
-                Declares argument referred to session variable.
-                Values are equal to values of the corresponding
-                session variable.
-            </documentation>
-        </annotation>
-        <attributeGroup ref="RefVarArgAttributes"/>
-    </complexType>
-    
-    <complexType name="Argument">
-        <annotation>
-            <documentation>
-                Represents an argument passed to the item to run.
-                Variables of the parent session with true handdown
-                attribute are automatically added to set of agruments.
-            </documentation>
-        </annotation>
-        <sequence>
-            <element name="value" type="ArgumentValue"
-                                  minOccurs="0" maxOccurs="unbounded">
-                <annotation>
-                    <documentation>
-                        Set of argument values.
-                    </documentation>
-                </annotation>
-            </element>
-        </sequence>
-        <attributeGroup ref="VarArgAttributes"/>
     </complexType>
     
     <group name="Arguments">
@@ -313,8 +234,8 @@
                 Possible types of argument elements.
             </documentation>
         </annotation>
-        <element name="arg" type="Argument" minOccurs="0"
-                                            maxOccurs="unbounded">
+        <element name="arg" type="TestParameter" minOccurs="0"
+                                                 maxOccurs="unbounded">
             <annotation>
                 <documentation>
                     Arguments to be passed to executable.
@@ -408,8 +329,8 @@
                     </documentation>
                 </annotation>
             </element>
-            <element name="req" type="Requirement"
-                                minOccurs="0" maxOccurs="unbounded">
+            <element name="req" type="Requirement" minOccurs="0"
+                                                   maxOccurs="unbounded">
                 <annotation>
                     <documentation>
                         Complete set of requiremetns verified by the
@@ -522,64 +443,74 @@
             </documentation>
         </annotation>
         <sequence>
-            <element name="var" type="Variable" minOccurs="0"
-                                                maxOccurs="unbounded">
-                <key name="vars">
+            <choice minOccurs="0" maxOccurs="unbounded">
+                <element name="var" type="TestParameter">
+                    <key name="vars">
+                        <annotation>
+                            <documentation>
+                                Define key to refer to session variables.
+                            </documentation>
+                        </annotation>
+                        <selector xpath="../*[self::var]">
+                            <annotation>
+                                <documentation>
+                                    Select all 'var' children of the session.
+                                </documentation>
+                            </annotation>
+                        </selector>
+                        <field xpath="@name">
+                            <annotation>
+                                <documentation>
+                                    Use 'name' attribute as key.
+                                </documentation>
+                            </annotation>
+                        </field>
+                    </key>
+                    <key name="var_values">
+                        <annotation>
+                            <documentation>
+                                Define key to refer to values of the
+                                variable.
+                            </documentation>
+                        </annotation>
+                        <selector xpath="value[@id]">
+                            <annotation>
+                                <documentation>
+                                    Select all 'value' elements with 'id'
+                                    attribute of the variable.
+                                </documentation>
+                            </annotation>
+                        </selector>
+                        <field xpath="@id">
+                            <annotation>
+                                <documentation>
+                                    Use 'id' attribute as key.
+                                </documentation>
+                            </annotation>
+                        </field>
+                    </key>
+                    <keyref name="var_preferred_value" refer="var_values">
+                        <annotation>
+                            <documentation>
+                                Define that 'preferred' attribute of the
+                                current element must be a reference to
+                                one of its values.
+                            </documentation>
+                        </annotation>
+                        <selector xpath="."/>
+                        <field    xpath="@preferred"/>
+                    </keyref>
+                </element>
+                <element name="arg" type="TestParameter">
                     <annotation>
                         <documentation>
-                            Define key to refer to session variables.
+                            Argument common for all run items of
+                            the session. It is passed to each run
+                            item of the session automatically.
                         </documentation>
                     </annotation>
-                    <selector xpath="../*[self::var]">
-                        <annotation>
-                            <documentation>
-                                Select all 'var' children of the session.
-                            </documentation>
-                        </annotation>
-                    </selector>
-                    <field xpath="@name">
-                        <annotation>
-                            <documentation>
-                                Use 'name' attribute as key.
-                            </documentation>
-                        </annotation>
-                    </field>
-                </key>
-                <key name="var_values">
-                    <annotation>
-                        <documentation>
-                            Define key to refer to values of the
-                            variable.
-                        </documentation>
-                    </annotation>
-                    <selector xpath="value[@id]">
-                        <annotation>
-                            <documentation>
-                                Select all 'value' elements with 'id'
-                                attribute of the variable.
-                            </documentation>
-                        </annotation>
-                    </selector>
-                    <field xpath="@id">
-                        <annotation>
-                            <documentation>
-                                Use 'id' attribute as key.
-                            </documentation>
-                        </annotation>
-                    </field>
-                </key>
-                <keyref name="var_preferred_value" refer="var_values">
-                    <annotation>
-                        <documentation>
-                            Define that 'preferred' attribute of the
-                            current element must be a reference to
-                            one of its values.
-                        </documentation>
-                    </annotation>
-                    <selector xpath="."/>
-                    <field    xpath="@preferred"/>
-                </keyref>
-            </element>
+                </element>
+            </choice>
             <element name="exception" type="InheritableExecutable"
                                       minOccurs="0">
                 <annotation>
@@ -746,7 +677,6 @@
                 </documentation>
             </annotation>
         </attribute>
--->
         <attribute name="configure" type="boolean"   default="true">
             <annotation>
                 <documentation>
@@ -772,6 +702,7 @@
                 </documentation>
             </annotation>
         </attribute>
+-->
     </complexType>
 
 </schema>
