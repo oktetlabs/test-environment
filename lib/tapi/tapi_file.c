@@ -288,7 +288,7 @@ tapi_file_read_ta(const char *ta, const char *filename, char **pbuf)
         return -1;
     }
 
-    if (fread(buf, 1, st.st_size, f) != st.st_size)
+    if (fread(buf, 1, st.st_size, f) != (size_t)st.st_size)
     {
         ERROR("Failed to read from file %s", pathname);
         unlink(pathname);
