@@ -87,12 +87,15 @@ FILE *rawlog_fd = NULL;
 enum e_rgt_op_mode  rgt_op_mode     = RGT_OP_MODE_DEFAULT;
 const char         *rgt_op_mode_str = RGT_OP_MODE_DEFAULT_STR;
 
+/** Whether Rgt should process control messages or not */
+int                 process_control_msg = FALSE; /* @todo Change to TRUE!*/
+
 /**
  * Operation mode (live or postponed) influences on desirable read behaviour
  * that can be blocking or nonblocking.
  * This global variable contains current rgt reading mode.
  */
-enum read_mode rgt_rmode;
+enum read_mode      rgt_rmode;
 
 /**
  * rgt_fetch_log_msg is a pointer to a function that should be used for 
@@ -175,6 +178,10 @@ process_cmd_line_opts(int argc, char **argv)
           "Mode of operation, can be " 
           RGT_OP_MODE_LIVE_STR " or " RGT_OP_MODE_POSTPONED_STR ". "
           "By default " RGT_OP_MODE_DEFAULT_STR " mode is used.", "MODE" },
+
+        { "no-cntrl-msg", '\0', POPT_ARG_NONE, NULL, 'n',
+          "Process TESTER control messages as ordinary: do not process "
+          "test flow structure.", NULL },
           
         { "version", 'v', POPT_ARG_NONE, NULL, 'v', 
           "Display version information.", 0 },
@@ -212,8 +219,13 @@ process_cmd_line_opts(int argc, char **argv)
             poptFreeContext(optCon);
             exit(0);
         }
+        else if (rc == 'n')
+        {
+            /* User do not want us to process control messages */
+            process_control_msg = TRUE; /* @todo Change to FALSE!*/
+        }
     }
-        
+
     if (rc < -1)
     {
         /* An error occurred during option processing */
@@ -406,7 +418,8 @@ rgt_core_process_log_msg(log_msg *msg)
      * Entity and User names.
      */
     if (strcmp(msg->entity, CMSG_ENTITY_NAME) == 0 &&
-        strcmp(msg->user, CMSG_USER_NAME) == 0)
+        strcmp(msg->user, CMSG_USER_NAME) == 0 &&
+        process_control_msg)
     {
         rgt_process_control_message(msg);
     }

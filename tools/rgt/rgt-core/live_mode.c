@@ -42,14 +42,14 @@
 #include "rgt_common.h"
 #include "live_mode.h"
 
-static int live_process_test_start(node_info *node);
-static int live_process_test_end(node_info *node);
-static int live_process_pkg_start(node_info *node);
-static int live_process_pkg_end(node_info *node);
-static int live_process_sess_start(node_info *node);
-static int live_process_sess_end(node_info *node);
-static int live_process_branch_start(node_info *node);
-static int live_process_branch_end(node_info *node);
+static int live_process_test_start(node_info_t *node);
+static int live_process_test_end(node_info_t *node);
+static int live_process_pkg_start(node_info_t *node);
+static int live_process_pkg_end(node_info_t *node);
+static int live_process_sess_start(node_info_t *node);
+static int live_process_sess_end(node_info_t *node);
+static int live_process_branch_start(node_info_t *node);
+static int live_process_branch_end(node_info_t *node);
 static int live_process_regular_msg(log_msg *msg);
 
 static void rgt_expand_regular_log_msg(log_msg *msg);
@@ -106,7 +106,7 @@ print_params(param *prms)
     
     if (prm != NULL)
     {
-        fprintf(output_fd, " - Parameters:\n");
+        fprintf(output_fd, "|- Parameters:\n");
     }
     
     while (prm != NULL)
@@ -116,31 +116,32 @@ print_params(param *prms)
     }
 }
 
-static int
-live_process_test_start(node_info *node)
+static inline int
+live_process_start_event(node_info_t *node, const char *node_name)
 {
-    test_info *test = &(node->node_specific.test);
-
-    fprintf(output_fd, "| Starting test: %s\n", test->name);
+    fprintf(output_fd, "| Starting %s: %s\n", node_name, node->descr.name);
     fprintf(output_fd, "|- Date: ");
     print_ts(node->start_ts);
+    fprintf(output_fd, "\n");
 
-    fprintf(output_fd, "\n|- Objective: %s", test->objective);
-    fprintf(output_fd, "\n|- Author: %s\n", test->author);
+    if (node->descr.objective != NULL)
+        fprintf(output_fd, "|- Objective: %s\n", node->descr.objective);
+    if (node->descr.author)
+        fprintf(output_fd, "|- Author: %s\n", node->descr.author);
+
     print_params(node->params);
 
     fprintf(output_fd, "\n");
-        
+
     return 1;
 }
 
-static int
-live_process_test_end(node_info *node)
+static inline int
+live_process_end_event(node_info_t *node, const char *node_name)
 {
-    test_info *test = &(node->node_specific.test);
-    
-    fprintf(output_fd, "| Test complited %-55s %s\n", test->name,
-            (node->result.status == RES_STATUS_PASS) ? "PASS" : "FAIL");
+    fprintf(output_fd, "| %s complited %-55s %s\n", node_name,
+            node->descr.name,
+            (node->result.status == RES_STATUS_PASSED) ? "PASSED" : "FAILED");
     fprintf(output_fd, "|- Date: ");
     print_ts(node->end_ts);
     fprintf(output_fd, "\n\n");
@@ -149,78 +150,50 @@ live_process_test_end(node_info *node)
 }
 
 static int
-live_process_pkg_start(node_info *node)
+live_process_test_start(node_info_t *node)
 {
-    pkg_info *pkg = &(node->node_specific.pkg);
-
-    fprintf(output_fd, "| Starting package: %s\n", pkg->name);
-    fprintf(output_fd, "|- Date: ");
-    print_ts(node->start_ts);
-
-    fprintf(output_fd, "\n|- Title: %s", pkg->title);
-    fprintf(output_fd, "\n|- Author: %s\n", pkg->author);
-    
-    print_params(node->params);
-
-    fprintf(output_fd, "\n");
-
-    return 1;
+    return live_process_start_event(node, "test");
 }
 
 static int
-live_process_pkg_end(node_info *node)
+live_process_test_end(node_info_t *node)
 {
-    pkg_info *pkg = &(node->node_specific.pkg);
-
-    fprintf(output_fd, "| Package complited %-52s %s\n", pkg->name,
-            (node->result.status == RES_STATUS_PASS) ? "PASS" : "FAIL");
-    fprintf(output_fd, "|- Date: ");
-    print_ts(node->end_ts);
-    fprintf(output_fd, "\n\n");
-
-    return 1;
+    return live_process_end_event(node, "Test");
 }
 
 static int
-live_process_sess_start(node_info *node)
+live_process_pkg_start(node_info_t *node)
 {
-    session_info *sess = &(node->node_specific.sess);
-
-    fprintf(output_fd, "| Starting session: \"%s\"\n", sess->objective);
-    fprintf(output_fd, "|- Date: ");
-    print_ts(node->start_ts);
-
-    fprintf(output_fd, "\n|- Objective: %s\n", sess->objective);
-    print_params(node->params);
-
-    fprintf(output_fd, "\n");
-
-    return 1;
+    return live_process_start_event(node, "package");
 }
 
 static int
-live_process_sess_end(node_info *node)
+live_process_pkg_end(node_info_t *node)
 {
-    session_info *sess = &(node->node_specific.sess);
-    
-    fprintf(output_fd, "| Session complited %-52s %s\n", sess->objective,
-            (node->result.status == RES_STATUS_PASS) ? "PASS" : "FAIL");
-    fprintf(output_fd, "|- Date: ");
-    print_ts(node->end_ts);
-    fprintf(output_fd, "\n\n");    
-
-    return 1;
+    return live_process_end_event(node, "Package");
 }
 
 static int
-live_process_branch_end(node_info *node)
+live_process_sess_start(node_info_t *node)
+{
+    return live_process_start_event(node, "session");
+}
+
+static int
+live_process_sess_end(node_info_t *node)
+{
+    return live_process_end_event(node, "Session");
+}
+
+static int
+live_process_branch_end(node_info_t *node)
 {
     UNUSED(node);
     return 1;
 }
 
 static int
-live_process_branch_start(node_info *node)
+live_process_branch_start(node_info_t *node)
 {
     UNUSED(node);
     return 1;

@@ -3,7 +3,7 @@
 
 AC_PREREQ(2.53)
 
-AC_INIT(rgt, 0.02, Oleg.Kravtsov@oktetlabs.ru)
+AC_INIT(rgt, 0.03, Oleg.Kravtsov@oktetlabs.ru)
 AM_CONFIG_HEADER(config.h)
 AC_CONFIG_SRCDIR([rgt-core/rgt_core.c])
 AC_CONFIG_AUX_DIR(aux)
@@ -69,6 +69,13 @@ then
 else
         XML_CONFIG=xml2-config
 fi
+
+TE_HEADERS_PATH=""
+AC_ARG_WITH(te-headers-path,
+        [  --with-te-headers-path=[PATH]        Specify location of TE headers],
+        CFLAGS="$CFLAGS -I$withval"
+)
+
 
 AC_MSG_CHECKING(for libxml2 library)
 if ${XML_CONFIG} --libs print > /dev/null 2>&1
@@ -137,6 +144,7 @@ AC_CHECK_HEADERS([signal.h            \
                   tcl.h               \
                   obstack.h           \
                   assert.h            \
+                  ctype.h             \
                   te_raw_log.h        \
                   logger_defs.h       \
                   ])

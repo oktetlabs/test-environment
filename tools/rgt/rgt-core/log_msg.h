@@ -105,7 +105,16 @@ typedef struct log_msg {
  * These constants were got from OKT-HLD-0000095-TE_TS document.
  */
 #define CMSG_ENTITY_NAME "Tester"
-#define CMSG_USER_NAME   "Flow"
+#define CMSG_USER_NAME   "Control"
+
+#define CNTR_MSG_TEST    "TEST"
+#define CNTR_MSG_PACKAGE "PACKAGE"
+#define CNTR_MSG_SESSION "SESSION"
+
+#define CNTR_BIN2STR(val_) \
+    (val_ == NT_TEST ? CNTR_MSG_TEST :            \
+     val_ == NT_PACKAGE ? CNTR_MSG_PACKAGE :      \
+     val_ == NT_SESSION ? CNTR_MSG_SESSION : (assert(0), ""))
 
 /* 
  * Structures that are used for representation of control log messages.
@@ -121,60 +130,43 @@ typedef struct param {
 } param;
 
 /** Possible results of test, package or session */
-enum result_status {
-    RES_STATUS_PASS, /**< Success */
-    RES_STATUS_FAIL, /**< Failure */
-};
+typedef enum result_status {
+    RES_STATUS_PASSED, 
+    RES_STATUS_KILLED, 
+    RES_STATUS_DUMPED, 
+    RES_STATUS_SKIPPED, 
+    RES_STATUS_FAKED, 
+    RES_STATUS_FAILED, 
+} result_status_t;
 
 /** Structure for keeping session/package/test result information */
 typedef struct result_info {
     enum result_status  status; /**< Result status */
     char               *err;    /**< An error message in the case of status 
                                      field different from RES_STATUS_PASS */
-} result_info;
+} result_info_t;
 
 /**
- * Structure that represents information about a particular test.
- * It is used for passing information about start test events and also for
- * test termination events.
+ * Structure that represents information about a particular entry.
+ * It is used for passing information about start/end events. 
  */
-typedef struct test_info {
-    char        *name;        /**< Test name */
-    char        *objective;   /**< Objectives of a test */
-    char        *author;      /**< Test author */
-} test_info;
-
-/**
- * Structure that represents information about a particular package.
- * It is used for passing information about start package events and also for
- * package termination events. 
- */
-typedef struct pkg_info {
-    char        *name;        /**< Package name */
-    char        *title;       /**< Package title */
-    char        *author;      /**< Package author */
-} pkg_info;
-
-/** Structure that represents information about a particular session. */
-typedef struct session_info {
-    char        *objective;   /**< Objectives of a session */
-    int          n_branches;  /**< Number of branches in a session */
-} session_info;
+typedef struct node_descr {
+    char *name;       /**< Entry name */
+    char *objective;  /**< Objectives of the entry */
+    char *author;     /**< Entry author */
+    int   n_branches; /**< Number of branches in the entry */
+} node_descr_t;
 
 typedef struct node_info {
-    union {
-        test_info    test;
-        pkg_info     pkg;
-        session_info sess;
-    } node_specific;
-    enum node_type  ntype;
+    node_type_t     type;        /**< Node type */
+    node_descr_t    descr;       /**< Description of the node */
     param          *params;      /**< List of parameters */
     uint32_t        start_ts[2]; /**< Timestamp of a "node start" event */
     uint32_t        end_ts[2];   /**< Timestamp of a "node end" event */
-    result_info     result;      /**< Node result info */
-} node_info;
+    result_info_t   result;      /**< Node result info */
+} node_info_t;
 
-typedef int (* f_process_ctrl_log_msg)(node_info *);
+typedef int (* f_process_ctrl_log_msg)(node_info_t *);
 typedef int (* f_process_reg_log_msg)(log_msg *);
 
 /** The set of generic control event types */
@@ -193,7 +185,7 @@ extern f_process_reg_log_msg  reg_msg_proc;
  * for a particular node
  */
 enum event_type {
-    MORE_BRANCHES /**< An additional branch is added on a session */
+    MORE_BRANCHES /**< An additional branch is added on the entry */
 };
 
 /**
@@ -204,7 +196,7 @@ enum event_type {
  *
  * @return  Status of operation.
  */
-int rgt_process_control_message(log_msg *msg);
+extern int rgt_process_control_message(log_msg *msg);
 
 /**
  * Process regular log message:
@@ -216,21 +208,22 @@ int rgt_process_control_message(log_msg *msg);
  *
  * @return  Nothing.
  */
-void rgt_process_regular_message(log_msg *msg);
+extern void rgt_process_regular_message(log_msg *msg);
 
 /**
  * Processes event occured on a node of the flow tree.
  * Currently the only event that is actually processed is MORE_BRANCHES.
  *
- * @params ntype  Type of a node on which an event has occured.
+ * @params type   Type of a node on which an event has occured.
  * @param  evt    Type of an event.
  * @param  node   User-specific data that is passed on  creation of the node.
  *
  * @return  Nothing.
  */
-void rgt_process_event(enum node_type ntype, enum event_type evt, node_info *node);
+extern void rgt_process_event(node_type_t type, enum event_type evt,
+                              node_info_t *node);
 
-void log_msg_init_arg(log_msg *msg);
+extern void log_msg_init_arg(log_msg *msg);
 
 /**
  * Return pointer to the log message argument. The first call of the function
@@ -241,14 +234,14 @@ void log_msg_init_arg(log_msg *msg);
  *
  * @return Pointer to an argument of a message
  */
-msg_arg *get_next_arg(log_msg *msg);
+extern msg_arg *get_next_arg(log_msg *msg);
 
 /**
  * Allocates a new log_msg structure from global memory pool for log messages.
  *
  * @return An address of log_msg structure.
  */
-log_msg *alloc_log_msg();
+extern log_msg *alloc_log_msg();
 
 /**
  * Frees log message.
@@ -261,7 +254,7 @@ log_msg *alloc_log_msg();
  *     The freeing of a log message leads to freeing all messages allocated 
  *     after the message.
  */
-void free_log_msg(log_msg *msg);
+extern void free_log_msg(log_msg *msg);
 
 #ifdef __cplusplus
 }

@@ -12,8 +12,8 @@ log_msg *alloc_log_msg();
 void free_log_msg(log_msg *);
 void initialize_node_info_pool();
 void destroy_node_info_pool();
-node_info *alloc_node_info();
-void free_node_info(node_info *);
+node_info_t *alloc_node_info();
+void free_node_info(node_info_t *);
 void *node_info_obstack_alloc(int size);
 void *node_info_obstack_copy0(const void *address, int size);
 

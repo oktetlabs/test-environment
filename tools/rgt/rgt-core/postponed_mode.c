@@ -49,14 +49,14 @@ static int logs_opened = 0;
 static int logs_closed = 1;
 struct obstack *log_obstk = NULL;
 
-static int postponed_process_test_start(node_info *node);
-static int postponed_process_test_end(node_info *node);
-static int postponed_process_pkg_start(node_info *node);
-static int postponed_process_pkg_end(node_info *node);
-static int postponed_process_sess_start(node_info *node);
-static int postponed_process_sess_end(node_info *node);
-static int postponed_process_branch_start(node_info *node);
-static int postponed_process_branch_end(node_info *node);
+static int postponed_process_test_start(node_info_t *node);
+static int postponed_process_test_end(node_info_t *node);
+static int postponed_process_pkg_start(node_info_t *node);
+static int postponed_process_pkg_end(node_info_t *node);
+static int postponed_process_sess_start(node_info_t *node);
+static int postponed_process_sess_end(node_info_t *node);
+static int postponed_process_branch_start(node_info_t *node);
+static int postponed_process_branch_end(node_info_t *node);
 static int postponed_process_regular_msg(log_msg *msg);
 
 static void output_regular_log_msg(log_msg *msg);
@@ -160,7 +160,7 @@ fwrite_string(const char *str)
 }
 
 static void
-print_ts_info(node_info *node)
+print_ts_info(node_info_t *node)
 {
     fprintf(output_fd, "<start-ts>");
     print_ts(output_fd, node->start_ts);
@@ -201,7 +201,7 @@ postponed_process_close()
 }
 
 static void
-print_params(node_info *node)
+print_params(node_info_t *node)
 {
     if (node->params != NULL)
     {
@@ -217,11 +217,9 @@ print_params(node_info *node)
     }
 }
 
-static int
-postponed_process_test_start(node_info *node)
+static inline int
+postponed_process_start_event(node_info_t *node, const char *node_name)
 {
-    test_info *test = &(node->node_specific.test);
-    
     if (!logs_closed)
     {
         fprintf(output_fd, "</logs>\n");
@@ -229,24 +227,55 @@ postponed_process_test_start(node_info *node)
         logs_closed = 1;
     }
 
-    fprintf(output_fd, "<test name=\"%s\" result=", test->name);
-    if (node->result.status == RES_STATUS_PASS)
+    fprintf(output_fd, "<%s", node_name);
+    if (node->descr.name)
+        fprintf(output_fd, " name=\"%s\"", node->descr.name);
+
+    switch (node->result.status)
     {
-        fprintf(output_fd, "\"pass\"");
+#define NODE_RES_CASE(res_) \
+        case RES_STATUS_ ## res_:                \
+            fprintf(output_fd, " result=\"" #res_ "\""); \
+            break
+
+        NODE_RES_CASE(PASSED);
+        NODE_RES_CASE(KILLED);
+        NODE_RES_CASE(DUMPED);
+        NODE_RES_CASE(SKIPPED);
+        NODE_RES_CASE(FAKED);
+        NODE_RES_CASE(FAILED);
+
+#undef NODE_RES_CASE
+        default:
+            assert(0);
     }
-    else
+
+    if (node->result.err)
     {
-        fprintf(output_fd, "\"fail\" err=\"%s\"", node->result.err);
+        fprintf(output_fd, " err=\"%s\"", node->result.err);
     }
     fprintf(output_fd, ">\n");
     fprintf(output_fd, "<meta>\n");
     print_ts_info(node);
-    fputs("<objective>", output_fd);
-    fwrite_string(test->objective);
-    fputs("</objective>\n", output_fd);
-    fputs("<author>", output_fd);
-    fwrite_string(test->author);
-    fputs("</author>\n", output_fd);
+
+    if (node->descr.objective != NULL)
+    {
+        fputs("<objective>", output_fd);
+        fwrite_string(node->descr.objective);
+        fputs("</objective>\n", output_fd);
+    }
+    if (node->descr.author)
+    {
+        fputs("<author>", output_fd);
+        fwrite_string(node->descr.author);
+        fputs("</author>\n", output_fd);
+    }
+    if (node->descr.n_branches > 0)
+    {
+        fprintf(output_fd, "<n-branches>%d</n-branches>\n",
+                node->descr.n_branches);
+    }
+
     print_params(node);
     fprintf(output_fd, "</meta>\n");
     logs_opened = 0;
@@ -254,8 +283,8 @@ postponed_process_test_start(node_info *node)
     return 1;
 }
 
-static int
-postponed_process_test_end(node_info *node)
+static inline int
+postponed_process_end_event(node_info_t *node, const char *node_name)
 {
     UNUSED(node);
 
@@ -266,116 +295,48 @@ postponed_process_test_end(node_info *node)
         logs_closed = 1;
     }
     
-    fprintf(output_fd, "</test>\n");
+    fprintf(output_fd, "</%s>\n", node_name);
     return 1;
 }
 
 static int
-postponed_process_pkg_start(node_info *node)
+postponed_process_test_start(node_info_t *node)
 {
-    pkg_info *pkg  = &(node->node_specific.pkg);
-    
-    if (!logs_closed)
-    {
-        fprintf(output_fd, "</logs>\n");
-        logs_opened = 0;
-        logs_closed = 1;
-    }
-
-    fprintf(output_fd, "<pkg name=\"%s\" result=", pkg->name);
-    if (node->result.status == RES_STATUS_PASS)
-    {
-        fprintf(output_fd, "\"pass\"");
-    }
-    else
-    {
-        fprintf(output_fd, "\"fail\" err=\"%s\"", node->result.err);
-    }
-    fprintf(output_fd, ">\n");
-    fprintf(output_fd, "<meta>\n");
-    print_ts_info(node);
-    fputs("<title>", output_fd);
-    fwrite_string(pkg->title);
-    fputs("</title>\n", output_fd);
-    fputs("<author>", output_fd);
-    fwrite_string(pkg->author);
-    fputs("</author>\n", output_fd);
-    print_params(node);
-    fprintf(output_fd, "</meta>\n");
-    logs_opened = 0;
-
-    return 1;
+    return postponed_process_start_event(node, "test");
 }
 
 static int
-postponed_process_pkg_end(node_info *node)
+postponed_process_test_end(node_info_t *node)
 {
-    UNUSED(node);
-
-    if (!logs_closed)
-    {
-        fprintf(output_fd, "</logs>\n");
-        logs_opened = 0;
-        logs_closed = 1;
-    }
-    fprintf(output_fd, "</pkg>\n");
-
-    return 1;
+    return postponed_process_end_event(node, "test");
 }
 
 static int
-postponed_process_sess_start(node_info *node)
+postponed_process_pkg_start(node_info_t *node)
 {
-    session_info *sess  = &(node->node_specific.sess);
-    
-    if (!logs_closed)
-    {
-        fprintf(output_fd, "</logs>\n");
-        logs_opened = 0;
-        logs_closed = 1;
-    }
-
-    fprintf(output_fd, "<session result=");
-    if (node->result.status == RES_STATUS_PASS)
-    {
-        fprintf(output_fd, "\"pass\"");
-    }
-    else
-    {
-        fprintf(output_fd, "\"fail\" err=\"%s\"", node->result.err);
-    }
-    fprintf(output_fd, ">\n");
-    fprintf(output_fd, "<meta>\n");
-    print_ts_info(node);
-    fputs("<objective>", output_fd);
-    fwrite_string(sess->objective);
-    fputs("</objective>\n", output_fd);
-    fprintf(output_fd, "<n-branches>%d</n-branches>\n", sess->n_branches);
-    print_params(node);
-    fprintf(output_fd, "</meta>\n");
-
-    logs_opened = 0;
-    return 1;
+    return postponed_process_start_event(node, "pkg");
 }
 
 static int
-postponed_process_sess_end(node_info *node)
+postponed_process_pkg_end(node_info_t *node)
 {
-    UNUSED(node);
-
-    if (!logs_closed)
-    {
-        fprintf(output_fd, "</logs>\n");
-        logs_opened = 0;
-        logs_closed = 1;
-    }
-    fprintf(output_fd, "</session>\n");
-
-    return 1;
+    return postponed_process_end_event(node, "pkg");
 }
 
 static int
-postponed_process_branch_start(node_info *node)
+postponed_process_sess_start(node_info_t *node)
+{
+    return postponed_process_start_event(node, "session");
+}
+
+static int
+postponed_process_sess_end(node_info_t *node)
+{
+    return postponed_process_end_event(node, "session");
+}
+
+static int
+postponed_process_branch_start(node_info_t *node)
 {
     UNUSED(node);
 
@@ -390,7 +351,7 @@ postponed_process_branch_start(node_info *node)
 }
 
 static int
-postponed_process_branch_end(node_info *node)
+postponed_process_branch_end(node_info_t *node)
 {
     UNUSED(node);
 

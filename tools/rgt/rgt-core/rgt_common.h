@@ -152,14 +152,14 @@ extern jmp_buf rgt_mainjmp;
 #define RGT_OP_MODE_DEFAULT_STR RGT_OP_MODE_POSTPONED_STR
 
 /** Possible node types */
-enum node_type {
+typedef enum node_type {
     NT_SESSION, /**< Node of session type */
     NT_PACKAGE, /**< Node of package type */
     NT_TEST,    /**< Node of test type */
     NT_BRANCH,  /**< It is used only for generation events 
                      "branch start" / "branch end" */
     NT_LAST     /**< Last marker - the biggest value of the all evements */
-};
+} node_type_t;
 
 /** RGT operation mode constants */
 enum e_rgt_op_mode {
@@ -171,6 +171,9 @@ enum e_rgt_op_mode {
 /** RGT operation mode in string and numerical representations */
 extern enum e_rgt_op_mode  rgt_op_mode;
 extern const char         *rgt_op_mode_str;
+
+/** Whether Rgt should process control messages or not */
+extern int                 process_control_msg;
 
 /** The structure keeps statistic on processing raw log file */
 struct rgt_statistics {

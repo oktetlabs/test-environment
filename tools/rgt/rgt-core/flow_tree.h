@@ -57,9 +57,6 @@ flow_tree_init();
  * Free all resources used by flow tree library.
  *
  * @return Nothing
- *
- * @se Add session node with id equals to ROOT_ID into the tree and insert 
- *     it into set of patential parent nodes (so called "new set").
  */
 void
 flow_tree_destroy();
@@ -77,7 +74,7 @@ flow_tree_destroy();
  */
 void *
 flow_tree_add_node(node_id_t parent_id, node_id_t node_id, 
-                   enum node_type new_node_type,
+                   node_type_t new_node_type,
                    char *node_name, uint32_t *timestamp,
                    void *user_data, int *err_code);
 

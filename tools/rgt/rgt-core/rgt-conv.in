@@ -33,6 +33,7 @@ datadir=@datadir@
 unset cfg_file
 unset rlf_file
 unset out_file
+unset extra_flags
 op_mode="postponed"
 end_opts="false"
 
@@ -42,6 +43,7 @@ prog_name=`basename $0`
 #
 # This script gets the following parameters:
 #   -m MODE, --mode=MODE        Choose mode of RGT opertation.
+#   --no-cntrl-msg              Process Tester control messages as ordinary
 #   -c FILE, --cfg-filter=FILE  Specify XMl filter file name.
 #   -f FILE, --raw-log=FILE     Specify Raw Log file name.
 #   -o FILE, --output=FILE      Output file name.
@@ -61,6 +63,8 @@ Usage: $prog_name [OPTION...] [<Raw Log file> [<Output file>]]
   OPTIONS:
   -m MODE, --mode=MODE     Specify mode of RGT operation.
                            It can be live or postponed (postponed by default).
+
+  --no-cntrl-msg           Process Tester control messages as ordinary.
 
   -c FILE,                 Specify XML filter configuration file. If no file
   --cfg-filter=FILE        specified no filtering is applied.
@@ -162,6 +166,9 @@ do
             shift
         fi
         check_op_mode $op_mode
+        ;;
+    --no-cntrl-msg)
+        extra_flags="$extra_flags $1"
         ;;
     -c)
         cfg_file=$2
@@ -265,6 +272,6 @@ if [ -z "$out_file" ]; then
 fi
 
 # Process raw log file with filter
-eval "$bindir/rgt-core -m $op_mode $TMP_FILE <$rlf_file >$out_file" || 
+eval "$bindir/rgt-core -m $op_mode $extra_flags $TMP_FILE <$rlf_file >$out_file" || 
     rm -f $out_file
 

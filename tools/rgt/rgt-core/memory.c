@@ -97,14 +97,14 @@ void destroy_node_info_pool()
     }
 }
 
-node_info *
+node_info_t *
 alloc_node_info()
 {
-    return (node_info *)obstack_alloc(node_info_obstk, sizeof(node_info));
+    return (node_info_t *)obstack_alloc(node_info_obstk, sizeof(node_info_t));
 }
 
 void
-free_node_info(node_info *node)
+free_node_info(node_info_t *node)
 {
     if (node != NULL)
         obstack_free(node_info_obstk, node);
