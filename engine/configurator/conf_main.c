@@ -52,8 +52,10 @@ static struct ipc_server *server = NULL; /* IPC Server handle */
 static void
 print_tree(cfg_instance *inst, int indent)
 {
-    int i;
     static FILE *f;
+
+    int     i;
+    char   *str;
 
     if (f == NULL && (f = fopen("instances", "w")) == NULL)
     {
@@ -63,7 +65,12 @@ print_tree(cfg_instance *inst, int indent)
 
     for (i = 0; i < indent; i++)
         fprintf(f, " ");
-    fprintf(f, "%s\n", inst->oid);
+    if (inst->obj->type == CVT_NONE ||
+        cfg_types[inst->obj->type].val2str(inst->val, &str) != 0)
+    {
+        str = "";
+    }
+    fprintf(f, "%s = %s\n", inst->oid, str);
     for (inst = inst->son; inst != NULL; inst = inst->brother)
         print_tree(inst, indent + 2);
 
