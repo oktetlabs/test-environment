@@ -127,7 +127,8 @@ xmlNodeSkipText(xmlNodePtr node)
 }
 
 /**
- * Go to the next XML node, skip 'comment' nodes.
+ * Go to the next XML node, skip 'comment' nodes and 'text' notes
+ * (to cope with unexpected text only content).
  *
  * @param node      XML node
  *
@@ -137,7 +138,7 @@ static xmlNodePtr
 xmlNodeChildren(xmlNodePtr node)
 {
     assert(node != NULL);
-    return xmlNodeSkipComment(node->children);
+    return xmlNodeSkipText(xmlNodeSkipComment(node->children));
 }
 
 /**
@@ -1831,7 +1832,7 @@ get_tests_info(xmlNodePtr node, tests_info *ti)
         return EINVAL;
     }
 
-    node = xmlNodeSkipText(xmlNodeChildren(node));
+    node = xmlNodeChildren(node);
 
     while (node != NULL &&
            xmlStrcmp(node->name, CONST_CHAR2XML("test")) == 0)
