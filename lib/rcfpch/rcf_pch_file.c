@@ -77,7 +77,7 @@ rcf_pch_file(struct rcf_comm_connection *conn, char *cbuf, size_t buflen,
     size_t  reply_buflen = buflen - answer_plen;
     int     rc;
     int     fd = -1;
-    char    fname[RCF_MAX_PATH];
+    char    fname[RCF_MAX_PATH * 2];
 
 
     ENTRY("conn=0x%x cbuf='%s' buflen=%u answer_plen=%u ba=0x%x "
@@ -274,7 +274,6 @@ rcf_pch_file(struct rcf_comm_connection *conn, char *cbuf, size_t buflen,
             {
                 ERROR("Communication error %d", rc);
                 close(fd);
-                free(fname);
                 EXIT("%d", rc);
                 return rc;
             }
@@ -291,7 +290,6 @@ rcf_pch_file(struct rcf_comm_connection *conn, char *cbuf, size_t buflen,
                 ERROR("Communication error - %s",
                       (rw_len == 0) ? "empty read" : "extra/missing data");
                 close(fd);
-                free(fname);
                 EXIT("EIO");
                 return EIO;
             }
@@ -305,7 +303,6 @@ rcf_pch_file(struct rcf_comm_connection *conn, char *cbuf, size_t buflen,
             }
         }
         close(fd);
-        free(fname);
         SEND_ANSWER("0");
     }
     else
@@ -341,7 +338,6 @@ rcf_pch_file(struct rcf_comm_connection *conn, char *cbuf, size_t buflen,
             ERROR("Failed to read file '%s'", filename);
         }
         EXIT("%d", rc);
-        free(fname);
         return rc;
     }
     /* Unreachable */
@@ -350,7 +346,6 @@ rcf_pch_file(struct rcf_comm_connection *conn, char *cbuf, size_t buflen,
 reject:
     if (fd != -1)
         close(fd);
-    free(fname);
     if (cmdlen > buflen)
     {
         int     error;
