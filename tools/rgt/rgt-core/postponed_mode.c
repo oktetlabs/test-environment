@@ -94,6 +94,7 @@ static void output_regular_log_msg(log_msg *msg);
                 fputc('r', output_fd);   \
                 fputc('/', output_fd);   \
                 fputc('>', output_fd);   \
+                break;                   \
                                          \
             default:                     \
                 fputc(ch, output_fd);    \
