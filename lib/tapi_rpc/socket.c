@@ -59,7 +59,8 @@
 #include "tapi_rpc_internal.h"
 #include "tapi_rpc_unistd.h"
 #include "tapi_rpc_socket.h"
-
+#include "tapi_test.h"
+#include "tapi_rpcsock_macros.h"
 
 int
 rpc_socket(rcf_rpc_server *rpcs,
@@ -1588,4 +1589,64 @@ rpc_setsockopt(rcf_rpc_server *rpcs,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_INT_ZERO_OR_MINUS_ONE(setsockopt, out.retval);
+}
+
+/**
+ * Get readability (there are data to read) or writability (it is allowed
+ * to write) of a particular socket.
+ *
+ * @param answer     answer location
+ * @param rpcs       RPC server handle
+ * @param s          socket to be checked
+ * @param timeout    timeout in seconds
+ * @param type       type of checking: "READ" or "WRITE"
+ *
+ * @return status code
+ */
+int 
+tapi_rpc_get_rw_ability(te_bool *answer, rcf_rpc_server *rpcs,
+                        int s, int timeout, char *type)
+{
+    struct timeval  tv = { 0 , 0 };
+    rpc_fd_set     *fds;
+    int             rc = -1; 
+    int             result = -1;
+                                                 
+    fds = rpc_fd_set_new(rpcs);                    
+    if (fds == NULL)                                               
+    {                                                               
+        ERROR("Failed to create a new rpc_fd_set entry"); 
+        return -1;
+    }                                                               
+    rpc_do_fd_zero(rpcs, fds);
+    if (RPC_ERRNO(rpcs))                                           
+    {                                                               
+        TEST_FAIL("rpc_do_fd_zero() fails with RPC_errno: 0x%X",  
+                  RPC_ERRNO(rpcs)); 
+    }                                                               
+    rpc_do_fd_set(rpcs, s, fds);                             
+    if (RPC_ERRNO(rpcs))                                           
+    {                                                               
+        TEST_FAIL("rpc_do_fd_set() fails with RPC_errno: 0x%X",     
+                  RPC_ERRNO(rpcs));
+    }                       
+    tv.tv_sec = timeout;                                        
+                                                                    
+    if (type[0] == 'R')                                  
+        RPC_SELECT(rc, rpcs, s + 1, fds, NULL, NULL, &tv);
+    else
+        RPC_SELECT(rc, rpcs, s + 1, NULL, fds, NULL, &tv);
+
+    *answer = (rc == 1);
+    result = 0;
+    
+cleanup:
+    rpc_fd_set_delete(rpcs, fds);
+    if (RPC_ERRNO(rpcs))                                           
+    {                                                               
+        ERROR("rpc_fd_set_delete() fails with RPC_errno: 0x%X", 
+              RPC_ERRNO(rpcs));
+        return -1;
+    }                           
+    return result;
 }

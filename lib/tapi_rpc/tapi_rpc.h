@@ -65,4 +65,19 @@
 #include "tapi_rpc_winsock2.h"
 #include "tapi_rpc_misc.h"
 
+/**
+ * Get readability (there are data to read) or writability (it is allowed
+ * to write) of a particular socket.
+ *
+ * @param answer     answer location
+ * @param rpcs       RPC server handle
+ * @param s          socket to be checked
+ * @param timeout    timeout in seconds
+ * @param type       type of checking: "READ" or "WRITE"
+ *
+ * @return status code
+ */
+extern int tapi_rpc_get_rw_ability(te_bool *answer, rcf_rpc_server *rpcs,
+                                   int s, int timeout, char *type);
+
 #endif /* !__TE_TAPI_RPC_H__ */

@@ -976,66 +976,6 @@
     } while (0)
 
 /**
- * Get readability or writability of a particular socket.
- *
- * @param answer_    variable where the answer is stored
- *                   (it should be of type 'te_bool')
- * @param rpcs_      RPC server handle
- * @param sockd_     Socket to be checked
- * @param timeout_   Timeout in seconds
- * @param type_      Type of checking (read or write ability) -
- *                   you should specify READ or WRITE words
- *
- * @note In case of failure it calls TEST_FAIL macro, otherwise it
- * gets back just after the checking
- */
-#define GET_RW_ABILITY(answer_, rpcs_, sockd_, timeout_, type_) \
-    do {                                                                \
-        struct timeval  tv_ = { timeout_ , 0 };                         \
-        rpc_fd_set     *fds_ = rpc_fd_set_new(rpcs_);                   \
-        int             rc_;                                            \
-                                                                        \
-        if (fds_ == NULL)                                               \
-        {                                                               \
-            TEST_FAIL("Failed to create a new rpc_fd_set entry");       \
-        }                                                               \
-        rpc_do_fd_zero(rpcs_, fds_);                                    \
-        if (RPC_ERRNO(rpcs_))                                           \
-        {                                                               \
-            TEST_FAIL("rpc_do_fd_zero() fails with RPC_errno: 0x%X",    \
-                      RPC_ERRNO(rpcs_));                                \
-        }                                                               \
-        rpc_do_fd_set(rpcs_, sockd_, fds_);                             \
-        if (RPC_ERRNO(rpcs_))                                           \
-        {                                                               \
-            TEST_FAIL("rpc_do_fd_set() fails with RPC_errno: 0x%X",     \
-                      RPC_ERRNO(rpcs_));                                \
-        }                                                               \
-                                                                        \
-        if (#type_[0] == 'R')                                           \
-        {                                                               \
-            RPC_SELECT(rc_, rpcs_, (sockd_) + 1,                        \
-                       fds_, NULL, NULL, &tv_);                         \
-        }                                                               \
-        else                                                            \
-        {                                                               \
-            RPC_SELECT(rc_, rpcs_, (sockd_) + 1,                        \
-                       NULL, fds_, NULL, &tv_);                         \
-        }                                                               \
-        if (rc_ == 0)                                                   \
-            answer_ = FALSE;                                            \
-        else if ( rc_ == 1)                                             \
-            answer_ = TRUE;                                             \
-                                                                        \
-        rpc_fd_set_delete(rpcs_, fds_);                                 \
-        if (RPC_ERRNO(rpcs_))                                           \
-        {                                                               \
-            TEST_FAIL("rpc_fd_set_delete() fails with RPC_errno: 0x%X", \
-                      RPC_ERRNO(rpcs_));                                \
-        }                                                               \
-    } while (0)
-
-/**
  * Get readability of a particular socket.
  *
  * @param answer_    variable where stored is readable or not
@@ -1048,7 +988,11 @@
  * gets back just after the checking
  */
 #define GET_READABILITY(answer_, rpcs_, sockd_, timeout_) \
-    GET_RW_ABILITY(answer_, rpcs_, sockd_, timeout_, READ)
+    do {                                                                 \
+        if (tapi_rpc_get_rw_ability(&(answer_), rpcs_, sockd_, timeout_, \
+                               "READ") != 0)                             \
+            TEST_STOP;                                                   \
+    } while (0)
 
 /**
  * Get writability of a particular socket.
@@ -1063,7 +1007,11 @@
  * gets back just after the checking
  */
 #define GET_WRITABILITY(answer_, rpcs_, sockd_, timeout_) \
-    GET_RW_ABILITY(answer_, rpcs_, sockd_, timeout_, WRITE)
+    do {                                                                  \
+        if (tapi_rpc_get_rw_ability(&(answer_), rpcs_, sockd_, timeout_,  \
+                                    "WRITE") != 0)                        \
+            TEST_STOP;                                                    \
+    } while (0)
 
 /**
  * Check readability of a particular socket.
