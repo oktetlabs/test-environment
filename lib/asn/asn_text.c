@@ -412,7 +412,7 @@ asn_impl_pt_objid(const char*text, const asn_type *type, asn_value_p *parsed, in
     const char * pt = text; 
     char *endptr;
 
-    int rc;
+    int rc = 0;
     int p_s;
 
     if (!text || !parsed || !parsed_syms)
