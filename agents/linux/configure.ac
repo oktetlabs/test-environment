@@ -29,6 +29,7 @@ AC_CHECK_TOOL(NM, nm)
 
 
 AC_SUBST(host)
+AC_SUBST(with_name)
 AC_SUBST(TE_CPPFLAGS)
 AC_SUBST(TE_CFLAGS)
 AC_SUBST(TE_LDFLAGS)
@@ -130,10 +131,6 @@ if test -n "$with_rcf_rpc" ; then
     enable_ltdl_install=yes
     AC_CONFIG_SUBDIRS(libltdl)
 fi
-
-
-AC_ARG_WITH(bsd, [], [TATYPE=freebsd], [TATYPE=linux])
-AM_CONDITIONAL(TALINUX, test x$TATYPE = xlinux)
 
 
 AC_CONFIG_FILES(Makefile)

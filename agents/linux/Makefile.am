@@ -76,38 +76,25 @@ AM_CPPFLAGS=$(MY_CPPFLAGS)
 #
 AM_LDFLAGS=@TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/../@host@/lib
 
-if TALINUX
+bin_PROGRAMS=talinuxtmpl
 
-talinux_SOURCES=$(MY_SOURCES)
-nodist_talinux_SOURCES=$(MY_NODIST_SOURCES)
+talinuxtmpl_SOURCES=$(MY_SOURCES)
+nodist_talinuxtmpl_SOURCES=$(MY_NODIST_SOURCES)
 
-talinux_LDADD=$(MY_LDADD)
+talinuxtmpl_LDADD=$(MY_LDADD)
 
-talinux_DEPENDENCIES=@TE_DEPENDENCIES@ symtbl.o \
+talinuxtmpl_DEPENDENCIES=@TE_DEPENDENCIES@ symtbl.o \
     $(DESTDIR)/$(prefix)/../@host@/lib/librcfpch.a \
     $(DESTDIR)/$(prefix)/../@host@/lib/libconf_oid.a \
     $(DESTDIR)/$(prefix)/../@host@/lib/libcomm_net_agent.a \
     $(DESTDIR)/$(prefix)/../@host@/lib/libloggerta.a
-
-bin_PROGRAMS=talinux
-
-else
-
-tafreebsd_SOURCES=$(MY_SOURCES)
-nodist_tafreebsd_SOURCES=$(MY_NODIST_SOURCES)
-
-tafreebsd_LDADD=$(MY_LDADD)
-
-tafreebsd_DEPENDENCIES=@TE_DEPENDENCIES@ symtbl.o \
-    $(DESTDIR)/$(prefix)/../@host@/lib/librcfpch.a \
-    $(DESTDIR)/$(prefix)/../@host@/lib/libconf_oid.a \
-    $(DESTDIR)/$(prefix)/../@host@/lib/libcomm_net_agent.a \
-    $(DESTDIR)/$(prefix)/../@host@/lib/libloggerta.a
-
-bin_PROGRAMS=tafreebsd
-
-endif
 
 symtbl.o: $(MY_SYMTBL_OBJECTS) @TE_DEPENDENCIES@
 	te_generate_symtbl "${NM}" symtbl.c $^ 
 	${CC} -c -o $@ symtbl.c
+
+install-exec-hook:
+	mv $(DESTDIR)/$(bindir)/talinuxtmpl $(DESTDIR)/$(bindir)/ta@with_name@
+
+uninstall-hook:
+	mv $(DESTDIR)/$(bindir)/ta@with_name@ $(DESTDIR)/$(bindir)/talinuxtmpl
