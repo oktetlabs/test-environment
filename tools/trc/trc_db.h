@@ -124,6 +124,9 @@ typedef struct test_iter {
 
     xmlNodePtr      node;           /**< XML node with this element */
     trc_stats       stats;          /**< Statistics */
+    te_bool         used;           /**< Is the iteration used?
+                                         (for many iterations with
+                                         the same arguments) */
 
     test_args       args;           /**< Iteration arguments */
     trc_test_result exp_result;     /**< The expected result */

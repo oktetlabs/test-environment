@@ -99,9 +99,11 @@ trc_db_find_by_args(test_iters *iters, const test_args *args)
 {
     test_iter *p;
 
-    for (p = iters->head.tqh_first;
-         (p != NULL) && !test_args_equal(&p->args, args);
-         p = p->links.tqe_next);
+    for (p = iters->head.tqh_first; p != NULL; p = p->links.tqe_next)
+    {
+        if (!p->used && test_args_equal(&p->args, args))
+            break;
+    }
 
     return p;
 }
@@ -449,6 +451,7 @@ get_test_result(xmlNodePtr root, trc_test_type type, test_runs *tests)
         {
             /* free args */
         }
+        iter->used = TRUE;
 
         rc = get_result(root, &iter->got_result);
         if (rc != 0)
