@@ -592,6 +592,21 @@ extern int rpc_kill(rcf_rpc_server *handle,
                     pid_t pid, rpc_signum signum);
 
 
+#define RCF_RPC_MAX_FUNC_NAME    64
+
+typedef struct rpc_struct_sigaction {
+    char          yy_handler[RCF_RPC_MAX_FUNC_NAME];
+    rpc_sigset_t *yy_mask;
+    rpc_sa_flags  yy_flags;
+    char          yy_restorer[RCF_RPC_MAX_FUNC_NAME];
+} rpc_struct_sigaction;
+
+extern int rpc_sigaction(rcf_rpc_server *handle,
+                         rpc_signum signum,
+                         const struct rpc_struct_sigaction *act,
+                         struct rpc_struct_sigaction *oldact);
+
+
 /*
  * Signal sets
  */

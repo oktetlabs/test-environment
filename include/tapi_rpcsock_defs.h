@@ -2440,4 +2440,141 @@ fcntl_rpc2str(rpc_fcntl_command cmd)
     }
 }
 
+
+/**
+ * TA-independent sigaction() flags.
+ */
+typedef enum rpc_sa_flags {
+    RPC_SA_NOCLDSTOP  = 1,     /**< Don't receive notification when
+                                    child process stop */
+    RPC_SA_ONESHOT    = 2,     /* with alias */
+    RPC_SA_RESETHAND  = 2,     /**< Restore the signal action to the
+                                    default state once the signal handler
+                                    has been called */
+    RPC_SA_ONSTACK    = 4,     /**< Call the signal handler on an alternate
+                                    signal  stack */
+    RPC_SA_RESTART    = 8,     /**< Make certain system calls restartable
+                                    across signals */
+    RPC_SA_NOMASK     = 0x10,  /* with alias */
+    RPC_SA_NODEFER    = 0x10,  /**< Do not prevent the signal from being
+                                    received from within its own signal
+                                    handler */
+    /* sa_sigaction() is not supported for now */
+    RPC_SA_SIGINFO    = 0x20,  /**< In this case, sa_sigaction() should be
+                                    set instead of sa_handler */
+    RPC_SA_UNKNOWN    = 0x40   /**< Incorrect flag */
+} rpc_sa_flags;
+
+
+#ifdef SA_NOCLDSTOP
+#define HAVE_SA_NOCLDSTOP 1
+#else
+#define HAVE_SA_NOCLDSTOP 0
+#define SA_NOCLDSTOP      0
+#endif
+
+#ifdef SA_ONESHOT
+#define HAVE_SA_ONESHOT   1
+#else
+#define HAVE_SA_ONESHOT   0
+#define SA_ONESHOT        0
+#endif
+
+#ifdef SA_RESETHAND
+#define HAVE_SA_RESETHAND 1
+#else
+#define HAVE_SA_RESETHAND 0
+#define SA_RESETHAND      0
+#endif
+
+#ifdef SA_ONSTACK
+#define HAVE_SA_ONSTACK   1
+#else
+#define HAVE_SA_ONSTACK   0
+#define SA_ONSTACK        0
+#endif
+
+#ifdef SA_RESTART
+#define HAVE_SA_RESTART   1
+#else
+#define HAVE_SA_RESTART   0
+#define SA_RESTART        0
+#endif
+
+#ifdef SA_NOMASK
+#define HAVE_SA_NOMASK    1
+#else
+#define HAVE_SA_NOMASK    0
+#define SA_NOMASK         0
+#endif
+
+#ifdef SA_NODEFER
+#define HAVE_SA_NODEFER   1
+#else
+#define HAVE_SA_NODEFER   0
+#define SA_NODEFER        0
+#endif
+
+#ifdef SA_SIGINFO
+#define HAVE_SA_SIGINFO   1
+#else
+#define HAVE_SA_SIGINFO   0
+#define SA_SIGINFO        0
+#endif
+
+#define SA_FLAGS_UNKNOWN  0xFFFFFFFF
+
+#define SA_FLAGS_ALL \
+            (SA_NOCLDSTOP | SA_ONESHOT | SA_RESETHAND |  \
+             SA_ONSTACK | SA_RESTART | SA_NOMASK |       \
+             SA_NODEFER | SA_SIGINFO)
+
+#define RPC_SA_FLAGS_ALL \
+            (RPC_SA_NOCLDSTOP | RPC_SA_ONESHOT | RPC_SA_RESETHAND |     \
+             RPC_SA_ONSTACK | RPC_SA_RESTART | RPC_SA_NOMASK |          \
+             RPC_SA_NODEFER | RPC_SA_SIGINFO)
+
+#define SA_FLAGS_MAPPING_LIST \
+            RPC_BIT_MAP_ENTRY(SA_NOCLDSTOP), \
+            RPC_BIT_MAP_ENTRY(SA_ONESHOT),   \
+            RPC_BIT_MAP_ENTRY(SA_RESETHAND), \
+            RPC_BIT_MAP_ENTRY(SA_ONSTACK),   \
+            RPC_BIT_MAP_ENTRY(SA_RESTART),   \
+            RPC_BIT_MAP_ENTRY(SA_NOMASK),    \
+            RPC_BIT_MAP_ENTRY(SA_NODEFER),   \
+            RPC_BIT_MAP_ENTRY(SA_SIGINFO),   \
+            RPC_BIT_MAP_ENTRY(SA_UNKNOWN)
+
+/** Convert RPC sigaction flags to native flags */
+static inline int
+sigaction_flags_rpc2h(rpc_sa_flags flags)
+{
+    if ((flags & ~RPC_SA_FLAGS_ALL) != 0)
+        return SA_FLAGS_UNKNOWN;
+    return
+           (!!(flags & RPC_SA_NOCLDSTOP) * SA_NOCLDSTOP) |
+           (!!(flags & RPC_SA_ONESHOT) * SA_ONESHOT) |
+           (!!(flags & RPC_SA_RESETHAND) * SA_RESETHAND) |
+           (!!(flags & RPC_SA_ONSTACK) * SA_ONSTACK) |
+           (!!(flags & RPC_SA_RESTART) * SA_RESTART) |
+           (!!(flags & RPC_SA_NOMASK) * SA_NOMASK) |
+           (!!(flags & RPC_SA_NODEFER) * SA_NODEFER) |
+           (!!(flags & RPC_SA_SIGINFO) * SA_SIGINFO);
+}
+
+/** Convert native sigaction flags to RPC flags */
+static inline rpc_send_recv_flags
+sigaction_flags_h2rpc(int flags)
+{
+    return (!!(flags & SA_NOCLDSTOP) * RPC_SA_NOCLDSTOP) |
+           (!!(flags & SA_ONESHOT) * RPC_SA_ONESHOT) |
+           (!!(flags & SA_RESETHAND) * RPC_SA_RESETHAND) |
+           (!!(flags & SA_ONSTACK) * RPC_SA_ONSTACK) |
+           (!!(flags & SA_RESTART) * RPC_SA_RESTART) |
+           (!!(flags & SA_NOMASK) * RPC_SA_NOMASK) |
+           (!!(flags & SA_NODEFER) * RPC_SA_NODEFER) |
+           (!!(flags & SA_SIGINFO) * RPC_SA_SIGINFO) |
+           (!!(flags & ~SA_FLAGS_ALL) * RPC_SA_UNKNOWN);
+}
+
 #endif /* !__TE_TAPI_RPCSOCK_DEFS_H__ */

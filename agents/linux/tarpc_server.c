@@ -205,6 +205,70 @@ find_func(tarpc_in_arg *in, char *name, sock_api_func *func)
     return 0;
 }
 
+/**
+ * Find the pointer to function by its name in table.
+ * Try to convert string to long int and cast it to the pointer
+ * in the case if function is implemented as a static one.
+ *
+ * @param name  function name (or pointer value converted to string)
+ * @param error returned errno if error or 0
+ *
+ * @return pointer to function or NULL if error
+ */
+static void *
+get_name2handler(const char *name, int *error)
+{
+        char *tmp;
+        void *handler = NULL;
+
+        handler = rcf_ch_symbol_addr(name, 1);
+        if (handler == NULL && name != NULL)
+        {
+            handler = (void *)strtol(name, &tmp, 16);
+
+            *error = (tmp == name || *tmp != 0) ? EINVAL : 0;
+        }
+        return error ? NULL : handler;
+}
+
+/**
+ * Find the function name in table according to pointer to one.
+ * Try to convert pointer value to string in the case if function
+ * is implemented as a static one.
+ *
+ * @param handler  pointer to function
+ * @param name     function name (or pointer value converted as a string)
+ * @param name_len length of function name string including '\0' at the end
+ *
+ * @return errno if error or 0
+ */
+static int
+get_handler2name(void *handler, char *name, int *name_len)
+{
+    char *tmp = rcf_ch_symbol_name(handler);
+
+    if (tmp != NULL)
+    {
+        if ((name = strdup(tmp)) == NULL)
+            return  ENOMEM;
+    }
+    else
+    {
+        if ((tmp = calloc(1, 16)) == NULL)
+        {
+            name = NULL;
+            return  ENOMEM;
+        }
+        else
+        {
+            sprintf(tmp, "0x%x", (unsigned int)handler);
+            name = tmp;
+        }
+    }
+    *name_len = strlen(tmp) + 1;
+    return 0;
+}
+
 /** Structure for checking of variable-length arguments safity */
 typedef struct checked_arg {
     struct checked_arg *next; /**< Next checked argument in the list */
@@ -1283,6 +1347,98 @@ TARPC_FUNC(signal,
                 }
             }
         }
+    }
+}
+)
+
+/*-------------- sigaction() --------------------------------*/
+
+typedef void (*sa_handler_t)(int);
+typedef void (*sa_restorer_t)(void);
+
+TARPC_FUNC(sigaction,
+{
+    if (in->signum == RPC_SIGINT)
+    {
+        out->common._errno = TE_RC(TE_TA_LINUX, EPERM);
+        return TRUE;
+    }
+    COPY_ARG(oldact);
+},
+{
+    tarpc_sigaction *in_act;
+    tarpc_sigaction *out_oldact;
+
+    struct sigaction act;
+    struct sigaction *p_act = NULL;
+    struct sigaction oldact;
+    struct sigaction *p_oldact = NULL;
+
+    memset(&act, 0, sizeof(act));
+    memset(&oldact, 0, sizeof(oldact));
+    in_act = in->act.act_val;
+    out_oldact = out->oldact.oldact_val;
+
+    if (in->act.act_len != 0)
+    {
+        act.sa_flags = sigaction_flags_rpc2h(in_act->xx_flags);
+        act.sa_mask = *((sigset_t *)in_act->xx_mask);
+
+        act.sa_handler =
+            (sa_handler_t)
+                get_name2handler(in_act->xx_handler.xx_handler_val,
+                                 &out->retval);
+        out->common._errno = TE_RC(TE_TA_LINUX, out->retval);
+        if (out->retval == 0)
+        {
+            act.sa_restorer =
+                (sa_restorer_t)
+                    get_name2handler(in_act->xx_restorer.xx_restorer_val, 
+                                     &out->retval);
+            out->common._errno = TE_RC(TE_TA_LINUX, out->retval);
+        }
+        if (out->retval == 0)
+            p_act = &act;
+
+    }
+
+    if (out->common._errno == 0)
+    {
+        if (in->oldact.oldact_len != 0)
+            p_oldact = &oldact;
+
+        MAKE_CALL(out->retval = func(signum_rpc2h(in->signum),
+                                      p_act, p_oldact));
+
+        if (out->retval == 0 && p_oldact != NULL)
+        {
+            out->retval =
+                get_handler2name(oldact.sa_handler,
+                                 out_oldact->xx_handler.xx_handler_val,
+                                 &(out_oldact->xx_handler.xx_handler_len));
+            if (out->retval == 0)
+            {
+                out->retval =
+                  get_handler2name(oldact.sa_restorer,
+                                   out_oldact->xx_restorer.xx_restorer_val,
+                                   &(out_oldact->xx_restorer.
+                                                         xx_restorer_len));
+            }
+
+            if (out->retval == 0)
+            {
+               out_oldact->xx_flags = sigaction_flags_h2rpc(oldact.
+                                                                 sa_flags);
+               *((sigset_t *)out_oldact->xx_mask) = oldact.sa_mask;
+            }
+        }
+    }
+
+    if (out->retval != 0)
+    {
+        out->common._errno = TE_RC(TE_TA_LINUX, out->retval);
+        out->retval = -1;
+        func(signum_rpc2h(in->signum), p_oldact, NULL);
     }
 }
 )

@@ -3016,6 +3016,99 @@ rpc_kill(rcf_rpc_server *handle, pid_t pid, rpc_signum signum)
 }
 
 int
+rpc_sigaction(rcf_rpc_server *handle, rpc_signum signum,
+              const struct rpc_struct_sigaction *act,
+              struct rpc_struct_sigaction *oldact)
+{
+    rcf_rpc_op          op;
+    tarpc_sigaction_in  in;
+    tarpc_sigaction_out out;
+
+    struct tarpc_sigaction *in_act, *in_oldact, *out_oldact;
+    in_act = in.act.act_val;
+    in_oldact = in.oldact.oldact_val;
+    out_oldact = out.oldact.oldact_val;
+
+    if (handle == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        return -1;
+    }
+    if (act != NULL || act->yy_mask == NULL)
+    {
+        ERROR("%s(): Invalid 'act->yy_mask' argument",
+                __FUNCTION__);
+        handle->_errno = EINVAL;
+        return -1;
+    }
+    if (oldact != NULL || oldact->yy_mask == NULL)
+    {
+        ERROR("%s(): Invalid 'oldact->yy_mask' argument",
+                __FUNCTION__);
+        handle->_errno = EINVAL;
+        return -1;
+    }
+
+    op = handle->op;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.signum = signum;
+    if (act != NULL)
+    {
+        in_act->xx_handler.xx_handler_val = (char *)act->yy_handler;
+        in_act->xx_handler.xx_handler_len = sizeof(act->yy_handler);
+
+        in_act->xx_restorer.xx_restorer_val = (char *)act->yy_restorer;
+        in_act->xx_restorer.xx_restorer_len = sizeof(act->yy_restorer);
+
+        in_act->xx_mask = (tarpc_sigset_t)act->yy_mask;
+        in_act->xx_flags = act->yy_flags;
+    }
+
+    if (oldact != NULL)
+    {
+        in_oldact->xx_handler.xx_handler_val = oldact->yy_handler;
+        in_oldact->xx_handler.xx_handler_len = sizeof(oldact->yy_handler);
+
+        in_oldact->xx_restorer.xx_restorer_val = oldact->yy_restorer;
+        in_oldact->xx_restorer.xx_restorer_len =
+                                              sizeof(oldact->yy_restorer);
+
+        in_oldact->xx_mask = (tarpc_sigset_t)oldact->yy_mask;
+        in_oldact->xx_flags = oldact->yy_flags;
+    }
+
+    rcf_rpc_call(handle, _sigaction, &in, (xdrproc_t)xdr_tarpc_sigaction_in,
+                 &out, (xdrproc_t)xdr_tarpc_sigaction_out);
+    if (RPC_CALL_OK && oldact != NULL)
+    {
+        assert(out_oldact->xx_handler.xx_handler_val != NULL);
+        assert(out_oldact->xx_handler.xx_handler_len <=
+                   sizeof(oldact->yy_handler));
+        memcpy(oldact->yy_handler, out_oldact->xx_handler.xx_handler_val,
+               out_oldact->xx_handler.xx_handler_len);
+
+        assert(out_oldact->xx_restorer.xx_restorer_val != NULL);
+        assert(out_oldact->xx_restorer.xx_restorer_len <=
+                   sizeof(oldact->yy_restorer));
+        memcpy(oldact->yy_restorer, out_oldact->xx_restorer.xx_restorer_val,
+               out_oldact->xx_restorer.xx_restorer_len);
+
+        oldact->yy_mask = (rpc_sigset_t *)out_oldact->xx_mask;
+        oldact->yy_flags = out_oldact->xx_flags;
+    }
+
+    RING("RPC (%s,%s)%s: sigaction(%d, %p, %p) -> (%s)",
+         handle->ta, handle->name, rpcop2str(op),
+         signum_rpc2str(signum), act, oldact,
+         errno_rpc2str(RPC_ERRNO(handle)));
+
+    RETVAL_RC(sigaction);
+}
+
+int
 rpc_getsockopt_gen(rcf_rpc_server *handle,
                    int s, rpc_socklevel level, rpc_sockopt optname,
                    void *optval, socklen_t *optlen, socklen_t roptlen)

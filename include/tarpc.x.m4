@@ -413,7 +413,15 @@ struct tarpc_recvfrom_out {
                                      returned by the function */
 };
 
-
+/* sigaction() */
+struct tarpc_sigaction {
+    char                xx_handler<>;   /**< Name of the signal handler
+                                             function */
+    tarpc_sigset_t      xx_mask;        /**< Handle (pointer in server
+                                             context) of the allocated set */
+    int                 xx_flags;
+    char                xx_restorer<>;  /**< Name of the restorer function */
+};
 
 /* sendmsg() / recvmsg() */
 
@@ -1180,6 +1188,24 @@ struct tarpc_signal_out {
                                              handler function */
 };
 
+/* sigaction() */
+struct tarpc_sigaction_in {
+    struct tarpc_in_arg     common;
+
+    int                     signum;   /**< The signal number */
+    struct tarpc_sigaction  act<>;    /**< If it's non-null, the new action
+                                           for signal signum is installed */
+    struct tarpc_sigaction  oldact<>; /**< If it's non-null, the old action
+                                           for signal signum was installed */
+};
+
+struct tarpc_sigaction_out {
+    struct tarpc_out_arg    common;
+
+    struct tarpc_sigaction  oldact<>;   /**< If it's non-null, the previous
+                                             action will be saved */
+    int                     retval;
+};
 
 /*
  * Is kill() RPC required? It seems RCF is sufficient.
@@ -1926,6 +1952,7 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(if_freenameindex)
 
         RPC_DEF(signal)
+        RPC_DEF(sigaction)
         RPC_DEF(kill)
 
         RPC_DEF(sigset_new)

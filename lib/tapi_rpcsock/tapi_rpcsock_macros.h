@@ -674,6 +674,29 @@
     } while (0)
 
 /**
+ * Change the action taken by a process on receipt of a specific signal
+ *
+ * @param rpcs_     RPC server handle
+ * @param signum_   Signal number
+ * @param oldact_   Location to save previus action
+ * @param newact_   Location of the new action for signal to be installed
+ *
+ * @note  use SIGNAL_REGISTRAR as default handler in sigaction structure
+ */
+#define RPC_SIGACTION(rpcs_, signum_, newact_, oldact_) \
+    do {                                                                \
+        int rc_;                                                        \
+        rc_ = rpc_sigaction(rpcs_, signum_, newact_, oldact_);          \
+        if (rc_ == -1)                                                  \
+        {                                                               \
+            LOG_ERRNO(rpcs_, rc_, sigaction, "(%s)",                    \
+                      signum_rpc2str(signum_));                         \
+            MACRO_ERROR_EXIT;                                           \
+        }                                                               \
+    } while (0)
+
+
+/**
  * Changes the list  of  currently  blocked signals.
  *
  * @param rpcs_         RPC server handle
