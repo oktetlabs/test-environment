@@ -7,6 +7,9 @@
    don't. */
 #undef HAVE_DECL_STRERROR_R
 
+/* Define to 1 if you have the <errno.h> header file. */
+#undef HAVE_ERRNO_H
+
 /* Define to 1 if you have the <expect.h> header file. */
 #undef HAVE_EXPECT_H
 
@@ -43,6 +46,9 @@
 
 /* Define to 1 if you have the <net-snmp/session_api.h> header file. */
 #undef HAVE_NET_SNMP_SESSION_API_H
+
+/* Define to 1 if you have the <pthread.h> header file. */
+#undef HAVE_PTHREAD_H
 
 /* Define to 1 if you have the `select' function. */
 #undef HAVE_SELECT

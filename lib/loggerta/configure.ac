@@ -32,8 +32,10 @@ AC_CHECK_HEADERS([\
 stdlib.h \
 stdarg.h \
 string.h \
+errno.h \
 time.h \
 sys/time.h \
+pthread.h \
 semaphore.h \
 netinet/in.h \
 ])

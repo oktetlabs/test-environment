@@ -56,8 +56,14 @@
 #if HAVE_NETINET_IN_H
 #include <netinet/in.h>
 #endif
+#if HAVE_PTHREAD_H
+#include <pthread.h>
+#endif
 #if HAVE_SEMAPHORE_H
 #include <semaphore.h>
+#endif
+#if HAVE_ERRNO_H
+#include <errno.h>
 #endif
 
 #include "te_defs.h"
@@ -71,22 +77,177 @@
 extern "C" {
 #endif
 
+
+typedef int ta_lgr_lock_key;
+
 /*
  * Following macro should be used to protect the
  * log buffer/file during processing
  */
-#if defined(HAVE_SEMAPHORE_H)
-extern sem_t lgr_lock;
-#define LGR_LOCK(lock)    UNUSED(lock); sem_wait(&lgr_lock)
-#define LGR_UNLOCK(lock)  UNUSED(lock); sem_post(&lgr_lock)
-#elif defined(HAVE_VXWORKS_H)
-#error "We only have VXWORKS_H"
+#if HAVE_PTHREAD_H
+
+extern pthread_mutex_t  ta_lgr_mutex;
+
+static inline int
+ta_lgr_lock_init(void)
+{
+    int rc = pthread_mutex_init(&ta_lgr_mutex, NULL);
+
+    if (rc != 0)
+    {
+        fprintf(stderr, "%s(): pthread_mutex_init() failed: errno=%d\n",
+                __FUNCTION__, errno);
+    }
+    return rc;
+}
+
+static inline int
+ta_lgr_lock_destroy(void)
+{
+    return 0;
+}
+
+static inline int
+ta_lgr_lock(ta_lgr_lock_key key)
+{
+    int rc;
+
+    UNUSED(key);
+    rc = pthread_mutex_lock(&ta_lgr_mutex);
+    if (rc != 0)
+    {
+        fprintf(stderr, "%s(): pthread_mutex_lock() failed: errno=%d",
+                __FUNCTION__, errno);
+    }
+
+    return rc;
+}
+
+static inline int
+ta_lgr_unlock(ta_lgr_lock_key key)
+{
+    int rc;
+
+    UNUSED(key);
+    rc = pthread_mutex_unlock(&ta_lgr_mutex);
+    if (rc != 0)
+    {
+        fprintf(stderr, "%s(): pthread_mutex_unlock() failed: errno=%d",
+                __FUNCTION__, errno);
+    }
+
+    return rc;
+}
+
+static inline int
+ta_lgr_trylock(ta_lgr_lock_key key)
+{
+    int rc;
+
+    UNUSED(key);
+    rc = pthread_mutex_trylock(&ta_lgr_mutex);
+    if ((rc != 0) && (errno != EBUSY))
+    {
+        fprintf(stderr, "%s(): pthread_mutex_trylock() failed: errno=%d",
+                __FUNCTION__, errno);
+    }
+
+    return rc;
+}
+
+#elif HAVE_SEMAPHORE_H
+
+#error We only have semaphore.h
+
+extern sem_t    ta_lgr_sem;
+
+static inline int
+ta_lgr_lock_init(void)
+{
+    int rc = sem_init(&ta_lgr_sem, 0, 1);
+
+    if (rc != 0)
+    {
+        fprintf(stderr, "%s(): sem_init() failed: errno=%d\n",
+                __FUNCTION__, errno);
+    }
+    return rc;
+}
+
+static inline int
+ta_lgr_lock_destroy(void)
+{
+    int rc = sem_destroy(&ta_lgr_sem);
+
+    if (rc != 0)
+    {
+        fprintf(stderr, "%s(): sem_destroy() failed: errno=%d\n",
+                __FUNCTION__, errno);
+    }
+    return rc;
+}
+
+
+static inline int
+ta_lgr_lock(ta_lgr_lock_key key)
+{
+    int rc;
+
+    UNUSED(key);
+    rc = sem_lock(&ta_lgr_sem);
+    if (rc != 0)
+    {
+        fprintf(stderr, "%s(): sem_lock() failed: errno=%d\n",
+                __FUNCTION__, errno);
+    }
+
+    return rc;
+}
+
+static inline int
+ta_lgr_unlock(ta_lgr_lock_key key)
+{
+    int rc;
+
+    UNUSED(key);
+    rc = sem_unlock(&ta_lgr_sem);
+    if (rc != 0)
+    {
+        fprintf(stderr, "%s(): sem_unlock() failed: errno=%d\n",
+                __FUNCTION__, errno);
+    }
+
+    return rc;
+}
+
+static inline int
+ta_lgr_trylock(ta_lgr_lock_key key)
+{
+    int rc;
+
+    UNUSED(key);
+    rc = sem_trylock(&ta_lgr_sem);
+    if ((rc != 0) && (errno != EBUSY))
+    {
+        fprintf(stderr, "%s(): sem_trylock() failed: errno=%d\n",
+                __FUNCTION__, errno);
+    }
+
+    return rc;
+}
+
+#elif HAVE_VXWORKS_H
+
+#error "We only have vxworks.h"
 #define LGR_LOCK(lock)    lock = intLock()
 #define LGR_UNLOCK(lock)  intUnlock(lock)
+
 #else
-#error "We have no semaphores"
-#define LGR_LOCK(lock)    lock = 1
+
+#error "We have no any locks"
+#define LGR_LOCK(lock)    lock = 1  
 #define LGR_UNLOCK(lock)  lock = 0
+
 #endif
 
 
@@ -591,9 +752,9 @@ log_message_fast(uint16_t level, const char *user_name,
                  int argl9,  uint32_t arg9,  int argl10, uint32_t arg10,
                  int argl11, uint32_t arg11, int argl12, uint32_t arg12)
 {
-    int key;
-    int position;
-    int res;
+    ta_lgr_lock_key key;
+    int             position;
+    int             res;
 
     struct lgr_mess_header *message;
 
@@ -602,11 +763,12 @@ log_message_fast(uint16_t level, const char *user_name,
     if (log_buffer.rb == NULL)
         return;
 
-    LGR_LOCK(key);
+    if (ta_lgr_lock(key) != 0)
+        return;
     res = lgr_rb_allocate_head(&log_buffer, LGR_RB_FORCE, &position);
     if (res == 0)
     {
-        LGR_UNLOCK(key);
+        (void)ta_lgr_unlock(key);
         return;
     }
 
@@ -667,7 +829,7 @@ log_message_fast(uint16_t level, const char *user_name,
 #if 0
     lgr_rb_view_head(&log_buffer, position);
 #endif
-    LGR_UNLOCK(key);
+    (void)ta_lgr_unlock(key);
 }
 
 

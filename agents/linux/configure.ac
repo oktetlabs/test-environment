@@ -51,9 +51,11 @@ AC_CONFIG_HEADERS([config.h])
 AC_CHECK_HEADERS([\
 sys/types.h \
 sys/socket.h \
+errno.h \
 time.h \
 sys/time.h \
 sys/resource.h \
+pthread.h \
 semaphore.h \
 aio.h \
 net/ethernet.h \

@@ -42,12 +42,14 @@ string.h \
 strings.h \
 unistd.h\
 limits.h \
+errno.h \
 fcntl.h \
 sys/time.h \
 sys/socket.h \
 sys/ioctl.h \
 arpa/inet.h \
 netinet/in.h \
+pthread.h \
 semaphore.h \
 ])
 

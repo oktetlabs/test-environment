@@ -43,6 +43,7 @@ sys/time.h \
 fcntl.h \
 strings.h \
 sys/queue.h \
+pthread.h \
 semaphore.h \
 ])
 

@@ -28,30 +28,32 @@
  * $Id$
  */
 
-#ifdef HAVE_CONFIG_H
+#if HAVE_CONFIG_H
 #include "config.h"
 #endif
 
 #include "logger_ta.h"
 
 
-/* Local log buffer instance */
-struct    lgr_rb log_buffer;
+/** Local log buffer instance */
+struct lgr_rb log_buffer;
 
-/*
+/**
  * Each message to be registered in the local log buffer
  * increases this variable by 1.
  */
-uint32_t  log_sequence = 0;
+uint32_t log_sequence = 0;
 
 int log_entries_fast;
 int log_entries_slow;
 
-#ifdef HAVE_SEMAPHORE_H
-sem_t lgr_lock;
-#else
-#error "We have no semaphores"
+
+#if HAVE_PTHREAD_H
+pthread_mutex_t ta_lgr_mutex;
+#elif HAVE_SEMAPHORE_H
+sem_t           ta_lgr_sem;
 #endif
+
 
 /**
  * Register message in the raw log (slow mode).
@@ -168,12 +170,13 @@ log_message(uint16_t level, const char *entity_name,
             goto resume;
     }
 
-    LGR_LOCK(key);
+    if (ta_lgr_lock(key) != 0)
+        return;
 
     res = lgr_rb_allocate_head(&log_buffer, LGR_RB_FORCE, &position);
     if (res == 0)
     {
-        LGR_UNLOCK(key);
+        (void)ta_lgr_unlock(key);
         goto resume;
     }
     hdr_addr = (struct lgr_mess_header *)(log_buffer.rb) + position;
@@ -198,7 +201,7 @@ log_message(uint16_t level, const char *entity_name,
                                        tmp_list->length, &arg_addr);
         if (res == 0)
         {
-            LGR_UNLOCK(key);
+            (void)ta_lgr_unlock(key);
             goto resume;
         }
 
@@ -208,7 +211,7 @@ log_message(uint16_t level, const char *entity_name,
         LGR_SET_ELEMENTS_FIELD(&log_buffer, position, val);
         tmp_list = tmp_list->next;
     };
-    LGR_UNLOCK(key);
+    (void)ta_lgr_unlock(key);
 
 resume:
     LGR_FREE_MD_LIST(cp_list);
@@ -242,17 +245,17 @@ log_nfl_hton(te_log_nfl_t val)
 static uint32_t
 log_get_message(uint32_t length, uint8_t *buffer)
 {
-    uint32_t        argn = 0;
-    const char     *fs;
-    uint32_t        mess_length = 0;
-    uint32_t        tmp_length;
-    uint32_t        key;
-    uint8_t         *tmp_buf;
-    uint8_t         *mess_length_location;
-    static char     *skip_flags, *skip_width;
-    static int      n_calls = 0;
-    lgr_mess_header header;
-    uint8_t        *ring_last = log_buffer.rb + LGR_TOTAL_RB_BYTES;
+    uint32_t            argn = 0;
+    const char         *fs;
+    uint32_t            mess_length = 0;
+    uint32_t            tmp_length;
+    ta_lgr_lock_key     key;
+    uint8_t            *tmp_buf;
+    uint8_t            *mess_length_location;
+    static char        *skip_flags, *skip_width;
+    static int          n_calls = 0;
+    lgr_mess_header     header;
+    uint8_t            *ring_last = log_buffer.rb + LGR_TOTAL_RB_BYTES;
 
     n_calls++;
 
@@ -262,16 +265,21 @@ log_get_message(uint32_t length, uint8_t *buffer)
     if (length < LGR_RB_ELEMENT_LEN)
         return 0;
 
-    LGR_LOCK(key);
+    if (ta_lgr_lock(key) != 0)
+        return 0;
 
     if (LGR_RB_UNUSED(&log_buffer) == LGR_TOTAL_RB_EL)
     {
-        LGR_UNLOCK(key);
+        (void)ta_lgr_unlock(key);
         return 0;
     }
 
     LGR_SET_MARK_FIELD(&log_buffer, log_buffer.head, 1);
-    LGR_UNLOCK(key);
+    if (ta_lgr_unlock(key) != 0)
+    {
+        LGR_SET_MARK_FIELD(&log_buffer, log_buffer.head, 0);
+        return 0;
+    }
 
     tmp_buf = buffer;
 
@@ -476,10 +484,15 @@ log_get_message(uint32_t length, uint8_t *buffer)
 #error Such TE_LOG_MSG_LEN_SZ is not supported
 #endif
 
-    LGR_LOCK(key);
+    if (ta_lgr_lock(key) != 0)
+    {
+        /* TODO: Is it safe to do it without lock? */
+        LGR_SET_MARK_FIELD(&log_buffer, log_buffer.head, 0);
+        return 0;
+    }
     LGR_SET_MARK_FIELD(&log_buffer, log_buffer.head, 0);
     lgr_rb_remove_oldest(&log_buffer);
-    LGR_UNLOCK(key);
+    (void)ta_lgr_unlock(key);
 
     return mess_length;
 }
@@ -497,13 +510,9 @@ log_get_message(uint32_t length, uint8_t *buffer)
 int
 log_init()
 {
-#ifdef HAVE_SEMAPHORE_H
-    if (sem_init(&lgr_lock, 0, 1) != 0)
-    {
-        fprintf(stderr, "sem_init() failed\n");
+    if (ta_lgr_lock_init() != 0)
         return -1;
-    }
-#endif
+
     log_entries_fast = 0;
     log_entries_slow = 0;
 
@@ -522,15 +531,10 @@ log_init()
  * @retval -1  Failure.
  */
 int
-log_shutdown()
+log_shutdown(void)
 {
-#ifdef HAVE_SEMAPHORE_H
-    if (sem_destroy(&lgr_lock) != 0)
-    {
-        fprintf(stderr, "sem_destroy() failed\n");
-        return -1;
-    }
-#endif
+    (void)ta_lgr_lock_destroy();
+
     return lgr_rb_destroy(&log_buffer);
 }
 
