@@ -436,6 +436,9 @@ xinetd_set(unsigned int gid, const char *oid, const char *value)
     return 0;
 }
 
+
+#if defined(WITH_TODUDP_SERVER) || defined(WITH_ECHO_SERVER)
+
 /**
  * Updates "bind" ("interface") attribute of an xinetd service.
  * Attribute "bind" allows a service to be bound to a specific interface
@@ -604,7 +607,10 @@ ds_xinetd_service_addr_get(const char *service, char *value)
     return 0;
 }
 
+#endif
+
 #endif /* WITH_XINETD */
+
 
 #ifdef WITH_TFTP_SERVER
 
