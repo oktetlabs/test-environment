@@ -193,7 +193,7 @@ test_var_arg_value_free(test_var_arg_value *p)
     free(p->id);
     free(p->ext);
     free(p->value);
-    free(p->req);
+    test_requirements_free(&p->reqs);
     free(p);
 }
 
