@@ -116,20 +116,24 @@
 /** @name Traffic Application Domain errno's */
 #define TAD_ERRNO_BASE  (5 << 16)
 #define ETADCSAPNOTEX   (TAD_ERRNO_BASE |1) /**< CSAP not exist. */
-#define ETADCSAPSTATE   (TAD_ERRNO_BASE |2) /**< command dos not appropriate to 
+#define ETADLOWER       (TAD_ERRNO_BASE |2) /**< Lower layer error, usually
+                                                 from some external library or 
+                                                 OS resources, which is used 
+                                                 for implementation of CSAP */
+#define ETADCSAPSTATE   (TAD_ERRNO_BASE |3) /**< command dos not appropriate to 
                                                  CSAP state */
-#define ETADNOTMATCH    (TAD_ERRNO_BASE |3) /**< data does not match 
+#define ETADNOTMATCH    (TAD_ERRNO_BASE |4) /**< data does not match 
                                                  to the specified pattern. */
-#define ETADLESSDATA    (TAD_ERRNO_BASE |4) /**< read data matches to the
+#define ETADLESSDATA    (TAD_ERRNO_BASE |5) /**< read data matches to the
                                                  begin of pattern, but it is
                                                  not enough for all one,
                                                  or not enough data for 
                                                  generate.*/
-#define ETADMISSNDS     (TAD_ERRNO_BASE |5) /**< Missing NDS, but it must. */
-#define ETADWRONGNDS    (TAD_ERRNO_BASE |6) /**< Wrong NDS passed. */
-#define ETADCSAPDB      (TAD_ERRNO_BASE |7) /**< CSAP DB internal error. */
-#define ETADENDOFDATA   (TAD_ERRNO_BASE |8) /**< End of incoming data in CSAP */
-#define ETADEXPRPARSE   (TAD_ERRNO_BASE |9) /**< Expression parse error. */
+#define ETADMISSNDS     (TAD_ERRNO_BASE |6) /**< Missing NDS, but it must. */
+#define ETADWRONGNDS    (TAD_ERRNO_BASE |7) /**< Wrong NDS passed. */
+#define ETADCSAPDB      (TAD_ERRNO_BASE |8) /**< CSAP DB internal error. */
+#define ETADENDOFDATA   (TAD_ERRNO_BASE |9) /**< End of incoming data in CSAP */
+#define ETADEXPRPARSE   (TAD_ERRNO_BASE|10) /**< Expression parse error. */
 
 /*@}*/
 

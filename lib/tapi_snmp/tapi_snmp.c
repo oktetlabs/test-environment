@@ -447,6 +447,7 @@ tapi_snmp_csap_create(const char *ta, int sid, const char *snmp_agent,
 #endif
 }
 
+#define DEBUG 1
 /* See description in tapi_snmp.h */
 int 
 tapi_snmp_gen_csap_create(const char *ta, int sid, const char *snmp_agent, 
@@ -468,7 +469,6 @@ tapi_snmp_gen_csap_create(const char *ta, int sid, const char *snmp_agent,
         return TE_RC(TE_TAPI, errno); /* return system errno */
 
     fprintf(f, "{ snmp:{ version plain:%d ",
-             community, 
              snmp_version - 1 /* convert "human"->ASN SNMP version */
              );
 
@@ -476,9 +476,9 @@ tapi_snmp_gen_csap_create(const char *ta, int sid, const char *snmp_agent,
         fprintf(f, ", remote-port plain:%d ", rem_port);
 
     if (loc_port)
-        fprintf(f, ", local-port plain:%d ", rem_port);
+        fprintf(f, ", local-port plain:%d ", loc_port);
 
-    if (community >= 0)
+    if (community)
         fprintf(f, ", community plain:\"%s\" ", community);
 
     if (timeout >= 0)
@@ -501,6 +501,8 @@ tapi_snmp_gen_csap_create(const char *ta, int sid, const char *snmp_agent,
     return rc;
 }
 
+
+#define DEBUG 0
 
 void
 tapi_snmp_pkt_handler(char *fn, void *p)

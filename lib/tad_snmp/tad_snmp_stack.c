@@ -403,12 +403,6 @@ snmp_single_init_cb (int csap_id, const asn_value_p csap_nds, int layer)
         strcpy (community, SNMP_CSAP_DEF_COMMUNITY);
     else if (rc) return rc;
 
-    v_len = sizeof(snmp_agent);
-    rc = asn_read_value_field(snmp_csap_spec, snmp_agent, &v_len, "snmp-agent.#plain");
-    if (rc == EASNINCOMPLVAL) 
-        strcpy (snmp_agent, SNMP_CSAP_DEF_AGENT);
-    else if (rc) return rc; 
-
     v_len = sizeof(timeout); 
     rc = asn_read_value_field(snmp_csap_spec, &timeout, &v_len, "timeout.#plain");
     if (rc == EASNINCOMPLVAL) 
@@ -430,8 +424,24 @@ snmp_single_init_cb (int csap_id, const asn_value_p csap_nds, int layer)
     v_len = sizeof(r_port); 
     rc = asn_read_value_field(snmp_csap_spec, &r_port, &v_len, "remote-port.#plain");
     if (rc == EASNINCOMPLVAL) 
-        r_port = SNMP_CSAP_DEF_REMPORT;
+    {
+        if (l_port == SNMP_CSAP_DEF_LOCPORT)
+            r_port = SNMP_CSAP_DEF_REMPORT;
+        else 
+            r_port = 0;
+    }
     else if (rc) return rc;
+
+    v_len = sizeof(snmp_agent);
+    rc = asn_read_value_field(snmp_csap_spec, snmp_agent, &v_len, "snmp-agent.#plain");
+    if (rc == EASNINCOMPLVAL) 
+    {
+        if (l_port == SNMP_CSAP_DEF_LOCPORT)
+            strcpy (snmp_agent, SNMP_CSAP_DEF_AGENT);
+        else 
+            snmp_agent[0] = '\0';
+    }
+    else if (rc) return rc; 
 
     csap_descr = csap_find(csap_id);
     snmp_spec_data = malloc (sizeof(snmp_csap_specific_data_t));
@@ -446,7 +456,7 @@ snmp_single_init_cb (int csap_id, const asn_value_p csap_nds, int layer)
     csap_descr->read_cb          = snmp_read_cb; 
     csap_descr->write_read_cb    = snmp_write_read_cb; 
     csap_descr->read_write_layer = layer; 
-    csap_descr->timeout          = 500000; 
+    csap_descr->timeout          = 2000000; 
 
     csap_session.version     = version;
     csap_session.remote_port = r_port; 
@@ -457,15 +467,20 @@ snmp_single_init_cb (int csap_id, const asn_value_p csap_nds, int layer)
 
     csap_session.community_len = strlen(community);
 
-    csap_session.peername = malloc (strlen(snmp_agent)+1);
-    strcpy (csap_session.peername, snmp_agent);
+    if (strlen(snmp_agent))
+    {
+        csap_session.peername = malloc (strlen(snmp_agent)+1);
+        strcpy (csap_session.peername, snmp_agent);
+    }
+    else
+        csap_session.peername = NULL;
 
     VERB("try to open SNMP session: \n");
     VERB("  version:    %d\n", csap_session.version);
     VERB("  rem-port:   %d\n", csap_session.remote_port);
     VERB("  loc-port:   %d\n", csap_session.local_port);
     VERB("  timeout:    %d\n", csap_session.timeout);
-    VERB("  peername:   %s\n", csap_session.peername);
+    VERB("  peername:   %s\n", snmp_agent );
     VERB("  community:  %s\n", csap_session.community);
 
     csap_session.callback       = snmp_csap_input;
@@ -484,7 +499,7 @@ snmp_single_init_cb (int csap_id, const asn_value_p csap_nds, int layer)
 #endif 
 #endif 
         free(snmp_spec_data);
-        return 1;
+        return ETADLOWER;
     }   
     VERB("in init, session: %x\n", ss);
 
