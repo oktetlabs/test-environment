@@ -252,5 +252,6 @@ extern void ds_shutdown_smtp();
 extern void ds_init_ftp_server(rcf_pch_cfg_object **last);
 extern void ds_shutdown_ftp_server();
 extern void ds_init_tftp_server(rcf_pch_cfg_object **last);
+extern void ds_init_dns_server(rcf_pch_cfg_object **last);
 
 #endif /* __TE_TA_LINUXCONF_DAEMONS */

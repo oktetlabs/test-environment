@@ -116,6 +116,13 @@
          Limit: 1 -->
     <object oid="/agent/dnsserver/forwarder" access="read_write" type="address"/>
 
+    <!-- DNS server directory
+         Name: empty
+         Value: DNS server working directory
+         Limit: 1 -->
+    <object oid="/agent/dnsserver/directory" access="read_write" type="string"/>
+
+
     <!-- DNS server recursive queries
          Name: empty
          Value: 0 (disabled) or 1 (enabled)

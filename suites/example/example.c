@@ -42,7 +42,9 @@
             int num_interfaces; \
             cfg_handle *interfaces; \
             struct sockaddr *addr; \
+            char *dirname; \
             cfg_val_type type = CVT_ADDRESS; \
+            int flag; \
             int len; \
             uint8_t mac[ETHER_ADDR_LEN + 1];
 
@@ -66,6 +68,25 @@ main(int argc, char *argv[])
     INFO("Agent is %s", ta);
     CHECK_RC(cfg_get_instance_fmt(&type, &addr, "/agent:%s/dns:", ta)); 
     RING("DNS is %s", sockaddr2str(addr));
+    type = CVT_INTEGER;
+    CHECK_RC(cfg_get_instance_fmt(&type, &flag, "/agent:%s/dnsserver:", ta));
+    RING("DNS server is %s", flag ? "running" : "not running");
+    type = CVT_STRING;
+    CHECK_RC(cfg_get_instance_fmt(&type, &dirname, "/agent:%s/dnsserver:/directory:", ta));
+    RING("DNS server directory is %s", dirname);
+    free(addr);
+    free(dirname);
+    type = CVT_ADDRESS;
+    CHECK_RC(cfg_get_instance_fmt(&type, &addr, "/agent:%s/dnsserver:/forwarder:", ta));
+    RING("DNS server forwarder is %s", sockaddr2str(addr));
+    free(addr);
+    type = CVT_INTEGER;
+    CHECK_RC(cfg_get_instance_fmt(&type, &flag, "/agent:%s/dnsserver:/recursive:", ta));
+    RING("DNS server is %s", flag ? "recursive" : "not recursive");
+    flag = 1;
+    CHECK_RC(cfg_set_instance_fmt(type, &flag, "/agent:%s/dnsserver:/recursive:", ta));
+
+
     snprintf(eth0_oid, sizeof(eth0_oid) - 1, "/agent:%s/interface:*", ta);
     CHECK_RC(cfg_find_pattern(eth0_oid, &num_interfaces, &interfaces));
     {
@@ -82,8 +103,10 @@ main(int argc, char *argv[])
         }
     }
     free(interfaces);
+#if 0
     CHECK_RC(rcf_ta_put_file(ta, 0, "/home/artem/test.txt", \
                              "/home/artem/tmp/test.txt"));
+#endif
     TEST_SUCCESS;
 
 cleanup:
