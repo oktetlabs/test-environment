@@ -595,10 +595,11 @@ void
 log_flush_ten(const char *ta_name)
 {
     static struct ipc_client *log_client;
-    char               ta_srv[LGR_FIELD_MAX] = "LOGGER-";
-    char               mess[LGR_FIELD_MAX] = "LOGGER-FLUSH";
-    char               answer[LGR_FIELD_MAX];
-    uint32_t           answer_len = LGR_FIELD_MAX;
+
+    char    ta_srv[LGR_FIELD_MAX] = "LOGGER-";
+    char    mess[LGR_FIELD_MAX] = "LOGGER-FLUSH";
+    char    answer[LGR_FIELD_MAX];
+    size_t  answer_len = LGR_FIELD_MAX;
 
     strcat(ta_srv, ta_name);
     log_client = ipc_init_client("LOGGER_FLUSH_CLIENT");
