@@ -303,6 +303,7 @@
      <!-- The link-layer address that will be used to match the client, if any. 
           acquired the lease.
           Name:  empty
+          Value: String representation is required, since it is optional
           Limit: 1 -->
      <object oid="/agent/dhcpserver/host/chaddr" access="read_write"
              type="string"/>
@@ -320,6 +321,7 @@
           to the client if it is valid for the network segment to which 
           the client is connected.
           Name:  empty
+          Value: String representation is required, since it is optional
           Limit: 1 -->
      <object oid="/agent/dhcpserver/host/ip-address" access="read_write"
              type="string"/>
