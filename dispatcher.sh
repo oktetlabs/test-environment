@@ -377,14 +377,6 @@ if test -n "$BUILDER" ; then
     fi
 fi
 
-if test -n "$TESTER" -a -n "${BUILD_TS}" ; then
-    if test -n "${QUIET}" ; then
-        te_build_suites >>build.log || exit_with_log ;
-    else
-        te_build_suites || exit_with_log ;
-    fi
-fi
-
 cd ${STARTING_DIR}
 
 rm -f valgrind.* vg.*

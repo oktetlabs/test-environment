@@ -8,10 +8,12 @@ AM_LDFLAGS=@TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/lib
 mybindir=$(prefix)/bin
 
 mybin_SCRIPTS=te_builder_log te_generate_symtbl te_generate_symtbl_cygwin \
-              te_build_suites tce_report tce_instrument_sources \
-              tce_uninstrument_sources te_configure_package te_cross_build
+              te_build_suite tce_report tce_instrument_sources \
+              tce_uninstrument_sources te_configure_package te_cross_build \
+              te_build_nut te_build_nuts
 
 EXTRA_DIST=builder.m4 te_builder_log te_generate_symtbl \
-           te_generate_symtbl_cygwin te_build_suites tce_report \
+           te_generate_symtbl_cygwin te_build_suite tce_report \
            tce_instrument_sources tce_uninstrument_sources \
-           te_configure_package te_cross_build
+           te_configure_package te_cross_build \
+           te_build_nut te_build_nuts

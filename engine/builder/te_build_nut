@@ -1,0 +1,76 @@
+#! /bin/sh
+
+# Test Environment
+#
+# Script for building of the one NUT.
+#
+# Copyright (C) 2004 Test Environment authors (see file AUTHORS in the 
+# root directory of the distribution).
+#
+# Test Environment is free software; you can redistribute it and/or 
+# modify it under the terms of the GNU General Public License as 
+# published by the Free Software Foundation; either version 2 of 
+# the License, or (at your option) any later version.
+# 
+# Test Environment is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, 
+# MA  02111-1307  USA
+#
+# Author Elena Vengerova <Elena.Vengerova@oktet.ru>
+# 
+# $Id: $
+#
+
+NUT=$1
+NUT_SOURCES=$2
+NUT_PARMS=$3
+
+if test -e builder.conf.processed ; then
+    . builder.conf.processed
+fi    
+
+if test -z "${TE_INSTALL_NUT}" ; then 
+    TE_INSTALL_NUT=${TE_INSTALL}/nuts ; 
+fi ; 
+
+mkdir -p ${TE_INSTALL_NUT} 
+
+if test -z "${NUT_SOURCES}" ; then
+    NUT_SOURCES=`eval echo '$NUT_'$NUT'_SOURCES'` 
+fi    
+
+NUT_SCRIPT=`eval echo '$NUT_'$NUT'_SCRIPT'` 
+if test -z"${NUT_SCRIPT}" ; then
+    NUT_SCRIPT=${NUT_SOURCES}/te_build_nut
+fi    
+
+if test -z "${NUT_PARMS}" ; then
+    NUT_PARMS=`eval echo '$NUT_'$NUT'_PARMS'` 
+fi    
+    
+NUT_ST_LOCATION=`eval echo '$NUT_'$NUT'_ST_LOCATION'`
+NUT_ST_STRING=`eval echo '$NUT_'$i'_ST_STRING'` 
+
+TCE_FMT=`eval echo '$NUT_'$NUT'_TCE_FMT'` 
+if test -n "${TCE_FMT}" ; then 
+    TCE_TYPE=`eval echo '$NUT_'$NUT'_TCE_TYPE'` 
+    TCE_SRC=`eval echo '$NUT_'$NUT'_TCE_SOURCES'` 
+    tce_instrument_sources ${TCE_TYPE} -p ${NUT_SOURCES} \
+                           ${TCE_TYPE} ${TCE_FMT} ${TCE_SRC} || exit 1 
+fi 
+
+TE_INSTALL=${TE_INSTALL} TE_INSTALL_NUT=${TE_INSTALL_NUT} \ 
+    ${NUT_SCRIPT} ${NUT} ${NUT_PARMS} 
+NUT_SCRIPT_RC=$? 
+
+if test -n "${TCE_FMT}" ; then 
+    tce_uninstrument_sources -p ${NUT_SOURCES} || exit 1
+fi 
+
+exit ${NUT_SCRIPT_RC}

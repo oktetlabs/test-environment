@@ -30,7 +30,7 @@ AUTOMAKE_OPTIONS = foreign
 host=@host@
 TA_REMOTE_SUBDIRS=@TA_REMOTE_SUBDIRS@
 
-SUBDIRS=include doc lib tools engine nutlib agents nuts
+SUBDIRS=include doc lib tools engine agents suites
 DIST_SUBDIRS=$(SUBDIRS) @SUITE_SUBDIR@
 
 mybindir=$(prefix)/$(host)/bin
@@ -59,50 +59,19 @@ DISTCLEANFILES=builder.conf.processed host_name.sh
 te: install-data
 	cd include ; make install 
 	cd lib ; make install 
-	cd nutlib ; make 
+	te_build_nuts nutlibs 
 	cd tools ; make install 
 	cd engine ; make install
 	cd agents ; make install
-	te_cross_build $(host) $(prefix)
-	cd nuts ; make 
-
-te-nuts:
-	cd nuts; \
-	make TE_INSTALL=$${TE_INSTALL} TE_BASE=$${TE_BASE}
+	te_cross_build $(prefix)
+	te_build_nuts nuts
 
 tce-report:
-	@echo Creating TCE report
+	. builder.conf.processed ; \
 	for i in $${TE_BS_NUTS}  $${TE_BS_NUTLIBS}; do \
 	    tce_taname=`eval echo '$$NUT_'$$i'_TCE_TANAME'` ; \
 	    if test -n "$${tce_taname}" ; then \
 	        tce_report $${tce_taname} || exit 1 ; \
 	    fi ; \
 	done
-
-suite:
-	@echo Building Test Suite 
-	if test -z "$${TE_INSTALL}" ; then \
-	    TE_INSTALL=$(prefix) ; \
-	fi ; \
-	if test -z "$${TE_INSTALL_SUITE}" ; then \
-	    TE_INSTALL_SUITE=$${TE_INSTALL}/suites ; \
-	fi ; \
-	if test -n "$(SUITE_SOURCES)" ; then \
-	    SOURCES=$(SUITE_SOURCES) ; \
-	    if test "$${SOURCES:0:1}" != "/" ; then \
-	        SOURCES=$(srcdir)/$${SOURCES} ; \
-	    fi ; \
-	    mkdir -p suites ; \
-	    cd suites ; \
-	    if test ! -e Makefile ; then \
-	        TE_INSTALL=$${TE_INSTALL} \
-	        TE_BASE=$${TE_BASE} \
-	        TE_CFLAGS="-Wall -W -O0 -ggdb -I$(srcdir)/include \
-	                   -I$${TE_INSTALL}/$(host)/include" \
-	        TE_LDFLAGS="-L$${TE_INSTALL}/$(host)/lib" \
-	        eval $${SOURCES}/configure '-q --prefix=$${TE_INSTALL_SUITE}' \
-	        || exit 1 ; \
-	    fi ; \
-	    make install || exit 1 ; \
-	fi
 

@@ -1,0 +1,97 @@
+#! /bin/sh
+
+# Test Environment
+#
+# Script for building of the test package. Parameters are unique package
+# name and package source directory.
+#
+# Copyright (C) 2003 Test Environment authors (see file AUTHORS in the 
+# root directory of the distribution).
+#
+# Test Environment is free software; you can redistribute it and/or 
+# modify it under the terms of the GNU General Public License as 
+# published by the Free Software Foundation; either version 2 of 
+# the License, or (at your option) any later version.
+# 
+# Test Environment is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, 
+# MA  02111-1307  USA
+#
+# Author Elena Vengerova <Elena.Vengerova@oktet.ru>
+# 
+# $Id: $
+#
+
+# Parameters are package name
+
+if test -n "${TE_BUILD}" ; then
+    cd ${TE_BUILD}
+fi    
+if test -e builder.conf.processed ; then
+    . builder.conf.processed
+else
+    CONFIG_GUESS=`find /usr/share/automake* -name config.guess | tail -n 1` 
+    host=`$CONFIG_GUESS` 
+    if test -z "$host" ; then
+        echo 'Cannot determine host platform.'
+        exit 1
+    fi
+fi    
+
+SUITE=$1
+SOURCES=$2
+  
+if test "${SOURCES:0:1}" != "/" ; then 
+    if test -z ${TE_BASE} ; then
+        echo 'Export TE_BASE or full path to suite sources, please'
+        exit 1
+    fi
+    SOURCES=${TE_BASE}/${SOURCES} 
+fi
+
+pushd ${SOURCES} >/dev/null
+if test -e configure.ac ; then 
+    if test ! -e configure ; then
+        aclocal || exit 1 ;
+        autoconf || exit 1 ;
+        automake || exit 1 ;
+    fi
+fi
+popd >/dev/null
+
+if test -n "${TE_BUILD}" ; then
+    cd ${TE_BUILD}
+    mkdir -p suites/${SUITE}
+    cd suites/${SUITE}
+else
+    cd $SOURCES
+fi
+
+if test -z "$TE_INSTALL_SUITE" ; then
+    TE_INSTALL_SUITE=${TE_INSTALL}/suites
+fi    
+
+if test ! -e Makefile ; then 
+    echo "${SOURCES}/configure -q --prefix=${TE_INSTALL_SUITE}"
+    TE_INSTALL=${TE_INSTALL} \
+    TE_BASE=${TE_BASE} \
+    TE_CFLAGS="-Wall -W -O0 -ggdb -I${TE_INSTALL}/include -I${TE_INSTALL}/${host}/include" \
+    TE_LDFLAGS="-L${TE_INSTALL}/${host}/lib" \
+    eval ${SOURCES}/configure -q --prefix=${TE_INSTALL_SUITE} || exit 1 
+fi
+make install || exit 1 
+
+# Now upgrade dynamic builder.conf
+if test -n "${TE_BUILD}" ; then
+   if ! cat ${TE_BUILD}/conf/builder.conf | grep -q "TE_SUITE("${SUITE}")" ; then 
+       echo "TE_SUITE("${SUITE}")" >> ${TE_BUILD}/conf/builder.conf
+   fi
+fi   
+
+exit 0

@@ -398,3 +398,25 @@ fi
 TE_BS_TA_$1_PLATFORM=$PLATFORM
 ]
 ])
+
+dnl Specifies the suite.
+dnl
+dnl Parameters:
+dnl       suite name
+dnl       sources location - name of the directory in ${TE_BASE}
+dnl       
+define([TE_SUITE],
+[
+TE_HOST_DEFINED=yes
+ADD=yes
+for i in $TE_BS_SUITES ; do 
+    if $i = $1 ; then
+        ADD=no
+        break
+    fi
+done
+if test "$ADD"="yes" ; then
+    TE_BS_SUITES="$TE_BS_SUITES $1" 
+fi
+]
+)

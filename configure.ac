@@ -210,7 +210,6 @@ AC_SUBST(TE_BS_NUTS)
 AC_SUBST(TE_BS_NUTLIBS)
 
 AC_CONFIG_FILES(Makefile include/Makefile lib/Makefile 
-                engine/Makefile tools/Makefile agents/Makefile 
-                nuts/Makefile nutlib/Makefile)
+                engine/Makefile tools/Makefile agents/Makefile suites/Makefile)
 
 AC_OUTPUT
