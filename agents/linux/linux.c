@@ -305,7 +305,8 @@ rcf_ch_trsend_start(struct rcf_comm_connection *handle,
     UNUSED(ba);
     UNUSED(cmdlen);
 
-    VERB("TRSEND start: handle %d %s\n", csap, postponed ? "postponed" : "");
+    VERB("TRSEND start: handle %d %s\n",
+         csap, postponed ? "postponed" : "");
     return -1;
 }
 
@@ -463,9 +464,10 @@ rcf_ch_start_task(struct rcf_comm_connection *handle,
             if (is_argv)
                 ((rcf_rtn)(addr))(argc, params);
             else
-                ((rcf_rtn)(addr))(params[0], params[1], params[2], params[3],
-                                  params[4], params[5], params[6], params[7],
-                                  params[8], params[9]);
+                ((rcf_rtn)(addr))(params[0], params[1], params[2],
+                                  params[3], params[4], params[5],
+                                  params[6], params[7], params[8],
+                                  params[9]);
             exit(0);
         }
 

@@ -17,14 +17,14 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public 
+ * You should have received a copy of the GNU Lesser General Public
  * License along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
  *
  *
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
- * 
+ *
  * $Id$
  */
 
@@ -93,10 +93,10 @@ static const char *ftpd_conf = NULL;
      (strstr(_oid, "echoserver") != NULL) ? "echo" : NULL)
 
 /* Auxiliary buffer */
-static char  buf[2048] = {0, }; 
+static char  buf[2048] = {0, };
 
 /* Get current state daemon or xinetd service */
-static int 
+static int
 daemon_get(unsigned int gid, const char *oid, char *value)
 {
     const char *daemon_name = GET_DAEMON_NAME(oid);
@@ -109,18 +109,18 @@ daemon_get(unsigned int gid, const char *oid, char *value)
     }
     sprintf(buf, "killall -CONT %s >/dev/null 2>&1", daemon_name);
     sprintf(value, "%s", ta_system(buf) == 0 ? "1" : "0");
-    
+
     return 0;
 }
 
 /* On/off daemon */
-static int 
+static int
 daemon_set(unsigned int gid, const char *oid, const char *value)
 {
     const char *daemon_name = GET_DAEMON_NAME(oid);
 
     UNUSED(gid);
-    
+
     if (strlen(value) != 1 || (*value != '0' && *value != '1'))
         return TE_RC(TE_TA_LINUX, EINVAL);
 
@@ -128,7 +128,7 @@ daemon_set(unsigned int gid, const char *oid, const char *value)
     {
         return TE_RC(TE_TA_LINUX, ENOENT);
     }
-        
+
     sprintf(buf, "/etc/init.d/%s %s >/dev/null 2>&1", daemon_name,
             *value == '0' ? "stop" : "start");
 
@@ -137,12 +137,12 @@ daemon_set(unsigned int gid, const char *oid, const char *value)
         ERROR("Command '%s' failed", buf);
         return TE_RC(TE_TA_LINUX, ETESHCMD);
     }
-        
-    return 0;    
+
+    return 0;
 }
 
 /* Get current state of xinetd service */
-static int 
+static int
 xinetd_get(unsigned int gid, const char *oid, char *value)
 {
     FILE       *f;
@@ -161,15 +161,15 @@ xinetd_get(unsigned int gid, const char *oid, char *value)
 
     if (fgets(buf, sizeof(buf), f) == NULL)
         return TE_RC(TE_TA_LINUX, EPIPE);
-    
+
     sprintf(value, "%s", strstr(buf, "on") ? "1" : "0");
     pclose(f);
-    
+
     return 0;
 }
 
 /* On/off xinetd service */
-static int 
+static int
 xinetd_set(unsigned int gid, const char *oid, const char *value)
 {
     const char *daemon_name = GET_DAEMON_NAME(oid);
@@ -186,15 +186,15 @@ xinetd_set(unsigned int gid, const char *oid, const char *value)
 
     sprintf(buf, "/sbin/chkconfig %s %s >/dev/null 2>&1", daemon_name,
             *value == '0' ? "off" : "on");
-    
+
     if (ta_system(buf) != 0)
     {
         ERROR("Command '%s' failed", buf);
         return TE_RC(TE_TA_LINUX, ETESHCMD);
     }
-        
+
     ta_system("/etc/init.d/xinetd reload >/dev/null 2>&1");
-    
+
     return 0;
 }
 
@@ -203,7 +203,7 @@ xinetd_set(unsigned int gid, const char *oid, const char *value)
  * Attribute "bind" allows a service to be bound to a specific interface
  * on the machine.
  *
- * @param service  xinetd service name (MUST be the same as the service 
+ * @param service  xinetd service name (MUST be the same as the service
  *                 configuration file located in /etc/xinetd.d directory)
  * @param value    IP address of interface to which server to be bound
  *
@@ -218,7 +218,8 @@ static int
 ds_xinetd_service_addr_set(const char *service, const char *value)
 {
     unsigned int  addr;
-    char         *service_path = NULL; /* Path to xinetd service configuration file */
+    char         *service_path = NULL; /* Path to xinetd service
+                                          configuration file */
     char         *tmp_path = NULL; /* Path to temporary file */
     char         *cmd = NULL;
     int           path_len;
@@ -229,8 +230,8 @@ ds_xinetd_service_addr_set(const char *service, const char *value)
     if (inet_aton(value, (struct in_addr *)&addr) == 0)
         return EINVAL;
 
-    path_len = ((strlen(TE_TMP_PATH) > strlen(XINETD_ETC_DIR)) ? 
-                strlen(TE_TMP_PATH) : strlen(XINETD_ETC_DIR)) + 
+    path_len = ((strlen(TE_TMP_PATH) > strlen(XINETD_ETC_DIR)) ?
+                strlen(TE_TMP_PATH) : strlen(XINETD_ETC_DIR)) +
                strlen(service) + strlen(TE_TMP_FILE_SUFFIX) + 1;
 
 #define FREE_BUFFERS \
@@ -268,7 +269,7 @@ ds_xinetd_service_addr_set(const char *service, const char *value)
     while (fgets(buf, sizeof(buf), f) != NULL)
     {
         char *comments = strchr(buf, '#');
-        
+
         if (comments != NULL)
             sprintf(comments, "\n");
 
@@ -280,7 +281,7 @@ ds_xinetd_service_addr_set(const char *service, const char *value)
                 fprintf(g, "}");
             break;
         }
-            
+
         if (strstr(buf, "bind") == NULL &&
             strstr(buf, "interface") == NULL)
         {
@@ -304,7 +305,7 @@ ds_xinetd_service_addr_set(const char *service, const char *value)
 /**
  * Gets value of "bind" ("interface") attribute of an xinetd service.
  *
- * @param service  xinetd service name (MUST be the same as the service 
+ * @param service  xinetd service name (MUST be the same as the service
  *                 configuration file located in /etc/xinetd.d directory)
  * @param value    Buffer for IP address to return (OUT)
  *
@@ -334,23 +335,23 @@ ds_xinetd_service_addr_get(const char *service, char *value)
     {
         char *comments = strchr(buf, '#');
         char *tmp;
-        
+
         if (comments != NULL)
             sprintf(comments, "\n");
-        
+
         if ((tmp = strstr(buf, "bind")) != NULL ||
             (tmp = strstr(buf, "interface")) != NULL)
         {
             char *val = value;
-            
+
             while (!isdigit(*tmp))
                 tmp++;
-            
+
             while (isdigit(*tmp) || *tmp == '.')
                 *val++ = *tmp++;
-                
+
             *val = 0;
-            
+
             if (inet_aton(value, (struct in_addr *)&addr) == 0)
                 break;
 
@@ -361,27 +362,27 @@ ds_xinetd_service_addr_get(const char *service, char *value)
     fclose(f);
 
     sprintf(value, "255.255.255.255");
-    
+
     return 0;
 }
 
 
 #ifdef WITH_DHCP_SERVER
 
-/* 
+/*
  * List of options, which should be quoted automatilally; for other
  * option quotes should be specified in value, if necessary.
  */
-static char *quoted_options[] = { 
-    "bootfile-name", "domain-name", "extension-path-name", "merit-dump", 
-    "nis-domain", "nisplus-domain", "root-path", "uap-servers", 
-    "tftp-server-name", "uap-servers", "fqdn.fqdn" 
+static char *quoted_options[] = {
+    "bootfile-name", "domain-name", "extension-path-name", "merit-dump",
+    "nis-domain", "nisplus-domain", "root-path", "uap-servers",
+    "tftp-server-name", "uap-servers", "fqdn.fqdn"
 };
 
 /* Definitions of types for DHCP configuring */
 typedef struct dhcp_option {
     struct dhcp_option *next;
-    
+
     char               *name;
     char               *value;
 } dhcp_option;
@@ -393,7 +394,7 @@ typedef struct dhcp_option {
         free(_opt->value);      \
         free(_opt);             \
     } while (0)
-    
+
 typedef struct host {
     struct host  *next;
     char         *name;
@@ -422,9 +423,9 @@ typedef struct group {
 
 static group *groups = NULL;
 
-static char *s = buf;   /* Pointer to the place of parsing configuration 
+static char *s = buf;   /* Pointer to the place of parsing configuration
                            in the buf during /etc/dhcpd.conf parsing */
-static FILE *f = NULL;  /* Pointer to opened /etc/dhcpd.conf */                           
+static FILE *f = NULL;  /* Pointer to opened /etc/dhcpd.conf */
 
 static unsigned short omapi_port = 0;
 
@@ -450,7 +451,7 @@ static host *
 find_host(const char *name)
 {
     host *h;
-    
+
     for (h = hosts; h != NULL && strcmp(h->name, name) != 0; h = h->next);
 
     return h;
@@ -461,7 +462,7 @@ static group *
 find_group(const char *name)
 {
     group *g;
-    
+
     for (g = groups; g != NULL && strcmp(g->name, name) != 0; g = g->next);
 
     return g;
@@ -472,7 +473,7 @@ static dhcp_option *
 find_option(dhcp_option *opt, const char *name)
 {
     for (; opt != NULL && strcmp(opt->name, name) != 0; opt = opt->next);
-    
+
     return opt;
 }
 
@@ -480,42 +481,42 @@ find_option(dhcp_option *opt, const char *name)
 static void
 free_host(host *h)
 {
-    dhcp_option *opt, *next;                       
-    
-    free(h->name);                                 
-    free(h->chaddr);                               
-    free(h->client_id);                            
-    free(h->ip_addr);                              
-    free(h->next_server);                          
-    free(h->filename);                             
+    dhcp_option *opt, *next;
+
+    free(h->name);
+    free(h->chaddr);
+    free(h->client_id);
+    free(h->ip_addr);
+    free(h->next_server);
+    free(h->filename);
     for (opt = h->options; opt != NULL; opt = next)
-    {                                              
-        next = opt->next;                          
-        FREE_OPTION(opt);                          
-    }                                              
+    {
+        next = opt->next;
+        FREE_OPTION(opt);
+    }
 }
 
 static void
-free_group(group * g) 
-{                                                        
-    dhcp_option *opt, *next;                             
-    
-    free(g->name);                                  
-    free(g->next_server);                           
-    free(g->filename);                              
-    for (opt = g->options; opt != NULL; opt = next) 
-    {                                                    
-        next = opt->next;                                
-        FREE_OPTION(opt);                                
-    }                                                    
-} 
+free_group(group * g)
+{
+    dhcp_option *opt, *next;
+
+    free(g->name);
+    free(g->next_server);
+    free(g->filename);
+    for (opt = g->options; opt != NULL; opt = next)
+    {
+        next = opt->next;
+        FREE_OPTION(opt);
+    }
+}
 /* Release all memory allocated for DHCP data */
 static void
 free_dhcp_data(void)
 {
     host  *host, *host_tmp;
     group *group, *group_tmp;
-    
+
     /* Free old lists */
     for (host = hosts; host != NULL; host = host_tmp)
     {
@@ -532,7 +533,7 @@ free_dhcp_data(void)
     groups = NULL;
 }
 
-/*--------------------- dhcpd.conf processing -------------------------------*/
+/*--------------------- dhcpd.conf processing --------------------------*/
 
 /*
  * It is assumed that syntax of dhcpd.conf is correct - this is checked
@@ -543,47 +544,50 @@ free_dhcp_data(void)
 static int
 get_line()
 {
-    char *tmp;                                                    
-    
+    char *tmp;
+
     do {
         if (fgets(buf, sizeof(buf), f) == NULL)
             return TE_RC(TE_TA_LINUX, EOF);
-        if (strlen(buf) + 1 == sizeof(buf))                           
-        {                                                             
-            VERB("too log line in /etc/dhcpd.conf\n"); 
-            return TE_RC(TE_TA_LINUX, ENOMEM); 
-        }                                                             
-        if ((tmp = strchr(buf, '#')) != NULL)                         
-            *tmp = 0;                                                 
-        if ((tmp = strchr(buf, '\r')) != NULL)                         
-            *tmp = 0;                                                 
-        if ((tmp = strchr(buf, '\n')) != NULL)                         
-            *tmp = 0;                                                 
+        if (strlen(buf) + 1 == sizeof(buf))
+        {
+            VERB("too log line in /etc/dhcpd.conf\n");
+            return TE_RC(TE_TA_LINUX, ENOMEM);
+        }
+        if ((tmp = strchr(buf, '#')) != NULL)
+            *tmp = 0;
+        if ((tmp = strchr(buf, '\r')) != NULL)
+            *tmp = 0;
+        if ((tmp = strchr(buf, '\n')) != NULL)
+            *tmp = 0;
     } while (*buf == 0);
-    
+
     return 0;
 }
 
-/** Find a token in the stream. If s already points to the token, do nothing. */
-static int 
+/**
+ * Find a token in the stream. If s already points to the token,
+ * do nothing.
+ */
+static int
 get_token()
 {
     int rc;
-    
-    while (TRUE)            
-    {                       
+
+    while (TRUE)
+    {
         while (isspace(*s))
             s++;
-            
+
         if (*s == 0)
-        { 
+        {
             if ((rc = get_line()) != 0)
                 return TE_RC(TE_TA_LINUX, rc);
             s = buf;
         }
-        else                
-            break;          
-    }                       
+        else
+            break;
+    }
     return 0;
 }
 
@@ -602,15 +606,15 @@ get_token()
 static char *
 extract_token()
 {
-    char *tmp;                                                         
+    char *tmp;
     char *scopy;
-    
-    for (tmp = s; 
-         !isspace(*tmp) && *tmp != 0 && *tmp != ';' && *tmp != '{'; 
-         tmp++);  
-                                                                       
-    if (*tmp == 0)                                                     
-    {                       
+
+    for (tmp = s;
+         !isspace(*tmp) && *tmp != 0 && *tmp != ';' && *tmp != '{';
+         tmp++);
+
+    if (*tmp == 0)
+    {
         scopy = strdup(s);
         get_line();
     }
@@ -636,7 +640,7 @@ static int
 process_omapi_record()
 {
     s += strlen("omapi-port");
-    
+
     get_token();
 
     if ((omapi_port = strtol(s, &s, 10)) == 0)
@@ -644,11 +648,11 @@ process_omapi_record()
         VERB("bad OMAPI port is specified in /etc/dhcpd.conf\n");
         return TE_RC(TE_TA_LINUX, EINVAL);
     }
-    
+
     get_token();
     assert(*s == ';');
     s++;
-    
+
     return 0;
 }
 
@@ -659,7 +663,7 @@ process_other_record()
     te_bool in_quotes = FALSE;
     int     brackets = 0;
     int     rc = 0;
-    
+
     for (; *s != 0 || (rc = get_token()) == 0; s++)
     {
         if (*s == '"')
@@ -667,49 +671,49 @@ process_other_record()
             in_quotes = !in_quotes;
             continue;
         }
-        
+
         if (in_quotes)
         {
             if (*s == '\\')
                 s++;
             continue;
         }
-        
+
         if (*s == ';' && brackets == 0)
         {
             s++;
             break;
         }
-        
+
         if (*s == '}')
         {
             if (--brackets == 0)
             {
                 s++;
-                /* 
+                /*
                  * If the record is ...{...};, then ';' will be skipped
                  * by the next call of the function.
                  */
                 break;
             }
         }
-        
+
         if (*s == '{')
             brackets++;
     }
-    
+
     return TE_RC(TE_TA_LINUX, rc);
 }
 
-/* 
+/*
  * Macros below are defined to process filename, next-server and
- * options definitions. They should be called from process_host_record() 
+ * options definitions. They should be called from process_host_record()
  * and process_group_record() because relies on local macro CHECKNULL.
  *
- * Usage: 
+ * Usage:
  *
- * CHECK_FILENAME(gh) 
- *     or 
+ * CHECK_FILENAME(gh)
+ *     or
  * else CHECK_FILENAME(gh)
  *
  * gh should be either group * or host *.
@@ -789,7 +793,7 @@ process_host_record()
             return TE_RC(TE_TA_LINUX, ENOMEM);  \
         }                                       \
     } while (0)
-        
+
     if ((h = (host *)calloc(sizeof(host), 1)) == NULL)
         return TE_RC(TE_TA_LINUX, ENOMEM);
 
@@ -797,11 +801,11 @@ process_host_record()
     s += strlen("host");
     get_token();
     CHECKNULL(h->name = extract_token());
-    
+
     get_token();
     assert(*s == '{');
     s++;
-        
+
     while (TRUE)
     {
         get_token();
@@ -832,7 +836,7 @@ process_host_record()
         else if (strncasecmp(s, "group", strlen("group")) == 0)
         {
             char *g;
-            
+
             s += strlen("group");
             get_token();
             CHECKNULL(g = extract_token());
@@ -842,12 +846,12 @@ process_host_record()
         else
             process_other_record();
     }
-    
+
     /* Look for client identifier option */
-    for (opt = h->options, prev = NULL; 
+    for (opt = h->options, prev = NULL;
          opt != NULL && strcmp(opt->name, "dhcp-client-identifier") != 0;
          prev = opt, opt = opt->next);
-         
+
     if (opt != NULL)
     {
         if (prev != NULL)
@@ -858,18 +862,18 @@ process_host_record()
         free(opt->name);
         free(opt);
     }
-    
+
     h->next = hosts;
     hosts = h;
-    
+
     return 0;
-    
-#undef CHECKNULL    
+
+#undef CHECKNULL
 }
 
-/** 
- * Process the group or subnet record in dhcpd.conf. 
- * First line is already in buf. 
+/**
+ * Process the group or subnet record in dhcpd.conf.
+ * First line is already in buf.
  */
 static int
 process_group_record()
@@ -889,7 +893,7 @@ process_group_record()
             return TE_RC(TE_TA_LINUX, ENOMEM);  \
         }                                       \
     } while (0)
-        
+
     if (*s == 'g')
     {
         /* Parse group name */
@@ -912,7 +916,7 @@ process_group_record()
     }
     assert(*s == '{');
     s++;
-        
+
     while (TRUE)
     {
         get_token();
@@ -926,7 +930,7 @@ process_group_record()
             if (process_host_record() != 0)
                 return TE_RC(TE_TA_LINUX, EOF);
         } else if (strncasecmp(s, "subnet", strlen("subnet")) == 0 ||
-                   strncasecmp(s, "shared-network", 
+                   strncasecmp(s, "shared-network",
                                strlen("shared-network")) == 0 ||
                    strncasecmp(s, "group", strlen("group")) == 0)
         {
@@ -936,11 +940,11 @@ process_group_record()
         else CHECK_FILENAME(g)
         else CHECK_NEXT_SERVER(g)
         else CHECK_OPTION(g)
-        else 
+        else
             process_other_record();
     }
-    
-    /* 
+
+    /*
      * Fill grup information in host structures associated with host
      * records inside group record.
      */
@@ -953,24 +957,24 @@ process_group_record()
         else
         {
             dhcp_option *opt;
-            
+
             if (g->filename != NULL && h->filename == NULL)
                 CHECKNULL(h->filename = strdup(g->filename));
-                
+
             if (g->next_server != NULL && h->next_server == NULL)
                 CHECKNULL(h->next_server = strdup(g->next_server));
-            
+
             for (opt = g->options; opt != NULL; opt = opt->next)
             {
                 dhcp_option *tmp;
-                
-                for (tmp = h->options; 
+
+                for (tmp = h->options;
                      tmp != NULL && strcmp(tmp->name, opt->name) != 0;
                      tmp = tmp->next);
-                     
+
                 if (tmp != NULL)
                     continue;
-                    
+
                 CHECKNULL(tmp = (dhcp_option *)calloc(sizeof(*tmp), 1));
                 tmp->next = h->options;
                 h->options = tmp;
@@ -979,19 +983,19 @@ process_group_record()
             }
         }
     }
-    
+
     if (g->name == NULL)
     {
         free_group(g);
         return 0;
     }
-    
+
     /* Insert the named group into the global list */
     g->next = groups;
     groups = g;
     return 0;
-    
-#undef CHECKNULL    
+
+#undef CHECKNULL
 }
 
 /** Initialize omapi objects and the connection to DHCP server */
@@ -999,77 +1003,77 @@ static int
 init_omapi()
 {
 #define CHECKERR(x) \
-    do {                                                        \
-        isc_result_t status = x;                                \
-        if (status != ISC_R_SUCCESS)                            \
-        {                                                       \
-            free_dhcp_data();                                   \
-            VERB("cannot interact with DHCP daemon\n");    \
-            return TE_RC(TE_TA_LINUX, EPERM);                   \
-        }                                                       \
+    do {                                                \
+        isc_result_t status = x;                        \
+        if (status != ISC_R_SUCCESS)                    \
+        {                                               \
+            free_dhcp_data();                           \
+            VERB("cannot interact with DHCP daemon\n"); \
+            return TE_RC(TE_TA_LINUX, EPERM);           \
+        }                                               \
     } while (0)
-    
+
     conn = lo = NULL;
     CHECKERR(dhcpctl_connect(&conn, "127.0.0.1", omapi_port, 0));
     CHECKERR(dhcpctl_new_object(&lo, conn, "lease"));
     return 0;
 
-#undef CHECKERR    
-} 
- 
+#undef CHECKERR
+}
+
 /** On/off DHCP server */
-static int 
+static int
 ds_dhcpserver_set(unsigned int gid, const char *oid, const char *value)
 {
     char val[2];
     int  rc;
-    
+
     UNUSED(oid);
-    
+
     if ((rc = daemon_get(gid, "dhcpserver", val)) != 0)
         return TE_RC(TE_TA_LINUX, rc);
-    
+
     if (strlen(value) != 1 || (*value != '0' && *value != '1'))
         return TE_RC(TE_TA_LINUX, EINVAL);
-    
-    /* 
+
+    /*
      * We don't need to change state of DHCP Server:
      * The current state is the same as desired.
      */
     if (*val == *value)
         return 0;
 
-    sprintf(buf, "/etc/init.d/dhcpd %s >/dev/null 2>&1", 
+    sprintf(buf, "/etc/init.d/dhcpd %s >/dev/null 2>&1",
             *value == '0' ? "stop" : "start");
-    
+
     if (ta_system(buf) != 0)
     {
         ERROR("Command '%s' failed", buf);
         return TE_RC(TE_TA_LINUX, ETESHCMD);
     }
-        
+
     if (0 && *value == '1' && *val != *value)
     {
-        rc = init_omapi(); 
+        rc = init_omapi();
         if (rc != 0)
             ta_system("/etc/init.d/dhcpd stop >/dev/null 2>&1");
         return TE_RC(TE_TA_LINUX, rc);
     }
-        
+
     return 0;
 }
 
 #define CHECKSTATUS(x) \
-    do {                                                                    \
-        isc_result_t _rc = x;                                               \
-        if (_rc != ISC_R_SUCCESS)                                           \
-        {                                                                   \
-            VERB("failure: OMAPI returned %d; "                        \
-                      "TA configuration database may be corrupted\n", _rc); \
-            return TE_RC(TE_TA_LINUX, EPERM);                               \
-        }                                                                   \
+    do {                                                            \
+        isc_result_t _rc = x;                                       \
+        if (_rc != ISC_R_SUCCESS)                                   \
+        {                                                           \
+            VERB("failure: OMAPI returned %d; TA configuration "    \
+                 "database may be corrupted\n", _rc);               \
+            return TE_RC(TE_TA_LINUX, EPERM);                       \
+        }                                                           \
     } while (0)
-    
+
 #define CHECKSTATUS_DEL(x) \
      if ((rc = x) != ISC_R_SUCCESS) \
          break
@@ -1091,19 +1095,19 @@ set_group(group *g)
     dhcp_option *opt;
     unsigned int addr;
     isc_result_t rc;
-    
+
     dhcpctl_handle go = NULL;
 
     if (conn == NULL)
         return TE_RC(TE_TA_LINUX, EPERM);
 
     CHECKSTATUS(dhcpctl_new_object(&go, conn, "group"));
-        
+
     DELETE_OBJECT(go, g->name);
     if (rc != ISC_R_NOTFOUND)
-        CHECKSTATUS(rc); 
-        
-    CHECKSTATUS(dhcpctl_set_string_value(go, g->name, "name")); 
+        CHECKSTATUS(rc);
+
+    CHECKSTATUS(dhcpctl_set_string_value(go, g->name, "name"));
     *buf = 0;
     if (g->filename != NULL)
         sprintf(buf, "filename \"%s\"; ", g->filename);
@@ -1112,7 +1116,7 @@ set_group(group *g)
         if (inet_aton(g->next_server, (struct in_addr *)&addr) == 0)
         {
             VERB("IP address in dotted notation should be specified "
-                      "as next-server (otherwise OMAPI kills DHCP daemon).\n");
+                 "as next-server (otherwise OMAPI kills DHCP daemon).\n");
             return TE_RC(TE_TA_LINUX, EINVAL);
         }
         sprintf(buf + strlen(buf), "next-server %s; ", g->next_server);
@@ -1120,13 +1124,14 @@ set_group(group *g)
     for (opt = g->options; opt != NULL; opt = opt->next)
     {
         if (is_quoted(opt->name))
-            sprintf(buf + strlen(buf), "option %s \"%s\"; ", 
+            sprintf(buf + strlen(buf), "option %s \"%s\"; ",
                     opt->name, opt->value);
         else
-            sprintf(buf + strlen(buf), "option %s %s; ", opt->name, opt->value);
+            sprintf(buf + strlen(buf), "option %s %s; ",
+                    opt->name, opt->value);
     }
     if (*buf == 0)
-        strcpy(buf, " ; "); 
+        strcpy(buf, " ; ");
 
     CHECKSTATUS(dhcpctl_set_string_value(go, buf, "statements"));
     CHECKSTATUS(dhcpctl_open_object(go, conn, DHCPCTL_CREATE));
@@ -1142,12 +1147,12 @@ set_host(host *h)
 {
     dhcpctl_data_string ip = NULL;
     dhcpctl_data_string mac = NULL;
-    
+
     dhcp_option *opt;
     isc_result_t rc;
 
     dhcpctl_handle ho = NULL;
-    
+
     if (conn == NULL)
         return TE_RC(TE_TA_LINUX, EPERM);
 
@@ -1159,23 +1164,23 @@ set_host(host *h)
 
     if (h->client_id == NULL && h->chaddr == NULL)
     {
-        /* 
-         * It's not necessary to create such host :) 
+        /*
+         * It's not necessary to create such host :)
          * In any case OMAPI does not allow this.
          */
         return 0;
     }
-    
-    CHECKSTATUS(dhcpctl_set_string_value(ho, h->name, "name")); 
+
+    CHECKSTATUS(dhcpctl_set_string_value(ho, h->name, "name"));
     if (h->ip_addr != NULL)
     {
         unsigned int addr;
-        
+
         if (inet_aton(h->ip_addr, (struct in_addr *)&addr) == 0)
             return TE_RC(TE_TA_LINUX, EINVAL);
         omapi_data_string_new(&ip, sizeof(addr), MDL);
         memcpy(ip->value, &addr, sizeof(addr));
-        CHECKSTATUS(dhcpctl_set_value(ho, ip, "ip-address")); 
+        CHECKSTATUS(dhcpctl_set_value(ho, ip, "ip-address"));
     }
     if (h->chaddr != NULL)
     {
@@ -1183,29 +1188,29 @@ set_host(host *h)
         unsigned char m[MAC_ADDR_LEN];
         unsigned char c;
         int           i;
-        
-        /* 
+
+        /*
          * It's possible to use m instead mi in sscanf, but the code
          * below seems more safe and warning-less.
          */
-        if (sscanf(h->chaddr, "%02x:%02x:%02x:%02x:%02x:%02x%c", 
+        if (sscanf(h->chaddr, "%02x:%02x:%02x:%02x:%02x:%02x%c",
                    mi, mi + 1, mi + 2, mi + 3, mi + 4, mi + 5, &c) != 6)
         {
             return TE_RC(TE_TA_LINUX, EINVAL);
         }
         for (i = 0; i < MAC_ADDR_LEN; i++)
             m[i] = (unsigned char)mi[i];
-            
+
         omapi_data_string_new(&mac, sizeof(m), MDL);
         memcpy(mac->value, m, sizeof(m));
-        CHECKSTATUS(dhcpctl_set_int_value(ho, 1, "hardware-type")); 
-        CHECKSTATUS(dhcpctl_set_value(ho, mac, "hardware-address")); 
+        CHECKSTATUS(dhcpctl_set_int_value(ho, 1, "hardware-type"));
+        CHECKSTATUS(dhcpctl_set_value(ho, mac, "hardware-address"));
     }
     if (h->group != NULL)
-        CHECKSTATUS(dhcpctl_set_string_value(ho, h->group->name, "group")); 
+        CHECKSTATUS(dhcpctl_set_string_value(ho, h->group->name, "group"));
     if (h->client_id != NULL)
-        CHECKSTATUS(dhcpctl_set_string_value(ho, h->client_id, 
-                                             "dhcp-client-identifier")); 
+        CHECKSTATUS(dhcpctl_set_string_value(ho, h->client_id,
+                                             "dhcp-client-identifier"));
     *buf = 0;
 
     if (h->filename != NULL)
@@ -1213,11 +1218,11 @@ set_host(host *h)
     if (h->next_server != NULL)
     {
         unsigned int addr;
-        
+
         if (inet_aton(h->next_server, (struct in_addr *)&addr) == 0)
         {
             VERB("IP address in dotted notation should be specified "
-                      "as next-server (otherwise OMAPI kills DHCP daemon).\n");
+                 "as next-server (otherwise OMAPI kills DHCP daemon).\n");
             return TE_RC(TE_TA_LINUX, EINVAL);
         }
         sprintf(buf + strlen(buf), "next-server %s; ", h->next_server);
@@ -1226,10 +1231,11 @@ set_host(host *h)
     for (opt = h->options; opt != NULL; opt = opt->next)
     {
         if (is_quoted(opt->name))
-            sprintf(buf + strlen(buf), "option %s \"%s\"; ", 
+            sprintf(buf + strlen(buf), "option %s \"%s\"; ",
                     opt->name, opt->value);
         else
-            sprintf(buf + strlen(buf), "option %s %s; ", opt->name, opt->value);
+            sprintf(buf + strlen(buf), "option %s %s; ",
+                    opt->name, opt->value);
     }
 
     if (*buf != 0)
@@ -1237,13 +1243,13 @@ set_host(host *h)
     CHECKSTATUS(dhcpctl_open_object(ho, conn, DHCPCTL_CREATE));
     CHECKSTATUS(dhcpctl_wait_for_completion(ho, &rc));
     CHECKSTATUS(rc);
-    
+
     if (ip != NULL)
         dhcpctl_data_string_dereference(&ip, MDL);
 
     if (mac != NULL)
         dhcpctl_data_string_dereference(&mac, MDL);
-        
+
     return 0;
 }
 
@@ -1387,64 +1393,64 @@ DEL_METHOD(host)
 DEL_METHOD(group)
 
 /** Obtain the group of the host */
-static int 
+static int
 ds_host_group_get(unsigned int gid, const char *oid, char *value,
                   const char *dhcpserver, const char *name)
-{                                                         
-    host *h;                                              
-                                                          
+{
+    host *h;
+
     UNUSED(gid);
-    UNUSED(oid);                                          
-    UNUSED(dhcpserver);                                   
-                                                          
-    if ((h = find_host(name)) == NULL || h->deleted)   
-        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);                             
-                                                          
-    if (h->group == NULL)                                
-        *value = 0;                                       
-    else                                                  
+    UNUSED(oid);
+    UNUSED(dhcpserver);
+
+    if ((h = find_host(name)) == NULL || h->deleted)
+        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
+
+    if (h->group == NULL)
+        *value = 0;
+    else
         strcpy(value, h->group->name);
-                                                          
-    return 0;                                             
+
+    return 0;
 }
 
 /** Change the group of the host */
-static int 
+static int
 ds_host_group_set(unsigned int gid, const char *oid, const char *value,
-                  const char *dhcpserver, const char *name) 
-{                                                               
-    host  *h;                                                   
+                  const char *dhcpserver, const char *name)
+{
+    host  *h;
     group *old;
-    int    rc;                                                   
-                                                                
+    int    rc;
+
     UNUSED(gid);
-    UNUSED(oid);                                                
-    UNUSED(dhcpserver);                                         
-                                                                
-    if ((h = find_host(name)) == NULL || h->deleted)         
+    UNUSED(oid);
+    UNUSED(dhcpserver);
+
+    if ((h = find_host(name)) == NULL || h->deleted)
         return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
-                                                                
-    if (!h->dynamic)                                           
-        return TE_RC(TE_TA_LINUX, EPERM); 
-                                                                
-    old = h->group;                                        
-    if (*value == 0)                                            
-        h->group = NULL;                                       
+
+    if (!h->dynamic)
+        return TE_RC(TE_TA_LINUX, EPERM);
+
+    old = h->group;
+    if (*value == 0)
+        h->group = NULL;
     else if ((h->group = find_group(value)) == NULL)
     {
         h->group = old;
         return TE_RC(TE_TA_LINUX, EINVAL);
     }
-                                                                
-    if ((rc = set_host(h)) != 0)                       
-        h->group = old;                                    
 
-    return TE_RC(TE_TA_LINUX, rc);                                              
+    if ((rc = set_host(h)) != 0)
+        h->group = old;
+
+    return TE_RC(TE_TA_LINUX, rc);
 }
 
-/* 
- * Definition of the routines for obtaining/changing of host/group attributes 
- * (except options).
+/*
+ * Definition of the routines for obtaining/changing of host/group
+ * attributes (except options).
  */
 #define ATTR_GET(_attr, _gh) \
 static int \
@@ -1528,7 +1534,10 @@ ATTR_SET(next_server, group)
 ATTR_GET(filename, group)
 ATTR_SET(filename, group)
 
-/* Definition of the method for obtaining of options list for the host/group */
+/**
+ * Definition of the method for obtaining of options list
+ * for the host/group.
+ */
 #define GET_OPT_LIST(_gh) \
 static int \
 ds_##_gh##_option_list(unsigned int gid, const char *oid,       \
@@ -1749,38 +1758,38 @@ DEL_OPT(group)
 #define ADDR_LIST_BULK      128
 
 /** Obtain the list of leases */
-static int 
+static int
 ds_lease_list(unsigned int gid, const char *oid, char **list)
 {
     FILE *f;
     char *name;
     int   len = ADDR_LIST_BULK;
-    
+
     UNUSED(gid);
     UNUSED(oid);
-    
+
     if ((f = fopen("/var/lib/dhcp/dhcpd.leases", "r")) == NULL)
         return TE_RC(TE_TA_LINUX, errno);
-        
+
     if ((*list = (char *)malloc(ADDR_LIST_BULK)) == NULL)
         return TE_RC(TE_TA_LINUX, ENOMEM);
-    
+
     **list = 0;
-    
+
     while (fgets(buf, sizeof(buf), f) != NULL)
     {
         if (strncmp(buf, "lease", strlen("lease")) != 0)
             continue;
-            
+
         name = buf + strlen("lease") + 1;
         *(strchr(name, ' ') + 1) = 0;
         if (strstr(*list, name) != NULL)
             continue;
-            
+
         if (strlen(*list) + strlen(name) >= len)
         {
             char *tmp;
-            
+
             len += ADDR_LIST_BULK;
             if ((tmp = (char *)realloc(*list, len)) == NULL)
             {
@@ -1793,7 +1802,7 @@ ds_lease_list(unsigned int gid, const char *oid, char **list)
         strcat(*list, name);
     }
     fclose(f);
-    
+
     return 0;
 }
 
@@ -1805,26 +1814,26 @@ open_lease(const char *name)
 
     isc_result_t rc;
     unsigned int addr;
-        
+
     if (conn == NULL)
         return TE_RC(TE_TA_LINUX, EPERM);
-    
+
     if (inet_aton(name, (struct in_addr *)&addr) == 0)
         return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
-        
+
     omapi_data_string_new(&ip, sizeof(addr), MDL);
     memcpy(ip->value, &addr, sizeof(addr));
-    CHECKSTATUS(dhcpctl_set_value(lo, ip, "ip-address")); 
+    CHECKSTATUS(dhcpctl_set_value(lo, ip, "ip-address"));
     CHECKSTATUS(dhcpctl_open_object(lo, conn, 0));
     CHECKSTATUS(dhcpctl_wait_for_completion(lo, &rc));
     CHECKSTATUS(rc);
     dhcpctl_data_string_dereference(&ip, MDL);
 
-    return 0;    
+    return 0;
 }
 
 /** Get lease node */
-static int 
+static int
 ds_lease_get(unsigned int gid, const char *oid, char *value,
              const char *dhcpserver, const char *name)
 {
@@ -1832,7 +1841,7 @@ ds_lease_get(unsigned int gid, const char *oid, char *value,
     UNUSED(oid);
     UNUSED(value);
     UNUSED(dhcpserver);
-    
+
     return open_lease(name);
 }
 
@@ -1861,132 +1870,132 @@ ds_lease_get(unsigned int gid, const char *oid, char *value,
 }
 
 /** Get lease state */
-static int 
+static int
 ds_lease_state_get(unsigned int gid, const char *oid, char *value,
                    const char *dhcpserver, const char *name)
 GET_INT_LEASE_ATTR("state")
 
 /** Get lease client identifier */
-static int 
+static int
 ds_lease_client_id_get(unsigned int gid, const char *oid, char *value,
                        const char *dhcpserver, const char *name)
 {
     int rc;
-    
+
     dhcpctl_data_string val;
-    
+
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(dhcpserver);
-    
+
     if ((rc = open_lease(name)) != 0)
         return TE_RC(TE_TA_LINUX, rc);
-        
-    /* 
-     * Very bad hack to know the type of the particular dhcp-client-identifier:
-     * srting or binary.
+
+    /*
+     * Very bad hack to know the type of the particular
+     * dhcp-client-identifier: srting or binary.
      */
     {
         omapi_value_t *tv = (omapi_value_t *)0;
 
-        CHECKSTATUS(omapi_get_value_str(lo, (omapi_object_t *)0, 
+        CHECKSTATUS(omapi_get_value_str(lo, (omapi_object_t *)0,
                     "dhcp-client-identifier", &tv));
-    
+
         if (tv->value->type == omapi_datatype_string)
-        { 
-            sprintf(value, "%.*s", tv->value->u.buffer.value, 
+        {
+            sprintf(value, "%.*s", tv->value->u.buffer.value,
                     tv->value->u.buffer.len);
         }
         else
         {
             int i;
-        
+
             sprintf(value, "\"");
             for (i = 0; i < tv->value->u.buffer.len; i++)
-                sprintf(value + strlen(value), "%02x%s", 
-                        ((unsigned char *)(tv->value->u.buffer.value))[i], 
+                sprintf(value + strlen(value), "%02x%s",
+                        ((unsigned char *)(tv->value->u.buffer.value))[i],
                         i == tv->value->u.buffer.len - 1 ? "\"" : ":");
         }
-        
+
         omapi_value_dereference (&tv, MDL);
     }
-    
+
     return 0;
 }
 
 /** Get lease hostname */
-static int 
+static int
 ds_lease_hostname_get(unsigned int gid, const char *oid, char *value,
                       const char *dhcpserver, const char *name)
 {
     int rc;
-    
+
     dhcpctl_data_string val;
-    
+
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(dhcpserver);
-    
+
     if ((rc = open_lease(name)) != 0)
         return TE_RC(TE_TA_LINUX, rc);
-        
+
     CHECKSTATUS(dhcpctl_get_value(&val, lo, "client-hostname"));
-    
+
     memcpy(value, val->value, val->len);
     *(value + val->len) = 0;
-    
+
     dhcpctl_data_string_dereference(&val, MDL);
-    
+
     return 0;
 }
 
 /** Get lease IP address */
-static int 
+static int
 ds_lease_host_get(unsigned int gid, const char *oid, char *value,
                   const char *dhcpserver, const char *name)
 {
     int rc;
-    
+
     dhcpctl_data_string val;
-    
+
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(value);
     UNUSED(dhcpserver);
-    
+
     if ((rc = open_lease(name)) != 0)
         return TE_RC(TE_TA_LINUX, rc);
-        
+
     CHECKSTATUS(dhcpctl_get_value(&val, lo, "host"));
-    
+
     /* It's not clear what to do next :) */
-    
+
     return 0;
 }
 
 /** Get lease MAC address */
-static int 
+static int
 ds_lease_chaddr_get(unsigned int gid, const char *oid, char *value,
                     const char *dhcpserver, const char *name)
 {
     int rc;
-    
+
     dhcpctl_data_string val;
     unsigned char      *mac;
-    
+
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(dhcpserver);
-    
+
     if ((rc = open_lease(name)) != 0)
         return TE_RC(TE_TA_LINUX, rc);
-        
+
     CHECKSTATUS(dhcpctl_get_value(&val, lo, "hardware-address"));
-    
+
     mac = (unsigned char *)(val->value);
     sprintf(value, "%02x:%02x:%02x:%02x:%02x:%02x",
            mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
-    
+
     dhcpctl_data_string_dereference(&val, MDL);
 
     return 0;
@@ -1994,16 +2003,19 @@ ds_lease_chaddr_get(unsigned int gid, const char *oid, char *value,
 
 /* Get lease attributes */
 
-static int 
-ds_lease_ends_get(unsigned int gid, const char *oid, char *value, char *dhcpserver, char *name)
+static int
+ds_lease_ends_get(unsigned int gid, const char *oid, char *value,
+                  char *dhcpserver, char *name)
 GET_INT_LEASE_ATTR("ends")
 
-static int 
-ds_lease_tstp_get(unsigned int gid, const char *oid, char *value, char *dhcpserver, char *name)
+static int
+ds_lease_tstp_get(unsigned int gid, const char *oid, char *value,
+                  char *dhcpserver, char *name)
 GET_INT_LEASE_ATTR("tstp")
 
-static int 
-ds_lease_cltt_get(unsigned int gid, const char *oid, char *value, char *dhcpserver, char *name)
+static int
+ds_lease_cltt_get(unsigned int gid, const char *oid, char *value,
+                  char *dhcpserver, char *name)
 GET_INT_LEASE_ATTR("cltt")
 
 #endif /* DHCP_LEASES_SUPPORTED */
@@ -2016,7 +2028,7 @@ init_dhcp_data()
 {
     int  rc = 0;
 
-    if (ta_system("/usr/sbin/dhcpd -t >/dev/null 2>&1") != 0) 
+    if (ta_system("/usr/sbin/dhcpd -t >/dev/null 2>&1") != 0)
     {
         VERB("bad or absent /etc/dhcpd.conf - "
                   "DHCP will not be available\n");
@@ -2030,15 +2042,16 @@ init_dhcp_data()
         return TE_RC(TE_TA_LINUX, EPERM);
     }
 
-    f = fopen("/etc/dhcpd.conf", "r"); 
+    f = fopen("/etc/dhcpd.conf", "r");
     *buf = 0;
-    
+
     while (rc == 0)
     {
         if ((rc = get_token()) != 0)
             break;
         if (strncasecmp(s, "group", strlen("group")) == 0 ||
-            strncasecmp(s, "shared-network", strlen("shared-network")) == 0 ||
+            strncasecmp(s, "shared-network",
+                        strlen("shared-network")) == 0 ||
             strncasecmp(s, "subnet", strlen("subnet")) == 0)
         {
             rc = process_group_record();
@@ -2050,7 +2063,7 @@ init_dhcp_data()
         else
             rc = process_other_record();
     }
-    
+
     if (rc == EOF)
         rc = 0;
 
@@ -2059,7 +2072,7 @@ init_dhcp_data()
         VERB("no OMAPI port is specified in /etc/dhcpd.conf\n");
         rc = EINVAL;
     }
-    
+
     fclose(f);
 
     if (rc != 0)
@@ -2067,13 +2080,13 @@ init_dhcp_data()
         free_dhcp_data();
         return TE_RC(TE_TA_LINUX, rc);
     }
-        
+
     sprintf(buf, "killall -CONT dhcpd >/dev/null 2>&1");
     if (ta_system(buf) != 0)
         return 0;
-        
+
     init_omapi();
-        
+
     return 0;
 }
 
@@ -2096,9 +2109,9 @@ print_dhcp_data()
         if (h->ip_addr)
             printf("\tip_addr: %s\n", h->ip_addr);
         if (h->next_server)
-            printf("\tnext_server: %s\n", h->next_server);  
+            printf("\tnext_server: %s\n", h->next_server);
         if (h->filename)
-            printf("\tfilename: %s\n", h->filename);  
+            printf("\tfilename: %s\n", h->filename);
         for (opt = h->options; opt != NULL; opt = opt->next)
             printf("\t%s: %s\n", opt->name, opt->value);
     }
@@ -2107,9 +2120,9 @@ print_dhcp_data()
     {
         printf("Group: %s\n", g->name);
         if (g->next_server)
-            printf("\tnext_server: %s\n", g->next_server);  
+            printf("\tnext_server: %s\n", g->next_server);
         if (g->filename)
-            printf("\tfilename: %s\n", g->filename);  
+            printf("\tfilename: %s\n", g->filename);
         for (opt = g->options; opt != NULL; opt = opt->next)
             printf("\t%s: %s\n", opt->name, opt->value);
     }
@@ -2129,53 +2142,53 @@ print_dhcp_data()
  *
  * @return status code
  */
-static int 
+static int
 ds_tftpserver_addr_get(unsigned int gid, const char *oid, char *value)
 {
     unsigned int addr;
-    
+
     FILE *f;
-    
+
     UNUSED(gid);
     UNUSED(oid);
-    
+
     if ((f = fopen("/etc/xinetd.d/tftp", "r")) == NULL)
         return TE_RC(TE_TA_LINUX, errno);
 
     while (fgets(buf, sizeof(buf), f) != NULL)
     {
         char *comments = strchr(buf, '#');
-        
+
         if (comments != NULL)
             sprintf(comments, "\n");
-        
+
         if (strstr(buf, "server_args") != NULL)
         {
             char *tmp;
             char *val = value;
-            
+
             if ((tmp = strstr(buf, "-a")) == NULL)
                 break;
-                
+
             for (tmp += 2; isspace(*tmp); tmp++);
-            
+
             while (isdigit(*tmp) || *tmp == '.')
                 *val++ = *tmp++;
-                
+
             *val = 0;
-            
+
             if (inet_aton(value, (struct in_addr *)&addr) == 0)
                 break;
-                
+
             fclose(f);
-                
+
             return 0;
         }
     }
-    
+
     sprintf(value, "255.255.255.255");
     fclose(f);
-    
+
     return 0;
 }
 
@@ -2188,21 +2201,21 @@ ds_tftpserver_addr_get(unsigned int gid, const char *oid, char *value)
  *
  * @return status code
  */
-static int 
+static int
 ds_tftpserver_addr_set(unsigned int gid, const char *oid, const char *value)
 {
     unsigned int addr;
     te_bool      addr_set = FALSE;
-    
+
     FILE *f;
     FILE *g;
-    
+
     UNUSED(gid);
     UNUSED(oid);
-    
+
     if (inet_aton(value, (struct in_addr *)&addr) == 0)
         return TE_RC(TE_TA_LINUX, EINVAL);
-    
+
     if ((f = fopen("/tmp/tftp.te_backup", "r")) == NULL)
         return TE_RC(TE_TA_LINUX, errno);
 
@@ -2216,10 +2229,10 @@ ds_tftpserver_addr_set(unsigned int gid, const char *oid, const char *value)
     {
         char *comments = strchr(buf, '#');
         char *tmp;
-        
+
         if (comments != NULL)
             sprintf(comments, "\n");
-        
+
         if (!addr_set && (tmp = strchr(buf, '}')) != NULL)
         {
             if (addr != 0xFFFFFFFF)
@@ -2228,25 +2241,25 @@ ds_tftpserver_addr_set(unsigned int gid, const char *oid, const char *value)
                 fprintf(g, "}");
             break;
         }
-        
+
         if (!addr_set && strstr(buf, "server_args") != NULL)
         {
             char *opt;
-            
+
             addr_set = TRUE;
-            
+
             if ((opt = strstr(buf, "-a")) != NULL)
             {
                 for (opt += 2; isspace(*opt); opt++);
-                
+
                 for (tmp = opt; isdigit(*tmp) || *tmp == '.'; tmp++);
-                    
+
                fwrite(buf, 1, opt - buf, g);
                if (addr != 0xFFFFFFFF)
                    fwrite(value, 1, strlen(value), g);
                fwrite(tmp, 1, strlen(tmp), g);
                continue;
-            } 
+            }
             else if (addr != 0xFFFFFFFF)
             {
                 tmp = strchr(buf, '\n');
@@ -2259,19 +2272,19 @@ ds_tftpserver_addr_set(unsigned int gid, const char *oid, const char *value)
     }
     fclose(f);
     fclose(g);
-    
+
     ta_system("/etc/init.d/xinetd reload >/dev/null 2>&1");
-    
+
     return 0;
 }
 
 /** Get home directory of the TFTP server */
-static int 
+static int
 ds_tftpserver_root_get(unsigned int gid, const char *oid, char *value)
 {
     UNUSED(gid);
     UNUSED(oid);
-    
+
     /* @todo Use the same directory as on daemon startup (option -s) */
     strcpy(value, "/tftpboot");
 
@@ -2304,7 +2317,7 @@ ds_log_get_timestamp(const char *buf, struct tm *last_tm)
     }
 
     /*
-     * TFTP logs does not containt year stamp, so that we get current 
+     * TFTP logs does not containt year stamp, so that we get current
      * local time, and use extracted year for the log message timstamp.
      */
 
@@ -2317,12 +2330,12 @@ ds_log_get_timestamp(const char *buf, struct tm *last_tm)
 
     /* Use current year for the messsage */
     last_tm->tm_year = tm.tm_year;
-    
+
     return TE_RC(TE_TA_LINUX, EINVAL);
 }
 
-/** 
- * Extracts parameters (file name and timestamp) of the last successful 
+/**
+ * Extracts parameters (file name and timestamp) of the last successful
  * access to TFTP server
  *
  * @param fname     Location for the file name
@@ -2343,10 +2356,10 @@ ds_tftpserver_last_access_params_get(char *fname, time_t *time_val)
 
     if (fname != NULL)
         *fname = 0;
-    
+
     again:
 
-    if ((f = fopen(again ? "./messages.1.txt" : 
+    if ((f = fopen(again ? "./messages.1.txt" :
                            "./messages.txt", "r")) == NULL)
     {
         return 0;
@@ -2357,7 +2370,7 @@ ds_tftpserver_last_access_params_get(char *fname, time_t *time_val)
     while (fgets(buf, sizeof(buf), f) != NULL)
     {
         char *tmp;
-        
+
         if ((tmp = strstr(buf, "tftpd[")) != NULL)
         {
             if (sscanf(tmp, "tftpd[%d]:", &sess_id) != 1)
@@ -2395,17 +2408,20 @@ ds_tftpserver_last_access_params_get(char *fname, time_t *time_val)
                     }
 
                     for (tmp += strlen("filename"); isspace(*tmp); tmp++);
-            
+
                     /* Fill in filename value */
                     while (!isspace(*tmp) && *tmp != 0 && *tmp != '\n')
                         *val++ = *tmp++;
 
                     *val = 0;
                 }
-                /* make a backup of access time of the previous transaction */
+                /*
+                 * make a backup of access time of the previous
+                 * transaction
+                 */
                 prev_tm = last_tm;
 
-                /* 
+                /*
                  * Update month, day, hour, min, sec apart from the year,
                  * because it is not provided in the log message.
                  */
@@ -2417,10 +2433,10 @@ ds_tftpserver_last_access_params_get(char *fname, time_t *time_val)
             /* Continue the search to find the last record */
         }
     }
-    
+
     free(prev_fname);
     fclose(f);
-    
+
     if (fname != NULL && *fname == '\0' && !again)
     {
         again = TRUE;
@@ -2477,7 +2493,7 @@ ds_tftpserver_time_get(unsigned int gid, const char *oid, char *value)
  *
  * @return status code
  */
-static int 
+static int
 ds_todudpserver_addr_get(unsigned int gid, const char *oid, char *value)
 {
     UNUSED(gid);
@@ -2495,8 +2511,9 @@ ds_todudpserver_addr_get(unsigned int gid, const char *oid, char *value)
  *
  * @return status code
  */
-static int 
-ds_todudpserver_addr_set(unsigned int gid, const char *oid, const char *value)
+static int
+ds_todudpserver_addr_set(unsigned int gid, const char *oid,
+                         const char *value)
 {
     UNUSED(gid);
     UNUSED(oid);
@@ -2509,7 +2526,7 @@ ds_todudpserver_addr_set(unsigned int gid, const char *oid, const char *value)
 #ifdef WITH_ECHO_SERVER
 
 /** Get protocol type used by echo server (tcp or udp) */
-static int 
+static int
 ds_echoserver_proto_get(unsigned int gid, const char *oid, char *value)
 {
     UNUSED(gid);
@@ -2520,8 +2537,9 @@ ds_echoserver_proto_get(unsigned int gid, const char *oid, char *value)
 }
 
 /** Set protocol type used by echo server (tcp or udp) */
-static int 
-ds_echoserver_proto_set(unsigned int gid, const char *oid, const char *value)
+static int
+ds_echoserver_proto_set(unsigned int gid, const char *oid,
+                        const char *value)
 {
     UNUSED(gid);
     UNUSED(oid);
@@ -2558,12 +2576,12 @@ ds_echoserver_addr_set(unsigned int gid, const char *oid, const char *value)
 
 #ifdef WITH_DHCP_SERVER
 
-static rcf_pch_cfg_object node_ds_group_option = 
-    { "option", 0, NULL, NULL, 
-      (rcf_ch_cfg_get)ds_group_option_get, 
-      (rcf_ch_cfg_set)ds_group_option_set, 
-      (rcf_ch_cfg_add)ds_group_option_add, 
-      (rcf_ch_cfg_del)ds_group_option_del, 
+static rcf_pch_cfg_object node_ds_group_option =
+    { "option", 0, NULL, NULL,
+      (rcf_ch_cfg_get)ds_group_option_get,
+      (rcf_ch_cfg_set)ds_group_option_set,
+      (rcf_ch_cfg_add)ds_group_option_add,
+      (rcf_ch_cfg_del)ds_group_option_del,
       (rcf_ch_cfg_list)ds_group_option_list, NULL, NULL };
 
 RCF_PCH_CFG_NODE_RW(node_ds_group_file, "file",
@@ -2574,19 +2592,19 @@ RCF_PCH_CFG_NODE_RW(node_ds_group_next, "next",
                     NULL, &node_ds_group_file,
                     ds_group_next_server_get, ds_group_next_server_set);
 
-static rcf_pch_cfg_object node_ds_group = 
+static rcf_pch_cfg_object node_ds_group =
     { "group", 0, &node_ds_group_next, NULL,
       (rcf_ch_cfg_get)ds_group_get, NULL,
-      (rcf_ch_cfg_add)ds_group_add, 
-      (rcf_ch_cfg_del)ds_group_del, 
+      (rcf_ch_cfg_add)ds_group_add,
+      (rcf_ch_cfg_del)ds_group_del,
       (rcf_ch_cfg_list)ds_group_list, NULL, NULL };
 
-static rcf_pch_cfg_object node_ds_host_option = 
-    { "option", 0, NULL, NULL, 
-      (rcf_ch_cfg_get)ds_host_option_get, 
-      (rcf_ch_cfg_set)ds_host_option_set, 
-      (rcf_ch_cfg_add)ds_host_option_add, 
-      (rcf_ch_cfg_del)ds_host_option_del, 
+static rcf_pch_cfg_object node_ds_host_option =
+    { "option", 0, NULL, NULL,
+      (rcf_ch_cfg_get)ds_host_option_get,
+      (rcf_ch_cfg_set)ds_host_option_set,
+      (rcf_ch_cfg_add)ds_host_option_add,
+      (rcf_ch_cfg_del)ds_host_option_del,
       (rcf_ch_cfg_list)ds_host_option_list, NULL, NULL };
 
 RCF_PCH_CFG_NODE_RW(node_ds_host_file, "file",
@@ -2613,11 +2631,11 @@ RCF_PCH_CFG_NODE_RW(node_ds_host_group, "group",
                     NULL, &node_ds_host_chaddr,
                     ds_host_group_get, ds_host_group_set);
 
-static rcf_pch_cfg_object node_ds_host = 
+static rcf_pch_cfg_object node_ds_host =
     { "host", 0, &node_ds_host_group, &node_ds_group,
       (rcf_ch_cfg_get)ds_host_get, NULL,
-      (rcf_ch_cfg_add)ds_host_add, 
-      (rcf_ch_cfg_del)ds_host_del, 
+      (rcf_ch_cfg_add)ds_host_add,
+      (rcf_ch_cfg_del)ds_host_del,
       (rcf_ch_cfg_list)ds_host_list, NULL, NULL};
 
 #if DHCP_LEASES_SUPPORTED
@@ -2653,38 +2671,38 @@ RCF_PCH_CFG_NODE_RO(node_ds_lease_state, "state",
                     NULL, &node_ds_lease_client_id,
                     ds_lease_state_get);
 
-static rcf_pch_cfg_object node_ds_lease = 
-    { "lease", 0, &node_ds_lease_state, &node_ds_host, 
-      (rcf_ch_cfg_get)ds_lease_get, NULL, NULL, NULL, 
+static rcf_pch_cfg_object node_ds_lease =
+    { "lease", 0, &node_ds_lease_state, &node_ds_host,
+      (rcf_ch_cfg_get)ds_lease_get, NULL, NULL, NULL,
       (rcf_ch_cfg_list)ds_lease_list, NULL, NULL};
 
-static rcf_pch_cfg_object node_ds_client_lease = 
-    { "lease", 0, NULL, NULL, 
-      (rcf_ch_cfg_get)ds_client_lease_get, NULL, NULL, NULL, 
+static rcf_pch_cfg_object node_ds_client_lease =
+    { "lease", 0, NULL, NULL,
+      (rcf_ch_cfg_get)ds_client_lease_get, NULL, NULL, NULL,
       (rcf_ch_cfg_list)ds_client_lease_list, NULL, NULL };
 
-static rcf_pch_cfg_object node_ds_client = 
-    { "client", 0, &node_ds_client_lease, &node_ds_lease, 
-      (rcf_ch_cfg_get)ds_client_get, NULL, NULL, NULL, 
+static rcf_pch_cfg_object node_ds_client =
+    { "client", 0, &node_ds_client_lease, &node_ds_lease,
+      (rcf_ch_cfg_get)ds_client_get, NULL, NULL, NULL,
       (rcf_ch_cfg_list)ds_client_list, NULL, NULL };
 
 #endif /* DHCP_LEASES_SUPPORTED */
 
-#if DHCP_LEASES_SUPPORTED    
+#if DHCP_LEASES_SUPPORTED
 RCF_PCH_CFG_NODE_RW(node_ds_dhcpserver, "dhcpserver",
-                    &node_ds_client, 
+                    &node_ds_client,
                     NULL,
                     daemon_get, ds_dhcpserver_set);
 #else
 RCF_PCH_CFG_NODE_RW(node_ds_dhcpserver, "dhcpserver",
-                    &node_ds_host, 
+                    &node_ds_host,
                     NULL,
                     daemon_get, ds_dhcpserver_set);
-#endif      
+#endif
 
 #endif /* WITH_DHCP_SERVER */
 
-#ifdef WITH_ECHO_SERVER                    
+#ifdef WITH_ECHO_SERVER
 
 RCF_PCH_CFG_NODE_RW(node_ds_echoserver_addr, "net_addr",
                     NULL, NULL,
@@ -2733,8 +2751,8 @@ RCF_PCH_CFG_NODE_RW(node_ds_tftppserver_addr, "net_addr",
 RCF_PCH_CFG_NODE_RW(node_ds_tftpserver, "tftpserver",
                     &node_ds_tftppserver_addr, NULL,
                     xinetd_get, xinetd_set);
-                    
-#endif /* WITH_TFTP_SERVER */                    
+
+#endif /* WITH_TFTP_SERVER */
 
 #ifdef WITH_DNS_SERVER
 
@@ -2749,10 +2767,10 @@ RCF_PCH_CFG_NODE_RW(node_ds_dnsserver, "dnsserver",
 RCF_PCH_CFG_NODE_RW(node_ds_ftpserver, "ftpserver",
                     NULL, NULL,
                     daemon_get, daemon_set);
-                    
+
 #endif /* WITH_FTP_SERVER */
 
-/** 
+/**
  * Maximum number of xinetd services the implemntation supports
  * @todo Rename it to something pretty and move in somewhere generic place
  */
@@ -2767,18 +2785,19 @@ static unsigned int    max_serv_name = 0;
 static void
 restore_backup()
 {
-    unsigned int i;                                             
-    
-    for (i = 0; i < n_serv; i++)                                   
-    {                                                              
+    unsigned int i;
+
+    for (i = 0; i < n_serv; i++)
+    {
         sprintf(buf, "mv " TE_TMP_PATH "%s" TE_TMP_BKP_SUFFIX " "
-                XINETD_ETC_DIR "%s >/dev/null 2>&1", services[i], services[i]); 
-        ta_system(buf);                                          
-    }                                                              
+                XINETD_ETC_DIR "%s >/dev/null 2>&1",
+                services[i], services[i]);
+        ta_system(buf);
+    }
 
     ta_system("/etc/init.d/xinetd reload >/dev/null 2>&1");
 
-#ifdef WITH_FTP_SERVER    
+#ifdef WITH_FTP_SERVER
     if (ftpd_conf != NULL)
     {
         char    ftp_enable[2];
@@ -2798,14 +2817,14 @@ restore_backup()
         }
     }
 
-#endif /* WITH_FTP_SERVER */    
+#endif /* WITH_FTP_SERVER */
 }
 
 
 #ifdef WITH_FTP_SERVER
 /**
  * Initialize FTP daemon.
- * 
+ *
  * @return Status code.
  */
 int
@@ -2825,7 +2844,7 @@ ftpd_init(void)
         ftpd_conf = "/etc/" FTPD_CONF;
         if (stat(ftpd_conf, &stat_buf) == 0)
             break;
-        
+
         ftpd_conf = NULL;
 
     } while (FALSE);
@@ -2835,15 +2854,15 @@ ftpd_init(void)
         ERROR("Failed to locate VSFTPD configuration file");
         return TE_RC(TE_TA_LINUX, ETENOSUPP);
     }
-    
+
     {
         char cmd[256]; /* FIXME */
 
         sprintf(cmd, "cp -a %s " FTPD_CONF_BACKUP, ftpd_conf);
         if (ta_system(cmd) != 0)
-        {        
+        {
             ERROR("Cannot create backup file " FTPD_CONF_BACKUP);
-            restore_backup();                                           
+            restore_backup();
             return TE_RC(TE_TA_LINUX, errno);
         }
     }
@@ -2892,23 +2911,24 @@ ftpd_init(void)
 
     return 0;
 }
-#endif /* WITH_FTP_SERVER */        
+#endif /* WITH_FTP_SERVER */
 
 
 /**
  * Initializes linuxconf_daemons support.
  *
- * @param last  node in configuration tree (last sun of /agent) to be updated
+ * @param last  node in configuration tree (last sun of /agent) to be
+ *              updated
  *
  * @return status code (see te_errno.h)
  */
 int
 linuxconf_daemons_init(rcf_pch_cfg_object **last)
 {
-    
+
 
 /*
- * Creates a copy of xinetd service configuration file in TMP directory 
+ * Creates a copy of xinetd service configuration file in TMP directory
  * to restore it after Agent finishes
  *
  * @param serv_name_  Service name - filename from /etc/xinetd.d/ directory
@@ -2943,15 +2963,15 @@ linuxconf_daemons_init(rcf_pch_cfg_object **last)
     CREATE_XINETD_SERVICE_BACKUP("echo");
 #endif /* WITH_ECHO_SERVER */
 
-#ifdef WITH_TODUDP_SERVER    
+#ifdef WITH_TODUDP_SERVER
     CREATE_XINETD_SERVICE_BACKUP("daytime-udp");
-#endif /* WITH_TODUDP_SERVER */ 
-    
+#endif /* WITH_TODUDP_SERVER */
+
 #ifdef WITH_TFTP_SERVER
     {
     FILE *f = NULL;
     FILE *g = NULL;
-    
+
     CREATE_XINETD_SERVICE_BACKUP("tftp");
 
     /* Set -v option to tftp */
@@ -3001,34 +3021,34 @@ linuxconf_daemons_init(rcf_pch_cfg_object **last)
     }
 #endif /* WITH_DHCP_SERVER */
 
-#ifdef WITH_DNS_SERVER    
+#ifdef WITH_DNS_SERVER
     (*last)->brother = &node_ds_dnsserver;
     *last = &node_ds_dnsserver;
-#endif        
+#endif
 
-#ifdef WITH_DHCP_SERVER    
+#ifdef WITH_DHCP_SERVER
     (*last)->brother = &node_ds_dhcpserver;
     *last = &node_ds_dhcpserver;
-#endif        
+#endif
 
-#ifdef WITH_ECHO_SERVER    
+#ifdef WITH_ECHO_SERVER
     (*last)->brother = &node_ds_echoserver;
     *last = &node_ds_echoserver;
-#endif        
+#endif
 
-#ifdef WITH_TODUDP_SERVER    
+#ifdef WITH_TODUDP_SERVER
     (*last)->brother = &node_ds_todudpserver;
     *last = &node_ds_todudpserver;
-#endif        
+#endif
 
-#ifdef WITH_TFTP_SERVER    
+#ifdef WITH_TFTP_SERVER
     (*last)->brother = &node_ds_tftpserver;
     *last = &node_ds_tftpserver;
-#endif        
+#endif
 
     return 0;
-    
-#undef CREATE_XINETD_SERVICE_BACKUP    
+
+#undef CREATE_XINETD_SERVICE_BACKUP
 }
 
 /**
@@ -3039,7 +3059,7 @@ linux_daemons_release()
 {
 #ifdef WITH_DHCP_SERVER
     free_dhcp_data();
-#endif /* WITH_DHCP_SERVER */    
+#endif /* WITH_DHCP_SERVER */
     restore_backup();
 }
 

@@ -974,8 +974,8 @@ port_get_autonegotiation(unsigned int gid, const char *oid, char *value,
  * @return Status code.
  */
 static int 
-port_set_autonegotiation(unsigned int gid, const char *oid, const char *value,
-                         const char *pid_str)
+port_set_autonegotiation(unsigned int gid, const char *oid,
+                         const char *value, const char *pid_str)
 {
     te_bool     val;
     poe_port   *port;
@@ -1241,7 +1241,8 @@ port_get_default_vlan(unsigned int gid, const char *oid, char *value,
         return 0;
     }
     else /* It is assumed that names are equal to tags in this model */
-        return snprintf_rc(value, RCF_MAX_VAL, "%s", port->vlan.default_vlan);
+        return snprintf_rc(value, RCF_MAX_VAL, "%s",
+                           port->vlan.default_vlan);
 }
 
 /**
@@ -1307,8 +1308,8 @@ port_get_untagged_priority(unsigned int gid, const char *oid, char *value,
  * @return status code
  */
 static int 
-port_set_untagged_priority(unsigned int gid, const char *oid, const char *value,
-                           const char *pid_str)
+port_set_untagged_priority(unsigned int gid, const char *oid,
+                           const char *value, const char *pid_str)
 {
     poe_port *port;
 
@@ -1635,7 +1636,8 @@ arl_cache_update(unsigned int gid)
         arl_table_num = 0;
         arl_table = NULL;
 
-        if (poe_arl_read_table(&arl_table, &arl_table_num, error_string) != 0)
+        if (poe_arl_read_table(&arl_table, &arl_table_num,
+                               error_string) != 0)
         {
             ERROR("Cannot read ARL table ERROR %s", error_string);
             return TE_RC(TE_TA_SWITCH_CTL, EIO);
@@ -2019,9 +2021,10 @@ arl_list(unsigned int gid, const char *oid, char **list)
 
 /**
  * Variable to keep temporary STP port entry - not committed yet.
- * At the present time no more than one entry of this type can be created.
- * In the future, if there is need in having more than one entry 
- * simultaniously, you may extend such variable to the list of local entries.
+ * At the present time no more than one entry of this type can be
+ * created. In the future, if there is need in having more than one
+ * entry simultaniously, you may extend such variable to the list
+ * of local entries.
  *
  * @sa 
  */
@@ -2190,9 +2193,10 @@ stp_cache_update(unsigned int gid)
  * @param entry    - Location for entry found (OUT)
  *
  * @return Status of the operation
- * @retval ENOENT  There is no STP port entry corresponding specified port id
- * @retval EINVAL  Format of port id is incorrect (not a number)
- * @retval 0       STP port entry successfully found
+ * @retval ENOENT   There is no STP port entry corresponding specified
+ *                  port id
+ * @retval EINVAL   Format of port id is incorrect (not a number)
+ * @retval 0        STP port entry successfully found
  */
 static int
 stp_port_entry_find(unsigned int gid, const char *port_id,
@@ -2230,10 +2234,10 @@ stp_port_entry_find(unsigned int gid, const char *port_id,
     {
         /*
          * Try to find entry in the list of the local entries.
-         * At the present time it is allowed to have no more than one local
-         * entry and it is located in local_stp_port_entry variable.
-         * Flags related to the local entry are in local_stp_port_entry_flags
-         * variable.
+         * At the present time it is allowed to have no more than one
+         * local entry and it is located in local_stp_port_entry variable.
+         * Flags related to the local entry are in
+         * local_stp_port_entry_flags variable.
          */
         if (local_stp_port_entry_flags & STP_PORT_ENTRY_PNUM_SET)
         {
@@ -2815,8 +2819,9 @@ stp_get_port_designated_port(unsigned int gid, const char *oid, char *value,
  *                      will be returned
  */
 static int 
-stp_get_port_designated_bridge(unsigned int gid, const char *oid, char *value,
-                               const char *stp_name, const char *port_num)
+stp_get_port_designated_bridge(unsigned int gid, const char *oid,
+                               char *value, const char *stp_name,
+                               const char *port_num)
 {
     poe_stp_port *stp_port_entry;
 
@@ -2825,7 +2830,8 @@ stp_get_port_designated_bridge(unsigned int gid, const char *oid, char *value,
 
     STP_COMMITTED_PORT_ENTRY_FIND(gid, port_num, &stp_port_entry);
 
-    return snprintf_rc(value, RCF_MAX_VAL, "%02x%02x%02x%02x%02x%02x%02x%02x",
+    return snprintf_rc(value, RCF_MAX_VAL,
+                       "%02x%02x%02x%02x%02x%02x%02x%02x",
                        stp_port_entry->designated_bridge.v[0],
                        stp_port_entry->designated_bridge.v[1],
                        stp_port_entry->designated_bridge.v[2],
@@ -2883,7 +2889,8 @@ stp_get_port_designated_root(unsigned int gid, const char *oid, char *value,
 
     STP_COMMITTED_PORT_ENTRY_FIND(gid, port_num, &stp_port_entry);
 
-    return snprintf_rc(value, RCF_MAX_VAL, "%02x%02x%02x%02x%02x%02x%02x%02x",
+    return snprintf_rc(value, RCF_MAX_VAL,
+                       "%02x%02x%02x%02x%02x%02x%02x%02x",
                        stp_port_entry->designated_root.v[0],
                        stp_port_entry->designated_root.v[1],
                        stp_port_entry->designated_root.v[2],
@@ -3178,7 +3185,7 @@ stp_port_list(unsigned int gid, const char *oid, char **list)
 
     stp_cache_update(gid);
 
-    mem_len = ((stp_port_table_num + num_local_entries) * strlen("50 ")) + 1;
+    mem_len = (stp_port_table_num + num_local_entries) * strlen("50 ") + 1;
     
     if ((*list = (char *)malloc(mem_len)) == NULL)
     {
@@ -3248,8 +3255,8 @@ stp_port_commit(unsigned int gid, const cfg_oid *p_oid)
                 return TE_RC(TE_TA_SWITCH_CTL, EIO);
             }
             /*
-             * The entry is not local any more, so that we can remove it from
-             * the list of local STP port entries
+             * The entry is not local any more, so that we can remove
+             * it from the list of local STP port entries
              */
             local_stp_port_entry_delete(stp_port_entry);
         }
@@ -3913,7 +3920,8 @@ RCF_PCH_CFG_NODE_NA(node_arl, "arl",
 
 static rcf_pch_cfg_object node_stp_port;
 
-RCF_PCH_CFG_NODE_RO(node_stp_port_forward_transitions, "forward_transitions",
+RCF_PCH_CFG_NODE_RO(node_stp_port_forward_transitions,
+                    "forward_transitions",
                     NULL, NULL,
                     stp_get_port_forward_transitions);
 

@@ -7,7 +7,8 @@ MY_CPPFLAGS=-I$(DESTDIR)/$(prefix)/include \
 # -lrcfpch must be before @TE_LDADD@ since the last may contain
 # -ltad_ch with names used in -lrcfpch.
 #
-MY_LDADD=symtbl.o -lrcfpch @TE_LDADD@ -lconf_oid -lcomm_net_agent -lloggerta
+MY_LDADD=symtbl.o -lrcfpch @TE_LDADD@ \
+         -lconf_oid -lcomm_net_agent -lloggerta
 
 #if HAS_NET_SNMP
 #MY_LDADD+= @NET_SNMP_LIBS@
@@ -29,7 +30,8 @@ MY_SOURCES+=linux_rpc.c tarpc_server.c
 MY_NODIST_SOURCES=tarpc_xdr.c tarpc_svc.c rpc_unsupported.c
 MY_SYMTBL_OBJECTS+=linux_rpc.o tarpc_server.o
 
-CLEANFILES+=tarpc.h tarpc_xdr.c tarpc_svc.c rpc_unsupported.c rpc_supported.h
+CLEANFILES+=tarpc.h tarpc_xdr.c tarpc_svc.c rpc_unsupported.c \
+            rpc_supported.h
 
 linux_rpc.o tarpc_server.o: tarpc.h
 

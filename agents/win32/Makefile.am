@@ -25,7 +25,8 @@ MY_NODIST_SOURCES=tarpc_xdr.c tarpc_svc.c rpc_unsupported.c
 MY_LDADD+=-lrpc -lws2_32 -lmswsock -lwsock32 -liphlpapi -lcygwin
 MY_SYMTBL_OBJECTS+=win32_rpc.o tarpc_server.o
 
-CLEANFILES+=tarpc.h tarpc_xdr.c tarpc_svc.c rpc_unsupported.c rpc_supported.h
+CLEANFILES+=tarpc.h tarpc_xdr.c tarpc_svc.c rpc_unsupported.c \
+            rpc_supported.h
 
 win32_rpc.o tarpc_server.o: tarpc.h
 

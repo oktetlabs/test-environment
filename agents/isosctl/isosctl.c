@@ -69,17 +69,17 @@ static rcf_pch_conf_object node_agent =
 
 /* Send answer to the TEN */
 #define SEND_ANSWER(_fmt...) \
-    do {                                                                   \
-        int rc;                                                            \
-        if (snprintf(cbuf + answer_plen,                                   \
-                     buflen - answer_plen, _fmt) >= buflen - answer_plen)  \
-        {                                                                  \
-            VERB("answer is truncated\n");                  \
-        }                                                                  \
-        rcf_ch_lock();                                                     \
-        rc = rcf_comm_agent_reply(handle, cbuf, strlen(cbuf) + 1);         \
-        rcf_ch_unlock();                                                   \
-        return rc;                                                         \
+    do {                                                                  \
+        int rc;                                                           \
+        if (snprintf(cbuf + answer_plen,                                  \
+                     buflen - answer_plen, _fmt) >= buflen - answer_plen) \
+        {                                                                 \
+            VERB("answer is truncated\n");                                \
+        }                                                                 \
+        rcf_ch_lock();                                                    \
+        rc = rcf_comm_agent_reply(handle, cbuf, strlen(cbuf) + 1);        \
+        rcf_ch_unlock();                                                  \
+        return rc;                                                        \
     } while (0)
 
 /**
@@ -115,8 +115,8 @@ rcf_ch_unlock()
 
 /* See description in rcf_ch_api.h */
 int 
-rcf_ch_shutdown(char *cbuf, int buflen, struct rcf_comm_connection *handle, 
-                int answer_plen)
+rcf_ch_shutdown(char *cbuf, int buflen,
+                struct rcf_comm_connection *handle, int answer_plen)
 {
     /* Standard handler is OK */
     UNUSED(cbuf);
@@ -126,7 +126,7 @@ rcf_ch_shutdown(char *cbuf, int buflen, struct rcf_comm_connection *handle,
     return -1;
 }
 
-/*------------------------ NUT reboot support ----------------------------*/
+/*------------------------ NUT reboot support -------------------------*/
 
 #define DEVICE_DELAY    1    /* Delay of device output in seconds */
 #define REBOOT_TIMEOUT  60   /* Maximum duration of reloading */
@@ -228,7 +228,8 @@ reboot_box()
     {
         if (strstr(buf, prompts[i].prompt) != NULL)
         {
-            CHECKERR(write(s, prompts[i].command, strlen(prompts[i].command)));
+            CHECKERR(write(s, prompts[i].command,
+                           strlen(prompts[i].command)));
             break;
         }
     }
@@ -529,7 +530,8 @@ rcf_ch_trsend_recv(char *cbuf, int buflen, char *ba, int cmdlen,
 int 
 rcf_ch_call(char *cbuf, int buflen, 
             struct rcf_comm_connection *handle, 
-            int answer_plen, char *rtn, int argc, int argv, uint32_t *params)
+            int answer_plen, char *rtn, int argc, int argv,
+            uint32_t *params)
 {
     UNUSED(cbuf);
     UNUSED(buflen);
@@ -548,7 +550,8 @@ rcf_ch_call(char *cbuf, int buflen,
 int 
 rcf_ch_start_task(char *cbuf, int buflen, 
                   struct rcf_comm_connection *handle, int answer_plen, 
-                  int priority, char *rtn, int argc, int argv, uint32_t *params)
+                  int priority, char *rtn, int argc, int argv,
+                  uint32_t *params)
 {
     UNUSED(cbuf);
     UNUSED(buflen);

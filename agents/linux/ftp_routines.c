@@ -95,8 +95,8 @@ read_string(int s, char *buf, int n)
  * URI should comply to following format: 
  *     ftp://[user[:password]@]server[:port]/directory/file
  *
- * If user is empty, anonymous is used. If password is empty, empty password
- * is used. If server is empty, 127.0.0.1 is used.
+ * If user is empty, anonymous is used. If password is empty, empty
+ * password is used. If server is empty, 127.0.0.1 is used.
  *
  * @param uri      URI string
  * @param srv      location for server
@@ -109,8 +109,8 @@ read_string(int s, char *buf, int n)
  * @return 0 (success) or -1 (invalid argument)
  */
 static int
-parse_ftp_uri(const char *uri, struct sockaddr *srv, char *user, char *passwd,
-              char *pathname)
+parse_ftp_uri(const char *uri, struct sockaddr *srv,
+              char *user, char *passwd, char *pathname)
 {
     char *s = (char *)uri;
     char *tmp;
@@ -213,7 +213,8 @@ parse_ftp_uri(const char *uri, struct sockaddr *srv, char *user, char *passwd,
             free(server);
             return -1;
         }
-        memcpy(&(addr->sin_addr), hostinfo->h_addr_list[0], hostinfo->h_length);
+        memcpy(&(addr->sin_addr), hostinfo->h_addr_list[0],
+               hostinfo->h_length);
     }
     else
         addr->sin_addr.s_addr = htonl(INADDR_LOOPBACK);
@@ -247,7 +248,8 @@ ftp_open(char *uri, int flags, int passive, int offset)
     char passwd[FTP_TEST_PASSWD_MAX];
     char file[FTP_TEST_PATHNAME_MAX];
     
-    if (parse_ftp_uri(uri, (struct sockaddr *)&addr, user, passwd, file) != 0 || 
+    if (parse_ftp_uri(uri, (struct sockaddr *)&addr,
+                      user, passwd, file) != 0 ||
         (flags != O_RDONLY && flags != O_WRONLY))
     {
         ERROR("parse_ftp_uri() failed");
@@ -255,16 +257,16 @@ ftp_open(char *uri, int flags, int passive, int offset)
     }
 
 #define PUT_CMD(_cmd...) \
-    do {                                        \
-        sprintf(buf, _cmd);                     \
-        printf("Command %s\n", buf); fflush(stdout); \
-        VERB("%s", buf);                        \
-        if (write(s, buf, strlen(buf)) < 0)     \
-        {                                       \
-            ERROR("write() failed %d", errno);  \
-            close(s);                           \
-            return -1;                          \
-        }                                       \
+    do {                                                \
+        sprintf(buf, _cmd);                             \
+        printf("Command %s\n", buf); fflush(stdout);    \
+        VERB("%s", buf);                                \
+        if (write(s, buf, strlen(buf)) < 0)             \
+        {                                               \
+            ERROR("write() failed %d", errno);          \
+            close(s);                                   \
+            return -1;                                  \
+        }                                               \
     } while (0)
 
 #define READ_ANS \
@@ -349,8 +351,8 @@ ftp_open(char *uri, int flags, int passive, int offset)
 #undef PUT_CMD    
 }
 
-#define FTP_GET_BULK    6144    /**< Size to be read in one read() call */
-#define FTP_PUT_BULK    6144    /**< Size to be write in one write() call */
+#define FTP_GET_BULK    6144  /**< Size to be read in one read() call */
+#define FTP_PUT_BULK    6144  /**< Size to be write in one write() call */
 
 typedef struct {
     int s;

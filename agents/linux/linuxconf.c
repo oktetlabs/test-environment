@@ -233,7 +233,8 @@ RCF_PCH_CFG_NODE_RO(node_ifindex, "index", NULL, &node_net_addr,
 
 RCF_PCH_CFG_NODE_COLLECTION(node_interface, "interface",
                             &node_ifindex, &node_arp,
-                            interface_add, interface_del, interface_list, NULL);
+                            interface_add, interface_del,
+                            interface_list, NULL);
 
 RCF_PCH_CFG_NODE_RW(node_ip4_fw, "ip4_fw", NULL, &node_interface,
                     ip4_fw_get, ip4_fw_set);
@@ -344,7 +345,8 @@ ip4_fw_get(unsigned int gid, const char *oid, char *value)
  * Enable/disable IPv4 forwarding.
  *
  * @param oid           full object instence identifier (unused)
- * @param value         pointer to new value of IPv4 forwarding system variable
+ * @param value         pointer to new value of IPv4 forwarding system
+ *                      variable
  *
  * @return error code
  */
@@ -359,7 +361,8 @@ ip4_fw_set(unsigned int gid, const char *oid, const char *value)
     if ((*value != '0' && *value != '1') || *(value + 1) != 0)
         return TE_RC(TE_TA_LINUX, EINVAL);
 
-    fd = open("/proc/sys/net/ipv4/ip_forward", O_WRONLY|O_CREAT|O_TRUNC, 0666);
+    fd = open("/proc/sys/net/ipv4/ip_forward",
+              O_WRONLY | O_CREAT | O_TRUNC, 0666);
     if (fd < 0)
         return TE_RC(TE_TA_LINUX, errno);
 
@@ -394,7 +397,7 @@ get_addr(const char *ifname, struct in_addr *addr)
               ifname, strerror(errno));
         return TE_RC(TE_TA_LINUX, errno);
     }
-    *addr = ((struct sockaddr_in *)&(req.ifr_addr))->sin_addr;
+    *addr = SIN(&(req.ifr_addr))->sin_addr;
     return 0;
 }
 
@@ -424,7 +427,7 @@ set_mask(const char *ifname, struct in_addr *mask)
     strcpy(req.ifr_name, ifname);
 
     req.ifr_addr.sa_family = AF_INET;
-    ((struct sockaddr_in *)&(req.ifr_addr))->sin_addr = *mask;
+    SIN(&(req.ifr_addr))->sin_addr = *mask;
     if (ioctl(s, SIOCSIFNETMASK, (int)&req) < 0)
     {
         ERROR("ioctl(SIOCSIFNETMASK) failed: %s", strerror(errno));
@@ -764,8 +767,12 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
     UNUSED(oid);
     UNUSED(value);
     
-    if (strlen(ifname) >= IF_NAMESIZE || strchr(ifname, ':') != NULL)/* FIXME */
-        return FALSE; /* Alias does not exist from Configurator point of view */
+    /* FIXME */
+    if (strlen(ifname) >= IF_NAMESIZE || strchr(ifname, ':') != NULL)
+    {
+        /* Alias does not exist from Configurator point of view */
+        return FALSE;
+    }
     
 
     if (inet_pton(AF_INET, addr, (void *)&new_addr) <= 0 ||
@@ -859,8 +866,12 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
     
 #ifdef __linux__
 
-    if (strlen(ifname) >= IF_NAMESIZE || strchr(ifname, ':') != NULL)/* FIXME */
-        return FALSE; /* Alias does not exist from Configurator point of view */
+    /* FIXME */
+    if (strlen(ifname) >= IF_NAMESIZE || strchr(ifname, ':') != NULL)
+    {
+        /* Alias does not exist from Configurator point of view */
+        return FALSE;
+    }
 
     if ((rc = aliases_list()) != 0)
         return TE_RC(TE_TA_LINUX, rc);
@@ -1026,8 +1037,12 @@ net_addr_del(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(oid);
     
-    if (strlen(ifname) >= IF_NAMESIZE || strchr(ifname, ':') != NULL)/* FIXME */
-        return FALSE; /* Alias does not exist from Configurator point of view */
+    /* FIXME */
+    if (strlen(ifname) >= IF_NAMESIZE || strchr(ifname, ':') != NULL)
+    {
+        /* Alias does not exist from Configurator point of view */
+        return FALSE;
+    }
 
     if ((name = find_net_addr(ifname, addr)) == NULL)
         return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
@@ -1050,8 +1065,12 @@ net_addr_del(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(oid);
 
-    if (strlen(ifname) >= IF_NAMESIZE || strchr(ifname, ':') != NULL)/* FIXME */
-        return FALSE; /* Alias does not exist from Configurator point of view */
+    /* FIXME */
+    if (strlen(ifname) >= IF_NAMESIZE || strchr(ifname, ':') != NULL)
+    {
+        /* Alias does not exist from Configurator point of view */
+        return FALSE;
+    }
 
     if ((name = find_net_addr(ifname, addr)) == NULL)
     {
@@ -1124,8 +1143,12 @@ net_addr_list(unsigned int gid, const char *oid, char **list,
     UNUSED(gid);
     UNUSED(oid);
 
-    if (strlen(ifname) >= IF_NAMESIZE || strchr(ifname, ':') != NULL)/* FIXME */
-        return FALSE; /* Alias does not exist from Configurator point of view */
+    /* FIXME */
+    if (strlen(ifname) >= IF_NAMESIZE || strchr(ifname, ':') != NULL)
+    {
+        /* Alias does not exist from Configurator point of view */
+        return FALSE;
+    }
 
     conf.ifc_len = sizeof(buf);
     conf.ifc_buf = buf;
@@ -1259,7 +1282,8 @@ netmask_set(unsigned int gid, const char *oid, const char *value,
 }
 
 /**
- * Get hardware address of the interface. Only MAC addresses are supported now.
+ * Get hardware address of the interface.
+ * Only MAC addresses are supported now.
  *
  * @param oid           full object instence identifier (unused)
  * @param value         location for hardware address (address is returned
@@ -1432,8 +1456,8 @@ status_get(unsigned int gid, const char *oid, char *value,
 }
 
 /**
- * Change status of the interface. If virtual interface is put to down state,
- * it is de-installed and information about it is stored in the list
+ * Change status of the interface. If virtual interface is put to down
+ * state,it is de-installed and information about it is stored in the list
  * of down interfaces.
  *
  * @param oid           full object instence identifier (unused)
@@ -1462,7 +1486,8 @@ status_set(unsigned int gid, const char *oid, const char *value,
     else
         return TE_RC(TE_TA_LINUX, EINVAL);
 
-    sprintf(buf, "/sbin/ifconfig %s %s", ifname, status == 1 ? "up" : "down");
+    sprintf(buf, "/sbin/ifconfig %s %s",
+            ifname, status == 1 ? "up" : "down");
 
     if (ta_system(buf) != 0)
         return TE_RC(TE_TA_LINUX, ETESHCMD);
@@ -1507,7 +1532,8 @@ status_set(unsigned int gid, const char *oid, const char *value,
  * Get ARP entry value (hardware address corresponding to IPv4).
  *
  * @param oid           full object instence identifier (unused)
- * @param value         location for the value (XX:XX:XX:XX:XX:XX is returned)
+ * @param value         location for the value
+ *                      (XX:XX:XX:XX:XX:XX is returned)
  * @param addr          IPv4 address in the dotted notation
  *
  * @return error code
@@ -1591,8 +1617,9 @@ arp_add(unsigned int gid, const char *oid, const char *value,
     UNUSED(gid);
     UNUSED(oid);
 
-    res = sscanf(value, "%2x:%2x:%2x:%2x:%2x:%2x%s", int_addr, int_addr + 1,
-                 int_addr + 2, int_addr + 3, int_addr + 4, int_addr + 5, trash);
+    res = sscanf(value, "%2x:%2x:%2x:%2x:%2x:%2x%s",
+                 int_addr, int_addr + 1, int_addr + 2, int_addr + 3,
+                 int_addr + 4, int_addr + 5, trash);
 
     if (res != 6)
         return TE_RC(TE_TA_LINUX, EINVAL);
@@ -1600,8 +1627,7 @@ arp_add(unsigned int gid, const char *oid, const char *value,
     memset (&arp_req, 0, sizeof(arp_req));
     arp_req.arp_pa.sa_family = AF_INET;
 
-    if (inet_pton(AF_INET, addr,
-                  &(((struct sockaddr_in *)&(arp_req.arp_pa))->sin_addr)) <= 0)
+    if (inet_pton(AF_INET, addr, &SIN(&(arp_req.arp_pa))->sin_addr) <= 0)
         return TE_RC(TE_TA_LINUX, EINVAL);
 
     arp_req.arp_ha.sa_family = AF_LOCAL;
@@ -1640,8 +1666,7 @@ arp_del(unsigned int gid, const char *oid, const char *addr)
 
     memset (&arp_req, 0, sizeof(arp_req));
     arp_req.arp_pa.sa_family = AF_INET;
-    if (inet_pton(AF_INET, addr,
-                  &(((struct sockaddr_in *)&(arp_req.arp_pa))->sin_addr)) <= 0)
+    if (inet_pton(AF_INET, addr, &SIN(&(arp_req.arp_pa))->sin_addr) <= 0)
         return TE_RC(TE_TA_LINUX, EINVAL);
 
 #ifdef SIOCDARP
@@ -1767,8 +1792,9 @@ route_get(unsigned int gid, const char *oid, char *value,
         int          win;
         int          irtt;
 
-        fscanf(fp, "%x %x %x %d %d %d %x %d %d %d", &addr, &gateway, &flags,
-               (int *)trash, (int *)trash, &metric, &mask, &mtu, &win, &irtt);
+        fscanf(fp, "%x %x %x %d %d %d %x %d %d %d", &addr, &gateway,
+               &flags, (int *)trash, (int *)trash, &metric, &mask,
+               &mtu, &win, &irtt);
 
         if (addr != route_addr || mask != route_mask)
         {
@@ -1912,8 +1938,7 @@ route_add(unsigned int gid, const char *oid, const char *value,
 
     *tmp = 0;
     rt.rt_dst.sa_family = AF_INET;
-    if (inet_pton(AF_INET, route,
-                  &(((struct sockaddr_in *)&(rt.rt_dst))->sin_addr)) <= 0)
+    if (inet_pton(AF_INET, route, &SIN(&(rt.rt_dst))->sin_addr) <= 0)
         return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
     tmp++;
     if (*tmp == '-' ||
@@ -1923,8 +1948,7 @@ route_add(unsigned int gid, const char *oid, const char *value,
 
 #ifdef __linux__
     rt.rt_genmask.sa_family = AF_INET;
-    ((struct sockaddr_in *)&(rt.rt_genmask))->sin_addr.s_addr =
-        htonl(PREFIX2MASK(prefix));
+    SIN(&(rt.rt_genmask))->sin_addr.s_addr = htonl(PREFIX2MASK(prefix));
 #endif
     if (prefix == 32)
         rt.rt_flags |= RTF_HOST;
@@ -1941,8 +1965,7 @@ route_add(unsigned int gid, const char *oid, const char *value,
             end_ptr++;
         *end_ptr = '\0';
 
-        rc = inet_pton(AF_INET, ptr,
-                       &(((struct sockaddr_in *)&(rt.rt_gateway))->sin_addr));
+        rc = inet_pton(AF_INET, ptr, &SIN(&(rt.rt_gateway))->sin_addr);
         if (rc <= 0)
         {
             ERROR("Incorrect format for gateway address: %s", ptr);
@@ -2109,8 +2132,7 @@ route_del(unsigned int gid, const char *oid, const char *route)
 
     *tmp = 0;
     rt.rt_dst.sa_family = AF_INET;
-    if (inet_pton(AF_INET, route,
-                  &(((struct sockaddr_in *)&(rt.rt_dst))->sin_addr)) <= 0)
+    if (inet_pton(AF_INET, route, &SIN(&(rt.rt_dst))->sin_addr) <= 0)
         return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
     tmp++;
     if (*tmp == '-' ||
@@ -2120,8 +2142,7 @@ route_del(unsigned int gid, const char *oid, const char *route)
 
 #ifdef __linux__
     rt.rt_genmask.sa_family = AF_INET;
-    ((struct sockaddr_in *)&(rt.rt_genmask))->sin_addr.s_addr =
-        htonl(PREFIX2MASK(prefix));
+    SIN(&(rt.rt_genmask))->sin_addr.s_addr = htonl(PREFIX2MASK(prefix));
 #endif
 
     if (prefix == 32)

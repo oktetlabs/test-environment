@@ -58,13 +58,19 @@ if test -n "$with_cfg_linux_daemons" ; then
     DAEMONS_CFLAGS=-DCFG_LINUX_DAEMONS
     for i in $with_cfg_linux_daemons ; do
         case $i in 
-            tftp)  DAEMONS_CFLAGS="$DAEMONS_CFLAGS -DWITH_TFTP_SERVER" ;;
-            ftp)  DAEMONS_CFLAGS="$DAEMONS_CFLAGS -DWITH_FTP_SERVER" ;;
-            dns)  DAEMONS_CFLAGS="$DAEMONS_CFLAGS -DWITH_DNS_SERVER" ;;
-            echo)  DAEMONS_CFLAGS="$DAEMONS_CFLAGS -DWITH_ECHO_SERVER" ;;
-            todudp)  DAEMONS_CFLAGS="$DAEMONS_CFLAGS -DWITH_TODUDP_SERVER" ;;
-            dhcp)  DAEMONS_CFLAGS="$DAEMONS_CFLAGS -DWITH_DHCP_SERVER" ;
-                   DAEMONS_LDADD="-ldhcpctl -lomapi -ldst" ;;
+            tftp)
+                DAEMONS_CFLAGS="$DAEMONS_CFLAGS -DWITH_TFTP_SERVER" ;;
+            ftp)
+                DAEMONS_CFLAGS="$DAEMONS_CFLAGS -DWITH_FTP_SERVER" ;;
+            dns)
+                DAEMONS_CFLAGS="$DAEMONS_CFLAGS -DWITH_DNS_SERVER" ;;
+            echo)
+                DAEMONS_CFLAGS="$DAEMONS_CFLAGS -DWITH_ECHO_SERVER" ;;
+            todudp)
+                DAEMONS_CFLAGS="$DAEMONS_CFLAGS -DWITH_TODUDP_SERVER" ;;
+            dhcp)
+                DAEMONS_CFLAGS="$DAEMONS_CFLAGS -DWITH_DHCP_SERVER" ;
+                DAEMONS_LDADD="-ldhcpctl -lomapi -ldst" ;;
             *)  ;; 
         esac
     done
@@ -143,9 +149,8 @@ if test -n "$with_rcf_rpc" ; then
     # - NetBSD does not have.
     #
     AC_CHECK_FUNC([aio_read], [],
-                  AC_CHECK_LIB([nsl], [aio_read], [LIBS="-lnsl -lrt ${LIBS}"],
-                               AC_MSG_WARN([Asynchronous I/O not supported]),
-                               [-lrt]))
+        AC_CHECK_LIB([nsl], [aio_read], [LIBS="-lnsl -lrt ${LIBS}"],
+            AC_MSG_WARN([Asynchronous I/O not supported]), [-lrt]))
 fi
 
 

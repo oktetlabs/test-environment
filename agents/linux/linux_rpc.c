@@ -194,13 +194,15 @@ gather_log(void *arg)
     
     if (s < 0)
     {
-        ERROR("Cannot create a socket for gathering the log, errno %d", errno);
+        ERROR("Cannot create a socket for gathering the log, errno %d",
+              errno);
         return NULL;
     }
     
     if (bind(s, (struct sockaddr *)&ta_log_addr, sizeof(ta_log_addr)) < 0)
     {
-        ERROR("Cannot bind a socket for gathering the log, errno %d", errno);
+        ERROR("Cannot bind a socket for gathering the log, errno %d",
+              errno);
         close(s);
         return NULL;
     }
@@ -523,7 +525,8 @@ tarpc_server_create(char *name)
 #else
         if (pthread_create(&tid, NULL, supervise_children, NULL) != 0)
         {
-            ERROR("Cannot create RPC servers supervising thread: %d", errno);
+            ERROR("Cannot create RPC servers supervising thread: %d",
+                  errno);
             return -1;
         }
 #endif

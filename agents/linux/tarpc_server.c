@@ -16,7 +16,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public 
+ * You should have received a copy of the GNU Lesser General Public
  * License along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
@@ -63,7 +63,7 @@
 #include <fcntl.h>
 #include <pthread.h>
 #include <sys/stat.h>
- 
+
 #include "te_stdint.h"
 #include "te_defs.h"
 #include "te_errno.h"
@@ -82,12 +82,12 @@ void *dummy = aio_read;
 
 extern sigset_t rpcs_received_signals;
 
-typedef int (*sock_api_func)(int param,...); 
+typedef int (*sock_api_func)(int param,...);
 
 /**
  * Convert shutdown parameter from RPC to native representation.
  */
-static inline int 
+static inline int
 shut_how_rpc2h(rpc_shut_how how)
 {
     switch (how)
@@ -99,7 +99,7 @@ shut_how_rpc2h(rpc_shut_how how)
     }
 }
 
-/** 
+/**
  * Convert RPC sockaddr to struct sockaddr.
  *
  * @param rpc_addr      RPC address location
@@ -111,32 +111,32 @@ static inline struct sockaddr *
 sockaddr_rpc2h(struct tarpc_sa *rpc_addr, struct sockaddr_storage *addr)
 {
     uint32_t len = SA_DATA_MAX_LEN;
-    
+
     if (rpc_addr->sa_data.sa_data_len == 0)
         return NULL;
-    
+
     memset(addr, 0, sizeof(struct sockaddr_storage));
 
     addr->ss_family = addr_family_rpc2h(rpc_addr->sa_family);
-    
+
     if (len < rpc_addr->sa_data.sa_data_len)
     {
-#if 0    
-        WARN("Strange tarpc_sa length %d is received", 
+#if 0
+        WARN("Strange tarpc_sa length %d is received",
              rpc_addr->sa_data.sa_data_len);
-#endif             
+#endif
     }
     else
         len = rpc_addr->sa_data.sa_data_len;
 
-    memcpy(((struct sockaddr *)addr)->sa_data, 
+    memcpy(((struct sockaddr *)addr)->sa_data,
            rpc_addr->sa_data.sa_data_val, len);
-           
+
     return (struct sockaddr *)addr;
 }
 
-/** 
- * Convert RPC sockaddr to struct sockaddr. It's assumed that 
+/**
+ * Convert RPC sockaddr to struct sockaddr. It's assumed that
  * memory allocated for RPC address has maximum possible length (i.e
  * SA_DATA_MAX_LEN).
  *
@@ -154,7 +154,7 @@ sockaddr_h2rpc(struct sockaddr *addr, struct tarpc_sa *rpc_addr)
     rpc_addr->sa_family = addr_family_h2rpc(addr->sa_family);
     if (rpc_addr->sa_data.sa_data_val != NULL)
     {
-        memcpy(rpc_addr->sa_data.sa_data_val, addr->sa_data, 
+        memcpy(rpc_addr->sa_data.sa_data_val, addr->sa_data,
                rpc_addr->sa_data.sa_data_len);
     }
 }
@@ -176,7 +176,7 @@ static int
 find_func(tarpc_in_arg *in, char *name, sock_api_func *func)
 {
     static void *libc_handle = NULL;
-    
+
     if (!dynamic_library_ok)
     {
         ERROR("Invalid dynamic library handle");
@@ -190,7 +190,7 @@ find_func(tarpc_in_arg *in, char *name, sock_api_func *func)
             return TE_RC(TE_TA_LINUX, ENOENT);
         }
     }
-    
+
     if ((dynamic_library_ok &&
          (*func = dlsym(dynamic_library_handle, name)) == NULL) &&
         (*func = dlsym(libc_handle, name)) == NULL)
@@ -217,20 +217,21 @@ typedef struct checked_arg {
 
 /** Initialise the checked argument and add it into the list */
 static void
-init_checked_arg(tarpc_in_arg *in, 
-                 checked_arg **list, char *real_arg, int len, int len_visible)
+init_checked_arg(tarpc_in_arg *in,
+                 checked_arg **list, char *real_arg,
+                 int len, int len_visible)
 {
     checked_arg *arg;
-    
+
     if (real_arg == NULL || len <= len_visible)
         return;
-    
+
     if ((arg = malloc(sizeof(*arg))) == NULL)
     {
         ERROR("No enough memory");
         return;
     }
-        
+
     if ((arg->control = malloc(len - len_visible)) == NULL)
     {
         ERROR("No enough memory");
@@ -246,28 +247,29 @@ init_checked_arg(tarpc_in_arg *in,
 }
 
 #define INIT_CHECKED_ARG(_real_arg, _len, _len_visible) \
-    init_checked_arg((tarpc_in_arg *)in, &list, _real_arg, _len, _len_visible)
+    init_checked_arg((tarpc_in_arg *)in, &list, _real_arg, \
+                     _len, _len_visible)
 
 /** Verify that arguments are not corrupted */
 static int
 check_args(checked_arg *list)
 {
     int rc = 0;
-    
+
     checked_arg *cur, *next;
-    
+
     for (cur = list; cur != NULL; cur = next)
     {
-        next = cur->next; 
+        next = cur->next;
         if (memcmp(cur->real_arg + cur->len_visible, cur->control,
                    cur->len - cur->len_visible) != 0)
         {
             rc = TE_RC(TE_TA_LINUX, ETECORRUPTED);
-        } 
+        }
         free(cur->control);
-        free(cur); 
+        free(cur);
     }
-    
+
     return rc;
 }
 
@@ -280,7 +282,7 @@ check_args(checked_arg *list)
     INIT_CHECKED_ARG((char *)a, (_address).sa_data.sa_data_len + \
                      SA_COMMON_LEN, _vlen);
 
-/** 
+/**
  * Copy in variable argument to out variable argument and zero in argument.
  * out and in are assumed in the context.
  */
@@ -299,8 +301,8 @@ check_args(checked_arg *list)
         in->_a.sa_data.sa_data_val = NULL; \
     } while (0)
 
-/** 
- * Find function by its name with check. 
+/**
+ * Find function by its name with check.
  * out variable is assumed in the context.
  */
 #define FIND_FUNC(_name, _func) \
@@ -332,7 +334,7 @@ check_args(checked_arg *list)
             WARN("Start time is gone");                         \
     } while (0)
 
-/** 
+/**
  * Declare and initialise time variables; execute the code and store
  * duration and errno in the output argument.
  */
@@ -451,7 +453,7 @@ _##_func##_1_svc(tarpc_##_func##_in *in, tarpc_##_func##_out *out,      \
 }
 
 
-/*------------------------------- setlibname() -----------------------------*/
+/*-------------- setlibname() -----------------------------*/
 
 /**
  * The routine called via RCF to set the name of socket library.
@@ -473,7 +475,7 @@ setlibname(const tarpc_setlibname_in *in)
     {
         ERROR("Cannot load shared library %s: %s", libname, dlerror());
         return TE_RC(TE_TA_LINUX, ENOENT);
-    } 
+    }
     dynamic_library_name = (libname != NULL) ? strdup(libname) : "(NULL)";
     if (dynamic_library_name == NULL)
     {
@@ -500,7 +502,7 @@ _setlibname_1_svc(tarpc_setlibname_in *in, tarpc_setlibname_out *out,
     return TRUE;
 }
 
-/*--------------------------------- fork() ---------------------------------*/
+/*-------------- fork() ---------------------------------*/
 TARPC_FUNC(fork, {},
 {
     MAKE_CALL(out->pid = func(0));
@@ -508,7 +510,7 @@ TARPC_FUNC(fork, {},
     if (out->pid == 0)
     {
 #ifdef HAVE_SVC_EXIT
-        svc_exit(); 
+        svc_exit();
 #endif
         tarpc_server(in->name);
         exit(EXIT_FAILURE);
@@ -516,15 +518,15 @@ TARPC_FUNC(fork, {},
 }
 )
 
-/*----------------------------- pthread_create() -----------------------------*/
+/*-------------- pthread_create() -----------------------------*/
 TARPC_FUNC(pthread_create, {},
 {
-    MAKE_CALL(out->retval = func((int)&(out->tid), NULL, tarpc_server, 
+    MAKE_CALL(out->retval = func((int)&(out->tid), NULL, tarpc_server,
                                  strdup(in->name)));
 }
 )
 
-/*----------------------------- pthread_cancel() -----------------------------*/
+/*-------------- pthread_cancel() -----------------------------*/
 TARPC_FUNC(pthread_cancel, {}, { MAKE_CALL(out->retval = func(in->tid)); })
 
 /** Function to start RPC server after execve */
@@ -575,30 +577,30 @@ tarpc_init(int argc, char **argv)
     tarpc_server(name);
 }
 
-/** 
+/**
  * Check, if some signals were received by the RPC server (as a process)
- * and return the mask of received signals. 
+ * and return the mask of received signals.
  */
-                                                                   
-bool_t                                                             
-_sigreceived_1_svc(tarpc_sigreceived_in *in, tarpc_sigreceived_out *out, 
-                   struct svc_req *rqstp)                            
+
+bool_t
+_sigreceived_1_svc(tarpc_sigreceived_in *in, tarpc_sigreceived_out *out,
+                   struct svc_req *rqstp)
 {
-    UNUSED(in);                                                                  
-    UNUSED(rqstp);                                                 
+    UNUSED(in);
+    UNUSED(rqstp);
     memset(out, 0, sizeof(*out));
     out->set = (tarpc_sigset_t)&rpcs_received_signals;
-                                                                   
-    return TRUE;                                                   
+
+    return TRUE;
 }
 
 
-/*--------------------------------- execve() ---------------------------------*/
-TARPC_FUNC(execve, {}, 
-{ 
+/*-------------- execve() ---------------------------------*/
+TARPC_FUNC(execve, {},
+{
     const char *args[7];
     static char buf[16];
-    
+
     args[0] = ta_execname;
     args[1] = "rpcserver";
     args[2] = rpcserver_name;
@@ -607,20 +609,20 @@ TARPC_FUNC(execve, {},
     args[4] = ta_log_addr.sun_path + 1;
     args[5] = dynamic_library_name;
     args[6] = NULL;
-    
+
     sleep(1);
     close(rpcserver_sock);
-    MAKE_CALL(func((int)ta_execname, args, NULL)); 
+    MAKE_CALL(func((int)ta_execname, args, NULL));
 }
 )
 
-/*-------------------------------- getpid() --------------------------------*/
+/*-------------- getpid() --------------------------------*/
 TARPC_FUNC(getpid, {}, { MAKE_CALL(out->retval = func(0)); })
 
 
-/*------------------------------ socket() ------------------------------*/
+/*-------------- socket() ------------------------------*/
 
-TARPC_FUNC(socket, {}, 
+TARPC_FUNC(socket, {},
 {
     MAKE_CALL(out->fd = func(domain_rpc2h(in->domain),
                              socktype_rpc2h(in->type),
@@ -628,19 +630,19 @@ TARPC_FUNC(socket, {},
 }
 )
 
-/*------------------------------ dup() --------------------------------*/
+/*-------------- dup() --------------------------------*/
 
 TARPC_FUNC(dup, {}, { MAKE_CALL(out->fd = func(in->oldfd)); })
 
-/*------------------------------ dup2() -------------------------------*/
+/*-------------- dup2() -------------------------------*/
 
 TARPC_FUNC(dup2, {}, { MAKE_CALL(out->fd = func(in->oldfd, in->newfd)); })
 
-/*------------------------------ close() ------------------------------*/
+/*-------------- close() ------------------------------*/
 
 TARPC_FUNC(close, {}, { MAKE_CALL(out->retval = func(in->fd)); })
 
-/*------------------------------ bind() ------------------------------*/
+/*-------------- bind() ------------------------------*/
 
 TARPC_FUNC(bind, {},
 {
@@ -649,17 +651,17 @@ TARPC_FUNC(bind, {},
 }
 )
 
-/*------------------------------ connect() ------------------------------*/
+/*-------------- connect() ------------------------------*/
 
 TARPC_FUNC(connect, {},
 {
     PREPARE_ADDR(in->addr, 0);
-    
+
     MAKE_CALL(out->retval = func(in->fd, a, in->len));
 }
 )
 
-/*------------------------------ listen() ------------------------------*/
+/*-------------- listen() ------------------------------*/
 
 TARPC_FUNC(listen, {},
 {
@@ -667,9 +669,9 @@ TARPC_FUNC(listen, {},
 }
 )
 
-/*------------------------------ accept() ------------------------------*/
+/*-------------- accept() ------------------------------*/
 
-TARPC_FUNC(accept, 
+TARPC_FUNC(accept,
 {
     COPY_ARG(len);
     COPY_ARG_ADDR(addr);
@@ -684,7 +686,7 @@ TARPC_FUNC(accept,
 }
 )
 
-/*------------------------------ recvfrom() ------------------------------*/
+/*-------------- recvfrom() ------------------------------*/
 
 
 TARPC_FUNC(recvfrom,
@@ -700,7 +702,7 @@ TARPC_FUNC(recvfrom,
 
     INIT_CHECKED_ARG(out->buf.buf_val, out->buf.buf_len, in->len);
 
-    MAKE_CALL(out->retval = func(in->fd, out->buf.buf_val, in->len, 
+    MAKE_CALL(out->retval = func(in->fd, out->buf.buf_val, in->len,
                                  send_recv_flags_rpc2h(in->flags), a,
                                  out->fromlen.fromlen_len == 0 ? NULL :
                                  out->fromlen.fromlen_val));
@@ -709,56 +711,56 @@ TARPC_FUNC(recvfrom,
 )
 
 
-/*------------------------------ recv() ------------------------------*/
+/*-------------- recv() ------------------------------*/
 
-TARPC_FUNC(recv,  
+TARPC_FUNC(recv,
 {
     COPY_ARG(buf);
 },
 {
     INIT_CHECKED_ARG(out->buf.buf_val, out->buf.buf_len, in->len);
 
-    MAKE_CALL(out->retval = func(in->fd, out->buf.buf_val, in->len, 
+    MAKE_CALL(out->retval = func(in->fd, out->buf.buf_val, in->len,
                                  send_recv_flags_rpc2h(in->flags)));
 }
 )
 
-/*------------------------------ shutdown() ------------------------------*/
+/*-------------- shutdown() ------------------------------*/
 
-TARPC_FUNC(shutdown, {}, 
+TARPC_FUNC(shutdown, {},
 {
     MAKE_CALL(out->retval = func(in->fd, shut_how_rpc2h(in->how)));
 }
 )
 
-/*------------------------------ sendto() ------------------------------*/
+/*-------------- sendto() ------------------------------*/
 
-TARPC_FUNC(sendto, {}, 
+TARPC_FUNC(sendto, {},
 {
     PREPARE_ADDR(in->to, 0);
 
-    INIT_CHECKED_ARG(in->buf.buf_val, in->buf.buf_len, in->len); 
+    INIT_CHECKED_ARG(in->buf.buf_val, in->buf.buf_len, in->len);
 
-    MAKE_CALL(out->retval = func(in->fd, in->buf.buf_val, in->len, 
-                                 send_recv_flags_rpc2h(in->flags), 
-                                 a, in->tolen)); 
+    MAKE_CALL(out->retval = func(in->fd, in->buf.buf_val, in->len,
+                                 send_recv_flags_rpc2h(in->flags),
+                                 a, in->tolen));
 }
 )
 
-/*------------------------------ send() ------------------------------*/
+/*-------------- send() ------------------------------*/
 
-TARPC_FUNC(send, {}, 
+TARPC_FUNC(send, {},
 {
-    INIT_CHECKED_ARG(in->buf.buf_val, in->buf.buf_len, in->len); 
+    INIT_CHECKED_ARG(in->buf.buf_val, in->buf.buf_len, in->len);
 
-    MAKE_CALL(out->retval = func(in->fd, in->buf.buf_val, in->len, 
+    MAKE_CALL(out->retval = func(in->fd, in->buf.buf_val, in->len,
                                  send_recv_flags_rpc2h(in->flags)));
 }
 )
 
-/*------------------------------ read() ------------------------------*/
+/*-------------- read() ------------------------------*/
 
-TARPC_FUNC(read, 
+TARPC_FUNC(read,
 {
     COPY_ARG(buf);
 },
@@ -769,7 +771,7 @@ TARPC_FUNC(read,
 }
 )
 
-/*------------------------------ write() ------------------------------*/
+/*-------------- write() ------------------------------*/
 
 TARPC_FUNC(write, {},
 {
@@ -779,13 +781,13 @@ TARPC_FUNC(write, {},
 }
 )
 
-/*------------------------------ readv() ------------------------------*/
+/*-------------- readv() ------------------------------*/
 
-TARPC_FUNC(readv, 
+TARPC_FUNC(readv,
 {
     if (out->vector.vector_len > RCF_RPC_MAX_IOVEC)
     {
-        ERROR("Too long iovec is provided"); 
+        ERROR("Too long iovec is provided");
         out->common._errno = TE_RC(TE_TA_LINUX, ENOMEM);
         return TRUE;
     }
@@ -793,7 +795,7 @@ TARPC_FUNC(readv,
 },
 {
     struct iovec iovec_arr[RCF_RPC_MAX_IOVEC];
-    
+
     unsigned int i;
 
     memset(iovec_arr, 0, sizeof(iovec_arr));
@@ -802,14 +804,14 @@ TARPC_FUNC(readv,
         INIT_CHECKED_ARG(out->vector.vector_val[i].iov_base.iov_base_val,
                          out->vector.vector_val[i].iov_base.iov_base_len,
                          out->vector.vector_val[i].iov_len);
-        iovec_arr[i].iov_base = 
+        iovec_arr[i].iov_base =
             out->vector.vector_val[i].iov_base.iov_base_val;
         iovec_arr[i].iov_len = out->vector.vector_val[i].iov_len;
-    }    
+    }
     INIT_CHECKED_ARG((char *)iovec_arr, sizeof(iovec_arr), 0);
 
     MAKE_CALL(out->retval = func(in->fd, iovec_arr, in->count));
-    
+
     for (i = 0; i < out->vector.vector_len; i++)
     {
         out->vector.vector_val[i].iov_len = iovec_arr[i].iov_len;
@@ -817,20 +819,20 @@ TARPC_FUNC(readv,
 }
 )
 
-/*------------------------------ writev() ------------------------------*/
+/*-------------- writev() ------------------------------*/
 
-TARPC_FUNC(writev, 
+TARPC_FUNC(writev,
 {
     if (in->vector.vector_len > RCF_RPC_MAX_IOVEC)
     {
-        ERROR("Too long iovec is provided"); 
+        ERROR("Too long iovec is provided");
         out->common._errno = TE_RC(TE_TA_LINUX, ENOMEM);
         return TRUE;
     }
 },
 {
     struct iovec iovec_arr[RCF_RPC_MAX_IOVEC];
-    
+
     unsigned int i;
 
     memset(iovec_arr, 0, sizeof(iovec_arr));
@@ -838,18 +840,18 @@ TARPC_FUNC(writev,
     {
         INIT_CHECKED_ARG(in->vector.vector_val[i].iov_base.iov_base_val,
                          in->vector.vector_val[i].iov_base.iov_base_len, 0);
-        iovec_arr[i].iov_base = 
+        iovec_arr[i].iov_base =
             in->vector.vector_val[i].iov_base.iov_base_val;
         iovec_arr[i].iov_len = in->vector.vector_val[i].iov_len;
-    }    
+    }
     INIT_CHECKED_ARG((char *)iovec_arr, sizeof(iovec_arr), 0);
 
     MAKE_CALL(out->retval = func(in->fd, iovec_arr, in->count));
 }
 )
 
-/*------------------------------ getsockname() ------------------------------*/
-TARPC_FUNC(getsockname, 
+/*-------------- getsockname() ------------------------------*/
+TARPC_FUNC(getsockname,
 {
     COPY_ARG(len);
     COPY_ARG_ADDR(addr);
@@ -864,9 +866,9 @@ TARPC_FUNC(getsockname,
 }
 )
 
-/*------------------------------ getpeername() ------------------------------*/
+/*-------------- getpeername() ------------------------------*/
 
-TARPC_FUNC(getpeername, 
+TARPC_FUNC(getpeername,
 {
     COPY_ARG(len);
     COPY_ARG_ADDR(addr);
@@ -881,14 +883,14 @@ TARPC_FUNC(getpeername,
 }
 )
 
-/*---------------------------- fd_set constructor ----------------------------*/
+/*-------------- fd_set constructor ----------------------------*/
 
-bool_t                                                                
-_fd_set_new_1_svc(tarpc_fd_set_new_in *in, tarpc_fd_set_new_out *out, 
-                  struct svc_req *rqstp)                              
-{                  
+bool_t
+_fd_set_new_1_svc(tarpc_fd_set_new_in *in, tarpc_fd_set_new_out *out,
+                  struct svc_req *rqstp)
+{
     fd_set *set;
-    
+
     UNUSED(rqstp);
     UNUSED(in);
 
@@ -904,16 +906,17 @@ _fd_set_new_1_svc(tarpc_fd_set_new_in *in, tarpc_fd_set_new_out *out,
         out->common._errno = RPC_ERRNO;
         out->retval = (tarpc_fd_set)set;
     }
-        
+
     return TRUE;
 }
 
-/*---------------------------- fd_set destructor ----------------------------*/
+/*-------------- fd_set destructor ----------------------------*/
 
-bool_t                                                                
-_fd_set_delete_1_svc(tarpc_fd_set_delete_in *in, tarpc_fd_set_delete_out *out, 
-                     struct svc_req *rqstp)                              
-{                  
+bool_t
+_fd_set_delete_1_svc(tarpc_fd_set_delete_in *in,
+                     tarpc_fd_set_delete_out *out,
+                     struct svc_req *rqstp)
+{
     UNUSED(rqstp);
 
     memset(out, 0, sizeof(*out));
@@ -925,11 +928,11 @@ _fd_set_delete_1_svc(tarpc_fd_set_delete_in *in, tarpc_fd_set_delete_out *out,
     return TRUE;
 }
 
-/*-------------------------------- FD_ZERO --------------------------------*/
+/*-------------- FD_ZERO --------------------------------*/
 
-bool_t                                                                
-_do_fd_zero_1_svc(tarpc_do_fd_zero_in *in, tarpc_do_fd_zero_out *out, 
-                  struct svc_req *rqstp)                              
+bool_t
+_do_fd_zero_1_svc(tarpc_do_fd_zero_in *in, tarpc_do_fd_zero_out *out,
+                  struct svc_req *rqstp)
 {
     UNUSED(rqstp);
 
@@ -939,12 +942,12 @@ _do_fd_zero_1_svc(tarpc_do_fd_zero_in *in, tarpc_do_fd_zero_out *out,
     return TRUE;
 }
 
-/*-------------------------------- FD_SET --------------------------------*/
+/*-------------- FD_SET --------------------------------*/
 
-bool_t                                                                
-_do_fd_set_1_svc(tarpc_do_fd_set_in *in, tarpc_do_fd_set_out *out, 
-                 struct svc_req *rqstp)                              
-{                 
+bool_t
+_do_fd_set_1_svc(tarpc_do_fd_set_in *in, tarpc_do_fd_set_out *out,
+                 struct svc_req *rqstp)
+{
     UNUSED(rqstp);
 
     memset(out, 0, sizeof(*out));
@@ -953,55 +956,55 @@ _do_fd_set_1_svc(tarpc_do_fd_set_in *in, tarpc_do_fd_set_out *out,
     return TRUE;
 }
 
-/*-------------------------------- FD_CLR --------------------------------*/
+/*-------------- FD_CLR --------------------------------*/
 
-bool_t                                                                
-_do_fd_clr_1_svc(tarpc_do_fd_clr_in *in, tarpc_do_fd_clr_out *out, 
-                 struct svc_req *rqstp)                              
+bool_t
+_do_fd_clr_1_svc(tarpc_do_fd_clr_in *in, tarpc_do_fd_clr_out *out,
+                 struct svc_req *rqstp)
 {
     UNUSED(rqstp);
- 
+
     memset(out, 0, sizeof(*out));
 
     FD_SET(in->fd, (fd_set *)(in->set));
     return TRUE;
 }
 
-/*-------------------------------- FD_ISSET --------------------------------*/
+/*-------------- FD_ISSET --------------------------------*/
 
-bool_t                                                                
-_do_fd_isset_1_svc(tarpc_do_fd_isset_in *in, tarpc_do_fd_isset_out *out, 
-                   struct svc_req *rqstp)                              
+bool_t
+_do_fd_isset_1_svc(tarpc_do_fd_isset_in *in, tarpc_do_fd_isset_out *out,
+                   struct svc_req *rqstp)
 {
     UNUSED(rqstp);
- 
+
     memset(out, 0, sizeof(*out));
 
     out->retval = FD_ISSET(in->fd, (fd_set *)(in->set));
     return TRUE;
 }
 
-/*-------------------------------- select() --------------------------------*/
+/*-------------- select() --------------------------------*/
 
-TARPC_FUNC(select, 
+TARPC_FUNC(select,
 {
     COPY_ARG(timeout);
 },
 {
     struct timeval tv;
-    
+
     if (out->timeout.timeout_len > 0)
     {
         tv.tv_sec = out->timeout.timeout_val[0].tv_sec;
         tv.tv_usec = out->timeout.timeout_val[0].tv_usec;
     }
-    
+
     MAKE_CALL(out->retval = func(in->n, (fd_set *)(in->readfds),
                                  (fd_set *)(in->writefds),
                                  (fd_set *)(in->exceptfds),
                                  out->timeout.timeout_len == 0 ? NULL :
                                  &tv));
-                                 
+
     if (out->timeout.timeout_len > 0)
     {
         out->timeout.timeout_val[0].tv_sec = tv.tv_sec;
@@ -1010,7 +1013,7 @@ TARPC_FUNC(select,
 }
 )
 
-/*-------------------------------- if_nametoindex() --------------------------------*/
+/*-------------- if_nametoindex() --------------------------------*/
 
 TARPC_FUNC(if_nametoindex, {},
 {
@@ -1019,26 +1022,26 @@ TARPC_FUNC(if_nametoindex, {},
 }
 )
 
-/*-------------------------------- if_nametoindex() --------------------------------*/
+/*-------------- if_nametoindex() --------------------------------*/
 
-TARPC_FUNC(if_indextoname, 
+TARPC_FUNC(if_indextoname,
 {
     COPY_ARG(ifname);
 },
 {
     char *name;
-    
+
     memcmp(name, out->ifname.ifname_val, out->ifname.ifname_len);
-    
+
     MAKE_CALL(name = (char *)func(in->ifindex, out->ifname.ifname_val));
-    
+
     if (name != NULL && name != out->ifname.ifname_val)
     {
-        ERROR("if_indextoname returned incorrect pointer"); 
+        ERROR("if_indextoname returned incorrect pointer");
         out->common._errno = TE_RC(TE_TA_LINUX, ETECORRUPTED);
     }
-    
-    if (name == NULL && 
+
+    if (name == NULL &&
         memcmp(name, out->ifname.ifname_val, out->ifname.ifname_len) != 0)
     {
         out->common._errno = TE_RC(TE_TA_LINUX, ETECORRUPTED);
@@ -1047,7 +1050,7 @@ TARPC_FUNC(if_indextoname,
 )
 
 
-/*------------------------------ if_nameindex() ------------------------------*/
+/*-------------- if_nameindex() ------------------------------*/
 
 TARPC_FUNC(if_nameindex, {},
 {
@@ -1055,17 +1058,18 @@ TARPC_FUNC(if_nameindex, {},
     tarpc_if_nameindex  *arr = NULL;
 
     int i = 0;
-    
+
     MAKE_CALL(out->mem_ptr = (unsigned int)func(0));
 
     ret = (struct if_nameindex *)(out->mem_ptr);
-        
+
     if (ret != NULL)
     {
         int j;
-        
+
         while (ret[i++].if_index != 0);
-        if ((arr = (tarpc_if_nameindex *)calloc(sizeof(*arr) * i, 1)) == NULL)
+        arr = (tarpc_if_nameindex *)calloc(sizeof(*arr) * i, 1);
+        if (arr == NULL)
         {
             out->common._errno = TE_RC(TE_TA_LINUX, ENOMEM);
         }
@@ -1074,7 +1078,8 @@ TARPC_FUNC(if_nameindex, {},
             for (j = 0; j < i - 1; j++)
             {
                 arr[j].ifindex = ret[j].if_index;
-                if ((arr[j].ifname.ifname_val = strdup(ret[j].if_name)) == NULL)
+                arr[j].ifname.ifname_val = strdup(ret[j].if_name);
+                if (arr[j].ifname.ifname_val == NULL)
                 {
                     for (j--; j >= 0; j--)
                         free(arr[j].ifname.ifname_val);
@@ -1086,32 +1091,32 @@ TARPC_FUNC(if_nameindex, {},
                 }
                 arr[j].ifname.ifname_len = strlen(ret[j].if_name) + 1;
             }
-        } 
-    } 
+        }
+    }
     out->ptr.ptr_val = arr;
     out->ptr.ptr_len = i;
 }
 )
 
-/*---------------------------- if_freenameindex() ----------------------------*/
+/*-------------- if_freenameindex() ----------------------------*/
 
 TARPC_FUNC(if_freenameindex, {},
 {
     MAKE_CALL(func(in->mem_ptr));
-}    
+}
 )
 
-/*--------------------------- sigset_t constructor ---------------------------*/
+/*-------------- sigset_t constructor ---------------------------*/
 
-bool_t                                                                
-_sigset_new_1_svc(tarpc_sigset_new_in *in, tarpc_sigset_new_out *out, 
-                  struct svc_req *rqstp)                              
-{                  
+bool_t
+_sigset_new_1_svc(tarpc_sigset_new_in *in, tarpc_sigset_new_out *out,
+                  struct svc_req *rqstp)
+{
     sigset_t *set;
-    
+
     UNUSED(rqstp);
     UNUSED(in);
- 
+
     memset(out, 0, sizeof(*out));
 
     errno = 0;
@@ -1124,19 +1129,19 @@ _sigset_new_1_svc(tarpc_sigset_new_in *in, tarpc_sigset_new_out *out,
         out->common._errno = RPC_ERRNO;
         out->set = (tarpc_sigset_t)set;
     }
-        
+
     return TRUE;
 }
 
-/*---------------------------- sigset_t destructor ----------------------------*/
+/*-------------- sigset_t destructor ----------------------------*/
 
-bool_t                                                                
-_sigset_delete_1_svc(tarpc_sigset_delete_in *in, 
-                     tarpc_sigset_delete_out *out, 
-                     struct svc_req *rqstp)                              
-{                  
+bool_t
+_sigset_delete_1_svc(tarpc_sigset_delete_in *in,
+                     tarpc_sigset_delete_out *out,
+                     struct svc_req *rqstp)
+{
     UNUSED(rqstp);
- 
+
     memset(out, 0, sizeof(*out));
 
     errno = 0;
@@ -1146,7 +1151,7 @@ _sigset_delete_1_svc(tarpc_sigset_delete_in *in,
     return TRUE;
 }
 
-/*------------------------------ sigemptyset() ------------------------------*/
+/*-------------- sigemptyset() ------------------------------*/
 
 TARPC_FUNC(sigemptyset, {},
 {
@@ -1154,7 +1159,7 @@ TARPC_FUNC(sigemptyset, {},
 }
 )
 
-/*------------------------------ sigpendingt() ------------------------------*/
+/*-------------- sigpendingt() ------------------------------*/
 
 TARPC_FUNC(sigpending, {},
 {
@@ -1162,7 +1167,7 @@ TARPC_FUNC(sigpending, {},
 }
 )
 
-/*------------------------------ sigsuspend() ------------------------------*/
+/*-------------- sigsuspend() ------------------------------*/
 
 TARPC_FUNC(sigsuspend, {},
 {
@@ -1170,7 +1175,7 @@ TARPC_FUNC(sigsuspend, {},
 }
 )
 
-/*------------------------------ sigfillset() ------------------------------*/
+/*-------------- sigfillset() ------------------------------*/
 
 TARPC_FUNC(sigfillset, {},
 {
@@ -1178,7 +1183,7 @@ TARPC_FUNC(sigfillset, {},
 }
 )
 
-/*------------------------------- sigaddset() -------------------------------*/
+/*-------------- sigaddset() -------------------------------*/
 
 TARPC_FUNC(sigaddset, {},
 {
@@ -1186,7 +1191,7 @@ TARPC_FUNC(sigaddset, {},
 }
 )
 
-/*------------------------------- sigdelset() -------------------------------*/
+/*-------------- sigdelset() -------------------------------*/
 
 TARPC_FUNC(sigdelset, {},
 {
@@ -1194,7 +1199,7 @@ TARPC_FUNC(sigdelset, {},
 }
 )
 
-/*------------------------------ sigismember() ------------------------------*/
+/*-------------- sigismember() ------------------------------*/
 
 TARPC_FUNC(sigismember, {},
 {
@@ -1203,15 +1208,16 @@ TARPC_FUNC(sigismember, {},
 }
 )
 
-/*------------------------------ sigprocmask() ------------------------------*/
-TARPC_FUNC(sigprocmask, {}, 
+/*-------------- sigprocmask() ------------------------------*/
+TARPC_FUNC(sigprocmask, {},
 {
     INIT_CHECKED_ARG((char *)in->set, sizeof(sigset_t), 0);
-    MAKE_CALL(out->retval = func(sighow_rpc2h(in->how), in->set, in->oldset));
+    MAKE_CALL(out->retval = func(sighow_rpc2h(in->how), in->set,
+                                 in->oldset));
 }
 )
 
-/*-------------------------------- kill() --------------------------------*/
+/*-------------- kill() --------------------------------*/
 
 TARPC_FUNC(kill, {},
 {
@@ -1219,11 +1225,11 @@ TARPC_FUNC(kill, {},
 }
 )
 
-/*-------------------------------- signal() --------------------------------*/
+/*-------------- signal() --------------------------------*/
 
 typedef void (*sighandler_t)(int);
 
-TARPC_FUNC(signal, 
+TARPC_FUNC(signal,
 {
     if (in->signum == RPC_SIGINT)
     {
@@ -1234,24 +1240,24 @@ TARPC_FUNC(signal,
 {
     sighandler_t handler = rcf_ch_symbol_addr(in->handler.handler_val, 1);
     sighandler_t old_handler;
-    
+
     if (handler == NULL && in->handler.handler_val != NULL)
-    {    
+    {
         char *tmp;
-            
+
         handler = (sighandler_t)strtol(in->handler.handler_val, &tmp, 16);
-            
+
         if (tmp == in->handler.handler_val || *tmp != 0)
             out->common._errno = TE_RC(TE_TA_LINUX, EINVAL);
     }
     if (out->common._errno == 0)
     {
-        MAKE_CALL(old_handler = (sighandler_t)func(signum_rpc2h(in->signum), 
-                                                   handler));
+        MAKE_CALL(old_handler = (sighandler_t)func(
+                      signum_rpc2h(in->signum), handler));
         if (old_handler != SIG_ERR)
         {
             char *name = rcf_ch_symbol_name(old_handler);
-            
+
             if (name != NULL)
             {
                 if ((out->handler.handler_val = strdup(name)) == NULL)
@@ -1281,28 +1287,28 @@ TARPC_FUNC(signal,
 }
 )
 
-/*------------------------------ setsockopt() ------------------------------*/
+/*-------------- setsockopt() ------------------------------*/
 
 TARPC_FUNC(setsockopt, {},
 {
     if (in->optval.optval_val == NULL)
     {
         MAKE_CALL(out->retval = func(in->s, socklevel_rpc2h(in->level),
-                                     sockopt_rpc2h(in->optname), 
+                                     sockopt_rpc2h(in->optname),
                                      NULL, in->optlen));
     }
     else
     {
         char *opt;
         int   optlen;
-        
+
         struct linger   linger;
 #ifdef __linux__
         struct ip_mreqn mreqn;
 #endif
         struct in_addr  addr;
         struct timeval  tv;
-    
+
         switch (in->optval.optval_val[0].opttype)
         {
             case OPT_INT:
@@ -1327,12 +1333,12 @@ TARPC_FUNC(setsockopt, {},
             {
                 opt = (char *)&mreqn;
 
-                memcpy((char *)&(mreqn.imr_multiaddr), 
+                memcpy((char *)&(mreqn.imr_multiaddr),
                        in->optval.optval_val[0].option_value_u.opt_mreqn.
-                       imr_multiaddr, sizeof(mreqn.imr_multiaddr)); 
-                memcpy((char *)&(mreqn.imr_address), 
+                       imr_multiaddr, sizeof(mreqn.imr_multiaddr));
+                memcpy((char *)&(mreqn.imr_address),
                        in->optval.optval_val[0].option_value_u.opt_mreqn.
-                       imr_address, sizeof(mreqn.imr_address)); 
+                       imr_address, sizeof(mreqn.imr_address));
 
                 mreqn.imr_ifindex = in->optval.optval_val[0].option_value_u.
                                     opt_mreqn.imr_ifindex;
@@ -1340,18 +1346,18 @@ TARPC_FUNC(setsockopt, {},
                 break;
             }
 #endif
-            
+
             case OPT_IPADDR:
             {
                 opt = (char *)&addr;
-                
+
                 memcpy(&addr,
                        in->optval.optval_val[0].option_value_u.opt_ipaddr,
                        sizeof(struct in_addr));
                 optlen = sizeof(addr);
                 break;
             }
-            
+
             case OPT_TIMEVAL:
             {
                 opt = (char *)&tv;
@@ -1363,7 +1369,7 @@ TARPC_FUNC(setsockopt, {},
                 optlen = sizeof(tv);
                 break;
             }
-            
+
             case OPT_STRING:
             {
                 opt = (char *)in->optval.optval_val[0].option_value_u.
@@ -1372,22 +1378,22 @@ TARPC_FUNC(setsockopt, {},
                     opt_string.opt_string_len;
                 break;
             }
-            
+
             default:
-                ERROR("incorrect option type %d is received", 
-                      in->optval.optval_val[0].opttype); 
+                ERROR("incorrect option type %d is received",
+                      in->optval.optval_val[0].opttype);
                 opt = NULL;
                 break;
         }
         INIT_CHECKED_ARG(opt, optlen, 0);
         MAKE_CALL(out->retval = func(in->s, socklevel_rpc2h(in->level),
-                                     sockopt_rpc2h(in->optname), 
+                                     sockopt_rpc2h(in->optname),
                                      opt, in->optlen));
     }
 }
 )
 
-/*------------------------------ getsockopt() ------------------------------*/
+/*-------------- getsockopt() ------------------------------*/
 
 #define COPY_TCP_INFO_FIELD(_name) \
     do {                                                               \
@@ -1395,7 +1401,7 @@ TARPC_FUNC(setsockopt, {},
             opt_tcp_info._name = info->_name;                          \
     } while (0)
 
-TARPC_FUNC(getsockopt, 
+TARPC_FUNC(getsockopt,
 {
     COPY_ARG(optval);
     COPY_ARG(optlen);
@@ -1404,7 +1410,7 @@ TARPC_FUNC(getsockopt,
     if (out->optval.optval_val == NULL)
     {
         MAKE_CALL(out->retval = func(in->s, socklevel_rpc2h(in->level),
-                                     sockopt_rpc2h(in->optname), 
+                                     sockopt_rpc2h(in->optname),
                                      NULL, out->optlen.optlen_val));
     }
     else
@@ -1420,26 +1426,26 @@ TARPC_FUNC(getsockopt,
                          (out->optlen.optlen_val == NULL) ?
                             0 : *out->optlen.optlen_val);
         MAKE_CALL(out->retval = func(in->s, socklevel_rpc2h(in->level),
-                                     sockopt_rpc2h(in->optname), 
+                                     sockopt_rpc2h(in->optname),
                                      opt, out->optlen.optlen_val));
         switch (out->optval.optval_val[0].opttype)
         {
             case OPT_INT:
             {
-                /* 
+                /*
                  * SO_ERROR socket option keeps the value of the last
                  * pending error occurred on the socket, so that we should
                  * convert its value to host independend representation,
                  * which is RPC errno
                  */
-                if (in->level == RPC_SOL_SOCKET && 
+                if (in->level == RPC_SOL_SOCKET &&
                     in->optname == RPC_SO_ERROR)
                 {
                     *(int *)opt = errno_h2rpc(*(int *)opt);
                 }
-                
-                /* 
-                 * SO_TYPE and SO_STYLE socket option keeps the value of 
+
+                /*
+                 * SO_TYPE and SO_STYLE socket option keeps the value of
                  * socket type they are called for, so that we should
                  * convert its value to host independend representation,
                  * which is RPC socket type
@@ -1449,37 +1455,37 @@ TARPC_FUNC(getsockopt,
                 {
                     *(int *)opt = socktype_h2rpc(*(int *)opt);
                 }
-                out->optval.optval_val[0].option_value_u.opt_int = *(int *)opt;
+                out->optval.optval_val[0].option_value_u.opt_int =
+                    *(int *)opt;
                 break;
             }
             case OPT_LINGER:
             {
                 struct linger *linger = (struct linger *)opt;
-                
-                out->optval.optval_val[0].option_value_u.opt_linger.l_onoff = 
-                    linger->l_onoff;
-                    
-                out->optval.optval_val[0].option_value_u.opt_linger.l_linger =
-                    linger->l_linger;
+
+                out->optval.optval_val[0].option_value_u.
+                    opt_linger.l_onoff = linger->l_onoff;
+                out->optval.optval_val[0].option_value_u.
+                    opt_linger.l_linger = linger->l_linger;
                 break;
             }
 #ifdef __linux__
             case OPT_MREQN:
             {
                 struct ip_mreqn *mreqn = (struct ip_mreqn *)opt;
-                
+
                 memcpy(out->optval.optval_val[0].option_value_u.opt_mreqn.
-                       imr_multiaddr, (char *)&(mreqn->imr_multiaddr), 
-                       sizeof(mreqn->imr_multiaddr)); 
+                       imr_multiaddr, (char *)&(mreqn->imr_multiaddr),
+                       sizeof(mreqn->imr_multiaddr));
                 memcpy(out->optval.optval_val[0].option_value_u.opt_mreqn.
-                       imr_address, (char *)&(mreqn->imr_address), 
+                       imr_address, (char *)&(mreqn->imr_address),
                        sizeof(mreqn->imr_address));
-                out->optval.optval_val[0].option_value_u.opt_mreqn.imr_ifindex =
-                    mreqn->imr_ifindex; 
+                out->optval.optval_val[0].option_value_u.opt_mreqn.
+                    imr_ifindex = mreqn->imr_ifindex;
                 break;
             }
 #endif
-            
+
             case OPT_IPADDR:
             {
                 struct in_addr *addr = (struct in_addr *)opt;
@@ -1493,13 +1499,13 @@ TARPC_FUNC(getsockopt,
             {
                 struct timeval *tv = (struct timeval *)opt;
 
-                out->optval.optval_val[0].option_value_u.opt_timeval.tv_sec =
-                    tv->tv_sec;
-                out->optval.optval_val[0].option_value_u.opt_timeval.tv_usec =
-                    tv->tv_usec;
+                out->optval.optval_val[0].option_value_u.
+                    opt_timeval.tv_sec = tv->tv_sec;
+                out->optval.optval_val[0].option_value_u.
+                    opt_timeval.tv_usec = tv->tv_usec;
                 break;
             }
-            
+
             case OPT_STRING:
             {
                 char *str = (char *)opt;
@@ -1512,11 +1518,11 @@ TARPC_FUNC(getsockopt,
                 break;
             }
 
-#ifdef __linux__ 
+#ifdef __linux__
             case OPT_TCP_INFO:
             {
                 struct tcp_info *info = (struct tcp_info *)opt;
-    
+
                 COPY_TCP_INFO_FIELD(tcpi_state);
                 COPY_TCP_INFO_FIELD(tcpi_ca_state);
                 COPY_TCP_INFO_FIELD(tcpi_retransmits);
@@ -1551,22 +1557,22 @@ TARPC_FUNC(getsockopt,
 #endif
 
             default:
-                ERROR("incorrect option type %d is received", 
-                      out->optval.optval_val[0].opttype); 
+                ERROR("incorrect option type %d is received",
+                      out->optval.optval_val[0].opttype);
                 break;
-        } 
-    } 
+        }
+    }
 }
 )
 
 #undef COPY_TCP_INFO_FIELD
 
-/*-------------------------------- pselect() --------------------------------*/
+/*-------------- pselect() --------------------------------*/
 
 TARPC_FUNC(pselect, {},
 {
     struct timespec tv;
-    
+
     if (in->timeout.timeout_len > 0)
     {
         tv.tv_sec = in->timeout.timeout_val[0].tv_sec;
@@ -1575,7 +1581,7 @@ TARPC_FUNC(pselect, {},
 
     INIT_CHECKED_ARG((char *)(in->sigmask), sizeof(sigset_t), 0);
     INIT_CHECKED_ARG((char *)&tv, sizeof(tv), 0);
-    
+
     MAKE_CALL(out->retval = func(in->n, (fd_set *)(in->readfds),
                                  (fd_set *)(in->writefds),
                                  (fd_set *)(in->exceptfds),
@@ -1587,23 +1593,23 @@ TARPC_FUNC(pselect, {},
 TARPC_FUNC(fcntl, {},
 {
     int arg = in->arg;
-    
-    if (in->cmd == RPC_F_GETFD || in->cmd == RPC_F_GETFL || 
+
+    if (in->cmd == RPC_F_GETFD || in->cmd == RPC_F_GETFL ||
         in->cmd == RPC_F_SETFL)
         arg = fcntl_flag_rpc2h(arg);
-        
+
     if (in->arg != 0)
         MAKE_CALL(out->retval = func(in->fd, fcntl_rpc2h(in->cmd), arg));
     else
         MAKE_CALL(out->retval = func(in->fd, fcntl_rpc2h(in->cmd)));
 
-    if (in->cmd == RPC_F_GETFD || in->cmd == RPC_F_GETFL || 
+    if (in->cmd == RPC_F_GETFD || in->cmd == RPC_F_GETFL ||
         in->cmd == RPC_F_SETFL)
         out->retval = fcntl_flag_h2rpc(out->retval);
 }
 )
 
-TARPC_FUNC(ioctl, 
+TARPC_FUNC(ioctl,
 {
     COPY_ARG(req);
 },
@@ -1625,14 +1631,13 @@ TARPC_FUNC(ioctl,
             {
                 req = (char *)&req_timeval;
                 reqlen = sizeof(struct timeval);
-                req_timeval.tv_sec = 
-                    out->req.req_val[0].ioctl_request_u.req_timeval.tv_sec;
-                req_timeval.tv_usec = 
-                    out->req.req_val[0].ioctl_request_u.req_timeval.tv_usec;
-
+                req_timeval.tv_sec = out->req.req_val[0].
+                    ioctl_request_u.req_timeval.tv_sec;
+                req_timeval.tv_usec = out->req.req_val[0].
+                    ioctl_request_u.req_timeval.tv_usec;
                 break;
             }
-                            
+
             case IOCTL_INT:
             {
                 req = (char *)&req_int;
@@ -1640,12 +1645,12 @@ TARPC_FUNC(ioctl,
                 reqlen = sizeof(int);
                 break;
             }
-                
+
             case IOCTL_IFREQ:
             {
                 req = (char *)&req_ifreq;
                 reqlen = sizeof(struct ifreq);
-                
+
                 memset(req, 0, reqlen);
                 /* Copy the whole 'ifr_name' buffer, not just strcpy() */
                 memcpy(req_ifreq.ifr_name,
@@ -1653,9 +1658,9 @@ TARPC_FUNC(ioctl,
                        rpc_ifr_name,
                        sizeof(req_ifreq.ifr_name));
 
-                INIT_CHECKED_ARG(req_ifreq.ifr_name, 
-                                 strlen(req_ifreq.ifr_name) + 1, 0); 
-                       
+                INIT_CHECKED_ARG(req_ifreq.ifr_name,
+                                 strlen(req_ifreq.ifr_name) + 1, 0);
+
                 switch (in->code)
                 {
                     case RPC_SIOCSIFFLAGS:
@@ -1664,21 +1669,21 @@ TARPC_FUNC(ioctl,
                                 out->req.req_val[0].ioctl_request_u.
                                     req_ifreq.rpc_ifr_flags);
                         break;
-                        
+
                     case RPC_SIOCSIFMTU:
-                        req_ifreq.ifr_mtu = 
+                        req_ifreq.ifr_mtu =
                             out->req.req_val[0].ioctl_request_u.
                             req_ifreq.rpc_ifr_mtu;
                         break;
-                        
+
                     case RPC_SIOCSIFADDR:
                     case RPC_SIOCSIFNETMASK:
                     case RPC_SIOCSIFBRDADDR:
                     case RPC_SIOCSIFDSTADDR:
-                        sockaddr_rpc2h(&(out->req.req_val[0].ioctl_request_u.
-                                       req_ifreq.rpc_ifr_addr),
-                                       (struct sockaddr_storage *)
-                                           (&(req_ifreq.ifr_addr)));
+                        sockaddr_rpc2h(&(out->req.req_val[0].
+                            ioctl_request_u.req_ifreq.rpc_ifr_addr),
+                            (struct sockaddr_storage *)
+                                (&(req_ifreq.ifr_addr)));
                        break;
                 }
                 break;
@@ -1689,10 +1694,10 @@ TARPC_FUNC(ioctl,
                 char *buf = NULL;
                 int   buflen = out->req.req_val[0].ioctl_request_u.
                                req_ifconf.buflen;
-                
+
                 req = (char *)&req_ifconf;
                 reqlen = sizeof(req_ifconf);
-                         
+
                 if (buflen > 0 && (buf = calloc(1, buflen + 10)) == NULL)
                 {
                     ERROR("No enough memory");
@@ -1702,7 +1707,7 @@ TARPC_FUNC(ioctl,
                 req_ifconf.ifc_buf = buf;
                 req_ifconf.ifc_len = buflen;
                 if (buf != NULL)
-                    INIT_CHECKED_ARG(buf, buflen + 10, buflen); 
+                    INIT_CHECKED_ARG(buf, buflen + 10, buflen);
                 break;
             }
             case IOCTL_ARPREQ:
@@ -1737,7 +1742,7 @@ TARPC_FUNC(ioctl,
                 }
                 break;
             }
-                
+
             default:
                 ERROR("incorrect request type %d is received",
                       out->req.req_val[0].type);
@@ -1746,9 +1751,9 @@ TARPC_FUNC(ioctl,
                 break;
         }
     }
-    
+
     if (in->access == IOCTL_WR)
-        INIT_CHECKED_ARG(req, reqlen, 0); 
+        INIT_CHECKED_ARG(req, reqlen, 0);
     MAKE_CALL(out->retval = func(in->s, ioctl_rpc2h(in->code), req));
     if (req != NULL)
     {
@@ -1757,22 +1762,23 @@ TARPC_FUNC(ioctl,
             case IOCTL_INT:
                 out->req.req_val[0].ioctl_request_u.req_int = req_int;
                 break;
-                
+
             case IOCTL_TIMEVAL:
                 out->req.req_val[0].ioctl_request_u.req_timeval.tv_sec =
                     req_timeval.tv_sec;
                 out->req.req_val[0].ioctl_request_u.req_timeval.tv_usec =
                     req_timeval.tv_usec;
                 break;
-                
+
             case IOCTL_IFREQ:
                 switch (in->code)
                 {
                     case RPC_SIOCGIFFLAGS:
                     case RPC_SIOCSIFFLAGS:
                         out->req.req_val[0].ioctl_request_u.req_ifreq.
-                            rpc_ifr_flags = if_fl_h2rpc((uint32_t)(unsigned short int)
-                                req_ifreq.ifr_flags);
+                            rpc_ifr_flags = if_fl_h2rpc(
+                                (uint32_t)(unsigned short int)
+                                    req_ifreq.ifr_flags);
                         break;
 
                     case RPC_SIOCGIFMTU:
@@ -1791,7 +1797,8 @@ TARPC_FUNC(ioctl,
                     case RPC_SIOCSIFDSTADDR:
                     case RPC_SIOCGIFHWADDR:
                         sockaddr_h2rpc(&(req_ifreq.ifr_addr),
-                                       &(out->req.req_val[0].ioctl_request_u.
+                                       &(out->req.req_val[0].
+                                         ioctl_request_u.
                                          req_ifreq.rpc_ifr_addr));
                         break;
 
@@ -1802,32 +1809,32 @@ TARPC_FUNC(ioctl,
                         goto finish;
                 }
                 break;
-                
+
             case IOCTL_IFCONF:
             {
                 struct ifreq       *req_c;
                 struct tarpc_ifreq *req_t;
-                
+
                 int n = 1;
                 int i;
-                
-                if (req_ifconf.ifc_len > 
+
+                if (req_ifconf.ifc_len >
                     out->req.req_val[0].ioctl_request_u.req_ifconf.buflen)
                 {
-                    n = out->req.req_val[0].ioctl_request_u.req_ifconf.buflen /
-                        sizeof(struct ifreq);
+                    n = out->req.req_val[0].ioctl_request_u.
+                            req_ifconf.buflen / sizeof(struct ifreq);
                 }
                 else
                 {
                     n = req_ifconf.ifc_len / sizeof(struct ifreq);
-                }    
-                
+                }
+
                 out->req.req_val[0].ioctl_request_u.req_ifconf.buflen =
                     req_ifconf.ifc_len;
-                    
+
                 if (req_ifconf.ifc_req == NULL)
                     break;
-                
+
                 if ((req_t = calloc(n, sizeof(*req_t))) == NULL)
                 {
                     free(req_ifconf.ifc_buf);
@@ -1840,21 +1847,26 @@ TARPC_FUNC(ioctl,
                 out->req.req_val[0].ioctl_request_u.req_ifconf.
                     rpc_ifc_req.rpc_ifc_req_len = n;
                 req_c = ((struct ifconf *)req)->ifc_req;
-                
+
                 for (i = 0; i < n; i++, req_t++, req_c++)
                 {
                     strcpy(req_t->rpc_ifr_name, req_c->ifr_name);
                     if ((req_t->rpc_ifr_addr.sa_data.sa_data_val =
                          calloc(1, SA_DATA_MAX_LEN)) == NULL)
                     {
-                        /* Already allocated memory will be released by RPC */
+                        /* 
+                         * Already allocated memory will be released 
+                         * by RPC
+                         */
                         free(req_ifconf.ifc_buf);
                         ERROR("No enough memory");
                         out->common._errno = TE_RC(TE_TA_LINUX, ENOMEM);
                         goto finish;
                     }
-                    req_t->rpc_ifr_addr.sa_data.sa_data_len = SA_DATA_MAX_LEN;
-                    sockaddr_h2rpc(&(req_c->ifr_addr), &(req_t->rpc_ifr_addr));
+                    req_t->rpc_ifr_addr.sa_data.sa_data_len =
+                        SA_DATA_MAX_LEN;
+                    sockaddr_h2rpc(&(req_c->ifr_addr),
+                                   &(req_t->rpc_ifr_addr));
                 }
                 free(req_ifconf.ifc_buf);
                 break;
@@ -1868,10 +1880,10 @@ TARPC_FUNC(ioctl,
                                    &(out->req.req_val[0].ioctl_request_u.
                                    req_arpreq.rpc_arp_pa));
                     /* Copy HW address */
-                    sockaddr_h2rpc(&(req_arpreq.arp_ha), 
+                    sockaddr_h2rpc(&(req_arpreq.arp_ha),
                                    &(out->req.req_val[0].ioctl_request_u.
                                    req_arpreq.rpc_arp_ha));
-                    
+
                     /* Copy flags */
                     out->req.req_val[0].ioctl_request_u.req_arpreq.
                         rpc_arp_flags = arp_fl_h2rpc(req_arpreq.arp_flags);
@@ -1918,29 +1930,29 @@ msghdr2str(const struct msghdr *msg)
     return buf;
 }
 
-/*------------------------------ sendmsg() ------------------------------*/
+/*-------------- sendmsg() ------------------------------*/
 
-TARPC_FUNC(sendmsg, 
+TARPC_FUNC(sendmsg,
 {
-    if (in->msg.msg_val != NULL && 
+    if (in->msg.msg_val != NULL &&
         in->msg.msg_val[0].msg_iov.msg_iov_val != NULL &&
         in->msg.msg_val[0].msg_iov.msg_iov_len > RCF_RPC_MAX_IOVEC)
     {
-        ERROR("Too long iovec is provided"); 
+        ERROR("Too long iovec is provided");
         out->common._errno = TE_RC(TE_TA_LINUX, ENOMEM);
         return TRUE;
     }
 },
 {
     struct iovec iovec_arr[RCF_RPC_MAX_IOVEC];
-    
+
     unsigned int i;
 
     memset(iovec_arr, 0, sizeof(iovec_arr));
-    
+
     if (in->msg.msg_val == NULL)
     {
-        MAKE_CALL(out->retval = func(in->s, NULL, 
+        MAKE_CALL(out->retval = func(in->s, NULL,
                                      send_recv_flags_rpc2h(in->flags)));
     }
     else
@@ -1955,23 +1967,24 @@ TARPC_FUNC(sendmsg,
         msg.msg_namelen = rpc_msg->msg_namelen;
         msg.msg_name = a;
         msg.msg_iovlen = rpc_msg->msg_iovlen;
-    
+
         if (rpc_msg->msg_iov.msg_iov_val != NULL)
-        {    
+        {
             for (i = 0; i < rpc_msg->msg_iov.msg_iov_len; i++)
             {
-                INIT_CHECKED_ARG( 
+                INIT_CHECKED_ARG(
                     rpc_msg->msg_iov.msg_iov_val[i].iov_base.iov_base_val,
-                    rpc_msg->msg_iov.msg_iov_val[i].iov_base.iov_base_len, 0);
-                iovec_arr[i].iov_base = 
+                    rpc_msg->msg_iov.msg_iov_val[i].iov_base.iov_base_len,
+                    0);
+                iovec_arr[i].iov_base =
                     rpc_msg->msg_iov.msg_iov_val[i].iov_base.iov_base_val;
-                iovec_arr[i].iov_len = 
+                iovec_arr[i].iov_len =
                     rpc_msg->msg_iov.msg_iov_val[i].iov_len;
             }
             msg.msg_iov = iovec_arr;
             INIT_CHECKED_ARG((char *)iovec_arr, sizeof(iovec_arr), 0);
         }
-        INIT_CHECKED_ARG(rpc_msg->msg_control.msg_control_val, 
+        INIT_CHECKED_ARG(rpc_msg->msg_control.msg_control_val,
                          rpc_msg->msg_control.msg_control_len, 0);
         msg.msg_control = rpc_msg->msg_control.msg_control_val;
         msg.msg_controllen = rpc_msg->msg_controllen;
@@ -1980,21 +1993,21 @@ TARPC_FUNC(sendmsg,
 
         VERB("sendmsg(): s=%d, msg=%s, flags=0x%x", in->s,
              msghdr2str(&msg), send_recv_flags_rpc2h(in->flags));
-        MAKE_CALL(out->retval = func(in->s, &msg, 
+        MAKE_CALL(out->retval = func(in->s, &msg,
                                      send_recv_flags_rpc2h(in->flags)));
     }
 }
 )
 
-/*------------------------------ recvmsg() ------------------------------*/
+/*-------------- recvmsg() ------------------------------*/
 
-TARPC_FUNC(recvmsg, 
+TARPC_FUNC(recvmsg,
 {
-    if (in->msg.msg_val != NULL && 
+    if (in->msg.msg_val != NULL &&
         in->msg.msg_val[0].msg_iov.msg_iov_val != NULL &&
         in->msg.msg_val[0].msg_iov.msg_iov_len > RCF_RPC_MAX_IOVEC)
     {
-        ERROR("Too long iovec is provided"); 
+        ERROR("Too long iovec is provided");
         out->common._errno = TE_RC(TE_TA_LINUX, ENOMEM);
         return TRUE;
     }
@@ -2002,21 +2015,21 @@ TARPC_FUNC(recvmsg,
 },
 {
     struct iovec iovec_arr[RCF_RPC_MAX_IOVEC];
-    
+
     unsigned int i;
-    
+
     memset(iovec_arr, 0, sizeof(iovec_arr));
     if (out->msg.msg_val == NULL)
     {
-        MAKE_CALL(out->retval = func(in->s, NULL, 
+        MAKE_CALL(out->retval = func(in->s, NULL,
                                      send_recv_flags_rpc2h(in->flags)));
     }
     else
     {
         struct msghdr msg;
-        
+
         struct tarpc_msghdr *rpc_msg = out->msg.msg_val;
-    
+
         memset(&msg, 0, sizeof(msg));
 
         PREPARE_ADDR(rpc_msg->msg_name, rpc_msg->msg_namelen);
@@ -2025,24 +2038,24 @@ TARPC_FUNC(recvmsg,
 
         msg.msg_iovlen = rpc_msg->msg_iovlen;
         if (rpc_msg->msg_iov.msg_iov_val != NULL)
-        {    
+        {
             for (i = 0; i < rpc_msg->msg_iov.msg_iov_len; i++)
             {
                 INIT_CHECKED_ARG(
                     rpc_msg->msg_iov.msg_iov_val[i].iov_base.iov_base_val,
-                    rpc_msg->msg_iov.msg_iov_val[i].iov_base.iov_base_len, 
+                    rpc_msg->msg_iov.msg_iov_val[i].iov_base.iov_base_len,
                     rpc_msg->msg_iov.msg_iov_val[i].iov_len);
-                iovec_arr[i].iov_base = 
+                iovec_arr[i].iov_base =
                     rpc_msg->msg_iov.msg_iov_val[i].iov_base.iov_base_val;
-                iovec_arr[i].iov_len = 
+                iovec_arr[i].iov_len =
                     rpc_msg->msg_iov.msg_iov_val[i].iov_len;
             }
             msg.msg_iov = iovec_arr;
             INIT_CHECKED_ARG((char *)iovec_arr, sizeof(iovec_arr), 0);
         }
 
-        INIT_CHECKED_ARG(rpc_msg->msg_control.msg_control_val, 
-                         rpc_msg->msg_control.msg_control_len, 
+        INIT_CHECKED_ARG(rpc_msg->msg_control.msg_control_val,
+                         rpc_msg->msg_control.msg_control_len,
                          rpc_msg->msg_controllen);
         msg.msg_control = rpc_msg->msg_control.msg_control_val;
         msg.msg_controllen = rpc_msg->msg_controllen;
@@ -2055,13 +2068,17 @@ TARPC_FUNC(recvmsg,
          *
          * msg_namelen, msg_controllen and msg_flags MAY be changed.
          */
-        INIT_CHECKED_ARG((char *)&msg.msg_name, sizeof(msg.msg_name), 0);
-        INIT_CHECKED_ARG((char *)&msg.msg_iov, sizeof(msg.msg_iov), 0);
-        INIT_CHECKED_ARG((char *)&msg.msg_iovlen, sizeof(msg.msg_iovlen), 0);
-        INIT_CHECKED_ARG((char *)&msg.msg_control, sizeof(msg.msg_control), 0);
+        INIT_CHECKED_ARG((char *)&msg.msg_name,
+                         sizeof(msg.msg_name), 0);
+        INIT_CHECKED_ARG((char *)&msg.msg_iov,
+                         sizeof(msg.msg_iov), 0);
+        INIT_CHECKED_ARG((char *)&msg.msg_iovlen,
+                         sizeof(msg.msg_iovlen), 0);
+        INIT_CHECKED_ARG((char *)&msg.msg_control,
+                         sizeof(msg.msg_control), 0);
 
         VERB("recvmsg(): in msg=%s", msghdr2str(&msg));
-        MAKE_CALL(out->retval = func(in->s, &msg, 
+        MAKE_CALL(out->retval = func(in->s, &msg,
                                      send_recv_flags_rpc2h(in->flags))
                   );
         VERB("recvmsg(): out msg=%s", msghdr2str(&msg));
@@ -2074,20 +2091,21 @@ TARPC_FUNC(recvmsg,
         {
             for (i = 0; i < rpc_msg->msg_iov.msg_iov_len; i++)
             {
-                rpc_msg->msg_iov.msg_iov_val[i].iov_len = iovec_arr[i].iov_len;
+                rpc_msg->msg_iov.msg_iov_val[i].iov_len =
+                    iovec_arr[i].iov_len;
             }
         }
     }
 }
 )
 
-/*-------------------------------- poll() --------------------------------*/
+/*-------------- poll() --------------------------------*/
 
-TARPC_FUNC(poll, 
+TARPC_FUNC(poll,
 {
     if (in->ufds.ufds_len > RPC_POLL_NFDS_MAX)
     {
-        ERROR("Too big nfds is passed to the poll()"); 
+        ERROR("Too big nfds is passed to the poll()");
         out->common._errno = TE_RC(TE_TA_LINUX, ENOMEM);
         return TRUE;
     }
@@ -2095,24 +2113,24 @@ TARPC_FUNC(poll,
 },
 {
     struct pollfd ufds[RPC_POLL_NFDS_MAX];
-    
+
     unsigned int i;
-    
+
     VERB("poll(): IN ufds=0x%x[%u] nfds=%u timeout=%d",
-         (unsigned int)out->ufds.ufds_val, out->ufds.ufds_len, in->nfds, 
+         (unsigned int)out->ufds.ufds_val, out->ufds.ufds_len, in->nfds,
          in->timeout);
     for (i = 0; i < out->ufds.ufds_len; i++)
     {
         ufds[i].fd = out->ufds.ufds_val[i].fd;
         INIT_CHECKED_ARG((char *)&(ufds[i].fd), sizeof(ufds[i].fd), 0);
         ufds[i].events = poll_event_rpc2h(out->ufds.ufds_val[i].events);
-        INIT_CHECKED_ARG((char *)&(ufds[i].events), 
+        INIT_CHECKED_ARG((char *)&(ufds[i].events),
                          sizeof(ufds[i].events), 0);
         ufds[i].revents = poll_event_rpc2h(out->ufds.ufds_val[i].revents);
         VERB("poll(): IN fd=%d events=%hd revents=%hd",
              ufds[i].fd, ufds[i].events, ufds[i].revents);
     }
-    
+
     VERB("poll(): call with ufds=0x%x, nfds=%u, timeout=%d",
          (unsigned int)ufds, in->nfds, in->timeout);
     MAKE_CALL(out->retval = func((int)ufds, in->nfds, in->timeout));
@@ -2120,14 +2138,14 @@ TARPC_FUNC(poll,
 
     for (i = 0; i < out->ufds.ufds_len; i++)
     {
-        out->ufds.ufds_val[i].revents = poll_event_h2rpc(ufds[i].revents); 
+        out->ufds.ufds_val[i].revents = poll_event_h2rpc(ufds[i].revents);
         VERB("poll(): OUT host-revents=%hd rpc-revents=%hd",
              ufds[i].revents, out->ufds.ufds_val[i].revents);
     }
 }
 )
 
-/** 
+/**
  * Convert host representation of the hostent to the RPC one.
  * The memory is allocated by the routine.
  *
@@ -2139,33 +2157,33 @@ static tarpc_hostent *
 hostent_h2rpc(struct hostent *he)
 {
     tarpc_hostent *rpc_he = (tarpc_hostent *)calloc(1, sizeof(*rpc_he));
-    
+
     unsigned int i;
     unsigned int k;
-    
+
     if (rpc_he == NULL)
         return NULL;
-        
+
     if (he->h_name != NULL)
-    { 
+    {
         if ((rpc_he->h_name.h_name_val = strdup(he->h_name)) == NULL)
             goto release;
         rpc_he->h_name.h_name_len = strlen(he->h_name) + 1;
     }
-    
+
     if (he->h_aliases != NULL)
     {
         char **ptr;
-        
+
         for (i = 1, ptr = he->h_aliases; *ptr != NULL; ptr++, i++);
-        
-        if ((rpc_he->h_aliases.h_aliases_val = 
+
+        if ((rpc_he->h_aliases.h_aliases_val =
              (tarpc_h_alias *)calloc(i, sizeof(tarpc_h_alias))) == NULL)
         {
             goto release;
         }
         rpc_he->h_aliases.h_aliases_len = i;
-        
+
         for (k = 0; k < i - 1; k++)
         {
             if ((rpc_he->h_aliases.h_aliases_val[k].name.name_val =
@@ -2173,27 +2191,27 @@ hostent_h2rpc(struct hostent *he)
             {
                 goto release;
             }
-            rpc_he->h_aliases.h_aliases_val[k].name.name_len = 
+            rpc_he->h_aliases.h_aliases_val[k].name.name_len =
                 strlen((he->h_aliases)[k]) + 1;
         }
     }
-    
+
     rpc_he->h_addrtype = domain_h2rpc(he->h_addrtype);
     rpc_he->h_length = he->h_length;
-    
+
     if (he->h_addr_list != NULL)
     {
         char **ptr;
-        
+
         for (i = 1, ptr = he->h_addr_list; *ptr != NULL; ptr++, i++);
 
-        if ((rpc_he->h_addr_list.h_addr_list_val = 
+        if ((rpc_he->h_addr_list.h_addr_list_val =
              (tarpc_h_addr *)calloc(i, sizeof(tarpc_h_addr))) == NULL)
         {
             goto release;
         }
         rpc_he->h_addr_list.h_addr_list_len = i;
-        
+
         for (k = 0; k < i - 1; k++)
         {
             if ((rpc_he->h_addr_list.h_addr_list_val[i].val.val_val =
@@ -2201,15 +2219,15 @@ hostent_h2rpc(struct hostent *he)
             {
                 goto release;
             }
-            rpc_he->h_addr_list.h_addr_list_val[i].val.val_len = 
+            rpc_he->h_addr_list.h_addr_list_val[i].val.val_len =
                 rpc_he->h_length;
-            memcpy(rpc_he->h_addr_list.h_addr_list_val[i].val.val_val, 
+            memcpy(rpc_he->h_addr_list.h_addr_list_val[i].val.val_val,
                    he->h_addr_list[i], rpc_he->h_length);
         }
     }
-    
+
     return rpc_he;
-    
+
 release:
     /* Release the memory in the case of failure */
     free(rpc_he->h_name.h_name_val);
@@ -2229,12 +2247,12 @@ release:
     return NULL;
 }
 
-/*----------------------------- gethostbyname() -----------------------------*/
+/*-------------- gethostbyname() -----------------------------*/
 
 TARPC_FUNC(gethostbyname, {},
 {
     struct hostent *he;
-    
+
     MAKE_CALL(he = (struct hostent *)func((int)(in->name.name_val)));
     if (he != NULL)
     {
@@ -2246,16 +2264,16 @@ TARPC_FUNC(gethostbyname, {},
 }
 )
 
-/*----------------------------- gethostbyaddr() -----------------------------*/
+/*-------------- gethostbyaddr() -----------------------------*/
 
 TARPC_FUNC(gethostbyaddr, {},
 {
     struct hostent *he;
-    
+
     INIT_CHECKED_ARG(in->addr.val.val_val, in->addr.val.val_len, 0);
-    
-    MAKE_CALL(he = (struct hostent *)func((int)(in->addr.val.val_val), 
-                                          in->addr.val.val_len, 
+
+    MAKE_CALL(he = (struct hostent *)func((int)(in->addr.val.val_val),
+                                          in->addr.val.val_len,
                                           addr_family_rpc2h(in->type)));
     if (he != NULL)
     {
@@ -2266,11 +2284,11 @@ TARPC_FUNC(gethostbyaddr, {},
     }
 }
 )
- 
 
-/*----------------------------- getaddrinfo() -----------------------------*/
 
-/** 
+/*-------------- getaddrinfo() -----------------------------*/
+
+/**
  * Convert host native addrinfo to the RPC one.
  *
  * @param ai            host addrinfo structure
@@ -2287,23 +2305,23 @@ ai_h2rpc(struct addrinfo *ai, struct tarpc_ai *ai_rpc)
     ai_rpc->socktype = socktype_h2rpc(ai->ai_socktype);
     ai_rpc->protocol = proto_h2rpc(ai->ai_protocol);
     ai_rpc->addrlen = ai->ai_addrlen - SA_COMMON_LEN;
-    
+
     if (ai->ai_addr != NULL)
     {
-        if ((ai_rpc->addr.sa_data.sa_data_val = 
+        if ((ai_rpc->addr.sa_data.sa_data_val =
              calloc(1, ai_rpc->addrlen)) == NULL)
         {
             return -1;
         }
         ai_rpc->addr.sa_family = addr_family_h2rpc(ai->ai_addr->sa_family);
-        memcpy(ai_rpc->addr.sa_data.sa_data_val, ai->ai_addr->sa_data, 
+        memcpy(ai_rpc->addr.sa_data.sa_data_val, ai->ai_addr->sa_data,
                ai_rpc->addrlen);
         ai_rpc->addr.sa_data.sa_data_len = ai_rpc->addrlen;
     }
-    
+
     if (ai->ai_canonname != NULL)
     {
-        if ((ai_rpc->canonname.canonname_val = 
+        if ((ai_rpc->canonname.canonname_val =
              strdup(ai->ai_canonname)) == NULL)
         {
             free(ai_rpc->addr.sa_data.sa_data_val);
@@ -2311,7 +2329,7 @@ ai_h2rpc(struct addrinfo *ai, struct tarpc_ai *ai_rpc)
         }
         ai_rpc->canonname.canonname_len = strlen(ai->ai_canonname) + 1;
     }
-    
+
     return 0;
 }
 
@@ -2321,9 +2339,9 @@ TARPC_FUNC(getaddrinfo, {},
     struct addrinfo *info = NULL;
     struct addrinfo *res = NULL;
 
-    struct sockaddr_storage addr;                    
-    struct sockaddr        *a;  
-   
+    struct sockaddr_storage addr;
+    struct sockaddr        *a;
+
     if (in->hints.hints_val != NULL)
     {
         info = &hints;
@@ -2333,8 +2351,8 @@ TARPC_FUNC(getaddrinfo, {},
         hints.ai_protocol = proto_rpc2h(in->hints.hints_val[0].protocol);
         hints.ai_addrlen = in->hints.hints_val[0].addrlen + SA_COMMON_LEN;
         a = sockaddr_rpc2h(&(in->hints.hints_val[0].addr), &addr);
-        INIT_CHECKED_ARG((char *)a,               
-                         in->hints.hints_val[0].addr.sa_data.sa_data_len + 
+        INIT_CHECKED_ARG((char *)a,
+                         in->hints.hints_val[0].addr.sa_data.sa_data_len +
                          SA_COMMON_LEN, 0);
         hints.ai_addr = a;
         hints.ai_canonname = in->hints.hints_val[0].canonname.canonname_val;
@@ -2344,12 +2362,12 @@ TARPC_FUNC(getaddrinfo, {},
         INIT_CHECKED_ARG((char *)info, sizeof(*info), 0);
     }
     INIT_CHECKED_ARG(in->node.node_val, in->node.node_len, 0);
-    INIT_CHECKED_ARG(in->service.service_val, 
-                     in->service.service_len, 0); 
+    INIT_CHECKED_ARG(in->service.service_val,
+                     in->service.service_len, 0);
     /* I do not understand, which function is found by usual way */
-    func = (sock_api_func)getaddrinfo;                     
-    MAKE_CALL(out->retval = func((int)(in->node.node_val), 
-                                       in->service.service_val, info, &res)); 
+    func = (sock_api_func)getaddrinfo;
+    MAKE_CALL(out->retval = func((int)(in->node.node_val),
+                                 in->service.service_val, info, &res));
     if (out->retval != 0 && res != NULL)
     {
         out->common._errno = TE_RC(TE_TA_LINUX, ETECORRUPTED);
@@ -2358,15 +2376,15 @@ TARPC_FUNC(getaddrinfo, {},
     if (res != NULL)
     {
         int i;
-        
+
         struct tarpc_ai *arr;
-                
+
         for (i = 0, info = res; info != NULL; i++, info = info->ai_next);
-        
+
         if ((arr = calloc(i, sizeof(*arr))) != NULL)
         {
             int k;
-            
+
             for (k = 0, info = res; k < i; k++, info = info->ai_next)
             {
                 if (ai_h2rpc(info, arr + k) < 0)
@@ -2381,7 +2399,7 @@ TARPC_FUNC(getaddrinfo, {},
                     break;
                 }
             }
-        } 
+        }
         if (arr == NULL)
         {
             out->common._errno = TE_RC(TE_TA_LINUX, ENOMEM);
@@ -2392,12 +2410,12 @@ TARPC_FUNC(getaddrinfo, {},
             out->mem_ptr = (unsigned int)res;
             out->res.res_val = arr;
             out->res.res_len = i;
-        } 
-    } 
+        }
+    }
 }
 )
 
-/*----------------------------- freeaddrinfo() -----------------------------*/
+/*-------------- freeaddrinfo() -----------------------------*/
 TARPC_FUNC(freeaddrinfo, {},
 {
     func = (sock_api_func)freeaddrinfo;
@@ -2405,12 +2423,16 @@ TARPC_FUNC(freeaddrinfo, {},
 }
 )
 
-/*-------------------------------- pipe() --------------------------------*/
-TARPC_FUNC(pipe, {}, { MAKE_CALL(out->retval = func((int)(out->filedes))); })
+/*-------------- pipe() --------------------------------*/
+TARPC_FUNC(pipe, {},
+{
+    MAKE_CALL(out->retval = func((int)(out->filedes)));
+}
+)
 
-/*------------------------------ socketpair() ------------------------------*/
+/*-------------- socketpair() ------------------------------*/
 
-TARPC_FUNC(socketpair, {}, 
+TARPC_FUNC(socketpair, {},
 {
     MAKE_CALL(out->retval = func(domain_rpc2h(in->domain),
                                  socktype_rpc2h(in->type),
@@ -2418,59 +2440,64 @@ TARPC_FUNC(socketpair, {},
 }
 )
 
-/*-------------------------------- fopen() --------------------------------*/
+/*-------------- fopen() --------------------------------*/
 TARPC_FUNC(fopen, {},
 {
 #if 1
     func = (sock_api_func)fopen;
 #endif
-    MAKE_CALL(out->mem_ptr = func((int)(in->path.path_val), in->mode.mode_val));
+    MAKE_CALL(out->mem_ptr = func((int)(in->path.path_val),
+                                  in->mode.mode_val));
 }
 )
 
-/*-------------------------------- fileno() --------------------------------*/
+/*-------------- fileno() --------------------------------*/
 TARPC_FUNC(fileno, {}, { MAKE_CALL(out->fd = func(in->mem_ptr)); })
 
-/*-------------------------------- getuid() --------------------------------*/
+/*-------------- getuid() --------------------------------*/
 TARPC_FUNC(getuid, {}, { MAKE_CALL(out->uid = func(0)); })
 
-/*-------------------------------- getuid() --------------------------------*/
+/*-------------- getuid() --------------------------------*/
 TARPC_FUNC(geteuid, {}, { MAKE_CALL(out->uid = func(0)); })
 
-/*-------------------------------- setuid() --------------------------------*/
+/*-------------- setuid() --------------------------------*/
 TARPC_FUNC(setuid, {}, { MAKE_CALL(out->retval = func(in->uid)); })
 
-/*-------------------------------- seteuid() --------------------------------*/
+/*-------------- seteuid() --------------------------------*/
 TARPC_FUNC(seteuid, {}, { MAKE_CALL(out->retval = func(in->uid)); })
 
-/*----------------------------- simple_sender() -----------------------------*/
-TARPC_FUNC(simple_sender, {}, { MAKE_CALL(out->retval = func((int)in, out)); } )
+/*-------------- simple_sender() -----------------------------*/
+TARPC_FUNC(simple_sender, {},
+{
+    MAKE_CALL(out->retval = func((int)in, out));
+}
+)
 
 /**
- * Simple sender. 
+ * Simple sender.
  *
  * @param in                input RPC argument
  *
  * @return number of sent bytes or -1 in the case of failure
  */
-int 
+int
 simple_sender(tarpc_simple_sender_in *in, tarpc_simple_sender_out *out)
 {
     sock_api_func send_func;
     char          buf[1024];
-    
+
     uint64_t sent = 0;
-    
+
     int size = rand_range(in->size_min, in->size_max);
     int delay = rand_range(in->delay_min, in->delay_max);
 
     time_t start;
     time_t now;
 
-#ifdef TA_DEBUG    
+#ifdef TA_DEBUG
     uint64_t control = 0;
-#endif    
-    
+#endif
+
     if (in->size_max > (int)sizeof(buf) || in->size_min > in->size_max ||
         in->delay_min > in->delay_max)
     {
@@ -2480,24 +2507,24 @@ simple_sender(tarpc_simple_sender_in *in, tarpc_simple_sender_out *out)
 
     if (find_func((tarpc_in_arg *)in, "send", &send_func) != 0)
         return -1;
-    
+
     memset(buf, 0xDEADBEEF, sizeof(buf));
-    
-    for (start = now = time(NULL); 
+
+    for (start = now = time(NULL);
          now - start <= in->time2run;
          now = time(NULL))
     {
         int len;
-        
+
         if (!in->size_rnd_once)
             size = rand_range(in->size_min, in->size_max);
-            
+
         if (!in->delay_rnd_once)
             delay = rand_range(in->delay_min, in->delay_max);
-            
+
         if (delay / 1000000 > in->time2run - (now - start) + 1)
             break;
-            
+
         usleep(delay);
 
         len = send_func(in->s, buf, size, 0);
@@ -2524,17 +2551,6 @@ simple_sender(tarpc_simple_sender_in *in, tarpc_simple_sender_out *out)
         }
 #endif
         sent += len;
-#ifdef TA_DEBUG
-        control += len;
-        if (control > 0x20000)
-        {
-            char buf[128];
-            sprintf(buf, "echo \"Intermediate %llu time %d %d %d\" >> /tmp/sender", 
-                    sent, now, start, in->time2run);
-            ta_system(buf);
-            control = 0;
-        }
-#endif
     }
 
     out->bytes_high = sent >> 32;
@@ -2543,10 +2559,10 @@ simple_sender(tarpc_simple_sender_in *in, tarpc_simple_sender_out *out)
     return 0;
 }
 
-/*-------------------------- simple_receiver() --------------------------*/
-TARPC_FUNC(simple_receiver, {}, 
-{ 
-    MAKE_CALL(out->retval = func((int)in, out)); 
+/*-------------- simple_receiver() --------------------------*/
+TARPC_FUNC(simple_receiver, {},
+{
+    MAKE_CALL(out->retval = func((int)in, out));
 }
 )
 
@@ -2557,31 +2573,32 @@ TARPC_FUNC(simple_receiver, {},
  *
  * @return number of received bytes or -1 in the case of failure
  */
-int 
-simple_receiver(tarpc_simple_receiver_in *in, tarpc_simple_receiver_out *out)
+int
+simple_receiver(tarpc_simple_receiver_in *in,
+                tarpc_simple_receiver_out *out)
 {
     sock_api_func select_func;
     sock_api_func recv_func;
     char          buf[1024];
-    
+
     uint64_t received = 0;
-#ifdef TA_DEBUG    
+#ifdef TA_DEBUG
     uint64_t control = 0;
     int start = time(NULL);
-#endif    
-    
+#endif
+
     if (find_func((tarpc_in_arg *)in, "select", &select_func) != 0 ||
         find_func((tarpc_in_arg *)in, "recv", &recv_func) != 0)
     {
         return -1;
     }
-    
+
     while (TRUE)
     {
         struct timeval tv = { 1, 0 };
         fd_set         set;
         int            len;
-        
+
         FD_ZERO(&set);
         FD_SET(in->s, &set);
         if (select_func(in->s + 1, &set, NULL, NULL, &tv) < 0)
@@ -2596,9 +2613,9 @@ simple_receiver(tarpc_simple_receiver_in *in, tarpc_simple_receiver_out *out)
             else
                 continue;
         }
-            
+
         len = recv_func(in->s, buf, sizeof(buf), 0);
-        
+
         if (len < 0)
         {
             ERROR("recv() failed in simple_receiver(): errno %x", errno);
@@ -2611,19 +2628,8 @@ simple_receiver(tarpc_simple_receiver_in *in, tarpc_simple_receiver_out *out)
                  "shutdown");
             goto simple_receiver_exit;
         }
-        
+
         received += len;
-#ifdef TA_DEBUG       
-        control += len;
-        if (control > 0x20000)
-        {
-            char buf[128];
-            sprintf(buf, "echo \"Intermediate %llu time %d\" >> /tmp/receiver", 
-                    received, time(NULL) - start);
-            ta_system(buf);
-            control = 0;
-        }
-#endif        
     }
 
 simple_receiver_exit:
@@ -2638,7 +2644,7 @@ simple_receiver_exit:
 #define FLOODER_ECHOER_WAIT_FOR_RX_EMPTY        1
 #define FLOODER_BUF                             4096
 
-/*-------------------------- flooder() --------------------------*/
+/*-------------- flooder() --------------------------*/
 TARPC_FUNC(flooder, {},
 {
     MAKE_CALL(out->retval = func((int)in));
@@ -2651,7 +2657,7 @@ typedef int (*flood_api_func)(struct pollfd *ufds,
                               unsigned int nfds, int timeout);
 
 /**
- * Routine which receives data from specified set of sockets and sends data 
+ * Routine which receives data from specified set of sockets and sends data
  * to specified set of sockets with maximum speed using I/O multiplexing.
  *
  * @param pco       - PCO to be used
@@ -2734,7 +2740,8 @@ flooder(tarpc_flooder_in *in)
         {
             if ((ioctl(rcvrs[i], FIONBIO, &on)) != 0)
             {
-                ERROR("%s(): ioctl(FIONBIO) failed: %X", __FUNCTION__, errno);
+                ERROR("%s(): ioctl(FIONBIO) failed: %X",
+                      __FUNCTION__, errno);
                 return -1;
             }
         }
@@ -2752,7 +2759,7 @@ flooder(tarpc_flooder_in *in)
             max_descr = sndrs[i];
     }
 
-    /* 
+    /*
      * FIXME
      * If 'b_array' does not contain all descriptors in 'l_array',
      * the last will be missing.
@@ -2781,7 +2788,8 @@ flooder(tarpc_flooder_in *in)
 
     if (gettimeofday(&timeout, NULL))
     {
-        ERROR("%s(): gettimeofday(timeout) failed: %X", __FUNCTION__, errno);
+        ERROR("%s(): gettimeofday(timeout) failed: %X",
+              __FUNCTION__, errno);
         return -1;
     }
     timeout.tv_sec += time2run;
@@ -2858,11 +2866,13 @@ flooder(tarpc_flooder_in *in)
             {
                 if (FD_ISSET(rcvrs[i], &rfds))
                 {
-                    received = read_func(rcvrs[i], rcv_buf, sizeof(rcv_buf));
+                    received = read_func(rcvrs[i], rcv_buf,
+                                         sizeof(rcv_buf));
                     if ((received < 0) &&
                         (errno != EAGAIN) && (errno != EWOULDBLOCK))
                     {
-                        ERROR("%s(): read() failed: %X", __FUNCTION__, errno);
+                        ERROR("%s(): read() failed: %X",
+                              __FUNCTION__, errno);
                         return -1;
                     }
                     if (received > 0)
@@ -2878,8 +2888,9 @@ flooder(tarpc_flooder_in *in)
         }
         else if (iomux == FUNC_POLL) /* poll() should be used as iomux */
         {
-            rc = poll_func(ufds, ufds_elements, call_timeout.tv_sec * 1000 +
-                                                call_timeout.tv_usec / 1000);
+            rc = poll_func(ufds, ufds_elements,
+                           call_timeout.tv_sec * 1000 +
+                           call_timeout.tv_usec / 1000);
 
             if (rc < 0)
             {
@@ -2895,7 +2906,8 @@ flooder(tarpc_flooder_in *in)
                     if ((sent < 0) &&
                         (errno != EAGAIN) && (errno != EWOULDBLOCK))
                     {
-                        ERROR("%s(): write() failed: %X", __FUNCTION__, errno);
+                        ERROR("%s(): write() failed: %X",
+                              __FUNCTION__, errno);
                         return -1;
                     }
                     if ((sent > 0) && (tx_stat != NULL))
@@ -2905,11 +2917,13 @@ flooder(tarpc_flooder_in *in)
                 }
                 if (ufds[i].revents & POLLIN)
                 {
-                    received = read_func(ufds[i].fd, rcv_buf, sizeof(rcv_buf));
+                    received = read_func(ufds[i].fd, rcv_buf,
+                                         sizeof(rcv_buf));
                     if ((received < 0) &&
                         (errno != EAGAIN) && (errno != EWOULDBLOCK))
                     {
-                        ERROR("%s(): read() failed: %X", __FUNCTION__, errno);
+                        ERROR("%s(): read() failed: %X",
+                              __FUNCTION__, errno);
                         return -1;
                     }
                     if (received > 0)
@@ -2991,7 +3005,7 @@ flooder(tarpc_flooder_in *in)
         }
 
     } while (time2run_not_expired || session_rx);
-    
+
     if (rx_nb)
     {
         int off = 0;
@@ -3000,7 +3014,8 @@ flooder(tarpc_flooder_in *in)
         {
             if ((ioctl(rcvrs[i], FIONBIO, &off)) != 0)
             {
-                ERROR("%s(): ioctl(FIONBIO) failed: %X", __FUNCTION__, errno);
+                ERROR("%s(): ioctl(FIONBIO) failed: %X",
+                      __FUNCTION__, errno);
                 return -1;
             }
         }
@@ -3014,7 +3029,7 @@ flooder(tarpc_flooder_in *in)
     return 0;
 }
 
-/*-------------------------- echoer() --------------------------*/
+/*-------------- echoer() --------------------------*/
 TARPC_FUNC(echoer, {},
 {
     MAKE_CALL(out->retval = func((int)in));
@@ -3106,7 +3121,8 @@ echoer(tarpc_echoer_in *in)
 
     if (gettimeofday(&timeout, NULL))
     {
-        ERROR("%s(): gettimeofday(timeout) failed: %X", __FUNCTION__, errno);
+        ERROR("%s(): gettimeofday(timeout) failed: %X",
+              __FUNCTION__, errno);
         return -1;
     }
     timeout.tv_sec += time2run;
@@ -3155,7 +3171,8 @@ echoer(tarpc_echoer_in *in)
                     received = read_func(sockets[i], buf, sizeof(buf));
                     if (received < 0)
                     {
-                        ERROR("%s(): read() failed: %X", __FUNCTION__, errno);
+                        ERROR("%s(): read() failed: %X",
+                              __FUNCTION__, errno);
                         return -1;
                     }
                     if (rx_stat != NULL)
@@ -3176,8 +3193,9 @@ echoer(tarpc_echoer_in *in)
         }
         else if (iomux == FUNC_POLL) /* poll() should be used as iomux */
         {
-            rc = poll_func(ufds, ufds_elements, call_timeout.tv_sec * 1000 +
-                                                call_timeout.tv_usec / 1000);
+            rc = poll_func(ufds, ufds_elements,
+                           call_timeout.tv_sec * 1000 +
+                           call_timeout.tv_usec / 1000);
 
             if (rc < 0)
             {
@@ -3192,7 +3210,8 @@ echoer(tarpc_echoer_in *in)
                     received = read_func(ufds[i].fd, buf, sizeof(buf));
                     if (received < 0)
                     {
-                        ERROR("%s(): read() failed: %X", __FUNCTION__, errno);
+                        ERROR("%s(): read() failed: %X",
+                              __FUNCTION__, errno);
                         return -1;
                     }
                     if (rx_stat != NULL)
@@ -3202,7 +3221,8 @@ echoer(tarpc_echoer_in *in)
                     sent = write_func(ufds[i].fd, buf, received);
                     if (sent < 0)
                     {
-                        ERROR("%s(): write() failed: %X", __FUNCTION__, errno);
+                        ERROR("%s(): write() failed: %X",
+                              __FUNCTION__, errno);
                         return -1;
                     }
                     if (tx_stat != NULL)
@@ -3278,21 +3298,21 @@ echoer(tarpc_echoer_in *in)
         errno = 0;                                              \
     } while (0)
 
-/*----------------------------- aio_read_test() -----------------------------*/
-TARPC_FUNC(aio_read_test, 
+/*-------------- aio_read_test() -----------------------------*/
+TARPC_FUNC(aio_read_test,
 {
     COPY_ARG(buf);
     COPY_ARG(diag);
-}, 
-{ 
-    INIT_CHECKED_ARG(out->buf.buf_val, out->buf.buf_len, in->buflen);    
+},
+{
+    INIT_CHECKED_ARG(out->buf.buf_val, out->buf.buf_len, in->buflen);
 #ifdef HAVE_AIO_H
-    MAKE_CALL(out->retval = func((int)in, out)); 
+    MAKE_CALL(out->retval = func((int)in, out));
 #else
     out->retval = -1;
     out->common._errno = EOPNOTSUPP;
 #endif
-} 
+}
 )
 
 
@@ -3303,7 +3323,7 @@ aio_read_test(tarpc_aio_read_test_in *in, tarpc_aio_read_test_out *out)
     struct aiocb   cb;
     struct timeval t;
     int            rc;
-    
+
     sock_api_func aio_read_func;
     sock_api_func aio_error_func;
     sock_api_func aio_return_func;
@@ -3315,22 +3335,22 @@ aio_read_test(tarpc_aio_read_test_in *in, tarpc_aio_read_test_out *out)
         DIAG("Failed to resolve asynchronous IO function");
         return -1;
     }
-    
+
     memset(&cb, 0, sizeof(cb));
     cb.aio_fildes = in->s;
     cb.aio_buf = out->buf.buf_val;
     cb.aio_nbytes = in->buflen;
-    cb.aio_sigevent.sigev_signo = 
-        in->signum == 0 ? 0 : signum_rpc2h(in->signum); 
+    cb.aio_sigevent.sigev_signo =
+        in->signum == 0 ? 0 : signum_rpc2h(in->signum);
     t.tv_sec = in->t;
     t.tv_usec = 0;
-        
+
     if (aio_read_func((int)&cb) < 0)
     {
         DIAG("aio_read() returnred -1");
         return -1;
     }
-        
+
     if ((rc = aio_error_func((int)&cb)) != EINPROGRESS)
     {
         DIAG("aio_error() called immediately after aio_read()"
@@ -3340,7 +3360,7 @@ aio_read_test(tarpc_aio_read_test_in *in, tarpc_aio_read_test_out *out)
     select(0, NULL, NULL, NULL, &t);
     if ((rc = aio_error_func((int)&cb)) != 0)
     {
-        snprintf(out->diag.diag_val, out->diag.diag_len, 
+        snprintf(out->diag.diag_val, out->diag.diag_len,
                  "aio_error() returned %d after select() unblocking", rc);
     }
     if ((rc = aio_return_func((int)&cb)) <= 0)
@@ -3348,24 +3368,24 @@ aio_read_test(tarpc_aio_read_test_in *in, tarpc_aio_read_test_out *out)
         DIAG("aio_return() returned %d - no data are received", rc);
     }
     out->buf.buf_len = rc;
-    
+
     return rc;
 }
 #endif /* HAVE_AIO_H */
 
-/*----------------------------- aio_error_test() -----------------------------*/
-TARPC_FUNC(aio_error_test, 
+/*-------------- aio_error_test() -----------------------------*/
+TARPC_FUNC(aio_error_test,
 {
     COPY_ARG(diag);
-}, 
-{ 
+},
+{
 #ifdef HAVE_AIO_H
-    MAKE_CALL(out->retval = func((int)in, out)); 
+    MAKE_CALL(out->retval = func((int)in, out));
 #else
     out->retval = -1;
     out->common._errno = EOPNOTSUPP;
 #endif
-} 
+}
 )
 
 #ifdef HAVE_AIO_H
@@ -3378,7 +3398,7 @@ aio_error_test(tarpc_aio_error_test_in *in, tarpc_aio_error_test_out *out)
     sock_api_func aio_write_func;
     sock_api_func aio_error_func;
 
-    if (find_func((tarpc_in_arg *)in, "aio_write", &aio_write_func) != 0   ||
+    if (find_func((tarpc_in_arg *)in, "aio_write", &aio_write_func) != 0 ||
         find_func((tarpc_in_arg *)in, "aio_error", &aio_error_func) != 0)
     {
         DIAG("Failed to resolve asynchronous IO function");
@@ -3405,21 +3425,21 @@ aio_error_test(tarpc_aio_error_test_in *in, tarpc_aio_error_test_out *out)
 }
 #endif
 
-/*----------------------------- aio_write_test() -----------------------------*/
-TARPC_FUNC(aio_write_test, 
+/*-------------- aio_write_test() -----------------------------*/
+TARPC_FUNC(aio_write_test,
 {
     COPY_ARG(diag);
-}, 
-{ 
+},
+{
 #ifdef HAVE_AIO_H
     INIT_CHECKED_ARG(in->buf.buf_val, in->buf.buf_len, in->buf.buf_len);
     out->retval = -1;
-    MAKE_CALL(out->retval = func((int)in, out));  
+    MAKE_CALL(out->retval = func((int)in, out));
 #else
     out->retval = -1;
     out->common._errno = EOPNOTSUPP;
 #endif
-} 
+}
 )
 
 #ifdef HAVE_AIO_H
@@ -3432,30 +3452,30 @@ aio_write_test(tarpc_aio_write_test_in *in, tarpc_aio_write_test_out *out)
     sock_api_func aio_write_func;
     sock_api_func aio_error_func;
     sock_api_func aio_return_func;
-    
-    if (find_func((tarpc_in_arg *)in, "aio_write", &aio_write_func) != 0  ||
+
+    if (find_func((tarpc_in_arg *)in, "aio_write", &aio_write_func) != 0 ||
         find_func((tarpc_in_arg *)in, "aio_error", &aio_error_func) != 0 ||
         find_func((tarpc_in_arg *)in, "aio_return", &aio_return_func) != 0)
     {
         DIAG("Failed to resolve asynchronous IO function");
         return -1;
     }
-    
+
     cb.aio_fildes = in->s;
     cb.aio_buf = in->buf.buf_val;
     cb.aio_nbytes = in->buf.buf_len;
-    cb.aio_sigevent.sigev_signo = 
-        in->signum == 0 ? 0 : signum_rpc2h(in->signum); 
+    cb.aio_sigevent.sigev_signo =
+        in->signum == 0 ? 0 : signum_rpc2h(in->signum);
 
     if (aio_write_func((int)&cb) < 0)
     {
         DIAG("aio_write() failed");
         return -1;
     }
-    
+
     while (aio_error_func((int)&cb) != 0)
         usleep(100);
-    
+
     if ((rc = aio_return_func((int)&cb)) <= 0)
     {
         DIAG("aio_return() returned %d - no data are sent", rc);
@@ -3465,25 +3485,26 @@ aio_write_test(tarpc_aio_write_test_in *in, tarpc_aio_write_test_out *out)
 }
 #endif /* HAVE_AIO_H */
 
-/*--------------------------- aio_suspend_test() ---------------------------*/
-TARPC_FUNC(aio_suspend_test, 
+/*-------------- aio_suspend_test() ---------------------------*/
+TARPC_FUNC(aio_suspend_test,
 {
     COPY_ARG(buf);
     COPY_ARG(diag);
-}, 
+},
 {
 #ifdef HAVE_AIO_H
-    MAKE_CALL(out->retval = func((int)in, out)); 
+    MAKE_CALL(out->retval = func((int)in, out));
 #else
     out->retval = -1;
     out->common._errno = EOPNOTSUPP;
 #endif
-} 
+}
 )
 
 #ifdef HAVE_AIO_H
 int
-aio_suspend_test(tarpc_aio_suspend_test_in *in, tarpc_aio_suspend_test_out *out)
+aio_suspend_test(tarpc_aio_suspend_test_in *in,
+                 tarpc_aio_suspend_test_out *out)
 {
     struct aiocb   cb1, cb2;
     struct aiocb  *cb[3] = { &cb1 , NULL, &cb2};
@@ -3491,26 +3512,29 @@ aio_suspend_test(tarpc_aio_suspend_test_in *in, tarpc_aio_suspend_test_out *out)
 
     struct timespec ts = { 0, 1000000 };
     struct timeval  tv1, tv2;
-    
+
     sock_api_func aio_read_func;
     sock_api_func aio_return_func;
     sock_api_func aio_suspend_func;
-    
+
     char aux_buf[8];
 
-    if (find_func((tarpc_in_arg *)in, "aio_read", &aio_read_func) != 0   ||
-        find_func((tarpc_in_arg *)in, "aio_suspend", &aio_suspend_func) != 0 ||
-        find_func((tarpc_in_arg *)in, "aio_return", &aio_return_func) != 0)
+    if (find_func((tarpc_in_arg *)in, "aio_read",
+                  &aio_read_func) != 0   ||
+        find_func((tarpc_in_arg *)in, "aio_suspend",
+                  &aio_suspend_func) != 0 ||
+        find_func((tarpc_in_arg *)in, "aio_return",
+                  &aio_return_func) != 0)
     {
         DIAG("Failed to resolve asynchronous IO function");
         return -1;
     }
     memset(&cb1, 0, sizeof(cb));
-    cb1.aio_fildes = in->s_aux; 
+    cb1.aio_fildes = in->s_aux;
     cb1.aio_buf = aux_buf;
     cb1.aio_nbytes = sizeof(aux_buf);
-    cb1.aio_sigevent.sigev_signo = 
-        in->signum == 0 ? 0 : signum_rpc2h(in->signum); 
+    cb1.aio_sigevent.sigev_signo =
+        in->signum == 0 ? 0 : signum_rpc2h(in->signum);
     if (aio_read_func((int)&cb1) < 0)
     {
         DIAG("aio_read() returnred -1");
@@ -3520,14 +3544,14 @@ aio_suspend_test(tarpc_aio_suspend_test_in *in, tarpc_aio_suspend_test_out *out)
     cb2.aio_fildes = in->s;
     cb2.aio_buf = out->buf.buf_val;
     cb2.aio_nbytes = out->buf.buf_len;
-    cb2.aio_sigevent.sigev_signo = 
-        in->signum == 0 ? 0 : signum_rpc2h(in->signum); 
+    cb2.aio_sigevent.sigev_signo =
+        in->signum == 0 ? 0 : signum_rpc2h(in->signum);
     if (aio_read_func((int)&cb2) < 0)
     {
         DIAG("aio_read() returnred -1");
         return -1;
     }
-    
+
     gettimeofday(&tv1, NULL);
     if (aio_suspend_func((int)cb, 3, &ts) == 0)
     {
@@ -3548,7 +3572,7 @@ aio_suspend_test(tarpc_aio_suspend_test_in *in, tarpc_aio_suspend_test_out *out)
         DIAG("aio_suspend() did not block during specified timeout");
         return -1;
     }
-    
+
     ts.tv_sec = in->t;
     ts.tv_nsec = 0;
     rc = aio_suspend_func((int)cb, 3, &ts);
@@ -3561,7 +3585,7 @@ aio_suspend_test(tarpc_aio_suspend_test_in *in, tarpc_aio_suspend_test_out *out)
     {
         if (errno != EINTR)
         {
-            DIAG("aio_suspend() set errno to %d instead expected EINTR\n", 
+            DIAG("aio_suspend() set errno to %d instead expected EINTR\n",
                  errno);
             return -1;
         }
@@ -3572,13 +3596,13 @@ aio_suspend_test(tarpc_aio_suspend_test_in *in, tarpc_aio_suspend_test_out *out)
         DIAG("aio_return() returned %d - no data are received", rc);
     }
     out->buf.buf_len = rc;
-    
+
     return rc;
 }
 #endif /* HAVE_AIO_H */
 
 
-/*------------------------------ sendfile() ------------------------------*/
+/*-------------- sendfile() ------------------------------*/
 
 TARPC_FUNC(sendfile,
 {
@@ -3592,7 +3616,7 @@ TARPC_FUNC(sendfile,
 }
 )
 
-/*------------------------------ socket_to_file() ------------------------------*/
+/*-------------- socket_to_file() ------------------------------*/
 #define SOCK2FILE_BUF_LEN  4096
 
 TARPC_FUNC(socket_to_file, {},
@@ -3660,7 +3684,8 @@ socket_to_file(tarpc_socket_to_file_in *in)
 
     if (gettimeofday(&timeout, NULL))
     {
-        ERROR("%s(): gettimeofday(timeout) failed: %X", __FUNCTION__, errno);
+        ERROR("%s(): gettimeofday(timeout) failed: %X",
+              __FUNCTION__, errno);
         rc = -1;
         goto local_exit;
     }
@@ -3778,9 +3803,10 @@ socket_to_file(tarpc_socket_to_file_in *in)
     } while (time2run_not_expired || session_rx);
 
 local_exit:
-    RING("Stop to get data from socket %d and put to file %s, %s, received %u",
-         sock, path,
-         (!time2run_not_expired) ? "timeout expired" : "unexpected failure",
+    RING("Stop to get data from socket %d and put to file %s, %s, "
+         "received %u", sock, path,
+         (!time2run_not_expired) ? "timeout expired" :
+                                   "unexpected failure",
          total);
     INFO("%s(): %s", __FUNCTION__, (rc == 0) ? "OK" : "FAILED");
 
@@ -3796,12 +3822,12 @@ local_exit:
     return rc;
 }
 
-/*------------------------------ ftp_open() ------------------------------*/
+/*-------------- ftp_open() ------------------------------*/
 
-TARPC_FUNC(ftp_open, {}, 
+TARPC_FUNC(ftp_open, {},
 {
-    MAKE_CALL(out->fd = func((int)(in->uri.uri_val), 
+    MAKE_CALL(out->fd = func((int)(in->uri.uri_val),
                              in->rdonly ? O_RDONLY : O_WRONLY,
-                             in->passive, in->offset)); 
+                             in->passive, in->offset));
 }
 )
