@@ -8,17 +8,12 @@ AC_CONFIG_SRCDIR([tapi_eth.c])
 
 AC_CONFIG_AUX_DIR(../../aux)
 
-AM_INIT_AUTOMAKE
+AM_INIT_AUTOMAKE([foreign -Wall])
 
 # Checks for programs.
 AC_PROG_CC
-AC_PROG_RANLIB
+AC_PROG_LIBTOOL
 AC_PROG_INSTALL
-
-AC_CHECK_TOOL(AR, ar)
-AC_CHECK_TOOL(NM, nm)
-AC_CHECK_TOOL(OBJDUMP, objdump)
-AC_CHECK_TOOL(OBJCOPY, objcopy)
 
 CFLAGS="${CFLAGS} ${TE_CFLAGS}"
 CPPFLAGS="${CPPFLAGS} ${TE_CFLAGS}"
@@ -33,11 +28,20 @@ AC_ARG_VAR(TE_LDFLAGS)
 AC_ARG_VAR(TE_LDADD)
 AC_ARG_VAR(TE_DEPENDENCIES)
 
-AM_CONFIG_HEADER(config.h)
+AM_CONFIG_HEADER([config.h])
 
-AC_CHECK_HEADERS(net/ethernet.h)
-AC_CHECK_HEADERS(netinet/ether.h)
-AC_CHECK_HEADERS([arpa/inet.h netinet/in.h stdint.h stdlib.h string.h strings.h sys/socket.h unistd.h])
+AC_CHECK_HEADERS([\
+stdlib.h \
+string.h \
+strings.h \
+stdint.h \
+sys/socket.h \
+unistd.h \
+arpa/inet.h \
+netinet/in.h \
+netinet/ether.h \
+net/ethernet.h \
+])
 
 AC_CONFIG_FILES([Makefile])
 

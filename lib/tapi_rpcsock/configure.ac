@@ -1,10 +1,10 @@
 # Process this file with autoconf to produce a configure script.
-AC_INIT(tapi_rpcsock, 0.01, Elena.Vangerova@oktetlabs.ru)
+AC_INIT([tapi_rpcsock], 0.01, Elena.Vangerova@oktetlabs.ru)
 
 AC_CONFIG_SRCDIR([tapi_rpcsock.h])
 AC_CONFIG_AUX_DIR(../../aux)
 
-AM_INIT_AUTOMAKE
+AM_INIT_AUTOMAKE([foreign -Wall])
 
 # Checks for programs.
 AC_PROG_CC
@@ -27,10 +27,21 @@ RPC_XFILE=${srcdir}/../../include/tarpc.x.m4
 
 AC_SUBST(RPC_XFILE)
 
-AM_CONFIG_HEADER(config.h)
+AM_CONFIG_HEADER([config.h])
 
-AC_CHECK_HEADERS(sys/socket.h netinet/in.h arpa/inet.h net/if.h signal.h \
-netinet/ip.h netinet/tcp.h sys/ioctl.h sys/poll.h netdb.h semaphore.h)
+AC_CHECK_HEADERS([\
+signal.h \
+sys/socket.h \
+sys/ioctl.h \
+sys/poll.h \
+arpa/inet.h \
+netinet/in.h \
+netinet/ip.h \
+netinet/tcp.h \
+net/if.h \
+netdb.h \
+semaphore.h \
+])
 
 AC_CONFIG_FILES([Makefile])
 

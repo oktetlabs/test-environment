@@ -1,16 +1,17 @@
 
-AUTOMAKE_OPTIONS = foreign 
+AM_CPPFLAGS=-I$(DESTDIR)/$(prefix)/include \
+            -I$(DESTDIR)/$(prefix)/../include
 
-AM_CFLAGS=@TE_CFLAGS@ -I$(DESTDIR)/$(prefix)/include \
-                      -I$(DESTDIR)/$(prefix)/../include
+AM_CFLAGS=
 
 AM_LDFLAGS=@TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/lib 
 
 
-lib_LIBRARIES=libtapi_dhcp.a
+lib_LTLIBRARIES=libtapi_dhcp.la
 
 include_HEADERS=tapi_dhcp.h
-libtapi_dhcp_a_SOURCES=tapi_dhcp.c
+libtapi_dhcp_la_SOURCES=tapi_dhcp.c
+
 
 #VPATH = @srcdir@:@srcdir@/tests
 
@@ -26,7 +27,7 @@ libtapi_dhcp_a_SOURCES=tapi_dhcp.c
 
 
 install-exec-hook:
-	touch -c -r libtapi_dhcp.a $(DESTDIR)/$(prefix)/lib/libtapi_dhcp.a
+	touch -c -r .libs/libtapi_dhcp.a $(DESTDIR)/$(prefix)/lib/libtapi_dhcp.a
 
 install-data-hook:
 	for i in $(include_HEADERS) ; do \

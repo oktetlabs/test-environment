@@ -1,14 +1,15 @@
 
-AUTOMAKE_OPTIONS = foreign 
-
 AM_CPPFLAGS=-I$(DESTDIR)/$(prefix)/include -I$(DESTDIR)/$(prefix)/../include
+
 AM_LDFLAGS=-L$(DESTDIR)/$(prefix)/lib
+
 
 include_HEADERS=tapi_rpcsock.h tapi_rpcsock_macros.h
 
 lib_LTLIBRARIES=libtapi_rpcsock.la
 
 libtapi_rpcsock_la_SOURCES=tapi_rpcsock.c tarpc_xdr.c
+
 
 CLEANFILES=tarpc.x tarpc.h tarpc_xdr.c
 

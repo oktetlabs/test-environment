@@ -1,28 +1,22 @@
 
-AUTOMAKE_OPTIONS = foreign 
+AM_CFLAGS=-I$(DESTDIR)/$(prefix)/include \
+          -I$(DESTDIR)/$(prefix)/../include
 
-AM_CFLAGS=@TE_CFLAGS@ -I$(DESTDIR)/$(prefix)/include \
-                      -I$(DESTDIR)/$(prefix)/../include
+AM_CFLAGS=
 
 AM_LDFLAGS=@TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/lib 
 
 
-lib_LIBRARIES=libtapi_ipstack.a
-
 include_HEADERS=tapi_ipstack.h
-libtapi_ipstack_a_SOURCES=tapi_ipstack.c
 
-#VPATH = @srcdir@:@srcdir@/tests
+lib_LTLIBRARIES=libtapi_ipstack.la
 
-#check_PROGRAMS=mib_table1
-
-#LDFLAGS=-static
-
-#CFLAGS=@CFLAGS@ -Wall
+libtapi_ipstack_la_SOURCES=tapi_ipstack.c
 
 
 install-exec-hook:
-	touch -c -r libtapi_ipstack.a $(DESTDIR)/$(prefix)/lib/libtapi_ipstack.a
+	touch -c -r .libs/libtapi_ipstack.a \
+		$(DESTDIR)/$(prefix)/lib/libtapi_ipstack.a
 
 install-data-hook:
 	for i in $(include_HEADERS) ; do \
@@ -30,4 +24,3 @@ install-data-hook:
 	done
 
 all: install
-
