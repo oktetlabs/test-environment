@@ -371,18 +371,161 @@ int snmp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
                   __FUNCTION__, rc);
     } 
 
-    for (vars = pdu->variables; vars; vars = vars->next_variable)
+    do { /* Match VarBinds */
+        const asn_value *pat_vb_list;
+        int              pat_vb_num, i;
+
+        rc = asn_get_subvalue(pattern_pdu, &pat_vb_list,
+                              "variable-bindings");
+        if (rc == EASNINCOMPLVAL)
+        {
+            rc = 0;
+            break;
+        }
+        else if (rc != 0) /* may not happen in normal situation */
+        {
+            ERROR("SNMP match: get var-binds from pattern fails %X", rc);
+            break;
+        }
+
+        pat_vb_num = asn_get_length(pat_vb_list, ""); 
+        VERB("%s: number of varbinds in pattern %d", pat_vb_num);
+
+        for (i = 0; i < pat_vb_num; i++)
+        { 
+            const asn_value *pat_var_bind;
+            const asn_value *pat_var_bind_value;
+            const oid       *pat_oid;
+            const uint8_t   *pat_vb_val_data;
+            size_t           pat_oid_len;
+            asn_syntax       pat_value_syntax;
+
+            rc = asn_get_indexed(pat_vb_list, &pat_var_bind, i);
+            if (rc != 0)
+            {
+                WARN("SNMP match: get of var bind pattern fails %X", rc);
+                break;
+            } 
+
+            rc = asn_get_field_data(pat_var_bind, (const uint8_t *)&pat_oid,
+                                    "name.#plain");
+            if (rc == EASNINCOMPLVAL)
+            {
+                /* match OID other then plain patterns not supported yet */
+                rc = 0;
+                continue;
+            }
+            pat_oid_len = asn_get_length(pat_var_bind, "name.#plain"); 
+
+            for (vars = pdu->variables;
+                 vars != NULL;
+                 vars = vars->next_variable)
+            {
+                if (pat_oid_len == vars->name_length && 
+                    memcmp(pat_oid, vars->name,
+                           pat_oid_len * sizeof(oid)) == 0)
+                    break;
+            }
+
+            if (vars == NULL) /* No matching varbind found */
+            {
+                rc = ETADNOTMATCH;
+                break;
+            }
+
+            pat_value_syntax = asn_get_syntax(pat_var_bind, "value");
+
+            rc = asn_get_field_data(pat_var_bind, &pat_vb_val_data,
+                                    "value.#plain");
+            if (rc == EASNINCOMPLVAL)
+            {
+                rc = 0; /* value matches - no pattern for it */
+                break;
+            }
+            else if (rc == EASNOTHERCHOICE)
+            {
+                rc = ETENOSUPP; /* value matches - math is not implemented */
+                WARN("SNMP match: unsupported choice"
+                     " in varbind value pattern");
+                break;
+            }
+            else if (rc != 0)
+                break;
+
+            switch (vars->type)
+            {
+                case ASN_INTEGER:   
+                case ASN_COUNTER:  
+                case ASN_UNSIGNED:  
+                case ASN_TIMETICKS: 
+                    if (pat_value_syntax != INTEGER &&
+                        pat_value_syntax != ENUMERATED)
+                    {
+                        rc = ETADNOTMATCH;
+                        break;
+                    }
+                    if (*((int *)pat_vb_val_data) != 
+                        *(vars->val.integer))
+                        rc = ETADNOTMATCH;
+                    break;
+
+                case ASN_IPADDRESS: 
+                case ASN_OCTET_STR: 
+                case ASN_OBJECT_ID: 
+                    if (vars->type == ASN_OBJECT_ID)
+                    {
+                        if (pat_value_syntax != OID)
+                            rc = ETADNOTMATCH;
+                    }
+                    else if (pat_value_syntax != OCT_STRING &&
+                             pat_value_syntax != CHAR_STRING)
+                        rc = ETADNOTMATCH;
+
+                    if (rc != 0)
+                    {
+                        size_t vb_data_len;
+
+                        vb_data_len = asn_get_length(pat_var_bind, "value");
+
+                        if (vb_data_len != vars->val_len)
+                        {
+                            rc = ETADNOTMATCH;
+                            break;
+                        }
+                        
+                        if (pat_value_syntax == OID)
+                            vb_data_len *= 4; 
+                        if (memcmp(pat_vb_val_data, vars->val.string, 
+                                   vb_data_len) != 0)
+                            rc = ETADNOTMATCH;
+                    }
+                    break;
+
+                default:
+            }
+        }
+
+        if (rc != 0)
+            break;
+
+    } while(0); /* match on varbinds finished */
+
+    /* fill varbinds into parsed packet */
+    for (vars = pdu->variables;
+         rc == 0 && vars != NULL;
+         vars = vars->next_variable)
     {
         asn_value_p var_bind = NULL;
         char        os_choice[100]; 
 
+        VERB("BEGIN of LOOP rc %X", rc);
+
         if (parsed_packet != NULL)
         {
             var_bind = asn_init_value(ndn_snmp_var_bind);
-            asn_write_value_field (var_bind, vars->name, vars->name_length, 
-                                    "name.#plain");
+            asn_write_value_field(var_bind, vars->name, vars->name_length, 
+                                  "name.#plain");
         }
-        /* TODO: add match by var binds here */
 
         if (parsed_packet == NULL)
             continue;
@@ -393,30 +536,30 @@ int snmp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
         switch (vars->type)
         {
             case ASN_INTEGER:   
-                strcat (os_choice, "#simple.#integer-value");
+                strcat(os_choice, "#simple.#integer-value");
                 break;
             case ASN_OCTET_STR: 
-                strcat (os_choice, "#simple.#string-value");
+                strcat(os_choice, "#simple.#string-value");
                 break;
             case ASN_OBJECT_ID: 
-                strcat (os_choice, "#simple.#objectID-value");
+                strcat(os_choice, "#simple.#objectID-value");
                 break;
 
             case ASN_IPADDRESS: 
-                strcat (os_choice, "#application-wide.#ipAddress-value");
+                strcat(os_choice, "#application-wide.#ipAddress-value");
                 break;
             case ASN_COUNTER:  
-                strcat (os_choice, "#application-wide.#counter-value");
+                strcat(os_choice, "#application-wide.#counter-value");
                 break;
             case ASN_UNSIGNED:  
-                strcat (os_choice, "#application-wide.#unsigned-value");
+                strcat(os_choice, "#application-wide.#unsigned-value");
                 break;
             case ASN_TIMETICKS: 
-                strcat (os_choice, "#application-wide.#timeticks-value");
+                strcat(os_choice, "#application-wide.#timeticks-value");
                 break;
 #if 0
             case ASN_OCTET_STR: 
-                strcat (os_choice, "#application-wide.#arbitrary-value");
+                strcat(os_choice, "#application-wide.#arbitrary-value");
                 break;
 #ifdef OPAQUE_SPECIAL_TYPES 
             case ASN_OPAQUE_U64: 
@@ -424,20 +567,20 @@ int snmp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
             case ASN_OCTET_STR:
 #endif
                                 
-                strcat (os_choice, "#application-wide.#big-counter-value");
+                strcat(os_choice, "#application-wide.#big-counter-value");
                 break;
             case ASN_UNSIGNED:  
-                strcat (os_choice, "#application-wide.#unsigned-value");
+                strcat(os_choice, "#application-wide.#unsigned-value");
                 break;
 #endif
             case SNMP_NOSUCHOBJECT: 
-                strcpy (os_choice, "noSuchObject"); /* overwrite "value..." */
+                strcpy(os_choice, "noSuchObject"); /* overwrite "value..." */
                 break;
             case SNMP_NOSUCHINSTANCE: 
-                strcpy (os_choice, "noSuchInstance"); /* overwrite "value..." */
+                strcpy(os_choice, "noSuchInstance"); /* overwrite "value..." */
                 break;
             case SNMP_ENDOFMIBVIEW: 
-                strcpy (os_choice, "endOfMibView"); /* overwrite "value..." */
+                strcpy(os_choice, "endOfMibView"); /* overwrite "value..." */
                 break;
             default:
                 asn_free_value(var_bind);
@@ -457,17 +600,18 @@ int snmp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
                                    os_choice);
         
         VERB("in SNMP MATCH, rc from varbind value write: %x", rc);
+        if (rc != 0)
+            break;
 
-        if (rc == 0)
-            rc = asn_insert_indexed(vb_seq, var_bind, -1, "");
+        rc = asn_insert_indexed(vb_seq, var_bind, -1, "");
 
         VERB("in SNMP MATCH, rc from varbind insert: %x", rc);
 
         asn_free_value(var_bind);
 
-        if (rc)
+        if (rc != 0)
             break;
-    }
+    } /* end of loop fill of varbinds */
 
     if (rc == 0 && parsed_packet != NULL)
         rc = asn_write_component_value(parsed_packet, vb_seq,

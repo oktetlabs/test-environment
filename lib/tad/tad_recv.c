@@ -86,7 +86,8 @@
  */
 int
 tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr, 
-                            asn_value_p pattern_unit, asn_value_p *packet)
+                            const asn_value *pattern_unit,
+                            asn_value_p *packet)
 { 
     int  level;
     int  rc;
@@ -761,7 +762,7 @@ tad_tr_recv_thread(void * arg)
         int num_pattern_units;
         int unit;
 
-        asn_value_p pattern_unit;
+        const asn_value *pattern_unit;
 
         CSAP_DA_LOCK(csap_descr);
         if (csap_descr->command & TAD_COMMAND_STOP)
@@ -861,12 +862,16 @@ tad_tr_recv_thread(void * arg)
 
             for (unit = 0; unit < num_pattern_units; unit ++)
             {
-                pattern_unit = asn_read_indexed(nds, unit, "");
+                rc = asn_get_indexed(nds, &pattern_unit, unit);
+                if (rc != 0)
+                {
+                    WARN("Get pattern unit fails %X", rc);
+                    break;
+                }
                 rc = tad_tr_recv_match_with_unit(read_buffer, d_len, 
                                                  csap_descr,
                                                  pattern_unit, &result); 
                 F_VERB("Match pkt return %x, unit %d", rc, unit);
-                asn_free_value(pattern_unit);
                 switch (rc)
                 {
                     case 0: /* received data matches to this pattern unit */
