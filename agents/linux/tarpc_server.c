@@ -495,6 +495,7 @@ tarpc_init(int argc, char **argv)
     memset(&ta_log_addr, 0, sizeof(ta_log_addr));
     ta_log_addr.sun_family = AF_UNIX;
     strcpy(ta_log_addr.sun_path + 1, argv[4]);
+    ta_log_addr_s = (struct sockaddr *)&ta_log_addr;
     setlibname(argv[5]);
     tarpc_server(argv[2]);
 }
