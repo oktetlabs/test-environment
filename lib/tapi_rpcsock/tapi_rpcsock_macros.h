@@ -174,6 +174,24 @@
         }                                                     \
     } while (0)
 
+
+/**
+ * Macro to check function 'func_' on returning non NULL value
+ * 
+ * @param rpcs_    RPS server
+ * @param retval_  Return value (OUT)
+ * @param func_    RPC function name to call (without rpc_ prefix)
+ */
+#define RPC_FUNC_WITH_PTR_RETVAL0(rpcs_, retval_, func_) \
+    do {                                                 \
+        (retval_) =  rpc_ ## func_(rpcs_);               \
+        if ((retval_) == NULL)                           \
+        {                                                \
+            LOG_ERRNO((rpcs_), (retval_), func_, "()");  \
+            MACRO_ERROR_EXIT;                            \
+        }                                                \
+    } while (0)
+
 /**
  * Macro to check function 'func_' on returning zero value
  *
