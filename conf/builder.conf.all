@@ -10,7 +10,7 @@ TE_PLATFORM([], [], [], [], \
              comm_net_engine rcfunix \
              loggerta comm_net_agent rcfpch \
              rcfrpc asn ndn tad \
-             tapi_rpcsock tapi_eth tapi_bridge tapi_ipstack \
+             tapi_rpcsock tapi_tad tapi_eth tapi_bridge tapi_ipstack \
              tapi_dhcp tapi_snmp tapi_cli \
             ])
 
