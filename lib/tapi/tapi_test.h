@@ -190,6 +190,13 @@ extern "C" {
         }                                                               \
     } while (0)
 
+/** Free variable and set its value to NULL */
+#define FREE_AND_CLEAN(ptr_) \
+    do {                     \
+        free(ptr_);          \
+        ptr_ = NULL;         \
+    } while (0)
+
 /**
  * Check that two buffers of specified length have the same content and
  * reports an error in case they are not
