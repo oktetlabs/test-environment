@@ -726,6 +726,13 @@ extern "C" {
              name, print_oid(&leaf_oid), #value, (value));                     \
     } while (0)
 
+#define TAPI_SNMP_WALK(ta, sid, csap_id, userdata, callback, name) \
+    do {                                                                      \
+	tapi_snmp_oid_t           oid;                                        \
+	CHECK_RC(tapi_snmp_make_oid(name, &oid));                             \
+	CHECK_RC(tapi_snmp_walk(ta, sid, csap_id, &oid, userdata, callback)); \
+    } while (0)	    
+	
 
 /**
  * Macro around tapi_snmp_get_integer()
