@@ -86,7 +86,7 @@ sockaddr_get_port(const struct sockaddr *addr)
 
 /* See the description in tapi_sockaddr.h */
 void
-sockaddr_set_port(const struct sockaddr *addr, uint16_t port)
+sockaddr_set_port(struct sockaddr *addr, uint16_t port)
 {
     switch (addr->sa_family)
     {

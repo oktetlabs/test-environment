@@ -79,7 +79,7 @@ extern uint16_t sockaddr_get_port(const struct sockaddr *addr);
  * of the structure assuming that there is enough space for a structure
  * defined from the value of "sa_family" field.
  */
-extern void sockaddr_set_port(const struct sockaddr *addr, uint16_t port);
+extern void sockaddr_set_port(struct sockaddr *addr, uint16_t port);
 
 /**
  * Returns pointer to network address part of sockaddr structure according to
