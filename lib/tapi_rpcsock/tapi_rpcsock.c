@@ -3952,6 +3952,7 @@ rpc_simple_sender(rcf_rpc_server *handle,
                   int size_rnd_once, int delay_min, int delay_max,
                   int delay_rnd_once, int time2run, uint64_t *sent)
 {
+    rcf_rpc_op              op = handle->op;
     tarpc_simple_sender_in  in;
     tarpc_simple_sender_out out;
 
@@ -3979,9 +3980,9 @@ rpc_simple_sender(rcf_rpc_server *handle,
     if (out.retval == 0)
         *sent = ((uint64_t)(out.bytes_high) << 32) + out.bytes_low;
         
-    INFO("RPC (%s,%s): "
+    INFO("RPC (%s,%s)%s: "
          "simple_sender(%d, %d, %d, %d, %d, %d, %d, %d) -> %d %u (%s)",
-         handle->ta, handle->name,
+         handle->ta, handle->name, rpcop2str(op),
          s, size_min, size_max, size_rnd_once, delay_min, delay_max,
          delay_rnd_once, time2run,
          out.retval, (unsigned long)*sent, errno_rpc2str(RPC_ERRNO(handle))); 
