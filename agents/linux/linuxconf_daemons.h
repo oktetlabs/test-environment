@@ -69,6 +69,13 @@
 /** Directory where xinetd service configuration files are located */
 #define XINETD_ETC_DIR      "/etc/xinetd.d/"
 
+
+#ifdef WITH_FTP_SERVER
+extern const char *get_ftp_daemon_name(void);
+#else
+#define get_ftp_daemon_name() "ftpd"
+#endif
+
 static inline const char *
 get_ds_name(const char *oid)
 {
@@ -77,7 +84,7 @@ get_ds_name(const char *oid)
          (strstr(oid, "dnsserver") != NULL) ? "named" :        
          (strstr(oid, "todudpserver") != NULL) ? "time-udp" :  
          (strstr(oid, "tftpserver") != NULL) ? "tftp" :        
-         (strstr(oid, "ftpserver") != NULL) ? "vsftpd" :       
+         (strstr(oid, "ftpserver") != NULL) ? get_ftp_daemon_name() :       
          (strstr(oid, "telnetd") != NULL) ? "telnet" :         
          (strstr(oid, "rshd") != NULL) ? "rsh" :               
          (strstr(oid, "echoserver") != NULL) ? "echo" : oid;
