@@ -496,10 +496,11 @@ fi
 #te_log_archive --storage="${LOG_STORAGE}" --storage-dir=="${LOG_STORAGE_DIR}" ;
 
 # Create log file in text representation
-rgt-conv -m postponed -f tmp_raw_log -o tmp_raw_log.xml
-rgt-xml2text -f tmp_raw_log.xml -o tmp_raw_log.txt
-rgt-xml2html -f tmp_raw_log.xml -o tmp_raw_log.html
-rm -f tmp_raw_log.xml
+rgt-conv -m postponed -f ${TE_LOG_DIR}/tmp_raw_log \
+                      -o ${TE_LOG_DIR}/tmp_raw_log.xml
+rgt-xml2text -f ${TE_LOG_DIR}/tmp_raw_log.xml -o ${TE_LOG_DIR}/tmp_raw_log.txt
+rgt-xml2html -f ${TE_LOG_DIR}/tmp_raw_log.xml -o ${TE_LOG_DIR}/tmp_raw_log.html
+rm -f ${TE_LOG_DIR}/tmp_raw_log.xml
 
 rm -f ${LOCK_DIR}/ds
 rm -rf ${TE_TMP}
