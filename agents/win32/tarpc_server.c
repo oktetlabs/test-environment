@@ -3675,6 +3675,8 @@ overfill_buffers(tarpc_overfill_buffers_in *in,
             }
             if (rc != -1)
                 out->bytes += rc;
+            else
+                Sleep(100);
         } while (err != WSAEWOULDBLOCK);
 
         if (total != out->bytes)
