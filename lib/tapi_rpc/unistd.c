@@ -46,6 +46,9 @@
 #if HAVE_SYS_POLL_H
 #include <sys/poll.h>
 #endif
+#if HAVE_PWD_H
+#include <pwd.h>
+#endif
 
 #include "tapi_rpc_internal.h"
 #include "tapi_rpc_unistd.h"
@@ -1050,3 +1053,65 @@ rpc_seteuid(rcf_rpc_server *rpcs,
 
     RETVAL_INT_ZERO_OR_MINUS_ONE(seteuid, out.retval);
 }
+
+struct passwd *
+rpc_getpwnam(rcf_rpc_server *rpcs, const char *name)
+{
+    tarpc_getpwnam_in  in;
+    tarpc_getpwnam_out out;
+    
+    static struct passwd passwd = { NULL, NULL, 0, 0, NULL, NULL, NULL};
+    
+    struct passwd *res;
+    
+    free(passwd.pw_name);
+    free(passwd.pw_passwd);
+    free(passwd.pw_gecos);
+    free(passwd.pw_dir);
+    free(passwd.pw_shell);
+    memset(&passwd, 0, sizeof(passwd));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        return NULL;
+    }
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    rpcs->op = RCF_RPC_CALL_WAIT;
+    if ((in.name.name_val = strdup(name)) == NULL)
+    {
+        ERROR("Out of memory");
+        return NULL;
+    }
+    in.name.name_len = strlen(name) + 1;
+
+    rcf_rpc_call(rpcs, _getpwnam,
+                 &in,  (xdrproc_t)xdr_tarpc_getpwnam_in,
+                 &out, (xdrproc_t)xdr_tarpc_getpwnam_out);
+                 
+    free(in.name.name_val);
+    res = (!RPC_IS_CALL_OK(rpcs) || out.passwd.name.name_val == NULL) ?
+          NULL : &passwd;
+
+    TAPI_RPC_LOG("RPC (%s,%s): getpwnam(%s) -> %p (%s)",
+                 rpcs->ta, rpcs->name, name, res,
+                 errno_rpc2str(RPC_ERRNO(rpcs)));
+
+    if (res != NULL)
+    {
+        passwd.pw_name = out.passwd.name.name_val;
+        passwd.pw_passwd = out.passwd.passwd.passwd_val;
+        passwd.pw_uid = out.passwd.uid;
+        passwd.pw_gid = out.passwd.gid;
+        passwd.pw_gecos = out.passwd.gecos.gecos_val;
+        passwd.pw_dir = out.passwd.dir.dir_val;
+        passwd.pw_shell = out.passwd.shell.shell_val;
+        memset(&out, 0, sizeof(out));
+    }
+    
+    return res;
+}
+

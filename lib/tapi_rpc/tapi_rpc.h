@@ -54,6 +54,9 @@
 #if HAVE_NET_IF_ARP_H
 #include <net/if_arp.h>
 #endif
+#if HAVE_PWD_H
+#include <pwd.h>
+#endif
 
 #include "tapi_rpc_socket.h"
 #include "tapi_rpc_unistd.h"

@@ -174,6 +174,8 @@ extern uid_t rpc_getuid(rcf_rpc_server *rpcs);
 extern int rpc_setuid(rcf_rpc_server *rpcs,
                       uid_t uid);
 
+extern struct passwd *rpc_getpwnam(rcf_rpc_server *rpcs, const char *name);
+
 extern uid_t rpc_geteuid(rcf_rpc_server *rpcs);
 
 extern int rpc_seteuid(rcf_rpc_server *rpcs,
