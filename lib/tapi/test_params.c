@@ -120,5 +120,70 @@ test_map_param_value(const char *var_name,
     return -1;
 }
 
+/** See the description in sockapi-test.h */
+unsigned char *
+test_get_octet_string_param(const char *str_val, int len)
+{
+    unsigned char *oct_string, *ptr;
+    char          *nptr, *endptr;
+    int            i = 0;
 
+    if (str_val == NULL)
+    {
+        ERROR("Invalid parameter: NULL pointer");
+	return NULL;
+    }
+
+    oct_string = (unsigned char *)calloc(len, sizeof(unsigned char *));
+    if (oct_string == NULL)
+    {
+        ERROR("Error in memory allocation");
+	return NULL;
+    }
+    ptr = oct_string;
+    nptr = NULL;
+    endptr = str_val;
+    
+    while ((nptr != endptr) && (endptr) && (i < len)) 
+    {
+        /* How should I fight args list ?*/	    
+        if (*endptr == ':')
+            endptr++; 		
+        nptr = endptr;	    
+        *ptr++ = (unsigned char)strtol(nptr, &endptr, 16);
+	i++;
+    }
+
+    if (*endptr != '\0')
+    {
+        ERROR("Error in parsing octet string %s or bad given length %d", str_val, len);
+	free(oct_string);
+	return NULL;
+    }
+
+    if (i != len)
+    {
+        ERROR("Bad given length %d for octet string %s", len, str_val);
+	free(oct_string);
+	return NULL;
+    }
+    return oct_string;
+}	
+
+/** See the description in sockapi-test.h */
+const char*
+print_octet_string (const unsigned char *oct_string, int len)
+{
+    static char buf[256];
+    char *p = buf;
+    unsigned i;
+
+    if (oct_string == NULL)
+        strncpy (buf, sizeof(buf), "<null octet string>");
+    
+    for(i = 0; i < len; i++)
+        p += sprintf (p, " 0x%x", (int)(*oct_string++));
+
+    return buf;
+}
 

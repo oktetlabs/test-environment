@@ -283,6 +283,32 @@ extern "C" {
         }                                                        \
     } while (0)
 
+	
+/**
+ * The macro to get parameter of type 'octet string' 
+ *
+ * @param var_name_  Variable whose name is the same as the name of
+ *                   parameter we get the value
+ */
+#define TEST_GET_OCTET_STRING_PARAM(var_name_, var_len_) \
+    do {                                                                           \
+        const char *str_val_;                                                      \
+        unsigned char *oct_string_;                                                \
+                                                                                   \
+        if (((str_val_) = test_get_param(argc, argv,                               \
+                                         #var_name_)) == NULL)                     \
+        {                                                                          \
+            result = EXIT_FAILURE;                                                 \
+            goto cleanup;                                                          \
+        }                                                                          \
+	oct_string_ = test_get_octet_string_param(str_val_, var_len_);             \
+        if (oct_string_ == NULL)                                                   \
+	{                                                                          \
+            TEST_FAIL("Test cannot get octet string from %s parameter", str_val_); \
+        }	                                                                   \
+	var_name_ = (unsigned char *)oct_string_;                                  \
+    } while (0)
+
 
 /**
  * The list of values allowed for parameter of type 'te_bool'
@@ -372,6 +398,31 @@ struct param_map_entry {
 extern int test_map_param_value(const char *var_name,
                                 struct param_map_entry *maps,
                                 const char *str_val, int *num_val);
+
+/**
+ * Transform string value to octet string value.
+ *
+ * @param	str_val	string value
+ * @param	len	octet string value length
+ *
+ * @return	octet string value or NULL int case of failure.
+ *
+ */
+unsigned char *test_get_octet_string_param(const char *str_val, int len);
+
+/**
+ * Print octet string.
+ *
+ * @param	oct_string	octet string
+ * @param	len		octet string lentgh
+ *
+ * @return	buffer with string representation of octet string
+ * 
+ */
+const char *print_octet_string (const unsigned char *oct_string, int len);
+	
+	
+
 
 /**
  * Signal handler to close TE when Ctrl-C is pressed.
