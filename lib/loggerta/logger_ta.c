@@ -161,6 +161,9 @@ log_message(uint16_t level, const char *entity_name,
 
                     cp_list.length += length;
                     LGR_PUT_MD_LIST(cp_list, narg, addr, length);
+                    if ((++narg) > LGR_MAX_ARGS)
+                        goto resume;
+                    LGR_SET_ARG(header, narg, length);
                 }
                 break;
 
