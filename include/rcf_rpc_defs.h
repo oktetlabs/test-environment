@@ -32,6 +32,7 @@
 #ifndef __TE_RCF_RPC_DEFS_H__
 #define __TE_RCF_RPC_DEFS_H__
 
+#include <stdio.h>
 #include "te_errno.h"
 
 /** RPC errno values */
