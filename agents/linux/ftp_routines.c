@@ -330,7 +330,7 @@ ftp_open(char *uri, int flags, int passive, int offset)
     if (passive)
         CMD("PASV\n");
     else
-        PUT_CMD("PORT %d,%d,%d,%d,%d,%d",
+        CMD("PORT %d,%d,%d,%d,%d,%d\n",
                 inaddr[0], inaddr[1], inaddr[2], inaddr[3],
                 ntohs(addr1.sin_port) / 256, ntohs(addr1.sin_port) % 256);
     
@@ -352,6 +352,8 @@ ftp_open(char *uri, int flags, int passive, int offset)
     }
 
     CMD("TYPE I\n");
+    
+    CMD("REST %d\n", offset);
     
     if (flags == O_RDONLY)
         PUT_CMD("RETR %s\n", file);
