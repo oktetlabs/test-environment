@@ -31,6 +31,43 @@
 #ifndef __TE_TAPI_RPCSOCK_H__
 #define __TE_TAPI_RPCSOCK_H__
 
+#include <stdio.h>
+#if HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif
+#if HAVE_SYS_POLL_H
+#include <sys/poll.h>
+#endif
+#if HAVE_SYS_IOCTL_H
+#include <sys/ioctl.h>
+#endif
+#if HAVE_NETINET_IP_H
+#include <netinet/ip.h>
+#endif
+#if HAVE_NET_IF_ARP_H
+#include <net/if_arp.h>
+#endif
+#if HAVE_NETINET_TCP_H
+#include <netinet/tcp.h>
+#endif
+#if HAVE_SIGNAL_H
+#include <signal.h>
+#endif
+#if HAVE_NET_IF_H
+#include <net/if.h>
+#endif
+#if HAVE_NETDB_H
+#include <netdb.h>
+#endif
+
+#if HAVE_STRING_H
+#include <string.h>
+#else
+#if HAVE_STRINGS_H
+#include <strings.h>
+#endif
+#endif
+
 #include "tapi_rpcsock_defs.h"
 
 /* Windows Event Objects */
