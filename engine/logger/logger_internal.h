@@ -80,10 +80,28 @@ extern "C" {
 #include "logger_api.h"
 
 
-#define LGR_MAX_NAME      255
+/** Default TA polling timeout */
+#define LGR_TA_POLL_DEF         1000000     /* 1 second */
+
+/** 
+ * Maximum number of messages to be get during flush.
+ * It is required to cope with permanent logging on TA
+ * with broken time synchronization.
+ */
+#define LGR_FLUSH_TA_MSG_MAX    1000
+
+/** Maximum length of the Logger IPC server name */
+#define LGR_MAX_NAME            (strlen(LGR_SRV_FOR_TA_PREFIX) + \
+                                 RCF_MAX_PATH)
+
+/** Logger flush command */
+#define LGR_FLUSH               "LGR-FLUSH"
+/** Logger shutdown command */
+#define LGR_SHUTDOWN            "LGR-SHUTDOWN"
+
+
 #define LGR_TANAMES_LEN   1024
-#define LGR_SHUTDOWN      "LGR-SHUTDOWN"
-#define LGR_FLUSH         "LGR-FLUSH"
+
 
 #define LGR_PUT_FLTR(_hdr, _ftype, _preg) \
     do {                                                            \
@@ -174,6 +192,6 @@ extern int configParser(const char *file_name);
 extern void lgr_register_message(const void *buf_mess, size_t buf_len);
 
 #ifdef __cplusplus
-}
+} /* extern "C" */
 #endif
 #endif /* __LGR_LOGGER_INTERNAL_H__ */

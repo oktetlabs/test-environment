@@ -50,7 +50,7 @@
 #define LGR_MAX_BUF 0x4000    /* FIXME */
 
 #define FREAD(_fd, _buf, _len) \
-    fread((_buf), sizeof(char), (_len), (_fd))
+    fread((_buf), sizeof(uint8_t), (_len), (_fd))
 
 #define SET_SEC(_poll)  ((_poll)/1000000)
 #define SET_MSEC(_poll) ((_poll)%1000000)
@@ -72,6 +72,7 @@ char te_log_dir[TE_LOG_FIELD_MAX];
 static char te_log_tmp[TE_LOG_FIELD_MAX];
 
 
+#if 0
 /**
  * Check if user incoming message should be processed.
  *
@@ -102,22 +103,23 @@ lgr_message_filter(const char *user_name, re_fltr *filters)
     }
     return lgr_type;
 }
+#endif
 
 
 /**
  * Register the log message in the raw log file.
  *
- * @param buf_mess  Log message location.
- * @param buf_len   Log message length.
+ * @param buf       Log message location
+ * @param len       Log message length
  */
 void
-lgr_register_message(const void *buf_mess, size_t buf_len)
+lgr_register_message(const void *buf, size_t len)
 {
     /* MUTual  EXclusion device */
     static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
     pthread_mutex_lock(&mutex);
-    if (fwrite(buf_mess, buf_len, 1, raw_file) != 1)
+    if (fwrite(buf, len, 1, raw_file) != 1)
     {
         perror("fwrite() failure");
     }
@@ -137,7 +139,7 @@ te_handler(void)
     char                        err_buf[BUFSIZ];
     static struct ipc_server   *srv;
     struct ipc_server_client   *ipcsc_p;
-    char                        buf_mess[LGR_MAX_BUF];
+    char                        buf[LGR_MAX_BUF];
     size_t                      buf_len;
 
 
@@ -156,14 +158,14 @@ te_handler(void)
     {
         buf_len = LGR_MAX_BUF;
         ipcsc_p = NULL;
-        if (ipc_receive_message(srv, buf_mess, &buf_len, &ipcsc_p) != 0)
+        if (ipc_receive_message(srv, buf, &buf_len, &ipcsc_p) != 0)
         {
             ERROR("Message receiving failure\n");
             break;
         }
 
-        if (strncmp((buf_mess + sizeof(te_log_nfl_t)), LGR_SHUTDOWN,
-                    *(te_log_nfl_t *)buf_mess) == 0)
+        if (strncmp((buf + sizeof(te_log_nfl_t)), LGR_SHUTDOWN,
+                    *(te_log_nfl_t *)buf) == 0)
         {
             RING("Logger shutdown ...\n");
             break;
@@ -174,9 +176,9 @@ te_handler(void)
             uint32_t          log_flag = LGR_INCLUDE;
             struct te_inst   *te_el;
             char              tmp_name[TE_LOG_FIELD_MAX];
-            uint32_t          len = buf_mess[0]; /* BUG here */
+            uint32_t          len = buf[0]; /* BUG here */
 
-            memcpy(tmp_name, buf_mess, len);
+            memcpy(tmp_name, buf, len);
             tmp_name[len] = 0;
 
             te_el = te_list;
@@ -187,10 +189,10 @@ te_handler(void)
                     char *tmp_pnt;
 
                     /* BUG here */
-                    len = TE_LOG_NFL_SZ + buf_mess[0] +
+                    len = TE_LOG_NFL_SZ + buf[0] +
                           LGR_UNACCOUNTED_LEN;
-                    tmp_pnt = buf_mess + len + 1;
-                    len = buf_mess[len];
+                    tmp_pnt = buf + len + 1;
+                    len = buf[len];
                     memcpy(tmp_name, tmp_pnt, len);
                     log_flag = lgr_message_filter(tmp_name,
                                                   &te_el->filters);
@@ -201,7 +203,7 @@ te_handler(void)
 
             if (log_flag == LGR_INCLUDE)
 #endif
-                lgr_register_message(buf_mess, buf_len);
+                lgr_register_message(buf, buf_len);
         }
     } /* end of forever loop */
 
@@ -216,183 +218,297 @@ te_handler(void)
     return NULL;
 }
 
+
+/**
+ * Reply to flush operation requester when it is done.
+ *
+ * @param srv       Logger IPC server for TA
+ *
+ * @return Status code.
+ */
+static int
+ta_flush_done(struct ipc_server *srv)
+{
+    struct ipc_server_client   *ipcsc_p = NULL;
+    uint8_t                     buf[strlen(LGR_FLUSH) + 1];
+    size_t                      len = sizeof(buf);
+    int                         rc;
+
+    rc = ipc_receive_message(srv, buf, &len, &ipcsc_p);
+    if (rc != 0)
+    {
+        ERROR("FATAL ERROR: Failed to read flush request: %X", rc);
+        return rc;
+    }
+    rc = ipc_send_answer(srv, ipcsc_p, buf, len);
+    if (rc != 0)
+    {
+        ERROR("FATAL ERROR: Failed to send answer to flush "
+              "request: %X", rc);
+        return rc;
+    }
+
+    return 0;
+}
+
 /**
  * This is an entry point of TA log message gatherer.
  * This routine periodically polls appropriate TA to get
  * TA local log. Besides, log is solicited if flush is requested.
  *
  * @param  ta   Location of TA parameters.
+ *
+ * @return NULL
  */
 static void *
 ta_handler(void *ta)
 {
-    struct timeval      tv, tv_msg;
-    char                log_file[RCF_MAX_PATH];
+    /* TA and IPC server data and related variables */
     ta_inst            *inst = (ta_inst *)ta;
-    FILE               *ta_file = NULL;
-    fd_set              rfds;
-    int                 fd_server;
+    char                srv_name[LGR_MAX_NAME] = LGR_SRV_FOR_TA_PREFIX;
     struct ipc_server  *srv;
-    char                ta_srv[LGR_MAX_NAME] = LGR_SRV_FOR_TA_PREFIX;
-    char                buf_mess[LGR_MAX_BUF] = { 0, };
-    size_t              buf_len = sizeof(buf_mess);
-    uint32_t            empty_flag  = 0; /* Set if file is empty */
-    uint32_t            tstamp_flag = 0; /* Set if timestamp */
-    uint32_t            flush_flag = 0;  /* Set if flush is detected */
+    int                 fd_server;
+    fd_set              rfds;
+    int                 rc;
 
-    strcat(ta_srv, inst->agent);
-    srv = ipc_register_server(ta_srv);
+    /* Polling variables */
+    unsigned long int   polling;
+    struct timeval      poll_ts;    /**< The last poll time stamp */
+    struct timeval      now;        /**< Current time */
+
+    /* Flush variavles */
+    te_bool             do_flush = FALSE;
+    te_bool             flush_done = FALSE;
+    unsigned int        flush_msg_max;
+    struct timeval      flush_ts;   /**< Time stamp when flush has been
+                                         started */
+    struct timeval      msg_ts;     /**< Time stamp in the message */
+
+    /* Log file processing variables */
+    char                log_file[RCF_MAX_PATH];
+    struct stat         log_file_stat;
+    FILE               *ta_file;
+    uint8_t             buf[LGR_MAX_BUF];
+
+
+    /* Register IPC Server for the TA */
+    strcat(srv_name, inst->agent);
+    srv = ipc_register_server(srv_name);
     if (srv == NULL)
     {
-        ERROR("Failed to register IPC server '%s'", ta_srv);
+        ERROR("Failed to register IPC server '%s'", srv_name);
         return NULL;
     }
     fd_server = ipc_get_server_fd(srv);
 
-    gettimeofday(&tv, NULL);
+    /* Do not allow to poll in flood mode */
+    if (inst->polling == 0)
+        inst->polling = LGR_TA_POLL_DEF;
+
+    /* Recalculate polling timeout in microseconds */
+    polling = inst->polling * 1000;
+
+    /* It not so important to poll at start up */
+    gettimeofday(&poll_ts, NULL);
 
     while (1)
     {
-        int rc;
-        int polling;
-        struct timeval cm;
-        int msg_count = 0;
-        struct stat log_file_stat;
-
-#if 0
-        static int get_log_count = 0;
-#endif
-
-        /* Watch stdin (fd 0) to see when it has input. */
-        FD_ZERO(&rfds);
-        FD_SET(fd_server, &rfds);
-
-        polling = inst->polling *1000;
-
-
-        if (flush_flag == 0)
+        /* If flush operation is done, reply to requester */
+        if (flush_done)
         {
-            struct timeval delay = {0,0};
+            flush_done = FALSE;
+            if (ta_flush_done(srv) != 0)
+                break;
+        }
 
-            gettimeofday(&cm, NULL);
+        /* 
+         * If we are not flushing, wait for polling timeout or
+         * flush request
+         */
+        if (do_flush == 0)
+        {
+            struct timeval delay = { 0, 0 };
 
-            /* calculate moment until we should wait before next get log */
-            tv.tv_sec  += SET_SEC (polling);
-            tv.tv_usec += SET_MSEC(polling);
+            gettimeofday(&now, NULL);
 
-            if (tv.tv_usec >= 1000000)
+            /* Calculate moment until we should wait before next get log */
+            poll_ts.tv_sec  += SET_SEC (polling);
+            poll_ts.tv_usec += SET_MSEC(polling);
+            if (poll_ts.tv_usec >= 1000000)
             {
-                tv.tv_usec -= 1000000;
-                tv.tv_sec ++;
+                poll_ts.tv_usec -= 1000000;
+                poll_ts.tv_sec++;
             }
 
             /*
              * Calculate delay of waiting we should wait
              * before next get log.
              */
-            if (tv.tv_sec >= cm.tv_sec)
-                delay.tv_sec  = tv.tv_sec  - cm.tv_sec;
+            if (poll_ts.tv_sec > now.tv_sec)
+                delay.tv_sec = poll_ts.tv_sec - now.tv_sec;
 
-            if (tv.tv_usec >= cm.tv_usec)
-                delay.tv_usec = tv.tv_usec - cm.tv_usec;
-            else if (delay.tv_sec > 0)
+            if (poll_ts.tv_usec >= now.tv_usec)
             {
-                delay.tv_usec = (tv.tv_usec + 1000000) - cm.tv_usec;
-                delay.tv_sec--;
+                delay.tv_usec = poll_ts.tv_usec - now.tv_usec;
             }
-            cm = delay;
-            select(FD_SETSIZE, &rfds, NULL, NULL, &delay);
+            else if (delay.tv_sec > 0) 
+            {
+                delay.tv_sec--;
+                delay.tv_usec = (poll_ts.tv_usec + 1000000) - now.tv_usec;
+            }
+
+            FD_ZERO(&rfds);
+            FD_SET(fd_server, &rfds);
+
+            rc = select(fd_server + 1, &rfds, NULL, NULL, &delay);
+            if (rc < 0)
+            {
+                break;
+            }
+            else if (rc > 0)
+            {
+                if (FD_ISSET(fd_server, &rfds))
+                {
+                    /* Go into the logs flush mode */
+                    do_flush = TRUE;
+                    flush_msg_max = LGR_FLUSH_TA_MSG_MAX;
+                    gettimeofday(&flush_ts, NULL);
+                }
+                else
+                {
+                    ERROR("FATAL ERROR: TA %s: select() returns %d, "
+                          "but server fd is not readable",
+                          inst->agent, rc);
+                    break;
+                }
+            }
 
             /* Get time for filtering incoming messages */
         }
 
-        gettimeofday(&tv, NULL);
-        *log_file = 0;
+        /* Make time stamp when we poll TA */
+        gettimeofday(&poll_ts, NULL);
+
+        *log_file = '\0';
         if ((rc = rcf_ta_get_log(inst->agent, log_file)) != 0)
         {
             if (rc == ETAREBOOTED)
+            {
+                /* 
+                 * Ignore error if TA is rebooted by RCF, but terminate
+                 * flush operation.
+                 */
+                if (do_flush)
+                {
+                    do_flush = FALSE;
+                    flush_done = TRUE;
+                }
                 continue;
+            }
+            /* The rest of errors are considered as fatal */
             break;
         }
+
         rc = stat(log_file, &log_file_stat);
         if (rc < 0)
         {
-            perror("log file stat failure");
+            ERROR("FATAL ERROR: TA %s: log file '%s' stat() failure: "
+                  "errno=%d", inst->agent, log_file, errno);
+            break;
+        }
+        else if (log_file_stat.st_size == 0)
+        {
+            /* File is empty */
+            if (remove(log_file) != 0)
+            {
+                ERROR("Failed to delete log file '%s': errno=%d",
+                      log_file, errno);
+                /* Continue */
+            }
+
+            if (do_flush)
+            {
+                do_flush = FALSE;
+                flush_done = TRUE;
+            }
             continue;
         }
 
-        if (log_file_stat.st_size != 0)
+        ta_file = fopen(log_file, "r");
+        if (ta_file == NULL)
         {
-            if ((ta_file = fopen(log_file, "r")) == NULL)
-                ERROR("TA:%s, fopen(%s) failure\n", inst->agent, log_file);
+            ERROR("FATAL ERROR: TA %s: fopen(%s) failure: errno=%d",
+                  inst->agent, log_file, errno);
+            break;
         }
 
-        if ((ta_file == NULL) || (log_file_stat.st_size == 0))
-        {
-            remove(log_file);
-            if (flush_flag == 1)
-            {
-                flush_flag = 0;
-                tstamp_flag = 1;
-            }
-            goto response_to_flush;
-        }
+        do { /* messages reading loop */
 
-        do {
-            char               *p_buf = buf_mess;
+            uint8_t            *p_buf = buf;
             te_log_nfl_t        nfl;
-            te_log_level_t      log_level;
             te_log_msg_len_t    len;
-            char                tmp_name[TE_LOG_FIELD_MAX];
-            uint32_t            log_flag = LGR_INCLUDE;
-            uint32_t            sequence = 0;
-            uint32_t            rc = 0;
+            uint32_t            sequence;
+            int32_t             lost;
+            size_t              read;
 
             /* Add TA name and corresponding NFL to the message */
-            msg_count++;
             nfl = strlen(inst->agent);
             LGR_NFL_PUT(nfl, p_buf);
             memcpy(p_buf, inst->agent, nfl);
             p_buf += nfl;
 
             /* Get message sequence number */
-            rc = FREAD(ta_file, (uint8_t *)&sequence, sizeof(uint32_t));
-            if (rc != sizeof(uint32_t))
+            read = FREAD(ta_file, (uint8_t *)&sequence, sizeof(uint32_t));
+            if (read != sizeof(uint32_t))
             {
                 break;
             }
-
             sequence = ntohl(sequence);
             sequence -= inst->sequence;
-            if (sequence > 1)
-                WARN("Lost %d messages\n", sequence);
-            inst->sequence += sequence;
+            lost = sequence - inst->sequence - 1;
+            if (lost > 0)
+                WARN("TA %s: Lost %d messages", inst->agent, lost);
+            inst->sequence = sequence;
 
+            /* Message is started */
+            flush_msg_max--;
 
             /* Read control fields value */
             len = TE_LOG_VERSION_SZ + TE_LOG_TIMESTAMP_SZ + \
                   TE_LOG_LEVEL_SZ + TE_LOG_MSG_LEN_SZ;
             if (FREAD(ta_file, p_buf, len) != len)
             {
-                empty_flag = 1; /* File is empty or reading error */
                 break;
             }
 
             /* Get message timestamp value */
-            assert(TE_LOG_TIMESTAMP_SZ == sizeof(uint32_t) * 2);
-            memcpy(&tv_msg.tv_sec, p_buf + TE_LOG_VERSION_SZ,
-                   sizeof(uint32_t));
-            tv_msg.tv_sec = ntohl(tv_msg.tv_sec);
-            memcpy(&tv_msg.tv_usec,
-                   p_buf + TE_LOG_VERSION_SZ + sizeof(uint32_t),
-                   sizeof(uint32_t));
-            tv_msg.tv_usec = ntohl(tv_msg.tv_usec);
+            if (do_flush)
+            {
+                assert(TE_LOG_TIMESTAMP_SZ == sizeof(uint32_t) * 2);
+                memcpy(&msg_ts.tv_sec,
+                       p_buf + TE_LOG_VERSION_SZ,
+                       sizeof(uint32_t));
+                msg_ts.tv_sec = ntohl(msg_ts.tv_sec);
+                memcpy(&msg_ts.tv_usec,
+                       p_buf + TE_LOG_VERSION_SZ + sizeof(uint32_t),
+                       sizeof(uint32_t));
+                msg_ts.tv_usec = ntohl(msg_ts.tv_usec);
 
-            /* Get message level value */
-            memcpy(&log_level,
-                   p_buf + TE_LOG_VERSION_SZ + TE_LOG_TIMESTAMP_SZ,
-                   TE_LOG_LEVEL_SZ);
-            log_level = htons(log_level);
+                /* Check timestamp value */
+                if ((msg_ts.tv_sec > flush_ts.tv_sec) ||
+                    ((msg_ts.tv_sec == flush_ts.tv_sec) &&
+                     (msg_ts.tv_usec > flush_ts.tv_usec)) ||
+                    (flush_msg_max == 0))
+                {
+                    do_flush = FALSE;
+                    flush_done = TRUE;
+                    if (flush_msg_max == 0)
+                    {
+                        WARN("TA %s: Flush operation was interrupted",
+                             inst->agent);
+                    }
+                }
+            }
 
             /* Get message length */
             p_buf += (len - TE_LOG_MSG_LEN_SZ);
@@ -411,82 +527,45 @@ ta_handler(void *ta)
             /* Copy the rest of the message to the buffer */
             if (FREAD(ta_file, p_buf, len) != len)
             {
-                empty_flag = 1; /* File is empty or reading error */
                 break;
             }
-
-            /* Extract user_name value */
-            memcpy(tmp_name, p_buf + 1, *p_buf);
-            tmp_name[(int)(*p_buf)] = '\0';
             p_buf += len;
 
-            log_flag = lgr_message_filter(tmp_name, &inst->filters);
+            lgr_register_message(buf, p_buf - buf);
 
-            if (log_flag == LGR_INCLUDE)
-            {
-                if (flush_flag == 1)
-                {
-                    /* Check timestamp value */
-                    if (tv_msg.tv_sec > tv.tv_sec)
-                    {
-                        flush_flag = 0;
-                        tstamp_flag = 1;
-                    }
-                    else if (tv_msg.tv_sec == tv.tv_sec)
-                    {
-                        if (tv_msg.tv_usec > tv.tv_usec)
-                        {
-                            flush_flag = 0;
-                            tstamp_flag = 1;
-                        }
-                    }
-                }
-                lgr_register_message(buf_mess, p_buf - buf_mess);
-            }
-        } while (1);
+        } while (TRUE);
 
         if (feof(ta_file) == 0)
         {
-            empty_flag = 0;
-            ERROR("Invalid file '%s' with logs from TA", log_file);
+            ERROR("TA %s: Invalid file '%s' with logs",
+                  inst->agent, log_file);
+            /* Continue */
         }
 
-        fclose(ta_file);
-        remove(log_file);
-        ta_file = NULL;
-
-#if 0
-        /* No messages are in the agent buffer by this time */
-        if ((flush_flag == 1) && (empty_flag == 1))
+        if (fclose(ta_file) != 0)
         {
-            ERROR("GET LOG %d; empty, flush finish", get_log_count)
-            flush_flag = 0;
-            empty_flag = 0;
-            tstamp_flag = 1;
+            ERROR("TA %s: fclose() of '%s' failed: errno=%d",
+                  inst->agent, log_file, errno);
+            /* Continue */
         }
-#endif
-
-response_to_flush:
-        if ((flush_flag == 0) && (tstamp_flag == 0))
+        if (remove(log_file) != 0)
         {
-           if (FD_ISSET(fd_server, &rfds))
-               flush_flag = 1;
+            ERROR("TA %s: Failed to delete file '%s': errno=%d",
+                  inst->agent, log_file, errno);
+            /* Continue */
         }
 
-        if ((flush_flag == 0) && (tstamp_flag == 1))
-        {
-            struct ipc_server_client  *ipcsc_p = NULL;
+    } /* end of forever loop */
 
-            /* FIXME: It's terrible */
-            ipc_receive_message(srv, buf_mess, &buf_len, &ipcsc_p);
-            ipc_send_answer(srv, ipcsc_p, buf_mess, buf_len);
-            tstamp_flag = 0;
-        }
-    }
+    /* TODO Is it required to check flush_done flag here? */
 
     if (ipc_close_server(srv) != 0)
     {
-        ERROR("Failed to close IPC server '%s': %X", ta_srv, errno);
+        ERROR("Failed to close IPC server '%s': %X", srv_name, errno);
+    }
+    else
+    {
+        RING("IPC Server '%s' closed", srv_name);
     }
     rcf_api_cleanup();
 
