@@ -3026,7 +3026,7 @@ TARPC_FUNC(wsa_send,
     else
     {
         memset(&tmp, 0, sizeof(tmp));
-    overlapped = &tmp;
+        overlapped = &tmp;
     }
     if (iovec2overlapped(overlapped, in->vector.vector_len,
                          in->vector.vector_val) != 0)
@@ -3073,7 +3073,7 @@ TARPC_FUNC(wsa_recv,
     else
     {
         memset(&tmp, 0, sizeof(tmp));
-    overlapped = &tmp;
+        overlapped = &tmp;
     }
     if (iovec2overlapped(overlapped, in->vector.vector_len,
                          in->vector.vector_val) != 0)
