@@ -28,6 +28,8 @@
  * $Id$
  */
 
+#define TE_LOG_LEVEL 0xff
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -1443,6 +1445,7 @@ send_cmd(ta *agent, usrreq *req)
 {
     rcf_msg *msg = req->message;
 
+    sprintf(cmd, "SID %d ", msg->sid);
     switch (msg->opcode)
     {
         case RCFOP_REBOOT:
