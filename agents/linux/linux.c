@@ -68,7 +68,7 @@
 /** Send answer to the TEN */
 #define SEND_ANSWER(_fmt...) \
     do {                                                                \
-        int rc;                                                         \
+        int _rc;                                                        \
                                                                         \
         if ((size_t)snprintf(cbuf + answer_plen, buflen - answer_plen,  \
                              _fmt) >= (buflen - answer_plen))           \
@@ -76,9 +76,9 @@
             VERB("answer is truncated\n");                              \
         }                                                               \
         rcf_ch_lock();                                                  \
-        rc = rcf_comm_agent_reply(handle, cbuf, strlen(cbuf) + 1);      \
+        _rc = rcf_comm_agent_reply(handle, cbuf, strlen(cbuf) + 1);     \
         rcf_ch_unlock();                                                \
-        return rc;                                                      \
+        return _rc;                                                     \
     } while (FALSE)
 
 
