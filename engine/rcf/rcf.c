@@ -1792,7 +1792,7 @@ process_user_request(usrreq *req)
             return;
 
         case RCFOP_SESSION:
-            msg->sid = ++agent->sid;
+            msg->sid = ++(agent->sid);
             answer_user_request(req);
             return;
 
