@@ -380,7 +380,11 @@ if test -n "$BUILDER" ; then
     for i in `find $TE_BASE -name configure.ac` ; do 
         pushd `dirname $i` >/dev/null
         if test ! -e configure ; then
-            echo "Calling aclocal/autoconf/automake in `pwd`"
+            if test -n "${QUIET}" ; then
+                echo "Calling aclocal/autoconf/automake in `pwd`" >>build.log
+            else
+                echo "Calling aclocal/autoconf/automake in `pwd`"
+            fi
             aclocal -I ${TE_BASE}/aux || exit_with_log
             autoconf || exit_with_log
             automake || exit_with_log
