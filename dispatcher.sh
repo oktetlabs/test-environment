@@ -410,7 +410,8 @@ if test -n "$BUILDER" ; then
         pushd `dirname $i` >/dev/null
         if test ! -e configure ; then
             if test -n "${QUIET}" ; then
-                echo "Calling aclocal/autoconf/automake in `pwd`" >>build.log
+                echo "Calling aclocal/autoconf/automake in `pwd`" \
+                    >>${TE_BUILD}/build.log
             else
                 echo "Calling aclocal/autoconf/automake in `pwd`"
             fi
@@ -424,8 +425,9 @@ if test -n "$BUILDER" ; then
     # FINAL ${TE_BASE}/configure --prefix=${TE_INSTALL} --with-config=${CONF_BUILDER} 2>&1 | te_builder_log
     if test -n "${QUIET}" ; then
         ${TE_BASE}/configure -q --prefix=${TE_INSTALL} \
-            --with-config=${CONF_BUILDER} >build.log || exit_with_log ;
-        make te >>build.log || exit_with_log ;
+            --with-config=${CONF_BUILDER} >${TE_BUILD}/build.log || \
+            exit_with_log ;
+        make te >>${TE_BUILD}/build.log || exit_with_log ;
     else
         ${TE_BASE}/configure -q --prefix=${TE_INSTALL} \
             --with-config=${CONF_BUILDER} || exit_with_log ;
