@@ -1,5 +1,6 @@
 
 AM_CPPFLAGS = -I$(DESTDIR)/$(prefix)/include 
+AM_CFLAGS = @XML2_CFLAGS@
 AM_LDFLAGS = @TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/lib 
 
 bin_PROGRAMS = te_cs te_cs_shutdown 
@@ -11,7 +12,7 @@ te_cs_SOURCES = conf_db.c conf_dh.c conf_main.c conf_backup.c conf_ta.c
 te_cs_shutdown_SOURCES = conf_shutdown.c
 
 te_cs_LDADD = @TE_LDADD@ -lrcfapi  -lconf_types -lconf_oid -llogger_ten \
-              -lipcserver -lipc -lpthread -lpopt
+              -lipcserver -lipc @XML2_LIBS@ -lpthread -lpopt
 
 te_cs_shutdown_LDADD = @TE_LDADD@ -llogger_ten -lipc -lpthread
 

@@ -32,13 +32,15 @@ fi
 AC_MSG_CHECKING(for libxml2 library)
 if ${XML_CONFIG} --libs print >/dev/null 2>&1
 then
-    CFLAGS=${CFLAGS}" "`$XML_CONFIG --cflags`
-    LIBS=${LIBS}" "`$XML_CONFIG --libs`
+    XML2_LIBS="$XML2_LIBS `$XML_CONFIG --libs`"
+    XML2_CFLAGS="$XML2_CFLAGS `$XML_CONFIG --cflags`"
     AC_MSG_RESULT(found)
 else
     AC_MSG_ERROR([Could not find libxml2, check ftp://xmlsoft.org/.])
 fi
 
+AC_SUBST([XML2_CFLAGS])
+AC_SUBST([XML2_LIBS])
 
 AC_SUBST([TE_CPPFLAGS])
 AC_SUBST([TE_CFLAGS])
