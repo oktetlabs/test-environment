@@ -29,7 +29,7 @@
  * $Id$
  */
 
-#define TE_LGR_USER     "LOGFORK"
+#define TE_LGR_USER     "LogFork"
 
 #include "te_config.h"
 
