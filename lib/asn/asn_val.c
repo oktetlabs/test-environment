@@ -600,13 +600,13 @@ asn_impl_insert_subvalue (asn_value_p container, const char *label,
  * @return zero on success, otherwise error code.
  */ 
 int
-asn_write_value_field (asn_value_p container, const void *data, int d_len, 
-                       const char *field_labels)
+asn_write_value_field(asn_value_p container, const void *data, int d_len, 
+                      const char *field_labels)
 {
     char * field_labels_int_copy = asn_strdup(field_labels); 
     int    rc = asn_impl_write_value_field(container, data, d_len, 
-                                                    field_labels_int_copy);
-    free (field_labels_int_copy);
+                                           field_labels_int_copy);
+    free(field_labels_int_copy);
 
     return rc;
 }
@@ -632,9 +632,9 @@ asn_write_value_field (asn_value_p container, const void *data, int d_len,
  * @return zero on success, otherwise error code.
  */ 
 int
-asn_impl_write_value_field (asn_value_p container, 
-                                const void *data, size_t d_len, 
-                                char *field_labels)
+asn_impl_write_value_field(asn_value_p container, 
+                           const void *data, size_t d_len, 
+                           char *field_labels)
 {
     unsigned int m_len = d_len; /* length of memory used */
 
