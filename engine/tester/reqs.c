@@ -193,7 +193,7 @@ te_bool
 tester_is_run_required(tester_ctx *ctx, const run_item *test,
                        const test_params *params)
 {
-    te_bool                     result = TRUE;
+    te_bool                     result = FALSE;
     test_requirements          *targets = &ctx->reqs;
     const test_requirements    *reqs;
     test_requirement           *t, *tn;
@@ -229,14 +229,6 @@ tester_is_run_required(tester_ctx *ctx, const run_item *test,
         {
             assert(s->exclude == FALSE);
             assert((test->type != RUN_ITEM_SCRIPT) || !(s->sticky));
-
-            /* 
-             * It's NOT exclude target requirement and list of non-sticky
-             * test requirementsis not empty, therefore, one of
-             * requirements must be complied.
-             */
-            if (!(t->exclude) && !(s->sticky))
-                result = FALSE;
 
             if (strcmp(t->id, req_get(s, params)) == 0)
             {
