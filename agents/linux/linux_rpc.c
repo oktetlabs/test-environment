@@ -611,7 +611,7 @@ tarpc_server(const void *arg)
     if (logfork_register_user(name) != 0)
     {
         fprintf(stderr,
-                "logfork_register_user() fail to register %s server\n",
+                "logfork_register_user() failed to register %s server\n",
                 name);
     }
     
