@@ -3556,4 +3556,117 @@ TARPC_FUNC(wsa_recv_disconnect, {},
 }
 )
 
+/*-------------- sigset_t constructor ---------------------------*/
+
+bool_t
+_sigset_new_1_svc(tarpc_sigset_new_in *in, tarpc_sigset_new_out *out,
+                  struct svc_req *rqstp)
+{
+    sigset_t *set;
+
+    UNUSED(rqstp);
+    UNUSED(in);
+
+    memset(out, 0, sizeof(*out));
+
+    errno = 0;
+    if ((set = (sigset_t *)malloc(sizeof(sigset_t))) == NULL)
+    {
+        out->common._errno = TE_RC(TE_TA_LINUX, ENOMEM);
+    }
+    else
+    {
+        out->common._errno = RPC_ERRNO;
+        out->set = (tarpc_sigset_t)set;
+    }
+
+    return TRUE;
+}
+
+/*-------------- sigset_t destructor ----------------------------*/
+
+bool_t
+_sigset_delete_1_svc(tarpc_sigset_delete_in *in,
+                     tarpc_sigset_delete_out *out,
+                     struct svc_req *rqstp)
+{
+    UNUSED(rqstp);
+
+    memset(out, 0, sizeof(*out));
+
+    errno = 0;
+    free((void *)(in->set));
+    out->common._errno = RPC_ERRNO;
+
+    return TRUE;
+}
+
+/*-------------- sigemptyset() ------------------------------*/
+
+TARPC_FUNC(sigemptyset, {},
+{
+    MAKE_CALL(out->retval = sigemptyset((sigset_t *)(in->set)));
+}
+)
+
+/*-------------- sigpendingt() ------------------------------*/
+
+TARPC_FUNC(sigpending, {},
+{
+    MAKE_CALL(out->retval = sigpending((sigset_t *)(in->set)));
+}
+)
+
+/*-------------- sigsuspend() ------------------------------*/
+
+TARPC_FUNC(sigsuspend, {},
+{
+    MAKE_CALL(out->retval = sigsuspend((sigset_t *)(in->set)));
+}
+)
+
+/*-------------- sigfillset() ------------------------------*/
+
+TARPC_FUNC(sigfillset, {},
+{
+    MAKE_CALL(out->retval = sigfillset((sigset_t *)(in->set)));
+}
+)
+
+/*-------------- sigaddset() -------------------------------*/
+
+TARPC_FUNC(sigaddset, {},
+{
+    MAKE_CALL(out->retval = sigaddset((sigset_t *)(in->set), 
+                                      signum_rpc2h(in->signum)));
+}
+)
+
+/*-------------- sigdelset() -------------------------------*/
+
+TARPC_FUNC(sigdelset, {},
+{
+    MAKE_CALL(out->retval = sigdelset((sigset_t *)(in->set), 
+                                      signum_rpc2h(in->signum)));
+}
+)
+
+/*-------------- sigismember() ------------------------------*/
+
+TARPC_FUNC(sigismember, {},
+{
+    INIT_CHECKED_ARG((char *)(in->set), sizeof(sigset_t), 0);
+    MAKE_CALL(out->retval = sigismember((sigset_t *)(in->set), 
+                                        signum_rpc2h(in->signum)));
+}
+)
+
+/*-------------- kill() --------------------------------*/
+
+TARPC_FUNC(kill, {},
+{
+    MAKE_CALL(out->retval = kill(in->pid, signum_rpc2h(in->signum)));
+}
+)
+
 /* WSARecvMsg */
