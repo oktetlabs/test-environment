@@ -378,16 +378,40 @@ extern "C" {
         tapi_snmp_oid_t oid_;                                              \
 	                                                                   \
         SNMP_MAKE_OID(lable_, oid_);                                       \
- 	rc_ = tapi_snmp_get_rows(ta_, sid_, csap_id_, &oid_,               \
-                                 num_, suffixes_, &result_);               \
+ 	rc_ = tapi_snmp_get_table_rows(ta_, sid_, csap_id_, &oid_,         \
+                                       num_, suffixes_, &result_);         \
 	if (rc_ != 0)                                                      \
 	{                                                                  \
-            TEST_FAIL("snmp get table rows for %s failed, result %X\n",    \
+            TEST_FAIL("snmp get table rows failed for %s failed, result %X\n",    \
 	              lable_, rc_);                                        \
         }                                                                  \
     } while (0)        	    
 
- 
+
+/**
+ * Macro around tapi_snmp_get_table_dimension().
+ *
+ * @param lable_     OID of SNMP table Entry object, or one leaf in this
+ *                   entry
+ * @param dimension  Table dimension
+ *
+ */ 
+#define SNMP_GET_TABLE_DIMENSION(lable_, dimension_)                       \
+    do                                                                     \
+    {                                                                      \	
+        int             rc_;                                               \
+        tapi_snmp_oid_t oid_;                                              \
+	                                                                   \
+        SNMP_MAKE_OID(lable_, oid_);                                       \
+ 	rc_ = tapi_snmp_get_table_dimension(&oid_, &dimension_);           \
+	if (rc_ != 0)                                                      \
+	{                                                                  \
+            TEST_FAIL("snmp get table dimension failed for %s failed, result %X\n",    \
+	              lable_, rc_);                                        \
+        }                                                                  \
+    } while (0)        	    
+
+   
 /**
  * Macro around tapi_snmp_load_mib_with_path().
  *

@@ -519,7 +519,17 @@ extern int tapi_snmp_get_table_rows(const char *ta, int sid, int csap_id,
                                     int num, tapi_snmp_oid_t *suffix,
                                     void **result);
 
- 
+/**
+ * Get SNMP table dimension.
+ * 
+ * @param table_oid     OID of SNMP table Entry object, or one leaf in this 
+ *                      entry
+ * @param dimension     Table dimension (OUT)
+ *
+ * @return zero on success or error code
+ */
+extern int tapi_snmp_get_table_dimension(tapi_snmp_oid_t *table_oid, int *dimension);
+
 /**
  * Loads all text OIDs from MIB file
  *

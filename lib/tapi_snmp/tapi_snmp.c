@@ -1156,7 +1156,51 @@ tapi_snmp_get_table(const char *ta, int sid, int csap_id,
     return rc; 
 } 
 
+/* See description in tapi_snmp.h */
+int 
+tapi_snmp_get_table_dimension(tapi_snmp_oid_t *table_oid, int *dimension)
+{
+    struct tree *entry_node; 
+    int rc = 0; 
+    tapi_snmp_oid_t entry; /* table Entry OID */
+    struct index_list *t_index;
 
+    if (table_oid == NULL)
+        return ETEWRONGPTR;
+
+    *dimension = 0;
+
+    memcpy(&entry, table_oid, sizeof(entry));
+
+    entry_node = get_tree(entry.id, entry.length, get_tree_head());
+
+    if (entry_node == NULL)
+    {
+        WARN("no entry node found!\n");
+        return TE_RC(TE_TAPI, EINVAL);
+    }
+
+    /* fall down in MIB tree to the table Entry node or leaf. */
+
+    while (entry_node->indexes == NULL && entry_node->child_list != NULL)
+    {
+        entry_node = entry_node->child_list;
+        if (entry.length == MAX_OID_LEN)
+            return TE_RC(TE_TAPI, ENOBUFS);
+        entry.id[entry.length] = entry_node->subid;
+        entry.length++;
+    }
+    if (entry_node->indexes == NULL)
+    {
+        VERB("Very strange, no indices for table %s\n", oid2str(table_oid));
+	return rc;
+    }	    
+
+    for (t_index = entry_node->indexes; t_index; t_index = t_index->next)
+        (*dimension)++;
+
+    return 0;
+}    
 
 
 /* See description in tapi_snmp.h */
