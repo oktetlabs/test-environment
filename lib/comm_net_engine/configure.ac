@@ -29,7 +29,7 @@ CFLAGS=${CFLAGS}" "${TE_CFLAGS}
 AC_PROG_LIBTOOL
 AC_SUBST([LIBTOOL_DEPS])
 
-AC_CHECK_HEADERS([te_config.h],[],[AC_ERROR([te_config.h is not found])])
+AC_CONFIG_HEADER(package.h)
 
 AC_CONFIG_FILES([Makefile])
 

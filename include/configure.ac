@@ -22,7 +22,16 @@ AC_ARG_VAR([TE_CFLAGS])
 
 AC_CONFIG_HEADERS([te_config.h])
 AH_TOP([#ifndef __TE_CONFIG_H__
-#define __TE_CONFIG_H__])
+#define __TE_CONFIG_H__
+
+#undef PACKAGE
+#undef PACKAGE_BUGREPORT
+#undef PACKAGE_NAME
+#undef PACKAGE_STRING
+#undef PACKAGE_TARNAME
+#undef PACKAGE_VERSION
+#undef VERSION
+])
 AH_BOTTOM([#endif])
 
 AC_HEADER_STDC

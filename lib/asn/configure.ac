@@ -33,7 +33,7 @@ AC_ARG_VAR([TE_LDFLAGS])
 AC_ARG_VAR([TE_LDADD])
 AC_ARG_VAR([TE_DEPENDENCIES])
 
-AC_CHECK_HEADERS([te_config.h],[],[AC_ERROR([te_config.h is not found])])
+AC_CONFIG_HEADER(package.h)
 
 AC_CONFIG_FILES([Makefile])
 
