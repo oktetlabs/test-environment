@@ -1951,7 +1951,7 @@ rpc_is_winsock2(rcf_rpc_server *rpcs)
     hevent = rpc_create_event(rpcs);
     if (hevent == NULL)
     {
-        if (TE_RC_GET_ERROR(RPC_ERRNO(rpcs)) != ETENOSUPP)
+        if (RPC_ERRNO(rpcs) != RPC_EOPNOTSUPP)
         {
             ERROR("RPC failed with unexpected error");
             return FALSE;
