@@ -608,3 +608,25 @@ tester_is_run_required(const tester_ctx *ctx, const run_item *test,
 
     return result;
 }
+
+/* See description in reqs.h */
+int
+tester_ctx_get_sticky_reqs(struct tester_ctx       *ctx,
+                           const test_requirements *reqs)
+{
+    const test_requirement *p;
+    test_requirement       *q;
+
+    for (p = reqs->tqh_first; p != NULL; p = p->links.tqe_next)
+    {
+        if (p->sticky)
+        {
+            q = test_requirement_clone(p);
+            if (q == NULL)
+                return ENOMEM;
+            TAILQ_INSERT_TAIL(&ctx->reqs, q, links);
+        }
+    }
+
+    return 0;
+}

@@ -164,4 +164,15 @@ extern te_bool tester_is_run_required(const struct tester_ctx  *ctx,
                                       const struct test_params *params,
                                       te_bool                   quiet);
 
+/**
+ * Add sticky requirements to the context.
+ *
+ * @param ctx       Tester context
+ * @param reqs      List of requirements
+ *
+ * @return Status code
+ */
+extern int tester_ctx_get_sticky_reqs(struct tester_ctx       *ctx,
+                                      const test_requirements *reqs);
+
 #endif /* !__TE_TESTER_REQS_H__ */

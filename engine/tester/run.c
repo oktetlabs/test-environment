@@ -1102,11 +1102,21 @@ static int
 run_test_package(tester_ctx *ctx, test_package *pkg, test_id id,
                  test_params *params)
 {
+    int rc;
+
     ENTRY();
 
     assert(!(ctx->flags & TESTER_INLOGUE));
 
     ctx->id = id;
+
+    rc = tester_ctx_get_sticky_reqs(ctx, &pkg->reqs);
+    if (rc != 0)
+    {
+        ERROR("%s(): tester_ctx_get_sticky_reqs() failed: %X",
+              __FUNCTION__, rc);
+        return rc;
+    }
 
     return run_test_session(ctx, &pkg->session, id, params);
 }
