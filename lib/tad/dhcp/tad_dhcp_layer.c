@@ -271,10 +271,10 @@ dhcp_gen_bin_cb(int csap_id, int layer, const asn_value *tmpl_pdu,
     PUT_DHCP_FIELD("xid",    0, uint32_t, htonl);
     PUT_DHCP_FIELD("secs",   0, uint16_t, htons);
     PUT_DHCP_FIELD("flags",  0, uint16_t, htons);
-    PUT_DHCP_FIELD("ciaddr", 0, uint32_t, htonl);
-    PUT_DHCP_FIELD("yiaddr", 0, uint32_t, htonl);
-    PUT_DHCP_FIELD("siaddr", 0, uint32_t, htonl);
-    PUT_DHCP_FIELD("giaddr", 0, uint32_t, htonl);
+    PUT_DHCP_FIELD("ciaddr", 0, uint32_t, (uint32_t));
+    PUT_DHCP_FIELD("yiaddr", 0, uint32_t, (uint32_t));
+    PUT_DHCP_FIELD("siaddr", 0, uint32_t, (uint32_t));
+    PUT_DHCP_FIELD("giaddr", 0, uint32_t, (uint32_t));
 
 #define PUT_DHCP_LONG_FIELD(_label, _defval, _length) \
     do {                                                            \
