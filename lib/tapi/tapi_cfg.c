@@ -67,7 +67,8 @@
 #include "tapi_sockaddr.h"
 #include "tapi_cfg_base.h"
 
-#define LGR_USER         "Configuration TAPI"
+#define LOG_LEVEL   (ERROR_LVL | WARNING_LVL | RING_LVL | INFORMATION_LVL)
+#define LGR_USER    "Configuration TAPI"
 #include "logger_api.h"
 
 
@@ -438,6 +439,10 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
     memset(&gw_sockaddr, 0, sizeof(gw_sockaddr));
     gw_sockaddr.ss_family = addr_family;
     sockaddr_set_netaddr(SA(&gw_sockaddr), gw_addr);
+
+    INFO("%s route on TA %s: %s|%d -> %s",
+         (op == OP_ADD) ? "Adding" : ((op == OP_DEL) ? "Deleting" : "?op?"),
+         ta, dst_addr_str, prefix, gw_addr_str);
 
     switch (op)
     {
