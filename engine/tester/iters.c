@@ -60,7 +60,7 @@ test_param_clone(const test_param *p)
 {
     test_param *pc = calloc(1, sizeof(*pc));
 
-    ENTRY("%s=%s", p->name, p->value);
+    ENTRY("%s=%s, clone=%d, reqs=%p", p->name, p->value, p->clone, p->reqs);
 
     if (pc == NULL)
     {
@@ -69,19 +69,17 @@ test_param_clone(const test_param *p)
         return NULL;
     }
 
-    pc->name = strdup(p->name);
+    pc->name = p->name;
     pc->value = strdup(p->value);
-    if (pc->name == NULL || pc->value == NULL)
+    if (pc->value == NULL)
     {
         ERROR("strdup() failed");
-        free(pc->name);
-        free(pc->value);
         free(pc);
         EXIT("ENOMEM");
         return NULL;
     }
-    pc->req = p->req;
     pc->clone = p->clone;
+    pc->reqs = p->reqs;
 
     return pc;
 }
@@ -94,7 +92,6 @@ test_param_clone(const test_param *p)
 static void
 test_param_free(test_param *p)
 {
-    free(p->name);
     free(p->value);
     free(p);
 }
@@ -196,6 +193,7 @@ test_param_iterations_free(test_param_iterations *iters)
     }
 }
 
+#if 0
 /* See description in iters.h */
 int
 test_param_iterations_mult(test_param_iterations *a,
@@ -215,3 +213,4 @@ test_param_iterations_mult(test_param_iterations *a,
     }
     return 0;
 }
+#endif
