@@ -44,6 +44,7 @@
 #include "rcf_api.h"
 #include "conf_api.h"
 #include "logger_api.h"
+#include "logger_ten.h"
 
 
 #ifdef __cplusplus
