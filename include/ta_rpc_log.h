@@ -31,7 +31,23 @@
 #ifndef __TE_TA_RPC_LOG_H__
 #define __TE_TA_RPC_LOG_H__
 
+#include <stdio.h>
+#if HAVE_STRING_H
+#include <string.h>
+#endif
+#if HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#if HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif
+#if HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+
 #include "logger_api.h"
+#include "rcf_rpc_defs.h"
+
 
 extern struct sockaddr *ta_log_addr_s; /**< Logging server address */
 extern int ta_log_addr_len;            /**< Logging server address length */
@@ -43,8 +59,6 @@ extern int ta_log_addr_len;            /**< Logging server address length */
  * (pointer to structure, which first part is compatible with
  *  rcf_rpc_in_arg) in functions where they are used.
  */
- 
-#include <sys/socket.h>
  
 /** Maximum length of the resulting log message */
 #define RPC_LOG_MSG_MAX         256

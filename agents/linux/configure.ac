@@ -49,9 +49,12 @@ CFLAGS=${CFLAGS}" "${TE_CFLAGS}
 AC_CONFIG_HEADERS([config.h])
 
 AC_CHECK_HEADERS([\
+string.h \
+strings.h \
 sys/types.h \
 sys/socket.h \
 errno.h \
+unistd.h \
 time.h \
 sys/time.h \
 sys/resource.h \

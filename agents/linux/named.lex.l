@@ -34,6 +34,9 @@ void lex_switch_buffer(const char *name)
 }
 
 %}
+
+%option nounput
+
 %x COMMENT
 %%
 include { return DNS_INCLUDE_STATEMENT; }

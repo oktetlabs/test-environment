@@ -71,6 +71,8 @@ if CFG_LINUX_DAEMONS
 
 MY_CPPFLAGS+=@DAEMONS_CFLAGS@
 
+noinst_HEADERS+=dhcp_server.h
+
 MY_SOURCES+=linuxconf_daemons.c dhcp_server.c dns_server.c 
 
 MY_LDADD+=@DAEMONS_LDADD@

@@ -181,9 +181,11 @@ static te_bool
 is_quoted(const char *opt_name)
 {
     unsigned int i;
+    
     for (i = 0; i < sizeof(isc_dhcp_quoted_options)/sizeof(char *); i++)
         if (strcmp(opt_name, isc_dhcp_quoted_options[i]) == 0)
             return TRUE;
+
     return FALSE;
 }
 
@@ -285,7 +287,12 @@ ds_dhcpserver_save_conf(void)
         if (h->filename)
             fprintf(f, "\tfilename \"%s\";\n", h->filename);
         for (opt = h->options; opt != NULL; opt = opt->next)
-            fprintf(f, "\toption %s %s;\n", opt->name, opt->value);
+        {
+            te_bool quoted = is_quoted(opt->name);
+
+            fprintf(f, "\toption %s %s%s%s;\n", opt->name,
+                    quoted ? "\"" : "", opt->value, quoted ? "\"" : "");
+        }
         fprintf(f, "}\n");
     }
 
