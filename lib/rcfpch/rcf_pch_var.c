@@ -224,8 +224,9 @@ rcf_pch_vwrite(struct rcf_comm_connection *conn,
         struct timeval tv;
         struct tm     *tm;
         
-
-        gettimeofday(&tv, NULL);
+        WARN("My variable =");
+        
+	gettimeofday(&tv, NULL);
         tm = localtime(&tv.tv_sec);
         if (sscanf(va_arg(ap, const char *), "%02d:%02d:%02d",
                    &(tm->tm_hour), &(tm->tm_min), &(tm->tm_sec)) != 3)
@@ -234,13 +235,12 @@ rcf_pch_vwrite(struct rcf_comm_connection *conn,
             SEND_ANSWER("%d", ETEBADFORMAT);
         }
         tv.tv_sec = mktime(tm);
-#if 0        
+       
 #ifndef VGDEBUG /* Valgrind debugging */
         settimeofday(&tv, NULL);
 #else
         ERROR("Ignore set of time since Valgrind "
                           "debugging is enabled in build");
-#endif
 #endif
         va_end(ap);
         SEND_ANSWER("0");
