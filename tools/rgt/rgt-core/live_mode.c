@@ -128,8 +128,8 @@ live_process_start_event(node_info_t *node, const char *node_name)
 
     if (node->descr.objective != NULL)
         fprintf(output_fd, "|- Objective: %s\n", node->descr.objective);
-    if (node->descr.author)
-        fprintf(output_fd, "|- Author: %s\n", node->descr.author);
+    if (node->descr.authors)
+        fprintf(output_fd, "|- Authors: %s\n", node->descr.authors);
 
     print_params(node->params);
 
