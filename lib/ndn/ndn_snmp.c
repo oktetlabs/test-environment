@@ -303,7 +303,7 @@ static asn_named_entry_t _ndn_snmp_message_ne_array [] =
     { "gen-trap",   &ndn_data_unit_int32_s, {PRIVATE, 1} },
     { "spec-trap",  &ndn_data_unit_int32_s, {PRIVATE, 1} },
     { "agent-addr", &ndn_data_unit_ip_address_s, {PRIVATE, 1} },
-    { "variable-bindings",  &ndn_snmp_var_bind_seq_s, {PRIVATE, 1} } 
+    { "variable-bindings", &ndn_snmp_var_bind_seq_s, {PRIVATE, 1} } 
 };
 
 asn_type ndn_snmp_message_s =
