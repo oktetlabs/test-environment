@@ -57,7 +57,7 @@ tad_snmp_free_pdu(void *ptr)
  *     String with textual presentation of parameter value, or NULL 
  *     if error occured. User have to free memory at returned pointer.
  */ 
-char* snmp_get_param_cb (int csap_id, int level, const char *param)
+char* snmp_get_param_cb(int csap_id, int level, const char *param)
 {
     UNUSED(csap_id);
     UNUSED(level);
@@ -75,7 +75,7 @@ char* snmp_get_param_cb (int csap_id, int level, const char *param)
  * @return zero on success or error code.
  */ 
 int
-snmp_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
+snmp_confirm_pdu_cb(int csap_id, int layer, asn_value_p tmpl_pdu)
 {
     UNUSED(csap_id);
     UNUSED(layer);
@@ -496,7 +496,7 @@ int snmp_gen_pattern_cb(int csap_id, int layer, const asn_value *tmpl_pdu,
 { 
     UNUSED(tmpl_pdu);
 
-    *pattern_pdu = asn_init_value (ndn_snmp_message);
+    *pattern_pdu = asn_init_value(ndn_snmp_message);
     VERB("%s callback, CSAP # %d, layer %d", __FUNCTION__, csap_id, layer); 
     return 0;
 }
