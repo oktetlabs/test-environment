@@ -613,6 +613,68 @@ _sigreceived_1_svc(tarpc_sigreceived_in *in, tarpc_sigreceived_out *out,
     return TRUE;
 }
 
+/*-------------- signal() --------------------------------*/
+
+typedef void (*sighandler_t)(int);
+
+TARPC_FUNC(signal,
+{
+    if (in->signum == RPC_SIGINT)
+    {
+        out->common._errno = TE_RC(TE_TA_LINUX, EPERM);
+        return TRUE;
+    }
+},
+{
+    sighandler_t handler = rcf_ch_symbol_addr(in->handler.handler_val, 1);
+    sighandler_t old_handler;
+
+    if (handler == NULL && in->handler.handler_val != NULL)
+    {
+        char *tmp;
+
+        handler = (sighandler_t)strtol(in->handler.handler_val, &tmp, 16);
+
+        if (tmp == in->handler.handler_val || *tmp != 0)
+            out->common._errno = TE_RC(TE_TA_WIN32, EINVAL);
+    }
+    if (out->common._errno == 0)
+    {
+        MAKE_CALL(old_handler = (sighandler_t)signal(
+                      signum_rpc2h(in->signum), handler));
+        if (old_handler != SIG_ERR)
+        {
+            char *name = rcf_ch_symbol_name(old_handler);
+
+            if (name != NULL)
+            {
+                if ((out->handler.handler_val = strdup(name)) == NULL)
+                {
+                    signal(signum_rpc2h(in->signum), old_handler);
+                    out->common._errno = TE_RC(TE_TA_WIN32, ENOMEM);
+                }
+                else
+                    out->handler.handler_len = strlen(name) + 1;
+            }
+            else
+            {
+                if ((name = calloc(1, 16)) == NULL)
+                {
+                    signal(signum_rpc2h(in->signum), old_handler);
+                    out->common._errno = TE_RC(TE_TA_LINUX, ENOMEM);
+                }
+                else
+                {
+                    sprintf(name, "0x%x", (unsigned int)old_handler);
+                    out->handler.handler_val = name;
+                    out->handler.handler_len = strlen(name) + 1;
+                }
+            }
+        }
+    }
+}
+)
+
 /*-------------- socket() ------------------------------*/
 
 TARPC_FUNC(socket, {},
