@@ -632,6 +632,7 @@ test_params_to_string(const test_params *params)
 /**
  * Log test (script, package, session) start.
  *
+ * @param ri        Run item
  * @param parent    Parent ID
  * @param test      Test ID
  * @param params    List of parameters

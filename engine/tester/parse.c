@@ -420,6 +420,7 @@ alloc_and_get_person_info(xmlNodePtr node, persons_info *persons)
  * Get (possibly empty) list of information about persons.
  *
  * @param node      Location of the XML node pointer
+ * @param node_name Name of the not with information
  * @param persons   List with information about persons
  *
  * @return Status code.
@@ -1771,6 +1772,7 @@ get_tester_config(xmlNodePtr root, tester_cfg *cfg, unsigned int flags)
  * Allocate and get information about test.
  *
  * @param node      XML node
+ * @param ti        List with information about tests
  *
  * @return Status code.
  */
@@ -1823,6 +1825,7 @@ alloc_and_get_test_info(xmlNodePtr node, tests_info *ti)
  * Get information about tests.
  *
  * @param node      XML document root
+ * @param ti        List with information about tests
  *
  * @return Status code.
  */

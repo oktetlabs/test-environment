@@ -321,6 +321,7 @@ is_req_in_params(const char *req, const test_params *params)
  * @param ctx_set   Context set of requirements
  * @param test_set  Test set of requirements
  * @param params    Current parameters
+ * @param force     Is the force verdict or weak?
  */
 static te_bool
 is_reqs_expr_match(const reqs_expr         *re,

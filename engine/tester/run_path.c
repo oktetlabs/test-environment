@@ -55,7 +55,7 @@
  * @param path      Run path as string
  * @param params    Whether parameters present?
  *
- * @return '\0'-terminated string
+ * @return Null-terminated string
  */
 static const char *
 run_path_name_token(char **path, te_bool *params)
@@ -85,7 +85,7 @@ run_path_name_token(char **path, te_bool *params)
  *
  * @param path      Run path as string
  *
- * @return '\0'-terminated string
+ * @return Null-terminated string
  */
 static char *
 run_path_param_name(char **path)
@@ -114,7 +114,7 @@ run_path_param_name(char **path)
  * @param path      Run path as string
  * @param more      Whether more parameters present?
  *
- * @return '\0'-terminated string
+ * @return Null-terminated string
  */
 static char *
 run_path_param_value(char **path, te_bool *more)
