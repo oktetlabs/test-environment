@@ -230,8 +230,39 @@ extern int tapi_ip4_eth_recv_start(const char *ta_name, int sid,
                                    unsigned int timeout, int num);
 
 
+/**
+ * Prepare ASN Pattern-Unit value for 'tcp.ip4.eth' CSAP.
+ * 
+ * @param src_mac_addr  Source MAC address (or NULL)
+ * @param dst_mac_addr  Destination MAC address (or NULL)
+ * @param src_ip4_addr  Source IP address in network order (or NULL)
+ * @param dst_ip4_addr  Destination IP address in network order (or NULL)
+ * @param result_value  Location for pointer to new ASN value (OUT)
+ * 
+ * @return Zero on success or error code.
+ */
+extern int tapi_ip4_eth_pattern_unit(const uint8_t *src_mac_addr,
+                                     const uint8_t *dst_mac_addr,
+                                     const uint8_t *src_ip4_addr,
+                                     const uint8_t *dst_ip4_addr,
+                                     asn_value **result_value);
 
 
+
+
+/**
+ * Find in passed ASN value of Pattern-Unit type IPv4 PDU in 'pdus' array
+ * and set in it specified masks for src and/or dst addresses.
+ *
+ * @param pattern_unit  ASN value of type Traffic-Pattern-Unit (IN/OUT)
+ * @param src_mask_len  Length of mask for IPv4 source address or zero
+ * @param dst_mask_len  Length of mask for IPv4 dest. address or zero
+ *
+ * @return Zero on success or error code.
+ */
+extern int tapi_pattern_unit_ip4_mask(asn_value *pattern_unit, 
+                                      size_t src_mask_len,
+                                      size_t dst_mask_len);
 
 
 /**

@@ -539,6 +539,58 @@ tapi_ip4_eth_recv_start(const char *ta_name, int sid, csap_handle_t csap,
 
 
 /* see description in tapi_ipstack.h */
+int
+tapi_ip4_eth_pattern_unit(const uint8_t *src_mac_addr,
+                          const uint8_t *dst_mac_addr,
+                          const uint8_t *src_ip4_addr,
+                          const uint8_t *dst_ip4_addr,
+                          asn_value **pattern_unit)
+{
+    int rc = 0;
+    int num = 0;
+
+    if (pattern_unit == NULL)
+        return TE_RC(TE_TAPI, ETEWRONGPTR);
+
+
+    rc = asn_parse_value_text("{ pdus { ip4:{}, eth:{}}}", 
+                              ndn_traffic_pattern_unit,
+                              pattern_unit, &num); 
+    if (rc != 0)
+    {
+        ERROR("%s: parse simple pattern unit fails %X, sym %d",
+              __FUNCTION__, rc, num);
+    }
+
+#define FILL_ADDR(dir_, atype_, len_, pos_) \
+    do {                                                                \
+        if (dir_ ## _ ## atype_ ## _addr != NULL)                       \
+        {                                                               \
+            rc = asn_write_value_field(*pattern_unit,                   \
+                                       dir_ ## _ ## atype_ ## _addr,    \
+                                       len_, "pdus." #pos_ "." #dir_    \
+                                       "-addr.#plain");                 \
+            if (rc != 0)                                                \
+            {                                                           \
+                ERROR("%s: write " #dir_ " " #atype_ " addr fails %X",   \
+                      __FUNCTION__, rc);                                \
+                asn_free_value(*pattern_unit);                          \
+                *pattern_unit = NULL;                                   \
+                return TE_RC(TE_TAPI, rc);                              \
+            }                                                           \
+        }                                                               \
+    } while (0)
+
+    FILL_ADDR(src, ip4, 4, 0);
+    FILL_ADDR(dst, ip4, 4, 0); 
+    FILL_ADDR(src, mac, 6, 1);
+    FILL_ADDR(dst, mac, 6, 1);
+
+#undef FILL_ADDR
+    return TE_RC(TE_TAPI, rc);
+}
+
+/* see description in tapi_ipstack.h */
 int 
 tapi_tcp_ip4_eth_csap_create(const char *ta_name, int sid, 
                          const char *eth_dev,
