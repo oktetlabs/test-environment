@@ -248,7 +248,8 @@ rcfunix_start(char *ta_name, char *ta_type, char *conf_str,
     }
 #endif
 
-    if ((ta = (unix_ta *)calloc(1, sizeof(unix_ta))) == NULL)
+    if ((ta = *(unix_ta **)(handle)) == NULL &&
+        (ta = (unix_ta *)calloc(1, sizeof(unix_ta))) == NULL)
     {
         ERROR("Memory allocation failure: %u bytes",
                   sizeof(unix_ta));
@@ -410,27 +411,23 @@ bad_confstr:
  * Agent, but return an error.
  *
  * @param handle        TA handle
- * @param parms         parameter string passed to the TA in "reboot"
- *                      command or NULL
+ * @param parms         library-specific parameters
  *
  * @return error code
  */
 int
-rcfunix_reboot(rcf_talib_handle handle, char *parms)
+rcfunix_finish(rcf_talib_handle handle, char *parms)
 {
     unix_ta *ta = (unix_ta *)handle;
 
     char  cmd[RCFUNIX_SHELL_CMD_MAX];
-
-    (void)parms;
     
-    RING("Reboot method is called for TA %s", ta->ta_name);
+    (void)parms;
+
+    RING("Finish method is called for TA %s", ta->ta_name);
     
     if (ta->flags & TA_FAKE)
-    {
-        free(ta);
         return 0;
-    }
     
     if (ta->pid > 0)
     {
@@ -473,8 +470,6 @@ rcfunix_reboot(rcf_talib_handle handle, char *parms)
         sprintf(cmd, RCFUNIX_SSH " %s \"rm -f /tmp/%s\"",
                 ta->host, ta->exec_name);
     system_with_timeout(cmd, RCFUNIX_KILL_TIMEOUT);
-
-    free(ta);
 
     return 0;
 }

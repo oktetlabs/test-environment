@@ -112,7 +112,7 @@
  *     reboot_num--; ta.reboot_timestamp = 0;
  *
  *     If the agent is not proxy or timeout occurred:
- *         ta.reboot();
+ *         ta.finish();
  *         ta.start() (if fails, goto shutdown)
  *         ta.connect() (if fails, goto shutdown)
  *         synchronize time;
@@ -129,7 +129,7 @@
  *     wait until time(NULL) - ta.reboot_timestamp > RCF_SHUTDOWN_TIMESTAMP
  *     or response from all TA is received (set flag TA_DOWN and decriment
  *     shutdown_num every time when response is received);
- *     for all TA with TA_DOWN flag clear ta.reboot();
+ *     for all TA with TA_DOWN flag clear ta.finish();
  *     response to all sent and pending requests (EIO);
  *     response to user shutdown request.
  */
@@ -177,7 +177,7 @@ typedef struct ta {
     /** @name Methods */
     rcf_talib_start     start;              /**< Start TA */
     rcf_talib_close     close;              /**< Close TA */
-    rcf_talib_reboot    reboot;             /**< Reboot TA */
+    rcf_talib_finish    finish;             /**< Stop TA */
     rcf_talib_connect   connect;            /**< Connect to TA */
     rcf_talib_transmit  transmit;           /**< Transmit to TA */
     rcf_talib_is_ready  is_ready;           /**< Is data from TA pending */
@@ -333,7 +333,7 @@ resolve_ta_methods(ta *agent, char *libname)
 
     RESOLVE_SYMBOL(start);
     RESOLVE_SYMBOL(close);
-    RESOLVE_SYMBOL(reboot);
+    RESOLVE_SYMBOL(finish);
     RESOLVE_SYMBOL(connect);
     RESOLVE_SYMBOL(transmit);
     RESOLVE_SYMBOL(is_ready);
@@ -778,7 +778,7 @@ init_agent(ta *agent)
     if ((rc = (agent->connect)(agent->handle, &set0, &tv0)) != 0)
     {
         ERROR("Cannot connect to TA '%s' error %d", agent->name, rc);
-        (agent->reboot)(agent->handle, NULL);
+        (agent->finish)(agent->handle, NULL);
         agent->dead = TRUE;
         return -1;
     }
@@ -812,7 +812,7 @@ force_reboot(ta *agent, usrreq *req)
     
     reboot_num--;
     agent->reboot_timestamp = 0;
-    rc = (agent->reboot)(agent->handle,
+    rc = (agent->finish)(agent->handle,
                          req->message->data_len > 0 ? req->message->data
                                                     : NULL);
     if (rc != 0)
@@ -1721,7 +1721,7 @@ rcf_ta_check()
             ERROR("Reboot TA '%s'", agent->name);
             reboot = TRUE;
             agent->reboot_timestamp = 0;
-            reb_success = ((agent->reboot)(agent->handle, NULL) != 0) || 
+            reb_success = ((agent->finish)(agent->handle, NULL) != 0) || 
                           (init_agent(agent) != 0);
             if (reb_success)
             {
@@ -1832,7 +1832,7 @@ process_user_request(usrreq *req)
             if (send_cmd(agent, req) != 0)
             {
                 VERB("Reboot using TA type support library");
-                rc = (agent->reboot)(agent->handle,
+                rc = (agent->finish)(agent->handle,
                                      req->message->data_len > 0 ?
                                      req->message->data : NULL);
                 if (rc != 0)
@@ -1934,7 +1934,7 @@ rcf_shutdown()
     {
         if ((agent->flags & TA_DOWN) == 0)
             ERROR("Soft shutdown of TA '%s' failed", agent->name);
-        if ((agent->reboot)(agent->handle, NULL) != 0)
+        if ((agent->finish)(agent->handle, NULL) != 0)
             ERROR("Cannot reboot TA '%s'", agent->name);
     }
     RING("Test Agents are stopped");

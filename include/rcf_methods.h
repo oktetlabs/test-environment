@@ -73,19 +73,17 @@ typedef int (* rcf_talib_start)(char *ta_name, char *ta_type,
                                 int *flags);
 
 /**
- * Reboot Test Agent station or NUT served by it. The method is called
- * after sending of "reboot" command to the TA. After that rcf_talib_start
- * and rcf_talib_connect are called.
- * For the case of local Test Agents this routine should kill the Test
- * Agent, but return an error.
+ * Kill all processes related to TA on the station where it is run.
+ * Reboot station which TA is runing on (if it's allowed).
+ * Handle should not be freed.
  *
- * @param handle        TA handle
- * @param parms         parameter string passed to the TA in "reboot"
- *                      command or NULL
+ * @param handle        TA handle locaton, may already contain memory
+ *                      pointer in the case of TA restart
+ * @param parms         library-specific parameters
  *
  * @return error code 
  */
-typedef int (* rcf_talib_reboot)(rcf_talib_handle handle, char *parms);
+typedef int (* rcf_talib_finish)(rcf_talib_handle handle, char *parms);
 
 /**
  * Establish connection with the Test Agent. Note that it's not necessary
