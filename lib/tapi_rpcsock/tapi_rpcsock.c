@@ -5441,17 +5441,17 @@ rpc_simple_receiver(rcf_rpc_server *handle,
     memset(&out, 0, sizeof(out));
     in.s = s;
 
-    rcf_rpc_call(handle, _simple_receiver, &in,
-                 (xdrproc_t)xdr_tarpc_simple_receiver_in,
+    rcf_rpc_call(handle, _simple_receiver,
+                 &in,  (xdrproc_t)xdr_tarpc_simple_receiver_in,
                  &out, (xdrproc_t)xdr_tarpc_simple_receiver_out);
 
     if (out.retval == 0)
         *received = out.bytes;
 
-    RING("RPC (%s,%s)%s: simple_receiver(%d) -> %d %u (%s)",
+    RING("RPC (%s,%s)%s: simple_receiver(%d) -> %d (%s) received=%u",
          handle->ta, handle->name, rpcop2str(op),
-         s, out.retval, (unsigned long)*received,
-         errno_rpc2str(RPC_ERRNO(handle)));
+         s, out.retval, errno_rpc2str(RPC_ERRNO(handle)),
+         (unsigned long)*received);
 
     RETVAL_RC(simple_receiver);
 }
