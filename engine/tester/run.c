@@ -55,8 +55,17 @@
 #include "iters.h"
 
 
+#if 0
 /** Tester run path log user */
-#define TESTER_FLOW         "FlowNoRGT"
+#define TESTER_FLOW             "Flow"
+/** Prefix of all messages from Tester:Flow user */
+#define TESTER_FLOW_MSG_PREFIX  "%T %T "
+#else
+/** Tester run path log user */
+#define TESTER_FLOW             "FlowNoRGT"
+/** Prefix of all messages from Tester:Flow user */
+#define TESTER_FLOW_MSG_PREFIX  "$T%d $T%d "
+#endif
 
 /** Size of the Tester shell command buffer */
 #define TESTER_CMD_BUF_SZ   1024
@@ -70,9 +79,6 @@
 
 /** Print string which may be NULL. */
 #define PRINT_STRING(_str)  ((_str) ? : "")
-
-/** ID of the main session of a Test Package */
-#define TEST_ID_PKG_MAIN_SESSION    (-1)
 
 
 /** Test parameters grouped in one pointer */
@@ -617,20 +623,23 @@ log_test_start(const run_item *ri, test_id parent, test_id test,
     switch (ri->type)
     {
         case RUN_ITEM_SCRIPT:
-            LOG_RING(TESTER_FLOW, "$T%d $T%d TEST %s \"%s\" ARGs%s",
+            LOG_RING(TESTER_FLOW, TESTER_FLOW_MSG_PREFIX
+                     "TEST %s \"%s\" ARGs%s",
                      parent, test, ri->u.script.name,
                      PRINT_STRING(ri->u.script.descr),
                      PRINT_STRING(params_str));
             break;
 
         case RUN_ITEM_SESSION:
-            LOG_RING(TESTER_FLOW, "$T%d $T%d SESSION ARGs%s",
+            LOG_RING(TESTER_FLOW, TESTER_FLOW_MSG_PREFIX
+                     "SESSION ARGs%s",
                      parent, test, PRINT_STRING(params_str));
             break;
 
         case RUN_ITEM_PACKAGE:
             authors = persons_info_to_string(&ri->u.package->authors);
-            LOG_RING(TESTER_FLOW, "$T%d $T%d PACKAGE %s \"%s\"%s%s ARGs%s",
+            LOG_RING(TESTER_FLOW, TESTER_FLOW_MSG_PREFIX
+                     "PACKAGE %s \"%s\"%s%s ARGs%s",
                      parent, test, ri->u.package->name,
                      PRINT_STRING(ri->u.package->descr),
                      (authors != NULL) ? " AUTHOURS" : "",
@@ -656,26 +665,31 @@ log_test_result(test_id parent, test_id test, int result)
 {
     if (result == ETESTPASS)
     {
-        LOG_RING(TESTER_FLOW, "$T%d $T%d PASSED", parent, test);
+        LOG_RING(TESTER_FLOW, TESTER_FLOW_MSG_PREFIX "PASSED",
+                 parent, test);
     }
     else
     {
         switch (result)
         {
             case ETESTKILL:
-                LOG_RING(TESTER_FLOW, "$T%d $T%d KILLED", parent, test);
+                LOG_RING(TESTER_FLOW, TESTER_FLOW_MSG_PREFIX "KILLED",
+                         parent, test);
                 break;
 
             case ETESTCORE:
-                LOG_RING(TESTER_FLOW, "$T%d $T%d DUMPED", parent, test);
+                LOG_RING(TESTER_FLOW, TESTER_FLOW_MSG_PREFIX "DUMPED",
+                         parent, test);
                 break;
 
             case ETESTSKIP:
-                LOG_RING(TESTER_FLOW, "$T%d $T%d SKIPPED", parent, test);
+                LOG_RING(TESTER_FLOW, TESTER_FLOW_MSG_PREFIX "SKIPPED",
+                         parent, test);
                 break;
 
             case ETESTFAKE:
-                LOG_RING(TESTER_FLOW, "$T%d $T%d FAKE", parent, test);
+                LOG_RING(TESTER_FLOW, TESTER_FLOW_MSG_PREFIX "FAKED",
+                         parent, test);
                 break;
 
             default:
@@ -708,7 +722,7 @@ log_test_result(test_id parent, test_id test, int result)
                     default:
                         reason = "Unknown test result";
                 }
-                LOG_RING(TESTER_FLOW, "$T%d $T%d FAILED %s",
+                LOG_RING(TESTER_FLOW, TESTER_FLOW_MSG_PREFIX "FAILED %s",
                          parent, test, reason);
                 break;
             }
@@ -821,7 +835,7 @@ run_test_script(tester_ctx *ctx, test_script *script, test_id id,
     }
     else
     {
-        VERB("$T%d system(%s)", id, cmd);
+        VERB("ID=%d system(%s)", id, cmd);
         rc = system(cmd);
         if (rc == -1)
         {
@@ -839,14 +853,14 @@ run_test_script(tester_ctx *ctx, test_script *script, test_id id,
         if (WIFSIGNALED(rc))
         {
             /* @todo Signal-to-string */
-            ERROR("$T%d was killed by signal %d", id, WTERMSIG(rc));
+            ERROR("ID=%d was killed by signal %d", id, WTERMSIG(rc));
             /* ETESTCORE may be already set */
             if (result == 0)
                 result = ETESTKILL;
         }
         else if (!WIFEXITED(rc))
         {
-            ERROR("$T%d was abnormally terminated", id);
+            ERROR("ID=%d was abnormally terminated", id);
             /* ETESTCORE may be already set */
             if (result == 0)
                 result = ETESTUNEXP;
@@ -1036,24 +1050,13 @@ static int
 run_test_package(tester_ctx *ctx, test_package *pkg, test_id id,
                  test_params *params)
 {
-    int     result;
-
     ENTRY();
 
     assert(!(ctx->flags & TESTER_INLOGUE));
 
     ctx->id = id;
 
-    /* Run test session provided by the package */
-    result = run_test_session(ctx, &pkg->session, 
-#if 1
-                              TEST_ID_PKG_MAIN_SESSION,
-#else
-                              tester_get_id(),
-#endif
-                              params);
-
-    return result;
+    return run_test_session(ctx, &pkg->session, id, params);
 }
 
 
@@ -1493,8 +1496,8 @@ iterate_test(tester_ctx *ctx, run_item *test,
         }
 
         tester_out_start(test->type, tester_run_item_name(test),
-                         test_ctx->id, id, test_ctx->flags);
-        log_test_start(test, test_ctx->id, id, &(i->params));
+                         ctx->id, id, ctx->flags);
+        log_test_start(test, ctx->id, id, &(i->params));
 
         if ((~test_ctx->flags & TESTER_QUIET_SKIP) &&
             !tester_is_run_required(test_ctx, test, &(i->params)))
@@ -1510,7 +1513,7 @@ iterate_test(tester_ctx *ctx, run_item *test,
                 ERROR("run_test() failed: %X", rc);
             }
 
-            if (!(test_ctx->flags & (TESTER_NO_CS | TESTER_NOCFGTRACK)) &&
+            if (!(ctx->flags & (TESTER_NO_CS | TESTER_NOCFGTRACK)) &&
                 test->attrs.track_conf)
             {
                 /* Check configuration backup */
@@ -1544,9 +1547,9 @@ iterate_test(tester_ctx *ctx, run_item *test,
             }
         }
 
-        log_test_result(test_ctx->id, id, test_result);
+        log_test_result(ctx->id, id, test_result);
         tester_out_done(test->type, tester_run_item_name(test),
-                        test_ctx->id, id, test_ctx->flags, test_result);
+                        ctx->id, id, ctx->flags, test_result);
 
         if (test_ctx_cloned)
             tester_ctx_free(test_ctx);
