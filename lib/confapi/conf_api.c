@@ -229,8 +229,8 @@ cfg_get_object_descr(cfg_handle handle, cfg_obj_descr *descr)
 {
     cfg_get_descr_msg *msg;
 
-    int len;
-    int ret_val = 0;
+    size_t  len;
+    int     ret_val = 0;
 
     cfg_oid    *oid;
     cfg_handle  object;

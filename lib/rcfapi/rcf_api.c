@@ -938,7 +938,7 @@ int
 rcf_ta_cfg_del(const char *ta_name, int session, const char *oid)
 {
     rcf_msg msg;
-    int     anslen = sizeof(msg);
+    size_t  anslen = sizeof(msg);
     INIT_IPC;
     
     if (oid == NULL || strlen(oid) >= RCF_MAX_ID || BAD_TA)

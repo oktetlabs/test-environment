@@ -66,8 +66,8 @@ char* eth_get_param_cb (csap_p csap_descr, int level, const char *param)
 
     if (strcmp (param, "total_bytes") == 0)
     {
-        par_buffer  = malloc (20);
-        sprintf(par_buffer, "%d", spec_data->total_bytes);
+        par_buffer  = malloc(20);
+        sprintf(par_buffer, "%zu", spec_data->total_bytes);
         return par_buffer;
     }
 
