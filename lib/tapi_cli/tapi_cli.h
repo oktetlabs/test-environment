@@ -42,15 +42,45 @@
 #include "asn_usr.h"
 #include "ndn_cli.h"
 
+/** Default ssh port is 22 */
+#define TAPI_CLI_SSH_PORT_DFLT      22
+
+/** Default telnet port is 23 */
+#define TAPI_CLI_TELNET_PORT_DFLT   23
+
 /** CLI CSAP type definition */
-typdefe enum {
+typedef enum {
     TAPI_CLI_CSAP_TYPE_SERIAL = 0, /**< Serial connection */
     TAPI_CLI_CSAP_TYPE_TELNET = 1, /**< Telnet connection */
     TAPI_CLI_CSAP_TYPE_SSH    = 2, /**< SSH connection */
 } tapi_cli_csap_type;
 
-/* CLI CSAP type names */
-const static char *tapi_cli_csap_type_name[] = {"serial", "telnet", "ssh"};
+/** CLI CSAP type names */
+static const char *tapi_cli_csap_type_name[] = {"serial", "telnet", "ssh"};
+
+/** Default command prompt on redhat is '[...]$ ' */
+static const char *tapi_cli_redhat_cprompt_dflt = "\\]\\$\\ ";
+
+/** Default command prompt on debian is '...$ ' */
+static const char *tapi_cli_debian_cprompt_dflt = "\\$\\ ";
+
+/** Default login prompt for serial console is 'Login: ' */
+static const char *tapi_cli_serial_lprompt_dflt = "Login: ";
+
+/** Default password prompt for serial console is 'Password: ' */
+static const char *tapi_cli_serial_pprompt_dflt = "Password: ";
+
+/** Default login prompt for telnet console is 'Login: ' */
+static const char *tapi_cli_telnet_lprompt_dflt = "Login: ";
+
+/** Default password prompt for telnet console is 'Password: ' */
+static const char *tapi_cli_telnet_pprompt_dflt = "Password: ";
+
+/** There is no default login prompt for ssh console */
+static const char *tapi_cli_ssh_lprompt_dflt = NULL;
+
+/** Default password prompt for ssh console is 'Password: ' */
+static const char *tapi_cli_ssh_pprompt_dflt = "Password: ";
 
 /**
  * Create common CLI CSAP on local device (using millicom).
@@ -102,6 +132,19 @@ extern int tapi_cli_csap_remote_create(const char *ta_name, int sid,
                                        const char *password,
                                        csap_handle_t *cli_csap);
 
+/**
+ * Create common CLI CSAP.
+ *
+ * @param ta_name       Test Agent name;
+ * @param sid           RCF session;
+ * @param buf           CLI CSAP initialisation string.
+ * @param cli_csap      Identifier of created CSAP (OUT).
+ *
+ * @return zero on success, otherwise standard or common TE error code.
+ */
+extern int tapi_cli_csap_create(const char *ta_name, int sid,
+                                const char *buf, csap_handle_t *cli_csap);
+
 
 /**
  * Sends CLI command according specified template from the CSAP.
@@ -135,5 +178,40 @@ extern int tapi_cli_send_recv(const char *ta_name, int sid,
                               csap_handle_t cli_csap,
                               const char *command,
                               char *buf, ssize_t size);
+
+
+#define TAPI_CLI_CSAP_CREATE_SERIAL(ta_name, sid, device, user, pwd,           \
+                                    cprompt, cli_csap)                         \
+    do {                                                                       \
+        CHECK_RC(                                                              \
+            tapi_cli_csap_remote_create(ta_name, sid, device, cprompt          \
+                                        tapi_cli_serial_lprompt_dflt, user,    \
+                                        tapi_cli_serial_pprompt_dflt, pwd)     \
+        );                                                                     \
+    } while (0)
+
+#define TAPI_CLI_CSAP_CREATE_TELNET(ta_name, sid, host, user, pwd,             \
+                                    cprompt, cli_csap)                         \
+    do {                                                                       \
+        CHECK_RC(                                                              \
+            tapi_cli_csap_remote_create(ta_name, sid,                          \
+                                        TAPI_CLI_CSAP_TYPE_TELNET,             \
+                                        host, TAPI_CLI_TELNET_PORT_DFLT,       \
+                                        cprompt, NULL, user,                   \
+                                        tapi_cli_telnet_pprompt_dflt,          \
+                                        pwd)                                   \
+        );                                                                     \
+    } while (0)
+
+#define TAPI_CLI_CSAP_CREATE_SSH(ta_name, sid, host, user, pwd,                \
+                                 cprompt, cli_csap)                            \
+    do {                                                                       \
+        CHECK_RC(                                                              \
+            tapi_cli_csap_remote_create(ta_name, sid, TAPI_CLI_CSAP_TYPE_SSH,  \
+                                        host, TAPI_CLI_SSH_PORT_DFLT, cprompt, \
+                                        NULL, user, tapi_cli_ssh_pprompt_dflt, \
+                                        pwd, cli_csap)                         \
+        );                                                                     \
+    } while (0)
 
 #endif /* __TE_LIB_TAPI_DHCP_H__ */

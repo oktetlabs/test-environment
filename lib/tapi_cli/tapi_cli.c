@@ -55,21 +55,8 @@
 #define TE_LGR_USER     "TAPI CLI"
 #include "logger_api.h"
 
-
-/** Format string for creating CLI CSAP on local device */
-const static char *tapi_cli_csap_local_fmt =
-    "{ cli : { conn-type %d, conn-params %s : { device plain : \"%s\" },";
-
-/** Format string for creating CLI CSAP on remote host */
-const static char *tapi_cli_csap_remote_fmt =
-    "{ cli : { conn-type %d, conn-params %s :"
-    "  { host plain : \"%s\", port plain : %d },";
-
-/** Format string for determining CLI CSAP on remote host */
-const static char *tapi_cli_csap_prompts_fmt =
-    "  command-prompt plain : \"%s\", login-prompt plain : \"%s\","
-    "  password-prompt plain : \"%s\", user plain : \"%s\","
-    "  password plain : \"%s\" } }";
+#define TAPI_CLI_CSAP_STR_MAXLEN            512
+#define TAPI_CLI_CSAP_INIT_FILENAME_MAXLEN  128
 
 
 /**
@@ -86,12 +73,12 @@ const static char *tapi_cli_csap_prompts_fmt =
  * @return length of added parameters string.
  */
 static int
-tapi_cli_csap_add_promts(char *buf, int buf_size,
-                         const char *command_prompt,
-                         const char *login_prompt,
-                         const char *login_name,
-                         const char *password_prompt,
-                         const char *password)
+tapi_cli_csap_add_prompts(char *buf, int buf_size,
+                          const char *command_prompt,
+                          const char *login_prompt,
+                          const char *login_name,
+                          const char *password_prompt,
+                          const char *password)
 {
     int len = 0;
     
@@ -142,7 +129,7 @@ tapi_cli_csap_local_create(const char *ta_name, int sid,
                     const char *login_name,
                     const char *password_prompt,
                     const char *password,
-                    csap_handle_t *cli_csap);
+                    csap_handle_t *cli_csap)
 {
     int   rc = 0;
     int   len = 0;
@@ -150,7 +137,7 @@ tapi_cli_csap_local_create(const char *ta_name, int sid,
     int   buf_size = TAPI_CLI_CSAP_STR_MAXLEN;
     int   type = TAPI_CLI_CSAP_TYPE_SERIAL;
 
-    if (cli_asn_string == NULL)
+    if (buf == NULL)
         return TE_RC(TE_TAPI, ENOMEM);
 
     len += snprintf(buf + len, buf_size - len,
@@ -158,9 +145,9 @@ tapi_cli_csap_local_create(const char *ta_name, int sid,
                     "          conn-params %s : { device plain : \"%s\" }",
                     type, tapi_cli_csap_type_name[type], device);
 
-    len += tapi_cli_csap_add_promts(buf + len, buf_size - len,
-                                    command_prompt, login_prompt, login_name,
-                                    password_prompt, password);
+    len += tapi_cli_csap_add_prompts(buf + len, buf_size - len,
+                                     command_prompt, login_prompt, login_name,
+                                     password_prompt, password);
 
     len += snprintf(buf + len, buf_size - len, " } }");
 
@@ -188,32 +175,33 @@ tapi_cli_csap_local_create(const char *ta_name, int sid,
  *
  * @return 0 on success, otherwise standard or common TE error code.
  */
-extern int tapi_cli_csap_remote_create(const char *ta_name, int sid,
-                                       int type, const char *host, int port,
-                                       const char *command_prompt,
-                                       const char *login_prompt,
-                                       const char *login_name,
-                                       const char *password_prompt,
-                                       const char *password,
-                                       csap_handle_t *cli_csap)
+extern int
+tapi_cli_csap_remote_create(const char *ta_name, int sid,
+                            int type, const char *host, int port,
+                            const char *command_prompt,
+                            const char *login_prompt,
+                            const char *login_name,
+                            const char *password_prompt,
+                            const char *password,
+                            csap_handle_t *cli_csap)
 {
     int   rc = 0;
     int   len = 0;
     char *buf = (char *)malloc(TAPI_CLI_CSAP_STR_MAXLEN);
     int   buf_size = TAPI_CLI_CSAP_STR_MAXLEN;
 
-    if (cli_asn_string == NULL)
+    if (buf == NULL)
         return TE_RC(TE_TAPI, ENOMEM);
 
     len += snprintf(buf + len, buf_size - len,
                     "{ cli : { conn-type %d,"
                     "          conn-params %s : { host plain : \"%s\","
-                    "                             port plain : %d }";
+                    "                             port plain : %d }",
                     type, tapi_cli_csap_type_name[type], host, port);
 
-    len += tapi_cli_csap_add_promts(buf + len, buf_size - len,
-                                    command_prompt, login_prompt, login_name,
-                                    password_prompt, password);
+    len += tapi_cli_csap_add_prompts(buf + len, buf_size - len,
+                                     command_prompt, login_prompt, login_name,
+                                     password_prompt, password);
 
     len += snprintf(buf + len, buf_size - len, " } }");
 
@@ -306,7 +294,7 @@ tapi_internal_cli_send(const char *ta_name, int sid, csap_handle_t cli_csap,
     char *fname;
     FILE *f;
 
-    if ( (ta_name == NULL) || (templ == NULL) )
+    if ( (ta_name == NULL) || (command == NULL) )
         return TE_RC(TE_TAPI, EINVAL);
 
     fname = (char *)malloc(TAPI_CLI_CSAP_INIT_FILENAME_MAXLEN);
