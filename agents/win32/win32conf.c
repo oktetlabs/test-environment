@@ -28,11 +28,12 @@
  * $Id$
  */
 
-#include "te_defs.h"
 #include "windows.h"
-#include "iprtrmib.h"
 #include "w32api/iphlpapi.h"
+#undef _SYS_TYPES_FD_SET
 #include <w32api/winsock2.h>
+#include "te_defs.h"
+#include "iprtrmib.h"
 
 #undef ERROR
 #define TE_LGR_USER     "Windows Conf"
