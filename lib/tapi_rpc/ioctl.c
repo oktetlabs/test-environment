@@ -32,50 +32,45 @@
 #include "te_config.h"
 
 #include <stdio.h>
-#include <ctype.h>
-#ifdef HAVE_SYS_TYPES_H
+#if HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
-#ifdef HAVE_STDLIB_H
+#if HAVE_STDLIB_H
 #include <stdlib.h>
 #endif
-#ifdef HAVE_STRING_H
+#if HAVE_STRING_H
 #include <string.h>
 #endif
-#ifdef HAVE_STRINGS_H
+#if HAVE_STRINGS_H
 #include <strings.h>
 #endif
-#ifdef HAVE_SYS_SOCKET_H
+#if HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif
-#ifdef HAVE_NETINET_IN_H
+#if HAVE_NETINET_IN_H
 #include <netinet/in.h>
 #endif
-#ifdef HAVE_NETINET_IP_H
+#if HAVE_NETINET_IP_H
 #include <netinet/ip.h>
 #endif
-#ifdef HAVE_NETINET_TCP_H
+#if HAVE_NETINET_TCP_H
 #include <netinet/tcp.h>
 #endif
-#ifdef HAVE_NET_IF_H
+#if HAVE_NET_IF_H
 #include <net/if.h>
 #endif
-#ifdef HAVE_NET_IF_ARP_H
+#if HAVE_NET_IF_ARP_H
 #include <net/if_arp.h>
 #endif
-#ifdef HAVE_ARPA_INET_H
+#if HAVE_ARPA_INET_H
 #include <arpa/inet.h>
 #endif
-#ifdef HAVE_SIGNAL_H
-#include <signal.h>
-#endif
-#ifdef HAVE_SYS_IOCTL_H
+#if HAVE_SYS_IOCTL_H
 #include <sys/ioctl.h>
 #endif
-#ifdef HAVE_SYS_POLL_H
-#include <sys/poll.h>
-#endif
+#if HAVE_STDARG_H
 #include <stdarg.h>
+#endif
 
 #include "tapi_rpc_internal.h"
 #include "tapi_rpc_unistd.h"
@@ -600,9 +595,12 @@ rpc_ioctl(rcf_rpc_server *rpcs,
             break;
     }
 
-    RING("RPC (%s,%s): ioctl(%d, %s, %p(%s)) -> %d (%s)",
-         rpcs->ta, rpcs->name, fd, ioctl_rpc2str(request),
-         arg, req_val, out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
+    CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(ioctl, out.retval);
+
+    TAPI_RPC_LOG("RPC (%s,%s): ioctl(%d, %s, %p(%s)) -> %d (%s)",
+                 rpcs->ta, rpcs->name, fd, ioctl_rpc2str(request),
+                 arg, req_val,
+                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_VAL(ioctl, out.retval);
 }

@@ -162,9 +162,9 @@ rpc_gethostbyname(rcf_rpc_server *rpcs, const char *name)
             rpcs->_errno = TE_RC(TE_RCF, ENOMEM);
     }
 
-    RING("RPC (%s,%s): gethostbyname(%s) -> %p (%s)",
-         rpcs->ta, rpcs->name,
-         name == NULL ? "" : name, res, errno_rpc2str(RPC_ERRNO(rpcs)));
+    TAPI_RPC_LOG("RPC (%s,%s): gethostbyname(%s) -> %p (%s)",
+                 rpcs->ta, rpcs->name, name == NULL ? "" : name,
+                 res, errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_PTR(gethostbyname, res);
 }
@@ -205,9 +205,9 @@ rpc_gethostbyaddr(rcf_rpc_server *rpcs,
             rpcs->_errno = TE_RC(TE_RCF, ENOMEM);
     }
 
-    RING("RPC (%s,%s): gethostbyaddr(%p, %d, %d) -> %p (%s)",
-         rpcs->ta, rpcs->name,
-         addr, len, type, res, errno_rpc2str(RPC_ERRNO(rpcs)));
+    TAPI_RPC_LOG("RPC (%s,%s): gethostbyaddr(%p, %d, %d) -> %p (%s)",
+                 rpcs->ta, rpcs->name, addr, len, type,
+                 res, errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_PTR(gethostbyaddr, res);
 }
@@ -351,10 +351,12 @@ rpc_getaddrinfo(rcf_rpc_server *rpcs,
         *res = list;
     }
 
-    RING("RPC (%s,%s): getaddrinfo(%s, %s, %p, %p) -> %d (%s)",
-         rpcs->ta, rpcs->name,
-         node, service, hints, res, out.retval,
-         errno_rpc2str(RPC_ERRNO(rpcs)));
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(getaddrinfo, out.retval);
+
+    TAPI_RPC_LOG("RPC (%s,%s): getaddrinfo(%s, %s, %p, %p) -> %d (%s)",
+                 rpcs->ta, rpcs->name,
+                 node, service, hints, res,
+                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_INT_ZERO_OR_MINUS_ONE(getaddrinfo, out.retval);
 }
@@ -384,9 +386,9 @@ rpc_freeaddrinfo(rcf_rpc_server *rpcs,
                  &in, (xdrproc_t)xdr_tarpc_freeaddrinfo_in,
                  &out, (xdrproc_t)xdr_tarpc_freeaddrinfo_out);
 
-    RING("RPC (%s,%s): freeaddrinfo(%p) -> (%s)",
-         rpcs->ta, rpcs->name,
-         res, errno_rpc2str(RPC_ERRNO(rpcs)));
+    TAPI_RPC_LOG("RPC (%s,%s): freeaddrinfo(%p) -> (%s)",
+                 rpcs->ta, rpcs->name, res,
+                 errno_rpc2str(RPC_ERRNO(rpcs)));
 
     free((int *)res - 1);
 

@@ -31,19 +31,19 @@
 
 #include "te_config.h"
 
-#ifdef HAVE_SYS_TYPES_H
+#if HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
-#ifdef HAVE_STDLIB_H
+#if HAVE_STDLIB_H
 #include <stdlib.h>
 #endif
-#ifdef HAVE_STRING_H
+#if HAVE_STRING_H
 #include <string.h>
 #endif
-#ifdef HAVE_STRINGS_H
+#if HAVE_STRINGS_H
 #include <strings.h>
 #endif
-#ifdef HAVE_SIGNAL_H
+#if HAVE_SIGNAL_H
 #include <signal.h>
 #endif
 
@@ -79,12 +79,13 @@ rpc_signal(rcf_rpc_server *rpcs,
                  &in,  (xdrproc_t)xdr_tarpc_signal_in,
                  &out, (xdrproc_t)xdr_tarpc_signal_out);
 
-    RING("RPC (%s,%s): signal(%s, %s) -> %s (%s)",
-         rpcs->ta, rpcs->name,
-         signum_rpc2str(signum), (handler != NULL) ? handler : "(null)",
-         out.handler.handler_val != NULL ?
-             out.handler.handler_val : "(null)",
-         errno_rpc2str(RPC_ERRNO(rpcs)));
+    TAPI_RPC_LOG("RPC (%s,%s): signal(%s, %s) -> %s (%s)",
+                 rpcs->ta, rpcs->name,
+                 signum_rpc2str(signum),
+                 (handler != NULL) ? handler : "(null)",
+                 out.handler.handler_val != NULL ?
+                     out.handler.handler_val : "(null)",
+                 errno_rpc2str(RPC_ERRNO(rpcs)));
 
     /* Yes, I know that it's memory leak, but what do you propose?! */
     if (RPC_IS_CALL_OK(rpcs) && out.handler.handler_val != NULL)
@@ -118,9 +119,12 @@ rpc_kill(rcf_rpc_server *rpcs, pid_t pid, rpc_signum signum)
                  &in,  (xdrproc_t)xdr_tarpc_kill_in,
                  &out, (xdrproc_t)xdr_tarpc_kill_out);
 
-    RING("RPC (%s,%s)%s: kill(%d, %s) -> (%s)",
-         rpcs->ta, rpcs->name, rpcop2str(op),
-         pid, signum_rpc2str(signum), errno_rpc2str(RPC_ERRNO(rpcs)));
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(kill, out.retval);
+
+    TAPI_RPC_LOG("RPC (%s,%s)%s: kill(%d, %s) -> %d (%s)",
+                 rpcs->ta, rpcs->name, rpcop2str(op),
+                 pid, signum_rpc2str(signum),
+                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_INT_ZERO_OR_MINUS_ONE(kill, out.retval);
 }
@@ -146,9 +150,9 @@ rpc_sigset_new(rcf_rpc_server *rpcs)
                  &in, (xdrproc_t)xdr_tarpc_sigset_new_in,
                  &out, (xdrproc_t)xdr_tarpc_sigset_new_out);
 
-    RING("RPC (%s,%s): sigset_new() -> %p (%s)",
-         rpcs->ta, rpcs->name,
-         out.set, errno_rpc2str(RPC_ERRNO(rpcs)));
+    TAPI_RPC_LOG("RPC (%s,%s): sigset_new() -> %p (%s)",
+                 rpcs->ta, rpcs->name,
+                 out.set, errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_PTR(sigset_new, out.set);
 }
@@ -176,8 +180,9 @@ rpc_sigset_delete(rcf_rpc_server *rpcs, rpc_sigset_t *set)
                  &in, (xdrproc_t)xdr_tarpc_sigset_delete_in,
                  &out, (xdrproc_t)xdr_tarpc_sigset_delete_out);
 
-    RING("RPC (%s,%s): sigset_delete(%p) -> (%s)",
-         rpcs->ta, rpcs->name, set, errno_rpc2str(RPC_ERRNO(rpcs)));
+    TAPI_RPC_LOG("RPC (%s,%s): sigset_delete(%p) -> (%s)",
+                 rpcs->ta, rpcs->name, set,
+                 errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_VOID(sigset_delete);
 }
@@ -209,9 +214,12 @@ rpc_sigprocmask(rcf_rpc_server *rpcs,
     rcf_rpc_call(rpcs, _sigprocmask,
                  &in, (xdrproc_t)xdr_tarpc_sigprocmask_in,
                  &out, (xdrproc_t)xdr_tarpc_sigprocmask_out);
-    RING("RPC (%s,%s): sigprocmask(%d, %p, %p) -> %d (%s)",
-         rpcs->ta, rpcs->name, how, set, oldset,
-         out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(sigprocmask, out.retval);
+
+    TAPI_RPC_LOG("RPC (%s,%s): sigprocmask(%d, %p, %p) -> %d (%s)",
+                 rpcs->ta, rpcs->name, how, set, oldset,
+                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_INT_ZERO_OR_MINUS_ONE(sigprocmask, out.retval);
 }
@@ -240,9 +248,11 @@ rpc_sigemptyset(rcf_rpc_server *rpcs, rpc_sigset_t *set)
                  &in, (xdrproc_t)xdr_tarpc_sigemptyset_in,
                  &out, (xdrproc_t)xdr_tarpc_sigemptyset_out);
 
-    RING("RPC (%s,%s): sigemptyset(%p) -> %d (%s)",
-         rpcs->ta, rpcs->name,
-         set, out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(sigemptyset, out.retval);
+
+    TAPI_RPC_LOG("RPC (%s,%s): sigemptyset(%p) -> %d (%s)",
+                 rpcs->ta, rpcs->name, set,
+                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_INT_ZERO_OR_MINUS_ONE(sigemptyset, out.retval);
 }
@@ -270,9 +280,11 @@ rpc_sigpending(rcf_rpc_server *rpcs, rpc_sigset_t *set)
                  &in, (xdrproc_t)xdr_tarpc_sigpending_in,
                  &out, (xdrproc_t)xdr_tarpc_sigpending_out);
 
-    RING("RPC (%s,%s): sigpending(%p) -> %d (%s)",
-         rpcs->ta, rpcs->name,
-         set, out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(sigpending, out.retval);
+
+    TAPI_RPC_LOG("RPC (%s,%s): sigpending(%p) -> %d (%s)",
+                 rpcs->ta, rpcs->name,
+                 set, out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_INT_ZERO_OR_MINUS_ONE(sigpending, out.retval);
 }
@@ -298,9 +310,11 @@ rpc_sigsuspend(rcf_rpc_server *rpcs, const rpc_sigset_t *set)
                  &in, (xdrproc_t)xdr_tarpc_sigsuspend_in,
                  &out, (xdrproc_t)xdr_tarpc_sigsuspend_out);
 
-    RING("RPC (%s,%s): sigsuspend(%p) -> %d (%s)",
-         rpcs->ta, rpcs->name,
-         set, out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(sigsuspend, out.retval);
+
+    TAPI_RPC_LOG("RPC (%s,%s): sigsuspend(%p) -> %d (%s)",
+                 rpcs->ta, rpcs->name,
+                 set, out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_INT_ZERO_OR_MINUS_ONE(sigsuspend, out.retval);
 }
@@ -326,9 +340,9 @@ rpc_sigreceived(rcf_rpc_server *rpcs)
                  &in, (xdrproc_t)xdr_tarpc_sigreceived_in,
                  &out, (xdrproc_t)xdr_tarpc_sigreceived_out);
 
-    RING("RPC (%s,%s): sigreceived() -> %p (%s)",
-         rpcs->ta, rpcs->name,
-         out.set, errno_rpc2str(RPC_ERRNO(rpcs)));
+    TAPI_RPC_LOG("RPC (%s,%s): sigreceived() -> %p (%s)",
+                 rpcs->ta, rpcs->name,
+                 out.set, errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_PTR(sigreceived, out.set);
 }
@@ -356,9 +370,11 @@ rpc_sigfillset(rcf_rpc_server *rpcs, rpc_sigset_t *set)
                  &in, (xdrproc_t)xdr_tarpc_sigfillset_in,
                  &out, (xdrproc_t)xdr_tarpc_sigfillset_out);
 
-    RING("RPC (%s,%s): sigfillset(%p) -> %d (%s)",
-         rpcs->ta, rpcs->name,
-         set, out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(sigfillset, out.retval);
+
+    TAPI_RPC_LOG("RPC (%s,%s): sigfillset(%p) -> %d (%s)",
+                 rpcs->ta, rpcs->name,
+                 set, out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_INT_ZERO_OR_MINUS_ONE(sigfillset, out.retval);
 }
@@ -387,10 +403,12 @@ rpc_sigaddset(rcf_rpc_server *rpcs, rpc_sigset_t *set, rpc_signum signum)
                  &in, (xdrproc_t)xdr_tarpc_sigaddset_in,
                  &out, (xdrproc_t)xdr_tarpc_sigaddset_out);
 
-    RING("RPC (%s,%s): sigaddset(%s, %p) -> %d (%s)",
-         rpcs->ta, rpcs->name,
-         signum_rpc2str(signum), set,
-         out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(sigaddset, out.retval);
+
+    TAPI_RPC_LOG("RPC (%s,%s): sigaddset(%s, %p) -> %d (%s)",
+                 rpcs->ta, rpcs->name,
+                 signum_rpc2str(signum), set,
+                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_INT_ZERO_OR_MINUS_ONE(sigaddset, out.retval);
 }
@@ -419,10 +437,12 @@ rpc_sigdelset(rcf_rpc_server *rpcs, rpc_sigset_t *set, rpc_signum signum)
                  &in, (xdrproc_t)xdr_tarpc_sigdelset_in,
                  &out, (xdrproc_t)xdr_tarpc_sigdelset_out);
 
-    RING("RPC (%s,%s): sigdelset(%s, %p) -> %d (%s)",
-         rpcs->ta, rpcs->name,
-         signum_rpc2str(signum), set,
-         out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(sigdelset, out.retval);
+
+    TAPI_RPC_LOG("RPC (%s,%s): sigdelset(%s, %p) -> %d (%s)",
+                 rpcs->ta, rpcs->name,
+                 signum_rpc2str(signum), set,
+                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_INT_ZERO_OR_MINUS_ONE(sigdelset, out.retval);
 }
@@ -449,25 +469,17 @@ rpc_sigismember(rcf_rpc_server *rpcs,
     in.signum = signum;
 
     rcf_rpc_call(rpcs, _sigismember,
-                 &in, (xdrproc_t)xdr_tarpc_sigismember_in,
+                 &in,  (xdrproc_t)xdr_tarpc_sigismember_in,
                  &out, (xdrproc_t)xdr_tarpc_sigismember_out);
 
-    RING("RPC (%s,%s): sigismember(%s, %p) -> %d (%s)",
-         rpcs->ta, rpcs->name,
-         signum_rpc2str(signum), set,
-         out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
+    CHECK_RETVAL_VAR(sigismember, out.retval,
+        (out.retval != 0 && out.retval != 1 && out.retval != -1), -1);
 
-    LOG_TE_ERROR(sigismember);
+    TAPI_RPC_LOG("RPC (%s,%s): sigismember(%s, %p) -> %d (%s)",
+                 rpcs->ta, rpcs->name,
+                 signum_rpc2str(signum), set,
+                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    if (!RPC_IS_CALL_OK(rpcs))
-        return -1;
-
-    if (out.retval != 0 && out.retval != 1 && out.retval != -1)
-    {
-        ERROR("FD_ISSET returned incorrect value %d", out.retval);
-        rpcs->_errno = TE_RC(TE_TAPI, ETECORRUPTED);
-        return -1;
-    }
     return out.retval;
 }
 
@@ -565,10 +577,12 @@ rpc_sigaction(rcf_rpc_server *rpcs, rpc_signum signum,
         oldact->mm_flags = out_oldact->xx_flags;
     }
 
-    RING("RPC (%s,%s)%s: sigaction(%d, %p, %p) -> (%s)",
-         rpcs->ta, rpcs->name, rpcop2str(op),
-         signum_rpc2str(signum), act, oldact,
-         errno_rpc2str(RPC_ERRNO(rpcs)));
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(sigaction, out.retval);
+
+    TAPI_RPC_LOG("RPC (%s,%s)%s: sigaction(%d, %p, %p) -> %d (%s)",
+                 rpcs->ta, rpcs->name, rpcop2str(op),
+                 signum_rpc2str(signum), act, oldact,
+                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_INT_ZERO_OR_MINUS_ONE(sigaction, out.retval);
 }

@@ -32,61 +32,21 @@
 #include "te_config.h"
 
 #include <stdio.h>
-#include <ctype.h>
-#ifdef HAVE_SYS_TYPES_H
+#if HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
-#ifdef HAVE_STDLIB_H
+#if HAVE_STDLIB_H
 #include <stdlib.h>
 #endif
-#ifdef HAVE_STRING_H
+#if HAVE_STDARG_H
+#include <stdarg.h>
+#endif
+#if HAVE_STRING_H
 #include <string.h>
 #endif
-#ifdef HAVE_STRINGS_H
+#if HAVE_STRINGS_H
 #include <strings.h>
 #endif
-#ifdef HAVE_SYS_SOCKET_H
-#include <sys/socket.h>
-#endif
-#ifdef HAVE_NETINET_IN_H
-#include <netinet/in.h>
-#endif
-#ifdef HAVE_NETINET_IP_H
-#include <netinet/ip.h>
-#endif
-#ifdef HAVE_NETINET_TCP_H
-#include <netinet/tcp.h>
-#endif
-#ifdef HAVE_NET_IF_H
-#include <net/if.h>
-#endif
-#ifdef HAVE_NET_IF_ARP_H
-#include <net/if_arp.h>
-#endif
-#ifdef HAVE_ARPA_INET_H
-#include <arpa/inet.h>
-#endif
-#ifdef HAVE_SIGNAL_H
-#include <signal.h>
-#endif
-#ifdef HAVE_SYS_IOCTL_H
-#include <sys/ioctl.h>
-#endif
-#ifdef HAVE_SYS_POLL_H
-#include <sys/poll.h>
-#endif
-#ifdef HAVE_NETDB_H
-#include <netdb.h>
-#endif
-#ifdef HAVE_SEMAPHORE_H
-#include <semaphore.h>
-#else
-#error "We have no semaphores"
-#endif
-#ifdef HAVE_FCNTL_H
-#include <fcntl.h>
-#endif
-#include <stdarg.h>
 
 #include "tapi_rpc_internal.h"
 #include "tapi_rpc_unistd.h"
@@ -119,9 +79,9 @@ rpc_fopen(rcf_rpc_server *rpcs,
                  &in,  (xdrproc_t)xdr_tarpc_fopen_in,
                  &out, (xdrproc_t)xdr_tarpc_fopen_out);
 
-    RING("RPC (%s,%s): fopen(%s, %s) -> %p (%s)",
-         rpcs->ta, rpcs->name,
-         path, mode, out.mem_ptr, errno_rpc2str(RPC_ERRNO(rpcs)));
+    TAPI_RPC_LOG("RPC (%s,%s): fopen(%s, %s) -> %p (%s)",
+                 rpcs->ta, rpcs->name,
+                 path, mode, out.mem_ptr, errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_PTR(fopen, out.mem_ptr);
 }
@@ -160,9 +120,9 @@ rpc_popen(rcf_rpc_server *rpcs,
     free(cmd_dup);
     free(mode_dup);  
 
-    RING("RPC (%s,%s): popen(%s, %s) -> %p (%s)",
-         rpcs->ta, rpcs->name,
-         cmd, mode, out.mem_ptr, errno_rpc2str(RPC_ERRNO(rpcs)));
+    TAPI_RPC_LOG("RPC (%s,%s): popen(%s, %s) -> %p (%s)",
+                 rpcs->ta, rpcs->name,
+                 cmd, mode, out.mem_ptr, errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_PTR(popen, out.mem_ptr);
 }
@@ -190,9 +150,11 @@ rpc_fileno(rcf_rpc_server *rpcs,
                  &in,  (xdrproc_t)xdr_tarpc_fileno_in,
                  &out, (xdrproc_t)xdr_tarpc_fileno_out);
 
-    RING("RPC (%s,%s): fileno(%p) -> %d (%s)",
-         rpcs->ta, rpcs->name,
-         f, out.fd, errno_rpc2str(RPC_ERRNO(rpcs)));
+    CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(fileno, out.fd);
+
+    TAPI_RPC_LOG("RPC (%s,%s): fileno(%p) -> %d (%s)",
+                 rpcs->ta, rpcs->name,
+                 f, out.fd, errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_VAL(fileno, out.fd);
 }
@@ -201,14 +163,14 @@ rpc_fileno(rcf_rpc_server *rpcs,
  * Execute shell command on the IPC server and return file descriptor
  * for it's standard input.
  *
- * @param rpcs        RPC server handle
+ * @param rpcs          RPC server handle
  * @param mode          "r" or "w"
  * @param cmd           format of the command to be executed
  *
  * @return File descriptor or -1 in the case of failure
  */
 int 
-rpc_cmd_spawn(rcf_rpc_server *rpcs, const char *mode, const char *cmd,...)
+rpc_cmd_spawn(rcf_rpc_server *rpcs, const char *mode, const char *cmd, ...)
 {
     FILE *f;
     int   fd;
@@ -247,7 +209,7 @@ rpc_cmd_spawn(rcf_rpc_server *rpcs, const char *mode, const char *cmd,...)
  */
 int 
 rpc_shell(rcf_rpc_server *rpcs,
-          char *buf, int buflen, const char *cmd,...)
+          char *buf, int buflen, const char *cmd, ...)
 {
     FILE *f;
     int   fd;
@@ -300,7 +262,7 @@ rpc_shell(rcf_rpc_server *rpcs,
  * @return 0 (success) or -1 (failure)
  */
 int 
-rpc_shell_get_all(rcf_rpc_server *rpcs, char **pbuf, const char *cmd,...)
+rpc_shell_get_all(rcf_rpc_server *rpcs, char **pbuf, const char *cmd, ...)
 {
     char *buf = calloc(1, RPC_SHELL_BUF_CHUNK);
     int   buflen = RPC_SHELL_BUF_CHUNK;

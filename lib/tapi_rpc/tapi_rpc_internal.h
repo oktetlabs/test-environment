@@ -52,38 +52,89 @@
 #include "tarpc.h"
 
 
+/**
+ * Log TAPI RPC call.
+ * If RPC call status is OK, log as ring, else log as error.
+ */
+#define TAPI_RPC_LOG(_x...) \
+    LGR_MESSAGE(RPC_IS_CALL_OK(rpcs) ? TE_LL_RING : TE_LL_ERROR, \
+                TE_LGR_USER, _x)
+
 /** Free memory used in RPC output */
 #define TAPI_RPC_FREE_OUT(_func) \
     rcf_rpc_free_result(&out, (xdrproc_t)xdr_tarpc_##_func##_out)
 
-#define LOG_TE_ERROR(_func) \
+/**
+ * If RPC call status is OK, check condition and set specified variable
+ * to _error_val and RPC server errno to ETECORRUPTED, if it is true.
+ * If RPC call status is not OK, variable is set to -1 and RPC server
+ * errno is not updated.
+ *
+ * The function assumes to have RPC server handle as 'rpcs' variable in
+ * the context.
+ *
+ * @param _func         function
+ * @param _var          variable with return value
+ * @param _cond         condition to be checked, if RPC call status is OK
+ * @param _error_val    value to be assigned in the case of error
+ */
+#define CHECK_RETVAL_VAR(_func, _var, _cond, _error_val) \
     do {                                                            \
-        if (!RPC_IS_CALL_OK(rpcs))                                  \
+        if (RPC_IS_CALL_OK(rpcs))                                   \
         {                                                           \
-            ERROR("RPC (%s,%s): " #_func "() failed: %s",           \
-                  rpcs->ta, rpcs->name,                             \
-                  errno_rpc2str(RPC_ERRNO(rpcs)));                  \
+            if (_cond)                                              \
+            {                                                       \
+                ERROR("Function %s() returned incorrect value %d",  \
+                      #_func, (_var));                              \
+                rpcs->_errno = TE_RC(TE_TAPI, ETECORRUPTED);        \
+                (_var) = (_error_val);                              \
+            }                                                       \
         }                                                           \
-    } while (FALSE)
+        else                                                        \
+        {                                                           \
+            (_var) = (_error_val);                                  \
+        }                                                           \
+    } while (0)
+
+/**
+ * If RPC call status is OK, check that variable with function return
+ * value is greater or equal to minus one and set specified variable
+ * to -1 and RPC server errno to ETECORRUPTED, it is true.
+ * If RPC call status is not OK, variable is set to -1 and RPC server
+ * errno is not updated.
+ *
+ * The function assumes to have RPC server handle as 'rpcs' variable in
+ * the context.
+ *
+ * @param _func     function
+ * @param _var      variable with return value
+ */
+#define CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(_func, _var) \
+    CHECK_RETVAL_VAR(_func, _var, ((_var) < -1), -1)
+
+/**
+ * If RPC call status is OK, check that variable with function return
+ * value is zero or minus one and set specified variable to -1 and RPC
+ * server errno to ETECORRUPTED, it is true.  If RPC call status is
+ * not OK, variable is set to -1 and RPC server errno is not updated.
+ *
+ * The function assumes to have RPC server handle as 'rpcs' variable in
+ * the context.
+ *
+ * @param _func     function
+ * @param _var      variable with return value
+ */
+#define CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(_func, _var) \
+    CHECK_RETVAL_VAR(_func, _var, (((_var) != 0) && ((_var) != -1)), -1)
+        
 
 /** Return with check (for functions returning value >= -1) */
 #define RETVAL_VAL(_func, _retval) \
     do {                                                            \
         int __retval = (_retval);                                   \
                                                                     \
-        LOG_TE_ERROR(_func);                                        \
         TAPI_RPC_FREE_OUT(_func);                                   \
                                                                     \
-        if (!RPC_IS_CALL_OK(rpcs))                                  \
-            return -1;                                              \
-                                                                    \
-        if (__retval < -1)                                          \
-        {                                                           \
-            ERROR("function %s returned incorrect value %d",        \
-                  #_func, __retval);                                \
-            rpcs->_errno = TE_RC(TE_TAPI, ETECORRUPTED);            \
-            return -1;                                              \
-        }                                                           \
         return __retval;                                            \
     } while (0)
 
@@ -92,19 +143,8 @@
     do {                                                            \
         int __retval = (_retval);                                   \
                                                                     \
-        LOG_TE_ERROR(_func);                                        \
         TAPI_RPC_FREE_OUT(_func);                                   \
                                                                     \
-        if (!RPC_IS_CALL_OK(rpcs))                                  \
-            return -1;                                              \
-                                                                    \
-        if (__retval != 0 && __retval != -1)                        \
-        {                                                           \
-            ERROR("function %s returned incorrect value %d",        \
-                  #_func, __retval);                                \
-            rpcs->_errno = TE_RC(TE_TAPI, ETECORRUPTED);            \
-            return -1;                                              \
-        }                                                           \
         return __retval;                                            \
     } while(0)
 
@@ -113,7 +153,6 @@
     do {                                                            \
         void *__retval = (void *)(_retval);                         \
                                                                     \
-        LOG_TE_ERROR(_func);                                        \
         TAPI_RPC_FREE_OUT(_func);                                   \
                                                                     \
         if (!RPC_IS_CALL_OK(rpcs))                                  \
@@ -125,7 +164,6 @@
 /** Return with check */
 #define RETVAL_VOID(_func) \
     do {                                                            \
-        LOG_TE_ERROR(_func);                                        \
         TAPI_RPC_FREE_OUT(_func);                                   \
         return;                                                     \
     } while(0)

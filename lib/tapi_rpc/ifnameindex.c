@@ -69,12 +69,13 @@ rpc_if_nametoindex(rcf_rpc_server *rpcs,
                  &in,  (xdrproc_t)xdr_tarpc_if_nametoindex_in,
                  &out, (xdrproc_t)xdr_tarpc_if_nametoindex_out);
 
-    RING("RPC (%s,%s): if_nametoindex(%s) -> %d (%s)",
-         rpcs->ta, rpcs->name,
-         ifname == NULL ? "" : ifname,
-         out.ifindex, errno_rpc2str(RPC_ERRNO(rpcs)));
+    CHECK_RETVAL_VAR(if_nametoindex, out.ifindex, FALSE, 0);
 
-    RETVAL_VAL(if_nametoindex, (int)out.ifindex);
+    TAPI_RPC_LOG("RPC (%s,%s): if_nametoindex(%s) -> %d (%s)",
+                 rpcs->ta, rpcs->name, ifname == NULL ? "" : ifname,
+                 out.ifindex, errno_rpc2str(RPC_ERRNO(rpcs)));
+
+    RETVAL_VAL(if_nametoindex, out.ifindex);
 }
 
 char *
@@ -109,10 +110,10 @@ rpc_if_indextoname(rcf_rpc_server *rpcs,
             memcpy(ifname, out.ifname.ifname_val, out.ifname.ifname_len);
     }
 
-    RING("RPC (%s,%s): if_indextoname(%d) -> %d (%s)",
-         rpcs->ta, rpcs->name,
-         ifindex, out.ifname.ifname_val != NULL ? ifname : "",
-         errno_rpc2str(RPC_ERRNO(rpcs)));
+    TAPI_RPC_LOG("RPC (%s,%s): if_indextoname(%d) -> %d (%s)",
+                 rpcs->ta, rpcs->name,
+                 ifindex, out.ifname.ifname_val != NULL ? ifname : "",
+                 errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_PTR(if_indextoname,
                out.ifname.ifname_val != NULL ? ifname : NULL);
@@ -171,8 +172,9 @@ rpc_if_nameindex(rcf_rpc_server *rpcs)
         }
     }
 
-    RING("RPC (%s,%s): if_nameindex() -> %p (%s)",
-         rpcs->ta, rpcs->name, res, errno_rpc2str(RPC_ERRNO(rpcs)));
+    TAPI_RPC_LOG("RPC (%s,%s): if_nameindex() -> %p (%s)",
+                 rpcs->ta, rpcs->name,
+                 res, errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_PTR(if_nameindex, res);
 }
@@ -208,8 +210,9 @@ rpc_if_freenameindex(rcf_rpc_server *rpcs,
                  &in,  (xdrproc_t)xdr_tarpc_if_freenameindex_in,
                  &out, (xdrproc_t)xdr_tarpc_if_freenameindex_out);
 
-    RING("RPC (%s,%s): if_freenameindex(%p) -> (%s)",
-         rpcs->ta, rpcs->name, ptr, errno_rpc2str(RPC_ERRNO(rpcs)));
+    TAPI_RPC_LOG("RPC (%s,%s): if_freenameindex(%p) -> (%s)",
+                 rpcs->ta, rpcs->name, ptr,
+                 errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_VOID(if_freenameindex);
 }

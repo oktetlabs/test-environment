@@ -31,10 +31,10 @@
 
 #include "te_config.h"
 
-#ifdef HAVE_STRING_H
+#if HAVE_STRING_H
 #include <string.h>
 #endif
-#ifdef HAVE_STRINGS_H
+#if HAVE_STRINGS_H
 #include <strings.h>
 #endif
 
@@ -87,12 +87,6 @@ rpc_aio_read_test(rcf_rpc_server *rpcs,
                  &in,  (xdrproc_t)xdr_tarpc_aio_read_test_in,
                  &out, (xdrproc_t)xdr_tarpc_aio_read_test_out);
 
-    RING("RPC (%s,%s): "
-         "aio_read_test(%d, %s, %d, %p, %d, %d) -> %d (%s)",
-         rpcs->ta, rpcs->name,
-         s, signum_rpc2str(signum), timeout, buf, buflen, rlen,
-         out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
-
     if (RPC_IS_CALL_OK(rpcs))
     {
         if (buf != NULL && out.buf.buf_val != NULL)
@@ -100,6 +94,14 @@ rpc_aio_read_test(rcf_rpc_server *rpcs,
 
         memcpy(diag, out.diag.diag_val, out.diag.diag_len);
     }
+
+    CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(aio_read_test, out.retval);
+
+    TAPI_RPC_LOG("RPC (%s,%s): "
+                 "aio_read_test(%d, %s, %d, %p, %d, %d) -> %d (%s)",
+                 rpcs->ta, rpcs->name,
+                 s, signum_rpc2str(signum), timeout, buf, buflen, rlen,
+                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_VAL(aio_read_test, out.retval);
 }
@@ -135,13 +137,15 @@ rpc_aio_error_test(rcf_rpc_server *rpcs,
                  &in,  (xdrproc_t)xdr_tarpc_aio_error_test_in,
                  &out, (xdrproc_t)xdr_tarpc_aio_error_test_out);
 
-    RING("RPC (%s,%s): "
-         "aio_error_test() -> %d (%s)",
-         rpcs->ta, rpcs->name,
-         out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
-
     if (RPC_IS_CALL_OK(rpcs))
         memcpy(diag, out.diag.diag_val, out.diag.diag_len);
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(aio_error_test, out.retval);
+
+    TAPI_RPC_LOG("RPC (%s,%s): "
+                 "aio_error_test() -> %d (%s)",
+                 rpcs->ta, rpcs->name,
+                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_INT_ZERO_OR_MINUS_ONE(aio_error_test, out.retval);
 }
@@ -187,15 +191,16 @@ rpc_aio_write_test(rcf_rpc_server *rpcs,
                  &in,  (xdrproc_t)xdr_tarpc_aio_write_test_in,
                  &out, (xdrproc_t)xdr_tarpc_aio_write_test_out);
 
-    RING("RPC (%s,%s): "
-         "aio_write_test(%d, %s, %p, %d) -> %d (%s)",
-         rpcs->ta, rpcs->name,
-         s, signum_rpc2str(signum), buf, buflen,
-         out.retval,
-         errno_rpc2str(RPC_ERRNO(rpcs)));
-
     if (RPC_IS_CALL_OK(rpcs))
         memcpy(diag, out.diag.diag_val, out.diag.diag_len);
+
+    CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(aio_write_test, out.retval);
+
+    TAPI_RPC_LOG("RPC (%s,%s): "
+                 "aio_write_test(%d, %s, %p, %d) -> %d (%s)",
+                 rpcs->ta, rpcs->name,
+                 s, signum_rpc2str(signum), buf, buflen,
+                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_VAL(aio_write_test, out.retval);
 }
@@ -245,12 +250,6 @@ rpc_aio_suspend_test(rcf_rpc_server *rpcs,
                  &in,  (xdrproc_t)xdr_tarpc_aio_suspend_test_in,
                  &out, (xdrproc_t)xdr_tarpc_aio_suspend_test_out);
 
-    RING("RPC (%s,%s): "
-         "aio_suspend_test(%d, %d, %s, %d, %p, %d) -> %d (%s)",
-         rpcs->ta, rpcs->name,
-         s, s_aux, signum_rpc2str(signum), timeout, buf, buflen,
-         out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
-
     if (RPC_IS_CALL_OK(rpcs))
     {
         if (buf != NULL && out.buf.buf_val != NULL)
@@ -258,6 +257,14 @@ rpc_aio_suspend_test(rcf_rpc_server *rpcs,
 
         memcpy(diag, out.diag.diag_val, out.diag.diag_len);
     }
+
+    CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(aio_suspend_test, out.retval);
+
+    TAPI_RPC_LOG("RPC (%s,%s): "
+                 "aio_suspend_test(%d, %d, %s, %d, %p, %d) -> %d (%s)",
+                 rpcs->ta, rpcs->name,
+                 s, s_aux, signum_rpc2str(signum), timeout, buf, buflen,
+                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_VAL(aio_suspend_test, out.retval);
 }
