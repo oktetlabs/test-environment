@@ -224,14 +224,14 @@ tapi_cfg_base_add_net_addr(const char *oid, const struct sockaddr *addr,
             }
             else
             {
-                uint32_t    inaddr = SIN(addr)->sin_addr.s_addr;
+                uint32_t    inaddr = ntohl(SIN(addr)->sin_addr.s_addr);
 
                 if (IN_CLASSA(inaddr))
-                    nmask = ~IN_CLASSA_NET;
+                    nmask = IN_CLASSA_HOST;
                 else if (IN_CLASSB(inaddr))
-                    nmask = ~IN_CLASSB_NET;
+                    nmask = IN_CLASSA_HOST;
                 else if (IN_CLASSC(inaddr))
-                    nmask = ~IN_CLASSC_NET;
+                    nmask = IN_CLASSA_HOST;
                 else
                 {
                     ERROR("Invalid IPv4 address - unknown class");
@@ -240,7 +240,7 @@ tapi_cfg_base_add_net_addr(const char *oid, const struct sockaddr *addr,
             }
 
             memcpy(&bcast, addr, sizeof(bcast));
-            bcast.sin_addr.s_addr |= nmask;
+            bcast.sin_addr.s_addr |= htonl(nmask);
 
             /* Set broadcast address */
             rc = cfg_set_instance_fmt(CVT_ADDRESS, &bcast,
