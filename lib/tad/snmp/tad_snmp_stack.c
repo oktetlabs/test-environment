@@ -401,7 +401,7 @@ snmp_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
     csap_p csap_descr;
 
     struct snmp_session         csap_session; 
-    struct snmp_session       * ss; 
+    struct snmp_session       * ss = NULL; 
 
     snmp_csap_specific_data_p   snmp_spec_data;
     asn_value_p                 snmp_csap_spec;
