@@ -2353,6 +2353,7 @@ tapi_snmp_get_table_columns(tapi_snmp_oid_t *table_oid,
            return TE_RC(TE_TAPI, rc);
        columns_p->access = entry_node->access;
        columns_p->status = entry_node->status;
+       columns_p->subid = entry_node->subid;
        VERB("    %s, %s", columns_p->label, print_oid(&(columns_p->oid)));
        columns_p->next = *columns;
        *columns = columns_p;

@@ -196,6 +196,7 @@ typedef struct tapi_snmp_var_access {
                                              MIB structure */       
     char                          label[MAX_LABLE_LEN];
     tapi_snmp_oid_t               oid;
+    oid                           subid;
     tapi_snmp_mib_access          access;
     tapi_snmp_mib_status          status;
 } tapi_snmp_var_access;    
