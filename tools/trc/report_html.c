@@ -268,7 +268,7 @@ static const char * const trc_tests_stats_end =
 static const char * const trc_tests_stats_row =
 "    <TR>\n"
 "      <TD>\n"
-"        <P>%s<B>%s</B></P>\n"
+"        <P>%s<B><A %s=\"%s%s\">%s</A></B></P>\n"
 "      </TD>\n"
 "      <TD>\n"
 "        <P>%s%s%s%s%s</P>\n"
@@ -353,7 +353,7 @@ static const char * const trc_test_exp_got_end =
 static const char * const trc_test_exp_got_row =
 "    <TR>\n"
 "      <TD>\n"
-"        <P>%s<B><A href=\"#%s\">%s</A></B></P>\n"
+"        <P>%s<B><A %s%s%shref=\"#%s\">%s</A></B></P>\n"
 "      </TD>\n"
 "      <TD>\n"
 "        <P>%s</P>\n"
@@ -446,8 +446,13 @@ iters_to_html(const test_run *test, const test_iters *iters,
             ((test->type == TRC_TEST_PACKAGE) ||
              (~flags & TRC_OUT_PACKAGES_ONLY)))
         {
+            te_bool name_anchor = (p == iters->head.tqh_first);
+
             fprintf(f, trc_test_exp_got_row,
                     level_str,
+                    name_anchor ? "name=\"" : "",
+                    name_anchor ? test->name : "",
+                    name_anchor ? "\" " : "",
                     test->obj_link ? : "ERROR",
                     test->name,
                     trc_test_args_to_string(&p->args),
@@ -487,7 +492,12 @@ tests_to_html(const test_run *parent, const test_runs *tests,
             ((p->type == TRC_TEST_PACKAGE) ||
              (~flags & TRC_OUT_PACKAGES_ONLY)))
         {
+            te_bool name_link;
             char *obj_link = NULL;
+
+            name_link = ((flags & TRC_OUT_PACKAGES_ONLY) ||
+                         ((~flags & TRC_OUT_PACKAGES_ONLY) &&
+                         (p->type == TRC_TEST_SCRIPT)));
 
             if (p->obj_link == NULL)
             {
@@ -508,7 +518,11 @@ tests_to_html(const test_run *parent, const test_runs *tests,
             }
 
             fprintf(f, trc_tests_stats_row,
-                    level_str, p->name,
+                    level_str,
+                    name_link ? "href" : "name",
+                    name_link ? "#" : "",
+                    p->name,
+                    p->name,
                     obj_link ? "<A name=\"" : "",
                     obj_link ? : "",
                     obj_link ? "\">": "",
