@@ -411,7 +411,7 @@ send_recv_rcf_ipc_message(struct ipc_client *ipcc,
                                            send_buf, send_size,
                                            recv_buf, recv_size)) != 0)
     {
-        WARN("%s() failed with rc %X", __FUNCTION__, rc);
+        INFO("%s() failed with rc %X", __FUNCTION__, rc);
         return rc;
     }
 
