@@ -395,14 +395,14 @@ rpc_recvfrom_gen(rcf_rpc_server *rpcs,
 
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(recvfrom, out.retval);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: recvfrom(%d, %p[%u], %u, %s, %p[%u], %u) "
-                 "-> %d (%s) from=%s fromlen=%u",
+    TAPI_RPC_LOG("RPC (%s,%s)%s: recvfrom(%d, %p[%u], %u, %s, %p[%u], %d) "
+                 "-> %d (%s) from=%s fromlen=%d",
                  rpcs->ta, rpcs->name, rpcop2str(op),
                  s, buf, rbuflen, len, send_recv_flags_rpc2str(flags),
-                 from, rfrombuflen, save_fromlen,
+                 from, rfrombuflen, (int)save_fromlen,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)),
                  sockaddr2str(from),
-                 (fromlen == NULL) ? (unsigned int)-1 : *fromlen);
+                 (fromlen == NULL) ? -1 : (int)*fromlen);
 
     RETVAL_VAL(recvfrom, out.retval);
 }
