@@ -262,7 +262,7 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
         } 
     }
 
-    /* call echo callback, if it present and requested. */
+    /* process action, if it present and requested. */
     if (rc == 0)
     {
         rc = asn_get_choice(pattern_unit, "action", label, sizeof(label));
@@ -338,7 +338,7 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
         free(data_to_check.data); 
 
     return rc; 
- }
+}
 
 
 typedef struct received_packets_queue
