@@ -788,21 +788,18 @@ alloc_and_get_value(xmlNodePtr node, test_var_arg_values *values)
             if (q->id != NULL && strcmp(q->id, tmp) == 0)
                 p->ref = q;
         }
-        if (p->ref == NULL)
-        {
-            ERROR("Reference to unknown value '%s'", tmp);
-            free(tmp);
-            return EINVAL;
-        }
-        free(tmp);
         if (p->ref == p)
         {
             ERROR("Self-reference of the value '%s'", p->id);
+            free(tmp);
             return EINVAL;
         }
+        if (p->ref == NULL)
+        {
+            INFO("Reference '%s' is considered as external", tmp);
+            p->ext = tmp;
+        }
     }
-    /* 'ext' is optional */
-    p->ext = xmlGetProp(node, CONST_CHAR2XML("ext"));
     /* 'reqs' is optional */
     tmp = xmlGetProp(node, CONST_CHAR2XML("reqs"));
     if (tmp != NULL)
@@ -940,83 +937,6 @@ get_var_arg_attrs(xmlNodePtr node, test_var_arg_values *values,
 
 
 /**
- * Allocate and get session reffered variable.
- *
- * @param node      Node with new run item
- * @param is_var    Is it variable or argument?
- * @param list      List of session variables
- *
- * @return Status code.
- */
-static int
-alloc_and_get_refvar_refarg(xmlNodePtr node, te_bool is_var,
-                            test_vars_args *list)
-{
-    int                 rc;
-    test_var_arg       *p;
-    test_var_arg_value *v;
-    char               *refer;
-
-    p = calloc(1, sizeof(*p));
-    if (p == NULL)
-    {
-        ERROR("malloc(%u) failed", sizeof(*p));
-        return ENOMEM;
-    }
-    TAILQ_INIT(&p->values);
-    TAILQ_INSERT_TAIL(list, p, links);
-
-    /* 'name' is mandatory */
-    p->name = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("name")));
-    if (p->name == NULL)
-    {
-        ERROR("Name is required for reffered argument");
-        return EINVAL;
-    }
-
-    /* 'refer' is optional */
-    refer = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("refer")));
-
-    if (is_var)
-    {
-        /* 'handdown' is optional, default value is false */
-        p->handdown = FALSE;
-        rc = get_bool_prop(node, "handdown", &p->handdown);
-        if (rc != 0 && rc != ENOENT)
-            return rc;
-    }
-    else
-    {
-        p->handdown = TRUE;
-    }
-
-    node = xmlNodeChildren(node);
-    if (node != NULL)
-    {
-        ERROR("Unexpected element '%s' in reffered variable/argument",
-              XML2CHAR(node->name));
-        return EINVAL;
-    }
-
-    v = calloc(1, sizeof(*v));
-    if (v == NULL)
-    {
-        ERROR("malloc(%u) failed", sizeof(*v));
-        return ENOMEM;
-    }
-    TAILQ_INIT(&v->reqs);
-    TAILQ_INSERT_TAIL(&p->values, v, links);
-    v->ext = (refer) ? : strdup(p->name);
-    if (v->ext == NULL)
-    {
-        ERROR("strdup(%s) failed", p->name);
-        return ENOMEM;
-    }
-
-    return 0;
-}
-
-/**
  * Allocate and get session variable or run item argument.
  *
  * @param node      Node with simple variable
@@ -1028,9 +948,11 @@ alloc_and_get_refvar_refarg(xmlNodePtr node, te_bool is_var,
 static int
 alloc_and_get_var_arg(xmlNodePtr node, te_bool is_var, test_vars_args *list)
 {
-    xmlNodePtr      root = node;
-    int             rc;
-    test_var_arg   *p;
+    xmlNodePtr          root = node;
+    int                 rc;
+    test_var_arg       *p;
+    char               *ref;
+    char               *value;
 
     p = calloc(1, sizeof(*p));
     if (p == NULL)
@@ -1047,6 +969,11 @@ alloc_and_get_var_arg(xmlNodePtr node, te_bool is_var, test_vars_args *list)
         ERROR("Name is required for simple variable");
         return EINVAL;
     }
+
+    /* 'ref' is optional */
+    ref = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("ref")));
+    /* 'value' is optional */
+    value = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("value")));
 
     if (is_var)
     {
@@ -1070,9 +997,13 @@ alloc_and_get_var_arg(xmlNodePtr node, te_bool is_var, test_vars_args *list)
             return rc;
         node = xmlNodeNext(node);
     }
-    if (p->values.tqh_first == NULL)
+
+    if ((!!ref + !!value + !!(p->values.tqh_first)) > 1)
     {
-        ERROR("Empty list of argument values");
+        ERROR("Too many sources of %s '%s' value: ref=%s value=%s "
+               "values=%s", (is_var) ? "variable" : "argument", p->name,
+               (ref) ? : "(empty)", (value) ? : "(empty)",
+               (p->values.tqh_first) ? "(not empty)" : "(empty)");
         return EINVAL;
     }
 
@@ -1088,6 +1019,33 @@ alloc_and_get_var_arg(xmlNodePtr node, te_bool is_var, test_vars_args *list)
     if (rc != 0)
         return rc;
 
+    if (p->values.tqh_first == NULL)
+    {
+        test_var_arg_value *v;
+
+        v = calloc(1, sizeof(*v));
+        if (v == NULL)
+        {
+            ERROR("malloc(%u) failed", sizeof(*v));
+            return ENOMEM;
+        }
+        TAILQ_INIT(&v->reqs);
+        TAILQ_INSERT_TAIL(&p->values, v, links);
+
+        if (value != NULL)
+        {
+            v->value = value;
+        }
+        else
+        {
+            v->ext = (ref) ? : strdup(p->name);
+            if (v->ext == NULL)
+            {
+                ERROR("strdup(%s) failed", p->name);
+                return ENOMEM;
+            }
+        }
+    }
     return 0;
 }
 
@@ -1129,20 +1087,10 @@ get_session(xmlNodePtr node, tester_cfg *cfg, test_session *session,
     node = xmlNodeChildren(node);
 
     /* Get information about variables */
-    while (node != NULL)
+    while (node != NULL &&
+           xmlStrcmp(node->name, CONST_CHAR2XML("var")) == 0)
     {
-        if (xmlStrcmp(node->name, CONST_CHAR2XML("var")) == 0)
-        {
-            rc = alloc_and_get_var_arg(node, TRUE, &session->vars);
-        }
-        else if (xmlStrcmp(node->name, CONST_CHAR2XML("refvar")) == 0)
-        {
-            rc = alloc_and_get_refvar_refarg(node, TRUE, &session->vars);
-        }
-        else
-        {
-            break;
-        }
+        rc = alloc_and_get_var_arg(node, TRUE, &session->vars);
         if (rc != 0)
             return rc;
         node = xmlNodeNext(node);
@@ -1386,20 +1334,10 @@ alloc_and_get_run_item(xmlNodePtr node, tester_cfg *cfg, unsigned int opts,
     node = xmlNodeNext(node);
     
     /* Get information about arguments */
-    while (node != NULL)
+    while (node != NULL &&
+           xmlStrcmp(node->name, CONST_CHAR2XML("arg")) == 0)
     {
-        if (xmlStrcmp(node->name, CONST_CHAR2XML("arg")) == 0)
-        {
-            rc = alloc_and_get_var_arg(node, FALSE, &p->args);
-        }
-        else if (xmlStrcmp(node->name, CONST_CHAR2XML("refarg")) == 0)
-        {
-            rc = alloc_and_get_refvar_refarg(node, FALSE, &p->args);
-        }
-        else
-        {
-            break;
-        }
+        rc = alloc_and_get_var_arg(node, FALSE, &p->args);
         if (rc != 0)
             return rc;
         node = xmlNodeNext(node);

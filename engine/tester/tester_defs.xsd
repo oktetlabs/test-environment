@@ -313,68 +313,59 @@
                 Possible types of argument elements.
             </documentation>
         </annotation>
-        <choice minOccurs="0" maxOccurs="unbounded">
-            <element name="refarg" type="ReferredArgument">
+        <element name="arg" type="Argument" minOccurs="0"
+                                            maxOccurs="unbounded">
+            <annotation>
+                <documentation>
+                    Arguments to be passed to executable.
+                </documentation>
+            </annotation>
+            <key name="arg_values">
                 <annotation>
                     <documentation>
-                        Argument referred to session variable
-                        to be passed to executable.
+                        Define key to refer to values of the
+                        argument.
                     </documentation>
                 </annotation>
-            </element>
-            <element name="arg" type="Argument">
+                <selector xpath="value[@id]">
+                    <annotation>
+                        <documentation>
+                            Select all 'value' elements with 'id'
+                            attribute of the argument.
+                        </documentation>
+                    </annotation>
+                </selector>
+                <field xpath="@id">
+                    <annotation>
+                        <documentation>
+                            Use 'id' attribute as key.
+                        </documentation>
+                    </annotation>
+                </field>
+            </key>
+            <keyref name="arg_preferred" refer="arg_values">
                 <annotation>
                     <documentation>
-                        Arguments to be passed to executable.
+                        Define that 'preferred' attribute of the
+                        current element must be a reference to
+                        one of its values.
                     </documentation>
                 </annotation>
-                <key name="arg_values">
-                    <annotation>
-                        <documentation>
-                            Define key to refer to values of the
-                            argument.
-                        </documentation>
-                    </annotation>
-                    <selector xpath="value[@id]">
-                        <annotation>
-                            <documentation>
-                                Select all 'value' elements with 'id'
-                                attribute of the argument.
-                            </documentation>
-                        </annotation>
-                    </selector>
-                    <field xpath="@id">
-                        <annotation>
-                            <documentation>
-                                Use 'id' attribute as key.
-                            </documentation>
-                        </annotation>
-                    </field>
-                </key>
-                <keyref name="arg_preferred" refer="arg_values">
-                    <annotation>
-                        <documentation>
-                            Define that 'preferred' attribute of the
-                            current element must be a reference to
-                            one of its values.
-                        </documentation>
-                    </annotation>
-                    <selector xpath="."/>
-                    <field    xpath="@preferred"/>
-                </keyref>
-                <keyref name="arg_value_refer" refer="vars">
-                    <annotation>
-                        <documentation>
-                            If 'ref' attribute is defined for 'value'
-                            child element, it must refer to one of
-                            variables.
-                        </documentation>
-                    </annotation>
-                    <selector xpath="value[@ref]"/>
-                    <field    xpath="@ref"/>
-                </keyref>
-            </element>
-        </choice>
+                <selector xpath="."/>
+                <field    xpath="@preferred"/>
+            </keyref>
+            <keyref name="arg_value_refer" refer="vars">
+                <annotation>
+                    <documentation>
+                        If 'ref' attribute is defined for 'value'
+                        child element, it must refer to one of
+                        variables.
+                    </documentation>
+                </annotation>
+                <selector xpath="value[@ref]"/>
+                <field    xpath="@ref"/>
+            </keyref>
+        </element>
     </group>
 
     <attributeGroup name="RunItemAttributes">
@@ -531,72 +522,64 @@
             </documentation>
         </annotation>
         <sequence>
-            <choice minOccurs="0" maxOccurs="unbounded">
-                <annotation>
-                    <documentation>
-                        Set of session variables.
-                    </documentation>
-                </annotation>
-                <element name="refvar" type="ReferredVariable"/>
-                <element name="var" type="Variable">
-                    <key name="vars">
+            <element name="var" type="Variable" minOccurs="0"
+                                                maxOccurs="unbounded">
+                <key name="vars">
+                    <annotation>
+                        <documentation>
+                            Define key to refer to session variables.
+                        </documentation>
+                    </annotation>
+                    <selector xpath="../*[self::var]">
                         <annotation>
                             <documentation>
-                                Define key to refer to session variables.
+                                Select all 'var' children of the session.
                             </documentation>
                         </annotation>
-                        <selector xpath="../*[self::refvar or self::var]">
-                            <annotation>
-                                <documentation>
-                                    Select all 'refvar' and 'var' children
-                                    of the session.
-                                </documentation>
-                            </annotation>
-                        </selector>
-                        <field xpath="@name">
-                            <annotation>
-                                <documentation>
-                                    Use 'name' attribute as key.
-                                </documentation>
-                            </annotation>
-                        </field>
-                    </key>
-                    <key name="var_values">
+                    </selector>
+                    <field xpath="@name">
                         <annotation>
                             <documentation>
-                                Define key to refer to values of the
-                                variable.
+                                Use 'name' attribute as key.
                             </documentation>
                         </annotation>
-                        <selector xpath="value[@id]">
-                            <annotation>
-                                <documentation>
-                                    Select all 'value' elements with 'id'
-                                    attribute of the variable.
-                                </documentation>
-                            </annotation>
-                        </selector>
-                        <field xpath="@id">
-                            <annotation>
-                                <documentation>
-                                    Use 'id' attribute as key.
-                                </documentation>
-                            </annotation>
-                        </field>
-                    </key>
-                    <keyref name="var_preferred_value" refer="var_values">
+                    </field>
+                </key>
+                <key name="var_values">
+                    <annotation>
+                        <documentation>
+                            Define key to refer to values of the
+                            variable.
+                        </documentation>
+                    </annotation>
+                    <selector xpath="value[@id]">
                         <annotation>
                             <documentation>
-                                Define that 'preferred' attribute of the
-                                current element must be a reference to
-                                one of its values.
+                                Select all 'value' elements with 'id'
+                                attribute of the variable.
                             </documentation>
                         </annotation>
-                        <selector xpath="."/>
-                        <field    xpath="@preferred"/>
-                    </keyref>
-                </element>
-            </choice>
+                    </selector>
+                    <field xpath="@id">
+                        <annotation>
+                            <documentation>
+                                Use 'id' attribute as key.
+                            </documentation>
+                        </annotation>
+                    </field>
+                </key>
+                <keyref name="var_preferred_value" refer="var_values">
+                    <annotation>
+                        <documentation>
+                            Define that 'preferred' attribute of the
+                            current element must be a reference to
+                            one of its values.
+                        </documentation>
+                    </annotation>
+                    <selector xpath="."/>
+                    <field    xpath="@preferred"/>
+                </keyref>
+            </element>
             <element name="exception" type="InheritableExecutable"
                                       minOccurs="0">
                 <annotation>
