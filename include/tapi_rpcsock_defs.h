@@ -2135,7 +2135,7 @@ win_error_h2rpc(int win_err)
 {
     switch (win_err)
     {
-        0: return 0;
+        case 0: return 0;
         H2RPC(WSAEACCES);
         H2RPC(WSAEFAULT);
         H2RPC(WSAEINVAL);
