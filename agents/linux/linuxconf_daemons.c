@@ -282,6 +282,9 @@ daemon_get(unsigned int gid, const char *oid, char *value)
         }
         /* Fall through to daemon_get() */
     }
+
+    if (strcmp(daemon_name, "qmail") == 0)
+        daemon_name = "qmail-send";
     
     sprintf(buf, "killall -CONT %s >/dev/null 2>&1", daemon_name);
     if (ta_system(buf) == 0)
@@ -2258,9 +2261,6 @@ exim_smarthost_set(te_bool enable)
 /** qmail configuration location */
 #define QMAIL_CONF_DIR   "/var/qmail/control/"
 
-/** Smarthost option */
-#define QMAIL_SMARTHOST_OPT  ":te_tester\n"
-
 static int qmail_index = -1;
 
 /** Check if ost option presents in the postfix configuration file */
@@ -2281,7 +2281,7 @@ qmail_smarthost_get(te_bool *enable)
     *enable = 0;
     while (fgets(buf, sizeof(buf), f) != NULL)
     {
-        if (strcmp(buf, QMAIL_SMARTHOST_OPT) == 0)
+        if (*buf == ':')
         {
             *enable = 1;
             break;
@@ -2293,7 +2293,7 @@ qmail_smarthost_get(te_bool *enable)
 
 /** Enable/disable smarthost option in the qmail configuration file */
 static int
-qmail_smarthost_set(te_bool enable)
+qmail_smarthost_set(te_bool enable, const char *relay)
 {
     FILE *g = NULL;
     int   rc;
@@ -2314,7 +2314,7 @@ qmail_smarthost_set(te_bool enable)
 
     if (enable != 0)
     {
-        fputs(QMAIL_SMARTHOST_OPT, g);
+        fprintf(g, ":[%s]\n", relay);
     }
     fclose(g);
     
@@ -2427,7 +2427,7 @@ ds_smtp_smarthost_set(unsigned int gid, const char *oid,
     }
     else if (strcmp(smtp_current, "qmail") == 0)
     {
-        if ((rc = qmail_smarthost_set(addr != 0)) != 0)
+        if ((rc = qmail_smarthost_set(addr != 0, new_host)) != 0)
             goto error;
     }
     else
@@ -2507,7 +2507,7 @@ ds_smtp_server_set(unsigned int gid, const char *oid, const char *value)
                 else if (strcmp(smtp_servers[i], "exim") == 0)
                     rc = exim_smarthost_set(FALSE);
                 else if (strcmp(smtp_servers[i], "qmail") == 0)
-                    rc = qmail_smarthost_set(FALSE);
+                    rc = qmail_smarthost_set(FALSE, "");
                 
                 if (rc != 0)
                     return rc;
