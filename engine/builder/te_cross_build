@@ -36,7 +36,7 @@ PREFIX=$1
 DUMMY=
 
 for p in ${TE_BS_PLATFORMS} ; do
-    PLATFORM=`echo $p | sed s/_/-/g`
+    PLATFORM=`eval echo '$'${p}'_PLATFORM'`
     mkdir -p $TE_INSTALL/$PLATFORM
     if test $PLATFORM = $host ; then continue ; fi
     LIBS=`eval echo '$'${p}'_LIBS'`

@@ -36,6 +36,7 @@ all: install
 
 install-data-hook:
 	mkdir -p $(DESTDIR)/$(prefix)/@host@
+	mkdir -p $(DESTDIR)/$(prefix)/agents
 	for i in $(include_HEADERS) ; do \
 	    touch -c -r $(srcdir)/$$i $(DESTDIR)/$(prefix)/include/$$i ; \
 	done

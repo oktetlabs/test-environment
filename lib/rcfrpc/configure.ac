@@ -29,7 +29,7 @@ AC_ARG_VAR(TE_CPPFLAGS)
 AC_ARG_VAR(TE_CFLAGS)
 AC_ARG_VAR(TE_LDFLAGS)
 
-RPC_XFILE=${TE_BASE}/agents/${with_ta}/tarpc.x.m4
+RPC_XFILE=${srcdir}/../../agents/${with_ta}/tarpc.x.m4
 AC_SUBST(RPC_XFILE)
 
 AM_CONFIG_HEADER(config.h)

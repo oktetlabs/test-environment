@@ -46,6 +46,7 @@ fi
 
 SUITE=$1
 SOURCES=$2
+FROM_MAKEFILE=$3
   
 if test "${SOURCES:0:1}" != "/" ; then 
     if test -z ${TE_BASE} ; then
@@ -73,10 +74,6 @@ else
     cd $SOURCES
 fi
 
-if test -z "$TE_INSTALL_SUITE" ; then
-    TE_INSTALL_SUITE=${TE_INSTALL}/suites
-fi    
-
 if test ! -e Makefile ; then 
     echo "${SOURCES}/configure -q --prefix=${TE_INSTALL_SUITE}"
     TE_INSTALL=${TE_INSTALL} \
@@ -87,10 +84,15 @@ if test ! -e Makefile ; then
 fi
 make install || exit 1 
 
+if test "${FROM_MAKEFILE}" = "yes" ; then
+    exit 0
+fi    
+
 # Now upgrade dynamic builder.conf
 if test -n "${TE_BUILD}" ; then
    if ! cat ${TE_BUILD}/conf/builder.conf | grep -q "TE_SUITE("${SUITE}")" ; then 
        echo "TE_SUITE("${SUITE}")" >> ${TE_BUILD}/conf/builder.conf
+       echo TE_BS_SUITES+=$SUITE >> ${TE_BUILD}/suites/Makefile.suites
    fi
 fi   
 

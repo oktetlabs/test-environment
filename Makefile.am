@@ -28,14 +28,12 @@
 AUTOMAKE_OPTIONS = foreign 
 
 host=@host@
-TA_REMOTE_SUBDIRS=@TA_REMOTE_SUBDIRS@
 
 SUBDIRS=include doc lib tools engine agents suites
-DIST_SUBDIRS=$(SUBDIRS) @SUITE_SUBDIR@
 
 mybindir=$(prefix)/$(host)/bin
 
-mybin_SCRIPTS=dispatcher.sh host_name.sh
+mybin_SCRIPTS=dispatcher.sh 
 
 EXTRA_DIST=dispatcher.sh conf
 
@@ -50,17 +48,16 @@ EXTRA_DIST+=@SUITE_SCRIPTS_EXTRA_DIST@
 
 endif
 
-host_name.sh:
-	echo 'echo ' @host@ > host_name.sh
-	chmod a+x host_name.sh
+DISTCLEANFILES=builder.conf.processed 
 
-DISTCLEANFILES=builder.conf.processed host_name.sh
+all: install-data
 
 te: install-data
-	cd include ; make install 
+	. builder.conf.processed 
+	cd include ; make install
 	cd lib ; make install 
-	te_build_nuts nutlibs 
-	cd tools ; make install 
+	te_build_nuts nutlibs
+	cd tools ; make install
 	cd engine ; make install
 	cd agents ; make install
 	te_cross_build $(prefix)

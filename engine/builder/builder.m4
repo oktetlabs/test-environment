@@ -72,6 +72,7 @@ eval `echo ${PLATFORM_NAME}_PARMS=\"$2\"`
 eval `echo ${PLATFORM_NAME}_CFLAGS=\"$3\"`
 eval `echo ${PLATFORM_NAME}_LDFLAGS=\"$4\"`
 eval `echo ${PLATFORM_NAME}_LIBS=\"$5\"`
+eval `echo ${PLATFORM_NAME}_PLATFORM=$PLATFORM`
 ])
 
 dnl Specifies additional parameters to be passed to configure script of the

@@ -17,6 +17,8 @@ EXTRA_DIST=tarpc.x.m4
 
 noinst_HEADERS=linux_rpc.h linux_rpc_log.h
 
+CLEANFILES=symtbl.c
+
 if CFG_RCF_RPC
 
 SUBDIRS = libltdl
@@ -26,7 +28,7 @@ MY_SOURCES+=linux_rpc.c tarpc_server.c
 MY_NODIST_SOURCES=tarpc_xdr.c tarpc_svc.c
 MY_SYMTBL_OBJECTS+=linux_rpc.o tarpc_server.o
 
-CLEANFILES=tarpc.h 
+CLEANFILES+=tarpc.h tarpc_xdr.c tarpc_svc.c 
 
 linux_rpc.o tarpc_server.o: tarpc.h
 
@@ -90,7 +92,11 @@ talinuxtmpl_DEPENDENCIES=@TE_DEPENDENCIES@ symtbl.o \
     $(DESTDIR)/$(prefix)/../@host@/lib/libloggerta.a
 
 symtbl.o: $(MY_SYMTBL_OBJECTS) @TE_DEPENDENCIES@
-	te_generate_symtbl "${NM}" symtbl.c $^ 
+	if test -e $(DESTDIR)/$(prefix)/../@host@/bin/te_generate_symtbl ; then \
+            $(DESTDIR)/$(prefix)/../@host@/bin/te_generate_symtbl "${NM}" symtbl.c $^ ; \
+        else \
+            te_generate_symtbl "${NM}" symtbl.c $^ ; \
+        fi
 	${CC} -c -o $@ symtbl.c
 
 install-exec-hook:

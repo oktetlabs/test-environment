@@ -35,10 +35,6 @@ if test -e builder.conf.processed ; then
     . builder.conf.processed
 fi    
 
-if test -z "${TE_INSTALL_NUT}" ; then 
-    TE_INSTALL_NUT=${TE_INSTALL}/nuts ; 
-fi ; 
-
 mkdir -p ${TE_INSTALL_NUT} 
 
 if test -z "${NUT_SOURCES}" ; then

@@ -17,6 +17,8 @@ EXTRA_DIST=tarpc.x.m4
 
 noinst_HEADERS=win32_rpc.h win32_rpc_log.h
 
+CLEANFILES=symtbl.c
+
 if CFG_RCF_RPC
 
 MY_CPPFLAGS+=-DRCF_RPC -I.
@@ -25,7 +27,7 @@ MY_NODIST_SOURCES=tarpc_xdr.c tarpc_svc.c
 MY_LDADD+=-lrpc -lws2_32 -lcygwin
 MY_SYMTBL_OBJECTS+=win32_rpc.o tarpc_server.o
 
-CLEANFILES=tarpc.h tarpc_xdr.c tarpc_svc.c
+CLEANFILES+=tarpc.h tarpc_xdr.c tarpc_svc.c 
 
 win32_rpc.o tarpc_server.o: tarpc.h
 

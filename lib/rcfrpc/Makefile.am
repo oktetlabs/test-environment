@@ -12,7 +12,7 @@ lib_LIBRARIES=librcfrpc.a
 
 librcfrpc_a_SOURCES=rcf_rpc.c tarpc_xdr.c
 
-CLEANFILES=tarpc.x tarpc.h
+CLEANFILES=tarpc.x tarpc.h tarpc_xdr.c
 
 rcf_rpc.o: tarpc.h
 

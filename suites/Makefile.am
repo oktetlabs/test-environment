@@ -27,10 +27,18 @@
 
 AUTOMAKE_OPTIONS = foreign 
 
+ include Makefile.suites
+ 
+DIST_SUBDIRS=$(TE_BS_SUITES) 
+
+DISTCLEANFILES=Makefile.suites
+
 all:
 	. ../builder.conf.processed ; \
         cd $${TE_BUILD} ; \
         for i in $${TE_BS_SUITES} ; do \
-            te_build_suite $$i $${TE_BASE}/$$i || exit 1 ; \
+            $${TE_INSTALL}/$(host)/bin/te_build_suite $$i $${TE_BASE}/suites/$$i yes || exit 1 ; \
         done
 
+uninstall-hook:
+	. ../builder.conf.processed ; rm -rf $${TE_INSTALL_SUITE}

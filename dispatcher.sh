@@ -260,12 +260,6 @@ if test -z "$TE_BASE" -a -n "$BUILDER" ; then
 fi
 
 
-if test -x ${DISPATCHER_DIR}/host_name.sh ; then
-    HOST=`${DISPATCHER_DIR}/host_name.sh` ;
-else
-    HOST=`${TE_BASE}/aux/config.guess` ;
-fi
-
 if test -n "$BUILDER" ; then
     # Verifiing build directory
     if test -e dispatcher.sh -a -e configure.ac ; then
@@ -292,6 +286,7 @@ export TE_LOG_DIR=${TE_LOG_DIR}
 mkdir -p ${TE_LOG_DIR}
 
 # Export TE_INSTALL
+TE_PATH=
 if test -z "$TE_INSTALL" ; then
     if test -e $DISPATCHER_DIR/configure.ac ; then
         if test -n "${TE_BUILD}" ; then
@@ -300,8 +295,8 @@ if test -z "$TE_INSTALL" ; then
             TE_INSTALL=$DISPATCHER_DIR/build/inst
         fi
     else
-        TMP=${DISPATCHER_DIR/\/bin/}
-        TE_INSTALL=${TMP/\/$HOST/}
+        TE_PATH=`dirname ${DISPATCHER_DIR}`
+        TE_INSTALL=`dirname ${TE_PATH}`
     fi
     if test -z "${QUIET}" ; then
         echo "Exporting TE installation directory as TE_INSTALL:"
@@ -310,6 +305,41 @@ if test -z "$TE_INSTALL" ; then
     export TE_INSTALL ;
 fi
 
+if test -z "${TE_PATH}" ; then
+    TMP=`find . ${TE_INSTALL} -name dispatcher.sh 2>/dev/null`
+    if test -n "${TMP}" ; then
+        TE_PATH=`dirname ${TMP}`
+    fi
+fi    
+
+if test -z "${TE_PATH}" ; then
+    if test -e ${CONF_BUILDER} ; then
+        TMP=`cat ${CONF_BUILDER} | grep TE_HOST`
+        TMP=`echo 'changequote([,]) define([TE_HOST], [host=$1])' "${TMP}" | m4 | grep 'host=' | tail -n 1`
+        eval $TMP
+    fi
+    if test -z "${host}" ; then
+        CONFIG_GUESS=`find /usr/share/automake* -name config.guess | tail -n 1` 
+        host=`$CONFIG_GUESS` 
+    fi        
+    if test -z "$host" ; then
+        echo 'Cannot determine host platform.'
+        rm -f ${LOCK_DIR}/ds
+        rm -rf ${TE_TMP}
+        exit 1
+    fi
+    TE_PATH=${TE_INSTALL}/${host}
+fi
+
+# Export PATH
+if test -z "${QUIET}" ; then
+    echo "Exporting path to host executables:"
+    echo "    ${TE_PATH}/bin"
+fi
+export PATH=$PATH:${TE_PATH}/bin ;
+export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${TE_PATH}/lib
+
+
 if test -z "$TE_INSTALL_NUT" ; then
     export TE_INSTALL_NUT=${TE_INSTALL}/nuts
 fi
@@ -317,14 +347,6 @@ fi
 if test -z "$TE_INSTALL_SUITE" ; then
     export TE_INSTALL_SUITE=${TE_INSTALL}/suites
 fi
-
-# Export PATH
-if test -z "${QUIET}" ; then
-    echo "Exporting path to host executables:"
-    echo "    ${TE_INSTALL}/$HOST/bin"
-fi
-export PATH=$PATH:${TE_INSTALL}/$HOST/bin ;
-export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${TE_INSTALL}/$HOST/lib
 
 TMP=`which te_log_init 2>/dev/null` ;
 if test -z "$TMP" ; then
@@ -358,9 +380,7 @@ if test -n "$BUILDER" ; then
         fi
         cd $CURRDIR
     done    
-    cd $TE_BUILD
-    mkdir -p conf
-    cp -f ${CONF_DIR}/* conf/
+    cd ${TE_BUILD}
     # FINAL ${TE_BASE}/configure --prefix=${TE_INSTALL} --with-config=${CONF_BUILDER} 2>&1 | te_builder_log
     if test -n "${QUIET}" ; then
         ${TE_BASE}/configure -q --prefix=${TE_INSTALL} \
@@ -372,6 +392,7 @@ if test -n "$BUILDER" ; then
         make te || exit_with_log ;
     fi
 fi
+
 
 if test -n "${SUITE_SOURCES}" -a -n "${BUILD_TS}" ; then
     te_build_suite `basename ${SUITE_SOURCES}` $SUITE_SOURCES || exit_with_log

@@ -32,12 +32,14 @@ AC_CONFIG_AUX_DIR(aux)
 
 AM_INIT_AUTOMAKE([foreign -Wall])
 
+if test "$no_create" = "yes" ; then
+    exit 0;
+fi    
+
 AC_PROG_INSTALL
 
-if test -z "$TE_BASE" ; then
-    CONFIGURE=`which $0` ;
-    export TE_BASE=${CONFIGURE/\/configure/} ;
-fi
+CONFIGURE=`which $0` ;
+TE_BASE=`dirname $CONFIGURE` 
 
 AC_CANONICAL_HOST
 
@@ -46,6 +48,8 @@ TE_BUILD=`pwd`
 if test "$prefix" = "NONE" ; then
     prefix=/usr/local ;
 fi    
+
+TE_INSTALL=$prefix
 
 # Put initial values to control variables
 
@@ -65,6 +69,17 @@ TE_BS_APP="builder rcf logger tester configurator"
 # List of Test Agents
 TE_BS_TA=
 
+# List of suites
+TE_BS_SUITES=
+
+if test -z "${TE_INSTALL_NUT}" ; then 
+    TE_INSTALL_NUT=${TE_INSTALL}/nuts ; 
+fi ; 
+
+if test -z "$TE_INSTALL_SUITE" ; then
+    TE_INSTALL_SUITE=${TE_INSTALL}/suites
+fi    
+
 # Parse configuration file
 echo TE_BASE=$TE_BASE > ${TE_BUILD}/builder.conf.processed.new
 echo TE_BUILD=$TE_BUILD >> ${TE_BUILD}/builder.conf.processed.new
@@ -73,8 +88,17 @@ echo TE_INSTALL_NUT=$TE_INSTALL_NUT >> ${TE_BUILD}/builder.conf.processed.new
 echo TE_INSTALL_SUITE=$TE_INSTALL_SUITE >> ${TE_BUILD}/builder.conf.processed.new
 echo host=$host >> ${TE_BUILD}/builder.conf.processed.new
 
-if test "$no_create" = "yes" ; then
-    exit 0;
+
+if test -z "$with_config" -a -e ${srcdir}/conf/builder.conf ; then
+    # Called from make distcheck
+    with_config=${srcdir}/conf/builder.conf
+fi    
+
+if test -n "$with_config" ; then
+    if ! test -e ${srcdir}/conf ; then
+        cp -pR `dirname $with_config` .
+        rm -rf conf/.svn
+    fi
 fi    
 
 if test -n "$with_config" ; then
@@ -125,7 +149,7 @@ mkdir -p lib
 LIB_SUBDIRS=
 LIB_DIST_SUBDIRS=
 for p in ${TE_BS_PLATFORMS} ; do
-    PLATFORM=`echo $p | sed s/_/-/g`
+    PLATFORM=`eval echo '$'${p}'_PLATFORM'`
     LIBS=`eval echo '$'${p}'_LIBS'`
     for package in $LIBS ; do
         PKGNAME=${p}_$package
@@ -199,15 +223,11 @@ done
 AC_SUBST(SUITE_SCRIPTS_EXTRA_DIST)
 AC_SUBST(SUITE_SCRIPTS)
 
-if test -n "$SUITE_SOURCES" ; then
-    SUITE_SUBDIR=suites
-else
-    SUITE_SUBDIR=
-fi    
-AC_SUBST(SUITE_SUBDIR)
-
 AC_SUBST(TE_BS_NUTS)
 AC_SUBST(TE_BS_NUTLIBS)
+
+mkdir -p ${TE_BUILD}/suites
+echo "TE_BS_SUITES=$TE_BS_SUITES" > ${TE_BUILD}/suites/Makefile.suites
 
 AC_CONFIG_FILES(Makefile include/Makefile lib/Makefile 
                 engine/Makefile tools/Makefile agents/Makefile suites/Makefile)
