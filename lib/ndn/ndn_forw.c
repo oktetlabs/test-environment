@@ -236,6 +236,30 @@ int
 ndn_forw_delay_to_plain(const asn_value *val, ndn_forw_delay_t *forw_delay)
 {
     int rc = 0;
+    int d_len; 
+
+    if (val == NULL || forw_delay == NULL) 
+        return EINVAL;
+
+    d_len = sizeof (forw_delay->type);
+    rc = asn_read_value_field(val, &(forw_delay->type), &d_len, "type");
+
+    if (rc)
+        return rc;
+    if (forw_delay->type == 0)
+        return 0;
+
+    d_len = sizeof (forw_delay->delay_min);
+    rc = asn_read_value_field(val, &(forw_delay->delay_min), &d_len, 
+                                    "delay_min.#plain"); 
+    if (rc)
+        return rc;
+
+    d_len = sizeof (forw_delay->delay_max);
+    rc = asn_read_value_field(val, &(forw_delay->delay_max), &d_len, 
+                                    "delay_max.#plain"); 
+    if (rc)
+        return rc;
 
     return rc;
 }
@@ -253,6 +277,27 @@ int
 ndn_forw_band_to_plain(const asn_value *val, ndn_forw_band_t *forw_band)
 {
     int rc = 0;
+    int d_len;
+
+    if (val == NULL || forw_band == NULL) 
+        return EINVAL;
+
+    d_len = sizeof (forw_band->type);
+    rc = asn_read_value_field(val, &(forw_band->type), &d_len, "type"); 
+    if (rc)
+        return rc;
+    if (forw_band->type == 0)
+        return 0;
+
+    d_len = sizeof (forw_band->bss);
+    rc = asn_read_value_field(val, &(forw_band->bss), &d_len, "bss.#plain"); 
+    if (rc)
+        return rc;
+
+    d_len = sizeof (forw_band->buf_size);
+    rc = asn_read_value_field(val, &(forw_band->buf_size), &d_len, "buf-size.#plain"); 
+    if (rc)
+        return rc;
 
     return rc;
 }
@@ -271,7 +316,7 @@ ndn_forw_reorder_to_plain(const asn_value *val, ndn_forw_reorder_t *forw_reorder
 {
     int rc = 0;
 
-    return rc;
+    return EASNINCOMPLVAL; /* unsupported, imitate absent */
 }
 
 /** 
@@ -288,7 +333,7 @@ ndn_forw_drop_to_plain(const asn_value *val, ndn_forw_drop_t *forw_drop)
 {
     int rc = 0;
 
-    return rc;
+    return EASNINCOMPLVAL; /* unsupported, imitate absent */
 }
 
 /** 
