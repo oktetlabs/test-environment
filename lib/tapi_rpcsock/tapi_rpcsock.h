@@ -502,12 +502,19 @@ rpc_wsa_event_select(rcf_rpc_server *handle,
  *
  * @return value returned by WSAEnumNetworkEvents() function
  */
-extern int 
-rpc_enum_network_events(rcf_rpc_server *handle,
-                        int s, rpc_wsaevent event_object, 
-                        rpc_network_event *event);
+extern int rpc_enum_network_events(rcf_rpc_server *handle,
+                                  int s, rpc_wsaevent event_object, 
+                                  rpc_network_event *event);
 
-/** WSAWaitForMultipleEvents() */
+/** Return codes for rpc_wait_multiple_events */
+enum {
+    WSA_WAIT_FAILED,
+    WSA_IO_COMPLETION,
+    WSA_WAIT_TIMEOUT,
+    WSA_WAIT_EVENT
+};
+
+/** WSAWaitForMultipleEvents(), returns -1 if timeout expires */
 extern int rpc_wait_multiple_events(rcf_rpc_server *handle,
                                     int count, rpc_wsaevent *events, 
                                     te_bool wait_all, uint32_t timeout, 

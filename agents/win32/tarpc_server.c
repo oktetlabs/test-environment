@@ -2849,6 +2849,24 @@ TARPC_FUNC(wait_multiple_events, {},
                                            in->wait_all,
                                            in->timeout,
                                            in->alertable));
+    switch (out->retval)
+    {
+        case WSA_WAIT_FAILED: 
+            out->retval = TARPC_WSA_WAIT_FAILED;
+            break;
+            
+        case WAIT_IO_COMPLETION:
+            out->retval = TARPC_WAIT_IO_COMPLETION;
+            break; 
+            
+        case WSA_WAIT_TIMEOUT:
+            out->retval = TARPC_WSA_WAIT_TIMEOUT;
+            break;
+            
+        default:
+            out->retval = TARPC_WSA_WAIT_EVENT_0 + 
+                         (out->retval - WSA_WAIT_EVENT_0);
+    }
 }
 )
 

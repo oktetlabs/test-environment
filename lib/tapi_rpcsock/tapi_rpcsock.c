@@ -2017,11 +2017,10 @@ rpc_enum_network_events(rcf_rpc_server *handle,
         if (event != NULL && out.event.event_val != NULL)
             *event = out.event.event_val[0];
     }
-    RING("RPC (%s,%s): enum_network_events(%d, %d, %x) -> (%s) "
+    RING("RPC (%s,%s): enum_network_events(%d, %d, %x) -> %d (%s) "
          "returned event %x",
-         handle->ta, handle->name,
-         s, event_object, event, errno_rpc2str(RPC_ERRNO(handle)),
-         *event); 
+         handle->ta, handle->name, s, event_object, event, out.retval, 
+         errno_rpc2str(RPC_ERRNO(handle)), *event); 
          
     RETVAL_RC(enum_network_events);
 }
@@ -5733,6 +5732,28 @@ rpc_wait_multiple_events(rcf_rpc_server *handle,
          count, events, wait_all ? "true" : "false", timeout, 
          alertable ? "true" : "false", out.retval,
          errno_rpc2str(RPC_ERRNO(handle)));
+
+    if (RPC_CALL_OK)
+    {
+        switch (out.retval)
+        {
+            case TARPC_WSA_WAIT_FAILED: 
+                out.retval = WSA_WAIT_FAILED;
+                break;
+                
+            case TARPC_WAIT_IO_COMPLETION:
+                out.retval = WAIT_IO_COMPLETION;
+                break; 
+                
+            case TARPC_WSA_WAIT_TIMEOUT:
+                out.retval = WSA_WAIT_TIMEOUT;
+                break;
+                
+            default:
+                out.retval = WSA_WAIT_EVENT_0 + 
+                             (out.retval - TARCPC_WSA_WAIT_EVENT_0);
+        }
+    }
     
-    RETVAL_RC(wait_multiple_events);
+    RETVAL_VAL(out.retval, wait_multiple_events);
 }

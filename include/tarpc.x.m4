@@ -1788,6 +1788,15 @@ struct tarpc_get_overlapped_result_out {
 
 
 /* WSAWaitForMultipleEvents */
+
+/** Return codes for rpc_wait_multiple_events */
+enum tarpc_wait_code {
+    TARPC_WSA_WAIT_FAILED,
+    TARPC_WAIT_IO_COMPLETION,
+    TARPC_WSA_WAIT_TIMEOUT,
+    TARPC_WSA_WAIT_EVENT_0
+};
+
 struct tarpc_wait_multiple_events_in {
     struct tarpc_in_arg common; 
     
@@ -1801,7 +1810,7 @@ struct tarpc_wait_multiple_events_in {
 struct tarpc_wait_multiple_events_out {
     struct tarpc_out_arg common;
 
-    int                  retval;
+    tarpc_wait_code      retval;
 };    
 
 program tarpc
