@@ -53,10 +53,10 @@ extern void tarpc_destroy_all();
 int rpcserver_sock;
 
 /** Name of the last started RPC server */
-extern char *rpcserver_name;
+extern const char *rpcserver_name;
 
 /** RPC server entry point */
-void *tarpc_server(void *arg);
+void *tarpc_server(const void *arg);
 
 /** Logging path */
 extern struct sockaddr_un ta_log_addr;

@@ -385,33 +385,6 @@ timespec2str(const struct timespec *tv)
             return (void *)(_retval);                                   \
     } while(0)
 
-/**
- * Set name for socket library.
- *
- * @param ta            Test Agent
- * @param libname       name of the library like "/lib/libc.so.6"
- *
- * @return status code
- */
-int
-rpc_setlibname(const char *ta, const char *libname)
-{
-    int rc;
-    int rc1;
-    
-    if ((ta == NULL) || (libname == NULL))
-        return TE_RC(TE_RCF, EINVAL);
-
-    if ((rc = rcf_ta_call(ta, 0, "setlibname", &rc1, 1, 0,
-                          RCF_STRING, libname)) != 0 ||
-         (rc = rc1) != 0)
-    {
-        ERROR("Failed to set socket library name %s on the TA %s", libname, ta);
-    }
-    
-    return rc;
-}
-
 
 int 
 rpc_socket(rcf_rpc_server *handle,

@@ -102,7 +102,7 @@ int                ta_log_addr_len = sizeof(struct sockaddr_un);
 int rpcserver_sock = -1;
 
 /** Name of the last started RPC server */
-char *rpcserver_name = "";
+const char *rpcserver_name = "";
 
 static srv *srv_list = NULL;
 static char buf[RCF_RPC_MAX_BUF]; 
@@ -377,8 +377,9 @@ sig_handler(int s)
  * @param arg   -1 if the new server is a process or 0 if it's a thread
  */
 void *
-tarpc_server(void *arg)
+tarpc_server(const void *arg)
 {
+    const char         *name = (const char *)arg;
     SVCXPRT            *transp;
     struct sockaddr_un  addr;
 
@@ -386,10 +387,10 @@ tarpc_server(void *arg)
     tarpc_in_arg *in = &arg1;
     
     memset(&arg1, 0, sizeof(arg1));
-    strcpy(arg1.name, (char *)arg);
-    rpcserver_name = (char *)arg;
+    strcpy(arg1.name, name);
+    rpcserver_name = name;
 
-    RPC_LGR_MESSAGE(RING_LVL, "Started %s (PID %d, TID %u)", (char *)arg, 
+    RPC_LGR_MESSAGE(RING_LVL, "Started %s (PID %d, TID %u)", name, 
                     (int)getpid(), (unsigned int)pthread_self());
 
     sigemptyset(&rpcs_received_signals);
@@ -400,7 +401,7 @@ tarpc_server(void *arg)
     memset(&addr, 0, sizeof(addr));
     addr.sun_family = AF_UNIX;
     snprintf(addr.sun_path, sizeof(addr.sun_path),
-             "/tmp/terpcs_%s_%u", (char *)arg, ta_pid);
+             "/tmp/terpcs_%s_%u", name, ta_pid);
 
     pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 

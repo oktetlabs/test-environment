@@ -159,7 +159,9 @@ sockaddr_h2rpc(struct sockaddr *addr, struct tarpc_sa *rpc_addr)
     }
 }
 
-static char *socket_library_name = "/dummy";
+static te_bool dynamic_library_ok = FALSE;
+static char *dynamic_library_name = NULL;
+static void *dynamic_library_handle = NULL;
 
 /**
  * Find the function by its name.
@@ -173,25 +175,24 @@ static char *socket_library_name = "/dummy";
 static int
 find_func(tarpc_in_arg *in, char *name, sock_api_func *func)
 {
-    static void *socklib_handle = NULL;
     static void *libc_handle = NULL;
     
-    if (socklib_handle == NULL)
+    if (!dynamic_library_ok)
     {
-        if ((socklib_handle = dlopen(socket_library_name, RTLD_LAZY)) == NULL)
-        {
-            ERROR("Cannot load shared library %s: %s",
-                  socket_library_name, dlerror());
-            return TE_RC(TE_TA_LINUX, ENOENT);
-        } 
+        ERROR("Invalid dynamic library handle");
+        return TE_RC(TE_TA_LINUX, EINVAL);
+    }
+    if (libc_handle == NULL)
+    {
         if ((libc_handle = dlopen(NULL, RTLD_LAZY)) == NULL)
         {
             ERROR("dlopen() failed for myself: %s", dlerror());
             return TE_RC(TE_TA_LINUX, ENOENT);
-        } 
+        }
     }
     
-    if ((*func = dlsym(socklib_handle, name)) == NULL &&
+    if ((dynamic_library_ok &&
+         (*func = dlsym(dynamic_library_handle, name)) == NULL) &&
         (*func = dlsym(libc_handle, name)) == NULL)
     {
         VERB("Cannot resolve symbol %s in libraries: %s", name, dlerror());
@@ -449,14 +450,54 @@ _##_func##_1_svc(tarpc_##_func##_in *in, tarpc_##_func##_out *out,      \
     return TRUE;                                                        \
 }
 
+
+/*------------------------------- setlibname() -----------------------------*/
+
 /**
  * The routine called via RCF to set the name of socket library.
  */
 int
-setlibname(char *libname)                            
+setlibname(const tarpc_setlibname_in *in)
 {
-    socket_library_name = strdup(libname);
+    const char *libname;
+
+    if (dynamic_library_ok)
+    {
+        ERROR("Dynamic library has already been set to %s",
+              dynamic_library_name);
+        return TE_RC(TE_TA_LINUX, EEXIST);
+    }
+    libname = (in->libname.libname_len == 0) ?
+                  NULL : in->libname.libname_val;
+    if ((dynamic_library_handle = dlopen(libname, RTLD_LAZY)) == NULL)
+    {
+        ERROR("Cannot load shared library %s: %s", libname, dlerror());
+        return TE_RC(TE_TA_LINUX, ENOENT);
+    } 
+    dynamic_library_name = (libname != NULL) ? strdup(libname) : "(NULL)";
+    if (dynamic_library_name == NULL)
+    {
+        ERROR("strdup(%s) failed", libname ? : "(nil)");
+        return TE_RC(TE_TA_LINUX, ENOMEM);
+    }
+    dynamic_library_ok = TRUE;
     return 0;
+}
+
+bool_t
+_setlibname_1_svc(tarpc_setlibname_in *in, tarpc_setlibname_out *out,
+                 struct svc_req *rqstp)
+{
+    UNUSED(rqstp);
+    memset(out, 0, sizeof(*out));
+    VERB("PID=%d TID=%d: Entry %s",
+         (int)getpid(), (int)pthread_self(), "setlibname");
+
+    errno = 0;
+    out->retval = setlibname(in);
+    out->common._errno = RPC_ERRNO;
+    out->common.duration = 0;
+    return TRUE;
 }
 
 /*--------------------------------- fork() ---------------------------------*/
@@ -490,14 +531,48 @@ TARPC_FUNC(pthread_cancel, {}, { MAKE_CALL(out->retval = func(in->tid)); })
 void
 tarpc_init(int argc, char **argv)
 {
+    const char *name = argv[2];
+    const char *pid = argv[3];
+    const char *log_addr = argv[4];
+    const char *libname = argv[5];
+
+    tarpc_setlibname_in  in_local;
+    tarpc_setlibname_in *in = &in_local;
+
+    memset(&in_local, 0, sizeof(in_local));
+
     UNUSED(argc);
-    ta_pid = atoi(argv[3]);
+    ta_pid = atoi(pid);
     memset(&ta_log_addr, 0, sizeof(ta_log_addr));
     ta_log_addr.sun_family = AF_UNIX;
-    strcpy(ta_log_addr.sun_path + 1, argv[4]);
+    strcpy(ta_log_addr.sun_path + 1, log_addr);
     ta_log_addr_s = (struct sockaddr *)&ta_log_addr;
-    setlibname(argv[5]);
-    tarpc_server(argv[2]);
+
+    /* Emulate setlibname() call */
+    if (name == NULL || (strlen(name) >= sizeof(in->common.name)))
+    {
+        ERROR("Invalid RPC server name");
+        return;
+    }
+    strcpy(in->common.name, name);
+    if (libname == NULL)
+    {
+        ERROR("Invalid dynamic library name");
+        return;
+    }
+    if (strcmp(libname, "(NULL)") == 0)
+    {
+        in->libname.libname_len = 0;
+        in->libname.libname_val = NULL;
+    }
+    else
+    {
+        in->libname.libname_len = strlen(libname);
+        in->libname.libname_val = (char *)libname;
+    }
+    setlibname(in);
+
+    tarpc_server(name);
 }
 
 /** 
@@ -521,7 +596,7 @@ _sigreceived_1_svc(tarpc_sigreceived_in *in, tarpc_sigreceived_out *out,
 /*--------------------------------- execve() ---------------------------------*/
 TARPC_FUNC(execve, {}, 
 { 
-    char       *args[7];
+    const char *args[7];
     static char buf[16];
     
     args[0] = my_execname;
@@ -530,7 +605,7 @@ TARPC_FUNC(execve, {},
     sprintf(buf, "%u", ta_pid);
     args[3] = buf;
     args[4] = ta_log_addr.sun_path + 1;
-    args[5] = socket_library_name;
+    args[5] = dynamic_library_name;
     args[6] = NULL;
     
     sleep(1);

@@ -34,17 +34,6 @@
 #include "tapi_rpcsock_defs.h"
 
 
-/**
- * Set name for socket library.
- *
- * @param ta            Test Agent
- * @param libname       name of the library like "/lib/libc.so.6"
- *
- * @return status code
- */
-extern int rpc_setlibname(const char *ta, const char *libname);
-
-
 /*
  * All functions have the same prototype and semantics of parameters
  * and return code as Linux implementation of Berkeley Socket API

@@ -153,6 +153,17 @@ struct tarpc_ssize_t_retval_out {
  * RPC arguments
  */
 
+/* setlibname() */
+
+struct tarpc_setlibname_in {
+    struct tarpc_in_arg common;
+    
+    char libname<>;
+};
+
+typedef struct tarpc_int_retval_out tarpc_setlibname_out;
+
+
 /* socket() */
 
 struct tarpc_socket_in {
@@ -1415,6 +1426,8 @@ changequote([,])
 define([cnt], 1)
 define([counter], [cnt[]define([cnt],incr(cnt))])
 define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
+
+        RPC_DEF(setlibname)
 
         RPC_DEF(fork)
         RPC_DEF(pthread_create)

@@ -190,4 +190,14 @@ rcf_rpc_free_result(void *out_arg, xdrproc_t out_proc)
     out_proc((XDR *)&op, out_arg);
 }
 
+/**
+ * Set dynamic library name to be used for additional name resolution.
+ *
+ * @param rpcs          Existing RPC server handle
+ * @param libname       Name of the dynamic library or NULL
+ *
+ * @return Status code
+ */
+extern int rpc_setlibname(rcf_rpc_server *rpcs, const char *libname);
+
 #endif /* !__RCF_RPC_H__ */
