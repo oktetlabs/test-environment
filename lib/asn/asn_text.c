@@ -403,7 +403,7 @@ asn_impl_pt_enum(const char*text, const asn_type *type,
 
         for (i = 0; i < type->len; i++)
         {
-            if (strncmp(label_buf, type->sp.enum_entries[i].name, p_s) == 0)
+            if (strcmp(label_buf, type->sp.enum_entries[i].name) == 0)
             {
                 p_value = type->sp.enum_entries[i].value;
                 break;
