@@ -238,7 +238,7 @@ rcf_pch_file(struct rcf_comm_connection *conn, char *cbuf, size_t buflen,
                        strlen(RCF_FILE_FTP_PREFIX)) == 0)
     {
         
-        sprintf(fname, "/var/ftp/pub/%s", 
+        sprintf(fname, "/var/ftp/%s", 
                 filename + strlen(RCF_FILE_FTP_PREFIX));
         filename = fname;
     }                
