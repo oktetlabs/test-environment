@@ -1,7 +1,8 @@
 /** @file
  * @brief Test Environment: 
  *
- * Traffic Application Domain Command Handler *
+ * Traffic Application Domain Command Handler
+ *
  * Declarations of types and functions, used in common and 
  * protocol-specific modules implemnting TAD.
  *
@@ -31,9 +32,17 @@
 #ifndef __TE_TAD_H__
 #define __TE_TAD_H__ 
 
+#include "config.h"
+
+#if HAVE_SYS_TIME_H
 #include <sys/time.h>
+#endif
+#if HAVE_UNISTD_H
 #include <unistd.h>
+#endif
+#if HAVE_PTHREAD_H
 #include <pthread.h>
+#endif
 
 #include "te_stdint.h"
 #include "te_errno.h"
@@ -50,55 +59,82 @@ extern "C" {
 /* ============= Macros definitions =============== */
 
 
-/* macros to insert element p into queue _after_ element q */
+/**
+ * Insert element p into queue _after_ element q 
+ *
+ * @param new_    Pointer to new element, to be inserted.
+ * @param place_  Pointer to the element, after which new should be placed.
+ */
 #ifndef INSQUE
-#define INSQUE(p, q) \
-    do { (p)->prev = q; (p)->next = (q)->next; \
-         (q)->next = p; (p)->next->prev = p;   \
+#define INSQUE(new_, place_) \
+    do {                                \
+        (new_)->prev = place_;          \
+        (new_)->next = (place_)->next;  \
+        (place_)->next = new_;          \
+        (new_)->next->prev = new_;      \
     } while(0)
-/* macros to remove element p from queue  */
-#define REMQUE(p) \
-    do { (p)->prev->next = (p)->next; \
-         (p)->next->prev = (p)->prev; \
-         (p)->next = (p)->prev = p;   \
+
+/**
+ * Remove element p from queue (double linked list)
+ *
+ * @param elem_         Pointer to the element to be removed.
+ */
+#define REMQUE(elem_) \
+    do {                                        \
+        (elem_)->prev->next = (elem_)->next;    \
+        (elem_)->next->prev = (elem_)->prev;    \
+        (elem_)->next = (elem_)->prev = elem_;  \
     } while(0)
 #endif
 
 
-#define WRITE_TIMEOUT_DEFAULT   {1, 0}
-#define WRITE_RETRIES           128
+/**
+ * Default timeout for waiting write possibility. This macro should 
+ * be used only for initialization of 'struct timeval' variables. 
+ */
+#define TAD_WRITE_TIMEOUT_DEFAULT   {1, 0}
+/**
+ * Number of retries to 
+ */
+#define TAD_WRITE_RETRIES           128
 
 /**
  * Locks access to CSAP shared flags and data. 
- * If already locked, wait until would be unlocked. 
+ * If already locked, wait until unlocked. 
  *
- * @param _csap_descr   pointer to CSAP descriptor structure. 
+ * @param csap_inst_   Pointer to CSAP instance structure. 
  */
-#define CSAP_DA_LOCK(_csap_descr)                               \
-    do {                                                        \
-        pthread_mutex_lock(&((_csap_descr)->data_access_lock)); \
+#define CSAP_DA_LOCK(csap_inst_)\
+    do {                                                                \
+        int rc = pthread_mutex_lock(&((csap_inst_)->data_access_lock)); \
+        if (rc != 0)                                                    \
+            ERROR("%s: mutex_lock fails %x", __FUNCTION__, rc);         \
     } while (0)
 
 /**
  * Try to lock access to CSAP shared flags and data. 
  * If already locked, sets _rc to EBUSY.
  *
- * @param _csap_descr   pointer to CSAP descriptor structure. 
- * @param _rc           variable for return code.
+ * @param csap_inst_   Pointer to CSAP instance structure. 
+ * @param rc_          Variable for return code.
  */
-#define CSAP_DA_TRYLOCK(_csap_descr, _rc)                              \
-    do {                                                                \
-        (_rc) = pthread_mutex_trylock(&((_csap_descr)->data_access_lock)); \
+#define CSAP_DA_TRYLOCK(csap_inst_, rc_)\
+    do {                                                                  \
+        (rc_) = pthread_mutex_trylock(&((csap_inst_)->data_access_lock)); \
+        if (rc_ != 0)                                                     \
+            RING("%s: mutex_trylock fails %x", __FUNCTION__, rc_);        \
     } while (0)
 
 /**
  * Unlocks access to CSAP shared flags and data. 
  *
- * @param _csap_descr   pointer to CSAP descriptor structure. 
+ * @param _csap_descr   Pointer to CSAP descriptor structure. 
  */
-#define CSAP_DA_UNLOCK(_csap_descr)                               \
-    do {                                                        \
-        pthread_mutex_unlock(&((_csap_descr)->data_access_lock)); \
+#define CSAP_DA_UNLOCK(csap_inst_)\
+    do {                                                                  \
+        int rc = pthread_mutex_unlock(&((csap_inst_)->data_access_lock)); \
+        if (rc != 0)                                                      \
+            ERROR("%s: mutex_unlock fails %x", __FUNCTION__, rc);         \
     } while (0)
 
 
@@ -123,9 +159,6 @@ extern "C" {
  * |||+- wait (valid only for "recv");
  * ||+- received packets requested (valid only for "recv");
  * ++- not used.
- *
- * complete (in background mode, all packets are precessed, wait stop)
- * answer is postponed, that is, operation in blocking mode 
  *
  * CSAP state bits 
  * 00000000
@@ -155,10 +188,16 @@ enum {
 };
 
 
+/**
+ * Type of CSAP: raw or data 
+ */
 typedef enum {
-    TAD_RAW_CSAP = 0,
-    TAD_DATA_CSAP
-} tad_csap_type;
+    TAD_CSAP_RAW = 0, /**< Raw CSAP, which allows full control of 
+                           byte flow */
+    TAD_CSAP_DATA     /**< Data CSAP, which have 'data' prefix in ints 
+                           type string and provides only service
+                           to transport data over some protocol */
+} tad_csap_type_t;
 
 typedef struct csap_instance *csap_p;
 
@@ -166,19 +205,25 @@ typedef struct csap_instance *csap_p;
 
 
 /**
- * template argument iteration enums and structures
+ * Template argument iteration enums and structures
  */ 
 
 
+/** 
+ * Type of iteration argument
+ */
 typedef enum {
-    ARG_INT,
-    ARG_STR,
-    ARG_OCT,
+    ARG_INT, /**< Integer */
+    ARG_STR, /**< Character string */
+    ARG_OCT, /**< Octet array */
 } arg_type_t;
 
+/**
+ * Iteration argument plain C presentation structure
+ */
 typedef struct { 
-    arg_type_t  type;
-    size_t      length;
+    arg_type_t  type;           /**< Type of argument */
+    size_t      length;         /**< Length of argument data */
     union {
         int     arg_int;
         char    *arg_str;
@@ -249,10 +294,10 @@ typedef int (*csap_low_resource_cb_t)(csap_p csap_descr);
 /**
  * Type for reference to callback for read data from media of CSAP. 
  *
- * @param csap_id       identifier of CSAP.
- * @param timeout       timeout of waiting for data in microseconds.
- * @param buf           buffer for read data.
- * @param buf_len       length of available buffer.
+ * @param csap_id       Identifier of CSAP.
+ * @param timeout       Timeout of waiting for data in microseconds.
+ * @param buf           Buffer for read data.
+ * @param buf_len       Length of available buffer.
  *
  * @return  quantity of read octets, or -1 if error occured, 
  *          0 if timeout expired. 
@@ -263,9 +308,9 @@ typedef int (*csap_read_cb_t)(csap_p csap_descr, int timeout,
 /**
  * Type for reference to callback for write data to media of CSAP. 
  *
- * @param csap_id       identifier of CSAP.
- * @param buf           buffer with data to be written.
- * @param buf_len       length of data in buffer.
+ * @param csap_id       Identifier of CSAP.
+ * @param buf           Buffer with data to be written.
+ * @param buf_len       Length of data in buffer.
  *
  * @return 
  *      quantity of written octets, or -1 if error occured. 
@@ -276,12 +321,12 @@ typedef int (*csap_write_cb_t)(csap_p csap_descr, char *buf, int buf_len);
  * Type for reference to callback for write data to media of CSAP and read
  *  data from media just after write, to get answer to sent request. 
  *
- * @param csap_id       identifier of CSAP.
- * @param timeout       timeout of waiting for data in microseconds.
- * @param w_buf         buffer with data to be written.
- * @param w_buf_len     length of data in w_buf.
- * @param r_buf         buffer for data to be read.
- * @param r_buf_len     available length r_buf.
+ * @param csap_id       Identifier of CSAP.
+ * @param timeout       Timeout of waiting for data in microseconds.
+ * @param w_buf         Buffer with data to be written.
+ * @param w_buf_len     Length of data in w_buf.
+ * @param r_buf         Buffer for data to be read.
+ * @param r_buf_len     Available length r_buf.
  *
  * @return quantity of read octets, or -1 if error occured, 
  *         0 if timeout expired. 
@@ -294,7 +339,7 @@ typedef int (*csap_write_read_cb_t)(csap_p csap_descr, int timeout,
  * Type for reference to callback for check sequence of PDUs in template
  * or pattern, and fill absent layers if necessary. 
  *
- * @param csap_descr       identifier of CSAP.
+ * @param csap_descr       Identifier of CSAP.
  * @param pdus             ASN value with Traffic-Template or 
  *                         Traffic-Pattern, which field pdus will 
  *                         be checked to have sequence of PDUs according
@@ -312,7 +357,7 @@ typedef int (*csap_check_pdus_cb_t)(csap_p csap_descr,
  * respective write method to send it. 
  * Method may change data stored at passed location.
  *
- * @param csap_descr    identifier of CSAP
+ * @param csap_descr    Identifier of CSAP
  * @param pkt           Got packet, plain binary data. 
  *
  * @return zero on success or error code.
@@ -323,9 +368,9 @@ typedef int (*csap_echo_method)(csap_p csap_descr, uint8_t *pkt,
 /**
  * Type for reference to callback for init CSAP layer.
  *
- * @param csap_id       identifier of CSAP.
- * @param csap_nds      asn_value with CSAP init parameters
- * @param layer         numeric index of layer in CSAP type to be processed.
+ * @param csap_id       Identifier of CSAP.
+ * @param csap_nds      Asn_value with CSAP init parameters
+ * @param layer         Numeric index of layer in CSAP type to be processed.
  *                      Layers are counted from zero, from up to down.
  *
  * @return zero on success or error code.
@@ -338,8 +383,8 @@ typedef int (*csap_nbr_init_cb_t)(int csap_id,
  *      this layer and all memory used for layer-specific data and pointed
  *      in respective structure in 'layer-data' in CSAP instance struct. 
  *
- * @param csap_id       identifier of CSAP.
- * @param layer         numeric index of layer in CSAP type to be processed.
+ * @param csap_id       Identifier of CSAP.
+ * @param layer         Numeric index of layer in CSAP type to be processed.
  *                      Layers are counted from zero, from up to down.
  *
  * @return zero on success or error code.
@@ -350,8 +395,8 @@ typedef int (*csap_nbr_destroy_cb_t)(int csap_id, int layer);
  * Type for reference to callback for confirm PDU with CSAP parameters and 
  *      possibilities.
  *
- * @param csap_id       identifier of CSAP
- * @param layer         numeric index of layer in CSAP type to be processed.
+ * @param csap_id       Identifier of CSAP
+ * @param layer         Numeric index of layer in CSAP type to be processed.
  * @param tmpl_pdu      asn_value with PDU (IN/OUT)
  *
  * @return zero on success or error code.
@@ -377,13 +422,13 @@ typedef struct csap_pkts
  * Type for reference to callback for generate binary data to be sent 
  * to media.
  *
- * @param csap_id       identifier of CSAP
- * @param layer         numeric index of layer in CSAP type to be processed.
- * @param tmpl_pdu      asn_value with PDU. 
+ * @param csap_id       Identifier of CSAP
+ * @param layer         Numeric index of layer in CSAP type to be processed.
+ * @param tmpl_pdu      Asn_value with PDU. 
  * @param args          Template iteration parameters array, may be used to
  *                      prepare binary data.
  * @param arg_num       Length of array above. 
- * @param up_payload    pointer to data which is already generated for 
+ * @param up_payload    Pointer to data which is already generated for 
  *                      upper layers and is payload for this protocol level.
  *                      May be zero.  Presented as list of packets. 
  *                      Almost always this list will contain only one 
@@ -401,34 +446,34 @@ typedef struct csap_pkts
  *
  * @return zero on success or error code.
  */ 
-typedef int (* csap_gen_bin_cb_t)(int csap_id, int layer,
-                                  const asn_value *tmpl_pdu,
-                                  const tad_template_arg_t *args,
-                                  size_t arg_num,
-                                  csap_pkts_p up_payload,
-                                  csap_pkts_p pkts);
+typedef int (*csap_gen_bin_cb_t)(int csap_id, int layer,
+                                 const asn_value *tmpl_pdu,
+                                 const tad_template_arg_t *args,
+                                 size_t arg_num,
+                                 csap_pkts_p up_payload,
+                                 csap_pkts_p pkts);
 
 /**
  * Type for reference to callback for parse received packet and match it
  * with pattern. 
  *
- * @param csap_id       identifier of CSAP
- * @param layer         numeric index of layer in CSAP type to be processed.
- * @param pattern_pdu   pattern NDS 
- * @param pkt           recevied packet
- * @param payload       rest upper layer payload, if any exists. (OUT)
- * @param parsed_packet caller of method should pass here empty asn_value
+ * @param csap_id       Identifier of CSAP
+ * @param layer         Numeric index of layer in CSAP type to be processed.
+ * @param pattern_pdu   Pattern NDS 
+ * @param pkt           Recevied packet
+ * @param payload       Rest upper layer payload, if any exists. (OUT)
+ * @param parsed_packet Caller of method should pass here empty asn_value
  *                      instance of ASN type 'Generic-PDU'. Callback 
  *                      have to fill this instance with values from 
  *                      parsed and matched packet
  *
  * @return zero on success or error code.
  */
-typedef int (* csap_match_bin_cb_t)(int csap_id, int layer,
-                                    const asn_value *pattern_pdu,
-                                    const csap_pkts *pkt,
-                                    csap_pkts *payload,
-                                    asn_value *parsed_packet);
+typedef int (*csap_match_bin_cb_t)(int csap_id, int layer,
+                                   const asn_value *pattern_pdu,
+                                   const csap_pkts *pkt,
+                                   csap_pkts *payload,
+                                   asn_value *parsed_packet);
 
 
 /**
@@ -436,28 +481,28 @@ typedef int (* csap_match_bin_cb_t)(int csap_id, int layer,
  * just one response to the packet which will be sent by this CSAP 
  * according to this template. 
  *
- * @param csap_id       identifier of CSAP
- * @param layer         numeric index of layer in CSAP type to be processed.
+ * @param csap_id       Identifier of CSAP
+ * @param layer         Numeric index of layer in CSAP type to be processed.
  * @param tmpl_pdu      ASN value with template PDU.
  * @param pattern_pdu   OUT: ASN value with pattern PDU, generated according
  *                      to passed template PDU and CSAP parameters. 
  *
  * @return zero on success or error code.
  */
-typedef int (* csap_gen_pattern_cb_t)(int csap_id, int layer,
-                                      const asn_value *tmpl_pdu, 
-                                      asn_value **pattern_pdu);
+typedef int (*csap_gen_pattern_cb_t)(int csap_id, int layer,
+                                     const asn_value *tmpl_pdu, 
+                                     asn_value **pattern_pdu);
 
 
 typedef struct csap_instance
 {
-    int           id;             /**< CSAP id */
+    int             id;           /**< CSAP id */
 
-    int           depth;          /**< number of layers in stack */
-    char       ** proto;          /**< array of protocol layers labels */
-    void       ** layer_data;     /**< array of pointer to layer-specific 
+    int             depth;        /**< number of layers in stack */
+    char          **proto;        /**< array of protocol layers labels */
+    void          **layer_data;   /**< array of pointer to layer-specific 
                                        data*/
-    tad_csap_type type;
+    tad_csap_type_t type;         /**< Type of CSAP */
 
     csap_get_param_cb_t 
                 * get_param_cb;   /**< array of pointers to callbacks for 
@@ -579,8 +624,8 @@ typedef int (* tad_processing_pkt_method)(const char *usr_param,
 /**
  * Type for reference to user function for generating data to be sent.
  *
- * @param csap_id       identifier of CSAP
- * @param layer         numeric index of layer in CSAP type to be processed.
+ * @param csap_id       Identifier of CSAP
+ * @param layer         Numeric index of layer in CSAP type to be processed.
  * @param tmpl          ASN value with template. 
  *                      function should replace that field (which it should
  *                      generate) with #plain (in headers) or #bytes 
@@ -832,7 +877,7 @@ extern int tad_confirm_pdus(csap_p csap_descr, asn_value *pdus);
 /**
  * Transform payload symbolic type label of ASN choice to enum.
  *
- * @param label         char string with ASN choice label.
+ * @param label         Char string with ASN choice label.
  *
  * @return tad_payload_type enum value.
  */
@@ -844,10 +889,10 @@ extern tad_payload_type tad_payload_asn_label_to_enum(const char *label);
  * Parse textual presentation of expression. Syntax is Perl-like, references
  * to template arguments noted as $1, $2, etc.
  *
- * @param string        text with expression. 
- * @param expr          place where pointer to new expression will 
+ * @param string        Text with expression. 
+ * @param expr          Place where pointer to new expression will 
  *                      be put (OUT).
- * @param syms          quantity of parsed symbols, if syntax error occured,
+ * @param syms          Quantity of parsed symbols, if syntax error occured,
  *                      error position (OUT).  
  *
  * @return status code.
@@ -872,7 +917,7 @@ extern tad_int_expr_t *tad_int_expr_constant_arr(uint8_t *arr, size_t len);
 /**
  * Initialize tad_int_expr_t structure with single constant value.
  *
- * @param n     value.
+ * @param n     Value.
  *
  * @return pointer to new tad_int_expr_r structure.
  */
@@ -886,9 +931,9 @@ extern void tad_int_expr_free(tad_int_expr_t *expr);
 /**
  * Calculate value of expression as function of argument set
  *
- * @param expr          expression structure.
- * @param args          array with arguments.
- * @param result        location for result (OUT).
+ * @param expr          Expression structure.
+ * @param args          Array with arguments.
+ * @param result        Location for result (OUT).
  *
  * @return status code.
  */
@@ -899,7 +944,7 @@ extern int tad_int_expr_calculate(const tad_int_expr_t *expr,
 /**
  * Convert 64-bit integer from network order to the host and vise versa. 
  *
- * @param n     integer to be converted.
+ * @param n     Integer to be converted.
  *
  * @return converted integer
  */
@@ -910,9 +955,9 @@ extern uint64_t tad_ntohll(uint64_t n);
  * Init argument iteration array template arguments specification.
  * Memory block for array assumed to be allocated.
  *
- * @param arg_specs     array of template argument specifications.
- * @param arg_specs_num length of array.
- * @param arg_iterated  array of template arguments (OUT).
+ * @param arg_specs     Array of template argument specifications.
+ * @param arg_specs_num Length of array.
+ * @param arg_iterated  Array of template arguments (OUT).
  *
  * @retval      - positive on success itertaion.
  * @retval      - zero if iteration finished.
@@ -926,9 +971,9 @@ extern int tad_init_tmpl_args(tad_template_arg_spec_t *arg_specs,
 /**
  * Perform next iteration for passed template arguments.
  *
- * @param arg_specs     array of template argument specifications.
- * @param arg_specs_num length of array.
- * @param arg_iterated  array of template arguments (OUT).
+ * @param arg_specs     Array of template argument specifications.
+ * @param arg_specs_num Length of array.
+ * @param arg_iterated  Array of template arguments (OUT).
  *
  * @retval      - positive on success itertaion.
  * @retval      - zero if iteration finished.
@@ -944,9 +989,9 @@ extern int tad_iterate_tmpl_args(tad_template_arg_spec_t *arg_specs,
  * @param arg_set       ASN value of type "SEQENCE OF Template-Parameter",
  *                      which is subvalue with label 'arg-sets' in
  *                      Traffic-Template.
- * @param arg_specs     memory block for arg_spec array. should 
+ * @param arg_specs     Memory block for arg_spec array. should 
  *                      be allocated by user. 
- * @param arg_num       length of arg_spec array, i.e. quantity of
+ * @param arg_num       Length of arg_spec array, i.e. quantity of
  *                      Template-Arguments in template.
  *
  * @return zero on success, otherwise error code. 
@@ -962,8 +1007,8 @@ extern int tad_get_tmpl_arg_specs(const asn_value *arg_set,
  *
  * @param pdu_val       ASN value with pdu, which DATA-UNIT field 
  *                      should be converted.
- * @param label         label of DATA_UNIT field in PDU.
- * @param location      location for converted structure (OUT). 
+ * @param label         Label of DATA_UNIT field in PDU.
+ * @param location      Location for converted structure (OUT). 
  *
  * @return zero on success or error code. 
  */ 
@@ -975,10 +1020,10 @@ extern int tad_data_unit_convert(const asn_value *pdu_val,
  * Constract data-unit structure from specified binary data for 
  * simple per-byte compare. 
  *
- * @param data          binary data which should be compared.
- * @param d_len         length of data.
- * @param location      location of data-unit structure to be 
- *                      initialized (OUT)
+ * @param data          Binary data which should be compared.
+ * @param d_len         Length of data.
+ * @param location      Location of data-unit structure to be 
+ *                      initialized (OUT).
  *
  * @return error status.
  */
@@ -989,7 +1034,7 @@ extern int tad_data_unit_from_bin(const uint8_t *data, size_t d_len,
  * Clear data_unit structure, e.g. free data allocated for internal usage. 
  * Memory block used by data_unit itself is not freed!
  * 
- * @param du    pointer to data_unit structure to be cleared. 
+ * @param du    Pointer to data_unit structure to be cleared. 
  */
 extern void tad_data_unit_clear(tad_data_unit_t *du);
 
@@ -1001,11 +1046,11 @@ extern void tad_data_unit_clear(tad_data_unit_t *du);
  * type, data will be simply compared. If it is integer, data will be
  * converted from "network byte order" to "host byte order" before matching.
  *
- * @param pattern       pattern structure. 
+ * @param pattern       Pattern structure. 
  * @param pkt_pdu       ASN value with parsed packet PDU (OUT). 
- * @param data          binary data to be matched.
- * @param d_len         length of data packet to be matched, in bytes. 
- * @param label         textual label of desired field.
+ * @param data          Binary data to be matched.
+ * @param d_len         Length of data packet to be matched, in bytes. 
+ * @param label         Textual label of desired field.
  *
  * @return zero on success (that means "data matches to the pattern"),
  *              otherwise error code. 

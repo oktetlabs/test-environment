@@ -312,7 +312,7 @@ udp_ip4_init_cb (int csap_id, const asn_value *csap_nds, int layer)
         return TE_RC(TE_TAD_CSAP, rc); 
     }
 
-    if (csap_descr->type == TAD_DATA_CSAP)
+    if (csap_descr->type == TAD_CSAP_DATA)
     {
         /* opening incoming socket */
         udp_spec_data->socket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP); 

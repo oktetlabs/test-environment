@@ -147,7 +147,7 @@ udp_gen_bin_cb(int csap_id, int layer, const asn_value *tmpl_pdu,
     UNUSED(layer); 
     UNUSED(tmpl_pdu); 
 
-    if (csap_descr->type == TAD_DATA_CSAP)
+    if (csap_descr->type == TAD_CSAP_DATA)
     {
         spec_data = (udp_csap_specific_data_t *) 
                             csap_descr->layer_data[layer];

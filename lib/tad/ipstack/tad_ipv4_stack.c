@@ -260,7 +260,7 @@ ip4_single_init_cb (int csap_id, const asn_value *csap_nds, int layer)
     csap_descr->layer_data[layer] = ip4_spec_data;
     csap_descr->get_param_cb[layer] = ip4_get_param_cb;
 
-    if (csap_descr->type == TAD_RAW_CSAP)
+    if (csap_descr->type == TAD_CSAP_RAW)
     {
         /* opening incoming socket */
         ip4_spec_data->socket = socket(AF_INET, SOCK_RAW, IPPROTO_IP); 

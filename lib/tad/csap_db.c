@@ -156,7 +156,7 @@ csap_create(const char *type)
         depth++; 
     }
     else
-        new_csap->type = TAD_DATA_CSAP;
+        new_csap->type = TAD_CSAP_DATA;
 
     for (i = 0; csap_type[i]; i++) 
     {

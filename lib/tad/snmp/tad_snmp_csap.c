@@ -27,9 +27,7 @@
  * @(#) $Id$
  */
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+#include "tad.h"
 
 #define TE_LGR_USER     "TAD SNMP"
 #include "logger_ta.h"

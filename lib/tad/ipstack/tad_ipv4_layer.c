@@ -166,7 +166,7 @@ ip4_gen_bin_cb(int csap_id, int layer, const asn_value *tmpl_pdu,
     UNUSED(arg_num); 
     UNUSED(pkts); 
 
-    if (csap_descr->type == TAD_DATA_CSAP)
+    if (csap_descr->type == TAD_CSAP_DATA)
         return 0;
 
     return TE_RC(TE_TAD_CSAP, ETENOSUPP);

@@ -640,7 +640,7 @@ eth_write_cb(csap_p csap_descr, char *buf, int buf_len)
     eth_csap_specific_data_p spec_data;
     int layer;    
     fd_set write_set;
-    int retries = WRITE_RETRIES;
+    int retries = TAD_WRITE_RETRIES;
 
    
     if (csap_descr == NULL)
@@ -664,10 +664,10 @@ eth_write_cb(csap_p csap_descr, char *buf, int buf_len)
     }
 
 
-    for (retries = 0; ret_val <= 0 && retries < WRITE_RETRIES; retries++)
+    for (retries = 0; ret_val <= 0 && retries < TAD_WRITE_RETRIES; retries++)
     {
         /* TODO: investigate question of write wait timeout */
-        struct timeval wr_timeout = WRITE_TIMEOUT_DEFAULT; 
+        struct timeval wr_timeout = TAD_WRITE_TIMEOUT_DEFAULT; 
     
         FD_ZERO(&write_set);
         FD_SET(spec_data->out, &write_set);
@@ -712,7 +712,7 @@ eth_write_cb(csap_p csap_descr, char *buf, int buf_len)
             }
         } 
     }
-    if (retries == WRITE_RETRIES)
+    if (retries == TAD_WRITE_RETRIES)
     {
         F_ERROR("csap #%d, too many retries made, failed");
         csap_descr->last_errno = ENOBUFS;
