@@ -44,10 +44,16 @@ AC_SUBST([TCL_CFLAGS])
 
 AC_CHECK_LIB([popt], [poptGetContext], 
              ac_cv_lib_popt=yes, ac_cv_lib_popt=no)
-AM_CONDITIONAL(USE_LOCAL_POPT, test x$ac_cv_lib_popt = xno)
+if test "x$ac_cv_lib_popt" = "xno"
+then
+    AC_MSG_ERROR("[RGT utility requires popt library to be installed.]")
+fi
 
 AC_FUNC_OBSTACK
-AM_CONDITIONAL(USE_LOCAL_OBSTACK, test x$ac_cv_func_obstack = xno)
+if test "x$ac_cv_func_obstack" = "xno"
+then
+    AC_MSG_ERROR("[RGT utility requires obstack feature to be installed.]")
+fi
 
 AC_C_BIGENDIAN
 
@@ -99,8 +105,6 @@ struct _xmlSAXHandler.serror \
 
 AC_CONFIG_FILES([Makefile
                  lib/Makefile
-                 lib/obstack/Makefile
-                 lib/popt/Makefile
                  lib/tmpls/Makefile
                  rgt-core/Makefile 
                  rgt-core/rgt-filter-prepare

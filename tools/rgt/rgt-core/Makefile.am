@@ -26,23 +26,8 @@
 
 SUBDIRS = .
 
-if USE_LOCAL_OBSTACK
-OBSTACK_CPPFLAGS = -I$(top_srcdir)/lib/obstack
-OBSTACK_LDADD = -L$(top_builddir)/lib/obstack -lobstack
-else
-OBSTACK_CPPFLAGS =
-OBSTACK_LDADD = 
-endif
-
-if USE_LOCAL_POPT
-POPT_CPPFLAGS = -I$(top_srcdir)/lib/popt
-POPT_LDADD = -L$(top_builddir)/lib/popt
-else
-POPT_CPPFLAGS =
-POPT_LDADD = 
-endif
-
 bin_PROGRAMS = rgt-core
+
 rgt_core_SOURCES = filter.c filter.h \
                    flow_tree.c flow_tree.h \
                    log_msg.c log_msg.h \
@@ -54,10 +39,9 @@ rgt_core_SOURCES = filter.c filter.h \
                    postponed_mode.c postponed_mode.h \
                    rgt_core.c rgt_common.h
 
-rgt_core_LDADD = @GLIB_LIBS@ $(OBSTACK_LDADD) $(POPT_LDADD) -lpopt \
+rgt_core_LDADD = @GLIB_LIBS@ -lpopt \
                  @TCL_LIB_SPEC@ -lm -ldl
-AM_CPPFLAGS = @GLIB_CFLAGS@ -I$(top_srcdir) $(OBSTACK_CPPFLAGS) \
-              $(POPT_CPPFLAGS) @TCL_CFLAGS@
+AM_CPPFLAGS = @GLIB_CFLAGS@ -I$(top_srcdir) @TCL_CFLAGS@
 
 AM_CFLAGS = -W -Wall -ggdb -O0 
 bin_SCRIPTS = rgt-filter-prepare rgt-conv

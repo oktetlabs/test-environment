@@ -24,13 +24,5 @@
 # Author: Oleg N. Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
 #
 
-if USE_LOCAL_POPT
-POPT_DIR = popt
-endif
-
-if USE_LOCAL_OBSTACK
-OBSTACK_DIR = obstack
-endif
-
-SUBDIRS = $(POPT_DIR) $(OBSTACK_DIR) tmpls .
+SUBDIRS = tmpls .
 

@@ -24,15 +24,6 @@
 # Author: Oleg N. Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
 #
 
-if USE_LOCAL_POPT
-POPT_CPPFLAGS = -I$(top_srcdir)/lib/popt
-# Local popt library requires Glib
-POPT_LDADD = -L$(top_builddir)/lib/popt @GLIB_LIBS@
-else
-POPT_CPPFLAGS =
-POPT_LDADD = 
-endif
-
 RGT_SUBDIRS = xml2html xml2text
 RGT_FORMAT_UTILS = $(RGT_SUBDIRS:%=rgt-%)
 RGT_FORMAT_UTILS_TMPLS = $(RGT_FORMAT_UTILS:%=%.tmpls)
@@ -45,9 +36,9 @@ pkgdata_DATA = $(RGT_FORMAT_UTILS_TMPLS)
 bin_PROGRAMS = rgt-xml-translator
 rgt_xml_translator_SOURCES = main.c
 rgt_xml_translator_CFLAGS = -I$(top_srcdir) @TE_CFLAGS@ \
-                            $(POPT_CPPFLAGS) -I$(top_srcdir)/lib/tmpls \
+                            -I$(top_srcdir)/lib/tmpls \
                             @XML2_CFLAGS@
-rgt_xml_translator_LDADD = $(POPT_LDADD) @TE_LDFLAGS@ \
+rgt_xml_translator_LDADD = @TE_LDFLAGS@ \
                            -L$(top_builddir)/lib/tmpls -ltmpls -lpopt \
                            @XML2_LIBS@
 AM_CFLAGS = -W -Wall -ggdb -O0
