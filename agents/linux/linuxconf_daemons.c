@@ -284,7 +284,7 @@ daemon_get(unsigned int gid, const char *oid, char *value)
 }
 
 /**
- * Get current state daemon.
+ * Set current state daemon.
  *
  * @param gid   unused
  * @param oid   daemon name
@@ -318,6 +318,10 @@ daemon_set(unsigned int gid, const char *oid, const char *value)
         
     if (strncmp(daemon_name, "exim", strlen("exim")) == 0)
         sprintf(buf, "/etc/init.d/%s* %s >/dev/null 2>&1", daemon_name,
+               *value == '0' ? "stop" : "start");
+    else if (strcmp(daemon_name, "named") == 0 &&
+             file_exists("/etc/init.d/bind9")) /* a hack for Debian */
+        sprintf(buf, "/etc/init.d/bind9 %s >/dev/null 2>&1", 
                *value == '0' ? "stop" : "start");
     else               
         sprintf(buf, "/etc/init.d/%s %s >/dev/null 2>&1", daemon_name,
