@@ -301,6 +301,7 @@ alloc_and_get_test_iter(xmlNodePtr node, test_iters *iters)
         return errno;
     }
     p->node = node;
+    p->stats.not_run = 1;
     TAILQ_INIT(&p->args);
     TAILQ_INIT(&p->tests);
     TAILQ_INSERT_TAIL(iters, p, links);

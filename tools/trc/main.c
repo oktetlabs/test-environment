@@ -165,6 +165,64 @@ process_cmd_line_opts(int argc, char **argv)
 }
 
 
+static void trc_collect_iters_stats(test_iters *iters, trc_stats *stats);
+static void trc_collect_tests_stats(test_runs *tests, trc_stats *stats);
+
+/**
+ * Add one statistics to another.
+ *
+ * @param stats     Total statistics
+ * @param add       Statistics to add
+ */
+static void
+trc_stats_add(trc_stats *stats, const trc_stats *add)
+{
+    stats->not_run += add->not_run;
+    stats->new_run += add->new_run;
+    stats->skipped += add->skipped;
+    stats->pass_exp += add->pass_exp;
+    stats->pass_une += add->pass_une;
+    stats->fail_exp += add->fail_exp;
+    stats->fail_une += add->fail_une;
+}
+
+/**
+ * Collect statistics for list of iterations.
+ *
+ * @param iters     List of iterations
+ * @param stats     Statistics to be updated
+ */
+static void
+trc_collect_iters_stats(test_iters *iters, trc_stats *stats)
+{
+    test_iter *p;
+
+    for (p = iters->tqh_first; p != NULL; p = p->links.tqe_next)
+    {
+        trc_collect_tests_stats(&p->tests, &p->stats);
+        trc_stats_add(stats, &p->stats);
+    }
+}
+
+/**
+ * Collect statistics for list of tests.
+ *
+ * @param tests     List of tests
+ * @param stats     Statistics to be updated
+ */
+static void
+trc_collect_tests_stats(test_runs *tests, trc_stats *stats)
+{
+    test_run *p;
+
+    for (p = tests->tqh_first; p != NULL; p = p->links.tqe_next)
+    {
+        trc_collect_iters_stats(&p->iters, &p->stats);
+        trc_stats_add(stats, &p->stats);
+    }
+}
+
+
 /**
  * Application entry point.
  *

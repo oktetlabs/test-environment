@@ -48,6 +48,18 @@ typedef enum test_result_e {
 } test_result;
 
 
+/** Testing results conparator statistics */
+typedef struct trc_stats {
+    unsigned int    not_run;
+    unsigned int    new_run;
+    unsigned int    skipped;
+    unsigned int    pass_exp;
+    unsigned int    pass_une;
+    unsigned int    fail_exp;
+    unsigned int    fail_une;
+} trc_stats;
+
+
 /** Test argument */
 typedef struct test_arg {
     TAILQ_ENTRY(test_arg)   links;  /**< List links */
@@ -74,6 +86,7 @@ typedef struct test_iter {
     TAILQ_ENTRY(test_iter)  links;  /**< List links */
 
     xmlNodePtr      node;           /**< XML node with this element */
+    trc_stats       stats;          /**< Statistics */
 
     test_args       args;           /**< Iteration arguments */
     unsigned int    n;              /**< Number of iterations
@@ -93,6 +106,7 @@ typedef struct test_run {
     TAILQ_ENTRY(test_run)   links;  /**< List links */
 
     xmlNodePtr      node;           /**< XML node with this element */
+    trc_stats       stats;          /**< Statistics */
 
     char           *name;           /**< Test name */
     char           *objective;      /**< Test objective */
