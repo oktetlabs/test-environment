@@ -136,6 +136,15 @@ typedef struct global_context {
     FILE           *js_fd; /**< File descriptor of JavaScript file */
 } global_context_t;
 
+typedef struct mem_ctx_s {
+    int mem_width; /**< Number of elements in a memory row.
+                        (Used only for mem-dump element processing) */
+    int cur_num; /**< Current number of elements in memory row */
+    int first_row; /* @todo MAke it te_bool */
+} mem_ctx_t;
+
+static mem_ctx_t mem_dump_ctx;
+
 #ifndef TRUE
 #define TRUE  1
 #endif
@@ -644,87 +653,90 @@ proc_meta_params_end(struct global_context *ctx, const xmlChar **atts)
     fprintf(depth_ctx->fd, "</table>\n");
 }
 
-
-#if 0
-
-/**
- * Processes start/stop tag "mem-dump" for the mem-dump.
- *
- * @param  el_type  Determine whether to process start of end element
- *
- * @todo Delete ctx, name and atts parameters.
- */
 static void
-process_mem_dump(FILE *out_fd, struct global_context *ctx, const xmlChar *name,
-                 const xmlChar **atts, enum e_element_type el_type)
+proc_mem_dump_start(struct global_context *ctx, const xmlChar **atts)
 {
-    UNUSED(ctx);
-    UNUSED(name);
+    DEF_DEPTH_CTX;
     UNUSED(atts);
+    
+    mem_dump_ctx.first_row = TRUE;
+    mem_dump_ctx.mem_width = 0;
 
-    if (el_type == XML_ELEMENT_START)
-        rgt_tmpls_lib_output(out_fd, &html_tmpls[LOG_PART_MEM_DUMP_START],
-                             NULL, user_vars);
-    else
-        rgt_tmpls_lib_output(out_fd, &html_tmpls[LOG_PART_MEM_DUMP_END],
-                             NULL, user_vars);
+    fprintf(depth_ctx->fd,
+            "<table border='0' cellspacing='2' cellpadding='0'>\n");
 }
 
-/**
- * Processes start/stop tag "row" for the mem-dump.
- *
- * @param  el_type  Determine whether to process start of end element
- *
- * @todo Delete ctx, name and atts parameters.
- */
 static void
-process_mem_row(struct global_context *ctx, const xmlChar *name,
-                const xmlChar **atts, enum e_element_type el_type)
+proc_mem_dump_end(struct global_context *ctx, const xmlChar **atts)
 {
-    UNUSED(name);
+    DEF_DEPTH_CTX;
     UNUSED(atts);
+    fprintf(depth_ctx->fd, "</table>\n");
+}
 
-    if (el_type == XML_ELEMENT_START)
-        rgt_tmpls_lib_output(out_fd, &html_tmpls[LOG_PART_MEM_ROW_START],
-                             NULL, user_vars);
-    else
+static void
+proc_mem_row_start(struct global_context *ctx, const xmlChar **atts)
+{
+    DEF_DEPTH_CTX;
+    UNUSED(atts);
+    
+    mem_dump_ctx.cur_num = 0;
+
+    fprintf(depth_ctx->fd, "<tr>");
+}
+
+static void
+proc_mem_row_end(struct global_context *ctx, const xmlChar **atts)
+{
+    DEF_DEPTH_CTX;
+    UNUSED(atts);
+    
+    mem_dump_ctx.first_row = FALSE;
+
+    fprintf(depth_ctx->fd, "</tr>\n");
+}
+
+static void
+proc_mem_elem_start(struct global_context *ctx, const xmlChar **atts)
+{
+    DEF_DEPTH_CTX;
+    UNUSED(atts);
+    fprintf(depth_ctx->fd,
+            "<td class='mem_dump'>");
+}
+
+static void
+proc_mem_elem_end(struct global_context *ctx, const xmlChar **atts)
+{
+    DEF_DEPTH_CTX;
+    UNUSED(atts);
+    
+    if (mem_dump_ctx.first_row)
     {
-        int i;
-
-        assert((ctx->mem_dump.mem_width - ctx->mem_dump.cur_num) >= 0);
-
-        for (i = 0; i < (ctx->mem_dump.mem_width - ctx->mem_dump.cur_num); i++)
-            rgt_tmpls_lib_output(out_fd, &html_tmpls[LOG_PART_MEM_ELEM_EMPTY], 
-                                 NULL, user_vars);
-
-        rgt_tmpls_lib_output(out_fd, &html_tmpls[LOG_PART_MEM_ROW_END],
-                             NULL, user_vars);
+        mem_dump_ctx.mem_width++;
     }
+    mem_dump_ctx.cur_num++;
+
+    fprintf(depth_ctx->fd, "</td>");
 }
 
-/**
- * Processes start/stop tag "elem" for the mem-dump.
- *
- * @param  el_type  Determine whether to process start of end element
- *
- * @todo Delete ctx, name and atts parameters.
- */
 static void
-process_mem_elem(struct global_context *ctx, const xmlChar *name,
-                 const xmlChar **atts, enum e_element_type el_type)
+proc_log_msg_br(struct global_context *ctx, const xmlChar **atts)
 {
-    UNUSED(ctx);
-    UNUSED(name);
+    DEF_DEPTH_CTX;
     UNUSED(atts);
 
-    if (el_type == XML_ELEMENT_START)
-        rgt_tmpls_lib_output(out_fd, &html_tmpls[LOG_PART_MEM_ELEM_START],
-                             NULL, user_vars);
-    else
-        rgt_tmpls_lib_output(out_fd, &html_tmpls[LOG_PART_MEM_ELEM_END],
-                             NULL, user_vars);
+    fprintf(depth_ctx->fd, "<br/>");
 }
-#endif
+
+static void
+proc_chars(struct global_context *ctx, const xmlChar *ch, size_t len)
+{
+    DEF_DEPTH_CTX;
+
+    fwrite(ch, len, 1, depth_ctx->fd);
+}
+
 
 /**
  * Callback function that is called before parsing the document.
@@ -857,7 +869,26 @@ rgt_log_end_element(void *user_data, const xmlChar *tag)
             else
             {
                 assert(strcmp(tag, "br") == 0);
+                /* Do nothing */
             }
+            break;
+
+        case RGT_XML2HTML_STATE_MEM_DUMP:
+            assert(strcmp(tag, "mem-dump") == 0);
+            proc_mem_dump_end(ctx, NULL);
+            ctx->state = RGT_XML2HTML_STATE_LOG_MSG;
+            break;
+        
+        case RGT_XML2HTML_STATE_MEM_DUMP_ROW:
+            assert(strcmp(tag, "row") == 0);
+            proc_mem_row_end(ctx, NULL);
+            ctx->state = RGT_XML2HTML_STATE_MEM_DUMP;
+            break;
+
+        case RGT_XML2HTML_STATE_MEM_DUMP_ELEM:
+            assert(strcmp(tag, "elem") == 0);
+            proc_mem_elem_end(ctx, NULL);
+            ctx->state = RGT_XML2HTML_STATE_MEM_DUMP_ROW;
             break;
 
         case RGT_XML2HTML_STATE_BLOCK:
@@ -942,6 +973,15 @@ rgt_log_end_element(void *user_data, const xmlChar *tag)
 
             proc_meta_params_end(ctx, NULL);
             ctx->state = RGT_XML2HTML_STATE_META;
+            break;
+            
+        case RGT_XML2HTML_STATE_FILE:
+            if (strcmp(tag, "file") == 0)
+            {
+                ctx->state = RGT_XML2HTML_STATE_LOG_MSG;
+            }
+            else
+                assert(strcmp(tag, "br") == 0);
             break;
 
         default:
@@ -1056,39 +1096,40 @@ rgt_log_start_element(void *user_data,
             ctx->state = RGT_XML2HTML_STATE_LOG_MSG;
             break;
 
-#if 0
         case RGT_XML2HTML_STATE_LOG_MSG:
-            if (strcmp(name, "mem-dump") == 0)
+            if (strcmp(tag, "br") == 0)
             {
-                process_mem_dump(ctx, name, atts, XML_ELEMENT_START);
-                ctx->state = RGT_XML2HTML_STATE_MEM_DUMP;
-                ctx->mem_dump.first_row = TRUE;
-                ctx->mem_dump.mem_width = 0;
+                proc_log_msg_br(ctx, atts);
             }
-            else if (strcmp(name, "file") == 0)
+            else if (strcmp(tag, "mem-dump") == 0)
+            {
+                proc_mem_dump_start(ctx, atts);
+                ctx->state = RGT_XML2HTML_STATE_MEM_DUMP;
+            }
+            else if (strcmp(tag, "file") == 0)
             {
                 ctx->state = RGT_XML2HTML_STATE_FILE;
             }
-            else if (strcmp(name, "br") == 0)
-            {
-                rgt_tmpls_lib_output(out_fd, &html_tmpls[LOG_PART_BR],
-                                     NULL, user_vars);
-            }
-            return;
+            else
+                assert(0);
+
+            break;
 
         case RGT_XML2HTML_STATE_MEM_DUMP:
-            assert(strcmp(name, "row") == 0);
-            process_mem_row(ctx, name, atts, XML_ELEMENT_START);
-            ctx->mem_dump.cur_num = 0;
+            assert(strcmp(tag, "row") == 0);
+            proc_mem_row_start(ctx, atts);
             ctx->state = RGT_XML2HTML_STATE_MEM_DUMP_ROW;
-            return;
+            break;
 
         case RGT_XML2HTML_STATE_MEM_DUMP_ROW:
-            assert(strcmp(name, "elem") == 0);
-            process_mem_elem(ctx, name, atts, XML_ELEMENT_START);
+            assert(strcmp(tag, "elem") == 0);
+            proc_mem_elem_start(ctx, atts);
             ctx->state = RGT_XML2HTML_STATE_MEM_DUMP_ELEM;
-            return;
-#endif
+            break;
+            
+        case RGT_XML2HTML_STATE_FILE:
+            assert(strcmp(tag, "br") == 0);
+            break;
 
         default:
             break;
@@ -1108,7 +1149,6 @@ static void
 rgt_log_characters(void *user_data, const xmlChar *ch, int len)
 {
     global_context_t *ctx = (global_context_t *)user_data;
-    depth_context_t  *depth_ctx;
 
     switch (ctx->state)
     {
@@ -1116,22 +1156,16 @@ rgt_log_characters(void *user_data, const xmlChar *ch, int len)
         case RGT_XML2HTML_STATE_END_TS:
         case RGT_XML2HTML_STATE_OBJECTIVE:
         case RGT_XML2HTML_STATE_LOG_MSG:
+        case RGT_XML2HTML_STATE_MEM_DUMP_ELEM:
+        case RGT_XML2HTML_STATE_FILE:
         {
             assert(ctx->depth >= 1);
-            depth_ctx = &g_array_index(ctx->depth_info,
-                                       depth_context_t, (ctx->depth - 1));
-            fprintf(stderr, "ctx->depth = %d, file p is %p\n",
-                    ctx->depth, depth_ctx->fd);
-            fwrite(ch, len, 1, depth_ctx->fd);
+            proc_chars(ctx, ch, len);
             break;
         }
         default:
             break;
     }
-
-    UNUSED(ctx);
-    UNUSED(ch);
-    UNUSED(len);
 }
 
 /** The structure specifies all types callback routines that should be called */
