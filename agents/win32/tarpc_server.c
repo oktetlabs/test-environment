@@ -3730,11 +3730,215 @@ TARPC_FUNC(wsa_address_to_string,
 }
 )
 
+/*-------------- WSAStringToAddress ---------------------*/
+TARPC_FUNC(wsa_string_to_address,
+{
+    COPY_ARG(addrlen);
+},
+{
+    PREPARE_ADDR(out->addr, out->addrlen.addrlen_len == 0 ? 0 :
+                                    *out->addrlen.addrlen_val);
+
+    MAKE_CALL(out->retval = WSAStringToAddress(in->addrstr.addrstr_val,
+                                domain_rpc2h(in->address_family),
+                                (LPWSAPROTOCOL_INFO)(in->info.info_val),
+                                a,
+                                (LPINT)out->addrlen.addrlen_val));
+
+    if (out->retval == 0)
+        sockaddr_h2rpc(a, &(out->addr));
+}
+)
+
+/*-------------- WSACancelAsyncRequest ------------------*/
+TARPC_FUNC(wsa_cancel_async_request, {},
+{
+    MAKE_CALL(out->retval = WSACancelAsyncRequest(
+                                (HANDLE)in->async_task_handle));
+}
+)
+
+/**
+ * Allocate a single buffer of specified size and return a pointer to it.
+ */
+TARPC_FUNC(alloc_buf, {},
+{
+    void *buf;
+    
+    UNUSED(list);
+    buf = calloc(1, in->size);
+
+    if (buf == NULL)
+    {
+        out->common._errno = TE_RC(TE_TA_WIN32, ENOMEM);
+        out->retval = (tarpc_ptr)NULL;
+    }
+    else
+        out->retval = (tarpc_ptr)buf;
+}
+)
+
+/**
+ * Free a previously allocated buffer.
+ */
+TARPC_FUNC(free_buf, {},
+{
+    UNUSED(list);
+    UNUSED(out);
+    free((void *)in->buf);
+}
+)
+
+/**
+ * Fill in the buffer.
+ */
+TARPC_FUNC(set_buf, {},
+{
+    UNUSED(list);
+    UNUSED(out);
+    if ((in->src_buf.src_buf_len != 0) && ((void*)in->dst_buf != NULL))
+    {
+        memcpy((void*)in->dst_buf, in->src_buf.src_buf_val,
+                                  in->src_buf.src_buf_len);
+    }
+}
+)
+
+TARPC_FUNC(get_buf, {},
+{
+    UNUSED(list);
+    if (((char*)in->src_buf != NULL) && (in->len != 0))
+    {
+        out->dst_buf.dst_buf_val = (char*)in->src_buf;
+        out->dst_buf.dst_buf_len = in->len;
+    }
+    else
+    {
+        out->dst_buf.dst_buf_val = NULL;
+        out->dst_buf.dst_buf_len = 0;
+    }
+}
+)
+
+/**
+ * Allocate a single WSABUF structure and a buffer of specified size;
+ * set the fields of the allocated structure according to the allocated
+ * buffer pointer and length. Return two pointers: to the structure and
+ * to the buffer.
+ */
+TARPC_FUNC(alloc_wsabuf, {},
+{
+    WSABUF *wsabuf;
+    void *buf;
+
+    UNUSED(list);
+    wsabuf = malloc(sizeof(WSABUF));
+    if (in->len != 0)
+        buf = calloc(1, in->len);
+    else
+        buf = NULL;
+
+    if ((wsabuf == NULL) || ((buf == NULL) && (in->len != 0)))
+    {
+        if (wsabuf != NULL)
+            free(wsabuf);
+        if (buf != NULL)
+            free(buf);
+        out->common._errno = TE_RC(TE_TA_WIN32, ENOMEM);
+        out->wsabuf = (tarpc_ptr)NULL;
+        out->wsabuf_buf = (tarpc_ptr)NULL;
+        out->retval = -1;
+    }
+    else
+    {
+        wsabuf->buf = buf;
+        wsabuf->len = in->len;
+        out->wsabuf = (tarpc_ptr)wsabuf;
+        out->wsabuf_buf = (tarpc_ptr)buf;
+        out->retval = 0;
+    }
+}
+)
+
+/**
+ * Free a previously allocated WSABUF structure and its buffer.
+ */
+TARPC_FUNC(free_wsabuf, {},
+{
+    WSABUF *wsabuf;
+
+    UNUSED(list);
+    UNUSED(out);
+    wsabuf = (WSABUF*)in->wsabuf;
+    if ((void*)wsabuf->buf != NULL)
+        free((void*)wsabuf->buf);
+    free((void*)wsabuf);
+}
+)
+
+/*-------------- WSAConnect -----------------------------*/
+TARPC_FUNC(wsa_connect, {},
+{
+    QOS sqos;
+    QOS *psqos = &sqos;
+    tarpc_flowspec *fs;
+
+    PREPARE_ADDR(in->addr, 0);
+
+    memset(&sqos, 0, sizeof(sqos));
+    
+    if ((in->sending.sending_len != 0) && (in->sending.sending_val != NULL))
+    {
+        fs = in->sending.sending_val;
+        sqos.SendingFlowspec.TokenRate = fs->TokenRate;
+        sqos.SendingFlowspec.TokenBucketSize = fs->TokenBucketSize;
+        sqos.SendingFlowspec.PeakBandwidth = fs->PeakBandwidth;
+        sqos.SendingFlowspec.Latency = fs->Latency;
+        sqos.SendingFlowspec.DelayVariation = fs->DelayVariation;
+        sqos.SendingFlowspec.ServiceType =
+            servicetype_flags_rpc2h(fs->ServiceType);
+        sqos.SendingFlowspec.MaxSduSize = fs->MaxSduSize;
+        sqos.SendingFlowspec.MinimumPolicedSize = fs->MinimumPolicedSize;
+    }
+
+    if ((in->receiving.receiving_len != 0)
+        && (in->receiving.receiving_val != NULL))
+    {
+        fs = in->receiving.receiving_val;
+        sqos.ReceivingFlowspec.TokenRate = fs->TokenRate;
+        sqos.ReceivingFlowspec.TokenBucketSize = fs->TokenBucketSize;
+        sqos.ReceivingFlowspec.PeakBandwidth = fs->PeakBandwidth;
+        sqos.ReceivingFlowspec.Latency = fs->Latency;
+        sqos.ReceivingFlowspec.DelayVariation = fs->DelayVariation;
+        sqos.ReceivingFlowspec.ServiceType =
+            servicetype_flags_rpc2h(fs->ServiceType);
+        sqos.ReceivingFlowspec.MaxSduSize = fs->MaxSduSize;
+        sqos.ReceivingFlowspec.MinimumPolicedSize = fs->MinimumPolicedSize;
+    }
+    
+    sqos.ProviderSpecific.buf = (char*)in->provider_specific_buf;
+    sqos.ProviderSpecific.len = in->provider_specific_buf_len;
+
+    if ((in->sending.sending_val == NULL)
+        && (in->receiving.receiving_val == NULL)
+        && ((char*)in->provider_specific_buf == NULL)
+        && (in->provider_specific_buf_len == 0))
+    {
+        psqos = NULL;
+    }
+
+    MAKE_CALL(out->retval = WSAConnect(in->s, a, in->addrlen,
+                                (LPWSABUF)in->caller_wsabuf,
+                                (LPWSABUF)in->callee_wsabuf,
+                                psqos, NULL));
+}
+)
+
 /*-------------- WSAAsyncGetHostByAddr ------------------*/
 TARPC_FUNC(wsa_async_get_host_by_addr, {},
 {
-    MAKE_CALL(out->retval = WSAAsyncGetHostByAddr((HWND)in->hwnd,
-                                in->wmsg, in->addr.addr_val,
+    MAKE_CALL(out->retval = (tarpc_handle)WSAAsyncGetHostByAddr(
+                                (HWND)in->hwnd, in->wmsg, in->addr.addr_val,
                                 in->addrlen, addr_family_rpc2h(in->type),
                                 (char*)in->buf, in->buflen));
 }
@@ -3743,8 +3947,8 @@ TARPC_FUNC(wsa_async_get_host_by_addr, {},
 /*-------------- WSAAsyncGetHostByName ------------------*/
 TARPC_FUNC(wsa_async_get_host_by_name, {},
 {
-    MAKE_CALL(out->retval = WSAAsyncGetHostByName((HWND)in->hwnd,
-                                in->wmsg, in->name.name_val,
+    MAKE_CALL(out->retval = (tarpc_handle)WSAAsyncGetHostByName(
+                                (HWND)in->hwnd, in->wmsg, in->name.name_val,
                                 (char*)in->buf, in->buflen));
 }
 )
@@ -3752,8 +3956,8 @@ TARPC_FUNC(wsa_async_get_host_by_name, {},
 /*-------------- WSAAsyncGetProtoByName -----------------*/
 TARPC_FUNC(wsa_async_get_proto_by_name, {},
 {
-    MAKE_CALL(out->retval = WSAAsyncGetProtoByName((HWND)in->hwnd,
-                                in->wmsg, in->name.name_val,
+    MAKE_CALL(out->retval = (tarpc_handle)WSAAsyncGetProtoByName(
+                                (HWND)in->hwnd, in->wmsg, in->name.name_val,
                                 (char*)in->buf, in->buflen));
 }
 )
@@ -3761,8 +3965,8 @@ TARPC_FUNC(wsa_async_get_proto_by_name, {},
 /*-------------- WSAAsyncGetProtoByNumber ---------------*/
 TARPC_FUNC(wsa_async_get_proto_by_number, {},
 {
-    MAKE_CALL(out->retval = WSAAsyncGetProtoByNumber((HWND)in->hwnd,
-                                in->wmsg, in->number,
+    MAKE_CALL(out->retval = (tarpc_handle)WSAAsyncGetProtoByNumber(
+                                (HWND)in->hwnd, in->wmsg, in->number,
                                 (char*)in->buf, in->buflen));
 }
 )
@@ -3770,9 +3974,9 @@ TARPC_FUNC(wsa_async_get_proto_by_number, {},
 /*-------------- WSAAsyncGetServByName ---------------*/
 TARPC_FUNC(wsa_async_get_serv_by_name, {},
 {
-    MAKE_CALL(out->retval = WSAAsyncGetServByName((HWND)in->hwnd,
-                                in->wmsg, in->name.name_val,
-                                in->proto.proto_val,
+    MAKE_CALL(out->retval = (tarpc_handle)WSAAsyncGetServByName(
+                                (HWND)in->hwnd, in->wmsg,
+                                in->name.name_val, in->proto.proto_val,
                                 (char*)in->buf, in->buflen));
 }
 )
@@ -3780,8 +3984,9 @@ TARPC_FUNC(wsa_async_get_serv_by_name, {},
 /*-------------- WSAAsyncGetServByPort ---------------*/
 TARPC_FUNC(wsa_async_get_serv_by_port, {},
 {
-    MAKE_CALL(out->retval = WSAAsyncGetServByPort((HWND)in->hwnd,
-                                in->wmsg, in->port, in->proto.proto_val,
-                                (char*)in->buf, in->buflen));
+    MAKE_CALL(out->retval = (tarpc_handle)WSAAsyncGetServByPort(
+                                (HWND)in->hwnd, in->wmsg, in->port,
+                                in->proto.proto_val, (char*)in->buf,
+                                in->buflen));
 }
 )
