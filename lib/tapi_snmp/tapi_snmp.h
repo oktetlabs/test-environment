@@ -112,6 +112,19 @@ typedef enum tapi_snmp_vartypes_t {
     TAPI_SNMP_ENDOFMIB  = SNMP_ENDOFMIBVIEW,   /**< 0x82  = 130*/
 } tapi_snmp_vartypes_t;
 
+/**
+ * The list of possible values of "GEN TRAP" field of SNMP V1 Trap.
+ */
+typedef enum tapi_snmp_gen_trap_t {
+    TAPI_SNMP_TRAP_COLDSTART = SNMP_TRAP_COLDSTART,
+    TAPI_SNMP_TRAP_WARMSTART = SNMP_TRAP_WARMSTART,
+    TAPI_SNMP_TRAP_LINKDOWN = SNMP_TRAP_LINKDOWN,
+    TAPI_SNMP_TRAP_LINKUP = SNMP_TRAP_LINKUP,
+    TAPI_SNMP_TRAP_AUTHFAIL = SNMP_TRAP_AUTHFAIL,
+    TAPI_SNMP_TRAP_EGPNEIGHBORLOSS = SNMP_TRAP_EGPNEIGHBORLOSS,
+    TAPI_SNMP_TRAP_ENTERPRISESPECIFIC = SNMP_TRAP_ENTERPRISESPECIFIC,
+} tapi_snmp_gen_trap_t;
+
 typedef enum {
     TAPI_SNMP_MIB_ACCESS_READONLY   = MIB_ACCESS_READONLY, /* 18 */
     TAPI_SNMP_MIB_ACCESS_READWRITE  = MIB_ACCESS_READWRITE, /* 19 */
@@ -133,9 +146,9 @@ typedef struct {
                                    number of sub-identifiers for OID type, 
                                    not used for integer types. */
     union {
-        unsigned char   * oct_string;
-        tapi_snmp_oid_t * obj_id;
-        int               integer;
+        unsigned char   *oct_string;
+        tapi_snmp_oid_t *obj_id;
+        int              integer;
     };
 } tapi_snmp_varbind_t;
 
@@ -331,7 +344,6 @@ extern int tapi_snmp_gen_csap_create(const char *ta, int sid,
 extern int tapi_snmp_set_vbs(const char *ta, int sid, int csap_id, 
                              const tapi_snmp_varbind_t *var_binds, 
                              size_t num_vars, int *errstat, int *errindex);
-
 
 /**
  * The same as tapi_snmp_set_vbs, but gets sequence of "varbind groups":
@@ -797,6 +809,44 @@ extern void tapi_snmp_append_oid(tapi_snmp_oid_t *oid, int n, ...);
 extern int tapi_snmp_make_oid(const char *oid_str, tapi_snmp_oid_t *oid);
 
 /**
+ * Finds VarBind by name (OID) among the array of VarBinds.
+ * 
+ * @param [in]  var_binds  Pointer to the array of VarBinds
+ * @param [in]  num        The number of entries in @a var_binds array
+ * @param [in]  oid        VarBind name we are interested in
+ * @param [out] vb         Found VarBind
+ * @param [out] pos        Position of found VarBind in the list,
+ *                         can be NULL if does not matter
+ *
+ * @return Status of the operation
+ * @retval 0       VarBind is found
+ * @retval ENOENT  There is no required VarBind in the list
+ */
+extern int tapi_snmp_find_vb(const tapi_snmp_varbind_t *var_binds,
+                             size_t num,
+                             const tapi_snmp_oid_t *oid,
+                             const tapi_snmp_varbind_t **vb, size_t *pos);
+
+/**
+ * Finds VarBind by name (OID) among the array of VarBinds.
+ * Function is the same as @a tapi_snmp_find_vb, but only gets
+ * OID in string format rather than in tapi_snmp_oid_t.
+ */
+static inline int
+tapi_snmp_find_vb_str(const tapi_snmp_varbind_t *var_binds, size_t num,
+                      const char *oid,
+                      const tapi_snmp_varbind_t **vb, size_t *pos)
+{
+    tapi_snmp_oid_t bin_oid;
+    int             rc;
+
+    if ((rc = tapi_snmp_make_oid(oid, &bin_oid)) != 0)
+        return rc;
+    
+    return tapi_snmp_find_vb(var_binds, num, &bin_oid, vb, pos);
+}
+
+/**
  * Get SNMP object syntax from MIB.
  *
  * @param       oid       OID of SNMP object
@@ -815,8 +865,8 @@ extern int tapi_snmp_get_syntax(tapi_snmp_oid_t *oid,
  * @param userdata      Parameter, provided by the caller of
  *                      tapi_snmp_walk().
  */
-typedef int (*tapi_snmp_trap_callback)(const tapi_snmp_message_t *trap,
-                                       void *userdata);
+typedef void (*tapi_snmp_trap_callback)(const tapi_snmp_message_t *trap,
+                                        void *userdata);
 
 
 
@@ -897,9 +947,22 @@ extern int tapi_snmp_make_vb(tapi_snmp_varbind_t *vb,
  * @retval 0        The values are the same
  * @retval -1       The values are different
  */
-extern int tapi_snmp_cmp_vb(tapi_snmp_varbind_t *vb1,
-                            tapi_snmp_varbind_t *vb2,
+extern int tapi_snmp_cmp_vb(const tapi_snmp_varbind_t *vb1,
+                            const tapi_snmp_varbind_t *vb2,
                             tapi_snmp_vb_cmp_type cmp_type);
+
+/**
+ * Compare two OIDs
+ *
+ * @param oid1       First OID
+ * @param oid2       Second OID
+ *
+ * @return Function return an integer less than, equal to,
+ * or greater than zero if @a oid1 is found, respectively, 
+ * to be less than, to match, or be greater than @a oid2.
+ */
+extern int tapi_snmp_cmp_oid(const tapi_snmp_oid_t *oid1,
+                             const tapi_snmp_oid_t *oid2);
 
 /**
  * Print SNMP OID struct to string and return pointer to this string. 
@@ -911,6 +974,18 @@ extern int tapi_snmp_cmp_vb(tapi_snmp_varbind_t *vb1,
  * @return Pointer to buffer with printed OID. 
  */
 extern const char *print_oid(const tapi_snmp_oid_t *oid);
+
+/**
+ * Print array of bytes to string and return pointer to this string.
+ * Note, that buffer with string is static and behaviour of this function
+ * in multithread usage may be unpredictable.
+ *
+ * @param data  Pointer to the data to be printed
+ * @param len   Number of bytes in @a data array
+ *
+ * @return Pointer to buffer with printed data.
+ */
+extern const char *tapi_snmp_print_oct_str(const void *data, size_t len);
 
 /** Convert SNMP ERROR constants to string format */
 extern const char *snmp_error_h2str(int error_val);
@@ -924,6 +999,9 @@ extern const char *tapi_snmp_truth_value_h2str(
 
 /** Convert SNMP value types constants to string format */
 extern const char *tapi_snmp_val_type_h2str(enum tapi_snmp_vartypes_t type);
+
+/** Convert SNMP Trap type constants to string format */
+extern const char *tapi_snmp_gen_trap_h2str(enum tapi_snmp_gen_trap_t type);
 
 #ifdef __cplusplus
 } /* extern "C" */

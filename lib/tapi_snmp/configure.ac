@@ -44,6 +44,8 @@ AC_CHECK_HEADERS(net-snmp/definitions.h, ,,
 #include<net-snmp/net-snmp-config.h>
 ) 
 
+AC_CHECK_HEADERS([assert.h])
+
 #AC_CHECK_HEADERS(ucd-snmp/snmp_impl.h, ,,  
 ##include<sys/types.h> 
 ##include<ucd-snmp/asn1.h> 

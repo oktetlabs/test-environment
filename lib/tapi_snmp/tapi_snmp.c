@@ -39,6 +39,16 @@
 #include <unistd.h>
 #include <time.h>
 
+#ifdef HAVE_ASSERT_H
+#include <assert.h>
+#else
+#define assert(x) \
+    do {                                         \
+        ERROR("ASSERT(" #x ") at %s:%s:%d",      \
+              __FILE__, __FUNCTION__, __LINE__); \
+    } while (0)
+#endif
+
 #include "te_stdint.h"
 
 #if HAVE_NET_SNMP_DEFINITIONS_H
@@ -58,8 +68,8 @@
 
 
 /* save or not tmp ndn files */
-/* #define DEBUG 1
-*/
+#undef DEBUG
+
 
 static char log_info_buf[1024 * 24];
 int         log_info_cur_len;
@@ -76,7 +86,7 @@ int         log_info_cur_len;
 
 #define TAPI_SNMP_LOG_FLUSH() \
     do {                          \
-        INFO("%s", log_info_buf); \
+        RING("%s", log_info_buf); \
         log_info_buf[0] = '\0';   \
     } while (0)
 
@@ -85,36 +95,95 @@ static int tapi_snmp_get_object_type(const tapi_snmp_oid_t *oid,
                                      enum snmp_obj_type *obj_type);
 
 
-
+/* See description in tapi_snmp.h */
 const char*
 print_oid(const tapi_snmp_oid_t *oid)
 {
 #define TAPI_SNMP_OID_BUF_SIZE (1024 * 2)
 #define TAPI_SNMP_OID_BUF_NUM (4)
 
-    static char buf[TAPI_SNMP_OID_BUF_NUM][TAPI_SNMP_OID_BUF_SIZE];
-    unsigned    tapi_snmp_oid_buf_cur = 0;
+    static char     buf[TAPI_SNMP_OID_BUF_NUM][TAPI_SNMP_OID_BUF_SIZE];
+    static unsigned buf_cur = 0;
 
-    tapi_snmp_oid_buf_cur++;
-    tapi_snmp_oid_buf_cur %= TAPI_SNMP_OID_BUF_NUM;
+    buf_cur++;
+    buf_cur %= TAPI_SNMP_OID_BUF_NUM;
 
     if (oid == NULL)
     {
-        snprintf(buf[tapi_snmp_oid_buf_cur],
+        snprintf(buf[buf_cur],
                  TAPI_SNMP_OID_BUF_SIZE, "<null oid>");
     }
     else
     {
-        if (snprint_objid(buf[tapi_snmp_oid_buf_cur],
+        if (snprint_objid(buf[buf_cur],
                           TAPI_SNMP_OID_BUF_SIZE,
                           oid->id, oid->length) < 0)
         {
-            snprintf(buf[tapi_snmp_oid_buf_cur],
+            snprintf(buf[buf_cur],
                      TAPI_SNMP_OID_BUF_SIZE, "snprint_objid() failed");
         }
     }
 
-    return buf[tapi_snmp_oid_buf_cur];
+#undef TAPI_SNMP_OID_BUF_SIZE
+#undef TAPI_SNMP_OID_BUF_NUM
+
+    return buf[buf_cur];
+}
+
+/* See description in tapi_snmp.h */
+const char *
+tapi_snmp_print_oct_str(const void *data, size_t len)
+{
+#define TAPI_SNMP_OCT_STR_BUF_SIZE (1024)
+#define TAPI_SNMP_OCT_STR_BUF_NUM  (4)
+
+    static char     *buf[TAPI_SNMP_OCT_STR_BUF_NUM] = {};
+    static size_t    buf_len[TAPI_SNMP_OCT_STR_BUF_NUM] = {};
+    static unsigned  buf_cur = 0;
+    size_t           req_len;
+    size_t           i;
+
+    if (len == 0)
+        return "<EMPTY STRING>";
+
+    buf_cur++;
+    buf_cur %= TAPI_SNMP_OCT_STR_BUF_NUM;
+
+    /* (Re)allocate a buffer */
+    req_len = 3 * len; /* two characters per byte and one for space & '\0'*/
+    while (buf_len[buf_cur] < req_len)
+    {
+        char *ptr = buf[buf_cur];
+
+        buf_len[buf_cur] += TAPI_SNMP_OCT_STR_BUF_SIZE;
+        if ((buf[buf_cur] = realloc(ptr, buf_len[buf_cur])) == NULL)
+        {
+            ERROR("%s:%s:%d: Cannot allocate memory",
+                  __FILE__, __FUNCTION__, __LINE__);
+
+            buf_len[buf_cur] -= TAPI_SNMP_OCT_STR_BUF_SIZE;
+            buf[buf_cur] = ptr;
+            return "<ENOMEM>";
+        }
+    }
+
+    for (i = 0; i < len; i++)
+    {
+        snprintf(buf[buf_cur] + (3 * i), buf_len[buf_cur] - (3 * i),
+                 "%02X ", ((uint8_t *)data)[i]);
+    }
+    assert(len >= 1);
+
+    /*
+     * Overwrite trailing space with '\0', knowing that, actually,
+     * we still have trailing '\0' after that space.
+     */
+    *(buf[buf_cur] + (3 * i) - 1) = '\0';
+
+#undef TAPI_SNMP_OCT_STR_BUF_SIZE
+#undef TAPI_SNMP_OCT_STR_BUF_NUM
+
+    return buf[buf_cur];
 }
 
 int
@@ -226,6 +295,33 @@ tapi_snmp_free_varbind(tapi_snmp_varbind_t *varbind)
 }
 
 /* See description in tapi_snmp.h */
+int
+tapi_snmp_find_vb(const tapi_snmp_varbind_t *var_binds, size_t num,
+                  const tapi_snmp_oid_t *oid,
+                  const tapi_snmp_varbind_t **vb, size_t *pos)
+{
+    size_t i;
+    
+    if (var_binds == NULL || oid == NULL || vb == NULL)
+        return TE_RC(TE_TAPI, EINVAL);
+
+    for (i = 0; i < num; i++)
+    {
+        if (tapi_snmp_cmp_oid(&(var_binds[i].name), oid) == 0)
+        {
+            *vb = var_binds + i;
+
+            if (pos != NULL)
+                *pos = i;
+
+            return 0;
+        }
+    }
+
+    return TE_RC(TE_TAPI, ENOENT);
+}
+
+/* See description in tapi_snmp.h */
 void
 tapi_snmp_free_message(tapi_snmp_message_t *snmp_message)
 {
@@ -268,29 +364,29 @@ tapi_snmp_free_message(tapi_snmp_message_t *snmp_message)
 int
 tapi_snmp_packet_to_plain(asn_value *pkt, tapi_snmp_message_t *snmp_message)
 {
-    int rc;
-    unsigned i, len;
+    int          rc;
+    size_t       len;
+    unsigned int i;
 
-    len = sizeof (snmp_message->type);
+    len = sizeof(snmp_message->type);
     rc = asn_read_value_field(pkt, &snmp_message->type, &len, "type");
-    if (rc)
+    if (rc != 0)
         return TE_RC(TE_TAPI, rc);
 
-    len = sizeof (snmp_message->err_status);
+    len = sizeof(snmp_message->err_status);
     rc = asn_read_value_field(pkt, &snmp_message->err_status, &len,
-                                "err-status");
-    if (rc)
+                              "err-status");
+    if (rc != 0)
         return TE_RC(TE_TAPI, rc);
 
-
-    len = sizeof (snmp_message->err_index);
+    len = sizeof(snmp_message->err_index);
     rc = asn_read_value_field(pkt, &snmp_message->err_index, &len,
                               "err-index");
-    if (rc)
+    if (rc != 0)
         return TE_RC(TE_TAPI, rc);
 
-    VERB("in %s, errstat %d, errindex %d", __FUNCTION__,
-            snmp_message->err_status, snmp_message->err_index);
+    VERB("%s(): errstat %d, errindex %d", __FUNCTION__,
+         snmp_message->err_status, snmp_message->err_index);
 
     if (snmp_message->type == NDN_SNMP_MSG_TRAP1)
     {
@@ -304,31 +400,31 @@ tapi_snmp_packet_to_plain(asn_value *pkt, tapi_snmp_message_t *snmp_message)
         }
 
         rc = asn_read_value_field(pkt, &(snmp_message->enterprise.id),
-                                    &len, "enterprise");
+                                  &len, "enterprise");
 
-        len = sizeof (snmp_message->gen_trap);
+        len = sizeof(snmp_message->gen_trap);
         rc = asn_read_value_field(pkt, &snmp_message->gen_trap,
-                                &len, "gen-trap");
-        if (rc)
+                                  &len, "gen-trap");
+        if (rc != 0)
             return TE_RC(TE_TAPI, rc);
 
-        len = sizeof (snmp_message->spec_trap);
+        len = sizeof(snmp_message->spec_trap);
         rc = asn_read_value_field(pkt, &snmp_message->spec_trap,
-                                &len, "spec-trap");
-        if (rc)
+                                  &len, "spec-trap");
+        if (rc != 0)
             return TE_RC(TE_TAPI, rc);
 
-        len = sizeof (snmp_message->agent_addr);
+        len = sizeof(snmp_message->agent_addr);
         rc = asn_read_value_field(pkt, &snmp_message->agent_addr,
-                                &len, "agent-addr");
-        if (rc)
+                                  &len, "agent-addr");
+        if (rc != 0)
             return TE_RC(TE_TAPI, rc);
     }
 
     snmp_message->num_var_binds = asn_get_length(pkt, "variable-bindings");
-    snmp_message->vars = malloc(snmp_message->num_var_binds *
+    snmp_message->vars = calloc(snmp_message->num_var_binds,
                                 sizeof(tapi_snmp_varbind_t));
-    if(snmp_message->vars == NULL)
+    if (snmp_message->vars == NULL)
         return TE_RC(TE_TAPI, ENOMEM);
 
     for (i = 0; i < snmp_message->num_var_binds; i++)
@@ -354,17 +450,17 @@ tapi_snmp_packet_to_plain(asn_value *pkt, tapi_snmp_message_t *snmp_message)
         rc = asn_read_value_field(var_bind,
                                   &(snmp_message->vars[i].name.id),
                                   &len, "name.#plain");
-/*
-        VERB("%s; var N %d ,oid %s", __FUNCTION__, i,
+        if (rc != 0)
+            return TE_RC(TE_TAPI, rc);
+
+        VERB("%s(): var N %d, oid %s", __FUNCTION__, i,
              print_oid(&(snmp_message->vars[i].name)));
-*/
-        if (rc == 0)
-            rc = asn_get_choice(var_bind, "value.#plain", choice_label,
-                                CL_MAX);
+
+        rc = asn_get_choice(var_bind, "value.#plain", choice_label, CL_MAX);
 
         if (rc == EASNINCOMPLVAL)
-        { /* Some of SNMP errors occure */
-
+        {
+            /* Some of SNMP errors occure */
             if ((rc = asn_read_value_field(var_bind, 0, 0,
                                            "endOfMibView")) == 0)
             {
@@ -372,11 +468,16 @@ tapi_snmp_packet_to_plain(asn_value *pkt, tapi_snmp_message_t *snmp_message)
             }
             else if ((rc = asn_read_value_field(var_bind, 0, 0,
                                                 "noSuchObject")) == 0)
+            {
                 snmp_message->vars[i].type = TAPI_SNMP_NOSUCHOBJ;
+            }
             else if ((rc = asn_read_value_field(var_bind, 0, 0,
                                                 "noSuchInstance")) == 0)
+            {
                 snmp_message->vars[i].type = TAPI_SNMP_NOSUCHINS;
-            VERB ("read SNMP error fields return 0x%x\n", rc);
+            }
+
+            VERB("read SNMP error fields return 0x%x\n", rc);
 
             if (rc == 0)
             {
@@ -386,60 +487,80 @@ tapi_snmp_packet_to_plain(asn_value *pkt, tapi_snmp_message_t *snmp_message)
             }
         }
 
-        if (rc == 0 && strcmp(choice_label, "simple") == 0)
+        if (rc != 0)
+            return TE_RC(TE_TAPI, rc);
+
+        if (strcmp(choice_label, "simple") == 0)
         {
             rc = asn_get_choice(var_bind, "value.#plain.#simple",
-                                        choice_label, CL_MAX);
-            if (rc == 0)
+                                choice_label, CL_MAX);
+            if (rc != 0)
+                return TE_RC(TE_TAPI, rc);
+
+            if (strcmp(choice_label, "integer-value") == 0)
             {
-                if (strcmp(choice_label, "integer-value") == 0)
-                {
-                    int value;
-                    len = sizeof(value);
-                    rc = asn_read_value_field(var_bind, &value, &len,
-                             "value.#plain.#simple.#integer-value");
-                    snmp_message->vars[i].type = TAPI_SNMP_INTEGER;
-                    snmp_message->vars[i].v_len =
-                        sizeof(snmp_message->vars[i].integer);
-                    snmp_message->vars[i].integer = value;
-                }
-                else if (strcmp(choice_label, "string-value") == 0)
-                {
-                    len = asn_get_length(var_bind,
-                              "value.#plain.#simple.#string-value");
-                    snmp_message->vars[i].oct_string = malloc(len);
-                    snmp_message->vars[i].type = TAPI_SNMP_OCTET_STR;
-                    snmp_message->vars[i].v_len = len;
-                    rc = asn_read_value_field (var_bind,
-                             snmp_message->vars[i].oct_string,
-                             &len, "value.#plain.#simple.#string-value");
-                }
-                else if (strcmp(choice_label, "objectID-value") == 0)
-                {
-                    len = asn_get_length(var_bind,
-                              "value.#plain.#simple.#objectID-value");
-                    snmp_message->vars[i].obj_id =
+                int value;
+
+                len = sizeof(value);
+                rc = asn_read_value_field(var_bind, &value, &len,
+                         "value.#plain.#simple.#integer-value");
+                if (rc != 0)
+                    return TE_RC(TE_TAPI, rc);
+
+                snmp_message->vars[i].type = TAPI_SNMP_INTEGER;
+                snmp_message->vars[i].v_len =
+                    sizeof(snmp_message->vars[i].integer);
+                snmp_message->vars[i].integer = value;
+            }
+            else if (strcmp(choice_label, "string-value") == 0)
+            {
+                len = asn_get_length(var_bind,
+                          "value.#plain.#simple.#string-value");
+
+                snmp_message->vars[i].oct_string = malloc(len);
+                if (snmp_message->vars[i].oct_string == NULL)
+                    return TE_RC(TE_TAPI, ENOMEM);
+
+                snmp_message->vars[i].type = TAPI_SNMP_OCTET_STR;
+                snmp_message->vars[i].v_len = len;
+                rc = asn_read_value_field(var_bind,
+                         snmp_message->vars[i].oct_string,
+                         &len, "value.#plain.#simple.#string-value");
+            }
+            else if (strcmp(choice_label, "objectID-value") == 0)
+            {
+                len = asn_get_length(var_bind,
+                          "value.#plain.#simple.#objectID-value");
+                fprintf(stderr, "Parsing OID value, len = %u\n", len);
+
+                snmp_message->vars[i].obj_id =
                         malloc(sizeof(tapi_snmp_oid_t));
-                    snmp_message->vars[i].type = TAPI_SNMP_OBJECT_ID;
-                    snmp_message->vars[i].v_len = len;
-                    rc = asn_read_value_field (var_bind,
+                if (snmp_message->vars[i].obj_id == NULL)
+                    return TE_RC(TE_TAPI, ENOMEM);
+
+                snmp_message->vars[i].type = TAPI_SNMP_OBJECT_ID;
+                snmp_message->vars[i].v_len = len;
+                snmp_message->vars[i].obj_id->length = len;
+                rc = asn_read_value_field(var_bind,
                              snmp_message->vars[i].obj_id->id,
                              &len, "value.#plain.#simple.#objectID-value");
-                }
-                else
-                {
-                    fprintf (stderr, "SNMP msg to C struct: "
-                                "unexpected choice in simple: %s \n",
-                                choice_label);
-                    rc = EASNGENERAL;
-                }
             }
+            else
+            {
+                fprintf(stderr, "%s(): SNMP msg to C struct - "
+                        "unexpected choice in simple: %s\n",
+                        __FUNCTION__, choice_label);
+                rc = EASNGENERAL;
 
+                assert(0);
+            }
         }
-        else if (rc == 0 && strcmp(choice_label, "application-wide") == 0)
-       {
+        else if (strcmp(choice_label, "application-wide") == 0)
+        {
             rc = asn_get_choice(var_bind, "value.#plain.#application-wide",
                                 choice_label, CL_MAX);
+            if (rc != 0)
+                return TE_RC(TE_TAPI, rc);
 
             if (strcmp(choice_label, "ipAddress-value") == 0)
             {
@@ -463,15 +584,25 @@ tapi_snmp_packet_to_plain(asn_value *pkt, tapi_snmp_message_t *snmp_message)
                         "unexpected choice in application-wide: %s\n",
                         choice_label);
                 rc = EASNGENERAL;
+                
+                assert(0);
+
             }
 
-            len = sizeof(int);
-            snmp_message->vars[i].v_len = len;
             if (rc == 0)
+            {
+                len = sizeof(int);
+                snmp_message->vars[i].v_len = len;
+
                 rc = asn_read_value_field(var_bind,
                          &snmp_message->vars[i].integer, &len,
                          "value.#plain.#application-wide");
+            }
         }
+
+        if (rc != 0)
+            return TE_RC(TE_TAPI, rc);
+
         asn_free_value(var_bind);
     }
     return TE_RC(TE_TAPI, rc);
@@ -609,7 +740,7 @@ tapi_snmp_pkt_handler(char *fn, void *p)
 
         VERB("parse SNMP file OK!\n");
 
-        snmp_message = asn_read_indexed (packet, 0, "pdus");
+        snmp_message = asn_read_indexed(packet, 0, "pdus");
         rc = tapi_snmp_packet_to_plain(snmp_message, plain_msg);
 
         VERB("packet to plain rc %d\n", rc);
@@ -2616,7 +2747,7 @@ tapi_snmp_trap_handler(char *fn, void *user_param)
 
     VERB("parse SNMP file OK!\n");
 
-    snmp_message = asn_read_indexed (packet, 0, "pdus");
+    snmp_message = asn_read_indexed(packet, 0, "pdus");
     rc = tapi_snmp_packet_to_plain(snmp_message, &plain_msg);
     VERB("packet to plain rc %d\n", rc);
     asn_free_value(packet);
@@ -2760,6 +2891,7 @@ tapi_snmp_make_vb(tapi_snmp_varbind_t *vb, const char *oid_str,
         ERROR("%s Cannot get type of %s object", __FUNCTION__, oid_str);
         return rc;
     }
+
     switch (obj_type)
     {
         case SNMP_OBJ_SCALAR:
@@ -2823,7 +2955,6 @@ tapi_snmp_make_vb(tapi_snmp_varbind_t *vb, const char *oid_str,
 #ifdef OPAQUE_SPECIAL_TYPES
         case ASN_OPAQUE_U64:
 #endif
-        case ASN_OBJECT_ID:
             if ((vb->oct_string = (unsigned char *)malloc(vb->v_len))
                                 == NULL)
             {
@@ -2831,6 +2962,33 @@ tapi_snmp_make_vb(tapi_snmp_varbind_t *vb, const char *oid_str,
                 return TE_RC(TE_TAPI, ENOMEM);
             }
             memcpy(vb->oct_string, var->val.string, vb->v_len);
+            break;
+
+        case ASN_OBJECT_ID:
+            assert(sizeof(vb->obj_id->id[0]) == sizeof(oid));
+
+            /* For OID 'v_len' keeps the number of Bub-IDs */
+            vb->v_len /= sizeof(oid);
+
+            if (vb->v_len > 
+                sizeof(vb->obj_id->id) / sizeof(vb->obj_id->id[0]))
+            {
+                snmp_free_pdu(pdu);
+                ERROR("%s(): The value %s of type 'OBJECT ID'"
+                      " is too long", __FUNCTION__, value);
+                return EFAULT;
+            }
+
+            if ((vb->obj_id = 
+                    (tapi_snmp_oid_t *)malloc(sizeof(*vb->obj_id))) == NULL)
+            {
+                snmp_free_pdu(pdu);
+                return TE_RC(TE_TAPI, ENOMEM);
+            }
+
+            memcpy(vb->obj_id->id, var->val.objid, var->val_len);
+            vb->obj_id->length = vb->v_len;
+
             break;
 
         default:
@@ -2845,28 +3003,25 @@ tapi_snmp_make_vb(tapi_snmp_varbind_t *vb, const char *oid_str,
 
 /* See description in tapi_snmp.h */
 int
-tapi_snmp_cmp_vb(tapi_snmp_varbind_t *vb1, tapi_snmp_varbind_t *vb2,
+tapi_snmp_cmp_vb(const tapi_snmp_varbind_t *vb1,
+                 const tapi_snmp_varbind_t *vb2,
                  tapi_snmp_vb_cmp_type cmp_type)
 {
+    int rc;
+
     switch (cmp_type)
     {
         case TAPI_SNMP_VB_VMP_FULL:
-            /* Fall through */
+            /* FALLTHROUGH */
+
         case TAPI_SNMP_VB_VMP_OID_ONLY:
-            if (vb1->name.length != vb2->name.length ||
-                memcmp(vb1->name.id, vb2->name.id, vb1->name.length) != 0)
-            {
-                INFO("'vb1' and 'vb2' has different length of their OIDs:\n"
-                     "OID('vb1'): %s - length %d\nOID('vb2'): %s - "
-                     "length %d",
-                     print_oid(&vb1->name), vb1->name.length,
-                     print_oid(&vb2->name), vb2->name.length);
-                return -1;
-            }
+            if ((rc = tapi_snmp_cmp_oid(&(vb1->name), &(vb1->name))) != 0)
+                return rc;
+
             if (cmp_type == TAPI_SNMP_VB_VMP_OID_ONLY)
                 break;
 
-            /* Fall through in case of TAPI_SNMP_VB_VMP_FULL */
+            /* FALLTHROUGH */
 
         case TAPI_SNMP_VB_VMP_VALUE_ONLY:
             if (vb1->type != vb2->type)
@@ -2884,7 +3039,8 @@ tapi_snmp_cmp_vb(tapi_snmp_varbind_t *vb1, tapi_snmp_varbind_t *vb2,
             {
                 INFO("'vb1' and 'vb2' has the same value types %s but "
                      "different length of values:\n"
-                     "'vb1': %s - value len: %d\n'vb2': %s - value len: %d",
+                     "'vb1': %s - value len: %d\n"
+                     "'vb2': %s - value len: %d",
                      tapi_snmp_val_type_h2str(vb1->type),
                      print_oid(&vb1->name), vb1->v_len,
                      print_oid(&vb2->name), vb2->v_len);
@@ -2896,13 +3052,33 @@ tapi_snmp_cmp_vb(tapi_snmp_varbind_t *vb1, tapi_snmp_varbind_t *vb2,
 #ifdef OPAQUE_SPECIAL_TYPES
                 case ASN_OPAQUE_U64:
 #endif
-                case ASN_OBJECT_ID:
                     if (memcmp(vb1->oct_string, vb2->oct_string,
                                vb1->v_len) != 0)
                     {
                         INFO("'vb1' and 'vb2' has different values:\n"
-                             "'vb1': %s\n'vb2': %s",
-                             print_oid(&vb1->name), print_oid(&vb2->name));
+                             "'vb1': %s - value: %d\n"
+                             "'vb2': %s - value: %d",
+                             print_oid(&vb1->name),
+                             tapi_snmp_print_oct_str(vb1->oct_string,
+                                                     vb1->v_len),
+                             print_oid(&vb2->name),
+                             tapi_snmp_print_oct_str(vb2->oct_string,
+                                                     vb2->v_len));
+                         return -1;
+                    }
+                    break;
+
+                case ASN_OBJECT_ID:
+                    assert(vb1->v_len == vb1->obj_id->length);
+                    assert(vb2->v_len == vb2->obj_id->length);
+
+                    if (tapi_snmp_cmp_oid(vb1->obj_id, vb2->obj_id) != 0)
+                    {
+                        INFO("'vb1' and 'vb2' has different values:\n"
+                             "'vb1': %s - value: %d\n"
+                             "'vb2': %s - value: %d",
+                             print_oid(&vb1->name), print_oid(vb1->obj_id),
+                             print_oid(&vb2->name), print_oid(vb2->obj_id));
                          return -1;
                     }
                     break;
@@ -2928,6 +3104,29 @@ tapi_snmp_cmp_vb(tapi_snmp_varbind_t *vb1, tapi_snmp_varbind_t *vb2,
     return 0;
 }
 
+/* See description in tapi_snmp.h */
+int
+tapi_snmp_cmp_oid(const tapi_snmp_oid_t *oid1, const tapi_snmp_oid_t *oid2)
+{
+    size_t i;
+    size_t min_len;
+
+    min_len = (oid1->length < oid2->length) ? oid1->length : oid2->length;
+
+    for (i = 0; i < min_len; i++)
+    {
+        if (oid1->id[i] != oid2->id[i])
+        {
+            if (oid1->id[i] > oid2->id[i])
+                return 1;
+            else
+                return -1;
+        }
+    }
+
+    /* Common Sub IDs are the same, check the rest Sub IDs */
+    return (oid1->length - oid2->length);
+}
 
 /** Convert SNMP ERROR constants to string format */
 const char *snmp_error_h2str(int error_val)
@@ -2963,12 +3162,12 @@ const char *snmp_error_h2str(int error_val)
 #undef SNMP_ERR_H2STR
 
         default:
-       {
+        {
             static char buf[255];
 
-           snprintf(buf, sizeof(buf), "UNKNOWN (%d)", error_val);
+            snprintf(buf, sizeof(buf), "UNKNOWN (%d)", error_val);
             return buf;
-       }
+        }
     }
     return "";
 }
@@ -3013,10 +3212,42 @@ tapi_snmp_val_type_h2str(enum tapi_snmp_vartypes_t type)
         {
             static char buf[255];
 
-           snprintf(buf, sizeof(buf), "UNKNOWN (%d)", type);
+            snprintf(buf, sizeof(buf), "UNKNOWN (%d)", type);
             return buf;
         }
     }
+
+    return "IMPOSSIBLE";
+}
+
+const char *
+tapi_snmp_gen_trap_h2str(enum tapi_snmp_gen_trap_t type)
+{
+    switch (type)
+    {
+#define TAPI_SNMP_GEN_TRAP_H2STR(val_) \
+        case TAPI_SNMP_TRAP_ ## val_:  \
+            return #val_
+
+        TAPI_SNMP_GEN_TRAP_H2STR(COLDSTART);
+        TAPI_SNMP_GEN_TRAP_H2STR(WARMSTART);
+        TAPI_SNMP_GEN_TRAP_H2STR(LINKDOWN);
+        TAPI_SNMP_GEN_TRAP_H2STR(LINKUP);
+        TAPI_SNMP_GEN_TRAP_H2STR(AUTHFAIL);
+        TAPI_SNMP_GEN_TRAP_H2STR(EGPNEIGHBORLOSS);
+        TAPI_SNMP_GEN_TRAP_H2STR(ENTERPRISESPECIFIC);
+
+#undef TAPI_SNMP_GEN_TRAP_H2STR
+        default:
+        {
+            static char buf[255];
+
+            snprintf(buf, sizeof(buf), "UNKNOWN (%d)", type);
+            return buf;
+        }
+    }
+
+    return "IMPOSSIBLE";
 }
 
 const char *
@@ -3031,9 +3262,11 @@ tapi_snmp_truth_value_h2str(enum tapi_snmp_truth_value val)
         {
             static char buf[255];
 
-           snprintf(buf, sizeof(buf), "UNKNOWN (%d)", val);
+            snprintf(buf, sizeof(buf), "UNKNOWN (%d)", val);
             return buf;
         }
     }
     return "";
 }
+
+
