@@ -201,8 +201,7 @@ ds_create_backup(const char *dir, const char *name, int *index)
         return TE_RC(TE_TA_LINUX, ENOMEM);
     }
     
-    sprintf(buf, "cp %s %s >/dev/null 2>&1", 
-            ds[n_ds].config_file, ds[n_ds].backup);
+    sprintf(buf, "cp %s %s", ds[n_ds].config_file, ds[n_ds].backup);
         
     if (ta_system(buf) != 0)
     {                                                              
