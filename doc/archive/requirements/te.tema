@@ -1,0 +1,81 @@
+At first - I'm so sorry...
+a lot of problems with Quantum object deletion, etc...
+
+and the second - I'm not sure that I could propose some requirements
+for "Abstract TE".
+
+I can't understand the meaning for expression "Abstract TE"
+
+See some thoughts as follows:
+
+I. It's neccessary to define termin Testing Environment (TE).
+There're a number of terms concerned with 'environment', such as
+Development Environement, but I can't express what is the TE.
+
+II. I propose the follosing architecture:
+
+
++-------------+ (1 to N)     +-------------+ (N to M)+----------------+
+| Test engine | -----------> | Tester node | --->    | Node under test|
++-------------+              +-------------+         +----------------+
+
+There're 3 entities.
+
+a) Test enigne - interacts with Tester.
+It's responsible on test execution, and test report generation.
+
+REQUIREMENTS:
+    1). Protocol for Interaction with TN
+      (engine sends commands to TNs (e.g. start test), TNs send LOGs to
+      engine,  TNs send commands to TNs)
+    2). Special command language to specify - how many TNs participate
+       in the test, the interaction sequence, etc...
+       (Sure TCL interpreter will be the best choice).
+
+    3). threads???
+b) Tester Node (TN).
+Test code is executed at TN.
+It interacts with NUTs, TNs, as well as Engine to deliver LOGs,
+or notifies about test execution status.
+
+REQUIREMENTS:
+   1). Tools for Expect like communication (send/expect string-oriented
+       data)
+   2). Special language for configuration (how many NUTs, etc...)
+      TCL - the best choice.
+   3). Packet processing (decoding/encoding) library.
+      (Should we try ASN.1 like notations/parsers to facilitate
+       packet encoding/decoding?)
+       Scotty is really good tool for SNMP packet encoding/decoding.
+   4). Threads??? (It was unavailable in our TE)
+   5). Interface with media (send/receive real packets from network,
+       etc...)
+
+c). NUT.
+REQUIREMENTS:
+   1). It is possible to have small part of TN running at NUT
+     (TN agent)
+
+III. It is neccessary to create Test Specification rules:
+      something like this:
+   a). Each test name consists of characters, dots and digits.
+   b). The tests are to be groupped into suites.
+   c). It is possible to ask test execution from the scope of another
+       tests. (requrrent sequences are depricated)
+
+Is it really actual for you?
+
+On Wed, 18 Sep 2002, Elena A. Vengerova wrote:
+
+>
+> Tema,
+>
+> it seems that you are the single person
+> who did not provide TE requirements for me.
+> Will you do it or I may start without
+> your opinion?
+>
+> Bye
+>     Helen
+>
+>

@@ -1,0 +1,106 @@
+ID OKT-QMSDRR-0000142
+
+COPYRIGHT Copyright(C) OKTET Ltd. 2003
+
+DDRID OKT-QMSDDR-0000068-TE
+
+RESPMGR Elena Vengerova <helen@oktet.ru>
+
+MODERATOR Andrew Rybchenko <arybchik@oktet.ru>
+
+PARTICIPANT Elena Vengerova <helen@oktet.ru>
+PARTICIPANT Ilya Ibragimov <ibr@oktet.ru>
+
+DIRECTION
+Remove comma after day in revision history date.
+
+DIRECTION
+Add revision 'B' (reviewed) and don't forget about 'C'.
+
+DIRECTION
+Add reference to RCF HLD and use it in abbreviations.
+
+DIRECTION
+Remove double quotes around of names of subsystems.
+
+DIRECTION
+Add definition of the 'element' term.
+
+DIRECTION
+Remove 'type' after 'Object' in terminology. Check usage of the term in the
+document.
+
+DIRECTION
+Sort terminology table.
+
+DIRECTION
+Use new identifier of the reference to TE architecture document.
+
+DIRECTION
+Correct type in the second line of introduction: "on" -> "or".
+
+DIRECTION
+Use "Table Contents" paragraph style for contents of all tables.
+
+DIRECTION
+Move description of the operations in the services chapter.
+
+DIRECTION
+Correct sentence between two tables in introduction.
+
+DIRECTION
+Add identifier property to object.
+Clearify that type property is type of object value.
+Remove values property.
+
+DIRECTION
+Add description of operations for instances and types.
+
+DIRECTION
+Replace '.' with ':' between two '*' symbols in introduction (near to the end).
+
+DIRECTION
+Remove ':' after "agent" in the last line of the paragraph before the last
+in introduction.
+
+DIRECTION
+Check correctness of the last paragraph in introduction.
+
+DIRECTION
+Check correctness of the rest part of the document in accordance with
+modifications in introduction.
+
+DIRECTION
+Remove "ADDRESS" primary type.
+
+DIRECTION
+Use "OKT List Bullet" paragraph style for bullet list in the document.
+
+DIRECTION
+Extend description of services in accordance with changes in introduction.
+
+DIRECTION
+Make chapter "10.1.6" the first subchapter of "External interfaces".
+
+PROPOSAL
+Use list in chapter "Database access".
+
+DIRECTION
+Make "function" word not part of the terms in chapter "External interfaces"
+term.
+
+DIRECTION
+Remove description of the configuration file format.
+Just refer to the appropriate document. 
+
+DIRECTION
+Configurator is initialized by Dispatcher.
+
+DIRECTION
+Remove "reset" function description from chapter 13.
+
+DIRECTION
+Use spell checker.
+
+RESULT
+Additional review must be performed after notes processing during 1 day.

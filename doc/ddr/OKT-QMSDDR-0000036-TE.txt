@@ -1,0 +1,70 @@
+ID OKT-QMSDDR-0000036-TE
+
+COPYRIGHT
+Copyright(C) OKTET Ltd. 2003
+
+DDRAUTH
+Elena Vengerova
+
+RESPMGR
+Elena Vengerova
+
+DOCID
+OKT-HLD-0000037-TE_TCE
+
+TITLE
+Proteos: Test Coverage Estimation
+
+PURPOSE
+Formal High Level Design of Test Coverage Estimation functionality 
+for Test Environment.
+
+AUDIENCE
+End users and TE project team-members
+
+AUDIENCE
+OKTET employees and customers
+ 
+TMPL
+OKT-TMPL-0000009-HLD
+
+FMT
+OpenOffice
+
+COMPLY
+OKT-REQ-0000010-TE
+OKT-ARCH-0000011-TE
+OKT-HLD-0000031-TE_BS
+OKT-DD-0000039-TE_BS_CONF
+OKT-HLD-0000041-TE_LS_IF
+OKT-UG-0000053-TE_RG
+
+ANNOTATION
+The document should describe all aspects of Test Coverage Estimation for
+Test Environment, particularly:
+* what changes should be done in existing tool for source modification
+  to use interface provided by Logger to Test Agents;
+* how the situation may be resolved if tested software has no common 
+  address space with software using logging library (for example, UNIX
+  software is tested);
+* interface provided by TCE module to Builder to temporary replacing
+  of native files in NUT source tree to modified ones;
+* functionality required from Report Generator tool to extract
+  TCE-related log from raw log;
+* script provided by TCE module to Dispatcher for obtaining of TCE value;
+* configuration parameters of TCE module and recommendation how
+  they may be inserted to Builder configuration file.
+  
+The HLD should comply to many documents. Most of them are created
+simultaneously with HLD. When lack of information is observed
+author is allowed to make some assumptions which should be verified
+after creation of all related documents.
+  
+SIZE
+10-20 pages
+
+DEADLINE
+2003-02-10
+
+AUTHOR
+Pavel Bolokhov

@@ -1,0 +1,165 @@
+example-pkt-udp UDPDatagram ::=
+{
+    header {
+        src-port plain:123,
+        dst-port plain:234
+    },
+    payload plain:'0102'H
+}
+
+example-pkt-ip IPDatagram ::=
+{
+    header { src-addr plain: {192 168 254 1} }, 
+    payload udp-data:example-pkt-udp
+}
+
+example-pkt-eth EthernetFrame ::=
+{ 
+    header {src-addr plain:'000102030405'H},
+    payload ip-data:example-pkt-ip
+}
+
+ex-ip-csap-0 CSAP-spec ::=
+{
+    eth:{device-id "eth0:0",
+         dst-addr plain:'21365879EA41'H },
+    ip4:{time-to-live plain:10,
+         src-addr plain:{192 168 254 1}
+        }
+}
+
+ex-ip-csap CSAP-scec ::=
+{
+    eth:{device-id "eth0",
+         src-addr plain:'010203040506'H,
+         dst-addr plain:'060504030201'H },
+    ip4:{type-of-service plain:0,
+         time-to-live plain:10,
+         src-addr plain:{192 168 254 20},
+         dst-addr plain:{192 168 253 11},
+         router   plain:{192 168 254 1},
+         max-packet-size plain:100
+        }
+}
+
+udp-csap-0 CSAP-spec ::=
+{
+    eth:{device-id "eth1",
+         src-addr plain:'010203040506'H},
+    ip4:{type-of-service plain:0,
+         time-to-live plain:100,
+         max-packet-size plain:1000
+        }
+    udp:{src-port script:"random" }
+}
+
+udp-csap-1 CSAP-spec ::=
+{
+    ip4:{src-addr plain:{192 168 254 20},
+         dst-addr plain:{192 168 253 11},
+         router   plain:{192 168 254 1}
+        },
+    udp:{src-port script:"random", 
+         dst-port plain:1650
+        }
+}
+
+udp-csap-2 CSAP-spec ::=
+{
+    ip4:{src-addr env:"usertest.udp1.srcIp",
+         dst-addr env:"usertest.udp1.dstIp"
+        },
+    udp:{src-port script:"random", 
+         dst-port env:"usertest.udp1.dstPort"
+        }
+}
+
+example-ip-pattern-0 Traffic-Pattern ::=
+{
+    ip4:{
+	protocol plain:"17",
+        src-addr script:"192.168.254.0/26"
+    }
+}
+
+example-icmp-pattern Traffic-Pattern ::=
+{
+    eth:{
+        src-addr mask:{ v '010203AA0066'H, m 'FFFFF0F000FF'H }
+    }
+    ip6:{ -- IPv6 Headers are not defined yet... but for example let it be
+          -- here
+        dst-addr spec:mask:{
+            v 'FF120000000000000000000000000000'H
+            m 'FFFF0000000000000000000000000000'H
+        }
+    }
+    icmp6:{ -- ICMP headers are not defined at all.. :)
+        type plain:129,
+        code plain:0,
+        id   plain:34,
+        sn   plain:32
+    }
+}
+
+<<<<<<< ds-example.asn
+ip4-tmpl-0 Traffic-Template::=
+{
+    dimension 0,
+    headers {
+        ip4:{ ip-len          plain:100 }
+    }
+}
+
+
+ip4-tmpl-0 Traffic-Template::=
+{
+    dimension 1,
+    arg-sets {simple-for:{ begin 1, end 10}}, 
+    headers {
+        ip4:{ 
+            type-of-service plain:2, 
+            ip-len          plain:100,
+            ip-ident        script:"$1"
+        }
+    },
+    payload script:"random";
+}
+
+udp-template Traffic-Template::=
+=======
+tcp-pattern-0 Traffic-Pattern ::=
+{
+    ip4:{
+	protocol plain:"6",
+        src-addr script:"192.168.254.0/24"
+    }
+    tcp:{ 
+        src-port enum:{1200, 1220, 1221, 5640},
+        seqn     intervals:{{b 0, e 20}, {b 100, e 105}},
+        flags    mask:{v '05'H, m '07'H}
+    }
+}
+
+example-udp-template Traffic-Template::=
+{
+    dimension 2,
+    arg-sets {
+	ints:{2, 3, 10},
+	simple-for:{ begin 2, end 20, step 2}
+    },
+    delays script:"100 * $2",
+    headers {
+	udp:{ dst-port plain:10,
+              length spec:script:"$2"
+		}
+	}
+	ip4:{ header {
+		dst-addr spec:script:"192.168.253.$1"
+		}
+	}
+    },
+    payload function:"gen_payload"
+}
+
+

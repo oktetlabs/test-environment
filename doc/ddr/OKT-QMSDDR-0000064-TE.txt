@@ -1,0 +1,50 @@
+ID OKT-QMSDDR-0000064-TE
+
+COPYRIGHT
+Copyright(C) OKTET Ltd. 2003
+
+DDRAUTH
+Elena Vengerova
+
+RESPMGR
+Elena Vengerova
+
+DOCID
+OKT-DD-0000065-TE_RCF_IF
+
+TITLE
+RCF Commands Handler library interface
+
+PURPOSE
+Detailed Design of C API which should be provided by Commands Handler
+libraries to Portable Command Handler.
+
+AUDIENCE
+End users and TE project team-members
+
+AUDIENCE
+OKTET employees and customers
+ 
+FMT
+C header
+
+COMPLY
+OKT-REQ-0000010-TE
+OKT-ARCH-0000011-TE
+OKT-HLD-0000027-TE_RCF
+OKT-HLD-0000057-TE_PROTO
+OKT-DD-0000067-TE_RCF_IF
+
+ANNOTATION
+Provide strict specification of C API, which should be provided by 
+Commands Handler libraries to Portable Command Handler for all
+Test Protocol commands.
+
+SIZE
+10-20 pages
+
+DEADLINE
+2003-03-10
+
+AUTHOR
+Elena Vengerova

@@ -1,0 +1,62 @@
+ID OKT-QMSDDR-0000046-TE
+
+COPYRIGHT
+Copyright(C) OKTET Ltd. 2003
+
+DDRAUTH
+Elena Vengerova
+
+RESPMGR
+Elena Vengerova
+
+DOCID
+OKT-HLD-0000047-TE_LS_TA
+
+TITLE
+Proteos: Test Agent side of the Logger
+
+PURPOSE
+High Level Design of logging software running on the Test Agent.
+
+AUDIENCE
+End users and TE project team-members
+
+AUDIENCE
+OKTET employees and customers
+ 
+TMPL
+OKT-TMPL-0000009-HLD
+
+FMT
+OpenOffice
+
+COMPLY
+OKT-REQ-0000010-TE
+OKT-ARCH-0000011-TE
+OKT-DD-0000049-TE_LS_IF
+
+ANNOTATION
+Logger should provide following facilities to Test Agent and software under
+test (if Test Agent runs on the operating system with shared address space):
+* log string messages;
+* dump memory;
+* pre-define format strings to avoid copiing during logging (for speed
+  sensitive entities);
+* mark log by unique user names;
+* split log to different levels and prohibit logging of messages with priorities
+  lower than specified log level (this feature should be supported
+  using pre-processor macros only and is opaque for Logger on the TEN).
+  
+All this areas should be clarified according to HLD template.
+  
+Data protection issues, interaction with Logger on the Test Engine, 
+portability and performance issues should be discussed in as well.
+
+SIZE
+12-15 pages
+
+DEADLINE
+2003-02-18
+
+AUTHOR
+Igor Vasiliev

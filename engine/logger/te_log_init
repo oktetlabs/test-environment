@@ -1,0 +1,51 @@
+#!/bin/sh
+
+# Test Environment
+# Logger subsystem
+# Script takes no arguments, creates and initializes temporary raw log file.
+# This script has to be called before Logging functionality will be used.
+#
+# Copyright (C) 2003 Test Environment authors (see file AUTHORS in the 
+# root directory of the distribution).
+#
+# Test Environment is free software; you can redistribute it and/or 
+# modify it under the terms of the GNU General Public License as 
+# published by the Free Software Foundation; either version 2 of 
+# the License, or (at your option) any later version.
+# 
+# Test Environment is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, 
+# MA  02111-1307  USA
+#
+# Author: Igor B. Vasiliev <Igor.Vasiliev@oktetlabs.ru>
+#
+
+if [ -z ${TE_LOG_DIR} ]; then
+    echo ""
+    echo "TE_LOG_DIR environment variable should be tuned"
+    echo ""
+    exit -1
+fi
+
+TE_LOG_PATH=${TE_LOG_DIR}
+TE_TMP_LOG=${TE_LOG_PATH}/tmp_raw_log
+
+if [ ${#@} -ne 0 ]; then
+    echo ""
+    echo "Usage: te_log_init"
+    echo ""
+    exit -1
+fi
+
+mkdir -p $TE_LOG_PATH
+rm -rf $TE_TMP_LOG
+
+# File version is set 1
+echo -ne "\1" > $TE_TMP_LOG
+chmod 666 $TE_TMP_LOG

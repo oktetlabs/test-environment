@@ -1,0 +1,38 @@
+TE-NDN-BPDU
+DEFINITIONS ::=
+BEGIN
+
+IMPORTS DATA-UNIT FROM TE-NDN-General;
+
+EXPORTS  BPDU, Bridge-CSAP;
+
+
+BPDU ::= IMPLICIT SEQUENCE { 
+    proto-id    DATA-UNIT{INTEGER(0..65535)} OPTIONAL,
+    version-id  DATA-UNIT{INTEGER(0..255)} OPTIONAL,
+    bpdu-type   DATA-UNIT{INTEGER(0..255)} OPTIONAL,
+    -- Rest parameters present only for Config BPDU (depending on bpdu-type 
+    content     CHOICE {
+        configuration  IMPLICIT  SEQUENCE {
+            flags       DATA-UNIT{OCTET STRING (SIZE 1)} OPTIONAL,
+            root-id     DATA-UNIT{OCTET STRING (SIZE 8)}OPTIONAL,
+            root-path-cost DATA-UNIT{INTEGER} OPTIONAL,
+            bridge-id   DATA-UNIT{OCTET STRING (SIZE 8)}OPTIONAL,
+            port-id     DATA-UNIT{INTEGER(0..65535)} OPTIONAL,
+            message-age DATA-UNIT{INTEGER(0..65535)} OPTIONAL,
+            max-age     DATA-UNIT{INTEGER(0..65535)} OPTIONAL,
+            hello-time  DATA-UNIT{INTEGER(0..65535)} OPTIONAL,
+            forward-delay DATA-UNIT{INTEGER(0..65535)} OPTIONAL,
+        },
+        notification NULL,
+    }
+}
+
+Bridge-CSAP ::= IMPLICIT SEQUENCE { 
+    proto-id    [3] DATA-UNIT{INTEGER(0..65535)} OPTIONAL,
+    version-id  [3] DATA-UNIT{INTEGER(0..255)} OPTIONAL,
+    bpdu-type   [3] DATA-UNIT{INTEGER(0..255)} OPTIONAL,
+    flags       [3] DATA-UNIT{OCTET STRING (SIZE 1)} OPTIONAL,
+}
+
+END

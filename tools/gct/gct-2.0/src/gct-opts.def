@@ -1,0 +1,184 @@
+/*
+This file is part of GCT.
+
+GCT is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 1, or (at your option)
+any later version.
+
+GCT is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+*/
+
+/*
+ * $Header: /mnt/data/repos/cvsroot/test_environment.sav/tools/gct/gct-2.0/src/gct-opts.def,v 1.1 2003/10/28 09:48:45 arybchik Exp $
+ */
+
+/*
+ * These are the possible options.  To the user, there's a difference
+ * between an option and an instrumentation directive.  To us, they're
+ * all just binary values, and we call all of them options.
+ */
+
+/*
+ * The arguments to the macro are:  
+ *
+ * 	The name used in C programs.
+ * 	The string name of the option.
+ * 	Whether the value is user-settable with an option command
+ * 		in the global context; its default value in that context.
+ * 	Ditto for the file context.
+ * 	Ditto for the routine context.
+ * 	Ditto for the comment context.
+ * 	OPT_OPTION if the option is really an option; OPT_NEED_WEAK if
+ * 	must use gct-utrans.c; OPT_NEED_STANDARD if must use gct-strans.c
+ * 	may be used; OPT_NEED_NEITHER if either may be used.
+ *
+ * See the user's manual for what all the options mean.
+ */
+
+/*
+ * Notes:
+ *
+ * Several options control what GCT does with a file:
+ *
+ * produce-object:  When on, GCT passes the instrumented file off to
+ * 	a compiler, then puts the compiled code for file.c into file.o.
+ * replace:  When on, GCT replaces the files it instruments; when off, it
+ * 	puts the instrumented code for file.c into Tfile.c.  Only relevant
+ * 	when produce-object is OFF.
+ *
+ * There are several options that control editing of the parse tree
+ * 	INSTRUMENT is used to decide whether any coverage
+ * 	instrumentation is to be added.  
+ * 	READLOG controls whether a call to gct-readlog will be added.
+ * 	WRITELOG controls whether a call to gct-writelog will be added.
+ *
+ * 	IGNORE defines whether the file is to be processed or ignored.
+ * 	At the global level, the above options dominate IGNORE; if any
+ * 	are ON, IGNORE is turned OFF.  
+ * 	At the file level, IGNORE dominates the options; they can set it
+ * 	OFF only if it's initially NONE.
+ *
+ * 	IGNORE
+ * 		GLOBAL		DEFAULT ON
+ * 		FILE		calculated or set by (option ignore)
+ * 		ROUTINE		N/A 
+ *
+ * 	INSTRUMENT
+ * 		GLOBAL		OFF
+ * 		FILE		Value set on creation with -<file> or <file>
+ * 		ROUTINE		Value set on creation with -<routine> or <routine>.
+ * 				Modified with (options instrument)
+ * 	READLOG
+ * 		GLOBAL		ON
+ * 		FILE		NONE; settable with option.
+ * 		ROUTINE		NONE; settable with option.
+ *
+ * 	WRITELOG
+ * 		GLOBAL		ON
+ * 		FILE		NONE; settable with option.
+ * 		ROUTINE		NONE; settable with option.
+ */
+
+GCTOPT(OPT_IGNORE,     "ignore",	1, ON,	 1, NONE,  0, NONE,  0, NONE, OPT_OPTION)
+GCTOPT(OPT_INSTRUMENT, "instrument",	1, OFF,   1, NONE,  1, NONE,  1, NONE, OPT_OPTION)
+GCTOPT(OPT_READLOG,    "readlog",	1, ON,   1, NONE,  1, NONE,  1, NONE, OPT_OPTION)
+GCTOPT(OPT_WRITELOG,   "writelog",	1, ON,   1, NONE,  1, NONE,  1, NONE, OPT_OPTION)
+
+
+/* How results are handled */
+GCTOPT(OPT_PRODUCE_OBJECT, "produce-object", 	1, ON,   1, NONE,  0, NONE,  0, NONE, OPT_OPTION)
+GCTOPT(OPT_REPLACE, 	   "replace", 		1, ON, 	 1, NONE,  0, NONE,  0, NONE, OPT_OPTION)
+GCTOPT(OPT_LINK,	   "link",		1, ON,   0, NONE,  0, NONE,  0, NONE, OPT_OPTION)
+GCTOPT(OPT_LINK_LOG,	   "link-log",		1, ON,   0, NONE,  0, NONE,  0, NONE, OPT_OPTION)     
+GCTOPT(OPT_LINK_DEF,	   "link-def",		1, ON,   0, NONE,  0, NONE,  0, NONE, OPT_OPTION)     
+
+/* Other control over instrumentation (rudimentary) */
+GCTOPT(OPT_MACROS, 	 "macros", 	1, OFF,  1, NONE,  0, NONE,  0, NONE, OPT_OPTION)
+GCTOPT(OPT_INSTRUMENT_INCLUDED_FILES,   "instrument-included-files",	1, OFF,   1, NONE,  0, NONE,  0, NONE, OPT_OPTION)
+     
+
+/* Instrumentation options. */
+GCTOPT(OPT_BRANCH,	"branch",	1, OFF,	 1, NONE,  1, NONE,  1, NONE, OPT_NEED_NEITHER)
+GCTOPT(OPT_MULTI,	"multi",	1, OFF,	 1, NONE,  1, NONE,  1, NONE, OPT_NEED_NEITHER)
+GCTOPT(OPT_LOOP,	"loop",		1, OFF,	 1, NONE,  1, NONE,  1, NONE, OPT_NEED_NEITHER)
+GCTOPT(OPT_OPERATOR,	"operator",	1, OFF,	 1, NONE,  1, NONE,  1, NONE, OPT_NEED_WEAK)
+GCTOPT(OPT_OPERAND,	"operand",	1, OFF,	 1, NONE,  1, NONE,  1, NONE, OPT_NEED_WEAK)
+GCTOPT(OPT_ROUTINE,	"routine",	1, OFF,	 1, NONE,  1, NONE,  1, NONE, OPT_NEED_STANDARD)
+GCTOPT(OPT_RELATIONAL,	"relational",	1, OFF,	 1, NONE,  1, NONE,  1, NONE, OPT_NEED_NEITHER)
+GCTOPT(OPT_CALL,	"call",		1, OFF,	 1, NONE,  1, NONE,  1, NONE, OPT_NEED_STANDARD)
+GCTOPT(OPT_RACE,	"race",		1, OFF,	 1, NONE,  1, NONE,  1, NONE, OPT_NEED_STANDARD)
+
+/* Finer control over relational coverage (needed with some compilers). */
+GCTOPT(OPT_ENUM_RELATIONAL, 	 "enum-relational", 	1, ON,  1, NONE,  1, NONE,  0, NONE, OPT_OPTION)
+
+
+/* The following options are normally not printed */
+
+/*
+ * Debugging Options:
+ *
+ * show_decls:  When the end of a function is seen, GCT's notion of all
+ * 	the declarations in the function is printed.
+ * show_tree:  At end of function, dump tree in internal format.
+ * show_ctrl:  After parsing the control file, print it to stderr.
+ * verbose:  At various points, print info about what's being done.
+ * gct_only:  GCT stops before calling any sub-programs
+ * check_tree:  Run consistency checks on tree.
+ * force_descend:  Force descent of tree even if -instrument was given and
+ * 	there's no instrumentation to do.
+ * force_weak:  Force weak mutation testing instrumentation path.
+ * force_standard:  Force standard testing instrumentation path.
+ * check_weak:  Check that weak mutation testing instrumentation path is being used.
+ * check_standard:  Check that standard testing instrumentation path is being used.
+ */
+
+#define FIRST_UNPRINTED_OPTION	((int) OPT_SHOW_DECLS)
+
+GCTOPT(OPT_SHOW_DECLS, 	 "show_decls", 	1, OFF,  1, NONE,  1, NONE,  1, NONE, OPT_OPTION)
+GCTOPT(OPT_SHOW_TREE, 	 "show_tree", 	1, OFF,  1, NONE,  1, NONE,  1, NONE, OPT_OPTION)
+GCTOPT(OPT_SHOW_VISIBLE, "show_visible", 1, OFF,  1, NONE,  1, NONE,  1, NONE, OPT_OPTION)
+GCTOPT(OPT_SHOW_CTRL, 	 "show_ctrl", 	1, OFF,  0, NONE,  0, NONE,  0, NONE, OPT_OPTION)
+GCTOPT(OPT_VERBOSE, 	 "verbose", 	1, OFF,  1, NONE,  1, NONE,  1, NONE, OPT_OPTION)
+GCTOPT(OPT_GCT_ONLY, 	 "gct_only", 	1, OFF,  0, NONE,  0, NONE,  0, NONE, OPT_OPTION)
+GCTOPT(OPT_CHECK_TREE, 	 "check_tree", 	1, OFF,  1, NONE,  1, NONE,  1, NONE, OPT_OPTION)
+GCTOPT(OPT_FORCE_DESCEND, "force_descend", 	1, OFF,  1, NONE,  1, NONE,  1, NONE, OPT_OPTION)
+GCTOPT(OPT_FORCE_WEAK, 	 "force_weak", 	1, OFF,  1, NONE,  1, NONE,  1, NONE, OPT_OPTION)
+GCTOPT(OPT_FORCE_STANDARD, "force_standard", 	1, OFF,  1, NONE,  1, NONE,  1, NONE, OPT_OPTION)
+
+/* Remapping options */
+GCTOPT(OPT_REMAP, 	 "remap", 		1, ON,  0, NONE,  0, NONE,  0, NONE, OPT_OPTION)
+GCTOPT(OPT_REMAP_STRICT, "remap-strict", 	1, OFF,  0, NONE,  0, NONE,  0, NONE, OPT_OPTION)
+GCTOPT(OPT_REMAP_FORGET, "remap-forget", 	1, OFF,  0, NONE,  0, NONE,  0, NONE, OPT_OPTION)
+GCTOPT(OPT_REMAP_VERBOSE, "remap-verbose", 	1, OFF,  0, NONE,  0, NONE,  0, NONE, OPT_OPTION)
+
+/* Weak mutation control options. */
+GCTOPT(OPT_DEREF,	 "dereference",	1, ON,   1, NONE,  1, NONE,  1, NONE, OPT_OPTION)
+GCTOPT(OPT_ARRAY_SUBSTITUTION,	 "array-substitutions",	1, ON,   1, NONE,  1, NONE,  1, NONE, OPT_OPTION)
+GCTOPT(OPT_CONSTANTS,   "constants",	1, ON,   1, NONE,  1, NONE,  1, NONE, OPT_OPTION)
+
+
+/*
+ * Testing options:
+ *
+ * These options turn on particular output used for specific test sets.
+ */
+
+/* When these tests are on, we 
+ * 1.  Generate a temporary for every variable initializer.
+ * 2.  Generate an outermost-temporary for every statement.
+ * 3.  Generate an innermost-temporary for every statement.
+ * Statements had better only be SIMPLE-STATEMENTS and COMPOUND-STATEMENTS.
+ */
+GCTOPT(OPT_TEST_TEMP, "test_temp", 	1, OFF,  1, NONE,  1, NONE,  0, NONE, OPT_OPTION)
+
+/*
+ * Some tests are designed to check weak mutation, others to check
+ * standard instrumentation.  They can use these to make sure GCT is
+ * taking the right path.  See also force_weak and force_standard.
+ */
+GCTOPT(OPT_CHECK_WEAK, 	 "check_weak", 	1, OFF,  1, NONE,  1, NONE,  1, NONE, OPT_OPTION)
+GCTOPT(OPT_CHECK_STANDARD, "check_standard", 	1, OFF,  1, NONE,  1, NONE,  1, NONE, OPT_OPTION)

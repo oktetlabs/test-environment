@@ -1,0 +1,77 @@
+TYPE DOCREQ Document Review Request/Report
+ID 
+#Filled automatically when submitted into infolib
+
+COPYRIGHT Copyright(C) OKTET Ltd. 2003
+
+DDRID OKT-UG-0000043-TE_LS_DATA
+
+RESPMGR Elena A. Vengerova <helen@oktet.ru>
+
+
+REVIEW 2003-02-03 15:00:00+03:00
+
+DURATION 01:00
+
+MODERATOR CHECKER Andrew Rybchenko <arybchik@oktet.ru>
+
+PARTICIPANT Oleg Kravtsov <oleg@oktet.ru>
+
+DIRECTION AUTHOR Andrew Rybchenko STATUS CHECKED
+"Proteos: " must present in header of document pages.
+Modify document properties instead of direct typing on the first page.
+
+DIRECTION AUTHOR Andrew Rybchenko STATUS CHECKED
+Document identifier should be in one line in page header and in
+"Document Identifier" field in "References" table. It's allowed to
+modify sizes of corresponding columns.
+
+DIRECTION AUTHOR Oleg Kravtsov STATUS CHECKED
+Unused abbreviations must be removed from the table in section 1
+(NUT, TA). "ASN.1" and "GCC" abbreviations should be added there.
+
+PROPOSAL AUTHOR Andrew Rybchenko STATUS CHECKED
+Use "e.g." instead of "for ex.:" chapters 3, 5.
+
+DIRECTION AUTHOR Oleg Kravtsov STATUS CHECKED
+Swap a) and b) parts of figure 1.
+
+DIRECTION AUTHOR Andrew Rybchenko STATUS CHECKED
+Swap "Log message length" and "timestamp" fields of the log message
+format.
+
+DIRECTION AUTHOR Oleg Kravtsov STATUS CHECKED
+Clearify presence of '\0' character at the end of ASCII strings.
+
+DIRECTION AUTHOR Andrew Rybchenko STATUS CHECKED
+Use "engine", "test" and agent name as examples for "Entity name".
+
+PROPOSAL AUTHOR Oleg Kravtsov STATUS CHECKED
+Use "below" instead of "further" in "Log message" explanations.
+
+DIRECTION AUTHOR Oleg Kravtsov STATUS CHECKED
+Fix typos in word "content" ("contain") in the document.
+
+PROPOSAL AUTHOR Oleg Kravtsov STATUS REJECTED
+Describe format of the timestamp.
+
+OPINION AUTHOR Andrew Rybchenko STATUS CHECKED
+Use "of pairs of fields" instead of "fields' pair".
+
+DIRECTION AUTHOR Andrew Rybchenko STATUS CHECKED
+Use "the first" instaed of "a first" in explanations for "Log data
+format string".
+
+PROPOSAL AUTHOR Oleg Kravtsov STATUS CHECKED
+Use "can follow" instead of "can be trailed" in explanations for "Log
+data format string".
+
+DIRECTION AUTHOR Andrew Rybchenko STATUS CHECKED
+Remove ' character after "its" in the second paragraph in chapter 5.2.
+
+DIRECTION AUTHOR Andrew Rybchenko STATUS CHECKED
+Specify type of argument for special specifiers %tm (unsigned char *),
+%tb (signed char *), %te (signed decimal).
+
+RESULT
+document may be issued (approved) after notes processing during 1 day

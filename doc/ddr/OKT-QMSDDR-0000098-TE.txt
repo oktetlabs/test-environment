@@ -1,0 +1,36 @@
+ID OKT-QMSDDR-0000098-TE
+
+COPYRIGHT Copyright(C) OKTET Ltd. 2003
+
+DDRAUTH Elena Vengerova 
+
+RESPMGR Elena Vengerova <helen@oktet.ru>
+
+DOCID OKT-HLD-0000099-TE_DS
+
+TITLE Proteos: Dispatcher command line options
+
+PURPOSE 
+Specify format, meaning and processing of Dispatcher command line options.
+
+AUDIENCE End users and TE project team-members
+
+ACCESS OKTET employees and customers
+
+TMPL OKT-TMPL-0000009-HLD
+
+COMPLY
+OKT-REQ-0000010-TE
+OKT-ARCH-0000011-TE
+
+ANNOTATION
+Document should describe options which cannot be specified in
+configuration file of subsystems and options describing
+Dispatcher behaivour is some subsystem is not started.
+
+SIZE 
+10 pages
+
+DEADLINE 2003-05-05
+
+AUTHOR Elena Vengerova

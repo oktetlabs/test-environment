@@ -1,0 +1,45 @@
+
+Requirements:
+============
+
+1. Well documented. (It's general requirement)
+    a) How to wite new tests.
+    b) How to support a new protocol.
+    c) How to support a new remote target.
+    
+2. It must allow simple and quick addition a new target system 
+   (suite of remote command as it is done in TAHI)
+
+3. The intuitive interface by operation with the environment. 
+   a) The monotonous interface for operation with various protocols.
+   b) Also some common interface for working with remote commands.
+
+4. Simple solution with a memory allocation. There must be some conventions 
+   for how to and when allocate and deallocate memory. May be the best solution 
+   is a having of some garbage collector.
+
+5. TE SHOULD allow porting to another host systems (For example FreeBSD with BPF).
+
+6. TE MUST be supplied with well structured and documented library which will simplify test writing.
+
+7. TE MUST be well structured, so that each directory should contain predefined objects.
+   (For now "shared" directory contains many things it shouldn't)
+
+8. As for me tests should be written in "C" as it now.
+
+9. API provided with TE mustn't change user's objects (forms, filters and so on). Now that is not true.
+
+10. It will be good if we could develop some language for description of packets (incoming and outgoing).
+    So that we can simply operate with those packets from our tests. (Tests will be clearer). 
+    But it requires big efforts and as I think much time. But it's a very very pretty feature!
+
+11. To my mind we should develop a test suite for TE. It would be helpfull for further development.
+
+12. TE should allow to configure many (different) remote systems simultaneously (allows working with many serial lines).
+    It's for testing of complex envirounments.
+
+13. I wanted TE to listen to many interfaces at the same time (incoming packets).
+
+
+If we implement all of these features our TE will be much better than TAHI and ANVL.
+

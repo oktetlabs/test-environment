@@ -1,0 +1,55 @@
+ID OKT-QMSDRR-0000201
+
+COPYRIGHT Copyright(C) OKTET Ltd. 2003
+
+DOCID
+OKT-DD-0000077-TE_CS_IF
+
+DDRID OKT-QMSDDR-0000076-TE
+
+RESPMGR Elena Vengerova
+
+MODERATOR Elena Vengerova <helen@oktet.ru>
+
+DIRECTION STATUS FIXED
+Line 26: use struct sockaddr * for the address.
+
+DIRECTION STATUS FIXED
+General: use "extern" specifier for function prototypes.
+
+DIRECTION STATUS FIXED
+Line 42: fix English
+
+DIRECTION STATUS FIXED
+Line 45: inst_type is not necessary
+
+DIRECTION STATUS FIXED
+Line 45: value should be provided for newly created object
+
+DIRECTION STATUS FIXED
+Line 71: pass value to the function instead variable address
+
+DIRECTION STATUS FIXED
+Lines 176-179: specify what happen if item is absent in the DB, but
+present on the TA.
+
+DIRECTION STATUS FIXED
+Line 173, 209: return string to user buffer
+
+DIRECTION STATUS FIXED
+Line 209: input may be either name of the instance or name of the object
+
+DIRECTION
+Line 209: remove function
+
+QUESTION Provide functions for walk through list of childs of object instance
+(i.e. all ip addresses) or object (all possible children: ipaddress, ttl, ifIndex).
+
+QUESTION
+Functions for creation/deletion of objects.
+
+QUESTION STATUS FIXED
+Function saving a history (as configuration file) is necessary.
+
+RESULT
+Additional review is necessary.

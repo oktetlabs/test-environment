@@ -1,0 +1,61 @@
+ID OKT-QMSDDR-0000110-TE
+
+COPYRIGHT
+Copyright(C) OKTET Ltd. 2003
+
+DDRAUTH
+Elena Vengerova
+
+RESPMGR
+Elena Vengerova
+
+DOCID
+OKT-UG-0000111-TE_EL
+
+TITLE
+Proteos: HOWTO implement External Library
+
+PURPOSE
+HOWTO for enhanced end users and TE project team-members, which wish to 
+implement or adapt an external library.
+
+AUDIENCE
+End users and TE project team-members
+
+AUDIENCE
+OKTET employees and customers
+ 
+TMPL
+OKT-TMPL-0000006
+
+FMT
+OpenOffice
+
+COMPLY
+OKT-REQ-0000010-TE
+OKT-ARCH-0000011-TE
+
+ANNOTATION
+The document should describe:
+* source conventions of EL (files/directories names, coding style);
+* build conventions of EL (autoconf/automake input files, variables passed
+  to configure script, etc.);
+* strict and clear instructions for creation of C, C++, PERL and TCL interfaces
+  to EL with examples;
+* set of clear algorithms how to adapt a side library to TE with examples.
+
+DETAILS
+High level of detailization is required. All instructions and algorithms
+should be splitted to maximum number of very simple steps.
+
+SIZE
+20-30 pages
+
+DEADLINE
+2003-02-11
+
+AUTHOR
+Igor Artimovich
+
+NOTES
+Deadline was changed from 2003-02-11 to 2003-02-17 after author request.

@@ -1,0 +1,27 @@
+
+TE-NDN-Ethernet
+DEFINITIONS ::=
+BEGIN
+
+IMPORTS DATA-UNIT FROM TE-NDN-General;
+
+EXPORTS EthernetAddress, Ethernet-Header, Ethernet-CSAP;
+
+EthernetAddress ::= IMPLICIT OCTET STRING (SIZE (6))
+
+
+Ethernet-Header ::= IMPLICIT SEQUENCE { 
+        dst-addr [0] DATA-UNIT{EthernetAddress} OPTIONAL,
+        src-addr [1] DATA-UNIT{EthernetAddress} OPTIONAL,
+        eth-type [2] DATA-UNIT{OCTET STRING (SIZE 2)}OPTIONAL
+        }
+
+Ethernet-CSAP ::= IMPLICIT SEQUENCE { 
+    device-id [0] DATA-UNIT{UniversalString},
+    local-addr [1] DATA-UNIT{EthernetAddress} OPTIONAL,
+    remote-addr [2] DATA-UNIT{EthernetAddress} OPTIONAL,
+    eth-type [3] DATA-UNIT{OCTET STRING (SIZE 2)}OPTIONAL, 
+    ..., ...
+}
+
+END

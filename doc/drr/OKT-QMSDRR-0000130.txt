@@ -1,0 +1,36 @@
+# Document Review Request/Report 
+ID OKT-QMSDRR-0000130
+
+COPYRIGHT Copyright(C) OKTET Ltd. 2003
+
+DDRID OKT-QMSDDR-0000104
+
+RESPMGR Elena Vengerova <helen@oktet.ru>
+
+MODERATOR Elena Vengerova <helen@oktet.ru>
+PARTICIPANT Andrew Rybchenko <arybchik@oktet.ru>
+
+DIRECTION
+Line 2: change "Storage Subsystem" to "Storage Library".
+
+DIRECTION
+Lines 24-25, 50, 52, 57, 129, ...: correct English (ispell may be used).
+
+DIRECTION
+Use normal words (not cut!) in the document. (For example, in line 59).
+
+DIRECTION
+Use prefix "strg_" instead "te_" for functions.
+
+DIRECTION
+Function should be defined which copies file, directory (possibly
+with subdirectories) to specified directory in the local file system.
+Proposed prorotype: 
+int strg_copy(const char *storage, char *st_object_name, 
+              char *local_dirname, int recursive);
+
+DIRECTION
+Line 116: specify that functions are just mapped to functions from stdio.h
+
+RESULT
+Document may be approved after notes processing during 2 hours.

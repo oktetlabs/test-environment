@@ -1,0 +1,34 @@
+ID OKT-QMSDRR-0000180
+
+COPYRIGHT Copyright(C) OKTET Ltd. 2003
+
+DDRID OKT-QMSDDR-0000064-TE
+
+RESPMGR Elena Vengerova
+
+TIME 2003-03-26 15-40:00+03:00
+
+DURATION 0:15
+
+MODERATOR Andrey G. Ivanov <andron@oktet.ru>
+
+PARTICIPANT Konstantin Abramenko <konst@oktet.ru>
+
+DIRECTION STATUS FIXED
+Must be clarified that when function(s) returns -1 the answer should be send
+be caller (the function does nothing).
+
+DIRECTION STATUS FIXED
+Functions rcf_ch_start and rcf_ch_kill should be renamed to rcf_ch_task_start
+and rcf_ch_task_kill
+
+DIRECTION STATUS FIXED
+Line 125 (the comments to the function rcf_ch_file). Comments should be 
+changed -- command processing should be done by CALLER if -1 returned.
+
+DIRECTION  STATUS FIXED
+Line 314 (the comments to the function rcf_ch_call). "calls a routine 
+rcf_ch_call_routine" is wrong (bad English).
+
+RESULT
+Document may be issued (approved) after notes processing during 20 minutes.

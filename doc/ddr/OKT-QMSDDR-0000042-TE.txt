@@ -1,0 +1,58 @@
+ID OKT-QMSDDR-0000042-TE
+
+COPYRIGHT
+Copyright(C) OKTET Ltd. 2003
+
+DDRAUTH
+Elena Vengerova
+
+RESPMGR
+Elena Vengerova
+
+DOCID
+OKT-UG-0000043-TE_LS_DATA
+
+TITLE
+Proteos: primary log format specification
+
+PURPOSE
+User's Guide intended for enhanced end users and TE project team-members
+describing format of raw log.
+
+AUDIENCE
+End users and TE project team-members
+
+AUDIENCE
+OKTET employees and customers
+ 
+TMPL
+OKT-TMPL-0000006
+
+FMT
+OpenOffice
+
+COMPLY
+OKT-REQ-0000010-TE
+OKT-ARCH-0000011-TE
+
+ANNOTATION
+The document should provide full description of all messages which may
+be stored in raw log. Particularly following elements of raw log should
+not be fogotten:
+* timestamps;
+* owner (subsystem, Test Package, user of the Test Agent);
+* string messages storing;
+* storing of file content;
+* storing of memory dumps.
+
+Specification should allow implementor of Report Generator to start
+his work without any additional information.
+
+SIZE
+5-10 pages
+
+DEADLINE
+2003-01-30
+
+AUTHOR
+Igor Vasiliev

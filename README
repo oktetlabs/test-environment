@@ -1,0 +1,26 @@
+
+Required packages:
+~~~~~~~~~~~~~~~~~~
+The following packages are required to build and run.
+
+- libxml2-devel (2.6.10)
+- glib-devel (1.2.10)
+- popt-devel
+- tcl (and tcl-devel, if applicable, e.g. on Fedora Core 2)
+
+We are using versions of libraries specified in parentheses.
+
+Also all works fine with RedHat 9.0 native packages.
+
+Of course, gcc, make, gawk, sed and other standard development tools
+are required to build sources.
+
+
+Tools required for development:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The following tools are required for development, but not required
+to build and run from distributive:
+
+- autoconf (at least 2.59)
+- automake (at least 1.8)
+

@@ -1,0 +1,132 @@
+
+     This is a complete list of the things which need to
+be done in TCE:
+
+    -- tce_instrument_sources script
+    -- tce_uninstrument_sources script
+    -- tce_cleanup  <- optional
+    -- tce_flush script which invokes
+    -- tce_flush_ta()
+    -- tce_flush_ten() to be called by Configurator
+    -- tce_init_nut_logfile()
+    -- tce_report script
+    -- GCT configure, compile and install
+
+
+    Here is a detailed description what the above things do.
+
+  TCE_INSTRUMENT_SOURCES, TCE_UNINSTRUMENT_SOURCES, TCE_CLEANUP
+ ---------------------------------------------------------------
+   Currently the script works with one "but". An important issue
+of work of the script is saving the uninstrumented sources. In the
+present realization I have relied totally on GCT, by invoking
+"grestore". That program can fail -- for example if invocation
+of GCT has failed (see below for explanation why GCT may fail). Essential 
+for its work is "gct-rscript". It may be removed by a consequent call of 
+"gct-init". Anyway, we do an extra copy of that script, and current 
+realization of "tce_uninstrument_sources" uses that backup copy if 
+neither "gct-rscript" nor "gct-rscript.bk" were found. 
+
+   It is recommended to switch to another approach: to remember all
+names of the files being instrumented in a file and then simply restore them
+one by one in "tce_uninstrument_sources". The difference is as follows:
+current approach requires writing a separate script "tce_cleanup" which
+will remove 'gct_control' and all 'gct_backup' subdirectories. 
+"tce_uninstrument_sources" does not do that because I don't trust
+"grestore" that it in an failure case is able to completely restore
+the sources (normally, it does, but I'm not sure it will cope in
+different erratic cases) -- therefore, 'gct_backup's can contain
+some original sources which have not been restored, and thus should
+not be removed. This requires separating the stage of removal from
+the stage of uninstrumenting, i.e. having a separate "tce_cleanup"
+script. The proposed approach is free from such difficulties and does
+not require "tce_cleanup". If I have time, I will try to realize
+this approach, it should not take too long.
+
+   GCT is probable to fail due to the following reasons:
+        (1) just because of an error in the program
+        (2) if it was given an option that it does not know or
+            does not support.
+        (3) because it is based on an old version of GCC
+        (4) while doing file operations, there can always be
+            errors (e.g. permission problems, etc)
+
+   What can be done:
+        (1) just find out and correct the error :-)
+        (2) Normally, GCT will not like the option it does not
+            recognize, and so it will not forward it to GCC 
+            or whomever. See "Troubleshooting GCT" how to modify
+            GCT to make it be tolerant to unknown options. However,
+            there might be another drawback, see (3).
+        (3) Indeed, by giving a certain option to GCC, you 
+            expect certain behavior from it. And, if the author
+            of the software being tested relied on that behavior,
+            you may get errors from GCT. The simplest drawback
+            is that certain pieces of code will not be instrumented.
+            Another drawback that it will deny to compile the code.
+            However we may address all the drawbacks to carefulness of
+            the developer which has not written a portable enough code.
+
+   A later addition: I have changed "tce_instrument_sources" to dump
+all the filenames it instruments to the file "filelist.txt". 
+But I haven't change "tce_uninstrument_sources":
+               -- it has probably be changed to be a PERL script
+                  to just read that file line by line and
+               -- to restore all files mentioned in that file
+                  by copying them from the "gct_backup" subdirectories
+               -- to remove "gct_control" and all "gct_backup" subdirectories
+                  which were mentioned in "filelist.txt"
+
+   Next, "tce_instrument_sources" copies a file 
+"${TCE_BASE}/gct-write.c.logger"
+to the control directory, if the logging mode was specified as "logger"
+on the command line. Currently that file is just a copy of gct-write.c.
+But it has to be changed in the following way:
+              -- gct_readlog() should be empty
+              -- gct_writelog() should write the log to the Logger subsystem.
+
+   One more remark:
+   gct-write.c is appended to the first source file. But the names 
+of the routines which are present in that file are not very good:
+     checklog(), openlog(), etc.
+No matter in which logging mode, these names are bad, and should be
+better changed to other, like
+    gct_checklog(), gct_openlog(), etc
+In the logging mode, one just has to modify "${TCE_BASE}/gct-write.c.logger".
+In the "file" mode, one needs to create "${TCE_BASE}/gct-write.c.file" and
+copy it the same way to "gct_control/gct-write.c".
+
+
+
+  TCE_FLUSH
+ -----------
+  This script must invoke 'tce_flush_ta()' routines on all agents.
+
+On each agent, that routine must invoke the routine gct_writelog(<filename>).
+Filename is "/te_tmp/tce_data" in the "file" mode, and is irrelevant
+in case of the "logger" mode.
+
+
+  TCE_INIT_NUT_LOGFILE
+ ----------------------
+  This script should remove all coverage log files on all "file"-mode
+Test Agents and remove all coverage log in the Logger.
+
+  TCE_REPORT
+ ------------
+  - "tce_report" should prepare a log file (either download it from NUT)
+or gather log from the Logger. 
+  - then invoke "greport" or
+  - "gsummary" in case of "-b" option of "tce_report"
+
+  GCT configure, compile and install
+ ------------------------------------
+
+  By the moment, the CVS version of GCT is able to configure itself.
+However, it only compiles successfully when the compilation is invoked
+from inside the source directory. When the build directory is different
+from the source directory, some errors occur, and I haven't managed
+to cure them. 
+  The file "gct-2.0B-patched.tar.gz" in "test_environment/tools/gct_src"
+is stale and should be ignored. CVS version is up-to-date.
+

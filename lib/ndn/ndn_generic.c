@@ -1,0 +1,417 @@
+/** @file
+ * @brief ASN.1 library
+ *
+ * Definitions of general NDN ASN.1 types
+ *
+ * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
+ * root directory of the distribution).
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation; either version 2.1 of
+ * the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+ * MA  02111-1307  USA
+ *
+ * @author Konstantin Abramenko <konst@oktetlabs.ru>
+ *
+ * $Id$
+ */ 
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#include "te_defs.h"
+
+#include "asn_impl.h"
+#include "ndn.h"
+#include "ndn_internal.h"
+
+/*
+IpAddress ::= OCTET STRING (SIZE(4)) 
+*/
+asn_type ndn_ip_address_s = 
+{ "IpAddress", {APPLICATION, 1}, OCT_STRING, 4, {0}};
+
+const asn_type * const ndn_ip_address = &ndn_ip_address_s;
+
+
+
+/* 
+ * Interval 
+ */ 
+
+static asn_named_entry_t _ndn_interval_ne_array [] = 
+{
+    { "b", &asn_base_integer_s },
+    { "e", &asn_base_integer_s }
+};
+
+ asn_type ndn_interval_static = 
+{ "Interval", {PRIVATE, 1}, SEQUENCE, 2, {_ndn_interval_ne_array} };
+
+const asn_type * const  ndn_interval = &ndn_interval_static;
+
+
+
+asn_type ndn_data_unit_intervals_static = 
+{   "DATA-UNIT-intervals", {PRIVATE, 2}, SEQUENCE_OF, 0,
+    {&ndn_interval_static} 
+};
+
+const asn_type * const  ndn_interval_sequence = &ndn_data_unit_intervals_static;
+
+
+
+
+asn_type ndn_data_unit_enum_static = 
+{ "DATA-UNIT-enum", {PRIVATE, 2}, SET_OF, 1,
+   {&asn_base_integer_s} 
+};
+
+
+
+static asn_named_entry_t _ndn_data_unit_mask_ne_array [] = 
+{
+    { "v", &asn_base_octstring_s },
+    { "m", &asn_base_octstring_s }
+}; 
+
+ asn_type ndn_data_unit_mask_static = 
+{ "DATA-UNIT-mask", {PRIVATE, 2}, SEQUENCE, 2, {_ndn_data_unit_mask_ne_array} };
+
+
+
+static asn_named_entry_t _ndn_data_unit_env_ne_array [] = 
+{
+    { "name", &asn_base_charstring_s },
+    { "type", &asn_base_enum_s }
+}; 
+
+ asn_type ndn_data_unit_env_static = 
+{ "DATA-UNIT-env", {PRIVATE, 2}, SEQUENCE, 
+  sizeof(_ndn_data_unit_env_ne_array)/sizeof(asn_named_entry_t), 
+  {_ndn_data_unit_env_ne_array} 
+};
+
+
+
+
+
+
+asn_type asn_base_int4_s = 
+{ "INTEGER (0..15)", {UNIVERSAL, 2}, INTEGER, 4, {0}};
+
+const asn_type * const  asn_base_int4 = &asn_base_int4_s;
+
+
+asn_type asn_base_int8_s = 
+{ "INTEGER (0..255)", {UNIVERSAL, 2}, INTEGER, 8, {0}};
+
+const asn_type * const  asn_base_int8 = &asn_base_int8_s;
+
+
+asn_type asn_base_int16_s = 
+{ "INTEGER (0..65535)", {UNIVERSAL, 2}, INTEGER, 16, {0}};
+
+const asn_type * const  asn_base_int16 = &asn_base_int16_s;
+
+
+asn_type ndn_octet_string6_s = 
+{  "OCTET STRING (SIZE (6))", {UNIVERSAL, 4}, OCT_STRING, 6, {0}};
+
+const asn_type * const  ndn_octet_string6 = &ndn_octet_string6_s;
+
+
+
+NDN_DATA_UNIT_TYPE (int32,         asn_base_integer_s,    INTEGER)
+NDN_DATA_UNIT_TYPE (int4,          asn_base_int4_s,       INTEGER(0..15))
+NDN_DATA_UNIT_TYPE (int8,          asn_base_int8_s,       INTEGER(0..255))
+NDN_DATA_UNIT_TYPE (int16,         asn_base_int16_s,      INTEGER(0..65535))
+NDN_DATA_UNIT_TYPE (octet_string,  asn_base_octstring_s,  OCTET STRING)
+NDN_DATA_UNIT_TYPE (octet_string6, ndn_octet_string6_s,   OCTET STRING (6) ) 
+NDN_DATA_UNIT_TYPE (char_string,   asn_base_charstring_s, UniversalString )
+NDN_DATA_UNIT_TYPE (ip_address,    ndn_ip_address_s,      IpAddress )
+NDN_DATA_UNIT_TYPE (objid,         asn_base_objid_s,      OBJECT IDENTIFIER )
+
+
+
+
+
+static asn_named_entry_t _ndn_payload_ne_array [] = 
+{
+    { "bytes",    &asn_base_octstring_s },
+    { "function", &asn_base_charstring_s },
+    { "filename", &asn_base_charstring_s },
+    { "length",   &asn_base_integer_s }
+}; 
+
+asn_type ndn_payload_s =
+{ "Payload", {PRIVATE, 2}, CHOICE, 
+  sizeof(_ndn_payload_ne_array)/sizeof(asn_named_entry_t), 
+  {_ndn_payload_ne_array} 
+};
+
+const asn_type * const  ndn_payload = &ndn_payload_s;
+
+
+
+static asn_type ndn_csap_spec_s =
+{ "CSAP-spec", {PRIVATE, 2}, SEQUENCE_OF, 0, {&ndn_generic_csap_level_s} };
+
+const asn_type * const  ndn_csap_spec = &ndn_csap_spec_s;
+
+
+
+
+
+
+
+
+
+
+
+static asn_type ndn_integer_seq_s = 
+{ "SEQENCE OF INTEGER", {PRIVATE, 20}, SEQUENCE_OF, 0, {&asn_base_integer_s} };
+
+static asn_type ndn_chstring_seq_s = 
+{ "SEQENCE OF UniversalString", {PRIVATE, 20}, SEQUENCE_OF, 0, {&asn_base_charstring_s} };
+
+
+static asn_named_entry_t _ndn_template_parameter_simple_for_ne_array [] = 
+{
+    { "begin",  &asn_base_integer_s },
+    { "end",    &asn_base_integer_s },
+    { "step",   &asn_base_integer_s }
+}; 
+
+static asn_type ndn_template_parameter_simple_for_s = 
+{ "Templ-Param-simple-for", {PRIVATE, 20}, SEQUENCE, 
+  sizeof(_ndn_template_parameter_simple_for_ne_array)/sizeof(asn_named_entry_t), 
+  {_ndn_template_parameter_simple_for_ne_array} 
+};
+
+
+static asn_named_entry_t _ndn_template_parameter_ne_array [] = 
+{
+    { "ints",       &ndn_integer_seq_s },
+    { "strings",    &ndn_chstring_seq_s },
+    { "simple-for", &ndn_template_parameter_simple_for_s },
+}; 
+
+asn_type ndn_template_parameter_s =
+{
+    "Template-Parameter", {PRIVATE, 20}, CHOICE,
+    sizeof(_ndn_template_parameter_ne_array)/sizeof(asn_named_entry_t), 
+    {_ndn_template_parameter_ne_array}
+};
+
+const asn_type * const ndn_template_parameter = &ndn_template_parameter_s;
+
+
+
+
+
+static asn_type ndn_template_parameter_sequence_s = 
+{ "SEQENCE OF Template-Parameter", {PRIVATE, 20}, 
+  SEQUENCE_OF, 1, {&ndn_template_parameter_s} 
+};
+
+static asn_type ndn_generic_pdu_sequence_s = 
+{ "Generic-PDU-sequence", {PRIVATE, 20}, 
+  SEQUENCE_OF, 1, {&ndn_generic_pdu_s} 
+};
+
+const asn_type * const ndn_generic_pdu_sequence = &ndn_generic_pdu_sequence_s;
+
+
+
+
+
+static asn_named_entry_t _ndn_traffic_template_ne_array [] = 
+{
+    { "arg-sets",  &ndn_template_parameter_sequence_s },
+    { "delays",    &ndn_data_unit_int32_s },
+    { "pdus",      &ndn_generic_pdu_sequence_s },
+    { "payload",   &ndn_payload_s },
+}; 
+
+asn_type ndn_traffic_template_s =
+{ "Traffic-Template", {PRIVATE, 22}, SEQUENCE, 
+   sizeof(_ndn_traffic_template_ne_array)/sizeof(asn_named_entry_t), 
+   {_ndn_traffic_template_ne_array}
+};
+
+const asn_type * const  ndn_traffic_template = &ndn_traffic_template_s;
+
+/*
+Packet-Action ::= CHOICE {
+    echo        NULL,
+    file        UniversalString
+}
+*/
+
+static asn_named_entry_t _ndn_packet_action_ne_array [] = 
+{
+    { "echo",    &asn_base_null_s },
+    { "file",    &asn_base_charstring_s }
+}; 
+
+asn_type ndn_packet_action_s =
+{ "Payload", {PRIVATE, 2}, CHOICE, 
+  sizeof(_ndn_packet_action_ne_array)/sizeof(asn_named_entry_t), 
+  {_ndn_packet_action_ne_array} 
+};
+
+const asn_type * const  ndn_packet_action = &ndn_packet_action_s;
+
+
+/*
+
+Traffic-Pattern-Unit ::= SEQUENCE {
+    pdus        SEQUENCE OF Generic-PDU,
+    payload     Payload OPTIONAL,
+    action      Packet-Action OPTIONAL,
+}
+*/
+
+
+static asn_named_entry_t _ndn_traffic_pattern_unit_ne_array [] = 
+{
+    { "pdus",      &ndn_generic_pdu_sequence_s },
+    { "payload",   &ndn_payload_s },
+    { "action",    &ndn_packet_action_s },
+}; 
+
+asn_type ndn_traffic_pattern_unit_s =
+{ "Traffic-Pattern-Unit", {PRIVATE, 20}, SEQUENCE, 
+   sizeof(_ndn_traffic_pattern_unit_ne_array)/sizeof(asn_named_entry_t), 
+  {_ndn_traffic_pattern_unit_ne_array}
+};
+
+const asn_type * const  ndn_traffic_pattern_unit = &ndn_traffic_pattern_unit_s;
+
+
+/*
+
+Traffic-Pattern ::= SEQUENCE OF Traffic-Pattern-Unit
+
+*/
+
+asn_type ndn_traffic_pattern_s =
+{ "Traffic-Pattern", {PRIVATE, 30}, SEQUENCE_OF, 1,
+  {&ndn_traffic_pattern_unit_s}
+};
+
+const asn_type * const  ndn_traffic_pattern = &ndn_traffic_pattern_s;
+
+
+
+/* 
+NDN-TimeStamp ::= SEQUENCE {
+    seconds INTEGER, -- seconds since Unix epoch
+    micro-seconds INTEGER
+}
+ */
+static asn_named_entry_t _ndn_time_stamp_ne_array [] = 
+{
+    { "seconds",       &asn_base_integer_s },
+    { "micro-seconds", &asn_base_integer_s },
+}; 
+
+asn_type ndn_time_stamp_s =
+{ "NDN-TimeStamp", {PRIVATE, 20}, SEQUENCE, 
+   sizeof(_ndn_time_stamp_ne_array)/sizeof(asn_named_entry_t), 
+  {_ndn_time_stamp_ne_array}
+
+};
+
+const asn_type * const  ndn_time_stamp = &ndn_time_stamp_s;
+
+
+/*
+Raw-Packet ::= SEQUENCE -- values of this type are passed from CSAP to test
+{
+    received    NDN-TimeStamp,
+    pdus        SEQUENCE (SIZE (1..max-pdus)) OF Generic-PDU,
+    payload     Payload OPTIONAL
+} 
+*/
+
+
+static asn_named_entry_t _ndn_raw_packet_ne_array [] = 
+{
+    { "received",  &ndn_time_stamp_s },
+    { "pdus",      &ndn_generic_pdu_sequence_s },
+    { "payload",   &ndn_payload_s },
+}; 
+
+asn_type ndn_raw_packet_s =
+{ "Raw-Packet", {PRIVATE, 20}, SEQUENCE, 
+   sizeof(_ndn_raw_packet_ne_array)/sizeof(asn_named_entry_t), 
+  {_ndn_raw_packet_ne_array}
+
+};
+
+const asn_type * const  ndn_raw_packet = &ndn_raw_packet_s;
+
+
+
+
+
+/**
+ * Match data with DATA-UNIT pattern.  
+ *
+ * @param data          data to be matched.
+ * @param d_len         length of data.
+ * @param pattern       ASN value containing DATA-UNIT pattern as some
+ *                      of subvalues or itself. 
+ * @param labels        textual dot-separated labels pointing to
+ *                      DATA-UNIT subvalue.
+ *
+ * @return zero if matches, errno otherwise.
+ */ 
+int 
+ndn_match_data_units(void * data, int d_len, asn_value_p pattern, 
+                     const char *labels)
+{
+    UNUSED (data);
+    UNUSED (d_len);
+    UNUSED (pattern);
+    UNUSED (labels);
+    return 1;
+}
+
+
+/**
+ * Get timestamp from recieved Raw-Packet
+ *
+ * @param packet ASN-value of Raw-Packet type.
+ * @param ts     location for timestamp (OUT).
+ *
+ * return zero on success or appropriate error code otherwise.
+ */
+int
+ndn_get_timestamp(const asn_value *packet, struct timeval *ts)
+{ 
+    int rc, len;
+
+    len = sizeof(ts->tv_sec);
+    rc = asn_read_value_field(packet, &ts->tv_sec, &len, "received.seconds");
+
+    len = sizeof(ts->tv_usec);
+    if (rc == 0)
+        rc = asn_read_value_field(packet, &ts->tv_usec, &len, 
+                                                "received.micro-seconds");
+    return rc;
+}
+

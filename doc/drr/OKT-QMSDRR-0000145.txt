@@ -1,0 +1,167 @@
+ID OKT-QMSDRR-0000145
+
+COPYRIGHT Copyright(C) OKTET Ltd. 2003
+
+DDRID OKT-QMSDDR-0000120-TE
+
+RESPMGR Elena Vengerova
+
+TIME 2003-02-14 17-00:00+03:00
+
+DURATION 01:00
+
+MODERATOR Andrew Rybchenko <arybchik@oktet.ru>
+
+PARTICIPANT Elena Vengerova <helen@oktet.ru>
+
+PARTICIPANT Konstantin Abramenko <konst@oktet.ru>
+
+PARTICIPANT Ibragimov Ilya <ibr@oktet.ru>
+
+PARTICIPANT Oleg Kravtsov <oleg@oktet.ru>
+
+
+DIRECTION STATUS FIXED
+Use numbered references in the document like [2], instead of titles.
+Ask Elena or Andrew about this technique.
+
+DIRECTION STATUS FIXED
+Modify "User Guide" -> "User's Guide" on the first page.
+
+DIRECTION STATUS FIXED
+Add abstract to the document.
+
+DIRECTION STATUS FIXED
+Move OKTET copyright notice from hidden section to normal.
+
+DIRECTION STATUS FIXED
+Modify "8 feb" to "Feb, 8".
+
+DIRECTION STATUS FIXED
+Swap first and second names of the author.
+
+DIRECTION STATUS FIXED
+Remove the first issue.
+
+DIRECTION STATUS FIXED
+Remove issue about defragrmentation.
+Clearify in the document that information from lower layers may be lost.
+
+DIRECTION STATUS FIXED
+Remove captions of tables.
+
+DIRECTION STATUS FIXED
+The first sentence in Intrioduction: services are provided to "tester".
+
+DIRECTION STATUS FIXED
+Use "OKT List Bullet" paragraph  style for bullet list.
+
+DIRECTION STATUS FIXED
+Clearify first two pargraphs of chapter 4.1.
+
+DIRECTION STATUS FIXED
+The second line in 4.1: "is descibe" -> "is described".
+
+DIRECTION STATUS FIXED
+Add comma in the first sentence of the third paragraph of 4.1
+
+DIRECTION STATUS FIXED
+Add "create and destroy" CSAP procedures for external library
+functionality.
+
+DIRECTION STATUS FIXED
+Remove "Bb" and "bb".
+
+DIRECTION STATUS FIXED
+Modify the first paragraph in 5 (due to CSAP description).
+
+DIRECTION STATUS FIXED
+Use "TCP segment" instead of "TCP datagram" (the last words in 5.2).
+
+DIRECTION STATUS FIXED
+Add detailed comments in ASN.1 definitions.
+
+DIRECTiON STATUS FIXED
+It should be possible to force IPv4 CSAP to automatically fragment
+traffic.
+
+DIRECTION STATUS FIXED
+IPv4 address is a sequence of 4 bytes. Use "Ip4Address" instead of
+"IpAddress".
+
+DIRECTION STATUS FIXED
+Clearify usage and processing of "env" field.
+
+DIRECTION STATUS FIXED
+"${TEBASE}/storage/ndn" and "${TEBASE}/storage/nds" for sources of
+notations and specifications.
+
+DIRECTION
+It should be possible to specify set of patterns.
+
+DIRECTION STATUS FIXED
+Clearify that "Generic Headers" is not just headers, it may be "trailer".
+
+DIRECTION STATUS FIXED
+Use spell checker for the document.
+
+
+RESULT
+Additional review is necessary since the document is not complete.
+
+
+
+TIME 2003-02-14 17-00:00+03:00
+
+DURATION 01:00
+
+MODERATOR Ibragimov Ilya <ibr@oktet.ru>
+
+PARTICIPANT Elena Vengerova <helen@oktet.ru>
+
+PARTICIPANT Igor Vasiliev <igorv@oktet.ru>
+
+DIRECTION STATUS FIXED
+Packet definition needs revising
+
+DIRECTION STATUS FIXED
+table: "presenteD"
+Line: 52 So, ... . - grammar
+           
+PROPOSAL STATUS FIXED
+Line: 62 - clarify test-writing language
+
+DIRECTION STATUS FIXED
+Line: 72-73 - grammar
+           76 graamar" - "do" instead of "does"
+
+DIRECTION STATUS FIXED
+ Line: 66-71 What is needed to support protocol? Make it 
+            stack-oriented (67-69 in particular).
+
+DIRECTION STATUS FIXED
+Line: 78 -83 Make verb forms equal
+
+DIRECTION STATUS FIXED
+Line: 83 remove "respective"
+              commanD
+
+DIRECTION STATUS FIXED
+Line: 151, Order of PDU is significant
+
+DIRECTION STATUS FIXED
+Line: 262, 280 payload is optional
+
+DIRECTION STATUS FIXED
+Clarify NDN Parser definition
+
+DIRECTION
+The [ch] files must comply TIS
+
+DIRECTION
+General comments for functions are required, logical description of actions
+           is required
+
+RESULT
+Notes should be processed during 1 day. Further document development is 
+postponed until implementation of AP domain core.

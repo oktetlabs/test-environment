@@ -1,0 +1,48 @@
+
+    This is a patched version of GCT-2.0B, which appeared to work on Linux
+platforms. We did not check whether it works on other platforms. 
+
+    Use this software at your own risk. 
+
+    All changes are minor. Some new files were added: those are GNU licensed.
+For licensing of GCT, see its documentation (unenhanced version is GPL). 
+
+    This is the description of all changes:
+
+        cccp.c
+        collect2.c
+        gcc.c
+        protoize.c:       Declaration of "extern char *sys_errlist[];" has been commented
+                          out. It produced problems in compilation on Linux.
+
+        Makefile.in:      1) perlexec is set to the value of PERL environment variable
+                          2) Makefile.in now generates gct-gcc2 from gct-gcc2.in by
+                             substituting the value of $(perlexec)
+                          3) New files stddef.h and stdarg.h are installed to the
+                             lib/gct-include/ directory
+                          4) Some precious files ("insn-*" and other) are now just
+                             copied to the build directory instead of generating new
+                             ones. However, this did not help.
+
+        config.sub        Replaced with a new FSF version. Works perfectly, accepts
+                          i686-*-*. 
+
+        config.guess      New file. Now used in configure.
+
+        stddef.h
+        stdarg.h          New files. GCT does not want to run without them.
+
+        configure:        1) All occurrences of i[34]86 architecture were replaced with
+                             i[3456789]86.
+                          2) Changed the behavior of configure, which aborted when the
+                             target platform had not been specified. Now, it calls
+                             config.guess in that case.
+
+        gct-gcc2:         Now Makefile.in takes the value of the PERL environment variable
+                          (puts it into the perlexec variable) and creates gct-gcc2 from
+                          gct-gcc2.in by substituting the given perl path. Obviously the
+                          authors forgot to do this with gct-gcc2.
+
+
+  Pavel A. Bolokhov, Pavel.Bolokhov@oktet.ru
+

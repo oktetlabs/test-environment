@@ -1,0 +1,270 @@
+#! @SHELL@
+# rgt-conv --
+#    Process Raw Log File according to user specified XML filter file
+#    (calls xml2tcl filter file converter and then calls rgt-core utility).
+#
+# Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
+# root directory of the distribution).
+#
+# Test Environment is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation; either version 2 of
+# the License, or (at your option) any later version.
+#
+# Test Environment is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+# MA  02111-1307  USA
+#
+# Author: Oleg N. Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
+#
+# $Id: rgt-conv.in,v 1.1 2003/10/28 09:35:42 arybchik Exp $
+
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+bindir=@bindir@
+datadir=@datadir@
+
+unset cfg_file
+unset rlf_file
+unset out_file
+op_mode="postponed"
+end_opts="false"
+
+DEFAULT_CFG_FILE_NAME=default-rgt-filter.xml
+prog_name=`basename $0`
+
+#
+# This script gets the following parameters:
+#   -m MODE, --mode=MODE        Choose mode of RGT opertation.
+#   -c FILE, --cfg-filter=FILE  Specify XMl filter file name.
+#   -f FILE, --raw-log=FILE     Specify Raw Log file name.
+#   -o FILE, --output=FILE      Output file name.
+#   -v, --version               Output version information.
+#   -h, --help                  Display help and exit.
+#
+
+#
+# Print information about how to use this utility and exit
+#
+usage () {
+    cat <<EOF
+Usage: $prog_name [OPTION...] [<Raw Log file> [<Output file>]]
+  Processes Raw Log file specified with -o option according to user filters 
+  passed with -c option. Result file is output in specified file or stdout.
+
+  OPTIONS:
+  -m MODE, --mode=MODE     Specify mode of RGT operation.
+                           It can be live or postponed (postponed by default).
+
+  -c FILE,                 Specify XML filter configuration file. If no file
+  --cfg-filter=FILE        specified no filtering is applied.
+  
+  -f FILE, --raw-log=FILE  Specify Raw Log file name to be processed.
+  
+  -o FILE, --output=FILE   Result file name. If it is not specified then the
+                           result is output in stdout.
+  
+  -v, --version            Display version information.
+  
+  -h, --help               Show this help message.
+  
+EOF
+}
+
+#
+# Checks if operation mode is valid (should be one of "live" or "postponed")
+#
+check_op_mode () {
+    if [ -z "$1" ] || \
+       ( [ "$1" != "live" ] && [ "$op_mode" != "postponed" ] ) ; then
+        usage
+        echo "Specify mode of operation: live or postponed"
+        { (exit 1); exit 1; }
+    fi
+}
+
+#
+# Check for presense file in file system
+#
+check_file () {
+    if ! [ -f "$1" ]; then
+        if [ -z "$1" ]; then
+            echo "You should specify $2" >&2
+        else
+            echo "$1: No such file" >&2
+        fi
+        { (exit 1); exit 1; }
+    fi
+}
+
+#
+# Print information about version number, copyright statement and exit.
+#
+version_info () {
+    echo "Package @PACKAGE@ ($prog_name) version @VERSION@"
+    echo "@TE_COPYRIGHT@"
+    { (exit 0); exit 0; }
+}
+
+#
+# Generates unique temp file name and creates it.
+# The name of the file is placed in variable with name given 
+# in the first argument.
+#
+get_tmp_file_name () {
+    # find a tmp directory
+    TMPDIR=""
+    for t in /tmp /var/tmp ${PWD}; do
+        if ! [ -d $t ] || ! [ -w $t ] ; then
+            continue;
+        fi
+        TMPDIR=$t
+        break;
+    done
+    
+    # choose tmp file name
+    tmp=""
+    {
+        tmp=`(umask 077 && mktemp -q "$TMPDIR/$prog_name.XXXXXX") 2>/dev/null` &&
+        test -n "$tmp" && test -f "$tmp"
+    } ||
+    {
+        tmp="$TMPDIR/$prog_name.$$-$RANDOM"
+        (umask 077 && touch $tmp)
+    } ||
+    {
+        echo "$prog_name: cannot create a temporary file." >&2
+        { (exit 1); exit 1; }
+    }
+    eval "$1=$tmp"
+}
+
+# Check arguments 
+while [ $# != 0 ]
+do
+    case "$1" in
+    -m)
+        op_mode=$2
+        check_op_mode $op_mode
+        shift
+        ;;
+    --mode*)
+        if echo $1 | grep '=' >/dev/null ; then
+            op_mode=`echo $1 | sed 's/^--mode=//'`
+        else
+            op_mode=$2
+            shift
+        fi
+        check_op_mode $op_mode
+        ;;
+    -c)
+        cfg_file=$2
+        check_file $cfg_file "filter configuration file"
+        shift
+        ;;
+    --cfg-filter*)
+        if echo $1 | grep '=' >/dev/null ; then
+            cfg_file=`echo $1 | sed 's/^--cfg-filter=//'`
+        else
+            cfg_file=$2
+            shift
+        fi
+        check_file $cfg_file "filter configuration file"
+        ;;
+    -f)
+        rlf_file=$2
+        check_file $rlf_file "raw log file"
+        shift
+        ;;
+    --raw-log*)
+        if echo $1 | grep '=' >/dev/null ; then
+            rlf_file=`echo $1 | sed 's/^--raw-log=//'`
+        else
+            rlf_file=$2
+            shift
+        fi
+        check_file $rlf_file "raw log file"
+        ;;
+    -o)
+        out_file=$2
+        shift
+        ;;
+    --output*)
+        if echo $1 | grep '=' >/dev/null ; then
+            out_file=`echo $1 | sed 's/^--output=//'`
+        else
+            out_file=$2
+            shift
+        fi
+        ;;
+    -v)
+        version_info
+        ;;
+    --version)
+        version_info
+        ;;
+    -h)
+        usage
+        { (exit 0); exit 0; }
+        ;;
+    --help)
+        usage
+        { (exit 0); exit 0; }
+        ;;
+    --)
+        end_opts="true"
+        ;;
+    *)
+        if [ "$end_opts" = "false" ] && [[ $1 = -* ]] ; then
+            usage
+            echo "Unknown option: $1" >&2
+            { (exit 1); exit 1; }
+        fi
+        
+        if [ -z "$rlf_file" ]; then
+            rlf_file=$1
+            check_file $rlf_file "raw log file"
+        elif [ -z "$out_file" ]; then
+            out_file=$1
+        else
+            usage
+            echo "Too many parameters specified" >&2
+            { (exit 1); exit 1; }
+        fi
+        ;;
+    esac
+    shift
+done
+
+if [ -z "$cfg_file" ]; then
+# Specify default filter file
+    cfg_file="$datadir/$DEFAULT_CFG_FILE_NAME"
+fi
+
+# Convert XML filter file in TCL file
+TMP_FILE=""
+get_tmp_file_name TMP_FILE
+
+# Destroy temporarely file on exit
+trap 'exit_status=$?; rm -f $TMP_FILE && exit $exit_status' 0
+trap '{ (exit 1); exit 1; }' 1 2 13 15
+
+$bindir/rgt-filter-prepare $cfg_file $TMP_FILE || exit 1
+
+if [ -z "$rlf_file" ]; then
+    rlf_file="&0"
+fi
+if [ -z "$out_file" ]; then
+    out_file="&1"
+fi
+
+# Process raw log file with filter
+eval "$bindir/rgt-core -m $op_mode $TMP_FILE <$rlf_file >$out_file" || 
+    rm -f $out_file
+

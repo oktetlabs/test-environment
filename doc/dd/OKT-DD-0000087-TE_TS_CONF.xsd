@@ -1,0 +1,228 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 
+    See test_environment/engine/tester/tester_defs.xsd for definitions
+    common for specifications of Test Package description file and
+    Tester configuration file.
+  -->
+<schema targetNamespace="http://www.oktetlabs.ru/proteos"
+        xmlns:proteos="http://www.oktetlabs.ru/proteos"
+        version="$Id: OKT-DD-0000087-TE_TS_CONF.xsd,v 1.1 2003/10/28 09:35:41 arybchik Exp $"
+        xml:lang="en"
+        xmlns="http://www.w3.org/2001/XMLSchema">
+
+    <annotation>
+        <documentation>
+            Test Environment
+            XML schema for Test Subsystem (Tester) configuration file
+
+            Copyright (C) 2003 Test Environment authors (see file AUTHORS
+            in the root directory of the distribution).
+
+            Test Environment is free software; you can redistribute it
+            and/or modify it under the terms of the GNU General Public
+            License as published by the Free Software Foundation; either
+            version 2 of the License, or (at your option) any later
+            version.
+            
+            Test Environment is distributed in the hope that it will be
+            useful, but WITHOUT ANY WARRANTY; without even the implied
+            warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+            PURPOSE. See the GNU General Public License for more details.
+            
+            You should have received a copy of the GNU General Public
+            License along with this program; if not, write to the Free
+            Software Foundation, Inc., 59 Temple Place, Suite 330,
+            Boston, MA  02111-1307  USA
+            
+            Author: Andrew Rybchenko &lt;Andrew.Rybchenko@oktetlabs.ru&gt;
+        </documentation>
+    </annotation>
+
+    <include schemaLocation="tester_defs.xsd">
+        <annotation>
+            <documentation>
+                Bring in the definitions and declarations contained in
+                file with common definition for Test Subsystem (Tester).
+            </documentation>
+        </annotation>
+    </include>
+
+    <element name="tester_cfg">
+
+        <annotation>
+            <documentation>
+                Root element of the Test Subsystem (Tester)
+                configuration file.
+            </documentation>
+        </annotation>
+
+        <complexType>
+
+            <sequence>
+
+                <element name="maintainer" type="PersonInfo">
+                    <annotation>
+                        <documentation>
+                            Mandatory information about maintainer
+                            of the configuration.
+                        </documentation>
+                    </annotation>
+                </element>
+
+                <element name="description" type="string"
+                                            minOccurs="0">
+                    <annotation>
+                        <documentation>
+                            Optional description of the configutation
+                            for human.
+                        </documentation>
+                    </annotation>
+                </element>
+
+                <element name="package" type="PackageInfo"
+                                        minOccurs="0"
+                                        maxOccurs="unbounded">
+                    <annotation>
+                        <documentation>
+                            Information about each Test Package used
+                            in this configuration. By default sources
+                            of Test Packages are searched in
+                            '&lt;te_base&gt;/packages/&lt;package_name&gt;'
+                            directory.
+                        </documentation>
+                    </annotation>
+                </element>
+
+                <element name="requirment" type="Requirement"
+                                           minOccurs="0"
+                                           maxOccurs="unbounded">
+                    <annotation>
+                        <documentation>
+                            Optional set of requirements verified by
+                            the configuration. It's guideline for Test
+                            Subsystem (Tester) to choose tests to run.
+                        </documentation>
+                    </annotation>
+                </element>
+
+                <element name="option" type="OptionSpecifier"
+                                       minOccurs="0"
+                                       maxOccurs="unbounded">
+                    <annotation>
+                        <documentation>
+                            Set of options to be used by Tester.
+                        </documentation>
+                    </annotation>
+                </element>
+
+                <element name="run" type="Run" maxOccurs="unbounded">
+                    <annotation>
+                        <documentation>
+                            Set of tests to run.
+                        </documentation>
+                    </annotation>
+                </element>
+
+            </sequence>
+
+        </complexType>
+
+    </element>
+
+    <complexType name="PackageInfo">
+        <annotation>
+            <documentation>
+                Type of the element to specify information about
+                Test Package.
+            </documentation>
+        </annotation>
+        <sequence>
+            <element name="path" type="string"
+                                 minOccurs="0">
+                <annotation>
+                    <documentation>
+                        Absolute or relative path to the Test Package
+                        sources. Absolute path starts from '/'.
+                        Relative path is calculated from Test
+                        Environment base (root directory).
+                    </documentation>
+                </annotation>
+            </element>
+        </sequence>
+        <attribute name="name" type="token">
+            <annotation>
+                <documentation>
+                    Test Package name.
+                </documentation>
+            </annotation>
+        </attribute>
+    </complexType>
+
+    <simpleType name="OptionName">
+        <annotation>
+            <documentation>
+                Set of supported options.
+            </documentation>
+        </annotation>
+        <restriction base="Name">
+            <enumeration value="human-debug">
+                <documentation>
+                    <annotation>
+                        This option is applicable for scripts. It
+                        forces to run all scripts in context in human
+                        debugging mode (e.g. under gdb for tests
+                        written in C/C++).
+                    </annotation>
+                </documentation>
+            </enumeration>
+            <enumeration value="debug-level">
+                <documentation>
+                    <annotation>
+                        Overrides debugging level for specified
+                        context (see definition of Debugging type).
+                    </annotation>
+                </documentation>
+            </enumeration>
+        </restriction>
+    </simpleType>
+
+    <complexType name="OptionSpecifier">
+        <annotation>
+            <documentation>
+                Type of the element to specify option with or without
+                value in global or restricted context.
+            </documentation>
+        </annotation>
+        <sequence>
+            <element name="context" minOccurs="0"
+                                    maxOccurs="unbounded">
+                <annotation>
+                    <documentation>
+                        Context in which option must be applied.
+                        If context is not specified, option has
+                        global context. For example:
+                          ip/ipv6/ndar
+                        specifies 'ndar' package context for an
+                        option.
+                    </documentation>
+                </annotation>
+            </element>
+        </sequence>
+        <attribute name="name" type="OptionName" use="required">
+            <annotation>
+                <documentation>
+                    Option name. Supported options are defined by
+                    OptionName type.
+                </documentation>
+            </annotation>
+        </attribute>
+        <attribute name="value" type="string">
+            <annotation>
+                <documentation>
+                    Option value (optional).
+                </documentation>
+            </annotation>
+        </attribute>
+    </complexType>
+
+</schema>

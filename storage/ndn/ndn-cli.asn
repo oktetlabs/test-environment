@@ -1,0 +1,36 @@
+TE-NDN-CLI
+DEFINITIONS ::=
+BEGIN
+
+IMPORTS DATA-UNIT FROM TE-NDN-General;
+
+EXPORTS  CLI-Message, CLI-CSAP;
+
+CLI-Message ::= IMPLICIT SEQUENCE { 
+    message DATA-UNIT{UniversalString} OPTIONAL,
+}
+
+CLI-Telnet-Params ::= SEQUENCE {
+    host [0] DATA-UNIT{UniversalString}, 
+    port [1] DATA-UNIT{INTEGER(0..65535)}
+}
+
+CLI-Serial-Params ::= SEQUENCE {
+    device DATA-UNIT {UniversalString} 
+}
+
+CLI-CSAP ::= IMPLICIT SEQUENCE { 
+    conn-type  INTEGER {serial(0), telnet(1), ssh(2)},
+    conn-params CHOICE {
+        telnet CLI-Telnet-Params,
+        serial CLI-Serial-Params
+    }
+    command-prompt  DATA-UNIT{UniversalString} ,
+    login-prompt    DATA-UNIT{UniversalString} OPTIONAL,
+    password-prompt DATA-UNIT{UniversalString} OPTIONAL,
+    user            DATA-UNIT{UniversalString} OPTIONAL,
+    password        DATA-UNIT{UniversalString} OPTIONAL,
+    ...
+} 
+
+END

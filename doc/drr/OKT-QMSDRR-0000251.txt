@@ -1,0 +1,126 @@
+ID OKT-QMSDRR-0000251
+
+COPYRIGHT Copyright(C) OKTET Ltd. 2003
+
+DOCID OKT-DD-0000077-TE_CS_IF.h
+
+RESPMGR Elena Vengerova <helen@oktet.ru>
+
+MODERATOR Andrew Rybchenko <arybchik@oktet.ru>
+
+QUESTION FIXED
+General: How safety of configurator handles usage will be guaranteed?
+
+PROPOSAL FIXED
+General: It's suggeted to define structure with object identifier
+properties/attributes and use it in functions 52, 70, 85. It simplifies
+addition of new attributes/properties.
+
+DIRECTION FIXED
+8 : Use doxygen style comment @author with e-mail
+
+DIRECTION FIXED
+10 : Remove "@(#) "
+
+DIRECTION FIXED
+12 : Use prefix for TE-global names. 
+
+QUESTION FIXED
+12 : Why the same defintion is used for both sub-identifier maximum length
+and instance name maximum length? It's not shown in definition name.
+
+PROPOSAL FIXED
+12: It's suggested to have two definitions.
+
+PROPOSAL FIXED
+12 : It's suggested to put "MAX", "MIN", "LEN" and "SZ" elements of macro
+name at the end of the name.
+
+DIRECTION FIXED
+22 : It should not be space between "*" and defined type name.
+
+QUESTION FIXED
+25, 29, 30, 52, 97, 116, 125, 133, 153, 272, 281, 292, 300, 310 :
+Why 'unsigned' qualifier is used here.
+
+PROPOSAL FIXED
+29 : It's suggested to use 'cfg_object_subid' here with macro definition
+to access 'subid' field with one step (as field of 'cfg_inst_subid').
+
+QUESTION FIXED
+36 : Why 'void *' type is used here?
+
+PROPOSAL FIXED
+43, 45, 53, 54 ... : It's suggested to define boolean type in TE and use here.
+
+QUESTION FIXED
+47 : May be it's better to use relative object identifiers here?
+
+QUESTION FIXED
+47 ... : Have children descriptions already been added to Configurator?
+
+QUESTION FIXED
+50 ... : What is status code?
+
+DIRECTION FIXED
+52, 70, 133, 141 : Use 'const' qualifier for 'oid' parameter.
+
+DIRECTION FIXED
+95, 97 : Synchronize function description and prototype.
+
+PROPOSAL FIXED
+97 : Use 'str' instead of 's'.
+
+PROPOSAL FIXED
+102, 103 : May be it's better to provide routine to free memory allocated for
+'cfg_oid' and does not provide any details to user about malloc(). User should
+call routine to free resources allocated for 'cfg_oid'.
+
+DIRECTION FIXED
+112, 121: Provide name of the macro which defines the assumed length of the
+buffer under the pointer. Don't use 'long enough'.
+
+DIRECTION FIXED
+124 : Fix routine name (it's equal to previous one).
+
+PROPOSAL FIXED
+131, 139, 159, 167, 175 :
+It's suggeted to define macro like 'CFG_HANDLE_INVALID' and use it instead of
+NULL.
+
+PROPOSAL FIXED
+147, 148, 286 : Use upper case 'OUT'
+
+QUESTION FIXED
+151; What is OK?
+
+QUESTION FIXED
+153: May be it's faster to use array with cfg_handles on return?
+
+PROPOSAL REJECTED
+155, 159, 161 : Use 'child' instead of 'son'.
+
+PROPOSAL REJECTED
+171, 175, 177 :Use 'parent' instead of 'father'.
+
+QUESTION REJECTED
+189, 210, 223, 237 : May be it's better to use 'void *' instead of '...'
+
+PROPOSAL FIXED
+237 : Use 'sync' instead of 's'.
+
+DIRECTION FIXED
+250 : Space should be between '*' and type name, not between '(' and '*'
+
+DIRECTION FIXED
+250 : Provide a possibility to break enumeration using callback return code.
+
+DIRECTION FIXED
+262 : Provide description of 'callback' parameter
+
+DIRECTION FIXED
+310 : Fix function name. It's equal to function in line 281 
+
+
+RESULT
+Document may be approved after notes processing.

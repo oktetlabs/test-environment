@@ -1,0 +1,765 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<schema targetNamespace="http://www.oktetlabs.ru/proteos"
+        xmlns:proteos="http://www.oktetlabs.ru/proteos"
+        version="$Id: tester_defs.xsd,v 1.1 2003/10/28 09:35:42 arybchik Exp $"
+        xml:lang="en"
+        xmlns="http://www.w3.org/2001/XMLSchema">
+
+    <annotation>
+        <documentation>
+            Test Environment
+            Definition of common types for Test Subsystem configuration
+            file and Test Package description file specifications
+
+            Copyright (C) 2003 Test Environment authors (see file AUTHORS
+            in the root directory of the distribution).
+
+            Test Environment is free software; you can redistribute it
+            and/or modify it under the terms of the GNU General Public
+            License as published by the Free Software Foundation; either
+            version 2 of the License, or (at your option) any later
+            version.
+            
+            Test Environment is distributed in the hope that it will be
+            useful, but WITHOUT ANY WARRANTY; without even the implied
+            warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+            PURPOSE. See the GNU General Public License for more details.
+            
+            You should have received a copy of the GNU General Public
+            License along with this program; if not, write to the Free
+            Software Foundation, Inc., 59 Temple Place, Suite 330,
+            Boston, MA  02111-1307  USA
+
+            Author: Andrew Rybchenko &lt;Andrew.Rybchenko@oktetlabs.ru&lt;
+        </documentation>
+    </annotation>
+
+    <complexType name="PersonInfo">
+        <annotation>
+            <documentation>
+                Information about person.
+            </documentation>
+        </annotation>
+        <sequence>
+            <element name="name" type="string">
+                <annotation>
+                    <documentation>
+                        Name.
+                    </documentation>
+                </annotation>
+            </element>
+            <element name="email" type="string" maxOccurs="unbounded">
+                <annotation>
+                    <documentation>
+                        E-mail addresses.
+                    </documentation>
+                </annotation>
+            </element>
+        </sequence>
+    </complexType>
+
+    <complexType name="Requirement">
+        <annotation>
+            <documentation>
+                Type for requirements declaration.
+            </documentation>
+        </annotation>
+        <simpleContent>
+            <extension base="Name"/>
+        </simpleContent>
+    </complexType>
+
+    <complexType name="Value">
+        <annotation>
+            <documentation>
+                Representation of value for session variable or run
+                argument.
+            </documentation>
+        </annotation>
+        <simpleContent>
+            <extension base="string">
+                <attribute name="id" type="Name">
+                    <annotation>
+                        <documentation>
+                            Identifier to be referred from 'preferred'
+                            attribute of the parent or 'refvalue'
+                            attribute of another value of the parent.
+                        </documentation>
+                    </annotation>
+                </attribute>
+                <attribute name="refvalue" type="Name">
+                    <annotation>
+                        <documentation>
+                            Identifier of another value of the
+                            argument.
+                        </documentation>
+                    </annotation>
+                </attribute>
+                <attribute name="ext" type="Name">
+                    <annotation>
+                        <documentation>
+                            Reference to external value (name of the
+                            variable of the parent session or name of
+                            the argument passed to the sesiion).
+                        </documentation>
+                    </annotation>
+                </attribute>
+            </extension>
+        </simpleContent>
+    </complexType>
+
+    <attributeGroup name="VarArgAttributes">
+        <annotation>
+            <documentation>
+                Common attributes for session variables and arguments
+                passed to run item.
+            </documentation>
+        </annotation>
+        <attribute name="name" type="Name" use="required">
+            <annotation>
+                <documentation> 
+                    Specifies variable/argument name.
+                </documentation>
+            </annotation>
+        </attribute>
+        <attribute name="ext" type="Name">
+            <annotation>
+                <documentation>
+                    Reference to external value (name of the
+                    variable of the parent session or name of
+                    the argument passed to the sesiion).
+                </documentation>
+            </annotation>
+        </attribute>
+        <attribute name="random" type="boolean">
+            <annotation>
+                <documentation>
+                    Forces Tester to choose values in random or strict
+                    (default) order. Default value may be overridden by
+                    'forcerandom' attribute of ancessor 'run' element.
+                </documentation>
+            </annotation>
+        </attribute>
+        <attribute name="type" type="Name">
+            <annotation>
+                <documentation>
+                    Defines type of the variable/argument. It's required
+                    to automatically generate random values.
+                </documentation>
+            </annotation>
+        </attribute>
+        <attribute name="foreach" type="boolean" default="true">
+            <annotation>
+                <documentation>
+                    Controls enumeration policy for values. If it's
+                    equal to true, each value should be used with each
+                    combination of other parameters. This attribute is
+                    usefull to organize parallel enumeration of two or
+                    more lists. For example, if A = {a1, a2, a3},
+                    B = {b1, b2, b3} and the attribute is false for
+                    both variables/arguments, then following pairs are
+                    used {a1, b1}, {a2, b2}, {a3, b3}.
+                </documentation>
+            </annotation>
+        </attribute>
+        <attribute name="preferred" type="Name">
+            <annotation>
+                <documentation>
+                    Refers to the preferred value. It has sence if 
+                    'foreach' attribute is false. Default preferred
+                    value is the last. For example, if A = {a1, a2, a3},
+                    B = {b1, b2} and 'foreach' attribute is false for
+                    both variables/arguments, then following pairs are
+                    used {a1, b1}, {a2, b2}, {a3, b2} by default.
+                </documentation>
+            </annotation>
+        </attribute>
+    </attributeGroup>
+
+    <attributeGroup name="RefVarArgAttributes">
+        <annotation>
+            <documentation>
+                Set of attributes common for 'ReferredVariable' and
+                'ReferredArgument' types.
+            </documentation>
+        </annotation>
+        <attribute name="name" type="Name" use="required">
+            <annotation>
+                <documentation>
+                    Local name of the variable.
+                </documentation>
+            </annotation>
+        </attribute>
+        <attribute name="refer" type="Name">  
+            <annotation>
+                <documentation>
+                    Name of the argument passed to the session to get
+                    its value. If this attribute is not specified it's
+                    assumed that it equals to the 'name' attribute.
+                </documentation>
+            </annotation>
+        </attribute>
+    </attributeGroup>
+
+    <complexType name="ReferredVariable">
+        <annotation>
+            <documentation>
+                Declares variables with single value. Value is equal
+                to value of the argument passed to the session.
+            </documentation>
+        </annotation>
+        <attribute name="handdown" type="boolean" default="false">
+            <annotation>
+                <documentation>
+                    Is it necessary to pass value of the variable to
+                    each run item of the session? If the attribute is
+                    true, then variable automatically becomes an
+                    argument for each run item of the session.
+                </documentation>
+            </annotation>
+        </attribute>
+        <attributeGroup ref="RefVarArgAttributes"/>
+    </complexType>
+    
+    <complexType name="Variable">
+        <annotation>
+            <documentation>
+                Representation of session variable to map externally
+                provided values as well as to declare internal
+                variables.
+            </documentation>
+        </annotation>
+        <sequence>
+            <element name="value" type="Value"
+                                  minOccurs="0" maxOccurs="unbounded">
+                <annotation>
+                    <documentation>
+                         Set of variable values.
+                    </documentation>
+                </annotation>
+            </element>
+        </sequence>
+        <attribute name="handdown" type="boolean" default="false">
+            <annotation>
+                <documentation>
+                    Is it necessary to pass value of the variable to
+                    each run item of the session? If the attribute is
+                    true, then variable automatically becomes an
+                    argument for each run item of the session.
+                </documentation>
+            </annotation>
+        </attribute>
+        <attributeGroup ref="VarArgAttributes"/>
+    </complexType>
+
+    <complexType name="ReferredArgument">
+        <annotation>
+            <documentation>
+                Declares argument referred to session variable.
+                Values are equal to values of the corresponding
+                session variable.
+            </documentation>
+        </annotation>
+        <attributeGroup ref="RefVarArgAttributes"/>
+    </complexType>
+    
+    <complexType name="Argument">
+        <annotation>
+            <documentation>
+                Represents an argument passed to the item to run.
+                Variables of the parent session with true handdown
+                attribute are automatically added to set of agruments.
+            </documentation>
+        </annotation>
+        <sequence>
+            <element name="value" type="ArgumentValue"
+                                  minOccurs="0" maxOccurs="unbounded">
+                <annotation>
+                    <documentation>
+                        Set of argument values.
+                    </documentation>
+                </annotation>
+            </element>
+        </sequence>
+        <attributeGroup ref="VarArgAttributes"/>
+    </complexType>
+    
+    <group name="Arguments">
+        <annotation>
+            <documentation>
+                Possible types of argument elements.
+            </documentation>
+        </annotation>
+        <choice minOccurs="0" maxOccurs="unbounded">
+            <element name="refarg" type="ReferredArgument">
+                <annotation>
+                    <documentation>
+                        Argument referred to session variable
+                        to be passed to executable.
+                    </documentation>
+                </annotation>
+            </element>
+            <element name="arg" type="Argument">
+                <annotation>
+                    <documentation>
+                        Arguments to be passed to executable.
+                    </documentation>
+                </annotation>
+                <key name="arg_values">
+                    <annotation>
+                        <documentation>
+                            Define key to refer to values of the
+                            argument.
+                        </documentation>
+                    </annotation>
+                    <selector xpath="value[@id]">
+                        <annotation>
+                            <documentation>
+                                Select all 'value' elements with 'id'
+                                attribute of the argument.
+                            </documentation>
+                        </annotation>
+                    </selector>
+                    <field xpath="@id">
+                        <annotation>
+                            <documentation>
+                                Use 'id' attribute as key.
+                            </documentation>
+                        </annotation>
+                    </field>
+                </key>
+                <keyref name="arg_preferred" refer="arg_values">
+                    <annotation>
+                        <documentation>
+                            Define that 'preferred' attribute of the
+                            current element must be a reference to
+                            one of its values.
+                        </documentation>
+                    </annotation>
+                    <selector xpath="."/>
+                    <field    xpath="@preferred"/>
+                </keyref>
+                <keyref name="arg_value_refer" refer="vars">
+                    <annotation>
+                        <documentation>
+                            If 'ext' attribute is defined for 'value'
+                            child element, it must refer to one of
+                            variables.
+                        </documentation>
+                    </annotation>
+                    <selector xpath="value[@ext]"/>
+                    <field    xpath="@ext"/>
+                </keyref>
+            </element>
+        </choice>
+    </group>
+
+    <attributeGroup name="RunItemAttributes">
+        <annotation>
+            <documentation>
+                Group of attributes applied for any run item.
+            </documentation>
+        </annotation>
+        <attribute name="timeout" type="duration">
+            <annotation>
+                <documentation>
+                    Timeout to break running. If it's not specified,
+                    current default value is used.
+                </documentation>
+            </annotation>
+        </attribute>
+        <attribute name="track_conf" type="boolean" default="true">
+            <annotation>
+                <documentation>
+                    Tracks changes of the configuration. Enabled by
+                    default. May be disabled by corresponging option.
+                    Automatically disabled for all descendants of the
+                    simultaneous session.
+                </documentation>
+            </annotation>
+        </attribute>
+    </attributeGroup>
+
+    <complexType name="Script">
+        <annotation>
+            <documentation>
+                External script (executable).
+            </documentation>
+        </annotation>
+        <sequence>
+            <element name="description" type="string">
+                <annotation>
+                    <documentation>
+                        Description of the test provided by the script.
+                    </documentation>
+                </annotation>
+            </element>
+            <element name="requirement" type="Requirement"
+                                        minOccurs="0"
+                                        maxOccurs="unbounded">
+                <annotation>
+                    <documentation>
+                        Complete set of requiremetns verified by the
+                        script.
+                    </documentation>
+                </annotation>
+            </element>
+            <element name="execute" type="string">
+                <annotation>
+                    <documentation>
+                        Name of the file to execute in current package
+                        directory.
+                    </documentation>
+                </annotation>
+            </element>
+        </sequence>
+        <attribute name="name" type="Name">
+            <annotation>
+                <documentation>
+                    Test name.
+                </documentation>
+            </annotation>
+        </attribute>
+        <attributeGroup ref="RunItemAttributes"/>
+    </complexType>
+
+    <group name="Executable">
+        <annotation>
+            <documentation>
+                Group of elements applied for all executables.
+            </documentation>
+        </annotation>
+        <sequence>
+            <choice>
+                <element name="script" type="Script">
+                    <annotation>
+                        <documentation>
+                            External script to be executed.
+                        </documentation>
+                    </annotation>
+                </element>
+                <element name="session" type="Session">
+                    <annotation>
+                        <documentation>
+                            Session to be executed.
+                        </documentation>
+                    </annotation>
+                </element>
+            </choice>
+            <group ref="Arguments"/>
+        </sequence>
+    </group>
+ 
+    <complexType name="PrologueEpilogue">
+        <annotation>
+            <documentation>
+                Type of prologue and epilogue elements.
+            </documentation>
+        </annotation>
+        <group ref="Executable"/>
+    </complexType>
+
+    <simpleType name="PropertyHanddownType">
+        <annotation>
+            <documentation>
+                Types of inheritance.
+            </documentation>
+        </annotation>
+        <restriction base="token">
+            <enumeration value="none"/>
+            <enumeration value="children"/>
+            <enumeration value="descendants"/>
+        </restriction>
+    </simpleType>
+
+    <complexType name="InheritableExacutable">
+        <annotation>
+            <documentation>
+                Type of elements which may be inherited by descendants.
+            </documentation>
+        </annotation>
+        <group ref="Executable">
+            <annotation>
+                <documentation>
+                    Group of elements for executables.
+                </documentation>
+            </annotation>
+        </group>
+        <attribute name="handdown" type="PropertyHanddownType"
+                                   default="none">
+            <annotation>
+                <documentation>
+                    Type of inheritance.
+                </documentation>
+            </annotation>
+        </attribute>
+    </complexType>
+
+    <complexType name="Session">
+        <annotation>
+            <documentation>
+                Set of run items with optional prologue, epilogue,
+                keep-alive validation and exception handler which may
+                be called with some arguments directly from parent run
+                item or indirectly as package from run item of the
+                another package or Tester configuration file. In the
+                last case session is a primary (root) session of the
+                package.
+            </documentation>
+        </annotation>
+        <sequence>
+            <choice minOccurs="0" maxOccurs="unbounded">
+                <annotation>
+                    <documentation>
+                        Set of session variables.
+                    </documentation>
+                </annotation>
+                <element name="refvar" type="ReferredVariable"/>
+                <element name="var" type="Variable">
+                    <key name="vars">
+                        <annotation>
+                            <documentation>
+                                Define key to refer to session variables.
+                            </documentation>
+                        </annotation>
+                        <selector xpath="../*[self::refvar or self::var]">
+                            <annotation>
+                                <documentation>
+                                    Select all 'refvar' and 'var' children
+                                    of the session.
+                                </documentation>
+                            </annotation>
+                        </selector>
+                        <field xpath="@name">
+                            <annotation>
+                                <documentation>
+                                    Use 'name' attribute as key.
+                                </documentation>
+                            </annotation>
+                        </field>
+                    </key>
+                    <key name="var_values">
+                        <annotation>
+                            <documentation>
+                                Define key to refer to values of the
+                                variable.
+                            </documentation>
+                        </annotation>
+                        <selector xpath="value[@id]">
+                            <annotation>
+                                <documentation>
+                                    Select all 'value' elements with 'id'
+                                    attribute of the variable.
+                                </documentation>
+                            </annotation>
+                        </selector>
+                        <field xpath="@id">
+                            <annotation>
+                                <documentation>
+                                    Use 'id' attribute as key.
+                                </documentation>
+                            </annotation>
+                        </field>
+                    </key>
+                    <keyref name="var_preferred_value" refer="var_values">
+                        <annotation>
+                            <documentation>
+                                Define that 'preferred' attribute of the
+                                current element must be a reference to
+                                one of its values.
+                            </documentation>
+                        </annotation>
+                        <selector xpath="."/>
+                        <field    xpath="@preferred"/>
+                    </keyref>
+                </element>
+            </choice>
+            <element name="exception" type="InheritableExecutable"
+                                      minOccurs="0">
+                <annotation>
+                    <documentation>
+                        Exception handler to be called for exceptions
+                        arised in the session. If exception handler
+                        is not specified, is not inherited or failed,
+                        then session is finished and exception is
+                        passed to the parent.
+                    </documentation>
+                </annotation>
+            </element>
+            <element name="keepalive" type="InheritableExecutable"
+                                      minOccurs="0">
+                <annotation>
+                    <documentation>
+                        Keep-alive validation. It is performed before
+                        and after each run item execution. It may be
+                        directly called and globally disabled.
+                    </documentation>
+                </annotation>
+            </element>
+            <element name="prologue" type="PrologueEpilogue" minOccurs="0">
+                <annotation>
+                    <documentation>
+                        Session prologue. It's recommended to configure
+                        agents here. It may be directly called and
+                        globally disabled.
+                    </documentation>
+                </annotation>
+            </element>
+            <element name="epilogue" type="ProlorueEpilogue" minOccurs="0">
+                <annotation>
+                    <documentation>
+                        Session epilogue. It's recommended to configure
+                        agents here. It may be directly called and
+                        globally disabled.
+                    </documentation>
+                </annotation>
+            </element>
+            <element name="run" type="Run" maxOccurs="unbounded">
+                <annotation>
+                    <documentation>
+                        Set of items to run.
+                    </documentation>
+                </annotation>
+            </element>
+        </sequence>
+        <attribute name="simultaneous" type="boolean" default="false">
+            <annotation>
+                <documentation>
+                    Run all items simultaneously or in series (default).
+                </documentation>
+            </annotation>
+        </attribute>
+        <attribute name="random" type="boolean">
+            <annotation>
+                <documentation>
+                    Run subsessions in random or strict (default)
+                    order. Default value may be overrided by
+                    corresponding option.
+                </documentation>
+            </annotation>
+        </attribute>
+        <attributeGroup ref="RunItemAttributes"/>
+    </complexType>
+
+    <complexType name="PackageRun">
+        <annotation>
+            <documentation>
+                Forces Tester to run external package. Usually it's
+                just name of the subpackage (name of its directory).
+                Also it may be relative path to any subpackage of the
+                current root package or absolute path to any subpackage
+                of the packages declared in Tester configuration file.
+                Absolute path starts from '/' symbol and name of the
+                root package declared in Tester configuration file.
+            </documentation>
+        </annotation>
+        <simpleContent>
+            <extension base="token">
+                <attributeGroup ref="RunItemAttributes"/>
+            </extension>
+        </simpleContent>
+    </complexType>        
+
+    <simpleType name="DebuggingLevels">
+        <annotation>
+            <documentation>
+                Enumeration of debugging levels.
+            </documentation>
+        </annotation>
+        <restriction base="Name">
+            <enumeration value="none"/>
+            <enumeration value="debug"/>
+            <enumeration value="trace"/>
+            <enumeration value="mem"/>
+            <enumeration value="entryexit"/>
+        </restriction>
+    </simpleType>
+
+    <simpleType name="Debugging">
+        <annotation>
+            <documentation>
+                Type for list of debugging values.
+            </documentation>
+        </annotation>
+        <list itemType="DebuggingLevels"/>
+    </simpleType>
+
+    <complexType name="Run">
+        <annotation>
+            <documentation>
+                Forces Tester to run script, session or package with
+                specified arguments. The element may be used in the 
+                context of session or Tester configuration file.
+            </documentation>
+        </annotation>
+        <sequence>
+            <choice>
+                <element name="script" type="Script"
+                                       maxOccurs="unbounded">
+                    <annotation>
+                        <documentation>
+                            External script to be executed.
+                        </documentation>
+                    </annotation>
+                </element>
+                <element name="session" type="Session">
+                    <annotation>
+                        <documentation>
+                            Session to be executed.
+                        </documentation>
+                    </annotation>
+                </element>
+                <element name="package" type="PackageRun">
+                    <annotation>
+                        <documentation>
+                            External package to be processed.
+                        </documentation>
+                    </annotation>
+                </element>
+            </choice>
+            <group ref="Arguments"/>
+        </sequence>
+        <attribute name="name" type="Name">
+            <annotation>
+                <documentation>
+                    Name of this run item. It may be used to call
+                    specific item of the package.
+                </documentation>
+            </annotation>
+        </attribute>
+        <attribute name="debugging" type="Debugging" default="none">
+            <annotation>
+                <documentation>
+                    List of enabled debugging levels.
+                </documentation>
+            </annotation>
+        </attribute>
+        <attribute name="configure" type="boolean"   default="true">
+            <annotation>
+                <documentation>
+                    Is configuring activity allowed for descendants?
+                </documentation>
+            </annotation>
+        </attribute>
+        <attribute name="keepalive" type="boolean"   default="true">
+            <annotation>
+                <documentation>
+                    Is keep-alive validation allowed for descendants?
+                </documentation>
+            </annotation>
+        </attribute>
+        <attribute name="forcerandom" type="boolean">
+            <annotation>
+                <documentation>
+                    Modify 'random' attribute policy.  False value
+                    forces to run all items in strict order.  True
+                    value modifies default attribute value to 'true'
+                    and, therefore, tries to use randomness where it
+                    is allowed.
+                </documentation>
+            </annotation>
+        </attribute>
+    </complexType>
+
+</schema>

@@ -1,0 +1,607 @@
+#!/bin/bash
+# 
+# Test Environment
+#
+# TCE_INSTRUMENT_SOURCES -- runs GCT on the specified set of C files.
+#
+# Usage: 
+#
+#    tce_instrument_sources [-t coverage_type1,coverage_type2,...]
+#                           [-p <src_path>]
+#                           [-x <logging_mode>]
+#                           [-c <CFLAGS>] source_file1 ...
+#                           [-c <CFLAGS>] source_file2 ...
+#                           ...
+#
+# Copyright (C) 2003 Test Environment authors (see file AUTHORS in the 
+# root directory of the distribution).
+#
+# Test Environment is free software; you can redistribute it and/or 
+# modify it under the terms of the GNU General Public License as 
+# published by the Free Software Foundation; either version 2 of 
+# the License, or (at your option) any later version.
+# 
+# Test Environment is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, 
+# MA  02111-1307  USA
+#
+# Author Pavel A. Bolokhov <Pavel.Bolokhov@oktet.ru>
+# 
+# $Id: tce_instrument_sources,v 1.1 2003/10/28 09:35:41 arybchik Exp $
+#
+
+#
+# Initialization and default configuration
+#
+progname=`basename $0`
+debuglevel=1
+invocation="$0 $*"
+files_began="no"     # either "yes" or "no"
+first_file=""        # the file to be augmented
+local_first_file=""  # first_file without the path
+ff_basename=""       # base name of the first file
+first_file_CFLAGS="" # CFLAGS for compiling the first source file
+
+if [ x"$TE_BASE" = "x" ]; then
+    echo "$progname: TE_BASE not set"
+    exit 1
+fi
+TCE_BASE=${TE_BASE}/engine/builder/coverage
+CFLAGS=""
+file_set=""       # (current) set of files with particular CFLAGS
+curr_path="$PWD"  # path where GCT configuration will be stored
+
+if [ x"$GCT" = "x" ]; then
+    GCT=gct   # no hint for us
+
+    if [ -n "$GCTLIB" ]; then
+        export C_INCLUDE_PATH=$GCTLIB/gct-include
+        export COMPILER_PATH=$GCTLIB
+    fi
+fi
+GCT_INIT=${GCT_INIT:-gct-init}
+STD_INCLUDES=/usr/include
+
+all_gct_types="branch loop multi relational routine call" # all known types
+types="$all_gct_types" 
+                  # space separated valid coverage types requested by the user
+logging_mode="logger"  
+                  # logging mode (logger or file)
+
+##
+# Prints a debug message to stderr if debuglevel is greater than or
+# equal to 1.
+#
+function debug()
+{
+    if [ $debuglevel -ge 1 ]; then
+        echo "$@" 1>&2
+    fi
+}
+
+##
+# Prints the help and exits
+# 
+# @param  n/a
+# 
+# @return n/a
+# 
+function print_help() 
+{
+    echo "$progname [-t coverage_type1,coverage_type2,...]" 1>&2
+    echo "                       [-p <src_path>]" 1>&2
+    echo "                       [-x <logging_mode>]" 1>&2
+    echo "                       [-c <CFLAGS>] source_file1 ..." 1>&2
+    echo "                       [-c <CFLAGS>] source_file2 ..." 1>&2
+    echo "                       ..." 1>&2
+    echo "" 1>&2
+    echo "where 'coverate_type' is " 1>&2
+    echo "               ${all_gct_types// /, } or all" 1>&2
+    echo "and 'logging_mode' is either " 1>&2
+    echo "               'logger' or 'file'" 1>&2
+    echo "" 1>&2
+    echo "$progname must be invoked once per each executable" 1>&2
+    echo "" 1>&2
+    echo "Environment:" 1>&2
+    echo \
+"        Either GCT must be set with a valid working command executing GCT," \
+        1>&2
+    echo "        or GCTLIB must be set properly"
+    echo "" 1>&2
+    echo "        GCT_INIT can also be defined by the user to override " 1>&2 
+    echo "        the default invocation of gct-init(1)" 1>&2
+    exit 0
+}
+
+##
+# Creates necessary configuration at the specified path
+# 
+# @return n/a
+# 
+function initialize_gct()
+{
+    # this check can save some efforts
+    grep '__GCT_INSTRUMENTATION_TAG' $first_file > /dev/null &&
+    {
+        echo "$progname: file $first_file is already instrumented. aborting." 1>&2;
+        exit 1;
+    }
+
+    # first create a subdirectory
+    GCT_CONTROL_DIR=$curr_path/gct_control
+    debug "initialize_gct: setting control directory to $GCT_CONTROL_DIR"
+
+    [ -d  $GCT_CONTROL_DIR ] ||
+    { 
+      mkdir ${curr_path}/gct_control || 
+      {
+        echo "$progname: cannot create the directory $curr_path/gct_control" \
+        1>&2; exit 2; 
+      } 
+    }
+
+    # now we populate it with the control files
+    date=`LANG=en_US date`
+
+    case "$logging_mode" in
+        "logger")
+##            options_string="-readlog -writelog"   # use our own logger
+
+            log_file="tmp"                          # no matter, because
+                                                    # we will redefine
+                                                    # the log dumping
+                                                    # routine
+        ;;
+
+        "file")
+##        options_string=""
+
+            log_file="/te_tmp/tce_data"
+        ;;
+    esac
+
+    #
+    # Create the control file
+    # It's quite small, so we do it as a Here Document
+    # 
+
+#
+# Here Document
+# *************
+    cat > $GCT_CONTROL_DIR/gct-ctrl << CTRL_EOF
+#
+# GCT Control File
+#
+# Created by tce_instrument_sources, a tool of the Test Environment
+#
+# Copyright (C) 2003 Test Environment authors (see file AUTHORS in the 
+# root directory of the distribution).
+#
+# Test Environment is free software; you can redistribute it and/or 
+# modify it under the terms of the GNU General Public License as 
+# published by the Free Software Foundation; either version 2 of 
+# the License, or (at your option) any later version.
+# 
+# Test Environment is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, 
+# MA  02111-1307  USA
+#
+# Author Pavel A. Bolokhov <Pavel.Bolokhov@oktet.ru>
+# 
+# GCT (without Expansion Kits) is distributed under GPL
+#
+# Created on $date by
+#    $invocation
+#
+
+# pertinent options
+(options instrument -produce-object)
+
+# the user-specified coverage types
+(coverage $types)
+
+# routines we don't want to be instrumented
+(../$local_first_file -gct_aix_bug_looptest
+                      -openlog
+                      -checklog
+                      -gct_write_new_log
+                      -gct_update_old_log
+                      -gct_get_lock
+                      -gct_unlock
+                      -gct_writelog
+                      -gct_readlog)
+
+# the location of the log file
+(logfile $log_file)
+
+CTRL_EOF
+
+# *****************
+# EOF Here Document
+#
+
+
+    #
+    # Now run gct-init(1)
+    #
+    ( cd $GCT_CONTROL_DIR; ${GCT_INIT} ) ||
+        { 
+            echo "$progname: error executing ${GCT_INIT}" 1>&2;
+            exit 1;
+        } 
+
+    if [ $logging_mode = 'logger' ]; then
+        cp -f ${TCE_BASE}/gct-write.c.logger $GCT_CONTROL_DIR/gct-write.c ||
+        { echo "Can't write the file $GCT_CONTROL_DIR/gct-write.c" \
+            1>&2; exit 1; }
+    fi
+
+    #
+    # Now do some workaround with the first source file.
+    #
+    
+    # Save the original copy of the file
+    debug "initialize_gct: adding standard includes to $first_file"
+    if [ ! -d $GCT_CONTROL_DIR/first_file ]; then
+        mkdir $GCT_CONTROL_DIR/first_file ||
+        { echo "$progname: can't create the directory $GCT_CONTROL_DIR" 1>&2;
+          exit 1; }
+    fi
+    cp -f $first_file $GCT_CONTROL_DIR/first_file/ ||
+        { echo "$progname: can't create a backup copy of $first_file" 1>&2;
+          exit 1; }
+}
+
+##
+# Instruments a particular set of files
+# 
+# @param A space-separated list of files
+# 
+# @return n/a
+# 
+function instrument_files()
+{
+    debug "instrument_files: instrumenting files $*"
+    debug "instrument_files: CFLAGS = '$CFLAGS'"
+
+    ( 
+      cd $curr_path;
+      ${GCT} -test-dir "$GCT_CONTROL_DIR" $CFLAGS $file_set || exit $?    
+                              # hopefully! this will succeed
+    ) ||
+    {
+        echo "$progname: error executing ${GCT}" 1>&2;
+        exit 1;
+    }
+
+    # save the file names
+    echo "$*" >> $GCT_CONTROL_DIR/filelist.txt
+}
+
+##
+# Augments the first source file with the necessary code
+# 
+# @param  the first source file
+# 
+# @return n/a
+# 
+function augment_sources()
+{
+    # Concatenate the files in a special sequence.
+    # We ignore their #includes, but add some necessary
+    # standard ones.
+    
+    debug "augment_sources: augmenting the first file $first_file"
+
+    # Extract the correct table pointer for the first file
+    ff_table_pointer=`grep '^ *# *define *GCT_TABLE_POINTER_FOR_THIS_FILE' $first_file |
+       sed 's/^ *# *define *GCT_TABLE_POINTER_FOR_THIS_FILE *//' |
+       sed 's/ *$//'`
+    ff_race_pointer=`grep '^ *# *define *GCT_RACE_TABLE_POINTER_FOR_THIS_FILE' $first_file |
+       sed 's/^ *# *define *GCT_RACE_TABLE_POINTER_FOR_THIS_FILE *//' |
+       sed 's/ *$//'`
+
+    debug "augment_sources: correct table pointer for the first file is"
+    debug "                 $ff_table_pointer"
+    debug "augment_sources: correct race table pointer for the first file is"
+    debug "                 $ff_race_pointer"
+
+    # save GCT service files
+    ( 
+        cd $GCT_CONTROL_DIR
+        cp -f gct-map save_gct-map
+        cp -f gct-defs.h save_gct-defs.h
+        cp -f gct-ps-defs.h save_gct-ps-defs.h
+        cp -f gct-ps-defs.c save_gct-ps-defs.c
+        cp -f gct-rscript save_gct-rscript
+    )
+
+    # now get the original copy of the first file
+    cp -f $GCT_CONTROL_DIR/first_file/$ff_basename \
+          $curr_path/$local_first_file
+
+    # add-ons
+    # Append necessary includes
+    echo \
+"
+
+/********************************************************
+ *     Standard includes necessary for GCT logging,     *
+ *           Added by tce_instrument_sources            *
+ ********************************************************/" \
+         >> $first_file   # unfortunately, this comment will be erased 
+                          # by the preprocessor
+    echo "#include <stdio.h>" >> $first_file
+    echo "#include <errno.h>" >> $first_file
+    echo "#include <sys/types.h>" >> $first_file
+    echo "#include <unistd.h>" >> $first_file
+    echo "#include <fcntl.h>" >> $first_file
+
+
+    echo \
+"
+
+/********************************************************
+ *     gct-defs.h added by tce_instrument_sources       *
+ ********************************************************/" \
+         >> $first_file
+    cat $GCT_CONTROL_DIR/gct-defs.h | grep -v '^ *# *include' \
+                        >> $first_file
+    echo \
+"
+
+/********************************************************
+ *     gct-ps-defs.h added by tce_instrument_sources    *
+ ********************************************************/" \
+         >> $first_file
+    cat $GCT_CONTROL_DIR/gct-ps-defs.h | grep -v '^ *# *include' \
+                        >> $first_file
+    echo \
+"
+
+/********************************************************
+ *     gct-ps-defs.c added by tce_instrument_sources    *
+ ********************************************************/" \
+         >> $first_file
+    cat $GCT_CONTROL_DIR/gct-ps-defs.c | grep -v '^ *# *include' \
+                        >> $first_file
+    echo \
+"
+
+/********************************************************
+ *     gct-write.c added by tce_instrument_sources      *
+ ********************************************************/" \
+         >> $first_file
+    cat $GCT_CONTROL_DIR/gct-write.c | grep -v '^ *# *include' \
+                        >> $first_file
+
+    # now instrument the file again
+    ( 
+      cd $curr_path;
+      ${GCT} -test-dir "$GCT_CONTROL_DIR" $first_file_CFLAGS $local_first_file
+    ) ||
+    {
+        echo "$progname: error executing ${GCT}" 1>&2;
+        exit 1;
+    }
+
+    # but that's not all
+    a=`grep '^ *# *define *GCT_TABLE_POINTER_FOR_THIS_FILE' $first_file |
+       sed 's/^ *# *define *GCT_TABLE_POINTER_FOR_THIS_FILE *//' |
+       sed 's/ *$//'`
+    debug "augment_sources: incorrect first file table pointer is"
+    debug "$a"
+    b=`grep '^ *# *define *GCT_RACE_TABLE_POINTER_FOR_THIS_FILE' $first_file |
+       sed 's/^ *# *define *GCT_RACE_TABLE_POINTER_FOR_THIS_FILE *//' |
+       sed 's/ *$//'`
+    debug "augment_sources: incorrect first file race table pointer is"
+    debug "$b"
+
+    # replace the incorrect (incremented) table pointer with the old one
+    cat $first_file | sed 's/'$a'/'$ff_table_pointer'/g' |
+                      sed 's/'$b'/'$ff_race_pointer'/g' \
+        > $GCT_CONTROL_DIR/$ff_basename
+    cp -f $GCT_CONTROL_DIR/$ff_basename $first_file
+    debug "augment_sources: table pointers successfully replaced"
+
+    # restore GCT headers
+    ( 
+        cd $GCT_CONTROL_DIR
+        cp -f save_gct-map gct-map
+        cp -f save_gct-defs.h gct-defs.h
+        cp -f save_gct-ps-defs.h gct-ps-defs.h
+        cp -f save_gct-ps-defs.c gct-ps-defs.c
+        cp -f save_gct-rscript gct-rscript
+
+        # leave a spare copy of gct-rscript
+        cp -f gct-rscript gct-rscript.bk_tce
+    )
+
+    # restore GCT backup of the first file
+    [ -d $curr_path/gct_backup/ ] &&
+    cp -f $GCT_CONTROL_DIR/first_file/$ff_basename $curr_path/gct_backup/ ||
+    {
+       echo "augment_sources: cannot restore first file's GCT backup." 1>&2;
+       echo "You should do it manually before running tce_uninstrument_sources" 1>&2;
+       echo "Archive copy of the first file is in $GCT_CONTROL_DIR/first_file" 1>&2
+       exit 1;
+    }
+}
+
+
+##
+# Checks user-provided coverage types for validity
+# 
+# @param A space-separated list of coverage types
+# 
+# @return n/a
+# 
+function check_coverage_types()
+{
+    if [ x$types = x"all" ]; then
+        types="$all_gct_types"
+        return
+    fi
+    while [ $# -gt 0 ]; do
+        case $1 in
+            branch|loop|multi|relational|call) 
+                ;;
+
+            *)
+                echo "$progname: unknown coverage type '$1'" 1>&2
+                exit 1
+                ;;
+        esac
+        shift
+    done
+}
+
+#
+# Process the options
+#
+
+while [ $# -gt 0 ]; do
+    case $1 in
+        -c)
+            # get the argument of the "-c" option
+            shift
+            if [ $# -eq 0 ]; then
+               echo "$progname: option '-c' expects CFLAGS" 1>&2
+               exit 1
+            fi
+
+            # now we look if we already have a set of files
+            # to process
+            CFLAGS="$1"
+
+            if [ -n "$file_set" ]; then
+                instrument_files $file_set
+
+                # empty the list of files
+                file_set="";
+            fi 
+            ;;
+
+        -h)
+            print_help
+            ;;
+
+        -[tpx])
+            if [ $files_began = "yes" ]; then
+                echo "$progname: can't specify the option " \
+                     "'$1' per file." 1>&2
+                echo "Invoke $progname several times if you wish " 1>&2
+                echo "to have separate settings for particular files" 1>&2
+                exit 1
+            fi
+            ;;
+
+        -*)
+            echo "$progname: unknown option '$1'" 1>&2
+            echo "use $progname -h for help"
+            exit 1
+            ;;
+
+# this is just a file
+        *) 
+            if [ $files_began = "no" ]; then
+                files_began="yes"
+                local_first_file="$1"
+                first_file="$curr_path/$1"
+                ff_basename=`basename $local_first_file`
+                first_file_CFLAGS="$CFLAGS"
+
+                # now that we got the first file
+                # we call gct-init(1)
+                initialize_gct
+            fi
+            if [ -z "$file_set" ]; then
+                file_set=$1
+            else
+                file_set="$file_set $1"
+            fi
+            ;;
+    esac
+
+# now here are only global options
+    case $1 in
+        -t)
+            # get the argument of the "-t" option
+            shift
+            if [ $# -eq 0 ]; then
+               echo "$progname: option '-t' expects coverage types" 1>&2
+               exit 1
+            fi
+
+            types=`echo $1 | tr , ' '`
+            check_coverage_types $types
+            ;;
+
+        -p)
+            # get the argument of the "-p" option
+            shift
+            if [ $# -eq 0 ]; then
+               echo "$progname: option '-p' expects a path" 1>&2
+               exit 1
+            fi
+
+            curr_path=$1
+            ;;
+
+        -x)
+            # get the argument of the "-x" option
+            shift
+            if [ $# -eq 0 ]; then
+               echo "$progname: option '-x' expects a logging mode" 1>&2
+               exit 1
+            fi
+        
+            logging_mode=$1
+            if [ "$logging_mode" != "file" -a \
+                 "$logging_mode" != "logger" ]; then
+                 echo \
+                "$progname: logging mode can be either 'logger' or 'file'" \
+                      1>&2
+                 exit 1
+            fi
+            ;;
+
+    esac
+    
+    shift
+done
+
+
+#
+# Just for debugging. Delete afterwards
+#
+debug "main: Coverage = ${types// /, }"
+debug "main: Path = $curr_path"
+debug "main: Logging = $logging_mode"
+
+#
+# Now do instrument, if we got anything
+#
+if [ -n "$file_set" ]; then
+    instrument_files $file_set
+fi
+
+if [ "$files_began" = "yes" ]; then
+    # augment the first source file
+    augment_sources $first_file
+fi
+
+
+# EOF

@@ -1,0 +1,55 @@
+ID OKT-QMSDDR-0000012-TE
+
+COPYRIGHT
+Copyright(C) OKTET Ltd. 2002
+
+DDRAUTH
+Elena Vengerova
+
+RESPMGR
+Piotr Lavrov
+
+DOCID
+OKT-MISC-0000013-TE
+
+TITLE
+Test Packages
+
+PURPOSE
+The document should contain results of research and list of proposals
+related to TE test packages framework.
+
+AUDIENCE
+Test Environment team
+
+AUDIENCE
+OKTET CONFIDENTIAL
+ 
+TMPL
+OKT-TMPL-0000006
+
+COMPLY
+OKT-REQ-0000010-TE
+OKT-ARCH-0000011-TE
+
+ANNOTATION
+The document should contain:
+  detailed definitions of tests and test packages;
+  source organization description (including all naming conventions);
+  sharing of internal libraries by test packages;
+  initialization and shutdown of test packages;
+  tests running issues (format of Test Subsystem configuration file;
+                        Dispatcher and Test Subsystem command line options);
+  possibility to run tests one-by-one, simultaneously or in the debugging mode;
+  possibility to run tests checking specified requirement(s);
+  specification and iteration of test parameters;
+  dynamic building of test packages on behalf of Test Subsystem.
+
+SIZE
+10-20 pages
+
+DEADLINE
+2002-12-23
+
+AUTHOR
+Andrew Rybchenko

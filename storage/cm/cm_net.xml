@@ -1,0 +1,65 @@
+<?xml version="1.0"?>
+<backup>
+
+    <!--
+        This configuration model is intended for describing of 
+        network topology.
+         
+        Division into "networks" is pure logical and depends on
+        testing purposes. E.g. if IP router is tested, all nodes 
+        connected to router port via Ethernet hub should be considered
+        as elements of the same network.
+
+
+        Copyright (C) 2003 Test Environment authors (see file AUTHORS
+        in the root directory of the distribution).
+
+        Test Environment is free software; you can redistribute it
+        and/or modify it under the terms of the GNU General Public
+        License as published by the Free Software Foundation; either
+        version 2 of the License, or (at your option) any later
+        version.
+        
+        Test Environment is distributed in the hope that it will be
+        useful, but WITHOUT ANY WARRANTY; without even the implied
+        warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+        PURPOSE. See the GNU General Public License for more details.
+        
+        You should have received a copy of the GNU General Public
+        License along with this program; if not, write to the Free
+        Software Foundation, Inc., 59 Temple Place, Suite 330,
+        Boston, MA  02111-1307  USA
+        
+
+        Author: Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
+    -->
+
+
+    <!-- Root object of the network configuration tree.
+         Name: network name -->
+    <object oid="/net" access="read_create" type="none"/>
+
+    <!-- Node of the network.
+         Name: node name
+         Value: OID of the connection point
+                
+                For nodes of Agent type the value is in the following format:
+                /agent:<agent name>/interface:<interface name>
+                E.g.: /agent:A/interace:eth0
+
+                For nodes of type bridge the value is in the following format:
+                /agent:<agent name>/port:<port id>
+                E.g.: /agent:bridge/port:20
+                Note that nodes of type bridge are identified as nodes of 
+                type nut.
+
+                -->
+    <object oid="/net/node" access="read_create" type="string"/>
+
+    <!-- Type of the network node.
+         Name: none
+         Value: 0 (agent), 1(nut), others... -->
+    <object oid="/net/node/type" access="read_create" type="integer"/>
+
+</backup>
+

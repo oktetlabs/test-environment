@@ -1,0 +1,129 @@
+TE-NDN-SNMP
+DEFINITIONS ::=
+BEGIN
+
+-- most part of this module is based on RFC-1905
+
+IMPORTS DATA-UNIT 
+            FROM TE-NDN-General
+	ObjectName, ObjectSyntax, Integer32
+	    FROM SNMPv2-SMI;
+
+EXPORTS SNMP-Message, SNMP-CSAP;
+
+SNMP-Message ::= SEQUENCE { 
+    version DATA-UNIT{INTEGER(1..3)} OPTIONAL,
+    community DATA-UNIT{PrintableString} OPTIONAL,
+    pdu CHOICE { get GetRequest-PDU, 
+	     get-next GetNextRequest-PDU, 
+	     get-bulk GetBulkRequest-PDU, 
+	     response Response-PDU, 
+	     set SetRequest-PDU, 
+	     inform InformRequest-PDU, 
+	     snmpV2-trap SNMPv2-Trap-PDU, 
+	     report Report-PDU
+	 } 
+}
+GetRequest-PDU ::= [0] IMPLICIT PDU
+
+GetNextRequest-PDU ::= [1] IMPLICIT PDU
+
+Response-PDU ::= [2] IMPLICIT PDU
+
+SetRequest-PDU ::= [3] IMPLICIT PDU
+
+-- [4] is obsolete
+
+GetBulkRequest-PDU ::= [5] IMPLICIT BulkPDU
+
+InformRequest-PDU ::= [6] IMPLICIT PDU
+
+SNMPv2-Trap-PDU ::= [7] IMPLICIT PDU
+
+--   Usage and precise semantics of Report-PDU are not presently
+--   defined.  Any SNMP administrative framework making use of
+--   this PDU must define its usage and semantics.
+Report-PDU ::= [8] IMPLICIT PDU
+
+max-bindings INTEGER ::= 2147483647
+
+PDU ::= SEQUENCE {
+     request-id
+         DATA-UNIT{ Integer32 } OPTIONAL,
+
+     error-status	     -- sometimes ignored
+         DATA-UNIT{ INTEGER {
+             noError(0),
+             tooBig(1),
+             noSuchName(2),   -- for proxy compatibility
+             badValue(3),     -- for proxy compatibility
+             readOnly(4),     -- for proxy compatibility genErr(5), 
+             noAccess(6),
+             wrongType(7),
+             wrongLength(8),
+             wrongEncoding(9),
+             wrongValue(10),
+             noCreation(11),
+             inconsistentValue(12),
+             resourceUnavailable(13),
+             commitFailed(14),
+             undoFailed(15),
+             authorizationError(16),
+             notWritable(17),
+             inconsistentName(18)
+         }} OPTIONAL, 
+         error-index	    -- sometimes ignored
+             DATA-UNIT{ INTEGER (0..max-bindings)} OPTIONAL,
+
+         variable-bindings	 -- values are sometimes ignored
+             VarBindList
+}
+
+
+BulkPDU ::=		     -- MUST be identical in
+    SEQUENCE {		     -- structure to PDU
+        request-id DATA-UNIT{Integer32}, 
+        non-repeaters DATA-UNIT{INTEGER (0..max-bindings)},
+
+        max-repetitions DATA-UNIT{INTEGER (0..max-bindings)},
+
+        variable-bindings	     -- values are ignored
+            VarBindList
+}
+
+VarBind ::= SEQUENCE {
+        name
+            DATA_UNIT{ObjectName},
+
+        CHOICE {
+        value DATA_UNIT{ObjectSyntax},
+
+            unSpecified	     -- in retrieval requests
+            NULL,
+
+                                 -- exceptions in responses
+            noSuchObject[0]
+                   IMPLICIT NULL,
+
+            noSuchInstance[1]
+                   IMPLICIT NULL,
+
+            endOfMibView[2]
+                   IMPLICIT NULL
+        }
+}
+
+
+-- variable-binding list
+
+VarBindList ::= SEQUENCE (SIZE (0..max-bindings)) OF VarBind
+
+SNMP-CSAP ::= SEQUENCE {
+    version DATA_UNIT{} ,
+    community DATA_UNIT{} OPTIONAL,
+    agent-addr DATA_UNIT{}  OPTIONAL,
+    timeout DATA_UNIT{}  OPTIONAL,
+    ...
+}
+
+END

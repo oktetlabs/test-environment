@@ -1,0 +1,134 @@
+ID OKT-QMSDRR-0000134
+
+COPYRIGHT Copyright(C) OKTET Ltd. 2003
+
+DDRID OKT-QMSDDR-0000056-TE
+
+RESPMGR Elena Vengerova <helen@oktet.ru>
+
+MODERATOR Andrew Rybchenko <arybchik@oktet.ru>
+PARTICIPANT Elena Vengerova <helen@oktet.ru>
+PARTICIPANT Oleg Kravtsov <oleg@oktet.ru>
+PARTICIPANT Ilya Ibragimov <ibr@oktet.ru>
+PARTICIPANT Konstantin Abramenko <konst@oktet.ru>
+
+DIRECTION STATUS FIXED
+Add "Abstract" to the document.
+
+DIRECTION STATUS FIXED
+Use "Table Content" paragraph style for "Document Title" and "Document
+Identifier" cells of the table with references.
+
+DIRECTION STATUS FIXED
+Add "NUT" abbreviation in the table in chapter 1.
+
+PROPOSAL STATUS FIXED
+Define "Testing Node" and "Auxiliary Station" in terminology or don't
+use them.
+
+DIRECTION STATUS FIXED
+Add caption to the figure in chapter 7.
+
+DIRECTION STATUS FIXED
+Remove ']' symbol in line 45.
+
+DIRECTION STATUS FIXED
+Line 100: Add end of the sentence.
+
+DIRECTION STATUS FIXED
+Define separator symbol and rules for processing of double quotes.
+
+PROPOSAL STATUS REJECTED
+Use "ATTACH" instead of 'attach'.
+
+DIRECTION STATUS FIXED
+130: Remove unnecessary dot.
+
+DIRECTION STATUS FIXED
+132: Name of the file with errno's is te_errno.h.
+
+DIRECTION STATUS FIXED
+134: Make the same font for ETEBADFORMAT.
+     Use "ETEBADFMT" and "ETEUNSUPP" instead of specified error codes.
+
+DIRECTION STATUS FIXED
+135: Add reference at the end of the line.
+
+DIRECTION STATUS FIXED
+205: Correct type "At list".
+
+DIRECTION STATUS FIXED
+206: Remove unnecesary space in "(00- 59)" at the end of the line.
+
+DIRECTION STATUS FIXED
+Use bold font ("OKT a Term" character style) for protocol command
+in the text except examples.
+
+DIRECTION STATUS FIXED
+Use "OKT Example" style for examples in the document (34, 118, 149, ...).
+
+DIRECTION STATUS FIXED
+79: Use "read/write" instead of "read/change".
+
+DIRECTION STATUS FIXED
+Describe usage of double quotes.
+
+DIRECTION STATUS FIXED
+Use "fget" and "fput" instead of "put_file" and "get_file".
+
+DIRECTION STATUS FIXED
+229: Use "file name" instead of "path".
+
+DIRECTION STATUS FIXED
+234: Correct type "os" -> "of".
+
+PROPOSAL Oleg Kravtsov STATUS FIXED
+231: Use "of memory" instead of "in memory".
+
+DIRECTION STATUS FIXED
+234, 271: Correct type "red" -> "read".
+
+DIRECTION STATUS FIXED
+Symbol table entry may be used as address in memory.
+
+DIRECTION STATUS FIXED
+241: Correct type "identifier" -> "identified".
+
+DIRECTION STATUS FIXED
+Remove "protocol stack identifier" from arguments of traffic commands
+except "casp_create".
+
+DIRECTION STATUS FIXED
+Remove "N" and "T" arguments from "trsend_start" command.
+
+DIRECTION STATUS FIXED
+Quantity of sent packets should be returned in answer string for
+postponed sending.
+
+DIRECTION STATUS FIXED
+Rename "patterns" with "results" in "trrecv_start" command.
+
+DIRECTION STATUS FIXED
+Default value 1 should be used, if N si not specified in "trrecv_start"
+command.
+
+DIRECTION STATUS FIXED
+293: Correct type "uin" -> "in".
+
+DIRECTION STATUS FIXED
+298: The sentence is not somplete.
+
+DIRECTION STATUS FIXED
+315: Use "The first" and "the second".
+
+DIRECTION STATUS FIXED
+Rewrite paragraphs in lines 332 -...
+
+PROPOSAL STATUS REJECTED
+Remove "int64" and "uint64" from types (340, 345).
+
+DIRECTION STATUS FIXED
+355: Return code must be interpreted as signed integer.
+
+RESULT
+Document may be issued (approved) after notes processing during 3 hours.

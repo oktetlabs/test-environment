@@ -1,0 +1,57 @@
+-------------------------------------------------------------------------
+-- file:        packets-asn1.txt
+-- author:      Abramenko Konstantin <konst@oktetlabs.ru>
+-- description: 
+--      This file contain attempt to describe Packets and filters format
+--      by ASN.1
+--
+-- $Id: packets-asn1.txt,v 1.1 2003/10/28 09:35:41 arybchik Exp $
+-------------------------------------------------------------------------
+
+MODULE 
+
+BEGIN
+
+PACKET-FIELD { BaseFieldType } ::=  CHOICE
+{ 
+    plain BaseFieldType, 
+    spec CHOICE {
+        pattern UniversalString, -- pattern for incoming traffic in 
+                                -- some CSAP-specific format.
+        script UniversalString, -- script for calculating of field value by TA.
+
+        env OBJECT IDENTIFIER   -- identifier of Config DB entry.
+    }
+}
+
+EthernetFrame ::= IMPLICIT SEQUENCE { header EthernetHeader, 
+                            payload ANY}
+
+EthernetHeader ::= IMPLICIT SEQUENCE { 
+        dst-addr EthernetAddress,
+        src-addr EthernetAddress,
+        eth-type EthernetType }
+
+EthernetAddress ::= IMPLICIT OCTET STRING (SIZE (6))
+
+EthernetType ::= IMPLICIT INTEGER (0..65535)
+
+IPDatagram ::= IMPLICIT SEQUENCE { header IPHeader, payload ANY }
+
+IPHeader ::= IMPLICIT SEQUENCE {
+        version         INTEGER (0..31),
+        header-len      INTEGER (0..31),
+        type-of-service INTEGER (0..255), 
+        ip-len          INTEGER (0..65535), 
+        ip-ident        INTEGER (0..65535), 
+        flags           INTEGER { frag-mask (1), mf(2), df(4) } 
+        ip-offset       INTEGER (0..65535), 
+        time-to-live    INTEGER (0..255), 
+        protocol        INTEGER (0..255), 
+        h-checksum      INTEGER (0..65535), 
+        src-addr        IpAddress,
+        dst-addr        IpAddress
+    }
+
+
+END

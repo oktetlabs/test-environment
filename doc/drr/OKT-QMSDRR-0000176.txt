@@ -1,0 +1,46 @@
+ID OKT-QMSDRR-0000176
+
+COPYRIGHT Copyright(C) OKTET Ltd. 2003
+
+DDRID OKT-QMSDDR-0000106-TE
+
+RESPMGR Elena Vengerova
+
+MODERATOR Elena Vengerova <helen@oktet.ru>
+
+PARTICIPANT Andrey G. Ivanov <andron@oktet.ru>
+
+DIRECTION STATUS FIXED
+Remove issues.
+
+QUESTION STATUS FIXED
+File/directory copiing to/from storage should be added.
+
+QUESTION STATUS FIXED
+Describe PERL interface facilities.
+
+DIRECTION STATUS FIXED
+Add dynamic archivation support.
+
+DIRECTION STATUS FIXED
+Clarify "\n" issue in the CVS configuration string.
+
+DIRECTION STATUS FIXED
+Remove mention about empty directories. Specify that it's not
+possible to remove directories in the CVS storage.
+
+DIRECTION STATUS FIXED
+It's necessary to update file before commiting when user calls
+flush or close.
+
+QUESTION
+Provide description of CVS error processing in the algorithms section.
+
+DIRECTION STATUS FIXED
+Provide file sharing conventions description.
+
+QUESTION STATUS FIXED
+Portability with MS (dirent library?)
+
+RESULT
+

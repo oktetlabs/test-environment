@@ -1,0 +1,57 @@
+ID OKT-QMSDDR-0000080-TE 
+
+COPYRIGHT
+Copyright(C) OKTET Ltd. 2003
+
+DDRAUTH
+Elena Vengerova
+
+RESPMGR
+Elena Vengerova
+
+DOCID
+OKT-DD-0000081-TE_TS_DATA
+
+TITLE
+Test Package file specification
+
+PURPOSE
+Provide strict specification of syntax and semantics of Test Package
+description file.
+
+AUDIENCE
+End users and TE project team-members
+
+AUDIENCE
+OKTET employees and customers
+ 
+FMT
+XML scheme
+
+COMPLY
+OKT-REQ-0000010-TE
+OKT-ARCH-0000011-TE
+OKT-DD-0000087-TE_TS_CONF
+OKT-HLD-0000095-TE_TS
+
+ANNOTATION
+Syntax of the TP description should be described using XML scheme means.
+For each object: 
+* semantics
+* usage
+* semantics of possible values
+* relations with other objects
+* default value/behaivour
+should be described in comments.
+
+Moreover it is very desirable (but not required) if the result may be used 
+as perfect example for people describing configuration files.
+
+SIZE
+2-10 pages
+
+DEADLINE
+2003-02-05
+
+AUTHOR
+Andrew Rybchenko

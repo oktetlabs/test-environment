@@ -1,0 +1,575 @@
+
+General Purposes of Product
+***************************
+
+   Network Test Environment (NTE) is intended for low-level precise
+testing of network elements. Generally, it may support any network
+protocol, but main objectives now are protocols from standard
+TCP/IP(v6) stack: `Ethernet', `IP', `IPv6', `ARP', `ICMP', `ICMPv6',
+`TCP', `UDP'.
+
+   "Low-level testing" means that user of NTE have access to every field
+of all headers, options, and payloads.
+
+   Internal data structures, representing protocol datagrams, are called
+"form"s.
+
+   NTE should supply ("convenient and safe" are supposed everywhere):
+
+   * API for create form of any protocol with any values of header
+     fields;
+
+   * API for glue forms of adjacent levels and separate them back;
+
+   * API for filtering all incoming packets;
+
+   * API for tracing any events;
+
+   * API for configuration database;
+
+   * easy way to add implementation of new protocol, or new type of
+     raw-interface.
+
+
+   It seems to be reasonable to implement all NTE in the same language
+in the same style. Offcourse, user of NTE will have wide variaty to use
+some other tools for specific aims, for example, parsing output of some
+`minicom'.
+
+   This document suggests detailed architecture of NTE supposing it
+will be implemented in `C++'.
+
+Detailed Architecture
+*********************
+
+Interfaces
+==========
+
+   "Interface" in NTE does not mean any strange: it is object which
+allows send and receive datagrams and may be opened and closed.
+
+   Base class `interface' has only pure virtual functions for basic
+"interface" functionality. Real interfaces should be inherited from
+this class and supply real implementation of all operations.
+
+   The first (and seems to be single for some time) real interface is
+`Ethernet'.
+
+     class interface
+     {
+     protected:
+         proto_type          m_type;
+     
+         enum {name_len = 32};
+         char                m_name[name_len];
+         uint32_t            m_mtu;
+         uint32_t            m_id;
+     
+         /* Some sockets, etc.. */
+     
+         int          m_if_index;           /* Os-IP stack index of interface */
+     
+         int          m_status;             /* Whether sockets were opened */
+         int          m_tx_error;           /* Number of transmit error */
+         int          m_rx_error;           /* Number of receive error */
+     
+     public:
+         enum {SOCKETS_CLOSED, SOCKETS_OPENED};
+     
+         interface(proto_type);
+     
+         int socket_status (void) const {return m_status; };
+     
+         proto_type type(void) const {return m_type; };
+     
+         enum status_code {
+             OK,
+             NOT_EXIST,
+             TIMEOUT,
+             NOT_OPENED,
+             INVALID_PARAM,
+             SOCKET_ERR,
+             MEMORY_ERR,
+             UNKNOWN_ERR = ((int)-1)
+         };
+     
+     
+         /* The following interface methods return 'enum status_code' */
+         virtual int if_open     (void) = 0;
+         virtual int if_close    (void) = 0;
+         virtual int if_flush    (void) = 0;
+         virtual int if_send     (const form *) = 0;
+         /*
+          * NOTE: address to pointer to packet filled with result of
+          * 'new' operator, therefore user of this method have to delete
+          * obtained object after use it.
+         */
+         virtual int if_receive  (struct timeval *timeout, packet **) = 0;
+     };
+
+Forms
+=====
+
+     class form
+     {
+     protected:
+         const proto_type m_type;
+     
+         form *m_lower;
+         form *m_upper;
+     
+         packet *m_data_pkt;   /* Payload data. Note: upper form pointer and data
+                              * pointer may not be nonzero simultaneously! */
+     
+     public:
+         form (const form&);
+     
+         /* Two following constructors intended only for use by constructors
+          * of inherited classes. Thus, copy of lower and upper forms should be
+          * performed by caller */
+         form (proto_type s_type, form *s_upper = 0) :
+             m_type(s_type), m_lower(0), m_upper(s_upper), m_data_pkt(0) {;};
+         form (proto_type s_type, packet *s_data) :
+             m_type(s_type), m_lower(0), m_upper(0), m_data_pkt(s_data) {;};
+     
+         virtual int glue_upper(const form *); /* glue passed form to this as upper */
+     
+         virtual int set_payload (const packet *payload);
+     
+     
+         /* returns pointer to new object, converted from this form,
+            caller have to delete this object after use. */
+         virtual operator packet* () const = 0;
+     
+     
+         /*
+          * The following function creates copy of real (corresponded to specific
+          *  protocol) form, and returns its pointer, casted to base class pointer.
+          *  Every inherited class from 'form' class have to implement this function.
+          *  Also it must copy all upper forms (or payload packet).
+          */
+         virtual form * copy() const = 0;
+     
+         /* return pointer to new object, identical to
+            payload data; caller have to delete this object!   */
+         packet* get_data(void) const
+             { if (m_data_pkt) return new packet(*m_data_pkt);
+               else return 0;
+             };
+     
+         virtual void print(void) const = 0; /* print content of form in human
+                                      representation into correspondent log class */
+         void print_all_up(void) const;
+     
+         proto_type type(void) const { return m_type; };
+     
+         virtual ~form(void);
+     
+         enum auto_flag {AUTO, NOAUTO};
+     };
+
+   This class is pure base class for real protocol forms.  Fields
+`m_lower' and `m_upper', if not zeros, points to objects of some
+inherited class.
+
+   Some general mechanisms of constructing form hierarchy, sending and
+filtering them are implemented in methods of base classes `interface',
+`form', and `filter', but whereas they should work with real forms,
+some operations, which implementation is protocol specific, and API for
+copying, are declared as pure virtual methods.
+
+   Methods `glue_upper' and `set_payload' both automatically erase old
+upper form and payload. They declared as virtual, because change of
+upper layer form may cause correcting of some fields in lower layer
+form.
+
+   Methods for constructing form hierarchy always must duplicate passed
+forms and packets, so user will never  get two addresses (or
+references) of two different forms in the same tree.
+
+Filters
+=======
+
+Base class declaration
+----------------------
+
+   The following declaration of base class `filter' is suggested:
+
+     class filter :
+         protected dlist /* For peer filters.
+                   Whereas filters from down to up are logically
+                   joined with AND operation, peer filters are
+                   joined with OR operation. */
+     {
+         filter () {;}; /* protect public usage of default constructor */
+     
+     public:
+         enum receive_status
+             {OK,
+              FILTER_REJECT,
+              BAD_PARAM,
+              IFACE_NOT_OPENED,
+              WRONG_IFACE_TYPE,
+              TIMEOUT,
+              SOCKET,
+              MEMORY,
+              WRONG_PKT,
+              UNKNOWN_ERR = 255};
+     
+     protected:
+         filter *m_upper; /* filter for upper level in protocol stack */
+         filter *m_lower; /* filter for lower level in protocol stack */
+     
+         form * m_mask;
+         form * m_value;
+     
+         uint32_t m_checkmask;
+     
+         struct timeval m_timeout;
+     
+         receive_status m_status; /* Status of last receive operation. */
+     
+     
+         /* return:
+             0  : if form is wrong,
+             1  : if form passed through the filter. */
+         virtual int check_form(const form*) = 0;
+     
+         /* return:
+             0  : some error
+             1  : form is good prepared for check */
+         virtual int prepare_form(form *f_p, interface *if_p) {return 1;};
+     
+         static receive_status iface_error_to_filter_error(int iface_error);
+     
+         filter& operator=(const filter&);
+     
+     
+         /* This constructor is intended for use by public constructors
+          * of inherited classes. */
+     
+         filter(form *mask, form *val, uint32_t checkmask,
+                struct timeval, filter *lower = 0);
+     
+     private:
+         void copy_all_peers(const filter *dst);
+     
+     public:
+     
+         filter(const filter&); /* copy constructor */
+     
+         virtual filter *copy() const = 0;
+     
+         /* The following methods copies also all peer filters. */
+         filter *copy_all_upper() const;
+         filter *copy_all_lower() const;
+         filter *copy_all_stack() const;
+     
+         virtual void glue_upper(const filter *);
+         virtual void glue_lower(const filter *);
+     
+         virtual ~filter();
+     
+         void set_timeout(uint64_t timeout); /* 'timeout' measured in microseconds. */
+     
+         struct timeval get_timeout(void) const {return m_timeout;};
+     
+     
+         /* ************************************************************************
+          * receive_form:
+          *      Try to receive something from specified interface and test it
+          *          by filter.
+          *      If interface has the same protocol type with filter 'value', packet
+          *          will be received directly from the interface, in other case
+          *          filter will try to receive lower level form by the same method of
+          *          lower level filter.
+          *      In any case, returned form has no any 'lower' forms -- if user
+          *          interested in them, one should call this method with lower level
+          *          filter.
+          *
+          * NOTE: If method returns non-zero pointer, memory is allocated by 'new',
+          *       and user of this method should delete obtained form by 'delete'
+          **************************************************************************/
+         form * receive_form(interface *);
+     
+         receive_status get_receive_status(void) const {return m_status;};
+     
+         void insert_peer(filter*);
+     };
+
+   This base class provides all necessary data fields, responsibility of
+inherited classes is implementation of methods, preparing and checking
+incoming form.
+
+   Sertainly, user may decide that standart mechanism of `value/mask'
+filtering is not convenient for his specific aims, and may add to
+inherited filter class it's own data field for pattern; but this
+situations seems rather rarely.
+
+Subordination of filters
+------------------------
+
+   Filters are linked from up to down into double-linked list by fields
+`m_upper' and `m_lower', neighbour filter instances should have
+protocol types adjacent in protocol stack.
+
+   Linkage methods `glue_upper' and `glue_lower' declared as virtual
+because some inherited filters may need to perform some specific
+operation with patterns while glue.
+
+   Methods `glue_(upper/lower)' makes copy of passed filter by its
+methods `copy_all_(upper/lower)' respectively.
+
+   Any of filters in this vertical list may have double-linked loop of
+"brother" filters. Each brother filter must have the same protocol type
+with another brother, and only one filter instance from this loop may
+have non-zero links to up/down protocols.  Situation with one brother
+filter has link to up-layer filters, and some other brother has link to
+down-layer filters, is forbidden.  It seems that API for constructing
+filter hierarchy designed in such way, that this situation is
+impossible.
+
+   Methods for constructing filter tree *always must duplicate* passed
+filters and all their internal data, so user will never  get two
+addresses (or references) of two different filter instances in the same
+tree.
+
+Filtering algorithm
+-------------------
+
+   The main method of filter is `receive_form'.  This method tries to
+receive packet from specified interface, convert it into form and
+filter it.
+
+   If passed interface has the same protocol type as filter instance,
+this method try to get packet directly from it. Otherwise, the same
+method of lower-level filter will be called.
+
+   Method `receive_form' will try to pass received from through all
+upper filter tree which it has.
+
+   To avoid overhead, before asking for `receive_form' of lower-level
+filter,  this lower filter should be separated from current level (i.e,
+the following operator will be performed: `m_lower->m_upper=0;').
+
+   After receiving form from interface or lower-level filter this form
+should be prepared for matching at this protocol level.  It will be
+performed by method `prepare_form'. It seems now that this method will
+be non-trivial only for `IP' filters and will perform defragmentation
+(if asked in filter pattern).
+
+   While form is prepared to match, it will be matched by all brother
+filters at current level.  If any of them will return `1', form will be
+returned, otherwise it will be deleted and `prepare_form' will return
+zero.
+
+   Status field `m_status' will be filled appropriately, and its value
+may be get by respective method.
+
+Trace
+=====
+
+   There no satisfactory suggestions of trace log API yet.
+Implementation of it in current Test Environment is not very convenient.
+
+   The following specification may be proposed:
+
+   * Every log issue must have "log_class",  "majority", "style", and
+     "text body".
+
+   * API should provide a way to turn on/off any of log_class and
+     majority from configuration DB and dinamically while test is
+     executed.
+
+   * API should provide a way to add new log_class dinamically. In any
+     case, definition of available log_classes in some header as
+     `#define' construction is not best solution.
+
+
+   Key `log_class' may be following: separate log class for every
+protocol, and some user-defined log-classes. User may not use any
+protocol log-class.
+
+   Methods of `form' and `filter' inherited classes will use respective
+protocol log-class for diagnostic messages when some unexpected
+situation is happened.  It seems reasonable that some events (such as
+filtering of got form) will be traced always with low majority.
+
+Configuration Database
+======================
+
+   The question is open.
+
+Usage example
+*************
+
+   Here is example of usage this scheme.
+
+   This example is rather draft and is not compiling (as it is here)
+but most of neccessary to run this example is implemented now.
+
+Declaration of eth_form
+=======================
+
+
+     struct eth_addr
+     {
+         enum {len = 6};
+         uint8_t m_addr[len];
+     
+         eth_addr (const char* str = 0);
+     
+         print (void);
+     };
+     
+     class eth_form : public form
+     {
+     protected:
+         eth_addr m_src, m_dst;
+         uint16_t m_eth_type;
+     
+         virtual form * copy() const; /* for private use by copy constructor and */
+     
+         enum {hdr_len = 14};
+     
+     public:
+         eth_form (const eth_form&); /* copy constructor;
+                                        will copy all upper level forms */
+         eth_form (uint16_t type, eth_addr src, eth_addr dst, packet *payload = 0);
+         eth_form (uint16_t type, eth_addr src, eth_addr dst, form *upper);
+     
+         eth_form (const packet& original);
+     
+     
+         ~eth_form();
+     
+         /* constants for eth type value */
+         enum {Incorrect = 0, IP = 0x0800, ARP = 0x0806, IP6 = 0x86DD };
+     
+         void print(void) const;
+     
+         virtual operator packet* () const;
+     
+         friend class eth_filter;
+     };
+
+Declaration of eth_filter
+=========================
+
+
+     class eth_filter: public filter
+     {
+     protected:
+         /* return:
+             0  : if form is wrong,
+             1  : if form passed through the filter. */
+         virtual int check_form(const form*);
+     
+         /* return:
+             0  : if eth_addr 'tested' does NOT match.
+             1  : if eth addr 'tested' is good.  */
+         int match_eth_addr(const eth_addr *tested, /* address to be tested*/
+                            const eth_addr *value, /* pattern */
+                            const eth_addr *mask); /* bit mask, usually (-1)*/
+         int match_eth_type(uint16_t tested,uint16_t value, uint16_t mask);
+     
+     public:
+         /* constants for set checkmask */
+         enum  { ETH_SRC = 1, ETH_DST = 2, ETH_TYPE = 4};
+     
+         eth_filter( const eth_form& mask, const eth_form& value,
+                     uint8_t checkmask, struct timeval timeout);
+     
+         /* Constructor without mask fill 'mask' with 0xff. */
+         eth_filter( const eth_form& value,
+                     uint8_t checkmask, struct timeval timeout);
+     
+         eth_filter(const eth_filter&);
+     
+         ~eth_filter();
+     
+         virtual filter * copy() const;
+     };
+
+Example of `issue-simple-eth'
+=============================
+
+   Ethernet frame here does not have any payload, but marked as IPv6
+frame to filter it on the other side.
+
+
+     int
+     main (int argc, char *argv[])
+     {
+         eth_interface *my_if = new eth_interface("eth0");
+         packet simple_payload (proto_ip6, 0, 20);
+         eth_addr thor_mac("00:48:54:12:72:16");
+         eth_addr otter_mac ("00:80:48:B3:48:D3");
+         eth_form simple_frame(eth_form::IP6, thor_mac, otter_mac, &simple_payload);
+     
+         int if_status;
+     
+         if (!my_if)
+         {
+             perror("open interface failed");
+             return -1;
+         }
+         if ((if_status = my_if->if_open()) != interface::OK)
+         {
+             printf ("interface open error, status: %d\n", if_status);
+             return 1;
+         }
+         if ((if_status = my_if->if_send(&simple_frame)) != interface::OK)
+         {
+             printf ("send simple frame error, status: %d\n", if_status);
+             return 2;
+         }
+         my_if->if_close();
+         delete my_if;
+     
+         return 0;
+     }
+
+Example of `catch-simple-eth'
+=============================
+
+
+     int
+     main (int argc, char *argv[])
+     {
+         eth_interface *my_if = new eth_interface("eth0");
+         packet simple_payload (proto_ip6, 0, 20);
+         eth_addr thor_mac("00:48:54:12:72:16");
+         eth_addr otter_mac ("00:80:48:B3:48:D3");
+         eth_form simple_frame(eth_form::IP6, thor_mac, otter_mac, &simple_payload);
+         eth_filter simple_filter (simple_frame, eth_filter::ETH_TYPE, {5, 0});
+         eth_form *received;
+     
+         int if_status;
+     
+         if (!my_if)
+         {
+             perror("open interface failed");
+             return -1;
+         }
+         if ((if_status = my_if->if_open()) != interface::OK)
+         {
+             printf ("interface open error, status: %d\n", if_status);
+             return 1;
+         }
+     
+         if ((received = simple_filter.receive_form(my_if)) == 0)
+         {
+             printf ("receive simple frame failed, status: %d\n",
+                     simple_filter.get_receive_status());
+             return 2;
+         }
+     
+         received->print();
+     
+         my_if->if_close();
+         delete my_if;
+     
+         return 0;
+     }
+

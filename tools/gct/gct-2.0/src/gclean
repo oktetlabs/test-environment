@@ -1,0 +1,34 @@
+#!/bin/sh
+# Remove all files created by any GCT program.
+
+# But first, warn user if they may be about to remove their only
+# uninstrumented file.  This is hardly a foolproof check.  It's certainly
+# not applicable if there's no gct_backup directory.
+
+if test -d gct_backup
+then
+  if grep __GCT_INSTRUMENTATION_TAG *.c > /dev/null 2>&1
+  then
+    cat <<- EOF
+	gclean will remove the gct_backup subdirectory.
+	There are instrumented files in the current directory.
+	Thus, it may be about to remove the only UNinstrumented copies of those files.
+	Do you want to continue? (y/n)
+	EOF
+    read answer
+    if [ x$answer != xy ]; then exit 1; fi
+  fi
+fi
+ 
+
+/bin/rm -f gct-ps-defs.h
+/bin/rm -f gct-map gct-map.gbk
+/bin/rm -f gct-rscript
+/bin/rm -f gct-rscript.bk
+/bin/rm -fr gct_backup
+/bin/rm -f gct-ps-defs.c
+/bin/rm -f gct-ps-defs.c~
+/bin/rm -f gct-ps-defs.h~
+/bin/rm -f gct-write.c
+/bin/rm -f gct-defs.h
+exit 0

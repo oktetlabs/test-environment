@@ -1,0 +1,30 @@
+#!  
+
+if ($0 =~ /^\//) {
+    $cmd = $0;
+} elsif ($0 =~ /^\./) {	
+    $pwd = `pwd`;
+    ($cmd = $0) =~ s/^\./$pwd/;
+} else {
+    $cmd = `which $0`;
+}
+
+$test_cc = "-test-cc gcc" unless (scalar(grep(/-test-cc/, @ARGV)));
+$gctbin = substr($cmd, 0, rindex($cmd, "/"));
+$gctlib = substr($gctbin, 0, rindex($gctbin, "/"));
+$gctlib .= "/lib";
+
+$env{"GCT_EXEC_PREFIX"} = "$gctlib/";
+
+exec("gct.exec $test_cc @ARGV");          # PAB: this better transfers the exit value
+
+## system("gct.exec $test_cc @ARGV");     # commented out by PAB
+## exit $?
+
+# You can use GCT with a C compiler not named ``cc'' by using this
+# line:
+#
+# gct.exec -D__GNUC__=2 -test-cc NAME_OF_YOUR_COMPILER "$@"
+#
+# Normally, GCT's installer has selected one of the gct-* 
+# scripts to be called ``gct''.

@@ -1,0 +1,95 @@
+<?xml version="1.0"?>
+<backup>
+
+    <!-- This configuration model is intended for describing of configuration
+         information deals with CableHome PS -->
+
+    <!--
+        Copyright (C) 2003 Test Environment authors (see file AUTHORS
+        in the root directory of the distribution).
+
+        Test Environment is free software; you can redistribute it
+        and/or modify it under the terms of the GNU General Public
+        License as published by the Free Software Foundation; either
+        version 2 of the License, or (at your option) any later
+        version.
+        
+        Test Environment is distributed in the hope that it will be
+        useful, but WITHOUT ANY WARRANTY; without even the implied
+        warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+        PURPOSE. See the GNU General Public License for more details.
+        
+        You should have received a copy of the GNU General Public
+        License along with this program; if not, write to the Free
+        Software Foundation, Inc., 59 Temple Place, Suite 330,
+        Boston, MA  02111-1307  USA
+        
+        Author: Oleg Kravtsov E-mail: Oleg.Kravtsov@oktetlabs.ru
+    -->
+    
+    <!-- Root object of the NUT configuration tree
+         Name: NUT name -->
+    <object oid="/nut" access="read_create" type="none"/>
+
+    <!-- Network interface on the NUT
+         Name: IPWAN-Man  -  PS WAN Man interface
+               IPWAN-Data -  PS WAN Data interface
+               LAN        -  PS LAN interface with ifindex 3
+               LAN2       -  PS LAN interface with ifindex 4
+               ...
+               LANn       -  PS LAN interface with ifindex n + 2 -->
+    <object oid="/nut/interface" access="read_create" type="none"/>
+    
+    <!-- Link layer address for the interface (MAC, NSAP, E.164, VPI/VCI, DLCI).
+         Name:  empty
+         Limit: 1 -->
+    <object oid="/nut/interface/link_addr" access="read_create" type="address"/>
+
+    <!-- Network address (IPv4 or IPv6) of the interface.
+         Name:   address in human notation: 
+                     dotted notation for IPv4
+                     RFC 2373 (or RFC 1924) for IPv6
+         Limit:  depends on Test Agent (may be limited to 1 for IPv4) 
+         Value: MUST be the same as instance name -->
+    <object oid="/nut/interface/net_addr" access="read_create" type="address"/>
+
+    <!-- Configuration of some agent-specific parameters, which can be useful
+         from the tests point of view
+	 Name:   empty  -->
+    <object oid="/dynamic_conf" access="read_create" type="none"/>
+
+    <!-- Specifies a particular Agent
+	 Name:   Agent name whose parameters are specified in sub-tree -->
+    <object oid="/dynamic_conf/agent" access="read_create" type="none"/>
+    
+    <!-- Network interface on the Agent
+         Name:   "eth0"-like -->
+         Limit:  1  - The model assumes that each agent has exactly 
+	              one interface  -->
+    <object oid="/dynamic_conf/agent/interface" access="read_create" type="none"/>
+    
+    <!-- Lower bound address in the pool of IPv4 addresses that can be 
+         potentially assigned on the interface of the Agent
+         Name:   empty
+         Limit:  1      -->
+    <object oid="/dynamic_conf/agent/interface/ipv4_pool_start" access="read_create" type="address"/>
+    
+    <!-- Upper bound address in the pool of IPv4 addresses that can be 
+         potentially assigned on the interface of the Agent
+         Name:   empty
+         Limit:  1      -->
+    <object oid="/dynamic_conf/agent/interface/ipv4_pool_end" access="read_create" type="address"/>
+
+    <!-- Lower bound address in the pool of MAC addresses that can be
+         used as addresses of virtual LAN PCs.
+         Name:   empty
+         Limit:  1      -->
+    <object oid="/dynamic_conf/mac_pool_start" access="read_create" type="address"/>
+    
+    <!-- Upper bound address in the pool of MAC addresses that can be
+         used as addresses of virtual LAN PCs.
+         Name:   empty
+         Limit:  1      -->
+    <object oid="/dynamic_conf/mac_pool_end" access="read_create" type="address"/>
+
+</backup>

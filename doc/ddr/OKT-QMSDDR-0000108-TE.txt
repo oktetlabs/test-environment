@@ -1,0 +1,59 @@
+ID OKT-QMSDDR-0000108-TE
+
+COPYRIGHT
+Copyright(C) OKTET Ltd. 2003
+
+DDRAUTH
+Elena Vengerova
+
+RESPMGR
+Elena Vengerova
+
+DOCID
+OKT-HLD-0000109-TE_LIB_ST
+
+TITLE
+Proteos: CVS storage library
+
+PURPOSE
+High Level Design of Storage library based on the CVS.
+
+AUDIENCE
+End users and TE project team-members
+
+AUDIENCE
+OKTET employees and customers
+ 
+TMPL
+OKT-TMPL-0000009-HLD
+
+FMT
+OpenOffice
+
+COMPLY
+OKT-REQ-0000010-TE
+OKT-ARCH-0000011-TE
+OKT-DD-0000105-TE_LIB_ST
+
+ANNOTATION
+The short document should contain all information necessary to understand
+and support the implementation. Particularly following issues should
+be clarified:
+    * configuration string format and processing;
+    * processing of errors returned by CVS;
+    * location of temporary files;
+    * portability to MS systems.
+
+
+SIZE
+5-10 pages
+
+DEADLINE
+2003-03-13
+
+AUTHOR
+Andrey Ivanov
+
+NOTES
+2003-03-24: document development is stopped - document content is
+included to OKT-HLD-0000107-TE_LIB_ST.

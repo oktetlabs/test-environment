@@ -1,0 +1,156 @@
+ID OKT-QMSDRR-0000146
+
+COPYRIGHT Copyright(C) OKTET Ltd. 2003
+
+DDRID OKT-QMSDDR-0000110-TE
+
+RESPMGR Elena Vengerova
+
+TIME 2003-02-17 15-30:00+03:00
+
+DURATION 01:30
+
+MODERATOR Andrew Rybchenko <arybchik@oktet.ru>
+
+PARTICIPANT Elena Vengerova <helen@oktet.ru>
+
+PARTICIPANT Igor Artimovitch <art@oktet.ru>
+
+DIRECTION
+Remove issus due to InfoLib.
+
+DIRECTION
+Use "OKT List Bullet" style for bullet styles in the document.
+
+DIRECTION
+Use "OKT List Numbering" style for numbering styles in the document.
+
+DIRECTION
+Modify type of the document from "HOWTO" to "User's Guide".
+
+DIRECTION
+Add references to conding standards and useful man pages.
+
+DIRECTION
+Provide  structure of the document in corresponding chapter.
+
+DIRECTION
+Add note about libtool.
+
+DIRECTION
+"configure.ac" is used instead of "configure.in".
+
+DIRECTION
+72: Use .dox extension for doxygen specific files.
+
+DIRECTION
+80: Revise sentence.
+
+DIRECTION
+91: Use prefix in examples.
+
+DIRECTION
+92: Add reference (just location and name) to the header with error codes.
+
+DIRECTION
+103: Add reference to coding standard and note about doxygen usage.
+
+DIRECTION
+It should be "recommended" (not mandatory) to have main header for library.
+
+DIRECTION
+131: "contain".
+
+DIRECTION
+138-139: Only "C" will be used for TE subsystems.
+
+DIRECTION
+Ch.8: 4 languages interface is desiarable for libraries which are used 
+from tests.
+
+DIRECTION
+Avoid forward links in your text. Revise whole document.
+
+DIRECTION
+146: Note that source code may not be accessable, if library is adopted.
+
+PROPOSAL
+Provide figures, which describe creation of X-interface for Y EL.
+
+DIRECTION
+Ch.8.2: Break down structure of the chapter.
+Provide example of Makefile.am.
+Make note about paths/visibility.
+Describe steps in more details: header, wrappes, installation, names etc
+
+PROPOSAL
+Ch.8.3: Rewrite the first paragraph.
+
+DIRECTION
+Ch.8.3: Break down structure of the chapter.
+Clearify process of implemantation, compilation and installation.
+
+DIRECTION
+Ch.8.4: Describe process in more details.
+
+DIRECTION
+Describe creation of Perl-to-Tcl and Tcl-to-Perl interfaces.
+Add notes due to C++ interface to Perl/Tcl, Perl/Tcl interface to C++.
+
+DIRECTION
+Ch.9: Following alternatives should be described here: with modification of 
+sources and only binaries are accessable.
+Provide notes due to usage without adoptation (configuration of Builder).
+
+DIRECTION
+Ch.10: Remove.
+
+DIRECTION
+Hide hidden paragraphs.
+
+DIRECTION
+Update all fields (Tools > Update > Update All).
+
+RESULT
+Since document is not complete, additional review is necessary
+after 4 days processing.
+
+DIRECTION
+Change type from User's Guide to Guidelines and identifier to OKT-GL-...
+
+DIRECTION
+Correct styles in the document.
+
+DIRECTION
+Use spell checker.
+
+DIRECTION
+Chapter 5.2: required files are configure and Makefile.am. Using of
+autoconf and automake is highly recommended.
+
+DIRECTION
+Chapter 6: add Makefile.in and configure script in the root directory.
+
+DIRECTION
+Chapter 7: multi-language interfaces should be implemented only for
+EL used by tests.
+
+DIRECTION
+Re-write all algoriths using imperative.
+
+DIRECTION
+Chapter 7.3: make picture more clear.
+
+QUESTION
+Looking for PERL modules in custom directories.
+
+DIRECTION
+Chapter 7.4: Use numerated list for the algorithm of library implementor.
+Separate instructions for library user from instructions for library 
+implementor.
+
+DIRECTION
+Lines 395-396: Re-write the phrase.
+
+RESULT
+Additional review is necessary.

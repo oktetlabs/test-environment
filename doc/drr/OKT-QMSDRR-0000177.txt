@@ -1,0 +1,34 @@
+ID OKT-QMSDRR-0000177
+
+COPYRIGHT Copyright(C) OKTET Ltd. 2003
+
+DDRID OKT-QMSDDR-0000038-TE
+
+RESPMGR Elena Vengerova
+
+MODERATOR Igor Vasiliev <igorv@oktet.ru>
+
+PARTICIPANT Oleg Kravtsov <oleg@oktet.ru>
+
+PROPOSAL STATUS FIXED
+line 11: is a set of macro calls
+
+PROPOSAL STATUS FIXED
+line 30: clarify this sentence.
+
+DIRECTION STATUS FIXED
+line 64: remove "???"
+
+DIRECTION STATUS FIXED
+line 72: one "all" should be removed
+
+PROPOSAL STATUS FIXED
+lines 154, 165: Quite different macros have very much the same names.
+
+
+DIRECTION STATUS FIXED
+line 155: remove one of "of the"
+
+RESULT
+Document may be approved after fix
+

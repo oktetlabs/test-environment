@@ -1,0 +1,14 @@
+#!/bin/sh
+gct.exec -test-traditional "$@"
+#gct.exec -test-traditional -test-cc /usr/local/bin/gcc "$@"
+exit $?
+
+# Use this shell script when ``cc'' is a "traditional"
+# Kernighan-and-Ritchie C compiler.  You can use GCT with 
+# a traditional compiler not named ``cc'' by using
+# this line:
+#
+# gct.exec -test-traditional -test-cc NAME_OF_YOUR_COMPILER "$@"
+#
+# Normally, GCT's installer has selected one of the gct-* 
+# scripts to be called ``gct''.

@@ -1,0 +1,4 @@
+EXTRA_OBJS	= halfpic.o
+LIMITS_H	=
+
+halfpic.o: halfpic.c $(CONFIG_H) $(CONFIG2_H) $(RTL_H) $(TREE_H)

@@ -1,0 +1,24 @@
+ID OKT-QMSDRR-0000181
+
+COPYRIGHT Copyright(C) OKTET Ltd. 2003
+
+DDRID OKT-QMSDDR-0000062-TE
+
+RESPMGR Elena Vengerova
+
+MODERATOR Konstantin Abramenko <konst@oktet.ru>
+
+PARTICIPANT Igor Vasiliev <igorv@oktet.ru>
+
+DIRECTION STATUS FIXED
+Line 16: grammar
+
+DIRECTION STATUS FIXED
+Line 41-43: description of 'select_set' argument is unclear to user. 
+
+DIRECTION STATUS FIXED
+Lines 50, 62, 97: typo: functions have the same names. 
+
+RESULT 
+Document may be issued (approved) after notes processing during 20 minutes.
+

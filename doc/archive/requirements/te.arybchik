@@ -1,0 +1,97 @@
+As for me, ASTF architecture is the best that I've seen before.
+Implementation of ASTF is terrible.
+
+---
+
+MRD: Common TE for all projects
+
+Note: Current Tcl-based TE core copied from one project to another.
+      It makes hard to track changes, since different CVS trees are
+      used to store it. Moreover, it's hard to find the latest version.
+
+ERD: One CVS tree must be used for TE
+
+---
+
+MRD: Portability of TE code and tests
+
+ERD: Target system specific code must be minimized and arranged in
+     separate place.
+
+---
+
+MRD: Building of target system kernel must be a part of the TE.
+
+ERD: Implementation of some target-specific methods must be enought
+     to do it (get sources (with template for CVS and archive storage),
+     build with arguments, put kernel to be loaded).
+
+---
+
+MRD: TE and target system configuration must be collected and easyly
+     accessable.
+
+ERD: TE DB: logging categories and levels, target system information and
+     it's configuration.
+     
+---
+
+MRD: Provide standard means to check test quality.
+
+ERD: Capabilities to make DB snapshots and to compare snapshots
+     in order to track configuration changes and generate warnings.
+     (as inherited pre-test an post-test hooks (tests))
+
+ERD: Check of the CLI state for tests using CLI.
+
+---
+
+MRD: Simplicity of the unification of tests in structured test packages
+
+ERD: Heirarhical structure of the test suite. Indistinguishability of 
+     the interface of the separate test and test package.
+     ((TEST) == (TEST PACKAGE))
+
+---
+
+MRD: Testing of different configurations with one test package. 
+
+ERD: Self-turning and self-removing of the tests via pre-test hooks
+     (conditions) (see below)
+
+ERD: Capability to set pre-test conditions for direct children only,
+     for all descendants, for final tests only (different types of
+     inheritance)
+
+---
+
+MRD: Sofisticated tests running mechanism, loggin and reporting
+
+ERD: Command line interface to run separate test
+
+ERD: Hierarhical categorized logs with separate levels for each category
+
+ERD: Capability to specify logging level in test scenarios and command
+     line (priorities of the logging level: highest - command line,
+     lowest - separate test)
+
+ERD: Hierarhical results with statistics on each level
+
+ERD: Different reports based on one test run.
+     
+ERD: Generating plain text and HTML reports with links to corresponding
+     logs.
+
+ERD: Hierarhical statistics for test authors in some reports.
+
+ERD: Standard mechanism of delivery of reports and related data.
+
+ERD: Capability of subscription to reports.
+
+---
+
+MRD: Easy integrating of foreing test packages
+
+ERD: Each test must provide methods to run it, get logs and results.
+     Specific implementation of such methods will allow to integrate
+     foreing test package.

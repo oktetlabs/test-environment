@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema version="$Id: OKT-DD-0000061-TE_RCF_CONF.xsd,v 1.1 2003/10/28 09:35:41 arybchik Exp $"
+            xml:lang="en"
+            xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+
+    <xsd:element name="rcf">
+        <xsd:annotation>
+            <xsd:documentation>
+                Test Environment
+                XML schema for RCF configuration file
+    
+                Copyright (C) 2003 Test Environment authors (see file
+                AUTHORS in the root directory of the distribution).
+
+                Test Environment is free software; you can redistribute
+                it and/or modify it under the terms of the GNU General
+                Public License as published by the Free Software
+                Foundation; either version 2 of the License, or (at your
+                option) any later version.
+            
+                Test Environment is distributed in the hope that it will
+                be useful, but WITHOUT ANY WARRANTY; without even the
+                implied warranty of MERCHANTABILITY or FITNESS FOR A
+                PARTICULAR PURPOSE. See the GNU General Public License
+                for more details.
+            
+                You should have received a copy of the GNU General
+                Public License along with this program; if not, write
+                to the Free Software Foundation, Inc., 59 Temple Place,
+                Suite 330, Boston, MA  02111-1307  USA
+
+                Author: Elena Vengerova &lt;Elena.Vengerova@oktetlabs.ru&gt;
+            </xsd:documentation>
+        </xsd:annotation>
+        
+        <xsd:complexType>
+            <xsd:sequence>
+            
+                <xsd:element name="ta" minOccurs="0" maxOccurs="unbounded">
+                    <xsd:annotation>
+                        <xsd:documentation>
+                            Parameters of the one Test Agent.
+                        </xsd:documentation>
+                    </xsd:annotation>
+                    
+                    <xsd:complexType>
+                        <xsd:attribute name="name" type="xsd:string" 
+                                       use="required">
+                            <xsd:annotation>
+                                <xsd:documentation>
+                                    Name of the Test Agent.
+                                </xsd:documentation>
+                            </xsd:annotation>
+                        </xsd:attribute>
+
+                        <xsd:attribute name="type" type="xsd:string" 
+                                       use="required">
+                            <xsd:annotation>
+                                <xsd:documentation>
+                                    Type of the Test Agent.
+                                </xsd:documentation>
+                            </xsd:annotation>
+                        </xsd:attribute>       
+
+                        <xsd:attribute name="rcflib" type="xsd:string">
+                            <xsd:annotation>
+                                <xsd:documentation>
+                                    Name of the shared RCF TA-specific 
+                                    library for the Test Agent.
+                                </xsd:documentation>
+                            </xsd:annotation>
+                        </xsd:attribute>       
+
+                        <xsd:attribute name="confstr" type="xsd:string" 
+                                       use="required">
+                            <xsd:annotation>
+                                <xsd:documentation>
+                                    Test Agent specific configuration parameters.
+                                </xsd:documentation>
+                            </xsd:annotation>
+                        </xsd:attribute>       
+                    </xsd:complexType>
+                </xsd:element>                                                                 
+
+            </xsd:sequence>
+        </xsd:complexType>
+    </xsd:element>
+
+</xsd:schema>

@@ -1,0 +1,230 @@
+GCT 2.0  BETA
+Patchlevel 0
+May 16, 1994
+
+Randy Clayton and Peter Vogel (pvogel@convex.com) ported Norbert's work
+to GNU gcc version 2.4.5, since it is based on GCC 2.x, it only makes sense
+to call it gct 2.0.
+
+This version was built and tested on the following platforms:
+	Sun SparcStation 1+ running SunOS 4.1.1
+	HP 9000/735 running HP/UX 9.03
+	Convex C2 running ConvexOS 11.0 and ConvexOS 10.1
+	Convex SPP-1000 running SPP-OS 1.0
+
+I have done nothing to address Norbert's comments on weak mutation.  Thanks
+to Randy, the automatic configuration of gcc should work fine, although there
+are some scripts that get blown away by a make clean that should not, so don't
+do a a make clean after you configure unless you backup the sources somewhere.
+
+Nothing has been done to create a g++ interface, so unless you want to spend
+a lot of time chasing bugs, don't try to use this for C++ code.
+
+The C interface is in good shape, though lack of wide distribution and use, and
+the presence of what I consider "band-aids" (code that fixes a bug, but not
+necessarily in the appropriate, logical location in the code) lead me to call
+this a BETA release.
+
+I have added one option to gct, the -test-metrics option will cause gct to 
+drop a .met file for each .c file it processes.  The .met file contains 
+metrics for each routine in the file and for the file as a whole.  The format
+of the .met file is this:
+	function <func_name>: NCSS CYC ESS
+	...
+	at top level: NCSS
+
+NCSS is the number of Non-comment source statements for each function and for
+the file as a whole, CYC is the Mccabe cyclomatic complexity of the function,
+and ESS is the mccabe essential complexity of the function.  It is hoped that 
+these static metrics can be used as a guide to direct your test improvement
+efforts when time is limited.
+
+Only plaintext documentation at the moment, the prodcution release will do 
+better w.r.t documentation, for now, however, you can consider this to be
+identical to V1.4 with the exception of -test-metrics and the gcc parser 
+version that this is based upon.
+
+-Peter
+
+-----------------------------
+
+GCT 1.5
+Patchlevel 0
+July 30, 1993
+
+Norbert Gumprecht <gumprech@informatik.uni-kl.de> ported GCT 1.4
+to GNU's gcc version 2.3.3 and named the result GCT version 1.5.
+
+This version was built and tested on Suns running SunOS 4.1.3. 
+
+Weak mutation is not fully functional.  I gave no attention to the
+configuration procedure: that is pretty much automated in gcc-2.3.3,
+but much of it does not affect the GCT part.  I have no idea what
+the tool will do if confronted with C++ code.  I also did not have
+the time to run the whole thing with purify to check for leaks. 
+Brian Marick mentioned a while back that the test code's interface
+to the compiler's type system should be examined; I did not do this.
+
+Basically all of these thoughts lead me to call this an alpha version.
+I hope that this helps, and that you will not have to invest all too
+much additional time into this version to make it as stable as v1.4.
+
+-------------------------------
+
+
+							GCT 1.4
+							Patchlevel 0
+							Jan 28, 1993
+
+The Generic Coverage Tool (GCT) is a freeware coverage tool that
+measures how thoroughly tests exercise C programs.  It can measure the
+following:
+
+- how often branches have been taken in either direction. (branch coverage)
+- how often cases in switches have been taken.
+- how often nested logical conditions have evaluated to true and false
+  (multiple condition coverage)
+- how often loops have iterated zero, one, and more than one times
+  (loop coverage)
+- how often the boundaries of relational operators have been probed
+  (relational coverage)
+- how often routines have been entered
+- how often call sites have been exercised
+- how often routines have had multiple threads of execution in them
+- weak mutation coverage (a research technique).
+
+If you use branch coverage, you will find the combination of branch,
+multiple condition, loop, and relational operator coverage to be more
+effective at little extra cost.  Routine and call coverage are useful
+for system testing.  Race coverage is useful for system testing of
+multiprocessor systems.
+
+The tool has been widely used in production environments, including
+the UNIX kernel.  
+
+
+MECHANISM
+
+The tool takes C source code, adds instrumentation, then uses the
+system C compiler (or a compiler of your choice) to produce an object
+file.  Alternately, the instrumented source can be captured and moved
+to another machine for compilation.  
+
+GCT is designed to work with existing makefiles (or other system build
+mechanisms).  Most makefiles will require no changes.
+
+For efficiency's sake, coverage information is stored in an internal
+log.  The log is written on exit (or, in the case of an unending
+program like the UNIX kernel, extracted from the running program).
+
+Instrumented programs run slower than the original programs.  How much
+slower depends on the program, how much of it is instrumented, and
+what types of coverage are measured.  An instrumented GCT runs 44%
+slower than normal.  (I instrument GCT to measure branch, loop,
+multiple condition, and relational coverage.)
+
+Reporting tools produce detailed reports on missing coverage, summary
+reports for the whole program, and per-routine and per-file summaries.
+
+
+NEW FEATURES
+
+This is a list of changes from GCT 1.3:
+
+- GCT now behaves like a true compiler. After instrumenting,
+  it calls the C compiler.  The original source is never touched.
+  The old behavior is retained as an option.
+- GCT can insert gct_readlog and gct_writelog calls for you.
+  You needn't edit the source. Original behavior is retained as an option.
+- More flexible reporting tools (including per-file and
+  per-routine reports from greport and gsummary)
+- Better control over the interface to different C compilers.
+- More flexibility in editing (suppressing, ignoring) mapfile entries.
+- Previously unsupported ANSI C constructs now supported
+- Optional locking of logfiles 
+- Numerous minor usability improvements
+
+
+RETRIEVING GCT
+
+GCT is available via anonymous FTP from cs.uiuc.edu.  The current
+version is in the directory pub/testing/gct.files.  To retrieve GCT,
+go to that directory and fetch one of these files:  ftp.ps
+(postscript) or ftp.txt (formatted to be read online).  Follow those
+instructions.
+
+
+UPGRADING FROM GCT 1.3
+
+1. The tutorial describes most of the changes; be sure to run it.
+
+2. (options files) has gone away.  (options instrument) now plays
+roughly the same role.  
+
+3. Expect to change any GCT target in your makefile.  In the best
+case, you won't need any GCT target.  Just type
+
+	% gct-init
+	% make CC=gct
+
+4. If you've made any changes to gct-ps-defs.c, be aware that gct-init
+now overwrites that file.
+
+5. gct-init still does not overwrite gct-write.c and gct-defs.h.
+Since they've both changed in GCT 1.4, you'll have to delete old
+versions manually.  (gclean(1) is a good idea.)
+
+6. `gct' is now a shell script that interfaces the true executable to
+`cc'.  By new convention, each compiler has its own shell script.  For
+example, to compile instrumented code with `xcc', use a shell script
+called `gct-xcc'.  These scripts should be created at installation
+time.
+
+7. Routines in included files are not instrumented.
+Set (options instrument-included-files) if that's what you want.
+
+
+DEFICIENCIES
+
+1.  The tool itself runs only on UNIX, although the instrumented code
+may be compiled wherever you like.  (An earlier version of GCT also
+ran on Apollo Aegis SR10; porting this version is probably trivial.)
+
+2.  The tool is based on the GNU C compiler and still contains the
+original code generation and optimization code.  This has two
+practical disadvantages:
+
+- The tool is large.  For the full installation (which includes the
+source, compiled executables, a large test suite, and all the
+documentation), you will need roughly 33,000 1K blocks.
+(The tests - which are not required - take up about 17,000 blocks.)
+The final executables will require roughly 3000 1K blocks.
+
+- The original compiler is made portable through machine and system
+configuration files.  These must still be used.  The distribution
+includes configuration files for many different machines.  If there
+isn't one for your machine, you may be able to use one for a similar
+machine.
+
+
+MAILING LIST
+
+Gct@cs.uiuc.edu is a mailing list for GCT users.  It is used to
+distribute bug reports, bug fixes, troubleshooting hints, proposed
+major and minor revisions, documentation errata, and anything else of
+interest to GCT users.  Mail to Gct-Request@cs.uiuc.edu will get you
+added to the list.
+
+ADVERTISING
+
+I provide GCT as a public service - and as a concrete demonstration of
+my skills.  I provide testing tools, training, and consulting.
+Contact me at:
+
+Brian Marick
+Testing Foundations
+809 Balboa
+Champaign, IL  61820
+(217) 351-7228
+marick@cs.uiuc.edu, testing!marick@uunet.uu.net
+

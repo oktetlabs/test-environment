@@ -1,0 +1,24 @@
+TE-NDN-ATM
+DEFINITIONS ::=
+BEGIN
+
+IMPORTS DATA-UNIT FROM TE-NDN-General;
+
+EXPORTS ATM-Header, ATM-CSAP;
+
+ATM-Header ::= SEQUENCE {
+    vpi           DATA-UNIT{INTEGER (0..4095)} OPTIONAL,
+    vci           DATA-UNIT{INTEGER (0..65535)} OPTIONAL,
+    payload-type  DATA-UNIT{INTEGER (0..7)} OPTIONAL,
+    clp           DATA-UNIT{INTEGER {0, 1}} OPTIONAL,
+    hec           DATA-UNIT{INTEGER (0..255)} OPTIONAL
+}
+
+ATM-CSAP ::= SEQUENCE { 
+    vpi           DATA-UNIT{INTEGER (0..4095)} OPTIONAL,
+    vci           DATA-UNIT{INTEGER (0..65535)} OPTIONAL,
+    payload-type  DATA-UNIT{INTEGER (0..7)} OPTIONAL,
+    clp           DATA-UNIT{INTEGER {0, 1}} OPTIONAL,
+}
+
+END

@@ -1,0 +1,48 @@
+ID OKT-QMSDDR-0000038-TE
+
+COPYRIGHT
+Copyright(C) OKTET Ltd. 2003
+
+DDRAUTH
+Elena Vengerova
+
+RESPMGR
+Elena Vengerova
+
+DOCID
+OKT-DD-0000039-TE_BS_CONF
+
+TITLE
+Builder configuration file
+
+PURPOSE
+Design of Builder configuration file.
+
+AUDIENCE
+End users and TE project team-members
+
+AUDIENCE
+OKTET employees and customers
+ 
+FMT
+m4 input file
+
+COMPLY
+OKT-REQ-0000010-TE
+OKT-ARCH-0000011-TE
+OKT-HLD-0000031-TE_BS
+
+ANNOTATION
+Provide specification of syntax and semantics of Builder configuration file. 
+Syntax of each macro should be clarified by example. Paremeters meaning,
+possible values and side effects of macro should be described in comments.
+The file should be appropriate to be used as a template.
+
+SIZE
+2-4 pages
+
+DEADLINE
+2003-03-03
+
+AUTHOR
+Elena Vengerova

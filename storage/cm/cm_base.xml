@@ -1,0 +1,376 @@
+<?xml version="1.0"?>
+<backup>
+
+    <!-- This configuration model is intended for describing of configuration
+         information common for all Test Agents -->
+
+    <!--
+        Copyright (C) 2003 Test Environment authors (see file AUTHORS
+        in the root directory of the distribution).
+
+        Test Environment is free software; you can redistribute it
+        and/or modify it under the terms of the GNU General Public
+        License as published by the Free Software Foundation; either
+        version 2 of the License, or (at your option) any later
+        version.
+        
+        Test Environment is distributed in the hope that it will be
+        useful, but WITHOUT ANY WARRANTY; without even the implied
+        warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+        PURPOSE. See the GNU General Public License for more details.
+        
+        You should have received a copy of the GNU General Public
+        License along with this program; if not, write to the Free
+        Software Foundation, Inc., 59 Temple Place, Suite 330,
+        Boston, MA  02111-1307  USA
+        
+        Author: Elena Vengerova E-mail: Elena.Vengerova@oktetlabs.ru
+    -->
+    
+
+    <!-- ************** Network configuration ************** -->
+
+    <!-- IP forwarding enabling/disabling.
+         Name:  empty
+         Limit: 1 -->
+    <object oid="/agent/ip4_fw" access="read_write" type="integer"/>
+    
+    <!-- Network interface
+         Name: "eth0"-like -->
+    <object oid="/agent/interface" access="read_create" type="none"/>
+    
+    <!-- Network interface index
+         Name: "eth0"-like -->
+    <object oid="/agent/interface/index" access="read_create" type="integer"/>
+    
+    <!-- Network address (IPv4 or IPv6) of the interface.
+         Name:   address in human notation: 
+                     dotted notation for IPv4
+                     RFC 2373 (or RFC 1924 :) for IPv6
+         Limit:  depends on Test Agent (may be limited to 1 for IPv4) -->
+    <object oid="/agent/interface/net_addr" access="read_create" type="none"/>
+    
+    <!-- Network mask for the network address.
+         Name:  empty
+         Limit: 1 -->
+    <object oid="/agent/interface/net_addr/netmask" access="read_write" type="address"/>
+    
+    <!-- Link layer address for the interface (MAC, NSAP, E.164, VPI/VCI, DLCI).
+         Name:  empty
+         Limit: 1 -->
+    <object oid="/agent/interface/link_addr" access="read_write" type="address"/>
+    
+    <!-- Maximum Transfer Unit for the interface.
+         Name:  empty
+         Limit: 1 -->
+    <object oid="/agent/interface/mtu" access="read_write" type="integer"/>
+    
+    <!-- IPv4 TTL for the interface. Note: for some agents may be the same
+         for all interfaces.
+         Name:  empty
+         Limit: 1 -->
+    <object oid="/agent/interface/ip4_ttl" access="read_write" type="integer"/>
+    
+    <!-- Administrative/operative status of the interface.
+         Name:  empty
+         Value: 0 (disabled) or 1 (enabled)
+         Limit: 1 -->
+    <object oid="/agent/interface/status" access="read_write" type="integer"/>
+    
+    <!-- ARP entry.
+         Name:  IPv4 address in dotted notation -->
+    <object oid="/agent/arp" access="read_create" type="address"/>
+    
+    <!-- Routine table entry.
+         Name: (network address in human notation)'|'(prefix)
+               for example: 1.2.3.0|24 -->
+    <object oid="/agent/route" access="read_create" type="address"/>
+    
+    <!-- DNS server.
+         Name:  empty    
+         Limit: 1 -->
+    <object oid="/agent/dns" access="read_create" type="address"/>
+
+    <!-- ************** Daemons running on the Test Agent ************** -->
+    
+    <!-- DNS server enabling/disabling.
+         Name:  empty
+         Value: 0 (disabled) or 1 (enabled)
+         Limit: 1 -->
+    <object oid="/agent/dnsserver" access="read_write" type="integer"/>
+
+    <!-- TFTP server enabling/disabling.
+         Name:  empty
+         Value: 0 (disabled) or 1 (enabled)
+         Limit: 1 -->
+    <object oid="/agent/tftpserver" access="read_write" type="integer"/>
+
+    <!-- Network address TFTP server is bound to.
+         Name:  empty
+         Value: Wildcard address if the Server listens on all addresses
+         Limit: 1 -->
+    <object oid="/agent/tftpserver/net_addr" access="read_write" type="address"/>
+
+    <!-- Name of the last file sucessfully transferred by TFTP server.
+         Name:  empty
+         Limit: 1 -->
+    <object oid="/agent/tftpserver/last_fname" access="read_only" type="string"/>
+    
+    <!-- Timestamp of the last request that sucessfully completed 
+         on TFTP server. Specifies the number of seconds elapsed
+         since 00:00:00 on January 1, 1970, Coordinated Universal Time (UTC)
+         Name:  empty
+         Limit: 1 -->
+    <object oid="/agent/tftpserver/last_time" access="read_only" type="string"/>
+    
+    <!-- Root directory of TFTP server.
+         Name:  empty
+         Limit: 1 -->
+    <object oid="/agent/tftpserver/root_dir" access="read_only" type="string"/>
+
+    <!-- TOD server over UDP enabling/disabling.
+         Name:  empty
+         Value: 0 (disabled) or 1 (enabled)
+         Limit: 1 -->
+    <object oid="/agent/todudpserver" access="read_write" type="integer"/>
+
+    <!-- Network address ToD server is bound to.
+         Name:  empty
+         Value: Wildcard address if the Server listens on all addresses
+         Limit: 1 -->
+    <object oid="/agent/todudpserver/net_addr" access="read_write" type="address"/>
+
+    <!-- Echo server enabling/disabling.
+         Name:  empty
+         Value: 0 (disabled) or 1 (enabled)
+         Limit: 1 -->
+    <object oid="/agent/echoserver" access="read_write" type="integer"/>
+
+    <!-- Echo server protocol type.
+         Name:  empty
+         Value: udp (UDP-based) or tcp (TCP-based)
+         Limit: 1 -->
+    <object oid="/agent/echoserver/proto" access="read_write" type="string"/>
+
+    <!-- Network address Echo server is bound to.
+         Name:  empty
+         Value: Wildcard address if the Server listens on all addresses
+         Limit: 1 -->
+    <object oid="/agent/echoserver/net_addr" access="read_write" type="address"/>
+
+    <!-- DHCP server enabling/disabling.
+         Name:  empty
+         Value: 0 (disabled) or 1 (enabled)
+         Limit: 1 -->
+    <object oid="/agent/dhcpserver" access="read_write" type="integer"/>
+
+    <!-- DHCP server operates in three term areas: its clients, which may
+         obtain some resources, resource configured for particular
+         clients and resources really distributed within clients. 
+         Thus CM for DHCP server requires three kind of subtrees:
+         client-oriented, configuration-oriented (hosts & groupt) 
+         and lease-oriented to make CM more convinient for particular
+         purposes. -->
+
+    <!-- Information associated with particular client in DHCP server 
+         Name:  hardware (MAC) address of the client -->
+    <object oid="/agent/dhcpserver/client" access="read_only"/>
+
+    <!-- DHCP lease associated with the client hardware address and 
+         DHCP client identifier.
+         Name:  colon separated DHCP client identifier
+         Value: object instance identifier of /agent/dhcpserver/lease instance
+         -->
+    <object oid="/agent/dhcpserver/client/lease" access="read_only"/>
+    
+    <!-- DHCP server lease.
+         Name:  IPv4 address in dotted notation -->
+    <object oid="/agent/dhcpserver/lease" access="read_only"/>
+    
+    <!-- State of DHCP server lease.
+         Name:  empty
+         Value: 1 (free)
+                2 (active) 
+                3 (expired)
+                4 (released)
+                5 (abandoned)
+                6 (reset)
+                7 (backup)
+                8 (reserved)
+                9 (bootp)
+         -->
+     <object oid="/agent/dhcpserver/lease/state" access="read_only" 
+             type="integer"/>
+
+     <!-- DHCP client identifier.
+          Name:  empty
+          Value: colon separated hexadecimal octet string like AB:03:68
+          Limit: 1 -->
+     <object oid="/agent/dhcpserver/lease/client-id" access="read_only"
+             type="string"/>
+             
+     <!-- The value sent by the client in host-name option when it acquired 
+          the lease.
+          Name:  empty
+          Limit: 1 -->
+     <object oid="/agent/dhcpserver/lease/hostname" access="read_only"
+             type="string"/>
+
+     <!-- Object instance identifier of the /agent/dhcpserver/host 
+          instance associated with the lease.
+          Name:  empty
+          Limit: 1 -->
+     <object oid="/agent/dhcpserver/lease/host" access="read_only" 
+             type="string"/>
+          
+     <!-- The hardware address (chaddr) field sent by the client when it 
+          acquired the lease.
+          Name:  empty
+          Limit: 1 -->
+     <object oid="/agent/dhcpserver/lease/chaddr" access="read_only"
+             type="address"/>
+      
+     <!-- The time when the lease's current state ends, as understood by the 
+          client (GMT in seconds from Epoch).
+          Name:  empty
+          Limit: 1 -->
+     <object oid="/agent/dhcpserver/lease/ends" access="read_only"
+             type="integer"/>
+
+     <!-- The time when the lease's current state ends, as understood by the 
+          server (GMT in seconds from Epoch).
+          Name:  empty
+          Limit: 1 -->
+     <object oid="/agent/dhcpserver/lease/tstp" access="read_only"
+             type="integer"/>
+
+     <!-- The time of the last transaction with the client on this lease 
+          (GMT in seconds from Epoch).
+          Name:  empty
+          Limit: 1 -->
+     <object oid="/agent/dhcpserver/lease/cltt" access="read_only"
+             type="integer"/>
+             
+     <!-- Host declaration for the DHCP server.
+          Name:  human readable name -->
+     <object oid="/agent/dhcpserver/host" access="read_create"/>
+
+     <!-- Object instance identifier of /agent/dhcpserver/group instance.
+          Name:  empty
+          Limit: 1 
+          Value: empty string or group name -->
+     <object oid="/agent/dhcpserver/host/group" access="read_write"
+             type="string" />
+     
+     
+     <!-- The link-layer address that will be used to match the client, if any. 
+          acquired the lease.
+          Name:  empty
+          Limit: 1 -->
+     <object oid="/agent/dhcpserver/host/chaddr" access="read_write"
+             type="string"/>
+      
+     <!-- The DHCP client identifier option that will be used to match  
+          the client, if any.
+          Name:  empty
+          Value: colon separated hexadecimal octet string like AB:03:68
+          Limit: 1 -->
+     <object oid="/agent/dhcpserver/host/client-id" access="read_write"
+             type="string"/>
+
+     <!-- A fixed IP address which is reserved for a DHCP client that 
+          matches this host declaration. The IP address will only be assigned 
+          to the client if it is valid for the network segment to which 
+          the client is connected.
+          Name:  empty
+          Limit: 1 -->
+     <object oid="/agent/dhcpserver/host/ip-address" access="read_write"
+             type="string"/>
+
+     <!-- IPv4 address or name of the host (to be resolved by the DHCP server 
+          in IPv4 address) to be provided to the client in siaddr field.
+          Name:  empty
+          Value: the string appropriate to be an argument for gethostbyname()
+                 or empty string
+          Limit: 1 -->
+     <object oid="/agent/dhcpserver/host/next" access="read_write"
+             type="string"/>
+             
+     <!-- Name of the file to be provided to the client in file field.
+          Name:  empty
+          Value: path file name with the length less or equal to 128
+                 or empty string
+          Limit: 1 -->
+     <object oid="/agent/dhcpserver/host/file" access="read_write"
+             type="string"/>
+
+     <!-- Value of the DHCP option to be provided to the client.
+     
+          Name:  Identification of opion/suboption either using their
+                 numbers: 177.51 or their names: pop-server or fqdn.encoded.
+                 Name of the option/suboption should be the same as
+                 used in RFC describing this option. The name should
+                 not contain word "option"; words should be separated by '-'.
+                 Both upper-case and lower-case letters may be used.
+                 
+          Value: For integer options the value is an integer printed to the 
+                 string (and may be parsed using atoi()).
+                 
+                 IP addresses the value is an IPv4 address in dotted notation.
+                 
+                 For character strings and domain names the value is a string.
+                 
+                 For hexadecimal data the value is a string like 03:a5:BE.
+                 
+                 For boolean options "on" and "true" are returned as "1" and
+                 "off" and "false" are returned as "0".
+                 
+                 For options, which values consist of sub-values of
+                 same of different types all sub-values are concatenated
+                 and sparated using commas: 1.2.3.4,25,45:a1:C0.
+                 
+          Limit: any -->
+          
+     <object oid="/agent/dhcpserver/host/option" access="read_create"
+             type="string"/>
+          
+     <!-- Group declaration for the DHCP server.
+          Name:  human readable name -->
+     <object oid="/agent/dhcpserver/group" access="read_create"/>
+     
+     <!-- IPv4 address or name of the host (to be resolved by the DHCP server 
+          in IPv4 address) to be provided to the client in siaddr field.
+          Name:  empty
+          Value: the string appropriate to be an argument for gethostbyname()
+                 or empty string
+          Limit: 1 -->
+     <object oid="/agent/dhcpserver/group/next" access="read_write"
+             type="string"/>
+     
+     <!-- Name of the file to be provided to the client in file field.
+          Name:  empty
+          Value: path file name with the length less or equal to 128
+                 or empty string
+          Limit: 1 -->
+     <object oid="/agent/dhcpserver/group/file" access="read_write"
+             type="string"/>
+
+     <!-- Value of the DHCP option to be provided to the client.
+          Name & Value the same as for /agent/dhcpserver/host/option.
+          Limit: any -->
+     <object oid="/agent/dhcpserver/group/option" access="read_create"
+             type="string"/>
+
+    <!-- FTP server enabling/disabling.
+         Name:  empty
+         Value: 0 (disabled) or 1 (enabled)
+         Limit: 1 -->
+    <object oid="/agent/ftpserver" access="read_write" type="integer"/>
+
+    <!-- Environment variables.
+         Name: variable name
+         Value: variable value
+         Limit: any -->
+    <object oid="/agent/env" access="read_create" type="string"/>
+
+</backup>

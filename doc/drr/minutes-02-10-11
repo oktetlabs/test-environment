@@ -1,0 +1,97 @@
+
+Date: 11.10.2002
+Start time: 15:00
+Finish time: 17:00
+Document revised: Testing Environments Requirements Revision A
+Participated: lvr, helen, arybchik, tema, oleg, konst, nicka, renata, ibr
+
+Unfortunately I can't specify authors of notes, because
+in most cases very hard discussion was, and it is not clear,
+who may be considered as author. :)
+
+1. The question was answered by helen about the best representation
+of requirements (subsections and table) - from the reader and
+writer point of view.
+
+nicka: reader - subsections are better; writer - table is  better
+other peolple (except lvr) - subsections are better from both points of view
+
+2. Terminology
+
+Term "TN" should be removed.
+Term "TA" - Test Agent, entity running on NUT or another computers and
+performing interaction with NUT, including configuration and
+traffic sending/receiving, etc. according to TE commands.
+Test Case should be defined.
+Host and Target words should not be used.
+Testing Environment definition should be changed (include framework,
+documentation, etc.)
+External Library definition should be clarified.
+
+3. References should be moved to standards section (except ASN.1?).
+
+4. Initial Conditions: items 8 and 10 of bulleted list should be removed.
+
+5. 9.1.1.1: Item 2 of bulleted list should be clarified.
+
+6. 9.1.1.2 "test suite" should be changed to "list of tests".
+Requirement about error recovering should be the separate requirement.
+
+7. 9.1.1.3: RS232 should be changed to "serial port". "Interaction"
+should be changed to "NUT control using CLI". The same requirement for
+TN should be specified.
+
+8. 9.1.1.4: "kernel" should be changed to "bootable image".
+
+9. 9.1.1.5: may be moved to 9.1.1.3 as clarification.
+
+10. 9.1.1.6: should be removed. "Running test in debugging mode should
+be supported." should appear instead.
+
+11. 9.1.1.8: should be removed. Three another requirements should
+be specified: TA should support several threads; it should be possible
+to run test case in several threads; it should be possible tu run
+several tests simultaneously in one test engine.
+
+12. 9.1.1.9: should be splitted to several requirements about generic
+log, log filtering, log format (universal format should be  designed
+and used to generate another formats).
+
+13. 9.1.1.10: time synchronization should be moved to requirement
+about the protocol between TA and TE. Precise time obtaining should
+be removed.
+
+14. 9.1.1.11, 9.1.1.12
+Overall system configuration should be accessible to
+TE, TA and test suite. Initial (static part) and real (dynamic
+part) of configuration database should be supported. All configuration
+should be performed from test suite via TE only. It should be possible
+to specify for an object (test or test suite) that TE should check,
+that configuration is not changed by the object.
+
+15. 9.1.1.14 Clarifications are required.
+
+16. 9.1.1.17 "re-use" should be replaced by "perform".
+
+17. 9.1.1.18 should be removed.
+
+18. 9.1.1.20: "It should be possible to specify packets in the test
+case in human-friendly form."
+
+19. 9.1.1.22 should be removed (should appear in another place).
+
+20. 9.1.2.1 should be removed.
+
+21. 9.1.2.4 should be removed.
+
+22. 9.1.2.5: Time synchronisation should be added. Should it be
+moved to another place? (Is it marketing requirement or design
+requirement?)
+
+23. 9.1.4.2 Clarifications: word "testing" is missed.
+
+-- 
+Elena A. Vengerova
+OKTET Ltd.
+Office: +78124284384  Mobile: +78129323751  Home: +78124281653
+

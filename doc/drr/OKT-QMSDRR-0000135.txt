@@ -1,0 +1,105 @@
+ID OKT-QMSDRR-0000135
+
+COPYRIGHT Copyright(C) OKTET Ltd. 2003
+
+DDRID OKT-QMSDDR-0000048-TE
+
+RESPMGR Elena Vengerova
+
+TIME 2003-02-04 17-00:00+03:00
+
+DURATION 2
+
+MODERATOR Elena Vengerova <helen@oktet.ru>
+
+PARTICIPANT Ibragimov Ilya <ibr@oktet.ru>
+
+PARTICIPANT Andrew Rybchenko <arybchik@oktet.ru>
+
+PARTICIPANT Igor Vasiliev <igorv@oktet.ru>
+
+DIRECTION
+Wrong macro parameters order.
+
+DIRECTION
+Change log_mess to log_message.
+
+PROPOSAL 
+Provide short desctiption of format string in LOG macro description.
+
+DIRECTION
+Specify that for logging on the engine name of the logging entity
+"Engine" or "Test" should be defined by pre-processor directive.
+
+DIRECTION
+Specify that log_mess is inline function.
+
+DIRECTION
+Prototype of the log_mess should be changed to discover number of
+real arguments.
+
+PROPOSAL
+Use two buffers: array with fixed-length number referring to
+buffer containing strings and memory dumps. If there is no free
+space in any of buffer (i.e. TEN gathers log too slow) new one
+should be allocated. If memory allocation is impossible (LOG macro
+call occurs in interrupt handler) old messages should be destroyed.
+
+DIRECTION
+Log level-related macros should be defined.
+
+DIRECTION
+Script for log file closing is not described (see DDR).
+
+DIRECTION
+Describe script te_log_message in details: which symbols are
+prohibited in the message, how it's possible to dump files, etc.
+
+RESULT
+Additional review is necessary.
+
+DIRECTION STATUS CHECKED
+Use spell checker for the file.
+
+DURECTION STATUS CHECKED
+Limit line length by 80 symbols.
+
+DIRECTION STATUS CHECKED
+Line 40: wrong order of macro parameters (old note!)
+
+DIRECTION STATUS CHECKED
+Line 42: change log_mess to log_message (old note!)
+
+DIRECTION STATUS CHECKED
+Describe additional format specifier in description of LOG macro (old note!)
+
+QUESTION STATUS CHECKED
+Could the LOG macro be used with two arguments only?
+
+DIRECTION STATUS CHECKED
+C function and script logger_flush (with TA name as parameter) is necessary 
+for using by TEN applications.
+
+DIRECTION STATUS CHECKED
+Log level-related macros should be defined (old note!)
+
+DIRECTION STATUS CHECKED
+Line 136: clarify how exectly the name is returned (printed to stdout?)
+
+DIRECTION STATUS CHECKED
+Line 139: unclear statement
+
+DIRECTION STATUS CHECKED
+Lines 131, 136: space is missed
+
+DIRECTION STATUS CHECKED
+Line 144, 149: wrong English
+
+PROPOSAL STATUS CHECKED
+Line 151: double quoting does not save from $ extensions. May be it's
+better to just say that user is responsible for passing MESSAGE_STRING
+as a single string from shell point of view and may use single quotes
+and double quotes for this, if necessary.
+
+RESULT
+Additional review is necessary.

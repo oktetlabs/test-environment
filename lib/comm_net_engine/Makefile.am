@@ -1,0 +1,30 @@
+
+AM_CPPFLAGS = -I$(DESTDIR)/$(prefix)/include \
+              -I$(DESTDIR)/$(prefix)/../include
+
+# TE_CFLAGS are already included in CFLAGS in configure.ac
+AM_CFLAGS =
+
+AM_LDFLAGS = @TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/lib 
+
+
+LIBTOOL_DEPS = @LIBTOOL_DEPS@
+libtool: $(LIBTOOL_DEPS)
+	$(SHELL) ./config.status --recheck
+
+include_HEADERS = comm_net_engine.h
+
+lib_LTLIBRARIES = libcomm_net_engine.la
+
+libcomm_net_engine_la_SOURCES = comm_net_engine.c
+
+
+install-exec-hook:
+	touch -c -r .libs/libcomm_net_engine.la $(DESTDIR)/$(prefix)/lib/libcomm_net_engine.la
+
+install-data-hook:
+	for i in $(include_HEADERS) ; do \
+	    touch -c -r $(srcdir)/$$i $(DESTDIR)/$(prefix)/include/$$i ; \
+	done
+
+all: install

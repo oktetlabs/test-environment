@@ -1,0 +1,32 @@
+CSAP type: hl2
+purpose: testing of hiperlan2 (?) library
+
+
+csap_create 
+    set some configure options in library. 
+    issue:
+	- options are common to the whole library (?), and creation of new CSAP 
+	  may change them, and traffic operation in others will be performed
+	  with these new option values.
+
+csap_destroy
+    check if there any data pending to be sent. 
+    if not, destroy does nothing hl2-specific, only free common-CSAP resources. 
+
+trsend_start:
+    save data to be sent in CSAP-related queue (mac_get will take them from it),
+    call mac_cmd with respective parameters, 
+    quit from "send" state, answer to test. 
+    
+trsend_stop never appropriate to this CSAP.
+    
+trrecv_start 
+    set request to data receive for this CSAP in mac_ind function,
+    read callback should wait on its individual semaphore which should 
+    be posted by mac_ind function when it will be called. 
+
+This library should implement funcions: mac_ind and mac_get. 
+
+All calls of mac_cmd should be protected by "low-busy" semaphore, which should
+indicate that some other CSAP calls this functions at this moment or 
+mac_get or mac_ind are processing.

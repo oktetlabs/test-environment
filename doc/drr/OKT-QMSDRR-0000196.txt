@@ -1,0 +1,51 @@
+
+ID OKT-QMSDRR-0000196
+
+COPYRIGHT Copyright(C) OKTET Ltd. 2003
+
+DDRID OKT-QMSDDR-0000072-TE
+
+RESPMGR Elena Vengerova
+
+MODERATOR Elena Vengerova <helen@oktet.ru>
+
+DIRECTION STATUS FIXED
+Remove Issue 1 - function for validation is necessary to log
+incorrect test behaivour.
+
+DIRECTION  STATUS FIXED
+Remove Issue 2 - Configurator may create any histories. Human's command
+"create history" should save compressed history during startup
+and is used only to obtain Configurator configuration file (to reproduce
+failure situation shortly).
+
+DIRECTION  STATUS FIXED
+General: check English gramma - there are too many wrong places (you
+can ask Pasha Bolokhov to help).
+
+QUESTION STATUS FIXED
+Chapter 5: it's not clear how elements of the table on the one raw
+are related. It's confusing a reader.
+
+QUESTION
+Is it efficient to store history and backup in files? May be some
+representation in the memory is better?
+
+QUESTION STATUS FIXED
+Chapter 7: confusing statement "all commands passed via Configurator
+are logged in the Configurator's history" - what about "get" commands?
+
+PROPOSAL STATUS FIXED
+Timestamp is confusing name for commands counter. It's better to find 
+another name.
+
+QUESTION STATUS FIXED
+What happens with comands counter after backup restoring? Is it
+assigned to t_back + 1?
+
+DIRECTION STATUS FIXED.
+Mention that TA running on the same station with TEN couldn't be rebooted.
+
+RESULT
+The document may be approved after notes processing if no significant 
+changes are done. 

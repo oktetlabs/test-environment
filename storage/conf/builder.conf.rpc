@@ -1,0 +1,8 @@
+TE_APP_PARMS([rcf], [--enable-ltdl-install], [], [])
+
+TE_EL([comm_net_agent comm_net_engine loggerta rcfpch rcfrpc rcfunix tapi_rpcsock])
+
+TE_LIB_PARMS([tapi_rpcsock], [--with-ta=linux], [])
+
+TE_TA_TYPE([linux], [linux], [], [--with-rcf-rpc], [-DTAD_CH_DUMMY], [],
+           [rcfpch conf_oid logger_ta comm_net_agent ])

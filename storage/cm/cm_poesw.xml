@@ -1,0 +1,471 @@
+<?xml version="1.0"?>
+<backup>
+
+    <!-- This configuration model is intended for describing of configuration
+         information deals with Switch (Device Under Test) management -->
+
+    <!--
+        Copyright (C) 2004 Test Environment authors (see file AUTHORS
+        in the root directory of the distribution).
+
+        Test Environment is free software; you can redistribute it
+        and/or modify it under the terms of the GNU General Public
+        License as published by the Free Software Foundation; either
+        version 2 of the License, or (at your option) any later
+        version.
+        
+        Test Environment is distributed in the hope that it will be
+        useful, but WITHOUT ANY WARRANTY; without even the implied
+        warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+        PURPOSE. See the GNU General Public License for more details.
+        
+        You should have received a copy of the GNU General Public
+        License along with this program; if not, write to the Free
+        Software Foundation, Inc., 59 Temple Place, Suite 330,
+        Boston, MA  02111-1307  USA
+        
+        Author: Igor Vasiliev <Igor.Vasiliev@oktetlabs.ru>
+        Author: Oleg Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
+    -->
+    
+    <!-- Common Switch Configuration group -->
+
+    <!-- Number of ports available on the Switch
+         Name: empty -->
+    <object oid="/agent/n_ports" access="read_only" type="integer"/>
+
+    <!-- Ageing Time value
+         Name: empty -->
+    <object oid="/agent/ageing_time" access="read_write" type="integer"/>
+
+    <!-- Number of CoS queues
+         Name: empty -->
+    <object oid="/agent/cos" access="read_write" type="integer"/>
+
+    <!-- PORT PARAMETERS GROUP -->
+
+    <!-- Switch port group
+         Name: integer in the range of 1..50 -->
+    <object oid="/agent/port" access="read_create" type="none"/>
+
+
+    <!-- Port Type
+         Name: empty
+         Value:
+             10/100BaseT                  - 1
+             1000Base-SX Gigabit Ethernet - 2
+         -->
+    <object oid="/agent/port/type" access="read_only" type="integer"/>
+
+
+    <!-- Port State information group. It consists of a set of read-only
+         objects that provide information about current values of
+         port-specific attributes.
+         Name: empty -->
+    <object oid="/agent/port/state" access="read_only" type="none"/>
+
+    <!-- Status of the link for the port
+         Name: empty
+         Value:
+             Port is desabled (link status DOWN) - 0
+             Port is enabled (link status UP)    - 1
+         -->
+    <object oid="/agent/port/state/status" access="read_only" type="integer"/>
+
+    <!-- Port speed
+         Name: empty
+         Value:
+             Speed in Mb/s
+         -->
+    <object oid="/agent/port/state/speed" access="read_only" type="integer"/>
+
+    <!-- Port duplexity
+         Name: empty
+         Value:
+             Full duplex mode - 1
+             Half duplex mode - 2
+         -->
+    <object oid="/agent/port/state/duplexity" access="read_only" type="integer"/>
+
+    <!-- Role of the port while it synchronize clocks with a peer
+         Name: empty
+         Value:
+             slave   -   0
+             master  -   1
+             unknown -  -1 (the peers couldn't agree with their roles)
+         -->
+    <object oid="/agent/port/state/role" access="read_only" type="integer"/>
+
+    <!-- State of Head of Line Blocking
+         Name: empty
+         Value:
+             Blocking is disabled  - 0
+             Blocking is enabled   - 1
+         -->
+    <object oid="/agent/port/state/hol_blocking" access="read_only" type="integer"/>
+
+    <!-- The attribute shows which actions are taken on detecting
+         back pressure on the port (Back Pressure State)
+         Name: empty
+         Value:
+             802.3x Flow Control (normal)            - 0
+             Enable Jamming signal (warning)         - 1
+             Discard the Incoming Packets (discard)  - 2
+         -->
+    <object oid="/agent/port/state/bps" access="read_only" type="integer"/>
+
+
+    <!-- Switch port administrative group.
+         It consists of a set of read-write objects that provide a mechanism 
+         to control the way Switch ports operate.
+         Name: empty -->
+    <object oid="/agent/port/admin" access="read_write" type="none"/>
+    
+    <!-- Attribute to control the operational status of the port.
+         Name: empty
+         Value:
+             To disable port (link status DOWN) - 0
+             To enable port (link status UP)    - 1
+         -->
+    <object oid="/agent/port/admin/status" access="read_write" type="integer"/>
+
+    <!-- Attribute to enable/disable autonegotiation on the port:
+         - Duplexity;
+         - speed.
+         Name: empty 
+         Value:
+             to disable  - 0
+             to enable   - 1
+         -->
+    <object oid="/agent/port/admin/auto" access="read_write" type="integer"/>
+    
+    <!-- Attribute to control port speed value.
+         Name: empty
+         Value:
+             Speed in Mb/s
+         -->
+    <object oid="/agent/port/admin/speed" access="read_write" type="integer"/>
+
+    <!-- Attribute to control port duplexity
+         Name: empty
+         Value:
+             Full duplex mode - 1
+             Half duplex mode - 2
+         -->
+    <object oid="/agent/port/admin/duplexity" access="read_write" type="integer"/>
+
+    <!-- Attribute to control the role of the port while it synchronize
+         clocks with a peer.
+         Name: empty
+         Value:
+             slave   - 0
+             master  - 1
+             auto    - 2
+         -->
+    <object oid="/agent/port/admin/role" access="read_write" type="integer"/>
+
+    <!-- Attribute to enable/disable flow of BPDU frames.
+         Name: empty
+         Value:
+             to disable  - 0
+             to enable   - 1         
+         -->
+    <object oid="/agent/port/admin/bpdu" access="read_write" type="integer"/>
+
+    <!-- Attribute to control the value of MTU on the port.
+         Name: empty
+         Value:
+             mtu in bytes
+         -->
+    <object oid="/agent/port/admin/mtu" access="read_write" type="integer"/>
+
+
+    <!-- Attribute to configure default VLAN - VLAN that is used for 
+         untagged frames.
+         Name: empty
+         Value:
+             VLAN name: "confvlan<tag>" or "default"
+         -->
+    <object oid="/agent/port/admin/default_vlan" access="read_write" type="integer"/>
+
+    <!-- Attribute to enable/disable Ingress Filtering on the port.
+         If VLAN ID of received tagged frame is not from the set of VLANs 
+         handled by the port, actions that are taken for the frame depend
+         on the value of Ingress Filtering attribute.
+         If Ingress Filtering is enabled on the port, the frame is discarded.
+         In other case it is accepted.
+         Name: empty
+         Value:
+             disable  - 0
+             enable   - 1
+         -->
+    <object oid="/agent/port/admin/ingress_filtering" access="read_write"
+            type="integer"/>
+
+    <!-- CoS priority for untagged frames received via port
+         Name: empty -->
+    <object oid="/agent/port/admin/untagged_priority" access="read_write" type="integer"/>
+
+    <!-- Switch VLAN group
+         Name: integer in the range 1..X 
+         Value:
+             VLAN disabled (DOWN)  - 0
+             VLAN enabled  (UP)    - 1   -->
+    <object oid="/agent/vlan" access="read_create" type="integer"/>
+
+    <!-- Collection of Bridge ports that belong to the VLAN
+         Name: Port number
+         -->
+    <object oid="/agent/vlan/port" access="read_create" type="none"/>
+
+    <!-- IP address for IP over VLAN interface.
+         Name:  empty
+         Value: IP address -->
+    <object oid="/agent/vlan/ip" access="read_write" type="address"/>
+
+
+    <!-- Switch ARL table group
+         Name: empty  -->
+    <object oid="/agent/arl" access="read_only" type="none"/>
+
+    <!-- Entry of the ARL table
+         Name: The name is an index of the entry that consists of a tuple
+               Entry type, port number, MAC address and VLAN name and 
+               has the following format:
+               <Entry type>.<Port number>.XX:XX:XX:XX:XX:XX.<VLAN name>
+               As a new entry is added instances of other objects 
+               "type", "port", "mac" and "vlan" are automatically filled in 
+               with corresponding values.
+               -->
+    <object oid="/agent/arl/entry" access="read_create" type="none"/>
+
+    <!-- MAC address of the ARL entry
+         Name: empty
+         Value:
+             MAC address
+         -->
+    <object oid="/agent/arl/entry/mac" access="read_only" type="address"/>
+
+    <!-- Port identifier of the ARL entry
+         Name: empty
+         Value:
+             integer in the range of 1..50
+         -->
+    <object oid="/agent/arl/entry/port" access="read_only" type="integer"/>
+
+    <!-- VLAN name of the ARL entry
+         Name: empty
+         Value:
+             VLAN name
+         -->
+    <object oid="/agent/arl/entry/vlan" access="read_only" type="string"/>
+
+    <!-- Type of the ARL entry
+         Name: empty
+         Value:
+             dynamic entry  - 0
+             static entry   - 1
+         -->
+    <object oid="/agent/arl/entry/type" access="read_only" type="integer"/>
+
+
+    <!-- Bridge Spanning Tree Protocol (STP) information group.
+         It consists of a set of read-write objects that provide a way to
+         manage the behaviour of STP module.
+         
+         This branch can be used to enable/disable STP functionality.
+
+         Name: empty
+         Value:
+             0 - STP disabled
+             1 - STP enabled
+         -->
+    <object oid="/agent/stp" access="read_write" type="integer"/>
+
+    <!-- Read-write Bridge objects deal with STP -->
+
+    <!-- Bridge Priority value used as a part of Bridge Identifier.
+         Name: empty
+         Value:
+             Unsigned integer that fits into two bytes
+         -->
+    <object oid="/agent/stp/prio" access="read_write" type="integer"/>
+
+    <!-- Bridge Max Age value set up in the Bridge.
+         Name: empty
+         Value:
+             Bridge Max Age value
+         -->
+    <object oid="/agent/stp/bridge_max_age" access="read_write"
+            type="integer"/>
+
+    <!-- Bridge Hello Time value set up in the Bridge.
+         Name: empty
+         Value:
+             Bridge Hello Time value
+         -->
+    <object oid="/agent/stp/bridge_hello_time" access="read_write"
+            type="integer"/>
+
+    <!-- Bridge Forward Delay value set up in the Bridge.
+         Name: empty
+         Value:
+             Bridge Forward Delay value
+         -->
+    <object oid="/agent/stp/bridge_forward_delay" access="read_write"
+            type="integer"/>
+
+
+    <!-- Read-only Bridge objects deal with STP -->
+
+    <!-- Bridge MAC address used as a part of Bridge Identifier.
+         Name: empty
+         Value:
+             MAC address
+         -->
+    <object oid="/agent/stp/mac" access="read_only" type="address"/>
+
+    <!-- Current Designated Root value set up in the Bridge.
+         Name: empty
+         Value:
+             eight octets' value in hexdecimal format
+             AABBCCDDEEFFAABB
+         -->
+    <object oid="/agent/stp/designated_root" access="read_only" type="string"/>
+
+    <!-- Current Root Path Cost value set up in the Bridge.
+         Name: empty
+         Value:
+             Unsigned integer that fits into four bytes
+         -->
+    <object oid="/agent/stp/root_path_cost" access="read_only" type="integer"/>
+
+    <!-- Current Root Port set up in the Bridge.
+         Name: empty
+         Value:
+             Port number - one of the ports listed in "/agent/port" object
+         -->
+    <object oid="/agent/stp/root_port" access="read_only" type="integer"/>
+
+    <!-- Max Age value currently used on the Bridge.
+         Name: empty
+         Value:
+             Max Age value
+         -->
+    <object oid="/agent/stp/max_age" access="read_only" type="integer"/>
+
+    <!-- Bridge Hello Time value currently used on the Bridge.
+         Name: empty
+         Value:
+             Hello Time value
+         -->
+    <object oid="/agent/stp/hello_time" access="read_only" type="integer"/>
+
+    <!-- Forward Delay value currently used on the Bridge.
+         Name: empty
+         Value:
+             Forward Delay value
+         -->
+    <object oid="/agent/stp/forward_delay" access="read_only" type="integer"/>
+
+    <!-- Hold Time value currently used on the Bridge.
+         Name: empty
+         Value:
+             Hold Time value
+         -->
+    <object oid="/agent/stp/hold_time" access="read_only" type="integer"/>
+
+    <!-- The time (in hundredths of a second) since the last time 
+         a topology change was detected by the bridge entity.
+         Name: empty
+         -->
+    <object oid="/agent/stp/time_since_tp_change" access="read_only"
+            type="integer"/>
+
+    <!-- The total number of topology changes detected by the bridge
+         since the management entity was last reset or initialized.
+         Name: empty
+         -->
+    <object oid="/agent/stp/tot_changes" access="read_only"
+            type="integer"/>
+
+
+    <!-- Per port information group deal with STP.
+         This collection keeps only ports with enabled STP, so that it never
+         maintains ports with DISABLED STP port state.
+         Name: Port number - one of the ports listed in "/agent/port" object
+         -->
+    <object oid="/agent/stp/port" access="read_create" type="none"/>
+
+    <!-- Read-write STP Port object attributes -->
+
+    <!-- Port Priority value used as a part of Port Identifier, which
+         consists of two components:
+         - Port number   - name of "/agent/stp/port" instance
+         - Port priority - the value of this attribute
+         Name: empty
+         Value:
+             Unsigned integer that fits into one bytes
+         -->
+    <object oid="/agent/stp/port/prio" access="read_write" type="integer"/>
+
+    <!-- The contribution of the path through this port.
+         Name: empty
+         -->
+    <object oid="/agent/stp/port/path_cost" access="read_write" type="integer"/>
+
+    <!-- Read-only STP Port object attributes -->
+
+    <!-- The current state of the port.
+         Name: empty
+         Value:
+             Disabled   - 0
+             Blocking   - 1
+             Listening  - 2
+             Learning   - 3
+             Forwarding - 4
+         -->
+    <object oid="/agent/stp/port/state" access="read_only" type="integer"/>
+
+    <!-- Designated Root value for the port.
+         Name: empty
+         Value:
+             eight octets' value in hexdecimal format
+             AABBCCDDEEFFAABB
+         -->
+    <object oid="/agent/stp/port/designated_root" access="read_only"
+            type="string"/>
+
+    <!-- Designated Cost value of the port.
+         Name: empty -->
+    <object oid="/agent/stp/port/designated_cost" access="read_only"
+            type="integer"/>
+
+    <!-- Designated Bridge value for the port.
+         Name: empty
+         Value:
+             eight octets' value in hexdecimal format
+             AABBCCDDEEFFAABB         
+         -->
+    <object oid="/agent/stp/port/designated_bridge" access="read_only"
+            type="string"/>
+
+    <!-- Designated Port value of the port.
+         Name: empty
+         -->
+    <object oid="/agent/stp/port/designated_port" access="read_only"
+            type="integer"/>
+
+    <!-- The number of times this port has transitioned from the Learning
+         state to the Forwarding state.
+         Name: empty -->
+    <object oid="/agent/stp/port/forward_transitions" access="read_only"
+            type="integer"/>
+
+    <!-- Pool of free IPv4 network addresses.
+         Name:   any
+         Value:  network IP address
+         Limit:  unlimited -->
+    <object oid="/ip4_net_pool" access="read_create" type="address"/>
+
+</backup>

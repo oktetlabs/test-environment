@@ -1,0 +1,141 @@
+Noteworthy GCC changes in version 2.4.4:
+
+  A crash building g++ on various hosts (including m68k) has been
+  fixed.  Also the g++ compiler no longer reports incorrect
+  ambiguities in some situations where they do not exist, and
+  const template member functions are now being found properly.
+
+Noteworthy GCC changes in version 2.4:
+
+* On each target, the default is now to return short structures
+compatibly with the "usual" compiler on that target.
+
+For most targets, this means the default is to return all structures
+in memory, like long structures, in whatever way is used on that
+target.  Use -freg-struct-return to enable returning short structures
+(and unions) in registers.
+
+This change means that newly compiled binaries are incompatible with
+binaries compiled with previous versions of GCC.
+
+On some targets, GCC is itself the usual compiler.  On these targets,
+the default way to return short structures is still in registers.
+Use -fpcc-struct-return to tell GCC to return them in memory.
+
+* There is now a floating point emulator which can imitate the way all
+supported target machines do floating point arithmetic.
+
+This makes it possible to have cross compilation to and from the VAX,
+and between machines of different endianness.  However, this works
+only when the target machine description is updated to use the new
+facilities, and not all have been updated.
+
+This also makes possible support for longer floating point types.
+GCC 2.4 supports extended format on the 68K if you use `long double',
+for targets that have a 68881.  (When we have run time library
+routines for extended floating point, then `long double' will use
+extended format on all 68K targets.)
+
+We expect to support extended floating point on the i386 and Sparc in
+future versions.
+
+* Building GCC now automatically fixes the system's header files.
+This should require no attention.
+
+* GCC now installs an unsigned data type as size_t when it fixes the
+header files (on all but a handful of old target machines).
+Therefore, the bug that size_t failed to be unsigned is fixed.
+
+* Building and installation are now completely separate.
+All new files are constructed during the build process; 
+installation just copies them.
+
+* New targets supported: Clipper, Hitachi SH, Hitachi 8300, and Sparc
+Lite.
+
+* A totally new and much better Objective C run time system is included.
+
+* Objective C supports many new features.  Alas, I can't describe them
+since I don't use that language; however, they are the same ones 
+supported in recent versions of the NeXT operating system.
+
+* The builtin functions __builtin_apply_args, __builtin_apply and
+__builtin_return let you record the arguments and returned
+value of a function without knowing their number or type.
+
+* The builtin string variables __FUNCTION__ and __PRETTY_FUNCTION__
+give the name of the function in the source, and a pretty-printed
+version of the name.  The two are the same in C, but differ in C++.
+
+* Casts to union types do not yield lvalues.
+
+* ## before an empty rest argument discards the preceding sequence
+of non-whitespace characters from the macro definition.
+(This feature is subject to change.)
+
+
+New features specific to C++:
+
+* The manual contains a new section ``Common Misunderstandings with
+GNU C++'' that C++ users should read.
+
+* #pragma interface and #pragma implementation let you use the same
+C++ source file for both interface and implementation.
+However, this mechanism is still in transition.
+
+* Named returned values let you avoid an extra constructor call
+when a function result has a class type.
+
+* The C++ operators <? and >? yield min and max, respectively.
+
+* C++ gotos can exit a block safely even if the block has
+aggregates that require destructors.
+
+* gcc defines the macro __GNUG__ when compiling C++ programs.
+
+* GNU C++ now correctly distinguishes between the prefix and postfix
+forms of overloaded operator ++ and --.  To avoid breaking old
+code, if a class defines only the prefix form, the compiler
+accepts either ++obj or obj++, unless -pedantic is used.
+
+* If you are using version 2.3 of libg++, you need to rebuild it with
+`make CC=gcc' to avoid mismatches in the definition of `size_t'.
+
+
+Newly documented compiler options:
+
+-fnostartfiles
+	Omit the standard system startup files when linking.
+
+-fvolatile-global
+	Consider memory references to extern and global data items to
+	be volatile.
+
+-idirafter DIR
+	Add DIR to the second include path.
+
+-iprefix PREFIX
+	Specify PREFIX for later -iwithprefix options.
+
+-iwithprefix DIR
+	Add PREFIX/DIR to the second include path.
+
+-mv8
+	Emit Sparc v8 code (with integer multiply and divide).
+-msparclite
+	Emit Sparclite code (roughly v7.5).
+
+-print-libgcc-file-name
+	Search for the libgcc.a file, print its absolute file name, and exit.
+
+-Woverloaded-virtual
+	Warn when a derived class function declaration may be an error
+	in defining a C++ virtual function. 
+
+-Wtemplate-debugging
+	When using templates in a C++ program, warn if debugging is
+	not yet fully available.
+
++eN
+	Control how C++ virtual function definitions are used
+	(like cfront 1.x).

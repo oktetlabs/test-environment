@@ -1,0 +1,112 @@
+
+TE-Network-Data-Notation-General
+DEFINITIONS ::=
+BEGIN
+
+
+EXPORTS Interval, DATA-UNIT, Payload, CSAP-spec, Template-Parameter, 
+    Raw-Packet, Traffic-Template, Traffic-Pattern;
+
+IMPORTS Generic-CSAP-Level, Generic-Header 
+            FROM TE-NDN-Context-General;
+
+Interval ::= SEQUENCE {
+    b INTEGER, -- begin of the interval
+    e INTEGER  -- end   of the interval
+}
+
+DATA-UNIT { BaseFieldType } ::=  CHOICE
+{ 
+    plain BaseFieldType, 
+    script UniversalString, -- script for calculating of field value by TA.
+    
+    enum        SET OF INTEGER,    -- | it seems to be useful place these  
+    mask        SEQUENCE {         -- | type of patterns here, at top level 
+        v OCTET STRING,
+        m OCTET STRING
+    },
+    intervals   SEQUENCE OF Interval,
+    env         PrintableString,   -- identifier of Config DB entry.
+    function    PrintableString 
+            -- name of function (which name shoulb be present
+            -- in TA symbol table) for matching value (if used in  
+            -- filter pattern) or generating it (in templates)
+}
+
+CSAP-spec ::= SEQUENCE OF Generic-CSAP-Level 
+
+Template-Parameter ::= CHOICE {
+	ints SEQUENCE OF INTEGER,
+	strings SEQUENCE OF UniversalString,
+	simple-for SEQUENCE 
+            { begin INTEGER, end INTEGER, step INTEGER OPTIONAL},
+	...
+}
+
+Raw-Packet ::= SEQUENCE {
+        headers SEQUENCE OF Generic-Header,
+        payload OCTET STRING
+} 
+
+Traffic-Template ::= SEQUENCE {
+	dimension INTEGER,
+	arg-sets SEQUENCE OF Template-Parameter,
+        delays  DATA-UNIT(INTEGER) OPTIONAL,
+	headers SEQUENCE OF Generic-Header,
+        payload CHOICE {
+                bytes       OCTET STRING,
+                function    PrintableString,
+                filename    PrintableString
+            }
+}
+
+Traffic-Pattern ::= SEQUENCE {
+        headers SEQUENCE OF Generic-Header,
+        payload DATA-UNIT(OCTET STRING)
+}
+
+Generic-CSAP-Level ::= CHOICE { ...  }
+
+Generic-Header ::= CHOICE { ... }
+
+END
+
+
+
+
+TE-NDN-Context-General
+DEFINITIONS ::=
+BEGIN 
+
+EXPORTS Generic-CSAP-Level, Generic-Header;
+
+IMPORTS 
+    EthernetAddress, Ethernet-Header, Ethernet-CSAP 
+        FROM TE-NDN-Ethernet
+    IpAddress, IP-Header, IP-CSAP, UDP-Header, UDP-CSAP, TCP-Header, TCP-CSAP 
+        FROM TE-NDN-Tcp-Ip
+    ATM-Header, ATM-CSAP 
+        FROM TE-NDN-ATM; 
+
+
+Generic-CSAP-Level ::= CHOICE {
+        eth Ethernet-CSAP,
+        ip4 IP-CSAP,
+        tcp TCP-CSAP,
+        udp UDP-CSAP,
+        atm ATM-CSAP,
+        ...
+}
+
+Generic-Header ::= CHOICE {
+	eth Ethernet-Header, 
+	ip4 IP-Header,
+	tcp TCP-Header,
+	udp UDP-Header,
+        atm ATM-Header,
+	...,...
+}
+
+
+END
+

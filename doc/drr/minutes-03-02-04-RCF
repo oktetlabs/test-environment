@@ -1,0 +1,74 @@
+TYPE DOCREQ Document Review Request/Report
+ID
+#Filled automatically when submitted into infolib
+
+COPYRIGHT Copyright(C) OKTET Ltd. 2003
+
+DDRID OKT-HLD-0000027-RE_RCF
+
+RESPMGR Elena Vengerova <helen@oktet.ru>
+
+
+REVIEW 2003-02-04 12:00:00+03:00
+
+DURATION 01:15
+
+MODERATOR Andrew Rybchenko <arybchik@oktet.ru>
+
+PARTICIPANT Elena Vengerova <helen@oktet.ru>
+PARTICIPANT Igor Vasiliev <igorv@oktet.ru>
+PARTICIPANT Ilya Ibragimov <ibr@oktet.ru>
+PARTICIPANT Oleg Kravtsov <oleg@oktet.ru>
+PARTICIPANT Konstantin Abramenko <konst@oktet.ru>
+
+DIRECTION
+Replace "RC_S" with "RFC" in the document.
+
+DIRECTION AUTHOR Andrew Rybchenko
+Use "Table Contents" style in second and third rows and seconds and third
+columns of the "References" table content.
+
+QUESTION AUTHOR Andrew Rybchenko
+Is it true that OKTET-TE-0001-MKT and OKTET-TE-0001-SCAL requirements
+have the same explanation?
+
+QUESTION AUTHOR Andrew Rybchenko
+Is paragraph after OKTET-TE-0018-MKT note requirement explanation?
+If it's true, make used font italic.
+
+DIRECTION AUTHOR Andrew Rybchenko
+Remove the second dot in the second paragraph after OKTET-TE-0023-DSGN
+requirement.
+
+DIRECTION AUTHOR Oleg Kravtsov
+Remove the second 's' in the first line in paragraph "Environment".
+
+DIRECTION AUTHOR Oleg Kravtsov
+Make "A" in lower case in word "are" in the first line in the fifth
+section in "Decomposition" chapter.
+
+DIRECTION AUTHOR Konstantin Abramenko
+Use "from .. to ..." instead of "between ... and ..." in the legend
+for figure 3.
+
+PROPOSAL AUTHOR Andrew Rybchenko
+Use "memory" instead of "ram" in chapter "Product Services / Files".
+
+DIRECTION AUTHOR Oleg Kravtsov
+Correct type in word "one" ("on") in the second line in chapter
+"Product Services / Traffic".
+
+DIRECTION AUTHOR Oleg Kravtsov
+Add space after "-" in the first line in "External Interfaces" chapter.
+Make "-" long.
+
+DIRECTION AUTHOR Konstantin Abramenko
+Provide more details about necessity of queue for user request in
+Event Processing chapter.
+
+DIRECTION
+Command "get traffic" should be added in order to retrive traffic
+from the agent without stopping of receiving.
+
+RESULT
+Document may be issued (approved) after notes processing during 1 day.

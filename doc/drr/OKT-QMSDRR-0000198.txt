@@ -1,0 +1,17 @@
+ID OKT-QMSDRR-0000198
+
+COPYRIGHT Copyright(C) OKTET Ltd. 2003
+
+DOCID OKT-HLD-0000125-TE_NDN
+
+
+DDRID OKT-QMSDDR-0000124-TE
+
+RESPMGR Elena Vengerova
+
+MODERATOR Elena Vengerova <helen@oktet.ru>
+
+PARTICIPANT Igor Vasiliev <igorv@oktet.ru>
+
+RESULT
+

@@ -1,0 +1,32 @@
+ID OKT-QMSDRR-0000141
+
+COPYRIGHT Copyright(C) OKTET Ltd. 2003
+
+DDRID OKT-QMSDDR-0000086-TE
+
+RESPMGR Elena Vengerova
+
+TIME 2003-02-11 14-30:00+03:00
+
+DURATION 02:00
+
+MODERATOR Elena Vengerova <helen@oktet.ru>
+
+PARTICIPANT Ibragimov Ilya <ibr@oktet.ru>
+
+PARTICIPANT Konstantin Abramenko <konst@oktet.ru>
+
+PARTICIPANT Andrew Rybchenko <arybchik@oktet.ru>
+
+DIRECTION
+Line 138: provide example of contexts.
+
+DIRECTION
+Line 156: provide list of allowed options.
+
+PROPOSAL
+Specify debugging level as Tester option.
+
+RESULT
+The document may be approved after notes processing.
+

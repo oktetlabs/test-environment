@@ -1,0 +1,62 @@
+ID OKT-QMSDDR-0000104-TE
+
+COPYRIGHT
+Copyright(C) OKTET Ltd. 2003
+
+DDRAUTH
+Elena Vengerova
+
+RESPMGR
+Elena Vengerova
+
+DOCID
+OKT-DD-0000105-TE_LIB_ST
+
+TITLE
+Storage library interface
+
+PURPOSE
+Detailed Design of interfaces provided by Storage library to TE subsystems
+and tests.
+
+AUDIENCE
+End users and TE project team-members
+
+AUDIENCE
+OKTET employees and customers
+ 
+FMT
+C header with rich comments
+
+COMPLY
+OKT-REQ-0000010-TE
+OKT-ARCH-0000011-TE
+
+ANNOTATION
+The Storage library should provide to user unified access to some persistent
+storage (file system, CVS, etc.). Ideally it should provide the same
+functionality as standard input/output library. Moreover, if it is
+possible, access to files in the storage should be provided by functions
+from stdio library. In this case C header should just contain list
+of supported functions from stdio with comments describing which values 
+are allowed for arguments of particular function. Otherwise (if standard
+interface to storage couldn't be implemented) at least following
+functionality should be supported:
+* open file/directory
+* close file/directory
+* check EOF
+* flush
+* seek
+* getc, gets, putc, puts
+* formatted output
+* remove file/directory
+* obtain directory content.
+
+SIZE
+2-5 pages
+
+DEADLINE
+2003-02-03
+
+AUTHOR
+Andrey Ivanov

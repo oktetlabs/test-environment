@@ -1,0 +1,340 @@
+#!/usr/tools/remote/bin/perl
+#
+# glist -- Merge source code and greport(1) output into an annotated 
+#          listing, formatted in PostScript.
+
+# Some configuration constants, meassured in points (1/72 inch)
+# sub page_top        { 792; }    # US Letter = 11in x 8.5in = 791pt x 612pt
+# sub page_right_edge { 612; }
+sub page_top        { 839; }     # ISO A4 = 29.6cm x 21cm = 839pt x 595pt
+sub page_right_edge { 595; }     # (1in ~ 2.54cm)
+
+
+# The next few entries are from the AFM file for Adobe's font Courier
+sub cour_char_width     { 600; }   # The width of each char in 1000x1000 square
+
+# Parse command line for options and flags
+$prog = substr(__FILE__,rindex(__FILE__,"/")+1,999);
+require 'getopts.pl';
+unless (&Getopts('lrts:')) {
+   print STDERR "Usage: $prog [-<options>] [file]...\n";
+   print STDERR "Options: -l       print with line numbers\n";
+   print STDERR "         -r       rotated, landscape orientation\n";
+   print STDERR "         -t       truncate long lines, " . 
+                                  "default is to wrap lines\n";
+   print STDERR "         -s<size> select new text fontsize, default 10pt\n";
+   exit(1);
+}
+
+# Set default values, some based on command line options
+$left_margin	  = 80;
+$right_margin	  = 40;
+$tb_margin	  = 45;
+$code_font	  = "Courier";
+$err_code_font	  = "Courier-Bold";
+$code_font_size	  = 10;		$code_font_size = $opt_s if ($opt_s > 0);
+$header_font	  = "Helvetica-Bold";
+$header_font_size = 12;
+$line_number_font = "Helvetica";
+$line_number_size = 5;
+if ($code_font_size < $line_number_size) {
+    $line_number_size = ($code_font_size * 0.8);
+}
+
+$line_height	 = $code_font_size * 1.08;
+$err_font	 = "Helvetica";
+$err_font_size	 = ($code_font_size * 0.8);
+$err_line_height = $err_font_size * 1.08;
+$landscape	 = defined($opt_r);
+$header_height	 = 30;
+$wrap_lines	 = !defined($opt_t);
+$truncate_lines	 = !$wrap_lines; # don't change this
+
+# Some initial values
+$page_no   = 0;
+$line_no   = 0;
+
+if ($landscape) {
+    $top = &page_right_edge;
+    $right_edge = &page_top;
+    $left_margin = $right_margin; # this is a dirty one
+} else {
+    $top = &page_top;
+    $right_edge = &page_right_edge;
+}
+$home_pos	= $top - $tb_margin - $header_height;
+$col_width	= ($right_edge - $left_margin - $right_margin);
+$char_width	= &cour_char_width * $code_font_size / 1000;
+$chars_per_line	= int ($col_width / $char_width + 1);
+
+&prolog;
+
+# Set up for first loop.  These values force us to open a new file.
+$current_err_file = "";
+$current_err_line = -1;
+$current_err_text = "";
+
+&get_logfile_line;
+if ($err_file eq "") {
+    die("No input");
+}
+
+open(CODEFILE, $err_file) || die("Could not open $err_file.");
+$have_codefile_open = 0;
+
+ERROR_LOOP:
+do {
+    if ($current_err_file ne $err_file) {
+	# Copy remainder of current file, if one is open
+	if ($have_codefile_open) {
+	    while (<CODEFILE>) {
+		&print_code_line($_);
+	    }
+	    close(CODEFILE);
+	    $have_codefile_open = 0;
+	}
+
+	$current_err_file = $err_file;
+	if ($current_err_file eq "") { last ERROR_LOOP; }
+	open(CODEFILE, $current_err_file) || die("Could not open $current_err_file");
+	$have_codefile_open = 1;
+	$file_name = &ps_string($CODEFILE);
+	$cur_pos   = -1;     # this will force a new page next time
+	$line_no   = 0;
+    } # if (new error file)...
+
+    # Scoop up all errors for this code line.
+    $current_err_line = $err_line;
+    @err_text_array = ();
+    while ($current_err_line == $err_line) {
+	push(@err_text_array, $err_text);
+	&get_logfile_line;
+    } # Scoop up error text.
+
+    # Print code file lines up to the new error.
+    # Need to increment line_no because it points to previous
+    # line right now.
+    while (($line_no + 1) < $current_err_line) {
+	$code_line = <CODEFILE>;
+	&print_code_line($code_line);
+    }
+
+    # Print the offending line
+    $code_line = <CODEFILE>;
+    &print_error_line($code_line);
+
+    # Print the error text.
+    &print_error_text(@err_text_array);
+
+    # We're done with this error line.  Repeat loop.
+} until (eof());
+
+# Copy remainder of current file, if one is open
+if ($have_codefile_open) {
+    while (<CODEFILE>) {
+	&print_code_line($_);
+    }
+}
+
+# We're done!
+&end_page;
+print "%%Trailer\n";
+print "%%Pages: $page_no\n";
+# printf "($prog: $page_no page%s for $user\n) print\n",
+#     $page_no != 1 ? "s" : "";
+
+#--end of main-------------------------------------------------------
+
+
+sub prolog {
+   $user = getlogin || "(unknown)";
+   local($sec,$min,$hour,$mday,$mon,$year) = localtime;
+   $date = sprintf("(%s %d, %d) (%2d:%02d)",
+                    ('January','February','March','April','May','June',
+                     'July','August','October','November','Desember')[$mon],
+                     $mday, $year+1900, $hour,$min);
+   print "%!PS-Adobe-2.0\n";
+   print "%%Title: @ARGV\n" if (@ARGV);
+   print <<"EOT";
+%%Creator: $prog, Text to PostScript filter in perl, (C) 1990 Gisle Aas, NCC
+%%CreationDate: $date
+%%For: $user
+%%Pages: (atend)
+EOT
+   print "%%DocumentFonts: $code_font";
+   print " $line_number_font";
+   print " $header_font";
+   print " $err_code_font";
+   print " $err_font";
+   print "\n";
+   print <<"EOT";
+%%EndComments
+/S{moveto show}bind def
+/M/moveto load def
+/L/lineto load def
+/SF/setfont load def
+EOT
+   print "%%EndProlog\n%%BeginSetup\n";
+   print "/F1/$code_font findfont $code_font_size scalefont def\n";
+   print "/F2/$line_number_font findfont $line_number_size scalefont def\n";
+   print "/F3/$header_font findfont $header_font_size scalefont def\n";
+   print "/F4/$err_code_font findfont $code_font_size scalefont def\n";
+   print "/F5/$err_font findfont $err_font_size scalefont def\n";
+   print "F1 SF\n"; # Set to font 1 by default
+   print "%%EndSetup\n";
+}
+
+sub new_page {
+   &end_page unless ($page_no == 0);
+   $page_no++;
+   print "%%Page: $page_no $page_no\n";
+   print "%%BeginPageSetup\n";
+   print "/page_save save def\n";
+   printf "90 rotate 0 -%d translate %% landscape mode\n",&page_right_edge
+      if ($landscape);
+   print "0.15 setlinewidth\n";
+   print "%%EndPageSetup\n";
+
+   # Print header
+   # First print a box
+   local($llx,$lly,$urx,$ury) = ($left_margin - 10,
+	 $top - $tb_margin - $header_font_size * 1.3,
+	 $right_edge - $right_margin + 10, $top - $tb_margin);
+   printf "%.1f %.1f M %.1f %.1f L %.1f %.1f L ",
+	  $llx,$lly, $urx,$lly, $urx, $ury;
+   printf "%.1f %.1f L closepath \n",$llx,$ury;
+   print  "gsave .95 setgray fill grestore stroke\n";
+
+   # Then the file name
+   print "F3 SF\n";
+   printf "(%s)%.1f %.1f S\n", $current_err_file,
+ 	   $left_margin,
+	   $top - $tb_margin - $header_font_size;
+
+   # Then print page number
+   printf "%.1f %.1f M($page_no)dup stringwidth pop neg 0 rmoveto show\n",
+	      $right_edge - $right_margin, 
+	      $top - $tb_margin - $header_font_size;
+   print  "F1 SF\n";
+}
+
+sub end_page {
+   unless ($page_no == 0) {
+      print "page_save restore\n";
+      print "showpage\n";
+   }
+}
+
+sub ps_string
+{
+   # Prepare text for printing
+   local($_) = shift;
+   s/[\\\(\)]/\\$&/g;
+   s/[\001-\037\177-\377]/sprintf("\\%03o",ord($&))/ge;
+   $_;    # return string
+}
+
+sub print_any_line
+{
+    local($is_error, $full_line) = @_;
+
+    $line_no++;
+    if (ord($full_line) == 014) {		# form feed
+	$full_line =~ s/.//;	# chop off first char
+	$cur_pos = -1; 
+	if (length($full_line) == 0) { return; }
+    }
+    while ($full_line =~ s/\t/' ' x (8 - length($`) % 8)/e) {}   # expand tabs
+
+    # Keep printing output until entire line is output.  This 
+    # loop handles wrapping lines if necessary.
+    do {
+	# Check if we ran off bottom of page.  If so, move to next.
+	if ($cur_pos < $tb_margin) {
+	    $cur_pos = $home_pos;
+	    &new_page;
+	    printf "F4 SF\n" if ($do_error);
+	}
+
+	$text = substr($full_line,0,$chars_per_line);
+	$full_line = $truncate_lines ? '' : substr($full_line,$chars_per_line,10000);
+	if ($text =~ s/^ +//) {		# suppress leading blanks
+	    $indent = $char_width * length($&);
+	} else {
+	    $indent = 0;
+	}
+
+	# Make suitable as a postscript string, same as calling
+	# "ps_string", but the overhead of calling a function is
+	# not acceptable here.
+	$text =~ s/[\\\(\)]/\\$&/g;
+	$text =~ s/[\000-\037\177-\377]/sprintf("\\%03o",ord($&))/ge;
+
+	# Calculate position
+	$x = $left_margin;
+	$cur_pos -= $line_height;
+	printf "(%s)%.1f %.1f S\n", $text, $x + $indent, $cur_pos 
+	    if (length($text));
+	if (($opt_l && (($line_no % 5) == 0)) || $is_error) { # print line numbers
+	     printf "F2 SF($line_no)%.1f %.1f S F%d SF\n",
+		    $x + $col_width + 5, $cur_pos, 
+		    ($is_error ? 4 : 1); # Switch back to bold if printing error line.
+	}
+    } while (length($full_line));
+} # End of print_any_line subroutine
+
+sub print_code_line
+{
+    &print_any_line(0, @_[0]);
+}
+
+sub print_error_line
+{
+    printf "F4 SF\n"; # Got to bold font.
+    &print_any_line(1, @_[0]);
+    printf "F1 SF\n"; # Back to normal font.
+}
+
+sub get_logfile_line
+{
+    $logline = <>;
+    ($err_file, $err_line, $err_text) = ($logline =~ /"([^"]+)", line (\w+): (.+)$/);
+}
+
+sub print_error_text
+{
+    $num_errs  = $#_ + 1;
+    $boxtop    = $cur_pos - ($err_line_height * .5);
+    $boxbottom = $boxtop - ($num_errs + 0.3) * $err_line_height;
+    $boxleft   = $left_margin + 72; # 1 inch in.
+    $boxright  = $right_edge - $right_margin - 72;
+
+    if ($boxbottom < $tb_margin) {
+	# Need to move to next page
+	$cur_pos = $home_pos;
+	&new_page;
+    	$boxtop	  = $cur_pos;
+	$boxbottom = $boxtop - ($num_errs + 0.3) * $err_line_height;
+    }
+    $x = $boxleft + 10;
+    $cur_pos = $boxtop;
+
+    # Draw shaded box around error text.
+    # Eventually set clipping to this region, but not for now.
+    printf "%.1f %.1f M %.1f %.1f L %.1f %.1f L ",
+	   $boxleft, $boxbottom, $boxleft, $boxtop, 
+	   $boxright, $boxtop;
+    printf "%.1f %.1f L closepath \n",$boxright, $boxbottom;
+    print  "gsave .95 setgray fill grestore stroke\n";
+    
+    # Write error text.
+    printf "F5 SF\n";
+    foreach $line (@_) {
+	$cur_pos -= $err_line_height;
+	printf "(%s)%.1f %.1f S\n", $line, $x, $cur_pos;
+    }
+    printf "F1 SF\n";
+
+    # Advance cur_pos below box.
+    $cur_pos -= $err_line_height;
+} # End of print_error_text.

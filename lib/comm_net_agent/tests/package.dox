@@ -1,0 +1,81 @@
+/** @page agent Tests of the RCF Network Library (Test Agent side)
+
+<!--
+  - Specify full package name of the test package node after 'page'
+  - keyword (from root package to the node with '_' separator between
+  - names).
+  -
+  - The rest of the string in title of the test package.
+  -
+  - State brief description of the node in the next paragraph.
+  -->
+
+RCF Network Communication Library (Agent side) Tests.
+
+<!-- Provide name and email of the node, if it's necessary -->
+@author Pavel A. Bolokhov <Pavel.Bolokhov@oktet.ru>
+
+<!-- Specify list of requirements verified by the test package -->
+@requirement TE-0023-DSGN
+
+<!--
+  - Describe session provided by the package.
+  -
+  - If an item is not used, skip corresponding paragraph.
+  -
+  - Detailed description may provide specification of parameters which
+  - are used for each item.
+  -->
+This package tests the robustness of the Agent side of the RCF Network
+Communication Library. The tests open communications with the library,
+and check how correctly messages are delivered by the library in different
+situations.
+
+API sanity tests are also included which check that the library API returns
+errors when inappropriate arguments are passed to it.
+
+<!-- Describe parameters which may be passed to the package -->
+@param max_buffer_size - maximum size of the transmission buffer (the value is 
+                         reached several times by the tests)
+
+
+<!--
+  - Use @ref to refer to sub-packages and files with tests.
+  -
+  - Use bullet list '-', if order of the items is not restricted.
+  - Use numbered list '-#', if items must be run in defined order
+  - only.
+  -->
+@par Items:
+
+- @ref test_rcf_net_agent_init01
+- @ref test_rcf_net_agent_init02
+- @ref test_rcf_net_agent_wait01
+- @ref test_rcf_net_agent_wait02
+- @ref test_rcf_net_agent_wait03
+- @ref test_rcf_net_agent_wait04
+- @ref test_rcf_net_agent_wait05
+- @ref test_rcf_net_agent_wait06
+- @ref test_rcf_net_agent_wait07
+- @ref test_rcf_net_agent_wait08
+- @ref test_rcf_net_agent_wait09
+- @ref test_rcf_net_agent_wait10
+- @ref test_rcf_net_agent_wait11
+- @ref test_rcf_net_agent_wait12
+- @ref test_rcf_net_agent_wait13
+- @ref test_rcf_net_agent_wait14
+- @ref test_rcf_net_agent_wait15
+- @ref test_rcf_net_agent_wait16
+- @ref test_rcf_net_agent_wait17
+- @ref test_rcf_net_agent_reply01
+- @ref test_rcf_net_agent_close01
+
+
+- @ref test_rcf_net_agent_sanity_init01
+- @ref test_rcf_net_agent_sanity_init02
+- @ref test_rcf_net_agent_sanity_wait01
+- @ref test_rcf_net_agent_sanity_wait02
+- @ref test_rcf_net_agent_sanity_reply01
+- @ref test_rcf_net_agent_sanity_reply02
+- @ref test_rcf_net_agent_sanity_close01
+*/

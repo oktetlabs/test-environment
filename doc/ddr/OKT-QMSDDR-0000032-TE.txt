@@ -1,0 +1,46 @@
+ID OKT-QMSDDR-0000032-TE
+
+COPYRIGHT
+Copyright(C) OKTET Ltd. 2003
+
+DDRAUTH
+Elena Vengerova
+
+RESPMGR
+Elena Vengerova
+
+DOCID
+OKT-DD-0000033-TE_BS_IF
+
+TITLE
+Interface between Builder and Tester
+
+PURPOSE
+Detailed Design of C API provided by Builder to Tester.
+
+AUDIENCE
+End users and TE project team-members
+
+AUDIENCE
+OKTET employees and customers
+ 
+FMT
+C header
+
+COMPLY
+OKT-REQ-0000010-TE
+OKT-ARCH-0000011-TE
+OKT-HLD-0000031-TE_BS
+
+ANNOTATION
+Provide strict specification of C API provided by Builder to Tester.
+The API should allow to build and install test executables.
+
+SIZE
+2-4 pages
+
+DEADLINE
+2003-03-03
+
+AUTHOR
+Elena Vengerova

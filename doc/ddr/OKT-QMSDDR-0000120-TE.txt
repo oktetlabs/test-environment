@@ -1,0 +1,64 @@
+ID OKT-QMSDDR-0000120-TE
+
+COPYRIGHT
+Copyright(C) OKTET Ltd. 2003
+
+DDRAUTH
+Elena Vengerova
+
+RESPMGR
+Elena Vengerova
+
+DOCID
+OKT-UG-0000121-TE_NDN
+
+TITLE
+Proteos: traffic RCF application domain framework
+
+PURPOSE
+User's Guide (introductory reading) for customers and team-members, which want
+to deal with traffic application domain of RCF.
+
+AUDIENCE
+End users and TE project team-members
+
+AUDIENCE
+OKTET employees and customers
+ 
+TMPL
+OKT-TMPL-0000006
+
+FMT
+OpenOffice
+
+COMPLY
+OKT-REQ-0000010-TE
+OKT-ARCH-0000011-TE
+
+ANNOTATION
+This document should describe:
+* terminology explanation;
+* description of services provided by RCF application domain to users;
+* introduction to ASN.1;
+* ASN.1 textual conventions for CSAPs, patterns and templates;
+* definitions for eth, ipv4.eth, udp.ipv4.eth, tcp.ipv4.etg, data.udp.ipv4.eth,
+  data.tcp.ipv4.eth, atm and aal5.atm stacks (possible parameters of CSAPs,
+  templates and patterns); possibility of incomplete stacks (like 
+  udp.ipv4 - without eth) should be discussed as well;
+* decomposition of RCF application domain software;
+* libraries allowing user to dynamically parse/build templates and patterns;
+* service provided by NDN parser to user.
+
+DETAILS
+Many examples should be provided. Strict ASN.1 definitions should be provided
+for all mentioned stacks. Input and output of NDN parser should be described
+in details.
+
+SIZE
+40-50 pages
+
+DEADLINE
+2003-02-11
+
+AUTHOR
+Konstantin Abramenko

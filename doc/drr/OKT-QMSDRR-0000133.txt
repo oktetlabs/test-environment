@@ -1,0 +1,146 @@
+# Document Review Request/Report Template
+ID OKT-QMSDRR-0000133
+
+COPYRIGHT Copyright(C) OKTET Ltd. 2003
+
+DDRID OKT-QMSDDR-0000052-TE
+
+RESPMGR Elena Vengerova <helen@oktet.ru>
+
+MODERATOR Andrew Rybchenko <arybchik@oktet.ru>
+PARTICIPANT Elena Vengerova <helen@oktet.ru>
+PARTICIPANT Igor Vasiliev <igorv@oktet.ru>
+PARTICIPANT Oleg Kravtsov <oleg@oktet.ru>
+
+DIRECTION
+Document identifier is wrong on title page.
+
+DIRECTION
+Footer on the title page should be as in template.
+
+DIRECTION
+Modify status of the document to "Draft".
+
+DIRECTION
+Use "raw log format" instead of "internal log format".
+
+DIRECTION
+Add all abbreviations used in the document (XML, DTD, CVS, etc).
+
+DIRECTION
+Terminology should be added (for example, raw log format).
+
+DIRECTION
+Add reference to "Proteos: primary log format specification".
+
+DIRECTION
+Use "guide" style for the document.
+
+DIRECTION
+Utility with generic interface should be proveded as frontend
+for all other utilities.
+
+DIRECTION
+Add diagram which shows relattionship between utilities.
+
+PROPOSAL
+Avoid long paragraphs and use lists where it is possible.
+
+DIRECTION
+Provide XML scheme for 'log_reporter' configuration file format as appendix.
+
+DIRECTION
+Provide XML scheme for 'ilf_conv' configuration file format as appendix.
+
+QUESTION
+Add "rgt-xml2text" tool description.
+
+DIRECTION
+Use "rgt-" prefix for all tools except "log_reporter".
+
+DIRECTION
+Use "rgt" instead of "log_reporter".
+
+DIRECTION
+Use "-c" key for configuration file options.
+
+DIRECTION
+Use "-s" key for specifing of storage for input file.
+
+DIRECTION
+"stdin" must be used for input if "-f" key is not specified.
+
+DIRECTION
+5.1.1 filtration by entity name as the first element in the list.
+
+DIRECTION
+Ability to provide time intervals for filtering.
+
+DIRECTION
+Remove the third element in the list.
+
+DIRECTION
+Filtering by test result.
+
+DIRECTION
+Describe GUI facilities in details.
+
+RESULT
+Additional review is necessary because document is not complete.
+Document must be corrected in two days.
+
+
+DIRECTION
+Add revision B in revision history.
+
+DIRECTION
+Remove dot in definition of XSL
+
+DIRECTION
+Modify the first sentence in 4.1 and list items.
+
+DIRECTION
+40: Remove (modify) "User may use".
+
+DIRECTION
+Remove --storage-passwd and --storage-module options.
+
+DIRECTION
+Use "-f" for "--format" abbreviation and file after options as input.
+
+DIRECTION
+Use -d options for output directory.
+
+DIRECTION
+139: Swap "format" and "supported" words.
+
+DIRECTION
+139: Add "is" before supported.
+
+DIRECTION:
+145: Mark line as unbreakable from the next paragraph.
+
+DIRECTION
+192: Rewrite in present tense.
+
+DIRECTION
+203: "consists"
+
+DIRECTION
+Reformat lists in the document.
+
+DIRECTION
+6.2 - Reduce functionality
+
+DIRECTION
+Add "ext-cfg" tag for external configuration file.
+
+DIRECTION
+Format may not be overrided, if multiple outputs are requested.
+
+DIRECTION AUTHOR Elena Vengerova
+It's suggested to use additional error code for notifications about
+warnings in test.
+
+RESULT
+Document may be approved after notes processing during 3 hours.

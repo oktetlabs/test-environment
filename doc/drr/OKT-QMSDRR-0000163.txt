@@ -1,0 +1,43 @@
+ID OKT-QMSDRR-0000163
+
+COPYRIGHT Copyright(C) OKTET Ltd. 2003
+
+DDRID OKT-QMSDDR-0000084-TE
+
+RESPMGR Elena Vengerova
+
+MODERATOR Elena Vengerova <helen@oktet.ru>
+
+PARTICIPANT Oleg Kravtsov <oleg@oktet.ru>
+
+DIRECTION STATUS FIXED
+Change requrement identifiers.
+
+DIRECTION STATUS FIXED
+Transform "generic Aalgorithm to decompozition" (provide names
+and very short descriptions of separate modules).
+
+DIRECTION STATUS FIXED
+Move 8.2 to data organization.
+
+DIRECTION STATUS FIXED
+Change configure.in to configure.ac
+
+DIRECTION STATUS FIXED
+Chapter 8.2.3: write about bin_SCRIPTS.
+
+DIRECTION STATUS FIXED
+Chapter 8.2.3: replace script_SOURCES to other, less confusing word.
+
+DIRECTION STATUS FIXED
+Chapter 8.3.3: provide correct installation-related variables in the
+Makefile.am
+
+DIRECTION STATUS FIXED
+Explicitly add library for parameters parsing to Makefile.am.
+
+DIRECTION STATUS FIXED
+Add description of utility for doxygen package description utility.
+
+RESULT
+The document may be approved after notes processing.

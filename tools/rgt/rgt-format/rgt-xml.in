@@ -1,0 +1,176 @@
+#! @SHELL@
+# @utility@ --
+#    Converts XML report file into @UTIL_FORMAT@ format
+#    (calls rgt-xml-translator to process XML file).
+#
+# Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
+# root directory of the distribution).
+#
+# Test Environment is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation; either version 2 of
+# the License, or (at your option) any later version.
+#
+# Test Environment is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+# MA  02111-1307  USA
+#
+# Author: Oleg N. Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
+#
+
+bindir=@bindir@
+pkgdatadir=@pkgdatadir@
+
+unset xml_file
+unset out_file
+
+prog_name=`basename $0`
+
+#
+# This script gets the following parameters:
+#   -f FILE, --xml-report-file=FILE  XML report file name.
+#   -o FILE, --output=FILE           Output file name.
+#   -v, --version                    Output version information.
+#   -h, --help                       Display help and exit.
+#
+
+#
+# Print information about how to use this utility and exit
+#
+usage () {
+    cat <<EOF
+Usage: $prog_name [OPTION...] [<XML Log file> [<Output file>]]
+  Converts XML report file specified with -f option to @UTIL_FORMAT@ file.
+  Result file is output in specified file or stdout.
+
+  OPTIONS:
+  -f FILE, --xml-report-file=FILE  Specify XML report file name to be processed.
+  
+  -o FILE, --output=FILE           Result file name. If it is not specified 
+                                   then the result is output in stdout.
+  
+  -v, --version                    Display version information.
+  
+  -h, --help                       Show this help message.
+  
+EOF
+}
+
+#
+# Check for presense file in file system
+#
+check_file () {
+    if ! [ -f "$1" ]; then
+        if [ -z "$1" ]; then
+            echo "You should specify $2" >&2
+        else
+            echo "$1: No such file" >&2
+        fi
+        { (exit 1); exit 1; }
+    fi
+}
+
+#
+# Print information about version number, copyright statement and exit.
+#
+version_info () {
+    echo "Package @PACKAGE@ ($prog_name) version @VERSION@"
+    echo "@TE_COPYRIGHT@"
+    { (exit 0); exit 0; }
+}
+
+
+# Check arguments 
+while [ $# != 0 ]
+do
+    case "$1" in
+    -f)
+        xml_file=$2
+        check_file $xml_file "XML report file"
+        shift
+        ;;
+    --xml-report-file*)
+        if echo $1 | grep '=' >/dev/null ; then
+            xml_file=`echo $1 | sed 's/^--xml-report-file=//'`
+        else
+            xml_file=$2
+            shift
+        fi
+        check_file $xml_file "XML report file"
+        ;;
+    -o)
+        out_file=$2
+        shift
+        ;;
+    --output*)
+        if echo $1 | grep '=' >/dev/null ; then
+            out_file=`echo $1 | sed 's/^--output=//'`
+        else
+            out_file=$2
+            shift
+        fi
+        ;;
+    -v)
+        version_info
+        ;;
+    --version)
+        version_info
+        ;;
+    -h)
+        usage
+        { (exit 0); exit 0; }
+        ;;
+    --help)
+        usage
+        { (exit 0); exit 0; }
+        ;;
+    --)
+        end_opts="true"
+        ;;
+    *)
+        if [ "$end_opts" = "false" ] && [[ $1 = -* ]] ; then
+            usage
+            echo "Unknown option: $1" >&2
+            { (exit 1); exit 1; }
+        fi
+        
+        if [ -z "$xml_file" ]; then
+            xml_file=$1
+            check_file $xml_file "XML report file"
+        elif [ -z "$out_file" ]; then
+            out_file=$1
+        else
+            usage
+            echo "Too many parameters specified" >&2
+            { (exit 1); exit 1; }
+        fi
+        ;;
+    esac
+    shift
+done
+
+if [ -z "$xml_file" ]; then
+    usage
+    echo "You should specify XML report file" >&2
+    { (exit 1); exit 1; }
+fi
+if [ -z "$out_file" ]; then
+    out_file="&1"
+fi
+
+# Process XML report file
+if [ "@utility@" = "rgt-xml2html" ]; then
+# Append variable with path to style.css file
+    eval "${bindir}/rgt-xml-translator -t ${pkgdatadir}/@utility@.tmpls \
+         --with-var=PATH_TO_AUX_FILE@@@UTIL_DIR@ \
+         $xml_file >$out_file" || rm -f $out_file
+else
+    eval "${bindir}/rgt-xml-translator -t ${pkgdatadir}/@utility@.tmpls \
+         $xml_file >$out_file" || rm -f $out_file
+fi

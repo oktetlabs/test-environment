@@ -1,0 +1,99 @@
+#! @SHELL@
+# rgt-filter-prepare --
+#    Converts filter configuration XML file into set of Tcl procedures that
+#    allow to make filtering.
+#
+# Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
+# root directory of the distribution).
+#
+# Test Environment is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation; either version 2 of
+# the License, or (at your option) any later version.
+#
+# Test Environment is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+# MA  02111-1307  USA
+#
+# Author: Oleg N. Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
+#
+
+prefix=@prefix@
+datadir=@datadir@
+
+unset src_file_name
+unset dst_file_name
+
+if test "x@XSLT_PROC@" = "x" ; then
+    echo "This utility uses XSLT processor, but while the package was being \
+configured no one was found." >&2
+    exit 1
+fi
+
+usage () {
+    cat <<EOF
+Usage: `basename $0` [OPTION...] <XML filter file> [<Result TCL file>]
+  Converts filter configuration file of the Report Generator
+  from XML format into TCL.
+ 
+  OPTIONS:
+  --version  Display version information.
+  --help     Show this help message
+EOF
+}
+
+# Check arguments 
+while [ $# != 0 ]
+do
+    case "$1" in
+    --version)
+        echo "Package @PACKAGE@ (rgt-filter-prepare) version @VERSION@"
+        echo "@TE_COPYRIGHT@"
+        exit 0
+        ;;
+    --help)
+        usage
+        exit 0
+        ;;
+    *)
+        if [ "$end_opts" = "false" ] && [[ $1 = -* ]] ; then
+            usage
+            echo "Unknown option: $1" >&2
+            exit 1
+        fi
+        
+        if [ -z "$src_file_name" ]; then
+            src_file_name=$1
+        elif [ -z "$dst_file_name" ]; then
+            dst_file_name=$1
+        else
+            usage
+            echo "Too many parameters specified" >&2
+            exit 1
+        fi
+        ;;
+    esac
+    shift
+done
+
+if [ -z "$src_file_name" ]; then
+    usage
+    echo "Source file should be specified" >&2
+    exit 1
+fi
+
+if [ -z "$dst_file_name" ]; then
+    dst_file_name="&1"
+fi
+
+eval "@XSLT_PROC@ $datadir/rgt-filter-xml2tcl.xsl \
+      $src_file_name >$dst_file_name" ||
+{
+    test $dst_file_name = "&1" && rm -f -- $dst_file_name
+}

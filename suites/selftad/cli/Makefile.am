@@ -1,0 +1,19 @@
+AUTOMAKE_OPTIONS = foreign 
+
+AM_CFLAGS=@TE_CFLAGS@ -I$(DESTDIR)/$(prefix)/include \
+                      -I$(DESTDIR)/$(prefix)/../include
+AM_LDFLAGS=@TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/lib 
+
+bin_PROGRAMS=clitest
+
+LDADD= -lrcfapi -lipc -lpthread -lasn -lsnmp -lcrypto
+clitest_LDADD= -lexpect -lrcfapi -lipc -lpthread -lasn -lsnmp -lcrypto
+ 
+clitest_DEPENDENCIES=${TE_INSTALL}/i686-pc-linux-gnu/lib/librcfapi.a
+
+NDS_DIR=${TE_BASE}/storage/nds/self
+
+clitestdir=${prefix}/selftest/cli_nds
+
+clitest_DATA=${NDS_DIR}/cli/cli-filter.asn \
+	     ${NDS_DIR}/cli/cli-csap.asn 

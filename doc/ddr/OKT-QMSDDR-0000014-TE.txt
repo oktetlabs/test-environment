@@ -1,0 +1,53 @@
+ID OKT-QMSDDR-0000014-TE
+
+COPYRIGHT
+Copyright(C) OKTET Ltd. 2002
+
+DDRAUTH
+Elena Vengerova
+
+RESPMGR
+Piotr Lavrov
+
+DOCID
+OKT-MISC-0000015-TE
+
+TITLE
+External Libraries: creation and usage issues
+
+PURPOSE
+The document should contain results of research and list of proposals
+related to Test Environment external libraries framework.
+
+AUDIENCE
+Test Environment team
+
+AUDIENCE
+OKTET confidential
+ 
+TMPL
+OKT-TMPL-0000006
+
+COMPLY
+OKT-REQ-0000010-TE
+OKT-ARCH-0000011-TE
+
+ANNOTATION
+The document should describe:
+  source organization description (including all naming conventions);
+  possible programming languages;
+  generation of reference manual for external libraries from sources.
+  
+Document should describe in details how to create the external library
+using programming language X (X in {C, C++, PERL, TCL)} with interfaces 
+allowing to use it from the test or subsystem written on C, C++, PERL and TCL.
+I.e. 12 possibilities should be described. Examples should be provided.
+
+SIZE
+10-20 pages
+
+DEADLINE
+2002-12-25
+
+AUTHOR
+Igor Artimovich

@@ -1,0 +1,19 @@
+Testing environment (TE) requirements.
+
+1. TE should provide automated test run capability.
+2. TE should provide automated test logs collection and reports generation.
+3. TE should be highly portable. It should be able to support different target platforms, hardware and OS by means
+   of appropriate platform/hardware/OS - dependent modules.
+4. TE should support automated generation of test suites using test patterns and/or some kind of concise description
+   of tested functionality.
+5. TE should support automated estimation of test coverage.
+6. Test suites developed for testing environment should be significantly independent from the tested system. 
+   It should be possible to use the same test suite to test several different implementation of the same 
+   functionality.
+7. TE should be easy to use.
+8. It should be possible to trace dependencies between testing system requirements and test suites.
+9. During test run TE should be able to restore from test errors and non-critical system errors and continue testing.
+   Detailed tracing of all error conditions should be performed.
+10. TE should be highly extensible. May be it is reasonable for TE to provide some kind of API which will allow 
+    development of different extension plugins.
+

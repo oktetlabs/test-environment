@@ -1,0 +1,128 @@
+
+TE-Data-Notation-Rules 
+DEFINITIONS ::=
+BEGIN
+
+DATA-UNIT { BaseFieldType } ::=  CHOICE
+{ 
+    plain BaseFieldType, 
+    spec CHOICE {
+        pattern UniversalString, -- pattern for incoming traffic in 
+                                -- some CSAP-specific format.
+        script UniversalString, -- script for calculating of field value by TA.
+
+        env OBJECT IDENTIFIER   -- identifier of Config DB entry.
+    }
+}
+
+EthernetFrame ::= IMPLICIT SEQUENCE { header EthernetHeader, 
+                            payload CHOICE {plain OCTET STRING, ..., ...} OPTIONAL
+                            }
+
+EthernetHeader ::= IMPLICIT SEQUENCE { 
+        dst-addr [0] DATA-UNIT{EthernetAddress} OPTIONAL,
+        src-addr [1] DATA-UNIT{EthernetAddress} OPTIONAL,
+        eth-type [2] DATA-UNIT{OCTET STRING (SIZE 2)}OPTIONAL
+        }
+
+IpAddress ::= IMPLICIT OCTET STRING (SIZE (4))
+
+EthernetAddress ::= IMPLICIT OCTET STRING (SIZE (6))
+
+IPDatagram ::=  SEQUENCE { header IPHeader, 
+                           payload CHOICE {plain OCTET STRING, ..., ...} OPTIONAL
+                         }
+
+IPHeader ::=  SEQUENCE {
+        version         [0] DATA-UNIT{INTEGER (0..31)} OPTIONAL,
+        header-len      [1] DATA-UNIT{INTEGER (0..31)} OPTIONAL,
+        type-of-service [2] DATA-UNIT{INTEGER (0..255)} OPTIONAL,
+        ip-len          [3] DATA-UNIT{INTEGER (0..65535)} OPTIONAL,
+        ip-ident        [4] DATA-UNIT{INTEGER (0..65535)} OPTIONAL,
+        flags           [5] DATA-UNIT{INTEGER { frag-mask (1), mf(2), df(4) }} OPTIONAL,
+        ip-offset       [6] DATA-UNIT{INTEGER (0..65535)} OPTIONAL,
+        time-to-live    [7] DATA-UNIT{INTEGER (0..255)} OPTIONAL,
+        protocol        [8] DATA-UNIT{INTEGER (0..255)} OPTIONAL,
+        h-checksum      [8] DATA-UNIT{INTEGER (0..65535)} OPTIONAL,
+        src-addr        [10] DATA-UNIT{IpAddress} OPTIONAL,
+        dst-addr        [11] DATA-UNIT{IpAddress} OPTIONAL
+    } 
+
+UDPDatagram ::= SEQUENCE { header UDPHeader, 
+                           payload CHOICE {plain OCTET STRING, ..., ...} OPTIONAL
+}
+
+UDPHeader ::= SEQUENCE {
+        src-port  [0] DATA-UNIT{INTEGER (0..65535)} OPTIONAL,
+        dst-port  [1] DATA-UNIT{INTEGER (0..65535)} OPTIONAL,
+        length    [2] DATA-UNIT{INTEGER (0..65535)} OPTIONAL,
+        checksum  [3] DATA-UNIT{INTEGER (0..65535)} OPTIONAL
+}
+
+
+-- specification of protocol Stack:
+EthernetFrame ::= IMPLICIT SEQUENCE { header EthernetHeader, 
+                            payload CHOICE {
+                                plain OCTET STRING, ..., 
+                                ip-data IPDatagram,
+                                ...} OPTIONAL
+                            }
+
+IPDatagram ::= IMPLICIT  SEQUENCE { header IPHeader, 
+                           payload CHOICE {
+                               plain OCTET STRING, ..., 
+                               udp-data UDPDatagram,
+                               ...} OPTIONAL
+                         }
+
+Ethernet-CSAP ::= IMPLICIT SEQUENCE { 
+        dst-addr [0] DATA-UNIT{EthernetAddress} OPTIONAL,
+        src-addr [1] DATA-UNIT{EthernetAddress} OPTIONAL,
+        eth-type [2] DATA-UNIT{OCTET STRING (SIZE 2)}OPTIONAL, 
+        ..., ...
+        }
+
+IP-CSAP ::= IMPLICIT SEQUENCE {
+        version         [0] DATA-UNIT{INTEGER (0..31)} OPTIONAL,
+        type-of-service [2] DATA-UNIT{INTEGER (0..255)} OPTIONAL,
+        ip-ident        [4] DATA-UNIT{INTEGER (0..65535)} OPTIONAL,
+        flags           [5] DATA-UNIT{INTEGER { frag-mask (1), mf(2), df(4) }} OPTIONAL,
+        time-to-live    [7] DATA-UNIT{INTEGER (0..255)} OPTIONAL,
+        protocol        [8] DATA-UNIT{INTEGER (0..255)} OPTIONAL,
+        src-addr        [10] DATA-UNIT{IpAddress} OPTIONAL,
+        dst-addr        [11] DATA-UNIT{IpAddress} OPTIONAL, 
+        ..., ...
+}
+
+UDP-CSAP ::= IMPLICIT SEQUENCE {
+        src-port  [0] DATA-UNIT{INTEGER (0..65535)} OPTIONAL,
+        dst-port  [1] DATA-UNIT{INTEGER (0..65535)} OPTIONAL,
+        length    [2] DATA-UNIT{INTEGER (0..65535)} OPTIONAL,
+        checksum  [3] DATA-UNIT{INTEGER (0..65535)} OPTIONAL
+	...,...
+}
+
+
+
+Template-Parameter ::= CHOICE {
+	ints SEQUENCE OF INTEGER,
+	strings SEQUENCE OF UniversalString,
+	simple-for SEQUENCE { begin INTEGER, end INTEGER, step INTEGER},
+	...,...
+}
+
+Generic-PDU ::= CHOICE {
+	eth EthernetFrame, -- or Header? Open Issue...
+	ip4 IPDatagram,
+	udp UDPDatagram,
+	...,...
+}
+
+Traffic-Template ::= IMPLICIT SEQUENCE }
+	dimention INTEGER,
+	arg-sets SEQUENCE OF Template-Parameter,
+	parametrized-data SEQUENCE OF Generic-PDU
+}
+
+END
+

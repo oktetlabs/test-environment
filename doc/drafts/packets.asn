@@ -1,0 +1,121 @@
+--========================================================================
+-- file:        packets.asn
+-- author:      Abramenko Konstantin <konst@oktetlabs.ru>
+-- description: 
+--      This file contain attempt to describe Packets and filters format
+--      by ASN.1
+--
+-- $Id: packets.asn,v 1.1 2003/10/28 09:35:41 arybchik Exp $
+--========================================================================
+
+TE-packet-defs 
+DEFINITIONS ::=
+BEGIN
+
+--IMPORTS 
+--        IpAddress FROM RFC1155-SMI
+--
+--        Message FROM RFC1157-SNMP
+--
+--        GetRequest-PDU, GetNextRequest-PDU, GetBulkRequest-PDU, Response-PDU,
+--            SetRequest-PDU, InformRequest-PDU, SNMPv2-Trap-PDU, Report-PDU 
+--                FROM SNMPv2-PDU;
+--
+PACKET-FIELD { BaseFieldType } ::=  CHOICE
+{ 
+    plain BaseFieldType, 
+    spec CHOICE {
+        pattern UniversalString, -- pattern for incoming traffic in 
+                                -- some CSAP-specific format.
+        script UniversalString, -- script for calculating of field value by TA.
+
+        env OBJECT IDENTIFIER   -- identifier of Config DB entry.
+    }
+}
+
+EthernetFrame ::= IMPLICIT SEQUENCE { header EthernetHeader, 
+                            payload CHOICE {plain OCTET STRING, ..., ...}
+                            }
+
+EthernetHeader ::= IMPLICIT SEQUENCE { 
+        dst-addr [0] IMPLICIT PACKET-FIELD{EthernetAddress} OPTIONAL,
+        src-addr [1] IMPLICIT PACKET-FIELD{EthernetAddress} OPTIONAL,
+        eth-type [2] IMPLICIT PACKET-FIELD{OCTET STRING (SIZE 2)}OPTIONAL
+        }
+
+IpAddress ::= IMPLICIT OCTET STRING (SIZE (4))
+
+EthernetAddress ::= IMPLICIT OCTET STRING (SIZE (6))
+
+IPDatagram ::=  SEQUENCE { header IPHeader, 
+                           payload CHOICE {plain OCTET STRING, ..., ...}
+                         }
+
+IPHeader ::=  SEQUENCE {
+        version         [0] IMPLICIT PACKET-FIELD{INTEGER (0..31)} OPTIONAL,
+        header-len      [1] IMPLICIT PACKET-FIELD{INTEGER (0..31)} OPTIONAL,
+        type-of-service [2] IMPLICIT PACKET-FIELD{INTEGER (0..255)} OPTIONAL,
+        ip-len          [3] IMPLICIT PACKET-FIELD{INTEGER (0..65535)} OPTIONAL,
+        ip-ident        [4] IMPLICIT PACKET-FIELD{INTEGER (0..65535)} OPTIONAL,
+        flags           [5] IMPLICIT PACKET-FIELD{INTEGER { frag-mask (1), mf(2), df(4) }} OPTIONAL,
+        ip-offset       [6] IMPLICIT PACKET-FIELD{INTEGER (0..65535)} OPTIONAL,
+        time-to-live    [7] IMPLICIT PACKET-FIELD{INTEGER (0..255)} OPTIONAL,
+        protocol        [8] IMPLICIT PACKET-FIELD{INTEGER (0..255)} OPTIONAL,
+        h-checksum      [8] IMPLICIT PACKET-FIELD{INTEGER (0..65535)} OPTIONAL,
+        src-addr        [10] IMPLICIT PACKET-FIELD{IpAddress} OPTIONAL,
+        dst-addr        [11] IMPLICIT PACKET-FIELD{IpAddress} OPTIONAL
+    } 
+
+UDPDatagram ::= SEQUENCE { header UDPHeader, 
+                           payload CHOICE {plain OCTET STRING, ..., ...}
+}
+
+UDPHeader ::= SEQUENCE {
+        src-port  [0] IMPLICIT PACKET-FIELD{INTEGER (0..65535)} OPTIONAL,
+        dst-port  [1] IMPLICIT PACKET-FIELD{INTEGER (0..65535)} OPTIONAL,
+        length    [2] IMPLICIT PACKET-FIELD{INTEGER (0..65535)} OPTIONAL,
+        checksum  [3] IMPLICIT PACKET-FIELD{INTEGER (0..65535)} OPTIONAL
+}
+
+
+-- specification of protocol Stack:
+EthernetFrame ::= IMPLICIT SEQUENCE { header EthernetHeader, 
+                            payload CHOICE {
+                                plain OCTET STRING, ..., 
+                                ip-data IPDatagram,
+                                ...}
+                            }
+
+IPDatagram ::=  SEQUENCE { header IPHeader, 
+                           payload CHOICE {
+                               plain OCTET STRING, ..., 
+                               udp-data UDPDatagram,
+                               ...}
+                         }
+
+
+
+-- Example of packet value.
+
+example-pkt-udp UDPDatagram ::=
+{
+    header {
+        src-port plain:123,
+        dst-port plain:234
+    },
+    payload plain:'0102'H
+}
+
+example-pkt-ip IPDatagram ::=
+{
+    header { src-addr:plain '12345678'H }, 
+    payload udp-data:example-pkt-udp
+}
+
+example-pkt-eth EthernetFrame ::=
+{ 
+    header {src-addr plain:'000102030405'H},
+    payload ip-data:example-pkt-ip
+}
+
+END

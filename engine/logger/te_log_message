@@ -1,0 +1,118 @@
+#!/usr/bin/perl -w
+# Test Environment, Logger subsystem
+# This script provides logging of the string messages and text files.
+# It takes four arguments for processing. Three beggining arguments are
+# mandatory. Four argument is processed as string containing full file
+# name of logged file if it exists. All symbols allowable in C-string
+# are allowable in MESSAGE.
+#
+# Copyright (C) 2004 Test Environment authors (see file AUTHORS
+# in the root directory of the distribution).
+#
+# Test Environment is free software; you can redistribute it and/or 
+# modify it under the terms of the GNU General Public License as 
+# published by the Free Software Foundation; either version 2 of 
+# the License, or (at your option) any later version.
+# 
+# Test Environment is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, 
+# MA  02111-1307  USA
+#
+# Author: Igor B. Vasiliev <Igor.Vasiliev@oktetlabs.ru>
+# Author: Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
+#
+# $Id: $
+
+use File::Basename qw(basename);
+use File::Copy qw(copy);
+
+# Make time stamp ASAP
+my $sec;
+my $usec;
+if (eval 'require Time::HiRes')
+{
+    import Time::HiRes qw(gettimeofday);
+    ($sec, $usec) = Time::HiRes::gettimeofday();
+}
+else
+{
+    ($sec, $usec) = (time, 0);
+}
+
+# Validate number of parameters
+if ((@ARGV < 3) || (@ARGV > 4))
+{
+    print STDOUT "Usage: te_log_message ENTITY USER MESSAGE [FILENAME]\n";
+    exit 1;
+}
+
+my $te_log_path = $ENV{TE_LOG_DIR};
+my $te_log_tmp  = $te_log_path . "/tmp_raw_log";
+
+open(OUTFILE, ">>" . $te_log_tmp) or 
+    die("Can't to open output file " . $te_log_tmp . ": $!");
+
+binmode OUTFILE;
+
+my @lens;
+my $i;
+for ($i = 0; $i < @ARGV; $i++)
+{
+    $lens[$i] = length($ARGV[$i]);
+}
+
+my $fname = "";
+my $fname_field_len = 0;
+
+# Process logged file if exists
+if (@ARGV == 4)
+{
+    # Get base name of the file
+    $fname = basename($ARGV[3]);
+
+    # Copy file in TE log directory
+    copy($ARGV[3], $te_log_path . "/" . $fname) or
+        die("Copy of file failed: $!");
+
+    # Calculate length of the file name
+    $fname_field_len = length($fname) + 1;
+}
+
+
+# Write length of Entity name filed and itself one
+print OUTFILE pack("CA*", $lens[0], $ARGV[0]);
+
+# Write log message version (1 byte) and 
+# timestamp (two 32--bit integer in "network" (big-endian) order)
+print OUTFILE pack("CNN", 1, $sec, $usec);
+
+# Write log level value (16-bit integer in "network" (big-endian) order)
+my $log_level = 4; # RING log level (see include/logger_defs.h)
+print OUTFILE pack("n", $log_level);
+
+
+# Write log message length (16-bit integer in "network" (big-endian) order)
+my $total_length = 2 + $lens[1] + $lens[2] + $fname_field_len;
+print OUTFILE pack("n", $total_length);
+
+# Write length of User name field and itself one
+print OUTFILE pack("CA*", $lens[1], $ARGV[1]);
+
+# Write length of message string and itself one
+print OUTFILE pack("CA*", $lens[2], $ARGV[2]);
+
+# Write length of logged file name and itsef one
+if (@ARGV == 4)
+{
+    print OUTFILE pack("CA*", $fname_field_len - 1, $fname);
+}
+
+close OUTFILE;
+
+exit 0;

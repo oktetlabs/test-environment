@@ -1,0 +1,61 @@
+ID OKT-QMSDDR-0000048-TE
+
+COPYRIGHT
+Copyright(C) OKTET Ltd. 2003
+
+DDRAUTH
+Elena Vengerova
+
+RESPMGR
+Elena Vengerova
+
+DOCID
+OKT-DD-0000049-TE_LS_IF
+
+TITLE
+Logger interfaces
+
+PURPOSE
+Describe C interface provided by Logger to TE subsystems, tests, Test Agents
+and software under test.
+
+AUDIENCE
+End users and TE project team-members
+
+AUDIENCE
+OKTET employees and customers
+ 
+FMT
+C header
+
+COMPLY
+OKT-REQ-0000010-TE
+OKT-ARCH-0000011-TE
+
+ANNOTATION
+In fact the document should consist of 2 parts which will be copied
+to two different headers during implementation:
+* interface provided by Logger to TE subsystems and tests (allowing
+  put string log messages, dump memory and files);
+* interface provided by Logger to Test Agents and software under test
+  (allowing put string log messages, dump memory).
+
+Macros providing static filtering of log (on compilation time) should
+be defined as well for both interfaces.
+
+Moreover document should describe script-based interface, which will be used
+by DIspatcher and Builder before Logger is started. Note that this script
+will be used from one context only and therefore it's not necessary
+to protect data. Script-based interface should allow:
+* initialize raw log file;
+* put log messages and dump files;
+* close raw log file.
+
+SIZE
+4-12 pages
+
+DEADLINE
+2003-02-04
+
+AUTHOR
+Igor Vasiliev

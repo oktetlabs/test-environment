@@ -1,0 +1,60 @@
+ID OKT-QMSDDR-0000044-TE
+
+COPYRIGHT
+Copyright(C) OKTET Ltd. 2003
+
+DDRAUTH
+Elena Vengerova
+
+RESPMGR
+Elena Vengerova
+
+DOCID
+OKT-HLD-0000045-TE_LS_TEN
+
+TITLE
+Proteos: Test Engine side of the Logger
+
+PURPOSE
+High Level Design of logging software running on the Test Engine.
+
+AUDIENCE
+End users and TE project team-members
+
+AUDIENCE
+OKTET employees and customers
+ 
+TMPL
+OKT-TMPL-0000009-HLD
+
+FMT
+OpenOffice
+
+COMPLY
+OKT-REQ-0000010-TE
+OKT-ARCH-0000011-TE
+OKT-DD-0000049-TE_LS_IF
+
+ANNOTATION
+Test Engine logging facilities are:
+* script to be used by Dispatcher to initialize the raw log;
+* script which should be used by Dispatcher and Builder in exclusive mode
+  for logging of string messages and files;
+* library to be used by TE subsystems for logging string messages, 
+  files and memory dumps;
+* process listening TEN user requests and polling Test Agents;
+* scripts to be used by Dispatcher to initialize and shutdown the Logger.
+
+All this areas should be clarified according to HLD template.
+
+Configuration file parsing issues (when the file is parsed, is some
+intermediate representation assumed, etc.) should be clarified as well.
+
+SIZE
+12-15 pages
+
+DEADLINE
+2003-02-18
+
+AUTHOR
+Igor Vasiliev

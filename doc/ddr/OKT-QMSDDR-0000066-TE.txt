@@ -1,0 +1,96 @@
+ID OKT-QMSDDR-0000066-TE
+
+COPYRIGHT
+Copyright(C) OKTET Ltd. 2003
+
+DDRAUTH
+Elena Vengerova
+
+RESPMGR
+Elena Vengerova
+
+DOCID
+OKT-DD-0000067-TE_RCF_IF
+
+TITLE
+RCF TA communication library interface
+
+PURPOSE
+Provide C interface specification for communication libraries 
+used on Test Agents.
+
+AUDIENCE
+End users and TE project team-members
+
+AUDIENCE
+OKTET employees and customers
+ 
+FMT
+C header
+
+COMPLY
+OKT-REQ-0000010-TE
+OKT-ARCH-0000011-TE
+OKT-DD-0000113-TE_EL_NC
+
+ANNOTATION
+
+Communication library should provide following functionality to 
+Portable Commands Handler module of the Test Agent:
+
+* wait connection from the Test Engine;
+* receive command from the Test Engine;
+* send the answer;
+* destroy connection.
+
+It is assumed that command and answers are strings finished by '\0'. 
+In the debugging mode (which is switched on by pre-processor directive) 
+it is allowed to mark end of command/answer by '\n'. 
+Note, that end marker is considered as part of the command/answer.
+
+Sender of command or answer specifies length of data as a parameter,
+i.e. library should never analyze data which it sends. In fact,
+the sender may send a command by two "send" calls. However the situation
+is bit more complex on receive.
+ 
+The library should read symbols from connection until '\0' (or '\n') 
+is received. After that it should analyze received command/answer to 
+determine if it contains an attachment. A command/answer contains attachment 
+if it is finished by "attach N" substring where N is non-negative integer 
+in string representation. For example:
+
+put_file /tmp/pkt attach 180\n
+
+If the library finds attachment it reads N bytes after '\0' (or '\n') 
+and puts them to the same user buffer (after command/answer).
+
+User should be informed about following abnormal situations:
+
+1. Buffer provided by user is too small for the command/answer. In this case:  
+   * part of command/answer should be returned; 
+   * some unique return code should be indicated.
+      
+2. Buffer provided by user is too small for the attachment. In this case:
+   * command/answer and part of attachment should be returned; 
+   * some unique return code different from error code used for the 
+     situation described above should be indicated;
+   * user should be informed about whole length of the attachment.
+   
+3. Network (socket) problems. Appropriate error should be returned.
+
+It is allowed to call "receive" primitive several times
+if the attachment is big. In this case command/answer itself is returned 
+only once (first time); only attachment pieces should be returned on 
+subsequent calls.
+
+The document should decribe generic interface, which is appropriate 
+for all sorts of transport (TCP, UDP, serial port).
+
+SIZE
+1-3 pages
+
+DEADLINE
+2003-02-05
+
+AUTHOR
+Andrey Ivanov

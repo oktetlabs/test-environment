@@ -1,0 +1,77 @@
+
+TE-NDN-Tcp-Ip
+DEFINITIONS ::=
+BEGIN
+
+IMPORTS DATA-UNIT FROM TE-NDN-General;
+
+EXPORTS IpAddress, IP-Header, IP-CSAP, UDP-Header, UDP-CSAP, TCP-Header, TCP-CSAP;
+
+IpAddress ::= IMPLICIT SEQUENCE OF INTEGER (0..255) 
+
+
+IP-Header ::= SEQUENCE {
+    version          [0] DATA-UNIT{INTEGER (0..31)} OPTIONAL,
+    header-len       [1] DATA-UNIT{INTEGER (0..31)} OPTIONAL,
+    type-of-service  [2] DATA-UNIT{INTEGER (0..255)} OPTIONAL,
+    ip-len           [3] DATA-UNIT{INTEGER (0..65535)} OPTIONAL,
+    ip-ident         [4] DATA-UNIT{INTEGER (0..65535)} OPTIONAL,
+    flags            [5] DATA-UNIT{INTEGER { frag-mask (1), mf(2), df(4) }} OPTIONAL,
+    ip-offset        [6] DATA-UNIT{INTEGER (0..65535)} OPTIONAL,
+    time-to-live     [7] DATA-UNIT{INTEGER (0..255)} OPTIONAL,
+    protocol         [8] DATA-UNIT{INTEGER (0..255)} OPTIONAL,
+    h-checksum       [9] DATA-UNIT{INTEGER (0..65535)} OPTIONAL,
+    src-addr        [10] DATA-UNIT{IpAddress} OPTIONAL,
+    dst-addr        [11] DATA-UNIT{IpAddress} OPTIONAL
+} 
+
+IP-CSAP ::= SEQUENCE {
+    version          [0] DATA-UNIT{INTEGER (0..31)} OPTIONAL,
+    type-of-service  [2] DATA-UNIT{INTEGER (0..255)} OPTIONAL,
+    ip-ident         [4] DATA-UNIT{INTEGER (0..65535)} OPTIONAL,
+    flags            [5] DATA-UNIT{INTEGER { frag-mask (1), mf(2), df(4) }} OPTIONAL,
+    time-to-live     [7] DATA-UNIT{INTEGER (0..255)} OPTIONAL,
+    protocol         [8] DATA-UNIT{INTEGER (0..255)} OPTIONAL,
+    local-addr      [10] DATA-UNIT{IpAddress} OPTIONAL,
+    remote-addr     [11] DATA-UNIT{IpAddress} OPTIONAL, 
+    max-packet-size [12] DATA-UNIT{INTEGER} OPTIONAL,
+    router          [13] DATA-UNIT{IpAddress} OPTIONAL, 
+    ..., ...
+}
+
+
+
+UDP-Header ::= SEQUENCE {
+    src-port  [0] DATA-UNIT{INTEGER (0..65535)} OPTIONAL,
+    dst-port  [1] DATA-UNIT{INTEGER (0..65535)} OPTIONAL,
+    length    [2] DATA-UNIT{INTEGER (0..65535)} OPTIONAL,
+    checksum  [3] DATA-UNIT{INTEGER (0..65535)} OPTIONAL
+}
+
+
+UDP-CSAP ::= SEQUENCE {
+        local-port   [0] DATA-UNIT{INTEGER (0..65535)} OPTIONAL,
+        remote-port  [1] DATA-UNIT{INTEGER (0..65535)} OPTIONAL,
+	...
+}
+
+TCP-Header ::= SEQUENCE {
+    src-port  [0] DATA-UNIT{INTEGER (0..65535)} OPTIONAL,
+    dst-port  [1] DATA-UNIT{INTEGER (0..65535)} OPTIONAL,
+    seqn      [2] DATA-UNIT{INTEGER } OPTIONAL,
+    acqn      [3] DATA-UNIT{INTEGER } OPTIONAL,
+    hlen      [4] DATA-UNIT{INTEGER (0..15)} OPTIONAL,
+    flags     [5] DATA-UNIT{INTEGER (0..63)} OPTIONAL,
+    win-size  [6] DATA-UNIT{INTEGER (0..65535)} OPTIONAL
+    checksum  [7] DATA-UNIT{INTEGER (0..65535)} OPTIONAL
+    urg-p     [8] DATA-UNIT{INTEGER (0..65535)} OPTIONAL
+
+}
+
+TCP-CSAP ::=  SEQUENCE {
+        local-port   [0] DATA-UNIT{INTEGER (0..65535)} OPTIONAL,
+        remote-port  [1] DATA-UNIT{INTEGER (0..65535)} OPTIONAL,
+        ...
+}
+
+END

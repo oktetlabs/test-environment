@@ -1,0 +1,73 @@
+TE-NDN-SNMP
+DEFINITIONS ::=
+BEGIN
+
+-- most part of this module is based on RFC-1905
+
+IMPORTS DATA-UNIT 
+            FROM TE-NDN-General
+	ObjectSyntax, Integer32
+	    FROM SNMPv2-SMI;
+
+EXPORTS SNMP-Message, SNMP-CSAP;
+
+SnmpErrorStatus ::= INTEGER {
+    noError(0),
+    tooBig(1),
+    noSuchName(2),   -- for proxy compatibility
+    badValue(3),     -- for proxy compatibility
+    readOnly(4),     -- for proxy compatibility genErr(5), 
+    noAccess(6),
+    wrongType(7),
+    wrongLength(8),
+    wrongEncoding(9),
+    wrongValue(10),
+    noCreation(11),
+    inconsistentValue(12),
+    resourceUnavailable(13),
+    commitFailed(14),
+    undoFailed(15),
+    authorizationError(16),
+    notWritable(17),
+    inconsistentName(18)
+}
+
+max-bindings INTEGER ::= 2147483647
+
+SNMP-Message ::= SEQUENCE { 
+    type        INTEGER {get(0), get-next(1), response(2),  set(3), trap(4), get-bulk(5)}, 
+
+    community   DATA-UNIT{PrintableString} OPTIONAL,
+    request-id  DATA-UNIT{ Integer32 } OPTIONAL,
+
+    err-status  DATA-UNIT{ SnmpErrorStatus } OPTIONAL, 
+    err-index   DATA-UNIT{ INTEGER (0..max-bindings)} OPTIONAL,
+
+    vbs         SEQUENCE OF VarBind OPTIONAL
+
+}
+
+
+VarBind ::= SEQUENCE {
+    name DATA_UNIT{OBJECT IDENTIFIER},
+
+    CHOICE {
+        value DATA_UNIT{ObjectSyntax}, 
+        noSuchObject[0] IMPLICIT NULL, 
+        noSuchInstance[1] IMPLICIT NULL, 
+        endOfMibView[2] IMPLICIT NULL
+    } OPTIONAL
+}
+
+
+SNMP-CSAP ::= SEQUENCE {
+    version     DATA-UNIT{INTEGER(1..3)} OPTIONAL,
+    remote-port DATA-UNIT{INTEGER(1..65535)} OPTIONAL, 
+    local-port  DATA-UNIT{INTEGER(1..65535)} OPTIONAL, 
+    community   DATA-UNIT{PrintableString} OPTIONAL,
+    snmp-agent  DATA-UNIT{PrintableString} OPTIONAL,
+    timeout     DATA-UNIT{INTEGER}  OPTIONAL,
+    ...
+}
+
+END

@@ -1,0 +1,224 @@
+<html>
+  <head>
+    <TITLE>Log Filter Configuration</TITLE>
+    <link rel="stylesheet" type="text/css" href="@@PATH_TO_AUX_FILE@@/style/style.css">
+
+<script>
+
+/**
+ * Hide or shows logs from a particular entity and user name.
+ *
+ * @param entity  - Entity name
+ * @param user    - User name (can be an empty string for any user names)
+ * @param visSt   - String to update "display" attribute of the log items
+ */
+function logsVisibility(entity, user, visSt)
+{
+    var divList = window.opener.getAllLogs();
+    var i;
+      
+    for (i = 0; i < divList.length; i++)
+    {
+        var DivElem = divList.item(i);
+
+        if (DivElem.getAttribute("entityname") == entity &&
+            (user == "" || DivElem.getAttribute("username") == user))
+        {
+            divList.item(i).style.display = visSt;
+        }
+    }
+}
+
+function update_line_colours()
+{
+    var divList = window.opener.getAllLogs();
+
+    if (divList.item(0).firstChild && divList.item(0).firstChild.firstChild)
+    {
+        var i, j;
+
+        for (i = 0, j = 0; i < divList.length; i++)
+        {
+            if (divList.item(i).style.display == "")
+            {
+                divList.item(i).firstChild.firstChild.firstChild.firstChild.className = 
+                    ((j++ % 2 == 0) ? "tdlight" : "tddark");
+                /* Refresh the style */
+                divList.item(i).style.display = "none";
+                divList.item(i).style.display = "";
+            }
+        }
+    }
+}
+
+/**
+ * Show particular group of logs
+ */
+function logsShow()
+{
+    var ids = new Array();
+    var cbox;
+
+    for (i = 0, cbox = eval("document.show_form.ch" + i);
+         cbox;
+         i += 2, cbox = eval("document.show_form.ch" + i))
+    {
+        if (cbox.checked)
+        {
+            /* Add an index to the array */
+            ids.push(i);
+        }
+    }
+
+    for (i = 0; i < ids.length; i++)
+    {
+        var hide = window.opener.hide;
+        var tmp1 = new Array();
+        var tmp2 = new Array();
+
+        /* Show logs with a particular entity and user names */
+        logsVisibility(hide[ids[i] - i * 2], hide[ids[i] - i * 2 + 1], "");
+
+        tmp1 = hide.slice(0, ids[i] - i * 2);
+        tmp2 = hide.slice(ids[i] - i * 2 + 2);
+        window.opener.hide = tmp1.concat(tmp2);
+    }
+    update_line_colours();
+    self.location.reload();
+}
+
+
+function chomp(str)
+{
+    var str_ar = new Array();
+    var res_str = "";
+
+    str_ar = str.match(/^\s*(.*\S)(\s)*$/);
+    if (str_ar)
+    {
+        res_str = str_ar[1];
+    }
+
+    return res_str;
+}
+
+function logsHide(entity, user)
+{
+    var hide = window.opener.hide;
+    var i;
+
+    entity = chomp(entity);
+    user = chomp(user);
+
+    if (entity == "" && user == "")
+        return;
+
+    /* Add a new entry into the array */
+    for (i = 0; i < hide.length; i += 2)
+    {
+        if (hide[i] == entity && hide[i + 1] == user)
+            break;
+    }
+    if (i == hide.length)
+    {
+        window.opener.hide.push(entity, user);
+        logsVisibility(entity, user, "none");
+        update_line_colours();
+        self.location.reload();
+    }
+    else
+    {
+        alert("Logs from " + ((entity == "") ? "*" : entity) + 
+              ":" + ((user == "") ? "*" : user) + " have been already hidden");
+    }
+}
+
+</script>
+
+  </head>
+  <body>
+
+<script>
+    var hide = window.opener.hide;
+
+    if (hide.length > 0)
+    {
+        var i, j;
+        var message = "";
+
+        message += 
+"The logs from the following objectes are hidden:<br>" +
+"<table border=\"0\"cellpadding=\"0\" cellspacing=\"0\" width=\"100%\">" +
+"<form name=\"show_form\">" +
+"<tr>" +
+"  <td>" +
+"      <table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" width=\"100%\">" +
+"      <tr>" +
+"        <td class=\"tdsubheading\">" +
+"          <table border=\"0\" cellpadding=\"0\" cellspacing=\"0\">" +
+"          <tr>" +
+"            <td width=\"30\" class=\"tdsubhead\">&nbsp;</td>" +
+"            <td width=\"150\" class=\"tdsubhead\">Entity Name</td>" +
+"            <td width=\"150\" class=\"tdsubhead\">User Name</td>" +
+"          </tr>" +
+"          </table>" +
+"        </td>" +
+"      </tr>" +
+"      </table>" +
+"      <img border=\"0\" src=\"@@PATH_TO_AUX_FILE@@/pics/tr.gif\" width=\"1\" height=\"10\"><br>";
+
+        for (i = 0, j = 0; i < hide.length; i += 2, j++)
+        {
+            message +=
+"      <table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" width=\"100%\">" +
+"      <tr>" +
+"        <td class=\"" + ((j % 2 == 0) ? "tdlight" : "tddark") + "\">" +
+"          <table border=\"0\" cellpadding=\"0\" cellspacing=\"0\">" +
+"          <tr>" +
+"            <td width=\"30\" align=\"center\"><input type=\"checkbox\" name=\"ch" + i + "\"></td>" +
+"            <td width=\"150\" class=\"entityname\">" + hide[i] + "</td>" +
+"            <td width=\"150\" class=\"username\">" + hide[i + 1] + "</td>" +
+"          </tr>" +
+"          </table>" +
+"        </td>" +
+"      </tr>" +
+"      </table>";
+         }
+
+         message +=
+"      <img border=\"0\" src=\"@@PATH_TO_AUX_FILE@@/pics/tr.gif\" width=\"1\" height=\"10\"><br>" +
+"  </td>" +
+"</tr>" +
+"<tr>" + 
+"  <td>" +
+"      <input type=\"button\" value=\"Show\" onClick=\"javascript:logsShow()\">" +
+"  </td>" +
+"</tr>" +
+"</form>" +
+"</table>";
+        
+        document.write(message);
+    }
+</script>
+    
+<br>Hide logs from object with:<br>
+<table border="0" cellpadding="0" cellspacing="0">
+  <form name="hide_form">
+  <tr>
+    <td class="tdsubhead">Entity name:</td><td>&nbsp;<input type="text" name="entity" size="15"></td>
+  </tr>
+  <tr>
+    <td class="tdsubhead">User name:</td><td>&nbsp;<input type="text" name="user" size="15"></td>
+  </tr>
+  <tr>
+    <td class="tdsubhead">
+      <img border="0" src="@@PATH_TO_AUX_FILE@@/pics/tr.gif" width="1" height="10"><br>
+      <input type="button" value="Hide"
+             onClick="javascript:logsHide(document.hide_form.entity.value, document.hide_form.user.value)"></td>
+    <td>&nbsp;</td>
+  </tr>
+  </form>
+</table>
+
+</body>
+</html>

@@ -1,0 +1,58 @@
+ID OKT-QMSDRR-0000144
+
+COPYRIGHT Copyright(C) OKTET Ltd. 2003
+
+DDRID OKT-QMSDDR-0000102-TE
+
+RESPMGR Elena Vengerova
+
+TIME 2003-02-14 15-30:00+03:00
+
+DURATION 01:00
+
+MODERATOR CHECKER Ibragimov Ilya <ibr@oktet.ru>
+
+PARTICIPANT Elena Vengerova <helen@oktet.ru>
+
+PARTICIPANT Andrew Rybchenko <arybchik@oktet.ru>
+
+PARTICIPANT Andrey G. Ivanov <andron@oktet.ru>
+
+PARTICIPANT Igor Vasiliev <igorv@oktet.ru>
+
+
+DIRECTION
+line 31: "*" position must comply OKTET TIS
+
+DIRECTION
+line 62: "server" missed
+
+DIRECTION
+line 65: Mention that ipc_server_client is released
+
+PROPOSAL:
+line 78: **ipcsc is better
+
+DIRECTION
+line 52: typo
+
+DIRECTION
+Check packet loss in UDP loopback sockets, and check 
+behaviour of UDP sockets when buffer is too small
+
+PROPOSAL
+TCP sockets may be used but implementation is not simple enough 
+(connect() calls, many sockets)
+
+PROPOSAL
+Flag that is used to read remaining information when the buffer is too small.
+May be new function is required.
+
+DIRECTION
+length instead of len.
+
+PROPOSAL
+Make type for handler
+
+RESULT
+The document may be approved after notes processing.(1 day).

@@ -1,0 +1,67 @@
+ID OKT-QMSDRR-0000179
+
+COPYRIGHT Copyright(C) OKTET Ltd. 2003
+
+DDRID OKT-QMSDDR-0000058-TE
+
+RESPMGR Elena Vengerova
+
+TIME 2003-03-26 15-00:00+03:00
+
+DURATION 0:25
+
+MODERATOR Andrey G. Ivanov <andron@oktet.ru>
+
+PARTICIPANT Konstantin Abramenko <konst@oktet.ru>
+
+PARTICIPANT Andrew Rybchenko <arybchik@oktet.ru>
+
+PARTICIPANT Pavel Bolokhov <pabolokh@oktet.ru>
+
+PARTICIPANT Igor Vasiliev <igorv@oktet.ru>
+
+PARTICIPANT Elena Vengerova <helen@oktet.ru>
+
+DIRECTION STATUS FIXED
+rcf_shutdown function must be removed
+
+DIRECTION STATUS FIXED
+Line 30. Comments to RCF_TIME should clarify type of the variable
+
+DIRECTION STATUS FIXED
+Line 50 and more. EIO comments has a typo.
+
+DIRECTION STATUS FIXED
+Line 110: rcf_ta_reboot(). The source of the Image should be clarified.
+
+DIRECTION STATUS FIXED
+Line 110: rcf_ta_reboot(). Specify that only Configurator may use this 
+function.
+
+DIRECTION STATUS FIXED
+Line 430: Unexpected parameter commented
+
+DIRECTION STATUS FIXED
+Rename function in the manner: rcf_ta_conf_XXX->rcf_ta_cfg_XXX.
+
+DIRECTION STATUS FIXED
+Line 203: 'unsigned integer' is not expected here.
+
+DIRECTION STATUS FIXED
+Line 288: rcf_ta_put_file. The order of rfile, lfile should be changed.
+
+DIRECTION STATUS FIXED
+Line 381: Typo
+
+DIRECTION STATUS FIXED
+A number of lines: Rename Simplest TS ->Simple TA
+
+DIRECTION STATUS FIXED
+Change int *pid -> pid_t *pid
+
+DIRECTION STATUS FIXED
+Change type of the length parameter from int to size_t.
+
+RESULT
+Document may be issued (approved) after notes processing during 30 minutes.
+

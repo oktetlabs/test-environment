@@ -1,0 +1,98 @@
+ID OKT-QMSDRR-0000148
+
+COPYRIGHT Copyright(C) OKTET Ltd. 2003
+
+DDRID OKT-QMSDDR-0000090-TE
+
+RESPMGR Elena Vengerova
+
+TIME 2003-02-19 18-00:00+03:00
+
+DURATION 00:30
+
+MODERATOR Elena Vengerova <helen@oktet.ru>
+
+PARTICIPANT Oleg Kravtsov <oleg@oktet.ru>
+
+PARTICIPANT Andrew Rybchenko <arybchik@oktet.ru>
+
+DIRECTION
+Change title in all documents referring to this one.
+
+DERECTION
+Refer to User Guide.
+
+DIRECTION
+Change object to record or provide a definition.
+DIRECTION
+Specify that section 8.1 provides definitions on non-terminals
+used in definitions of options and records.
+
+DIRECTION
+Clarify what is "default base name". 
+
+DIRECTION
+Chapter 8.2.1: "format of scripts".
+
+DIRECTION
+Chapter 8.2.2: use "explicitly" instead "directly".
+
+DIRECTION
+Specify using of quoting.
+
+DIRECTION
+Swap chapters 8 and 9.
+
+PROPOSAL
+Change "layout" to "gramma".
+
+DIRECTION
+Add REQUIREMENT to TEST_DECL definition.
+
+DIRECTION
+Use different symbols for terminals (keywords) and non-terminals (objects).
+
+DIRECTION
+Specify rules for object content processing for cases where it is
+not specified explicitly.
+
+DIRECTION
+Chapter 8.2.4 remove "should be added".
+
+DIRECTION
+Chapter 8.2.4: "add element to array" replace by "generate macro defining 
+sequence number for the element".
+
+DIRECTION
+Chapter 8.2.6: change "package" to "page" in "Processing" section.
+
+DIRECTION
+Chapter 8.2.8: remove "install"-related words.
+
+DIRECTION
+Chapter 8.2.8: use FMT instead TYPE.
+
+DIRECTION
+Add Copyright object.
+
+DIRECTION
+Chapter 8.2.8: add content to SHARED.
+
+DIRECTION
+Chapter 8.2.5 define default basename for test.
+
+DIRECTION
+Chapter 8.2.11: specify types of tests.
+
+DIRECTION
+Chapter 8.2.9: incorrect decription.
+
+DIRECTION
+Chapter 8.2.14: typo in "Processing" section.
+
+DIRECTION
+Move "TITLE" to content of the package and allow to use DESCRIPTION
+for the package.
+
+RESULT
+Document may be approved after notes processing.

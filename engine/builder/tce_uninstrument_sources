@@ -1,0 +1,128 @@
+#!/bin/bash
+# 
+# Test Environment
+#
+# TCE_INSTRUMENT_SOURCES -- runs GCT on the specified set of C files.
+#
+# Usage: 
+#
+#    tce_uninstrument_sources [-p <src_path>]
+#                           
+# Copyright (C) 2003 Test Environment authors (see file AUTHORS in the 
+# root directory of the distribution).
+#
+# Test Environment is free software; you can redistribute it and/or 
+# modify it under the terms of the GNU General Public License as 
+# published by the Free Software Foundation; either version 2 of 
+# the License, or (at your option) any later version.
+# 
+# Test Environment is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, 
+# MA  02111-1307  USA
+#
+# Author Pavel A. Bolokhov <Pavel.Bolokhov@oktet.ru>
+# 
+# $Id: tce_uninstrument_sources,v 1.1 2003/10/28 09:35:41 arybchik Exp $
+#
+
+debuglevel=1
+progname=`basename $0`
+curr_path="$PWD"  # path from where GCT configuration is to be removed
+
+##
+# Prints a debug message to stderr if debuglevel is greater than or
+# equal to 1.
+#
+function debug()
+{
+    if [ $debuglevel -ge 1 ]; then
+        echo "$@" 1>&2
+    fi
+}
+
+#
+# Process the options
+#
+
+while [ $# -gt 0 ]; do
+    case $1 in
+        -p)
+            # get the argument of the "-p" option
+            shift
+            if [ $# -eq 0 ]; then
+               echo "$progname: option '-p' expects a path" 1>&2
+               exit 1
+            fi
+
+            curr_path=$1
+            ;;
+
+        -*)
+            echo "$progname: unknown option '$1'" 1>&2
+            echo "use $progname -h for help"
+            exit 1
+            ;;
+    esac
+
+    shift
+done
+
+
+#
+# Let's do it
+#
+control=$curr_path/gct_control
+backup=$curr_path/gct_backup
+[ -d $control ] || 
+{
+    echo "$progname: $control: directory absent. Cannot proceed." 1>&2;
+    exit 1;
+}
+
+[ -d $backup ] || 
+{
+    echo "$progname: $backup: directory absent. Cannot proceed." 1>&2;
+    exit 1;
+}
+
+#
+# if the original version of the "restore-script" is absent, 
+# try to restore it if there is a backup version
+#
+if [ ! -f $control/gct-rscript ]; then
+    if [ -f $control/gct-rscript.bk ]; then
+        cp -f $control/gct-rscript.bk $control/gct-rscript
+        debug "$progname: GCT backup copy of gct-rscript found"
+    elif [ -f $control/gct-rscript.bk_tce ]; then  # TCE-provided backup
+        echo "$progname: gct-rscript.bk not found, using TCE-provided backup" 1>&2
+        cp -f $control/gct-rscript.bk_tce $control/gct-rscript
+    fi
+else
+    debug "$progname: original gct-rscript found"
+fi
+
+#
+# now finally call grestore(1)
+#
+debug "$progname: calling grestore(1)"
+(
+    cd $curr_path;
+    grestore -test-dir gct_control || exit 1;
+) ||
+{
+    echo "$progname: grestore failed..   cannot proceed." 1>&2;
+    exit 1;
+}
+
+#
+# if everything has been alright by this moment,
+# remove GCT and TCE directories
+#
+debug "removing $control"
+rm -rf $control

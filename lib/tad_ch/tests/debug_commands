@@ -1,0 +1,12 @@
+csap_create file attach 38
+{ file:{ filename plain:"/tmp/cs" } }
+
+trsend_start 1 attach 42
+{ pdus { file:{ line plain:"test line"}}}
+
+trrecv_start 1 postponed results attach 35
+{{ pdus { file:{ line plain:""}}}}
+
+trrecv_get 1
+
+trrecv_stop 1

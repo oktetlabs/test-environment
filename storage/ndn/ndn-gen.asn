@@ -1,0 +1,151 @@
+
+TE-Network-Data-Notation-General
+DEFINITIONS ::=
+BEGIN
+
+
+EXPORTS Interval, DATA-UNIT, Payload, CSAP-spec, Template-Parameter, 
+    Raw-Packet, Traffic-Template, Traffic-Pattern;
+
+IMPORTS Generic-CSAP-Level, Generic-PDU 
+            FROM TE-NDN-Context-General;
+
+Interval ::= SEQUENCE {
+    b INTEGER, -- begin of the interval
+    e INTEGER  -- end   of the interval
+}
+
+-- 
+-- Function-ref ::= SEQUENCE {
+--     name PrintableString; -- name of function, should be in sybmol table of TA.
+--     args SEQUENCE OF CHOICE { -- array of arguments, may be empty. 
+--         int INTEGER;          -- simple integer
+--         str UniversalString; 
+--     }
+-- }
+
+DATA-UNIT { BaseFieldType } ::=  CHOICE
+{ 
+    plain BaseFieldType,    -- "hardcoded constant" in NDS, simple value of 
+                            -- desired type. 
+                            
+    script UniversalString, -- script for calculating of field value by TA.
+    
+    enum        SET OF INTEGER,    -- domain of values. For usage in patterns.
+
+    mask        SEQUENCE {  -- | bitmask for patterns. Let's "a" denote name 
+        v OCTET STRING,     -- | of variable to be checked. 
+        m OCTET STRING      -- | then result of matching is:  ((a&m) == (v&m)) 
+    },                      -- |   in C notation 
+
+    intervals   SEQUENCE OF Interval, -- domain of values. For usage in patterns.
+
+    env         SEQUENCE { -- reference to Config DB entry.
+        name PrintableString,  
+        type INTEGER          
+                {int(0), string(1), ip-addr(2)}
+    },
+
+    function    PrintableString 
+            -- name of function (which name should be present
+            -- in TA symbol table) for matching value (if used in  
+            -- filter pattern) or generating it (in templates)
+}
+
+CSAP-spec ::= SEQUENCE OF Generic-CSAP-Level 
+
+Template-Parameter ::= CHOICE -- type for defingn of template argument. 
+            -- see "Traffic Application Domain Framework" document
+            -- for full description.
+{ 
+    ints SEQUENCE OF INTEGER,            -- | explicit list of values 
+    strings SEQUENCE OF UniversalString, -- |   to be iterated.
+
+    simple-for SEQUENCE 
+        { begin INTEGER, end INTEGER, step INTEGER OPTIONAL},
+    ...
+}
+
+max-pdus ::= INTEGER 100 -- quite dummy value
+
+Payload ::= 
+{
+    bytes       OCTET STRING,
+    function    PrintableString,
+    filename    PrintableString,
+    script      PrintableString
+}
+
+Raw-Packet ::= SEQUENCE -- values of this type are passed from CSAP to test
+{                       
+    pdus        SEQUENCE (SIZE (1..max-pdus)) OF Generic-PDU,
+    payload     Payload OPTIONAL
+} 
+
+Traffic-Template ::= SEQUENCE 
+{
+    arg-sets    SEQUENCE OF Template-Parameter OPTIONAL,
+    delays      DATA-UNIT(INTEGER) OPTIONAL,
+    pdus        SEQUENCE (SIZE (1..max-pdus)) OF Generic-PDU,
+    payload     Payload OPTIONAL
+}
+
+Traffic-Pattern ::= SEQUENCE OF SEQUENCE
+{
+    pdus        SEQUENCE OF Generic-PDU,
+    payload     Payload OPTIONAL
+}
+
+AllowFragments ::= INTEGER {always(0), never(1), presense-depended(2)}
+
+END
+
+
+
+
+TE-NDN-Context-General
+DEFINITIONS ::=
+BEGIN 
+
+EXPORTS Generic-CSAP-Level, Generic-PDU;
+
+IMPORTS 
+    EthernetAddress, Ethernet-Header, Ethernet-CSAP 
+        FROM TE-NDN-Ethernet;
+    IP-Header, IP-CSAP, UDP-Header, UDP-CSAP, TCP-Header, TCP-CSAP 
+        FROM TE-NDN-Tcp-Ip;
+    SNMP-Message, SNMP-CSAP 
+        FROM TE-NDN-SNMP; 
+    CLI-Message, CLI-CSAP 
+        FROM TE-NDN-CLI; 
+    ATM-Header, ATM-CSAP 
+        FROM TE-NDN-ATM; 
+
+
+Generic-CSAP-Level ::= CHOICE 
+{
+    eth Ethernet-CSAP,
+    ip4 IP-CSAP,
+    tcp TCP-CSAP,
+    udp UDP-CSAP,
+    snmp SNMP-CSAP,
+    cli CLI-CSAP,
+    atm ATM-CSAP,
+    ...
+}
+
+Generic-PDU ::= CHOICE 
+{
+    eth Ethernet-Header, 
+    ip4 IP-Header,
+    tcp TCP-Header,
+    udp UDP-Header,
+    snmp SNMP-Message,
+    cli CLI-Message,
+    atm ATM-Header,
+    ...,...
+}
+
+
+END
+

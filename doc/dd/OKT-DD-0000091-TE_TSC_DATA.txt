@@ -1,0 +1,259 @@
+#
+# Specification of input file format for Test Suite compiler (TSC) is
+# provided.
+#
+# All keywords contain capital letters only.
+#
+# Target file syntactically consists of objects. Each object starts
+# from object keyword and finishes before the next object keyword.
+# Object keyword starts from the first symbol in line. Options of the
+# object are located in the same line as keyword. Contents of the
+# object starts from the next line after line with keyword.
+#
+# Spaces are used to separate values from options' keywords.
+#
+# Blank lines are used to break paragraph in the item contents.
+#
+# Square brackets are used to mark optional attributes. Parenthesis
+# are used to group alternatives and '|' symbol is used to separate
+# them. Angle brackets are used to mark values to be substituted
+# (except e-mail in the example). Syntax of each value are described
+# below.
+#
+
+#
+# Logically this file contains common section with default values and
+# definition of the upper level package. Definition of the package
+# starts from PACKAGE item and finishes with ENDPACKAGE item.
+#
+# Definitions of lower level packages are specified in parent package.
+#
+# In general, the order is mandatory. Special notes are provided when
+# order is arbitrary.
+#
+# Optional items are started from '#' character.
+#
+
+
+#
+# The following options are common for a number of items:
+#      SCRIPT_ATTRIBUTES ::= [ FMT ( c | tcl | pl ) ]
+#                            [ SRC <filename> ] [ NOFILE ]
+# FMT option defines type of source file to be generated as well as
+# compilation and installation rules for the file. 
+# SRC overrides default name of the file (it's parent item specific).
+# NOFILE attribute with empty content specifies that source file should
+# not be generated.
+#
+#
+# Described below items may be used in different context and just
+# referred where they may be used.
+#
+# AUTHOR Andrew Rybchenko <arybchik@oktetlabs.ru> [ EVERYWHERE ]
+#
+#     Specifies full name and e-mail address of the author.
+#     Attribute EVERYWHERE may be used to force TSC to insert author
+#     every where in lower level package and test. By default, author
+#     is specified in upper level package description file and each
+#     script.
+#
+#
+# REQUIREMENT <req>
+#
+#     Specifies requirement verified by the package or test script.
+#     The rest of the string is considered as requirement identifier.
+#     Content of the item may be used for additional explanations.
+#
+#
+# PARAMETER <name>
+#
+#     Specifies parameter supported by the script. Name of the parameter
+#     must start from letter, may contain letters, numbers and '_'
+#     symbol to separate words.
+#
+#     Content of the element provides description of the parameter.
+#
+#     This item may appear more than once.
+#
+
+
+#DEFFMT ( c | tcl | pl )
+#
+# Default format of script may be specified here.
+#
+
+PACKAGE <name> TITLE <title>
+#
+# Start of package declaration. Name must start from letter, may contain
+# letters, digits and '-' symbol. Try to avoid upper case letters in names.
+# Title is mandatory, it's arbitrary string up to the end of line.
+#
+# Description of the package is provided in content of the element.
+#
+
+#AUTHOR
+#
+# See description above.
+#
+
+#REQUIREMENT
+#
+# See description above.
+#
+
+#SHARED <filename> TYPE ( exe | lib | h | tcl | pl ) [ NOINST ]
+#
+# Set of sources in shared to be generated. "tcl", "pl" and "exe" types
+# are installed in shared directory of the package, "h" type are installed
+# in "include" directory of the package, "lib" - in "lib" directory of
+# the package. Sources of "exe" and "lib" types are compiled before
+# installation.
+#
+# NOINST attribute (empty value) may be used to skip installation for
+# the file.
+#
+
+#EXCEPTION <SCRIPT_ATTRIBUTES>
+#KEEPALIVE <SCRIPT_ATTRIBUTES>
+#PROLOGUE <SCRIPT_ATTRIBUTES>
+#EPILOGUE <SCRIPT_ATTRIBUTES>
+#
+# Specifies that exception handler, keep-alive validation, prologue or
+# epilogue should be used in session provided by the package. Default
+# name of the file is "exception", "keepalive", "prologue" and
+# "epilogue" correspondingly.
+#
+# PARAMETER and DESCRIPTION items are considered in the context of the
+# last script.
+#
+
+DESCRIPTION
+#
+# Item content provides detailed information about script.
+#
+
+#PARAMETER
+#
+# See description above.
+#
+
+
+#
+# Further PACKAGE...ENDPACKAGE, SESSION...ENDSESSION and TEST items
+# may appear in arbitrary order.
+#
+
+#PACKAGE
+#ENDPACKAGE
+#
+# Declares sub-package of the current package.
+#
+
+
+#TEST <name> <SCRIPT_ATTRIBUTES>
+#
+# Starts declaration of the test script. Name of the test must
+# start from letter, may contain letters, numbers and '_' symbol
+# to separate words. Don't include name of the parent package as
+# prefix of the name, it's done automatically by TSC.
+#
+# Define objective of the test in item content.
+# Keep objective in one paragraph. Try to make it short.
+#
+
+#TYPE <type>
+#
+# Defines type of the test.
+#
+# This item may appear more than once.
+#
+
+#PRE
+#
+# Item content describes assumed conditions before execution
+# (preconditions).
+#
+
+#DESCRIPTION
+#
+# Item contents provides detailed information about script.
+# It's mandatory item of test script.
+#
+
+#POST
+#
+# Item content describes conditions after successful execution
+# (postconditions).
+#
+
+#REFERENCE <refname1> ... <refnameN>
+#
+# Specifies reference which may be useful. Name of the reference
+# <refname*> must start from letter, may contain letters, numbers and
+# '_' symbol to separate words.
+#
+# Content of the element provides description of the reference.
+#
+# If <refname> is found in the content, it'll be replaced marked as
+# reference.
+#
+# This item may appear more than once.
+#
+
+#PARAMETER <name>
+#
+# See description above.
+#
+
+
+#SESSION
+#
+# Defines taken up session in main session of the package.
+#
+
+#DESCRIPTION
+#
+# Optional description of the session
+#
+
+#EXCEPTION <SCRIPT_ATTRIBUTES>
+#KEEPALIVE <SCRIPT_ATTRIBUTES>
+#PROLOGUE <SCRIPT_ATTRIBUTES>
+#EPILOGUE <SCRIPT_ATTRIBUTES>
+#
+# Optional specifiers of corresponding scripts with its contents
+# (DESCRIPTION and PARAMETERs).
+#
+
+#
+# Packages, sessions and test scripts may be declared in arbitrary
+# order.
+#
+
+#PACKAGE
+#ENDPACKAGE
+#
+# Declaration of the sub-package with its contents.
+#
+
+#SESSION
+#ENDSESSION
+#
+# Declaration of taken up session with its contents.
+#
+
+#TEST
+#
+# Declaration of test with its contents.
+#
+
+#ENDSESSION
+#
+# Finishes declaration of the session
+#
+
+
+ENDPACKAGE
+#
+# Finishes top level test package declaration.
+#

@@ -1,0 +1,120 @@
+cc -pcc  -DIN_GCC   -g  -DUSE_C_ALLOCA     -I. -I. -I./config -DSTANDARD_STARTFILE_PREFIX=\"/usr/local/lib/\" -DSTANDARD_EXEC_PREFIX=\"/usr/local/lib/gct-/\" -DDEFAULT_TARGET_MACHINE=\"c1-convex-none\" -DTOOLDIR_BASE_PREFIX=\"/usr/local/\" -DTOOLDIR=\"/usr/local/c1-convex-none/\"  -c `echo ./gcc.c | sed 's,^\./,,'`
+cc -pcc -c  -DIN_GCC   -g  -DUSE_C_ALLOCA     -I. -I. -I./config gct-contro.c
+cc -pcc -c  -DIN_GCC   -g  -DUSE_C_ALLOCA     -I. -I. -I./config gct-files.c
+cc -pcc -c  -DIN_GCC   -g  -DUSE_C_ALLOCA     -I. -I. -I./config version.c
+cc -pcc -c  -DIN_GCC   -g  -DUSE_C_ALLOCA     -I. -I. -I./config obstack.c
+cc -pcc -g  -DUSE_C_ALLOCA  -o gct.exec gcc.o gct-contro.o gct-files.o version.o  obstack.o ` case "cc -pcc" in "cc") echo  ;; esac `  
+/bin/rm -f gct
+ln ./gct-gcc2 gct
+cd .; bison  -d c-parse.y -o c-parse.c
+c-parse.y:450:  warning:  $1 of 'unary_expr' has no declared type.
+c-parse.y contains 8 shift/reduce conflicts and 50 reduce/reduce conflicts.
+cc -pcc  -DIN_GCC   -g  -DUSE_C_ALLOCA     -I. -I. -I./config -c ./c-parse.c
+cc: Warning on line 307 of bison.simple: label 'yybackup' defined but not referenced.
+cc: Warning on line 584 of c-parse.y: label 'GCT' defined but not referenced.
+cc -pcc -c  -DIN_GCC   -g  -DUSE_C_ALLOCA     -I. -I. -I./config c-lang.c
+cc -pcc -c  -DIN_GCC   -g  -DUSE_C_ALLOCA     -I. -I. -I./config c-lex.c
+cc -pcc -c  -DIN_GCC   -g  -DUSE_C_ALLOCA     -I. -I. -I./config c-pragma.c
+cc -pcc -c  -DIN_GCC   -g  -DUSE_C_ALLOCA     -I. -I. -I./config c-decl.c
+cc: Error on line 612 of ./config/convex/convex.h: tag 'reg_class' redeclared.
+cc: Error on line 613 of ./config/convex/convex.h: variable 'NO_REGS' redeclared.
+cc: Error on line 613 of ./config/convex/convex.h: variable 'S_REGS' redeclared.
+cc: Error on line 613 of ./config/convex/convex.h: variable 'INDEX_REGS' redeclared.
+cc: Error on line 613 of ./config/convex/convex.h: variable 'SP_REGS' redeclared.
+cc: Error on line 613 of ./config/convex/convex.h: variable 'A_REGS' redeclared.
+cc: Error on line 613 of ./config/convex/convex.h: variable 'SI_REGS' redeclared.
+cc: Error on line 614 of ./config/convex/convex.h: variable 'ALL_REGS' redeclared.
+cc: Error on line 614 of ./config/convex/convex.h: variable 'LIM_REG_CLASSES' redeclared.
+cc: Error on line 26 of ./tree.h: tag 'tree_code' redeclared.
+cc: Error on line 44 of ./tree.def: variable 'ERROR_MARK' redeclared.
+cc: Error on line 50 of ./tree.def: variable 'IDENTIFIER_NODE' redeclared.
+cc: Error on line 55 of ./tree.def: variable 'OP_IDENTIFIER' redeclared.
+cc: Error on line 62 of ./tree.def: variable 'TREE_LIST' redeclared.
+cc: Error on line 65 of ./tree.def: variable 'TREE_VEC' redeclared.
+cc: Error on line 85 of ./tree.def: variable 'BLOCK' redeclared.
+cc: Error on line 124 of ./tree.def: variable 'VOID_TYPE' redeclared.
+cc: Error on line 134 of ./tree.def: variable 'INTEGER_TYPE' redeclared.
+cc: Error on line 138 of ./tree.def: variable 'REAL_TYPE' redeclared.
+cc: Error on line 142 of ./tree.def: variable 'COMPLEX_TYPE' redeclared.
+cc: Error on line 155 of ./tree.def: variable 'ENUMERAL_TYPE' redeclared.
+cc: Error on line 159 of ./tree.def: variable 'BOOLEAN_TYPE' redeclared.
+cc: Error on line 163 of ./tree.def: variable 'CHAR_TYPE' redeclared.
+cc: Error on line 167 of ./tree.def: variable 'POINTER_TYPE' redeclared.
+cc: Error on line 173 of ./tree.def: variable 'OFFSET_TYPE' redeclared.
+cc: Error on line 177 of ./tree.def: variable 'REFERENCE_TYPE' redeclared.
+cc: Error on line 184 of ./tree.def: variable 'METHOD_TYPE' redeclared.
+cc: Error on line 187 of ./tree.def: variable 'FILE_TYPE' redeclared.
+cc: Error on line 198 of ./tree.def: variable 'ARRAY_TYPE' redeclared.
+cc: Error on line 202 of ./tree.def: variable 'SET_TYPE' redeclared.
+cc: Error on line 206 of ./tree.def: variable 'STRING_TYPE' redeclared.
+cc: Error on line 214 of ./tree.def: variable 'RECORD_TYPE' redeclared.
+cc: Error on line 220 of ./tree.def: variable 'UNION_TYPE' redeclared.
+cc: Error on line 226 of ./tree.def: variable 'QUAL_UNION_TYPE' redeclared.
+cc: Error on line 234 of ./tree.def: variable 'FUNCTION_TYPE' redeclared.
+cc: Error on line 240 of ./tree.def: variable 'LANG_TYPE' redeclared.
+cc: Error on line 251 of ./tree.def: variable 'INTEGER_CST' redeclared.
+cc: Error on line 254 of ./tree.def: variable 'REAL_CST' redeclared.
+cc: Error on line 259 of ./tree.def: variable 'COMPLEX_CST' redeclared.
+cc: Error on line 263 of ./tree.def: variable 'STRING_CST' redeclared.
+cc: Error on line 323 of ./tree.def: variable 'FUNCTION_DECL' redeclared.
+cc: Error on line 324 of ./tree.def: variable 'LABEL_DECL' redeclared.
+cc: Error on line 325 of ./tree.def: variable 'CONST_DECL' redeclared.
+cc: Error on line 326 of ./tree.def: variable 'TYPE_DECL' redeclared.
+cc: Error on line 327 of ./tree.def: variable 'VAR_DECL' redeclared.
+cc: Error on line 328 of ./tree.def: variable 'PARM_DECL' redeclared.
+cc: Error on line 329 of ./tree.def: variable 'RESULT_DECL' redeclared.
+cc: Error on line 330 of ./tree.def: variable 'FIELD_DECL' redeclared.
+cc: Error on line 337 of ./tree.def: variable 'COMPONENT_REF' redeclared.
+cc: Error on line 346 of ./tree.def: variable 'BIT_FIELD_REF' redeclared.
+cc: Error on line 349 of ./tree.def: variable 'INDIRECT_REF' redeclared.
+cc: Error on line 355 of ./tree.def: variable 'OFFSET_REF' redeclared.
+cc: Error on line 358 of ./tree.def: variable 'BUFFER_REF' redeclared.
+cc: Error on line 363 of ./tree.def: variable 'ARRAY_REF' redeclared.
+cc: Error on line 371 of ./tree.def: variable 'CONSTRUCTOR' redeclared.
+cc: Error on line 380 of ./tree.def: variable 'COMPOUND_EXPR' redeclared.
+cc: Error on line 383 of ./tree.def: variable 'MODIFY_EXPR' redeclared.
+cc: Error on line 387 of ./tree.def: variable 'INIT_EXPR' redeclared.
+cc: Error on line 392 of ./tree.def: variable 'TARGET_EXPR' redeclared.
+cc: Error on line 398 of ./tree.def: variable 'COND_EXPR' redeclared.
+cc: Error on line 421 of ./tree.def: variable 'BIND_EXPR' redeclared.
+cc: Error on line 428 of ./tree.def: variable 'CALL_EXPR' redeclared.
+cc: Error on line 433 of ./tree.def: variable 'METHOD_CALL_EXPR' redeclared.
+cc: Error on line 443 of ./tree.def: variable 'WITH_CLEANUP_EXPR' redeclared.
+cc: Error on line 447 of ./tree.def: variable 'PLUS_EXPR' redeclared.
+cc: Error on line 448 of ./tree.def: variable 'MINUS_EXPR' redeclared.
+cc: Error on line 449 of ./tree.def: variable 'MULT_EXPR' redeclared.
+cc: Error on line 456 of ./tree.def: variable 'TRUNC_DIV_EXPR' redeclared.
+cc: Error on line 459 of ./tree.def: variable 'CEIL_DIV_EXPR' redeclared.
+cc: Error on line 462 of ./tree.def: variable 'FLOOR_DIV_EXPR' redeclared.
+cc: Error on line 465 of ./tree.def: variable 'ROUND_DIV_EXPR' redeclared.
+cc: Error on line 468 of ./tree.def: variable 'TRUNC_MOD_EXPR' redeclared.
+cc: Error on line 469 of ./tree.def: variable 'CEIL_MOD_EXPR' redeclared.
+cc: Error on line 470 of ./tree.def: variable 'FLOOR_MOD_EXPR' redeclared.
+cc: Error on line 471 of ./tree.def: variable 'ROUND_MOD_EXPR' redeclared.
+cc: Error on line 477 of ./tree.def: variable 'RDIV_EXPR' redeclared.
+cc: Error on line 481 of ./tree.def: variable 'EXACT_DIV_EXPR' redeclared.
+cc: Error on line 488 of ./tree.def: variable 'FIX_TRUNC_EXPR' redeclared.
+cc: Error on line 489 of ./tree.def: variable 'FIX_CEIL_EXPR' redeclared.
+cc: Error on line 490 of ./tree.def: variable 'FIX_FLOOR_EXPR' redeclared.
+cc: Error on line 491 of ./tree.def: variable 'FIX_ROUND_EXPR' redeclared.
+cc: Error on line 494 of ./tree.def: variable 'FLOAT_EXPR' redeclared.
+cc: Error on line 498 of ./tree.def: variable 'EXPON_EXPR' redeclared.
+cc: Error on line 501 of ./tree.def: variable 'NEGATE_EXPR' redeclared.
+cc: Error on line 503 of ./tree.def: variable 'MIN_EXPR' redeclared.
+cc: Error on line 504 of ./tree.def: variable 'MAX_EXPR' redeclared.
+cc: Error on line 505 of ./tree.def: variable 'ABS_EXPR' redeclared.
+cc: Error on line 506 of ./tree.def: variable 'FFS_EXPR' redeclared.
+cc: Error on line 514 of ./tree.def: variable 'LSHIFT_EXPR' redeclared.
+cc: Error on line 515 of ./tree.def: variable 'RSHIFT_EXPR' redeclared.
+cc: Error on line 516 of ./tree.def: variable 'LROTATE_EXPR' redeclared.
+cc: Error on line 517 of ./tree.def: variable 'RROTATE_EXPR' redeclared.
+cc: Error on line 520 of ./tree.def: variable 'BIT_IOR_EXPR' redeclared.
+cc: Error on line 521 of ./tree.def: variable 'BIT_XOR_EXPR' redeclared.
+cc: Error on line 522 of ./tree.def: variable 'BIT_AND_EXPR' redeclared.
+cc: Error on line 523 of ./tree.def: variable 'BIT_ANDTC_EXPR' redeclared.
+cc: Error on line 524 of ./tree.def: variable 'BIT_NOT_EXPR' redeclared.
+cc: Error on line 531 of ./tree.def: variable 'TRUTH_ANDIF_EXPR' redeclared.
+cc: Error on line 532 of ./tree.def: variable 'TRUTH_ORIF_EXPR' redeclared.
+cc: Error on line 533 of ./tree.def: variable 'TRUTH_AND_EXPR' redeclared.
+cc: Too many errors to continue
+gnumake: *** [c-decl.o] Error 1

@@ -1,0 +1,266 @@
+/** @mainpage
+
+@section abstract Abstract
+
+<!-- Specify here the purpose of the document. -->
+This document briefly describes testing process of the Agent
+part of the RCF Network Communication Library
+
+
+@section copyright_notice Copyright Notice
+
+<!-- Add copyright notice of the project customer. -->
+Copyright (C) 2003 Test Environment authors (see file AUTHORS in the 
+root directory of the distribution).
+
+Test Environment is free software; you can redistribute it and/or 
+modify it under the terms of the GNU General Public License as 
+published by the Free Software Foundation; either version 2 of 
+the License, or (at your option) any later version.
+
+Test Environment is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place, Suite 330, Boston, 
+MA  02111-1307  USA
+
+
+@section audience Audience
+
+<!--
+  - Specify the audience of the document and confidentiality restrictions,
+  - if exist. Specify assumed skills of the reader as well.
+  -->
+This document is intended for developers and customers who wish to know the
+basic ideas of how testing of Agent and Engine parts of the RCF Network 
+Communcation Library is performed.
+
+
+@section contact_information Contact Information
+
+Ulianovskaya 1, Petergoff, 198504, St.-Petersburg, Russia
+
+Phone: +7(812)428-4384
+
+Fax: +7(812)428-4389
+
+Questions regarding this document may be forwarded to support@oktet.ru
+
+For more information, call the above office or visit our web site at
+http://www.oktet.ru
+
+
+@section revision_history Revision History
+
+<!--
+  - The first draft should have revision 'A', the second - 'B' and so
+  - on. The first release (approved or issued) should have revision '1',
+  - the second - '2' and so on. If further changes are made to revision
+  - '1', the revision becomes '1A'.
+  -->
+
+@revs_start
+
+@rev_date     Feb, 10 2003
+@rev_revision A
+@rev_author   Pavel A. Bolokhov
+@rev_changes  Initial Revision 
+
+@revs_end
+
+
+@section issues Issues
+
+<!--
+  - Type here all unclear questions as well as issues, which are not
+  - described at the moment but should appear in the document.
+  -->
+- Is it possible to check validity of a particular communication handler?
+- The document should be submitted to the InfoLib.
+
+
+@section abbreviations Abbreviations
+
+<!--
+  - List abbreviations used in the document (note, definitions
+  - should be provided in the next section). Keep abbreviations
+  - in the alphabetical order.
+  -->
+
+@tdt_start
+
+@tdt_term RCF
+@tdt_def Remote Control Facility 
+
+@tdt_end
+ 
+
+@section terminology Terminology
+
+<!--
+  - Define specific terms used in the document.
+  - Keep terms in alphabetical order.
+  -->
+
+@tdt_start
+
+@tdt_term Network Communication Library, Agent/Engine
+@tdt_def Communication library which performs low-level transmission
+         of the Test Protocol commands. Library exists separately
+         for the Agent and for the Engine.
+@tdt_term Local Station
+@tdt_def The executable binary running on a station on which the communication
+         library is being tested. 
+@tdt_term Remote Station
+@tdt_def The executable binary running on a (possibly a different from the 
+         local) station which behaves like a dummy Test Engine which sends
+         probe commands to the Local Station and receives replies from it.
+
+@tdt_end
+
+
+@section references References
+
+<!--
+  - List documents by their identifier and title. Assure that all
+  - documents in the "Reference Documents" table are actually referenced.
+  - List major documents only. References to the following documents are
+  - required (when they exist):
+  -  - Requirements document;
+  -  - Relevant standards;
+  -  - High Level Design;
+  -  - Test plan document.
+  -->
+
+@refs_start
+
+@ref_ref        TP TP
+@ref_title      Proteos: Test Protocol Specification
+@ref_identifier OKT-HLD-0000057-TE_PROTO
+
+@refs_end
+
+
+
+@section introduction Introduction
+
+<!--
+  - Provide introductory descriptive information about context and
+  - purpose of the document, allowing reader to better understand
+  - its meaning.
+  -
+  - Identify test plan document, if it exists, in which conditions this
+  - specification was written.
+  -
+  - Any general information, which should be provided before another
+  - sections, may be written here.
+  -
+  - State briefly what this Test Specification covers.
+  -->
+This document lists the features of Network Communication Library/Agent that
+are tested and the way they are tested. It gives some advices how to
+configure the test setup. 
+
+
+@subsection constrains What is tested and will not be tested
+
+<!--
+  - List identifiers of the requirements directly verified by this Test
+  - Specification. If requirement is partly tested, mark out the aspects
+  - to be verified by this Test Specification and not to be verified.
+  - Try to provide reasons why some aspect/feature is not tested.
+  -->
+TE-0023-DSGN Requirement:
+    A single Protocol to be used between Test Engine and all Test Agents should
+    be specified and implemented. It should include time synchronization.
+
+In fact, only the interoperability of the network transport which ships the protocol
+messages and commands is tested. No features of the protocol itself are tested.
+Nor is the time synchronization tested.
+
+ 
+@subsection quality_goals Quality goals
+
+<!--
+  - Specify the quality goals:
+  -  - code coverage (in percents);
+  -  - compatibility;
+  -  - reliability in normal use;
+  -  - boundary value testing;
+  -  - robustness under stress;
+  -  - performance.
+  -->
+The reliability of the Agent part's Network Communication Library is tested.
+
+Some boundary tests are provided. Also, some tests perform checks on transmission of large
+buffers. API sanity checks testing is also done.
+
+@section applicability_constrains Applicability Constrains
+
+<!-- The last two subsections may be omitted for black box testing. -->
+
+
+@subsection environmental_requirements Environmental Requirements
+
+<!--
+  - Specify configuration(s) necessary to use this Test Specification.
+  -
+  - If different configurations are necessary for different tests,
+  - it's recommended to describe all configurations here and structure
+  - tests by used configuration. Also it's possible to describe
+  - configurations in the package description file, if many
+  - configurations must be tested with small number of tests for each
+  - configuration.
+  -
+  - Also static target configuration (software) must be described here.
+  -
+  - In fact it's rarely when each test uses all configuration items.
+  - Hence some of them may be marked as optional with AC-ER-<number>
+  - identifier to be referenced from detailed description of packages
+  - and tests.
+  -->
+  For testing the Agent's Network Communication Library, a remote station
+which would pretend to be the Engine, is needed. This station sends TP commands
+and receives Agent's replies. 
+
+  Due to the necessity of having a remote station, the number of tests in fact
+double -- local tests encourage the library to perform some actions while remote
+tests communicate with the library and check the data they receive. This requires
+synchronization between the two test parts: the remote part needs to know when
+to start sending or listening, and it needs to know the correct data that has been
+sent via the library, in order to check the correctness of the data it receives.
+This requires creating a separate data channel which would carry the correct data from
+the library side tests to the remote station. And these necessities complexify the 
+test functionality. 
+
+But as a matter of fact, given that the communication between the Agent and the 
+Engine uses TCP sockets, the test setup can be simplified: each test can perform 
+the very same actions which in the described above approach the remote station would.
+A test can connect to the library (being aware of the port and address where to connect, or
+at which to listen) and perform the necessary library API manipulations simultaneously. 
+Comparison of buffers would be much more trivial: no parallel network connection is required. 
+And time synchronization is trivial.
+
+Finally note, that the library can be compiled standalone and no initial pre-setup for 
+the tests needs to be performed. The only requirement is that the library exist and 
+be compiled.
+
+
+@section specification Test Specification
+
+<!--
+  - Test identifier must contain only letters [a..zA..Z], numbers [0..9]
+  - and symbol '-'. Underscore '_' is used to divided identifier into
+  - parent test identifier and local subtest identifier. Local subtest
+  - identifier must not contain underscores.
+  -
+  - Provide reference to the root of the described here test package.
+  -->
+
+@ref agent
+
+*/

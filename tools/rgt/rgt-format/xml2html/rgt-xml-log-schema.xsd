@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 
+    XML Schema for RGT log report XML format.
+  -->
+<schema targetNamespace="http://www.oktetlabs.ru/proteos"
+        xmlns:proteos="http://www.oktetlabs.ru/proteos"
+        version="$Id: rgt-xml-log-schema.xsd,v 1.1 2003/10/28 09:35:42 arybchik Exp $"
+        xml:lang="en"
+        xmlns="http://www.w3.org/2001/XMLSchema">
+
+    <annotation>
+        <documentation>
+            Test Environment
+            XML schema for RGT log report XML format
+
+            Copyright (C) 2003 Test Environment authors (see file AUTHORS
+            in the root directory of the distribution).
+
+            Test Environment is free software; you can redistribute it
+            and/or modify it under the terms of the GNU General Public
+            License as published by the Free Software Foundation; either
+            version 2 of the License, or (at your option) any later
+            version.
+            
+            Test Environment is distributed in the hope that it will be
+            useful, but WITHOUT ANY WARRANTY; without even the implied
+            warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+            PURPOSE. See the GNU General Public License for more details.
+            
+            You should have received a copy of the GNU General Public
+            License along with this program; if not, write to the Free
+            Software Foundation, Inc., 59 Temple Place, Suite 330,
+            Boston, MA  02111-1307  USA
+
+            Author: Oleg Kravtsov &lt;Oleg.Kravtsov@oktetlabs.ru&lt;
+        </documentation>
+    </annotation>
+
+
+    <element name="log_report">
+      <complexType>
+        <sequence>
+          <element name="logs" minOccurs="0" maxOccurs="1" type="proteos:logs_t"/>
+          <element name="pkg" minOccurs="0" maxOccurs="unbounded"
+                   type="proteos:package_t"/>
+        </sequence>
+      </complexType>
+    </element>
+
+    <complexType name="package_t">
+      <sequence>
+        <element name="meta">
+          <complexType>
+            <sequence>
+              <element name="start-ts" type="string"/>
+              <element name="end-ts" type="string"/>
+              <element name="title" type="string"/>
+              <element name="author" type="string"/>
+              </sequence>
+          </complexType>
+        </element>
+        <element name="logs" minOccurs="0" maxOccurs="1" type="proteos:logs_t"/>
+        <element name="session" type="proteos:session_t"/>
+      </sequence>
+
+      <attribute name="name" type="string"/>
+      <attributeGroup ref="proteos:result_attr_group"/>
+    </complexType>
+    
+    <complexType name="session_t">
+      <sequence>
+        <element name="meta">
+          <complexType>
+            <sequence>
+              <element name="start-ts" type="string"/>
+              <element name="end-ts" type="string"/>
+              <element name="objective" type="string"/>
+              <element name="n-branches" type="unsignedShort"/>
+            </sequence>
+          </complexType>
+        </element>
+        <element name="logs" minOccurs="0" maxOccurs="1" type="proteos:logs_t"/>
+        <element name="branch" minOccurs="1" maxOccurs="unbounded"
+                 type="proteos:flow_t"/>
+      </sequence>
+
+      <attributeGroup ref="proteos:result_attr_group"/>
+    </complexType>
+
+    <complexType name="test_t">
+      <sequence>
+        <element name="meta">
+          <complexType>
+            <sequence>
+              <element name="start-ts" type="string"/>
+              <element name="end-ts" type="string"/>
+              <element name="objective" type="string"/>
+              <element name="author" type="string"/>
+            </sequence>
+            </complexType>
+        </element>
+        <element name="logs" minOccurs="0" maxOccurs="1" type="proteos:logs_t"/>
+      </sequence>
+
+      <attribute name="name" type="string"/>
+      <attributeGroup ref="proteos:result_attr_group"/>
+    </complexType>
+
+
+    <attributeGroup name="result_attr_group">
+      <attribute name="result" use="required">
+        <simpleType>
+          <restriction base="string">
+            <enumeration value="pass"/>
+            <enumeration value="fail"/>
+          </restriction>
+        </simpleType>
+      </attribute>
+      <attribute name="err" type="string"/>
+    </attributeGroup>
+
+    <complexType name="flow_t">
+      <sequence minOccurs="0" maxOccurs="unbounded">
+        <choice>
+          <element name="test" type="proteos:test_t"/>
+          <element name="pkg" type="proteos:package_t"/>
+          <element name="session" type="proteos:session_t"/>
+        </choice>
+        <element name="logs" minOccurs="0" maxOccurs="1" type="proteos:logs_t"/>
+      </sequence>
+    </complexType>
+
+    <complexType name="logs_t">
+      <sequence>
+        <element name="msg" minOccurs="1" maxOccurs="unbounded" type="proteos:log_t"/>
+      </sequence>
+    </complexType>
+
+    <complexType name="log_t" mixed="true">
+      <sequence>
+        <choice minOccurs="0" maxOccurs="unbounded">
+          <element name="br">
+            <complexType/>
+          </element>
+          <element name="file">
+            <complexType mixed="true">
+              <sequence minOccurs="0" maxOccurs="unbounded">
+                <element name="br">
+                  <complexType/>
+                </element>
+              </sequence>
+            </complexType>
+          </element>
+          <element name="mem-dump" type="proteos:mem-dump_t"/>
+        </choice>
+      </sequence>
+      <attribute name="entity" type="string"/>
+      <attribute name="user" type="string"/>
+      <attribute name="ts" type="string"/>
+    </complexType>
+    
+    <complexType name="mem-dump_t">
+      <sequence>
+        <element name="row" minOccurs="1" maxOccurs="unbounded">
+           <complexType>
+             <sequence>
+               <element name="elem" type="hexBinary"
+                        minOccurs="1" maxOccurs="unbounded"/>
+             </sequence>
+           </complexType>
+        </element>
+      </sequence>
+    </complexType>
+
+</schema>
