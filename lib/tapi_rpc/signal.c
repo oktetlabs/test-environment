@@ -60,14 +60,14 @@ rpc_signal(rcf_rpc_server *rpcs,
 
     char *res = NULL;
 
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        return NULL;
+        RETVAL_PTR(signal, NULL);
     }
-
-    memset(&in, 0, sizeof(in));
-    memset(&out, 0, sizeof(out));
 
     rpcs->op = RCF_RPC_CALL_WAIT;
 
@@ -78,7 +78,7 @@ rpc_signal(rcf_rpc_server *rpcs,
     rcf_rpc_call(rpcs, _signal,
                  &in,  (xdrproc_t)xdr_tarpc_signal_in,
                  &out, (xdrproc_t)xdr_tarpc_signal_out);
-
+                 
     TAPI_RPC_LOG("RPC (%s,%s): signal(%s, %s) -> %s (%s)",
                  rpcs->ta, rpcs->name,
                  signum_rpc2str(signum),
@@ -90,7 +90,7 @@ rpc_signal(rcf_rpc_server *rpcs,
     /* Yes, I know that it's memory leak, but what do you propose?! */
     if (RPC_IS_CALL_OK(rpcs) && out.handler.handler_val != NULL)
         res = strdup(out.handler.handler_val);
-
+        
     RETVAL_PTR(signal, res);
 }
 
@@ -101,16 +101,16 @@ rpc_kill(rcf_rpc_server *rpcs, pid_t pid, rpc_signum signum)
     tarpc_kill_in  in;
     tarpc_kill_out out;
 
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        return -1;
+        RETVAL_INT(kill, -1);
     }
 
     op = rpcs->op;
-
-    memset(&in, 0, sizeof(in));
-    memset(&out, 0, sizeof(out));
 
     in.signum = signum;
     in.pid = pid;
@@ -126,7 +126,7 @@ rpc_kill(rcf_rpc_server *rpcs, pid_t pid, rpc_signum signum)
                  pid, signum_rpc2str(signum),
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_INT_ZERO_OR_MINUS_ONE(kill, out.retval);
+    RETVAL_INT(kill, out.retval);
 }
 
 rpc_sigset_t *
@@ -135,14 +135,14 @@ rpc_sigset_new(rcf_rpc_server *rpcs)
     tarpc_sigset_new_in  in;
     tarpc_sigset_new_out out;
 
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        return NULL;
+        RETVAL_PTR(sigset_new, NULL);
     }
-
-    memset(&in, 0, sizeof(in));
-    memset(&out, 0, sizeof(out));
 
     rpcs->op = RCF_RPC_CALL_WAIT;
 
@@ -163,14 +163,14 @@ rpc_sigset_delete(rcf_rpc_server *rpcs, rpc_sigset_t *set)
     tarpc_sigset_delete_in  in;
     tarpc_sigset_delete_out out;
 
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        return;
+        RETVAL_VOID(sigset_delete);
     }
-
-    memset(&in, 0, sizeof(in));
-    memset(&out, 0, sizeof(out));
 
     rpcs->op = RCF_RPC_CALL_WAIT;
 
@@ -196,14 +196,14 @@ rpc_sigprocmask(rcf_rpc_server *rpcs,
     tarpc_sigprocmask_in  in;
     tarpc_sigprocmask_out out;
 
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        return -1;
+        RETVAL_INT(sigprocmask, -1);
     }
-
-    memset(&in, 0, sizeof(in));
-    memset(&out, 0, sizeof(out));
 
     rpcs->op = RCF_RPC_CALL_WAIT;
 
@@ -221,7 +221,7 @@ rpc_sigprocmask(rcf_rpc_server *rpcs,
                  rpcs->ta, rpcs->name, how, set, oldset,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_INT_ZERO_OR_MINUS_ONE(sigprocmask, out.retval);
+    RETVAL_INT(sigprocmask, out.retval);
 }
 
 
@@ -231,14 +231,14 @@ rpc_sigemptyset(rcf_rpc_server *rpcs, rpc_sigset_t *set)
     tarpc_sigemptyset_in  in;
     tarpc_sigemptyset_out out;
 
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        return -1;
+        RETVAL_INT(sigemptyset, -1);
     }
-
-    memset(&in, 0, sizeof(in));
-    memset(&out, 0, sizeof(out));
 
     rpcs->op = RCF_RPC_CALL_WAIT;
 
@@ -254,7 +254,7 @@ rpc_sigemptyset(rcf_rpc_server *rpcs, rpc_sigset_t *set)
                  rpcs->ta, rpcs->name, set,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_INT_ZERO_OR_MINUS_ONE(sigemptyset, out.retval);
+    RETVAL_INT(sigemptyset, out.retval);
 }
 
 int
@@ -263,14 +263,14 @@ rpc_sigpending(rcf_rpc_server *rpcs, rpc_sigset_t *set)
     tarpc_sigpending_in  in;
     tarpc_sigpending_out out;
 
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        return -1;
+        RETVAL_INT(sigpending, -1);
     }
-
-    memset(&in, 0, sizeof(in));
-    memset(&out, 0, sizeof(out));
 
     rpcs->op = RCF_RPC_CALL_WAIT;
 
@@ -286,7 +286,7 @@ rpc_sigpending(rcf_rpc_server *rpcs, rpc_sigset_t *set)
                  rpcs->ta, rpcs->name,
                  set, out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_INT_ZERO_OR_MINUS_ONE(sigpending, out.retval);
+    RETVAL_INT(sigpending, out.retval);
 }
 
 int
@@ -295,14 +295,14 @@ rpc_sigsuspend(rcf_rpc_server *rpcs, const rpc_sigset_t *set)
     tarpc_sigsuspend_in  in;
     tarpc_sigsuspend_out out;
 
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        return -1;
+        RETVAL_INT(sigsuspend, -1);
     }
-
-    memset(&in, 0, sizeof(in));
-    memset(&out, 0, sizeof(out));
 
     in.set = (tarpc_sigset_t)set;
 
@@ -316,7 +316,7 @@ rpc_sigsuspend(rcf_rpc_server *rpcs, const rpc_sigset_t *set)
                  rpcs->ta, rpcs->name,
                  set, out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_INT_ZERO_OR_MINUS_ONE(sigsuspend, out.retval);
+    RETVAL_INT(sigsuspend, out.retval);
 }
 
 rpc_sigset_t *
@@ -325,14 +325,14 @@ rpc_sigreceived(rcf_rpc_server *rpcs)
     tarpc_sigreceived_in  in;
     tarpc_sigreceived_out out;
 
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        return NULL;
+        RETVAL_PTR(sigreceived, NULL);
     }
-
-    memset(&in, 0, sizeof(in));
-    memset(&out, 0, sizeof(out));
 
     rpcs->op = RCF_RPC_CALL_WAIT;
 
@@ -353,14 +353,14 @@ rpc_sigfillset(rcf_rpc_server *rpcs, rpc_sigset_t *set)
     tarpc_sigfillset_in  in;
     tarpc_sigfillset_out out;
 
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        return -1;
+        RETVAL_INT(sigfillset, -1);
     }
-
-    memset(&in, 0, sizeof(in));
-    memset(&out, 0, sizeof(out));
 
     rpcs->op = RCF_RPC_CALL_WAIT;
 
@@ -376,7 +376,7 @@ rpc_sigfillset(rcf_rpc_server *rpcs, rpc_sigset_t *set)
                  rpcs->ta, rpcs->name,
                  set, out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_INT_ZERO_OR_MINUS_ONE(sigfillset, out.retval);
+    RETVAL_INT(sigfillset, out.retval);
 }
 
 int
@@ -385,14 +385,14 @@ rpc_sigaddset(rcf_rpc_server *rpcs, rpc_sigset_t *set, rpc_signum signum)
     tarpc_sigaddset_in  in;
     tarpc_sigaddset_out out;
 
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        return -1;
+        RETVAL_INT(sigaddset, -1);
     }
-
-    memset(&in, 0, sizeof(in));
-    memset(&out, 0, sizeof(out));
 
     rpcs->op = RCF_RPC_CALL_WAIT;
 
@@ -410,7 +410,7 @@ rpc_sigaddset(rcf_rpc_server *rpcs, rpc_sigset_t *set, rpc_signum signum)
                  signum_rpc2str(signum), set,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_INT_ZERO_OR_MINUS_ONE(sigaddset, out.retval);
+    RETVAL_INT(sigaddset, out.retval);
 }
 
 int
@@ -419,14 +419,14 @@ rpc_sigdelset(rcf_rpc_server *rpcs, rpc_sigset_t *set, rpc_signum signum)
     tarpc_sigdelset_in  in;
     tarpc_sigdelset_out out;
 
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        return -1;
+        RETVAL_INT(sigdelset, -1);
     }
-
-    memset(&in, 0, sizeof(in));
-    memset(&out, 0, sizeof(out));
 
     rpcs->op = RCF_RPC_CALL_WAIT;
 
@@ -444,7 +444,7 @@ rpc_sigdelset(rcf_rpc_server *rpcs, rpc_sigset_t *set, rpc_signum signum)
                  signum_rpc2str(signum), set,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_INT_ZERO_OR_MINUS_ONE(sigdelset, out.retval);
+    RETVAL_INT(sigdelset, out.retval);
 }
 
 int
@@ -454,14 +454,14 @@ rpc_sigismember(rcf_rpc_server *rpcs,
     tarpc_sigismember_in  in;
     tarpc_sigismember_out out;
 
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        return -1;
+        RETVAL_INT(sigismember, -1);
     }
-
-    memset(&in, 0, sizeof(in));
-    memset(&out, 0, sizeof(out));
 
     rpcs->op = RCF_RPC_CALL_WAIT;
 
@@ -480,7 +480,7 @@ rpc_sigismember(rcf_rpc_server *rpcs,
                  signum_rpc2str(signum), set,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    return out.retval;
+    RETVAL_INT(sigismember, out.retval);
 }
 
 int
@@ -501,21 +501,21 @@ rpc_sigaction(rcf_rpc_server *rpcs, rpc_signum signum,
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        return -1;
+        RETVAL_INT(sigaction, out.retval);
     }
     if (act != NULL && act->mm_mask == NULL)
     {
         ERROR("%s(): Invalid 'act->mm_mask' argument",
                 __FUNCTION__);
         rpcs->_errno = EINVAL;
-        return -1;
+        RETVAL_INT(sigaction, out.retval);
     }
     if (oldact != NULL && oldact->mm_mask == NULL)
     {
         ERROR("%s(): Invalid 'oldact->mm_mask' argument",
                 __FUNCTION__);
         rpcs->_errno = EINVAL;
-        return -1;
+        RETVAL_INT(sigaction, -1);
     }
 
     op = rpcs->op;
@@ -584,5 +584,5 @@ rpc_sigaction(rcf_rpc_server *rpcs, rpc_signum signum,
                  signum_rpc2str(signum), act, oldact,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_INT_ZERO_OR_MINUS_ONE(sigaction, out.retval);
+    RETVAL_INT(sigaction, out.retval);
 }

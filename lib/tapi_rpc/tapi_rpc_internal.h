@@ -48,21 +48,43 @@
 #include "logger_api.h"
 #include "tapi_sockaddr.h"
 #include "tapi_rpcsock_defs.h"
+#include "tapi_rpc.h"
 
 #include "tarpc.h"
-
+#include "tapi_jmp.h"
 
 /**
  * Log TAPI RPC call.
  * If RPC call status is OK, log as ring, else log as error.
  */
 #define TAPI_RPC_LOG(_x...) \
-    LGR_MESSAGE(RPC_IS_CALL_OK(rpcs) ? TE_LL_RING : TE_LL_ERROR, \
-                TE_LGR_USER, _x)
+    LGR_MESSAGE(rpcs->err_log ? TE_LL_ERROR : TE_LL_RING, TE_LGR_USER, _x)
 
-/** Free memory used in RPC output */
-#define TAPI_RPC_FREE_OUT(_func) \
-    rcf_rpc_free_result(&out, (xdrproc_t)xdr_tarpc_##_func##_out)
+/** 
+ * Free memory, check RPC error, jump in the case of RPC error or if 
+ * _res is TRUE, set jump condition to default value.
+ */
+#define TAPI_RPC_OUT(_func, _res) \
+    do {                                                                \
+        if (rpcs == NULL)                                               \
+            tapi_jmp_do(ETEFAIL);                                       \
+                                                                        \
+        rcf_rpc_free_result(&out, (xdrproc_t)xdr_tarpc_##_func##_out);  \
+        if (!RPC_IS_CALL_OK(rpcs))                                      \
+        {                                                               \
+            rpcs->iut_err_jump = TRUE;                                  \
+            tapi_jmp_do(ETEFAIL);                                       \
+        }                                                               \
+        if (_res)                                                       \
+        {                                                               \
+            if (rpcs->iut_err_jump)                                     \
+            {                                                           \
+                rpcs->iut_err_jump = TRUE;                              \
+                tapi_jmp_do(ETEFAIL);                                   \
+            }                                                           \
+        }                                                               \
+        rpcs->iut_err_jump = TRUE;                                      \
+    } while (0)
 
 /**
  * If RPC call status is OK, check condition and set specified variable
@@ -89,10 +111,18 @@
                 rpcs->_errno = TE_RC(TE_TAPI, ETECORRUPTED);        \
                 (_var) = (_error_val);                              \
             }                                                       \
+            else if (RPC_ERRNO(rpcs) == RPC_ERPCNOTSUPP)            \
+            {                                                       \
+                RING("Function %s() is not supported",  #_func);    \
+                (_var) = (_error_val);                              \
+            }                                                       \
+            if ((_var) == (_error_val) && rpcs->iut_err_jump)       \
+                rpcs->err_log = TRUE;                               \
         }                                                           \
         else                                                        \
         {                                                           \
             (_var) = (_error_val);                                  \
+            rpcs->err_log = TRUE;                                   \
         }                                                           \
     } while (0)
 
@@ -129,54 +159,39 @@
         
 
 /** Return with check (for functions returning value >= -1) */
-#define RETVAL_VAL(_func, _retval) \
+#define RETVAL_INT(_func, _retval) \
     do {                                                            \
         int __retval = (_retval);                                   \
                                                                     \
-        TAPI_RPC_FREE_OUT(_func);                                   \
+        TAPI_RPC_OUT(_func, (__retval) < 0);                        \
                                                                     \
         return __retval;                                            \
     } while (0)
-
-#define RETVAL_TYPE_PTR(_func, _type, _retval) \
-    do {                                                            \
-        _type __retval = (_type)(_retval);                          \
-                                                                    \
-        TAPI_RPC_FREE_OUT(_func);                                   \
-                                                                    \
-        if (!RPC_IS_CALL_OK(rpcs))                                  \
-            return (_type)NULL;                                     \
-        else                                                        \
-            return __retval;                                        \
-    } while (0)
-
-/** Return with check (for functions returning 0 or -1) */
-#define RETVAL_INT_ZERO_OR_MINUS_ONE(_func, _retval) \
-    do {                                                            \
-        int __retval = (_retval);                                   \
-                                                                    \
-        TAPI_RPC_FREE_OUT(_func);                                   \
-                                                                    \
-        return __retval;                                            \
-    } while(0)
 
 /** Return with check (for functions returning pointers) */
 #define RETVAL_PTR(_func, _retval) \
     do {                                                            \
         void *__retval = (void *)(_retval);                         \
                                                                     \
-        TAPI_RPC_FREE_OUT(_func);                                   \
+        TAPI_RPC_OUT(_func, __retval == NULL);                      \
                                                                     \
-        if (!RPC_IS_CALL_OK(rpcs))                                  \
-            return NULL;                                            \
-        else                                                        \
-            return __retval;                                        \
+        return __retval;                                            \
     } while (0)
 
-/** Return with check */
+/** Return with check (for functions returning pointers) */
+#define RETVAL_RPC_PTR(_func, _retval) \
+    do {                                                            \
+        rpc_ptr __retval = _retval;                                 \
+                                                                    \
+        TAPI_RPC_OUT(_func, __retval == 0);                         \
+                                                                    \
+        return __retval;                                            \
+    } while (0)
+
+/** Return with check (for void functions) */
 #define RETVAL_VOID(_func) \
     do {                                                            \
-        TAPI_RPC_FREE_OUT(_func);                                   \
+        TAPI_RPC_OUT(_func, FALSE);                                 \
         return;                                                     \
     } while(0)
 

@@ -75,7 +75,7 @@ rpc_if_nametoindex(rcf_rpc_server *rpcs,
                  rpcs->ta, rpcs->name, ifname == NULL ? "" : ifname,
                  out.ifindex, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_VAL(if_nametoindex, out.ifindex);
+    RETVAL_INT(if_nametoindex, out.ifindex);
 }
 
 char *
@@ -127,14 +127,14 @@ rpc_if_nameindex(rcf_rpc_server *rpcs)
 
     struct if_nameindex *res = NULL;
 
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        return NULL;
+        RETVAL_PTR(if_nameindex, NULL);
     }
-
-    memset(&in, 0, sizeof(in));
-    memset(&out, 0, sizeof(out));
 
     rpcs->op = RCF_RPC_CALL_WAIT;
 
@@ -186,14 +186,14 @@ rpc_if_freenameindex(rcf_rpc_server *rpcs,
     tarpc_if_freenameindex_in  in;
     tarpc_if_freenameindex_out out;
 
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        return;
+        RETVAL_VOID(if_freenameindex);
     }
-
-    memset(&in, 0, sizeof(in));
-    memset(&out, 0, sizeof(out));
 
     rpcs->op = RCF_RPC_CALL_WAIT;
 

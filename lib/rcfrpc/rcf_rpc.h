@@ -57,6 +57,10 @@
     (((_rpcs) != NULL) && \
      (((_rpcs)->_errno == 0) || RPC_ERRNO_RPC((_rpcs)->_errno)))
 
+/** Do not jump from the TAPI RPC library call in the case of IUT error */
+#define RPC_AWAIT_IUT_ERROR(_rpcs) \
+    (_rpcs)->iut_err_jump = FALSE
+
 /**
  * Extract name of the PCO by RCP server handle
  *
@@ -83,6 +87,9 @@ typedef struct rcf_rpc_server {
     uint32_t    timeout;        /**< Next RPC call timeout in milliseconds
                                      (after call it's automatically reset
                                      to def_timeout) */
+    te_bool     iut_err_jump;   /**< Jump in the case of IUT error
+                                     (true by default) */
+    te_bool     err_log;        /**< Log error with ERROR log level */
 
     /* Read-only fields filled by API internals when server is created */
     char            ta[RCF_MAX_NAME];   /**< Test Agent name */

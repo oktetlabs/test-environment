@@ -41,23 +41,24 @@
 
 /** @name Common Test Environment errno's */
 #define TE_BASE         (1 << 16)
-#define ETEOK           (TE_BASE | 0) /* Success when 0 can't be used */
-#define ETESMALLBUF     (TE_BASE | 1) /* Too small buffer is provided
-                                         to user */
-#define ETEPENDING      (TE_BASE | 2) /* Pending data retain on
-                                         connection */
-#define ETESHCMD        (TE_BASE | 3) /* Shell command returned non-zero
-                                         exit status */
-#define ETEWRONGPTR     (TE_BASE | 4) /* Wrong pointer was passed to
-                                         function */
-#define ETENOSUPP       (TE_BASE | 5) /* Asked functionality is not
-                                         supported */
-#define ETOOMANY        (TE_BASE | 6) /* Too many objects have been
-                                         already allocated, so that the
-                                         resource is not available */
-#define ETEFMT          (TE_BASE | 7) /* Invalid format */
-#define ETEENV          (TE_BASE | 8) /* Inappropriate environment */
-#define ETEWIN          (TE_BASE | 9) /* WIndows API function failed,
+#define ETEOK           (TE_BASE | 0)  /* Success when 0 can't be used */
+#define ETEFAIL         (TE_BASE | 1)  /* Generic failure */
+#define ETESMALLBUF     (TE_BASE | 2)  /* Too small buffer is provided
+                                          to user */
+#define ETEPENDING      (TE_BASE | 3)  /* Pending data retain on
+                                          connection */
+#define ETESHCMD        (TE_BASE | 4)  /* Shell command returned non-zero
+                                          exit status */
+#define ETEWRONGPTR     (TE_BASE | 5)  /* Wrong pointer was passed to
+                                          function */
+#define ETENOSUPP       (TE_BASE | 6)  /* Asked functionality is not
+                                          supported */
+#define ETOOMANY        (TE_BASE | 7)  /* Too many objects have been
+                                          already allocated, so that the
+                                          resource is not available */
+#define ETEFMT          (TE_BASE | 8)  /* Invalid format */
+#define ETEENV          (TE_BASE | 9)  /* Inappropriate environment */
+#define ETEWIN          (TE_BASE | 10) /* WIndows API function failed,
                                          see log for the description */
 /*@}*/
 

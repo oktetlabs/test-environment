@@ -89,16 +89,7 @@
  * @param _func    RPC function name to call (without rpc_ prefix)
  * @param _args    A set of arguments pased to the function
  */
-#define RPC_FUNC_VOID(_rpcs, _func, _args...) \
-    do {                                                         \
-        rpc_##_func(_rpcs, _args);                               \
-        if (RPC_ERRNO(_rpcs) != 0)                               \
-        {                                                        \
-            ERROR("rpc_" #_func " on %s failed with errno=0x%X", \
-                  RPC_NAME(_rpcs), RPC_ERRNO(_rpcs));            \
-            MACRO_ERROR_EXIT;                                    \
-        }                                                        \
-    } while (0)
+#define RPC_FUNC_VOID(_rpcs, _func, _args...)  rpc_##_func(_rpcs, _args)
 
 /**
  * Macro to check function 'func_' on returning non negative value
@@ -109,19 +100,7 @@
  * @param args_    A set of arguments pased to the function
  */
 #define RPC_FUNC_WITH_RETVAL(rpcs_, retval_, func_, args_...) \
-    do {                                                        \
-        int err2_;                                              \
-                                                                \
-        (retval_) =  rpc_ ## func_(rpcs_, args_);               \
-        err2_ = RPC_ERRNO(rpcs_);                               \
-        VERB("rpc_" #func_ " returns: %d, 0x%X",                \
-             retval_, TE_RC_GET_ERROR(err2_));                  \
-        if ((retval_) < 0)                                      \
-        {                                                       \
-            LOG_ERRNO((rpcs_), (retval_), func_, "()");         \
-            MACRO_ERROR_EXIT;                                   \
-        }                                                       \
-    } while (0)
+    (retval_) =  rpc_ ## func_(rpcs_, args_)
 
 /**
  * Macro to check function 'func_' on returning non negative value
@@ -131,19 +110,7 @@
  * @param func_    RPC function name to call (without rpc_ prefix)
  */
 #define RPC_FUNC_WITH_RETVAL0(rpcs_, retval_, func_)            \
-    do {                                                        \
-        int err2_;                                              \
-                                                                \
-        (retval_) =  rpc_ ## func_(rpcs_);                      \
-        err2_ = RPC_ERRNO(rpcs_);                               \
-        VERB("rpc_" #func_ " returns: %d, 0x%X",                \
-             retval_, TE_RC_GET_ERROR(err2_));                  \
-        if ((retval_) < 0)                                      \
-        {                                                       \
-            LOG_ERRNO((rpcs_), (retval_), func_, "()");         \
-            MACRO_ERROR_EXIT;                                   \
-        }                                                       \
-    } while (0)
+        (retval_) =  rpc_ ## func_(rpcs_)
 
 /**
  * Macro to check function 'func_' on returning exactly specified value.
@@ -157,23 +124,11 @@
 #define RPC_FUNC_WITH_EXACT_RETVAL(rpcs_, retval_, expect_, \
                                    func_, args_...)             \
     do {                                                        \
-        int err2_;                                              \
-                                                                \
         (retval_) =  rpc_ ## func_(rpcs_, args_);               \
-        err2_ = RPC_ERRNO(rpcs_);                               \
-        VERB("rpc_" #func_ " returns: %d, 0x%X",                \
-             retval_, TE_RC_GET_ERROR(err2_));                  \
         if ((int)(retval_) != (int)(expect_))                   \
         {                                                       \
-            if (RPC_ERRNO(rpcs_) == 0)                          \
-            {                                                   \
-                ERROR(#func_ "() returned unexpected value %d " \
-                      "instead of %d", (retval_), (expect_));   \
-            }                                                   \
-            else                                                \
-            {                                                   \
-                LOG_ERRNO((rpcs_), (retval_), func_, "()");     \
-            }                                                   \
+            ERROR(#func_ "() returned unexpected value %d "     \
+                  "instead of %d", (retval_), (expect_));       \
             MACRO_ERROR_EXIT;                                   \
         }                                                       \
     } while (0)
@@ -187,15 +142,7 @@
  * @param args_    A set of arguments pased to the function
  */
 #define RPC_FUNC_WITH_PTR_RETVAL(rpcs_, retval_, func_, args_...) \
-    do {                                                      \
-        (retval_) =  rpc_ ## func_(rpcs_, args_);             \
-        if ((retval_) == NULL)                                \
-        {                                                     \
-            LOG_ERRNO((rpcs_), (retval_), func_, "()");       \
-            MACRO_ERROR_EXIT;                                 \
-        }                                                     \
-    } while (0)
-
+    (retval_) =  rpc_ ## func_(rpcs_, args_)
 
 /**
  * Macro to check function 'func_' on returning non NULL value
@@ -205,14 +152,7 @@
  * @param func_    RPC function name to call (without rpc_ prefix)
  */
 #define RPC_FUNC_WITH_PTR_RETVAL0(rpcs_, retval_, func_) \
-    do {                                                 \
-        (retval_) =  rpc_ ## func_(rpcs_);               \
-        if ((retval_) == NULL)                           \
-        {                                                \
-            LOG_ERRNO((rpcs_), (retval_), func_, "()");  \
-            MACRO_ERROR_EXIT;                            \
-        }                                                \
-    } while (0)
+    (retval_) =  rpc_ ## func_(rpcs_)
 
 /**
  * Macro to check function 'func_' on returning zero value
@@ -228,7 +168,8 @@
         (rc_) =  rpc_ ## func_(rpcs_, args_);        \
         if ((rc_) != 0)                              \
         {                                            \
-            LOG_ERRNO((rpcs_), (rc_), func_, "()");  \
+            ERROR(#func_ "() returned unexpected "   \
+                  "value %d instead of 0", rc_);     \
             MACRO_ERROR_EXIT;                        \
         }                                            \
     } while (0)
@@ -247,8 +188,8 @@
  * @se In case of failure it jumps to "cleanup" label
  */
 #define RPC_SOCKET(sockd_, rpcs_, domain_, type_, proto_) \
-            RPC_FUNC_WITH_RETVAL(rpcs_, sockd_, socket,         \
-                                 (domain_), (type_), (proto_))
+    RPC_FUNC_WITH_RETVAL(rpcs_, sockd_, socket,         \
+                         (domain_), (type_), (proto_))
 
 /**
  * Duplicate a file descriptor.
@@ -285,17 +226,7 @@
  * @param rpcs_   RPC server handle
  * @param sockd_  Socket descriptor
  */
-#define RPC_CLOSE_UNSAFE(rpcs_, sockd_) \
-    do {                                             \
-        int rc_;                                     \
-                                                     \
-        rc_ = rpc_close((rpcs_), (sockd_));          \
-        if ((rc_) < 0)                               \
-        {                                            \
-            LOG_ERRNO(rpcs_, (rc_), close, "()");    \
-            MACRO_ERROR_EXIT;                        \
-        }                                            \
-    } while (0)
+#define RPC_CLOSE_UNSAFE(rpcs_, sockd_)  rpc_close((rpcs_), (sockd_))
 
 
 /**
@@ -309,15 +240,7 @@
  */
 #define RPC_CLOSE(rpcs_, sockd_) \
     do {                                             \
-        int rc_;                                     \
-                                                     \
-        rc_ = rpc_close((rpcs_), (sockd_));          \
-        if ((rc_) < 0)                               \
-        {                                            \
-            LOG_ERRNO(rpcs_, (rc_), close, "()");    \
-            (sockd_) = -1;                           \
-            MACRO_ERROR_EXIT;                        \
-        }                                            \
+        rpc_close((rpcs_), (sockd_));                \
         (sockd_) = -1;                               \
     } while (0)
 
@@ -449,16 +372,12 @@
  * @se In case of failure it jumps to "cleanup" label
  */
 #define RPC_SELECT(retval_, rpcs_, maxfd_, rd_, wr_, ex_, tv_) \
-            RPC_FUNC_WITH_RETVAL(rpcs_, retval_, select,                \
-                                 (maxfd_), (rd_), (wr_), (ex_), (tv_))
+    RPC_FUNC_WITH_RETVAL(rpcs_, retval_, select,               \
+                         (maxfd_), (rd_), (wr_), (ex_), (tv_))
 
 /** Call fd_set() on the specified RPC server */
 #define RPC_DO_FD_SET(rpcs_, sockd_, set_) \
-    do {                                                  \
-        rpc_do_fd_set((rpcs_), (sockd_), (set_));         \
-        CHECK_RPC_ERRNO((rpcs_), 0, "fd_set() fails to "  \
-                        "add socket to the fdset");       \
-    } while (0)
+    rpc_do_fd_set((rpcs_), (sockd_), (set_))
 
 /**
  * Call recv() function on RPC server and check return value.
@@ -473,8 +392,8 @@
  * @se In case of failure it jumps to "cleanup" label
  */
 #define RPC_RECV(received_, rpcs_, sockd_, buf_, len_, flags_) \
-            RPC_FUNC_WITH_RETVAL(rpcs_, received_, recv,             \
-                                 (sockd_), (buf_), (len_), (flags_))
+    RPC_FUNC_WITH_RETVAL(rpcs_, received_, recv,               \
+                         (sockd_), (buf_), (len_), (flags_))
 
 /**
  * Call recvfrom() function on RPC server and check return value.
@@ -492,7 +411,7 @@
  * @se In case of failure it jumps to "cleanup" label
  */
 #define RPC_RECVFROM(received_, rpcs_, sockd_, buf_, len_, flags_,  \
-                     addr_, addrlen_)                                \
+                     addr_, addrlen_)                               \
     RPC_FUNC_WITH_RETVAL(rpcs_, received_, recvfrom,         \
                          (sockd_), (buf_), (len_), (flags_), \
                          addr_, addrlen_)
@@ -509,8 +428,7 @@
  * @se In case of failure it jumps to "cleanup" label
  */
 #define RPC_SENDMSG(sent_, rpcs_, sockd_, msg_, flags_) \
-    RPC_FUNC_WITH_RETVAL(rpcs_, sent_, sendmsg,      \
-                         (sockd_), (msg_), (flags_))
+    RPC_FUNC_WITH_RETVAL(rpcs_, sent_, sendmsg, (sockd_), (msg_), (flags_))
 
 /**
  * Call recvmsg() function on RPC server and check return value.
@@ -554,8 +472,8 @@
  * @se In case of failure it jumps to "cleanup" label
  */
 #define RPC_READ(received_, rpcs_, sockd_, buf_, len_) \
-        RPC_FUNC_WITH_RETVAL(rpcs_, received_, read,   \
-                             (sockd_), (buf_), (len_))
+    RPC_FUNC_WITH_RETVAL(rpcs_, received_, read,   \
+                         (sockd_), (buf_), (len_))
 
 
 /**
@@ -649,8 +567,8 @@
  * @todo const char *ioctl_val2str(req_name_, req_val_);
  */
 #define RPC_IOCTL(rpcs_, sockd_, req_name_, req_val_) \
-            RPC_FUNC_ZERO_RETVAL(rpcs_, ioctl,                       \
-                                 (sockd_), (req_name_), (req_val_))
+    RPC_FUNC_ZERO_RETVAL(rpcs_, ioctl, (sockd_), (req_name_), (req_val_))
+    
 /**
  * Call fcntl() function on RPC server.
  *
@@ -715,16 +633,7 @@
  * @note  use SIGNAL_REGISTRAR as default handler in sigaction structure
  */
 #define RPC_SIGACTION(rpcs_, signum_, newact_, oldact_) \
-    do {                                                                \
-        int rc_;                                                        \
-        rc_ = rpc_sigaction(rpcs_, signum_, newact_, oldact_);          \
-        if (rc_ == -1)                                                  \
-        {                                                               \
-            LOG_ERRNO(rpcs_, rc_, sigaction, "(%s)",                    \
-                      signum_rpc2str(signum_));                         \
-            MACRO_ERROR_EXIT;                                           \
-        }                                                               \
-    } while (0)
+    rpc_sigaction(rpcs_, signum_, newact_, oldact_)
 
 
 /**
@@ -738,16 +647,7 @@
  *                      stored
  */
 #define RPC_SIGPROCMASK(rpcs_, how_, sigmask_, sigmask_old_) \
-    do {                                                            \
-        int rc_;                                                    \
-        rc_ = rpc_sigprocmask(rpcs_, how_, sigmask_, sigmask_old_); \
-        if (rc_ == -1)                                              \
-        {                                                           \
-            LOG_ERRNO(rpcs_, rc_, sigprocmask, "(%s)",              \
-                      signum_rpc2str(how_));                        \
-            MACRO_ERROR_EXIT;                                       \
-        }                                                           \
-    } while (0)
+    rpc_sigprocmask(rpcs_, how_, sigmask_, sigmask_old_)
 
 
 /**
@@ -756,17 +656,7 @@
  * @param rpcs_     RPC server handle
  * @param sigmask_  Sigmask handle
  */
-#define RPC_SIGPENDING(rpcs_, sigmask_)\
-    do {                                                 \
-        int rc_;                                         \
-        rc_ = rpc_sigpending(rpcs_, sigmask_);           \
-        if (rc_ == -1)                                   \
-        {                                                \
-            LOG_ERRNO(rpcs_, rc_, sigpending, "()");     \
-            MACRO_ERROR_EXIT;                            \
-        }                                                \
-    } while (0)
-
+#define RPC_SIGPENDING(rpcs_, sigmask_)  rpc_sigpending(rpcs_, sigmask_)
 
 /**
  * Make the pair of file descriptors connected with a pipe on
@@ -813,12 +703,7 @@
             char *ret_handler_;                                         \
                                                                         \
             (ret_handler_) = rpc_signal((rpcs_), (signum_), (handler_));\
-            if ((ret_handler_) == NULL)                                 \
-            {                                                           \
-                LOG_ERRNO(rpcs_, ret_handler_, signal, "()");           \
-                MACRO_TEST_ERROR;                                       \
-            }                                                           \
-            else if ((old_handler_) != NULL)                            \
+            if ((old_handler_) != NULL)                                 \
             {                                                           \
                 if (strcmp(ret_handler_, (old_handler_)) != 0)          \
                 {                                                       \
@@ -850,7 +735,7 @@
  * @param sigmask_  Signal mask
  */
 #define RPC_SIGEMPTYSET(rpcs_, sigmask_) \
-            RPC_FUNC_ZERO_RETVAL(rpcs_, sigemptyset, (sigmask_))
+    RPC_FUNC_ZERO_RETVAL(rpcs_, sigemptyset, (sigmask_))
 
 /**
  * Add a signal ts a set of signals
@@ -860,7 +745,7 @@
  * @param signum_   Signal number to add
  */
 #define RPC_SIGADDSET(rpcs_, sigmask_, signum_) \
-            RPC_FUNC_ZERO_RETVAL(rpcs_, sigaddset, (sigmask_), (signum_))
+    RPC_FUNC_ZERO_RETVAL(rpcs_, sigaddset, (sigmask_), (signum_))
 
 /**
  * Delete a signal from a set of signals
@@ -870,7 +755,7 @@
  * @param signum_   Signal number to delete
  */
 #define RPC_SIGDELSET(rpcs_, sigmask_, signum_) \
-            RPC_FUNC_ZERO_RETVAL(rpcs_, sigdelset, (sigmask_), (signum_))
+    RPC_FUNC_ZERO_RETVAL(rpcs_, sigdelset, (sigmask_), (signum_))
 
 /**
  * Get set of signals received by signal_registrar routine.
@@ -895,7 +780,7 @@
  * @param user_id_  A new UID
  */
 #define RPC_SETUID(rpcs_, user_id_) \
-            RPC_FUNC_ZERO_RETVAL((rpcs_), setuid, (user_id_))
+    RPC_FUNC_ZERO_RETVAL((rpcs_), setuid, (user_id_))
 
 
 /**
@@ -906,23 +791,11 @@
  */
 #define CLEANUP_RPC_CLOSE(rpcs_, sockd_) \
     do {                                                            \
-        if ((sockd_) >= 0)                                          \
+        if ((sockd_) >= 0 && rpcs_ != NULL)                         \
         {                                                           \
-            int rc_ = rpc_close(rpcs_, sockd_);                     \
-                                                                    \
-            if (rc_ != 0)                                           \
-            {                                                       \
-                int err_ = RPC_ERRNO(rpcs_);                        \
-                                                                    \
-                if (RPC_ERRNO_RPC(err_))                            \
-                {                                                   \
-                    ERROR("RPC close() on %s failed retval=%d "     \
-                          "RPC_errno=0x%X",                         \
-                          RPC_NAME(rpcs_), rc_,                     \
-                          TE_RC_GET_ERROR(err_));                   \
-                }                                                   \
+            RPC_AWAIT_IUT_ERROR(rpcs_);                             \
+            if (rpc_close(rpcs_, sockd_) != 0)                      \
                 MACRO_TEST_ERROR;                                   \
-            }                                                       \
         }                                                           \
     } while (0)
 
@@ -945,31 +818,14 @@
         {                                                               \
             if (!!((#args_)[0]))                                        \
             {                                                           \
-                if (RPC_ERRNO_RPC(err_) || err_ == 0)                   \
-                {                                                       \
-                    ERROR(err_msg_ ": errno is set to %s instead of %s",\
-                          args_ + 0, errno_rpc2str(err_),               \
-                          errno_rpc2str(exp_errno_));                   \
-                }                                                       \
-                else                                                    \
-                {                                                       \
-                    ERROR(err_msg_ " RPC call failed with errno 0x%X",  \
-                          args_ + 0, TE_RC_GET_ERROR(err_));            \
-                }                                                       \
+                ERROR(err_msg_ ": errno is set to %s instead of %s",    \
+                      args_ + 0, errno_rpc2str(err_),                   \
+                      errno_rpc2str(exp_errno_));                       \
             }                                                           \
             else                                                        \
             {                                                           \
-                if (RPC_ERRNO_RPC(err_) || err_ == 0)                   \
-                {                                                       \
-                    ERROR(err_msg_ " sets errno to %s instead of %s",   \
-                          errno_rpc2str(err_),                          \
-                          errno_rpc2str(exp_errno_));                   \
-                }                                                       \
-                else                                                    \
-                {                                                       \
-                    ERROR(err_msg_ " RPC call failed with errno 0x%X",  \
-                          TE_RC_GET_ERROR(err_));                       \
-                }                                                       \
+                ERROR(err_msg_ " sets errno to %s instead of %s",       \
+                      errno_rpc2str(err_),  errno_rpc2str(exp_errno_)); \
             }                                                           \
             MACRO_TEST_ERROR;                                           \
             MACRO_ERROR_EXIT;                                           \
@@ -1136,11 +992,6 @@
                            sizeof(path_name) - strlen(path_name));      \
         (recv_) = rpc_socket_to_file((rpcs_), (sockd_),                 \
                                       path_name, (timeout_));           \
-        if ((recv_) < 0)                                                \
-        {                                                               \
-            LOG_ERRNO((rpcs_), (recv_), socket_to_file, "()");          \
-            MACRO_ERROR_EXIT;                                           \
-        }                                                               \
     } while (0)
 
 /**
@@ -1155,14 +1006,6 @@
  * @se In case of failure it jumps to "cleanup" label
  */
 #define RPC_SIMPLE_RECEIVER(recv_, rpcs_, sockd_, timeout_) \
-    do {                                                                \
-        int rc_ = rpc_simple_receiver((rpcs_), (sockd_),                \
-                                      (timeout_), &(recv_));            \
-        if ((rc_) != 0)                                                 \
-        {                                                               \
-            LOG_ERRNO((rpcs_), (recv_), simple_receiver, "()");         \
-            MACRO_ERROR_EXIT;                                           \
-        }                                                               \
-    } while (0)
+    rpc_simple_receiver((rpcs_), (sockd_), (timeout_), &(recv_))
 
 #endif /* !__TE_TAPI_RPCSOCK_MACROS_H__ */

@@ -89,14 +89,15 @@ rpc_ioctl(rcf_rpc_server *rpcs,
     int             *arg;
     const char      *req_val;
 
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+    
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        return -1;
+        RETVAL_INT(ioctl, -1);
     }
 
-    memset(&in, 0, sizeof(in));
-    memset(&out, 0, sizeof(out));
     rpcs->op = RCF_RPC_CALL_WAIT;
 
     va_start(ap, request);
@@ -304,7 +305,7 @@ rpc_ioctl(rcf_rpc_server *rpcs,
         default:
             ERROR("Unsupported ioctl code: %d", request);
             rpcs->_errno = TE_RC(TE_RCF, EOPNOTSUPP);
-            return -1;
+            RETVAL_INT(ioctl, -1);;
     }
 
     rcf_rpc_call(rpcs, _ioctl,
@@ -602,5 +603,5 @@ rpc_ioctl(rcf_rpc_server *rpcs,
                  arg, req_val,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_VAL(ioctl, out.retval);
+    RETVAL_INT(ioctl, out.retval);
 }

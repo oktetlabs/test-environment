@@ -157,6 +157,7 @@ rcf_rpc_server_create(const char *ta, const char *name,
     
     strcpy(rpcs->ta, ta);
     strcpy(rpcs->name, name);
+    rpcs->iut_err_jump = TRUE;
     rpcs->op = RCF_RPC_CALL_WAIT;
     rpcs->def_timeout = RCF_RPC_DEFAULT_TIMEOUT;
     if ((rc = rpc_server_sem_init(rpcs)) != 0)
@@ -261,6 +262,7 @@ rcf_rpc_server_thread_create(rcf_rpc_server *rpcs, const char *name,
     strcpy(tmp->ta, rpcs->ta);
     strcpy(tmp->name, name);
     tmp->op = RCF_RPC_CALL_WAIT;
+    tmp->iut_err_jump = TRUE;
     tmp->def_timeout = rpcs->def_timeout;
     tmp->father = rpcs;
     tmp->pid = rpcs->pid;
@@ -336,6 +338,7 @@ rcf_rpc_server_fork(rcf_rpc_server *rpcs, const char *name,
     strcpy(tmp->ta, rpcs->ta);
     strcpy(tmp->name, name);
     tmp->op = RCF_RPC_CALL_WAIT;
+    tmp->iut_err_jump = TRUE;
     tmp->pid = out.pid;
     tmp->def_timeout = rpcs->def_timeout;
     if ((rc = rpc_server_sem_init(tmp)) != 0)
@@ -869,6 +872,7 @@ rcf_rpc_call(rcf_rpc_server *rpcs, int proc,
     }
     pthread_mutex_lock(&rpcs->lock);
     rpcs->_errno = 0;
+    rpcs->err_log = FALSE;
     if (rpcs->timeout == 0)
         rpcs->timeout = rpcs->def_timeout;
     

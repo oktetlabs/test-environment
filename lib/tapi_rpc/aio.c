@@ -66,14 +66,15 @@ rpc_aio_read_test(rcf_rpc_server *rpcs,
     tarpc_aio_read_test_in  in;
     tarpc_aio_read_test_out out;
 
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+    
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        return -1;
+        RETVAL_INT(aio_read_test, -1);
     }
 
-    memset(&in, 0, sizeof(in));
-    memset(&out, 0, sizeof(out));
     in.s = s;
     in.signum = signum;
     in.t = timeout;
@@ -103,7 +104,7 @@ rpc_aio_read_test(rcf_rpc_server *rpcs,
                  s, signum_rpc2str(signum), timeout, buf, buflen, rlen,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_VAL(aio_read_test, out.retval);
+    RETVAL_INT(aio_read_test, out.retval);
 }
 
 /**
@@ -122,14 +123,15 @@ rpc_aio_error_test(rcf_rpc_server *rpcs,
     tarpc_aio_error_test_in  in;
     tarpc_aio_error_test_out out;
 
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+    
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        return -1;
+        RETVAL_INT(aio_error_test, -1);
     }
 
-    memset(&in, 0, sizeof(in));
-    memset(&out, 0, sizeof(out));
     in.diag.diag_val = diag;
     in.diag.diag_len = diag_len;
 
@@ -147,7 +149,7 @@ rpc_aio_error_test(rcf_rpc_server *rpcs,
                  rpcs->ta, rpcs->name,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_INT_ZERO_OR_MINUS_ONE(aio_error_test, out.retval);
+    RETVAL_INT(aio_error_test, out.retval);
 }
 
 /*
@@ -172,14 +174,15 @@ rpc_aio_write_test(rcf_rpc_server *rpcs,
     tarpc_aio_write_test_in  in;
     tarpc_aio_write_test_out out;
 
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+    
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        return -1;
+        RETVAL_INT(aio_write_test, -1);
     }
 
-    memset(&in, 0, sizeof(in));
-    memset(&out, 0, sizeof(out));
     in.s = s;
     in.signum = signum;
     in.buf.buf_val = buf;
@@ -202,7 +205,7 @@ rpc_aio_write_test(rcf_rpc_server *rpcs,
                  s, signum_rpc2str(signum), buf, buflen,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_VAL(aio_write_test, out.retval);
+    RETVAL_INT(aio_write_test, out.retval);
 }
 
 /**
@@ -229,14 +232,15 @@ rpc_aio_suspend_test(rcf_rpc_server *rpcs,
     tarpc_aio_suspend_test_in  in;
     tarpc_aio_suspend_test_out out;
 
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+    
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        return -1;
+        RETVAL_INT(aio_suspend_test, -1);
     }
 
-    memset(&in, 0, sizeof(in));
-    memset(&out, 0, sizeof(out));
     in.s = s;
     in.s_aux = s_aux;
     in.signum = signum;
@@ -266,6 +270,6 @@ rpc_aio_suspend_test(rcf_rpc_server *rpcs,
                  s, s_aux, signum_rpc2str(signum), timeout, buf, buflen,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_VAL(aio_suspend_test, out.retval);
+    RETVAL_INT(aio_suspend_test, out.retval);
 }
 

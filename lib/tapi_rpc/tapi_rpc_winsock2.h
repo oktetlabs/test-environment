@@ -48,9 +48,6 @@ typedef void *rpc_hwnd;
 /* Windows HANDLE  :o\  */
 typedef void *rpc_handle;
 
-/* To store the pointer, which is valid in the TA address space */
-typedef uint64_t rpc_ptr;
-
 /* WSASocket() */
 extern int rpc_wsa_socket(rcf_rpc_server *rpcs,
                           rpc_socket_domain domain, rpc_socket_type type,

@@ -140,14 +140,14 @@ rpc_gethostbyname(rcf_rpc_server *rpcs, const char *name)
 
     struct hostent *res = NULL;
 
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        return NULL;
+        RETVAL_PTR(gethostbyname, NULL);
     }
-
-    memset(&in, 0, sizeof(in));
-    memset(&out, 0, sizeof(out));
 
     in.name.name_val = (char *)name;
     in.name.name_len = (name == NULL) ? 0 : (strlen(name) + 1);
@@ -178,14 +178,14 @@ rpc_gethostbyaddr(rcf_rpc_server *rpcs,
 
     struct hostent *res = NULL;
 
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        return NULL;
+        RETVAL_PTR(gethostbyaddr, NULL);
     }
-
-    memset(&in, 0, sizeof(in));
-    memset(&out, 0, sizeof(out));
 
     in.type = type;
 
@@ -265,14 +265,14 @@ rpc_getaddrinfo(rcf_rpc_server *rpcs,
     struct addrinfo *list = NULL;
     struct tarpc_ai  rpc_hints;
 
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        return -1;
+        RETVAL_INT(getaddrinfo, -1);
     }
-
-    memset(&in, 0, sizeof(in));
-    memset(&out, 0, sizeof(out));
 
     if (node != NULL)
     {
@@ -327,7 +327,7 @@ rpc_getaddrinfo(rcf_rpc_server *rpcs,
                            sizeof(int))) == NULL)
         {
             rpcs->_errno = TE_RC(TE_RCF, ENOMEM);
-            RETVAL_INT_ZERO_OR_MINUS_ONE(getaddrinfo, out.retval);
+            RETVAL_INT(getaddrinfo, -1);
         }
         *(int *)list = out.mem_ptr;
         list = (struct addrinfo *)((int *)list + 1);
@@ -343,7 +343,7 @@ rpc_getaddrinfo(rcf_rpc_server *rpcs,
                 }
                 free((int *)list - 1);
                 rpcs->_errno = TE_RC(TE_RCF, ENOMEM);
-                RETVAL_INT_ZERO_OR_MINUS_ONE(getaddrinfo, out.retval);
+                RETVAL_INT(getaddrinfo, -1);
             }
             list[i].ai_next = (i == (int)out.res.res_len - 1) ?
                                   NULL : list + i + 1;
@@ -358,7 +358,7 @@ rpc_getaddrinfo(rcf_rpc_server *rpcs,
                  node, service, hints, res,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_INT_ZERO_OR_MINUS_ONE(getaddrinfo, out.retval);
+    RETVAL_INT(getaddrinfo, out.retval);
 }
 
 void
@@ -368,14 +368,14 @@ rpc_freeaddrinfo(rcf_rpc_server *rpcs,
     tarpc_freeaddrinfo_in  in;
     tarpc_freeaddrinfo_out out;
 
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        return;
+        RETVAL_VOID(freeaddrinfo);
     }
-
-    memset(&in, 0, sizeof(in));
-    memset(&out, 0, sizeof(out));
 
     rpcs->op = RCF_RPC_CALL_WAIT;
 

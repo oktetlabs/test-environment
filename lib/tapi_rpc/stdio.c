@@ -60,14 +60,14 @@ rpc_fopen(rcf_rpc_server *rpcs,
     tarpc_fopen_in  in;
     tarpc_fopen_out out;
 
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
     if (rpcs == NULL || path == NULL || mode == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        return NULL;
+        RETVAL_PTR(fopen, NULL);
     }
-
-    memset(&in, 0, sizeof(in));
-    memset(&out, 0, sizeof(out));
 
     rpcs->op = RCF_RPC_CALL_WAIT;
     in.path.path_len = strlen(path) + 1;
@@ -96,16 +96,16 @@ rpc_popen(rcf_rpc_server *rpcs,
     char *cmd_dup = strdup(cmd);
     char *mode_dup = strdup(mode);
 
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
     if (rpcs == NULL || cmd == NULL || mode == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         free(cmd_dup);
         free(mode_dup);
-        return NULL;
+        RETVAL_PTR(popen, NULL);
     }
-
-    memset(&in, 0, sizeof(in));
-    memset(&out, 0, sizeof(out));
 
     rpcs->op = RCF_RPC_CALL_WAIT;
     in.cmd.cmd_len = strlen(cmd) + 1;
@@ -134,14 +134,14 @@ rpc_fileno(rcf_rpc_server *rpcs,
     tarpc_fileno_in  in;
     tarpc_fileno_out out;
 
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        return -1;
+        RETVAL_INT(fileno, -1);
     }
-
-    memset(&in, 0, sizeof(in));
-    memset(&out, 0, sizeof(out));
 
     rpcs->op = RCF_RPC_CALL_WAIT;
     in.mem_ptr = (unsigned int)f;
@@ -156,7 +156,7 @@ rpc_fileno(rcf_rpc_server *rpcs,
                  rpcs->ta, rpcs->name,
                  f, out.fd, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_VAL(fileno, out.fd);
+    RETVAL_INT(fileno, out.fd);
 }
 
 /**
