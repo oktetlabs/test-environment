@@ -493,7 +493,7 @@ process_backup(cfg_backup_msg *msg)
             if ((msg->rc = cfg_dh_restore_backup(msg->filename)) == 0)
                 return;
                 
-            if (msg->rc == ENOENT)
+            if (msg->rc == ENOENT) /* FIXME */
                 return;
 
 /**
