@@ -79,14 +79,14 @@ rcf_pch_vread(struct rcf_comm_connection *conn,
     {
         struct timeval tv;
         time_t         t;
-        struct tm     *tm;
+        struct tm      tm;
 
         gettimeofday(&tv, NULL);
         t = (time_t)(tv.tv_sec);
         localtime_r(&t, &tm);
 
         SEND_ANSWER("0 %02d:%02d:%02d",
-                    tm->tm_hour, tm->tm_min, tm->tm_sec);
+                    tm.tm_hour, tm.tm_min, tm.tm_sec);
     }
 #endif
 
@@ -225,7 +225,7 @@ rcf_pch_vwrite(struct rcf_comm_connection *conn,
     {
         struct timeval tv;
         time_t         t;
-        struct tm     *tm;
+        struct tm      tm;
         
         WARN("My variable =");
         
@@ -233,12 +233,12 @@ rcf_pch_vwrite(struct rcf_comm_connection *conn,
         t = (time_t)(tv.tv_sec);
         localtime_r(&t, &tm);
         if (sscanf(va_arg(ap, const char *), "%02d:%02d:%02d",
-                   &(tm->tm_hour), &(tm->tm_min), &(tm->tm_sec)) != 3)
+                   &(tm.tm_hour), &(tm.tm_min), &(tm.tm_sec)) != 3)
         {
             va_end(ap);
             SEND_ANSWER("%d", ETEBADFORMAT);
         }
-        tv.tv_sec = mktime(tm);
+        tv.tv_sec = mktime(&tm);
        
 #ifndef VGDEBUG /* Valgrind debugging */
         settimeofday(&tv, NULL);
