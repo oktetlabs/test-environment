@@ -3625,5 +3625,5 @@ TARPC_FUNC(___func, {},                                         \
 }                                                               \
 )
 
-TARPC_UNSUPPORTED(create_event);
-TARPC_UNSUPPORTED(close_event);
+TARPC_FUNC_UNSUPPORTED(create_event);
+TARPC_FUNC_UNSUPPORTED(close_event);
