@@ -21,7 +21,7 @@ TE_LIB_PARMS([tad], [], [], \
               --with-ipstack --with-dhcp --with-snmp --with-cli], [])
 
 TE_TA_TYPE([linux], [linux], [], [--with-rcf-rpc], [], \
-           [-lexpect], [tad ndn asn])
+           [-lexpect -lnetsnmp -lcrypto], [tad ndn asn])
 
 #TE_TA_TYPE([linux_lite], [linux], [], [], [-DTAD_CH_DUMMY], [], [])
 
