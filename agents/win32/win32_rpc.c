@@ -463,7 +463,8 @@ tarpc_server(void *arg)
     signal(SIGINT, sigint_handler);
     
     memset(&arg1, 0, sizeof(arg1));
-    strcpy(arg1.name, (char *)arg);
+    arg1.name.name_val = (char *)arg;
+    arg1.name.name_len = strlen((char *)arg) + 1;
     rpcserver_name = (char *)arg;
 
     RPC_LGR_MESSAGE(TE_LL_RING, "Started %s (PID %d, TID %u)", (char *)arg, 
