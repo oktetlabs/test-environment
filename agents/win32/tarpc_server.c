@@ -2053,7 +2053,6 @@ _peek_message_1_svc(tarpc_peek_message_in *in,
                    struct svc_req *rqstp)
 {
     MSG msg;
-    int rc;
 
     /* 
      * Should not be called in thread to avoid troubles with threads 
@@ -2062,17 +2061,14 @@ _peek_message_1_svc(tarpc_peek_message_in *in,
 
     UNUSED(rqstp);
     
-    while ((rc = PeekMessage(&msg, (HWND)(in->hwnd), 0, 0, PM_REMOVE)) != 0 &&
+    while ((out->retval = PeekMessage(&msg, (HWND)(in->hwnd), 
+                                      0, 0, PM_REMOVE)) != 0 &&
            msg.message != WM_USER + 1);
            
-    if (rc != 0)
+    if (out->retval != 0)
     {
         out->sock = msg.wParam;
         out->event = network_event_h2rpc(msg.lParam);
-    }
-    else
-    {
-        out->sock = -1;
     }
 
     return TRUE;                                 
