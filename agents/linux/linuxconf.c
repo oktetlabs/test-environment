@@ -1858,6 +1858,13 @@ arp_list(unsigned int gid, const char *oid, char **list)
  *
  * @note The function is not thread safe - it uses static memory for 
  * 'rt_dev' field in 'rt' structure.
+ *
+ * ATENTION - read the text below!
+ * @todo This function is used in both places agent/linux/linuxconf.c
+ * and lib/tapi/tapi_cfg.c, which is very ugly!
+ * We couldn't find the right place to put it in so that it 
+ * is accessible from both places. If you modify it you should modify
+ * the same function in the second place!
  */
 static int
 route_parse_inst_name(const char *inst_name,
@@ -1870,13 +1877,17 @@ route_parse_inst_name(const char *inst_name,
 {
     char        *tmp, *tmp1;
     int          prefix;
+#ifdef __linux__
     static char  ifname[IF_NAMESIZE];
+#endif
     char        *ptr;
     char        *end_ptr;
     char        *term_byte; /* Pointer to the trailing zero byte 
                                in 'inst_name' */
     static char  inst_copy[RCF_MAX_VAL];
+#ifdef __linux__
     int          int_val;
+#endif
 
     memset(rt, 0, sizeof(*rt));
     strncpy(inst_copy, inst_name, sizeof(inst_copy));
@@ -1938,6 +1949,7 @@ route_parse_inst_name(const char *inst_name,
         rt->rt_flags |= RTF_GATEWAY;
     }
 
+#ifdef __linux__
     if ((ptr = strstr(tmp, "dev=")) != NULL)
     {
         end_ptr = ptr += strlen("dev=");
@@ -2035,6 +2047,7 @@ route_parse_inst_name(const char *inst_name,
         rt->rt_irtt = int_val;
         rt->rt_flags |= RTF_IRTT;
     }
+#endif /* !__linux__ */
 
     if (strstr(tmp, "reject") != NULL)
         rt->rt_flags |= RTF_REJECT;
@@ -2058,6 +2071,7 @@ static int
 route_get(unsigned int gid, const char *oid, char *value,
           const char *route)
 {
+#ifdef __linux__
     int       rc;
     FILE     *fp;
     char      ifname[IF_NAMESIZE];
@@ -2065,11 +2079,7 @@ route_get(unsigned int gid, const char *oid, char *value,
     uint32_t  route_mask;
     uint32_t  route_gw;
 
-#ifdef __linux__
     struct rtentry  rt;
-#else
-    struct ortentry rt;
-#endif
 
     UNUSED(gid);
     UNUSED(oid);
@@ -2082,11 +2092,7 @@ route_get(unsigned int gid, const char *oid, char *value,
     memcpy(&route_addr, &(((struct sockaddr_in *)&(rt.rt_dst))->sin_addr),
            sizeof(route_addr));
 
-#ifdef __linux__
     route_mask = ((struct sockaddr_in *)&(rt.rt_genmask))->sin_addr.s_addr;
-#else
-#error Find field corresponding to route mask
-#endif
     route_gw = ((struct sockaddr_in *)&(rt.rt_gateway))->sin_addr.s_addr;
 
     if ((fp = fopen("/proc/net/route", "r")) == NULL)
@@ -2161,6 +2167,14 @@ route_get(unsigned int gid, const char *oid, char *value,
     fclose(fp);
 
     return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
+#else
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(value);
+    UNUSED(route);
+
+    return TE_RC(TE_TA_LINUX, EOPNOTSUPP);
+#endif
 }
 
 /**
@@ -2203,12 +2217,9 @@ static int
 route_add(unsigned int gid, const char *oid, const char *value,
           const char *route)
 {
-    int             rc;
 #ifdef __linux__
+    int             rc;
     struct rtentry  rt;
-#else
-    struct ortentry rt;
-#endif
 
     UNUSED(gid);
     UNUSED(oid);
@@ -2243,6 +2254,14 @@ route_add(unsigned int gid, const char *oid, const char *value,
     }
 
     return 0;
+#else
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(value);
+    UNUSED(route);
+
+    return TE_RC(TE_TA_LINUX, EOPNOTSUPP);
+#endif
 }
 
 
@@ -2259,13 +2278,10 @@ route_add(unsigned int gid, const char *oid, const char *value,
 static int
 route_del(unsigned int gid, const char *oid, const char *route)
 {
+#ifdef __linux__
     int             rc;
     char            value[RCF_MAX_VAL];
-#ifdef __linux__
     struct rtentry  rt;
-#else
-    struct ortentry rt;
-#endif
 
     ENTRY("%s", route);
 
@@ -2294,6 +2310,13 @@ route_del(unsigned int gid, const char *oid, const char *route)
     }
 
     return 0;
+#else
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(route);
+
+    return TE_RC(TE_TA_LINUX, EOPNOTSUPP);
+#endif
 }
 
 /**

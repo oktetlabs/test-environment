@@ -1733,6 +1733,7 @@ TARPC_FUNC(ioctl,
                         arp_fl_rpc2h(out->req.req_val[0].ioctl_request_u.
                                      req_arpreq.rpc_arp_flags);
                 }
+#ifdef __linux__
                 if (in->code == RPC_SIOCGARP)
                 {
                      /* Copy device */
@@ -1740,6 +1741,7 @@ TARPC_FUNC(ioctl,
                            out->req.req_val[0].ioctl_request_u.
                            req_arpreq.rpc_arp_dev);
                 }
+#endif /* !__linux__ */
                 break;
             }
 

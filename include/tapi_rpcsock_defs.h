@@ -2022,6 +2022,19 @@ RPCBITMAP2STR(if_fl, IF_FL_MAPPING_LIST)
 #endif /* IFF_UP */
 
 
+#ifdef ATF_NETMASK
+#define HAVE_ATF_NETMASK 1
+#else
+#define HAVE_ATF_NETMASK 0
+#define ATF_NETMASK      0
+#endif
+#ifdef ATF_DONTPUB
+#define HAVE_ATF_DONTPUB 1
+#else
+#define HAVE_ATF_DONTPUB 0
+#define ATF_DONTPUB      0
+#endif
+
 /* arpreq flags */
 typedef enum rpc_arp_flags {
     RPC_ATF_COM = 0x0001,         /**< Lookup complete */
@@ -2058,9 +2071,14 @@ arp_fl_rpc2h(rpc_arp_fl flags)
     
     return (!!(flags & RPC_ATF_COM) * ATF_COM) |
            (!!(flags & RPC_ATF_PERM) * ATF_PERM) |
-           (!!(flags & RPC_ATF_PUBL) * ATF_PUBL) |
-           (!!(flags & RPC_ATF_NETMASK) * ATF_NETMASK) |
-           (!!(flags & RPC_ATF_DONTPUB) * ATF_DONTPUB);
+           (!!(flags & RPC_ATF_PUBL) * ATF_PUBL)
+#if HAVE_ATF_NETMASK
+           | (!!(flags & RPC_ATF_NETMASK) * ATF_NETMASK)
+#endif
+#if HAVE_ATF_DONTPUB
+           | (!!(flags & RPC_ATF_DONTPUB) * ATF_DONTPUB)
+#endif
+           ;
 }
 
 static inline int
@@ -2068,9 +2086,14 @@ arp_fl_h2rpc(int flags)
 {
     return (!!(flags & ATF_COM) * RPC_ATF_COM) |
            (!!(flags & ATF_PERM) * RPC_ATF_PERM) |
-           (!!(flags & ATF_PUBL) * RPC_ATF_PUBL) |
-           (!!(flags & ATF_NETMASK) * RPC_ATF_NETMASK) |
-           (!!(flags & ATF_DONTPUB) * RPC_ATF_DONTPUB);
+           (!!(flags & ATF_PUBL) * RPC_ATF_PUBL)
+#if HAVE_ATF_NETMASK
+           | (!!(flags & ATF_NETMASK) * RPC_ATF_NETMASK)
+#endif
+#if HAVE_ATF_DONTPUB
+           | (!!(flags & ATF_DONTPUB) * RPC_ATF_DONTPUB)
+#endif
+           ;
 }
 
 #endif /* HAVE_NET_IF_ARP_H */

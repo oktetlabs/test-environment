@@ -24,6 +24,15 @@
 /* Define to 1 if you have the <net/if_dl.h> header file. */
 #undef HAVE_NET_IF_DL_H
 
+/* Define to 1 if you have the <net/route.h> header file. */
+#undef HAVE_NET_ROUTE_H
+
+/* Whether we have ortentry in net/route.h */
+#undef HAVE_ORTENTRY
+
+/* Whether we have rtentry in net/route.h */
+#undef HAVE_RTENTRY
+
 /* Define to 1 if you have the <semaphore.h> header file. */
 #undef HAVE_SEMAPHORE_H
 

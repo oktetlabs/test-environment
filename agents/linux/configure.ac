@@ -49,6 +49,7 @@ aio.h \
 net/ethernet.h \
 net/if_arp.h \
 net/if_dl.h \
+net/route.h \
 netinet/in_systm.h \
 sys/un.h \
 ])
@@ -133,6 +134,22 @@ AM_CONDITIONAL(CFG_RCF_RPC, test -n "$with_rcf_rpc")
 # # Check for expect library
 # AC_CHECK_LIB(expect, exp_expectv)
 
+dnl #######################################################################
+dnl Newer BSD systems don't have a compatible rtentry - use ortentry
+dnl #######################################################################
+ 
+rtry=none
+AC_MSG_CHECKING(for either struct rtentry or struct ortentry)
+AC_EGREP_HEADER(rtentry, net/route.h, rtry=rtentry)
+if test x"$rtry" = xrtentry; then
+  AC_DEFINE([HAVE_RTENTRY], [1], [Whether we have rtentry in net/route.h])
+fi
+AC_EGREP_HEADER(ortentry, net/route.h, rtry=ortentry)
+if test x"$rtry" = xortentry; then
+ AC_DEFINE([HAVE_ORTENTRY], [1], [Whether we have ortentry in net/route.h])
+fi
+AC_MSG_RESULT([$rtry])
+    
 #
 # Check for 'sa_len'-like members in 'struct sockaddr'-like structures.
 #
