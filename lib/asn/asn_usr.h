@@ -480,8 +480,17 @@ extern asn_syntax_t asn_get_syntax(const asn_value *value, const char *subval_la
 extern asn_syntax_t asn_get_syntax_of_type(const asn_type *type);
 
 /**
- * Get choice in subvalue of root ASN value container. 
+ * Get choice in subvalue of root ASN value container.  
+ *
+ * @param container     Root of ASN value tree which subvalue is interested.
+ *
+ * @return pointer to label or NULL on error. 
+ */ 
+extern const char* asn_get_choice_ptr(const asn_value *container);
 
+/**
+ * Get choice in subvalue of root ASN value container. 
+ *
  * @param container     Root of ASN value tree which subvalue is interested.
  * @param subval_labels string with dot-separated sequence of textual field
  *                      labels, specifying interested subvalue in ASN value 
