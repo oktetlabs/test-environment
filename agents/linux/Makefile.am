@@ -21,10 +21,8 @@ CLEANFILES=symtbl.c
 
 if CFG_RCF_RPC
 
-SUBDIRS = libltdl
-DIST_SUBDIRS = libltdl
 MY_CPPFLAGS+=-DRCF_RPC -I.
-MY_LDADD+=$(LIBLTDL) -lltdl
+MY_LDADD+=-ldl
 MY_SOURCES+=linux_rpc.c tarpc_server.c 
 MY_NODIST_SOURCES=tarpc_xdr.c tarpc_svc.c
 MY_SYMTBL_OBJECTS+=linux_rpc.o tarpc_server.o
@@ -49,9 +47,6 @@ tarpc.h tarpc_xdr.c tarpc_svc.c: tarpc.x.m4
 	rm -f tarpc.x
 
 else
-
-SUBDIRS=
-DIST_SUBDIRS=
 
 EXTRA_DIST+=linux_rpc.h linux_rpc.c
 
@@ -94,10 +89,10 @@ talinuxtmpl_DEPENDENCIES=@TE_DEPENDENCIES@ symtbl.o \
 
 symtbl.c: $(MY_SYMTBL_OBJECTS) @TE_DEPENDENCIES@
 	if test -e $(DESTDIR)/$(prefix)/../@host@/bin/te_generate_symtbl ; then \
-            $(DESTDIR)/$(prefix)/../@host@/bin/te_generate_symtbl "${NM}" symtbl.c $^ ; \
-        else \
-            te_generate_symtbl "${NM}" symtbl.c $^ ; \
-        fi
+		$(DESTDIR)/$(prefix)/../@host@/bin/te_generate_symtbl "${NM}" symtbl.c $^ ; \
+	else \
+		te_generate_symtbl "${NM}" symtbl.c $^ ; \
+	fi
 
 install-exec-hook:
 	mv $(DESTDIR)/$(bindir)/talinuxtmpl $(DESTDIR)/$(bindir)/ta@with_name@

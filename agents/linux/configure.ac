@@ -14,15 +14,6 @@ AC_CANONICAL_HOST
 # Checks for programs.
 AC_PROG_CC
 
-#
-# Ideally it should be done conditionally
-#
-AC_LIBLTDL_INSTALLABLE
-# Check for dlopen support
-AC_LIBTOOL_DLOPEN
-# Configure libtool
-AC_PROG_LIBTOOL
-
 AC_PROG_INSTALL
 
 AC_CHECK_TOOL(NM, nm)
@@ -120,16 +111,6 @@ if test -n "$with_rcf_rpc" ; then
                   AC_CHECK_LIB([nsl], [aio_read], [LIBS="-lnsl -lrt ${LIBS}"],
                                AC_MSG_WARN([Asynchronous I/O not supported]),
                                [-lrt]))
-
-    #
-    # libtool is required for RCF RPC only
-    #
-    # Substitute INCLTDL and LIBLTDL in the Makefiles
-    AC_SUBST(INCLTDL)
-    AC_SUBST(LIBLTDL)
-    # Configure libltdl
-    enable_ltdl_install=yes
-    AC_CONFIG_SUBDIRS(libltdl)
 fi
 
 

@@ -66,7 +66,6 @@
 #include "te_stdint.h"
 #include "te_defs.h"
 #include "te_errno.h"
-#include "ltdl.h"
 #include "tarpc.h"
 #include "rcf_ch_api.h"
 #include "rcf_rpc_defs.h"
@@ -172,34 +171,28 @@ static char *socket_library_name = "/dummy";
 static int
 find_func(tarpc_in_arg *in, char *name, sock_api_func *func)
 {
-    static lt_dlhandle socklib_handle = NULL;
-    static lt_dlhandle libc_handle = NULL;
+    static void *socklib_handle = NULL;
+    static void *libc_handle = NULL;
     
     if (socklib_handle == NULL)
     {
-        if (lt_dlinit() != 0)
-        {
-            ERROR("lt_dlinit() failed");
-            return TE_RC(TE_TA_LINUX, ENOENT);
-        }
-
-        if ((socklib_handle = lt_dlopen(socket_library_name)) == NULL)
+        if ((socklib_handle = dlopen(socket_library_name, RTLD_LAZY)) == NULL)
         {
             ERROR("Cannot load shared library %s: %s",
-                  socket_library_name, lt_dlerror());
+                  socket_library_name, dlerror());
             return TE_RC(TE_TA_LINUX, ENOENT);
         } 
-        if ((libc_handle = lt_dlopen(NULL)) == NULL)
+        if ((libc_handle = dlopen(NULL, RTLD_LAZY)) == NULL)
         {
-            ERROR("lt_dlopen() failed for myself: %s", lt_dlerror());
+            ERROR("dlopen() failed for myself: %s", dlerror());
             return TE_RC(TE_TA_LINUX, ENOENT);
         } 
     }
     
-    if ((*func = lt_dlsym(socklib_handle, name)) == NULL &&
-        (*func = lt_dlsym(libc_handle, name)) == NULL)
+    if ((*func = dlsym(socklib_handle, name)) == NULL &&
+        (*func = dlsym(libc_handle, name)) == NULL)
     {
-        VERB("Cannot resolve symbol %s in libraries: %s", name, lt_dlerror());
+        VERB("Cannot resolve symbol %s in libraries: %s", name, dlerror());
         if ((*func = rcf_ch_symbol_addr(name, 1)) == NULL)
         {
             ERROR("Cannot resolve symbol %s", name);
