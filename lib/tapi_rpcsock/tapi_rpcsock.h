@@ -336,6 +336,17 @@ extern void rpc_if_freenameindex(rcf_rpc_server *handle,
                                  struct if_nameindex *ptr);
 
 
+typedef void * rpc_wsaevent;
+
+extern rpc_wsaevent rpc_create_event(rcf_rpc_server *handle);
+
+extern int rpc_close_event(rcf_rpc_server *handle, rpc_wsaevent hevent);
+	
+
+
+
+
+
 /*
  * Signals
  */

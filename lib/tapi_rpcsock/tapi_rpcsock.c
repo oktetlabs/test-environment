@@ -1376,6 +1376,82 @@ rpc_getpeername_gen(rcf_rpc_server *handle,
     RETVAL_RC(getpeername);
 }             
 
+
+
+
+
+
+
+
+rpc_wsaevent 
+rpc_create_event(rcf_rpc_server *handle)
+{
+    rcf_rpc_op      op = handle->op;
+    tarpc_create_event_in  in;
+    tarpc_create_event_out out;
+
+    if (handle == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        return NULL;
+    }
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    rcf_rpc_call(handle, _create_event, &in, 
+		 (xdrproc_t)xdr_tarpc_create_event_in,
+                 &out, (xdrproc_t)xdr_tarpc_create_event_out);
+    
+    RING("RPC (%s,%s)%s: create_event() -> %p (%s)",
+         handle->ta, handle->name, rpcop2str(op),
+         out.retval, errno_rpc2str(RPC_ERRNO(handle)));
+	 
+    RETVAL_PTR(out.retval, create_event);
+}
+
+int
+rpc_close_event(rcf_rpc_server *handle, rpc_wsaevent hevent)
+{
+    rcf_rpc_op      op = handle->op;
+    tarpc_close_event_in  in;
+    tarpc_close_event_out out;
+
+    if (handle == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        return FALSE;
+    }
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+    in.hevent = (tarpc_wsaevent)hevent;
+
+    rcf_rpc_call(handle, _close_event, &in, (xdrproc_t)xdr_tarpc_close_event_in,
+                 &out, (xdrproc_t)xdr_tarpc_close_event_out);
+    
+    RING("RPC (%s,%s)%s: close_event(%p) -> %s (%s)",
+         handle->ta, handle->name, rpcop2str(op), hevent, 
+         out.retval ? "true" : "false", errno_rpc2str(RPC_ERRNO(handle)));
+
+    RETVAL_VAL(out.retval, close_event);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 rpc_fd_set *
 rpc_fd_set_new(rcf_rpc_server *handle)
 {
