@@ -39,6 +39,7 @@ netinet/in.h \
 netinet/ip.h \
 netinet/tcp.h \
 net/if.h \
+net/if_arp.h \
 netdb.h \
 semaphore.h \
 ])

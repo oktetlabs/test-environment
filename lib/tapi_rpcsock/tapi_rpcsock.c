@@ -61,6 +61,9 @@
 #ifdef HAVE_NET_IF_H
 #include <net/if.h>
 #endif
+#ifdef HAVE_NET_IF_ARP_H
+#include <net/if_arp.h>
+#endif
 #ifdef HAVE_ARPA_INET_H
 #include <arpa/inet.h>
 #endif
@@ -3477,6 +3480,8 @@ rpc_ioctl(rcf_rpc_server *handle,
         in.req.req_val = &req;
         in.req.req_len = 1;
     }
+
+
     switch (request)
     {
         case RPC_SIOCGSTAMP:
@@ -3601,7 +3606,55 @@ rpc_ioctl(rcf_rpc_server *handle,
                        sizeof(((struct ifreq *)arg)->ifr_name));
             }
             break;
-        
+#define FILL_ARPREQ_ADDR(type_) \
+    do                                                                       \
+    {                                                                        \
+        tarpc_sa *rpc_addr =                                                 \
+            &in.req.req_val[0].ioctl_request_u.req_arpreq.rpc_arp_##type_;   \
+        struct sockaddr *addr = &((struct arpreq *)arg)->arp_##type_;        \
+                                                                             \
+        rpc_addr->sa_family =                                                \
+            addr_family_h2rpc(addr->sa_family);                              \
+        rpc_addr->sa_data.sa_data_val = addr->sa_data;                       \
+        rpc_addr->sa_data.sa_data_len =                                      \
+            sizeof(struct sockaddr) - SA_COMMON_LEN;                         \
+    } while (0)
+        case RPC_SIOCSARP:
+            in.access = IOCTL_WR;
+            if (arg != NULL)
+            {
+                in.req.req_val[0].type = IOCTL_ARPREQ;
+                /* Copy protocol address */
+                FILL_ARPREQ_ADDR(pa);
+                /* Copy HW address */
+                FILL_ARPREQ_ADDR(ha);
+                /* Copy flags */
+                in.req.req_val[0].ioctl_request_u.req_arpreq.rpc_arp_flags =
+                    arp_fl_h2rpc(((struct arpreq *)arg)->arp_flags);
+                /* Copy device */
+                memcpy(
+                    in.req.req_val[0].ioctl_request_u.req_arpreq.rpc_arp_dev,
+                    ((struct arpreq *)arg)->arp_dev,
+                    sizeof(((struct arpreq *)arg)->arp_dev));
+            }
+            break;
+        case RPC_SIOCDARP:
+            in.access = IOCTL_WR;
+            if (arg != NULL)
+            {
+                in.req.req_val[0].type = IOCTL_ARPREQ;
+                FILL_ARPREQ_ADDR(pa);
+            }
+            break;
+        case RPC_SIOCGARP:
+            in.access = IOCTL_WR;
+            if (arg != NULL)
+            {
+                in.req.req_val[0].type = IOCTL_ARPREQ;
+                FILL_ARPREQ_ADDR(pa);
+            }
+            break;
+#undef FILL_ARPREQ_ADDR
         default:
             ERROR("Unsupported ioctl code: %d", request);
             handle->_errno = TE_RC(TE_RCF, EOPNOTSUPP);
@@ -3703,6 +3756,23 @@ rpc_ioctl(rcf_rpc_server *handle,
                 }
                 break;
             }
+            case IOCTL_ARPREQ:
+            {
+                if (request != RPC_SIOCGARP)
+                    break;
+                ((struct arpreq *)arg)->arp_ha.sa_family =
+                    addr_family_rpc2h(out.req.req_val[0].ioctl_request_u.
+                        req_arpreq.rpc_arp_ha.sa_family);
+                 memcpy(((struct arpreq *)arg)->arp_ha.sa_data,
+                         out.req.req_val[0].ioctl_request_u.
+                         req_arpreq.rpc_arp_ha.sa_data.sa_data_val,
+                         out.req.req_val[0].ioctl_request_u.
+                         req_arpreq.rpc_arp_ha.sa_data.sa_data_len);
+                 ((struct arpreq *)arg)->arp_flags =
+                     arp_fl_rpc2h(out.req.req_val[0].ioctl_request_u.
+                                  req_arpreq.rpc_arp_flags);
+                break;
+            }
         }
     }
     
@@ -3754,7 +3824,7 @@ rpc_ioctl(rcf_rpc_server *handle,
                 case RPC_SIOCGIFHWADDR:
                     snprintf(ifreq_buf + strlen(ifreq_buf),
                              sizeof(ifreq_buf) - strlen(ifreq_buf),
-                             "hwaddr: %02x:%02x:%02x:%02x:%02x:%02x ",
+                             "hwaddr: %02x:%02x:%02x:%02x:%02x:%02x",
                              (unsigned char)((struct ifreq *)arg)->ifr_hwaddr.sa_data[0],
                              (unsigned char)((struct ifreq *)arg)->ifr_hwaddr.sa_data[1],
                              (unsigned char)((struct ifreq *)arg)->ifr_hwaddr.sa_data[2],
@@ -3786,7 +3856,39 @@ rpc_ioctl(rcf_rpc_server *handle,
             }
             break;
         }
-        
+        case IOCTL_ARPREQ:
+        {
+            static char arpreq_buf[1024];
+            snprintf(arpreq_buf, sizeof(arpreq_buf), " ARP entry ");
+ 
+            req_val = arpreq_buf;
+
+            switch (request)
+            {
+                case RPC_SIOCGARP:
+                    snprintf(arpreq_buf + strlen(arpreq_buf),
+                             sizeof(arpreq_buf) - strlen(arpreq_buf),
+                             "get: ");
+                {
+                     snprintf(arpreq_buf + strlen(arpreq_buf),
+                             sizeof(arpreq_buf) - strlen(arpreq_buf),
+                             "protocol address %s, ",
+                              inet_ntoa(SIN(&(((struct arpreq *)arg)->
+                                            arp_pa))->sin_addr));
+                     
+                     snprintf(arpreq_buf + strlen(arpreq_buf),
+                             sizeof(arpreq_buf) - strlen(arpreq_buf),
+                             "HW address: %02x:%02x:%02x:%02x:%02x:%02x ",
+                             (unsigned char)((struct arpreq *)arg)->arp_ha.sa_data[0],
+                             (unsigned char)((struct arpreq *)arg)->arp_ha.sa_data[1],
+                             (unsigned char)((struct arpreq *)arg)->arp_ha.sa_data[2],
+                             (unsigned char)((struct arpreq *)arg)->arp_ha.sa_data[3],
+                             (unsigned char)((struct arpreq *)arg)->arp_ha.sa_data[4],
+                             (unsigned char)((struct arpreq *)arg)->arp_ha.sa_data[5]);
+                    break;
+                }
+            }
+        }
         default:
             req_val = "";
             break;
