@@ -1787,6 +1787,23 @@ struct tarpc_get_overlapped_result_out {
 };    
 
 
+/* WSAWaitForMultipleEvents */
+struct tarpc_wait_multiple_events_in {
+    struct tarpc_in_arg common; 
+    
+    int            count;         /**< Number of events */
+    tarpc_wsaevent events<>;      /**< Events array */
+    int            wait_all;      /**< WaitAll flag */
+    unsigned int   timeout;       /**< Timeout (in milliseconds) */
+    int            alertable;     /**< Alertable flag */
+};
+
+struct tarpc_wait_multiple_events_out {
+    struct tarpc_out_arg common;
+
+    int                  retval;
+};    
+
 program tarpc
 {
     version ver0
@@ -1913,10 +1930,10 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(enum_network_events)
         RPC_DEF(transmit_file)
         RPC_DEF(completion_callback)
-
         RPC_DEF(wsa_send)
         RPC_DEF(wsa_recv)
         RPC_DEF(get_overlapped_result)
+        RPC_DEF(wait_multiple_events)
         
         RPC_DEF(create_window)
         RPC_DEF(destroy_window)

@@ -507,6 +507,11 @@ rpc_enum_network_events(rcf_rpc_server *handle,
                         int s, rpc_wsaevent event_object, 
                         rpc_network_event *event);
 
+/** WSAWaitForMultipleEvents() */
+extern int rpc_wait_multiple_events(rcf_rpc_server *handle,
+                                    int count, rpc_wsaevent *events, 
+                                    te_bool wait_all, uint32_t timeout, 
+                                    te_bool alertable, int rcount);
 
 /* Window objects */
 

@@ -2676,5 +2676,21 @@ TARPC_FUNC(duplicate_socket,
 }
 )
 
-/* @TODO WSARecvEx, WSASendTo, WSARecvFrom, WSASendDisconnect,
-   WSARecvDisconnect, WSADuplicateSocket */
+/*---------------------- WSAWaitForMultipleEvents() -------------------------*/
+TARPC_FUNC(wait_multiple_events, {},
+{ 
+    INIT_CHECKED_ARG((char *)(in->events.events_val),
+                     in->events.events_len * sizeof(tarpc_wsaevent),
+                     in->count * sizeof(tarpc_wsaevent));
+
+    MAKE_CALL(out->retval = 
+                  WSAWaitForMultipleEvents(in->count,
+                                           (WSAEVENT *)(in->events.events_val),
+                                           in->wait_all,
+                                           in->timeout,
+                                           in->alertable));
+}
+)
+
+/* @TODO WSARecvEx, WSASendTo, WSARecvFrom, WSASendDisconnect, 
+         WSARecvDisconnect */

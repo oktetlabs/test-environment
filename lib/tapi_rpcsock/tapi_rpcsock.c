@@ -5688,3 +5688,50 @@ rpc_wsa_duplicate_socket(rcf_rpc_server *handle,
 
     RETVAL_RC(duplicate_socket);
 }
+
+int
+rpc_wait_multiple_events(rcf_rpc_server *handle,
+                        int count, rpc_wsaevent *events, 
+                        te_bool wait_all, uint32_t timeout, 
+                        te_bool alertable, int rcount)
+{
+    rcf_rpc_op       op;
+    tarpc_wait_multiple_events_in  in;
+    tarpc_wait_multiple_events_out out;
+
+    if (handle == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        return -1;
+    }
+
+    if (events != NULL && count > rcount)
+    {
+        handle->_errno = TE_RC(TE_RCF, EINVAL);
+        return -1;
+    }
+
+    op = handle->op;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+    
+    in.s = s;
+    in.count = count;
+    in.events.events_len = rcount;
+    in.events.events_val = (tarpc_wsaevent *)events;
+    in.wait_all = wait_all;
+    in.timeout = timeout;
+    in.alertable = alertable;
+    
+    rcf_rpc_call(handle, _wait_multiple_events, &in, (xdrproc_t)xdr_tarpc_wait_multiple_events_in,
+                 &out, (xdrproc_t)xdr_tarpc_wait_multiple_events_out);
+
+    RING("RPC (%s,%s)%s: wait_multiple_events(%d, %p, %s, %d, %s) -> %d (%s)",
+         handle->ta, handle->name, rpcop2str(op), 
+         count, events, wait_all ? "true" : "false", timeout, 
+         alertable ? "true" : "false", out.retval,
+         errno_rpc2str(RPC_ERRNO(handle)));
+    
+    RETVAL_RC(wait_multiple_events);
+}
