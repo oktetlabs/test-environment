@@ -83,7 +83,8 @@ asn_type ndn_data_unit_enum_static =
 static asn_named_entry_t _ndn_data_unit_mask_ne_array [] = 
 {
     { "v", &asn_base_octstring_s },
-    { "m", &asn_base_octstring_s }
+    { "m", &asn_base_octstring_s },
+    { "free-len", &asn_base_null_s }
 }; 
 
  asn_type ndn_data_unit_mask_static = 
