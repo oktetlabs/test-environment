@@ -152,8 +152,9 @@ rcf_rpc_server_create(const char *ta, const char *name,
     rpcs->op = RCF_RPC_CALL_WAIT;
     rpcs->def_timeout = RCF_RPC_DEFAULT_TIMEOUT;
 
-    if ((rc = rcf_ta_call(rpcs->ta, 0, "tarpc_add_server", &rc1, 1, 0,
-                          RCF_STRING, rpcs->name)) != 0 ||
+    if ((rc = rcf_ta_call(rpcs->ta, 0, "tarpc_add_server", &rc1, 2, 0,
+                          RCF_STRING, rpcs->name, 
+                          RCF_INT32, rpcs->pid)) != 0 ||
          (rc = rc1) != 0)
     {
         if (rcf_ta_kill_task(rpcs->ta, 0, rpcs->pid) != 0)
@@ -246,8 +247,8 @@ rcf_rpc_server_thread_create(rcf_rpc_server *rpcs, const char *name,
     tmp->pid = rpcs->pid;
     tmp->tid = out.tid;
     rpcs->children++;
-    if ((rc = rcf_ta_call(rpcs->ta, 0, "tarpc_add_server", &rc1, 1, 0,
-                          RCF_STRING, tmp->name)) != 0 ||
+    if ((rc = rcf_ta_call(rpcs->ta, 0, "tarpc_add_server", &rc1, 2, 0,
+                          RCF_STRING, tmp->name, RCF_INT32, tmp->pid)) != 0 ||
          (rc = rc1) != 0)
                           
     {
@@ -310,8 +311,8 @@ rcf_rpc_server_fork(rcf_rpc_server *rpcs, const char *name,
     tmp->pid = out.pid;
     tmp->def_timeout = rpcs->def_timeout;
 
-    if ((rc = rcf_ta_call(rpcs->ta, 0, "tarpc_add_server", &rc1, 1, 0,
-                          RCF_STRING, tmp->name)) != 0 ||
+    if ((rc = rcf_ta_call(rpcs->ta, 0, "tarpc_add_server", &rc1, 2, 0,
+                          RCF_STRING, tmp->name, RCF_INT32, tmp->pid)) != 0 ||
          (rc = rc1) != 0)
     {
         ERROR("Remote call of tarpc_add_server failed for %s.", rpcs->name);
@@ -393,8 +394,8 @@ rcf_rpc_server_exec(rcf_rpc_server *rpcs)
         return rc;
     }
 
-    if ((rc = rcf_ta_call(rpcs->ta, 0, "tarpc_add_server", &rc1, 1, 0,
-                          RCF_STRING, rpcs->name)) != 0 ||
+    if ((rc = rcf_ta_call(rpcs->ta, 0, "tarpc_add_server", &rc1, 2, 0,
+                          RCF_STRING, rpcs->name, RCF_INT32, rpcs->pid)) != 0 ||
          (rc = rc1) != 0)
     {
         rpcs->dead = 1;
