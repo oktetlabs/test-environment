@@ -293,37 +293,42 @@ extern int rpc_wsa_accept(rcf_rpc_server *handle,
  * Client implementation of AcceptEx()-GetAcceptExSockAddr() call.
  * 
  * @param handle           RPC server handle
- * @param s                descriptor of socket that has already been called with
- *                         the listen function
- * @param s_a              descriptor of a socket on wich to accept an incomming
+ * @param s                Descriptor of socket that has already been called
+ * 			   with the listen function
+ * @param s_a              Descriptor of a socket on wich to accept an incomming
  *                         connection
- * @param buf              pointer to a buffer that receives the first block of
- *                         data sent
- * @param rbuflen          length of buffer passed to the egent
- * @param len              length of the buffer passed to the call
+ * @param len              Length of the buffer to receive data (should not 
+ *			   include the size of local and remote addresses) 	 
  * @param overlapped       WSAOVERLAPPED structure
  * @param bytes_received   number of received data bytes
- * @param laddr            local address returned by GetAcceptExSockAddr()
- *                         function, wich is called after AcceptEx() returning
- * @param laddrlen         size of laddr returned by GetAcceptExSockAddr()
- *                         function
- * @param raddr            remote address returned by GetAcceptExSockAddr()
- *                         function, wich is called after AcceptEx() returning
- * @param raddrlen         size of raddr returned by GetAcceptExSockAddr()
- *                         function
  *
  * @return value returned by AcceptEx() function.
  */
-extern int 
-rpc_accept_ex(rcf_rpc_server *handle,
-              int s, int s_a,
-              void *buf,
-              size_t len,
-              size_t rbuflen,
-              rpc_overlapped overlapped,
-              size_t *bytes_received,
-              struct sockaddr *laddr, socklen_t *laddrlen,
-              struct sockaddr *raddr, socklen_t *raddrlen);
+extern int
+rpc_accept_ex(rcf_rpc_server *handle, int s, int s_a,
+              size_t len, rpc_overlapped overlapped,
+              size_t *bytes_received);
+/**
+ * Client implementation of GetAcceptExSockAddr() call.
+ * 
+ * @param handle           RPC server handle
+ * @param s                descriptor of socket that was passed
+ *                         to rpc_accept_ex() fuinction as 3d parameter
+ * @param buf              pointer to a buffer passed to 
+ *                         rpc_get_overlapped_result()
+ * @param buflen           size of the buffer passed to 
+ *                         rpc_get_overlapped_result()
+ * @param len              buffer size wich was passed to rpc_accept_ex()
+ * @param laddr            local address returned by GetAcceptExSockAddr()
+ * @param raddr            remote address returned by GetAcceptExSockAddr()
+ *
+ * @return N/A
+ */
+extern void
+rpc_get_accept_addr(rcf_rpc_server *handle,
+                    int s, void *buf, size_t buflen, size_t len,
+	            struct sockaddr *laddr,
+	            struct sockaddr *raddr);
 
 extern int rpc_transmit_file(rcf_rpc_server *handle, int s, char *file,
                              ssize_t len, ssize_t len_per_send, 
