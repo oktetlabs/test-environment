@@ -257,6 +257,7 @@ const asn_type * const  ndn_traffic_template = &ndn_traffic_template_s;
 /*
 Packet-Action ::= CHOICE {
     echo        NULL,
+    function    UniversalString,
     file        UniversalString
 }
 */
@@ -264,7 +265,8 @@ Packet-Action ::= CHOICE {
 static asn_named_entry_t _ndn_packet_action_ne_array [] = 
 {
     { "echo",    &asn_base_null_s },
-    { "file",    &asn_base_charstring_s }
+    { "function",&asn_base_charstring_s },
+    { "file",    &asn_base_charstring_s },
 }; 
 
 asn_type ndn_packet_action_s =

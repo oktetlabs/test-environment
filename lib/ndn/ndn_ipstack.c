@@ -173,6 +173,7 @@ asn_type ndn_udp_csap_s =
     {_ndn_udp_csap_ne_array}
 };
 
+asn_type_p ndn_udp_csap = &ndn_udp_csap_s;
 
 
 
