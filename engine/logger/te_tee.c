@@ -85,23 +85,40 @@ DEFINE_LGR_ENTITY("(Tee)");
 int
 main (int argc, char *argv[])
 {
-    char          *buffer; 
+    char          *buffer;
     char          *current;
     char          *fence;
+    char          *newline;
+    char          *rest = NULL;
     int            interval;
     int            current_timeout = -1;
     int            len;
     struct pollfd  poller;
+    static char    buffer1[TE_LOG_FIELD_MAX + 1];
+    static char    buffer2[TE_LOG_FIELD_MAX + 1];
 
 #define MAYBE_DO_LOG \
-    do {                                                    \
-        if (current != buffer)                              \
-        {                                                   \
-            *current = '\0';                                \
-            LGR_MESSAGE(TE_LL_WARN, argv[2], "%s", buffer); \
-            current_timeout = -1;                           \
-            current = buffer;                               \
-        }                                                   \
+    do {                                                       \
+        if (current != buffer)                                 \
+        {                                                      \
+            *current = '\0';                                   \
+            newline = strrchr(buffer, '\n');                   \
+            if (newline)                                       \
+                *newline = '\0';                               \
+            LGR_MESSAGE(TE_LL_WARN, argv[2], "%s%s",           \
+                        rest ? rest : "",                      \
+                        buffer);                               \
+            if (!newline)                                      \
+                rest = NULL;                                   \
+            else                                               \
+            {                                                  \
+                rest = newline + 1;                            \
+                buffer = (buffer == buffer1 ? buffer2 : buffer1); \ 
+                fence = buffer + TE_LOG_FIELD_MAX;             \
+            }                                                  \
+            current_timeout = -1;                              \
+            current = buffer;                                  \
+        }                                                      \
     } while (0)
 
     if (argc != 4)
@@ -118,11 +135,7 @@ main (int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
-    if ((buffer = malloc(TE_LOG_FIELD_MAX + 1)) == NULL)
-    {
-        ERROR("%s(): malloc failed: %d", __FUNCTION__, errno);
-        return EXIT_FAILURE;
-    }
+    buffer  = buffer1;
     current = buffer;
     fence   = buffer + TE_LOG_FIELD_MAX;
     *fence  = '\0';
@@ -152,9 +165,7 @@ main (int argc, char *argv[])
             current += len;
             if (current == fence)
             {
-                LGR_MESSAGE(TE_LL_WARN, argv[2], "%s", buffer);
-                current_timeout = -1;
-                current = buffer;
+                MAYBE_DO_LOG;
             }
             else
             {
