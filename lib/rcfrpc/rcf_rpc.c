@@ -238,15 +238,22 @@ rcf_rpc_server_thread_create(rcf_rpc_server *rpcs, const char *name,
     memset(&out, 0, sizeof(out));
 
     in.name.name_len = strlen(name) + 1;
-    in.name.name_val = (char *)name;
+    in.name.name_val = strdup(name);
+    if (in.name.name_val == NULL)
+        return TE_RC(TE_RCF_API, ENOMEM);
 
     if ((tmp = (rcf_rpc_server *)calloc(1, sizeof(*tmp))) == NULL)
+    {
+        free(in.name.name_val);
         return TE_RC(TE_RCF_API, ENOMEM);
+    }
 
     rcf_rpc_call(rpcs, _pthread_create, 
                  &in, (xdrproc_t)xdr_tarpc_pthread_create_in,
                  &out, (xdrproc_t)xdr_tarpc_pthread_create_out);
-                 
+
+    free(in.name.name_val);
+
     if (rpcs->_errno != 0 || out.retval != 0)
     {
         ERROR("Cannot create thread on the RPC server %s", rpcs->name);
@@ -312,10 +319,14 @@ rcf_rpc_server_fork(rcf_rpc_server *rpcs, const char *name,
     memset(&out, 0, sizeof(out));
 
     in.name.name_len = strlen(name) + 1;
-    in.name.name_val = (char *)name;
+    in.name.name_val = strdup(name);
+    if (in.name.name_val == NULL)
+        return TE_RC(TE_RCF_API, ENOMEM);
 
     rcf_rpc_call(rpcs, _fork, &in, (xdrproc_t)xdr_tarpc_fork_in, 
                  &out, (xdrproc_t)xdr_tarpc_fork_out);
+
+    free(in.name.name_val);
                  
     if (rpcs->_errno != 0 || out.pid < 0)
     {
