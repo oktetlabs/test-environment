@@ -22,6 +22,7 @@ usage()
     echo -e '  '--no-tester\\t\\t\\t'Do not run Tester'
     echo -e '  '--no-cs\\t\\t\\t'Do not run Configurator'
     echo -e '  '--no-rcf\\t\\t\\t'Do not run RCF'
+    echo -e '  '--no-run\\t\\t\\t'Do not run RCF, Configurator and Tester'
     echo
     echo -e '  '--conf-dir='<directory>'\\t'specify configuration file directory'
     echo -e \\t\\t\\t\\t'(${TE_BASE}/storage/conf or '.' by default)'
@@ -174,7 +175,8 @@ while test -n "$1" ; do
         --no-builder) BUILDER= ;;
         --no-tester) TESTER= ;;
         --no-cs) CONFIGURATOR= ;;
-        --no-rcf) RCF= ; ;;
+        --no-rcf) RCF= ;;
+        --no-run) RCF= ; CONFIGURATOR= ; TESTER= ;;
         
         --conf-dir=*) CONF_DIR="${1#--conf-dir=}" ;;
         
