@@ -14,10 +14,10 @@
 
     <session>
         <run>
-            <package name="eth"/>
+            <package name="snmp"/>
         </run>
         <run>
-            <package name="snmp"/>
+            <package name="eth"/>
         </run>
         <run>
             <package name="ipstack"/>
