@@ -52,6 +52,7 @@
 #include "rcf_api.h"
 
 #include "tapi_snmp.h"
+#include "conf_api.h"
 #include "logger_api.h"
 
 
@@ -67,7 +68,7 @@ print_oid (const tapi_snmp_oid_t *oid )
     unsigned i;
 
     if (oid == NULL)
-        strncpy (buf, sizeof(buf), "<null oid>");
+        strncpy(buf, "<null oid>", sizeof(buf));
     for(i =0; i < oid->length; i ++)
         p += sprintf (p, ".%d", (int)oid->id[i]);
     return buf;
@@ -761,7 +762,7 @@ tapi_snmp_getbulk(const char *ta, int sid, int csap_id,
 
     if (rc == 0)
     {
-        if (*num > msg.num_var_binds)
+        if ((unsigned int)(*num) > msg.num_var_binds)
             *num = msg.num_var_binds;
 
         if (msg.num_var_binds) /* this is real response from Test Agent*/
@@ -993,7 +994,7 @@ tapi_snmp_get_table(const char *ta, int sid, int csap_id,
 
         for (leaf = entry_node->child_list; leaf; leaf = leaf->next_peer)
         {
-            if (table_width < leaf->subid)
+            if ((unsigned int)table_width < leaf->subid)
                 table_width = leaf->subid;
         }
 
@@ -1244,7 +1245,6 @@ int
 tapi_snmp_get_syntax(tapi_snmp_oid_t *oid, tapi_snmp_vartypes_t *type)
 {
     struct tree *entry_node;
-    int rc;
 
     if (oid == NULL)
         return ETEWRONGPTR;
@@ -1271,7 +1271,6 @@ tapi_snmp_get_table_columns(tapi_snmp_oid_t *table_oid, tapi_snmp_var_access **c
     struct tree *entry_node; 
     int rc = 0; 
     tapi_snmp_oid_t entry; /* table Entry OID */
-    struct index_list *t_index;
     tapi_snmp_var_access *columns_p;
 
     if (table_oid == NULL)
@@ -1589,6 +1588,67 @@ tapi_snmp_load_mib_with_path(const char *dir_path, const char *mib_file)
     free(full_path);
 
     return 0;
+}
+
+/* See description in tapi_snmp.h */
+int
+tapi_snmp_load_cfg_mibs(const char *dir_path)
+{
+    const char * const  mibs_ptrn = "/mibs:/load:*";
+    unsigned int        num;
+    cfg_handle         *set = NULL;
+    char               *mib_name;
+    int                 rc = 0;
+    unsigned int        i;
+
+    if (!snmp_lib_initialized)
+    {
+        init_snmp("");
+        snmp_lib_initialized = 1;
+    }
+    
+    if ((rc = cfg_find_pattern(mibs_ptrn, &num, &set)) != 0)
+    {
+        if (TE_RC_GET_ERROR(rc) == ENOENT)
+        {
+            WARN("There is no MIB entries specified in configurator.conf");
+            return 0;
+        }
+        else
+        {
+            ERROR("Failed to find by pattern '%s' in Configurator, %X",
+                  mibs_ptrn, rc);
+            return rc;
+        }
+    }
+
+    if (num == 0)
+    {
+        WARN("There is no MIB entries specified in configurator.conf");
+        goto cleanup;
+    }
+
+    for (i = 0; i < num; i++)
+    {
+        if ((rc = cfg_get_inst_name(set[i], &mib_name)) != 0)
+        {
+            ERROR("Failed to get instance name by handle 0x%x, %X",
+                  set[i], rc);
+            goto cleanup;
+        }
+
+        if ((rc = tapi_snmp_load_mib_with_path(dir_path, mib_name)) != 0)
+            WARN("Loading %s MIB fails", mib_name);
+        else
+            INFO("%s MIB has been sucessfully loaded", mib_name);
+
+        free(mib_name);
+    }
+
+cleanup:
+
+    free(set);
+    return rc;
 }
 
 /* See description in tapi_snmp.h */
