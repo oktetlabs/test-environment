@@ -489,15 +489,11 @@ _sigreceived_1_svc(tarpc_sigreceived_in *in, tarpc_sigreceived_out *out,
 
 TARPC_FUNC(socket, {}, 
 {
-    printf("Here!\n");
-    ERROR("Here!\n");
     MAKE_CALL(out->fd = WSASocket(domain_rpc2h(in->domain),
                                   socktype_rpc2h(in->type),
                                   proto_rpc2h(in->proto), 
                                   (LPWSAPROTOCOL_INFO)(in->info.info_val), 0,  
                                   in->flags ? WSA_FLAG_OVERLAPPED : 0));
-    printf("Result %d error %d\n", out->fd, out->common.win_error);
-    ERROR("Result %d error %d\n", out->fd, out->common.win_error);
 }
 )
 
