@@ -91,6 +91,7 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
     int rc;
     struct timeval current;
     char label[20] = "pdus";
+    char choice[20] = "";
 
     gettimeofday(&current, NULL);
 
@@ -184,7 +185,47 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
         else break;
     }
 
-    /* TODO: parse of payload */
+    /* match payload */
+    rc = asn_get_choice(pattern_unit, "payload", label, sizeof(label));
+    if (rc == 0)
+    {
+        if (strcmp(label, "mask") == 0)
+        {
+            const uint8_t *d = data_to_check.data; 
+            const uint8_t *mask = NULL;
+            const uint8_t *pat = NULL;
+            int mask_len, i;
+
+            rc = asn_get_field_data(pattern_unit, &mask, "payload.#mask.m");
+
+            if (rc == 0)
+                rc = asn_get_field_data(pattern_unit, &pat, "payload.#mask.v"); 
+
+            if (rc != 0 || mask == NULL || pat == NULL)
+            {
+                if (rc == 0) 
+                    rc = ETEWRONGPTR;
+                ERROR("Error getting mask of payload, %X", rc);
+                return rc;
+            }
+            mask_len = asn_get_length(pattern_unit, "payload.#mask.m");
+
+            for (i = 0; i < mask_len && i < data_to_check.len; 
+                    i++, mask++, pat++, d++)
+                if ((*d & *mask) != (*pat & *mask))
+                {
+                    rc = ETADNOTMATCH;
+                    break;
+                }
+        }
+
+        if (rc != 0)
+        {
+            INFO("Error matching pattern, rc %X", rc);
+            return rc;
+        }
+    }
+
     if (csap_descr->command & TAD_COMMAND_RESULTS)
     {
         if (data_to_check.len)
@@ -193,8 +234,7 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
                                     data_to_check.len, "payload.#bytes");
             if (rc)
             {
-                VERB(
-                        "ASN error in add rest payload 0x%x\n", rc);
+                ERROR( "ASN error in add rest payload 0x%x\n", rc);
                 asn_free_value(*packet);
                 return rc;
             }
@@ -207,15 +247,14 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
     {
         rc = csap_descr->echo_cb (csap_descr, data, d_len);
         if (rc)
-            ERROR(
-                        "csap #%d, echo_cb returned %x code.", 
+            ERROR( "csap #%d, echo_cb returned %x code.", 
                         csap_descr->id, rc);
             /* Have no reason to stop receiving. */
         rc = 0;
     }
     else if (rc)
     {
-        VERB("asn read action rc %x", rc);
+        INFO("asn read action rc %x", rc);
         rc = 0;
     }
 
