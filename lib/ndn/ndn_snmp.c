@@ -320,6 +320,8 @@ int snmp_asn_syntaxes[] =
 const char *
 ndn_snmp_msg_type_h2str(ndn_snmp_msg_t msg_type)
 {
+    static char buf[255];
+    
 #define NDN_SNMP_MSG_H2STR(msg_) \
         case NDN_SNMP_MSG_ ## msg_: return #msg_
 
@@ -334,6 +336,7 @@ ndn_snmp_msg_type_h2str(ndn_snmp_msg_t msg_type)
         NDN_SNMP_MSG_H2STR(GETBULK);
     }
 #undef NDN_SNMP_MSG_H2STR
-
-    return "UNKNOWN";
+    
+    snprintf(buf, sizeof(buf), "UNKNOWN (%d)", msg_type);
+    return buf;
 }
