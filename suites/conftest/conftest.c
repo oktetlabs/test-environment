@@ -723,7 +723,7 @@ main()
     if (ret_val != 0)
     {
         fprintf(outerr, "main: cfg_create_backup() failed\n");
-        return ret_val;
+        return 1;
     }
     
     ret_val = cfg_find_pattern("*", &obj_num, &objects);
@@ -766,7 +766,7 @@ main()
     if (ret_val != 0)
     {
         fprintf(outerr, "main: cfg_create_config() failed\n");
-        return ret_val;
+        return 1;
     }
     
     delete_all();
@@ -775,13 +775,13 @@ main()
     if (ret_val != 0)
     {
         fprintf(outerr, "main: cfg_restore_backup() failed\n");
-        return ret_val;
+        return 1;
     }
     ret_val = cfg_create_config(history_name, TRUE);
     if (ret_val != 0)
     {
         fprintf(outerr, "main: cfg_create_config() failed\n");
-        return ret_val; 
+        return 1; 
     }
     return 0;
 }
