@@ -799,6 +799,51 @@ test_params_to_string(const test_params *params)
 }
 
 /**
+ * Log test (script, package, session) start.
+ *
+ * @param parent    Parent ID
+ * @param test      Test ID
+ * @param params    List of parameters
+ */
+static void
+log_test_start(const run_item *ri, test_id parent, test_id test,
+               const test_params *params)
+{
+    char   *params_str;
+    char   *authors;
+
+    params_str = test_params_to_string(params);
+    switch (ri->type)
+    {
+        case RUN_ITEM_SCRIPT:
+            LOG_RING(TESTER_FLOW, "$T%d $T%d TEST %s \"%s\" ARGs%s",
+                     parent, test, ri->u.script.name,
+                     PRINT_STRING(ri->u.script.descr),
+                     PRINT_STRING(params_str));
+            break;
+
+        case RUN_ITEM_SESSION:
+            LOG_RING(TESTER_FLOW, "$T%d $T%d SESSION ARGs%s",
+                     parent, test, PRINT_STRING(params_str));
+            break;
+
+        case RUN_ITEM_PACKAGE:
+            authors = persons_info_to_string(&ri->u.package->authors);
+            LOG_RING(TESTER_FLOW, "$T%d $T%d PACKAGE %s \"%s\"%s%s ARGs%s",
+                     parent, test, ri->u.package->name,
+                     PRINT_STRING(ri->u.package->descr),
+                     (authors != NULL) ? " AUTHOURS " : "",
+                     PRINT_STRING(authors), PRINT_STRING(params_str));
+            free(authors);
+            break;
+
+        default:
+            ERROR("Invalid run item type %d", ri->type);
+    }
+    free(params_str);
+}
+
+/**
  * Log test (script, package, session) result.
  *
  * @param parent    Parent ID
@@ -885,7 +930,6 @@ static int
 run_test_script(tester_ctx *ctx, test_script *script, test_id id,
                 test_params *params)
 {
-    te_bool     ctx_cloned = FALSE;
     int         result = 0;
     int         rc;
     char       *params_str;
@@ -895,33 +939,6 @@ run_test_script(tester_ctx *ctx, test_script *script, test_id id,
     char        gdb_init[32] = "";
 
     ENTRY();
-
-    if (ctx->paths.tqh_first != NULL && !(ctx->flags & TESTER_CTX_INLOGUE))
-    {
-        ctx = tester_ctx_clone(ctx);
-        if (ctx == NULL)
-        {
-            ERROR("%s(): tester_ctx_clone() failed", __FUNCTION__);
-            return ENOMEM;
-        }
-        ctx_cloned = TRUE;
-
-        rc = tester_run_path_forward(ctx, script->name);
-        if (rc != 0)
-        {
-            tester_ctx_free(ctx);
-            if (rc == ENOENT)
-            {
-                /* Silently ignore nodes not of the path */
-                return 0;
-            }
-            else
-            {
-                ERROR("%s(): tester_run_path_forward() failed", __FUNCTION__);
-                return rc;
-            }
-        }
-    }
 
     params_str = test_params_to_string(params);
 
@@ -972,7 +989,8 @@ run_test_script(tester_ctx *ctx, test_script *script, test_id id,
     {
         if (snprintf(shell, sizeof(shell),
                      "valgrind --num-callers=16 --leak-check=yes "
-                     "--show-reachable=yes --tool=memcheck ") >= (int)sizeof(shell))
+                     "--show-reachable=yes --tool=memcheck ") >=
+                (int)sizeof(shell))
         {
             ERROR("Too short buffer is reserved for shell command prefix");
             return ETESMALLBUF;
@@ -994,13 +1012,6 @@ run_test_script(tester_ctx *ctx, test_script *script, test_id id,
               "line");
         return ETESMALLBUF;
     }
-
-    tester_out_start(RUN_ITEM_SCRIPT, script->name, ctx->id, id, ctx->flags);
-
-    /* Log call */
-    LOG_RING(TESTER_FLOW, "$T%d $T%d TEST %s \"%s\" ARGs%s",
-             ctx->id, id, script->name, PRINT_STRING(script->descr),
-             PRINT_STRING(params_str));
     free(params_str);
 
     if (!tester_is_run_required(ctx, &script->reqs, params))
@@ -1018,8 +1029,6 @@ run_test_script(tester_ctx *ctx, test_script *script, test_id id,
         if (rc == -1)
         {
             ERROR("system(%s) failed: %X", cmd, errno);
-            if (ctx_cloned)
-                tester_ctx_free(ctx);
             return errno;
         }
 
@@ -1068,14 +1077,7 @@ run_test_script(tester_ctx *ctx, test_script *script, test_id id,
         }
     }
 
-    log_test_result(ctx->id, id, result);
-    tester_out_done(RUN_ITEM_SCRIPT, script->name, ctx->id, id, ctx->flags,
-                    result);
-
     EXIT("%X", result);
-
-    if (ctx_cloned)
-        tester_ctx_free(ctx);
 
     return result;
 }
@@ -1095,10 +1097,8 @@ static int
 run_test_session(tester_ctx *ctx, test_session *session, test_id id,
                  test_params *params)
 {
-    test_id                 parent_id = ctx->id; 
     int                     result = ETESTPASS;
     int                     rc;
-    char                   *params_str;
     run_item               *test;
     test_param_iterations   iters;
 
@@ -1111,26 +1111,6 @@ run_test_session(tester_ctx *ctx, test_session *session, test_id id,
         return ENOMEM;
     }
     ctx->id = id;
-
-    if (session->name != NULL && ctx->paths.tqh_first != NULL &&
-        !(ctx->flags & TESTER_CTX_INLOGUE))
-    {
-        rc = tester_run_path_forward(ctx, session->name);
-        if (rc != 0)
-        {
-            tester_ctx_free(ctx);
-            if (rc == ENOENT)
-            {
-                /* Silently ignore nodes not of the path */
-                return 0;
-            }
-            else
-            {
-                ERROR("%s(): tester_run_path_forward() failed", __FUNCTION__);
-                return rc;
-            }
-        }
-    }
 
     /* Create list of iterations */
     TAILQ_INIT(&iters);
@@ -1146,16 +1126,6 @@ run_test_session(tester_ctx *ctx, test_session *session, test_id id,
         ERROR("Empty list of parameters iterations");
         tester_ctx_free(ctx);
         return EINVAL;
-    }
-
-    if (id != TEST_ID_PKG_MAIN_SESSION)
-    {
-        tester_out_start(RUN_ITEM_SESSION, "", ctx->id, id, ctx->flags);
-        /* Log test session bindings and parameters */
-        params_str = test_params_to_string(params);
-        LOG_RING(TESTER_FLOW, "$T%d $T%d SESSION ARGs%s",
-                 parent_id, id, PRINT_STRING(params_str));
-        free(params_str);
     }
 
     /* If fake flag is already set in context */
@@ -1245,13 +1215,6 @@ run_test_session(tester_ctx *ctx, test_session *session, test_id id,
         }
     } while (0);
 
-    if (id != TEST_ID_PKG_MAIN_SESSION)
-    {
-        log_test_result(ctx->id, id, result);
-        tester_out_done(RUN_ITEM_SESSION, "", ctx->id, id, ctx->flags,
-                        result);
-    }
-
     EXIT("%d", result);
 
     test_param_iterations_free(&iters);
@@ -1275,11 +1238,7 @@ static int
 run_test_package(tester_ctx *ctx, test_package *pkg, test_id id,
                  test_params *params)
 {
-    test_id parent_id = ctx->id;
-    int     rc;
     int     result;
-    char   *authors;
-    char   *params_str;
 
     ENTRY();
 
@@ -1292,37 +1251,6 @@ run_test_package(tester_ctx *ctx, test_package *pkg, test_id id,
         return ENOMEM;
     }
     ctx->id = id;
-
-    if (ctx->paths.tqh_first != NULL)
-    {
-        rc = tester_run_path_forward(ctx, pkg->name);
-        if (rc != 0)
-        {
-            tester_ctx_free(ctx);
-            if (rc == ENOENT)
-            {
-                /* Silently ignore nodes not of the path */
-                return 0;
-            }
-            else
-            {
-                ERROR("%s(): tester_run_path_forward() failed", __FUNCTION__);
-                return rc;
-            }
-        }
-    }
-
-    tester_out_start(RUN_ITEM_PACKAGE, pkg->name, parent_id, id, ctx->flags);
-
-    /* Log name, description, author(s) and parameters */
-    authors = persons_info_to_string(&pkg->authors);
-    params_str = test_params_to_string(params);
-    LOG_RING(TESTER_FLOW, "$T%d $T%d PACKAGE %s \"%s\"%s%s ARGs%s",
-             parent_id, id, pkg->name, PRINT_STRING(pkg->descr),
-             (authors != NULL) ? " authours " : "", PRINT_STRING(authors),
-             PRINT_STRING(params_str));
-    free(authors);
-    free(params_str);
 
     /* Check requirements */
     if (tester_is_run_required(ctx, &pkg->reqs, params))
@@ -1343,10 +1271,6 @@ run_test_package(tester_ctx *ctx, test_package *pkg, test_id id,
         result = ETESTSKIP;
     }
 
-    log_test_result(parent_id, id, result);
-    tester_out_done(RUN_ITEM_PACKAGE, pkg->name, parent_id, id, ctx->flags,
-                    result);
-    
     tester_ctx_free(ctx);
 
     return result;
@@ -1437,12 +1361,13 @@ run_test_thread(void *args)
  *
  * @param ctx           Tester context
  * @param test          Test to be run
+ * @param id            Assigned test ID
  * @param params        Test parameters
  *
  * @return Status code.
  */
 static int
-run_test(tester_ctx *ctx, run_item *test, test_params *params)
+run_test(tester_ctx *ctx, run_item *test, test_id id, test_params *params)
 {
     int rc;
 #ifdef TESTER_TIMEOUT_SUPPORT
@@ -1475,7 +1400,7 @@ run_test(tester_ctx *ctx, run_item *test, test_params *params)
         memset(&thr_params, 0, sizeof(thr_params));
         thr_params.ctx    = ctx;
         thr_params.test   = test;
-        thr_params.id     = tester_get_id(); 
+        thr_params.id     = id; 
         thr_params.params = params;
 
 #ifdef TESTER_TIMEOUT_SUPPORT
@@ -1559,6 +1484,34 @@ run_test(tester_ctx *ctx, run_item *test, test_params *params)
 
 
 /**
+ * Get run item name.
+ *
+ * @param test          Test to run
+ *
+ * @return Name.
+ */
+static const char *
+tester_run_item_name(const run_item *test)
+{
+    switch (test->type)
+    {
+        case RUN_ITEM_SCRIPT:
+            return test->u.script.name;
+
+        case RUN_ITEM_SESSION:
+            return test->u.session.name;
+
+        case RUN_ITEM_PACKAGE:
+            return test->u.package->name;
+
+        default:
+            ERROR("Invalid run item type %d", test->type);
+            return "";
+    }
+}
+
+
+/**
  * Run test with iteration of its parameters.
  *
  * @param ctx           Tester context
@@ -1578,11 +1531,13 @@ iterate_test(tester_ctx *ctx, run_item *test,
     test_param_iterations   iters;
     test_param_iteration   *i;
     char                   *backup_name;
+    const char             *run_item_name = test->name;
+    const char             *test_name = tester_run_item_name(test);
 
     ENTRY();
 
-    if (test->name != NULL && ctx->paths.tqh_first != NULL &&
-        !(ctx->flags & TESTER_CTX_INLOGUE))
+    if ((run_item_name != NULL || test_name != NULL) &&
+        ctx->paths.tqh_first != NULL && !(ctx->flags & TESTER_CTX_INLOGUE))
     {
         ctx = tester_ctx_clone(ctx);
         if (ctx == NULL)
@@ -1592,19 +1547,42 @@ iterate_test(tester_ctx *ctx, run_item *test,
         }
         ctx_cloned = TRUE;
 
-        rc = tester_run_path_forward(ctx, test->name);
-        if (rc != 0)
+        if (run_item_name != NULL)
         {
-            tester_ctx_free(ctx);
-            if (rc == ENOENT)
+            rc = tester_run_path_forward(ctx, run_item_name);
+            if (rc != 0)
             {
-                /* Silently ignore nodes not of the path */
-                return 0;
+                tester_ctx_free(ctx);
+                if (rc == ENOENT)
+                {
+                    /* Silently ignore nodes not of the path */
+                    return 0;
+                }
+                else
+                {
+                    ERROR("%s(): tester_run_path_forward() failed",
+                          __FUNCTION__);
+                    return rc;
+                }
             }
-            else
+        }
+        if (test_name != NULL)
+        {
+            rc = tester_run_path_forward(ctx, test_name);
+            if (rc != 0)
             {
-                ERROR("%s(): tester_run_path_forward() failed", __FUNCTION__);
-                return rc;
+                tester_ctx_free(ctx);
+                if (rc == ENOENT)
+                {
+                    /* Silently ignore nodes not of the path */
+                    return 0;
+                }
+                else
+                {
+                    ERROR("%s(): tester_run_path_forward() failed",
+                          __FUNCTION__);
+                    return rc;
+                }
             }
         }
     }
@@ -1647,6 +1625,48 @@ iterate_test(tester_ctx *ctx, run_item *test,
     /* Iterate parameters */
     for (i = iters.tqh_first; i != NULL; i = i->links.tqe_next)
     {
+        test_id     id = tester_get_id();
+        te_bool     test_ctx_cloned = FALSE;
+        tester_ctx *test_ctx;
+
+#if 0
+        if (ctx->paths.tqh_first != NULL &&
+            (~(ctx->flags) & TESTER_CTX_INLOGUE))
+        {
+            test_ctx = tester_ctx_clone(ctx);
+            if (test_ctx == NULL)
+            {
+                ERROR("%s(): tester_ctx_clone() failed", __FUNCTION__);
+                result = ENOMEM;
+                break;
+            }
+            test_ctx_cloned = TRUE;
+
+            rc = tester_run_path_forward(test_ctx, script->name);
+            if (rc != 0)
+            {
+                tester_ctx_free(test_ctx);
+                if (rc == ENOENT)
+                {
+                    /* Silently ignore nodes not of the path */
+                    continue;
+                }
+                else
+                {
+                    ERROR("%s(): tester_run_path_forward() failed",
+                          __FUNCTION__);
+                    result = rc;
+                    break;
+                }
+            }
+        }
+        else
+#endif
+        {
+            test_ctx_cloned = FALSE;
+            test_ctx = ctx;
+        }
+
         if (test->attrs.track_conf)
         {
             /* Make Configuration backup, if required */
@@ -1655,18 +1675,23 @@ iterate_test(tester_ctx *ctx, run_item *test,
             {
                 ERROR("Cannot create configuration backup: %X", rc);
                 test_param_iterations_free(&iters);
-                if (ctx_cloned)
-                    tester_ctx_free(ctx);
-                return rc;
+                if (test_ctx_cloned)
+                    tester_ctx_free(test_ctx);
+                result = rc;
+                break;
             }
         }
 
+        tester_out_start(test->type, tester_run_item_name(test),
+                         test_ctx->id, id, test_ctx->flags);
+        log_test_start(test, test_ctx->id, id, &(i->params));
+
         /* Run test with specified parameters */
-        rc = run_test(ctx, test, &(i->params));
+        rc = run_test(test_ctx, test, id, &(i->params));
         if (!TEST_RESULT(rc))
         {
             ERROR("run_test() failed: %X", rc);
-            result = ETESTUNEXP;
+            result = rc;
         }
         else if (result < rc)
         {
@@ -1685,7 +1710,8 @@ iterate_test(tester_ctx *ctx, run_item *test,
                 if (rc != 0)
                 {
                     ERROR("Cannot restore configuration backup: %X", rc);
-                    result = rc;
+                    if (TEST_RESULT(result))
+                        result = rc;
                 }
                 else
                 {
@@ -1696,11 +1722,22 @@ iterate_test(tester_ctx *ctx, run_item *test,
             else if (rc != 0)
             {
                 ERROR("Cannot verify configuration backup: %X", rc);
-                result = rc;
+                if (TEST_RESULT(result))
+                    result = rc;
             }
             free(backup_name);
         }
-    } while (0);
+        
+        log_test_result(test_ctx->id, id, result);
+        tester_out_done(test->type, tester_run_item_name(test),
+                        test_ctx->id, id, test_ctx->flags, result);
+
+        if (test_ctx_cloned)
+            tester_ctx_free(test_ctx);
+
+        if (!TEST_RESULT(result))
+            break;
+    }
 
     test_param_iterations_free(&aux_base_iters);
     test_param_iterations_free(&iters);
