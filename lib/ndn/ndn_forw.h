@@ -51,7 +51,7 @@ extern "C" {
 typedef enum {
     FORW_DELAY_DISABLED,
     FORW_DELAY_CONSTANT,
-    FORW_DELAY_RANDROM,
+    FORW_DELAY_RANDOM,
 } ndn_forw_delay_type_t;
 
 typedef struct {
@@ -68,7 +68,7 @@ typedef struct {
 
 typedef enum {
     FORW_REORDER_DISABLED,
-    FORW_REORDER_RANDROM,
+    FORW_REORDER_RANDOM,
     FORW_REORDER_REVERSED,
 } ndn_forw_reorder_type_t;
 

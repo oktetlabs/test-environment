@@ -188,7 +188,7 @@ ndn_forw_delay_to_plain(const asn_value *val, ndn_forw_delay_t *forw_delay)
     if (forw_delay->delay_max == forw_delay->delay_min)
         forw_delay->type = FORW_DELAY_CONSTANT;
     else 
-        forw_delay->type = FORW_DELAY_RANDROM;
+        forw_delay->type = FORW_DELAY_RANDOM;
 
     return rc;
 }
@@ -233,7 +233,7 @@ ndn_forw_drop_to_plain(const asn_value *val, ndn_forw_drop_t *forw_drop)
 
     if (strcmp(drop_label, "random-rate") == 0)
     {
-        forw_drop->type = FORW_DROP_RANDROM;
+        forw_drop->type = FORW_DROP_RANDOM;
         d_len = sizeof(forw_drop->rate);
         rc = asn_read_value_field(val, "#random-rate", 
                                   &forw_drop->rate, &d_len);
