@@ -97,6 +97,17 @@ Generic options:
   --vg-tester                   Run Tester under valgrind (without by default)
   
 EOF
+#    echo -e '  '--storage='<string>'\\t\\tconfiguration string for the storage
+#    echo -e \\t\\t\\t\\twith data to be updated by Dispatcher
+#    echo -e '  '--update-files='<list>'\\t\\tupdate files and directories specified
+#    echo -e \\t\\t\\t\\tin the '<list>' from the storage
+#    echo
+#    echo -e '  '--log-storage\\t\\t\\tconfiguration string for the storage
+#    echo -e \\t\\t\\t\\twhere raw log should be submitted
+#    echo -e '  '--log-storage-dir='<directory>'\\traw log directory in the storage
+#    echo -e '  '--log-dir='<directory>'\\t\\t'local directory for raw log (. by default)'
+#    echo -e '  '--log-online\\t\\t\\tconvert and print log on stdout during work
+#    echo
 }
 
 exit_with_log()
