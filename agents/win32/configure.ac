@@ -38,9 +38,13 @@ LDFLAGS=${LDFLAGS}" "${TE_LDFLAGS}
 AC_CONFIG_HEADERS([config.h])
 
 AC_CHECK_HEADERS([\
+sys/types.h \
+string.h \
 time.h \
 sys/time.h \
 sys/resource.h \
+sys/socket.h \
+unistd.h \
 pthread.h \
 semaphore.h \
 ])
