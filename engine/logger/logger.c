@@ -170,10 +170,11 @@ te_handler(void)
         }
         else 
         {
+#if 0
             uint32_t          log_flag = LGR_INCLUDE;
             struct te_inst   *te_el;
             char              tmp_name[TE_LOG_FIELD_MAX];
-            uint32_t          len = buf_mess[0];
+            uint32_t          len = buf_mess[0]; /* BUG here */
 
             memcpy(tmp_name, buf_mess, len);
             tmp_name[len] = 0;
@@ -185,8 +186,9 @@ te_handler(void)
                 {
                     char *tmp_pnt;
 
-                    len = TE_LOG_NFL_SZ + buf_mess[0] + TE_LOG_VERSION_SZ + 
-                          TE_LOG_TIMESTAMP_SZ + TE_LOG_MSG_LEN_SZ;
+                    /* BUG here */
+                    len = TE_LOG_NFL_SZ + buf_mess[0] + 
+                          LGR_UNACCOUNTED_LEN;
                     tmp_pnt = buf_mess + len + 1;
                     len = buf_mess[len];
                     memcpy(tmp_name, tmp_pnt, len);
@@ -197,6 +199,7 @@ te_handler(void)
             }           
 
             if (log_flag == LGR_INCLUDE)
+#endif
                 lgr_register_message(buf_mess, buf_len);
         }
     } /* end of forever loop */
@@ -347,6 +350,7 @@ ta_handler(void *ta)
 
         do {
             char               *p_buf = buf_mess;
+            te_log_nfl_t        nfl;
             te_log_level_t      log_level;
             te_log_msg_len_t    len;
             char                tmp_name[TE_LOG_FIELD_MAX];
@@ -356,10 +360,11 @@ ta_handler(void *ta)
 
             /* Add TA name and corresponding NFL to the message */
             msg_count++;
-            *p_buf = strlen(inst->agent); 
-            p_buf++;
-            memcpy(p_buf, inst->agent, buf_mess[0]);
-            p_buf += buf_mess[0];
+            nfl = strlen(inst->agent);
+            LGR_NFL_PUT(nfl, p_buf);
+            p_buf += sizeof(te_log_nfl_t);
+            memcpy(p_buf, inst->agent, nfl);
+            p_buf += nfl;
 
             /* Get message sequence number */
             rc = FREAD(ta_file, (uint8_t *)&sequence, sizeof(uint32_t));

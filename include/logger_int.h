@@ -43,6 +43,14 @@ extern "C" {
 #define LGR_SRV_FOR_TA_PREFIX   LGR_SRV_NAME "-"
 
 
+/*
+ * Number of bytes is not added to the Log_message_length (except entity
+ * name length with its NFL): Log_ver, Timestamp, Level, Log_message_length.
+ */
+#define LGR_UNACCOUNTED_LEN   (TE_LOG_VERSION_SZ + TE_LOG_TIMESTAMP_SZ + \
+                               TE_LOG_LEVEL_SZ + TE_LOG_MSG_LEN_SZ)
+
+
 /** Convert value to the network order */
 #define LGR_16_TO_NET(_val, _res) \
     (((int8_t *)(_res))[0] = (int8_t)(((_val)>>8) & 0xff), \
@@ -53,6 +61,47 @@ extern "C" {
      ((int8_t *)(_res))[1] = (int8_t)(((_val)>>16) & 0xff), \
      ((int8_t *)(_res))[2] = (int8_t)(((_val)>>8) & 0xff),  \
      ((int8_t *)(_res))[3] = (int8_t)((_val) & 0xff))
+
+
+#define LGR_16_PUT(val_, buf_) \
+    do {                            \
+        uint16_t    nfl_ = (val_);  \
+                                    \
+        LGR_16_TO_NET(nfl_, buf_);  \
+        (buf_) += 2;                \
+    } while (0)
+
+#if (TE_LOG_NFL_SZ == 2)
+#define LGR_NFL_PUT(val_, buf_)     LGR_16_PUT(val_, buf_)
+#else
+#error LGR_NFL_PUT is not defined
+#endif
+
+#if (TE_LOG_LEVEL_SZ == 2)
+#define LGR_LEVEL_PUT(val_, buf_)   LGR_16_PUT(val_, buf_)
+#else
+#error LGR_LEVEL_PUT is not defined
+#endif
+
+#if (TE_LOG_MSG_LEN_SZ == 4)
+#define LGR_MSG_LEN_PUT(val_, buf_) LGR_32_TO_NET(val_, buf_)
+#else
+#error LGR_MSG_LEN_PUT is not defined
+#endif
+
+#if (TE_LOG_TIMESTAMP_SZ == 8)
+#define LGR_TIMESTAMP_PUT(ts_, buf_) \
+    do {                                        \
+        C_ASSERT(sizeof((ts_)->tv_sec) == 4);   \
+        LGR_32_TO_NET((ts_)->tv_sec, buf_);     \
+        (buf_) += 4;                            \
+        C_ASSERT(sizeof((ts_)->tv_usec) == 4);  \
+        LGR_32_TO_NET((ts_)->tv_usec, buf_);    \
+        (buf_) += 4;                            \
+    } while (0)
+#else
+#error LGR_TIMESTAMP_PUT is not defined
+#endif
 
 
 /* ==== Test Agent Logger lib definitions */

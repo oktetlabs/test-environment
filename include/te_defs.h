@@ -55,6 +55,9 @@ typedef unsigned char te_bool;
 #endif
 
 
+#define C_ASSERT(x)
+
+
 /**
  * Marks unused argument of the function in order to avoid compilation
  * warning.

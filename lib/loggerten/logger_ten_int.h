@@ -88,56 +88,6 @@ extern "C" {
 /** Maximum logger message arguments */
 #define LGR_MAX_ARGS        16
 
-/*
- * Number of bytes is not added to the Log_message_length (except entity
- * name length with its NFL): Log_ver, Timestamp, Level, Log_message_length.
- */
-#define LGR_UNACCOUNTED_LEN   (TE_LOG_VERSION_SZ + TE_LOG_TIMESTAMP_SZ + \
-                               TE_LOG_LEVEL_SZ + TE_LOG_MSG_LEN_SZ)
-
-
-#define C_ASSERT(x)
-
-#define LGR_16_PUT(val_, buf_) \
-    do {                            \
-        uint16_t    nfl_ = (val_);  \
-                                    \
-        LGR_16_TO_NET(nfl_, buf_);  \
-        (buf_) += 2;                \
-    } while (0)
-
-#if (TE_LOG_NFL_SZ == 2)
-#define LGR_NFL_PUT(val_, buf_)     LGR_16_PUT(val_, buf_)
-#else
-#error LGR_NFL_PUT is not defined
-#endif
-
-#if (TE_LOG_LEVEL_SZ == 2)
-#define LGR_LEVEL_PUT(val_, buf_)   LGR_16_PUT(val_, buf_)
-#else
-#error LGR_LEVEL_PUT is not defined
-#endif
-
-#if (TE_LOG_MSG_LEN_SZ == 4)
-#define LGR_MSG_LEN_PUT(val_, buf_) LGR_32_TO_NET(val_, buf_)
-#else
-#error LGR_MSG_LEN_PUT is not defined
-#endif
-
-#if (TE_LOG_TIMESTAMP_SZ == 8)
-#define LGR_TIMESTAMP_PUT(ts_, buf_) \
-    do {                                        \
-        C_ASSERT(sizeof((ts_)->tv_sec) == 4);   \
-        LGR_32_TO_NET((ts_)->tv_sec, buf_);     \
-        (buf_) += 4;                            \
-        C_ASSERT(sizeof((ts_)->tv_usec) == 4);  \
-        LGR_32_TO_NET((ts_)->tv_usec, buf_);    \
-        (buf_) += 4;                            \
-    } while (0)
-#else
-#error LGR_TIMESTAMP_PUT is not defined
-#endif
-
 
 /** Log message transport */
 typedef void (* te_log_message_tx_f)(const void *msg, size_t len);
