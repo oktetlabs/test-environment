@@ -250,6 +250,52 @@ free_group(group * g)
     }
 }
 
+/** Save configuration to the file */
+static int
+ds_dhcpserver_save_conf(void)
+{
+    host           *h;
+    te_dhcp_option *opt;
+    FILE           *f = fopen(dhcp_server_conf, "w");
+
+    if (f == NULL)
+    {
+        ERROR("Failed to open '%s' for writing: %s",
+              dhcp_server_conf, strerror(errno));
+        return TE_RC(TE_TA_LINUX, errno);
+    }
+
+    fprintf(f, "deny unknown-clients;\n\n");
+    fprintf(f, "subnet 10.17.19.0 netmask 255.255.255.0 {\n");
+    fprintf(f, "}\n\n");
+
+    for (h = hosts; h != NULL; h = h->next)
+    {
+        fprintf(f, "host %s {\n", h->name);
+        if (h->chaddr)
+            fprintf(f, "\thardware ethernet %s;\n", h->chaddr);
+        if (h->client_id)
+            fprintf(f, "\tclient-id %s;\n", h->client_id);
+        if (h->ip_addr)
+            fprintf(f, "\tfixed-address %s;\n", h->ip_addr);
+        if (h->next_server)
+            fprintf(f, "\tnext-server %s;\n", h->next_server);
+        if (h->filename)
+            fprintf(f, "\tfilename \"%s\";\n", h->filename);
+        for (opt = h->options; opt != NULL; opt = opt->next)
+            fprintf(f, "\toption %s %s;\n", opt->name, opt->value);
+        fprintf(f, "}\n");
+    }
+
+    if (fclose(f) != 0)
+    {
+        ERROR("%s(): fclose() failed: %s", __FUNCTION__,
+              strerror(errno));
+        return TE_RC(TE_TA_LINUX, errno);
+    }
+
+    return 0;
+}
 
 /** Is DHCP server daemon running */
 static te_bool
@@ -316,6 +362,15 @@ ds_dhcpserver_script_start(void)
 static int
 ds_dhcpserver_start(void)
 {
+    int rc;
+
+    rc = ds_dhcpserver_save_conf();
+    if (rc != 0)
+    {
+        ERROR("Failed to save DHCP server configuration file");
+        return rc;
+    }
+    
     sprintf(buf, "%s -q -t -cf %s",
             dhcp_server_exec, dhcp_server_conf);
     if (ta_system(buf) != 0)
@@ -1189,7 +1244,7 @@ static rcf_pch_cfg_object node_ds_host =
       (rcf_ch_cfg_add)ds_host_add, (rcf_ch_cfg_del)ds_host_del,
       (rcf_ch_cfg_list)ds_host_list, NULL, NULL};
 
-#if TA_LINUX_ISC_DHCPS_LEASES_SUPPORTED
+#ifdef TA_LINUX_ISC_DHCPS_LEASES_SUPPORTED
 RCF_PCH_CFG_NODE_RO(node_ds_lease_cltt, "cltt",
                     NULL, NULL,
                     ds_lease_cltt_get);
@@ -1241,11 +1296,11 @@ static rcf_pch_cfg_object node_ds_client =
 
 #if TA_LINUX_ISC_DHCPS_LEASES_SUPPORTED
 RCF_PCH_CFG_NODE_RW(node_ds_dhcpserver_ifs, "interfaces",
-                    &node_ds_client, NULL,
+                    NULL, &node_ds_client,
                     ds_dhcpserver_ifs_get, ds_dhcpserver_ifs_set);
 #else
 RCF_PCH_CFG_NODE_RW(node_ds_dhcpserver_ifs, "interfaces",
-                    &node_ds_host, NULL,
+                    NULL, &node_ds_host,
                     ds_dhcpserver_ifs_get, ds_dhcpserver_ifs_set);
 #endif
 
@@ -1316,6 +1371,21 @@ ds_init_dhcp_server(rcf_pch_cfg_object **last)
         return;
     }
 #else
+    /* FIXME */
+    dhcp_server_conf = "/tmp/te.dhcpd.conf";
+    dhcp_server_leases = "/tmp/te.dhcpd.leases";
+    {
+        FILE *f = fopen(dhcp_server_leases, "w");
+
+        if (f == NULL)
+        {
+            ERROR("Failed to open '%s' for writing: %s",
+                  dhcp_server_leases, strerror(errno));
+            return TE_RC(TE_TA_LINUX, errno);
+        }
+        fclose(f);
+    }
+
     if (ds_dhcpserver_is_run())
     {
         rc = ds_dhcpserver_script_stop();
