@@ -28,8 +28,6 @@
  * $Id$
  */
 
-#define TE_LOG_LEVEL 0xff
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
