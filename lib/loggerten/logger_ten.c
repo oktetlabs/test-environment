@@ -234,7 +234,7 @@ log_flush_ten(const char *ta_name)
     if (rc != 0)
     {
         ipc_close_client(log_client);
-        ERROR("Failed to flush log on TA '%s'", ta_name);
+        ERROR("Failed to flush log on TA '%s': rc=%X", ta_name, rc);
         return rc;
     }
 

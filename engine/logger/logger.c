@@ -500,8 +500,9 @@ response_to_flush:
         {
             struct ipc_server_client  *ipcsc_p = NULL;
 
+            /* FIXME: It's terrible */
             ipc_receive_message(srv, buf_mess, &buf_len, &ipcsc_p);
-            ipc_send_answer(srv, ipcsc_p, buf_mess, strlen(buf_mess));
+            ipc_send_answer(srv, ipcsc_p, buf_mess, buf_len);
             tstamp_flag = 0;
         }
     }
