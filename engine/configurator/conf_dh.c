@@ -660,7 +660,7 @@ cfg_dh_attach_backup(char *filename)
     cfg_backup *tmp;
     
     if (last == NULL)
-        return ENOENT;
+        return 0;
         
     if ((tmp = (cfg_backup *)malloc(sizeof(*tmp))) == NULL)
         return ENOMEM;
