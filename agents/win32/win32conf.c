@@ -32,7 +32,13 @@
 #include "config.h"
 #endif
 
+#include "windows.h"
+#include "iprtrmib.h"
+#include "w32api/iphlpapi.h"
 #include <w32api/winsock2.h>
+
+#undef ERROR
+#define TE_LGR_USER     "Windows Conf"
 
 #include "te_errno.h"
 #include "te_defs.h"
@@ -41,20 +47,168 @@
 #include "rcf_ch_api.h"
 #include "rcf_pch.h"
 
-#define ARP_TABLE_SIZE   400
-#include "windows.h"
-#include "iprtrmib.h"
-#include "w32api/iphlpapi.h"
+/* TA name pointer */
+extern char *ta_name;
 
+/* Auxiliary buffer */
+static char  buf[2048] = {0, }; 
 
+/* Fast conversion of the network mask to prefix */
+#define MASK2PREFIX(mask, prefix)            \
+    switch (mask)                            \
+    {                                        \
+        case 0x0: prefix = 0; break;         \
+        case 0x80000000: prefix = 1; break;  \
+        case 0xc0000000: prefix = 2; break;  \
+        case 0xe0000000: prefix = 3; break;  \
+        case 0xf0000000: prefix = 4; break;  \
+        case 0xf8000000: prefix = 5; break;  \
+        case 0xfc000000: prefix = 6; break;  \
+        case 0xfe000000: prefix = 7; break;  \
+        case 0xff000000: prefix = 8; break;  \
+        case 0xff800000: prefix = 9; break;  \
+        case 0xffc00000: prefix = 10; break; \
+        case 0xffe00000: prefix = 11; break; \
+        case 0xfff00000: prefix = 12; break; \
+        case 0xfff80000: prefix = 13; break; \
+        case 0xfffc0000: prefix = 14; break; \
+        case 0xfffe0000: prefix = 15; break; \
+        case 0xffff0000: prefix = 16; break; \
+        case 0xffff8000: prefix = 17; break; \
+        case 0xffffc000: prefix = 18; break; \
+        case 0xffffe000: prefix = 19; break; \
+        case 0xfffff000: prefix = 20; break; \
+        case 0xfffff800: prefix = 21; break; \
+        case 0xfffffc00: prefix = 22; break; \
+        case 0xfffffe00: prefix = 23; break; \
+        case 0xffffff00: prefix = 24; break; \
+        case 0xffffff80: prefix = 25; break; \
+        case 0xffffffc0: prefix = 26; break; \
+        case 0xffffffe0: prefix = 27; break; \
+        case 0xfffffff0: prefix = 28; break; \
+        case 0xfffffff8: prefix = 29; break; \
+        case 0xfffffffc: prefix = 30; break; \
+        case 0xfffffffe: prefix = 31; break; \
+        case 0xffffffff: prefix = 32; break; \
+         /* Error indication */              \
+        default: prefix = 33; break;         \
+    }
 
-#define TE_LGR_USER     "Windows Conf"
-#include "logger_api.h"
+/* Fast conversion of the prefix to network mask */
+#define PREFIX2MASK(prefix) (prefix == 0 ? 0 : (~0) << (32 - (prefix)))
 
 /* TA name pointer */
 extern char *ta_name;
 
-RCF_PCH_CFG_NODE_AGENT(node_agent, NULL);
+/*
+ * Access routines prototypes (comply to procedure types
+ * specified in rcf_ch_api.h).
+ */
+static int interface_list(unsigned int, const char *, char **);
+
+static int net_addr_add(unsigned int, const char *, const char *,
+                        const char *, const char *);
+static int net_addr_del(unsigned int, const char *,
+                        const char *, const char *);
+static int net_addr_list(unsigned int, const char *, char **,
+                         const char *);
+
+static int netmask_get(unsigned int, const char *, char *,
+                       const char *, const char *);
+static int netmask_set(unsigned int, const char *, const char *,
+                       const char *, const char *);
+
+static int link_addr_get(unsigned int, const char *, char *,
+                         const char *);
+
+static int ifindex_get(unsigned int, const char *, char *,
+                       const char *);
+
+static int status_get(unsigned int, const char *, char *,
+                      const char *);
+static int status_set(unsigned int, const char *, const char *,
+                      const char *);
+
+static int mtu_get(unsigned int, const char *, char *,
+                   const char *);
+
+static int arp_get(unsigned int, const char *, char *,
+                   const char *);
+static int arp_set(unsigned int, const char *, const char *,
+                   const char *);
+static int arp_add(unsigned int, const char *, const char *,
+                   const char *);
+static int arp_del(unsigned int, const char *,
+                   const char *);
+static int arp_list(unsigned int, const char *, char **);
+
+static int route_get(unsigned int, const char *, char *,
+                     const char *);
+static int route_set(unsigned int, const char *, const char *,
+                     const char *);
+static int route_add(unsigned int, const char *, const char *,
+                     const char *);
+static int route_del(unsigned int, const char *,
+                     const char *);
+static int route_list(unsigned int, const char *, char **);
+
+/* Linux Test Agent configuration tree */
+static rcf_pch_cfg_object node_route =
+    { "route", 0, NULL, NULL,
+      (rcf_ch_cfg_get)route_get, (rcf_ch_cfg_set)route_set,
+      (rcf_ch_cfg_add)route_add, (rcf_ch_cfg_del)route_del,
+      (rcf_ch_cfg_list)route_list, NULL, NULL};
+
+static rcf_pch_cfg_object node_arp =
+    { "arp", 0, NULL, &node_route,
+      (rcf_ch_cfg_get)arp_get, (rcf_ch_cfg_set)arp_set,
+      (rcf_ch_cfg_add)arp_add, (rcf_ch_cfg_del)arp_del,
+      (rcf_ch_cfg_list)arp_list, NULL, NULL};
+
+RCF_PCH_CFG_NODE_RW(node_status, "status", NULL, NULL,
+                    status_get, status_set);
+
+RCF_PCH_CFG_NODE_RW(node_mtu, "mtu", NULL, &node_status,
+                    mtu_get, NULL);
+
+RCF_PCH_CFG_NODE_RO(node_link_addr, "link_addr", NULL, &node_mtu,
+                    link_addr_get);
+
+RCF_PCH_CFG_NODE_RW(node_netmask, "netmask", NULL, NULL,
+                    netmask_get, netmask_set);
+
+RCF_PCH_CFG_NODE_COLLECTION(node_net_addr, "net_addr",
+                            &node_netmask, &node_link_addr,
+                            net_addr_add, net_addr_del,
+                            net_addr_list, NULL);
+
+RCF_PCH_CFG_NODE_RO(node_ifindex, "index", NULL, &node_net_addr,
+                    ifindex_get);
+
+RCF_PCH_CFG_NODE_COLLECTION(node_interface, "interface",
+                            &node_ifindex, &node_arp,
+                            NULL, NULL, interface_list, NULL);
+
+RCF_PCH_CFG_NODE_AGENT(node_agent, &node_interface);
+
+static MIB_IFROW if_entry;
+
+/** Update information in if_entry. Local variable ifname should exist */
+#define GET_IF_ENTRY \
+    do {                                                        \
+        char *tmp;                                              \
+                                                                \
+        if (ifname == NULL ||                                   \
+            strncmp(ifname, "intf", 4) != 0 ||                  \
+            (if_entry.dwIndex = strtol(ifname + 4, &tmp, 10),   \
+             tmp == ifname) || *tmp != 0 ||                     \
+            GetIfEntry(&if_entry) != 0)                         \
+        {                                                       \
+            return TE_RC(TE_TA_WIN32, ENOENT);                  \
+        }                                                       \
+    } while (0)
+
+#define RETURN_BUF
 
 /**
  * Get root of the tree of supported objects.
@@ -86,62 +240,415 @@ rcf_ch_conf_release()
 {
 }
 
-
-
-/*
-void 
-get_arp_table()
+/**
+ * Get instance list for object "agent/interface".
+ *
+ * @param id            full identifier of the father instance
+ * @param list          location for the list pointer
+ *
+ * @return error code
+ * @retval 0            success
+ * @retval ENOMEM       cannot allocate memory
+ */
+static int
+interface_list(unsigned int gid, const char *oid, char **list)
 {
-ULONG nSize = ARP_TABLE_SIZE;
+    MIB_IFTABLE *table;
     
-    PMIB_IPNETTABLE pMib = (PMIB_IPNETTABLE)malloc(sizeof(MIB_IPNETTABLE) +
-                            sizeof(MIB_IPNETROW)*nSize);
+    DWORD size = 0;
+    char *s = buf;
+    int   i;
 
-    DWORD dwRet = GetIpNetTable(pMib,&nSize,TRUE);     
+    UNUSED(gid);
+    UNUSED(oid);
 
-    if (nSize>ARP_TABLE_SIZE) 
+    table = (MIB_IFTABLE *)malloc(sizeof(MIB_IFTABLE));
+
+    if (GetIfTable(table, &size, 0) == ERROR_INSUFFICIENT_BUFFER) 
+        table = (MIB_IFTABLE *)realloc(table, size);
+    else
     {
-        printf("[Warning] Insufficient Memory(allocated %d needed %d)\n",
-               ARP_TABLE_SIZE, nSize);
-          
-        nSize = ARP_TABLE_SIZE;
-    } else 
-    {
-        nSize = (unsigned long)pMib->dwNumEntries ;
+        ERROR("GetIfTable() failed, error %x", GetLastError());
+        return TE_RC(TE_TA_WIN32, ETEWIN);
     }
-    printf("ARP Table ( %d Entries) \n", nSize);
-    printf("--------------------------------------------------------\n");
-    printf("Internet Address      Physical Address         Type\n");
     
-    for (int i = 0; i < nSize; i++) 
+    if (GetIfTable(table, &size, 0) != NO_ERROR) 
     {
-        char ipaddr[20], macaddr[20];
-        sprintf(ipaddr,"%d.%d.%d.%d", (pMib->table[i].dwAddr&0x0000ff), 
-                ((pMib->table[i].dwAddr&0xff00)>>8),
-                ((pMib->table[i].dwAddr&0xff0000)>>16),
-		(pMib->table[i].dwAddr>>24));
-
-        sprintf(macaddr, "%02x-%02x-%02x-%02x-%02x-%02x",
-                pMib->table[i].bPhysAddr[0],pMib->table[i].bPhysAddr[1],
-		pMib->table[i].bPhysAddr[2],pMib->table[i].bPhysAddr[3],
-		pMib->table[i].bPhysAddr[4],pMib->table[i].bPhysAddr[5]);
-
-        printf("%-20s  %-25s",ipaddr,macaddr);
-        if (pMib->table[i].dwType == 3) 
-	    printf("Dynamic\n");
-        else if (pMib->table[i].dwType == 4) 
-	    printf("Static\n");
+        ERROR("GetIfTable() failed, error %x", GetLastError());
+        return TE_RC(TE_TA_WIN32, ETEWIN);
     }
-         
+    
+    if (table->dwNumEntries == 0)
+    {
+        ERROR("GetIfTable() returned");
+    }
+    
+    for (i = 0; i < table->dwNumEntries; i++)
+        s += sprintf(s, "intf%d ", table->table[i].dwIndex);
+        
+    free(table);
+
+    if ((*list = strdup(buf)) == NULL)
+        return TE_RC(TE_TA_WIN32, ENOMEM);
+
     return 0;
-
-
-
-
 }
-*/
+
+/**
+ * Get index of the interface.
+ *
+ * @param gid           request group identifier (unused)
+ * @param oid           full object instence identifier (unused)
+ * @param value         location for interface index
+ * @param ifname        name of the interface (like "eth0")
+ *
+ * @return error code
+ */
+static int
+ifindex_get(unsigned int gid, const char *oid, char *value,
+            const char *ifname)
+{
+    GET_IF_ENTRY;
+    
+    sprintf(value, "%d", if_entry.dwIndex);
+    
+    return 0;
+}
+
+/**
+ * Configure IPv4 address for the interface.
+ * If the address does not exist, alias interface is created.
+ *
+ * @param oid           full object instence identifier (unused)
+ * @param value         value string (unused)
+ * @param ifname        name of the interface (like "eth0")
+ * @param addr          IPv4 address in dotted notation
+ *
+ * @return error code
+ */
+static int
+net_addr_add(unsigned int gid, const char *oid, const char *value,
+             const char *ifname, const char *addr)
+{
+        
+    return 0;
+}
+
+/**
+ * Clear interface address of the down interface.
+ *
+ * @param oid           full object instence identifier (unused)
+ * @param ifname        name of the interface (like "eth0")
+ * @param addr          IPv4 address in dotted notation
+ *
+ * @return error code
+ */
+
+static int
+net_addr_del(unsigned int gid, const char *oid,
+             const char *ifname, const char *addr)
+{
+}
+
+/**
+ * Get instance list for object "agent/interface/net_addr".
+ *
+ * @param id            full identifier of the father instance
+ * @param list          location for the list pointer
+ * @param ifname        interface name
+ *
+ * @return error code
+ * @retval 0                    success
+ * @retval ETENOSUCHNAME        no such instance
+ * @retval ENOMEM               cannot allocate memory
+ */
+static int
+net_addr_list(unsigned int gid, const char *oid, char **list,
+              const char *ifname)
+{
+}
+
+/**
+ * Get netmask of the interface.
+ *
+ * @param oid           full object instence identifier (unused)
+ * @param value         netmask location (netmask is presented in dotted
+ *                      notation)
+ * @param ifname        name of the interface (like "eth0")
+ * @param addr          IPv4 address in dotted notation
+ *
+ * @return error code
+ */
+static int
+netmask_get(unsigned int gid, const char *oid, char *value,
+            const char *ifname, const char *addr)
+{
+}
+
+/**
+ * Change netmask of the interface.
+ *
+ * @param oid           full object instence identifier (unused)
+ * @param value         pointer to the new network mask in dotted notation
+ * @param ifname        name of the interface (like "eth0")
+ * @param addr          IPv4 address in dotted notation
+ *
+ * @return error code
+ */
+static int
+netmask_set(unsigned int gid, const char *oid, const char *value,
+            const char *ifname, const char *addr)
+{
+}
+
+/**
+ * Get hardware address of the interface. Only MAC addresses are supported now.
+ *
+ * @param oid           full object instence identifier (unused)
+ * @param value         location for hardware address (address is returned
+ *                      as XX:XX:XX:XX:XX:XX)
+ * @param ifname        name of the interface (like "eth0")
+ *
+ * @return error code
+ */
+static int
+link_addr_get(unsigned int gid, const char *oid, char *value,
+              const char *ifname)
+{
+    uint8_t *ptr = if_entry.bPhysAddr;
+    
+    GET_IF_ENTRY;
+    
+    if (if_entry.dwPhysAddrLen != 6)
+        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
+
+    snprintf(value, RCF_MAX_VAL, "%02x:%02x:%02x:%02x:%02x:%02x",
+             ptr[0], ptr[1], ptr[2], ptr[3], ptr[4], ptr[5]);
+    
+    return 0;
+}
+
+/**
+ * Get MTU of the interface.
+ *
+ * @param oid           full object instence identifier (unused)
+ * @param value         value location
+ * @param ifname        name of the interface (like "eth0")
+ *
+ * @return error code
+ */
+static int
+mtu_get(unsigned int gid, const char *oid, char *value,
+        const char *ifname)
+{
+    GET_IF_ENTRY;
+    
+    sprintf(value, "%d", if_entry.dwMtu);
+    
+    return 0;
+}
+
+/**
+ * Get status of the interface ("0" - down or "1" - up).
+ *
+ * @param oid           full object instence identifier (unused)
+ * @param value         value location
+ * @param ifname        name of the interface (like "eth0")
+ *
+ * @return error code
+ */
+static int
+status_get(unsigned int gid, const char *oid, char *value,
+           const char *ifname)
+{
+    GET_IF_ENTRY;
+    
+    sprintf(value, "%d", 
+            if_entry.dwOperStatus == MIB_IF_OPER_STATUS_CONNECTED ||
+            if_entry.dwOperStatus == MIB_IF_OPER_STATUS_OPERATIONAL ? 1 : 0);
+    
+    return 0;
+}
+
+/**
+ * Change status of the interface. If virtual interface is put to down state,
+ * it is de-installed and information about it is stored in the list
+ * of down interfaces.
+ *
+ * @param oid           full object instence identifier (unused)
+ * @param value         new value pointer
+ * @param ifname        name of the interface (like "eth0")
+ *
+ * @return error code
+ */
+static int
+status_set(unsigned int gid, const char *oid, const char *value,
+           const char *ifname)
+{
+    GET_IF_ENTRY;
+    
+    
+    if (strcmp(value, "0") == 0)
+        if_entry.dwAdminStatus = MIB_IF_ADMIN_STATUS_DOWN;
+    else if (strcmp(value, "1") == 0)
+        if_entry.dwAdminStatus = MIB_IF_ADMIN_STATUS_UP;
+    else
+        return TE_RC(TE_TA_LINUX, EINVAL);
+
+    if (SetIfEntry(&if_entry) != 0)
+        return TE_RC(TE_TA_WIN32, ENOENT);
+        
+    return 0;
+}
+
+/**
+ * Get ARP entry value (hardware address corresponding to IPv4).
+ *
+ * @param oid           full object instence identifier (unused)
+ * @param value         location for the value (XX:XX:XX:XX:XX:XX is returned)
+ * @param addr          IPv4 address in the dotted notation
+ *
+ * @return error code
+ */
+static int
+arp_get(unsigned int gid, const char *oid, char *value,
+        const char *addr)
+{
+}
+
+/**
+ * Change already existing ARP entry.
+ *
+ * @param oid           full object instence identifier (unused)
+ * @param value         new value pointer ("XX:XX:XX:XX:XX:XX")
+ * @param addr          IPv4 address in the dotted notation
+ *
+ * @return error code
+ */
+static int
+arp_set(unsigned int gid, const char *oid, const char *value,
+        const char *addr)
+{
+}
+
+/**
+ * Add a new ARP entry.
+ *
+ * @param oid           full object instence identifier (unused)
+ * @param value         new entry value pointer ("XX:XX:XX:XX:XX:XX")
+ * @param addr          IPv4 address in the dotted notation
+ *
+ * @return error code
+ */
+static int
+arp_add(unsigned int gid, const char *oid, const char *value,
+        const char *addr)
+{
+}
+
+/**
+ * Delete ARP entry.
+ *
+ * @param oid           full object instence identifier (unused)
+ * @param value         value string (unused)
+ * @param addr          IPv4 address in the dotted notation
+ *
+ * @return error code
+ */
+static int
+arp_del(unsigned int gid, const char *oid, const char *addr)
+{
+}
+
+/**
+ * Get instance list for object "agent/arp".
+ *
+ * @param oid           full object instence identifier (unused)
+ * @param list          location for the list pointer
+ *
+ * @return error code
+ */
+static int
+arp_list(unsigned int gid, const char *oid, char **list)
+{
+}
+
+/**
+ * Get route value (gateway IP address).
+ *
+ * @param oid           full object instence identifier (unused)
+ * @param value         value location (IPv4 address is returned in
+ *                      dotted notation)
+ * @param route         route instance name:
+ *                      <IPv4 address in dotted notation>'|'<prefix length>
+ *
+ * @return error code
+ */
+static int
+route_get(unsigned int gid, const char *oid, char *value,
+          const char *route)
+{
+}
+
+/**
+ * Change already existing route.
+ *
+ * @param oid           full object instence identifier (unused)
+ * @param value         value string (unused)
+ * @param route         route instance name:
+ *                      <IPv4 address in dotted notation>'|'<prefix length>
+ *
+ * @return error code
+ */
+static int
+route_set(unsigned int gid, const char *oid, const char *value,
+          const char *route)
+{
+}
+
+/**
+ * Add a new route.
+ *
+ * @param oid           full object instence identifier (unused)
+ * @param value         value string (unused)
+ * @param route         route instance name:
+ *                      <IPv4 address in dotted notation>'|'<prefix length>
+ *
+ * @return error code
+ */
+static int
+route_add(unsigned int gid, const char *oid, const char *value,
+          const char *route)
+{
+}
 
 
+/**
+ * Delete a route.
+ *
+ * @param oid           full object instence identifier (unused)
+ * @param route         route instance name:
+ *                      <IPv4 address in dotted notation>'|'<prefix length>
+ *
+ * @return error code
+ */
+static int
+route_del(unsigned int gid, const char *oid, const char *route)
+{
+}
 
-
-
+/**
+ * Get instance list for object "agent/route".
+ *
+ * @param id            full identifier of the father instance
+ * @param list          location for the list pointer
+ *
+ * @return error code
+ * @retval 0                    success
+ * @retval ETENOSUCHNAME      no such instance
+ * @retval ENOMEM               cannot allocate memory
+ */
+static int
+route_list(unsigned int gid, const char *oid, char **list)
+{
+}
