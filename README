@@ -5,7 +5,7 @@ The following packages are required to build and run.
 
 - libxml2-devel (2.6.10)
 - glib-devel (1.2.10)
-- popt-devel
+- popt-devel (libpopt-dev on Debian)
 - tcl (and tcl-devel, if applicable, e.g. on Fedora Core 2)
 
 We are using versions of libraries specified in parentheses.
