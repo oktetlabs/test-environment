@@ -527,6 +527,27 @@ cfg_get_inst_name(cfg_handle handle, char **name)
     return TE_RC(TE_CONF_API, ret_val);
 }
 
+/* See description in conf_api.h */
+int
+cfg_get_inst_name_int(cfg_handle handle, int *name)
+{
+    int     rc;
+    char   *str;
+    char   *end;
+
+    rc = cfg_get_inst_name(handle, &str);
+    if (rc != 0)
+        return rc;
+
+    rc = strtol(str, &end, 10);
+    if (end == str)
+        return TE_RC(TE_CONF_API, ETEFMT);
+
+    *name = rc;
+
+    return 0;
+}
+
 
 /* See description in conf_api.h */
 int

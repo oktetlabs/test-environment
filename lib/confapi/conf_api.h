@@ -194,6 +194,16 @@ extern int cfg_get_subid(cfg_handle handle, char **subid);
 extern int cfg_get_inst_name(cfg_handle handle, char **name);
 
 /**
+ * Obtain integer name of object instance by its handle.
+ *
+ * @param handle    handle of object instance
+ * @param name      OUT: location for the name
+ *
+ * @return 0 or EINVAL if invalid handle is provided
+ */
+extern int cfg_get_inst_name_int(cfg_handle handle, int *name);
+
+/**
  * Obtain name of object instance by its handle.
  *
  * @param str_oid   object instance identifier in string
