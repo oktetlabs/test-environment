@@ -164,6 +164,8 @@ typedef enum {
     RPC_ENOMEDIUM,     /**< No medium found */
     RPC_EMEDIUMTYPE,   /**< Wrong medium type */
     
+    RPC_ERPCNOTSUPP,   /**< RPC is not supported
+                            (it does not have host analogue) */
     RPC_EUNKNOWN,      /**< all unknown errno values on the agent are 
                             mapped to this value */
 } rpc_errno;
@@ -637,6 +639,8 @@ errno_rpc2str(rpc_errno rpc_errno_val)
 #ifdef EMEDIUMTYPE
         RPC2STR(EMEDIUMTYPE);
 #endif
+
+        RPC2STR(ERPCNOTSUPP);
 
         default: 
         {

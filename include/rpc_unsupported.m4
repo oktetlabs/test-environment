@@ -23,7 +23,7 @@ _$1_1_svc(tarpc_$1_in *in, tarpc_$1_out *out, struct svc_req *rqstp)
     UNUSED(rqstp);
     UNUSED(in);
     memset(out, 0, sizeof(*out));
-    out->common._errno = TE_RC(TE_RCF, RPC_EOPNOTSUPP);
+    out->common._errno = RPC_ERPCNOTSUPP;
     RING("Unsupported function '$1' is called");
     return TRUE;
 }
