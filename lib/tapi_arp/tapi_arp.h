@@ -61,14 +61,16 @@ typedef struct tapi_arp_hdr {
     uint8_t  hard_size; /**< Size of hardware address */
     uint8_t  proto_size; /**< Size of protocol address */
     uint16_t op_code; /**< Operation type */
-    uint8_t  snd_hw_addr[TAPI_ARP_MAX_HW_ADDR_LEN]; /**< Sender hardware 
-                                                         address */
-    uint8_t  snd_proto_addr[TAPI_ARP_MAX_PROTO_ADDR_LEN]; /**< Sender protocol
-                                                               address */
-    uint8_t  tgt_hw_addr[TAPI_ARP_MAX_HW_ADDR_LEN]; /**< Target hardware 
-                                                         address */
-    uint8_t  tgt_proto_addr[TAPI_ARP_MAX_PROTO_ADDR_LEN]; /**< Target protocol
-                                                               address */
+
+    /** Sender hardware address */
+    uint8_t  snd_hw_addr[TAPI_ARP_MAX_HW_ADDR_LEN]; 
+    /** Sender protocol address */
+    uint8_t  snd_proto_addr[TAPI_ARP_MAX_PROTO_ADDR_LEN];
+    /** Target hardware address */
+    uint8_t  tgt_hw_addr[TAPI_ARP_MAX_HW_ADDR_LEN];
+    /** Target protocol address */
+    uint8_t  tgt_proto_addr[TAPI_ARP_MAX_PROTO_ADDR_LEN];
+
 } tapi_arp_hdr_t;
 
 /** Structure that represents ARP frame: Ethernet header and ARP header */
@@ -102,26 +104,29 @@ typedef struct tapi_arp_frame {
 
 #define TAPI_ARP_FILL_HDR(arp_frame_, op_, \
                           snd_hw_, snd_proto_, tgt_hw_, tgt_proto_) \
-    do {                                                                    \
-        memset(&((arp_frame_)->arp_hdr), 0, sizeof((arp_frame_)->arp_hdr)); \
-        (arp_frame_)->arp_hdr.hard_type = ARPHRD_ETHER;                     \
-        (arp_frame_)->arp_hdr.proto_type = ETHERTYPE_IP;                    \
-        (arp_frame_)->arp_hdr.hard_size = ETH_ALEN;                         \
-        (arp_frame_)->arp_hdr.proto_size = sizeof(struct in_addr);          \
-        (arp_frame_)->arp_hdr.op_code = (op_);                              \
-        if ((snd_hw_) != NULL)                                              \
-            memcpy((arp_frame_)->arp_hdr.snd_hw_addr, snd_hw_, ETH_ALEN);   \
-        if ((snd_proto_) != NULL)                                           \
-            memcpy((arp_frame_)->arp_hdr.snd_proto_addr, snd_proto_,        \
-                   sizeof(struct in_addr));                                 \
-        if ((tgt_hw_) != NULL)                                              \
-            memcpy((arp_frame_)->arp_hdr.tgt_hw_addr, tgt_hw_, ETH_ALEN);   \
-        if ((tgt_proto_) != NULL)                                           \
-            memcpy((arp_frame_)->arp_hdr.tgt_proto_addr, tgt_proto_,        \
-                   sizeof(struct in_addr));                                 \
-                                                                            \
-        (arp_frame_)->data = NULL;                                          \
-        (arp_frame_)->data_len = 0;                                         \
+    do {                                                                \
+        memset(&((arp_frame_)->arp_hdr), 0,                             \
+               sizeof((arp_frame_)->arp_hdr));                          \
+        (arp_frame_)->arp_hdr.hard_type = ARPHRD_ETHER;                 \
+        (arp_frame_)->arp_hdr.proto_type = ETHERTYPE_IP;                \
+        (arp_frame_)->arp_hdr.hard_size = ETH_ALEN;                     \
+        (arp_frame_)->arp_hdr.proto_size = sizeof(struct in_addr);      \
+        (arp_frame_)->arp_hdr.op_code = (op_);                          \
+        if ((snd_hw_) != NULL)                                          \
+            memcpy((arp_frame_)->arp_hdr.snd_hw_addr, snd_hw_,          \
+                   ETH_ALEN);                                           \
+        if ((snd_proto_) != NULL)                                       \
+            memcpy((arp_frame_)->arp_hdr.snd_proto_addr, snd_proto_,    \
+                   sizeof(struct in_addr));                             \
+        if ((tgt_hw_) != NULL)                                          \
+            memcpy((arp_frame_)->arp_hdr.tgt_hw_addr, tgt_hw_,          \
+                   ETH_ALEN);                                           \
+        if ((tgt_proto_) != NULL)                                       \
+            memcpy((arp_frame_)->arp_hdr.tgt_proto_addr, tgt_proto_,    \
+                   sizeof(struct in_addr));                             \
+                                                                        \
+        (arp_frame_)->data = NULL;                                      \
+        (arp_frame_)->data_len = 0;                                     \
     } while (0)
 
 /**
@@ -132,14 +137,13 @@ typedef struct tapi_arp_frame {
  * @param device        interface name on TA host
  * @param remote_addr   default remote MAC address, may be NULL - in this
  *                      case frames will be sent only if dst is specified in
- *                      template, and frames from all src's will be
- *                      catched.
- *                      If NULL, CSAP will have remote address unconfigured 
+ *                      template, and frames from all src's will be catched.
+ *                      If NULL, CSAP will have remote address unconfigured
  *                      and will require it in traffic template.
- * @param local_addr    default local MAC address. may be NULL - in this case
- *                      frames will be sent with src specifed in template
- *                      or native for outgoing device (if not present
- *                      in template).
+ * @param local_addr    default local MAC address. may be NULL - in this
+ *                      case frames will be sent with src specifed in
+ *                      template or native for outgoing device (if not
+ *                      present in template).
  * @param arp_csap      Identifier of created CSAP (OUT)
  *
  * @return zero on success, otherwise standard or common TE error code. 
@@ -151,8 +155,8 @@ extern int tapi_arp_csap_create(const char *ta_name, int sid,
                                 csap_handle_t *arp_csap);
 
 /**
- * Sends traffic from specified CSAP according to the traffic template passed.
- * This function blocks until all packets are sent.
+ * Sends traffic from specified CSAP according to the traffic template
+ * passed.  This function blocks until all packets are sent.
  *
  * @param ta_name   Test Agent name
  * @param sid       RCF session identifier
@@ -169,11 +173,11 @@ extern int tapi_arp_send(const char *ta_name, int sid,
  * Callback function for the tapi_arp_recv_start() routine, it is called
  * for each packet received on CSAP.
  *
- * @param header        structure with ARP and Ethernet header of the frame.
- * @param payload       payload of the frame.
- * @param plen          length of the frame payload.
+ * @param header        Structure with ARP and Ethernet header of the frame
+ * @param payload       Payload of the frame
+ * @param plen          Length of the frame payload
  * @param userdata      Pointer to user data, provided by  the caller of 
- *                      tapi_arp_recv_start.
+ *                      tapi_arp_recv_start
  */
 typedef void (*tapi_arp_frame_callback)(const tapi_arp_frame_t *header, 
                                         void *userdata);
@@ -181,7 +185,8 @@ typedef void (*tapi_arp_frame_callback)(const tapi_arp_frame_t *header,
 /**
  * Start receive process on specified ARP CSAP. If process
  * was started correctly (rc is OK) it can be managed by common RCF
- * methods 'rcf_ta_trrecv_wait', 'rcf_ta_trrecv_get' and 'rcf_ta_trrecv_stop'.
+ * methods 'rcf_ta_trrecv_wait', 'rcf_ta_trrecv_get' and
+ * 'rcf_ta_trrecv_stop'.
  *
  * @param ta_name    Test Agent name
  * @param sid        RCF session
@@ -243,8 +248,8 @@ extern int tapi_arp_prepare_template(const tapi_arp_frame_t *frame,
  *
  * @param src_mac  Desired source MAC address value. if NULL, source address
  *                 of the Ethernet frame is not matched
- * @param dst_mac  Desired destination MAC address value. if NULL, destination
- *                 address of the Ethernet frame is not matched
+ * @param dst_mac  Desired destination MAC address value. if NULL,
+ *                 destination address of the Ethernet frame is not matched
  * @param pattern  Placeholder for the pattern (OUT)
  *
  * @returns Status of the operation

@@ -72,7 +72,8 @@ tapi_arp_csap_create(const char *ta_name, int sid, const char *device,
 {
     uint16_t eth_type = ETHERTYPE_ARP;
 
-    return tapi_eth_csap_create(ta_name, sid, device, remote_addr, local_addr,
+    return tapi_eth_csap_create(ta_name, sid, device,
+                                remote_addr, local_addr,
                                 &eth_type, arp_csap);
 }
 
@@ -194,7 +195,9 @@ tapi_arp_recv_start(const char *ta_name, int sid, csap_handle_t arp_csap,
 {
     struct tapi_pkt_handler_data *i_data;
     
-    if ((i_data = (struct tapi_pkt_handler_data *)malloc(sizeof(struct tapi_pkt_handler_data))) == NULL)
+    i_data = (struct tapi_pkt_handler_data *)malloc(
+                 sizeof(struct tapi_pkt_handler_data));
+    if (i_data == NULL)
         return TE_RC(TE_TAPI, ENOMEM);
     
     i_data->user_callback = cb;
@@ -224,7 +227,10 @@ arp_frame_callback(const tapi_arp_frame_t *arp_frame, void *userdata)
     if (info->rc != 0)
         return;
 
-    /* Copy ARP frame because it is freed after returning from the function */
+    /*
+     * Copy ARP frame because it is freed after returning
+     * from the function.
+     */
     info->num++;
     info->frames = 
         (tapi_arp_frame_t *)realloc(info->frames,
@@ -360,7 +366,8 @@ tapi_arp_prepare_template(const tapi_arp_frame_t *frame, asn_value **templ)
 
         arp_pkt = tapi_arp_create_bin_arp_pkt(&(frame->arp_hdr),
                                               frame->data,
-                                              frame->data_len, &arp_pkt_len);
+                                              frame->data_len,
+                                              &arp_pkt_len);
         if (arp_pkt == NULL)
             return ENOMEM;
 
@@ -624,7 +631,7 @@ tapi_arp_create_bin_arp_pkt(const tapi_arp_hdr_t *arp_hdr,
         arp_pkt += data_len;
     }
 
-    assert((arp_pkt - arp_pkt_start) == arp_pkt_len);
+    assert((arp_pkt - arp_pkt_start) == (int)arp_pkt_len);
 
     *pkt_len = arp_pkt_len;
 
