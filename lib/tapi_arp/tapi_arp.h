@@ -44,6 +44,7 @@
 #include "te_defs.h"
 #include "tad_common.h"
 #include "asn_usr.h"
+#include "ndn_eth.h"
 
 /* ARP request operation - ARPOP_REQUEST */
 /* ARP reply operation - ARPOP_REPLY */
@@ -89,7 +90,7 @@ typedef struct tapi_arp_frame {
  */
 #define TAPI_ARP_FILL_ETH_HDR(arp_frame_, src_mac_, dst_mac_) \
     do {                                                            \
-        memeset(&((arp_frame_)->eth_hdr), 0,                        \
+        memset(&((arp_frame_)->eth_hdr), 0,                         \
                 sizeof((arp_frame_)->eth_hdr));                     \
         assert(sizeof((arp_frame_)->eth_hdr.src_addr) == ETH_ALEN); \
         memcpy((arp_frame_)->eth_hdr.src_addr, src_mac_, ETH_ALEN); \

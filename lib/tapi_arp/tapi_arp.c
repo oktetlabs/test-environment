@@ -298,8 +298,9 @@ tapi_arp_prepare_template(const tapi_arp_frame_t *frame, asn_value **templ)
 #undef ARP_FILL_ARRAY
 
         assert((arp_pkt - arp_pkt_start) == arp_pkt_len);
-        rc = asn_write_value_field(traffic_templ, arp_pkt, arp_pkt_len,
+        rc = asn_write_value_field(traffic_templ, arp_pkt_start, arp_pkt_len,
                                    "payload.#bytes");
+        arp_pkt = arp_pkt_start;
     }
 
     free(arp_pkt);
