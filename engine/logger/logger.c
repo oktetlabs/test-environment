@@ -362,7 +362,6 @@ ta_handler(void *ta)
             msg_count++;
             nfl = strlen(inst->agent);
             LGR_NFL_PUT(nfl, p_buf);
-            p_buf += sizeof(te_log_nfl_t);
             memcpy(p_buf, inst->agent, nfl);
             p_buf += nfl;
 
