@@ -41,6 +41,7 @@ if test -z "$with_tad" ; then
 fi
 AC_SUBST([TAD], [$with_tad])
 
+AC_SUBST([TAD_LIBS])
 
 CPPFLAGS=${CPPFLAGS}" "${TE_CPPFLAGS}
 CFLAGS=${CFLAGS}" "${TE_CFLAGS}
@@ -279,6 +280,10 @@ if test -n "$with_rcf_rpc" ; then
             [AC_ERROR([There is no xdr_uint64_t or xdr_u_int64_t!])])])
 fi
 
+
+export PKG_CONFIG_PATH=$DESTDIR/$prefix/../$host/lib/pkgconfig/
+
+PKG_CHECK_MODULES(TAD, te-$with_tad)
 
 AC_CONFIG_FILES([Makefile])
 

@@ -40,10 +40,16 @@ lib@with_name@.a: $(lib@with_name@_a_DEPENDENCIES)
 	echo -e $${AR_SCRIPT} | $(AR) -M
 	$(RANLIB) $@
 
+
+mybindir=$(libdir)/pkgconfig
+
+mybin_DATA = te-@with_name@.pc
+
 install-exec-hook:
 	touch -c -r lib@with_name@.a $(DESTDIR)/$(prefix)/lib/lib@with_name@.a
 
 install-data-hook:
+	touch -c -r te-@with_name@.pc $(mybindir)/te-@with_name@.pc ; \
 	for i in $(include_HEADERS) ; do \
 	    touch -c -r $(srcdir)/$$i $(DESTDIR)/$(prefix)/include/$$i ; \
 	done

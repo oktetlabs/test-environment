@@ -70,6 +70,7 @@ AC_ARG_VAR([TE_DEPENDENCIES])
 TAD_LIBLIST=
 TAD_SUBDIRS=
 TAD_CH_DEFS=
+TA_TAD_LIBS=
 
 proto_specific()
 {
@@ -78,6 +79,7 @@ proto_specific()
     TAD_SUBDIRS="$TAD_SUBDIRS $1"
     TAD_CH_DEFS="$TAD_CH_DEFS -DWITH_$VAR" 
 }
+
 
 
 AC_ARG_WITH([eth],, 
@@ -114,6 +116,7 @@ AC_ARG_WITH([snmp],,
 [if test "${withval}" = yes; then
     w_snmp=true;
     proto_specific snmp;
+    TA_TAD_LIBS="$TA_TAD_LIBS `net-snmp-config --libs` "
     AC_CONFIG_FILES([snmp/Makefile])
  fi
 ], [w_snmp=false])
@@ -129,6 +132,7 @@ AC_ARG_WITH([cli],,
 [if test "${withval}" = yes; then
     w_cli=true;
     proto_specific cli;
+    TA_TAD_LIBS="$TA_TAD_LIBS -lexpect";
     AC_CONFIG_FILES([cli/Makefile])
  fi
 ], [w_cli=false])
@@ -160,6 +164,16 @@ fi
 if test x$w_eth = xtrue; then 
     AC_CHECK_HEADERS([netinet/ether.h])
 fi
+
+
+cat > te-$with_name.pc <<EOF
+Name: te-$with_name
+Description: Traffic Application Domain for TE
+Version: $PACKAGE_VERSION
+Requires:
+Libs: $TA_TAD_LIBS
+Cflags: 
+EOF
 
 AC_SUBST([NET_SNMP_CFLAGS])
 AC_SUBST([NET_SNMP_LIBS])

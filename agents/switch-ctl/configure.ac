@@ -33,6 +33,13 @@ AC_ARG_VAR([TE_DEPENDENCIES])
 CPPFLAGS=${CPPFLAGS}" "${TE_CPPFLAGS}
 CFLAGS=${CFLAGS}" "${TE_CFLAGS}
 
+if test -z "$with_tad" ; then
+    with_tad=tad
+fi
+AC_SUBST([TAD], [$with_tad])
+
+AC_SUBST([TAD_LIBS])
+
 AC_CONFIG_HEADERS([config.h])
 
 AC_HEADER_STDC
@@ -44,6 +51,10 @@ assert.h \
 semaphore.h \
 ])
 AC_C_INLINE
+
+export PKG_CONFIG_PATH=$DESTDIR/$prefix/../$host/lib/pkgconfig/
+
+PKG_CHECK_MODULES(TAD, te-$with_tad)
 
 AC_CONFIG_FILES([Makefile])
 

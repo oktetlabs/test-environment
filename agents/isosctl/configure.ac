@@ -32,6 +32,13 @@ AC_ARG_VAR([TE_DEPENDENCIES])
 CFLAGS=${CFLAGS}" "${TE_CFLAGS}
 CPPFLAGS=${CPPFLAGS}" "${TE_CFLAGS}
 
+if test -z "$with_tad" ; then
+    with_tad=tad
+fi
+AC_SUBST([TAD], [$with_tad])
+
+AC_SUBST([TAD_LIBS])
+
 AC_CONFIG_HEADERS([config.h])
 
 AC_CHECK_HEADERS([\
@@ -39,6 +46,10 @@ time.h \
 sys/time.h \
 ])
 AC_C_INLINE
+
+export PKG_CONFIG_PATH=$DESTDIR/$prefix/../$host/lib/pkgconfig/
+
+PKG_CHECK_MODULES(TAD, te-$with_tad)
                             
 AC_CONFIG_FILES([Makefile])
 

@@ -95,6 +95,7 @@ endif
 
 endif
 
+LIBS+=@TAD_LIBS@
 
 AM_CPPFLAGS=$(MY_CPPFLAGS)
 
