@@ -269,8 +269,8 @@ logfork_entry(void)
         
         if ((len = recv(sockd, (udp_msg *)&message, msg_len, 0)) <= 0)
         {
-            ERROR("recv() failed; errno %d", errno);
-            break;
+            WARN("recv() failed, len=%d; errno %d", len, errno);
+            continue;
         }
         
         if (len != sizeof(message))
