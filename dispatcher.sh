@@ -268,6 +268,9 @@ if test -n "$BUILDER" ; then
     fi
     export TE_BUILD=`pwd`
 else
+    if test -e build/builder.conf.processed ; then
+        export TE_BUILD=`pwd`/build
+    fi
     if test -z "${TE_BUILD}" ; then
         export TE_BUILD=`pwd`
         if test -z "${QUIET}" ; then
