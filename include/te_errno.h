@@ -52,6 +52,8 @@
                                          not available */
 #define ETEFMT          (TE_BASE | 7) /* Invalid format */
 #define ETEENV          (TE_BASE | 8) /* Inappropriate environment */
+#define ETEWIN          (TE_BASE | 9) /* WIndows API function failed, 
+                                         see log for the description */
 /*@}*/
 
 /** @name Remote Control Facility errno's */
