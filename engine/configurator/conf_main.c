@@ -68,9 +68,10 @@ print_tree(cfg_instance *inst, int indent)
     if (inst->obj->type == CVT_NONE ||
         cfg_types[inst->obj->type].val2str(inst->val, &str) != 0)
     {
-        str = "";
+        str = NULL;
     }
-    fprintf(f, "%s = %s\n", inst->oid, str);
+    fprintf(f, "%s = %s\n", inst->oid, (str != NULL) ? str : "");
+    free(str);
     for (inst = inst->son; inst != NULL; inst = inst->brother)
         print_tree(inst, indent + 2);
 
