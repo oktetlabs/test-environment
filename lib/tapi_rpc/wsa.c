@@ -1995,8 +1995,11 @@ rpc_wsa_address_to_string(rcf_rpc_server *rpcs, struct sockaddr *addr,
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        return FALSE;
+        return -1;
     }
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
 
     op = rpcs->op;
 
@@ -2041,8 +2044,7 @@ rpc_wsa_address_to_string(rcf_rpc_server *rpcs, struct sockaddr *addr,
         {
             *addrstr_len = *out.addrstr_len.addrstr_len_val;
 
-            if (addrstr != NULL &&
-                out.addrstr.addrstr_val != NULL)
+            if ((addrstr != NULL) && (out.addrstr.addrstr_val != NULL))
             {
                 memcpy(addrstr, out.addrstr.addrstr_val, *addrstr_len);
             }        
@@ -2060,11 +2062,412 @@ rpc_wsa_address_to_string(rcf_rpc_server *rpcs, struct sockaddr *addr,
     RETVAL_INT_ZERO_OR_MINUS_ONE(wsa_address_to_string, out.retval);
 }
 
+int
+rpc_wsa_string_to_address(rcf_rpc_server *rpcs, char *addrstr,
+                          rpc_socket_domain address_family,
+                          uint8_t *info, int info_len,
+                          struct sockaddr *addr, socklen_t *addrlen)
+{
+    rcf_rpc_op                      op;
+    tarpc_wsa_string_to_address_in  in;
+    tarpc_wsa_string_to_address_out out;
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        return -1;
+    }
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    op = rpcs->op;
+
+    in.addrstr.addrstr_val = addrstr;
+    in.addrstr.addrstr_len = strlen(addrstr) + 1;
+
+    in.address_family = address_family;
+
+    in.info.info_val = info;
+    in.info.info_len = info_len;
+    
+    in.addrlen.addrlen_val = addrlen;
+    if (addrlen != NULL)
+        in.addrlen.addrlen_len = 1;
+     else
+        in.addrlen.addrlen_len = 0;
+
+    rcf_rpc_call(rpcs, _wsa_string_to_address,
+                 &in, (xdrproc_t)xdr_tarpc_wsa_string_to_address_in,
+                 &out, (xdrproc_t)xdr_tarpc_wsa_string_to_address_out);
+
+    if (RPC_IS_CALL_OK(rpcs))
+    {
+        if ((addrlen != NULL) && (out.addrlen.addrlen_val != NULL))
+            *addrlen = *out.addrlen.addrlen_val;
+
+        if ((addr != NULL) && (out.addr.sa_data.sa_data_val != NULL))
+        {
+            memcpy(addr->sa_data, out.addr.sa_data.sa_data_val,
+                                 out.addr.sa_data.sa_data_len);
+            addr->sa_family = addr_family_rpc2h(out.addr.sa_family);
+        }
+    }
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(wsa_string_to_address,
+                                                    out.retval);
+
+    TAPI_RPC_LOG("RPC (%s,%s)%s: wsa_string_to_address() -> %d (%s %s)",
+                 rpcs->ta, rpcs->name, rpcop2str(op),
+                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)),
+                 win_error_rpc2str(out.common.win_error));
+
+    RETVAL_INT_ZERO_OR_MINUS_ONE(wsa_string_to_address, out.retval);
+}
+
+/* WSACancelAsyncRequest */
+int
+rpc_wsa_cancel_async_request(rcf_rpc_server *rpcs,
+                             rpc_handle async_task_handle)
+{
+    rcf_rpc_op                         op;
+    tarpc_wsa_cancel_async_request_in  in;
+    tarpc_wsa_cancel_async_request_out out;
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        return -1;
+    }
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    op = rpcs->op;
+
+    in.async_task_handle = (tarpc_handle)async_task_handle;
+
+    rcf_rpc_call(rpcs, _wsa_cancel_async_request,
+                 &in, (xdrproc_t)xdr_tarpc_wsa_cancel_async_request_in,
+                 &out, (xdrproc_t)xdr_tarpc_wsa_cancel_async_request_out);
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(wsa_cancel_async_request,
+                                                       out.retval);
+
+    TAPI_RPC_LOG("RPC (%s,%s)%s: wsa_cancel_async_request() -> %d (%s %s)",
+                 rpcs->ta, rpcs->name, rpcop2str(op),
+                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)),
+                 win_error_rpc2str(out.common.win_error));
+
+    RETVAL_INT_ZERO_OR_MINUS_ONE(wsa_cancel_async_request, out.retval);
+}
+
+/**
+ * Allocate a buffer of specified size in the TA address space.
+ */
+rpc_ptr
+rpc_alloc_buf(rcf_rpc_server *rpcs, size_t size)
+{
+    rcf_rpc_op          op;
+    tarpc_alloc_buf_in  in;
+    tarpc_alloc_buf_out out;
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        return (rpc_ptr)NULL;
+    }
+
+    op = rpcs->op;
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.size = size;
+
+    rcf_rpc_call(rpcs, _alloc_buf,
+                 &in, (xdrproc_t)xdr_tarpc_alloc_buf_in,
+                 &out, (xdrproc_t)xdr_tarpc_alloc_buf_out);
+
+    TAPI_RPC_LOG("RPC (%s,%s)%s: alloc_buf() -> %p (%s %s)",
+                 rpcs->ta, rpcs->name, rpcop2str(op),
+                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)),
+                 win_error_rpc2str(out.common.win_error));
+
+    RETVAL_TYPE_PTR(alloc_buf, rpc_ptr, out.retval);
+}
+
+void
+rpc_free_buf(rcf_rpc_server *rpcs, rpc_ptr buf)
+{
+    rcf_rpc_op         op;
+    tarpc_free_buf_in  in;
+    tarpc_free_buf_out out;
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        return;
+    }
+
+    op = rpcs->op;
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.buf = (tarpc_ptr)buf;
+
+    rcf_rpc_call(rpcs, _free_buf,
+                 &in, (xdrproc_t)xdr_tarpc_free_buf_in,
+                 &out, (xdrproc_t)xdr_tarpc_free_buf_out);
+
+    TAPI_RPC_LOG("RPC (%s,%s)%s: free_buf() -> (%s %s)",
+                 rpcs->ta, rpcs->name, rpcop2str(op),
+                 errno_rpc2str(RPC_ERRNO(rpcs)),
+                 win_error_rpc2str(out.common.win_error));
+
+    RETVAL_VOID(free_buf);
+}
+
+/**
+ * Copy the data from src_buf to the dst_buf buffer located at TA.
+ */
+void
+rpc_set_buf(rcf_rpc_server *rpcs, char *src_buf,
+             size_t len, rpc_ptr dst_buf)
+{
+    rcf_rpc_op        op;
+    tarpc_set_buf_in  in;
+    tarpc_set_buf_out out;
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        return;
+    }
+
+    op = rpcs->op;
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.src_buf.src_buf_val = src_buf;
+    if (len != 0)
+        in.src_buf.src_buf_len = len;
+    else
+        in.src_buf.src_buf_len = 0;
+
+    in.dst_buf = (tarpc_ptr)dst_buf;
+
+    rcf_rpc_call(rpcs, _set_buf,
+                 &in, (xdrproc_t)xdr_tarpc_set_buf_in,
+                 &out, (xdrproc_t)xdr_tarpc_set_buf_out);
+
+    TAPI_RPC_LOG("RPC (%s,%s)%s: set_buf() -> (%s %s)",
+                 rpcs->ta, rpcs->name, rpcop2str(op),
+                 errno_rpc2str(RPC_ERRNO(rpcs)),
+                 win_error_rpc2str(out.common.win_error));
+
+    RETVAL_VOID(set_buf);
+}
+
+/**
+ * Copy the data from the src_buf buffer located at TA to dst_buf buffer.
+ */
+void
+rpc_get_buf(rcf_rpc_server *rpcs, rpc_ptr src_buf,
+            size_t len, char *dst_buf)
+{
+    rcf_rpc_op        op;
+    tarpc_get_buf_in  in;
+    tarpc_get_buf_out out;
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        return;
+    }
+
+    op = rpcs->op;
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.src_buf = (tarpc_ptr)src_buf;
+    in.len = len;
+
+    rcf_rpc_call(rpcs, _get_buf,
+                 &in, (xdrproc_t)xdr_tarpc_get_buf_in,
+                 &out, (xdrproc_t)xdr_tarpc_get_buf_out);
+
+    TAPI_RPC_LOG("RPC (%s,%s)%s: get_buf() -> (%s %s)",
+                 rpcs->ta, rpcs->name, rpcop2str(op),
+                 errno_rpc2str(RPC_ERRNO(rpcs)),
+                 win_error_rpc2str(out.common.win_error));
+
+    if ((out.dst_buf.dst_buf_len != 0) && (out.dst_buf.dst_buf_val != NULL))
+        memcpy(dst_buf, out.dst_buf.dst_buf_val, out.dst_buf.dst_buf_len);
+
+    RETVAL_VOID(get_buf);
+}
+
+/**
+ * Allocate a WSABUF structure, a buffer of specified length and
+ * fill in the fields of the allocated structure according to the
+ * allocated buffer pointer and length in the TA address space.
+ */
+int
+rpc_alloc_wsabuf(rcf_rpc_server *rpcs, size_t len,
+                 rpc_ptr *wsabuf, rpc_ptr *wsabuf_buf)
+{
+    rcf_rpc_op             op;
+    tarpc_alloc_wsabuf_in  in;
+    tarpc_alloc_wsabuf_out out;
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        return -1;
+    }
+
+    op = rpcs->op;
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.len = len;
+
+    rcf_rpc_call(rpcs, _alloc_wsabuf,
+                 &in, (xdrproc_t)xdr_tarpc_alloc_wsabuf_in,
+                 &out, (xdrproc_t)xdr_tarpc_alloc_wsabuf_out);
+
+    TAPI_RPC_LOG("RPC (%s,%s)%s: alloc_wsabuf() -> "
+                 "%d (%s %s)", rpcs->ta, rpcs->name, rpcop2str(op),
+                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)),
+                 win_error_rpc2str(out.common.win_error));
+
+    *wsabuf = out.wsabuf;
+    *wsabuf_buf = out.wsabuf_buf;
+
+    RETVAL_VAL(alloc_wsabuf, out.retval);
+}
+
+void rpc_free_wsabuf(rcf_rpc_server *rpcs, rpc_ptr wsabuf)
+{
+    rcf_rpc_op            op;
+    tarpc_free_wsabuf_in  in;
+    tarpc_free_wsabuf_out out;
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        return;
+    }
+
+    op = rpcs->op;
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.wsabuf = (tarpc_ptr)wsabuf;
+
+    rcf_rpc_call(rpcs, _free_wsabuf,
+                 &in, (xdrproc_t)xdr_tarpc_free_wsabuf_in,
+                 &out, (xdrproc_t)xdr_tarpc_free_wsabuf_out);
+
+    TAPI_RPC_LOG("RPC (%s,%s)%s: free_wsabuf() -> (%s %s)",
+                 rpcs->ta, rpcs->name, rpcop2str(op),
+                 errno_rpc2str(RPC_ERRNO(rpcs)),
+                 win_error_rpc2str(out.common.win_error));
+
+    RETVAL_VOID(free_wsabuf);
+}
+
+/**
+ * @param caller_wsabuf           A pointer to the WSABUF structure in the
+ *                                TA virtual address space.
+ * @param callee_wsabuf           A pointer to the WSABUF structure in the
+ *                                TA virtual address space.
+ * @param provider_specific_buf   A pointer to the buffer in the TA virtual
+ *                                address space.
+ */
+int
+rpc_wsa_connect(rcf_rpc_server *rpcs, int s, struct sockaddr *addr,
+                socklen_t addrlen, rpc_ptr caller_wsabuf,
+                rpc_ptr callee_wsabuf, tarpc_flowspec *sending,
+                tarpc_flowspec *receiving,
+                rpc_ptr provider_specific_buf,
+                size_t provider_specific_buf_len)
+{
+    rcf_rpc_op            op;
+    tarpc_wsa_connect_in  in;
+    tarpc_wsa_connect_out out;
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        return -1;
+    }
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    op = rpcs->op;
+    
+    in.s = s;
+
+    if (addr != NULL)
+    {
+        if (addrlen >= SA_COMMON_LEN)
+        {
+            in.addr.sa_family = addr_family_h2rpc(addr->sa_family);
+            in.addr.sa_data.sa_data_len = addrlen - SA_COMMON_LEN;
+            in.addr.sa_data.sa_data_val = (uint8_t *)(addr->sa_data);
+        }
+        else
+        {
+            in.addr.sa_family = RPC_AF_UNSPEC;
+            in.addr.sa_data.sa_data_len = 0;
+            /* Any not-NULL pointer is suitable here */
+            in.addr.sa_data.sa_data_val = (uint8_t *)addr;
+        }
+    }
+    in.addrlen = addrlen;
+
+    in.caller_wsabuf = caller_wsabuf;
+    in.callee_wsabuf = callee_wsabuf;
+
+    in.sending.sending_val = sending;
+    if (sending != NULL)
+        in.sending.sending_len = 1;
+    else
+        in.sending.sending_len = 0;
+
+    in.receiving.receiving_val = receiving;
+    if (receiving != NULL)
+        in.receiving.receiving_len = 1;
+    else
+        in.receiving.receiving_len = 0;
+
+    in.provider_specific_buf = (tarpc_ptr)provider_specific_buf;
+    in.provider_specific_buf_len = provider_specific_buf_len;
+
+    rcf_rpc_call(rpcs, _wsa_connect,
+                 &in, (xdrproc_t)xdr_tarpc_wsa_connect_in,
+                 &out, (xdrproc_t)xdr_tarpc_wsa_connect_out);
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(wsa_connect, out.retval);
+
+    TAPI_RPC_LOG("RPC (%s,%s)%s: wsa_connect() -> %d (%s %s)",
+                 rpcs->ta, rpcs->name, rpcop2str(op),
+                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)),
+                 win_error_rpc2str(out.common.win_error));
+
+    RETVAL_INT_ZERO_OR_MINUS_ONE(wsa_connect, out.retval);
+}
+
+/**
+ * @param buf   A valid pointer in the TA virtual address space.
+ */
 rpc_handle
 rpc_wsa_async_get_host_by_addr(rcf_rpc_server *rpcs, rpc_hwnd hwnd,
                                unsigned int wmsg, char *addr,
                                ssize_t addrlen, rpc_socket_type type,
-                               uint64_t buf, ssize_t buflen) 
+                               rpc_ptr buf, ssize_t buflen) 
 {
     rcf_rpc_op                           op;
     tarpc_wsa_async_get_host_by_addr_in  in;
@@ -2073,8 +2476,11 @@ rpc_wsa_async_get_host_by_addr(rcf_rpc_server *rpcs, rpc_hwnd hwnd,
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        return FALSE;
+        return (rpc_handle)NULL;
     }
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
 
     op = rpcs->op;
 
@@ -2108,7 +2514,7 @@ rpc_wsa_async_get_host_by_addr(rcf_rpc_server *rpcs, rpc_hwnd hwnd,
 rpc_handle
 rpc_wsa_async_get_host_by_name(rcf_rpc_server *rpcs, rpc_hwnd hwnd,
                                unsigned int wmsg, char *name,
-                               uint64_t buf, ssize_t buflen) 
+                               rpc_ptr buf, ssize_t buflen) 
 {
     rcf_rpc_op                           op;
     tarpc_wsa_async_get_host_by_name_in  in;
@@ -2117,8 +2523,11 @@ rpc_wsa_async_get_host_by_name(rcf_rpc_server *rpcs, rpc_hwnd hwnd,
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        return FALSE;
+        return (rpc_handle)NULL;
     }
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
 
     op = rpcs->op;
 
@@ -2127,7 +2536,7 @@ rpc_wsa_async_get_host_by_name(rcf_rpc_server *rpcs, rpc_hwnd hwnd,
 
     in.name.name_val = name;
     if (name != NULL)
-        in.name.name_len = strlen(name);
+        in.name.name_len = strlen(name) + 1;
     else
         in.name.name_len = 0;
 
@@ -2150,7 +2559,7 @@ rpc_wsa_async_get_host_by_name(rcf_rpc_server *rpcs, rpc_hwnd hwnd,
 rpc_handle
 rpc_wsa_async_get_proto_by_name(rcf_rpc_server *rpcs, rpc_hwnd hwnd,
                                 unsigned int wmsg, char *name,
-                                uint64_t buf, ssize_t buflen) 
+                                rpc_ptr buf, ssize_t buflen) 
 {
     rcf_rpc_op                            op;
     tarpc_wsa_async_get_proto_by_name_in  in;
@@ -2159,8 +2568,11 @@ rpc_wsa_async_get_proto_by_name(rcf_rpc_server *rpcs, rpc_hwnd hwnd,
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        return FALSE;
+        return (rpc_handle)NULL;
     }
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
 
     op = rpcs->op;
 
@@ -2169,7 +2581,7 @@ rpc_wsa_async_get_proto_by_name(rcf_rpc_server *rpcs, rpc_hwnd hwnd,
 
     in.name.name_val = name;
     if (name != NULL)
-        in.name.name_len = strlen(name);
+        in.name.name_len = strlen(name) + 1;
     else
         in.name.name_len = 0;
 
@@ -2191,7 +2603,7 @@ rpc_wsa_async_get_proto_by_name(rcf_rpc_server *rpcs, rpc_hwnd hwnd,
 rpc_handle
 rpc_wsa_async_get_proto_by_number(rcf_rpc_server *rpcs, rpc_hwnd hwnd,
                                   unsigned int wmsg, int number,
-                                  uint64_t buf, ssize_t buflen) 
+                                  rpc_ptr buf, ssize_t buflen) 
 {
     rcf_rpc_op                              op;
     tarpc_wsa_async_get_proto_by_number_in  in;
@@ -2200,8 +2612,11 @@ rpc_wsa_async_get_proto_by_number(rcf_rpc_server *rpcs, rpc_hwnd hwnd,
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        return FALSE;
+        return (rpc_handle)NULL;
     }
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
 
     op = rpcs->op;
 
@@ -2226,7 +2641,7 @@ rpc_wsa_async_get_proto_by_number(rcf_rpc_server *rpcs, rpc_hwnd hwnd,
 rpc_handle
 rpc_wsa_async_get_serv_by_name(rcf_rpc_server *rpcs, rpc_hwnd hwnd,
                                unsigned int wmsg, char *name, char *proto,
-                               uint64_t buf, ssize_t buflen) 
+                               rpc_ptr buf, ssize_t buflen) 
 {
     rcf_rpc_op                           op;
     tarpc_wsa_async_get_serv_by_name_in  in;
@@ -2235,8 +2650,11 @@ rpc_wsa_async_get_serv_by_name(rcf_rpc_server *rpcs, rpc_hwnd hwnd,
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        return FALSE;
+        return (rpc_handle)NULL;
     }
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
 
     op = rpcs->op;
 
@@ -2245,13 +2663,13 @@ rpc_wsa_async_get_serv_by_name(rcf_rpc_server *rpcs, rpc_hwnd hwnd,
 
     in.name.name_val = name;
     if (name != NULL)
-        in.name.name_len = strlen(name);
+        in.name.name_len = strlen(name) + 1;
     else
         in.name.name_len = 0;
 
     in.proto.proto_val = proto;
     if (proto != NULL)
-        in.proto.proto_len = strlen(proto);
+        in.proto.proto_len = strlen(proto) + 1;
     else
         in.proto.proto_len = 0;
 
@@ -2274,7 +2692,7 @@ rpc_wsa_async_get_serv_by_name(rcf_rpc_server *rpcs, rpc_hwnd hwnd,
 rpc_handle
 rpc_wsa_async_get_serv_by_port(rcf_rpc_server *rpcs, rpc_hwnd hwnd,
                                unsigned int wmsg, int port, char *proto,
-                               uint64_t buf, ssize_t buflen) 
+                               rpc_ptr buf, ssize_t buflen) 
 {
     rcf_rpc_op                           op;
     tarpc_wsa_async_get_serv_by_port_in  in;
@@ -2283,8 +2701,11 @@ rpc_wsa_async_get_serv_by_port(rcf_rpc_server *rpcs, rpc_hwnd hwnd,
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        return FALSE;
+        return (rpc_handle)NULL;
     }
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
 
     op = rpcs->op;
 
@@ -2294,7 +2715,7 @@ rpc_wsa_async_get_serv_by_port(rcf_rpc_server *rpcs, rpc_hwnd hwnd,
 
     in.proto.proto_val = proto;
     if (proto != NULL)
-        in.proto.proto_len = strlen(proto);
+        in.proto.proto_len = strlen(proto) + 1;
     else
         in.proto.proto_len = 0;
 
