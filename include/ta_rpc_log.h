@@ -37,8 +37,8 @@
 #endif
 #include "logger_api.h"
 
-extern struct sockaddr *ta_log_addr_s;    /**< Logging server address */
-extern int              ta_log_addr_len;  /**< Logging server address length */
+extern struct sockaddr *ta_log_addr_s; /**< Logging server address */
+extern int ta_log_addr_len;            /**< Logging server address length */
 
 /* 
  * Only macros ERROR, WARN, RING, INFO and VERB are allowed.

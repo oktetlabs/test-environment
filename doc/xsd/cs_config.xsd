@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<xsd:schema version="$Id: OKT-DD-0000079-TE_CS_CONF.xsd,v 1.4 2003/11/19 12:58:01 helen Exp $"
+<xsd:schema version="$Id: $"
             xml:lang="en"
             xmlns:xs="http://www.w3.org/2001/XMLSchema"
             xmlns:xsd="http://www.w3.org/2001/XMLSchema">
@@ -113,8 +113,8 @@
     <xs:element name="add">
         <xs:annotation>
             <xs:documentation>
-                Add object instance command (attribute value of the instance 
-                element is required for objects with integer, string or 
+                Add object instance command (attribute value of the instance
+                element is required for objects with integer, string or
                 address types).
             </xs:documentation>
         </xs:annotation>
@@ -128,9 +128,9 @@
     <xs:element name="set">
         <xs:annotation>
             <xs:documentation>
-                Change object instance value (attribute value of the instance 
-                element is required for objects with integer, string or 
-                address types).
+                Change object instance value (attribute value of the
+                instance element is required for objects with integer,
+                string or address types).
             </xs:documentation>
         </xs:annotation>
         <xs:complexType>
@@ -168,8 +168,10 @@
     <xs:element name="backup">
         <xs:complexType>
             <xs:sequence>
-                <xs:element ref="object" maxOccurs="unbounded" minOccurs="0"/>
-                <xs:element ref="instance" maxOccurs="unbounded" minOccurs="0"/>
+                <xs:element ref="object" maxOccurs="unbounded"
+                                         minOccurs="0"/>
+                <xs:element ref="instance" maxOccurs="unbounded"
+                                           minOccurs="0"/>
             </xs:sequence>
         </xs:complexType>
     </xs:element>

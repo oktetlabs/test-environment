@@ -6,7 +6,7 @@
   -->
 <schema targetNamespace="http://www.oktetlabs.ru/proteos"
         xmlns:proteos="http://www.oktetlabs.ru/proteos"
-        version="$Id: tester_config.xsd,v 1.1 2003/10/28 09:35:42 arybchik Exp $"
+        version="$Id: $"
         xml:lang="en"
         xmlns="http://www.w3.org/2001/XMLSchema">
 

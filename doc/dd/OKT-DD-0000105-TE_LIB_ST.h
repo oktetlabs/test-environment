@@ -31,11 +31,12 @@
 /*
  * COMMENTS ABOUT const char *storage
  *
- * Three functions (strg_fopen, strg_fopendir and strg_mkdir) have a parameter
- * const char *storage. This parameter describes the storage be used.
+ * Three functions (strg_fopen, strg_fopendir and strg_mkdir) have
+ * a parameter const char *storage. This parameter describes the storage
+ * be used.
  *
- * For the file system-bases storage it is just a prefix (path to the storage).
- * Something like: "/home/tester/storage".
+ * For the file system-bases storage it is just a prefix (path to the
+ * storage). Something like: "/home/tester/storage".
  *
  * For cvs-based storage this string should be in the format
  * cvs://<cvs root>\n<cvs password>\n<cvs module>
@@ -48,11 +49,11 @@
 /* strg_set_default_storage -
  *     Set default storage to use in strg_fopen/strg_opendir/strg_mkdir.
  *
- *     This function defines the default storage. Default storage will
- * be used by strg_fopen/strg_opendir/strg_mkdir functions if parameter storage
- * is NULL. Error will be generated if strg_fopen/strg_opendir/strg_mkdir 
- * called with storage=NULL w/o previously calling of the 
- * strg_set_default_storage is an error.
+ *     This function defines the default storage. Default storage will be
+ *     used by strg_fopen/strg_opendir/strg_mkdir functions if parameter
+ *     storage is NULL. Error will be generated if
+ *     strg_fopen/strg_opendir/strg_mkdir called with storage=NULL w/o
+ *     previously calling of the strg_set_default_storage is an error.
  *
  * PARAMETERS:
  *     default_storage - String with default storage description
@@ -70,16 +71,16 @@ void strg_set_default_storage(const char *default_storage);
  * File access functions.
  * Prototypes of the following function's are taken from the stdio library.
  *
- * For the file system-based storage those functions will be mapped
- * to the stdio's functions, except for the strg_open and strg_remove functions.
- * For strg_open/strg_remove functions filenames will be modified before calling
- * functions from stdio.h.
+ * For the file system-based storage those functions will be mapped to the
+ * stdio's functions, except for the strg_open and strg_remove functions.
+ * For strg_open/strg_remove functions filenames will be modified before
+ * calling functions from stdio.h.
  *
- * For other storages (CVS-base, for example) those functions must be 
+ * For other storages (CVS-base, for example) those functions must be
  * implemented. It seems to be possible to use stdio's functions. When the
  * file is opened/created, the temporary file in the local file system will
- * be created (copied from the storage). The strg_fseek/strg_fput/etc 
- * functions will call stdio's functions for local file. When strg_close is 
+ * be created (copied from the storage). The strg_fseek/strg_fput/etc
+ * functions will call stdio's functions for local file. When strg_close is
  * called, the file will be written to the real storage.
  */
 
@@ -87,13 +88,15 @@ void strg_set_default_storage(const char *default_storage);
 /* strg_fopen --
  *     Open the file.
  *
- *     For simple file system-based storage the function just opens the file.
- *     For other storages (CVS, archive, etc) this function obtains specified
- * file (takes it from the CVS or extracts it from the archive) and copies it 
- * to the local file system. Then fopen function called for this local file.
+ *     For simple file system-based storage the function just opens the
+ *     file.  For other storages (CVS, archive, etc) this function obtains
+ *     specified file (takes it from the CVS or extracts it from the
+ *     archive) and copies it to the local file system. Then fopen function
+ *     called for this local file.
  *
  * PARAMETERS:
- *     storage   - The string with information about the storage to be used. 
+ *     storage   - The string with information about the storage to be
+ *                 used. 
  *     path/mode - See fopen man page.
  *
  * RETURNS:
@@ -104,10 +107,10 @@ FILE *strg_fopen(const char *storage, const char *path, const char *mode);
 /* strg_fclose --
  *     Close the file.
  *
- *     For simple file system-based storage the function just closes the file.
- *     For other storages (CVS, archive, etc) this function first closes the 
- * local file. Then it writes specified file to the storage (puts it into the 
- * CVS or archive) and deletes local copy. 
+ *     For simple file system-based storage the function just closes the
+ *     file.  For other storages (CVS, archive, etc) this function first
+ *     closes the local file. Then it writes specified file to the storage
+ *     (puts it into the CVS or archive) and deletes local copy. 
  
  * PARAMETERS:
  *     stream - Pointer to the stream returned by strg_fopen.
@@ -124,12 +127,12 @@ int strg_fclose(FILE *stream);
  *     This function forces a write of all user-space buffered data for
  * the given stream. 
  *
- *     For simple file system-based storage the function just flushes the file.
- *     For other storages (CVS, archive, etc) this function first flushes the 
- * local file. Then it writes specified file to the storage (puts it into the 
- * CVS or archive). The local copy of the file is not deleted (in contrast
- * to the strg_close).
- 
+ *     For simple file system-based storage the function just flushes the
+ *     file.  For other storages (CVS, archive, etc) this function first
+ *     flushes the local file. Then it writes specified file to the storage
+ *     (puts it into the CVS or archive). The local copy of the file is not
+ *     deleted (in contrast to the strg_close).
+ *
  * PARAMETERS:
  *     stream - Pointer to the stream returned by strg_fopen.
  *
@@ -189,10 +192,10 @@ int strg_closedir(DIR *dir);
 /* strg_readdir --
  *     Read next entry in the directory structure.
  *
- *     Returns a pointer to a dirent structure representing the next 
- * directory entry in the directory stream pointed to  by dir. Only the field
- * char d_name[] can be used in the returned structure. Returned structure may
- * be overwritten by  subsequent calls to readdir.
+ *     Returns a pointer to a dirent structure representing the next
+ *     directory entry in the directory stream pointed to  by dir. Only the
+ *     field char d_name[] can be used in the returned structure. Returned
+ *     structure may be overwritten by  subsequent calls to readdir.
  *
  * PARAMETERS:
  *     dir - Pointer to the directory stream returned by strg_opendir.
@@ -241,7 +244,10 @@ off_t strg_telldir(DIR *dir);
  */
 void strg_rewinddir(DIR *dir);
 
-/* mkdir is not a function from stdio.h or dirent.h. It is from sys/stat.h */
+/* 
+ * mkdir is not a function from stdio.h or dirent.h.
+ * It is from sys/stat.h
+ */
 
 /* strg_mkdir --
  *     Create directory.
@@ -258,8 +264,8 @@ void strg_rewinddir(DIR *dir);
 int strg_mkdir(const char *storage, const char *pathname, mode_t mode);
 
 /* strg_storage_to_local --
- *     copies the files, directory (possibly with subdirectories) from storage
-*      into specified directory in the local file system. 
+ *     copies the files, directory (possibly with subdirectories) from
+ *     storage into specified directory in the local file system. 
  *
  * PARAMETERS:
  *     storage       - The string with information about the storage to be 

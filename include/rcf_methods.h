@@ -71,12 +71,12 @@ typedef int (* rcf_talib_start)(char *ta_name, char *ta_type,
  * Reboot Test Agent station or NUT served by it. The method is called
  * after sending of "reboot" command to the TA. After that rcf_talib_start
  * and rcf_talib_connect are called.
- * For the case of local Test Agents this routine should kill the Test Agent,
- * but return an error.
+ * For the case of local Test Agents this routine should kill the Test
+ * Agent, but return an error.
  *
  * @param handle        TA handle
- * @param parms         parameter string passed to the TA in "reboot" command
- *                      or NULL
+ * @param parms         parameter string passed to the TA in "reboot"
+ *                      command or NULL
  *
  * @return error code 
  */
@@ -89,8 +89,8 @@ typedef int (* rcf_talib_reboot)(rcf_talib_handle handle, char *parms);
  *
  * @param handle        TA handle
  * @param select_set    FD_SET to be updated with the TA connection file 
- *                      descriptor (for Test Agents supporting listening mode)
- *                      (IN/OUT)
+ *                      descriptor (for Test Agents supporting listening
+ *                      mode) (IN/OUT)
  *
  * @param select_tm     timeout value for the select to be updated with
  *                      TA polling interval (for Test Agents supporting
@@ -130,10 +130,12 @@ typedef int (* rcf_talib_is_ready)(rcf_talib_handle handle);
  *
  * @param handle        TA handle
  * @param buf           location for received data
- * @param len           should be filled by the caller to length of the buffer;
- *                      is filled by the routine to length of received data
+ * @param len           should be filled by the caller to length of the
+ *                      buffer; is filled by the routine to length of
+ *                      received data
  * @param pba           location for address of first byte after answer 
- *                      end marker (is set only if binary attachment presents)
+ *                      end marker (is set only if binary attachment
+ *                      presents)
  *
  * @return error code
  * @retval 0            success
@@ -141,14 +143,14 @@ typedef int (* rcf_talib_is_ready)(rcf_talib_handle handle);
  * @retval ETESMALLBUF  Buffer is too small for the command. The part
  *                      of the command is written to the buffer. Other
  *                      part(s) of the message can be read by the subsequent
- *                      routine calls. ETSMALLBUF is returned until last 
+ *                      routine calls. ETSMALLBUF is returned until last
  *                      part of the message is read.
  *
  * @retval ETEPENDING   Attachment is too big to fit into the buffer.
- *                      The command and a part of the attachment is written 
- *                      to the buffer. Other part(s) can be read by the 
- *                      subsequent routine calls. ETEPENDING is returned until 
- *                      last part of the message is read.
+ *                      The command and a part of the attachment is written
+ *                      to the buffer. Other part(s) can be read by the
+ *                      subsequent routine calls. ETEPENDING is returned
+ *                      until last part of the message is read.
  *
  * @retval other        OS errno
  */
@@ -160,12 +162,13 @@ typedef int (* rcf_talib_receive)(rcf_talib_handle handle,
  *
  * @param handle        TA handle
  * @param select_set    FD_SET to be updated with the TA connection file 
- *                      descriptor (for Test Agents supporting listening mode)
- *                      (IN/OUT)
+ *                      descriptor (for Test Agents supporting listening
+ *                      mode) (IN/OUT)
  *
  * @return error code 
  */
-typedef int (* rcf_talib_close)(rcf_talib_handle handle, fd_set *select_set);
+typedef int (* rcf_talib_close)(rcf_talib_handle handle,
+                                fd_set *select_set);
 
 #ifdef __cplusplus
 }

@@ -190,27 +190,27 @@ bitmask2str(struct RPC_BIT_MAP_ENTRY *maps, unsigned int val)
  * TA-independent protocol families.
  */
 typedef enum rpc_socket_domain {
-    RPC_PF_UNKNOWN,     /**< Protocol family unknown to RPC server sockets */
-    RPC_PF_INET,        /**< IPv4 */
-    RPC_PF_INET6,       /**< IPv6 */
-    RPC_PF_PACKET,      /**< Low level packet interface */
-    RPC_PF_LOCAL,       /**< Local communication */
-    RPC_PF_UNIX,        /**< Synonym of RPC_PF_LOCAL */
-    RPC_PF_UNSPEC       /**< Unspecified */
+    RPC_PF_UNKNOWN, /**< Protocol family unknown to RPC server sockets */
+    RPC_PF_INET,    /**< IPv4 */
+    RPC_PF_INET6,   /**< IPv6 */
+    RPC_PF_PACKET,  /**< Low level packet interface */
+    RPC_PF_LOCAL,   /**< Local communication */
+    RPC_PF_UNIX,    /**< Synonym of RPC_PF_LOCAL */
+    RPC_PF_UNSPEC   /**< Unspecified */
 } rpc_socket_domain;
 
 /**
  * TA-independent address families.
  */
 typedef enum rpc_socket_addr_family {
-    RPC_AF_UNKNOWN,     /**< Address family unknown to RPC server sockets */
-    RPC_AF_INET,        /**< IPv4 */
-    RPC_AF_INET6,       /**< IPv6 */
-    RPC_AF_PACKET,      /**< Low level packet interface */
-    RPC_AF_LOCAL,       /**< Local communication */
-    RPC_AF_UNIX,        /**< Synonym of RPC_AF_LOCAL */
-    RPC_AF_ETHER,       /**< Non-standard family for Ethernet addresses */
-    RPC_AF_UNSPEC       /**< Unspecified */
+    RPC_AF_UNKNOWN, /**< Address family unknown to RPC server sockets */
+    RPC_AF_INET,    /**< IPv4 */
+    RPC_AF_INET6,   /**< IPv6 */
+    RPC_AF_PACKET,  /**< Low level packet interface */
+    RPC_AF_LOCAL,   /**< Local communication */
+    RPC_AF_UNIX,    /**< Synonym of RPC_AF_LOCAL */
+    RPC_AF_ETHER,   /**< Non-standard family for Ethernet addresses */
+    RPC_AF_UNSPEC   /**< Unspecified */
 } rpc_socket_addr_family;
 
 /** Convert RPC domain to native domain */
@@ -411,12 +411,12 @@ socktype_h2rpc(int type)
  * TA-independent constants for IP protocols.
  */
 typedef enum rpc_socket_proto {
-    RPC_PROTO_UNKNOWN,      /**< IP protocol unknown to RPC server sockets */
-    RPC_PROTO_DEF,          /**< Default protocol (0) */
-    RPC_IPPROTO_IP,         /**< IPv4 protocol */
-    RPC_IPPROTO_ICMP,       /**< Internet Control Message Protocol */
-    RPC_IPPROTO_TCP,        /**< Transmission Control Protocol */
-    RPC_IPPROTO_UDP,        /**< User Datagram Protocol */
+    RPC_PROTO_UNKNOWN,  /**< IP protocol unknown to RPC server sockets */
+    RPC_PROTO_DEF,      /**< Default protocol (0) */
+    RPC_IPPROTO_IP,     /**< IPv4 protocol */
+    RPC_IPPROTO_ICMP,   /**< Internet Control Message Protocol */
+    RPC_IPPROTO_TCP,    /**< Transmission Control Protocol */
+    RPC_IPPROTO_UDP,    /**< User Datagram Protocol */
 } rpc_socket_proto;
 
 /** Convert RPC IP protocol to native IP protocol constants */
@@ -475,8 +475,9 @@ typedef enum rpc_recv_flags {
     RPC_MSG_DONTWAIT  = 8,     /**< Do not block */
     RPC_MSG_WAITALL   = 0x10,  /**< Block until full request is specified */
     RPC_MSG_NOSIGNAL  = 0x20,  /**< Turn off raising of SIGPIPE */
-    RPC_MSG_TRUNC     = 0x40,  /**< Return the real length of the packet, even 
-                                    when it was longer than the passed buffer */
+    RPC_MSG_TRUNC     = 0x40,  /**< Return the real length of the packet,
+                                    even when it was longer than the passed
+                                    buffer */
     RPC_MSG_CTRUNC    = 0x80,  /**< Control data lost before delivery */
     RPC_MSG_ERRQUEUE  = 0x100, /**< Queued errors should be received from
                                     the socket error queue */
@@ -671,11 +672,12 @@ typedef enum rpc_network_event {
     RPC_FD_CLOSE     = 0x20,  /**< Socket closure */
     RPC_FD_QOS       = 0x40,  /**< Socket QOS changes */
     RPC_FD_GROUP_QOS = 0x80,  /**< Reserved. Socket group QOS changes */
-    RPC_FD_ROUTING_INTERFACE_CHANGE = 0x100, /**< Routing interface change for
-                                                   the specified destination */
-    RPC_FD_ADDRESS_LIST_CHANGE      = 0x200, /**< Local address list changes for
-                                                  the address family of
-                                                  the socket */
+    RPC_FD_ROUTING_INTERFACE_CHANGE = 0x100, /**< Routing interface change
+                                                  for the specified
+                                                  destination */
+    RPC_FD_ADDRESS_LIST_CHANGE      = 0x200, /**< Local address list
+                                                  changes for the address
+                                                  family of the socket */
 } rpc_network_event;
 
 #ifdef FD_READ
@@ -774,8 +776,9 @@ network_event_rpc2h(rpc_network_event flags)
            (!!(flags & RPC_FD_QOS) * FD_QOS) |
            (!!(flags & RPC_FD_GROUP_QOS) * FD_GROUP_QOS) |
            (!!(flags & RPC_FD_ROUTING_INTERFACE_CHANGE) *
-                                                FD_ROUTING_INTERFACE_CHANGE) |
-           (!!(flags & RPC_FD_ADDRESS_LIST_CHANGE) * FD_ADDRESS_LIST_CHANGE); 
+                FD_ROUTING_INTERFACE_CHANGE) |
+           (!!(flags & RPC_FD_ADDRESS_LIST_CHANGE) *
+                FD_ADDRESS_LIST_CHANGE); 
 }
 
 /** Convert native network evenet flags to RPC flags */
@@ -791,8 +794,9 @@ network_event_h2rpc(unsigned int flags)
            (!!(flags & FD_QOS) * RPC_FD_QOS) |
            (!!(flags & FD_GROUP_QOS) * RPC_FD_GROUP_QOS) |
            (!!(flags & FD_ROUTING_INTERFACE_CHANGE) *
-                                            RPC_FD_ROUTING_INTERFACE_CHANGE) |
-           (!!(flags & FD_ADDRESS_LIST_CHANGE) * RPC_FD_ADDRESS_LIST_CHANGE);
+                RPC_FD_ROUTING_INTERFACE_CHANGE) |
+           (!!(flags & FD_ADDRESS_LIST_CHANGE) *
+                RPC_FD_ADDRESS_LIST_CHANGE);
 }
 
 /** Convert RPC network event(s) to string */
@@ -835,17 +839,20 @@ network_event_rpc2str(rpc_network_event events)
  * TA-independent TransmitFile() flags. 
  */
 typedef enum rpc_transmit_file_flags {
-    RPC_TF_DISCONNECT         = 1,     /**< Start a transport-level disconnect
-                                            after all the file data has been
-                                            queued for transmission */
+    RPC_TF_DISCONNECT         = 1,     /**< Start a transport-level
+                                            disconnect after all the file
+                                            data has been queued for
+                                            transmission */
     RPC_TF_REUSE_SOCKET       = 2,     /**< Prepare the socket handle
                                             to be reused */
-    RPC_TF_USE_DEFAULT_WORKER = 4,     /**< Use the system's default thread */
+    RPC_TF_USE_DEFAULT_WORKER = 4,     /**< Use the system's default
+                                            thread */
     RPC_TF_USE_SYSTEM_THREAD  = 8,     /**< Use system threads */
     RPC_TF_USE_KERNEL_APC     = 0x10,  /**< Use kernel asynchronous
                                             procedure calls */
-    RPC_TF_WRITE_BEHIND       = 0x20,  /**< Complete the TransmitFile request
-                                            immediately, without pending */
+    RPC_TF_WRITE_BEHIND       = 0x20,  /**< Complete the TransmitFile
+                                            request immediately, without
+                                            pending */
 } rpc_transmit_file_flags;
 
 #ifndef TF_DISCONNECT

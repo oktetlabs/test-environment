@@ -38,7 +38,8 @@ EXTRA_DIST=tarpc.x.m4 rpc_unsupported.m4
 all: install
 
 install-data-hook:
-	TE_BUILD=".." $(srcdir)/../engine/builder/te_create_inst_dirs $(DESTDIR)/$(prefix)
+	TE_BUILD=".." $(srcdir)/../engine/builder/te_create_inst_dirs \
+					  $(DESTDIR)/$(prefix)
 	for i in $(include_HEADERS) ; do \
 	    touch -c -r $(srcdir)/$$i $(DESTDIR)/$(prefix)/include/$$i ; \
 	done

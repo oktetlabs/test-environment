@@ -2,7 +2,7 @@
 
 <schema targetNamespace="http://www.oktetlabs.ru/proteos"
         xmlns:proteos="http://www.oktetlabs.ru/proteos"
-        version="$Id: tester_defs.xsd,v 1.1 2003/10/28 09:35:42 arybchik Exp $"
+        version="$Id: $"
         xml:lang="en"
         xmlns="http://www.w3.org/2001/XMLSchema">
 
@@ -467,7 +467,8 @@
                         <selector xpath="../*[self::var]">
                             <annotation>
                                 <documentation>
-                                    Select all 'var' children of the session.
+                                    Select all 'var' children of the
+                                    session.
                                 </documentation>
                             </annotation>
                         </selector>
