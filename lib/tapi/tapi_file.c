@@ -74,7 +74,7 @@
  * @note the function is not thread-safe 
  */
 char *
-tapi_file_create_pattern(int len, char c)
+tapi_file_create_pattern(size_t len, char c)
 {
     char *pathname = strdup(tapi_file_generate_pathname());
     char  buf[1024];
@@ -125,7 +125,7 @@ tapi_file_create_pattern(int len, char c)
  * @note The function is not thread-safe 
  */
 char *
-tapi_file_create(int len, char *buf, te_bool random)
+tapi_file_create(size_t len, char *buf, te_bool random)
 {
     char *pathname = strdup(tapi_file_generate_pathname());
     FILE *f;
@@ -142,7 +142,7 @@ tapi_file_create(int len, char *buf, te_bool random)
         return NULL;
     }
     
-    if (fwrite((void *)buf, sizeof(char), len, f) < 0)
+    if (fwrite((void *)buf, sizeof(char), len, f) < len)
     {
         fclose(f);
         ERROR("fwrite() faled: file %s errno %d\n", pathname, errno);

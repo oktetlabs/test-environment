@@ -96,7 +96,7 @@ tapi_file_generate_pathname(void)
  *
  * @note The function is not thread-safe 
  */
-extern char *tapi_file_create_pattern(int len, char c);
+extern char *tapi_file_create_pattern(size_t len, char c);
 
 /**
  * Create file in the TE temporary directory with the specified content.
@@ -110,7 +110,7 @@ extern char *tapi_file_create_pattern(int len, char c);
  *
  * @note The function is not thread-safe 
  */
-extern char *tapi_file_create(int len, char *buf, te_bool random);
+extern char *tapi_file_create(size_t len, char *buf, te_bool random);
 
 /**
  * Create file in the specified directory on the TA.
