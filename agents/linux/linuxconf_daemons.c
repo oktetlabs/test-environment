@@ -47,6 +47,7 @@
 #include <stdarg.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <signal.h>
 
 #ifdef WITH_DHCP_SERVER
 #include <dhcpctl.h>
@@ -2579,6 +2580,155 @@ ds_echoserver_addr_set(unsigned int gid, const char *oid, const char *value)
 
 #endif /* WITH_ECHO_SERVER */
 
+#ifdef WITH_SSHD
+
+/** 
+ * Check if the SSH daemon with specified port is running. 
+ *
+ * @param port  port in string representation
+ *
+ * @return pid of the daemon or 0
+ */
+static uint32_t
+sshd_exists(char *port)
+{
+    FILE *f = popen("ps ax | grep 'sshd -p' | grep -v grep", "r");
+    char  line[128];
+    int   len = strlen(port);
+    
+    buf[0] = 0;
+    while (fgets(line, sizeof(line), f) != NULL)
+    {
+        char *tmp = strstr(line, "sshd");
+        
+        tmp = strstr(tmp, "-p") + 2;
+        while (*++tmp == ' ');
+        
+        if (strncmp(tmp, port, len) == 0 && !isdigit(*(tmp + len)))
+        {
+            fclose(f);
+            return atoi(line);
+        }
+    }
+    
+    fclose(f);
+
+    return 0;
+}
+
+/**
+ * Add a new SSH daemon with specified port.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instence identifier (unused)
+ * @param value         unused
+ * @param addr          SSHD port
+ *
+ * @return error code
+ */
+static int
+sshd_add(unsigned int gid, const char *oid, const char *value,
+         const char *port)
+{
+    uint32_t pid = sshd_exists((char *)port);
+    uint32_t p;
+    char    *tmp;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(value);
+    
+    p = strtol(port, &tmp, 10);
+    if (tmp == port || *tmp != 0)
+        return TE_RC(TE_TA_LINUX, EINVAL);
+    
+    if (pid != 0)
+        return TE_RC(TE_TA_LINUX, EEXIST);
+        
+    sprintf(buf, "/usr/sbin/sshd -p %s", port);
+
+    if (ta_system(buf) != 0)
+    {
+        ERROR("Command '%s' failed", buf);
+        return TE_RC(TE_TA_LINUX, ETESHCMD);
+    }
+    
+    return 0;
+}
+
+/**
+ * Stop SSHD with specified port.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instence identifier (unused)
+ * @param addr          
+ *
+ * @return error code
+ */
+static int
+sshd_del(unsigned int gid, const char *oid, const char *port)
+{
+    uint32_t pid = sshd_exists((char *)port);
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if (pid == 0)
+        return TE_RC(TE_TA_LINUX, ENOENT);
+        
+    if (kill(pid, SIGTERM) != 0)
+    {
+        int kill_errno = errno;
+        ERROR("Failed to send SIGTERM "
+              "to process SSH daemon with PID=%u: %X",
+              pid, kill_errno);
+        /* Just to make sure */
+        kill(pid, SIGKILL);
+    }
+    
+    return 0;
+}
+
+/**
+ * Return list
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instence identifier (unused)
+ * @param list          location for the list pointer
+ *
+ * @return error code
+ */
+static int
+sshd_list(unsigned int gid, const char *oid, char **list)
+{
+    FILE *f = popen("ps ax | grep 'sshd -p' | grep -v grep", "r");
+    char  line[128];
+    char *s = buf;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    
+    buf[0] = 0;
+    while (fgets(line, sizeof(line), f) != NULL)
+    {
+        char *tmp = strstr(line, "sshd");
+        
+        tmp = strstr(tmp, "-p") + 2;
+        while (*++tmp == ' ');
+        
+        s += sprintf(s, "%u ", atoi(tmp));
+    }
+    
+    fclose(f);
+
+    if ((*list = strdup(buf)) == NULL)
+        return TE_RC(TE_TA_LINUX, ENOMEM);
+    
+    return 0;
+}
+
+#endif /* WITH_SSHD */
+
 /*
  * Daemons configuration tree in reverse order.
  */
@@ -2779,6 +2929,14 @@ RCF_PCH_CFG_NODE_RW(node_ds_ftpserver, "ftpserver",
 
 #endif /* WITH_FTP_SERVER */
 
+#ifdef WITH_SSHD
+
+RCF_PCH_CFG_NODE_COLLECTION(node_ds_sshd, "sshd",
+                            NULL, NULL, 
+                            sshd_add, sshd_del, sshd_list, NULL);
+
+#endif /* WITH_SSHD */
+
 /**
  * Maximum number of xinetd services the implemntation supports
  * @todo Rename it to something pretty and move in somewhere generic place
@@ -2923,7 +3081,6 @@ ftpd_init(void)
 }
 #endif /* WITH_FTP_SERVER */
 
-
 /**
  * Initializes linuxconf_daemons support.
  *
@@ -3054,6 +3211,11 @@ linuxconf_daemons_init(rcf_pch_cfg_object **last)
 #ifdef WITH_TFTP_SERVER
     (*last)->brother = &node_ds_tftpserver;
     *last = &node_ds_tftpserver;
+#endif
+
+#ifdef WITH_SSHD
+    (*last)->brother = &node_ds_sshd;
+    *last = &node_ds_sshd;
 #endif
 
     return 0;
