@@ -101,7 +101,8 @@ typedef struct test_suite_info {
     TAILQ_ENTRY(test_suite_info)    links;  /**< List links */
 
     char   *name;   /**< Name of the Test Suite */
-    char   *path;   /**< Path where Test Suite root directory is located */
+    char   *src;    /**< Path where Test Suite sources are located */
+    char   *bin;    /**< Path where Test Suite executables are located */
 } test_suite_info;
 
 /** Head of the list with information about Test Suites */
@@ -355,8 +356,9 @@ enum tester_ctx_flags {
     TESTER_CTX_VVVERB   = 0x40,     /**< The third level of verbosity */
     TESTER_CTX_INLOGUE  = 0x80,     /**< Is in prologue/epilogue */
     TESTER_CTX_VALGRIND = 0x100,    /**< Run scripts under valgrind */
-    TESTER_CTX_GDB      = 0x200     /**< Run scripts under GDB in
+    TESTER_CTX_GDB      = 0x200,    /**< Run scripts under GDB in
                                          interactive mode */
+    TESTER_CTX_NOBUILD  = 0x1000,   /**< Don't build any Test Suites */
 };
 
 
@@ -392,17 +394,17 @@ tester_ctx_free(tester_ctx *ctx)
  */
 extern test_id tester_get_id(void);
 
-extern int tester_parse_config(tester_cfg *cfg);
+extern int tester_parse_config(tester_cfg *cfg, const tester_ctx *ctx);
 extern int tester_run_config(tester_ctx *ctx, tester_cfg *cfg);
 
 /**
- * Build list of Test Suites.
+ * Build Test Suite.
  *
- * @param suites    List of Test Suites
+ * @param suite     Test Suites
  *
  * @return Status code.
  */
-extern int tester_build_suites(test_suites_info *suites);
+extern int tester_build_suite(test_suite_info *suite);
 
 /**
  * Log test start to terminal.

@@ -62,6 +62,7 @@ enum {
     TESTER_OPT_VALGRIND,
     TESTER_OPT_GDB,
     TESTER_OPT_REQ,
+    TESTER_OPT_NOBUILD,
     TESTER_OPT_FAKE,
     TESTER_OPT_TIMEOUT,
     TESTER_OPT_VERBOSE,
@@ -409,6 +410,13 @@ process_cmd_line_opts(tester_ctx *ctx, tester_cfgs *cfgs,
 
     /* Option Table */
     struct poptOption options_table[] = {
+        { "suite", 's', POPT_ARG_STRING, NULL, TESTER_OPT_SUITE_PATH,
+          "Specify path to the Test Suite.", "NAME:PATH" },
+
+        { "req", 'R', POPT_ARG_STRING, NULL, TESTER_OPT_REQ,
+          "Requirement to be tested (or excluded, if its first symbol is !).",
+          "[REQ|!REQ]" },
+
         { "run", 'r', POPT_ARG_STRING, NULL, TESTER_OPT_RUN,
           "Run Test Suite with specified arguments.", "PATH" },
 
@@ -418,15 +426,8 @@ process_cmd_line_opts(tester_ctx *ctx, tester_cfgs *cfgs,
         { "gdb", '\0', POPT_ARG_STRING, NULL, TESTER_OPT_GDB,
           "Run test scripts in specified path under gdb.", "PATH" },
 
-        { "req", 'R', POPT_ARG_STRING, NULL, TESTER_OPT_REQ,
-          "Requirement to be tested (or excluded, if its first symbol is !).",
-          "[REQ|!REQ]" },
-
-        { "suite", 's', POPT_ARG_STRING, NULL, TESTER_OPT_SUITE_PATH,
-          "Specify path to the Test Suite.", "NAME:PATH" },
-
-        { "timeout", 't', POPT_ARG_INT, &ctx->timeout, TESTER_OPT_TIMEOUT, 
-          "Restrict execution time (in seconds).", NULL },
+        { "nobuild", '\0', POPT_ARG_NONE, NULL, TESTER_OPT_NOBUILD,
+          "Don't build any Test Suites.", NULL },
 
         { "norandom", '\0', POPT_ARG_NONE, NULL, TESTER_OPT_NORANDOM,
           "Force to run all tests in defined order as well as to get "
@@ -441,6 +442,9 @@ process_cmd_line_opts(tester_ctx *ctx, tester_cfgs *cfgs,
 
         { "fake", 'T', POPT_ARG_NONE, NULL, TESTER_OPT_FAKE,
           "Don't run any test scripts, just emulate test failure.", NULL },
+
+        { "timeout", 't', POPT_ARG_INT, &ctx->timeout, TESTER_OPT_TIMEOUT, 
+          "Restrict execution time (in seconds).", NULL },
 
         { "verbose", 'v', POPT_ARG_NONE, NULL, TESTER_OPT_VERBOSE,
           "Increase verbosity of the Tester (the first level is set by "
@@ -481,6 +485,10 @@ process_cmd_line_opts(tester_ctx *ctx, tester_cfgs *cfgs,
 
             case TESTER_OPT_FAKE:
                 ctx->flags |= TESTER_CTX_FAKE;
+                break;
+
+            case TESTER_OPT_NOBUILD:
+                ctx->flags |= TESTER_CTX_NOBUILD;
                 break;
 
             case TESTER_OPT_VERBOSE:
@@ -529,7 +537,7 @@ process_cmd_line_opts(tester_ctx *ctx, tester_cfgs *cfgs,
                 }
                 if ((p == NULL) ||
                     ((p->name = malloc(name_len + 1)) == NULL) ||
-                    ((p->path = strdup(s + 1)) == NULL))
+                    ((p->src = strdup(s + 1)) == NULL))
                 {
                     if (p != NULL)
                         free(p->name);
@@ -623,6 +631,30 @@ process_cmd_line_opts(tester_ctx *ctx, tester_cfgs *cfgs,
 
 /* See description in internal.h */
 int
+tester_build_suite(test_suite_info *suite)
+{
+    int rc;
+
+    RING("Build Test Suite '%s' from '%s'",
+         suite->name, suite->src);
+    rc = builder_build_test_suite(suite->name, suite->src);
+    if (rc != 0)
+    {
+        ERROR("Build of Test Suite '%s' from '%s' failed",
+              suite->name, suite->src);
+        return rc;
+    }
+    return 0;
+}
+
+/**
+ * Build list of Test Suites.
+ *
+ * @param suites    List of Test Suites
+ *
+ * @return Status code.
+ */
+static int
 tester_build_suites(test_suites_info *suites)
 {
     int              rc;
@@ -632,12 +664,11 @@ tester_build_suites(test_suites_info *suites)
          suite != NULL;
          suite = suite->links.tqe_next)
     {
-        rc = builder_build_test_suite(suite->name, suite->path);
-        if (rc != 0)
+        if (suite->src != NULL)
         {
-            ERROR("Build of Test Suite '%s' from '%s' failed",
-                  suite->name, suite->path);
-            return rc;
+            rc = tester_build_suite(suite);
+            if (rc != 0)
+                return rc;
         }
     }
     return 0;
@@ -672,7 +703,8 @@ main(int argc, char *argv[])
         goto exit;
     }
     
-    if (ctx.suites.tqh_first != NULL)
+    if ((~ctx.flags & TESTER_CTX_NOBUILD) &&
+        (ctx.suites.tqh_first != NULL))
     {
         RING("Building Test Suites specified in command line...");
         rc = tester_build_suites(&ctx.suites);
@@ -685,7 +717,7 @@ main(int argc, char *argv[])
 
     for (cfg = cfgs.tqh_first; cfg != NULL; cfg = cfg->links.tqe_next)
     {
-        rc = tester_parse_config(cfg);
+        rc = tester_parse_config(cfg, &ctx);
         if (rc != 0)
         {
             ERROR("Preprocessing of Tester configuration files failed");

@@ -22,7 +22,6 @@ usage()
     echo -e '  '--no-tester\\t\\t\\t'Do not run Tester'
     echo -e '  '--no-cs\\t\\t\\t'Do not run Configurator'
     echo -e '  '--no-rcf\\t\\t\\t'Do not run RCF'
-    echo -e '  '--no-ts-build\\t\\t\\t'Do not build Test Suite sources'
     echo
     echo -e '  '--conf-dir='<directory>'\\t'specify configuration file directory'
     echo -e \\t\\t\\t\\t'(${TE_BASE}/storage/conf or '.' by default)'
@@ -62,6 +61,7 @@ usage()
     echo -e '  '--vg-tests\\t\\t\\t'Run tests under valgrind (without by default).'
     echo -e \\t\\t\\t\\t'May be used with script Tester only.'
     echo
+    echo -e '  --tester-nobuild'\\t\\t'Do not build Test Suite sources'
     echo -e '  --tester-suite=[NAME|PATH]'\\t'Specify location of Test Sutie sources.'
     echo -e '  --tester-run=[PATH]'\\t\\t'Run a test item defined by PATH.'
     echo -e '  --tester-req=[REQ|!REQ]'\\t'Requirement to be tested (or excluded,'
@@ -193,7 +193,7 @@ while test -n "$1" ; do
         
         --lock-dir=*) LOCK_DIR="${1#--lock-dir=}" ;;
 
-        --no-ts-build) BUILD_TS= ;;
+        --no-ts-build) BUILD_TS= ; TESTER_OPTS="${TESTER_OPTS} --nobuild" ;;
 
         --script-tester) TESTER_EXT=".sh" ;;
 

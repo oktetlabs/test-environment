@@ -172,7 +172,7 @@ name_to_path(tester_cfg *cfg, const char *name, te_bool is_package)
         {
             if (strcmp(p->name, name) == 0)
             {
-                base_path = p->path;
+                base_path = p->bin;
                 break;
             }
         }
@@ -263,14 +263,14 @@ alloc_and_get_tqe_string(xmlNodePtr node, tqh_strings *strs)
  *
  * @param node          Node with information
  * @param suites_info   List with information about suites
+ * @param flags         Tester context flags
  *
  * @return Status code.
  */
 static int
-alloc_and_get_test_suite_info(xmlNodePtr node, test_suites_info *suites_info)
+alloc_and_get_test_suite_info(xmlNodePtr node, test_suites_info *suites_info,
+                              unsigned int flags)
 {
-    xmlChar         *name;
-    xmlChar         *path;
     test_suite_info *p;
 
 #ifndef XML_DOC_ASSUME_VALID
@@ -280,28 +280,48 @@ alloc_and_get_test_suite_info(xmlNodePtr node, test_suites_info *suites_info)
         return EINVAL;
     }
 #endif
+    p = calloc(1, sizeof(*p));
+    if (p == NULL)
+    {
+        ERROR("malloc(%u) failed", sizeof(*p));
+        return ENOMEM;
+    }
+    TAILQ_INSERT_TAIL(suites_info, p, links);
+
     /* Name is mandatory */
-    name = xmlGetProp(node, CONST_CHAR2XML("name"));
-    if (name == NULL)
+    p->name = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("name")));
+    if (p->name == NULL)
     {
         ERROR("'name' attribute is missing in suite information");
         return EINVAL;
     }
-    /* Path is optional */
-    path = xmlGetProp(node, CONST_CHAR2XML("path"));
+    /* Path to sources is optional */
+    p->src = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("src")));
+    /* Path to binaries is optional */
+    p->bin = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("bin")));
 
-    p = calloc(1, sizeof(*p));
-    if (p == NULL)
+    if (p->src != NULL && p->bin != NULL)
     {
-        xmlFree(name);
-        xmlFree(path);
-        ERROR("malloc(%u) failed", sizeof(*p));
-        return ENOMEM;
+        ERROR("Two paths are specified for Test Suite '%s'", p->name);
+        return EINVAL;
     }
-    p->name = XML2CHAR(name);
-    p->path = XML2CHAR(path);
+    if (p->src == NULL && p->bin == NULL)
+    {
+        p->src = strdup(p->name);
+        if (p->src == NULL)
+        {
+            ERROR("strdup(%s) failed", p->name);
+            return ENOMEM;
+        }
+    }
 
-    TAILQ_INSERT_TAIL(suites_info, p, links);
+    if ((p->src != NULL) && (~flags & TESTER_CTX_NOBUILD))
+    {
+        int rc = tester_build_suite(p);
+
+        if (rc != 0)
+            return rc;
+    }
 
     return 0;
 }
@@ -1529,11 +1549,12 @@ get_test_package(xmlNodePtr root, tester_cfg *cfg, test_package *pkg)
  *
  * @param root      Root element of the Tester configuration file
  * @param cfg       Configuration structure to be filled in
+ * @param flags     Tester context flags
  *
  * @return Status code.
  */
 static int
-get_tester_config(xmlNodePtr root, tester_cfg *cfg)
+get_tester_config(xmlNodePtr root, tester_cfg *cfg, unsigned int flags)
 {
     xmlNodePtr  node;
     xmlChar    *s;
@@ -1606,7 +1627,7 @@ get_tester_config(xmlNodePtr root, tester_cfg *cfg)
     while (node != NULL &&
            xmlStrcmp(node->name, CONST_CHAR2XML("suite")) == 0)
     {
-        rc = alloc_and_get_test_suite_info(node, &cfg->suites);
+        rc = alloc_and_get_test_suite_info(node, &cfg->suites, flags);
         if (rc != 0)
             return rc;
         node = xmlNodeNext(node);
@@ -1735,7 +1756,7 @@ parse_test_package(tester_cfg *cfg, test_package *pkg)
  * @return Status code
  */
 int
-tester_parse_config(tester_cfg *cfg)
+tester_parse_config(tester_cfg *cfg, const tester_ctx *ctx)
 {
     xmlParserCtxtPtr    parser;
     xmlDocPtr           doc;
@@ -1765,7 +1786,7 @@ tester_parse_config(tester_cfg *cfg)
         return EINVAL;
     }
 
-    rc = get_tester_config(xmlDocGetRootElement(doc), cfg);
+    rc = get_tester_config(xmlDocGetRootElement(doc), cfg, ctx->flags);
     if (rc != 0)
     {
         ERROR("Preprocessing of Tester configuration file '%s' failed", 

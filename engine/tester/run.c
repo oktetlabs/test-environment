@@ -1733,14 +1733,6 @@ tester_run_config(tester_ctx *ctx, tester_cfg *cfg)
          maintainer_mailto,
          cfg->descr ? : "(no description)");
 
-    if (cfg->suites.tqh_first != NULL)
-    {
-        RING("Building Test Suites specified in configuration file...");
-        rc = tester_build_suites(&cfg->suites);
-        if (rc != 0)
-            return rc;
-    }
-
     /* Clone Tester context */
     ctx = tester_ctx_clone(ctx);
     if (ctx == NULL)
