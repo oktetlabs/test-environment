@@ -1,5 +1,8 @@
 /** @file
- * @brief Definition of RPC structures and functions
+ * @brief Remote Procedure Call
+ *
+ * Definition of RPC structures and functions
+ *
  *
  * Copyright (C) 2004 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).

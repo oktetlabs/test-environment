@@ -4,6 +4,7 @@
  * Definition of the C API provided by Logger subsystem to TE
  * subsystems and tests.
  *
+ *
  * Copyright (C) 2004 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
  *

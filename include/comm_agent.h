@@ -3,6 +3,7 @@
  *
  * Definition of routines provided for library user
  *
+ *
  * Copyright (C) 2003 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
  *
@@ -22,7 +23,7 @@
  * MA  02111-1307  USA
  *
  *
- * Author: Andrey Ivanov <andron@oktetlabs.ru>
+ * Author: Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
  *
  * $Id$
  */
