@@ -298,7 +298,11 @@ log_serial(void *ready, int argc, char *argv[])
             *current = '\0';                                   \
             newline = strrchr(buffer, '\n');                   \
             if (newline)                                       \
+            {                                                  \
                 *newline = '\0';                               \
+                if (newline[1] == '\r')                        \
+                   newline++;                                  \
+            }                                                  \
             LGR_MESSAGE(TE_LL_WARN, user, "%s%s",              \
                         rest ? rest : "",                      \
                         buffer);                               \
