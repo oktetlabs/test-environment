@@ -122,13 +122,25 @@ fwrite_string(struct obstack *obstk, const char *str)
     {
         switch (str[i])
         {
+            case '\r':
+                if (i > 0 && msg->fmt_str[i - 1] == '\n')
+                {
+                    /*
+                     * Skip \r after \n, because it does not bring any
+                     * formating, but just follows after ]n on some systems
+                     */
+                    break;
+                }
+                /* Process it as ordinary new line character */
+                /* FALLTHROUGH */
+
             case '\n':
                 if (obstk != NULL)
                     obstack_grow(log_obstk, "<br/>", 5);
                 else
                     fputs("<br/>", output_fd);
                 break;
-            
+
             case '<':
                 if (obstk != NULL)
                     obstack_grow(log_obstk, "&lt;", 4);
@@ -609,10 +621,6 @@ output_regular_log_msg(log_msg *msg)
         
         switch (msg->fmt_str[i])
         {
-            case '\n':
-                obstack_grow(log_obstk, "<br/>", 5);
-                break;
-            
             case '\r':
                 if (i > 0 && msg->fmt_str[i - 1] == '\n')
                 {
@@ -620,12 +628,13 @@ output_regular_log_msg(log_msg *msg)
                      * Skip \r after \n, because it does not bring any
                      * formating, but just follows after ]n on some systems
                      */
+                    break;
                 }
-                else
-                {
-                    /* Process it as ordinary new line character */
-                    obstack_grow(log_obstk, "<br/>", 5);
-                }
+                /* Process it as ordinary new line character */
+                /* FALLTHROUGH */
+
+            case '\n':
+                obstack_grow(log_obstk, "<br/>", 5);
                 break;
             
             case '<':
