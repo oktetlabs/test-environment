@@ -31,10 +31,6 @@
 #ifndef __TE_TA_RPC_LOG_H__
 #define __TE_TA_RPC_LOG_H__
 
-#include <stdio.h>
-#if HAVE_UNISTD_H
-#include <unistd.h>
-#endif
 #include "logger_api.h"
 
 extern struct sockaddr *ta_log_addr_s; /**< Logging server address */
