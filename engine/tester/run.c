@@ -55,17 +55,10 @@
 #include "iters.h"
 
 
-#if 1
 /** Tester run path log user */
 #define TESTER_CONTROL             "Control"
 /** Prefix of all messages from Tester:Flow user */
-#define TESTER_CONTROL_MSG_PREFIX  "%T %T "
-#else
-/** Tester run path log user */
-#define TESTER_CONTROL             "NoControl"
-/** Prefix of all messages from Tester:Flow user */
-#define TESTER_CONTROL_MSG_PREFIX  "$T%d $T%d "
-#endif
+#define TESTER_CONTROL_MSG_PREFIX  "%u %u "
 
 /** Size of the Tester shell command buffer */
 #define TESTER_CMD_BUF_SZ   1024
