@@ -20,13 +20,11 @@ CLEANFILES=symtbl.c
 if CFG_RCF_RPC
 
 MY_CPPFLAGS+=-DRCF_RPC -I.
-MY_SOURCES+=linux_rpc.c tarpc_server.c rpc_unsupported.c
-MY_NODIST_SOURCES=tarpc_xdr.c tarpc_svc.c
+MY_SOURCES+=linux_rpc.c tarpc_server.c 
+MY_NODIST_SOURCES=tarpc_xdr.c tarpc_svc.c rpc_unsupported.c
 MY_SYMTBL_OBJECTS+=linux_rpc.o tarpc_server.o
 
 CLEANFILES+=tarpc.h tarpc_xdr.c tarpc_svc.c rpc_unsupported.c rpc_supported.h
-
-linux_rpc.o tarpc_server.o: tarpc.h
 
 tarpc.h tarpc_xdr.c tarpc_svc.c: $(srcdir)/../../include/tarpc.x.m4
 	rm -f tarpc.h tarpc_xdr.c tarpc_svc.c
