@@ -613,7 +613,7 @@ ipc_send_message(struct ipc_client *ipcc, const char *server_name,
         if (r != (ssize_t)(ipc_msg_size))
         {
             fprintf(stderr, "IPC client '%s' failed to send message "
-                            "to '%s': %s", ipcc->name, server_name,
+                            "to '%s': %s\n", ipcc->name, server_name,
                             strerror(errno));
             return TE_RC(TE_IPC, errno);
         }
