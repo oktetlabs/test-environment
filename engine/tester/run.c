@@ -1477,8 +1477,8 @@ iterate_test(tester_ctx *ctx, run_item *test,
         te_bool     test_ctx_cloned = FALSE;
         tester_ctx *test_ctx = ctx;
 
-        if (test_ctx->path->params.tqh_first != NULL &&
-            (~(test_ctx->flags) & TESTER_INLOGUE))
+        if (ctx->path->params.tqh_first != NULL &&
+            (~(ctx->flags) & TESTER_INLOGUE))
         {
             rc = tester_run_path_params_match(test_ctx, &(i->params));
             if (rc != 0)
@@ -1498,19 +1498,7 @@ iterate_test(tester_ctx *ctx, run_item *test,
             }
         }
 
-        if (test->type != RUN_ITEM_SCRIPT)
-        {
-            test_ctx = tester_ctx_clone(ctx);
-            if (test_ctx == NULL)
-            {
-                ERROR("%s(): tester_ctx_clone() failed", __FUNCTION__);
-                all_result = ENOMEM;
-                break;
-            }
-            test_ctx_cloned = TRUE;
-        }
-
-        if ((~ctx->flags & TESTER_INLOGUE) &&
+        if ((~test_ctx->flags & TESTER_INLOGUE) &&
             (test_ctx->flags & TESTER_QUIET_SKIP) &&
             !tester_is_run_required(test_ctx, test, &(i->params), TRUE))
         {
@@ -1528,7 +1516,7 @@ iterate_test(tester_ctx *ctx, run_item *test,
                          ctx->id, id, ctx->flags);
         log_test_start(test, ctx->id, id, &(i->params));
 
-        if ((~ctx->flags & TESTER_INLOGUE) &&
+        if ((~test_ctx->flags & TESTER_INLOGUE) &&
             (~test_ctx->flags & TESTER_QUIET_SKIP) &&
             !tester_is_run_required(test_ctx, test, &(i->params), FALSE))
         {
@@ -1536,6 +1524,18 @@ iterate_test(tester_ctx *ctx, run_item *test,
         }
         else
         {
+            if (test->type != RUN_ITEM_SCRIPT)
+            {
+                test_ctx = tester_ctx_clone(ctx);
+                if (test_ctx == NULL)
+                {
+                    ERROR("%s(): tester_ctx_clone() failed", __FUNCTION__);
+                    all_result = ENOMEM;
+                    break;
+                }
+                test_ctx_cloned = TRUE;
+            }
+
             /* Run test with specified parameters */
             test_result = run_test(test_ctx, test, id, &(i->params));
             if (!TEST_RESULT(test_result))
