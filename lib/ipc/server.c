@@ -499,6 +499,7 @@ ipc_receive_message(struct ipc_server *ipcs,
         /* Calculate number of octets rest in the provided buffer */
         buf_len -= copy_len;
         /* Calculate number of octets rest in the current message */
+        assert(client->msg_rest >= copy_len);
         client->msg_rest -= copy_len;
 
     } while ((buf_len > 0) && (client->msg_rest > 0));
