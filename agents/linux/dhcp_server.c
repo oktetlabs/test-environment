@@ -432,8 +432,7 @@ ds_##_gh##_list(unsigned int gid, const char *oid, char **list) \
                                                                 \
     for (gh = _gh##s; gh != NULL; gh = gh->next)                \
     {                                                           \
-        if (!gh->deleted)                                       \
-            sprintf(buf + strlen(buf), "%s ",  gh->name);       \
+        sprintf(buf + strlen(buf), "%s ",  gh->name);           \
     }                                                           \
                                                                 \
     return (*list = strdup(buf)) == NULL ?                      \
@@ -458,9 +457,9 @@ ds_##_gh##_add(unsigned int gid, const char *oid, const char *value,    \
     UNUSED(value);                                                      \
                                                                         \
     if ((gh = find_##_gh(name)) != NULL)                                \
-        return TE_RC(TE_TA_LINUX, gh->deleted ? EPERM : EEXIST);        \
+        return TE_RC(TE_TA_LINUX, EEXIST);                              \
                                                                         \
-    if ((gh = (_gh *)calloc(sizeof(_gh), 1)) == NULL)                   \
+    if ((gh = (_gh *)calloc(1, sizeof(_gh))) == NULL)                   \
         return TE_RC(TE_TA_LINUX, ENOMEM);                              \
                                                                         \
     if ((gh->name = strdup(name)) == NULL)                              \
@@ -469,7 +468,6 @@ ds_##_gh##_add(unsigned int gid, const char *oid, const char *value,    \
         return TE_RC(TE_TA_LINUX, ENOMEM);                              \
     }                                                                   \
                                                                         \
-    gh->dynamic = TRUE;                                                 \
     gh->next = _gh##s;                                                  \
     _gh##s = gh;                                                        \
                                                                         \
@@ -478,28 +476,6 @@ ds_##_gh##_add(unsigned int gid, const char *oid, const char *value,    \
 
 ADD_METHOD(host)
 ADD_METHOD(group)
-
-/** Definition of get method for host and groups */
-#define GET_METHOD(_gh) \
-static int \
-ds_##_gh##_get(unsigned int gid, const char *oid, char *value,          \
-               const char *dhcpserver, const char *name)                \
-{                                                                       \
-    _gh *gh;                                                            \
-                                                                        \
-    UNUSED(gid);                                                        \
-    UNUSED(oid);                                                        \
-    UNUSED(dhcpserver);                                                 \
-    UNUSED(value);                                                      \
-                                                                        \
-    if ((gh = find_##_gh(name)) == NULL || gh->deleted)                 \
-        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);                       \
-                                                                        \
-    return 0;                                                           \
-}
-
-GET_METHOD(host)
-GET_METHOD(group)
 
 /** Definition of delete method for host and groups */
 #define DEL_METHOD(_gh) \
@@ -510,10 +486,6 @@ ds_##_gh##_del(unsigned int gid, const char *oid,       \
     _gh *gh;                                            \
     _gh *prev;                                          \
                                                         \
-    isc_result_t rc;                                    \
-                                                        \
-    dhcpctl_handle _o = NULL;                           \
-                                                        \
     UNUSED(gid);                                        \
     UNUSED(oid);                                        \
     UNUSED(dhcpserver);                                 \
@@ -522,19 +494,14 @@ ds_##_gh##_del(unsigned int gid, const char *oid,       \
          gh != NULL && strcmp(gh->name, name) != 0;     \
          prev = gh, gh = gh->next);                     \
                                                         \
-    if (gh == NULL || gh->deleted)                      \
+    if (gh == NULL)                                     \
         return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);       \
                                                         \
-    if (!gh->dynamic)                                   \
-        gh->deleted = TRUE;                             \
+    if (prev)                                           \
+        prev->next = gh->next;                          \
     else                                                \
-    {                                                   \
-        if (prev)                                       \
-            prev->next = gh->next;                      \
-        else                                            \
-            _gh##s = gh->next;                          \
-        free_##_gh(gh);                                 \
-    }                                                   \
+        _gh##s = gh->next;                              \
+    free_##_gh(gh);                                     \
                                                         \
     return 0;                                           \
 }
@@ -553,7 +520,7 @@ ds_host_group_get(unsigned int gid, const char *oid, char *value,
     UNUSED(oid);
     UNUSED(dhcpserver);
 
-    if ((h = find_host(name)) == NULL || h->deleted)
+    if ((h = find_host(name)) == NULL)
         return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
 
     if (h->group == NULL)
@@ -577,11 +544,8 @@ ds_host_group_set(unsigned int gid, const char *oid, const char *value,
     UNUSED(oid);
     UNUSED(dhcpserver);
 
-    if ((h = find_host(name)) == NULL || h->deleted)
+    if ((h = find_host(name)) == NULL)
         return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
-
-    if (!h->dynamic)
-        return TE_RC(TE_TA_LINUX, EPERM);
 
     old = h->group;
     if (*value == 0)
@@ -611,7 +575,7 @@ ds_##_gh##_##_attr##_get(unsigned int gid, const char *oid,     \
     UNUSED(oid);                                                \
     UNUSED(dhcpserver);                                         \
                                                                 \
-    if ((gh = find_##_gh(name)) == NULL || gh->deleted)         \
+    if ((gh = find_##_gh(name)) == NULL)                        \
         return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);               \
                                                                 \
     if (gh->_attr == NULL)                                      \
@@ -637,11 +601,8 @@ ds_##_gh##_##_attr##_set(unsigned int gid, const char *oid,     \
     UNUSED(oid);                                                \
     UNUSED(dhcpserver);                                         \
                                                                 \
-    if ((gh = find_##_gh(name)) == NULL || gh->deleted)         \
+    if ((gh = find_##_gh(name)) == NULL)                        \
         return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);               \
-                                                                \
-    if (!gh->dynamic)                                           \
-        return TE_RC(TE_TA_LINUX, EPERM);                       \
                                                                 \
     old_val = gh->_attr;                                        \
     if (*value == 0)                                            \
@@ -692,7 +653,7 @@ ds_##_gh##_option_list(unsigned int gid, const char *oid,       \
     UNUSED(oid);                                                \
     UNUSED(dhcpserver);                                         \
                                                                 \
-    if ((gh = find_##_gh(name)) == NULL || gh->deleted)         \
+    if ((gh = find_##_gh(name)) == NULL)                        \
         return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);               \
                                                                 \
     *buf = 0;                                                   \
@@ -727,11 +688,8 @@ ds_##_gh##_option_add(unsigned int gid, const char *oid,        \
     if (*value == 0)                                            \
         return TE_RC(TE_TA_LINUX, EINVAL);                      \
                                                                 \
-    if ((gh = find_##_gh(name)) == NULL || gh->deleted)         \
+    if ((gh = find_##_gh(name)) == NULL)                        \
         return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);               \
-                                                                \
-    if (!gh->dynamic)                                           \
-        return TE_RC(TE_TA_LINUX, EPERM);                       \
                                                                 \
     if (find_option(gh->options, optname) != NULL)              \
         return TE_RC(TE_TA_LINUX, EEXIST);                      \
@@ -768,7 +726,7 @@ ds_##_gh##_option_get(unsigned int gid, const char *oid,        \
     UNUSED(oid);                                                \
     UNUSED(dhcpserver);                                         \
                                                                 \
-    if ((gh = find_##_gh(name)) == NULL || gh->deleted)         \
+    if ((gh = find_##_gh(name)) == NULL)                        \
         return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);               \
                                                                 \
     if ((opt = find_option(gh->options, optname)) == NULL)      \
@@ -800,11 +758,8 @@ ds_##_gh##_option_set(unsigned int gid, const char *oid,        \
     UNUSED(oid);                                                \
     UNUSED(dhcpserver);                                         \
                                                                 \
-    if ((gh = find_##_gh(name)) == NULL || gh->deleted)         \
+    if ((gh = find_##_gh(name)) == NULL)                        \
         return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);               \
-                                                                \
-    if (!gh->dynamic)                                           \
-        return TE_RC(TE_TA_LINUX, EPERM);                       \
                                                                 \
     if ((opt = find_option(gh->options, optname)) == NULL)      \
         return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);               \
@@ -846,11 +801,8 @@ ds_##_gh##_option_del(unsigned int gid, const char *oid,        \
     UNUSED(oid);                                                \
     UNUSED(dhcpserver);                                         \
                                                                 \
-    if ((gh = find_##_gh(name)) == NULL || gh->deleted)         \
+    if ((gh = find_##_gh(name)) == NULL)                        \
         return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);               \
-                                                                \
-    if (!gh->dynamic)                                           \
-        return TE_RC(TE_TA_LINUX, EPERM);                       \
                                                                 \
     for (opt = gh->options, prev = NULL;                        \
          opt != NULL && strcmp(opt->name, optname) != 0;        \
@@ -1195,9 +1147,8 @@ RCF_PCH_CFG_NODE_RW(node_ds_group_next, "next",
 
 static rcf_pch_cfg_object node_ds_group =
     { "group", 0, &node_ds_group_next, NULL,
-      (rcf_ch_cfg_get)ds_group_get, NULL,
-      (rcf_ch_cfg_add)ds_group_add,
-      (rcf_ch_cfg_del)ds_group_del,
+      NULL, NULL,
+      (rcf_ch_cfg_add)ds_group_add, (rcf_ch_cfg_del)ds_group_del,
       (rcf_ch_cfg_list)ds_group_list, NULL, NULL };
 
 static rcf_pch_cfg_object node_ds_host_option =
@@ -1234,9 +1185,8 @@ RCF_PCH_CFG_NODE_RW(node_ds_host_group, "group",
 
 static rcf_pch_cfg_object node_ds_host =
     { "host", 0, &node_ds_host_group, &node_ds_group,
-      (rcf_ch_cfg_get)ds_host_get, NULL,
-      (rcf_ch_cfg_add)ds_host_add,
-      (rcf_ch_cfg_del)ds_host_del,
+      NULL, NULL,
+      (rcf_ch_cfg_add)ds_host_add, (rcf_ch_cfg_del)ds_host_del,
       (rcf_ch_cfg_list)ds_host_list, NULL, NULL};
 
 #if TA_LINUX_ISC_DHCPS_LEASES_SUPPORTED

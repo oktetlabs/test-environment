@@ -43,8 +43,6 @@ typedef struct host {
     char         *next_server;
     char         *filename;
     te_dhcp_option  *options;
-    te_bool       dynamic;      /* The host is added dynamically */
-    te_bool       deleted;      /* Static host, which was deleted */
 } host;
 
 typedef struct group {
@@ -53,8 +51,6 @@ typedef struct group {
     char           *filename;
     char           *next_server;
     te_dhcp_option *options;
-    te_bool         dynamic;      /* The host is added dynamically */
-    te_bool         deleted;      /* Static host, which was deleted */
 } group;
 
 typedef struct te_dhcp_server_subnet {

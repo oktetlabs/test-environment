@@ -52,10 +52,6 @@
 #include <arpa/inet.h>
 #include <signal.h>
 
-#if WITH_DHCP_SERVER
-#include <dhcpctl.h>
-#endif
-
 #include "te_errno.h"
 #include "te_defs.h"
 #include "comm_agent.h"
