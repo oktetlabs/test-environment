@@ -35,11 +35,9 @@
 #include "te_stdint.h"
 #include "conf_api.h"
 
-
 #ifdef __cplusplus
 extern "C" {
 #endif
-
 
 /**
  * Get son of configuration node with MAC address value.
@@ -66,7 +64,7 @@ extern int tapi_cfg_switch_vlan_del_port(const char *ta_name,
  * Add a new route to some destination address with a lot of additional 
  * route attributes
  *
- * @param ta           Test agent
+ * @param ta           Test agent name
  * @param addr_family  Address family of destination and gateway addresses
  * @param dst_addr     Destination address
  * @param prefix       Prefix for destination address
@@ -79,6 +77,7 @@ extern int tapi_cfg_switch_vlan_del_port(const char *ta_name,
  * @param win          TCP window size for connections over this route
  * @param irtt         initial round trip time (irtt) for TCP connections
  *                     over this route (in milliseconds)
+ * @param rt_handle    Route handle (OUT)
  *
  * @note For more information about the meaning of parameters see
  *       "man route".
@@ -91,12 +90,13 @@ extern int tapi_cfg_add_route(const char *ta, int addr_family,
                               const void *dst_addr, int prefix,
                               const void *gw_addr, const char *dev,
                               uint32_t flags,
-                              int metric, int mss, int win, int irtt);
+                              int metric, int mss, int win, int irtt,
+                              cfg_handle *rt_hndl);
 
 /**
  * Delete specified route
  *
- * @param ta           Test agent
+ * @param ta           Test agent name
  * @param addr_family  Address family of destination and gateway addresses
  * @param dst_addr     Destination address
  * @param prefix       Prefix for destination address
@@ -117,11 +117,20 @@ extern int tapi_cfg_add_route(const char *ta, int addr_family,
  *
  * @retval 0  - on success
  */
-extern int tapi_cfg_del_route(const char *ta, int addr_family,
-                              const void *dst_addr, int prefix,
-                              const void *gw_addr, const char *dev,
-                              uint32_t flags,
-                              int metric, int mss, int win, int irtt);
+extern int tapi_cfg_del_route_tmp(const char *ta, int addr_family,
+                                  const void *dst_addr, int prefix,
+                                  const void *gw_addr, const char *dev,
+                                  uint32_t flags,
+                                  int metric, int mss, int win, int irtt);
+
+/**
+ * Delete route by handle got with tapi_cfg_add_route() function
+ *
+ * @param rt_hndl   Route handle
+ *
+ * @return 0 on success, and TE errno on failure
+ */
+extern int tapi_cfg_del_route(cfg_handle *rt_hndl);
 
 /**
  * Add a new indirect route (via a gateway) on specified Test agent
@@ -139,14 +148,16 @@ tapi_cfg_add_route_via_gw(const char *ta, int addr_family,
                           const void *dst_addr, int prefix,
                           const void *gw_addr)
 {
+    cfg_handle cfg_hndl;
+
     return tapi_cfg_add_route(ta, addr_family, dst_addr, prefix,
-                              gw_addr, NULL, 0, 0, 0, 0, 0);
+                              gw_addr, NULL, 0, 0, 0, 0, 0, &cfg_hndl);
 }
 
 /**
  * Deletes route added with 'tapi_cfg_add_route_via_gw' function
  *
- * @param ta           Test agent
+ * @param ta           Test agent name
  * @param addr_family  Address family of destination and gateway addresses
  * @param dst_addr     Destination address
  * @param prefix       Prefix for destination address
@@ -159,14 +170,14 @@ tapi_cfg_del_route_via_gw(const char *ta, int addr_family,
                           const void *dst_addr, int prefix,
                           const void *gw_addr)
 {
-    return tapi_cfg_del_route(ta, addr_family, dst_addr, prefix,
-                              gw_addr, NULL, 0, 0, 0, 0, 0);
+    return tapi_cfg_del_route_tmp(ta, addr_family, dst_addr, prefix,
+                                  gw_addr, NULL, 0, 0, 0, 0, 0);
 }
 
 /**
  * Add a new static ARP entry on specified agent
  *
- * @param ta           Test agent
+ * @param ta           Test agent name
  * @param net_addr     IPv4 network address
  * @param link_addr    IEEE 802.3 Link layer address
  *
@@ -185,7 +196,7 @@ extern int tapi_cfg_add_arp_entry(const char *ta,
 /**
  * Delete a particular ARP entry from ARP table on specified agent
  *
- * @param ta           Test agent
+ * @param ta           Test agent name
  * @param net_addr     IPv4 network address
  * @param link_addr    IEEE 802.3 Link layer address
  *
@@ -205,7 +216,7 @@ extern int tapi_cfg_del_arp_entry(const char *ta,
  * Returns hardware address of specified interface on a particular 
  * test agent.
  * 
- * @param ta          Test agent
+ * @param ta          Test agent name
  * @param ifname      Interface name whose hardware address is obtained
  * @param hwaddr      Hardware address - link-layer address (OUT)
  * @param hwaddr_len  Length of 'hwaddr' buffer (IN/OUT)
@@ -218,6 +229,17 @@ extern int tapi_cfg_get_hwaddr(const char *ta,
                                const char *ifname,
                                void *hwaddr, unsigned int *hwaddr_len);
 
+/**
+ * Add network address on Agent's interface.
+ *
+ * @param ta      Test agent name
+ * @param ifname  Interface name on the Agent
+ * @param addr    Address to add
+ * @param mask    Address mask or NULL for default
+ * @param bcast   Corresponding broadcast address or NULL for default
+ *
+ * @return 0 on success, and te errno on failure
+ */
 
 #ifdef __cplusplus
 } /* extern "C" */

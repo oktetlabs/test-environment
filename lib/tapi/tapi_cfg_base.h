@@ -25,6 +25,7 @@
  *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
+ * @author Oleg Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
  *
  * $Id$
  */
@@ -86,6 +87,33 @@ extern int tapi_cfg_base_add_net_addr(const char *oid,
                                       const struct sockaddr *mask,
                                       const struct sockaddr *bcast,
                                       cfg_handle *cfg_hndl);
+
+/**
+ * Wrapper over tapi_cfg_base_add_net_addr() function.
+ *
+ * @param ta      Test agent name
+ * @param ifname  Interface name on the Agent
+ * @param addr    Address to add
+ * @param mask    Address mask or NULL for default
+ * @param bcast   Corresponding broadcast address or NULL for default
+ * @param cfg_hndl  Configurator handle of the new address
+ *
+ * @return See return value of tapi_cfg_base_add_net_addr()
+ */
+static inline int
+tapi_cfg_base_if_add_net_addr(const char *ta, const char *ifname,
+                              const struct sockaddr *addr,
+                              const struct sockaddr *mask,
+                              const struct sockaddr *bcast,
+                              cfg_handle *cfg_hndl)
+{
+    char inst_name[CFG_OID_MAX];
+
+    snprintf(inst_name, sizeof(inst_name),
+             "/agent:%s/interface:%s", ta, ifname);
+    return tapi_cfg_base_add_net_addr(inst_name, addr, mask, bcast,
+                                      cfg_hndl);
+}
 
 #ifdef __cplusplus
 } /* extern "C" */

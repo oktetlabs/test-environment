@@ -86,7 +86,7 @@ static int tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta,
                              const void *dst_addr, int prefix,
                              const void *gw_addr, const char *dev,
                              uint32_t flags, int metric, int mss, 
-                             int win, int irtt);
+                             int win, int irtt, cfg_handle *cfg_hndl);
 
 static int tapi_cfg_arp_op(enum tapi_cfg_oper op, const char *ta,
                            const void *net_addr, const void *link_addr);
@@ -365,23 +365,80 @@ int
 tapi_cfg_add_route(const char *ta, int addr_family,
                    const void *dst_addr, int prefix,
                    const void *gw_addr, const char *dev,
-                   uint32_t flags, int metric, int mss, int win, int irtt)
+                   uint32_t flags, int metric, int mss, int win, int irtt,
+                   cfg_handle *cfg_hndl)
 {
     return tapi_cfg_route_op(OP_ADD, ta, addr_family,
                              dst_addr, prefix, gw_addr, dev,
-                             flags, metric, mss, win, irtt);
+                             flags, metric, mss, win, irtt, cfg_hndl);
 }
 
 /* See the description in tapi_cfg.h */
 int
-tapi_cfg_del_route(const char *ta, int addr_family,
-                   const void *dst_addr, int prefix, 
-                   const void *gw_addr, const char *dev,
-                   uint32_t flags, int metric, int mss, int win, int irtt)
+tapi_cfg_del_route_tmp(const char *ta, int addr_family,
+                       const void *dst_addr, int prefix, 
+                       const void *gw_addr, const char *dev,
+                       uint32_t flags, int metric,
+                       int mss, int win, int irtt)
 {
     return tapi_cfg_route_op(OP_DEL, ta, addr_family,
                              dst_addr, prefix, gw_addr, dev,
-                             flags, metric, mss, win, irtt);
+                             flags, metric, mss, win, irtt, NULL);
+}
+
+/* See the description in tapi_cfg.h */
+int
+tapi_cfg_del_route(cfg_handle *rt_hndl)
+{
+    int           rc;
+    char         *ta;
+    cfg_val_type  type = CVT_STRING;
+    char         *rt_name;
+    char         *rt_val;
+    cfg_handle    agt_hndl;
+
+    if (rt_hndl == NULL)
+        return EINVAL;
+
+    if (*rt_hndl == CFG_HANDLE_INVALID)
+        return 0;
+    
+    if ((rc = cfg_get_father(*rt_hndl, &agt_hndl)) != 0)
+    {
+        ERROR("%s: Cannot get handle of the parent node", __FUNCTION__);
+        return rc;
+    }
+    if ((rc = cfg_get_inst_name(*rt_hndl, &rt_name)) != 0)
+    {
+        ERROR("%s: Route handle cannot be processed", __FUNCTION__);
+        return rc;
+    }
+    if ((rc = cfg_get_inst_name(agt_hndl, &ta)) != 0)
+    {
+        ERROR("%s: Cannot get Test Agent name", __FUNCTION__);
+        free(rt_name);
+        return rc;
+    }
+    if ((rc = cfg_get_instance(*rt_hndl, &type, &rt_val)) != 0)
+    {
+        ERROR("%s: Cannot get the value of the route", __FUNCTION__);
+        free(ta);
+        free(rt_name);
+        return rc;
+    }
+    
+    RING("Deleting route on TA %s: %s %s", ta, rt_name, rt_val);
+    free(rt_val);
+    free(ta);
+    free(rt_name);
+
+    rc = cfg_del_instance(*rt_hndl, FALSE);
+    if (rc == 0)
+    {
+        *rt_hndl = CFG_HANDLE_INVALID;
+    }
+
+    return rc;
 }
 
 /* See the description in tapi_cfg.h */
@@ -409,6 +466,7 @@ tapi_cfg_del_arp_entry(const char *ta,
  * @param dst_addr      Destination address of the route
  * @param prefix        Prefix for dst_addr
  * @param gw_addr       Gateway address of the route
+ * @param cfg_hndl      Handle of the route in Configurator DB (OUT)
  *
  * @return Status code
  *
@@ -418,7 +476,8 @@ static int
 tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
                   const void *dst_addr, int prefix, const void *gw_addr,
                   const char *dev, uint32_t flags,
-                  int metric, int mss, int win, int irtt)
+                  int metric, int mss, int win, int irtt,
+                  cfg_handle *cfg_hndl)
 {
     cfg_handle  handle;
     char        dst_addr_str[INET6_ADDRSTRLEN];
@@ -543,6 +602,9 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
 
                 return TE_RC(TE_TAPI, rc);
             }
+            if (cfg_hndl != NULL)
+                *cfg_hndl = handle;
+
             break;
 
         case OP_DEL:
@@ -637,6 +699,7 @@ tapi_cfg_arp_op(enum tapi_cfg_oper op, const char *ta,
     return 0;
 }
 
+/* See the description in tapi_cfg.h */
 int
 tapi_cfg_get_hwaddr(const char *ta,
                     const char *ifname,
@@ -681,3 +744,4 @@ tapi_cfg_get_hwaddr(const char *ta,
 
     return 0;
 }
+
