@@ -126,6 +126,9 @@ typedef unsigned int tarpc_fd_set;
 typedef long int tarpc_off_t;
 /** Handle of the 'WSAEvent' or 0 */
 typedef unsigned int tarpc_wsaevent;
+/** Handle of the window */
+typedef unsigned int tarpc_hwnd;
+
 /** Function outputs nothing */
 struct tarpc_void_out {
     struct tarpc_out_arg    common;
@@ -520,23 +523,15 @@ struct tarpc_do_fd_zero_in {
 typedef struct tarpc_void_out tarpc_do_fd_zero_out;
 
 
-
-
-/** Function outputs 'wsaevent' return value only */
-struct tarpc_wsaevent_retval_out {
-    struct tarpc_out_arg    common;
-
-    tarpc_wsaevent                     retval;
-};
-
-
-
 /* WSACreateEvent()*/
 struct tarpc_create_event_in {
     struct tarpc_in_arg common;
 };
 
-typedef struct tarpc_wsaevent_retval_out tarpc_create_event_out;
+struct tarpc_create_event_out {
+    struct tarpc_out_arg common;
+    tarpc_wsaevent       retval;
+};
 
 
 /* WSACloseEvent()*/
@@ -548,7 +543,55 @@ struct tarpc_close_event_in {
 typedef struct tarpc_int_retval_out tarpc_close_event_out;
 
 
+/* Create window */
+struct tarpc_create_window_in {
+    struct tarpc_in_arg common;
+};
 
+struct tarpc_create_window_out {
+    struct tarpc_in_arg common;
+    tarpc_hwnd          hwnd;
+};
+
+/* DestroyWindow */
+struct tarpc_destroy_window_in {
+    struct tarpc_in_arg common;
+    tarpc_hwnd          hwnd;
+};
+
+typedef struct tarpc_void_out tarpc_destroy_window_out;
+
+/* WSAAsyncSelect */
+struct tarpc_wsa_async_select_in {
+    struct tarpc_in_arg common;
+    int                 sock;   /**< Socket for WSAAsyncSelect() */
+    tarpc_hwnd          hwnd;   /**< Window for messages receiving */
+    unsigned int        event;  /**< Network event to be listened */
+};
+
+struct tarpc_wsa_async_select_out {
+    struct tarpc_out_arg common;
+    int                  sock;   /**< Socket about which the message is 
+                                      received or -1 if no messages are 
+                                      received */
+    unsigned int         event;  /**< Event about which the message is 
+                                      received */
+};
+
+/* GetMessage */
+struct tarpc_get_message_in {
+    struct tarpc_in_arg common;
+    tarpc_hwnd          hwnd;   /**< Window to be checked */
+};
+
+struct tarpc_get_message_out {
+    struct tarpc_out_arg common;
+    int                  sock;   /**< Socket about which the message is 
+                                      received or -1 if no messages are 
+                                      received */
+    unsigned int         event;  /**< Event about which the message is 
+                                      received */
+};
 
 /* FD_SET() */
 
@@ -1538,6 +1581,11 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
 
         RPC_DEF(create_event)
 	RPC_DEF(close_event)
+
+        RPC_DEF(create_window)
+	RPC_DEF(destroy_window)
+	RPC_DEF(wsa_async_select)
+	RPC_DEF(get_message)
 
     } = 1;
 } = 1;
