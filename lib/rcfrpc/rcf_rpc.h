@@ -99,6 +99,7 @@ typedef struct rcf_rpc_server {
     int             win_error;  /**< Value returned by GetLastError() */
     
     pthread_mutex_t lock;
+    unsigned long   proc;       /**< Procedure called using NB RPC */
     int             tid0;       /**< Identifier of thread performing
                                      non-blocking operations */
     uint32_t        is_done_ptr;

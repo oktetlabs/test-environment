@@ -579,10 +579,11 @@ forward(void *arg)
     
     rcf_rpc_server *rpcs = (rcf_rpc_server *)arg;
     
-    int sock;
-    int s = -1;
-    int len;
-    int rc;
+    int         sock;
+    int         s = -1;
+    int         len;
+    uint32_t    msg_len;
+    int         rc;
     
     char *tmp = getenv("TE_TMP");
     
@@ -668,45 +669,50 @@ forward(void *arg)
     close(sock);
     VERB("Local RPC server %s accepted connection", addr.sun_path);
     len = 0;
-    while (1)
+    msg_len = (uint32_t)-1;
+    while ((uint32_t)len < msg_len)
     {
-        struct timeval tv;
-        fd_set         set;
-        int            n;
+        ssize_t        n;
 
-        tv.tv_sec = RCF_RPC_EOR_TIMEOUT / 1000000;
-        tv.tv_usec = RCF_RPC_EOR_TIMEOUT % 1000000;
-        FD_ZERO(&set);
-        FD_SET(s, &set);
-        if (select(s + 1, &set, NULL, NULL, &tv) <= 0)
-        {
-            if (len == 0)
-            {
-                rpcs->_errno = TE_RC(TE_RCF_API, ENODATA);
-                ERROR("Cannot read data from RPC client");
-                goto release;
-            }
-            else
-                break;
-        }
-        
-        if (len == RCF_RPC_MAX_BUF)
-        {
-            rpcs->_errno = TE_RC(TE_RCF_API, ENOMEM);
-            ERROR("RPC data are too long - increase RCF_RPC_MAX_BUF");
-            goto release;
-        }
-        
         if ((n = read(s, buf + len, RCF_RPC_MAX_BUF - len)) < 0)
         {
             rpcs->_errno = TE_RC(TE_RCF_API, errno);
             ERROR("Cannot read data from RPC client");
             goto release;
         }
-        len += n;
         VERB("%d bytes are read from pipe", n);
+        len += n;
+        if (msg_len == (uint32_t)-1 && (size_t)len >= sizeof(msg_len))
+        {
+            memcpy(&msg_len, buf, sizeof(msg_len));
+            msg_len = ntohl(msg_len);
+            if (~msg_len & 0x80000000)
+            {
+                rpcs->_errno = TE_RC(TE_RCF_API, E2BIG);
+                ERROR("Fragmented RPC messages are not supported");
+                goto release;
+            }
+            /* Remove the-last-fragment flag */
+            msg_len &= ~0x80000000;
+            /* Header is not include in the length, add it */
+            msg_len += sizeof(msg_len);
+            if (msg_len > RCF_RPC_MAX_BUF)
+            {
+                rpcs->_errno = TE_RC(TE_RCF_API, E2BIG);
+                ERROR("Too big RPC message: len=%u, max=%u",
+                      msg_len, RCF_RPC_MAX_BUF);
+                goto release;
+            }
+        }
     }
     VERB("%d bytes of RPC data are read", len);
+    if ((uint32_t)len != msg_len)
+    {
+        rpcs->_errno = TE_RC(TE_RCF_API, EINVAL);
+        ERROR("Invalid RPC message format: advertised length is %u, "
+              "received length is %u", msg_len, len);
+        goto release;
+    }
      
     if ((f = fopen(file, "w")) == NULL)
     {
