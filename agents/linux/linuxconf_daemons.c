@@ -2062,7 +2062,7 @@ sendmail_smarthost_set(te_bool enable)
 
     while (fgets(buf, sizeof(buf), f) != NULL)
     {
-        if (strstr(buf, "SMARTHOST") == NULL)
+        if (strstr(buf, "SMART_HOST") == NULL)
             fwrite(buf, 1, strlen(buf), g);
     }
     if (enable != 0)
