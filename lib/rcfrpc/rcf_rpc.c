@@ -377,7 +377,7 @@ rcf_rpc_server_exec(rcf_rpc_server *rpcs)
     {
         ERROR("Failed to call execve() on the RPC server %s", rpcs->name);
         if (pthread_mutex_unlock(&rpcs->lock) != 0)
-           ERROR("pthread_mutex_unlock() failed");
+            ERROR("pthread_mutex_unlock() failed");
         return rpcs->_errno;
     }
     rpcs->op = RCF_RPC_CALL_WAIT;
@@ -394,6 +394,8 @@ rcf_rpc_server_exec(rcf_rpc_server *rpcs)
         {
             ERROR("Cannot kill RPC server process");
         }
+        if (pthread_mutex_unlock(&rpcs->lock) != 0)
+            ERROR("pthread_mutex_unlock() failed");
         return rc;
     }
 
@@ -408,6 +410,8 @@ rcf_rpc_server_exec(rcf_rpc_server *rpcs)
         {
             ERROR("Cannot kill RPC server process");
         }
+        if (pthread_mutex_unlock(&rpcs->lock) != 0)
+            ERROR("pthread_mutex_unlock() failed");
         return rc;
     }
     if (pthread_mutex_unlock(&rpcs->lock) != 0)
@@ -782,9 +786,7 @@ rcf_rpc_call(rcf_rpc_server *rpcs, int proc,
         if (rpcs->tid0 != 0)
         {
             rpcs->_errno = TE_RC(TE_RCF_API, EBUSY);
-#ifndef FORK_FORWARD    
             pthread_mutex_unlock(&rpcs->lock);
-#endif                
             return;
         }
     }
@@ -805,6 +807,7 @@ rcf_rpc_call(rcf_rpc_server *rpcs, int proc,
     sprintf(host, "tmp/te_rcfrpc_pipe_%u", (unsigned int)rcf_rpc_pid);
     {
         struct stat st;
+
         while (stat(host, &st) < 0)
             usleep(1000);
         usleep(1000);
