@@ -597,7 +597,7 @@ test_params_to_string(const test_params *params)
             rest += TEST_PARAM_STR_BULK;
             v = nv;
         }
-        rest -= sprintf(v + (len - rest), " \"%s=%s\"", p->name, p->value);
+        rest -= sprintf(v + (len - rest), " %s=\"%s\"", p->name, p->value);
     }
     if (v != NULL)
         VERB("%s(): %s", __FUNCTION__, v);
