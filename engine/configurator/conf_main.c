@@ -550,13 +550,21 @@ process_backup(cfg_backup_msg *msg)
 
         case CFG_BACKUP_VERIFY:
         {
+            char diff_file[RCF_MAX_PATH];
+            
             if ((msg->rc = cfg_backup_create_file(filename)) != 0)
                 return;
-            sprintf(tmp_buf, "diff %s %s >/dev/null 2>&1", msg->filename,
-                             filename);
+            sprintf(diff_file, "%s/te_cs.diff", getenv("TE_TMP"));
+            sprintf(tmp_buf, "diff -u %s %s >%s 2>&1", msg->filename,
+                             filename, diff_file);
             msg->rc = ((system(tmp_buf) == 0) ? 0 : ETEBACKUP);
             if (msg->rc == 0)
                 cfg_dh_release_after(msg->filename);
+#if 0                
+            else
+                WARN("Backup diff: %tf", diff_file);
+#endif
+            unlink(diff_file);            
             break;
         }
 
