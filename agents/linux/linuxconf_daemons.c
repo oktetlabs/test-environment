@@ -216,8 +216,20 @@ daemon_get(unsigned int gid, const char *oid, char *value)
     {
         return TE_RC(TE_TA_LINUX, ENOENT);
     }
+    sprintf(buf, "find /var/run/ -name %s.pid | grep pid >/dev/null 2>&1", 
+            daemon_name);
+    if (ta_system(buf) == 0)
+    {
+         sprintf(value, "1");
+         return 0;
+    }
     sprintf(buf, "killall -CONT %s >/dev/null 2>&1", daemon_name);
-    sprintf(value, "%s", ta_system(buf) == 0 ? "1" : "0");
+    if (ta_system(buf) == 0)
+    {
+         sprintf(value, "1");
+         return 0;
+    }
+    sprintf(value, "0");
 
     return 0;
 }
@@ -254,7 +266,7 @@ daemon_set(unsigned int gid, const char *oid, const char *value)
 
     if (value0[0] == value[0])
         return 0;
-
+        
     sprintf(buf, "/etc/init.d/%s %s >/dev/null 2>&1", daemon_name,
             *value == '0' ? "stop" : "start");
 
@@ -1830,6 +1842,7 @@ ds_init_vncserver(rcf_pch_cfg_object **last)
 static char *smtp_servers[] = {
     "sendmail",
     "exim",
+    "exim3",
     "exim4"
 };    
 
@@ -2105,7 +2118,6 @@ ds_smtp_set(unsigned int gid, const char *oid, const char *value)
         else
             return TE_RC(TE_TA_LINUX, EINVAL);
     }
-        
     return daemon_set(gid, smtp_current, value);
 }
 
@@ -2161,8 +2173,10 @@ ds_shutdown_smtp()
     }
     if (smtp_current != NULL)
         daemon_set(0, smtp_current, "0");
+
     if (smtp_initial != NULL)
         daemon_set(0, smtp_initial, "1");
+
     free(smtp_current_smarthost);        
 }
 
