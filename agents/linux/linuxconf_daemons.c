@@ -2757,9 +2757,9 @@ ftp_server_init(void)
     struct stat stat_buf;
 
     if (stat("/etc/vsftpd/" FTPD_CONF, &stat_buf) == 0)
-        dir = "/etc/vsftpd";
+        dir = "/etc/vsftpd/";
     else if (stat("/etc/" FTPD_CONF, &stat_buf) == 0)
-        dir = "/etc";
+        dir = "/etc/";
     else
     {
         ERROR("Failed to locate VSFTPD configuration file");
