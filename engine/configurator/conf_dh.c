@@ -665,7 +665,7 @@ cfg_dh_restore_backup(char *filename)
     if (filename != NULL)
     {
         for (limit = first; limit != NULL; limit = limit->next)
-            if (limit->backup != NULL && has_backup(limit, filename) == 0)
+            if (limit->backup != NULL && !has_backup(limit, filename))
                 break;
             
         if (limit == NULL)
