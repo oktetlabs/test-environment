@@ -1,7 +1,7 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-AC_PREREQ(2.53)
+AC_PREREQ([2.59])
 AC_INIT(logger, 0.02, Igor.Vasiliev@oktetlabs.ru)
 AC_CONFIG_SRCDIR([te_log_init])
 

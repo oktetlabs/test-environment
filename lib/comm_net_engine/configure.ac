@@ -1,7 +1,7 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-AC_PREREQ(2.53)
+AC_PREREQ([2.59])
 AC_INIT(comm_net_engine, 0.2, Andrew.Rybchenko@oktetlabs.ru)
 
 AC_CONFIG_SRCDIR([comm_net_engine.c])

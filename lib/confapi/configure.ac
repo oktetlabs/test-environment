@@ -1,7 +1,7 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-AC_PREREQ(2.53)
+AC_PREREQ([2.59])
 AC_INIT(confapi,  0.01, Renata.Sayakhova@oktetlabs.ru)
 
 AC_CONFIG_SRCDIR([conf_api.h])

@@ -24,11 +24,11 @@
 #
 # Author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
 
-AC_PREREQ(2.53)
+AC_PREREQ([2.59])
 
-AC_INIT(test_environment, 0.8, Elena.Vengerova@oktetlabs.ru)
+AC_INIT([test_environment-doc], [0.8], [Elena.Vengerova@oktetlabs.ru])
 
-AC_CONFIG_AUX_DIR(../aux)
+AC_CONFIG_AUX_DIR([../aux])
 
 AM_INIT_AUTOMAKE([foreign -Wall])
 

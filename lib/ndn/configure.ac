@@ -1,12 +1,12 @@
 
 # Process this file with autoconf to produce a configure script.
 
-#AC_PREREQ(2.53)
-AC_INIT(ndn, 0.90, konst@oktetlabs.ru)
+#AC_PREREQ([2.59])
+AC_INIT([ndn], [0.90], [konst@oktetlabs.ru])
 
 AC_CONFIG_SRCDIR([ndn_generic.c])
 
-AC_CONFIG_AUX_DIR(../../aux)
+AC_CONFIG_AUX_DIR([../../aux])
 
 AM_INIT_AUTOMAKE
 

@@ -1,8 +1,8 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-AC_PREREQ(2.53)
-AC_INIT([bsapi],  0.01, Elena.Vengerova@oktetlabs.ru)
+AC_PREREQ([2.59])
+AC_INIT([bsapi], [0.01], [Elena.Vengerova@oktetlabs.ru])
 
 AC_CONFIG_SRCDIR([bsapi.c])
 

@@ -1,7 +1,7 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-AC_PREREQ(2.53)
+AC_PREREQ([2.59])
 
 AC_INIT(rgt, 0.03, Oleg.Kravtsov@oktetlabs.ru)
 AM_CONFIG_HEADER(config.h)
