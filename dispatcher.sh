@@ -108,6 +108,12 @@ EOF
 #    echo -e '  '--log-dir='<directory>'\\t\\t'local directory for raw log (. by default)'
 #    echo -e '  '--log-online\\t\\t\\tconvert and print log on stdout during work
 #    echo
+
+#    echo -e '  --tester-norandom'\\t\\t'Force to run all tests in defined order as well'
+#    echo -e \\t\\t\\t\\t'as to get values of all arguments in defined'
+#    echo -e \\t\\t\\t\\t'order.  Usefull for debugging."'
+#    echo -e '  --tester-nosimultaneous'\\t'Force to run all tests in series.'
+#    echo -e \\t\\t\\t\\t'Usefull for debugging.'
 }
 
 exit_with_log()
