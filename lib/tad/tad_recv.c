@@ -947,6 +947,11 @@ tad_tr_recv_thread(void * arg)
         rc = 0;
     } 
 
+    /* 
+     * Release resources, this should be done before clearing 
+     * CSAP state fields, becouse zero state during release means 
+     * CSAP destroy procedure. 
+     */
     if (csap_descr->release_cb)
         csap_descr->release_cb(csap_descr);
 

@@ -110,7 +110,7 @@ typedef enum {
 } tad_packet_dir_t;
 
 /**
- * Close Ethernet sockets
+ * Release CSAP resources. 
  *
  * @param csap_descr    CSAP descriptor
  *
@@ -125,21 +125,31 @@ eth_release(csap_p csap_descr)
     layer = csap_descr->read_write_layer; 
     spec_data = (eth_csap_specific_data_p) csap_descr->layer_data[layer]; 
 
-    if (spec_data->in >= 0)
+    if (spec_data->in >= 0 && csap_descr->command & TAD_OP_RECV)
     {
-        VERB("csap # %d CLOSE SOCKET %d", 
-                                csap_descr->id, spec_data->in);
+        VERB("%s: CSAP %d, close input socket %d", 
+             __FUNCTION__, csap_descr->id, spec_data->in);
         if (close(spec_data->in) < 0)
         {
-            perror ("close socket");
-            VERB("CLOSE SOCKET ERROR %d", errno);
+            csap_descr->last_errno = errno;
+            perror("close input socket");
+            WARN("%s: CLOSE input socket error %d", 
+                 __FUNCTION__, csap_descr->last_errno);
         }
         spec_data->in = -1;
     }
 
-    if (spec_data->out >= 0)
+    if (spec_data->out >= 0 && csap_descr->command & TAD_OP_SEND)
     {
-        close (spec_data->out);
+        VERB("%s: CSAP %d, close output socket %d", 
+             __FUNCTION__, csap_descr->id, spec_data->out);
+        if (close(spec_data->out) < 0)
+        {
+            csap_descr->last_errno = errno;
+            perror("close output socket");
+            WARN("%s: CLOSE output socket error %d", 
+                 __FUNCTION__, csap_descr->last_errno);
+        }
         spec_data->out = -1;
     }
 
@@ -1043,13 +1053,14 @@ eth_single_init_cb (int csap_id, const asn_value *csap_nds, int layer)
 
 /**
  * Callback for destroy ethernet CSAP layer  if single in stack.
- *      This callback should free all undeground media resources used by 
- *      this layer and all memory used for layer-specific data and pointed 
- *      in respective structure in 'layer-data' in CSAP instance struct. 
+ *
+ * This callback should free all undeground media resources used by 
+ * this layer and all memory used for layer-specific data and pointed 
+ * in respective structure in 'layer-data' in CSAP instance struct. 
  *
  * @param csap_id       identifier of CSAP.
  * @param csap_nds      asn_value with CSAP init parameters
- * @param layer         numeric index of layer in CSAP type to be processed. 
+ * @param layer         numeric index of layer in CSAP type to be processed.
  *                      Layers are counted from zero, from up to down.
  *
  * @return zero on success or error code.

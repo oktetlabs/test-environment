@@ -334,11 +334,11 @@ rcf_ch_csap_destroy(struct rcf_comm_connection *handle,
     
     check_init();
 
-    VERB("Destroy CSAP %d\n", csap); 
+    VERB("%s: CSAP %d\n", __FUNCTION__, csap); 
 
     if ((csap_descr_p = csap_find(csap)) == NULL)
     {
-        WARN("CSAP not exists");
+        WARN("%s: CSAP %d not exists", __FUNCTION__, csap);
         SEND_ANSWER("%d CSAP not exists", TE_RC(TE_TAD_CH, ETADCSAPNOTEX));
         return 0;
     }
@@ -346,10 +346,10 @@ rcf_ch_csap_destroy(struct rcf_comm_connection *handle,
     CSAP_DA_LOCK(csap_descr_p);
     if (csap_descr_p->command)
     {
+        WARN("%s: CSAP %d is busy", __FUNCTION__, csap);
+        CSAP_DA_UNLOCK(csap_descr_p);
         SEND_ANSWER("%d Specified CSAP is busy", 
                     TE_RC(TE_TAD_CH, ETADCSAPSTATE));
-        CSAP_DA_UNLOCK(csap_descr_p);
-        WARN("CSAP is busy");
         return 0;
     } 
     CSAP_DA_UNLOCK(csap_descr_p);
@@ -357,14 +357,14 @@ rcf_ch_csap_destroy(struct rcf_comm_connection *handle,
     for (level = 0; level < csap_descr_p->depth; level ++)
     {
         csap_layer_neighbour_list_p nbr_p; 
-        csap_spt_type_p csap_spt_descr; 
-        char *lower_proto = NULL;
+        
+        csap_spt_type_p  csap_spt_descr; 
+        char            *lower_proto = NULL;
 
         csap_spt_descr = find_csap_spt(csap_descr_p->proto[level]);
 
         if (csap_spt_descr == NULL)
         {
-            /* ERROR! asked protocol is not supported. */
             ERROR("protocol support is not found.");
 
             SEND_ANSWER("%d Generic error: protocol support is not found.",
@@ -372,7 +372,7 @@ rcf_ch_csap_destroy(struct rcf_comm_connection *handle,
             return 0;
         }
         VERB("found protocol support for <%s>.", 
-                    csap_descr_p->proto[level]);
+             csap_descr_p->proto[level]);
 
         if (level + 1 < csap_descr_p->depth)
             lower_proto = csap_descr_p->proto[level + 1];
@@ -828,15 +828,15 @@ rcf_ch_trrecv_stop(struct rcf_comm_connection *handle,
     VERB("TRRECV stop handle %d\n", csap);
     return -1;
 #else
-    csap_p      csap_descr_p;
+    csap_p csap_descr_p;
 
-    VERB("CSAP %d", csap);
+    VERB("%s: CSAP %d", __FUNCTION__, csap);
 
     check_init();
 
     if ((csap_descr_p = csap_find(csap)) == NULL)
     {
-        F_ERROR("CSAP #%d not exists", csap);
+        ERROR("%s: CSAP %d not exists", __FUNCTION__, csap);
         SEND_ANSWER("%d 0", TE_RC(TE_TAD_CH, ETADCSAPNOTEX));
         return 0;
     }
@@ -857,8 +857,8 @@ rcf_ch_trrecv_stop(struct rcf_comm_connection *handle,
     }
     else
     {
-        F_ERROR("Inappropriate command, CSAP %d is not receiving; "
-                "command %x; state %x ", csap_descr_p->id, 
+        F_ERROR("%s: inappropriate command, CSAP %d is not receiving; "
+                "command %x; state %x ", __FUNCTION__, csap_descr_p->id, 
                 (int)csap_descr_p->command, (int)csap_descr_p->state);
         CSAP_DA_UNLOCK(csap_descr_p);
         SEND_ANSWER("%d 0", TE_RC(TE_TAD_CH, ETADCSAPSTATE));
