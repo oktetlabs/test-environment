@@ -22,7 +22,7 @@ _$1_1_svc(tarpc_$1_in *in, tarpc_$1_out *out, struct svc_req *rqstp)
     UNUSED(rqstp);
     UNUSED(in);
     UNUSED(out);
-    ERROR("Unsipported function $1 is called");
+    ERROR("Unsupported function '$1' is called");
     return FALSE;
 }
 #endif
