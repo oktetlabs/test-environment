@@ -579,8 +579,8 @@ struct tarpc_peek_message_in {
 
 struct tarpc_peek_message_out {
     struct tarpc_out_arg common;
+    int                  retval; /**< 0 if there are no messages */
     int                  sock;   /**< Socket about which the message is 
-                                      received or -1 if no messages are 
                                       received */
     unsigned int         event;  /**< Event about which the message is 
                                       received */
