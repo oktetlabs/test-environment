@@ -151,10 +151,10 @@ int
 asn_impl_pt_charstring(const char*text, const asn_type *type, 
                        asn_value_p *parsed, int *syms_parsed)
 {
-    const char * pt = text; 
+    const char *pt = text; 
 
-    char   buffer[PARSE_BUF];
-    char * pb = buffer;       
+    char  buffer[PARSE_BUF];
+    char *pb = buffer;       
     
     size_t l;
     size_t total = 0;
@@ -231,7 +231,8 @@ asn_impl_pt_octstring(const char*text, const asn_type *type,
     if (type) 
         octstr_len = type->len;
 
-    while (isspace(*pt)) pt++;
+    while (isspace(*pt)) 
+        pt++;
 
     if (*pt != '\'')
     {
@@ -243,7 +244,7 @@ asn_impl_pt_octstring(const char*text, const asn_type *type,
 
     while (*pt != '\'') 
     {         
-        int byte;
+        int   byte;
         char *end_ptr;
 
         if ((octstr_len && (b_num == octstr_len) ) || 
@@ -283,7 +284,7 @@ asn_impl_pt_octstring(const char*text, const asn_type *type,
         int rest_len = type->len - b_num;
 
         if (rest_len)
-            memset (buffer + b_num, 0, rest_len); 
+            memset(buffer + b_num, 0, rest_len); 
         b_num += rest_len;
     }
 
@@ -311,7 +312,7 @@ asn_impl_pt_integer(const char*text, const asn_type *type,
     if (!text || !parsed || !syms_parsed)
         return ETEWRONGPTR; 
 
-    p_value = strtol (text, &endptr, 10);
+    p_value = strtol(text, &endptr, 10);
     if ((*syms_parsed = endptr - text) == 0)
     {
         /* ERROR! there are no integer. */
@@ -346,7 +347,7 @@ asn_impl_pt_null(const char *text, const asn_type *type,
     if (!text || !parsed || !syms_parsed)
         return ETEWRONGPTR; 
 
-    if (memcmp (text, null_string, 4) != 0)
+    if (memcmp(text, null_string, 4) != 0)
     {
         /* ERROR! there are no NULL. */
         return EASNTXTPARSE;
@@ -376,16 +377,16 @@ int
 asn_impl_pt_enum(const char*text, const asn_type *type, 
                  asn_value_p *parsed, int *syms_parsed)
 {
-    int    rc;
-    int    p_value;
-    char * endptr; 
-    char   label_buf[100];
-    int    p_s = sizeof(label_buf);
+    int   rc;
+    int   p_value;
+    char *endptr; 
+    char  label_buf[100];
+    int   p_s = sizeof(label_buf);
 
     if (!text || !parsed || !syms_parsed)
         return ETEWRONGPTR; 
 
-    p_value = strtol (text, &endptr, 10);
+    p_value = strtol(text, &endptr, 10);
     if ((*syms_parsed = endptr - text) == 0)
     {
         const char  *pt = text;
@@ -533,10 +534,10 @@ asn_impl_pt_objid(const char *text, const asn_type *type,
  *              of non-OPTIONAL fields should be done. 
  */
 int 
-asn_impl_pt_named_array(const char*text, const asn_type * type, 
+asn_impl_pt_named_array(const char *text, const asn_type *type, 
                         asn_value_p *parsed, int *parsed_syms)
 {
-    const char * pt = text; 
+    const char *pt = text; 
 
     char label_buf[100];
     int  rc;
@@ -625,7 +626,7 @@ int
 asn_impl_pt_indexed_array(const char*text, const asn_type * type, 
                           asn_value_p *parsed, int *parsed_syms)
 {
-    const char * pt = text; 
+    const char *pt = text; 
 
     int rc = 0;
 
@@ -651,17 +652,20 @@ asn_impl_pt_indexed_array(const char*text, const asn_type * type,
         int        p_s;
         asn_value *subval;
 
-        while (isspace(*pt)) pt++; 
+        while (isspace(*pt)) 
+            pt++; 
 
         rc = asn_parse_value_text(pt, type->sp.subtype, &subval, &p_s);
         pt += p_s; 
         *parsed_syms = pt - text;
-        if (rc) return rc; 
+        if (rc) 
+            return rc; 
 
-        asn_insert_indexed (*parsed, subval, -1, "");
+        asn_insert_indexed(*parsed, subval, -1, "");
         asn_free_value(subval);
 
-        while (isspace(*pt)) pt++;
+        while (isspace(*pt)) 
+            pt++;
 
         if (*pt == ',') 
         { pt++; continue; } 
@@ -693,7 +697,7 @@ asn_impl_pt_indexed_array(const char*text, const asn_type * type,
  * @return zero on success, otherwise error code.
  */
 int 
-asn_impl_pt_choice(const char*text, const asn_type * type, 
+asn_impl_pt_choice(const char*text, const asn_type *type, 
                    asn_value_p *parsed, int *parsed_syms)
 {
     const char *pt = text; 
@@ -714,7 +718,8 @@ asn_impl_pt_choice(const char*text, const asn_type * type,
 
     *parsed = asn_init_value(type); 
 
-    while (isspace(*pt)) pt++;
+    while (isspace(*pt)) 
+        pt++;
 
     rc = asn_impl_pt_label(pt, label_buf, &p_s);
     if (rc) return rc;
@@ -736,7 +741,8 @@ asn_impl_pt_choice(const char*text, const asn_type * type,
         return EASNTXTSEPAR;
     }
     pt++;
-    while (isspace(*pt)) pt++;
+    while (isspace(*pt)) 
+        pt++;
 
     rc = asn_parse_value_text(pt, subtype, &subval, &p_s);
 
@@ -749,7 +755,7 @@ asn_impl_pt_choice(const char*text, const asn_type * type,
         return rc; 
     }
 
-    rc = asn_impl_insert_subvalue (*parsed, l_b, subval);
+    rc = asn_impl_insert_subvalue(*parsed, l_b, subval);
 
     if (rc)
     {
@@ -776,7 +782,7 @@ asn_impl_pt_choice(const char*text, const asn_type * type,
  * @return zero on success, otherwise error code.
  */ 
 int 
-asn_parse_value_text(const char *text, const asn_type * type, 
+asn_parse_value_text(const char *text, const asn_type *type, 
                      asn_value_p *parsed, int *syms_parsed)
 {
     if (!text || !type || !parsed || !syms_parsed)
@@ -786,6 +792,7 @@ asn_parse_value_text(const char *text, const asn_type * type,
     {
         case INTEGER:
             return asn_impl_pt_integer   (text, type, parsed, syms_parsed);
+            
         case ENUMERATED: 
             return asn_impl_pt_enum      (text, type, parsed, syms_parsed);
 
@@ -987,7 +994,7 @@ asn_count_len_tagged(const asn_value *value, unsigned int indent)
         asn_value_p v_el = value->data.array[0];
         if (v_el)
         { 
-            all_used += strlen (t_class[(int)value->tag.cl]); 
+            all_used += strlen(t_class[(int)value->tag.cl]); 
             all_used += number_of_digits(value->tag.val);
             all_used += 3; /* square braces and space after tag */ 
             all_used += asn_count_txt_len(v_el, indent);
@@ -1065,8 +1072,9 @@ asn_count_len_objid(const asn_value *value)
     
     if (value->txt_len < 0)
     {
-        int all_used = 2; /* braces */
+        int  all_used = 2; /* braces */
         int *subid;
+        
         unsigned int i;
 
         subid = (int*) value->data.other; 
@@ -1193,10 +1201,10 @@ asn_sprint_charstring(const asn_value *value, char *buffer, size_t buf_len)
 
     string = value->data.other;
 
-    strcpy  (buffer, "\""); 
+    strcpy(buffer, "\""); 
     if (string)
-        strncat (buffer, string, buf_len-1); 
-    strcat  (buffer, "\""); 
+        strncat(buffer, string, buf_len-1); 
+    strcat(buffer, "\""); 
 
     return strlen(buffer);
 }
@@ -1315,8 +1323,8 @@ asn_sprint_choice(const asn_value *value, char *buffer, size_t buf_len,
     v_el = value->data.array[0];
     if (v_el)
     { 
-        strcpy (buffer, v_el->name);
-        strcat (buffer, ":");
+        strcpy(buffer, v_el->name);
+        strcat(buffer, ":");
 
         used = strlen(buffer);
         all_used += used; buffer += used; 
@@ -1356,11 +1364,11 @@ asn_sprint_objid(const asn_value *value, char *buffer, size_t buf_len)
     if (buf_len <= asn_count_len_objid(value))
         return -1;
 
-    strcpy (buffer, "{");
+    strcpy(buffer, "{");
 
     all_used++; buffer++;
 
-    subid = (int*)value->data.other; 
+    subid = (int *)value->data.other; 
 
     for (i = 0; i < value->len; i++)
     { 
@@ -1369,7 +1377,7 @@ asn_sprint_objid(const asn_value *value, char *buffer, size_t buf_len)
         strcat(buffer, " ");
         all_used++; buffer++;
     } 
-    strcat (buffer, "}"); 
+    strcat(buffer, "}"); 
     all_used++;
 
     return all_used;
@@ -1411,7 +1419,7 @@ asn_sprint_array_fields(const asn_value *value, char *buffer,
         return -1;
 
     /* strcpy (buffer, asn_print_current_indent); */
-    strcpy (buffer, "{");
+    strcpy(buffer, "{");
 
     used = strlen(buffer);
     all_used += used; buffer += used;
@@ -1433,11 +1441,11 @@ asn_sprint_array_fields(const asn_value *value, char *buffer,
             else 
                 strcat(buffer, "\n"); 
 
-            strcat (buffer, str_indent); 
+            strcat(buffer, str_indent); 
             if ( ! (value->syntax & 1) )
             { /* We have structure with named components. */
-                strcat (buffer, v_el->name);
-                strcat (buffer, " ");
+                strcat(buffer, v_el->name);
+                strcat(buffer, " ");
             }
 
             used = strlen(buffer);
@@ -1455,13 +1463,13 @@ asn_sprint_array_fields(const asn_value *value, char *buffer,
     /* decrease indent */
     str_indent[indent - 2] = '\0';
 
-    strcat (buffer, str_indent);
-    strcat (buffer, "}");
+    strcat(buffer, str_indent);
+    strcat(buffer, "}");
 
     used = strlen(buffer);
     all_used += used;
 
-    free (str_indent);
+    free(str_indent);
 
     return all_used;
 }
@@ -1489,47 +1497,47 @@ asn_sprint_value(const asn_value *value, char *buffer, size_t buf_len,
 
     switch (value->syntax)
     {
-    case BOOL:
-        if (value->data.integer) 
-            return sprintf (buffer, "TRUE");
-        else
-            return sprintf (buffer, "FALSE");
+        case BOOL:
+            if (value->data.integer) 
+                return sprintf(buffer, "TRUE");
+            else
+                return sprintf(buffer, "FALSE");
 
-    case INTEGER:
-        return asn_sprint_integer(value, buffer, buf_len);
+        case INTEGER:
+            return asn_sprint_integer(value, buffer, buf_len);
 
-    case ENUMERATED: 
-        return asn_sprint_enum(value, buffer, buf_len);
+        case ENUMERATED: 
+            return asn_sprint_enum(value, buffer, buf_len);
 
-    case CHAR_STRING:
-        return asn_sprint_charstring(value, buffer, buf_len);
+        case CHAR_STRING:
+            return asn_sprint_charstring(value, buffer, buf_len);
 
-    case OCT_STRING:
-        return asn_sprint_octstring(value, buffer, buf_len);
+        case OCT_STRING:
+            return asn_sprint_octstring(value, buffer, buf_len);
 
-    case PR_ASN_NULL:
-        return sprintf (buffer, "NULL");
+        case PR_ASN_NULL:
+            return sprintf(buffer, "NULL");
 
-    case LONG_INT:
-    case BIT_STRING:
-    case REAL:
-        return 0; /* not implemented yet.*/
-    case OID:
-        return asn_sprint_objid(value, buffer, buf_len);
-    case CHOICE:
-        return asn_sprint_choice(value, buffer, buf_len, indent);
+        case LONG_INT:
+        case BIT_STRING:
+        case REAL:
+            return 0; /* not implemented yet.*/
+        case OID:
+            return asn_sprint_objid(value, buffer, buf_len);
+        case CHOICE:
+            return asn_sprint_choice(value, buffer, buf_len, indent);
 
-    case TAGGED:
-        return asn_sprint_tagged(value, buffer, buf_len, indent);
+        case TAGGED:
+            return asn_sprint_tagged(value, buffer, buf_len, indent);
 
-    case SEQUENCE:
-    case SEQUENCE_OF:
-    case SET:
-    case SET_OF:
-        return asn_sprint_array_fields(value, buffer, buf_len, indent);
+        case SEQUENCE:
+        case SEQUENCE_OF:
+        case SET:
+        case SET_OF:
+            return asn_sprint_array_fields(value, buffer, buf_len, indent);
 
-    default: 
-        return 0; /* nothing to do. */
+        default: 
+            return 0; /* nothing to do. */
     }
 }
 
@@ -1546,55 +1554,58 @@ asn_sprint_value(const asn_value *value, char *buffer, size_t buf_len,
 size_t 
 asn_count_txt_len(const asn_value *value, unsigned int indent) 
 { 
-    if (value == NULL) return 0;
+    if (value == NULL) 
+        return 0;
+
     switch (value->syntax)
     {
-    case BOOL:
-        if (value->data.integer) 
-            return 4;
-        else
-            return 5;
+        case BOOL:
+            if (value->data.integer) 
+                return strlen("TRUE");
+            else
+                return strlen("FALSE");
 
-    case INTEGER:
-        return value->txt_len;
+        case INTEGER:
+            return value->txt_len;
 
-    case ENUMERATED: 
-        return asn_count_len_enum(value);
+        case ENUMERATED: 
+            return asn_count_len_enum(value);
 
-    case CHAR_STRING:
-        return value->txt_len;
+        case CHAR_STRING:
+            return value->txt_len;
 
-    case OCT_STRING:
-        return asn_count_len_octstring(value);
+        case OCT_STRING:
+            return asn_count_len_octstring(value);
 
-    case PR_ASN_NULL:
-        return 4;
+        case PR_ASN_NULL:
+            return strlen("NULL");
 
-    case LONG_INT:
-    case BIT_STRING:
-    case REAL:
-        return 0; /* not implemented yet.*/
-    case OID:
-        return asn_count_len_objid(value);
+        case LONG_INT:
+        case BIT_STRING:
+        case REAL:
+            return 0; /* not implemented yet.*/
+            
+        case OID:
+            return asn_count_len_objid(value);
 
-    /* Due to some (not found) bugs in counting length, obtained value 
-     * is a bit less then really need, so the folowing ugly hacks
-     * are made. 
-     * TODO: found and fix bugs. */
-    case CHOICE:
-        return asn_count_len_choice(value, indent) + 10;
+        /* Due to some (not found) bugs in counting length, obtained value 
+         * is a bit less then really need, so the folowing ugly hacks
+         * are made. 
+         * TODO: found and fix bugs. */
+        case CHOICE:
+            return asn_count_len_choice(value, indent) + 10;
 
-    case TAGGED:
-        return asn_count_len_tagged(value, indent) + 10;
+        case TAGGED:
+            return asn_count_len_tagged(value, indent) + 10;
 
-    case SEQUENCE:
-    case SEQUENCE_OF:
-    case SET:
-    case SET_OF:
-        return asn_count_len_array_fields(value, indent) + 10;
+        case SEQUENCE:
+        case SEQUENCE_OF:
+        case SET:
+        case SET_OF:
+            return asn_count_len_array_fields(value, indent) + 10;
 
-    default: 
-        return 0; /* nothing to do. */
+        default: 
+            return 0; /* nothing to do. */
     }
 }
 
@@ -1627,17 +1638,19 @@ asn_count_len_array_fields(const asn_value *value, unsigned int indent)
     if (value->txt_len < 0)
     {
         unsigned int i;
+
         int all_used = 1; /* for "{" */
         int elems = 0;
 
         for (i = 0; i < value->len; i++)
         { 
             asn_value_p v_el = value->data.array[i];
+
             if (v_el)
             { 
                 if ( !(value->syntax & 1) )
                 { 
-                    all_used += strlen (v_el->name) + 1;
+                    all_used += strlen(v_el->name) + 1;
                 } 
                 all_used += asn_count_txt_len(v_el, indent + 2); 
                 elems ++;
@@ -1712,10 +1725,10 @@ asn_parse_dvalue_in_file(const char *filename, const asn_type *type,
 {
     struct stat fst;
 
-    char * buf;
-    int    fd;
-    int    read_sz;
-    int    rc;
+    char *buf;
+    int   fd;
+    int   read_sz;
+    int   rc;
 
     if (filename == NULL || type == NULL || 
         parsed_value == NULL || syms_parsed == NULL)
