@@ -51,8 +51,8 @@ echo ' */' >> $RESULT
 echo >> $RESULT
 
 awk --posix '
-/^[[:xdigit:]]{8} C|D|B/ { printf "extern int %s;\n", $3 ; next ;}
-/^[[:xdigit:]]{8} T/ { printf "extern int %s();\n", $3 ; next ;}
+/^[[:xdigit:]]{8} C|D|B/ { if ($3 == "") next ; printf "extern int %s;\n", $3; next ;}
+/^[[:xdigit:]]{8} T/ { if ($3 == "") next ; printf "extern int %s();\n", $3 ; next ;}
 ' te_bs_symtbl.tmp >> $RESULT
 
 
@@ -66,8 +66,8 @@ static struct {
 EOF
 
 awk --posix '
-/^[[:xdigit:]]{8} C|D|B/ { printf "    { \"%s\", 0, &%s },\n", $3, $3 ; next ;}
-/^[[:xdigit:]]{8} T/ { printf "    { \"%s\", 1, %s },\n", $3, $3 ; next ;}
+/^[[:xdigit:]]{8} C|D|B/ { if ($3 == "") next ; printf "    { \"%s\", 0, &%s },\n", $3, $3 ; next ;}
+/^[[:xdigit:]]{8} T/ { if ($3 == "") next ; printf "    { \"%s\", 1, %s },\n", $3, $3 ; next ;}
 ' te_bs_symtbl.tmp >> $RESULT
 
 cat >> $RESULT <<\EOF
