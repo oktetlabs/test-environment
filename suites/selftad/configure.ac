@@ -96,7 +96,13 @@ AC_SUBST([SELFTAD_TE_DEPS])
 AC_DEFINE_UNQUOTED(SUITE_SRCDIR, "$srcdir", [The suite source directory])
 
 
-AC_CONFIG_FILES([Makefile cli/Makefile \
-		snmp/Makefile eth/Makefile ipstack/Makefile dhcp/Makefile])
+AC_CONFIG_FILES([\
+Makefile \
+eth/Makefile \
+ipstack/Makefile \
+dhcp/Makefile \
+snmp/Makefile \
+cli/Makefile \
+])
 
 AC_OUTPUT
