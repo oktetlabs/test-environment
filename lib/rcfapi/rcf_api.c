@@ -83,7 +83,7 @@ typedef struct traffic_op {
     struct traffic_op *prev;    /**< Previous CSAP in the list */
 
     char            ta[RCF_MAX_NAME];   /**< Test Agent name */
-    int             csap_id;    /**< CSAP handle returned by the TA */
+    csap_handle_t   csap_id;    /**< CSAP handle returned by the TA */
     int             state;      /**< CSAP_SEND, CSAP_RECV or
                                      CSAP_SENDRECV */
     int             sid;        /**< Session identifier */
@@ -96,7 +96,8 @@ static traffic_op_t traffic_ops = { &traffic_ops, &traffic_ops,
                                     "", 0, 0, 0, NULL, NULL };
 
 /* Forward declaration */
-static int csap_tr_recv_get(const char *ta_name, int session, int csap_id, 
+static int csap_tr_recv_get(const char *ta_name, int session, 
+                            csap_handle_t csap_id, 
                             int *num, int opcode);
 
 /* If pthread mutexes are supported - OK; otherwise hope for best... */
@@ -355,7 +356,7 @@ rcf_api_cleanup(void)
  * @return CSAP structure pointer or NULL
  */
 static traffic_op_t *
-find_traffic_op(const char *ta_name, int csap_id)
+find_traffic_op(const char *ta_name, csap_handle_t csap_id)
 {
     traffic_op_t *tr_op;
     
@@ -406,7 +407,7 @@ insert_traffic_op(traffic_op_t *cs)
  * @param csap_id       csap_id of CSAP to be removed
  */
 static void
-remove_traffic_op(const char *ta_name, int csap_id)
+remove_traffic_op(const char *ta_name, csap_handle_t csap_id)
 {
     traffic_op_t *cs;
     
@@ -1429,7 +1430,8 @@ rcf_ta_del_file(const char *ta_name, int session, const char *rfile)
  */
 int 
 rcf_ta_csap_create(const char *ta_name, int session,
-                   const char *stack_id, const char *params, int *csap_id)
+                   const char *stack_id, const char *params,
+                   csap_handle_t *csap_id)
 {
     rcf_msg *msg;
     size_t   len = 0;
@@ -1529,7 +1531,8 @@ rcf_ta_csap_create(const char *ta_name, int session,
  * @sa rcf_ta_csap_create
  */
 int 
-rcf_ta_csap_destroy(const char *ta_name, int session, int csap_id)
+rcf_ta_csap_destroy(const char *ta_name, int session,
+                    csap_handle_t csap_id)
 {
     rcf_msg msg;
     size_t  anslen = sizeof(msg);
@@ -1575,7 +1578,7 @@ rcf_ta_csap_destroy(const char *ta_name, int session, int csap_id)
  * @retval ETESMALLBUF  the buffer is too small
  */
 int 
-rcf_ta_csap_param(const char *ta_name, int session, int csap_id,
+rcf_ta_csap_param(const char *ta_name, int session, csap_handle_t csap_id,
                   const char *var_name, size_t var_len, char *val)
 {
     rcf_msg  msg;
@@ -1644,7 +1647,7 @@ rcf_ta_csap_param(const char *ta_name, int session, int csap_id,
  */
 int 
 rcf_ta_trsend_start(const char *ta_name, int session, 
-                    int csap_id, const char *templ,
+                    csap_handle_t csap_id, const char *templ,
                     rcf_call_mode_t blk_mode)
 {
     rcf_msg       msg;
@@ -1743,7 +1746,7 @@ rcf_ta_trsend_start(const char *ta_name, int session,
  * @sa rcf_ta_trsend_start
  */
 int 
-rcf_ta_trsend_stop(const char *ta_name, int csap_id, int *num)
+rcf_ta_trsend_stop(const char *ta_name, csap_handle_t csap_id, int *num)
 {
     rcf_msg       msg;
     size_t        anslen = sizeof(msg);
@@ -1806,7 +1809,7 @@ rcf_ta_trsend_stop(const char *ta_name, int csap_id, int *num)
  */
 int
 rcf_ta_trrecv_start(const char *ta_name, int session,
-                    int csap_id, const char *pattern,
+                    csap_handle_t csap_id, const char *pattern,
                     rcf_pkt_handler handler, void *user_param, 
                     unsigned int timeout, int num)
 {
@@ -1911,7 +1914,7 @@ rcf_ta_trrecv_start(const char *ta_name, int session,
  * @return error code
  */
 static int
-csap_tr_recv_get(const char *ta_name, int session, int csap_id,
+csap_tr_recv_get(const char *ta_name, int session, csap_handle_t csap_id,
                  int *num, int opcode)
 {
     int           rc;
@@ -2014,7 +2017,7 @@ csap_tr_recv_get(const char *ta_name, int session, int csap_id,
  * See the description in rcf_api.h
  */
 int
-rcf_ta_trrecv_wait(const char *ta_name, int csap_id, int *num)
+rcf_ta_trrecv_wait(const char *ta_name, csap_handle_t csap_id, int *num)
 {
     int rc;
     VERB("%s(ta %s, csap %d, *num  %p) called", 
@@ -2051,7 +2054,7 @@ rcf_ta_trrecv_wait(const char *ta_name, int csap_id, int *num)
  * @sa rcf_ta_trrecv_start
  */
 int 
-rcf_ta_trrecv_stop(const char *ta_name, int csap_id, int *num)
+rcf_ta_trrecv_stop(const char *ta_name, csap_handle_t csap_id, int *num)
 {
     int rc;
 
@@ -2066,8 +2069,8 @@ rcf_ta_trrecv_stop(const char *ta_name, int csap_id, int *num)
 
 /* See description in rcf_api.h */
 int 
-rcf_ta_trrecv_stop_sess(const char *ta_name, int session, int csap_id,
-                        int *num)
+rcf_ta_trrecv_stop_sess(const char *ta_name, int session,
+                        csap_handle_t csap_id, int *num)
 {
     int rc;
 
@@ -2106,7 +2109,7 @@ rcf_ta_trrecv_stop_sess(const char *ta_name, int session, int csap_id,
  * @sa rcf_ta_trrecv_start
  */
 int 
-rcf_ta_trrecv_get(const char *ta_name, int csap_id, int *num)
+rcf_ta_trrecv_get(const char *ta_name, csap_handle_t csap_id, int *num)
 {
     int rc;
 
@@ -2154,7 +2157,7 @@ rcf_ta_trrecv_get(const char *ta_name, int csap_id, int *num)
  * @retval other        error returned by command handler on the TA
  */
 int 
-rcf_ta_trsend_recv(const char *ta_name, int session, int csap_id, 
+rcf_ta_trsend_recv(const char *ta_name, int session, csap_handle_t csap_id,
                    const char *templ, rcf_pkt_handler handler, 
                    void *user_param, unsigned int timeout, int *error)
 {

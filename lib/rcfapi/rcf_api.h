@@ -37,6 +37,7 @@
 
 #include "te_defs.h"
 #include "rcf_common.h"
+#include "tad_common.h"
 
 
 /** 
@@ -415,7 +416,7 @@ extern int rcf_ta_del_file(const char *ta_name, int session,
  *                      a binary attachment; otherwise the string is
  *                      appended to the command
  *
- * @param handle        location for unique CSAP handle
+ * @param csap_id       location for unique CSAP handle
  *
  * @return error code
  *
@@ -431,14 +432,14 @@ extern int rcf_ta_del_file(const char *ta_name, int session,
  */
 extern int rcf_ta_csap_create(const char *ta_name, int session,
                               const char *stack_id, const char *params,
-                              int *handle);
+                              csap_handle_t *csap_id);
 
 /**
  * This function destroys CSAP.
  *
  * @param ta_name       Test Agent name                 
  * @param session       TA session or 0   
- * @param handle        CSAP handle
+ * @param csap_id       CSAP handle
  *
  * @return error code
  *
@@ -453,14 +454,14 @@ extern int rcf_ta_csap_create(const char *ta_name, int session,
  * @sa rcf_ta_csap_create
  */
 extern int rcf_ta_csap_destroy(const char *ta_name, int session,
-                               int handle);
+                               csap_handle_t csap_id);
 
 /**
  * This function is used to obtain CSAP parameter value.
  *
  * @param ta_name       Test Agent name                 
  * @param session       TA session or 0   
- * @param handle        CSAP handle
+ * @param csap_id       CSAP handle
  * @param var           parameter name
  * @param var_len       length of the location buffer
  * @param val           location for variable value
@@ -475,7 +476,8 @@ extern int rcf_ta_csap_destroy(const char *ta_name, int session,
  * @retval ETAREBOOTED  Test Agent is rebooted
  * @retval ETESMALLBUF  the buffer is too small
  */
-extern int rcf_ta_csap_param(const char *ta_name, int session, int handle,
+extern int rcf_ta_csap_param(const char *ta_name, int session,
+                             csap_handle_t csap_id,
                              const char *var, size_t var_len, char *val);
 
 /**
@@ -484,7 +486,7 @@ extern int rcf_ta_csap_param(const char *ta_name, int session, int handle,
  *
  * @param ta_name       Test Agent name                 
  * @param session       TA session or 0   
- * @param handle        CSAP handle
+ * @param csap_id       CSAP handle
  * @param templ         full name of the file with traffic template
  * @param blk_mode      mode of the operation:
  *                      in blocking mode it suspends the caller
@@ -508,7 +510,7 @@ extern int rcf_ta_csap_param(const char *ta_name, int session, int handle,
  * @sa rcf_ta_trsend_stop
  */
 extern int rcf_ta_trsend_start(const char *ta_name, int session, 
-                               int handle, const char *templ,
+                               csap_handle_t csap_id, const char *templ,
                                rcf_call_mode_t blk_mode);
 
 /**
@@ -516,7 +518,7 @@ extern int rcf_ta_trsend_start(const char *ta_name, int session,
  * rcf_ta_trsend_start called in non-blocking mode.
  *
  * @param ta_name       Test Agent name                 
- * @param handle        CSAP handle
+ * @param csap_id       CSAP handle
  * @param num           location where number of sent packets should be
  *                      placed
  *
@@ -533,7 +535,8 @@ extern int rcf_ta_trsend_start(const char *ta_name, int session,
  *
  * @sa rcf_ta_trsend_start
  */
-extern int rcf_ta_trsend_stop(const char *ta_name, int handle, int *num);
+extern int rcf_ta_trsend_stop(const char *ta_name,
+                              csap_handle_t csap_id, int *num);
 
 /** Function - handler of received packets */
 typedef void (*rcf_pkt_handler)(
@@ -548,7 +551,7 @@ typedef void (*rcf_pkt_handler)(
  *
  * @param ta_name      - Test Agent name.
  * @param session      - TA session or 0.
- * @param handle       - CSAP handle.
+ * @param csap_id      - CSAP handle.
  * @param pattern      - Full name of the file with traffic pattern.
  * @param handler      - Address of function to be used to process
  *                       received packets or NULL.
@@ -578,7 +581,7 @@ typedef void (*rcf_pkt_handler)(
  * @sa rcf_ta_trrecv_stop rcf_ta_trrecv_wait
  */
 extern int rcf_ta_trrecv_start(const char *ta_name, int session,
-                               int handle, const char *pattern,
+                               csap_handle_t csap_id, const char *pattern,
                                rcf_pkt_handler handler, void *user_param, 
                                unsigned int timeout, int num);
 
@@ -591,7 +594,7 @@ extern int rcf_ta_trrecv_start(const char *ta_name, int session,
  * This function can only be called after rcf_ta_trrecv_start.
  *
  * @param ta_name   - Test Agent name.
- * @param handle    - CSAP handle.
+ * @param csap_id   - CSAP handle.
  * @param num       - Number of received packets (OUT).
  *
  * @return error code
@@ -608,7 +611,7 @@ extern int rcf_ta_trrecv_start(const char *ta_name, int session,
  * @sa rcf_ta_trrecv_start
  */
 extern int rcf_ta_trrecv_wait(const char *ta_name, 
-                              int handle, int *num);
+                              csap_handle_t csap_id, int *num);
 
 /**
  * This function is used to stop receiving of traffic started by
@@ -617,7 +620,7 @@ extern int rcf_ta_trrecv_wait(const char *ta_name,
  * it is called for all received packets.
  *
  * @param ta_name       Test Agent name                 
- * @param handle        CSAP handle
+ * @param csap_id       CSAP handle
  * @param num           location where number of received packets 
  *                      should be placed
  *
@@ -634,7 +637,8 @@ extern int rcf_ta_trrecv_wait(const char *ta_name,
  *
  * @sa rcf_ta_trrecv_start
  */
-extern int rcf_ta_trrecv_stop(const char *ta_name, int handle, int *num);
+extern int rcf_ta_trrecv_stop(const char *ta_name,
+                              csap_handle_t csap_id, int *num);
 
 /**
  * This function is used to stop receiving of traffic started by
@@ -644,7 +648,7 @@ extern int rcf_ta_trrecv_stop(const char *ta_name, int handle, int *num);
  *
  * @param ta_name       Test Agent name                 
  * @param session       TA session or 0
- * @param handle        CSAP handle
+ * @param csap_id       CSAP handle
  * @param num           location where number of received packets 
  *                      should be placed
  *
@@ -662,7 +666,7 @@ extern int rcf_ta_trrecv_stop(const char *ta_name, int handle, int *num);
  * @sa rcf_ta_trrecv_start
  */
 extern int rcf_ta_trrecv_stop_sess(const char *ta_name, int session,
-                                   int handle, int *num);
+                                   csap_handle_t csap_id, int *num);
 
 /**
  * This function is used to force processing of received packets 
@@ -670,7 +674,7 @@ extern int rcf_ta_trrecv_stop_sess(const char *ta_name, int session,
  * rcf_ta_trrecv_start is used for packets processing).
  *
  * @param ta_name       Test Agent name                 
- * @param handle        CSAP handle
+ * @param csap_id       CSAP handle
  * @param num           location where number of processed packets 
  *                      should be placed
  *
@@ -689,7 +693,8 @@ extern int rcf_ta_trrecv_stop_sess(const char *ta_name, int session,
  *
  * @sa rcf_ta_trrecv_start
  */
-extern int rcf_ta_trrecv_get(const char *ta_name, int handle, int *num);
+extern int rcf_ta_trrecv_get(const char *ta_name,
+                             csap_handle_t csap_id, int *num);
 
 /**
  * This function is used to send exactly one packet via CSAP and receive
@@ -699,7 +704,7 @@ extern int rcf_ta_trrecv_get(const char *ta_name, int handle, int *num);
  *
  * @param ta_name       Test Agent name
  * @param session       TA session or 0
- * @param handle        CSAP handle
+ * @param csap_id       CSAP handle
  * @param templ         Full name of the file with traffic template
  * @param handler       Callback function used in processing of
  *                      received packet or NULL
@@ -725,7 +730,8 @@ extern int rcf_ta_trrecv_get(const char *ta_name, int handle, int *num);
  * @retval ENOMEM       out of memory
  * @retval other        error returned by command handler on the TA
  */
-extern int rcf_ta_trsend_recv(const char *ta_name, int session, int handle, 
+extern int rcf_ta_trsend_recv(const char *ta_name, int session,
+                              csap_handle_t csap_id, 
                               const char *templ, rcf_pkt_handler handler, 
                               void *user_param, unsigned int timeout,
                               int *error);
