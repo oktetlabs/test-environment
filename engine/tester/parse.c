@@ -801,6 +801,8 @@ alloc_and_get_value(xmlNodePtr node, test_var_arg_values *values)
     }
     /* 'ext' is optional */
     p->ext = xmlGetProp(node, CONST_CHAR2XML("ext"));
+    /* 'req' is optional */
+    p->req = xmlGetProp(node, CONST_CHAR2XML("req"));
     
     /* Simple text content is represented as 'text' elements */
     if (node->children != NULL)

@@ -80,6 +80,7 @@ test_param_clone(const test_param *p)
         EXIT("ENOMEM");
         return NULL;
     }
+    pc->req = p->req;
     pc->clone = p->clone;
 
     return pc;

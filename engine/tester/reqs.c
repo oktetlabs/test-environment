@@ -183,7 +183,7 @@ req_get(const test_requirement *r, const test_params *params)
     for (p = params->tqh_first; p != NULL; p = p->links.tqe_next)
     {
         if (strcmp(p->name, r->ref) == 0)
-            return p->value;
+            return (p->req) ? : p->value;
     }
     return "";
 }

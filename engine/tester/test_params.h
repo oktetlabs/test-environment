@@ -44,6 +44,7 @@ typedef struct test_param {
 
     char       *name;   /**< Parameter name */
     char       *value;  /**< Current parameter value */
+    const char *req;    /**< Requirement ID or NULL */
     te_bool     clone;  /**< Clone this entry or not */
 } test_param;
 

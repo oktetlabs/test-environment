@@ -125,6 +125,7 @@ typedef struct test_var_arg_value {
     char                       *id;
     struct test_var_arg_value  *ref;
     char                       *ext;
+    char                       *req;
     char                       *value;
 } test_var_arg_value;
 

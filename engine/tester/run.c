@@ -145,12 +145,14 @@ tester_ctx_clone(const tester_ctx *ctx)
  *
  * @param name      Parameter name
  * @param value     Parameter value
+ * @param req       Associated requirement
  * @param clone     Should the parameter be cloned?
  *
  * @return Poiner to allocated test parameter or NULL.
  */
 static test_param *
-test_param_new(const char *name, const char *value, te_bool clone)
+test_param_new(const char *name, const char *value, const char *req,
+               te_bool clone)
 {
     test_param *p;
 
@@ -178,6 +180,7 @@ test_param_new(const char *name, const char *value, te_bool clone)
         EXIT("ENOMEM");
         return NULL;
     }
+    p->req = req;
     p->clone = clone;
     VERB("New parameter: %s=%s", p->name, p->value);
 
@@ -403,7 +406,8 @@ vars_iterations(test_params *params, test_session_vars *vars,
                     s = get_value(value, &i->base->params);
                     if (s == NULL)
                         return EINVAL;
-                    p = test_param_new(var->name, s, var->handdown);
+                    p = test_param_new(var->name, s, value->req,
+                                       var->handdown);
                     if (p == NULL)
                     {
                         ERROR("Failed to create new test parameter");
@@ -445,7 +449,7 @@ vars_iterations(test_params *params, test_session_vars *vars,
                 s = get_refvar_value(var, params);
                 if (s == NULL)
                     return EINVAL;
-                p = test_param_new(var->name, s, var->handdown);
+                p = test_param_new(var->name, s, NULL, var->handdown);
                 if (p == NULL)
                 {
                     ERROR("Failed to create new test parameter");
@@ -573,7 +577,7 @@ args_iterations(test_param_iterations *base_iters, test_args *args,
                                   &i->base->params);
                     if (s == NULL)
                         return EINVAL;
-                    p = test_param_new(arg->name, s, TRUE);
+                    p = test_param_new(arg->name, s, v->req, TRUE);
                     if (p == NULL)
                     {
                         ERROR("Failed to create new test parameter");
@@ -610,7 +614,8 @@ args_iterations(test_param_iterations *base_iters, test_args *args,
                                 return EINVAL;
                             more_in_list = (more_in_list || more_in_arg);
                             /* Create parameter and add it in iteration */
-                            p = test_param_new(arg2->name, s, TRUE);
+                            /* FIXME: Requirement here */
+                            p = test_param_new(arg2->name, s, NULL, TRUE);
                             if (p == NULL)
                             {
                                 ERROR("Failed to create new test parameter");
@@ -635,7 +640,7 @@ args_iterations(test_param_iterations *base_iters, test_args *args,
                 s = get_refarg_value(arg, &i->base->params);
                 if (s == NULL)
                     return EINVAL;
-                p = test_param_new(arg->name, s, TRUE);
+                p = test_param_new(arg->name, s, NULL, TRUE);
                 if (p == NULL)
                 {
                     ERROR("Failed to create new test parameter");
