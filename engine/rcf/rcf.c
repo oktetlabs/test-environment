@@ -166,6 +166,7 @@ typedef struct ta {
 
     void               *dlhandle;           /**< Dynamic library handle */
     te_bool             dead;               /**< TA is dead */
+    te_bool             rebootable;         /**< TA is rebootable */
 
     /** @name Methods */
     rcf_talib_start     start;              /**< Start TA */
@@ -431,6 +432,27 @@ parse_config(char *filename)
         else
             agent->conf = strdup("");
 
+        if ((attr = xmlGetProp(cur, (const xmlChar *)"rebootable")) != NULL)
+        {
+            if (strcmp(attr, "yes") == 0)
+            {
+                agent->rebootable = TRUE;
+            }
+            else
+            {
+                agent->rebootable = FALSE;
+            }
+            xmlFree(attr);
+        }
+        else
+        {
+            /* 
+             * When this attribute is missing TA is by default 
+             * not rebootable. 
+             */
+            agent->rebootable = FALSE;
+        }
+
         agent->sent.prev = agent->sent.next = &(agent->sent);
         agent->pending.prev = agent->pending.next = &(agent->pending);
 
@@ -586,7 +608,8 @@ init_agent(ta *agent)
     {
         ERROR("FATAL ERROR: Cannot connect to TA '%s' "
                          "error %d", agent->name, rc);
-        (agent->reboot)(agent->handle, NULL);
+        if (agent->rebootable)                         
+            (agent->reboot)(agent->handle, NULL);
         return 1;
     }
     VERB("Connected with TA %s", agent->name);
@@ -612,7 +635,12 @@ static int
 force_reboot(ta *agent, usrreq *req)
 {
     int rc;
-
+    
+    if (agent->rebootable == FALSE)
+    {
+        ERROR("fatal error: TA %s is not rebootable.\n", agent->name);
+        return TE_RC(TE_RCF, EPERM);
+    }
     reboot_num--;
     agent->reboot_timestamp = 0;
     rc = (agent->reboot)(agent->handle,
@@ -1522,6 +1550,12 @@ process_user_request(usrreq *req)
             return 0;
 
         case RCFOP_REBOOT:
+            if (agent->rebootable == FALSE)
+            {
+                msg->error = TE_RC(TE_RCF, EPERM);
+                answer_user_request(req);
+                return 0;
+            }
             if (agent->reboot_timestamp > 0)
             {
                 msg->error = TE_RC(TE_RCF, EINPROGRESS);
@@ -1645,7 +1679,7 @@ rcf_shutdown()
             ERROR("Soft shutdown of TA '%s' failed",
                              agent->name);
 
-        if ((agent->reboot)(agent->handle, NULL) != 0)
+        if (!agent->rebootable || (agent->reboot)(agent->handle, NULL) != 0)
             ERROR("Cannot reboot TA '%s'", agent->name);
     }
 }
