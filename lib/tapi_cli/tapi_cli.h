@@ -1,0 +1,139 @@
+/** @file
+ * @brief Proteos, TAPI CLI.
+ *
+ * Declarations of API for TAPI CLI.
+ *
+ *
+ * Copyright (C) 2004 Test Environment authors (see file AUTHORS in the
+ * root directory of the distribution).
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation; either version 2.1 of
+ * the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+ * MA  02111-1307  USA
+ *
+ *
+ * @author Alexander Kukuta <Alexander.Kukuta@oktetlabs.ru>
+ *
+ * $Id: $
+ */
+
+#ifndef __TE_LIB_TAPI_DHCP_H__
+#define __TE_LIB_TAPI_DHCP_H__
+
+#include <stdio.h>
+#if HAVE_ASSERT_H
+#include <assert.h>
+#endif
+
+#include "te_stdint.h"
+#include "te_defs.h"
+#include "tad_common.h"
+#include "asn_usr.h"
+#include "ndn_cli.h"
+
+/** CLI CSAP type definition */
+typdefe enum {
+    TAPI_CLI_CSAP_TYPE_SERIAL = 0, /**< Serial connection */
+    TAPI_CLI_CSAP_TYPE_TELNET = 1, /**< Telnet connection */
+    TAPI_CLI_CSAP_TYPE_SSH    = 2, /**< SSH connection */
+} tapi_cli_csap_type;
+
+/* CLI CSAP type names */
+const static char *tapi_cli_csap_type_name[] = {"serial", "telnet", "ssh"};
+
+/**
+ * Create common CLI CSAP on local device (using millicom).
+ *
+ * @param ta_name           Test Agent name
+ * @param sid               RCF session
+ * @param device            Local device name
+ * @param command_prompt    Expected command prompt (when commands may be sent)
+ * @param login_prompt      Expected login prompt (when login name may be sent)
+ * @param login_name        Login name to be sent if login prompt is detected
+ * @param password_prompt   Expected password prompt (when password may be sent)
+ * @param password          Password to be sent if password prompt is detected
+ * @param cli_csap          Identifier of created CSAP (OUT)
+ *
+ * @return 0 on success, otherwise standard or common TE error code.
+ */
+extern int tapi_cli_csap_local_create(const char *ta_name, int sid,
+                                      const char *device,
+                                      const char *command_prompt,
+                                      const char *login_prompt,
+                                      const char *login_name,
+                                      const char *password_prompt,
+                                      const char *password,
+                                      csap_handle_t *cli_csap);
+
+/**
+ * Create common CLI CSAP on remote connection (telnet or ssh).
+ *
+ * @param ta_name       Test Agent name
+ * @param sid           RCF session
+ * @param type          Remote connection type (telnet or ssh)
+ * @param host          Remote host name
+ * @param port          Remote port number
+ * @param command_prompt    Expected command prompt (when commands may be sent)
+ * @param login_prompt      Expected login prompt (when login name may be sent)
+ * @param login_name        Login name to be sent if login prompt is detected
+ * @param password_prompt   Expected password prompt (when password may be sent)
+ * @param password          Password to be sent if password prompt is detected
+ * @param cli_csap      Identifier of created CSAP (OUT)
+ *
+ * @return 0 on success, otherwise standard or common TE error code.
+ */
+extern int tapi_cli_csap_remote_create(const char *ta_name, int sid,
+                                       int type, const char *host, int port,
+                                       const char *command_prompt,
+                                       const char *login_prompt,
+                                       const char *login_name,
+                                       const char *password_prompt,
+                                       const char *password,
+                                       csap_handle_t *cli_csap);
+
+
+/**
+ * Sends CLI command according specified template from the CSAP.
+ * This function is blocking, returns after all commands are sent and
+ * CSAP operation finished.
+ *
+ * @param ta_name       Test Agent name
+ * @param sid           RCF session identifier
+ * @param cli_csap      CSAP handle
+ * @param command       Command string to be sent to CLI session
+ *
+ * @return zero on success, otherwise standard or common TE error code.
+ */
+extern int tapi_cli_send(const char *ta_name, int sid,
+                         csap_handle_t cli_csap,
+                         const char *command);
+
+/**
+ * Sends CLI command according specified template from the CSAP.
+ * This function is blocking, returns after all commands are sent and
+ * CSAP operation finished.
+ *
+ * @param ta_name       Test Agent name
+ * @param sid           RCF session identifier
+ * @param cli_csap      CSAP handle
+ * @param command       Command string to be sent to CLI session
+ *
+ * @return zero on success, otherwise standard or common TE error code.
+ */
+extern int tapi_cli_send_recv(const char *ta_name, int sid,
+                              csap_handle_t cli_csap,
+                              const char *command,
+                              char *buf, ssize_t size);
+
+#endif /* __TE_LIB_TAPI_DHCP_H__ */
