@@ -169,28 +169,14 @@ AM_CONDITIONAL(CFG_LINUX_DAEMONS_ISC_DHCP_SERVER,
     [expr "$with_cfg_linux_daemons" : ".*dhcp" >/dev/null])
 AM_CONDITIONAL(CFG_RCF_RPC, test -n "$with_rcf_rpc")
 
-# #
-# # Check for NET-SNMP library for possible usage by TAD SNMP; 
-# # explore correct link flags if it is found installed. 
-# #
-# AC_PATH_PROG(NET_SNMP_CONFIG, net-snmp-config, no) 
-# if test "$NET_SNMP_CONFIG" != "no" ; then
-#     NET_SNMP_LIBS=`$NET_SNMP_CONFIG --libs`
-# fi
-# AC_SUBST([NET_SNMP_LIBS])
-# 
-# AM_CONDITIONAL(HAS_NET_SNMP, test "$NET_SNMP_CONFIG" != "no")
-
-# # Check for expect library
-# AC_CHECK_LIB(expect, exp_expectv)
 
 dnl #######################################################################
 dnl Newer BSD systems don't have a compatible rtentry - use ortentry
 dnl #######################################################################
 AC_CHECK_TYPES([struct rtentry, struct ortentry], [], [],
-              [#include <sys/types.h>
-               #include <sys/socket.h>
-               #include <net/route.h>])
+               [#include <sys/types.h>
+                #include <sys/socket.h>
+                #include <net/route.h>])
 
 dnl
 dnl Check for 'sa_len'-like members in 'struct sockaddr'-like structures.
