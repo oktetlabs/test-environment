@@ -37,7 +37,6 @@
 extern "C" {
 #endif
 
-
 /**
  * Enable/disable IPv4 forwarding on the Test Agent.
  *
@@ -61,6 +60,18 @@ extern int tapi_cfg_base_ipv4_fw(const char *ta, te_bool *enabled);
  */
 extern int tapi_cfg_base_if_get_mac(const char *oid, uint8_t *mac);
 
+/**
+ * Get link address of TA interface.
+ *
+ * @param ta        Test Agent
+ * @param dev       interface name
+ * @param link_addr Location for link address
+ *
+ * @return Status code
+ */ 
+int
+tapi_cfg_base_if_get_link_addr(const char *ta, const char *dev,
+                               struct sockaddr *link_addr);
 /**
  * Get MTU (layer 2 payload) of the Test Agent interface.
  *

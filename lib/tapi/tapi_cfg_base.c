@@ -104,6 +104,38 @@ tapi_cfg_base_ipv4_fw(const char *ta, te_bool *enabled)
 
 /* See description in tapi_cfg_base.h */
 int
+tapi_cfg_base_if_get_link_addr(const char *ta, const char *dev,
+                               struct sockaddr *link_addr)
+{
+    char             inst_name[CFG_OID_MAX];
+    cfg_handle       handle;
+    cfg_val_type     type = CVT_ADDRESS;
+    struct sockaddr *addr = NULL;
+    int              rc;
+
+    snprintf(inst_name, sizeof(inst_name), 
+             "/agent:%s/interface:%s/link_addr:",
+             ta, dev);
+    rc = cfg_find_str(inst_name, &handle);
+    if (rc != 0)
+    {
+        ERROR("Failed to find MAC address OID handle for %s", inst_name);
+        return rc;
+    }
+
+    rc = cfg_get_instance(handle, &type, &addr);
+    if (rc != 0)
+    {
+        ERROR("Failed to get MAC address using OID %s", inst_name);
+        return rc;
+    }
+    memcpy(link_addr, addr, sizeof(struct sockaddr));
+    free(addr);
+    return 0;
+}
+
+/* See description in tapi_cfg_base.h */
+int
 tapi_cfg_base_if_get_mac(const char *oid, uint8_t *mac)
 {
     int                 rc;
