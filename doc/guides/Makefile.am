@@ -25,7 +25,9 @@
 #
 # Author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
 
-EXTRA_DIST = OKT-GL-0000111-TE_EL.sxw \
-             OKT-UG-0000043-TE_LS_DATA.doc \
-             OKT-UG-0000053-TE_RG.sxw \
-             OKT-UG-0000121-TE_NDN.sxw
+EXTRA_DIST = OKTL-UG-0000129-TE.sxw \
+             OKTL-UG-0000130-TE_LS_DATA.doc \
+             OKTL-UG-0000131-TE_RG.sxw \
+             OKTL-GL-0000132-TE_CS.sxw \
+             OKTL-UG-0000133-TE_NDN.sxw \
+             OKTL-GL-0000135-TE_EL.sxw
