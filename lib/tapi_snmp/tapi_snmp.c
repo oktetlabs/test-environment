@@ -86,7 +86,7 @@ int         log_info_cur_len;
 
 #define TAPI_SNMP_LOG_FLUSH() \
     do {                          \
-        RING("%s", log_info_buf); \
+        VERB("%s", log_info_buf); \
         log_info_buf[0] = '\0';   \
     } while (0)
 
@@ -844,9 +844,10 @@ tapi_snmp_msg_var_bind(FILE *f, const tapi_snmp_varbind_t *var_bind)
                 break;
 
             case TAPI_SNMP_IPADDRESS:
-                fprintf(f, "application-wide:ipAddress-value:");
-                for(i = 0; i < var_bind->v_len; i++)
-                    fprintf(f, "%02x ", var_bind->oct_string[i]);
+                fprintf(f, "application-wide:ipAddress-value:'");
+                for(i = 0; i < 4; i++)
+                    fprintf(f, "%02x ",
+                            ((uint8_t *)&(var_bind->integer))[i]);
                 fprintf(f, "'H");
                 break;
 
@@ -934,7 +935,6 @@ tapi_snmp_operation(const char *ta, int sid, int csap_id,
         {
             case TAPI_SNMP_OBJECT_ID:
             case TAPI_SNMP_OCTET_STR:
-            case TAPI_SNMP_IPADDRESS:
             {
                 unsigned int i;
 
@@ -1814,7 +1814,7 @@ tapi_snmp_vb_to_mem (const tapi_snmp_varbind_t *vb)
                 return NULL;
             {
                 uint8_t *ret_val = calloc (1,  4);
-                memcpy (ret_val, &vb->oct_string, 4);
+                memcpy (ret_val, &vb->integer, 4);
                 return (void *)ret_val;
             }
             break;
@@ -2839,7 +2839,7 @@ tapi_snmp_trap_recv_start(const char *ta_name, int sid,
     i_data->user_callback = cb;
     i_data->user_data = cb_data;
 
-    strcpy(tmp_name, "/tmp/te_eth_trrecv.XXXXXX");
+    strcpy(tmp_name, "/tmp/te_snmp_trap_trrecv.XXXXXX");
     mkstemp(tmp_name);
     rc = asn_save_to_file(pattern, tmp_name);
     if (rc)
