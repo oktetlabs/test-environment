@@ -57,14 +57,14 @@
 
 #if 0
 /** Tester run path log user */
-#define TESTER_FLOW             "Flow"
+#define TESTER_CONTROL             "Control"
 /** Prefix of all messages from Tester:Flow user */
-#define TESTER_FLOW_MSG_PREFIX  "%T %T "
+#define TESTER_CONTROL_MSG_PREFIX  "%T %T "
 #else
 /** Tester run path log user */
-#define TESTER_FLOW             "FlowNoRGT"
+#define TESTER_CONTROL             "NoControl"
 /** Prefix of all messages from Tester:Flow user */
-#define TESTER_FLOW_MSG_PREFIX  "$T%d $T%d "
+#define TESTER_CONTROL_MSG_PREFIX  "$T%d $T%d "
 #endif
 
 /** Size of the Tester shell command buffer */
@@ -623,7 +623,7 @@ log_test_start(const run_item *ri, test_id parent, test_id test,
     switch (ri->type)
     {
         case RUN_ITEM_SCRIPT:
-            LOG_RING(TESTER_FLOW, TESTER_FLOW_MSG_PREFIX
+            LOG_RING(TESTER_CONTROL, TESTER_CONTROL_MSG_PREFIX
                      "TEST %s \"%s\" ARGs%s",
                      parent, test, ri->u.script.name,
                      PRINT_STRING(ri->u.script.descr),
@@ -631,14 +631,14 @@ log_test_start(const run_item *ri, test_id parent, test_id test,
             break;
 
         case RUN_ITEM_SESSION:
-            LOG_RING(TESTER_FLOW, TESTER_FLOW_MSG_PREFIX
+            LOG_RING(TESTER_CONTROL, TESTER_CONTROL_MSG_PREFIX
                      "SESSION ARGs%s",
                      parent, test, PRINT_STRING(params_str));
             break;
 
         case RUN_ITEM_PACKAGE:
             authors = persons_info_to_string(&ri->u.package->authors);
-            LOG_RING(TESTER_FLOW, TESTER_FLOW_MSG_PREFIX
+            LOG_RING(TESTER_CONTROL, TESTER_CONTROL_MSG_PREFIX
                      "PACKAGE %s \"%s\"%s%s ARGs%s",
                      parent, test, ri->u.package->name,
                      PRINT_STRING(ri->u.package->descr),
@@ -665,7 +665,7 @@ log_test_result(test_id parent, test_id test, int result)
 {
     if (result == ETESTPASS)
     {
-        LOG_RING(TESTER_FLOW, TESTER_FLOW_MSG_PREFIX "PASSED",
+        LOG_RING(TESTER_CONTROL, TESTER_CONTROL_MSG_PREFIX "PASSED",
                  parent, test);
     }
     else
@@ -673,22 +673,22 @@ log_test_result(test_id parent, test_id test, int result)
         switch (result)
         {
             case ETESTKILL:
-                LOG_RING(TESTER_FLOW, TESTER_FLOW_MSG_PREFIX "KILLED",
+                LOG_RING(TESTER_CONTROL, TESTER_CONTROL_MSG_PREFIX "KILLED",
                          parent, test);
                 break;
 
             case ETESTCORE:
-                LOG_RING(TESTER_FLOW, TESTER_FLOW_MSG_PREFIX "DUMPED",
+                LOG_RING(TESTER_CONTROL, TESTER_CONTROL_MSG_PREFIX "DUMPED",
                          parent, test);
                 break;
 
             case ETESTSKIP:
-                LOG_RING(TESTER_FLOW, TESTER_FLOW_MSG_PREFIX "SKIPPED",
+                LOG_RING(TESTER_CONTROL, TESTER_CONTROL_MSG_PREFIX "SKIPPED",
                          parent, test);
                 break;
 
             case ETESTFAKE:
-                LOG_RING(TESTER_FLOW, TESTER_FLOW_MSG_PREFIX "FAKED",
+                LOG_RING(TESTER_CONTROL, TESTER_CONTROL_MSG_PREFIX "FAKED",
                          parent, test);
                 break;
 
@@ -722,7 +722,8 @@ log_test_result(test_id parent, test_id test, int result)
                     default:
                         reason = "Unknown test result";
                 }
-                LOG_RING(TESTER_FLOW, TESTER_FLOW_MSG_PREFIX "FAILED %s",
+                LOG_RING(TESTER_CONTROL,
+                         TESTER_CONTROL_MSG_PREFIX "FAILED %s",
                          parent, test, reason);
                 break;
             }
