@@ -176,11 +176,11 @@ typedef struct tarpc_int_retval_out tarpc_setlibname_out;
 struct tarpc_socket_in {
     struct tarpc_in_arg common;
     
-    int domain; /**< TA-independent domain */
-    int type;   /**< TA-independent socket type */
-    int proto;  /**< TA-independent socket protocol */
-    int info;   /**< Protocol Info (for winsock2 only) */
-    int flags;  /**< If 1, the socket is overlapped (for winsock2 only) */
+    int domain;  /**< TA-independent domain */
+    int type;    /**< TA-independent socket type */
+    int proto;   /**< TA-independent socket protocol */
+    char info<>; /**< Protocol Info (for winsock2 only) */
+    int flags;   /**< If 1, the socket is overlapped (for winsock2 only) */
 };
 
 struct tarpc_socket_out {

@@ -413,7 +413,7 @@ rpc_socket(rcf_rpc_server *handle,
 int 
 rpc_wsa_socket(rcf_rpc_server *handle,
                rpc_socket_domain domain, rpc_socket_type type,
-               rpc_socket_proto protocol, unsigned int protocol_info,
+               rpc_socket_proto protocol, uint8_t *info, int info_len, 
                te_bool overlapped)
 {
     tarpc_socket_in  in;
@@ -432,7 +432,8 @@ rpc_wsa_socket(rcf_rpc_server *handle,
     in.domain = domain;
     in.type = type;
     in.proto = protocol;
-    in.info = protocol_info;
+    in.info.info_val = info;
+    in.info.info_len = info_len;
     in.flags = overlapped;
 
     rcf_rpc_call(handle, _socket, &in, (xdrproc_t)xdr_tarpc_socket_in,

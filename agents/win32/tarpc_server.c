@@ -489,7 +489,7 @@ TARPC_FUNC(socket, {},
     MAKE_CALL(out->fd = WSASocket(domain_rpc2h(in->domain),
                                   socktype_rpc2h(in->type),
                                   proto_rpc2h(in->proto), 
-                                  (LPWSAPROTOCOL_INFO)(in->info), 0,  
+                                  (LPWSAPROTOCOL_INFO)(in->info.info_val), 0,  
                                   in->flags ? WSA_FLAG_OVERLAPPED : 0));
 }
 )
@@ -2588,7 +2588,7 @@ TARPC_FUNC(wsa_recv,
     if (out->vector.vector_len > RCF_RPC_MAX_IOVEC)
     {
         ERROR("Too many buffers are provided"); 
-        out->common._errno = TE_RC(TE_TA_LINUX, ENOMEM);
+        out->common._errno = TE_RC(TE_TA_WIN32, ENOMEM);
         return TRUE;
     }
     COPY_ARG(vector);
