@@ -4,18 +4,17 @@ TE_TOOLS([rgt trc])
 TE_PLATFORM([], [], [], [],
             [ipc bsapi loggerten rcfapi conf_oid confapi tapi \
              comm_net_agent comm_net_engine loggerta rcfpch rcfunix \
-             asn ndn tad forwarder rcfrpc tapi_rpcsock tapi_tad \
+             asn ndn tad rcfrpc tapi_rpcsock tapi_tad \
              tapi_eth tapi_arp tapi_ipstack tapi_dhcp tapi_cli])
 
 TE_LIB_PARMS([tad], [], [],
              [--with-eth --with-ipstack --with-dhcp --with-cli], [])
-TE_LIB_PARMS([forwarder], [], [${TAD_FORW_DIR}], [], [])
 
 TE_TA_TYPE([linux], [], [],
            [--with-rcf-rpc \
             --with-cfg-linux-daemons='ftp Xvfb smtp telnet rsh vncserver dhcp dns'], 
            [], [], 
-           [forwarder ndn asn comm_net_agent])
+           [ndn asn comm_net_agent])
 
 TE_PLATFORM([i686-pc-cygwin],[],
             [-I${CYGWIN_HOME}/include -I${CYGWIN_HOME}/include/ws32api \
