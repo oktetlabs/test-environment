@@ -2468,7 +2468,8 @@ rpc_wsa_connect(rcf_rpc_server *rpcs, int s, struct sockaddr *addr,
 }
 
 /**
- * @param buf   A valid pointer in the TA virtual address space.
+ * @param buf   A valid pointer in the TA virtual address space
+ *              (can be obtained by a call to rpc_alloc_buf()).
  */
 rpc_handle
 rpc_wsa_async_get_host_by_addr(rcf_rpc_server *rpcs, rpc_hwnd hwnd,
