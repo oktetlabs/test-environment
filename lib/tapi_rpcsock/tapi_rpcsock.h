@@ -430,6 +430,21 @@ extern rpc_overlapped rpc_create_overlapped(rcf_rpc_server *handle,
 extern void rpc_delete_overlapped(rcf_rpc_server *handle, 
                                   rpc_overlapped overlapped);
 
+/* WSASend() */
+extern int rpc_wsa_send(rcf_rpc_server *handle,
+                       int s, const struct rpc_iovec *iov,
+                       size_t iovcnt, rpc_send_recv_flags flags, 
+                       int *bytes_sent, rpc_overlapped overlapped, 
+                       te_bool callback);
+
+/* WSARecv() */
+extern int rpc_wsa_recv(rcf_rpc_server *handle,
+                        int s, const struct rpc_iovec *iov,
+                        size_t iovcnt, size_t riovcnt,
+                        rpc_send_recv_flags *flags, 
+                        int *bytes_received, rpc_overlapped overlapped, 
+                        te_bool callback);
+
 /**
  * Get result of completion callback (if called).
  *

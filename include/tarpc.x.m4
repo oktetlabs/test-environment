@@ -1706,6 +1706,48 @@ struct tarpc_socket_to_file_in {
 
 typedef struct tarpc_ssize_t_retval_out tarpc_socket_to_file_out;
 
+/* WSASend */
+struct tarpc_wsa_send_in {
+    struct tarpc_in_arg common;
+
+    int                 s;              /**< Socket */
+    struct tarpc_iovec  vector<>;       /**< Buffers */
+    int                 count;          /**< Number of buffers */
+    int                 bytes_sent<>;   /**< Location for sent bytes num */
+    int                 flags;          /**< Flags */
+    tarpc_overlapped    overlapped;     /**< WSAOVERLAPPED structure pointer */
+    int                 callback;       /**< If 1, completion callback should be 
+                                             specified */
+};
+
+struct tarpc_wsa_send_out {
+    struct tarpc_out_arg common;
+    tarpc_ssize_t        retval;
+    int                  bytes_sent<>;
+};
+
+/* WSARecv */
+struct tarpc_wsa_recv_in {
+    struct tarpc_in_arg common;
+
+    int                 s;              /**< Socket */
+    struct tarpc_iovec  vector<>;       /**< Buffers */
+    int                 count;          /**< Number of buffers */
+    int                 bytes_received<>;   
+                                        /**< Location for received bytes num */
+    int                 flags<>;        /**< Flags */
+    tarpc_overlapped    overlapped;     /**< WSAOVERLAPPED structure pointer */
+    int                 callback;       /**< If 1, completion callback should be 
+                                             specified */
+};
+
+struct tarpc_wsa_recv_out {
+    struct tarpc_out_arg common;
+    tarpc_ssize_t        retval;
+    struct tarpc_iovec   vector<>;       
+    int                  bytes_received<>;   
+    int                  flags<>;        
+};
 
 
 program tarpc
@@ -1834,6 +1876,8 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
 
         RPC_DEF(create_overlapped)
         RPC_DEF(delete_overlapped)
+        RPC_DEF(wsa_send)
+        RPC_DEF(wsa_recv)
         
         RPC_DEF(create_window)
         RPC_DEF(destroy_window)

@@ -2539,4 +2539,91 @@ TARPC_FUNC(completion_callback, {},
     pthread_mutex_unlock(&completion_lock);
 }
 )
-                    
+
+/*------------------------------ WSASend() ------------------------------*/
+TARPC_FUNC(wsa_send, 
+{
+    if (in->vector.vector_len > RCF_RPC_MAX_IOVEC)
+    {
+        ERROR("Too many buffers are provided"); 
+        out->common._errno = TE_RC(TE_TA_WIN32, ENOMEM);
+        return TRUE;
+    }
+    COPY_ARG(bytes_sent);
+},
+{
+    WSABUF iovec_arr[RCF_RPC_MAX_IOVEC];
+    
+    unsigned int i;
+
+    memset(iovec_arr, 0, sizeof(iovec_arr));
+    for (i = 0; i < in->vector.vector_len; i++)
+    {
+        INIT_CHECKED_ARG(in->vector.vector_val[i].iov_base.iov_base_val,
+                         in->vector.vector_val[i].iov_base.iov_base_len, 0);
+        iovec_arr[i].buf = 
+            in->vector.vector_val[i].iov_base.iov_base_val;
+        iovec_arr[i].len = in->vector.vector_val[i].iov_len;
+    }    
+    INIT_CHECKED_ARG((char *)iovec_arr, sizeof(iovec_arr), 0);
+
+    MAKE_CALL(out->retval = 
+                  WSASend(in->s, iovec_arr, in->count,
+                          out->bytes_sent.bytes_sent_len == 0 ? NULL :
+                          (LPDWORD)(out->bytes_sent.bytes_sent_val),
+                          send_recv_flags_rpc2h(in->flags),
+                          (LPWSAOVERLAPPED)(in->overlapped), 
+                          in->callback ? 
+                          (LPWSAOVERLAPPED_COMPLETION_ROUTINE)
+                              completion_callback : NULL));
+}
+)
+
+/*------------------------------ WSARecv() ------------------------------*/
+TARPC_FUNC(wsa_recv, 
+{
+    if (out->vector.vector_len > RCF_RPC_MAX_IOVEC)
+    {
+        ERROR("Too many buffers are provided"); 
+        out->common._errno = TE_RC(TE_TA_LINUX, ENOMEM);
+        return TRUE;
+    }
+    COPY_ARG(vector);
+    COPY_ARG(bytes_received);
+    COPY_ARG(flags);
+},
+{
+    WSABUF iovec_arr[RCF_RPC_MAX_IOVEC];
+    
+    unsigned int i;
+
+    memset(iovec_arr, 0, sizeof(iovec_arr));
+    for (i = 0; i < out->vector.vector_len; i++)
+    {
+        INIT_CHECKED_ARG(out->vector.vector_val[i].iov_base.iov_base_val,
+                         out->vector.vector_val[i].iov_base.iov_base_len,
+                         out->vector.vector_val[i].iov_len);
+        iovec_arr[i].buf = out->vector.vector_val[i].iov_base.iov_base_val;
+        iovec_arr[i].len = out->vector.vector_val[i].iov_len;
+    }    
+    INIT_CHECKED_ARG((char *)iovec_arr, sizeof(iovec_arr), 0);
+    if (out->flags.flags_len > 0)
+        out->flags.flags_val[0] = 
+            send_recv_flags_rpc2h(out->flags.flags_val[0]);
+
+    MAKE_CALL(out->retval = 
+                  WSARecv(in->s, iovec_arr, in->count,
+                          out->bytes_received.bytes_received_len == 0 ? NULL :
+                          (LPDWORD)(out->bytes_received.bytes_received_val),
+                          out->flags.flags_len > 0 ? 
+                          (LPDWORD)(out->flags.flags_val) : NULL,
+                          (LPWSAOVERLAPPED)(in->overlapped), 
+                          in->callback ? 
+                          (LPWSAOVERLAPPED_COMPLETION_ROUTINE)
+                              completion_callback : NULL));
+
+    if (out->flags.flags_len > 0)
+        out->flags.flags_val[0] = 
+            send_recv_flags_h2rpc(out->flags.flags_val[0]);
+}
+)

@@ -603,12 +603,13 @@ rpc_connect(rcf_rpc_server *handle,
     RETVAL_RC(connect);
 }         
 
-extern int rpc_connect_ex(rcf_rpc_server *handle,
-                          int s, const struct sockaddr *addr,
-                          socklen_t addrlen,
-                          void *buf, ssize_t len_buf,
-                          ssize_t *bytes_sent,
-                          rpc_overlapped overlapped)
+int 
+rpc_connect_ex(rcf_rpc_server *handle,
+               int s, const struct sockaddr *addr,
+               socklen_t addrlen,
+               void *buf, ssize_t len_buf,
+               ssize_t *bytes_sent,
+               rpc_overlapped overlapped)
 {
     rcf_rpc_op        op;
     tarpc_connect_ex_in  in;
@@ -1014,11 +1015,12 @@ rpc_accept_ex(rcf_rpc_server *handle,
     RETVAL_VAL(out.retval, accept_ex);
 }             
 
-extern int rpc_transmit_file(rcf_rpc_server *handle, int s, char *file,
-                             ssize_t len, ssize_t len_per_send, 
-                             rpc_overlapped overlapped,
-                             void *head, ssize_t head_len,
-                             void *tail, ssize_t tail_len, ssize_t flags)
+int 
+rpc_transmit_file(rcf_rpc_server *handle, int s, char *file,
+                  ssize_t len, ssize_t len_per_send, 
+                  rpc_overlapped overlapped,
+                  void *head, ssize_t head_len,
+                  void *tail, ssize_t tail_len, ssize_t flags)
 {
     rcf_rpc_op        op;
     tarpc_transmit_file_in  in;
@@ -5384,3 +5386,164 @@ rpc_peek_message(rcf_rpc_server *handle,
     RETVAL_VAL(out.retval, wsa_async_select);
 }
           
+int 
+rpc_wsa_send(rcf_rpc_server *handle,
+             int s, const struct rpc_iovec *iov,
+             size_t iovcnt, rpc_send_recv_flags flags, 
+             int *bytes_sent, rpc_overlapped overlapped, 
+             te_bool callback)
+{
+    rcf_rpc_op       op;
+    tarpc_wsa_send_in  in;
+    tarpc_wsa_send_out out;
+
+    struct tarpc_iovec iovec_arr[RCF_RPC_MAX_IOVEC];
+    
+    size_t i;
+    
+    if (handle == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        return -1;
+    }
+
+    op = handle->op;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+    memset(iovec_arr, 0, sizeof(iovec_arr));
+    
+    if (iovcnt > RCF_RPC_MAX_IOVEC)
+    {
+        handle->_errno = TE_RC(TE_RCF, ENOMEM);
+        return -1;
+    }
+
+    for (i = 0; i < iovcnt && iov != NULL; i++)
+    {
+        iovec_arr[i].iov_base.iov_base_val = iov[i].iov_base;
+        iovec_arr[i].iov_base.iov_base_len = iov[i].iov_rlen;
+        iovec_arr[i].iov_len = iov[i].iov_len;
+    }
+    
+    if (iov != NULL)
+    {
+        in.vector.vector_val = iovec_arr;
+        in.vector.vector_len = iovcnt;
+    }
+    
+    in.s = s;
+    in.count = iovcnt;
+    in.overlapped = (tarpc_overlapped)overlapped;
+    in.callback = callback;
+    if (bytes_sent != NULL)
+    {
+        in.bytes_sent.bytes_sent_len = 1;
+        in.bytes_sent.bytes_sent_val = bytes_sent;
+    }
+    in.flags = flags;
+    
+    rcf_rpc_call(handle, _wsa_send, &in, (xdrproc_t)xdr_tarpc_wsa_send_in,
+                 &out, (xdrproc_t)xdr_tarpc_wsa_send_out);
+
+    RING("RPC (%s,%s)%s: wsa_send() -> %d (%s)",
+         handle->ta, handle->name, rpcop2str(op), out.retval,
+         errno_rpc2str(RPC_ERRNO(handle)));
+    
+    RETVAL_RC(wsa_send);
+}             
+
+int 
+rpc_wsa_recv(rcf_rpc_server *handle,
+             int s, const struct rpc_iovec *iov,
+             size_t iovcnt, size_t riovcnt,
+             rpc_send_recv_flags *flags, 
+             int *bytes_received, rpc_overlapped overlapped, 
+             te_bool callback)
+{
+    rcf_rpc_op      op;
+    tarpc_wsa_recv_in  in;
+    tarpc_wsa_recv_out out;
+
+    struct tarpc_iovec iovec_arr[RCF_RPC_MAX_IOVEC];
+    
+    size_t i;
+    
+    if (handle == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        return -1;
+    }
+
+    op = handle->op;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+    memset(iovec_arr, 0, sizeof(iovec_arr));
+    
+    if (riovcnt > RCF_RPC_MAX_IOVEC)
+    {
+        handle->_errno = TE_RC(TE_RCF, ENOMEM);
+        return -1;
+    }
+    
+    if (iov != NULL && iovcnt > riovcnt)
+    {
+        handle->_errno = TE_RC(TE_RCF, EINVAL);
+        return -1;
+    }
+
+    in.s = s;
+    in.count = iovcnt;
+    in.overlapped = (tarpc_overlapped)overlapped;
+    in.callback = callback;
+    if (bytes_received != NULL)
+    {
+        in.bytes_received.bytes_received_len = 1;
+        in.bytes_received.bytes_received_val = bytes_received;
+    }
+    if (flags != NULL)
+    {
+        in.flags.flags_len = 1;
+        in.flags.flags_val = (int *)flags;
+    }
+
+    if (iov != NULL)
+    {
+        in.vector.vector_len = riovcnt;
+        in.vector.vector_val = iovec_arr;
+        for (i = 0; i < riovcnt; i++)
+        {
+            VERB("IN wsa_recv() I/O vector #%d: %p[%u] %u",
+                 i, iov[i].iov_base, iov[i].iov_rlen, iov[i].iov_len);
+            iovec_arr[i].iov_base.iov_base_val = iov[i].iov_base;
+            iovec_arr[i].iov_base.iov_base_len = iov[i].iov_rlen;
+            iovec_arr[i].iov_len = iov[i].iov_len;
+        }
+    }
+
+    rcf_rpc_call(handle, _wsa_recv, &in, (xdrproc_t)xdr_tarpc_wsa_recv_in,
+                 &out, (xdrproc_t)xdr_tarpc_wsa_recv_out);
+    
+    if (RPC_CALL_OK && iov != NULL && out.vector.vector_val != NULL)
+    {
+        for (i = 0; i < riovcnt; i++)
+        {
+            ((struct rpc_iovec *)iov)[i].iov_len = 
+                out.vector.vector_val[i].iov_len;
+            if ((iov[i].iov_base != NULL) &&
+                (out.vector.vector_val[i].iov_base.iov_base_val != NULL))
+            {
+                memcpy(iov[i].iov_base,
+                       out.vector.vector_val[i].iov_base.iov_base_val,
+                       iov[i].iov_rlen);
+            }
+        }
+    }
+
+    RING("RPC (%s,%s)%s: wsa_recv() -> %d (%s)",
+         handle->ta, handle->name, rpcop2str(op),
+         out.retval, errno_rpc2str(RPC_ERRNO(handle)));
+
+    RETVAL_RC(wsa_recv);
+}             
