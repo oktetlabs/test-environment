@@ -334,7 +334,7 @@ ds_dhcpserver_start(void)
 
     sprintf(buf, "%s -q -cf %s -lf %s %s",
             dhcp_server_exec, dhcp_server_conf,
-            dhcp_server_leases, dhcp_server_ifs);
+            dhcp_server_leases, dhcp_server_ifs ? : "");
     if (ta_system(buf) != 0)
     {
         ERROR("Command '%s' failed", buf);
@@ -390,12 +390,32 @@ ds_dhcpserver_set(unsigned int gid, const char *oid, const char *value)
 static int
 ds_dhcpserver_ifs_get(unsigned int gid, const char *oid, char *value)
 {
+    UNUSED(gid);
+    UNUSED(oid);
+
+    strcpy(value, dhcp_server_ifs ? : "");
+
+    return 0;
 }
 
 /** Get DHCP server interfaces */
 static int
 ds_dhcpserver_ifs_set(unsigned int gid, const char *oid, const char *value)
 {
+    char *copy;
+
+    /* TODO Check value */
+
+    copy = strdup(value);
+    if (copy == NULL)
+    {
+        ERROR("%s(): strdup(%s) failed", __FUNCTION__, value);
+        return TE_RC(TE_TA_LINUX, errno);
+    }
+    free(dhcp_server_ifs);
+    dhcp_server_ifs = copy;
+
+    return 0;
 }
 
 /** Definition of list method for host and groups */
