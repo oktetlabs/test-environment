@@ -2585,19 +2585,29 @@ TARPC_FUNC(freeaddrinfo, {},
 )
 
 /*-------------- pipe() --------------------------------*/
-TARPC_FUNC(pipe, {},
+TARPC_FUNC(pipe,
 {
-    MAKE_CALL(out->retval = func((int)(out->filedes)));
+    COPY_ARG(filedes);
+},
+{
+    MAKE_CALL(out->retval = func((int)((out->filedes.filedes_len > 0) ?
+                                            out->filedes.filedes_val :
+                                            NULL)));
 }
 )
 
 /*-------------- socketpair() ------------------------------*/
 
-TARPC_FUNC(socketpair, {},
+TARPC_FUNC(socketpair,
+{
+    COPY_ARG(sv);
+},
 {
     MAKE_CALL(out->retval = func(domain_rpc2h(in->domain),
                                  socktype_rpc2h(in->type),
-                                 proto_rpc2h(in->proto), out->sv));
+                                 proto_rpc2h(in->proto),
+                                 (out->sv.sv_len > 0) ?
+                                     out->sv.sv_val : NULL));
 }
 )
 

@@ -4930,17 +4930,22 @@ rpc_pipe(rcf_rpc_server *handle,
     memset(&out, 0, sizeof(out));
 
     handle->op = RCF_RPC_CALL_WAIT;
+    if (filedes != NULL)
+    {
+        in.filedes.filedes_len = 2;
+        in.filedes.filedes_val = filedes;
+    }
 
     rcf_rpc_call(handle, _pipe, &in, (xdrproc_t)xdr_tarpc_pipe_in,
                  &out, (xdrproc_t)xdr_tarpc_pipe_out);
 
+    if (RPC_CALL_OK && filedes != NULL)
+        memcpy(filedes, out.filedes.filedes_val, sizeof(int) * 2);
+
     RING("RPC (%s,%s): pipe() -> %d %d %d (%s)",
          handle->ta, handle->name,
-         out.retval, out.filedes[0], out.filedes[1],
+         out.retval, filedes[0], filedes[1],
          errno_rpc2str(RPC_ERRNO(handle)));
-
-    if (RPC_CALL_OK && filedes != NULL)
-        memcpy(filedes, out.filedes, sizeof(out.filedes));
 
     RETVAL_RC(pipe);
 }
@@ -4966,19 +4971,24 @@ rpc_socketpair(rcf_rpc_server *handle,
     in.domain = domain;
     in.type = type;
     in.proto = protocol;
+    if (sv != NULL)
+    {
+        in.sv.sv_len = 2;
+        in.sv.sv_val = sv;
+    }
 
     rcf_rpc_call(handle, _socketpair,
                  &in, (xdrproc_t)xdr_tarpc_socketpair_in,
                  &out, (xdrproc_t)xdr_tarpc_socketpair_out);
 
+    if (RPC_CALL_OK && sv != NULL)
+        memcpy(sv, out.sv.sv_val, sizeof(int) * 2);
+
     RING("RPC (%s,%s): socketpair(%s, %s, %s) -> %d %d %d (%s)",
          handle->ta, handle->name,
          domain_rpc2str(domain), socktype_rpc2str(type),
          proto_rpc2str(protocol), out.retval,
-         out.sv[0], out.sv[1], errno_rpc2str(RPC_ERRNO(handle)));
-
-    if (RPC_CALL_OK && sv != NULL)
-        memcpy(sv, out.sv, sizeof(out.sv));
+         sv[0], sv[1], errno_rpc2str(RPC_ERRNO(handle)));
 
     RETVAL_RC(socketpair);
 }

@@ -1439,12 +1439,14 @@ typedef struct tarpc_void_out tarpc_freeaddrinfo_out;
 
 struct tarpc_pipe_in {
     struct tarpc_in_arg common;
+
+    tarpc_int   filedes<>;
 };
 
 struct tarpc_pipe_out {
     struct tarpc_out_arg common;
     tarpc_int   retval;
-    tarpc_int   filedes[2];
+    tarpc_int   filedes<>;
 };
 
 /* socketpair() */
@@ -1455,13 +1457,16 @@ struct tarpc_socketpair_in {
     tarpc_int   domain; /**< TA-independent domain */
     tarpc_int   type;   /**< TA-independent socket type */
     tarpc_int   proto;  /**< TA-independent socket protocol */
+
+    tarpc_int   sv<>;   /**< Socket pair */
 };
 
 struct tarpc_socketpair_out {
     struct tarpc_out_arg common;
     
     tarpc_int   retval; /**< Returned value */
-    tarpc_int   sv[2];  /**< Socket pair */
+
+    tarpc_int   sv<>;   /**< Socket pair */
 };
 
 /* fopen() */
