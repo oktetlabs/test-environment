@@ -99,7 +99,8 @@ static unsigned int gid;                    /**< Group identifier */
  * @retval ENOMEM       malloc() failed
  */
 static int
-parse_one_level(char *oid, char **next_level, char **sub_id, char **inst_name)
+parse_one_level(char *oid, char **next_level, char **sub_id,
+                char **inst_name)
 {
     char *tmp;
     char  c = '/';
@@ -429,9 +430,10 @@ create_wildcard_obj_list(rcf_pch_cfg_object *obj, char *parsed, char *oid,
             continue;
 
         len = strlen(obj->sub_id) + 2;
-        tmp_parsed = (char *)calloc(len + (parsed == NULL ? 0
-                                                          : strlen(parsed)), 1);
-        sprintf(tmp_parsed, "%s/%s", parsed == NULL ? "" : parsed, obj->sub_id);
+        tmp_parsed = (char *)calloc(1, len +
+            ((parsed == NULL) ? 0 : strlen(parsed)));
+        sprintf(tmp_parsed, "%s/%s",
+                parsed == NULL ? "" : parsed, obj->sub_id);
 
         if (*next_level == 0 || *full_oid == '*')
         {

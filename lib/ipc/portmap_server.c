@@ -215,7 +215,8 @@ ipc_pmap_cycle(int s)
                         struct ipc_pmap_node *next = ipc_pool;
 
                         ipc_pool = calloc(1, sizeof(*ipc_pool));
-                        memcpy(ipc_pool->name, cmd.server_name, UNIX_PATH_MAX);
+                        memcpy(ipc_pool->name, cmd.server_name,
+                               UNIX_PATH_MAX);
                         ipc_pool->port = cmd.server_port;
                         ipc_pool->next = next;
                         PMAP_DEBUG("REG_SERVER: Added %s<->%d\n",
@@ -344,9 +345,9 @@ ipc_init(void)
             if (pmap_set(prg_num, 1, IPPROTO_TCP, addr.sin_port) == 0)
             {
                 /*
-                 * Sometimes Linux binds socket to the port below 1024. It
-                 * is not alloowed to public such ports. So we'll try to
-                 * listen/public a number of times.
+                 * Sometimes Linux binds socket to the port below 1024.
+                 * It is not alloowed to public such ports. So we'll try
+                 * to listen/public a number of times.
                  */
                 if (cntr != 0)
                 {

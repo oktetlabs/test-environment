@@ -60,22 +60,25 @@ typedef struct cfg_primary_type {
      * Functions return void or status code (see te_errno.h).
      */
     
-    /* Convert value from string representation to cfg_inst_val */
+    /** Convert value from string representation to cfg_inst_val */
     int (* str2val)(char *val_str, cfg_inst_val *val); 
     
-    /* Convert value from cfg_inst_val to string representation */
+    /** Convert value from cfg_inst_val to string representation */
     int (* val2str)(cfg_inst_val val, char **val_str);
     
-    /* Free memory allocated for the value (dummy for int type) */
+    /** Free memory allocated for the value (dummy for int type) */
     void (* free)(cfg_inst_val val);
 
-    /* Copy the value (allocating memory, if necessary). */
+    /** Copy the value (allocating memory, if necessary). */
     int (* copy)(cfg_inst_val val, cfg_inst_val *var);   
 
-    /* Obtain value from the message */
+    /** Obtain value from the message */
     int (* get_from_msg)(struct cfg_msg *msg, cfg_inst_val *val);
                           
-    /* Put the value to the message; the message length should be updated. */
+    /**
+     * Put the value to the message; the message length should be
+     * updated.
+     */
     void (* put_to_msg)(cfg_inst_val val, struct cfg_msg *msg);
     
     /* Compare two values */

@@ -97,16 +97,16 @@
 
 /** UNIX Test Agent descriptor */
 typedef struct unix_ta {
-    char     ta_name[RCF_MAX_NAME];     /**< Test agent name */
-    char     ta_type[RCF_MAX_NAME];     /**< Test Agent type */
-    char     host[RCF_MAX_NAME];        /**< Test Agent host */
-    char     port[RCF_MAX_NAME];        /**< TCP port */
-    char     exec_name[RCF_MAX_PATH];   /**< Name of the started file */
-    te_bool  sudo;                      /**< Manipulate process using sudo */
-    te_bool  is_local;                  /**< TA is started on the local PC */
-    uint32_t pid;                       /**< TA pid */
+    char     ta_name[RCF_MAX_NAME];   /**< Test agent name */
+    char     ta_type[RCF_MAX_NAME];   /**< Test Agent type */
+    char     host[RCF_MAX_NAME];      /**< Test Agent host */
+    char     port[RCF_MAX_NAME];      /**< TCP port */
+    char     exec_name[RCF_MAX_PATH]; /**< Name of the started file */
+    te_bool  sudo;                    /**< Manipulate process using sudo */
+    te_bool  is_local;                /**< TA is started on the local PC */
+    uint32_t pid;                     /**< TA pid */
     
-    struct rcf_net_connection *conn;    /**< connection handle */
+    struct rcf_net_connection *conn;  /**< connection handle */
 } unix_ta;
 
 
@@ -354,12 +354,12 @@ bad_confstr:
  * Reboot Test Agent station or NUT served by it. The method is called
  * after sending of "reboot" command to the TA. After that rcf_talib_start
  * and rcf_talib_connect are called.
- * For the case of local Test Agents this routine should kill the Test Agent,
- * but return an error.
+ * For the case of local Test Agents this routine should kill the Test
+ * Agent, but return an error.
  *
  * @param handle        TA handle
- * @param parms         parameter string passed to the TA in "reboot" command
- *                      or NULL
+ * @param parms         parameter string passed to the TA in "reboot"
+ *                      command or NULL
  *
  * @return error code
  */
@@ -424,8 +424,8 @@ rcfunix_reboot(rcf_talib_handle handle, char *parms)
  * 
  * @param handle        TA handle
  * @param select_set    FD_SET to be updated with the TA connection file
- *                      descriptor (for Test Agents supporting listening mode)
- *                      (IN/OUT)
+ *                      descriptor (for Test Agents supporting listening
+ *                      mode) (IN/OUT)
  *
  * @return error code
  */
@@ -442,10 +442,10 @@ rcfunix_close(rcf_talib_handle handle, fd_set *select_set)
  *
  * @param handle        TA handle
  * @param select_set    FD_SET to be updated with the TA connection file
- *                      descriptor (for Test Agents supporting listening mode)
- *                      (IN/OUT)
+ *                      descriptor (for Test Agents supporting listening
+ *                      mode) (IN/OUT)
  *
- * @param select_tm     timeout value for the select to be updated with
+ * @param select_tm     Timeout value for the select to be updated with
  *                      TA polling interval (for Test Agents supporting
  *                      polling mode only)
  *                      (IN/OUT)
@@ -525,10 +525,12 @@ rcfunix_is_ready(rcf_talib_handle handle)
  *
  * @param handle        TA handle
  * @param buf           location for received data
- * @param len           should be filled by the caller to length of the buffer;
- *                      is filled by the routine to length of received data
+ * @param len           should be filled by the caller to length of
+ *                      the buffer; is filled by the routine to length of
+ *                      received data
  * @param pba           location for address of first byte after answer
- *                      end marker (is set only if binary attachment presents)
+ *                      end marker (is set only if binary attachment
+ *                      presents)
  *
  * @return error code
  * @retval 0            success
@@ -542,8 +544,8 @@ rcfunix_is_ready(rcf_talib_handle handle)
  * @retval ETEPENDING   Attachment is too big to fit into the buffer.
  *                      The command and a part of the attachment is written
  *                      to the buffer. Other part(s) can be read by the
- *                      subsequent routine calls. ETEPENDING is returned until
- *                      last part of the message is read.
+ *                      subsequent routine calls. ETEPENDING is returned
+ *                      until last part of the message is read.
  *
  * @retval other        OS errno
  */

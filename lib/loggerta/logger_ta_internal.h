@@ -129,8 +129,8 @@ extern sem_t lgr_lock;
 #if TALOGDEBUG
 #define LOGF_PUT(_us, _fs...) log_message_print(_us, _fs)
 #else
-#define LOGF_MESS(_lvl, _us, _fs, _args...) log_message_fast(_lvl, _us, \
-                                                             _fs, LARG12(_args))
+#define LOGF_MESS(_lvl, _us, _fs, _args...) \
+    log_message_fast(_lvl, _us, _fs, LARG12(_args))
 #define LOGF_PUT(_us, _fs, _args...) LOGF_MESS(0x0, _us, _fs, _args)
 #endif
 
@@ -367,7 +367,8 @@ lgr_rb_destroy(struct lgr_rb *ring_buffer)
 static inline void
 lgr_rb_view_head(struct lgr_rb *ring_buffer, uint32_t position)
 {
-    printf("unused:%d, head:%d, tail:%d elements:%d, mark:%d, sequence:%d\n",
+    printf("unused:%d, head:%d, tail:%d elements:%d, mark:%d, "
+           "sequence:%d\n",
            LGR_RB_UNUSED(ring_buffer), LGR_RB_HEAD(ring_buffer),
            LGR_RB_TAIL(ring_buffer),
            LGR_GET_ELEMENTS_FIELD(ring_buffer, position),
@@ -581,7 +582,8 @@ lgr_rb_get_elements(struct lgr_rb *ring_buffer, uint32_t position,
  *                        raw log format string description.
  */
 static inline void
-log_message_fast(uint16_t level, const char *user_name, const char *form_str,
+log_message_fast(uint16_t level, const char *user_name,
+                 const char *form_str,
                  int argl1,  uint32_t arg1,  int argl2,  uint32_t arg2,
                  int argl3,  uint32_t arg3,  int argl4,  uint32_t arg4,
                  int argl5,  uint32_t arg5,  int argl6,  uint32_t arg6,
@@ -608,8 +610,8 @@ log_message_fast(uint16_t level, const char *user_name, const char *form_str,
         return;
     }
 
-    message =
-        (struct lgr_mess_header *)LGR_GET_MESSAGE_ARRAY(&log_buffer, position);
+    message = (struct lgr_mess_header *)LGR_GET_MESSAGE_ARRAY(&log_buffer,
+                                                              position);
 
     LGR_TIMESTAMP(&(message->timestamp));
     message->user_name = user_name;

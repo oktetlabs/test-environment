@@ -77,7 +77,8 @@ extern int rcf_pch_run(const char *confstr, const char *info);
  * @param conn          connection handle
  * @param cbuf          command buffer
  * @param buflen        length of the command buffer
- * @param answer_plen   number of bytes to be copied from the command to answer
+ * @param answer_plen   number of bytes to be copied from the command
+ *                      to answer
  * @param type          variable type
  * @param var           variable name
  *
@@ -93,7 +94,8 @@ extern int rcf_pch_vread(struct rcf_comm_connection *conn,
  * @param conn          connection handle
  * @param cbuf          command buffer
  * @param buflen        length of the command buffer
- * @param answer_plen   number of bytes to be copied from the command to answer
+ * @param answer_plen   number of bytes to be copied from the command
+ *                      to answer
  * @param type          variable type
  * @param var           variable name
  * @param ...           value
@@ -119,9 +121,11 @@ extern void rcf_pch_cfg_init(void);
  * @param buflen        length of the command buffer
  * @param answer_plen   number of bytes in the command buffer to be
  *                      copied to the answer
- * @param ba            pointer to location of binary attachment in the command 
- *                      buffer or NULL if no binary attachment is provided
- * @param cmdlen        full length of the command including binary attachment
+ * @param ba            pointer to location of binary attachment in
+ *                      the command buffer or NULL if no binary attachment
+ *                      is provided
+ * @param cmdlen        full length of the command including binary
+ *                      attachment
  *
  * @param op            configure operation
  * @param oid           object instance identifier or NULL
@@ -148,7 +152,8 @@ extern int rcf_pch_configure(struct rcf_comm_connection *conn,
  * @retval 0        success
  * @retval ENOMEM   memory allocation failure
  */
-extern int rcf_pch_agent_list(unsigned int gid, const char *oid, char **list);
+extern int rcf_pch_agent_list(unsigned int gid, const char *oid,
+                              char **list);
 
 /**
  * Default file processing handler.

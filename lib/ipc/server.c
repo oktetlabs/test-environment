@@ -142,7 +142,8 @@ static struct ipc_server_client * ipc_int_client_by_addr(
                                       socklen_t sa_len);
 
 static int ipc_int_get_datagram_from_pool(struct ipc_server *ipcs,
-                                          struct ipc_server_client **p_ipcsc);
+                                          struct ipc_server_client
+                                              **p_ipcsc);
 
 static int ipc_int_get_datagram(struct ipc_server *ipcs,
                                 struct ipc_server_client **p_ipcsc);
@@ -670,7 +671,8 @@ ipc_receive_message(struct ipc_server *ipcs,
 #endif
         ptr->socket = accept(ipcs->socket, NULL, NULL);
 #if TCP_DEBUG
-        printf("Socket %d accepted, Entry = 0x%08X\n", ptr->socket, (int)ptr);
+        printf("Socket %d accepted, Entry = 0x%08X\n",
+               ptr->socket, (int)ptr);
 #endif
         /*
          * We've accepted the connection but have not receive any message.

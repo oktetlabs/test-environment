@@ -262,7 +262,8 @@ rcf_rpc_server_thread_create(rcf_rpc_server *rpcs, const char *name,
         return rc;
     rpcs->children++;
     if ((rc = rcf_ta_call(rpcs->ta, 0, "tarpc_add_server", &rc1, 2, 0,
-                          RCF_STRING, tmp->name, RCF_INT32, tmp->pid)) != 0 ||
+                          RCF_STRING, tmp->name,
+                          RCF_INT32, tmp->pid)) != 0 ||
          (rc = rc1) != 0)
                           
     {
@@ -328,7 +329,8 @@ rcf_rpc_server_fork(rcf_rpc_server *rpcs, const char *name,
         return rc;
 
     if ((rc = rcf_ta_call(rpcs->ta, 0, "tarpc_add_server", &rc1, 2, 0,
-                          RCF_STRING, tmp->name, RCF_INT32, tmp->pid)) != 0 ||
+                          RCF_STRING, tmp->name,
+                          RCF_INT32, tmp->pid)) != 0 ||
          (rc = rc1) != 0)
     {
         ERROR("Remote call of tarpc_add_server failed for %s.", rpcs->name);
@@ -417,7 +419,8 @@ rcf_rpc_server_exec(rcf_rpc_server *rpcs)
     }
 
     if ((rc = rcf_ta_call(rpcs->ta, 0, "tarpc_add_server", &rc1, 2, 0,
-                          RCF_STRING, rpcs->name, RCF_INT32, rpcs->pid)) != 0 ||
+                          RCF_STRING, rpcs->name,
+                          RCF_INT32, rpcs->pid)) != 0 ||
          (rc = rc1) != 0)
     {
         rpcs->dead = 1;
@@ -613,7 +616,8 @@ forward(void *arg)
             (unsigned int)rcf_rpc_pid, (unsigned int)pthread_self());
     len = sizeof(addr.sun_family) + strlen(addr.sun_path) + 1;
 
-    if (bind(sock, (struct sockaddr *)&addr, len) < 0 || listen(sock, 1) < 0)
+    if (bind(sock, (struct sockaddr *)&addr, len) < 0 ||
+        listen(sock, 1) < 0)
     {
         rpcs->_errno = TE_RC(TE_RCF_API, errno);
         ERROR("Cannot receive connection from RPC client - bind() failed");
@@ -629,7 +633,8 @@ forward(void *arg)
     if ((s = accept(sock, (struct sockaddr *)&addr, &len)) < 0)
     {
         rpcs->_errno = TE_RC(TE_RCF_API, errno);
-        ERROR("Cannot receive connection from RPC client - accept() failed");
+        ERROR("Cannot receive connection from RPC client - "
+              "accept() failed");
         close(sock);
         free(buf);
         return NULL;
@@ -762,7 +767,8 @@ release:
         unlink(file);
     
     if (*rfile != 0)
-        rcf_ta_call(rpcs->ta, 0, "ta_rtn_unlink", &rc, 1, 0, RCF_STRING, rfile);
+        rcf_ta_call(rpcs->ta, 0, "ta_rtn_unlink", &rc, 1, 0,
+                    RCF_STRING, rfile);
         
     free(buf);
 
@@ -780,10 +786,12 @@ release:
  *
  * @param rpcs          RPC server
  * @param proc          RPC to be called
- * @param in_arg        input argument
- * @param in_proc       function for handling of the input argument (generated)
- * @param out_arg       output argument
- * @param out_proc      function for handling of output argument (generated)
+ * @param in_arg        Input argument
+ * @param in_proc       Function for handling of the input argument
+ *                      (generated)
+ * @param out_arg       Output argument
+ * @param out_proc      Function for handling of output argument
+ *                      (generated)
  *
  * @attention The status code is returned in rpcs _errno.
  *            If rpcs is NULL the function does nothing.
@@ -891,7 +899,8 @@ rcf_rpc_call(rcf_rpc_server *rpcs, int proc,
 
     tv.tv_sec = rpcs->timeout / 1000;
     tv.tv_usec = (rpcs->timeout % 1000) * 1000;
-    rpcs->stat = clnt_call(clnt, proc, in_proc, in_arg, out_proc, out_arg, tv);
+    rpcs->stat = clnt_call(clnt, proc, in_proc, in_arg,
+                           out_proc, out_arg, tv);
 
 #ifdef FORK_FORWARD
     {
@@ -900,7 +909,8 @@ rcf_rpc_call(rcf_rpc_server *rpcs, int proc,
         
         pid = wait(&status);
         
-        VERB("Process is joined PID %d errno %d status %d", pid, errno, status);
+        VERB("Process is joined PID %d errno %d status %d",
+             pid, errno, status);
     }
 #else
     if (pthread_join(t, &retval) != 0)

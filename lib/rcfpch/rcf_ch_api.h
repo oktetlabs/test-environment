@@ -109,7 +109,8 @@ extern int rcf_ch_shutdown(struct rcf_comm_connection *handle,
  * @param ba            pointer to location of binary attachment
  *                      in the command buffer or NULL if no binary
  *                      attachment is provided
- * @param cmdlen        full length of the command including binary attachment
+ * @param cmdlen        full length of the command including binary
+ *                      attachment
  *
  * @param params        reboot parameters
  *
@@ -146,7 +147,8 @@ typedef enum {
  * @param ba            pointer to location of binary attachment
  *                      in the command buffer or NULL if no binary
  *                      attachment is provided
- * @param cmdlen        full length of the command including binary attachment
+ * @param cmdlen        full length of the command including binary
+ *                      attachment
  *
  * @param op            configure operation
  * @param oid           object instance identifier or NULL
@@ -255,7 +257,8 @@ extern char *rcf_ch_symbol_name(const void *addr);
  * @param ba            pointer to location of binary attachment
  *                      in the command buffer or NULL if no binary
  *                      attachment is provided
- * @param cmdlen        full length of the command including binary attachment
+ * @param cmdlen        full length of the command including binary
+ *                      attachment
  * @param opt           RCFOP_FGET, RCFOP_FPUT or RCFOP_FDEL
  * @param filename      full name of the file in TA or NUT file system
  *
@@ -279,12 +282,12 @@ extern int rcf_ch_file(struct rcf_comm_connection *handle,
  * @param cbuf          command buffer
  * @param buflen        length of the command buffer
  * @param answer_plen   number of bytes in the command buffer to be
- *                        copied to the answer
+ *                      copied to the answer
  * @param ba            pointer to location of binary attachment
- *                        in the command buffer or NULL if no binary
- *                        attachment is provided
+ *                      in the command buffer or NULL if no binary
+ *                      attachment is provided
  * @param cmdlen        full length of the command including binary
- *                        attachment
+ *                      attachment
  *
  * @param stack         protocol stack identifier
  * @param params        parameters passed in the command line or NULL
@@ -356,12 +359,12 @@ extern int rcf_ch_csap_param(struct rcf_comm_connection *handle,
  * @param cbuf          command buffer
  * @param buflen        length of the command buffer
  * @param answer_plen   number of bytes in the command buffer to be
- *                        copied to the answer
+ *                      copied to the answer
  * @param ba            pointer to location of binary attachment
- *                        in the command buffer or NULL if no binary
- *                        attachment is provided
+ *                      in the command buffer or NULL if no binary
+ *                      attachment is provided
  * @param cmdlen        full length of the command including binary
- *                        attachment
+ *                      attachment
  *
  * @param csap          CSAP handle
  * @param postponed     "postponed" flag value
@@ -409,20 +412,20 @@ extern int rcf_ch_trsend_stop(struct rcf_comm_connection *handle,
  * @param cbuf          command buffer
  * @param buflen        length of the command buffer
  * @param answer_plen   number of bytes in the command buffer to be
- *                        copied to the answer
+ *                      copied to the answer
  * @param ba            pointer to location of binary attachment
- *                        in the command buffer or NULL if no binary
- *                        attachment is provided
+ *                      in the command buffer or NULL if no binary
+ *                      attachment is provided
  * @param cmdlen        full length of the command including binary
- *                        attachment
+ *                      attachment
  *
  * @param csap          CSAP handle
  * @param num           number of packets to be sent
- *                        (0 if number of packets is unlimited)
+ *                      (0 if number of packets is unlimited)
  * @param results       if TRUE, received packets should be
- *                        passed to the TEN
+ *                      passed to the TEN
  * @param timeout       maximum duration (in milliseconds) of
- *                        receiving the traffic
+ *                      receiving the traffic
  *
  *
  * @return Indication of command support or error code

@@ -289,15 +289,17 @@ rcf_net_engine_is_ready(struct rcf_net_connection *rnc)
  * @param pbytes        Pointer to variable with:
  *                      on entry - size of the buffer;
  *                      on return:
- *                      number of bytes really written if 0 returned (success);
+ *                      number of bytes really written if 0 returned
+ *                      (success);
  *                      unchanged if ETESMALLBUF returned;
  *                      number of bytes in the message (with attachment) 
  *                      if ETEPENDING returned. (Note: If the function
- *                      called a number of times to receive one big message,
- *                      a full number of bytes will be returned on first call.
+ *                      called a number of times to receive one big
+ *                      message, a full number of bytes will be returned
+ *                      on first call.
  *                      On the next calls number of bytes in the message
- *                      minus number of bytes previously read by this function
- *                      will be returned);
+ *                      minus number of bytes previously read by this
+ *                      function will be returned);
  *                      undefined if other errno returned.
  * @param pba           Address of the pointer that will hold on return 
  *                      an address of the first byte of the attachment (or 
@@ -306,18 +308,20 @@ rcf_net_engine_is_ready(struct rcf_net_connection *rnc)
  *                      attachment) this pointer will be not touched.
  *
  * @return Status code.
- * @retval 0            Success (message received and written to the buffer).
- * @retval ETESMALLBUF  Buffer is too small for the message. The part of the 
- *                      message is written to the buffer. Other part(s) of 
- *                      the message can be read by the next calls to the 
+ * @retval 0            Success (message received and written to the
+ *                      buffer).
+ * @retval ETESMALLBUF  Buffer is too small for the message. The part of
+ *                      the message is written to the buffer. Other part(s)
+ *                      of the message can be read by the next calls to the
  *                      rcf_net_engine_receive. The ETSMALLBUF will be 
- *                      returned until last part of the message will be read.
- * @retval ETEPENDING   Attachment is too big to fit into the buffer. Part of 
- *                      the message with attachment is written to the buffer. 
- *                      Other part(s) can be read by the next calls to the 
- *                      rcf_net_engine_receive. The ETEPENDING will be 
- *                      returned until last part of the message will
- *                      be read.
+ *                      returned until last part of the message will be
+ *                      read.
+ * @retval ETEPENDING   Attachment is too big to fit into the buffer.
+ *                      Part of the message with attachment is written
+ *                      to the buffer. Other part(s) can be read by the
+ *                      next calls to the rcf_net_engine_receive.
+ *                      The ETEPENDING will be returned until last part
+ *                      of the message will be read.
  * @retval other value  errno.
  */
 int 
@@ -381,7 +385,8 @@ rcf_net_engine_receive(struct rcf_net_connection *rnc, char *buffer,
 
                 if ((l > 0) && (buffer[l - 1] == '\r'))
                 {
-                    buffer[l - 1] = ' '; /* ... and change '\r' to the space */
+                    /* ... and change '\r' to the space */
+                    buffer[l - 1] = ' ';
                 }
             }
 #endif
@@ -413,7 +418,8 @@ rcf_net_engine_receive(struct rcf_net_connection *rnc, char *buffer,
                 {
                     /* Buffer is enought to write attachment */
                     *pbytes = l + attach_size;
-                    return read_socket(rnc->socket, buffer + l, attach_size);
+                    return read_socket(rnc->socket, buffer + l,
+                                       attach_size);
                 } 
                 else 
                 {
@@ -454,7 +460,8 @@ rcf_net_engine_receive(struct rcf_net_connection *rnc, char *buffer,
  * @retval other value  errno.
  */
 int 
-rcf_net_engine_close(struct rcf_net_connection **p_rnc, fd_set *p_select_set)
+rcf_net_engine_close(struct rcf_net_connection **p_rnc,
+                     fd_set *p_select_set)
 {
     int rc = 0;
 

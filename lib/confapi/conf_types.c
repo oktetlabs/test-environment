@@ -114,8 +114,10 @@ static te_bool none_equal(cfg_inst_val first, cfg_inst_val second);
 cfg_primary_type cfg_types[CFG_PRIMARY_TYPES_NUM] = {
     {str2int, int2str, int_free, int_copy, int_get, int_put, int_equal},
     {str2char, char2str, str_free, str_copy, str_get, str_put, str_equal},
-    {str2addr, addr2str, addr_free, addr_copy, addr_get, addr_put, addr_equal},
-    {str2none, none2str, none_free, none_copy, none_get, none_put, none_equal}
+    {str2addr, addr2str, addr_free, addr_copy, addr_get, addr_put,
+     addr_equal},
+    {str2none, none2str, none_free, none_copy, none_get, none_put,
+     none_equal}
  };
 
 /*
@@ -364,7 +366,8 @@ str2addr(char *val_str, cfg_inst_val *val)
         /* Probably IPv4 address */
         struct sockaddr_in *addr;
         
-        if ((addr = (struct sockaddr_in *)calloc(1, sizeof(*addr))) == NULL)
+        addr = (struct sockaddr_in *)calloc(1, sizeof(*addr));
+        if (addr == NULL)
             return ENOMEM;
         
         if (inet_pton(AF_INET, val_str, &(addr->sin_addr)) <= 0)
@@ -385,7 +388,8 @@ str2addr(char *val_str, cfg_inst_val *val)
         char     c;
        
         /* Probably IPv6 address */
-        if ((addr6 = (struct sockaddr_in6 *)calloc(1, sizeof(*addr6))) == NULL)
+        addr6 = (struct sockaddr_in6 *)calloc(1, sizeof(*addr6));
+        if (addr6 == NULL)
             return ENOMEM;
         
         if (inet_pton(AF_INET6, val_str, &(addr6->sin6_addr)) > 0)
@@ -403,9 +407,10 @@ str2addr(char *val_str, cfg_inst_val *val)
          * [It's done to prevent compiler warnings]
          */
         if (sscanf(val_str, "%02x:%02x:%02x:%02x:%02x:%02x%c",
-                   mac_addr_bytes, mac_addr_bytes + 1,
+                   mac_addr_bytes,     mac_addr_bytes + 1,
                    mac_addr_bytes + 2, mac_addr_bytes + 3,
-                   mac_addr_bytes + 4, mac_addr_bytes + 5, &c) != MAC_ADDR_LEN)
+                   mac_addr_bytes + 4, mac_addr_bytes + 5, &c)
+                != MAC_ADDR_LEN)
         {
             return EINVAL;
         }
@@ -465,7 +470,8 @@ addr2str(cfg_inst_val val, char ** val_str)
             int size;
             unsigned char *mac = (unsigned char *)(val_addr->sa_data);
             
-            size = snprintf(val_buf, CFG_TP_MAX_BUF, "%02x:%02x:%02x:%02x:%02x:%02x", 
+            size = snprintf(val_buf, CFG_TP_MAX_BUF,
+                            "%02x:%02x:%02x:%02x:%02x:%02x", 
                             (unsigned int)mac[0], 
                             (unsigned int)mac[1],
                             (unsigned int)mac[2], 

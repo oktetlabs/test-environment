@@ -42,13 +42,15 @@
 
 /** Message types */
 enum {
-    CFG_REGISTER,  /**< Register object: IN: OID, description; OUT: handle */
+    CFG_REGISTER,  /**< Register object: IN: OID, description;
+                        OUT: handle */
     CFG_FIND,      /**< Find handle by OID: IN: OID; OUT: handle */
     CFG_GET_DESCR, /**< Get description by handle:
                         IN: handle; OUT: description */
     CFG_GET_OID,   /**< Get OID: IN: handle OUT: OID */
     CFG_GET_ID,    /**< Get sub-identifier or object instance name */
-    CFG_PATTERN,   /**< Find by pattern: IN: pattern; OUT: array of handles */
+    CFG_PATTERN,   /**< Find by pattern: IN: pattern;
+                        OUT: array of handles */
     CFG_FAMILY,    /**< Get son, father or brother:
                         IN: handle, member name;  OUT: handle */
     CFG_ADD,       /**< Add instance: IN: OID, value; OUT: handle */

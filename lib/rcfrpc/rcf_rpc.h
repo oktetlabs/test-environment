@@ -66,17 +66,17 @@
 /** Forward declarations of RPC server context */
 typedef struct rcf_rpc_server {
     /* Configuration paramters */
-    rcf_rpc_op      op;             /**< Instruction for RPC call */
-    uint64_t        start;          /**< Time when RPC should be called on 
-                                         the server (in milliseconds since
-                                         Epoch; 0 if it should be called
-                                         immediately) */
+    rcf_rpc_op  op;             /**< Instruction for RPC call */
+    uint64_t    start;          /**< Time when RPC should be called on 
+                                     the server (in milliseconds since
+                                     Epoch; 0 if it should be called
+                                     immediately) */
 
-    uint32_t        def_timeout;    /**< Default RPC call timeout in 
-                                         milliseconds */
-    uint32_t        timeout;        /**< Next RPC call timeout in milliseconds
-                                         (after call it's automatically 
-                                         reset to def_timeout) */
+    uint32_t    def_timeout;    /**< Default RPC call timeout in 
+                                     milliseconds */
+    uint32_t    timeout;        /**< Next RPC call timeout in milliseconds
+                                     (after call it's automatically reset
+                                     to def_timeout) */
 
     /* Read-only fields filled by API internals when server is created */
     char            ta[RCF_MAX_NAME];   /**< Test Agent name */
@@ -171,9 +171,11 @@ extern int rcf_rpc_server_destroy(rcf_rpc_server *rpcs);
  * @param rpcs          RPC server
  * @param proc          RPC to be called
  * @param in_arg        input argument
- * @param in_proc       function for handling of the input argument (generated)
+ * @param in_proc       function for handling of the input argument
+ *                      (generated)
  * @param out_arg       output argument
- * @param out_proc      function for handling of output argument (generated)
+ * @param out_proc      function for handling of output argument
+ *                      (generated)
  *
  * @attention The status code is returned in rpcs _errno.
  *            If rpcs is NULL the function does nothing.

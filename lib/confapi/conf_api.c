@@ -151,10 +151,10 @@ cfg_register_object_str(const char *oid, cfg_obj_descr *descr,
     msg->len = sizeof(cfg_register_msg) + len;
     len = CFG_MSG_MAX;
 
-    if ((ret_val =
-             ipc_send_message_with_answer(cfgl_ipc_client, CONFIGURATOR_SERVER,
-                                         (char *)msg, msg->len,
-                                         (char *)msg, &len)) != 0)
+    if ((ret_val = ipc_send_message_with_answer(cfgl_ipc_client,
+                                                CONFIGURATOR_SERVER,
+                                                msg, msg->len,
+                                                msg, &len)) != 0)
     {
 #ifdef HAVE_PTHREAD_H
         pthread_mutex_unlock(&cfgl_lock);
@@ -278,8 +278,7 @@ cfg_get_object_descr(cfg_handle handle, cfg_obj_descr *descr)
 
     ret_val = ipc_send_message_with_answer(cfgl_ipc_client,
                                            CONFIGURATOR_SERVER,
-                                           (char *)msg, msg->len,
-                                           (char *)msg, &len);
+                                           msg, msg->len, msg, &len);
     if ((ret_val == 0) && ((ret_val = msg->rc) == 0))
     {
         memcpy((void *)descr, (void *)(&(msg->descr)),
@@ -337,8 +336,7 @@ cfg_get_oid_str(cfg_handle handle, char **oid)
 
     ret_val = ipc_send_message_with_answer(cfgl_ipc_client,
                                            CONFIGURATOR_SERVER,
-                                           (char *)msg, msg->len,
-                                           (char *)msg, &len);
+                                           msg, msg->len, msg, &len);
     if ((ret_val == 0) && ((ret_val = msg->rc) == 0))
     {
         len = strlen(msg->oid) + 1;
@@ -365,8 +363,8 @@ cfg_get_oid_str(cfg_handle handle, char **oid)
  * Obtain identifier of object or object instance by its handle.
  *
  * @param handle        handle of object or object instance
- * @param oid           OUT: location for the oid pointer (memory for the array
- *                      is allocated by the routine using malloc()
+ * @param oid           OUT: location for the oid pointer (memory for the
+ *                      array is allocated by the routine using malloc()
  *
  * @return 0 or EINVAL if invalid handle is provided
  */
@@ -400,8 +398,8 @@ cfg_get_oid(cfg_handle handle, cfg_oid **oid)
  * Obtain sub-identifier of object by its handle.
  *
  * @param handle        handle of object
- * @param subid         OUT: location for the sub-identifier (should be at least
- *                      CFG_SUBID_MAX length)
+ * @param subid         OUT: location for the sub-identifier (should be
+ *                      at least CFG_SUBID_MAX length)
  *
  * @return 0 or EINVAL if invalid handle is provided
  */
@@ -442,8 +440,7 @@ cfg_get_subid(cfg_handle handle, char **subid)
 
     ret_val = ipc_send_message_with_answer(cfgl_ipc_client,
                                            CONFIGURATOR_SERVER,
-                                           (char *)msg, msg->len,
-                                           (char *)msg, &len);
+                                           msg, msg->len, msg, &len);
     if ((ret_val == 0) && ((ret_val = msg->rc) == 0))
     {
         len = strlen(msg->id) + 1;
@@ -509,8 +506,7 @@ cfg_get_inst_name(cfg_handle handle, char **name)
 
     ret_val = ipc_send_message_with_answer(cfgl_ipc_client,
                                            CONFIGURATOR_SERVER,
-                                           (char *)msg, msg->len,
-                                           (char *)msg, &len);
+                                           msg, msg->len, msg, &len);
     if ((ret_val == 0) && ((ret_val = msg->rc) == 0))
     {
         len = strlen(msg->id) + 1;
@@ -602,8 +598,7 @@ cfg_find_str(const char *oid, cfg_handle *handle)
 
     ret_val = ipc_send_message_with_answer(cfgl_ipc_client,
                                            CONFIGURATOR_SERVER,
-                                           (char *)msg, msg->len,
-                                           (char *)msg, &len);
+                                           msg, msg->len, msg, &len);
     if ((ret_val == 0) && ((ret_val = msg->rc) == 0))
     {
         *handle = msg->handle;
@@ -711,7 +706,7 @@ cfg_find_object_by_instance(cfg_handle instance, cfg_handle *object)
  *                      (see Configurator documentation for details)
  * @param num           OUT: number of found objects or object instances
  * @param set           OUT: array of object/object instances handles;
- *                           memory for the array is allocated using malloc()
+ *                      memory for the array is allocated using malloc()
  *
  * @return 0 or EINVAL if pattern format is incorrect some argument is NULL
  */
@@ -753,8 +748,7 @@ cfg_find_pattern(const char *pattern, int *num, cfg_handle **set)
 
     ret_val = ipc_send_message_with_answer(cfgl_ipc_client,
                                            CONFIGURATOR_SERVER,
-                                           (char *)msg, msg->len,
-                                           (char *)msg, &len);
+                                           msg, msg->len, msg, &len);
     if (ret_val == ETESMALLBUF)
     {
         size_t  rest_len = len - CFG_MSG_MAX;
@@ -838,8 +832,7 @@ cfg_get_family_member(cfg_handle handle, uint8_t who, cfg_handle *member)
 
     ret_val = ipc_send_message_with_answer(cfgl_ipc_client,
                                            CONFIGURATOR_SERVER,
-                                           (char *)msg, msg->len,
-                                           (char *)msg, &len);
+                                           msg, msg->len, msg, &len);
     if ((ret_val == 0) && ((ret_val = msg->rc) == 0))
     {
         *member = msg->handle;
@@ -931,7 +924,8 @@ cfg_get_father(cfg_handle handle, cfg_handle *father)
  * @return status code (see te_errno.h)
  */
 int
-cfg_add_instance(const cfg_oid *oid, cfg_handle *handle, cfg_val_type type, ...)
+cfg_add_instance(const cfg_oid *oid, cfg_handle *handle,
+                 cfg_val_type type, ...)
 {
     cfg_add_msg *msg;
 
@@ -1004,8 +998,7 @@ cfg_add_instance(const cfg_oid *oid, cfg_handle *handle, cfg_val_type type, ...)
 
     ret_val = ipc_send_message_with_answer(cfgl_ipc_client,
                                            CONFIGURATOR_SERVER,
-                                           (char *)msg, msg->len,
-                                           (char *)msg, &len);
+                                           msg, msg->len, msg, &len);
     if ((ret_val == 0) && ((ret_val = msg->rc) == 0))
     {
         *handle = msg->handle;
@@ -1032,7 +1025,8 @@ cfg_add_instance(const cfg_oid *oid, cfg_handle *handle, cfg_val_type type, ...)
  * @return status code (see te_errno.h)
  */
 int
-cfg_add_instance_str(const char *oid, cfg_handle *handle, cfg_val_type type, ...)
+cfg_add_instance_str(const char *oid, cfg_handle *handle,
+                     cfg_val_type type, ...)
 {
     cfg_add_msg *msg;
 
@@ -1095,8 +1089,7 @@ cfg_add_instance_str(const char *oid, cfg_handle *handle, cfg_val_type type, ...
 
     ret_val = ipc_send_message_with_answer(cfgl_ipc_client,
                                            CONFIGURATOR_SERVER,
-                                           (char *)msg, msg->len,
-                                           (char *)msg, &len);
+                                           msg, msg->len, msg, &len);
     if ((ret_val == 0) && ((ret_val = msg->rc) == 0))
     {
         if (handle != NULL)
@@ -1205,8 +1198,7 @@ kill(cfg_handle handle)
 
     ret_val = ipc_send_message_with_answer(cfgl_ipc_client,
                                            CONFIGURATOR_SERVER,
-                                           (char *)msg, msg->len,
-                                           (char *)msg, &len);
+                                           msg, msg->len, msg, &len);
     if (ret_val == 0)
     {
         ret_val = msg->rc;
@@ -1458,8 +1450,7 @@ cfg_get_instance(cfg_handle handle, cfg_val_type *type, ...)
 
     ret_val = ipc_send_message_with_answer(cfgl_ipc_client,
                                            CONFIGURATOR_SERVER,
-                                           (char *)msg, msg->len,
-                                           (char *)msg, &len);
+                                           msg, msg->len, msg, &len);
     if ((ret_val != 0) || ((ret_val = msg->rc) != 0) ||
         ((ret_val = cfg_types[msg->val_type].get_from_msg((cfg_msg *)msg,
                                                           &value)) != 0))
@@ -1576,8 +1567,7 @@ cfg_get_instance_sync(cfg_handle handle, cfg_val_type *type, ...)
 
     ret_val = ipc_send_message_with_answer(cfgl_ipc_client,
                                            CONFIGURATOR_SERVER,
-                                           (char *)msg, msg->len,
-                                           (char *)msg, &len);
+                                           msg, msg->len, msg, &len);
     if ((ret_val != 0) || ((ret_val = msg->rc) != 0) ||
         ((ret_val = cfg_types[msg->val_type].get_from_msg((cfg_msg *)msg,
                                                           &value)) != 0))
@@ -1683,8 +1673,7 @@ cfg_synchronize(const char *oid, te_bool subtree)
 
     ret_val = ipc_send_message_with_answer(cfgl_ipc_client,
                                            CONFIGURATOR_SERVER,
-                                           (char *)msg, msg->len,
-                                           (char *)msg, &len);
+                                           msg, msg->len, msg, &len);
     if (ret_val == 0)
     {
         ret_val = msg->rc;
@@ -1708,7 +1697,8 @@ cfg_synchronize(const char *oid, te_bool subtree)
  * @return status code (see te_errno.h)
  */
 int
-cfg_enumerate(cfg_handle handle, cfg_inst_handler callback, void *user_data)
+cfg_enumerate(cfg_handle handle, cfg_inst_handler callback,
+              void *user_data)
 {
     int ret_val = 0;
 
@@ -1840,8 +1830,7 @@ cfg_reboot_ta(const char *ta_name, te_bool restore)
 
     ret_val = ipc_send_message_with_answer(cfgl_ipc_client,
                                            CONFIGURATOR_SERVER,
-                                           (char *)msg, msg->len,
-                                           (char *)msg, &len);
+                                           msg, msg->len, msg, &len);
     if (ret_val == 0)
     {
         ret_val = msg->rc;
@@ -1890,8 +1879,7 @@ cfg_create_backup(char **name)
 
     ret_val = ipc_send_message_with_answer(cfgl_ipc_client,
                                            CONFIGURATOR_SERVER,
-                                           (char *)msg, msg->len,
-                                           (char *)msg, &len);
+                                           msg, msg->len, msg, &len);
     if ((ret_val == 0) && ((ret_val = msg->rc) == 0))
     {
         len = strlen(msg->filename) + 1;
@@ -1955,8 +1943,7 @@ cfg_verify_backup(const char *name)
 
     ret_val = ipc_send_message_with_answer(cfgl_ipc_client,
                                            CONFIGURATOR_SERVER,
-                                           (char *)msg, msg->len,
-                                           (char *)msg, &len);
+                                           msg, msg->len, msg, &len);
     if (ret_val == 0)
     {
         ret_val = msg->rc;
@@ -2012,8 +1999,7 @@ cfg_restore_backup(const char *name)
 
     ret_val = ipc_send_message_with_answer(cfgl_ipc_client,
                                            CONFIGURATOR_SERVER,
-                                           (char *)msg, msg->len,
-                                           (char *)msg, &len);
+                                           msg, msg->len, msg, &len);
     if (ret_val == 0)
     {
         ret_val = msg->rc;
@@ -2070,8 +2056,7 @@ cfg_create_config(const char *name, te_bool history)
 
     ret_val = ipc_send_message_with_answer(cfgl_ipc_client,
                                            CONFIGURATOR_SERVER,
-                                           (char *)msg, msg->len,
-                                           (char *)msg, &len);
+                                           msg, msg->len, msg, &len);
     if (ret_val == 0)
     {
         ret_val = msg->rc;

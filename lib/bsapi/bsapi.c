@@ -94,15 +94,16 @@ builder_build_nut(const char *name, const char *sources, const char *params)
  * a Test Suite. Test Suite is installed to 
  * ${TE_INSTALL_SUITE}/bin/<suite>.
  *
- * Test Suite may be linked with TE libraries. If ${TE_INSTALL} or ${TE_BUILD}
- * are not empty necessary compiler and linker flags are passed to
- * Test Suite configure in variables TE_CFLAGS and TE_LDFLAGS.
+ * Test Suite may be linked with TE libraries. If ${TE_INSTALL} or
+ * ${TE_BUILD} are not empty necessary compiler and linker flags are
+ * passed to Test Suite configure in variables TE_CFLAGS and TE_LDFLAGS.
  *
  * @param suite         Unique suite name.
- * @param sources       Source location of the Test Suite (Builder will look 
- *                      for configure script in this directory. If the path
- *                      is started from "/" it is considered as absolute.
- *                      Otherwise it is considered as relative from ${TE_BASE}.
+ * @param sources       Source location of the Test Suite (Builder will
+ *                      look for configure script in this directory.
+ *                      If the path is started from "/" it is considered as
+ *                      absolute.  Otherwise it is considered as relative
+ *                      from ${TE_BASE}.
  *
  * @return error code
  *

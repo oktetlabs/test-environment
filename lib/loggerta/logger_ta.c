@@ -630,7 +630,8 @@ log_message_print(const char *us, const char *fs, ...)
 
         if ((++narg) > LGR_MAX_ARGS)
         {
-            fprintf(stderr, "\n%ld: <LOGGER> Too many arguments\n", tv.tv_sec);
+            fprintf(stderr, "\n%ld: <LOGGER> Too many arguments\n",
+                    tv.tv_sec);
             return;
         }
 

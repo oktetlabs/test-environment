@@ -120,7 +120,8 @@ extern te_bool rcf_net_engine_is_ready(struct rcf_net_connection *rnc);
  *                    big attachment) this pointer will be not touched.
  *
  * @return Status code.
- * @retval 0            - success (message received and written to the buffer)
+ * @retval 0            - success (message received and written to the
+ *                        buffer)
  * @retval ETESMALLBUF  - Buffer is too small for the message. The part
  *                        of the message is written to the buffer. Other
  *                        part(s) of the message can be read by the next

@@ -129,7 +129,7 @@ struct ipc_client_server {
 #endif
 };
 
-/** ipc_client structure is used to store state information about the client */
+/** Storage of IPC client state information */
 struct ipc_client {
     struct ipc_client_server *pool;   /**< Pool of the used servers */
     char   name[UNIX_PATH_MAX];       /**< IPC client name */
@@ -144,12 +144,13 @@ struct ipc_client {
 
 /**
  * Search in pool for the item with specified server name and return
- * pointer to this item. Allocate a new entry if entry not found. If new
- * entry is created, all fileds is set to zero expect sa, sa_len and buffer.
+ * pointer to this item. Allocate a new entry if entry not found.
+ * If new entry is created, all fileds is set to zero expect sa,
+ * sa_len and buffer.
  *
- * @param       ipcc            Pointer to the ipcc structure.
- * @param       sa_ptr          Pointer to the expected address.
- * @param       sa_len          Length of the address.
+ * @param ipcc          Pointer to the ipcc structure.
+ * @param sa_ptr        Pointer to the expected address.
+ * @param sa_len        Length of the address.
  *
  * @return
  *    pointer to the item in the ipcc->pool pool
@@ -237,13 +238,12 @@ ipc_free_client_server_pool(struct ipc_client *ipcc)
  * Write datagram to the ipcc->pool pool from the ipcc->datagrams pool
  * or from the socket, this function may block.
  *
- * @param       ipcc            Pointer to the ipc_client structure.
- * @param       pool_item       Pointer to the ipc_client_server structure
- *                              if datagram from the specified client
- *                              expected, NULL otherwise.
+ * @param ipcc          Pointer to the ipc_client structure.
+ * @param pool_item     Pointer to the ipc_client_server structure
+ *                      if datagram from the specified client expected,
+ *                      NULL otherwise.
  *
- * @return
- *      Pointer to the pool item on success, NULL on error.
+ * @return Pointer to the pool item on success, NULL on error.
  */
 static struct ipc_client_server *
 get_datagram(struct ipc_client *ipcc,
@@ -312,8 +312,10 @@ get_datagram(struct ipc_client *ipcc,
         }
     }
 
-    /* No datagram in the pool or datargarm with specified address not found */
-
+    /* 
+     * No datagram in the pool or datargarm with specified address not
+     * found
+     */
     if (pool_item == NULL) /* Datagram with any source address expected */
     {
         struct sockaddr_un  sa;
@@ -660,7 +662,8 @@ ipc_receive_answer(struct ipc_client *ipcc, const char *server_name,
     }
 
 
-    octets_received = server->fragment_size - sizeof(struct ipc_packet_header);
+    octets_received =
+        server->fragment_size - sizeof(struct ipc_packet_header);
 
     assert(octets_received > 0);
 
@@ -697,7 +700,9 @@ ipc_receive_answer(struct ipc_client *ipcc, const char *server_name,
         }
         else
         {
-            /* Message can not fit into the user buffer, return part of it */
+            /* 
+             * Message can not fit into the user buffer, return part of it.
+             */
             memcpy(buf, server->buffer + sizeof(struct ipc_packet_header),
                    *p_buf_len);
 
@@ -709,7 +714,10 @@ ipc_receive_answer(struct ipc_client *ipcc, const char *server_name,
             /* Remember length of the message */
             server->length = iph->length;
 
-            /* Remember number of octets received (= full length of the msg) */
+            /*
+             * Remember number of octets received (= full length
+             * of the msg)
+             */
             server->octets_received = octets_received;
 
             server->fragment_size = octets_received +
@@ -727,7 +735,8 @@ ipc_receive_answer(struct ipc_client *ipcc, const char *server_name,
         size_t total_octets_written = 0;
         size_t full_message_length = iph->length;
 
-        server->octets_received = octets_received; /* Count received octets */
+        /* Count received octets */
+        server->octets_received = octets_received;
 
         while (TRUE)
         {
@@ -745,7 +754,9 @@ ipc_receive_answer(struct ipc_client *ipcc, const char *server_name,
             }
             else
             {
-                /* Only a part of the segment can be written to the buffer */
+                /* 
+                 * Only a part of the segment can be written to the buffer.
+                 */
                 memcpy(buf,
                        server->buffer + sizeof(struct ipc_packet_header),
                        *p_buf_len - total_octets_written);
@@ -800,7 +811,8 @@ ipc_receive_answer(struct ipc_client *ipcc, const char *server_name,
 
             {
                 size_t l = server->length;
-                size_t l2 = ((struct ipc_packet_header*)server->buffer)->length;
+                size_t l2 =
+                    ((struct ipc_packet_header*)server->buffer)->length;
 
                 if (get_datagram(ipcc, server) == NULL)
                 {
@@ -816,11 +828,13 @@ ipc_receive_answer(struct ipc_client *ipcc, const char *server_name,
 #endif
                     return ESYNCFAILED;
                 }
-                if (l2 != ((struct ipc_packet_header*)server->buffer)->length)
+                if (l2 !=
+                    ((struct ipc_packet_header*)server->buffer)->length)
                 {
 #if IPC_CLIENT_DEBUG_REASSEMBLING
                     printf("Header changed: %d != %d\n", l2,
-                           ((struct ipc_packet_header*)server->buffer)->length);
+                           ((struct ipc_packet_header*)server->
+                                buffer)->length);
                     printf("author: %s\n", server->sa.sun_path+1);
 #endif
                     return ESYNCFAILED;
@@ -918,7 +932,8 @@ ipc_receive_rest_answer(struct ipc_client *ipcc, const char *server_name,
                n);
 
         /* Is it all? */
-        if (server->length == server->octets_received /* Last datargam */ &&
+        if (server->length == server->octets_received /* Last datargam */
+            &&
             server->fragment_size - sizeof(struct ipc_packet_header) -
                 server->octets_returned <= *p_buf_len)
         {
@@ -1335,13 +1350,12 @@ ipc_close_client(struct ipc_client *ipcc)
 
 
 /**
- * Connect to the my pmap server and obtain port number for specified server
- * name.
+ * Connect to the my pmap server and obtain port number for specified
+ * server name.
  *
- * @param       server_name     The name of the server.
+ * @param server_name     The name of the server.
  *
- * @return
- *      Port number, 0 on error.
+ * @return Port number, 0 on error.
  */
 static unsigned short
 ipc_pmap_get_server(const char *server_name)

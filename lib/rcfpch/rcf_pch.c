@@ -311,7 +311,8 @@ get_opcode(char **ptr, rcf_op_t *opcode)
  *
  * @param cbuf          command buffer
  * @param conn          connection handle
- * @param answer_plen   number of bytes to be copied from the command to answer
+ * @param answer_plen   number of bytes to be copied from the command
+ *                      to answer
  *
  * @return 0 or error returned by communication library
  */
@@ -432,7 +433,7 @@ rcf_pch_run(const char *confstr, const char *info)
     while (1)
     {
         size_t   len = RCF_MAX_LEN;
-        size_t   answer_plen = 0;   /* Length of data to be copied to answer */
+        size_t   answer_plen = 0; /* Len of data to be copied to answer */
         rcf_op_t opcode;
 
         char   *ptr = cmd;
@@ -469,8 +470,11 @@ rcf_pch_run(const char *confstr, const char *info)
                 if (*ptr != 0 || ba != NULL)
                     goto bad_protocol;
 
-                if (rcf_ch_shutdown(conn, cmd, RCF_MAX_LEN, answer_plen) < 0)
+                if (rcf_ch_shutdown(conn, cmd, RCF_MAX_LEN,
+                                    answer_plen) < 0)
+                {
                     SEND_ANSWER("0");
+                }
                 goto exit;
                 break;
 
@@ -717,7 +721,8 @@ rcf_pch_run(const char *confstr, const char *info)
 
                 READ_INT(handle);
 
-                if (*ptr == 0 || transform_str(&ptr, &var) != 0 || *ptr != 0)
+                if (*ptr == 0 || transform_str(&ptr, &var) != 0 ||
+                    *ptr != 0)
                     goto bad_protocol;
 
                 if (rcf_ch_csap_param(conn, cmd, RCF_MAX_LEN, 
@@ -920,7 +925,8 @@ rcf_pch_run(const char *confstr, const char *info)
                 int      priority = -1;
                 int      argc;
 
-                if (*ptr == 0 || ba != NULL || transform_str(&ptr, &rtn) != 0)
+                if (*ptr == 0 || ba != NULL ||
+                    transform_str(&ptr, &rtn) != 0)
                     goto bad_protocol;
 
                 if (isdigit(*ptr))
@@ -930,10 +936,11 @@ rcf_pch_run(const char *confstr, const char *info)
                     goto bad_protocol;
 
                 if (rcf_ch_start_task(conn, cmd, RCF_MAX_LEN, answer_plen,
-                                      priority, rtn, is_argv, argc, param) < 0)
+                                      priority, rtn, is_argv,
+                                      argc, param) < 0)
                 {
-                    ERROR("rcf_ch_start_task() returns - "
-                                      "no support for %s(%d)", rtn, priority);
+                    ERROR("rcf_ch_start_task() returns - no support "
+                          "for %s(%d)", rtn, priority);
                     SEND_ANSWER("%d", EOPNOTSUPP);
                 }
 

@@ -220,7 +220,8 @@ rcf_pch_file(struct rcf_comm_connection *conn, char *cbuf, size_t buflen,
         if (dir == NULL)
         {
             /* Try to create */
-            if (mkdir(RCF_FILE_TMP_DEF_DIR, S_IRWXU | S_IRWXO | S_IRWXG) < 0)
+            if (mkdir(RCF_FILE_TMP_DEF_DIR,
+                      S_IRWXU | S_IRWXO | S_IRWXG) < 0)
             {
                 VERB("cannot create directory '%s'",
                                   RCF_FILE_TMP_DEF_DIR);
@@ -286,7 +287,8 @@ rcf_pch_file(struct rcf_comm_connection *conn, char *cbuf, size_t buflen,
         while (rest > 0)
         {
             rw_len = reply_buflen;
-            rc = rcf_comm_agent_wait(conn, cbuf + answer_plen, &rw_len, NULL);
+            rc = rcf_comm_agent_wait(conn, cbuf + answer_plen, &rw_len,
+                                     NULL);
             if ((rc != 0) && (rc != ETEPENDING))
             {
                 ERROR("Communication error %d", rc);
@@ -334,8 +336,9 @@ rcf_pch_file(struct rcf_comm_connection *conn, char *cbuf, size_t buflen,
             goto reject;
         }
 
-        if ((size_t)snprintf(cbuf + answer_plen, reply_buflen, "0 attach %u",
-                             (unsigned int)stat_buf.st_size) >= reply_buflen)
+        if ((size_t)snprintf(cbuf + answer_plen, reply_buflen,
+                             "0 attach %u", (unsigned int)stat_buf.st_size)
+                >= reply_buflen)
         {
             ERROR("Command buffer too small for reply");
             rc = E2BIG;

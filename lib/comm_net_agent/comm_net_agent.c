@@ -166,15 +166,17 @@ rcf_comm_agent_init(const char *config_str,
  * @param pbytes        Pointer to variable with:
  *                      on entry - size of the buffer;
  *                      on return:
- *                      number of bytes really written if 0 returned (success);
+ *                      number of bytes really written if 0 returned
+ *                      (success);
  *                      unchanged if ETESMALLBUF returned;
  *                      number of bytes in the message (with attachment)
  *                      if ETEPENDING returned. (Note: If the function
  *                      called a number of times to receive one big message,
- *                      a full number of bytes will be returned on first call.
+ *                      a full number of bytes will be returned on first
+ *                      call.
  *                      On the next calls number of bytes in the message
- *                      minus number of bytes previously read by this function
- *                      will be returned.);
+ *                      minus number of bytes previously read by this
+ *                      function will be returned.);
  *                      undefined if other errno returned.
  * @param pba           Address of the pointer that will hold on return
  *                      address of the first byte of attachment (or NULL if
@@ -183,18 +185,20 @@ rcf_comm_agent_init(const char *config_str,
  *                      attachment) this pointer will be not touched.
  *
  * @return Status code.
- * @retval 0            Success (message received and written to the buffer).
- * @retval ETESMALLBUF  Buffer is too small for the message. The part of the
- *                      message is written to the buffer. Other part(s) of
- *                      the message can be read by the next calls to the
- *                      rcf_comm_agent_wait. The ETSMALLBUF will be
- *                      returned until last part of the message will be read.
+ * @retval 0            Success (message received and written to the
+ *                      buffer).
+ * @retval ETESMALLBUF  Buffer is too small for the message. The part of
+ *                      the message is written to the buffer. Other
+ *                      part(s) of the message can be read by the next
+ *                      calls to the rcf_comm_agent_wait. The ETSMALLBUF
+ *                      will be returned until last part of the message
+ *                      will be read.
  * @retval ETEPENDING   Attachment is too big to fit into the buffer. Part
  *                      of the message with attachment is written to the
  *                      buffer. Other part(s) can be read by the next calls
  *                      to the rcf_comm_engine_receive. The ETEPENDING
- *                      will be returned until last part of the message will
- *                      be read.
+ *                      will be returned until last part of the message
+ *                      will be read.
  * @retval other value  errno.
  */
 int
@@ -266,7 +270,8 @@ rcf_comm_agent_wait(struct rcf_comm_connection *rcc,
 
                 if ((l > 0) && (buffer[l - 1] == '\r'))
                 {
-                    buffer[l - 1] = ' '; /* ... and change '\r' to the space */
+                    /* ... and change '\r' to the space */
+                    buffer[l - 1] = ' ';
                 }
             }
 #endif
@@ -298,7 +303,8 @@ rcf_comm_agent_wait(struct rcf_comm_connection *rcc,
                 {
                     /* Buffer is enought to write attachment */
                     *pbytes = l + attach_size;
-                    return read_socket(rcc->socket, buffer + l, attach_size);
+                    return read_socket(rcc->socket, buffer + l,
+                                       attach_size);
                 }
                 else
                 {

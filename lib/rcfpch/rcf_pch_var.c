@@ -323,7 +323,8 @@ rcf_pch_call(struct rcf_comm_connection *conn,
     void *addr;
     int   rc;
 
-    ENTRY("rtn='%s' is_argv=%d argc=%d params=%x", rtn, is_argv, argc, params);
+    ENTRY("rtn='%s' is_argv=%d argc=%d params=%x",
+          rtn, is_argv, argc, params);
     VERB("Default call handler is executed");
 
     addr = rcf_ch_symbol_addr(rtn, 1);

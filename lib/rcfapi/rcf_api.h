@@ -59,8 +59,9 @@ extern "C" {
  * This function returns list of Test Agents (names) running.
  *
  * @param buf           location for the name list; 
- *                      names are put to the buffer one-by-one and are 
- *                      separated by '\0'; the list is finished by '\0' as well
+ *                      names are put to the buffer one-by-one and are
+ *                      separated by '\0'; the list is finished by '\0' as
+ *                      well
  *
  * @param len           pointer to length variable (should be set
  *                      to the length the buffer by caller;
@@ -119,17 +120,18 @@ extern int rcf_ta_create_session(const char *ta_name, int *session);
  * "reboot" command to the Test Agent, calls reboot function provided by 
  * RCF TA-specific library, restarts the TA and re-connects to it.
  * The function may be called by Configurator only. 
- * It is prohibited to call the function for the TA running on the Testing Node.
+ * It is prohibited to call the function for the TA running on the Testing
+ * Node.
  *
  * @param ta_name       Test Agent name              
- * @param boot_params   complete parameter string to be passed to the Test Agent
+ * @param boot_params   complete parameter string to be passed to the TA
  *                      in the "reboot" command and to the reboot function
  *                      of RCF TA-specific library (without quotes) or NULL
  *
  * @param image         name of the bootable image (without path) to be 
- *                      passed to the Test Agent as binary attachment or NULL
- *                      (it is assumed that NUT images are located in
- *                       ${TE_INSTALL_NUT}/bin or ${TE_INSTALL}/nuts/bin)
+ *                      passed to the Test Agent as binary attachment or
+ *                      NULL (it is assumed that NUT images are located in
+ *                      ${TE_INSTALL_NUT}/bin or ${TE_INSTALL}/nuts/bin)
  *
  * @return error code
  *
@@ -145,8 +147,8 @@ extern int rcf_ta_reboot(const char *ta_name, const char *boot_params,
                          const char *image);
 
 /**
- * This function is used to obtain value of object instance by its identifier.
- * The function may be called by Configurator only. 
+ * This function is used to obtain value of object instance by its
+ * identifier.  The function may be called by Configurator only. 
  *
  * @param ta_name       Test Agent name              
  * @param session       TA session or 0   
@@ -262,7 +264,8 @@ extern int rcf_ta_cfg_group(const char *ta_name, int session,
  *
  * @param ta_name       Test Agent name              
  * @param log_file      name of the local file where log should be put
- *                      (the file is truncated to zero length before updating)
+ *                      (the file is truncated to zero length before
+ *                      updating)
  *
  * @return error code
  *
@@ -396,7 +399,8 @@ extern int rcf_ta_put_file(const char *ta_name, int session,
  * @retval ETAREBOOTED  Test Agent is rebooted
  * @retval ENOMEM       out of memory
  */
-extern int rcf_ta_del_file(const char *ta_name, int session, const char *rfile);
+extern int rcf_ta_del_file(const char *ta_name, int session,
+                           const char *rfile);
 
 /**
  * This function creates CSAP (communication service access point) on the 
@@ -513,7 +517,8 @@ extern int rcf_ta_trsend_start(const char *ta_name, int session,
  *
  * @param ta_name       Test Agent name                 
  * @param handle        CSAP handle
- * @param num           location where number of sent packets should be placed
+ * @param num           location where number of sent packets should be
+ *                      placed
  *
  * @return error code
  *
@@ -550,8 +555,9 @@ typedef void (*rcf_pkt_handler)(
  * @param user_param   - User parameter to be passed to the handler.
  * @param timeout      - Timeout for traffic receive operation. After this
  *                       time interval CSAP stops capturing any traffic on
- *                       the agent and will be waiting until 
- *                       rcf_ta_trrecv_stop or rcf_ta_trrecv_wait are called.
+ *                       the agent and will be waiting until
+ *                       rcf_ta_trrecv_stop or rcf_ta_trrecv_wait are
+ *                       called.
  * @param num          - Number of packets that needs to be captured;
  *                       if it is zero, the number of received packets
  *                       is not limited.
@@ -593,8 +599,8 @@ extern int rcf_ta_trrecv_start(const char *ta_name, int session,
  * @retval 0            success
  * @retval TE_RC(TE_TAD_CSAP, ETIMEDOUT)
  *                      timeout occured before all the requested traffic
- *                      received - this means that TAD has captured less than
- *                      the number of packets specified with 
+ *                      received - this means that TAD has captured less
+ *                      than the number of packets specified with
  *                      rcf_ta_trrecv_start.
  *                      Nevertheless, number of captured packets is set to 
  *                      "num" parameter.
@@ -655,7 +661,8 @@ extern int rcf_ta_trrecv_stop(const char *ta_name, int handle, int *num);
  *
  * @sa rcf_ta_trrecv_start
  */
-extern int rcf_ta_trrecv_stop_sess(const char *ta_name, int session, int handle, int *num);
+extern int rcf_ta_trrecv_stop_sess(const char *ta_name, int session,
+                                   int handle, int *num);
 
 /**
  * This function is used to force processing of received packets 
