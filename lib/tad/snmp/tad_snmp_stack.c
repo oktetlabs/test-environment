@@ -27,32 +27,27 @@
  * @(#) $Id$
  */
 
-#include "tad.h" 
+
+
+#include "tad_snmp_impl.h"
 
 #define TE_LGR_USER     "TAD SNMP"
 #include "logger_ta.h"
 
-#include <stdio.h>
-
-#ifdef HAVE_STDLIB_H
+#if HAVE_STDLIB_H
 #include <stdlib.h>
 #endif
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
-#ifdef HAVE_SYS_STAT_H
+#if HAVE_SYS_STAT_H
 #include <sys/stat.h>
 #endif
-#ifdef HAVE_FCNTL_H
+#if HAVE_FCNTL_H
 #include <fcntl.h>
 #endif
 
+#if HAVE_STRING_H
 #include <string.h>
+#endif
 
-#include "tad_snmp_impl.h"
 
 
 #undef SNMPDEBUG

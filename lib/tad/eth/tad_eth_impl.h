@@ -47,7 +47,9 @@
 #include "asn_usr.h" 
 #include "ndn_eth.h"
 
-#include "tad.h"
+#include "tad_csap_inst.h"
+#include "tad_csap_support.h"
+#include "tad_utils.h"
 
 
 #ifndef ETH_ALEN          /* Octets in one ethernet addr     */

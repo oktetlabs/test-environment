@@ -5,7 +5,8 @@ SUBDIRS= @TAD_SUBDIRS@ .
 AM_CPPFLAGS=@TAD_CH_DEFS@ -I$(DESTDIR)/$(prefix)/include -I$(top_srcdir)
 AM_LDFLAGS=@TE_LDFLAGS@ 
 
-include_HEADERS=tad.h
+include_HEADERS=tad_csap_inst.h
+noinst_HEADERS=tad_csap_support.h tad_utils.h
 
 noinst_LIBRARIES=libtad_core.a
 

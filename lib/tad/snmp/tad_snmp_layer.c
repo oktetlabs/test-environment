@@ -27,16 +27,14 @@
  * @(#) $Id$
  */
 
-#include "tad.h"
-
 #undef SNMPDEBUG
+#include "tad_snmp_impl.h"
 
 #define TE_LGR_USER     "TAD SNMP"
 #include "logger_ta.h"
 
 #include <string.h>
 #include "te_stdint.h"
-#include "tad_snmp_impl.h"
 
 void
 tad_snmp_free_pdu(void *ptr)

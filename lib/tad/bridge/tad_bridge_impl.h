@@ -48,7 +48,9 @@
 #include "asn_usr.h" 
 #include "ndn_bridge.h"
 
-#include "tad.h"
+#include "tad_csap_inst.h"
+#include "tad_csap_support.h"
+#include "tad_utils.h"
 
 #define TE_LGR_USER     "TAD Bridge"
 #include "logger_ta.h"

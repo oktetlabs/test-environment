@@ -74,7 +74,9 @@
 #include "te_errno.h"
 #include "asn_usr.h" 
 #include "ndn_cli.h"
-#include "tad.h"
+#include "tad_csap_inst.h"
+#include "tad_csap_support.h"
+#include "tad_utils.h"
 #include "logger_api.h"
 
 #define CLI_CONN_TYPE_SERIAL        0 /**< serial CLI connection (millicom) */
@@ -95,8 +97,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#define UNUSED(x)   if (NULL == (void *)(x)) {};
 
 /* 
  * CLI CSAP specific data

@@ -30,19 +30,28 @@
 #ifndef __TE_TAD_SNMP_IMPL_H__
 #define __TE_TAD_SNMP_IMPL_H__ 
 
+#include "config.h" 
+
+#if HAVE_STDIO_H
 #include<stdio.h>
+#endif
+#if HAVE_SYS_TYPES_H
 #include<sys/types.h>
+#endif
+#if HAVE_SYS_TIME_H
 #include<sys/time.h>
+#endif
+#if HAVE_UNISTD_H
 #include<unistd.h> 
+#endif
 
 #include"te_errno.h"
 
 #include"asn_usr.h" 
 #include"ndn_snmp.h"
 
-
 #if HAVE_NET_SNMP_SESSION_API_H
-#include<net-snmp/net-snmp-config.h>
+#include<net-snmp/net-snmp-config.h> 
 #include<net-snmp/session_api.h> 
 #include<net-snmp/pdu_api.h> 
 #elif HAVE_UCD_SNMP_SNMP_CLIENT_H
@@ -55,7 +64,9 @@
 #error This module can not be compiled without NET- or UCD-SNMP library.
 #endif /* HAVE_SNMP */
 
-#include "tad.h"
+#include "tad_csap_inst.h"
+#include "tad_csap_support.h"
+#include "tad_utils.h"
 
 #ifdef __cplusplus
 extern "C" {

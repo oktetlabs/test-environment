@@ -46,7 +46,9 @@
 #include "ndn.h"
 #include "ndn_dhcp.h"
 
-#include "tad.h"
+#include "tad_csap_inst.h"
+#include "tad_csap_support.h"
+#include "tad_utils.h"
 
 
 #define DHCP_SERVER_PORT 67

@@ -37,6 +37,7 @@ AC_CHECK_FUNCS([gettimeofday inet_ntoa memset select socket strdup strtol])
 AC_HEADER_STDC
 AC_HEADER_SYS_WAIT
 AC_CHECK_HEADERS([\
+stdio.h \
 stdlib.h \
 string.h \
 strings.h \

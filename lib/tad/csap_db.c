@@ -27,14 +27,10 @@
  * $Id$
  */
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
 #include <stdlib.h>
 #include <string.h>
 
-#include "tad.h"
+#include "tad_csap_inst.h"
 #include "te_errno.h"
 #include "logger_ta.h"
 #include "logger_api.h"

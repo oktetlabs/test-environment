@@ -27,9 +27,6 @@
  * $Id$
  */
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
 
 #include <stdio.h>
 #include <string.h>
@@ -39,11 +36,14 @@
 #include "rcf_ch_api.h"
 #include "rcf_pch.h"
 
+
+#include "tad_csap_inst.h"
+#include "tad_csap_support.h"
+#include "tad_utils.h"
+#include "ndn.h" 
+
 #define TE_LGR_USER     "TAD CH"
 #include "logger_ta.h"
-
-#include "tad.h" 
-#include "ndn.h" 
 
 /* buffer for send answer */
 #define RBUF 100 

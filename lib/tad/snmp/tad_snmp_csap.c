@@ -27,13 +27,12 @@
  * @(#) $Id$
  */
 
-#include "tad.h"
+#include "tad_snmp_impl.h"
 
 #define TE_LGR_USER     "TAD SNMP"
 #include "logger_ta.h"
 
 #include <string.h>
-#include "tad_snmp_impl.h"
 
 
 csap_layer_neighbour_list_t snmp_nbr_list = 
