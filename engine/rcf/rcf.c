@@ -298,8 +298,8 @@ resolve_ta_methods(ta *agent, char *libname)
     sprintf(name, "lib%s.so", libname);
     if ((handle = dlopen(name, RTLD_LAZY)) == NULL)
     {
-        VERB("FATAL ERROR: Cannot load shared library %s "
-                         "errno %s", libname, dlerror());
+        ERROR("FATAL ERROR: Cannot load shared library %s errno %s", 
+              libname, dlerror());
         return -1;
     }
 
@@ -309,7 +309,7 @@ resolve_ta_methods(ta *agent, char *libname)
         if ((agent->sym = dlsym(handle, name)) == NULL)         \
         {                                                       \
             ERROR("FATAL ERROR: Cannot resolve symbol '%s' "    \
-                             "in the shared library", name);    \
+                  "in the shared library", name);               \
             if (dlclose(handle) != 0)                           \
                 ERROR("dlclose() failed");                      \
             return -1;                                          \
@@ -394,8 +394,8 @@ parse_config(char *filename)
         strcpy(name_ptr, agent->name);
         if (names_len + strlen(agent->name) + 1 > sizeof(names))
         {
-            VERB("FATAL ERROR: Too many Test Agents - "
-                             "increase memory constants");
+            ERROR("FATAL ERROR: Too many Test Agents - "
+                  "increase memory constants");
             goto error;
         }
         name_ptr += strlen(agent->name) + 1;
@@ -548,8 +548,8 @@ synchronize_time(ta *agent)
                   tm->tm_hour, tm->tm_min, tm->tm_sec);
     if ((rc = (agent->transmit)(agent->handle, cmd, strlen(cmd) + 1)) != 0)
     {
-        VERB("FATAL ERROR: Failed to transmit command to "
-                         "TA '%s' errno %d", agent->name, rc);
+        ERROR("Failed to transmit command to TA '%s' errno %d", 
+              agent->name, rc);
         return -1;
     }
 
@@ -576,8 +576,7 @@ synchronize_time(ta *agent)
         }
     }
 
-    ERROR("FATAL ERROR: Failed to receive answer from TA %s",
-                     agent->name);
+    ERROR("Failed to receive answer from TA %s", agent->name);
 
     return -1;
 }
@@ -601,8 +600,7 @@ answer_user_request(usrreq *req)
                  req->message->opcode, 
                  req->message->ta, 
                  req->message->sid, 
-                 req->message->file 
-                );
+                 req->message->file);
         }
     }
     if (!(req->message->flags & INTERMEDIATE_ANSWER))
@@ -666,6 +664,15 @@ startup_tasks(ta *agent)
     return 0;
 }
 
+static void
+set_ta_dead(ta *agent)
+{
+    agent->dead = TRUE;
+    (agent->close)(agent->handle, &set0);
+    answer_all_requests(&(agent->sent), ETADEAD);
+    answer_all_requests(&(agent->pending), ETADEAD);
+}
+
 /**
  * Initialize Test Agent or recovery it after reboot.
  *
@@ -688,16 +695,16 @@ init_agent(ta *agent)
                              agent->conf, &(agent->handle),
                              &(agent->flags))) != 0)
     {
-        ERROR("FATAL ERROR: Cannot start TA '%s' error %d",
-              agent->name, rc);
+        ERROR("Cannot (re-)initialize TA '%s' error %d", agent->name, rc);
+        agent->dead = TRUE;
         return -1;
     }
     VERB("TA %s started, trying to connect", agent->name);
     if ((rc = (agent->connect)(agent->handle, &set0, &tv0)) != 0)
     {
-        ERROR("FATAL ERROR: Cannot connect to TA '%s' "
-                         "error %d", agent->name, rc);
+        ERROR("Cannot connect to TA '%s' error %d", agent->name, rc);
         (agent->reboot)(agent->handle, NULL);
+        agent->dead = TRUE;
         return -1;
     }
     VERB("Connected with TA %s", agent->name);
@@ -706,6 +713,9 @@ init_agent(ta *agent)
     {
         rc = startup_tasks(agent);
     }
+    if (rc != 0)
+        agent->dead = TRUE;
+
     return rc;
 }
 
@@ -977,15 +987,6 @@ read_str(char **ptr, char *s)
     *ptr = p;
 }
 
-static void
-set_ta_dead(ta *agent)
-{
-    agent->dead = TRUE;
-    (agent->close)(agent->handle, &set0);
-    answer_all_requests(&(agent->sent), ETADEAD);
-    answer_all_requests(&(agent->pending), ETADEAD);
-}
-
 /**
  * Receive reply from the Test Agent, send answer to user and send pending
  * message if necessary.
@@ -1253,14 +1254,13 @@ transmit_cmd(ta *agent, usrreq *req)
              * Presence and readability of the file is checked in API
              * library.
              */
-            ERROR("FATAL ERROR: Cannot open file '%s'",
-                             req->message->file);
+            ERROR("FATAL ERROR: Cannot open file '%s'", req->message->file);
             return -1;
         }
         if (fstat(file, &st) != 0)
         {
             ERROR("RCF", "FATAL ERROR: stat() failed for file %s",
-                             req->message->file);
+                  req->message->file);
             close(file);
             return -1;
         }
@@ -1291,8 +1291,8 @@ transmit_cmd(ta *agent, usrreq *req)
 
         if (len < 0)
         {
-            ERROR("FATAL ERROR: Read from file '%s' failed "
-                             "errno %d", req->message->file, errno);
+            ERROR("FATAL ERROR: Read from file '%s' failed errno %d", 
+                  req->message->file, errno);
             close(file);
             return -1;
         }
@@ -1781,8 +1781,10 @@ process_user_request(usrreq *req)
                                      req->message->data : NULL);
                 if (rc != 0)
                 {
-                    ERROR("FATAL ERROR: Cannot reboot TA %s", agent->name);
-                    return -1;
+                    ERROR("Cannot reboot TA %s", agent->name);
+                    msg->error = TE_RC(TE_RCF, rc);
+                    answer_user_request(req);
+                    return 0;
                 }
                 answer_user_request(req);
                 return init_agent(agent);
