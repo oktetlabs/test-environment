@@ -34,10 +34,10 @@
 # $Id$
 #
 
-for i in `find . -name configure` ; do
+for i in `find . -name configure -or -name Makefile.in -or -name aclocal.m4 -or -name autom4te.cache` ; do
     i_status=`svn status $i` || echo "Failed to set SVN status of $i"
-    # Remove only 'configure' which are ignored by Subversion
+    # Remove only files which are ignored by Subversion
     if test "x$i_status" = "xI${i_status/#I/}" ; then
-        rm $i
+        rm -rf $i
     fi
 done
