@@ -77,6 +77,16 @@ extern "C" {
 #define TEST_END_SPECIFIC do { } while (0)
 #endif
 
+    
+/**
+ * Template action to be done on jump in the test.
+ */
+#define TEST_ON_JMP_DO \
+    do {                                                            \
+        result = (jmp_rc == ETEOK) ? EXIT_SUCCESS : EXIT_FAILURE;   \
+        goto cleanup;                                               \
+    } while (0)
+
 /**
  * The first action of any test @b main() function.
  *
@@ -104,10 +114,7 @@ extern "C" {
      */                                                             \
     (void)signal(SIGINT, sigint_handler);                           \
                                                                     \
-    TAPI_ON_JMP({                                                   \
-        result = (jmp_rc == ETEOK) ? EXIT_SUCCESS : EXIT_FAILURE;   \
-        goto cleanup;                                               \
-    });                                                             \
+    TAPI_ON_JMP(TEST_ON_JMP_DO);                                    \
                                                                     \
     TEST_START_SPECIFIC
 
