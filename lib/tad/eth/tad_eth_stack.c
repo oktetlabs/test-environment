@@ -603,7 +603,14 @@ eth_read_cb (csap_p csap_descr, int timeout, char *buf, int buf_len)
             break;
     }
 
+#if 0 
+    /* Correction for number of read bytes was insered to synchronize 
+     * with OS interface statistics, but it cause many side effects, 
+     * therefore it is disabled now. */
     return pkt_size + ETH_TAILING_CHECKSUM;
+#else
+    return pkt_size;
+#endif
 }
 
 /**
@@ -708,7 +715,14 @@ eth_write_cb(csap_p csap_descr, char *buf, int buf_len)
     if (ret_val < 0)
         return -1;
 
+#if 0 
+    /* Correction for number of read bytes was insered to synchronize 
+     * with OS interface statistics, but it cause many side effects, 
+     * therefore it is disabled now. */
     return ret_val + ETH_TAILING_CHECKSUM;
+#else
+    return ret_val;
+#endif
 }
 
 /**
