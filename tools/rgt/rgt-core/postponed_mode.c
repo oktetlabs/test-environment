@@ -418,8 +418,6 @@ output_regular_log_msg(log_msg *msg)
     if (log_obstk == NULL)
         return;
 
-    fprintf(stderr, "%s\n", __FUNCTION__);
-
     obstk_base = obstack_base(log_obstk);
     log_msg_init_arg(msg);
 
@@ -643,8 +641,6 @@ output_regular_log_msg(log_msg *msg)
         str_len = obstack_object_size(log_obstk);
         out_str = (char *)obstack_finish(log_obstk);
 
-        fprintf(stderr, "OUT STR: %s, len = %d\n", out_str, str_len);
-
         /* 
          * Truncate trailing end of line characters:
          * @todo - maybe it's better not to make this by default.
@@ -657,12 +653,9 @@ output_regular_log_msg(log_msg *msg)
         }
         *(out_str + str_len + br_len - i) = '\0';
 
-        fprintf(stderr, "PROCESSED STR: %s\n", out_str);
-
         fprintf(output_fd, "%s", out_str);
         obstack_free(log_obstk, out_str);
     }
-    fprintf(stderr, "%s - END\n", __FUNCTION__);
 
     return;
 }
