@@ -65,6 +65,8 @@ int
 main(int argc, char *argv[])
 {
     TEST_START;
+    
+    len = sizeof(ta);
     CHECK_RC(rcf_get_ta_list(ta, &len));
     INFO("Agent is %s", ta);
 
