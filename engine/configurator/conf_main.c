@@ -28,7 +28,6 @@
  * $Id$
  */
 
-#include <popt.h>
 #include "conf_defs.h"
 
 #include <libxml/xinclude.h>
@@ -48,12 +47,7 @@ static char *filename;
 static te_bool cfg_shutdown = FALSE;
 static int cfg_fatal_err = 0;
 static struct ipc_server *server = NULL; /* IPC Server handle */
-static te_bool cs_print_tree = FALSE; /* For --cs-print-trees option */
-static te_bool cs_print_diff = FALSE; /* For --cs-print-diff option */
-enum {
-    CS_OPT_TREE,
-    CS_OPT_DIFF,
-};
+
 
 static void
 print_tree(cfg_instance *inst, int indent)
@@ -585,6 +579,104 @@ get_time_ms()
 }
 
 /**
+ * Process backup user request.
+ *
+ * @param msg           message pointer
+ */
+static void
+process_backup(cfg_backup_msg *msg)
+{
+    switch (msg->op)
+    {
+        case CFG_BACKUP_CREATE:
+        {
+            sprintf(msg->filename, CONF_BACKUP_NAME,
+                    tmp_dir, getpid(), get_time_ms());
+
+            if ((msg->rc = cfg_backup_create_file(msg->filename)) != 0)
+                return;
+
+            if ((msg->rc = cfg_dh_attach_backup(msg->filename)) != 0)
+                unlink(msg->filename);
+
+            msg->len += strlen(msg->filename) + 1;
+
+            break;
+        }
+
+        case CFG_BACKUP_RESTORE:
+        {
+#if 0        
+            /* Check agents */
+            int rc = rcf_check_agents();
+            
+            if (TE_RC_GET_ERROR(rc) == ETAREBOOTED)
+                cfg_ta_sync("/:", TRUE);
+#endif            
+            /* Try to restore using dynamic history */
+            if ((msg->rc = cfg_dh_restore_backup(msg->filename)) == 0)
+                return;
+
+            WARN("Restoring backup from history failed; "
+                 "restore from the file");
+            msg->rc = parse_config(msg->filename, TRUE);
+            cfg_dh_release_after(msg->filename);
+            
+            break;
+        }
+
+        case CFG_BACKUP_VERIFY:
+        {
+            char diff_file[RCF_MAX_PATH];
+            
+            if ((msg->rc = cfg_backup_create_file(filename)) != 0)
+                return;
+            sprintf(diff_file, "%s/te_cs.diff", getenv("TE_TMP"));
+            sprintf(tmp_buf, "diff -u %s %s >%s 2>&1", msg->filename,
+                             filename, diff_file);
+            msg->rc = ((system(tmp_buf) == 0) ? 0 : ETEBACKUP);
+            if (msg->rc == 0)
+                cfg_dh_release_after(msg->filename);
+            else
+                INFO("Backup diff: %tf", diff_file);
+            unlink(diff_file);            
+            break;
+        }
+
+        case CFG_BACKUP_RELEASE:
+        {
+            msg->rc = cfg_dh_release_backup(msg->filename);
+            break;
+        }
+    }
+}
+
+/**
+ * Process reboot user request.
+ *
+ * @param msg           message pointer
+ * @param update_dh     if true, add the command to dynamic history
+ */
+static void
+process_reboot(cfg_reboot_msg *msg, te_bool update_dh)
+{
+    if (update_dh && (msg->rc = cfg_dh_add_command((cfg_msg *)msg)) != 0)
+        return;
+
+    msg->rc = rcf_ta_reboot(msg->ta_name, NULL, NULL);
+
+    if (msg->rc == 0 && msg->restore)
+    {
+        if ((msg->rc = cfg_backup_restore_ta(msg->ta_name)) != 0)
+        {
+            ERROR("Restoring of the TA state after reboot failed - "
+                  "cannot continue");
+            cfg_fatal_err = msg->rc;
+        };
+    }
+}
+
+/**
  * Log message.
  *
  * @param msg       Message to be logged
@@ -857,109 +949,6 @@ log_msg(cfg_msg *msg, te_bool before)
 }
 
 /**
- * Process backup user request.
- *
- * @param msg           message pointer
- */
-static void
-process_backup(cfg_backup_msg *msg)
-{
-    switch (msg->op)
-    {
-        case CFG_BACKUP_CREATE:
-        {
-            sprintf(msg->filename, CONF_BACKUP_NAME,
-                    tmp_dir, getpid(), get_time_ms());
-
-            if ((msg->rc = cfg_backup_create_file(msg->filename)) != 0)
-                return;
-
-            if ((msg->rc = cfg_dh_attach_backup(msg->filename)) != 0)
-                unlink(msg->filename);
-
-            msg->len += strlen(msg->filename) + 1;
-
-            break;
-        }
-
-        case CFG_BACKUP_RESTORE:
-        {
-#if 0        
-            /* Check agents */
-            int rc = rcf_check_agents();
-            
-            if (TE_RC_GET_ERROR(rc) == ETAREBOOTED)
-                cfg_ta_sync("/:", TRUE);
-#endif            
-            /* Try to restore using dynamic history */
-            if ((msg->rc = cfg_dh_restore_backup(msg->filename)) == 0)
-                return;
-
-            WARN("Restoring backup from history failed; "
-                 "restore from the file");
-            msg->rc = parse_config(msg->filename, TRUE);
-            cfg_dh_release_after(msg->filename);
-            
-            break;
-        }
-
-        case CFG_BACKUP_VERIFY:
-        {
-            char diff_file[RCF_MAX_PATH];
-            
-            if ((msg->rc = cfg_backup_create_file(filename)) != 0)
-                return;
-            sprintf(diff_file, "%s/te_cs.diff", getenv("TE_TMP"));
-            sprintf(tmp_buf, "diff -u %s %s >%s 2>&1", msg->filename,
-                             filename, diff_file);
-            msg->rc = ((system(tmp_buf) == 0) ? 0 : ETEBACKUP);
-            if (msg->rc == 0)
-                cfg_dh_release_after(msg->filename);
-            else
-            {
-                if (cs_print_diff)
-                    log_msg((cfg_msg *)msg, TRUE);
-                else
-                    INFO("Backup diff: %tf", diff_file);
-            }
-            unlink(diff_file);            
-            break;
-        }
-
-        case CFG_BACKUP_RELEASE:
-        {
-            msg->rc = cfg_dh_release_backup(msg->filename);
-            break;
-        }
-    }
-}
-
-/**
- * Process reboot user request.
- *
- * @param msg           message pointer
- * @param update_dh     if true, add the command to dynamic history
- */
-static void
-process_reboot(cfg_reboot_msg *msg, te_bool update_dh)
-{
-    if (update_dh && (msg->rc = cfg_dh_add_command((cfg_msg *)msg)) != 0)
-        return;
-
-    msg->rc = rcf_ta_reboot(msg->ta_name, NULL, NULL);
-
-    if (msg->rc == 0 && msg->restore)
-    {
-        if ((msg->rc = cfg_backup_restore_ta(msg->ta_name)) != 0)
-        {
-            ERROR("Restoring of the TA state after reboot failed - "
-                  "cannot continue");
-            cfg_fatal_err = msg->rc;
-        };
-    }
-}
-
-/**
  * Process message with user request.
  *
  * @param msg           location of message pointer (message may be updated
@@ -1121,68 +1110,6 @@ wait_shutdown()
     }
 }
 
-/**
- * Process command line options and parameters specified in argv.
- * The procedure contains "Option table" that should be updated 
- * if some new options are going to be added.
- *
- * @param argc  Number of elements in array "argv".
- * @param argv  Array of strings that represents all command line arguments
- *
- * @return EXIT_SUCCESS or EXIT_FAILURE
- */
-static int
-process_cmd_line_opts(int argc, char **argv)
-{
-    poptContext  optCon;
-    int          rc;
-    
-    /* Option Table */
-    struct poptOption options_table[] = {
-        { "print-trees", '\0', POPT_ARG_NONE, NULL, CS_OPT_TREE + 1,
-          "Update expected testing results database.", NULL },
-
-        { "print-diff", '\0', POPT_ARG_NONE, NULL, CS_OPT_DIFF + 1,
-          "Initialize expected testing results database.", NULL },
-
-        POPT_AUTOHELP
-        
-        { NULL, 0, 0, NULL, 0, NULL, 0 },
-    };
-    
-    /* Process command line options */
-    optCon = poptGetContext(NULL, argc, (const char **)argv,
-                            options_table, 0);
-      
-    while ((rc = poptGetNextOpt(optCon)) >= 0)
-    {
-        switch (rc)
-        {
-            case (CS_OPT_TREE + 1):
-                cs_print_tree = TRUE;
-                break;
-
-            case (CS_OPT_DIFF + 1):
-                cs_print_diff = TRUE;
-                break;
-               
-            default:
-                ERROR("Unexpected option number %d", rc);
-                poptFreeContext(optCon);
-                return EXIT_FAILURE;
-        }
-    }
-    if (rc < -1)
-    {
-        /* An error occurred during option processing */
-        ERROR("%s: %s", poptBadOption(optCon, POPT_BADOPTION_NOALIAS),
-              poptStrerror(rc));
-        poptFreeContext(optCon);
-        return EXIT_FAILURE;
-    }
-    poptFreeContext(optCon);
-    return EXIT_SUCCESS;
-}
 
 /**
  * Main loop of the Configurator: initialization and processing user
@@ -1198,6 +1125,7 @@ int
 main(int argc, char **argv)
 {
     int rc = 1;
+    const char *tree_opt = "--cs-print-trees";
 
     ipc_init();
     if ((server = ipc_register_server(CONFIGURATOR_SERVER)) == NULL)
@@ -1205,7 +1133,7 @@ main(int argc, char **argv)
 
     VERB("Starting...");
 
-    if (argc < 2)
+    if (argc < 2 || argc > 3)
     {
         ERROR("Wrong arguments");
         rc = EINVAL;
@@ -1237,11 +1165,14 @@ main(int argc, char **argv)
     if ((rc = parse_config(argv[1], FALSE)) != 0)
         goto error;
     
-    if ((rc = process_cmd_line_opts(argc, argv)) != EXIT_SUCCESS)
-        goto error;
-     
-    if (cs_print_tree)
+    if (argc > 2 && argv[2][0] != 0) 
     {
+        if (strcmp(tree_opt, argv[2]) != 0)
+        {
+            ERROR("Invalid option provided: opt=%s", argv[2]);
+            rc = EINVAL;
+            goto error;
+        }
         print_otree(&cfg_obj_root, 0);
         print_tree(&cfg_inst_root, 0);
     }
