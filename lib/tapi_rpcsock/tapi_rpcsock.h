@@ -339,7 +339,7 @@ extern int rpc_transmit_file(rcf_rpc_server *handle, int s, char *file,
                              void *head, ssize_t head_len,
                              void *tail, ssize_t tail_len, ssize_t flags);
 
-extern rpc_fd_set * rpc_fd_set_new(rcf_rpc_server *handle);
+extern rpc_fd_set *rpc_fd_set_new(rcf_rpc_server *handle);
 extern void rpc_fd_set_delete(rcf_rpc_server *handle,
                               rpc_fd_set *set);
 
