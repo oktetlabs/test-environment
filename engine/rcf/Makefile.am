@@ -40,5 +40,5 @@ te_rcf_tadead_LDFLAGS = -static
 te_rcf_tadead_LDADD = -lipc -lpthread
 
 te_rcf_tadead_DEPENDENCIES = $(DESTDIR)/$(prefix)/lib/librcfapi.a \
-                               $(DESTDIR)/$(prefix)/lib/libipc.a
+                             $(DESTDIR)/$(prefix)/lib/libipc.a
 
