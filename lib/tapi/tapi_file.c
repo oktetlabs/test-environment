@@ -39,13 +39,15 @@
 #include "logger_api.h"
 #include "tapi_file.h"
 
+
 /**
  * Create file in the TE temporary directory.
  *
- * @param len   file length
- * @param c     file content
+ * @param len   File length
+ * @param c     File content
  *
- * @return name (memory is allocated) of the file or NULL in the case of failure
+ * @return Name (memory is allocated) of the file or
+ *         NULL in the case of failure
  *
  * @note the function is not thread-safe 
  */

@@ -13,6 +13,18 @@
 #ifndef __TE_LIB_TAPI_FILE_H__
 #define __TE_LIB_TAPI_FILE_H__
 
+#include <stdio.h>
+#if HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#if HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+
+#include "te_stdint.h"
+#include "rcf_common.h"
+
+
 /**
  * Generate unique basename for file.
  *
@@ -21,7 +33,7 @@
  * @note the function is not thread-safe
  */
 static inline char *
-tapi_file_generate_name()
+tapi_file_generate_name(void)
 {
     static int  num = 0;
     static char buf[RCF_MAX_PATH];
@@ -34,12 +46,13 @@ tapi_file_generate_name()
 /**
  * Create file in the TE temporary directory.
  *
- * @param len   file length
- * @param c     file content
+ * @param len   File length
+ * @param c     File content
  *
- * @return name (memory is allocated) of the file or NULL in the case of failure
+ * @return Name (memory is allocated) of the file or
+ *         NULL in the case of failure.
  *
- * @note the function is not thread-safe 
+ * @note The function is not thread-safe 
  */
 extern char *tapi_file_create(int len, char c);
 

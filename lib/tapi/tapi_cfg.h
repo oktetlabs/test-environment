@@ -80,7 +80,8 @@ extern int tapi_cfg_switch_vlan_del_port(const char *ta_name,
  * @param irtt         initial round trip time (irtt) for TCP connections
  *                     over this route (in milliseconds)
  *
- * @note For more information about the meaning of parameters see "man route"
+ * @note For more information about the meaning of parameters see
+ *       "man route".
  *
  * @return Status code
  *
@@ -109,7 +110,8 @@ extern int tapi_cfg_add_route(const char *ta, int addr_family,
  * @param irtt         initial round trip time (irtt) for TCP connections
  *                     over this route (in milliseconds)
  *
- * @note For more information about the meaning of parameters see "man route"
+ * @note For more information about the meaning of parameters see
+ *       "man route".
  *
  * @return Status code
  *

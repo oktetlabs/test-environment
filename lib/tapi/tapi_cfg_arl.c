@@ -310,7 +310,8 @@ tapi_arl_print_table(const arl_table_t *p_table)
             "\tPort: %d"
             "\tVLAN: %s"
             "\tType: %s",
-            p->mac[0], p->mac[1], p->mac[2], p->mac[3], p->mac[4], p->mac[5],
+            p->mac[0], p->mac[1], p->mac[2],
+            p->mac[3], p->mac[4], p->mac[5],
             p->port, p->vlan,
             (p->type == ARL_ENTRY_STATIC) ? "static" : "dynamic");
     }

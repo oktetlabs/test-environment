@@ -489,7 +489,7 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
     }
     
 #define PUT_INTO_BUF(buf_, args...) \
-            snprintf((buf_) + strlen(buf_), sizeof(buf_) - strlen(buf_), args)
+    snprintf((buf_) + strlen(buf_), sizeof(buf_) - strlen(buf_), args)
 
     route_inst_name[0] = '\0';
     PUT_INTO_BUF(route_inst_name, "%s|%d", dst_addr_str, prefix);
