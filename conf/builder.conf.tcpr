@@ -7,11 +7,9 @@
 #
 TE_PLATFORM([], [], [], [], \
             [ipc bsapi loggerten rcfapi conf_oid confapi tapi \
-             comm_net_engine rcfunix \
-             loggerta comm_net_agent rcfpch \
+             comm_net_engine rcfunix loggerta comm_net_agent rcfpch \
              rcfrpc tapi_rpcsock \
-             asn ndn tad tapi_eth tapi_snmp \
-             tapi_ipstack forwarder\
+             asn ndn tad tapi_eth tapi_ipstack tapi_snmp forwarder \
             ])
 
 TE_APP_PARMS([rcf], [--enable-ltdl-install], [], [], [])
@@ -20,10 +18,6 @@ TE_LIB_PARMS([forwarder], [], [${TAD_FORW_DIR}], [], [])
 
 TE_LIB_PARMS([tad], [], [], [--with-eth --with-ipstack], [])
               
-TE_TA_TYPE([linux], [linux], [], \
-           [--with-rcf-rpc], [], [], \
-           [forwarder tad ndn asn])
-
-#TE_TA_TYPE([linux_lite], [linux], [], [], [-DTAD_CH_DUMMY], [], [])
-
-
+TE_TA_TYPE([linux], [], [linux],
+           [--with-rcf-rpc], [], [],
+           [forwarder ndn asn comm_net_agent])

@@ -7,11 +7,10 @@
 #
 TE_PLATFORM([], [], [], [], \
             [ipc bsapi loggerten rcfapi conf_oid confapi tapi \
-             comm_net_engine rcfunix \
-             loggerta comm_net_agent rcfpch \
-             rcfrpc asn ndn tad \
-             tapi_rpcsock tapi_tad tapi_eth tapi_bridge tapi_ipstack \
-             tapi_dhcp tapi_snmp tapi_cli \
+             comm_net_engine rcfunix loggerta comm_net_agent rcfpch \
+             asn ndn tad tad_dummy \
+             rcfrpc tapi_rpcsock tapi_tad tapi_eth tapi_bridge tapi_arp \
+             tapi_ipstack tapi_dhcp tapi_snmp tapi_cli \
             ])
 
 TE_APP_PARMS([rcf], [--enable-ltdl-install], [], [], [])
@@ -19,32 +18,35 @@ TE_APP_PARMS([rcf], [--enable-ltdl-install], [], [], [])
 TE_LIB_PARMS([tad], [], [], \
              [--with-file --with-eth --with-bridge \
               --with-ipstack --with-dhcp --with-snmp --with-cli], [])
-              
-TE_TA_TYPE([linux], [linux], [], \
-           [--with-rcf-rpc --with-cfg-linux-daemons='ftp echo'], \
-           [], [-lexpect -lnetsnmp -lcrypto], [tad ndn asn])
 
-TE_TA_TYPE([linux_lite], [linux], [], [], [-DTAD_CH_DUMMY], [], [])
+TE_TA_TYPE([linux], [], [linux], \
+           [--with-rcf-rpc --with-cfg-linux-daemons='ftp echo'], \
+           [], [-lexpect -lnetsnmp -lcrypto], [tad ndn asn comm_net_agent])
+
+TE_LIB_PARMS([tad_dummy], [], [tad], [], [])
+
+TE_TA_TYPE([linux_lite], [], [linux], [--with-tad=tad_dummy], [], [],
+           [comm_net_agent])
 
 #
 # FreeBSD5 platform
 #
 TE_PLATFORM([i686-pc-freebsd5], [],
             [-I${FREEBSD5_HOME}/sys-include], [-L${FREEBSD5_HOME}/lib],
-            [loggerta comm_net_agent conf_oid rcfpch])
+            [loggerta comm_net_agent conf_oid rcfpch tad])
 
-TE_TA_TYPE([freebsd5], [linux], [i686-pc-freebsd5],
-           [--with-rcf-rpc], [-DTAD_CH_DUMMY], [], [])
+TE_TA_TYPE([freebsd5], [i686-pc-freebsd5], [linux],
+           [--with-rcf-rpc], [], [], [comm_net_agent])
 
 #
 # NetBSD platform
 #
 TE_PLATFORM([i686-pc-netbsdelf], [],
             [-I${NETBSD_HOME}/sys-include], [-L${NETBSD_HOME}/lib],
-            [loggerta comm_net_agent conf_oid rcfpch])
+            [loggerta comm_net_agent conf_oid rcfpch tad])
 
-TE_TA_TYPE([netbsd], [linux], [i686-pc-netbsdelf],
-           [--with-rcf-rpc], [-DTAD_CH_DUMMY], [], [])
+TE_TA_TYPE([netbsd], [i686-pc-netbsdelf], [linux],
+           [--with-rcf-rpc], [], [], [comm_net_agent])
 
 #
 # CygWin platform
@@ -52,9 +54,8 @@ TE_TA_TYPE([netbsd], [linux], [i686-pc-netbsdelf],
 TE_PLATFORM([i686-pc-cygwin], [],
             [-I${CYGWIN_HOME}/include -I${CYGWIN_HOME}/include/ws32api -D__CYGWIN__],
             [-L${CYGWIN_HOME}/lib -L${CYGWIN_HOME}/lib/w32api], 
-            [loggerta comm_net_agent conf_oid rcfpch])
+            [loggerta comm_net_agent conf_oid rcfpch tad])
 
-TE_TA_TYPE([win32], [win32], [i686-pc-cygwin], \
-           [--with-rcf-rpc], [-DTAD_CH_DUMMY], [], \
-           [ws2_32 rcfpch conf_oid loggerta comm_net_agent])
+TE_TA_TYPE([win32], [i686-pc-cygwin], [win32], \
+           [--with-rcf-rpc], [], [], [ws2_32 comm_net_agent])
 

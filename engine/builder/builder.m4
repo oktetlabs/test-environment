@@ -22,7 +22,7 @@ dnl MA  02111-1307  USA
 dnl
 dnl Author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
 dnl
-dnl $Id: builder.m4,v 1.4 2003/12/08 15:15:51 oleg Exp $
+dnl $Id$
  
 changequote([,])
 
@@ -357,9 +357,9 @@ dnl Specifies parameters for the Test Agent. Can be called once for each TA.
 dnl
 dnl Parameters:
 dnl       type of the Test Agent 
-dnl       sources location (name of the directory in ${TE_BASE}/agents or
-dnl       full absolute path to sources)
 dnl       platform (may be empty)
+dnl       sources location (name of the directory in ${TE_BASE}/agents or
+dnl               full absolute path to sources)
 dnl       additional parameters to configure script (may be empty)
 dnl       additional compiler flags
 dnl       additional linker flags
@@ -376,7 +376,7 @@ then
     break ; 
 fi
 ]
-SOURCES=$2
+SOURCES=$3
 if test -z "$SOURCES" ; then 
     SOURCES=${TE_BASE}/agents/$1 ; 
 fi
@@ -391,10 +391,10 @@ TE_BS_TA_$1_CFLAGS="$5"
 TE_BS_TA_$1_LDFLAGS="$6"
 TE_BS_TA_$1_LIBS="$7"
 [
-if test -z "$3" ; then
+if test -z "$2" ; then
     PLATFORM=${host};
 else
-    PLATFORM=$3;
+    PLATFORM=$2;
 fi
 TE_BS_TA_$1_PLATFORM=$PLATFORM
 ]

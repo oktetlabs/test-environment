@@ -8,9 +8,9 @@
 #
 TE_PLATFORM([], [], [], [], \
             [ipc bsapi loggerten rcfapi conf_oid confapi tapi \
-             comm_net_engine rcfunix rcfrpc loggerta comm_net_agent rcfpch \
-             tapi_rpcsock tapi_eth tapi_snmp tapi_ipstack \
-             tapi_bridge tapi_cli tapi_dhcp tapi_tad \
+             comm_net_engine rcfunix loggerta comm_net_agent rcfpch \
+             rcfrpc tapi_rpcsock tapi_tad tapi_eth tapi_bridge tapi_arp \
+             tapi_ipstack tapi_dhcp tapi_snmp tapi_cli \
              asn ndn tad \
             ])
 
@@ -20,9 +20,5 @@ TE_LIB_PARMS([tad], [], [], \
              [--with-file --with-eth --with-bridge \
               --with-ipstack --with-dhcp --with-snmp --with-cli], [])
 
-TE_TA_TYPE([linux], [linux], [], [--with-rcf-rpc], [], \
-           [-lexpect -lnetsnmp -lcrypto], [tad ndn asn])
-
-#TE_TA_TYPE([linux_lite], [linux], [], [], [-DTAD_CH_DUMMY], [], [])
-
-
+TE_TA_TYPE([linux], [], [linux], [--with-rcf-rpc], [], \
+           [-lexpect -lnetsnmp -lcrypto], [ndn asn comm_net_agent])
