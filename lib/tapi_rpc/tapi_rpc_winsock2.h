@@ -33,6 +33,7 @@
 #define __TE_TAPI_RPC_WINSOCK2_H__
 
 #include "tapi_rpc_unistd.h"
+#include "tapi_rpc_socket.h"
 
 
 /* Windows Event Objects */
@@ -182,7 +183,7 @@ extern int rpc_wsa_recv(rcf_rpc_server *rpcs,
                         te_bool callback);
 
 /* WSASendTo */
-extern int rpc_wsa_send_to(rcf_rpc_server *handle, int s,
+extern int rpc_wsa_send_to(rcf_rpc_server *rpcs, int s,
                            const struct rpc_iovec *iov,
                            size_t iovcnt, rpc_send_recv_flags flags,
                            int *bytes_sent, const struct sockaddr *to,
@@ -190,7 +191,7 @@ extern int rpc_wsa_send_to(rcf_rpc_server *handle, int s,
                            te_bool callback);
 
 /* WSARecvFrom */
-extern int rpc_wsa_recv_from(rcf_rpc_server *handle, int s,
+extern int rpc_wsa_recv_from(rcf_rpc_server *rpcs, int s,
                              const struct rpc_iovec *iov, size_t iovcnt,
                              size_t riovcnt, rpc_send_recv_flags *flags,
                              int *bytes_received, struct sockaddr *from,
@@ -198,12 +199,17 @@ extern int rpc_wsa_recv_from(rcf_rpc_server *handle, int s,
                              te_bool callback);
 
 /* WSASendDisconnect */
-extern int rpc_wsa_send_disconnect(rcf_rpc_server *handle,
+extern int rpc_wsa_send_disconnect(rcf_rpc_server *rpcs,
                                    int s, const struct rpc_iovec *iov);
 
 /* WSARecvDisconnect */
-extern int rpc_wsa_recv_disconnect(rcf_rpc_server *handle,
+extern int rpc_wsa_recv_disconnect(rcf_rpc_server *rpcs,
                                    int s, const struct rpc_iovec *iov);
+
+/* WSARecvMsg */
+extern int rpc_wsa_recv_msg(rcf_rpc_server *rpcs, int s,
+                            struct rpc_msghdr *msg, int *bytes_received,
+                            rpc_overlapped overlapped, te_bool callback);
 
 /* WSAGetOverlappedResult() */
 extern int rpc_get_overlapped_result(rcf_rpc_server *rpcs,
