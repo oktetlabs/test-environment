@@ -265,7 +265,7 @@ daemon_get(unsigned int gid, const char *oid, char *value)
     
     if (strcmp(daemon_name, "sendmail") == 0)
     {
-        sprintf(buf, "find /var/run/ -name %s.pid | grep pid "
+        sprintf(buf, "find /var/run/ -name %s.pid 2>/dev/null | grep pid "
                      ">/dev/null 2>&1", daemon_name);
         if (ta_system(buf) == 0)
         {
@@ -1153,8 +1153,16 @@ ds_init_ftp_server(rcf_pch_cfg_object **last)
     fprintf(g, "anon_upload_enable=YES\n");
     fclose(f);
     fclose(g);
-    ta_system("mkdir -p /var/ftp/pub");
-    ta_system("chmod o+w /var/ftp/pub");
+    if (ta_system("mkdir -p /var/ftp/pub") != 0)
+    {
+        ERROR("Cannot create /var/pub/ftp");
+        return;
+    }
+    if (ta_system("chmod o+w /var/ftp/pub") !=0)
+    {
+        ERROR("Cannot chmod /var/ftp/pub");
+        return;
+    }
     if (daemon_running("ftpserver"))
     {
         daemon_set(0, "ftpserver", "0");
@@ -1167,7 +1175,7 @@ ds_init_ftp_server(rcf_pch_cfg_object **last)
 void
 ds_shutdown_ftp_server()
 {
-    ta_system("chmod o-w /var/ftp/pub");
+    ta_system("chmod o-w /var/ftp/pub 2>err");
     if (daemon_running("ftpserver"))
     {
         daemon_set(0, "ftpserver", "0");
