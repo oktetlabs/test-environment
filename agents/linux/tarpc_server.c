@@ -1889,7 +1889,7 @@ TARPC_FUNC(ioctl,
                 /* Copy the whole 'ifr_name' buffer, not just strcpy() */
                 memcpy(req_ifreq.ifr_name,
                        out->req.req_val[0].ioctl_request_u.req_ifreq.
-                       rpc_ifr_name.rpc_ifr_name_val,
+                           rpc_ifr_name.rpc_ifr_name_val,
                        sizeof(req_ifreq.ifr_name));
 
                 INIT_CHECKED_ARG(req_ifreq.ifr_name,
@@ -2086,7 +2086,17 @@ TARPC_FUNC(ioctl,
 
                 for (i = 0; i < n; i++, req_t++, req_c++)
                 {
-                    req_t->rpc_ifr_name.rpc_ifr_name_val = req_c->ifr_name;
+                    req_t->rpc_ifr_name.rpc_ifr_name_val =
+                        malloc(sizeof(req_c->ifr_name));
+                    if (req_t->rpc_ifr_name.rpc_ifr_name_val == NULL)
+                    {
+                        free(req_ifconf.ifc_buf);
+                        ERROR("No enough memory");
+                        out->common._errno = TE_RC(TE_TA_LINUX, ENOMEM);
+                        goto finish;
+                    }
+                    memcpy(req_t->rpc_ifr_name.rpc_ifr_name_val,
+                           req_c->ifr_name, sizeof(req_c->ifr_name));
                     req_t->rpc_ifr_name.rpc_ifr_name_len =
                         sizeof(req_c->ifr_name);
                     if ((req_t->rpc_ifr_addr.sa_data.sa_data_val =
