@@ -280,7 +280,7 @@ rcf_pch_file(struct rcf_comm_connection *conn, char *cbuf, size_t buflen,
         res = write(fd, ba, rw_len);
         if ((res < 0) || ((size_t)res < rw_len))
         {
-            VERB("failed to write to file '%s'\n", filename);
+            ERROR("failed to write to file '%s'\n", filename);
             rc = errno;
             goto reject;
         }
@@ -316,7 +316,7 @@ rcf_pch_file(struct rcf_comm_connection *conn, char *cbuf, size_t buflen,
             res = write(fd, cbuf + answer_plen, rw_len);
             if ((res < 0) || ((size_t)res < rw_len))
             {
-                VERB("failed to write in file '%s'\n", filename);
+                ERROR("failed to write in file '%s'\n", filename);
                 rc = errno;
                 goto reject;
             }

@@ -729,7 +729,8 @@ forward(void *arg)
 
     if ((rpcs->_errno = rcf_ta_put_file(rpcs->ta, 0, file, rfile)) != 0)
     {
-        ERROR("Cannot put file %s with RPC data to the TA", file);
+        ERROR("Cannot put file %s with RPC data to the TA %s", 
+              file, rpcs->ta);
         goto release;
     }
 
