@@ -533,7 +533,7 @@ tapi_cfg_arp_op(enum tapi_cfg_oper op, const char *ta,
             if ((rc = cfg_del_instance_fmt(FALSE, "/agent:%s/arp:%s",
                                            ta, net_addr_str)) != 0)
             {
-                ERROR("%s() fails deleting ARP entry for %s host"
+                ERROR("%s() fails deleting ARP entry for %s host "
                       "on TA '%s'", __FUNCTION__, net_addr_str, ta);
                 return TE_RC(TE_TAPI, rc);
             }
