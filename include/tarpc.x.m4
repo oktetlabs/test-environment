@@ -1426,6 +1426,20 @@ struct tarpc_fopen_out {
     unsigned int mem_ptr;
 };
 
+/* popen() */
+struct tarpc_popen_in {
+    struct tarpc_in_arg common;
+    
+    char cmd<>;
+    char mode<>;
+};
+
+struct tarpc_popen_out {
+    struct tarpc_out_arg common;
+    
+    unsigned int mem_ptr;
+};
+
 /* fileno() */
 struct tarpc_fileno_in {
     struct tarpc_in_arg common;
@@ -1935,6 +1949,7 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(pipe)
         RPC_DEF(socketpair)
         RPC_DEF(fopen)
+        RPC_DEF(popen)
         RPC_DEF(fileno)
         RPC_DEF(getuid)
         RPC_DEF(geteuid)
