@@ -95,11 +95,8 @@ if test -z "$with_config" -a -e ${srcdir}/conf/builder.conf ; then
     with_config=${srcdir}/conf/builder.conf
 fi    
 
-if test -n "$with_config" ; then
-    cp -pR `dirname $with_config` .
-    rm -rf conf/.svn
-    cp -f $with_config conf/builder.conf
-fi    
+AC_SUBST([TE_CONF_DIR], [`dirname $with_config`])
+AC_SUBST([TE_BUILDER_CONF], [$with_config])
 
 if test -n "$with_config" ; then
     cat ${TE_BASE}/engine/builder/builder.m4 $with_config | m4 >> ${TE_BUILD}/builder.conf.processed.new

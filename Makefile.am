@@ -37,7 +37,7 @@ dist_mybin_SCRIPTS = dispatcher.sh
 
 DISTCLEANFILES = builder.conf.processed 
 
-EXTRA_DIST = conf Doxyfile
+EXTRA_DIST = Doxyfile
 
 if SUITE_SCRIPTS_PROVIDED
 
@@ -73,3 +73,9 @@ tce-report:
 	    fi ; \
 	done
 
+dist-hook:
+	cp -pR @TE_CONF_DIR@ $(distdir)
+	rm -rf $(distdir)/conf/.svn $(distdir)/conf/CVS
+	if test `basename @TE_BUILDER_CONF@` != "builder.conf" ; then \
+		cp -f @TE_BUILDER_CONF@ $(distdir)/conf/builder.conf ; \
+	fi
