@@ -828,6 +828,20 @@ extern int rcf_ta_kill_task(const char *ta_name, int session, pid_t pid);
  */
 extern void rcf_api_cleanup(void);
 
+/**
+ * This function is used to check that all running are still
+ * working.
+ *
+ * @return error code
+ *
+ * @retval 0            success
+ * @retval ETAREBOOTED  if at least one test agent has been normally
+ *                      rebooted
+ * @retval ETADEAD      if at least one agent was dead
+ * @retval ETEIO        cannot interact with RCF 
+ * 
+ */
+extern int rcf_check_agents(void);
 
 #ifdef __cplusplus
 } /* extern "C" */

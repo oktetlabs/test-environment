@@ -1245,7 +1245,7 @@ rcf_ta_set_var(const char *ta_name, int session, const char *var_name,
     {
         return TE_RC(TE_RCF_API, ETEIO);
     }
-    
+
     return msg.error;
 }
 
@@ -2512,3 +2512,35 @@ rcf_ta_kill_task(const char *ta_name, int session, pid_t pid)
     return msg.error;
 }
 
+/**
+ * This function is used to check that all running are still
+ * working.
+ *
+ * @return error code
+ *
+ * @retval 0            success
+ * @retval ETAREBOOTED  if at least one test agent has been normally
+ *                      rebooted
+ * @retval ETADEAD      if at least one agent was dead
+ * @retval ETEIO        cannot interact with RCF 
+ * 
+ */
+int
+rcf_check_agents(void)
+{ 
+    rcf_msg  msg;
+    size_t   anslen = sizeof(msg);
+    INIT_IPC;
+    
+    memset((char *)&msg, 0, sizeof(msg));
+    msg.opcode = RCFOP_TACHECK;
+    
+    if (ipc_send_message_with_answer(ipc_handle, RCF_SERVER,
+                                     &msg, sizeof(msg),
+                                     &msg, &anslen) != 0)
+    {
+        return TE_RC(TE_RCF_API, ETEIO);
+    }
+
+    return msg.error;
+}

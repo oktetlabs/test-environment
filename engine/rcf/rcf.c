@@ -133,7 +133,6 @@
  */
 
 
-
 /** One request from the user */
 typedef struct usrreq {
     struct usrreq            *next;
@@ -191,7 +190,6 @@ static te_bool rcf_wait_shutdown = FALSE;   /**< Should RCF go to wait
 static struct ipc_server *server = NULL;    /**< IPC Server handle */
 static int server_fd;                       /**< IPC file descriptor 
                                                  of the server */
-
 static char cmd[RCF_MAX_LEN];   /**< Test Protocol command location */
 static char names[RCF_MAX_LEN - sizeof(rcf_msg)];   /**< TA names */
 static int  names_len = 0;      /**< Length of TA name list */
@@ -920,12 +918,14 @@ process_reply(ta *agent)
     } while (0)
 
     rc = (agent->receive)(agent->handle, cmd, &len, &ba);
+
     if (rc == ETESMALLBUF)
     {
         ERROR("FATAL ERROR: Too big answer from TA '%s' - increase "
               "memory constants", agent->name);
         return -1;
     }
+
     if (rc != 0 && rc != ETEPENDING)
     {
         ERROR("ERROR: Receiving answer from TA '%s' failed error %d",
@@ -936,6 +936,7 @@ process_reply(ta *agent)
         answer_all_requests(&(agent->pending), ETADEAD);
         return 0;
     }
+
 
     VERB("Answer \"%s\" is received from TA '%s'", cmd, agent->name);
 
@@ -1470,6 +1471,90 @@ send_cmd(ta *agent, usrreq *req)
     return transmit_cmd(agent, req);
 }
 
+/**
+ * This function is used to check that all running TA are still
+ * working.
+ */
+static int
+rcf_ta_check()
+{
+    te_bool   reboot = FALSE;
+    te_bool   dead = FALSE;
+    te_bool   reb_success = FALSE;
+    ta        *agent;
+    struct timeval tv;
+    fd_set         set;
+    int         num_live = 0;
+
+    time_t t = time(NULL);
+
+    for (agent = agents; agent != NULL; agent = agent->next)
+    {
+        if (agent->dead)
+        {
+            continue;
+        }
+        num_live++;
+        sprintf(cmd, "SID %d %s time string", ++agent->sid, TE_PROTO_VREAD);
+        (agent->transmit)(agent->handle, cmd, strlen(cmd) + 1);        
+    }
+    while (num_live > 0 && time(NULL) - t < RCF_SHUTDOWN_TIMEOUT)
+    {
+        tv = tv0;
+        set = set0;
+        select(FD_SETSIZE, &set, NULL, NULL, &tv);
+
+        for (agent = agents; agent != NULL; agent = agent->next)
+        {
+            VERB("Flags %x %x Dead %d", agent->flags,
+                 TA_CHECKED, agent->dead);
+            if ((agent->flags & TA_CHECKED) || (agent->dead))
+                continue;
+
+            if ((agent->is_ready)(agent->handle))
+            {
+                char    answer[16];
+                char   *ba;
+                size_t  len = sizeof(cmd);
+
+                VERB("Receiving");
+                if ((agent->receive)(agent->handle, cmd, &len, &ba) != 0)
+                    continue;
+                VERB("Received %s", cmd);
+                
+                sprintf(answer, "SID %d 0", agent->sid);
+
+                if (strncmp(cmd, answer, strlen(answer)) != 0)
+                    continue;
+
+                VERB("Test Agent '%s' is checked", agent->name);
+                agent->flags |= TA_CHECKED;
+                num_live--;
+            }
+        }
+    }
+
+    for (agent = agents; agent != NULL; agent = agent->next)
+    {
+        if (((agent->flags & TA_CHECKED) == 0) || (agent->dead))
+        {
+            ERROR("Reboot TA '%s'", agent->name);
+            reboot = TRUE;
+            agent->reboot_timestamp = 0;
+            reb_success = ((agent->reboot)(agent->handle, NULL) != 0) || 
+                          (init_agent(agent) != 0);
+            if (reb_success)
+            {
+                ERROR("Cannot reboot TA '%s'", agent->name);
+                dead = TRUE;
+            }
+            else
+                agent->dead = FALSE;
+        }
+        agent->flags &= ~TA_CHECKED;
+    }
+    return dead? ETADEAD : reboot ? ETAREBOOTED : 0;
+}
 
 /**
  * Process a request from the user: send the command to the Test Agent or
@@ -1494,6 +1579,14 @@ process_user_request(usrreq *req)
         return 0;
     }
 
+    if (msg->opcode == RCFOP_TACHECK)
+    {
+        rc = rcf_ta_check();
+        msg->error = TE_RC(TE_RCF, rc);
+        answer_user_request(req);
+        return 0;
+    }
+    
     if ((agent = find_ta_by_name(msg->ta)) == NULL)
     {
         ERROR("Unknown TA %s", msg->ta);
@@ -1780,6 +1873,7 @@ main(int argc, char **argv)
             goto error;
         }
     }
+
     if (agents == NULL)
     {
         VERB("Empty list with TAs");
@@ -1835,6 +1929,7 @@ main(int argc, char **argv)
                  */
                 req = NULL;
             }
+
         }
         for (agent = agents; agent != NULL; agent = agent->next)
         {
@@ -1843,7 +1938,8 @@ main(int argc, char **argv)
             {
                 goto shutdown;
             }
-        }
+        } 
+
         if (rcf_wait_shutdown)
         {
             rc = 0;
@@ -1873,5 +1969,6 @@ no_ipcs_error:
 
     log_client_close();
 
+    
     return rc < 0 ? 1 : 0;
 }

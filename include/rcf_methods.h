@@ -48,9 +48,9 @@ typedef void * rcf_talib_handle;
                                 not lead to loss of the connectivity */
 
 #define TA_REBOOTABLE  4   /**< Test Agent host may be rebooted */
-
-#define TA_FAKE        8   /**< Disable TA startup */
-#define TA_DOWN        16  /**< For RCF internal use */
+#define TA_FAKE        8   /**< TA is started manually */
+#define TA_DOWN        16  /**< For internal RCF use */
+#define TA_CHECKED     32  /**< For internal RCF use */
 /*@}*/
 
 

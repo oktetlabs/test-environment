@@ -66,6 +66,7 @@ extern "C" {
 typedef enum {
     RCFOP_SHUTDOWN,         /**< Shutdown RCF */
     RCFOP_TALIST,           /**< Get list of Test Agents */
+    RCFOP_TACHECK,          /**< Check running TA */
     RCFOP_TATYPE,           /**< Get TA type */
     RCFOP_SESSION,          /**< Create a session */
     RCFOP_REBOOT,           /**< Reboot the Test Agent */
@@ -178,6 +179,7 @@ rcf_op_to_string(rcf_op_t op)
     {
         case RCFOP_SHUTDOWN:        return "shutdown";
         case RCFOP_TALIST:          return "TA list";
+        case RCFOP_TACHECK:         return "TA check";
         case RCFOP_TATYPE:          return "TA type";
         case RCFOP_SESSION:         return "session";
         case RCFOP_REBOOT:          return "reboot";
