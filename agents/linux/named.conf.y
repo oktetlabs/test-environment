@@ -5,6 +5,8 @@
     extern void dns_parse_set_directory(const char *dir);
     extern void dns_parse_set_recursion(int r);
     extern void lex_switch_buffer(const char *name);
+    extern int yylex(void);
+    extern void yyerror(const char *msg);
 %}
 
 %token DNS_INCLUDE_STATEMENT

@@ -465,8 +465,9 @@ rcf_ch_start_task_thr(struct rcf_comm_connection *handle,
 {
     void *addr = rcf_ch_symbol_addr(rtn, TRUE);
     struct rcf_thread_parameter *iter;
-    int   id;
 
+
+    UNUSED(priority);
     if (addr != NULL)
     {
         VERB("start thread with entry point '%s'", rtn);

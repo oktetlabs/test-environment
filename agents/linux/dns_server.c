@@ -121,8 +121,6 @@ static int
 ds_dns_directory_set(unsigned int gid, const char *oid,
                      const char *value, const char *instN, ...)
 {
-    char *tmp;
-    
     if(named_conf_was_running)
     {
         WARN("DNS server was running");
