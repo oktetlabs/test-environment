@@ -322,15 +322,26 @@ get_client_handle(te_bool create)
 void
 log_client_close(void)
 {
-#if PTHREAD_SETSPECIFIC_BUG
+#if HAVE_PTHREAD_H && !PTHREAD_SETSPECIFIC_BUG
+    logger_ten_thread_ctx_destroy(get_client_handle(FALSE));
+    /* Write NULL to key value */
+    if (pthread_setspecific(key, NULL) != 0)
+    {
+        fprintf(stderr, "pthread_setspecific() failed\n");
+    }
+#else
     int                 res;
     struct ipc_client  *ipcc = get_client_handle(FALSE);
 
     res = ipc_close_client(ipcc);
     if (res != 0)
+    {
         fprintf(stderr, "log_client_close(): ipc_close_client failed\n");
+    }
+#if PTHREAD_SETSPECIFIC_BUG
     free_client_handle();
-#endif    
+#endif
+#endif
 }
 
 

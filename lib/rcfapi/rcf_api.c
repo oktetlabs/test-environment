@@ -148,7 +148,7 @@ validate_type(int var_type, int var_len)
 /**
  * Destructor of resources assosiated with thread.
  *
- * @handle      - handle assosiated with thread
+ * @handle      Handle assosiated with thread
  */
 static void
 rcf_api_thread_ctx_destroy(void *handle)
@@ -322,7 +322,15 @@ free_ipc_handle(void)
 void
 rcf_api_cleanup(void)
 {
-#if PTHREAD_SETSPECIFIC_BUG
+#if HAVE_PTHREAD_H && !PTHREAD_SETSPECIFIC_BUG
+    rcf_api_thread_ctx_destroy(get_ipc_handle(FALSE));
+    /* Write NULL to key value */
+    if (pthread_setspecific(key, NULL) != 0)
+    {
+        ERROR("pthread_setspecific() failed\n");
+        fprintf(stderr, "pthread_setspecific() failed\n");
+    }
+#else
     struct ipc_client *ipcc = get_ipc_handle(FALSE);
 
     if (ipc_close_client(ipcc) != 0)
@@ -330,7 +338,9 @@ rcf_api_cleanup(void)
         ERROR("%s(): ipc_close_client() failed", __FUNCTION__);
         fprintf(stderr, "ipc_close_client() failed\n");
     }
+#if PTHREAD_SETSPECIFIC_BUG
     free_ipc_handle();
+#endif
 #endif
 }
 
