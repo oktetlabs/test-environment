@@ -4,7 +4,7 @@
 AC_PREREQ([2.59])
 AC_INIT([tapi], [0.1], [Andrew.Rybchenko@oktetlabs.ru])
 
-AC_CONFIG_SRCDIR([tapi_tad.h])
+AC_CONFIG_SRCDIR([tapi_test.h])
 
 AC_CONFIG_AUX_DIR([../../auxdir])
 
