@@ -392,7 +392,8 @@ ta_handler(void *ta)
         *log_file = '\0';
         if ((rc = rcf_ta_get_log(inst->agent, log_file)) != 0)
         {
-            if (TE_RC_GET_ERROR(rc) == ETAREBOOTED)
+            if (TE_RC_GET_ERROR(rc) == ETAREBOOTED ||
+                TE_RC_GET_ERROR(rc) == ETADEAD)
             {
                 /* 
                  * Ignore error if TA is rebooted by RCF, but terminate
@@ -557,7 +558,10 @@ ta_handler(void *ta)
 
     } /* end of forever loop */
 
-    /* TODO Is it required to check flush_done flag here? */
+    if (do_flush || flush_done)
+    {
+        (void)ta_flush_done(srv);
+    }
 
     if (ipc_close_server(srv) != 0)
     {
