@@ -470,8 +470,10 @@ tapi_eth_recv_start(const char *ta_name, int sid,
 
 /* See the description in tapi_eth.h */
 int
-tapi_eth_prepare_pattern(uint8_t *src_mac, uint8_t *dst_mac,
-                         uint16_t *eth_type, asn_value **pattern)
+tapi_eth_prepare_pattern(const uint8_t *src_mac,
+                         const uint8_t *dst_mac,
+                         const uint16_t *eth_type,
+                         asn_value **pattern)
 {
     asn_value            *frame_hdr;
     ndn_eth_header_plain  eth_hdr;

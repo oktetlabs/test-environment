@@ -247,9 +247,9 @@ extern int tapi_eth_recv_start(const char *ta_name, int sid,
  *
  * @returns Status of the operation
  */
-extern int tapi_eth_prepare_pattern(uint8_t *src_mac,
-                                    uint8_t *dst_mac,
-                                    uint16_t *eth_type,
+extern int tapi_eth_prepare_pattern(const uint8_t *src_mac,
+                                    const uint8_t *dst_mac,
+                                    const uint16_t *eth_type,
                                     asn_value **pattern);
 
 /**
