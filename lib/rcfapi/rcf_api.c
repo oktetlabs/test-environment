@@ -1908,6 +1908,7 @@ static int
 csap_tr_recv_get(const char *ta_name, int session, int handle,
                  int *num, int opcode)
 {
+    int     rc;
     rcf_msg msg;
     size_t  anslen = sizeof(msg);
     csap   *tmp;
@@ -1959,11 +1960,13 @@ csap_tr_recv_get(const char *ta_name, int session, int handle,
     msg.handle = handle;
 
     anslen = sizeof(msg);
-    if (ipc_send_message_with_answer(ipc_handle, RCF_SERVER,
-                                     &msg, sizeof(msg),
-                                     &msg, &anslen) != 0)
+    if ((rc = ipc_send_message_with_answer(ipc_handle, RCF_SERVER,
+                                           &msg, sizeof(msg),
+                                           &msg, &anslen)) != 0)
     {
         remove_csap(ta_name, handle);
+        ERROR("%s: IPC send with answer fails, rc %X", 
+              __FUNCTION__, rc);
         return TE_RC(TE_RCF_API, ETEIO);
     }
 
@@ -1972,8 +1975,11 @@ csap_tr_recv_get(const char *ta_name, int session, int handle,
         handler(msg.file, user_param);
 
         anslen = sizeof(msg);
-        if (ipc_receive_answer(ipc_handle, RCF_SERVER, &msg, &anslen) != 0)
+        if ((rc = ipc_receive_answer(ipc_handle, RCF_SERVER, 
+                                     &msg, &anslen)) != 0)
         {
+            ERROR("%s: IPC receive answer fails, rc %X", 
+                  __FUNCTION__, rc);
             return TE_RC(TE_RCF_API, ETEIO);
         }
     }
@@ -1990,6 +1996,8 @@ csap_tr_recv_get(const char *ta_name, int session, int handle,
          * in case of error. */
         remove_csap(ta_name, handle);
     }
+    if (msg.error)
+        WARN("RCF traffic operation fails with status code %X", msg.error);
     
     return msg.error;
 }
