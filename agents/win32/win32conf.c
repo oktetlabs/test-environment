@@ -855,7 +855,7 @@ arp_set(unsigned int gid, const char *oid, const char *value,
         const char *addr)
 {
     MIB_IPNETTABLE *table;
-    int             i, k, res;
+    int             i, k;
     DWORD           a;
     int             int_mac[6];
     
@@ -880,25 +880,18 @@ arp_set(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_WIN32, ENOENT);
     }
     
-    res = sscanf(value, "%2x:%2x:%2x:%2x:%2x:%2x%s", int_mac, int_mac + 1,
-                 int_mac + 2, int_mac + 3, int_mac + 4, int_mac + 5, buf);
-
-    if (res != 6)
-        return TE_RC(TE_TA_WIN32, EINVAL);
-        
-    if (DeleteIpNetEntry(table->table + i) != NO_ERROR)
+    if (sscanf(value, "%2x:%2x:%2x:%2x:%2x:%2x%s", int_mac, int_mac + 1,
+               int_mac + 2, int_mac + 3, int_mac + 4, int_mac + 5, buf) != 6)
     {
-        ERROR("DeleteIpNetEntry() failed, error %x", GetLastError());
-        free(table);
-        return TE_RC(TE_TA_WIN32, ETEWIN);
+        return TE_RC(TE_TA_WIN32, EINVAL);
     }
-    
+        
     for (k = 0; k < 6; k++)
         table->table[i].bPhysAddr[k] = (unsigned char)int_mac[k];
 
-    if (CreateIpNetEntry(table->table + i) != NO_ERROR)
+    if (SetIpNetEntry(table->table + i) != NO_ERROR)
     {
-        ERROR("CreateIpNetEntry() failed, error %x", GetLastError());
+        ERROR("SetIpNetEntry() failed, error %x", GetLastError());
         free(table);
         return TE_RC(TE_TA_WIN32, ETEWIN);
     }
@@ -924,7 +917,7 @@ arp_add(unsigned int gid, const char *oid, const char *value,
     char           val[32];
     MIB_IPNETROW   entry;
     int            int_mac[6];
-    int            res;
+    int            rc;
     int            i;
 
     UNUSED(gid);
@@ -933,18 +926,18 @@ arp_add(unsigned int gid, const char *oid, const char *value,
     if (arp_get(0, NULL, val, addr) == 0)
         return TE_RC(TE_TA_WIN32, EEXIST);
 
-    res = sscanf(value, "%2x:%2x:%2x:%2x:%2x:%2x%s", int_mac, int_mac + 1,
-                 int_mac + 2, int_mac + 3, int_mac + 4, int_mac + 5, buf);
-
-    if (res != 6)
+    if (sscanf(value, "%2x:%2x:%2x:%2x:%2x:%2x%s", int_mac, int_mac + 1,
+               int_mac + 2, int_mac + 3, int_mac + 4, int_mac + 5, buf) != 6)
+    {
         return TE_RC(TE_TA_WIN32, EINVAL);
+    }
         
     for (i = 0; i < 6; i++)
         entry.bPhysAddr[i] = (unsigned char)int_mac[i];
 
     entry.dwAddr = inet_addr(addr);
-    if ((res = find_ifindex(entry.dwAddr, &entry.dwIndex)) != 0)
-        return res;
+    if ((rc = find_ifindex(entry.dwAddr, &entry.dwIndex)) != 0)
+        return rc;
     entry.dwPhysAddrLen = 6;
     entry.dwType = 4;
     if (CreateIpNetEntry(&entry) != 0)
@@ -1135,9 +1128,43 @@ static int
 route_set(unsigned int gid, const char *oid, const char *value,
           const char *route)
 {
+    MIB_IPFORWARDTABLE *table;
+    DWORD dst, gw;
+    int   i, prefix, rc;
+    
     UNUSED(gid);
     UNUSED(oid);
+
+    if ((rc = parse_route_name((char *)route, &dst, &prefix)) != 0)
+        return rc;
+        
+    if ((gw = inet_addr(value)) == INADDR_NONE)
+        return TE_RC(TE_TA_WIN32, EINVAL);
     
+    GET_TABLE(MIB_IPFORWARDTABLE, GetIpForwardTable);
+    if (table == NULL)
+        return TE_RC(TE_TA_WIN32, ENOENT);
+    
+    for (i = 0; i < (int)table->dwNumEntries; i++)
+    {
+        int p;
+        
+        MASK2PREFIX(table->table[i].dwForwardMask, p);
+        if (table->table[i].dwForwardDest == dst && prefix == p)
+        {
+            table->table[i].dwForwardNextHop = gw;
+            if (SetIpForwardEntry(table->table + i) != 0)
+            {
+                ERROR("SetIpForwardEntry() failed, error %x", GetLastError());
+                free(table);
+                return TE_RC(TE_TA_WIN32, ETEWIN);
+            }
+            free(table);
+            return 0;
+        }
+    }
+
+    return TE_RC(TE_TA_WIN32, ENOENT);
 }
 
 /**
@@ -1154,9 +1181,36 @@ static int
 route_add(unsigned int gid, const char *oid, const char *value,
           const char *route)
 {
+    char             val[32];
+    MIB_IPFORWARDROW entry;
+    int              rc, prefix;
+
     UNUSED(gid);
     UNUSED(oid);
-    
+
+    if ((rc = parse_route_name((char *)route, &entry.dwForwardDest, 
+                               &prefix)) != 0)
+        return rc;
+
+    if (route_get(0, NULL, val, route) == 0)
+        return TE_RC(TE_TA_WIN32, EEXIST);
+
+    if ((entry.dwForwardNextHop = inet_addr(value)) == INADDR_NONE)
+        return TE_RC(TE_TA_WIN32, EINVAL);
+        
+    if ((rc = find_ifindex(entry.dwForwardNextHop, 
+                            &entry.dwForwardIfIndex)) != 0)
+    {
+        return rc;
+    }
+    entry.dwForwardMask = PREFIX2MASK(prefix);
+    entry.dwForwardProto = 3;
+    if (CreateIpForwardEntry(&entry) != 0)
+    {
+        ERROR("CreateIpForwardEntry() failed, error %x", GetLastError());
+        return TE_RC(TE_TA_WIN32, ETEWIN);
+    }
+    return 0;
 }
 
 
@@ -1172,9 +1226,40 @@ route_add(unsigned int gid, const char *oid, const char *value,
 static int
 route_del(unsigned int gid, const char *oid, const char *route)
 {
+    MIB_IPFORWARDTABLE *table;
+    DWORD dst;
+    int   i, prefix, rc;
+    
     UNUSED(gid);
     UNUSED(oid);
+
+    if ((rc = parse_route_name((char *)route, &dst, &prefix)) != 0)
+        return rc;
+        
+    GET_TABLE(MIB_IPFORWARDTABLE, GetIpForwardTable);
+    if (table == NULL)
+        return TE_RC(TE_TA_WIN32, ENOENT);
     
+    for (i = 0; i < (int)table->dwNumEntries; i++)
+    {
+        int p;
+        
+        MASK2PREFIX(table->table[i].dwForwardMask, p);
+        if (table->table[i].dwForwardDest == dst && prefix == p)
+        {
+            if (DeleteIpForwardEntry(table->table + i) != 0)
+            {
+                ERROR("DeleteIpForwardEntry() failed, error %x", 
+                      GetLastError());
+                free(table);
+                return TE_RC(TE_TA_WIN32, ETEWIN);
+            }
+            free(table);
+            return 0;
+        }
+    }
+
+    return TE_RC(TE_TA_WIN32, ENOENT);
 }
 
 /**
