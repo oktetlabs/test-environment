@@ -1393,9 +1393,6 @@ route_add(unsigned int gid, const char *oid, const char *value,
     if ((rc = route_parse_inst_name(route, &rt)) != 0)
         return rc;
         
-    PRINT("Dst: %x Gw: %x Prefix: %d IfIndex: %d Type: %d", 
-          rt.dst, rt.gw, rt.prefix, rt.if_index, rt.forw_type);
-        
 #ifndef WITH_METRIC        
     if (rt.metric != 0)
     {
