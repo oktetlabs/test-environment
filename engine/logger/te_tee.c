@@ -109,12 +109,15 @@ main (int argc, char *argv[])
                         rest ? rest : "",                      \
                         buffer);                               \
             if (!newline)                                      \
+            {                                                  \
+                fence = buffer + TE_LOG_FIELD_MAX;             \
                 rest = NULL;                                   \
+            }                                                  \
             else                                               \
             {                                                  \
                 rest = newline + 1;                            \
-                buffer = (buffer == buffer1 ? buffer2 : buffer1); \ 
-                fence = buffer + TE_LOG_FIELD_MAX;             \
+                buffer = (buffer == buffer1 ? buffer2 : buffer1); \
+                fence = buffer + TE_LOG_FIELD_MAX - (current - rest);   \
             }                                                  \
             current_timeout = -1;                              \
             current = buffer;                                  \

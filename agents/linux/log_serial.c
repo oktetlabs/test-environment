@@ -303,7 +303,10 @@ log_serial(void *ready, int argc, char *argv[])
                         rest ? rest : "",                      \
                         buffer);                               \
             if (!newline)                                      \
+            {                                                  \
+                fence = buffer + TE_LOG_FIELD_MAX;             \
                 rest = NULL;                                   \
+            }                                                  \
             else                                               \
             {                                                  \
                 char *tmp;                                     \
@@ -312,7 +315,7 @@ log_serial(void *ready, int argc, char *argv[])
                 tmp = buffer;                                  \
                 buffer = other_buffer;                         \
                 other_buffer = tmp;                            \
-                fence = buffer + TE_LOG_FIELD_MAX;             \
+                fence = buffer + TE_LOG_FIELD_MAX - (current - rest);   \
             }                                                  \
             current_timeout = -1;                              \
             current = buffer;                                  \
@@ -420,6 +423,7 @@ log_serial(void *ready, int argc, char *argv[])
     /* FIXME: Cast of (int) to (void *) is not a good idea really */
     pthread_cleanup_push((void (*)(void *))close, (void *)poller.fd);
     pthread_cleanup_push(free, buffer);
+    pthread_cleanup_push(free, other_buffer);
     for (;;)
     {
         poller.revents = 0;
@@ -469,8 +473,9 @@ log_serial(void *ready, int argc, char *argv[])
             MAYBE_DO_LOG;
         }
     }
-    pthread_cleanup_pop(1);
-    pthread_cleanup_pop(1);
+    pthread_cleanup_pop(1); /* free other buffer */
+    pthread_cleanup_pop(1); /* free buffer */
+    pthread_cleanup_pop(1); /* close fd */
     return 0;
 #undef MAYBE_DO_LOG
 }
