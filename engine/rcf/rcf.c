@@ -223,7 +223,7 @@ free_ta_list()
     {
         next = agent->next;
 
-        if (dlclose(agent->dlhandle) != 0)
+        if (agent->dlhandle != NULL && dlclose(agent->dlhandle) != 0)
             ERROR("dlclose() failed");
 
         free(agent->name);
