@@ -1975,7 +1975,7 @@ route_get(unsigned int gid, const char *oid, char *value,
     UNUSED(gid);
     UNUSED(oid);
 
-    RING("%s: %s", __FUNCTION__, route);
+    ENTRY("%s", route);
 
     if ((rc = route_parse_inst_name(route, &rt)) != 0)
         return 0;
@@ -2081,7 +2081,7 @@ route_set(unsigned int gid, const char *oid, const char *value,
 {
     char val[RCF_MAX_VAL];
 
-    RING("%s: %s", __FUNCTION__, route);
+    ENTRY("%s", route);
 
     if (route_get(gid, oid, val, route) != 0)
         return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
@@ -2114,7 +2114,7 @@ route_add(unsigned int gid, const char *oid, const char *value,
     UNUSED(gid);
     UNUSED(oid);
 
-    RING("%s: %s", __FUNCTION__, route);
+    ENTRY("%s", route);
 
     if ((rc = route_parse_inst_name(route, &rt)) != 0)
         return 0;
@@ -2168,7 +2168,7 @@ route_del(unsigned int gid, const char *oid, const char *route)
     struct ortentry rt;
 #endif
 
-    RING("%s: %s", __FUNCTION__, route);
+    ENTRY("%s", route);
 
     if (route_get(gid, oid, value, route) != 0)
     {
@@ -2219,7 +2219,7 @@ route_list(unsigned int gid, const char *oid, char **list)
     UNUSED(gid);
     UNUSED(oid);
 
-    RING("%s: ", __FUNCTION__);
+    ENTRY();
     if ((fp = fopen("/proc/net/route", "r")) == NULL)
     {
         ERROR("Failed to open /proc/net/route for reading: %s",
@@ -2299,7 +2299,7 @@ route_list(unsigned int gid, const char *oid, char **list)
     }
     fclose(fp);
 
-    RING("%s: Routes: %s", __FUNCTION__, buf);
+    INFO("%s: Routes: %s", __FUNCTION__, buf);
     if ((*list = strdup(buf)) == NULL)
         return TE_RC(TE_TA_LINUX, ENOMEM);
 
