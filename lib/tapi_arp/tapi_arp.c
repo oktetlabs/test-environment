@@ -97,12 +97,20 @@ eth_frame_callback(const ndn_eth_header_plain *header,
 {
     struct tapi_pkt_handler_data *i_data = 
         (struct tapi_pkt_handler_data *)user_data;
-    tapi_arp_frame_t              arp_frame;
-    uint16_t                      short_var;
+
+    tapi_arp_frame_t  arp_frame;
+    uint16_t          short_var;
+    /* 
+     * Flag meaning is payload length minimal. 
+     * Minimal Eth frame length = 64 bytes, 
+     *         Eth header + tailing checksum = 18 bytes. 
+     */
+    te_bool  plen_minimal = (plen <= (64 - 18));
 
     memset(&arp_frame, 0, sizeof(arp_frame));
 
     memcpy(&(arp_frame.eth_hdr), header, sizeof(arp_frame.eth_hdr));
+
 
     /* Parse ARP packet structure */
 #define ARP_GET_SHORT_VAR(fld_) \
@@ -167,9 +175,9 @@ eth_frame_callback(const ndn_eth_header_plain *header,
 
 #undef ARP_GET_ARRAY
 
-    if (plen > 0)
+    if (!plen_minimal && plen > 0)
     {
-        WARN("ARP frame has some data after ARP header");
+        WARN("ARP frame has some data after ARP header, plen %d", plen);
         if ((arp_frame.data = (uint8_t *)malloc(plen)) == NULL)
         {
             ERROR("Cannot allocate memory under ARP payload");
