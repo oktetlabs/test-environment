@@ -31,6 +31,11 @@ TD {FONT-FAMILY:Tahoma, Arial, Verdana,  sans-serif; FONT-SIZE: 10pt;}
 .tdlight { background-color: #F3DDF3; valign: top; }
 .tddark { background-color: #EFF5EE; valign: top; }
 
+.ERROR { background-color: #FF2A17; valign: top; }
+.WARN { background-color: #FFA857; valign: top; }
+.RING { background-color: #AB94FF; valign: top; }
+.INFO { background-color: #B2FFDF; valign: top; }
+.VERB { background-color: #EFF2FF; valign: top; }
 
 /*  END of BACKGROUNDS SECTION  */
 

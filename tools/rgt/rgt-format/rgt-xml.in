@@ -29,6 +29,8 @@ pkgdatadir=@pkgdatadir@
 
 unset xml_file
 unset out_file
+multidoc=false
+def_out=false
 
 prog_name=`basename $0`
 
@@ -54,7 +56,17 @@ Usage: $prog_name [OPTION...] [<XML Log file> [<Output file>]]
   
   -o FILE, --output=FILE           Result file name. If it is not specified 
                                    then the result is output in stdout.
-  
+EOF
+
+# In case xml2html we can generate multiple document version 
+if [ "@utility@" = "rgt-xml2html" ]; then
+    cat <<EOF
+  -m, --multidoc                   Generate multidocument output
+EOF
+fi
+
+cat <<EOF
+
   -v, --version                    Display version information.
   
   -h, --help                       Show this help message.
@@ -116,6 +128,12 @@ do
             shift
         fi
         ;;
+    -m)
+        multidoc=true
+        ;;
+    --multidoc)
+        multidoc=true
+        ;;
     -v)
         version_info
         ;;
@@ -161,15 +179,25 @@ if [ -z "$xml_file" ]; then
     { (exit 1); exit 1; }
 fi
 if [ -z "$out_file" ]; then
+    def_out=true
     out_file="&1"
 fi
 
 # Process XML report file
 if [ "@utility@" = "rgt-xml2html" ]; then
 # Append variable with path to style.css file
-    eval "${bindir}/rgt-xml-translator -t ${pkgdatadir}/@utility@.tmpls \
-         --with-var=PATH_TO_AUX_FILE@@@UTIL_DIR@ \
-         $xml_file >$out_file" || rm -f $out_file
+    if [ x"$multidoc" = x"false" ]; then
+        eval "${bindir}/rgt-xml-translator -t ${pkgdatadir}/@utility@.tmpls \
+             --with-var=PATH_TO_AUX_FILE@@@UTIL_DIR@ \
+             $xml_file >$out_file" || rm -f $out_file
+    else
+        if [ x"$def_out" = x"true" ]; then
+            out_file=
+        fi
+        
+        eval "${bindir}/rgt-xml-translator-mult -d ${pkgdatadir}/xml2html \
+             $xml_file $out_file"
+    fi
 else
     eval "${bindir}/rgt-xml-translator -t ${pkgdatadir}/@utility@.tmpls \
          $xml_file >$out_file" || rm -f $out_file

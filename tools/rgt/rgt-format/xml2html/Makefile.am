@@ -30,7 +30,12 @@ styledatadir = $(datadir)/$(subdir)/style
 miscdatadir = $(datadir)/$(subdir)/misc
 
 dist_styledata_DATA = style.css
-dist_miscdata_DATA = filter_conf.html rgt-xml-log-schema.xsd
+dist_miscdata_DATA = filter_conf.html rgt-xml-log-schema.xsd \
+                     ftiens4.js ua.js \
+                     demoFrameset.html \
+                     demoFramesetLeftFrame.html \
+                     demoFramesetRightFrame.html \
+                     filter_conf_local.html
 
 EXTRA_DIST = filter_conf.html.in
 BUILT_SOURCES = filter_conf.html

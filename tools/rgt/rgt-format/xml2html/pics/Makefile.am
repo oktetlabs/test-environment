@@ -28,6 +28,21 @@ SUBDIRS = .
 
 picsdatadir = $(datadir)/$(subdir)
 
-dist_picsdata_DATA = tr.gif
+dist_picsdata_DATA = tr.gif \
+diffDoc.gif \
+diffFolder.gif \
+ftv2blank.gif \
+ftv2doc.gif \
+ftv2folderclosed.gif \
+ftv2folderopen.gif \
+ftv2lastnode.gif \
+ftv2link.gif \
+ftv2mlastnode.gif \
+ftv2mnode.gif \
+ftv2node.gif \
+ftv2plastnode.gif \
+ftv2pnode.gif \
+ftv2vertline.gif
 
 EXTRA_DIST=arrow.gif
+

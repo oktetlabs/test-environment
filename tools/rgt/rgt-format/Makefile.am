@@ -33,7 +33,7 @@ SUBDIRS = $(RGT_SUBDIRS) .
 pkgdatadir = $(datadir)/$(subdir)
 pkgdata_DATA = $(RGT_FORMAT_UTILS_TMPLS)
 
-bin_PROGRAMS = rgt-xml-translator
+bin_PROGRAMS = rgt-xml-translator rgt-xml-translator-mult
 rgt_xml_translator_SOURCES = main.c
 rgt_xml_translator_CFLAGS = -I$(top_srcdir) @TE_CFLAGS@ \
                             -I$(top_srcdir)/lib/tmpls \
@@ -41,6 +41,12 @@ rgt_xml_translator_CFLAGS = -I$(top_srcdir) @TE_CFLAGS@ \
 rgt_xml_translator_LDADD = @TE_LDFLAGS@ \
                            -L$(top_builddir)/lib/tmpls -ltmpls -lpopt \
                            @XML2_LIBS@
+
+rgt_xml_translator_mult_SOURCES = main_mult.c
+rgt_xml_translator_mult_CFLAGS = @GLIB_CFLAGS@ -I$(top_srcdir) @TE_CFLAGS@ \
+                                 @XML2_CFLAGS@
+rgt_xml_translator_mult_LDADD = @GLIB_LIBS@ @TE_LDFLAGS@ -lpopt @XML2_LIBS@
+
 AM_CFLAGS = -W -Wall -ggdb -O0
 
 bin_SCRIPTS = $(RGT_FORMAT_UTILS)
