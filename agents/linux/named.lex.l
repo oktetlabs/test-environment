@@ -41,8 +41,8 @@ options { return DNS_OPTIONS_STATEMENT; }
 forwarders { return DNS_FORWARDERS_STATEMENT; }
 recursion { return DNS_RECURSION_STATEMENT; }
 directory { return DNS_DIRECTORY_STATEMENT; }
-[[:digit:]]+(\.[[:digit:]])+ { yylval.str = strdup(yytext); return DNS_DOTTED_STRING; }
-[[:digit:]]+(:[[:digit:]])+ { yylval.str = strdup(yytext); return DNS_COLON_STRING; }
+[[:digit:]]+(\.[[:digit:]]+)+ { yylval.str = strdup(yytext); return DNS_DOTTED_STRING; }
+[[:digit:]]+(:[[:digit:]]+)+ { yylval.str = strdup(yytext); return DNS_COLON_STRING; }
 yes|true { yylval.ival = 1; return DNS_NUMBER; }
 no|false { yylval.ival = 0; return DNS_NUMBER; }
 [[:digit:]]+ { yylval.ival = strtol(yytext, NULL, 10); return DNS_NUMBER; }
