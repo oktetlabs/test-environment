@@ -417,7 +417,7 @@ cli_expect_main(cli_csap_specific_data_p spec_data)
 {
     int rc;
     char data;
-    char *pdata;
+    char *pdata = &data;
     fd_set read_set;
 
     printf("%s()\n", __FUNCTION__);
@@ -440,7 +440,7 @@ cli_expect_main(cli_csap_specific_data_p spec_data)
     {
         printf("write() failed on sync_c2p pipe\n");
         cli_expect_finalize(spec_data);
-    }
+    } 
 
     for (;;)
     {
@@ -885,7 +885,7 @@ cli_single_init_cb (int csap_id, const asn_value * csap_nds, int layer)
     asn_value_p                 cli_csap_spec; /**< ASN value with csap init
                                                     parameters */
     
-    printf("%s()\n", __FUNCTION__);
+    printf("%s()\n", __FUNCTION__); fflush(stdout);
     VERB("%s() entered\n", __FUNCTION__);
 
     if (csap_nds == NULL)
