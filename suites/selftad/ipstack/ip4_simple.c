@@ -49,7 +49,7 @@
 
 #include "rcf_rpc.h"
 #include "conf_api.h"
-#include "tapi_rpcsock.h"
+#include "tapi_rpc.h"
 
 #include "tapi_test.h"
 #include "tapi_ipstack.h"

@@ -41,7 +41,7 @@
 #include "rcf_api.h"
 #include "rcf_rpc.h"
 #include "conf_api.h"
-#include "tapi_rpcsock.h"
+#include "tapi_rpc.h"
 
 
 DEFINE_LGR_ENTITY("rpctest");
