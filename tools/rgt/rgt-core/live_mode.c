@@ -262,6 +262,7 @@ rgt_expand_regular_log_msg(log_msg *msg)
                 case 'o':
                 case 'x':
                 case 'X':
+                case 'p': /* FIXME: Add 0x before %p automatically */
                 {
                     char  format[3] = {'%', msg->fmt_str[i + 1], '\0'};
                     char *tmp;
