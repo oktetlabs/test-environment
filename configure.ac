@@ -32,10 +32,6 @@ AC_CONFIG_AUX_DIR(aux)
 
 AM_INIT_AUTOMAKE([foreign -Wall])
 
-if test "$no_create" = "yes" ; then
-    exit 0;
-fi    
-
 AC_PROG_INSTALL
 
 CONFIGURE=`which $0` ;
@@ -78,7 +74,7 @@ fi ;
 
 if test -z "$TE_INSTALL_SUITE" ; then
     TE_INSTALL_SUITE=${TE_INSTALL}/suites
-fi    
+fi
 
 # Parse configuration file
 echo TE_BASE=$TE_BASE > ${TE_BUILD}/builder.conf.processed.new
@@ -88,6 +84,7 @@ echo TE_INSTALL_NUT=$TE_INSTALL_NUT >> ${TE_BUILD}/builder.conf.processed.new
 echo TE_INSTALL_SUITE=$TE_INSTALL_SUITE >> ${TE_BUILD}/builder.conf.processed.new
 echo host=$host >> ${TE_BUILD}/builder.conf.processed.new
 
+AC_ARG_VAR(with_config)
 
 if test -z "$with_config" -a -e ${srcdir}/conf/builder.conf ; then
     # Called from make distcheck
@@ -115,9 +112,7 @@ fi
 
 if test -e ${TE_BUILD}/builder.conf.processed ; then
     if diff -q ${TE_BUILD}/builder.conf.processed ${TE_BUILD}/builder.conf.processed.new > /dev/null ; then 
-        rm builder.conf.processed.new
-        AC_MSG_NOTICE([no parameters are changed])
-        exit 0
+        no_create=""
     fi
 fi    
 
@@ -143,7 +138,7 @@ done ;
 AC_CONFIG_SUBDIRS(doc)
 
 DUMMY=
-
+ 
 # Configure libraries for each platform
 mkdir -p lib
 LIB_SUBDIRS=
@@ -171,11 +166,13 @@ for p in ${TE_BS_PLATFORMS} ; do
         
         if test $PLATFORM != $host ; then continue ; fi
         
-        ${TE_BASE}/engine/builder/te_configure_package LIB $package \
+        if test -z "$no_create" ; then
+             ${TE_BASE}/engine/builder/te_configure_package LIB $package \
             $PKGNAME $PLATFORM $PKGSRC $prefix || exit 1
-        cd lib/$PKGNAME
-        make install-data || exit 1
-        cd ../..
+            cd lib/$PKGNAME
+            make install-data || exit 1
+            cd ../..
+        fi
         LIB_SUBDIRS="$LIB_SUBDIRS $PKGNAME"
     done
 done
@@ -183,18 +180,22 @@ AC_SUBST(LIB_SUBDIRS)
 AC_SUBST(LIB_DIST_SUBDIRS)
 
 # Configure TEN applications
-for package in $DUMMY $TE_BS_APP ; do
-    ${TE_BASE}/engine/builder/te_configure_package APP $package $package \
-        $host ${TE_BASE}/engine/$package $prefix || exit 1
-done
+if test -z "$no_create" ; then
+    for package in $DUMMY $TE_BS_APP ; do
+        ${TE_BASE}/engine/builder/te_configure_package APP $package $package \
+            $host ${TE_BASE}/engine/$package $prefix || exit 1
+    done
+fi    
 APP_SUBDIRS="$TE_BS_APP"
 AC_SUBST(APP_SUBDIRS)
 
 # Configure tools
-for package in $DUMMY ${TE_BS_TOOLS} ; do
-    ${TE_BASE}/engine/builder/te_configure_package TOOL $package $package \
-        $host ${TE_BASE}/tools/$package $prefix || exit 1
-done
+if test -z "$no_create" ; then
+    for package in $DUMMY ${TE_BS_TOOLS} ; do
+        ${TE_BASE}/engine/builder/te_configure_package TOOL $package $package \
+            $host ${TE_BASE}/tools/$package $prefix || exit 1
+    done
+fi    
 TOOLS_SUBDIRS="${TE_BS_TOOLS}" 
 AC_SUBST(TOOLS_SUBDIRS)
 
@@ -207,8 +208,10 @@ for package in $DUMMY $TE_BS_TA ; do
     if test -z "$PKGSRC" ; then 
         PKGSRC=${TE_BASE}/agents/$package ; 
     fi
-    ${TE_BASE}/engine/builder/te_configure_package TA $package $package \
-        $host $PKGSRC $prefix || exit 1
+    if test -z "$no_create" ; then
+        ${TE_BASE}/engine/builder/te_configure_package TA $package $package \
+            $host $PKGSRC $prefix || exit 1
+    fi
     TA_SUBDIRS="$TA_SUBDIRS $package"
 done
 AC_SUBST(TA_SUBDIRS)
@@ -226,10 +229,13 @@ AC_SUBST(SUITE_SCRIPTS)
 AC_SUBST(TE_BS_NUTS)
 AC_SUBST(TE_BS_NUTLIBS)
 
-mkdir -p ${TE_BUILD}/suites
-echo "TE_BS_SUITES=$TE_BS_SUITES" > ${TE_BUILD}/suites/Makefile.suites
+if test -z "$no_create" ; then
+    mkdir -p ${TE_BUILD}/suites
+    echo "TE_BS_SUITES=$TE_BS_SUITES" > ${TE_BUILD}/suites/Makefile.suites
+fi    
 
 AC_CONFIG_FILES(Makefile include/Makefile lib/Makefile 
                 engine/Makefile tools/Makefile agents/Makefile suites/Makefile)
 
 AC_OUTPUT
+ 
