@@ -39,10 +39,6 @@ TE_PLATFORM([i686-pc-cygwin],[],
             [-L${CYGWIN_HOME}/lib -L${CYGWIN_HOME}/lib/w32api], 
             [comm_net_agent loggerta conf_oid rcfpch ])
 
-TE_LIB_PARMS([tapi_rpcsock], [], [], [--with-ta=win32], [], [])
-
-TE_LIB_PARMS([rcfrpc], [], [], [--with-ta=win32], [], [])
-
 TE_TA_TYPE([linux], [linux], [], [], [-DTAD_CH_DUMMY], [], \
            [rcfpch conf_oid loggerta comm_net_agent])
 
