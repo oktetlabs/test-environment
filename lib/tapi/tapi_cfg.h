@@ -32,6 +32,10 @@
 #ifndef __TE_TAPI_CFG_H_
 #define __TE_TAPI_CFG_H_
 
+#if HAVE_NET_IF_H
+#include <net/if.h>
+#endif
+
 #if HAVE_NETINET_IN_H
 #include <netinet/in.h>
 #endif
@@ -63,6 +67,38 @@ extern int tapi_cfg_switch_vlan_add_port(const char *ta_name,
                                          uint16_t vid, unsigned int port);
 extern int tapi_cfg_switch_vlan_del_port(const char *ta_name,
                                          uint16_t vid, unsigned int port);
+/** Routing entry data structure */
+typedef struct tapi_rt_entry {
+    struct sockaddr_storage dst; /**< Route for this destination address */
+    unsigned int            prefix; /**< Destination address prefix */
+    struct sockaddr_storage gw; /**< Gateway address
+                                     (in case RTF_GATEWAY flag is set) */
+
+    uint32_t flags; /**< Route flags - see net/route.h */
+    uint32_t metric; /**< Route metric */
+    char     dev[IF_NAMESIZE]; /**< Output interface name */
+    uint32_t mss; /**< Route MSS value (for TCP) */
+    uint32_t win; /**< Route Window value (for TCP) */
+    uint32_t irtt; /**< Route IRTT value (for TCP) */
+
+    cfg_handle hndl; /**< Handle of the entry in configurator */
+} tapi_rt_entry_t;
+
+/**
+ * Gets routing table on the specified Test Agent
+ *
+ * @param ta           Test Agent name
+ * @param addr_family  Address family of the routes (AF_INET)
+ * @param rt_tbl       Pointer to the routing table (OUT)
+ * @param n            The number of entries in the table (OUT)
+ *
+ * @return 0 on success, and TE errno in case of failure.
+ *
+ * @note Function allocates memory with malloc(), which should be freed
+ * with free() by the caller.
+ */
+extern int tapi_cfg_get_route_table(const char *ta, int addr_family,
+                                    tapi_rt_entry_t **rt_tbl, int *n);
 
 /**
  * Add a new route to some destination address with a lot of additional 

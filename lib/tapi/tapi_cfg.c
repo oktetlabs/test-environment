@@ -69,6 +69,7 @@
 #include "te_stdint.h"
 #include "conf_api.h"
 #include "logger_api.h"
+#include "rcf_api.h"
 
 #include "tapi_sockaddr.h"
 #include "tapi_cfg_base.h"
@@ -361,6 +362,348 @@ tapi_cfg_switch_vlan_del_port(const char *ta_name, uint16_t vid,
  * END of Temporaraly located here
  */
 
+
+/* Fast conversion of the network mask to prefix */
+#define MASK2PREFIX(mask, prefix)            \
+    switch (mask)                            \
+    {                                        \
+        case 0x0: prefix = 0; break;         \
+        case 0x80000000: prefix = 1; break;  \
+        case 0xc0000000: prefix = 2; break;  \
+        case 0xe0000000: prefix = 3; break;  \
+        case 0xf0000000: prefix = 4; break;  \
+        case 0xf8000000: prefix = 5; break;  \
+        case 0xfc000000: prefix = 6; break;  \
+        case 0xfe000000: prefix = 7; break;  \
+        case 0xff000000: prefix = 8; break;  \
+        case 0xff800000: prefix = 9; break;  \
+        case 0xffc00000: prefix = 10; break; \
+        case 0xffe00000: prefix = 11; break; \
+        case 0xfff00000: prefix = 12; break; \
+        case 0xfff80000: prefix = 13; break; \
+        case 0xfffc0000: prefix = 14; break; \
+        case 0xfffe0000: prefix = 15; break; \
+        case 0xffff0000: prefix = 16; break; \
+        case 0xffff8000: prefix = 17; break; \
+        case 0xffffc000: prefix = 18; break; \
+        case 0xffffe000: prefix = 19; break; \
+        case 0xfffff000: prefix = 20; break; \
+        case 0xfffff800: prefix = 21; break; \
+        case 0xfffffc00: prefix = 22; break; \
+        case 0xfffffe00: prefix = 23; break; \
+        case 0xffffff00: prefix = 24; break; \
+        case 0xffffff80: prefix = 25; break; \
+        case 0xffffffc0: prefix = 26; break; \
+        case 0xffffffe0: prefix = 27; break; \
+        case 0xfffffff0: prefix = 28; break; \
+        case 0xfffffff8: prefix = 29; break; \
+        case 0xfffffffc: prefix = 30; break; \
+        case 0xfffffffe: prefix = 31; break; \
+        case 0xffffffff: prefix = 32; break; \
+         /* Error indication */              \
+        default: prefix = 33; break;         \
+    }
+
+/* Fast conversion of the prefix to network mask */
+#define PREFIX2MASK(prefix) (prefix == 0 ? 0 : (~0) << (32 - (prefix)))
+
+/**
+ * Parses instance name and converts its value into routing table entry 
+ * data structure.
+ *
+ * @param inst_name  Instance name that keeps route information
+ * @param rt         Routing entry location to be filled in (OUT)
+ *
+ * @note The function is not thread safe - it uses static memory for 
+ * 'rt_dev' field in 'rt' structure.
+ *
+ * ATENTION - read the text below!
+ * @todo This function is used in both places agent/linux/linuxconf.c
+ * and lib/tapi/tapi_cfg.c, which is very ugly!
+ * We couldn't find the right place to put it in so that it 
+ * is accessible from both places. If you modify it you should modify
+ * the same function in the second place!
+ */
+static int
+route_parse_inst_name(const char *inst_name,
+#ifdef __linux__
+                      struct rtentry  *rt
+#else
+                      struct ortentry *rt
+#endif
+)
+{
+    char        *tmp, *tmp1;
+    int          prefix;
+    static char  ifname[IF_NAMESIZE];
+    char        *ptr;
+    char        *end_ptr;
+    char        *term_byte; /* Pointer to the trailing zero byte 
+                               in 'inst_name' */
+    static char  inst_copy[RCF_MAX_VAL];
+    int          int_val;
+
+    memset(rt, 0, sizeof(*rt));
+    strncpy(inst_copy, inst_name, sizeof(inst_copy));
+    inst_copy[sizeof(inst_copy) - 1] = '\0';
+
+    if ((tmp = strchr(inst_copy, '|')) == NULL)
+        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
+
+    *tmp = 0;
+    rt->rt_dst.sa_family = AF_INET;
+    if (inet_pton(AF_INET, inst_copy,
+                  &(((struct sockaddr_in *)&(rt->rt_dst))->sin_addr)) <= 0)
+    {
+        ERROR("Incorrect 'destination address' value in route %s",
+              inst_name);
+        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
+    }
+    tmp++;
+    if (*tmp == '-' ||
+        (prefix = strtol(tmp, &tmp1, 10), tmp == tmp1 || prefix > 32))
+    {
+        ERROR("Incorrect 'prefix length' value in route %s", inst_name);
+        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
+    }
+    tmp = tmp1;
+
+#ifdef __linux__
+    rt->rt_genmask.sa_family = AF_INET;
+    ((struct sockaddr_in *)&(rt->rt_genmask))->sin_addr.s_addr =
+        htonl(PREFIX2MASK(prefix));
+#endif
+    if (prefix == 32)
+        rt->rt_flags |= RTF_HOST;
+
+    term_byte = (char *)(tmp + strlen(tmp));
+
+    /* @todo Make a macro to wrap around similar code below */
+    if ((ptr = strstr(tmp, "gw=")) != NULL)
+    {
+        int rc;
+
+        end_ptr = ptr += strlen("gw=");
+        while (*end_ptr != ',' && *end_ptr != '\0')
+            end_ptr++;
+        *end_ptr = '\0';
+
+        rc = inet_pton(AF_INET, ptr,
+                       &(((struct sockaddr_in *)
+                               &(rt->rt_gateway))->sin_addr));
+        if (rc <= 0)
+        {
+            ERROR("Incorrect format of 'gateway address' value in route %s",
+                  inst_name);
+            return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
+        }
+        if (term_byte != end_ptr)
+            *end_ptr = ',';
+        rt->rt_gateway.sa_family = AF_INET;
+        rt->rt_flags |= RTF_GATEWAY;
+    }
+
+    if ((ptr = strstr(tmp, "dev=")) != NULL)
+    {
+        end_ptr = ptr += strlen("dev=");
+        while (*end_ptr != ',' && *end_ptr != '\0')
+            end_ptr++;
+        *end_ptr = '\0';
+
+        if (strlen(ptr) >= sizeof(ifname))
+        {
+            ERROR("Interface name is too long: %s in route %s",
+                  ptr, inst_name);
+            return TE_RC(TE_TA_LINUX, EINVAL);
+        }
+        strcpy(ifname, ptr);
+
+        if (term_byte != end_ptr)
+            *end_ptr = ',';
+        rt->rt_dev = ifname;
+    }
+
+    if ((ptr = strstr(tmp, "metric=")) != NULL)
+    {
+        end_ptr = ptr += strlen("metric=");
+        while (*end_ptr != ',' && *end_ptr != '\0')
+            end_ptr++;
+        *end_ptr = '\0';
+        
+        if (*ptr == '\0' || *ptr == '-' ||
+            (int_val = strtol(ptr, &end_ptr, 10), *end_ptr != '\0'))
+        {
+            ERROR("Incorrect 'route metric' value in route %s",
+                  inst_name);
+            return TE_RC(TE_TA_LINUX, EINVAL);
+        }
+        if (term_byte != end_ptr)
+            *end_ptr = ',';
+        rt->rt_metric = int_val;
+    }
+    
+    if ((ptr = strstr(tmp, "mss=")) != NULL)
+    {
+        end_ptr = ptr += strlen("mss=");
+        while (*end_ptr != ',' && *end_ptr != '\0')
+            end_ptr++;
+        *end_ptr = '\0';
+
+        if (*ptr == '\0' || *ptr == '-' ||
+            (int_val = strtol(ptr, &end_ptr, 10), *end_ptr != '\0'))
+        {
+            ERROR("Incorrect 'route mss' value in route %s", inst_name);
+            return TE_RC(TE_TA_LINUX, EINVAL);
+        }
+        if (term_byte != end_ptr)
+            *end_ptr = ',';
+
+        /* Don't be confused the structure does not have mss field */
+        rt->rt_mtu = int_val;
+        rt->rt_flags |= RTF_MSS;
+    }
+
+    if ((ptr = strstr(tmp, "window=")) != NULL)
+    {
+        end_ptr = ptr += strlen("window=");
+        while (*end_ptr != ',' && *end_ptr != '\0')
+            end_ptr++;
+        *end_ptr = '\0';
+
+        if (*ptr == '\0' ||  *ptr == '-' ||
+            (int_val = strtol(ptr, &end_ptr, 10), *end_ptr != '\0'))
+        {
+            ERROR("Incorrect 'route window' value in route %s", inst_name);
+            return TE_RC(TE_TA_LINUX, EINVAL);
+        }
+        if (term_byte != end_ptr)
+            *end_ptr = ',';
+        rt->rt_window = int_val;
+        rt->rt_flags |= RTF_WINDOW;
+    }
+
+    if ((ptr = strstr(tmp, "irtt=")) != NULL)
+    {
+        end_ptr = ptr += strlen("irtt=");
+        while (*end_ptr != ',' && *end_ptr != '\0')
+            end_ptr++;
+        *end_ptr = '\0';
+
+        if (*ptr == '\0' || *ptr == '-' ||
+            (int_val = strtol(ptr, &end_ptr, 10), *end_ptr != '\0'))
+        {
+            ERROR("Incorrect 'route irtt' value in route %s", inst_name);
+            return TE_RC(TE_TA_LINUX, EINVAL);
+        }
+        if (term_byte != end_ptr)
+            *end_ptr = ',';
+        rt->rt_irtt = int_val;
+        rt->rt_flags |= RTF_IRTT;
+    }
+
+    if (strstr(tmp, "reject") != NULL)
+        rt->rt_flags |= RTF_REJECT;
+
+    return 0;
+}
+
+/* See the description in tapi_cfg.h */
+int
+tapi_cfg_get_route_table(const char *ta, int addr_family,
+                         tapi_rt_entry_t **rt_tbl, int *n)
+{
+#ifdef __linux__
+    struct rtentry   rt;
+#else
+    struct ortentry  rt;
+#endif
+    int              rc;
+    cfg_handle      *handles;
+    tapi_rt_entry_t *tbl;
+    char            *rt_name = NULL;
+    char            *rt_val = NULL;
+    int              num;
+    int              i;
+    
+    UNUSED(addr_family);
+
+    if (ta == NULL || rt_tbl == NULL || n == NULL)
+        return TE_RC(TE_TAPI, EINVAL);
+
+    rc = cfg_find_pattern_fmt(&num, &handles, "/agent:%s/route:*", ta);
+    if (rc != 0)
+        return rc;
+    
+    if (num == 0)
+    {
+        *rt_tbl = NULL;
+        *n = 0;
+        return 0;
+    }
+    
+    if ((tbl = (tapi_rt_entry_t *)calloc(num, sizeof(*tbl))) == NULL)
+    {
+        return TE_RC(TE_TAPI, ENOMEM);
+    }
+
+    for (i = 0; i < num; i++)
+    {
+        uint32_t     mask;
+        cfg_val_type type = CVT_STRING;
+
+        if ((rc = cfg_get_inst_name(handles[i], &rt_name)) != 0)
+        {
+            ERROR("%s: Route handle cannot be processed", __FUNCTION__);
+            free(tbl);
+            return rc;
+        }
+        if ((rc = cfg_get_instance(handles[i], &type, &rt_val)) != 0)
+        {
+            ERROR("%s: Cannot get the value of the route", __FUNCTION__);
+            free(rt_name);
+            free(tbl);
+            return rc;
+        }
+        memset(&rt, 0, sizeof(rt));
+
+        rt.rt_dev = tbl[i].dev;
+
+        rc = route_parse_inst_name(rt_name, &rt);
+        assert(rc == 0);
+
+        memcpy(&tbl[i].dst, &rt.rt_dst, sizeof(rt.rt_dst));
+
+        mask = ntohl(((struct sockaddr_in *)
+                         &(rt.rt_genmask))->sin_addr.s_addr);
+        MASK2PREFIX(mask, tbl[i].prefix);
+        memcpy(&tbl[i].gw, &rt.rt_gateway, sizeof(rt.rt_gateway));
+
+        tbl[i].flags = rt.rt_flags;
+        tbl[i].metric = rt.rt_metric;
+        tbl[i].mss = rt.rt_mtu;
+        tbl[i].win = rt.rt_window;
+        tbl[i].irtt = rt.rt_irtt;
+
+        if (strstr(rt_val, "mod") != NULL)
+            tbl[i].flags |= RTF_MODIFIED;
+        if (strstr(rt_val, "dyn") != NULL)
+            tbl[i].flags |= RTF_DYNAMIC;
+        if (strstr(rt_val, "reinstate") != NULL)
+            tbl[i].flags |= RTF_REINSTATE;
+
+        tbl[i].hndl = handles[i];
+
+        free(rt_name);
+        free(rt_val);
+    }
+    free(handles);
+
+    *rt_tbl = tbl;
+    *n = num;
+
+    return 0;
+}
+
 /* See the description in tapi_cfg.h */
 int
 tapi_cfg_add_route(const char *ta, int addr_family,
@@ -482,6 +825,7 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
 {
     cfg_handle  handle;
     char        dst_addr_str[INET6_ADDRSTRLEN];
+    char        dst_addr_str_orig[INET6_ADDRSTRLEN];
     char        gw_addr_str[INET6_ADDRSTRLEN];
     char        route_inst_name[1024];
     char        rt_val[128];
@@ -512,6 +856,15 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
 
         return TE_RC(TE_TAPI, ENOMEM);
     }
+
+    if (inet_ntop(addr_family, dst_addr, dst_addr_str_orig, 
+                  sizeof(dst_addr_str_orig)) == NULL)
+    {
+        ERROR("%s() fails converting binary destination address "
+              "into a character string", __FUNCTION__);
+        return TE_RC(TE_TAPI, errno);
+    }
+
     memcpy(dst_addr_copy, dst_addr, netaddr_size);
     
     /* Check that dst_addr & netmask == dst_addr */
@@ -531,13 +884,19 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
         
         if ((dst_addr_copy[i] & mask) != dst_addr_copy[i])
         {
-            WARN("%d-th byte of destination address specified in "
-                 "the route does not cleared according to the prefix "
-                 "prefix length %d, addr[%d] %x expected to be %x.\n"
-                 "Clear these bits.",
-                 i, prefix, i, dst_addr_copy[i], (dst_addr_copy[i] & mask));
             dst_addr_copy[i] &= mask;
         }
+    }
+    if (memcmp(dst_addr, dst_addr_copy, netaddr_size) != 0)
+    {
+        inet_ntop(addr_family, dst_addr_copy, dst_addr_str, 
+                  sizeof(dst_addr_str));
+
+        WARN("Destination address specified in the route does not "
+             "cleared according to the prefix: prefix length %d, "
+             "addr: %s expected to be %s. "
+             "[The address is cleared anyway]",
+             prefix, dst_addr_str_orig, dst_addr_str);
     }
 
     if (inet_ntop(addr_family, dst_addr_copy, dst_addr_str, 
@@ -545,8 +904,10 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
     {
         ERROR("%s() fails converting binary destination address "
               "into a character string", __FUNCTION__);
+        free(dst_addr_copy);
         return TE_RC(TE_TAPI, errno);
     }
+    free(dst_addr_copy);
     
 #define PUT_INTO_BUF(buf_, args...) \
     snprintf((buf_) + strlen(buf_), sizeof(buf_) - strlen(buf_), args)
@@ -846,7 +1207,7 @@ tapi_cfg_free_entry(cfg_handle *entry)
     rc = cfg_set_instance(*entry, CVT_INTEGER, 0);
     if (rc != 0)
     {
-        ERROR("Failed to free entry by handle 0x%x: %X", *entry, rc);
+    ERROR("Failed to free entry by handle 0x%x: %X", *entry, rc);
     }
     else
     {
