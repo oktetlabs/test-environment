@@ -345,9 +345,9 @@ tapi_cfg_alloc_ip4_net(cfg_handle *entry)
  *
  * @return Status code.
  */
-extern int
-tapi_cfg_add_ip4_net(struct sockaddr_in *ip4_net_addr, int prefix,
-                             int state, cfg_handle *entry);
+extern int tapi_cfg_add_ip4_net(struct sockaddr_in *ip4_net_addr,
+                                int prefix, int state,
+                                cfg_handle *entry);
 
 /**
  * Allocate IPv4 address from IPv4 subnet got from IPv4 subnets pool.
