@@ -77,6 +77,107 @@ tapi_arp_send(const char *ta_name, int sid,
     return tapi_eth_send(ta_name, sid, arp_csap, templ);
 }
 
+struct tapi_pkt_handler_data
+{
+    tapi_arp_frame_callback  user_callback;
+    void                    *user_data;
+};
+
+static void
+eth_frame_callback(const ndn_eth_header_plain *header,
+                   const uint8_t *payload, uint16_t plen,
+                   void *user_data)
+{
+    struct tapi_pkt_handler_data *i_data = 
+        (struct tapi_pkt_handler_data *)user_data;
+    tapi_arp_frame_t              arp_frame;
+    uint16_t                      short_var;
+
+    memset(&arp_frame, 0, sizeof(arp_frame));
+
+    memcpy(&(arp_frame.eth_hdr), header, sizeof(arp_frame.eth_hdr));
+
+    /* Parse ARP packet structure */
+#define ARP_GET_SHORT_VAR(fld_) \
+    do {                                                           \
+        if (plen < sizeof(short_var))                              \
+        {                                                          \
+            ERROR("ARP Header is truncated at '%s' field", #fld_); \
+            return;                                                \
+        }                                                          \
+        memcpy(&short_var, payload, sizeof(short_var));            \
+        arp_frame.arp_hdr.fld_ = ntohs(short_var);                 \
+        payload += sizeof(short_var);                              \
+        plen -= sizeof(short_var);                                 \
+    } while (0)
+
+    ARP_GET_SHORT_VAR(hard_type);
+    ARP_GET_SHORT_VAR(proto_type);
+
+    if (plen < sizeof(arp_frame.arp_hdr.hard_size))
+    {
+        ERROR("ARP Header is truncated at 'hard_size' field");
+        return;
+    }
+    arp_frame.arp_hdr.hard_size = *(payload++);
+    plen--;
+    if (plen < sizeof(arp_frame.arp_hdr.proto_size))
+    {
+        ERROR("ARP Header is truncated at 'proto_size' field");
+        return;
+    }
+    arp_frame.arp_hdr.proto_size = *(payload++);
+    plen--;
+
+    ARP_GET_SHORT_VAR(op_code);
+
+#undef ARP_GET_SHORT_VAR
+
+#define ARP_GET_ARRAY(fld_, size_fld_) \
+    do {                                                           \
+        if (arp_frame.arp_hdr.size_fld_ >                          \
+            sizeof(arp_frame.arp_hdr.fld_))                        \
+        {                                                          \
+            ERROR("The length of '%s' field is too big to "        \
+                  "fit in TAPI data structure", #fld_);            \
+            return;                                                \
+        }                                                          \
+        if (plen < arp_frame.arp_hdr.size_fld_)                    \
+        {                                                          \
+            ERROR("ARP Header is truncated at '%s' field", #fld_); \
+            return;                                                \
+        }                                                          \
+        memcpy(arp_frame.arp_hdr.fld_, payload,                    \
+               arp_frame.arp_hdr.size_fld_);                       \
+        payload += arp_frame.arp_hdr.size_fld_;                    \
+        plen -= arp_frame.arp_hdr.size_fld_;                       \
+    } while (0)
+
+    ARP_GET_ARRAY(snd_hw_addr, hard_size);
+    ARP_GET_ARRAY(snd_proto_addr, proto_size);
+    ARP_GET_ARRAY(tgt_hw_addr, hard_size);
+    ARP_GET_ARRAY(tgt_proto_addr, proto_size);
+
+#undef ARP_GET_ARRAY
+
+    if (plen > 0)
+    {
+        WARN("ARP frame has some data after ARP header");
+        if ((arp_frame.data = (uint8_t *)malloc(plen)) == NULL)
+        {
+            ERROR("Cannot allocate memory under ARP payload");
+            return;
+        }
+        memcpy(arp_frame.data, payload, plen);
+        arp_frame.data_len = plen;
+    }
+
+    i_data->user_callback(&arp_frame, i_data->user_data);
+
+    free(arp_frame.data);
+    return;
+}
+
 /* See the description in tapi_arp.h */
 int
 tapi_arp_recv_start(const char *ta_name, int sid, csap_handle_t arp_csap,
@@ -84,14 +185,17 @@ tapi_arp_recv_start(const char *ta_name, int sid, csap_handle_t arp_csap,
                     tapi_arp_frame_callback cb, void *cb_data,
                     unsigned int timeout, int num)
 {
-    UNUSED(ta_name);
-    UNUSED(sid);
-    UNUSED(arp_csap);
-    UNUSED(pattern);
-    UNUSED(cb);
-    UNUSED(cb_data);
-    UNUSED(timeout);
-    UNUSED(num);
+    struct tapi_pkt_handler_data *i_data;
+    
+    if ((i_data = (struct tapi_pkt_handler_data *)malloc(sizeof(struct tapi_pkt_handler_data))) == NULL)
+        return TE_RC(TE_TAPI, ENOMEM);
+    
+    i_data->user_callback = cb;
+    i_data->user_data = cb_data;
+ 
+    return tapi_eth_recv_start(ta_name, sid, arp_csap, pattern,
+                               (cb != NULL) ? eth_frame_callback : NULL,
+                               (cb != NULL) ? i_data : NULL, timeout, num);
 }
 
 int
