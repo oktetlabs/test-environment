@@ -37,6 +37,13 @@
 #if HAVE_STDLIB_H
 #include <stdlib.h>
 #endif
+#if HAVE_STRING_H
+#include <string.h>
+#endif
+#if HAVE_STRINGS_H
+#include <strings.h>
+#endif
+
 
 /** Test Environment copyright to be used in applications output */
 #define TE_COPYRIGHT \

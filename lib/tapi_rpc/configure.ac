@@ -1,7 +1,7 @@
 # Process this file with autoconf to produce a configure script.
 AC_INIT([tapi_rpcsock], [0.01], [Elena.Vangerova@oktetlabs.ru])
 
-AC_CONFIG_SRCDIR([tapi_rpcsock.h])
+AC_CONFIG_SRCDIR([tapi_rpc.h])
 AC_CONFIG_AUX_DIR([../../auxdir])
 
 AM_INIT_AUTOMAKE([1.8.5 foreign -Wall])

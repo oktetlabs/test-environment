@@ -31,11 +31,14 @@
 #ifndef __TE_TAPI_SOCKADDR_H__
 #define __TE_TAPI_SOCKADDR_H__
 
-#ifdef HAVE_SYS_TYPES_H
+#if HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
-#ifdef HAVE_SYS_SOCKET_H
+#if HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
+#endif
+#if HAVE_ARPA_INET_H
+#include <arpa/inet.h>
 #endif
 
 #include "te_defs.h"

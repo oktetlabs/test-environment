@@ -106,8 +106,8 @@ tapi_jmp_thread_ctx_destroy(void *handle)
     tapi_jmp_ctx_free_garbage(ctx);
     while ((p = ctx->stack.lh_first) != NULL)
     {
-        ERROR("Jump point destructed: ");
         LIST_REMOVE(p, links);
+        ERROR("Jump point destructed: %s:%u", p->file, p->lineno);
         free(p);
     }
 }

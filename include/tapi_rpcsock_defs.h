@@ -1587,6 +1587,7 @@ typedef enum rpc_signum {
     RPC_SIGIO,
 } rpc_signum;
     
+#if HAVE_SIGNAL_H
 /** Convert RPC signal number to the native one */
 static inline int
 signum_rpc2h(rpc_signum s)
@@ -1626,6 +1627,7 @@ signum_rpc2h(rpc_signum s)
 #endif
     }
 }
+#endif
 
 /** Convert RPC signal number to string */
 static inline const char *

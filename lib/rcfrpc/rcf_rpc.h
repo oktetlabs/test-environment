@@ -39,6 +39,7 @@
 #include <rpc/clnt.h>
 #include <semaphore.h>
 
+#include "te_defs.h"
 #include "rcf_common.h"
 #include "rcf_rpc_defs.h"
 
@@ -206,6 +207,27 @@ rcf_rpc_free_result(void *out_arg, xdrproc_t out_proc)
     enum xdr_op op = XDR_FREE;
 
     out_proc((XDR *)&op, out_arg);
+}
+
+/**
+ * Convert RCF RPC operation to string.
+ *
+ * @param op    - RCF RPC operation
+ *
+ * @return null-terminated string
+ */
+static inline const char *
+rpcop2str(rcf_rpc_op op)
+{
+    switch (op)
+    {
+        case RCF_RPC_CALL:      return " call";
+        case RCF_RPC_IS_DONE:   return " is done";
+        case RCF_RPC_WAIT:      return " wait";
+        case RCF_RPC_CALL_WAIT: return "";
+        default:                assert(FALSE);
+    }
+    return " (unknown)";
 }
 
 #endif /* !__TE_RCF_RPC_H__ */
