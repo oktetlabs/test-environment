@@ -2008,6 +2008,21 @@ struct tarpc_many_send_out {
     uint64_t    bytes;      /**< Number of sent bytes */
 };
 
+/* overfill_buffers() */
+struct tarpc_overfill_buffers_in {
+    struct tarpc_in_arg common;
+
+    tarpc_int       sock;
+};
+
+struct tarpc_overfill_buffers_out {
+    struct tarpc_out_arg common;
+
+    tarpc_int   retval;     /**< 0 (success) or -1 (failure) */
+
+    uint64_t    bytes;      /**< Number of sent bytes */
+};
+
 program tarpc
 {
     version ver0
@@ -2157,6 +2172,7 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(ftp_open)
 
         RPC_DEF(many_send)
+        RPC_DEF(overfill_buffers)
 
     } = 1;
 } = 1;

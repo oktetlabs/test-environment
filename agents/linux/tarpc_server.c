@@ -4229,3 +4229,96 @@ many_send_exit:
     return rc;
 }
 
+
+/*-------------- overfill_buffers() -----------------------------*/
+TARPC_FUNC(overfill_buffers,{},
+{
+    MAKE_CALL(out->retval = func((int)in, out));
+}
+)
+
+int
+overfill_buffers(tarpc_overfill_buffers_in *in,
+                 tarpc_overfill_buffers_out *out)
+{
+    ssize_t          rc = 0;
+    sock_api_func    send_func;
+    sock_api_func    select_func;
+    size_t           max_len = 4096;
+    uint8_t         *buf = NULL;
+    uint64_t         total = 0;
+    fd_set           writefds;
+    struct timeval   tv;
+    int              unchanged = 0;
+
+    out->bytes = 0;
+
+    buf = malloc(max_len);
+    if (buf == NULL)
+    {
+        ERROR("%s(): No enough memory", __FUNCTION__);
+        out->common._errno = TE_RC(TE_TA_LINUX, ENOMEM);
+        rc = -1;
+        goto overfill_buffers_exit;
+    }
+
+    memset(buf, 0xDEADBEEF, sizeof(max_len));
+
+    if (find_func((tarpc_in_arg *)in, "send", &send_func) != 0)
+    {
+        ERROR("%s(): Failed to resolve send() function", __FUNCTION__);
+        rc = -1;
+        goto overfill_buffers_exit;
+    }
+
+    if (find_func((tarpc_in_arg *)in, "select", &select_func) != 0)
+    {
+        ERROR("%s(): Failed to resolve select() function", __FUNCTION__);
+        rc = -1;
+        goto overfill_buffers_exit;
+    }
+
+    /*
+     * If total bytes is left unchanged after 3 attempts the socket
+     * can be considered as not writable.
+     */
+    do {
+        FD_ZERO(&writefds);
+        FD_SET(in->sock, &writefds);
+        tv.tv_sec  = 0;
+        tv.tv_usec = 100 * 1000;
+        rc = select_func(in->sock + 1, NULL, &writefds, NULL, &tv);
+        if (rc < 0)
+        {
+            ERROR("%s(): select() failed", __FUNCTION__);
+            out->common._errno = TE_RC(TE_TA_LINUX, errno);
+            goto overfill_buffers_exit;
+        }
+
+        do {
+            rc = send_func(in->sock, buf, max_len, MSG_DONTWAIT);
+            if (rc == -1 && errno != EAGAIN)
+            {
+                ERROR("%s(): send() failed", __FUNCTION__);
+                out->common._errno = TE_RC(TE_TA_LINUX, errno);
+                goto overfill_buffers_exit;
+            }
+            if (rc != -1)
+                out->bytes += rc;
+        } while (errno != EAGAIN);
+
+        if (total != out->bytes)
+            total = out->bytes;
+        else
+        {
+            unchanged++;
+            rc = 0;
+            errno = 0;
+        }
+    } while (unchanged != 3);
+
+overfill_buffers_exit:
+
+    free(buf);
+    return rc;
+}

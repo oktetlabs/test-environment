@@ -763,3 +763,37 @@ rpc_many_send(rcf_rpc_server *rpcs, int sock,
 
     RETVAL_RC(many_send);
 }
+
+int
+rpc_overfill_buffers(rcf_rpc_server *rpcs, int sock, uint64_t *sent)
+{
+    rcf_rpc_op                 op;
+    tarpc_overfill_buffers_in  in;
+    tarpc_overfill_buffers_out out;
+
+    op = rpcs->op;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server rpcs", __FUNCTION__);
+        return -1;
+    }
+
+    in.sock = sock;
+
+    rcf_rpc_call(rpcs, _overfill_buffers, &in,
+                 (xdrproc_t)xdr_tarpc_overfill_buffers_in,
+                 &out, (xdrproc_t)xdr_tarpc_overfill_buffers_out);
+    if (out.retval == 0)
+        *sent = out.bytes;
+
+    RING("RPC (%s,%s)%s: overfill_buffers(%d) -> %d (%s)",
+         rpcs->ta, rpcs->name, rpcop2str(op),
+         sock,
+         out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
+
+    RETVAL_RC(overfill_buffers);
+}

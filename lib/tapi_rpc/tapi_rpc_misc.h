@@ -245,11 +245,25 @@ extern int rpc_ftp_open(rcf_rpc_server *handle,
  * @param nops          The number of send() operation should be executed
  *                      (the length of len_array)
  * @param vector        Array of lenghts for appropriate send() operation
+ * @param sent          total bytes are sent on exit
  *
- * @return file descriptor, which may be used for reading/writing data
+ * @return   -1 in the case of failure or 0 on success
  */
 extern int rpc_many_send(rcf_rpc_server *handle, int sock,
                          const int *vector, int nops, uint64_t *sent);
 
+/**
+ * Overfill the buffers on receive and send sides of TCP connection.
+ *
+ * @param handle        RPC server
+ * @param sock          Socket for sending
+ * @param sent          total bytes written to sending socket
+ *                      while both sending and receiving side buffers
+ *                      are overfilled.
+ *
+ * @return    -1 in the case of failure or 0 on success
+ */
+extern int rpc_overfill_buffers(rcf_rpc_server *rpcs, int sock,
+                                uint64_t *sent);
 
 #endif /* !__TE_TAPI_RPC_MISC_H__ */
