@@ -255,17 +255,28 @@ interface_list(unsigned int gid, const char *oid, char **list)
 {
     MIB_IFTABLE *table;
     
-    DWORD size = 0;
+    DWORD size = 0, rc;
     char *s = buf;
     int   i;
 
     UNUSED(gid);
     UNUSED(oid);
 
-    table = (MIB_IFTABLE *)malloc(sizeof(MIB_IFTABLE));
+    if ((table = (MIB_IFTABLE *)malloc(sizeof(MIB_IFTABLE))) == NULL)
+        return TE_RC(TE_TA_WIN32, ENOMEM);
 
-    if (GetIfTable(table, &size, 0) == ERROR_INSUFFICIENT_BUFFER) 
+    if ((rc = GetIfTable(table, &size, 0)) == ERROR_INSUFFICIENT_BUFFER) 
+    {
         table = (MIB_IFTABLE *)realloc(table, size);
+    }
+    else if (rc == 0)
+    {
+        free(table);
+        if ((*list = strdup(" ")) == NULL)
+            return TE_RC(TE_TA_WIN32, ENOMEM);
+        else
+            return 0;
+    }
     else
     {
         ERROR("GetIfTable() failed, error %x", GetLastError());
@@ -336,16 +347,18 @@ static te_bool
 ip_addr_exist(struct in_addr addr, MIB_IPADDRROW *data)
 {
     MIB_IPADDRTABLE *table;
-    DWORD            size = 0;
+    DWORD            size = 0, rc;
     int              i;
     
-    table = (MIB_IPADDRTABLE *)malloc(sizeof(MIB_IFTABLE));
+    if ((table = (MIB_IPADDRTABLE *)malloc(sizeof(MIB_IPADDRTABLE))) == NULL)
+        return FALSE;
 
-    if (GetIpAddrTable(table, &size, 0) == ERROR_INSUFFICIENT_BUFFER) 
+    if ((rc = GetIpAddrTable(table, &size, 0)) == ERROR_INSUFFICIENT_BUFFER) 
         table = (MIB_IPADDRTABLE *)realloc(table, size);
     else
     {
-        ERROR("GetIpAddrTable() failed, error %x", GetLastError());
+        if (rc != 0)
+            ERROR("GetIpAddrTable() failed, error %x", GetLastError());
         free(table);
         return FALSE;
     }
@@ -500,7 +513,7 @@ net_addr_list(unsigned int gid, const char *oid, char **list,
               const char *ifname)
 {
     MIB_IPADDRTABLE *table;
-    DWORD            size = 0;
+    DWORD            size = 0, rc;
     int              i;
     struct in_addr   addr;
     
@@ -509,13 +522,25 @@ net_addr_list(unsigned int gid, const char *oid, char **list,
     
     GET_IF_ENTRY;
 
-    table = (MIB_IPADDRTABLE *)malloc(sizeof(MIB_IFTABLE));
+    if ((table = (MIB_IPADDRTABLE *)malloc(sizeof(MIB_IPADDRTABLE))) == NULL)
+        return TE_RC(TE_TA_WIN32, ENOMEM);
 
-    if (GetIpAddrTable(table, &size, 0) == ERROR_INSUFFICIENT_BUFFER) 
+    if ((rc = GetIpAddrTable(table, &size, 0)) == ERROR_INSUFFICIENT_BUFFER) 
+    {
         table = (MIB_IPADDRTABLE *)realloc(table, size);
+    }
+    else if (rc == 0)
+    {
+        free(table);
+        if ((*list = strdup(" ")) == NULL)
+            return TE_RC(TE_TA_WIN32, ENOMEM);
+        else
+            return 0;
+    }
     else
     {
         ERROR("GetIpAddrTable() failed, error %x", GetLastError());
+        free(table);
         return TE_RC(TE_TA_WIN32, ETEWIN);
     }
     
@@ -763,9 +788,66 @@ static int
 arp_get(unsigned int gid, const char *oid, char *value,
         const char *addr)
 {
+    MIB_IPNETTABLE *table;
+    DWORD           size = 0, rc;
+    struct in_addr  a;
+    int             i;
+
     UNUSED(gid);
     UNUSED(oid);
     
+    if ((a.s_addr = inet_addr(addr)) == 0)
+        return TE_RC(TE_TA_WIN32, EINVAL);
+    
+    if ((table = (MIB_IPNETTABLE *)malloc(sizeof(MIB_IPNETTABLE))) == NULL)
+        return TE_RC(TE_TA_WIN32, ENOMEM);
+
+    if ((rc = GetIpNetTable(table, &size, 0)) == ERROR_INSUFFICIENT_BUFFER) 
+    {
+        table = (MIB_IPNETTABLE *)realloc(table, size);
+    }
+    else if (rc == 0)
+    {
+        free(table);
+        return TE_RC(TE_TA_WIN32, ENOENT);
+    }
+    else
+    {
+        free(table);
+        ERROR("GetIpNetTable() failed, error %x", GetLastError());
+        return TE_RC(TE_TA_WIN32, ETEWIN);
+    }
+    
+    if (GetIpNetTable(table, &size, 0) != NO_ERROR) 
+    {
+        ERROR("GetIpNetTable() failed, error %x", GetLastError());
+        return TE_RC(TE_TA_WIN32, ETEWIN);
+    }
+    
+    buf[0] = 0;
+    
+    for (i = 0; i < (int)table->dwNumEntries; i++)
+    {
+        if (a.s_addr == table->table[i].dwAddr)
+        {
+            uint8_t *ptr = table->table[i].bPhysAddr;
+            
+            if (table->table[i].dwPhysAddrLen != 6 || 
+                table->table[i].dwType < 3)
+            {
+                free(table);
+                return TE_RC(TE_TA_WIN32, ENOENT);
+            }
+            snprintf(value, RCF_MAX_VAL, "%02x:%02x:%02x:%02x:%02x:%02x",
+                     ptr[0], ptr[1], ptr[2], ptr[3], ptr[4], ptr[5]);
+            free(table);
+            return 0;
+        }
+    }
+
+    free(table);
+
+    return TE_RC(TE_TA_WIN32, ENOENT);
 }
 
 /**
@@ -832,9 +914,58 @@ arp_del(unsigned int gid, const char *oid, const char *addr)
 static int
 arp_list(unsigned int gid, const char *oid, char **list)
 {
+    MIB_IPNETTABLE *table;
+    DWORD            size = 0, rc;
+    int              i;
+    struct in_addr   addr;
+    
     UNUSED(gid);
     UNUSED(oid);
     
+    if ((table = (MIB_IPNETTABLE *)malloc(sizeof(MIB_IPNETTABLE))) == NULL)
+        return TE_RC(TE_TA_WIN32, ENOMEM);
+
+    if ((rc = GetIpNetTable(table, &size, 0)) == ERROR_INSUFFICIENT_BUFFER) 
+    {
+        table = (MIB_IPNETTABLE *)realloc(table, size);
+    }
+    else if (rc == 0)
+    {
+        free(table);
+        if ((*list = strdup(" ")) == NULL)
+            return TE_RC(TE_TA_WIN32, ENOMEM);
+        else
+            return 0;
+    }
+    else
+    {
+        free(table);
+        ERROR("GetIpNetTable() failed, error %x", GetLastError());
+        return TE_RC(TE_TA_WIN32, ETEWIN);
+    }
+    
+    if (GetIpNetTable(table, &size, 0) != NO_ERROR) 
+    {
+        ERROR("GetIpNetTable() failed, error %x", GetLastError());
+        return TE_RC(TE_TA_WIN32, ETEWIN);
+    }
+    
+    buf[0] = 0;
+    
+    for (i = 0; i < (int)table->dwNumEntries; i++)
+    {
+        if (table->table[i].dwPhysAddrLen != 6 || table->table[i].dwType < 3)
+            continue;
+        addr.s_addr = table->table[i].dwAddr;
+        sprintf("%s ", inet_ntoa(addr));
+    }
+
+    free(table);
+
+    if ((*list = strdup(buf)) == NULL)
+        return TE_RC(TE_TA_WIN32, ENOMEM);
+
+    return 0;
 }
 
 /**
