@@ -33,9 +33,6 @@
 
 #include "tad_cli_impl.h"
 
-#define LGR_USER "TAD CLI LAYER"
-#include "logger_api.h"
-
 #include <stdio.h>
 
 /**
@@ -67,7 +64,7 @@ char* cli_get_param_cb (int csap_id, int level, const char *param)
  *
  * @return zero on success or error code.
  */ 
-int cli_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
+int cli_confirm_pdu_cb (int csap_id, int layer, asn_value * tmpl_pdu)
 {
     csap_p                   csap_descr;
     cli_csap_specific_data_p spec_data;
@@ -83,13 +80,15 @@ int cli_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
     
     return 0;
 }
-
 /**
  * Callback for generate binary data to be sent to media.
  *
  * @param csap_id       identifier of CSAP
  * @param layer         numeric index of layer in CSAP type to be processed.
  * @param tmpl_pdu      asn_value with PDU. 
+ * @param args          Template iteration parameters array, may be used to 
+ *                      prepare binary data.
+ * @param arg_num       Length of array above. 
  * @param up_payload    pointer to data which is already generated for upper 
  *                      layers and is payload for this protocol level. 
  *                      May be zero.  Presented as list of packets. 
@@ -99,6 +98,8 @@ int cli_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
  *                      but upper layer (if any present) may perform 
  *                      fragmentation, and current layer may have possibility 
  *                      to de-fragment payload.
+ *                      Callback is responsible for freeing of memory, used in 
+ *                      up_payload list. 
  * @param pkts          Callback have to fill this structure with list of 
  *                      generated packets. Almost always this list will 
  *                      contain only one element, but need 
@@ -106,7 +107,9 @@ int cli_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
  *
  * @return zero on success or error code.
  */ 
-int cli_gen_bin_cb (int csap_id, int layer, const asn_value_p tmpl_pdu,
+
+int cli_gen_bin_cb (int csap_id, int layer, const asn_value * tmpl_pdu,
+                    const tad_template_arg_t *args, size_t arg_num,
                     const csap_pkts_p  up_payload, csap_pkts_p pkts)
 {
     int rc;
@@ -117,6 +120,8 @@ int cli_gen_bin_cb (int csap_id, int layer, const asn_value_p tmpl_pdu,
     /* XXX */
     UNUSED(csap_id);
     UNUSED(layer);
+    UNUSED(args);
+    UNUSED(arg_num);
     UNUSED(up_payload);
 
     msg_len = asn_get_length(tmpl_pdu, "message");
@@ -154,9 +159,9 @@ int cli_gen_bin_cb (int csap_id, int layer, const asn_value_p tmpl_pdu,
  *
  * @return zero on success or error code.
  */
-int cli_match_bin_cb (int csap_id, int layer, const asn_value_p pattern_pdu,
+int cli_match_bin_cb (int csap_id, int layer, const asn_value * pattern_pdu,
                        const csap_pkts *  pkt, csap_pkts * payload, 
-                       asn_value_p  parsed_packet )
+                       asn_value *  parsed_packet )
 {
     /* XXX: do not locate local array on stack */
     char buf[10000];
@@ -196,8 +201,8 @@ int cli_match_bin_cb (int csap_id, int layer, const asn_value_p pattern_pdu,
  *
  * @return zero on success or error code.
  */
-int cli_gen_pattern_cb (int csap_id, int layer, const asn_value_p tmpl_pdu, 
-                                         asn_value_p   *pattern_pdu)
+int cli_gen_pattern_cb (int csap_id, int layer, const asn_value * tmpl_pdu, 
+                                         asn_value **pattern_pdu)
 {
     UNUSED(csap_id);
     UNUSED(tmpl_pdu);

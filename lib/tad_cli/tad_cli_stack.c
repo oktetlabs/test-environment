@@ -60,7 +60,7 @@ static char cli_programs[][CLI_PROGRAM_NAME_SIZE] = {
  *
  * @return 0 on success or -1 if not found. 
  */ 
-int cli_get_asn_string_value(asn_value_p csap_spec,
+int cli_get_asn_string_value(asn_value * csap_spec,
                              const char *asn_name,
                              char **str_value)
 {
@@ -103,7 +103,7 @@ int cli_get_asn_string_value(asn_value_p csap_spec,
  *
  * @return 0 on success or -1 if not found.
  */ 
-int cli_get_asn_integer_value(asn_value_p csap_spec,
+int cli_get_asn_integer_value(asn_value * csap_spec,
                               const char *asn_name,
                               int *int_value)
 {
@@ -840,7 +840,7 @@ cli_write_read_cb (csap_p csap_descr, int timeout,
  * @return zero on success or error code.
  */ 
 int 
-cli_single_init_cb (int csap_id, const asn_value_p csap_nds, int layer)
+cli_single_init_cb (int csap_id, const asn_value * csap_nds, int layer)
 {
     int      rc;
     int      tmp_len;
