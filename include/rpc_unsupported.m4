@@ -5,7 +5,7 @@
  *
  */
 
-#include <stdio.h>
+#include "config.h"
 #include "te_defs.h"
 #include "rcf_rpc_defs.h"
 #include "tarpc.h"

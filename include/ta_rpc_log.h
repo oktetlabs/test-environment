@@ -31,6 +31,7 @@
 #ifndef __TA_RPC_LOG_H__
 #define __TA_RPC_LOG_H__
 
+#include <stdio.h>
 #if HAVE_UNISTD_H
 #include <unistd.h>
 #endif
