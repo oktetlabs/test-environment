@@ -1883,6 +1883,7 @@ rcf_shutdown()
 static void
 wait_shutdown()
 {
+    RING("Wait shutdown command");
     while (TRUE)
     {
         usrreq *req;
@@ -1915,6 +1916,7 @@ wait_shutdown()
             }
             else
             {
+                WARN("Reject request from user - RCF is shutdowning");
                 req->message->error = ETENORCF;
                 answer_user_request(req);
             }
