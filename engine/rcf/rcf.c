@@ -1391,9 +1391,9 @@ send_cmd(ta *agent, usrreq *req)
 
         case RCFOP_TRRECV_START:
             strcat(cmd, TE_PROTO_TRRECV_START);
-            sprintf(cmd + strlen(cmd), " %u %u %u %s", msg->handle,
+            sprintf(cmd + strlen(cmd), " %u %u %u%s", msg->handle,
                     msg->num, msg->timeout,
-                    (msg->intparm & TR_RESULTS) ? "results" : "");
+                    (msg->intparm & TR_RESULTS) ? " results" : "");
             break;
 
         case RCFOP_TRRECV_WAIT:
@@ -1410,11 +1410,9 @@ send_cmd(ta *agent, usrreq *req)
 
         case RCFOP_TRSEND_RECV:
             strcat(cmd, TE_PROTO_TRSEND_RECV);
-            sprintf(cmd + strlen(cmd), " %u", msg->handle);
-            if (msg->num > 0)
-                sprintf(cmd + strlen(cmd), " %d", msg->num);
-            if (msg->intparm & TR_RESULTS)
-                strcat(cmd, " results");
+            sprintf(cmd + strlen(cmd), " %u %u%s",
+                    msg->handle, msg->timeout,
+                    (msg->intparm & TR_RESULTS) ? " results" : "");
             msg->num = 0;
             break;
 
