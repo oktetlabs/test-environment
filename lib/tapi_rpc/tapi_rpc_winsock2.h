@@ -309,17 +309,6 @@ extern int rpc_peek_message(rcf_rpc_server *rpcs,
  * @return TRUE, if it is definitely known that winsock2 is used and FALSE
  *         otherwise
  */
-static inline te_bool
-rpc_is_winsock2(rcf_rpc_server *rpcs)
-{
-    rpc_wsaevent hevent = rpc_create_event(rpcs);
-    
-    if (hevent != NULL)
-    {
-        rpc_close_event(rpcs, hevent);
-        return TRUE;
-    }
-    return FALSE;
-}
+extern te_bool rpc_is_winsock2(rcf_rpc_server *rpcs);
 
 #endif /* !__TE_TAPI_RPC_WINSOCK2_H__ */

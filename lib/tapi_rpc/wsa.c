@@ -46,7 +46,7 @@
 
 #include "tapi_rpc_internal.h"
 #include "tapi_rpc_winsock2.h"
-
+#include "conf_api.h"
 
 int
 rpc_wsa_socket(rcf_rpc_server *rpcs,
@@ -1712,4 +1712,77 @@ rpc_wait_multiple_events(rcf_rpc_server *rpcs,
                  win_error_rpc2str(out.common.win_error));
 
     RETVAL_VAL(wait_multiple_events, out.retval);
+}
+
+/**
+ * Check, if RPC server is located on TA with winsock2.
+ *
+ * @param rpcs  RPC server handle
+ *
+ * @return TRUE, if it is definitely known that winsock2 is used and FALSE
+ *         otherwise
+ */
+te_bool
+rpc_is_winsock2(rcf_rpc_server *rpcs)
+{
+    static te_bool registered = FALSE;
+    
+    rpc_wsaevent hevent;
+    char        *value;
+    te_bool      result;
+    int          rc;
+    cfg_handle   handle;
+    
+    /* First check that instance for TA exists in the configurator */
+    rc = cfg_get_instance_fmt(NULL, &value, "/volatile:/ta_sockets:%s",
+                              rpcs->ta);
+    if (rc == 0)
+    {
+        result = strcmp(value, "winsock2") == 0;
+        
+        free(value);
+        
+        return result;
+    }             
+
+    hevent = rpc_create_event(rpcs);
+    if (hevent == NULL)
+    {
+        if (TE_RC_GET_ERROR(RPC_ERRNO(rpcs)) != ETENOSUPP)
+        {
+            ERROR("RPC failed with unexpected error");
+            return FALSE;
+        }
+        result = FALSE;
+    }
+    else
+    {
+        rpc_close_event(rpcs, hevent);
+        result = TRUE;
+    }
+    
+    /* Check, if object is registered */
+    if (!registered && cfg_find_str("/volatile/ta_sockets", &handle) != 0)
+    {
+        cfg_obj_descr descr = { CVT_STRING, CFG_READ_CREATE } ;
+        
+        if ((rc = cfg_register_object_str("/volatile/ta_sockets", &descr,
+                                          &handle) != 0))
+        {
+            ERROR("Failed to register object /volatile/ta_sockets;"
+                  " rc = 0x%x", rc);
+            return result;
+        }
+    }
+    registered = TRUE;
+    if ((rc = cfg_add_instance_fmt(&handle, CVT_STRING, 
+                                   result ? "winsock2" : "berkeley",
+                                   "/volatile:/ta_sockets:%s", 
+                                   rpcs->ta)) != 0)
+    {
+        ERROR("Failed to add /volatile:/ta_sockets:%s ; rc = 0x%x",
+              rpcs->ta, rc);
+    }                                   
+    
+    return result;
 }
