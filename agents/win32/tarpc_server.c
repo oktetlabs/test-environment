@@ -1947,8 +1947,7 @@ simple_sender(tarpc_simple_sender_in *in, tarpc_simple_sender_out *out)
         ERROR(buf);
     }
 
-    out->bytes_high = sent >> 32;
-    out->bytes_low = sent & 0xFFFFFFFF;
+    out->bytes = sent
 
     return 0;
 }
@@ -2036,8 +2035,7 @@ simple_receiver(tarpc_simple_receiver_in *in,
         ERROR(buf);
     }
 
-    out->bytes_high = received >> 32;
-    out->bytes_low = received & 0xFFFFFFFF;
+    out->bytes = received;
 
     return 0;
 }
