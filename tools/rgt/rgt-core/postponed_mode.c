@@ -613,6 +613,21 @@ output_regular_log_msg(log_msg *msg)
                 obstack_grow(log_obstk, "<br/>", 5);
                 break;
             
+            case '\r':
+                if (i > 0 && msg->fmt_str[i - 1] == '\n')
+                {
+                    /*
+                     * Skip \r after \n, because it does not bring any
+                     * formating, but just follows after ]n on some systems
+                     */
+                }
+                else
+                {
+                    /* Process it as ordinary new line character */
+                    obstack_grow(log_obstk, "<br/>", 5);
+                }
+                break;
+            
             case '<':
                 obstack_grow(log_obstk, "&lt;", 4);
                 break;
