@@ -26,3 +26,4 @@
 AUTOMAKE_OPTIONS = foreign
 SUBDIRS = lib rgt-core rgt-format .
 
+EXTRA_DIST = acsite.m4
