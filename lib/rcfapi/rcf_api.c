@@ -55,6 +55,9 @@
 #ifdef HAVE_FCNTL_H
 #include <fcntl.h>
 #endif
+#ifdef HAVE_SYS_QUEUE_H
+#include <sys/queue.h>
+#endif
 
 #include "te_defs.h"
 #include "te_stdint.h"
@@ -93,18 +96,17 @@ typedef struct traffic_op {
 } traffic_op_t;
 
 typedef struct msg_buf_entry {
-    struct msg_buf_entry *next; 
-    rcf_msg              *message;
+    CIRCLEQ_ENTRY(msg_buf_entry) link;
+    rcf_msg                     *message;
 } msg_buf_entry_t;
 
-typedef struct msg_buf_head {
-    struct msg_buf_entry *first; 
-} msg_buf_head_t;
+typedef CIRCLEQ_HEAD(msg_buf_head, msg_buf_entry) msg_buf_head_t;
 
 typedef struct thread_ctx {
     struct ipc_client *ipc_handle;
     msg_buf_head_t     msg_buf_head;
 } thread_ctx_t;
+
 
 /* Busy CSAPs list anchor */
 static traffic_op_t traffic_ops = { &traffic_ops, &traffic_ops, 
@@ -169,17 +171,16 @@ validate_type(int var_type, int var_len)
 static int
 msg_buffer_clear(msg_buf_head_t *buf_head)
 {
-    msg_buf_entry_t *next_entry;
+    msg_buf_entry_t *entry;
 
     if (buf_head == NULL)
         return 0;
 
-    while (buf_head->first)
+    while ((entry = buf_head->cqh_first) != (void *)buf_head)
     {
-        next_entry = buf_head->first->next;
-        free(buf_head->first->message);
-        free(buf_head->first);
-        buf_head->first = next_entry;
+        CIRCLEQ_REMOVE(buf_head, entry, link);
+        free(entry->message);
+        free(entry);
     }
     return 0;
 }
@@ -195,17 +196,18 @@ msg_buffer_clear(msg_buf_head_t *buf_head)
 static int
 msg_buffer_insert(msg_buf_head_t *buf_head, rcf_msg *message)
 {
-    msg_buf_entry_t *buf_entry = calloc(1, sizeof(*buf_entry));
+    msg_buf_entry_t *buf_entry;
     size_t           msg_len;
 
     if (buf_head == NULL)
         return ETEWRONGPTR;
 
-    if (buf_entry == NULL)
-        return ENOMEM;
-
     if (message == NULL)
         return 0; /* nothing to do */
+
+    buf_entry = calloc(1, sizeof(*buf_entry));
+    if (buf_entry == NULL)
+        return ENOMEM;
 
     msg_len = sizeof(rcf_msg) + message->data_len;
     if ((buf_entry->message = (rcf_msg *)calloc(1, msg_len)) == NULL)
@@ -213,8 +215,7 @@ msg_buffer_insert(msg_buf_head_t *buf_head, rcf_msg *message)
 
     memcpy(buf_entry->message, message, msg_len);
 
-    buf_entry->next = buf_head->first;
-    buf_head->first = buf_entry;
+    CIRCLEQ_INSERT_TAIL(buf_head, buf_entry, link);
 
     return 0;
 }
@@ -232,27 +233,24 @@ msg_buffer_insert(msg_buf_head_t *buf_head, rcf_msg *message)
 rcf_msg *
 msg_buffer_find(msg_buf_head_t *msg_buf, int session)
 {
-    msg_buf_entry_t *buf_entry, *prev_entry;
+    msg_buf_entry_t *buf_entry;
 
     if (msg_buf == NULL)
         return NULL; 
 
-    for (buf_entry = msg_buf->first, prev_entry = NULL;
-         buf_entry;
-         prev_entry = buf_entry, buf_entry = buf_entry->next)
+    for (buf_entry = msg_buf->cqh_first;
+         buf_entry != (void *)msg_buf;
+         buf_entry = buf_entry->link.cqe_next)
     { 
         if (buf_entry->message->sid == session)
             break;
     }
 
-    if (buf_entry)
+    if (buf_entry != (void *)msg_buf)
     {
         rcf_msg *msg = buf_entry->message;
 
-        if (prev_entry)
-            prev_entry->next = buf_entry->next;
-        else 
-            msg_buf->first = buf_entry->next;
+        CIRCLEQ_REMOVE(msg_buf, buf_entry, link);
         free(buf_entry);
         return msg;
     }
@@ -409,6 +407,7 @@ get_ctx_handle(te_bool create)
            fprintf(stderr, "ipc_init_client() failed\n");
            return NULL;
        }
+       CIRCLEQ_INIT(&handle->msg_buf_head);
 #ifdef HAVE_PTHREAD_H
        if (pthread_setspecific(key, (void *)handle) != 0)
        {
@@ -478,7 +477,7 @@ get_ctx_handle(te_bool create)
                     fprintf(stderr, "ipc_init_client() failed\n");
                     return NULL;
                 }
-                handles[i].handle.msg_buf_head.first = NULL;
+                CIRCLEQ_INIT(&(handles[i].handle.msg_buf_head));
                 pthread_mutex_unlock(&rcf_lock);
                 return &(handles[i].handle);
             }

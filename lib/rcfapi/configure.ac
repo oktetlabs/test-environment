@@ -30,7 +30,7 @@ AC_ARG_VAR([TE_CFLAGS])
 AC_ARG_VAR([TE_LDFLAGS])
 
 AC_CONFIG_HEADERS([config.h])
-AC_CHECK_HEADERS([pthread.h fcntl.h])
+AC_CHECK_HEADERS([pthread.h fcntl.h sys/queue.h])
 
 AH_TEMPLATE(PTHREAD_SETSPECIFIC_BUG,
     [Workaround for pthread_setspecific() bug present in RedHat 9.0])
