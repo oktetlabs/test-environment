@@ -22,13 +22,12 @@ lib_LIBRARIES=libtad.a
 
 libtad_a_SOURCES=
 
-AR_SCRIPT=CREATE $@\nADDLIB libtad_core.a\n@TAD_LIBADD@\nSAVE\nEND\n
-
-libtad.a: libtad_core.a @TAD_LIBLIST@
-	echo -e "$(AR_SCRIPT)" | ar -M
-	ranlib $@
+AR_SCRIPT=CREATE libtad.a\nADDLIB libtad_core.a\n@TAD_LIBADD@\nSAVE\nEND\n
 
 install-exec-hook:
+	rm libtad.a
+	echo -e "$(AR_SCRIPT)" | ar -M
+	ranlib libtad.a
 	touch -c -r libtad.a $(DESTDIR)/$(prefix)/lib/libtad.a
 
 install-data-hook:
