@@ -62,7 +62,7 @@ walk_cb(tapi_snmp_varbind_t *vb, void *userdata)
          vb->type, tapi_snmp_val_type_h2str(vb->type), vb->v_len);
 
     if (counter != NULL)
-        *counter++;
+        (*counter)++;
 
     return 0;
 }

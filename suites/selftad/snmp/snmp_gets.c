@@ -79,8 +79,8 @@ main(int argc, char *argv[])
     do {
         tapi_snmp_varbind_t vb;
         tapi_snmp_oid_t oid;
-        int timeout = 30;
         int value;
+        int errstat, errindex;
 
         rc = tapi_snmp_csap_create(ta, sid, snmp_agt, "public", 
                                    snmp_version, &snmp_csap); 
@@ -116,8 +116,8 @@ main(int argc, char *argv[])
         oid.length = 1;
         oid.id[0] = 0; 
         value = 0;
-        rc = tapi_snmp_get_row(ta, sid, snmp_csap, &oid, "ifNumber",
-                               &value, NULL);
+        rc = tapi_snmp_get_row(ta, sid, snmp_csap, &errstat, &errindex,
+                               &oid, "ifNumber", &value, NULL);
         if (rc)
             TEST_FAIL("SNMP get_row method failed with rc %X", rc);
 

@@ -6,6 +6,6 @@ tetestdir=$(prefix)/@PACKAGE_NAME@/$(subdir)
 dist_tetest_DATA = package.xml
 
 
-SUBDIRS = cli eth snmp ipstack dhcp
+SUBDIRS = eth snmp ipstack dhcp
 
 MYDEPS = @SELFTAD_TE_DEPS@

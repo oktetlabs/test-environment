@@ -62,6 +62,14 @@
                 <value>ipAddrTable</value>
             </arg>
         </run>
+
+        <run>
+            <script name="trap_any">
+                <req id="TAD_SNMP"/>
+            </script>
+            <arg name="ta"/>
+            <arg name="snmp_version"/>
+        </run>
     </session>
 
 </package>
