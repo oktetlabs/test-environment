@@ -5,28 +5,59 @@
     
     <author mailto="Konstantin.Abramenko@oktetlabs.ru"/>
 
-    <req id="TAD_CLI" sticky="true"/>
-
     <session>
+        <req id="TAD_CLI"/> 
+
         <arg name="ta" handdown="true">
             <value>Agt_A</value>
         </arg>
+
         <run>
-            <script name="clitest">
-                <req id="TAD_CLI"/> 
-            </script>
-            <script name="tapi_cli_test">
-                <req id="TAD_CLI"/> 
-                <arg name="host">
-                    <value>melkor</value>
-                </arg>
-                <arg name="user">
-                    <value>TesterCLI</value>
-                </arg>
-                <arg name="passwd">
-                    <value>TesterCLI</value>
-                </arg>
-            </script>
+            <script name="clitest"/>
+            <arg name="ta"/>
         </run>
-   </session>
+
+        <run>
+            <script name="tapi_cli_test"/>
+            <arg name="ta"/>
+            <arg name="host">
+                <value>melkor</value>
+            </arg>
+            <arg name="user">
+                <value>testercli</value>
+            </arg>
+            <arg name="passwd">
+                <value>testercli</value>
+            </arg>
+        </run>
+
+        <run>
+            <script name="tapi_cli_serial"/>
+            <arg name="ta"/>
+            <arg name="device">
+                <value>/dev/ttyS0</value>
+            </arg>
+            <arg name="user">
+                <value>admin</value>
+            </arg>
+            <arg name="passwd">
+                <value>admin</value>
+            </arg>
+        </run>
+
+        <run>
+            <script name="tapi_cli_telnet"/>
+            <arg name="ta"/>
+            <arg name="host">
+                <value>192.168.150.1</value>
+            </arg>
+            <arg name="user">
+                <value>admin</value>
+            </arg>
+            <arg name="passwd">
+                <value>admin</value>
+            </arg>
+        </run>
+    </session>
+
 </package>
