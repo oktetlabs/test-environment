@@ -285,7 +285,7 @@ find_user_request(usrreq *req, int sid)
  * @param agent         Test Agent structure
  * @param libname       name of the shared library (without "lib" prefix)
  *
- * @return 0 (success) or 1 (failure)
+ * @return 0 (success) or -1 (failure)
  */
 static int
 resolve_ta_methods(ta *agent, char *libname)
@@ -298,7 +298,7 @@ resolve_ta_methods(ta *agent, char *libname)
     {
         VERB("FATAL ERROR: Cannot load shared library %s "
                          "errno %s", libname, dlerror());
-        return 1;
+        return -1;
     }
 
 #define RESOLVE_SYMBOL(sym) \
@@ -310,7 +310,7 @@ resolve_ta_methods(ta *agent, char *libname)
                              "in the shared library", name);    \
             if (dlclose(handle) != 0)                           \
                 ERROR("dlclose() failed");                      \
-            return 1;                                           \
+            return -1;                                          \
         }                                                       \
     } while (0)
 
@@ -335,7 +335,7 @@ resolve_ta_methods(ta *agent, char *libname)
  *
  * @param filename      full name of the configuration file
  *
- * @return 0 (success) or 1 (failure)
+ * @return 0 (success) or -1 (failure)
  */
 static int
 parse_config(char *filename)
@@ -350,7 +350,7 @@ parse_config(char *filename)
     {
         VERB("error occured during parsing configuration file %s\n",
                   filename);
-        return 1;
+        return -1;
     }
 
     if ((cur = xmlDocGetRootElement(doc)) == NULL)
@@ -358,7 +358,7 @@ parse_config(char *filename)
         VERB("Empty configuration file");
         xmlFreeDoc(doc);
         xmlCleanupParser();
-        return 1;
+        return -1;
     }
 
     if (xmlStrcmp(cur->name, (const xmlChar *)"rcf") != 0)
@@ -372,7 +372,7 @@ parse_config(char *filename)
             continue;
 
         if ((agent = (ta *)calloc(sizeof(ta), 1)) == NULL)
-            return 1;
+            return -1;
 
         agent->next = agents;
         agents = agent;
@@ -472,7 +472,7 @@ error:
     xmlCleanupParser();
     free_ta_list();
 
-    return 1;
+    return -1;
 }
 
 /**
@@ -480,7 +480,7 @@ error:
  *
  * @param agent         Test Agent structure
  *
- * @return 0 (success) or 1 (failure)
+ * @return 0 (success) or -1 (failure)
  */
 static int
 synchronize_time(ta *agent)
@@ -500,7 +500,7 @@ synchronize_time(ta *agent)
     {
         VERB("FATAL ERROR: Failed to transmit command to "
                          "TA '%s' errno %d", agent->name, rc);
-        return 1;
+        return -1;
     }
 
     t = t0 = time(NULL);
@@ -529,7 +529,7 @@ synchronize_time(ta *agent)
     ERROR("FATAL ERROR: Failed to receive answer from TA %s",
                      agent->name);
 
-    return 1;
+    return -1;
 }
 
 /**
@@ -584,7 +584,7 @@ answer_all_requests(usrreq *req, int error)
  *
  * @param agent         Test Agent structure
  *
- * @return 0 (success) or 1 (failure)
+ * @return 0 (success) or -1 (failure)
  */
 static int
 init_agent(ta *agent)
@@ -601,7 +601,7 @@ init_agent(ta *agent)
     {
         ERROR("FATAL ERROR: Cannot start TA '%s' error %d",
                          agent->name, rc);
-        return 1;
+        return -1;
     }
     VERB("TA %s started, trying to connect", agent->name);
     if ((rc = (agent->connect)(agent->handle, &set0, &tv0)) != 0)
@@ -610,17 +610,13 @@ init_agent(ta *agent)
                          "error %d", agent->name, rc);
         if (agent->rebootable)                         
             (agent->reboot)(agent->handle, NULL);
-        return 1;
+        return -1;
     }
     VERB("Connected with TA %s", agent->name);
     if (agent->enable_synch_time)
-    {
         return synchronize_time(agent);
-    }
     else
-    {
         return 0;
-    }
 }
 
 /**
@@ -629,7 +625,7 @@ init_agent(ta *agent)
  * @param agent         Test Agent structure
  * @param req           user reboot request
  *
- * @return 0 (success) or 1 (failure)
+ * @return 0 (success) or -1 (failure)
  */
 static int
 force_reboot(ta *agent, usrreq *req)
@@ -648,9 +644,8 @@ force_reboot(ta *agent, usrreq *req)
                                                     : NULL);
     if (rc != 0)
     {
-         ERROR("fatal error: cannot reboot TA %s\n",
-                   agent->name);
-         return TE_RC(TE_RCF, rc);
+         ERROR("fatal error: cannot reboot TA %s\n", agent->name);
+         return -1;
     }
     answer_user_request(req);
     return init_agent(agent);
@@ -782,7 +777,7 @@ save_attachment(ta *agent, rcf_msg *msg, size_t cmdlen, char *ba)
  * @param agent         Test Agent structure
  * @param sid           session identifier
  *
- * @return 0 (success) or 1 (failure)
+ * @return 0 (success) or -1 (failure)
  */
 static int
 send_pending_command(ta *agent, int sid)
@@ -808,14 +803,13 @@ send_pending_command(ta *agent, int sid)
  * Send all pending commands to the TA, if no request with such SID
  * already sent.
  *
- * @param agent     - test agent
+ * @param agent     test agent
  *
- * @return Status code.
+ * @return 0 (success) or -1 (failure)
  */
 static int
 send_all_pending_commands(ta *agent)
 {
-    int     error;
     usrreq *head;
     usrreq *req;
     usrreq *next;
@@ -829,9 +823,8 @@ send_all_pending_commands(ta *agent)
         {
             /* No requests with such SID sent */
             QEL_DELETE(req);
-            error = send_cmd(agent, req);
-            if (error != 0)
-                return error;
+            if (send_cmd(agent, req) < 0)
+                return -1;
             QEL_INSERT(&(agent->sent), req);
         }
     }
@@ -902,7 +895,7 @@ read_str(char **ptr, char *s)
  *
  * @param agent         Test Agent structure
  *
- * @return 0 (success) or 1 (failure)
+ * @return 0 (success) or -1 (failure)
  */
 static int
 process_reply(ta *agent)
@@ -937,7 +930,7 @@ process_reply(ta *agent)
     {
         ERROR("FATAL ERROR: Too big answer from TA '%s' - increase "
               "memory constants", agent->name);
-        return 1;
+        return -1;
     }
     if (rc != 0 && rc != ETEPENDING)
     {
@@ -1002,13 +995,13 @@ process_reply(ta *agent)
             if (!(agent->flags & TA_PROXY))
             {
                 answer_user_request(req);
-                error = init_agent(agent);
-                if (error != 0)
+                if (init_agent(agent) < 0)
                 {
                     ERROR("FATAL ERROR: Initialization of the TA '%s' "
                           "after reboot failed ", agent->name);
+                    return -1;
                 }
-                return error;
+                return 0;
             }
         }
         else
@@ -1123,7 +1116,7 @@ bad_protocol:
         req->message->error = TE_RC(TE_RCF, ETEIO);
         answer_user_request(req);
     }
-    return 1;
+    return -1;
 
 #undef READ_INT
 }
@@ -1134,7 +1127,7 @@ bad_protocol:
  * @param agent         Test Agent structure
  * @param req           user request structure
  *
- * @return 0 (success) or 1 (failure)
+ * @return 0 (success) or -1 (failure)
  */
 static int
 transmit_cmd(ta *agent, usrreq *req)
@@ -1154,14 +1147,14 @@ transmit_cmd(ta *agent, usrreq *req)
              */
             ERROR("FATAL ERROR: Cannot open file '%s'",
                              req->message->file);
-            return 1;
+            return -1;
         }
         if (fstat(file, &st) != 0)
         {
             ERROR("RCF", "FATAL ERROR: stat() failed for file %s",
                              req->message->file);
             close(file);
-            return 1;
+            return -1;
         }
 
         sprintf(cmd + strlen(cmd), " attach %u", (unsigned int)st.st_size);
@@ -1181,7 +1174,7 @@ transmit_cmd(ta *agent, usrreq *req)
             if (file != -1)
                 close(file);
 
-            return 1;
+            return -1;
         }
         if (file < 0 || (len = read(file, cmd, sizeof(cmd))) == 0)
             break;
@@ -1191,7 +1184,7 @@ transmit_cmd(ta *agent, usrreq *req)
             ERROR("FATAL ERROR: Read from file '%s' failed "
                              "errno %d", req->message->file, errno);
             close(file);
-            return 1;
+            return -1;
         }
     }
 
@@ -1285,7 +1278,7 @@ print_value(char *cmd, unsigned char type, void *value)
  * @param agent         Test Agent structure
  * @param req           user request
  *
- * @return 0 (success) or 1 (failure)
+ * @return 0 (success) or -1 (failure)
  */
 static int
 send_cmd(ta *agent, usrreq *req)
@@ -1485,7 +1478,7 @@ send_cmd(ta *agent, usrreq *req)
  *
  * @param req           user request structure
  *
- * @return 0 (success) or 1 (failure)
+ * @return 0 (success) or -1 (failure)
  */
 static int
 process_user_request(usrreq *req)
@@ -1577,9 +1570,8 @@ process_user_request(usrreq *req)
                                      req->message->data : NULL);
                 if (rc != 0)
                 {
-                    ERROR("FATAL ERROR: Cannot reboot TA %s",
-                                     agent->name);
-                    return 1;
+                    ERROR("FATAL ERROR: Cannot reboot TA %s", agent->name);
+                    return -1;
                 }
 
                 answer_user_request(req);
@@ -1607,7 +1599,7 @@ process_user_request(usrreq *req)
     else
     {
         if ((rc = send_cmd(agent, req)) != 0)
-            return 1;
+            return -1;
 
         QEL_INSERT(&(agent->sent), req);
     }
@@ -1751,17 +1743,14 @@ main(int argc, char **argv)
 {
     usrreq *req = NULL;
     ta     *agent;
-    int     rc;
+    int     rc = -1;
 
     /* Register SIGPIPE handler, by default SIGPIPE kills the process */
     signal(SIGPIPE, sigpipe_handler);
 
     ipc_init();
     if ((server = ipc_register_server(RCF_SERVER)) == NULL)
-    {
-        rc = 1;
         goto no_ipcs_error;
-    }
 
     FD_ZERO(&set0);
     server_fd = ipc_get_server_fd(server);
@@ -1774,24 +1763,22 @@ main(int argc, char **argv)
     {
         ERROR("FATAL ERROR: Wrong arguments - configuration "
                          "file name only should be provided");
-        rc = EINVAL;
         goto error;
     }
 
     if ((tmp_dir = getenv("TE_TMP")) == NULL)
     {
         ERROR("FATAL ERROR: TE_TMP is empty");
-        rc = ENOENT;
         goto error;
     }
 
-    if ((rc = parse_config(argv[1])) != 0)
+    if (parse_config(argv[1]) != 0)
         goto error;
 
     /* Initialize Test Agents */
     for (agent = agents; agent != NULL; agent = agent->next)
     {
-        if ((rc = init_agent(agent)) != 0)
+        if (init_agent(agent) != 0)
         {
             ERROR("FATAL ERROR: TA initialization failed");
             goto error;
@@ -1816,15 +1803,11 @@ main(int argc, char **argv)
         if (FD_ISSET(server_fd, &set))
         {
             if ((req = (usrreq *)calloc(sizeof(usrreq), 1)) == NULL)
-            {
-                rc = 1;
                 goto error;
-            }
 
             if ((req->message = (rcf_msg *)malloc(RCF_MAX_LEN)) == NULL)
             {
                 free(req);
-                rc = 1;
                 goto error;
             }
 
@@ -1844,10 +1827,9 @@ main(int argc, char **argv)
                     VERB("Shutdown command is recieved");
                     break;
                 }
-                rc = process_user_request(req);
-                if (rc != 0)
+                if (process_user_request(req) != 0)
                 {
-                    ERROR("User request processing failed: error=%d", rc);
+                    ERROR("User request processing failed");
                     /* TODO: Free request here */
                     break;
                 }
@@ -1861,13 +1843,14 @@ main(int argc, char **argv)
         for (agent = agents; agent != NULL; agent = agent->next)
         {
             if ((agent->is_ready)(agent->handle) &&
-                (rc = process_reply(agent)) != 0)
+                process_reply(agent) != 0)
             {
                 goto shutdown;
             }
         }
         if (rcf_wait_shutdown)
         {
+            rc = 0;
             goto error;
         }
     }
@@ -1894,5 +1877,5 @@ no_ipcs_error:
 
     log_client_close();
 
-    return rc;
+    return rc < 0 ? 1 : 0;
 }
