@@ -844,6 +844,8 @@ cfg_dh_add_command(cfg_msg *msg)
                             strlen("/"CFG_VOLATILE"/")) == 0 ||
                     strcmp(m->oid, CFG_VOLATILE) == 0)
                 {
+                    free(entry->cmd);
+                    free(entry);
                     return 0;
                 }
             }
@@ -854,6 +856,8 @@ cfg_dh_add_command(cfg_msg *msg)
                 if (strncmp((char *)m + m->oid_offset, "/"CFG_VOLATILE":", 
                             strlen("/"CFG_VOLATILE":")) == 0)
                 {
+                    free(entry->cmd);
+                    free(entry);
                     return 0;
                 }
             }
@@ -869,7 +873,11 @@ cfg_dh_add_command(cfg_msg *msg)
             cfg_instance *inst = CFG_GET_INST(((cfg_del_msg *)msg)->handle);
             
             if (strncmp(inst->oid, "/volatile:", strlen("/volatile:")) == 0)
+            {
+                free(entry->cmd);
+                free(entry);
                 return 0;
+            }
     
             if (inst == NULL)
             {
