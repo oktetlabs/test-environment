@@ -1333,19 +1333,6 @@ TARPC_FUNC(getsockname,
                                         out->len.len_len == 0 ? NULL :
                                         (int *)(out->len.len_val)));
                                         
-    if (out->retval == -1)
-    {
-        if (out->common.win_error == RPC_WSAEINVAL)
-        {
-            /* Socket is not bound, work-around; FIXME */
-            out->retval = 0;
-            out->common.win_error = 0;
-            memset(a, 0, sizeof(struct sockaddr_in));
-            a->sa_family = AF_INET;
-            *out->len.len_val = sizeof(struct sockaddr_in);
-        }
-    }
-    
     sockaddr_h2rpc(a, &(out->addr));
 }
 )

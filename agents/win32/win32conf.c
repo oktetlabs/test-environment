@@ -888,7 +888,7 @@ arp_get(unsigned int gid, const char *oid, char *value,
 
     UNUSED(gid);
     UNUSED(oid);
-
+    
     if ((a = inet_addr(addr)) == INADDR_NONE)
         return TE_RC(TE_TA_WIN32, EINVAL);
 
@@ -1031,8 +1031,10 @@ arp_add(unsigned int gid, const char *oid, const char *value,
     UNUSED(gid);
     UNUSED(oid);
 
+#if FOR_FUTURE /* Volatile ARP should be implemented */
     if (arp_get(0, NULL, val, addr) == 0)
         return TE_RC(TE_TA_WIN32, EEXIST);
+#endif        
 
     if (sscanf(value, "%2x:%2x:%2x:%2x:%2x:%2x%s", int_mac, int_mac + 1,
             int_mac + 2, int_mac + 3, int_mac + 4, int_mac + 5, buf) != 6)
