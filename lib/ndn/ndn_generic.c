@@ -30,11 +30,15 @@
 #include "config.h"
 #endif
 
+/* for hton* functions */
+#include <netinet/in.h>
+
 #include "te_defs.h"
 
 #include "asn_impl.h"
 #include "ndn.h"
 #include "ndn_internal.h"
+#include "logger_api.h"
 
 /*
 IpAddress ::= OCTET STRING (SIZE(4)) 
@@ -374,8 +378,8 @@ const asn_type * const  ndn_raw_packet = &ndn_raw_packet_s;
 
 /* See description in ndn.h */ 
 int 
-ndn_match_data_units(const asn_value *pat, asn_value *pkt_pdu,
-                     uint8_t *data, size_t d_len, const char *label); 
+ndn_match_data_units(const asn_value *pattern, asn_value *pkt_pdu,
+                     uint8_t *data, size_t d_len, const char *label)
 {
     asn_syntax_t plain_syntax;
     const asn_value *du_val;
@@ -385,7 +389,7 @@ ndn_match_data_units(const asn_value *pat, asn_value *pkt_pdu,
     int rc;
     uint32_t user_int;
 
-    if (pat == NULL || data == NULL || label == NULL)
+    if (pattern == NULL || data == NULL || label == NULL)
         return ETEWRONGPTR; 
 
     rc = asn_get_subvalue(pattern, &du_val, label);
@@ -401,7 +405,7 @@ ndn_match_data_units(const asn_value *pat, asn_value *pkt_pdu,
     switch (plain_syntax)
     {
     case SYNTAX_UNDEFINED:
-        printf("error getting syntax\n");
+        ERROR("error getting syntax\n");
     case INTEGER:
     case ENUMERATED:
         switch (d_len)
@@ -433,7 +437,7 @@ ndn_match_data_units(const asn_value *pat, asn_value *pkt_pdu,
     case SET_OF:
     case CHOICE:
     case TAGGED:
-        printf("error getting syntax\n");
+        WARN("unsupported yet");
     }
 
     if (strcmp(choice_ptr, "plain") == 0)
