@@ -37,10 +37,20 @@ CPPFLAGS=${CPPFLAGS}" "${TE_CPPFLAGS}
 CFLAGS=${CFLAGS}" "${TE_CFLAGS}
 
 
-AM_CONFIG_HEADER(config.h)
+AM_CONFIG_HEADER([config.h])
 
-AC_CHECK_HEADERS(time.h sys/time.h sys/resource.h semaphore.h aio.h \
-                 net/ethernet.h net/if_dl.h netinet/in_systm.h sys/un.h)
+AC_CHECK_HEADERS([\
+time.h \
+sys/time.h \
+sys/resource.h \
+semaphore.h \
+aio.h \
+net/ethernet.h \
+net/if_arp.h \
+net/if_dl.h \
+netinet/in_systm.h \
+sys/un.h \
+])
 
 AC_C_INLINE
 
