@@ -35,7 +35,7 @@ mybindir=$(prefix)/$(host)/bin
 dist_mybin_SCRIPTS = dispatcher.sh
 
 
-DISTCLEANFILES = builder.conf.processed 
+DISTCLEANFILES = builder.conf builder.conf.processed 
 
 EXTRA_DIST = Doxyfile
 
@@ -76,6 +76,8 @@ tce-report:
 dist-hook:
 	cp -pR @TE_CONF_DIR@ $(distdir)
 	rm -rf $(distdir)/conf/.svn $(distdir)/conf/CVS
-	if test `basename @TE_BUILDER_CONF@` != "builder.conf" ; then \
-		cp -f @TE_BUILDER_CONF@ $(distdir)/conf/builder.conf ; \
+	if test -e $(distdir)/conf/builder.conf ; then \
+		chmod u+w $(distdir)/conf ; \
+		rm -f $(distdir)/conf/builder.conf ; \
 	fi
+	cp @TE_BUILDER_CONF@ $(distdir)/conf/builder.conf

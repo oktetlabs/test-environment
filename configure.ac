@@ -96,7 +96,9 @@ if test -z "$with_config" -a -e ${srcdir}/conf/builder.conf ; then
 fi    
 
 AC_SUBST([TE_CONF_DIR], [`dirname $with_config`])
-AC_SUBST([TE_BUILDER_CONF], [$with_config])
+TE_BUILDER_CONF="`pwd`/builder.conf"
+cp $with_config ${TE_BUILDER_CONF}
+AC_SUBST([TE_BUILDER_CONF])
 
 if test -n "$with_config" ; then
     cat ${TE_BASE}/engine/builder/builder.m4 $with_config | m4 >> ${TE_BUILD}/builder.conf.processed.new
