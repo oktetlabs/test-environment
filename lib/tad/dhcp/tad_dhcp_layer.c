@@ -35,7 +35,9 @@
 #include "tad_dhcp_impl.h"
 
 #define TE_LGR_USER     "TAD DHCP layer"
+
 #include "logger_api.h"
+#include "logger_ta.h"
 
 
 /**
@@ -329,47 +331,40 @@ dhcp_gen_bin_cb(int csap_id, int layer, const asn_value *tmpl_pdu,
  *
  * @return zero on success or error code.
  */
-int dhcp_match_bin_cb (int csap_id, int layer, const asn_value *pattern_pdu,
-                       const csap_pkts *  pkt, csap_pkts * payload, 
-                       asn_value * parsed_packet )
+int 
+dhcp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
+                  const csap_pkts *pkt, csap_pkts *payload, 
+                  asn_value *parsed_packet )
 { 
-    uint8_t     *p = pkt->data; 
-    asn_value_p  opt_list;
-    int          rc;
-#define MATCH_BUF_SIZE 20
-    uint8_t      buf[MATCH_BUF_SIZE];
+    uint8_t    *data = pkt->data; 
+    asn_value  *opt_list;
+    asn_value  *dhcp_message_pdu = NULL;
+    int         rc;
 
+    UNUSED(payload); 
 
-    VERB("DHCP match callback called: %tm", p, pkt->len);
+    if (pattern_pdu == NULL || pkt == NULL)
+        return ETEWRONGPTR;
 
-#define FILL_DHCP_HEADER_FIELD(_label, _size) \
+    ENTRY("%s: CSAP %d, layer %d, pkt len: %d", 
+          __FUNCTION__, csap_id, layer, pkt->len);
+
+    VERB("DHCP match callback called: %tm", data, pkt->len);
+
+    if (parsed_packet)
+        dhcp_message_pdu = asn_init_value(ndn_dhcpv4_message);
+
+#define FILL_DHCP_HEADER_FIELD(_asn_label, _size) \
     do {                                                        \
-        uint8_t *mb;                                            \
-        int len = _size;                                        \
-        rc = 0;                                                 \
-        if (_size > MATCH_BUF_SIZE)                             \
-            mb = malloc(_size);                                 \
-        else                                                    \
-            mb = buf;                                           \
-                                                                \
-        if (asn_read_value_field(pattern_pdu, mb, &len,         \
-                             "#dhcp." _label ".#plain") == 0)   \
-        {                                                       \
-            if (memcmp(p, mb, _size))                           \
-            {                                                   \
-                VERB("Opps: " _label);                          \
-                rc = ETADNOTMATCH;                              \
-            }                                                   \
-        }                                                       \
-        if (rc == 0)                                            \
-            rc = asn_write_value_field(parsed_packet, p, _size, \
-                                   "#dhcp." _label ".#plain");  \
-        if (_size > MATCH_BUF_SIZE)                             \
-            free(mb);                                           \
-                                                                \
+        rc = ndn_match_data_units(pattern_pdu, dhcp_message_pdu,\
+                                  data, _size, _asn_label);     \
         if (rc)                                                 \
+        {                                                       \
+            F_VERB("%s: field %s not match, rc %X",             \
+                    __FUNCTION__, _asn_label, rc);              \
             return rc;                                          \
-        p += _size;                                             \
+        }                                                       \
+        data += _size;                                          \
     } while(0)
 
     FILL_DHCP_HEADER_FIELD("op",      1);
@@ -389,88 +384,86 @@ int dhcp_match_bin_cb (int csap_id, int layer, const asn_value *pattern_pdu,
 
 #undef FILL_DHCP_HEADER_FIELD
 
-#if 0
     /* check for magic DHCP cookie, see RFC2131, section 3. */
-    if ((((void *)p) + sizeof(magic_dhcp)) > (pkt->data + pkt->len) || 
-        memcmp(magic_dhcp, p, sizeof(magic_dhcp)) != 0)
+    if ((((void *)data) + sizeof(magic_dhcp)) > (pkt->data + pkt->len) || 
+        memcmp(magic_dhcp, data, sizeof(magic_dhcp)) != 0)
     {
-        VERB("DHCP magic does not match");
-        return ETADNOTMATCH;
+        VERB("DHCP magic does not match: "
+             "it is pure BOOTP message without options");
     }
+    else
+    { 
+        data += sizeof(magic_dhcp); 
 
-    p += sizeof(magic_dhcp); 
+        opt_list = asn_init_value(ndn_dhcpv4_options); 
 
-    opt_list = asn_init_value(ndn_dhcpv4_options); 
-
-    while (((void *)p) < (pkt->data + pkt->len))
-    {
-        asn_value_p opt = asn_init_value(ndn_dhcpv4_option);
-        uint8_t     opt_len;
-        uint8_t     opt_type;
-    
-#define FILL_DHCP_OPT_FIELD(_obj, _label, _size) \
-        do {                                                              \
-            rc = asn_write_value_field(_obj, p, _size, _label ".#plain"); \
-            p += _size;                                                   \
-        } while(0);
-
-        opt_type = *p;
-        FILL_DHCP_OPT_FIELD(opt, "type",  1);
-        if (opt_type == 255 || opt_type == 0)
+        while (((void *)data) < (pkt->data + pkt->len))
         {
-            /* END and PAD options don't have length and value */
+            asn_value_p opt = asn_init_value(ndn_dhcpv4_option);
+            uint8_t     opt_len;
+            uint8_t     opt_type;
+        
+#define FILL_DHCP_OPT_FIELD(_obj, _label, _size) \
+            do {                                                \
+                rc = asn_write_value_field(_obj, data, _size,   \
+                                           _label ".#plain");   \
+                data += _size;                                  \
+            } while(0);
+
+            opt_type = *data;
+            FILL_DHCP_OPT_FIELD(opt, "type",  1);
+            if (opt_type == 255 || opt_type == 0)
+            {
+                /* END and PAD options don't have length and value */
+                rc = asn_insert_indexed(opt_list, opt, -1, "");
+                asn_free_value(opt);
+                continue;
+            }
+
+            opt_len = *data;
+            FILL_DHCP_OPT_FIELD(opt, "length", 1);
+            FILL_DHCP_OPT_FIELD(opt, "value", opt_len);
+
+            /* possible suboptions.  */
+            switch (opt_type)
+            {
+                case 43:
+                {
+                    asn_value_p  sub_opt_list;
+                    uint8_t      sub_opt_len;
+                    asn_value_p  sub_opt;
+                    void        *start_opt_value;
+
+                    /* Set pointer to the beginning of the Option data */
+                    data -= opt_len;
+                    start_opt_value = data;
+                    sub_opt_list = asn_init_value(ndn_dhcpv4_options);
+                    while (((void *)data) < (start_opt_value + opt_len))
+                    {
+                        sub_opt = asn_init_value(ndn_dhcpv4_option);
+
+                        
+                        FILL_DHCP_OPT_FIELD(sub_opt, "type",  1);
+                        sub_opt_len = *data;
+                        FILL_DHCP_OPT_FIELD(sub_opt, "length", 1);
+                        FILL_DHCP_OPT_FIELD(sub_opt, "value", sub_opt_len);
+
+                        asn_insert_indexed(sub_opt_list, sub_opt, -1, "");
+                        asn_free_value(sub_opt);
+                    }
+                    rc = asn_write_component_value(opt, sub_opt_list,
+                                                   "options");
+                    break;
+                }
+            }
             rc = asn_insert_indexed(opt_list, opt, -1, "");
             asn_free_value(opt);
-            continue;
         }
-
-        opt_len = *p;
-        FILL_DHCP_OPT_FIELD(opt, "length", 1);
-        FILL_DHCP_OPT_FIELD(opt, "value", opt_len);
-
-        /* possible suboptions.  */
-        switch (opt_type)
-        {
-            case 43:
-            {
-                asn_value_p  sub_opt_list;
-                uint8_t      sub_opt_len;
-                asn_value_p  sub_opt;
-                void        *start_opt_value;
-
-                /* Set pointer to the beginning of the Option data */
-                p -= opt_len;
-                start_opt_value = p;
-                sub_opt_list = asn_init_value(ndn_dhcpv4_options);
-                while (((void *)p) < (start_opt_value + opt_len))
-                {
-                    sub_opt = asn_init_value(ndn_dhcpv4_option);
-
-                    
-                    FILL_DHCP_OPT_FIELD(sub_opt, "type",  1);
-                    sub_opt_len = *p;
-                    FILL_DHCP_OPT_FIELD(sub_opt, "length", 1);
-                    FILL_DHCP_OPT_FIELD(sub_opt, "value", sub_opt_len);
-
-                    asn_insert_indexed(sub_opt_list, sub_opt, -1, "");
-                    asn_free_value(sub_opt);
-                }
-                /* rc = asn_insert_indexed(opt, sub_opt_list, -1, ""); */
-                rc = asn_write_component_value(opt, sub_opt_list, "options");
-                break;
-            }
-        }
-        rc = asn_insert_indexed(opt_list, opt, -1, "");
-        asn_free_value(opt);
+        asn_write_component_value(parsed_packet, opt_list, "#dhcp.options");
+        asn_free_value(opt_list);
     }
-    asn_write_component_value(parsed_packet, opt_list, "#dhcp.options");
-    /* TODO real match with patter should be done */
-    UNUSED(csap_id);
-    UNUSED(layer);
-    UNUSED(pattern_pdu);
 
     memset(payload, 0 , sizeof(*payload));
-#endif
 
     VERB("MATCH CALLBACK OK\n");
 
@@ -501,7 +494,8 @@ dhcp_gen_pattern_cb(int csap_id, int layer, const asn_value *tmpl_pdu,
     rc = asn_read_value_field(tmpl_pdu, &xid, &len, "xid.#plain");
     if (rc == 0)
     {
-        rc = asn_write_value_field(*pattern_pdu, &xid, sizeof(xid), "xid.#plain");
+        rc = asn_write_value_field(*pattern_pdu, &xid, sizeof(xid),
+                                   "xid.#plain");
     }
     /* TODO: DHCP options to be inserted into pattern */
     UNUSED(csap_id);

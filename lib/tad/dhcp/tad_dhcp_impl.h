@@ -208,9 +208,10 @@ extern int dhcp_gen_bin_cb(int csap_id, int layer,
  *
  * @return zero on success or error code.
  */
-extern int dhcp_match_bin_cb (int csap_id, int layer, const asn_value *pattern_pdu,
-                             const csap_pkts *  pkt, csap_pkts * payload, 
-                             asn_value * parsed_packet );
+extern int dhcp_match_bin_cb(int csap_id, int layer,
+                             const asn_value *pattern_pdu,
+                             const csap_pkts *pkt, csap_pkts *payload, 
+                             asn_value *parsed_packet );
 
 /**
  * Callback for generating pattern to filter 
