@@ -6,7 +6,8 @@
 #    automake in all such directories.
 #
 # TE_BASE is required to be set. All actions are performed in this
-# directory.
+# directory. The script uses Subversion to make sure that 'configure'
+# to be removed in marked as ignored by user.
 #
 #
 # Copyright (C) 2004 Test Environment authors (see file AUTHORS
