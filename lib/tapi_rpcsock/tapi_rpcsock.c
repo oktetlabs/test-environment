@@ -2018,7 +2018,7 @@ rpc_enum_network_events(rcf_rpc_server *handle,
         in.event.event_len = 0;
     else
         in.event.event_len = 1;
-    in.event.event_val = event;
+    in.event.event_val = (unsigned long *)event;
 
     rcf_rpc_call(handle, _enum_network_events,
                  &in,  (xdrproc_t)xdr_tarpc_enum_network_events_in,
