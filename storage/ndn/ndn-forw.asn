@@ -5,35 +5,13 @@ BEGIN
 
 IMPORTS DATA-UNIT FROM TE-NDN-General;
 
-IMPORTS EthernetAddress FROM TE-NDN-Ethernet;
-IMPORTS Ethernet-Header FROM TE-NDN-Ethernet;
-
-IMPORTS Ip4Address FROM TE-NDN-Tcp-Ip;
-IMPORTS IPv4-Header FROM TE-NDN-Tcp-Ip;
-IMPORTS TCP-Header FROM TE-NDN-Tcp-Ip;
-
-EXPORTS RF-CSAP;
-
-
-Router-Filter-Ethernet-Params ::= Ethernet-Header
-
-Router-Filter-IP-Params ::= IPv4-Header
-
-Router-Filter-TCP-Params ::= TCP-Header
-
-Router-Filter ::= SEQUENCE {
-    eth       [0] Router-Filter-Ethernet-Params OPTIONAL,
-    ip        [1] Router-Filter-IP-Params OPTIONAL,
-    tcp       [2] Router-Filter-TCP-Params OPTIONAL    
-}
-
-Router-Filter-Group ::= SEQUENCE OF Router-Filter
+EXPORTS FORW-CSAP;
 
 
 Router-Action-Delay-Params ::= SEQUENCE {
     type      [0] INTEGER {disabled(0), constant(1), random(2)},
-    delay_min [0] DATA-UNIT {INTEGER},
-    delay_max [1] DATA-UNIT {INTEGER}
+    delay_min [1] DATA-UNIT {INTEGER},
+    delay_max [2] DATA-UNIT {INTEGER}
 }
 
 Router-Action-Bandwidth-Params ::= SEQUENCE {
@@ -51,27 +29,22 @@ Router-Action-Reorder-Params ::= SEQUENCE {
 Router-Action-Drop-Params ::= SEQUENCE {
     type      [0] INTEGER {disabled(0), random(1), pattern(2)},
     rate      [1] DATA-UNIT {INTEGER},
-    buf_size  [2] DATA-UNIT {INTEGER}
 }
 
-Router-Action-Group ::= SEQUENCE {
-    delay     [0] Router-Action-Delay-Params OPTIONAL,
-    bandwidth [1] Router-Action-Bandwidth-Params OPTIONAL,
-    reorder   [2] Router-Action-Reorder-Params OPTIONAL,
-    drop      [3] Router-Action-Drop-Params OPTIONAL
+Router-Action ::= SEQUENCE {
+    id        [0] DATA-UNIT {UniversalString},
+    delay     [1] Router-Action-Delay-Params OPTIONAL,
+    bandwidth [2] Router-Action-Bandwidth-Params OPTIONAL,
+    reorder   [3] Router-Action-Reorder-Params OPTIONAL,
+    drop      [4] Router-Action-Drop-Params OPTIONAL
 }
 
-Packet-Handler ::= SEQUENCE {
-    filters   [0] Router-Filter-Group OPTIONAL,
-    actions   [1] Router-Action-Group OPTIONAL
-}
+Router-Action-List ::= SEQUENCE OF Router-Action
 
-Router-Params ::= SEQUENCE OF Packet-Handler
-
-RF-CSAP ::=  SEQUENCE {
+FORW-CSAP ::=  SEQUENCE {
     src_device  [0] DATA-UNIT{UniversalString},
     dst_device  [1] DATA-UNIT{UniversalString},
-    router      [2] Router-Params
+    actions     [2] Router-Action-List
     ...
 }
 
