@@ -79,24 +79,31 @@ main(int argc, char *argv[])
     int  len = sizeof(ta);
     int  sid;
     int  num_pkts;
+    int  timeout;
 
-    int  caught_num;
+    te_bool pass_results;
+    te_bool dump_packets;
+    te_bool blocked_mode;
+
+    int      caught_num = 0;
     uint16_t eth_type = ETH_P_IP;
+
     csap_handle_t eth_listen_csap = CSAP_INVALID_HANDLE;
 
     asn_value *pattern_unit;
     asn_value *pattern;
-    char eth_device[] = "eth0"; 
+    char       eth_device[] = "eth0"; 
 
     TEST_START;
     TEST_GET_INT_PARAM(num_pkts);
+    TEST_GET_INT_PARAM(timeout);
+    TEST_GET_BOOL_PARAM(pass_results);
+    TEST_GET_BOOL_PARAM(dump_packets);
+    TEST_GET_BOOL_PARAM(blocked_mode);
     
-    VERB("Starting test\n");
-    if (rcf_get_ta_list(ta, &len) != 0)
-    {
-        fprintf(stderr, "rcf_get_ta_list failed\n");
-        return 1;
-    }
+    if ((rc = rcf_get_ta_list(ta, &len)) != 0)
+        TEST_FAIL("rcf_get_ta_list failed 0x%X", rc);
+
     VERB(" Using agent: %s\n", ta);
    
     
@@ -122,8 +129,8 @@ main(int argc, char *argv[])
         TEST_FAIL("prepare eth pattern unit fails %X", rc);
 
 
-    /*  ------ Caught some packets without callback, dumping -----  */ 
 
+    if (dump_packets)
     {
         char dump_fname[] = "tad_dump_hex";
         rc = asn_write_value_field(pattern_unit,
@@ -141,46 +148,22 @@ main(int argc, char *argv[])
         TEST_FAIL("Add pattern unit fails %X", rc);
 
     rc = tapi_eth_recv_start(ta, sid, eth_listen_csap, pattern, 
-                             NULL, NULL, 12000, num_pkts);
+                             pass_results ? local_eth_frame_handler : NULL,
+                             NULL, timeout, num_pkts);
 
     if (rc != 0)
         TEST_FAIL("tapi_eth_recv_start failed: 0x%X", rc);
     VERB("eth recv start num: %d", num_pkts);
 
-    caught_num = 0;
-    rc = rcf_ta_trrecv_wait(ta, sid, eth_listen_csap, &caught_num);
-    if (rc == TE_RC(TE_TAD_CSAP, ETIMEDOUT))
+    if (blocked_mode)
+        rc = rcf_ta_trrecv_wait(ta, sid, eth_listen_csap, &caught_num);
+    else
     {
-        RING("Wait for eth frames timedout");
-        if (caught_num >= num_pkts || caught_num < 0)
-            TEST_FAIL("Wrong number of caught pkts in timeout: %d", 
-                      caught_num);
+        sleep(timeout / 1000 + 1);
+        rc = rcf_ta_trrecv_stop(ta, sid, eth_listen_csap, &caught_num);
     }
-    else if (rc != 0)
-        TEST_FAIL("trrecv wait on ETH CSAP fails: 0x%X", rc);
-    else if (caught_num != num_pkts)
-        TEST_FAIL("Wrong number of caught pkts: %d, wanted %d",
-                  caught_num, num_pkts);
-    asn_free_value(pattern);
-    pattern = NULL;
 
-    /*  ---------- Caught some packets with callback --------  */
 
-    pattern = asn_init_value(ndn_traffic_pattern);
-
-    rc = asn_insert_indexed(pattern, pattern_unit, -1, ""); 
-    if (rc != 0)
-        TEST_FAIL("Add pattern unit fails %X", rc);
-
-    rc = tapi_eth_recv_start(ta, sid, eth_listen_csap, pattern, 
-            local_eth_frame_handler, NULL, 12000, num_pkts);
-
-    if (rc)
-        TEST_FAIL("tapi_eth_recv_start failed: 0x%X", rc);
-    VERB("eth recv start num: %d", num_pkts);
-
-    caught_num = 0;
-    rc = rcf_ta_trrecv_wait(ta, sid, eth_listen_csap, &caught_num);
     if (rc == TE_RC(TE_TAD_CSAP, ETIMEDOUT))
     {
         RING("Wait for eth frames timedout");
@@ -194,13 +177,13 @@ main(int argc, char *argv[])
         TEST_FAIL("Wrong number of caught pkts: %d, wanted %d",
                   caught_num, num_pkts);
 
-    if (cb_called != caught_num)
+    if (pass_results && (cb_called != caught_num))
         TEST_FAIL("user callback called %d != caught pkts %d", 
                   cb_called, caught_num);
 
-    asn_free_value(pattern);
-    pattern = NULL;
+    RING("caught packts %d, wait/stop rc 0x%X", caught_num, rc); 
 
+    asn_free_value(pattern);
 
     TEST_SUCCESS;
 

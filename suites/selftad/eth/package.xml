@@ -14,6 +14,21 @@
             <arg name="num_pkts">
                 <value>5</value>
             </arg>
+            <arg name="timeout"> 
+                <value>1200</value><!-- in milliseconds -->
+            </arg>
+            <arg name="pass_results">
+                <value>FALSE</value>
+                <value>TRUE</value>
+            </arg>
+            <arg name="dump_packets">
+                <value>FALSE</value>
+                <value>TRUE</value>
+            </arg>
+            <arg name="blocked_mode">
+                <value>FALSE</value>
+                <value>TRUE</value>
+            </arg>
         </run>
         <run>
             <script name="eth1">
