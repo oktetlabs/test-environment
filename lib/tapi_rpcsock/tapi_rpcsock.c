@@ -4002,6 +4002,7 @@ int
 rpc_simple_receiver(rcf_rpc_server *handle, 
                     int s, uint64_t *received)
 {
+    rcf_rpc_op                op = handle->op;
     tarpc_simple_receiver_in  in;
     tarpc_simple_receiver_out out;
 
@@ -4022,9 +4023,8 @@ rpc_simple_receiver(rcf_rpc_server *handle,
     if (out.retval == 0)
         *received = ((uint64_t)(out.bytes_high) << 32) + out.bytes_low;
         
-    INFO("RPC (%s,%s): "
-         "simple_receiver(%d) -> %d %u (%s)",
-         handle->ta, handle->name,
+    INFO("RPC (%s,%s)%s: simple_receiver(%d) -> %d %u (%s)",
+         handle->ta, handle->name, rpcop2str(op),
          s, out.retval, (unsigned long)*received, 
          errno_rpc2str(RPC_ERRNO(handle))); 
 
