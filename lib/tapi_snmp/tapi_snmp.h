@@ -711,7 +711,7 @@ extern int tapi_snmp_trap_recv_start(const char *ta_name, int sid,
  * @return  Status of the operation
  */
 int
-tapi_snmp_make_table_field_instance(const char *oid_str, tapi_snmp_oid_t *oid, ...);
+tapi_snmp_make_instance(const char *oid_str, tapi_snmp_oid_t *oid, ...);
 
 
 /**
