@@ -2188,6 +2188,7 @@ flooder(tarpc_flooder_in *in)
     char     rcv_buf[FLOODER_BUF];
     char     snd_buf[FLOODER_BUF];
 
+    fd_set          rfds0, wfds0;
     fd_set          rfds, wfds;
     int             max_descr = 0;
 
@@ -2195,8 +2196,7 @@ flooder(tarpc_flooder_in *in)
     struct timeval  timestamp;
     struct timeval  call_timeout;
     te_bool         time2run_not_expired = TRUE;
-    te_bool         session_rx;
-
+    te_bool         session_rx = TRUE;
 
     memset(rcv_buf, 0x0, FLOODER_BUF);
     memset(snd_buf, 0xA, FLOODER_BUF);
@@ -2221,16 +2221,18 @@ flooder(tarpc_flooder_in *in)
     {
         if (rcvrs[i] > max_descr)
             max_descr = rcvrs[i];
+        FD_SET((unsigned int)rcvrs[i], &rfds0);
     }
     for (i = 0; i < sndnum; ++i)
     {
         if (sndrs[i] > max_descr)
             max_descr = sndrs[i];
+        FD_SET((unsigned int)sndrs[i], &wfds0);
     }
 
     if (gettimeofday(&timeout, NULL))
     {
-        ERROR("%s(): gettimeofday(timeout) failed: %X",
+        ERROR("%s(): gettimeofday(timeout) failed: %d",
               __FUNCTION__, errno);
         return -1;
     }
@@ -2243,21 +2245,23 @@ flooder(tarpc_flooder_in *in)
          time2run, (long)timeout.tv_sec, (long)timeout.tv_usec);
 
     do {
-        session_rx = FALSE;
-
-        /* Prepare sets of file descriptors */
-        FD_ZERO(&rfds);
-        FD_ZERO(&wfds);
-        for (i = 0; time2run_not_expired && (i < sndnum); ++i)
-            FD_SET((unsigned int)sndrs[i], &wfds);
-        for (i = 0; i < rcvnum; ++i)
-            FD_SET((unsigned int)rcvrs[i], &rfds);
-
-        if (select(max_descr + 1, &rfds,
-                   time2run_not_expired ? &wfds : NULL,
-                   NULL, &call_timeout) < 0)
+        if (time2run_not_expired)
         {
-            ERROR("%s(): (p)select() failed: %X", __FUNCTION__, errno);
+            wfds = wfds0;
+        }
+        else
+        {
+            FD_ZERO(&wfds);
+            session_rx = FALSE;
+        }
+        rfds = rfds0;
+
+        if ((rc = select(max_descr + 1, &rfds,
+                         time2run_not_expired ? &wfds : NULL,
+                         NULL, &call_timeout)) < 0)
+        {
+            ERROR("%s(): (p)select() failed: %d", __FUNCTION__, 
+                  WSAGetLastError());
             return -1;
         }
 
@@ -2301,11 +2305,11 @@ flooder(tarpc_flooder_in *in)
                 }
                 if (received > 0)
                 {
-                    session_rx = TRUE;
                     if (rx_stat != NULL)
                         rx_stat[i] += received;
                     if (!time2run_not_expired)
                         VERB("FD=%d Rx=%d", rcvrs[i], received);
+                    session_rx = TRUE;
                 }
             }
         }
@@ -2324,37 +2328,18 @@ flooder(tarpc_flooder_in *in)
             {
                 --(call_timeout.tv_sec);
                 call_timeout.tv_usec += 1000000;
-#ifdef DEBUG
-                if (call_timeout.tv_usec < 0)
-                {
-                    ERROR("Unexpected situation, assertation failed\n"
-                          "%s:%d", __FILE__, __LINE__);
-                }
-#endif
             }
             if (call_timeout.tv_sec < 0)
             {
                 time2run_not_expired = FALSE;
-                /* Just to make sure that we'll get all from buffers */
-                session_rx = TRUE;
                 INFO("%s(): time2run expired", __FUNCTION__);
             }
-#ifdef DEBUG
-            else if (call_timeout.tv_sec < time2run)
-            {
-                VERB("%s(): timeout %ld.%06ld", __FUNCTION__,
-                     call_timeout.tv_sec, call_timeout.tv_usec);
-                time2run >>= 1;
-            }
-#endif
         }
 
         if (!time2run_not_expired)
         {
             call_timeout.tv_sec = FLOODER_ECHOER_WAIT_FOR_RX_EMPTY;
             call_timeout.tv_usec = 0;
-            VERB("%s(): Waiting for empty Rx queue, Rx=%d",
-                 __FUNCTION__, session_rx);
         }
 
     } while (time2run_not_expired || session_rx);
@@ -2367,8 +2352,8 @@ flooder(tarpc_flooder_in *in)
         {
             if ((ioctlsocket((unsigned int)rcvrs[i], FIONBIO, &off)) != 0)
             {
-                ERROR("%s(): ioctl(FIONBIO) failed: %X",
-                      __FUNCTION__, errno);
+                ERROR("%s(): ioctl(FIONBIO) failed: %d",
+                      __FUNCTION__, WSAGetLastError());
                 return -1;
             }
         }
