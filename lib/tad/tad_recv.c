@@ -240,7 +240,7 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
                         break;
                     }
                 if (rc != 0)
-                    F_RING("pld byte [%d] is %02x; dont match", i, *d);
+                    F_RING("pld byte [%d] is %x; dont match", i, (int)*d);
             }
         }
 
