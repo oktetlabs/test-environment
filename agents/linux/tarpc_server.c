@@ -54,6 +54,7 @@
 #include <netinet/tcp.h>
 #include <arpa/inet.h>
 #include <net/if.h>
+#include <net/if_arp.h>
 #include <netdb.h>
 #include <dlfcn.h>
 #if HAVE_AIO_H
@@ -1588,13 +1589,14 @@ TARPC_FUNC(ioctl,
     COPY_ARG(req);
 },
 {
-    char *req;
+    char *req = NULL;
     int   reqlen = 0;
 
     static struct timeval req_timeval;
     static int            req_int;
     static struct ifreq   req_ifreq;
     static struct ifconf  req_ifconf;
+    static struct arpreq  req_arpreq;
 
     if (out->req.req_val != NULL)
     {
@@ -1682,6 +1684,31 @@ TARPC_FUNC(ioctl,
                 req_ifconf.ifc_len = buflen;
                 if (buf != NULL)
                     INIT_CHECKED_ARG(buf, buflen + 10, buflen); 
+                break;
+            }
+            case IOCTL_ARPREQ:
+            {
+                req = (char *)&req_arpreq;
+                reqlen = sizeof(req_arpreq);
+
+                memset(req, 0, reqlen);
+                /* Copy protocol address for all requests */
+                sockaddr_rpc2h(&(out->req.req_val[0].ioctl_request_u.
+                               req_arpreq.rpc_arp_pa),
+                               (struct sockaddr_storage *)
+                                   (&(req_arpreq.arp_pa)));
+                if (in->code == RPC_SIOCSARP)
+                {
+                    /* Copy HW address */
+                    sockaddr_rpc2h(&(out->req.req_val[0].ioctl_request_u.
+                                   req_arpreq.rpc_arp_ha),
+                                   (struct sockaddr_storage *)
+                                       (&(req_arpreq.arp_ha)));
+                    /* Copy ARP flags */
+                    req_arpreq.arp_flags =
+                        arp_fl_rpc2h(out->req.req_val[0].ioctl_request_u.
+                                     req_arpreq.rpc_arp_flags);
+                }
                 break;
             }
                 
@@ -1806,6 +1833,25 @@ TARPC_FUNC(ioctl,
                 free(req_ifconf.ifc_buf);
                 break;
             }
+            case IOCTL_ARPREQ:
+            {
+                 if (in->code == RPC_SIOCGARP)
+                 {
+                     /* Copy protocol address */
+                     sockaddr_h2rpc(&(req_arpreq.arp_pa),
+                                    &(out->req.req_val[0].ioctl_request_u.
+                                    req_arpreq.rpc_arp_pa));
+                     /* Copy HW address */
+                     sockaddr_h2rpc(&(req_arpreq.arp_ha),
+                                    &(out->req.req_val[0].ioctl_request_u.
+                                    req_arpreq.rpc_arp_ha));
+                     /* Copy flags */
+                     out->req.req_val[0].ioctl_request_u.req_arpreq.
+                         rpc_arp_flags = arp_fl_h2rpc(req_arpreq.arp_flags);
+                 }
+                 break;
+            }
+
         }
     }
     finish:
