@@ -71,7 +71,7 @@
 #include <libxml/xmlmemory.h>
 #include <libxml/parser.h>
 
-#include <ltdl.h>
+#include <dlfcn.h>
 
 #include "te_stdint.h"
 #include "te_errno.h"
@@ -160,7 +160,7 @@ typedef struct ta {
     int                 sid;                /**< Free session identifier 
                                                  (starts from 2) */
 
-    lt_dlhandle         dlhandle;           /**< Dynamic library handle */
+    void               *dlhandle;           /**< Dynamic library handle */
     te_bool             dead;               /**< TA is dead */
 
     /** @name Methods */
@@ -223,8 +223,8 @@ free_ta_list()
     {
         next = agent->next;
 
-        if (lt_dlclose(agent->dlhandle) != 0)
-            ERROR("lt_dlclose() failed");
+        if (dlclose(agent->dlhandle) != 0)
+            ERROR("dlclose() failed");
 
         free(agent->name);
         free(agent->type);
@@ -284,28 +284,28 @@ find_user_request(usrreq *req, int sid)
 static int
 resolve_ta_methods(ta *agent, char *libname)
 {
-    lt_dlhandle handle;
+    void *handle;
     char name[RCF_MAX_NAME];
 
     sprintf(name, "lib%s", libname);
-    if ((handle = lt_dlopenext(name)) == NULL)
+    if ((handle = dlopen(name, RTLD_LAZY)) == NULL)
     {
         VERB("FATAL ERROR: Cannot load shared library %s "
-                         "errno %s", libname, lt_dlerror());
+                         "errno %s", libname, dlerror());
         return 1;
     }
 
 #define RESOLVE_SYMBOL(sym) \
-    do {                                                                \
-        sprintf(name, "%s_"#sym, libname);                              \
-        if ((agent->sym = lt_dlsym(handle, name)) == NULL)              \
-        {                                                               \
-            ERROR("FATAL ERROR: Cannot resolve symbol '%s' " \
-                             "in the shared library", name);            \
-            if (lt_dlclose(handle) != 0)                                \
-                ERROR("lt_dlclose() failed");                \
-            return 1;                                                   \
-        }                                                               \
+    do {                                                        \
+        sprintf(name, "%s_"#sym, libname);                      \
+        if ((agent->sym = dlsym(handle, name)) == NULL)         \
+        {                                                       \
+            ERROR("FATAL ERROR: Cannot resolve symbol '%s' "    \
+                             "in the shared library", name);    \
+            if (dlclose(handle) != 0)                           \
+                ERROR("dlclose() failed");                      \
+            return 1;                                           \
+        }                                                       \
     } while (0)
 
     RESOLVE_SYMBOL(start);
@@ -1731,13 +1731,6 @@ main(int argc, char **argv)
         goto error;
     }
 
-    rc = lt_dlinit();
-    if (rc != 0)
-    {
-        ERROR("FATAL ERROR: lt_dlinit() failed");
-        goto error;
-    }
-
     if ((rc = parse_config(argv[1])) != 0)
         goto error;
 
@@ -1839,9 +1832,6 @@ no_ipcs_error:
     free_ta_list();
     if (server != NULL)
         ipc_close_server(server);
-
-    if (lt_dlexit() != 0)
-        ERROR("lt_dlexit() failed");
 
     if (rc != 0)
         ERROR("Error exit");

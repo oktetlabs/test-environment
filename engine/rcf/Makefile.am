@@ -1,13 +1,9 @@
 
 AUTOMAKE_OPTIONS = foreign 
 
-SUBDIRS=libltdl
-
-INCLUDES = $(INCLTDL)
-
-AM_CFLAGS=@TE_CFLAGS@ -I$(DESTDIR)/$(prefix)/include \
-                      -I$(DESTDIR)/$(prefix)/../include \
-                      @XML2_CFLAGS@
+AM_CPPFLAGS=-I$(DESTDIR)/$(prefix)/include \
+            -I$(DESTDIR)/$(prefix)/../include
+AM_CFLAGS=@XML2_CFLAGS@
 AM_LDFLAGS=@TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/lib 
 
 bin_PROGRAMS=rcf rcf_shutdown
@@ -21,7 +17,7 @@ rcf_shutdown_LDADD=-lrcfapi -lipc -llogger_ten -lpthread
 rcf_LDFLAGS=-rdynamic -export-dynamic 
 
 rcf_LDADD = $(LIBLTDL) @TE_LDADD@ -llogger_ten -lipcserver -lipc \
-            -lltdl @XML2_LIBS@ -lpthread
+            @XML2_LIBS@ -ldl -lpthread
 rcf_DEPENDENCIES = $(LIBLTDL) @TE_DEPENDENCIES@ \
                    $(DESTDIR)/$(prefix)/lib/liblogger_ten.a \
                    $(DESTDIR)/$(prefix)/lib/libipcserver.a \

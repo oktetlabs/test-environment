@@ -49,17 +49,6 @@ AC_ARG_VAR(TE_LDFLAGS)
 AC_ARG_VAR(TE_LDADD)
 AC_ARG_VAR(TE_DEPENDENCIES)
 
-AC_LIBLTDL_INSTALLABLE
-# Substitute INCLTDL and LIBLTDL in the Makefiles
-AC_SUBST(INCLTDL)
-AC_SUBST(LIBLTDL)
-# Check for dlopen support
-AC_LIBTOOL_DLOPEN
-# Configure libtool
-AC_PROG_LIBTOOL
-# Configure libltdl
-AC_CONFIG_SUBDIRS(libltdl)
-
 AM_CONFIG_HEADER(config.h)
 AC_CHECK_HEADERS([\
 fcntl.h \
