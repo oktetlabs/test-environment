@@ -31,15 +31,10 @@
 #ifndef __TE_DEFS_H__
 #define __TE_DEFS_H__
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-#ifdef HAVE_ASSERT_H
+#if HAVE_ASSERT_H
 #include <assert.h>
 #endif
-
-#ifdef HAVE_STDLIB_H
+#if HAVE_STDLIB_H
 #include <stdlib.h>
 #endif
 
@@ -119,8 +114,8 @@ typedef unsigned char te_bool;
 /**
  * Swap two pointers.
  *
- * @param _p1   - one pointer
- * @param _p2   - another pointer
+ * @param _p1       one pointer
+ * @param _p2       another pointer
  */
 #define SWAP_PTRS(_p1, _p2) \
     do {                    \
@@ -140,6 +135,12 @@ typedef unsigned char te_bool;
 /** Prefix for tester user name */
 #define TE_USER_PREFIX  "te"
 
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#if HAVE_STDLIB_H
 /**
  * Generate random number from the range.
  *
@@ -153,7 +154,7 @@ rand_range(int min, int max)
 {
     return min + (rand() % (max - min + 1));
 }
-
+#endif
 
 #ifdef __cplusplus
 } /* extern "C" */
