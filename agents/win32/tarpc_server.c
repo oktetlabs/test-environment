@@ -76,7 +76,7 @@
 /** Function prototypes for Microsoft extended functions
  *  from Windows Sockets 2 */
 /* ConnectEx() */
-typedef BOOL (PASCAL FAR *LPFN_CONNECTEX)(SOCKET s,
+typedef BOOL (__stdcall  *LPFN_CONNECTEX)(SOCKET s,
                                           const struct sockaddr* name,
                                           int namelen,
                                           PVOID lpSendBuffer,
@@ -84,21 +84,21 @@ typedef BOOL (PASCAL FAR *LPFN_CONNECTEX)(SOCKET s,
                                           LPDWORD lpdwBytesSent,
                                           LPOVERLAPPED lpOverlapped);
 /* DisconnectEx() */
-typedef BOOL (PASCAL FAR *LPFN_DISCONNECTEX)(SOCKET hSocket,
-                                  LPOVERLAPPED lpOverlapped,
-                                  DWORD dwFlags,
-                                  DWORD reserved);
+typedef BOOL (__stdcall  *LPFN_DISCONNECTEX)(SOCKET hSocket,
+                                             LPOVERLAPPED lpOverlapped,
+                                             DWORD dwFlags,
+                                             DWORD reserved);
 /* AcceptEx() */
-typedef BOOL (*LPFN_ACCEPTEX)(SOCKET sListenSocket,
-                              SOCKET sAcceptSocket,
-                              PVOID lpOutputBuffer,
-                              DWORD dwReceiveDataLength,
-                              DWORD dwLocalAddressLength,
-                              DWORD dwRemoteAddressLength,
-                              LPDWORD lpdwBytesReceived,
-                              LPOVERLAPPED lpOverlapped);
+typedef BOOL (__stdcall *LPFN_ACCEPTEX)(SOCKET sListenSocket,
+                                        SOCKET sAcceptSocket,
+                                        PVOID lpOutputBuffer,
+                                        DWORD dwReceiveDataLength,
+                                        DWORD dwLocalAddressLength,
+                                        DWORD dwRemoteAddressLength,
+                                        LPDWORD lpdwBytesReceived,
+                                        LPOVERLAPPED lpOverlapped);
 /* GetAcceptExSockAddrs() */
-typedef void (*LPFN_GETACCEPTEXSOCKADDRS)(PVOID lpOutputBuffer,
+typedef void (__stdcall *LPFN_GETACCEPTEXSOCKADDRS)(PVOID lpOutputBuffer,
                                           DWORD dwReceiveDataLength,
                                           DWORD dwLocalAddressLength,
                                           DWORD dwRemoteAddressLength,
@@ -107,7 +107,7 @@ typedef void (*LPFN_GETACCEPTEXSOCKADDRS)(PVOID lpOutputBuffer,
                                           LPSOCKADDR *RemoteSockaddr,
                                           LPINT RemoteSockaddrLength);
 /* TransmitFile() */
-typedef BOOL (*LPFN_TRANSMITFILE)(SOCKET hSocket,
+typedef BOOL (__stdcall *LPFN_TRANSMITFILE)(SOCKET hSocket,
                                   HANDLE hFile,
                                   DWORD nNumberOfBytesToWrite,
                                   DWORD nNumberOfBytesPerSend,
@@ -115,7 +115,7 @@ typedef BOOL (*LPFN_TRANSMITFILE)(SOCKET hSocket,
                                   TRANSMIT_FILE_BUFFERS *lpTransmitBuffers,
                                   DWORD dwFlags);
 /* WSARecvMsg() */
-typedef int (*LPFN_WSARECVMSG)(SOCKET s,
+typedef int (__stdcall *LPFN_WSARECVMSG)(SOCKET s,
                                LPWSAMSG lpMsg,
                                LPDWORD lpdwNumberOfBytesRecvd,
                                LPWSAOVERLAPPED lpOverlapped,
@@ -1159,16 +1159,19 @@ TARPC_FUNC(accept_ex,
         }
     }
     MAKE_CALL(out->retval =
-                      (*pf_accept_ex)(in->fd, in->fd_a,
-                                      in->buflen == 0 ? NULL :
-                                      overlapped->buffers[0].buf,
-                           in->buflen,
-                      sizeof(struct sockaddr_storage) + 16,
-                                      sizeof(struct sockaddr_storage) + 16,
-                                      out->count.count_len == 0 ? NULL :
-                                      (LPDWORD)out->count.count_val,
-                                      in->overlapped == 0 ? NULL :
-                         (LPWSAOVERLAPPED)overlapped));
+              (*pf_accept_ex)(in->fd, in->fd_a,
+                              in->buflen == 0 ? NULL : 
+                              overlapped->buffers[0].buf, 
+                              in->buflen,
+                              sizeof(struct sockaddr_storage) + 16,
+                              sizeof(struct sockaddr_storage) + 16,
+                              out->count.count_len == 0 ? NULL :
+                              (LPDWORD)out->count.count_val, 
+                              in->overlapped == 0 ? NULL :
+                              (LPWSAOVERLAPPED)overlapped)); 
+    if (overlapped == &tmp)
+        rpc_overlapped_free_memory(overlapped);
+
     finish:
     ;
 }
@@ -3126,7 +3129,7 @@ TARPC_FUNC(get_overlapped_result,
     MAKE_CALL(out->retval =
                   WSAGetOverlappedResult(in->s,
                                          in->overlapped == 0 ?
-                     NULL : (LPWSAOVERLAPPED)overlapped,
+                                         NULL : (LPWSAOVERLAPPED)overlapped,
                                          out->bytes.bytes_len == 0 ? NULL :
                                          (LPDWORD)(out->bytes.bytes_val),
                                          in->wait,
