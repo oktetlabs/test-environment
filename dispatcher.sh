@@ -62,6 +62,7 @@ usage()
     echo -e '  '--vg-tests\\t\\t\\t'Run tests under valgrind (without by default).'
     echo -e \\t\\t\\t\\t'May be used with script Tester only.'
     echo
+    echo -e '  --tester-suite=[NAME|PATH]'\\t'Specify location of Test Sutie sources.'
     echo -e '  --tester-run=[PATH]'\\t\\t'Run a test item defined by PATH.'
     echo -e '  --tester-req=[REQ|!REQ]'\\t'Requirement to be tested (or excluded,'
     echo -e \\t\\t\\t\\t'if its first symbol is !).'
@@ -153,11 +154,6 @@ LOG_ONLINE=
 #LOCK_DIR=/var/lock/te
 # RedHat does not allow to write usual users in /var/lock directory
 LOCK_DIR=/tmp/te_lock
-
-# Test Suites to build
-TS_BUILD=
-# Test Suites to execute
-TS_EXEC=
 
 while test -n "$1" ; do
     case $1 in 
@@ -377,7 +373,7 @@ if test -n "$BUILDER" ; then
     fi
 fi
 
-if test -n ${SUITE_SOURCES} ; then
+if test -n "${SUITE_SOURCES}" -a -n "${BUILD_TS}" ; then
     te_build_suite `basename ${SUITE_SOURCES}` $SUITE_SOURCES
 fi    
 
