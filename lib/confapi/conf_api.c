@@ -123,8 +123,8 @@ int
 cfg_register_object_str(const char *oid, cfg_obj_descr *descr,
                         cfg_handle *handle)
 {
-    int len;
-    int ret_val = 0;
+    size_t  len;
+    int     ret_val = 0;
 
     cfg_register_msg *msg;
 
@@ -307,8 +307,8 @@ cfg_get_oid_str(cfg_handle handle, char **oid)
 {
     cfg_get_oid_msg *msg;
 
-    int len;
-    int ret_val = 0;
+    size_t  len;
+    int     ret_val = 0;
 
     char *str;
 
@@ -375,8 +375,8 @@ cfg_get_oid_str(cfg_handle handle, char **oid)
 int
 cfg_get_oid(cfg_handle handle, cfg_oid **oid)
 {
-    char *str;
-    int ret_val = 0;
+    char   *str;
+    int     ret_val = 0;
 
     *oid = NULL;
 
@@ -412,8 +412,8 @@ cfg_get_subid(cfg_handle handle, char **subid)
 {
     cfg_get_id_msg *msg;
 
-    int len;
-    int ret_val = 0;
+    size_t  len;
+    int     ret_val = 0;
 
     char *str;
 
@@ -479,8 +479,8 @@ cfg_get_inst_name(cfg_handle handle, char **name)
 {
     cfg_get_id_msg *msg;
 
-    int len;
-    int ret_val = 0;
+    size_t  len;
+    int     ret_val = 0;
 
     char *str;
 
@@ -575,8 +575,8 @@ cfg_find_str(const char *oid, cfg_handle *handle)
 {
     cfg_find_msg *msg;
 
-    int len;
-    int ret_val = 0;
+    size_t  len;
+    int     ret_val = 0;
 
     if (oid == NULL)
     {
@@ -658,9 +658,9 @@ cfg_find(const cfg_oid *oid, cfg_handle *handle)
 int
 cfg_find_object_by_instance(cfg_handle instance, cfg_handle *object)
 {
-    int ret_val;
-    int i = 0;
-    int len;
+    int      ret_val;
+    size_t   i = 0;
+    size_t   len;
     cfg_oid *instance_oid;
     cfg_oid *object_oid;
 
@@ -723,8 +723,8 @@ cfg_find_pattern(const char *pattern, int *num, cfg_handle **set)
     cfg_pattern_msg *msg;
     char            *alloc_msg = NULL;
 
-    int len;
-    int ret_val = 0;
+    size_t  len;
+    int     ret_val = 0;
 
     *num = 0;
     *set = NULL;
@@ -812,8 +812,8 @@ cfg_get_family_member(cfg_handle handle, uint8_t who, cfg_handle *member)
 {
     cfg_family_msg *msg;
 
-    int len;
-    int ret_val = 0;
+    size_t  len;
+    int     ret_val = 0;
 
     if (handle == CFG_HANDLE_INVALID)
     {
@@ -941,8 +941,8 @@ cfg_add_instance(const cfg_oid *oid, cfg_handle *handle, cfg_val_type type, ...)
     cfg_inst_val value;
     char        *oid2str;
 
-    int len;
-    int ret_val = 0;
+    size_t  len;
+    int     ret_val = 0;
 
     if (oid == NULL)
     {
@@ -1041,8 +1041,8 @@ cfg_add_instance_str(const char *oid, cfg_handle *handle, cfg_val_type type, ...
     va_list      list;
     cfg_inst_val value;
 
-    int len;
-    int ret_val = 0;
+    size_t  len;
+    int     ret_val = 0;
 
     if (oid == NULL)
     {
@@ -1178,8 +1178,9 @@ static int
 kill(cfg_handle handle)
 {
     cfg_del_msg *msg;
-    int ret_val = 0;
-    int len;
+
+    int     ret_val = 0;
+    size_t  len;
 
     if (handle == CFG_HANDLE_INVALID)
     {
@@ -1273,8 +1274,8 @@ cfg_set_instance_gen(cfg_handle handle, te_bool local, cfg_val_type type,
     cfg_set_msg    *msg;
     cfg_inst_val    value;
 
-    int ret_val = 0;
-    int len;
+    int     ret_val = 0;
+    size_t  len;
 
     if (handle == CFG_HANDLE_INVALID)
     {
@@ -1370,7 +1371,7 @@ int
 cfg_commit(const char *oid)
 {
     cfg_commit_msg *msg;
-    unsigned int    len;
+    size_t          len;
     int             ret_val = 0;
 
 #ifdef HAVE_PTHREAD_H
@@ -1431,8 +1432,8 @@ cfg_get_instance(cfg_handle handle, cfg_val_type *type, ...)
     va_list      list;
     cfg_inst_val value;
 
-    int len;
-    int ret_val = 0;
+    size_t  len;
+    int     ret_val = 0;
 
     if (handle == CFG_HANDLE_INVALID)
     {
@@ -1549,8 +1550,8 @@ cfg_get_instance_sync(cfg_handle handle, cfg_val_type *type, ...)
     va_list      list;
     cfg_inst_val value;
 
-    int len;
-    int ret_val = 0;
+    size_t  len;
+    int     ret_val = 0;
 
     if (handle == CFG_HANDLE_INVALID)
     {
@@ -1659,8 +1660,8 @@ cfg_synchronize(const char *oid, te_bool subtree)
 {
     cfg_sync_msg *msg;
 
-    int len;
-    int ret_val = 0;
+    size_t  len;
+    int     ret_val = 0;
 
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_lock(&cfgl_lock);
@@ -1812,8 +1813,8 @@ cfg_reboot_ta(const char *ta_name, te_bool restore)
 {
     cfg_reboot_msg *msg;
 
-    int len;
-    int ret_val = 0;
+    size_t  len;
+    int     ret_val = 0;
 
     if (ta_name == NULL)
     {
@@ -1867,8 +1868,8 @@ cfg_create_backup(char **name)
 {
     cfg_backup_msg *msg;
 
-    int len;
-    int ret_val = 0;
+    size_t  len;
+    int     ret_val = 0;
 
     *name = NULL;
 
@@ -1925,8 +1926,8 @@ cfg_verify_backup(const char *name)
 {
     cfg_backup_msg *msg;
 
-    int len;
-    int ret_val = 0;
+    size_t  len;
+    int     ret_val = 0;
 
     if (name == NULL)
     {
@@ -1982,8 +1983,8 @@ cfg_restore_backup(const char *name)
 {
     cfg_backup_msg *msg;
 
-    int len;
-    int ret_val = 0;
+    size_t  len;
+    int     ret_val = 0;
 
     if (name == NULL)
     {
@@ -2041,8 +2042,8 @@ cfg_create_config(const char *name, te_bool history)
 {
     cfg_config_msg *msg;
 
-    int len;
-    int ret_val = 0;
+    size_t  len;
+    int     ret_val = 0;
 
     if (name == NULL)
     {
