@@ -85,7 +85,6 @@ echo TE_BUILD=$TE_BUILD >> ${TE_BUILD}/builder.conf.processed.new
 echo TE_INSTALL=$TE_INSTALL >> ${TE_BUILD}/builder.conf.processed.new
 echo TE_INSTALL_NUT=$TE_INSTALL_NUT >> ${TE_BUILD}/builder.conf.processed.new
 echo TE_INSTALL_SUITE=$TE_INSTALL_SUITE >> ${TE_BUILD}/builder.conf.processed.new
-echo TE_PATH=${TE_INSTALL}/${host}/bin >> ${TE_BUILD}/builder.conf.processed.new
 echo host=$host >> ${TE_BUILD}/builder.conf.processed.new
 
 AC_ARG_VAR(with_config)
@@ -111,6 +110,7 @@ else
     echo ${HOST}_LIBS=\"ipc bsapi loggerten rcfapi conf_oid confapi\" >> ${TE_BUILD}/builder.conf.processed.new
     echo TE_BS_APP=\"$TE_BS_APP\" >> ${TE_BUILD}/builder.conf.processed.new
 fi
+echo 'TE_PATH=${TE_INSTALL}/${host}/bin' >> ${TE_BUILD}/builder.conf.processed.new
 
 if test -e ${TE_BUILD}/builder.conf.processed ; then
     if diff -q ${TE_BUILD}/builder.conf.processed ${TE_BUILD}/builder.conf.processed.new > /dev/null ; then 
