@@ -15,12 +15,10 @@ MY_LDADD=symtbl.o -lrcfpch @TE_LDADD@ \
 #MY_LDADD+= @NET_SNMP_LIBS@
 #endif
 
-MY_LDAFLAGS=-rdynamic -export-dynamic 
-
 MY_SOURCES=linux.c linuxconf.c ftp_routines.c
 MY_SYMTBL_OBJECTS=linux.o ftp_routines.o
 
-noinst_HEADERS=linux_rpc.h linux_internal.h
+noinst_HEADERS=linux_rpc.h linux_internal.h linuxconf_daemons.h
 
 CLEANFILES=symtbl.c
 
@@ -71,7 +69,7 @@ if CFG_LINUX_DAEMONS
 
 MY_CPPFLAGS+=@DAEMONS_CFLAGS@
 
-MY_SOURCES+=linuxconf_daemons.c 
+MY_SOURCES+=linuxconf_daemons.c dhcp_server.c
 
 MY_LDADD+=@DAEMONS_LDADD@
 
@@ -86,7 +84,7 @@ AM_CPPFLAGS=$(MY_CPPFLAGS)
 # host which does not have required dynamically linked libraries.
 # Use -static.
 #
-AM_LDFLAGS=@TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/../@host@/lib
+AM_LDFLAGS=-static @TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/../@host@/lib
 
 bin_PROGRAMS=talinuxtmpl
 

@@ -86,6 +86,7 @@ int a = IP_MTU;],
                    [AC_MSG_RESULT([not found])])
               ], [], [#include <sys/socket.h>])])])
 
+DS_SOURCES=
 if test -n "$with_cfg_linux_daemons" ; then
   DAEMONS_CFLAGS=-DCFG_LINUX_DAEMONS
   for i in $with_cfg_linux_daemons ; do
@@ -94,25 +95,47 @@ if test -n "$with_cfg_linux_daemons" ; then
             DAEMONS_CFLAGS="$DAEMONS_CFLAGS -DWITH_TFTP_SERVER"
             DAEMONS_CFLAGS="$DAEMONS_CFLAGS -DWITH_XINETD" 
             ;;
+            
         ftp)
             DAEMONS_CFLAGS="$DAEMONS_CFLAGS -DWITH_FTP_SERVER" ;;
+            
         dns)
             DAEMONS_CFLAGS="$DAEMONS_CFLAGS -DWITH_DNS_SERVER" ;;
+            
         echo)
             DAEMONS_CFLAGS="$DAEMONS_CFLAGS -DWITH_ECHO_SERVER"
             DAEMONS_CFLAGS="$DAEMONS_CFLAGS -DWITH_XINETD" 
             ;;
+            
         todudp)
             DAEMONS_CFLAGS="$DAEMONS_CFLAGS -DWITH_TODUDP_SERVER"
             DAEMONS_CFLAGS="$DAEMONS_CFLAGS -DWITH_XINETD" 
             ;;
+            
+        telnet)
+            DAEMONS_CFLAGS="$DAEMONS_CFLAGS -DWITH_TELNET"
+            DAEMONS_CFLAGS="$DAEMONS_CFLAGS -DWITH_XINETD" 
+            ;;
+            
+        rsh)
+            DAEMONS_CFLAGS="$DAEMONS_CFLAGS -DWITH_RSH"
+            DAEMONS_CFLAGS="$DAEMONS_CFLAGS -DWITH_XINETD" 
+            ;;
+            
         dhcp)
             DAEMONS_CFLAGS="$DAEMONS_CFLAGS -DWITH_DHCP_SERVER" ;
-            DAEMONS_LDADD="-ldhcpctl -lomapi -ldst" ;;
+            DAEMONS_LDADD="-ldhcpctl -lomapi -ldst" 
+            ;;
+            
         smtp)
             DAEMONS_CFLAGS="$DAEMONS_CFLAGS -DWITH_SMTP" ;;
+            
         sshd) ;;
+        
         Xvfb) ;;
+        
+        vncserver) DAEMONS_CFLAGS="$DAEMONS_CFLAGS -DWITH_VNCSERVER" ;;
+        
         *)  ;; 
     esac
   done
