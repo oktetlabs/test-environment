@@ -132,6 +132,8 @@ typedef unsigned char te_bool;
                                             (({assert(FALSE);}), NULL))
 #endif
 
+/** Prefix for tester user name */
+#define TE_USER_PREFIX  "te_tester_"
 
 /**
  * Generate random number from the range.
