@@ -124,6 +124,13 @@ extern reqs_expr *reqs_expr_binary(reqs_expr_type type,
 extern void tester_reqs_expr_free(reqs_expr *p);
 
 /**
+ * Free requirements expression (non-recursive).
+ *
+ * @param p         Expression to be freed without subexpressions
+ */
+extern void tester_reqs_expr_free_nr(reqs_expr *p);
+
+/**
  * Clone list of requirements.
  *
  * @param reqs      List of requirements to be cloned

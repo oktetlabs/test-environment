@@ -47,7 +47,7 @@ typedef TAILQ_HEAD(tester_run_paths, tester_run_path) tester_run_paths;
 typedef struct tester_run_path {
     TAILQ_ENTRY(tester_run_path)    links;  /**< List links */
 
-    char               *name;   /**< Path item name */
+    const char         *name;   /**< Path item name */
     unsigned int        flags;  /**< Path flags (tester_flags) */
     test_params         params; /**< Specific parameters */
 

@@ -208,6 +208,7 @@ test_params_add(test_params *params, test_param *param)
         if (strcmp(p->name, param->name) == 0)
         {
             TAILQ_REMOVE(params, p, links);
+            test_param_free(p);
             break;
         }
     }
@@ -315,6 +316,23 @@ var_arg_preferred_value(const test_var_arg *p)
 }
 
 /**
+ * Free list of allocated strings.
+ *
+ * @param head      Head of the list
+ */
+static void
+tq_strings_free(tqh_strings *head)
+{
+    tqe_string *p;
+
+    while ((p = head->tqh_first) != NULL)
+    {
+        TAILQ_REMOVE(head, p, links);
+        free(p);
+    }
+}
+
+/**
  * Create a list of parameters iterations.
  *
  * @param vas       Test variables or arguments
@@ -366,6 +384,7 @@ vars_args_iterations(test_vars_args        *vas,
             list = calloc(1, sizeof(*list));
             if (list == NULL)
             {
+                tq_strings_free(&processed_lists);
                 EXIT("ENOMEM");
                 return ENOMEM;
             }
@@ -391,6 +410,7 @@ vars_args_iterations(test_vars_args        *vas,
                 i_clone = test_param_iteration_clone(i, TRUE);
                 if (i_clone == NULL)
                 {
+                    tq_strings_free(&processed_lists);
                     ERROR("Cloning of the iteration failed");
                     EXIT("ENOMEM");
                     return ENOMEM;
@@ -401,12 +421,16 @@ vars_args_iterations(test_vars_args        *vas,
                 /* Get argument value and create parameter */
                 s = get_value(value, i->base);
                 if (s == NULL)
+                {
+                    tq_strings_free(&processed_lists);
                     return EINVAL;
+                }
                 tp = test_param_new(va->name, s, va->handdown,
                                     (value->reqs.tqh_first == NULL) ?
                                         NULL : &value->reqs);
                 if (tp == NULL)
                 {
+                    tq_strings_free(&processed_lists);
                     ERROR("Failed to create new test parameter");
                     EXIT("ENOMEM");
                     return ENOMEM;
@@ -434,7 +458,10 @@ vars_args_iterations(test_vars_args        *vas,
                                           var_arg_preferred_value(va2),
                                           i->base, &more_in_arg);
                         if (s == NULL)
+                        {
+                            tq_strings_free(&processed_lists);
                             return EINVAL;
+                        }
                         more_in_list = (more_in_list || more_in_arg);
                         /* Create parameter and add it in iteration */
                         /* FIXME: Requirement here */
@@ -442,6 +469,7 @@ vars_args_iterations(test_vars_args        *vas,
                                             NULL);
                         if (tp == NULL)
                         {
+                            tq_strings_free(&processed_lists);
                             ERROR("Failed to create new test parameter");
                             EXIT("ENOMEM");
                             return ENOMEM;
@@ -460,6 +488,8 @@ vars_args_iterations(test_vars_args        *vas,
             }
         }
     }
+
+    tq_strings_free(&processed_lists);
 
     EXIT("OK");
     return 0;
@@ -1636,6 +1666,7 @@ tester_run_config(tester_ctx *ctx, tester_cfg *cfg)
     int         rc;
     int         result = 0;
     char       *maintainers;
+    reqs_expr  *targets_root = NULL;
     run_item   *test;
 
     ENTRY();
@@ -1660,8 +1691,9 @@ tester_run_config(tester_ctx *ctx, tester_cfg *cfg)
         if (ctx->targets != NULL)
         {
             /* Add configuration to context requirements */
-            ctx->targets = reqs_expr_binary(TESTER_REQS_EXPR_AND,
-                                            ctx->targets, cfg->targets);
+            ctx->targets = targets_root =
+                reqs_expr_binary(TESTER_REQS_EXPR_AND,
+                                 ctx->targets, cfg->targets);
             if (ctx->targets == NULL)
             {
                 tester_ctx_free(ctx);
@@ -1701,6 +1733,7 @@ tester_run_config(tester_ctx *ctx, tester_cfg *cfg)
         }
     }
 
+    tester_reqs_expr_free_nr(targets_root);
     tester_ctx_free(ctx);
 
     return result;

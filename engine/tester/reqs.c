@@ -196,6 +196,14 @@ reqs_expr_binary(reqs_expr_type type, reqs_expr *lhv, reqs_expr *rhv)
     return p;
 }
 
+
+/* See description in reqs.h */
+void
+tester_reqs_expr_free_nr(reqs_expr *p)
+{
+    free(p);
+}
+
 /* See description in reqs.h */
 void
 tester_reqs_expr_free(reqs_expr *p)
@@ -224,7 +232,7 @@ tester_reqs_expr_free(reqs_expr *p)
             assert(FALSE);
             break;
     }
-    free(p);
+    tester_reqs_expr_free_nr(p);
 }
 
 

@@ -88,4 +88,11 @@ extern void test_param_iteration_free(test_param_iteration *p);
  */
 extern void test_param_iterations_free(test_param_iterations *iters);
 
+/**
+ * Free a test parameter.
+ *
+ * @param p     Test parameter to be freed 
+ */
+extern void test_param_free(test_param *param);
+
 #endif /* !__TE_TESTER_ITERS_H__ */

@@ -85,12 +85,8 @@ test_param_clone(const test_param *p)
     return pc;
 }
 
-/**
- * Free a test parameter.
- *
- * @param p     Test parameter to be freed 
- */
-static void
+/* See description in iters.h */
+void
 test_param_free(test_param *p)
 {
     free(p->value);
@@ -102,7 +98,7 @@ test_param_free(test_param *p)
  *
  * @param params    List of test parameters to be freed    
  */
-static void 
+void 
 test_params_free(test_params *params)
 {
     test_param *p;

@@ -57,7 +57,7 @@
  *
  * @return '\0'-terminated string
  */
-static char *
+static const char *
 run_path_name_token(char **path, te_bool *params)
 {
     char   *s;

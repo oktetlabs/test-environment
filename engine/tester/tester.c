@@ -795,6 +795,7 @@ exit:
     }
 
     /* TODO */
+    tester_reqs_expr_free(ctx.targets);
     tester_run_path_free(ctx.path);
     test_requirements_free(&ctx.reqs);
     

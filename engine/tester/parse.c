@@ -1581,6 +1581,7 @@ get_target_reqs(xmlNodePtr *node, reqs_expr **targets)
             return EINVAL;
         }
         rc = tester_new_target_reqs(targets, str);
+        free(str);
         if (rc != 0)
             return rc;
         (*node) = xmlNodeNext(*node);
