@@ -519,7 +519,7 @@ extern const char * asn_get_name(const asn_value *container);
  * @return zero or error code.
  */ 
 extern int asn_get_subtype(const asn_type *type, 
-                const asn_type ** subtype, const char *labels);
+                           const asn_type ** subtype, const char *labels);
 
 /**
  * Get constant pointer to subvalue of some ASN value with CONSTRAINT syntax.
@@ -541,6 +541,26 @@ extern int asn_get_subvalue(const asn_value *container,
                             const asn_value ** subval, 
                             const char *labels);
 
+
+/**
+ * Get constant pointer to subvalue of ASN value with indexed 
+ * ('SEQUENCE OF' or 'SET OF') syntax. 
+ * User may try to discard 'const' qualifier of obtained subvalue only 
+ * if he (she) knows very well what he doing with ASN value. 
+ * In particular, got subvalue should NOT be freed!
+ *
+ * This method is much faster then "asn_read_component_value' because it does
+ * not make external copy of subvalue. 
+ * 
+ * @param container     root of ASN value tree which subvalue is interested
+ * @param subval        location for pointer to ASN sub-value (OUT)
+ * @param index         index of subvalue
+ *
+ * @return zero on success or error code.
+ */ 
+extern int asn_get_indexed(const asn_value *container, 
+                           const asn_value ** subval, 
+                           int index);
 
 /**
  * Get constant pointer to data related to leaf (plain-syntax) sub-value 
@@ -566,7 +586,7 @@ extern int asn_get_subvalue(const asn_value *container,
  * @return zero on success or error code.
  */ 
 extern int asn_get_field_data(const asn_value *container, 
-                uint8_t const **data_ptr, const char *labels);
+                              uint8_t const **data_ptr, const char *labels);
 
 
 

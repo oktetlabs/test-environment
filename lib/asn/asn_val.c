@@ -1073,8 +1073,8 @@ asn_impl_write_component_value (asn_value_p container,
  * See description in asn_usr.h
  */
 int 
-asn_get_subvalue(const asn_value *container, 
-                 const asn_value ** subval, const char *subval_labels)
+asn_get_subvalue(const asn_value *container, const asn_value **subval,
+                 const char *subval_labels)
 {
     int rc;
     char *rest_labels;
@@ -1102,6 +1102,31 @@ asn_get_subvalue(const asn_value *container,
     rc = asn_impl_fall_down_to_tree_nc (container, rest_labels, subval); 
     free (rest_labels); 
     return rc;
+}
+
+/**
+ * See description in asn_usr.h
+ */
+int
+asn_get_indexed(const asn_value *container, const asn_value **subval, 
+                int index)
+{
+    if (!container || !subval)
+        return ETEWRONGPTR; 
+
+    if (container->syntax != SEQUENCE_OF && 
+        container->syntax != SET_OF)
+        return EINVAL;
+
+    if (index < 0)
+        return EINVAL; 
+
+    if ((unsigned int)index >= container->len)
+        return EASNINCOMPLVAL; 
+
+    *subval = container->data.array[index];
+
+    return 0;
 }
 
 /**
@@ -1256,7 +1281,8 @@ asn_write_indexed (asn_value_p container, const asn_value_p elem_value,
  * @return pointer to new ASN_value instance or NULL if error occurred. 
  */ 
 asn_value_p
-asn_read_indexed (const asn_value *container, int index, const char *subval_labels)
+asn_read_indexed(const asn_value *container, int index,
+                 const char *subval_labels)
 {
     const asn_value *value = container;
 
