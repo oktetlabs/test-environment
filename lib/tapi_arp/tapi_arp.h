@@ -154,10 +154,10 @@ extern int tapi_arp_csap_create(const char *ta_name, int sid,
  * Sends traffic from specified CSAP according to the traffic template passed.
  * This function blocks until all packets are sent.
  *
- * @param ta_name  - Test Agent name
- * @param sid      - RCF session identifier
- * @param arp_csap - CSAP handle
- * @param templ    - Traffic template
+ * @param ta_name   Test Agent name
+ * @param sid       RCF session identifier
+ * @param arp_csap  CSAP handle
+ * @param templ     Traffic template
  * 
  * @return zero on success, otherwise standard or common TE error code.
  */
@@ -183,16 +183,16 @@ typedef void (*tapi_arp_frame_callback)(const tapi_arp_frame_t *header,
  * was started correctly (rc is OK) it can be managed by common RCF
  * methods 'rcf_ta_trrecv_wait', 'rcf_ta_trrecv_get' and 'rcf_ta_trrecv_stop'.
  *
- * @param ta_name   - Test Agent name
- * @param sid       - RCF session
- * @param arp_csap  - CSAP handle 
- * @param pattern   - ASN value with receive pattern
- * @param cb        - Callback function which will be called for each 
- *                    received frame, may me NULL if frames are not need
- * @param cb_data   - pointer to be passed to user callback
- * @param timeout   - Timeout for receiving of packets, measured in 
- *                    milliseconds
- * @param num       - Number of packets caller wants to receive
+ * @param ta_name    Test Agent name
+ * @param sid        RCF session
+ * @param arp_csap   CSAP handle 
+ * @param pattern    ASN value with receive pattern
+ * @param cb         Callback function which will be called for each 
+ *                   received frame, may me NULL if frames are not need
+ * @param cb_data    pointer to be passed to user callback
+ * @param timeout    Timeout for receiving of packets, measured in 
+ *                   milliseconds
+ * @param num        Number of packets caller wants to receive
  *
  * @return zero on success, otherwise standard or common TE error code.
  */
@@ -201,6 +201,30 @@ extern int tapi_arp_recv_start(const char *ta_name, int sid,
                                const asn_value *pattern,
                                tapi_arp_frame_callback cb, void *cb_data,
                                unsigned int timeout, int num);
+
+/**
+ * Receives specified number of ARP frames matched with the pattern.
+ * The function blocks the caller until all the frames are received or 
+ * timeout occurred.
+ * 
+ * @param ta_name    Test Agent name
+ * @param sid        RCF session
+ * @param arp_csap   CSAP handle 
+ * @param pattern    ASN value with receive pattern
+ * @param timeout    Timeout for receiving of packets, measured in 
+ *                   milliseconds
+ * @param frames     Pointer to the array of packets (OUT)
+ *                   the function allocates memory under the packets that 
+ *                   should be freed with free() function
+ * @param num        Number of packets caller wants to receive (IN)
+ *                   number of received packets (OUT)
+ *
+ * @return zero on success, otherwise standard or common TE error code.
+ */
+extern int tapi_arp_recv(const char *ta_name, int sid,
+                         csap_handle_t arp_csap,
+                         const asn_value *pattern, unsigned int timeout,
+                         tapi_arp_frame_t **frames, int *num);
 
 /**
  * Creates traffic template for a single ARP frame.
