@@ -29,6 +29,7 @@
  * $Id$
  */
 
+#define TE_LOG_LEVEL 0xff
 #include "te_config.h"
 
 #include <stdio.h>
@@ -336,9 +337,11 @@ create_wildcard_inst_list(rcf_pch_cfg_object *obj, char *parsed, char *oid,
                 }
 
                 strcpy(new_entry->oid, tmp_parsed);
+
                 new_entry->next = *list;
                 *list = new_entry;
             }
+
 
             if (obj->son != NULL && *next_level != 0)
                 rc = create_wildcard_inst_list(obj->son, tmp_parsed,
@@ -524,36 +527,6 @@ convert_to_answer(olist *list, char **answer)
 
     return 0;
 }
-static rcf_pch_cfg_object *
-find_obj(rcf_pch_cfg_object *node, char *oid)
-{
-    rcf_pch_cfg_object *curr;
-    
-    char *c;
-
-    if (oid == NULL)
-        return NULL;
-
-    if (node == NULL)
-        return NULL;
-
-    c = strchr(oid, ':');
-    if (c != NULL)
-        *c = 0;
-
-    for (curr = node; curr != NULL; curr = curr->brother)
-    {
-        if (strcmp(curr->sub_id, oid) == 0)
-        {
-            if (c != NULL)
-                *c = ':';
-            if ((curr->son != NULL) && (strchr(oid, '/') != NULL))
-                return find_obj(curr->son, strchr(oid, '/') + 1);
-            return curr;
-        }
-    }
-    return NULL;
-}
 
 /**
  * Process wildcard configure get request.
@@ -585,9 +558,6 @@ process_wildcard(struct rcf_comm_connection *conn, char *cbuf,
         SEND_ANSWER("%d", TE_RC(TE_RCF_PCH, ENOMEM));
     if (strstr(oid, "...") != NULL)
     {
-        char               *d = NULL;
-        rcf_pch_cfg_object *start_point;
-        char               *obj_id;
 
         VERB("Create list of instances due to the '...' request");
         if (strchr(oid, ':') == NULL)
@@ -596,33 +566,56 @@ process_wildcard(struct rcf_comm_connection *conn, char *cbuf,
         }
         else
         {
-            d = strrchr(oid, '/');
-            if (d != NULL)
-                *d = 0;
+            char  *obj_id = strdup(oid);
+            char  *level_all = "/*:*";
+            char  *c = NULL;
+            olist *tmp_list = NULL;
+            olist *level_list = NULL;
 
-            obj_id = strrchr(oid, '/');
             if (obj_id == NULL)
-                return EINVAL;
-            
-            start_point = find_obj(rcf_ch_conf_root(), oid + 1);
-            
-            rc = create_wildcard_inst_list(start_point, NULL, tmp, 
-                                           obj_id, &list);
-            if (start_point == NULL)
             {
-                rc = 0; 
-                olist *tmp;
-                while (list != NULL)
-                {
-                    tmp = list->next;
-                    free(list);
-                    list = tmp;
-                }
+                SEND_ANSWER("%d", TE_RC(TE_RCF_PCH, ENOMEM));
             }
+            c = strrchr(obj_id, '/');
+            if (c != NULL)
+                *c = 0;
+     
+            do {
+                char *tmp_id;
+                
+                free(tmp);
+                tmp_id = realloc(obj_id, strlen(obj_id) + sizeof("/*:*"));
+                if (tmp_id == NULL)
+                    SEND_ANSWER("%d", TE_RC(TE_RCF_PCH, ENOMEM));
+                
+                obj_id = tmp_id;
+
+                obj_id = strcat(tmp_id, level_all);
+                if ((tmp = strdup(obj_id)) == NULL)
+                {
+                    SEND_ANSWER("%d", TE_RC(TE_RCF_PCH, ENOMEM));
+                }
+                while (level_list != NULL)
+                {
+                    tmp_list = level_list;
+                    level_list = level_list->next;
+                }
+
+                level_list = NULL;
+                rc = create_wildcard_inst_list(rcf_ch_conf_root(), NULL, 
+                                               tmp, obj_id, &level_list);
+                if (tmp_list != NULL)
+                    tmp_list->next = level_list;
+                else
+                    list = level_list;
+                
+            } while (rc == 0 && level_list != NULL);
+
+            *c = '/';
+            free(obj_id);
         }
     } 
-    else 
-    if (strchr(oid, ':') == NULL)
+    else if (strchr(oid, ':') == NULL)
     {
         VERB("Create list of objects by wildcard");
         rc = create_wildcard_obj_list(rcf_ch_conf_root(),
@@ -631,6 +624,7 @@ process_wildcard(struct rcf_comm_connection *conn, char *cbuf,
     else
     {
         VERB("Create list of instances by wildcard");
+        
         rc = create_wildcard_inst_list(rcf_ch_conf_root(),
                                        NULL, tmp, oid, &list);
     }
