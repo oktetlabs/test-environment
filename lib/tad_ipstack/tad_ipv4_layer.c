@@ -203,7 +203,7 @@ int ip4_match_bin_cb (int csap_id, int layer, const asn_value_p pattern_pdu,
             return rc;                                                \
         p += _size;                                                   \
     }
-    FILL_TCP_HEADER_FIELD("file",  128); 
+    /* FILL_TCP_HEADER_FIELD("file",  128); */
     
     p++;
     FILL_IP_HEADER_FIELD("type-of-service",         1);
