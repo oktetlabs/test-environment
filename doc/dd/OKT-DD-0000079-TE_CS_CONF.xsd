@@ -105,7 +105,7 @@
         </xs:annotation>
         <xs:complexType>
             <xs:sequence>
-                <xs:element ref="object"/>
+                <xs:element ref="object" maxOccurs="unbounded"/>
             </xs:sequence>
         </xs:complexType>
     </xs:element>
@@ -120,7 +120,7 @@
         </xs:annotation>
         <xs:complexType>
             <xs:sequence>
-                <xs:element ref="instance"/>
+                <xs:element ref="instance" maxOccurs="unbounded"/>
             </xs:sequence>
         </xs:complexType>
     </xs:element>
@@ -135,7 +135,7 @@
         </xs:annotation>
         <xs:complexType>
             <xs:sequence>
-                <xs:element ref="instance"/>
+                <xs:element ref="instance" maxOccurs="unbounded"/>
             </xs:sequence>
         </xs:complexType>
     </xs:element>
@@ -149,7 +149,7 @@
         </xs:annotation>
         <xs:complexType>
             <xs:sequence>
-                <xs:element ref="instance"/>
+                <xs:element ref="instance" maxOccurs="unbounded"/>
             </xs:sequence>
         </xs:complexType>
     </xs:element>
