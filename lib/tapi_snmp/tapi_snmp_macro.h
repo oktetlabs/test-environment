@@ -637,6 +637,48 @@ extern "C" {
                               strlen(value), index)
 
 
+/**
+ * Macro around tapi_snmp_get_integer()
+ * 
+ * @param ta             Test Agent name
+ * @param sid            RCF Session id.
+ * @param csap_id        identifier of an SNMP CSAP.
+ * @param name           name of an SNMP object the value is to be set.
+ * @param value          pointer to returned integer value.
+ * @param index          index of table field instance (0 for scalar field).
+ * 
+ */
+#define TAPI_SNMP_GET_INTEGER(ta, sid, csap_id, name, value, index...)         \
+    do {                                                                       \
+        tapi_snmp_oid_t           leaf_oid;                                    \
+        CHECK_RC(tapi_snmp_make_instance(name, &leaf_oid, index));             \
+        CHECK_RC(tapi_snmp_get_integer(ta, sid, csap_id, &leaf_oid, (value))); \
+    } while (0)
+
+
+/**
+ * Macro around tapi_snmp_get_integer()
+ * 
+ * @param ta             Test Agent name
+ * @param sid            RCF Session id.
+ * @param csap_id        identifier of an SNMP CSAP.
+ * @param name           name of an SNMP object the value is to be set.
+ * @param value          integer value to compare.
+ * @param index          index of table field instance (0 for scalar field).
+ * 
+ */
+#define TAPI_SNMP_CHECK_INTEGER(ta, sid, csap_id, name, value, index...)       \
+    do {                                                                       \
+        int                       tmp_value;                                   \
+        tapi_snmp_oid_t           leaf_oid;                                    \
+        CHECK_RC(tapi_snmp_make_instance(name, &leaf_oid, index));             \
+        CHECK_RC(tapi_snmp_get_integer(ta, sid, csap_id, &leaf_oid,            \
+                 &tmp_value));                                                 \
+        if (value != tmp_value)                                                \
+            TEST_FAIL(name " is not equal to %s = %d", #value, value);         \
+    } while (0)
+
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
