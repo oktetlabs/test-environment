@@ -50,7 +50,7 @@ tapi_file_generate_name(void)
  * @param c     file content pattern
  *
  * @return name (memory is allocated) of the file or
- *         NULL in the case of failure.
+ *         NULL in the case of failure
  *
  * @note The function is not thread-safe 
  */
