@@ -28,16 +28,16 @@ TE_LIB_PARMS([tapi_rpcsock], [], [], [--with-ta=linux], [])
 
 TE_LIB_PARMS([ndn], [], [], \
              [--with-file --with-eth --with-bridge \
-              --with-ipstack --with-dhcp --with-snmp], [])
+              --with-ipstack --with-dhcp --with-snmp --with-cli], [])
 TE_LIB_PARMS([tad_ch], [], [], \
              [--with-file --with-eth --with-bridge \
-              --with-ipstack --with-dhcp --with-snmp], [])
+              --with-ipstack --with-dhcp --with-snmp --with-cli], [])
               
 TE_TA_TYPE([linux], [linux], [], \
            [--with-rcf-rpc --with-cfg-linux-daemons='ftp echo'], \
            [], [-lsnmp -lcrypto], \
            [tad_ch tad_file tad_eth tad_bridge tad_ipstack tad_dhcp tad_snmp \
-            ndn asn])
+            tad_cli ndn asn])
 
 TE_TA_TYPE([linux_lite], [linux], [], [], [-DTAD_CH_DUMMY], [], [])
 
