@@ -275,15 +275,13 @@ get_value(const test_var_arg_value *value, const test_params *params)
  * @param values        List of values
  * @param value_i       Index of the value to get
  * @param preferred     Preferred value, if 'value_i' is too big
- * @param params        Current parameters context
  * @param more          Whether more values present
  *
- * @return Value or NULL.
+ * @return i-th value or preferred value.
  */
-static const char *
+static const test_var_arg_value *
 get_ith_value(const test_var_arg_values *values, unsigned int value_i,
-              const test_var_arg_value *preferred,
-              const test_params *params, te_bool *more)
+              const test_var_arg_value *preferred, te_bool *more)
 {
     const test_var_arg_value   *v;
     unsigned int                i;
@@ -298,7 +296,7 @@ get_ith_value(const test_var_arg_values *values, unsigned int value_i,
     *more = (v != NULL) && (v->links.tqe_next != NULL);
     if (v == NULL)
         v = preferred;
-    return get_value(v, params);
+    return v;
 }
 
 /**
@@ -311,7 +309,7 @@ var_arg_preferred_value(const test_var_arg *p)
 {
     assert(p != NULL);
 
-    return (p->attrs.preferred) ? : p->values.tqh_first;
+    return (p->attrs.preferred) ? p->attrs.preferred : p->values.tqh_first;
 }
 
 /**
@@ -348,6 +346,7 @@ vars_args_iterations(test_vars_args        *vas,
     const test_var_arg         *va;
     const test_var_arg_value   *v;
     const test_var_arg_value   *value;
+    const test_var_arg_value   *value2;
     test_param                 *tp;
     const char                 *s;
     tqh_strings                 processed_lists;
@@ -453,19 +452,24 @@ vars_args_iterations(test_vars_args        *vas,
                         /* Argument from the same list */
 
                         /* Get its i-th value */
-                        s = get_ith_value(&va2->values, value_i,
-                                          var_arg_preferred_value(va2),
-                                          i->base, &more_in_arg);
+                        value2 = get_ith_value(&va2->values, value_i,
+                                     var_arg_preferred_value(va2),
+                                     &more_in_arg);
+                        assert(value2 != NULL);
+                        more_in_list = (more_in_list || more_in_arg);
+                        /* Get argument value and create parameter */
+                        s = get_value(value2, i->base);
                         if (s == NULL)
                         {
                             tq_strings_free(&processed_lists);
+                            ERROR("Failed to get test parameter value");
+                            EXIT("EINVAL");
                             return EINVAL;
                         }
-                        more_in_list = (more_in_list || more_in_arg);
                         /* Create parameter and add it in iteration */
-                        /* FIXME: Requirement here */
                         tp = test_param_new(va2->name, s, va->handdown,
-                                            NULL);
+                                 (value2->reqs.tqh_first == NULL) ?
+                                     NULL : &value2->reqs);
                         if (tp == NULL)
                         {
                             tq_strings_free(&processed_lists);
