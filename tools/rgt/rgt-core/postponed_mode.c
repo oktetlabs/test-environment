@@ -61,48 +61,6 @@ static int postponed_process_regular_msg(log_msg *msg);
 
 static void output_regular_log_msg(log_msg *msg);
 
-
-#define EXPAND_XML_SPECIAL_CHARS(ch) \
-    do {                                 \
-        switch (ch)                      \
-        {                                \
-            case '&':                    \
-                fputc('&', output_fd);   \
-                fputc('a', output_fd);   \
-                fputc('m', output_fd);   \
-                fputc('p', output_fd);   \
-                fputc(';', output_fd);   \
-                break;                   \
-                                         \
-            case '<':                    \
-                fputc('&', output_fd);   \
-                fputc('l', output_fd);   \
-                fputc('t', output_fd);   \
-                fputc(';', output_fd);   \
-                break;                   \
-                                         \
-            case '>':                    \
-                fputc('&', output_fd);   \
-                fputc('g', output_fd);   \
-                fputc('t', output_fd);   \
-                fputc(';', output_fd);   \
-                break;                   \
-                                         \
-            case '\n':                   \
-                fputc('<', output_fd);   \
-                fputc('b', output_fd);   \
-                fputc('r', output_fd);   \
-                fputc('/', output_fd);   \
-                fputc('>', output_fd);   \
-                break;                   \
-                                         \
-            default:                     \
-                fputc(ch, output_fd);    \
-                break;                   \
-        }                                \
-    } while (0)
-
-
 void
 postponed_mode_init(f_process_ctrl_log_msg
                         ctrl_proc[CTRL_EVT_LAST][NT_LAST],
@@ -149,14 +107,56 @@ print_ts(FILE *fd, uint32_t *ts)
 #undef TIME_BUF_LEN
 }
 
+/**
+ * Processes string with expanding XML special characters
+ *
+ * @param obstk  Obstack structure for string output
+ * @param str    String to process and output
+ */
 static void
-fwrite_string(const char *str)
+fwrite_string(struct obstack *obstk, const char *str)
 {
     int i = 0;
     
     while (str[i] != '\0')
     {
-        EXPAND_XML_SPECIAL_CHARS(str[i]);
+        switch (str[i])
+        {
+            case '\n':
+                if (obstk != NULL)
+                    obstack_grow(log_obstk, "<br/>", 5);
+                else
+                    fputs("<br/>", output_fd);
+                break;
+            
+            case '<':
+                if (obstk != NULL)
+                    obstack_grow(log_obstk, "&lt;", 4);
+                else
+                    fputs("&lt;", output_fd);
+                break;
+            
+            case '>':
+                if (obstk != NULL)
+                    obstack_grow(log_obstk, "&gt;", 4);
+                else
+                    fputs("&gt;", output_fd);
+                break;
+            
+            case '&':
+                if (obstk != NULL)
+                    obstack_grow(log_obstk, "&amp;", 5);
+                else
+                    fputs("&amp;", output_fd);
+                break;
+            
+            default:
+                if (obstk != NULL)
+                    obstack_1grow(log_obstk, str[i]);
+                else
+                    fputc(str[i], output_fd);
+                break;
+        }
         i++;
     }
 }
@@ -264,13 +264,13 @@ postponed_process_start_event(node_info_t *node, const char *node_name)
     if (node->descr.objective != NULL)
     {
         fputs("<objective>", output_fd);
-        fwrite_string(node->descr.objective);
+        fwrite_string(NULL, node->descr.objective);
         fputs("</objective>\n", output_fd);
     }
     if (node->descr.author)
     {
         fputs("<author>", output_fd);
-        fwrite_string(node->descr.author);
+        fwrite_string(NULL, node->descr.author);
         fputs("</author>\n", output_fd);
     }
     if (node->descr.n_branches > 0)
@@ -404,6 +404,7 @@ output_regular_log_msg(log_msg *msg)
     int      i;
     void    *obstk_base;
 
+/* @todo - It should be removed in the future! */
 #define OBSTACK_FLUSH() \
     do {                                              \
         char *out_str;                                \
@@ -416,6 +417,8 @@ output_regular_log_msg(log_msg *msg)
 
     if (log_obstk == NULL)
         return;
+
+    fprintf(stderr, "%s\n", __FUNCTION__);
 
     obstk_base = obstack_base(log_obstk);
     log_msg_init_arg(msg);
@@ -464,10 +467,7 @@ output_regular_log_msg(log_msg *msg)
                         THROW_EXCEPTION;
                     }
 
-                    if (obstack_next_free(log_obstk) != obstk_base)
-                        OBSTACK_FLUSH();
-
-                    fwrite_string(arg->val);
+                    fwrite_string(log_obstk, arg->val);
                     i++;
 
                     continue;
@@ -517,7 +517,7 @@ output_regular_log_msg(log_msg *msg)
                         fputs("<file>", output_fd);
                         while (fgets(str, sizeof(str), fd) != NULL)
                         {
-                            fwrite_string(str);
+                            fwrite_string(NULL, str);
                         }
                         /* End file tag */
                         fputs("</file>", output_fd);
@@ -643,6 +643,8 @@ output_regular_log_msg(log_msg *msg)
         str_len = obstack_object_size(log_obstk);
         out_str = (char *)obstack_finish(log_obstk);
 
+        fprintf(stderr, "OUT STR: %s, len = %d\n", out_str, str_len);
+
         /* 
          * Truncate trailing end of line characters:
          * @todo - maybe it's better not to make this by default.
@@ -655,9 +657,12 @@ output_regular_log_msg(log_msg *msg)
         }
         *(out_str + str_len + br_len - i) = '\0';
 
+        fprintf(stderr, "PROCESSED STR: %s\n", out_str);
+
         fprintf(output_fd, "%s", out_str);
         obstack_free(log_obstk, out_str);
     }
+    fprintf(stderr, "%s - END\n", __FUNCTION__);
 
     return;
 }
