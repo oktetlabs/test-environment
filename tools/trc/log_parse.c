@@ -330,9 +330,9 @@ get_meta(xmlNodePtr node, char **objective, test_args *args)
     }
     if (node == NULL)
     {
-        ERROR("'params' not found");
-        return EINVAL;
+        return 0;
     }
+
     if (xmlStrcmp(node->name, CONST_CHAR2XML("objective")) == 0 &&
         (rc = get_text_content(node, "objective", objective)) != 0)
     {
@@ -354,6 +354,7 @@ get_meta(xmlNodePtr node, char **objective, test_args *args)
             return rc;
         }
     }
+
     return 0;
 }
 
