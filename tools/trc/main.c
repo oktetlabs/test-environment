@@ -59,6 +59,8 @@ te_bool trc_quiet = FALSE;
 static char *trc_xml_log_fn = NULL;
 /** Name of the file with expected testing result database */
 static char *trc_db_fn = NULL;
+/** Name of the file with report in HTML format */
+static char *trc_html_fn = NULL;
 
 
 /** TRC tool command line options */
@@ -68,6 +70,7 @@ enum {
     TRC_OPT_QUIET,
     TRC_OPT_INIT,
     TRC_OPT_DB,
+    TRC_OPT_HTML,
 };
 
 /**
@@ -99,6 +102,10 @@ process_cmd_line_opts(int argc, char **argv)
 
         { "db", 'd', POPT_ARG_STRING, NULL, TRC_OPT_DB,
           "Specify name of the file with expected testing results database.",
+          "FILENAME" },
+
+        { "html", 'h', POPT_ARG_STRING, NULL, TRC_OPT_HTML,
+          "Specify name of the file to report in HTML format.",
           "FILENAME" },
 
         { "version", '\0', POPT_ARG_NONE, NULL, TRC_OPT_VERSION, 
@@ -133,6 +140,10 @@ process_cmd_line_opts(int argc, char **argv)
 
             case TRC_OPT_DB:
                 trc_db_fn = strdup(poptGetOptArg(optCon));
+                break;
+
+            case TRC_OPT_HTML:
+                trc_html_fn = strdup(poptGetOptArg(optCon));
                 break;
             
             case TRC_OPT_VERSION:
@@ -317,7 +328,8 @@ main(int argc, char *argv[])
     }
 
     /* Generate report in HTML format */
-    if (trc_report_to_html("test.html", &trc_db) != 0)
+    if (trc_html_fn != NULL &&
+        trc_report_to_html(trc_html_fn, &trc_db) != 0)
     {
         ERROR("Failed to generate report in HTML format");
         goto exit;
