@@ -2221,11 +2221,11 @@ typedef enum rpc_fcntl_command {
 
 typedef enum rpc_fcntl_arg
 {
-    RPC_O_ASYNC,
-    RPC_O_APPEND,
-    RPC_O_NONBLOCK,
-    RPC_FASYNC,
-    RPC_O_UNKNOWN
+    RPC_O_ASYNC = 020000,
+    RPC_O_APPEND = 02000,
+    RPC_O_NONBLOCK = 04000,
+    RPC_FASYNC = RPC_O_ASYNC,
+    RPC_O_UNKNOWN = 0x8000
 }rpc_fcntl_flag; 
 
 #define O_UNKNOWN	0xFFFFFFFF
