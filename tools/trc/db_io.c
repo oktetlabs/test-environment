@@ -651,7 +651,7 @@ trc_dump_db(const char *filename)
     }
     else
     {
-        printf("DB with expected testing results has been updated:\n%s\n",
+        printf("DB with expected testing results has been updated:\n%s\n\n",
                filename);
     }
 
