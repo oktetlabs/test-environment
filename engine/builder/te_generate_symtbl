@@ -70,6 +70,7 @@ EOF
 awk --posix '
 {                                               \
     if ($3 == "") next ;                        \
+    if (match($3, "@") != 0) next;              \
     if ($2 != "T")                              \
         printf "extern int %s;\n", $3 ;         \
     else                                        \
@@ -89,6 +90,7 @@ EOF
 awk --posix '
 {                                                       \
     if ($3 == "") next ;                                \
+    if (match($3, "@") != 0) next;              \
     if ($2 != "T")                                      \
         printf "    { \"%s\", 0, &%s },\n", $3, $3 ;    \
     else                                                \
