@@ -230,7 +230,7 @@ ipc_register_server(const char *name, struct ipc_server **p_ipcs)
         if (bind(ipcs->socket, SA(&sa), sizeof(sa)) != 0)
         {
             rc = errno;
-            fprintf(stderr, "Failed to register IPC server '%s': %s",
+            fprintf(stderr, "Failed to register IPC server '%s': %s\n",
                             SUN_NAME(&sa), strerror(rc));
             close(ipcs->socket);
             free(ipcs->buffer);
@@ -572,7 +572,7 @@ ipc_send_answer(struct ipc_server *ipcs, struct ipc_server_client *ipcsc,
         if (r != (ssize_t)(sizeof(*ipch) + segm_size))
         {
             fprintf(stderr, "Send IPC message from server '%s' to "
-                            "client '%s' failed: %s", ipcs->name,
+                            "client '%s' failed: %s\n", ipcs->name,
                             SUN_NAME(&ipcsc->sa), strerror(errno));
             return TE_RC(TE_IPC, errno);
         }
@@ -980,7 +980,7 @@ ipc_int_get_datagram(struct ipc_server *ipcs,
         if (r < 0)
         {
             fprintf(stderr, "IPC server '%s' failed to receive "
-                            "message: %s", ipcs->name, strerror(errno));
+                            "message: %s\n", ipcs->name, strerror(errno));
             return TE_RC(TE_IPC, errno);
         }
 
@@ -999,7 +999,7 @@ ipc_int_get_datagram(struct ipc_server *ipcs,
                                         r, &sa, sa_len);
             if (rc2 != 0)
             {
-                fprintf(stderr, "ipc_int_remember_datagram() failed");
+                fprintf(stderr, "ipc_int_remember_datagram() failed\n");
                 return TE_RC(TE_IPC, rc2);
             }
             /* IPC server buffer was owned by previous routine */
