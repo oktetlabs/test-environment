@@ -1,0 +1,73 @@
+#
+# This file contains ALL available Test Environment features
+#
+
+#
+# Host platform
+#
+TE_PLATFORM([], [], [], [], \
+            [ipc bsapi loggerten rcfapi conf_oid confapi tapi \
+             rcfunix rcfpch comm_net_engine comm_net_agent loggerta \
+             rcfrpc tapi_rpcsock \
+             asn ndn tad_ch tad_file \
+             tad_eth tapi_eth \
+             tad_bridge tapi_bridge \
+             tad_ipstack tapi_ipstack \
+             tad_dhcp tapi_dhcp \
+             tad_snmp tapi_snmp \
+            ])
+
+TE_APP_PARMS([rcf], [--enable-ltdl-install], [], [], [])
+
+TE_LIB_PARMS([rcfrpc], [], [], [--with-ta=linux], [])
+TE_LIB_PARMS([tapi_rpcsock], [], [], [--with-ta=linux], [])
+#TE_LIB_PARMS([rcfrpc], [], [], [--with-ta=win32], [], [])
+#TE_LIB_PARMS([tapi_rpcsock], [], [], [--with-ta=win32], [], [])
+
+TE_LIB_PARMS([ndn], [], [], \
+             [--with-file --with-eth --with-bridge \
+              --with-ipstack --with-dhcp --with-snmp], [])
+TE_LIB_PARMS([tad_ch], [], [], \
+             [--with-file --with-eth --with-bridge \
+              --with-ipstack --with-dhcp --with-snmp], [])
+              
+TE_TA_TYPE([linux], [linux], [], \
+           [--with-rcf-rpc --with-cfg-linux-daemons='ftp echo'], \
+           [], [-lsnmp -lcrypto], \
+           [tad_ch tad_file tad_eth tad_bridge tad_ipstack tad_dhcp tad_snmp \
+            ndn asn])
+
+TE_TA_TYPE([linux_lite], [linux], [], [], [-DTAD_CH_DUMMY], [], [])
+
+#
+# FreeBSD5 platform
+#
+TE_PLATFORM([i686-pc-freebsd5], [],
+            [-I${FREEBSD5_HOME}/sys-include], [-L${FREEBSD5_HOME}/lib],
+            [loggerta rcfpch conf_oid comm_net_agent])
+
+TE_TA_TYPE([freebsd5], [linux], [i686-pc-freebsd5],
+           [--with-rcf-rpc], [-DTAD_CH_DUMMY], [], [])
+
+#
+# NetBSD platform
+#
+TE_PLATFORM([i686-pc-netbsdelf], [],
+            [-I${NETBSD_HOME}/sys-include], [-L${NETBSD_HOME}/lib],
+            [loggerta rcfpch conf_oid comm_net_agent])
+
+TE_TA_TYPE([netbsd], [linux], [i686-pc-netbsdelf],
+           [--with-rcf-rpc], [-DTAD_CH_DUMMY], [], [])
+
+#
+# CygWin platform
+#
+TE_PLATFORM([i686-pc-cygwin], [],
+            [-I${CYGWIN_HOME}/include -I${CYGWIN_HOME}/include/ws32api -D__CYGWIN__],
+            [-L${CYGWIN_HOME}/lib -L${CYGWIN_HOME}/lib/w32api], 
+            [loggerta rcfpch conf_oid comm_net_agent])
+
+TE_TA_TYPE([win32], [win32], [i686-pc-cygwin], \
+           [--with-rcf-rpc], [-DTAD_CH_DUMMY], [], \
+           [ws2_32 rcfpch conf_oid loggerta comm_net_agent])
+
