@@ -77,7 +77,7 @@ cat >> $RESULT <<\EOF
 void *
 rcf_ch_symbol_addr_auto(const char *name, int is_func)
 {
-    int i;
+    unsigned int i;
     
     if (name == (void *)0)
         return (void *)0;
@@ -95,7 +95,7 @@ rcf_ch_symbol_addr_auto(const char *name, int is_func)
 char *
 rcf_ch_symbol_name_auto(const void *addr)
 {
-    int i;
+    unsigned int i;
     
     if (addr == (void *)0)
         return (void *)0;

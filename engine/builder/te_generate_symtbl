@@ -46,9 +46,26 @@ cat > $RESULT <<\EOF
 EOF
 
 echo ' * File generated at' `date` >> $RESULT 
-echo ' */' >> $RESULT
+cat >> $RESULT <<\EOF
+ */
 
-echo >> $RESULT
+#if HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#if STDC_HEADERS
+#include <string.h>
+#else
+#if HAVE_STRING_H
+#include <string.h>
+#endif
+#if HAVE_STRINGS_H
+#include <strings.h>
+#endif
+#endif
+
+
+EOF
 
 awk --posix '
 /^[[:xdigit:]]{8} B|C|D|G|S/ { if ($3 == "") next ; printf "extern int %s;\n", $3 ; next ;}
@@ -81,7 +98,7 @@ cat >> $RESULT <<\EOF
 void *
 rcf_ch_symbol_addr_auto(const char *name, int is_func)
 {
-    int i;
+    unsigned int i;
     
     if (name == (void *)0)
         return (void *)0;
@@ -99,7 +116,7 @@ rcf_ch_symbol_addr_auto(const char *name, int is_func)
 char *
 rcf_ch_symbol_name_auto(const void *addr)
 {
-    int i;
+    unsigned int i;
     
     if (addr == (void *)0)
         return (void *)0;
