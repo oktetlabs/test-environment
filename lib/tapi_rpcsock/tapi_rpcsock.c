@@ -6490,7 +6490,92 @@ rpc_shell(rcf_rpc_server *handle,
     rpc_close(handle, fd);
     
     return rc;
-}          
+}
+
+/** Chunk for memory allocation in rpc_shell_get_all */
+#define RPC_SHELL_BUF_CHUNK     1024          
+
+/**
+ * Execute shell command on the IPC server and read the output.
+ * The routine allocates memory for the output buffer and places
+ * null-terminated string to it.
+ *
+ * @param handle        RPC server handle
+ * @param buf           location for the command output buffer 
+ * @param cmd           format of the command to be executed
+ *
+ * @return 0 (success) or -1 (failure)
+ */
+int 
+rpc_shell_get_all(rcf_rpc_server *handle, char **pbuf, const char *cmd,...)
+{
+    char *buf;
+    int   buflen = RPC_SHELL_BUF_CHUNK;
+    int   offset = 0;
+    char  cmdline[RPC_SHELL_CMDLINE_MAX];
+    FILE *f;
+    int   fd;
+    int   rc = -1;
+
+    va_list ap;
+    
+    if (buf == NULL)
+    {
+        ERROR("Out of memory");
+        return -1;
+    }
+
+    va_start(ap, cmd);
+    vsnprintf(cmdline, sizeof(cmdline), cmd, ap);
+    va_end(ap);
+    
+    if ((f = rpc_popen(handle, cmdline, "r")) == NULL)
+    {
+        ERROR("Cannot execute the command: rpc_popen() failed");
+        free(buf);
+        return -1;
+    }
+    
+    if ((fd = rpc_fileno(handle, f)) < 0)
+    {
+        ERROR("Cannot read command output: rpc_fileno failed");
+        free(buf);
+        return -1;
+    }
+    
+    while (TRUE)
+    {
+        if (rpc_read(handle, fd, buf + offset, buflen - offset) < 0)
+        {
+            ERROR("Cannot read command output: rpc_read failed");
+            break;
+        }
+
+        if (buf[buflen - 1] == 0)
+        {
+            rc = 0;
+            break;
+        }
+        
+        offset = buflen;    
+        buflen = buflen * 2;
+        
+        if ((buf = realloc(buf, buflen)) == NULL)
+        {
+            ERROR("Out of memory");
+            break;
+        }
+        memset(buf + offset, 0, buflen - offset);
+    }
+    rpc_close(handle, fd);
+    if (rc == 0)
+        *pbuf = buf;
+    else
+        free(buf);
+    
+    return rc;
+    
+}
 
 /**
  * Execute shell command on the IPC server and return file descriptor

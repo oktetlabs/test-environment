@@ -718,6 +718,20 @@ extern int rpc_shell(rcf_rpc_server *handle,
                      char *buf, int buflen, const char *cmd,...);
 
 /**
+ * Execute shell command on the IPC server and read the output.
+ * The routine allocates memory for the output buffer and places
+ * null-terminated string to it.
+ *
+ * @param handle        RPC server handle
+ * @param buf           location for the command output buffer 
+ * @param cmd           format of the command to be executed
+ *
+ * @return 0 (success) or -1 (failure)
+ */
+extern int rpc_shell_get_all(rcf_rpc_server *handle,
+                             char **pbuf, const char *cmd,...);
+
+/**
  * Execute shell command on the IPC server and return file descriptor
  * for it's standard input or output.
  *
