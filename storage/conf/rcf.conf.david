@@ -1,0 +1,5 @@
+<?xml version="1.0"?>
+<rcf>
+    <ta name="Agt_A" type="linux" rcflib="rcfunix" confstr=":5012:sudo:"/>
+</rcf>
+
