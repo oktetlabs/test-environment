@@ -38,6 +38,7 @@
 
 #include "te_stdint.h"
 #include "te_defs.h"
+#include "te_errno.h"
 #include "tad_common.h"
 #include "asn_usr.h"
 #include "ndn_cli.h"
