@@ -55,7 +55,7 @@
 #define TAPI_ARP_MAX_PROTO_ADDR_LEN 4
 
 /** Structure that represents ARP header */
-typedef struct tapi_arp_pkt {
+typedef struct tapi_arp_hdr {
     uint16_t hard_type; /**< Hardware type filed */
     uint16_t proto_type; /**< Protocol type filed */
     uint8_t  hard_size; /**< Size of hardware address */
@@ -69,12 +69,12 @@ typedef struct tapi_arp_pkt {
                                                          address */
     uint8_t  tgt_proto_addr[TAPI_ARP_MAX_PROTO_ADDR_LEN]; /**< Target protocol
                                                                address */
-} tapi_arp_pkt_t;
+} tapi_arp_hdr_t;
 
 /** Structure that represents ARP frame: Ethernet header and ARP header */
 typedef struct tapi_arp_frame {
     ndn_eth_header_plain  eth_hdr; /**< Ethernet header */
-    tapi_arp_pkt_t        arp_hdr; /**< APR packet */
+    tapi_arp_hdr_t        arp_hdr; /**< ARP header */
 
     uint32_t              data_len; /**< Data length */
     uint8_t              *data; /**< The data that goes after ARP header */
@@ -108,7 +108,7 @@ typedef struct tapi_arp_frame {
         (arp_frame_)->arp_hdr.proto_type = ETHERTYPE_IP;                    \
         (arp_frame_)->arp_hdr.hard_size = ETH_ALEN;                         \
         (arp_frame_)->arp_hdr.proto_size = sizeof(struct in_addr);          \
-        (arp_frame_)->arp_hdr.op_code = op_;                                \
+        (arp_frame_)->arp_hdr.op_code = (op_);                              \
         if ((snd_hw_) != NULL)                                              \
             memcpy((arp_frame_)->arp_hdr.snd_hw_addr, snd_hw_, ETH_ALEN);   \
         if ((snd_proto_) != NULL)                                           \
@@ -202,7 +202,57 @@ extern int tapi_arp_recv_start(const char *ta_name, int sid,
                                tapi_arp_frame_callback cb, void *cb_data,
                                unsigned int timeout, int num);
 
+/**
+ * Creates traffic template for a single ARP frame.
+ *
+ * @param frame  ARP frame data structure as the source of ARP frame values
+ * @param templ  Placeholder for ARP template (OUT)
+ *
+ * @returns Status of the operation
+ */
 extern int tapi_arp_prepare_template(const tapi_arp_frame_t *frame,
                                      asn_value **templ);
+
+/**
+ * Creates traffic pattern for a single Ethernet frame with 'type' field 
+ * set to ARP and specified source and destination MAC addresses.
+ *
+ * @param src_mac  Desired source MAC address value. if NULL, source address
+ *                 of the Ethernet frame is not matched
+ * @param dst_mac  Desired destination MAC address value. if NULL, destination
+ *                 address of the Ethernet frame is not matched
+ * @param pattern  Placeholder for the pattern (OUT)
+ *
+ * @returns Status of the operation
+ */
+extern int tapi_arp_prepare_pattern_eth_only(uint8_t *src_mac,
+                                             uint8_t *dst_mac,
+                                             asn_value **pattern);
+
+/**
+ * Creates traffic pattern for a single ARP frame with specified 
+ * Ethernet source, destination MAC addresses and ARP header fields.
+ *
+ * @param eth_src_mac     Desired source MAC address value
+ * @param eth_dst_mac     Desired destination MAC address value
+ * @param op_code         Desired operation code
+ * @param snd_hw_addr     Desired sender hardware address
+ * @param snd_proto_addr  Desired sender protocol address
+ * @param tgt_hw_addr     Desired target hardware address
+ * @param tgt_proto_addr  Desired target protocol address
+ * @param pattern         Placeholder for the pattern (OUT)
+ *
+ * @note If the pointer is NULL, the field is not matched
+ *
+ * @returns Status of the operation
+ */
+extern int tapi_arp_prepare_pattern_with_arp(uint8_t *eth_src_mac,
+                                             uint8_t *eth_dst_mac,
+                                             uint16_t *op_code,
+                                             uint8_t *snd_hw_addr,
+                                             uint8_t *snd_proto_addr,
+                                             uint8_t *tgt_hw_addr,
+                                             uint8_t *tgt_proto_addr,
+                                             asn_value **pattern);
 
 #endif /* TAPI_ARP_H__ */

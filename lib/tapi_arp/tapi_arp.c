@@ -198,14 +198,98 @@ tapi_arp_recv_start(const char *ta_name, int sid, csap_handle_t arp_csap,
                                (cb != NULL) ? i_data : NULL, timeout, num);
 }
 
+/**
+ * Create ARP header in binary format based on 
+ * the 'tapi_arp_hdr_t' data structure.
+ *
+ * @param arp_hdr   ARP packet header
+ * @param data      Pointer to the raw data that should go after ARP header
+ * @param data_len  The length of the data
+ * @param pkt_len   Binary ARP packet length (OUT)
+ *
+ * @return Pointer to the binary data formed, or NULL if there is not enough
+ *         memory to allocate.
+ */
+static uint8_t *
+tapi_arp_create_bin_arp_pkt(const tapi_arp_hdr_t *arp_hdr,
+                            const uint8_t *data, size_t data_len,
+                            size_t *pkt_len)
+{
+    uint8_t   *arp_pkt;
+    uint32_t   arp_pkt_len;
+    uint16_t  short_var;
+    uint8_t  *arp_pkt_start;
+
+    if (arp_hdr == NULL || pkt_len == NULL)
+    {
+        assert(0);
+        return NULL;
+    }
+
+    assert((data == NULL && data_len == 0) ||
+           (data != NULL && data_len != 0));
+
+    /* Allocate memory under ARP packet */
+#define ARP_FIELD_SIZE(fld_) sizeof(arp_hdr->fld_)
+    arp_pkt_len = ARP_FIELD_SIZE(hard_type) + ARP_FIELD_SIZE(proto_type) +
+                  ARP_FIELD_SIZE(hard_size) + ARP_FIELD_SIZE(proto_size) +
+                  ARP_FIELD_SIZE(op_code) + arp_hdr->hard_size * 2 +
+                  arp_hdr->proto_size * 2 + data_len;
+#undef ARP_FIELD_SIZE
+
+    if ((arp_pkt_start = arp_pkt = (uint8_t *)malloc(arp_pkt_len)) == NULL)
+        return NULL;
+
+#define ARP_FILL_SHORT_VAR(fld_) \
+    do {                                                \
+        short_var = htons(arp_hdr->fld_);               \
+        memcpy(arp_pkt, &short_var, sizeof(short_var)); \
+        arp_pkt += sizeof(short_var);                   \
+    } while (0)
+
+    ARP_FILL_SHORT_VAR(hard_type);
+    ARP_FILL_SHORT_VAR(proto_type);
+
+    *(arp_pkt++) = arp_hdr->hard_size;
+    *(arp_pkt++) = arp_hdr->proto_size;
+
+    ARP_FILL_SHORT_VAR(op_code);
+
+#undef ARP_FILL_SHORT_VAR
+
+#define ARP_FILL_ARRAY(fld_, size_fld_) \
+   do {                                \
+        memcpy(arp_pkt, arp_hdr->fld_, \
+               arp_hdr->size_fld_);    \
+        arp_pkt += arp_hdr->size_fld_; \
+    } while (0)
+
+    ARP_FILL_ARRAY(snd_hw_addr, hard_size);
+    ARP_FILL_ARRAY(snd_proto_addr, proto_size);
+    ARP_FILL_ARRAY(tgt_hw_addr, hard_size);
+    ARP_FILL_ARRAY(tgt_proto_addr, proto_size);
+
+#undef ARP_FILL_ARRAY
+    if (data != NULL)
+    {
+        memcpy(arp_pkt, data, data_len);
+        arp_pkt += data_len;
+    }
+
+    assert((arp_pkt - arp_pkt_start) == arp_pkt_len);
+
+    *pkt_len = arp_pkt_len;
+
+    return arp_pkt_start;
+}
+
+/* See the description in tapi_arp.h */
 int
 tapi_arp_prepare_template(const tapi_arp_frame_t *frame, asn_value **templ)
 {
     asn_value *traffic_templ;
     asn_value *frame_tmpl;
     asn_value *asn_pdus, *asn_pdu;
-    uint8_t   *arp_pkt;
-    uint32_t   arp_pkt_len;
     int        rc = 0;
 
     if (frame == NULL || templ == NULL)
@@ -231,16 +315,6 @@ tapi_arp_prepare_template(const tapi_arp_frame_t *frame, asn_value **templ)
         return EINVAL;
     }
 
-    /* Allocate memory under ARP packet */
-#define ARP_FIELD_SIZE(fld_) sizeof(frame->arp_hdr.fld_)
-    arp_pkt_len = ARP_FIELD_SIZE(hard_type) + ARP_FIELD_SIZE(proto_type) +
-                  ARP_FIELD_SIZE(hard_size) + ARP_FIELD_SIZE(proto_size) +
-                  ARP_FIELD_SIZE(op_code) + frame->arp_hdr.hard_size * 2 +
-                  frame->arp_hdr.proto_size * 2 + frame->data_len;
-#undef ARP_FIELD_SIZE
-    if ((arp_pkt = (uint8_t *)malloc(arp_pkt_len)) == NULL)
-        return ENOMEM;
-
     traffic_templ = asn_init_value(ndn_traffic_template);
     asn_pdus = asn_init_value(ndn_generic_pdu_sequence);
     asn_pdu = asn_init_value(ndn_generic_pdu);
@@ -248,7 +322,6 @@ tapi_arp_prepare_template(const tapi_arp_frame_t *frame, asn_value **templ)
     frame_tmpl = ndn_eth_plain_to_packet(&(frame->eth_hdr));
     if (frame_tmpl == NULL)
     {
-        free(arp_pkt);
         return ENOMEM;
     }
 
@@ -263,54 +336,158 @@ tapi_arp_prepare_template(const tapi_arp_frame_t *frame, asn_value **templ)
     /** Create ARP header and add it as the payload to Ethernet frame */
     if (rc == 0)
     {
-        uint16_t  short_var;
-        uint8_t  *arp_pkt_start = arp_pkt;
-        
-#define ARP_FILL_SHORT_VAR(fld_) \
-        do {                                                \
-            short_var = htons(frame->arp_hdr.fld_);         \
-            memcpy(arp_pkt, &short_var, sizeof(short_var)); \
-            arp_pkt += sizeof(short_var);                   \
-        } while (0)
-    
-        ARP_FILL_SHORT_VAR(hard_type);
-        ARP_FILL_SHORT_VAR(proto_type);
+        uint8_t   *arp_pkt;
+        size_t     arp_pkt_len;
 
-        *(arp_pkt++) = frame->arp_hdr.hard_size;
-        *(arp_pkt++) = frame->arp_hdr.proto_size;
+        arp_pkt = tapi_arp_create_bin_arp_pkt(&(frame->arp_hdr),
+                                              frame->data,
+                                              frame->data_len, &arp_pkt_len);
+        if (arp_pkt == NULL)
+            return ENOMEM;
 
-        ARP_FILL_SHORT_VAR(op_code);
-
-#undef ARP_FILL_SHORT_VAR
-
-#define ARP_FILL_ARRAY(fld_, size_fld_) \
-        do {                                     \
-            memcpy(arp_pkt, frame->arp_hdr.fld_, \
-                   frame->arp_hdr.size_fld_);    \
-            arp_pkt += frame->arp_hdr.size_fld_; \
-        } while (0)
-
-        ARP_FILL_ARRAY(snd_hw_addr, hard_size);
-        ARP_FILL_ARRAY(snd_proto_addr, proto_size);
-        ARP_FILL_ARRAY(tgt_hw_addr, hard_size);
-        ARP_FILL_ARRAY(tgt_proto_addr, proto_size);
-
-#undef ARP_FILL_ARRAY
-
-        assert((arp_pkt - arp_pkt_start) == arp_pkt_len);
-        rc = asn_write_value_field(traffic_templ, arp_pkt_start, arp_pkt_len,
+        rc = asn_write_value_field(traffic_templ, arp_pkt, arp_pkt_len,
                                    "payload.#bytes");
-        arp_pkt = arp_pkt_start;
+        free(arp_pkt);
     }
 
-    free(arp_pkt);
 
     if (rc != 0)
     {
-        VERB("Cannot create traffic template %x\n", rc);
+        ERROR("Cannot create traffic template %x\n", rc);
         return rc;
     }
 
     *templ = traffic_templ;
+    return 0;
+}
+
+/* See the description in tapi_arp.h */
+int
+tapi_arp_prepare_pattern_eth_only(uint8_t *src_mac, uint8_t *dst_mac,
+                                  asn_value **pattern)
+{
+    asn_value            *frame_hdr;
+    ndn_eth_header_plain  eth_hdr;
+    int                   syms;
+    int                   rc;
+
+    if (pattern == NULL)
+        return EINVAL;
+
+    memset(&eth_hdr, 0, sizeof(eth_hdr));
+
+    if (src_mac != NULL)
+        memcpy(eth_hdr.src_addr, src_mac, sizeof(eth_hdr.src_addr));
+    if (dst_mac != NULL)
+        memcpy(eth_hdr.dst_addr, dst_mac, sizeof(eth_hdr.dst_addr));
+
+    eth_hdr.eth_type_len = ETHERTYPE_ARP;
+
+    frame_hdr = ndn_eth_plain_to_packet(&eth_hdr);
+    if (frame_hdr == NULL)
+        return ENOMEM;
+
+    if (src_mac == NULL)
+    {
+        rc = asn_remove_indexed(frame_hdr, 1, "");
+        WARN("asn_remove_indexed returns %x\n", rc);
+    }
+
+    rc = asn_parse_value_text("{{ pdus { eth:{ }}}}",
+                              ndn_traffic_pattern,
+                              pattern, &syms);
+    if (rc != 0)
+    {
+        ERROR("asn_parse_value_text fails %x\n", rc);
+        return rc;
+    }
+    rc = asn_write_component_value(*pattern,
+                                   frame_hdr, "0.pdus.0.#eth");
+    if (rc != 0)
+    {
+        ERROR("asn_write_component_value fails %x\n", rc);
+        return rc;
+    }
+
+    return 0;
+}
+
+/* See the description in tapi_arp.h */
+int
+tapi_arp_prepare_pattern_with_arp(uint8_t *eth_src_mac,
+                                  uint8_t *eth_dst_mac,
+                                  uint16_t *op_code,
+                                  uint8_t *snd_hw_addr,
+                                  uint8_t *snd_proto_addr,
+                                  uint8_t *tgt_hw_addr,
+                                  uint8_t *tgt_proto_addr,
+                                  asn_value **pattern)
+{
+    int               rc;
+    asn_value        *eth_pattern;
+    uint8_t          *arp_pkt;
+    uint8_t          *pkt_mask;
+    size_t            arp_pkt_len;
+    tapi_arp_frame_t  arp_frame;
+    uint8_t           zero_mac[ETH_ALEN] = { 0, };
+    uint8_t           zero_ip[sizeof(struct in_addr)] = { 0, };
+    uint8_t           all_one_mac[ETH_ALEN] =
+                          { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
+    uint8_t           all_one_ip[sizeof(struct in_addr)] = 
+                          { 0xff, 0xff, 0xff, 0xff };
+    
+    if ((rc = tapi_arp_prepare_pattern_eth_only(eth_src_mac, eth_dst_mac,
+                                                &eth_pattern)) != 0)
+    {
+        ERROR("tapi_arp_prepare_pattern_eth_only() returns %x", rc);
+        return rc;
+    }
+
+    TAPI_ARP_FILL_HDR(&arp_frame, (op_code != NULL) ? *op_code : 0,
+                      snd_hw_addr, snd_proto_addr,
+                      tgt_hw_addr, tgt_proto_addr);
+
+    /* Create binary ARP header */
+    arp_pkt = tapi_arp_create_bin_arp_pkt(&(arp_frame.arp_hdr),
+                                          NULL, 0, &arp_pkt_len);
+    if (arp_pkt == NULL)
+    {
+        ERROR("Cannot create binary ARP header");
+        return ENOMEM;
+    }
+
+    /* Create 'mask' for ethernet payload, which contains ARP header */
+    TAPI_ARP_FILL_HDR(&arp_frame, (op_code == NULL) ?  0x0000 : 0xffff,
+                      snd_hw_addr == NULL ? zero_mac : all_one_mac,
+                      snd_proto_addr == NULL ? zero_ip : all_one_ip,
+                      tgt_hw_addr == NULL ? zero_mac : all_one_mac,
+                      tgt_proto_addr == NULL ? zero_mac : all_one_mac);
+
+    pkt_mask = tapi_arp_create_bin_arp_pkt(&(arp_frame.arp_hdr),
+                                           NULL, 0, &arp_pkt_len);
+    if (pkt_mask == NULL)
+    {
+        ERROR("Cannot create binary mask for ARP header");
+        free(arp_pkt);
+        return ENOMEM;
+    }
+    {
+        size_t  i;
+        char buf[1024] = { 0, };
+
+        for (i = 0; i < arp_pkt_len; i++)
+        {
+            snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf),
+                     "%02x ", pkt_mask[i]);
+        }
+        WARN("MASK is %s", buf);
+    }
+    /* @todo Create MASK and add it to traffic pattern */
+
+    *pattern = eth_pattern;
+
+    free(pkt_mask);
+    free(arp_pkt);
+
     return 0;
 }
