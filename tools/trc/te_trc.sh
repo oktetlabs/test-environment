@@ -14,14 +14,14 @@ fi
 
 RAW_LOG_FILE=$1
 
-RGT_FILTER=`mktemp`
+RGT_FILTER=`mktemp /tmp/tmp.XXXXXX`
 echo -e \
 "<?xml version=\"1.0\"?>\\n"\
 "<filters>\\n"\
 "<entity-filter><exclude entity=\"\"/></entity-filter>\\n"\
 "</filters>\\n" > $RGT_FILTER
 
-XML_LOG_FILE=`mktemp`
+XML_LOG_FILE=`mktemp /tmp/tmp.XXXXXX`
 
 rgt-conv --no-cntrl-msg -m postponed -c $RGT_FILTER -f $RAW_LOG_FILE -o $XML_LOG_FILE
 if test $? -eq 0 ; then
