@@ -85,6 +85,10 @@
 
 #define RCFUNIX_SSH     "ssh -q -o BatchMode=yes -o ConnectTimeout=20 "
 
+#define RCFUNIX_KILL_TIMEOUT    5
+#define RCFUNIX_COPY_TIMEOUT    20
+#define RCFUNIX_START_TIMEOUT   10
+
 #define RCFUNIX_SHELL_CMD_MAX   2048
 
 
@@ -331,7 +335,8 @@ rcfunix_start(char *ta_name, char *ta_type, char *conf_str,
     }
 
     VERB("Copy image '%s' to the %s:/tmp", ta->exec_name, ta->host);
-    if (!(*flags & TA_FAKE) && system_with_timeout(cmd, 10) != 0)
+    if (!(*flags & TA_FAKE) &&
+        system_with_timeout(cmd, RCFUNIX_COPY_TIMEOUT) != 0)
     {
         ERROR("Failed to copy TA image %s to the %s:/tmp",
               ta->exec_name, ta->host);
@@ -379,8 +384,11 @@ rcfunix_start(char *ta_name, char *ta_type, char *conf_str,
     free(dup);
 
     VERB("Command to start TA: %s", cmd);
-    if (!(*flags & TA_FAKE) && (system_with_timeout(cmd, 5) != 0))
+    if (!(*flags & TA_FAKE) &&
+        (system_with_timeout(cmd, RCFUNIX_START_TIMEOUT) != 0))
+    {
         return ETESHCMD;
+    }
 
     *handle = (rcf_talib_handle)ta;
 
@@ -434,11 +442,11 @@ rcfunix_reboot(rcf_talib_handle handle, char *parms)
         {
             sprintf(cmd, RCFUNIX_SSH " %s \"%skill %d\" >/dev/null 2>&1",
                     ta->host, ta->sudo ? "sudo " : "" , ta->pid);
-            system_with_timeout(cmd, 5);
+            system_with_timeout(cmd, RCFUNIX_KILL_TIMEOUT);
     
             sprintf(cmd, RCFUNIX_SSH " %s \"%skill -9 %d\" >/dev/null 2>&1",
                     ta->host, ta->sudo ? "sudo " : "" , ta->pid);
-            system_with_timeout(cmd, 5);
+            system_with_timeout(cmd, RCFUNIX_KILL_TIMEOUT);
         }
     }
 
@@ -448,7 +456,7 @@ rcfunix_reboot(rcf_talib_handle handle, char *parms)
     else
         sprintf(cmd, RCFUNIX_SSH " %s \"%skillall %s\" >/dev/null 2>&1",
                 ta->host, ta->sudo ? "sudo " : "" , ta->exec_name);
-    system_with_timeout(cmd, 5);
+    system_with_timeout(cmd, RCFUNIX_KILL_TIMEOUT);
 
     if (ta->is_local)
         sprintf(cmd, "%skillall -9 %s >/dev/null 2>&1",
@@ -456,14 +464,14 @@ rcfunix_reboot(rcf_talib_handle handle, char *parms)
     else
         sprintf(cmd, RCFUNIX_SSH " %s \"%skillall -9 %s\" >/dev/null 2>&1",
                 ta->host, ta->sudo ? "sudo " : "" , ta->exec_name);
-    system_with_timeout(cmd, 5);
+    system_with_timeout(cmd, RCFUNIX_KILL_TIMEOUT);
 
     if (ta->is_local)
         sprintf(cmd, "rm -f /tmp/%s", ta->exec_name);
     else
         sprintf(cmd, RCFUNIX_SSH " %s \"rm -f /tmp/%s\"",
                 ta->host, ta->exec_name);
-    system_with_timeout(cmd, 5);
+    system_with_timeout(cmd, RCFUNIX_KILL_TIMEOUT);
 
     free(ta);
 
