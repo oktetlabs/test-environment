@@ -520,7 +520,6 @@ ta_handler(void *ta)
                 break;
             }
             sequence = ntohl(sequence);
-            sequence -= inst->sequence;
             lost = sequence - inst->sequence - 1;
             if (lost > 0)
                 WARN("TA %s: Lost %d messages", inst->agent, lost);
