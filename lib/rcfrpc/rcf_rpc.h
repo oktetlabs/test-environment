@@ -95,14 +95,18 @@ typedef struct rcf_rpc_server {
     pthread_mutex_t lock;
     int             tid0;       /**< Identifier of thread performing
                                      non-blocking operations */
-    int             dead;       /**< The server is dead and could not
+    uint32_t        is_done_ptr;
+                                /**< Pointer to the variable in
+                                     RPC server context to check
+                                     state of non-blocking RPC */
+    te_bool         dead;       /**< The server is dead and could not
                                      process RPCs */
     sem_t           fw_sem;     /**< Semaphore to be used to synchronize
                                      with forwarding thread */ 
     struct rcf_rpc_server *father;     
                                 /**< Father of the server created using
                                      pthread_create() */
-    int             children;   /**< Number of children */
+    unsigned int    children;   /**< Number of children */
 } rcf_rpc_server;
 
 
