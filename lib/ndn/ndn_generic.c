@@ -33,6 +33,8 @@
 /* for hton* functions */
 #include <netinet/in.h>
 
+#include <string.h>
+
 #include "te_defs.h"
 
 #include "asn_impl.h"
@@ -386,17 +388,17 @@ ndn_match_data_units(const asn_value *pattern, asn_value *pkt_pdu,
     const asn_type   *du_type;
     const char       *choice_ptr;
 
-    int      rc;
+    int      rc = 0;
     uint32_t user_int;
 
     if (pattern == NULL || data == NULL || label == NULL)
         return ETEWRONGPTR; 
 
-    rc = asn_get_subvalue(pattern, &du_val, label);
+    rc = asn_impl_find_subvalue(pattern, label, &du_val);
     if (rc)
         return rc;
 
-    choice_ptr = asn_get_choice_ptr(pattern);
+    choice_ptr = asn_get_choice_ptr(du_val);
 
     du_type = asn_get_type(du_val);
 
@@ -404,64 +406,129 @@ ndn_match_data_units(const asn_value *pattern, asn_value *pkt_pdu,
 
     switch (plain_syntax)
     {
-    case SYNTAX_UNDEFINED:
-        ERROR("error getting syntax\n");
-    case INTEGER:
-    case ENUMERATED:
-        switch (d_len)
-        {
-            case 2: 
-                user_int = ntohs(*((uint16_t *)data));
-                break;
-            case 4: 
-                user_int = ntohl(*((uint32_t *)data));
-                break;
-            case 8: 
-                return ETENOSUPP;
-            default:
-                user_int = *((uint8_t *)data);
-        }
-        break;
-    case BOOL:
-    case PR_ASN_NULL:
-    case PRIMITIVE_VAR_LEN:
-    case LONG_INT:
-    case BIT_STRING:
-    case OCT_STRING:
-    case CHAR_STRING:
-    case REAL:
-    case OID:
-    case SEQUENCE:
-    case SEQUENCE_OF:
-    case SET:
-    case SET_OF:
-    case CHOICE:
-    case TAGGED:
-        WARN("unsupported yet");
+        case SYNTAX_UNDEFINED:
+            ERROR("error getting syntax\n");
+        case INTEGER:
+        case ENUMERATED:
+            switch (d_len)
+            {
+                case 2: 
+                    user_int = ntohs(*((uint16_t *)data));
+                    break;
+                case 4: 
+                    user_int = ntohl(*((uint32_t *)data));
+                    break;
+                case 8: 
+                    return ETENOSUPP;
+                default:
+                    user_int = *((uint8_t *)data);
+            }
+            break;
+        default: 
+            break; /* No any preliminary actions needed. */
     }
 
-    if (strcmp(choice_ptr, "plain") == 0)
+    if (choice_ptr == NULL) 
     {
-        uint8_t *pat_data;
+        /* do nothing, data is matched */
+        rc = 0;
+    }
+    else if (strcmp(choice_ptr, "plain") == 0)
+    {
+        const uint8_t *pat_data;
+        size_t pat_d_len;
 
-        rc = asn_get_field_data(pattern, &pat_data, "#plain"); 
-        if (rc) return rc;
+        rc = asn_get_field_data(du_val, &pat_data, "#plain"); 
+        if (rc) 
+            return rc;
+
         switch (plain_syntax)
         {
             case INTEGER:
             case ENUMERATED:
-                {
-                    uint32_t pat_int = *((uint32_t *)pat_data);
-                    if (pat_int == user_int)
-                        return 0;
-                    else 
-                        return ETADNOTMATCH;
-                }
+            {
+                uint32_t pat_int = *((uint32_t *)pat_data);
+                if (pat_int != user_int)
+                    rc = ETADNOTMATCH;
+            }
+            break;
+            case BIT_STRING:
+                rc = ETENOSUPP; /* TODO */
+                break;
+            case OCT_STRING:
+            case CHAR_STRING: 
+                pat_d_len = asn_get_length(du_val, "");
+                if (pat_d_len != d_len || 
+                    memcmp(data, pat_data, d_len) != 0)
+                    rc = ETADNOTMATCH;
+                break;
             default:
-                (void)0;
+                WARN("%s, compare with plain of syntax %d unsupported yet",
+                     __FUNCTION__, plain_syntax);
+                break;
         }
     }
-    return 0;
+    else if (strcmp(choice_ptr, "mask") == 0)
+    { 
+        const asn_value *mask_val;
+        const uint8_t *mask_data;
+        const uint8_t *pat_data;
+        const uint8_t *m, *d, *p;
+        size_t mask_len, n;
+
+        rc = asn_get_subvalue(du_val, &mask_val, "");
+        if (rc)
+            return rc; 
+        mask_len = asn_get_length(mask_val, "m");
+        if (mask_len != d_len)
+            return ETADNOTMATCH;
+
+        rc = asn_get_field_data(mask_val, &mask_data, "m");
+        if (rc == 0)
+            rc = asn_get_field_data(mask_val, &pat_data, "v");
+        if (rc)
+            return rc; 
+        for (d = data, m = mask_data, p = pat_data;
+             mask_len > 0; 
+             d++, p++, m++)
+            if ((*d & *m) != (*p & *m))
+            {
+                rc = ETADNOTMATCH;
+                break;
+            }
+    }
+    else
+    {
+        WARN("%s, DATA-UNIT choice %s unsupported", 
+             __FUNCTION__, choice_ptr);
+        rc = ETENOSUPP;
+    }
+
+    if (rc == 0 && pkt_pdu)
+    {
+        char labels_buffer[200];
+
+        strcpy(labels_buffer, label);
+        strcat(labels_buffer, ".#plain");
+
+        switch (plain_syntax)
+        {
+            case INTEGER:
+            case ENUMERATED:
+                rc = asn_write_value_field(pkt_pdu, &user_int,
+                                           sizeof(user_int), labels_buffer);
+                break;
+            case OCT_STRING:
+            case CHAR_STRING:
+                rc = asn_write_value_field(pkt_pdu, data, d_len, 
+                                           labels_buffer);
+                break;
+            default:
+                WARN("unsupported yet");
+        }
+    }
+    return rc;
+
 }
 
 
