@@ -122,10 +122,10 @@ typedef struct test_var_arg_type {
 typedef struct test_var_arg_value {
     TAILQ_ENTRY(test_var_arg_value) links;  /**< List links */
 
-    char   *id;
-    char   *refvalue;
-    char   *ext;
-    char   *value;
+    char                       *id;
+    struct test_var_arg_value  *ref;
+    char                       *ext;
+    char                       *value;
 } test_var_arg_value;
 
 /** List of value of the variable or argument */

@@ -248,16 +248,18 @@ static const char *
 get_value(const test_var_arg_value *value, const test_params *params)
 {
     assert(value != NULL);
-    assert(((value->value != NULL) + (value->refvalue != NULL) +
+    assert(((value->value != NULL) + (value->ref != NULL) +
             (value->ext != NULL)) == 1);
     
     if (value->value != NULL)
         return value->value;
     else if (value->ext != NULL)
         return get_ref_value(value->ext, params);
-    else if (value->refvalue != NULL)
-        ERROR("Value to value references using 'refvalue' are not "
-              "supported yet");
+    else if (value->ref != NULL)
+    {
+        assert(value->ref != value);
+        return get_value(value->ref, params);
+    }
     else
         assert(0);
     

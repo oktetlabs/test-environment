@@ -190,7 +190,6 @@ static void
 test_var_arg_value_free(test_var_arg_value *p)
 {
     free(p->id);
-    free(p->refvalue);
     free(p->ext);
     free(p->value);
     free(p);

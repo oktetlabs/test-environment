@@ -114,12 +114,12 @@
                     <annotation>
                         <documentation>
                             Identifier to be referred from 'preferred'
-                            attribute of the parent or 'refvalue'
+                            attribute of the parent or 'ref'
                             attribute of another value of the parent.
                         </documentation>
                     </annotation>
                 </attribute>
-                <attribute name="refvalue" type="Name">
+                <attribute name="ref" type="Name">
                     <annotation>
                         <documentation>
                             Identifier of another value of the

@@ -742,6 +742,7 @@ static int
 alloc_and_get_value(xmlNodePtr node, test_var_arg_values *values)
 {
     test_var_arg_value *p;
+    char               *ref;
 
     p = calloc(1, sizeof(*p));
     if (p == NULL)
@@ -753,8 +754,32 @@ alloc_and_get_value(xmlNodePtr node, test_var_arg_values *values)
     
     /* 'id' is optional */
     p->id = xmlGetProp(node, CONST_CHAR2XML("id"));
-    /* 'refvalue' is optional */
-    p->refvalue = xmlGetProp(node, CONST_CHAR2XML("refvalue"));
+    /* 'ref' is optional */
+    ref = xmlGetProp(node, CONST_CHAR2XML("ref"));
+    if (ref != NULL)
+    {
+        test_var_arg_value *q;
+
+        for (q = values->tqh_first;
+             q != NULL && p->ref == NULL;
+             q = q->links.tqe_next)
+        {
+            if (q->id != NULL && strcmp(q->id, ref) == 0)
+                p->ref = q;
+        }
+        if (p->ref == NULL)
+        {
+            ERROR("Reference to unknown value '%s'", ref);
+            free(ref);
+            return EINVAL;
+        }
+        free(ref);
+        if (p->ref == p)
+        {
+            ERROR("Self-reference of the value '%s'", p->id);
+            return EINVAL;
+        }
+    }
     /* 'ext' is optional */
     p->ext = xmlGetProp(node, CONST_CHAR2XML("ext"));
     
@@ -775,7 +800,7 @@ alloc_and_get_value(xmlNodePtr node, test_var_arg_values *values)
         p->value = XML2CHAR_DUP(node->children->content);
     }
 
-    if (((!!(p->refvalue)) + (!!(p->ext) + (!!(p->value)))) != 1)
+    if (((!!(p->ref)) + (!!(p->ext) + (!!(p->value)))) != 1)
     {
         ERROR("Too many sources of value");
         return EINVAL;
