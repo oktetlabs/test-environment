@@ -569,7 +569,7 @@ TARPC_FUNC(fork, {},
 #ifdef HAVE_SVC_EXIT
         svc_exit();
 #endif
-        tarpc_server(in->name);
+        tarpc_server(in->name.name_val);
         exit(EXIT_FAILURE);
     }
 }
@@ -580,7 +580,7 @@ TARPC_FUNC(pthread_create, {},
 {
     MAKE_CALL(out->retval = pthread_create((pthread_t *)&(out->tid), NULL,
                                            tarpc_server,
-                                           strdup(in->name)));
+                                           strdup(in->name.name_val)));
 }
 )
 
