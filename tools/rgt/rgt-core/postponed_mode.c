@@ -28,15 +28,17 @@
  * $Id$
  */
 
-#ifdef HAVE_CONFIG_H
+#if HAVE_CONFIG_H
 #include <config.h>
 #endif
 
-#ifdef HAVE_TIME_H
+/* To get obstack_printf() definition, it must help, but does not work :( */
+#define __USE_GNU
+#include <stdio.h>
+
+#if HAVE_TIME_H
 #include <time.h>
 #endif
-
-#include <stdio.h>
 
 #include "log_msg.h"
 #include "rgt_common.h"
