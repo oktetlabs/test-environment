@@ -76,8 +76,6 @@ while test -n "$1" ; do
            echo Invalid option build option ; exit 1 ;;
     esac
     
-    echo OPT=$OPT
-        
     case $OPT in 
         include ) build include ;;
         builder ) build engine/builder ;;
