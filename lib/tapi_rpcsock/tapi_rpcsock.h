@@ -327,8 +327,8 @@ rpc_getpeername(rcf_rpc_server *handle,
 extern unsigned int rpc_if_nametoindex(rcf_rpc_server *handle,
                                        const char *ifname);
 
-extern char * rpc_if_indextoname(rcf_rpc_server *handle,
-                                 unsigned int ifindex, char *ifname);
+extern char *rpc_if_indextoname(rcf_rpc_server *handle,
+                                unsigned int ifindex, char *ifname);
 
 extern struct if_nameindex * rpc_if_nameindex(rcf_rpc_server *handle);
 
@@ -336,16 +336,31 @@ extern void rpc_if_freenameindex(rcf_rpc_server *handle,
                                  struct if_nameindex *ptr);
 
 
-typedef void * rpc_wsaevent;
+/* Windows Event Objects */
+typedef void *rpc_wsaevent;
 
 extern rpc_wsaevent rpc_create_event(rcf_rpc_server *handle);
 
 extern int rpc_close_event(rcf_rpc_server *handle, rpc_wsaevent hevent);
 	
 
+/* Window objects */
 
+typedef void *rpc_hwnd;
 
+/** CreateWIndow() */
+extern rpc_hwnd rpc_create_window(rcf_rpc_server *handle);
 
+/** DestroyWindow() */
+extern void rpc_destroy_window(rcf_rpc_server *handle, rpc_hwnd hwnd);
+
+/** WSAAsyncSelect() */
+extern int rpc_wsa_async_select(rcf_rpc_server *handle,
+                                int s, rpc_hwnd hwnd, rpc_network_event event);
+                            
+/** PeekMessage() */                            
+extern int rpc_peek_message(rcf_rpc_server *handle,
+                            rpc_hwnd hwnd, int *s, rpc_network_event *event);
 
 /*
  * Signals
