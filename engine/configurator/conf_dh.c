@@ -1197,6 +1197,6 @@ cfg_dh_release_backup(char *filename)
         return 0;
     }
     
-    return ENOENT;
+    return 0;
 }
 

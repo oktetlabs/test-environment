@@ -30,14 +30,15 @@
 #include "conf_defs.h"
 
 /**
- * Register all objects specified in the configuration file.
+ * Parse all objects specified in the configuration file.
  *
- * @param node      first object node
+ * @param node     first object node
+ * @param reg      if TRUE, register objects
  *
  * @return status code (see te_errno.h)
  */
 static int
-register_objects(xmlNodePtr *node)
+register_objects(xmlNodePtr *node, te_bool reg)
 {
     xmlNodePtr cur = *node;
     
@@ -55,6 +56,9 @@ register_objects(xmlNodePtr *node)
             
         if (xmlStrcmp(cur->name , (const xmlChar *)"object") != 0)
             break;
+            
+        if (!reg)
+            continue;
             
         if (cur->xmlChildrenNode != NULL || 
             (oid = xmlGetProp(cur, (const xmlChar *)"oid")) == NULL)
@@ -264,18 +268,26 @@ delete_with_children(cfg_instance *inst)
     cfg_msg    *p_msg = (cfg_msg *)&msg;
     int         rc;
     
-    while (inst->son != NULL)
-        if ((rc = delete_with_children(inst->son)) != 0)
-            return rc;
+    cfg_instance *tmp, *next;
+    
+    if (cfg_instance_volatile(inst))
+        return 0;
         
     if (inst->obj->access != CFG_READ_CREATE)
         return 0;
+        
+    for (tmp = inst->son; tmp != NULL; tmp = next)
+    {
+        next = tmp->brother;
+        if ((rc = delete_with_children(tmp)) != 0)
+            return rc;
+    }
         
     msg.handle = inst->handle;
     
     cfg_process_msg(&p_msg, TRUE);
     
-    return msg.rc;
+    return TE_RC_GET_ERROR(msg.rc) == ENOENT ? 0 : msg.rc;
 }
 
 
@@ -305,7 +317,6 @@ remove_excessive(char *root, cfg_instance *list)
         {
             continue;
         }
-            
         for (tmp = list; tmp != NULL; tmp = tmp->brother)
         {
             if (strcmp(tmp->oid, cfg_all_inst[i]->oid) == 0)
@@ -337,11 +348,26 @@ add_or_set(cfg_instance *inst)
         
     if (inst->handle != CFG_HANDLE_INVALID)
     {
-        cfg_set_msg *msg = (cfg_set_msg *)calloc(sizeof(*msg) + 
-                                                 CFG_MAX_INST_VALUE, 1);
-        cfg_msg     *p_msg = (cfg_msg *)msg;
+        cfg_set_msg *msg;
+        cfg_msg     *p_msg;
         cfg_val_type t;
         int          rc;
+        
+        if (CFG_GET_INST(inst->handle) == 0)
+            return EINVAL;
+        
+        if ((inst->obj->type != CVT_INTEGER &&
+             inst->obj->type != CVT_STRING &&
+             inst->obj->type != CVT_ADDRESS) ||
+             cfg_types[inst->obj->type].is_equal(
+                 inst->val, CFG_GET_INST(inst->handle)->val))
+        {
+            return 0;
+        }
+        
+        msg = (cfg_set_msg *)calloc(sizeof(*msg) + 
+                                    CFG_MAX_INST_VALUE, 1);
+        p_msg = (cfg_msg *)msg;
         
         if (msg == NULL)
             return ENOMEM;
@@ -444,17 +470,16 @@ restore_entries(cfg_instance *list)
 }
 
 /**
- * Process "backup" configuration file:
- *     register all objects;
- *     synchronize object instances tree with Test Agents;
- *     add/delete/change object instances constructing fictive messages.
+ * Process "backup" configuration file or backup file.
  *
- * @param node  <backup> node pointer
+ * @param node    <backup> node pointer
+ * @param restore if TRUE, the configuration should be restored after
+ *                unsuccessful dynamic history restoring
  *
  * @return status code (errno.h)
  */
 int 
-cfg_backup_process_file(xmlNodePtr node)
+cfg_backup_process_file(xmlNodePtr node, te_bool restore)
 {
     cfg_instance *list;
     xmlNodePtr    cur = node->xmlChildrenNode;
@@ -463,17 +488,20 @@ cfg_backup_process_file(xmlNodePtr node)
     if (cur == NULL)
         return 0;
 
-    if ((rc = register_objects(&cur)) != 0)
+    if ((rc = register_objects(&cur, !restore)) != 0)
         return rc;
         
     if ((rc = parse_instances(cur, &list)) != 0)
         return rc;
 
-    if ((rc = cfg_ta_sync("/:", TRUE)) != 0)
+    if (!restore)
     {
-        ERROR("Cannot synchronize database with Test Agents");
-        free_instances(list);
-        return rc;
+        if ((rc = cfg_ta_sync("/:", TRUE)) != 0)
+        {
+            ERROR("Cannot synchronize database with Test Agents");
+            free_instances(list);
+            return rc;
+        }
     }
     
     if ((rc = remove_excessive("/", list)) != 0)

@@ -34,16 +34,15 @@ extern "C" {
 #endif
 
 /**
- * Process "backup" configuration file:
- *     register all objects;
- *     synchronize object instances tree with Test Agents;
- *     add/delete/change object instances constructing fictive messages.
+ * Process "backup" configuration file or backup file.
  *
- * @param node  <backup> node pointer
+ * @param node    <backup> node pointer
+ * @param restore if TRUE, the configuration should be restored after
+ *                unsuccessful dynamic history restoring
  *
  * @return status code (errno.h)
  */
-int cfg_backup_process_file(xmlNodePtr node);
+extern int cfg_backup_process_file(xmlNodePtr node, te_bool restore);
 
 /**
  * Save current version of the TA subtree, 
@@ -53,16 +52,16 @@ int cfg_backup_process_file(xmlNodePtr node);
  *
  * @return status code (see te_errno.h)
  */
-int cfg_backup_restore_ta(char *ta);
+extern int cfg_backup_restore_ta(char *ta);
 
 /**
  * Create "backup" configuration file with specified name.
  *
- * @param filename      name of the file to be created
+ * @param filename   name of the file to be created
  *
  * @return status code (errno.h)
  */
-int cfg_backup_create_file(char *filename);
+extern int cfg_backup_create_file(char *filename);
  
 #ifdef __cplusplus
 }

@@ -52,14 +52,14 @@ static struct ipc_server *server = NULL; /* IPC Server handle */
 static void
 print_tree(cfg_instance *inst, int indent)
 {
-    static FILE *f;
+    static FILE *f = NULL;
 
     int     i;
     char   *str;
-
+    
     if (f == NULL && (f = fopen("instances", "w")) == NULL)
     {
-        printf("Cannot open file instances\n");
+        ERROR("Cannot open file instances");
         return;
     }
 
@@ -87,11 +87,11 @@ print_otree(cfg_object *obj, int indent)
 {
     int i;
 
-    static FILE *f;
+    static FILE *f = NULL;
 
     if (f == NULL && (f = fopen("objects", "w")) == NULL)
     {
-        printf("Cannot open file objects\n");
+        ERROR("Cannot open file objects");
         return;
     }
 
@@ -112,12 +112,14 @@ print_otree(cfg_object *obj, int indent)
 /**
  * Parse and execute the configuration file.
  *
- * @param file  path name of the file
+ * @param file    path name of the file
+ * @param restore if TRUE, the configuration should be restored after
+ *                unsuccessful dynamic history restoring
  *
  * @return status code (see te_errno.h)
  */
 static int
-parse_config(char *file)
+parse_config(char *file, te_bool restore)
 {
     xmlDocPtr   doc;
     xmlNodePtr  root;
@@ -167,7 +169,7 @@ parse_config(char *file)
     }
 
     if (xmlStrcmp(root->name, (const xmlChar *)"backup") == 0)
-        rc = cfg_backup_process_file(root);
+        rc = cfg_backup_process_file(root, restore);
     else if (xmlStrcmp(root->name, (const xmlChar *)"history") == 0)
         rc = cfg_dh_process_file(root);
     else
@@ -615,32 +617,11 @@ process_backup(cfg_backup_msg *msg)
             if ((msg->rc = cfg_dh_restore_backup(msg->filename)) == 0)
                 return;
 
-            return; /* FIXME */
-
-/**
- * If error is returned by @e x, log error message and return from
- * function.
- *
- * @param x     - expression which returns status code
- */
-#define CHECKERR(x) \
-     do {                                                           \
-         if ((msg->rc = (x)) != 0)                                  \
-         {                                                          \
-             ERROR("Restoring of backup failed - cannot continue"); \
-             cfg_fatal_err = msg->rc;                               \
-             return;                                                \
-         }                                                          \
-     } while (0)
-
-            /* Re-initialize the Configurator with specified backup file */
-
+            WARN("Restoring backup from history failed; "
+                 "restore from the file");
+            msg->rc = parse_config(msg->filename, TRUE);
             cfg_dh_destroy();
-            CHECKERR(cfg_db_init());
-            CHECKERR(cfg_ta_reboot_all());
-            CHECKERR(parse_config(msg->filename));
-
-#undef CHECKERR
+            
             break;
         }
 
@@ -1181,7 +1162,7 @@ main(int argc, char **argv)
         goto error;
     }
 
-    if ((rc = parse_config(argv[1])) != 0)
+    if ((rc = parse_config(argv[1], FALSE)) != 0)
         goto error;
     
     if (argc > 2 && argv[2][0] != 0) 
@@ -1229,12 +1210,7 @@ main(int argc, char **argv)
         }
 
         if (cfg_shutdown)
-        {
-
-            print_otree(&cfg_obj_root, 0);
-            print_tree(&cfg_inst_root, 0);
             goto error;
-        }
     }
 
 error:

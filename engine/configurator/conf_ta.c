@@ -126,25 +126,18 @@ cfg_ta_add_agent_instances()
 
 /**
  * Reboot all Test Agents (before re-initializing of the Configurator).
- *
- * @return status code (see te_errno.h)
  */
-int
+void
 cfg_ta_reboot_all(void)
 {
     char *ta;
-    int   rc;
 
     for (ta = cfg_ta_list;
          ta < cfg_ta_list + ta_list_size;
          ta += strlen(ta) + 1)
     {
-        rc = rcf_ta_reboot(ta, NULL, NULL);
-        if (rc != 0 && rc != EINPROGRESS)
-            return rc;
+        rcf_ta_reboot(ta, NULL, NULL);
     }
-
-    return 0;
 }
 
 /**
@@ -199,7 +192,7 @@ sync_ta_instance(char *ta, char *oid)
         }
     }
 
-    if (TE_RC_GET_ERROR(rc) == ENOENT)
+    if (rc != 0)
     {
         if (handle != CFG_HANDLE_INVALID)
             cfg_db_del(handle);
@@ -300,7 +293,7 @@ sync_ta_subtree(char *ta, char *oid)
                 return ENOMEM;
             }
         }
-        else if (TE_RC_GET_ERROR(rc) == ENOENT || rc == 0)
+        else if (rc == 0)
             break;
         else
         {

@@ -43,10 +43,8 @@ extern char *cfg_get_buf;
 
 /**
  * Reboot all Test Agents (before re-initializing of the Configurator).
- *
- * @return status code (see te_errno.h)
  */
-extern int cfg_ta_reboot_all(void);
+extern void cfg_ta_reboot_all(void);
 
 /**
  * Synchronize object instances tree with Test Agents.
