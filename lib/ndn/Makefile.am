@@ -6,60 +6,19 @@ AM_CFLAGS=@TE_CFLAGS@ -I$(DESTDIR)/$(prefix)/include \
 
 AM_LDFLAGS=@TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/lib 
 
-DEF_CONTEXT_S=
-if DEF_CONTEXT
-DEF_CONTEXT_S+=ndn_context.c
-endif
-DEF_CONTEXT_H=
-
-if USE_SNMP 
-AM_CFLAGS+=-DWITH_SNMP -DCMU_COMPATIBLE -DUCD_COMPATIBLE
-DEF_CONTEXT_S+=ndn_snmp.c
-DEF_CONTEXT_H+=ndn_snmp.h
-endif
-
-if USE_FILE 
-AM_CFLAGS+= -DWITH_FILE
-DEF_CONTEXT_S+=ndn_file.c
-DEF_CONTEXT_H+=ndn_file.h
-endif
-
-if USE_DHCP 
-AM_CFLAGS+= -DWITH_DHCP
-DEF_CONTEXT_S+=ndn_dhcp.c
-DEF_CONTEXT_H+=ndn_dhcp.h
-endif
-
-if USE_ETH 
-AM_CFLAGS+= -DWITH_ETH
-DEF_CONTEXT_S+=ndn_eth.c
-DEF_CONTEXT_H+=ndn_eth.h
-endif 
-
-if USE_IPSTACK 
-AM_CFLAGS+= -DWITH_IPSTACK
-DEF_CONTEXT_S+=ndn_ipstack.c
-DEF_CONTEXT_H+=ndn_ipstack.h
-endif
-
-if USE_CLI 
-AM_CFLAGS+= -DWITH_CLI
-DEF_CONTEXT_S+=ndn_cli.c
-DEF_CONTEXT_H+=ndn_cli.h
-endif
-
-if USE_BRIDGE 
-AM_CFLAGS+= -DWITH_BRIDGE
-DEF_CONTEXT_S+=ndn_bridge.c
-DEF_CONTEXT_H+=ndn_bridge.h
+if HAS_SNMP 
+AM_CFLAGS+=-DHAS_SNMP -DCMU_COMPATIBLE -DUCD_COMPATIBLE
 endif
 
 
 lib_LIBRARIES=libndn.a
 
-include_HEADERS=ndn.h ndn_internal.h ${DEF_CONTEXT_H}
+include_HEADERS=ndn.h ndn_internal.h ndn_snmp.h ndn_file.h \
+                  ndn_dhcp.h ndn_eth.h ndn_ipstack.h ndn_cli.h ndn_bridge.h
 
-libndn_a_SOURCES= ndn_generic.c ${DEF_CONTEXT_S}
+libndn_a_SOURCES= ndn_generic.c ndn_context.c ndn_snmp.c ndn_file.c \
+                  ndn_dhcp.c ndn_eth.c ndn_ipstack.c ndn_cli.c ndn_bridge.c
+
 
 CFLAGS=@CFLAGS@ 
 
