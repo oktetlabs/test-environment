@@ -91,11 +91,11 @@ extern int tapi_cfg_base_add_net_addr(const char            *oid,
 /**
  * Wrapper over tapi_cfg_base_add_net_addr() function.
  *
- * @param ta      Test agent name
- * @param ifname  Interface name on the Agent
- * @param addr    Address to add
- * @param mask    Address mask or NULL for default
- * @param bcast   Corresponding broadcast address or NULL for default
+ * @param ta        Test agent name
+ * @param ifname    Interface name on the Agent
+ * @param addr      Address to add
+ * @param prefix    Address prefix length (0 - default, -1 - do not set)
+ * @param set_bcast Set broadcast address or not
  * @param cfg_hndl  Configurator handle of the new address
  *
  * @return See return value of tapi_cfg_base_add_net_addr()
@@ -103,8 +103,7 @@ extern int tapi_cfg_base_add_net_addr(const char            *oid,
 static inline int
 tapi_cfg_base_if_add_net_addr(const char *ta, const char *ifname,
                               const struct sockaddr *addr,
-                              const struct sockaddr *mask,
-                              const struct sockaddr *bcast,
+                              int prefix, te_bool set_bcast,
                               cfg_handle *cfg_hndl)
 {
     char inst_name[CFG_OID_MAX];
