@@ -1600,7 +1600,7 @@ TARPC_FUNC(fcntl, {},
     if (in->cmd == RPC_F_GETFD || in->cmd == RPC_F_GETFL || 
         in->cmd == RPC_F_SETFL)
         out->retval = fcntl_flag_h2rpc(out->retval);
-}	
+}
 )
 
 TARPC_FUNC(ioctl, 

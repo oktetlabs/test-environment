@@ -113,9 +113,9 @@ typedef BOOL (*LPFN_TRANSMITFILE)(SOCKET hSocket,
                                   DWORD dwFlags);
 /* WSARecvMsg() */
 typedef int (*LPFN_WSARECVMSG)(SOCKET s,
-			                   LPWSAMSG lpMsg,
-            			       LPDWORD lpdwNumberOfBytesRecvd,
-			                   LPWSAOVERLAPPED lpOverlapped,
+                               LPWSAMSG lpMsg,
+                               LPDWORD lpdwNumberOfBytesRecvd,
+                               LPWSAOVERLAPPED lpOverlapped,
                                LPWSAOVERLAPPED_COMPLETION_ROUTINE 
                                lpCompletionRoutine);
     
@@ -128,7 +128,7 @@ extern HINSTANCE ta_hinstance;
     with overlapped information  */
 typedef struct rpc_overlapped {
     WSAOVERLAPPED  overlapped; /**< WSAOVERLAPPED object itself */
-    LPWSABUF       buffers;	 /**< List of allocated buffers   */
+    LPWSABUF       buffers;     /**< List of allocated buffers   */
     int            bufnum;     /**< Number of allocated buffers */
 } rpc_overlapped;
 
@@ -147,7 +147,7 @@ rpc_overlapped_free_memory(rpc_overlapped *overlapped)
 
     for (i = 0; i < overlapped->bufnum; i++)
         free(overlapped->buffers[i].buf);
-	
+    
     free(overlapped->buffers);
     overlapped->buffers = NULL;
     overlapped->bufnum = 0;
@@ -169,19 +169,19 @@ iovec2overlapped(rpc_overlapped *overlapped, int vector_len,
     for (; overlapped->bufnum < vector_len; overlapped->bufnum++)
     {
         if (vector[overlapped->bufnum].iov_len != 0 &&
-	    (overlapped->buffers[overlapped->bufnum].buf = 
-	         calloc(vector[overlapped->bufnum].iov_len, 1)) == NULL)
-	{
-	    rpc_overlapped_free_memory(overlapped);
-	    return ENOMEM;
-	}
-	overlapped->buffers[overlapped->bufnum].len =
-	    vector[overlapped->bufnum].iov_len;
-	if (vector[overlapped->bufnum].iov_base.iov_base_val != NULL)
-	{
-  	    memcpy(overlapped->buffers[overlapped->bufnum].buf,
-	           vector[overlapped->bufnum].iov_base.iov_base_val,
-  	           vector[overlapped->bufnum].iov_len);
+        (overlapped->buffers[overlapped->bufnum].buf = 
+             calloc(vector[overlapped->bufnum].iov_len, 1)) == NULL)
+    {
+        rpc_overlapped_free_memory(overlapped);
+        return ENOMEM;
+    }
+    overlapped->buffers[overlapped->bufnum].len =
+        vector[overlapped->bufnum].iov_len;
+    if (vector[overlapped->bufnum].iov_base.iov_base_val != NULL)
+    {
+          memcpy(overlapped->buffers[overlapped->bufnum].buf,
+               vector[overlapped->bufnum].iov_base.iov_base_val,
+                 vector[overlapped->bufnum].iov_len);
         }
     }
     
@@ -206,13 +206,13 @@ overlapped2iovec(rpc_overlapped *overlapped, int *vector_len,
     {
         (*vector_val)[i].iov_base.iov_base_val = overlapped->buffers[i].buf;
         (*vector_val)[i].iov_len = (*vector_val)[i].iov_base.iov_base_len =
-   	    overlapped->buffers[i].len;
+           overlapped->buffers[i].len;
     }
     free(overlapped->buffers);
     overlapped->buffers = NULL;
     overlapped->bufnum = 0;
     return 0;
-}	
+}    
 
 /** Allocate memory for the overlapped object and copy buffer content to it */
 static int
@@ -233,8 +233,8 @@ overlapped2buf(rpc_overlapped *overlapped, int *buf_len, char **buf_val)
     if (overlapped->buffers == NULL)
     {
         *buf_val = NULL;
-	*buf_len = 0;
-	return;
+    *buf_len = 0;
+    return;
     }
     *buf_val = overlapped->buffers[0].buf;
     *buf_len = overlapped->buffers[0].len;
@@ -660,21 +660,21 @@ TARPC_FUNC(connect_ex,
     if (in->overlapped != 0)
     {
         rpc_overlapped *overlapped = (rpc_overlapped *)(in->overlapped);
-	
+    
         if (buf2overlapped(overlapped, in->buf.buf_len, in->buf.buf_val) != 0)
-	{
-	    out->common._errno = TE_RC(TE_TA_WIN32, ENOMEM); 
-	}
-	else
-	{
+    {
+        out->common._errno = TE_RC(TE_TA_WIN32, ENOMEM); 
+    }
+    else
+    {
             MAKE_CALL(out->retval = 
                           (*pf_connect_ex)(in->fd, a, in->len,
-			                   overlapped->buffers[0].buf,
+                               overlapped->buffers[0].buf,
                                            in->len_buf,
                                            out->len_sent.len_sent_len == 0 ? NULL :
                                            (LPDWORD)(out->len_sent.len_sent_val),
                                            (LPWSAOVERLAPPED)overlapped));
-        }					   
+        }                       
     }
     else
     {
@@ -778,7 +778,7 @@ accept_callback(LPWSABUF caller_id, LPWSABUF caller_data, LPQOS sqos,
     
     for (; cond->port != 0; cond++)
         if (cond->port == addr->sin_port)
-   	        return cond->verdict;
+               return cond->verdict;
 
     return CF_REJECT;
 }                
@@ -855,27 +855,27 @@ TARPC_FUNC(accept_ex,
     else
     {
         memset(&tmp, 0, sizeof(tmp));
-	overlapped = &tmp;
+    overlapped = &tmp;
     }
     if (in->buflen > 0)
     {
         if (buf2overlapped(overlapped, buflen, NULL) != 0)
         {
             out->common._errno = TE_RC(TE_TA_WIN32, ENOMEM); 
-    	    goto finish;
+            goto finish;
         }
     }
     MAKE_CALL(out->retval =
                       (*pf_accept_ex)(in->fd, in->fd_a,
                                       in->buflen == 0 ? NULL :
                                       overlapped->buffers[0].buf, 
-		         	      in->buflen,
-				      sizeof(struct sockaddr_storage) + 16,
+                           in->buflen,
+                      sizeof(struct sockaddr_storage) + 16,
                                       sizeof(struct sockaddr_storage) + 16,
                                       out->count.count_len == 0 ? NULL :
                                       (LPDWORD)out->count.count_val,
                                       in->overlapped == 0 ? NULL :
-   				      (LPWSAOVERLAPPED)overlapped)); 
+                         (LPWSAOVERLAPPED)overlapped)); 
     finish:
     ;
 }
@@ -895,8 +895,8 @@ TARPC_FUNC(get_accept_addr,
     GUID                      guid_get_accept_ex_sockaddrs =
                                                      WSAID_GETACCEPTEXSOCKADDRS; 
     DWORD                     bytes_returned;
-    struct sockaddr	     *l_a = 0;
-    struct sockaddr	     *r_a = 0 ;
+    struct sockaddr         *l_a = 0;
+    struct sockaddr         *r_a = 0 ;
     int                       addrlen1 = 0;
     int                       addrlen2 = 0;
 
@@ -950,7 +950,7 @@ TARPC_FUNC(transmit_file, {},
         if ((overlapped->buffers = calloc(2, sizeof(WSABUF))) == NULL)
         {
             out->common._errno = TE_RC(TE_TA_WIN32, ENOMEM); 
-        	goto finish;
+            goto finish;
         }
         overlapped->buffers[0].buf = in->head.head_val;
         in->head.head_val = NULL;
@@ -1198,7 +1198,7 @@ TARPC_FUNC(wsa_recv_ex,
         
     MAKE_CALL(out->retval = WSARecvEx(in->fd, in->len == 0 ? NULL :
                                       out->buf.buf_val,
-				      in->len,
+                      in->len,
                                       out->flags.flags_len == 0 ? NULL :
                                       out->flags.flags_val));
 
@@ -2825,7 +2825,7 @@ TARPC_FUNC(create_overlapped, {},
         tmp->overlapped.hEvent = (WSAEVENT)(in->hevent);
         tmp->overlapped.Offset = in->offset;
         tmp->overlapped.OffsetHigh = in->offset_high;
-	out->retval = (tarpc_overlapped)tmp;
+    out->retval = (tarpc_overlapped)tmp;
     }        
 }
 )
@@ -2891,14 +2891,14 @@ TARPC_FUNC(wsa_send,
     else
     {
         memset(&tmp, 0, sizeof(tmp));
-	overlapped = &tmp;
+    overlapped = &tmp;
     }
     if (iovec2overlapped(overlapped, in->vector.vector_len, 
                          in->vector.vector_val) != 0)
     {
         out->common._errno = TE_RC(TE_TA_WIN32, ENOMEM); 
         goto finish;
-    }			 
+    }             
 
     MAKE_CALL(out->retval = 
                   WSASend(in->s, overlapped->buffers, in->count,
@@ -2906,18 +2906,18 @@ TARPC_FUNC(wsa_send,
                           (LPDWORD)(out->bytes_sent.bytes_sent_val),
                           send_recv_flags_rpc2h(in->flags),
                           in->overlapped == 0 ? NULL 
-			                      : (LPWSAOVERLAPPED)overlapped, 
+                                  : (LPWSAOVERLAPPED)overlapped, 
                           in->callback ? 
                           (LPWSAOVERLAPPED_COMPLETION_ROUTINE)
                               completion_callback : NULL));
-			      
+                  
     if (in->overlapped == 0 || out->retval >= 0 || 
         out->common.win_error != RPC_WSA_IO_PENDING)
     {
         rpc_overlapped_free_memory(overlapped);
     }
     finish:
-    ;			      
+    ;                  
 }
 )
 
@@ -2938,14 +2938,14 @@ TARPC_FUNC(wsa_recv,
     else
     {
         memset(&tmp, 0, sizeof(tmp));
-	overlapped = &tmp;
+    overlapped = &tmp;
     }
     if (iovec2overlapped(overlapped, in->vector.vector_len, 
                          in->vector.vector_val) != 0)
     {
         out->common._errno = TE_RC(TE_TA_WIN32, ENOMEM); 
         goto finish;
-    }			 
+    }             
     if (out->flags.flags_len > 0)
         out->flags.flags_val[0] = 
             send_recv_flags_rpc2h(out->flags.flags_val[0]);
@@ -2956,14 +2956,14 @@ TARPC_FUNC(wsa_recv,
                           out->flags.flags_len > 0 ? 
                           (LPDWORD)(out->flags.flags_val) : NULL,
                           in->overlapped == 0 ? NULL 
-			                      : (LPWSAOVERLAPPED)overlapped, 
+                                  : (LPWSAOVERLAPPED)overlapped, 
                           in->callback ? 
                           (LPWSAOVERLAPPED_COMPLETION_ROUTINE)
                               completion_callback : NULL));
     if (out->retval >= 0)
     {
         overlapped2iovec(overlapped, &(out->vector.vector_len),
-	                 &(out->vector.vector_val));
+                     &(out->vector.vector_val));
         if (out->flags.flags_len > 0)
             out->flags.flags_val[0] = 
                 send_recv_flags_h2rpc(out->flags.flags_val[0]);
@@ -2989,7 +2989,7 @@ TARPC_FUNC(get_overlapped_result,
     MAKE_CALL(out->retval = 
                   WSAGetOverlappedResult(in->s, 
                                          in->overlapped == 0 ? 
-					 NULL : (LPWSAOVERLAPPED)overlapped,
+                     NULL : (LPWSAOVERLAPPED)overlapped,
                                          out->bytes.bytes_len == 0 ? NULL :
                                          (LPDWORD)(out->bytes.bytes_val),
                                          in->wait, 
@@ -3002,7 +3002,7 @@ TARPC_FUNC(get_overlapped_result,
             out->flags.flags_val[0] = 
                 send_recv_flags_h2rpc(out->flags.flags_val[0]);
         overlapped2iovec(overlapped, &out->vector.vector_len, 
-	                 &out->vector.vector_val);
+                         &out->vector.vector_val);
     }
 }
 )

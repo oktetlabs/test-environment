@@ -51,7 +51,7 @@
 pthread_t remote_thread;
 
 int       sleep_over = 0;  /* indicates that the remote station has
-			      already passed its sleep period */
+                           already passed its sleep period */
 
 /**
  * The main routine of the remote station thread.
@@ -69,12 +69,12 @@ remote_station_proc(void *arg)
     remote_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (remote_socket < 0)
     {
-	char err_buf[BUFSIZ];
+       char err_buf[BUFSIZ];
 
-	strerror_r(errno, err_buf, sizeof(err_buf));
-	fprintf(stderr, "\t\t\tremote_station_proc: "
-		"can't create a socket: %s\n", err_buf);
-	exit(1);
+       strerror_r(errno, err_buf, sizeof(err_buf));
+       fprintf(stderr, "\t\t\tremote_station_proc: "
+              "can't create a socket: %s\n", err_buf);
+       exit(1);
     }
 
     /* pre-connection synchronization */
@@ -82,22 +82,22 @@ remote_station_proc(void *arg)
 
     /* now the local station is running rcf_comm_agent_init() */
     fprintf(stderr, "\t\t\tremote_station_proc: sleeping %d seconds...\n",
-	    REMOTE_CONNECT_DELAY);
+           REMOTE_CONNECT_DELAY);
 #if (HAVE_NANOSLEEP == 1)
     {
-	struct timespec t;
-	
-	t.tv_nsec = 0;
-	t.tv_sec = REMOTE_CONNECT_DELAY;
-	if (nanosleep(&t, NULL) < 0)
-	{
-	    char err_buf[BUFSIZ];
+       struct timespec t;
+       
+       t.tv_nsec = 0;
+       t.tv_sec = REMOTE_CONNECT_DELAY;
+       if (nanosleep(&t, NULL) < 0)
+       {
+           char err_buf[BUFSIZ];
 
-	    strerror_r(errno, err_buf, sizeof(err_buf));
-	    fprintf(stderr, "remote_station_proc: nanosleep() failed: %s\n", 
-		    err_buf);
-	    exit(1);
-	}
+           strerror_r(errno, err_buf, sizeof(err_buf));
+           fprintf(stderr, "remote_station_proc: nanosleep() failed: %s\n", 
+                  err_buf);
+           exit(1);
+       }
     }
 #else
     sleep(REMOTE_CONNECT_DELAY);
@@ -109,16 +109,16 @@ remote_station_proc(void *arg)
     addr.sin_addr.s_addr = inet_addr(LOCAL_STATION_ADDRESS);
     if (connect(remote_socket, (struct sockaddr *)&addr, sizeof(addr)) < 0)
     {
-	char err_buf[BUFSIZ];
+       char err_buf[BUFSIZ];
 
-	strerror_r(errno, err_buf, sizeof(err_buf));
-	fprintf(stderr, "\t\t\tremote_station_proc: can't connect to "
-		"the agent: %s\n", err_buf);
-	return 1;
+       strerror_r(errno, err_buf, sizeof(err_buf));
+       fprintf(stderr, "\t\t\tremote_station_proc: can't connect to "
+              "the agent: %s\n", err_buf);
+       return 1;
     }
 
     sleep_over = 1;    /* raise the flag to let the local station know
-			  that we're thru with our *sleep() */
+                       that we're thru with our *sleep() */
 
     /* synchronize at this point */
     remote_synch(10);
@@ -148,9 +148,9 @@ local_station_proc(void *arg)
 
     if (!sleep_over)
     {
-	fprintf(stderr, "ERROR: the call of rcf_comm_agent_init() returned "
-		"before the remote station had sent a connection request\n");
-	exit(3);
+       fprintf(stderr, "ERROR: the call of rcf_comm_agent_init() returned "
+              "before the remote station had sent a connection request\n");
+       exit(3);
     }
 
     /* synchronize at this point */
@@ -186,14 +186,14 @@ main(int argc, char *argv[])
 
     /* launch the remote station thread */
     rc = pthread_create(&remote_thread, /* attr */ NULL, 
-			remote_station_proc, /* arg */ NULL);
+                     remote_station_proc, /* arg */ NULL);
     if (rc != 0)
-    {	    
-	char err_buf[BUFSIZ];
+    {           
+       char err_buf[BUFSIZ];
 
-	strerror_r(errno, err_buf, sizeof(err_buf));
-	fprintf(stderr, "main: pthread_create() failed: %s\n", err_buf);
-	exit(1);
+       strerror_r(errno, err_buf, sizeof(err_buf));
+       fprintf(stderr, "main: pthread_create() failed: %s\n", err_buf);
+       exit(1);
     }
 
     /* launch the local station in the current thread */

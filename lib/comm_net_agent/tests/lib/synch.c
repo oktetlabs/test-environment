@@ -59,9 +59,9 @@ static sem_t barrier; /* done as a semaphore */
 int proceed = 1;
 
 int local_synch_point;  /* point at which the local station is waiting
-			   for synchronization */
+                        for synchronization */
 int remote_synch_point; /* point at which the remote station is waiting
-			   for synchronization */
+                        for synchronization */
 
 /* 
  * This semaphore allows the local station to access the initial_messages_no
@@ -98,8 +98,8 @@ local_synch(int synch_point)
     DEBUG("synchronizing local station at point %d\n", synch_point);
     if (!CHECK_PROCEED())
     {
-	fprintf(stderr, "local_synch: CHECK_PROCEED() failed\n");
-	exit(3);
+       fprintf(stderr, "local_synch: CHECK_PROCEED() failed\n");
+       exit(3);
     }
     synch(synch_point, &local_synch_point, remote_synch_point);
 }
@@ -125,9 +125,9 @@ remote_synch(int synch_point)
     DEBUG("\t\t\tsynchronizing remote station at point %d\n", synch_point);
     if (!CHECK_PROCEED())
     {
-	fprintf(stderr, "remote_synch: CHECK_PROCEED() failed\n");
-	exit(3);
-	return;
+       fprintf(stderr, "remote_synch: CHECK_PROCEED() failed\n");
+       exit(3);
+       return;
     }
     synch(synch_point, &remote_synch_point, local_synch_point);
 }
@@ -156,9 +156,9 @@ synch(int synch_point, int *curr_point, int other_side_point)
 
     if (other_side_point > synch_point)
     {
-	fprintf(stderr, "synch: other station has gone too far "
-		"(%d > %d)\n", other_side_point, synch_point);
-	exit(2);
+       fprintf(stderr, "synch: other station has gone too far "
+              "(%d > %d)\n", other_side_point, synch_point);
+       exit(2);
     }
 
     /* set current station synch point */
@@ -169,39 +169,39 @@ synch(int synch_point, int *curr_point, int other_side_point)
     rc = pthread_barrier_wait(&barrier);
     if (rc != 0 && rc != BARRIER_SERIAL_THREAD)
     {
-	char err_buf[BUFSIZ];
+       char err_buf[BUFSIZ];
 
-	strerror_r(rc, err_buf, sizeof(err_buf));
-	fprintf(stderr, "synch: pthread_barrier_wait() failed: %s\n", err_buf);
-	exit(1);
+       strerror_r(rc, err_buf, sizeof(err_buf));
+       fprintf(stderr, "synch: pthread_barrier_wait() failed: %s\n", err_buf);
+       exit(1);
     }
 #else /* HAVE_PTHREAD_BARRIER_T */
     /* now check the other station synchpoint */
     if (other_side_point == synch_point)
     {
-	/* we are being waited for */
-	rc = sem_post(&barrier);
-	if (rc < 0)
-	{
-	    char err_buf[BUFSIZ];
+       /* we are being waited for */
+       rc = sem_post(&barrier);
+       if (rc < 0)
+       {
+           char err_buf[BUFSIZ];
 
-	    strerror_r(errno, err_buf, sizeof(err_buf));
-	    fprintf(stderr, "synch: sem_post() failed: %s\n", err_buf);
-	    exit(1);
-	}
+           strerror_r(errno, err_buf, sizeof(err_buf));
+           fprintf(stderr, "synch: sem_post() failed: %s\n", err_buf);
+           exit(1);
+       }
     }
     else
     {
-	/* we have to wait */
-	rc = sem_wait(&barrier);
-	if (rc < 0)
-	{
-	    char err_buf[BUFSIZ];
+       /* we have to wait */
+       rc = sem_wait(&barrier);
+       if (rc < 0)
+       {
+           char err_buf[BUFSIZ];
 
-	    strerror_r(errno, err_buf, sizeof(err_buf));
-	    fprintf(stderr, "synch: sem_wait() failed: %s\n", err_buf);
-	    exit(1);
-	}
+           strerror_r(errno, err_buf, sizeof(err_buf));
+           fprintf(stderr, "synch: sem_wait() failed: %s\n", err_buf);
+           exit(1);
+       }
     }
 #endif /* HAVE_PTHREAD_BARRIER_T != 1 */    
 }
@@ -222,27 +222,27 @@ barrier_init(void)
 
 #if (HAVE_PTHREAD_BARRIER_T == 1)
     rc = pthread_barrier_init(&barrier, 
-			      NULL,    /* default attributes */
-			      2);      /* two threads must be synchronized */
+                           NULL,    /* default attributes */
+                           2);      /* two threads must be synchronized */
     if (rc != EOK)
     {
-	char err_buf[BUFSIZ];
+       char err_buf[BUFSIZ];
 
-	strerror_r(rc, err_buf, sizeof(err_buf));
-	fprintf(stderr, "pthread_barrier_init() failed: %s\n", err_buf);
-	exit(1);
+       strerror_r(rc, err_buf, sizeof(err_buf));
+       fprintf(stderr, "pthread_barrier_init() failed: %s\n", err_buf);
+       exit(1);
     }
 #else
     rc = sem_init(&barrier, 
-		  0,          /* no sharing between processes */
-		  0);         /* initial count value must be zero */
+                0,          /* no sharing between processes */
+                0);         /* initial count value must be zero */
     if (rc < 0)
     {
-	char err_buf[BUFSIZ];
+       char err_buf[BUFSIZ];
 
-	strerror_r(errno, err_buf, sizeof(err_buf));
-	fprintf(stderr, "sem_init() failed: %s\n", err_buf);
-	exit(1);
+       strerror_r(errno, err_buf, sizeof(err_buf));
+       fprintf(stderr, "sem_init() failed: %s\n", err_buf);
+       exit(1);
     }
 #endif /* HAVE_PTHREAD_BARRIER_T != 1 */
 
@@ -256,21 +256,21 @@ barrier_init(void)
      */
     if (sem_init(&random_number_semaphore, 0, 0) < 0)
     {
-	char err_buf[BUFSIZ];
+       char err_buf[BUFSIZ];
 
-	strerror_r(errno, err_buf, sizeof(err_buf));
-	fprintf(stderr, "\t\t\tbarrier_init: can't sem_init(): %s\n",
-		err_buf);
-	exit(1);
+       strerror_r(errno, err_buf, sizeof(err_buf));
+       fprintf(stderr, "\t\t\tbarrier_init: can't sem_init(): %s\n",
+              err_buf);
+       exit(1);
     }
     if (sem_init(&random_messages_semaphore, 0, 0) < 0)
     {
-	char err_buf[BUFSIZ];
+       char err_buf[BUFSIZ];
 
-	strerror_r(errno, err_buf, sizeof(err_buf));
-	fprintf(stderr, "\t\t\tbarrier_init: can't sem_init(): %s\n",
-		err_buf);
-	exit(1);
+       strerror_r(errno, err_buf, sizeof(err_buf));
+       fprintf(stderr, "\t\t\tbarrier_init: can't sem_init(): %s\n",
+              err_buf);
+       exit(1);
     }
 }
 

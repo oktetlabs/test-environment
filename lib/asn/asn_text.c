@@ -1060,7 +1060,7 @@ asn_sprint_enum(const asn_value *value, char *buffer, size_t buf_len)
         return -1;
 
     if (buf_len <= asn_count_len_enum(value))
-	return -1;
+        return -1;
 
 
     for (i = 0; i < value->asn_type->len; i++)
@@ -1106,7 +1106,7 @@ asn_sprint_integer(const asn_value *value, char *buffer, size_t buf_len)
         return -1;
 
     if ((int)buf_len <= value->txt_len)
-	return -1;
+        return -1;
 
     used = sprintf (loc_buf, "%d", value->data.integer);
 
@@ -1140,7 +1140,7 @@ asn_sprint_charstring(const asn_value *value, char *buffer, size_t buf_len)
         return -1;
 
     if ((int)buf_len <= value->txt_len)
-	return -1;
+        return -1;
 
     string = value->data.other;
 
@@ -1176,7 +1176,7 @@ asn_sprint_octstring(const asn_value *value, char *buffer, size_t buf_len)
         return -1;
 
     if (buf_len <= asn_count_len_octstring(value))
-	return -1;
+        return -1;
 
     strcpy  (buffer, "\'"); 
     pb++;
@@ -1215,7 +1215,7 @@ asn_sprint_tagged(const asn_value *value, char *buffer, size_t buf_len,
         return -1; 
     
     if (buf_len <= asn_count_len_tagged(value, indent))
-	return -1;
+        return -1;
 
     v_el = value->data.array[0];
     if (v_el)
@@ -1260,7 +1260,7 @@ asn_sprint_choice(const asn_value *value, char *buffer, size_t buf_len,
         return -1; 
     
     if (buf_len <= asn_count_len_choice(value, indent))
-	return -1;
+        return -1;
 
     v_el = value->data.array[0];
     if (v_el)
@@ -1303,7 +1303,7 @@ asn_sprint_objid(const asn_value *value, char *buffer, size_t buf_len)
         return -1; 
     
     if (buf_len <= asn_count_len_objid(value))
-	return -1;
+        return -1;
 
     strcpy (buffer, "{");
 
@@ -1354,7 +1354,7 @@ asn_sprint_array_fields(const asn_value *value, char *buffer, size_t buf_len,
         return -1; 
     
     if (buf_len <= asn_count_txt_len(value, indent))
-	return -1;
+        return -1;
 
     /* strcpy (buffer, asn_print_current_indent); */
     strcpy (buffer, "{");
@@ -1428,7 +1428,7 @@ asn_sprint_value(const asn_value *value, char *buffer, size_t buf_len,
         return 0;
 
     if (buf_len <= asn_count_txt_len(value, indent))
-	return -1;
+        return -1;
 
     switch (value->syntax)
     {

@@ -260,8 +260,8 @@ snmp_write_cb (csap_p csap_descr, char *buf, int buf_len)
  */ 
 int 
 snmp_write_read_cb (csap_p csap_descr, int timeout,
-			char *w_buf, int w_buf_len,
-			char *r_buf, int r_buf_len)
+                     char *w_buf, int w_buf_len,
+                     char *r_buf, int r_buf_len)
 {
     fd_set fdset;
     int    n_fds = 0; 

@@ -60,21 +60,21 @@
  */
 #define REMOTE_SEND_DELAY       5 /* seconds */
 
-#define TEST_BUFFER_SANITY()						  \
-    do {								  \
-        if (MESSAGE_SIZE > TOTAL_BUFFER_LENGTH)				  \
-        {								  \
-    	    fprintf(stderr,						  \
-		    "TESTS_BUFFER_SANITY: check sizes of the buffers\n"); \
-            exit(2);							  \
-        }								  \
+#define TEST_BUFFER_SANITY()                                            \
+    do {                                                          \
+        if (MESSAGE_SIZE > TOTAL_BUFFER_LENGTH)                              \
+        {                                                          \
+               fprintf(stderr,                                            \
+                  "TESTS_BUFFER_SANITY: check sizes of the buffers\n"); \
+            exit(2);                                                   \
+        }                                                          \
     } while (0)
 
 /* thread handle of the remote station thread */
 pthread_t remote_thread;
 
 int       sleep_over = 0;  /* indicates that the remote station has
-			      already passed its sleep period */
+                           already passed its sleep period */
 
 /**
  * The main routine of the remote station thread.
@@ -96,38 +96,38 @@ remote_station_proc(void *arg)
 
     /* then we sleep */
     fprintf(stderr, "\t\t\tremote_station_proc: sleeping %d seconds...\n",
-	    REMOTE_SEND_DELAY);
+           REMOTE_SEND_DELAY);
 #if (HAVE_NANOSLEEP == 1)
     {
-	struct timespec t;
-	
-	t.tv_nsec = 0;
-	t.tv_sec = REMOTE_SEND_DELAY;
-	if (nanosleep(&t, NULL) < 0)
-	{
-	    char err_buf[BUFSIZ];
+       struct timespec t;
+       
+       t.tv_nsec = 0;
+       t.tv_sec = REMOTE_SEND_DELAY;
+       if (nanosleep(&t, NULL) < 0)
+       {
+           char err_buf[BUFSIZ];
 
-	    strerror_r(errno, err_buf, sizeof(err_buf));
-	    fprintf(stderr, "remote_station_proc: nanosleep() failed: %s\n", 
-		    err_buf);
-	    exit(1);
-	}
+           strerror_r(errno, err_buf, sizeof(err_buf));
+           fprintf(stderr, "remote_station_proc: nanosleep() failed: %s\n", 
+                  err_buf);
+           exit(1);
+       }
     }
 #else
     sleep(REMOTE_SEND_DELAY);
 #endif /* HAVE_NANOSLEEP == 1 */    
 
     sleep_over = 1;    /* raise the flag to let the local station know
-			  that we're thru with our *sleep() */
+                       that we're thru with our *sleep() */
 
     /* now generate a command */
     generate_command(output_buffer, COMMAND_SIZE, ATTACHMENT_SIZE);
     DEBUG("\t\t\tremote_station_proc: generated a message of %d bytes "
-	  "command and %d bytes attachment\n", COMMAND_SIZE, ATTACHMENT_SIZE);
+         "command and %d bytes attachment\n", COMMAND_SIZE, ATTACHMENT_SIZE);
     declared_output_buffer_length = MESSAGE_SIZE;
 #if 0
     DEBUG("\t\t\tremote_station_proc: generated a message of %d bytes\n",
-	  MESSAGE_SIZE);
+         MESSAGE_SIZE);
     DEBUG("\t\t\tHere follows the command:\n");
     DEBUG("\t\t\t%s\n", output_buffer);
     DEBUG("\t\t\tEnd of command\n");
@@ -173,15 +173,15 @@ local_station_proc(void *arg)
     /* check that the remote station really has sent us something */
     if (!sleep_over)
     {
-	fprintf(stderr, "ERROR: the call of rcf_comm_agent_wait() returned "
-		"before the remote station had sent it anything\n");
-	exit(3);
+       fprintf(stderr, "ERROR: the call of rcf_comm_agent_wait() returned "
+              "before the remote station had sent it anything\n");
+       exit(3);
     }
     if (rc != 0)
     {
-	fprintf(stderr, "ERROR: the call of rcf_comm_agent_wait() "
-		"returned %d instead of zero\n", rc);
-	exit(3);
+       fprintf(stderr, "ERROR: the call of rcf_comm_agent_wait() "
+              "returned %d instead of zero\n", rc);
+       exit(3);
     }
 
     /* synchronize at this point */
@@ -218,14 +218,14 @@ main(int argc, char *argv[])
 
     /* launch the remote station thread */
     rc = pthread_create(&remote_thread, /* attr */ NULL, 
-			remote_station_proc, /* arg */ NULL);
+                     remote_station_proc, /* arg */ NULL);
     if (rc != 0)
-    {	    
-	char err_buf[BUFSIZ];
+    {           
+       char err_buf[BUFSIZ];
 
-	strerror_r(errno, err_buf, sizeof(err_buf));
-	fprintf(stderr, "main: pthread_create() failed: %s\n", err_buf);
-	exit(1);
+       strerror_r(errno, err_buf, sizeof(err_buf));
+       fprintf(stderr, "main: pthread_create() failed: %s\n", err_buf);
+       exit(1);
     }
 
     /* launch the local station in the current thread */

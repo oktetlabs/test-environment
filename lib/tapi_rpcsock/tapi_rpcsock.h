@@ -294,11 +294,11 @@ extern int rpc_wsa_accept(rcf_rpc_server *handle,
  * 
  * @param handle           RPC server handle
  * @param s                Descriptor of socket that has already been called
- * 			   with the listen function
+ *                            with the listen function
  * @param s_a              Descriptor of a socket on wich to accept an incomming
  *                         connection
  * @param len              Length of the buffer to receive data (should not 
- *			   include the size of local and remote addresses) 	 
+ *                           include the size of local and remote addresses)          
  * @param overlapped       WSAOVERLAPPED structure
  * @param bytes_received   number of received data bytes
  *
@@ -327,8 +327,8 @@ rpc_accept_ex(rcf_rpc_server *handle, int s, int s_a,
 extern void
 rpc_get_accept_addr(rcf_rpc_server *handle,
                     int s, void *buf, size_t buflen, size_t len,
-	            struct sockaddr *laddr,
-	            struct sockaddr *raddr);
+                    struct sockaddr *laddr,
+                    struct sockaddr *raddr);
 
 extern int rpc_transmit_file(rcf_rpc_server *handle, int s, char *file,
                              ssize_t len, ssize_t len_per_send, 
@@ -380,9 +380,9 @@ rpc_poll(rcf_rpc_server *handle,
 
 extern int rpc_ioctl(rcf_rpc_server *handle,
                      int fd, rpc_ioctl_code request, ...);
-		     
+                     
 extern int rpc_fcntl(rcf_rpc_server *handle, int fd,
-		     int cmd, int arg);		     
+                     int cmd, int arg);                     
 
 
 extern int rpc_getsockopt_gen(rcf_rpc_server *handle,
@@ -455,7 +455,7 @@ extern rpc_wsaevent rpc_create_event(rcf_rpc_server *handle);
 extern int rpc_close_event(rcf_rpc_server *handle, rpc_wsaevent hevent);
 
 /* WSAResetEvent() */
-extern int rpc_reset_event(rcf_rpc_server *handle, rpc_wsaevent hevent);	
+extern int rpc_reset_event(rcf_rpc_server *handle, rpc_wsaevent hevent);        
 
 /* Create WSAOVERLAPPED */
 extern rpc_overlapped rpc_create_overlapped(rcf_rpc_server *handle,
@@ -487,7 +487,7 @@ extern int rpc_get_overlapped_result(rcf_rpc_server *handle,
                                      int s, rpc_overlapped overlapped,
                                      int *bytes, te_bool wait,
                                      rpc_send_recv_flags *flags,
-               			     char *buf, int buflen);
+                                     char *buf, int buflen);
 /**
  * Get result of completion callback (if called).
  *

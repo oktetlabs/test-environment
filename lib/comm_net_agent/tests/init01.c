@@ -66,12 +66,12 @@ remote_station_proc(void *arg)
     remote_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (remote_socket < 0)
     {
-	char err_buf[BUFSIZ];
+       char err_buf[BUFSIZ];
 
-	strerror_r(errno, err_buf, sizeof(err_buf));
-	fprintf(stderr, "\t\t\tremote_station_proc: "
-		"can't create a socket: %s\n", err_buf);
-	exit(1);
+       strerror_r(errno, err_buf, sizeof(err_buf));
+       fprintf(stderr, "\t\t\tremote_station_proc: "
+              "can't create a socket: %s\n", err_buf);
+       exit(1);
     }
 
     /* now connect */
@@ -82,12 +82,12 @@ remote_station_proc(void *arg)
     addr.sin_addr.s_addr = inet_addr(LOCAL_STATION_ADDRESS);
     if (connect(remote_socket, (struct sockaddr *)&addr, sizeof(addr)) < 0)
     {
-	char err_buf[BUFSIZ];
+       char err_buf[BUFSIZ];
 
-	strerror_r(errno, err_buf, sizeof(err_buf));
-	fprintf(stderr, "\t\t\tremote_station_proc: can't connect to "
-		"the agent: %s\n", err_buf);
-	exit(1);
+       strerror_r(errno, err_buf, sizeof(err_buf));
+       fprintf(stderr, "\t\t\tremote_station_proc: can't connect to "
+              "the agent: %s\n", err_buf);
+       exit(1);
     }
 
     /* synchronize at this point */
@@ -96,31 +96,31 @@ remote_station_proc(void *arg)
     /* now try to connect again two times */
     for (i = 0; i < EXTRA_CONNECTS; i++)
     {
-	int extra_socket;
+       int extra_socket;
 
-	/* create the socket */
-	extra_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-	if (extra_socket < 0)
-	{
-	    char err_buf[BUFSIZ];
-	    
-	    strerror_r(errno, err_buf, sizeof(err_buf));
-	    fprintf(stderr, "\t\t\tremote_station_proc: "
-		    "can't create a socket: %s\n", err_buf);
-	    exit(1);
-	}
-	
-	/* now connect */
-	memset(&addr, 0, sizeof(addr));
-	addr.sin_family = AF_INET;
-	addr.sin_port = htons(atoi(local_port_no));
-	addr.sin_addr.s_addr = inet_addr(LOCAL_STATION_ADDRESS);
-	if (connect(extra_socket, (struct sockaddr *)&addr, sizeof(addr)) == 0)
-	{
-	    fprintf(stderr, "\t\t\tERROR: the local station should not "
-		    "accept more than one connection\n");
-	    exit(3);
-	}
+       /* create the socket */
+       extra_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+       if (extra_socket < 0)
+       {
+           char err_buf[BUFSIZ];
+           
+           strerror_r(errno, err_buf, sizeof(err_buf));
+           fprintf(stderr, "\t\t\tremote_station_proc: "
+                  "can't create a socket: %s\n", err_buf);
+           exit(1);
+       }
+       
+       /* now connect */
+       memset(&addr, 0, sizeof(addr));
+       addr.sin_family = AF_INET;
+       addr.sin_port = htons(atoi(local_port_no));
+       addr.sin_addr.s_addr = inet_addr(LOCAL_STATION_ADDRESS);
+       if (connect(extra_socket, (struct sockaddr *)&addr, sizeof(addr)) == 0)
+       {
+           fprintf(stderr, "\t\t\tERROR: the local station should not "
+                  "accept more than one connection\n");
+           exit(3);
+       }
     }
 
     remote_synch(20);
@@ -193,14 +193,14 @@ main(int argc, char *argv[])
 
     /* launch the remote station thread */
     rc = pthread_create(&remote_thread, /* attr */ NULL, 
-			remote_station_proc, /* arg */ NULL);
+                     remote_station_proc, /* arg */ NULL);
     if (rc != 0)
-    {	    
-	char err_buf[BUFSIZ];
+    {           
+       char err_buf[BUFSIZ];
 
-	strerror_r(errno, err_buf, sizeof(err_buf));
-	fprintf(stderr, "main: pthread_create() failed: %s\n", err_buf);
-	exit(1);
+       strerror_r(errno, err_buf, sizeof(err_buf));
+       fprintf(stderr, "main: pthread_create() failed: %s\n", err_buf);
+       exit(1);
     }
 
     /* launch the local station in the current thread */

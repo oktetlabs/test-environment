@@ -105,7 +105,7 @@ struct cli_csap_specific_data;
 typedef struct cli_csap_specific_data *cli_csap_specific_data_p;
 typedef struct cli_csap_specific_data
 {
-    FILE  *dbg_file;	/**< file to gather debug data from expect session    */
+    FILE  *dbg_file;        /**< file to gather debug data from expect session    */
     int    io;          /**< file descriptor of CLI session stdin and stdout  */
     FILE  *fp;          /**< file descriptor of CLI session stdin and stdout  */
     pid_t  expect_pid;  /**< Expect process id                                */
@@ -124,9 +124,9 @@ typedef struct cli_csap_specific_data
     char  *user;        /**< Default user account (NULL if not defined)       */
     char  *password;    /**< Default user password (NULL if not defined)      */
 
-	int    prompts_status;   /**< available prompts found on init             */
+    int    prompts_status;   /**< available prompts found on init             */
 
-	struct exp_case prompts[CLI_MAX_PROMPTS]; /**< expect cases structure that
+    struct exp_case prompts[CLI_MAX_PROMPTS]; /**< expect cases structure that
                                                    contains known prompts     */
 
     int   read_timeout; /**< Number of second to wait for data                */

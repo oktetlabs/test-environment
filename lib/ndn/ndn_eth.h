@@ -54,11 +54,11 @@ typedef struct ndn_eth_header_plain
 {
     uint8_t  dst_addr [ETH_ALEN]; /**< Destination MAC address */
     uint8_t  src_addr [ETH_ALEN]; /**< Source MAC address */ 
-    uint16_t eth_type_len;  	/**< Ethernet Length/Type */
-    int      is_tagged;  	/**< BOOL, flag - is frame tagged. */
-    int      cfi;		/**< BOOL, Canonical Format Indicator*/
-    uint8_t  priority;  	/**< Prioriy */
-    uint16_t vlan_id;  		/**< Ethernet Length/Type */
+    uint16_t eth_type_len;         /**< Ethernet Length/Type */
+    int      is_tagged;         /**< BOOL, flag - is frame tagged. */
+    int      cfi;              /**< BOOL, Canonical Format Indicator*/
+    uint8_t  priority;         /**< Prioriy */
+    uint16_t vlan_id;                /**< Ethernet Length/Type */
 } ndn_eth_header_plain;
 
 

@@ -409,7 +409,7 @@ parse_config(char *filename)
         }
         else
             goto bad_format;
-	
+
         if ((attr = xmlGetProp(cur, (const xmlChar *)"synch_time")) != NULL)
         {
             agent->enable_synch_time = (strcmp(attr, "yes") == 0);

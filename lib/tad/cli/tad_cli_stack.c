@@ -476,7 +476,7 @@ cli_expect_main(cli_csap_specific_data_p spec_data)
                 printf("an error occured on sync_p2c pipe\n");
                 cli_expect_finalize(spec_data);
             }
-	    
+           
             printf("%c", data);
             
             if (data != 0)

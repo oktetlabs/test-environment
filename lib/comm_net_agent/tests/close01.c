@@ -93,12 +93,12 @@ local_station_proc(void *arg)
     /* now close the connection */
     if ((rc = rcf_comm_agent_close(&handle)) != 0)
     {
-	char err_buf[BUFSIZ];
+        char err_buf[BUFSIZ];
 
-	strerror_r(rc, err_buf, sizeof(err_buf));
-	fprintf(stderr, "local_station_proc: rcf_comm_agent_close() failed: "
-		"%s\n", err_buf);
-	exit(3);
+        strerror_r(rc, err_buf, sizeof(err_buf));
+        fprintf(stderr, "local_station_proc: rcf_comm_agent_close() failed: "
+                "%s\n", err_buf);
+        exit(3);
     }
 
     /* prepare the fake buffer */
@@ -108,16 +108,16 @@ local_station_proc(void *arg)
     /* check the rcf_comm_agent_reply() function */
     if (rcf_comm_agent_reply(handle, buffer, sizeof(buffer)) == 0)
     {
-	fprintf(stderr, "ERROR: the call of rcf_comm_agent_reply() "
-		"succeeded while it shouldn't have to\n");
-	exit(3);
+        fprintf(stderr, "ERROR: the call of rcf_comm_agent_reply() "
+                "succeeded while it shouldn't have to\n");
+        exit(3);
     }
     /* check the rcf_comm_agent_wait() function */
     if (rcf_comm_agent_reply(handle, buffer, sizeof(buffer)) == 0)
     {
-	fprintf(stderr, "ERROR: the call of rcf_comm_agent_wait() "
-		"succeeded while it shouldn't have to\n");
-	exit(3);
+        fprintf(stderr, "ERROR: the call of rcf_comm_agent_wait() "
+                "succeeded while it shouldn't have to\n");
+        exit(3);
     }
 
     /* close the connection */
@@ -152,14 +152,14 @@ main(int argc, char *argv[])
 
     /* launch the remote station thread */
     rc = pthread_create(&remote_thread, /* attr */ NULL, 
-			remote_station_proc, /* arg */ NULL);
+                        remote_station_proc, /* arg */ NULL);
     if (rc != 0)
-    {	    
-	char err_buf[BUFSIZ];
+    {            
+        char err_buf[BUFSIZ];
 
-	strerror_r(errno, err_buf, sizeof(err_buf));
-	fprintf(stderr, "main: pthread_create() failed: %s\n", err_buf);
-	exit(1);
+        strerror_r(errno, err_buf, sizeof(err_buf));
+        fprintf(stderr, "main: pthread_create() failed: %s\n", err_buf);
+        exit(1);
     }
 
     /* launch the local station in the current thread */

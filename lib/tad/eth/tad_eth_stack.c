@@ -176,7 +176,7 @@ eth_prepare_recv(csap_p csap_descr)
 
     /* opening incoming socket */
     if ((rc = open_packet_socket(PACKET_HOST,
-	                         spec_data->interface->if_index,
+                                spec_data->interface->if_index,
                                  &spec_data->in)) != 0)
     {
         ERROR("open_packet_socket error %d", rc);
@@ -221,7 +221,7 @@ eth_prepare_send(csap_p csap_descr)
    
     /* outgoing socket */
     if ((rc = open_packet_socket(PACKET_OTHERHOST,
-	                         spec_data->interface->if_index,
+                                spec_data->interface->if_index,
                                  &spec_data->out)) != 0)
     { 
         ERROR("open_packet_socket error %d", rc);

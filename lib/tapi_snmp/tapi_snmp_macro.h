@@ -52,11 +52,11 @@ extern "C" {
     do                                                                                \
     {                                                                                 \
         int rc_;                                                                      \
-	                                                                              \
+                                                                                     \
         rc_ = tapi_snmp_csap_create(ta_, sid_, snmp_agent_, community_,               \
                                     snmp_version_, &csap_id_);                        \
         if (rc_ != 0)                                                                 \
-	{                                                                             \
+       {                                                                             \
             TEST_FAIL("snmp csap creation failed %X\n", rc_);                         \
         }                                                                             \
     } while (0)
@@ -70,15 +70,15 @@ extern "C" {
  */ 
 #define SNMP_MAKE_OID(label_, oid_)                                                   \
     do                                                                                \
-    {                    	                                                      \
+    {                                                                                 \
         int rc_;                                                                      \
-	                                                                              \
+                                                                                     \
         rc_ = tapi_snmp_make_oid(label_, &oid_);                                      \
-	if (rc_ != 0)                                                                 \
-	{                                                                             \
+       if (rc_ != 0)                                                                 \
+       {                                                                             \
             TEST_FAIL("snmp make integer failed for OID, result\n", label_, rc_);     \
         }                                                                             \
-    } while (0)	    
+    } while (0)           
 
 /**
  * Macro around tapi_snmp_make_oid().
@@ -130,7 +130,7 @@ extern "C" {
  * 
  */ 
 #define SNMP_MAKE_INSTANCE(label_, oid_, indeces_...) \
-    do {                       	                                          \
+    do {                                                                        \
         int rc_;                                                          \
                                                                           \
         rc_ = tapi_snmp_make_instance(label_, &oid_, indeces_);           \
@@ -152,18 +152,18 @@ extern "C" {
  */ 
 #define TAPI_SNMP_GET_SYNTAX(label_, syntax_) \
     do                                                                      \
-    {                    	                                            \
+    {                                                                       \
         int             rc_;                                                \
         tapi_snmp_oid_t oid_;                                               \
-	                                                                    \
+                                                                           \
         TAPI_SNMP_MAKE_OID(label_, &oid_);                                  \
-	                                                                    \
+                                                                           \
         rc_ = tapi_snmp_get_syntax(&oid_, syntax_);                         \
-	if (rc_ != 0)                                                       \
-	{                                                                   \
+       if (rc_ != 0)                                                       \
+       {                                                                   \
             TEST_FAIL("snmp get syntax failed  OID, result\n", label_, rc_);\
         }                                                                   \
-    } while (0)	    
+    } while (0)           
 
 /**
  * Macro around tapi_snmp_get_table().
@@ -183,14 +183,14 @@ extern "C" {
     do {                                                                \
         int             rc_;                                            \
         tapi_snmp_oid_t oid_;                                           \
-	                                                                \
+                                                                       \
         TAPI_SNMP_MAKE_OID(label_, &oid_);                              \
- 	rc_ = tapi_snmp_get_table(ta_, sid_, csap_id_, &oid_,           \
+        rc_ = tapi_snmp_get_table(ta_, sid_, csap_id_, &oid_,           \
                                   num_, (void **)result_);              \
-	if (rc_ != 0)                                                   \
-	{                                                               \
+       if (rc_ != 0)                                                   \
+       {                                                               \
             TEST_FAIL("snmp get table for %s failed, result %X\n",      \
-	              label_, rc_);                                     \
+                     label_, rc_);                                     \
         }                                                               \
     } while (0)
 
@@ -257,16 +257,16 @@ extern "C" {
     do {                                                           \
         int             rc_;                                       \
         tapi_snmp_oid_t oid_;                                      \
-	                                                           \
+                                                                  \
         TAPI_SNMP_MAKE_OID(label_, oid_);                          \
- 	rc_ = tapi_snmp_get_table_rows(ta_, sid_, csap_id_, &oid_, \
+        rc_ = tapi_snmp_get_table_rows(ta_, sid_, csap_id_, &oid_, \
                                        num_, suffixes_, &result_); \
-	if (rc_ != 0)                                              \
-	{                                                          \
+       if (rc_ != 0)                                              \
+       {                                                          \
             TEST_FAIL("snmp get table rows failed for %s failed, " \
                       "result %X\n", label_, rc_);                 \
         }                                                          \
-    } while (0)        	    
+    } while (0)                   
 
 
 /**
@@ -280,11 +280,11 @@ extern "C" {
     do {                                                                 \
         int             rc_;                                             \
         tapi_snmp_oid_t oid_;                                            \
-	                                                                 \
+                                                                        \
         TAPI_SNMP_MAKE_OID(label_, &oid_);                               \
- 	rc_ = tapi_snmp_get_table_dimension(&oid_, dimension_);          \
-	if (rc_ != 0)                                                    \
-	{                                                                \
+        rc_ = tapi_snmp_get_table_dimension(&oid_, dimension_);          \
+       if (rc_ != 0)                                                    \
+       {                                                                \
             TEST_FAIL("snmp get table dimension failed for %s failed, "  \
                       "result %X\n", label_, rc_);                       \
         }                                                                \
@@ -303,11 +303,11 @@ extern "C" {
     {                                                                      \
         int             rc_;                                               \
         tapi_snmp_oid_t oid_;                                              \
-	                                                                   \
+                                                                          \
         TAPI_SNMP_MAKE_OID(label_, &oid_);                                 \
- 	rc_ = tapi_snmp_get_table_columns(&oid_, &columns_);               \
-	if (rc_ != 0)                                                      \
-	{                                                                  \
+        rc_ = tapi_snmp_get_table_columns(&oid_, &columns_);               \
+       if (rc_ != 0)                                                      \
+       {                                                                  \
             TEST_FAIL("snmp get table columns failed for %s failed, "      \
                       "result %X\n", label_, rc_);                         \
         }                                                                  \
@@ -323,11 +323,11 @@ extern "C" {
  */
 #define SNMP_LOAD_MIB_WITH_PATH(dir_path_, mib_file_) \
     do {                                                                   \
-       	int rc_;                                                           \
+              int rc_;                                                           \
                                                                            \
         rc_ = tapi_snmp_load_mib_with_path(dir_path_,                      \
-			                   mib_file_);                     \
-	if (rc_ != 0)                                                      \
+                                        mib_file_);                     \
+       if (rc_ != 0)                                                      \
         {                                                                  \
             TEST_FAIL("Loading mib with path failed, result %X\n", rc_);   \
         }                                                                  \
@@ -342,10 +342,10 @@ extern "C" {
  */
 #define SNMP_LOAD_MIB(mib_file_) \
     do {                                                       \
-       	int rc_;                                               \
+              int rc_;                                               \
                                                                \
         rc_ = tapi_snmp_load_mib(mib_file_);                   \
-	if (rc_ != 0)                                          \
+       if (rc_ != 0)                                          \
         {                                                      \
             TEST_FAIL("Loading mib failed, result %X\n", rc_); \
         }                                                      \
@@ -354,14 +354,14 @@ extern "C" {
 #define SNMP_MAKE_TBL_INDEX(label_, index_... ) \
     do                                                         \
     {                                                          \
-	tapi_snmp_oid_t label_;                                \
-	int             rc_;                                   \
-	TAPI_SNMP_MAKE_OID(#label_, label_);                   \
+       tapi_snmp_oid_t label_;                                \
+       int             rc_;                                   \
+       TAPI_SNMP_MAKE_OID(#label_, label_);                   \
         rc_ = tapi_snmp_make_table_index(&label_, &index_);    \
-	if (rc_)                                               \
+       if (rc_)                                               \
             TEST_FAIL("Make table index failed\n");            \
-    } while (0)	
-	
+    } while (0)       
+       
    
 
 /**
@@ -384,8 +384,8 @@ extern "C" {
         CHECK_RC(tapi_snmp_make_instance(name, &leaf_oid, sub_id));            \
         CHECK_RC(tapi_snmp_set_integer((ta), (sid), (csap_id), &leaf_oid,      \
                                        (value), (err_stat)));                  \
-	VERB("SNMP set integer, set %s to %d, error status %d",                \
-	     name, value, *err_stat);                                          \
+       VERB("SNMP set integer, set %s to %d, error status %d",                \
+            name, value, *err_stat);                                          \
     } while (0)
 
 /**
@@ -409,7 +409,7 @@ extern "C" {
         CHECK_RC(tapi_snmp_make_instance(name, &leaf_oid, sub_id));            \
         CHECK_RC(tapi_snmp_set_octetstring((ta), (sid), (csap_id), &leaf_oid,  \
                                        (value), (length), (err_stat)));        \
-	VERB("SNMP set octetstring, set %s to %s, error status %d", name,      \
+       VERB("SNMP set octetstring, set %s to %s, error status %d", name,      \
              print_octet_string(value, length), *err_stat);                    \
     } while (0)
 
@@ -483,13 +483,13 @@ extern "C" {
     do                                                              \
     {                                                               \
         tapi_snmp_oid_t          oid;                               \
-	                                                            \
+                                                                   \
         CHECK_RC(tapi_snmp_make_instance(name, &oid, sub_id));      \
-	CHECK_RC(tapi_snmp_get(ta, sid, csap_id, &oid,              \
+       CHECK_RC(tapi_snmp_get(ta, sid, csap_id, &oid,              \
                  next, vb, err_stat));                              \
-	VERB("SNMP get for %s, oid = %s,  error status %d",         \
+       VERB("SNMP get for %s, oid = %s,  error status %d",         \
              name, print_oid(&oid), *err_stat);                     \
-    } while (0)	    
+    } while (0)           
 
     
 /**
@@ -500,7 +500,7 @@ extern "C" {
  * @param csap_id        identifier of an SNMP CSAP.
  * @param name           name of an SNMP object the value is to be set.
  * @param value          pointer to returned integer value.
- * @param err_stat	 error status
+ * @param err_stat        error status
  * @param subid          index of table field instance (0 for scalar field).
  * 
  */
@@ -508,11 +508,11 @@ extern "C" {
     do                                                                         \
     {                                                                          \
         tapi_snmp_oid_t     oid;                                               \
-	                                                                       \
+                                                                              \
         CHECK_RC(tapi_snmp_make_instance(name, &oid, sub_id));                 \
         CHECK_RC(tapi_snmp_get_integer(ta, sid, csap_id, &oid,                 \
                  (value), err_stat));                                          \
-	                                                                       \
+                                                                              \
         VERB("SNMP get: for %s (oid=%s) returns %s = %d, error status %d\n",   \
              name, print_oid(&oid), #value, (value), *err_stat);               \
     } while (0)
@@ -521,12 +521,12 @@ extern "C" {
 /**
  * Macro around tapi_snmp_get_octetstring()
  *
- * @param ta	         Test Agent name
+ * @param ta                Test Agent name
  * @param sid            RCF Session id
  * @param csap_id        identifier of an SNMP CSAP
  * @param name           name of an SNMP object the value is to be set
  * @param value          Location for returned value
- * @param size	         size of returned value
+ * @param size                size of returned value
  * @param err_stat       error status
  * @param subid          index of table field instance (0 for scalar field)
  *
@@ -536,7 +536,7 @@ extern "C" {
     do                                                                         \
     {                                                                          \
         tapi_snmp_oid_t       oid;                                             \
-	                                                                           \
+                                                                                  \
         CHECK_RC(tapi_snmp_make_instance(name, &oid, sub_id));                 \
         CHECK_RC(tapi_snmp_get_oct_string(ta, sid, csap_id, &oid,              \
                  (value), size, err_stat));                                    \
@@ -544,18 +544,18 @@ extern "C" {
              "returns %s = %s, error status %d",                               \
              name, print_oid(&oid), #value,                                    \
              print_octet_string(value, *size), *err_stat);                     \
-    } while (0) 	    
+    } while (0)            
 
-		
+              
 /**
  * Macro around tapi_snmp_walk.
  *
- * @param	ta		Test Agent name
- * @param	sid		RCF Session id
- * @param 	csap_id		identifier of an SNMP CSAP
- * @param	name		name of SNMP object
- * @param	userdata	userdata for walk cb
- * @param	callback	walk callback
+ * @param       ta              Test Agent name
+ * @param       sid              RCF Session id
+ * @param        csap_id              identifier of an SNMP CSAP
+ * @param       name              name of SNMP object
+ * @param       userdata       userdata for walk cb
+ * @param       callback       walk callback
  *
  */ 
 #define TAPI_SNMP_WALK(ta, sid, csap_id, name, userdata, callback) \
@@ -585,7 +585,7 @@ extern "C" {
     {                                                                        \
         int                       tmp_value;                                 \
         tapi_snmp_oid_t           oid;                                       \
-	                                                                     \
+                                                                            \
         CHECK_RC(tapi_snmp_make_instance(name, &oid, sub_id));               \
         CHECK_RC(tapi_snmp_get_integer(ta, sid, csap_id, &oid,               \
                  &tmp_value, err_stat));                                     \

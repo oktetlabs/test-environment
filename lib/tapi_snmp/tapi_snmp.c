@@ -429,7 +429,7 @@ tapi_snmp_packet_to_plain(asn_value *pkt, tapi_snmp_message_t *snmp_message)
 
         }
         else if (rc == 0 && strcmp(choice_label, "application-wide") == 0)
-	{
+       {
             rc = asn_get_choice(var_bind, "value.#plain.#application-wide", 
                                 choice_label, CL_MAX);
 
@@ -1508,7 +1508,7 @@ tapi_snmp_walk(const char *ta, int sid, int csap_id,
         rc = tapi_snmp_get(ta, sid, csap_id, &next_oid, TAPI_SNMP_NEXT, &vb, NULL);
         if (vb.type == TAPI_SNMP_ENDOFMIB)
         {
-	    VERB("walk is over");
+           VERB("walk is over");
             break; /* walk is finished */ 
         }    
         if (rc)
@@ -1524,7 +1524,7 @@ tapi_snmp_walk(const char *ta, int sid, int csap_id,
             rc = callback(&vb, userdata);
 
             tapi_snmp_free_varbind(&vb);
-	    VERB("user callback in walk return %x", rc);
+           VERB("user callback in walk return %x", rc);
 
             if (rc)
                 return rc;
@@ -1838,12 +1838,12 @@ tapi_snmp_get_table(const char *ta, int sid, int csap_id,
 
             if (rc) break; 
 
-	    if (vb_num == 0)
-	    {
-		rc = EFAULT;
-		WARN("GETBULK got zero variables!");
-		break;
-	    }
+           if (vb_num == 0)
+           {
+              rc = EFAULT;
+              WARN("GETBULK got zero variables!");
+              break;
+           }
 
             rest_varbinds -= vb_num;
             got_varbinds  += vb_num;
@@ -1970,8 +1970,8 @@ tapi_snmp_get_table_dimension(tapi_snmp_oid_t *table_oid, int *dimension)
     if (entry_node->indexes == NULL)
     {
         VERB("Very strange, no indices for table %s\n", print_oid(table_oid));
-	return EFAULT;
-    }	    
+       return EFAULT;
+    }           
 
     for (t_index = entry_node->indexes; t_index; t_index = t_index->next)
         (*dimension)++;
@@ -1992,7 +1992,7 @@ tapi_snmp_make_table_index(tapi_snmp_oid_t *tbl, tapi_snmp_oid_t *index, ...)
     rc = tapi_snmp_get_table_dimension(tbl, &dimension);
     if (rc)
     {
-        return rc;	    
+        return rc;           
     }
 
     va_start(list, index);
@@ -2097,8 +2097,8 @@ tapi_snmp_get_table_columns(tapi_snmp_oid_t *table_oid, tapi_snmp_var_access **c
     if (entry_node->indexes == NULL)
     {
         VERB("Very strange, cannot find entry for table %s\n", print_oid(table_oid));
-	return rc;
-    }	    
+       return rc;
+    }           
 
     if (entry_node->child_list == NULL)
     {
@@ -2109,20 +2109,20 @@ tapi_snmp_get_table_columns(tapi_snmp_oid_t *table_oid, tapi_snmp_var_access **c
     for (entry_node = entry_node->child_list; entry_node; entry_node = entry_node->next_peer)
     {
         columns_p = (tapi_snmp_var_access *)calloc(1, sizeof(tapi_snmp_var_access));
-	if (columns_p == NULL)
-	    return TE_RC(TE_TAPI, ENOMEM);
+       if (columns_p == NULL)
+           return TE_RC(TE_TAPI, ENOMEM);
 
-	strcpy(columns_p->label, entry_node->label);
-	rc = tapi_snmp_make_oid(columns_p->label, &(columns_p->oid));
-	if (rc)
-	    return TE_RC(TE_TAPI, rc);	
-	columns_p->access = entry_node->access;
-	VERB("    %s, %s", columns_p->label, print_oid(&(columns_p->oid)));
-	columns_p->next = *columns;
-	*columns = columns_p;
-    } 	
+       strcpy(columns_p->label, entry_node->label);
+       rc = tapi_snmp_make_oid(columns_p->label, &(columns_p->oid));
+       if (rc)
+           return TE_RC(TE_TAPI, rc);       
+       columns_p->access = entry_node->access;
+       VERB("    %s, %s", columns_p->label, print_oid(&(columns_p->oid)));
+       columns_p->next = *columns;
+       *columns = columns_p;
+    }        
     return 0;
-}	
+}       
 
 /* See description in tapi_snmp.h */
 int
@@ -2646,35 +2646,35 @@ tapi_snmp_make_instance(const char *oid_str, tapi_snmp_oid_t *bin_oid, ...)
     entry_node = find_tree_node(oid_str, -1);
     if (entry_node == NULL)
     {
-        ERROR("Bad oid string %s", oid_str);	    
-	return ETEWRONGPTR;    
-    }	
+        ERROR("Bad oid string %s", oid_str);           
+       return ETEWRONGPTR;    
+    }       
 
     /* This node must be scalar or table leaf */
     if (entry_node->parent == NULL)
     {
         ERROR("Parent doesn't exist, strange");
-	return -1;
+       return -1;
     }
     t_index = entry_node->parent->indexes;
     while (t_index)
     {
-	dimension++;    
-	t_index = t_index->next;
+       dimension++;    
+       t_index = t_index->next;
     }
 
     rc = tapi_snmp_make_oid(oid_str, bin_oid);
     if (rc)
     {
-	ERROR("Make oid failed for %s oid string", oid_str);    
-        return rc;	    
+       ERROR("Make oid failed for %s oid string", oid_str);    
+        return rc;           
     }
     
     if (dimension == 0)
     {
         VERB("Make instance %s.0", oid_str);
-	bin_oid->id[bin_oid->length++] = 0;
-	return 0;
+       bin_oid->id[bin_oid->length++] = 0;
+       return 0;
     }
     
     va_start(list, bin_oid);
@@ -2702,7 +2702,7 @@ tapi_snmp_make_vb(tapi_snmp_varbind_t *vb, const char *oid_str,
 
     if ((rc = tapi_snmp_make_oid(oid_str, &bin_oid)) != 0)
     {
-	ERROR("Make oid failed for %s oid string", oid_str);
+       ERROR("Make oid failed for %s oid string", oid_str);
         return rc;
     }
 
@@ -2910,12 +2910,12 @@ const char *snmp_error_h2str(int error_val)
 #undef SNMP_ERR_H2STR
         
         default:
-	{
+       {
             static char buf[255];
 
-	    snprintf(buf, sizeof(buf), "UNKNOWN (%d)", error_val);
+           snprintf(buf, sizeof(buf), "UNKNOWN (%d)", error_val);
             return buf;
-	}
+       }
     }
     return "";
 }
@@ -2960,7 +2960,7 @@ tapi_snmp_val_type_h2str(enum tapi_snmp_vartypes_t type)
         {
             static char buf[255];
 
-	    snprintf(buf, sizeof(buf), "UNKNOWN (%d)", type);
+           snprintf(buf, sizeof(buf), "UNKNOWN (%d)", type);
             return buf;
         }
     }
@@ -2978,7 +2978,7 @@ tapi_snmp_truth_value_h2str(enum tapi_snmp_truth_value val)
         {
             static char buf[255];
 
-	    snprintf(buf, sizeof(buf), "UNKNOWN (%d)", val);
+           snprintf(buf, sizeof(buf), "UNKNOWN (%d)", val);
             return buf;
         }
     }

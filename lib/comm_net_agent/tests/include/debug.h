@@ -32,9 +32,9 @@ extern "C" {
 #endif
 #include "config.h"
 
-#define DEBUG(x...) 				\
-    do {					\
-        fprintf(stderr, x);			\
+#define DEBUG(x...)                             \
+    do {                                   \
+        fprintf(stderr, x);                     \
     } while (0)
 
 #ifdef __cplusplus

@@ -108,12 +108,12 @@ int remote_socket = -1;
 char *input_buffer = NULL;           /* Input buffer for messages */
 int   total_input_buffer_length;     /* Size of the buffer as allocated */
 int   declared_input_buffer_length;  /* Size of the data on the buffer,
-				      * as in the customs declaration   */
+                                  * as in the customs declaration   */
 
 char *output_buffer = NULL;          /* Output buffer for messages */
 int   total_output_buffer_length;    /* Size of the buffer as allocated */
 int   declared_output_buffer_length; /* Size of the data on the buffer,
-				      * as in the customs declaration   */
+                                  * as in the customs declaration   */
 
 /* 
  * These buffers are used for transferring initial random messages.
@@ -141,10 +141,10 @@ local_connection_init(void)
     err = rcf_comm_agent_init(local_port_no, &handle);
     if (err != 0)
     {
-	strerror_r(err, err_buf, sizeof(err_buf));
-	fprintf(stderr, "local_connection_init: rcf_comm_agent_init() "
-		"failed: %s\n", err_buf);
-	return 1;
+       strerror_r(err, err_buf, sizeof(err_buf));
+       fprintf(stderr, "local_connection_init: rcf_comm_agent_init() "
+              "failed: %s\n", err_buf);
+       return 1;
     }
 
     DEBUG("local_connection_init: rcf_comm_agent_init() ok\n");
@@ -161,11 +161,11 @@ void
 local_connection_close(void)
 {
     if (input_buffer != NULL)
-	free(input_buffer);       /* though, it not necessarily has
-				     been allocated by the local station */
+       free(input_buffer);       /* though, it not necessarily has
+                                 been allocated by the local station */
     /* ignore the return value */
     if (handle != NULL)
-	rcf_comm_agent_close(&handle);
+       rcf_comm_agent_close(&handle);
 }
 
 /**
@@ -183,12 +183,12 @@ remote_connection_init(void)
     remote_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (remote_socket < 0)
     {
-	char err_buf[BUFSIZ];
+       char err_buf[BUFSIZ];
 
-	strerror_r(errno, err_buf, sizeof(err_buf));
-	fprintf(stderr, "\t\t\tremote_connection_init: "
-		"can't create a socket: %s\n", err_buf);
-	exit(1);
+       strerror_r(errno, err_buf, sizeof(err_buf));
+       fprintf(stderr, "\t\t\tremote_connection_init: "
+              "can't create a socket: %s\n", err_buf);
+       exit(1);
     }
 
     /* synchronize at the level of connecting */
@@ -201,12 +201,12 @@ remote_connection_init(void)
     addr.sin_addr.s_addr = inet_addr(LOCAL_STATION_ADDRESS);
     if (connect(remote_socket, (struct sockaddr *)&addr, sizeof(addr)) < 0)
     {
-	char err_buf[BUFSIZ];
+       char err_buf[BUFSIZ];
 
-	strerror_r(errno, err_buf, sizeof(err_buf));
-	fprintf(stderr, "\t\t\tremote_connection_init: can't connect to "
-		"the agent: %s\n", err_buf);
-	return 1;
+       strerror_r(errno, err_buf, sizeof(err_buf));
+       fprintf(stderr, "\t\t\tremote_connection_init: can't connect to "
+              "the agent: %s\n", err_buf);
+       return 1;
     }
 
     /* set the random seed */
@@ -228,13 +228,13 @@ remote_connection_close(void)
     
     if (output_buffer != NULL)
     {
-	free(output_buffer);       /* though, it not necessarily has
-				      been allocated by the remote station */
-	output_buffer = NULL;
+       free(output_buffer);       /* though, it not necessarily has
+                                  been allocated by the remote station */
+       output_buffer = NULL;
     }
 
     if (remote_socket >= 0)
-	close(remote_socket);
+       close(remote_socket);
 }
 
 /**
@@ -254,8 +254,8 @@ alloc_input_buffer(int size, int declared_size)
     ptr = malloc(size);
     if (ptr == NULL)
     {
-	fprintf(stderr, "alloc_input_buffer: malloc() failed\n");
-	exit(1);
+       fprintf(stderr, "alloc_input_buffer: malloc() failed\n");
+       exit(1);
     }
     total_input_buffer_length = size;
     declared_input_buffer_length = declared_size;
@@ -281,8 +281,8 @@ alloc_output_buffer(int size, int declared_size)
     ptr = malloc(size);
     if (ptr == NULL)
     {
-	fprintf(stderr, "alloc_output_buffer: malloc() failed\n");
-	exit(1);
+       fprintf(stderr, "alloc_output_buffer: malloc() failed\n");
+       exit(1);
     }
     total_output_buffer_length = size;
     declared_output_buffer_length = declared_size;
@@ -309,10 +309,10 @@ remote_presend_random()
 
     /* generate the number of initial random commands */
     initial_messages_no = MIN_INITIAL_MESSAGES + 
-	(int)(random() % (MAX_INITIAL_MESSAGES - MIN_INITIAL_MESSAGES + 1));
+       (int)(random() % (MAX_INITIAL_MESSAGES - MIN_INITIAL_MESSAGES + 1));
 
     DEBUG("\t\t\tremote_presend_random: sending %d initial random messages\n",
-	  initial_messages_no);
+         initial_messages_no);
 
     /* 
      * post the semaphore so that the local station now can
@@ -320,103 +320,103 @@ remote_presend_random()
      */
     if (sem_post(&random_number_semaphore) < 0)
     {
-	char err_buf[BUFSIZ];
+       char err_buf[BUFSIZ];
 
-	strerror_r(errno, err_buf, sizeof(err_buf));
-	fprintf(stderr, "\t\t\tremote_presend_random: can't sem_post(): %s\n",
-		err_buf);
-	exit(1);
+       strerror_r(errno, err_buf, sizeof(err_buf));
+       fprintf(stderr, "\t\t\tremote_presend_random: can't sem_post(): %s\n",
+              err_buf);
+       exit(1);
     }
 
     /* allocate a special temporary buffer */
     random_output_buffer = malloc(MAX_RANDOM_COMMAND_SIZE + 
-				  MAX_RANDOM_ATTACHMENT_SIZE);
+                              MAX_RANDOM_ATTACHMENT_SIZE);
     if (random_output_buffer == NULL)
     {
-	fprintf(stderr, "\t\t\tremote_presend_random: can't malloc()\n");
-	exit(1);
+       fprintf(stderr, "\t\t\tremote_presend_random: can't malloc()\n");
+       exit(1);
     }
 
     /* cycle over all initial messages */
     for (i = 0; i < initial_messages_no; i++)
     {
-	char *buf_ptr;
+       char *buf_ptr;
 
-	/* 
-	 * Now we generate the size of the command and the size
-	 * of the attachment 
-	 */
-	cmd_size = MIN_RANDOM_COMMAND_SIZE + 
-	    (int)(random() % (MAX_RANDOM_COMMAND_SIZE - 
-			      MIN_RANDOM_COMMAND_SIZE + 1));
-	
-	/* Now throw the dice if we should omit the attachment */
-	do_generate_attachment = 
-	    (random() % OMIT_ATTACHMENT_FREQUENCY != 0);
-	
-	if (do_generate_attachment)
-	{
-	    /* Generate the size of the attachment */
-	    attach_size = (int)(random() % MAX_RANDOM_ATTACHMENT_SIZE) + 1;
-	}
-	else
-	{
-	    attach_size = 0;
-	}
+       /* 
+        * Now we generate the size of the command and the size
+        * of the attachment 
+        */
+       cmd_size = MIN_RANDOM_COMMAND_SIZE + 
+           (int)(random() % (MAX_RANDOM_COMMAND_SIZE - 
+                           MIN_RANDOM_COMMAND_SIZE + 1));
+       
+       /* Now throw the dice if we should omit the attachment */
+       do_generate_attachment = 
+           (random() % OMIT_ATTACHMENT_FREQUENCY != 0);
+       
+       if (do_generate_attachment)
+       {
+           /* Generate the size of the attachment */
+           attach_size = (int)(random() % MAX_RANDOM_ATTACHMENT_SIZE) + 1;
+       }
+       else
+       {
+           attach_size = 0;
+       }
 
-	/* ok, now generate the message itself */
-	generate_command(random_output_buffer, cmd_size, attach_size);
+       /* ok, now generate the message itself */
+       generate_command(random_output_buffer, cmd_size, attach_size);
 
 #if 0
-	DEBUG("\t\t\tremote_presend_random: generated a command of size %d, "
-	      "attachment = %d\n", cmd_size, attach_size);
-	DEBUG("\t\t\tThe command is:\n");
-	random_output_buffer[cmd_size + attach_size - 1] = '\0';
-	DEBUG("\t\t\t%s\n", random_output_buffer);
+       DEBUG("\t\t\tremote_presend_random: generated a command of size %d, "
+             "attachment = %d\n", cmd_size, attach_size);
+       DEBUG("\t\t\tThe command is:\n");
+       random_output_buffer[cmd_size + attach_size - 1] = '\0';
+       DEBUG("\t\t\t%s\n", random_output_buffer);
 #endif
 
-	declared_output_buffer_length = cmd_size + attach_size;
+       declared_output_buffer_length = cmd_size + attach_size;
 
-	/* now transmit it over the net */
-	cmd_size += attach_size;   /* total size now */
-	buf_ptr   = random_output_buffer;
-	do {
-	    int sent;
+       /* now transmit it over the net */
+       cmd_size += attach_size;   /* total size now */
+       buf_ptr   = random_output_buffer;
+       do {
+           int sent;
 
-	    sent = write(remote_socket, buf_ptr, cmd_size);
-	    if (sent < 0)
-	    {
-		char err_buf[BUFSIZ];
-		
-		strerror_r(errno, err_buf, sizeof(err_buf));
-		fprintf(stderr, 
-			"\t\t\tremote_presend_random: "
-			"can't write() to socket: %s\n",
-			err_buf);
-		return 1;  /* we consider any network failures as 
-			      agent's unwillingness to obey our commands,
-			      i.e. subordination violation */
-	    }
-	    cmd_size -= sent;
-	    buf_ptr  += sent;
-	} while(cmd_size > 0);
+           sent = write(remote_socket, buf_ptr, cmd_size);
+           if (sent < 0)
+           {
+              char err_buf[BUFSIZ];
+              
+              strerror_r(errno, err_buf, sizeof(err_buf));
+              fprintf(stderr, 
+                     "\t\t\tremote_presend_random: "
+                     "can't write() to socket: %s\n",
+                     err_buf);
+              return 1;  /* we consider any network failures as 
+                           agent's unwillingness to obey our commands,
+                           i.e. subordination violation */
+           }
+           cmd_size -= sent;
+           buf_ptr  += sent;
+       } while(cmd_size > 0);
 
-	/* now wait while the local station reads and checks the message */
-	if (sem_wait(&random_messages_semaphore) < 0)
-	{
-	    char err_buf[BUFSIZ];
+       /* now wait while the local station reads and checks the message */
+       if (sem_wait(&random_messages_semaphore) < 0)
+       {
+           char err_buf[BUFSIZ];
 
-	    strerror_r(errno, err_buf, sizeof(err_buf));
-	    fprintf(stderr, 
-		    "\t\t\tremote_presend_random: can't sem_wait(): %s\n",
-		    err_buf);
-	    exit(1);
-	}
+           strerror_r(errno, err_buf, sizeof(err_buf));
+           fprintf(stderr, 
+                  "\t\t\tremote_presend_random: can't sem_wait(): %s\n",
+                  err_buf);
+           exit(1);
+       }
 
-	if (!CHECK_PROCEED())
-	{
-	    return 1;  /* consistency check failed on the other side */
-	}
+       if (!CHECK_PROCEED())
+       {
+           return 1;  /* consistency check failed on the other side */
+       }
     } /* for all initial messages */
 
     /* now free the initial buffer */
@@ -443,84 +443,84 @@ local_receive_random()
     DEBUG("local_receive_random: waiting on the number's semaphore..\n");
     if (sem_wait(&random_number_semaphore) < 0)
     {
-	char err_buf[BUFSIZ];
+       char err_buf[BUFSIZ];
 
-	strerror_r(errno, err_buf, sizeof(err_buf));
-	fprintf(stderr, "local_receive_random: can't sem_wait(): %s\n",
-		err_buf);
-	exit(1);
+       strerror_r(errno, err_buf, sizeof(err_buf));
+       fprintf(stderr, "local_receive_random: can't sem_wait(): %s\n",
+              err_buf);
+       exit(1);
     }
     DEBUG("local_receive_random: number's semaphore is up\n");
 
     /* now obtain the number of messages */
     if ((num_messages = initial_messages_no) < 0)
     {
-	fprintf(stderr, "local_receive_random: couldn't obtain the number "
-		"of initial messages\n");
-	exit(2);
+       fprintf(stderr, "local_receive_random: couldn't obtain the number "
+              "of initial messages\n");
+       exit(2);
     }
 
     /* allocate a special temporary buffer */
     random_input_buffer = malloc(MAX_RANDOM_COMMAND_SIZE + 
-				 MAX_RANDOM_ATTACHMENT_SIZE);
+                             MAX_RANDOM_ATTACHMENT_SIZE);
     if (random_input_buffer == NULL)
     {
-	fprintf(stderr, "local_receive_random: can't malloc()\n");
-	exit(1);
+       fprintf(stderr, "local_receive_random: can't malloc()\n");
+       exit(1);
     }
 
     DEBUG("local_receive_random: receiving %d initial random messages\n",
-	  num_messages);
+         num_messages);
     for (i = 0; i < num_messages; i++)
     {
-	declared_input_buffer_length = MAX_RANDOM_COMMAND_SIZE + 
- 	                               MAX_RANDOM_ATTACHMENT_SIZE;
-	/* now obtain the whole message; the input buffer MUST be enough */
-	rc = rcf_comm_agent_wait(handle, random_input_buffer, 
-				 &declared_input_buffer_length, NULL);
-	if (rc != 0)
-	{
-	    fprintf(stderr, "local_receive_random: rcf_comm_agent_wait() "
-		    "failed(%d)\n", rc);
-	    FAIL_PROCEED();
-	    return 1;
-	}
+       declared_input_buffer_length = MAX_RANDOM_COMMAND_SIZE + 
+                                       MAX_RANDOM_ATTACHMENT_SIZE;
+       /* now obtain the whole message; the input buffer MUST be enough */
+       rc = rcf_comm_agent_wait(handle, random_input_buffer, 
+                             &declared_input_buffer_length, NULL);
+       if (rc != 0)
+       {
+           fprintf(stderr, "local_receive_random: rcf_comm_agent_wait() "
+                  "failed(%d)\n", rc);
+           FAIL_PROCEED();
+           return 1;
+       }
 
 #if 0
-	DEBUG("local_receive_random: received a buffer of length %d\n",
-	      declared_input_buffer_length);
-	DEBUG("The buffer is:\n");
-	DEBUG("%s\n", random_input_buffer);
-	DEBUG("End of buffer\n");
+       DEBUG("local_receive_random: received a buffer of length %d\n",
+             declared_input_buffer_length);
+       DEBUG("The buffer is:\n");
+       DEBUG("%s\n", random_input_buffer);
+       DEBUG("End of buffer\n");
 #endif
 
-	ZERO_ADJUST_INPUT_BUFFER(random_input_buffer, 
-				 declared_input_buffer_length);
+       ZERO_ADJUST_INPUT_BUFFER(random_input_buffer, 
+                             declared_input_buffer_length);
 
-	/* check the obtained buffer */
-	if (compare_buffers(random_input_buffer, 
-			    declared_input_buffer_length,
-			    random_output_buffer, 
-			    declared_output_buffer_length) != 0)
-	{
-	    fprintf(stderr, "local_receive_random: buffers don't match\n");
-	    FAIL_PROCEED();
-	    return 1;
-	}
+       /* check the obtained buffer */
+       if (compare_buffers(random_input_buffer, 
+                         declared_input_buffer_length,
+                         random_output_buffer, 
+                         declared_output_buffer_length) != 0)
+       {
+           fprintf(stderr, "local_receive_random: buffers don't match\n");
+           FAIL_PROCEED();
+           return 1;
+       }
 
-	/* 
-	 * post the semaphore to let the other side know it can now 
-	 * send the next message
-	 */
-	if (sem_post(&random_messages_semaphore) < 0)
-	{
-	    char err_buf[BUFSIZ];
-	    
-	    strerror_r(errno, err_buf, sizeof(err_buf));
-	    fprintf(stderr, 
-		    "local_receive_random: can't sem_post(): %s\n", err_buf);
-	    exit(1);
-	}
+       /* 
+        * post the semaphore to let the other side know it can now 
+        * send the next message
+        */
+       if (sem_post(&random_messages_semaphore) < 0)
+       {
+           char err_buf[BUFSIZ];
+           
+           strerror_r(errno, err_buf, sizeof(err_buf));
+           fprintf(stderr, 
+                  "local_receive_random: can't sem_post(): %s\n", err_buf);
+           exit(1);
+       }
     } /* for (all messages) */
 
     /* now free the initial buffer */
@@ -542,21 +542,21 @@ remote_transfer_buffer(void)
     int   size = declared_output_buffer_length;
     
     do {
-	int sent;
-	
-	sent = write(remote_socket, p, size);
-	
-	if (sent < 0)
-	{
-	    char err_buf[BUFSIZ];
-	    
-	    strerror_r(errno, err_buf, sizeof(err_buf));
-	    fprintf(stderr, 
-		    "\t\t\tremote_transfer_buffer: "
-		    "can't write() to socket: %s\n", err_buf);
-	    exit(1);
-	}
-	size -= sent;
-	p    += sent;
+       int sent;
+       
+       sent = write(remote_socket, p, size);
+       
+       if (sent < 0)
+       {
+           char err_buf[BUFSIZ];
+           
+           strerror_r(errno, err_buf, sizeof(err_buf));
+           fprintf(stderr, 
+                  "\t\t\tremote_transfer_buffer: "
+                  "can't write() to socket: %s\n", err_buf);
+           exit(1);
+       }
+       size -= sent;
+       p    += sent;
     } while(size > 0);
 }

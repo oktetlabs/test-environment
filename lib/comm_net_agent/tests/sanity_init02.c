@@ -66,7 +66,7 @@ remote_station_proc(void *arg)
      * Now the local station does its actions
      */
     fprintf(stderr, "\t\t\tremote_station_proc: sleeping %d seconds...\n",
-	    LOCAL_STATION_MAXIMAL_TIMEOUT);
+           LOCAL_STATION_MAXIMAL_TIMEOUT);
 #if (HAVE_NANOSLEEP == 1)
     {
         struct timespec t;
@@ -89,7 +89,7 @@ remote_station_proc(void *arg)
 
     /* we should not have reached here */
     fprintf(stderr, "ERROR: the call of rcf_comm_agent_init(ILLEGAL, "
-	    "p_rcc) succeeded while it shouldn't have to\n");
+           "p_rcc) succeeded while it shouldn't have to\n");
     exit(3);
 }
 
@@ -105,7 +105,7 @@ local_station_proc(void *arg)
     int    rc;
     char   buffer[BUFSIZ];
     struct rcf_comm_connection 
-	  *my_handle;
+         *my_handle;
 
     DEBUG("Local Station Thread started\n");
 
@@ -116,9 +116,9 @@ local_station_proc(void *arg)
     strcpy(buffer, INVALID_PORT_NO);
     if ((rc = rcf_comm_agent_init(buffer, &my_handle)) == 0)
     {
-	fprintf(stderr, "ERROR: the call of rcf_comm_agent_init(ILLEGAL, "
-		"p_rcc) succeeded while it shouldn't have to\n");
-	exit(3);
+       fprintf(stderr, "ERROR: the call of rcf_comm_agent_init(ILLEGAL, "
+              "p_rcc) succeeded while it shouldn't have to\n");
+       exit(3);
     }
 
     /* synchronize at this point */
@@ -152,14 +152,14 @@ main(int argc, char *argv[])
 
     /* launch the remote station thread */
     rc = pthread_create(&remote_thread, /* attr */ NULL, 
-			remote_station_proc, /* arg */ NULL);
+                     remote_station_proc, /* arg */ NULL);
     if (rc != 0)
-    {	    
-	char err_buf[BUFSIZ];
+    {           
+       char err_buf[BUFSIZ];
 
-	strerror_r(errno, err_buf, sizeof(err_buf));
-	fprintf(stderr, "main: pthread_create() failed: %s\n", err_buf);
-	exit(1);
+       strerror_r(errno, err_buf, sizeof(err_buf));
+       fprintf(stderr, "main: pthread_create() failed: %s\n", err_buf);
+       exit(1);
     }
 
     /* launch the local station in the current thread */

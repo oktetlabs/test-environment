@@ -74,36 +74,36 @@ generate_command(char *buffer, int cmd_size, int attachment_size)
     char         buf[BUFSIZ];
     int          att_str_len, len;
     static const char  letters[] = "abcdefghijklmnopqrstuvwxyz"
-	                           "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-	                           "0123456789_/ ";
+                                  "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                                  "0123456789_/ ";
     char        *end_ptr, *p;
 
     if (attachment_size != 0 && cmd_size < 20)
     {
-	fprintf(stderr, "generate_command: cmd_size %d too small\n", cmd_size);
-	exit(2);
+       fprintf(stderr, "generate_command: cmd_size %d too small\n", cmd_size);
+       exit(2);
     }
 
     /* compute the size of the ' attach <size>' string */
     if (attachment_size != 0)
     {
-	sprintf(buf, " attach %d", attachment_size);
-	att_str_len = strlen(buf);
+       sprintf(buf, " attach %d", attachment_size);
+       att_str_len = strlen(buf);
     }
     else
     {
-	att_str_len = 0;
+       att_str_len = 0;
     }
 
     /* randomly fill the command */
     len = cmd_size - att_str_len - 1; /* don't forget the separator */
     end_ptr = buffer + len;
     for (p = buffer; p < end_ptr; p++)
-	*p = letters[(int)(random() % (sizeof(letters) - 1))];
+       *p = letters[(int)(random() % (sizeof(letters) - 1))];
 
     /* now put the 'attach' string */
     if (attachment_size != 0)
-	strcpy(end_ptr, buf);   
+       strcpy(end_ptr, buf);   
     end_ptr += att_str_len;
 
     /* XXXX: here the actual separator must be set */
@@ -112,16 +112,16 @@ generate_command(char *buffer, int cmd_size, int attachment_size)
     /* now generate the binary attachment */
     if (attachment_size != 0)
     {
-	p = end_ptr;
-	end_ptr += attachment_size;
+       p = end_ptr;
+       end_ptr += attachment_size;
 
-	while (p < end_ptr)
-	{
-	    *p = (char)(((unsigned long int)(random())) % 0x100);
+       while (p < end_ptr)
+       {
+           *p = (char)(((unsigned long int)(random())) % 0x100);
 #if 0
-	    *p = 'A';
+           *p = 'A';
 #endif
-	    p++;
-	}
+           p++;
+       }
     }
 }

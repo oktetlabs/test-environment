@@ -82,7 +82,7 @@ typedef struct csap_instance *csap_p;
  *     if error occured. User have to free memory at returned pointer.
  */ 
 typedef char* (*csap_get_param_cb_t) 
-	(csap_p csap_descr, int level, const char *param);
+       (csap_p csap_descr, int level, const char *param);
 
 /**
  * Type for reference to callback for prepare/release low-level resources 
@@ -136,8 +136,8 @@ typedef int (*csap_write_cb_t) (csap_p csap_descr, char *buf, int buf_len);
  *      quantity of read octets, or -1 if error occured, 0 if timeout expired. 
  */ 
 typedef int (*csap_write_read_cb_t) (csap_p csap_descr, int timeout,
-			char *w_buf, int w_buf_len,
-			char *r_buf, int r_buf_len);
+                     char *w_buf, int w_buf_len,
+                     char *r_buf, int r_buf_len);
 
 /**
  * Type for reference to callback for check sequence of PDUs in template
@@ -228,7 +228,7 @@ typedef struct csap_instance
 
     csap_get_param_cb_t 
                 * get_param_cb;   /**< array of pointers to callbacks for 
-		  	               get CSAP parameters */
+                                      get CSAP parameters */
 
     csap_read_cb_t       read_cb;       /**< read data from CSAP media */
     csap_write_cb_t      write_cb;      /**< write data to CSAP media */ 
@@ -597,11 +597,11 @@ typedef struct csap_layer_neighbour_list_t * csap_layer_neighbour_list_p;
 typedef struct csap_layer_neighbour_list_t
 {
     char * nbr_type; /**< symbolic identifier of neighvour. 
-		May have such values: 
-		NULL    - this means that layer which neighbours are listed 
+              May have such values: 
+              NULL    - this means that layer which neighbours are listed 
                           is single in stack;
-		"data"  - for data-CSAPs;
-		id of lower neighbour level. */
+              "data"  - for data-CSAPs;
+              id of lower neighbour level. */
     csap_layer_neighbour_list_p next; /**< pointer to the next possible
                                            neighbour*/
 

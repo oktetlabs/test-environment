@@ -93,9 +93,9 @@ local_station_proc(void *arg)
     /* now call the rcf_comm_agent_close() function two times */
     if ((rc = rcf_comm_agent_close(NULL)) == 0)
     {
-	fprintf(stderr, "ERROR: the call of rcf_comm_agent_close(NULL) "
-		"succeeded while it shouldn't have to\n");
-	exit(3);
+       fprintf(stderr, "ERROR: the call of rcf_comm_agent_close(NULL) "
+              "succeeded while it shouldn't have to\n");
+       exit(3);
     }
 
     /* 
@@ -104,14 +104,14 @@ local_station_proc(void *arg)
      */
 #if 0
     {
-	struct rcf_comm_connection *illegal_pointer = &local_station_proc;
+       struct rcf_comm_connection *illegal_pointer = &local_station_proc;
 
-	if ((rc = rcf_comm_agent_close(&illegal_pointer)) == 0)
-	{
-	    fprintf(stderr, "ERROR: the call of rcf_comm_agent_close(ILLEGAL) "
-		    "succeeded while it shouldn't have to\n");
-	    exit(3);
-	}
+       if ((rc = rcf_comm_agent_close(&illegal_pointer)) == 0)
+       {
+           fprintf(stderr, "ERROR: the call of rcf_comm_agent_close(ILLEGAL) "
+                  "succeeded while it shouldn't have to\n");
+           exit(3);
+       }
     }
 #endif
 
@@ -150,14 +150,14 @@ main(int argc, char *argv[])
 
     /* launch the remote station thread */
     rc = pthread_create(&remote_thread, /* attr */ NULL, 
-			remote_station_proc, /* arg */ NULL);
+                     remote_station_proc, /* arg */ NULL);
     if (rc != 0)
-    {	    
-	char err_buf[BUFSIZ];
+    {           
+       char err_buf[BUFSIZ];
 
-	strerror_r(errno, err_buf, sizeof(err_buf));
-	fprintf(stderr, "main: pthread_create() failed: %s\n", err_buf);
-	exit(1);
+       strerror_r(errno, err_buf, sizeof(err_buf));
+       fprintf(stderr, "main: pthread_create() failed: %s\n", err_buf);
+       exit(1);
     }
 
     /* launch the local station in the current thread */

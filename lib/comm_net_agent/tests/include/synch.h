@@ -45,9 +45,9 @@ extern "C" {
  * Any thread which has discovered that the variable has the value of 
  * zero, must interrupt its execution.
  */
-#define FAIL_PROCEED()				\
-do {						\
-    proceed = 0;				\
+#define FAIL_PROCEED()                            \
+do {                                          \
+    proceed = 0;                            \
 } while (0);
 
 /* 
@@ -65,9 +65,9 @@ extern int proceed;
 #define SYNCH_AGENT_CONNECTION_READY 5
 
 extern int local_synch_point;  /* point at which the local station is waiting
-				  for synchronization */
+                              for synchronization */
 extern int remote_synch_point; /* point at which the remote station is waiting
-				  for synchronization */
+                              for synchronization */
 
 /* 
  * This semaphore allows the local station to access the initial_messages_no

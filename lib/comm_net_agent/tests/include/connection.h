@@ -61,12 +61,12 @@ extern int remote_socket;
 extern char *input_buffer;         /* Input buffer for messages */
 extern int   total_input_buffer_length;  /* Size of the buffer as allocated */
 extern int   declared_input_buffer_length;  /* Size of the data on the buffer,
-					     * as in the customs declaration */
+                                        * as in the customs declaration */
 
 extern char *output_buffer;        /* Output buffer for messages */
 extern int   total_output_buffer_length; /* Size of the buffer as allocated */
 extern int   declared_output_buffer_length; /* Size of the data on the buffer,
-				             * as in the customs declaration */
+                                         * as in the customs declaration */
 
 /**
  * Initializes the agent side connection.

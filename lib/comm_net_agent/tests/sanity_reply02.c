@@ -80,7 +80,7 @@ local_station_proc(void *arg)
     int    rc;
     char   buffer[BUFSIZ];
     struct rcf_comm_connection *my_handle = 
-	(struct rcf_comm_connection *)&local_station_proc; /* illegal handle */
+       (struct rcf_comm_connection *)&local_station_proc; /* illegal handle */
 
     DEBUG("Local Station Thread started\n");
 
@@ -95,10 +95,10 @@ local_station_proc(void *arg)
     buffer[sizeof(buffer) - 1] = '\0';
     if ((rc = rcf_comm_agent_reply(my_handle, buffer, sizeof(buffer))) == 0)
     {
-	fprintf(stderr, "ERROR: the call of "
-		"rcf_comm_agent_reply (ILLEGAL, buffer, len) "
-		"succeeded while it shouldn't have to\n");
-	exit(3);
+       fprintf(stderr, "ERROR: the call of "
+              "rcf_comm_agent_reply (ILLEGAL, buffer, len) "
+              "succeeded while it shouldn't have to\n");
+       exit(3);
     }
 
     /* synchronize at this point */
@@ -135,14 +135,14 @@ main(int argc, char *argv[])
 
     /* launch the remote station thread */
     rc = pthread_create(&remote_thread, /* attr */ NULL, 
-			remote_station_proc, /* arg */ NULL);
+                     remote_station_proc, /* arg */ NULL);
     if (rc != 0)
-    {	    
-	char err_buf[BUFSIZ];
+    {           
+       char err_buf[BUFSIZ];
 
-	strerror_r(errno, err_buf, sizeof(err_buf));
-	fprintf(stderr, "main: pthread_create() failed: %s\n", err_buf);
-	exit(1);
+       strerror_r(errno, err_buf, sizeof(err_buf));
+       fprintf(stderr, "main: pthread_create() failed: %s\n", err_buf);
+       exit(1);
     }
 
     /* launch the local station in the current thread */

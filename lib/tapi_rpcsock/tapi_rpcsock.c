@@ -1003,16 +1003,16 @@ rpc_accept_ex(rcf_rpc_server *handle, int s, int s_a,
          handle->ta, handle->name, rpcop2str(op), 
          s, s_a, len,
          out.retval ? "true" : "false", errno_rpc2str(RPC_ERRNO(handle)),
-	 win_error_rpc2str(out.common.win_error),
-	 (bytes_received == NULL) ? (size_t)-1 : *bytes_received);
+         win_error_rpc2str(out.common.win_error),
+         (bytes_received == NULL) ? (size_t)-1 : *bytes_received);
     RETVAL_VAL(out.retval, accept_ex);
 }
 
 void
 rpc_get_accept_addr(rcf_rpc_server *handle,
                     int s, void *buf, size_t buflen, size_t len,
-	            struct sockaddr *laddr,
-	            struct sockaddr *raddr)
+                    struct sockaddr *laddr,
+                    struct sockaddr *raddr)
 {
     tarpc_get_accept_addr_in  in;
     tarpc_get_accept_addr_out out;
@@ -1066,11 +1066,11 @@ rpc_get_accept_addr(rcf_rpc_server *handle,
     RING("RPC (%s,%s): get_accept_addr(%d, ...) -> (%s %s) laddr=%s raddr=%s", 
          handle->ta, handle->name, 
          s, errno_rpc2str(RPC_ERRNO(handle)),
-	 win_error_rpc2str(out.common.win_error),
+         win_error_rpc2str(out.common.win_error),
          ((out.laddr.sa_data.sa_data_val == NULL) || (laddr == NULL)) ?
-	 "NULL" : sockaddr2str(laddr),
+         "NULL" : sockaddr2str(laddr),
          ((out.raddr.sa_data.sa_data_val == NULL) || (raddr == NULL)) ?
-	 "NULL" : sockaddr2str(raddr));
+         "NULL" : sockaddr2str(raddr));
     RETVAL_VOID(get_accept_addr);
 }
 
@@ -1327,9 +1327,9 @@ rpc_wsa_recv_ex(rcf_rpc_server *handle,
     {
         if (buf != NULL && out.buf.buf_val != NULL)
             memcpy(buf, out.buf.buf_val, out.buf.buf_len);
-	    
-	if (flags != NULL && out.flags.flags_val != NULL)
-	    *flags = out.flags.flags_val[0];
+            
+        if (flags != NULL && out.flags.flags_val != NULL)
+            *flags = out.flags.flags_val[0];
     }
 
     RING("RPC (%s,%s)%s: WSARecvEx(%d, %p[%u], %x (%u->%u), %s) -> %d (%s %s)",
@@ -1338,7 +1338,7 @@ rpc_wsa_recv_ex(rcf_rpc_server *handle,
          flags, send_recv_flags_rpc2str(in_flags), 
          send_recv_flags_rpc2str(flags == NULL ? 0 : *flags),
          out.retval, errno_rpc2str(RPC_ERRNO(handle)),
-	 win_error_rpc2str(out.common.win_error));
+         win_error_rpc2str(out.common.win_error));
 
     RETVAL_VAL(out.retval, wsa_recv_ex);
 }                
@@ -2374,7 +2374,7 @@ rpc_select(rcf_rpc_server *handle,
 
 int
 rpc_fcntl(rcf_rpc_server *handle, int fd, 
-	    int cmd, int arg)
+            int cmd, int arg)
 {
     tarpc_fcntl_in  in;
     tarpc_fcntl_out out;
@@ -2382,8 +2382,8 @@ rpc_fcntl(rcf_rpc_server *handle, int fd,
     
     if (handle == NULL)
     {
-	ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-	return -1;
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        return -1;
     }
 
     op = handle->op;
@@ -2396,14 +2396,14 @@ rpc_fcntl(rcf_rpc_server *handle, int fd,
     in.arg = arg;
     
     rcf_rpc_call(handle, _fcntl, &in, (xdrproc_t)xdr_tarpc_fcntl_in,
-		 &out, (xdrproc_t)xdr_tarpc_fcntl_out);
+                 &out, (xdrproc_t)xdr_tarpc_fcntl_out);
 
     RING("RPC (%s,%s)%s: fcntl(%d, %s, %d) -> %d (%s)",
          handle->ta, handle->name, rpcop2str(op),
          fd, fcntl_rpc2str(cmd), 
-	 arg, out.retval, errno_rpc2str(RPC_ERRNO(handle)));
+         arg, out.retval, errno_rpc2str(RPC_ERRNO(handle)));
     
-    RETVAL_VAL(out.retval, fcntl);		
+    RETVAL_VAL(out.retval, fcntl);                
 }
 
 
@@ -5760,11 +5760,11 @@ rpc_wsa_send(rcf_rpc_server *handle,
     RING("RPC (%s,%s)%s: wsa_send() -> %d (%s)",
          handle->ta, handle->name, rpcop2str(op), out.retval,
          errno_rpc2str(RPC_ERRNO(handle)));
-	 
+         
     if (RPC_CALL_OK)
     {
-	if (bytes_sent != NULL && out.bytes_sent.bytes_sent_val != NULL)
-	    *bytes_sent = out.bytes_sent.bytes_sent_val[0];
+        if (bytes_sent != NULL && out.bytes_sent.bytes_sent_val != NULL)
+            *bytes_sent = out.bytes_sent.bytes_sent_val[0];
     }
 
     RETVAL_RC(wsa_send);
@@ -5856,19 +5856,19 @@ rpc_wsa_recv(rcf_rpc_server *handle,
                        iov[i].iov_rlen);
             }
         }
-	if (bytes_received != NULL && 
-	    out.bytes_received.bytes_received_val != NULL)
-	{
-	    *bytes_received = out.bytes_received.bytes_received_val[0];
-	}
-	if (flags != NULL && out.flags.flags_val != NULL)
-	    *flags = out.flags.flags_val[0];
+        if (bytes_received != NULL && 
+            out.bytes_received.bytes_received_val != NULL)
+        {
+            *bytes_received = out.bytes_received.bytes_received_val[0];
+        }
+        if (flags != NULL && out.flags.flags_val != NULL)
+            *flags = out.flags.flags_val[0];
     }
 
     RING("RPC (%s,%s)%s: wsa_recv() -> %d (%s %s)",
          handle->ta, handle->name, rpcop2str(op),
          out.retval, errno_rpc2str(RPC_ERRNO(handle)),
-	 win_error_rpc2str(out.common.win_error));
+         win_error_rpc2str(out.common.win_error));
 
     RETVAL_RC(wsa_recv);
 }
@@ -5878,7 +5878,7 @@ rpc_get_overlapped_result(rcf_rpc_server *handle,
                           int s, rpc_overlapped overlapped,
                           int *bytes, te_bool wait,
                           rpc_send_recv_flags *flags,
-			  char *buf, int buflen)
+                          char *buf, int buflen)
 {
     rcf_rpc_op op;
 
@@ -5917,33 +5917,33 @@ rpc_get_overlapped_result(rcf_rpc_server *handle,
     if (out.retval)
     {
         int filled = 0;
-	int i;
-	
-	for (i = 0; i < (int)out.vector.vector_len; i++)
-	{
-	    int copy_len = 
-	        buflen - filled < (int)out.vector.vector_val[i].iov_len ?
-	        buflen - filled : (int)out.vector.vector_val[i].iov_len;
-	    
-	    memcpy(buf + filled, 
-	           out.vector.vector_val[i].iov_base.iov_base_val, copy_len);
+        int i;
+        
+        for (i = 0; i < (int)out.vector.vector_len; i++)
+        {
+            int copy_len = 
+                buflen - filled < (int)out.vector.vector_val[i].iov_len ?
+                buflen - filled : (int)out.vector.vector_val[i].iov_len;
+            
+            memcpy(buf + filled, 
+                   out.vector.vector_val[i].iov_base.iov_base_val, copy_len);
             filled += copy_len;
-	}
-    } 	
+        }
+    }         
     if (RPC_CALL_OK)
     {
-	if (bytes != NULL && out.bytes.bytes_val != NULL)
-	    *bytes = out.bytes.bytes_val[0];
-	    
-	if (flags != NULL && out.flags.flags_val != NULL)
-	    *flags = out.flags.flags_val[0];
+        if (bytes != NULL && out.bytes.bytes_val != NULL)
+            *bytes = out.bytes.bytes_val[0];
+            
+        if (flags != NULL && out.flags.flags_val != NULL)
+            *flags = out.flags.flags_val[0];
     }
     RING("RPC (%s,%s)%s: get_overlapped_result(%d, %p, ...) -> %s (%s %s) "
          "bytes transferred %u",
          handle->ta, handle->name, rpcop2str(op), s, overlapped,
          out.retval ? "true" : "false", errno_rpc2str(RPC_ERRNO(handle)),
-	 win_error_rpc2str(out.common.win_error),
-	 (bytes != NULL && out.bytes.bytes_val != NULL) ? *bytes : (size_t)-1);
+         win_error_rpc2str(out.common.win_error),
+         (bytes != NULL && out.bytes.bytes_val != NULL) ? *bytes : (size_t)-1);
 
     RETVAL_VAL(out.retval, get_overlapped_result);
 }
@@ -6070,7 +6070,7 @@ rpc_wait_multiple_events(rcf_rpc_server *handle,
          count, events, wait_all ? "true" : "false", timeout,
          alertable ? "true" : "false", wsa_wait_rpc2str(out.retval),
          errno_rpc2str(RPC_ERRNO(handle)), 
-	 win_error_rpc2str(out.common.win_error));
+         win_error_rpc2str(out.common.win_error));
 
     RETVAL_VAL(out.retval, wait_multiple_events);
 }

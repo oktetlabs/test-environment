@@ -70,7 +70,7 @@ enum test_status {
     do {                         \
         VERB(_x); \
         test_state = TEST_FAIL;  \
-	goto test_stop;          \
+       goto test_stop;          \
     } while (0)
 
 #define TEST_START \

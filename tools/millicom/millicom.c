@@ -171,14 +171,14 @@ main(int argc, char *argv[])
     DBG(print_attr(&tty));
 
     /* Modify TTY attributes (stealed from minicom sources) */
-  	tty.c_iflag &= ~(IGNCR | INLCR | ICRNL | IUCLC | IXANY | IXON |
+    tty.c_iflag &= ~(IGNCR | INLCR | ICRNL | IUCLC | IXANY | IXON |
                      IXOFF | INPCK | ISTRIP | BRKINT | IGNPAR);
-  	tty.c_iflag |= (IGNBRK);
-	tty.c_oflag &= ~OPOST;
-  	tty.c_cflag |= (CREAD | CLOCAL | HUPCL | CRTSCTS);
-	tty.c_lflag &= ~(XCASE | ECHONL | NOFLSH | ICANON | ISIG | ECHO);
-  	tty.c_cc[VTIME] = 5;
-  	tty.c_cc[VMIN] = 1;
+    tty.c_iflag |= (IGNBRK);
+    tty.c_oflag &= ~OPOST;
+    tty.c_cflag |= (CREAD | CLOCAL | HUPCL | CRTSCTS);
+    tty.c_lflag &= ~(XCASE | ECHONL | NOFLSH | ICANON | ISIG | ECHO);
+    tty.c_cc[VTIME] = 5;
+    tty.c_cc[VMIN] = 1;
 
     /* Set input baud rate the same as output */
     cfsetispeed(&tty, B0);

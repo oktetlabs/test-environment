@@ -40,21 +40,21 @@ extern "C" {
  *
  * @return n/a
  */
-#define VERIFY_BUFFERS()						    \
-    do {								    \
+#define VERIFY_BUFFERS()                                              \
+    do {                                                            \
         if (compare_buffers(input_buffer, declared_input_buffer_length,     \
-			    output_buffer, declared_output_buffer_length)   \
-	    != 0)							    \
-	{								    \
-	    fprintf(stderr, "ERROR: input (%d bytes) and output (%d bytes)" \
-		    " buffers are not equal\n", 			    \
-		    declared_input_buffer_length,			    \
-		    declared_output_buffer_length);			    \
-	    DEBUG("Here follows the input buffer:\n");			    \
-	    DEBUG("%s\n", output_buffer);				    \
-	    DEBUG("End of output buffer\n");				    \
-	    exit(3);							    \
-	}								    \
+                         output_buffer, declared_output_buffer_length)   \
+           != 0)                                                     \
+       {                                                            \
+           fprintf(stderr, "ERROR: input (%d bytes) and output (%d bytes)" \
+                  " buffers are not equal\n",                          \
+                  declared_input_buffer_length,                         \
+                  declared_output_buffer_length);                         \
+           DEBUG("Here follows the input buffer:\n");                         \
+           DEBUG("%s\n", output_buffer);                                \
+           DEBUG("End of output buffer\n");                                \
+           exit(3);                                                     \
+       }                                                            \
     } while (0)
 
 /**
@@ -63,18 +63,18 @@ extern "C" {
  *
  * @return n/a
  */
-#define PRINT_TEST_OK()						\
-    do {							\
-        char __x_buf[BUFSIZ], *__x_p;				\
-    								\
-	__x_p = strrchr(argv[0], '/');				\
-	if (__x_p == NULL)					\
-	    __x_p = argv[0];					\
-	else							\
-	    __x_p++;						\
-	strncpy(__x_buf, __x_p, sizeof(__x_buf) - 1);		\
-	__x_buf[sizeof(__x_buf) - 1] = '\0';			\
-	fprintf(stderr, "%s: TEST PASSED OK\n", __x_buf);	\
+#define PRINT_TEST_OK()                                          \
+    do {                                                 \
+        char __x_buf[BUFSIZ], *__x_p;                            \
+                                                            \
+       __x_p = strrchr(argv[0], '/');                            \
+       if (__x_p == NULL)                                   \
+           __x_p = argv[0];                                   \
+       else                                                 \
+           __x_p++;                                          \
+       strncpy(__x_buf, __x_p, sizeof(__x_buf) - 1);              \
+       __x_buf[sizeof(__x_buf) - 1] = '\0';                     \
+       fprintf(stderr, "%s: TEST PASSED OK\n", __x_buf);       \
     } while (0)
 
 /**
@@ -91,14 +91,14 @@ extern "C" {
  *
  * @return n/a
  */
-#define ZERO_ADJUST_INPUT_BUFFER(buf, size)			\
-    do {							\
-        int l = strlen(buf);					\
-								\
-	if (size > l + 1)  /* there is an attachment */		\
-	{							\
-	    buf[l] = ' ';   /* reset the '\0' with space */	\
-	}							\
+#define ZERO_ADJUST_INPUT_BUFFER(buf, size)                     \
+    do {                                                 \
+        int l = strlen(buf);                                   \
+                                                        \
+       if (size > l + 1)  /* there is an attachment */              \
+       {                                                 \
+           buf[l] = ' ';   /* reset the '\0' with space */       \
+       }                                                 \
     } while (0);
 
 #ifdef __cplusplus

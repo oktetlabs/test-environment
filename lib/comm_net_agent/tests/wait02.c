@@ -55,15 +55,15 @@
 /* The default declared size of the input buffer */
 #define DECLARED_BUFFER_LENGTH  TOTAL_BUFFER_LENGTH
 
-#define TEST_BUFFER_SANITY()						  \
-    do {								  \
-        if (MESSAGE_SIZE > TOTAL_BUFFER_LENGTH ||			  \
-	    MESSAGE_SIZE >= DECLARED_BUFFER_LENGTH)			  \
-        {								  \
-    	    fprintf(stderr,						  \
-		    "TESTS_BUFFER_SANITY: check sizes of the buffers\n"); \
-            exit(2);							  \
-        }								  \
+#define TEST_BUFFER_SANITY()                                            \
+    do {                                                          \
+        if (MESSAGE_SIZE > TOTAL_BUFFER_LENGTH ||                       \
+           MESSAGE_SIZE >= DECLARED_BUFFER_LENGTH)                       \
+        {                                                          \
+               fprintf(stderr,                                            \
+                  "TESTS_BUFFER_SANITY: check sizes of the buffers\n"); \
+            exit(2);                                                   \
+        }                                                          \
     } while (0)
 
 /* thread handle of the remote station thread */
@@ -94,11 +94,11 @@ remote_station_proc(void *arg)
     /* now generate a command */
     generate_command(output_buffer, COMMAND_SIZE, ATTACHMENT_SIZE);
     DEBUG("\t\t\tremote_station_proc: generated a message of %d bytes "
-	  "command and %d bytes attachment\n", COMMAND_SIZE, ATTACHMENT_SIZE);
+         "command and %d bytes attachment\n", COMMAND_SIZE, ATTACHMENT_SIZE);
     declared_output_buffer_length = MESSAGE_SIZE;
 #if 0
     DEBUG("\t\t\tremote_station_proc: generated a message of %d bytes\n",
-	  MESSAGE_SIZE);
+         MESSAGE_SIZE);
     DEBUG("\t\t\tHere follows the command:\n");
     DEBUG("\t\t\t%s\n", output_buffer);
     DEBUG("\t\t\tEnd of command\n");
@@ -146,9 +146,9 @@ local_station_proc(void *arg)
     rc = rcf_comm_agent_wait(handle, ptr, &len, NULL);
     if (rc != 0)
     {
-	fprintf(stderr, "ERROR: the call of rcf_comm_agent_wait() "
-		"returned %d instead of zero\n", rc);
-	exit(3);
+       fprintf(stderr, "ERROR: the call of rcf_comm_agent_wait() "
+              "returned %d instead of zero\n", rc);
+       exit(3);
     }
     declared_input_buffer_length = (ptr + len) - input_buffer;
 
@@ -191,14 +191,14 @@ main(int argc, char *argv[])
 
     /* launch the remote station thread */
     rc = pthread_create(&remote_thread, /* attr */ NULL, 
-			remote_station_proc, /* arg */ NULL);
+                     remote_station_proc, /* arg */ NULL);
     if (rc != 0)
-    {	    
-	char err_buf[BUFSIZ];
+    {           
+       char err_buf[BUFSIZ];
 
-	strerror_r(errno, err_buf, sizeof(err_buf));
-	fprintf(stderr, "main: pthread_create() failed: %s\n", err_buf);
-	exit(1);
+       strerror_r(errno, err_buf, sizeof(err_buf));
+       fprintf(stderr, "main: pthread_create() failed: %s\n", err_buf);
+       exit(1);
     }
 
     /* launch the local station in the current thread */

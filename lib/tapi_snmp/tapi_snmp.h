@@ -71,8 +71,8 @@ this length can be exceeded only for "string" table indixes. */
 #ifndef MAX_LABLE_LEN
 #define MAX_LABLE_LEN 50
 #endif
-	
-	
+       
+       
 /** SNMP Object Identifier */
 typedef struct {
     size_t length;
@@ -92,7 +92,7 @@ enum snmp_obj_type {
     ASN.1 codes. Not all possible codes are defined, only usually used 
     and supported in TAD SNMP module. */
 typedef enum tapi_snmp_vartypes_t {
-    TAPI_SNMP_OTHER     = 0,	
+    TAPI_SNMP_OTHER     = 0,       
     TAPI_SNMP_INTEGER   = ASN_INTEGER,  /**<    2 */
     TAPI_SNMP_OCTET_STR = ASN_OCTET_STR,/**<    4 */
     TAPI_SNMP_OBJECT_ID = ASN_OBJECT_ID,/**<    6 */
@@ -110,7 +110,7 @@ typedef enum {
     TAPI_SNMP_MIB_ACCESS_READWRITE  = MIB_ACCESS_READWRITE, /* 19 */
     TAPI_SNMP_MIB_ACCESS_CREATE     = MIB_ACCESS_CREATE, /* 48 */
     
-} tapi_snmp_mib_access;	
+} tapi_snmp_mib_access;       
 
 typedef enum {
     TAPI_SNMP_EXACT,
@@ -161,7 +161,7 @@ typedef struct {
  * Structure to contain snmp variable mib access
  */ 
 typedef struct tapi_snmp_var_access {
-    struct tapi_snmp_var_access  *next; /* Pointer to the next peer in sense of MIB structure */	
+    struct tapi_snmp_var_access  *next; /* Pointer to the next peer in sense of MIB structure */       
     char                          label[MAX_LABLE_LEN];
     tapi_snmp_oid_t               oid;
     tapi_snmp_mib_access          access;
@@ -696,15 +696,15 @@ extern int tapi_snmp_get_table_dimension(tapi_snmp_oid_t *table_oid, int *dimens
 /**
  * Make table index.
  *
- * @param	tbl	Table OID
- * @param	index	Table index pointer
- * @param	...	Values to be inserted in index.id
+ * @param       tbl       Table OID
+ * @param       index       Table index pointer
+ * @param       ...       Values to be inserted in index.id
  *
  * @return zero on success or error code
  * 
  */ 
 extern int tapi_snmp_make_table_index(tapi_snmp_oid_t *tbl, tapi_snmp_oid_t *index, ...);
-	
+       
 
 /**
  * Get SNMP table columns.
@@ -780,10 +780,10 @@ extern int tapi_snmp_make_oid(const char *oid_str, tapi_snmp_oid_t *oid);
 /**
  * Get SNMP object syntax from MIB.
  *
- * @param	oid	OID of SNMP object
- * @param	syntax	syntax of SNMP object (OUT)
+ * @param       oid       OID of SNMP object
+ * @param       syntax       syntax of SNMP object (OUT)
  *
- * @return	Status of the operation
+ * @return       Status of the operation
  *
  */
 extern int tapi_snmp_get_syntax(tapi_snmp_oid_t *oid,  tapi_snmp_vartypes_t *syntax);
