@@ -29,6 +29,9 @@
  * $Id$
  */
 
+#define LOG_LEVEL   (ERROR_LVL | WARNING_LVL | RING_LVL | INFORMATION_LVL)
+#define LGR_USER    "Configuration TAPI"
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -66,10 +69,6 @@
 
 #include "tapi_sockaddr.h"
 #include "tapi_cfg_base.h"
-
-#define LOG_LEVEL   (ERROR_LVL | WARNING_LVL | RING_LVL | INFORMATION_LVL)
-#define LGR_USER    "Configuration TAPI"
-#include "logger_api.h"
 
 
 /** Operations with routing/ARP table */
