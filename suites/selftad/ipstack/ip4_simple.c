@@ -221,6 +221,17 @@ main(int argc, char *argv[])
         INFO ("try to wait\n");
         rc = rcf_ta_trrecv_wait(ta, csap, &num);
         INFO("trrecv_wait: 0x%X num: %d\n", rc, num);
+        if (rc)
+        {
+            if (TE_RC_GET_ERROR(rc) == ETIMEDOUT && 
+                TE_RC_GET_MODULE(rc) == TE_TAD_CSAP)
+            {
+                RING("wait for packets timedout");
+                rc = 0;
+            }
+            else 
+                TEST_FAIL("Unexpected error for trrecv_wait: %X", rc);
+        }
 
         rc = rcf_ta_csap_destroy(ta, sid, csap);
         INFO("csap %d destroy: 0x%X ", csap, rc); 
