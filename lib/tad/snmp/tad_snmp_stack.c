@@ -259,9 +259,9 @@ snmp_write_cb (csap_p csap_descr, char *buf, int buf_len)
  *      quantity of read octets, or -1 if error occured, 0 if timeout expired. 
  */ 
 int 
-snmp_write_read_cb (csap_p csap_descr, int timeout,
-                     char *w_buf, int w_buf_len,
-                     char *r_buf, int r_buf_len)
+snmp_write_read_cb(csap_p csap_descr, int timeout,
+                   char *w_buf, int w_buf_len,
+                   char *r_buf, int r_buf_len)
 {
     fd_set fdset;
     int    n_fds = 0; 
@@ -289,9 +289,10 @@ snmp_write_read_cb (csap_p csap_descr, int timeout,
     sel_timeout.tv_sec  = (ss->timeout) / 1000000L;
     sel_timeout.tv_usec = (ss->timeout) % 1000000L;
 
-    if (!snmp_send(ss, pdu)){
-        WARN("send pdu failed\n");
-        snmp_perror("send pdu error");
+    if (snmp_send(ss, pdu) == 0)
+    {
+        ERROR("Send PDU failed, see the reason in stderr output");
+        snmp_perror("Send PDU failed");
         return 0;
     } 
 
