@@ -1,4 +1,0 @@
-{ cli:{ conn-type 2, conn-params  telnet: {host plain:"ull", port plain:22},
-        command-prompt plain:"\\[cli\\@ull cli\\]\\$ ", login-prompt plain:"Login",
-        password-prompt plain:"password: ", user plain:"cli",
-        password plain:"TestCLI"}}
