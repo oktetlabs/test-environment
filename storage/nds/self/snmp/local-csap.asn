@@ -1,3 +1,0 @@
-{ snmp:{ community plain:"public", version plain:1, 
-          snmp-agent plain:"localhost"}}
-
