@@ -63,6 +63,10 @@
 extern "C" {
 #endif
 
+
+/** Default port for SNMP trap receiver application */
+#define TAPI_SNMP_TRAP_PORT 162
+
 /**
  * Strongly restricted maximal length of Object Identifier - this value is
  * not succeded for all MIBs which are under testging. Really, it seems
