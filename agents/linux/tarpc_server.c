@@ -31,30 +31,36 @@
 #include "config.h"
 #endif
 
-#include <sys/types.h>
-#include <sys/wait.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
-#include <pthread.h>
-#include <signal.h>
 #include <string.h>
+#include <unistd.h>
+#include <signal.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 #include <sys/socket.h>
 #if HAVE_NETINET_IN_SYSTM_H /* Required for FreeBSD build */
 #include <netinet/in_systm.h>
 #endif
+#if HAVE_SYS_UN_H
+#include <sys/un.h>
+#endif
 #include <sys/uio.h>
+#include <sys/poll.h>
+#include <sys/select.h>
+#include <sys/ioctl.h>
 #include <netinet/in.h>
 #include <netinet/ip.h>
 #include <netinet/tcp.h>
 #include <arpa/inet.h>
 #include <net/if.h>
-#include <sys/ioctl.h>
-#include <sys/poll.h>
 #include <netdb.h>
 #include <dlfcn.h>
+#if HAVE_AIO_H
 #include <aio.h>
+#endif
 #include <fcntl.h>
+#include <pthread.h>
 #include <sys/stat.h>
  
 #include "te_stdint.h"
@@ -71,7 +77,9 @@
 extern char *my_execname;
 extern int ta_pid;
 
+#if HAVE_AIO_H
 void *dummy = aio_read;
+#endif
 
 typedef int (*sock_api_func)(int param,...); 
 
@@ -463,7 +471,7 @@ TARPC_FUNC(fork, {},
 
     if (out->pid == 0)
     {
-#if HAVE_SVC_EXIT
+#ifdef HAVE_SVC_EXIT
         svc_exit(); 
 #endif
         tarpc_server(in->name);
@@ -3105,10 +3113,17 @@ TARPC_FUNC(aio_read_test,
 }, 
 { 
     INIT_CHECKED_ARG(out->buf.buf_val, out->buf.buf_len, in->buflen);    
+#ifdef HAVE_AIO_H
     MAKE_CALL(out->retval = func((int)in, out)); 
+#else
+    out->retval = -1;
+    out->common._errno = EOPNOTSUPP;
+#endif
 } 
 )
 
+
+#ifdef HAVE_AIO_H
 int
 aio_read_test(tarpc_aio_read_test_in *in, tarpc_aio_read_test_out *out)
 {
@@ -3163,6 +3178,7 @@ aio_read_test(tarpc_aio_read_test_in *in, tarpc_aio_read_test_out *out)
     
     return rc;
 }
+#endif /* HAVE_AIO_H */
 
 /*----------------------------- aio_error_test() -----------------------------*/
 TARPC_FUNC(aio_error_test, 
@@ -3170,10 +3186,16 @@ TARPC_FUNC(aio_error_test,
     COPY_ARG(diag);
 }, 
 { 
+#ifdef HAVE_AIO_H
     MAKE_CALL(out->retval = func((int)in, out)); 
+#else
+    out->retval = -1;
+    out->common._errno = EOPNOTSUPP;
+#endif
 } 
 )
 
+#ifdef HAVE_AIO_H
 int
 aio_error_test(tarpc_aio_error_test_in *in, tarpc_aio_error_test_out *out)
 {
@@ -3208,6 +3230,7 @@ aio_error_test(tarpc_aio_error_test_in *in, tarpc_aio_error_test_out *out)
     errno = 0;
     return 0;
 }
+#endif
 
 /*----------------------------- aio_write_test() -----------------------------*/
 TARPC_FUNC(aio_write_test, 
@@ -3215,12 +3238,18 @@ TARPC_FUNC(aio_write_test,
     COPY_ARG(diag);
 }, 
 { 
+#ifdef HAVE_AIO_H
     INIT_CHECKED_ARG(in->buf.buf_val, in->buf.buf_len, in->buf.buf_len);
     out->retval = -1;
     MAKE_CALL(out->retval = func((int)in, out));  
+#else
+    out->retval = -1;
+    out->common._errno = EOPNOTSUPP;
+#endif
 } 
 )
 
+#ifdef HAVE_AIO_H
 int
 aio_write_test(tarpc_aio_write_test_in *in, tarpc_aio_write_test_out *out)
 {
@@ -3261,6 +3290,7 @@ aio_write_test(tarpc_aio_write_test_in *in, tarpc_aio_write_test_out *out)
     }
     return rc;
 }
+#endif /* HAVE_AIO_H */
 
 /*--------------------------- aio_suspend_test() ---------------------------*/
 TARPC_FUNC(aio_suspend_test, 
@@ -3268,11 +3298,17 @@ TARPC_FUNC(aio_suspend_test,
     COPY_ARG(buf);
     COPY_ARG(diag);
 }, 
-{ 
+{
+#ifdef HAVE_AIO_H
     MAKE_CALL(out->retval = func((int)in, out)); 
+#else
+    out->retval = -1;
+    out->common._errno = EOPNOTSUPP;
+#endif
 } 
 )
 
+#ifdef HAVE_AIO_H
 int
 aio_suspend_test(tarpc_aio_suspend_test_in *in, tarpc_aio_suspend_test_out *out)
 {
@@ -3366,6 +3402,8 @@ aio_suspend_test(tarpc_aio_suspend_test_in *in, tarpc_aio_suspend_test_out *out)
     
     return rc;
 }
+#endif /* HAVE_AIO_H */
+
 
 /*------------------------------ sendfile() ------------------------------*/
 
