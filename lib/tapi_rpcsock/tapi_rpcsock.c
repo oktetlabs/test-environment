@@ -1313,14 +1313,18 @@ rpc_wsa_recv_ex(rcf_rpc_server *handle,
     {
         if (buf != NULL && out.buf.buf_val != NULL)
             memcpy(buf, out.buf.buf_val, out.buf.buf_len);
+	    
+	if (flags != NULL && out.flags.flags_val != NULL)
+	    *flags = out.flags.flags_val[0];
     }
 
-    RING("RPC (%s,%s)%s: WSARecvEx(%d, %p[%u], %x (%u->%u), %s) -> %d (%s)",
+    RING("RPC (%s,%s)%s: WSARecvEx(%d, %p[%u], %x (%u->%u), %s) -> %d (%s %s)",
          handle->ta, handle->name, rpcop2str(op),
          s, buf, rbuflen, len, 
          flags, send_recv_flags_rpc2str(in_flags), 
          send_recv_flags_rpc2str(flags == NULL ? 0 : *flags),
-         out.retval, errno_rpc2str(RPC_ERRNO(handle)));
+         out.retval, errno_rpc2str(RPC_ERRNO(handle)),
+	 win_error_rpc2str(out.common.win_error));
 
     RETVAL_VAL(out.retval, wsa_recv_ex);
 }                
@@ -1978,13 +1982,15 @@ rpc_delete_overlapped(rcf_rpc_server *handle,
     RETVAL_VOID(delete_overlapped);
 }
 
-void
+int
 rpc_completion_callback(rcf_rpc_server *handle,
                         int *called, int *error, int *bytes,
                         rpc_overlapped *overlapped)
 {
     tarpc_completion_callback_in  in;
     tarpc_completion_callback_out out;
+    
+    int rc = 0;
 
     if (handle == NULL)
     {
@@ -2016,8 +2022,10 @@ rpc_completion_callback(rcf_rpc_server *handle,
         *bytes = out.bytes;
         *overlapped = (rpc_overlapped)(out.overlapped);
     }
+    else
+        rc = -1;
 
-    RETVAL_VOID(completion_callback);
+    RETVAL_VAL(rc, completion_callback);
 }
 
 int
@@ -5666,6 +5674,12 @@ rpc_wsa_send(rcf_rpc_server *handle,
     RING("RPC (%s,%s)%s: wsa_send() -> %d (%s)",
          handle->ta, handle->name, rpcop2str(op), out.retval,
          errno_rpc2str(RPC_ERRNO(handle)));
+	 
+    if (RPC_CALL_OK)
+    {
+	if (bytes_sent != NULL && out.bytes_sent.bytes_sent_val != NULL)
+	    *bytes_sent = out.bytes_sent.bytes_sent_val[0];
+    }
 
     RETVAL_RC(wsa_send);
 }
@@ -5756,11 +5770,19 @@ rpc_wsa_recv(rcf_rpc_server *handle,
                        iov[i].iov_rlen);
             }
         }
+	if (bytes_received != NULL && 
+	    out.bytes_received.bytes_received_val != NULL)
+	{
+	    *bytes_received = out.bytes_received.bytes_received_val[0];
+	}
+	if (flags != NULL && out.flags.flags_val != NULL)
+	    *flags = out.flags.flags_val[0];
     }
 
-    RING("RPC (%s,%s)%s: wsa_recv() -> %d (%s)",
+    RING("RPC (%s,%s)%s: wsa_recv() -> %d (%s %s)",
          handle->ta, handle->name, rpcop2str(op),
-         out.retval, errno_rpc2str(RPC_ERRNO(handle)));
+         out.retval, errno_rpc2str(RPC_ERRNO(handle)),
+	 win_error_rpc2str(out.common.win_error));
 
     RETVAL_RC(wsa_recv);
 }
@@ -5769,7 +5791,8 @@ int
 rpc_get_overlapped_result(rcf_rpc_server *handle,
                           int s, rpc_overlapped overlapped,
                           int *bytes, te_bool wait,
-                          rpc_send_recv_flags *flags)
+                          rpc_send_recv_flags *flags,
+			  char *buf, int buflen)
 {
     rcf_rpc_op op;
 
@@ -5805,9 +5828,35 @@ rpc_get_overlapped_result(rcf_rpc_server *handle,
                  (xdrproc_t)xdr_tarpc_get_overlapped_result_in,
                  &out, (xdrproc_t)xdr_tarpc_get_overlapped_result_out);
 
-    RING("RPC (%s,%s)%s: get_overlapped_result(%d, %p, ...) -> %s (%s)",
+    if (out.retval)
+    {
+        int filled = 0;
+	int i;
+	
+	for (i = 0; i < (int)out.vector.vector_len; i++)
+	{
+	    int copy_len = 
+	        buflen - filled < (int)out.vector.vector_val[i].iov_len ?
+	        buflen - filled : (int)out.vector.vector_val[i].iov_len;
+	    
+	    memcpy(buf + filled, 
+	           out.vector.vector_val[i].iov_base.iov_base_val, copy_len);
+            filled += copy_len;
+	}
+    } 	
+    RING("RPC (%s,%s)%s: get_overlapped_result(%d, %p, ...) -> %s (%s %s) ",
          handle->ta, handle->name, rpcop2str(op), s, overlapped,
-         out.retval ? "true" : "false", errno_rpc2str(RPC_ERRNO(handle)));
+         out.retval ? "true" : "false", errno_rpc2str(RPC_ERRNO(handle)),
+	 win_error_rpc2str(out.common.win_error));
+
+    if (RPC_CALL_OK)
+    {
+	if (bytes != NULL && out.bytes.bytes_val != NULL)
+	    *bytes = out.bytes.bytes_val[0];
+	    
+	if (flags != NULL && out.flags.flags_val != NULL)
+	    *flags = out.flags.flags_val[0];
+    }
 
     RETVAL_VAL(out.retval, get_overlapped_result);
 }

@@ -478,8 +478,8 @@ extern int rpc_wsa_recv(rcf_rpc_server *handle,
 extern int rpc_get_overlapped_result(rcf_rpc_server *handle,
                                      int s, rpc_overlapped overlapped,
                                      int *bytes, te_bool wait,
-                                     rpc_send_recv_flags *flags);
-
+                                     rpc_send_recv_flags *flags,
+               			     char *buf, int buflen);
 /**
  * Get result of completion callback (if called).
  *
@@ -488,10 +488,12 @@ extern int rpc_get_overlapped_result(rcf_rpc_server *handle,
  * @param bytes      number of tramsmitted bytes reported to last callback
  * @param error      overlapped operation error reported to the last callback
  * @param overlapped overlapped object reported to the last callback
+ *
+ * @return 0 (success) or -1 (failure)
  */
-extern void rpc_completion_callback(rcf_rpc_server *handle, 
-                                    int *called, int *error, int *bytes,
-                                    rpc_overlapped *overlapped);
+extern int rpc_completion_callback(rcf_rpc_server *handle, 
+                                   int *called, int *error, int *bytes,
+                                   rpc_overlapped *overlapped);
 
 /* WSAEventSelect() */
 extern int 
