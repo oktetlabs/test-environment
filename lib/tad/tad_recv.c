@@ -91,7 +91,6 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
     int rc;
     struct timeval current;
     char label[20] = "pdus";
-    char choice[20] = "";
 
     gettimeofday(&current, NULL);
 
@@ -191,10 +190,10 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
     {
         if (strcmp(label, "mask") == 0)
         {
-            const uint8_t *d = data_to_check.data; 
             const uint8_t *mask = NULL;
             const uint8_t *pat = NULL;
-            int mask_len, i;
+            int mask_len;
+
 
             rc = asn_get_field_data(pattern_unit, &mask, "payload.#mask.m");
 
@@ -209,24 +208,38 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
                 return rc;
             }
             mask_len = asn_get_length(pattern_unit, "payload.#mask.m");
+            if (mask_len != data_to_check.len)
+            {
+                F_RING("Income pld length %d != mask len %d", 
+                        data_to_check.len, mask_len);
+                rc = ETADNOTMATCH;
+            }
+            else 
+            {
+                int i;
+                const uint8_t *d = data_to_check.data; 
 
-            for (i = 0; i < mask_len && i < data_to_check.len; 
-                    i++, mask++, pat++, d++)
-                if ((*d & *mask) != (*pat & *mask))
-                {
-                    rc = ETADNOTMATCH;
-                    break;
-                }
+                for (i = 0; i < mask_len && i < data_to_check.len; 
+                        i++, mask++, pat++, d++)
+                    if ((*d & *mask) != (*pat & *mask))
+                    {
+                        rc = ETADNOTMATCH;
+                        break;
+                    }
+                if (rc != 0)
+                    F_RING("pld byte [%d] is %02x; dont match", i, *d);
+            }
         }
 
         if (rc != 0)
         {
-            INFO("Error matching pattern, rc %X", rc);
-            return rc;
+            F_INFO("Error matching pattern, rc %X", rc);
+            if (*packet && csap_descr->command & TAD_COMMAND_RESULTS)
+                asn_free_value(*packet);
         }
     }
 
-    if (csap_descr->command & TAD_COMMAND_RESULTS)
+    if (rc == 0 && csap_descr->command & TAD_COMMAND_RESULTS)
     {
         if (data_to_check.len)
         { /* There are non-parsed payload rest */
@@ -242,20 +255,25 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
     }
 
     /* call echo callback, if it present and requested. */
-    rc = asn_get_choice(pattern_unit, "action", label, sizeof(label));
-    if (rc == 0 && (strcmp(label, "echo") == 0) && csap_descr->echo_cb != NULL)
+    if (rc == 0)
     {
-        rc = csap_descr->echo_cb (csap_descr, data, d_len);
-        if (rc)
-            ERROR( "csap #%d, echo_cb returned %x code.", 
-                        csap_descr->id, rc);
-            /* Have no reason to stop receiving. */
-        rc = 0;
-    }
-    else if (rc)
-    {
-        INFO("asn read action rc %x", rc);
-        rc = 0;
+        rc = asn_get_choice(pattern_unit, "action", label, sizeof(label));
+
+        if (rc == 0 && (strcmp(label, "echo") == 0) && 
+                    csap_descr->echo_cb != NULL)
+        {
+            rc = csap_descr->echo_cb (csap_descr, data, d_len);
+            if (rc)
+                ERROR( "csap #%d, echo_cb returned %x code.", 
+                            csap_descr->id, rc);
+                /* Have no reason to stop receiving. */
+            rc = 0;
+        }
+        else if (rc)
+        {
+            INFO("asn read action rc %x", rc);
+            rc = 0;
+        }
     }
 
     F_VERB("Packet to RX CSAP #%d matches", csap_descr->id);
@@ -263,10 +281,9 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
     if (data_to_check.free_data_cb)
         data_to_check.free_data_cb(data_to_check.data);
     else
-        free(data_to_check.data);
+        free(data_to_check.data); 
 
-
-    return 0; 
+    return rc; 
  }
 
 
