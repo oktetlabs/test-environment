@@ -45,8 +45,11 @@ typedef void *rpc_overlapped;
 /* Windows HWND */
 typedef void *rpc_hwnd;
 
-/* Windows HANDLE */
+/* Windows HANDLE  :o\  */
 typedef void *rpc_handle;
+
+/* To store the pointer, which is valid in the TA address space */
+typedef uint64_t rpc_ptr;
 
 /* WSASocket() */
 extern int rpc_wsa_socket(rcf_rpc_server *rpcs,
@@ -172,43 +175,78 @@ extern int rpc_wsa_address_to_string(rcf_rpc_server *rpcs,
                                      socklen_t addrlen, uint8_t *info,
                                      int info_len, char *addrstr,
                                      ssize_t *addrstr_len);
+     
+/* WSAStringToAddress */
+extern int rpc_wsa_string_to_address(rcf_rpc_server *rpcs, char *addrstr,
+                                     rpc_socket_domain address_family,
+                                     uint8_t *info, int info_len,
+                                     struct sockaddr *addr,
+                                     socklen_t *addrlen);
+
+/* WSACancelAsyncRequest */
+extern int rpc_wsa_cancel_async_request(rcf_rpc_server *rpcs,
+                                        rpc_handle async_task_handle);
+
+extern rpc_ptr rpc_alloc_buf(rcf_rpc_server *rpcs, size_t size);
+
+extern void rpc_free_buf(rcf_rpc_server *rpcs, rpc_ptr buf);
+
+extern void rpc_set_buf(rcf_rpc_server *rpcs, char *src_buf,
+                        size_t len, rpc_ptr dst_buf);
+
+extern void rpc_get_buf(rcf_rpc_server *rpcs, rpc_ptr src_buf,
+                        size_t len, char *dst_buf);
+
+extern int rpc_alloc_wsabuf(rcf_rpc_server *rpcs, size_t len,
+                            rpc_ptr *wsabuf, rpc_ptr *wsabuf_buf);
+
+extern void rpc_free_wsabuf(rcf_rpc_server *rpcs, rpc_ptr wsabuf);
+
+/* WSAConnect */
+extern int rpc_wsa_connect(rcf_rpc_server *rpcs, int s,
+                           struct sockaddr *addr, socklen_t addrlen,
+                           rpc_ptr caller_wsabuf, rpc_ptr callee_wsabuf,
+                           tarpc_flowspec *sending,
+                           tarpc_flowspec *receiving,
+                           rpc_ptr provider_specific_buf,
+                           size_t provider_specific_buf_len);
 
 /* WSAAsyncGetHostByAddr */
-rpc_handle
+extern rpc_handle
 rpc_wsa_async_get_host_by_addr(rcf_rpc_server *rpcs, rpc_hwnd hwnd,
                                unsigned int wmsg, char *addr,
                                ssize_t addrlen, rpc_socket_type type,
-                               uint64_t buf, ssize_t buflen);
+                               rpc_ptr buf, ssize_t buflen);
 
 /* WSAAsyncGetHostByName */
-rpc_handle
+extern rpc_handle
 rpc_wsa_async_get_host_by_name(rcf_rpc_server *rpcs, rpc_hwnd hwnd,
                                unsigned int wmsg, char *name,
-                               uint64_t buf, ssize_t buflen);
+                               rpc_ptr buf, ssize_t buflen);
 
 /* WSAAsyncGetProtoByName */
-rpc_handle
+extern rpc_handle
 rpc_wsa_async_get_proto_by_name(rcf_rpc_server *rpcs, rpc_hwnd hwnd,
                                 unsigned int wmsg, char *name,
-                                uint64_t buf, ssize_t buflen);
+                                rpc_ptr buf, ssize_t buflen);
 
 /* WSAAsyncGetProtoByNumber */
-rpc_handle
+extern rpc_handle
 rpc_wsa_async_get_proto_by_number(rcf_rpc_server *rpcs, rpc_hwnd hwnd,
                                   unsigned int wmsg, int number,
-                                  uint64_t buf, ssize_t buflen);
+                                  rpc_ptr buf, ssize_t buflen);
 
 /* WSAAsyncGetServByName */
-rpc_handle
+extern rpc_handle
 rpc_wsa_async_get_serv_by_name(rcf_rpc_server *rpcs, rpc_hwnd hwnd,
                                unsigned int wmsg, char *name, char *proto,
-                               uint64_t buf, ssize_t buflen);
+                               rpc_ptr buf, ssize_t buflen);
 
 /* WSAAsyncGetServByPort */
-rpc_handle
+extern rpc_handle
 rpc_wsa_async_get_serv_by_port(rcf_rpc_server *rpcs, rpc_hwnd hwnd,
                                unsigned int wmsg, int port, char *proto,
-                               uint64_t buf, ssize_t buflen);
+                               rpc_ptr buf, ssize_t buflen);
 
 /* Create WSAOVERLAPPED */
 extern rpc_overlapped rpc_create_overlapped(rcf_rpc_server *rpcs,
