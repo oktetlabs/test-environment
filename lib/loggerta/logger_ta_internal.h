@@ -270,8 +270,8 @@ typedef struct md_list {
     struct md_list *next;
     struct md_list *last;
     uint32_t        narg;
-    int8_t         *addr;
-    uint8_t         length;
+    uint8_t        *addr;
+    uint32_t        length;
 } md_list;
 
 /*

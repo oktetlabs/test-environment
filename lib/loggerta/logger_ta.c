@@ -133,25 +133,28 @@ log_message(uint16_t level, const char *entity_name,
             }
 
             case 's':
-                {
-                    uint8_t  length;
-                    char *addr = va_arg(ap, char*);
-                    if (addr == NULL)
-                        addr = null_str;
-                    length = strlen(addr) + 1;
-                    cp_list.length += length;
-                    LGR_PUT_MD_LIST(cp_list, narg, addr, length);
-                }
+            {
+                size_t  length;
+                char   *addr = va_arg(ap, char *);
+
+                if (addr == NULL)
+                    addr = null_str;
+                length = strlen(addr) + 1;
+
+                cp_list.length += length;
+                LGR_PUT_MD_LIST(cp_list, narg, addr, length);
                 break;
+            }
 
             case 't':
                 if ((*++p_str != 0) && (*p_str == 'm'))
                 {
-                    int8_t *addr;
-                    uint8_t length;
+                    uint8_t    *addr;
+                    size_t      length;
 
-                    addr = (int8_t *)va_arg(ap, int);
-                    length = (int8_t)va_arg(ap, int);
+                    addr = va_arg(ap, uint8_t *);
+                    length = va_arg(ap, size_t);
+
                     cp_list.length += length;
                     LGR_PUT_MD_LIST(cp_list, narg, addr, length);
                 }

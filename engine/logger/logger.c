@@ -80,8 +80,9 @@ lgr_message_filter(const char *user_name, re_fltr *filters)
     tmp_fltr = filters;
     while (tmp_fltr->next != tmp_fltr)
     {
-        int str_len = strlen(user_name);
-        if(regexec(tmp_fltr->preg, user_name, 1, pmatch, 0) == 0)
+        size_t str_len = strlen(user_name);
+
+        if (regexec(tmp_fltr->preg, user_name, 1, pmatch, 0) == 0)
         {
            if ((str_len - (pmatch->rm_eo - pmatch->rm_so) == 0))
                lgr_type = tmp_fltr->type;
@@ -99,7 +100,7 @@ lgr_message_filter(const char *user_name, re_fltr *filters)
  * @param buf_len   Log message length.
  */
 void
-lgr_register_message(char *buf_mess, uint32_t buf_len)
+lgr_register_message(char *buf_mess, size_t buf_len)
 {
     pthread_mutex_lock(&mutex);
     if (buf_len != fwrite(buf_mess, sizeof(char), buf_len, raw_file))
@@ -119,9 +120,9 @@ lgr_register_message(char *buf_mess, uint32_t buf_len)
 static void * 
 te_handler(void)
 {
-    struct ipc_server_client  *ipcsc_p;
-    char                       buf_mess[LGR_MAX_BUF];
-    uint32_t                   buf_len;
+    struct ipc_server_client   *ipcsc_p;
+    char                        buf_mess[LGR_MAX_BUF];
+    size_t                      buf_len;
 
     while (run_logger)
     {
@@ -181,19 +182,19 @@ te_handler(void)
 static void *
 ta_handler(void *ta)
 {
-    struct timeval             tv, tv_msg;
-    char                       log_file[RCF_MAX_PATH];
-    ta_inst                   *inst = (ta_inst *)ta;
-    FILE                      *ta_file = NULL; 
-    fd_set                     rfds;     
-    int                        fd_server;
-    struct ipc_server         *srv;
-    char                       ta_srv[LGR_MAX_NAME] = "LOGGER-";
-    char                       buf_mess[LGR_MAX_BUF] = { 0, };
-    uint32_t                   buf_len = sizeof(buf_mess);
-    uint32_t                   empty_flag  = 0; /* Set if file is empty */
-    uint32_t                   tstamp_flag = 0; /* Set if timestamp */
-    uint32_t                   flush_flag = 0;  /* Set if flush is detected */
+    struct timeval      tv, tv_msg;
+    char                log_file[RCF_MAX_PATH];
+    ta_inst            *inst = (ta_inst *)ta;
+    FILE               *ta_file = NULL; 
+    fd_set              rfds;     
+    int                 fd_server;
+    struct ipc_server  *srv;
+    char                ta_srv[LGR_MAX_NAME] = "LOGGER-";
+    char                buf_mess[LGR_MAX_BUF] = { 0, };
+    size_t              buf_len = sizeof(buf_mess);
+    uint32_t            empty_flag  = 0; /* Set if file is empty */
+    uint32_t            tstamp_flag = 0; /* Set if timestamp */
+    uint32_t            flush_flag = 0;  /* Set if flush is detected */
 
     strcat(ta_srv, inst->agent); 
     srv = ipc_register_server(ta_srv);
@@ -470,14 +471,14 @@ response_to_flush:
 int
 main(int argc, char *argv[])
 {
-    char     *ta_names = NULL;
-    int       names_len;
-    int       str_len = 0;    
-    int       res = 0;
-    int       scale = 0;
-    pthread_t te_thread;
-    ta_inst  *ta_el;
-    char     *te_tmp = NULL;
+    char       *ta_names = NULL;
+    size_t      names_len;
+    size_t      str_len = 0;    
+    int         res = 0;
+    int         scale = 0;
+    pthread_t   te_thread;
+    ta_inst    *ta_el;
+    char       *te_tmp = NULL;
 
     pthread_mutex_init(&mutex,  NULL);
 
@@ -545,9 +546,9 @@ main(int argc, char *argv[])
     /* Create single linked list of active TA */
     while (names_len != str_len)
     {
-        char     *aux_str;
-        uint32_t  tmp_len;
-        ta_inst  *tmp_el;
+        char       *aux_str;
+        size_t      tmp_len;
+        ta_inst    *tmp_el;
     
         tmp_el = (struct ta_inst *)malloc(sizeof(struct ta_inst));
         memset(tmp_el, 0, sizeof(struct ta_inst));  

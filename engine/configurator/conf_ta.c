@@ -33,7 +33,7 @@
 
 #define TA_LIST_SIZE    64
 char *cfg_ta_list = NULL;
-static int ta_list_size = TA_LIST_SIZE;
+static size_t ta_list_size = TA_LIST_SIZE;
 
 #define TA_BUF_SIZE     8192
 char *cfg_get_buf = NULL;

@@ -58,7 +58,7 @@ main(void)
 {
     rcf_msg msg;
     char   *name = "rcfshutdown_client";
-    int     anslen = sizeof(msg);
+    size_t  anslen = sizeof(msg);
     int     rc;
     int     result = EXIT_SUCCESS;
 

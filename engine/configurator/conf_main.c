@@ -871,7 +871,7 @@ wait_shutdown()
         struct ipc_server_client *user = NULL;
         
         cfg_msg *msg = (cfg_msg *)buf;
-        int      len = CFG_BUF_LEN;
+        size_t   len = CFG_BUF_LEN;
         int      rc;
         
         if ((rc = ipc_receive_message(server, buf, &len, &user)) != 0)
@@ -957,7 +957,7 @@ main(int argc, char **argv)
         struct ipc_server_client *user = NULL;
         
         cfg_msg *msg = (cfg_msg *)buf;
-        int      len = CFG_BUF_LEN;
+        size_t   len = CFG_BUF_LEN;
         
         if ((rc = ipc_receive_message(server, buf, &len, &user)) != 0)
         {

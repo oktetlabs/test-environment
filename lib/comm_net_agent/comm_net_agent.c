@@ -66,13 +66,13 @@
 
 /** This structure is used to store some context for each connection. */
 struct rcf_comm_connection{
-    int socket;          /**< Connection socket */
-    int bytes_to_read;   /**< Number of bytes of attachment to read */
+    int     socket;          /**< Connection socket */
+    size_t  bytes_to_read;   /**< Number of bytes of attachment to read */
 };
 
 /* Static function declaration. See implementation for comments */
-static int find_attach(char *buf, int len);
-static int read_socket(int socket, char *buffer, int len);
+static int find_attach(char *buf, size_t len);
+static int read_socket(int socket, void *buffer, size_t len);
 
 /**
  * Wait for incoming connection from the Test Engine side of the
@@ -199,10 +199,11 @@ rcf_comm_agent_init(const char *config_str,
  */
 int
 rcf_comm_agent_wait(struct rcf_comm_connection *rcc,
-                    char *buffer, int *pbytes, char **pba)
+                    char *buffer, size_t *pbytes, char **pba)
 {
-    int ret;
-    int l = 0;
+    int     ret;
+    size_t  l = 0;
+
     if (rcc->bytes_to_read)
     {
         /* Some data from previous message should be returned */
@@ -220,7 +221,8 @@ rcf_comm_agent_wait(struct rcf_comm_connection *rcc,
                 return ret; /* Some error occured */
 
             {
-                int tmp = *pbytes;
+                size_t tmp = *pbytes;
+
                 *pbytes = rcc->bytes_to_read;
                 rcc->bytes_to_read -= tmp;
             }
@@ -301,7 +303,8 @@ rcf_comm_agent_wait(struct rcf_comm_connection *rcc,
                 else
                 {
                     /* Buffer is too small to write attachment */
-                    int to_read = *pbytes - l;
+                    size_t to_read = *pbytes - l;
+
                     ret = read_socket(rcc->socket, buffer + l, to_read);
                     if (ret != 0)
                         return ret; /* Some error occured */
@@ -331,18 +334,18 @@ rcf_comm_agent_wait(struct rcf_comm_connection *rcc,
  * @retval other value  errno.
  */
 int
-rcf_comm_agent_reply(struct rcf_comm_connection *rcc, const char *buffer,
-                     unsigned int length)
+rcf_comm_agent_reply(struct rcf_comm_connection *rcc, const void *buffer,
+                     size_t length)
 {
-    unsigned int total_sent_len = 0;
-    int sent_len;
+    size_t  total_sent_len = 0;
+    ssize_t sent_len;
 
     if (length == 0)
         return 0;
 #ifdef TE_COMM_DEBUG_PROTO
     {
         /* Change \x0 to \n in the user (!!!) buffer before sending */
-        int n = strlen(buffer);
+        int n = strlen((const char *)buffer);
 
         assert(n <= length);
         ((char *)buffer)[n] = '\n';
@@ -351,13 +354,16 @@ rcf_comm_agent_reply(struct rcf_comm_connection *rcc, const char *buffer,
 
     while (length > 0)
     {
-        sent_len = send(rcc->socket, buffer + total_sent_len, length, 0);
+        sent_len = send(rcc->socket,
+                        (const uint8_t *)buffer + total_sent_len,
+                        length, 0);
         if (sent_len < 0)
             return errno;
 
         total_sent_len += sent_len;
         length -= sent_len;
     }
+
     return 0;
 }
 
@@ -373,7 +379,8 @@ rcf_comm_agent_reply(struct rcf_comm_connection *rcc, const char *buffer,
  * @retval 0            Success.
  * @retval other value  errno.
  */
-int rcf_comm_agent_close(struct rcf_comm_connection **p_rcc)
+int
+rcf_comm_agent_close(struct rcf_comm_connection **p_rcc)
 {
     if (*p_rcc == NULL)
         return 0;
@@ -394,15 +401,15 @@ int rcf_comm_agent_close(struct rcf_comm_connection **p_rcc)
  * Search in the string for the "attach <number>" entry at the end. Inserts
  * ZERO before 'attach' word.
  *
- * @param str           String to process.
- * @param len           Length of the string.
+ * @param str           String to process
+ * @param len           Length of the string
  *
- * @return Status code.
- * @retval -1           No such entry found.
- * @retval other value  Number (value) from the entry.
+ * @return Status code
+ * @retval -1           No such entry found
+ * @retval other value  Number (value) from the entry
  */
 static int
-find_attach(char *buf, int len)
+find_attach(char *buf, size_t len)
 {
     /* Pointer tmp will scan the buffer */
     char *tmp;
@@ -490,30 +497,32 @@ find_attach(char *buf, int len)
 /**
  * Read specified number of bytes (not less) from the connection
  *
- * @param socket        Connection socket.
- * @param buf           Buffer to store the data.
- * @param len           Number of bytes to read.
+ * @param socket        Connection socket
+ * @param buf           Buffer to store the data
+ * @param len           Number of bytes to read
  *
- * @return
- *      Status code.
+ * @return Status code.
  *
- * @retval      0               Success.
- * @retval      other value     errno.
+ * @retval 0            Success
+ * @retval other value  errno
  */
 static int
-read_socket(int socket, char *buffer, int len)
+read_socket(int socket, void *buffer, size_t len)
 {
+    ssize_t r;
+
     while (len > 0)
     {
-        int r = recv(socket, buffer, len, 0);
+        r = recv(socket, buffer, len, 0);
         if (r < 0)
         {
             perror ("read socket: ");
             return errno;
         }
+        assert((size_t)r <= len);
 
         len -= r;
-        buffer += r;
+        buffer = (uint8_t *)buffer + r;
     }
 
     return 0;

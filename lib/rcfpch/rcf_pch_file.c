@@ -94,8 +94,11 @@ rcf_pch_file(struct rcf_comm_connection *conn, char *cbuf, size_t buflen,
         const char *sep = strchr(ptr, RCF_FILE_MEM_SEP);
         char       *tmp;
 
-        uint32_t addr;
-        uint32_t len;
+        long int    addr_int;
+        void       *addr_ptr;
+        void       *addr;
+
+        unsigned long int   len;
 
 
         VERB("memory access file operation");
@@ -108,7 +111,7 @@ rcf_pch_file(struct rcf_comm_connection *conn, char *cbuf, size_t buflen,
             goto reject;
         }
         /* Try to consider address as hexadecimal number */
-        addr = strtol(ptr, &tmp, 16);
+        addr_int = strtol(ptr, &tmp, 16);
         if (tmp != ptr)
         {
             if (tmp != sep)
@@ -118,6 +121,7 @@ rcf_pch_file(struct rcf_comm_connection *conn, char *cbuf, size_t buflen,
                 rc = ETEBADFORMAT;
                 goto reject;
             }
+            addr = (void *)addr_int;
         }
         else /* Failed to convert address from string to number */
         {
@@ -130,15 +134,15 @@ rcf_pch_file(struct rcf_comm_connection *conn, char *cbuf, size_t buflen,
                 buf[tmplen] = '\0';
             }
             /* Try to consider address as name from symbol table */
-            addr = (uint32_t)rcf_ch_symbol_addr(
-                                 (sep != NULL) ? buf : ptr, 0);
-            if (addr == 0)
+            addr_ptr = rcf_ch_symbol_addr((sep != NULL) ? buf : ptr, 0);
+            if (addr_ptr == NULL)
             {
                 ERROR("No such name '%s' in symbol table",
                                   (sep != NULL) ? buf : ptr);
                 rc = ETENOSUCHNAME;
                 goto reject;
             }
+            addr = *(uint8_t **)addr_ptr;
         }
         /* Address has successfully been recognized */
 
@@ -157,17 +161,19 @@ rcf_pch_file(struct rcf_comm_connection *conn, char *cbuf, size_t buflen,
 
         if (put)
         {
-            size_t  write_len = ((cmdlen <= buflen) ? cmdlen : buflen) -
+            size_t  got_len = ((cmdlen <= buflen) ? cmdlen : buflen) -
                                     (ba - (uint8_t *)cbuf);
+            size_t  more_len;
 
-            memcpy(*(char **)addr, ba, write_len);
+            memcpy(addr, ba, got_len);
             if (cmdlen > buflen)
             {
                 /* Not all data fit in command buffer */
-                write_len = cmdlen - buflen;
+                more_len = cmdlen - buflen;
                 /* Write binary attachment to 'addr' on receive */
-                rc = rcf_comm_agent_wait(conn, *(char **)addr,
-                                         &write_len, NULL);
+                rc = rcf_comm_agent_wait(conn, 
+                                         ((uint8_t *)addr) + got_len,
+                                         &more_len, NULL);
                 if (rc != 0)
                 {
                     ERROR("rcfpch", "rcf_comm_agent_wait() failed %d", rc);
@@ -180,7 +186,7 @@ rcf_pch_file(struct rcf_comm_connection *conn, char *cbuf, size_t buflen,
         else /* get operation */
         {
             if ((size_t)snprintf(cbuf + answer_plen, reply_buflen,
-                                 "0 attach %u", len) >= reply_buflen)
+                                 "0 attach %lu", len) >= reply_buflen)
             {
                 ERROR("Command buffer too small for reply");
                 rc = E2BIG;
@@ -191,7 +197,7 @@ rcf_pch_file(struct rcf_comm_connection *conn, char *cbuf, size_t buflen,
             rc = rcf_comm_agent_reply(conn, cbuf, strlen(cbuf) + 1);
             if (rc == 0)
             {
-                rc = rcf_comm_agent_reply(conn, *(char **)addr, len);
+                rc = rcf_comm_agent_reply(conn, addr, len);
             }
             rcf_ch_unlock();
             EXIT("%d", rc);

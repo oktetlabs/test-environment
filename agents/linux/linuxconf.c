@@ -580,7 +580,7 @@ aliases_list()
     conf.ifc_buf = buf;
 
     memset(buf, 0, sizeof(buf));
-    if (ioctl(s, SIOCGIFCONF, (int)&conf) < 0)
+    if (ioctl(s, SIOCGIFCONF, &conf) < 0)
     {
         ERROR("ioctl(SIOCGIFCONF) failed: %s", strerror(errno));
         return TE_RC(TE_TA_LINUX, errno);
@@ -1130,7 +1130,7 @@ net_addr_list(unsigned int gid, const char *oid, char **list,
     conf.ifc_buf = buf;
 
     memset(buf, 0, sizeof(buf));
-    if (ioctl(s, SIOCGIFCONF, (int)&conf) < 0)
+    if (ioctl(s, SIOCGIFCONF, &conf) < 0)
     {
         ERROR("ioctl(SIOCGIFCONF) failed: %d", errno);
         return TE_RC(TE_TA_LINUX, errno);
@@ -1608,7 +1608,7 @@ arp_add(unsigned int gid, const char *oid, const char *value,
         (arp_req.arp_ha.sa_data)[i] = (unsigned char)(int_addr[i]);
     arp_req.arp_flags = ATF_PERM | ATF_COM;
 #ifdef SIOCSARP
-    if (ioctl(s, SIOCSARP, (int)&arp_req) < 0)
+    if (ioctl(s, SIOCSARP, &arp_req) < 0)
     {
         ERROR("ioctl(SIOCSARP) failed: %s", strerror(errno));
         return TE_RC(TE_TA_LINUX, errno);
@@ -1644,7 +1644,7 @@ arp_del(unsigned int gid, const char *oid, const char *addr)
         return TE_RC(TE_TA_LINUX, EINVAL);
 
 #ifdef SIOCDARP
-    if (ioctl(s, SIOCDARP, (int)&arp_req) < 0)
+    if (ioctl(s, SIOCDARP, &arp_req) < 0)
     {
         ERROR("ioctl(SIOCDARP) failed: %s", strerror(errno));
         return TE_RC(TE_TA_LINUX, errno);
@@ -1884,7 +1884,7 @@ route_add(unsigned int gid, const char *oid, const char *value,
     rt.rt_flags = RTF_UP | RTF_STATIC | (prefix == 32 ? RTF_HOST : 0) |
                   RTF_GATEWAY;
 
-    if (ioctl(s, SIOCADDRT, (int)&rt) < 0)
+    if (ioctl(s, SIOCADDRT, &rt) < 0)
     {
         ERROR("ioctl(SIOCADDRT) failed: %s", strerror(errno));
         return TE_RC(TE_TA_LINUX, errno);
@@ -1942,7 +1942,7 @@ route_del(unsigned int gid, const char *oid, const char *route)
         htonl(PREFIX2MASK(prefix));
 #endif
 
-    if (ioctl(s, SIOCDELRT, (int)&rt) < 0)
+    if (ioctl(s, SIOCDELRT, &rt) < 0)
     {
         ERROR("ioctl(SIOCDELRT) failed: %s", strerror(errno));
         return TE_RC(TE_TA_LINUX, errno);

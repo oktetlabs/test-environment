@@ -94,7 +94,7 @@ extern int rcf_comm_agent_init(const char *config_str,
  * @retval other value  errno.
  */
 extern int rcf_comm_agent_wait(struct rcf_comm_connection *rcc, 
-                               char *buffer, int *pbytes, char **pba);
+                               char *buffer, size_t *pbytes, char **pba);
 
 
 /**
@@ -109,7 +109,7 @@ extern int rcf_comm_agent_wait(struct rcf_comm_connection *rcc,
  * @retval other value  errno.
  */
 extern int rcf_comm_agent_reply(struct rcf_comm_connection *rcc,
-                                const char *p_buffer, unsigned int length);
+                                const void *p_buffer, size_t length);
 
 /** 
  * Close connection.

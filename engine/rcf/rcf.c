@@ -486,7 +486,7 @@ synchronize_time(ta *agent)
         select(FD_SETSIZE, &set, NULL, NULL, &tv);
         if ((agent->is_ready)(agent->handle))
         {
-            int len = sizeof(cmd);
+            size_t len = sizeof(cmd);
 
             if ((agent->receive)(agent->handle, cmd, &len, &ba) != 0)
                 break;
@@ -873,10 +873,10 @@ read_str(char **ptr, char *s)
 static int
 process_reply(ta *agent)
 {
-    int rc;
-    int sid;
-    int error;
-    int len = sizeof(cmd);
+    int     rc;
+    int     sid;
+    int     error;
+    size_t  len = sizeof(cmd);
 
     rcf_msg *msg;
     usrreq  *req = NULL;
@@ -1600,9 +1600,9 @@ rcf_shutdown()
 
             if ((agent->is_ready)(agent->handle))
             {
-                char answer[16];
-                char *ba;
-                int  len = sizeof(cmd);
+                char    answer[16];
+                char   *ba;
+                size_t  len = sizeof(cmd);
 
                 if ((agent->receive)(agent->handle, cmd, &len, &ba) != 0)
                     continue;
@@ -1637,7 +1637,7 @@ wait_shutdown()
     while (TRUE)
     {
         usrreq *req;
-        int     len;
+        size_t  len;
         int     rc;
 
         if ((req = (usrreq *)calloc(sizeof(usrreq), 1)) == NULL)
@@ -1710,7 +1710,8 @@ main(int argc, char **argv)
     }
 
     FD_ZERO(&set0);
-    FD_SET((server_fd = ipc_get_server_fd(server)), &set0);
+    server_fd = ipc_get_server_fd(server);
+    FD_SET(server_fd, &set0);
     tv0.tv_sec = RCF_SELECT_TIMEOUT;
     tv0.tv_usec = 0;
 
@@ -1759,7 +1760,7 @@ main(int argc, char **argv)
     {
         struct timeval  tv = tv0;
         fd_set          set = set0;
-        int             len;
+        size_t          len;
 
         select(FD_SETSIZE, &set, NULL, NULL, &tv);
         if (reboot_num > 0)

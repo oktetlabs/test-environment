@@ -166,7 +166,7 @@ test_param_iteration_clone(const test_param_iteration *i)
         }
     }
     ic->base = (i->base) ? : i;
-    EXIT("OK 0x%x", (unsigned int)ic);
+    EXIT("OK 0x%x", (size_t)ic);
     return ic;
 }
 
