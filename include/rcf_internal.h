@@ -91,6 +91,7 @@ typedef enum {
     RCFOP_KILL,             /**< Kill the process */
     RCFOP_CONFGRP_START,    /**< Start of configuration group */
     RCFOP_CONFGRP_END,      /**< End of configuration group */
+    RCFOP_TADEAD            /**< Inform RCF that TA is dead */
 } rcf_op_t;
 
 

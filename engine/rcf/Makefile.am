@@ -9,7 +9,7 @@ AM_CFLAGS = @XML2_CFLAGS@
 AM_LDFLAGS = @TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/lib 
 
 
-bin_PROGRAMS = te_rcf te_rcf_shutdown
+bin_PROGRAMS = te_rcf te_rcf_shutdown te_rcf_tadead
 
 
 te_rcf_SOURCES = rcf.c
@@ -30,5 +30,12 @@ te_rcf_shutdown_SOURCES = rcf_shutdown.c
 te_rcf_shutdown_LDADD = -lrcfapi -llogger_ten -lipc -lpthread
 
 te_rcf_shutdown_DEPENDENCIES = $(DESTDIR)/$(prefix)/lib/librcfapi.a \
+                               $(DESTDIR)/$(prefix)/lib/libipc.a
+
+te_rcf_tadead_SOURCES = rcf_tadead.c
+
+te_rcf_tadead_LDADD = -lrcfapi -llogger_ten -lipc -lpthread
+
+te_rcf_tadead_DEPENDENCIES = $(DESTDIR)/$(prefix)/lib/librcfapi.a \
                                $(DESTDIR)/$(prefix)/lib/libipc.a
 

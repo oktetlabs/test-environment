@@ -1479,7 +1479,16 @@ process_user_request(usrreq *req)
         answer_user_request(req);
         return 0;
     }
-
+    
+    if (msg->opcode == RCFOP_TADEAD)
+    {
+        agent->dead = TRUE;
+        (agent->close)(agent->handle, &set0);
+        answer_all_requests(&(agent->sent), ETADEAD);
+        answer_all_requests(&(agent->pending), ETADEAD);
+        return 0;
+    }
+    
     if (req->message->sid > agent->sid)
     {
         ERROR("Invalid SID %d for TA %s", req->message->sid, msg->ta);
