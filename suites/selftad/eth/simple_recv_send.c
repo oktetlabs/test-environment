@@ -175,7 +175,7 @@ main(int argc, char *argv[])
 
         rc = tapi_eth_recv_start(ta_B, sid_b, eth_listen_csap, pattern, 
                                  local_eth_frame_handler, NULL, 1000, 1);
-        VERB("eth recv start rc: %x\n", rc);
+        VERB("eth recv start rc: %x", rc);
 
         if (rc)
             TEST_FAIL("tapi_eth_recv_start failed 0x%x", rc);
@@ -187,13 +187,15 @@ main(int argc, char *argv[])
         if (rc)
             TEST_FAIL("Eth frame send error: %x", rc);
 
+        sleep(2);
+
         num_pkts = 0;
         rc = rcf_ta_trrecv_wait(ta_B, sid_b, eth_listen_csap, &num_pkts);
 
         if (rc)
-            TEST_FAIL("tapi_eth_recv_stop failed 0x%x", rc);
+            TEST_FAIL("tapi_eth_recv_wait failed 0x%x", rc);
 
-        INFO("trrecv stop rc: %x, num of pkts: %d\n", rc, num_pkts);
+        INFO("trrecv wait rc: %x, num of pkts: %d\n", rc, num_pkts);
 
         if (num_pkts != 1)
             TEST_FAIL("Wrong number of packets caught");
