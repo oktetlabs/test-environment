@@ -1223,7 +1223,7 @@ get_session(xmlNodePtr node, tester_cfg *cfg, test_session *session,
         if (rc != 0)
             return rc;
         /* TODO */
-        session->prologue->attrs.track_conf = TESTER_TRACK_CONF_NO;
+        session->epilogue->attrs.track_conf = TESTER_TRACK_CONF_NO;
         node = xmlNodeNext(node);
     }
     /* Get 'run' items */
