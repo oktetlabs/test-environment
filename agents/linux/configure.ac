@@ -147,6 +147,8 @@ AC_SUBST([DAEMONS_LDADD])
 
 
 AM_CONDITIONAL(CFG_LINUX_DAEMONS, test -n "$with_cfg_linux_daemons")
+AM_CONDITIONAL(CFG_LINUX_DAEMONS_NAMED, 
+    [expr "$with_cfg_linux_daemons" : ".*dns" >/dev/null])
 AM_CONDITIONAL(CFG_RCF_RPC, test -n "$with_rcf_rpc")
 
 # #

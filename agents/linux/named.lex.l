@@ -8,15 +8,28 @@
 #include "named.conf.h"
 
 
+static YY_BUFFER_STATE state_stack[16], *state_stack_top = state_stack;
+
 void lex_switch_buffer(const char *name)
 {
     FILE *infile = fopen(name, "r");
     YY_BUFFER_STATE state;
     
-    if(infile)
+    if(!infile)
+        ERROR("Cannot open '%s'");
+    else 
     {
-        state = yy_create_buffer(infile, 1024);
-        yypush_buffer_state(state);
+        if(state_stack_top == state_stack + sizeof(state_stack) / sizeof(*state_stack))
+        {
+            ERROR("Too many nested include's");
+            fclose(infile);
+        }
+        else
+        {
+            state = yy_create_buffer(infile, 1024);
+            *state_stack_top++ = YY_CURRENT_BUFFER;
+            yy_switch_to_buffer(state);
+        }
     }
 }
 
@@ -52,9 +65,9 @@ return DNS_QUOTED_STRING; }
 . { return DNS_UNKNOWN_TOKEN; }
 <INITIAL,COMMENT><<EOF>> {
     fclose(yyin);
-    yypop_buffer_state();
-    if (!YY_CURRENT_BUFFER)
+    if(state_stack_top == state_stack)
         yyterminate();
+    yy_switch_to_buffer(*--state_stack_top);
     BEGIN(INITIAL);
 }
    

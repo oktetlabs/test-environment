@@ -10,7 +10,7 @@ AM_YFLAGS=-d
 # -ltad_ch with names used in -lrcfpch.
 #
 MY_LDADD=symtbl.o -lrcfpch @TE_LDADD@ \
-         -lconf_oid -lcomm_net_agent -lloggerta -lfl
+         -lconf_oid -lcomm_net_agent -lloggerta 
 
 #if HAS_NET_SNMP
 #MY_LDADD+= @NET_SNMP_LIBS@
@@ -71,12 +71,18 @@ if CFG_LINUX_DAEMONS
 MY_CPPFLAGS+=@DAEMONS_CFLAGS@
 
 MY_SOURCES+=linuxconf_daemons.c dhcp_server.c dns_server.c 
-#			named.conf.y named.lex.l
-
-#BUILT_SOURCES=named.conf.h
-#CLEANFILES+=named.conf.h
 
 MY_LDADD+=@DAEMONS_LDADD@
+
+if CFG_LINUX_DAEMONS_NAMED
+
+MY_SOURCES+=named.conf.y named.lex.l
+
+BUILT_SOURCES=named.conf.h
+CLEANFILES+=named.conf.h
+MY_LDADD+=-lfl
+
+endif
 
 endif
 
