@@ -672,23 +672,23 @@ main(int argc, char *argv[])
         goto exit;
     }
     
-    for (cfg = cfgs.tqh_first; cfg != NULL; cfg = cfg->links.tqe_next)
-    {
-        rc = tester_parse_config(cfg);
-        if (rc != 0)
-        {
-            ERROR("Preprocessing of Tester configuration files failed");
-            result = EXIT_FAILURE;
-            goto exit;
-        }
-    }
-
     if (ctx.suites.tqh_first != NULL)
     {
         RING("Building Test Suites specified in command line...");
         rc = tester_build_suites(&ctx.suites);
         if (rc != 0)
         {
+            result = EXIT_FAILURE;
+            goto exit;
+        }
+    }
+
+    for (cfg = cfgs.tqh_first; cfg != NULL; cfg = cfg->links.tqe_next)
+    {
+        rc = tester_parse_config(cfg);
+        if (rc != 0)
+        {
+            ERROR("Preprocessing of Tester configuration files failed");
             result = EXIT_FAILURE;
             goto exit;
         }
