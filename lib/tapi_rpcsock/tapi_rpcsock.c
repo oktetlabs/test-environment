@@ -6509,7 +6509,7 @@ rpc_shell(rcf_rpc_server *handle,
 int 
 rpc_shell_get_all(rcf_rpc_server *handle, char **pbuf, const char *cmd,...)
 {
-    char *buf;
+    char *buf = calloc(1, RPC_SHELL_BUF_CHUNK);
     int   buflen = RPC_SHELL_BUF_CHUNK;
     int   offset = 0;
     char  cmdline[RPC_SHELL_CMDLINE_MAX];
