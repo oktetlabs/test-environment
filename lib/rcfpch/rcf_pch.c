@@ -827,11 +827,8 @@ rcf_pch_run(const char *confstr, const char *info)
                     goto bad_protocol;
 
                 READ_INT(handle);
-
                 READ_INT(num);
-
-                if (isdigit(*ptr))
-                    READ_INT(timeout);
+                READ_INT(timeout);
 
                 if (strncmp(ptr, "results", strlen("results")) == 0)
                 {
@@ -858,16 +855,14 @@ rcf_pch_run(const char *confstr, const char *info)
             case RCFOP_TRSEND_RECV:
             {
                 int handle;
-                int timeout = 0;
-                int results = 0;
+                int timeout;
+                int results;
 
                 if (*ptr == 0 || ba == NULL)
                     goto bad_protocol;
 
                 READ_INT(handle);
-
-                if (isdigit(*ptr))
-                    READ_INT(timeout);
+                READ_INT(timeout);
 
                 if (strncmp(ptr, "results", strlen("results")) == 0)
                 {
@@ -883,8 +878,7 @@ rcf_pch_run(const char *confstr, const char *info)
                                        answer_plen, ba, len, handle,
                                        results, timeout) < 0)
                 {
-                    ERROR("rcf_ch_trsend_recv() returns - "
-                                      "no support");
+                    ERROR("rcf_ch_trsend_recv() returns - no support");
                     SEND_ANSWER("%d", EOPNOTSUPP);
                 }
 

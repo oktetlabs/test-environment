@@ -229,6 +229,7 @@
 #define TE_NET_SNMP       (0xc) /* Errors from net-snmp library */
 #define TE_CS             (0xd)
 #define TE_TA_EXT         (0xe)
+#define TE_RCF_PCH        (0xf)
 /*@}*/
 
 
