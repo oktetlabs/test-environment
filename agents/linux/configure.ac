@@ -99,8 +99,9 @@ if test -n "$with_cfg_linux_daemons" ; then
             ;;
             
         ftp)
-            DAEMONS_CFLAGS="$DAEMONS_CFLAGS -DWITH_FTP_SERVER" ;;
-            
+            DAEMONS_CFLAGS="$DAEMONS_CFLAGS -DWITH_FTP_SERVER" 
+            DAEMONS_CFLAGS="$DAEMONS_CFLAGS -DWITH_XINETD" 
+            ;;            
         dns)
             DAEMONS_CFLAGS="$DAEMONS_CFLAGS -DWITH_DNS_SERVER" ;;
             

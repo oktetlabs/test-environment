@@ -402,6 +402,12 @@
          Value: 0 (disabled) or 1 (enabled)
          Limit: 1 -->
     <object oid="/agent/ftpserver" access="read_write" type="integer"/>
+    <!-- FTP server standalone or via inetd
+         Name:  empty
+         Value: 0 (inetd) or 1 (standalone)
+         Limit: 1 -->
+    <object oid="/agent/ftpserver/standalone" access="read_write" type="integer"/>
+
 
     <!-- SSH daemon.
          Name:  port -->

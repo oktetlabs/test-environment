@@ -1097,10 +1097,101 @@ ds_echoserver_addr_set(unsigned int gid, const char *oid, const char *value)
 #define FTPD_CONF           "vsftpd.conf"
 
 static int ftp_index;
+static int ftp_xinetd_index = -1;
+static te_bool ftp_standalone = TRUE;
+
+static void
+ds_ftpserver_update_config(void)
+{
+    FILE *f = NULL;
+    FILE *g = NULL;
+    
+    /* Enable anonymous upload for ftp */
+    ds_config_touch(ftp_index);
+    OPEN_BACKUP(ftp_index, f);
+    OPEN_CONFIG(ftp_index, g);
+
+    while (fgets(buf, sizeof(buf), f) != NULL)
+    {
+        if (strstr(buf, "anonymous_enable") != NULL ||
+            strstr(buf, "anon_mkdir_write_enable") != NULL ||
+            strstr(buf, "write_enable") != NULL ||
+            strstr(buf, "anon_upload_enable") != NULL ||
+            strstr(buf, "listen") != NULL)
+        {
+            continue;
+        }
+        fwrite(buf, 1, strlen(buf), g);
+    }
+    fprintf(g, "anonymous_enable=YES\n");
+    fprintf(g, "anon_mkdir_write_enable=YES\n");
+    fprintf(g, "write_enable=YES\n");
+    fprintf(g, "anon_upload_enable=YES\n");
+    fprintf(g, "listen=%s\n", ftp_standalone ? "YES" : "NO");
+    fclose(f);
+    fclose(g);
+}
+
+#ifdef WITH_XINETD
+static int
+ds_ftpserver_set(unsigned int gid, const char *oid, const char *value)
+{
+    UNUSED(oid);
+    return ftp_standalone ? daemon_set(gid, "ftpserver", value) : 
+        xinetd_set(gid, "ftp", value);
+}
+
+static int
+ds_ftpserver_get(unsigned int gid, const char *oid, char *value)
+{
+    UNUSED(oid);
+    return ftp_standalone ? daemon_get(gid, "ftpserver", value) :
+        xinetd_get(gid, "ftp", value);
+}
+#else
+#define ds_ftpserver_set daemon_set
+#define ds_ftpserver_get daemon_get
+#endif
+
+static int
+ds_ftpserver_standalone_set(unsigned int gid, const char *oid, 
+                            const char *value)
+{
+    te_bool newval = (strtoul(value, NULL, 10) != 0);
+    char tmp[2];
+
+    if(!newval && ftp_xinetd_index < 0)
+        return TE_RC(TE_TA_LINUX, ETENOSUPP);
+
+    ds_ftpserver_get(gid, oid, tmp);
+    ds_ftpserver_set(gid, oid, "0");
+    ftp_standalone = newval;
+    ds_ftpserver_update_config();
+    ds_ftpserver_set(gid, oid, tmp);
+    UNUSED(gid);
+    UNUSED(oid);
+    return 0;
+}
+
+static int
+ds_ftpserver_standalone_get(unsigned int gid, const char *oid, char *value)
+{
+    value[0] = (ftp_standalone ? '1' : '0');
+    value[1] = '\0';
+    UNUSED(gid);
+    UNUSED(oid);
+    return 0;
+}
+
+
+RCF_PCH_CFG_NODE_RW(node_ds_ftpserver_standalone, "standalone",
+                    NULL, NULL,
+                    ds_ftpserver_standalone_get, 
+                    ds_ftpserver_standalone_set);
 
 RCF_PCH_CFG_NODE_RW(node_ds_ftpserver, "ftpserver",
-                    NULL, NULL,
-                    daemon_get, daemon_set);
+                    NULL, &node_ds_ftpserver_standalone,
+                    ds_ftpserver_get, ds_ftpserver_set);
 
 /**
  * Initialize FTP daemon.
@@ -1110,9 +1201,6 @@ RCF_PCH_CFG_NODE_RW(node_ds_ftpserver, "ftpserver",
 void
 ds_init_ftp_server(rcf_pch_cfg_object **last)
 {
-    FILE *f = NULL;
-    FILE *g = NULL;
-    
     char *dir = NULL;
 
     struct stat stat_buf;
@@ -1126,32 +1214,19 @@ ds_init_ftp_server(rcf_pch_cfg_object **last)
         WARN("Failed to locate VSFTPD configuration file");
         return;
     }
-    
+   
     if (ds_create_backup(dir, FTPD_CONF, &ftp_index) != 0)
         return;
 
-    /* Enable anonymous upload for ftp */
-    ds_config_touch(ftp_index);
-    OPEN_BACKUP(ftp_index, f);
-    OPEN_CONFIG(ftp_index, g);
-
-    while (fgets(buf, sizeof(buf), f) != NULL)
+#ifdef WITH_XINETD
+    if (file_exists(XINETD_ETC_DIR "ftp"))
     {
-        if (strstr(buf, "anonymous_enable") != NULL ||
-            strstr(buf, "anon_mkdir_write_enable") != NULL ||
-            strstr(buf, "write_enable") != NULL ||
-            strstr(buf, "anon_upload_enable") != NULL)
-        {
-            continue;
-        }
-        fwrite(buf, 1, strlen(buf), g);
+        if (ds_create_backup(XINETD_ETC_DIR, "ftp", &ftp_xinetd_index) != 0)
+            return;
     }
-    fprintf(g, "anonymous_enable=YES\n");
-    fprintf(g, "anon_mkdir_write_enable=YES\n");
-    fprintf(g, "write_enable=YES\n");
-    fprintf(g, "anon_upload_enable=YES\n");
-    fclose(f);
-    fclose(g);
+#endif
+
+    ds_ftpserver_update_config();
     if (ta_system("mkdir -p /var/ftp/pub") != 0)
     {
         ERROR("Cannot create /var/pub/ftp");
