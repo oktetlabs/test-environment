@@ -24,7 +24,7 @@
  *
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
  *
- * $Id: tarpc_server.c 4215 2004-08-04 06:37:49Z igorv $
+ * $Id$
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -673,7 +673,7 @@ TARPC_FUNC(connect_ex,
                                            in->len_buf,
                                            out->len_sent.len_sent_len == 0 ? NULL :
                                            (LPDWORD)(out->len_sent.len_sent_val),
-                                           &overlapped->overlapped));
+                                           (LPWSAOVERLAPPED)overlapped));
         }					   
     }
     else
@@ -824,37 +824,21 @@ TARPC_FUNC(wsa_accept,
 }   
 )
 
-
 /*------------------------------ AcceptEx() ------------------------------*/
 
 TARPC_FUNC(accept_ex, 
 {
-    COPY_ARG(buf);    
     COPY_ARG(count);
-    COPY_ARG_ADDR(laddr);    
-    COPY_ARG_ADDR(raddr);
-    COPY_ARG(laddr_len);
-    COPY_ARG(raddr_len);
 },
 {
     LPFN_ACCEPTEX             pf_accept_ex = NULL;    
     GUID                      guid_accept_ex = WSAID_ACCEPTEX; 
-    LPFN_GETACCEPTEXSOCKADDRS pf_get_accept_ex_sockaddrs = NULL;    
-    GUID                      guid_get_accept_ex_sockaddrs =
-                                                     WSAID_GETACCEPTEXSOCKADDRS; 
     DWORD                     bytes_returned;
-    struct sockaddr_storage   l_addr;
-    struct sockaddr          *l_a;      
-    struct sockaddr_storage   r_addr;
-    struct sockaddr          *r_a;
     int                       buflen;
     rpc_overlapped           *overlapped;
     rpc_overlapped            tmp;
 
-    l_a = sockaddr_rpc2h(&out->laddr, &l_addr);
-    r_a = sockaddr_rpc2h(&out->raddr, &r_addr);
-    
-    buflen = in->len + 2 * (sizeof(struct sockaddr_storage) + 16) + 1;
+    buflen = in->buflen + 2 * (sizeof(struct sockaddr_storage) + 16);
     if (WSAIoctl(in->fd, SIO_GET_EXTENSION_FUNCTION_POINTER,
                  (LPVOID)&guid_accept_ex, sizeof(GUID),
                  (LPVOID)&pf_accept_ex, sizeof(LPFN_ACCEPTEX),
@@ -862,17 +846,6 @@ TARPC_FUNC(accept_ex,
     {
         out->retval = 0;
         ERROR("WSAIoctl() failed for AcceptEx");
-        goto finish;     
-    }
-    if (WSAIoctl(in->fd, SIO_GET_EXTENSION_FUNCTION_POINTER,
-                 (LPVOID)&guid_get_accept_ex_sockaddrs,
-                  sizeof(GUID),
-                  (LPVOID)&pf_get_accept_ex_sockaddrs,
-                  sizeof(LPFN_GETACCEPTEXSOCKADDRS),
-                  &bytes_returned, NULL, NULL))
-    {
-        out->retval = 0;
-        ERROR("WSAIoctl() failed for GetAcceptExSockaddrs");
         goto finish;     
     }
     if (in->overlapped != 0)
@@ -884,53 +857,71 @@ TARPC_FUNC(accept_ex,
         memset(&tmp, 0, sizeof(tmp));
 	overlapped = &tmp;
     }
-    if (buf2overlapped(overlapped, buflen, NULL) != 0)
+    if (in->buflen > 0)
     {
-        out->common._errno = TE_RC(TE_TA_WIN32, ENOMEM); 
-	goto finish;
+        if (buf2overlapped(overlapped, buflen, NULL) != 0)
+        {
+            out->common._errno = TE_RC(TE_TA_WIN32, ENOMEM); 
+    	    goto finish;
+        }
     }
-    
-    MAKE_CALL(out->retval = (*pf_accept_ex)(in->fd, in->fd_a,
-                                            out->buf.buf_len == 0 ? NULL :
-                                            overlapped->buffers[0].buf, 
-					    in->len,
-                                            sizeof(struct sockaddr_storage)
-                                            + 16,
-                                            sizeof(struct sockaddr_storage)
-                                            + 16,
-                                            out->count.count_len == 0 ? NULL :
-                                            (LPDWORD)out->count.count_val,
-                                            in->overlapped == 0 ? NULL :
-					    &overlapped->overlapped));
+    MAKE_CALL(out->retval =
+                      (*pf_accept_ex)(in->fd, in->fd_a,
+                                      in->buflen == 0 ? NULL :
+                                      overlapped->buffers[0].buf, 
+		         	      in->buflen,
+				      sizeof(struct sockaddr_storage) + 16,
+                                      sizeof(struct sockaddr_storage) + 16,
+                                      out->count.count_len == 0 ? NULL :
+                                      (LPDWORD)out->count.count_val,
+                                      in->overlapped == 0 ? NULL :
+   				      (LPWSAOVERLAPPED)overlapped)); 
+    finish:
+    ;
+}
+)
 
-    if (in->overlapped == 0 || out->retval || 
-        out->common.win_error != RPC_WSA_IO_PENDING)
+/*-------------------------- GetAcceptExSockAddr() ---------------------------*/
+
+TARPC_FUNC(get_accept_addr, 
+{
+    COPY_ARG_ADDR(laddr);    
+    COPY_ARG_ADDR(raddr);
+},
+{
+    UNUSED(list);
+
+    LPFN_GETACCEPTEXSOCKADDRS pf_get_accept_ex_sockaddrs = NULL;    
+    GUID                      guid_get_accept_ex_sockaddrs =
+                                                     WSAID_GETACCEPTEXSOCKADDRS; 
+    DWORD                     bytes_returned;
+    struct sockaddr	     *l_a = 0;
+    struct sockaddr	     *r_a = 0 ;
+    int                       addrlen1 = 0;
+    int                       addrlen2 = 0;
+
+    if (WSAIoctl(in->fd, SIO_GET_EXTENSION_FUNCTION_POINTER,
+                 (LPVOID)&guid_get_accept_ex_sockaddrs,
+                  sizeof(GUID),
+                  (LPVOID)&pf_get_accept_ex_sockaddrs,
+                  sizeof(LPFN_GETACCEPTEXSOCKADDRS),
+                  &bytes_returned, NULL, NULL))
     {
-        rpc_overlapped_free_memory(overlapped);
-    }
-    if (!out->retval)
-    {
+        ERROR("WSAIoctl() failed for GetAcceptExSockaddrs");
         goto finish;     
-    }    
-    (*pf_get_accept_ex_sockaddrs)(out->buf.buf_len == 0 ? NULL :
-                                  overlapped->buffers[0].buf,
-                                  in->len,
+    }
+    (*pf_get_accept_ex_sockaddrs)(in->buf.buf_val, 
+                                  in->buflen,
                                   sizeof(struct sockaddr_storage) + 16,
                                   sizeof(struct sockaddr_storage) + 16,
-                                  &l_a,
-                                  out->laddr_len.laddr_len_len == 0 ?
-                                  NULL : (LPINT)&out->laddr_len.laddr_len_val,
-                                  &r_a,
-                                  out->raddr_len.raddr_len_len == 0 ?
-                                  NULL : (LPINT)&out->raddr_len.raddr_len_val);
-    if (out->buf.buf_len != 0)
-        memcpy(out->buf.buf_val, overlapped->buffers[0].buf, in->len);
+                                  &l_a, &addrlen1, &r_a, &addrlen2);
     sockaddr_h2rpc(l_a, &(out->laddr));
     sockaddr_h2rpc(r_a, &(out->raddr));
     finish:
     ;
 }
 )
+
 
 /*------------------------------ TransmitFile() ----------------------------*/
 
@@ -943,15 +934,35 @@ TARPC_FUNC(transmit_file, {},
     DWORD                     flags;
     HANDLE                    file = NULL;
  
-    INIT_CHECKED_ARG(in->head.head_val, in->head.head_len, 0);
-    INIT_CHECKED_ARG(in->tail.tail_val, in->tail.tail_len, 0);
+    rpc_overlapped *overlapped = NULL;
+
     memset(&transmit_buffers, 0, sizeof(transmit_buffers));
     if (in->head.head_len != 0)
          transmit_buffers.Head = in->head.head_val; 
-    transmit_buffers.HeadLength = in->head_len;
+    transmit_buffers.HeadLength = in->head.head_len;
     if (in->tail.tail_len != 0)
          transmit_buffers.Tail = in->tail.tail_val; 
-    transmit_buffers.TailLength = in->tail_len;                
+    transmit_buffers.TailLength = in->tail.tail_len;                
+
+    if (in->overlapped != 0)
+    {
+        rpc_overlapped_free_memory(overlapped);
+        if ((overlapped->buffers = calloc(2, sizeof(WSABUF))) == NULL)
+        {
+            out->common._errno = TE_RC(TE_TA_WIN32, ENOMEM); 
+        	goto finish;
+        }
+        overlapped->buffers[0].buf = in->head.head_val;
+        in->head.head_val = NULL;
+        overlapped->buffers[0].len = in->head.head_len;
+        in->head.head_len = 0;
+        overlapped->buffers[1].buf = in->tail.tail_val;
+        in->tail.tail_val = NULL;
+        overlapped->buffers[1].len = in->tail.tail_len;
+        in->tail.tail_len = 0;
+        overlapped->bufnum = 2;
+    }
+ 
     if (WSAIoctl(in->fd, SIO_GET_EXTENSION_FUNCTION_POINTER,
                  (LPVOID)&guid_transmit_file, sizeof(GUID),
                  (LPVOID)&pf_transmit_file,
@@ -970,7 +981,7 @@ TARPC_FUNC(transmit_file, {},
     MAKE_CALL(out->retval = 
         (*pf_transmit_file)(in->fd, file, 
                             in->len, in->len_per_send,
-                            (LPWSAOVERLAPPED)(in->overlapped),
+                            (LPWSAOVERLAPPED)overlapped,
                             &transmit_buffers, flags));
     finish:
     ;
@@ -2870,7 +2881,7 @@ TARPC_FUNC(wsa_send,
     COPY_ARG(bytes_sent);
 },
 {
-    rpc_overlapped *overlapped;
+    rpc_overlapped *overlapped = NULL;
     rpc_overlapped  tmp;
     
     if (in->overlapped != 0)
@@ -2894,7 +2905,8 @@ TARPC_FUNC(wsa_send,
                           out->bytes_sent.bytes_sent_len == 0 ? NULL :
                           (LPDWORD)(out->bytes_sent.bytes_sent_val),
                           send_recv_flags_rpc2h(in->flags),
-                          in->overlapped == 0 ? NULL : &overlapped->overlapped, 
+                          in->overlapped == 0 ? NULL 
+			                      : (LPWSAOVERLAPPED)overlapped, 
                           in->callback ? 
                           (LPWSAOVERLAPPED_COMPLETION_ROUTINE)
                               completion_callback : NULL));
@@ -2918,7 +2930,6 @@ TARPC_FUNC(wsa_recv,
 {
     rpc_overlapped *overlapped;
     rpc_overlapped  tmp;
-    int i;
 
     if (in->overlapped != 0)
     {
@@ -2944,7 +2955,8 @@ TARPC_FUNC(wsa_recv,
                           (LPDWORD)(out->bytes_received.bytes_received_val),
                           out->flags.flags_len > 0 ? 
                           (LPDWORD)(out->flags.flags_val) : NULL,
-                          in->overlapped == 0 ? NULL : &overlapped->overlapped, 
+                          in->overlapped == 0 ? NULL 
+			                      : (LPWSAOVERLAPPED)overlapped, 
                           in->callback ? 
                           (LPWSAOVERLAPPED_COMPLETION_ROUTINE)
                               completion_callback : NULL));
@@ -2977,7 +2989,7 @@ TARPC_FUNC(get_overlapped_result,
     MAKE_CALL(out->retval = 
                   WSAGetOverlappedResult(in->s, 
                                          in->overlapped == 0 ? 
-					 NULL : &overlapped->overlapped,
+					 NULL : (LPWSAOVERLAPPED)overlapped,
                                          out->bytes.bytes_len == 0 ? NULL :
                                          (LPDWORD)(out->bytes.bytes_val),
                                          in->wait, 
@@ -2986,7 +2998,6 @@ TARPC_FUNC(get_overlapped_result,
                                          NULL));
     if (out->retval)
     {
-        int i;
         if (out->flags.flags_len > 0)
             out->flags.flags_val[0] = 
                 send_recv_flags_h2rpc(out->flags.flags_val[0]);
