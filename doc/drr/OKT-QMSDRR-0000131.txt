@@ -1,29 +1,0 @@
-# Document Review Request/Report 
-ID OKT-QMSDRR-0000131
-
-COPYRIGHT Copyright(C) OKTET Ltd. 2003
-
-DDRID OKT-QMSDDR-0000066
-
-RESPMGR Elena Vengerova <helen@oktet.ru>
-
-MODERATOR Elena Vengerova <helen@oktet.ru>
-PARTICIPANT Andrew Rybchenko <arybchik@oktet.ru>
-
-DIRECTION:
-Line 9: use CVS tag:  "@(#) $Id: OKT-QMSDRR-0000131.txt,v 1.1 2003/10/28 09:35:41 arybchik Exp $"
-
-QUESTION
-The document does not comply to DDR - TA side should provide
-generic (not only network) interface to user. I.e. all prefixes
-should be rcf_comm_agent_* and parameters of functions should be
-generic. It is possible because we can link to TA only one communication
-library and due this fact all functions from two TA communication libraries
-may have same names. Another situation is on the TEN - several
-communication libraries may be linked to RCF application and therefore
-all libraries should have different interface. Moreover it's not
-necessary to provide unified interface to TEN communication libraries -
-we can do it most comfortable for communication library implementor.
-
-RESULT
-Document should be significantly updated - additional review is necessary.
