@@ -74,6 +74,7 @@
 #define ETERPCTIMEOUT   (RCF_ERRNO_BASE | 10) /* Timeout ocurred during
                                                  RPC call */                                                
 #define ETERPCDEAD      (RCF_ERRNO_BASE | 11) /* RPC server is dead */ 
+#define ETADEAD         (RCF_ERRNO_BASE | 12) /* Test Agent is dead */ 
 /*@}*/
 
 

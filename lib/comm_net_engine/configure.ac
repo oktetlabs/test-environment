@@ -42,6 +42,7 @@ AC_CHECK_HEADERS([config.h              \
                   sys/errno.h           \
                   arpa/inet.h           \
                   netinet/in.h          \
+                  netinet/tcp.h         \
                 ])
 
 

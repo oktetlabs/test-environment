@@ -155,6 +155,18 @@ typedef int (* rcf_talib_is_ready)(rcf_talib_handle handle);
 typedef int (* rcf_talib_receive)(rcf_talib_handle handle, 
                                   char *buf, size_t *len, char **pba);
 
+/**
+ * Close interactions with TA.
+ *
+ * @param handle        TA handle
+ * @param select_set    FD_SET to be updated with the TA connection file 
+ *                      descriptor (for Test Agents supporting listening mode)
+ *                      (IN/OUT)
+ *
+ * @return error code 
+ */
+typedef int (* rcf_talib_close)(rcf_talib_handle handle, fd_set *select_set);
+
 #ifdef __cplusplus
 }
 #endif

@@ -161,9 +161,11 @@ typedef struct ta {
                                                  (starts from 2) */
 
     lt_dlhandle         dlhandle;           /**< Dynamic library handle */
+    te_bool             dead;               /**< TA is dead */
 
     /** @name Methods */
     rcf_talib_start     start;              /**< Start TA */
+    rcf_talib_close     close;              /**< Close TA */
     rcf_talib_reboot    reboot;             /**< Reboot TA */
     rcf_talib_connect   connect;            /**< Connect to TA */
     rcf_talib_transmit  transmit;           /**< Transmit to TA */
@@ -307,6 +309,7 @@ resolve_ta_methods(ta *agent, char *libname)
     } while (0)
 
     RESOLVE_SYMBOL(start);
+    RESOLVE_SYMBOL(close);
     RESOLVE_SYMBOL(reboot);
     RESOLVE_SYMBOL(connect);
     RESOLVE_SYMBOL(transmit);
@@ -516,8 +519,7 @@ answer_user_request(usrreq *req)
                                  sizeof(rcf_msg) + req->message->data_len);
         if (rc != 0)
         {
-            ERROR("Cannot send an answer to user: errno %d",
-                             rc);
+            ERROR("Cannot send an answer to user: errno %d", rc);
         }
     }
     if (!(req->message->flags & INTERMEDIATE_ANSWER))
@@ -545,7 +547,7 @@ answer_all_requests(usrreq *req, int error)
     for (tmp = req->next ; tmp != req ; tmp = next)
     {
         next = tmp->next;
-        tmp->message->error = error;
+        tmp->message->error = TE_RC(TE_RCF, error);
         answer_user_request(tmp);
     }
 }
@@ -899,19 +901,22 @@ process_reply(ta *agent)
     rc = (agent->receive)(agent->handle, cmd, &len, &ba);
     if (rc == ETESMALLBUF)
     {
-        ERROR("FATAL ERROR: Too big answer from TA '%s' - "
-                         "increase memory constants", agent->name);
+        ERROR("FATAL ERROR: Too big answer from TA '%s' - increase "
+              "memory constants", agent->name);
         return 1;
     }
     if (rc != 0 && rc != ETEPENDING)
     {
-        ERROR("FATAL ERROR: Receiving answer from TA '%s' "
-                         "failed error %d", agent->name, rc);
-        return 1;
+        ERROR("ERROR: Receiving answer from TA '%s' failed error %d",
+              agent->name, rc);
+        agent->dead = TRUE;
+        (agent->close)(agent->handle, &set0);
+        answer_all_requests(&(agent->sent), ETADEAD);
+        answer_all_requests(&(agent->pending), ETADEAD);
+        return 0;
     }
 
-    VERB("Answer \"%s\" is received from TA '%s'",
-              cmd, agent->name);
+    VERB("Answer \"%s\" is received from TA '%s'", cmd, agent->name);
 
     if (strncmp(ptr, "SID ", strlen("SID ")) != 0)
     {
@@ -1080,7 +1085,7 @@ bad_protocol:
                      agent->name);
     if (req != NULL)
     {
-        req->message->error = ETEIO;
+        req->message->error = TE_RC(TE_RCF, ETEIO);
         answer_user_request(req);
     }
     return 1;
@@ -1466,11 +1471,18 @@ process_user_request(usrreq *req)
         answer_user_request(req);
         return 0;
     }
+    
+    if (agent->dead)
+    {
+        ERROR("Request to dead TA %s", msg->ta);
+        msg->error = TE_RC(TE_RCF, ETADEAD);
+        answer_user_request(req);
+        return 0;
+    }
 
     if (req->message->sid > agent->sid)
     {
-        ERROR("Invalid SID %d for TA %s",
-                         req->message->sid, msg->ta);
+        ERROR("Invalid SID %d for TA %s", req->message->sid, msg->ta);
         msg->error = TE_RC(TE_RCF, EINVAL);
         answer_user_request(req);
         return 0;
@@ -1568,10 +1580,12 @@ rcf_shutdown()
 
     for (agent = agents; agent != NULL; agent = agent->next)
     {
+        if (agent->dead)
+            continue;
         sprintf(cmd, "SID %d %s", ++agent->sid, TE_PROTO_SHUTDOWN);
         (agent->transmit)(agent->handle, cmd, strlen(cmd) + 1);
         answer_all_requests(&(agent->sent), EIO);
-        answer_all_requests(&(agent->pending), EIO);
+        answer_all_requests(&(agent->pending), EIO);        
     }
 
     while (shutdown_num > 0 && time(NULL) - t < RCF_SHUTDOWN_TIMEOUT)
@@ -1600,6 +1614,7 @@ rcf_shutdown()
 
                 VERB("Test Agent '%s' is down", agent->name);
                 agent->flags |= TA_DOWN;
+                (agent->close)(agent->handle, &set0);
                 shutdown_num--;
             }
         }

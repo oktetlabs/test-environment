@@ -417,6 +417,22 @@ rcfunix_reboot(rcf_talib_handle handle, char *parms)
 }
 
 /**
+ * Close all interactions with TA.
+ * 
+ * @param handle        TA handle
+ * @param select_set    FD_SET to be updated with the TA connection file
+ *                      descriptor (for Test Agents supporting listening mode)
+ *                      (IN/OUT)
+ *
+ * @return error code
+ */
+int
+rcfunix_close(rcf_talib_handle handle, fd_set *select_set)
+{
+    return rcf_net_engine_close(&(((unix_ta *)handle)->conn), select_set);
+}
+
+/**
  * Establish connection with the Test Agent. Note that it's not necessary
  * to perform real reconnect to proxy Test Agents after rebooting of
  * the NUT, which it serves.

@@ -55,7 +55,10 @@
 #if HAVE_NETINET_IN_H
 #include <netinet/in.h>
 #endif
-#ifdef HAVE_NETDB_H
+#if HAVE_NETINET_TCP_H
+#include <netinet/tcp.h>
+#endif
+#if HAVE_NETDB_H
 #include <netdb.h>
 #endif
 
@@ -132,7 +135,7 @@ rcf_net_engine_connect(const char *addr, const char *port,
     
     if (s < 0)
         return errno;
-    
+
     peer.sin_family = AF_INET;
     peer.sin_port = htons(atoi(port));
     peer.sin_addr = *(struct in_addr *)(hs->h_addr_list[0]);
@@ -152,11 +155,55 @@ rcf_net_engine_connect(const char *addr, const char *port,
         return errno;
     }
         
+//#ifdef SO_KEEPALIVE
+    {
+        int optval;
+
+        optval = 1;
+        if (setsockopt(s, SOL_SOCKET, SO_KEEPALIVE,
+                       &optval, sizeof(optval)) != 0)
+        {
+            perror("setsockopt(SOL_SOCKET, SO_KEEPALIVE)");
+            close(s);
+            return errno;
+        }
+//#ifdef TCP_KEEPIDLE
+        optval = TE_COMM_NET_ENGINE_KEEPIDLE;
+        if (setsockopt(s, SOL_TCP, TCP_KEEPIDLE,
+                       &optval, sizeof(optval)) != 0)
+        {
+            perror("setsockopt(SOL_TCP, TCP_KEEPIDLE)");
+            close(s);
+            return errno;
+        }
+//#endif
+//#ifdef TCP_KEEPINTVL
+        optval = TE_COMM_NET_ENGINE_KEEPINTVL;
+        if (setsockopt(s, SOL_TCP, TCP_KEEPINTVL,
+                       &optval, sizeof(optval)) != 0)
+        {
+            perror("setsockopt(SOL_TCP, TCP_KEEPINTVL)");
+            close(s);
+            return errno;
+        }
+//#endif
+//#ifdef TCP_KEEPCNT
+        optval = TE_COMM_NET_ENGINE_KEEPCNT;
+        if (setsockopt(s, SOL_TCP, TCP_KEEPCNT,
+                       &optval, sizeof(optval)) != 0)
+        {
+            perror("setsockopt(SOL_TCP, TCP_KEEPCNT)");
+            close(s);
+            return errno;
+        }
+//#endif
+    }
+//#endif /* SO_KEEPALIVE */
+    
     FD_SET(s, p_select_set);
 
     /* Connection established. Let's allocate memory for rnc and fill it*/
     *p_rnc = (struct rcf_net_connection *)calloc(1, sizeof(**p_rnc));
-
     if ((*p_rnc) == 0)
     {
         perror("rcf_net_engine_connect(): memory allocation");
@@ -185,6 +232,9 @@ rcf_net_engine_transmit(struct rcf_net_connection *rnc,
                         const char *data, size_t length)
 {
     ssize_t len = 0;
+
+    if (rnc == NULL)
+        return EINVAL;
 
     while (length > 0)
     {
@@ -215,8 +265,11 @@ rcf_net_engine_is_ready(struct rcf_net_connection *rnc)
     fd_set          rfds;
     struct timeval  tv;
 
+    if (rnc == NULL)
+        return 0;
+
     if (rnc->bytes_to_read > 0)
-      return 1;
+        return 1;
 
     FD_ZERO(&rfds);
     FD_SET(rnc->socket, &rfds);
@@ -273,6 +326,9 @@ rcf_net_engine_receive(struct rcf_net_connection *rnc, char *buffer,
 {
     int     ret;
     size_t  l = 0;
+
+    if (rnc == NULL)
+        return EINVAL;
 
     if (rnc->bytes_to_read > 0) 
     {
@@ -391,24 +447,35 @@ rcf_net_engine_receive(struct rcf_net_connection *rnc, char *buffer,
  *
  * @param p_rnc         Pointer to variable with  handler received from 
  *                      rcf_net_engine_connect
+ * @param p_select_set  Pointer to the fdset for reading to be modified
  *
  * @return Status code.
  * @retval 0            Success.
  * @retval other value  errno.
  */
 int 
-rcf_net_engine_close(struct rcf_net_connection **p_rnc)
+rcf_net_engine_close(struct rcf_net_connection **p_rnc, fd_set *p_select_set)
 {
+    int rc = 0;
+
+    if (p_rnc == NULL)
+        return EINVAL;
+
+    if (*p_rnc == NULL)
+        return 0;
+
+    FD_CLR((*p_rnc)->socket, p_select_set);
+
     if (close((*p_rnc)->socket) < 0)
     {
         perror("rcf_net_engine_close(): close() error");
-        return errno;
+        rc = errno;
     }
 
     free(*p_rnc);
     *p_rnc = NULL;
 
-    return 0;
+    return rc;
 }
 
 

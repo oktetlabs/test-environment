@@ -34,6 +34,14 @@
 #include "te_defs.h"
 
 
+/** TCP interval between successfull keep-alive probes */
+#define TE_COMM_NET_ENGINE_KEEPIDLE     15
+/** TCP interval between failed keep-alive probes */
+#define TE_COMM_NET_ENGINE_KEEPINTVL    3
+/** Number of TCP keep-alive probes before failure */
+#define TE_COMM_NET_ENGINE_KEEPCNT      5
+
+
 /** This structure is used to store some context for each connection. */
 struct rcf_net_connection;
 
@@ -136,14 +144,16 @@ extern int rcf_net_engine_receive(struct rcf_net_connection *rnc,
  * Close connection (socket) to the Test Agent and release the memory used 
  * by struct rcf_net_connection *rnc.
  *
- * @param p_rnc         Pointer to variable with  handler received from 
+ * @param p_rnc         Pointer to variable with handler received from 
  *                      rcf_net_engine_connect
+ * @param p_select_set  Pointer to the fdset for reading to be modified
  *
  * @return Status code.
  * @retval 0            - success
  * @retval other value  - errno
  */
-extern int rcf_net_engine_close(struct rcf_net_connection **p_rnc);
+extern int rcf_net_engine_close(struct rcf_net_connection **p_rnc,
+                                fd_set *p_select_set);
 
 
 #endif /* !__TE_COMM_NET_ENGINE_H__ */
