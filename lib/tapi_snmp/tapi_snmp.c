@@ -897,20 +897,25 @@ tapi_snmp_set_row(const char *ta, int sid, int csap_id,
             case TAPI_SNMP_COUNTER:
             case TAPI_SNMP_UNSIGNED:
             case TAPI_SNMP_TIMETICKS:
-            case TAPI_SNMP_ENDOFMIB:
-            case TAPI_SNMP_NOSUCHOBJ:
-            case TAPI_SNMP_NOSUCHINS:
                 vb->type = syntax;
                 vb->name = oid;
                 vb->integer = va_arg(ap, int);
                 break;
 
             case TAPI_SNMP_OCTET_STR:
+            {
+                vb->type = syntax;
+                vb->name = oid;
+                vb->oct_string = va_arg(ap, unsigned char *);
+                vb->v_len = va_arg(ap, int);
+                break;
+            }
+
             case TAPI_SNMP_OBJECT_ID:
             {
                 vb->type = syntax;
                 vb->name = oid;
-                vb->oct_string = va_arg(ap, char *);
+                vb->obj_id = va_arg(ap, tapi_snmp_oid_t *);
                 vb->v_len = va_arg(ap, int);
                 break;
             }
