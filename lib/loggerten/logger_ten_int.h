@@ -185,25 +185,21 @@ log_message_va(uint8_t **msg_buf, size_t *msg_buf_len, uint16_t level,
     do {                                                            \
         if (msg_ptr + (_len) > msg_end)                             \
         {                                                           \
-            uint8_t *new_buf = malloc(*msg_buf_len << 1);           \
             size_t   data_len = msg_ptr - *msg_buf;                 \
+            size_t   msg_len_off = msg_len_ptr - *msg_buf;          \
                                                                     \
+            (*msg_buf_len) <<= 1;                                   \
+            (*msg_buf) = realloc(*msg_buf, *msg_buf_len);           \
             if (new_buf == NULL)                                    \
             {                                                       \
-                log_message_int(msg_buf, msg_buf_len, TE_LL_ERROR,  \
-                                te_lgr_entity, TE_LGR_USER,         \
-                                "malloc(%u) failed",                \
-                                *msg_buf_len << 1);                 \
+                fprintf(stderr, "%s(): realloc(%u) failed",         \
+                        __FUNCTION__, *msg_buf_len);                \
                 return;                                             \
             }                                                       \
-            memcpy(new_buf, *msg_buf, data_len);                    \
             if (msg_len_ptr != NULL)                                \
-                msg_len_ptr = new_buf + (msg_len_ptr - *msg_buf);   \
-            free(*msg_buf);                                         \
-            *msg_buf = new_buf;                                     \
-            (*msg_buf_len) <<= 1;                                   \
-            msg_ptr = new_buf + data_len;                           \
-            msg_end = new_buf + *msg_buf_len;                       \
+                msg_len_ptr = *msg_buf + msg_len_off;               \
+            msg_ptr = *msg_buf + data_len;                          \
+            msg_end = *msg_buf + *msg_buf_len;                      \
         }                                                           \
     } while (0)
 
