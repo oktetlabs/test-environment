@@ -57,31 +57,31 @@ typedef enum {
 } tapi_cli_csap_type;
 
 /** CLI CSAP type names */
-static const char *tapi_cli_csap_type_name[] = {"serial", "telnet", "ssh"};
+extern const char * const tapi_cli_csap_type_name[];
 
 /** Default command prompt on redhat is '[...]$ ' */
-static const char *tapi_cli_redhat_cprompt_dflt = "\\]\\$\\ ";
+extern const char * const tapi_cli_redhat_cprompt_dflt;
 
 /** Default command prompt on debian is '...$ ' */
-static const char *tapi_cli_debian_cprompt_dflt = "\\$\\ ";
+extern const char * const tapi_cli_debian_cprompt_dflt;
 
 /** Default login prompt for serial console is '[L|l]ogin: ' */
-static const char *tapi_cli_serial_lprompt_dflt = "ogin: ";
+extern const char * const tapi_cli_serial_lprompt_dflt;
 
 /** Default password prompt for serial console is '[P|p]assword: ' */
-static const char *tapi_cli_serial_pprompt_dflt = "assword: ";
+extern const char * const tapi_cli_serial_pprompt_dflt;
 
 /** Default login prompt for telnet console is 'Login: ' */
-static const char *tapi_cli_telnet_lprompt_dflt = "ogin: ";
+extern const char * const tapi_cli_telnet_lprompt_dflt;
 
 /** Default password prompt for telnet console is '[P|p]assword: ' */
-static const char *tapi_cli_telnet_pprompt_dflt = "assword: ";
+extern const char * const tapi_cli_telnet_pprompt_dflt;
 
 /** There is no default login prompt for ssh console */
-static const char *tapi_cli_ssh_lprompt_dflt = NULL;
+extern const char * const tapi_cli_ssh_lprompt_dflt;
 
 /** Default password prompt for ssh console is '[P|p]assword: ' */
-static const char *tapi_cli_ssh_pprompt_dflt = "assword: ";
+extern const char * const tapi_cli_ssh_pprompt_dflt;
 
 /**
  * Create common CLI CSAP on local device (using millicom).

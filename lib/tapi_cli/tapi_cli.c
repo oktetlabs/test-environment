@@ -62,6 +62,34 @@
 #define TAPI_DEBUG  1
 
 
+/** CLI CSAP type names */
+const char * const tapi_cli_csap_type_name[] = {"serial", "telnet", "ssh"};
+
+/** Default command prompt on redhat is '[...]$ ' */
+const char * const tapi_cli_redhat_cprompt_dflt = "\\]\\$\\ ";
+
+/** Default command prompt on debian is '...$ ' */
+const char * const tapi_cli_debian_cprompt_dflt = "\\$\\ ";
+
+/** Default login prompt for serial console is '[L|l]ogin: ' */
+const char * const tapi_cli_serial_lprompt_dflt = "ogin: ";
+
+/** Default password prompt for serial console is '[P|p]assword: ' */
+const char * const tapi_cli_serial_pprompt_dflt = "assword: ";
+
+/** Default login prompt for telnet console is 'Login: ' */
+const char * const tapi_cli_telnet_lprompt_dflt = "ogin: ";
+
+/** Default password prompt for telnet console is '[P|p]assword: ' */
+const char * const tapi_cli_telnet_pprompt_dflt = "assword: ";
+
+/** There is no default login prompt for ssh console */
+const char * const tapi_cli_ssh_lprompt_dflt = NULL;
+
+/** Default password prompt for ssh console is '[P|p]assword: ' */
+const char * const tapi_cli_ssh_pprompt_dflt = "assword: ";
+
+
 /**
  * Add prompts parameters to CLI CSAP initialisation string
  *
