@@ -54,6 +54,9 @@ udp_handler(char *fn, void *p)
 { 
     int rc, s_parsed;
     asn_value_p packet, eth_header;
+
+    UNUSED(p);
+
     VERB("ETH handler, file: %s\n", fn);
 
     rc = asn_parse_dvalue_in_file(fn, ndn_raw_packet, &packet, &s_parsed);
@@ -128,23 +131,23 @@ main(int argc, char *argv[])
 
 #if 0
         rc = rcf_ta_trrecv_start(ta, sid, handle, path, 0, eth_handler, NULL, 0);
-        printf("trrecv_start: 0x%x \n", rc);
+        INFO("trrecv_start: 0x%x \n", rc);
         if (rc) break;
 
 #if 1
         sleep(1);
-        printf ("try to get\n");
+        INFO ("try to get\n");
         rc = rcf_ta_trrecv_get(ta, handle, &num);
-        printf("trrecv_get: 0x%x num: %d\n", rc, num);
+        INFO("trrecv_get: 0x%x num: %d\n", rc, num);
 
 #endif
         num = 1;
-        printf ("sleep %d secs before stop\n", num);
+        INFO ("sleep %d secs before stop\n", num);
         sleep (num);
 
-        printf ("try to stop\n");
+        INFO ("try to stop\n");
         rc = rcf_ta_trrecv_stop(ta, handle, &num);
-        printf("trrecv_stop: 0x%x num: %d\n", rc, num);
+        INFO("trrecv_stop: 0x%x num: %d\n", rc, num);
 
 #endif
 

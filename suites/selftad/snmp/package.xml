@@ -17,18 +17,21 @@
         </var>
 
         <run>
-            <script name="snmp_gets"/>
+            <script name="snmp_gets">
+                <req id="SNMP"/>
+            </script>
             <arg name="mib_name">
                 <value>SNMPv2-MIB.txt</value>
             </arg>
             <arg name="mib_object">
                 <value>sysDescr</value>
             </arg>
-            <req id="SNMP"/>
         </run>
 
         <run>
-            <script name="snmp_get_if_table"/>
+            <script name="snmp_get_if_table">
+                <req id="SNMP"/>
+            </script>
             <arg name="mib_name">
                 <value>SNMPv2-MIB.txt</value>
             </arg>

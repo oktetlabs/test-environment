@@ -14,6 +14,6 @@ AM_LDFLAGS = @TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/lib
 
 tetest_PROGRAMS = udp1
 
-MYLDADD = -ltapi_ipstack -lndn -lasn -ltapi -lrcfapi -lconfapi -lconf_oid \
+LDADD = -ltapi_ipstack -lndn -lasn -ltapi -lrcfapi -lconfapi -lconf_oid \
           -lipc -lpthread -llogger_ten
 

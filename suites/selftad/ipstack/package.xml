@@ -11,7 +11,10 @@
         </var>
 
         <run>
-            <script name="udp1"/>
+            <script name="udp1">
+                <req id="IPSTACK"/>
+                <req id="UDP"/>
+            </script>
         </run>
     </session>
 

@@ -26,6 +26,8 @@
  * $Id$
  */
 
+#define TE_TEST_NAME    "cli/simple"
+
 #include "config.h"
 
 #include <stdio.h>
@@ -36,54 +38,37 @@
 #include <unistd.h>
 #include "te_stdint.h"
 #include "te_errno.h"
+#include "tapi_test.h"
 #include "rcf_api.h"
 
-
-const char *te_lgr_entity = "CLI TEST";
+#include "logger_api.h"
 
 void
-trap_handler(char *fn, void *p)
+cli_msg_handler(char *fn, void *p)
 { 
-    printf ("CLI message handler, file with NDS: %s\n", fn);
+    UNUSED(p);
+    VERB("CLI message handler, file with NDS: %s\n", fn);
 }
 
 int
-main()
+main(int argc, char *argv[])
 {
-    char ta[32];
-    int  len = sizeof(ta);
-    int  sid;
-    
-    printf("Starting test\n");
-    if (rcf_get_ta_list(ta, &len) != 0)
-    {
-        printf("rcf_get_ta_list failed\n");
-        return 1;
-    }
-    printf("Agent: %s\n", ta);
-    
-    /* Type test */
-    {
-        char type[16];
-        if (rcf_ta_name2type(ta, type) != 0)
-        {
-            printf("rcf_ta_name2type failed\n");
-            return 1;
-        }
-        printf("TA type: %s\n", type); 
-    }
+    char *ta;
+    int   sid;
+   
+    TEST_START;
+    TEST_GET_STRING_PARAM(ta);
     
     /* Session */
     {
         if (rcf_ta_create_session(ta, &sid) != 0)
         {
-            printf("rcf_ta_create_session failed\n");
+            ERROR("rcf_ta_create_session failed\n");
             return 1;
         }
-        printf("Test: Created session: %d\n", sid); 
+        INFO("Test: Created session: %d", sid); 
     }
 
-    /* CSAP tests */
     do {
         struct timeval to;
         char path[1000];
@@ -97,7 +82,7 @@ main()
         char *te_suites = getenv("TE_INSTALL_SUITE");
 
         if (te_suites)
-            printf ("te_suites: %s\n", te_suites);
+            INFO("te_suites: %s\n", te_suites);
         else 
             break;
 
@@ -105,26 +90,32 @@ main()
         strcat(path, "/selftest/cli_nds/");
         path_prefix = strlen(path);
         strcpy(path + path_prefix, "cli-csap.asn");
-        printf("csap full path: %s\n", path);
+        VERB("csap full path: %s\n", path);
 
-        printf("let's create csap for listen\n"); 
+        VERB("let's create csap for listen\n"); 
         rc =   rcf_ta_csap_create(ta, sid, "cli", path, &handle);
-        printf("csap_create rc: %d, csap id %d\n", rc, handle); 
-        if (rc) break;
+        VERB("csap_create rc: %X, csap id %d\n", rc, handle); 
+        if (rc) 
+            TEST_FAIL("CLI CSAP create failed %X", rc);
 
         strcpy(path + path_prefix, "cli-filter.asn");
-        printf("send template full path: %s\n", path);
-        rc = rcf_ta_trsend_recv(ta, sid, handle, path, trap_handler, NULL, &timeout, num);
-        printf("trsend_recv: 0x%x, timeout: %d, num: %d\n", 
+        VERB("send template full path: %s\n", path);
+        rc = rcf_ta_trsend_recv(ta, sid, handle, path, cli_msg_handler, NULL, &timeout, num);
+        VERB("trsend_recv: 0x%x, timeout: %d, num: %d\n", 
                     rc, timeout, num);
-        if (rc) break;
+        if (rc) 
+            TEST_FAIL("CLI CSAP send_recv failed %X", rc);
 
-        printf ("try to  destroy\n");
 
-        printf("csap_destroy: %x\n", 
-               rcf_ta_csap_destroy(ta, sid, handle)); 
+        rc = rcf_ta_csap_destroy(ta, sid, handle); 
+        if (rc) 
+            TEST_FAIL("CLI CSAP destroy failed %X", rc);
 
     } while(0);
 
-    return 0;
+    TEST_SUCCESS;
+
+cleanup:
+    TEST_END;
+
 }
