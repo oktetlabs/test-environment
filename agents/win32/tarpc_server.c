@@ -2627,3 +2627,28 @@ TARPC_FUNC(wsa_recv,
             send_recv_flags_h2rpc(out->flags.flags_val[0]);
 }
 )
+
+TARPC_FUNC(get_overlapped_result, 
+{
+    COPY_ARG(bytes);
+    COPY_ARG(flags);
+}, 
+{ 
+    UNUSED(list);
+    MAKE_CALL(out->retval = 
+                  WSAGetOverlappedResult(in->s, 
+                                         (LPWSAOVERLAPPED)(in->overlapped),
+                                         out->bytes.bytes_len == 0 ? NULL :
+                                         (LPDWORD)(out->bytes.bytes_val),
+                                         in->wait, 
+                                         out->flags.flags_len > 0 ? 
+                                         (LPDWORD)(out->flags.flags_val) : 
+                                         NULL));
+    if (out->flags.flags_len > 0)
+        out->flags.flags_val[0] = 
+            send_recv_flags_h2rpc(out->flags.flags_val[0]);
+}
+)
+
+/* @TODO WSARecvEx, WSASendTo, WSARecvFrom, WSASendDisconnect,
+   WSARecvDisconnect, WSADuplicateSocket, WSASocket */

@@ -1722,7 +1722,7 @@ struct tarpc_wsa_send_in {
 
 struct tarpc_wsa_send_out {
     struct tarpc_out_arg common;
-    tarpc_ssize_t        retval;
+    int                  retval;
     int                  bytes_sent<>;
 };
 
@@ -1743,11 +1743,31 @@ struct tarpc_wsa_recv_in {
 
 struct tarpc_wsa_recv_out {
     struct tarpc_out_arg common;
-    tarpc_ssize_t        retval;
+    int                  retval;
     struct tarpc_iovec   vector<>;       
     int                  bytes_received<>;   
     int                  flags<>;        
 };
+
+
+/* WSAGetOverlappedResult */
+struct tarpc_get_overlapped_result_in {
+    struct tarpc_in_arg common;
+
+    int                 s;              /**< Socket    */
+    tarpc_overlapped    overlapped;     /**< WSAOVERLAPPED structure */
+    int                 wait;           /**< Wait flag */
+    int                 bytes<>;        /**< Transferred bytes location */
+    int                 flags<>;        /**< Flags location */
+};    
+
+struct tarpc_get_overlapped_result_out {
+    struct tarpc_out_arg common;
+
+    int                  retval;
+    int                  bytes<>;        /**< Transferred bytes */
+    int                  flags<>;        /**< Flags */
+};    
 
 
 program tarpc
@@ -1878,6 +1898,7 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(delete_overlapped)
         RPC_DEF(wsa_send)
         RPC_DEF(wsa_recv)
+        RPC_DEF(get_overlapped_result)
         
         RPC_DEF(create_window)
         RPC_DEF(destroy_window)

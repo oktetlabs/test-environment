@@ -445,6 +445,12 @@ extern int rpc_wsa_recv(rcf_rpc_server *handle,
                         int *bytes_received, rpc_overlapped overlapped, 
                         te_bool callback);
 
+/* WSAGetOverlappedResult() */
+extern int rpc_get_overlapped_result(rcf_rpc_server *handle,
+                                     int s, rpc_overlapped overlapped,
+                                     int *bytes, te_bool wait,
+                                     rpc_send_recv_flags *flags);
+
 /**
  * Get result of completion callback (if called).
  *

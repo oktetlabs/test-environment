@@ -5547,3 +5547,51 @@ rpc_wsa_recv(rcf_rpc_server *handle,
 
     RETVAL_RC(wsa_recv);
 }             
+
+int 
+rpc_get_overlapped_result(rcf_rpc_server *handle,
+                          int s, rpc_overlapped overlapped,
+                          int *bytes, te_bool wait,
+                          rpc_send_recv_flags *flags)
+{
+    rcf_rpc_op op;
+    
+    tarpc_get_overlapped_result_in  in;
+    tarpc_get_overlapped_result_out out;
+    
+    if (handle == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        return -1;
+    }
+
+    op = handle->op;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.s = s;
+    in.overlapped = (tarpc_overlapped)overlapped;
+    in.wait = wait;
+    if (bytes != NULL)
+    {
+        in.bytes.bytes_len = 1;
+        in.bytes.bytes_val = bytes;
+    }
+    if (flags != NULL)
+    {
+        in.flags.flags_len = 1;
+        in.flags.flags_val = (int *)flags;
+    }
+
+    rcf_rpc_call(handle, _get_overlapped_result, &in, 
+                 (xdrproc_t)xdr_tarpc_get_overlapped_result_in,
+                 &out, (xdrproc_t)xdr_tarpc_get_overlapped_result_out);
+    
+    RING("RPC (%s,%s)%s: get_overlapped_result(%d, %p, ...) -> %s (%s)",
+         handle->ta, handle->name, rpcop2str(op), s, overlapped, 
+         out.retval ? "true" : "false", errno_rpc2str(RPC_ERRNO(handle)));
+
+    RETVAL_VAL(out.retval, get_overlapped_result);
+}
+                          
