@@ -518,8 +518,8 @@ rcf_ch_kill_task(struct rcf_comm_connection *handle,
                  char *cbuf, size_t buflen, size_t answer_plen,
                  unsigned int pid)
 {
-    kill(pid, SIGTERM);
 #if 0    
+    kill(pid, SIGTERM); 
     kill(pid, SIGKILL); 
 #endif    
     SEND_ANSWER("0");
@@ -733,6 +733,8 @@ WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance,
         if (retval == 0)
             retval = rc;
     }
+    
+    printf("I'm exit\n");
 
     return retval;
 }

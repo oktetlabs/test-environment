@@ -426,10 +426,6 @@ bool_t
 _setlibname_1_svc(tarpc_setlibname_in *in, tarpc_setlibname_out *out,
                  struct svc_req *rqstp)
 {
-    WSADATA data;                               
-
-    WSAStartup(MAKEWORD(2,2), &data);
-    
     UNUSED(rqstp);
     UNUSED(in);
     memset(out, 0, sizeof(*out));

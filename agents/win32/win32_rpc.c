@@ -398,8 +398,6 @@ tarpc_add_server(char *name, int pid)
     tmp->pid = pid;
     srv_list = tmp;
 
-    VERB("RPC Server '%s' successfully added to the list", name);
-    
     return 0;
 }
 
@@ -431,6 +429,8 @@ tarpc_del_server(char *name)
         ERROR("Failed to find RPC Server '%s' to delete", name);
         return TE_RC(TE_TA_WIN32, ENOENT);
     }
+    
+    close(cur->sock);
         
     if (prev)
         prev->next = cur->next;
@@ -483,7 +483,6 @@ sigint_handler(int s)
     exit(1);
 }
 
-
 /**
  * Entry function for RPC server (never returns). Creates the transport
  * and runs main RPC loop (see SUN RPC documentation).
@@ -502,7 +501,7 @@ tarpc_server(void *arg)
 
     tarpc_in_arg  arg1;
     tarpc_in_arg *in = &arg1;
-
+    
     memset(&arg1, 0, sizeof(arg1));
     strcpy(arg1.name, (char *)arg);
     rpcserver_name = (char *)arg;
@@ -559,10 +558,10 @@ tarpc_server(void *arg)
     }
     
     svc_run();
+    
+    printf("exit!\n");
 
-    RPC_LGR_MESSAGE(TE_LL_ERROR, "Unreachable!");
-
-    return NULL;
+    exit(0);
 }
 
 /**
@@ -673,8 +672,7 @@ tarpc_destroy_all()
     for (cur = srv_list; cur != NULL; cur = srv_list)
     {
         srv_list = cur->next;
-        if (kill(cur->pid, SIGINT) != 0)
-            ERROR("Failed to send SIGINT to PID %d", cur->pid);
+        close(cur->sock);
         RELEASE_SRV(cur);
     }
 }
