@@ -1064,6 +1064,10 @@ typedef enum rpc_sockopt {
 
 #define RPC_SOCKOPT_MAX     0xFFFFFFFF
 
+#if !defined(IP_MTU) && defined(MY_IP_MTU)
+#define IP_MTU  MY_IP_MTU
+#endif
+
 /** Convert RPC socket option constants to native ones */
 static inline int
 sockopt_rpc2h(rpc_sockopt opt)
