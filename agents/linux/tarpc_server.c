@@ -2687,7 +2687,7 @@ flooder(tarpc_flooder_in *in)
                         if (rx_stat != NULL)
                             rx_stat[i] += received;
                         if (!time2run_not_expired)
-                            VERB("FD=%d Rx=%d", ufds[i].fd, received);
+                            VERB("FD=%d Rx=%d", rcvrs[i], received);
                     }
                 }
             }
