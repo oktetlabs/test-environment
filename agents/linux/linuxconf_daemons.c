@@ -1805,12 +1805,11 @@ ds_init_vncserver(rcf_pch_cfg_object **last)
 
 static char *smtp_initial;
 static char *smtp_current;
+static char *smtp_current_daemon;
 static char *smtp_current_smarthost;
 
 /** "exim" or "exim4" */
 static char *exim_name = "exim";
-/** Index of the exim name in smtp_servers array */
-static const int exim_name_index = 0;
 
 /* Possible kinds of SMTP servers - do not change order */
 static char *smtp_servers[] = {
@@ -2159,7 +2158,7 @@ ds_smtp_smarthost_get(unsigned int gid, const char *oid, char *value)
         if (enable)
             strcpy(value, smtp_current_smarthost);
     }
-    else if (strcmp(smtp_current, exim_name) == 0)
+    else if (strcmp(smtp_current, "exim") == 0)
     {
         te_bool enable;
         int     rc;
@@ -2211,7 +2210,7 @@ ds_smtp_smarthost_set(unsigned int gid, const char *oid,
         if ((rc = postfix_smarthost_set(addr != 0)) != 0)
             goto error;
     }
-    else if (strcmp(smtp_current, exim_name) == 0)
+    else if (strcmp(smtp_current, "exim") == 0)
     {
         if ((rc = exim_smarthost_set(addr != 0)) != 0)
             goto error;
@@ -2257,7 +2256,7 @@ ds_smtp_get(unsigned int gid, const char *oid, char *value)
         return 0;
     }
     
-    return daemon_get(gid, smtp_current, value);
+    return daemon_get(gid, smtp_current_daemon, value);
 }
 
 /** Set SMTP server program */
@@ -2269,7 +2268,7 @@ ds_smtp_server_set(unsigned int gid, const char *oid, const char *value)
     UNUSED(gid);
     UNUSED(oid);
     
-    if (smtp_current != NULL && daemon_running(smtp_current))
+    if (smtp_current != NULL && daemon_running(smtp_current_daemon))
         return TE_RC(TE_TA_LINUX, EPERM);
 
     for (i = 0; i < sizeof(smtp_servers) / sizeof(char *); i++)
@@ -2291,6 +2290,10 @@ ds_smtp_server_set(unsigned int gid, const char *oid, const char *value)
                     return rc;
             }
             smtp_current = smtp_servers[i];
+            if (strcmp(smtp_current, "exim") == 0)
+                smtp_current_daemon = exim_name;
+            else
+                smtp_current_daemon = smtp_current;
             return 0;
         }
     }
@@ -2312,7 +2315,7 @@ ds_smtp_set(unsigned int gid, const char *oid, const char *value)
         else
             return TE_RC(TE_TA_LINUX, EINVAL);
     }
-    return daemon_set(gid, smtp_current, value);
+    return daemon_set(gid, smtp_current_daemon, value);
 }
 
 RCF_PCH_CFG_NODE_RW(node_ds_smtp_smarthost, "smarthost",
@@ -2353,7 +2356,6 @@ ds_init_smtp(rcf_pch_cfg_object **last)
     else if (file_exists(EXIM4_CONF_DIR "update-exim4.conf.conf"))
     {
         exim_name = "exim4";
-        smtp_servers[exim_name_index] = "exim4";
         if (ds_create_backup(EXIM4_CONF_DIR, "update-exim4.conf.conf", 
                              &exim_index) != 0)
             return;                             
@@ -2371,7 +2373,12 @@ ds_init_smtp(rcf_pch_cfg_object **last)
     {
         if (daemon_running(smtp_servers[i]))
         {
-            smtp_current = smtp_initial = smtp_servers[i];
+            smtp_current = smtp_servers[i];
+            if (strcmp(smtp_current, "exim") == 0)
+                smtp_current_daemon = exim_name;
+            else
+                smtp_current_daemon = smtp_current;
+            smtp_initial = smtp_current_daemon;
             break;
         }
     }
@@ -2393,7 +2400,7 @@ ds_shutdown_smtp()
         ta_system(buf);
     }
     if (smtp_current != NULL)
-        daemon_set(0, smtp_current, "0");
+        daemon_set(0, smtp_current_daemon, "0");
 
     if (smtp_initial != NULL)
         daemon_set(0, smtp_initial, "1");
