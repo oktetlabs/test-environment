@@ -267,8 +267,12 @@ daemon_set(unsigned int gid, const char *oid, const char *value)
     if (value0[0] == value[0])
         return 0;
         
-    sprintf(buf, "/etc/init.d/%s %s >/dev/null 2>&1", daemon_name,
-            *value == '0' ? "stop" : "start");
+    if (strncmp(daemon_name, "exim", strlen("exim")) == 0)
+        sprintf(buf, "/etc/init.d/%s* %s >/dev/null 2>&1", daemon_name,
+               *value == '0' ? "stop" : "start");
+    else               
+        sprintf(buf, "/etc/init.d/%s %s >/dev/null 2>&1", daemon_name,
+               *value == '0' ? "stop" : "start");
 
     if (ta_system(buf) != 0)
     {
@@ -278,7 +282,8 @@ daemon_set(unsigned int gid, const char *oid, const char *value)
     
     if (value[0] == '0')
     {
-        sprintf(buf, "rm `find /var/run/ -name %s.pid`", daemon_name);
+        sprintf(buf, "rm `find /var/run/ -name %s.pid` >/dev/null 2>&1", 
+                daemon_name);
         ta_system(buf);
     }
 
