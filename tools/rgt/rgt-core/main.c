@@ -42,6 +42,14 @@
 #define UNUSED(x) ((void)x)
 #endif
 
+#ifndef DEBUG
+#define DEBUG
+#endif
+
+#ifndef DEBUG
+#define assert
+#endif
+
 typedef enum parser_state {
     RGT_XML2HTML_STATE_INITIAL,
     
@@ -104,9 +112,11 @@ typedef enum node_type {
 
 typedef struct depth_context {
     int   seq; /**< Current sequence number used on the particular depth */
+    node_type_t type; /**< Current node type */
+
+    /* @todo User DATA */
     FILE *fd; /**< File descriptor of the node currently being processed
                    on the particular depth */
-    node_type_t type; /**< Current node type */
 } depth_context_t;
 
 /** 
@@ -114,12 +124,14 @@ typedef struct depth_context {
  * to determine the current state, values some element specific variables
  */
 typedef struct global_context {
-    FILE           *js_fd; /**< File descriptor of JavaScript file */
     int             depth; /**< The current processing depth 
                                 in the node tree */
     GArray         *depth_info; /**< Array of information about 
                                      the particular depth */
     parser_state_t  state;
+
+    /* @todo User DATA */
+    FILE           *js_fd; /**< File descriptor of JavaScript file */
 } global_context_t;
 
 #ifndef TRUE
@@ -173,6 +185,8 @@ proc_document_start(struct global_context *ctx, const xmlChar **atts)
 {
     depth_context_t *depth_ctx;
 
+    UNUSED(atts);
+
     assert(global_ctx.depth >= 1);
     depth_ctx = &g_array_index(ctx->depth_info,
                                depth_context_t, (global_ctx.depth - 1));
@@ -199,8 +213,10 @@ proc_document_end(struct global_context *ctx, const xmlChar **atts)
 {
     depth_context_t *depth_ctx;
 
+    UNUSED(atts);
+
     assert(global_ctx.depth >= 1);
-    
+
     fclose(ctx->js_fd);
 
     depth_ctx = &g_array_index(global_ctx.depth_info,
@@ -239,7 +255,7 @@ control_node_start(struct global_context *ctx, const xmlChar **atts,
     }
     write_document_header(depth_ctx->fd);
     
-    fprintf(stderr, "File %s (%d) opened in array element %d\n",
+    fprintf(stderr, "File %s (%p) opened in array element %d\n",
             fname, depth_ctx->fd, (ctx->depth - 1));
     
     fprintf(prev_depth_ctx->fd,
@@ -268,6 +284,9 @@ control_node_end(struct global_context *ctx, const xmlChar **atts,
                  const char *node_type)
 {
     depth_context_t *depth_ctx;
+
+    UNUSED(atts);
+    UNUSED(node_type);
 
     assert(ctx->depth >= 1);
     depth_ctx = &g_array_index(ctx->depth_info,
@@ -308,33 +327,209 @@ proc_test_end(struct global_context *ctx, const xmlChar **atts)
     control_node_end(ctx, atts, "Test");
 }
 
-/**
- * Processes start/stop "msg" tag.
- *
- * @param  atts     An array of attribute name, attribute value pairs
- *                  (it is used only in start element processing)
- * @param  el_type  Determine whether to process start of end element
- *
- * @todo Delete ctx and name parameters.
- */
 static void
-process_log_msg(FILE *out_fd, struct global_context *ctx, const xmlChar *name,
-                const xmlChar **atts, enum e_element_type el_type)
+proc_log_msg_start(struct global_context *ctx, const xmlChar **atts)
+{
+    depth_context_t *depth_ctx;
+
+    assert(ctx->depth >= 1);
+    depth_ctx = &g_array_index(ctx->depth_info,
+                               depth_context_t, (ctx->depth - 1));
+
+    rgt_tmpls_lib_output(depth_ctx->fd,
+            &html_tmpls[LOG_PART_LOG_MSG_START], (const char **)atts, user_vars);
+}
+
+static void
+proc_log_msg_end(struct global_context *ctx, const xmlChar **atts)
+{
+    depth_context_t *depth_ctx;
+
+    assert(ctx->depth >= 1);
+    depth_ctx = &g_array_index(ctx->depth_info,
+                               depth_context_t, (ctx->depth - 1));
+
+    rgt_tmpls_lib_output(depth_ctx->fd,
+            &html_tmpls[LOG_PART_LOG_MSG_END], (const char **)atts, user_vars);
+}
+
+static void
+proc_branch_start(struct global_context *ctx, const xmlChar **atts)
+{
+    depth_context_t *depth_ctx;
+
+    UNUSED(atts);
+
+    depth_ctx = &g_array_index(ctx->depth_info,
+                               depth_context_t, (ctx->depth - 1));
+
+    assert(depth_ctx->type != NT_TEST);
+}
+
+static void
+proc_branch_end(struct global_context *ctx, const xmlChar **atts)
 {
     UNUSED(ctx);
-    UNUSED(name);
+    UNUSED(atts);
+}
 
-    if (el_type == XML_ELEMENT_START)
+static void
+proc_meta_param_start(struct global_context *ctx, const xmlChar **atts)
+{
+    depth_context_t *depth_ctx;
+    const xmlChar   *name = get_attr_value(atts, "name");
+    const xmlChar   *value = get_attr_value(atts, "value");
+
+    assert(name != NULL && value != NULL);
+
+    assert(ctx->depth >= 1);
+    depth_ctx = &g_array_index(ctx->depth_info,
+                               depth_context_t, (ctx->depth - 1));
+
+    fprintf(depth_ctx->fd, "<tr><td>%s</td><td>%s</td></tr>",
+            name, value);
+}
+
+static void
+proc_meta_param_end(struct global_context *ctx, const xmlChar **atts)
+{
+    UNUSED(ctx);
+    UNUSED(atts);
+    /* Do nothing */
+}
+
+static void
+proc_logs_start(struct global_context *ctx, const xmlChar **atts)
+{
+    UNUSED(ctx);
+    UNUSED(atts);
+}
+
+static void
+proc_logs_end(struct global_context *ctx, const xmlChar **atts)
+{
+    UNUSED(ctx);
+    UNUSED(atts);
+}
+
+static void
+proc_meta_start(struct global_context *ctx, const xmlChar **atts)
+{
+    const xmlChar *nbranches = get_attr_value(atts, "nbranches");
+    UNUSED(ctx);
+    
+    if (nbranches != NULL)
     {
-        rgt_tmpls_lib_output(out_fd,
-                &html_tmpls[LOG_PART_LOG_MSG_START], atts, user_vars);
-    }
-    else
-    {
-        rgt_tmpls_lib_output(out_fd,
-                &html_tmpls[LOG_PART_LOG_MSG_END], atts, user_vars);
+        /* Do smth. */
     }
 }
+
+static void
+proc_meta_end(struct global_context *ctx, const xmlChar **atts)
+{
+    UNUSED(ctx);
+    UNUSED(atts);
+}
+
+static void
+proc_meta_start_ts_start(struct global_context *ctx, const xmlChar **atts)
+{
+    depth_context_t *depth_ctx;
+
+    UNUSED(atts);
+
+    depth_ctx = &g_array_index(ctx->depth_info,
+                               depth_context_t, (ctx->depth - 1));
+    fprintf(depth_ctx->fd, "<b>start time</b>:");
+}
+
+static void
+proc_meta_start_ts_end(struct global_context *ctx, const xmlChar **atts)
+{
+    UNUSED(ctx);
+    UNUSED(atts);
+}
+
+static void
+proc_meta_end_ts_start(struct global_context *ctx, const xmlChar **atts)
+{
+    depth_context_t *depth_ctx;
+
+    UNUSED(atts);
+
+    depth_ctx = &g_array_index(ctx->depth_info,
+                               depth_context_t, (ctx->depth - 1));
+    fprintf(depth_ctx->fd, "<b>end time</b>:");
+}
+
+static void
+proc_meta_end_ts_end(struct global_context *ctx, const xmlChar **atts)
+{
+    UNUSED(ctx);
+    UNUSED(atts);
+}
+
+static void
+proc_meta_objective_start(struct global_context *ctx, const xmlChar **atts)
+{
+    depth_context_t *depth_ctx;
+
+    UNUSED(atts);
+
+    depth_ctx = &g_array_index(ctx->depth_info,
+                               depth_context_t, (ctx->depth - 1));
+    fprintf(depth_ctx->fd, "<b>objective</b>:");
+}
+
+static void
+proc_meta_objective_end(struct global_context *ctx, const xmlChar **atts)
+{
+    UNUSED(ctx);
+    UNUSED(atts);
+}
+
+static void
+proc_meta_author_start(struct global_context *ctx, const xmlChar **atts)
+{
+    depth_context_t *depth_ctx;
+    UNUSED(atts);
+
+    depth_ctx = &g_array_index(ctx->depth_info,
+                               depth_context_t, (ctx->depth - 1));
+    fprintf(depth_ctx->fd, "<b>authors</b>:");
+}
+
+static void
+proc_meta_author_end(struct global_context *ctx, const xmlChar **atts)
+{
+    UNUSED(ctx);
+    UNUSED(atts);
+}
+
+static void
+proc_meta_params_start(struct global_context *ctx, const xmlChar **atts)
+{
+    depth_context_t *depth_ctx;
+    UNUSED(atts);
+
+    depth_ctx = &g_array_index(ctx->depth_info,
+                               depth_context_t, (ctx->depth - 1));
+
+    fprintf(depth_ctx->fd, "<table>");
+}
+
+static void
+proc_meta_params_end(struct global_context *ctx, const xmlChar **atts)
+{
+    depth_context_t *depth_ctx;
+    UNUSED(atts);
+
+    depth_ctx = &g_array_index(ctx->depth_info,
+                               depth_context_t, (ctx->depth - 1));
+
+    fprintf(depth_ctx->fd, "</table>");
+}
+
 
 #if 0
 
@@ -463,13 +658,13 @@ rgt_log_end_document(void *user_data)
 
 static void
 rgt_process_cntrl_start(struct global_context *ctx,
-                       const xmlChar *tag, const xmlChar **atts)
+                        const xmlChar *tag, const xmlChar **atts)
 {
     depth_context_t *depth_ctx;
-    depth_context_t *prev_depth_ctx;
+#ifdef DEBUG
     const xmlChar   *name = get_attr_value(atts, "name");
     const xmlChar   *result = get_attr_value(atts, "result");
-    char             fname[255];
+#endif /* DEBUG */
 
     assert(result != NULL);
     assert(ctx->depth >= 1);
@@ -526,30 +721,30 @@ rgt_process_cntrl_start(struct global_context *ctx,
 static void
 rgt_log_end_element(void *user_data, const xmlChar *tag)
 {
-    depth_context_t  *depth_ctx;
     global_context_t *ctx = (struct global_context *)user_data;
 
     switch (ctx->state)
     {
         case RGT_XML2HTML_STATE_LOGS:
-            if (strcmp(tag, "logs") == 0)
-            {
-                ctx->state = RGT_XML2HTML_STATE_BLOCK;
-                break;
-            }
+            assert(strcmp(tag, "logs") == 0);
+
+            proc_logs_end(ctx, NULL);
+            ctx->state = RGT_XML2HTML_STATE_BLOCK;
+            break;
 
         case RGT_XML2HTML_STATE_LOG_MSG:
+            assert(ctx->depth >= 1);
             if (strcmp(tag, "msg") == 0)
             {
-                assert(ctx->depth >= 1);
-                depth_ctx = &g_array_index(ctx->depth_info,
-                                           depth_context_t, (ctx->depth - 1));
-
                 fprintf(stderr, "Closing LOG msg\n");
-                process_log_msg(depth_ctx->fd, ctx, tag, NULL, XML_ELEMENT_END);
+                proc_log_msg_end(ctx, NULL);
                 ctx->state = RGT_XML2HTML_STATE_LOGS;
             }
-            return;
+            else
+            {
+                assert(strcmp(tag, "br") == 0);
+            }
+            break;
 
         case RGT_XML2HTML_STATE_BLOCK:
         {
@@ -562,45 +757,73 @@ rgt_log_end_element(void *user_data, const xmlChar *tag)
                 cb_func(ctx, NULL);
                 ctx->depth--;
             }
+            else if (strcmp(tag, "branch") == 0)
+            {
+                proc_branch_end(ctx, NULL);
+            }
+            else if (strcmp(tag, "proteos:log_report") == 0)
+            {
+                /* Do nothing - end of file */
+                ctx->state = RGT_XML2HTML_STATE_INITIAL;
+            }
+            else
+            {
+                fprintf(stderr, "Unexpected closing TAG %s in "
+                        "BLOCK state\n", tag);
+                exit(0);
+            }
+
             break;
         }
 
         case RGT_XML2HTML_STATE_META:
-            if (strcmp(tag, "meta") == 0)
-            {
-                assert(ctx->depth >= 1);
-                depth_ctx = &g_array_index(ctx->depth_info,
-                                           depth_context_t, (ctx->depth - 1));
-                ctx->state = RGT_XML2HTML_STATE_BLOCK;
-                break;
-            }
+            assert(strcmp(tag, "meta") == 0);
+            assert(ctx->depth >= 1);
+
+            proc_meta_end(ctx, NULL);
+            ctx->state = RGT_XML2HTML_STATE_BLOCK;
             break;
         
         case RGT_XML2HTML_STATE_START_TS:
+            assert(ctx->depth >= 1);
+            proc_meta_start_ts_end(ctx, NULL);
+            ctx->state = RGT_XML2HTML_STATE_META;
+            break;
+
         case RGT_XML2HTML_STATE_END_TS:
+            assert(ctx->depth >= 1);
+            proc_meta_end_ts_end(ctx, NULL);
+            ctx->state = RGT_XML2HTML_STATE_META;
+            break;
+
         case RGT_XML2HTML_STATE_OBJECTIVE:
+            assert(ctx->depth >= 1);
+            proc_meta_objective_end(ctx, NULL);
+            ctx->state = RGT_XML2HTML_STATE_META;
+            break;
+
         case RGT_XML2HTML_STATE_AUTHOR:
             assert(ctx->depth >= 1);
-            depth_ctx = &g_array_index(ctx->depth_info,
-                                       depth_context_t, (ctx->depth - 1));
-            fprintf(depth_ctx->fd, "<br/>");
+            proc_meta_author_end(ctx, NULL);
             ctx->state = RGT_XML2HTML_STATE_META;
             break;
 
         case RGT_XML2HTML_STATE_PARAMS:
-            if (strcmp(tag, "params") != 0)
-                break;
-
             assert(ctx->depth >= 1);
-            depth_ctx = &g_array_index(ctx->depth_info,
-                                       depth_context_t, (ctx->depth - 1));
 
-            fprintf(depth_ctx->fd, "</table>");
+            if (strcmp(tag, "params") != 0)
+            {
+                assert(strcmp(tag, "param") == 0);
+                proc_meta_param_end(ctx, NULL);
+                break;
+            }
+
+            proc_meta_params_end(ctx, NULL);
             ctx->state = RGT_XML2HTML_STATE_META;
             break;
 
         default:
-            break;
+            assert(0);
     }
 }
 
@@ -618,7 +841,6 @@ rgt_log_start_element(void *user_data,
                       const xmlChar *tag, const xmlChar **atts)
 {
     struct global_context *ctx = (struct global_context *)user_data;
-    depth_context_t       *depth_ctx;
 
     switch (ctx->state)
     {
@@ -631,92 +853,78 @@ rgt_log_start_element(void *user_data,
             fprintf(stderr, "State BLOCK TAG %s\n", tag);
             if (strcmp(tag, "meta") == 0)
             {
+                proc_meta_start(ctx, atts);
                 ctx->state = RGT_XML2HTML_STATE_META;
                 break;
             }
             else if (strcmp(tag, "logs") == 0)
             {
                 assert(ctx->depth >= 1);
-                depth_ctx = &g_array_index(ctx->depth_info,
-                                           depth_context_t, (ctx->depth - 1));
-
                 fprintf(stderr, "Going to LOGS state\n");
+                proc_logs_start(ctx, atts);
                 ctx->state = RGT_XML2HTML_STATE_LOGS;
                 break;
             }
             else if (strcmp(tag, "branch") == 0)
             {
                 assert(ctx->depth >= 1);
-                depth_ctx = &g_array_index(ctx->depth_info,
-                                           depth_context_t, (ctx->depth - 1));
-
-                assert(depth_ctx->type != NT_TEST);
+                proc_branch_start(ctx, atts);
                 break;
             }
 
             fprintf(stderr, "Process control message\n");
+
             /* Control message */
             rgt_process_cntrl_start(ctx, tag, atts);
             break;
         
         case RGT_XML2HTML_STATE_META:
             assert(ctx->depth >= 1);
-            depth_ctx = &g_array_index(ctx->depth_info,
-                                       depth_context_t, (ctx->depth - 1));
 
             fprintf(stderr, "State META TAG %s\n", tag);
+
             if (strcmp(tag, "start-ts") == 0)
             {
-                fprintf(depth_ctx->fd, "<b>start time</b>:");
+                proc_meta_start_ts_start(ctx, atts);
                 ctx->state = RGT_XML2HTML_STATE_START_TS;
             }
             else if (strcmp(tag, "end-ts") == 0)
             {
-                fprintf(depth_ctx->fd, "<b>end time</b>:");
+                proc_meta_end_ts_start(ctx, atts);
                 ctx->state = RGT_XML2HTML_STATE_END_TS;
             }
             else if (strcmp(tag, "objective") == 0)
             {
-                fprintf(depth_ctx->fd, "<b>objective</b>:");
+                proc_meta_objective_start(ctx, atts);
                 ctx->state = RGT_XML2HTML_STATE_OBJECTIVE;
             }
             else if (strcmp(tag, "author") == 0)
             {
-                fprintf(depth_ctx->fd, "<b>author</b>:");
+                proc_meta_author_start(ctx, atts);
                 ctx->state = RGT_XML2HTML_STATE_AUTHOR;
             }
             else if (strcmp(tag, "params") == 0)
             {
-                fprintf(depth_ctx->fd, "<table>");
+                proc_meta_params_start(ctx, atts);
                 ctx->state = RGT_XML2HTML_STATE_PARAMS;
             }
+            else
+            {
+                fprintf(stderr, "Unexpected TAG '%s' in META state\n", tag);
+                assert(0);
+            }
+
             break;
 
         case RGT_XML2HTML_STATE_PARAMS:
-        {
-            const xmlChar *name = get_attr_value(atts, "name");
-            const xmlChar *value = get_attr_value(atts, "value");
-
-            assert(name != NULL && value != NULL);
             assert(strcmp(tag, "param") == 0);
-
-            assert(ctx->depth >= 1);
-            depth_ctx = &g_array_index(ctx->depth_info,
-                                       depth_context_t, (ctx->depth - 1));
-
-            fprintf(depth_ctx->fd, "<tr><td>%s</td><td>%s</td></tr>",
-                    name, value);
+            proc_meta_param_start(ctx, atts);
             break;
-        }
 
         case RGT_XML2HTML_STATE_LOGS:
             assert(strcmp(tag, "msg") == 0);
 
-            assert(ctx->depth >= 1);
-            depth_ctx = &g_array_index(ctx->depth_info,
-                                       depth_context_t, (ctx->depth - 1));
-
-            process_log_msg(depth_ctx->fd, ctx, tag, atts, XML_ELEMENT_START);
+            proc_log_msg_start(ctx, atts);
             ctx->state = RGT_XML2HTML_STATE_LOG_MSG;
             break;
 
@@ -774,7 +982,6 @@ rgt_log_characters(void *user_data, const xmlChar *ch, int len)
     global_context_t *ctx = (global_context_t *)user_data;
     depth_context_t  *depth_ctx;
 
-
     switch (ctx->state)
     {
         case RGT_XML2HTML_STATE_START_TS:
@@ -786,11 +993,13 @@ rgt_log_characters(void *user_data, const xmlChar *ch, int len)
             assert(ctx->depth >= 1);
             depth_ctx = &g_array_index(ctx->depth_info,
                                        depth_context_t, (ctx->depth - 1));
-            fprintf(stderr, "ctx->depth = %d, file p is %d\n",
+            fprintf(stderr, "ctx->depth = %d, file p is %p\n",
                     ctx->depth, depth_ctx->fd);
             fwrite(ch, len, 1, depth_ctx->fd);
             break;
         }
+        default:
+            break;
     }
 
     UNUSED(ctx);
@@ -1144,8 +1353,6 @@ int
 main(int argc, char **argv)
 {
     int              rc = 0;
-    depth_context_t  new_depth_ctx;
-    depth_context_t *depth_ctx;
 
     process_cmd_line_opts(argc, argv);
 
