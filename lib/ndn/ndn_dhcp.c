@@ -28,6 +28,7 @@
 
 #include <stdlib.h>
 #include "asn_impl.h"
+#include "ndn.h"
 #include "ndn_internal.h"
 #include "ndn_dhcp.h"
 
@@ -98,8 +99,8 @@ asn_type_p ndn_dhcpv4_message = &ndn_dhcpv4_message_s;
 
 asn_enum_entry_t _ndn_dhcp_mode_enum_entries[] = 
 {
-    {"server", DHCPv4_CSAP_mode_server},
-    {"client", DHCPv4_CSAP_mode_client},
+    {"server", DHCP4_CSAP_MODE_SERVER},
+    {"client", DHCP4_CSAP_MODE_CLIENT},
 };
 
 asn_type ndn_dhcp_mode_s = {

@@ -29,7 +29,6 @@
 #define __TE_NDN_DHCP_H__
 
 #include "asn_usr.h"
-#include "ndn.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -42,8 +41,8 @@ extern asn_type_p ndn_dhcpv4_option;
 extern asn_type_p ndn_dhcpv4_csap;
 
 typedef enum dhcp_csap_mode {
-    DHCPv4_CSAP_mode_server = 1,
-    DHCPv4_CSAP_mode_client = 2,
+    DHCP4_CSAP_MODE_SERVER = 1,
+    DHCP4_CSAP_MODE_CLIENT = 2,
 } dhcp_csap_mode;
 
 #ifdef __cplusplus
