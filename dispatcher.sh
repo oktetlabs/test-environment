@@ -374,7 +374,7 @@ if test -n "$BUILDER" ; then
 fi
 
 if test -n "${SUITE_SOURCES}" -a -n "${BUILD_TS}" ; then
-    te_build_suite `basename ${SUITE_SOURCES}` $SUITE_SOURCES
+    te_build_suite `basename ${SUITE_SOURCES}` $SUITE_SOURCES || exit_with_log
 fi    
 
 cd ${STARTING_DIR}
