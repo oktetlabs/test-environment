@@ -204,7 +204,7 @@ log_client_close(void)
 int
 log_flush_ten(const char *ta_name)
 {
-    const char * const msg = "FLUSH";
+    const char * const msg = LGR_FLUSH;
 
     struct ipc_client *log_client;
 
