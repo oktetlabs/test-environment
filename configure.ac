@@ -113,7 +113,10 @@ fi
 echo 'TE_PATH=${TE_INSTALL}/${host}/bin' >> ${TE_BUILD}/builder.conf.processed.new
 
 if test -e ${TE_BUILD}/builder.conf.processed ; then
-    if diff -q ${TE_BUILD}/builder.conf.processed ${TE_BUILD}/builder.conf.processed.new > /dev/null ; then 
+    if ! diff -q ${TE_BUILD}/builder.conf.processed ${TE_BUILD}/builder.conf.processed.new > /dev/null ; then 
+        cd ${TE_BUILD}    
+        rm -rf `ls | grep -v builder.conf`
+        cd $OLDPWD
         no_create=""
     fi
 fi    
