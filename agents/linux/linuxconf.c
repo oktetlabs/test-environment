@@ -306,6 +306,7 @@ rcf_ch_conf_release()
 /**
  * Obtain value of the IPv4 forwarding sustem variable.
  *
+ * @param gid           group identifier (unused)
  * @param oid           full object instence identifier (unused)
  * @param value         value location
  *
@@ -344,6 +345,7 @@ ip4_fw_get(unsigned int gid, const char *oid, char *value)
 /**
  * Enable/disable IPv4 forwarding.
  *
+ * @param gid           group identifier (unused)
  * @param oid           full object instence identifier (unused)
  * @param value         pointer to new value of IPv4 forwarding system
  *                      variable
@@ -435,16 +437,6 @@ set_mask(const char *ifname, struct in_addr *mask)
     }
     return 0;
 }
-
-
-/**
- * Obtain value of the IPv4 forwarding sustem variable.
- *
- * @param oid           full object instence identifier (unused)
- * @param value         value location
- *
- * @return error code
- */
 
 /**
  * Check, if the interface with specified name exists.
@@ -744,6 +736,7 @@ ifindex_get(unsigned int gid, const char *oid, char *value,
  * Configure IPv4 address for the interface.
  * If the address does not exist, alias interface is created.
  *
+ * @param gid           group identifier (unused)
  * @param oid           full object instence identifier (unused)
  * @param value         value string (unused)
  * @param ifname        name of the interface (like "eth0")
@@ -1020,6 +1013,7 @@ find_net_addr(const char *ifname, const char *addr)
 /**
  * Clear interface address of the down interface.
  *
+ * @param gid           group identifier (unused)
  * @param oid           full object instence identifier (unused)
  * @param ifname        name of the interface (like "eth0")
  * @param addr          IPv4 address in dotted notation
@@ -1208,6 +1202,7 @@ net_addr_list(unsigned int gid, const char *oid, char **list,
 /**
  * Get netmask of the interface.
  *
+ * @param gid           group identifier (unused)
  * @param oid           full object instence identifier (unused)
  * @param value         netmask location (netmask is presented in dotted
  *                      notation)
@@ -1250,6 +1245,7 @@ netmask_get(unsigned int gid, const char *oid, char *value,
 /**
  * Change netmask of the interface.
  *
+ * @param gid           group identifier (unused)
  * @param oid           full object instence identifier (unused)
  * @param value         pointer to the new network mask in dotted notation
  * @param ifname        name of the interface (like "eth0")
@@ -1295,6 +1291,7 @@ netmask_set(unsigned int gid, const char *oid, const char *value,
  * Get hardware address of the interface.
  * Only MAC addresses are supported now.
  *
+ * @param gid           group identifier (unused)
  * @param oid           full object instence identifier (unused)
  * @param value         location for hardware address (address is returned
  *                      as XX:XX:XX:XX:XX:XX)
@@ -1379,6 +1376,7 @@ link_addr_get(unsigned int gid, const char *oid, char *value,
 /**
  * Get MTU of the interface.
  *
+ * @param gid           group identifier (unused)
  * @param oid           full object instence identifier (unused)
  * @param value         value location
  * @param ifname        name of the interface (like "eth0")
@@ -1406,6 +1404,7 @@ mtu_get(unsigned int gid, const char *oid, char *value,
 /**
  * Change MTU of the interface.
  *
+ * @param gid           group identifier (unused)
  * @param oid           full object instence identifier (unused)
  * @param value         new value pointer
  * @param ifname        name of the interface (like "eth0")
@@ -1439,6 +1438,7 @@ mtu_set(unsigned int gid, const char *oid, const char *value,
 /**
  * Get status of the interface ("0" - down or "1" - up).
  *
+ * @param gid           group identifier (unused)
  * @param oid           full object instence identifier (unused)
  * @param value         value location
  * @param ifname        name of the interface (like "eth0")
@@ -1470,6 +1470,7 @@ status_get(unsigned int gid, const char *oid, char *value,
  * state,it is de-installed and information about it is stored in the list
  * of down interfaces.
  *
+ * @param gid           group identifier (unused)
  * @param oid           full object instence identifier (unused)
  * @param value         new value pointer
  * @param ifname        name of the interface (like "eth0")
@@ -1541,6 +1542,7 @@ status_set(unsigned int gid, const char *oid, const char *value,
 /**
  * Get ARP entry value (hardware address corresponding to IPv4).
  *
+ * @param gid           group identifier (unused)
  * @param oid           full object instence identifier (unused)
  * @param value         location for the value
  *                      (XX:XX:XX:XX:XX:XX is returned)
@@ -1587,6 +1589,7 @@ arp_get(unsigned int gid, const char *oid, char *value,
 /**
  * Change already existing ARP entry.
  *
+ * @param gid           group identifier
  * @param oid           full object instence identifier (unused)
  * @param value         new value pointer ("XX:XX:XX:XX:XX:XX")
  * @param addr          IPv4 address in the dotted notation
@@ -1608,6 +1611,7 @@ arp_set(unsigned int gid, const char *oid, const char *value,
 /**
  * Add a new ARP entry.
  *
+ * @param gid           group identifier (unused)
  * @param oid           full object instence identifier (unused)
  * @param value         new entry value pointer ("XX:XX:XX:XX:XX:XX")
  * @param addr          IPv4 address in the dotted notation
@@ -1660,6 +1664,7 @@ arp_add(unsigned int gid, const char *oid, const char *value,
 /**
  * Delete ARP entry.
  *
+ * @param gid           group identifier (unused)
  * @param oid           full object instence identifier (unused)
  * @param value         value string (unused)
  * @param addr          IPv4 address in the dotted notation
@@ -1695,6 +1700,7 @@ arp_del(unsigned int gid, const char *oid, const char *addr)
 /**
  * Get instance list for object "agent/arp".
  *
+ * @param gid           group identifier (unused)
  * @param oid           full object instence identifier (unused)
  * @param list          location for the list pointer
  *
@@ -1746,6 +1752,7 @@ arp_list(unsigned int gid, const char *oid, char **list)
 /**
  * Get route value (gateway IP address).
  *
+ * @param gid           group identifier (unused)
  * @param oid           full object instence identifier (unused)
  * @param value         value location (IPv4 address is returned in
  *                      dotted notation)
@@ -1891,6 +1898,7 @@ route_get(unsigned int gid, const char *oid, char *value,
 /**
  * Change already existing route.
  *
+ * @param gid           group identifier 
  * @param oid           full object instence identifier (unused)
  * @param value         value string (unused)
  * @param route         route instance name:
@@ -1913,6 +1921,7 @@ route_set(unsigned int gid, const char *oid, const char *value,
 /**
  * Add a new route.
  *
+ * @param gid           group identifier (unused)
  * @param oid           full object instence identifier (unused)
  * @param value         value string (unused)
  * @param route         route instance name:
@@ -2112,6 +2121,7 @@ route_add(unsigned int gid, const char *oid, const char *value,
 /**
  * Delete a route.
  *
+ * @param gid           group identifier 
  * @param oid           full object instence identifier (unused)
  * @param route         route instance name:
  *                      <IPv4 address in dotted notation>'|'<prefix length>
