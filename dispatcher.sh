@@ -646,22 +646,21 @@ if test -n "${CONF_RGT}" ; then
 fi
 if test -n "${RGT_LOG_TXT}" -o -n "${RGT_LOG_HTML_PLAIN}" ; then
     # Generate XML log do not taking into account control messages
-    rgt-conv -m postponed ${CONF_RGT} -f ${TE_LOG_DIR}/tmp_raw_log \
-                                      -o ${TE_LOG_DIR}/tmp_raw_log.xml
+    rgt-conv -m postponed ${CONF_RGT} \
+        -f ${TE_LOG_DIR}/tmp_raw_log -o tmp_raw_log.xml
     if test $? -eq 0 ; then
         if test -n "${RGT_LOG_TXT}" ; then
-            rgt-xml2text -f ${TE_LOG_DIR}/tmp_raw_log.xml -o ${RGT_LOG_TXT}
+            rgt-xml2text -f tmp_raw_log.xml -o ${RGT_LOG_TXT}
         fi
         if test -n "${RGT_LOG_HTML_PLAIN}" ; then
-            rgt-xml2html -f ${TE_LOG_DIR}/tmp_raw_log.xml \
-                         -o ${RGT_LOG_HTML_PLAIN}
+            rgt-xml2html -f tmp_raw_log.xml -o ${RGT_LOG_HTML_PLAIN}
         fi
     fi
 fi
 if test -n "${RGT_LOG_HTML}" ; then
     # Generate XML log taking into account control messages
-    rgt-conv --no-cntrl-msg ${CONF_RGT} -f ${TE_LOG_DIR}/tmp_raw_log \
-                                        -o tmp_raw_log2.xml
+    rgt-conv --no-cntrl-msg -m postponed ${CONF_RGT} \
+        -f ${TE_LOG_DIR}/tmp_raw_log -o tmp_raw_log2.xml
     if test $? -eq 0 ; then
         rgt-xml2html -m tmp_raw_log2.xml ${RGT_LOG_HTML}
     fi
