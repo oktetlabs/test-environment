@@ -1899,16 +1899,16 @@ cfg_create_backup(char **name)
     return TE_RC(TE_CONF_API, ret_val);
 }
 
-
 /**
- * Verify the backup.
+ * Verify/release/restore backup.
  *
  * @param name      name returned by cfg_create_backup
+ * @param op        backup operation
  *
  * @return status code (see te_errno.h)
  */
-int
-cfg_verify_backup(const char *name)
+static int
+cfg_backup(const char *name, uint8_t op)
 {
     cfg_backup_msg *msg;
 
@@ -1916,9 +1916,7 @@ cfg_verify_backup(const char *name)
     int     ret_val = 0;
 
     if (name == NULL)
-    {
         return TE_RC(TE_CONF_API, EINVAL);
-    }
 
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_lock(&cfgl_lock);
@@ -1934,7 +1932,7 @@ cfg_verify_backup(const char *name)
 
     msg = (cfg_backup_msg *)cfgl_msg_buf;
     msg->type = CFG_BACKUP;
-    msg->op = CFG_BACKUP_VERIFY;
+    msg->op = op;
 
     len = strlen(name) + 1;
     memcpy(msg->filename, name, len);
@@ -1955,6 +1953,31 @@ cfg_verify_backup(const char *name)
     return TE_RC(TE_CONF_API, ret_val);
 }
 
+/**
+ * Verify the backup.
+ *
+ * @param name      name returned by cfg_create_backup
+ *
+ * @return status code (see te_errno.h)
+ */
+int
+cfg_verify_backup(const char *name)
+{
+    return cfg_backup(name, CFG_BACKUP_VERIFY);
+}
+
+/**
+ * Ask Configurator to forget about the backup, if known.
+ *
+ * @param name      name returned by cfg_create_backup
+ *
+ * @return status code (see te_errno.h)
+ */
+int 
+cfg_release_backup(const char *name)
+{
+    return cfg_backup(name, CFG_BACKUP_RELEASE);
+}
 
 /**
  * Restore the backup.
@@ -1966,49 +1989,7 @@ cfg_verify_backup(const char *name)
 int
 cfg_restore_backup(const char *name)
 {
-    cfg_backup_msg *msg;
-
-    size_t  len;
-    int     ret_val = 0;
-
-    if (name == NULL)
-    {
-        return TE_RC(TE_CONF_API, EINVAL);
-    }
-
-#ifdef HAVE_PTHREAD_H
-    pthread_mutex_lock(&cfgl_lock);
-#endif
-    INIT_IPC;
-    if (cfgl_ipc_client == NULL)
-    {
-#ifdef HAVE_PTHREAD_H
-        pthread_mutex_unlock(&cfgl_lock);
-#endif
-        return TE_RC(TE_CONF_API, ETEIO);
-    }
-
-    msg = (cfg_backup_msg *)cfgl_msg_buf;
-    msg->type = CFG_BACKUP;
-    msg->op = CFG_BACKUP_RESTORE;
-
-    len = strlen(name) + 1;
-    memcpy(msg->filename, name, len);
-    msg->len = sizeof(cfg_sync_msg) + len;
-    len = CFG_MSG_MAX;
-
-    ret_val = ipc_send_message_with_answer(cfgl_ipc_client,
-                                           CONFIGURATOR_SERVER,
-                                           msg, msg->len, msg, &len);
-    if (ret_val == 0)
-    {
-        ret_val = msg->rc;
-    }
-
-#ifdef HAVE_PTHREAD_H
-    pthread_mutex_unlock(&cfgl_lock);
-#endif
-    return TE_RC(TE_CONF_API, ret_val);
+    return cfg_backup(name, CFG_BACKUP_RESTORE);
 }
 
 

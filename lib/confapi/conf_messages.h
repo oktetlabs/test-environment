@@ -187,6 +187,7 @@ typedef struct cfg_backup_msg {
 #define CFG_BACKUP_CREATE       1
 #define CFG_BACKUP_VERIFY       2
 #define CFG_BACKUP_RESTORE      3
+#define CFG_BACKUP_RELEASE      4
     char    filename[0];  /* IN or OUT depending on operation */
 } cfg_backup_msg;
 

@@ -107,9 +107,9 @@ typedef struct cfg_obj_descr {
 /**
  * Register new object using string object identifiers.
  *
- * @param oid       - object identifier in string representation
- * @param descr     - object properties description
- * @param handle    - location for handle of the new object
+ * @param oid       object identifier in string representation
+ * @param descr     object properties description
+ * @param handle    location for handle of the new object
  *
  * @return status code (see te_errno.h)
  */
@@ -119,9 +119,9 @@ extern int cfg_register_object_str(const char *oid, cfg_obj_descr *descr,
 /**
  * Register new object using array object identifiers.
  *
- * @param oid       - object identifier
- * @param descr     - object properties description
- * @param handle    - location for handle of the new object
+ * @param oid       object identifier
+ * @param descr     object properties description
+ * @param handle    location for handle of the new object
  *
  * @return status code (see te_errno.h)
  */
@@ -131,8 +131,8 @@ extern int cfg_register_object(const cfg_oid *oid, cfg_obj_descr *descr,
 /**
  * Obtain parameters configured for the object.
  *
- * @param handle    - object handle
- * @param descr     - OUT: location for the object properties description
+ * @param handle    object handle
+ * @param descr     OUT: location for the object properties description
  *
  * @return status code (see te_errno.h)
  */
@@ -141,9 +141,9 @@ extern int cfg_get_object_descr(cfg_handle handle, cfg_obj_descr *descr);
 /**
  * Obtain identifier of object or object instance by its handle.
  *
- * @param handle    - handle of object or object instance
- * @param oid       - OUT: location for the oid pointer (memory for the
- *                    string is allocated by the routine using malloc()
+ * @param handle    handle of object or object instance
+ * @param oid       OUT: location for the oid pointer (memory for the
+ *                  string is allocated by the routine using malloc()
  *
  * @return 0 or EINVAL if invalid handle is provided
  */
@@ -152,8 +152,8 @@ extern int cfg_get_oid_str(cfg_handle handle, char **oid);
 /**
  * Obtain identifier of object or object instance by its handle.
  *
- * @param handle    - handle of object or object instance
- * @param oid       - OUT: location for the oid pointer (memory for the
+ * @param handle    handle of object or object instance
+ * @param oid       OUT: location for the oid pointer (memory for the
  *                    array is allocated by the routine using malloc()
  *
  * @return 0 or EINVAL if invalid handle is provided
@@ -163,9 +163,9 @@ extern int cfg_get_oid(cfg_handle handle, cfg_oid **oid);
 /**
  * Obtain sub-identifier of object by its handle.
  *
- * @param handle    - handle of object
- * @param subid     - OUT: location for the sub-identifier (should be
- *                    at least CFG_SUBID_MAX length)
+ * @param handle    handle of object
+ * @param subid     OUT: location for the sub-identifier (should be
+ *                  at least CFG_SUBID_MAX length)
  *
  * @return 0 or EINVAL if invalid handle is provided
  */
@@ -174,8 +174,8 @@ extern int cfg_get_subid(cfg_handle handle, char **subid);
 /**
  * Obtain name of object instance by its handle.
  *
- * @param handle    - handle of object instance
- * @param name      - OUT: location for the name
+ * @param handle    handle of object instance
+ * @param name      OUT: location for the name
  *
  * @return 0 or EINVAL if invalid handle is provided
  */
@@ -184,9 +184,9 @@ extern int cfg_get_inst_name(cfg_handle handle, char **name);
 /**
  * Obtain name of object instance by its handle.
  *
- * @param str_oid   - object instance identifier in string
- * @param i         - index of the instance subid
- * @param name      - OUT: location for the name
+ * @param str_oid   object instance identifier in string
+ * @param i         index of the instance subid
+ * @param name      OUT: location for the name
  *
  * @return 0 or EINVAL if invalid handle is provided
  */
@@ -197,8 +197,8 @@ extern int cfg_get_ith_inst_name(const char *str_oid, unsigned int i,
  * Find the object or object instance by its object identifier.
  * Root object identifier is "/"; root object instance identifier is "/:".
  *
- * @param oid       - object identifier in string representation
- * @param p_handle  - location for object or instance handle
+ * @param oid       object identifier in string representation
+ * @param p_handle  location for object or instance handle
  *
  * @return      status code
  */
@@ -232,8 +232,8 @@ cfg_find_fmt(cfg_handle *p_handle, const char *oid_fmt, ...)
 /**
  * Find the object or object instance by its object identifier.
  *
- * @param oid       - object identifier
- * @param handle    - location for object or instance handle
+ * @param oid       object identifier
+ * @param handle    location for object or instance handle
  *
  * @return status code
  */
@@ -242,8 +242,8 @@ extern int cfg_find(const cfg_oid *oid, cfg_handle *handle);
 /*
  * Find object of the given instance.
  *
- * @param instance  - instance handle
- * @param object    - OUT: localtion for object handle
+ * @param instance  instance handle
+ * @param object    OUT: localtion for object handle
  *
  * @return status code.
  */
@@ -253,10 +253,10 @@ extern int cfg_find_object_by_instance(cfg_handle instance,
 /**
  * Find all objects or object instances matching to pattern.
  *
- * @param pattern   - string object identifier possibly containing '*'
- *                    (see Configurator documentation for details)
- * @param p_num     - OUT: number of found objects or object instances
- * @param p_set     - OUT: array of object/object instances handles;
+ * @param pattern   string object identifier possibly containing '*'
+ *                  (see Configurator documentation for details)
+ * @param p_num     OUT: number of found objects or object instances
+ * @param p_set     OUT: array of object/object instances handles;
  *                    memory for the array is allocated using malloc()
  *
  * @return 0 or EINVAL if pattern format is incorrect some argument is NULL
@@ -282,7 +282,7 @@ cfg_find_pattern_fmt(int *p_num, cfg_handle **p_set,
 /**
  * Get handle of the oldest son of the object or object instance.
  *
- * @param handle    - handle of the object or object instance
+ * @param handle    handle of the object or object instance
  *
  * @returns sun's handle or CFG_HANDLE_INVALID
  */
@@ -291,7 +291,7 @@ extern int cfg_get_son(cfg_handle handle, cfg_handle *son);
 /**
  * Get handle of the brother of the object or object instance.
  *
- * @param handle    - handle of the object or object instance
+ * @param handle    handle of the object or object instance
  *
  * @returns brother's handle or CFG_HANDLE_INVALID
  */
@@ -300,7 +300,7 @@ extern int cfg_get_brother(cfg_handle handle, cfg_handle *brother);
 /**
  * Get handle of the father of the object or object instance.
  *
- * @param handle    - handle of the object or object instance
+ * @param handle    handle of the object or object instance
  *
  * @returns father's handle or CFG_HANDLE_INVALID
  */
@@ -309,10 +309,10 @@ extern int cfg_get_father(cfg_handle handle, cfg_handle *father);
 /**
  * Create an object instance.
  *
- * @param  oid      - object identifier of the new instance
- * @param  handle   - location for handle of the new instance
- * @param  type     - value type (necessary for fast processing)
- * @param  ...      - value to be assigned to the new instance or NULL;
+ * @param  oid      object identifier of the new instance
+ * @param  handle   location for handle of the new instance
+ * @param  type     value type (necessary for fast processing)
+ * @param  ...      value to be assigned to the new instance or NULL;
  *                    for integer values: int
  *                    for strings: char *
  *                    for addreses: struct sockaddr *
@@ -325,11 +325,11 @@ extern int cfg_add_instance(const cfg_oid *oid, cfg_handle *handle,
 /**
  * Create an object instance.
  *
- * @param  oid      - object identifier of the new instance
- *                    (string representation)
- * @param  p_handle - location for handle of the new instance (OUT)
- * @param  type     - value type (necessary for fast processing)
- * @param  ...      - value to be assigned to the new instance or NULL;
+ * @param  oid      object identifier of the new instance
+ *                  (string representation)
+ * @param  p_handle location for handle of the new instance (OUT)
+ * @param  type     value type (necessary for fast processing)
+ * @param  ...      value to be assigned to the new instance or NULL;
  *                    for integer values: int
  *                    for strings: char *
  *                    for addreses: struct sockaddr *
@@ -402,8 +402,8 @@ cfg_add_instance_child_fmt(cfg_handle *p_handle, cfg_val_type type,
 /**
  * Delete an object instance.
  *
- * @param handle            - object instance handle
- * @param with_children     - delete the children subtree, if necessary
+ * @param handle            object instance handle
+ * @param with_children     delete the children subtree, if necessary
  *
  * @return status code (see te_errno.h)
  */
@@ -420,9 +420,9 @@ cfg_del_instance_fmt(te_bool with_children, const char *oid_fmt, ...)
 /**
  * Change object instance value.
  *
- * @param handle    - object instance handle
- * @param  type     - value type (necessary for fast processing)
- * @param  ...      - new value to be assigned to the instance or NULL;
+ * @param handle    object instance handle
+ * @param  type     value type (necessary for fast processing)
+ * @param  ...      new value to be assigned to the instance or NULL;
  *                    for integer values: int
  *                    for strings: char *
  *                    for addreses: struct sockaddr *
@@ -444,9 +444,9 @@ cfg_set_instance_fmt(cfg_val_type type, const void *val,
  * Change object instance value locally. Commit should be called to
  * propagate changed as a bulk to the Test Agent later.
  *
- * @param handle    - object instance handle
- * @param type      - value type (necessary for fast processing)
- * @param ...       - new value to be assigned to the instance or NULL;
+ * @param handle    object instance handle
+ * @param type      value type (necessary for fast processing)
+ * @param ...       new value to be assigned to the instance or NULL;
  *                    for integer values: int
  *                    for strings: char *
  *                    for addreses: struct sockaddr *
@@ -468,8 +468,8 @@ cfg_set_instance_local_fmt(cfg_val_type type, void *val,
 /**
  * Commit Configurator database changes to the Test Agent.
  *
- * @param oid       - subtree object identifier or NULL if whole
- *                    database should be synchronized
+ * @param oid       subtree object identifier or NULL if whole
+ *                  database should be synchronized
  *
  * @return status code (see te_errno.h)
  */
@@ -494,9 +494,9 @@ cfg_commit_fmt(const char *oid_fmt, ...)
  * Obtain value of the object instance. Memory for strings and
  * addresses is allocated by the routine using malloc().
  *
- * @param handle    - object instance handle
- * @param p_type    - location for value type, may be NULL
- * @param ...       - OUT: location for the value
+ * @param handle    object instance handle
+ * @param p_type    location for value type, may be NULL
+ * @param ...       OUT: location for the value
  *                    for integer values: int *
  *                    for strings: char **
  *                    for addreses: struct sockaddr **
@@ -519,8 +519,8 @@ cfg_get_instance_fmt(cfg_val_type *p_type, void *val,
  * the managed object. Memory for strings and
  * addresses is allocated by the routine using malloc().
  *
- * @param handle    - object instance handle
- * @param  ...      - OUT: location for the value
+ * @param handle    object instance handle
+ * @param  ...      OUT: location for the value
  *                    for integer values: int *
  *                    for strings: char **
  *                    for addreses: struct sockaddr **
@@ -543,10 +543,10 @@ cfg_get_instance_sync_fmt(cfg_val_type *type, void *val,
 /**
  * Synchronize Configurator database with managed objects.
  *
- * @param oid        - identifier of the object instance or subtree or
- *                     NULL if whole database should be synchronized
- * @param subtree    - 1 if the subtree of the specified node should
- *                     be synchronized
+ * @param oid        identifier of the object instance or subtree or
+ *                   NULL if whole database should be synchronized
+ * @param subtree    1 if the subtree of the specified node should
+ *                   be synchronized
  *
  * @return status code (see te_errno.h)
  */
@@ -567,7 +567,7 @@ cfg_synchronize_fmt(te_bool subtree, const char *oid_fmt, ...)
 }
 
 
-/** Function - handler called during instances enumeration */
+/** Function handler called during instances enumeration */
 typedef int (* cfg_inst_handler)(
     cfg_handle handle,    /**< Handle of the object instance */
     void      *user_data  /**< Data specified by the user */
@@ -577,9 +577,9 @@ typedef int (* cfg_inst_handler)(
  * Enumerate all instances of the object (enumeration is stopped if
  * callback returns non-zero).
  *
- * @param handle    - object handle
- * @param callback  - the function to be called for each object instance
- * @param user_data - opaque user data
+ * @param handle    object handle
+ * @param callback  the function to be called for each object instance
+ * @param user_data opaque user data
  *
  * @return status code (see te_errno.h)
  */
@@ -590,8 +590,8 @@ extern int cfg_enumerate(cfg_handle handle, cfg_inst_handler callback,
 /**
  * Reboot the Test Agent.
  *
- * @param name      - name of the Test Agent
- * @param restore   - if TRUE, restore the current configuration
+ * @param name      name of the Test Agent
+ * @param restore   if TRUE, restore the current configuration
  *
  * @return status code (see te_errno.h)
  */
@@ -601,7 +601,7 @@ extern int cfg_reboot_ta(const char *ta_name, te_bool restore);
 /**
  * Create a backup.
  *
- * @param name      - OUT: location for backup file name
+ * @param name      OUT: location for backup file name
  *
  * @return status code (see te_errno.h)
  */
@@ -610,7 +610,7 @@ extern int cfg_create_backup(char **name);
 /**
  * Verify the backup.
  *
- * @param name      - name returned by cfg_create_backup
+ * @param name      name returned by cfg_create_backup
  *
  * @return status code (see te_errno.h)
  * @retval 0            current configuration is equal to backup
@@ -619,9 +619,18 @@ extern int cfg_create_backup(char **name);
 extern int cfg_verify_backup(const char *name);
 
 /**
+ * Ask Configurator to forget about the backup, if known.
+ *
+ * @param name      name returned by cfg_create_backup
+ *
+ * @return status code
+ */
+extern int cfg_release_backup(const char *name);
+
+/**
  * Restore the backup.
  *
- * @param name      - name returned by cfg_create_backup
+ * @param name      name returned by cfg_create_backup
  *
  * @return status code (see te_errno.h)
  */
@@ -631,8 +640,8 @@ extern int cfg_restore_backup(const char *name);
 /**
  * Create a configuration file.
  *
- * @param name      - configuration file name
- * @param history   - if TRUE "history" configuration file is created;
+ * @param name      configuration file name
+ * @param history   if TRUE "history" configuration file is created;
  *                    otherwise "backup" configuration file is created
  *
  * @return status code (see te_errno.h)
