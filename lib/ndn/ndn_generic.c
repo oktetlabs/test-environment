@@ -385,8 +385,9 @@ ndn_match_data_units(const asn_value *pattern, asn_value *pkt_pdu,
 {
     asn_syntax_t      plain_syntax;
     const asn_value  *du_val;
+    const asn_type   *val_type;
     const asn_type   *du_type;
-    const char       *choice_ptr;
+    const char       *choice_ptr = NULL;
 
     int      rc = 0;
     uint32_t user_int;
@@ -395,12 +396,19 @@ ndn_match_data_units(const asn_value *pattern, asn_value *pkt_pdu,
         return ETEWRONGPTR; 
 
     rc = asn_impl_find_subvalue(pattern, label, &du_val);
-    if (rc)
+    if (rc && rc != EASNINCOMPLVAL)
         return rc;
 
-    choice_ptr = asn_get_choice_ptr(du_val);
+    if (rc == 0)
+        choice_ptr = asn_get_choice_ptr(du_val);
 
-    du_type = asn_get_type(du_val);
+    if (choice_ptr == NULL && pkt_pdu == NULL)
+        return 0; /* data matches, no value should be saved into packet */
+
+    val_type = asn_get_type(pattern);
+    rc = asn_impl_find_subtype(val_type, label, &du_type);
+    if (rc)
+        return rc;
 
     plain_syntax = du_type->sp.named_entries[0].type->syntax;
 
@@ -471,10 +479,12 @@ ndn_match_data_units(const asn_value *pattern, asn_value *pkt_pdu,
     else if (strcmp(choice_ptr, "mask") == 0)
     { 
         const asn_value *mask_val;
+        size_t           mask_len;
+
         const uint8_t *mask_data;
         const uint8_t *pat_data;
         const uint8_t *m, *d, *p;
-        size_t mask_len, n;
+
 
         rc = asn_get_subvalue(du_val, &mask_val, "");
         if (rc)
