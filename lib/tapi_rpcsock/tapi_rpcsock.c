@@ -5683,7 +5683,7 @@ rpc_wsa_duplicate_socket(rcf_rpc_server *handle,
     if (RPC_CALL_OK)
     {
         if (info_len != NULL)
-            *info_len = out->info.info_len;
+            *info_len = out.info.info_len;
     }
 
     RETVAL_RC(duplicate_socket);
@@ -5716,7 +5716,9 @@ rpc_wait_multiple_events(rcf_rpc_server *handle,
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
     
+#if 0
     in.s = s;
+#endif
     in.count = count;
     in.events.events_len = rcount;
     in.events.events_val = (tarpc_wsaevent *)events;
@@ -5724,7 +5726,8 @@ rpc_wait_multiple_events(rcf_rpc_server *handle,
     in.timeout = timeout;
     in.alertable = alertable;
     
-    rcf_rpc_call(handle, _wait_multiple_events, &in, (xdrproc_t)xdr_tarpc_wait_multiple_events_in,
+    rcf_rpc_call(handle, _wait_multiple_events,
+                 &in, (xdrproc_t)xdr_tarpc_wait_multiple_events_in,
                  &out, (xdrproc_t)xdr_tarpc_wait_multiple_events_out);
 
     RING("RPC (%s,%s)%s: wait_multiple_events(%d, %p, %s, %d, %s) -> %d (%s)",
