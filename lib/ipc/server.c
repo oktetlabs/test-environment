@@ -479,8 +479,9 @@ ipc_receive_message(struct ipc_server *ipcs,
 
     if ((client->msg_rest > 0) && (buf_len == 0))
     {
-        assert(0);
         /* Buffer provided by caller is too small for the message */
+        fprintf(stderr, "IPC: Buffer provided by caller is too small "
+                "for the message\n");
         return ETESMALLBUF;
     }
     else
