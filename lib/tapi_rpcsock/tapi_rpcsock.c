@@ -288,51 +288,54 @@ timespec2str(const struct timespec *tv)
 /** Return with check (for functions returning 0 or -1) */
 #define RETVAL_RC(_func) \
     do {                                                                \
+        int __retval = out.retval;                                      \
         LOG_TE_ERROR(_func);                                            \
         rcf_rpc_free_result(&out, (xdrproc_t)xdr_tarpc_##_func##_out);  \
                                                                         \
         if (!RPC_CALL_OK)                                               \
             return -1;                                                  \
                                                                         \
-        if (out.retval != 0 && out.retval != -1)                        \
+        if (__retval != 0 && __retval != -1)                            \
         {                                                               \
             ERROR("function %s returned incorrect value %d",            \
-                  #_func, out.retval);                                  \
+                  #_func, __retval);                                    \
             handle->_errno = TE_RC(TE_TAPI, ETECORRUPTED);              \
             return -1;                                                  \
         }                                                               \
-        return out.retval;                                              \
+        return __retval;                                                \
     } while(0)
 
 /** Return with check (for functions returning value >= -1) */    
 #define RETVAL_VAL(_retval, _func) \
     do {                                                                \
+        int __retval = _retval;                                         \
         LOG_TE_ERROR(_func);                                            \
         rcf_rpc_free_result(&out, (xdrproc_t)xdr_tarpc_##_func##_out);  \
                                                                         \
         if (!RPC_CALL_OK)                                               \
             return -1;                                                  \
                                                                         \
-        if ((_retval) < -1)                                             \
+        if ((__retval) < -1)                                            \
         {                                                               \
             ERROR("function %s returned incorrect value %d",            \
-                  #_func, _retval);                                     \
+                  #_func, __retval);                                    \
             handle->_errno = TE_RC(TE_TAPI, ETECORRUPTED);              \
             return -1;                                                  \
         }                                                               \
-        return (_retval);                                               \
+        return (__retval);                                              \
     } while(0)
 
 /** Return with check (for functions returning pointers) */
 #define RETVAL_PTR(_retval, _func) \
     do {                                                                \
+        int __retval = _retval;                                         \
         LOG_TE_ERROR(_func);                                            \
         rcf_rpc_free_result(&out, (xdrproc_t)xdr_tarpc_##_func##_out);  \
                                                                         \
         if (!RPC_CALL_OK)                                               \
             return NULL;                                                \
         else                                                            \
-            return (void *)(_retval);                                   \
+            return (void *)(__retval);                                  \
     } while(0)
 
 /** Return with check */
@@ -2012,6 +2015,7 @@ rpc_enum_network_events(rcf_rpc_server *handle,
         in.event.event_len = 0;
     else
         in.event.event_len = 1;    
+    in.event.event_val = event;
 
     rcf_rpc_call(handle, _enum_network_events,
                  &in,  (xdrproc_t)xdr_tarpc_enum_network_events_in,
@@ -5830,12 +5834,6 @@ rpc_wait_multiple_events(rcf_rpc_server *handle,
                  &in, (xdrproc_t)xdr_tarpc_wait_multiple_events_in,
                  &out, (xdrproc_t)xdr_tarpc_wait_multiple_events_out);
 
-    RING("RPC (%s,%s)%s: wait_multiple_events(%d, %p, %s, %d, %s) -> %d (%s)",
-         handle->ta, handle->name, rpcop2str(op), 
-         count, events, wait_all ? "true" : "false", timeout, 
-         alertable ? "true" : "false", out.retval,
-         errno_rpc2str(RPC_ERRNO(handle)));
-
     if (RPC_CALL_OK)
     {
         switch (out.retval)
@@ -5857,6 +5855,12 @@ rpc_wait_multiple_events(rcf_rpc_server *handle,
                              (out.retval - TARPC_WSA_WAIT_EVENT_0);
         }
     }
-    
+
+    RING("RPC (%s,%s)%s: wait_multiple_events(%d, %p, %s, %d, %s) -> %d (%s)",
+         handle->ta, handle->name, rpcop2str(op), 
+         count, events, wait_all ? "true" : "false", timeout, 
+         alertable ? "true" : "false", out.retval,
+         errno_rpc2str(RPC_ERRNO(handle)));
+         
     RETVAL_VAL(out.retval, wait_multiple_events);
 }
