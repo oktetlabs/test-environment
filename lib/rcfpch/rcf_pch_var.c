@@ -226,22 +226,20 @@ rcf_pch_vwrite(struct rcf_comm_connection *conn,
     if (strcmp(var, "time") == 0)
     {
         struct timeval tv;
-        time_t         t;
-        struct tm      tm;
-        
-        gettimeofday(&tv, NULL);
-        t = (time_t)(tv.tv_sec);
-        localtime_r(&t, &tm);
-        if (sscanf(va_arg(ap, const char *), "%02d:%02d:%02d",
-                   &(tm.tm_hour), &(tm.tm_min), &(tm.tm_sec)) != 3)
+        VERB("synchronizing time");
+        if (sscanf(va_arg(ap, const char *), "%u:%u",
+                   &(tv.tv_sec), &(tv.tv_usec)) != 2)
         {
             va_end(ap);
             SEND_ANSWER("%d", ETEBADFORMAT);
         }
-        tv.tv_sec = mktime(&tm);
        
 #ifndef VGDEBUG /* Valgrind debugging */
-        settimeofday(&tv, NULL);
+        if (settimeofday(&tv, NULL) != 0)
+        {
+            va_end(ap);
+            SEND_ANSWER("%d", errno);
+        }
 #else
         ERROR("Ignore set of time since Valgrind debugging is enabled "
               "in build");

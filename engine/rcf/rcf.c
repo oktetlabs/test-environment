@@ -594,14 +594,12 @@ static int
 synchronize_time(ta *agent)
 {
     struct timeval tv;
-    struct tm     *tm;
     int            rc;
 
     gettimeofday(&tv, NULL);
-    tm = localtime(&tv.tv_sec);
 
-    sprintf(cmd, "%s time string %02d:%02d:%02d", TE_PROTO_VWRITE,
-                  tm->tm_hour, tm->tm_min, tm->tm_sec);
+    sprintf(cmd, "%s time string %u:%u", TE_PROTO_VWRITE,
+                  (unsigned)tv.tv_sec, (unsigned)tv.tv_usec);
     if ((rc = (agent->transmit)(agent->handle, cmd, strlen(cmd) + 1)) != 0)
     {
         VERB("Failed to transmit command to TA '%s' errno %d", 
@@ -615,6 +613,21 @@ synchronize_time(ta *agent)
     {
         WARN("Time synchronization failed for TA %s: "
              "log may be inconsistent", agent->name);
+    }
+    else
+    {
+        struct timeval tv2;
+        
+        gettimeofday(&tv2, NULL);
+        if (tv2.tv_sec - tv.tv_sec > 1)
+            WARN("Possible time drift is larger than 1s");
+        else
+        {
+            INFO("Possible time drift: %u us", 
+                 (tv2.tv_usec + (tv2.tv_sec == tv.tv_sec ? 0 : 1000000) 
+                  - tv.tv_usec) / 2);
+        }
+        
     }
     return rc;
 }
