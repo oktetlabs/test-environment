@@ -1,7 +1,7 @@
 /** @file
  * @brief Proteos, TAPI DHCP.
  *
- * Implementation of TAPI DHCP library. 
+ * Implementation of TAPI DHCP library.
  *
  * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
  * root directory of the distribution).
@@ -61,7 +61,7 @@ struct dhcp_rcv_pkt_info {
     struct dhcp_message *dhcp_msg;
 };
 
-/* 
+/*
  * Now TAPI DHCP allows issuing only one request on receiving
  * DHCP message simultaneously.
  */
@@ -76,23 +76,25 @@ static bool rcv_op_busy = false;
 static pthread_mutex_t tapi_dhcp_lock = PTHREAD_MUTEX_INITIALIZER;
 #endif
 
-static int ndn_dhcpv4_option_to_plain(asn_value_p dhcp_opt, struct dhcp_option **opt_p);
-static void ndn_dhcpv4_add_opts(asn_value_p container, struct dhcp_option *opt);
+static int ndn_dhcpv4_option_to_plain(asn_value_p dhcp_opt,
+                                      struct dhcp_option **opt_p);
+static void ndn_dhcpv4_add_opts(asn_value_p container,
+                                struct dhcp_option *opt);
 static void dhcp_options_destroy(struct dhcp_option *opt);
 
-/** 
+/**
  * Convert DHCPv4 ASN value to plain C structrue
- * 
- * @param pkt           ASN value of type DHCPv4 message or Generic-PDU with 
- *                      choice "dhcp"
+ *
+ * @param pkt           ASN value of type DHCPv4 message or Generic-PDU
+ *                      with choice "dhcp"
  * @param dhcp_msg      converted structure (OUT)
  *
  * @return zero on success or error code
  *
  * @se Function allocates memory under dhcp_message data structure, which
  * should be freed with dhcpv4_message_destroy
- */ 
-int 
+ */
+int
 ndn_dhcpv4_packet_to_plain(asn_value_p pkt, struct dhcp_message **dhcp_msg)
 {
     struct dhcp_option **opt_p;
@@ -104,11 +106,12 @@ ndn_dhcpv4_packet_to_plain(asn_value_p pkt, struct dhcp_message **dhcp_msg)
     int         i;
     int         n_opts;
 
-    if ((*dhcp_msg = (struct dhcp_message *)malloc(sizeof(**dhcp_msg))) == NULL)
+    *dhcp_msg = (struct dhcp_message *)malloc(sizeof(**dhcp_msg));
+    if (*dhcp_msg == NULL)
         return ENOMEM;
 
     memset(*dhcp_msg, 0, sizeof(**dhcp_msg));
-    
+
 /** Stores the value of 'field_' entry in user-specified buffer 'ptr_' */
 #define PKT_GET_VALUE(ptr_, field_) \
     do {                                                           \
@@ -164,7 +167,7 @@ ndn_dhcpv4_packet_to_plain(asn_value_p pkt, struct dhcp_message **dhcp_msg)
             /* No options specified */
             return 0;
         }
-        
+
         free(*dhcp_msg);
         return rc;
     }
@@ -187,13 +190,13 @@ ndn_dhcpv4_packet_to_plain(asn_value_p pkt, struct dhcp_message **dhcp_msg)
 
 /**
  * Convert DHCPv4 Option ASN value to plain C structrue
- * 
+ *
  * @param dhcp_opt      ASN value of type DHCPv4 option
  * @param opt_p         converted structure (OUT)
  *
  * @return zero on success or error code
- */ 
-static int 
+ */
+static int
 ndn_dhcpv4_option_to_plain(asn_value_p dhcp_opt, struct dhcp_option **opt_p)
 {
     int rc = 0;
@@ -210,7 +213,10 @@ ndn_dhcpv4_option_to_plain(asn_value_p dhcp_opt, struct dhcp_option **opt_p)
     }
     else if (rc == EASNINCOMPLVAL)
     {
-        /* Option doesn't have length and value fields (END and PAD options) */
+        /* 
+         * Option doesn't have length and value fields
+         * (END and PAD options)
+         */
         len = 0;
     }
     else
@@ -252,7 +258,7 @@ ndn_dhcpv4_option_to_plain(asn_value_p dhcp_opt, struct dhcp_option **opt_p)
         *opt_p = NULL;
         return rc;
     }
-    
+
     if ((n_subopts = asn_get_length(dhcp_opt, "options")) > 0)
     {
         struct dhcp_option **sub_opt_p;
@@ -260,7 +266,8 @@ ndn_dhcpv4_option_to_plain(asn_value_p dhcp_opt, struct dhcp_option **opt_p)
         asn_value_p sub_opts;
 
         sub_opt_p = &((*opt_p)->subopts);
-        if ((rc = asn_read_component_value(dhcp_opt, &sub_opts, "options")) != 0)
+        rc = asn_read_component_value(dhcp_opt, &sub_opts, "options");
+        if (rc != 0)
         {
             free((*opt_p)->val);
             free(*opt_p);
@@ -281,29 +288,30 @@ ndn_dhcpv4_option_to_plain(asn_value_p dhcp_opt, struct dhcp_option **opt_p)
             sub_opt_p = &((*sub_opt_p)->next);
         }
     }
-    
+
     return rc;
 }
 
 /**
- * Converts 
+ * Converts
  *
  */
-/** 
+/**
  * Convert C structrue to DHCPv4 ASN value
- * 
+ *
  * @param dhcp_msg      DHCP message in plain C data structure
  * @param pkt           Placeholder for the new ASN.1 DHCP packet (OUT)
  *
- * @return zero on success or error code
- */ 
-int 
-ndn_dhcpv4_plain_to_packet(const struct dhcp_message *dhcp_msg, asn_value_p *pkt)
+ * @return Zero on success or error code
+ */
+int
+ndn_dhcpv4_plain_to_packet(const struct dhcp_message *dhcp_msg,
+                           asn_value_p *pkt)
 {
     int len;
     int rc = 0;
 
-/**  
+/**
  * Sets the value of 'field_' in ASN.1 DHCPv4 structure
  * It sets the value only if is_'field'_set flag is set
  */
@@ -355,13 +363,13 @@ ndn_dhcpv4_add_opts(asn_value_p container, struct dhcp_option *opt)
     asn_value_p dhcp_opt, opts;
     int         rc = 0;
 
-    
+
     opts = asn_init_value(ndn_dhcpv4_options);
     dhcp_opt = asn_init_value(ndn_dhcpv4_option);
 
     if (opt != NULL)
         rc = asn_write_component_value(container, opts, "options");
-        
+
     if (rc)
         printf ("insert indexed rc: %x\n", rc);
 
@@ -393,10 +401,11 @@ ndn_dhcpv4_add_opts(asn_value_p container, struct dhcp_option *opt)
  * hlen  - MACADDR_LEN
  *
  * All other fields are left unspecified
- * 
+ *
  * @param msg_type  Type of the DHCP message to be created
  *
- * @return  Pointer to the message handle or NULL if there is not enough memory
+ * @return Pointer to the message handle or NULL if there is not enough
+ *         memory
  *
  * @se It adds Option 53 in DHCP message with value 'msg_type'
  */
@@ -406,7 +415,8 @@ dhcpv4_message_create(uint8_t msg_type)
     struct dhcp_message *dhcp_msg;
     struct dhcp_option  *opt;
 
-    if ((dhcp_msg = (struct dhcp_message *)malloc(sizeof(*dhcp_msg))) == NULL)
+    dhcp_msg = (struct dhcp_message *)malloc(sizeof(*dhcp_msg));
+    if (dhcp_msg == NULL)
         return NULL;
 
     memset(dhcp_msg, 0, sizeof(*dhcp_msg));
@@ -452,14 +462,14 @@ dhcpv4_message_create(uint8_t msg_type)
  * @param dhcp_msg  DHCP message handle
  * @param type      Type of the option to return
  *
- * @return  Pointer to the option or NULL if there is no 
+ * @return  Pointer to the option or NULL if there is no
  *          such option in the message
  */
 const struct dhcp_option *
 dhcpv4_message_get_option(const struct dhcp_message *dhcp_msg, uint8_t type)
 {
     struct dhcp_option *cur_opt;
-    
+
     assert(dhcp_msg != NULL);
 
     for (cur_opt = dhcp_msg->opts; cur_opt != NULL; cur_opt = cur_opt->next)
@@ -476,7 +486,7 @@ dhcpv4_message_get_option(const struct dhcp_message *dhcp_msg, uint8_t type)
  * @param opt   Option from which the sub-option to return
  * @param type  Sub-option type
  *
- * @return  Pointer to the sub-option or NULL if there is no 
+ * @return  Pointer to the sub-option or NULL if there is no
  *          such sub-option in the option
  */
 const struct dhcp_option *
@@ -501,23 +511,25 @@ dhcpv4_message_get_sub_option(const struct dhcp_option *opt, uint8_t type)
  *
  * @param type      Type of the option
  * @param len       Value of the 'Length' field of the option
- * @param val_len   Length of the buffer to be used as the value of the option
+ * @param val_len   Length of the buffer to be used as the value
+ *                  of the option
  * @param val       Pointer to the buffer of the value of the option
  *
  * @return  Pointer to created option of NULL if there is not enough memory
  */
 struct dhcp_option *
-dhcpv4_option_create(uint8_t type, uint8_t len, uint8_t val_len, uint8_t *val)
+dhcpv4_option_create(uint8_t type, uint8_t len,
+                     uint8_t val_len, uint8_t *val)
 {
     struct dhcp_option *opt;
-    
+
     if ((opt = (struct dhcp_option *)malloc(sizeof(*opt))) == NULL ||
         (opt->val = (uint8_t *)malloc(val_len)) == NULL)
     {
         free(opt);
         return NULL;
     }
-    
+
     opt->type = type;
     opt->len = len;
     opt->val_len = val_len;
@@ -542,7 +554,7 @@ dhcpv4_option_add_subopt(struct dhcp_option *opt, uint8_t type, uint8_t len,
 {
     struct dhcp_option  *subopt;
     struct dhcp_option **cur_opt_p;
-    
+
     if ((subopt = dhcpv4_option_create(type, len, len, val)) == NULL)
         return ENOMEM;
 
@@ -566,10 +578,11 @@ dhcpv4_option_add_subopt(struct dhcp_option *opt, uint8_t type, uint8_t len,
  * @return  Status of the operation
  */
 int
-dhcpv4_option_insert_subopt(struct dhcp_option *opt, struct dhcp_option *subopt)
+dhcpv4_option_insert_subopt(struct dhcp_option *opt,
+                            struct dhcp_option *subopt)
 {
     struct dhcp_option **cur_opt_p;
-    
+
     cur_opt_p = &(opt->subopts);
     while (*cur_opt_p != NULL)
     {
@@ -591,14 +604,15 @@ dhcpv4_option_insert_subopt(struct dhcp_option *opt, struct dhcp_option *subopt)
  *
  * @return  Status of the operation
  *
- * @note The function cannot be used for adding options with incorrect length 
+ * @note The function cannot be used for adding options with incorrect
+ *       length
  */
 int
 dhcpv4_message_add_option(struct dhcp_message *dhcp_msg, uint8_t type,
                           uint8_t len, const void *val)
 {
     struct dhcp_option **cur_opt_p;
-    
+
     assert(dhcp_msg != NULL);
     assert((len != 0 && val != NULL) || (len == 0 && val == NULL));
 
@@ -619,7 +633,7 @@ dhcpv4_message_add_option(struct dhcp_message *dhcp_msg, uint8_t type,
     (*cur_opt_p)->type = type;
     (*cur_opt_p)->len = len;
     (*cur_opt_p)->val_len = len;
-    
+
     if (val != NULL)
         memcpy((*cur_opt_p)->val, val, len);
     else
@@ -648,7 +662,7 @@ dhcpv4_message_insert_option(struct dhcp_message *dhcp_msg,
     struct dhcp_option **cur_opt_p;
 
     assert(dhcp_msg != NULL);
-    
+
     cur_opt_p = &(dhcp_msg->opts);
     while (*cur_opt_p != NULL)
     {
@@ -684,8 +698,8 @@ dhcp_options_destroy(struct dhcp_option *opt)
 }
 
 /**
- * Fills some fields of reply message based on the values of request message:
- * Copies xid, yiaddr, siaddr, flags, giaddr and chaddr fields
+ * Fills some fields of reply message based on the values of request
+ * message: Copies xid, yiaddr, siaddr, flags, giaddr and chaddr fields
  *
  * @param dhcp_rep  DHCP reply message to be updated
  * @param dhcp_req  DHCP request message whose values are used as a basic
@@ -702,7 +716,7 @@ dhcpv4_message_fill_reply_from_req(struct dhcp_message *dhcp_rep,
     uint32_t siaddr = dhcpv4_message_get_siaddr(dhcp_req);
     uint32_t giaddr = dhcpv4_message_get_giaddr(dhcp_req);
     const uint8_t *chaddr = dhcpv4_message_get_chaddr(dhcp_req);
-    
+
     dhcpv4_message_set_xid(dhcp_rep, &xid);
     dhcpv4_message_set_flags(dhcp_rep, &flags);
     dhcpv4_message_set_yiaddr(dhcp_rep, &yiaddr);
@@ -739,17 +753,17 @@ dhcpv4_option55_has_code(const struct dhcp_option *opt, uint8_t type)
  * Creates DHCPv4 CSAP in server mode
  * (Sends/receives traffic from/on DHCPv4 server port)
  *
- * @param ta_name    Test Agent name
- * @param if_addr    IPv4 address of a Test Agent interface, on which the CSAP
- *                   is attached
- * @param mode       DHCP mode (client or server)
- * @param dhcp_csap  Location for the DHCPv4 CSAP handle (OUT)
+ * @param ta_name       Test Agent name
+ * @param if_addr       IPv4 address of a Test Agent interface, on which
+ *                      the CSAP is attached
+ * @param mode          DHCP mode (client or server)
+ * @param dhcp_csap     Location for the DHCPv4 CSAP handle (OUT)
  *
  * @return  Status of the operation
  */
 int
 tapi_dhcpv4_plain_csap_create(const char *ta_name,
-                              const char *iface,                              
+                              const char *iface,
                               dhcp_csap_mode mode,
                               csap_handle_t *dhcp_csap)
 {
@@ -766,10 +780,10 @@ tapi_dhcpv4_plain_csap_create(const char *ta_name,
     asn_write_value_field(asn_dhcp_csap, &mode, sizeof(mode), "mode");
     asn_write_value_field(asn_dhcp_csap, iface, strlen(iface) + 1, "iface");
 
-    rc = asn_write_component_value(csap_level_spec, asn_dhcp_csap, "#dhcp"); 
+    rc = asn_write_component_value(csap_level_spec, asn_dhcp_csap, "#dhcp");
     if (rc == 0)
     {
-        rc = asn_insert_indexed(csap_spec, csap_level_spec, -1, ""); 
+        rc = asn_insert_indexed(csap_spec, csap_level_spec, -1, "");
     }
 
     /* @todo Generate temporary file name */
@@ -785,7 +799,8 @@ tapi_dhcpv4_plain_csap_create(const char *ta_name,
     if (rc != 0)
         return rc;
 
-    if ((rc = rcf_ta_csap_create(ta_name, 0, "dhcp", csap_fname, dhcp_csap)) != 0)
+    rc = rcf_ta_csap_create(ta_name, 0, "dhcp", csap_fname, dhcp_csap);
+    if (rc != 0)
     {
         return rc;
     }
@@ -865,7 +880,7 @@ dhcpv4_prepare_traffic_pattern(const struct dhcp_message *dhcp_msg,
     asn_pattern_unit = asn_init_value(ndn_traffic_pattern_unit);
     asn_pdus = asn_init_value(ndn_generic_pdu_sequence);
     asn_pdu = asn_init_value(ndn_generic_pdu);
-    
+
     rc = asn_write_component_value(asn_pdu, asn_dhcp_msg, "#dhcp");
     if (rc == 0)
         rc = asn_insert_indexed(asn_pdus, asn_pdu, -1, "");
@@ -881,7 +896,7 @@ dhcpv4_prepare_traffic_pattern(const struct dhcp_message *dhcp_msg,
     *pattern_fname = "./tmp_ndn.dat";
 
     rc = asn_save_to_file(asn_pattern, *pattern_fname);
-    
+
     return rc;
 }
 
@@ -912,18 +927,21 @@ tapi_dhcpv4_message_send(const char *ta_name, csap_handle_t dhcp_csap,
 }
 
 /**
- * Handler that is used as a callback routine for processing incoming packets
+ * Handler that is used as a callback routine for processing incoming
+ * packets
  *
- * @param pkt_fname   File name with ASN.1 representation of the received
- *                    packet
- * @param user_param  Pointer to the placeholder of the DHCP message handler
+ * @param pkt_fname     File name with ASN.1 representation of the received
+ *                      packet
+ * @param user_param    Pointer to the placeholder of the DHCP message
+ *                      handler
  *
  * @se It allocates a DHCP message
  */
 static void
 dhcp_pkt_handler(char *pkt_fname, void *user_param)
 {
-    struct dhcp_rcv_pkt_info *rcv_pkt = (struct dhcp_rcv_pkt_info *)user_param;
+    struct dhcp_rcv_pkt_info *rcv_pkt =
+        (struct dhcp_rcv_pkt_info *)user_param;
     struct dhcp_message      *dhcp_msg;
     int                       rc;
     int                       s_parsed;
@@ -938,7 +956,7 @@ dhcp_pkt_handler(char *pkt_fname, void *user_param)
         sprintf(buf, "cp %s rcv_file_ndn.asn", pkt_fname);
         system(buf);
     }
-    
+
     if ((rc = asn_parse_dvalue_in_file(pkt_fname, ndn_raw_packet,
                                        &pkt, &s_parsed)) != 0)
     {
@@ -974,7 +992,7 @@ dhcpv4_message_start_recv(const char *ta_name, csap_handle_t dhcp_csap,
 
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_lock(&tapi_dhcp_lock);
-#endif    
+#endif
 
     if (rcv_op_busy)
     {
@@ -989,7 +1007,10 @@ dhcpv4_message_start_recv(const char *ta_name, csap_handle_t dhcp_csap,
 #endif
     rcv_pkt.dhcp_msg = NULL;
 
-    /* Fill in asn_dhcp_msg data structure: specify 'op' field and Option 53 */
+    /* 
+     * Fill in asn_dhcp_msg data structure: specify 'op' field and
+     * Option 53
+     */
     dhcp_msg = dhcpv4_message_create(msg_type);
     dhcpv4_prepare_traffic_pattern(dhcp_msg, &pattern_fname);
     dhcpv4_message_destroy(dhcp_msg);
@@ -1002,7 +1023,7 @@ dhcpv4_message_start_recv(const char *ta_name, csap_handle_t dhcp_csap,
     {
 #ifdef HAVE_PTHREAD_H
         pthread_mutex_lock(&tapi_dhcp_lock);
-#endif    
+#endif
         rcv_op_busy = false;
 #ifdef HAVE_PTHREAD_H
         pthread_mutex_unlock(&tapi_dhcp_lock);
@@ -1036,7 +1057,7 @@ dhcpv4_message_capture(const char *ta_name, csap_handle_t dhcp_csap,
     msg = rcv_pkt.dhcp_msg;
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_lock(&tapi_dhcp_lock);
-#endif    
+#endif
     rcv_op_busy = false;
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_unlock(&tapi_dhcp_lock);
@@ -1058,7 +1079,7 @@ tapi_dhcpv4_send_recv(const char *ta_name, csap_handle_t dhcp_csap,
 
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_lock(&tapi_dhcp_lock);
-#endif    
+#endif
 
     if (rcv_op_busy)
     {
@@ -1104,7 +1125,7 @@ free_rcv_op:
 
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_lock(&tapi_dhcp_lock);
-#endif    
+#endif
     rcv_op_busy = false;
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_unlock(&tapi_dhcp_lock);
@@ -1127,7 +1148,7 @@ tapi_dhcpv4_csap_get_ipaddr(const char *ta_name, csap_handle_t dhcp_csap,
     char inet_addr_str[INET_ADDRSTRLEN];
     int  rc;
 
-    if ((rc = rcf_ta_csap_param(ta_name, 0, dhcp_csap, "ipaddr", 
+    if ((rc = rcf_ta_csap_param(ta_name, 0, dhcp_csap, "ipaddr",
                                 sizeof(inet_addr_str), inet_addr_str)) != 0)
     {
         return rc;

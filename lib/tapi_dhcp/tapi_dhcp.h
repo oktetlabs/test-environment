@@ -249,8 +249,10 @@ struct dhcp_message {
                 memcpy((msg_)->file, value_, str_len + 1); \
             } while (0)
 
-extern int ndn_dhcpv4_packet_to_plain(asn_value_p pkt, struct dhcp_message **dhcp_msg);
-extern int ndn_dhcpv4_plain_to_packet(const struct dhcp_message *dhcp_msg, asn_value_p *pkt);
+extern int ndn_dhcpv4_packet_to_plain(asn_value_p pkt,
+                                      struct dhcp_message **dhcp_msg);
+extern int ndn_dhcpv4_plain_to_packet(const struct dhcp_message *dhcp_msg,
+                                      asn_value_p *pkt);
 
 extern struct dhcp_message *dhcpv4_message_create(uint8_t msg_type);
 extern void dhcpv4_message_destroy(struct dhcp_message *);
@@ -260,26 +262,46 @@ extern int tapi_dhcpv4_plain_csap_create(const char *ta_name,
                                          dhcp_csap_mode mode,
                                          csap_handle_t *dhcp_csap);
 
-extern int tapi_dhcpv4_message_send(const char *ta_name, csap_handle_t dhcp_csap, const struct dhcp_message *dhcp_msg);
-extern int dhcpv4_message_start_recv(const char *ta_name, csap_handle_t dhcp_csap, uint8_t msg_type);
-extern struct dhcp_message *dhcpv4_message_capture(const char *ta_name, csap_handle_t dhcp_csap, unsigned int *timeout);
-extern struct dhcp_message *tapi_dhcpv4_send_recv(const char *ta_name, csap_handle_t dhcp_csap,
+extern int tapi_dhcpv4_message_send(const char *ta_name,
+                                    csap_handle_t dhcp_csap,
+                                    const struct dhcp_message *dhcp_msg);
+extern int dhcpv4_message_start_recv(const char *ta_name,
+                                     csap_handle_t dhcp_csap,
+                                     uint8_t msg_type);
+extern struct dhcp_message *dhcpv4_message_capture(const char *ta_name,
+                                                   csap_handle_t dhcp_csap,
+                                                   unsigned int *timeout);
+extern struct dhcp_message *tapi_dhcpv4_send_recv(const char *ta_name,
+                                                  csap_handle_t dhcp_csap,
                       const struct dhcp_message *dhcp_msg, int *tv,
                       const char **err_msg);
 extern int tapi_dhcpv4_csap_get_ipaddr(const char *ta_name,
                                        csap_handle_t dhcp_csap, void *addr);
 
-extern const struct dhcp_option *dhcpv4_message_get_option(const struct dhcp_message *dhcp_msg, uint8_t type);
-extern const struct dhcp_option *dhcpv4_message_get_sub_option(const struct dhcp_option *opt, uint8_t type);
-extern void dhcpv4_message_fill_reply_from_req(struct dhcp_message *dhcp_rep,
-                                               const struct dhcp_message *dhcp_req);
+extern const struct dhcp_option *dhcpv4_message_get_option(
+                                    const struct dhcp_message *dhcp_msg,
+                                    uint8_t type);
+extern const struct dhcp_option *dhcpv4_message_get_sub_option(
+                                    const struct dhcp_option *opt,
+                                    uint8_t type);
+extern void dhcpv4_message_fill_reply_from_req(
+                struct dhcp_message *dhcp_rep,
+                const struct dhcp_message *dhcp_req);
 
-extern struct dhcp_option *dhcpv4_option_create(uint8_t type, uint8_t len, uint8_t val_len, uint8_t *val);
-extern int dhcpv4_option_add_subopt(struct dhcp_option *opt, uint8_t type, uint8_t len, uint8_t *val);
-extern int dhcpv4_option_insert_subopt(struct dhcp_option *opt, struct dhcp_option *subopt);
-extern int dhcpv4_message_add_option(struct dhcp_message *dhcp_msg, uint8_t type,
-                                     uint8_t len, const void *val);
-extern int dhcpv4_message_insert_option(struct dhcp_message *dhcp_msg, struct dhcp_option *opt);
-extern bool dhcpv4_option55_has_code(const struct dhcp_option *opt, uint8_t type);
+extern struct dhcp_option *dhcpv4_option_create(uint8_t type,
+                                                uint8_t len,
+                                                uint8_t val_len,
+                                                uint8_t *val);
+extern int dhcpv4_option_add_subopt(struct dhcp_option *opt, uint8_t type,
+                                    uint8_t len, uint8_t *val);
+extern int dhcpv4_option_insert_subopt(struct dhcp_option *opt,
+                                       struct dhcp_option *subopt);
+extern int dhcpv4_message_add_option(struct dhcp_message *dhcp_msg,
+                                     uint8_t type, uint8_t len,
+                                     const void *val);
+extern int dhcpv4_message_insert_option(struct dhcp_message *dhcp_msg,
+                                        struct dhcp_option *opt);
+extern bool dhcpv4_option55_has_code(const struct dhcp_option *opt,
+                                     uint8_t type);
 
-#endif /* !__TE_TAPI_DHCP__ */
+#endif /* !__TE_TAPI_DHCP_H__ */
