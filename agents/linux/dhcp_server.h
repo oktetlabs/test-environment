@@ -54,11 +54,11 @@ typedef struct group {
 } group;
 
 typedef struct te_dhcp_server_subnet {
-    char               *subnet;
-    char               *netmask;
+    struct te_dhcp_server_subnet *next;
 
+    char               *subnet;
+    int                 prefix_len;
     te_dhcp_option     *options;
-    
 } te_dhcp_server_subnet;
 
 typedef struct te_dhcp_server_shared_net {

@@ -165,6 +165,8 @@ static char *isc_dhcp_quoted_options[] = {
         free(_opt);             \
     } while (0)
 
+static te_dhcp_server_subnet *subnets = NULL;
+
 static host *hosts = NULL;
 
 static group *groups = NULL;
@@ -1437,6 +1439,16 @@ ds_shutdown_dhcp_server()
                  " - DHCP server will not be available");
         }
         dhcp_server_was_run = FALSE;
+    }
+    if (dhcp_server_conf != NULL && unlink(dhcp_server_conf) != 0)
+    {
+        ERROR("Failed to delete DHCP server temporary configuration "
+              "file '%s': %s", dhcp_server_conf, strerror(errno));
+    }
+    if (dhcp_server_leases != NULL && unlink(dhcp_server_leases) != 0)
+    {
+        ERROR("Failed to delete DHCP server temporary leases data base "
+              "file '%s': %s", dhcp_server_leases, strerror(errno));
     }
 #endif
 }
