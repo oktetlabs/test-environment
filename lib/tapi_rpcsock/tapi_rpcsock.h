@@ -684,6 +684,22 @@ extern int rpc_socketpair(rcf_rpc_server *handle,
 extern FILE *rpc_fopen(rcf_rpc_server *handle,
                        const char *path, const char *mode);
 
+extern FILE *rpc_popen(rcf_rpc_server *handle,
+                       const char *cmd, const char *mode);
+
+/**
+ * Execute shell command on the IPC server and read the output.
+ *
+ * @param handle        RPC server handle
+ * @param cmd           command to be executed
+ * @param buf           output buffer
+ * @param buflen        output buffer length
+ *
+ * @return 0 (success) or -1 (failure)
+ */
+extern int rpc_shell(rcf_rpc_server *handle,
+                       const char *cmd, char *buf, int buflen);
+
 extern int rpc_fileno(rcf_rpc_server *handle,
                       FILE *f);
 

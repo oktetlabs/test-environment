@@ -91,9 +91,10 @@
  */
 #define RPC_FUNC_WITH_RETVAL(rpcs_, retval_, func_, args_...) \
     do {                                                        \
-        int err2_ = RPC_ERRNO(rpcs_);                           \
+        int err2_;                                              \
                                                                 \
         (retval_) =  rpc_ ## func_(rpcs_, args_);               \
+        err2_ = RPC_ERRNO(rpcs_);                               \
         VERB("rpc_" #func_ " returns: %d, %X",                  \
              retval_, TE_RC_GET_ERROR(err2_));                  \
         if ((retval_) < 0)                                      \
@@ -112,9 +113,10 @@
  */
 #define RPC_FUNC_WITH_RETVAL0(rpcs_, retval_, func_)            \
     do {                                                        \
-        int err2_ = RPC_ERRNO(rpcs_);                           \
+        int err2_;                                              \
                                                                 \
         (retval_) =  rpc_ ## func_(rpcs_);                      \
+        err2_ = RPC_ERRNO(rpcs_);                               \
         VERB("rpc_" #func_ " returns: %d, %X",                  \
              retval_, TE_RC_GET_ERROR(err2_));                  \
         if ((retval_) < 0)                                      \
@@ -136,9 +138,10 @@
 #define RPC_FUNC_WITH_EXACT_RETVAL(rpcs_, retval_, expect_, \
                                    func_, args_...)             \
     do {                                                        \
-        int err2_ = RPC_ERRNO(rpcs_);                           \
+        int err2_;                                              \
                                                                 \
         (retval_) =  rpc_ ## func_(rpcs_, args_);               \
+        err2_ = RPC_ERRNO(rpcs_);                               \
         VERB("rpc_" #func_ " returns: %d, %X",                  \
              retval_, TE_RC_GET_ERROR(err2_));                  \
         if ((int)(retval_) != (int)(expect_))                   \

@@ -4922,6 +4922,46 @@ rpc_fopen(rcf_rpc_server *handle,
     RETVAL_PTR(out.mem_ptr, fopen);
 }
 
+FILE *
+rpc_popen(rcf_rpc_server *handle,
+          const char *cmd, const char *mode)
+{
+    tarpc_popen_in  in;
+    tarpc_popen_out out;
+    
+    char *cmd_dup = strdup(cmd);
+    char *mode_dup = strdup(mode);
+
+    if (handle == NULL || cmd == NULL || mode == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        free(cmd_dup);
+        free(mode_dup);
+        return NULL;
+    }
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    handle->op = RCF_RPC_CALL_WAIT;
+    in.cmd.cmd_len = strlen(cmd) + 1;
+    in.cmd.cmd_val = (char *)cmd_dup;
+    in.mode.mode_len = strlen(mode) + 1;
+    in.mode.mode_val = (char *)mode_dup;
+
+    rcf_rpc_call(handle, _popen, &in, (xdrproc_t)xdr_tarpc_popen_in,
+                 &out, (xdrproc_t)xdr_tarpc_popen_out);
+                 
+    free(cmd_dup);
+    free(mode_dup);  
+
+    RING("RPC (%s,%s): popen(%s, %s) -> %p (%s)",
+         handle->ta, handle->name,
+         cmd, mode, out.mem_ptr, errno_rpc2str(RPC_ERRNO(handle)));
+
+    RETVAL_PTR(out.mem_ptr, popen);
+}
+
 int
 rpc_fileno(rcf_rpc_server *handle,
            FILE *f)
@@ -6167,3 +6207,46 @@ rpc_ftp_open(rcf_rpc_server *handle,
 
     RETVAL_VAL(out.fd, ftp_open);
 }
+
+/**
+ * Execute shell command on the IPC server and read the output.
+ *
+ * @param handle        RPC server handle
+ * @param cmd           command to be executed
+ * @param buf           output buffer
+ * @param buflen        output buffer length
+ *
+ * @return status code
+ */
+int 
+rpc_shell(rcf_rpc_server *handle,
+          const char *cmd, char *buf, int buflen)
+{
+    FILE *f;
+    int   fd;
+    int   rc = 0;
+    
+    if ((f = rpc_popen(handle, cmd, "r")) == NULL)
+    {
+        ERROR("Cannot execute the command: rpc_popen() failed");
+        return -1;
+    }
+    
+    if ((fd = rpc_fileno(handle, f)) < 0)
+    {
+        ERROR("Cannot read command output: rpc_fileno failed");
+        return -1;
+    }
+    
+    buf[0] = 0;
+
+    if (rpc_read_gen(handle, fd, buf, buflen, buflen) < 0)
+    {
+        ERROR("Cannot read command output: rpc_read failed");
+        rc = -1;
+    }
+
+    rpc_close(handle, fd);
+    
+    return rc;
+}          
