@@ -179,12 +179,18 @@ log_client_close(void)
     int res;
 
 #ifdef HAVE_PTHREAD_H
-    pthread_mutex_lock(&lgr_lock);
+    if (pthread_mutex_trylock(&lgr_lock) != 0)
+    {
+        fprintf(stderr, "%s(): pthread_mutex_trylock() failed: %s\n",
+                __FUNCTION__, strerror(errno));
+        return;
+    }
 #endif
     res = ipc_close_client(lgr_client);
     if (res != 0)
     {
-        fprintf(stderr, "log_client_close(): ipc_close_client failed\n");
+        fprintf(stderr, "%s(): ipc_close_client() failed\n",
+                __FUNCTION__);
     }
     else
     {
@@ -194,7 +200,11 @@ log_client_close(void)
     lgr_msg_buf = NULL;
     lgr_msg_buf_len = 0;
 #ifdef HAVE_PTHREAD_H
-    pthread_mutex_unlock(&lgr_lock);
+    if (pthread_mutex_unlock(&lgr_lock) != 0)
+    {
+        fprintf(stderr, "%s(): pthread_mutex_unlock() failed: %s\n",
+                __FUNCTION__, strerror(errno));
+    }
 #endif
 }
 
