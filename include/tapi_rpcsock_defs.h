@@ -881,26 +881,27 @@ typedef enum rpc_servicetype_flags {
     RPC_SERVICE_NO_QOS_SIGNALING          = 0x40000000
 } rpc_servicetype_flags;
 
+
 #ifndef SERVICETYPE_NOTRAFFIC
-#define SERVICETYPE                         int
-#define SERVICETYPE_NOTRAFFIC               0
-#define SERVICETYPE_BESTEFFORT              0
-#define SERVICETYPE_CONTROLLEDLOAD          0
-#define SERVICETYPE_GUARANTEED              0
-#define SERVICETYPE_NETWORK_UNAVAILABLE     0
-#define SERVICETYPE_GENERAL_INFORMATION     0
-#define SERVICETYPE_NOCHANGE                0
-#define SERVICETYPE_NONCONFORMING           0
-#define SERVICETYPE_NETWORK_CONTROL         0
-#define SERVICETYPE_QUALITATIVE             0
-#define SERVICE_NO_TRAFFIC_CONTROL          0
-#define SERVICE_NO_QOS_SIGNALING            0
+/* Cygwin 1.5.10-3 does not provide us with required definitions */
+#define SERVICETYPE_NOTRAFFIC               0x00000000
+#define SERVICETYPE_BESTEFFORT              0x00000001
+#define SERVICETYPE_CONTROLLEDLOAD          0x00000002
+#define SERVICETYPE_GUARANTEED              0x00000003
+#define SERVICETYPE_NETWORK_UNAVAILABLE     0x00000004
+#define SERVICETYPE_GENERAL_INFORMATION     0x00000005
+#define SERVICETYPE_NOCHANGE                0x00000006
+#define SERVICETYPE_NONCONFORMING           0x00000009
+#define SERVICETYPE_NETWORK_CONTROL         0x0000000A
+#define SERVICETYPE_QUALITATIVE             0x0000000D
+#define SERVICE_NO_TRAFFIC_CONTROL          0x81000000
+#define SERVICE_NO_QOS_SIGNALING            0x40000000
 #endif
 
-static inline SERVICETYPE
+static inline unsigned int
 servicetype_flags_rpc2h(rpc_servicetype_flags flags)
 {
-    return (SERVICETYPE)
+    return
         (!!(flags & RPC_SERVICETYPE_NOTRAFFIC)
             * SERVICETYPE_NOTRAFFIC) |
         (!!(flags & RPC_SERVICETYPE_BESTEFFORT)
