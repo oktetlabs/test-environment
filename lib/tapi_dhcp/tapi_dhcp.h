@@ -60,13 +60,15 @@
 #define DHCP_HW_TYPE_ETHERNET_10MB  1
 
 /** @name Type of the DHCP message (It is used as a value of Option 53) */
-#define DHCPDISCOVER    1
-#define DHCPOFFER       2
-#define DHCPREQUEST     3
-#define DHCPDECLINE     4
-#define DHCPACK         5
-#define DHCPNAK         6
-#define DHCPRELEASE     7
+typedef enum {
+    DHCPDISCOVER = 1,
+    DHCPOFFER,
+    DHCPREQUEST,
+    DHCPDECLINE,
+    DHCPACK,
+    DHCPNAK,
+    DHCPRELEASE,
+} dhcp_message_type;
 /*@}*/
 
 /** @name Values of message op code */
@@ -96,7 +98,7 @@ struct dhcp_option {
 };
 
 /** Structure of DHCP message */
-struct dhcp_message {
+typedef struct dhcp_message {
     uint8_t  op;        /**< Message op code */
     uint8_t  htype;     /**< Hardware address type */ 
     uint8_t  hlen;      /**< Hardware address length */
@@ -133,7 +135,7 @@ struct dhcp_message {
     te_bool  is_file_set;       /**< Is message file has been set */
 
     struct dhcp_option *opts;   /**< List of DHCP options */
-};
+} dhcp_message;
 
 /**
  * Gets the value of the field in dhcp_message structure
@@ -245,7 +247,7 @@ struct dhcp_message {
 
 extern int ndn_dhcpv4_packet_to_plain(asn_value_p pkt,
                                       struct dhcp_message **dhcp_msg);
-extern int ndn_dhcpv4_plain_to_packet(const struct dhcp_message *dhcp_msg,
+extern int ndn_dhcpv4_plain_to_packet(const dhcp_message *dhcp_msg,
                                       asn_value_p *pkt);
 
 /**
@@ -264,7 +266,8 @@ extern int ndn_dhcpv4_plain_to_packet(const struct dhcp_message *dhcp_msg,
  *
  * @se It adds Option 53 in DHCP message with value 'msg_type'
  */
-extern struct dhcp_message *dhcpv4_message_create(uint8_t msg_type);
+extern struct dhcp_message *dhcpv4_message_create(dhcp_message_type 
+                                                  msg_type);
 
 /**
  * Creates DHCP BOOTP message with specified operation set.
@@ -291,9 +294,44 @@ extern int tapi_dhcpv4_plain_csap_create(const char *ta_name,
 extern int tapi_dhcpv4_message_send(const char *ta_name,
                                     csap_handle_t dhcp_csap,
                                     const struct dhcp_message *dhcp_msg);
+/**
+ * Creates ASN.1 text file with traffic template of one DHCPv4 message
+ *
+ * @param dhcp_msg     DHCPv4 message
+ * @param templ_fname  Traffic template file name (OUT)
+ *
+ * @return status code
+ */
+extern int dhcpv4_prepare_traffic_template(const dhcp_message *dhcp_msg,
+                                           const char **templ_fname);
+
+/**
+ * Creates ASN.1 text file with traffic pattern of one DHCPv4 message
+ *
+ * @param dhcp_msg       DHCPv4 message to be used as a pattern
+ * @param pattern_fname  Traffic pattern file name (OUT)
+ *
+ * @return status code
+ */
+extern int dhcpv4_prepare_traffic_pattern(const dhcp_message *dhcp_msg,
+                                          char **pattern_fname);
+
+/**
+ * Star receive of DHCP message of desired type during timeout.
+ *
+ * @param ta_name       Name of Test Agent
+ * @param dhcp_csap     ID of DHCP CSAP, which should receive message
+ * @param timeout       Time while CSAP will receive, measured in 
+ *                      milliseconds, counted wince start receive,
+ *                      may be TAD_TIMEOUT_INF for infinitive wait
+ * @param msg_type      Desired type of message
+ *
+ * @return status code
+ */
 extern int dhcpv4_message_start_recv(const char *ta_name,
                                      csap_handle_t dhcp_csap,
-                                     uint8_t msg_type);
+                                     int timeout,
+                                     dhcp_message_type msg_type);
 extern struct dhcp_message *dhcpv4_message_capture(const char *ta_name,
                                                    csap_handle_t dhcp_csap,
                                                    unsigned int *timeout);

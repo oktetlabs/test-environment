@@ -443,7 +443,7 @@ dhcpv4_bootp_message_create(uint8_t op)
 
 /* See description in tapi_dhcp.h */
 struct dhcp_message *
-dhcpv4_message_create(uint8_t msg_type)
+dhcpv4_message_create(dhcp_message_type msg_type)
 {
     uint8_t              op;
     struct dhcp_message *dhcp_msg;
@@ -841,9 +841,10 @@ tapi_dhcpv4_plain_csap_create(const char *ta_name,
  * @param dhcp_msg     DHCPv4 message
  * @param templ_fname  Traffic template file name (OUT)
  *
+ * @return status code
  */
-static int
-dhcpv4_prepare_traffic_template(const struct dhcp_message *dhcp_msg,
+int
+dhcpv4_prepare_traffic_template(const dhcp_message *dhcp_msg,
                                 const char **templ_fname)
 {
     asn_value_p asn_dhcp_msg;
@@ -876,10 +877,11 @@ dhcpv4_prepare_traffic_template(const struct dhcp_message *dhcp_msg,
  * @param dhcp_msg       DHCPv4 message to be used as a pattern
  * @param pattern_fname  Traffic pattern file name (OUT)
  *
+ * @return status code
  */
-static int
-dhcpv4_prepare_traffic_pattern(const struct dhcp_message *dhcp_msg,
-                               const char **pattern_fname)
+int
+dhcpv4_prepare_traffic_pattern(const dhcp_message *dhcp_msg,
+                               char **pattern_fname)
 {
     asn_value_p asn_dhcp_msg;
     asn_value_p asn_pattern;
@@ -888,8 +890,11 @@ dhcpv4_prepare_traffic_pattern(const struct dhcp_message *dhcp_msg,
     asn_value_p asn_pdu;
     int         rc;
 
+    if (pattern_fname == NULL)
+        return TE_RC(TE_TAPI, ETEWRONGPTR);
+
     if ((rc = ndn_dhcpv4_plain_to_packet(dhcp_msg, &asn_dhcp_msg)) != 0)
-        return rc;
+        return TE_RC(TE_TAPI, rc);
 
     asn_pattern = asn_init_value(ndn_traffic_pattern);
     asn_pattern_unit = asn_init_value(ndn_traffic_pattern_unit);
@@ -905,14 +910,17 @@ dhcpv4_prepare_traffic_pattern(const struct dhcp_message *dhcp_msg,
         rc = asn_insert_indexed(asn_pattern, asn_pattern_unit, -1, "");
 
     if (rc != 0)
-        return rc;
+        return TE_RC(TE_TAPI, rc);
 
     /* @todo Generate temporary file name */
-    *pattern_fname = "./tmp_ndn.dat";
+    *pattern_fname = calloc(1, 100);
+
+    strcpy(*pattern_fname, "/tmp/te-dhcp-pattern.asn.XXXXXX");
+    mkstemp(*pattern_fname); 
 
     rc = asn_save_to_file(asn_pattern, *pattern_fname);
 
-    return rc;
+    return TE_RC(TE_TAPI, rc);
 }
 
 /**
@@ -991,21 +999,28 @@ dhcp_pkt_handler(char *pkt_fname, void *user_param)
 }
 
 
+
 /**
- * Start receiving DHCP message of specified type in backgroung
+ * Star receive of DHCP message of desired type during timeout.
  *
- * @param ta_name    Test Agent name
- * @param dhcp_csap  CSAP to be used for receiving
- * @param msg_type   Type of the DHCP message to be created
+ * @param ta_name       Name of Test Agent
+ * @param dhcp_csap     ID of DHCP CSAP, which should receive message
+ * @param timeout       Time while CSAP will receive, measured in 
+ *                      milliseconds, counted wince start receive,
+ *                      may be TAD_TIMEOUT_INF for infinitive wait
+ * @param msg_type      Desired type of message
+ *
+ * @return status code
  */
 int
 dhcpv4_message_start_recv(const char *ta_name, csap_handle_t dhcp_csap,
-                          uint8_t msg_type)
+                          int timeout, dhcp_message_type msg_type)
 {
     struct dhcp_message *dhcp_msg = NULL;
-    const char          *pattern_fname;
-    int                  rc;
-    int                  sid;
+
+    char *pattern_fname;
+    int   rc;
+    int   sid;
 
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_lock(&tapi_dhcp_lock);
@@ -1036,7 +1051,7 @@ dhcpv4_message_start_recv(const char *ta_name, csap_handle_t dhcp_csap,
     if ((rc = rcf_ta_create_session(ta_name, &sid)) != 0 ||
         (rc = rcf_ta_trrecv_start(ta_name, sid, dhcp_csap, pattern_fname,
                                   dhcp_pkt_handler, &rcv_pkt,
-                                  TAD_TIMEOUT_INF, 1)) != 0)
+                                  timeout, 1)) != 0)
     {
 #ifdef HAVE_PTHREAD_H
         pthread_mutex_lock(&tapi_dhcp_lock);
