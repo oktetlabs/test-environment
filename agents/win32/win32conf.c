@@ -63,7 +63,7 @@ static char  buf[2048] = {0, };
 #define FORW_TYPE_REMOTE 4
 
 
-/* Fast conversion of the network mask to prefix */
+/** Fast conversion of the network mask to prefix */
 #define MASK2PREFIX(mask, prefix)            \
     switch (ntohl(mask))                     \
     {                                        \
@@ -104,7 +104,7 @@ static char  buf[2048] = {0, };
         default: prefix = 33; break;         \
     }
 
-/* Fast conversion of the prefix to network mask */
+/** Fast conversion of the prefix to network mask */
 #define PREFIX2MASK(prefix) htonl(prefix == 0 ? 0 : (~0) << (32 - (prefix)))
 
 /* TA name pointer */
@@ -908,25 +908,42 @@ arp_get(unsigned int gid, const char *oid, char *value,
 static int
 find_ifindex(DWORD addr, DWORD *ifindex)
 {
-    MIB_IPADDRTABLE *table;
-    int              i;
+    MIB_IPFORWARDTABLE *table;
+    
+    DWORD index = 0;
+    DWORD mask_max = 0;
+    int   i;
 
-    GET_TABLE(MIB_IPADDRTABLE, GetIpAddrTable);
+    GET_TABLE(MIB_IPFORWARDTABLE, GetIpForwardTable);
+    
     if (table == NULL)
         return TE_RC(TE_TA_WIN32, ENOENT);
 
     for (i = 0; i < (int)table->dwNumEntries; i++)
     {
-        if ((addr & table->table[i].dwMask) ==
-            (table->table[i].dwAddr & table->table[i].dwMask))
+        if ((table->table[i].dwForwardDest & 
+             table->table[i].dwForwardMask) !=
+            (addr &  table->table[i].dwForwardMask))
         {
-            *ifindex = table->table[i].dwIndex;
-            free(table);
-            return 0;
+            continue;
+        }
+        
+        if (ntohl(table->table[i].dwForwardMask) > mask_max || index == 0)
+        {
+            mask_max = table->table[i].dwForwardMask;
+            index = table->table[i].dwForwardIfIndex;
+            if (mask_max == 0xFFFFFFFF)
+                break;
         }
     }
     free(table);
-    return TE_RC(TE_TA_WIN32, ENOENT);
+
+    if (index == 0)
+        return TE_RC(TE_TA_WIN32, ENOENT);
+        
+    *ifindex = index;
+    
+    return 0;
 }
 
 
@@ -1376,6 +1393,9 @@ route_add(unsigned int gid, const char *oid, const char *value,
     if ((rc = route_parse_inst_name(route, &rt)) != 0)
         return rc;
         
+    PRINT("Dst: %x Gw: %x Prefix: %d IfIndex: %d Type: %d", 
+          rt.dst, rt.gw, rt.prefix, rt.if_index, rt.forw_type);
+        
 #ifndef WITH_METRIC        
     if (rt.metric != 0)
     {
@@ -1388,16 +1408,15 @@ route_add(unsigned int gid, const char *oid, const char *value,
     entry.dwForwardDest = rt.dst;
     entry.dwForwardNextHop = rt.gw;
     entry.dwForwardMask = PREFIX2MASK(rt.prefix);
-
-    if (rt.forw_type == FORW_TYPE_LOCAL)
-    {
-        entry.dwForwardIfIndex = rt.if_index;        
+    entry.dwForwardType = rt.forw_type;
+    entry.dwForwardNextHop = rt.gw;
+    entry.dwForwardIfIndex = rt.if_index;
+    
+    if (entry.dwForwardNextHop == 0)
         entry.dwForwardNextHop = rt.dst;
-    }
-    else
+        
+    if (entry.dwForwardIfIndex == 0)
     {
-        entry.dwForwardNextHop = rt.gw;
-
         if ((rc = find_ifindex(entry.dwForwardNextHop,
                                &entry.dwForwardIfIndex)) != 0)
         {
