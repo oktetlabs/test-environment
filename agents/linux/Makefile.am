@@ -6,11 +6,11 @@ MY_CPPFLAGS=-I$(DESTDIR)/$(prefix)/include \
 AM_YFLAGS=-d
 
 #
-# -lrcfpch must be before @TE_LDADD@ since the last may contain
-# -ltad_ch with names used in -lrcfpch.
+# -lrcfpch must be before -ltad since rcfpch contains references to
+# functions provided by -ltad. @TE_LDADD@ must be after -ltad, since
+# @TE_LDADD@ may contain ASN and NDN libraries.
 #
-MY_LDADD=symtbl.o -lrcfpch -ltad @TE_LDADD@ \
-         -lconf_oid -lcomm_net_agent -lloggerta -lcrypt
+MY_LDADD=symtbl.o -lrcfpch -ltad @TE_LDADD@ -lconf_oid -lloggerta -lcrypt
 
 #if HAS_NET_SNMP
 #MY_LDADD+= @NET_SNMP_LIBS@
@@ -22,6 +22,7 @@ MY_SYMTBL_OBJECTS=linux.o ftp_routines.o
 noinst_HEADERS=linux_rpc.h linux_internal.h linuxconf_daemons.h
 
 CLEANFILES=symtbl.c
+BUILT_SOURCES=
 
 if CFG_RCF_RPC
 
@@ -78,10 +79,16 @@ if CFG_LINUX_DAEMONS_NAMED
 
 MY_SOURCES+=named.conf.y named.lex.l
 
-BUILT_SOURCES=named.conf.h
+BUILT_SOURCES+=named.conf.h
 CLEANFILES+=named.conf.h
 MY_LDADD+=-lfl
 
+endif
+
+if CFG_LINUX_DAEMONS_ISC_DHCP_SERVER
+MY_SOURCES+=isc-dhcp-server.lex.l isc-dhcp-server.conf.y
+BUILT_SOURCES+=isc-dhcp-server.conf.h
+MY_LDADD+=-lfl
 endif
 
 endif
@@ -108,7 +115,6 @@ talinuxtmpl_DEPENDENCIES=@TE_DEPENDENCIES@ symtbl.o \
     $(DESTDIR)/$(prefix)/../@host@/lib/librcfpch.a \
     $(DESTDIR)/$(prefix)/../@host@/lib/libtad.a \
     $(DESTDIR)/$(prefix)/../@host@/lib/libconf_oid.a \
-    $(DESTDIR)/$(prefix)/../@host@/lib/libcomm_net_agent.a \
     $(DESTDIR)/$(prefix)/../@host@/lib/libloggerta.a
 
 symtbl.c: $(MY_SYMTBL_OBJECTS) @TE_DEPENDENCIES@

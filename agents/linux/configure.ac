@@ -52,6 +52,7 @@ semaphore.h \
 aio.h \
 net/ethernet.h \
 net/if_dl.h \
+netinet/in.h \
 netinet/in_systm.h \
 sys/un.h \
 ])
@@ -150,6 +151,8 @@ AC_SUBST([DAEMONS_LDADD])
 AM_CONDITIONAL(CFG_LINUX_DAEMONS, test -n "$with_cfg_linux_daemons")
 AM_CONDITIONAL(CFG_LINUX_DAEMONS_NAMED, 
     [expr "$with_cfg_linux_daemons" : ".*dns" >/dev/null])
+AM_CONDITIONAL(CFG_LINUX_DAEMONS_ISC_DHCP_SERVER,
+    [expr "$with_cfg_linux_daemons" : ".*dhcp" >/dev/null])
 AM_CONDITIONAL(CFG_RCF_RPC, test -n "$with_rcf_rpc")
 
 # #
