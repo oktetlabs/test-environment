@@ -31,8 +31,6 @@
 #include "config.h"
 #endif
 
-#define TE_LOG_LEVEL 0xff
-
 #include <string.h>
 
 #define TE_LGR_USER     "TAD Ethernet"
