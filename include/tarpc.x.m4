@@ -1920,6 +1920,22 @@ struct tarpc_ftp_open_out {
     tarpc_int sock;   /**< Value of returning socket */
 };    
 
+/* many_send() */
+struct tarpc_many_send_in {
+    struct tarpc_in_arg common;
+
+    tarpc_int       sock;
+    tarpc_int       vector<>;
+};
+
+struct tarpc_many_send_out {
+    struct tarpc_out_arg common;
+
+    tarpc_int   retval;     /**< 0 (success) or -1 (failure) */
+
+    uint64_t    bytes;      /**< Number of sent bytes */
+};
+
 program tarpc
 {
     version ver0
@@ -2063,6 +2079,8 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(peek_message)
         
         RPC_DEF(ftp_open)
+
+        RPC_DEF(many_send)
 
     } = 1;
 } = 1;

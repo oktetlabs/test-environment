@@ -4110,3 +4110,62 @@ TARPC_FUNC(ftp_open, {},
         out->sock = in->sock.sock_val[0];
 }
 )
+
+/*-------------- many_send() -----------------------------*/
+TARPC_FUNC(many_send,{},
+{
+    MAKE_CALL(out->retval = func((int)in, out));
+}
+)
+
+int
+many_send(tarpc_many_send_in *in, tarpc_many_send_out *out)
+{
+    int            rc, i;
+    sock_api_func  send_func;
+    uint8_t        buf[32768];
+
+    out->bytes = 0;
+
+    if (in->vector.vector_len == 0)
+    {
+        ERROR("%s(): Invalid number of send() operations to be executed",
+              __FUNCTION__);
+        out->common._errno = TE_RC(TE_TA_LINUX, EINVAL);
+        return -1;
+    }
+
+    for (i = 0; i < (int)in->vector.vector_len; i++)
+    {
+        if (in->vector.vector_val[i] == 0)
+        {
+            ERROR("%s(): Invalid data length %d to be sent "
+                  "by %d send() call", __FUNCTION__,
+                  in->vector.vector_val[i], i);
+            out->common._errno = TE_RC(TE_TA_LINUX, EINVAL);
+            return -1;
+        }
+    }
+
+    memset(buf, 0xDEADBEEF, sizeof(buf));
+
+    if (find_func((tarpc_in_arg *)in, "send", &send_func) != 0)
+    {
+        ERROR("Failed to resolve send() function");
+        return -1;
+    }
+
+    for (i = 0; i < in->vector.vector_val[i]; i++)
+    {
+        rc = send_func(in->sock, buf, in->vector.vector_val[i], 0);
+        if (rc == -1 || rc != in->vector.vector_val[i])
+        {
+           ERROR("%s(): send(%d, %p, %d, 0) failed: %X", __FUNCTION__,
+                 in->sock, buf, in->vector.vector_val[i], errno);
+            return -1;
+        }
+        out->bytes += rc;
+    }
+    return 0;
+}
+

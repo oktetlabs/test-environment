@@ -6612,7 +6612,46 @@ rpc_cmd_spawn(rcf_rpc_server *handle, const char *mode, const char *cmd,...)
         ERROR("Cannot read command output: rpc_fileno failed");
         return -1;
     }
-    
+
     return fd;
 }
 
+int
+rpc_many_send(rcf_rpc_server *handle, int sock,
+              const int *vector, int nops, uint64_t *sent)
+{
+    rcf_rpc_op          op;
+    tarpc_many_send_in  in;
+    tarpc_many_send_out out;
+
+    op = handle->op;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (handle == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        return -1;
+    }
+
+    in.sock = sock;
+
+    if (vector != NULL && handle->op != RCF_RPC_WAIT)
+    {
+        in.vector.vector_len = nops;
+        in.vector.vector_val = vector;
+    }
+
+    rcf_rpc_call(handle, _many_send, &in, (xdrproc_t)xdr_tarpc_many_send_in,
+                 &out, (xdrproc_t)xdr_tarpc_many_send_out);
+    if (out.retval == 0)
+        *sent = out.bytes;
+
+    RING("RPC (%s,%s)%s: many_send(%d, %u, %p) -> %d (%s)",
+         handle->ta, handle->name, rpcop2str(op),
+         sock, nops, vector,
+         out.retval, errno_rpc2str(RPC_ERRNO(handle)));
+
+    RETVAL_RC(many_send);
+}

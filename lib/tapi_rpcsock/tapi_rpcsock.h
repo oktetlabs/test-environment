@@ -1024,4 +1024,20 @@ extern int rpc_ftp_open(rcf_rpc_server *handle,
                         int offset, int *sock);
 
 
+/**
+ * Execute a number of send() operation each after other with no delay.
+ *
+ *
+ * @param handle        RPC server
+ * @param sock          Socket for sending
+ * @param nops          The number of send() operation should be executed
+ *                      (the length of len_array)
+ * @param vector        Array of lenghts for appropriate send() operation
+ *
+ * @return file descriptor, which may be used for reading/writing data
+ */
+extern int rpc_many_end(rcf_rpc_server *handle, int sock,
+                        int *vector, int nops, uint64_t *sent);
+
+
 #endif /* __TE_TAPI_RPCSOCK_H__ */
