@@ -294,7 +294,7 @@ init_checked_arg(checked_arg **list, char *real_arg,
     if (real_arg == NULL || len <= len_visible)
         return;
 
-    if ((arg = malloc(sizeof(*arg))) == NULL)
+    if ((arg = calloc(1, sizeof(*arg))) == NULL)
     {
         ERROR("No enough memory");
         return;
@@ -484,7 +484,7 @@ _##_func##_1_svc(tarpc_##_func##_in *in, tarpc_##_func##_out *out,  \
         pthread_t _tid;                                             \
                                                                     \
         VERB("%s(): CALL", #_func);                                 \
-        if ((arg = malloc(sizeof(*arg))) == NULL)                   \
+        if ((arg = calloc(1, sizeof(*arg))) == NULL)                \
         {                                                           \
             out->common._errno = TE_RC(TE_TA_LINUX, ENOMEM);        \
             return TRUE;                                            \
@@ -1014,7 +1014,7 @@ _fd_set_new_1_svc(tarpc_fd_set_new_in *in, tarpc_fd_set_new_out *out,
     memset(out, 0, sizeof(*out));
 
     errno = 0;
-    if ((set = (fd_set *)malloc(sizeof(fd_set))) == NULL)
+    if ((set = (fd_set *)calloc(1, sizeof(fd_set))) == NULL)
     {
         out->common._errno = TE_RC(TE_TA_LINUX, ENOMEM);
     }
@@ -1237,7 +1237,7 @@ _sigset_new_1_svc(tarpc_sigset_new_in *in, tarpc_sigset_new_out *out,
     memset(out, 0, sizeof(*out));
 
     errno = 0;
-    if ((set = (sigset_t *)malloc(sizeof(sigset_t))) == NULL)
+    if ((set = (sigset_t *)calloc(1, sizeof(sigset_t))) == NULL)
     {
         out->common._errno = TE_RC(TE_TA_LINUX, ENOMEM);
     }
@@ -2072,7 +2072,7 @@ TARPC_FUNC(ioctl,
                 for (i = 0; i < n; i++, req_t++, req_c++)
                 {
                     req_t->rpc_ifr_name.rpc_ifr_name_val =
-                        malloc(sizeof(req_c->ifr_name));
+                        calloc(1, sizeof(req_c->ifr_name));
                     if (req_t->rpc_ifr_name.rpc_ifr_name_val == NULL)
                     {
                         free(req_ifconf.ifc_buf);
@@ -2448,7 +2448,7 @@ hostent_h2rpc(struct hostent *he)
         for (k = 0; k < i - 1; k++)
         {
             if ((rpc_he->h_addr_list.h_addr_list_val[i].val.val_val =
-                 malloc(rpc_he->h_length)) == NULL)
+                 calloc(1, rpc_he->h_length)) == NULL)
             {
                 goto release;
             }
@@ -4174,7 +4174,7 @@ many_send(tarpc_many_send_in *in, tarpc_many_send_out *out)
         max_len = MAX(max_len, in->vector.vector_val[i]);
     }
 
-    buf = malloc(max_len);
+    buf = calloc(1, max_len);
     if (buf == NULL)
     {
         ERROR("%s(): No enough memory", __FUNCTION__);
@@ -4238,7 +4238,7 @@ overfill_buffers(tarpc_overfill_buffers_in *in,
 
     out->bytes = 0;
 
-    buf = malloc(max_len);
+    buf = calloc(1, max_len);
     if (buf == NULL)
     {
         ERROR("%s(): No enough memory", __FUNCTION__);
