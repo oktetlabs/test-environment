@@ -1143,7 +1143,8 @@ static const char *const ftpd_conf_names[][2] =
 const char *
 get_ftp_daemon_name(void)
 {
-    static const char *const ftpd_names[] = {"vsftpd", "wu-ftpd"};
+    static const char *const ftpd_names[] = 
+        {"vsftpd", "wu-ftpd", "proftpd"};
     return ftpd_names[ftp_server_kind];
 }
 
