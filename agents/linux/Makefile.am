@@ -13,26 +13,24 @@ MY_LDAFLAGS=-rdynamic -export-dynamic
 MY_SOURCES=linux.c linuxconf.c ftp_routines.c
 MY_SYMTBL_OBJECTS=linux.o ftp_routines.o
 
-EXTRA_DIST=tarpc.x.m4
-
-noinst_HEADERS=linux_rpc.h linux_rpc_log.h
+noinst_HEADERS=linux_rpc.h 
 
 CLEANFILES=symtbl.c
 
 if CFG_RCF_RPC
 
 MY_CPPFLAGS+=-DRCF_RPC -I.
-MY_SOURCES+=linux_rpc.c tarpc_server.c 
+MY_SOURCES+=linux_rpc.c tarpc_server.c rpc_unsupported.c
 MY_NODIST_SOURCES=tarpc_xdr.c tarpc_svc.c
 MY_SYMTBL_OBJECTS+=linux_rpc.o tarpc_server.o
 
-CLEANFILES+=tarpc.h tarpc_xdr.c tarpc_svc.c 
+CLEANFILES+=tarpc.h tarpc_xdr.c tarpc_svc.c rpc_unsupported.c rpc_supported.h
 
 linux_rpc.o tarpc_server.o: tarpc.h
 
-tarpc.h tarpc_xdr.c tarpc_svc.c: tarpc.x.m4
+tarpc.h tarpc_xdr.c tarpc_svc.c: $(srcdir)/../../include/tarpc.x.m4
 	rm -f tarpc.h tarpc_xdr.c tarpc_svc.c
-	m4 $(srcdir)/tarpc.x.m4 > tarpc.x
+	m4 $< > tarpc.x
 	rpcgen -h -M tarpc.x -o tarpc.h
 	rpcgen -c -M tarpc.x -o tarpc_xdr.c
 	awk '\
@@ -45,9 +43,18 @@ tarpc.h tarpc_xdr.c tarpc_svc.c: tarpc.x.m4
 	mv tarpc_svc.c.new tarpc_svc.c
 	rm -f tarpc.x
 
+rpc_unsupported.c: $(srcdir)/../../include/tarpc.x.m4 rpc_supported.h \
+                   $(srcdir)/../../include/rpc_unsupported.m4
+	cat $< | grep 'RPC_DEF(' > tmp
+	cat $(srcdir)/../../include/rpc_unsupported.m4 tmp | m4 > $@
+	rm -f tmp
+        
+rpc_supported.h: tarpc_server.o
+	$(srcdir)/../../engine/builder/te_rpc_supported "${NM}" 
+        
 else
 
-EXTRA_DIST+=linux_rpc.h linux_rpc.c
+EXTRA_DIST=linux_rpc.h linux_rpc.c
 
 endif
 
@@ -87,11 +94,7 @@ talinuxtmpl_DEPENDENCIES=@TE_DEPENDENCIES@ symtbl.o \
     $(DESTDIR)/$(prefix)/../@host@/lib/libloggerta.a
 
 symtbl.c: $(MY_SYMTBL_OBJECTS) @TE_DEPENDENCIES@
-	if test -e $(DESTDIR)/$(prefix)/../@host@/bin/te_generate_symtbl ; then \
-		$(DESTDIR)/$(prefix)/../@host@/bin/te_generate_symtbl "${NM}" symtbl.c $^ ; \
-	else \
-		te_generate_symtbl "${NM}" symtbl.c $^ ; \
-	fi
+	$(srcdir)/../../engine/builder/te_generate_symtbl "${NM}" $@ $^ 
 
 install-exec-hook:
 	mv $(DESTDIR)/$(bindir)/talinuxtmpl $(DESTDIR)/$(bindir)/ta@with_name@

@@ -13,27 +13,25 @@ MY_LDAFLAGS=-rdynamic -export-dynamic
 MY_SOURCES=win32.c win32conf.c ftp_routines.c
 MY_SYMTBL_OBJECTS=win32.o ftp_routines.o
 
-EXTRA_DIST=tarpc.x.m4
-
-noinst_HEADERS=win32_rpc.h win32_rpc_log.h
+noinst_HEADERS=win32_rpc.h 
 
 CLEANFILES=symtbl.c
 
 if CFG_RCF_RPC
 
 MY_CPPFLAGS+=-DRCF_RPC -I.
-MY_SOURCES+=win32_rpc.c  tarpc_server.c 
+MY_SOURCES+=win32_rpc.c  tarpc_server.c rpc_unsupported.c
 MY_NODIST_SOURCES=tarpc_xdr.c tarpc_svc.c
 MY_LDADD+=-lrpc -lws2_32 -lcygwin
 MY_SYMTBL_OBJECTS+=win32_rpc.o tarpc_server.o
 
-CLEANFILES+=tarpc.h tarpc_xdr.c tarpc_svc.c 
+CLEANFILES+=tarpc.h tarpc_xdr.c tarpc_svc.c rpc_unsupported.c rpc_supported.h
 
 win32_rpc.o tarpc_server.o: tarpc.h
 
-tarpc.h tarpc_xdr.c tarpc_svc.c: tarpc.x.m4
+tarpc.h tarpc_xdr.c tarpc_svc.c: $(srcdir)/../../include/tarpc.x.m4
 	rm -f tarpc.h tarpc_xdr.c tarpc_svc.c
-	m4 $(srcdir)/tarpc.x.m4 > tarpc.x
+	m4 $< > tarpc.x
 	rpcgen -h -M tarpc.x -o tarpc.h
 	rpcgen -c -M tarpc.x -o tarpc_xdr.c
 	awk '\
@@ -41,11 +39,23 @@ tarpc.h tarpc_xdr.c tarpc_svc.c: tarpc.x.m4
             { print $0 ; next ;}' tarpc_xdr.c > tarpc_xdr.c.new
 	mv tarpc_xdr.c.new tarpc_xdr.c
 	rpcgen -m -M tarpc.x -o tarpc_svc.c 
+	echo "#include <stdio.h>" > tarpc_svc.c.new
+	cat tarpc_svc.c >> tarpc_svc.c.new
+	mv tarpc_svc.c.new tarpc_svc.c
 	rm -f tarpc.x
+
+rpc_unsupported.c: $(srcdir)/../../include/tarpc.x.m4 rpc_supported.h \
+                   $(srcdir)/../../include/rpc_unsupported.m4
+	cat $< | grep 'RPC_DEF(' > tmp
+	cat $(srcdir)/../../include/rpc_unsupported.m4 tmp | m4 > $@
+	rm -f tmp
+        
+rpc_supported.h: tarpc_server.o
+	$(srcdir)/../../engine/builder/te_rpc_supported "${NM}" 
 
 else
 
-EXTRA_DIST+=win32_rpc.h win32_rpc.c
+EXTRA_DIST=win32_rpc.h win32_rpc.c
 
 endif
 
@@ -73,9 +83,8 @@ AM_LDFLAGS=@TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/../@host@/lib
 
 bin_PROGRAMS=tawin32
 
-symtbl.o: $(MY_SYMTBL_OBJECTS) @TE_DEPENDENCIES@
-	te_generate_symtbl_cygwin "${NM}" symtbl.c $^ 
-	${CC} -c -o $@ symtbl.c
+symtbl.c: $(MY_SYMTBL_OBJECTS) @TE_DEPENDENCIES@
+	$(srcdir)/../../engine/builder/te_generate_symtbl "${NM}" $@ $^ 
 
 install-exec-hook:
 	cd $(DESTDIR)/$(prefix)/bin; ln -fs tawin32.exe tawin32

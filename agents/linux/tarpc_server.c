@@ -70,7 +70,7 @@
 #include "rcf_ch_api.h"
 #include "rcf_rpc_defs.h"
 #include "linux_rpc.h"
-#include "linux_rpc_log.h"
+#include "ta_rpc_log.h"
 #include "tapi_rpcsock_defs.h"
 
 extern char *my_execname;
@@ -79,6 +79,8 @@ extern int ta_pid;
 #if HAVE_AIO_H
 void *dummy = aio_read;
 #endif
+
+extern sigset_t rpcs_received_signals;
 
 typedef int (*sock_api_func)(int param,...); 
 
@@ -496,6 +498,24 @@ tarpc_init(int argc, char **argv)
     setlibname(argv[5]);
     tarpc_server(argv[2]);
 }
+
+/** 
+ * Check, if some signals were received by the RPC server (as a process)
+ * and return the mask of received signals. 
+ */
+                                                                   
+bool_t                                                             
+_sigreceived_1_svc(tarpc_sigreceived_in *in, tarpc_sigreceived_out *out, 
+                   struct svc_req *rqstp)                            
+{
+    UNUSED(in);                                                                  
+    UNUSED(rqstp);                                                 
+    memset(out, 0, sizeof(*out));
+    out->set = (tarpc_sigset_t)&rpcs_received_signals;
+                                                                   
+    return TRUE;                                                   
+}
+
 
 /*--------------------------------- execve() ---------------------------------*/
 TARPC_FUNC(execve, {}, 
@@ -3607,23 +3627,3 @@ local_exit:
     return rc;
 }
 
-#define TARPC_FUNC_UNSUPPORTED(___func) \
-TARPC_FUNC(___func, {},                                         \
-{                                                               \
-   UNUSED(list);                                                \
-   ERROR("Unsipported function %s is called", #___func);        \
-   out->retval = TE_RC(TE_TA_WIN32, ENOTSUP);                   \
-}                                                               \
-)
-
-#define TARPC_FUNC_UNSUPPORTED_NORETVAL(___func) \
-TARPC_FUNC(___func, {},                                         \
-{                                                               \
-   UNUSED(list);                                                \
-   UNUSED(out);                                                 \
-   ERROR("Unsipported function %s is called", #___func);        \
-}                                                               \
-)
-
-TARPC_FUNC_UNSUPPORTED(create_event);
-TARPC_FUNC_UNSUPPORTED(close_event);

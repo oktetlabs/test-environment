@@ -63,8 +63,8 @@
 #include "win32_rpc.h"
 
 #define TE_LGR_USER     "RCF RPC"
-#define WIN32_RPC_INSIDE
-#include "win32_rpc_log.h"
+#define TA_RPC_INSIDE
+#include "ta_rpc_log.h"
 
 /** Maximum length of the pipe address */
 #define PIPENAME_LEN    sizeof(((struct sockaddr_un *)0)->sun_path)
@@ -95,6 +95,8 @@ extern int ta_pid;
 #define TARPC_SERVER_SYNC_TIMEOUT       1000000
 /** PID of the TA process */
 struct sockaddr_in ta_log_addr; 
+int                ta_log_addr_len = sizeof(struct sockaddr_in);
+struct sockaddr   *ta_log_addr_s;
 int                ta_log_sock = -1;
 int                ta_rpc_sync_socks[2] = {-1, -1};
 
@@ -109,7 +111,7 @@ static char buf[RCF_RPC_MAX_BUF];
 
 static int supervise_started = 0;
 
-static sigset_t rpcs_received_signals;
+sigset_t rpcs_received_signals;
 
 
 #define TARPC_SERVER_NAME_LEN   256
@@ -249,6 +251,7 @@ create_log_socket()
     memset(&ta_log_addr, 0, sizeof(ta_log_addr));
     ta_log_addr.sin_family = AF_INET;
     ta_log_addr.sin_port = 0;
+    ta_log_addr_s = (struct sockaddr *)&ta_log_addr;
     if (bind(s, (struct sockaddr *)&ta_log_addr, len) < 0)
     {
         ERROR("Cannot bind a socket for gathering the log, errno %d", errno);
@@ -759,21 +762,5 @@ tarpc_call(int timeout, char *name, const char *file)
     fclose(f);
     
     return 0;
-}
-
-/** Check, if some signals were received by the RPC server (as a process)
- * and return the mask of received signals. 
- */
-                                                                   
-bool_t                                                             
-_sigreceived_1_svc(tarpc_sigreceived_in *in, tarpc_sigreceived_out *out, 
-                   struct svc_req *rqstp)                            
-{
-    UNUSED(in);                                                                  
-    UNUSED(rqstp);                                                 
-    memset(out, 0, sizeof(*out));
-    out->set = (tarpc_sigset_t)&rpcs_received_signals;
-                                                                   
-    return TRUE;                                                   
 }
 
