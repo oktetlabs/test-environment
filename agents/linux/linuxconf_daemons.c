@@ -2580,7 +2580,7 @@ ds_echoserver_addr_set(unsigned int gid, const char *oid, const char *value)
 
 #endif /* WITH_ECHO_SERVER */
 
-#ifdef WITH_SSHD
+/*--------------------------- SSH daemon ---------------------------------*/
 
 /** 
  * Check if the SSH daemon with specified port is running. 
@@ -2690,7 +2690,7 @@ sshd_del(unsigned int gid, const char *oid, const char *port)
 }
 
 /**
- * Return list
+ * Return list of SSH daemons.
  *
  * @param gid           group identifier (unused)
  * @param oid           full object instence identifier (unused)
@@ -2727,7 +2727,156 @@ sshd_list(unsigned int gid, const char *oid, char **list)
     return 0;
 }
 
-#endif /* WITH_SSHD */
+/*--------------------------- X server ---------------------------------*/
+
+/** 
+ * Check if the Xvfb daemon with specified port is running. 
+ *
+ * @param number  server number
+ *
+ * @return pid of the daemon or 0
+ */
+static uint32_t
+xvfb_exists(char *number)
+{
+    FILE *f = popen("ps ax | grep 'Xvfb' | grep -v grep", "r");
+    char  line[128];
+    int   len = strlen(number);
+    
+    buf[0] = 0;
+    while (fgets(line, sizeof(line), f) != NULL)
+    {
+        char *tmp = strstr(line, "Xvfb");
+        int   n;
+
+        if ((tmp  = strstr(tmp, ":")) == NULL)
+            continue;
+        
+        tmp++;
+        
+        if (strncmp(tmp, number, len) == 0 && !isdigit(*(tmp + len)))
+        {
+            fclose(f);
+            return atoi(line);
+        }
+    }
+    
+    fclose(f);
+
+    return 0;
+}
+
+/**
+ * Add a new Xvfb daemon with specified number.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instence identifier (unused)
+ * @param value         unused
+ * @param addr          server number
+ *
+ * @return error code
+ */
+static int
+xvfb_add(unsigned int gid, const char *oid, const char *value,
+         const char *number)
+{
+    uint32_t pid = xvfb_exists((char *)number);
+    uint32_t n;
+    char    *tmp;
+    
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(value);
+    
+    n = strtol(number, &tmp, 10);
+    if (tmp == number || *tmp != 0)
+        return TE_RC(TE_TA_LINUX, EINVAL);
+    
+    if (pid != 0)
+        return TE_RC(TE_TA_LINUX, EEXIST);
+        
+    sprintf(buf, "Xvfb :%s -ac &", number);
+
+    if (ta_system(buf) != 0)
+    {
+        ERROR("Command '%s' failed", buf);
+        return TE_RC(TE_TA_LINUX, ETESHCMD);
+    }
+    
+    return 0;
+}
+
+/**
+ * Stop Xvfb with specified number.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instence identifier (unused)
+ * @param addr          
+ *
+ * @return error code
+ */
+static int
+xvfb_del(unsigned int gid, const char *oid, const char *number)
+{
+    uint32_t pid = xvfb_exists((char *)number);
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if (pid == 0)
+        return TE_RC(TE_TA_LINUX, ENOENT);
+        
+    if (kill(pid, SIGTERM) != 0)
+    {
+        int kill_errno = errno;
+        ERROR("Failed to send SIGTERM "
+              "to process SSH daemon with PID=%u: %X",
+              pid, kill_errno);
+        /* Just to make sure */
+        kill(pid, SIGKILL);
+    }
+    
+    return 0;
+}
+
+/**
+ * Return list of Xvfb servers.
+ *
+ * @param gid    group identifier (unused)
+ * @param oid    full object instence identifier (unused)
+ * @param list   location for the list pointer
+ *
+ * @return error code
+ */
+static int
+xvfb_list(unsigned int gid, const char *oid, char **list)
+{
+    FILE *f = popen("ps ax | grep 'Xvfb' | grep -v grep", "r");
+    char  line[128];
+    char *s = buf;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    
+    buf[0] = 0;
+    while (fgets(line, sizeof(line), f) != NULL)
+    {
+        char *tmp = strstr(line, "Xvfb");
+        int   n;
+
+        if ((tmp  = strstr(tmp, ":")) == NULL || (n = atoi(tmp + 1)) == 0)
+            continue;
+        
+        s += sprintf(s, "%u ", n);
+    }
+    
+    fclose(f);
+    
+    if ((*list = strdup(buf)) == NULL)
+        return TE_RC(TE_TA_LINUX, ENOMEM);
+    
+    return 0;
+}
 
 /*
  * Daemons configuration tree in reverse order.
@@ -2929,13 +3078,13 @@ RCF_PCH_CFG_NODE_RW(node_ds_ftpserver, "ftpserver",
 
 #endif /* WITH_FTP_SERVER */
 
-#ifdef WITH_SSHD
-
 RCF_PCH_CFG_NODE_COLLECTION(node_ds_sshd, "sshd",
                             NULL, NULL, 
                             sshd_add, sshd_del, sshd_list, NULL);
 
-#endif /* WITH_SSHD */
+RCF_PCH_CFG_NODE_COLLECTION(node_ds_xvfb, "Xvfb",
+                            NULL, NULL, 
+                            xvfb_add, xvfb_del, xvfb_list, NULL);
 
 /**
  * Maximum number of xinetd services the implemntation supports
@@ -3213,9 +3362,18 @@ linuxconf_daemons_init(rcf_pch_cfg_object **last)
     *last = &node_ds_tftpserver;
 #endif
 
-#ifdef WITH_SSHD
     (*last)->brother = &node_ds_sshd;
     *last = &node_ds_sshd;
+
+/*    (*last)->brother = &node_ds_ssh_fwd;
+    *last = &node_ds_ssh_fwd; */
+
+    (*last)->brother = &node_ds_xvfb;
+    *last = &node_ds_xvfb;
+
+#ifdef WITH_SMTP
+/*    (*last)->brother = &node_ds_smtp;
+    *last = &node_ds_smtp; */
 #endif
 
     return 0;

@@ -97,8 +97,11 @@ if test -n "$with_cfg_linux_daemons" ; then
             dhcp)
                 DAEMONS_CFLAGS="$DAEMONS_CFLAGS -DWITH_DHCP_SERVER" ;
                 DAEMONS_LDADD="-ldhcpctl -lomapi -ldst" ;;
-            sshd)
-                DAEMONS_CFLAGS="$DAEMONS_CFLAGS -DWITH_SSHD" ;;
+            smtp)
+                DAEMONS_CFLAGS="$DAEMONS_CFLAGS -DWITH_SMTP" ;;
+            sshd) ;;
+            ssh_fwd) ;;
+            Xvfb) ;;
             *)  ;; 
         esac
     done
