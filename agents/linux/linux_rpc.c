@@ -100,9 +100,6 @@ int                ta_log_addr_len = sizeof(struct sockaddr_un);
 /** Socket used by the last started RPC server */
 int rpcserver_sock = -1;
 
-/** Name of the last started RPC server */
-const char *rpcserver_name = "";
-
 static srv *srv_list = NULL;
 static char buf[RCF_RPC_MAX_BUF]; 
 
@@ -439,8 +436,6 @@ tarpc_server(const void *arg)
     memset(&arg1, 0, sizeof(arg1));
     arg1.name.name_len = strlen(name) + 1;
     arg1.name.name_val = strdup(name);
-    assert(arg1.name.name_val != NULL);
-    rpcserver_name = name;
 
     RPC_LGR_MESSAGE(TE_LL_RING, "Started %s (PID %d, TID %u)", name, 
                     (int)getpid(), (unsigned int)pthread_self());
@@ -458,7 +453,8 @@ tarpc_server(const void *arg)
     pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
 #ifdef HAVE_SVCUNIX_CREATE
-    VERB("%s(): call svcunix_create()", __FUNCTION__);
+    RPC_LGR_MESSAGE(TE_LL_VERB, "%s(): call svcunix_create()",
+                    __FUNCTION__);
     transp = svcunix_create(RPC_ANYSOCK, 1024, 1024, addr.sun_path);
     if (transp == NULL)
     {
@@ -499,14 +495,14 @@ tarpc_server(const void *arg)
     }
 #endif
 
-    VERB("%s(): call svc_register()", __FUNCTION__);
+    RPC_LGR_MESSAGE(TE_LL_VERB, "%s(): call svc_register()", __FUNCTION__);
     if (!svc_register(transp, tarpc, ver0, tarpc_1, 0))
     {
         RPC_LGR_MESSAGE(TE_LL_ERROR, "svc_register() failed");
         return NULL;
     }
     
-    VERB("%s(): call svc_run()", __FUNCTION__);
+    RPC_LGR_MESSAGE(TE_LL_VERB, "%s(): call svc_run()", __FUNCTION__);
     svc_run();
 
     RPC_LGR_MESSAGE(TE_LL_ERROR, "Unreachable!");
@@ -522,7 +518,7 @@ tarpc_server(const void *arg)
  * @return pid in the case of success or -1 in the case of failure
  */
 int
-tarpc_server_create(char *name)
+tarpc_server_create(const char *name)
 {
     int  pid;
     

@@ -30,27 +30,28 @@
 #ifndef __TE_TA_LINUX_RPC_H__
 #define __TE_TA_LINUX_RPC_H__
 
+
+/** Obtain RCF RPC errno code */
+#define RPC_ERRNO errno_h2rpc(errno)
+
+
+/** Socket used by the last started RPC server */
+extern int rpcserver_sock;
+
+/** Logging path */
+extern struct sockaddr_un ta_log_addr;
+
+
 /** Function to start RPC server after execve */
 void tarpc_init(int argc, char **argv);
 
 /**
  * Destroy all RPC server processes and release the list of RPC servers.
  */
-extern void tarpc_destroy_all();
-
-/** Socket used by the last started RPC server */
-int rpcserver_sock;
-
-/** Name of the last started RPC server */
-extern const char *rpcserver_name;
+extern void tarpc_destroy_all(void);
 
 /** RPC server entry point */
-void *tarpc_server(const void *arg);
+extern void *tarpc_server(const void *arg);
 
-/** Logging path */
-extern struct sockaddr_un ta_log_addr;
-
-/** Obtain RCF RPC errno code */
-#define RPC_ERRNO errno_h2rpc(errno)
 
 #endif /* __TE_TA_LINUX_RPC_H__ */

@@ -75,24 +75,24 @@
 /** Fast conversion of the prefix to network mask */
 #define PREFIX2MASK(prefix) (prefix == 0 ? 0 : (~0) << (32 - (prefix)))
 
-
-/** TA name pointer */
-extern char *ta_name;
-
-/** Command line */ 
-extern char *ta_execname;
-
-/* TA pid */
-extern int ta_pid;
-
-extern int ftp_open(char *uri, int flags, int passive, int offset);
-
-/* Work-around for system/waitpid problem */
-extern int ta_system(char *cmd);
-
 #define PRINT(msg...) \
     do {                                                \
        printf(msg); printf("\n"); fflush(stdout);       \
     } while (0)
+
+
+/** Test Agent name */
+extern const char *ta_name;
+/** Test Agent executable name */ 
+extern const char *ta_execname;
+/* TA pid */
+extern int ta_pid;
+
+
+extern int ftp_open(char *uri, int flags, int passive, int offset);
+
+/** Work-around for system/waitpid problem */
+extern int ta_system(char *cmd);
+
 
 #endif /* __TE_TA_LINUX_INTERNAL_H__ */

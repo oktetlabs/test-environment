@@ -416,6 +416,7 @@ check_args(checked_arg *list)
         int           _rc;                                       \
                                                                  \
         WAIT_START(in->common.start);                            \
+        VERB("Calling: %s" , #x);                                \
         gettimeofday(&t_start, NULL);                            \
         errno = 0;                                               \
         x;                                                       \
@@ -651,6 +652,18 @@ tarpc_init(int argc, char **argv)
     tarpc_setlibname_in  in_local;
     tarpc_setlibname_in *in = &in_local;
 
+    /*
+     * ATTENTION: It is not allowed to use logging before
+     * initialization of 'ta_log_addr_s' and 'name' in 'in'
+     * variable.
+     */
+
+    if (name == NULL || pid == NULL || log_addr == NULL)
+    {
+        PRINT("%s(): Invalid argument", __FUNCTION__);
+        return;
+    }
+
     memset(&in_local, 0, sizeof(in_local));
 
     UNUSED(argc);
@@ -661,19 +674,10 @@ tarpc_init(int argc, char **argv)
     ta_log_addr_s = (struct sockaddr *)&ta_log_addr;
 
     /* Emulate setlibname() call */
-    if (name == NULL || (strlen(name) >= sizeof(in->common.name)))
-    {
-        ERROR("Invalid RPC server name");
-        return;
-    }
     in->common.name.name_val = (char *)name;
     in->common.name.name_len = strlen(name) + 1;
-    if (libname == NULL)
-    {
-        ERROR("Invalid dynamic library name");
-        return;
-    }
-    if (strcmp(libname, "(NULL)") == 0)
+
+    if (libname == NULL || strcmp(libname, "(NULL)") == 0)
     {
         in->libname.libname_len = 0;
         in->libname.libname_val = NULL;
@@ -711,19 +715,36 @@ TARPC_FUNC(execve, {},
 {
     const char *args[7];
     static char buf[16];
+    int rc;
 
     args[0] = ta_execname;
     args[1] = "rpcserver";
-    args[2] = rpcserver_name;
-    sprintf(buf, "%u", ta_pid);
+    args[2] = strdup(in->common.name.name_val);
+    snprintf(buf, sizeof(buf), "%d", ta_pid);
     args[3] = buf;
     args[4] = ta_log_addr.sun_path + 1;
     args[5] = dynamic_library_name;
     args[6] = NULL;
 
+    /* Wait until main thread sends answer to non-blocking RPC call */
     sleep(1);
-    close(rpcserver_sock);
-    MAKE_CALL(func((int)ta_execname, args, NULL));
+
+    /* Close current RPC server socket after send of the last reply */ 
+    if (close(rpcserver_sock) != 0)
+    {
+        rc = errno;
+        ERROR("close() failed: errno=%d", rc);
+    }
+
+    VERB("execve() args: %s, %s, %s, %s, %s, %s",
+         args[0], args[1], args[2], args[3], args[4], args[5]);
+    /* Call execve() */
+    MAKE_CALL(rc = func((int)ta_execname, args, NULL));
+    if (rc != 0)
+    {
+        rc = errno;
+        ERROR("execve() failed: errno=%d", rc);
+    }
 }
 )
 

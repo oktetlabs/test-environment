@@ -64,7 +64,6 @@
 #define TE_LGR_USER      "Main"
 #include "logger_ta.h"
 
-char *ta_execname;
 
 /** Send answer to the TEN */
 #define SEND_ANSWER(_fmt...) \
@@ -86,18 +85,25 @@ char *ta_execname;
 extern void *rcf_ch_symbol_addr_auto(const char *name, te_bool is_func);
 extern char *rcf_ch_symbol_name_auto(const void *addr);
 
-char *ta_name = "(linux)";
 
-int ta_pid;
+/** Logger entity name */
+DEFINE_LGR_ENTITY("(linux)");
+
+/** Test Agent executable name */
+const char *ta_execname = NULL;
+/** Test Agent name */
+const char *ta_name = "(linux)";
+/** Test Agent process ID */
+int ta_pid = -1;
+
 
 /** Tasks to be killed during TA shutdown */
 static unsigned int     tasks_len = 0;
 static unsigned int     tasks_index = 0;
 static pid_t           *tasks = NULL; 
 
-DEFINE_LGR_ENTITY("(linux)");
-
 static pthread_mutex_t ta_lock = PTHREAD_MUTEX_INITIALIZER;
+
 
 /** Add the talk pid into the list */
 static void
