@@ -37,7 +37,11 @@
 #include <stdlib.h>
 #include <string.h>
 #endif
+#if HAVE_POPT_H
 #include <popt.h>
+#else
+#error popt library (development version) is required for Tester
+#endif
 
 #include "conf_api.h"
 

@@ -65,6 +65,7 @@ pthread.h \
 sys/types.h \
 sys/wait.h \
 sys/queue.h \
+popt.h \
 ])
 
 
