@@ -312,6 +312,7 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
                         {
                             rc = method_addr(usr_place, data, d_len);
                             RING("rc from user method %X", rc);
+                            rc = 0;
                         }
                     }
                     else
