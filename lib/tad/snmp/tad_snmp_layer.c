@@ -466,8 +466,9 @@ int snmp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
             break;
     }
 
-    if (rc == 0)
-        rc = asn_write_component_value(parsed_packet, vb_seq, "#snmp.variable-bindings");
+    if (rc == 0 && parsed_packet != NULL)
+        rc = asn_write_component_value(parsed_packet, vb_seq,
+                                       "#snmp.variable-bindings");
 
 #ifdef SNMPDEBUG
     printf ("in SNMP MATCH, rc from vb_seq insert: %x\n", rc);
