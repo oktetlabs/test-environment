@@ -176,8 +176,10 @@ print_octet_string (const unsigned char *oct_string, int len)
     char *p = buf;
     unsigned i;
 
-    if (oct_string == NULL)
+    if (oct_string == NULL || len == 0)
         strncpy (buf, "<null octet string>", sizeof(buf));
+
+    memset(buf, 0, sizeof(buf));
 
     for(i = 0; i < len; i++)
         p += sprintf (p, " 0x%x", (int)(*oct_string++));
