@@ -149,9 +149,8 @@ static char *te_tmp = NULL;
 static char  te_log_path[LGR_FIELD_MAX];
 static char  te_log_tmp[LGR_FIELD_MAX];
 
-
 #ifdef HAVE_PTHREAD_H
-#if 0 /* FIXME */
+#ifndef  PTHREAD_SETSPECIFIC_BUG
 static pthread_once_t   once_control = PTHREAD_ONCE_INIT;
 static pthread_key_t    key;
 #endif
@@ -160,7 +159,7 @@ static pthread_mutex_t  lgr_lock = PTHREAD_MUTEX_INITIALIZER;
 
 
 /* WORK AROUND against RedHat bug */
-#ifdef HAVE_PTHREAD_H
+#ifdef PTHREAD_SETSPECIFIC_BUG
 
 #define LGR_MAX_THREADS     1024
 
@@ -223,7 +222,7 @@ get_client_handle(te_bool create)
 }
 
 /**
- * Frep IPC client handle.
+ * Free IPC client handle.
  */
 static void
 free_client_handle(void)
@@ -282,7 +281,6 @@ get_client_handle(te_bool create)
 #ifdef HAVE_PTHREAD_H
         if (pthread_setspecific(key, (void *)handle) != 0)
         {
-            LOG_DEBUG("Logger TEN", "pthread_setspecific() failed\n");
             fprintf(stderr, "Logger TEN: pthread_setspecific() failed\n");
         }
 #else
@@ -307,8 +305,9 @@ log_client_close(void)
     res = ipc_close_client(ipcc);
     if (res != 0)
         fprintf(stderr, "log_client_close(): ipc_close_client failed\n");
-
+#if PTHREAD_SETSPECIFIC_BUG
     free_client_handle();
+#endif    
 }
 
 

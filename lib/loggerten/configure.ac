@@ -31,6 +31,23 @@ AM_CONFIG_HEADER(config.h)
 AC_CHECK_HEADERS(stdlib.h string.h strings.h sys/types.h time.h sys/time.h \
                  netinet/in.h sys/stat.h pthread.h)
 
+
+AH_TEMPLATE(PTHREAD_SETSPECIFIC_BUG,
+            [Workaround for pthread_setspecific() bug present in RedHat 9.0])
+                                                                                
+#Checking for the nessecerity of workaround for RH-specific pthread bug
+                                                                                
+if test x$ac_cv_header_pthread_h = x"yes" -a -e /etc/redhat-release ; then
+  str=`cat /etc/redhat-release`
+  if test "$str" = "Red Hat Linux release 9.0 (Shrike)" ; then
+    AC_DEFINE(PTHREAD_SETSPECIFIC_BUG,1)
+  fi
+fi
+
+
+
+
+
 AC_CONFIG_FILES(Makefile)
 
 AC_OUTPUT

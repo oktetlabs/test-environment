@@ -57,6 +57,9 @@
 /* Define to the version of this package. */
 #undef PACKAGE_VERSION
 
+/* Workaround for pthread_setspecific() bug present in RedHat 9.0 */
+#undef PTHREAD_SETSPECIFIC_BUG
+
 /* Define to 1 if you have the ANSI C header files. */
 #undef STDC_HEADERS
 
