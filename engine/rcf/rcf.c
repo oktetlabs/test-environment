@@ -1119,8 +1119,7 @@ process_reply(ta *agent)
     msg->flags = 0;
     msg->data_len = 0;
 
-    if ((msg->opcode == RCFOP_TRRECV_START ||
-         msg->opcode == RCFOP_TRRECV_STOP ||
+    if ((msg->opcode == RCFOP_TRRECV_STOP ||
          msg->opcode == RCFOP_TRRECV_GET ||
          msg->opcode == RCFOP_TRRECV_WAIT ||
          msg->opcode == RCFOP_TRSEND_RECV) &&
