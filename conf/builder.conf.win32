@@ -31,7 +31,7 @@
 
 TE_APP_PARMS([rcf], [--enable-ltdl-install], [], [], [])
 
-TE_PLATFORM([], [], [], [], \
+TE_PLATFORM([], [], [], [],
             [ipc bsapi loggerten rcfapi conf_oid confapi tapi \
              comm_net_engine rcfunix comm_net_agent loggerta rcfpch \
              rcfrpc tapi_rpcsock tad])
@@ -41,8 +41,8 @@ TE_PLATFORM([i686-pc-cygwin],[],
             [-L${CYGWIN_HOME}/lib -L${CYGWIN_HOME}/lib/w32api], 
             [comm_net_agent loggerta conf_oid rcfpch tad])
 
-TE_TA_TYPE([linux], [], [linux], [], [], [], [comm_net_agent])
+TE_TA_TYPE([linux], [], [], [], [], [], [comm_net_agent])
 
-TE_TA_TYPE([win32], [win32], [i686-pc-cygwin],
+TE_TA_TYPE([win32], [i686-pc-cygwin], [],
            [--with-rcf-rpc], [], [],
            [ws2_32 comm_net_agent])

@@ -11,6 +11,6 @@ TE_LIB_PARMS([tad], [], [], [--with-cli], [], [])
 
 TE_TOOLS([rgt millicom])
 
-TE_TA_TYPE([linux], [], [linux], [], [], [-lexpect],
+TE_TA_TYPE([linux], [], [], [], [], [-lexpect],
            [ndn asn comm_net_agent])
 

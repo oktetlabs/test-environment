@@ -5,7 +5,7 @@
 #
 # Host platform
 #
-TE_PLATFORM([], [], [], [], \
+TE_PLATFORM([], [], [], [],
             [ipc bsapi loggerten rcfapi conf_oid confapi tapi \
              comm_net_engine rcfunix loggerta comm_net_agent rcfpch \
              asn ndn tad tad_dummy \
@@ -15,12 +15,12 @@ TE_PLATFORM([], [], [], [], \
 
 TE_APP_PARMS([rcf], [--enable-ltdl-install], [], [], [])
 
-TE_LIB_PARMS([tad], [], [], \
+TE_LIB_PARMS([tad], [], [],
              [--with-file --with-eth --with-bridge \
               --with-ipstack --with-dhcp --with-snmp --with-cli], [])
 
-TE_TA_TYPE([linux], [], [linux], \
-           [--with-rcf-rpc --with-cfg-linux-daemons='ftp echo'], \
+TE_TA_TYPE([linux], [], [],
+           [--with-rcf-rpc --with-cfg-linux-daemons='ftp echo'],
            [], [-lexpect -lnetsnmp -lcrypto], [tad ndn asn comm_net_agent])
 
 TE_LIB_PARMS([tad_dummy], [], [tad], [], [])
@@ -56,6 +56,6 @@ TE_PLATFORM([i686-pc-cygwin], [],
             [-L${CYGWIN_HOME}/lib -L${CYGWIN_HOME}/lib/w32api], 
             [loggerta comm_net_agent conf_oid rcfpch tad])
 
-TE_TA_TYPE([win32], [i686-pc-cygwin], [win32], \
+TE_TA_TYPE([win32], [i686-pc-cygwin], [],
            [--with-rcf-rpc], [], [], [ws2_32 comm_net_agent])
 

@@ -5,7 +5,7 @@
 #
 # Host platform
 #
-TE_PLATFORM([], [], [], [], \
+TE_PLATFORM([], [], [], [],
             [ipc bsapi loggerten rcfapi conf_oid confapi tapi \
              comm_net_engine rcfunix loggerta comm_net_agent rcfpch \
              rcfrpc tapi_rpcsock \
@@ -18,6 +18,6 @@ TE_LIB_PARMS([forwarder], [], [${TAD_FORW_DIR}], [], [])
 
 TE_LIB_PARMS([tad], [], [], [--with-eth --with-ipstack], [])
               
-TE_TA_TYPE([linux], [], [linux],
+TE_TA_TYPE([linux], [], [],
            [--with-rcf-rpc], [], [],
            [forwarder ndn asn comm_net_agent])
