@@ -253,14 +253,14 @@ static MIB_IFROW if_entry;
         }                                                               \
         else                                                            \
         {                                                               \
-            ERROR("%s failed, error %x", #_func, GetLastError());       \
+            ERROR("%s failed, error %d", #_func, rc);                   \
             free(table);                                                \
             return TE_RC(TE_TA_WIN32, ETEWIN);                          \
         }                                                               \
                                                                         \
-        if (_func(table, &size, 0) != NO_ERROR)                         \
+        if ((rc = _func(table, &size, 0)) != NO_ERROR)                  \
         {                                                               \
-            ERROR("%s failed, error %x", #_func, GetLastError());       \
+            ERROR("%s failed, error %d", #_func, rc);                   \
             free(table);                                                \
             return TE_RC(TE_TA_WIN32, ETEWIN);                          \
         }                                                               \
@@ -369,15 +369,6 @@ ifindex_get(unsigned int gid, const char *oid, char *value,
     return 0;
 }
 
-typedef struct added_ip_addr {
-    struct added_ip_addr *next;
-    DWORD                 addr;
-    uint32_t              ifindex;
-    ULONG                 nte_context;
-} added_ip_addr;
-
-static added_ip_addr *list = NULL;
-
 /** Check, if IP address exist for the current if_entry */
 static int
 ip_addr_exist(DWORD addr, MIB_IPADDRROW *data)
@@ -427,7 +418,7 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
     ULONG nte_context;
     ULONG nte_instance;
 
-    added_ip_addr *tmp;
+    int rc;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -443,28 +434,15 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
 
     GET_IF_ENTRY;
 
-    if (AddIPAddress(*(IPAddr *)&a, *(IPAddr *)&m, if_entry.dwIndex,
-                     &nte_context, &nte_instance) != NO_ERROR)
+    if ((rc = AddIPAddress(*(IPAddr *)&a, *(IPAddr *)&m, if_entry.dwIndex,
+                            &nte_context, &nte_instance)) != NO_ERROR)
     {
-        ERROR("AddIpAddr() failed, error %x", GetLastError());
+        ERROR("AddIpAddress() failed, error %x", rc);
         return TE_RC(TE_TA_WIN32, ETEWIN);
     }
 
-    if ((tmp = (added_ip_addr *)calloc(sizeof(*tmp), 1)) == NULL)
-    {
-        DeleteIPAddress(nte_context);
-        return TE_RC(TE_TA_WIN32, ENOMEM);
-    }
-
-    tmp->addr = a;
-    tmp->ifindex = if_entry.dwIndex;
-    tmp->nte_context = nte_context;
-    tmp->next = list;
-    list = tmp;
-
     return 0;
 }
-
 
 /**
  * Clear interface address of the down interface.
@@ -480,9 +458,11 @@ static int
 net_addr_del(unsigned int gid, const char *oid,
              const char *ifname, const char *addr)
 {
-    added_ip_addr *cur, *prev;
+    PIP_ADAPTER_INFO table, info; 
+    DWORD            size = 0; 
 
     DWORD a;
+    int   rc;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -492,31 +472,43 @@ net_addr_del(unsigned int gid, const char *oid,
 
     GET_IF_ENTRY;
 
-    for (prev = NULL, cur = list;
-         cur != NULL &&
-         !(cur->addr == a && cur->ifindex == if_entry.dwIndex);
-         prev = cur, cur = cur->next);
+    GetAdaptersInfo(NULL, &size);
+    table = (PIP_ADAPTER_INFO)malloc(size);                      
+                                                                    
+    if ((rc = GetAdaptersInfo(table, &size)) != NO_ERROR)                  
+    {                                                               
+        ERROR("GetAdaptersInfo failed, error %d", rc);
+        free(table);                                                
+        return TE_RC(TE_TA_WIN32, ETEWIN);                          
+    }                                                               
 
-    if (cur == NULL)
+    for (info = table; info != NULL; info = info->Next)
     {
-        int rc = ip_addr_exist(a, NULL);
-
-        return rc == 0 ? TE_RC(TE_TA_WIN32, EPERM) : rc;
+       IP_ADDR_STRING *addrlist;
+       
+       if (info->Index != if_entry.dwIndex)
+           continue;
+       
+       for (addrlist = &(info->IpAddressList); 
+            addrlist != NULL;
+            addrlist = addrlist->Next)
+        {
+            if (strcmp(addr, addrlist->IpAddress.String) == 0)
+            {
+                if ((rc = DeleteIPAddress(addrlist->Context)) != NO_ERROR)
+                {
+                    ERROR("DeleteIPAddress() failed; error %d\n", rc);
+                    free(table);
+                    return TE_RC(TE_TA_WIN32, ETEWIN);;
+                }
+                free(table);
+                return 0;
+            }
+        }
     }
+    free(table);
 
-    if (DeleteIPAddress(cur->nte_context) != NO_ERROR)
-    {
-        ERROR("DeleteIPAddr() failed, error %x", GetLastError());
-        return TE_RC(TE_TA_WIN32, ETEWIN);
-    }
-
-    if (prev)
-        prev->next = cur->next;
-    else
-        list = cur->next;
-    free(cur);
-
-    return 0;
+    return TE_RC(TE_TA_WIN32, ENOENT);
 }
 
 /**
@@ -626,15 +618,17 @@ static int
 prefix_set(unsigned int gid, const char *oid, const char *value,
             const char *ifname, const char *addr)
 {
-    added_ip_addr *cur;
-    DWORD          a, m;
-    uint8_t        prefix;
-    ULONG          nte_instance;
-    char          *end;
+    DWORD    a, m;
+    uint8_t  prefix;
+    char    *end;
+    int      rc;
+
+    ULONG nte_context;
+    ULONG nte_instance;
 
     UNUSED(gid);
     UNUSED(oid);
-
+    
     if ((a = inet_addr(addr)) == INADDR_NONE)
         return TE_RC(TE_TA_WIN32, EINVAL);
 
@@ -652,31 +646,15 @@ prefix_set(unsigned int gid, const char *oid, const char *value,
     }
 
     m = PREFIX2MASK(prefix);
+    
+    if ((rc = net_addr_del(0, NULL, ifname, addr)) != 0)
+        return rc;
 
-    GET_IF_ENTRY;
-
-    for (cur = list;
-         cur != NULL &&
-         !(cur->addr == a && cur->ifindex == if_entry.dwIndex);
-         cur = cur->next);
-
-    if (cur == NULL)
+    if ((rc = AddIPAddress(*(IPAddr *)&a, *(IPAddr *)&m,
+                           if_entry.dwIndex, &nte_context, 
+                           &nte_instance)) != NO_ERROR)
     {
-        int rc = ip_addr_exist(a, NULL);
-
-        return rc == 0 ? TE_RC(TE_TA_WIN32, EPERM) : rc;
-    }
-
-    if (DeleteIPAddress(cur->nte_context) != NO_ERROR)
-    {
-        ERROR("DeleteIPAddr() failed, error %x", GetLastError());
-        return TE_RC(TE_TA_WIN32, ETEWIN);
-    }
-
-    if (AddIPAddress(*(IPAddr *)&a, *(IPAddr *)&m,
-                     cur->ifindex, &cur->nte_context, &nte_instance) != 0)
-    {
-        ERROR("AddIpAddr() failed, error %x", GetLastError());
+        ERROR("AddIpAddr() failed, error %d", rc);
         return TE_RC(TE_TA_WIN32, ETEWIN);
     }
 
@@ -970,6 +948,7 @@ arp_set(unsigned int gid, const char *oid, const char *value,
     int             i, k;
     DWORD           a;
     int             int_mac[6];
+    int             rc;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -1001,9 +980,9 @@ arp_set(unsigned int gid, const char *oid, const char *value,
     for (k = 0; k < 6; k++)
         table->table[i].bPhysAddr[k] = (unsigned char)int_mac[k];
 
-    if (SetIpNetEntry(table->table + i) != NO_ERROR)
+    if ((rc = SetIpNetEntry(table->table + i)) != NO_ERROR)
     {
-        ERROR("SetIpNetEntry() failed, error %x", GetLastError());
+        ERROR("SetIpNetEntry() failed, error %d", rc);
         free(table);
         return TE_RC(TE_TA_WIN32, ETEWIN);
     }
@@ -1056,9 +1035,9 @@ arp_add(unsigned int gid, const char *oid, const char *value,
         return rc;
     entry.dwPhysAddrLen = 6;
     entry.dwType = 4;
-    if (CreateIpNetEntry(&entry) != 0)
+    if ((rc = CreateIpNetEntry(&entry)) != NO_ERROR)
     {
-        ERROR("CreateIpNetEntry() failed, error %x", GetLastError());
+        ERROR("CreateIpNetEntry() failed, error %d", rc);
         return TE_RC(TE_TA_WIN32, ETEWIN);
     }
     return 0;
@@ -1079,6 +1058,7 @@ arp_del(unsigned int gid, const char *oid, const char *addr)
     MIB_IPNETTABLE *table;
     int             i;
     DWORD           a;
+    int             rc;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -1094,10 +1074,9 @@ arp_del(unsigned int gid, const char *oid, const char *addr)
     {
         if (table->table[i].dwAddr == a)
         {
-            if (DeleteIpNetEntry(table->table + i) != 0)
+            if ((rc = DeleteIpNetEntry(table->table + i)) != 0)
             {
-                ERROR("DeleteIpNetEntry() failed, error %x",
-                      GetLastError());
+                ERROR("DeleteIpNetEntry() failed, error %d", rc);
                 free(table);
                 return TE_RC(TE_TA_WIN32, ETEWIN);
             }
@@ -1423,9 +1402,9 @@ route_add(unsigned int gid, const char *oid, const char *value,
     }
     
     entry.dwForwardProto = 3;
-    if (CreateIpForwardEntry(&entry) != 0)
+    if ((rc = CreateIpForwardEntry(&entry)) != NO_ERROR)
     {
-        ERROR("CreateIpForwardEntry() failed, error %x", GetLastError());
+        ERROR("CreateIpForwardEntry() failed, error %d", rc);
         return TE_RC(TE_TA_WIN32, ETEWIN);
     }
     return 0;
@@ -1482,10 +1461,9 @@ route_del(unsigned int gid, const char *oid, const char *route)
             continue;
         }
 
-        if (DeleteIpForwardEntry(table->table + i) != 0)
+        if ((rc = DeleteIpForwardEntry(table->table + i)) != 0)
         {
-            ERROR("DeleteIpForwardEntry() failed, error %x",
-                  GetLastError());
+            ERROR("DeleteIpForwardEntry() failed, error %d", rc);
             free(table);
             return TE_RC(TE_TA_WIN32, ETEWIN);
         }
