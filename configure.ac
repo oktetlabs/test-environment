@@ -158,15 +158,13 @@ for p in ${TE_BS_PLATFORMS} ; do
             PKGSRC=${TE_BASE}/lib/$package ; 
         fi
         
-        if test `dirname $PKGSRC` = ${TE_BASE}/lib ; then
-            cd lib
-            mkdir -p $PKGNAME
-            NAME=`basename $PKGSRC`
-            if ! test -e $NAME ; then
-                ln -s $PKGNAME $NAME
-            fi
-            cd ..
+        cd lib
+        mkdir -p $PKGNAME
+        NAME=`basename $PKGSRC`
+        if ! test -e $NAME ; then
+            ln -s $PKGNAME $NAME
         fi
+        cd ..
         
         if test $PLATFORM != $host ; then continue ; fi
         
