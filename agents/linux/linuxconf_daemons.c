@@ -70,9 +70,6 @@
 /** Directory where xinetd service configuration files are located */
 #define XINETD_ETC_DIR      "/etc/xinetd.d/"
 
-/** sendmail configuration location */
-#define SENDMAIL_CONF_DIR   "/etc/mail/"
-
 #define GET_DAEMON_NAME(_oid) \
     ((strstr(_oid, "dhcpserver") != NULL) ? "dhcpd" :                  \
      (strstr(_oid, "dnsserver") != NULL) ? "named" :                   \
@@ -3116,6 +3113,9 @@ ds_xvfb_list(unsigned int gid, const char *oid, char **list)
 }
 
 #ifdef WITH_SMTP
+
+/** sendmail configuration location */
+#define SENDMAIL_CONF_DIR   "/etc/mail/"
 
 #define SMTP_EMPTY_SMARTHOST    "0.0.0.0"
 
