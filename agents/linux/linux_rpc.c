@@ -32,15 +32,18 @@
 #include "config.h"
 #endif
 
-#include <sys/types.h>
-#include <sys/wait.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
-#include <pthread.h>
-#include <signal.h>
 #include <string.h>
+#include <unistd.h>
+#include <signal.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 #include <sys/socket.h>
+#ifdef HAVE_SYS_UN_H
+#include <sys/un.h>
+#endif
+#include <pthread.h>
 #include <rpc/rpc.h>
 #include <rpc/pmap_clnt.h>
 
@@ -372,8 +375,8 @@ sig_handler(int s)
 void *
 tarpc_server(void *arg)
 {
-    SVCXPRT *transp;
-    char     pipename[PIPENAME_LEN] = { 0, };
+    SVCXPRT            *transp;
+    struct sockaddr_un  addr;
 
     tarpc_in_arg  arg1;
     tarpc_in_arg *in = &arg1;
@@ -389,15 +392,54 @@ tarpc_server(void *arg)
     signal(SIGTERM, sig_handler);
     
     pmap_unset(tarpc, ver0);
-    sprintf(pipename, "/tmp/terpcs_%s_%u", (char *)arg, ta_pid);
+
+    memset(&addr, 0, sizeof(addr));
+    addr.sun_family = AF_UNIX;
+    snprintf(addr.sun_path, sizeof(addr.sun_path),
+             "/tmp/terpcs_%s_%u", (char *)arg, ta_pid);
 
     pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
-    transp = svcunix_create(RPC_ANYSOCK, 1024, 1024, pipename);
+
+#ifdef HAVE_SVCUNIX_CREATE
+    transp = svcunix_create(RPC_ANYSOCK, 1024, 1024, addr.sun_path);
     if (transp == NULL)
     {
         RPC_LGR_MESSAGE(ERROR_LVL, "svcunix_create() returned NULL");
         return NULL;
     }
+#else
+    if (1) {
+        int sock = socket(PF_UNIX, SOCK_STREAM, 0);
+
+        if (sock < 0)
+        {
+            RPC_LGR_MESSAGE(ERROR_LVL,
+                            "socket(PF_UNIX, SOCK_STREAM, 0) failed");
+            return NULL;
+        }
+        if (bind(sock, SA(&addr), sizeof(addr)) != 0)
+        {
+            RPC_LGR_MESSAGE(ERROR_LVL,
+                            "bind() to RPC server address failed");
+            close(sock);
+            return NULL;
+        }
+        if (listen(sock, 2) != 0)
+        {
+            RPC_LGR_MESSAGE(ERROR_LVL,
+                            "listen() on RPC server socket failed");
+            close(sock);
+            return NULL;
+        }
+
+        transp = svc_vc_create(sock, 1024, 1024);
+        if (transp == NULL)
+        {
+            RPC_LGR_MESSAGE(ERROR_LVL, "svc_vc_create() returned NULL");
+            return NULL;
+        }
+    }
+#endif
 
     if (!svc_register(transp, tarpc, ver0, tarpc_1, 0))
     {
