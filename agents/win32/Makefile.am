@@ -4,7 +4,12 @@ SUBDIRS=libltdl
 MY_CPPFLAGS=-I$(DESTDIR)/$(prefix)/../@host@/include \
             -I$(DESTDIR)/$(prefix)/../include
 
-MY_LDADD=symtbl.o $(LIBLTDL) @TE_LDADD@ -lpthread -lltdl
+#
+# -lrcfpch must be before @TE_LDADD@ since the last may contain
+# -ltad_ch with names used in -lrcfpch.
+#
+MY_LDADD=symtbl.o $(LIBLTDL) -lrcfpch @TE_LDADD@ -lconf_oid \
+         -lcomm_net_agent -lloggerta -lpthread -lltdl
 MY_LDAFLAGS=-rdynamic -export-dynamic 
 
 MY_SOURCES=win32.c win32conf.c ftp_routines.c

@@ -5,7 +5,11 @@ MY_CPPFLAGS=-I$(DESTDIR)/$(prefix)/include \
             -I$(DESTDIR)/$(prefix)/../@host@/include \
             -I$(DESTDIR)/$(prefix)/../include
 
-MY_LDADD=symtbl.o @TE_LDADD@
+#
+# -lrcfpch must be before @TE_LDADD@ since the last may contain
+# -ltad_ch with names used in -lrcfpch.
+#
+MY_LDADD=symtbl.o -lrcfpch @TE_LDADD@ -lconf_oid -lcomm_net_agent -lloggerta
 MY_LDAFLAGS=-rdynamic -export-dynamic 
 
 MY_SOURCES=linux.c linuxconf.c ftp_routines.c

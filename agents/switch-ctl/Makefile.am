@@ -9,7 +9,12 @@ AM_LDFLAGS = @TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/../@host@/lib
 
 bin_PROGRAMS = taswitch-ctl
 
-taswitch_ctl_LDADD = symtbl.o @TE_LDADD@ -lpthread -lstdc++
+#
+# -lrcfpch must be before @TE_LDADD@ since the last may contain
+# -ltad_ch with names used in -lrcfpch.
+#
+taswitch_ctl_LDADD = symtbl.o -lrcfpch @TE_LDADD@ -lconf_oid \
+                     -lcomm_net_agent -lloggerta -lpthread -lstdc++
 
 taswitch_ctl_SOURCES = main.c conf.c
 

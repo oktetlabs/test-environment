@@ -8,7 +8,8 @@ taisosctl_SOURCES=isosctl.c
 
 AM_LDFLAGS=@TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/../@host@/lib
 
-taisosctl_LDADD=@TE_LDADD@ -lpthread
+taisosctl_LDADD=-lrcfpch @TE_LDADD@ -lconf_oid -lcomm_net_agent \
+                -lloggerta -lpthread
 
 taisosctl_DEPENDENCIES=@TE_DEPENDENCIES@ 
 
