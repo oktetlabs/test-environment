@@ -25,7 +25,7 @@
 #
 # Author Elena Vengerova <Elena.Vengerova@oktet.ru>
 # 
-# $Id: $
+# $Id$
 #
 
 # Parameters are package name
@@ -53,7 +53,7 @@ if test "${SOURCES:0:1}" != "/" ; then
         echo 'Export TE_BASE or full path to suite sources, please'
         exit 1
     fi
-    SOURCES=${TE_BASE}/${SOURCES} 
+    SOURCES=${TE_BASE}/suites/${SOURCES} 
 fi
 
 pushd ${SOURCES} >/dev/null
