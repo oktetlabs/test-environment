@@ -8,7 +8,7 @@
 
     <session>
         <run>
-            <script name="get_any">
+            <script name="caught_any">
                 <req id="TAD_ETH"/> 
             </script>
             <arg name="num_pkts">
@@ -16,7 +16,6 @@
                 <value>5</value>
             </arg>
             <arg name="timeout"> 
-                <value>2000</value><!-- in milliseconds -->
                 <value>200</value><!-- in milliseconds -->
             </arg>
             <arg name="pass_results">
@@ -33,12 +32,12 @@
             </arg>
         </run>
         <run>
-            <script name="eth1">
+            <script name="simple_recv_send">
                 <req id="TAD_ETH"/> 
             </script>
         </run>
         <run>
-            <script name="eth2">
+            <script name="vlan_recv_send">
                 <req id="TAD_ETH"/> 
             </script>
         </run>

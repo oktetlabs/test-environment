@@ -10,7 +10,8 @@ AM_CFLAGS = -I$(DESTDIR)/$(prefix)/include
 AM_LDFLAGS = @TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/lib 
 
 
-tetest_PROGRAMS = get_any eth1 eth2 eth_serial1 eth_serial2
+tetest_PROGRAMS = caught_any simple_recv_send vlan_recv_send \
+		    eth_serial1 eth_serial2
 
 LDADD= -ltapi -ltapi_eth -ltapi_tad -lndn -lasn -lconfapi -lrcfapi \
        -lconf_oid -llogger_ten -lipc -lpthread

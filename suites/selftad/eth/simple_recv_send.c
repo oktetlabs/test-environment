@@ -27,7 +27,7 @@
  * $Id$
  */
 
-#define TE_TEST_NAME    "eth/minimal"
+#define TE_TEST_NAME    "eth/simple_recv_send"
 
 #define TE_LOG_LEVEL 255
 

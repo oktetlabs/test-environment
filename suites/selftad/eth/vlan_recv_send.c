@@ -26,7 +26,7 @@
  * $Id$
  */
 
-#define TE_TEST_NAME    "eth/min_vlan"
+#define TE_TEST_NAME    "eth/vlan_recv_send"
 
 #define TE_LOG_LEVEL 0xff
 
