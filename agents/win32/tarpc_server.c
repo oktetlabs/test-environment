@@ -614,15 +614,16 @@ typedef struct accept_cond {
      int            verdict;
 } accept_cond;
 
-static int
+static int CALLBACK
 accept_callback(LPWSABUF caller_id, LPWSABUF caller_data, LPQOS sqos,
                 LPQOS gqos, LPWSABUF callee_id, LPWSABUF callee_data, 
                 GROUP *g, DWORD_PTR user_data)
 {
     accept_cond *cond = (accept_cond *)user_data;
     
-    struct sockaddr_in *addr;
+    return CF_ACCEPT;
     
+    struct sockaddr_in *addr;
     UNUSED(caller_data);
     UNUSED(sqos);
     UNUSED(gqos);
@@ -641,7 +642,7 @@ accept_callback(LPWSABUF caller_id, LPWSABUF caller_data, LPQOS sqos,
     for (; cond->port != 0; cond++)
         if (cond->port == addr->sin_port)
             return cond->verdict;
-            
+
     return CF_REJECT;
 }                
 
@@ -652,9 +653,9 @@ TARPC_FUNC(wsa_accept,
 },
 {
     accept_cond *cond = NULL;
-    
     PREPARE_ADDR(out->addr, out->len.len_len == 0 ? 0 : *out->len.len_val);
     
+
     if (in->cond.cond_len != 0)
     {
         unsigned int i;
@@ -677,11 +678,11 @@ TARPC_FUNC(wsa_accept,
 
     MAKE_CALL(out->retval = WSAAccept(in->fd, a,
                                       out->len.len_len == 0 ? NULL :
-                                      out->len.len_val, 
+                                      out->len.len_val,
                                       (LPCONDITIONPROC)accept_callback, 
-                                      (DWORD)cond));
+                                      (DWORD)cond)); 
     sockaddr_h2rpc(a, &(out->addr));
-}
+}   
 )
 
 
@@ -2680,7 +2681,7 @@ static int completion_bytes = 0;
 static tarpc_overlapped completion_overlapped = 0;
 static pthread_mutex_t completion_lock = PTHREAD_MUTEX_INITIALIZER;
 
-static void
+static void CALLBACK
 completion_callback(DWORD error, DWORD bytes, LPWSAOVERLAPPED overlapped,
                     DWORD flags)
 {
