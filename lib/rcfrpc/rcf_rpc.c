@@ -582,7 +582,9 @@ forward(void *arg)
     int         sock;
     int         s = -1;
     int         len;
-    uint32_t    msg_len;
+    size_t      known_len;
+    uint32_t    frag_len;
+    te_bool     more_frags;
     int         rc;
     
     char *tmp = getenv("TE_TMP");
@@ -668,9 +670,11 @@ forward(void *arg)
     }
     close(sock);
     VERB("Local RPC server %s accepted connection", addr.sun_path);
+    
     len = 0;
-    msg_len = (uint32_t)-1;
-    while ((uint32_t)len < msg_len)
+    more_frags = TRUE;
+    known_len = sizeof(frag_len);
+    while ((size_t)len < known_len)
     {
         ssize_t        n;
 
@@ -682,35 +686,31 @@ forward(void *arg)
         }
         VERB("%d bytes are read from pipe", n);
         len += n;
-        if (msg_len == (uint32_t)-1 && (size_t)len >= sizeof(msg_len))
+        while (more_frags && (size_t)len >= known_len)
         {
-            memcpy(&msg_len, buf, sizeof(msg_len));
-            msg_len = ntohl(msg_len);
-            if (~msg_len & 0x80000000)
-            {
-                rpcs->_errno = TE_RC(TE_RCF_API, E2BIG);
-                ERROR("Fragmented RPC messages are not supported");
-                goto release;
-            }
+            memcpy(&frag_len, buf + known_len - sizeof(frag_len),
+                   sizeof(frag_len));
+            frag_len = ntohl(frag_len);
+            more_frags = !(frag_len & 0x80000000);
             /* Remove the-last-fragment flag */
-            msg_len &= ~0x80000000;
+            frag_len &= ~0x80000000;
             /* Header is not include in the length, add it */
-            msg_len += sizeof(msg_len);
-            if (msg_len > RCF_RPC_MAX_BUF)
+            known_len += frag_len + (more_frags ? sizeof(frag_len) : 0);
+            if (known_len > RCF_RPC_MAX_BUF)
             {
                 rpcs->_errno = TE_RC(TE_RCF_API, E2BIG);
                 ERROR("Too big RPC message: len=%u, max=%u",
-                      msg_len, RCF_RPC_MAX_BUF);
+                      known_len, RCF_RPC_MAX_BUF);
                 goto release;
             }
         }
     }
     VERB("%d bytes of RPC data are read", len);
-    if ((uint32_t)len != msg_len)
+    if ((size_t)len != known_len)
     {
         rpcs->_errno = TE_RC(TE_RCF_API, EINVAL);
         ERROR("Invalid RPC message format: advertised length is %u, "
-              "received length is %u", msg_len, len);
+              "received length is %u", known_len, len);
         goto release;
     }
      
