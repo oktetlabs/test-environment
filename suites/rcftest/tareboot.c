@@ -23,7 +23,7 @@
  *
  * @author Elena A. Vengerova <Mamadou.Ngom@oktetlabs.ru>
  * 
- * $Id: tareboot.c  10100 2005-01-26 21:25:42 mamadou $
+ * $Id$
  */
  
 #include "config.h"
@@ -53,13 +53,13 @@ main()
     if (retval != 0)
     {
         ERROR("Cannot get TA list.");
-	exit(1);
+        exit(1);
     }
     
     if (list_len == 0 || list_len <= strlen(ta_list) + 1)
     {
         ERROR("Cannot get TA names");
-	exit(1);
+        exit(1);
     }
     agentA = ta_list;
     agentB = ta_list + strlen(agentA) + 1;
@@ -70,7 +70,7 @@ main()
         if (EPERM == TE_RC_GET_ERROR(retval))
             ERROR("/*****TA %s is not rebootable.********/", agentA);
         else
-	    ERROR("/****rcf_ta_reboot failed. errno=%X ****/",
+            ERROR("/****rcf_ta_reboot failed. errno=%X ****/",
                    TE_RC_GET_ERROR(retval)); 
     }
     else
@@ -83,7 +83,7 @@ main()
         if (EPERM == TE_RC_GET_ERROR(retval))
             ERROR("/*****TA %s is not rebootable.********/", agentB);
         else
-	    ERROR("rcf_ta_reboot failed. errno=%X",
+            ERROR("rcf_ta_reboot failed. errno=%X",
                    TE_RC_GET_ERROR(retval)); 
     }
     else
