@@ -443,6 +443,26 @@ extern int tapi_snmp_set_integer(const char *ta, int sid, int csap_id,
                                  int value, int *errstat);
 
 /**
+ * The function makes an attempt to set an unsigned integer value 
+ * for an SNMP object by means of SNMP Set request, which is sent 
+ * to the SNMP agent, associated with a particular SNMP CSAP. Note,
+ * that the function waits for SNMP agent response.
+ * 
+ * @param ta            Test Agent name
+ * @param sid           RCF Session id.
+ * @param csap_id       identifier of an SNMP CSAP.
+ * @param oid           ID of an SNMP object the value is to be set.
+ * @param value         unsigned integer value.
+ * @param errstat       the value of error-status field in response
+ *                      message (OUT), may be zero if not need.
+ * 
+ * @return zero on success or error code.
+ */
+extern int tapi_snmp_set_unsigned(const char *ta, int sid, int csap_id, 
+                                  const tapi_snmp_oid_t *oid, 
+                                  unsigned int value, int *errstat);
+
+/**
  * The function makes an attempt to set an octet string value for an SNMP
  * object by means of SNMP Set request, which is sent to the SNMP agent,
  * associated with an SNMP CSAP. Note, that the function waits for SNMP
@@ -609,9 +629,32 @@ extern int tapi_snmp_get_date_and_time(const char *ta, int sid, int csap_id,
  *
  * @return Zero on success or error code
  */
-extern int tapi_snmp_get_integer(const char *ta, int sid, int csap_id,
-                                 const tapi_snmp_oid_t *oid, int *val, 
-                                 int *errstat);
+extern int tapi_snmp_get_integer(const char *ta, int sid,
+                                 int csap_id,
+                                 const tapi_snmp_oid_t *oid,
+                                 int *val, int *errstat);
+
+/**
+ * Sends SNMP Get request on MIB object with type Unsigned (or Gauge)
+ * to the SNMP agent, associated with an SNMP CSAP and obtains a value 
+ * the agent have responded.
+ *
+ * @param ta            Test Agent name
+ * @param sid           RCF session ID
+ * @param csap_id       SNMP CSAP handle
+ * @param oid           ID of an SNMP object
+ * @param val           Location for returned value (OUT)
+ *
+ * @return Zero on success or error code
+ */
+static inline unsigned int tapi_snmp_get_unsigned(const char *ta, int sid, 
+                                         int csap_id,
+                                         const tapi_snmp_oid_t *oid, 
+                                         unsigned int *val, int *errstat)
+{
+    return tapi_snmp_get_integer(ta, sid, csap_id, oid, 
+                                 (int *)val, errstat);
+}
 
 /**
  * Sends SNMP Get request on MIB object with type DisplayString to

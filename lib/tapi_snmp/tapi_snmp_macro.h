@@ -397,6 +397,31 @@ extern "C" {
     } while (0)
 
 /**
+ * Macro around tapi_snmp_set_unsigned()
+ * 
+ * @param ta            Test Agent name
+ * @param sid           RCF session ID
+ * @param csap_id       Identifier of an SNMP CSAP
+ * @param name          Name of an SNMP object the value is to be set
+ * @param value         Unsigned integer value
+ * @param err_stat      SNMP error status
+ * @param sub_id        Index of table field instance or 0 for scalar field
+ * 
+ */
+#define TAPI_SNMP_SET_UNSIGNED(ta, sid, csap_id, name, value,           \
+                               err_stat, sub_id...)                     \
+    do {                                                                \
+        tapi_snmp_oid_t           leaf_oid;                             \
+                                                                        \
+        CHECK_RC(tapi_snmp_make_instance(name, &leaf_oid, sub_id));     \
+        CHECK_RC(tapi_snmp_set_unsigned((ta), (sid), (csap_id),         \
+                                        &leaf_oid,                      \
+                                        (value), (err_stat)));          \
+        VERB("SNMP set unsigned, set %s to %u, error status %d",        \
+             name, value, *err_stat);                                   \
+    } while (0)
+
+/**
  * Macro around tapi_snmp_set_octetstring()
  * 
  * @param ta            Test Agent name
@@ -527,6 +552,32 @@ extern "C" {
              name, print_oid(&oid), #value, (value), *err_stat);        \
     } while (0)
 
+
+/**
+ * Macro around tapi_snmp_get_unsigned()
+ * 
+ * @param ta            Test Agent name
+ * @param sid           RCF session ID
+ * @param csap_id       Identifier of an SNMP CSAP
+ * @param name          Name of an SNMP object the value is to be set
+ * @param value         Pointer to returned unsigned integer value
+ * @param err_stat      Error status
+ * @param subid         Index of table field instance (0 for scalar field)
+ * 
+ */
+#define TAPI_SNMP_GET_UNSIGNED(ta, sid, csap_id, name, value, err_stat, \
+                               sub_id...)                               \
+    do {                                                                \
+        tapi_snmp_oid_t     oid;                                        \
+                                                                        \
+        CHECK_RC(tapi_snmp_make_instance(name, &oid, sub_id));          \
+        CHECK_RC(tapi_snmp_get_unsigned(ta, sid, csap_id, &oid,         \
+                 (value), err_stat));                                   \
+                                                                        \
+        VERB("SNMP get: for %s (oid=%s) returns %s = %u, "              \
+             "error status %d\n",                                       \
+             name, print_oid(&oid), #value, (value), *err_stat);        \
+    } while (0)
 
 /**
  * Macro around tapi_snmp_get_octetstring()

@@ -1530,6 +1530,40 @@ tapi_snmp_set_integer(const char *ta, int sid, int csap_id,
 
 /* See description in tapi_snmp.h */
 int
+tapi_snmp_set_unsigned(const char *ta, int sid, int csap_id,
+                       const tapi_snmp_oid_t *oid,
+                       unsigned int value, int *errstat)
+{
+    unsigned int        local_value = value;
+    tapi_snmp_message_t msg;
+    int                 rc;
+
+    rc = tapi_snmp_operation(ta, sid, csap_id, oid,
+                             NDN_SNMP_MSG_SET, TAPI_SNMP_UNSIGNED,
+                             sizeof(local_value), &local_value, &msg);
+    if (rc == 0)
+    {
+        if (msg.num_var_binds) 
+        {
+            /* this is real response from Test Agent*/
+            if (errstat)
+                *errstat = msg.err_status;
+            tapi_snmp_free_message(&msg);
+        }
+        else
+        {
+            /* 
+             * abnormal situation, msg is not correct SNMP response,
+             * err_status simply used for passing error code. 
+             */
+            rc = TE_RC(TE_TAPI, msg.err_status);
+        }
+    }
+    return rc;
+}
+
+/* See description in tapi_snmp.h */
+int
 tapi_snmp_set_octetstring(const char *ta, int sid, int csap_id,
                     const tapi_snmp_oid_t *oid,
                     const unsigned char *value, size_t size, int *errstat)
