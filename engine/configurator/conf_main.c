@@ -175,7 +175,7 @@ parse_config(char *file, te_bool restore)
     }
 
     if (xmlStrcmp(root->name, (const xmlChar *)"backup") == 0)
-        rc = cfg_backup_process_file(root);
+        rc = cfg_backup_process_file(root, restore);
     else if (xmlStrcmp(root->name, (const xmlChar *)"history") == 0)
         rc = cfg_dh_process_file(root);
     else
