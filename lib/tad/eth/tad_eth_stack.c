@@ -1075,8 +1075,14 @@ eth_single_destroy_cb (int csap_id, int layer)
     eth_csap_specific_data_p spec_data = 
         (eth_csap_specific_data_p) csap_descr->layer_data[layer]; 
 
+    if (spec_data == NULL)
+    {
+        WARN("Not ethernet CSAP %d special data found!", csap_id);
+        return 0;
+    }
+
 #if USE_PROMISC_MODE
-    if (spec_data != NULL) do {
+    do {
         iface_user_rec *ir;
         struct ifreq  if_req;
         int cfg_socket;
@@ -1130,7 +1136,7 @@ eth_single_destroy_cb (int csap_id, int layer)
     
     if (spec_data->out >= 0)
         close(spec_data->out);    
-    
+
     free_eth_csap_data(spec_data, ETH_COMPLETE_FREE);
 
     csap_descr->layer_data[layer] = NULL;
