@@ -553,7 +553,7 @@ tapi_snmp_pkt_handler(char *fn, void *p)
 
 
 static int 
-tapi_snmp_msg_head(FILE *f, ndn_snmp_msg_t msg_type)
+tapi_snmp_msg_head(FILE *f, ndn_snmp_msg_t msg_type, int reps)
 {
     if (f == NULL)
         return EINVAL;
@@ -564,7 +564,7 @@ tapi_snmp_msg_head(FILE *f, ndn_snmp_msg_t msg_type)
         case NDN_SNMP_MSG_GET:      fprintf(f,"get, ");      break;
         case NDN_SNMP_MSG_GETNEXT:  fprintf(f,"get-next, "); break;
         case NDN_SNMP_MSG_GETBULK:  
-            fprintf(f,"get-bulk, repeats plain:11, "); 
+            fprintf(f,"get-bulk, repeats plain: %d, ", reps); 
             break;
 
         case NDN_SNMP_MSG_SET:      fprintf(f,"set, ");      break;
@@ -698,7 +698,7 @@ tapi_snmp_operation (const char *ta, int sid, int csap_id,
     else
         var_bind.type = TAPI_SNMP_OTHER;
 
-    rc = tapi_snmp_msg_head(f, msg_type);
+    rc = tapi_snmp_msg_head(f, msg_type, dlen);
 
     if (rc == 0)
         rc = tapi_snmp_msg_var_bind(f, &var_bind);
@@ -753,7 +753,7 @@ tapi_snmp_set(const char *ta, int sid, int csap_id,
     if (f == NULL)
         return TE_RC(TE_TAPI, errno); /* return system errno */ 
 
-    rc = tapi_snmp_msg_head(f, NDN_SNMP_MSG_SET);
+    rc = tapi_snmp_msg_head(f, NDN_SNMP_MSG_SET, 0);
 
     for (i = 0; (i < num_vars) && (rc == 0); i ++)
     {
