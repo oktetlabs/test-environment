@@ -498,4 +498,14 @@
          Password is the same as user name. -->
     <object oid="/agent/user" access="read_create" type="none"/>
 
+    <!-- Volatile engine data root. 
+         Name: empty
+         -->
+    <object oid="/volatile"               access="read_create" type="none"/>
+    
+    <!-- Socket library ("berkeley", "winsock2").
+         Name: TA name
+         Value: readable library name -->
+    <object oid="/volatile/ta_sockets" access="read_create" type="string"/>
+
 </backup>
