@@ -14,7 +14,7 @@ popd >/dev/null
 usage()
 {
 cat <<EOF
-Usage: dispatcher.sh [<generic options>] [[<test options> tests ]...
+USAGE: dispatcher.sh [<generic options>] [[<test options> tests ]...
 Generic options:
   -q                            Suppress part of output messages
 
