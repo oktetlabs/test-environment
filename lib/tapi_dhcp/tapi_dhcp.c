@@ -410,8 +410,11 @@ ndn_dhcpv4_add_opts(asn_value_p container, struct dhcp_option *opt)
                                        "value.#plain"));
 
         CHECK_RC(ndn_dhcpv4_add_opts(dhcp_opt, opt->subopts));
+
         CHECK_RC(asn_insert_indexed(container, dhcp_opt, -1, "options"));
-        CHECK_RC(asn_free_subvalue(dhcp_opt, "options"));
+        
+        if (opt->subopts)
+            CHECK_RC(asn_free_subvalue(dhcp_opt, "options"));
     }
 
     asn_free_value(dhcp_opt);
