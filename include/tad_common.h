@@ -45,12 +45,14 @@
 #define CSAP_PARAM_LAST_PACKET_TIME     "last_pkt_time"
 
 
-/** Type for CSAP handle, should have semantic unsigned integer, 
+/** 
+ * Type for CSAP handle, should have semantic unsigned integer, 
  * because TAD Users Guide specify CSAP ID as positive integer, and
- * zero used as mark of invalid/uninitialized CSAP handle. */ 
+ * zero used as mark of invalid/uninitialized CSAP handle. 
+ */ 
 typedef unsigned int csap_handle_t;
 enum {
-    CSAP_INVALID_HANDLE=0, /**< Constant for invalid CSAP handle */
+    CSAP_INVALID_HANDLE = 0, /**< Constant for invalid CSAP handle */
 };
 
 
