@@ -84,14 +84,15 @@ main()
         return 1;
     }
     printf("Agent: %s\n", ta);
-    rpc_setlibname(ta, "/lib/libc.so.6");
-    
+
     if ((rc = rcf_rpc_server_create(ta, "FIRST", &srv)) != 0)
     {
         printf("Cannot create server %x\n", rc);
         return 1;
     }
     srv->def_timeout = 5000;
+    
+    rpc_setlibname(srv, NULL);
     
     if ((rc = rcf_rpc_server_thread_create(srv, "SECOND", &srv1)) != 0)
     {
