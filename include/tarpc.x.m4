@@ -1792,8 +1792,10 @@ struct tarpc_get_overlapped_result_out {
     struct tarpc_out_arg common;
 
     int                  retval;
-    int                  bytes<>;        /**< Transferred bytes */
-    int                  flags<>;        /**< Flags */
+    int                  bytes<>;     /**< Transferred bytes */
+    int                  flags<>;     /**< Flags             */
+    struct tarpc_iovec   vector<>;    /**< Buffer to receive buffers resulted
+            			           from overlapped operation */
 };    
 
 
