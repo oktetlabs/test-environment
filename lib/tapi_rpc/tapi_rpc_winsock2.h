@@ -202,6 +202,7 @@ extern int rpc_alloc_wsabuf(rcf_rpc_server *rpcs, size_t len,
 
 extern void rpc_free_wsabuf(rcf_rpc_server *rpcs, rpc_ptr wsabuf);
 
+#if 0 /* It breaks the build */
 /* WSAConnect */
 extern int rpc_wsa_connect(rcf_rpc_server *rpcs, int s,
                            struct sockaddr *addr, socklen_t addrlen,
@@ -210,6 +211,7 @@ extern int rpc_wsa_connect(rcf_rpc_server *rpcs, int s,
                            tarpc_flowspec *receiving,
                            rpc_ptr provider_specific_buf,
                            size_t provider_specific_buf_len);
+#endif
 
 /* WSAAsyncGetHostByAddr */
 extern rpc_handle
