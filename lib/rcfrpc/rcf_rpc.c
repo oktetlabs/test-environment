@@ -406,7 +406,7 @@ rcf_rpc_server_exec(rcf_rpc_server *rpcs)
                           RCF_STRING, rpcs->name)) != 0 ||
         (rc = rc1) != 0)
     {
-        rpcs->dead = 1;
+        rpcs->dead = TRUE;
         ERROR("Remote call of tarpc_del_server failed for %s. "
               "RPC server is unusable.", rpcs->name);
         if (rcf_ta_kill_task(rpcs->ta, 0, rpcs->pid) != 0)
@@ -423,7 +423,7 @@ rcf_rpc_server_exec(rcf_rpc_server *rpcs)
                           RCF_INT32, rpcs->pid)) != 0 ||
          (rc = rc1) != 0)
     {
-        rpcs->dead = 1;
+        rpcs->dead = TRUE;
         ERROR("Remote call of tarpc_add_server failed for %s. "
               "RPC server is unusable.", rpcs->name);
         if (rcf_ta_kill_task(rpcs->ta, 0, rpcs->pid) != 0)
@@ -923,7 +923,7 @@ rcf_rpc_call(rcf_rpc_server *rpcs, int proc,
     if ((rpcs->_errno & ETERPCTIMEOUT) == ETERPCTIMEOUT)
     {
         rpcs->stat = RPC_TIMEDOUT;
-        rpcs->dead = 1;
+        rpcs->dead = TRUE;
     }
     else if (rpcs->_errno == 0 && rpcs->stat != RPC_SUCCESS)
     {
@@ -932,7 +932,7 @@ rcf_rpc_call(rcf_rpc_server *rpcs, int proc,
         CLNT_GETERR(clnt, &err);
         ERROR("SUN RPC error %d errno %d", rpcs->stat, err.re_errno);
         rpcs->_errno = TE_RC(TE_RCF_API, ETESUNRPC);
-        rpcs->dead = 1;
+        rpcs->dead = TRUE;
     }
 
     if (rpcs->_errno == 0)
@@ -940,11 +940,18 @@ rcf_rpc_call(rcf_rpc_server *rpcs, int proc,
         rpcs->duration = out->duration; 
         rpcs->_errno = out->_errno;
         rpcs->win_error = out->win_error;
-        rpcs->tid0 = out->tid;
         if (rpcs->op == RCF_RPC_CALL)
+        {
+            rpcs->tid0 = out->tid;
+            rpcs->is_done_ptr = out->done;
             rpcs->op = RCF_RPC_WAIT;
+        }
         else if (rpcs->op == RCF_RPC_WAIT)
+        {
+            rpcs->tid0 = 0;
+            rpcs->is_done_ptr = 0;
             rpcs->op = RCF_RPC_CALL_WAIT;
+        }
     }
 
     pthread_mutex_unlock(&rpcs->lock);
@@ -967,6 +974,8 @@ rcf_rpc_server_is_op_done(rcf_rpc_server *rpcs, te_bool *done)
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
+
+    in.common.done = rpcs->is_done_ptr;
 
     rpcs->op = RCF_RPC_IS_DONE;
     rcf_rpc_call(rpcs, _rpc_is_op_done,
