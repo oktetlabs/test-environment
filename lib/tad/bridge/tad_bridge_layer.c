@@ -299,17 +299,16 @@ int bridge_match_bin_cb (int csap_id, int layer, const asn_value *pattern_pdu,
     /* match of BPDUs should not be very fast, convert from ASN pattern 
      * to data_unit structure just in match callback. */
 
-#define MATCH_FIELD(_len, _label) \
-    do if (rc == 0) {                                           \
-        tad_data_unit_t du;                                     \
-                                                                \
-        rc = tad_data_unit_convert(pattern_pdu, _label, &du);   \
-        if (rc)                                                 \
-            break;                                              \
-        data += f_len; f_len = (_len);                          \
-        rc = tad_univ_match_field(&du, bridge_pdu, data,        \
-                                f_len, _label);                 \
-        F_VERB("match %s rc %x", _label, rc);                   \
+#define MATCH_FIELD(len_, label_) \
+    do {                                                                \
+        if (rc == 0)                                                    \
+        {                                                               \
+            rc = ndn_match_data_units(pattern_pdu, bridge_pdu,          \
+                                      data, len_, label_);              \
+            data += len_;                                               \
+            if (rc != 0)                                                \
+                F_VERB("%s: match %s rc %x", __FUNCTION__, label_, rc); \
+        }                                                               \
     } while (0)
 
         
