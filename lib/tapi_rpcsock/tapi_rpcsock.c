@@ -411,6 +411,42 @@ rpc_socket(rcf_rpc_server *handle,
 }           
 
 int 
+rpc_wsa_socket(rcf_rpc_server *handle,
+               rpc_socket_domain domain, rpc_socket_type type,
+               rpc_socket_proto protocol, unsigned int protocol_info,
+               te_bool overlapped)
+{
+    tarpc_socket_in  in;
+    tarpc_socket_out out;
+
+    if (handle == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        return -1;
+    }
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    handle->op = RCF_RPC_CALL_WAIT;
+    in.domain = domain;
+    in.type = type;
+    in.proto = protocol;
+    in.info = protocol_info;
+    in.flags = overlapped;
+
+    rcf_rpc_call(handle, _socket, &in, (xdrproc_t)xdr_tarpc_socket_in,
+                 &out, (xdrproc_t)xdr_tarpc_socket_out);
+
+    RING("RPC (%s,%s): socket(%s, %s, %s) -> %d (%s)",
+         handle->ta, handle->name,
+         domain_rpc2str(domain), socktype_rpc2str(type),
+         proto_rpc2str(protocol), out.fd, errno_rpc2str(RPC_ERRNO(handle)));
+
+    RETVAL_VAL(out.fd, socket);
+}           
+
+int 
 rpc_close(rcf_rpc_server *handle, int fd)
 {
     rcf_rpc_op      op;

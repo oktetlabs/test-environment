@@ -72,6 +72,11 @@ extern int rpc_socket(rcf_rpc_server *handle,
                       rpc_socket_domain domain, rpc_socket_type type,
                       rpc_socket_proto protocol);
 
+extern int rpc_wsa_socket(rcf_rpc_server *handle,
+                         rpc_socket_domain domain, rpc_socket_type type,
+                         rpc_socket_proto protocol, 
+                         unsigned int protocol_info, te_bool overlapped);
+
 extern int rpc_close(rcf_rpc_server *handle,
                      int fd);
 

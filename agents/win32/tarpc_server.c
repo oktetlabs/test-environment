@@ -488,7 +488,9 @@ TARPC_FUNC(socket, {},
 {
     MAKE_CALL(out->fd = WSASocket(domain_rpc2h(in->domain),
                                   socktype_rpc2h(in->type),
-                                  proto_rpc2h(in->proto), NULL, 0, 0));
+                                  proto_rpc2h(in->proto), 
+                                  (LPWSAPROTOCOL_INFO)(in->info), 0,  
+                                  in->flags ? WSA_FLAG_OVERLAPPED : 0));
 }
 )
 
@@ -654,8 +656,9 @@ TARPC_FUNC(wsa_accept,
     {
         unsigned int i;
         
+        /* FIXME: memory allocated here is lost */
         if ((cond = calloc(in->cond.cond_len + 1, sizeof(accept_cond))) == NULL)
-        {
+        {   
             out->common._errno = TE_RC(TE_TA_WIN32, ENOMEM); 
             return TRUE;
         }
@@ -2651,4 +2654,4 @@ TARPC_FUNC(get_overlapped_result,
 )
 
 /* @TODO WSARecvEx, WSASendTo, WSARecvFrom, WSASendDisconnect,
-   WSARecvDisconnect, WSADuplicateSocket, WSASocket */
+   WSARecvDisconnect, WSADuplicateSocket */
