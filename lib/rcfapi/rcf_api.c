@@ -116,8 +116,8 @@ static pthread_mutex_t  rcf_lock = PTHREAD_MUTEX_INITIALIZER;
 
 /* Declare and initialize (or obtain old) IPC library handle. */
 #define INIT_IPC \
-    struct ipc_client *ipc_handle = get_ipc_handle(); \
-    if (ipc_handle == NULL)                           \
+    struct ipc_client *ipc_handle = get_ipc_handle(TRUE);   \
+    if (ipc_handle == NULL)                                 \
         return TE_RC(TE_RCF_API, ETEIO)
 
 
@@ -155,8 +155,8 @@ rcf_api_thread_ctx_destroy(void *handle)
 {
     if (ipc_close_client((struct ipc_client *)handle) != 0)
     {
-        ERROR("ipc_close_client() failed");
-        fprintf(stderr, "ipc_close_client() failed");
+        ERROR("%s(): ipc_close_client() failed", __FUNCTION__);
+        fprintf(stderr, "ipc_close_client() failed\n");
     }
 }
 
@@ -177,10 +177,12 @@ rcf_api_key_create(void)
 /**
  * Find thread IPC handle or initialize a new one.
  *
+ * @param create    Create IPC client, if it is not exist or not
+ *
  * @return IPC handle or NULL if IPC library returned an error
  */
 struct ipc_client *
-get_ipc_handle()
+get_ipc_handle(te_bool create)
 {
 #ifdef HAVE_PTHREAD_H
     struct ipc_client          *handle;
@@ -196,7 +198,7 @@ get_ipc_handle()
     }
     handle = (struct ipc_client *)pthread_getspecific(key);
 #endif
-    if (handle == NULL)
+    if (handle == NULL && create)
     {
        char name[RCF_MAX_NAME];
 
@@ -238,10 +240,12 @@ static struct {
 /**
  * Find thread IPC handle or initialize a new one.
  *
+ * @param create    Create IPC client, if it is not exist or not
+ *
  * @return IPC handle or NULL if IPC library returned an error
  */
 struct ipc_client *
-get_ipc_handle()
+get_ipc_handle(te_bool create)
 {
     pthread_t mine = pthread_self();
     int       i;
@@ -256,29 +260,32 @@ get_ipc_handle()
         }
     }
     
-    for (i = 0; i < RCF_MAX_THREADS; i++)
+    if (create)
     {
-        if (handles[i].tid == 0)
+        for (i = 0; i < RCF_MAX_THREADS; i++)
         {
-            char name[RCF_MAX_NAME];
-           
-            handles[i].tid = mine;
-
-            snprintf(name, RCF_MAX_NAME, "rcf_client_%u_%u",
-                     (unsigned int)getpid(), (unsigned int)mine);
-               
-            if ((handles[i].handle = ipc_init_client(name)) == NULL)
+            if (handles[i].tid == 0)
             {
+                char name[RCF_MAX_NAME];
+               
+                handles[i].tid = mine;
+
+                snprintf(name, RCF_MAX_NAME, "rcf_client_%u_%u",
+                         (unsigned int)getpid(), (unsigned int)mine);
+                   
+                if ((handles[i].handle = ipc_init_client(name)) == NULL)
+                {
+                    pthread_mutex_unlock(&rcf_lock);
+                    fprintf(stderr, "ipc_init_client() failed\n");
+                    return NULL;
+                }
                 pthread_mutex_unlock(&rcf_lock);
-                fprintf(stderr, "ipc_init_client() failed\n");
-                return NULL;
+                return handles[i].handle;
             }
-            pthread_mutex_unlock(&rcf_lock);
-            return handles[i].handle;
         }
+        fprintf(stderr, "too many threads\n");
     }
     pthread_mutex_unlock(&rcf_lock);
-    fprintf(stderr, "too many threads\n");
         
     return NULL;
 }
@@ -315,14 +322,14 @@ free_ipc_handle(void)
 void
 rcf_api_cleanup(void)
 {
-    struct ipc_client *ipcc = get_ipc_handle();
+#if PTHREAD_SETSPECIFIC_BUG
+    struct ipc_client *ipcc = get_ipc_handle(FALSE);
 
     if (ipc_close_client(ipcc) != 0)
     {
-        ERROR("ipc_close_client() failed");
+        ERROR("%s(): ipc_close_client() failed", __FUNCTION__);
         fprintf(stderr, "ipc_close_client() failed\n");
     }
-#if PTHREAD_SETSPECIFIC_BUG
     free_ipc_handle();
 #endif
 }

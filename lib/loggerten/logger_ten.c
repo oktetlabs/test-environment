@@ -153,8 +153,9 @@ static char  te_log_tmp[LGR_FIELD_MAX];
 #ifndef  PTHREAD_SETSPECIFIC_BUG
 static pthread_once_t   once_control = PTHREAD_ONCE_INIT;
 static pthread_key_t    key;
-#endif
+#else
 static pthread_mutex_t  lgr_lock = PTHREAD_MUTEX_INITIALIZER;
+#endif
 #endif
 
 
@@ -242,7 +243,37 @@ free_client_handle(void)
     }
     pthread_mutex_unlock(&lgr_lock);
 }
+
 #else
+
+#ifdef HAVE_PTHREAD_H
+/**
+ * Destructor of resources assosiated with thread.
+ *
+ * @handle      - handle assosiated with thread
+ */
+static void
+logger_ten_thread_ctx_destroy(void *handle)
+{
+    if (ipc_close_client((struct ipc_client *)handle) != 0)
+    {
+        fprintf(stderr, "ipc_close_client() failed");
+    }
+}
+
+/**
+ * Only once called function to create key.
+ */
+static void
+logger_ten_key_create(void)
+{
+    if (pthread_key_create(&key, logger_ten_thread_ctx_destroy) != 0)
+    {
+        fprintf(stderr, "pthread_key_create() failed\n");
+    }
+}
+#endif /* HAVE_PTHREAD_H */
+
 /**
  * Find thread IPC handle or initialize a new one.
  * 
@@ -258,24 +289,21 @@ get_client_handle(te_bool create)
 #else
     static struct ipc_client *handle;
 #endif
-    static int                init = 0;
 
-
-    if (!init)
-    {
 #ifdef HAVE_PTHREAD_H
-        if (pthread_key_create(&key, NULL) != 0)
-            return NULL;
-        init = 1;
+    if (pthread_once(&once_control, logger_ten_key_create) != 0)
+    {
+        fprintf(stderr, "pthread_once() failed\n");
+        return NULL;
     }
     handle = (struct ipc_client *)pthread_getspecific(key);
+#endif
     if ((handle == NULL) && create)
     {
-#endif
         char name[LGR_FIELD_MAX];
 
-        sprintf(name, "lgr_client_%u_%u", (unsigned int)getpid(),
-                (unsigned int)pthread_self());
+        snprintf(name, sizeof(name), "lgr_client_%u_%u",
+                 (unsigned int)getpid(), (unsigned int)pthread_self());
         if ((handle = ipc_init_client(name)) == NULL)
             return NULL;
 #ifdef HAVE_PTHREAD_H
@@ -283,8 +311,6 @@ get_client_handle(te_bool create)
         {
             fprintf(stderr, "Logger TEN: pthread_setspecific() failed\n");
         }
-#else
-        init = 1;
 #endif
     }
     return handle;
@@ -296,16 +322,13 @@ get_client_handle(te_bool create)
 void
 log_client_close(void)
 {
+#if PTHREAD_SETSPECIFIC_BUG
     int                 res;
     struct ipc_client  *ipcc = get_client_handle(FALSE);
 
-    if (ipcc == NULL)
-        return;
-        
     res = ipc_close_client(ipcc);
     if (res != 0)
         fprintf(stderr, "log_client_close(): ipc_close_client failed\n");
-#if PTHREAD_SETSPECIFIC_BUG
     free_client_handle();
 #endif    
 }
