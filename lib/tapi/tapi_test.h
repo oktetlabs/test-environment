@@ -133,7 +133,7 @@ extern "C" {
                                                                 \
         if ((rc_ = (expr_)) != 0)                               \
         {                                                       \
-            TEST_FAIL("line %d: %s returns %d, but expected 0", \
+            TEST_FAIL("line %d: %s returns %X, but expected 0", \
                       __LINE__, # expr_, rc_);                  \
         }                                                       \
     } while (0)
