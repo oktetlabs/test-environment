@@ -125,6 +125,8 @@ extern sigset_t rpcs_received_signals;
 
 extern HINSTANCE ta_hinstance;
 
+static int wsaerr2errno(int wsaerr);
+
 /** Overlapped object with additional parameters - memory associated
     with overlapped information  */
 typedef struct rpc_overlapped {
@@ -232,6 +234,7 @@ buf2overlapped(rpc_overlapped *overlapped, int buflen, char *buf)
     return iovec2overlapped(overlapped, 1, &vector);
 }
 
+#if FOR_FUTURE
 /** Copy memory from the overlapped object to buffer and free it */
 static void
 overlapped2buf(rpc_overlapped *overlapped, int *buf_len, char **buf_val)
@@ -249,6 +252,7 @@ overlapped2buf(rpc_overlapped *overlapped, int *buf_len, char **buf_val)
     overlapped->buffers = NULL;
     overlapped->bufnum = 0;
 }
+#endif
 
 /**
  * Convert shutdown parameter from RPC to native representation.
@@ -753,7 +757,7 @@ TARPC_FUNC(accept,
 
     MAKE_CALL(out->retval = accept(in->fd, a,
                                    out->len.len_len == 0 ? NULL :
-                                   out->len.len_val));
+                                   (int *)(out->len.len_val)));
     sockaddr_h2rpc(a, &(out->addr));
 }
 )
@@ -830,7 +834,7 @@ TARPC_FUNC(wsa_accept,
 
     MAKE_CALL(out->retval = WSAAccept(in->fd, a,
                                       out->len.len_len == 0 ? NULL :
-                                      out->len.len_val,
+                                      (int *)(out->len.len_val),
                                       (LPCONDITIONPROC)accept_callback,
                                       (DWORD)cond));
     sockaddr_h2rpc(a, &(out->addr));
@@ -1021,7 +1025,7 @@ TARPC_FUNC(recvfrom,
     MAKE_CALL(out->retval = recvfrom(in->fd, out->buf.buf_val, in->len,
                                      send_recv_flags_rpc2h(in->flags), a,
                                      out->fromlen.fromlen_len == 0 ? NULL :
-                                     out->fromlen.fromlen_val));
+                                     (int *)(out->fromlen.fromlen_val)));
     sockaddr_h2rpc(a, &(out->from));
 }
 )
@@ -1216,7 +1220,7 @@ TARPC_FUNC(wsa_recv_ex,
                                       out->buf.buf_val,
                                       in->len,
                                       out->flags.flags_len == 0 ? NULL :
-                                      out->flags.flags_val));
+                                      (int *)(out->flags.flags_val)));
 
     if (out->flags.flags_len > 0)
         out->flags.flags_val[0] =
@@ -1268,13 +1272,13 @@ TARPC_FUNC(getsockname,
 
     MAKE_CALL(out->retval = getsockname(in->fd, a,
                                         out->len.len_len == 0 ? NULL :
-                                        out->len.len_val));
+                                        (int *)(out->len.len_val)));
                                         
     if (out->retval == -1)
     {
         if (out->common.win_error == RPC_WSAEINVAL)
         {
-            /* Socket is not bound, work-around */
+            /* Socket is not bound, work-around; FIXME */
             out->retval = 0;
             out->common.win_error = 0;
             memset(a, 0, sizeof(struct sockaddr_in));
@@ -1299,7 +1303,7 @@ TARPC_FUNC(getpeername,
 
     MAKE_CALL(out->retval = getpeername(in->fd, a,
                                         out->len.len_len == 0 ? NULL :
-                                        out->len.len_val));
+                                        (int *)(out->len.len_val)));
     sockaddr_h2rpc(a, &(out->addr));
 }
 )
@@ -1480,7 +1484,8 @@ TARPC_FUNC(setsockopt, {},
                 opt = (char *)&addr;
 
                 memcpy(&addr,
-                       in->optval.optval_val[0].option_value_u.opt_ipaddr,
+                       &(in->optval.optval_val[0].
+                         option_value_u.opt_ipaddr),
                        sizeof(struct in_addr));
                 optlen = sizeof(addr);
                 break;
@@ -1532,10 +1537,10 @@ TARPC_FUNC(getsockopt,
 {
     if (out->optval.optval_val == NULL)
     {
-        MAKE_CALL(out->retval = getsockopt(in->s,
-                                           socklevel_rpc2h(in->level),
-                                           sockopt_rpc2h(in->optname),
-                                           NULL, out->optlen.optlen_val));
+        MAKE_CALL(out->retval = 
+                      getsockopt(in->s, socklevel_rpc2h(in->level),
+                      sockopt_rpc2h(in->optname),
+                      NULL, (int *)(out->optlen.optlen_val)));
     }
     else
     {
@@ -1546,10 +1551,10 @@ TARPC_FUNC(getsockopt,
                          (out->optlen.optlen_val == NULL) ?
                             0 : *out->optlen.optlen_val);
 
-        MAKE_CALL(out->retval = getsockopt(in->s,
-                                           socklevel_rpc2h(in->level),
-                                           sockopt_rpc2h(in->optname),
-                                           opt, out->optlen.optlen_val));
+        MAKE_CALL(out->retval = 
+                      getsockopt(in->s, socklevel_rpc2h(in->level),
+                                 sockopt_rpc2h(in->optname),
+                                 opt, (int *)(out->optlen.optlen_val)));
 
         switch (out->optval.optval_val[0].opttype)
         {
@@ -1597,7 +1602,8 @@ TARPC_FUNC(getsockopt,
             {
                 struct in_addr *addr = (struct in_addr *)opt;
 
-                memcpy(out->optval.optval_val[0].option_value_u.opt_ipaddr,
+                memcpy(&(out->optval.optval_val[0].
+                         option_value_u.opt_ipaddr),
                        addr, sizeof(*addr));
                 break;
             }
@@ -1618,10 +1624,9 @@ TARPC_FUNC(getsockopt,
                 char *str = (char *)opt;
 
                 memcpy(out->optval.optval_val[0].option_value_u.opt_string.
-                           opt_string_val,
-                       str,
+                       opt_string_val, str,
                        out->optval.optval_val[0].option_value_u.opt_string.
-                           opt_string_len);
+                       opt_string_len);
                 break;
             }
 
@@ -1914,7 +1919,7 @@ simple_sender(tarpc_simple_sender_in *in, tarpc_simple_sender_out *out)
     memset(buf, 0xDEADBEEF, sizeof(buf));
 
     for (start = now = time(NULL);
-         now - start <= in->time2run;
+         now - start <= (time_t)in->time2run;
          now = time(NULL))
     {
         int len;
@@ -1925,7 +1930,7 @@ simple_sender(tarpc_simple_sender_in *in, tarpc_simple_sender_out *out)
         if (!in->delay_rnd_once)
             delay = rand_range(in->delay_min, in->delay_max);
 
-        if (delay / 1000000 > in->time2run - (now - start) + 1)
+        if (delay / 1000000 > (time_t)in->time2run - (now - start) + 1)
             break;
 
         usleep(delay);
@@ -2090,16 +2095,16 @@ TARPC_FUNC(simple_receiver, {},
 int
 flooder(tarpc_flooder_in *in)
 {
-    int        *rcvrs = in->rcvrs.rcvrs_val;
-    int         rcvnum = in->rcvrs.rcvrs_len;
-    int        *sndrs = in->sndrs.sndrs_val;
-    int         sndnum = in->sndrs.sndrs_len;
-    int         bulkszs = in->bulkszs;
-    int         time2run = in->time2run;
-    te_bool     rx_nb = in->rx_nonblock;
+    int      *rcvrs = (int *)(in->rcvrs.rcvrs_val);
+    int       rcvnum = in->rcvrs.rcvrs_len;
+    int      *sndrs = (int *)(in->sndrs.sndrs_val);
+    int       sndnum = in->sndrs.sndrs_len;
+    int       bulkszs = in->bulkszs;
+    int       time2run = in->time2run;
+    te_bool   rx_nb = in->rx_nonblock;
 
-    unsigned long   *tx_stat = in->tx_stat.tx_stat_val;
-    unsigned long   *rx_stat = in->rx_stat.rx_stat_val;
+    uint32_t *tx_stat = (uint32_t *)(in->tx_stat.tx_stat_val);
+    uint32_t *rx_stat = (uint32_t *)(in->rx_stat.rx_stat_val);
 
     int      i;
     int      rc;
@@ -2336,12 +2341,12 @@ TARPC_FUNC(flooder, {},
 int
 echoer(tarpc_echoer_in *in)
 {
-    int        *sockets = in->sockets.sockets_val;
-    int         socknum = in->sockets.sockets_len;
-    int         time2run = in->time2run;
+    int *sockets = (int *)(in->sockets.sockets_val);
+    int  socknum = in->sockets.sockets_len;
+    int  time2run = in->time2run;
 
-    unsigned long   *tx_stat = in->tx_stat.tx_stat_val;
-    unsigned long   *rx_stat = in->rx_stat.rx_stat_val;
+    uint32_t *tx_stat = (uint32_t *)(in->tx_stat.tx_stat_val);
+    uint32_t *rx_stat = (uint32_t *)(in->rx_stat.rx_stat_val);
 
     int      i;
     int      rc;
@@ -3121,11 +3126,10 @@ TARPC_FUNC(wait_multiple_events, {},
 }
 )
 
-/* @TODO WSASendTo, WSARecvFrom, WSASendDisconnect, WSARecvDisconnect */
 /**
- *Translates WSAError to errno.
+ * Translates WSAError to errno.
  */ 
-int 
+static int 
 wsaerr2errno(int wsaerr)
 {
     int err = 0;
@@ -3176,7 +3180,8 @@ wsaerr2errno(int wsaerr)
         
         case RPC_WSAENOTSOCK:
         {
-            err = RPC_ENOTSOCK;
+            /* FIXME */
+            err = RPC_EBADF;
             break;
         }    
         
@@ -3335,3 +3340,4 @@ wsaerr2errno(int wsaerr)
 }
 
 
+/* @TODO WSASendTo, WSARecvFrom, WSASendDisconnect, WSARecvDisconnect */

@@ -1156,7 +1156,7 @@ typedef struct route_entry {
     int   prefix; /**< Destination address prefix */
     DWORD gw; /**< Gwateway address, in case 'forw_type' is 
                    FORW_TYPE_REMOTE */
-    char  if_index; /**< Interface index, in case 'forw_type' is 
+    DWORD if_index; /**< Interface index, in case 'forw_type' is 
                          FORW_TYPE_LOCAL */
     DWORD forw_type; /**< Forward type value () */
     DWORD metric; /**< Primary route metric */
@@ -1207,8 +1207,6 @@ route_parse_inst_name(const char *inst_name, route_entry_t *rt)
 
     if ((ptr = strstr(tmp, "gw=")) != NULL)
     {
-        int rc;
-
         end_ptr = ptr += strlen("gw=");
         while (*end_ptr != ',' && *end_ptr != '\0')
             end_ptr++;
@@ -1231,7 +1229,7 @@ route_parse_inst_name(const char *inst_name, route_entry_t *rt)
             end_ptr++;
         *end_ptr = '\0';
 
-        if (sscanf(ptr, "intf%d", &rt->if_index) != 1)
+        if (sscanf(ptr, "intf%d", (int *)&rt->if_index) != 1)
         {
             return TE_RC(TE_TA_WIN32, ETENOSUCHNAME);
         }
@@ -1329,7 +1327,7 @@ route_get(unsigned int gid, const char *oid, char *value,
          * win32 agent does not support values defined for routes
          * in configuration model.
          */
-        snprintf(value, RCF_MAX_VAL, "");
+        value[0] = 0;
         free(table);
         return 0;
     }
@@ -1353,8 +1351,11 @@ static int
 route_set(unsigned int gid, const char *oid, const char *value,
           const char *route)
 {
-    return 0;
-
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(value);
+    UNUSED(route);
+    return TE_RC(TE_TA_WIN32, ENOTSUP);
 }
 
 /**
@@ -1378,6 +1379,7 @@ route_add(unsigned int gid, const char *oid, const char *value,
 
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(value);
 
     if (route_get(0, NULL, val, route) == 0)
         return TE_RC(TE_TA_WIN32, EEXIST);
@@ -1534,13 +1536,13 @@ route_list(unsigned int gid, const char *oid, char **list)
         else
         {
             snprintf(ptr, end_ptr - ptr, ",dev=intf%d",
-                     table->table[i].dwForwardIfIndex);
+                     (int)(table->table[i].dwForwardIfIndex));
         }
         ptr += strlen(ptr);
         if (table->table[i].dwForwardMetric1 != 0)
         {
             snprintf(ptr, end_ptr - ptr, ",metric=%d",
-                     table->table[i].dwForwardMetric1);
+                     (int)(table->table[i].dwForwardMetric1));
             ptr += strlen(ptr);
         }
         snprintf(ptr, end_ptr - ptr, " ");

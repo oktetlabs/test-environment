@@ -383,8 +383,10 @@ rcf_ch_start_task_thr(struct rcf_comm_connection *handle,
                   int argc, uint32_t *params)
 {
     void *addr = rcf_ch_symbol_addr(rtn, TRUE);
+    
     struct rcf_thread_parameter *iter;
-    int   id;
+    
+    UNUSED(priority);
 
     if (addr != NULL)
     {
@@ -429,36 +431,14 @@ rcf_ch_start_task_thr(struct rcf_comm_connection *handle,
     SEND_ANSWER("%d", ETENOSUCHNAME);
 }
 
-/* Kill all the threads started by rcf_ch_start_task_thr */
-static void 
-kill_threads(void)
-{
-    struct rcf_thread_parameter *iter;
-
-    for (iter = thread_pool; 
-         iter < thread_pool + TA_MAX_THREADS;
-         iter++)
-    {
-        if (iter->active)
-        {
-            pthread_cancel(iter->id);
-            pthread_join(iter->id, NULL);
-        }
-    }
-}
-
-
-
 /* See description in rcf_ch_api.h */
 int
 rcf_ch_kill_task(struct rcf_comm_connection *handle,
                  char *cbuf, size_t buflen, size_t answer_plen,
                  unsigned int pid)
 {
-#if 1    
     kill(pid, SIGTERM); 
     kill(pid, SIGKILL); 
-#endif    
     SEND_ANSWER("0");
 }
 
@@ -601,6 +581,7 @@ ta_sigint_handler(int sig)
 static void
 ta_sigpipe_handler(int sig)
 {
+    UNUSED(sig);
     WARN("Test Agent received SIGPIPE signal");
 }
 
