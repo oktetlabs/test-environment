@@ -28,6 +28,7 @@
 #ifndef __PROTEOS_TAPI_SNMP_NDN__H__
 #define __PROTEOS_TAPI_SNMP_NDN__H__
 
+#include "config.h"
 
 #include "asn_usr.h"
 #include "ndn.h"

@@ -34,12 +34,12 @@ AC_ARG_VAR(TE_LDADD)
 AC_ARG_VAR(TE_DEPENDENCIES)
 
 
-AC_CHECK_HEADERS(ucd-snmp/snmp_impl.h, has_snmp=true,,  
+AC_CHECK_HEADERS(ucd-snmp/snmp_impl.h, has_snmp=true,has_snmp=false,  
 #include<sys/types.h> 
 #include<ucd-snmp/asn1.h> 
 ) 
 
-AC_CHECK_HEADERS(net-snmp/definitions.h, has_snmp=true,,  
+AC_CHECK_HEADERS(net-snmp/definitions.h, has_snmp=true,has_snmp=false,  
 #include<net-snmp/net-snmp-config.h>
 ) 
 

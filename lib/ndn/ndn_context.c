@@ -26,6 +26,8 @@
  * $Id$
  */ 
 
+#include "config.h"
+
 #include "asn_impl.h"
 #include "ndn.h"
 
