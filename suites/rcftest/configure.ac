@@ -4,7 +4,7 @@ AC_INIT([rcftest], [0.01], [Elena.Vangerova@oktetlabs.ru])
 AC_CONFIG_SRCDIR([rcftest.c])
 AC_CONFIG_AUX_DIR([../../auxdir])
 
-AM_INIT_AUTOMAKE([-Wall foreign])
+AM_INIT_AUTOMAKE([1.8.5 foreign -Wall])
 
 AC_CANONICAL_HOST
 AC_SUBST(host)

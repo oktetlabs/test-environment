@@ -7,7 +7,7 @@ AC_CONFIG_SRCDIR([te_trc.sh])
 
 AC_CONFIG_AUX_DIR([../../auxdir])
 
-AM_INIT_AUTOMAKE([foreign -Wall])
+AM_INIT_AUTOMAKE([1.8.5 foreign -Wall])
 
 # Checks for programs.
 AC_PROG_CC

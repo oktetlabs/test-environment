@@ -4,7 +4,7 @@ AC_INIT([rcf_unix], [0.01], [Elena.Vengerova@oktetlabs.ru])
 AC_CONFIG_SRCDIR([rcfunix.c])
 AC_CONFIG_AUX_DIR([../../auxdir])
 
-AM_INIT_AUTOMAKE
+AM_INIT_AUTOMAKE([1.8.5 foreign -Wall])
 
 # Checks for programs.
 AC_PROG_CC

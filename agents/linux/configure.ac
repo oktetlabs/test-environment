@@ -7,7 +7,7 @@ AC_CONFIG_SRCDIR([linux.c])
 
 AC_CONFIG_AUX_DIR([../../auxdir])
 
-AM_INIT_AUTOMAKE([foreign])
+AM_INIT_AUTOMAKE([1.8.5 foreign -Wall])
 
 AC_CANONICAL_HOST
 

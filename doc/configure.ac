@@ -30,7 +30,7 @@ AC_INIT([test_environment-doc], [0.8], [Elena.Vengerova@oktetlabs.ru])
 
 AC_CONFIG_AUX_DIR([../auxdir])
 
-AM_INIT_AUTOMAKE([foreign -Wall])
+AM_INIT_AUTOMAKE([1.8.5 foreign -Wall])
 
 AC_CONFIG_FILES([\
 Makefile \

@@ -4,7 +4,7 @@ AC_INIT([comm_net_agent_tests], [1.0],
         [Pavel A. Bolokhov <Pavel.Bolokhov@oktetlabs.ru>])
 AC_REVISION($Id: configure.ac,v 1.1 2003/10/28 09:35:42 arybchik Exp $)
 
-AM_INIT_AUTOMAKE
+AM_INIT_AUTOMAKE([1.8.5 foreign -Wall])
 
 AC_CONFIG_HEADERS([include/config.h])
 

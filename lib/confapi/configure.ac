@@ -8,7 +8,7 @@ AC_CONFIG_SRCDIR([conf_api.h])
 
 AC_CONFIG_AUX_DIR([../../auxdir])
 
-AM_INIT_AUTOMAKE
+AM_INIT_AUTOMAKE([1.8.5 foreign -Wall])
 
 # Checks for programs.
 AC_PROG_CC

@@ -30,7 +30,7 @@ AC_INIT([test_environment], [0.8], [Elena.Vengerova@oktetlabs.ru])
 
 AC_CONFIG_AUX_DIR([auxdir])
 
-AM_INIT_AUTOMAKE([foreign -Wall dist-bzip2])
+AM_INIT_AUTOMAKE([1.8.5 foreign -Wall dist-bzip2])
 
 AC_PROG_INSTALL
 

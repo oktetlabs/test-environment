@@ -7,7 +7,7 @@ AC_CONFIG_SRCDIR([win32.c])
 
 AC_CONFIG_AUX_DIR([../../auxdir])
 
-AM_INIT_AUTOMAKE([foreign])
+AM_INIT_AUTOMAKE([1.8.5 foreign -Wall])
 
 # Checks for programs.
 AC_PROG_CC

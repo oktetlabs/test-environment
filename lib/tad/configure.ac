@@ -6,7 +6,7 @@ AC_INIT([tad], [0.1], [konst@oktetlabs.ru])
 AC_CONFIG_SRCDIR([tad_ch.c])
 AC_CONFIG_AUX_DIR([../../auxdir])
 
-AM_INIT_AUTOMAKE
+AM_INIT_AUTOMAKE([1.8.5 foreign -Wall])
 
 # Checks for programs.
 AC_PROG_CC
