@@ -85,6 +85,12 @@
  * second one is a TCP port.
  */
 
+#define RCFUNIX_SSH     "ssh -q -o BatchMode=yes -o SetupTimeOut=10 " \
+                        "-o ServerAliveInterval=30"
+
+#define RCFUNIX_SHELL_CMD_MAX   2048
+
+
 /*
  * This library is appropriate for usual and proxy UNIX agents.
  * All agents which type has postfix "ctl" are assumed as proxy.
@@ -130,7 +136,7 @@ rcfunix_start(char *ta_name, char *ta_type, char *conf_str,
     unix_ta *ta;
     char    *token;
     char     path[RCF_MAX_PATH];
-    char     cmd[RCF_MAX_PATH];
+    char     cmd[RCFUNIX_SHELL_CMD_MAX];
     char    *installdir;
     char    *tmp;
     char    *dup;
@@ -267,16 +273,15 @@ rcfunix_start(char *ta_name, char *ta_type, char *conf_str,
          * Be quite, but DO NOT suppress command output in order
          * to have to see possible problems.
          */
-        sprintf(cmd, "scp -pq %s %s:/tmp/%s",
+        sprintf(cmd, "scp -Bpq %s %s:/tmp/%s",
                 path, ta->host, ta->exec_name);
     }
 
-    VERB("Copy image '%s' to the %s:/tmp",
-                         ta->exec_name, ta->host);
+    VERB("Copy image '%s' to the %s:/tmp", ta->exec_name, ta->host);
     if (system(cmd) != 0)
     {
-        VERB("Failed to copy TA image %s to the "
-                             "%s:/tmp", ta->exec_name, ta->host);
+        ERROR("Failed to copy TA image %s to the %s:/tmp",
+              ta->exec_name, ta->host);
         free(dup);
         return ETESHCMD;
     }
@@ -287,7 +292,7 @@ rcfunix_start(char *ta_name, char *ta_type, char *conf_str,
     if (!ta->is_local)
     {
         /* Be quite and go to background just before command execution */
-        sprintf(cmd + strlen(cmd), "ssh -qf %s \"", ta->host);
+        sprintf(cmd + strlen(cmd), RCFUNIX_SSH " -f %s \"", ta->host);
     }
     if (ta->sudo)
     {
@@ -303,8 +308,7 @@ rcfunix_start(char *ta_name, char *ta_type, char *conf_str,
     }
     if (shell != NULL)
     {
-        VERB("Using '%s' as shell for TA '%s'",
-                  shell, ta->ta_name);
+        VERB("Using '%s' as shell for TA '%s'", shell, ta->ta_name);
         strcat(cmd, shell);
         strcat(cmd, " ");
     }
@@ -313,9 +317,9 @@ rcfunix_start(char *ta_name, char *ta_type, char *conf_str,
      * Test Agent is always running in background, therefore it's
      * necessary to redirect its stdout and stderr to a file.
      */
-    sprintf(cmd + strlen(cmd), "/tmp/%s %s %s %s >ta.%s 2>&1",
+    sprintf(cmd + strlen(cmd), "/tmp/%s %s %s %s",
             ta->exec_name, ta->ta_name, ta->port,
-            (conf_str == NULL) ? "" : conf_str, ta->ta_name);
+            (conf_str == NULL) ? "" : conf_str);
 
     /* Background mode is provided by SSH or SUDO option */
     if (!ta->sudo && ta->is_local)
@@ -327,13 +331,14 @@ rcfunix_start(char *ta_name, char *ta_type, char *conf_str,
     {
         sprintf(cmd + strlen(cmd), "\"");
     }
+    sprintf(cmd + strlen(cmd), " >ta.%s 2>&1", ta->ta_name);
 
     free(dup);
 
     VERB("Command to start TA: %s", cmd);
     if (system(cmd) != 0)
     {
-        VERB("Command '%s' failed", cmd);
+        ERROR("Command '%s' failed", cmd);
         return ETESHCMD;
     }
 
@@ -366,7 +371,7 @@ rcfunix_reboot(rcf_talib_handle handle, char *parms)
 {
     unix_ta *ta = (unix_ta *)handle;
 
-    char  cmd[RCF_MAX_PATH * 2];
+    char  cmd[RCFUNIX_SHELL_CMD_MAX];
 
     (void)parms;
 
@@ -379,11 +384,11 @@ rcfunix_reboot(rcf_talib_handle handle, char *parms)
         }
         else
         {
-            sprintf(cmd, "ssh %s \"%skill %d\" >/dev/null 2>&1",
+            sprintf(cmd, RCFUNIX_SSH " %s \"%skill %d\" >/dev/null 2>&1",
                     ta->host, ta->sudo ? "sudo " : "" , ta->pid);
             system(cmd);
     
-            sprintf(cmd, "ssh %s \"%skill -9 %d\" >/dev/null 2>&1",
+            sprintf(cmd, RCFUNIX_SSH " %s \"%skill -9 %d\" >/dev/null 2>&1",
                     ta->host, ta->sudo ? "sudo " : "" , ta->pid);
             system(cmd);
         }
@@ -393,7 +398,7 @@ rcfunix_reboot(rcf_talib_handle handle, char *parms)
         sprintf(cmd, "%skillall %s >/dev/null 2>&1",
                 ta->sudo ? "sudo " : "" , ta->exec_name);
     else
-        sprintf(cmd, "ssh %s \"%skillall %s\" >/dev/null 2>&1",
+        sprintf(cmd, RCFUNIX_SSH " %s \"%skillall %s\" >/dev/null 2>&1",
                 ta->host, ta->sudo ? "sudo " : "" , ta->exec_name);
     system(cmd);
 
@@ -401,14 +406,15 @@ rcfunix_reboot(rcf_talib_handle handle, char *parms)
         sprintf(cmd, "%skillall -9 %s >/dev/null 2>&1",
                 ta->sudo ? "sudo " : "" , ta->exec_name);
     else
-        sprintf(cmd, "ssh %s \"%skillall -9 %s\" >/dev/null 2>&1",
+        sprintf(cmd, RCFUNIX_SSH " %s \"%skillall -9 %s\" >/dev/null 2>&1",
                 ta->host, ta->sudo ? "sudo " : "" , ta->exec_name);
     system(cmd);
 
     if (ta->is_local)
         sprintf(cmd, "rm -f /tmp/%s", ta->exec_name);
     else
-        sprintf(cmd, "ssh %s \"rm -f /tmp/%s\"", ta->host, ta->exec_name);
+        sprintf(cmd, RCFUNIX_SSH " %s \"rm -f /tmp/%s\"",
+                ta->host, ta->exec_name);
     system(cmd);
 
     free(ta);
