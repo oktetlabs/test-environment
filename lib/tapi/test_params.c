@@ -10,9 +10,22 @@
  * $Id$
  */
 
-#include "sockapi-test.h"
+#include "config.h"
 
+#ifdef STDC_HEADERS
+#include <stdlib.h>
+#include <string.h>
+#endif
+#ifdef HAVE_CTYPE_H
 #include <ctype.h>
+#endif
+
+#include "te_defs.h"
+
+#define LGR_USER        "Test Params LIB"
+#include "logger_api.h"
+
+#include "tapi_test.h"
 
 
 /** Global variable with entity name for logging */

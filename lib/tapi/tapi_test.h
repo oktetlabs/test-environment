@@ -26,7 +26,9 @@
 #include "conf_api.h"
 
 /** Default user of a test */
+#ifndef LGR_USER
 #define LGR_USER    "Self"
+#endif
 #include "logger_api.h"
 
 
