@@ -2515,7 +2515,6 @@ simple_sender(tarpc_simple_sender_in *in, tarpc_simple_sender_out *out)
             else
             {
                 len = errno = 0;
-                fprintf(stderr, "simple_sender(): errno %x", errno);
                 continue;
             }
         }
@@ -2611,8 +2610,9 @@ simple_receiver(tarpc_simple_receiver_in *in, tarpc_simple_receiver_out *out)
 
         if (len == 0)
         {
-            ERROR("recv() returned 0 in simple_receiver()");
-            return -1;
+            RING("recv() returned 0 in simple_receiver() because of peer "
+                 "shutdown");
+            goto simple_receiver_exit;
         }
         
         received += len;
@@ -2628,6 +2628,8 @@ simple_receiver(tarpc_simple_receiver_in *in, tarpc_simple_receiver_out *out)
         }
 #endif        
     }
+
+simple_receiver_exit:
 
     out->bytes_high = received >> 32;
     out->bytes_low = received & 0xFFFFFFFF;
