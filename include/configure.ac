@@ -28,6 +28,7 @@ AH_BOTTOM([
 #endif])
 
 AC_HEADER_STDC
+AC_CHECK_HEADERS([sys/types.h])
 AC_CHECK_HEADERS([\
 aio.h \
 arpa/inet.h \
@@ -77,7 +78,6 @@ sys/sendfile.h \
 sys/socket.h \
 sys/stat.h \
 sys/time.h \
-sys/types.h \
 sys/un.h \
 sys/wait.h \
 tcl.h \
@@ -86,7 +86,15 @@ termio.h \
 time.h \
 ucd-snmp/snmp_impl.h \
 unistd.h \
+], [], [],
+[#if HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#if HAVE_SYS_TYPES_H
+#include <sys/socket.h>
+#endif
 ])
+
 AC_C_INLINE
 
 AC_CONFIG_FILES([Makefile])
