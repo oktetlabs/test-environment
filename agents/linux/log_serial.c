@@ -299,7 +299,7 @@ log_serial(void *ready, int argc, char *argv[])
             newline = strrchr(buffer, '\n');                   \
             if (newline)                                       \
                 *newline = '\0';                               \
-            LGR_MESSAGE(TE_LL_WARN, argv[2], "%s%s",           \
+            LGR_MESSAGE(TE_LL_WARN, user, "%s%s",              \
                         rest ? rest : "",                      \
                         buffer);                               \
             if (!newline)                                      \
