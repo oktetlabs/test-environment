@@ -38,8 +38,6 @@
 
 #include <rpc/rpc.h>
 #include <rpc/pmap_clnt.h>
-#include <sys/socket.h>
-#include <sys/un.h>
 
 #include <windows.h>
 #include <sys/types.h>
@@ -51,6 +49,8 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <signal.h>
+#include <sys/socket.h>
+#include <sys/un.h>
 
 #include "win32_dummy.h"
 

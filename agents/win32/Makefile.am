@@ -74,5 +74,11 @@ AM_LDFLAGS=@TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/../@host@/lib
 bin_PROGRAMS=tawin32
 
 symtbl.o: $(MY_SYMTBL_OBJECTS) @TE_DEPENDENCIES@
-	te_generate_symtbl_cygwin ${NM} symtbl.c $^ 
+	te_generate_symtbl_cygwin "${NM}" symtbl.c $^ 
 	${CC} -c -o $@ symtbl.c
+
+install-exec-hook:
+	cd $(DESTDIR)/$(prefix)/bin; ln -s tawin32.exe tawin32
+
+uninstall-hook:
+	cd $(DESTDIR)/$(prefix)/bin; rm -f tawin32

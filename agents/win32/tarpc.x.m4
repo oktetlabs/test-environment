@@ -9,9 +9,6 @@
  * $Id: $
  */
 
-#ifdef RPC_HDR
-%#include <windows.h>
-#endif
 
 /** Types of RPC operations */
 enum tarpc_op {
@@ -571,12 +568,13 @@ struct tarpc_poll_out {
  */
  
 enum option_type {
-    OPT_INT = 1,
-    OPT_LINGER = 2,
-    OPT_TIMEVAL = 3,
-    OPT_MREQN = 4,
-    OPT_IPADDR = 5,
-    OPT_STRING = 6
+    OPT_INT      = 1,
+    OPT_LINGER   = 2,
+    OPT_TIMEVAL  = 3,
+    OPT_MREQN    = 4,
+    OPT_IPADDR   = 5,
+    OPT_STRING   = 6,
+    OPT_TCP_INFO = 7
 };
 
 struct option_value_linger {
@@ -590,6 +588,44 @@ struct option_value_mreqn {
     int  imr_ifindex;      /* Interface index */
 };
 
+struct option_value_tcp_info {
+    unsigned char tcpi_state;
+    unsigned char tcpi_ca_state;
+    unsigned char tcpi_retransmits;
+    unsigned char tcpi_probes;
+    unsigned char tcpi_backoff;
+    unsigned char tcpi_options;
+    unsigned char tcpi_snd_wscale;
+    unsigned char tcpi_rcv_wscale;
+
+    unsigned int tcpi_rto;
+    unsigned int tcpi_ato;
+    unsigned int tcpi_snd_mss;
+    unsigned int tcpi_rcv_mss;
+
+    unsigned int tcpi_unacked;
+    unsigned int tcpi_sacked;
+    unsigned int tcpi_lost;
+    unsigned int tcpi_retrans;
+    unsigned int tcpi_fackets;
+
+    /* Times. */
+    unsigned int tcpi_last_data_sent;
+    unsigned int tcpi_last_ack_sent;
+    unsigned int tcpi_last_data_recv;
+    unsigned int tcpi_last_ack_recv;
+
+    /* Metrics. */
+    unsigned int tcpi_pmtu;
+    unsigned int tcpi_rcv_ssthresh;
+    unsigned int tcpi_rtt;
+    unsigned int tcpi_rttvar;
+    unsigned int tcpi_snd_ssthresh;
+    unsigned int tcpi_snd_cwnd;
+    unsigned int tcpi_advmss;
+    unsigned int tcpi_reordering;
+};
+
 union option_value switch (option_type opttype) {
     case OPT_INT:     int opt_int;
     case OPT_LINGER:  struct option_value_linger opt_linger;
@@ -597,6 +633,7 @@ union option_value switch (option_type opttype) {
     case OPT_MREQN:   struct option_value_mreqn  opt_mreqn;
     case OPT_IPADDR:  char opt_ipaddr[4];
     case OPT_STRING:  char opt_string<>;
+    case OPT_TCP_INFO: struct option_value_tcp_info opt_tcp_info;
 };
 
 /* setsockopt() */
