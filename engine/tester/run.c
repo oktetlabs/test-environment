@@ -1497,6 +1497,8 @@ iterate_test(tester_ctx *ctx, run_item *test,
             /* Silently skip without any logs */
             if (test_ctx_cloned)
                 tester_ctx_free(test_ctx);
+            if (all_result < ETESTSKIP)
+                all_result = ETESTSKIP;
             continue;
         }
 
