@@ -41,11 +41,13 @@ typedef void * rcf_talib_handle;
 
 
 /** @name Test Agent flags */
-#define TA_LOCAL    1   /**< Test Agent runs on the same station with 
-                             TEN, so it's prohibited to reboot it 
-                             if it is not proxy */
-#define TA_PROXY    2   /**< Test Agent is proxy agent, so reboot should
-                             not lead to loss of the connectivity */
+#define TA_LOCAL       1   /**< Test Agent runs on the same station with 
+                                TEN, so it's prohibited to reboot it 
+                                if it is not proxy */
+#define TA_PROXY       2   /**< Test Agent is proxy agent, so reboot should
+                                not lead to loss of the connectivity */
+
+#define TA_REBOOTABLE  4   /**< Test Agent host may be rebooted */
 /*@}*/
 
 
@@ -59,7 +61,7 @@ typedef void * rcf_talib_handle;
  *                      to ta_type and is located in TE_INSTALL/agents/bin)
  * @param conf_str      TA-specific configuration string
  * @param handle        location for TA handle
- * @param flags         location of TA flags
+ * @param flags         IN/OUT location of TA flags
  *
  * @return error code 
  */
