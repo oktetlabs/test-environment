@@ -89,8 +89,8 @@ AC_SUBST(NET_SNMP_LIBS)
 
 AM_CONDITIONAL(HAS_NET_SNMP, test "$NET_SNMP_CONFIG" != "no")
 
-# Check for expect library
-AC_CHECK_LIB(expect, exp_expectv)
+# # Check for expect library
+# AC_CHECK_LIB(expect, exp_expectv)
 
 #
 # Check for 'sa_len'-like members in 'struct sockaddr'-like structures.
