@@ -5716,9 +5716,6 @@ rpc_wait_multiple_events(rcf_rpc_server *handle,
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
     
-#if 0
-    in.s = s;
-#endif
     in.count = count;
     in.events.events_len = rcount;
     in.events.events_val = (tarpc_wsaevent *)events;
