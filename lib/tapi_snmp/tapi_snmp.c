@@ -1629,6 +1629,20 @@ tapi_snmp_vb_to_mem (const tapi_snmp_varbind_t *vb)
     return NULL;
 }
 
+/* Checks if SNMP mib entry access is readable */
+static inline int
+check_access_readable(int access)
+{
+    switch (access)
+    {
+        case MIB_ACCESS_READONLY:
+        case MIB_ACCESS_READWRITE:
+        case MIB_ACCESS_CREATE:
+            return 1;
+    }
+    return 0;
+}
+
 /* See description in tapi_snmp.h */
 int 
 tapi_snmp_get_table(const char *ta, int sid, int csap_id, 
@@ -1637,7 +1651,8 @@ tapi_snmp_get_table(const char *ta, int sid, int csap_id,
     struct tapi_snmp_column_list_t ti_list;
     struct tapi_snmp_column_list_t *index_l_en;
     struct tree *entry_node; 
-    int table_width = 0;
+    int table_width = 0;  /* Really this is maximum sub-id of leaf in Entry */
+    int num_columns = 0;  /* Quantity of leafs in Entry */
     int table_height = 0;
     int rc = 0; 
     tapi_snmp_oid_t entry; /* table Entry OID */
@@ -1701,9 +1716,7 @@ tapi_snmp_get_table(const char *ta, int sid, int csap_id,
                 continue;
             }
 
-            if (index_node->access == MIB_ACCESS_READONLY ||
-                index_node->access == MIB_ACCESS_READWRITE ||
-                index_node->access == MIB_ACCESS_CREATE )
+            if (check_access_readable(index_node->access))
             {
                 INFO("Find readable column <%s> with access %d", 
                         index_node->label, index_node->access);
@@ -1714,8 +1727,10 @@ tapi_snmp_get_table(const char *ta, int sid, int csap_id,
 
         for (leaf = entry_node->child_list; leaf; leaf = leaf->next_peer)
         {
+            if (check_access_readable(leaf->access))
+                num_columns ++;
             if ((unsigned int)table_width < leaf->subid)
-                table_width = leaf->subid;
+                table_width = leaf->subid; 
         }
 
         if (index_node)
@@ -1770,7 +1785,8 @@ tapi_snmp_get_table(const char *ta, int sid, int csap_id,
 
     *num = table_height;
 
-    INFO("table width: %d, height: %d\n", table_width, table_height);
+    INFO("table width: %d, height: %d; number of readable columns %d\n", 
+          table_width, table_height, num_columns);
     if (table_height == 0) 
         return 0;
     
@@ -1795,7 +1811,7 @@ tapi_snmp_get_table(const char *ta, int sid, int csap_id,
                                           position of first index suboid */ 
         void **res_table = (void **) *result;
 
-        int table_cardinality = table_width * table_height;
+        int table_cardinality = num_columns * table_height;
         int rest_varbinds = table_cardinality;
         int got_varbinds = 0;
         tapi_snmp_oid_t begin_of_portion;
