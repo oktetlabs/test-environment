@@ -366,6 +366,7 @@ typedef struct tester_ctx {
 
     unsigned int        flags;      /**< Flags (enum tester_ctx_flags) */
     int                 timeout;    /**< Global execution timeout (sec) */
+    test_suites_info    suites;     /**< Information about test suites */
     test_requirements   reqs;       /**< List of target requirements
                                          specified in command line */
     tester_run_paths    paths;      /**< List of paths to run */
@@ -393,6 +394,15 @@ extern test_id tester_get_id(void);
 
 extern int tester_parse_config(tester_cfg *cfg);
 extern int tester_run_config(tester_ctx *ctx, tester_cfg *cfg);
+
+/**
+ * Build list of Test Suites.
+ *
+ * @param suites    List of Test Suites
+ *
+ * @return Status code.
+ */
+extern int tester_build_suites(test_suites_info *suites);
 
 /**
  * Log test start to terminal.

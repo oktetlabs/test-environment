@@ -1711,11 +1711,11 @@ iterate_test(tester_ctx *ctx, run_item *test,
 int
 tester_run_config(tester_ctx *ctx, tester_cfg *cfg)
 {
-    int         rc;
-    int         result = 0;
-    const char *maintainer_name;
-    const char *maintainer_mailto;
-    run_item   *test;
+    int              rc;
+    int              result = 0;
+    const char      *maintainer_name;
+    const char      *maintainer_mailto;
+    run_item        *test;
 
     ENTRY();
 
@@ -1732,6 +1732,14 @@ tester_run_config(tester_ctx *ctx, tester_cfg *cfg)
          maintainer_name ? : "", maintainer_name ? " " : "",
          maintainer_mailto,
          cfg->descr ? : "(no description)");
+
+    if (cfg->suites.tqh_first != NULL)
+    {
+        RING("Building Test Suites specified in configuration file...");
+        rc = tester_build_suites(&cfg->suites);
+        if (rc != 0)
+            return rc;
+    }
 
     /* Clone Tester context */
     ctx = tester_ctx_clone(ctx);

@@ -12,9 +12,10 @@ noinst_HEADERS = internal.h run_path.h reqs.h
 
 bin_PROGRAMS = te_tester
 
-te_tester_LDADD = @TE_LDADD@ -lconfapi -lconf_oid -llogger_ten -lipc \
-                  @XML2_LIBS@ -lpopt -lpthread
+te_tester_LDADD = @TE_LDADD@ -lbsapi -lconfapi -lconf_oid -llogger_ten \
+                  -lipc @XML2_LIBS@ -lpopt -lpthread
 te_tester_DEPENDENCIES = @TE_DEPENDENCIES@ \
+                         $(DESTDIR)/$(prefix)/lib/libbsapi.a \
                          $(DESTDIR)/$(prefix)/lib/libconfapi.a \
                          $(DESTDIR)/$(prefix)/lib/libconf_oid.a \
                          $(DESTDIR)/$(prefix)/lib/liblogger_ten.a \

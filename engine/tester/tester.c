@@ -43,6 +43,7 @@
 #error popt library (development version) is required for Tester
 #endif
 
+#include "te_builder_ts.h"
 #include "conf_api.h"
 
 #include "internal.h"
@@ -83,6 +84,7 @@ tester_ctx_init(tester_ctx *ctx)
 {
     memset(ctx, 0, sizeof(*ctx));
     ctx->id = tester_get_id();
+    TAILQ_INIT(&ctx->suites);
     TAILQ_INIT(&ctx->reqs);
     TAILQ_INIT(&ctx->paths);
     /* By default verbosity level is set to 1 */
@@ -537,6 +539,7 @@ process_cmd_line_opts(tester_ctx *ctx, tester_cfgs *cfgs,
                 }
                 memcpy(p->name, opt, name_len);
                 p->name[name_len] = '\0';
+                TAILQ_INSERT_TAIL(&ctx->suites, p, links);
                 break;
             }
 
@@ -618,6 +621,29 @@ process_cmd_line_opts(tester_ctx *ctx, tester_cfgs *cfgs,
 }
 
 
+/* See description in internal.h */
+int
+tester_build_suites(test_suites_info *suites)
+{
+    int              rc;
+    test_suite_info *suite;
+
+    for (suite = suites->tqh_first;
+         suite != NULL;
+         suite = suite->links.tqe_next)
+    {
+        rc = builder_build_test_suite(suite->name, suite->path);
+        if (rc != 0)
+        {
+            ERROR("Build of Test Suite '%s' from '%s' failed",
+                  suite->name, suite->path);
+            return rc;
+        }
+    }
+    return 0;
+}
+
+
 /**
  * Application entry point.
  *
@@ -657,8 +683,18 @@ main(int argc, char *argv[])
         }
     }
 
-    RING("Starting...");
+    if (ctx.suites.tqh_first != NULL)
+    {
+        RING("Building Test Suites specified in command line...");
+        rc = tester_build_suites(&ctx.suites);
+        if (rc != 0)
+        {
+            result = EXIT_FAILURE;
+            goto exit;
+        }
+    }
 
+    RING("Starting...");
     for (cfg = cfgs.tqh_first; cfg != NULL; cfg = cfg->links.tqe_next)
     {
         rc = tester_run_config(&ctx, cfg);
