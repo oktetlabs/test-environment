@@ -648,6 +648,13 @@ tapi_snmp_msg_var_bind(FILE *f, const tapi_snmp_varbind_t *var_bind)
 
     fprintf(f,"{name plain:{");
 
+    if (var_bind->name.length > MAX_OID_LEN)
+    {
+        ERROR("Too long OID length: %d, max: %d",
+              var_bind->name.length, MAX_OID_LEN);
+        return TE_RC(TE_TAPI, ENAMETOOLONG);
+    }
+    
     for (i = 0; i < var_bind->name.length; i ++)
     {
         fprintf(f, "%lu ", var_bind->name.id[i]);
@@ -1808,10 +1815,9 @@ tapi_snmp_get_table(const char *ta, int sid, int csap_id,
             rc = tapi_snmp_getbulk(ta, sid, csap_id, &begin_of_portion, 
                                     &vb_num, vb + got_varbinds, NULL);
 
-/*
             VERB ("table getbulk return %X, asked for %d, got %d vbs for oid %s", 
                     rc, rest_varbinds, vb_num, print_oid(&(begin_of_portion)));
-*/
+
             if (rc) break; 
 
 	    if (vb_num == 0)
@@ -1831,9 +1837,9 @@ tapi_snmp_get_table(const char *ta, int sid, int csap_id,
                 break;
             }
             begin_of_portion = vb[got_varbinds - 1].name;
-/*
+
             VERB("prepare next bulk to oid %s",  print_oid(&begin_of_portion));
-*/
+
         }
         INFO("table cardinality, bulk got %d varbinds.", 
                     table_cardinality);
@@ -1858,9 +1864,9 @@ tapi_snmp_get_table(const char *ta, int sid, int csap_id,
             {
                 int table_offset;
 
-/*
+
                 VERB("try to add varbind with oid %s", print_oid(&(vb[i].name))); 
-*/
+
                 if (!tapi_snmp_is_sub_oid(&entry, &vb[i].name))
                 {
                     continue;
@@ -1875,9 +1881,9 @@ tapi_snmp_get_table(const char *ta, int sid, int csap_id,
                                ) == 0 )
                         break;
                 }
-/*
+
                 VERB("found index_l_en: %x\n", index_l_en); 
-*/
+
                 if (index_l_en == NULL) 
                     continue; /* just skip this varbind, for which we cannot 
                                  find index... */ 
@@ -1893,18 +1899,14 @@ tapi_snmp_get_table(const char *ta, int sid, int csap_id,
                     index_suffix->length = ti_len;
                     res_table[table_offset] = index_suffix;
 
-/*
-                VERB("add index_suffix for row %d:  %s", 
-                        row_num, print_oid(index_suffix)); 
-*/
+                    VERB("add index_suffix for row %d:  %s", 
+                         row_num, print_oid(index_suffix)); 
                 } 
 
                 table_offset += (vb[i].name.id[ti_start - 1] ) ;
     
                 res_table[table_offset] = tapi_snmp_vb_to_mem(&vb[i]);
-/*
                 VERB("table offset:%d, ptr: %x\n", table_offset, res_table[table_offset]);
-*/
             }
         } 
     } 

@@ -45,6 +45,8 @@
 
 #include "asn_impl.h" 
 
+#include "logger_api.h"
+
 /*
  * Declaraions of local functions. 
  */ 
@@ -404,57 +406,87 @@ asn_impl_pt_enum(const char*text, const asn_type * type, asn_value_p *parsed, in
  * @todo parse of symbolic labels
  */
 int 
-asn_impl_pt_objid(const char*text, const asn_type *type, asn_value_p *parsed, int *parsed_syms)
+asn_impl_pt_objid(const char *text, const asn_type *type,
+                  asn_value_p *parsed, int *parsed_syms)
 {
-#define OID_MAX 40
-    int parsed_ints [OID_MAX];
-    int cur_index = 0;
-    const char * pt = text; 
-    char *endptr;
-
-    int rc = 0;
-    int p_s;
+    const char *pt = text; 
+    int         cur_index = 0;
+    int        *parsed_ints = NULL;
+    int         parsed_ints_len = 0;
+    char       *endptr;
+    int         rc = 0;
+    int         p_s;
 
     if (!text || !parsed || !parsed_syms)
         return ETEWRONGPTR; 
 
     *parsed_syms = 0;
 
-    while (isspace(*pt)) pt++; 
+    /* Skip all the spaces before '{' */
+    while (isspace(*pt))
+        pt++;
+
     if (*pt != '{')
     {
         return EASNTXTPARSE; 
     }
     pt++;
 
-    while (isspace(*pt)) pt++;
+    while (isspace(*pt))
+        pt++;
 
-    while(*pt != '}')
-    { 
-        parsed_ints[cur_index] = strtol (pt, &endptr, 10);
+    while (*pt != '}')
+    {
+        /* Allocate memory under the set of sub IDs when required */
+        if (parsed_ints_len <= cur_index)
+        {
+            int *mem_ptr;
+            
+#define OID_LEN_BLOCK 40
+            mem_ptr = (int *)realloc(parsed_ints,
+                                     (parsed_ints_len += OID_LEN_BLOCK) *
+                                     sizeof(int));
+#undef OID_LEN_BLOCK
+
+            if (mem_ptr == NULL)
+            {
+                free(parsed_ints);
+                return ENOMEM;
+            }
+            parsed_ints = mem_ptr;
+        }
+
+        parsed_ints[cur_index] = strtol(pt, &endptr, 10);
         *parsed_syms += (p_s = endptr - pt);
 
         if (p_s == 0)
         {
             /* ERROR! there are no integer. */
+            ERROR("The format of Object ID is incorrect");
+            free(parsed_ints);
             return EASNTXTNOTINT;
-        } 
+        }
         pt += p_s;
-        while (isspace(*pt)) pt++;
-        cur_index++;
+        while (isspace(*pt))
+            pt++;
 
+        cur_index++;
     }
-    pt ++;
+    pt++;
+
     *parsed = asn_init_value(type);
     *parsed_syms = pt - text;
 
     if (cur_index)
-        rc = asn_write_value_field(*parsed, parsed_ints, cur_index, ""); 
-    if (rc) asn_free_value(*parsed); 
+        rc = asn_write_value_field(*parsed, parsed_ints, cur_index, "");
+
+    if (rc)
+        asn_free_value(*parsed);
+
+    free(parsed_ints);
 
     return rc;
 }
-
 
 
 /**
