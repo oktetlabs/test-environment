@@ -14,15 +14,21 @@
  *
  * @author Igor Vasiliev Igor.Vasiliev@oktetlabs.ru>
  */
-#include <linux/if_ether.h>
+
+#define TE_TEST_NAME    "eth/serial_udp_pld"
+
+#define TE_LOG_LEVEL 255
 
 #include "config.h"
+#include <linux/if_ether.h>
 
+#include "tapi_test.h"
 #include "logger_api.h"
 #include "conf_api.h"
 #include "rcf_api.h" 
 #include "ndn_eth.h"
 #include "tapi_eth.h"
+#include "tapi_tad.h"
 
 
 #define PAYLOAD_CREATION_METHOD        "eth_udp_payload"
@@ -42,61 +48,13 @@
 #define SRC_PORT   9000
 #define DST_PORT   9001
 
-/*
- * MI test cancelation. This macro is called into TEST_STOP macro.
- * Resources to be allocated by test must be free into this macro.
- */
-#undef TEST_CANCELATION
-#define TEST_CANCELATION \
-    do {                                              \
-        rcf_ta_csap_destroy(agent_a, sid_a, tx_csap); \
-    } while (0)
-
 
 
 /* Source MAC addresses are used in tests */
 #define SRC1_MAC  "20:03:20:04:14:30"
 
 /* Destination MAC addresses are used in tests */
-#define DST1_MAC               "20:03:20:06:24:41"
-
-/* Test status constants */
-enum test_status {
-    TEST_FAIL,
-    TEST_PASS
-};
-
-
-/* Some common macros for test organization */ 
-#define TEST_TERMINATION(_x...) \
-    do {                         \
-        VERB(_x); \
-        test_state = TEST_FAIL;  \
-       goto test_stop;          \
-    } while (0)
-
-#define TEST_START \
-    do {                        \
-        test_state = TEST_PASS; \
-    } while (0)
-
-
-#define TEST_STOP \
-test_stop:                                                       \
-    do {                                                         \
-        TEST_CANCELATION;                                     \
-        if (test_state)                                          \
-        {                                                        \
-            VERB("TEST PASS\n");                    \
-            return 0;                                            \
-        }                                                        \
-        else                                                     \
-        {                                                        \
-            printf("TEST FAIL: %s\n", error_msg_buf);            \
-            VERB("TEST FAIL: %s\n", error_msg_buf); \
-            return 1;                                            \
-        }                                                        \
-    } while (0)
+#define DST1_MAC  "20:03:20:06:24:41"
 
 
 
@@ -123,20 +81,16 @@ mi_set_agent_params(char *agent, int sid, int payload_length,
    return rc; 
 }
 
-int main()
+int 
+main(int argc, char *argv[])
 {
     tad_csap_status_t status;         /* Status of TX CSAP */
 
-    char  error_msg_buf[255];
-    int   rc, syms = 4;
-    
-
-    int   recv_pkts;  /* the number of waned/received packets */
-           
+    int   syms = 4; 
+    int   recv_pkts;  /* the number of waned/received packets */ 
     int   num_pkts = PKTS_TO_PROCESS; /* number of packets
-                                                       to be generated */
-   
-    char *agent_a;       /* first linux agent name */ 
+                                         to be generated */ 
+    char  agent_a[100];  /* first linux agent name */ 
     char *agent_b;       /* second linux agent name */ 
 
     char *agent_a_if;    /* first agent interface name */ 
@@ -144,8 +98,8 @@ int main()
     char *agent_b_if;    /* second agent interface name */ 
     int   sid_b;         /* session id for second session */ 
 
-    csap_handle_t    tx_csap; /* the CSAP handle for frame transmission */
-    csap_handle_t    rx_csap; /* the CSAP handle for frame reception */
+    csap_handle_t    tx_csap = CSAP_INVALID_HANDLE; 
+    csap_handle_t    rx_csap = CSAP_INVALID_HANDLE; 
     unsigned long    tx_counter;/* returned from CSAP total byte counter */
     char             tx_counter_txt[20];/* buffer for tx_counter */
     unsigned long    rx_counter; /* returned from CSAP total byte counter*/
@@ -160,43 +114,31 @@ int main()
     uint8_t    dst_bin_mac[ETH_ALEN];
 
     uint16_t   eth_type = ETH_P_IP;
-    int        test_state;
     size_t     pld_len = PAYLOAD_LENGTH;
     
     asn_value *pattern; /* eth frame pattern  for filtering */
-    asn_value *template;/* eth frame template for traffic generation */
+    asn_value *template;/* eth frame template for traffic generation */ 
 
-    /* Test configuration preambule */
+    int len = 100;
 
-    {
-        int len = 100;
-        agent_a = malloc (100);
-        if (agent_a == NULL)
-        {
-            fprintf(stderr, "malloc failed \n");
-            return 1; 
-        }
-        if ((rc = rcf_get_ta_list(agent_a, &len)) != 0)
-        {
-            fprintf(stderr, "rcf_get_ta_list failed %x\n", rc);
-            return 1;
-        }
-        VERB(" Using agent: %s\n", agent_a); 
+    TEST_START; 
 
-        agent_b = agent_a;  /* more simple test: use the same agent */
+    if ((rc = rcf_get_ta_list(agent_a, &len)) != 0)
+        TEST_FAIL("rcf_get_ta_list failed %x", rc);
+    VERB(" Using agent: %s\n", agent_a); 
 
-        agent_b_if = agent_a_if = strdup("eth0");
-    }
+    agent_b = agent_a + strlen(agent_a) + 1;
+
+    if (agent_b - agent_a > len)
+        TEST_FAIL("Second TA not found, at least two agents required");
+
+    agent_b_if = agent_a_if = strdup("eth0");
   
     if (rcf_ta_create_session(agent_a, &sid_a))
-    {
-        TEST_TERMINATION(" first session creation error");
-    }
+        TEST_FAIL("first session creation error");
 
     if (rcf_ta_create_session(agent_b, &sid_b))
-    {
-        TEST_TERMINATION(" second session creation error");
-    } 
+        TEST_FAIL(" second session creation error");
 
     memcpy (dst_bin_mac, ether_aton(dst_mac), ETH_ALEN);
     memcpy (src_bin_mac, ether_aton(src_mac), ETH_ALEN);
@@ -205,30 +147,26 @@ int main()
                              dst_bin_mac, src_bin_mac, 
                              &eth_type, &tx_csap)) != 0)
     {
-        TEST_TERMINATION(" TX CSAP creation failure");
+        TEST_FAIL("TX CSAP creation failure: %X", rc);
     } 
     
-    if (rc = tapi_eth_csap_create_with_mode
-                            (agent_b, sid_b, agent_b_if, ETH_RECV_ALL,
-                             src_bin_mac, dst_bin_mac, 
-                             &eth_type, &rx_csap))
+    if ((rc = tapi_eth_csap_create_with_mode(agent_b, sid_b, agent_b_if,
+                                             ETH_RECV_ALL,
+                                             src_bin_mac, dst_bin_mac, 
+                                             &eth_type, &rx_csap)) != 0)
     {
-        TEST_TERMINATION(" RX CSAP creation failure");
+        TEST_FAIL(" RX CSAP creation failure");
     } 
 
     /* Set AGENT side function parameters  */
-    if (mi_set_agent_params(agent_a, sid_a, PAYLOAD_LENGTH, 
-                            SRC_IP, DST_IP,
-                            SRC_PORT, DST_PORT))
+    if ((rc = mi_set_agent_params(agent_a, sid_a, PAYLOAD_LENGTH, 
+                                  SRC_IP, DST_IP,
+                                  SRC_PORT, DST_PORT)) != 0)
     {
-        TEST_TERMINATION(" AGENT side parameters setting up failure");
+        TEST_FAIL(" AGENT side parameters setting up failure");
     }
    
     
-    /* End of test configuration preambule */
-
-    TEST_START;
-
     /* Fill in value for iteration */
     rc = asn_parse_value_text("{ arg-sets { simple-for:{begin 1} }, "
                               "  pdus     {} }",
@@ -250,7 +188,7 @@ int main()
 #endif
     if (rc)
     {
-        TEST_TERMINATION(" traffic template creation error %x, sym %d", 
+        TEST_FAIL(" traffic template creation error %x, sym %d", 
                 rc, syms);
     }
 
@@ -264,7 +202,7 @@ int main()
                                    "0.pdus.0.#eth.dst-addr.#plain");
     if (rc)
     {
-        TEST_TERMINATION(" pattern creation error %x", rc);
+        TEST_FAIL(" pattern creation error %x", rc);
     }
     
 
@@ -278,7 +216,7 @@ int main()
                              NULL, NULL, TAD_TIMEOUT_INF, recv_pkts);
     if (rc)
     {
-        TEST_TERMINATION(" recieving process error %x", rc);     
+        TEST_FAIL(" recieving process error %x", rc);     
     }
    
     
@@ -286,7 +224,7 @@ int main()
     rc = tapi_eth_send_start(agent_a, sid_a, tx_csap, template);
     if (rc)
     {
-        TEST_TERMINATION(" transmitting process error %x", rc);     
+        TEST_FAIL(" transmitting process error %x", rc);     
     }
 
     {
@@ -294,24 +232,21 @@ int main()
         int i;
     do {
         sleep(1);
-        printf ("before get status\n");
-        fflush (stdout);
+        VERB("before get status\n");
         rc = tapi_csap_get_status(agent_a, sid_a, tx_csap, &status);
         if (rc)
         {
-            TEST_TERMINATION("v1: port A. TX CSAP get status error %x",
+            TEST_FAIL("v1: port A. TX CSAP get status error %x",
                              rc);
         }
-        printf ("get status: %d\n", status);
-        fflush (stdout);
+        VERB("get status: %d\n", status);
     } while(status == CSAP_BUSY);
 
     if (status == CSAP_ERROR)
     {
         rc = rcf_ta_trsend_stop(agent_a, sid_a, tx_csap, &num);
-        printf("----  send stop return error %x\n", rc); 
         if (rc)
-            TEST_TERMINATION("v1: send stop return error %x", rc); 
+            TEST_FAIL("v1: send stop return error %x", rc); 
     }
 
     rc = tapi_csap_get_status(agent_b, sid_b, rx_csap, &status);
@@ -321,20 +256,16 @@ int main()
         prev = num;
         if (rc)
         {
-            TEST_TERMINATION("v1: port A. RX CSAP get status error %x",
+            TEST_FAIL("v1: port A. RX CSAP get status error %x",
                              rc);
         }
         rc = rcf_ta_trrecv_get(agent_b, sid_b, rx_csap, &num);
-     sleep(1);
+        sleep(1);
         if (rc)
         {
-            TEST_TERMINATION("v1: port A. RX CSAP get traffic error %x",
+            TEST_FAIL("v1: port A. RX CSAP get traffic error %x",
                              rc);
         }
-        printf ("prev num: %d, cur num: %d, status: %d\n", 
-                prev, num, status);
-        fflush (stdout);
-        printf ("recv csap status: %d\n", status);
 
         if (prev == num || status != CSAP_BUSY)
             break;
@@ -347,12 +278,11 @@ int main()
     }
 
    
-    printf ("lets' stop recv\n");
     /* Stop recieving process */
     rc = rcf_ta_trrecv_stop(agent_b, sid_b, rx_csap, &recv_pkts);
     if (rc)
     {
-        TEST_TERMINATION(" receiving process shutdown error %x", rc);     
+        TEST_FAIL(" receiving process shutdown error %x", rc);     
     }
 
     /* Retrieve total TX bytes sent */
@@ -360,7 +290,7 @@ int main()
                            sizeof(tx_counter_txt), tx_counter_txt);
     if (rc)
     {
-        TEST_TERMINATION(" total TX counter retrieving error %x", rc);
+        TEST_FAIL(" total TX counter retrieving error %x", rc);
     }
     tx_counter = atoi(tx_counter_txt);
    
@@ -369,39 +299,49 @@ int main()
                            sizeof(rx_counter_txt), rx_counter_txt);
     if (rc)
     {
-        TEST_TERMINATION(" total RX counter retrieving error %x", rc);
+        TEST_FAIL(" total RX counter retrieving error %x", rc);
     } 
     rx_counter = atoi(rx_counter_txt);
 
 
     rc = tapi_csap_get_duration(agent_b, sid_b, rx_csap, &duration);
-    printf ("rx_duration: rc %x sec %d, usec %d\n", 
-            rc, duration.tv_sec, duration.tv_usec);
+    VERB("rx_duration: rc %x sec %d, usec %d\n", 
+         rc, duration.tv_sec, duration.tv_usec);
 
     rc = tapi_csap_get_duration(agent_a, sid_a, tx_csap, &duration);
-    printf ("tx_duration: rc %x sec %d, usec %d\n", 
-            rc, duration.tv_sec, duration.tv_usec);
-    
-    printf( "recv_pkts: %d, rx_counter: %d, tx_counter: %d\n", 
-            recv_pkts, rx_counter, tx_counter);     
+    VERB("tx_duration: rc %x sec %d, usec %d\n", 
+         rc, duration.tv_sec, duration.tv_usec);
 
-    fflush (stdout);
+    VERB("recv_pkts: %d, rx_counter: %d, tx_counter: %d\n", 
+         recv_pkts, rx_counter, tx_counter);     
+
     if (recv_pkts != PKTS_TO_PROCESS)
     {
-        TEST_TERMINATION(" some frames from flow are lost; got %d, "
-                         "should %d",
-                recv_pkts, PKTS_TO_PROCESS);
+        TEST_FAIL("some frames from flow are lost; got %d, should %d",
+                  recv_pkts, PKTS_TO_PROCESS);
     }
 
     /* Check port counters for both ingress and egress ports */
     if (tx_counter != rx_counter)
     {
-        TEST_TERMINATION(" TX/RX process has traffic inconsistence");
+        TEST_FAIL(" TX/RX process has traffic inconsistence");
     } 
 
-    VERB("TEST PASS: recv_pkts:%d, rx_counter: %d, "
+    INFO("TEST PASS: recv_pkts:%d, rx_counter: %d, "
               "tx_counter: %d\n", recv_pkts, rx_counter, tx_counter);     
+
+    TEST_SUCCESS;
+
+cleanup:
+
+    if (tx_csap != CSAP_INVALID_HANDLE &&
+        (rc = rcf_ta_csap_destroy(agent_a, sid_a, tx_csap) != 0) )
+        ERROR("ETH listen csap destroy fails, rc %X", rc);
+
+    if (rx_csap != CSAP_INVALID_HANDLE &&
+        (rc = rcf_ta_csap_destroy(agent_b, sid_b, rx_csap) != 0) )
+        ERROR("ETH listen csap destroy fails, rc %X", rc);
+
+    TEST_END; 
     
-    TEST_CANCELATION;
-    TEST_STOP; 
 }

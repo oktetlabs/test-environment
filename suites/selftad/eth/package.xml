@@ -41,5 +41,10 @@
                 <req id="TAD_ETH"/> 
             </script>
         </run>
+        <run>
+            <script name="eth_serial1">
+                <req id="TAD_ETH"/> 
+            </script>
+        </run>
    </session>
 </package>
