@@ -174,7 +174,7 @@ main(int argc, char *argv[])
             TEST_FAIL("parse value text fails %X, sym %d", rc, syms);
 
         rc = tapi_eth_recv_start(ta_B, sid_b, eth_listen_csap, pattern, 
-                                 local_eth_frame_handler, NULL, 1000, 1);
+                                 local_eth_frame_handler, NULL, 5000, 1);
         VERB("eth recv start rc: %x", rc);
 
         if (rc)
@@ -207,9 +207,12 @@ main(int argc, char *argv[])
 cleanup:
     if (eth_csap != CSAP_INVALID_HANDLE && 
         (rc = rcf_ta_csap_destroy(ta_A, sid_a, eth_csap)) != 0)
+        ERROR("CSAP destroy %d on agt %s failure %X", eth_csap, ta_A, rc);
 
     if (eth_listen_csap != CSAP_INVALID_HANDLE && 
         (rc = rcf_ta_csap_destroy(ta_B, sid_b, eth_listen_csap)) != 0)
+        ERROR("CSAP destroy %d on agt %s failure %X", eth_listen_csap,
+              ta_B, rc);
 
     TEST_END; 
 }

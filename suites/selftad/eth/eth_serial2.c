@@ -83,7 +83,6 @@ int main()
     uint8_t    dst_bin_mac[ETH_ALEN];
 
     uint16_t   eth_type = ETH_P_IP;
-    int        test_state;
 
     uint32_t    eth_payload_length = PAYLOAD_LENGTH;
     
@@ -304,17 +303,17 @@ int main()
 
 
     rc = tapi_csap_get_duration(agent_b, sid_b, rx_csap, &duration);
-    printf ("rx_duration: rc %x sec %d, usec %d\n", 
-            rc, duration.tv_sec, duration.tv_usec);
+    VERB("rx_duration: rc %x sec %d, usec %d\n", 
+            rc, (int)duration.tv_sec, (int)duration.tv_usec);
 
     rc = tapi_csap_get_duration(agent_a, sid_a, tx_csap, &duration);
-    printf ("tx_duration: rc %x sec %d, usec %d\n", 
-            rc, duration.tv_sec, duration.tv_usec);
+    VERB("tx_duration: rc %x sec %d, usec %d\n", 
+            rc, (int)duration.tv_sec, (int)duration.tv_usec);
     
-    printf( "recv_pkts: %d, rx_counter: %d, tx_counter: %d\n", 
-            recv_pkts, rx_counter, tx_counter);     
+    VERB("recv_pkts: %d, rx_counter: %d, tx_counter: %d\n", 
+            recv_pkts, (int)rx_counter, (int)tx_counter);     
 
-    fflush (stdout);
+    fflush(stdout);
     if (recv_pkts != PKTS_TO_PROCESS)
     {
         TEST_TERMINATION(" some frames from flow are lost; got %d, "
