@@ -480,7 +480,7 @@ tapi_arp_prepare_pattern_with_arp(const uint8_t *eth_src_mac,
             snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf),
                      "%02x ", pkt_mask[i]);
         }
-        WARN("MASK is %s", buf);
+        VERB("MASK is %s", buf);
     }
     
     if (rc == 0)
