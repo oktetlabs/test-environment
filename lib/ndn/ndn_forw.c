@@ -183,13 +183,13 @@ ndn_forw_delay_to_plain(const asn_value *val, ndn_forw_delay_t *forw_delay)
 
     d_len = sizeof (forw_delay->delay_min);
     rc = asn_read_value_field(val, &(forw_delay->delay_min), &d_len, 
-                              "delay_min.#plain"); 
+                              "delay-min.#plain"); 
     if (rc)
         return rc;
 
     d_len = sizeof (forw_delay->delay_max);
     rc = asn_read_value_field(val, &(forw_delay->delay_max), &d_len, 
-                              "delay_max.#plain"); 
+                              "delay-max.#plain"); 
     if (rc)
         return rc;
 
