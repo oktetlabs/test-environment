@@ -31,6 +31,8 @@
 #include "config.h"
 #endif
 
+#define TE_LOG_LEVEL 0xff
+
 #include <string.h>
 
 #define TE_LGR_USER     "TAD Ethernet"
@@ -121,8 +123,13 @@ int eth_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
             if (spec_data->local_addr != NULL)
             {
                 VERB("receive, dst = local");
-                rc = tad_data_unit_from_bin(spec_data->local_addr, ETH_ALEN, 
-                                           &spec_data->du_dst_addr);
+                rc = tad_data_unit_from_bin(spec_data->local_addr, ETH_ALEN,
+                                            &spec_data->du_dst_addr);
+
+                if (rc == 0)
+                    rc = asn_write_value_field(tmpl_pdu, 
+                                               spec_data->local_addr, 
+                                               ETH_ALEN, "dst-addr.#plain");
                 if (rc)
                 {
                     ERROR("construct dst addr rc %x", rc);
@@ -137,11 +144,14 @@ int eth_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
                 VERB("sending, dst = remote");
                 rc = tad_data_unit_from_bin(spec_data->remote_addr, ETH_ALEN, 
                                            &spec_data->du_dst_addr);
+                if (rc == 0)
+                    rc = asn_write_value_field(tmpl_pdu, 
+                                               spec_data->remote_addr, 
+                                               ETH_ALEN, "dst-addr.#plain");
             }
             else
             {
-                ERROR(
-                        "sending csap, no remote address found, ret EINVAL.");
+                ERROR("sending csap, no remote address found, ret EINVAL.");
                 return EINVAL; /* NO DESTINATION ADDRESS IS SPECIFIED */
             }                  
         }
@@ -168,25 +178,34 @@ int eth_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
             if (spec_data->remote_addr != NULL)
             {
                 VERB("receive, src = remote");
-                rc = tad_data_unit_from_bin(spec_data->remote_addr, ETH_ALEN, 
-                                           &spec_data->du_src_addr);
+                rc = tad_data_unit_from_bin(spec_data->remote_addr, 
+                                            ETH_ALEN,
+                                            &spec_data->du_src_addr);
+                if (rc == 0)
+                    rc = asn_write_value_field(tmpl_pdu, 
+                                               spec_data->remote_addr, 
+                                               ETH_ALEN, "src-addr.#plain");
             }
         }
         else
         {
             spec_data->du_src_addr.du_type = TAD_DU_EXPR;
+            uint8_t *local_addr;
             if (spec_data->local_addr != NULL)
             {
                 VERB("sending, src = local/csap");
-                rc = tad_data_unit_from_bin(spec_data->local_addr, ETH_ALEN, 
-                                           &spec_data->du_src_addr);
+                local_addr = spec_data->local_addr;
             }
             else
             {
                 VERB("sending, src = local/iface");
-                rc = tad_data_unit_from_bin(spec_data->interface->local_addr, 
-                                ETH_ALEN, &spec_data->du_src_addr);
+                local_addr = spec_data->interface->local_addr;
             }                  
+            rc = tad_data_unit_from_bin(local_addr, ETH_ALEN, 
+                                       &spec_data->du_src_addr);
+            if (rc == 0)
+                rc = asn_write_value_field(tmpl_pdu, local_addr, 
+                                           ETH_ALEN, "src-addr.#plain");
         }
         if (rc)
         {
@@ -214,6 +233,9 @@ int eth_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
     {
         spec_data->du_eth_type.du_type = TAD_DU_I32;     
         spec_data->du_eth_type.val_i32 = spec_data->eth_type;         
+        asn_write_value_field(tmpl_pdu, &(spec_data->eth_type), 
+                              sizeof(spec_data->eth_type), 
+                              "eth-type.#plain");
     }
 
     {
@@ -568,7 +590,7 @@ int eth_match_bin_cb (int csap_id, int layer, const asn_value *pattern_pdu,
     VERB("come data: %tm6.1\n", data,  ETH_ALEN);
 #endif
 
-    rc = tad_univ_match_field(&spec_data->du_dst_addr, eth_hdr_pdu, 
+    rc = ndn_match_data_units(pattern_pdu, eth_hdr_pdu, 
                               data, ETH_ALEN, "dst-addr");
     data += ETH_ALEN; 
 
@@ -577,7 +599,7 @@ int eth_match_bin_cb (int csap_id, int layer, const asn_value *pattern_pdu,
     if (rc == 0)
     {
     /* source  */ 
-        rc = tad_univ_match_field(&spec_data->du_src_addr, eth_hdr_pdu, 
+        rc = ndn_match_data_units(pattern_pdu, eth_hdr_pdu, 
                                   data, ETH_ALEN, "src-addr");
         data += ETH_ALEN;
         VERB("univ match for src rc %x\n", rc);
@@ -597,15 +619,15 @@ int eth_match_bin_cb (int csap_id, int layer, const asn_value *pattern_pdu,
         *data &= 0x0f; 
 
 
-        rc = tad_univ_match_field(&spec_data->du_cfi, eth_hdr_pdu, 
+        rc = ndn_match_data_units(pattern_pdu, eth_hdr_pdu, 
                                   &cfi, 1, "cfi");
 
         if (rc == 0)
-            rc = tad_univ_match_field(&spec_data->du_priority, eth_hdr_pdu, 
+            rc = ndn_match_data_units(pattern_pdu, eth_hdr_pdu, 
                                   &prio, 1, "priority");
         
         if (rc == 0)
-            rc = tad_univ_match_field(&spec_data->du_vlan_id, eth_hdr_pdu, 
+            rc = ndn_match_data_units(pattern_pdu, eth_hdr_pdu, 
                                     data, 2, "vlan-id");
 
         data += ETH_TAG_EXC_LEN; 
@@ -613,7 +635,7 @@ int eth_match_bin_cb (int csap_id, int layer, const asn_value *pattern_pdu,
 
     if (rc == 0)
     { 
-        rc = tad_univ_match_field(&spec_data->du_eth_type, eth_hdr_pdu, 
+        rc = ndn_match_data_units(pattern_pdu, eth_hdr_pdu, 
                                   data, ETH_TYPE_LEN, "eth-type");
         VERB("univ match for eth-type rc %x\n", rc);
     }
