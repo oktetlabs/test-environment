@@ -168,24 +168,27 @@
 
 /** @name Tester errno's */
 #define TESTER_ERRNO_BASE   (7 << 16)
-#define ETESTPASS   (0)                     /**< Test passed */
+/* 
+ * Errno codes below are strictly ordered and
+ * have ETESTRESULTMIN and ETESTRESULTMAX.
+ */
 #define ETESTEMPTY  (TESTER_ERRNO_BASE | 1) /**< Test session/pkg is
                                                  empty */
-#define ETESTFAKE   (TESTER_ERRNO_BASE | 2) /**< Test not really run */
-#define ETESTSKIP   (TESTER_ERRNO_BASE | 3) /**< Test skipped */
-#define ETESTCONF   (TESTER_ERRNO_BASE | 4) /**< Test changed
+#define ETESTSKIP   (TESTER_ERRNO_BASE | 2) /**< Test skipped */
+#define ETESTFAKE   (TESTER_ERRNO_BASE | 3) /**< Test not really run */
+#define ETESTPASS   (TESTER_ERRNO_BASE | 4) /**< Test passed */
+#define ETESTCONF   (TESTER_ERRNO_BASE | 5) /**< Test changed
                                                  configuration */
-#define ETESTKILL   (TESTER_ERRNO_BASE | 5) /**< Test killed by signal */
-#define ETESTCORE   (TESTER_ERRNO_BASE | 6) /**< Test dumped core */
-#define ETESTPROLOG (TESTER_ERRNO_BASE | 7) /**< Session prologue failed */
-#define ETESTEPILOG (TESTER_ERRNO_BASE | 8) /**< Session epilogue failed */
-#define ETESTALIVE  (TESTER_ERRNO_BASE | 9) /**< Session keep-alive
-                                                 failed */
-#define ETESTFAIL   (TESTER_ERRNO_BASE | 10) /**< Test failed */
-#define ETESTUNEXP  (TESTER_ERRNO_BASE | 11) /**< Test unexpected results */
+#define ETESTKILL   (TESTER_ERRNO_BASE | 6) /**< Test killed by signal */
+#define ETESTCORE   (TESTER_ERRNO_BASE | 7) /**< Test dumped core */
+#define ETESTPROLOG (TESTER_ERRNO_BASE | 8) /**< Session prologue failed */
+#define ETESTEPILOG (TESTER_ERRNO_BASE | 9) /**< Session epilogue failed */
+#define ETESTALIVE  (TESTER_ERRNO_BASE | 10) /**< Session keep-alive
+                                                  failed */
+#define ETESTFAIL   (TESTER_ERRNO_BASE | 11) /**< Test failed */
+#define ETESTUNEXP  (TESTER_ERRNO_BASE | 12) /**< Test unexpected results */
 
-#define ETESTRESULTMIN  ETESTEMPTY  /**< Minimum test result errno
-                                         except 0 */
+#define ETESTRESULTMIN  ETESTEMPTY  /**< Minimum test result errno */
 #define ETESTRESULTMAX  ETESTUNEXP  /**< Maximum test result errno */
 /*@}*/
 

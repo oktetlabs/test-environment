@@ -68,8 +68,7 @@
 
 /** Is return code a test result or TE error? */
 #define TEST_RESULT(_rc) \
-    (((_rc) == ETESTPASS) || \
-     (((_rc) >= ETESTRESULTMIN) && ((_rc) <= ETESTRESULTMAX)))
+    (((_rc) >= ETESTRESULTMIN) && ((_rc) <= ETESTRESULTMAX))
 
 /** Print string which may be NULL. */
 #define PRINT_STRING(_str)  ((_str) ? : "")
@@ -918,10 +917,8 @@ run_test_script(tester_ctx *ctx, test_script *script, test_id id,
                     result = ETESTFAIL;
                     break;
 
-                case ETESTPASS: /* EXIT_SUCCESS */
-                case ETESTFAIL:
-                case ETEENV:
-                    result = WEXITSTATUS(rc);
+                case EXIT_SUCCESS:
+                    result = ETESTPASS;
                     break;
 
                 default:
@@ -996,7 +993,7 @@ run_test_session(tester_ctx *ctx, test_session *session, test_id id,
                 VERB("Running test session prologue...");
                 ctx->flags |= TESTER_INLOGUE;
                 rc = iterate_test(ctx, session->prologue, &iters);
-                if ((rc != 0) && (rc != ETESTFAKE))
+                if ((rc != ETESTPASS) && (rc != ETESTFAKE))
                 {
                     result = ETESTPROLOG;
                     break;
@@ -1030,7 +1027,7 @@ run_test_session(tester_ctx *ctx, test_session *session, test_id id,
             }
 
             rc = iterate_test(ctx, test, &iters);
-            if ((rc != 0) && (rc != ETESTEMPTY) &&
+            if ((rc != ETESTPASS) && (rc != ETESTEMPTY) &&
                 (rc != ETESTFAKE) && (rc != ETESTSKIP))
             {
                 /* 
@@ -1039,7 +1036,7 @@ run_test_session(tester_ctx *ctx, test_session *session, test_id id,
                  */
                 result = ETESTFAIL;
             }
-            else if (result == ETESTEMPTY)
+            else if (result < rc)
             {
                 result = rc;
             }
@@ -1056,7 +1053,7 @@ run_test_session(tester_ctx *ctx, test_session *session, test_id id,
                 VERB("Running test session epilogue...");
                 ctx->flags |= TESTER_INLOGUE;
                 rc = iterate_test(ctx, session->epilogue, &iters);
-                if ((rc != 0) && (rc != ETESTFAKE))
+                if ((rc != ETESTPASS) && (rc != ETESTFAKE))
                 {
                     result = ETESTEPILOG;
                     break;
@@ -1624,7 +1621,7 @@ iterate_test(tester_ctx *ctx, run_item *test,
             all_result = test_result;
             break;
         }
-        else if ((all_result < test_result) || (all_result == ETESTEMPTY))
+        else if (all_result < test_result)
         {
             all_result = test_result;
         }
