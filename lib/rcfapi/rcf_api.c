@@ -1538,6 +1538,13 @@ rcf_ta_csap_destroy(const char *ta_name, int session,
     size_t  anslen = sizeof(msg);
     INIT_IPC;
     
+    if (csap_id == CSAP_INVALID_HANDLE)
+    {
+        INFO("%s(): Called with CSAP_INVALID_HANDLE CSAP ID, IGNORE",
+             __FUNCTION__);
+        return 0;
+    }
+
     if (BAD_TA)
         return TE_RC(TE_RCF_API, EINVAL);
     
