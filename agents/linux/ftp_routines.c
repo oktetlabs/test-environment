@@ -179,7 +179,7 @@ parse_ftp_uri(const char *uri, struct sockaddr *srv,
         
         *tmp++ = 0;
         n = strtol(tmp, &tmp1, 10);
-        if (tmp1 == NULL || *tmp1 != '/' || n == 0 || n > 0xFFFFFF)
+        if (tmp1 == NULL || *tmp1 != '/' || n == 0 || n > 0xFFFF)
         {
             free(server);
             return -1;
