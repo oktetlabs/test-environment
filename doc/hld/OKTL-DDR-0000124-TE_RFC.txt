@@ -32,7 +32,7 @@ RESPMGR
 # This field may be changed by a person processing the DDR if he/she 
 # decides that this request should be processed by 
 # another manager. Specify name and e-mail address here.
-Elena Vengerova <Elena.Vengerova@oktetlabs.ru>
+Alexandra Kossovsky <Alexandra.Kossovsky@oktetlabs.ru>
 
 DOCID 
 # Infolib document identifier should be specified here. If the document
