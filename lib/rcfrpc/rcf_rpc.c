@@ -952,6 +952,10 @@ rcf_rpc_call(rcf_rpc_server *rpcs, int proc,
             rpcs->is_done_ptr = 0;
             rpcs->op = RCF_RPC_CALL_WAIT;
         }
+        else if (rpcs->op == RCF_RPC_IS_DONE)
+        {
+            rpcs->op = RCF_RPC_WAIT;
+        }
     }
 
     pthread_mutex_unlock(&rpcs->lock);
