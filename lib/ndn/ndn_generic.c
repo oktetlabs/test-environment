@@ -458,6 +458,7 @@ ndn_match_data_units(const asn_value *pattern, asn_value *pkt_pdu,
                         return ETADNOTMATCH;
                 }
             default:
+                (void)0;
         }
     }
     return 0;
