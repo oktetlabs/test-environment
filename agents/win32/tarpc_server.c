@@ -2817,6 +2817,14 @@ TARPC_FUNC(reset_event, {},
 }
 )
 
+/*-------------- WSASetEvent ----------------------------*/
+TARPC_FUNC(set_event, {},
+{
+    UNUSED(list);
+    out->retval = WSASetEvent((HANDLE)(in->hevent));
+}
+)
+
 /*-------------- WSAEventSelect ----------------------------*/
 
 TARPC_FUNC(event_select, {},
@@ -3709,5 +3717,77 @@ overfill_buffers_exit:
 TARPC_FUNC(overfill_buffers,{},
 {
     MAKE_CALL(out->retval = overfill_buffers(in, out));
+}
+)
+
+/*-------------- WSAAddressToString ---------------------*/
+TARPC_FUNC(wsa_address_to_string,
+{
+    COPY_ARG(addrstr);
+    COPY_ARG(addrstr_len);
+},
+{
+    PREPARE_ADDR(in->addr, 0);
+
+    MAKE_CALL(out->retval = WSAAddressToString(a, in->addrlen,
+                                (LPWSAPROTOCOL_INFO)(in->info.info_val),
+                                out->addrstr.addrstr_val,
+                                out->addrstr_len.addrstr_len_val));
+}
+)
+
+/*-------------- WSAAsyncGetHostByAddr ------------------*/
+TARPC_FUNC(wsa_async_get_host_by_addr, {},
+{
+    MAKE_CALL(out->retval = WSAAsyncGetHostByAddr((HWND)in->hwnd,
+                                in->wmsg, in->addr.addr_val,
+                                in->addrlen, addr_family_rpc2h(in->type),
+                                (char*)in->buf, in->buflen));
+}
+)
+
+/*-------------- WSAAsyncGetHostByName ------------------*/
+TARPC_FUNC(wsa_async_get_host_by_name, {},
+{
+    MAKE_CALL(out->retval = WSAAsyncGetHostByName((HWND)in->hwnd,
+                                in->wmsg, in->name.name_val,
+                                (char*)in->buf, in->buflen));
+}
+)
+
+/*-------------- WSAAsyncGetProtoByName -----------------*/
+TARPC_FUNC(wsa_async_get_proto_by_name, {},
+{
+    MAKE_CALL(out->retval = WSAAsyncGetProtoByName((HWND)in->hwnd,
+                                in->wmsg, in->name.name_val,
+                                (char*)in->buf, in->buflen));
+}
+)
+
+/*-------------- WSAAsyncGetProtoByNumber ---------------*/
+TARPC_FUNC(wsa_async_get_proto_by_number, {},
+{
+    MAKE_CALL(out->retval = WSAAsyncGetProtoByNumber((HWND)in->hwnd,
+                                in->wmsg, in->number,
+                                (char*)in->buf, in->buflen));
+}
+)
+
+/*-------------- WSAAsyncGetServByName ---------------*/
+TARPC_FUNC(wsa_async_get_serv_by_name, {},
+{
+    MAKE_CALL(out->retval = WSAAsyncGetServByName((HWND)in->hwnd,
+                                in->wmsg, in->name.name_val,
+                                in->proto.proto_val,
+                                (char*)in->buf, in->buflen));
+}
+)
+
+/*-------------- WSAAsyncGetServByPort ---------------*/
+TARPC_FUNC(wsa_async_get_serv_by_port, {},
+{
+    MAKE_CALL(out->retval = WSAAsyncGetServByPort((HWND)in->hwnd,
+                                in->wmsg, in->port, in->proto.proto_val,
+                                (char*)in->buf, in->buflen));
 }
 )
