@@ -147,6 +147,7 @@ rcf_ch_reboot(struct rcf_comm_connection *handle,
     rcf_comm_agent_reply(handle, cbuf, len);         
     rcf_ch_unlock();                                
     system("reboot -f 0");
+    return 0;
 }
 
 

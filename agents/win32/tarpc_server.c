@@ -1098,14 +1098,18 @@ TARPC_FUNC(sendmsg,
     WSABUF buf_arr[RCF_RPC_MAX_IOVEC];
 
     unsigned int i;
+    
+    DWORD bytes_sent;
 
     memset(buf_arr, 0, sizeof(buf_arr));
 
     if (in->msg.msg_val == NULL)
     {
-        MAKE_CALL(out->retval = WSASendTo(in->s, NULL, 0, NULL,
-                                          send_recv_flags_rpc2h(in->flags),
-                                          NULL, 0, NULL, NULL));
+        MAKE_CALL(out->retval = 
+                      WSASendTo(in->s, NULL, 0, &bytes_sent,
+                                send_recv_flags_rpc2h(in->flags),
+                                NULL, 0, NULL, NULL) == 0 ? 
+                                (int)bytes_sent : -1);
     }
     else
     {
@@ -1130,11 +1134,12 @@ TARPC_FUNC(sendmsg,
         INIT_CHECKED_ARG(rpc_msg->msg_control.msg_control_val,
                          rpc_msg->msg_control.msg_control_len, 0);
 
-        MAKE_CALL(out->retval = WSASendTo(in->s, buf_arr,
-                                          rpc_msg->msg_iovlen, NULL,
-                                          send_recv_flags_rpc2h(in->flags),
-                                          a, rpc_msg->msg_namelen,
-                                          NULL, NULL));
+        MAKE_CALL(out->retval = 
+                      WSASendTo(in->s, buf_arr,
+                                rpc_msg->msg_iovlen, &bytes_sent,
+                                send_recv_flags_rpc2h(in->flags),
+                                a, rpc_msg->msg_namelen,
+                                NULL, NULL) == 0 ? (int)bytes_sent : -1);
     }
 }
 )

@@ -1022,7 +1022,9 @@ static int
 arp_add(unsigned int gid, const char *oid, const char *value,
         const char *addr)
 {
+#ifdef FOR_FUTURE
     char           val[32];
+#endif    
     MIB_IPNETROW   entry;
     int            int_mac[6];
     int            rc;
