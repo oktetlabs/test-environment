@@ -162,6 +162,7 @@ extern int rpc_send_traffic(rcf_rpc_server *handle, int num, int *s,
  * @param bulkszs       sizes of data bulks to send for each sender
  *                      (in bytes, 1024 bytes maximum)
  * @param time2run      how long send data (in seconds)
+ * @param time2wait     how long wait data (in seconds)
  * @param iomux         type of I/O Multiplexing function
  *                      (@b select(), @b pselect(), @b poll())
  * @param rx_nonblock   push all Rx sockets in nonblocking mode
@@ -177,8 +178,8 @@ extern int rpc_send_traffic(rcf_rpc_server *handle, int num, int *s,
  */
 extern int rpc_iomux_flooder(rcf_rpc_server *handle,
                              int *sndrs, int sndnum, int *rcvrs, int rcvnum,
-                             int bulkszs, int time2run, int iomux,
-                             te_bool rx_nonblock,
+                             int bulkszs, int time2run, int time2wait,
+                             int iomux, te_bool rx_nonblock,
                              uint64_t *tx_stat,
                              uint64_t *rx_stat);
 

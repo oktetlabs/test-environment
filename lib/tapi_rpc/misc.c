@@ -476,8 +476,8 @@ rpc_simple_receiver(rcf_rpc_server *rpcs,
 int
 rpc_iomux_flooder(rcf_rpc_server *rpcs,
                   int *sndrs, int sndnum, int *rcvrs, int rcvnum,
-                  int bulkszs, int time2run, int iomux, te_bool rx_nonblock,
-                  uint64_t *tx_stat, uint64_t *rx_stat)
+                  int bulkszs, int time2run, int time2wait, int iomux, 
+                  te_bool rx_nonblock, uint64_t *tx_stat, uint64_t *rx_stat)
 {
     rcf_rpc_op        op;
     tarpc_flooder_in  in;
@@ -507,6 +507,7 @@ rpc_iomux_flooder(rcf_rpc_server *rpcs,
     }
     in.bulkszs = bulkszs;
     in.time2run = time2run;
+    in.time2wait = time2wait;
     in.iomux = iomux;
     in.rx_nonblock = rx_nonblock;
     if (tx_stat != NULL)
@@ -537,9 +538,11 @@ rpc_iomux_flooder(rcf_rpc_server *rpcs,
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(flooder, out.retval);
 
     TAPI_RPC_LOG("RPC (%s,%s)%s: "
-                 "flooder(%p, %d, %p, %d, %d, %d, %d, %p, %p) -> %d (%s)",
+                 "flooder(%p, %d, %p, %d, %d, %d, %d, %d, %p, %p) "
+                 "-> %d (%s)",
                  rpcs->ta, rpcs->name, rpcop2str(op), rcvrs,
-                 rcvnum, sndrs, sndnum, bulkszs, time2run, iomux,
+                 rcvnum, sndrs, sndnum, bulkszs, time2run, time2wait,
+                 iomux,
                  tx_stat, rx_stat, out.retval,
                  errno_rpc2str(RPC_ERRNO(rpcs)));
 

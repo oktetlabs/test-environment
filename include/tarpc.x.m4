@@ -1905,6 +1905,7 @@ struct tarpc_flooder_in {
     tarpc_int       rcvrs<>;
     tarpc_size_t    bulkszs;
     uint32_t        time2run;        /**< How long run (in seconds) */
+    uint32_t        time2wait;       /**< How long wait (in seconds) */
     iomux_func      iomux;
     tarpc_bool      rx_nonblock;
 

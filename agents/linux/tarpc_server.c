@@ -3032,6 +3032,7 @@ typedef int (*flood_api_func)(struct pollfd *ufds,
  * @param bulkszs   - sizes of data bulks to send for each sender
  *                    (in bytes, 1024 bytes maximum)
  * @param time2run  - how long send data (in seconds)
+ * @param time2wait - how long wait data (in seconds)
  * @param iomux     - type of I/O Multiplexing function
  *                    (@b select(), @b pselect(), @b poll())
  *
@@ -3055,6 +3056,7 @@ flooder(tarpc_flooder_in *in)
     int         sndnum = in->sndrs.sndrs_len;
     int         bulkszs = in->bulkszs;
     int         time2run = in->time2run;
+    int         time2wait = in->time2wait;
     iomux_func  iomux = in->iomux;
     te_bool     rx_nb = in->rx_nonblock;
 
@@ -3368,7 +3370,7 @@ flooder(tarpc_flooder_in *in)
 
         if (!time2run_not_expired)
         {
-            call_timeout.tv_sec = FLOODER_ECHOER_WAIT_FOR_RX_EMPTY;
+            call_timeout.tv_sec = time2wait;
             call_timeout.tv_usec = 0;
             VERB("%s(): Waiting for empty Rx queue, Rx=%d",
                  __FUNCTION__, session_rx);
