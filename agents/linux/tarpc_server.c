@@ -151,7 +151,7 @@ sockaddr_h2rpc(struct sockaddr *addr, struct tarpc_sa *rpc_addr)
 {
     if (addr == NULL || rpc_addr->sa_data.sa_data_val == NULL)
         return;
-        
+
     rpc_addr->sa_family = addr_family_h2rpc(addr->sa_family);
     if (rpc_addr->sa_data.sa_data_val != NULL)
     {
@@ -1709,6 +1709,13 @@ TARPC_FUNC(ioctl,
                         arp_fl_rpc2h(out->req.req_val[0].ioctl_request_u.
                                      req_arpreq.rpc_arp_flags);
                 }
+                if (in->code == RPC_SIOCGARP)
+                {
+                     /* Copy device */
+                    strcpy(req_arpreq.arp_dev,
+                           out->req.req_val[0].ioctl_request_u.
+                           req_arpreq.rpc_arp_dev);
+                }
                 break;
             }
                 
@@ -1835,21 +1842,22 @@ TARPC_FUNC(ioctl,
             }
             case IOCTL_ARPREQ:
             {
-                 if (in->code == RPC_SIOCGARP)
-                 {
-                     /* Copy protocol address */
-                     sockaddr_h2rpc(&(req_arpreq.arp_pa),
-                                    &(out->req.req_val[0].ioctl_request_u.
-                                    req_arpreq.rpc_arp_pa));
-                     /* Copy HW address */
-                     sockaddr_h2rpc(&(req_arpreq.arp_ha),
-                                    &(out->req.req_val[0].ioctl_request_u.
-                                    req_arpreq.rpc_arp_ha));
-                     /* Copy flags */
-                     out->req.req_val[0].ioctl_request_u.req_arpreq.
-                         rpc_arp_flags = arp_fl_h2rpc(req_arpreq.arp_flags);
-                 }
-                 break;
+                if (in->code == RPC_SIOCGARP)
+                {
+                    /* Copy protocol address */
+                    sockaddr_h2rpc(&(req_arpreq.arp_pa),
+                                   &(out->req.req_val[0].ioctl_request_u.
+                                   req_arpreq.rpc_arp_pa));
+                    /* Copy HW address */
+                    sockaddr_h2rpc(&(req_arpreq.arp_ha), 
+                                   &(out->req.req_val[0].ioctl_request_u.
+                                   req_arpreq.rpc_arp_ha));
+                    
+                    /* Copy flags */
+                    out->req.req_val[0].ioctl_request_u.req_arpreq.
+                        rpc_arp_flags = arp_fl_h2rpc(req_arpreq.arp_flags);
+                }
+                break;
             }
 
         }
