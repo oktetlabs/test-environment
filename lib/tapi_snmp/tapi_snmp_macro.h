@@ -194,6 +194,50 @@ extern "C" {
         }                                                          \
     } while (0)        	    
 
+/**
+ * Extracts subtable so that all the entries in the subtable have
+ * specified prefix in their index.
+ *
+ * @param tbl_           Pointer to the SNMP table data structure
+ * @param tbl_size_      Number of rows in the table
+ * @param index_prefix_  Index prefix that should present in all rows of 
+ *                       the resulting subtable (tapi_snmp_oid_t *)
+ * @param sub_tbl_       Placeholder for the pointer to the subtable (OUT)
+ * @param sub_tbl_size_  Number of rows in the subtable (OUT)
+ *
+ * @note If there is no entry with specified index prefix,
+ *       sub_tbl_ is set to NULL, and sub_tbl_size_ is set to zero.
+ *
+ * @example
+ *
+ * 
+ */
+#define TAPI_SNMP_GET_SUBTABLE(tbl_, tbl_size_, index_prefix_, \
+                               sub_tbl_, sub_tbl_size_)                      \
+    do {                                                                     \
+          int i_;                                                            \
+                                                                             \
+          *(sub_tbl_size_) = 0;                                              \
+          *(sub_tbl_) = NULL;                                                \
+          for (i_ = 0; i_ < (tbl_size_); i_++)                               \
+          {                                                                  \
+              if (tbl_[i_].index_suffix->length < (index_prefix_)->length)   \
+              {                                                              \
+                  TEST_FAIL("Row %d in the table has index whose length is " \
+                            "less than the length of passed index prefix "); \
+              }                                                              \
+              if (memcmp((tbl_)[i_].index_suffix->id, (index_prefix_)->id,   \
+                         (index_prefix_)->length) == 0)                      \
+              {                                                              \
+                  if (*(sub_tbl_size_) == 0)                                 \
+                  {                                                          \
+                      /* We've found the first row with the index prefix */  \
+                      *(sub_tbl_) = &(tbl_)[i_];                             \
+                  }                                                          \
+                  (*(sub_tbl_size_))++;                                      \
+              }                                                              \
+          }                                                                  \
+      } while (0)
    
 /**
  * Macro around tapi_snmp_get_table_rows().
@@ -533,21 +577,21 @@ extern "C" {
  * @param subid          index of table field instance (0 for scalar field).
  * 
  */
-#define TAPI_SNMP_CHECK_INTEGER(ta, sid, csap_id, name, value, err_stat, sub_id...) \
-    do                                                                         \
-    {                                                                          \
-        int                       tmp_value;                                   \
-        tapi_snmp_oid_t           oid;                                         \
-	                                                                       \
-        CHECK_RC(tapi_snmp_make_instance(name, &oid, sub_id));                 \
-        CHECK_RC(tapi_snmp_get_integer(ta, sid, csap_id, &oid,                 \
-                 &tmp_value, err_stat));                                       \
-        VERB("SNMP get: for %s (oid=%s) returns %s = %d, error status %d\n",   \
-             name, print_oid(&oid), #value, (value), *err_stat);               \
-        if (value != tmp_value)                                                \
-            TEST_FAIL(name " is not equal to %s = %d", #value, value);         \
+#define TAPI_SNMP_CHECK_INTEGER(ta, sid, csap_id, name, value, \
+                                err_stat, sub_id...)                         \
+    do                                                                       \
+    {                                                                        \
+        int                       tmp_value;                                 \
+        tapi_snmp_oid_t           oid;                                       \
+	                                                                     \
+        CHECK_RC(tapi_snmp_make_instance(name, &oid, sub_id));               \
+        CHECK_RC(tapi_snmp_get_integer(ta, sid, csap_id, &oid,               \
+                 &tmp_value, err_stat));                                     \
+        VERB("SNMP get: for %s (oid=%s) returns %s = %d, error status %d\n", \
+             name, print_oid(&oid), #value, (value), *err_stat);             \
+        if (value != tmp_value)                                              \
+            TEST_FAIL("%s is not equal to %s = %d", name, #value, value);    \
     } while (0)
-
 
 #ifdef __cplusplus
 } /* extern "C" */
