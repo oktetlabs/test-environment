@@ -1541,8 +1541,7 @@ iterate_test(tester_ctx *ctx, run_item *test,
                 ERROR("run_test() failed: %X", rc);
             }
 
-            if (!(ctx->flags & (TESTER_NO_CS | TESTER_NOCFGTRACK)) &&
-                test->attrs.track_conf != TESTER_TRACK_CONF_NO)
+            if (backup_name != NULL)
             {
                 /* Check configuration backup */
                 rc = cfg_verify_backup(backup_name);
@@ -1598,7 +1597,17 @@ iterate_test(tester_ctx *ctx, run_item *test,
         }
     }
 
-    free(backup_name);
+    if (backup_name != NULL)
+    {
+        rc = cfg_release_backup(&backup_name);
+        if (rc != 0)
+        {
+            ERROR("cfg_release_backup() failed: %X", rc);
+            if (TEST_RESULT(test_result))
+                test_result = rc;
+        }
+    }
+
     test_param_iterations_free(&iters);
     if (ctx_cloned)
         tester_ctx_free(ctx);
