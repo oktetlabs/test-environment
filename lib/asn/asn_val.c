@@ -275,6 +275,9 @@ asn_copy_value(const asn_value *value)
         if(value->syntax == OID) 
             len *= sizeof(int);
 
+        if(value->syntax == BIT_STRING) 
+            len = (len + 7) >> 3;
+
         if ((value->data.other == NULL) || (len == 0))
         { /* data is not specified yet, value is incomplete.*/
             new_value->data.other = NULL;
@@ -623,6 +626,9 @@ asn_write_value_field (asn_value_p container, const void *data, int d_len,
  * @param data          data to be written, should be in nature C format for
  *                      data type respective to leaf syntax;
  * @param d_len         length of data; 
+ *                      Measured in octets for all types except OID and
+ *                      BIT_STRING; for OID measured in sizeof(int),
+ *                      for BIT_STRING measured in bits 
  * @param field_labels  string with dot-separated sequence of textual field
  *                      labels, specifying primitive-syntax leaf in ASN value 
  *                      tree with 'container' as a root. Label for 
@@ -691,11 +697,13 @@ asn_impl_write_value_field (asn_value_p container,
     case PR_ASN_NULL:
         break;
 
-    case BIT_STRING:
-        return ETENOSUPP;
-
+    case BIT_STRING: 
     case OID: 
-        m_len *= sizeof(int);
+        if (container->syntax == OID)
+            m_len *= sizeof(int);
+        else
+            m_len = (m_len + 7) >> 3;
+        /* fall through */
     case LONG_INT:
     case REAL:
     case OCT_STRING:
@@ -737,7 +745,8 @@ asn_impl_write_value_field (asn_value_p container,
                 default:
                     cur_label = strsep (&rest_field_labels, ".");
             }
-            rc = asn_impl_find_subvalue_writable(container, cur_label, &subvalue);
+            rc = asn_impl_find_subvalue_writable(container, cur_label, 
+                                                 &subvalue);
 
             switch (rc)
             {
@@ -785,10 +794,10 @@ asn_impl_write_value_field (asn_value_p container,
  * @param data          pointer to buffer for read data.
  * @param d_len         length of available buffer / read data (IN/OUT). 
  * @param field_labels  string with dot-separated sequence of textual field
- *                      labels, specifying primitive-syntax leaf in ASN value 
- *                      tree with 'container' as a root. Label for 
- *                      'SEQUENCE OF' and 'SET OF' subvalues is decimal
- *                      notation of its integer index in array.
+ *                      labels, specifying primitive-syntax leaf in 
+ *                      ASN value tree with 'container' as a root. 
+ *                      Label for 'SEQUENCE OF' and 'SET OF' subvalues 
+ *                      is decimalnotation of its integer index in array.
  *
  * @return zero on success, otherwise error code.
  */ 
@@ -808,16 +817,17 @@ asn_read_value_field  (const asn_value *container,  void *data, int *d_len,
  * Read data into primitive syntax leaf in specified ASN value, internal 
  * implemetation of this functionality.
  *
- * @param container     pointer to ASN value which leaf field is interested.
- * @param data          pointer to buffer for read data (OUT).
+ * @param container     pointer to ASN value which leaf field is interested
+ * @param data          pointer to buffer for read data (OUT)
  * @param d_len         length of available buffer / read data (IN/OUT); 
- *                      measured in octets for all types except OID;
- *                      for OID measured in sizeof(int). 
+ *                      measured in octets for all types except OID and
+ *                      BIT_STRING; for OID measured in sizeof(int),
+ *                      for BIT_STRING measured in bits 
  * @param field_labels  string with dot-separated sequence of textual field
- *                      labels, specifying primitive-syntax leaf in ASN value 
- *                      tree with 'container' as a root. Label for 
- *                      'SEQUENCE OF' and 'SET OF' subvalues is decimal
- *                      notation of its integer index in array.
+ *                      labels, specifying primitive-syntax leaf in 
+ *                      ASN value tree with 'container' as a root. 
+ *                      Label for 'SEQUENCE OF' and 'SET OF' subvalues 
+ *                      is decimalnotation of its integer index in array.
  *
  * @return zero on success, otherwise error code.
  */ 
@@ -874,7 +884,12 @@ asn_impl_read_value_field  (const asn_value *container,  void *data,
         break;
 
     case OID:
-        m_len *= sizeof(int);
+    case BIT_STRING:
+        if (container->syntax == OID)
+            m_len *= sizeof(int);
+        else
+            m_len = (m_len + 7) >> 3;
+        /* fall through */
     case CHAR_STRING:
     case LONG_INT:
     case OCT_STRING:
@@ -888,9 +903,6 @@ asn_impl_read_value_field  (const asn_value *container,  void *data,
     case PR_ASN_NULL:
         break;
 
-    case BIT_STRING:
-        return ETENOSUPP;
-        
     case SEQUENCE:
     case SET:
     case SEQUENCE_OF:
@@ -1131,6 +1143,7 @@ asn_get_field_data(const asn_value *container,
         case CHAR_STRING:
         case LONG_INT:
         case OCT_STRING:
+        case BIT_STRING:
         case REAL:
             *data_ptr = subval->data.other;
             break;
@@ -1139,9 +1152,6 @@ asn_get_field_data(const asn_value *container,
             *data_ptr = NULL;
             break;
 
-        case BIT_STRING:
-            return ETENOSUPP;
-            
         case SEQUENCE:
         case SET:
         case SEQUENCE_OF:

@@ -295,6 +295,9 @@ extern asn_value_p asn_decode(const void *data);
  * @param data          data to be written, should be in nature C format for
  *                      data type respective to leaf syntax;
  * @param d_len         length of data. 
+ *                      Measured in octets for all types except OID and
+ *                      BIT_STRING; for OID measured in sizeof(int),
+ *                      for BIT_STRING measured in bits 
  * @param field_labels  string with dot-separated sequence of textual field
  *                      labels, specifying primitive-syntax leaf in ASN value 
  *                      tree with 'container' as a root. Label for 
@@ -313,8 +316,9 @@ extern int asn_write_value_field (asn_value_p container,
  * @param container     pointer to ASN value which leaf field is interested;
  * @param data          pointer to buffer for read data (OUT).
  * @param d_len         length of available buffer / read data (IN/OUT). 
- *                      Measured in bytes (for all types except OID) and in 
- *                      sub-ids for OID.
+ *                      Measured in octets for all types except OID and
+ *                      BIT_STRING; for OID measured in sizeof(int),
+ *                      for BIT_STRING measured in bits 
  * @param field_labels  string with dot-separated sequence of textual field
  *                      labels, specifying primitive-syntax leaf in ASN value 
  *                      tree with 'container' as a root. Label for 
