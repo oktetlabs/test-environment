@@ -1,5 +1,5 @@
-#                                               -*- Autoconf -*-
-# Process this file with autoconf to produce a configure script.
+dnl                                               -*- Autoconf -*-
+dnl Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.59])
 AC_INIT([ta-linux], [0.4], [Elena.Vengerova@oktetlabs.ru])
@@ -11,7 +11,7 @@ AM_INIT_AUTOMAKE([1.8.5 foreign -Wall])
 
 AC_CANONICAL_HOST
 
-# Checks for programs.
+dnl Checks for programs.
 AC_PROG_CC
 AC_C_INLINE
 
@@ -41,22 +41,27 @@ CFLAGS=${CFLAGS}" "${TE_CFLAGS}
 AC_CONFIG_HEADERS([config.h])
 
 AC_CHECK_HEADERS([\
+sys/types.h \
+sys/socket.h \
 time.h \
 sys/time.h \
 sys/resource.h \
 semaphore.h \
 aio.h \
 net/ethernet.h \
-net/if_arp.h \
 net/if_dl.h \
-net/route.h \
 netinet/in_systm.h \
 sys/un.h \
 ])
 
-#
-# Try to find IP_MTU socket option definition.
-#
+
+AC_CHECK_HEADERS([net/if_arp.h net/route.h], [], [],
+                 [#include <sys/types.h>
+                  #include <sys/socket.h>])
+
+dnl
+dnl Try to find IP_MTU socket option definition.
+dnl
 AH_TEMPLATE([MY_IP_MTU],
     [Cope with strange location of IP_MTU socket option definition])
 
@@ -137,70 +142,62 @@ AM_CONDITIONAL(CFG_RCF_RPC, test -n "$with_rcf_rpc")
 dnl #######################################################################
 dnl Newer BSD systems don't have a compatible rtentry - use ortentry
 dnl #######################################################################
- 
-rtry=none
-AC_MSG_CHECKING(for either struct rtentry or struct ortentry)
-AC_EGREP_HEADER(rtentry, net/route.h, rtry=rtentry)
-if test x"$rtry" = xrtentry; then
-  AC_DEFINE([HAVE_RTENTRY], [1], [Whether we have rtentry in net/route.h])
-fi
-AC_EGREP_HEADER(ortentry, net/route.h, rtry=ortentry)
-if test x"$rtry" = xortentry; then
- AC_DEFINE([HAVE_ORTENTRY], [1], [Whether we have ortentry in net/route.h])
-fi
-AC_MSG_RESULT([$rtry])
-    
-#
-# Check for 'sa_len'-like members in 'struct sockaddr'-like structures.
-#
+AC_CHECK_TYPES([struct rtentry, struct ortentry], [], [],
+              [#include <sys/types.h>
+               #include <sys/socket.h>
+               #include <net/route.h>])
+
+dnl
+dnl Check for 'sa_len'-like members in 'struct sockaddr'-like structures.
+dnl
 AC_CHECK_MEMBERS([struct sockaddr.sa_len], [], [],
                  [#include <sys/types.h>
                   #include <sys/socket.h>])
 
-#
-# POSIX threads are provided by:
-# - -lpthread in Linux;
-# - -lc_r in FreeBSD;
-# - -lpthread in NetBSD ('pth' package).
-#
+dnl
+dnl POSIX threads are provided by:
+dnl - -lpthread in Linux;
+dnl - -lc_r in FreeBSD;
+dnl - -lpthread in NetBSD ('pth' package).
+dnl
 AC_SEARCH_LIBS([pthread_create], [pthread c_r], [],
                AC_MSG_ERROR([No POSIX threads]))
 
-#
-# POSIX semaphores are provided by:
-# - -lpthread in Linux;
-# - -lc_r in FreeBSD;
-# - -lsemaphore in NetNSD ('pthread-sem' package).
-#
+dnl
+dnl POSIX semaphores are provided by:
+dnl - -lpthread in Linux;
+dnl - -lc_r in FreeBSD;
+dnl - -lsemaphore in NetNSD ('pthread-sem' package).
+dnl
 AC_SEARCH_LIBS([sem_init], [pthread c_r semaphore], [],
                AC_MSG_ERROR([No POSIX semaphores]))
 
 if test -n "$with_rcf_rpc" -o -n "$with_cfg_linux_daemons" ; then
-    #
-    # Dynamic linker functions are provided by:
-    # - -ldl in Linux;
-    # - -lc in FreeBSD;
-    # - N/A for NetBSD, since automatically included in every dynamically
-    #   linked program.
-    #
+    dnl
+    dnl Dynamic linker functions are provided by:
+    dnl - -ldl in Linux;
+    dnl - -lc in FreeBSD;
+    dnl - N/A for NetBSD, since automatically included in every dynamically
+    dnl   linked program.
+    dnl
     AC_CHECK_FUNC([dlopen], [],
                   AC_CHECK_LIB([dl], [dlopen], [],
                                AC_MSG_ERROR([No dynamic linker API found])))
 fi
 
 if test -n "$with_rcf_rpc" ; then
-    #
-    # FreeBSD 4.x has no svc_exit().
-    # NetBSD has no svcunix_create().
-    #
+    dnl
+    dnl FreeBSD 4.x has no svc_exit().
+    dnl NetBSD has no svcunix_create().
+    dnl
     AC_CHECK_FUNCS([svcunix_create svc_exit])
 
-    #
-    # Asynchronous I/O:
-    # - FreeBSD has in -lc;
-    # - Linux has in -lnsl -lrt;
-    # - NetBSD does not have.
-    #
+    dnl
+    dnl Asynchronous I/O:
+    dnl - FreeBSD has in -lc;
+    dnl - Linux has in -lnsl -lrt;
+    dnl - NetBSD does not have.
+    dnl
     AC_CHECK_FUNC([aio_read], [],
         AC_CHECK_LIB([nsl], [aio_read], [LIBS="-lnsl -lrt ${LIBS}"],
             AC_MSG_WARN([Asynchronous I/O not supported]), [-lrt]))

@@ -27,12 +27,6 @@
 /* Define to 1 if you have the <net/route.h> header file. */
 #undef HAVE_NET_ROUTE_H
 
-/* Whether we have ortentry in net/route.h */
-#undef HAVE_ORTENTRY
-
-/* Whether we have rtentry in net/route.h */
-#undef HAVE_RTENTRY
-
 /* Define to 1 if you have the <semaphore.h> header file. */
 #undef HAVE_SEMAPHORE_H
 
@@ -48,6 +42,12 @@
 /* Define to 1 if you have the <string.h> header file. */
 #undef HAVE_STRING_H
 
+/* Define to 1 if the system has the type `struct ortentry'. */
+#undef HAVE_STRUCT_ORTENTRY
+
+/* Define to 1 if the system has the type `struct rtentry'. */
+#undef HAVE_STRUCT_RTENTRY
+
 /* Define to 1 if `sa_len' is member of `struct sockaddr'. */
 #undef HAVE_STRUCT_SOCKADDR_SA_LEN
 
@@ -59,6 +59,9 @@
 
 /* Define to 1 if you have the <sys/resource.h> header file. */
 #undef HAVE_SYS_RESOURCE_H
+
+/* Define to 1 if you have the <sys/socket.h> header file. */
+#undef HAVE_SYS_SOCKET_H
 
 /* Define to 1 if you have the <sys/stat.h> header file. */
 #undef HAVE_SYS_STAT_H
