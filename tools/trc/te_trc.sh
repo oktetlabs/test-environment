@@ -11,7 +11,7 @@ fi
 
 RGT_FILTER=`mktemp`
 echo -e \
-"<?xml version="1.0"?>\\n"\
+"<?xml version=\"1.0\"?>\\n"\
 "<filters>\\n"\
 "<entity-filter><exclude entity=\"\"/></entity-filter>\\n"\
 "</filters>\\n" > $RGT_FILTER
