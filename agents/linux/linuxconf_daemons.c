@@ -2901,6 +2901,7 @@ ftpd_init(void)
     fprintf(g, "anon_upload_enable=YES\n");
     fclose(f);
     fclose(g);
+    ta_system("mkdir -p /var/ftp/pub");
     ta_system("chmod o+w /var/ftp/pub");
     daemon_get(0, "ftpserver", ftp_enable);
     if (*ftp_enable == '1')
