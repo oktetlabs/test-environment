@@ -585,30 +585,29 @@ tapi_tcp_ip4_pattern_unit(const uint8_t *src_addr, const uint8_t *dst_addr,
 {
     int rc;
     int num;
-    asn_value *pat_unit = NULL;
+    asn_value *pu = NULL;
 
     do {
         if (result_value == NULL) { rc = ETEWRONGPTR; break; }
 
         rc = asn_parse_value_text("{ pdus { tcp:{}, ip4:{}, eth:{}}}", 
-                              ndn_traffic_pattern_unit, &pat_unit, &num);
+                              ndn_traffic_pattern_unit, &pu, &num);
 
         if (rc) break;
-
         if (src_addr)
-            rc = asn_write_value_field(pat_unit, src_addr, 4, 
+            rc = asn_write_value_field(pu, src_addr, 4, 
                                        "pdus.1.#ip4.src-addr.#plain");
 
         if (dst_addr)
-            rc = asn_write_value_field(pat_unit, dst_addr, 4, 
+            rc = asn_write_value_field(pu, dst_addr, 4, 
                                        "pdus.1.#ip4.dst-addr.#plain");
 
         if (src_port)
-            rc = asn_write_value_field(pat_unit, src_port, sizeof(src_port),
+            rc = asn_write_value_field(pu, &src_port, sizeof(src_port),
                                        "pdus.0.#tcp.src-port.#plain");
 
         if (dst_port)
-            rc = asn_write_value_field(pat_unit, dst_port, sizeof(src_port),
+            rc = asn_write_value_field(pu, &dst_port, sizeof(src_port),
                                        "pdus.0.#tcp.dst-port.#plain"); 
 
     } while (0);
@@ -616,10 +615,10 @@ tapi_tcp_ip4_pattern_unit(const uint8_t *src_addr, const uint8_t *dst_addr,
     if (rc)
     {
         ERROR("%s: error %X", __FUNCTION__, rc);
-        asn_free_value(pat_unit);
+        asn_free_value(pu);
     }
     else
-        *result_value = pat_unit;
+        *result_value = pu;
 
     return TE_RC(TE_TAPI, rc);
 }
