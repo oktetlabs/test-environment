@@ -45,7 +45,7 @@
 #include <unistd.h>
 #endif
 
-#include "logger_api.h"
+#include "logger_ta.h"
 #include "rcf_rpc_defs.h"
 
 

@@ -119,9 +119,22 @@ wait_child_and_log(void)
 {
     int status;
     int pid;
+
+#define CHECK_LGR_LOCK \
+    do {                                                              \
+        ta_lgr_lock_key key;                                          \
+                                                                      \
+        if (ta_lgr_trylock(key) != 0)                                 \
+        {                                                             \
+            fprintf(stderr, "Logger is locked, drop the message\n");  \
+            return;                                                   \
+        }                                                             \
+        (void)ta_lgr_unlock(key);                                     \
+    } while (0)
     
     if ((pid = waitpid(-1, &status, WNOHANG)) > 0)
     {
+        CHECK_LGR_LOCK;
         if (WIFEXITED(status))
             VERB("RPC Server process with PID %d is deleted", pid);
         else if (WIFSIGNALED(status))
@@ -141,12 +154,15 @@ wait_child_and_log(void)
     }
     else if (pid == 0)
     {
+        CHECK_LGR_LOCK;
         WARN("No child was available");
     }
     else
     {
+        CHECK_LGR_LOCK;
         ERROR("waitpid() failed with errno %d", errno);
     }
+#undef CHECK_LGR_LOCK
 }
 
 
