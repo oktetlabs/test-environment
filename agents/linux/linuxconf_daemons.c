@@ -233,7 +233,8 @@ ds_restore_backup()
         {
             sprintf(buf, "rm %s >/dev/null 2>&1", ds_backup(i));
         }
-        ta_system(buf);
+        if (ta_system(buf) != 0)
+            ERROR("Command <%s> failed", buf);
         free(ds[i].backup);
         free(ds[i].config_file);
     }
