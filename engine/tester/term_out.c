@@ -316,7 +316,7 @@ tester_out_done(run_item_type type, const char *name,
 #endif
 
     msg = (self == prev_id) ? msg_in : msg_out;
-    if (write(1, msg, strlen(msg)) != (ssize_t)prev_len)
+    if (write(1, msg, strlen(msg)) != (ssize_t)strlen(msg))
     {
         ERROR("Write to 'stdout' failed");
     }
