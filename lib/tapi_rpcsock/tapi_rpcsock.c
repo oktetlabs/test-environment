@@ -497,10 +497,19 @@ rpc_bind(rcf_rpc_server *handle,
     in.fd = s;
     if (my_addr != NULL)
     {
-        in.addr.sa_family = addr_family_h2rpc(my_addr->sa_family);
-        in.addr.sa_data.sa_data_len = 
-            addrlen > SA_COMMON_LEN ? addrlen - SA_COMMON_LEN : 0;
-        in.addr.sa_data.sa_data_val = (uint8_t *)my_addr->sa_data;
+        if (addrlen >= SA_COMMON_LEN)
+        {
+            in.addr.sa_family = addr_family_h2rpc(my_addr->sa_family);
+            in.addr.sa_data.sa_data_len = addrlen - SA_COMMON_LEN;
+            in.addr.sa_data.sa_data_val = (uint8_t *)(my_addr->sa_data);
+        }
+        else
+        {
+            in.addr.sa_family = RPC_AF_UNSPEC;
+            in.addr.sa_data.sa_data_len = 0;
+            /* Any no-NULL pointer is suitable here */
+            in.addr.sa_data.sa_data_val = (uint8_t *)my_addr;
+        }
     }
     in.len = addrlen;
     
@@ -535,10 +544,19 @@ rpc_connect(rcf_rpc_server *handle,
     in.fd = s;
     if (addr != NULL)
     {
-        in.addr.sa_family = addr_family_h2rpc(addr->sa_family);
-        in.addr.sa_data.sa_data_len = 
-            addrlen > SA_COMMON_LEN ? addrlen - SA_COMMON_LEN : 0;
-        in.addr.sa_data.sa_data_val = (uint8_t *)addr->sa_data;
+        if (addrlen >= SA_COMMON_LEN)
+        {
+            in.addr.sa_family = addr_family_h2rpc(addr->sa_family);
+            in.addr.sa_data.sa_data_len = addrlen - SA_COMMON_LEN;
+            in.addr.sa_data.sa_data_val = (uint8_t *)(addr->sa_data);
+        }
+        else
+        {
+            in.addr.sa_family = RPC_AF_UNSPEC;
+            in.addr.sa_data.sa_data_len = 0;
+            /* Any not-NULL pointer is suitable here */
+            in.addr.sa_data.sa_data_val = (uint8_t *)addr;
+        }
     }
     in.len = addrlen;
     
@@ -616,9 +634,19 @@ rpc_accept_gen(rcf_rpc_server *handle,
     }
     if (addr != NULL && handle->op != RCF_RPC_WAIT)
     {
-        in.addr.sa_data.sa_data_len = raddrlen - SA_COMMON_LEN;
-        in.addr.sa_data.sa_data_val = addr->sa_data;
-        in.addr.sa_family = addr_family_h2rpc(addr->sa_family);
+        if (raddrlen >= SA_COMMON_LEN)
+        {
+            in.addr.sa_family = addr_family_h2rpc(addr->sa_family);
+            in.addr.sa_data.sa_data_len = raddrlen - SA_COMMON_LEN;
+            in.addr.sa_data.sa_data_val = addr->sa_data;
+        }
+        else
+        {
+            in.addr.sa_family = RPC_AF_UNSPEC;
+            in.addr.sa_data.sa_data_len = 0;
+            /* Any not-NULL pointer is suitable here */
+            in.addr.sa_data.sa_data_val = (uint8_t *)addr;
+        }
     }
     
     rcf_rpc_call(handle, _accept, &in, (xdrproc_t)xdr_tarpc_accept_in,
@@ -686,9 +714,19 @@ rpc_recvfrom_gen(rcf_rpc_server *handle,
     }
     if (from != NULL && handle->op != RCF_RPC_WAIT)
     {
-        in.from.sa_data.sa_data_len = rfrombuflen - SA_COMMON_LEN;
-        in.from.sa_data.sa_data_val = from->sa_data;
-        in.from.sa_family = addr_family_h2rpc(from->sa_family);
+        if (rfrombuflen >= SA_COMMON_LEN)
+        {
+            in.from.sa_family = addr_family_h2rpc(from->sa_family);
+            in.from.sa_data.sa_data_len = rfrombuflen - SA_COMMON_LEN;
+            in.from.sa_data.sa_data_val = from->sa_data;
+        }
+        else
+        {
+            in.from.sa_family = RPC_AF_UNSPEC;
+            in.from.sa_data.sa_data_len = 0;
+            /* Any not-NULL pointer is suitable here */
+            in.from.sa_data.sa_data_val = (uint8_t *)from;
+        }
     }
     if (buf != NULL && handle->op != RCF_RPC_WAIT)
     {
@@ -830,9 +868,19 @@ rpc_sendto(rcf_rpc_server *handle,
     in.len = len;
     if (to != NULL && handle->op != RCF_RPC_WAIT)
     {
-        in.to.sa_data.sa_data_len = tolen - SA_COMMON_LEN;
-        in.to.sa_data.sa_data_val = (uint8_t *)to->sa_data;
-        in.to.sa_family = addr_family_h2rpc(to->sa_family);
+        if (tolen >= SA_COMMON_LEN)
+        {
+            in.to.sa_family = addr_family_h2rpc(to->sa_family);
+            in.to.sa_data.sa_data_len = tolen - SA_COMMON_LEN;
+            in.to.sa_data.sa_data_val = (uint8_t *)(to->sa_data);
+        }
+        else
+        {
+            in.to.sa_family = RPC_AF_UNSPEC;
+            in.to.sa_data.sa_data_len = 0;
+            /* Any no-NULL pointer is suitable here */
+            in.to.sa_data.sa_data_val = (uint8_t *)to;
+        }
     }
     in.tolen = tolen;
     if (buf != NULL && handle->op != RCF_RPC_WAIT)
@@ -1144,9 +1192,19 @@ rpc_getsockname_gen(rcf_rpc_server *handle,
     }
     if (name != NULL && handle->op != RCF_RPC_WAIT)
     {
-        in.addr.sa_data.sa_data_len = rnamelen - SA_COMMON_LEN;
-        in.addr.sa_data.sa_data_val = name->sa_data;
-        in.addr.sa_family = addr_family_h2rpc(name->sa_family);
+        if (rnamelen >= SA_COMMON_LEN)
+        {
+            in.addr.sa_family = addr_family_h2rpc(name->sa_family);
+            in.addr.sa_data.sa_data_len = rnamelen - SA_COMMON_LEN;
+            in.addr.sa_data.sa_data_val = name->sa_data;
+        }
+        else
+        {
+            in.addr.sa_family = RPC_AF_UNSPEC;
+            in.addr.sa_data.sa_data_len = 0;
+            /* Any no-NULL pointer is suitable here */
+            in.addr.sa_data.sa_data_val = (uint8_t *)name;
+        }
     }
     
     rcf_rpc_call(handle, _getsockname, &in, (xdrproc_t)xdr_tarpc_getsockname_in,
@@ -1212,9 +1270,19 @@ rpc_getpeername_gen(rcf_rpc_server *handle,
     }
     if (name != NULL && handle->op != RCF_RPC_WAIT)
     {
-        in.addr.sa_data.sa_data_len = rnamelen - SA_COMMON_LEN;
-        in.addr.sa_data.sa_data_val = name->sa_data;
-        in.addr.sa_family = addr_family_h2rpc(name->sa_family);
+        if (rnamelen >= SA_COMMON_LEN)
+        {
+            in.addr.sa_family = addr_family_h2rpc(name->sa_family);
+            in.addr.sa_data.sa_data_len = rnamelen - SA_COMMON_LEN;
+            in.addr.sa_data.sa_data_val = name->sa_data;
+        }
+        else
+        {
+            in.addr.sa_family = RPC_AF_UNSPEC;
+            in.addr.sa_data.sa_data_len = 0;
+            /* Any no-NULL pointer is suitable here */
+            in.addr.sa_data.sa_data_val = (uint8_t *)name;
+        }
     }
     
     rcf_rpc_call(handle, _getpeername, &in, (xdrproc_t)xdr_tarpc_getpeername_in,
@@ -3079,13 +3147,23 @@ rpc_sendmsg(rcf_rpc_server *handle,
         
         if (msg->msg_name != NULL)
         {
-            rpc_msg.msg_name.sa_data.sa_data_len = 
-                msg->msg_rnamelen > SA_COMMON_LEN ?
-                msg->msg_rnamelen - SA_COMMON_LEN : 0;
-            rpc_msg.msg_name.sa_data.sa_data_val = 
-                ((struct sockaddr *)(msg->msg_name))->sa_data;
-            rpc_msg.msg_name.sa_family = addr_family_h2rpc(
-                ((struct sockaddr *)(msg->msg_name))->sa_family);
+            if (msg->msg_rnamelen >= SA_COMMON_LEN)
+            {
+                rpc_msg.msg_name.sa_family = addr_family_h2rpc(
+                    ((struct sockaddr *)(msg->msg_name))->sa_family);
+                rpc_msg.msg_name.sa_data.sa_data_len = 
+                    msg->msg_rnamelen - SA_COMMON_LEN;
+                rpc_msg.msg_name.sa_data.sa_data_val = 
+                    ((struct sockaddr *)(msg->msg_name))->sa_data;
+            }
+            else
+            {
+                rpc_msg.msg_name.sa_family = RPC_AF_UNSPEC;
+                rpc_msg.msg_name.sa_data.sa_data_len = 0;
+                /* Any not-NULL pointer is suitable here */
+                rpc_msg.msg_name.sa_data.sa_data_val =
+                    (uint8_t *)(msg->msg_name);
+            }
         } 
         rpc_msg.msg_namelen = msg->msg_namelen;
         rpc_msg.msg_flags = (int)msg->msg_flags;
@@ -3185,13 +3263,23 @@ rpc_recvmsg(rcf_rpc_server *handle,
         
         if (msg->msg_name != NULL)
         {
-            rpc_msg.msg_name.sa_data.sa_data_len = 
-                msg->msg_rnamelen > SA_COMMON_LEN ?
-                msg->msg_rnamelen - SA_COMMON_LEN : 0;
-            rpc_msg.msg_name.sa_data.sa_data_val = 
-                ((struct sockaddr *)(msg->msg_name))->sa_data;
-            rpc_msg.msg_name.sa_family = addr_family_h2rpc(
-                ((struct sockaddr *)(msg->msg_name))->sa_family);
+            if (msg->msg_rnamelen >= SA_COMMON_LEN)
+            {
+                rpc_msg.msg_name.sa_family = addr_family_h2rpc(
+                    ((struct sockaddr *)(msg->msg_name))->sa_family);
+                rpc_msg.msg_name.sa_data.sa_data_len = 
+                    msg->msg_rnamelen - SA_COMMON_LEN;
+                rpc_msg.msg_name.sa_data.sa_data_val = 
+                    ((struct sockaddr *)(msg->msg_name))->sa_data;
+            }
+            else
+            {
+                rpc_msg.msg_name.sa_family = RPC_AF_UNSPEC;
+                rpc_msg.msg_name.sa_data.sa_data_len = 0;
+                /* Any not-NULL pointer is suitable here */
+                rpc_msg.msg_name.sa_data.sa_data_val =
+                    (uint8_t *)(msg->msg_name);
+            }
         } 
         rpc_msg.msg_namelen = msg->msg_namelen;
         rpc_msg.msg_flags = msg->msg_flags;
