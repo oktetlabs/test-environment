@@ -339,6 +339,8 @@ is_reqs_expr_match(const reqs_expr         *re,
             result = is_req_in_set(re->u.value, ctx_set, params) ||
                      is_req_in_set(re->u.value, test_set, params) ||
                      is_req_in_params(re->u.value, params);
+            VERB("%s(): %s -> %u(%u)", __FUNCTION__, re->u.value,
+                 result, *force);
             break;
 
         case TESTER_REQS_EXPR_NOT:
@@ -347,6 +349,7 @@ is_reqs_expr_match(const reqs_expr         *re,
                                          force);
             if (!result)
                 *force = TRUE;
+            VERB("%s(): ! -> %u(%u)", __FUNCTION__, result, *force);
             break;
 
         case TESTER_REQS_EXPR_AND:
@@ -356,6 +359,7 @@ is_reqs_expr_match(const reqs_expr         *re,
                      is_reqs_expr_match(re->u.binary.rhv,
                                         ctx_set, test_set, params,
                                         force);
+            VERB("%s(): && -> %u(%u)", __FUNCTION__, result, *force);
             break;
 
         case TESTER_REQS_EXPR_OR:
@@ -365,6 +369,7 @@ is_reqs_expr_match(const reqs_expr         *re,
                      is_reqs_expr_match(re->u.binary.rhv,
                                         ctx_set, test_set, params,
                                         force);
+            VERB("%s(): || -> %u(%u)", __FUNCTION__, result, *force);
             break;
 
         default:
