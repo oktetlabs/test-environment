@@ -451,9 +451,12 @@ if test -n "$BUILDER" ; then
                 echo "Calling aclocal/autoconf/automake in `pwd`" \
                     >>${TE_BUILD_LOG}
             else
-                echo "Calling aclocal/autoconf/automake in `pwd`"
+                echo "Calling aclocal/autoheader/autoconf/automake in `pwd`"
             fi
             aclocal -I ${TE_BASE}/auxdir || exit_with_log
+            if cat configure.ac | grep -q AC_CONFIG_HEADER ; then
+                autoheader || exit_with_log
+            fi
             autoconf || exit_with_log
             automake || exit_with_log
         fi
