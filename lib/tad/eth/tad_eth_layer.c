@@ -547,9 +547,10 @@ int eth_gen_bin_cb(int csap_id, int layer, const asn_value *tmpl_pdu,
  *
  * @return zero on success or error code.
  */
-int eth_match_bin_cb (int csap_id, int layer, const asn_value *pattern_pdu,
-                       const csap_pkts *  pkt, csap_pkts * payload, 
-                       asn_value_p  parsed_packet )
+int 
+eth_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
+                 const csap_pkts *pkt, csap_pkts *payload, 
+                 asn_value_p parsed_packet)
 {
     csap_p                   csap_descr;
     eth_csap_specific_data_p spec_data;

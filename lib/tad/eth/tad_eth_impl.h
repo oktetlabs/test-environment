@@ -152,24 +152,24 @@ struct eth_csap_specific_data;
 typedef struct eth_csap_specific_data *eth_csap_specific_data_p;
 typedef struct eth_csap_specific_data
 {
-    eth_csap_interface_p interface; /**< Local eth interface related data     */
+    eth_csap_interface_p interface; /**< Ethernet interface data        */
 
-    int   out;          /**< Socket for sending data to the media    */
-    int   in;           /**< Socket for receiving data               */
+    int   out;          /**< Socket for sending data to the media       */
+    int   in;           /**< Socket for receiving data                  */
    
-    uint16_t eth_type;  /**< Ethernet protocol type                  */
+    uint16_t eth_type;  /**< Ethernet protocol type                     */
 
     uint8_t recv_mode;  /**< Receive mode, bit mask from values in 
-                             enum eth_csap_receive_mode in ndn_eth.h */
+                             enum eth_csap_receive_mode in ndn_eth.h    */
     
-    char  *remote_addr; /**< Default destination address (NULL if not defined)*/
-    char  *local_addr;  /**< Local address (NULL if not defined)     */
+    char *remote_addr;  /**< Default remote address (NULL if undefined) */
+    char *local_addr;   /**< Default local address (NULL if undefined)  */
 
-    int   read_timeout; /**< Number of second to wait for data       */
+    int   read_timeout; /**< Number of second to wait for data          */
     int   cfi;
     int   vlan_id;
     int   priority;
-    size_t total_bytes; /**< Total number of sent or received bytes   */ 
+    size_t total_bytes; /**< Total number of sent or received bytes     */ 
 
 
     /* integer scripts for iteration: */ 
