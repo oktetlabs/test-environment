@@ -1,51 +1,41 @@
 
-TE-NDN-Forw
+TE-NDN-Forwarder
 DEFINITIONS ::=
 BEGIN
 
 IMPORTS DATA-UNIT FROM TE-NDN-General;
 
-EXPORTS FORW-CSAP;
 
 
-Router-Action-Delay-Params ::= SEQUENCE {
+Forwarder-Action-Delay-Params ::= SEQUENCE {
     type      [0] INTEGER {disabled(0), constant(1), random(2)},
     delay_min [1] DATA-UNIT {INTEGER},
     delay_max [2] DATA-UNIT {INTEGER}
 }
 
-Router-Action-Bandwidth-Params ::= SEQUENCE {
+Forwarder-Action-Bandwidth-Params ::= SEQUENCE {
     type      [0] INTEGER{unlimited(0), limited(1)},
     bps       [1] DATA-UNIT{INTEGER },
     buf_size  [2] DATA-UNIT{INTEGER }
 }
 
-Router-Action-Reorder-Params ::= SEQUENCE {
+Forwarder-Action-Reorder-Params ::= SEQUENCE {
     type            [0] INTEGER {disabled(0), random(1), reversed(2)},
     timeout         [1] DATA-UNIT {INTEGER},
     reorder_size    [2] DATA-UNIT {INTEGER}
 }
 
-Router-Action-Drop-Params ::= SEQUENCE {
+Forwarder-Action-Drop-Params ::= SEQUENCE {
     type      [0] INTEGER {disabled(0), random(1), pattern(2)},
     rate      [1] DATA-UNIT {INTEGER},
 }
 
-Router-Action ::= SEQUENCE {
+Forwarder-Action ::= SEQUENCE {
     id        [0] DATA-UNIT {UniversalString},
-    delay     [1] Router-Action-Delay-Params OPTIONAL,
-    bandwidth [2] Router-Action-Bandwidth-Params OPTIONAL,
-    reorder   [3] Router-Action-Reorder-Params OPTIONAL,
-    drop      [4] Router-Action-Drop-Params OPTIONAL
-}
-
-Router-Action-List ::= SEQUENCE OF Router-Action
-
-FORW-CSAP ::=  SEQUENCE {
-    src_device  [0] DATA-UNIT{UniversalString},
-    dst_device  [1] DATA-UNIT{UniversalString},
-    actions     [2] Router-Action-List
-    ...
+    delay     [1] Forwarder-Action-Delay-Params OPTIONAL,
+    bandwidth [2] Forwarder-Action-Bandwidth-Params OPTIONAL,
+    reorder   [3] Forwarder-Action-Reorder-Params OPTIONAL,
+    drop      [4] Forwarder-Action-Drop-Params OPTIONAL
 }
 
 END
