@@ -88,7 +88,7 @@ static asn_named_entry_t _ndn_data_unit_mask_ne_array [] =
 }; 
 
  asn_type ndn_data_unit_mask_static = 
-{ "DATA-UNIT-mask", {PRIVATE, 2}, SEQUENCE, 2, {_ndn_data_unit_mask_ne_array} };
+{ "DATA-UNIT-mask", {PRIVATE, 2}, SEQUENCE, 3, {_ndn_data_unit_mask_ne_array} };
 
 
 
