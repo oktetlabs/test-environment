@@ -197,6 +197,11 @@ ta_handler(void *ta)
 
     strcat(ta_srv, inst->agent); 
     srv = ipc_register_server(ta_srv);
+    if (srv == NULL)
+    {
+        ERROR("Failed to register IPC server '%s'", ta_srv);
+        return NULL;
+    }
     fd_server = ipc_get_server_fd(srv);
 
     gettimeofday(&tv, NULL);
@@ -442,6 +447,12 @@ response_to_flush:
             tstamp_flag = 0;
         }
     }
+
+    if (ipc_close_server(srv) != 0)
+    {
+        ERROR("Failed to close IPC server '%s': %X", ta_srv, errno);
+    }
+
     return NULL;
 }
 
