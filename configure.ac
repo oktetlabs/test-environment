@@ -85,6 +85,7 @@ echo TE_BUILD=$TE_BUILD >> ${TE_BUILD}/builder.conf.processed.new
 echo TE_INSTALL=$TE_INSTALL >> ${TE_BUILD}/builder.conf.processed.new
 echo TE_INSTALL_NUT=$TE_INSTALL_NUT >> ${TE_BUILD}/builder.conf.processed.new
 echo TE_INSTALL_SUITE=$TE_INSTALL_SUITE >> ${TE_BUILD}/builder.conf.processed.new
+echo TE_PATH=${TE_INSTALL}/${host}/bin >> ${TE_BUILD}/builder.conf.processed.new
 echo host=$host >> ${TE_BUILD}/builder.conf.processed.new
 
 AC_ARG_VAR(with_config)
