@@ -2978,7 +2978,6 @@ user_del(unsigned int gid, const char *oid, const char *user)
         return TE_RC(TE_TA_LINUX, EEXIST);
 
     sprintf(buf, "/usr/sbin/userdel -r %s", user);
-            
     ta_system(buf);
         
     return 0;
