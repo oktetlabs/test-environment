@@ -1766,6 +1766,30 @@ struct tarpc_fileno_out {
     tarpc_int fd;
 };
 
+/* struct passwd */
+struct tarpc_passwd {
+    char       name<>;      /* User name */
+    char       passwd<>;    /* User password */
+    tarpc_uint uid;         /* User id */
+    tarpc_uint gid;         /* Group id */
+    char       gecos<>;     /* Real name */
+    char       dir<>;       /* Home directory */
+    char       shell<>;     /* Shell program */
+};
+
+/* getpwnam() */
+struct tarpc_getpwnam_in {
+    struct tarpc_in_arg common;
+    
+    char name<>;
+};
+
+struct tarpc_getpwnam_out {
+    struct tarpc_out_arg common;
+    
+    struct tarpc_passwd passwd;   /* name is NULL if entry is not found */
+};
+
 /* getuid() */
 struct tarpc_getuid_in {
     struct tarpc_in_arg common;
@@ -2393,6 +2417,7 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(fopen)
         RPC_DEF(popen)
         RPC_DEF(fileno)
+        RPC_DEF(getpwnam)
         RPC_DEF(getuid)
         RPC_DEF(geteuid)
         RPC_DEF(setuid)
