@@ -40,38 +40,59 @@ extern asn_type asn_base_real_s;
 extern asn_type asn_base_enum_s;
 extern asn_type asn_base_charstring_s;
 
+extern asn_type asn_base_int4_s;
+extern asn_type asn_base_int8_s;
+extern asn_type asn_base_int16_s;
+
 extern asn_type ndn_data_unit_ints_s;
 extern asn_type ndn_data_unit_enum_s;
 extern asn_type ndn_data_unit_mask_s;
 extern asn_type ndn_data_unit_env_s;
 
-typedef enum { 
-    NDN_DU_PLAIN = 1, 
-    NDN_DU_SCRIPT, 
-    NDN_DU_ENUM, 
-    NDN_DU_MASK, 
-    NDN_DU_INTERVALS, 
-    NDN_DU_ENV, 
-    NDN_DU_FUNC, 
-} ndn_data_unit_tags_t;
 
-#define NDN_DATA_UNIT_TYPE(id, asn_t, asn_bt_txt_id)                    \
-    static asn_named_entry_t _ndn_data_unit_##id##_ne_array [] =        \
-    {                                                                   \
-      {"plain",    & asn_t ,              {PRIVATE, NDN_DU_PLAIN}},     \
-      {"script",   &asn_base_charstring_s,{PRIVATE, NDN_DU_SCRIPT} },   \
-      {"enum",     &ndn_data_unit_enum_s, {PRIVATE, NDN_DU_ENUM} },     \
-      {"mask",     &ndn_data_unit_mask_s, {PRIVATE, NDN_DU_MASK} },     \
-      {"intervals",&ndn_data_unit_ints_s, {PRIVATE, NDN_DU_INTERVALS}}, \
-      {"env",      &ndn_data_unit_env_s,  {PRIVATE, NDN_DU_ENV} },      \
-      {"function", &asn_base_charstring_s,{PRIVATE, NDN_DU_FUNC} },     \
-    };                                                                  \
-    asn_type ndn_data_unit_##id##_s =                                   \
-    {                                                                   \
-      "DATA-UNIT ( " #asn_bt_txt_id " )", {PRIVATE, 1},                 \
-      CHOICE, 7, {_ndn_data_unit_##id##_ne_array}                       \
-    };                                                                  \
-    const asn_type * const ndn_data_unit_##id = &ndn_data_unit_##id##_s;
+extern asn_type ndn_data_unit_int8_s;  
+extern asn_type ndn_data_unit_int16_s;  
+extern asn_type ndn_data_unit_int32_s;  
+extern asn_type ndn_data_unit_octet_string_s;  
+extern asn_type ndn_data_unit_char_string_s;  
+extern asn_type ndn_data_unit_objid_s;  
+extern asn_type ndn_data_unit_ip_address_s;  
+
+extern asn_type ndn_ip_address_s;
+extern asn_type ndn_octet_string6_s;
+
+extern asn_type ndn_generic_pdu_s;
+extern asn_type ndn_generic_csap_level_s;
+
+
+
+/**
+ * Macro for definition of C structures, presenting 
+ * DATA-UNIT based ASN types. 
+ *
+ * @param id            suffix, used to constract global constant names
+ * @param asn_t         base ASN type, constant of asn_type type
+ * @param asn_bt_txt_id textual name of base ASN type
+ */
+#define NDN_DATA_UNIT_TYPE(id, asn_t, asn_bt_txt_id)                      \
+    static asn_named_entry_t _ndn_data_unit_##id##_ne_array [] =          \
+    {                                                                     \
+      {"plain",     &asn_t,                 {PRIVATE, NDN_DU_PLAIN} },    \
+      {"script",    &asn_base_charstring_s, {PRIVATE, NDN_DU_SCRIPT} },   \
+      {"enum",      &ndn_data_unit_enum_s,  {PRIVATE, NDN_DU_ENUM} },     \
+      {"mask",      &ndn_data_unit_mask_s,  {PRIVATE, NDN_DU_MASK} },     \
+      {"intervals", &ndn_data_unit_ints_s,  {PRIVATE, NDN_DU_INTERVALS} },\
+      {"env",       &ndn_data_unit_env_s,   {PRIVATE, NDN_DU_ENV} },      \
+      {"function",  &asn_base_charstring_s, {PRIVATE, NDN_DU_FUNC} },     \
+    };                                                                    \
+    asn_type ndn_data_unit_##id##_s =                                     \
+    {                                                                     \
+      "DATA-UNIT ( " #asn_bt_txt_id " )", {PRIVATE, 1},                   \
+      CHOICE, sizeof(_ndn_data_unit_##id##_ne_array)/                     \
+              sizeof(_ndn_data_unit_##id##_ne_array[0]),                  \
+      {_ndn_data_unit_##id##_ne_array}                                    \
+    };                                                                    \
+    const asn_type * const ndn_data_unit_##id = &ndn_data_unit_##id##_s
 
 
 #endif /* __TE_NDN_INTERNAL_H__ */

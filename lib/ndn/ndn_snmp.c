@@ -164,7 +164,7 @@ asn_type ndn_snmp_error_status_s = {
 asn_type * ndn_snmp_error_status = &ndn_snmp_error_status_s;
 
 
-NDN_DATA_UNIT_TYPE (snmp_errstat, ndn_snmp_error_status_s, SnmpErrorStatus) 
+NDN_DATA_UNIT_TYPE(snmp_errstat, ndn_snmp_error_status_s, SnmpErrorStatus);
 
 asn_enum_entry_t _ndn_snmp_message_type_enum_entries[] = 
 {
@@ -188,7 +188,7 @@ asn_type ndn_snmp_message_type_s = {
 const asn_type * const ndn_snmp_message_type = &ndn_snmp_message_type_s;
 
 
-NDN_DATA_UNIT_TYPE(snmp_msgtype, ndn_snmp_message_type_s, SnmpMessageType)
+NDN_DATA_UNIT_TYPE(snmp_msgtype, ndn_snmp_message_type_s, SnmpMessageType);
 
 
 static asn_named_entry_t _ndn_snmp_simple_ne_array [] = 
@@ -247,7 +247,7 @@ asn_type ndn_snmp_object_syntax_s =
 const asn_type * const ndn_snmp_object_syntax = &ndn_snmp_object_syntax_s;
 
 
-NDN_DATA_UNIT_TYPE (object_syntax, ndn_snmp_object_syntax_s, ObjectSyntax)
+NDN_DATA_UNIT_TYPE(object_syntax, ndn_snmp_object_syntax_s, ObjectSyntax);
 
 
 asn_type snmp_no_such_object_s = 

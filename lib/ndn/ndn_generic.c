@@ -26,14 +26,16 @@
  * $Id$
  */ 
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+#include "te_config.h"
 
 /* for hton* functions */
+#if HAVE_NETINET_IN_H
 #include <netinet/in.h>
+#endif
 
+#if HAVE_STRING_H
 #include <string.h>
+#endif
 
 #include "te_defs.h"
 #include "te_errno.h" 
@@ -57,16 +59,16 @@ const asn_type * const ndn_ip_address = &ndn_ip_address_s;
  * Interval 
  */ 
 
-static asn_named_entry_t _ndn_interval_ne_array [] = 
+static asn_named_entry_t _ndn_interval_ne_array[] = 
 {
     { "b", &asn_base_integer_s, {PRIVATE, 1} },
     { "e", &asn_base_integer_s, {PRIVATE, 1} }
 };
 
- asn_type ndn_interval_static = 
+asn_type ndn_interval_static = 
 { "Interval", {PRIVATE, 1}, SEQUENCE, 2, {_ndn_interval_ne_array} };
 
-const asn_type * const  ndn_interval = &ndn_interval_static;
+const asn_type *const ndn_interval = &ndn_interval_static;
 
 
 
@@ -87,7 +89,7 @@ asn_type ndn_data_unit_enum_s =
 
 
 
-static asn_named_entry_t _ndn_data_unit_mask_ne_array [] = 
+static asn_named_entry_t _ndn_data_unit_mask_ne_array[] = 
 {
     { "v", &asn_base_octstring_s, {PRIVATE, 1} },
     { "m", &asn_base_octstring_s, {PRIVATE, 1} },
@@ -102,13 +104,13 @@ asn_type ndn_data_unit_mask_s =
 
 
 
-static asn_named_entry_t _ndn_data_unit_env_ne_array [] = 
+static asn_named_entry_t _ndn_data_unit_env_ne_array[] = 
 {
     { "name", &asn_base_charstring_s, {PRIVATE, 1} },
     { "type", &asn_base_enum_s, {PRIVATE, 1} }
 }; 
 
- asn_type ndn_data_unit_env_s = 
+asn_type ndn_data_unit_env_s = 
 { "DATA-UNIT-env", {PRIVATE, 2}, SEQUENCE, 
   sizeof(_ndn_data_unit_env_ne_array)/sizeof(asn_named_entry_t), 
   {_ndn_data_unit_env_ne_array} 
@@ -144,21 +146,21 @@ const asn_type * const  ndn_octet_string6 = &ndn_octet_string6_s;
 
 
 
-NDN_DATA_UNIT_TYPE (int32,         asn_base_integer_s,    INTEGER)
-NDN_DATA_UNIT_TYPE (int4,          asn_base_int4_s,       INTEGER(0..15))
-NDN_DATA_UNIT_TYPE (int8,          asn_base_int8_s,       INTEGER(0..255))
-NDN_DATA_UNIT_TYPE (int16,         asn_base_int16_s,      INTEGER(0..65535))
-NDN_DATA_UNIT_TYPE (octet_string,  asn_base_octstring_s,  OCTET STRING)
-NDN_DATA_UNIT_TYPE (octet_string6, ndn_octet_string6_s,   OCTET STRING (6))
-NDN_DATA_UNIT_TYPE (char_string,   asn_base_charstring_s, UniversalString )
-NDN_DATA_UNIT_TYPE (ip_address,    ndn_ip_address_s,      IpAddress )
-NDN_DATA_UNIT_TYPE (objid,         asn_base_objid_s,      OBJECT IDENTIFIER)
+NDN_DATA_UNIT_TYPE(int32,         asn_base_integer_s,    INTEGER);
+NDN_DATA_UNIT_TYPE(int4,          asn_base_int4_s,       INTEGER(0..15));
+NDN_DATA_UNIT_TYPE(int8,          asn_base_int8_s,       INTEGER(0..255));
+NDN_DATA_UNIT_TYPE(int16,         asn_base_int16_s,      INTEGER(0..65535));
+NDN_DATA_UNIT_TYPE(octet_string,  asn_base_octstring_s,  OCTET STRING);
+NDN_DATA_UNIT_TYPE(octet_string6, ndn_octet_string6_s,   OCTET STRING (6));
+NDN_DATA_UNIT_TYPE(char_string,   asn_base_charstring_s, UniversalString );
+NDN_DATA_UNIT_TYPE(ip_address,    ndn_ip_address_s,      IpAddress );
+NDN_DATA_UNIT_TYPE(objid,         asn_base_objid_s,      OBJECT IDENTIFIER);
 
 
 
 
 
-static asn_named_entry_t _ndn_payload_ne_array [] = 
+static asn_named_entry_t _ndn_payload_ne_array[] = 
 {
     { "bytes",    &asn_base_octstring_s, {PRIVATE, 1} },
     { "mask",     &ndn_data_unit_mask_s, {PRIVATE, 1} },
@@ -199,7 +201,7 @@ static asn_type ndn_chstring_seq_s =
 };
 
 
-static asn_named_entry_t _ndn_template_parameter_simple_for_ne_array [] =
+static asn_named_entry_t _ndn_template_parameter_simple_for_ne_array[] =
 {
     { "begin",  &asn_base_integer_s, {PRIVATE, 1} },
     { "end",    &asn_base_integer_s, {PRIVATE, 1} },
@@ -215,7 +217,7 @@ static asn_type ndn_template_parameter_simple_for_s =
 };
 
 
-static asn_named_entry_t _ndn_template_parameter_ne_array [] = 
+static asn_named_entry_t _ndn_template_parameter_ne_array[] = 
 {
     { "ints",       &ndn_integer_seq_s, {PRIVATE, 1} },
     { "strings",    &ndn_chstring_seq_s, {PRIVATE, 1} },
@@ -252,7 +254,7 @@ const asn_type * const ndn_generic_pdu_sequence =
 
 
 
-static asn_named_entry_t _ndn_traffic_template_ne_array [] = 
+static asn_named_entry_t _ndn_traffic_template_ne_array[] = 
 {
     { "arg-sets",  &ndn_template_parameter_sequence_s, {PRIVATE, 1} },
     { "delays",    &ndn_data_unit_int32_s, {PRIVATE, 1} },
@@ -276,7 +278,7 @@ Packet-Action ::= CHOICE {
 }
 */
 
-static asn_named_entry_t _ndn_packet_action_ne_array [] = 
+static asn_named_entry_t _ndn_packet_action_ne_array[] = 
 {
     { "echo",    &asn_base_null_s, {PRIVATE, 1} },
     { "function",&asn_base_charstring_s, {PRIVATE, 1} },
@@ -302,7 +304,7 @@ Traffic-Pattern-Unit ::= SEQUENCE {
 */
 
 
-static asn_named_entry_t _ndn_traffic_pattern_unit_ne_array [] = 
+static asn_named_entry_t _ndn_traffic_pattern_unit_ne_array[] = 
 {
     { "pdus",      &ndn_generic_pdu_sequence_s, {PRIVATE, 1} },
     { "payload",   &ndn_payload_s, {PRIVATE, 1} },
@@ -340,7 +342,7 @@ NDN-TimeStamp ::= SEQUENCE {
     micro-seconds INTEGER
 }
  */
-static asn_named_entry_t _ndn_time_stamp_ne_array [] = 
+static asn_named_entry_t _ndn_time_stamp_ne_array[] = 
 {
     { "seconds",       &asn_base_integer_s, {PRIVATE, 1} },
     { "micro-seconds", &asn_base_integer_s, {PRIVATE, 1} },
@@ -366,7 +368,7 @@ Raw-Packet ::= SEQUENCE -- values of this type are passed from CSAP to test
 */
 
 
-static asn_named_entry_t _ndn_raw_packet_ne_array [] = 
+static asn_named_entry_t _ndn_raw_packet_ne_array[] = 
 {
     { "received",  &ndn_time_stamp_s, {PRIVATE, 1} },
     { "pdus",      &ndn_generic_pdu_sequence_s, {PRIVATE, 1} },

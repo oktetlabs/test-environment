@@ -39,66 +39,77 @@
 extern "C" {
 #endif
 
-/* Constants for ASN tags of protocol choices in PDUs and CSAPs */
+/**
+ * Constants for ASN tags of protocol choices in PDUs and CSAPs 
+ */
 typedef enum { 
-    NDN_TAD_FILE = 1,
-    NDN_TAD_SNMP,
-    NDN_TAD_CLI,
-    NDN_TAD_ETH,
     NDN_TAD_BRIDGE,
-    NDN_TAD_IP4,
-    NDN_TAD_ICMP4,
-    NDN_TAD_UDP,
-    NDN_TAD_TCP,
+    NDN_TAD_CLI,
     NDN_TAD_DHCP,
+    NDN_TAD_ETH,
+    NDN_TAD_FILE,
+    NDN_TAD_ICMP4,
+    NDN_TAD_IP4,
+    NDN_TAD_TCP,
+    NDN_TAD_SNMP,
+    NDN_TAD_UDP,
 } ndn_tad_protocols_t;
 
-extern const asn_type * const  ndn_data_unit_int4;
-extern const asn_type * const  ndn_data_unit_int5;
-extern const asn_type * const  ndn_data_unit_int8;
-extern const asn_type * const  ndn_data_unit_int16;
-extern const asn_type * const  ndn_data_unit_int16;
-extern const asn_type * const  ndn_data_unit_int32;
-extern const asn_type * const  ndn_data_unit_octet_string;
-extern const asn_type * const  ndn_data_unit_octet_string6;
-extern const asn_type * const  ndn_data_unit_char_string;
-extern const asn_type * const  ndn_data_unit_objid;
-extern const asn_type * const  ndn_generic_pdu_sequence;
-extern const asn_type * const  ndn_payload;
-extern const asn_type * const  ndn_interval;
-extern const asn_type * const  ndn_interval_sequence;
-extern const asn_type * const  ndn_csap_spec;
-extern const asn_type * const  ndn_traffic_template;
-extern const asn_type * const  ndn_template_parameter;
-extern const asn_type * const  ndn_traffic_pattern;
-extern const asn_type * const  ndn_traffic_pattern_unit;
-extern const asn_type * const  ndn_raw_packet;
-extern const asn_type * const  ndn_ip_address;
 
-extern asn_type ndn_data_unit_int8_s;  
-extern asn_type ndn_data_unit_int16_s;  
-extern asn_type ndn_data_unit_int32_s;  
-extern asn_type ndn_data_unit_octet_string_s;  
-extern asn_type ndn_data_unit_char_string_s;  
-extern asn_type ndn_data_unit_objid_s;  
-extern asn_type ndn_data_unit_ip_address_s;  
+/** 
+ * ASN tag values for DATA-UNIT choice, see definition of DATA-UNIT
+ * macro in ASN module TE-Network-Data-Notation-General 
+ * ($TE_BASE/doc/ndn/ndn-gen.asn).
+ */
+typedef enum { 
+    NDN_DU_PLAIN = 1, 
+    NDN_DU_SCRIPT, 
+    NDN_DU_ENUM, 
+    NDN_DU_MASK, 
+    NDN_DU_INTERVALS, 
+    NDN_DU_ENV, 
+    NDN_DU_FUNC, 
+} ndn_data_unit_tags_t;
 
-extern asn_type ndn_ip_address_s;
 
-extern const asn_type * const  asn_base_int4;
-extern const asn_type * const  asn_base_int8;
-extern const asn_type * const  asn_base_int16;
-extern const asn_type * const  ndn_octet_string6;
 
-extern asn_type  asn_base_int4_s;
-extern asn_type  asn_base_int8_s;
-extern asn_type  asn_base_int16_s;
-extern asn_type  ndn_octet_string6_s;
+/* Generic useful ASN types */
+extern const asn_type *const asn_base_int4;
+extern const asn_type *const asn_base_int8;
+extern const asn_type *const asn_base_int16;
 
-extern const asn_type * const  ndn_generic_csap_level;
-extern const asn_type * const  ndn_generic_pdu; 
-extern asn_type ndn_generic_pdu_s;
-extern asn_type ndn_generic_csap_level_s;
+
+/* NDN ASN types. */
+    /* DATA-UNIT wrappers over respecive bit integer fields */
+extern const asn_type *const ndn_data_unit_int4; 
+extern const asn_type *const ndn_data_unit_int5;
+extern const asn_type *const ndn_data_unit_int8;
+extern const asn_type *const ndn_data_unit_int16;
+extern const asn_type *const ndn_data_unit_int16;
+extern const asn_type *const ndn_data_unit_int32;
+
+    /* DATA-UNIT(OCTET STRING) */
+extern const asn_type *const ndn_data_unit_octet_string;
+    /* DATA-UNIT(OCTET STRING SIZE 6) , for MAC addresses */
+extern const asn_type *const ndn_data_unit_octet_string6;
+
+extern const asn_type *const ndn_data_unit_char_string;
+extern const asn_type *const ndn_data_unit_objid;
+extern const asn_type *const ndn_ip_address;
+extern const asn_type *const ndn_octet_string6; 
+extern const asn_type *const ndn_generic_pdu_sequence;
+extern const asn_type *const ndn_payload;
+extern const asn_type *const ndn_interval;
+extern const asn_type *const ndn_interval_sequence;
+extern const asn_type *const ndn_csap_spec;
+extern const asn_type *const ndn_traffic_template;
+extern const asn_type *const ndn_template_parameter;
+extern const asn_type *const ndn_traffic_pattern;
+extern const asn_type *const ndn_traffic_pattern_unit;
+extern const asn_type *const ndn_raw_packet;
+
+extern const asn_type *const ndn_generic_csap_level;
+extern const asn_type *const ndn_generic_pdu; 
 
 
 /**

@@ -59,7 +59,7 @@ extern asn_type ndn_dhcpv4_csap_s;
 
 extern asn_type ndn_bridge_csap_s;
 
-static asn_named_entry_t _ndn_generic_csap_level_ne_array [] = 
+static asn_named_entry_t _ndn_generic_csap_level_ne_array[] = 
 {
 /* Add here reference to protocol-specific CSAP init params */ 
     { "file",   &ndn_file_csap_s,       {PRIVATE, NDN_TAD_FILE} }, 
@@ -100,7 +100,7 @@ extern asn_type ndn_dhcpv4_message_s;
 extern asn_type ndn_bridge_pdu_s;
 
 
-static asn_named_entry_t _ndn_generic_pdu_ne_array [] = 
+static asn_named_entry_t _ndn_generic_pdu_ne_array[] = 
 {
     { "file",   &ndn_file_message_s,      {PRIVATE, NDN_TAD_FILE} }, 
 #ifdef HAS_SNMP
