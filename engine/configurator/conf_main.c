@@ -492,6 +492,9 @@ process_backup(cfg_backup_msg *msg)
             /* Try to restore using dynamic history */
             if ((msg->rc = cfg_dh_restore_backup(msg->filename)) == 0)
                 return;
+                
+            if (msg->rc == ENOENT)
+                return;
 
 /**
  * If error is returned by @e x, log error message and return from
@@ -527,6 +530,7 @@ process_backup(cfg_backup_msg *msg)
             sprintf(tmp_buf, "diff %s %s >/dev/null 2>&1", msg->filename, 
                              filename);
             msg->rc = ((system(tmp_buf) == 0) ? 0 : ETEBACKUP);
+            break;
         }
     }
 }
