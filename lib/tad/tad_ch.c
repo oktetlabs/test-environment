@@ -254,7 +254,7 @@ rcf_ch_csap_create(struct rcf_comm_connection *handle,
         char *lower_proto = NULL;
         int val_len;
 
-        csap_spt_descr = find_csap_spt(new_csap->proto[level]);
+        csap_spt_descr = new_csap->proto_supports[level];
 
         if (csap_spt_descr == NULL)
         {
@@ -345,7 +345,7 @@ rcf_ch_csap_destroy(struct rcf_comm_connection *handle,
     }
 
     CSAP_DA_LOCK(csap_descr_p);
-    if (csap_descr_p->command)
+    if (csap_descr_p->command != TAD_OP_IDLE)
     {
         WARN("%s: CSAP %d is busy", __FUNCTION__, csap);
         CSAP_DA_UNLOCK(csap_descr_p);
@@ -362,7 +362,7 @@ rcf_ch_csap_destroy(struct rcf_comm_connection *handle,
         csap_spt_type_p  csap_spt_descr; 
         char            *lower_proto = NULL;
 
-        csap_spt_descr = find_csap_spt(csap_descr_p->proto[level]);
+        csap_spt_descr = csap_descr_p->proto_supports[level];
 
         if (csap_spt_descr == NULL)
         {
@@ -468,7 +468,9 @@ rcf_ch_trsend_start(struct rcf_comm_connection *handle,
     strncpy(csap_descr_p->answer_prefix, cbuf, MAX_ANS_PREFIX - 1);
     csap_descr_p->answer_prefix[answer_plen] = 0; 
 
-    csap_descr_p->state = csap_descr_p->command = TAD_OP_SEND;
+    csap_descr_p->command = TAD_OP_SEND;
+
+    csap_descr_p->state = TAD_STATE_SEND;
 
     if (postponed)
         csap_descr_p->state |= TAD_STATE_FOREGROUND;
@@ -482,6 +484,8 @@ rcf_ch_trsend_start(struct rcf_comm_connection *handle,
         {
             ERROR("send nds check_pdus error: %x", rc);
             SEND_ANSWER("%d", TE_RC(TE_TAD_CH, rc));
+            csap_descr_p->command = TAD_OP_IDLE;
+            csap_descr_p->state = 0;
             return 0;
         }
     }
@@ -499,6 +503,8 @@ rcf_ch_trsend_start(struct rcf_comm_connection *handle,
         SEND_ANSWER("%d cannot initialize pthread attribute variable",
                     TE_RC(TE_TAD_CH, rc));
         free(send_context);
+        csap_descr_p->command = TAD_OP_IDLE;
+        csap_descr_p->state = 0;
         return 0;
     }
 
@@ -510,6 +516,8 @@ rcf_ch_trsend_start(struct rcf_comm_connection *handle,
         SEND_ANSWER("%d cannot create a new SEND thread", 
                     TE_RC(TE_TAD_CH, rc));
         free(send_context);
+        csap_descr_p->command = TAD_OP_IDLE;
+        csap_descr_p->state = 0;
     }
     return 0;
 #endif
@@ -546,11 +554,11 @@ rcf_ch_trsend_stop(struct rcf_comm_connection *handle,
 
     CSAP_DA_LOCK(csap_descr_p);
 
-    if (csap_descr_p->command & TAD_OP_SEND)
+    if (csap_descr_p->command == TAD_OP_SEND)
     {
         strncpy(csap_descr_p->answer_prefix, cbuf, answer_plen);
         csap_descr_p->answer_prefix[answer_plen] = 0; 
-        csap_descr_p->command |= TAD_COMMAND_STOP;
+        csap_descr_p->command = TAD_OP_STOP;
         CSAP_DA_UNLOCK(csap_descr_p);
     }
     else
@@ -628,7 +636,7 @@ rcf_ch_trrecv_start(struct rcf_comm_connection *handle,
     }
 
     CSAP_DA_LOCK(csap_descr_p);
-    if (csap_descr_p->command)
+    if (csap_descr_p->command != TAD_OP_IDLE)
     {
         CSAP_DA_UNLOCK(csap_descr_p);
         WARN("CSAP is busy");
@@ -658,14 +666,15 @@ rcf_ch_trrecv_start(struct rcf_comm_connection *handle,
     
     CSAP_DA_LOCK(csap_descr_p);
 
-    csap_descr_p->command = TAD_OP_RECV; 
+    csap_descr_p->state = TAD_STATE_RECV;
+
     if (sr_flag) 
     {
-        csap_descr_p->command |= TAD_OP_SEND; 
-        csap_descr_p->state |= TAD_STATE_FOREGROUND;
+        csap_descr_p->command = TAD_OP_SEND_RECV; 
+        csap_descr_p->state |= TAD_STATE_FOREGROUND | TAD_STATE_SEND;
     }
-
-    csap_descr_p->state |= csap_descr_p->command;
+    else
+        csap_descr_p->command = TAD_OP_RECV; 
 
     strncpy(csap_descr_p->answer_prefix, cbuf, answer_plen);
     csap_descr_p->answer_prefix[answer_plen] = 0; 
@@ -676,7 +685,7 @@ rcf_ch_trrecv_start(struct rcf_comm_connection *handle,
 
     CSAP_DA_LOCK(csap_descr_p);
     if (results)
-        csap_descr_p->command |= TAD_COMMAND_RESULTS;
+        csap_descr_p->state |= TAD_STATE_RESULTS;
     CSAP_DA_UNLOCK(csap_descr_p);
 
     recv_context = malloc(sizeof(tad_task_context));
@@ -729,15 +738,15 @@ rcf_ch_trrecv_start(struct rcf_comm_connection *handle,
                 break;
             }
 
-            csap_spt_descr = find_csap_spt (csap_descr_p->proto[level]);
+            csap_spt_descr = csap_descr_p->proto_supports[level];
 
             rc = csap_spt_descr->confirm_cb(csap_descr_p->id, level, 
                                             level_pdu);
 
             if (rc) 
             {
-                WARN("%s: csap #%d confirm pattern pdu fails; 0x%x\n", 
-                        __FUNCTION__, csap, rc);
+                WARN("%s(): csap %d confirm pattern pdu fails; 0x%x", 
+                     __FUNCTION__, csap, rc);
                 break;
             }
             snprintf(label_buf, sizeof(label_buf), "pdus.%d.#%s", 
@@ -771,6 +780,8 @@ rcf_ch_trrecv_start(struct rcf_comm_connection *handle,
         WARN("pattern does not confirm to CSAP; rc 0x%x", rc);
         asn_free_value(nds);
         SEND_ANSWER("%d", TE_RC(TE_TAD_CH, rc));
+        csap_descr_p->command = TAD_OP_IDLE;
+        csap_descr_p->state = 0;
         return 0;
     }
 
@@ -798,6 +809,8 @@ rcf_ch_trrecv_start(struct rcf_comm_connection *handle,
         SEND_ANSWER("%d cannot initialize pthread attribute variable",
                     TE_RC(TE_TAD_CH, rc));
         free(recv_context);
+        csap_descr_p->command = TAD_OP_IDLE;
+        csap_descr_p->state = 0;
         return 0;
     }
 
@@ -808,6 +821,8 @@ rcf_ch_trrecv_start(struct rcf_comm_connection *handle,
         asn_free_value(recv_context->nds);
         SEND_ANSWER("%d", TE_RC(TE_TAD_CH, rc));
         free(recv_context);
+        csap_descr_p->command = TAD_OP_IDLE;
+        csap_descr_p->state = 0;
     }
 
     return 0;
@@ -847,9 +862,9 @@ rcf_ch_trrecv_stop(struct rcf_comm_connection *handle,
 
     /* Note: watch carefully, that unlock made in every 
      * conditional branch. */
-    if (csap_descr_p->command & TAD_OP_RECV)
+    if (csap_descr_p->command == TAD_OP_RECV)
     {
-        csap_descr_p->command |= TAD_COMMAND_STOP; 
+        csap_descr_p->command = TAD_OP_STOP; 
 
         if (csap_descr_p->state & TAD_STATE_FOREGROUND)
         {
@@ -868,7 +883,7 @@ rcf_ch_trrecv_stop(struct rcf_comm_connection *handle,
     else
     {
         F_ERROR("%s: inappropriate command, CSAP %d is not receiving; "
-                "command %x; state %x ", __FUNCTION__, csap_descr_p->id, 
+                "command %d; state %x ", __FUNCTION__, csap_descr_p->id, 
                 (int)csap_descr_p->command, (int)csap_descr_p->state);
         CSAP_DA_UNLOCK(csap_descr_p);
         SEND_ANSWER("%d 0", TE_RC(TE_TAD_CH, ETADCSAPSTATE));
@@ -911,9 +926,9 @@ rcf_ch_trrecv_wait(struct rcf_comm_connection *handle,
 
     CSAP_DA_LOCK(csap_descr_p);
 
-    if (csap_descr_p->command & TAD_OP_RECV)
+    if (csap_descr_p->command == TAD_OP_RECV)
     {
-        csap_descr_p->command |= TAD_COMMAND_WAIT; 
+        csap_descr_p->command = TAD_OP_WAIT; 
         strncpy(csap_descr_p->answer_prefix, cbuf, answer_plen);
         csap_descr_p->answer_prefix[answer_plen] = 0; 
         CSAP_DA_UNLOCK(csap_descr_p);
@@ -921,7 +936,7 @@ rcf_ch_trrecv_wait(struct rcf_comm_connection *handle,
     else
     {
         ERROR("Inappropriate command, CSAP %d is not receiving; "
-              "command %x; state %x ",
+              "command %d; state %x ",
               csap_descr_p->id, 
               (int)csap_descr_p->command, (int)csap_descr_p->state);
         CSAP_DA_UNLOCK(csap_descr_p);
@@ -960,9 +975,9 @@ rcf_ch_trrecv_get(struct rcf_comm_connection *handle,
     }
 
     CSAP_DA_LOCK(csap_descr_p);
-    if (csap_descr_p->command & TAD_OP_RECV)
+    if (csap_descr_p->command == TAD_OP_RECV)
     {
-        csap_descr_p->command |= TAD_COMMAND_GET;
+        csap_descr_p->command = TAD_OP_GET;
         strncpy(csap_descr_p->answer_prefix, cbuf, answer_plen);
         csap_descr_p->answer_prefix[answer_plen] = 0; 
         CSAP_DA_UNLOCK(csap_descr_p);
@@ -970,7 +985,7 @@ rcf_ch_trrecv_get(struct rcf_comm_connection *handle,
     else
     {
         ERROR("Inappropriate command, CSAP %d is not receiving; "
-              "command %x; state %x ", csap_descr_p->id, 
+              "command %d; state %x ", csap_descr_p->id, 
               (int)csap_descr_p->command, (int)csap_descr_p->state);
         CSAP_DA_UNLOCK(csap_descr_p);
 
@@ -1011,7 +1026,7 @@ rcf_ch_csap_param(struct rcf_comm_connection *handle,
         tad_csap_status_t status = 0;
 
         CSAP_DA_LOCK(csap_descr_p);
-        if (csap_descr_p->command == 0)
+        if (csap_descr_p->command == TAD_OP_IDLE)
             status = CSAP_IDLE;
         else if (csap_descr_p->state & TAD_STATE_COMPLETE)
         {
@@ -1023,7 +1038,7 @@ rcf_ch_csap_param(struct rcf_comm_connection *handle,
         else
             status = CSAP_BUSY;
 
-        F_VERB("CSAP get_param, status %d, command flag %x\n", 
+        F_VERB("CSAP get_param, status %d, command flag %d\n", 
                (int)status, (int)csap_descr_p->command);
         CSAP_DA_UNLOCK(csap_descr_p);
 
@@ -1114,7 +1129,7 @@ rcf_ch_trsend_recv(struct rcf_comm_connection *handle,
         return 0;
     }
     CSAP_DA_LOCK(csap_descr_p);
-    if (csap_descr_p->command)
+    if (csap_descr_p->command != TAD_OP_IDLE)
     {
         CSAP_DA_UNLOCK(csap_descr_p);
         SEND_ANSWER("%d Specified CSAP is busy", 

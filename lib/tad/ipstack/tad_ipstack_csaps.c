@@ -36,16 +36,16 @@
 
 csap_layer_neighbour_list_t ip4_nbr_eth = 
 {
-    "eth",
     NULL, 
+    "eth",
     ip4_eth_init_cb,
     ip4_eth_destroy_cb,
 };
 
 csap_layer_neighbour_list_t ip4_nbr_single = 
 {
-    NULL,
     &ip4_nbr_eth, 
+    NULL,
     ip4_single_init_cb,
     ip4_single_destroy_cb,
 };
@@ -68,8 +68,8 @@ csap_spt_type_t ip4_csap_spt =
 
 csap_layer_neighbour_list_t udp_nbr_ip4 = 
 {
-    "ip4",
     NULL, 
+    "ip4",
     udp_ip4_init_cb,
     udp_ip4_destroy_cb,
 };
@@ -78,8 +78,8 @@ csap_layer_neighbour_list_t udp_nbr_ip4 =
 #if 0 
 csap_layer_neighbour_list_t udp_nbr_single = 
 {
-    NULL,
     &udp_nbr_ip4, 
+    NULL,
     udp_single_init_cb,
     udp_single_destroy_cb,
 };
@@ -102,8 +102,8 @@ csap_spt_type_t udp_csap_spt =
 
 csap_layer_neighbour_list_t tcp_nbr_ip4 = 
 {
-    "ip4",
     NULL, /* next */
+    "ip4",
     tcp_ip4_init_cb,
     tcp_ip4_destroy_cb,
 };

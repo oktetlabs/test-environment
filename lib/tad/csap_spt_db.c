@@ -37,15 +37,19 @@
 
 
 struct csap_spt_entry;
-typedef struct csap_spt_entry * csap_spt_entry_p;
+typedef struct csap_spt_entry *csap_spt_entry_p;
 
-typedef struct csap_spt_entry
-{ 
-    csap_spt_entry_p  next, prev;
+typedef struct csap_spt_entry { 
+    csap_spt_entry_p  next;
+    csap_spt_entry_p  prev;
     csap_spt_type_p   spt_data;  
 } csap_spt_entry_t;
 
-static csap_spt_entry_t csap_spt_root;
+static csap_spt_entry_t csap_spt_root = {
+    &csap_spt_root,
+    &csap_spt_root,
+    NULL
+};
 
 /**
  * Init CSAP support database
@@ -55,10 +59,6 @@ static csap_spt_entry_t csap_spt_root;
 int 
 init_csap_spt(void)
 {
-    csap_spt_root.next = &csap_spt_root;
-    csap_spt_root.prev = &csap_spt_root;
-    csap_spt_root.spt_data = NULL;
-
     return 0;
 }
 
@@ -74,7 +74,7 @@ init_csap_spt(void)
 int 
 add_csap_spt(csap_spt_type_p spt_descr)
 {
-    csap_spt_entry_p new_spt_entry = malloc(sizeof(csap_spt_entry_t));
+    csap_spt_entry_p new_spt_entry = malloc(sizeof(*new_spt_entry));
 
     if (new_spt_entry == NULL) 
         return ENOMEM;
@@ -97,7 +97,7 @@ find_csap_spt(const char *proto)
 {
     csap_spt_entry_p spt_entry;
 
-    VERB("%s, asked proto %s", __FUNCTION__, proto);
+    VERB("%s(): asked proto %s", __FUNCTION__, proto);
 
     for (spt_entry = csap_spt_root.next; 
          spt_entry!= &csap_spt_root; 
@@ -107,7 +107,7 @@ find_csap_spt(const char *proto)
             VERB("test proto %s", spt_entry->spt_data->proto);
 
         if (spt_entry->spt_data && 
-            (strcmp (spt_entry->spt_data->proto, proto) == 0))
+            (strcmp(spt_entry->spt_data->proto, proto) == 0))
             return spt_entry->spt_data;
     } 
     return NULL;

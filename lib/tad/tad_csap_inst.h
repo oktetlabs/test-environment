@@ -51,10 +51,6 @@
 #include "asn_usr.h" 
 #include "tad_common.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 
 
 
@@ -74,7 +70,7 @@ extern "C" {
         (new_)->next = (place_)->next;  \
         (place_)->next = new_;          \
         (new_)->next->prev = new_;      \
-    } while(0)
+    } while (0)
 
 /**
  * Remove element p from queue (double linked list)
@@ -86,7 +82,7 @@ extern "C" {
         (elem_)->prev->next = (elem_)->next;    \
         (elem_)->next->prev = (elem_)->prev;    \
         (elem_)->next = (elem_)->prev = elem_;  \
-    } while(0)
+    } while (0)
 #endif
 
 
@@ -109,6 +105,7 @@ extern "C" {
 #define CSAP_DA_LOCK(csap_inst_)\
     do {                                                                \
         int rc = pthread_mutex_lock(&((csap_inst_)->data_access_lock)); \
+                                                                        \
         if (rc != 0)                                                    \
             ERROR("%s: mutex_lock fails %x", __FUNCTION__, rc);         \
     } while (0)
@@ -123,18 +120,19 @@ extern "C" {
 #define CSAP_DA_TRYLOCK(csap_inst_, rc_)\
     do {                                                                  \
         (rc_) = pthread_mutex_trylock(&((csap_inst_)->data_access_lock)); \
-        if (rc_ != 0)                                                     \
-            RING("%s: mutex_trylock fails %x", __FUNCTION__, rc_);        \
+        if (rc_ != 0 && rc_ != EBUSY)                                     \
+            ERROR("%s: mutex_trylock fails %x", __FUNCTION__, rc_);       \
     } while (0)
 
 /**
  * Unlocks access to CSAP shared flags and data. 
  *
- * @param _csap_descr   Pointer to CSAP descriptor structure. 
+ * @param csap_inst_   Pointer to CSAP descriptor structure. 
  */
 #define CSAP_DA_UNLOCK(csap_inst_)\
     do {                                                                  \
         int rc = pthread_mutex_unlock(&((csap_inst_)->data_access_lock)); \
+                                                                          \
         if (rc != 0)                                                      \
             ERROR("%s: mutex_unlock fails %x", __FUNCTION__, rc);         \
     } while (0)
@@ -147,69 +145,12 @@ extern "C" {
 
 /* ============= Types and structures definitions =============== */
 
-/**
- * CSAP parameters command and state are bitmasks with the following 
- * semantic:
- *
- *  CSAP command bits. 
- * 
- * 00000000
- * |||||||+- traffic send operation;
- * ||||||+- traffic receive operation;
- * |||||+- stop;
- * ||||+- get (valid only for "recv");
- * |||+- wait (valid only for "recv");
- * ||+- received packets requested (valid only for "recv");
- * ++- not used.
- *
- * CSAP state bits 
- * 00000000
- * |||||||+- traffic send operation;
- * ||||||+- traffic receive operation;
- * |||||+- foreground (blocking) operation mode; 
- * ||||+- operation complete (in background mode), 
- * ||||   waiting for "stop" or "wait";
- * ++++- not used.
- *
- */
-
-/** Constants used for both "command" and "state" flags. */
-enum {
-    TAD_OP_SEND            =    1,
-    TAD_OP_RECV            =    2,  
-};
-
-/** Constants for "command" flag */
-enum {
-    TAD_COMMAND_STOP       =    4, 
-    TAD_COMMAND_GET        =    8, 
-    TAD_COMMAND_WAIT       = 0x10, 
-    TAD_COMMAND_RESULTS    = 0x20, 
-};
-
-/** Constants for "state" flag */
-enum {
-    TAD_STATE_FOREGROUND   =    4,
-    TAD_STATE_COMPLETE     =    8,
-};
-
-
-/**
- * Type of CSAP: raw or data 
- */
-typedef enum {
-    TAD_CSAP_RAW = 0, /**< Raw CSAP, which allows full control of 
-                           byte flow */
-    TAD_CSAP_DATA     /**< Data CSAP, which have 'data' prefix in ints 
-                           type string and provides only service
-                           to transport data over some protocol */
-} tad_csap_type_t;
-
 typedef struct csap_instance *csap_p;
 
+struct csap_spt_type_t;
 
 /**
- * Type for reference to callback for read parameter value of CSAP.
+ * Callback type to read parameter value of CSAP.
  *
  * @param csap_descr    CSAP descriptor structure. 
  * @param level         Index of level in CSAP stack, which param is wanted.
@@ -219,11 +160,11 @@ typedef struct csap_instance *csap_p;
  *     String with textual presentation of parameter value, or NULL 
  *     if error occured. User have to free memory at returned pointer.
  */ 
-typedef char* (*csap_get_param_cb_t)(csap_p csap_descr, int level, 
+typedef char *(*csap_get_param_cb_t)(csap_p csap_descr, int level, 
                                      const char *param);
 
 /**
- * Type for reference to callback for prepare/release low-level resources 
+ * Callback type to prepare/release low-level resources 
  * of CSAP used in traffic process.
  * Usually should open/close sockets, etc. 
  *
@@ -234,9 +175,9 @@ typedef char* (*csap_get_param_cb_t)(csap_p csap_descr, int level,
 typedef int (*csap_low_resource_cb_t)(csap_p csap_descr);
 
 /**
- * Type for reference to callback for read data from media of CSAP. 
+ * Callback type to read data from media of CSAP. 
  *
- * @param csap_id       Identifier of CSAP.
+ * @param csap_descr    CSAP descriptor structure. 
  * @param timeout       Timeout of waiting for data in microseconds.
  * @param buf           Buffer for read data.
  * @param buf_len       Length of available buffer.
@@ -248,9 +189,9 @@ typedef int (*csap_read_cb_t)(csap_p csap_descr, int timeout,
                               char *buf, int buf_len);
 
 /**
- * Type for reference to callback for write data to media of CSAP. 
+ * Callback type to write data to media of CSAP. 
  *
- * @param csap_id       Identifier of CSAP.
+ * @param csap_descr    CSAP descriptor structure. 
  * @param buf           Buffer with data to be written.
  * @param buf_len       Length of data in buffer.
  *
@@ -260,10 +201,10 @@ typedef int (*csap_read_cb_t)(csap_p csap_descr, int timeout,
 typedef int (*csap_write_cb_t)(csap_p csap_descr, char *buf, int buf_len);
 
 /**
- * Type for reference to callback for write data to media of CSAP and read
+ * Callback type to write data to media of CSAP and read
  *  data from media just after write, to get answer to sent request. 
  *
- * @param csap_id       Identifier of CSAP.
+ * @param csap_descr    CSAP descriptor structure. 
  * @param timeout       Timeout of waiting for data in microseconds.
  * @param w_buf         Buffer with data to be written.
  * @param w_buf_len     Length of data in w_buf.
@@ -278,14 +219,14 @@ typedef int (*csap_write_read_cb_t)(csap_p csap_descr, int timeout,
                                     char *r_buf, int r_buf_len);
 
 /**
- * Type for reference to callback for check sequence of PDUs in template
+ * Callback type to check sequence of PDUs in template
  * or pattern, and fill absent layers if necessary. 
  *
- * @param csap_descr       Identifier of CSAP.
- * @param pdus             ASN value with Traffic-Template or 
- *                         Traffic-Pattern, which field pdus will 
- *                         be checked to have sequence of PDUs according
- *                         with CSAP layer structure.
+ * @param csap_descr    CSAP descriptor structure. 
+ * @param pdus          ASN value with Traffic-Template or 
+ *                      Traffic-Pattern, which field pdus will 
+ *                      be checked to have sequence of PDUs according
+ *                      with CSAP layer structure.
  *
  * @return zero on success, otherwise common TE error code.
  */ 
@@ -294,13 +235,14 @@ typedef int (*csap_check_pdus_cb_t)(csap_p csap_descr,
 
 
 /**
- * Type for reference to echo CSAP method. 
+ * Callback type to echo CSAP method. 
  * Method should prepare binary data to be send as "echo" and call 
  * respective write method to send it. 
  * Method may change data stored at passed location.
  *
- * @param csap_descr    Identifier of CSAP
+ * @param csap_descr    CSAP descriptor structure. 
  * @param pkt           Got packet, plain binary data. 
+ * @param len           Length of packet.
  *
  * @return zero on success or error code.
  */
@@ -308,20 +250,59 @@ typedef int (*csap_echo_method)(csap_p csap_descr, uint8_t *pkt,
                                 size_t len);
 
 
+/**
+ * Constants for last unprocessed traffic command to the CSAP 
+ */
+typedef enum {
+    TAD_OP_IDLE,        /**< no traffic operation, waiting for command */
+    TAD_OP_SEND,        /**< trsend_start */
+    TAD_OP_SEND_RECV,   /**< trsend_recv */
+    TAD_OP_RECV,        /**< trrecv_start */
+    TAD_OP_GET,         /**< trrecv_get */
+    TAD_OP_WAIT,        /**< trrecv_wait */
+    TAD_OP_STOP,        /**< tr{send|recv}_stop */
+} tad_traffic_op_t;
 
-typedef struct csap_instance
-{
-    int             id;           /**< CSAP id */
+/** @name CSAP processing flags */
+enum {
+    TAD_STATE_SEND       =    1, /**< CSAP is sending */
+    TAD_STATE_RECV       =    2, /**< CSAP is receiving */
+    TAD_STATE_FOREGROUND =    4, /**< RCF answer is pending */
+    TAD_STATE_COMPLETE   =    8, /**< traffic operation complete */
+    TAD_STATE_RESULTS    = 0x10, /**< receive results are required */
+};
+/*@}*/
 
-    int             depth;        /**< number of layers in stack */
-    char          **proto;        /**< array of protocol layers labels */
-    void          **layer_data;   /**< array of pointer to layer-specific 
-                                       data*/
-    tad_csap_type_t type;         /**< Type of CSAP */
 
-    csap_get_param_cb_t 
-                * get_param_cb;   /**< array of pointers to callbacks for 
-                                      get CSAP parameters */
+/**
+ * Type of CSAP: raw or data 
+ */
+typedef enum {
+    TAD_CSAP_RAW,  /**< Raw CSAP, which allows full control of 
+                        byte flow */
+    TAD_CSAP_DATA, /**< Data CSAP, which have 'data' prefix in its 
+                        type string and provides only service
+                        to transport data over some protocol */
+} tad_csap_type_t;
+
+
+
+typedef struct csap_instance {
+    int      id;           /**< CSAP id */
+
+    int      depth;        /**< number of layers in stack */
+    char    *csap_type;    /**< pointer to original CSAP type, proto[]
+                                entries are blocks of this string. */
+    char   **proto;        /**< array of protocol layers labels */
+    void   **layer_data;   /**< array of pointer to layer-specific 
+                                data */
+
+    tad_csap_type_t type;  /**< type of CSAP */
+
+    struct csap_spt_type_t **proto_supports; /**< array of references to
+                                             protocol layer descroptors */
+    csap_get_param_cb_t *get_param_cb;  /**< array of pointers to callbacks
+                                             for get CSAP parameters */
 
     csap_read_cb_t       read_cb;       /**< read data from CSAP media */
     csap_write_cb_t      write_cb;      /**< write data to CSAP media */ 
@@ -345,7 +326,7 @@ typedef struct csap_instance
 
     char        answer_prefix[MAX_ANS_PREFIX]; 
                                  /**< prefix for test-protocol answer to 
-                                  *   the current command */
+                                      the current command */
 
     struct timeval  wait_for;    /**< Zero or moment of timeout current 
                                        CSAP operation */
@@ -359,9 +340,9 @@ typedef struct csap_instance
     size_t          total_bytes; /**< quantity of total processed bytes in
                                       last operation, for some protocols 
                                       it is not sensible */
-    uint8_t         command;     /**< current command flag */
-    uint8_t         state;       /**< current state bitmask */
-    pthread_mutex_t data_access_lock; 
+    tad_traffic_op_t command;    /**< last unprocessed command */
+    uint8_t          state;      /**< current state bitmask */
+    pthread_mutex_t  data_access_lock; 
                                  /**< mutex for lock CSAP data changing 
                                       from different threads */
 } csap_instance;
@@ -404,6 +385,11 @@ typedef int (*tad_user_generate_method)(int csap_id, int layer,
 
 
 /* ============= Function prototypes declarations =============== */
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 /**
  * Init TAD Command Handler.
@@ -468,12 +454,14 @@ extern int csap_destroy(int csap_id);
 extern csap_p csap_find(int csap_id);
 
 
-typedef struct tad_task_context
-{
-    csap_p      csap;
-    asn_value * nds;
+/**
+ * Traffic operation thread special data.
+ */
+typedef struct tad_task_context {
+    csap_p     csap; /**< Pointer to CSAP descriptor */
+    asn_value *nds;  /**< ASN value with NDS */
 
-    struct rcf_comm_connection * rcf_handle;
+    struct rcf_comm_connection *rcf_handle; /**< RCF handle to answer */
 } tad_task_context;
 
 
@@ -483,9 +471,9 @@ typedef struct tad_task_context
  * @param arg      start argument, should be pointer to 
  *                 tad_task_context struct.
  *
- * @return nothing. 
+ * @return NULL 
  */
-extern void *tad_tr_recv_thread(void * arg);
+extern void *tad_tr_recv_thread(void *arg);
 
 /**
  * Start routine for tr_send thread. 
@@ -493,9 +481,9 @@ extern void *tad_tr_recv_thread(void * arg);
  * @param arg           start argument, should be pointer to 
  *                      tad_task_context struct.
  *
- * @return nothing. 
+ * @return NULL 
  */
-extern void *tad_tr_send_thread(void * arg);
+extern void *tad_tr_send_thread(void *arg);
 
 #ifdef __cplusplus
 } /* extern "C" */

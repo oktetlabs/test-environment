@@ -37,8 +37,8 @@
 
 csap_layer_neighbour_list_t bridge_nbr_list = 
 {
-    "eth",
     NULL, 
+    "eth",
     bridge_eth_init_cb,
     bridge_eth_destroy_cb,
 };

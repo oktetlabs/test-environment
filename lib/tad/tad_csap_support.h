@@ -70,7 +70,7 @@ struct tad_tmpl_arg_t;
 
 
 /**
- * Type for reference to callback for init CSAP layer.
+ * Callback type to init CSAP layer.
  *
  * @param csap_id       Identifier of CSAP.
  * @param csap_nds      Asn_value with CSAP init parameters
@@ -82,7 +82,7 @@ struct tad_tmpl_arg_t;
 typedef int (*csap_nbr_init_cb_t)(int csap_id, 
                                   const asn_value *csap_nds, int layer);
 /**
- * Type for reference to callback for destroy CSAP layer.
+ * Callback type to destroy CSAP layer.
  *      This callback should free all undeground media resources used by 
  *      this layer and all memory used for layer-specific data and pointed
  *      in respective structure in 'layer-data' in CSAP instance struct. 
@@ -96,8 +96,7 @@ typedef int (*csap_nbr_init_cb_t)(int csap_id,
 typedef int (*csap_nbr_destroy_cb_t)(int csap_id, int layer);
 
 /**
- * Type for reference to callback for confirm PDU with CSAP parameters and 
- *      possibilities.
+ * Callback type to confirm PDU with CSAP parameters and possibilities.
  *
  * @param csap_id       Identifier of CSAP
  * @param layer         Numeric index of layer in CSAP type to be processed.
@@ -106,7 +105,7 @@ typedef int (*csap_nbr_destroy_cb_t)(int csap_id, int layer);
  * @return zero on success or error code.
  */ 
 typedef int (*csap_confirm_pdu_cb_t)(int csap_id, int layer, 
-                                        asn_value * tmpl_pdu); 
+                                     asn_value *tmpl_pdu); 
 
 
 
@@ -118,22 +117,20 @@ typedef int (*csap_confirm_pdu_cb_t)(int csap_id, int layer,
  * constructing message to be sent. 
  */
 struct csap_pkts;
-typedef struct csap_pkts * csap_pkts_p;
-typedef struct csap_pkts
-{
+typedef struct csap_pkts *csap_pkts_p;
+typedef struct csap_pkts {
     csap_pkts_p   next; /**< Pointer to next message fragment or NULL */
 
     void  *data;        /**< Pointer to data of this fragment */
     int    len;         /**< Length of this fragment */
 
-    void (*free_data_cb)(void*); /**< Pointer to callback for free 
-                                      fragment data, or NULL if usual 
-                                      free() may be used. */
+    void (*free_data_cb)(void *); /**< Pointer to callback for free 
+                                       fragment data, or NULL if usual 
+                                       free() may be used. */
 } csap_pkts;
 
 /**
- * Type for reference to callback for generate binary data to be sent 
- * to media.
+ * Callback type to generate binary data to be sent to media.
  *
  * @param csap_id       Identifier of CSAP
  * @param layer         Numeric index of layer in CSAP type to be processed.
@@ -167,8 +164,7 @@ typedef int (*csap_gen_bin_cb_t)(int csap_id, int layer,
                                  csap_pkts_p pkts);
 
 /**
- * Type for reference to callback for parse received packet and match it
- * with pattern. 
+ * Callback type to parse received packet and match it with pattern. 
  *
  * @param csap_id       Identifier of CSAP
  * @param layer         Numeric index of layer in CSAP type to be processed.
@@ -190,7 +186,7 @@ typedef int (*csap_match_bin_cb_t)(int csap_id, int layer,
 
 
 /**
- * Type for reference to callback for generating pattern to filter 
+ * Callback type to generating pattern to filter 
  * just one response to the packet which will be sent by this CSAP 
  * according to this template. 
  *
@@ -246,7 +242,7 @@ typedef int (*csap_gen_pattern_cb_t)(int csap_id, int layer,
 
 
 struct csap_layer_neighbour_list_t;
-typedef struct csap_layer_neighbour_list_t * csap_layer_neighbour_list_p;
+typedef struct csap_layer_neighbour_list_t *csap_layer_neighbour_list_p;
 
 /**
  * Structure for description of CSAP lower neighbours supported. 
@@ -259,16 +255,16 @@ typedef struct csap_layer_neighbour_list_t * csap_layer_neighbour_list_p;
  * These callbacks are responsible for non-TAD external means used for 
  * traffic operations. 
  */
-typedef struct csap_layer_neighbour_list_t
-{
+typedef struct csap_layer_neighbour_list_t {
+    csap_layer_neighbour_list_p next; /**< pointer to the next possible
+                                           neighbour*/
+
     char *nbr_type; /**< symbolic identifier of neighvour. 
               May have such values: 
               NULL    - this means that layer which neighbours are listed 
-                          is single in stack;
+                        is single in stack;
               "data"  - for data-CSAPs;
               id of lower neighbour level. */
-    csap_layer_neighbour_list_p next; /**< pointer to the next possible
-                                           neighbour*/
 
     csap_nbr_init_cb_t    init_cb;    /**< Callback for initialize 
                                            'current' CSAP layer regarding 
@@ -285,15 +281,15 @@ typedef struct csap_layer_neighbour_list_t
  * It contains some pointers to specific layer-dependent callbacks
  * and list with supported lower neighbours. 
  */
-typedef struct csap_spt_type_t 
-{
+typedef struct csap_spt_type_t {
     char *proto;     /**< symbolic label of related protocol level */
 
-    /* protocol-specific callbacks: */ 
+    /** @name protocol-specific callbacks */ 
     csap_confirm_pdu_cb_t confirm_cb;
     csap_gen_bin_cb_t     generate_cb;
     csap_match_bin_cb_t   match_cb;
     csap_gen_pattern_cb_t generate_pattern_cb;
+    /*@}*/
 
     csap_layer_neighbour_list_p neighbours; /**< link to the list with
                                               possible (lower) neighbours,

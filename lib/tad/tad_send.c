@@ -202,7 +202,7 @@ tad_tr_send_prepare_bin(csap_p csap_descr, asn_value_p nds,
 
         if (rc == 0)
         {
-            csap_spt_descr = find_csap_spt(csap_descr->proto[level]);
+            csap_spt_descr = csap_descr->proto_supports[level];
 
             F_VERB("before generate_cb, level: %d, up_pkts: %x\n",
                    level, up_packets);
@@ -437,7 +437,7 @@ tad_tr_send_thread(void * arg)
     {
         ERROR("preparing template error: 0x%x", rc);
         SEND_ANSWER("%d",  TE_RC(TE_TAD_CSAP, rc)); 
-        csap_descr->command = 0;
+        csap_descr->command = TAD_OP_IDLE;
         csap_descr->state = 0;
         rc = 0;
     } 
@@ -447,7 +447,7 @@ tad_tr_send_thread(void * arg)
             csap_pkts *pkt;
 
             if (!(csap_descr->state   & TAD_STATE_FOREGROUND) &&
-                 (csap_descr->command & TAD_COMMAND_STOP))
+                 (csap_descr->command == TAD_OP_STOP))
             {
                 strcpy(answer_buffer, csap_descr->answer_prefix);
                 ans_len = strlen(answer_buffer); 
@@ -562,13 +562,13 @@ tad_tr_send_thread(void * arg)
 
 
     if ((csap_descr->state   & TAD_STATE_FOREGROUND) || 
-        (csap_descr->command & TAD_COMMAND_STOP) )
+        (csap_descr->command == TAD_OP_STOP) )
     {
         VERB(
                 "blocked or long trsend finished. rc %x, sent %d", 
                 rc, sent);
 
-        csap_descr->command = 0;
+        csap_descr->command = TAD_OP_IDLE;
         csap_descr->state   = 0;
 
         if (rc)
@@ -586,9 +586,9 @@ tad_tr_send_thread(void * arg)
             struct timeval wait_for_stop_delay = {0, 30000};
             select(0, NULL, NULL, NULL, &wait_for_stop_delay);
 
-            if (csap_descr->command & TAD_COMMAND_STOP)
+            if (csap_descr->command == TAD_OP_STOP)
             {
-                csap_descr->command = 0;
+                csap_descr->command = TAD_OP_IDLE;
                 csap_descr->state = 0;
                 strcpy(answer_buffer, csap_descr->answer_prefix);
                 ans_len = strlen(answer_buffer); 
@@ -598,7 +598,7 @@ tad_tr_send_thread(void * arg)
         }
     }
 
-    csap_descr->command = 0;
+    csap_descr->command = TAD_OP_IDLE;
     csap_descr->state = 0;
     free(context); 
     return NULL;
