@@ -299,10 +299,10 @@ static asn_named_entry_t _ndn_snmp_message_ne_array [] =
     { "request-id", &ndn_data_unit_int32_s, {PRIVATE, 1} },
     { "err-status", &ndn_data_unit_snmp_errstat_s, {PRIVATE, 1} },
     { "err-index",  &ndn_data_unit_int32_s, {PRIVATE, 1} },
-    { "enterprise", &ndn_snmp_obj_syntax_objid_s, {PRIVATE, 1} },
-    { "gen-trap",   &asn_base_integer_s, {PRIVATE, 1} },
-    { "spec-trap",  &asn_base_integer_s, {PRIVATE, 1} },
-    { "agent-addr", &ndn_ip_address_s, {PRIVATE, 1} },
+    { "enterprise", &ndn_data_unit_objid_s, {PRIVATE, 1} },
+    { "gen-trap",   &ndn_data_unit_int32_s, {PRIVATE, 1} },
+    { "spec-trap",  &ndn_data_unit_int32_s, {PRIVATE, 1} },
+    { "agent-addr", &ndn_data_unit_ip_address_s, {PRIVATE, 1} },
     { "variable-bindings",  &ndn_snmp_var_bind_seq_s, {PRIVATE, 1} } 
 };
 

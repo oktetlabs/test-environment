@@ -347,17 +347,14 @@ int snmp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
 
     if (type == NDN_SNMP_MSG_TRAP1)
     {
-        asn_write_value_field(parsed_packet, pdu->enterprise, 
-                              pdu->enterprise_length, "enterprise");
-
-        asn_write_value_field(parsed_packet, &pdu->trap_type,
-                              sizeof(pdu->trap_type), "gen-trap");
-
-        asn_write_value_field(parsed_packet, &pdu->specific_type,
-                              sizeof(pdu->specific_type), "spec-trap");
-
-        asn_write_value_field(parsed_packet, pdu->agent_addr,
-                              sizeof(pdu->agent_addr), "agent-addr");
+        CHECK_FIELD("enterprise",  pdu->enterprise_length,
+                    pdu->enterprise);
+        CHECK_FIELD("gen-trap",  sizeof(pdu->trap_type),
+                    &pdu->trap_type); 
+        CHECK_FIELD("spec-trap",  sizeof(pdu->specific_type),
+                    &pdu->specific_type); 
+        CHECK_FIELD("agent-addr",  sizeof(pdu->agent_addr),
+                    pdu->agent_addr);
     }
 
     if (parsed_packet != NULL)
