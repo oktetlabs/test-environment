@@ -333,7 +333,7 @@ ta_handler(void *ta)
     /* Flush variavles */
     te_bool             do_flush = FALSE;
     te_bool             flush_done = FALSE;
-    unsigned int        flush_msg_max;
+    unsigned int        flush_msg_max = 0;
     struct timeval      flush_ts;   /**< Time stamp when flush has been
                                          started */
     struct timeval      msg_ts;     /**< Time stamp in the message */
