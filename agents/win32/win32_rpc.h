@@ -30,9 +30,6 @@
 #ifndef __WIN32_RPC_H__
 #define __WIN32_RPC_H__
 
-/** Function to start RPC server after execve */
-extern void tarpc_init(int argc, char **argv);
-
 /**
  * Destroy all RPC server processes and release the list of RPC servers.
  */

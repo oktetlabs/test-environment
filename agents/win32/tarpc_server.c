@@ -51,7 +51,6 @@
 #include "win32_rpc.h"
 #include "ta_rpc_log.h"
 
-extern char *my_execname;
 extern int ta_pid;
 extern sigset_t rpcs_received_signals;
 
@@ -414,27 +413,6 @@ _sigreceived_1_svc(tarpc_sigreceived_in *in, tarpc_sigreceived_out *out,
                                                                    
     return TRUE;                                                   
 }
-
-/** Function to start RPC server after execve */
-void
-tarpc_init(int argc, char **argv)
-{
-    UNUSED(argc);
-    ta_pid = atoi(argv[3]);
-    memset(&ta_log_addr, 0, sizeof(ta_log_addr));
-    ta_log_addr.sin_family = AF_INET;
-    setlibname(NULL);
-    tarpc_server(argv[2]);
-}
-
-/*--------------------------------- execve() ---------------------------------*/
-TARPC_FUNC(execve, {}, 
-{ 
-    UNUSED(out);
-    UNUSED(list);
-    ERROR("Unsupported function execve() is called");
-}
-)
 
 /*------------------------------ socket() ------------------------------*/
 

@@ -65,8 +65,6 @@
 #include "logger_ta.h"
 
 
-char *my_execname;
-
 
 /** Send answer to the TEN */
 #define SEND_ANSWER(_fmt...) \
@@ -676,35 +674,23 @@ ta_sigpipe_handler(int sig)
  * Usage:
  *     tawin32 <ta_name> <communication library configuration string>
  */
-int
-main(int argc, char **argv)
+int WINAPI 
+WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, 
+        LPSTR lpCmdLine, int nCmdShow) 
 {
     int rc, retval = 0;
     
-    char buf[16];
+    char  buf[16];
+    char  cmd[256] = { 0, };
+    char *tmp;
     
-    printf("Hi!\n");
-
     setvbuf(stdout, NULL, _IONBF, 0);
     setvbuf(stderr, NULL, _IONBF, 0);
     
-    if (argc < 3)
-    {
-        fprintf(stderr, "Invalid number of arguments\n");
-        return -1;
-    }
-
-    my_execname = argv[0];
+    strncpy(cmd, lpCmdLine, sizeof(cmd) - 1);
+    ta_name = strtok(cmd, " ");
+    tmp = strtok(NULL, " ");
     
-#ifdef RCF_RPC
-    /* After execve */
-    if (strcmp(argv[1], "rpcserver") == 0)
-    {
-        tarpc_init(argc, argv);
-        return 0;
-    }
-#endif
-
     ta_pid = getpid();
 
     (void)signal(SIGINT, ta_sigint_handler);
@@ -716,12 +702,12 @@ main(int argc, char **argv)
         return rc;
     }
 
-    te_lgr_entity = ta_name = argv[1];
+    te_lgr_entity = ta_name;
     VERB("Started\n");
 
     sprintf(buf, "PID %u", getpid());
 
-    rc = rcf_pch_run(argv[2], buf);
+    rc = rcf_pch_run(tmp, buf);
     if (rc != 0)
     {
         fprintf(stderr, "rcf_pch_run() failed: error=%d\n", rc);
@@ -740,7 +726,6 @@ main(int argc, char **argv)
         if (retval == 0)
             retval = rc;
     }
-
 
     return retval;
 }
