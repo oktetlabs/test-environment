@@ -90,9 +90,9 @@ char *ta_name = "(linux)";
 int ta_pid;
 
 /** Tasks to be killed during TA shutdown */
-static int    tasks_len;
-static int    tasks_index;
-static pid_t *tasks; 
+static unsigned int     tasks_len = 0;
+static unsigned int     tasks_index = 0;
+static pid_t           *tasks = NULL; 
 
 DEFINE_LGR_ENTITY("(linux)");
 
@@ -102,29 +102,43 @@ static pthread_mutex_t ta_lock = PTHREAD_MUTEX_INITIALIZER;
 static void
 store_pid(pid_t pid)
 {
-    if (tasks_index == tasks_len)
+    unsigned int i;
+
+    for (i = 0; i < tasks_index && tasks[i] != 0; i++);
+
+    if (i < tasks_index)
+    {
+        tasks[i] = pid;
+        return;
+    }
+    if (i == tasks_len)
     {
         tasks_len += 32;
         tasks = realloc(tasks, tasks_len * sizeof(pid_t));
+        if (tasks == NULL)
+        {
+            ERROR("%s(): realloc() failed", __FUNCTION__);
+            tasks_len = tasks_index = 0;
+            return;
+        }
     }
-    if (tasks == NULL)
-        return;
     tasks[tasks_index++] = pid;
 }
 
 /** Kill all tasks started using rcf_ch_start_task() */
 static void
-kill_tasks()
+kill_tasks(void)
 {
-    int i;
+    unsigned int i;
     
     for (i = 0; i < tasks_index; i++)
     {
-        if (tasks[i] == -1)
-            continue;
-        kill(-tasks[i], SIGTERM);
-        usleep(100);
-        kill(-tasks[i], SIGKILL);
+        if (tasks[i] != 0)
+        {
+            kill(-tasks[i], SIGTERM);
+            usleep(100);
+            kill(-tasks[i], SIGKILL);
+        }
     }
     free(tasks);
 }
@@ -562,18 +576,20 @@ rcf_ch_kill_task(struct rcf_comm_connection *handle,
                  char *cbuf, size_t buflen, size_t answer_plen,
                  unsigned int pid)
 {
-    int kill_errno = 0;
-    int i;
-    int p = pid;
-    
+    int             kill_errno = 0;
+    unsigned int    i;
+    int             p = pid;
+
     for (i = 0; i < tasks_index; i++)
+    {
         if (tasks[i] == (pid_t)pid)
         {
-            tasks[i] = -1;
+            tasks[i] = 0;
             p = -pid;
             break;
         }
-    
+    }
+
     if (kill(p, SIGTERM) != 0)
     {
         kill_errno = errno;
