@@ -35,7 +35,6 @@ typedef struct {
     udp4_callback   callback;
 } udp4_cb_data_t;
 
-#define DEBUG
 
 
 /**
@@ -477,7 +476,7 @@ tapi_ip4_eth_recv_start(const char *ta_name, int sid, csap_handle_t csap,
     int   rc;
     FILE *f;
 
-    uint8_t *b;
+    const uint8_t *b;
 
     mktemp(template_fname);
 
@@ -526,29 +525,42 @@ tapi_tcp_ip4_eth_csap_create(const char *ta_name, int sid,
 {
     char  csap_fname[] = "/tmp/te_tcp_csap.XXXXXX";
     int   rc;
-    FILE *f;
-
-    uint8_t *b;
 
     asn_value *csap_spec;
-
 
     do {
         int num = 0;
 
         mktemp(csap_fname);
 
-        rc = asn_parse_value_text("{ tcp:{local-port plain:0}, "
-                                    "ip4:{max-packet-size plain:100000},"
-                                    " eth:{device-id plain:\"eth0\"}}", 
+        rc = asn_parse_value_text("{ tcp:{}, ip4:{}, eth:{}}", 
                                       ndn_csap_spec, &csap_spec, &num); 
         if (rc) break; 
 
-        UNUSED(eth_dev);
-        UNUSED(loc_addr);
-        UNUSED(rem_addr);
-        UNUSED(loc_port);
-        UNUSED(rem_port);
+        if (eth_dev)
+            rc = asn_write_value_field(csap_spec, 
+                    eth_dev, strlen(eth_dev), "2.#eth.device-id.#plain");
+        if (rc) break; 
+
+        if(loc_addr)
+            rc = asn_write_value_field(csap_spec, loc_addr, 4,
+                                           "1.#ip4.local-addr.#plain");
+        if (rc) break; 
+
+        if(rem_addr)
+            rc = asn_write_value_field(csap_spec, rem_addr, 4,
+                                           "1.#ip4.remote-addr.#plain");
+        if (rc) break; 
+
+        if(loc_port)
+            rc = asn_write_value_field(csap_spec, 
+                &loc_port, sizeof(loc_port), "0.#tcp.local-port.#plain");
+        if (rc) break; 
+
+        if(rem_port)
+            rc = asn_write_value_field(csap_spec, 
+                &rem_port, sizeof(rem_port), "0.#tcp.remote-port.#plain");
+        if (rc) break;
 
         rc = asn_save_to_file(csap_spec, csap_fname);
         VERB("TAPI: udp create csap, save to file %s, rc: %x\n",
@@ -565,4 +577,19 @@ tapi_tcp_ip4_eth_csap_create(const char *ta_name, int sid,
 
     return TE_RC(TE_TAPI, rc);
 }
+
+int 
+tapi_tcp_ip4_pattern_unit(const uint8_t *src_addr, const uint8_t *dst_addr,
+                        uint16_t src_port, uint16_t dst_port,
+                        asn_value **result_value)
+{
+    UNUSED(src_addr);
+    UNUSED(dst_addr);
+    UNUSED(src_port);
+    UNUSED(dst_port);
+    UNUSED(result_value);
+
+    return ETENOSUPP;
+}
+
 
