@@ -3193,7 +3193,7 @@ update_etc_hosts(char *ip)
     return 0;
 }
 
-#define SENDMAIL_SMARTHOST_OPT  "define(`SMART_HOST',`te_tester')"
+#define SENDMAIL_SMARTHOST_OPT  "define(`SMART_HOST',`te_tester')\n"
 
 /** Check if smarthost option presents in the sendmail configuration file */
 static int
@@ -3244,7 +3244,7 @@ sendmail_smarthost_set(te_bool enable)
 
     while (fgets(buf, sizeof(buf), f) != NULL)
     {
-        if (strstr(buf, SENDMAIL_SMARTHOST_OPT) == NULL)
+        if (strstr(buf, "SMARTHOST") == NULL)
             fwrite(buf, 1, strlen(buf), g);
     }
     if (enable != 0)
@@ -3396,7 +3396,15 @@ ds_smtp_set(unsigned int gid, const char *oid, const char *value)
 {
     UNUSED(oid);
     if (smtp_current == NULL)
-        return TE_RC(TE_TA_LINUX, EPERM);
+    {
+        if (value[0] == '0')
+            return 0;
+        else if (value[0] == '1')
+            return TE_RC(TE_TA_LINUX, EPERM);
+        else
+            return TE_RC(TE_TA_LINUX, EINVAL);
+    }
+        
     return daemon_set(gid, smtp_current, value);
 }
 

@@ -251,8 +251,6 @@ ftp_open(char *uri, int flags, int passive, int offset)
     char passwd[FTP_TEST_PASSWD_MAX];
     char file[FTP_TEST_PATHNAME_MAX];
     
-    UNUSED(offset);
-    
     if (parse_ftp_uri(uri, (struct sockaddr *)&addr,
                       user, passwd, file) != 0 ||
         (flags != O_RDONLY && flags != O_WRONLY))
