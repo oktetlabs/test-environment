@@ -225,16 +225,17 @@ rcf_pch_vwrite(struct rcf_comm_connection *conn,
 #ifdef HAVE_TIME_H
     if (strcmp(var, "time") == 0)
     {
+        unsigned sec, usec;
         struct timeval tv;
         VERB("synchronizing time");
-        if (sscanf(va_arg(ap, const char *), "%u:%u",
-                   (unsigned *)&tv.tv_sec, 
-                   (unsigned *)&tv.tv_usec) != 2)
+        if (sscanf(va_arg(ap, const char *), "%u:%u", &sec, &usec) != 2)
         {
             va_end(ap);
             SEND_ANSWER("%d", ETEBADFORMAT);
         }
        
+        tv.tv_sec  = sec;
+        tv.tv_usec = usec;
 #ifndef VGDEBUG /* Valgrind debugging */
         if (settimeofday(&tv, NULL) != 0)
         {
