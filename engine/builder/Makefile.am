@@ -1,11 +1,20 @@
 
 AUTOMAKE_OPTIONS = foreign 
 
-AM_CFLAGS=@TE_CFLAGS@ -I$(DESTDIR)/$(prefix)/include \
-                      -I$(DESTDIR)/$(prefix)/../include
+AM_CPPFLAGS=-I$(DESTDIR)/$(prefix)/include \
+            -I$(DESTDIR)/$(prefix)/../include
+AM_CFLAGS=
 AM_LDFLAGS=@TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/lib 
 
 mybindir=$(prefix)/bin
+
+mybin_PROGRAMS=te_stdouterr
+
+te_stdouterr_SOURCES=te_stdouterr.c
+te_stdouterr_LDADD=-llogger_ten -lipc @TE_LDADD@
+te_stdouterr_DEPENDENCIES=@TE_DEPENDENCIES@ \
+                          $(DESTDIR)/$(prefix)/lib/liblogger_ten.a \
+                          $(DESTDIR)/$(prefix)/lib/libipc.a
 
 mybin_SCRIPTS=te_builder_log te_generate_symtbl te_generate_symtbl_cygwin \
               te_build_suite tce_report tce_instrument_sources \
