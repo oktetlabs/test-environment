@@ -13,7 +13,8 @@ usage()
 {
     echo Usage: dispatcher.sh ['<'generic options'>'] [['<'test options'>' tests ]...
     echo -e Generic options:
-    echo -e '  '-q\\t\\t\\t\\tSuppress part of output messages
+    echo -e '  '-q\\t\\t\\t\\t'Suppress part of output messages'
+    echo -e '  '--opts='<filename>'\\t\\t'Get additional command-line options from file'
     echo -e '  '--live-log\\t\\t\\tRun RGT in live mode
     echo
     echo -e '  '--no-builder\\t\\t\\t'Do not build TE'
