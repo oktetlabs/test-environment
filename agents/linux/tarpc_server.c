@@ -2451,6 +2451,15 @@ TARPC_FUNC(fopen, {},
 }
 )
 
+/*-------------- popen() --------------------------------*/
+TARPC_FUNC(popen, {},
+{
+    func = (sock_api_func)popen;
+    MAKE_CALL(out->mem_ptr = func((int)(in->cmd.cmd_val),
+                                  in->mode.mode_val));
+}
+)
+
 /*-------------- fileno() --------------------------------*/
 TARPC_FUNC(fileno, {}, { MAKE_CALL(out->fd = func(in->mem_ptr)); })
 
