@@ -28,7 +28,7 @@
  *
  * $Id$
  */
-
+#define TE_LOG_LEVEL 0xff
 #include "te_config.h"
 
 #include <stdio.h>
@@ -60,6 +60,7 @@
 #include "rcf_pch_internal.h"
 
 
+#define TE_LOG_LEVEL 0xff
 /** Structure for temporary storing of instances/objects identifiers */
 typedef struct olist {
     struct olist *next;             /**< Pointer to the next element */
@@ -524,7 +525,36 @@ convert_to_answer(olist *list, char **answer)
 
     return 0;
 }
+static rcf_pch_cfg_object *
+find_obj(rcf_pch_cfg_object *node, char *oid)
+{
+    rcf_pch_cfg_object *curr;
+    
+    char *c;
 
+    if (oid == NULL)
+        return NULL;
+
+    if (node == NULL)
+        return NULL;
+
+    c = strchr(oid, ':');
+    if (c != NULL)
+        *c = 0;
+
+    for (curr = node; curr != NULL; curr = curr->brother)
+    {
+        if (strcmp(curr->sub_id, oid) == 0)
+        {
+            if (c != NULL)
+                *c = ':';
+            if ((curr->son != NULL) && (strchr(oid, '/') != NULL))
+                return find_obj(curr->son, strchr(oid, '/') + 1);
+            return curr;
+        }
+    }
+    return NULL;
+}
 
 /**
  * Process wildcard configure get request.
@@ -554,7 +584,45 @@ process_wildcard(struct rcf_comm_connection *conn, char *cbuf,
 
     if ((tmp = strdup(oid)) == NULL)
         SEND_ANSWER("%d", TE_RC(TE_RCF_PCH, ENOMEM));
+    if (strstr(oid, "...") != NULL)
+    {
+        char               *d = NULL;
+        rcf_pch_cfg_object *start_point;
+        char               *obj_id;
 
+        VERB("Create list of instances due to the '...' request");
+        if (strchr(oid, ':') == NULL)
+        {
+            VERB("Feature is not supported yet");
+        }
+        else
+        {
+            d = strrchr(oid, '/');
+            if (d != NULL)
+                *d = 0;
+
+            obj_id = strrchr(oid, '/');
+            if (obj_id == NULL)
+                return EINVAL;
+            
+            start_point = find_obj(rcf_ch_conf_root(), oid + 1);
+            
+            rc = create_wildcard_inst_list(start_point, NULL, tmp, 
+                                           obj_id, &list);
+            if (start_point == NULL)
+            {
+                rc = 0; 
+                olist *tmp;
+                while (list != NULL)
+                {
+                    tmp = list->next;
+                    free(list);
+                    list = tmp;
+                }
+            }
+        }
+    } 
+    else 
     if (strchr(oid, ':') == NULL)
     {
         VERB("Create list of objects by wildcard");
@@ -567,6 +635,7 @@ process_wildcard(struct rcf_comm_connection *conn, char *cbuf,
         rc = create_wildcard_inst_list(rcf_ch_conf_root(),
                                        NULL, tmp, oid, &list);
     }
+
     free(tmp);
     VERB("Wildcard processing result rc=%d list=0x%08x", rc, list);
 
@@ -786,7 +855,7 @@ rcf_pch_configure(struct rcf_comm_connection *conn,
     if (oid != 0)
     {
         /* Now parse the oid and look for the object */
-        if (strchr(oid, '*') != NULL)
+        if ((strchr(oid, '*') != NULL) || (strstr(oid, "...") != NULL))
         {
             if (op != RCF_CH_CFG_GET)
             {
