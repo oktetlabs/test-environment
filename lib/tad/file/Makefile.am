@@ -1,8 +1,6 @@
 
-AUTOMAKE_OPTIONS = foreign 
-
 AM_CPPFLAGS=-I$(DESTDIR)/$(prefix)/include \
-            -I$(DESTDIR)/$(prefix)/../include
+            -I$(DESTDIR)/$(prefix)/../include -I$(top_srcdir)
 
 AM_CFLAGS=
 

@@ -1,8 +1,6 @@
 
-AUTOMAKE_OPTIONS = foreign 
-
 AM_CPPFLAGS=-I$(DESTDIR)/$(prefix)/include \
-            -I$(DESTDIR)/$(prefix)/../include 
+            -I$(DESTDIR)/$(prefix)/../include -I$(top_srcdir)
 
 AM_CFLAGS=
 
@@ -13,7 +11,8 @@ noinst_HEADERS=tad_bridge_impl.h
 
 noinst_LIBRARIES=libtad_bridge.a
 
-libtad_bridge_a_SOURCES=tad_bridge_stack.c tad_bridge_layer.c tad_bridge_csap.c 
+libtad_bridge_a_SOURCES=tad_bridge_stack.c tad_bridge_layer.c \
+                        tad_bridge_csap.c 
 
 
 install-exec-hook:

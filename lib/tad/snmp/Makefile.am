@@ -1,9 +1,7 @@
 
-AUTOMAKE_OPTIONS = foreign 
-
 AM_CPPFLAGS=-I$(DESTDIR)/$(prefix)/include \
             -I$(DESTDIR)/$(prefix)/../include \
-            -DCMU_COMPATIBLE -DUCD_COMPATIBLE
+            -DCMU_COMPATIBLE -DUCD_COMPATIBLE -I$(top_srcdir)
 
 AM_CFLAGS=@NET_SNMP_CFLAGS@
 

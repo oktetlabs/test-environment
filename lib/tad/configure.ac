@@ -25,11 +25,12 @@ AC_SUBST([TE_DEPENDENCIES])
 AC_ARG_VAR([TE_CFLAGS])
 AC_ARG_VAR([TE_LDFLAGS])
 AC_ARG_VAR([TE_LDADD])
-AC_ARG_VAR([TE_DEPENDENCIES]) 
+AC_ARG_VAR([TE_DEPENDENCIES])
 
 TAD_LIBADD=
 TAD_LIBLIST=
 TAD_SUBDIRS=
+TAD_MAKEFILES=
 TAD_CH_DEFS=
 
 proto_specific()
@@ -42,53 +43,61 @@ proto_specific()
 }
 
 
-AC_ARG_WITH(eth,, 
+AC_ARG_WITH([eth],, 
 [if test "${withval}" = yes; then
-   w_eth=true
+   w_eth=true;
    proto_specific eth;
+   AC_CONFIG_FILES([eth/Makefile])
  fi
 ], [w_eth=false])
     
-AC_ARG_WITH(bridge,, 
+AC_ARG_WITH([bridge],, 
 [if test "${withval}" = yes; then
    proto_specific bridge;
+   AC_CONFIG_FILES([bridge/Makefile])
  fi
 ], [w_bridge=false])
 
-AC_ARG_WITH(ipstack,, 
+AC_ARG_WITH([ipstack],, 
 [if test "${withval}" = yes; then
-   w_ipstack=true
+   w_ipstack=true;
    proto_specific ipstack;
+   AC_CONFIG_FILES([ipstack/Makefile])
  fi
 ], [w_ipstack=false])
 
 
-AC_ARG_WITH(dhcp,, 
+AC_ARG_WITH([dhcp],, 
 [if test "${withval}" = yes; then
    proto_specific dhcp;
+   AC_CONFIG_FILES([dhcp/Makefile])
  fi
 ], [w_dhcp=false])
 
-AC_ARG_WITH(snmp,, 
+AC_ARG_WITH([snmp],, 
 [if test "${withval}" = yes; then
-    w_snmp=true
+    w_snmp=true;
     proto_specific snmp;
+    AC_CONFIG_FILES([snmp/Makefile])
  fi
 ], [w_snmp=false])
 
 
-AC_ARG_WITH(file,, 
+AC_ARG_WITH([file],, 
 [if test "${withval}" = yes; then
-   proto_specific file;
+    proto_specific file;
+    AC_CONFIG_FILES([file/Makefile])
  fi
 ], [w_file=false])
 
-AC_ARG_WITH(cli,, 
+AC_ARG_WITH([cli],, 
 [if test "${withval}" = yes; then
-   w_cli=true
-   proto_specific cli;
+    w_cli=true;
+    proto_specific cli;
+    AC_CONFIG_FILES([cli/Makefile])
  fi
 ], [w_cli=false])
+
 
 if test x$w_snmp = xtrue; then 
     AC_MSG_CHECKING(for net-snmp library)
@@ -157,14 +166,7 @@ AC_FUNC_SELECT_ARGTYPES
 AC_FUNC_STRERROR_R
 AC_CHECK_FUNCS([gettimeofday inet_ntoa memset select socket strdup strtol])
 
-AC_CONFIG_FILES([Makefile
-                 bridge/Makefile
-                 cli/Makefile
-                 dhcp/Makefile
-                 eth/Makefile
-                 file/Makefile
-                 ipstack/Makefile
-                 snmp/Makefile])
+AC_CONFIG_FILES([Makefile])
 
 
 AC_OUTPUT
