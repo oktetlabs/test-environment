@@ -37,7 +37,7 @@ dist_mybin_SCRIPTS = dispatcher.sh
 
 DISTCLEANFILES = builder.conf.processed 
 
-EXTRA_DIST = conf
+EXTRA_DIST = conf Doxyfile
 
 if SUITE_SCRIPTS_PROVIDED
 
