@@ -40,6 +40,9 @@
 #if HAVE_ERRNO_H
 #include <errno.h>
 #endif
+#if HAVE_UNISTD_H
+#include <unistd.h>
+#endif
 
 #include "te_defs.h"
 #include "trc_log.h"
@@ -512,8 +515,9 @@ cleanup:
     return rc;
 }
 
+/** See descriptino in trc_db.h */
 int
-report_to_html(const char *filename, trc_database *db)
+trc_report_to_html(const char *filename, trc_database *db)
 {
     int             rc;
 

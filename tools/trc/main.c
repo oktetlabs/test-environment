@@ -83,7 +83,6 @@ process_cmd_line_opts(int argc, char **argv)
 {
     poptContext  optCon;
     int          rc;
-    const char  *cfg_file;
 
     /* Option Table */
     struct poptOption options_table[] = {
@@ -275,7 +274,7 @@ main(int argc, char *argv[])
     trc_collect_tests_stats(&trc_db.tests, &trc_db.stats);
 
     /* Generate report in HTML format */
-    if (report_to_html("test.html", &trc_db) != 0)
+    if (trc_report_to_html("test.html", &trc_db) != 0)
     {
         ERROR("Failed to generate report in HTML format");
         goto exit;

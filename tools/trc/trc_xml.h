@@ -86,4 +86,17 @@ xmlNodeNext(xmlNodePtr node)
     return xmlNodeSkipComment(node->next);
 }
 
+
+/**
+ * Get text content of the node.
+ * 
+ * @param node      Location of the XML node pointer
+ * @param name      Expected name of the XML node
+ * @param content   Location for the result
+ *
+ * @return Status code
+ */
+extern int get_text_content(xmlNodePtr node, const char *name,
+                            char **content);
+
 #endif /* !__TE_TOOLS_TRC_XML_H__ */

@@ -57,39 +57,6 @@ static int get_tests(xmlNodePtr *node, test_runs *tests);
 
 
 /**
- * Get boolean property.
- *
- * @param node      Node with boolean property
- * @param name      Name of the property to get
- * @param value     Location for value
- *
- * @return Status code.
- * @retval ENOENT   Property does not exists. Value is not modified.
- */
-static int
-get_bool_prop(xmlNodePtr node, const char *name, te_bool *value)
-{
-    xmlChar *s = xmlGetProp(node, CONST_CHAR2XML(name));
-
-    if (s == NULL)
-        return ENOENT;
-    if (xmlStrcmp(s, CONST_CHAR2XML("true")) == 0)
-        *value = TRUE;
-    else if (xmlStrcmp(s, CONST_CHAR2XML("false")) == 0)
-        *value = FALSE;
-    else
-    {
-        ERROR("Invalid value '%s' of the boolean property '%s'",
-              XML2CHAR(s), name);
-        xmlFree(s);
-        return EINVAL;
-    }
-    xmlFree(s);
-
-    return 0;
-}
-
-/**
  * Get text content of the node.
  * 
  * @param node      Location of the XML node pointer
@@ -453,7 +420,6 @@ int
 trc_parse_db(const char *filename)
 {
     xmlParserCtxtPtr    parser;
-    xmlDocPtr           doc;
     xmlNodePtr          node;
 #if HAVE_XMLERROR
     xmlError           *err;

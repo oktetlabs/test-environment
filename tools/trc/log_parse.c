@@ -46,6 +46,9 @@
 #include "trc_xml.h"
 
 
+static int get_logs(xmlNodePtr node, test_runs *tests);
+
+
 /**
  * Find element of the list by name.
  *
@@ -54,7 +57,7 @@
  *
  * @return Pointer to found element or NULL.
  */
-test_run *
+static test_run *
 trc_db_find_by_name(test_runs *tests, const char *name)
 {
     test_run *p;
@@ -66,7 +69,7 @@ trc_db_find_by_name(test_runs *tests, const char *name)
     return p;
 }
 
-te_bool
+static te_bool
 test_args_1in2(const test_args *args1, const test_args *args2)
 {
     test_arg *p, *q;
@@ -85,13 +88,13 @@ test_args_1in2(const test_args *args1, const test_args *args2)
     return (p == NULL);
 }
 
-te_bool
+static te_bool
 test_args_equal(const test_args *args1, const test_args *args2)
 {
     return test_args_1in2(args1, args2) && test_args_1in2(args2, args1);
 }
 
-test_iter *
+static test_iter *
 trc_db_find_by_args(test_iters *iters, const test_args *args)
 {
     test_iter *p;
@@ -245,7 +248,6 @@ get_result(xmlNodePtr node, trc_test_result *value)
 static int
 alloc_and_get_test_param(xmlNodePtr node, test_args *args)
 {
-    int         rc;
     test_arg   *p;
 
     p = calloc(1, sizeof(*p));
@@ -364,7 +366,6 @@ get_test_result(xmlNodePtr root, trc_test_type type, test_runs *tests)
     int                 rc = 0;
     xmlNodePtr          node = NULL;
     char               *name;
-    trc_test_result     result;
     test_run           *test;
     test_iter          *iter;
     te_bool             new_test = FALSE;

@@ -178,4 +178,21 @@ extern int trc_parse_db(const char *filename);
  */
 extern int trc_dump_db(const char *filename);
 
+/**
+ * Parse TE log in XML format.
+ *
+ * @param filename      Name of the file with log
+ *
+ * @return Status code
+ */
+extern int trc_parse_log(const char *filename);
+
+/**
+ * Prepare TRC report in HTML format.
+ *
+ * @param filename      Name of the file to put report
+ * @param db            DB to be processed
+ */
+extern int trc_report_to_html(const char *filename, trc_database *db);
+
 #endif /* !__TE_TOOLS_TRC_DB_H__ */
