@@ -53,7 +53,13 @@
     <!-- Network mask for the network address.
          Name:  empty
          Limit: 1 -->
-    <object oid="/agent/interface/net_addr/netmask" access="read_write" type="address"/>
+    <object oid="/agent/interface/net_addr/netmask"
+            access="read_write" type="address"/>
+    <!-- Broadcast address which corresponds to this network address.
+         Name:  empty
+         Limit: 1 -->
+    <object oid="/agent/interface/net_addr/netmask"
+            access="read_write" type="address"/>
     
     <!-- Link layer address for the interface (MAC, NSAP, E.164, VPI/VCI, DLCI).
          Name:  empty
