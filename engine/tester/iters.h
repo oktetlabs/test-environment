@@ -70,11 +70,14 @@ extern test_param_iteration *test_param_iteration_new(void);
  * Clone existing test parameters iteration.
  *
  * @param i         Existing iteration
+ * @param clone_all Clone all parameters or marked only
+ *                  (used to remove non-handdown variables)
  *
  * @return Clone of the passed iteration or NULL.
  */
 extern test_param_iteration *test_param_iteration_clone(
-                                 const test_param_iteration *i);
+                                 const test_param_iteration *i,
+                                 te_bool clone_all);
 
 /**
  * Free test parameters iteration.

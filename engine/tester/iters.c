@@ -139,7 +139,7 @@ test_param_iteration_new(void)
 
 /* See description in iters.h */
 test_param_iteration *
-test_param_iteration_clone(const test_param_iteration *i)
+test_param_iteration_clone(const test_param_iteration *i, te_bool clone_all)
 {
     test_param_iteration *ic = test_param_iteration_new();
     test_param           *p;
@@ -154,7 +154,7 @@ test_param_iteration_clone(const test_param_iteration *i)
     }
     for (p = i->params.tqh_first; p != NULL; p = p->links.tqe_next)
     {
-        if (p->clone)
+        if (clone_all ||  p->clone)
         {
             pc = test_param_clone(p);
             if (pc == NULL)
@@ -165,7 +165,7 @@ test_param_iteration_clone(const test_param_iteration *i)
             TAILQ_INSERT_TAIL(&ic->params, pc, links);
         }
     }
-    ic->base = (i->base) ? : &i->params;
+    ic->base = (clone_all) ? i->base : &i->params;
     ic->reqs = i->reqs;
     EXIT("OK 0x%x", (size_t)ic);
     return ic;

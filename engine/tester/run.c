@@ -234,7 +234,7 @@ get_ref_value(const char *refer, const test_params *params)
             return p->value;
     }
 
-    WARN("Failed to find value by reference '%s'", refer);
+    ERROR("Failed to find value by reference '%s'", refer);
     return NULL;
 }
 
@@ -387,7 +387,7 @@ vars_args_iterations(test_vars_args        *vas,
                 if (i_clone != NULL)
                     i = i_clone;
                 /* Clone current iteration before update */
-                i_clone = test_param_iteration_clone(i);
+                i_clone = test_param_iteration_clone(i, TRUE);
                 if (i_clone == NULL)
                 {
                     ERROR("Cloning of the iteration failed");
@@ -1398,7 +1398,7 @@ iterate_test(tester_ctx *ctx, run_item *test,
              base_i != NULL; 
              base_i = base_i->links.tqe_next)
         {
-            i = test_param_iteration_clone(base_i);
+            i = test_param_iteration_clone(base_i, FALSE);
             if (i == NULL)
             {
                 ERROR("Cloning of the test parameters iteration failed");
