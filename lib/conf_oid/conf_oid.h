@@ -40,7 +40,8 @@ extern "C" {
 #define CFG_OID_LEN_MAX     16   /**< Maximum number of elements in OID */
 
 /** Maximum space for object (instance) identifier, 2 is for '/' and ':' */
-#define CFG_OID_MAX  ((CFG_SUBID_MAX + CFG_INST_NAME_MAX + 2) * CFG_OID_LEN_MAX)
+#define CFG_OID_MAX \
+    ((CFG_SUBID_MAX + CFG_INST_NAME_MAX + 2) * CFG_OID_LEN_MAX)
 
 
 /** Object identifier element */

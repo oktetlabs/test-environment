@@ -73,27 +73,27 @@
  *
  * @return newly allocated structure pointer or NULL
  */
-cfg_oid * 
+cfg_oid *
 cfg_allocate_oid(int length, te_bool inst)
 {
     int size;
     cfg_oid * oid;
-    
+
     if (length < 1)
     {
         return NULL;
     }
 
-    size = (inst == TRUE) ? sizeof(cfg_inst_subid) : sizeof(cfg_object_subid);
+    size = (inst) ? sizeof(cfg_inst_subid) : sizeof(cfg_object_subid);
     oid = (cfg_oid *)calloc(1, sizeof(cfg_oid));
     if (oid == NULL)
-        return NULL;     
-    
+        return NULL;
+
     oid->len = length;
     oid->inst = inst;
     oid->ids = (void *)calloc(length, size);
     if (oid->ids == NULL)
-    {    
+    {
         free(oid);
         return NULL;
     }
@@ -102,14 +102,14 @@ cfg_allocate_oid(int length, te_bool inst)
 
 /**
  * Convert object identifier or object instance identifier in
- * string representation to cfg_oid structure. We hope that OID string 
+ * string representation to cfg_oid structure. We hope that OID string
  * representation and we do not check overflow and etc.
  *
  * @param str OID in string representation.
  *
  * @return newly allocated structure pointer or NULL
  */
-cfg_oid * 
+cfg_oid *
 cfg_convert_oid_str(const char *str)
 {
     cfg_oid *oid;
@@ -119,7 +119,7 @@ cfg_convert_oid_str(const char *str)
     te_bool  inst;
     int      depth = 1;
     int      size;
-    
+
     if (str == NULL)
     {
         ERROR("%s: 'str' parameter can't be NULL", __FUNCTION__);
@@ -137,7 +137,7 @@ cfg_convert_oid_str(const char *str)
               __FUNCTION__, str, CFG_OID_MAX);
         return NULL;
     }
-    
+
     inst = strchr(str, ':') != NULL;
 
     if (strcmp(str, "/") == 0 || strcmp(str, "/:") == 0)
@@ -182,20 +182,20 @@ cfg_convert_oid_str(const char *str)
             if (strlen(token) >= CFG_SUBID_MAX)
                 return NULL;
             strcpy(oid_buf + sizeof(cfg_object_subid) * depth, token);
-        }   
+        }
         depth++;
     }
-    
+
     create:
     if ((oid = cfg_allocate_oid(depth, inst)) == NULL)
         return NULL;
-        
-    size = inst ? sizeof(cfg_inst_subid) : sizeof(cfg_object_subid);    
-        
+
+    size = inst ? sizeof(cfg_inst_subid) : sizeof(cfg_object_subid);
+
     memcpy(oid->ids, oid_buf, depth * size);
 
     return oid;
-}            
+}
 
 /**
  * Convert object identifier or object instance identifier in
@@ -212,26 +212,26 @@ cfg_convert_oid(const cfg_oid *oid)
     char *str = (char *)malloc(CFG_OID_MAX);
     char *tmp = str;
     int   i;
-    
+
     if (str == NULL)
         return NULL;
-        
+
     if (oid->len == 1)
     {
         sprintf(str, "%s", oid->inst ? "/:" : "/");
         return str;
-    } 
-    
+    }
+
     for (i = 1; i < oid->len; tmp += strlen(tmp), i++)
         if (oid->inst)
         {
-            sprintf(tmp, "/%s:%s", ((cfg_inst_subid *)(oid->ids))[i].subid, 
-                    ((cfg_inst_subid *)(oid->ids))[i].name); 
+            sprintf(tmp, "/%s:%s", ((cfg_inst_subid *)(oid->ids))[i].subid,
+                    ((cfg_inst_subid *)(oid->ids))[i].name);
         }
         else
             sprintf(tmp, "/%s", ((cfg_object_subid *)(oid->ids))[i].subid);
-    
-    return str;    
+
+    return str;
 }
 
 /**
@@ -239,7 +239,7 @@ cfg_convert_oid(const cfg_oid *oid)
  *
  * @param oid   oid structure
  */
-void 
+void
 cfg_free_oid(cfg_oid *oid)
 {
     if (oid == NULL)
@@ -248,7 +248,7 @@ cfg_free_oid(cfg_oid *oid)
     if (oid->ids != NULL)
         free(oid->ids);
     free(oid);
-    return;    
+    return;
 }
 
 
