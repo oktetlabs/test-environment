@@ -161,7 +161,6 @@ tapi_cfg_arl_add_entry(const char *ta,
                        const uint8_t *mac_addr, const char *vlan_name)
 {
     cfg_handle  handle;
-    char       *inst_name;
     int         rc;
 
     if (vlan_name == NULL)
@@ -185,7 +184,7 @@ tapi_cfg_arl_add_entry(const char *ta,
                                    mac_addr[3], mac_addr[4], mac_addr[5],
                                    vlan_name)) != 0)
     {
-        ERROR("Error %x while adding a new ARL entry %s", rc, inst_name);
+        ERROR("Error %x while adding a new ARL entry", rc);
         return rc;
     }
 
