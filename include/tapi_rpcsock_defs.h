@@ -992,10 +992,10 @@ typedef enum rpc_sockopt {
     RPC_IP_DROP_MEMBERSHIP, /**< Leave a multicast group */
     RPC_IP_HDRINCL,         /**< If enabled, the user supplies an IP
                                  header in front of the user data */
-#if 0                                 
+
     RPC_IP_MTU,             /**< Retrive the current known path MTU
                                  of the current connected socket */
-#endif                                 
+
     RPC_IP_MULTICAST_IF,    /**< Set the local device for a multicast
                                  socket */
     RPC_IP_MULTICAST_LOOP,  /**< Whether sent multicast packets
