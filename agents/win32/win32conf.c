@@ -152,7 +152,7 @@ static int route_del(unsigned int, const char *,
                      const char *);
 static int route_list(unsigned int, const char *, char **);
 
-/* Linux Test Agent configuration tree */
+/* win32 Test Agent configuration tree */
 static rcf_pch_cfg_object node_route =
     { "route", 0, NULL, NULL,
       (rcf_ch_cfg_get)route_get, (rcf_ch_cfg_set)route_set,
@@ -269,7 +269,7 @@ interface_list(unsigned int gid, const char *oid, char **list)
     {
         table = (MIB_IFTABLE *)realloc(table, size);
     }
-    else if (rc == 0)
+    else if (rc == NO_ERROR)
     {
         free(table);
         if ((*list = strdup(" ")) == NULL)
@@ -357,7 +357,7 @@ ip_addr_exist(struct in_addr addr, MIB_IPADDRROW *data)
         table = (MIB_IPADDRTABLE *)realloc(table, size);
     else
     {
-        if (rc != 0)
+        if (rc != NO_ERROR)
             ERROR("GetIpAddrTable() failed, error %x", GetLastError());
         free(table);
         return FALSE;
@@ -424,8 +424,8 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
     
     GET_IF_ENTRY;
     
-    if (AddIPAddress(*(IPAddr *)&a, *(IPAddr *)&m, 
-                     if_entry.dwIndex, &nte_context, &nte_instance) != 0)
+    if (AddIPAddress(*(IPAddr *)&a, *(IPAddr *)&m, if_entry.dwIndex, 
+                     &nte_context, &nte_instance) != NO_ERROR)
     {
         ERROR("AddIpAddr() failed, error %x", GetLastError());
         return TE_RC(TE_TA_WIN32, ETEWIN);
@@ -481,7 +481,7 @@ net_addr_del(unsigned int gid, const char *oid,
         return ip_addr_exist(a, NULL) ? TE_RC(TE_TA_WIN32, EPERM) :
                                         TE_RC(TE_TA_WIN32, ENOENT);
                                   
-    if (DeleteIPAddress(cur->nte_context) != 0)
+    if (DeleteIPAddress(cur->nte_context) != NO_ERROR)
     {
         ERROR("DeleteIPAddr() failed, error %x", GetLastError());
         return TE_RC(TE_TA_WIN32, ETEWIN);
@@ -529,7 +529,7 @@ net_addr_list(unsigned int gid, const char *oid, char **list,
     {
         table = (MIB_IPADDRTABLE *)realloc(table, size);
     }
-    else if (rc == 0)
+    else if (rc == NO_ERROR)
     {
         free(table);
         if ((*list = strdup(" ")) == NULL)
@@ -635,7 +635,7 @@ netmask_set(unsigned int gid, const char *oid, const char *value,
 
     MASK2PREFIX(ntohl(m.s_addr), prefix);
     if (prefix > 32)
-        return TE_RC(TE_TA_LINUX, EINVAL);
+        return TE_RC(TE_TA_WIN32, EINVAL);
 
     GET_IF_ENTRY;
     
@@ -648,7 +648,7 @@ netmask_set(unsigned int gid, const char *oid, const char *value,
         return ip_addr_exist(a, NULL) ? TE_RC(TE_TA_WIN32, EPERM) :
                                         TE_RC(TE_TA_WIN32, ENOENT);
                                   
-    if (DeleteIPAddress(cur->nte_context) != 0)
+    if (DeleteIPAddress(cur->nte_context) != NO_ERROR)
     {
         ERROR("DeleteIPAddr() failed, error %x", GetLastError());
         return TE_RC(TE_TA_WIN32, ETEWIN);
@@ -686,7 +686,7 @@ link_addr_get(unsigned int gid, const char *oid, char *value,
     GET_IF_ENTRY;
     
     if (if_entry.dwPhysAddrLen != 6)
-        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
+        return TE_RC(TE_TA_WIN32, ETENOSUCHNAME);
 
     snprintf(value, RCF_MAX_VAL, "%02x:%02x:%02x:%02x:%02x:%02x",
              ptr[0], ptr[1], ptr[2], ptr[3], ptr[4], ptr[5]);
@@ -767,7 +767,7 @@ status_set(unsigned int gid, const char *oid, const char *value,
     else if (strcmp(value, "1") == 0)
         if_entry.dwAdminStatus = MIB_IF_ADMIN_STATUS_UP;
     else
-        return TE_RC(TE_TA_LINUX, EINVAL);
+        return TE_RC(TE_TA_WIN32, EINVAL);
 
     if (SetIfEntry(&if_entry) != 0)
         return TE_RC(TE_TA_WIN32, ENOENT);
@@ -790,13 +790,13 @@ arp_get(unsigned int gid, const char *oid, char *value,
 {
     MIB_IPNETTABLE *table;
     DWORD           size = 0, rc;
-    struct in_addr  a;
+    DWORD           a;
     int             i;
 
     UNUSED(gid);
     UNUSED(oid);
     
-    if ((a.s_addr = inet_addr(addr)) == 0)
+    if ((a = inet_addr(addr)) == 0)
         return TE_RC(TE_TA_WIN32, EINVAL);
     
     if ((table = (MIB_IPNETTABLE *)malloc(sizeof(MIB_IPNETTABLE))) == NULL)
@@ -806,7 +806,7 @@ arp_get(unsigned int gid, const char *oid, char *value,
     {
         table = (MIB_IPNETTABLE *)realloc(table, size);
     }
-    else if (rc == 0)
+    else if (rc == NO_ERROR)
     {
         free(table);
         return TE_RC(TE_TA_WIN32, ENOENT);
@@ -818,7 +818,7 @@ arp_get(unsigned int gid, const char *oid, char *value,
         return TE_RC(TE_TA_WIN32, ETEWIN);
     }
     
-    if (GetIpNetTable(table, &size, 0) != NO_ERROR) 
+    if (GetIpNetTable(table, &size, NO_ERROR) != NO_ERROR) 
     {
         ERROR("GetIpNetTable() failed, error %x", GetLastError());
         return TE_RC(TE_TA_WIN32, ETEWIN);
@@ -828,7 +828,7 @@ arp_get(unsigned int gid, const char *oid, char *value,
     
     for (i = 0; i < (int)table->dwNumEntries; i++)
     {
-        if (a.s_addr == table->table[i].dwAddr)
+        if (a == table->table[i].dwAddr)
         {
             uint8_t *ptr = table->table[i].bPhysAddr;
             
@@ -850,6 +850,55 @@ arp_get(unsigned int gid, const char *oid, char *value,
     return TE_RC(TE_TA_WIN32, ENOENT);
 }
 
+/** Find an interface for ARP entry */
+static int
+find_ifindex(DWORD addr, DWORD *ifindex)
+{
+    MIB_IPADDRTABLE *table;
+    DWORD            size = 0;
+    int              i;
+    int              rc;
+
+    if ((table = (MIB_IPADDRTABLE *)malloc(sizeof(MIB_IPADDRTABLE))) == NULL)
+        return TE_RC(TE_TA_WIN32, ENOMEM);
+
+    if ((rc = GetIpAddrTable(table, &size, 0)) == ERROR_INSUFFICIENT_BUFFER) 
+    {
+        table = (MIB_IPADDRTABLE *)realloc(table, size);
+    }
+    else if (rc == NO_ERROR)
+    {
+        free(table);
+        return TE_RC(TE_TA_WIN32, ENOENT);
+    }
+    else
+    {
+        free(table);
+        ERROR("GetIpAddrTable() failed, error %x", GetLastError());
+        return TE_RC(TE_TA_WIN32, ETEWIN);
+    }
+
+    if (GetIpAddrTable(table, &size, 0) != NO_ERROR) 
+    {
+        ERROR("GetIpAddrTable() failed, error %x", GetLastError());
+        return TE_RC(TE_TA_WIN32, ETEWIN);
+    }
+    
+    for (i = 0; i < (int)table->dwNumEntries; i++)
+    {
+        if ((addr & table->table[i].dwMask) == 
+            (table->table[i].dwAddr & table->table[i].dwMask))
+        {
+            *ifindex = table->table[i].dwIndex;
+            free(table);
+            return 0;
+        }
+    }
+    free(table);
+    return TE_RC(TE_TA_WIN32, ENOENT);
+}
+
+
 /**
  * Change already existing ARP entry.
  *
@@ -863,9 +912,80 @@ static int
 arp_set(unsigned int gid, const char *oid, const char *value,
         const char *addr)
 {
+    MIB_IPNETTABLE *table;
+    DWORD            size = 0, rc;
+    int              i, k, res;
+    DWORD            a;
+    int              int_mac[6];
+    
     UNUSED(gid);
     UNUSED(oid);
+
+    if ((a = inet_addr(addr)) == 0)
+        return TE_RC(TE_TA_WIN32, EINVAL);
     
+    if ((table = (MIB_IPNETTABLE *)malloc(sizeof(MIB_IPNETTABLE))) == NULL)
+        return TE_RC(TE_TA_WIN32, ENOMEM);
+
+    if ((rc = GetIpNetTable(table, &size, 0)) == ERROR_INSUFFICIENT_BUFFER) 
+    {
+        table = (MIB_IPNETTABLE *)realloc(table, size);
+    }
+    else if (rc == NO_ERROR)
+    {
+        free(table);
+        return TE_RC(TE_TA_WIN32, ENOENT);
+    }
+    else
+    {
+        free(table);
+        ERROR("GetIpNetTable() failed, error %x", GetLastError());
+        return TE_RC(TE_TA_WIN32, ETEWIN);
+    }
+    
+    if (GetIpNetTable(table, &size, 0) != NO_ERROR) 
+    {
+        ERROR("GetIpNetTable() failed, error %x", GetLastError());
+        return TE_RC(TE_TA_WIN32, ETEWIN);
+    }
+    
+    for (i = 0; i < (int)table->dwNumEntries; i++)
+    {
+        if (table->table[i].dwAddr == a)
+            break;
+    }
+    if (i == (int)table->dwNumEntries)
+    {
+        free(table);
+        return TE_RC(TE_TA_WIN32, ENOENT);
+    }
+    
+    res = sscanf(value, "%2x:%2x:%2x:%2x:%2x:%2x%s", int_mac, int_mac + 1,
+                 int_mac + 2, int_mac + 3, int_mac + 4, int_mac + 5, buf);
+
+    if (res != 6)
+        return TE_RC(TE_TA_WIN32, EINVAL);
+        
+    if (DeleteIpNetEntry(table->table + i) != NO_ERROR)
+    {
+        ERROR("DeleteIpNetEntry() failed, error %x", GetLastError());
+        free(table);
+        return TE_RC(TE_TA_WIN32, ETEWIN);
+    }
+    
+    for (k = 0; k < 6; k++)
+        table->table[i].bPhysAddr[k] = (unsigned char)int_mac[k];
+
+    if (CreateIpNetEntry(table->table + i) != NO_ERROR)
+    {
+        ERROR("CreateIpNetEntry() failed, error %x", GetLastError());
+        free(table);
+        return TE_RC(TE_TA_WIN32, ETEWIN);
+    }
+    
+    free(table);
+    
+    return 0;
 }
 
 /**
@@ -881,9 +1001,38 @@ static int
 arp_add(unsigned int gid, const char *oid, const char *value,
         const char *addr)
 {
+    char           val[32];
+    MIB_IPNETROW   entry;
+    int            int_mac[6];
+    int            res;
+    int            i;
+
     UNUSED(gid);
     UNUSED(oid);
-    
+
+    if (arp_get(0, NULL, val, addr) == 0)
+        return TE_RC(TE_TA_WIN32, EEXIST);
+
+    res = sscanf(value, "%2x:%2x:%2x:%2x:%2x:%2x%s", int_mac, int_mac + 1,
+                 int_mac + 2, int_mac + 3, int_mac + 4, int_mac + 5, buf);
+
+    if (res != 6)
+        return TE_RC(TE_TA_WIN32, EINVAL);
+        
+    for (i = 0; i < 6; i++)
+        entry.bPhysAddr[i] = (unsigned char)int_mac[i];
+
+    entry.dwAddr = inet_addr(addr);
+    if ((res = find_ifindex(entry.dwAddr, &entry.dwIndex)) != 0)
+        return res;
+    entry.dwPhysAddrLen = 6;
+    entry.dwType = 4;
+    if (CreateIpNetEntry(&entry) != 0)
+    {
+        ERROR("CreateIpNetEntry() failed, error %x", GetLastError());
+        return TE_RC(TE_TA_WIN32, ETEWIN);
+    }
+    return 0;
 }
 
 /**
@@ -898,9 +1047,58 @@ arp_add(unsigned int gid, const char *oid, const char *value,
 static int
 arp_del(unsigned int gid, const char *oid, const char *addr)
 {
+    MIB_IPNETTABLE *table;
+    DWORD            size = 0, rc;
+    int              i;
+    DWORD            a;
+    
     UNUSED(gid);
     UNUSED(oid);
+
+    if ((a = inet_addr(addr)) == 0)
+        return TE_RC(TE_TA_WIN32, EINVAL);
     
+    if ((table = (MIB_IPNETTABLE *)malloc(sizeof(MIB_IPNETTABLE))) == NULL)
+        return TE_RC(TE_TA_WIN32, ENOMEM);
+
+    if ((rc = GetIpNetTable(table, &size, 0)) == ERROR_INSUFFICIENT_BUFFER) 
+    {
+        table = (MIB_IPNETTABLE *)realloc(table, size);
+    }
+    else if (rc == NO_ERROR)
+    {
+        free(table);
+        return TE_RC(TE_TA_WIN32, ENOENT);
+    }
+    else
+    {
+        free(table);
+        ERROR("GetIpNetTable() failed, error %x", GetLastError());
+        return TE_RC(TE_TA_WIN32, ETEWIN);
+    }
+    
+    if (GetIpNetTable(table, &size, 0) != NO_ERROR) 
+    {
+        ERROR("GetIpNetTable() failed, error %x", GetLastError());
+        return TE_RC(TE_TA_WIN32, ETEWIN);
+    }
+    
+    for (i = 0; i < (int)table->dwNumEntries; i++)
+    {
+        if (table->table[i].dwAddr == a)
+        {
+            if (DeleteIpNetEntry(table->table + i) != 0)
+            {
+                ERROR("DeleteIpNetEntry() failed, error %x", GetLastError());
+                free(table);
+                return TE_RC(TE_TA_WIN32, ETEWIN);
+            }
+            free(table);
+            return 0;
+        }
+    }
+    free(table);
+    return TE_RC(TE_TA_WIN32, ENOENT);
 }
 
 /**
@@ -929,7 +1127,7 @@ arp_list(unsigned int gid, const char *oid, char **list)
     {
         table = (MIB_IPNETTABLE *)realloc(table, size);
     }
-    else if (rc == 0)
+    else if (rc == NO_ERROR)
     {
         free(table);
         if ((*list = strdup(" ")) == NULL)
