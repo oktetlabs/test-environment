@@ -825,6 +825,7 @@ rcf_rpc_call(rcf_rpc_server *rpcs, int proc,
     void     *retval;
 #endif    
                       
+    static char   *tmp;
     struct timeval tv;
     
     tarpc_in_arg  *in = (tarpc_in_arg *)in_arg;
@@ -832,6 +833,9 @@ rcf_rpc_call(rcf_rpc_server *rpcs, int proc,
 
     VERB("Calling RPC %d", proc);
 
+    if (tmp == NULL && (tmp = getenv("TE_TMP")) == NULL)
+        tmp = "/tmp";
+        
     if (rpcs == NULL)
         return;
         
@@ -875,7 +879,7 @@ rcf_rpc_call(rcf_rpc_server *rpcs, int proc,
         forward(rpcs);
         exit(1);
     }
-    sprintf(host, "tmp/te_rcfrpc_pipe_%u", (unsigned int)rcf_rpc_pid);
+    sprintf(host, "%s/te_rcfrpc_pipe_%u", tmp, (unsigned int)rcf_rpc_pid);
     {
         struct stat st;
 
@@ -893,7 +897,7 @@ rcf_rpc_call(rcf_rpc_server *rpcs, int proc,
     }
     sem_wait(&rpcs->fw_sem);
 
-    sprintf(host, "tmp/te_rcfrpc_pipe_%u_%u",
+    sprintf(host, "%s/te_rcfrpc_pipe_%u_%u", tmp,
             (unsigned int )rcf_rpc_pid, (unsigned int)t); 
 #endif    
 
