@@ -398,7 +398,7 @@
          -->
     <object oid="/agent/smtp" access="read_create" type="integer"/>
 
-    <!-- SMTP daemon program to be used: sendmail, exim.
+    <!-- SMTP daemon program to be used: sendmail, exim, exim4.
          Name: empty
          Value: program name -->
     <object oid="/agent/smtp/server" access="read_write" type="string"/>
