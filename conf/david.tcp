@@ -1,5 +1,0 @@
---conf-builder=builder.conf.ls
---conf-tester=tester.tcpr
---conf-rcf=rcf.conf.david
---tester-req=TAD_TCP
---tester-run=selftad
