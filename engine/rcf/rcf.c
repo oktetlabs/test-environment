@@ -166,7 +166,6 @@ typedef struct ta {
 
     void               *dlhandle;           /**< Dynamic library handle */
     te_bool             dead;               /**< TA is dead */
-    te_bool             rebootable;         /**< TA is rebootable */
 
     /** @name Methods */
     rcf_talib_start     start;              /**< Start TA */
@@ -435,22 +434,8 @@ parse_config(char *filename)
         if ((attr = xmlGetProp(cur, (const xmlChar *)"rebootable")) != NULL)
         {
             if (strcmp(attr, "yes") == 0)
-            {
-                agent->rebootable = TRUE;
-            }
-            else
-            {
-                agent->rebootable = FALSE;
-            }
+                agent->flags = TA_REBOOTABLE;
             xmlFree(attr);
-        }
-        else
-        {
-            /* 
-             * When this attribute is missing TA is by default 
-             * not rebootable. 
-             */
-            agent->rebootable = FALSE;
         }
 
         agent->sent.prev = agent->sent.next = &(agent->sent);
@@ -608,8 +593,7 @@ init_agent(ta *agent)
     {
         ERROR("FATAL ERROR: Cannot connect to TA '%s' "
                          "error %d", agent->name, rc);
-        if (agent->rebootable)                         
-            (agent->reboot)(agent->handle, NULL);
+        (agent->reboot)(agent->handle, NULL);
         return -1;
     }
     VERB("Connected with TA %s", agent->name);
@@ -632,11 +616,6 @@ force_reboot(ta *agent, usrreq *req)
 {
     int rc;
     
-    if (agent->rebootable == FALSE)
-    {
-        ERROR("fatal error: TA %s is not rebootable.\n", agent->name);
-        return TE_RC(TE_RCF, EPERM);
-    }
     reboot_num--;
     agent->reboot_timestamp = 0;
     rc = (agent->reboot)(agent->handle,
@@ -1543,7 +1522,7 @@ process_user_request(usrreq *req)
             return 0;
 
         case RCFOP_REBOOT:
-            if (agent->rebootable == FALSE)
+            if ((agent->flags & TA_REBOOTABLE) == 0)
             {
                 msg->error = TE_RC(TE_RCF, EPERM);
                 answer_user_request(req);
@@ -1668,10 +1647,10 @@ rcf_shutdown()
     for (agent = agents; agent != NULL; agent = agent->next)
     {
         if ((agent->flags & TA_DOWN) == 0)
-            ERROR("Soft shutdown of TA '%s' failed",
-                             agent->name);
+            ERROR("Soft shutdown of TA '%s' failed", agent->name);
+        
 
-        if (!agent->rebootable || (agent->reboot)(agent->handle, NULL) != 0)
+        if ((agent->reboot)(agent->handle, NULL) != 0)
             ERROR("Cannot reboot TA '%s'", agent->name);
     }
 }
