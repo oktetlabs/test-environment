@@ -27,8 +27,14 @@
  * @(#) $Id$
  */
 
+#include "config.h"
+
 #include <string.h>
+
 #include "tad_dhcp_impl.h"
+
+#define TE_LGR_USER     "TAD DHCP CSAP"
+#include "logger_ta.h"
 
 
 csap_layer_neighbour_list_t dhcp_nbr_list = 
@@ -51,12 +57,15 @@ csap_spt_type_t dhcp_csap_spt =
 };
 
 /**
- * Register dhcpernet CSAP callbacks and support structures in TAD Command Handler.
+ * Register dhcpernet CSAP callbacks and support structures in
+ * TAD Command Handler.
  *
  * @return zero on success or error code.
  */ 
-int csap_support_dhcp_register (void)
+int
+csap_support_dhcp_register(void)
 { 
+    VERB("match=%x", dhcp_csap_spt.match_cb);
     return add_csap_spt(&dhcp_csap_spt);
 }
 
