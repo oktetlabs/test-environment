@@ -363,38 +363,25 @@ tapi_cfg_switch_vlan_del_port(const char *ta_name, uint16_t vid,
 /* See the description in tapi_cfg.h */
 int
 tapi_cfg_add_route(const char *ta, int addr_family,
-                   const void *dst_addr, int prefix, const void *gw_addr)
-{
-    return tapi_cfg_route_op(OP_ADD, ta, addr_family,
-                             dst_addr, prefix, gw_addr, NULL, 0, 0, 0, 0, 0);
-}
-
-/* See the description in tapi_cfg.h */
-int
-tapi_cfg_del_route(const char *ta, int addr_family,
-                   const void *dst_addr, int prefix, const void *gw_addr)
-{
-    return tapi_cfg_route_op(OP_DEL, ta, addr_family,
-                             dst_addr, prefix, gw_addr, NULL, 0, 0, 0, 0, 0);
-}
-
-int
-tapi_cfg_add_route_my(const char *ta, int addr_family,
-                      const void *dst_addr, int prefix,
-                      const void *gw_addr, const char *dev,
-                      uint32_t flags, int metric, int mss, int win, int irtt)
+                   const void *dst_addr, int prefix,
+                   const void *gw_addr, const char *dev,
+                   uint32_t flags, int metric, int mss, int win, int irtt)
 {
     return tapi_cfg_route_op(OP_ADD, ta, addr_family,
                              dst_addr, prefix, gw_addr, dev,
                              flags, metric, mss, win, irtt);
 }
 
-int tapi_cfg_del_route_my(const char *ta, int addr_family,
-                          const void *dst_addr, int prefix)
+/* See the description in tapi_cfg.h */
+int
+tapi_cfg_del_route(const char *ta, int addr_family,
+                   const void *dst_addr, int prefix, 
+                   const void *gw_addr, const char *dev,
+                   uint32_t flags, int metric, int mss, int win, int irtt)
 {
     return tapi_cfg_route_op(OP_DEL, ta, addr_family,
-                             dst_addr, prefix, NULL, NULL, 0, 0, 0, 0, 0);
-
+                             dst_addr, prefix, gw_addr, dev,
+                             flags, metric, mss, win, irtt);
 }
 
 /* See the description in tapi_cfg.h */
@@ -436,6 +423,8 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
     cfg_handle  handle;
     char        dst_addr_str[INET6_ADDRSTRLEN];
     char        gw_addr_str[INET6_ADDRSTRLEN];
+    char        route_inst_name[1024];
+    char        rt_val[128];
     int         rc;
     int         netaddr_size = netaddr_get_size(addr_family);
     uint8_t    *dst_addr_copy;
@@ -498,73 +487,70 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
               "into a character string", __FUNCTION__);
         return TE_RC(TE_TAPI, errno);
     }
+    
+#define PUT_INTO_BUF(buf_, args...) \
+            snprintf((buf_) + strlen(buf_), sizeof(buf_) - strlen(buf_), args)
+
+    route_inst_name[0] = '\0';
+    PUT_INTO_BUF(route_inst_name, "%s|%d", dst_addr_str, prefix);
+
+    if (gw_addr != NULL)
+    {
+        if (inet_ntop(addr_family, gw_addr, gw_addr_str,
+                      sizeof(gw_addr_str)) == NULL)
+        {
+            ERROR("%s() fails converting binary gateway address "
+                  "into a character string", __FUNCTION__);
+            return TE_RC(TE_TAPI, errno);
+        }
+        PUT_INTO_BUF(route_inst_name, ",gw=%s", gw_addr_str);
+    }
+    if (dev != NULL)
+        PUT_INTO_BUF(route_inst_name, ",dev=%s", dev);
+    if (metric != 0)
+        PUT_INTO_BUF(route_inst_name, ",metric=%d", metric);
+    if (mss != 0)
+        PUT_INTO_BUF(route_inst_name, ",mss=%d", mss);
+    if (win != 0)
+        PUT_INTO_BUF(route_inst_name, ",window=%d", win);
+    if (irtt != 0)
+        PUT_INTO_BUF(route_inst_name, ",irtt=%d", irtt);
+    if (flags & RTF_REJECT)
+        PUT_INTO_BUF(route_inst_name, ",reject");
+
+    rt_val[0] = '\0';
+
+    if (flags & RTF_MODIFIED)
+        PUT_INTO_BUF(rt_val, " mod");
+    if (flags & RTF_DYNAMIC)
+        PUT_INTO_BUF(rt_val, " dyn");
+    if (flags & RTF_REINSTATE)
+        PUT_INTO_BUF(rt_val, " reinstate");
+
+    RING("%s route on TA %s: %s %s", op == OP_ADD ? "Adding" : "Deleting",
+         ta, route_inst_name, rt_val);
 
     switch (op)
     {
         case OP_ADD:
-        {
-            char buf[1024];
-
-            buf[0] = '\0';
-
-#define PUT_INTO_BUF(args...) \
-            snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), args)
-
-            if (gw_addr != NULL)
+            if ((rc = cfg_add_instance_fmt(&handle, CVT_STRING, rt_val,
+                                           "/agent:%s/route:%s",
+                                           ta, route_inst_name)) != 0)
             {
-                if (inet_ntop(addr_family, gw_addr, gw_addr_str,
-                              sizeof(gw_addr_str)) == NULL)
-                {
-                    ERROR("%s() fails converting binary gateway address "
-                          "into a character string", __FUNCTION__);
-                    return TE_RC(TE_TAPI, errno);
-                }
-                PUT_INTO_BUF(" gw: %s", gw_addr_str);
-            }
-            if (dev != NULL)
-                PUT_INTO_BUF(" dev: %s", dev);
-            if (metric != 0)
-                PUT_INTO_BUF(" metric: %d", metric);
-            if (mss != 0)
-                PUT_INTO_BUF(" mss: %d", mss);
-            if (win != 0)
-                PUT_INTO_BUF(" window: %d", win);
-            if (irtt != 0)
-                PUT_INTO_BUF(" irtt: %d", irtt);
-            if (flags & RTF_REJECT)
-                PUT_INTO_BUF(" reject");
-            if (flags & RTF_MODIFIED)
-                PUT_INTO_BUF(" mod");
-            if (flags & RTF_DYNAMIC)
-                PUT_INTO_BUF(" dyn");
-            if (flags & RTF_REINSTATE)
-                PUT_INTO_BUF(" reinstate");
+                ERROR("%s() fails adding a new route %s %s on '%s' Agent "
+                      "errno = %X", __FUNCTION__, route_inst_name,
+                      rt_val, ta, rc);
 
-#undef PUT_INTO_BUF
-
-            RING("Adding route on TA %s: %s|%d -> %s",
-                 ta, dst_addr_str, prefix, buf);
-
-            if ((rc = cfg_add_instance_fmt(&handle, CVT_STRING, buf,
-                                           "/agent:%s/route:%s|%d",
-                                           ta, dst_addr_str, prefix)) != 0)
-            {
-                ERROR("%s() fails adding a new route %s|%d -> \"%s\" "
-                      "on '%s' Agent", __FUNCTION__, dst_addr_str,
-                      prefix, buf, ta);
                 return TE_RC(TE_TAPI, rc);
             }
             break;
-        }
 
         case OP_DEL:
-            RING("Deleting route on TA %s: %s|%d", ta, dst_addr_str, prefix);
-
-            if ((rc = cfg_del_instance_fmt(FALSE, "/agent:%s/route:%s|%d",
-                                           ta, dst_addr_str, prefix)) != 0)
+            if ((rc = cfg_del_instance_fmt(FALSE, "/agent:%s/route:%s",
+                                           ta, route_inst_name)) != 0)
             {
-                ERROR("%s() fails deleting route %s|%d on '%s' agent",
-                      __FUNCTION__, dst_addr_str, prefix, ta);
+                ERROR("%s() fails deleting route %s on '%s' Agent "
+                      "errno = %X", __FUNCTION__, route_inst_name, ta, rc);
                 return TE_RC(TE_TAPI, rc);
             }
             break;
@@ -573,6 +559,8 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
             ERROR("%s(): Operation %d is not supported", __FUNCTION__, op);
             break;
     }
+
+#undef PUT_INTO_BUF
 
     return 0;
 }

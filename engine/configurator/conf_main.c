@@ -201,10 +201,10 @@ process_add(cfg_add_msg *msg, te_bool update_dh)
         assert(0);
 
     msg->rc = cfg_db_add(oid, &handle, msg->val_type, val);
-
+    
     if (msg->rc != 0)
     {
-        ERROR("Failed to add a new instance %s with value %s into "
+        ERROR("Failed to add a new instance %s with value '%s' into "
               "configuration database", inst_name_str, val_str);
         cfg_types[msg->val_type].free(val);
         return;
@@ -417,10 +417,16 @@ process_del(cfg_del_msg *msg, te_bool update_dh)
     }
 
     if ((msg->rc = cfg_db_del_check(handle)) != 0)
+    {
+        ERROR("%s: cfg_db_del_check fails %X", __FUNCTION__, msg->rc);
         return;
+    }
 
     if (update_dh && (msg->rc = cfg_dh_add_command((cfg_msg *)msg)) != 0)
+    {
+        ERROR("%s: Failed to add into DH errno %X", __FUNCTION__, msg->rc);
         return;
+    }
 
     if (strncmp(inst->oid, "/agent:", strlen("/agent:")) != 0)
     {
@@ -435,6 +441,7 @@ process_del(cfg_del_msg *msg, te_bool update_dh)
 
     if (msg->rc != 0)
     {
+        ERROR("%s: rcf_ta_cfg_del returns %X", __FUNCTION__, msg->rc);
         if (update_dh)
             cfg_dh_delete_last_command();
         return;

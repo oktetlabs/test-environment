@@ -83,9 +83,9 @@
     
     <!-- Routine table entry.
          Name: (network address in human notation)'|'(prefix)
-               for example: 1.2.3.0|24
-         Value: [gw: Gw] [dev: If] [metric: N] [mss: M] [window: W] [irtt: I]
-                [reject] [mod] [dyn] [reinstate]
+               for example: 1.2.3.0|24[,gw:Gw][,dev:If]
+                            [,metric:N][,mss:M][,window:W][,irtt:I][,reject]
+         Value: [mod] [dyn] [reinstate]
 
          See "man route" for the meaning of these attributes
          -->

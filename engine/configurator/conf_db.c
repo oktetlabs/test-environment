@@ -556,7 +556,10 @@ cfg_db_add(char *oid_s, cfg_handle *handle,
     int             i = 0;
     
     if (oid == NULL)
+    {
+        ERROR("%s: OID is expected to be not NULL", __FUNCTION__);
         return EINVAL;
+    }
     
 #define RET(_rc) \
     do {                        \
@@ -845,6 +848,7 @@ cfg_db_find(const char *oid_s, cfg_handle *handle)
     if (oid->inst)
     {
         cfg_instance *tmp = &cfg_inst_root;
+
         while (TRUE)
         {
            for (; 
@@ -854,7 +858,7 @@ cfg_db_find(const char *oid_s, cfg_handle *handle)
                   strcmp(tmp->name, 
                          ((cfg_inst_subid *)(oid->ids))[i].name) == 0);
                 tmp = tmp->brother);
-                
+
             if (++i == oid->len || tmp == NULL)
                 break;
                 

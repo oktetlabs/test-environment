@@ -24,7 +24,7 @@
  *
  * @author Elena Vengerova <Elena.Vengerova@oktetlabs.ru>
  *
- * $Id: conf_api.h 2657 2004-06-25 06:01:06Z arybchik $
+ * $Id$
  */
 
 #ifndef __TE_CONF_OID_H__
@@ -35,7 +35,7 @@ extern "C" {
 
 #define CFG_SUBID_MAX       32   /**< Maximum length of sub-identifier 
                                       including trailing 0 */
-#define CFG_INST_NAME_MAX   32   /**< Instance name, including trailing 0 */
+#define CFG_INST_NAME_MAX   128  /**< Instance name, including trailing 0 */
 
 #define CFG_OID_LEN_MAX     16   /**< Maximum number of elements in OID */
 

@@ -24,7 +24,7 @@
  *
  * @author Elena Vengerova <Elena.Vengerova@oktetlabs.ru>
  *
- * $Id: conf_oid.c 2201 2004-06-14 13:59:12Z helen $
+ * $Id$
  */
 
 #ifdef HAVE_CONFIG_H
@@ -60,6 +60,9 @@
 #include "te_errno.h"
 #include "te_defs.h"
 #include "conf_oid.h"
+
+#define TE_LGR_USER     "Configurator OID API"
+#include "logger_api.h"
 
 /**
  * Allocate memory for object identifier or object instance identifier.
@@ -117,26 +120,57 @@ cfg_convert_oid_str(const char *str)
     int      depth = 1;
     int      size;
     
-    if (str == NULL || *str != '/' || strlen(str) >= CFG_OID_MAX)
+    if (str == NULL)
     {
+        ERROR("%s: 'str' parameter can't be NULL", __FUNCTION__);
         return NULL;
     }
-    inst = strchr(str, ':') != NULL;
+    if (*str != '/')
+    {
+        ERROR("%s: OID should be started with '/' symbol, not with '%c'",
+              __FUNCTION__, *str);
+        return NULL;
+    }
+    if (strlen(str) >= CFG_OID_MAX)
+    {
+        ERROR("%s: OID %s is too long, maximum allowed length is %d",
+              __FUNCTION__, str, CFG_OID_MAX);
+        return NULL;
+    }
     
+    inst = strchr(str, ':') != NULL;
+
     if (strcmp(str, "/") == 0 || strcmp(str, "/:") == 0)
         goto create;
-        
+
     strcpy(str_buf, str + 1);
-        
-    for (token = strtok(str_buf, "/"); token != NULL; token = strtok(NULL, "/"))
+
+    for (token = strtok(str_buf, "/");
+         token != NULL;
+         token = strtok(NULL, "/"))
     {
         if (inst)
         {
             char *name = strchr(token, ':');
-            if (name == NULL || 
-                (*name++ = 0, strlen(name) >= CFG_INST_NAME_MAX) ||
-                strlen(token) >= CFG_SUBID_MAX)
+
+            if (name == NULL)
             {
+                ERROR("%s: Cannot find instance name in %s",
+                      __FUNCTION__, token);
+                return NULL;
+            }
+            if ((*name++ = '\0', strlen(name) >= CFG_INST_NAME_MAX))
+            {
+                ERROR("%s: Instance name '%s' is too long, "
+                      "maximum allowed length of a single instance "
+                      "name is %d", __FUNCTION__, name, CFG_INST_NAME_MAX);
+                return NULL;
+            }
+            if (strlen(token) >= CFG_SUBID_MAX)
+            {
+                ERROR("%s: Sub ID name '%s' is too long, "
+                      "maximum allowed length of an Sub ID name is %d",
+                      __FUNCTION__, token, CFG_SUBID_MAX);
                 return NULL;
             }
             strcpy(oid_buf + sizeof(cfg_inst_subid) * depth, token);

@@ -63,28 +63,53 @@ extern int tapi_cfg_switch_vlan_del_port(const char *ta_name,
                                          uint16_t vid, unsigned int port);
 
 /**
- * Add a new route via a gateway to some destination address
+ * Add a new route to some destination address with a lot of additional 
+ * route attributes
  *
  * @param ta           Test agent
  * @param addr_family  Address family of destination and gateway addresses
  * @param dst_addr     Destination address
  * @param prefix       Prefix for destination address
  * @param gw_addr      Gateway address
+ * @param dev          Interface name (for direct route)
+ * @param flags        Flags to be added for the route
+ *                     (see route flags in net/route.h system header)
+ * @param metric       Route metric
+ * @param mss          TCP Maximum Segment Size (MSS) on the route
+ * @param win          TCP window size for connections over this route
+ * @param irtt         initial round trip time (irtt) for TCP connections
+ *                     over this route (in milliseconds)
+ *
+ * @note For more information about the meaning of parameters see "man route"
  *
  * @return Status code
  *
  * @retval 0  - on success
  */
-
+extern int tapi_cfg_add_route(const char *ta, int addr_family,
+                              const void *dst_addr, int prefix,
+                              const void *gw_addr, const char *dev,
+                              uint32_t flags,
+                              int metric, int mss, int win, int irtt);
 
 /**
- * Delete a particular route identified by destination and gateway addresses
+ * Delete specified route
  *
  * @param ta           Test agent
  * @param addr_family  Address family of destination and gateway addresses
  * @param dst_addr     Destination address
  * @param prefix       Prefix for destination address
  * @param gw_addr      Gateway address
+ * @param dev          Interface name (for direct route)
+ * @param flags        Flags to be added for the route
+ *                     (see route flags in net/route.h system header)
+ * @param metric       Route metric
+ * @param mss          TCP Maximum Segment Size (MSS) on the route
+ * @param win          TCP window size for connections over this route
+ * @param irtt         initial round trip time (irtt) for TCP connections
+ *                     over this route (in milliseconds)
+ *
+ * @note For more information about the meaning of parameters see "man route"
  *
  * @return Status code
  *
@@ -92,16 +117,49 @@ extern int tapi_cfg_switch_vlan_del_port(const char *ta_name,
  */
 extern int tapi_cfg_del_route(const char *ta, int addr_family,
                               const void *dst_addr, int prefix,
-                              const void *gw_addr);
+                              const void *gw_addr, const char *dev,
+                              uint32_t flags,
+                              int metric, int mss, int win, int irtt);
 
-extern int tapi_cfg_add_route_my(const char *ta, int addr_family,
-                                 const void *dst_addr, int prefix,
-                                 const void *gw_addr, const char *dev,
-                                 uint32_t flags,
-                                 int metric, int mss, int win, int irtt);
+/**
+ * Add a new indirect route (via a gateway) on specified Test agent
+ *
+ * @param ta           Test agent
+ * @param addr_family  Address family of destination and gateway addresses
+ * @param dst_addr     Destination address
+ * @param prefix       Prefix for destination address
+ * @param gw_addr      Gateway address
+ *
+ * @return 0 - on success, or TE error code
+ */
+static inline int
+tapi_cfg_add_route_via_gw(const char *ta, int addr_family,
+                          const void *dst_addr, int prefix,
+                          const void *gw_addr)
+{
+    return tapi_cfg_add_route(ta, addr_family, dst_addr, prefix,
+                              gw_addr, NULL, 0, 0, 0, 0, 0);
+}
 
-extern int tapi_cfg_del_route_my(const char *ta, int addr_family,
-                                 const void *dst_addr, int prefix);
+/**
+ * Deletes route added with 'tapi_cfg_add_route_via_gw' function
+ *
+ * @param ta           Test agent
+ * @param addr_family  Address family of destination and gateway addresses
+ * @param dst_addr     Destination address
+ * @param prefix       Prefix for destination address
+ * @param gw_addr      Gateway address
+ *
+ * @return 0 - on success, or TE error code
+ */
+static inline int
+tapi_cfg_del_route_via_gw(const char *ta, int addr_family,
+                          const void *dst_addr, int prefix,
+                          const void *gw_addr)
+{
+    return tapi_cfg_del_route(ta, addr_family, dst_addr, prefix,
+                              gw_addr, NULL, 0, 0, 0, 0, 0);
+}
 
 /**
  * Add a new static ARP entry on specified agent

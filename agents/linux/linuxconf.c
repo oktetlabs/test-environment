@@ -1749,6 +1749,200 @@ arp_list(unsigned int gid, const char *oid, char **list)
     return 0;
 }
 
+
+/**
+ * Parses instance name and converts its value into routing table entry 
+ * data structure.
+ *
+ * @param inst_name  Instance name that keeps route information
+ * @param rt         Routing entry location to be filled in (OUT)
+ *
+ * @note The function is not thread safe - it uses static memory for 
+ * 'rt_dev' field in 'rt' structure.
+ */
+static int
+route_parse_inst_name(const char *inst_name,
+#ifdef __linux__
+                      struct rtentry  *rt
+#else
+                      struct ortentry *rt
+#endif
+)
+{
+    char        *tmp, *tmp1;
+    int          prefix;
+    static char  ifname[IF_NAMESIZE];
+    char        *ptr;
+    char        *end_ptr;
+    char        *term_byte; /* Pointer to the trailing zero byte 
+                               in 'inst_name' */
+    static char  inst_copy[RCF_MAX_VAL];
+    int          int_val;
+
+    memset(rt, 0, sizeof(*rt));
+    strncpy(inst_copy, inst_name, sizeof(inst_copy));
+    inst_copy[sizeof(inst_copy) - 1] = '\0';
+
+    if ((tmp = strchr(inst_copy, '|')) == NULL)
+        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
+
+    *tmp = 0;
+    rt->rt_dst.sa_family = AF_INET;
+    if (inet_pton(AF_INET, inst_copy,
+                  &(((struct sockaddr_in *)&(rt->rt_dst))->sin_addr)) <= 0)
+    {
+        ERROR("Incorrect 'destination address' value in route %s",
+              inst_name);
+        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
+    }
+    tmp++;
+    if (*tmp == '-' ||
+        (prefix = strtol(tmp, &tmp1, 10), tmp == tmp1 || prefix > 32))
+    {
+        ERROR("Incorrect 'prefix length' value in route %s", inst_name);
+        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
+    }
+    tmp = tmp1;
+
+#ifdef __linux__
+    rt->rt_genmask.sa_family = AF_INET;
+    ((struct sockaddr_in *)&(rt->rt_genmask))->sin_addr.s_addr =
+        htonl(PREFIX2MASK(prefix));
+#endif
+    if (prefix == 32)
+        rt->rt_flags |= RTF_HOST;
+
+    term_byte = (char *)(tmp + strlen(tmp));
+
+    /* @todo Make a macro to wrap around similar code below */
+    if ((ptr = strstr(tmp, "gw=")) != NULL)
+    {
+        int rc;
+
+        end_ptr = ptr += strlen("gw=");
+        while (*end_ptr != ',' && *end_ptr != '\0')
+            end_ptr++;
+        *end_ptr = '\0';
+
+        rc = inet_pton(AF_INET, ptr,
+                       &(((struct sockaddr_in *)
+                               &(rt->rt_gateway))->sin_addr));
+        if (rc <= 0)
+        {
+            ERROR("Incorrect format of 'gateway address' value in route %s",
+                  inst_name);
+            return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
+        }
+        if (term_byte != end_ptr)
+            *end_ptr = ',';
+        rt->rt_gateway.sa_family = AF_INET;
+        rt->rt_flags |= RTF_GATEWAY;
+    }
+
+    if ((ptr = strstr(tmp, "dev=")) != NULL)
+    {
+        end_ptr = ptr += strlen("dev=");
+        while (*end_ptr != ',' && *end_ptr != '\0')
+            end_ptr++;
+        *end_ptr = '\0';
+
+        if (strlen(ptr) >= sizeof(ifname))
+        {
+            ERROR("Interface name is too long: %s in route %s",
+                  ptr, inst_name);
+            return TE_RC(TE_TA_LINUX, EINVAL);
+        }
+        strcpy(ifname, ptr);
+
+        if (term_byte != end_ptr)
+            *end_ptr = ',';
+        rt->rt_dev = ifname;
+    }
+
+    if ((ptr = strstr(tmp, "metric=")) != NULL)
+    {
+        end_ptr = ptr += strlen("metric=");
+        while (*end_ptr != ',' && *end_ptr != '\0')
+            end_ptr++;
+        *end_ptr = '\0';
+        
+        if (*ptr == '\0' || *ptr == '-' ||
+            (int_val = strtol(ptr, &end_ptr, 10), *end_ptr != '\0'))
+        {
+            ERROR("Incorrect 'route metric' value in route %s",
+                  inst_name);
+            return TE_RC(TE_TA_LINUX, EINVAL);
+        }
+        if (term_byte != end_ptr)
+            *end_ptr = ',';
+        rt->rt_metric = int_val;
+    }
+    
+    if ((ptr = strstr(tmp, "mss=")) != NULL)
+    {
+        end_ptr = ptr += strlen("mss=");
+        while (*end_ptr != ',' && *end_ptr != '\0')
+            end_ptr++;
+        *end_ptr = '\0';
+
+        if (*ptr == '\0' || *ptr == '-' ||
+            (int_val = strtol(ptr, &end_ptr, 10), *end_ptr != '\0'))
+        {
+            ERROR("Incorrect 'route mss' value in route %s", inst_name);
+            return TE_RC(TE_TA_LINUX, EINVAL);
+        }
+        if (term_byte != end_ptr)
+            *end_ptr = ',';
+
+        /* Don't be confused the structure does not have mss field */
+        rt->rt_mtu = int_val;
+        rt->rt_flags |= RTF_MSS;
+    }
+
+    if ((ptr = strstr(tmp, "window=")) != NULL)
+    {
+        end_ptr = ptr += strlen("window=");
+        while (*end_ptr != ',' && *end_ptr != '\0')
+            end_ptr++;
+        *end_ptr = '\0';
+
+        if (*ptr == '\0' ||  *ptr == '-' ||
+            (int_val = strtol(ptr, &end_ptr, 10), *end_ptr != '\0'))
+        {
+            ERROR("Incorrect 'route window' value in route %s", inst_name);
+            return TE_RC(TE_TA_LINUX, EINVAL);
+        }
+        if (term_byte != end_ptr)
+            *end_ptr = ',';
+        rt->rt_window = int_val;
+        rt->rt_flags |= RTF_WINDOW;
+    }
+
+    if ((ptr = strstr(tmp, "irtt=")) != NULL)
+    {
+        end_ptr = ptr += strlen("irtt=");
+        while (*end_ptr != ',' && *end_ptr != '\0')
+            end_ptr++;
+        *end_ptr = '\0';
+
+        if (*ptr == '\0' || *ptr == '-' ||
+            (int_val = strtol(ptr, &end_ptr, 10), *end_ptr != '\0'))
+        {
+            ERROR("Incorrect 'route irtt' value in route %s", inst_name);
+            return TE_RC(TE_TA_LINUX, EINVAL);
+        }
+        if (term_byte != end_ptr)
+            *end_ptr = ',';
+        rt->rt_irtt = int_val;
+        rt->rt_flags |= RTF_IRTT;
+    }
+
+    if (strstr(tmp, "reject") != NULL)
+        rt->rt_flags |= RTF_REJECT;
+
+    return 0;
+}
+
 /**
  * Get route value (gateway IP address).
  *
@@ -1756,8 +1950,8 @@ arp_list(unsigned int gid, const char *oid, char **list)
  * @param oid           full object instence identifier (unused)
  * @param value         value location (IPv4 address is returned in
  *                      dotted notation)
- * @param route         route instance name:
- *                      <IPv4 address in dotted notation>'|'<prefix length>
+ * @param route         route instance name: see doc/cm_cm_base.xml 
+ *                      for the format
  *
  * @return error code
  */
@@ -1765,30 +1959,36 @@ static int
 route_get(unsigned int gid, const char *oid, char *value,
           const char *route)
 {
-    char *tmp, *tmp1;
-    char  ifname[RCF_MAX_NAME];
-    FILE *fp;
+    int       rc;
+    FILE     *fp;
+    char      ifname[IF_NAMESIZE];
+    uint32_t  route_addr;
+    uint32_t  route_mask;
+    uint32_t  route_gw;
 
-    unsigned int route_addr;
-    unsigned int route_mask;
-    unsigned int prefix;
+#ifdef __linux__
+    struct rtentry  rt;
+#else
+    struct ortentry rt;
+#endif
 
     UNUSED(gid);
     UNUSED(oid);
 
-    if ((tmp = strchr(route, '|')) == NULL)
-        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
+    RING("%s: %s", __FUNCTION__, route);
 
-    *tmp = 0;
-    if (inet_pton(AF_INET, route, &route_addr) <= 0)
-        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
-    tmp++;
-    if (*tmp == '-' ||
-        (prefix = strtol(tmp, &tmp1, 10), tmp == tmp1 || *tmp1 != 0 ||
-         prefix > 32))
-        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
+    if ((rc = route_parse_inst_name(route, &rt)) != 0)
+        return 0;
 
-    route_mask = htonl(PREFIX2MASK(prefix));
+    memcpy(&route_addr, &(((struct sockaddr_in *)&(rt.rt_dst))->sin_addr),
+           sizeof(route_addr));
+
+#ifdef __linux__
+    route_mask = ((struct sockaddr_in *)&(rt.rt_genmask))->sin_addr.s_addr;
+#else
+#error Find field corresponding to route mask
+#endif
+    route_gw = ((struct sockaddr_in *)&(rt.rt_gateway))->sin_addr.s_addr;
 
     if ((fp = fopen("/proc/net/route", "r")) == NULL)
     {
@@ -1800,11 +2000,11 @@ route_get(unsigned int gid, const char *oid, char *value,
     fgets(trash, sizeof(trash), fp);
     while (fscanf(fp, "%s", ifname) != EOF)
     {
-        unsigned int addr;
-        unsigned int mask;
-        unsigned int gateway = 0;
+        uint32_t     addr;
+        uint32_t     mask;
+        uint32_t     gateway = 0;
         unsigned int flags = 0;
-        int          metric;
+        unsigned int metric;
         int          mtu;
         int          win;
         int          irtt;
@@ -1812,10 +2012,19 @@ route_get(unsigned int gid, const char *oid, char *value,
         fscanf(fp, "%x %x %x %d %d %d %x %d %d %d", &addr, &gateway,
                &flags, (int *)trash, (int *)trash, &metric, &mask,
                &mtu, &win, &irtt);
+        VERB("%s: Route %s %x %x %x %d %d %d %x %d %d %d", __FUNCTION__,
+             ifname, addr, gateway, flags, 0, 0, metric, mask,
+             mtu, win, irtt);
 
-        if (addr != route_addr || mask != route_mask)
+        if ((rt.rt_dev != NULL && strcmp(rt.rt_dev, ifname) != 0) ||
+            addr != route_addr || gateway != route_gw || 
+            rt.rt_metric != metric  || mask != route_mask ||
+            rt.rt_mtu != mtu || rt.rt_window != win ||
+            rt.rt_irtt != irtt ||
+            ((rt.rt_flags & RTF_REJECT) ^ (flags & RTF_REJECT)))
         {
             fgets(trash, sizeof(trash), fp);
+            VERB("Continue processing ...");
             continue;
         }
 
@@ -1823,49 +2032,10 @@ route_get(unsigned int gid, const char *oid, char *value,
             break;
 
         fclose(fp);
+        
+        VERB("It's what we wanted");
 
         value[0] = '\0';
-        if ((flags & RTF_GATEWAY) == 0)
-        {
-            int rc = get_addr(ifname, (struct in_addr *)&gateway);
-
-            if (rc != 0)
-            {
-                ERROR("get_addr(%s) failed", ifname);
-                return TE_RC(TE_TA_LINUX, rc);
-            }
-            snprintf(value + strlen(value), RCF_MAX_VAL - strlen(value), 
-                     " gw: %d.%d.%d.%d", 
-                     ((unsigned char *)&gateway)[0],
-                     ((unsigned char *)&gateway)[1],
-                     ((unsigned char *)&gateway)[2],
-                     ((unsigned char *)&gateway)[3]);
-        }
-        else
-        {
-            snprintf(value + strlen(value), RCF_MAX_VAL - strlen(value),
-                     " dev: %s", ifname);
-        }
-
-        if (metric != 0)
-            snprintf(value + strlen(value), RCF_MAX_VAL - strlen(value),
-                     " metric: %d", metric);
-
-#define TE_LC_RTF_SET_FIELD_WITH_VAL(flg_, name_, var_) \
-        do {                                           \
-            if (flags & flg_)                          \
-            {                                          \
-                snprintf(value + strlen(value),        \
-                         RCF_MAX_VAL - strlen(value),  \
-                         " " name_ ": %d", var_);      \
-            }                                          \
-        } while (0)
-
-        TE_LC_RTF_SET_FIELD_WITH_VAL(RTF_MSS, "mss", mtu);
-        TE_LC_RTF_SET_FIELD_WITH_VAL(RTF_WINDOW, "window", win);
-        TE_LC_RTF_SET_FIELD_WITH_VAL(RTF_IRTT, "irtt", irtt);
-
-#undef TE_LC_RTF_SET_FIELD_WITH_VAL
 
 #define TE_LC_RTF_SET_FLAG(flg_, name_) \
         do {                                           \
@@ -1877,15 +2047,11 @@ route_get(unsigned int gid, const char *oid, char *value,
             }                                          \
         } while (0)
 
-        TE_LC_RTF_SET_FLAG(RTF_REJECT, "reject");
-
         TE_LC_RTF_SET_FLAG(RTF_MODIFIED, "mod");
         TE_LC_RTF_SET_FLAG(RTF_DYNAMIC, "dyn");
         TE_LC_RTF_SET_FLAG(RTF_REINSTATE, "reinstate");
 
 #undef TE_LC_RTF_SET_FLAG
-
-        *(tmp - 1) = '|';
 
         return 0;
     }
@@ -1901,8 +2067,8 @@ route_get(unsigned int gid, const char *oid, char *value,
  * @param gid           group identifier 
  * @param oid           full object instence identifier (unused)
  * @param value         value string (unused)
- * @param route         route instance name:
- *                      <IPv4 address in dotted notation>'|'<prefix length>
+ * @param route         route instance name: see doc/cm_cm_base.xml 
+ *                      for the format
  *
  * @return error code
  */
@@ -1911,6 +2077,8 @@ route_set(unsigned int gid, const char *oid, const char *value,
           const char *route)
 {
     char val[RCF_MAX_VAL];
+
+    RING("%s: %s", __FUNCTION__, route);
 
     if (route_get(gid, oid, val, route) != 0)
         return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
@@ -1924,8 +2092,8 @@ route_set(unsigned int gid, const char *oid, const char *value,
  * @param gid           group identifier (unused)
  * @param oid           full object instence identifier (unused)
  * @param value         value string (unused)
- * @param route         route instance name:
- *                      <IPv4 address in dotted notation>'|'<prefix length>
+ * @param route         route instance name: see doc/cm_cm_base.xml 
+ *                      for the format
  *
  * @return error code
  */
@@ -1933,16 +2101,9 @@ static int
 route_add(unsigned int gid, const char *oid, const char *value,
           const char *route)
 {
-    char *tmp, *tmp1;
-    int   prefix;
-    char  ifname[IF_NAMESIZE];
-    char *ptr;
-    char *end_ptr;
-    char *term_byte; /* Pointer to the trailing zero byte in 'value' */
-    int   int_val;
-
+    int             rc;
 #ifdef __linux__
-    struct rtentry rt;
+    struct rtentry  rt;
 #else
     struct ortentry rt;
 #endif
@@ -1950,161 +2111,26 @@ route_add(unsigned int gid, const char *oid, const char *value,
     UNUSED(gid);
     UNUSED(oid);
 
-    memset(&rt, 0, sizeof(rt));
+    RING("%s: %s", __FUNCTION__, route);
 
-    if ((tmp = strchr(route, '|')) == NULL)
-        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
+    if ((rc = route_parse_inst_name(route, &rt)) != 0)
+        return 0;
 
-    *tmp = 0;
-    rt.rt_dst.sa_family = AF_INET;
-    if (inet_pton(AF_INET, route, &SIN(&(rt.rt_dst))->sin_addr) <= 0)
-        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
-    tmp++;
-    if (*tmp == '-' ||
-        (prefix = strtol(tmp, &tmp1, 10), tmp == tmp1 || *tmp1 != 0 ||
-         prefix > 32))
-        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
-
-#ifdef __linux__
-    rt.rt_genmask.sa_family = AF_INET;
-    SIN(&(rt.rt_genmask))->sin_addr.s_addr = htonl(PREFIX2MASK(prefix));
-#endif
-    if (prefix == 32)
-        rt.rt_flags |= RTF_HOST;
-
-    term_byte = (char *)(value + strlen(value));
-
-    /* @todo Make a macro to wrap around similar code below */
-    if ((ptr = strstr(value, "gw: ")) != NULL)
-    {
-        int rc;
-
-        end_ptr = ptr += strlen("gw: ");
-        while (*end_ptr != ' ')
-            end_ptr++;
-        *end_ptr = '\0';
-
-        rc = inet_pton(AF_INET, ptr, &SIN(&(rt.rt_gateway))->sin_addr);
-        if (rc <= 0)
-        {
-            ERROR("Incorrect format for gateway address: %s", ptr);
-            if (term_byte != end_ptr)
-                *end_ptr = ' ';
-            return TE_RC(TE_TA_LINUX, EINVAL);
-        }
-        if (term_byte != end_ptr)
-            *end_ptr = ' ';
-        rt.rt_gateway.sa_family = AF_INET;
-        rt.rt_flags |= RTF_GATEWAY;
-    }
-    if ((ptr = strstr(value, "dev: ")) != NULL)
-    {
-        end_ptr = ptr += strlen("dev: ");
-        while (*end_ptr != ' ')
-            end_ptr++;
-        *end_ptr = '\0';
-        
-        if (strlen(ptr) >= sizeof(ifname))
-        {
-            ERROR("Interface name is too long: %s", ptr);
-            if (term_byte != end_ptr)
-                *end_ptr = ' ';
-            return TE_RC(TE_TA_LINUX, EINVAL);
-        }
-        strcpy(ifname, ptr);
-
-        if (term_byte != end_ptr)
-            *end_ptr = ' ';
-        rt.rt_dev = ifname;
-    }
-    if ((ptr = strstr(value, "metric: ")) != NULL)
-    {
-        end_ptr = ptr += strlen("metric: ");
-        while (*end_ptr != ' ')
-            end_ptr++;
-        *end_ptr = '\0';
-        
-        if (*ptr == '\0' ||
-            (int_val = strtol(ptr, &end_ptr, 10), *end_ptr != '\0'))
-        {
-            ERROR("Incorrect format for route metric: %s", ptr);
-            if (term_byte != end_ptr)
-                *end_ptr = ' ';
-            return TE_RC(TE_TA_LINUX, EINVAL);
-        }
-        if (term_byte != end_ptr)
-            *end_ptr = ' ';
-        rt.rt_metric = int_val + 1;
-    }
-    if ((ptr = strstr(value, "mss: ")) != NULL)
-    {
-        end_ptr = ptr += strlen("mss: ");
-        while (*end_ptr != ' ')
-            end_ptr++;
-        *end_ptr = '\0';
-
-        if (*ptr == '\0' ||
-            (int_val = strtol(ptr, &end_ptr, 10), *end_ptr != '\0'))
-        {
-            ERROR("Incorrect format for route mss: %s", ptr);
-            if (term_byte != end_ptr)
-                *end_ptr = ' ';
-            return TE_RC(TE_TA_LINUX, EINVAL);
-        }
-        if (term_byte != end_ptr)
-            *end_ptr = ' ';
-        /* Don't be confused the structure does not have mss field */
-        rt.rt_mtu = int_val;
-        rt.rt_flags |= RTF_MSS;
-    }
-    if ((ptr = strstr(value, "window: ")) != NULL)
-    {
-        end_ptr = ptr += strlen("window: ");
-        while (*end_ptr != ' ')
-            end_ptr++;
-        *end_ptr = '\0';
-
-        if (*ptr == '\0' ||
-            (int_val = strtol(ptr, &end_ptr, 10), *end_ptr != '\0'))
-        {
-            ERROR("Incorrect format for route window: %s", ptr);
-            if (term_byte != end_ptr)
-                *end_ptr = ' ';
-            return TE_RC(TE_TA_LINUX, EINVAL);
-        }
-        if (term_byte != end_ptr)
-            *end_ptr = ' ';
-        rt.rt_window = int_val;
-        rt.rt_flags |= RTF_WINDOW;
-    }
-    if ((ptr = strstr(value, "irtt: ")) != NULL)
-    {
-        end_ptr = ptr += strlen("irtt: ");
-        while (*end_ptr != ' ')
-            end_ptr++;
-        *end_ptr = '\0';
-
-        if (*ptr == '\0' ||
-            (int_val = strtol(ptr, &end_ptr, 10), *end_ptr != '\0'))
-        {
-            ERROR("Incorrect format for route window: %s", ptr);
-            if (term_byte != end_ptr)
-                *end_ptr = ' ';
-            return TE_RC(TE_TA_LINUX, EINVAL);
-        }
-        if (term_byte != end_ptr)
-            *end_ptr = ' ';
-        rt.rt_irtt = int_val;
-        rt.rt_flags |= RTF_IRTT;
-    }
-    if (strstr(value, "reject") != NULL)
-        rt.rt_flags |= RTF_REJECT;
     if (strstr(value, "mod") != NULL)
         rt.rt_flags |= RTF_MODIFIED;
     if (strstr(value, "dyn") != NULL)
         rt.rt_flags |= RTF_DYNAMIC;
     if (strstr(value, "reinstate") != NULL)
         rt.rt_flags |= RTF_REINSTATE;
+
+    if (rt.rt_metric != 0)
+    {
+        /*
+         * Increment metric because ioctl substracts one from the value,
+         * 'route' command does the same thing.
+         */
+        rt.rt_metric++;
+    }
 
     rt.rt_flags |= (RTF_UP | RTF_STATIC);
 
@@ -2123,50 +2149,41 @@ route_add(unsigned int gid, const char *oid, const char *value,
  *
  * @param gid           group identifier 
  * @param oid           full object instence identifier (unused)
- * @param route         route instance name:
- *                      <IPv4 address in dotted notation>'|'<prefix length>
+ * @param route         route instance name: see doc/cm_cm_base.xml 
+ *                      for the format
  *
  * @return error code
  */
 static int
 route_del(unsigned int gid, const char *oid, const char *route)
 {
-    char *tmp, *tmp1;
-    char  value[RCF_MAX_VAL];
-    int   prefix;
-
+    int             rc;
+    char            value[RCF_MAX_VAL];
 #ifdef __linux__
-    struct rtentry rt;
+    struct rtentry  rt;
 #else
     struct ortentry rt;
 #endif
 
+    RING("%s: %s", __FUNCTION__, route);
 
     if (route_get(gid, oid, value, route) != 0)
+    {
+        ERROR("NOT FOUND");
         return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
+    }
 
-    memset(&rt, 0, sizeof(rt));
+    if ((rc = route_parse_inst_name(route, &rt)) != 0)
+        return 0;
 
-    if ((tmp = strchr(route, '|')) == NULL)
-        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
-
-    *tmp = 0;
-    rt.rt_dst.sa_family = AF_INET;
-    if (inet_pton(AF_INET, route, &SIN(&(rt.rt_dst))->sin_addr) <= 0)
-        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
-    tmp++;
-    if (*tmp == '-' ||
-        (prefix = strtol(tmp, &tmp1, 10), tmp == tmp1 || *tmp1 != 0 ||
-         prefix > 32))
-        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
-
-#ifdef __linux__
-    rt.rt_genmask.sa_family = AF_INET;
-    SIN(&(rt.rt_genmask))->sin_addr.s_addr = htonl(PREFIX2MASK(prefix));
-#endif
-
-    if (prefix == 32)
-        rt.rt_flags |= RTF_HOST;
+    if (rt.rt_metric != 0)
+    {
+        /*
+         * Increment metric because ioctl substracts one from the value,
+         * 'route' command does the same thing.
+         */
+        rt.rt_metric++;
+    }
 
     if (ioctl(s, SIOCDELRT, &rt) < 0)
     {
@@ -2192,12 +2209,14 @@ static int
 route_list(unsigned int gid, const char *oid, char **list)
 {
     char *ptr = buf;
+    char *end_ptr = buf + sizeof(buf);
     char  ifname[RCF_MAX_NAME];
     FILE *fp;
 
     UNUSED(gid);
     UNUSED(oid);
 
+    RING("%s: ", __FUNCTION__);
     if ((fp = fopen("/proc/net/route", "r")) == NULL)
     {
         ERROR("Failed to open /proc/net/route for reading: %s",
@@ -2205,33 +2224,79 @@ route_list(unsigned int gid, const char *oid, char **list)
         return TE_RC(TE_TA_LINUX, errno);
     }
 
+    buf[0] = 0;
+
     fgets(trash, sizeof(trash), fp);
     while (fscanf(fp, "%s", ifname) != EOF)
     {
         unsigned int addr;
         unsigned int mask;
+        uint32_t     gateway = 0;
         unsigned int flags = 0;
         unsigned int prefix = 0;
+        int          metric;
+        int          mtu;
+        int          win;
+        int          irtt;
 
-        fscanf(fp, "%x %x %x %d %d %d %x", &addr, (int *)trash, &flags,
-               (int *)trash, (int *)trash, (int *)trash, &mask);
+        fscanf(fp, "%x %x %x %d %d %d %x %d %d %d", &addr, &gateway,
+               &flags, (int *)trash, (int *)trash, &metric, &mask,
+               &mtu, &win, &irtt);
 
         if (flags & RTF_UP)
         {
             MASK2PREFIX(ntohl(mask), prefix);
 
-            sprintf(ptr, "%d.%d.%d.%d|%d ",
-                    ((unsigned char *)&addr)[0],
-                    ((unsigned char *)&addr)[1],
-                    ((unsigned char *)&addr)[2],
-                    ((unsigned char *)&addr)[3],
-                    prefix);
+            snprintf(ptr, end_ptr - ptr, "%d.%d.%d.%d|%d",
+                    ((uint8_t *)&addr)[0], ((uint8_t *)&addr)[1],
+                    ((uint8_t *)&addr)[2], ((uint8_t *)&addr)[3], prefix);
+            ptr += strlen(ptr);
+
+            if (flags & RTF_GATEWAY)
+            {
+                snprintf(ptr, end_ptr - ptr, ",gw=%d.%d.%d.%d",
+                        ((uint8_t *)&gateway)[0], ((uint8_t *)&gateway)[1],
+                        ((uint8_t *)&gateway)[2], ((uint8_t *)&gateway)[3]);
+            }
+            else
+            {
+                snprintf(ptr, end_ptr - ptr, ",dev=%s", ifname);
+            }
+            ptr += strlen(ptr);
+
+            if (metric != 0)
+            {
+                snprintf(ptr, end_ptr - ptr, ",metric=%d", metric);
+                ptr += strlen(ptr);
+            }
+            if (mtu != 0)
+            {
+                snprintf(ptr, end_ptr - ptr, ",mss=%d", mtu);
+                ptr += strlen(ptr);
+            }
+            if (win != 0)
+            {
+                snprintf(ptr, end_ptr - ptr, ",window=%d", win);
+                ptr += strlen(ptr);
+            }
+            if (irtt != 0)
+            {
+                snprintf(ptr, end_ptr - ptr, ",irtt=%d", irtt);
+                ptr += strlen(ptr);
+            }
+            if (flags & RTF_REJECT)
+            {
+                snprintf(ptr, end_ptr - ptr, "rejected");
+                ptr += strlen(ptr);
+            }
+            snprintf(ptr, end_ptr - ptr, " ");
             ptr += strlen(ptr);
         }
         fgets(trash, sizeof(trash), fp);
     }
     fclose(fp);
 
+    RING("%s: Routes: %s", __FUNCTION__, buf);
     if ((*list = strdup(buf)) == NULL)
         return TE_RC(TE_TA_LINUX, ENOMEM);
 
@@ -2356,7 +2421,13 @@ env_del(unsigned int gid, const char *oid, const char *name)
 
     if (getenv(name) != NULL)
     {
+        /* FIXME */
+#if 0
+        /* There is some issues with unsetenv() in NetBSD 2.0 build */
         unsetenv(name);
+#else
+        setenv(name, NULL, TRUE);
+#endif
         return 0;
     }
     else
