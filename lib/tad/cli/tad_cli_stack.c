@@ -207,7 +207,13 @@ int cli_session_open(cli_csap_specific_data_p spec_data)
     }
     else
     {
-        sprintf(port_param, "-p%d", spec_data->port);
+        if (spec_data->conn_type == CLI_CONN_TYPE_TELNET)
+            sprintf(port_param, "%d", spec_data->port);
+        else if (spec_data->conn_type == CLI_CONN_TYPE_SSH)
+            sprintf(port_param, "-p%d", spec_data->port);
+        else
+            port_param[0] = '\0';
+            
         if (spec_data->user != NULL)
         {
             sprintf(user_param, "-l%s", spec_data->user);
