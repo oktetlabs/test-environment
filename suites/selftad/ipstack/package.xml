@@ -17,6 +17,7 @@
             </script>
         </run> 
 
+        <!--
         <run>
             <script name="tcp_simple">
                 <req id="TAD_TCP"/>
@@ -31,6 +32,7 @@
                 <value>udp-filter.asn</value>
             </arg>
         </run>
+        -->
     </session>
 
 </package>
