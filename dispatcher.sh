@@ -418,7 +418,7 @@ if test -n "$BUILDER" ; then
             else
                 echo "Calling aclocal/autoconf/automake in `pwd`"
             fi
-            aclocal -I ${TE_BASE}/aux || exit_with_log
+            aclocal -I ${TE_BASE}/auxdir || exit_with_log
             autoconf || exit_with_log
             automake || exit_with_log
         fi
