@@ -1,3 +1,31 @@
+/** @file
+ * @brief Test API for TAD. ipstack CSAP
+ *
+ * Implementation of Test API
+ *
+ * Copyright (C) 2004 Test Environment authors (see file AUTHORS in the
+ * root directory of the distribution).
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation; either version 2.1 of
+ * the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+ * MA  02111-1307  USA
+ *
+ * @author: Konstantin Abramenko <konst@oktetlabs.ru>
+ *
+ * $Id$
+ */
+
 
 #ifndef __TE_TAPI_IPSTACK_H__
 #define __TE_TAPI_IPSTACK_H__
@@ -41,6 +69,9 @@ typedef void (*udp4_callback)(const udp4_datagram *pkt, void *userdata);
  * @param udp_dgram     converted structure (OUT).
  *
  * @return zero on success or error code.
+ *
+ * @note Function allocates memory under dhcp_message data structure, which
+ * should be freed with dhcpv4_message_destroy
  */
 extern int ndn_udp4_dgram_to_plain(asn_value_p pkt, 
                                    struct udp4_datagram **udp_dgram);
@@ -51,13 +82,13 @@ extern int ndn_udp4_dgram_to_plain(asn_value_p pkt,
  * Creates usual 'data.udp.ip4' CSAP on specified Test Agent and got its
  * handle.
  * 
- * @param ta            Test Agent name
+ * @param ta_name       Test Agent name
  * @param sid           RCF SID
  * @param loc_addr_str  Character string with local IP address (or NULL)
  * @param rem_addr_str  Character string with remote IP address (or NULL)
  * @param loc_port      Local UDP port (may be zero)
  * @param rem_port      Remote UDP port (may be zero)
- * @param csap_id       Identifier of an SNMP CSAP (OUT)
+ * @param udp_csap      Identifier of an SNMP CSAP (OUT)
  * 
  * @return Zero on success or error code.
  */
@@ -71,7 +102,7 @@ extern int tapi_udp4_csap_create(const char *ta_name, int sid,
 /**
  * Send UDP datagram via 'data.udp.ip4' CSAP.
  * 
- * @param ta            Test Agent name.
+ * @param ta_name       Test Agent name.
  * @param sid           RCF SID
  * @param csap          identifier of an SNMP CSAP (OUT).
  * @param udp_dgram     UDP datagram to be sent.
@@ -87,13 +118,13 @@ extern int tapi_udp4_dgram_send(const char *ta_name, int sid,
  * Start receiving of UDP datagrams via 'data.udp.ip4' CSAP, non-block
  * method.
  * 
- * @param ta            Test Agent name
+ * @param ta_name       Test Agent name
  * @param sid           RCF SID
  * @param csap          Identifier of an SNMP CSAP (OUT)
  * @param udp_dgram     UDP datagram with pattern for filter
  * @param callback      Callback function, which will be call for each 
  *                      received packet
- * @param userdata      Opaque data to be passed into the callback function
+ * @param user_data     Opaque data to be passed into the callback function
  * 
  * @return Zero on success or error code.
  */
@@ -105,7 +136,7 @@ extern int tapi_udp4_dgram_start_recv(const char *ta_name,  int sid,
  * Receive some number of UDP datagrams via 'data.udp.ip4' CSAP, block
  * method.
  * 
- * @param ta            Test Agent name
+ * @param ta_name       Test Agent name
  * @param sid           RCF SID
  * @param csap          Identifier of an SNMP CSAP (OUT)
  * @param number        Number of dgrams to be received
@@ -113,7 +144,7 @@ extern int tapi_udp4_dgram_start_recv(const char *ta_name,  int sid,
  * @param udp_dgram     UDP datagram with pattern for filter 
  * @param callback      Callback function, which will be call for each 
  *                      received packet
- * @param userdata      Opaque data to be passed into the callback function
+ * @param user_data     Opaque data to be passed into the callback function
  * 
  * @return Zero on success or error code.
  */
@@ -128,7 +159,7 @@ extern int tapi_udp4_dgram_recv(const char *ta_name, int sid,
  * (that is first received UDP datagram with reverse to the sent 
  * source/destination addresses and ports).
  * 
- * @param ta            Test Agent name
+ * @param ta_name       Test Agent name
  * @param sid           RCF SID
  * @param csap          Identifier of an SNMP CSAP (OUT)
  * @param timeout       Timeout for receive, in seconds
@@ -142,7 +173,7 @@ extern int tapi_udp4_dgram_recv(const char *ta_name, int sid,
 extern int tapi_udp4_dgram_send_recv(const char *ta_name, int sid, 
                                      csap_handle_t csap,
                                      unsigned int timeout,
-                                     const udp4_datagram *dgram_send,
+                                     const udp4_datagram *dgram_sent,
                                      udp4_datagram *dgram_recv);
 
 
@@ -152,6 +183,7 @@ extern int tapi_udp4_dgram_send_recv(const char *ta_name, int sid,
  *
  * @param ta_name       Test Agent name
  * @param sid           RCF SID
+ * @param eth_dev       Name of Ethernet interface
  * @param loc_mac_addr  Local MAC address (or NULL)
  * @param rem_mac_addr  Remote MAC address (or NULL)
  * @param loc_ip4_addr  Local IP address in network order (or NULL)
@@ -176,7 +208,7 @@ extern int tapi_ip4_eth_csap_create(const char *ta_name, int sid,
  * Started receiving process may be controlled by rcf_ta_trrecv_get, 
  * rcf_ta_trrecv_wait, and rcf_ta_trrecv_stop methods.
  * 
- * @param ta            Test Agent name
+ * @param ta_name       Test Agent name
  * @param sid           RCF SID
  * @param csap          Identifier of CSAP
  * @param src_mac_addr  Source MAC address (or NULL)
@@ -207,6 +239,7 @@ extern int tapi_ip4_eth_recv_start(const char *ta_name, int sid,
  *
  * @param ta_name       Test Agent name
  * @param sid           RCF SID
+ * @param eth_dev       Name of Ethernet interface
  * @param loc_addr      Local IP address in network order (or NULL)
  * @param rem_addr      Remote IP address in network order (or NULL)
  * @param loc_port      Local TCP port in HOST byte order 
@@ -231,7 +264,7 @@ extern int tapi_tcp_ip4_eth_csap_create(const char *ta_name, int sid,
  * Started receiving process may be controlled by rcf_ta_trrecv_get, 
  * rcf_ta_trrecv_wait, and rcf_ta_trrecv_stop methods.
  * 
- * @param ta            Test Agent name
+ * @param ta_name       Test Agent name
  * @param sid           RCF SID
  * @param csap          Identifier of CSAP
  * @param src_addr      Source IP address in network order (or NULL)
