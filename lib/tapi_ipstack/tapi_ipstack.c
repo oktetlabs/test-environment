@@ -583,13 +583,45 @@ tapi_tcp_ip4_pattern_unit(const uint8_t *src_addr, const uint8_t *dst_addr,
                         uint16_t src_port, uint16_t dst_port,
                         asn_value **result_value)
 {
-    UNUSED(src_addr);
-    UNUSED(dst_addr);
-    UNUSED(src_port);
-    UNUSED(dst_port);
-    UNUSED(result_value);
+    int rc;
+    int num;
+    asn_value *pat_unit = NULL;
 
-    return ETENOSUPP;
+    do {
+        if (result_value == NULL) { rc = ETEWRONGPTR; break; }
+
+        rc = asn_parse_value_text("{ pdus { tcp:{}, ip4:{}, eth:{}}}", 
+                              ndn_traffic_pattern_unit, &pat_unit, &num);
+
+        if (rc) break;
+
+        if (src_addr)
+            rc = asn_write_value_field(pat_unit, src_addr, 4, 
+                                       "pdus.1.#ip4.src-addr.#plain");
+
+        if (dst_addr)
+            rc = asn_write_value_field(pat_unit, dst_addr, 4, 
+                                       "pdus.1.#ip4.dst-addr.#plain");
+
+        if (src_port)
+            rc = asn_write_value_field(pat_unit, src_port, sizeof(src_port),
+                                       "pdus.0.#tcp.src-port.#plain");
+
+        if (dst_port)
+            rc = asn_write_value_field(pat_unit, dst_port, sizeof(src_port),
+                                       "pdus.0.#tcp.dst-port.#plain"); 
+
+    } while (0);
+
+    if (rc)
+    {
+        ERROR("%s: error %X", __FUNCTION__, rc);
+        asn_free_value(pat_unit);
+    }
+    else
+        *result_value = pat_unit;
+
+    return TE_RC(TE_TAPI, rc);
 }
 
 
