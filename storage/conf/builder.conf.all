@@ -9,12 +9,14 @@ TE_PLATFORM([], [], [], [], \
             [ipc bsapi loggerten rcfapi conf_oid confapi tapi \
              comm_net_engine rcfunix rcfpch comm_net_agent loggerta \
              rcfrpc tapi_rpcsock \
-             asn ndn tad_ch tad_file \
+             asn ndn tad_ch \
+             tad_file \
              tad_eth tapi_eth \
              tad_bridge tapi_bridge \
              tad_ipstack tapi_ipstack \
              tad_dhcp tapi_dhcp \
              tad_snmp tapi_snmp \
+             tad_cli \
             ])
 
 TE_APP_PARMS([rcf], [--enable-ltdl-install], [], [], [])
