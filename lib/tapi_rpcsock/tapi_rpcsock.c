@@ -1975,11 +1975,12 @@ rpc_event_select(rcf_rpc_server *handle,
                  &in,  (xdrproc_t)xdr_tarpc_event_select_in,
                  &out, (xdrproc_t)xdr_tarpc_event_select_out);
 
-    RING("RPC (%s,%s): event_select(%d, %d, %x) -> (%s)",
+    RING("RPC (%s,%s): event_select(%d, %d, %x) -> %d (%s)",
          handle->ta, handle->name,
-         s, event_object, event, errno_rpc2str(RPC_ERRNO(handle)));
+         s, event_object, event, out.retval, 
+         errno_rpc2str(RPC_ERRNO(handle)));
 
-    RETVAL_VAL(out.retval, event_select);
+    RETVAL_RC(event_select);
 }
 
 int 
@@ -5376,11 +5377,11 @@ rpc_wsa_async_select(rcf_rpc_server *handle,
                  &in,  (xdrproc_t)xdr_tarpc_wsa_async_select_in,
                  &out, (xdrproc_t)xdr_tarpc_wsa_async_select_out);
 
-    RING("RPC (%s,%s): wsa_async_select(%p, %d, %x) -> (%s)",
+    RING("RPC (%s,%s): wsa_async_select(%p, %d, %x) -> %d (%s)",
          handle->ta, handle->name,
-         hwnd, s, event, errno_rpc2str(RPC_ERRNO(handle)));
+         hwnd, s, event, out.retval, errno_rpc2str(RPC_ERRNO(handle)));
 
-    RETVAL_VAL(out.retval, wsa_async_select);
+    RETVAL_RC(wsa_async_select);
 }
                  
 int 
