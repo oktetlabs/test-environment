@@ -318,17 +318,15 @@ rcfunix_start(char *ta_name, char *ta_type, char *conf_str,
             ta->exec_name, ta->ta_name, ta->port,
             (conf_str == NULL) ? "" : conf_str);
 
-    /* Background mode is provided by SSH or SUDO option */
-    if (!ta->sudo && ta->is_local)
-    {
-        sprintf(cmd + strlen(cmd), " &");
-    }
     /* Enquote command in double quotes for non-local agent */
     if (!ta->is_local)
     {
         sprintf(cmd + strlen(cmd), "\"");
     }
-    sprintf(cmd + strlen(cmd), " >ta.%s 2>&1", ta->ta_name);
+    sprintf(cmd + strlen(cmd), " 2>&1 | te_tee %s 100 >ta.%s ", 
+            ta->ta_name, ta->ta_name);
+
+    strcat(cmd, " &");
 
     free(dup);
 

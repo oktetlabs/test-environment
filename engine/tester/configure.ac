@@ -63,6 +63,9 @@ sys/types.h \
 sys/wait.h \
 sys/queue.h \
 popt.h \
+sys/poll.h \
+poll.h \
+fcntl.h \
 ])
 
 AC_CHECK_TYPES([xmlError], [], [], [#include <libxml/xmlerror.h>])
