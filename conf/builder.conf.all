@@ -21,7 +21,7 @@ TE_LIB_PARMS([tad], [], [],
 
 TE_TA_TYPE([linux], [], [],
            [--with-rcf-rpc --with-cfg-linux-daemons='ftp echo'],
-           [], [-lexpect -lnetsnmp -lcrypto], [tad ndn asn comm_net_agent])
+           [], [], [tad ndn asn comm_net_agent])
 
 TE_LIB_PARMS([tad_dummy], [], [tad], [], [])
 

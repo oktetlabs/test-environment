@@ -20,6 +20,5 @@ TE_LIB_PARMS([tad], [], [], \
              [--with-file --with-eth --with-bridge \
               --with-ipstack --with-dhcp --with-snmp --with-cli], [])
 
-TE_TA_TYPE([linux], [], [], [--with-rcf-rpc], [],
-           [-lexpect -lnetsnmp -lcrypto],
-           [ndn asn comm_net_agent])
+TE_TA_TYPE([linux], [], [], [--with-rcf-rpc], [], [], \
+            [ndn asn comm_net_agent])
