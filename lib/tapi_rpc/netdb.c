@@ -150,7 +150,7 @@ rpc_gethostbyname(rcf_rpc_server *rpcs, const char *name)
     memset(&out, 0, sizeof(out));
 
     in.name.name_val = (char *)name;
-    in.name.name_len = name == NULL ? 0 : strlen(name) + 1;
+    in.name.name_len = (name == NULL) ? 0 : (strlen(name) + 1);
 
     rcf_rpc_call(rpcs, _gethostbyname,
                  &in,  (xdrproc_t)xdr_tarpc_gethostbyname_in,

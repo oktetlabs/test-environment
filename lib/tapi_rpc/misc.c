@@ -681,7 +681,7 @@ rpc_socket_to_file(rcf_rpc_server *rpcs, int sock,
     in.timeout = timeout;
     if (path != NULL && rpcs->op != RCF_RPC_WAIT)
     {
-        in.path.path_len = strlen(path);
+        in.path.path_len = strlen(path) + 1;
         in.path.path_val = (char *)path;
     }
 

@@ -63,7 +63,7 @@ rpc_if_nametoindex(rcf_rpc_server *rpcs,
     rpcs->op = RCF_RPC_CALL_WAIT;
 
     in.ifname.ifname_val = (char *)ifname;
-    in.ifname.ifname_len = ifname == NULL ? 0 : strlen(ifname) + 1;
+    in.ifname.ifname_len = (ifname == NULL) ? 0 : (strlen(ifname) + 1);
 
     rcf_rpc_call(rpcs, _if_nametoindex,
                  &in,  (xdrproc_t)xdr_tarpc_if_nametoindex_in,
@@ -98,7 +98,7 @@ rpc_if_indextoname(rcf_rpc_server *rpcs,
 
     in.ifindex = ifindex;
     in.ifname.ifname_val = ifname;
-    in.ifname.ifname_len = ifname == NULL ? 0 : strlen(ifname) + 1;
+    in.ifname.ifname_len = (ifname == NULL) ? 0 : (strlen(ifname) + 1);
 
     rcf_rpc_call(rpcs, _if_indextoname,
                  &in,  (xdrproc_t)xdr_tarpc_if_indextoname_in,

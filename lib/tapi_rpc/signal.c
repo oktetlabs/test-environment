@@ -73,7 +73,7 @@ rpc_signal(rcf_rpc_server *rpcs,
 
     in.signum = signum;
     in.handler.handler_val = (char *)handler;
-    in.handler.handler_len = handler == NULL ? 0 : strlen(handler) + 1;
+    in.handler.handler_len = (handler == NULL) ? 0 : (strlen(handler) + 1);
 
     rcf_rpc_call(rpcs, _signal,
                  &in,  (xdrproc_t)xdr_tarpc_signal_in,
