@@ -241,6 +241,52 @@ extern int tapi_cfg_get_hwaddr(const char *ta,
  * @return 0 on success, and te errno on failure
  */
 
+
+/**
+ * Get Configurator handle of free child. The function assumes that
+ * all children of the parent has integer value. Zero value is considered
+ * as the child is free. The child is marked as non-free by set of 1
+ * as the child value.
+ * 
+ * @param parent_oid    Parent instance OID
+ * @param entry         Location for entry handle
+ * 
+ * @return Status code.
+ *
+ * @sa tapi_cfg_free_entry
+ */
+extern int tapi_cfg_alloc_entry(const char *parent_oid, cfg_handle *entry);
+
+/**
+ * Free earlier allocated child.
+ * Entry handle is set to CFG_HANDLE_INVALID on success.
+ *
+ * @param child         Location of entry handle
+ *
+ * @return Status code.
+ *
+ * @sa tapi_cfg_alloc_entry
+ */
+extern int tapi_cfg_free_entry(cfg_handle *entry);
+
+/**
+ * Allocate entry in IPv4 subnets pool.
+ *
+ * @param entry         Location for Cfgr handle
+ *
+ * @return Status code.
+ *
+ * @note Use #tapi_cfg_free_entry function to free allocated entry.
+ *
+ * @sa tapi_cfg_free_entry
+ */
+static inline int
+tapi_cfg_alloc_ip4_net(cfg_handle *entry)
+{
+    return tapi_cfg_alloc_entry("/ip4_net_pool:", entry);
+}
+
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

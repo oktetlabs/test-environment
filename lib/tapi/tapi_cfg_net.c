@@ -30,7 +30,7 @@
  * $Id$
  */
 
-#ifdef HAVE_CONFIG_H
+#if HAVE_CONFIG_H
 #include "config.h"
 #endif
 
@@ -39,8 +39,14 @@
 #include <stdlib.h>
 #include <string.h>
 #endif
-#ifdef HAVE_ASSERT_H
+#if HAVE_ASSERT_H
 #include <assert.h>
+#endif
+#if HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
+#if HAVE_ARPA_INET_H
+#include <arpa/inet.h>
 #endif
 
 #include "te_defs.h"
@@ -49,6 +55,7 @@
 #include "conf_api.h"
 
 #include "tapi_cfg.h"
+#include "tapi_cfg_base.h"
 #include "tapi_cfg_net.h"
 
 #define TE_LGR_USER      "Configuration TAPI"
@@ -654,6 +661,197 @@ tapi_cfg_net_all_up(void)
     }
 
     tapi_cfg_net_free_nets(&nets);
+
+    return rc;
+}
+
+
+/* See description in tapi_cfg_net.h */
+int
+tapi_cfg_net_assign_ip4(cfg_net_t *net, cfg_handle *ip4_net)
+{
+    int                 rc;
+    cfg_val_type        type;
+    char               *str;
+    unsigned int        i;
+    cfg_handle          ip4_net_hndl;
+    char               *ip4_net_oid = NULL;
+    struct sockaddr_in  ip4_net_addr;
+    unsigned int        ip4_net_pfx;
+    int                 ip4_net_n_used;
+    cfg_handle          ip4_addr_hndl;
+    struct sockaddr_in  ip4_addr;
+
+    if (net == NULL)
+    {
+        ERROR("%s: Net pointer is NULL", __FUNCTION__);
+        return TE_RC(TE_TAPI, EINVAL);
+    }
+
+    /* Allocate or use passed IPv4 subnet */
+    if (ip4_net == NULL || *ip4_net == CFG_HANDLE_INVALID)
+    {
+        rc = tapi_cfg_alloc_ip4_net(&ip4_net_hndl);
+        if (rc != 0)
+        {
+            ERROR("%s: Failed to allocate IPv4 net to assign: %X",
+                  __FUNCTION__, rc);
+            return rc;
+        }
+    }
+    else
+    {
+        ip4_net_hndl = *ip4_net;
+    }
+
+    do { /* Fake loop */
+
+        /* 
+         * Get all information about this IPv4 subnet
+         */
+        /* Convert instance name to IPv4 address */
+        rc = cfg_get_inst_name(ip4_net_hndl, &str);
+        if (rc != 0)
+        {
+            ERROR("%s(): cfg_get_inst_name(0x%x) failed",
+                  __FUNCTION__, ip4_net_hndl);
+            break;
+        }
+        memset(&ip4_net_addr, 0, sizeof(ip4_net_addr));
+        ip4_net_addr.sin_family = AF_INET;
+        if (inet_pton(ip4_net_addr.sin_family, str,
+                      &(ip4_net_addr.sin_addr)) <= 0)
+        {
+            ERROR("Failed to convert instance name '%s' to IPv4 address",
+                  str);
+            free(str);
+            rc = EINVAL;
+            break;
+        }
+        free(str);
+
+        /* Get OID as string */
+        rc = cfg_get_oid_str(ip4_net_hndl, &ip4_net_oid);
+        if (rc != 0)
+        {
+            ERROR("%s(): cfg_get_oid_str(0x%x) failed",
+                  __FUNCTION__, ip4_net_hndl);
+            break;
+        }
+        /* Get prefix length */
+        type = CVT_INTEGER;
+        rc = cfg_get_instance_fmt(&type, &ip4_net_pfx,
+                                  "%s/prefix:", ip4_net_oid);
+        if (rc != 0)
+        {
+            ERROR("Failed to get IPv4 subnet '%s' prefix: %X",
+                  ip4_net_oid, rc);
+            break;
+        }
+        /* Get number of used addresses */
+        type = CVT_INTEGER;
+        rc = cfg_get_instance_fmt(&type, &ip4_net_n_used,
+                                  "%s/n_used:", ip4_net_oid);
+        if (rc != 0)
+        {
+            ERROR("Failed to get number of addresses used in IPv4 "
+                  "subnet '%s': %X", ip4_net_oid, rc);
+            break;
+        }
+
+        /* Add the subnet to the list of IPv4 subnets of the net */
+        rc = cfg_add_instance_child_fmt(NULL,
+                                        CVT_ADDRESS, SA(&ip4_net_addr),
+                                        net->handle, "/ip4_subnet:%u",
+                                        ip4_net_hndl);
+        if (rc != 0)
+        {
+            ERROR("Failed to add '/ip4_subnet:%u' child to "
+                  "instance with handle 0x%x: %X",
+                  ip4_net_hndl, net->handle, rc);
+            break;
+        }
+
+        /*
+         * Assign IPv4 addresses to each node of the net.
+         */
+        for (i = 0; i < net->n_nodes; ++i)
+        {
+            uint32_t *p;
+            
+            /* Increment number of used address */
+            ip4_net_n_used++;
+            if (ip4_net_n_used >=
+                (1 << ((sizeof(struct in_addr) << 3) - ip4_net_pfx)) - 1)
+            {
+                ERROR("No enough IPv4 addresses in subnet");
+                rc = ENOENT;
+                break;
+            }
+
+            /* Prepare IPv4 address */
+            memcpy(&ip4_addr, &ip4_net_addr, sizeof(ip4_addr));
+            p = (uint32_t *)&(SIN(&ip4_addr)->sin_addr.s_addr);
+            *p = htonl(ntohl(*p) + ip4_net_n_used);
+
+            /* Get interface OID */
+            type = CVT_STRING;
+            rc = cfg_get_instance(net->nodes[i].handle, &type,
+                                  &str);
+            if (rc != 0)
+            {
+                ERROR("Failed to get Configurator instance by handle "
+                      "0x%x: %X", net->nodes[i].handle, rc);
+                break;
+            }
+
+            rc = tapi_cfg_base_add_net_addr(str, SA(&ip4_addr),
+                                            ip4_net_pfx, TRUE,
+                                            &ip4_addr_hndl);
+            if (TE_RC_GET_ERROR(rc) == EEXIST)
+            {
+                /* Address already assigned - continue */
+                rc = 0;
+            } else if (rc != 0)
+            {
+                break;
+            }
+
+            rc = cfg_add_instance_child_fmt(NULL, CVT_ADDRESS,
+                                            SA(&ip4_addr),
+                                            net->nodes[i].handle,
+                                            "/ip4_address:%u",
+                                            ip4_addr_hndl);
+            if (rc != 0)
+            {
+                ERROR("Failed to add 'ip4_address:%u' child to "
+                      "instance with handle 0x%x: %X",
+                      ip4_addr_hndl, net->nodes[i].handle, rc);
+                break;
+            }
+        }
+        if (rc != 0)
+            break;
+
+        /* Get number of used addresses */
+        rc = cfg_set_instance_fmt(CVT_INTEGER, (void *)ip4_net_n_used,
+                                  "%s/n_used:", ip4_net_oid);
+        if (rc != 0)
+        {
+            ERROR("Failed to set number of addresses used in IPv4 "
+                  "subnet '%s': %X", str, rc);
+            break;
+        }
+
+    } while (0); /* End of fake loop */
+
+    if ((rc == 0) &&
+        (ip4_net != NULL) && (*ip4_net == CFG_HANDLE_INVALID))
+    {
+        *ip4_net = ip4_net_hndl;
+    }
+
+    free(ip4_net_oid);
 
     return rc;
 }

@@ -74,19 +74,19 @@ extern int tapi_cfg_base_if_get_mtu(const char *oid, unsigned int *p_mtu);
  *
  * @param oid       TA interface oid, e.g. /agent:A/interface:eth0
  * @param addr      Address to add
- * @param mask      Address mask or NULL
- * @param bcast     Corresponding broadcast address or NULL
+ * @param prefix    Address prefix length (0 - default, -1 - do not set)
+ * @param set_bcast Set broadcast address or not
  * @param cfg_hndl  Configurator handle of the new address
  *
  * @return Status code.
  * @retval EAFNOSUPPORT     Address family is not supported
  * @retval EEXIST           Address already exist
  */
-extern int tapi_cfg_base_add_net_addr(const char *oid,
+extern int tapi_cfg_base_add_net_addr(const char            *oid,
                                       const struct sockaddr *addr,
-                                      const struct sockaddr *mask,
-                                      const struct sockaddr *bcast,
-                                      cfg_handle *cfg_hndl);
+                                      int                    prefix,
+                                      te_bool                set_bcast,
+                                      cfg_handle            *cfg_hndl);
 
 /**
  * Wrapper over tapi_cfg_base_add_net_addr() function.

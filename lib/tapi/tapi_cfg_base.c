@@ -166,10 +166,8 @@ tapi_cfg_base_if_get_mtu(const char *oid, unsigned int *p_mtu)
 
 /* See description in tapi_cfg_base.h */
 int
-tapi_cfg_base_add_net_addr(const char *oid,
-                           const struct sockaddr *addr,
-                           const struct sockaddr *mask,
-                           const struct sockaddr *bcast,
+tapi_cfg_base_add_net_addr(const char *oid, const struct sockaddr *addr,
+                           int prefix, te_bool set_bcast,
                            cfg_handle *cfg_hndl)
 {
     char    buf[INET6_ADDRSTRLEN];
@@ -189,11 +187,11 @@ tapi_cfg_base_add_net_addr(const char *oid,
                                         buf, sizeof(buf)));
     if (rc == 0)
     {
-        if (mask != NULL)
+        if (prefix != -1)
         {
             /* Set address mask */
-            rc = cfg_set_instance_fmt(CVT_ADDRESS, mask,
-                                      "%s/net_addr:%s/netmask:", oid,
+            rc = cfg_set_instance_fmt(CVT_INTEGER, (void *)prefix,
+                                      "%s/net_addr:%s/prefix:", oid,
                                       inet_ntop(addr->sa_family,
                                                 &SIN(addr)->sin_addr,
                                                 buf, sizeof(buf)));
@@ -201,8 +199,8 @@ tapi_cfg_base_add_net_addr(const char *oid,
             {
                 int rc2;
 
-                ERROR("Failed to set address mask: %X", rc);
-                rc2 = cfg_del_instance_fmt(TRUE, 
+                ERROR("Failed to set address prefix length: %X", rc);
+                rc2 = cfg_del_instance_fmt(FALSE, 
                                            "%s/net_addr:%s", oid,
                                            inet_ntop(addr->sa_family,
                                                      &SIN(addr)->sin_addr,
@@ -213,9 +211,39 @@ tapi_cfg_base_add_net_addr(const char *oid,
                 }
                 return rc;
             }
+        }
+
+        if (set_bcast)
+        {
+            struct sockaddr_in  bcast;
+            uint32_t            nmask;
+
+            if (prefix > 0)
+            {
+                nmask = (1 << ((sizeof(struct in_addr) << 3) - prefix)) - 1;
+            }
+            else
+            {
+                uint32_t    inaddr = SIN(addr)->sin_addr.s_addr;
+
+                if (IN_CLASSA(inaddr))
+                    nmask = ~IN_CLASSA_NET;
+                else if (IN_CLASSB(inaddr))
+                    nmask = ~IN_CLASSB_NET;
+                else if (IN_CLASSC(inaddr))
+                    nmask = ~IN_CLASSC_NET;
+                else
+                {
+                    ERROR("Invalid IPv4 address - unknown class");
+                    return EINVAL;
+                }
+            }
+
+            memcpy(&bcast, addr, sizeof(bcast));
+            bcast.sin_addr.s_addr |= nmask;
 
             /* Set broadcast address */
-            rc = cfg_set_instance_fmt(CVT_ADDRESS, bcast,
+            rc = cfg_set_instance_fmt(CVT_ADDRESS, &bcast,
                                       "%s/net_addr:%s/broadcast:", oid,
                                       inet_ntop(addr->sa_family,
                                                 &SIN(addr)->sin_addr,

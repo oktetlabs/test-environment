@@ -745,3 +745,87 @@ tapi_cfg_get_hwaddr(const char *ta,
     return 0;
 }
 
+
+/* See the description in tapi_cfg.h */
+int
+tapi_cfg_alloc_entry(const char *parent_oid, cfg_handle *entry)
+{
+    int             rc;
+    cfg_handle      handle;
+    cfg_val_type    type = CVT_INTEGER;
+    int             value;
+
+    rc = cfg_find_str(parent_oid, &handle);
+    if (rc != 0)
+    {
+        ERROR("%s: Failed to convert OID '%s' to handle: %X",
+              __FUNCTION__, parent_oid, rc);
+        return rc;
+    }
+    
+    for (rc = cfg_get_son(handle, &handle);
+         rc == 0;
+         rc = cfg_get_brother(handle, &handle))
+    {
+        rc = cfg_get_instance(handle, &type, &value);
+        if (rc != 0)
+        {
+            ERROR("%s: Failed to get integer value by handle 0x%x: %X",
+                  __FUNCTION__, handle, rc);
+            break;
+        }
+        if (value == 0)
+        {
+            rc = cfg_set_instance(handle, type, 1);
+            if (rc != 0)
+            {
+                ERROR("%s: Failed to set value of handle 0x%x to 1: %X",
+                      __FUNCTION__, handle, rc);
+            }
+            break;
+        }
+    }
+
+    if (rc == 0)
+    {
+        *entry = handle;
+        INFO("Pool '%s' entry with Cfgr handle 0x%x allocated",
+             parent_oid, *entry);
+    }
+    else
+    {
+        ERROR("Failed to allocate entry in '%s': %X", parent_oid, rc);
+    }
+
+    return rc;
+}
+
+/* See the description in tapi_cfg.h */
+int
+tapi_cfg_free_entry(cfg_handle *entry)
+{
+    int rc;
+
+    if (entry == NULL)
+    {
+        ERROR("%s(): Invalid Cfgr handle pointer", __FUNCTION__);
+        return TE_RC(TE_TAPI, EINVAL);
+    }
+    if (*entry == CFG_HANDLE_INVALID)
+    {
+        return 0;
+    }
+
+    rc = cfg_set_instance(*entry, CVT_INTEGER, 0);
+    if (rc != 0)
+    {
+        ERROR("Failed to free entry by handle 0x%x: %X", *entry, rc);
+    }
+    else
+    {
+        INFO("Pool entry with Cfgr handle 0x%x freed", *entry);
+        *entry= CFG_HANDLE_INVALID;
+    }
+    return rc;
+}
+

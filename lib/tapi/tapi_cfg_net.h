@@ -163,6 +163,21 @@ extern int tapi_cfg_net_get_switch_port(const char *ta_node,
  */
 extern int tapi_cfg_net_all_up(void);
 
+/**
+ * Assign IPv4 subnet to specified configuration network.
+ *
+ * @param net       Configuration network
+ * @param ip4_net   Location of IPv4 subnet Cfgr handle
+ *
+ * If ip4_net is NULL or *ip4_net is CFG_HANDLE_INVALID, IPv4 subnet is
+ * allocated using #tapi_cfg_alloc_ip4_net. Its handle is returned
+ * in *ip4_net, if ip4_net is not NULL.
+ *
+ * @return Status code.
+ */
+extern int tapi_cfg_net_assign_ip4(cfg_net_t *net, cfg_handle *ip4_net);
+
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
