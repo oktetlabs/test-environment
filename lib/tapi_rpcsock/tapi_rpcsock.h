@@ -33,6 +33,8 @@
 
 #include "tapi_rpcsock_defs.h"
 
+/* Windows Event Objects */
+typedef void *rpc_wsaevent;
 
 /**
  * Set dynamic library name to be used for additional name resolution.
@@ -154,7 +156,6 @@ rpc_recv(rcf_rpc_server *handle,
     return rpc_recv_gen(handle, s, buf, len, flags, len);
 }
 
-
 extern ssize_t rpc_recvfrom_gen(rcf_rpc_server *handle,
                                 int s, void *buf, size_t len,
                                 rpc_send_recv_flags flags,
@@ -208,6 +209,16 @@ extern int rpc_bind(rcf_rpc_server *handle,
 extern int rpc_connect(rcf_rpc_server *handle,
                        int s, const struct sockaddr *addr, socklen_t addrlen);
 
+extern int rpc_connect_ex(rcf_rpc_server *handle,
+                          int s, const struct sockaddr *addr,
+                          socklen_t addrlen,
+                          void *buf, ssize_t len_buf,
+                          ssize_t *bytes_sent,
+                          rpc_wsaevent hevent);
+
+extern int rpc_disconnect_ex(rcf_rpc_server *handle, int s,
+                             rpc_wsaevent hevent, int flags);
+                             
 extern int rpc_listen(rcf_rpc_server *handle,
                       int s, int backlog);
 
@@ -224,7 +235,47 @@ rpc_accept(rcf_rpc_server *handle,
     return rpc_accept_gen(handle, s, addr, addrlen,
                           (addrlen == NULL) ? 0 : *addrlen);
 }
+/**
+ * Client implementation of AcceptEx()-GetAcceptExSockAddr() call.
+ * 
+ * @param handle           RPC server handle.
+ * @param s                Descriptor of socket that has already been called with
+ *                         the listen function.
+ * @param s_a              Descriptor of a socket on wich to accept an incomming
+ *                         connection.
+ * @param buf              Pointer to a buffer that receives the first block of
+ *                         data sent.
+ * @param rbuflen          Length of buffer passed to the egent.
+ * @param len              Length of the buffer passed to the call.
+ * @param hevent           Event to be passed to OVERLAPPED structure.
+ * @param bytes_received   Number of received data bytes
+ * @param laddr            Local address returned by GetAcceptExSockAddr()
+ *                         function, wich is called after AcceptEx() returning.
+ * @param laddrlen         Size of laddr returned by GetAcceptExSockAddr()
+ *                         function.
+ * @param raddr            Remote address returned by GetAcceptExSockAddr()
+ *                         function, wich is called after AcceptEx() returning. 
+ * @param raddrlen         Size of raddr returned by GetAcceptExSockAddr()
+ *                         function.
+ *
+ * @retval value returned by AcceptEx() function.
+ */
+extern int 
+rpc_accept_ex(rcf_rpc_server *handle,
+              int s, int s_a,
+              void *buf,
+              size_t len,
+              size_t rbuflen,
+              rpc_wsaevent hevent,
+              size_t *bytes_received,
+              struct sockaddr *laddr, socklen_t *laddrlen,
+              struct sockaddr *raddr, socklen_t *raddrlen);
 
+extern int rpc_transmit_file(rcf_rpc_server *handle, int s, char *file,
+                             ssize_t len, ssize_t len_per_send, ssize_t offset,
+                             ssize_t offset_high, rpc_wsaevent hevent,
+                             void *head, ssize_t head_len,
+                             void *tail, ssize_t tail_len, ssize_t flags);              
 
 extern rpc_fd_set * rpc_fd_set_new(rcf_rpc_server *handle);
 extern void rpc_fd_set_delete(rcf_rpc_server *handle,
@@ -335,14 +386,35 @@ extern struct if_nameindex * rpc_if_nameindex(rcf_rpc_server *handle);
 extern void rpc_if_freenameindex(rcf_rpc_server *handle,
                                  struct if_nameindex *ptr);
 
-
-/* Windows Event Objects */
-typedef void *rpc_wsaevent;
-
+/* WSACreateEvent() */
 extern rpc_wsaevent rpc_create_event(rcf_rpc_server *handle);
 
+/* WSACloseEvent() */
 extern int rpc_close_event(rcf_rpc_server *handle, rpc_wsaevent hevent);
-	
+
+/* WSAResetEvent() */
+extern int rpc_reset_event(rcf_rpc_server *handle, rpc_wsaevent hevent);	
+
+/* WSAEventSelect() */
+extern int 
+rpc_event_select(rcf_rpc_server *handle,
+                     int s, rpc_wsaevent event_object, rpc_network_event event);
+
+/**
+ * Client implementation of WSAEnumNetworkEvent().
+ * 
+ * @param handle           RPC server handle.
+ * @param s                Socket descriptor.
+ * @param event_object     Optional handle identifying an associated event object to be reset.
+ * @param event            Network events that occurred.
+ *
+ * @retval value returned by AcceptEx() function.
+ */
+extern int 
+rpc_enum_network_events(rcf_rpc_server *handle,
+                        int s, rpc_wsaevent event_object, 
+                        rpc_network_event *event);
+
 
 /* Window objects */
 

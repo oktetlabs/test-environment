@@ -93,6 +93,7 @@
 #include "rcf_rpc.h"
 #include "tapi_rpcsock.h"
 #include "tarpc.h"
+#include "tapi_sockaddr.h"
 
 
 /** @name String buffers for snprintf() operations */
@@ -593,6 +594,104 @@ rpc_connect(rcf_rpc_server *handle,
     RETVAL_RC(connect);
 }         
 
+extern int rpc_connect_ex(rcf_rpc_server *handle,
+                          int s, const struct sockaddr *addr,
+                          socklen_t addrlen,
+                          void *buf, ssize_t len_buf,
+                          ssize_t *bytes_sent,
+                          rpc_wsaevent hevent)
+{
+    rcf_rpc_op        op;
+    tarpc_connect_ex_in  in;
+    tarpc_connect_ex_out out;
+    
+    if (handle == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        return -1;
+    }
+    op = handle->op;
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+    
+    in.fd = s;
+    if (addr != NULL)
+    {
+        if (addrlen >= SA_COMMON_LEN)
+        {
+            in.addr.sa_family = addr_family_h2rpc(addr->sa_family);
+            in.addr.sa_data.sa_data_len = addrlen - SA_COMMON_LEN;
+            in.addr.sa_data.sa_data_val = (uint8_t *)(addr->sa_data);
+        }
+        else
+        {
+            in.addr.sa_family = RPC_AF_UNSPEC;
+            in.addr.sa_data.sa_data_len = 0;
+            /* Any not-NULL pointer is suitable here */
+            in.addr.sa_data.sa_data_val = (uint8_t *)addr;
+        }
+    }
+    in.len = addrlen;
+    if (buf == NULL)
+        in.buf.buf_len = 0;
+    else
+        in.buf.buf_len = len_buf;
+
+    if (bytes_sent == NULL)
+        in.len_sent.len_sent_len = 0; 
+    else        
+        in.len_sent.len_sent_len = 1;
+
+    in.buf.buf_val = buf;
+    in.len_sent.len_sent_val = bytes_sent;
+    in.len_buf = len_buf;
+    in.hevent = (tarpc_wsaevent)hevent;
+
+    rcf_rpc_call(handle, _connect_ex, &in, (xdrproc_t)xdr_tarpc_connect_ex_in,
+                 &out, (xdrproc_t)xdr_tarpc_connect_ex_out);
+
+    RING("RPC (%s,%s)%s: connect_ex(%d, %s, %u, ..., %p, ...) -> %s (%s)",
+         handle->ta, handle->name, rpcop2str(op),
+         s, sockaddr2str(addr), addrlen, hevent,
+         out.retval ? "true" : "false", errno_rpc2str(RPC_ERRNO(handle)));
+         
+    if (bytes_sent != NULL)
+        *bytes_sent = out.len_sent.len_sent_val[0];
+
+    RETVAL_VAL(out.retval, connect_ex);
+}         
+
+extern int rpc_disconnect_ex(rcf_rpc_server *handle, int s,
+                             rpc_wsaevent hevent, int flags)
+{
+    rcf_rpc_op        op;
+    tarpc_disconnect_ex_in  in;
+    tarpc_disconnect_ex_out out;
+    
+    if (handle == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        return -1;
+    }
+    op = handle->op;
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+    
+    in.fd = s;
+    in.hevent = (tarpc_wsaevent)hevent;
+    in.flags = flags; 
+    rcf_rpc_call(handle, _disconnect_ex, &in,
+                 (xdrproc_t)xdr_tarpc_disconnect_ex_in,
+                 &out, (xdrproc_t)xdr_tarpc_disconnect_ex_out);
+
+    RING("RPC (%s,%s)%s: disconnect_ex(%d, %p, %d) -> %s (%s)",
+         handle->ta, handle->name, rpcop2str(op),
+         s, hevent, flags,
+	 out.retval ? "true" : "false", errno_rpc2str(RPC_ERRNO(handle)));
+
+    RETVAL_VAL(out.retval, disconnect_ex);
+}         
+
 int 
 rpc_listen(rcf_rpc_server *handle, int fd, int backlog)
 {
@@ -688,7 +787,7 @@ rpc_accept_gen(rcf_rpc_server *handle,
             *addrlen = out.len.len_val[0];
     }
     
-    RING("RPC (%s,%s)%s: accept(%d, %p[%u], %p(%u)) -> %d (%s) "
+    RING("RPC (%s, %s)%s: accept(%d, %p[%u], %p(%u)) -> %d (%s) "
          "peer=%s addrlen=%u",
          handle->ta, handle->name, rpcop2str(op),
          s, addr, raddrlen, addrlen, save_addrlen,
@@ -696,7 +795,168 @@ rpc_accept_gen(rcf_rpc_server *handle,
          sockaddr2str(addr), (addrlen == NULL) ? (socklen_t)-1 : *addrlen);
 
     RETVAL_VAL(out.retval, accept);
+} 
+    
+extern int 
+rpc_accept_ex(rcf_rpc_server *handle,
+              int s, int s_a,
+              void *buf,
+              size_t len,
+              size_t rbuflen,
+              rpc_wsaevent hevent,
+              size_t *bytes_received,
+              struct sockaddr *laddr, socklen_t *laddrlen,
+              struct sockaddr *raddr, socklen_t *raddrlen)
+{
+    rcf_rpc_op          op;
+
+    tarpc_accept_ex_in  in;
+    tarpc_accept_ex_out out;
+    
+    if (handle == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        return -1;
+    }
+
+    op = handle->op;
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+    
+    in.fd = s;
+    in.fd_a = s_a;    
+    if (laddrlen != NULL && handle->op != RCF_RPC_WAIT)
+        in.laddr_len.laddr_len_len = sizeof(socklen_t);
+    if (raddrlen != NULL && handle->op != RCF_RPC_WAIT)
+        in.raddr_len.raddr_len_len = sizeof(socklen_t);
+    in.laddr_len.laddr_len_val = laddrlen;
+    in.raddr_len.raddr_len_val = raddrlen;    
+    if (laddr != NULL && handle->op != RCF_RPC_WAIT)
+    {
+        in.laddr.sa_family = RPC_AF_UNSPEC;
+        in.laddr.sa_data.sa_data_len = 0;
+        /* Any not-NULL pointer is suitable here */
+        in.laddr.sa_data.sa_data_val = (uint8_t *)laddr;
+    }
+    if (raddr != NULL && handle->op != RCF_RPC_WAIT)
+    {
+        in.raddr.sa_family = RPC_AF_UNSPEC;
+        in.raddr.sa_data.sa_data_len = 0;
+        /* Any not-NULL pointer is suitable here */
+        in.raddr.sa_data.sa_data_val = (uint8_t *)raddr;
+    }
+    if (buf == NULL || handle->op == RCF_RPC_WAIT)
+        in.buf.buf_len = 0;
+    else
+        in.buf.buf_len = rbuflen;
+    in.buf.buf_val = buf;
+    in.len = len;
+    if (bytes_received == NULL)
+        in.count.count_len = 0;
+    else
+        in.count.count_len = 1;     
+    in.count.count_val = bytes_received;
+    in.hevent = (tarpc_wsaevent)hevent;
+    in.laddr_len.laddr_len_len = laddrlen == NULL ? 0 : 1;
+    in.laddr_len.laddr_len_val = laddrlen;    
+    in.raddr_len.raddr_len_len = raddrlen == NULL ? 0 : 1;
+    in.raddr_len.raddr_len_val = raddrlen;                
+
+    rcf_rpc_call(handle, _accept_ex, &in, (xdrproc_t)xdr_tarpc_accept_ex_in,
+                 &out, (xdrproc_t)xdr_tarpc_accept_ex_out);
+    
+    if (RPC_CALL_OK)
+    {
+        if (laddr != NULL && out.laddr.sa_data.sa_data_val != NULL)
+        {
+            memcpy(laddr->sa_data, out.laddr.sa_data.sa_data_val, 
+                   out.laddr.sa_data.sa_data_len);
+            laddr->sa_family = addr_family_rpc2h(out.laddr.sa_family);
+        }
+        if (laddrlen != NULL && out.laddr_len.laddr_len_val != NULL)
+            *laddrlen = out.laddr_len.laddr_len_val[0];
+       
+        if (raddr != NULL && out.raddr.sa_data.sa_data_val != NULL)
+        {
+            memcpy(raddr->sa_data, out.raddr.sa_data.sa_data_val, 
+                   out.raddr.sa_data.sa_data_len);
+            raddr->sa_family = addr_family_rpc2h(out.raddr.sa_family);
+        }
+        if (raddrlen != NULL && out.raddr_len.raddr_len_val != NULL)
+            *raddrlen = out.raddr_len.raddr_len_val[0];
+        if (bytes_received != NULL)
+            *bytes_received = out.count.count_val[0];
+    }
+
+    RING("RPC (%s,%s)%s: accept_ex(%d, %d, %d, %d) -> %s (%s) "
+         "laddr=%s laddrlen=%u ",
+         "raddr=%s raddrlen=%u ",
+         handle->ta, handle->name, rpcop2str(op),
+         s, s_a, len, hevent,
+         out.retval ? "true" : "false", errno_rpc2str(RPC_ERRNO(handle)),
+         sockaddr2str(laddr), (laddrlen == NULL) ? (socklen_t)-1 : *laddrlen,
+         sockaddr2str(raddr), (raddrlen == NULL) ? (socklen_t)-1 : *raddrlen);
+
+    RETVAL_VAL(out.retval, accept_ex);
 }             
+
+extern int rpc_transmit_file(rcf_rpc_server *handle, int s, char *file,
+                             ssize_t len, ssize_t len_per_send, ssize_t offset,
+                             ssize_t offset_high, rpc_wsaevent hevent,
+                             void *head, ssize_t head_len,
+                             void *tail, ssize_t tail_len, ssize_t flags)
+{
+    rcf_rpc_op        op;
+    tarpc_transmit_file_in  in;
+    tarpc_transmit_file_out out;
+    
+    if (handle == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        return -1;
+    }
+#if 0
+    if ((buf != NULL) && (bytes_sent == NULL))
+    {
+        return -1;  
+    }
+#endif    
+    op = handle->op;
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+    
+    in.fd = s;
+    if (file == NULL)   
+        in.file.file_len = 0;
+    else
+        in.file.file_len = strlen(file) + 1;
+    in.file.file_val = file;    
+    in.len = len;
+    in.len_per_send = len_per_send;
+    in.offset = offset;
+    in.offset_high = offset_high;
+    in.hevent = (tarpc_wsaevent)hevent; 
+    if (head == NULL)
+        in.head.head_len = 0;
+    in.head.head_val = head;
+    in.head_len = head_len;      
+    if (tail == NULL)
+        in.tail.tail_len = 0;
+    in.tail.tail_val = tail;
+    in.tail_len = tail_len;      
+    in.flags = flags;
+    rcf_rpc_call(handle, _transmit_file, &in,
+                 (xdrproc_t)xdr_tarpc_transmit_file_in,
+                 &out, (xdrproc_t)xdr_tarpc_transmit_file_out);
+
+    RING("RPC (%s,%s)%s: transmit_file(%d, ..., %p, ...) -> %s (%s)",
+         handle->ta, handle->name, rpcop2str(op),
+         s, hevent,
+         out.retval ? "true" : "false", errno_rpc2str(RPC_ERRNO(handle)));
+
+    RETVAL_VAL(out.retval, transmit_file);
+}         
+
 
 
 ssize_t 
@@ -1213,7 +1473,6 @@ rpc_getsockname_gen(rcf_rpc_server *handle,
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return -1;
     }
-
     if (namelen != NULL && *namelen > rnamelen)
     {
         handle->_errno = TE_RC(TE_RCF, EINVAL);
@@ -1408,6 +1667,111 @@ rpc_close_event(rcf_rpc_server *handle, rpc_wsaevent hevent)
 
     RETVAL_VAL(out.retval, close_event);
 }
+
+int
+rpc_reset_event(rcf_rpc_server *handle, rpc_wsaevent hevent)
+{
+    tarpc_reset_event_in  in;
+    tarpc_reset_event_out out;
+
+    if (handle == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        return FALSE;
+    }
+
+    handle->op = RCF_RPC_CALL_WAIT;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+    in.hevent = (tarpc_wsaevent)hevent;
+
+    rcf_rpc_call(handle, _reset_event, &in, (xdrproc_t)xdr_tarpc_reset_event_in,
+                 &out, (xdrproc_t)xdr_tarpc_reset_event_out);
+    
+    RING("RPC (%s,%s): reset_event(%p) -> %s (%s)",
+         handle->ta, handle->name, hevent, 
+         out.retval ? "true" : "false", errno_rpc2str(RPC_ERRNO(handle)));
+
+    RETVAL_VAL(out.retval, reset_event);
+}
+
+int 
+rpc_event_select(rcf_rpc_server *handle,
+                     int s, rpc_wsaevent event_object, rpc_network_event event)
+{
+    tarpc_event_select_in  in;
+    tarpc_event_select_out out;
+    
+    if (handle == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        return -1;
+    }
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    handle->op = RCF_RPC_CALL_WAIT;
+
+    in.fd = s;
+    in.event_object = (tarpc_wsaevent)event_object;
+    in.event = event;
+    
+    rcf_rpc_call(handle, _event_select,
+                 &in,  (xdrproc_t)xdr_tarpc_event_select_in,
+                 &out, (xdrproc_t)xdr_tarpc_event_select_out);
+
+    RING("RPC (%s,%s): event_select(%d, %d, %x) -> (%s)",
+         handle->ta, handle->name,
+         s, event_object, event, errno_rpc2str(RPC_ERRNO(handle)));
+
+    RETVAL_VAL(out.retval, event_select);
+}
+
+int 
+rpc_enum_network_events(rcf_rpc_server *handle,
+                        int s, rpc_wsaevent event_object, 
+                        rpc_network_event *event)
+{
+    tarpc_enum_network_events_in  in;
+    tarpc_enum_network_events_out out;
+    
+    if (handle == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        return -1;
+    }
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    handle->op = RCF_RPC_CALL_WAIT;
+
+    in.fd = s;
+    in.event_object = (tarpc_wsaevent)event_object;
+    if (event == NULL)
+        in.event.event_len = 0;
+    else
+        in.event.event_len = 1;    
+
+    rcf_rpc_call(handle, _enum_network_events,
+                 &in,  (xdrproc_t)xdr_tarpc_enum_network_events_in,
+                 &out, (xdrproc_t)xdr_tarpc_enum_network_events_out);
+    if (RPC_CALL_OK)
+    {
+        if (event != NULL && out.event.event_val != NULL)
+            *event = out.event.event_val[0];
+    }
+    RING("RPC (%s,%s): enum_network_events(%d, %d, %x) -> (%s) "
+         "returned event %x",
+         handle->ta, handle->name,
+         s, event_object, event, errno_rpc2str(RPC_ERRNO(handle)),
+         *event); 
+         
+    RETVAL_RC(enum_network_events);
+}
+
 
 
 rpc_fd_set *
@@ -4804,4 +5168,5 @@ rpc_peek_message(rcf_rpc_server *handle,
     *event = out.event;
 
     RETVAL_VAL(out.retval, wsa_async_select);
-}                 
+}
+          

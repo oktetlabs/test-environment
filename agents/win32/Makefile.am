@@ -22,7 +22,7 @@ if CFG_RCF_RPC
 MY_CPPFLAGS+=-DRCF_RPC -I.
 MY_SOURCES+=win32_rpc.c tarpc_server.c 
 MY_NODIST_SOURCES=tarpc_xdr.c tarpc_svc.c rpc_unsupported.c
-MY_LDADD+=-lrpc -lws2_32 -liphlpapi -lcygwin
+MY_LDADD+=-lrpc -lws2_32 -lmswsock -lwsock32 -liphlpapi -lcygwin
 MY_SYMTBL_OBJECTS+=win32_rpc.o tarpc_server.o
 
 CLEANFILES+=tarpc.h tarpc_xdr.c tarpc_svc.c rpc_unsupported.c rpc_supported.h

@@ -320,7 +320,26 @@ struct tarpc_recv_out {
     unsigned char           buf<>;
 };
 
+/* WSARecvEx() */
 
+struct tarpc_wsarecv_ex_in {
+    struct tarpc_in_arg common;
+
+    int                 fd;       /**< TA-local socket */
+    unsigned char       buf<>;    /**< Buffer for received data */
+    tarpc_size_t        len;      /**< Maximum length of expected data */
+    int                 flags;    /**< TA-independent flags */
+};
+
+struct tarpc_wsarecv_ex_out {
+    struct tarpc_out_arg    common;
+
+    tarpc_ssize_t           retval;  /**< Returned length */
+
+    unsigned char           buf<>;   /**< Returned buffer with received 
+                                          data */
+    int                     flags;   /**< TA-independent flags */
+};
 
 /* sendto() */
 
@@ -433,6 +452,38 @@ struct tarpc_connect_in {
 
 typedef struct tarpc_int_retval_out tarpc_connect_out;
 
+/* ConnectEx() */
+struct tarpc_connect_ex_in {
+    struct tarpc_in_arg     common;
+    
+    int                     fd;       /**< TA-local socket */
+    struct tarpc_sa         addr;     /**< Remote address */
+    tarpc_socklen_t         len;      /**< Length to be passed to connectEx() */
+    char                    buf<>;    /**< Buffer for data to be sent */
+    tarpc_size_t            len_buf;  /**< Size of data passed to connectEx() */
+    tarpc_wsaevent          hevent;   /**< Event to be passed to OVERLAPPED */
+    tarpc_size_t            len_sent<>; /**< Returned by the function
+                                             size of sent data from buf */
+};                                               
+
+struct tarpc_connect_ex_out {
+    struct tarpc_out_arg  common;
+
+    tarpc_ssize_t  retval;     /**< Returned value (1 success, 0 failure) */
+    tarpc_size_t   len_sent<>; /**< Returned by the function
+                                    size of sent data from buf */
+};
+
+/* DisconnectEx */
+struct tarpc_disconnect_ex_in {
+    struct tarpc_in_arg    common;
+    
+    int                    fd;     /**< TA-local socket */   
+    tarpc_wsaevent         hevent; /**< Event to be passed to OVERLAPPED */
+    int                    flags;  /**< Function call processing flag */
+};
+
+typedef struct tarpc_int_retval_out tarpc_disconnect_ex_out;     
 
 /* listen() */
 
@@ -467,6 +518,96 @@ struct tarpc_accept_out {
                                          for peer name */
 };
 
+/* AcceptEx() */
+/* Also arguments for call of GetAcceptExSockAddrs function are specified */
+
+struct tarpc_accept_ex_in {
+    struct tarpc_in_arg common;
+                                                                               
+    int                     fd;           /**< TA-local socket */
+    int                     fd_a;         /**< TA-local socket to wich the
+                                               connection will be actually
+                                               made */
+    char                    buf<>;        /**< Buffer to receive first block 
+                                               of data */
+    tarpc_size_t            len;          /**< Length of data to be received */
+ 
+    tarpc_wsaevent          hevent;       /**< Event to be passed
+                                               to OVERLAPPED */
+    tarpc_size_t            count<>;      /**< Location for
+                                               count of received bytes */ 
+    struct tarpc_sa         laddr;        /**< Pointer to the sockaddr structure
+                                               that receives the local address of
+                                               the connection 
+                                               returned by 
+                                               GetAcceptExSockAddrs function */
+    tarpc_socklen_t         laddr_len<>;  /**< Size fo the local address
+                                               in bytes */
+    struct tarpc_sa         raddr;        /**< Pointer to the sockaddr structure
+                                               that receives the remote address
+                                               of the connection 
+                                               returned by 
+                                               GetAcceptExSockAddrs function */
+    tarpc_socklen_t         raddr_len<>;  /**< Size fo the remote address
+                                               in bytes */
+};
+
+struct tarpc_accept_ex_out {
+    struct tarpc_out_arg    common;
+
+    int                     retval;
+
+    tarpc_size_t            count<>;      /**< Location for
+                                               count of received bytes */ 
+    char                    buf<>;        /**< Buffer to receive first block 
+                                               of data */
+    struct tarpc_sa         laddr;        /**< Pointer to the sockaddr structure
+                                               that receives the local address of
+                                               the connection 
+                                               returned by 
+                                               GetAcceptExSockAddrs function */
+    tarpc_socklen_t         laddr_len<>;  /**< Size fo the local address
+                                               in bytes */
+    struct tarpc_sa         raddr;        /**< Pointer to the sockaddr structure
+                                               that receives the remote address
+                                               of the connection 
+                                               returned by 
+                                               GetAcceptExSockAddrs function */
+    tarpc_socklen_t         raddr_len<>;  /**< Size fo the remote address
+                                               in bytes */
+};
+
+/* TransmitFile() */
+
+struct tarpc_transmit_file_in {
+    struct tarpc_in_arg common;
+                                                                               
+    int                     fd;           /**< TA-local socket */
+    char                    file<>;       /**< Handle to the open file to be
+                                               transmitted */
+    tarpc_size_t            len;          /**< Number of file bytes to
+                                               transmite */
+    tarpc_size_t            len_per_send; /**< Number of bytes of each block of
+                                               data sent in each send operarion */
+    tarpc_size_t            offset;       /**< Offset to be passed
+                                               to OVERLAPPED. File position
+                                               at wich to start to transfer */
+    tarpc_size_t            offset_high;  /**< OffsetHigh to be passed
+                                               to OVERLAPPED. High-oreder
+                                               word of the file position
+                                               at wich to start to transfer */                                               
+    tarpc_wsaevent          hevent;       /**< Event to be passed
+                                               to OVERLAPPED */
+    char                    head<>;       /**< Buffer to be transmitted before
+                                               the file data is transmitted */
+    tarpc_size_t            head_len;     /**< Length of head in bytes */
+    char                    tail<>;       /**< Buffer to be transmitted after
+                                               the file data is transmitted */
+    tarpc_size_t            tail_len;     /**< Length of tail in bytes */
+    tarpc_size_t            flags;        /**< Parameter of TransmitFile() */
+};
+
+typedef struct tarpc_int_retval_out tarpc_transmit_file_out;
 
 /* getsockname() */
 
@@ -519,11 +660,10 @@ struct tarpc_do_fd_zero_in {
     tarpc_fd_set        set;
 };
 
-
 typedef struct tarpc_void_out tarpc_do_fd_zero_out;
 
 
-/* WSACreateEvent()*/
+/* WSACreateEvent() */
 struct tarpc_create_event_in {
     struct tarpc_in_arg common;
 };
@@ -534,7 +674,7 @@ struct tarpc_create_event_out {
 };
 
 
-/* WSACloseEvent()*/
+/* WSACloseEvent() */
 struct tarpc_close_event_in {
     struct tarpc_in_arg common;
     tarpc_wsaevent hevent;
@@ -542,6 +682,46 @@ struct tarpc_close_event_in {
 
 typedef struct tarpc_int_retval_out tarpc_close_event_out;
 
+/* WSAResetEvent() */
+struct tarpc_reset_event_in {
+    struct tarpc_in_arg common;
+    tarpc_wsaevent hevent;
+};
+
+typedef struct tarpc_int_retval_out tarpc_reset_event_out;
+
+/* WSAEventSelect() */
+
+struct tarpc_event_select_in {
+    struct tarpc_in_arg common;
+
+    int             fd;           /**< TA-local socket */ 
+    tarpc_wsaevent  event_object; /**< Event object to be associated
+                                       with set of network events */   
+    unsigned long   event;        /**< Bitmask that specifies the set
+                                         of network events */      
+};
+
+typedef struct tarpc_int_retval_out tarpc_event_select_out;
+
+/* WSAEnumNetworkEvents() */
+
+struct tarpc_enum_network_events_in {
+    struct tarpc_in_arg common;
+
+    int             fd;           /**< TA-local socket */ 
+    tarpc_wsaevent  event_object; /**< Event object to be reset */   
+    unsigned long   event<>;      /**< Bitmask that specifies the set
+                                       of network events occurred */      
+};
+
+struct tarpc_enum_network_events_out {
+    struct tarpc_out_arg common;
+
+    int                  retval;
+    unsigned long        event<>;    /**< Bitmask that specifies the set
+                                          of network events occurred */      
+};
 
 /* Create window */
 struct tarpc_create_window_in {
@@ -1573,12 +1753,21 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(socket_to_file)
 
         RPC_DEF(create_event)
-	RPC_DEF(close_event)
+        RPC_DEF(close_event)
 
+        RPC_DEF(wsarecv_ex)
+        RPC_DEF(connect_ex)
+        RPC_DEF(accept_ex)
+        RPC_DEF(disconnect_ex)
+        RPC_DEF(reset_event)     
+        RPC_DEF(event_select)
+        RPC_DEF(enum_network_events)
+        RPC_DEF(transmit_file)
+        
         RPC_DEF(create_window)
-	RPC_DEF(destroy_window)
-	RPC_DEF(wsa_async_select)
-	RPC_DEF(peek_message)
+        RPC_DEF(destroy_window)
+        RPC_DEF(wsa_async_select)
+        RPC_DEF(peek_message)
 
     } = 1;
 } = 1;

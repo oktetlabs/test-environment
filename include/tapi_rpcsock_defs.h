@@ -792,6 +792,68 @@ network_event_h2rpc(unsigned int flags)
 }
 
 /**
+ * TA-independent TransmitFile() flags. 
+ */
+typedef enum rpc_transmit_file_flags {
+    RPC_TF_DISCONNECT         = 1,     /**< Start a transport-level disconnect
+                                            after all the file data has been
+                                            queued for transmission */
+    RPC_TF_REUSE_SOCKET       = 2,     /**< Prepare the socket handle
+                                            to be reused */
+    RPC_TF_USE_DEFAULT_WORKER = 4,     /**< Use the system's default thread */
+    RPC_TF_USE_SYSTEM_THREAD  = 8,     /**< Use system threads */
+    RPC_TF_USE_KERNEL_APC     = 0x10,  /**< Use kernel asynchronous
+                                            procedure calls */
+    RPC_TF_WRITE_BEHIND       = 0x20,  /**< Complete the TransmitFile request
+                                            immediately, without pending */
+} rpc_transmit_file_flags;
+
+#ifndef TF_DISCONNECT
+#define TF_DISCONNECT  0
+#endif
+
+#ifndef TF_REUSE_SOCKET
+#define TF_REUSE_SOCKET  0
+#endif
+
+#ifndef TF_USE_DEFAULT_WORKER
+#define TF_USE_DEFAULT_WORKER  0
+#endif
+
+#ifndef TF_USE_SYSTEM_THREAD
+#define TF_USE_SYSTEM_THREAD  0
+#endif
+
+#ifndef TF_USE_KERNEL_APC
+#define TF_USE_KERNEL_APC  0
+#endif
+
+#ifndef TF_WRITE_BEHIND
+#define TF_WRITE_BEHIND  0
+#endif
+
+#define TRANSMIT_FILE_FLAGS_MAPPING_LIST \
+            RPC_BIT_MAP_ENTRY(TF_DISCONNECT),          \
+            RPC_BIT_MAP_ENTRY(TF_REUSE_SOCKET),        \
+            RPC_BIT_MAP_ENTRY(TF_USE_DEFAULT_WORKER),  \
+            RPC_BIT_MAP_ENTRY(TF_USE_SYSTEM_THREAD),   \
+            RPC_BIT_MAP_ENTRY(TF_USE_KERNEL_APC),      \
+            RPC_BIT_MAP_ENTRY(TF_WRITE_BEHIND)
+
+/** Convert RPC transmit file flags to native flags */
+static inline unsigned int
+transmit_file_flags_rpc2h(rpc_transmit_file_flags flags)
+{
+    return 
+           (!!(flags & RPC_TF_DISCONNECT) * TF_DISCONNECT) |
+           (!!(flags & RPC_TF_REUSE_SOCKET) * TF_REUSE_SOCKET) |
+           (!!(flags & RPC_TF_USE_DEFAULT_WORKER) * TF_USE_DEFAULT_WORKER) |
+           (!!(flags & RPC_TF_USE_SYSTEM_THREAD) * TF_USE_SYSTEM_THREAD) |
+           (!!(flags & RPC_TF_USE_KERNEL_APC) * TF_USE_KERNEL_APC) |
+           (!!(flags & RPC_TF_WRITE_BEHIND) * TF_WRITE_BEHIND);
+}
+
+/**
  * send_recv_flags_rpc2str()
  */
 RPCBITMAP2STR(send_recv_flags, SEND_RECV_FLAGS_MAPPING_LIST)
