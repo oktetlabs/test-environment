@@ -88,8 +88,30 @@
 
 #undef FORK_FORWARD
 
-
 static pid_t rcf_rpc_pid = -1;
+
+/** Initialize mutex and forwarding semaphore for RPC server */
+static int
+rpc_server_sem_init(rcf_rpc_server *rpcs)
+{
+    pthread_mutexattr_t attr;
+    
+    pthread_mutexattr_init(&attr);
+    if (pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE_NP) != 0 ||
+        pthread_mutex_init(&rpcs->lock, &attr) != 0)
+    {
+        ERROR("Cannot initialize mutex for RPC server");
+        return TE_RC(TE_RCF_API, errno); 
+    }
+
+    if (sem_init(&rpcs->fw_sem, 0, 0) != 0)
+    {
+        ERROR("Cannot initialize semaphore for RPC server");
+        return TE_RC(TE_RCF_API, errno);
+    }
+    
+    return 0;
+}
 
 
 /**
@@ -107,8 +129,6 @@ rcf_rpc_server_create(const char *ta, const char *name,
 {
     rcf_rpc_server *rpcs;
     
-    pthread_mutexattr_t attr;
-    
     int rc;
     int rc1;
     
@@ -123,17 +143,6 @@ rcf_rpc_server_create(const char *ta, const char *name,
 
     if ((rpcs = calloc(1, sizeof(*rpcs))) == NULL)
         return TE_RC(TE_RCF_API, ENOMEM);
-
-    pthread_mutexattr_init(&attr);
-    if (pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE_NP) != 0 ||
-        pthread_mutex_init(&rpcs->lock, &attr) != 0)
-    {
-        ERROR("Cannot initialize mutex for RPC server");
-        return TE_RC(TE_RCF_API, errno); 
-    }
-
-    if (sem_init(&rpcs->fw_sem, 0, 0) != 0)
-        return TE_RC(TE_RCF_API, errno);
         
     if ((rc = rcf_ta_call(ta, 0, "tarpc_server_create", &rpcs->pid, 1, 0,
                           RCF_STRING, name)) != 0)
@@ -152,6 +161,8 @@ rcf_rpc_server_create(const char *ta, const char *name,
     strcpy(rpcs->name, name);
     rpcs->op = RCF_RPC_CALL_WAIT;
     rpcs->def_timeout = RCF_RPC_DEFAULT_TIMEOUT;
+    if ((rc = rpc_server_sem_init(rpcs)) != 0)
+        return rc;
 
     if ((rc = rcf_ta_call(rpcs->ta, 0, "tarpc_add_server", &rc1, 2, 0,
                           RCF_STRING, rpcs->name, 
@@ -247,6 +258,8 @@ rcf_rpc_server_thread_create(rcf_rpc_server *rpcs, const char *name,
     tmp->father = rpcs;
     tmp->pid = rpcs->pid;
     tmp->tid = out.tid;
+    if ((rc = rpc_server_sem_init(tmp)) != 0)
+        return rc;
     rpcs->children++;
     if ((rc = rcf_ta_call(rpcs->ta, 0, "tarpc_add_server", &rc1, 2, 0,
                           RCF_STRING, tmp->name, RCF_INT32, tmp->pid)) != 0 ||
@@ -311,6 +324,8 @@ rcf_rpc_server_fork(rcf_rpc_server *rpcs, const char *name,
     tmp->op = RCF_RPC_CALL_WAIT;
     tmp->pid = out.pid;
     tmp->def_timeout = rpcs->def_timeout;
+    if ((rc = rpc_server_sem_init(rpcs)) != 0)
+        return rc;
 
     if ((rc = rcf_ta_call(rpcs->ta, 0, "tarpc_add_server", &rc1, 2, 0,
                           RCF_STRING, tmp->name, RCF_INT32, tmp->pid)) != 0 ||
