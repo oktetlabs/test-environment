@@ -569,22 +569,15 @@ struct tarpc_wsa_async_select_in {
     unsigned int        event;  /**< Network event to be listened */
 };
 
-struct tarpc_wsa_async_select_out {
-    struct tarpc_out_arg common;
-    int                  sock;   /**< Socket about which the message is 
-                                      received or -1 if no messages are 
-                                      received */
-    unsigned int         event;  /**< Event about which the message is 
-                                      received */
-};
+typedef struct tarpc_int_retval_out tarpc_wsa_async_select_out;
 
-/* GetMessage */
-struct tarpc_get_message_in {
+/* PeekMessage */
+struct tarpc_peek_message_in {
     struct tarpc_in_arg common;
     tarpc_hwnd          hwnd;   /**< Window to be checked */
 };
 
-struct tarpc_get_message_out {
+struct tarpc_peek_message_out {
     struct tarpc_out_arg common;
     int                  sock;   /**< Socket about which the message is 
                                       received or -1 if no messages are 
@@ -1585,7 +1578,7 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(create_window)
 	RPC_DEF(destroy_window)
 	RPC_DEF(wsa_async_select)
-	RPC_DEF(get_message)
+	RPC_DEF(peek_message)
 
     } = 1;
 } = 1;

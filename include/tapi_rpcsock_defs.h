@@ -657,7 +657,7 @@ send_recv_flags_h2rpc(int flags)
 /**
  * TA-independent network event flags. 
  */
-typedef enum rpc_network_event_flags {
+typedef enum rpc_network_event {
     RPC_FD_READ      = 1,     /**< Readiness for reading */
     RPC_FD_WRITE     = 2,     /**< Readiness for writing */
     RPC_FD_OOB       = 4,     /**< Arrival of out-of-band data */
@@ -672,7 +672,7 @@ typedef enum rpc_network_event_flags {
     RPC_FD_ADDRESS_LIST_CHANGE      = 0x200, /**< Local address list changes for
                                                   the address family of
 						  the socket */
-} rpc_network_event_flags;
+} rpc_network_event;
 
 #ifdef FD_READ
 #define HAVE_FD_READ    1
@@ -757,8 +757,8 @@ typedef enum rpc_network_event_flags {
             RPC_BIT_MAP_ENTRY(FD_ADDRESS_LIST_CHANGE)
 
 /** Convert RPC network evenet flags to native flags */
-static inline int
-send_network_event_flags_rpc2h(rpc_network_event_flags flags)
+static inline unsigned int
+network_event_rpc2h(rpc_network_event flags)
 {
     return 
            (!!(flags & RPC_FD_READ) * FD_READ) |
@@ -775,8 +775,8 @@ send_network_event_flags_rpc2h(rpc_network_event_flags flags)
 }
 
 /** Convert native network evenet flags to RPC flags */
-static inline rpc_network_event_flags
-send_network_event_flags_h2rpc(int flags)
+static inline rpc_network_event
+network_event_h2rpc(unsigned int flags)
 {
     return (!!(flags & FD_READ) * RPC_FD_READ) |
            (!!(flags & FD_WRITE) * RPC_FD_WRITE) |
