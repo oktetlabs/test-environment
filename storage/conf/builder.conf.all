@@ -22,9 +22,6 @@ TE_PLATFORM([], [], [], [], \
 
 TE_APP_PARMS([rcf], [--enable-ltdl-install], [], [], [])
 
-TE_LIB_PARMS([ndn], [], [], \
-             [--with-file --with-eth --with-bridge \
-              --with-ipstack --with-dhcp --with-snmp --with-cli], [])
 TE_LIB_PARMS([tad_ch], [], [], \
              [--with-file --with-eth --with-bridge \
               --with-ipstack --with-dhcp --with-snmp --with-cli], [])

@@ -12,23 +12,18 @@ TE_PLATFORM([], [], [], [], \
              rcfrpc tapi_rpcsock \
              asn ndn tad_ch \
              tad_file \
-             tad_eth tapi_eth \
+             tad_eth tapi_eth tapi_snmp \
              tad_ipstack tapi_ipstack \
-             tad_snmp tapi_snmp \
             ])
 
 TE_APP_PARMS([rcf], [--enable-ltdl-install], [], [], [])
 
-TE_LIB_PARMS([ndn], [], [], \
-             [--with-eth --with-ipstack --with-snmp], [])
-
 TE_LIB_PARMS([tad_ch], [], [], \
-             [--with-eth --with-ipstack --with-snmp], [])
+             [--with-eth --with-ipstack], [])
               
 TE_TA_TYPE([linux], [linux], [], \
-           [--with-rcf-rpc], \
-           [], [-lexpect -lsnmp -lcrypto], \
-           [tad_ch tad_eth tad_ipstack tad_snmp ndn asn])
+           [--with-rcf-rpc], [], [], \
+           [tad_ch tad_eth tad_ipstack ndn asn])
 
 #TE_TA_TYPE([linux_lite], [linux], [], [], [-DTAD_CH_DUMMY], [], [])
 
