@@ -78,24 +78,25 @@
 #define RCF_MAX_INT     12
 
 /* CSAP structure for checking is the CSAP busy or not */
-typedef struct csap {
-    struct csap    *next;       /**< Next CSAP in the list */
-    struct csap    *prev;       /**< Previous CSAP in the list */
+typedef struct traffic_op {
+    struct traffic_op *next;    /**< Next CSAP in the list */
+    struct traffic_op *prev;    /**< Previous CSAP in the list */
 
     char            ta[RCF_MAX_NAME];   /**< Test Agent name */
-    int             handle;     /**< CSAP handle returned by the TA */
+    int             csap_id;    /**< CSAP handle returned by the TA */
     int             state;      /**< CSAP_SEND, CSAP_RECV or
                                      CSAP_SENDRECV */
     int             sid;        /**< Session identifier */
     rcf_pkt_handler handler;    /**< handler for received packet */
     void           *user_param; /**< handler parameter */
-} csap;
+} traffic_op_t;
 
 /* Busy CSAPs list anchor */
-static csap csaps = { &csaps, &csaps, "", 0, 0, 0, NULL, NULL };
+static traffic_op_t traffic_ops = { &traffic_ops, &traffic_ops, 
+                                    "", 0, 0, 0, NULL, NULL };
 
 /* Forward declaration */
-static int csap_tr_recv_get(const char *ta_name, int session, int handle, 
+static int csap_tr_recv_get(const char *ta_name, int session, int csap_id, 
                             int *num, int opcode);
 
 /* If pthread mutexes are supported - OK; otherwise hope for best... */
@@ -353,15 +354,18 @@ rcf_api_cleanup(void)
  *
  * @return CSAP structure pointer or NULL
  */
-static csap *
-find_csap(const char *ta_name, int handle)
+static traffic_op_t *
+find_traffic_op(const char *ta_name, int csap_id)
 {
-    csap *tmp;
+    traffic_op_t *tr_op;
     
-    for (tmp = csaps.next; tmp != &csaps; tmp = tmp->next)
-        if ((tmp->handle == handle) && (strcmp(tmp->ta, ta_name) == 0))
+    for (tr_op = traffic_ops.next; 
+         tr_op != &traffic_ops;
+         tr_op = tr_op->next)
+        if ((tr_op->csap_id == csap_id) && 
+            (strcmp(tr_op->ta, ta_name) == 0))
         {
-            return tmp;
+            return tr_op;
         }
 
     return NULL;
@@ -375,7 +379,7 @@ find_csap(const char *ta_name, int handle)
  * @return 0 (success) or 1 (CSAP is already in the list)
  */
 static int
-insert_csap(csap *cs)
+insert_traffic_op(traffic_op_t *cs)
 {
     int rc;
     
@@ -383,9 +387,9 @@ insert_csap(csap *cs)
     pthread_mutex_lock(&rcf_lock);
 #endif    
     
-    if (rc = (find_csap(cs->ta, cs->handle) != NULL), !rc)
+    if (rc = (find_traffic_op(cs->ta, cs->csap_id) != NULL), !rc)
     {
-        QEL_INSERT(&csaps, cs);
+        QEL_INSERT(&traffic_ops, cs);
     }
 
 #ifdef HAVE_PTHREAD_H
@@ -399,23 +403,23 @@ insert_csap(csap *cs)
  * Remove CSAP from the list.
  *
  * @param ta_name       Test Agent name
- * @param handle        handle of CSAP to be removed
+ * @param csap_id       csap_id of CSAP to be removed
  */
 static void
-remove_csap(const char *ta_name, int handle)
+remove_traffic_op(const char *ta_name, int csap_id)
 {
-    csap *cs;
+    traffic_op_t *cs;
     
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_lock(&rcf_lock);
 #endif    
 
-    cs = find_csap(ta_name, handle);
+    cs = find_traffic_op(ta_name, csap_id);
     
     if (cs != NULL)
         QEL_DELETE(cs);
     else
-        WARN("Csap %d: traffic operation handler not found", handle);
+        WARN("Csap %d: traffic operation handler not found", csap_id);
 
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_unlock(&rcf_lock);
@@ -1409,7 +1413,7 @@ rcf_ta_del_file(const char *ta_name, int session, const char *rfile)
  *                      a binary attachment; otherwise the string is
  *                      appended to the command
  *
- * @param handle        location for unique CSAP handle
+ * @param csap_id       location for unique CSAP handle
  *
  * @return error code
  *
@@ -1425,7 +1429,7 @@ rcf_ta_del_file(const char *ta_name, int session, const char *rfile)
  */
 int 
 rcf_ta_csap_create(const char *ta_name, int session,
-                   const char *stack_id, const char *params, int *handle)
+                   const char *stack_id, const char *params, int *csap_id)
 {
     rcf_msg *msg;
     size_t   len = 0;
@@ -1433,7 +1437,7 @@ rcf_ta_csap_create(const char *ta_name, int session,
     size_t   anslen = sizeof(*msg);
     INIT_IPC;
     
-    if (stack_id == NULL || handle == NULL || BAD_TA)
+    if (stack_id == NULL || csap_id == NULL || BAD_TA)
     {
         VERB("Invalid parameters");
         return TE_RC(TE_RCF_API, EINVAL);
@@ -1499,7 +1503,7 @@ rcf_ta_csap_create(const char *ta_name, int session,
         return TE_RC(TE_RCF_API, error);
     }
     
-    *handle = msg->handle;
+    *csap_id = msg->handle;
     free(msg);
         
     return 0;
@@ -1510,7 +1514,7 @@ rcf_ta_csap_create(const char *ta_name, int session,
  *
  * @param ta_name       Test Agent name                 
  * @param session       TA session or 0   
- * @param handle        CSAP handle
+ * @param csap_id       CSAP csap_id
  *
  * @return error code
  *
@@ -1525,7 +1529,7 @@ rcf_ta_csap_create(const char *ta_name, int session,
  * @sa rcf_ta_csap_create
  */
 int 
-rcf_ta_csap_destroy(const char *ta_name, int session, int handle)
+rcf_ta_csap_destroy(const char *ta_name, int session, int csap_id)
 {
     rcf_msg msg;
     size_t  anslen = sizeof(msg);
@@ -1538,7 +1542,7 @@ rcf_ta_csap_destroy(const char *ta_name, int session, int handle)
     msg.opcode = RCFOP_CSAP_DESTROY;
     strcpy(msg.ta, ta_name);
     msg.sid = session;
-    msg.handle = handle;
+    msg.handle = csap_id;
     
     if (ipc_send_message_with_answer(ipc_handle, RCF_SERVER,
                                      &msg, sizeof(msg),
@@ -1555,7 +1559,7 @@ rcf_ta_csap_destroy(const char *ta_name, int session, int handle)
  *
  * @param ta_name       Test Agent name                 
  * @param session       TA session or 0   
- * @param handle        CSAP handle
+ * @param csap_id       CSAP handle
  * @param var_name      parameter name
  * @param var_len       length of the location buffer
  * @param val           location for variable value
@@ -1571,7 +1575,7 @@ rcf_ta_csap_destroy(const char *ta_name, int session, int handle)
  * @retval ETESMALLBUF  the buffer is too small
  */
 int 
-rcf_ta_csap_param(const char *ta_name, int session, int handle,
+rcf_ta_csap_param(const char *ta_name, int session, int csap_id,
                   const char *var_name, size_t var_len, char *val)
 {
     rcf_msg  msg;
@@ -1590,7 +1594,7 @@ rcf_ta_csap_param(const char *ta_name, int session, int handle,
     strcpy(msg.id, var_name);
     msg.opcode = RCFOP_CSAP_PARAM;
     msg.sid = session;
-    msg.handle = handle;
+    msg.handle = csap_id;
     if (ipc_send_message_with_answer(ipc_handle, RCF_SERVER,
                                      &msg, sizeof(msg),
                                      &msg, &anslen) != 0)
@@ -1615,7 +1619,7 @@ rcf_ta_csap_param(const char *ta_name, int session, int handle,
  *
  * @param ta_name       Test Agent name                 
  * @param session       TA session or 0   
- * @param handle        CSAP handle
+ * @param csap_id       CSAP handle
  * @param templ         full name of the file with traffic template
  * @param blk_mode      mode of the operation:
  *                      in blocking mode it suspends the caller
@@ -1640,13 +1644,14 @@ rcf_ta_csap_param(const char *ta_name, int session, int handle,
  */
 int 
 rcf_ta_trsend_start(const char *ta_name, int session, 
-                    int handle, const char *templ,
+                    int csap_id, const char *templ,
                     rcf_call_mode_t blk_mode)
 {
-    rcf_msg msg;
-    size_t  anslen = sizeof(msg);
-    int     fd;
-    csap   *tmp;
+    rcf_msg       msg;
+    size_t        anslen = sizeof(msg);
+    int           fd;
+    traffic_op_t *tr_op;
+
     INIT_IPC;
     
     if (templ == NULL || strlen(templ) >= RCF_MAX_PATH || BAD_TA)
@@ -1655,9 +1660,9 @@ rcf_ta_trsend_start(const char *ta_name, int session,
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_lock(&rcf_lock);
 #endif    
-    if ((tmp = find_csap(ta_name, handle)) != NULL)
+    if ((tr_op = find_traffic_op(ta_name, csap_id)) != NULL)
     {
-        int state = tmp->state;
+        int state = tr_op->state;
 #ifdef HAVE_PTHREAD_H
         pthread_mutex_unlock(&rcf_lock);
 #endif
@@ -1676,7 +1681,7 @@ rcf_ta_trsend_start(const char *ta_name, int session,
     msg.flags |= BINARY_ATTACHMENT;
     strcpy(msg.ta, ta_name);
     strcpy(msg.file, templ);
-    msg.handle = handle;
+    msg.handle = csap_id;
     msg.intparm = (blk_mode == RCF_MODE_BLOCKING) ? TR_POSTPONED : 0; 
     msg.sid = session;
     
@@ -1687,15 +1692,15 @@ rcf_ta_trsend_start(const char *ta_name, int session,
     }
     close(fd);
 
-    if ((tmp = (csap *)calloc(sizeof(csap), 1)) == NULL)
+    if ((tr_op = (traffic_op_t *)calloc(sizeof(traffic_op_t), 1)) == NULL)
         return TE_RC(TE_RCF_API, ENOMEM);
-    strncpy(tmp->ta, ta_name, RCF_MAX_NAME);
-    tmp->handle = handle;
-    tmp->state = CSAP_SEND;
-    tmp->next = &csaps;
-    if (insert_csap(tmp) != 0)
+    strncpy(tr_op->ta, ta_name, RCF_MAX_NAME);
+    tr_op->csap_id = csap_id;
+    tr_op->state = CSAP_SEND;
+    tr_op->next = &traffic_ops;
+    if (insert_traffic_op(tr_op) != 0)
     {
-        free(tmp);
+        free(tr_op);
         ERROR("Cannot insert CSAP control block in the list of "
               "active CSAPs");
         return TE_RC(TE_RCF_API, EEXIST);
@@ -1705,12 +1710,12 @@ rcf_ta_trsend_start(const char *ta_name, int session,
                                      &msg, sizeof(msg), 
                                      &msg, &anslen) != 0)
     {
-        remove_csap(ta_name, handle);
+        remove_traffic_op(ta_name, csap_id);
         return TE_RC(TE_RCF_API, ETEIO);
     }
 
     if ((msg.error != 0) || (blk_mode == RCF_MODE_BLOCKING))
-        remove_csap(ta_name, handle);
+        remove_traffic_op(ta_name, csap_id);
 
     return msg.error;
 }
@@ -1720,7 +1725,7 @@ rcf_ta_trsend_start(const char *ta_name, int session,
  * rcf_ta_trsend_start called in non-blocking mode.
  *
  * @param ta_name       Test Agent name                 
- * @param handle        CSAP handle
+ * @param csap_id       CSAP handle
  * @param num           location where number of sent packets should be
  *                      placed
  *
@@ -1738,11 +1743,11 @@ rcf_ta_trsend_start(const char *ta_name, int session,
  * @sa rcf_ta_trsend_start
  */
 int 
-rcf_ta_trsend_stop(const char *ta_name, int handle, int *num)
+rcf_ta_trsend_stop(const char *ta_name, int csap_id, int *num)
 {
-    rcf_msg msg;
-    size_t  anslen = sizeof(msg);
-    csap   *tmp;
+    rcf_msg       msg;
+    size_t        anslen = sizeof(msg);
+    traffic_op_t  *tr_op;
     INIT_IPC;
     
     if (BAD_TA)
@@ -1752,33 +1757,33 @@ rcf_ta_trsend_stop(const char *ta_name, int handle, int *num)
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_lock(&rcf_lock);
 #endif    
-    if ((tmp = find_csap(ta_name, handle)) == NULL)
+    if ((tr_op = find_traffic_op(ta_name, csap_id)) == NULL)
     {
 #ifdef HAVE_PTHREAD_H
         pthread_mutex_unlock(&rcf_lock);
 #endif
         ERROR("There is no entry in the list of active CSAPs for "
-              "CSAP %d residing on Agent %s", handle, ta_name);
+              "CSAP %d residing on Agent %s", csap_id, ta_name);
         return TE_RC(TE_RCF_API, EBADFD);
     }
-    if (tmp->state != CSAP_SEND)
+    if (tr_op->state != CSAP_SEND)
     {
 #ifdef HAVE_PTHREAD_H
         pthread_mutex_unlock(&rcf_lock);
 #endif
         ERROR("CSAP %d residing on Agent %s is not sending",
-              handle, ta_name);
+              csap_id, ta_name);
         return TE_RC(TE_RCF_API, EINVAL);
     }
 
-    msg.sid = tmp->sid;
+    msg.sid = tr_op->sid;
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_unlock(&rcf_lock);
 #endif    
     
     msg.opcode = RCFOP_TRSEND_STOP;
     strcpy(msg.ta, ta_name);
-    msg.handle = handle;
+    msg.handle = csap_id;
     
     if (ipc_send_message_with_answer(ipc_handle, RCF_SERVER, 
                                      &msg, sizeof(msg),
@@ -1789,7 +1794,7 @@ rcf_ta_trsend_stop(const char *ta_name, int handle, int *num)
         
     if (msg.error == 0)
     {
-        remove_csap(ta_name, handle);
+        remove_traffic_op(ta_name, csap_id);
         *num = msg.num;
     }
     
@@ -1801,15 +1806,15 @@ rcf_ta_trsend_stop(const char *ta_name, int handle, int *num)
  */
 int
 rcf_ta_trrecv_start(const char *ta_name, int session,
-                    int handle, const char *pattern,
+                    int csap_id, const char *pattern,
                     rcf_pkt_handler handler, void *user_param, 
                     unsigned int timeout, int num)
 {
-    rcf_msg  msg;
-    size_t   anslen = sizeof(msg);
-    int      fd;
-    int      rc;
-    csap    *tmp;
+    rcf_msg       msg;
+    size_t        anslen = sizeof(msg);
+    int           fd;
+    int           rc;
+    traffic_op_t *tr_op;
 
     INIT_IPC;
 
@@ -1819,9 +1824,9 @@ rcf_ta_trrecv_start(const char *ta_name, int session,
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_lock(&rcf_lock);
 #endif    
-    if ((tmp = find_csap(ta_name, handle)) != NULL)
+    if ((tr_op = find_traffic_op(ta_name, csap_id)) != NULL)
     {
-        int state = tmp->state;
+        int state = tr_op->state;
 #ifdef HAVE_PTHREAD_H
         pthread_mutex_unlock(&rcf_lock);
 #endif    
@@ -1836,7 +1841,7 @@ rcf_ta_trrecv_start(const char *ta_name, int session,
     msg.flags |= BINARY_ATTACHMENT;
     strcpy(msg.ta, ta_name);
     strcpy(msg.file, pattern);
-    msg.handle = handle;
+    msg.handle = csap_id;
     msg.intparm = (handler == NULL ? 0 : TR_RESULTS); 
     msg.sid = session;
     msg.num = num;
@@ -1849,17 +1854,17 @@ rcf_ta_trrecv_start(const char *ta_name, int session,
     }
     close(fd);
 
-    if ((tmp = (csap *)calloc(sizeof(csap), 1)) == NULL)
+    if ((tr_op = (traffic_op_t *)calloc(sizeof(traffic_op_t), 1)) == NULL)
         return TE_RC(TE_RCF_API, ENOMEM);
-    strncpy(tmp->ta, ta_name, RCF_MAX_NAME);
-    tmp->handle = handle;
-    tmp->state = CSAP_RECV;
-    tmp->handler = handler;
-    tmp->user_param = user_param;
-    tmp->sid = session;    
-    if (insert_csap(tmp) != 0)
+    strncpy(tr_op->ta, ta_name, RCF_MAX_NAME);
+    tr_op->csap_id = csap_id;
+    tr_op->state = CSAP_RECV;
+    tr_op->handler = handler;
+    tr_op->user_param = user_param;
+    tr_op->sid = session;    
+    if (insert_traffic_op(tr_op) != 0)
     {
-        free(tmp);
+        free(tr_op);
         return TE_RC(TE_RCF_API, EEXIST);
     }
     
@@ -1867,7 +1872,7 @@ rcf_ta_trrecv_start(const char *ta_name, int session,
                                       &msg, sizeof(msg), &msg, &anslen);
     if (rc != 0)
     {
-        remove_csap(ta_name, handle);
+        remove_traffic_op(ta_name, csap_id);
         return TE_RC(TE_RCF_API, rc);
     }
 
@@ -1883,7 +1888,7 @@ rcf_ta_trrecv_start(const char *ta_name, int session,
     }
 
     if (msg.error != 0)
-        remove_csap(ta_name, handle);
+        remove_traffic_op(ta_name, csap_id);
 
     VERB("msg.error = %x", msg.error);
 
@@ -1897,7 +1902,7 @@ rcf_ta_trrecv_start(const char *ta_name, int session,
  * @param ta_name       Test Agent name                 
  * @param session       TA session or -1, denoting session associated with
  *                      specified CSAP and TA. 
- * @param handle        CSAP handle
+ * @param csap_id       CSAP handle
  * @param num           location where number of received packets 
  *                      should be placed
  * @param opcode        RCFOP_TRRECV_STOP, RCFOP_TRRECV_WAIT or 
@@ -1906,13 +1911,13 @@ rcf_ta_trrecv_start(const char *ta_name, int session,
  * @return error code
  */
 static int
-csap_tr_recv_get(const char *ta_name, int session, int handle,
+csap_tr_recv_get(const char *ta_name, int session, int csap_id,
                  int *num, int opcode)
 {
-    int     rc;
-    rcf_msg msg;
-    size_t  anslen = sizeof(msg);
-    csap   *tmp;
+    int           rc;
+    rcf_msg       msg;
+    size_t        anslen = sizeof(msg);
+    traffic_op_t *tr_op;
     
     rcf_pkt_handler handler;
     void           *user_param;
@@ -1925,47 +1930,49 @@ csap_tr_recv_get(const char *ta_name, int session, int handle,
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_lock(&rcf_lock);
 #endif
-    if ((tmp = find_csap(ta_name, handle)) == NULL)
+    tr_op = find_traffic_op(ta_name, csap_id);
+    if (tr_op == NULL && opcode != RCFOP_TRRECV_STOP)
     {
 #ifdef HAVE_PTHREAD_H
         pthread_mutex_unlock(&rcf_lock);
 #endif
         ERROR("There is no entry in the list of active CSAPs for CSAP %d "
-              "residing on Agent %s", handle, ta_name);
+              "residing on Agent %s", csap_id, ta_name);
         return TE_RC(TE_RCF_API, EBADFD);
     }
-    if (tmp->state != CSAP_RECV)
+    if ((tr_op != NULL) && (tr_op->state != CSAP_RECV))
     {
 #ifdef HAVE_PTHREAD_H
         pthread_mutex_unlock(&rcf_lock);
 #endif
         ERROR("CSAP %d residing on Agent %s is not receiving, but %s",
-              handle, ta_name, (tmp->state & CSAP_SEND) ? "sending" :
+              csap_id, ta_name, (tr_op->state & CSAP_SEND) ? "sending" :
                                    "waiting for something");
         return TE_RC(TE_RCF_API, EINVAL);
     }
 
     if (session == -1)
-        msg.sid = tmp->sid;
+        msg.sid = (tr_op != NULL) ? tr_op->sid : 0;
     else
         msg.sid = session;
 
-    handler = tmp->handler;
-    user_param = tmp->user_param;
+    handler    = (tr_op != NULL) ? tr_op->handler    : NULL;
+    user_param = (tr_op != NULL) ? tr_op->user_param : NULL;
+
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_unlock(&rcf_lock);
 #endif
 
     msg.opcode = opcode;
     strcpy(msg.ta, ta_name);
-    msg.handle = handle;
+    msg.handle = csap_id;
 
     anslen = sizeof(msg);
     if ((rc = ipc_send_message_with_answer(ipc_handle, RCF_SERVER,
                                            &msg, sizeof(msg),
                                            &msg, &anslen)) != 0)
     {
-        remove_csap(ta_name, handle);
+        remove_traffic_op(ta_name, csap_id);
         ERROR("%s: IPC send with answer fails, rc %X", 
               __FUNCTION__, rc);
         return TE_RC(TE_RCF_API, ETEIO);
@@ -1995,7 +2002,7 @@ csap_tr_recv_get(const char *ta_name, int session, int handle,
         /* for STOP and WAIT request descr should be removed */
         /* @todo investigate of consistant removing csap request record 
          * in case of error. */
-        remove_csap(ta_name, handle);
+        remove_traffic_op(ta_name, csap_id);
     }
     if (msg.error)
         WARN("RCF traffic operation fails with status code %X", msg.error);
@@ -2007,15 +2014,15 @@ csap_tr_recv_get(const char *ta_name, int session, int handle,
  * See the description in rcf_api.h
  */
 int
-rcf_ta_trrecv_wait(const char *ta_name, int handle, int *num)
+rcf_ta_trrecv_wait(const char *ta_name, int csap_id, int *num)
 {
     int rc;
     VERB("%s(ta %s, csap %d, *num  %p) called", 
-         ta_name, handle, num);
-    rc = csap_tr_recv_get(ta_name, -1, handle, num, RCFOP_TRRECV_WAIT);
+         ta_name, csap_id, num);
+    rc = csap_tr_recv_get(ta_name, -1, csap_id, num, RCFOP_TRRECV_WAIT);
 
     VERB("%s(ta %s, csap %d, *num  %p) return %X, num %d", 
-         ta_name, handle, num, rc, (num == NULL ? -1: *num)); 
+         ta_name, csap_id, num, rc, (num == NULL ? -1: *num)); 
     return rc;
 }
                       
@@ -2026,7 +2033,7 @@ rcf_ta_trrecv_wait(const char *ta_name, int handle, int *num)
  * it is called for all received packets.
  *
  * @param ta_name       Test Agent name                 
- * @param handle        CSAP handle
+ * @param csap_id       CSAP handle
  * @param num           location where number of received packets 
  *                      should be placed
  *
@@ -2044,32 +2051,32 @@ rcf_ta_trrecv_wait(const char *ta_name, int handle, int *num)
  * @sa rcf_ta_trrecv_start
  */
 int 
-rcf_ta_trrecv_stop(const char *ta_name, int handle, int *num)
+rcf_ta_trrecv_stop(const char *ta_name, int csap_id, int *num)
 {
     int rc;
 
     VERB("%s(ta %s, csap %d, *num  %p) called", 
-         ta_name, handle, num);
-    rc = csap_tr_recv_get(ta_name, -1, handle, num, RCFOP_TRRECV_STOP);
+         ta_name, csap_id, num);
+    rc = csap_tr_recv_get(ta_name, -1, csap_id, num, RCFOP_TRRECV_STOP);
 
     VERB("%s(ta %s, csap %d, *num  %p) return %X, num %d", 
-         ta_name, handle, num, rc, (num == NULL ? -1: *num)); 
+         ta_name, csap_id, num, rc, (num == NULL ? -1: *num)); 
     return rc;
 }
 
 /* See description in rcf_api.h */
 int 
-rcf_ta_trrecv_stop_sess(const char *ta_name, int session, int handle,
+rcf_ta_trrecv_stop_sess(const char *ta_name, int session, int csap_id,
                         int *num)
 {
     int rc;
 
     VERB("%s(ta %s, csap %d, *num  %p) called", 
-         ta_name, handle, num); 
-    rc = csap_tr_recv_get(ta_name, session, handle, num,
+         ta_name, csap_id, num); 
+    rc = csap_tr_recv_get(ta_name, session, csap_id, num,
                             RCFOP_TRRECV_STOP); 
     VERB("%s(ta %s, csap %d, *num  %p) return %X, num %d", 
-         ta_name, handle, num, rc, (num == NULL ? -1: *num)); 
+         ta_name, csap_id, num, rc, (num == NULL ? -1: *num)); 
     return rc;
 }
 
@@ -2079,7 +2086,7 @@ rcf_ta_trrecv_stop_sess(const char *ta_name, int session, int handle,
  * rcf_ta_trrecv_start is used for packets processing).
  *
  * @param ta_name       Test Agent name                 
- * @param handle        CSAP handle
+ * @param csap_id       CSAP handle
  * @param num           location where number of processed packets 
  *                      should be placed
  *
@@ -2099,16 +2106,16 @@ rcf_ta_trrecv_stop_sess(const char *ta_name, int session, int handle,
  * @sa rcf_ta_trrecv_start
  */
 int 
-rcf_ta_trrecv_get(const char *ta_name, int handle, int *num)
+rcf_ta_trrecv_get(const char *ta_name, int csap_id, int *num)
 {
     int rc;
 
     VERB("%s(ta %s, csap %d, *num  %p) called", 
-         ta_name, handle, num);
-    rc = csap_tr_recv_get(ta_name, -1, handle, num, RCFOP_TRRECV_GET);
+         ta_name, csap_id, num);
+    rc = csap_tr_recv_get(ta_name, -1, csap_id, num, RCFOP_TRRECV_GET);
 
     VERB("%s(ta %s, csap %d, *num  %p) return %X, num %d", 
-         ta_name, handle, num, rc, (num == NULL ? -1: *num)); 
+         ta_name, csap_id, num, rc, (num == NULL ? -1: *num)); 
     return rc;
 }
 
@@ -2120,7 +2127,7 @@ rcf_ta_trrecv_get(const char *ta_name, int handle, int *num)
  *
  * @param ta_name       Test Agent name
  * @param session       TA session or 0
- * @param handle        CSAP handle
+ * @param csap_id       CSAP handle
  * @param templ         Full name of the file with traffic template
  * @param handler       Callback function used in processing of
  *                      received packet or NULL
@@ -2147,14 +2154,14 @@ rcf_ta_trrecv_get(const char *ta_name, int handle, int *num)
  * @retval other        error returned by command handler on the TA
  */
 int 
-rcf_ta_trsend_recv(const char *ta_name, int session, int handle, 
+rcf_ta_trsend_recv(const char *ta_name, int session, int csap_id, 
                    const char *templ, rcf_pkt_handler handler, 
                    void *user_param, unsigned int timeout, int *error)
 {
-    rcf_msg msg;
-    csap   *tmp;
-    size_t  anslen = sizeof(msg);
-    int     fd;
+    rcf_msg       msg;
+    traffic_op_t *tr_op;
+    size_t        anslen = sizeof(msg);
+    int           fd;
     INIT_IPC;
     
     if (BAD_TA || templ == NULL)
@@ -2164,7 +2171,7 @@ rcf_ta_trsend_recv(const char *ta_name, int session, int handle,
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_lock(&rcf_lock);
 #endif    
-    if ((tmp = find_csap(ta_name, handle)) != NULL)
+    if ((tr_op = find_traffic_op(ta_name, csap_id)) != NULL)
     {
 #ifdef HAVE_PTHREAD_H
         pthread_mutex_unlock(&rcf_lock);
@@ -2181,7 +2188,7 @@ rcf_ta_trsend_recv(const char *ta_name, int session, int handle,
     msg.flags |= BINARY_ATTACHMENT;
     strcpy(msg.ta, ta_name);
     strcpy(msg.file, templ);
-    msg.handle = handle;
+    msg.handle = csap_id;
     msg.intparm = handler == NULL ? 0 : TR_RESULTS;
     
     if ((fd = open(templ, O_RDONLY)) < 0)
@@ -2191,14 +2198,14 @@ rcf_ta_trsend_recv(const char *ta_name, int session, int handle,
     }
     close(fd);
 
-    if ((tmp = (csap *)calloc(sizeof(csap), 1)) == NULL)
+    if ((tr_op = (traffic_op_t *)calloc(sizeof(traffic_op_t), 1)) == NULL)
         return TE_RC(TE_RCF_API, ENOMEM);
-    strncpy(tmp->ta, ta_name, RCF_MAX_NAME);
-    tmp->handle = handle;
-    tmp->state = CSAP_SENDRECV;
-    if (insert_csap(tmp) != 0)
+    strncpy(tr_op->ta, ta_name, RCF_MAX_NAME);
+    tr_op->csap_id = csap_id;
+    tr_op->state = CSAP_SENDRECV;
+    if (insert_traffic_op(tr_op) != 0)
     {
-        free(tmp);
+        free(tr_op);
         return TE_RC(TE_RCF_API, EBUSY);
     }
     
@@ -2206,7 +2213,7 @@ rcf_ta_trsend_recv(const char *ta_name, int session, int handle,
                                      &msg, sizeof(msg),
                                      &msg, &anslen) != 0)
     {
-        remove_csap(ta_name, handle);
+        remove_traffic_op(ta_name, csap_id);
         return TE_RC(TE_RCF_API, ETEIO);
     }
     
@@ -2220,7 +2227,7 @@ rcf_ta_trsend_recv(const char *ta_name, int session, int handle,
         }
     }
     
-    remove_csap(ta_name, handle);
+    remove_traffic_op(ta_name, csap_id);
     if (msg.error != 0)
         return msg.error;
     
