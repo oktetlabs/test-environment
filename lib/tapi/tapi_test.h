@@ -32,6 +32,11 @@
 #include "logger_api.h"
 
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 /**
  * The first action of any test @b main() function.
  *
@@ -111,6 +116,74 @@
         ERROR(fmt);                                                 \
         result = EXIT_FAILURE;                                      \
         goto cleanup;                                               \
+    } while (0)
+
+
+/**
+ * Check an expression passed as the argument against zero.
+ * If the expression is something not zero the macro reports an
+ * error, sets 'result' variable to EXIT_FAILURE and goes to 'cleanup'
+ * label.
+ *
+ * @param expr_  Expression to be checked
+ */
+#define CHECK_RC(expr_) \
+    do {                                                        \
+        int rc_;                                                \
+                                                                \
+        if ((rc_ = (expr_)) != 0)                               \
+        {                                                       \
+            TEST_FAIL("line %d: %s returns %d, but expected 0", \
+                      __LINE__, # expr_, rc_);                  \
+        }                                                       \
+    } while (0)
+
+/**
+ * Check an expression passed as the argument against zero.
+ * The same as CHECK_RC, but does not go to 'cleanup' label.
+ *
+ * @param expr_  Expression to be checked
+ */
+#define CLEANUP_CHECK_RC(expr_) \
+    do {                                                     \
+        int rc_;                                             \
+                                                             \
+        if ((rc_ = (expr_)) != 0)                            \
+        {                                                    \
+            ERROR("line %d: %s returns %d, but expected 0",  \
+                  __LINE__, # expr_, rc_);                   \
+            result = EXIT_FAILURE;                           \
+        }                                                    \
+    } while (0)
+
+/**
+ * Check that the expression is not NULL
+ */
+#define CHECK_NOT_NULL(expr_) \
+    do {                                                                \
+        if ((expr_) == NULL)                                            \
+        {                                                               \
+            TEST_FAIL("Expression " #expr_ " in file %s line %d is "    \
+                      "expected to be nut NULL, but it is",             \
+                      __FILE__, __LINE__);                              \
+        }                                                               \
+    } while (0)
+
+/**
+ * Check that two buffers of specified length have the same content and
+ * reports an error in case they are not
+ *
+ * @param buf1_     First buffer
+ * @param buf2_     Second buffer
+ * @param buf_len_  Buffer length
+ */
+#define CHECK_BUFS_EQUAL(buf1_, buf2_, buf_len_) \
+    do {                                                    \
+        if (memcmp(buf1_, buf2_, buf_len_) != 0)            \
+        {                                                   \
+            TEST_FAIL("The content of '"#buf1_ "' and '"    \
+                      #buf2_ "' are different");            \
+        }                                                   \
     } while (0)
 
 
@@ -277,5 +350,15 @@ extern int test_map_param_value(const char *var_name,
                                 struct param_map_entry *maps,
                                 const char *str_val, int *num_val);
 
+/**
+ * Signal handler to close TE when Ctrl-C is pressed.
+ *
+ * @param signum    - signal number
+ */
+extern void sigint_handler(int signum);
 
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
 #endif /* !__TE_LIB_TAPI_TEST_PARAMS_H__ */

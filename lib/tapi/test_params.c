@@ -10,7 +10,9 @@
  * $Id$
  */
 
+#ifdef HAVE_CONFIG_H
 #include "config.h"
+#endif
 
 #ifdef STDC_HEADERS
 #include <stdlib.h>
@@ -22,7 +24,7 @@
 
 #include "te_defs.h"
 
-#define LGR_USER        "Test Params LIB"
+#define LGR_USER        "TAPI Params"
 #include "logger_api.h"
 
 #include "tapi_test.h"
