@@ -585,7 +585,7 @@ tarpc_destroy_all()
  * @return status code
  */
 int 
-tarpc_call(int timeout, char *name, const char *file)
+tarpc_call(int timeout, const char *name, const char *file)
 {
     FILE *f;
     int   len;
@@ -639,10 +639,16 @@ tarpc_call(int timeout, char *name, const char *file)
         return TE_RC(TE_TA_LINUX, ETERPCTIMEOUT);
     }
     
-    if ((len = read(cur->sock, buf, RCF_RPC_MAX_BUF)) <= 0)
+    if ((len = read(cur->sock, buf, RCF_RPC_MAX_BUF)) < 0)
     {
         ERROR("Failed to read data from the RPC pipe; errno %d", errno);
         return TE_RC(TE_TA_LINUX, errno);
+    }
+    if (len == 0)
+    {
+        ERROR("RPC client connection closed, "
+              "it's likely that RPC server '%s' dead", name);
+        return TE_RC(TE_TA_LINUX, EIO);
     }
     /* Read the rest of data, if exist */
     while (1)
@@ -657,7 +663,7 @@ tarpc_call(int timeout, char *name, const char *file)
         {
             if (len == 0)
             {
-                VERB("Cannot read data from RPC client");
+                ERROR("Cannot read data from RPC client");
                 return TE_RC(TE_TA_LINUX, EIO);
             }
             else
@@ -665,14 +671,20 @@ tarpc_call(int timeout, char *name, const char *file)
         }
         if (len == RCF_RPC_MAX_BUF)
         {
-            VERB("RPC data are too long - increase RCF_RPC_MAX_BUF");
+            ERROR("RPC data are too long - increase RCF_RPC_MAX_BUF");
             return TE_RC(TE_TA_LINUX, ENOMEM);
         }
         
         if ((n = read(cur->sock, buf + len, RCF_RPC_MAX_BUF - len)) < 0)
         {
-            VERB("Cannot read data from RPC client");
+            ERROR("Cannot read data from RPC client");
             return TE_RC(TE_TA_LINUX, errno);
+        }
+        if (n == 0)
+        {
+            ERROR("RPC client connection closed after got of some data, "
+                  "it's likely that RPC server '%s' dead", name);
+            return TE_RC(TE_TA_LINUX, EIO);
         }
         len += n;
     }
