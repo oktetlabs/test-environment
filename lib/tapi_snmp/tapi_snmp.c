@@ -770,16 +770,25 @@ tapi_snmp_msg_head(FILE *f, ndn_snmp_msg_t msg_type, int reps)
     if (f == NULL)
         return EINVAL;
 
-    fprintf(f, "{pdus{snmp:{type ");
+    fprintf(f, "{pdus{snmp:{type plain:");
     switch (msg_type)
     {
-        case NDN_SNMP_MSG_GET:      fprintf(f,"get, ");      break;
-        case NDN_SNMP_MSG_GETNEXT:  fprintf(f,"get-next, "); break;
+        case NDN_SNMP_MSG_GET:
+            fprintf(f,"get, ");
+            break;
+
+        case NDN_SNMP_MSG_GETNEXT:
+            fprintf(f,"get-next, ");
+            break;
+
         case NDN_SNMP_MSG_GETBULK:
             fprintf(f,"get-bulk, repeats plain: %d, ", reps);
             break;
 
-        case NDN_SNMP_MSG_SET:      fprintf(f,"set, ");      break;
+        case NDN_SNMP_MSG_SET:
+            fprintf(f,"set, ");
+            break;
+
         default:
             return EINVAL;
     }
