@@ -380,14 +380,16 @@ rcf_rpc_server_exec(rcf_rpc_server *rpcs)
            ERROR("pthread_mutex_unlock() failed");
         return rpcs->_errno;
     }
+    rpcs->op = RCF_RPC_CALL_WAIT;
+    rpcs->tid0 = 0;
 
     if ((rc = rcf_ta_call(rpcs->ta, 0, "tarpc_del_server", &rc1, 1, 0,
                           RCF_STRING, rpcs->name)) != 0 ||
         (rc = rc1) != 0)
     {
         rpcs->dead = 1;
-        ERROR("Remote call of tarpc_del_server failed for %s."
-              " RPC server is unusable.", rpcs->name);
+        ERROR("Remote call of tarpc_del_server failed for %s. "
+              "RPC server is unusable.", rpcs->name);
         if (rcf_ta_kill_task(rpcs->ta, 0, rpcs->pid) != 0)
         {
             ERROR("Cannot kill RPC server process");
@@ -400,16 +402,14 @@ rcf_rpc_server_exec(rcf_rpc_server *rpcs)
          (rc = rc1) != 0)
     {
         rpcs->dead = 1;
-        ERROR("Remote call of tarpc_add_server failed for %s."
-              " RPC server is unusable.", rpcs->name);
+        ERROR("Remote call of tarpc_add_server failed for %s. "
+              "RPC server is unusable.", rpcs->name);
         if (rcf_ta_kill_task(rpcs->ta, 0, rpcs->pid) != 0)
         {
             ERROR("Cannot kill RPC server process");
         }
         return rc;
     }
-    rpcs->op = RCF_RPC_CALL_WAIT;
-    rpcs->tid0 = 0;
     if (pthread_mutex_unlock(&rpcs->lock) != 0)
         ERROR("pthread_mutex_unlock() failed");
 
