@@ -166,7 +166,14 @@ snmp_read_cb (csap_p csap_descr, int timeout, char *buf, int buf_len)
     sel_timeout.tv_sec =  timeout / 1000000L;
     sel_timeout.tv_usec = timeout % 1000000L;
 
-    snmp_select_info(&n_fds, &fdset, &sel_timeout, &block); 
+    if (spec_data->sock < 0)
+        snmp_select_info(&n_fds, &fdset, &sel_timeout, &block); 
+    else
+    {
+        FD_SET(spec_data->sock, &fdset);
+        n_fds = spec_data->sock + 1;
+    }
+
     VERB("session select info, n_fds: %d\n", n_fds);
 
     if (spec_data->pdu) snmp_free_pdu (spec_data->pdu); 
@@ -494,6 +501,7 @@ snmp_single_init_cb (int csap_id, const asn_value_p csap_nds, int layer)
     csap_session.callback       = snmp_csap_input;
     csap_session.callback_magic = snmp_spec_data;
 
+    snmp_spec_data->sock = -1;
     do {
 #if NEW_SNMP_API
         char buf[32];
@@ -506,6 +514,8 @@ snmp_single_init_cb (int csap_id, const asn_value_p csap_nds, int layer)
         transport = netsnmp_tdomain_transport(buf, !r_port, "udp");
 
         ss = snmp_add(&csap_session, transport, NULL, NULL);
+
+        snmp_spec_data->sock = transport->sock; 
 #else
         ss = snmp_open(&csap_session); 
 #endif

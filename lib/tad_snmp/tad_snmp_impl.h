@@ -266,6 +266,7 @@ typedef struct snmp_csap_specific_data
 {
     struct snmp_session * ss;
     struct snmp_pdu     * pdu;
+    int                   sock;
 } snmp_csap_specific_data_t;
 
 #ifdef __cplusplus
