@@ -132,6 +132,7 @@ asn_impl_pt_label(const char*text, char *label, int *syms)
     memcpy (label, l_begin, l);
     label[l] = 0;
     *syms = pt - text;
+
     return 0; 
 }
 
@@ -151,6 +152,7 @@ asn_impl_pt_charstring(const char*text, const asn_type *type,
                        asn_value_p *parsed, int *syms_parsed)
 {
     const char * pt = text; 
+
     char   buffer[PARSE_BUF];
     char * pb = buffer;       
     
@@ -179,14 +181,14 @@ asn_impl_pt_charstring(const char*text, const asn_type *type,
                really, allocation of more memory should be here.  */ 
             return EASNGENERAL; 
         }
-        memcpy (pb, pt, l); 
-        pt+= l; pb += l; total += l;
+        memcpy(pb, pt, l); 
+        pt+= l, pb += l, total += l;
 
         if (*pt == '\\')
         {
             pt++;
             *pb = *pt;
-            pb ++, pt ++, total++;
+            pb++, pt++, total++;
         }
     } 
     *pb = 0;
@@ -250,11 +252,14 @@ asn_impl_pt_octstring(const char*text, const asn_type *type,
             return EASNTXTPARSE;
         }
 
-        while (isspace(*pt)) pt++;
+        while (isspace(*pt)) 
+            pt++;
         txt_buf[0] = *pt; pt++;
-        while (isspace(*pt)) pt++;
+        while (isspace(*pt)) 
+            pt++;
         txt_buf[1] = *pt; pt++;
-        while (isspace(*pt)) pt++;
+        while (isspace(*pt)) 
+            pt++;
 
         byte = strtol(txt_buf, &end_ptr, 16);
         if (*end_ptr) /* There are not two hexadecimal digits. */
@@ -276,6 +281,7 @@ asn_impl_pt_octstring(const char*text, const asn_type *type,
     if (type && (type->len))
     {
         int rest_len = type->len - b_num;
+
         if (rest_len)
             memset (buffer + b_num, 0, rest_len); 
         b_num += rest_len;
@@ -374,7 +380,7 @@ asn_impl_pt_enum(const char*text, const asn_type *type,
     int    p_value;
     char * endptr; 
     char   label_buf[100];
-    int    p_s = sizeof (label_buf);
+    int    p_s = sizeof(label_buf);
 
     if (!text || !parsed || !syms_parsed)
         return ETEWRONGPTR; 
@@ -382,12 +388,14 @@ asn_impl_pt_enum(const char*text, const asn_type *type,
     p_value = strtol (text, &endptr, 10);
     if ((*syms_parsed = endptr - text) == 0)
     {
-        const char *pt = text;
+        const char  *pt = text;
         unsigned int i;
 
-        while (isspace(*pt)) pt++;
+        while (isspace(*pt)) 
+            pt++;
         rc = asn_impl_pt_label(pt, label_buf, &p_s);
-        if (rc) return rc;
+        if (rc)
+            return rc;
 
         pt += p_s; 
         *syms_parsed = pt - text;
@@ -531,27 +539,28 @@ asn_impl_pt_named_array(const char*text, const asn_type * type,
     const char * pt = text; 
 
     char label_buf[100];
-    int rc;
+    int  rc;
 
     if (!text || !type || !parsed || !parsed_syms)
         return ETEWRONGPTR; 
 
-    while (isspace(*pt)) pt++; 
+    while (isspace(*pt))
+        pt++; 
     if (*pt != '{')
-    {
         return EASNTXTPARSE; 
-    }
+
     pt++;
 
     *parsed = asn_init_value(type);
 
-    while(1)
+    while (1)
     {
         int p_s = sizeof(label_buf);
         const asn_type *subtype;
         asn_value *subval;
 
-        while (isspace(*pt)) pt++;
+        while (isspace(*pt))
+            pt++;
         rc = asn_impl_pt_label(pt, label_buf, &p_s);
         pt += p_s;
         if (rc)
@@ -567,17 +576,21 @@ asn_impl_pt_named_array(const char*text, const asn_type * type,
             return EASNTXTVALNAME;
         }
 
-        while (isspace(*pt)) pt++;
+        while (isspace(*pt))
+            pt++;
 
         rc = asn_parse_value_text(pt, subtype, &subval, &p_s);
         pt += p_s; 
         *parsed_syms = pt - text;
-        if (rc) return rc; 
+        if (rc) 
+            return rc; 
 
         rc = asn_impl_insert_subvalue(*parsed, label_buf, subval); 
-        if (rc) return rc; 
+        if (rc) 
+            return rc; 
 
-        while (isspace(*pt)) pt++;
+        while (isspace(*pt)) 
+            pt++;
 
         if (*pt == ',') 
         { pt++; continue; } 
@@ -620,23 +633,23 @@ asn_impl_pt_indexed_array(const char*text, const asn_type * type,
         return ETEWRONGPTR; 
 
     *parsed_syms = 0;
-    while (isspace(*pt)) pt++, (*parsed_syms)++; 
+    while (isspace(*pt)) 
+        pt++, (*parsed_syms)++; 
 
     if (*pt != '{')
-    {
         return EASNTXTPARSE; 
-    }
-    pt++;
 
+    pt++; 
 
     *parsed = asn_init_value(type);
 
-    while (isspace(*pt)) pt++; 
+    while (isspace(*pt)) 
+        pt++; 
 
-    while(*pt != '}')
+    while (*pt != '}')
     {
-        int p_s;
-        asn_value_p subval;
+        int        p_s;
+        asn_value *subval;
 
         while (isspace(*pt)) pt++; 
 
@@ -661,6 +674,7 @@ asn_impl_pt_indexed_array(const char*text, const asn_type * type,
     }
     pt++;
     *parsed_syms = pt - text; 
+
     return 0;
 }
 
@@ -965,7 +979,6 @@ asn_count_len_tagged(const asn_value *value, unsigned int indent)
      * should have 'mutable' semantic */
     txt_len_p = (int *)&(value->txt_len);
 
-    /* syntaxes processed in this method may have arbitrary last two bits*/
     if (value->syntax != TAGGED) 
         return -1; 
 
@@ -1009,7 +1022,6 @@ asn_count_len_choice(const asn_value *value, unsigned int indent)
      * should have 'mutable' semantic */
     txt_len_p = (int *)&(value->txt_len);
 
-    /* syntaxes processed in this method may have arbitrary last two bits */
     if (value->syntax != CHOICE) 
         return -1; 
     
@@ -1133,7 +1145,7 @@ asn_sprint_enum(const asn_value *value, char *buffer, size_t buf_len)
 int
 asn_sprint_integer(const asn_value *value, char *buffer, size_t buf_len)
 {
-    char loc_buf[16];
+    char         loc_buf[16];
     unsigned int used;
 
     if ((value == NULL) || (buffer == NULL) || (buf_len == 0) )
@@ -1168,7 +1180,7 @@ asn_sprint_integer(const asn_value *value, char *buffer, size_t buf_len)
 int
 asn_sprint_charstring(const asn_value *value, char *buffer, size_t buf_len)
 {
-    char * string;
+    char *string;
 
     if ((value == NULL) || (buffer == NULL) || (buf_len == 0) )
         return 0;
@@ -1248,7 +1260,8 @@ asn_sprint_tagged(const asn_value *value, char *buffer, size_t buf_len,
     if ((value == NULL) || (buffer == NULL) || (buf_len == 0) )
         return 0; 
 
-    /* syntaxes processed in this method may have arbitrary last two bits*/
+    /* codes of syntaxes which processed in this method 
+     * may have arbitrary last two bits*/ 
     if (value->syntax != TAGGED) 
         return -1; 
     
@@ -1293,7 +1306,6 @@ asn_sprint_choice(const asn_value *value, char *buffer, size_t buf_len,
     if ((value == NULL) || (buffer == NULL) || (buf_len == 0) )
         return 0; 
 
-    /* syntaxes processed in this method may have arbitrary last two bits*/
     if (value->syntax != CHOICE) 
         return -1; 
     
@@ -1390,7 +1402,8 @@ asn_sprint_array_fields(const asn_value *value, char *buffer,
     if ((value == NULL) || (buffer == NULL) || (buf_len == 0) )
         return 0; 
 
-    /* syntaxes processed in this method may have arbitrary last two bits*/
+    /* codes of syntaxes which processed in this method 
+     * may have arbitrary last two bits*/
     if ((value->syntax & ((-1)<<2) )!= SEQUENCE) 
         return -1; 
     
@@ -1606,7 +1619,8 @@ asn_count_len_array_fields(const asn_value *value, unsigned int indent)
      * should have 'mutable' semantic */
     txt_len_p = (int *)&(value->txt_len);
 
-    /* syntaxes processed in this method may have arbitrary last two bits*/
+    /* codes of syntaxes which processed in this method 
+     * may have arbitrary last two bits*/
     if ((value->syntax & ((-1)<<2) )!= SEQUENCE) 
         return -1; 
     
