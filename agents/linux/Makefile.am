@@ -19,7 +19,7 @@ MY_LDADD=symtbl.o -lrcfpch -llogfork -l@TAD@ @TE_LDADD@ \
 #endif
 
 MY_SOURCES=linux.c linuxconf.c ftp_routines.c log_serial.c
-MY_SYMTBL_OBJECTS=linux.o ftp_routines.o log_serial.o linuxconf_daemons.o
+MY_SYMTBL_OBJECTS=linux.o ftp_routines.o log_serial.o 
 
 noinst_HEADERS=linux_rpc.h linux_internal.h linuxconf_daemons.h
 
@@ -76,6 +76,7 @@ MY_CPPFLAGS+=@DAEMONS_CFLAGS@
 noinst_HEADERS+=dhcp_server.h
 
 MY_SOURCES+=linuxconf_daemons.c dhcp_server.c dns_server.c 
+MY_SYMTBL_OBJECTS+=linuxconf_daemons.o
 
 MY_LDADD+=@DAEMONS_LDADD@
 
