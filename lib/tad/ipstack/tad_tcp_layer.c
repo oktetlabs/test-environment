@@ -33,6 +33,8 @@
 #define TE_LGR_USER "TAD tcp" 
 #include "tad_ipstack_impl.h"
 
+#include "logger_ta.h"
+
 /**
  * Callback for read parameter value of ethernet CSAP.
  *
@@ -257,6 +259,11 @@ int tcp_match_bin_cb (int csap_id, int layer, const asn_value *pattern_pdu,
     UNUSED(pattern_pdu);
     UNUSED(parsed_packet);
 
+    asn_value *tcp_header_pdu = NULL;
+
+    if (parsed_packet)
+        tcp_header_pdu = asn_init_value(ndn_tcp_header);
+
     if ((csap_descr = csap_find(csap_id)) == NULL)
     {
         ERROR("null csap_descr for csap id %d", csap_id);
@@ -266,33 +273,39 @@ int tcp_match_bin_cb (int csap_id, int layer, const asn_value *pattern_pdu,
 
     data = pkt->data; 
 
-#define CHECK_FIELD(_du_field, _asn_label, _size) \
+#define CHECK_FIELD(_asn_label, _size) \
     do {                                                        \
-        rc = tad_univ_match_field(&spec_data-> _du_field, NULL, \
-                data, _size, _asn_label);                       \
+        rc = ndn_match_data_units(pattern_pdu, tcp_header_pdu,  \
+                                  data, _size, _asn_label);     \
         if (rc)                                                 \
+        {                                                       \
+            F_VERB("%s: field %s not match, rc %X",             \
+                    __FUNCTION__, _asn_label, rc);              \
             return rc;                                          \
+        }                                                       \
         data += _size;                                          \
     } while(0)
 
-    CHECK_FIELD(du_src_port, "src-port", 2);
-    CHECK_FIELD(du_dst_port, "dst-port", 2);
-    CHECK_FIELD(du_seqn,     "seqn", 4);
-    CHECK_FIELD(du_acqn,     "acqn", 4);
+    CHECK_FIELD("src-port", 2);
+    CHECK_FIELD("dst-port", 2);
+    CHECK_FIELD("seqn", 4);
+    CHECK_FIELD("acqn", 4);
 
     tmp8 = (*data) >> 4;
-    rc = tad_univ_match_field(&spec_data->du_hlen, NULL, &tmp8, 1, "hlen");
+    rc = ndn_match_data_units(pattern_pdu, tcp_header_pdu, 
+                              &tmp8, 1, "hlen");
     if (rc) return rc;
     data ++;
 
     tmp8 = (*data) & 0x3f;
-    rc = tad_univ_match_field(&spec_data->du_flags, NULL, &tmp8, 1, "flags");
+    rc = ndn_match_data_units(pattern_pdu, tcp_header_pdu, 
+                              &tmp8, 1, "flags");
     if (rc) return rc;
     data++;
 
-    CHECK_FIELD(du_win_size, "win-size", 2); 
-    CHECK_FIELD(du_checksum, "checksum", 2); 
-    CHECK_FIELD(du_urg_p,    "urg-p", 2);
+    CHECK_FIELD("win-size", 2); 
+    CHECK_FIELD("checksum", 2); 
+    CHECK_FIELD("urg-p", 2);
  
 #undef CHECK_FIELD
 
@@ -303,6 +316,17 @@ int tcp_match_bin_cb (int csap_id, int layer, const asn_value *pattern_pdu,
     payload->len = (pkt->len - (data - (uint8_t*)(pkt->data)));
     payload->data = malloc (payload->len);
     memcpy(payload->data, data, payload->len);
+
+    if (parsed_packet)
+    {
+        rc = asn_write_component_value(parsed_packet, tcp_header_pdu, "#tcp"); 
+        if (rc)
+            ERROR("%s, write TCP header to packet fails %X\n", 
+                  __FUNCTION__, rc);
+    } 
+
+    asn_free_value(tcp_header_pdu);
+
     return rc;
 }
 

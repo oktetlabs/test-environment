@@ -34,6 +34,8 @@
 
 #include "tad_ipstack_impl.h"
 
+#include "logger_ta.h"
+
 
 /**
  * Callback for read parameter value of ethernet CSAP.
@@ -195,6 +197,7 @@ int ip4_match_bin_cb (int csap_id, int layer, const asn_value *pattern_pdu,
     uint8_t *data;
     uint8_t  tmp8;
     int      rc = 0;
+
     asn_value *ip4_header_pdu = NULL;
 
     if (parsed_packet)
@@ -215,7 +218,7 @@ int ip4_match_bin_cb (int csap_id, int layer, const asn_value *pattern_pdu,
                                   data, _size, _asn_label);     \
         if (rc)                                                 \
         {                                                       \
-            VERB("%s: field %s not match, rc %X",               \
+            F_VERB("%s: field %s not match, rc %X",             \
                     __FUNCTION__, _asn_label, rc);              \
             return rc;                                          \
         }                                                       \
@@ -226,12 +229,20 @@ int ip4_match_bin_cb (int csap_id, int layer, const asn_value *pattern_pdu,
     tmp8 = (*data) >> 4;
     rc = ndn_match_data_units(pattern_pdu, ip4_header_pdu, 
                               &tmp8, 1, "version");
-    if (rc) return rc;
+    if (rc) 
+    {
+        F_VERB("%s: field verxion not match, rc %X", __FUNCTION__, rc); 
+        return rc;
+    }
 
     tmp8 = (*data) & 0x0f;
     rc = ndn_match_data_units(pattern_pdu, ip4_header_pdu, 
                               &tmp8, 1, "header-len");
-    if (rc) return rc;
+    if (rc) 
+    {
+        F_VERB("%s: field verxion not match, rc %X", __FUNCTION__, rc); 
+        return rc;
+    }
     data++;
 
     CHECK_FIELD("type-of-service", 1); 
@@ -248,7 +259,7 @@ int ip4_match_bin_cb (int csap_id, int layer, const asn_value *pattern_pdu,
     CHECK_FIELD("time-to-live", 1);
     CHECK_FIELD("protocol", 1);
     CHECK_FIELD("h-checksum", 2);
-    CHECK_FIELD("src_addr", 4);
+    CHECK_FIELD("src-addr", 4);
     CHECK_FIELD("dst-addr", 4);
  
 #undef CHECK_FIELD 
