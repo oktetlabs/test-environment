@@ -173,7 +173,7 @@ extern "C" {
         tapi_snmp_oid_t oid_;                                              \
 	                                                                   \
         SNMP_MAKE_OID(label_, oid_);                                       \
- 	rc_ = tapi_snmp_set_string(ta_, csid_, sap_id_, &oid_,             \
+ 	rc_ = tapi_snmp_set_string(ta_, sid_, csap_id_, &oid_,             \
 			                value_, &errstat_);                \
 	if (rc_ != 0)                                                      \
 	{                                                                  \
@@ -252,7 +252,7 @@ extern "C" {
         tapi_snmp_oid_t oid_;                                              \
 	                                                                   \
         SNMP_MAKE_OID(label_, oid_);                                       \
- 	rc_ = tapi_snmp_integer(ta_, sid_, csap_id_, &oid_, &val_);        \
+ 	rc_ = tapi_snmp_get_integer(ta_, sid_, csap_id_, &oid_, &val_);    \
 	if (rc_ != 0)                                                      \
 	{                                                                  \
             TEST_FAIL("snmp get integer failed, result %X\n", rc_);        \
@@ -306,7 +306,7 @@ extern "C" {
 	                                                                   \
         SNMP_MAKE_OID(label_, oid_);                                       \
  	rc_ = tapi_snmp_get_oct_string(ta_, sid_, csap_id_, &oid_,         \
-			               buf_, bufsize_);                    \
+			               &buf_, &bufsize_);                  \
 	if (rc_ != 0)                                                      \
 	{                                                                  \
             TEST_FAIL("snmp get octet string failed, result %X\n", rc_);   \
