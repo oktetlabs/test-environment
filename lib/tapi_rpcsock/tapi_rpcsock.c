@@ -5413,9 +5413,9 @@ rpc_peek_message(rcf_rpc_server *handle,
                  &in,  (xdrproc_t)xdr_tarpc_peek_message_in,
                  &out, (xdrproc_t)xdr_tarpc_peek_message_out);
 
-    RING("RPC (%s,%s): peek_message(%p) -> (%s)",
+    RING("RPC (%s,%s): peek_message(%p) -> %d (%s)",
          handle->ta, handle->name,
-         hwnd, errno_rpc2str(RPC_ERRNO(handle)));
+         hwnd, out->retval, errno_rpc2str(RPC_ERRNO(handle)));
          
     *s = out.sock;
     *event = out.event;
