@@ -1825,6 +1825,22 @@ struct tarpc_wait_multiple_events_out {
     tarpc_wait_code      retval;
 };    
 
+/* fcntl() */
+
+struct tarpc_fcntl_in {
+    struct tarpc_in_arg common;
+    
+    int			fd;
+    int         	cmd;
+    int			arg;
+};
+
+struct tarpc_fcntl_out {
+    struct tarpc_out_arg common;
+    
+    int		retval;
+};
+
 program tarpc
 {
     version ver0
@@ -1884,6 +1900,7 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(setsockopt)
 
         RPC_DEF(ioctl) 
+	RPC_DEF(fcntl)
 
         RPC_DEF(getsockname)
         RPC_DEF(getpeername)

@@ -2017,6 +2017,7 @@ arp_fl_h2rpc(int flags)
 
 #endif /* HAVE_NET_IF_ARP_H */
 
+
 /** TA-independent Winsock Error codes */
 typedef enum rpc_win_error {
     RPC_WINERROR_UNKNOWN,
@@ -2073,6 +2074,7 @@ typedef enum rpc_win_error {
     RPC_WSAEPROVIDERFAILEDINIT
     
 } rpc_win_error;
+
 
 #ifdef WSAEACCES
 /** Convert native Winsock Error codes to RPC Winsock Error codes */
@@ -2196,6 +2198,164 @@ win_error_rpc2str(int win_err)
 	case 0: return "";
         default: return "WINERROR_UNKNOWN";
     } 
+}
+
+typedef enum rpc_fcntl_command {
+    RPC_F_DUPFD,
+    RPC_F_GETFD,
+    RPC_F_SETFD,
+    RPC_F_GETFL,
+    RPC_F_SETFL,
+    RPC_F_GETLK,
+    RPC_F_SETLK,
+    RPC_F_SETLKW,
+    RPC_F_SETOWN,
+    RPC_F_GETOWN,
+    RPC_F_SETSIG,
+    RPC_F_GETSIG,
+    RPC_F_SETLEASE,
+    RPC_F_GETLEASE,
+    RPC_F_NOTIFY,
+    RPC_F_UNKNOWN
+} rpc_fcntl_command;
+
+typedef enum rpc_fcntl_arg
+{
+    RPC_O_ASYNC,
+    RPC_O_APPEND,
+    RPC_O_NONBLOCK,
+    RPC_FASYNC,
+    RPC_O_UNKNOWN
+}rpc_fcntl_flag; 
+
+#define O_UNKNOWN	0xFFFFFFFF
+#define RPC_FCNTL_FLAGS_ALL \
+	(RPC_O_ASYNC | RPC_O_APPEND | \
+	RPC_O_NONBLOCK | RPC_FASYNC)
+	
+/** Convert RPC fcntl args to native ones. */
+static inline int
+fcntl_flag_rpc2h(rpc_fcntl_flag flags)
+{
+    if ((flags & ~RPC_FCNTL_FLAGS_ALL) != 0)
+        return O_UNKNOWN;
+    if (flags == 0)
+        return 0;
+    return 0 
+#ifdef O_ASYNC
+	| (!!(flags & RPC_O_ASYNC) * O_ASYNC)
+#endif
+#ifdef O_APPEND
+	| (!!(flags & RPC_O_APPEND) * O_APPEND) 
+#endif
+#ifdef O_NONBLOCK
+	| (!!(flags & RPC_O_NONBLOCK) * O_NONBLOCK) 
+#endif
+#ifdef FASYNC
+	| (!!(flags & RPC_FASYNC) * FASYNC)
+#endif
+        ;
+}
+
+/** Convert RPC fcntl args to native ones. */
+static inline rpc_fcntl_flag
+fcntl_flag_h2rpc(int flags)
+{
+    return 0
+#ifdef O_ASYNC
+	| (!!(flags & O_ASYNC) * RPC_O_ASYNC) 
+#endif	
+#ifdef O_APPEND
+	| (!!(flags & O_APPEND) * RPC_O_APPEND) 
+#endif	
+#ifdef O_NONBLOCK
+	| (!!(flags & O_NONBLOCK) * RPC_O_NONBLOCK) 
+#endif	
+#ifdef FASYNC
+        | (!!(flags & FASYNC) * RPC_FASYNC)
+#endif
+    ;	
+}
+
+#define F_UNKNOWN	0xFFFFFFFF
+
+/** Convert RPC fcntl commands to native ones. */
+static inline int
+fcntl_rpc2h(rpc_fcntl_command cmd)
+{
+    switch(cmd)
+    {
+#ifdef F_DUPFD
+	RPC2H(F_DUPFD);
+#endif
+#ifdef F_GETFD
+	RPC2H(F_GETFD);
+#endif
+#ifdef F_SETFD
+	RPC2H(F_SETFD);
+#endif
+#ifdef F_GETFL
+	RPC2H(F_GETFL);
+#endif
+#ifdef F_SETFL
+	RPC2H(F_SETFL);
+#endif
+#ifdef F_GETLK
+	RPC2H(F_GETLK);
+#endif
+#ifdef F_SETLK
+	RPC2H(F_SETLK);
+#endif
+#ifdef F_SETLKW
+	RPC2H(F_SETLKW);
+#endif
+#ifdef F_GETOWN
+	RPC2H(F_GETOWN);
+#endif
+#ifdef F_SETOWN
+	RPC2H(F_SETOWN);
+#endif
+#ifdef F_GETSIG
+	RPC2H(F_GETSIG);
+#endif
+#ifdef F_SETSIG
+	RPC2H(F_SETSIG);
+#endif
+#ifdef F_GETLEASE
+	RPC2H(F_GETLEASE);
+#endif
+#ifdef F_SETLEASE
+	RPC2H(F_SETLEASE);
+#endif
+#ifdef F_NOTIFY
+	RPC2H(F_NOTIFY);
+#endif
+        default: return F_UNKNOWN;
+    }
+}
+
+static inline const char *
+fcntl_rpc2str(rpc_fcntl_command cmd)
+{
+    switch (cmd)
+    {
+        RPC2STR(F_DUPFD);
+        RPC2STR(F_GETFD);
+        RPC2STR(F_SETFD);
+        RPC2STR(F_GETFL);
+        RPC2STR(F_SETFL);
+        RPC2STR(F_GETLK);
+        RPC2STR(F_SETLK);
+        RPC2STR(F_SETLKW);
+        RPC2STR(F_SETOWN);
+        RPC2STR(F_GETOWN);
+        RPC2STR(F_SETSIG);
+        RPC2STR(F_GETSIG);
+        RPC2STR(F_SETLEASE);
+        RPC2STR(F_GETLEASE);
+        RPC2STR(F_NOTIFY);
+	default: return "F_UNKNOWN";
+    }
 }
 
 #endif /* !__TE_TAPI_RPCSOCK_DEFS_H__ */
