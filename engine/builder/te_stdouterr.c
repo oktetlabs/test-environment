@@ -174,6 +174,7 @@ main(int argc, char *const argv[])
         if (rc != 0)
         {
             ERROR("execvp(): %s\n", strerror(errno));
+            child_run = 0;
             return EXIT_FAILURE;
         }
     }
