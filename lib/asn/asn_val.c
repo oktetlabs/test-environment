@@ -1596,6 +1596,19 @@ asn_impl_find_subvalue (const asn_value *container, const char *label,
     return EASNGENERAL;
 }
 
+const char * 
+asn_get_choice_ptr(const asn_value *container)
+{ 
+    const asn_value *sval;
+
+    if ((container->data.array == NULL) || 
+        ((sval = container->data.array[0]) == NULL))
+        return NULL; 
+
+
+    return sval->name;
+
+}
 
 
 /**
@@ -1622,14 +1635,22 @@ asn_get_choice(const asn_value *container, const char *subval_labels,
     static char suffix [] = {'.', '#', '\1', '\0'};
     char *corrected_labels = malloc (len + sizeof(suffix));
 
-    memcpy (corrected_labels, subval_labels, len); 
-    memcpy (corrected_labels + len, suffix, sizeof(suffix)); 
+    if (len)
+    { 
+        memcpy (corrected_labels, subval_labels, len); 
+        memcpy (corrected_labels + len, suffix, sizeof(suffix)); 
 
-    rc = asn_impl_fall_down_to_tree_nc(container, corrected_labels, &val); 
-    free (corrected_labels);
+        rc = asn_impl_fall_down_to_tree_nc(container, corrected_labels, &val); 
+        free (corrected_labels);
 
-    if (rc && rc != ASN_STOP_AT_CHOICE)
-        return rc; 
+        if (rc && rc != ASN_STOP_AT_CHOICE)
+        { 
+            printf ("internall fall error\n");
+            return rc; 
+        }
+    }
+    else 
+        val = container;
 
     if (val->syntax != CHOICE)
     {
@@ -1637,7 +1658,10 @@ asn_get_choice(const asn_value *container, const char *subval_labels,
     }
 
     if (val->data.array == NULL)
-        return EASNGENERAL;
+    {
+        printf ("data array is null\n");
+        return EASNGENERAL; 
+    }
 
     if ((sval = val->data.array[0]) == NULL) 
         return EASNINCOMPLVAL; 
@@ -1708,16 +1732,21 @@ asn_get_syntax(const asn_value *value, const char *subval_labels)
         return value->syntax;
 
     len = strlen (subval_labels);
-    corrected_labels = malloc (len + sizeof(suffix));
+    if (len)
+    { 
+        corrected_labels = malloc (len + sizeof(suffix));
 
-    memcpy (corrected_labels, subval_labels, len); 
-    memcpy (corrected_labels + len, suffix, sizeof(suffix)); 
+        memcpy (corrected_labels, subval_labels, len); 
+        memcpy (corrected_labels + len, suffix, sizeof(suffix)); 
 
-    rc = asn_impl_fall_down_to_tree_nc(value, corrected_labels, &val); 
-    free (corrected_labels);
+        rc = asn_impl_fall_down_to_tree_nc(value, corrected_labels, &val); 
+        free (corrected_labels);
 
-    if (rc && rc != ASN_STOP_AT_CHOICE)
-        return SYNTAX_UNDEFINED; 
+        if (rc && rc != ASN_STOP_AT_CHOICE)
+            return SYNTAX_UNDEFINED; 
+    }
+    else
+        val = value;
 
     return val->syntax;
 }
