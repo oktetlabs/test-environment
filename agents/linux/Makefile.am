@@ -22,6 +22,7 @@ CLEANFILES=symtbl.c
 if CFG_RCF_RPC
 
 SUBDIRS = libltdl
+DIST_SUBDIRS = libltdl
 MY_CPPFLAGS+=-DRCF_RPC -I.
 MY_LDADD+=$(LIBLTDL) -lltdl
 MY_SOURCES+=linux_rpc.c tarpc_server.c 
