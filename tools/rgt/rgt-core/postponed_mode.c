@@ -123,7 +123,7 @@ fwrite_string(struct obstack *obstk, const char *str)
         switch (str[i])
         {
             case '\r':
-                if (i > 0 && msg->fmt_str[i - 1] == '\n')
+                if (i > 0 && str[i - 1] == '\n')
                 {
                     /*
                      * Skip \r after \n, because it does not bring any
