@@ -283,7 +283,8 @@ snmp_write_read_cb (csap_p csap_descr, int timeout,
     sel_timeout.tv_usec = (ss->timeout) % 1000000L;
 
     if (!snmp_send(ss, pdu)){
-        VERB("send pdu failed\n");
+        WARN("send pdu failed\n");
+        snmp_perror("send pdu error");
         return 0;
     } 
 
