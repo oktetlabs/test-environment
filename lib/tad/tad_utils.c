@@ -993,4 +993,27 @@ tad_data_unit_from_bin(const uint8_t *data, size_t d_len,
 }
 
 
+/**
+ * Make hex dump of packet into log with RING log level. 
+ *
+ * @param usr_param     string with some user parameter, not used 
+ *                      in this callback
+ * @param pkt           pointer to packet binary data
+ * @param pkt_len       length of packet
+ *
+ * @return status code
+ */
+int
+tad_dump_hex(const char *usr_param, const uint8_t *pkt, size_t pkt_len)
+{
+
+    UNUSED(usr_param);
+
+    if (pkt == NULL || pkt_len == 0)
+        return EINVAL;
+
+    RING("PACKET: %tm", pkt, pkt_len);
+
+    return 0;
+}
 
