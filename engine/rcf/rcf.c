@@ -714,7 +714,10 @@ init_agent(ta *agent)
         rc = startup_tasks(agent);
     }
     if (rc != 0)
+    {
+        (agent->close)(agent->handle, &set0);
         agent->dead = TRUE;
+    }
 
     return rc;
 }
