@@ -50,37 +50,45 @@
 /*
  * Declaraions of local functions. 
  */ 
-size_t number_of_digits      (int value);
+size_t number_of_digits(int value);
 
-size_t asn_count_len_array_fields(const asn_value *value, unsigned int indent);
+size_t asn_count_len_array_fields(const asn_value *value, 
+                                  unsigned int indent);
 
-int asn_impl_pt_label      (const char*text, char *label, int *parsed_syms);
-
-
-int asn_impl_pt_charstring (const char*text, const asn_type *, asn_value_p *parsed, int *parsed_syms);
-
-int asn_impl_pt_integer    (const char*text, const asn_type *, asn_value_p *parsed, int *parsed_syms);
-
-int asn_impl_pt_null       (const char*text, const asn_type *, asn_value_p *parsed, int *parsed_syms);
-
-int asn_impl_pt_objid      (const char*text, const asn_type *, asn_value_p *parsed, int *parsed_syms);
+int asn_impl_pt_label(const char*text, char *label, int *parsed_syms);
 
 
-int asn_impl_pt_octstring    (const char  *text,   const asn_type *type, 
-                              asn_value_p *parsed, int            *parsed_syms);
+int asn_impl_pt_charstring(const char *text, const asn_type *type, 
+                           asn_value_p *parsed, int *parsed_syms);
 
-int asn_impl_pt_enum         (const char*text, const asn_type *, asn_value_p *parsed, int *parsed_syms);
+int asn_impl_pt_integer(const char *text, const asn_type *type, 
+                        asn_value_p *parsed, int *parsed_syms);
 
-int asn_impl_pt_named_array  (const char*text, const asn_type *, asn_value_p *parsed, int *parsed_syms);
+int asn_impl_pt_null(const char*text, const asn_type *type, 
+                     asn_value_p *parsed, int *parsed_syms);
 
-int asn_impl_pt_indexed_array(const char*text, const asn_type *, asn_value_p *parsed, int *parsed_syms);
-
-int asn_impl_pt_choice       (const char*text, const asn_type *, asn_value_p *parsed, int *parsed_syms);
-
-int asn_parse_value_text     (const char*text, const asn_type *, asn_value_p *parsed, int *parsed_syms);
+int asn_impl_pt_objid(const char*text, const asn_type *type,
+                      asn_value_p *parsed, int *parsed_syms);
 
 
-static char spaces[] = " \t\n\r";
+int asn_impl_pt_octstring(const char *text, const asn_type *type, 
+                          asn_value_p *parsed, int *parsed_syms);
+
+int asn_impl_pt_enum(const char*text, const asn_type *type, 
+                     asn_value_p *parsed, int *parsed_syms);
+
+int asn_impl_pt_named_array(const char*text, const asn_type *type, 
+                            asn_value_p *parsed, int *parsed_syms);
+
+int asn_impl_pt_indexed_array(const char*text, const asn_type *type, 
+                              asn_value_p *parsed, int *parsed_syms);
+
+int asn_impl_pt_choice(const char*text, const asn_type *type, 
+                       asn_value_p *parsed, int *parsed_syms);
+
+int asn_parse_value_text(const char*text, const asn_type *type, 
+                         asn_value_p *parsed, int *parsed_syms);
+
 
 #define PARSE_BUF 0x400
 
@@ -89,19 +97,21 @@ static char spaces[] = " \t\n\r";
  * specification terminology. 
  *
  * @param text          text to be parsed;
- * @param label         found value;
- * @param syms          size of 'label' buffer, size of parsed label (IN/OUT);
+ * @param label         location for parsed label;
+ * @param syms          size of 'label' buffer (IN), 
+ *                      number of parsed symbols (OUT);
  *
  * @return zero on success, otherwise error code.
  */ 
 int 
 asn_impl_pt_label(const char*text, char *label, int *syms)
 { 
-    int    l = 0;
+    int         l = 0;
     const char *l_begin;
     const char *pt = text;
 
-    while (isspace(*pt) ) pt++;
+    while (isspace(*pt)) 
+        pt++;
 
     l_begin = pt;
         
@@ -130,13 +140,15 @@ asn_impl_pt_label(const char*text, char *label, int *syms)
  * create new instance of asn_value type with its internal presentation.
  *
  * @param text          text to be parsed;
+ * @param type          ASN type of value to be parsed;
  * @param parsed        parsed ASN value (OUT);
  * @param syms_parsed   quantity of parsed symbols in 'text' (OUT);
  *
  * @return zero on success, otherwise error code.
  */ 
 int 
-asn_impl_pt_charstring(const char*text, const asn_type *type, asn_value_p *parsed, int *syms_parsed)
+asn_impl_pt_charstring(const char*text, const asn_type *type, 
+                       asn_value_p *parsed, int *syms_parsed)
 {
     const char * pt = text; 
     char   buffer[PARSE_BUF];
@@ -148,8 +160,8 @@ asn_impl_pt_charstring(const char*text, const asn_type *type, asn_value_p *parse
     if (!text || !parsed || !syms_parsed)
         return ETEWRONGPTR; 
 
-    l = strspn (pt, spaces);
-    pt += l;
+    while (isspace(*pt))
+        pt++;
 
     if (*pt != '"')
     {
@@ -192,6 +204,7 @@ asn_impl_pt_charstring(const char*text, const asn_type *type, asn_value_p *parse
  * create new instance of asn_value type with its internal presentation.
  *
  * @param text          text to be parsed;
+ * @param type          ASN type of value to be parsed;
  * @param parsed        parsed ASN value (OUT);
  * @param syms_parsed   quantity of parsed symbols in 'text' (OUT);
  *
@@ -201,8 +214,8 @@ int
 asn_impl_pt_octstring(const char*text, const asn_type *type, 
                       asn_value_p *parsed, int *syms_parsed)
 {
-    const char * pt = text; 
-    uint8_t   buffer[PARSE_BUF];
+    const char *pt = text; 
+    uint8_t     buffer[PARSE_BUF];
     
     char txt_buf[3]; 
     int  octstr_len = 0;
@@ -276,13 +289,15 @@ asn_impl_pt_octstring(const char*text, const asn_type *type,
  * create new instance of asn_value type with its internal presentation.
  *
  * @param text          text to be parsed;
+ * @param type          ASN type of value to be parsed;
  * @param parsed        parsed ASN value (OUT);
  * @param syms_parsed   quantity of parsed symbols in 'text' (OUT);
  *
  * @return zero on success, otherwise error code.
  */ 
 int 
-asn_impl_pt_integer(const char*text, const asn_type *type, asn_value_p *parsed, int *syms_parsed)
+asn_impl_pt_integer(const char*text, const asn_type *type, 
+                    asn_value_p *parsed, int *syms_parsed)
 {
     int   p_value;
     char *endptr; 
@@ -310,6 +325,7 @@ asn_impl_pt_integer(const char*text, const asn_type *type, asn_value_p *parsed, 
  * create new instance of asn_value type with its internal presentation.
  *
  * @param text          text to be parsed;
+ * @param type          ASN type of value to be parsed;
  * @param parsed        parsed ASN value (OUT);
  * @param syms_parsed   quantity of parsed symbols in 'text' (OUT);
  *
@@ -351,7 +367,8 @@ asn_impl_pt_null(const char *text, const asn_type *type,
  *
  */ 
 int 
-asn_impl_pt_enum(const char*text, const asn_type * type, asn_value_p *parsed, int *syms_parsed)
+asn_impl_pt_enum(const char*text, const asn_type *type, 
+                 asn_value_p *parsed, int *syms_parsed)
 {
     int    rc;
     int    p_value;
@@ -377,7 +394,7 @@ asn_impl_pt_enum(const char*text, const asn_type * type, asn_value_p *parsed, in
 
         for (i = 0; i < type->len; i++)
         {
-            if (strncmp (label_buf, type->sp.enum_entries[i].name, p_s) == 0)
+            if (strncmp(label_buf, type->sp.enum_entries[i].name, p_s) == 0)
             {
                 p_value = type->sp.enum_entries[i].value;
                 break;
@@ -398,6 +415,7 @@ asn_impl_pt_enum(const char*text, const asn_type * type, asn_value_p *parsed, in
  * Parse textual presentation of single ASN.1 value OID type.
  *
  * @param text          text to be parsed;
+ * @param type          ASN type of value to be parsed;
  * @param parsed        parsed ASN value (OUT);
  * @param syms_parsed   quantity of parsed symbols in 'text' (OUT);
  *
@@ -427,9 +445,8 @@ asn_impl_pt_objid(const char *text, const asn_type *type,
         pt++;
 
     if (*pt != '{')
-    {
         return EASNTXTPARSE; 
-    }
+
     pt++;
 
     while (isspace(*pt))
@@ -593,7 +610,7 @@ asn_impl_pt_named_array(const char*text, const asn_type * type,
  */
 int 
 asn_impl_pt_indexed_array(const char*text, const asn_type * type, 
-                        asn_value_p *parsed, int *parsed_syms)
+                          asn_value_p *parsed, int *parsed_syms)
 {
     const char * pt = text; 
 
@@ -663,24 +680,20 @@ asn_impl_pt_indexed_array(const char*text, const asn_type * type,
  */
 int 
 asn_impl_pt_choice(const char*text, const asn_type * type, 
-                        asn_value_p *parsed, int *parsed_syms)
+                   asn_value_p *parsed, int *parsed_syms)
 {
-    const char * pt = text; 
-    char l_b[100];
+    const char *pt = text; 
+
+    char  l_b[100];
     char *label_buf;
 
     int rc;
     int p_s = sizeof(l_b) - 1; 
 
     const asn_type *subtype;
-    asn_value *subval;
+    asn_value      *subval;
 
-#if 0
-    label_buf = l_b + 1;
-    l_b[0] = '#';
-#else
     label_buf = l_b;
-#endif
 
     if (!text || !type || !parsed || !parsed_syms)
         return ETEWRONGPTR; 
@@ -750,7 +763,7 @@ asn_impl_pt_choice(const char*text, const asn_type * type,
  */ 
 int 
 asn_parse_value_text(const char *text, const asn_type * type, 
-                    asn_value_p *parsed, int *syms_parsed)
+                     asn_value_p *parsed, int *syms_parsed)
 {
     if (!text || !type || !parsed || !syms_parsed)
         return ETEWRONGPTR;
@@ -758,32 +771,34 @@ asn_parse_value_text(const char *text, const asn_type * type,
     switch (type->syntax)
     {
         case INTEGER:
-            return asn_impl_pt_integer       (text, type, parsed, syms_parsed);
+            return asn_impl_pt_integer   (text, type, parsed, syms_parsed);
         case ENUMERATED: 
-            return asn_impl_pt_enum          (text, type, parsed, syms_parsed);
+            return asn_impl_pt_enum      (text, type, parsed, syms_parsed);
 
         case CHAR_STRING:
-            return asn_impl_pt_charstring    (text, type, parsed, syms_parsed);
+            return asn_impl_pt_charstring(text, type, parsed, syms_parsed);
 
         case OCT_STRING:
-            return asn_impl_pt_octstring     (text, type, parsed, syms_parsed);
+            return asn_impl_pt_octstring (text, type, parsed, syms_parsed);
 
         case PR_ASN_NULL:
-            return asn_impl_pt_null          (text, type, parsed, syms_parsed);
+            return asn_impl_pt_null      (text, type, parsed, syms_parsed);
 
         case OID:
-            return asn_impl_pt_objid         (text, type, parsed, syms_parsed);
+            return asn_impl_pt_objid     (text, type, parsed, syms_parsed);
  
         case SEQUENCE:
         case SET:
-            return asn_impl_pt_named_array   (text, type, parsed, syms_parsed);
+            return asn_impl_pt_named_array(text, type, parsed, 
+                                           syms_parsed);
 
         case SEQUENCE_OF:
         case SET_OF:
-            return asn_impl_pt_indexed_array (text, type, parsed, syms_parsed);
+            return asn_impl_pt_indexed_array(text, type, parsed, 
+                                             syms_parsed);
 
         case CHOICE:
-            return asn_impl_pt_choice        (text, type, parsed, syms_parsed);
+            return asn_impl_pt_choice(text, type, parsed, syms_parsed);
 
         default:
             return ETENOSUPP;
@@ -792,9 +807,9 @@ asn_parse_value_text(const char *text, const asn_type * type,
 
 /**
  * Parse ASN.1 text with "Value assignment" (see ASN.1 specification) 
- * and create new ASN value instance with internal presentation of this value.
- * If type of ASN value in 'string' is not known for module, string will not 
- * parsed and NULL will be returned. 
+ * and create new ASN value instance with internal presentation 
+ * of this value. If type of ASN value in 'string' is not known 
+ * for module, string will not parsed and NULL will be returned. 
  * Name of value is stored in field 'name' of asn_value structure. 
  *
  * @param string        text to be parsed;
@@ -832,22 +847,27 @@ asn_parse_file(const char *filename, char **found_names, int *found_len)
 
 /**
  * Count number of symbols required to deciamal notation of integer/
+ *
  * @param value         integer number
- * @return number of digits.
+ *
+ * @return number of symbols.
  */
 size_t
 number_of_digits(int value)
 {
     int n = 0;
+
     if (value < 0) 
         n++, value = -value;
     while (value >= 10)
-        value = value / 10, n ++; 
-    return n+1;
+        value = value / 10, n++; 
+
+    return n + 1;
 }
 
 /**
- * Count required length of string for textual presentation of specified value. 
+ * Count required length of string for textual presentation 
+ * of specified value. 
  *
  * @param value         ASN value.   
  *
@@ -858,11 +878,14 @@ asn_count_len_enum(const asn_value *value)
 {
     unsigned int i;
 
+    int *txt_len_p;
+
     if (value == NULL) 
         return 0;
-    /* Explicit discards of 'const' qualifier, whereas field 'txt_len' should 
-     * have 'mutable' semantic */
-    int *txt_len_p = (int *)&(value->txt_len);
+
+    /* Explicit discards of 'const' qualifier, whereas field 'txt_len' 
+     * should have 'mutable' semantic */
+    txt_len_p = (int *)&(value->txt_len);
 
     if (value->txt_len < 0) 
     { 
@@ -890,7 +913,8 @@ asn_count_len_enum(const asn_value *value)
 
 
 /**
- * Count required length of string for textual presentation of specified value. 
+ * Count required length of string for textual presentation 
+ * of specified value. 
  *
  * @param value         ASN value.   
  *
@@ -900,11 +924,12 @@ size_t
 asn_count_len_octstring(const asn_value *value)
 { 
     int *txt_len_p;
+
     if (value == NULL)
         return 0;
 
-    /* Explicit discards of 'const' qualifier, whereas field 'txt_len' should 
-     * have 'mutable' semantic */
+    /* Explicit discards of 'const' qualifier, whereas field 'txt_len' 
+     * should have 'mutable' semantic */
     txt_len_p = (int *)&(value->txt_len);
 
     if (value->syntax != OCT_STRING)
@@ -919,7 +944,8 @@ asn_count_len_octstring(const asn_value *value)
 static char t_class[4][30] = {"UNIVERSAL ", "APPLICATION ", "", "PRIVATE "};
 
 /**
- * Count required length of string for textual presentation of specified value. 
+ * Count required length of string for textual presentation 
+ * of specified value. 
  *
  * @param value         ASN value.   
  * @param indent        current indent
@@ -929,13 +955,15 @@ static char t_class[4][30] = {"UNIVERSAL ", "APPLICATION ", "", "PRIVATE "};
 size_t
 asn_count_len_tagged(const asn_value *value, unsigned int indent)
 {
-    int all_used = 0; 
+    int  all_used = 0; 
+    int *txt_len_p;
 
     if (value == NULL)
         return 0; 
-    /* Explicit discards of 'const' qualifier, whereas field 'txt_len' should 
-     * have 'mutable' semantic */
-    int *txt_len_p = (int *)&(value->txt_len);
+
+    /* Explicit discards of 'const' qualifier, whereas field 'txt_len' 
+     * should have 'mutable' semantic */
+    txt_len_p = (int *)&(value->txt_len);
 
     /* syntaxes processed in this method may have arbitrary last two bits*/
     if (value->syntax != TAGGED) 
@@ -958,7 +986,8 @@ asn_count_len_tagged(const asn_value *value, unsigned int indent)
 }
 
 /**
- * Count required length of string for textual presentation of specified value. 
+ * Count required length of string for textual presentation of specified 
+ * value. 
  *
  * @param value         ASN value.   
  * @param indent        current indent
@@ -968,16 +997,19 @@ asn_count_len_tagged(const asn_value *value, unsigned int indent)
 size_t
 asn_count_len_choice(const asn_value *value, unsigned int indent)
 {
-    int all_used = 0; 
+    int  all_used = 0; 
+    int *txt_len_p;
+
     asn_value_p v_el;
+
     if (value == NULL)
         return 0; 
 
-    /* Explicit discards of 'const' qualifier, whereas field 'txt_len' should 
-     * have 'mutable' semantic */
-    int *txt_len_p = (int *)&(value->txt_len);
+    /* Explicit discards of 'const' qualifier, whereas field 'txt_len' 
+     * should have 'mutable' semantic */
+    txt_len_p = (int *)&(value->txt_len);
 
-    /* syntaxes processed in this method may have arbitrary last two bits*/
+    /* syntaxes processed in this method may have arbitrary last two bits */
     if (value->syntax != CHOICE) 
         return -1; 
     
@@ -997,7 +1029,8 @@ asn_count_len_choice(const asn_value *value, unsigned int indent)
 
 
 /**
- * Count required length of string for textual presentation of specified value. 
+ * Count required length of string for textual presentation 
+ * of specified value. 
  *
  * @param value         ASN value.   
  *
@@ -1006,11 +1039,14 @@ asn_count_len_choice(const asn_value *value, unsigned int indent)
 size_t
 asn_count_len_objid(const asn_value *value)
 { 
+    int *txt_len_p;
+
     if (value == NULL) 
         return 0; 
-    /* Explicit discards of 'const' qualifier, whereas field 'txt_len' should 
-     * have 'mutable' semantic */
-    int *txt_len_p = (int *)&(value->txt_len);
+
+    /* Explicit discards of 'const' qualifier, whereas field 'txt_len' 
+     * should have 'mutable' semantic */
+    txt_len_p = (int *)&(value->txt_len);
 
     if (value->syntax != OID) 
         return -1; 
@@ -1041,7 +1077,7 @@ asn_count_len_objid(const asn_value *value)
  * Prepare textual ASN.1 presentation of passed value ENUMERATED 
  * and put it into specified buffer. 
  *
- * @param value         ASN value to be printed, should have ENUMERATED type.  
+ * @param value         ASN value to print, should have ENUMERATED type.
  * @param buffer        buffer for ASN text.  
  * @param buf_len       length of buffer. 
  *
@@ -1050,9 +1086,9 @@ asn_count_len_objid(const asn_value *value)
 int
 asn_sprint_enum(const asn_value *value, char *buffer, size_t buf_len)
 {
-    int used;
+    int          used;
     unsigned int i;
-    const char * val_label;
+    const char  *val_label;
 
     if ((value == NULL) || (buffer == NULL) || (buf_len == 0) )
         return 0;
@@ -1123,7 +1159,7 @@ asn_sprint_integer(const asn_value *value, char *buffer, size_t buf_len)
  * Prepare textual ASN.1 presentation of passed value Character String 
  * and put it into specified buffer. 
  *
- * @param value         ASN value to be printed, should have INTEGER type.  
+ * @param value         ASN value to be printed, should have INTEGER type.
  * @param buffer        buffer for ASN text.  
  * @param buf_len       length of buffer. 
  *
@@ -1167,7 +1203,7 @@ asn_sprint_charstring(const asn_value *value, char *buffer, size_t buf_len)
 int
 asn_sprint_octstring(const asn_value *value, char *buffer, size_t buf_len)
 {
-    char *pb = buffer;
+    char        *pb = buffer;
     unsigned int i;
 
     if ((value == NULL) || (buffer == NULL) || (buf_len == 0) )
@@ -1179,14 +1215,15 @@ asn_sprint_octstring(const asn_value *value, char *buffer, size_t buf_len)
     if (buf_len <= asn_count_len_octstring(value))
         return -1;
 
-    strcpy  (buffer, "\'"); 
+    strcpy(buffer, "\'"); 
     pb++;
     for (i = 0; i < value->len; i++)
-        pb += sprintf (pb, "%02X ", ((uint8_t*)value->data.other)[i]);
+        pb += sprintf(pb, "%02X ", ((uint8_t*)value->data.other)[i]);
 
-    strcat  (pb, "\'H"); 
+    strcat(pb, "\'H"); 
+    pb += 2;
 
-    return strlen(buffer);
+    return pb - buffer;
 }
 
 /**
@@ -1221,10 +1258,10 @@ asn_sprint_tagged(const asn_value *value, char *buffer, size_t buf_len,
     v_el = value->data.array[0];
     if (v_el)
     { 
-        char t_class[4][30] = {"UNIVERSAL ", "APPLICATION ", "", "PRIVATE "};
+        char t_class[4][30] = {"UNIVERSAL ","APPLICATION ","","PRIVATE "};
 
-        used = sprintf (buffer, "[%s%d]", 
-                        t_class[(int)value->tag.cl], value->tag.val); 
+        used = sprintf(buffer, "[%s%d]", 
+                       t_class[(int)value->tag.cl], value->tag.val); 
         all_used += used; buffer += used; 
 
         used = asn_sprint_value(v_el, buffer, buf_len - all_used, indent);
@@ -1247,7 +1284,7 @@ asn_sprint_tagged(const asn_value *value, char *buffer, size_t buf_len,
  */ 
 int
 asn_sprint_choice(const asn_value *value, char *buffer, size_t buf_len, 
-       unsigned int indent)
+                  unsigned int indent)
 {
     int all_used = 0, used;
 
@@ -1281,8 +1318,8 @@ asn_sprint_choice(const asn_value *value, char *buffer, size_t buf_len,
 
 
 /**
- * Prepare textual ASN.1 presentation of passed value of OID type and put it 
- * into specified buffer. 
+ * Prepare textual ASN.1 presentation of passed value of OID type and 
+ * put it into specified buffer. 
  *
  * @param value         ASN value to be printed, should have INTEGER type.  
  * @param buffer        buffer for ASN text.  
@@ -1293,8 +1330,9 @@ asn_sprint_choice(const asn_value *value, char *buffer, size_t buf_len,
 int
 asn_sprint_objid(const asn_value *value, char *buffer, size_t buf_len)
 {
-    int all_used = 0, used;
     unsigned int i;
+
+    int  all_used = 0, used;
     int *subid;
 
     if ((value == NULL) || (buffer == NULL) || (buf_len == 0) )
@@ -1308,16 +1346,16 @@ asn_sprint_objid(const asn_value *value, char *buffer, size_t buf_len)
 
     strcpy (buffer, "{");
 
-    all_used ++ ; buffer ++;
+    all_used++; buffer++;
 
-    subid = (int*) value->data.other; 
+    subid = (int*)value->data.other; 
 
     for (i = 0; i < value->len; i++)
     { 
-        used = sprintf (buffer, "%d", subid[i]);
+        used = sprintf(buffer, "%d", subid[i]);
         all_used += used; buffer += used;
-        strcat (buffer, " ");
-        all_used ++ ; buffer ++;
+        strcat(buffer, " ");
+        all_used++; buffer++;
     } 
     strcat (buffer, "}"); 
     all_used++;
@@ -1327,10 +1365,11 @@ asn_sprint_objid(const asn_value *value, char *buffer, size_t buf_len)
 
 
 /**
- * Prepare textual ASN.1 presentation of passed value of complex type with many
- * subvalues (i.e. 'SEQUENCE[_OF]' and 'SET[_OF]') and put it into specified buffer. 
+ * Prepare textual ASN.1 presentation of passed value of complex 
+ * type with many subvalues (i.e. 'SEQUENCE[_OF]' and 'SET[_OF]') 
+ * and put it into specified buffer. 
  *
- * @param value         ASN value to be printed, should have INTEGER type.  
+ * @param value         ASN value to be printed, should have INTEGER type.
  * @param buffer        buffer for ASN text.  
  * @param buf_len       length of buffer. 
  * @param indent        current indent
@@ -1338,14 +1377,15 @@ asn_sprint_objid(const asn_value *value, char *buffer, size_t buf_len)
  * @return number characters written to buffer or -1 if error occured. 
  */ 
 int
-asn_sprint_array_fields(const asn_value *value, char *buffer, size_t buf_len, 
-                        unsigned int indent)
+asn_sprint_array_fields(const asn_value *value, char *buffer, 
+                        size_t buf_len, unsigned int indent)
 {
-    int all_used = 0, used;
     unsigned int i;
+
+    int all_used = 0, used;
     int was_element = 0;
     
-    char *str_indent = malloc (indent + 3);
+    char *str_indent = malloc(indent + 3);
 
     if ((value == NULL) || (buffer == NULL) || (buf_len == 0) )
         return 0; 
@@ -1372,6 +1412,7 @@ asn_sprint_array_fields(const asn_value *value, char *buffer, size_t buf_len,
     for (i = 0; i < value->len; i++)
     { 
         asn_value_p v_el = value->data.array[i];
+
         if (v_el)
         {
             if (was_element) 
@@ -1389,7 +1430,8 @@ asn_sprint_array_fields(const asn_value *value, char *buffer, size_t buf_len,
             used = strlen(buffer);
             all_used += used; buffer += used; 
 
-            used = asn_sprint_value(v_el, buffer, buf_len - all_used, indent);
+            used = asn_sprint_value(v_el, buffer, buf_len - all_used, 
+                                    indent);
             all_used += used; buffer += used;
 
             was_element = 1;
@@ -1407,12 +1449,13 @@ asn_sprint_array_fields(const asn_value *value, char *buffer, size_t buf_len,
     all_used += used;
 
     free (str_indent);
+
     return all_used;
 }
 
 /**
- * Prepare textual ASN.1 presentation of passed value and put it into specified
- * buffer. 
+ * Prepare textual ASN.1 presentation of passed value and put it into 
+ * specified buffer. 
  *
  * @param value         ASN value to be printed.  
  * @param buffer        buffer for ASN text.  
@@ -1423,7 +1466,7 @@ asn_sprint_array_fields(const asn_value *value, char *buffer, size_t buf_len,
  */ 
 int
 asn_sprint_value(const asn_value *value, char *buffer, size_t buf_len, 
-        unsigned int indent)
+                 unsigned int indent)
 {
     if ((value == NULL) || (buffer == NULL) || (buf_len == 0) )
         return 0;
@@ -1479,7 +1522,8 @@ asn_sprint_value(const asn_value *value, char *buffer, size_t buf_len,
 
 
 /**
- * Count required length of string for textual presentation of specified value. 
+ * Count required length of string for textual presentation of 
+ * specified value. 
  *
  * @param value         ASN value.   
  * @param indent        current indent
@@ -1519,6 +1563,11 @@ asn_count_txt_len(const asn_value *value, unsigned int indent)
         return 0; /* not implemented yet.*/
     case OID:
         return asn_count_len_objid(value);
+
+    /* Due to some (not found) bugs in counting length, obtained value 
+     * is a bit less then really need, so the folowing ugly hacks
+     * are made. 
+     * TODO: found and fix bugs. */
     case CHOICE:
         return asn_count_len_choice(value, indent) + 10;
 
@@ -1538,7 +1587,8 @@ asn_count_txt_len(const asn_value *value, unsigned int indent)
 
 
 /**
- * Count required length of string for textual presentation of specified value. 
+ * Count required length of string for textual presentation 
+ * of specified value. 
  *
  * @param value         ASN value.   
  * @param indent        current indent
@@ -1548,11 +1598,13 @@ asn_count_txt_len(const asn_value *value, unsigned int indent)
 size_t
 asn_count_len_array_fields(const asn_value *value, unsigned int indent)
 { 
+    int *txt_len_p;
+
     if (value == NULL)
         return 0; 
-    /* Explicit discards of 'const' qualifier, whereas field 'txt_len' should 
-     * have 'mutable' semantic */
-    int *txt_len_p = (int *)&(value->txt_len);
+    /* Explicit discards of 'const' qualifier, whereas field 'txt_len' 
+     * should have 'mutable' semantic */
+    txt_len_p = (int *)&(value->txt_len);
 
     /* syntaxes processed in this method may have arbitrary last two bits*/
     if ((value->syntax & ((-1)<<2) )!= SEQUENCE) 
@@ -1577,10 +1629,10 @@ asn_count_len_array_fields(const asn_value *value, unsigned int indent)
                 elems ++;
             }
         } 
-        all_used +=   elems * (indent + 2)      /* indents before subvalues */
-                    + elems + 1                 /* new line symbols */
-                    + (elems ? (elems - 1) : 0) /* commas */    
-                    + indent + 1;               /* closing brace wint indent */
+        all_used +=   elems * (indent + 2) /* indents before subvalues */
+                    + elems + 1            /* new line symbols */
+                    + (elems ? (elems - 1) : 0)/* commas */    
+                    + indent + 1;          /* closing brace wint indent */
 
         *txt_len_p = all_used;
     }
@@ -1590,8 +1642,9 @@ asn_count_len_array_fields(const asn_value *value, unsigned int indent)
 
 
 /**
- * Prepare textual ASN.1 presentation of passed value and save this string to
- * file with specified name. If file already exists, it will be overwritten.
+ * Prepare textual ASN.1 presentation of passed value and save this string 
+ * to file with specified name. 
+ * If file already exists, it will be overwritten.
  *
  * @param value         ASN value to be saved. 
  * @param filename      name of file 
@@ -1602,9 +1655,13 @@ int
 asn_save_to_file(const asn_value *value, const char *filename)
 {
     FILE *fp;
-    int len = asn_count_txt_len(value, 0);
-    char * buffer;
+    char *buffer;
+    int   len;
 
+    if (value == NULL || filename == NULL)
+        return ETEWRONGPTR;
+
+    len = asn_count_txt_len(value, 0);
     fp = fopen(filename, "w+");
     if (fp == NULL) 
         return errno;
@@ -1636,8 +1693,8 @@ asn_save_to_file(const asn_value *value, const char *filename)
  * @return zero on success, otherwise error code.
  */ 
 int 
-asn_parse_dvalue_in_file(const char *filename, const asn_type * type, 
-                                asn_value_p *parsed_value, int *syms_parsed) 
+asn_parse_dvalue_in_file(const char *filename, const asn_type *type, 
+                         asn_value_p *parsed_value, int *syms_parsed) 
 {
     struct stat fst;
 
@@ -1646,15 +1703,20 @@ asn_parse_dvalue_in_file(const char *filename, const asn_type * type,
     int    read_sz;
     int    rc;
 
-    if (stat (filename, &fst) != 0)
+    if (filename == NULL || type == NULL || 
+        parsed_value == NULL || syms_parsed == NULL)
+        return ETEWRONGPTR;
+
+    if (stat(filename, &fst) != 0)
         return errno; 
-    buf = malloc (fst.st_size + 1); 
-    fd = open (filename, O_RDONLY);
+
+    buf = malloc(fst.st_size + 1); 
+    fd = open(filename, O_RDONLY);
     if (fd < 0)
         return errno; 
 
     read_sz = read(fd, buf, fst.st_size + 1);
-    close (fd);
+    close(fd);
 
     rc = asn_parse_value_text(buf, type, parsed_value, syms_parsed);
 
