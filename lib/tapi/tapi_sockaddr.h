@@ -104,6 +104,28 @@ extern void sockaddr_set_port(struct sockaddr *addr, uint16_t port);
 extern const void *sockaddr_get_netaddr(const struct sockaddr *addr);
 
 /**
+ * Returns pointer to the IP 4/6 address in human representation 
+ * (without port).
+ *
+ * @param addr  address to be converted
+ *
+ * @return address string
+ *
+ * @note non-rentarable
+ * @note non-thread-safe
+ * @note does not perform any checks
+ */
+static inline const char *
+sockaddr_get_ipstr(const struct sockaddr *addr)
+{
+    static char addr_buf[INET6_ADDRSTRLEN];
+    
+    return inet_ntop(addr->sa_family, 
+                     sockaddr_get_netaddr(addr), addr_buf, 
+                     sizeof(addr_buf));
+}
+
+/**
  * Update network address part of sockaddr structure according to
  * 'sa_family' field of the structure
  *

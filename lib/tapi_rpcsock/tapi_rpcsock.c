@@ -6212,21 +6212,28 @@ rpc_ftp_open(rcf_rpc_server *handle,
  * Execute shell command on the IPC server and read the output.
  *
  * @param handle        RPC server handle
- * @param cmd           command to be executed
  * @param buf           output buffer
  * @param buflen        output buffer length
+ * @param cmd           format of the command to be executed
  *
- * @return status code
+ * @return 0 (success) or -1 (failure)
  */
 int 
 rpc_shell(rcf_rpc_server *handle,
-          const char *cmd, char *buf, int buflen)
+          char *buf, int buflen, const char *cmd,...)
 {
     FILE *f;
     int   fd;
     int   rc = 0;
+    char  cmdline[RPC_SHELL_CMDLINE_MAX];
+
+    va_list ap;
+
+    va_start(ap, cmd);
+    vsnprintf(cmdline, sizeof(cmdline), cmd, ap);
+    va_end(ap);
     
-    if ((f = rpc_popen(handle, cmd, "r")) == NULL)
+    if ((f = rpc_popen(handle, cmdline, "r")) == NULL)
     {
         ERROR("Cannot execute the command: rpc_popen() failed");
         return -1;
