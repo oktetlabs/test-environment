@@ -4155,8 +4155,10 @@ many_send(tarpc_many_send_in *in, tarpc_many_send_out *out)
         return -1;
     }
 
-    for (i = 0; i < in->vector.vector_val[i]; i++)
+    for (i = 0; i < in->vector.vector_len; i++)
     {
+        RING("%s(): [%d] send(%d, %p, %d, 0)", __FUNCTION__, i,
+             in->sock, buf, in->vector.vector_val[i]);
         rc = send_func(in->sock, buf, in->vector.vector_val[i], 0);
         if (rc == -1 || rc != in->vector.vector_val[i])
         {
