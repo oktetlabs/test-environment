@@ -167,15 +167,16 @@ tapi_cfg_base_if_get_mtu(const char *oid, unsigned int *p_mtu)
 /* See description in tapi_cfg_base.h */
 int
 tapi_cfg_base_add_net_addr(const char *oid,
-                           const struct sockaddr *sa,
+                           const struct sockaddr *addr,
                            const struct sockaddr *mask,
+                           const struct sockaddr *bcast,
                            cfg_handle *cfg_hndl)
 {
     char    buf[INET6_ADDRSTRLEN];
     int     rc;
 
 
-    if (sa->sa_family != AF_INET)
+    if (addr->sa_family != AF_INET)
     {
         ERROR("AF_INET address family is supported only.");
         return TE_RC(TE_TAPI, EAFNOSUPPORT);
@@ -183,17 +184,18 @@ tapi_cfg_base_add_net_addr(const char *oid,
 
     rc = cfg_add_instance_fmt(cfg_hndl, CVT_NONE, NULL,
                               "%s/net_addr:%s", oid,
-                              inet_ntop(sa->sa_family,
-                                        &SIN(sa)->sin_addr,
+                              inet_ntop(addr->sa_family,
+                                        &SIN(addr)->sin_addr,
                                         buf, sizeof(buf)));
     if (rc == 0)
     {
         if (mask != NULL)
         {
+            /* Set address mask */
             rc = cfg_set_instance_fmt(CVT_ADDRESS, mask,
                                       "%s/net_addr:%s/netmask:", oid,
-                                      inet_ntop(sa->sa_family,
-                                                &SIN(sa)->sin_addr,
+                                      inet_ntop(addr->sa_family,
+                                                &SIN(addr)->sin_addr,
                                                 buf, sizeof(buf)));
             if (rc != 0)
             {
@@ -202,8 +204,31 @@ tapi_cfg_base_add_net_addr(const char *oid,
                 ERROR("Failed to set address mask: %X", rc);
                 rc2 = cfg_del_instance_fmt(TRUE, 
                                            "%s/net_addr:%s", oid,
-                                           inet_ntop(sa->sa_family,
-                                                     &SIN(sa)->sin_addr,
+                                           inet_ntop(addr->sa_family,
+                                                     &SIN(addr)->sin_addr,
+                                                     buf, sizeof(buf)));
+                if (rc2 != 0)
+                {
+                    ERROR("Failed to delete address to rollback: %X", rc2);
+                }
+                return rc;
+            }
+
+            /* Set broadcast address */
+            rc = cfg_set_instance_fmt(CVT_ADDRESS, bcast,
+                                      "%s/net_addr:%s/broadcast:", oid,
+                                      inet_ntop(addr->sa_family,
+                                                &SIN(addr)->sin_addr,
+                                                buf, sizeof(buf)));
+            if (rc != 0)
+            {
+                int rc2;
+
+                ERROR("Failed to set broadcast address: %X", rc);
+                rc2 = cfg_del_instance_fmt(TRUE, 
+                                           "%s/net_addr:%s", oid,
+                                           inet_ntop(addr->sa_family,
+                                                     &SIN(addr)->sin_addr,
                                                      buf, sizeof(buf)));
                 if (rc2 != 0)
                 {
@@ -212,14 +237,16 @@ tapi_cfg_base_add_net_addr(const char *oid,
                 return rc;
             }
         }
+
         RING("Address %s added to %s",
-             inet_ntop(sa->sa_family, &SIN(sa)->sin_addr, buf, sizeof(buf)),
+             inet_ntop(addr->sa_family, &SIN(addr)->sin_addr,
+                       buf, sizeof(buf)),
              oid);
     }
     else if (TE_RC_GET_ERROR(rc) == EEXIST)
     {
         WARN("%s already has address %s", oid,
-             inet_ntop(sa->sa_family, &SIN(sa)->sin_addr,
+             inet_ntop(addr->sa_family, &SIN(addr)->sin_addr,
                        buf, sizeof(buf)));
     }
     else

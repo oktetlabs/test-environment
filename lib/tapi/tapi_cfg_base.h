@@ -72,8 +72,9 @@ extern int tapi_cfg_base_if_get_mtu(const char *oid, unsigned int *p_mtu);
  * Add network address (/net_addr:).
  *
  * @param oid       TA interface oid, e.g. /agent:A/interface:eth0
- * @param sa        Address to add
+ * @param addr      Address to add
  * @param mask      Address mask or NULL
+ * @param bcast     Corresponding broadcast address or NULL
  * @param cfg_hndl  Configurator handle of the new address
  *
  * @return Status code.
@@ -81,8 +82,9 @@ extern int tapi_cfg_base_if_get_mtu(const char *oid, unsigned int *p_mtu);
  * @retval EEXIST           Address already exist
  */
 extern int tapi_cfg_base_add_net_addr(const char *oid,
-                                      const struct sockaddr *sa,
+                                      const struct sockaddr *addr,
                                       const struct sockaddr *mask,
+                                      const struct sockaddr *bcast,
                                       cfg_handle *cfg_hndl);
 
 #ifdef __cplusplus

@@ -162,6 +162,11 @@ static int netmask_get(unsigned int, const char *, char *,
 static int netmask_set(unsigned int, const char *, const char *,
                        const char *, const char *);
 
+static int broadcast_get(unsigned int, const char *, char *,
+                         const char *, const char *);
+static int broadcast_set(unsigned int, const char *, const char *,
+                         const char *, const char *);
+
 static int link_addr_get(unsigned int, const char *, char *,
                          const char *);
 
@@ -220,7 +225,9 @@ RCF_PCH_CFG_NODE_RW(node_mtu, "mtu", NULL, &node_status,
 RCF_PCH_CFG_NODE_RO(node_link_addr, "link_addr", NULL, &node_mtu,
                     link_addr_get);
 
-RCF_PCH_CFG_NODE_RW(node_netmask, "netmask", NULL, NULL,
+RCF_PCH_CFG_NODE_RW(node_broadcast, "broadcast", NULL, NULL,
+                    broadcast_get, broadcast_set);
+RCF_PCH_CFG_NODE_RW(node_netmask, "netmask", NULL, &node_broadcast,
                     netmask_get, netmask_set);
 
 RCF_PCH_CFG_NODE_COLLECTION(node_net_addr, "net_addr",
@@ -1286,6 +1293,97 @@ netmask_set(unsigned int gid, const char *oid, const char *value,
 
     return set_mask(name, (struct in_addr *)&mask);
 }
+
+
+/**
+ * Get broadcast of the interface.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instence identifier (unused)
+ * @param value         broadcast address location (in dotted notation)
+ * @param ifname        name of the interface (like "eth0")
+ * @param addr          IPv4 address in dotted notation
+ *
+ * @return error code
+ */
+static int
+broadcast_get(unsigned int gid, const char *oid, char *value,
+            const char *ifname, const char *addr)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+
+    strncpy(req.ifr_name, ifname, sizeof(req.ifr_name));
+    if (inet_pton(AF_INET, addr, &SIN(&req.ifr_addr)->sin_addr) <= 0)
+    {
+        ERROR("inet_pton() failed");
+        return TE_RC(TE_TA_LINUX, ETEFMT);
+    }
+    if (ioctl(s, SIOCGIFBRDADDR, &req) < 0)
+    {
+        ERROR("ioctl(SIOCGIFBRDADDR) failed for if=%s addr=%s: %s",
+              ifname, addr, strerror(errno));
+        /* FIXME Mapping to ETENOSUCHNAME */
+        return TE_RC(TE_TA_LINUX, errno);
+    }
+
+    if (inet_ntop(AF_INET, &SIN(&req.ifr_addr)->sin_addr, value,
+                  RCF_MAX_VAL) == NULL)
+    {
+        ERROR("inet_ntop() failed");
+        return TE_RC(TE_TA_LINUX, errno);
+    }
+
+    return 0;
+}
+
+/**
+ * Change broadcast of the interface.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instence identifier (unused)
+ * @param value         pointer to the new broadcast address in dotted
+ *                      notation
+ * @param ifname        name of the interface (like "eth0")
+ * @param addr          IPv4 address in dotted notation
+ *
+ * @return error code
+ */
+static int
+broadcast_set(unsigned int gid, const char *oid, const char *value,
+            const char *ifname, const char *addr)
+{
+    unsigned int baddr;
+    char        *name;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if ((name = find_net_addr(ifname, addr)) == NULL)
+    {
+        ERROR("Address '%s' on interface '%s' to set broadcast not found",
+              ifname, addr);
+        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
+    }
+
+    if (inet_pton(AF_INET, value, (void *)&baddr) <= 0)
+    {
+        ERROR("Failed to convert string '%s' to IPv4 address", value);
+        return TE_RC(TE_TA_LINUX, EINVAL);
+    }
+
+    strcpy(req.ifr_name, name);
+    req.ifr_addr.sa_family = AF_INET;
+    SIN(&(req.ifr_addr))->sin_addr.s_addr = baddr;
+    if (ioctl(s, SIOCSIFBRDADDR, (int)&req) < 0)
+    {
+        ERROR("ioctl(SIOCSIFBRDADDR) failed: %s", strerror(errno));
+        return TE_RC(TE_TA_LINUX, errno);
+    }
+
+    return 0;
+}
+
 
 /**
  * Get hardware address of the interface.
