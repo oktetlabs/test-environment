@@ -33,7 +33,7 @@ EXTRA_DIST = OKTL-ARCH-0000044-TE.doc\
              OKT-HLD-0000045-TE_LS_TEN.sxw \
              OKT-HLD-0000047-TE_LS_TA.sxw \
              OKT-HLD-0000055-TE_RG.sxw \
-             OKT-HLD-0000057-TE_PROTO.sxw \
+             OKTL-HLD-0000151-TE_PROTO.sxw \
              OKT-HLD-0000069-TE_CS.sxw \
              OKT-HLD-0000071-TE_CS_DATA.sxw \
              OKT-HLD-0000085-TE_TSC.sxw \
