@@ -988,11 +988,14 @@ socklevel_rpc2h(rpc_socklevel level)
     switch (level)
     {
         RPC2H(SOL_SOCKET);
-#ifdef __FreeBSD__
+#ifndef SOL_IP
         case RPC_SOL_IP:  return IPPROTO_IP;
-        case RPC_SOL_TCP: return IPPROTO_TCP;
 #else
         RPC2H(SOL_IP);
+#endif
+#ifndef SOL_TCP
+        case RPC_SOL_TCP: return IPPROTO_TCP;
+#else
         RPC2H(SOL_TCP);
 #endif
         default: return SOL_MAX;
@@ -1208,6 +1211,8 @@ signum_rpc2h(rpc_signum s)
         default: return SIGUNUSED;
 #elif defined(_SIG_MAXSIG)
         default: return _SIG_MAXSIG;
+#elif defined(_NSIG)
+        default: return _NSIG;
 #else
 #error There is no way to convert unknown/unsupported/unused signal number!
 #endif
