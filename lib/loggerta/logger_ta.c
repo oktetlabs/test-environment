@@ -191,8 +191,7 @@ log_message(uint16_t level, const char *entity_name,
         uint8_t  *arg_addr;
         uint32_t *arg_location = (&hdr_addr->arg1) + tmp_list->narg;
 
-        res = lgr_rb_allocate_and_copy(&log_buffer,
-                                       (uint32_t)tmp_list->addr,
+        res = lgr_rb_allocate_and_copy(&log_buffer, tmp_list->addr,
                                        tmp_list->length, &arg_addr);
         if (res == 0)
         {
