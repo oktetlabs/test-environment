@@ -20,7 +20,7 @@ TE_PLATFORM([i686-pc-cygwin],[],
             [-I${CYGWIN_HOME}/include -I${CYGWIN_HOME}/include/ws32api \
              -D__CYGWIN__],
             [-L${CYGWIN_HOME}/lib -L${CYGWIN_HOME}/lib/w32api], 
-            [comm_net_agent loggerta conf_oid rcfpch tad])
+            [comm_net_agent loggerta logfork conf_oid rcfpch tad])
 
 TE_TA_TYPE([win32], [i686-pc-cygwin], [],
            [--with-rcf-rpc], [],
