@@ -50,7 +50,7 @@ char* ip4_get_param_cb (csap_p csap_descr, int level, const char *param)
     UNUSED(param);
     return NULL;
 }
-# if 0
+# if 1
 /**
  * Callback for confirm PDU with DHCP CSAP parameters and possibilities.
  *
@@ -243,7 +243,7 @@ int ip4_match_bin_cb (int csap_id, int layer, const asn_value_p pattern_pdu,
  *
  * @return zero on success or error code.
  */
-#if 0
+#if 1
 int ip4_gen_pattern_cb (int csap_id, int layer, const asn_value_p tmpl_pdu, 
                                          asn_value_p   *pattern_pdu)
 { 
