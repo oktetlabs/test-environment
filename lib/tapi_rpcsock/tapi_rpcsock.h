@@ -477,17 +477,6 @@ extern int rpc_seteuid(rcf_rpc_server *handle,
                        uid_t uid);
 
 /**
- * Convert 'struct sockaddr' to string.
- *
- * @note Static buffer is used for return value.
- *
- * @param sa    - pointer to 'struct sockaddr'
- *
- * @return null-terminated string
- */
-extern const char *sockaddr2str(const struct sockaddr *sa);
-
-/**
  * Convert 'struct timeval' to string.
  *
  * @note Static buffer is used for return value.

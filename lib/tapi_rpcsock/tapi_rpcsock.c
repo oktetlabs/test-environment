@@ -190,62 +190,6 @@ rpcop2str(rcf_rpc_op op)
     return " (unknown)";
 }
 
-
-/* See description in tapi_rpcsock.h */
-const char *
-sockaddr2str(const struct sockaddr *sa)
-{
-
-#define SOCKADDR2STR_ADDRSTRLEN 128
-/* Number of buffers used in the function */
-#define N_BUFS 10
-
-    static char  buf[N_BUFS][SOCKADDR2STR_ADDRSTRLEN];
-    static char  (*cur_buf)[SOCKADDR2STR_ADDRSTRLEN] = 
-                                (char (*)[SOCKADDR2STR_ADDRSTRLEN])buf[0];
-
-    char *ptr;
-
-    /*
-     * Firt time the function is called we start from the second buffer, but
-     * then after a turn we'll use all N_BUFS buffer.
-     */
-    if (cur_buf == (char (*)[SOCKADDR2STR_ADDRSTRLEN])buf[N_BUFS - 1])
-        cur_buf = (char (*)[SOCKADDR2STR_ADDRSTRLEN])buf[0];
-    else
-        cur_buf++;
-
-    ptr = *cur_buf;
-
-    if (sa == NULL)
-    {
-        snprintf(ptr, SOCKADDR2STR_ADDRSTRLEN, "NULL");
-        return ptr;
-    }
-    
-    switch (sa->sa_family)
-    {
-        case AF_INET:
-        {
-            struct sockaddr_in *sin = (struct sockaddr_in *)sa;
-
-            inet_ntop(AF_INET, (void *)&(sin->sin_addr), *cur_buf,
-                      SOCKADDR2STR_ADDRSTRLEN);
-            snprintf(ptr + strlen(ptr), SOCKADDR2STR_ADDRSTRLEN - strlen(ptr),
-                     ":%hu", ntohs(sin->sin_port));
-            break;
-        }
-
-        default:
-             snprintf(ptr, SOCKADDR2STR_ADDRSTRLEN, "(unknown)");
-    }
-
-#undef SOCKADDR2STR_ADDRSTRLEN
-#undef N_BUFS
-
-    return ptr;
-}
-
 /**
  * Convert 'struct timeval' to string.
  *

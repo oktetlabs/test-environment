@@ -31,12 +31,18 @@
 #include "config.h"
 #endif
 
+#include <stdio.h>
+
 #ifdef HAVE_STRING_H
 #include <string.h>
 #endif
 
 #ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>
+#endif
+
+#ifdef HAVE_ARPA_INET_H
+#include <arpa/inet.h>
 #endif
 
 #include "tapi_sockaddr.h"
@@ -270,6 +276,7 @@ sockaddrcmp(const struct sockaddr *a1, socklen_t a1len,
     return -1;
 }
 
+/* See description in tapi_sockaaddr.h */
 int
 sockaddrncmp(const struct sockaddr *a1, socklen_t a1len,
              const struct sockaddr *a2, socklen_t a2len)
@@ -382,6 +389,60 @@ sockaddrncmp(const struct sockaddr *a1, socklen_t a1len,
     return -1;
 }
 
+/* See description in tapi_sockaaddr.h */
+const char *
+sockaddr2str(const struct sockaddr *sa)
+{
+
+#define SOCKADDR2STR_ADDRSTRLEN 128
+/* Number of buffers used in the function */
+#define N_BUFS 10
+
+    static char  buf[N_BUFS][SOCKADDR2STR_ADDRSTRLEN];
+    static char  (*cur_buf)[SOCKADDR2STR_ADDRSTRLEN] = 
+                                (char (*)[SOCKADDR2STR_ADDRSTRLEN])buf[0];
+
+    char       *ptr;
+    const void *addr_ptr;
+    char        addr_buf[INET6_ADDRSTRLEN];
+    uint16_t    port;
+
+    /*
+     * Firt time the function is called we start from the second buffer, but
+     * then after a turn we'll use all N_BUFS buffer.
+     */
+    if (cur_buf == (char (*)[SOCKADDR2STR_ADDRSTRLEN])buf[N_BUFS - 1])
+        cur_buf = (char (*)[SOCKADDR2STR_ADDRSTRLEN])buf[0];
+    else
+        cur_buf++;
+
+    ptr = *cur_buf;
+
+    if (sa == NULL)
+    {
+        snprintf(ptr, SOCKADDR2STR_ADDRSTRLEN, "NULL");
+        return ptr;
+    }
+
+    if ((addr_ptr = sockaddr_get_netaddr(sa)) == NULL)
+    {
+        return "<Not supported address family>";
+    }
+    port = sockaddr_get_port(sa);
+
+    if (inet_ntop(sa->sa_family, addr_ptr,
+                  addr_buf, sizeof(addr_buf)) == NULL)
+    {
+        return "<Cannot convert network address>";
+    }
+    snprintf(ptr, SOCKADDR2STR_ADDRSTRLEN, "%s:%hu", addr_buf, ntohs(port));
+
+#undef N_BUFS
+#undef SOCKADDR2STR_ADDRSTRLEN
+
+    return ptr;
+}
+
 /* See the description in tapi_sockaddr.h */
 int
 netaddr_get_size(int addr_family)
@@ -448,3 +509,4 @@ mreq_set_mr_ifindex(int addr_family, void *mreq, int ifindex)
                   "operation has no effect", __FUNCTION__, addr_family);
     }
 }
+

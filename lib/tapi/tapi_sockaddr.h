@@ -183,6 +183,17 @@ extern int sockaddrncmp(const struct sockaddr *a1, socklen_t a1len,
                         const struct sockaddr *a2, socklen_t a2len);
 
 /**
+ * Convert 'struct sockaddr' to string.
+ *
+ * @note Static buffer is used for return value.
+ *
+ * @param sa    - pointer to 'struct sockaddr'
+ *
+ * @return null-terminated string
+ */
+extern const char *sockaddr2str(const struct sockaddr *sa);
+
+/**
  * Returns the size of network address from a particular family
  *
  * @param addr_family  Address family
