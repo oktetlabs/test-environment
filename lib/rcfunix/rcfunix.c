@@ -105,6 +105,7 @@ typedef struct unix_ta {
     te_bool  sudo;                    /**< Manipulate process using sudo */
     te_bool  is_local;                /**< TA is started on the local PC */
     uint32_t pid;                     /**< TA pid */
+    int      flags;
     
     struct rcf_net_connection *conn;  /**< connection handle */
 } unix_ta;
@@ -200,6 +201,7 @@ rcfunix_start(char *ta_name, char *ta_type, char *conf_str,
     if (strcmp(ta_type + strlen(ta_type) - strlen("ctl"), "ctl") == 0)
         *flags |= TA_PROXY;
 
+    ta->flags = *flags;
     tmp = getenv("LOGNAME");
     sprintf(ta->exec_name, "ta%s_%s_%u_%u", ta_type,
             (tmp == NULL) ? "" : tmp, (unsigned int)time(NULL), seqno++);
@@ -273,7 +275,7 @@ rcfunix_start(char *ta_name, char *ta_type, char *conf_str,
     }
 
     VERB("Copy image '%s' to the %s:/tmp", ta->exec_name, ta->host);
-    if (system(cmd) != 0)
+    if (!(*flags & TA_FAKE) && system(cmd) != 0)
     {
         ERROR("Failed to copy TA image %s to the %s:/tmp",
               ta->exec_name, ta->host);
@@ -331,7 +333,7 @@ rcfunix_start(char *ta_name, char *ta_type, char *conf_str,
     free(dup);
 
     VERB("Command to start TA: %s", cmd);
-    if (system(cmd) != 0)
+    if (!(*flags & TA_FAKE) && (system(cmd) != 0))
     {
         ERROR("Command '%s' failed", cmd);
         return ETESHCMD;
@@ -369,7 +371,13 @@ rcfunix_reboot(rcf_talib_handle handle, char *parms)
     char  cmd[RCFUNIX_SHELL_CMD_MAX];
 
     (void)parms;
-
+    
+    if (ta->flags & TA_FAKE)
+    {
+        free(ta);
+        return 0;
+    }
+    
     if (ta->pid > 0)
     {
         if (ta->is_local)

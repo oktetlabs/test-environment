@@ -14,11 +14,17 @@ AM_CFLAGS =
 AM_LDFLAGS = @TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/lib 
 
 
-tetest_PROGRAMS = rcftest
+tetest_PROGRAMS = rcftest tareboot
 
 
 rcftest_SOURCES = rcftest.c
 rcftest_LDADD = -lrcfapi -llogger_ten -lipc -lpthread
 rcftest_DEPENDENCIES = ${TE_INSTALL}/@host@/lib/librcfapi.a \
+                       ${TE_INSTALL}/@host@/lib/liblogger_ten.a \
+                       ${TE_INSTALL}/@host@/lib/libipc.a
+
+tareboot_SOURCES = tareboot.c
+tareboot_LDADD = -lrcfapi -llogger_ten -lipc -lpthread
+tareboot_DEPENDENCIES = ${TE_INSTALL}/@host@/lib/librcfapi.a \
                        ${TE_INSTALL}/@host@/lib/liblogger_ten.a \
                        ${TE_INSTALL}/@host@/lib/libipc.a

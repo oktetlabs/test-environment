@@ -4,7 +4,7 @@
     <author mailto="Elena.Vengerova@oktetlabs.ru"/>
     <session>
         <run>
-            <script name="rcftest"/>
+            <script name="tareboot"/>
         </run>
     </session>
 </package>

@@ -98,7 +98,17 @@
                                 </xsd:documentation>
                             </xsd:annotation>
                         </xsd:attribute>
-
+                        
+                        <xsd:attribute name="fake" type="xsd:string"
+                                       default="no">
+                            <xsd:annotation>
+                                <xsd:documentation>
+                                    Indicate that TA is already running 
+                                    under gdb.
+                                </xsd:documentation>
+                            </xsd:annotation>
+                        </xsd:attribute>                        
+                        
                     </xsd:complexType>
                 </xsd:element>
 

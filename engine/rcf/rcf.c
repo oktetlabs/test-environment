@@ -133,10 +133,6 @@
  */
 
 
-/** @name Additional TA flags */
-#define TA_DOWN     4   /**< Response to shutdown is received */
-/*@}*/
-
 
 /** One request from the user */
 typedef struct usrreq {
@@ -372,6 +368,7 @@ parse_config(char *filename)
 
         agent->next = agents;
         agents = agent;
+        agent->flags = 0;
 
         if ((attr = xmlGetProp(cur, (const xmlChar *)"name")) != NULL)
         {
@@ -432,6 +429,16 @@ parse_config(char *filename)
         {
             if (strcmp(attr, "yes") == 0)
                 agent->flags = TA_REBOOTABLE;
+            xmlFree(attr);
+        }
+       
+        if ((attr = xmlGetProp(cur, (const xmlChar *)"fake")) != NULL)
+        {
+            if (strcmp(attr, "yes") == 0)
+            {
+                /* TA is already running under gdb */
+                agent->flags |= TA_FAKE;
+            }
             xmlFree(attr);
         }
 
@@ -577,12 +584,14 @@ init_agent(ta *agent)
     answer_all_requests(&(agent->pending), ETAREBOOTED);
     VERB("Start TA %s type=%s confstr='%s'",
          agent->name, agent->type, agent->conf);
+    if (agent->flags & TA_FAKE)
+        VERB("TA %s has been already started");
     if ((rc = (agent->start)(agent->name, agent->type,
                              agent->conf, &(agent->handle),
                              &(agent->flags))) != 0)
     {
         ERROR("FATAL ERROR: Cannot start TA '%s' error %d",
-                         agent->name, rc);
+              agent->name, rc);
         return -1;
     }
     VERB("TA %s started, trying to connect", agent->name);
@@ -1557,7 +1566,6 @@ process_user_request(usrreq *req)
                     ERROR("FATAL ERROR: Cannot reboot TA %s", agent->name);
                     return -1;
                 }
-
                 answer_user_request(req);
                 return init_agent(agent);
             }
@@ -1653,8 +1661,6 @@ rcf_shutdown()
     {
         if ((agent->flags & TA_DOWN) == 0)
             ERROR("Soft shutdown of TA '%s' failed", agent->name);
-        
-
         if ((agent->reboot)(agent->handle, NULL) != 0)
             ERROR("Cannot reboot TA '%s'", agent->name);
     }
