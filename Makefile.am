@@ -79,9 +79,6 @@ dist-hook:
 	if test -e $(distdir)/conf/builder.conf ; then \
 		chmod u+w $(distdir)/conf ; \
 		rm -f $(distdir)/conf/builder.conf ; \
-	fi
+	fi ;
 	cp @TE_BUILDER_CONF@ $(distdir)/conf/builder.conf
 
-install-data:
-	TE_BUILD="." $(srcdir)/engine/builder/te_create_inst_dirs \
-                         $(DESTDIR)/$(prefix)

@@ -32,3 +32,11 @@ AM_MAKEFLAGS="prefix=$(prefix)/@host@"
 SUBDIRS=@LIB_SUBDIRS@
 DIST_SUBDIRS=@LIB_DIST_SUBDIRS@
 
+distclean-local:
+	for i in $(SUBDIRS) ; do \
+	    cd $$i ; \
+	    if test -e Makefile ; then \
+	        $(MAKE) $(AM_MAKEFLAGS) distclean ; \
+	    fi ; \
+	    cd .. ; \
+	done
