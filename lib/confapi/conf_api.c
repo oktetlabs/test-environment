@@ -531,19 +531,19 @@ cfg_get_inst_name(cfg_handle handle, char **name)
 int
 cfg_get_inst_name_int(cfg_handle handle, int *name)
 {
-    int     rc;
-    char   *str;
-    char   *end;
+    int             rc;
+    char           *str;
+    cfg_inst_val    val;
 
     rc = cfg_get_inst_name(handle, &str);
     if (rc != 0)
         return rc;
 
-    rc = strtol(str, &end, 10);
-    if (end == str)
-        return TE_RC(TE_CONF_API, ETEFMT);
+    rc = cfg_types[CVT_INTEGER].str2val(str, &val);
+    if (rc != 0)
+        return rc;
 
-    *name = rc;
+    *name = val.val_int;
 
     return 0;
 }
