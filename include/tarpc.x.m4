@@ -57,6 +57,8 @@ typedef uint32_t    tarpc_wsaevent;
 typedef uint32_t    tarpc_hwnd;
 /** WSAOVERLAPPED structure */
 typedef uint32_t    tarpc_overlapped;
+/** HANDLE */
+typedef uint32_t    tarpc_handle;
 
 typedef uint32_t    tarpc_op;
 
@@ -775,10 +777,138 @@ struct tarpc_wsa_address_to_string_out {
     struct tarpc_out_arg common;
     tarpc_int            retval;
     uint8_t              addrstr<>;
-    tarpc_socklen_t      addrstr_len<>;
+    tarpc_size_t         addrstr_len<>;
 };
 
-typedef uint32_t    tarpc_handle;
+/* WSAStringToAddress */
+struct tarpc_wsa_string_to_address_in {
+    struct tarpc_in_arg  common;
+    char                 addrstr<>;
+    tarpc_int            address_family;
+    uint8_t              info<>; /**< Protocol Info */
+    tarpc_socklen_t      addrlen<>;
+};
+
+struct tarpc_wsa_string_to_address_out {
+    struct tarpc_out_arg common;
+    tarpc_int            retval;
+    struct tarpc_sa      addr;
+    tarpc_socklen_t      addrlen<>;
+};
+
+/* WSACancelAsyncRequest */
+struct tarpc_wsa_cancel_async_request_in {
+    struct tarpc_in_arg  common;
+    tarpc_handle         async_task_handle;
+};
+
+struct tarpc_wsa_cancel_async_request_out {
+    struct tarpc_out_arg common;
+    tarpc_int            retval;
+};
+
+/* alloc_buf */
+struct tarpc_alloc_buf_in {
+    struct tarpc_in_arg  common;
+    tarpc_size_t         size; /**< Bytes to allocate */
+};
+
+struct tarpc_alloc_buf_out {
+    struct tarpc_out_arg common;
+    tarpc_ptr            retval; /**< A pointer in the TA address space */
+};
+
+/* free_buf */
+struct tarpc_free_buf_in {
+    struct tarpc_in_arg  common;
+    tarpc_ptr            buf;    /**< A pointer in the TA address space */
+};
+
+struct tarpc_free_buf_out {
+    struct tarpc_out_arg common;
+};
+
+/* set_buf */
+struct tarpc_set_buf_in {
+    struct tarpc_in_arg  common;
+    char                 src_buf<>;
+    tarpc_ptr            dst_buf;  /**< A pointer in the TA address space */
+};
+
+struct tarpc_set_buf_out {
+    struct tarpc_out_arg common;
+};
+
+/* get_buf */
+struct tarpc_get_buf_in {
+    struct tarpc_in_arg  common;
+    tarpc_ptr            src_buf;  /**< A pointer in the TA address space */
+    tarpc_size_t         len;      /**< How much to get */
+};
+
+struct tarpc_get_buf_out {
+    struct tarpc_out_arg common;
+    char                 dst_buf<>;
+};
+
+/* alloc_wsabuf */
+struct tarpc_alloc_wsabuf_in {
+    struct tarpc_in_arg  common;
+    tarpc_ssize_t         len; /**< Length of buffer to allocate */
+};
+
+struct tarpc_alloc_wsabuf_out {
+    struct tarpc_out_arg common;
+    tarpc_int            retval;
+    tarpc_ptr            wsabuf;     /**< A pointer to WSABUF structure
+                                          in the TA address space */
+    tarpc_ptr            wsabuf_buf; /**< A pointer to buffer in the
+                                          TA address space */
+};
+
+/* free_wsabuf */
+struct tarpc_free_wsabuf_in {
+    struct tarpc_in_arg  common;
+    tarpc_ptr            wsabuf;     /**< A pointer to WSABUF structure
+                                          in the TA address space */
+};
+
+struct tarpc_free_wsabuf_out {
+    struct tarpc_out_arg common;
+};
+
+/* WSAConnect */
+struct tarpc_flowspec {
+    uint32_t TokenRate;
+    uint32_t TokenBucketSize;
+    uint32_t PeakBandwidth;
+    uint32_t Latency;
+    uint32_t DelayVariation;
+    uint32_t ServiceType;
+    uint32_t MaxSduSize;
+    uint32_t MinimumPolicedSize;
+};
+
+struct tarpc_wsa_connect_in {
+    struct tarpc_in_arg    common;
+    tarpc_int              s;
+    struct tarpc_sa        addr;
+    tarpc_size_t           addrlen;
+    tarpc_ptr              caller_wsabuf; /**< A pointer to WSABUF structure
+                                               in TA address space */
+    tarpc_ptr              callee_wsabuf; /**< A pointer to WSABUF structure
+                                               in TA address space */
+    struct tarpc_flowspec  sending<>;
+    struct tarpc_flowspec  receiving<>;
+    tarpc_ptr              provider_specific_buf;  /**< Buffer in the TA
+                                                        address space */
+    tarpc_ssize_t          provider_specific_buf_len;
+};
+
+struct tarpc_wsa_connect_out {
+    struct tarpc_out_arg common;
+    tarpc_int            retval;
+};
 
 /* WSAAsyncGetHostByAddr */
 struct tarpc_wsa_async_get_host_by_addr_in {
@@ -788,7 +918,7 @@ struct tarpc_wsa_async_get_host_by_addr_in {
     char                 addr<>;
     tarpc_size_t         addrlen;
     tarpc_int            type;   /**< TA-independent socket type */    
-    uint64_t             buf;    /**< Buffer in TA address space */
+    tarpc_ptr            buf;    /**< Buffer in TA address space */
     tarpc_size_t         buflen;
 };
 
@@ -803,7 +933,7 @@ struct tarpc_wsa_async_get_host_by_name_in {
     tarpc_hwnd           hwnd;
     tarpc_uint           wmsg;
     char                 name<>;
-    uint64_t             buf;    /**< Buffer in TA address space */
+    tarpc_ptr            buf;    /**< Buffer in TA address space */
     tarpc_size_t         buflen;
 };
 
@@ -818,7 +948,7 @@ struct tarpc_wsa_async_get_proto_by_name_in {
     tarpc_hwnd           hwnd;
     tarpc_uint           wmsg;
     char                 name<>;
-    uint64_t             buf;    /**< Buffer in TA address space */
+    tarpc_ptr            buf;    /**< Buffer in TA address space */
     tarpc_size_t         buflen;
 };
 
@@ -833,7 +963,7 @@ struct tarpc_wsa_async_get_proto_by_number_in {
     tarpc_hwnd           hwnd;
     tarpc_uint           wmsg;
     tarpc_int            number;
-    uint64_t             buf;    /**< Buffer in TA address space */
+    tarpc_ptr            buf;    /**< Buffer in TA address space */
     tarpc_size_t         buflen;
 };
 
@@ -849,7 +979,7 @@ struct tarpc_wsa_async_get_serv_by_name_in {
     tarpc_uint           wmsg;
     char                 name<>;
     char                 proto<>;
-    uint64_t             buf;    /**< Buffer in TA address space */
+    tarpc_ptr            buf;    /**< Buffer in TA address space */
     tarpc_size_t         buflen;
 };
 
@@ -865,7 +995,7 @@ struct tarpc_wsa_async_get_serv_by_port_in {
     tarpc_uint           wmsg;
     tarpc_uint           port;
     char                 proto<>;
-    uint64_t             buf;    /**< Buffer in TA address space */
+    tarpc_ptr            buf;    /**< Buffer in TA address space */
     tarpc_size_t         buflen;
 };
 
@@ -2309,12 +2439,21 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(wsa_recv_disconnect)
         RPC_DEF(wsa_recv_msg)
         RPC_DEF(wsa_address_to_string)
+        RPC_DEF(wsa_string_to_address)
         RPC_DEF(wsa_async_get_host_by_addr)
         RPC_DEF(wsa_async_get_host_by_name)
         RPC_DEF(wsa_async_get_proto_by_name)
         RPC_DEF(wsa_async_get_proto_by_number)
         RPC_DEF(wsa_async_get_serv_by_name)
         RPC_DEF(wsa_async_get_serv_by_port)
+        RPC_DEF(wsa_cancel_async_request)
+        RPC_DEF(alloc_buf)
+        RPC_DEF(free_buf)
+        RPC_DEF(set_buf)
+        RPC_DEF(get_buf)
+        RPC_DEF(alloc_wsabuf)
+        RPC_DEF(free_wsabuf)
+        RPC_DEF(wsa_connect)
 
         RPC_DEF(create_window)
         RPC_DEF(destroy_window)
