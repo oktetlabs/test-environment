@@ -1,13 +1,11 @@
 #! /bin/sh
 
-STARTING_DIR=`pwd`
 DISPATCHER=`which $0` 
 
 # which somewhere may give only relative, but not absolute path to the 
 # dispatcher directory, therefore the following more safe and portable way
 # is chosen.
-DISP_DIRNAME=`dirname $DISPATCHER`
-pushd $DISP_DIRNAME >/dev/null
+pushd `dirname $DISPATCHER` >/dev/null
 DISPATCHER_DIR=`pwd`
 popd >/dev/null
 
@@ -37,17 +35,17 @@ usage()
     echo -e '  '--conf-rcf='<filename>'\\t\\t'RCF config file (rcf.conf by default)'
     echo -e '  '--conf-rgt='<filename>'\\t\\t'RGT config file (rgt.conf by default)'
     echo
-    echo -e '  '--storage='<string>'\\t\\tconfiguration string for the storage
-    echo -e \\t\\t\\t\\twith data to be updated by Dispatcher
-    echo -e '  '--update-files='<list>'\\t\\tupdate files and directories specified
-    echo -e \\t\\t\\t\\tin the '<list>' from the storage
-    echo
-    echo -e '  '--log-storage\\t\\t\\tconfiguration string for the storage
-    echo -e \\t\\t\\t\\twhere raw log should be submitted
-    echo -e '  '--log-storage-dir='<directory>'\\traw log directory in the storage 
-    echo -e '  '--log-dir='<directory>'\\t\\t'local directory for raw log (. by default)'
-    echo -e '  '--log-online\\t\\t\\tconvert and print log on stdout during work
-    echo    
+#    echo -e '  '--storage='<string>'\\t\\tconfiguration string for the storage
+#    echo -e \\t\\t\\t\\twith data to be updated by Dispatcher
+#    echo -e '  '--update-files='<list>'\\t\\tupdate files and directories specified
+#    echo -e \\t\\t\\t\\tin the '<list>' from the storage
+#    echo
+#    echo -e '  '--log-storage\\t\\t\\tconfiguration string for the storage
+#    echo -e \\t\\t\\t\\twhere raw log should be submitted
+#    echo -e '  '--log-storage-dir='<directory>'\\traw log directory in the storage 
+#    echo -e '  '--log-dir='<directory>'\\t\\t'local directory for raw log (. by default)'
+#    echo -e '  '--log-online\\t\\t\\tconvert and print log on stdout during work
+#    echo    
     echo -e '  '--lock-dir='<directory>'\\t'lock file directory (/tmp/te/lock by default)'
     echo
     echo -e '  '--vg-rcf\\t\\t\\t'Run RCF under valgrind (without by default)'
@@ -90,7 +88,8 @@ exit_with_log()
                    --storage-dir="${LOG_STORAGE_DIR}" ;
     rm -f ${LOCK_DIR}/ds
     rm -rf ${TE_TMP}
-    exit 1 ;
+    popd >/dev/null
+    exit 1
 }
 
 # Parse options
@@ -203,7 +202,7 @@ while test -n "$1" ; do
 
         --tester-*) TESTER_OPTS="${TESTER_OPTS} --${1#--tester-}" ;;
 
-        *)  echo "Unknown option: $1" ;
+        *)  echo "Unknown option: $1" >&2;
             usage ;
             exit 1 ;;
     esac
@@ -212,7 +211,7 @@ done
 
 
 if test -e ${LOCK_DIR}/ds ; then
-    echo "Cannot obtain lock"
+    echo "Cannot obtain lock" >&2
     exit 2
 fi
 
@@ -221,7 +220,7 @@ mkdir -p -m 1777 ${LOCK_DIR}
 # Lock file should be writable for creator only
 touch ${LOCK_DIR}/ds
 if test $? -ne 0 ; then
-    echo "Cannot obtain lock"
+    echo "Cannot obtain lock" >&2
     exit 2
 fi
 
@@ -258,30 +257,33 @@ for i in BUILDER LOGGER TESTER CONFIGURATOR RCF RGT ; do
 done
 
 if test -z "$TE_BASE" -a -n "$BUILDER" ; then
-    echo "Cannot find TE sources for building - exiting." ;
+    echo "Cannot find TE sources for building - exiting." >&2
     rm -f ${LOCK_DIR}/ds
-    exit 1 ;
+    exit 1
 fi
 
 
 if test -n "$BUILDER" ; then
-    # Verifiing build directory
+    # Verifying build directory
     if test -e dispatcher.sh -a -e configure.ac ; then
-        mkdir -p build ;
-        cd build ;
+        mkdir -p build
+        TE_BUILD=`pwd`/build
+    else
+        TE_BUILD=`pwd`
     fi
-    export TE_BUILD=`pwd`
 else
     if test -e build/builder.conf.processed ; then
-        export TE_BUILD=`pwd`/build
+        TE_BUILD=`pwd`/build
     fi
     if test -z "${TE_BUILD}" ; then
-        export TE_BUILD=`pwd`
+        TE_BUILD=`pwd`
         if test -z "${QUIET}" ; then
             echo "Guessing TE_BUILD=${TE_BUILD}"
         fi
     fi
 fi
+export TE_BUILD
+pushd $TE_BUILD >/dev/null
 
 # Create directory for temporary files
 if test -z "$TE_TMP" ; then
@@ -318,7 +320,7 @@ if test -z "${TE_PATH}" ; then
         TMP=`dirname ${TMP}`
         TE_PATH=${TE_PATH/%\/bin/}
         if test x${TE_PATH} = x${TMP} ; then
-            echo "dispatcher.sh is found in unexpected path."
+            echo "dispatcher.sh is found in unexpected path." >&2
             exit_with_log
         fi
     fi
@@ -335,10 +337,8 @@ if test -z "${TE_PATH}" ; then
         host=`$CONFIG_GUESS` 
     fi        
     if test -z "$host" ; then
-        echo 'Cannot determine host platform.'
-        rm -f ${LOCK_DIR}/ds
-        rm -rf ${TE_TMP}
-        exit 1
+        echo 'Cannot determine host platform.' >&2
+        exit_with_log
     fi
     TE_PATH=${TE_INSTALL}/${host}
 fi
@@ -363,10 +363,8 @@ fi
 TMP=`which te_log_init 2>/dev/null` ;
 if test -z "$TMP" ; then
     if test -z "$BUILDER" ; then
-        echo "TE core executables are not installed - exiting." ;
-        rm -f ${LOCK_DIR}/ds
-        rm -rf ${TE_TMP}
-        exit 1 ;
+        echo "TE core executables are not installed - exiting." >&2
+        exit_with_log
     fi
     #Export path to logging, building and storage scripts, which are not installed yet
     export PATH=$PATH:${TE_BASE}/engine/logger:${TE_BASE}/engine/builder:${TE_BASE}/lib/storage
@@ -379,18 +377,15 @@ te_log_init
 
 # Build Test Environment
 if test -n "$BUILDER" ; then
-    cd $TE_BASE    
-    for i in `find . -name configure.ac` ; do 
-        DIRNAME=`dirname $i`
-        CURRDIR=`pwd`
-        cd $DIRNAME
+    for i in `find $TE_BASE -name configure.ac` ; do 
+        pushd `dirname $i` >/dev/null
         if test ! -e configure ; then
-            echo Calling aclocal/autoconf/automake in `pwd`
+            echo "Calling aclocal/autoconf/automake in `pwd`"
             aclocal -I ${TE_BASE}/aux || exit_with_log
             autoconf || exit_with_log
             automake || exit_with_log
         fi
-        cd $CURRDIR
+        popd >/dev/null
     done    
     cd ${TE_BUILD}
     # FINAL ${TE_BASE}/configure --prefix=${TE_INSTALL} --with-config=${CONF_BUILDER} 2>&1 | te_builder_log
@@ -409,8 +404,6 @@ fi
 if test -n "${SUITE_SOURCES}" -a -n "${BUILD_TS}" ; then
     te_build_suite `basename ${SUITE_SOURCES}` $SUITE_SOURCES || exit_with_log
 fi    
-
-cd ${STARTING_DIR}
 
 rm -f valgrind.* vg.*
 
@@ -510,5 +503,7 @@ rm -f tmp_raw_log.xml
 
 rm -f ${LOCK_DIR}/ds
 rm -rf ${TE_TMP}
+
+popd >/dev/null
 
 exit 0
