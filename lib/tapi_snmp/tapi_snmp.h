@@ -265,9 +265,9 @@ extern int tapi_snmp_gen_csap_create(const char *ta, int sid,
 
 
 /**
- * The function send SNMP-SET request to the SNMP agent, associated
- * with a particular SNMP CSAP. Note, that the function waits for SNMP agent
- * response.
+ * The function send SNMP-SET request for specified objects to the SNMP agent, 
+ * associated with a particular SNMP CSAP. 
+ * Note, that the function waits for SNMP agent response.
  * 
  * @param ta            Test Agent name
  * @param sid           RCF Session id.
@@ -284,6 +284,32 @@ extern int tapi_snmp_gen_csap_create(const char *ta, int sid,
 extern int tapi_snmp_set(const char *ta, int sid, int csap_id, 
                          const tapi_snmp_varbind_t *var_binds, 
                          size_t num_vars, int *errstat, int *errindex);
+
+
+/**
+ * The function send SNMP-SET request for specified objects to the SNMP agent, 
+ * associated with a particular SNMP CSAP. 
+ * Note, that the function waits for SNMP agent response.
+ * 
+ * @param ta            Test Agent name
+ * @param sid           RCF Session id.
+ * @param csap_id       identifier of an SNMP CSAP.
+ * @param errstat       Rhe value of error-status field in response
+ *                      message (OUT), may be zero if not need.
+ * @param errindex      Rhe value of error-index field in response
+ *                      message (OUT), may be zero if not need.
+ * @param common_index  Common index part of OID, which should be concatened
+ *                      to all varbind's OIDs below; may be NULL. 
+ * @param var_binds     Begin of argument ellipsis, which is sequence of 
+ *                      pointers to varbinds, ended by NULL.
+ * 
+ * @return zero on success or error code.
+ */
+extern int tapi_snmp_set_row(const char *ta, int sid, int csap_id, 
+                             int *errstat, int *errindex,
+                             const tapi_snmp_oid_t *common_index,
+                             const tapi_snmp_varbind_t *var_binds, ...);
+
 
 /**
  * The function makes an attempt to set an integer value for an SNMP object
