@@ -341,6 +341,17 @@ rgt_log_start_element(void *user_data, const xmlChar *name,
             }
             return;
 
+        case RGT_XML2HTML_STATE_FILE:
+            if (strcmp(name, "br") == 0)
+            {
+                rgt_tmpls_lib_output(out_fd, &html_tmpls[LOG_PART_BR],
+                                     NULL, user_vars);
+            }
+            else
+                assert(0);
+
+            return;
+
         case RGT_XML2HTML_STATE_MEM_DUMP:
             assert(strcmp(name, "row") == 0);
             process_mem_row(ctx, name, atts, XML_ELEMENT_START);
@@ -388,8 +399,13 @@ rgt_log_end_element(void *user_data, const xmlChar *name)
             return;
 
         case RGT_XML2HTML_STATE_FILE:
-            assert(strcmp(name, "file") == 0);
-            ctx->state = RGT_XML2HTML_STATE_LOG_MSG;
+            if (strcmp(name, "file") == 0)
+            {
+                ctx->state = RGT_XML2HTML_STATE_LOG_MSG;
+                return;
+            }
+            assert(strcmp(name, "br") == 0);
+
             return;
 
         case RGT_XML2HTML_STATE_MEM_DUMP_ELEM:
