@@ -1027,10 +1027,8 @@ cfg_add_instance(const cfg_oid *oid, cfg_handle *handle,
         cfg_types[type].val2str(value, &valstr);
         if (strncmp(oid2str, AGENT_BOID, BOID_LEN) == 0)
         {
-            if (valstr == NULL)
-                RING("Instance %s is added.",  oid);
-            else
-                RING("Instance %s with value %s is added", oid, valstr);
+            RING("Added %s = %s", oid,
+                 (valstr != NULL) ? valstr : "(none)");
         }
         free(valstr);
     }
@@ -1132,10 +1130,8 @@ cfg_add_instance_str(const char *oid, cfg_handle *handle,
         cfg_types[type].val2str(value, &valstr);
         if (strncmp(oid, AGENT_BOID, BOID_LEN) == 0)
         {
-            if (valstr == NULL)
-                RING("Instance %s is added.",  oid);
-            else
-                RING("Instance %s with value %s is added", oid, valstr);
+            RING("Added %s = %s", oid,
+                 (valstr != NULL) ? valstr : "(none)");
         }
         free(valstr);
     }
@@ -1259,7 +1255,7 @@ kill(cfg_handle handle)
         if (ret_val == 0 &&  oidstr != NULL && 
             strncmp(oidstr, AGENT_BOID, BOID_LEN) == 0)
         {
-            RING("Instance %s is deleted.", oidstr);
+            RING("Deleted %s", oidstr);
         }
     }
     free(oidstr);
@@ -1387,7 +1383,7 @@ cfg_set_instance_gen(cfg_handle handle, te_bool local, cfg_val_type type,
         if (ret_val == 0 && cfg_get_oid_str(handle, &oidstr) == 0 && 
             strncmp(oidstr, AGENT_BOID, BOID_LEN) == 0 && valstr != NULL)
         {
-            RING("Instance %s value is set to %s.", oidstr, valstr);
+            RING("Set %s = %s", oidstr, valstr);
         }
         free(oidstr);
         free(valstr);
