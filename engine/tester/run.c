@@ -1510,7 +1510,8 @@ iterate_test(tester_ctx *ctx, run_item *test,
             test_ctx_cloned = TRUE;
         }
 
-        if ((test_ctx->flags & TESTER_QUIET_SKIP) &&
+        if ((~ctx->flags & TESTER_INLOGUE) &&
+            (test_ctx->flags & TESTER_QUIET_SKIP) &&
             !tester_is_run_required(test_ctx, test, &(i->params)))
         {
             /* Silently skip without any logs */
@@ -1527,7 +1528,8 @@ iterate_test(tester_ctx *ctx, run_item *test,
                          ctx->id, id, ctx->flags);
         log_test_start(test, ctx->id, id, &(i->params));
 
-        if ((~test_ctx->flags & TESTER_QUIET_SKIP) &&
+        if ((~ctx->flags & TESTER_INLOGUE) &&
+            (~test_ctx->flags & TESTER_QUIET_SKIP) &&
             !tester_is_run_required(test_ctx, test, &(i->params)))
         {
             test_result = ETESTSKIP;

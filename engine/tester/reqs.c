@@ -193,7 +193,7 @@ te_bool
 tester_is_run_required(tester_ctx *ctx, const run_item *test,
                        const test_params *params)
 {
-    te_bool                     result = TRUE;
+    te_bool                     result;
     test_requirements          *targets = &ctx->reqs;
     const test_requirements    *reqs;
     test_requirement           *t, *tn;
@@ -218,6 +218,11 @@ tester_is_run_required(tester_ctx *ctx, const run_item *test,
             return FALSE;
     }
 
+    /*
+     * If no requirements specified for a test package/session, run it.
+     * If no requirements specified for a test script, skip it.
+     */
+    result = (test->type != RUN_ITEM_SCRIPT);
     for (t = targets->tqh_first; t != NULL; t = tn)
     {
         tn = t->links.tqe_next;
@@ -235,7 +240,7 @@ tester_is_run_required(tester_ctx *ctx, const run_item *test,
              * test requirementsis not empty, therefore, one of
              * requirements must be complied.
              */
-            if (!(t->exclude) && !(s->sticky))
+            if (result && !(t->exclude) && !(s->sticky))
                 result = FALSE;
 
             if (strcmp(t->id, req_get(s, params)) == 0)
