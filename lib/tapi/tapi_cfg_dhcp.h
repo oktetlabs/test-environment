@@ -1,7 +1,7 @@
 /** @file
- * @brief Test API to use setjmp/longjmp.
+ * @brief Test API to configure DHCP.
  *
- * Definition of API to deal with thread-safe stack of jumps.
+ * Definition of API to configure DHCP.
  *
  *
  * Copyright (C) 2004 Test Environment authors (see file AUTHORS
@@ -28,8 +28,8 @@
  * $Id$
  */
 
-#ifndef __TE_TAPI_JMP_H__
-#define __TE_TAPI_JMP_H__
+#ifndef __TE_TAPI_CFG_DHCP_H__
+#define __TE_TAPI_CFG_DHCP_H__
 
 #ifdef __cplusplus
 extern "C" {
@@ -39,4 +39,4 @@ extern "C" {
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
-#endif /* !__TE_TAPI_JMP_H__ */
+#endif /* !__TE_TAPI_CFG_DHCP_H__ */

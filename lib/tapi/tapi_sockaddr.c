@@ -3,6 +3,7 @@
  *
  * Implementation of test API for working with struct sockaddr.
  *
+ *
  * Copyright (C) 2004 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
  *
