@@ -1018,24 +1018,23 @@ TARPC_FUNC(recvmsg,
 TARPC_FUNC(wsarecv_ex,  
 {
     COPY_ARG(buf);
+    COPY_ARG(flags);
 },
 {
-#if 0
-    int flags;
-    
     INIT_CHECKED_ARG(out->buf.buf_val, out->buf.buf_len, in->len);
-    
-    flags = send_recv_flags_rpc2h(in->flags);
-    MAKE_CALL(out->retval = WSARecvEx(in->fd, in->len == 0 : NULL ?
+    if (out->flags.flags_len > 0)
+        out->flags.flags_val[0] = 
+            send_recv_flags_rpc2h(out->flags.flags_val[0]);
+        
+    MAKE_CALL(out->retval = WSARecvEx(in->fd, in->len == 0 ? NULL :
                                       out->buf.buf_val,
 				      in->len,
-                                      &flags));
-    out->flags = send_recv_flags_h2rpc(flags);
-#else
-    UNUSED(out);
-    UNUSED(list);
-    ERROR("Unsupported function WSARecvEx() is called");
-#endif
+                                      out->flags.flags_len == 0 ? NULL :
+                                      out->flags.flags_val));
+
+    if (out->flags.flags_len > 0)
+        out->flags.flags_val[0] = 
+            send_recv_flags_h2rpc(out->flags.flags_val[0]);
 }
 )
 
