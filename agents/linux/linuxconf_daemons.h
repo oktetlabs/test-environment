@@ -159,6 +159,18 @@ extern const char *ds_backup(int index);
  */
 extern te_bool ds_config_changed(int index);
 
+
+/**
+ * Look for registered service with specified configuration directory
+ * and file name.
+ *
+ * @param dir   configuration directory name
+ * @param name  service name
+ *
+ * @return index or -1
+ */
+extern int ds_lookup(const char *dir, const char *name);
+
 /** 
  * Notify backup manager that the configuration file was touched.
  *
@@ -191,7 +203,7 @@ extern void ds_config_touch(int index);
 /* Daemon handling */
 
 /**
- * Get current state daemon or xinetd service.
+ * Get current state daemon.
  *
  * @param gid   unused
  * @param oid   daemon name
@@ -202,7 +214,7 @@ extern void ds_config_touch(int index);
 extern int daemon_get(unsigned int gid, const char *oid, char *value);
 
 /**
- * Start/stop daemon or xinetd service.
+ * Start/stop daemon.
  *
  * @param gid   unused
  * @param oid   daemon name

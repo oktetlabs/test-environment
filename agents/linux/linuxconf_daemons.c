@@ -43,6 +43,9 @@ static int n_ds = 0;
 /** Auxiliary buffer */
 static char buf[2048];
 
+/** /etc/hosts backup index */
+static int hosts_index;
+
 /** 
  * Get configuration file name for the daemon/service.
  *
@@ -54,6 +57,33 @@ const char *
 ds_config(int index)
 {
     return (index >= n_ds || index < 0) ? "" : ds[index].config_file;
+}
+
+/**
+ * Look for registered service with specified configuration directory
+ * and file name.
+ *
+ * @param dir   configuration directory name
+ * @param name  service name
+ *
+ * @return index or -1
+ */
+int 
+ds_lookup(const char *dir, const char *name)
+{
+    int dirlen = strlen(dir);
+    int i;
+    
+    for (i = 0; i < n_ds; i++)
+    {
+        if (strncmp(dir, ds[i].config_file, dirlen) == 0 &&
+            strcmp(name, ds[i].config_file + dirlen) == 0)
+        {
+            return i;
+        }
+    }
+    
+    return -1;
 }
 
 /** 
@@ -167,7 +197,7 @@ ds_restore_backup()
 }
 
 /**
- * Get current state daemon or xinetd service.
+ * Get current state daemon.
  *
  * @param gid   unused
  * @param oid   daemon name
@@ -193,7 +223,7 @@ daemon_get(unsigned int gid, const char *oid, char *value)
 }
 
 /**
- * Get current state daemon or xinetd service.
+ * Get current state daemon.
  *
  * @param gid   unused
  * @param oid   daemon name
@@ -243,25 +273,33 @@ daemon_set(unsigned int gid, const char *oid, const char *value)
 static int
 xinetd_get(unsigned int gid, const char *oid, char *value)
 {
-    FILE       *f;
-    const char *daemon_name = get_ds_name(oid);
+    int   index = ds_lookup(XINETD_ETC_DIR, get_ds_name(oid));
+    FILE *f;
 
     UNUSED(gid);
-
-    if (daemon_name == NULL)
-    {
+    
+    if (index < 0)
         return TE_RC(TE_TA_LINUX, ENOENT);
+        
+    if ((f = fopen(ds_config(index), "r")) == NULL)
+        return TE_RC(TE_TA_LINUX, errno);
+
+    strcpy(value, "1");
+    while (fgets(buf, sizeof(buf), f) != NULL)
+    {
+        char *tmp = strstr(buf, "disable");
+        char *comment = strstr(buf, "#");
+        
+        if (tmp == NULL || (comment != NULL && comment < tmp))
+            continue;
+            
+        if (strstr(tmp, "yes") == 0)
+        {
+            strcpy(value, "0");
+            break;
+        }
     }
-
-    sprintf(buf, "LANG= /sbin/chkconfig --list %s", daemon_name);
-    if ((f = popen(buf, "r")) == NULL)
-        return errno;
-
-    if (fgets(buf, sizeof(buf), f) == NULL)
-        return TE_RC(TE_TA_LINUX, EPIPE);
-
-    sprintf(value, "%s", strstr(buf, "on") ? "1" : "0");
-    pclose(f);
+    fclose(f);
 
     return 0;
 }
@@ -270,26 +308,41 @@ xinetd_get(unsigned int gid, const char *oid, char *value)
 static int
 xinetd_set(unsigned int gid, const char *oid, const char *value)
 {
-    const char *daemon_name = get_ds_name(oid);
+    int   index = ds_lookup(XINETD_ETC_DIR, get_ds_name(oid));
+    FILE *f, *g;
+    int   rc;
 
     UNUSED(gid);
+
+    if (index < 0)
+        return TE_RC(TE_TA_LINUX, ENOENT);
 
     if (strlen(value) != 1 || (*value != '0' && *value != '1'))
         return TE_RC(TE_TA_LINUX, EINVAL);
 
-    if (daemon_name == NULL)
+    if ((f = fopen(ds_backup(index), "r")) == NULL) 
     {
-        return TE_RC(TE_TA_LINUX, ENOENT);
+        rc = TE_RC(TE_TA_LINUX, errno);
+        ERROR("Cannot open file %s for reading", ds_backup(index));
+        return rc;                                            
     }
 
-    sprintf(buf, "/sbin/chkconfig %s %s >/dev/null 2>&1", daemon_name,
-            *value == '0' ? "off" : "on");
-
-    if (ta_system(buf) != 0)
+    if ((g = fopen(ds_config(index), "w")) == NULL) 
     {
-        ERROR("Command '%s' failed", buf);
-        return TE_RC(TE_TA_LINUX, ETESHCMD);
+        rc = TE_RC(TE_TA_LINUX, errno);
+        ERROR("Cannot open file %s for writing", ds_config(index));
+        return rc;                                            
     }
+    ds_config_touch(index);
+
+    while (fgets(buf, sizeof(buf), f) != NULL)
+    {
+        if (strstr(buf, "disable") == NULL)
+            fwrite(buf, 1, strlen(buf), g);
+    }
+    fprintf(g, "disable = %s", *value == '0' ? "yes" : "no");
+    fclose(f);
+    fclose(g);
 
     ta_system("/etc/init.d/xinetd reload >/dev/null 2>&1");
 
@@ -1773,7 +1826,6 @@ static char *smtp_servers[] = {
     "exim4"
 };    
 
-static int hosts_index;
 static int sendmail_index = -1;
 
 static char *smtp_initial;
@@ -1808,6 +1860,7 @@ update_etc_hosts(char *ip)
         ERROR("Cannot open file %s for writing", ds_config(hosts_index));
         return rc;                                            
     }
+    ds_config_touch(hosts_index);
 
     while (fgets(buf, sizeof(buf), f) != NULL)
     {
