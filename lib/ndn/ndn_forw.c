@@ -71,7 +71,11 @@ Forwarder-Action-Reorder-Params ::= SEQUENCE {
 }
 */
 static asn_enum_entry_t _ndn_reorder_type_enum_entries[] = 
-{ {"disabled", 0}, {"random", 1}, {"reversed",   2}, };
+{ 
+    {"disabled", FORW_REORDER_DISABLED}, 
+    {"random",   FORW_REORDER_RANDOM}, 
+    {"reversed", FORW_REORDER_REVERSED}, 
+};
 static asn_type ndn_forw_reorder_type_s = {
     "Forw-Delay-Type", {APPLICATION, 15}, ENUMERATED,
     sizeof(_ndn_reorder_type_enum_entries)/sizeof(asn_enum_entry_t), 
@@ -98,7 +102,8 @@ const asn_type * const ndn_forw_reorder = &ndn_forw_reorder_s;
 
 /*
 Forwarder-Action-Drop-Params ::= CHOICE {
-    random-rate      [0] INTEGER(1..100),
+    random-rate      [0] INTEGER(e..100),
+    r
     pattern-mask     [1] BIT STRING
 } 
 */ 
@@ -178,13 +183,13 @@ ndn_forw_delay_to_plain(const asn_value *val, ndn_forw_delay_t *forw_delay)
 
     d_len = sizeof (forw_delay->delay_min);
     rc = asn_read_value_field(val, &(forw_delay->delay_min), &d_len, 
-                                    "delay_min.#plain"); 
+                              "delay_min.#plain"); 
     if (rc)
         return rc;
 
     d_len = sizeof (forw_delay->delay_max);
     rc = asn_read_value_field(val, &(forw_delay->delay_max), &d_len, 
-                                    "delay_max.#plain"); 
+                              "delay_max.#plain"); 
     if (rc)
         return rc;
 
@@ -207,12 +212,30 @@ ndn_forw_delay_to_plain(const asn_value *val, ndn_forw_delay_t *forw_delay)
  */ 
 
 int 
-ndn_forw_reorder_to_plain(const asn_value *val, ndn_forw_reorder_t *forw_reorder)
+ndn_forw_reorder_to_plain(const asn_value *val,
+                          ndn_forw_reorder_t *forw_reorder)
 {
-    UNUSED(val);
-    UNUSED(forw_reorder);
+    int rc = 0;
+    int d_len; 
 
-    return EASNINCOMPLVAL; /* unsupported, imitate absent */
+    if (val == NULL || forw_reorder == NULL) 
+        return EINVAL;
+
+    d_len = sizeof (forw_reorder->type);
+    rc = asn_read_value_field(val, &forw_reorder->type, &d_len, "type");
+    if (rc)
+        return rc;
+
+    d_len = sizeof (forw_reorder->timeout);
+    rc = asn_read_value_field(val, &forw_reorder->timeout, &d_len, 
+                              "timeout");
+    if (rc)
+        return rc;
+
+    d_len = sizeof (forw_reorder->r_size);
+    rc = asn_read_value_field(val, &forw_reorder->r_size, &d_len, 
+                              "reorder-size"); 
+    return rc;
 }
 
 /** 
@@ -367,20 +390,50 @@ ndn_forw_action_plain_to_asn(ndn_forw_action_plain *forw_action,
                             
         switch (forw_action->drop.type)
         {
-        case FORW_DROP_DISABLED:
-            break; /* do nothing */
-        case FORW_DROP_RANDOM:
-            rc = asn_write_value_field(val, 
-                                    &forw_action->drop.rate,
-                                    sizeof(forw_action->drop.rate),
-                                    "drop.#random-rate");
-            break;
-        case FORW_DROP_PATTERN:
-            rc = ETENOSUPP; /* TODO */
+            case FORW_DROP_DISABLED:
+                break; /* do nothing */
+            case FORW_DROP_RANDOM:
+                rc = asn_write_value_field(val, &forw_action->drop.rate,
+                                           sizeof(forw_action->drop.rate),
+                                           "drop.#random-rate");
+                break;
+            case FORW_DROP_PATTERN:
+                rc = asn_write_value_field(val, 
+                                           forw_action->drop.pattern_mask,
+                                           forw_action->drop.mask_len,
+                                           "drop.#pattern-mask");
+                break;
         } 
         if (rc) break;
+
+        if (forw_action->reorder.type != FORW_REORDER_DISABLED)
+        {
+            rc = asn_write_value_field(val, &forw_action->reorder.type,
+                                       sizeof(forw_action->reorder.type),
+                                       "reorder.type");
+            if (rc) break;
+            rc = asn_write_value_field(val, &forw_action->reorder.timeout,
+                                       sizeof(forw_action->reorder.timeout),
+                                       "reorder.timeout.#plain");
+            if (rc) break;
+            rc = asn_write_value_field(val, &forw_action->reorder.r_size,
+                                       sizeof(forw_action->reorder.r_size),
+                                       "reorder.reorder-size.#plain");
+            if (rc) break;
+        }
+
+        if (forw_action->delay.type != FORW_DELAY_DISABLED)
+        {
+            rc = asn_write_value_field(val, &forw_action->delay.delay_min,
+                                       sizeof(forw_action->delay.delay_min),
+                                       "delay.delay-min.#plain");
+            if (rc) break;
+            rc = asn_write_value_field(val, &forw_action->delay.delay_max,
+                                       sizeof(forw_action->delay.delay_max),
+                                       "delay.delay-max.#plain");
+            if (rc) break;
+        }
         
-        /* TODO delay and reorder */
     } while (0);
 
     if (rc)

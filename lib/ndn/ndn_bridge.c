@@ -174,23 +174,23 @@ ndn_bpdu_asn_to_plain(const asn_value *pkt, ndn_stp_bpdu_t *bpdu)
     if (rc == 0)
     {
         len = sizeof(bpdu->cfg.root_id);
-        rc = asn_read_value_field (pkt, bpdu->cfg.root_id, &len, 
-                "content.#cfg.root-id.#plain");
+        rc = asn_read_value_field(pkt, bpdu->cfg.root_id, &len, 
+                                  "content.#cfg.root-id.#plain");
     }
 
     READ_BPDU_CFG_FIELD(root_path_cost, "root-path-cost" );
     if (rc == 0)
     {
         len = sizeof(bpdu->cfg.bridge_id);
-        rc = asn_read_value_field (pkt, bpdu->cfg.bridge_id, &len, 
-                "content.#cfg.bridge-id.#plain");
+        rc = asn_read_value_field(pkt, bpdu->cfg.bridge_id, &len, 
+                                  "content.#cfg.bridge-id.#plain");
     }
 
-    READ_BPDU_CFG_FIELD(port_id, "port-id" );
-    READ_BPDU_CFG_FIELD(msg_age, "message-age" );
-    READ_BPDU_CFG_FIELD(max_age, "max-age" );
+    READ_BPDU_CFG_FIELD(port_id,    "port-id" );
+    READ_BPDU_CFG_FIELD(msg_age,    "message-age" );
+    READ_BPDU_CFG_FIELD(max_age,    "max-age" );
     READ_BPDU_CFG_FIELD(hello_time, "hello-time" );
-    READ_BPDU_CFG_FIELD(fwd_delay, "forward-delay" ); 
+    READ_BPDU_CFG_FIELD(fwd_delay,  "forward-delay" ); 
 
 #undef READ_BPDU_FIELD
 #undef READ_BPDU_CFG_FIELD
@@ -217,11 +217,11 @@ ndn_bpdu_plain_to_asn(const ndn_stp_bpdu_t *bpdu)
     if (new_value == NULL)
         return NULL;
 
-#define WRITE_BPDU_FIELD(fld, label) \
-    do if (rc == 0) \
-    { \
-        rc = asn_write_value_field (new_value, &bpdu-> fld , sizeof(bpdu->fld), \
-                label ".#plain");\
+#define WRITE_BPDU_FIELD(fld_, label_) \
+    do if (rc == 0)                                                     \
+    {                                                                   \
+        rc = asn_write_value_field(new_value, &bpdu-> fld_ ,            \
+                                   sizeof(bpdu->fld_),label_ ".#plain");\
     } while (0)
 
     WRITE_BPDU_FIELD(version, "version-id" ); 
@@ -246,28 +246,30 @@ ndn_bpdu_plain_to_asn(const ndn_stp_bpdu_t *bpdu)
 
 
 
-#define WRITE_BPDU_CFG_FIELD(fld, label) \
-    do if (rc == 0) \
-    { \
-        rc = asn_write_value_field (new_value, &bpdu->cfg. fld , sizeof(bpdu->cfg.fld), \
-                "content.#cfg." label ".#plain");\
+#define WRITE_BPDU_CFG_FIELD(fld_, label_) \
+    do                                                                    \
+    {                                                                     \
+        if (rc == 0)                                                      \
+            rc = asn_write_value_field(new_value, &bpdu->cfg.             \
+                                       fld_, sizeof(bpdu->cfg.fld_),      \
+                                       "content.#cfg." label_ ".#plain"); \
     } while (0)
 
     WRITE_BPDU_CFG_FIELD(flags, "flags" ); 
 
     if (rc == 0)
     {
-        rc = asn_write_value_field (new_value, bpdu->cfg.root_id, 
-                sizeof(bpdu->cfg.root_id), 
-                "content.#cfg.root-id.#plain");
+        rc = asn_write_value_field(new_value, bpdu->cfg.root_id, 
+                                   sizeof(bpdu->cfg.root_id), 
+                                   "content.#cfg.root-id.#plain");
     }
 
     WRITE_BPDU_CFG_FIELD(root_path_cost, "root-path-cost" );
     if (rc == 0)
     {
         int len = sizeof(bpdu->cfg.bridge_id);
-        rc = asn_write_value_field (new_value, bpdu->cfg.bridge_id, len, 
-                "content.#cfg.bridge-id.#plain");
+        rc = asn_write_value_field(new_value, bpdu->cfg.bridge_id, len, 
+                                   "content.#cfg.bridge-id.#plain");
     }
 
 

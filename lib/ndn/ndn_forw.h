@@ -76,7 +76,7 @@ typedef struct {
     ndn_forw_reorder_type_t type;
     
     int timeout;
-    int reorder_size;
+    int r_size;
 } ndn_forw_reorder_t;
 
 

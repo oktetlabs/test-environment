@@ -39,15 +39,15 @@ extern "C" {
 
 /** Structure represents Configuration BPDU */
 typedef struct ndn_stp_cfg_bpdu_t {
-    uint8_t  flags; /**< Value of the Flags field */
-    uint8_t  root_id[8]; /**< Value of the Root Identifier field */
+    uint8_t  flags;          /**< Value of the Flags field */
+    uint8_t  root_id[8];     /**< Value of the Root Identifier field */
     uint32_t root_path_cost; /**< Value of the Root Path Cost field */
-    uint8_t  bridge_id[8]; /**< Value of the Bridge Identifier field */
-    uint16_t port_id; /**< Value of the Port Identifier field */
-    uint16_t msg_age; /**< Value of the Message Age field */
-    uint16_t max_age; /**< Value of the Max Age field */
-    uint16_t hello_time; /**< Value of the Hello Time field */
-    uint16_t fwd_delay; /**< Value of the Forward Delay field */
+    uint8_t  bridge_id[8];   /**< Value of the Bridge Identifier field */
+    uint16_t port_id;        /**< Value of the Port Identifier field */
+    uint16_t msg_age;        /**< Value of the Message Age field */
+    uint16_t max_age;        /**< Value of the Max Age field */
+    uint16_t hello_time;     /**< Value of the Hello Time field */
+    uint16_t fwd_delay;      /**< Value of the Forward Delay field */
 } ndn_stp_cfg_bpdu_t;
 
 /**
@@ -64,12 +64,13 @@ typedef struct ndn_stp_cfg_bpdu_t {
 
 /** Structure represents STP BPDU */
 typedef struct ndn_stp_bpdu_t {
-    uint8_t version; /**< Protocol version identifier */
+    uint8_t version;   /**< Protocol version identifier */
     uint8_t bpdu_type; /**< STP BPDU type - Configuration or Notification */
 
     union {
         struct ndn_stp_cfg_bpdu_t cfg; /**< Content of Configuration BPDU */
-        struct ndn_stp_tcn_bpdu_t {} tcn[0]; /**< Topology Change Notification 
+        struct ndn_stp_tcn_bpdu_t {} tcn[0]; 
+                                       /**< Topology Change Notification 
                                             BPDU has no content */
     }; /**< BPDU content */
 } ndn_stp_bpdu_t;
@@ -88,9 +89,9 @@ typedef struct ndn_stp_bpdu_t {
 /** 
  * Convert Bridge STP PDU ASN value to plain C structure. 
  * 
- * @param pkt           - ASN value of type Bridge-PDU or Generic-PDU with 
- *                        choice "bridge". 
- * @param bpdu          - converted structure (OUT).
+ * @param pkt           ASN value of type Bridge-PDU or Generic-PDU with 
+ *                      choice "bridge". 
+ * @param bpdu          converted structure (OUT).
  *
  * @return zero on success or error code.
  */ 
