@@ -1,7 +1,7 @@
 #!/bin/sh
 
 OPTS=""
-while test ${1#-} != $1 ; do
+while test "${1#-}" != "$1" ; do
     OPTS="$OPTS $1"
     shift 1
 done
