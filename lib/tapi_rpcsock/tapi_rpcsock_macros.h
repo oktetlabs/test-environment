@@ -866,40 +866,6 @@
 #define RPC_SETUID(rpcs_, user_id_) \
             RPC_FUNC_ZERO_RETVAL((rpcs_), setuid, (user_id_))
 
-/**
- * Get socket state and match it with specified expected value.
- *
- * @param rpcs_     RPC server handle
- * @param sockd_    Descriptor of socket to be processed
- * @param peer_     Peer RPC server handle or NULL
- * @param peer_s_   Peer socket or -1
- * @param state_    Expected socket state
- */
-#define CHECK_SOCKET_STATE(rpcs_, sockd_, peer_, peer_s_, state_) \
-    do {                                                                \
-        int rc_;                                                        \
-        sockts_socket_state_t got_state;                                \
-                                                                        \
-        rc_ = sockts_get_socket_state((rpcs_), (sockd_),                \
-                                      (peer_), (peer_s_), &got_state);  \
-        if (rc_ == 0)                                                   \
-            INFO("Got state: RPC (%s,%s), socket %d, %s",               \
-                    (rpcs_)->ta, (rpcs_)->name, (sockd_),               \
-                    socket_state2str(got_state));                       \
-        if (rc_ == 0 && got_state != (state_))                          \
-        {                                                               \
-            ERROR("Wrong socket state, got %s; expected %s",            \
-                  socket_state2str(got_state),                          \
-                  socket_state2str(state_));                            \
-            rc_ = -1;                                                   \
-        }                                                               \
-        if (rc_ < 0)                                                    \
-        {                                                               \
-            MACRO_TEST_ERROR;                                           \
-            MACRO_ERROR_EXIT;                                           \
-        }                                                               \
-    } while (0);
-
 
 /**
  * Close a socket in cleanup part of the test
