@@ -572,22 +572,7 @@ rcf_ch_trrecv_start(struct rcf_comm_connection *handle,
                     const uint8_t *ba, size_t cmdlen, csap_handle_t csap,
                     unsigned int num, te_bool results, unsigned int timeout)
 {
-#ifdef DUMMY_TAD 
-    UNUSED(handle);
-    UNUSED(cbuf);
-    UNUSED(buflen);
-    UNUSED(answer_plen);
-    UNUSED(ba);
-    UNUSED(cmdlen);
-    UNUSED(csap);
-    UNUSED(num);
-    UNUSED(results);
-    UNUSED(timeout);
-
-    VERB("TRRECV start: handle %d num %u timeout %u %s\n",
-         csap, num, timeout, results ? "results" : "");
-    return -1;
-#else
+#ifndef DUMMY_TAD 
     char        label_buf[20];
     pthread_t   recv_thread;
     int         syms;
@@ -600,10 +585,27 @@ rcf_ch_trrecv_start(struct rcf_comm_connection *handle,
     pthread_attr_t    pthread_attr;
     char              srname[] = "trsend_recv";
     int               sr_flag = 0;
+#endif
+
+    INFO("%s: csap %d, num %u, timeout %u ms, %s",
+         csap, num, timeout, results ? "results" : "");
+
+#ifdef DUMMY_TAD 
+    UNUSED(handle);
+    UNUSED(cbuf);
+    UNUSED(buflen);
+    UNUSED(answer_plen);
+    UNUSED(ba);
+    UNUSED(cmdlen);
+    UNUSED(csap);
+    UNUSED(num);
+    UNUSED(results);
+    UNUSED(timeout);
+
+    return -1;
+#else
 
     UNUSED(cmdlen);
-
-    VERB("CSAP %d", csap);
 
     check_init(); 
 
@@ -612,14 +614,14 @@ rcf_ch_trrecv_start(struct rcf_comm_connection *handle,
 
     if (ba == NULL)
     {
-        VERB("missing attached NDS");
+        WARN("missing attached NDS");
         SEND_ANSWER("%d", TE_RC(TE_TAD_CH, ETADMISSNDS));
         return 0;
     }
 
     if ((csap_descr_p = csap_find(csap)) == NULL)
     {
-        VERB("CSAP not exists");
+        WARN("CSAP not exists");
         SEND_ANSWER("%d", TE_RC(TE_TAD_CH, ETADCSAPNOTEX));
         return 0;
     }
@@ -628,7 +630,7 @@ rcf_ch_trrecv_start(struct rcf_comm_connection *handle,
     if (csap_descr_p->command)
     {
         CSAP_DA_UNLOCK(csap_descr_p);
-        VERB("CSAP is busy");
+        WARN("CSAP is busy");
         SEND_ANSWER("%d", TE_RC(TE_TAD_CH, ETADCSAPSTATE));
         return 0;
     }
@@ -645,8 +647,8 @@ rcf_ch_trrecv_start(struct rcf_comm_connection *handle,
 
     if (rc)
     { 
-        VERB("parse error in NDS, rc: 0x%x, sym: %d", rc, syms);
-        VERB("sr_flag %d, NDS: <%s>", sr_flag, ba);
+        ERROR("parse error in NDS, rc: 0x%x, sym: %d", rc, syms);
+        INFO("sr_flag %d, NDS: <%s>", sr_flag, ba);
         SEND_ANSWER("%d", TE_RC(TE_TAD_CH, rc));
         return 0;
     } 
@@ -664,28 +666,10 @@ rcf_ch_trrecv_start(struct rcf_comm_connection *handle,
 
     csap_descr_p->state |= csap_descr_p->command;
 
-    strncpy (csap_descr_p->answer_prefix, cbuf, answer_plen);
+    strncpy(csap_descr_p->answer_prefix, cbuf, answer_plen);
     csap_descr_p->answer_prefix[answer_plen] = 0; 
 
     CSAP_DA_UNLOCK(csap_descr_p);
-
-    VERB("csap %d, timeout %u", csap_descr_p->id, 
-            timeout);
-    if (timeout && timeout != TAD_TIMEOUT_INF)
-    { 
-        gettimeofday(&csap_descr_p->wait_for, NULL);
-        csap_descr_p->wait_for.tv_usec += timeout * 1000;
-        csap_descr_p->wait_for.tv_sec += 
-            (csap_descr_p->wait_for.tv_usec / 1000000);
-        csap_descr_p->wait_for.tv_usec %= 1000000;
-
-        VERB("init, csap %d, wait_for set %u.%u", 
-                    csap_descr_p->id,  
-                    csap_descr_p->wait_for.tv_sec,
-                    csap_descr_p->wait_for.tv_usec);
-    }
-    else 
-        memset(&csap_descr_p->wait_for, 0, sizeof(struct timeval));
 
     csap_descr_p->num_packets = num;
 
@@ -768,7 +752,7 @@ rcf_ch_trrecv_start(struct rcf_comm_connection *handle,
                 WARN("replace component value with confirmed pdu " 
                      "fails; 0x%x\n", rc);
             } 
-        }
+        } /* loop by levels in pdus array */
         if (sr_flag == 0)
         {
             if (rc == 0)
@@ -779,7 +763,8 @@ rcf_ch_trrecv_start(struct rcf_comm_connection *handle,
         }
         if (rc)
             break; 
-    }
+    } /* loop by pattern units */
+
     if (rc) 
     {
         WARN("pattern does not confirm to CSAP; rc 0x%x", rc);
@@ -787,6 +772,22 @@ rcf_ch_trrecv_start(struct rcf_comm_connection *handle,
         SEND_ANSWER("%d", TE_RC(TE_TAD_CH, rc));
         return 0;
     }
+
+    if (timeout && timeout != TAD_TIMEOUT_INF)
+    { 
+        gettimeofday(&csap_descr_p->wait_for, NULL);
+        csap_descr_p->wait_for.tv_usec += timeout * 1000;
+        csap_descr_p->wait_for.tv_sec += 
+            (csap_descr_p->wait_for.tv_usec / 1000000);
+        csap_descr_p->wait_for.tv_usec %= 1000000;
+
+        VERB("trrecv_start: csap %d, wait_for set to %u.%u", 
+             csap_descr_p->id,  
+             csap_descr_p->wait_for.tv_sec,
+             csap_descr_p->wait_for.tv_usec);
+    }
+    else 
+        memset(&csap_descr_p->wait_for, 0, sizeof(struct timeval));
 
     if ((rc = pthread_attr_init(&pthread_attr)) != 0 ||
         (rc = pthread_attr_setdetachstate(&pthread_attr,
@@ -841,18 +842,26 @@ rcf_ch_trrecv_stop(struct rcf_comm_connection *handle,
         return 0;
     }
 
-    CSAP_DA_LOCK(csap_descr_p);
+    CSAP_DA_LOCK(csap_descr_p); 
 
+    /* Note: watch carefully, that unlock made in every 
+     * conditional branch. */
     if (csap_descr_p->command & TAD_OP_RECV)
     {
         csap_descr_p->command |= TAD_COMMAND_STOP; 
-        CSAP_DA_UNLOCK(csap_descr_p);
 
         if (csap_descr_p->state & TAD_STATE_FOREGROUND)
         {
+            CSAP_DA_UNLOCK(csap_descr_p);
             /* With some probability number of received packets, 
              * reported here, may be wrong. */
             SEND_ANSWER("0 %u", csap_descr_p->num_packets); 
+        }
+        else
+        { 
+            strncpy(csap_descr_p->answer_prefix, cbuf, answer_plen);
+            csap_descr_p->answer_prefix[answer_plen] = 0; 
+            CSAP_DA_UNLOCK(csap_descr_p);
         }
     }
     else
@@ -863,6 +872,7 @@ rcf_ch_trrecv_stop(struct rcf_comm_connection *handle,
         CSAP_DA_UNLOCK(csap_descr_p);
         SEND_ANSWER("%d 0", TE_RC(TE_TAD_CH, ETADCSAPSTATE));
     }
+
     return 0;
 #endif
 }
@@ -881,13 +891,13 @@ rcf_ch_trrecv_wait(struct rcf_comm_connection *handle,
     UNUSED(answer_plen);
     UNUSED(csap);
 
-    VERB("TRRECV wait: handle %d \n", csap);
+    VERB("%s: CSAP %d", __FUNCTION__, csap);
     
     return -1;
 #else
     csap_p csap_descr_p;
 
-    VERB("CSAP %d", csap);
+    VERB("%s: CSAP %d", __FUNCTION__, csap);
 
     check_init();
 
@@ -903,6 +913,8 @@ rcf_ch_trrecv_wait(struct rcf_comm_connection *handle,
     if (csap_descr_p->command & TAD_OP_RECV)
     {
         csap_descr_p->command |= TAD_COMMAND_WAIT; 
+        strncpy(csap_descr_p->answer_prefix, cbuf, answer_plen);
+        csap_descr_p->answer_prefix[answer_plen] = 0; 
         CSAP_DA_UNLOCK(csap_descr_p);
     }
     else
@@ -950,6 +962,8 @@ rcf_ch_trrecv_get(struct rcf_comm_connection *handle,
     if (csap_descr_p->command & TAD_OP_RECV)
     {
         csap_descr_p->command |= TAD_COMMAND_GET;
+        strncpy(csap_descr_p->answer_prefix, cbuf, answer_plen);
+        csap_descr_p->answer_prefix[answer_plen] = 0; 
         CSAP_DA_UNLOCK(csap_descr_p);
     }
     else

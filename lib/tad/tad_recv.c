@@ -618,8 +618,7 @@ tad_tr_recv_thread(void * arg)
         rc = tad_prepare_csap(csap_descr, nds);
 
         if (rc)
-            break;
-        
+            break; 
 
         strcpy(answer_buffer, csap_descr->answer_prefix);
         ans_len = strlen(answer_buffer); 
@@ -764,6 +763,9 @@ tad_tr_recv_thread(void * arg)
         CSAP_DA_LOCK(csap_descr);
         if (csap_descr->command & TAD_COMMAND_STOP)
         {
+            strcpy(answer_buffer, csap_descr->answer_prefix);
+            ans_len = strlen(answer_buffer); 
+
             CSAP_DA_UNLOCK(csap_descr);
             VERB("trrecv_stop flag detected"); 
             break;
@@ -771,7 +773,10 @@ tad_tr_recv_thread(void * arg)
 
         if ((csap_descr->command & TAD_COMMAND_WAIT) || 
             (csap_descr->command & TAD_COMMAND_GET))
-        {
+        { 
+            strcpy(answer_buffer, csap_descr->answer_prefix);
+            ans_len = strlen(answer_buffer); 
+
             if (csap_descr->command & TAD_COMMAND_WAIT)
             {
                 csap_descr->state |= TAD_STATE_FOREGROUND;
@@ -938,7 +943,7 @@ tad_tr_recv_thread(void * arg)
     /* either stop got or foreground operation completed */ 
 
     rc = tad_tr_recv_send_results(&received_packets, handle, 
-                                      answer_buffer, ans_len);
+                                  answer_buffer, ans_len);
     if (rc)
     {
         ERROR("trrecv thread: send results failed with code 0x%x\n", rc);
