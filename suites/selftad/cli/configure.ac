@@ -4,7 +4,7 @@ AC_INIT(clitest, 0.01, kam@oktetlabs.ru)
 AC_CONFIG_SRCDIR([clitest.c])
 AC_CONFIG_AUX_DIR(../../../aux)
 
-AM_INIT_AUTOMAKE
+AM_INIT_AUTOMAKE([-Wall foreign])
 
 # Checks for programs.
 AC_PROG_CC

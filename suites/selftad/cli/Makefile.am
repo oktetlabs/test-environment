@@ -6,8 +6,8 @@ tetestdir=$(prefix)/@PACKAGE_NAME@/$(subdir)
 dist_tetest_DATA = package.xml
 
 
-AM_CFLAGS = -I$(DESTDIR)/$(prefix)/include \
-            -I$(DESTDIR)/$(prefix)/../include
+AM_CPPFLAGS = -I$(DESTDIR)/$(prefix)/include \
+              -I$(DESTDIR)/$(prefix)/../include
 
 AM_CFLAGS =
 
