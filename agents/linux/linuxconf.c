@@ -2315,13 +2315,7 @@ env_del(unsigned int gid, const char *oid, const char *name)
 
     if (getenv(name) != NULL)
     {
-        /* FIXME */
-#if 0
-        /* There is some issues with unsetenv() in NetBSD 2.0 build */
         unsetenv(name);
-#else
-        setenv(name, NULL, TRUE);
-#endif
         return 0;
     }
     else
