@@ -9,8 +9,9 @@ mybindir=$(prefix)/bin
 
 mybin_SCRIPTS=te_builder_log te_generate_symtbl te_generate_symtbl_cygwin \
               te_build_suites tce_report tce_instrument_sources \
-              tce_uninstrument_sources
+              tce_uninstrument_sources te_configure_package te_cross_build
 
 EXTRA_DIST=builder.m4 te_builder_log te_generate_symtbl \
            te_generate_symtbl_cygwin te_build_suites tce_report \
-           tce_instrument_sources tce_uninstrument_sources
+           tce_instrument_sources tce_uninstrument_sources \
+           te_configure_package te_cross_build

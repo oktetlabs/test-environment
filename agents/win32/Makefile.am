@@ -1,6 +1,4 @@
 
-SUBDIRS=libltdl
-
 MY_CPPFLAGS=-I$(DESTDIR)/$(prefix)/../@host@/include \
             -I$(DESTDIR)/$(prefix)/../include
 
@@ -9,59 +7,39 @@ MY_CPPFLAGS=-I$(DESTDIR)/$(prefix)/../@host@/include \
 # -ltad_ch with names used in -lrcfpch.
 #
 MY_LDADD=symtbl.o $(LIBLTDL) -lrcfpch @TE_LDADD@ -lconf_oid \
-         -lcomm_net_agent -lloggerta -lpthread -lltdl
+         -lcomm_net_agent -lloggerta -lpthread 
 MY_LDAFLAGS=-rdynamic -export-dynamic 
 
 MY_SOURCES=win32.c win32conf.c ftp_routines.c
 MY_SYMTBL_OBJECTS=win32.o ftp_routines.o
 
-
-#
-# Temporary outside of CFG_RCF_RPC
-#
-etcdir=$(DESTDIR)/$(prefix)/etc/win32
-etc_DATA=tarpc.x
-
 EXTRA_DIST=tarpc.x.m4
-
-tarpc.x: $(srcdir)/tarpc.x.m4
-	m4 $(srcdir)/tarpc.x.m4 > tarpc.x
-
-install-data-hook:
-	mkdir -p $(etcdir) ; \
-	touch -c -r $(srcdir)/tarpc.x.m4 $(etcdir)/tarpc.x ;
-
-CLEANFILES=tarpc.x
 
 noinst_HEADERS=win32_rpc.h win32_rpc_log.h
 
 if CFG_RCF_RPC
 
-noinst_HEADERS+=tarpc.h
 MY_CPPFLAGS+=-DRCF_RPC -I.
-MY_SOURCES+=win32_rpc.c tarpc_xdr.c tarpc_svc.c tarpc_server.c 
+MY_SOURCES+=win32_rpc.c  tarpc_server.c 
+MY_NODIST_SOURCES=tarpc_xdr.c tarpc_svc.c
 MY_LDADD+=-lrpc -lws2_32 -lcygwin
 MY_SYMTBL_OBJECTS+=win32_rpc.o tarpc_server.o
 
-CLEANFILES+=tarpc.h
+CLEANFILES=tarpc.h tarpc_xdr.c tarpc_svc.c
 
 win32_rpc.o tarpc_server.o: tarpc.h
 
-tarpc.h: tarpc.x
-	rm -f tarpc.h
+tarpc.h tarpc_xdr.c tarpc_svc.c: tarpc.x.m4
+	rm -f tarpc.h tarpc_xdr.c tarpc_svc.c
+	m4 $(srcdir)/tarpc.x.m4 > tarpc.x
 	rpcgen -h -M tarpc.x -o tarpc.h
-
-tarpc_xdr.c: tarpc.h
-	rm -f tarpc_xdr.c
 	rpcgen -c -M tarpc.x -o tarpc_xdr.c
 	awk '\
             /buf;/ { print $0 ; printf("\t(void)buf;") ; next ; } \
             { print $0 ; next ;}' tarpc_xdr.c > tarpc_xdr.c.new
 	mv tarpc_xdr.c.new tarpc_xdr.c
-
-tarpc_svc.c: tarpc.h
-	rm -f tarpc_svc.c
 	rpcgen -m -M tarpc.x -o tarpc_svc.c 
+	rm -f tarpc.x
 
 else
 
@@ -73,6 +51,7 @@ endif
 AM_CPPFLAGS=$(MY_CPPFLAGS)
 
 tawin32_SOURCES=$(MY_SOURCES)
+nodist_tawin32_SOURCES=$(MY_NODIST_SOURCES)
 
 tawin32_LDADD=$(MY_LDADD)
 

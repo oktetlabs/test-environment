@@ -30,9 +30,7 @@ AUTOMAKE_OPTIONS = foreign
 host=@host@
 TA_REMOTE_SUBDIRS=@TA_REMOTE_SUBDIRS@
 
- include Makefile.conf
-
-SUBDIRS=include doc lib engine tools agents 
+SUBDIRS=include doc lib tools engine nutlib agents nuts
 DIST_SUBDIRS=$(SUBDIRS) @SUITE_SUBDIR@
 
 mybindir=$(prefix)/$(host)/bin
@@ -56,172 +54,25 @@ host_name.sh:
 	echo 'echo ' @host@ > host_name.sh
 	chmod a+x host_name.sh
 
-DISTCLEANFILES=Makefile.conf builder.conf.processed host_name.sh
-
-define build_library
-    mkdir -p $${lib} ; \
-    cd $${lib} ; \
-    echo Building library $${lib} for platform $${p} ; \
-    if test ! -e Makefile ; then \
-        LIB_PARMS=`eval echo '$${TE_BS_LIB_'$${lib}'_PARMS}'` ; \
-        ADD_CFLAGS=`eval echo '$${TE_BS_LIB_'$${lib}'_CFLAGS}'` ; \
-        ADD_LDFLAGS=`eval echo '$${TE_BS_LIB_'$${lib}'_LDFLAGS}'` ; \
-        echo $(srcdir)/lib/$${lib}/configure -q --prefix=$(prefix)/$${p} \
-             --build=$(host) --host=$${p} $${PL_PARMS} $${LIB_PARMS} ; \
-        TE_BASE=$${TE_BASE} \
-        TE_CFLAGS="-Wall $${ADD_CFLAGS} $${PL_CFLAGS}"  \
-        TE_LDFLAGS="$${ADD_LDFLAGS} $${PL_LDFLAGS}"  \
-        eval $(srcdir)/lib/$${lib}/configure '-q --prefix=$(prefix)/$${p} \
-                                              --build=$(host) --host=$${p}' \
-                                              $${LIB_PARMS} $${PL_PARMS} \
-        || exit 1 ; \
-    fi ; \
-    make install || exit 1 ; \
-    cd .. ; 
-endef
+DISTCLEANFILES=builder.conf.processed host_name.sh
 
 te: install-data
-	@\
-	$(import_variables) \
-	\
-	CURRDIR=`pwd` ; \
-	cd lib ; \
-	echo Building lib ; \
-	make install || exit 1 ; \
-	cd $${CURRDIR} ; \
-	\
-	echo Building NUT libraries ; \
-	$(MAKE) $(AM_MAKEFLAGS) te-nuts NUTS="$${TE_BS_NUTLIBS}" ; \
-	\
-	for i in engine agents $(TA_REMOTE_SUBDIRS) ; do \
-	     CURRDIR=`pwd` ; \
-	     cd $${i} ; \
-	     echo Building $${i} ; \
-	     make install || exit 1 ; \
-	     cd $${CURRDIR} ; \
-	done ; \
-	echo Building tools ; \
-	cd tools ; \
-	for i in $${TE_BS_TOOLS} ; do \
-	    echo Tool $${i} ; \
-	    if test -d $${i} ; then \
-	        cd $${i} ; \
-	        make install || exit 1 ; \
-	        cd .. ; \
-	    fi ; \
-	done ; \
-	cd .. ; \
-	\
-	for p in $${TE_BS_PLATFORMS} ; do \
-	    mkdir -p $(prefix)/$${p} ; \
-	    ta= ; \
-	    for k in $${TE_BS_TA} ; do \
-	        platform=`eval echo '$$TE_BS_TA_'$${k}'_PLATFORM'` ; \
-	        if test "$${platform}" = "$${p}" ; \
-	        then \
-	            ta=$${k} ; \
-	            break 1 ; \
-	        fi ; \
-	    done ; \
-	    if test -z "$${ta}" ; then continue ; fi ; \
-	\
-	    mkdir -p $${p} ; \
-	    cd $${p} ; \
-	    pname=`echo $${p} | sed s/-/_/g` ; \
-	    PL_PARMS=`eval echo '$${'$${pname}'_PARMS}'` ; \
-	    PL_CFLAGS=`eval echo '$${'$${pname}'_CFLAGS}'` ; \
-	    PL_LDFLAGS=`eval echo '$${'$${pname}'_LDFLAGS}'` ; \
-	\
-	    mkdir -p lib ; \
-	    cd lib ; \
-	    for lib in $${TE_BS_LIB} ; do \
-	        option=`eval echo '$${TE_BS_'$${lib}'_TA}'` ; \
-	        if test "$${option}" = "yes" ; then \
-	            $(build_library) \
-	        fi ; \
-	    done ; \
-	\
-	    ta_el=`eval echo '$${TE_BS_TA_'$${ta}'_EL}'` ; \
-	    for lib in $${ta_el} ; do \
-	        $(build_library) \
-	    done ; \
-	    cd .. ; \
-	\
-	    TASRC=`eval echo '$${TE_BS_TA_'$${ta}'_SOURCES}'` ; \
-	    mkdir -p agents ; \
-	    cd agents ; \
-	    CURRDIR=`pwd` ; \
-	    mkdir -p $${CURRDIR}/$${TASRC} ; \
-	    cd $${CURRDIR}/$${TASRC} ; \
-	    echo Building Test Agent $${ta} for platform $${p} ; \
-	    if test ! -e Makefile ; then \
-	        TAPARMS=`eval echo '$${TE_BS_TA_'$${ta}'_PARMS}'` ; \
-	        ADD_CFLAGS=`eval echo '$${TE_BS_TA_'$${ta}'_CFLAGS}'` ; \
-	        ADD_LDFLAGS=`eval echo '$${TE_BS_TA_'$${ta}'_LDFLAGS}'` ; \
-	        echo $(srcdir)/agents/$${TASRC}/configure \
-	             -q --build=$(host) --host=$${p} --prefix=$(prefix)/agents \
-	             $${TAPARMS} $${PL_PARMS} ; \
-	        TE_BASE=$${TE_BASE}  \
-	        TE_CFLAGS="-Wall $${ADD_CFLAGS} $${PL_CFLAGS}"  \
-	        TE_LDFLAGS="$${ADD_LDFLAGS}  $${PL_LDFLAGS}"  \
-	        TE_LDADD=`eval echo '$${TE_BS_TA_'$${ta}'_LDADD}'`  \
-	        TE_DEPENDENCIES=`eval echo '$${TE_BS_TA_'$${ta}'_DEPENDENCIES}'`  \
-	        eval $(srcdir)/agents/$${TASRC}/configure \
-	             '-q --build=$(host) --host=$${p} --prefix=$(prefix)/agents' \
-	             $${TAPARMS} $${PL_PARMS} || exit 1 ; \
-	    fi ; \
-	    make install || exit 1 ; \
-	    cd $${CURRDIR}/.. ; \
-	done ;
-	$(MAKE) $(AM_MAKEFLAGS) te-nuts
+	cd include ; make install 
+	cd lib ; make install 
+	cd nutlib ; make 
+	cd tools ; make install 
+	cd engine ; make install
+	cd agents ; make install
+	te_cross_build $(host) $(prefix)
+	cd nuts ; make 
 
-        
-te-tools:
-	cd tools ; \
-	make install ;
-
-# TODO: submit to the storage
 te-nuts:
-	@echo Building NUT images
-	@$(import_variables) \
-	if test -z "$${TE_INSTALL}" ; then \
-	    TE_INSTALL=$(prefix) ; \
-	fi ; \
-	if test -z "$${TE_INSTALL_NUT}" ; then \
-	    TE_INSTALL_NUT=$${TE_INSTALL}/nuts ; \
-	fi ; \
-	mkdir -p $${TE_INSTALL_NUT} ; \
-	if test -n "$(NUTS)" ; then TE_BS_NUTS=$(NUTS) ; fi ; \
-	mkdir -p nuts/bin ; \
-	for i in $${TE_BS_NUTS} ; do \
-	    nut_sources=`eval echo '$$NUT_'$$i'_SOURCES'` ; \
-	    nut_script=`eval echo '$$NUT_'$$i'_SCRIPT'` ; \
-	    nut_parms=`eval echo '$$NUT_'$$i'_PARMS'` ; \
-	    nut_st_location=`eval echo '$$NUT_'$$i'_ST_LOCATION'` ; \
-	    nut_st_string=`eval echo '$$NUT_'$$i'_ST_STRING'` ; \
-	    tce_fmt=`eval echo '$$NUT_'$$i'_TCE_FMT'` ; \
-	    if test -n "$${tce_fmt}" ; then \
-	        tce_type=`eval echo '$$NUT_'$$i'_TCE_TYPE'` ; \
-	        tce_src=`eval echo '$$NUT_'$$i'_TCE_SOURCES'` ; \
-	        tce_instrument_sources $${tce_type} -p $${nut_sources} \
-	                               $${tce_type} $${tce_fmt} $${tce_src} \
-	        || exit 1 ; \
-	    fi ; \
-	    TE_INSTALL=$${TE_INSTALL} TE_INSTALL_NUT=$${TE_INSTALL_NUT} \
-	    $${nut_script} $${i} $${nut_parms} ; \
-	    nut_script_rc=$$? ; \
-	    if test -n "$${tce_fmt}" ; then \
-	        tce_uninstrument_sources -p $${nut_sources} || exit 1 ; \
-	    fi ; \
-	    if test $${nut_script_rc} -ne 0 ; then \
-	        exit 1 ; \
-	    fi ; \
-	done
+	cd nuts; \
+	make TE_INSTALL=$${TE_INSTALL} TE_BASE=$${TE_BASE}
 
 tce-report:
 	@echo Creating TCE report
-	@$(import_variables) \
-	for i in $${TE_BS_NUTS} ; do \
+	for i in $${TE_BS_NUTS}  $${TE_BS_NUTLIBS}; do \
 	    tce_taname=`eval echo '$$NUT_'$$i'_TCE_TANAME'` ; \
 	    if test -n "$${tce_taname}" ; then \
 	        tce_report $${tce_taname} || exit 1 ; \
@@ -230,7 +81,6 @@ tce-report:
 
 suite:
 	@echo Building Test Suite 
-	$(import_variables) \
 	if test -z "$${TE_INSTALL}" ; then \
 	    TE_INSTALL=$(prefix) ; \
 	fi ; \
@@ -249,10 +99,8 @@ suite:
 	        TE_BASE=$${TE_BASE} \
 	        TE_CFLAGS="-Wall -W -O0 -ggdb -I$(srcdir)/include \
 	                   -I$${TE_INSTALL}/$(host)/include \
-	                   $${TE_BS_HOST_CFLAGS}" \
-	        TE_LDFLAGS="-L$${TE_INSTALL}/$(host)/lib $${TE_BS_HOST_LDFLAGS}" \
-	        eval $${SOURCES}/configure '-q \
-	             --prefix=$${TE_INSTALL_SUITE}' $${TE_BS_HOST_PARMS} \
+	        TE_LDFLAGS="-L$${TE_INSTALL}/$(host)/lib" \
+	        eval $${SOURCES}/configure '-q --prefix=$${TE_INSTALL_SUITE}' \
 	        || exit 1 ; \
 	    fi ; \
 	    make install || exit 1 ; \

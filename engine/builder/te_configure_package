@@ -1,0 +1,126 @@
+#! /bin/sh
+
+# Test Environment
+#
+# Script for the package configuring.
+#
+# Usage: builder_generate_symtbl "$(NM)" <out C file name> <list of TA objects> 
+#
+# List of TA object may contain libraryies as well.
+#
+# Copyright (C) 2003 Test Environment authors (see file AUTHORS in the 
+# root directory of the distribution).
+#
+# Test Environment is free software; you can redistribute it and/or 
+# modify it under the terms of the GNU General Public License as 
+# published by the Free Software Foundation; either version 2 of 
+# the License, or (at your option) any later version.
+# 
+# Test Environment is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, 
+# MA  02111-1307  USA
+#
+# Author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
+# 
+# $Id: builder_generate_symtbl,v 1.1 2003/10/28 09:35:41 arybchik Exp $
+
+. builder.conf.processed
+
+KIND=$1
+PACKAGE=$2
+PKGNAME=$3
+PLATFORM=$4
+PKGSRC=$5
+PREFIX=$6
+
+# Create list of linked libraries and dependencies for the package
+process_libs()
+{
+    PACKAGE_LIBS="`eval echo '$TE_BS_'${KIND}_${PKGNAME}'_LIBS'`"
+    BUILD_LIBS="`eval echo '$'${PLATFORM_NAME}'_LIBS'`"
+    LDADD=
+    DEPENDENCIES=
+    for l in $PACKAGE_LIBS ; do
+        LDADD="$LDADD -l$l"
+        for i in $BUILD_LIBS ; do
+            if test "$i" = "$l" ; then
+                if test "$KIND" = "TA" ; then
+                    DEPENDENCIES="$DEPENDENCIES \$(DESTDIR)/\$(prefix)/../$PLATFORM/lib/lib${l}.a"
+                else                    
+                    DEPENDENCIES="$DEPENDENCIES \$(DESTDIR)/\$(prefix)/lib/lib${l}.a"
+                fi
+                break
+            fi
+        done
+    done
+}
+
+
+PLATFORM_NAME=`echo $PLATFORM | sed s/-/_/g`
+
+if test "$KIND" = TA ; then
+    mkdir -p agents
+    cd agents
+    PREFIX=$PREFIX/agents
+    mkdir -p $TE_INSTALL/agents
+else
+    PREFIX=$PREFIX/$PLATFORM    
+fi    
+
+if test "$KIND" = LIB ; then
+    mkdir -p lib
+    cd lib
+fi    
+
+if test "$KIND" = APP ; then
+    mkdir -p engine
+    cd engine
+fi    
+
+if test "$KIND" = TOOL ; then
+    mkdir -p tools
+    cd tools
+fi    
+
+mkdir -p $PKGNAME ;
+cd $PKGNAME ;
+
+if test -e Makefile ; then
+    exit 0 
+fi        
+    
+process_libs
+
+PARMS="--with-name=$PACKAGE `eval echo '$'${PLATFORM_NAME}'_PARMS'` `eval echo '$TE_BS_'${KIND}'_'${PKGNAME}'_PARMS'`"
+if test "$KIND" = TA ; then
+    for i in $TE_BS_NUTS $TE_BS_NUTLIBS ; do
+        NUT_TATYPE=`eval echo '$NUT_'${i}'_TCE_TATYPE'` ;
+        if test "$PACKAGE" = "$NUT_TATYPE" ; then
+            PARMS="$PARMS --enable-tce" ;
+        fi
+    done
+fi
+
+ADD_CFLAGS="`eval echo '$'${PLATFORM_NAME}'_CFLAGS'` `eval echo '$TE_BS_'${KIND}'_'${PKGNAME}'_CFLAGS'`"
+ADD_LDFLAGS="`eval echo '$'${PLATFORM_NAME}'_LDFLAGS'` `eval echo '$TE_BS_'${KIND}'_'${PKGNAME}'_LDFLAGS'`"
+
+echo ${PKGSRC}/configure -q --host=$PLATFORM --prefix=$PREFIX ${PARMS}
+
+TE_CFLAGS="-DDEBUG -Wall -W -O0 -g -ggdb ${ADD_CFLAGS}" \
+TE_LDFLAGS="${ADD_LDFLAGS}" \
+TE_LDADD="$LDADD" \
+TE_DEPENDENCIES="$DEPENDENCIES" \
+eval ${PKGSRC}/configure --host=$PLATFORM '-q --prefix=$PREFIX' ${PARMS} 
+
+if test $? -ne 0 ; then
+    exit 1 ;
+fi
+make install-data
+
+exit 0

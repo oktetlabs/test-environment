@@ -26,8 +26,137 @@ dnl $Id: builder.m4,v 1.4 2003/12/08 15:15:51 oleg Exp $
  
 changequote([,])
 
+TE_HOST_DEFINED=
+
+dnl Specifies a host platform. Should be the first macro in the
+dnl configuration file.
+dnl
+dnl Parameters:
+dnl       host platform or empty
+dnl
+define([TE_HOST],
+[
+if test "$TE_HOST_DEFINED" ; then
+    TE_BS_CONF_ERR="host platform is specified in the incorrect place" ; 
+    break ; 
+fi    
+if test "$1" ; then
+    host=$1
+fi    
+TE_HOST_DEFINED=yes
+])
+
+
+dnl Declares a platform for and specifies platform-specific 
+dnl parameters for configure script as well platform-specific 
+dnl CFLAGS and LDFLAGS. 
+dnl May be called once for each platform (including host platform).
+dnl
+dnl Parameters:
+dnl       canonical host name
+dnl       configure parameters (may be empty)
+dnl       additional compiler flags
+dnl       additional linker flags
+dnl       list of all libraries to be built
+dnl
+define([TE_PLATFORM],
+[
+TE_HOST_DEFINED=yes
+PLATFORM=$1
+if test -z "$PLATFORM" ; then
+    PLATFORM=$host
+fi    
+PLATFORM_NAME=`echo $PLATFORM | sed s/-/_/g`
+TE_BS_PLATFORMS="$TE_BS_PLATFORMS $PLATFORM_NAME"
+eval `echo ${PLATFORM_NAME}_PARMS=\"$2\"`
+eval `echo ${PLATFORM_NAME}_CFLAGS=\"$3\"`
+eval `echo ${PLATFORM_NAME}_LDFLAGS=\"$4\"`
+eval `echo ${PLATFORM_NAME}_LIBS=\"$5\"`
+])
+
+dnl Specifies additional parameters to be passed to configure script of the
+dnl mandatory or external library (common for all platforms). May be called 
+dnl once for each library.
+dnl
+dnl Parameters:
+dnl       name of the library
+dnl       platform
+dnl       source directory
+dnl       additional parameters to configure script (may be empty)
+dnl       additional compiler flags
+dnl       additional linker flags
+dnl
+define([TE_LIB_PARMS],
+[
+[
+TE_HOST_DEFINED=yes
+PLATFORM=$2
+SOURCES=$3
+if test -z "$PLATFORM" ; then
+    PLATFORM=$host
+fi
+PLATFORM_NAME=`echo $PLATFORM | sed s/-/_/g`
+eval `echo TE_BS_LIB_${PLATFORM_NAME}_$1_PLATFORM=$PLATFORM`
+
+if test -z "$SOURCES" ; then 
+    SOURCES=${TE_BASE}/lib/$1 ; 
+fi
+
+if test "${SOURCES:0:1}" != "/" ; then 
+    SOURCES=${TE_BASE}/lib/$SOURCES ; 
+fi
+]
+eval `echo TE_BS_LIB_${PLATFORM_NAME}_$1_SOURCES=$SOURCES`
+eval `echo TE_BS_LIB_${PLATFORM_NAME}_$1_PARMS=\"$4\"`
+eval `echo TE_BS_LIB_${PLATFORM_NAME}_$1_CFLAGS=\"$5\"`
+eval `echo TE_BS_LIB_${PLATFORM_NAME}_$1_LDFLAGS=\"$6\"`
+])
+
+
+dnl Declares the list of engine applications to be built by "make all" command.
+dnl May be called only once.
+dnl
+dnl Parameters:
+dnl       list of names of directories in ${TE_BASE}/engine
+dnl               separated by spaces (may be empty)
+dnl
+define([TE_APP],
+[
+TE_HOST_DEFINED=yes
+TE_BS_APPS="$1"
+])
+
+dnl Specifies additional parameters to be passed to configure script 
+dnl of the application and list of external libraries to be linked with
+dnl the application. May be called once for each TEN application.
+dnl
+dnl Parameters:
+dnl       name of the directory in ${TE_BASE}/engine
+dnl       additional parameters to configure script (may be empty)
+dnl       additional compiler flags
+dnl       additional linker flags
+dnl       list of libraries names (names of directories 
+dnl       in ${TE_BASE}/lib in the order "independent last")
+dnl
+define([TE_APP_PARMS],
+[
+[
+TE_HOST_DEFINED=yes
+if test "${TE_BS_$1_APP_PARMS_SPECIFIED}" = "yes";
+then
+    TE_BS_CONF_ERR="parameters for the TEN application $1 are specified twice" ; 
+    break ; 
+fi
+]
+TE_BS_APP_$1_PARMS="$2"
+TE_BS_APP_$1_CFLAGS="$3"
+TE_BS_APP_$1_LDFLAGS="$4"
+TE_BS_APP_$1_LIBS="$5"
+TE_BS_$1_APP_PARMS_SPECIFIED=yes
+])
+
 dnl Declares the list of tools to be built by "make all" command.
-dnl May be called several times.
+dnl May be called only once.
 dnl
 dnl Parameters:
 dnl       list of names of directories in ${TE_BASE}/tools 
@@ -35,7 +164,8 @@ dnl               separated by spaces (may be empty)
 dnl
 define([TE_TOOLS],
 [
-TE_BS_TOOLS="$TE_BS_TOOLS $1"
+TE_HOST_DEFINED=yes
+TE_BS_TOOLS="$1"
 ])
 
 dnl Specifies additional parameters to be passed to configure script of the
@@ -50,6 +180,7 @@ dnl
 define([TE_TOOL_PARMS],
 [
 [
+TE_HOST_DEFINED=yes
 if test "${TE_BS_$1_TOOL_PARMS_SPECIFIED}" = "yes";
 then
     TE_BS_CONF_ERR="parameters for the tool $1 are specified twice" ; 
@@ -86,6 +217,7 @@ dnl
 define([TE_NUT],
 [
 [
+TE_HOST_DEFINED=yes
 if test -n "$NUT_$1_SOURCES" ;
 then
     TE_BS_CONF_ERR="Warning: definition of the NUT $1 appears twice" ;
@@ -126,6 +258,7 @@ dnl
 define([TE_NUT_TCE],
 [
 [
+TE_HOST_DEFINED=yes
 if test -n "$NUT_$1_TCE_TANAME" ;
 then
     TE_BS_CONF_ERR="TCE parameters for the NUT $1 are specified twice" ;
@@ -203,6 +336,7 @@ dnl       additional compiler flags to be used for sources compilation
 dnl               
 define([TE_NUT_TCE_SOURCES],
 [
+TE_HOST_DEFINED=yes
 NUT_$1_TCE_SOURCES="$NUT_$1_TCE_SOURCES -c \"$3\" $2"
 ])
 
@@ -213,161 +347,10 @@ dnl       program name
 dnl
 define([TE_HOST_EXEC],
 [
+TE_HOST_DEFINED=yes
 TE_BS_HOST_EXEC="$TE_BS_HOST_EXEC $1"
 ])
 
-dnl Declares a platform for and specifies platform-specific 
-dnl parameters for configure script as well platform-specific 
-dnl CFLAGS and LDFLAGS. 
-dnl May be called once for each platform (including host platform).
-dnl
-dnl Parameters:
-dnl       canonical host name
-dnl       configure parameters (may be empty)
-dnl       additional compiler flags
-dnl       additional linker flags
-dnl
-define([TE_PLATFORM],
-[
-if echo $TE_BS_PLATFORMS | grep -q $1 ;
-then
-    TE_BS_CONF_ERR="platform $1 is specified twice" ; 
-    break ; 
-fi
-if test "$1" = "$host" ;
-then
-    TE_BS_HOST_PARMS="$2" ;
-    TE_BS_HOST_CFLAGS="$3" ;
-    TE_BS_HOST_LDFLAGS="$4" ;
-else
-    TE_BS_PLATFORMS="$TE_BS_PLATFORMS $1" ;
-    patsubst($1, -, _)_PARMS="$2" ;
-    patsubst($1, -, _)_CFLAGS="$3" ;
-    patsubst($1, -, _)_LDFLAGS="$4" ;
-fi
-])
-
-dnl Specifies list of mandatory libraries to be built (may be empty). 
-dnl May be called only once. If the macro is not called, all mandatory
-dnl libraries are built.
-dnl Libraries should be listed in order "independent first".
-dnl
-dnl Parameters:
-dnl       list of directory names in ${TE_BASE}/lib separated by spaces
-dnl
-define([TE_LIB],
-[
-[
-if test "$TE_BS_LIB" != "empty" ;
-then
-    TE_BS_CONF_ERR="macro TE_LIB should be called only once" ; 
-    break ; 
-fi
-]
-TE_BS_LIB="$1"
-])
-
-dnl Specifies additional parameters to be passed to configure script of the
-dnl mandatory or external library (common for all platforms). May be called 
-dnl once for each library.
-dnl
-dnl Parameters:
-dnl       name of the directory in ${TE_BASE}/lib
-dnl       additional parameters to configure script (may be empty)
-dnl       additional compiler flags
-dnl       additional linker flags
-dnl
-define([TE_LIB_PARMS],
-[
-[
-if test "${TE_BS_$1_LIB_PARMS_SPECIFIED}" = "yes";
-then
-    TE_BS_CONF_ERR="parameters for the library $1 are specified twice" ; 
-    break ; 
-fi
-]
-TE_BS_LIB_$1_PARMS="$2"
-TE_BS_LIB_$1_CFLAGS="$3"
-TE_BS_LIB_$1_LDFLAGS="$4"
-TE_BS_$1_LIB_PARMS_SPECIFIED=yes
-])
-
-dnl Specifies external libraries necessary for TEN applications, Test Agents
-dnl and Test Suites. May be called once.
-dnl Libraries should be listed in order "independent first".
-dnl
-dnl Parameters:
-dnl       list of directory names in ${TE_BASE}/lib separated by spaces
-dnl
-define([TE_EL],
-[
-[
-if test -n "$TE_BS_EL" ; 
-then
-    TE_BS_CONF_ERR="macro TE_EL should be called only once" ; 
-    break ; 
-fi
-]
-TE_BS_EL="$1"
-])
-
-dnl Specifies list of TEN applications to be built (may be empty). 
-dnl May be called only once. If the macro is not called, all TEN applications
-dnl are built.
-dnl
-dnl Parameters:
-dnl       list of directory names in ${TE_BASE}/engine separated by spaces
-dnl
-define([TE_APP],
-[
-[
-if test "$TE_BS_APP" != "empty" ;
-then
-    TE_BS_CONF_ERR="macro TE_APP should be called only once" ; 
-    break ; 
-fi
-]
-TE_BS_APP="$1"
-])
-
-dnl Specifies additional parameters to be passed to configure script 
-dnl of the application and list of external libraries to be linked with
-dnl the application. May be called once for each TEN application.
-dnl
-dnl Parameters:
-dnl       name of the directory in ${TE_BASE}/engine
-dnl       additional parameters to configure script (may be empty)
-dnl       additional compiler flags
-dnl       additional linker flags
-dnl       list of external libraries names (names of directories 
-dnl              in ${TE_BASE}/lib in the order "independent last")
-dnl
-define([TE_APP_PARMS],
-[
-[
-if test "${TE_BS_$1_APP_PARMS_SPECIFIED}" = "yes";
-then
-    TE_BS_CONF_ERR="parameters for the TEN application $1 are specified twice" ; 
-    break ; 
-fi
-]
-TE_BS_APP_$1_PARMS="$2"
-TE_BS_APP_$1_CFLAGS="$3"
-TE_BS_APP_$1_LDFLAGS="$4"
-[
-DUMMY=
-if test -n "$5" ;
-then
-    for i in $DUMMY $5 ; do
-        TE_BS_APP_$1_LDADD="${TE_BS_APP_$1_LDADD} -l$i" ;
-    done
-    for i in $DUMMY $5 ; do
-        TE_BS_APP_$1_DEPENDENCIES="${TE_BS_APP_$1_DEPENDENCIES} \$(DESTDIR)/\$(prefix)/lib/lib${i}.a" ;
-    done
-fi
-]
-TE_BS_$1_APP_PARMS_SPECIFIED=yes
-])
 
 dnl Specifies parameters for the Test Agent. Can be called once for each TA.
 dnl
@@ -385,41 +368,33 @@ dnl
 define([TE_TA_TYPE],
 [
 [
+TE_HOST_DEFINED=yes
 if test -n "${TE_BS_TA_$1_SOURCES}" ;
 then
     TE_BS_CONF_ERR="configuration for TA $1 is specified twice" ; 
     break ; 
 fi
 ]
+SOURCES=$2
+if test -z "$SOURCES" ; then 
+    SOURCES=${TE_BASE}/agents/$1 ; 
+fi
+
+if test "${SOURCES:0:1}" != "/" ; then 
+    SOURCES=${TE_BASE}/agents/$SOURCES ; 
+fi
 TE_BS_TA="$TE_BS_TA $1"
-TE_BS_TA_$1_SOURCES=$2
+TE_BS_TA_$1_SOURCES=$SOURCES
 TE_BS_TA_$1_PARMS="$4"
 TE_BS_TA_$1_CFLAGS="$5"
 TE_BS_TA_$1_LDFLAGS="$6"
+TE_BS_TA_$1_LIBS="$7"
 [
-DUMMY=
 if test -z "$3" ; then
-    platform=${host};
+    PLATFORM=${host};
 else
-    platform=$3;
+    PLATFORM=$3;
 fi
-TE_BS_TA_$1_PLATFORM=$platform
-if test -n "$7" ;
-then
-    for i in $DUMMY $7 ; do
-        TE_BS_TA_$1_LDADD="${TE_BS_TA_$1_LDADD} -l$i" ;
-	for j in $DUMMY $TE_BS_LIB $TE_BS_EL ; do
-            if test $j = $i ; then
-                if test ${platform} = ${host} ; then 
-                TE_BS_TA_$1_DEPENDENCIES="${TE_BS_TA_$1_DEPENDENCIES} \$(DESTDIR)/\$(prefix)/../${platform}/lib/lib${i}.a" ;
-                else
-                    TE_BS_TA_$1_DEPENDENCIES="${TE_BS_TA_$1_DEPENDENCIES} \$(DESTDIR)/\$(prefix)/${platform}/lib/lib${i}.a" ;
-                fi
-                TE_BS_TA_$1_EL="${i} ${TE_BS_TA_$1_EL}" ;
-		break 1;
-	    fi
-        done
-    done
-fi
+TE_BS_TA_$1_PLATFORM=$PLATFORM
 ]
 ])
