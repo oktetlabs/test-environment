@@ -2008,7 +2008,14 @@ csap_tr_recv_get(const char *ta_name, int session, int handle,
 int
 rcf_ta_trrecv_wait(const char *ta_name, int handle, int *num)
 {
-    return csap_tr_recv_get(ta_name, -1, handle, num, RCFOP_TRRECV_WAIT);
+    int rc;
+    VERB("%s(ta %s, csap %d, *num  %p) called", 
+         ta_name, handle, num);
+    rc = csap_tr_recv_get(ta_name, -1, handle, num, RCFOP_TRRECV_WAIT);
+
+    VERB("%s(ta %s, csap %d, *num  %p) return %X, num %d", 
+         ta_name, handle, num, rc, (num == NULL ? -1: *num)); 
+    return rc;
 }
                       
 /**
@@ -2038,7 +2045,15 @@ rcf_ta_trrecv_wait(const char *ta_name, int handle, int *num)
 int 
 rcf_ta_trrecv_stop(const char *ta_name, int handle, int *num)
 {
-    return csap_tr_recv_get(ta_name, -1, handle, num, RCFOP_TRRECV_STOP);
+    int rc;
+
+    VERB("%s(ta %s, csap %d, *num  %p) called", 
+         ta_name, handle, num);
+    rc = csap_tr_recv_get(ta_name, -1, handle, num, RCFOP_TRRECV_STOP);
+
+    VERB("%s(ta %s, csap %d, *num  %p) return %X, num %d", 
+         ta_name, handle, num, rc, (num == NULL ? -1: *num)); 
+    return rc;
 }
 
 /* See description in rcf_api.h */
@@ -2046,8 +2061,15 @@ int
 rcf_ta_trrecv_stop_sess(const char *ta_name, int session, int handle,
                         int *num)
 {
-    return csap_tr_recv_get(ta_name, session, handle, num,
-                            RCFOP_TRRECV_STOP);
+    int rc;
+
+    VERB("%s(ta %s, csap %d, *num  %p) called", 
+         ta_name, handle, num); 
+    rc = csap_tr_recv_get(ta_name, session, handle, num,
+                            RCFOP_TRRECV_STOP); 
+    VERB("%s(ta %s, csap %d, *num  %p) return %X, num %d", 
+         ta_name, handle, num, rc, (num == NULL ? -1: *num)); 
+    return rc;
 }
 
 /**
@@ -2078,7 +2100,15 @@ rcf_ta_trrecv_stop_sess(const char *ta_name, int session, int handle,
 int 
 rcf_ta_trrecv_get(const char *ta_name, int handle, int *num)
 {
-    return csap_tr_recv_get(ta_name, -1, handle, num, RCFOP_TRRECV_GET);
+    int rc;
+
+    VERB("%s(ta %s, csap %d, *num  %p) called", 
+         ta_name, handle, num);
+    rc = csap_tr_recv_get(ta_name, -1, handle, num, RCFOP_TRRECV_GET);
+
+    VERB("%s(ta %s, csap %d, *num  %p) return %X, num %d", 
+         ta_name, handle, num, rc, (num == NULL ? -1: *num)); 
+    return rc;
 }
 
 /**
