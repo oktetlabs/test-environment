@@ -28,7 +28,7 @@ AC_PREREQ([2.59])
 
 AC_INIT([test_environment-doc], [0.8], [Elena.Vengerova@oktetlabs.ru])
 
-AC_CONFIG_AUX_DIR([../aux])
+AC_CONFIG_AUX_DIR([../auxdir])
 
 AM_INIT_AUTOMAKE([foreign -Wall])
 

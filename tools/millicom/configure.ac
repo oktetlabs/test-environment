@@ -5,7 +5,7 @@ AC_PREREQ([2.59])
 
 AC_INIT(millicom, 0.02, Konstantin.Abramenko@oktetlabs.ru)
 
-AC_CONFIG_AUX_DIR(../../aux/)
+AC_CONFIG_AUX_DIR([../../auxdir])
 AM_INIT_AUTOMAKE
 
 AC_CONFIG_SRCDIR([millicom.c])

@@ -4,9 +4,9 @@
 AC_PREREQ([2.59])
 
 AC_INIT(rgt, 0.03, Oleg.Kravtsov@oktetlabs.ru)
-AM_CONFIG_HEADER(config.h)
+AM_CONFIG_HEADER([config.h])
 AC_CONFIG_SRCDIR([rgt-core/rgt_core.c])
-AC_CONFIG_AUX_DIR(aux)
+AC_CONFIG_AUX_DIR([auxdir])
 AM_INIT_AUTOMAKE
 
 # Checks for programs.
@@ -21,7 +21,7 @@ if test -z "$XSLT_PROC" ; then
   You can download one of xslt processors from http://xmlsoft.org/
   Some utilities don't work without XSLT processor])
 fi
-AC_SUBST(XSLT_PROC)
+AC_SUBST([XSLT_PROC])
 
 # Checks for libraries.
 AC_CHECK_LIB([tcl], [Tcl_CreateInterp],,,-lm -ldl)
@@ -159,16 +159,16 @@ TE_COPYRIGHT="Copyright (C) 2003 Test Environment authors (see file AUTHORS in t
 AC_DEFINE_UNQUOTED([TE_COPYRIGHT], "${TE_COPYRIGHT}",
           [Generic Copyrigth string])
 
-AC_SUBST(TE_COPYRIGHT)
-AC_SUBST(TE_CFLAGS)
-AC_SUBST(TE_LDFLAGS)
-AC_SUBST(TE_LDADD)
-AC_SUBST(TE_DEPENDENCIES)
+AC_SUBST([TE_COPYRIGHT])
+AC_SUBST([TE_CFLAGS])
+AC_SUBST([TE_LDFLAGS])
+AC_SUBST([TE_LDADD])
+AC_SUBST([TE_DEPENDENCIES])
 
 
-AC_ARG_VAR(TE_CFLAGS)
-AC_ARG_VAR(TE_LDFLAGS)
-AC_ARG_VAR(TE_LDADD)
-AC_ARG_VAR(TE_DEPENDENCIES)
+AC_ARG_VAR([TE_CFLAGS])
+AC_ARG_VAR([TE_LDFLAGS])
+AC_ARG_VAR([TE_LDADD])
+AC_ARG_VAR([TE_DEPENDENCIES])
 
 AC_OUTPUT

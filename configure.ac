@@ -28,7 +28,7 @@ AC_PREREQ([2.59])
 
 AC_INIT(test_environment, 0.8, Elena.Vengerova@oktetlabs.ru)
 
-AC_CONFIG_AUX_DIR(aux)
+AC_CONFIG_AUX_DIR([auxdir])
 
 AM_INIT_AUTOMAKE([foreign -Wall dist-bzip2])
 
@@ -180,8 +180,8 @@ done
 for i in `find lib -maxdepth 1 -type l` ; do 
     LIB_DIST_SUBDIRS="$LIB_DIST_SUBDIRS `basename $i`" ;
 done
-AC_SUBST(LIB_SUBDIRS)
-AC_SUBST(LIB_DIST_SUBDIRS)
+AC_SUBST([LIB_SUBDIRS])
+AC_SUBST([LIB_DIST_SUBDIRS])
 
 # Configure TEN applications
 if test -z "$no_create" ; then
@@ -191,7 +191,7 @@ if test -z "$no_create" ; then
     done
 fi    
 APP_SUBDIRS="$TE_BS_APP"
-AC_SUBST(APP_SUBDIRS)
+AC_SUBST([APP_SUBDIRS])
 
 # Configure tools
 if test -z "$no_create" ; then
@@ -201,7 +201,7 @@ if test -z "$no_create" ; then
     done
 fi    
 TOOLS_SUBDIRS="${TE_BS_TOOLS}" 
-AC_SUBST(TOOLS_SUBDIRS)
+AC_SUBST([TOOLS_SUBDIRS])
 
 # Configure Test Agents
 TA_SUBDIRS=
@@ -218,7 +218,7 @@ for package in $DUMMY $TE_BS_TA ; do
     fi
     TA_SUBDIRS="$TA_SUBDIRS $package"
 done
-AC_SUBST(TA_SUBDIRS)
+AC_SUBST([TA_SUBDIRS])
 
 AC_SUBST(host)
 
@@ -227,11 +227,11 @@ SUITE_SCRIPTS_EXTRA_DIST=
 for i in ${SUITE_SCRIPTS} ; do
     SUITE_SCRIPTS_EXTRA_DIST="${SUITE_SCRIPTS_EXTRA_DIST} `basename $i`"
 done
-AC_SUBST(SUITE_SCRIPTS_EXTRA_DIST)
-AC_SUBST(SUITE_SCRIPTS)
+AC_SUBST([SUITE_SCRIPTS_EXTRA_DIST])
+AC_SUBST([SUITE_SCRIPTS])
 
-AC_SUBST(TE_BS_NUTS)
-AC_SUBST(TE_BS_NUTLIBS)
+AC_SUBST([TE_BS_NUTS])
+AC_SUBST([TE_BS_NUTLIBS])
 
 if test -z "$no_create" ; then
     mkdir -p ${TE_BUILD}/suites

@@ -6,7 +6,7 @@ AC_INIT(ipclib, 0.2, Andrew.Rybchenko@oktetlabs.ru)
 
 AC_CONFIG_SRCDIR([ipc_internal.h])
 
-AC_CONFIG_AUX_DIR(../../aux)
+AC_CONFIG_AUX_DIR([../../auxdir])
 
 AM_INIT_AUTOMAKE([foreign -Wall])
 
@@ -15,16 +15,16 @@ AC_PROG_CC
 AC_PROG_LIBTOOL
 AC_PROG_INSTALL
 
-AC_SUBST(TE_CPPFLAGS)
-AC_SUBST(TE_CFLAGS)
-AC_SUBST(TE_LDFLAGS)
+AC_SUBST([TE_CPPFLAGS])
+AC_SUBST([TE_CFLAGS])
+AC_SUBST([TE_LDFLAGS])
 
-AC_ARG_VAR(TE_CPPFLAGS)
-AC_ARG_VAR(TE_CFLAGS)
-AC_ARG_VAR(TE_LDFLAGS)
+AC_ARG_VAR([TE_CPPFLAGS])
+AC_ARG_VAR([TE_CFLAGS])
+AC_ARG_VAR([TE_LDFLAGS])
 
 
-AM_CONFIG_HEADER(config.h)
+AM_CONFIG_HEADER([config.h])
 
 AC_CHECK_HEADERS([ \
 stdlib.h        \
@@ -44,6 +44,6 @@ rpc/pmap_clnt.h \
 sys/queue.h     \
 ])
 
-AC_CONFIG_FILES(Makefile)
+AC_CONFIG_FILES([Makefile])
 
 AC_OUTPUT

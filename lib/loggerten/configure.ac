@@ -6,7 +6,7 @@ AC_INIT([logger_ten], [0.03], [Igor.Vasiliev@oktetlabs.ru])
 
 AC_CONFIG_SRCDIR([logger_ten.h])
 
-AC_CONFIG_AUX_DIR([../../aux])
+AC_CONFIG_AUX_DIR([../../auxdir])
 
 AC_C_INLINE
 
@@ -45,6 +45,6 @@ pthread.h \
 ])
 
 
-AC_CONFIG_FILES(Makefile)
+AC_CONFIG_FILES([Makefile])
 
 AC_OUTPUT

@@ -5,7 +5,7 @@ AC_PREREQ([2.59])
 AC_INIT(configurator, 0.02, Elena.Vengerova@oktetlabs.ru)
 AC_CONFIG_SRCDIR([conf_db.h])
 
-AC_CONFIG_AUX_DIR(../../aux)
+AC_CONFIG_AUX_DIR([../../auxdir])
 
 AM_INIT_AUTOMAKE([-Wall foreign])
 
@@ -37,23 +37,23 @@ else
 fi
 
 
-AC_SUBST(TE_CPPFLAGS)
-AC_SUBST(TE_CFLAGS)
-AC_SUBST(TE_LDFLAGS)
-AC_SUBST(TE_LDADD)
-AC_SUBST(TE_DEPENDENCIES)
+AC_SUBST([TE_CPPFLAGS])
+AC_SUBST([TE_CFLAGS])
+AC_SUBST([TE_LDFLAGS])
+AC_SUBST([TE_LDADD])
+AC_SUBST([TE_DEPENDENCIES])
 
-AC_ARG_VAR(TE_CPPFLAGS)
-AC_ARG_VAR(TE_CFLAGS)
-AC_ARG_VAR(TE_LDFLAGS)
-AC_ARG_VAR(TE_LDADD)
-AC_ARG_VAR(TE_DEPENDENCIES)
+AC_ARG_VAR([TE_CPPFLAGS])
+AC_ARG_VAR([TE_CFLAGS])
+AC_ARG_VAR([TE_LDFLAGS])
+AC_ARG_VAR([TE_LDADD])
+AC_ARG_VAR([TE_DEPENDENCIES])
 
 CPPFLAGS=${CPPFLAGS}" "${TE_CPPFLAGS}
 CFLAGS=${CFLAGS}" "${TE_CFLAGS}
 
 
-AM_CONFIG_HEADER(config.h)
+AM_CONFIG_HEADER([config.h])
 # It's assumed that stdio.h always presents.
 # Check for stdlib.h, stdarg.h, string.h and float.h.
 AC_HEADER_STDC
@@ -70,6 +70,6 @@ signal.h \
 
 AC_CHECK_TYPES([xmlError], [], [], [#include <libxml/xmlerror.h>])
 
-AC_CONFIG_FILES(Makefile)
+AC_CONFIG_FILES([Makefile])
 
 AC_OUTPUT
