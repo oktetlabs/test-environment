@@ -940,7 +940,7 @@
     do {                                                                \
         int err_ = RPC_ERRNO(rpcs_);                                    \
                                                                         \
-        if (err_ != (exp_errno_))                                       \
+        if (err_ != (int)(exp_errno_))                                  \
         {                                                               \
             if (!!((#args_)[0]))                                        \
             {                                                           \
