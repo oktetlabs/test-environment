@@ -284,7 +284,7 @@ process_add(cfg_add_msg *msg, te_bool update_dh)
     if (msg->rc != 0)
     {
         ERROR("Failed to add a new instance %s with value '%s' into "
-              "configuration database; errno %x", inst_name_str, val_str,
+              "configuration database; errno 0x%x", inst_name_str, val_str,
               msg->rc);
         cfg_types[msg->val_type].free(val);
         return;
