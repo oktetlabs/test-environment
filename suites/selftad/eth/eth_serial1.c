@@ -308,7 +308,7 @@ int main()
 
     if (status == CSAP_ERROR)
     {
-        rc = rcf_ta_trsend_stop(agent_a, tx_csap, &num);
+        rc = rcf_ta_trsend_stop(agent_a, sid_a, tx_csap, &num);
         printf("----  send stop return error %x\n", rc); 
         if (rc)
             TEST_TERMINATION("v1: send stop return error %x", rc); 
@@ -324,7 +324,7 @@ int main()
             TEST_TERMINATION("v1: port A. RX CSAP get status error %x",
                              rc);
         }
-        rc = rcf_ta_trrecv_get(agent_b, rx_csap, &num);
+        rc = rcf_ta_trrecv_get(agent_b, sid_b, rx_csap, &num);
      sleep(1);
         if (rc)
         {
@@ -349,7 +349,7 @@ int main()
    
     printf ("lets' stop recv\n");
     /* Stop recieving process */
-    rc = rcf_ta_trrecv_stop(agent_b, rx_csap, &recv_pkts);
+    rc = rcf_ta_trrecv_stop(agent_b, sid_b, rx_csap, &recv_pkts);
     if (rc)
     {
         TEST_TERMINATION(" receiving process shutdown error %x", rc);     

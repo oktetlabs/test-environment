@@ -1746,7 +1746,8 @@ rcf_ta_trsend_start(const char *ta_name, int session,
  * @sa rcf_ta_trsend_start
  */
 int 
-rcf_ta_trsend_stop(const char *ta_name, csap_handle_t csap_id, int *num)
+rcf_ta_trsend_stop(const char *ta_name, int session,
+                   csap_handle_t csap_id, int *num)
 {
     rcf_msg       msg;
     size_t        anslen = sizeof(msg);
@@ -1779,7 +1780,7 @@ rcf_ta_trsend_stop(const char *ta_name, csap_handle_t csap_id, int *num)
         return TE_RC(TE_RCF_API, EINVAL);
     }
 
-    msg.sid = tr_op->sid;
+    msg.sid = session;
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_unlock(&rcf_lock);
 #endif    
@@ -1954,10 +1955,7 @@ csap_tr_recv_get(const char *ta_name, int session, csap_handle_t csap_id,
         return TE_RC(TE_RCF_API, EINVAL);
     }
 
-    if (session == -1)
-        msg.sid = (tr_op != NULL) ? tr_op->sid : 0;
-    else
-        msg.sid = session;
+    msg.sid = session;
 
     handler    = (tr_op != NULL) ? tr_op->handler    : NULL;
     user_param = (tr_op != NULL) ? tr_op->user_param : NULL;
@@ -2017,15 +2015,18 @@ csap_tr_recv_get(const char *ta_name, int session, csap_handle_t csap_id,
  * See the description in rcf_api.h
  */
 int
-rcf_ta_trrecv_wait(const char *ta_name, csap_handle_t csap_id, int *num)
+rcf_ta_trrecv_wait(const char *ta_name, int session,
+                   csap_handle_t csap_id, int *num)
 {
     int rc;
     VERB("%s(ta %s, csap %d, *num  %p) called", 
-         ta_name, csap_id, num);
-    rc = csap_tr_recv_get(ta_name, -1, csap_id, num, RCFOP_TRRECV_WAIT);
+         __FUNCTION__, ta_name, csap_id, num);
+    rc = csap_tr_recv_get(ta_name, session, csap_id, num,
+                          RCFOP_TRRECV_WAIT);
 
     VERB("%s(ta %s, csap %d, *num  %p) return %X, num %d", 
-         ta_name, csap_id, num, rc, (num == NULL ? -1: *num)); 
+         __FUNCTION__, ta_name, csap_id, num, rc, 
+         (num == NULL ? -1: *num));
     return rc;
 }
                       
@@ -2052,34 +2053,20 @@ rcf_ta_trrecv_wait(const char *ta_name, csap_handle_t csap_id, int *num)
  * @retval ENOMEM       out of memory
  *
  * @sa rcf_ta_trrecv_start
- */
+ */ 
 int 
-rcf_ta_trrecv_stop(const char *ta_name, csap_handle_t csap_id, int *num)
-{
-    int rc;
-
-    VERB("%s(ta %s, csap %d, *num  %p) called", 
-         ta_name, csap_id, num);
-    rc = csap_tr_recv_get(ta_name, -1, csap_id, num, RCFOP_TRRECV_STOP);
-
-    VERB("%s(ta %s, csap %d, *num  %p) return %X, num %d", 
-         ta_name, csap_id, num, rc, (num == NULL ? -1: *num)); 
-    return rc;
-}
-
-/* See description in rcf_api.h */
-int 
-rcf_ta_trrecv_stop_sess(const char *ta_name, int session,
+rcf_ta_trrecv_stop(const char *ta_name, int session,
                         csap_handle_t csap_id, int *num)
 {
     int rc;
 
     VERB("%s(ta %s, csap %d, *num  %p) called", 
-         ta_name, csap_id, num); 
+         __FUNCTION__, ta_name, csap_id, num); 
     rc = csap_tr_recv_get(ta_name, session, csap_id, num,
                             RCFOP_TRRECV_STOP); 
     VERB("%s(ta %s, csap %d, *num  %p) return %X, num %d", 
-         ta_name, csap_id, num, rc, (num == NULL ? -1: *num)); 
+         __FUNCTION__, ta_name, csap_id, num, rc,
+         (num == NULL ? -1: *num));
     return rc;
 }
 
@@ -2109,13 +2096,15 @@ rcf_ta_trrecv_stop_sess(const char *ta_name, int session,
  * @sa rcf_ta_trrecv_start
  */
 int 
-rcf_ta_trrecv_get(const char *ta_name, csap_handle_t csap_id, int *num)
+rcf_ta_trrecv_get(const char *ta_name, int session,
+                  csap_handle_t csap_id, int *num)
 {
     int rc;
 
     VERB("%s(ta %s, csap %d, *num  %p) called", 
          ta_name, csap_id, num);
-    rc = csap_tr_recv_get(ta_name, -1, csap_id, num, RCFOP_TRRECV_GET);
+    rc = csap_tr_recv_get(ta_name, session, csap_id, num,
+                          RCFOP_TRRECV_GET);
 
     VERB("%s(ta %s, csap %d, *num  %p) return %X, num %d", 
          ta_name, csap_id, num, rc, (num == NULL ? -1: *num)); 

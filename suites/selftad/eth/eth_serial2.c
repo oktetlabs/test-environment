@@ -264,7 +264,7 @@ int main()
         printf ("TX status: %d\n", status);
         fflush (stdout);
 
-        rc = rcf_ta_trrecv_get(agent_b, rx_csap, &num);
+        rc = rcf_ta_trrecv_get(agent_b, sid_b, rx_csap, &num);
         if (rc)
         {
             TEST_TERMINATION("v1: port A. RX CSAP get traffic error %x",
@@ -278,7 +278,7 @@ int main()
     sleep (3);
    
     /* Stop recieving process */
-    rc = rcf_ta_trrecv_stop(agent_b, rx_csap, &recv_pkts);
+    rc = rcf_ta_trrecv_stop(agent_b, sid_b, rx_csap, &recv_pkts);
     if (rc)
     {
         TEST_TERMINATION(" receiving process shutdown error %x", rc);     

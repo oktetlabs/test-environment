@@ -368,7 +368,7 @@ main(int argc, char *argv[])
         rx_counter = atoi(rx_counter_txt);
         VERB (" rx_counter: %ld\n", rx_counter);
 
-        rc = rcf_ta_trrecv_stop(ta, eth_listen_csap, &syms);
+        rc = rcf_ta_trrecv_stop(ta, sid, eth_listen_csap, &syms);
 
         VERB ("trrecv stop rc: %x, num of pkts: %d\n", rc, syms);
 

@@ -176,7 +176,7 @@ main()
 
         sleep(2);
 
-        rc = rcf_ta_trrecv_stop(ta, eth_listen_csap, &syms);
+        rc = rcf_ta_trrecv_stop(ta, sid, eth_listen_csap, &syms);
 
         printf ("trrecv stop rc: %x, num of pkts: %d\n", rc, syms);
 

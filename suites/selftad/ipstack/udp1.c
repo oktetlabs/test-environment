@@ -170,7 +170,7 @@ main(int argc, char *argv[])
 #if 1
         sleep(1);
         INFO ("try to get\n");
-        rc = rcf_ta_trrecv_get(ta, csap, &num);
+        rc = rcf_ta_trrecv_get(ta, sid, csap, &num);
         INFO("trrecv_get: 0x%X num: %d\n", rc, num);
         if (rc) break;
 
@@ -180,7 +180,7 @@ main(int argc, char *argv[])
         sleep (num);
 
         INFO ("try to stop\n");
-        rc = rcf_ta_trrecv_stop(ta, csap, &num);
+        rc = rcf_ta_trrecv_stop(ta, sid, csap, &num);
         INFO("trrecv_stop: 0x%X num: %d\n", rc, num);
 
 #endif

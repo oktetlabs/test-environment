@@ -178,7 +178,7 @@ main()
             return rc;
         } 
 
-        rc = rcf_ta_trrecv_stop(ta, eth_listen_csap, &syms);
+        rc = rcf_ta_trrecv_stop(ta, sid, sid, eth_listen_csap, &syms);
         VERB("trrecv stop rc: %x, num of pkts: %d\n", rc, syms);
 #else
         syms = 1;
@@ -194,7 +194,7 @@ main()
         } 
         printf ("before trrecv_wait call \n");
         syms = 0;
-        rc = rcf_ta_trrecv_wait(ta, eth_listen_csap, &syms);
+        rc = rcf_ta_trrecv_wait(ta, sid, eth_listen_csap, &syms);
         printf ("trrecv_wait return %x, num %d\n", rc, syms);
 #endif 
 

@@ -175,7 +175,7 @@ main()
 
         sleep(1);
 
-        rc = rcf_ta_trrecv_stop(ta, bpdu_listen_csap, &syms);
+        rc = rcf_ta_trrecv_stop(ta, sid, bpdu_listen_csap, &syms);
         printf ("trrecv stop rc: %x, num: %d\n", rc, syms);
         CHECK_STATUS(rc, "trrecv stop rc: %x, num of pkts: %d\n", rc, syms);
 

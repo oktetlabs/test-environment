@@ -209,17 +209,17 @@ main(int argc, char *argv[])
 #if 1
         sleep(2);
         INFO ("try to get\n");
-        rc = rcf_ta_trrecv_get(ta, csap, &num);
+        rc = rcf_ta_trrecv_get(ta, sid, csap, &num);
         INFO("trrecv_get: 0x%X num: %d\n", rc, num);
         if (rc) break;
 
 #endif
         num = 2;
-        INFO ("sleep %d secs before stop\n", num);
+        INFO ("sleep %d secs before wait\n", num);
         sleep (num);
 
         INFO ("try to wait\n");
-        rc = rcf_ta_trrecv_wait(ta, csap, &num);
+        rc = rcf_ta_trrecv_wait(ta, sid, csap, &num);
         INFO("trrecv_wait: 0x%X num: %d\n", rc, num);
         if (rc)
         {

@@ -283,7 +283,7 @@ tapi_arp_recv(const char *ta_name, int sid, csap_handle_t arp_csap,
         return rc;
     }
     /* Wait until all the packets received or timeout */
-    rc = rcf_ta_trrecv_wait(ta_name, arp_csap, &num_tmp);
+    rc = rcf_ta_trrecv_wait(ta_name, sid, arp_csap, &num_tmp);
 
     if (rc != 0 || info.rc != 0)
     {

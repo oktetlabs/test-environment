@@ -166,7 +166,7 @@ main()
 #if 1
         sleep(1);
         printf ("try to get\n");
-        rc = rcf_ta_trrecv_get(ta, handle, &num);
+        rc = rcf_ta_trrecv_get(ta, sid, handle, &num);
         printf("trrecv_get: 0x%x num: %d\n", rc, num);
 
 #endif
@@ -175,7 +175,7 @@ main()
         sleep (num);
 
         printf ("try to stop\n");
-        rc = rcf_ta_trrecv_stop(ta, handle, &num);
+        rc = rcf_ta_trrecv_stop(ta, sid, handle, &num);
         printf("trrecv_stop: 0x%x num: %d\n", rc, num);
 
 #endif
