@@ -561,7 +561,7 @@ process_backup(cfg_backup_msg *msg)
             if (msg->rc == 0)
                 cfg_dh_release_after(msg->filename);
             else
-                WARN("Backup diff: %tf", diff_file);
+                INFO("Backup diff: %tf", diff_file);
             unlink(diff_file);            
             break;
         }
@@ -969,7 +969,6 @@ cfg_process_msg(cfg_msg **msg, te_bool update_dh)
 
         case CFG_SHUTDOWN:
             /* Remove commands initiated by configuration file */
-            INFO("Restoring backup");
             cfg_dh_restore_backup(NULL);
             cfg_shutdown = TRUE;
             break;
