@@ -1619,7 +1619,26 @@ get_tester_config(xmlNodePtr root, tester_cfg *cfg, unsigned int flags)
     if (node != NULL &&
         xmlStrcmp(node->name, CONST_CHAR2XML("description")) == 0)
     {
-        cfg->descr = XML2CHAR_DUP(node->content);
+        if (node->children == NULL)
+        {
+            ERROR("Tester configuration 'description' must not be "
+                  "empty, if it is present");
+            return EINVAL;
+        }
+        /* Simple text content is represented as 'text' elements */
+        if ((xmlStrcmp(node->children->name, CONST_CHAR2XML("text")) != 0) ||
+            (node->children->content == NULL))
+        {
+            ERROR("Tester configuration 'description' content is "
+                  "empty or not 'text'");
+            return EINVAL;
+        }
+        if (node->children != node->last)
+        {
+            ERROR("Too many children in 'description' element");
+            return EINVAL;
+        }
+        cfg->descr = XML2CHAR_DUP(node->children->content);
         node = xmlNodeNext(node);
     }
 
