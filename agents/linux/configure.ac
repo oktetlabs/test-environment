@@ -106,7 +106,6 @@ if test -n "$with_cfg_linux_daemons" ; then
         smtp)
             DAEMONS_CFLAGS="$DAEMONS_CFLAGS -DWITH_SMTP" ;;
         sshd) ;;
-        ssh_fwd) ;;
         Xvfb) ;;
         *)  ;; 
     esac

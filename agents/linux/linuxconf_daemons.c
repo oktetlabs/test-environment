@@ -3716,9 +3716,6 @@ linuxconf_daemons_init(rcf_pch_cfg_object **last)
     (*last)->brother = &node_ds_sshd;
     *last = &node_ds_sshd;
 
-/*    (*last)->brother = &node_ds_ssh_fwd;
-    *last = &node_ds_ssh_fwd; */
-
     (*last)->brother = &node_ds_xvfb;
     *last = &node_ds_xvfb;
 
@@ -3726,6 +3723,7 @@ linuxconf_daemons_init(rcf_pch_cfg_object **last)
 
 #undef CHECK_RC
 }
+
 
 /**
  * Release resources allocated for the configuration support.
