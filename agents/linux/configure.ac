@@ -207,6 +207,16 @@ if test -n "$with_rcf_rpc" ; then
     AC_CHECK_FUNC([aio_read], [],
         AC_CHECK_LIB([nsl], [aio_read], [LIBS="-lnsl -lrt ${LIBS}"],
             AC_MSG_WARN([Asynchronous I/O not supported]), [-lrt]))
+
+dnl    AC_CHECK_FUNC([xdr_uint8_t], []
+dnl        AC_CHECK_FUNC([xdr_u_int8_t],
+dnl            AC_DEFINE([xdr_uint8_t], xdr_u_int8_t),
+dnl            AC_ERROR([There is no xdr_uint8_t or xdr_u_int8_t!])))
+
+    AC_CHECK_FUNC([xdr_uint8_t], [],
+        [AC_CHECK_FUNC([xdr_u_int8_t],
+            [AC_DEFINE([xdr_uint8_t], [xdr_u_int8_t])],
+            [AC_ERROR([There is no xdr_uint8_t or xdr_u_int8_t!])])])
 fi
 
 
