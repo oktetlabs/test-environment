@@ -1,17 +1,24 @@
 
+#EXTRA_DIST = package.dox
 
-AUTOMAKE_OPTIONS = foreign 
+tetestdir=$(prefix)/@PACKAGE_NAME@/$(subdir)
 
-AM_CFLAGS=@TE_CFLAGS@ -I$(DESTDIR)/$(prefix)/include \
-                      -I$(DESTDIR)/$(prefix)/../include
-AM_LDFLAGS=@TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/lib 
+dist_tetest_DATA = package.xml
 
-bin_PROGRAMS=get_any eth1 eth2 eth3 eth_serial1 eth_serial2
-bindir=${prefix}/bin/eth/
+
+AM_CFLAGS = -I$(DESTDIR)/$(prefix)/include \
+            -I$(DESTDIR)/$(prefix)/../include
+
+AM_CFLAGS =
+
+AM_LDFLAGS = @TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/lib 
+
+
+
+tetest_PROGRAMS = get_any eth1 eth2 eth3 eth_serial1 eth_serial2
 
 LDADD= -lrcfapi -lipc -lpthread -ltapi -ltapi_eth -lndn -lasn -llogger_ten
 #eth2_LDADD= -lrcfapi -llogger_ten -lipc -lpthread -lndn -lndn_eth -ltapi_eth -lndn -lasn 
-
 
 TESTS_DEPS = ${TE_INSTALL}/i686-pc-linux-gnu/lib/libconfapi.a \
              ${TE_INSTALL}/i686-pc-linux-gnu/lib/librcfapi.a \

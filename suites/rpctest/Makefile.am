@@ -1,4 +1,9 @@
 
+tetestdir=$(prefix)/@PACKAGE_NAME@/$(subdir)
+
+dist_tetest_DATA = package.xml
+
+
 AM_CPPFLAGS = -I$(DESTDIR)/$(prefix)/include \
               -I$(DESTDIR)/$(prefix)/../include
 
@@ -7,20 +12,17 @@ AM_CFLAGS =
 AM_LDFLAGS = @TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/lib 
 
 
-tetestdir=$(prefix)/@PACKAGE_NAME@/$(subdir)
-
-tetest_DATA = package.xml
-
 tetest_PROGRAMS = rpctest
 
 
-rpctest_SOURCES=rpctest.c 
+rpctest_SOURCES = rpctest.c 
 
-rpctest_LDADD= -ltapi_rpcsock -lrcfrpc -lconfapi -lconf_oid -lrcfapi  -llogger_ten -lipc -lpthread
+rpctest_LDADD = -ltapi_rpcsock -lrcfrpc -lconfapi -lconf_oid -lrcfapi \
+                -llogger_ten -lipc -lpthread
 
-rpctest_DEPENDENCIES=${TE_INSTALL}/@host@/lib/librcfapi.a \
-                     ${TE_INSTALL}/@host@/lib/librcfrpc.a \
-                     ${TE_INSTALL}/@host@/lib/libconfapi.a \
-                     ${TE_INSTALL}/@host@/lib/libtapi_rpcsock.a \
-                     ${TE_INSTALL}/@host@/lib/liblogger_ten.a
+rpctest_DEPENDENCIES = ${TE_INSTALL}/@host@/lib/librcfapi.a \
+                       ${TE_INSTALL}/@host@/lib/librcfrpc.a \
+                       ${TE_INSTALL}/@host@/lib/libconfapi.a \
+                       ${TE_INSTALL}/@host@/lib/libtapi_rpcsock.a \
+                       ${TE_INSTALL}/@host@/lib/liblogger_ten.a
 

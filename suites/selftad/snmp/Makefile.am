@@ -3,7 +3,7 @@
 
 tetestdir=$(prefix)/@PACKAGE_NAME@/$(subdir)
 
-tetest_DATA = package.xml
+dist_tetest_DATA = package.xml
 
 
 AM_CPPFLAGS = -I. -I$(DESTDIR)/$(prefix)/include \

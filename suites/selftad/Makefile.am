@@ -1,9 +1,10 @@
 
+#EXTRA_DIST = mainpage.dox
+
 tetestdir=$(prefix)/@PACKAGE_NAME@/$(subdir)
 
-tetest_DATA = package.xml
+dist_tetest_DATA = package.xml
 
-#SUBDIRS=eth bridge
 
-SUBDIRS=snmp 
+SUBDIRS = snmp 
 
