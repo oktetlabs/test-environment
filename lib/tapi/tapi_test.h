@@ -113,6 +113,7 @@ extern "C" {
     TEST_END_SPECIFIC;                                              \
     cfg_api_cleanup();                                              \
     rcf_api_cleanup();                                              \
+    log_client_close();                                             \
     return result
 
 /**
