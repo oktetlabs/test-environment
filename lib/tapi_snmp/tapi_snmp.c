@@ -192,8 +192,7 @@ tapi_snmp_free_message(tapi_snmp_message_t *snmp_message)
                     break;
                 default:
                     /* do nothing - no memory allocated for storage. */
-                    break;
-
+                    break; 
             }
         }
         free(snmp_message->vars);
@@ -756,7 +755,6 @@ tapi_snmp_get_row(const char *ta, int sid, int csap_id,
     va_list       ap;
     int           num_vars = 0;
     int           i;
-    char         *oid_name;
     FILE         *f;
     unsigned int  timeout;
     char          tmp_name[100];
@@ -781,7 +779,6 @@ tapi_snmp_get_row(const char *ta, int sid, int csap_id,
     va_start(ap, common_index);
     while (1) {
         tapi_snmp_varbind_t  var_bind;
-        tapi_snmp_oid_t      oid;
         tapi_snmp_vartypes_t syntax;
         char                 *oid_name = va_arg(ap, char *);
 
@@ -792,8 +789,13 @@ tapi_snmp_get_row(const char *ta, int sid, int csap_id,
         if ((rc = tapi_snmp_make_oid(oid_name, &var_bind.name)) != 0)
             return TE_RC(TE_TAPI, rc);
 
-        if ((rc = tapi_snmp_get_syntax(&oid, &syntax)) != 0)
+        VERB("%s: var #%d, label %s, got oid %s\n", 
+                __FUNCTION__, num_vars, oid_name, print_oid(&var_bind.name));
+
+        if ((rc = tapi_snmp_get_syntax(&var_bind.name, &syntax)) != 0)
             return TE_RC(TE_TAPI, rc);
+
+        tapi_snmp_cat_oid(&var_bind.name, common_index);
 
         var_bind.type = TAPI_SNMP_OTHER; /* value is not need for GET */
         rc = tapi_snmp_msg_var_bind(f, &var_bind);
@@ -822,6 +824,11 @@ tapi_snmp_get_row(const char *ta, int sid, int csap_id,
                 get_par->type = ROW_PAR_INT;
                 get_par->objid_place = va_arg(ap, tapi_snmp_oid_t *);
                 break;
+
+            default:
+                ERROR("%s : unexpected syntax %d", __FUNCTION__, syntax);
+                rc = EINVAL;
+                break;
         }
         
         get_par->next = gp_head;
@@ -833,9 +840,11 @@ tapi_snmp_get_row(const char *ta, int sid, int csap_id,
     if (rc == 0)
         rc = tapi_snmp_msg_tail(f);
 
+    fclose(f);
+
     if (rc) 
     {
-        ERROR("prepare in %s failed, rc %X", __FUNCTION__, rc); 
+        ERROR("%s : prepare in failed, rc %X", __FUNCTION__, rc); 
         goto clean_up;
     }
 
@@ -858,15 +867,21 @@ tapi_snmp_get_row(const char *ta, int sid, int csap_id,
     if (msg.num_var_binds) /* this is real response from Test Agent*/
     {
         if ((unsigned int)(num_vars) != msg.num_var_binds)
+        {
+            ERROR("Wrong number of gor var_binds: %d", msg.num_var_binds);
+            rc = EFAULT;
+            goto clean_up;
+        }
 
         i = num_vars;
         get_par = gp_head;
         do
         {
             unsigned char *buf;
-            size_t len = msg.vars[i].v_len;
+            size_t len;
 
             i--;
+            len = msg.vars[i].v_len; 
             switch(get_par->type)
             {
                 case ROW_PAR_INT:
@@ -889,6 +904,11 @@ tapi_snmp_get_row(const char *ta, int sid, int csap_id,
         rc = TE_RC(TE_TAPI, msg.err_status);
 
 clean_up:
+
+#if !(DEBUG)
+    unlink(tmp_name);
+#endif 
+
     while (gp_head)
     { 
         get_par = gp_head->next;
@@ -1085,14 +1105,12 @@ tapi_snmp_set_gen(const char *ta, int sid, int csap_id,
     int                  num_vars = 0;
     int                  i;
     int                  rc;
-    int                  dimention;
     struct tapi_vb_list *vbl; 
     struct tapi_vb_list *vbl_head = NULL; 
     tapi_snmp_varbind_t *vb_array;
     tapi_snmp_varbind_t *vb;
     tapi_snmp_oid_t      oid;
     tapi_snmp_vartypes_t syntax;
-    char *oid_name;
 
     while (1) {
         char *oid_name = va_arg(ap, char *);
@@ -1141,8 +1159,6 @@ tapi_snmp_set_gen(const char *ta, int sid, int csap_id,
 
                 case SNMP_OBJ_TBL_FIELD:
                 {
-                    int i;
-                    int sub_oid;
                     tapi_snmp_oid_t *tbl_index;
 
                     /* Table object - apend index */
@@ -1181,6 +1197,9 @@ tapi_snmp_set_gen(const char *ta, int sid, int csap_id,
                 vb->obj_id = va_arg(ap, tapi_snmp_oid_t *);
                 vb->v_len = vb->obj_id->length;
                 break;
+            default:
+                ERROR("%s unexpected syntax %d", __FUNCTION__, syntax);
+                return TE_RC(TE_TAPI, EFAULT);
         }
 
         vbl = calloc(1, sizeof(struct tapi_vb_list));
@@ -1230,6 +1249,8 @@ tapi_snmp_set_row(const char *ta, int sid, int csap_id,
     rc = tapi_snmp_set_gen(ta, sid, csap_id, errstat, errindex,
                            common_index, ap);
     va_end(ap);
+
+    return rc;
 }
 
 int 
@@ -1243,6 +1264,8 @@ tapi_snmp_set(const char *ta, int sid, int csap_id,
     rc = tapi_snmp_set_gen(ta, sid, csap_id, errstat, errindex,
                            NULL, ap);
     va_end(ap);
+
+    return rc;
 }
 
 #endif
@@ -2203,8 +2226,10 @@ tapi_snmp_load_mib_with_path(const char *dir_path, const char *mib_file)
 
     memcpy(full_path, dir_path, dir_path_len);
     full_path[dir_path_len] = '/';
-    memcpy(full_path + dir_path_len + 1, mib_file, mib_file_len + 1);
-    strcat(full_path, ".my");
+    memcpy(full_path + dir_path_len + 1, mib_file, mib_file_len + 1); 
+
+    if (strchr(mib_file, '.') == NULL)
+        strcat(full_path, ".my");
 
     if (read_mib(full_path) == NULL)
         return ENOENT;
