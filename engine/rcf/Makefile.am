@@ -34,6 +34,9 @@ te_rcf_shutdown_DEPENDENCIES = $(DESTDIR)/$(prefix)/lib/librcfapi.a \
 
 te_rcf_tadead_SOURCES = rcf_tadead.c
 
+# Use static linkage for tool to be used by human
+te_rcf_tadead_LDFLAGS = -static
+
 te_rcf_tadead_LDADD = -lipc -lpthread
 
 te_rcf_tadead_DEPENDENCIES = $(DESTDIR)/$(prefix)/lib/librcfapi.a \
