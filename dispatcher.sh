@@ -663,15 +663,19 @@ if test $? -eq 0 ; then
         rgt-xml2html -f ${TE_LOG_DIR}/tmp_raw_log.xml \
                      -o ${TE_LOG_DIR}/${RGT_LOG_HTML_PLAIN}
     fi
+fi
+rgt-conv --no-cntrl-msg ${CONF_RGT} -f ${TE_LOG_DIR}/tmp_raw_log \
+                                    -o ${TE_LOG_DIR}/tmp_raw_log2.xml
+if test $? -eq 0 ; then
     if test -n "${RGT_LOG_HTML}" ; then
-        rgt-xml2html -m ${TE_LOG_DIR}/tmp_raw_log.xml \
+        rgt-xml2html -m ${TE_LOG_DIR}/tmp_raw_log2.xml \
                         ${TE_LOG_DIR}/${RGT_LOG_HTML}
     fi
 fi
 
 # Run TRC, if any its option is provided
 if test -n "${TRC_OPTS}" ; then
-    te_trc.sh ${TRC_OPTS} tmp_raw_log
+    te_trc.sh ${TRC_OPTS} ${TE_LOG_DIR}/tmp_raw_log
 fi
 
 rm -f ${LOCK_DIR}/ds
