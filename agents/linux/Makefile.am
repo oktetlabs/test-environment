@@ -91,13 +91,12 @@ talinuxtmpl_DEPENDENCIES=@TE_DEPENDENCIES@ symtbl.o \
     $(DESTDIR)/$(prefix)/../@host@/lib/libcomm_net_agent.a \
     $(DESTDIR)/$(prefix)/../@host@/lib/libloggerta.a
 
-symtbl.o: $(MY_SYMTBL_OBJECTS) @TE_DEPENDENCIES@
+symtbl.c: $(MY_SYMTBL_OBJECTS) @TE_DEPENDENCIES@
 	if test -e $(DESTDIR)/$(prefix)/../@host@/bin/te_generate_symtbl ; then \
             $(DESTDIR)/$(prefix)/../@host@/bin/te_generate_symtbl "${NM}" symtbl.c $^ ; \
         else \
             te_generate_symtbl "${NM}" symtbl.c $^ ; \
         fi
-	${CC} -c -o $@ symtbl.c
 
 install-exec-hook:
 	mv $(DESTDIR)/$(bindir)/talinuxtmpl $(DESTDIR)/$(bindir)/ta@with_name@
