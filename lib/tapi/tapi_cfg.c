@@ -451,7 +451,7 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
                                            ta, dst_addr_str, prefix)) != 0)
             {
                 ERROR("%s() fails adding a new route %s|%d via %s gateway "
-                      "on %s agent", __FUNCTION__, dst_addr_str, prefix,
+                      "on TA '%s'", __FUNCTION__, dst_addr_str, prefix,
                       gw_addr_str, ta);
                 return TE_RC(TE_TAPI, rc);
             }
@@ -516,8 +516,9 @@ tapi_cfg_arp_op(enum tapi_cfg_oper op, const char *ta,
                                            "/agent:%s/arp:%s",
                                            ta, net_addr_str)) != 0)
             {
+                /* TODO Correct formating */
                 ERROR("%s() fails adding a new ARP entry "
-                      "%s -> %02x:%02x:%02x:%02x:%02x:%02x on %s agent",
+                      "%s -> %x:%x:%x:%x:%x:%x on TA '%s'",
                       __FUNCTION__, net_addr_str,
                       *(((uint8_t *)link_addr) + 0),
                       *(((uint8_t *)link_addr) + 1),
@@ -534,7 +535,7 @@ tapi_cfg_arp_op(enum tapi_cfg_oper op, const char *ta,
                                            ta, net_addr_str)) != 0)
             {
                 ERROR("%s() fails deleting ARP entry for %s host"
-                      "on %s agent", __FUNCTION__, net_addr_str, ta);
+                      "on TA '%s'", __FUNCTION__, net_addr_str, ta);
                 return TE_RC(TE_TAPI, rc);
             }
             break;
