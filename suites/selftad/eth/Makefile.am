@@ -15,13 +15,11 @@ tetest_PROGRAMS = ethtest get_any eth1 eth2 eth3 eth_serial1 eth_serial2
 LDADD= -ltapi -ltapi_eth -ltapi_tad -lndn -lasn -lconfapi -lrcfapi \
        -lconf_oid -llogger_ten -lipc -lpthread
 
-TESTS_DEPS = ${TE_INSTALL}/i686-pc-linux-gnu/lib/libconfapi.a \
-             ${TE_INSTALL}/i686-pc-linux-gnu/lib/librcfapi.a \
-             ${TE_INSTALL}/i686-pc-linux-gnu/lib/liblogger_ten.a \
-             ${TE_INSTALL}/i686-pc-linux-gnu/lib/libipc.a \
-             ${TE_INSTALL}/i686-pc-linux-gnu/lib/libtapi_eth.a \
-             ${TE_INSTALL}/i686-pc-linux-gnu/lib/libtapi.a \
-             ${TE_INSTALL}/i686-pc-linux-gnu/lib/libndn.a \
-             ${TE_INSTALL}/i686-pc-linux-gnu/lib/libndn_eth.a \
-             ${TE_INSTALL}/i686-pc-linux-gnu/lib/libasn.a 
+MYDEPS = @SELFTAD_TE_DEPS@ @TE_INSTALL@/@host@/lib/libtapi_eth.a 
+
+get_any_DEPENDENCIES = $(MYDEPS)
+
+eth1_DEPENDENCIES = $(MYDEPS)
+
+eth2_DEPENDENCIES = $(MYDEPS)
 

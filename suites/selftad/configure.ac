@@ -77,13 +77,26 @@ else
     NET_SNMP_CFLAGS=`$NET_SNMP_CONFIG --cflags`
     NET_SNMP_LIBS=`$NET_SNMP_CONFIG --libs`
 fi
+
+SELFTAD_TE_DEPS="${TE_INSTALL}/${host}/lib/libipc.a \
+${TE_INSTALL}/${host}/lib/librcfapi.a \
+${TE_INSTALL}/${host}/lib/libconfapi.a \
+${TE_INSTALL}/${host}/lib/libconf_oid.a \
+${TE_INSTALL}/${host}/lib/libconf_types.a \
+${TE_INSTALL}/${host}/lib/librcfrpc.a \
+${TE_INSTALL}/${host}/lib/liblogger_ten.a \
+${TE_INSTALL}/${host}/lib/libtapi.a \
+${TE_INSTALL}/${host}/lib/libndn.a \
+${TE_INSTALL}/${host}/lib/libtapi_rpc.a"
+
 AC_SUBST([NET_SNMP_CFLAGS])
 AC_SUBST([NET_SNMP_LIBS])
+AC_SUBST([SELFTAD_TE_DEPS])
 
 AC_DEFINE_UNQUOTED(SUITE_SRCDIR, "$srcdir", [The suite source directory])
 
 
 AC_CONFIG_FILES([Makefile cli/Makefile \
-		snmp/Makefile eth/Makefile ipstack/Makefile])
+		snmp/Makefile eth/Makefile ipstack/Makefile dhcp/Makefile])
 
 AC_OUTPUT

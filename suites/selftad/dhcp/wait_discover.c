@@ -58,7 +58,7 @@
  * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  */
 
-#define TE_TEST_NAME    "dhcp/simple"
+#define TE_TEST_NAME    "dhcp/wait_discover"
 
 #include "te_config.h"
 #include "config.h"
@@ -94,6 +94,8 @@
 #include <sys/time.h>
 #include <unistd.h>
 
+#include "te_defs.h"
+#include "te_errno.h"
 #include "conf_api.h"
 #include "ndn_dhcp.h"
 #include "tapi_test.h"
@@ -104,25 +106,13 @@
 int
 main(int argc, char *argv[])
 {
-    char ta[32];
-    int  len = sizeof(ta);
-    
-    struct dhcp_message *dhcp_req;
-    struct dhcp_message *dhcp_ack;
-    const struct dhcp_option  *opt;
+    char   ta[32];
+    int    len = sizeof(ta); 
+    char  *pattern_fname;
+    int    num = 0;
 
-    csap_handle_t        dhcp_csap;
-    csap_handle_t        dhcp_csap_tx;
-
-    struct timeval tv = {10, 0}; /* 10 sec */
-
-    uint8_t  ps_wan_man_mac[ETHER_ADDR_LEN];
-    uint32_t ps_wan_man_addr;
-    uint32_t tftp_serv_addr = inet_addr("192.168.249.2");
-    uint32_t dhcp_serv_addr = inet_addr("192.168.249.2");
-    uint32_t tod_serv_addr = inet_addr("192.168.249.2");
-    const char *ps_cfg_file = "PSP-01-Basic.cfg";
-    unsigned int i;
+    csap_handle_t        dhcp_csap = CSAP_INVALID_HANDLE;
+    struct dhcp_message *dhcp_msg; 
 
     TEST_START;
 
@@ -133,38 +123,46 @@ main(int argc, char *argv[])
     }
     VERB("Agent: %s\n", ta);
 
-    /* 
-     * Register on receiving DHCP DISCOVER message from 
-     * WAN-Man MAC address
-     */
-    /*@todo Create a handle to operate with DHCP CSAP (WAN-Man MAC) */
-    if ((rc = tapi_dhcpv4_plain_csap_create(ta, &dhcp_csap,
+    if ((rc = tapi_dhcpv4_plain_csap_create(ta, "eth0",
                                             DHCP4_CSAP_MODE_SERVER,
-                                            "eth0")) 
+                                            &dhcp_csap)) 
 
          != 0)
     {
         TEST_FAIL("Cannot create DHCP CSAP rc = %X", rc);
     }
-#if 1
-    if ((rc = dhcpv4_message_start_recv(ta, dhcp_csap,
-                                        DHCPDISCOVER)) != 0)
+
+    dhcp_msg = dhcpv4_message_create(DHCPDISCOVER);
+    rc = dhcpv4_prepare_traffic_pattern(dhcp_msg, &pattern_fname);
+
+    rc = rcf_ta_trrecv_start(ta, 0, dhcp_csap, pattern_fname, 
+                             NULL, NULL, 5000, 1);
+    if (rc != 0)
     {
         TEST_FAIL("dhcpv4_message_start_recv returns %X", rc);
     }
 
-    /* Reboot the PS */
-    printf("Before sleep\n");
-    fflush(stdout);
-    /* Wait for DHCP DISCOVER message (use CSAP created before) */
-    sleep(10);
-    printf("Before traffic stop\n");
-    fflush(stdout);
-#endif
+    rc = rcf_ta_trrecv_wait(ta, 0, dhcp_csap, &num);
+    switch (rc)
+    {
+        case 0:
+            INFO("Wait for DHCP message successful, num %d", num);
+            break;
+        case TE_RC(TE_TAD_CSAP, ETIMEDOUT):
+            INFO("Wait for DHCP message timedout");
+            break;
+        default:
+            TEST_FAIL("Wait for DHCP message failed %X", rc);
+            break;
+    } 
     
     TEST_SUCCESS;
 
 cleanup:
+
+    if (dhcp_csap != CSAP_INVALID_HANDLE)
+        rcf_ta_csap_destroy(ta, 0, dhcp_csap);
+
     TEST_END; 
 }
 

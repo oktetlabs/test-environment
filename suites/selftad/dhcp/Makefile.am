@@ -10,8 +10,13 @@ AM_CPPFLAGS = -I$(DESTDIR)/$(prefix)/include
 AM_LDFLAGS = @TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/lib 
 
 
-tetest_PROGRAMS = dhcptest
+tetest_PROGRAMS = wait_discover
 
-LDADD = -lrcfapi -llogger_ten -lipc -lpthread -lndn -lndn_dhcp \
-        -ltapi_dhcp -lndn -lasn 
+LDADD= -ltapi -ltapi_dhcp -ltapi_tad -lndn -lasn -lconfapi -lrcfapi \
+       -lconf_oid -llogger_ten -lipc -lpthread 
+
+MYDEPS = @SELFTAD_TE_DEPS@ @TE_INSTALL@/@host@/lib/libtapi_dhcp.a 
+
+wait_discover_DEPENDENCIES = $(MYDEPS)
+
 
