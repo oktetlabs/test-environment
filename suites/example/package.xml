@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<package version="1.0">
+    <description>Example test</description>
+    <author mailto="Artem.Andreev@oktetlabs.ru"/>
+    <session>
+        <run>
+            <script name="example"/>
+        </run>
+    </session>
+</package>
