@@ -469,34 +469,39 @@ rgt_log_characters(void *user_data, const xmlChar *ch, int len)
 
 /** The structure specifies all types callback routines that should be called */
 static xmlSAXHandler sax_handler = {
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL, /* attributeDeclDebug, */
-    NULL, /* elementDeclDebug, */
-    NULL, /* unparsedEntityDeclDebug, */
-    NULL,
-    rgt_log_start_document,
-    rgt_log_end_document,
-    rgt_log_start_element,
-    rgt_log_end_element,
-    NULL, /* referenceDebug, */
-    rgt_log_characters,
-    NULL, /* ignorableWhitespaceDebug, */
-    NULL, /* processingInstructionDebug, */
-    NULL, /* commentDebug, */
-    NULL, /* warningDebug, */
-    NULL, /* errorDebug, */
-    NULL, /* fatalErrorDebug, */
-    NULL, /* getParameterEntityDebug, */
-    NULL, /* cdataBlockDebug, */
-    NULL, /* externalSubsetDebug, */
-    1
+    .internalSubset         = NULL,
+    .isStandalone           = NULL,
+    .hasInternalSubset      = NULL,
+    .hasExternalSubset      = NULL,
+    .resolveEntity          = NULL,
+    .getEntity              = NULL,
+    .entityDecl             = NULL,
+    .notationDecl           = NULL,
+    .attributeDecl          = NULL, /* attributeDeclDebug, */
+    .elementDecl            = NULL, /* elementDeclDebug, */
+    .unparsedEntityDecl     = NULL, /* unparsedEntityDeclDebug, */
+    .setDocumentLocator     = NULL,
+    .startDocument          = rgt_log_start_document,
+    .endDocument            = rgt_log_end_document,
+    .startElement           = rgt_log_start_element,
+    .endElement             = rgt_log_end_element,
+    .reference              = NULL, /* referenceDebug, */
+    .characters             = rgt_log_characters,
+    .ignorableWhitespace    = NULL, /* ignorableWhitespaceDebug, */
+    .processingInstruction  = NULL, /* processingInstructionDebug, */
+    .comment                = NULL, /* commentDebug, */
+    .warning                = NULL, /* warningDebug, */
+    .error                  = NULL, /* errorDebug, */
+    .fatalError             = NULL, /* fatalErrorDebug, */
+    .getParameterEntity     = NULL, /* getParameterEntityDebug, */
+    .cdataBlock             = NULL, /* cdataBlockDebug, */
+    .externalSubset         = NULL, /* externalSubsetDebug, */
+    .initialized            = 1,
+    /* The following fields are extensions available only on version 2 */
+    ._private               = NULL,
+    .startElementNs         = NULL,
+    .endElementNs           = NULL,
+    .serror                 = NULL
 };
 
 /**
