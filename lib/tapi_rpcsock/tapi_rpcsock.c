@@ -706,7 +706,8 @@ rpc_connect_ex(rcf_rpc_server *handle,
     in.len_buf = len_buf;
     in.overlapped = (tarpc_overlapped)overlapped;
 
-    rcf_rpc_call(handle, _connect_ex, &in, (xdrproc_t)xdr_tarpc_connect_ex_in,
+    rcf_rpc_call(handle, _connect_ex,
+                 &in, (xdrproc_t)xdr_tarpc_connect_ex_in,
                  &out, (xdrproc_t)xdr_tarpc_connect_ex_out);
 
     RING("RPC (%s,%s)%s: connect_ex(%d, %s, %u, ..., %p, ...) -> %s (%s)",
@@ -991,7 +992,8 @@ rpc_accept_ex(rcf_rpc_server *handle, int s, int s_a,
         in.count.count_len = 1;
     in.count.count_val = bytes_received;
     in.overlapped = (tarpc_overlapped)overlapped;
-    rcf_rpc_call(handle, _accept_ex, &in, (xdrproc_t)xdr_tarpc_accept_ex_in,
+    rcf_rpc_call(handle, _accept_ex,
+                 &in, (xdrproc_t)xdr_tarpc_accept_ex_in,
                  &out, (xdrproc_t)xdr_tarpc_accept_ex_out);
     if (RPC_CALL_OK)
     {
@@ -1000,7 +1002,7 @@ rpc_accept_ex(rcf_rpc_server *handle, int s, int s_a,
     }
     RING("RPC (%s,%s)%s: accept_ex(%d, %d, %d, ...) -> %s (%s %s) "
          "bytes received %u",
-         handle->ta, handle->name, rpcop2str(op), 
+         handle->ta, handle->name, rpcop2str(op),
          s, s_a, len,
          out.retval ? "true" : "false", errno_rpc2str(RPC_ERRNO(handle)),
          win_error_rpc2str(out.common.win_error),
@@ -1022,7 +1024,7 @@ rpc_get_accept_addr(rcf_rpc_server *handle,
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return;
     }
-    
+
     handle->op = RCF_RPC_CALL_WAIT;
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
@@ -1032,14 +1034,14 @@ rpc_get_accept_addr(rcf_rpc_server *handle,
     if (laddr != NULL)
     {
         in.laddr.sa_family = addr_family_h2rpc(laddr->sa_family);
-        in.laddr.sa_data.sa_data_len = 
+        in.laddr.sa_data.sa_data_len =
             sizeof(struct sockaddr_storage) - SA_COMMON_LEN;
         in.laddr.sa_data.sa_data_val = laddr->sa_data;
     }
     if (raddr != NULL)
     {
         in.raddr.sa_family = addr_family_h2rpc(raddr->sa_family);
-        in.raddr.sa_data.sa_data_len = 
+        in.raddr.sa_data.sa_data_len =
             sizeof(struct sockaddr_storage) - SA_COMMON_LEN;
         in.raddr.sa_data.sa_data_val = raddr->sa_data;
     }
@@ -1063,8 +1065,9 @@ rpc_get_accept_addr(rcf_rpc_server *handle,
             raddr->sa_family = addr_family_rpc2h(out.raddr.sa_family);
         }
     }
-    RING("RPC (%s,%s): get_accept_addr(%d, ...) -> (%s %s) laddr=%s raddr=%s", 
-         handle->ta, handle->name, 
+    RING("RPC (%s,%s): get_accept_addr(%d, ...) -> "
+         "(%s %s) laddr=%s raddr=%s",
+         handle->ta, handle->name,
          s, errno_rpc2str(RPC_ERRNO(handle)),
          win_error_rpc2str(out.common.win_error),
          ((out.laddr.sa_data.sa_data_val == NULL) || (laddr == NULL)) ?
@@ -1278,15 +1281,15 @@ rpc_recv_gen(rcf_rpc_server *handle,
     RETVAL_VAL(out.retval, recv);
 }
 
-ssize_t 
+ssize_t
 rpc_wsa_recv_ex(rcf_rpc_server *handle,
-                int s, void *buf, size_t len, 
+                int s, void *buf, size_t len,
                 rpc_send_recv_flags *flags, size_t rbuflen)
 {
     rcf_rpc_op            op;
     tarpc_wsa_recv_ex_in  in;
     tarpc_wsa_recv_ex_out out;
-    
+
     rpc_send_recv_flags in_flags = flags == NULL ? 0 : *flags;
 
     if (handle == NULL)
@@ -1319,7 +1322,7 @@ rpc_wsa_recv_ex(rcf_rpc_server *handle,
         in.flags.flags_val = (int *)flags;
     }
 
-    rcf_rpc_call(handle, _wsa_recv_ex, 
+    rcf_rpc_call(handle, _wsa_recv_ex,
                  &in, (xdrproc_t)xdr_tarpc_wsa_recv_ex_in,
                  &out, (xdrproc_t)xdr_tarpc_wsa_recv_ex_out);
 
@@ -1327,21 +1330,22 @@ rpc_wsa_recv_ex(rcf_rpc_server *handle,
     {
         if (buf != NULL && out.buf.buf_val != NULL)
             memcpy(buf, out.buf.buf_val, out.buf.buf_len);
-            
+
         if (flags != NULL && out.flags.flags_val != NULL)
             *flags = out.flags.flags_val[0];
     }
 
-    RING("RPC (%s,%s)%s: WSARecvEx(%d, %p[%u], %x (%u->%u), %s) -> %d (%s %s)",
+    RING("RPC (%s,%s)%s: WSARecvEx(%d, %p[%u], %x (%u->%u), %s) -> "
+         "%d (%s %s)",
          handle->ta, handle->name, rpcop2str(op),
-         s, buf, rbuflen, len, 
-         flags, send_recv_flags_rpc2str(in_flags), 
+         s, buf, rbuflen, len,
+         flags, send_recv_flags_rpc2str(in_flags),
          send_recv_flags_rpc2str(flags == NULL ? 0 : *flags),
          out.retval, errno_rpc2str(RPC_ERRNO(handle)),
          win_error_rpc2str(out.common.win_error));
 
     RETVAL_VAL(out.retval, wsa_recv_ex);
-}                
+}
 
 int
 rpc_shutdown(rcf_rpc_server *handle, int s, rpc_shut_how how)
@@ -1425,7 +1429,8 @@ rpc_sendto(rcf_rpc_server *handle,
     RING("RPC (%s,%s)%s: sendto(%d, %p, %u, %s, %s, %u) -> %d (%s)",
          handle->ta, handle->name, rpcop2str(op),
          s, buf, len, send_recv_flags_rpc2str(flags),
-         sockaddr2str(to), tolen, out.retval, errno_rpc2str(RPC_ERRNO(handle)));
+         sockaddr2str(to), tolen,
+         out.retval, errno_rpc2str(RPC_ERRNO(handle)));
 
     RETVAL_VAL(out.retval, sendto);
 }
@@ -1633,8 +1638,9 @@ rpc_readv_gen(rcf_rpc_server *handle,
         }
     }
 
-    RING("RPC (%s,%s)%s: readv() -> %d (%s)",
+    RING("RPC (%s,%s)%s: readv(%d, %p[%u], %u) -> %d (%s)",
          handle->ta, handle->name, rpcop2str(op),
+         fd, iov, riovcnt, iovcnt,
          out.retval, errno_rpc2str(RPC_ERRNO(handle)));
 
     RETVAL_VAL(out.retval, readv);
@@ -1689,9 +1695,10 @@ rpc_writev(rcf_rpc_server *handle,
     rcf_rpc_call(handle, _writev, &in, (xdrproc_t)xdr_tarpc_writev_in,
                  &out, (xdrproc_t)xdr_tarpc_writev_out);
 
-    RING("RPC (%s,%s)%s: writev() -> %d (%s)",
-         handle->ta, handle->name, rpcop2str(op), out.retval,
-         errno_rpc2str(RPC_ERRNO(handle)));
+    RING("RPC (%s,%s)%s: writev(%d, %p, %u) -> %d (%s)",
+         handle->ta, handle->name, rpcop2str(op),
+         fd, iov, iovcnt,
+         out.retval, errno_rpc2str(RPC_ERRNO(handle)));
 
     RETVAL_VAL(out.retval, writev);
 }
@@ -1746,7 +1753,8 @@ rpc_getsockname_gen(rcf_rpc_server *handle,
         }
     }
 
-    rcf_rpc_call(handle, _getsockname, &in, (xdrproc_t)xdr_tarpc_getsockname_in,
+    rcf_rpc_call(handle, _getsockname,
+                 &in, (xdrproc_t)xdr_tarpc_getsockname_in,
                  &out, (xdrproc_t)xdr_tarpc_getsockname_out);
 
     if (RPC_CALL_OK)
@@ -1824,7 +1832,8 @@ rpc_getpeername_gen(rcf_rpc_server *handle,
         }
     }
 
-    rcf_rpc_call(handle, _getpeername, &in, (xdrproc_t)xdr_tarpc_getpeername_in,
+    rcf_rpc_call(handle, _getpeername,
+                 &in, (xdrproc_t)xdr_tarpc_getpeername_in,
                  &out, (xdrproc_t)xdr_tarpc_getpeername_out);
 
     if (RPC_CALL_OK)
@@ -1898,7 +1907,8 @@ rpc_close_event(rcf_rpc_server *handle, rpc_wsaevent hevent)
     memset(&out, 0, sizeof(out));
     in.hevent = (tarpc_wsaevent)hevent;
 
-    rcf_rpc_call(handle, _close_event, &in, (xdrproc_t)xdr_tarpc_close_event_in,
+    rcf_rpc_call(handle, _close_event,
+                 &in, (xdrproc_t)xdr_tarpc_close_event_in,
                  &out, (xdrproc_t)xdr_tarpc_close_event_out);
 
     RING("RPC (%s,%s): close_event(%p) -> %s (%s)",
@@ -1926,7 +1936,8 @@ rpc_reset_event(rcf_rpc_server *handle, rpc_wsaevent hevent)
     memset(&out, 0, sizeof(out));
     in.hevent = (tarpc_wsaevent)hevent;
 
-    rcf_rpc_call(handle, _reset_event, &in, (xdrproc_t)xdr_tarpc_reset_event_in,
+    rcf_rpc_call(handle, _reset_event,
+                 &in, (xdrproc_t)xdr_tarpc_reset_event_in,
                  &out, (xdrproc_t)xdr_tarpc_reset_event_out);
 
     RING("RPC (%s,%s): reset_event(%p) -> %s (%s)",
@@ -1987,7 +1998,8 @@ rpc_delete_overlapped(rcf_rpc_server *handle,
     memset(&out, 0, sizeof(out));
     in.overlapped = (tarpc_overlapped)overlapped;
 
-    rcf_rpc_call(handle, _delete_overlapped, &in, (xdrproc_t)xdr_tarpc_delete_overlapped_in,
+    rcf_rpc_call(handle, _delete_overlapped,
+                 &in, (xdrproc_t)xdr_tarpc_delete_overlapped_in,
                  &out, (xdrproc_t)xdr_tarpc_delete_overlapped_out);
 
     RING("RPC (%s,%s): delete_overlapped(%p)",
@@ -2003,7 +2015,7 @@ rpc_completion_callback(rcf_rpc_server *handle,
 {
     tarpc_completion_callback_in  in;
     tarpc_completion_callback_out out;
-    
+
     int rc = 0;
 
     if (handle == NULL)
@@ -2011,7 +2023,8 @@ rpc_completion_callback(rcf_rpc_server *handle,
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         return -1;
     }
-    if (called == NULL || error == NULL || bytes == NULL || overlapped == NULL)
+    if (called == NULL || error == NULL || bytes == NULL ||
+        overlapped == NULL)
     {
         handle->_errno = TE_RC(TE_RCF, EINVAL);
         return -1;
@@ -2022,7 +2035,8 @@ rpc_completion_callback(rcf_rpc_server *handle,
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
 
-    rcf_rpc_call(handle, _completion_callback, &in, (xdrproc_t)xdr_tarpc_completion_callback_in,
+    rcf_rpc_call(handle, _completion_callback,
+                 &in, (xdrproc_t)xdr_tarpc_completion_callback_in,
                  &out, (xdrproc_t)xdr_tarpc_completion_callback_out);
 
     RING("RPC (%s,%s): completion_callback() -> %d %d %d %p",
@@ -2044,7 +2058,8 @@ rpc_completion_callback(rcf_rpc_server *handle,
 
 int
 rpc_wsa_event_select(rcf_rpc_server *handle,
-                     int s, rpc_wsaevent event_object, rpc_network_event event)
+                     int s, rpc_wsaevent event_object,
+                     rpc_network_event event)
 {
     tarpc_event_select_in  in;
     tarpc_event_select_out out;
@@ -2113,8 +2128,8 @@ rpc_enum_network_events(rcf_rpc_server *handle,
     }
     RING("RPC (%s,%s): enum_network_events(%d, %d, %x) -> %d (%s) "
          "returned event %s",
-         handle->ta, handle->name, s, event_object, event, 
-         out.retval, errno_rpc2str(RPC_ERRNO(handle)), 
+         handle->ta, handle->name, s, event_object, event,
+         out.retval, errno_rpc2str(RPC_ERRNO(handle)),
          network_event_rpc2str(event != NULL ? *event : 0));
 
     RETVAL_RC(enum_network_events);
@@ -2139,7 +2154,8 @@ rpc_fd_set_new(rcf_rpc_server *handle)
 
     handle->op = RCF_RPC_CALL_WAIT;
 
-    rcf_rpc_call(handle, _fd_set_new, &in, (xdrproc_t)xdr_tarpc_fd_set_new_in,
+    rcf_rpc_call(handle, _fd_set_new,
+                 &in, (xdrproc_t)xdr_tarpc_fd_set_new_in,
                  &out, (xdrproc_t)xdr_tarpc_fd_set_new_out);
 
     RING("RPC (%s,%s): fd_set_new() -> %p (%s)",
@@ -2199,7 +2215,8 @@ rpc_do_fd_zero(rcf_rpc_server *handle, rpc_fd_set *set)
 
     in.set = (tarpc_fd_set)set;
 
-    rcf_rpc_call(handle, _do_fd_zero, &in, (xdrproc_t)xdr_tarpc_do_fd_zero_in,
+    rcf_rpc_call(handle, _do_fd_zero,
+                 &in, (xdrproc_t)xdr_tarpc_do_fd_zero_in,
                  &out, (xdrproc_t)xdr_tarpc_do_fd_zero_out);
 
     RING("RPC (%s,%s): do_fd_zero(%p) -> (%s)",
@@ -2229,7 +2246,8 @@ rpc_do_fd_set(rcf_rpc_server *handle, int fd, rpc_fd_set *set)
     in.set = (tarpc_fd_set)set;
     in.fd = fd;
 
-    rcf_rpc_call(handle, _do_fd_set, &in, (xdrproc_t)xdr_tarpc_do_fd_set_in,
+    rcf_rpc_call(handle, _do_fd_set,
+                 &in, (xdrproc_t)xdr_tarpc_do_fd_set_in,
                  &out, (xdrproc_t)xdr_tarpc_do_fd_set_out);
 
     RING("RPC (%s,%s): do_fd_set(%d, %p) -> (%s)",
@@ -2259,7 +2277,8 @@ rpc_do_fd_clr(rcf_rpc_server *handle, int fd, rpc_fd_set *set)
     in.set = (tarpc_fd_set)set;
     in.fd = fd;
 
-    rcf_rpc_call(handle, _do_fd_clr, &in, (xdrproc_t)xdr_tarpc_do_fd_clr_in,
+    rcf_rpc_call(handle, _do_fd_clr,
+                 &in, (xdrproc_t)xdr_tarpc_do_fd_clr_in,
                  &out, (xdrproc_t)xdr_tarpc_do_fd_clr_out);
 
     RING("RPC (%s,%s): do_fd_clr(%d, %p) -> (%s)",
@@ -2373,13 +2392,13 @@ rpc_select(rcf_rpc_server *handle,
 }
 
 int
-rpc_fcntl(rcf_rpc_server *handle, int fd, 
+rpc_fcntl(rcf_rpc_server *handle, int fd,
             int cmd, int arg)
 {
     tarpc_fcntl_in  in;
     tarpc_fcntl_out out;
     rcf_rpc_op      op;
-    
+
     if (handle == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
@@ -2387,23 +2406,23 @@ rpc_fcntl(rcf_rpc_server *handle, int fd,
     }
 
     op = handle->op;
-    
+
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
-    
+
     in.fd = fd;
     in.cmd = cmd;
     in.arg = arg;
-    
+
     rcf_rpc_call(handle, _fcntl, &in, (xdrproc_t)xdr_tarpc_fcntl_in,
                  &out, (xdrproc_t)xdr_tarpc_fcntl_out);
 
     RING("RPC (%s,%s)%s: fcntl(%d, %s, %d) -> %d (%s)",
          handle->ta, handle->name, rpcop2str(op),
-         fd, fcntl_rpc2str(cmd), 
+         fd, fcntl_rpc2str(cmd),
          arg, out.retval, errno_rpc2str(RPC_ERRNO(handle)));
-    
-    RETVAL_VAL(out.retval, fcntl);                
+
+    RETVAL_VAL(out.retval, fcntl);
 }
 
 
@@ -2594,11 +2613,13 @@ rpc_sigset_new(rcf_rpc_server *handle)
 
     handle->op = RCF_RPC_CALL_WAIT;
 
-    rcf_rpc_call(handle, _sigset_new, &in, (xdrproc_t)xdr_tarpc_sigset_new_in,
+    rcf_rpc_call(handle, _sigset_new,
+                 &in, (xdrproc_t)xdr_tarpc_sigset_new_in,
                  &out, (xdrproc_t)xdr_tarpc_sigset_new_out);
 
     RING("RPC (%s,%s): sigset_new() -> %p (%s)",
-         handle->ta, handle->name, out.set, errno_rpc2str(RPC_ERRNO(handle)));
+         handle->ta, handle->name,
+         out.set, errno_rpc2str(RPC_ERRNO(handle)));
 
     RETVAL_PTR(out.set, sigset_new);
 }
@@ -2656,7 +2677,8 @@ rpc_sigprocmask(rcf_rpc_server *handle,
     in.oldset = (tarpc_sigset_t)oldset;
     in.how = how;
 
-    rcf_rpc_call(handle, _sigprocmask, &in, (xdrproc_t)xdr_tarpc_sigprocmask_in,
+    rcf_rpc_call(handle, _sigprocmask,
+                 &in, (xdrproc_t)xdr_tarpc_sigprocmask_in,
                  &out, (xdrproc_t)xdr_tarpc_sigprocmask_out);
     RING("RPC (%s,%s): sigprocmask(%d, %p, %p) -> %d (%s)",
          handle->ta, handle->name, how, set, oldset,
@@ -2685,7 +2707,8 @@ rpc_sigemptyset(rcf_rpc_server *handle, rpc_sigset_t *set)
 
     in.set = (tarpc_sigset_t)set;
 
-    rcf_rpc_call(handle, _sigemptyset, &in, (xdrproc_t)xdr_tarpc_sigemptyset_in,
+    rcf_rpc_call(handle, _sigemptyset,
+                 &in, (xdrproc_t)xdr_tarpc_sigemptyset_in,
                  &out, (xdrproc_t)xdr_tarpc_sigemptyset_out);
 
     RING("RPC (%s,%s): sigemptyset(%p) -> %d (%s)",
@@ -2714,7 +2737,8 @@ rpc_sigpending(rcf_rpc_server *handle, rpc_sigset_t *set)
 
     in.set = (tarpc_sigset_t)set;
 
-    rcf_rpc_call(handle, _sigpending, &in, (xdrproc_t)xdr_tarpc_sigpending_in,
+    rcf_rpc_call(handle, _sigpending,
+                 &in, (xdrproc_t)xdr_tarpc_sigpending_in,
                  &out, (xdrproc_t)xdr_tarpc_sigpending_out);
 
     RING("RPC (%s,%s): sigpending(%p) -> %d (%s)",
@@ -2741,7 +2765,8 @@ rpc_sigsuspend(rcf_rpc_server *handle, const rpc_sigset_t *set)
 
     in.set = (tarpc_sigset_t)set;
 
-    rcf_rpc_call(handle, _sigsuspend, &in, (xdrproc_t)xdr_tarpc_sigsuspend_in,
+    rcf_rpc_call(handle, _sigsuspend,
+                 &in, (xdrproc_t)xdr_tarpc_sigsuspend_in,
                  &out, (xdrproc_t)xdr_tarpc_sigsuspend_out);
 
     RING("RPC (%s,%s): sigsuspend(%p) -> %d (%s)",
@@ -2798,7 +2823,8 @@ rpc_sigfillset(rcf_rpc_server *handle, rpc_sigset_t *set)
 
     in.set = (tarpc_sigset_t)set;
 
-    rcf_rpc_call(handle, _sigfillset, &in, (xdrproc_t)xdr_tarpc_sigfillset_in,
+    rcf_rpc_call(handle, _sigfillset,
+                 &in, (xdrproc_t)xdr_tarpc_sigfillset_in,
                  &out, (xdrproc_t)xdr_tarpc_sigfillset_out);
 
     RING("RPC (%s,%s): sigfillset(%p) -> %d (%s)",
@@ -2828,7 +2854,8 @@ rpc_sigaddset(rcf_rpc_server *handle, rpc_sigset_t *set, rpc_signum signum)
     in.set = (tarpc_sigset_t)set;
     in.signum = signum;
 
-    rcf_rpc_call(handle, _sigaddset, &in, (xdrproc_t)xdr_tarpc_sigaddset_in,
+    rcf_rpc_call(handle, _sigaddset,
+                 &in, (xdrproc_t)xdr_tarpc_sigaddset_in,
                  &out, (xdrproc_t)xdr_tarpc_sigaddset_out);
 
     RING("RPC (%s,%s): sigaddset(%s, %p) -> %d (%s)",
@@ -2859,7 +2886,8 @@ rpc_sigdelset(rcf_rpc_server *handle, rpc_sigset_t *set, rpc_signum signum)
     in.set = (tarpc_sigset_t)set;
     in.signum = signum;
 
-    rcf_rpc_call(handle, _sigdelset, &in, (xdrproc_t)xdr_tarpc_sigdelset_in,
+    rcf_rpc_call(handle, _sigdelset,
+                 &in, (xdrproc_t)xdr_tarpc_sigdelset_in,
                  &out, (xdrproc_t)xdr_tarpc_sigdelset_out);
 
     RING("RPC (%s,%s): sigdelset(%s, %p) -> %d (%s)",
@@ -2945,7 +2973,8 @@ rpc_signal(rcf_rpc_server *handle,
     RING("RPC (%s,%s): signal(%s, %s) -> %s (%s)",
          handle->ta, handle->name,
          signum_rpc2str(signum), (handler != NULL) ? handler : "(null)",
-         out.handler.handler_val != NULL ? out.handler.handler_val : "(null)",
+         out.handler.handler_val != NULL ?
+             out.handler.handler_val : "(null)",
          errno_rpc2str(RPC_ERRNO(handle)));
 
     /* Yes, I know that it's memory leak, but what do you propose?! */
@@ -3027,7 +3056,8 @@ rpc_getsockopt_gen(rcf_rpc_server *handle,
             case RPC_SO_BINDTODEVICE:
                 val.opttype = OPT_STRING;
                 val.option_value_u.opt_string.opt_string_len = roptlen;
-                val.option_value_u.opt_string.opt_string_val = (char *)optval;
+                val.option_value_u.opt_string.opt_string_val =
+                    (char *)optval;
                 break;
 
             case RPC_SO_LINGER:
@@ -3071,11 +3101,11 @@ rpc_getsockopt_gen(rcf_rpc_server *handle,
                 if (roptlen >= sizeof(struct ip_mreqn))
                 {
                     memcpy(val.option_value_u.opt_mreqn.imr_multiaddr,
-                           &(((struct ip_mreqn *)optval)->imr_multiaddr),
-                           sizeof(((struct ip_mreqn *)optval)->imr_multiaddr));
+                        &(((struct ip_mreqn *)optval)->imr_multiaddr),
+                        sizeof(((struct ip_mreqn *)optval)->imr_multiaddr));
                     memcpy(val.option_value_u.opt_mreqn.imr_address,
-                           &(((struct ip_mreqn *)optval)->imr_address),
-                           sizeof(((struct ip_mreqn *)optval)->imr_address));
+                        &(((struct ip_mreqn *)optval)->imr_address),
+                        sizeof(((struct ip_mreqn *)optval)->imr_address));
                     val.option_value_u.opt_mreqn.imr_ifindex =
                           ((struct ip_mreqn *)optval)->imr_ifindex;
                 }
@@ -3165,7 +3195,8 @@ rpc_getsockopt_gen(rcf_rpc_server *handle,
         }
     }
 
-    rcf_rpc_call(handle, _getsockopt, &in, (xdrproc_t)xdr_tarpc_getsockopt_in,
+    rcf_rpc_call(handle, _getsockopt,
+                 &in, (xdrproc_t)xdr_tarpc_getsockopt_in,
                  &out, (xdrproc_t)xdr_tarpc_getsockopt_out);
 
     if (RPC_CALL_OK)
@@ -3246,11 +3277,12 @@ rpc_getsockopt_gen(rcf_rpc_server *handle,
                         char addr_buf1[INET_ADDRSTRLEN];
                         char addr_buf2[INET_ADDRSTRLEN];
 
-                        memcpy(&(((struct ip_mreqn *)optval)->imr_multiaddr),
-                               out.optval.optval_val[0].option_value_u.
-                                   opt_mreqn.imr_multiaddr,
-                               sizeof(((struct ip_mreqn *)optval)->
-                                          imr_multiaddr));
+                        memcpy(
+                            &(((struct ip_mreqn *)optval)->imr_multiaddr),
+                            out.optval.optval_val[0].option_value_u.
+                                opt_mreqn.imr_multiaddr,
+                            sizeof(((struct ip_mreqn *)optval)->
+                                       imr_multiaddr));
                         memcpy(&(((struct ip_mreqn *)optval)->imr_address),
                                out.optval.optval_val[0].option_value_u.
                                    opt_mreqn.imr_address,
@@ -3294,17 +3326,17 @@ rpc_getsockopt_gen(rcf_rpc_server *handle,
                     if (roptlen >= sizeof(struct tcp_info))
                     {
 #define COPY_TCP_INFO_FIELD(_name) \
-                        do {                                                 \
-                            ((struct tcp_info *)optval)->_name =             \
-                                out.optval.optval_val[0].option_value_u.     \
-                                opt_tcp_info._name;                          \
-                            snprintf(opt_val_str + strlen(opt_val_str),      \
-                                     sizeof(opt_val_str) -                   \
-                                         strlen(opt_val_str),                \
-                                     #_name ": %u ",                         \
-                                     out.optval.optval_val[0].               \
-                                         option_value_u.opt_tcp_info._name); \
-                        } while (0)
+    do {                                                 \
+        ((struct tcp_info *)optval)->_name =             \
+            out.optval.optval_val[0].option_value_u.     \
+            opt_tcp_info._name;                          \
+        snprintf(opt_val_str + strlen(opt_val_str),      \
+                 sizeof(opt_val_str) -                   \
+                     strlen(opt_val_str),                \
+                 #_name ": %u ",                         \
+                 out.optval.optval_val[0].               \
+                     option_value_u.opt_tcp_info._name); \
+    } while (0)
 
                     snprintf(opt_val_str, sizeof(opt_val_str), "{ ");
                     COPY_TCP_INFO_FIELD(tcpi_state);
@@ -3408,7 +3440,8 @@ rpc_setsockopt(rcf_rpc_server *handle,
                 char *buf;
 
                 val.option_value_u.opt_string.opt_string_len = optlen;
-                val.option_value_u.opt_string.opt_string_val = (char *)optval;
+                val.option_value_u.opt_string.opt_string_val =
+                    (char *)optval;
                 val.opttype = OPT_STRING;
 
                 if ((buf = (char *)malloc(optlen + 1)) == NULL)
@@ -3462,11 +3495,11 @@ rpc_setsockopt(rcf_rpc_server *handle,
                 char addr_buf2[INET_ADDRSTRLEN];
 
                 memcpy(val.option_value_u.opt_mreqn.imr_multiaddr,
-                       (char *)&(((struct ip_mreqn *)optval)->imr_multiaddr),
-                       sizeof(((struct ip_mreqn *)optval)->imr_multiaddr));
+                    (char *)&(((struct ip_mreqn *)optval)->imr_multiaddr),
+                    sizeof(((struct ip_mreqn *)optval)->imr_multiaddr));
                 memcpy(val.option_value_u.opt_mreqn.imr_address,
-                       (char *)&(((struct ip_mreqn *)optval)->imr_address),
-                       sizeof(((struct ip_mreqn *)optval)->imr_address));
+                    (char *)&(((struct ip_mreqn *)optval)->imr_address),
+                    sizeof(((struct ip_mreqn *)optval)->imr_address));
                 val.option_value_u.opt_mreqn.imr_ifindex =
                        ((struct ip_mreqn *)optval)->imr_ifindex;
                 val.opttype = OPT_MREQN;
@@ -3475,11 +3508,13 @@ rpc_setsockopt(rcf_rpc_server *handle,
                          "{ imr_multiaddr: %s, imr_address: %s, "
                          "imr_ifindex: %d}",
                          inet_ntop(AF_INET,
-                                   (char *)&(((struct ip_mreqn *)optval)->imr_multiaddr),
-                                   addr_buf1, sizeof(addr_buf1)),
+                              (char *)&(((struct ip_mreqn *)optval)->
+                                            imr_multiaddr),
+                              addr_buf1, sizeof(addr_buf1)),
                          inet_ntop(AF_INET,
-                                   (char *)&(((struct ip_mreqn *)optval)->imr_address),
-                                   addr_buf2, sizeof(addr_buf2)),
+                              (char *)&(((struct ip_mreqn *)optval)->
+                                            imr_address),
+                              addr_buf2, sizeof(addr_buf2)),
                          ((struct ip_mreqn *)optval)->imr_ifindex);
                 break;
             }
@@ -3510,13 +3545,15 @@ rpc_setsockopt(rcf_rpc_server *handle,
         }
     }
 
-    rcf_rpc_call(handle, _setsockopt, &in, (xdrproc_t)xdr_tarpc_setsockopt_in,
+    rcf_rpc_call(handle, _setsockopt,
+                 &in, (xdrproc_t)xdr_tarpc_setsockopt_in,
                  &out, (xdrproc_t)xdr_tarpc_setsockopt_out);
 
     RING("RPC (%s,%s): setsockopt(%d, %s, %s, %p(%s), %d) -> %d (%s)",
          handle->ta, handle->name,
          s, socklevel_rpc2str(level), sockopt_rpc2str(optname), optval,
-         opt_val_str, optlen, out.retval, errno_rpc2str(RPC_ERRNO(handle)));
+         opt_val_str, optlen,
+         out.retval, errno_rpc2str(RPC_ERRNO(handle)));
 
     RETVAL_RC(setsockopt);
 }
@@ -3691,7 +3728,8 @@ rpc_ioctl(rcf_rpc_server *handle,
             if (arg != NULL)
             {
                 in.req.req_val[0].type = IOCTL_IFREQ;
-                memcpy(in.req.req_val[0].ioctl_request_u.req_ifreq.rpc_ifr_name,
+                memcpy(in.req.req_val[0].ioctl_request_u.
+                           req_ifreq.rpc_ifr_name,
                        ((struct ifreq *)arg)->ifr_name,
                        sizeof(((struct ifreq *)arg)->ifr_name));
 
@@ -3732,17 +3770,17 @@ rpc_ioctl(rcf_rpc_server *handle,
             }
             break;
 #define FILL_ARPREQ_ADDR(type_) \
-    do                                                                       \
-    {                                                                        \
-        tarpc_sa *rpc_addr =                                                 \
-            &in.req.req_val[0].ioctl_request_u.req_arpreq.rpc_arp_##type_;   \
-        struct sockaddr *addr = &((struct arpreq *)arg)->arp_##type_;        \
-                                                                             \
-        rpc_addr->sa_family =                                                \
-            addr_family_h2rpc(addr->sa_family);                              \
-        rpc_addr->sa_data.sa_data_val = addr->sa_data;                       \
-        rpc_addr->sa_data.sa_data_len =                                      \
-            sizeof(struct sockaddr) - SA_COMMON_LEN;                         \
+    do                                                                  \
+    {                                                                   \
+        tarpc_sa *rpc_addr = &in.req.req_val[0].ioctl_request_u.        \
+                                 req_arpreq.rpc_arp_##type_;            \
+        struct sockaddr *addr = &((struct arpreq *)arg)->arp_##type_;   \
+                                                                        \
+        rpc_addr->sa_family =                                           \
+            addr_family_h2rpc(addr->sa_family);                         \
+        rpc_addr->sa_data.sa_data_val = addr->sa_data;                  \
+        rpc_addr->sa_data.sa_data_len =                                 \
+            sizeof(struct sockaddr) - SA_COMMON_LEN;                    \
     } while (0)
         case RPC_SIOCSARP:
             in.access = IOCTL_WR;
@@ -3776,9 +3814,9 @@ rpc_ioctl(rcf_rpc_server *handle,
                 /* Copy HW address */
                 FILL_ARPREQ_ADDR(ha);
                  /* Copy device */
-                strcpy(
-                    in.req.req_val[0].ioctl_request_u.req_arpreq.rpc_arp_dev,
-                    ((struct arpreq *)arg)->arp_dev);
+                strcpy(in.req.req_val[0].ioctl_request_u.
+                           req_arpreq.rpc_arp_dev,
+                       ((struct arpreq *)arg)->arp_dev);
             }
             break;
 #undef FILL_ARPREQ_ADDR
@@ -3814,8 +3852,9 @@ rpc_ioctl(rcf_rpc_server *handle,
                     case RPC_SIOCGIFDSTADDR:
                     case RPC_SIOCGIFHWADDR:
                         ((struct ifreq *)arg)->ifr_addr.sa_family =
-                        addr_family_rpc2h(out.req.req_val[0].ioctl_request_u.
-                        req_ifreq.rpc_ifr_addr.sa_family);
+                            addr_family_rpc2h(out.req.req_val[0].
+                            ioctl_request_u.req_ifreq.rpc_ifr_addr.
+                            sa_family);
 
                         memcpy(((struct ifreq *)arg)->ifr_addr.sa_data,
                                out.req.req_val[0].ioctl_request_u.
@@ -3851,7 +3890,7 @@ rpc_ioctl(rcf_rpc_server *handle,
                 struct ifreq *req = ((struct ifconf *)arg)->ifc_req;
                 uint32_t n = ((struct ifconf *)arg)->ifc_len / sizeof(*req);
                 uint32_t i;
-                int      max_addrlen = sizeof(req->ifr_addr) - SA_COMMON_LEN;
+                int max_addrlen = sizeof(req->ifr_addr) - SA_COMMON_LEN;
 
                 ((struct ifconf *)arg)->ifc_len =
                     out.req.req_val[0].ioctl_request_u.req_ifconf.buflen;
@@ -3950,12 +3989,18 @@ rpc_ioctl(rcf_rpc_server *handle,
                     snprintf(ifreq_buf + strlen(ifreq_buf),
                              sizeof(ifreq_buf) - strlen(ifreq_buf),
                              "hwaddr: %02x:%02x:%02x:%02x:%02x:%02x",
-                             (unsigned char)((struct ifreq *)arg)->ifr_hwaddr.sa_data[0],
-                             (unsigned char)((struct ifreq *)arg)->ifr_hwaddr.sa_data[1],
-                             (unsigned char)((struct ifreq *)arg)->ifr_hwaddr.sa_data[2],
-                             (unsigned char)((struct ifreq *)arg)->ifr_hwaddr.sa_data[3],
-                             (unsigned char)((struct ifreq *)arg)->ifr_hwaddr.sa_data[4],
-                             (unsigned char)((struct ifreq *)arg)->ifr_hwaddr.sa_data[5]);
+                             (unsigned char)((struct ifreq *)arg)->
+                                 ifr_hwaddr.sa_data[0],
+                             (unsigned char)((struct ifreq *)arg)->
+                                 ifr_hwaddr.sa_data[1],
+                             (unsigned char)((struct ifreq *)arg)->
+                                 ifr_hwaddr.sa_data[2],
+                             (unsigned char)((struct ifreq *)arg)->
+                                 ifr_hwaddr.sa_data[3],
+                             (unsigned char)((struct ifreq *)arg)->
+                                 ifr_hwaddr.sa_data[4],
+                             (unsigned char)((struct ifreq *)arg)->
+                                 ifr_hwaddr.sa_data[5]);
                     break;
 
                 case RPC_SIOCGIFMTU:
@@ -4009,12 +4054,18 @@ rpc_ioctl(rcf_rpc_server *handle,
                              "HW address: family %d, "
                              "addr %02x:%02x:%02x:%02x:%02x:%02x ",
                              ((struct arpreq *)arg)->arp_ha.sa_family,
-                             (unsigned char)((struct arpreq *)arg)->arp_ha.sa_data[0],
-                             (unsigned char)((struct arpreq *)arg)->arp_ha.sa_data[1],
-                             (unsigned char)((struct arpreq *)arg)->arp_ha.sa_data[2],
-                             (unsigned char)((struct arpreq *)arg)->arp_ha.sa_data[3],
-                             (unsigned char)((struct arpreq *)arg)->arp_ha.sa_data[4],
-                             (unsigned char)((struct arpreq *)arg)->arp_ha.sa_data[5]);
+                             (unsigned char)((struct arpreq *)arg)->
+                                 arp_ha.sa_data[0],
+                             (unsigned char)((struct arpreq *)arg)->
+                                 arp_ha.sa_data[1],
+                             (unsigned char)((struct arpreq *)arg)->
+                                 arp_ha.sa_data[2],
+                             (unsigned char)((struct arpreq *)arg)->
+                                 arp_ha.sa_data[3],
+                             (unsigned char)((struct arpreq *)arg)->
+                                 arp_ha.sa_data[4],
+                             (unsigned char)((struct arpreq *)arg)->
+                                 arp_ha.sa_data[5]);
                     {
                          memset(flags, 0, sizeof(flags));
                          if (arp_flags & ATF_COM)
@@ -4029,12 +4080,13 @@ rpc_ioctl(rcf_rpc_server *handle,
                              strcat(flags, "!");
                          if (arp_flags & ATF_USETRAILERS)
                              strcat(flags, "T");
-                         if (!(arp_flags & ATF_COM) && !(arp_flags & ATF_PUBL))
+                         if (!(arp_flags & ATF_COM) &&
+                             !(arp_flags & ATF_PUBL))
                              strcat(flags, "(incomplete)");
                     }
                     snprintf(arpreq_buf + strlen(arpreq_buf),
                              sizeof(arpreq_buf) - strlen(arpreq_buf),
-                             "arp flags %s", flags);     
+                             "arp flags %s", flags);
                     break;
                 }
                 case RPC_SIOCDARP:
@@ -4047,7 +4099,7 @@ rpc_ioctl(rcf_rpc_server *handle,
                              "protocol address %s, ",
                               inet_ntoa(SIN(&(((struct arpreq *)arg)->
                                             arp_pa))->sin_addr));
-                    break; 
+                    break;
                 }
                 default:
                     req_val = " unknown request ";
@@ -4307,7 +4359,8 @@ rpc_recvmsg(rcf_rpc_server *handle,
 
         for (i = 0; i < msg->msg_riovlen && msg->msg_iov != NULL; i++)
         {
-            msg->msg_iov[i].iov_len = rpc_msg.msg_iov.msg_iov_val[i].iov_len;
+            msg->msg_iov[i].iov_len =
+                rpc_msg.msg_iov.msg_iov_val[i].iov_len;
             memcpy(msg->msg_iov[i].iov_base,
                    rpc_msg.msg_iov.msg_iov_val[i].iov_base.iov_base_val,
                    msg->msg_iov[i].iov_rlen);
@@ -4480,7 +4533,8 @@ hostent_rpc2h(tarpc_hostent *rpc_he)
 
         for (i = 0; i < rpc_he->h_aliases.h_aliases_len; i++)
         {
-            he->h_aliases[i] = rpc_he->h_aliases.h_aliases_val[i].name.name_val;
+            he->h_aliases[i] =
+                rpc_he->h_aliases.h_aliases_val[i].name.name_val;
             rpc_he->h_aliases.h_aliases_val[i].name.name_val = NULL;
             rpc_he->h_aliases.h_aliases_val[i].name.name_len = 0;
         }
@@ -4680,7 +4734,8 @@ rpc_getaddrinfo(rcf_rpc_server *handle,
         if (hints->ai_canonname != NULL)
         {
             rpc_hints.canonname.canonname_val = hints->ai_canonname;
-            rpc_hints.canonname.canonname_len = strlen(hints->ai_canonname) + 1;
+            rpc_hints.canonname.canonname_len =
+                strlen(hints->ai_canonname) + 1;
         }
 
         in.hints.hints_val = &rpc_hints;
@@ -4717,8 +4772,8 @@ rpc_getaddrinfo(rcf_rpc_server *handle,
                 handle->_errno = TE_RC(TE_RCF, ENOMEM);
                 RETVAL_RC(getaddrinfo);
             }
-            list[i].ai_next = (i == (int)out.res.res_len - 1) ? NULL
-                                                              : list + i + 1;
+            list[i].ai_next = (i == (int)out.res.res_len - 1) ?
+                                  NULL : list + i + 1;
         }
         *res = list;
     }
@@ -4752,7 +4807,8 @@ rpc_freeaddrinfo(rcf_rpc_server *handle,
     if (res != NULL)
         in.mem_ptr = *((int *)res - 1);
 
-    rcf_rpc_call(handle, _freeaddrinfo, &in, (xdrproc_t)xdr_tarpc_freeaddrinfo_in,
+    rcf_rpc_call(handle, _freeaddrinfo,
+                 &in, (xdrproc_t)xdr_tarpc_freeaddrinfo_in,
                  &out, (xdrproc_t)xdr_tarpc_freeaddrinfo_out);
 
     RING("RPC (%s,%s): freeaddrinfo(%p) -> (%s)",
@@ -4818,7 +4874,8 @@ rpc_socketpair(rcf_rpc_server *handle,
     in.type = type;
     in.proto = protocol;
 
-    rcf_rpc_call(handle, _socketpair, &in, (xdrproc_t)xdr_tarpc_socketpair_in,
+    rcf_rpc_call(handle, _socketpair,
+                 &in, (xdrproc_t)xdr_tarpc_socketpair_in,
                  &out, (xdrproc_t)xdr_tarpc_socketpair_out);
 
     RING("RPC (%s,%s): socketpair(%s, %s, %s) -> %d %d %d (%s)",
@@ -5027,8 +5084,9 @@ rpc_seteuid(rcf_rpc_server *handle,
  * @param sent              location for number of sent bytes
  * @param ignore_err        Ignore errors while run
  *
- * @return number of sent bytes or -1 in the case of failure if ignore_err
- *         set to FALSE or number of sent bytes or 0 if ignore_err set to TRUE
+ * @return Number of sent bytes or -1 in the case of failure if
+ *         ignore_err set to FALSE or number of sent bytes or 0 if
+ *         ignore_err set to TRUE
  */
 int
 rpc_simple_sender(rcf_rpc_server *handle,
@@ -5073,7 +5131,8 @@ rpc_simple_sender(rcf_rpc_server *handle,
          handle->ta, handle->name, rpcop2str(op),
          s, size_min, size_max, size_rnd_once, delay_min, delay_max,
          delay_rnd_once, time2run, ignore_err,
-         out.retval, (unsigned long)*sent, errno_rpc2str(RPC_ERRNO(handle)));
+         out.retval, (unsigned long)*sent,
+         errno_rpc2str(RPC_ERRNO(handle)));
 
     RETVAL_RC(simple_sender);
 }
@@ -5650,7 +5709,7 @@ rpc_wsa_async_select(rcf_rpc_server *handle,
 
     RING("RPC (%s,%s): wsa_async_select(%p, %d, %s) -> %d (%s)",
          handle->ta, handle->name,
-         hwnd, s, network_event_rpc2str(event), 
+         hwnd, s, network_event_rpc2str(event),
          out.retval, errno_rpc2str(RPC_ERRNO(handle)));
 
     RETVAL_RC(wsa_async_select);
@@ -5688,8 +5747,8 @@ rpc_peek_message(rcf_rpc_server *handle,
 
     RING("RPC (%s,%s): peek_message(%p) -> %d (%s) event %s",
          handle->ta, handle->name,
-         hwnd, out.retval, 
-         errno_rpc2str(RPC_ERRNO(handle)), network_event_rpc2str(out.event));
+         hwnd, out.retval, errno_rpc2str(RPC_ERRNO(handle)),
+         network_event_rpc2str(out.event));
 
     *s = out.sock;
     *event = out.event;
@@ -5760,7 +5819,7 @@ rpc_wsa_send(rcf_rpc_server *handle,
     RING("RPC (%s,%s)%s: wsa_send() -> %d (%s)",
          handle->ta, handle->name, rpcop2str(op), out.retval,
          errno_rpc2str(RPC_ERRNO(handle)));
-         
+
     if (RPC_CALL_OK)
     {
         if (bytes_sent != NULL && out.bytes_sent.bytes_sent_val != NULL)
@@ -5856,7 +5915,7 @@ rpc_wsa_recv(rcf_rpc_server *handle,
                        iov[i].iov_rlen);
             }
         }
-        if (bytes_received != NULL && 
+        if (bytes_received != NULL &&
             out.bytes_received.bytes_received_val != NULL)
         {
             *bytes_received = out.bytes_received.bytes_received_val[0];
@@ -5918,23 +5977,24 @@ rpc_get_overlapped_result(rcf_rpc_server *handle,
     {
         int filled = 0;
         int i;
-        
+
         for (i = 0; i < (int)out.vector.vector_len; i++)
         {
-            int copy_len = 
+            int copy_len =
                 buflen - filled < (int)out.vector.vector_val[i].iov_len ?
                 buflen - filled : (int)out.vector.vector_val[i].iov_len;
-            
-            memcpy(buf + filled, 
-                   out.vector.vector_val[i].iov_base.iov_base_val, copy_len);
+
+            memcpy(buf + filled,
+                   out.vector.vector_val[i].iov_base.iov_base_val,
+                   copy_len);
             filled += copy_len;
         }
-    }         
+    }
     if (RPC_CALL_OK)
     {
         if (bytes != NULL && out.bytes.bytes_val != NULL)
             *bytes = out.bytes.bytes_val[0];
-            
+
         if (flags != NULL && out.flags.flags_val != NULL)
             *flags = out.flags.flags_val[0];
     }
@@ -5942,7 +6002,7 @@ rpc_get_overlapped_result(rcf_rpc_server *handle,
          "bytes transferred %u",
          handle->ta, handle->name, rpcop2str(op), s, overlapped,
          out.retval ? "true" : "false", errno_rpc2str(RPC_ERRNO(handle)),
-         win_error_rpc2str(out.common.win_error), 
+         win_error_rpc2str(out.common.win_error),
          out.bytes.bytes_val != NULL ? *bytes : 0);
 
     RETVAL_VAL(out.retval, get_overlapped_result);
@@ -6069,13 +6129,13 @@ rpc_wait_multiple_events(rcf_rpc_server *handle,
          handle->ta, handle->name, rpcop2str(op),
          count, events, wait_all ? "true" : "false", timeout,
          alertable ? "true" : "false", wsa_wait_rpc2str(out.retval),
-         errno_rpc2str(RPC_ERRNO(handle)), 
+         errno_rpc2str(RPC_ERRNO(handle)),
          win_error_rpc2str(out.common.win_error));
 
     RETVAL_VAL(out.retval, wait_multiple_events);
 }
 
-int 
+int
 rpc_ftp_open(rcf_rpc_server *handle,
              char *uri, te_bool rdonly, te_bool passive, int offset)
 {
@@ -6106,4 +6166,4 @@ rpc_ftp_open(rcf_rpc_server *handle,
          out.fd, errno_rpc2str(RPC_ERRNO(handle)));
 
     RETVAL_VAL(out.fd, ftp_open);
-}             
+}

@@ -44,7 +44,7 @@
  * All the macros defined in the file expect user having in the calling
  * context the following:
  *     - @p result variable of type @c int;
- *     - @c cleanup label, which is responsible for freeing 
+ *     - @c cleanup label, which is responsible for freeing
  *       resources allocated or occuped in the test.
  *     .
  */
@@ -83,7 +83,7 @@
 
 /**
  * Macro to check function 'func_' on returning non negative value
- * 
+ *
  * @param rpcs_    RPS server
  * @param retval_  Return value (OUT)
  * @param func_    RPC function name to call (without rpc_ prefix)
@@ -105,7 +105,7 @@
 
 /**
  * Macro to check function 'func_' on returning non negative value
- * 
+ *
  * @param rpcs_    RPS server
  * @param retval_  Return value (OUT)
  * @param func_    RPC function name to call (without rpc_ prefix)
@@ -126,7 +126,7 @@
 
 /**
  * Macro to check function 'func_' on returning exactly specified value.
- * 
+ *
  * @param rpcs_     RPS server
  * @param retval_   Return value (OUT)
  * @param expect_   Expected return value
@@ -158,7 +158,7 @@
 
 /**
  * Macro to check function 'func_' on returning non NULL value
- * 
+ *
  * @param rpcs_    RPS server
  * @param retval_  Return value (OUT)
  * @param func_    RPC function name to call (without rpc_ prefix)
@@ -177,7 +177,7 @@
 
 /**
  * Macro to check function 'func_' on returning non NULL value
- * 
+ *
  * @param rpcs_    RPS server
  * @param retval_  Return value (OUT)
  * @param func_    RPC function name to call (without rpc_ prefix)
@@ -210,7 +210,7 @@
             MACRO_ERROR_EXIT;                        \
         }                                            \
     } while (0)
-    
+
 
 /**
  * Create a new socket on specified RPC server
@@ -221,7 +221,7 @@
  * @param domain_   Socket domain
  * @param type_     Socket type
  * @param proto_    Protocol value
- * 
+ *
  * @se In case of failure it jumps to "cleanup" label
  */
 #define RPC_SOCKET(sockd_, rpcs_, domain_, type_, proto_) \
@@ -231,11 +231,11 @@
 /**
  * Duplicate a file descriptor.
  *
- * @param sockd_    Variable that is updated with the descriptor of 
+ * @param sockd_    Variable that is updated with the descriptor of
  *                  created socket (OUT)
  * @param rpcs_     RPC server handle
  * @param oldfd_    FD to be duplicated
- * 
+ *
  * @se In case of failure it jumps to "cleanup" label
  */
 #define RPC_DUP(sockd_, rpcs_, oldfd_) \
@@ -244,12 +244,12 @@
 /**
  * Duplicate a file descriptor to specified file descriptor.
  *
- * @param sockd_    Variable that is updated with the descriptor of 
+ * @param sockd_    Variable that is updated with the descriptor of
  *                  created socket (OUT)
  * @param rpcs_     RPC server handle
  * @param oldfd_    FD to be duplicated
  * @param newfd_    FD to duplicate to
- * 
+ *
  * @se In case of failure it jumps to "cleanup" label
  */
 #define RPC_DUP2(sockd_, rpcs_, oldfd_, newfd_) \
@@ -257,7 +257,7 @@
 
 
 /**
- * Close a socket on a particular RPC server, non-changing variable 
+ * Close a socket on a particular RPC server, non-changing variable
  * with socket descriptor.
  *
  * @param rpcs_   RPC server handle
@@ -282,7 +282,7 @@
  * @param rpcs_   RPC server handle
  * @param sockd_  Socket descriptor
  *
- * @note @p sockd_ parameter is updated to -1 after successfull 
+ * @note @p sockd_ parameter is updated to -1 after successfull
  * completion of the macro.
  */
 #define RPC_CLOSE(rpcs_, sockd_) \
@@ -307,7 +307,7 @@
  * @param sockd_    - Socket descriptor
  * @param addr_     - Address the socket to be bound to
  * @param addrlen_  - Address length value
- * 
+ *
  * @se In case of failure it jumps to "cleanup" label
  */
 #define RPC_BIND(rpcs_, sockd_, addr_, addrlen_) \
@@ -320,7 +320,7 @@
  * @param sockd_    - Socket descriptor
  * @param addr_     - Address the socket to be connected to
  * @param addrlen_  - Address length value
- * 
+ *
  * @se In case of failure it jumps to "cleanup" label
  */
 #define RPC_CONNECT(rpcs_, sockd_, addr_, addrlen_) \
@@ -332,7 +332,7 @@
  * @param rpcs_     - RPC server handle
  * @param sockd_    - Socket descriptor
  * @param backlog_  - Backlog value
- * 
+ *
  * @se In case of failure it jumps to "cleanup" label
  */
 #define RPC_LISTEN(rpcs_, sockd_, backlog_) \
@@ -374,7 +374,7 @@
  * @param buf_      Buffer pointer
  * @param len_      Length of the data to be sent
  * @param flags_    Operation flags
- * 
+ *
  * @se In case of failure it jumps to "cleanup" label
  */
 #define RPC_SEND(sent_, rpcs_, sockd_, buf_, len_, flags_) \
@@ -463,7 +463,8 @@
  * @param buf_       Buffer for received data
  * @param len_       Size of the buffer
  * @param flags_     Operation flags
- * @param addr_      Address of the peer from which the data is received (OUT)
+ * @param addr_      Address of the peer from which the data is received
+ *                   (OUT)
  * @param addrlen_   Peer address length (IN/OUT)
  *
  * @se In case of failure it jumps to "cleanup" label
@@ -512,7 +513,7 @@
  * @param sockd_    Socket descriptor
  * @param buf_      Buffer pointer
  * @param len_      Length of the data to be sent
- * 
+ *
  * @se In case of failure it jumps to "cleanup" label
  */
 #define RPC_WRITE(sent_, rpcs_, sockd_, buf_, len_) \
@@ -622,7 +623,7 @@
  * @param sockd_     - Socket descriptor
  * @param req_name_  - IOCTL request name
  * @param req_val_   - Request value
- * 
+ *
  * @todo const char *ioctl_val2str(req_name_, req_val_);
  */
 #define RPC_IOCTL(rpcs_, sockd_, req_name_, req_val_) \
@@ -651,11 +652,12 @@
 
 /**
  * Register signal handler for capturing a particular signal
- * 
+ *
  * @param rc_       Previous signal handler (OUT)
  * @param rpcs_     RPC server handle
  * @param signum_   Signal number
- * @param handler_  Signal handler (use SIGNAL_REGISTRAR to default handler)
+ * @param handler_  Signal handler (use SIGNAL_REGISTRAR to default
+ *                  handler)
  */
 #define RPC_SIGNAL(rc_,  rpcs_, signum_, handler_) \
     do {                                                  \
@@ -671,11 +673,12 @@
 /**
  * Changes the list  of  currently  blocked signals.
  *
- * @param rpcs_          RPC server handle
- * @param how_           How change the list  of  currently  blocked
- *                       signals
- * @param sigmask_       New signal mask
- * @param sigmask_old_   Where the previous value of the signal mask is stored
+ * @param rpcs_         RPC server handle
+ * @param how_          How change the list  of  currently  blocked
+ *                      signals
+ * @param sigmask_      New signal mask
+ * @param sigmask_old_  Where the previous value of the signal mask is
+ *                      stored
  */
 #define RPC_SIGPROCMASK(rpcs_, how_, sigmask_, sigmask_old_) \
     do {                                                            \
@@ -709,12 +712,12 @@
 
 
 /**
- * Make the pair of file descriptors connected with a pipe on 
+ * Make the pair of file descriptors connected with a pipe on
  * specified RPC server
  *
  * @param rpcs_     - RPC server handle
  * @param filedes_  - Array of size 2 for file descriptors
- * 
+ *
  * @se In case of failure it jumps to "cleanup" label
  */
 #define RPC_PIPE(rpcs_, filedes_) \
@@ -730,7 +733,7 @@
  * @param sv_      Array of size 2 for socket descriptors
  *
  * @note Usually supported only for PF_UNIX domain.
- * 
+ *
  * @se In case of failure it jumps to "cleanup" label
  */
 #define RPC_SOCKETPAIR(rpcs_, domain_, type_, proto_, sv_) \
@@ -772,7 +775,7 @@
     } while (0)
 
 /**
- * Check whether a particaular signal is a member of sigmask on 
+ * Check whether a particaular signal is a member of sigmask on
  * a particular RPC server
  *
  * @param rc_       Returned value of type 'te_bool' (OUT)
@@ -901,7 +904,7 @@
     } while (0)
 
 /**
- * Check current value of errno on a particular RPC server against 
+ * Check current value of errno on a particular RPC server against
  * some expected value
  *
  * @param rpcs_      - RPC server handle
@@ -1121,7 +1124,8 @@
  * @se In case of failure it jumps to "cleanup" label
  */
 #define RPC_FOPEN(f_, rpcs_, fn_, mode_) \
-    RPC_FUNC_WITH_PTR_RETVAL((rpcs_), (f_), fopen, strdup(fn_), strdup(mode_))
+    RPC_FUNC_WITH_PTR_RETVAL((rpcs_), (f_), fopen, \
+                             strdup(fn_), strdup(mode_))
 
 /**
  * Call sendfile() function on RPC server and check return value
@@ -1131,7 +1135,7 @@
  * @param rpcs_     RPC server handle
  * @param out_fd_   File descriptor opened for writing
  * @param in_fd_    File descriptor opened for reading
- * @param offset_   Pointer to a variable holding the input file pointer 
+ * @param offset_   Pointer to a variable holding the input file pointer
  *                  positionLength of the data to be sent
  * @param count_    Number of bytes to copy
  *

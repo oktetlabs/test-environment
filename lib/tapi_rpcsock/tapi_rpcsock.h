@@ -75,7 +75,7 @@ extern int rpc_socket(rcf_rpc_server *handle,
 /* WSASocket() */
 extern int rpc_wsa_socket(rcf_rpc_server *handle,
                           rpc_socket_domain domain, rpc_socket_type type,
-                          rpc_socket_proto protocol, 
+                          rpc_socket_proto protocol,
                           uint8_t *info, int info_len, te_bool overlapped);
 
 /**
@@ -90,9 +90,9 @@ extern int rpc_wsa_socket(rcf_rpc_server *handle,
  *                      location (OUT)
  *
  * @return value returned by WSADuplicateSocket() function
- */ 
-extern int rpc_wsa_duplicate_socket(rcf_rpc_server *handle,            
-                                    int s, int pid, 
+ */
+extern int rpc_wsa_duplicate_socket(rcf_rpc_server *handle,
+                                    int s, int pid,
                                     uint8_t *info, int *info_len);
 
 extern int rpc_close(rcf_rpc_server *handle,
@@ -152,7 +152,7 @@ extern int rpc_readv_gen(rcf_rpc_server *handle,
                          int fd, const struct rpc_iovec *iov,
                          size_t iovcnt, size_t riovcnt);
 
-static inline int 
+static inline int
 rpc_readv(rcf_rpc_server *handle,
           int fd, const struct rpc_iovec *iov,
           size_t iovcnt)
@@ -171,13 +171,13 @@ extern ssize_t rpc_sendto(rcf_rpc_server *handle,
 
 
 extern ssize_t rpc_recv_gen(rcf_rpc_server *handle,
-                            int s, void *buf, size_t len, 
+                            int s, void *buf, size_t len,
                             rpc_send_recv_flags flags,
                             size_t rbuflen);
 
 /* WSARecvEx() */
 extern ssize_t rpc_wsa_recv_ex(rcf_rpc_server *handle,
-                               int s, void *buf, size_t len, 
+                               int s, void *buf, size_t len,
                                rpc_send_recv_flags *flags,
                                size_t rbuflen);
 
@@ -202,7 +202,7 @@ rpc_recvfrom(rcf_rpc_server *handle,
 {
     return rpc_recvfrom_gen(handle, s, buf, len, flags, from, fromlen,
                             len, (fromlen == NULL) ? 0 : *fromlen);
-}      
+}
 
 
 typedef struct rpc_msghdr {
@@ -220,8 +220,9 @@ typedef struct rpc_msghdr {
     socklen_t         msg_rnamelen;     /**< real size of protocol
                                              address buffer to be copied
                                              by RPC */
-    size_t            msg_riovlen;      /**< real number of elements in msg_iov */
-    socklen_t         msg_rcontrollen;  /**< real length of the 
+    size_t            msg_riovlen;      /**< real number of elements
+                                             in msg_iov */
+    socklen_t         msg_rcontrollen;  /**< real length of the
                                              ancillary data buffer bo be
                                              copied by RPC */
 } rpc_msghdr;
@@ -236,10 +237,12 @@ extern ssize_t rpc_recvmsg(rcf_rpc_server *handle,
 
 
 extern int rpc_bind(rcf_rpc_server *handle,
-                    int s, const struct sockaddr *my_addr, socklen_t addrlen);
+                    int s, const struct sockaddr *my_addr,
+                    socklen_t addrlen);
 
 extern int rpc_connect(rcf_rpc_server *handle,
-                       int s, const struct sockaddr *addr, socklen_t addrlen);
+                       int s, const struct sockaddr *addr,
+                       socklen_t addrlen);
 
 extern int rpc_connect_ex(rcf_rpc_server *handle,
                           int s, const struct sockaddr *addr,
@@ -250,13 +253,13 @@ extern int rpc_connect_ex(rcf_rpc_server *handle,
 
 extern int rpc_disconnect_ex(rcf_rpc_server *handle, int s,
                              rpc_overlapped overlapped, int flags);
-                             
+
 extern int rpc_listen(rcf_rpc_server *handle,
                       int s, int backlog);
 
 
 extern int rpc_accept_gen(rcf_rpc_server *handle,
-                          int s, struct sockaddr *addr, 
+                          int s, struct sockaddr *addr,
                           socklen_t *addrlen,
                           socklen_t raddrlen);
 
@@ -270,14 +273,14 @@ rpc_accept(rcf_rpc_server *handle,
 
 typedef enum accept_verdict {
     CF_REJECT,
-    CF_ACCEPT, 
+    CF_ACCEPT,
     CF_DEFER
-} accept_verdict;    
+} accept_verdict;
 
 typedef struct accept_cond {
     unsigned short port;
     accept_verdict verdict;
-} accept_cond;    
+} accept_cond;
 
 #define RCF_RPC_MAX_ACCEPT_CONDS    4
 
@@ -286,19 +289,19 @@ typedef struct accept_cond {
  * describes the condition function behaivour.
  */
 extern int rpc_wsa_accept(rcf_rpc_server *handle,
-                          int s, struct sockaddr *addr, 
-                          socklen_t *addrlen, socklen_t raddrlen, 
+                          int s, struct sockaddr *addr,
+                          socklen_t *addrlen, socklen_t raddrlen,
                           accept_cond *cond, int cond_num);
 /**
  * Client implementation of AcceptEx()-GetAcceptExSockAddr() call.
- * 
+ *
  * @param handle           RPC server handle
- * @param s                Descriptor of socket that has already been called
- *                            with the listen function
- * @param s_a              Descriptor of a socket on wich to accept an incomming
- *                         connection
- * @param len              Length of the buffer to receive data (should not 
- *                           include the size of local and remote addresses)          
+ * @param s                Descriptor of socket that has already been
+ *                         called with the listen function
+ * @param s_a              Descriptor of a socket on wich to accept
+ *                         an incomming connection
+ * @param len              Length of the buffer to receive data (should not
+ *                         include the size of local and remote addresses)
  * @param overlapped       WSAOVERLAPPED structure
  * @param bytes_received   number of received data bytes
  *
@@ -310,13 +313,13 @@ rpc_accept_ex(rcf_rpc_server *handle, int s, int s_a,
               size_t *bytes_received);
 /**
  * Client implementation of GetAcceptExSockAddr() call.
- * 
+ *
  * @param handle           RPC server handle
  * @param s                descriptor of socket that was passed
  *                         to rpc_accept_ex() fuinction as 3d parameter
- * @param buf              pointer to a buffer passed to 
+ * @param buf              pointer to a buffer passed to
  *                         rpc_get_overlapped_result()
- * @param buflen           size of the buffer passed to 
+ * @param buflen           size of the buffer passed to
  *                         rpc_get_overlapped_result()
  * @param len              buffer size wich was passed to rpc_accept_ex()
  * @param laddr            local address returned by GetAcceptExSockAddr()
@@ -331,10 +334,10 @@ rpc_get_accept_addr(rcf_rpc_server *handle,
                     struct sockaddr *raddr);
 
 extern int rpc_transmit_file(rcf_rpc_server *handle, int s, char *file,
-                             ssize_t len, ssize_t len_per_send, 
+                             ssize_t len, ssize_t len_per_send,
                              rpc_overlapped overlapped,
                              void *head, ssize_t head_len,
-                             void *tail, ssize_t tail_len, ssize_t flags);              
+                             void *tail, ssize_t tail_len, ssize_t flags);
 
 extern rpc_fd_set * rpc_fd_set_new(rcf_rpc_server *handle);
 extern void rpc_fd_set_delete(rcf_rpc_server *handle,
@@ -369,20 +372,20 @@ extern int rpc_poll_gen(rcf_rpc_server *handle,
                         struct rpc_pollfd *ufds, unsigned int nfds,
                         int timeout, unsigned int rnfds);
 
-static inline int 
+static inline int
 rpc_poll(rcf_rpc_server *handle,
          struct rpc_pollfd *ufds, unsigned int nfds,
          int timeout)
 {
     return rpc_poll_gen(handle, ufds, nfds, timeout, nfds);
-}             
+}
 
 
 extern int rpc_ioctl(rcf_rpc_server *handle,
                      int fd, rpc_ioctl_code request, ...);
-                     
+
 extern int rpc_fcntl(rcf_rpc_server *handle, int fd,
-                     int cmd, int arg);                     
+                     int cmd, int arg);
 
 
 extern int rpc_getsockopt_gen(rcf_rpc_server *handle,
@@ -455,7 +458,7 @@ extern rpc_wsaevent rpc_create_event(rcf_rpc_server *handle);
 extern int rpc_close_event(rcf_rpc_server *handle, rpc_wsaevent hevent);
 
 /* WSAResetEvent() */
-extern int rpc_reset_event(rcf_rpc_server *handle, rpc_wsaevent hevent);        
+extern int rpc_reset_event(rcf_rpc_server *handle, rpc_wsaevent hevent);
 
 /* Create WSAOVERLAPPED */
 extern rpc_overlapped rpc_create_overlapped(rcf_rpc_server *handle,
@@ -464,22 +467,22 @@ extern rpc_overlapped rpc_create_overlapped(rcf_rpc_server *handle,
                                             unsigned int offset_high);
 
 /* Delete WSAOVERLAPPED */
-extern void rpc_delete_overlapped(rcf_rpc_server *handle, 
+extern void rpc_delete_overlapped(rcf_rpc_server *handle,
                                   rpc_overlapped overlapped);
 
 /* WSASend() */
 extern int rpc_wsa_send(rcf_rpc_server *handle,
                        int s, const struct rpc_iovec *iov,
-                       size_t iovcnt, rpc_send_recv_flags flags, 
-                       int *bytes_sent, rpc_overlapped overlapped, 
+                       size_t iovcnt, rpc_send_recv_flags flags,
+                       int *bytes_sent, rpc_overlapped overlapped,
                        te_bool callback);
 
 /* WSARecv() */
 extern int rpc_wsa_recv(rcf_rpc_server *handle,
                         int s, const struct rpc_iovec *iov,
                         size_t iovcnt, size_t riovcnt,
-                        rpc_send_recv_flags *flags, 
-                        int *bytes_received, rpc_overlapped overlapped, 
+                        rpc_send_recv_flags *flags,
+                        int *bytes_received, rpc_overlapped overlapped,
                         te_bool callback);
 
 /* WSAGetOverlappedResult() */
@@ -491,26 +494,30 @@ extern int rpc_get_overlapped_result(rcf_rpc_server *handle,
 /**
  * Get result of completion callback (if called).
  *
- * @param handle     handle of RPC server
- * @param called     number of callback calls since last call of this function
- * @param bytes      number of tramsmitted bytes reported to last callback
- * @param error      overlapped operation error reported to the last callback
- * @param overlapped overlapped object reported to the last callback
+ * @param handle        handle of RPC server
+ * @param called        number of callback calls since last call
+ *                      of this function
+ * @param bytes         number of tramsmitted bytes reported to last
+ *                      callback
+ * @param error         overlapped operation error reported to the last
+ *                      callback
+ * @param overlapped    overlapped object reported to the last callback
  *
  * @return 0 (success) or -1 (failure)
  */
-extern int rpc_completion_callback(rcf_rpc_server *handle, 
+extern int rpc_completion_callback(rcf_rpc_server *handle,
                                    int *called, int *error, int *bytes,
                                    rpc_overlapped *overlapped);
 
 /* WSAEventSelect() */
-extern int 
+extern int
 rpc_wsa_event_select(rcf_rpc_server *handle,
-                     int s, rpc_wsaevent event_object, rpc_network_event event);
+                     int s, rpc_wsaevent event_object,
+                     rpc_network_event event);
 
 /**
  * Client implementation of WSAEnumNetworkEvents().
- * 
+ *
  * @param handle           RPC server handle
  * @param s                socket descriptor
  * @param event_object     event object to be reset
@@ -519,7 +526,7 @@ rpc_wsa_event_select(rcf_rpc_server *handle,
  * @return value returned by WSAEnumNetworkEvents() function
  */
 extern int rpc_enum_network_events(rcf_rpc_server *handle,
-                                  int s, rpc_wsaevent event_object, 
+                                  int s, rpc_wsaevent event_object,
                                   rpc_network_event *event);
 
 /** Return codes for rpc_wait_multiple_events */
@@ -534,7 +541,7 @@ static inline const char *
 wsa_wait_rpc2str(int code)
 {
     static char buf[32];
-    
+
     switch (code)
     {
         case WSA_WAIT_FAILED:    return "WSA_WAIT_FAILED";
@@ -550,8 +557,8 @@ wsa_wait_rpc2str(int code)
 
 /** WSAWaitForMultipleEvents(), returns -1 if timeout expires */
 extern int rpc_wait_multiple_events(rcf_rpc_server *handle,
-                                    int count, rpc_wsaevent *events, 
-                                    te_bool wait_all, uint32_t timeout, 
+                                    int count, rpc_wsaevent *events,
+                                    te_bool wait_all, uint32_t timeout,
                                     te_bool alertable, int rcount);
 
 /* Window objects */
@@ -566,11 +573,13 @@ extern void rpc_destroy_window(rcf_rpc_server *handle, rpc_hwnd hwnd);
 
 /** WSAAsyncSelect() */
 extern int rpc_wsa_async_select(rcf_rpc_server *handle,
-                                int s, rpc_hwnd hwnd, rpc_network_event event);
-                            
-/** PeekMessage() */                            
+                                int s, rpc_hwnd hwnd,
+                                rpc_network_event event);
+
+/** PeekMessage() */
 extern int rpc_peek_message(rcf_rpc_server *handle,
-                            rpc_hwnd hwnd, int *s, rpc_network_event *event);
+                            rpc_hwnd hwnd, int *s,
+                            rpc_network_event *event);
 
 /*
  * Signals
@@ -645,15 +654,17 @@ extern int rpc_sigsuspend(rcf_rpc_server *handle, const rpc_sigset_t *set);
  * Name/address resolution
  */
 
-/* 
- * Memory is allocated by these functions using malloc(). They are thread-safe.
+/*
+ * Memory is allocated by these functions using malloc().
+ * They are thread-safe.
  */
 extern struct hostent *rpc_gethostbyname(rcf_rpc_server *handle,
                                          const char *name);
 
 extern struct hostent *rpc_gethostbyaddr(rcf_rpc_server *handle,
                                          const char *addr,
-                                         int len, rpc_socket_addr_family type);
+                                         int len,
+                                         rpc_socket_addr_family type);
 
 extern int rpc_getaddrinfo(rcf_rpc_server *handle,
                            const char *node, const char *service,
@@ -665,7 +676,7 @@ extern void rpc_freeaddrinfo(rcf_rpc_server *handle,
 
 extern int rpc_pipe(rcf_rpc_server *handle,
                     int filedes[2]);
-                    
+
 extern int rpc_socketpair(rcf_rpc_server *handle,
                           rpc_socket_domain domain, rpc_socket_type type,
                           rpc_socket_proto protocol, int sv[2]);
@@ -680,7 +691,7 @@ extern uid_t rpc_getuid(rcf_rpc_server *handle);
 
 extern int rpc_setuid(rcf_rpc_server *handle,
                       uid_t uid);
-                       
+
 extern uid_t rpc_geteuid(rcf_rpc_server *handle);
 
 extern int rpc_seteuid(rcf_rpc_server *handle,
@@ -709,7 +720,7 @@ extern const char *timeval2str(const struct timeval *tv);
 extern const char *timespec2str(const struct timespec *tv);
 
 /**
- * Simple sender. 
+ * Simple sender.
  *
  * @param handle            RPC server
  * @param s                 a socket to be user for sending
@@ -730,17 +741,21 @@ extern const char *timespec2str(const struct timespec *tv);
  * @param ignore_err        Ignore errors while run
  *
  * @return number of sent bytes or -1 in the case of failure if ignore_err
- *         set to FALSE or number of sent bytes or 0 if ignore_err set to TRUE
+ *         set to FALSE or number of sent bytes or 0 if ignore_err set to
+ *         TRUE
  */
 extern int rpc_simple_sender(rcf_rpc_server *handle,
-                             int s, int size_min, int size_max, 
-                             int size_rnd_once, int delay_min, int delay_max,
-                             int delay_rnd_once, int time2run, uint64_t *sent,
+                             int s,
+                             int size_min, int size_max,
+                             int size_rnd_once,
+                             int delay_min, int delay_max,
+                             int delay_rnd_once,
+                             int time2run, uint64_t *sent,
                              int ignore_err);
 
 
 /**
- * Simple receiver. 
+ * Simple receiver.
  *
  * @param handle            RPC server
  * @param s                 a socket to be user for receiving
@@ -797,8 +812,8 @@ extern int rpc_aio_error_test(rcf_rpc_server *handle,
  * @return number of sent bytes or -1 in the case of failure
  */
 extern int rpc_aio_write_test(rcf_rpc_server *handle,
-                              int s, rpc_signum signum, 
-                              char *buf, int buflen, 
+                              int s, rpc_signum signum,
+                              char *buf, int buflen,
                               char *diag, int diag_len);
 /**
  * Susending on asynchronous events test procedure.
@@ -816,8 +831,8 @@ extern int rpc_aio_write_test(rcf_rpc_server *handle,
  * @return number of received bytes or -1 in the case of failure
  */
 extern int rpc_aio_suspend_test(rcf_rpc_server *handle,
-                                int s, int s_aux, rpc_signum signum, 
-                                int timeout, char *buf, int buflen, 
+                                int s, int s_aux, rpc_signum signum,
+                                int timeout, char *buf, int buflen,
                                 char *diag, int diag_len);
 
 
@@ -848,10 +863,11 @@ extern int rpc_aio_suspend_test(rcf_rpc_server *handle,
  * @return number of sent bytes or -1 in the case of failure
  */
 extern int rpc_iomux_flooder(rcf_rpc_server *handle,
-                             int *sndrs, int sndnum, int *rcvrs, int rcvnum, 
+                             int *sndrs, int sndnum, int *rcvrs, int rcvnum,
                              int bulkszs, int time2run, int iomux,
                              te_bool rx_nonblock,
-                             unsigned long *tx_stat, unsigned long *rx_stat);
+                             unsigned long *tx_stat,
+                             unsigned long *rx_stat);
 
 /**
  * Routine which receives data from specified set of
@@ -894,8 +910,8 @@ extern ssize_t rpc_sendfile(rcf_rpc_server *handle,
                             off_t *offset, size_t count);
 
 /**
- * Routine which receives data from opened socket descriptor and write its to
- * the file. Processing is finished when timeout expired.
+ * Routine which receives data from opened socket descriptor and write its
+ * to the file. Processing is finished when timeout expired.
  *
  * @param handle        RPC server
  * @param sock          socket descriptor for data receiving
@@ -922,7 +938,8 @@ extern ssize_t rpc_socket_to_file(rcf_rpc_server *handle,
  * @return file descriptor, which may be used for reading/writing data
  */
 extern int rpc_ftp_open(rcf_rpc_server *handle,
-                        char *uri, te_bool rdonly, te_bool passive, int offset);
+                        char *uri, te_bool rdonly, te_bool passive,
+                        int offset);
 
 
 #endif /* __TAPI_RPCSOCK_H__ */
