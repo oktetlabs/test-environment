@@ -101,7 +101,7 @@ static int csap_tr_recv_get(const char *ta_name, int handle,
 
 /* If pthread mutexes are supported - OK; otherwise hope for best... */
 #ifdef HAVE_PTHREAD_H
-#if 0 /* FIXME */
+#ifndef PTHREAD_SETSPECIFIC_BUG
 static pthread_once_t   once_control = PTHREAD_ONCE_INIT;
 static pthread_key_t    key;
 #endif
@@ -142,8 +142,9 @@ validate_type(int var_type, int var_len)
 }
 
 
+#ifndef PTHREAD_SETSPECIFIC_BUG
+
 #ifdef HAVE_PTHREAD_H
-#if 0 /* FIXME */
 /**
  * Destructor of resources assosiated with thread.
  *
@@ -171,11 +172,60 @@ rcf_api_key_create(void)
         fprintf(stderr, "pthread_key_create() failed\n");
     }
 }
-#endif
+#endif /* HAVE_PTHREAD_H */
+
+/**
+ * Find thread IPC handle or initialize a new one.
+ *
+ * @return IPC handle or NULL if IPC library returned an error
+ */
+struct ipc_client *
+get_ipc_handle()
+{
+#ifdef HAVE_PTHREAD_H
+    struct ipc_client          *handle;
+#else
+    static struct ipc_client   *handle = NULL;
 #endif
 
-/* FIXME */
-#if 1
+#ifdef HAVE_PTHREAD_H
+    if (pthread_once(&once_control, rcf_api_key_create) != 0)
+    {
+        ERROR("pthread_once() failed\n");
+        return NULL;
+    }
+    handle = (struct ipc_client *)pthread_getspecific(key);
+#endif
+    if (handle == NULL)
+    {
+       char name[RCF_MAX_NAME];
+
+       sprintf(name, "rcf_client_%u_%u", (unsigned int)getpid(), 
+               (unsigned int)pthread_self());
+               
+       if ((handle = ipc_init_client(name)) == NULL)
+       {
+           ERROR("ipc_init_client() failed\n");
+           fprintf(stderr, "ipc_init_client() failed\n");
+           return NULL;
+       }
+#ifdef HAVE_PTHREAD_H
+       if (pthread_setspecific(key, (void *)handle) != 0)
+       {
+           ERROR("pthread_setspecific() failed\n");
+           fprintf(stderr, "pthread_setspecific() failed\n");
+       }
+#endif
+    }
+
+    return handle;
+}
+
+#else /* PTHREAD_SETSPECIFIC_BUG */
+
+#ifndef HAVE_PTHREAD_H
+#error PTHREAD_SETSPECIFIC_BUG may be defined only if we have pthread API.
+#endif
 
 #define RCF_MAX_THREADS     1024
 
@@ -234,7 +284,7 @@ get_ipc_handle()
 }
 
 /**
- * Frep IPC client handle.
+ * Free IPC client handle.
  */
 static void
 free_ipc_handle(void)
@@ -254,54 +304,9 @@ free_ipc_handle(void)
     }
     pthread_mutex_unlock(&rcf_lock);
 }
-#else
-/**
- * Find thread IPC handle or initialize a new one.
- *
- * @return IPC handle or NULL if IPC library returned an error
- */
-struct ipc_client *
-get_ipc_handle()
-{
-#ifdef HAVE_PTHREAD_H
-    struct ipc_client          *handle;
-#else
-    static struct ipc_client   *handle = NULL;
-#endif
 
-#ifdef HAVE_PTHREAD_H
-    if (pthread_once(&once_control, rcf_api_key_create) != 0)
-    {
-        ERROR("pthread_once() failed\n");
-        return NULL;
-    }
-    handle = (struct ipc_client *)pthread_getspecific(key);
-#endif
-    if (handle == NULL)
-    {
-       char name[RCF_MAX_NAME];
+#endif /* PTHREAD_SETSPECIFIC_BUG */
 
-       sprintf(name, "rcf_client_%u_%u", (unsigned int)getpid(), 
-               (unsigned int)pthread_self());
-               
-       if ((handle = ipc_init_client(name)) == NULL)
-       {
-           ERROR("ipc_init_client() failed\n");
-           fprintf(stderr, "ipc_init_client() failed\n");
-           return NULL;
-       }
-#ifdef HAVE_PTHREAD_H
-       if (pthread_setspecific(key, (void *)handle) != 0)
-       {
-           ERROR("pthread_setspecific() failed\n");
-           fprintf(stderr, "pthread_setspecific() failed\n");
-       }
-#endif
-    }
-
-    return handle;
-}
-#endif
 
 /**
  * Clean up resources allocated by RCF API.
@@ -317,7 +322,9 @@ rcf_api_cleanup(void)
         ERROR("ipc_close_client() failed");
         fprintf(stderr, "ipc_close_client() failed\n");
     }
+#if PTHREAD_SETSPECIFIC_BUG
     free_ipc_handle();
+#endif
 }
 
     
