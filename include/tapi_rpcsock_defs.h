@@ -540,7 +540,7 @@ typedef enum rpc_recv_flags {
 #ifdef MSG_TRUNC
 #define HAVE_MSG_TRUNC   1
 #else
-#ifdef HAVE_MSG_PARTIAL
+#ifdef MSG_PARTIAL
 #define MSG_TRUNC MSG_PARTIAL
 #define HAVE_MSG_TRUNC   1
 #else
@@ -940,6 +940,7 @@ shut_how_rpc2str(int how)
 
 
 typedef uint32_t rpc_fd_set;
+
 
 typedef uint32_t rpc_sigset_t;
 
