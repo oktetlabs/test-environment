@@ -42,18 +42,18 @@
 
 static asn_named_entry_t _ndn_ip4_header_ne_array [] = 
 {
-    { "version",  &ndn_data_unit_int8_s, {PRIVATE, 1} },
-    { "header-len",     &ndn_data_unit_int8_s, {PRIVATE, 1} },
+    { "version",         &ndn_data_unit_int8_s, {PRIVATE, 1} },
+    { "header-len",      &ndn_data_unit_int8_s, {PRIVATE, 1} },
     { "type-of-service", &ndn_data_unit_int8_s, {PRIVATE, 1} },
-    { "ip-len", &ndn_data_unit_int16_s, {PRIVATE, 1} },
-    { "ip-ident",  &ndn_data_unit_int16_s, {PRIVATE, 1} },
-    { "flags",  &ndn_data_unit_int8_s, {PRIVATE, 1} },
-    { "ip-offset",  &ndn_data_unit_int16_s, {PRIVATE, 1} },
-    { "time-to-live",  &ndn_data_unit_int8_s, {PRIVATE, 1} },
-    { "protocol",  &ndn_data_unit_int8_s, {PRIVATE, 1} },
-    { "h-checksum",  &ndn_data_unit_int16_s, {PRIVATE, 1} },
-    { "src-addr",  &ndn_data_unit_ip_address_s, {PRIVATE, 1} },
-    { "dst-addr",  &ndn_data_unit_ip_address_s, {PRIVATE, 1} }, 
+    { "ip-len",          &ndn_data_unit_int16_s, {PRIVATE, 1} },
+    { "ip-ident",        &ndn_data_unit_int16_s, {PRIVATE, 1} },
+    { "flags",           &ndn_data_unit_int8_s, {PRIVATE, 1} },
+    { "ip-offset",       &ndn_data_unit_int16_s, {PRIVATE, 1} },
+    { "time-to-live",    &ndn_data_unit_int8_s, {PRIVATE, 1} },
+    { "protocol",        &ndn_data_unit_int8_s, {PRIVATE, 1} },
+    { "h-checksum",      &ndn_data_unit_int16_s, {PRIVATE, 1} },
+    { "src-addr",        &ndn_data_unit_ip_address_s, {PRIVATE, 1} },
+    { "dst-addr",        &ndn_data_unit_ip_address_s, {PRIVATE, 1} }, 
 };
 
 asn_type ndn_ip4_header_s =
@@ -190,8 +190,8 @@ static asn_named_entry_t _ndn_tcp_header_ne_array [] =
     { "dst-port", &ndn_data_unit_int16_s, {PRIVATE, 1} },
     { "seqn",     &ndn_data_unit_int32_s, {PRIVATE, 1} },
     { "acqn",     &ndn_data_unit_int32_s, {PRIVATE, 1} },
-    { "hlen",     &ndn_data_unit_int8_s, {PRIVATE, 1} },
-    { "flags",    &ndn_data_unit_int8_s, {PRIVATE, 1} },
+    { "hlen",     &ndn_data_unit_int8_s,  {PRIVATE, 1} },
+    { "flags",    &ndn_data_unit_int8_s,  {PRIVATE, 1} },
     { "win-size", &ndn_data_unit_int16_s, {PRIVATE, 1} },
     { "checksum", &ndn_data_unit_int16_s, {PRIVATE, 1} },
     { "urg-p",    &ndn_data_unit_int16_s, {PRIVATE, 1} },
@@ -199,7 +199,7 @@ static asn_named_entry_t _ndn_tcp_header_ne_array [] =
 
 asn_type ndn_tcp_header_s =
 {
-    "TCP-Header", {PRIVATE, 100}, SEQUENCE, 
+    "TCP-Header", {PRIVATE, 101}, SEQUENCE, 
     sizeof(_ndn_tcp_header_ne_array)/sizeof(asn_named_entry_t),
     {_ndn_tcp_header_ne_array}
 };
@@ -218,7 +218,7 @@ static asn_named_entry_t _ndn_tcp_csap_ne_array [] =
 
 asn_type ndn_tcp_csap_s =
 {
-    "UDP-CSAP", {PRIVATE, 101}, SEQUENCE, 
+    "UDP-CSAP", {PRIVATE, 102}, SEQUENCE, 
     sizeof(_ndn_tcp_csap_ne_array)/sizeof(asn_named_entry_t),
     {_ndn_tcp_csap_ne_array}
 };
