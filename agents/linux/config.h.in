@@ -48,6 +48,9 @@
 /* Define to 1 if the system has the type `struct rtentry'. */
 #undef HAVE_STRUCT_RTENTRY
 
+/* Define to 1 if `sa_restorer' is member of `struct sigaction'. */
+#undef HAVE_STRUCT_SIGACTION_SA_RESTORER
+
 /* Define to 1 if `sa_len' is member of `struct sockaddr'. */
 #undef HAVE_STRUCT_SOCKADDR_SA_LEN
 
