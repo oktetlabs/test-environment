@@ -711,7 +711,7 @@ tapi_cfg_net_assign_ip4(cfg_net_t *net, tapi_cfg_net_assigned *assigned)
          * Get all information about this IPv4 subnet
          */
         rc = cfg_get_inst_name_type(ip4_net_hndl, CVT_ADDRESS,
-                                    &ip4_net_addr);
+                                    CFG_IVP(&ip4_net_addr));
         if (rc != 0)
         {
             ERROR("%s(): cfg_get_inst_name_type(0x%x) failed",
