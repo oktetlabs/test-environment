@@ -24,12 +24,13 @@
 # Author: Oleg N. Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
 #
 
+AUTOMAKE_OPTIONS = foreign
 SUBDIRS = .
 
 bin_PROGRAMS = millicom
 millicom_SOURCES = millicom.c
 
-millicom_LDADD = @GLIB_LIBS@ -lm -ldl
-AM_CPPFLAGS = @GLIB_CFLAGS@ -I$(top_srcdir)
+millicom_LDADD = -lm -ldl
+AM_CPPFLAGS = -I$(top_srcdir)
 
 AM_CFLAGS = -W -Wall -ggdb -O0 
