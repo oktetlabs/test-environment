@@ -20,6 +20,7 @@ tarpc.x: @RPC_XFILE@
 	m4 @RPC_XFILE@ > tarpc.x
 
 tarpc.h: tarpc.x
+	$(RM) -f tarpc.h
 	rpcgen -h -M tarpc.x -o tarpc.h
 
 tarpc_xdr.c: tarpc.h
