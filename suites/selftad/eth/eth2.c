@@ -90,6 +90,9 @@ main(int argc, char *argv[])
     int  len = sizeof(ta);
     int  sid;
 
+    csap_handle_t eth_csap = CSAP_INVALID_HANDLE;
+    csap_handle_t eth_listen_csap = CSAP_INVALID_HANDLE;
+
     TEST_START;
     
     if (rcf_get_ta_list(ta, &len) != 0)
@@ -121,8 +124,6 @@ main(int argc, char *argv[])
         uint16_t  eth_type = ETH_P_IP;
         uint8_t   payload [2000];
 
-        csap_handle_t        eth_csap;
-        csap_handle_t        eth_listen_csap;
         ndn_eth_header_plain plain_hdr;
 
         asn_value *asn_eth_hdr;
@@ -185,16 +186,16 @@ main(int argc, char *argv[])
             rc = asn_write_component_value(template, asn_pdus, "pdus");
 
 
-#if 1
+#if 0
         if (rc == 0)
             rc = asn_write_value_field (template, payload_fill_method, 
                     strlen(payload_fill_method) + 1, 
                 "payload.#function");
 #else
         if (rc == 0)
-            rc = asn_write_value_field (template, payload, 100, 
-                                        100 /* sizeof(payload) */,
-                                        "payload.#bytes");
+            rc = asn_write_value_field(template, payload, 
+                                       100 /* sizeof(payload) */,
+                                       "payload.#bytes");
 #endif
 
 #if 0 /* Breaks log parse */
@@ -314,29 +315,27 @@ main(int argc, char *argv[])
         if (rc)
             TEST_FAIL("ETH send fails, rc %X", rc);
 
+        VERB("Eth pkt sent");
+
         sleep(2);
 
         /* Retrieve total TX bytes sent */
         rc = rcf_ta_csap_param(ta, sid, eth_csap, "total_bytes", 
                                sizeof(tx_counter_txt), tx_counter_txt);
         if (rc)
-        {
-            ERROR("get total bytes recv rc %x", rc);
-            break;
-        }
+            TEST_FAIL("get total bytes recv rc %x", rc);
+
         tx_counter = atoi(tx_counter_txt);
-        VERB (" tx_counter: %ld\n", tx_counter);
+        VERB("tx_counter: %d\n", tx_counter);
        
         /* Retrieve total RX bytes received */    
         rc = rcf_ta_csap_param(ta, sid, eth_listen_csap, "total_bytes", 
                                sizeof(rx_counter_txt), rx_counter_txt);
         if (rc)
-        {
-            VERB("get total bytes recv rc %x", rc);
-            break;
-        } 
+            TEST_FAIL("get total bytes recv rc %x", rc);
+
         rx_counter = atoi(rx_counter_txt);
-        VERB (" rx_counter: %ld\n", rx_counter);
+        VERB("rx_counter: %d\n", rx_counter);
 
         rc = rcf_ta_trrecv_stop(ta, sid, eth_listen_csap, &syms);
 
@@ -345,13 +344,18 @@ main(int argc, char *argv[])
 
         VERB ("trrecv stop rc: %x, num of pkts: %d\n", rc, syms);
 
-        rcf_ta_csap_destroy(ta, sid, eth_csap);
-        rcf_ta_csap_destroy(ta, sid, eth_listen_csap);
-
     } while (0);
 
     TEST_SUCCESS;
 
 cleanup:
+    if (eth_csap != CSAP_INVALID_HANDLE &&
+        (rc = rcf_ta_csap_destroy(ta, sid, eth_csap) != 0) )
+        ERROR("ETH csap destroy fails, rc %X", rc);
+
+    if (eth_listen_csap != CSAP_INVALID_HANDLE &&
+        (rc = rcf_ta_csap_destroy(ta, sid, eth_listen_csap) != 0) )
+        ERROR("ETH listen csap destroy fails, rc %X", rc);
+
     TEST_END; 
 }

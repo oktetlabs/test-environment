@@ -84,23 +84,9 @@ main(int argc, char *argv[])
     TEST_START;
  
     if (rcf_get_ta_list(ta, &len) != 0)
-    {
-        fprintf(stderr, "rcf_get_ta_list failed\n");
-        return 1;
-    }
+        TEST_FAIL("rcf_get_ta_list failed");
+
     VERB(" Using agent: %s\n", ta);
-    
-    /* Type test */
-    {
-        char type[16];
-        if (rcf_ta_name2type(ta, type) != 0)
-        {
-            fprintf(stderr, "rcf_ta_name2type failed\n");
-            VERB("rcf_ta_name2type failed\n"); 
-            return 1;
-        }
-        VERB("TA type: %s\n", type); 
-    }
     
     /* Session */
     {
@@ -113,9 +99,9 @@ main(int argc, char *argv[])
         VERB("Test: Created session: %d\n", sid); 
     }
 
-    /* CSAP tests */
+    /* ETH CSAP tests */
     do {
-        int rc, syms = 4;
+        int syms = 4;
         uint16_t eth_type = ETH_P_IP;
         uint8_t payload [2000];
         int p_len = 100; /* for test */
@@ -134,13 +120,13 @@ main(int argc, char *argv[])
         uint8_t loc_addr[6] = {0xff,0xff,0xff,0xff,0xff,0xff};
 
                     
-        memset (&plain_hdr, 0, sizeof(plain_hdr));
-        memcpy (plain_hdr.dst_addr, rem_addr, ETH_ALEN);  
-        memset (payload, 0, sizeof(payload));
+        memset(&plain_hdr, 0, sizeof(plain_hdr));
+        memcpy(plain_hdr.dst_addr, rem_addr, ETH_ALEN);  
+        memset(payload, 0, sizeof(payload));
         plain_hdr.eth_type_len = ETH_P_IP; 
 
         if ((asn_eth_hdr = ndn_eth_plain_to_packet(&plain_hdr)) == NULL)
-            return 2;
+            TEST_FAIL("make eth pkt fails");
 
         template = asn_init_value(ndn_traffic_template);
         asn_pdus = asn_init_value(ndn_generic_pdu_sequence);
@@ -157,62 +143,42 @@ main(int argc, char *argv[])
                 "payload.#bytes");
 
         if (rc)
-        {
-            printf ("template create error %x\n", rc);
-            VERB("template create error %x\n", rc);
-            return rc;
-        }
-        VERB("template created successfully \n");
+            TEST_FAIL("template create error %X", rc);
+        VERB("template created successfully");
+
         rc = tapi_eth_csap_create(ta, sid, eth_device, rem_addr, loc_addr, 
                               &eth_type, &eth_csap);
 
         if (rc)
-        {
-            fprintf (stderr, "csap create error: %x\n", rc);
-            VERB("csap create error: %x\n", rc);
-            return rc;
-        }
-        else 
-            VERB("csap created, id: %d\n", (int)eth_csap);
+            TEST_FAIL("csap create error: %x", rc);
+
+        VERB("csap created, id: %d\n", (int)eth_csap);
 
 
         rc = tapi_eth_csap_create(ta, sid, eth_device, rem_addr, loc_addr, 
                               &eth_type, &eth_listen_csap); 
         if (rc)
-        {
-            fprintf (stderr, "csap for listen create error: %x\n", rc);
-            VERB("csap for listen create error: %x\n", rc);
-            return rc;
-        }
-        else 
-            VERB("csap for listen created, id: %d\n", (int)eth_listen_csap);
+            TEST_FAIL("csap for listen create error: %x", rc);
+
+        VERB("csap for listen created, id: %d\n", (int)eth_listen_csap);
 
 
         rc = asn_parse_value_text("{{ pdus { eth:{ }}}}", 
                             ndn_traffic_pattern, &pattern, &syms); 
         if (rc)
-        {
-            fprintf (stderr, "parse value text fails\n");
-            return rc;
-        }
+            TEST_FAIL("parse value text fails %X", rc);
 
         rc = asn_write_value_field(pattern, rem_addr, sizeof(rem_addr), 
                 "0.pdus.0.#eth.dst-addr.#plain"); 
         if (rc)
-        {
-            fprintf (stderr, "write dst to pattern failed\n");
-            return rc;
-        } 
+            TEST_FAIL("write dst to pattern failed %X", rc);
 
         rc = tapi_eth_send(ta, sid, eth_csap, template);
 
         VERB("tapi_eth_send rc: %x\n", rc);
 
         if (rc)
-        {
-            fprintf (stderr, "Eth frame send error: %x\n", rc);
-            return rc;
-        }
+            TEST_FAIL("Eth frame send error: %x", rc);
 
 #if 1
         rc = tapi_eth_recv_start(ta, sid, eth_listen_csap, pattern, 
@@ -226,19 +192,21 @@ main(int argc, char *argv[])
 #endif
 
         if (rc)
-        {
-            fprintf(stderr, "tapi_eth_recv_start failed 0x%x, "
-                            "catched %d\n", rc, syms);
-            return rc;
-        } 
+            TEST_FAIL("tapi_eth_recv_start failed 0x%x", rc);
 
         sleep(5);
 
         rc = rcf_ta_trrecv_stop(ta, sid, eth_listen_csap, &syms);
 
+        if (rc)
+            TEST_FAIL("tapi_eth_recv_stop failed 0x%x", rc);
+
         VERB("trrecv stop rc: %x, num of pkts: %d\n", rc, syms);
 
     } while (0);
 
-    return 0;
+    TEST_SUCCESS;
+
+cleanup:
+    TEST_END; 
 }
