@@ -952,7 +952,7 @@
                 }                                                       \
                 else                                                    \
                 {                                                       \
-                    ERROR(err_msg_ " RPC call failure with errno 0x%X", \
+                    ERROR(err_msg_ " RPC call failed with errno 0x%X",  \
                           args_ + 0, TE_RC_GET_ERROR(err_));            \
                 }                                                       \
             }                                                           \
@@ -966,7 +966,7 @@
                 }                                                       \
                 else                                                    \
                 {                                                       \
-                    ERROR(err_msg_ " RPC call failure with errno 0x%X", \
+                    ERROR(err_msg_ " RPC call failed with errno 0x%X",  \
                           TE_RC_GET_ERROR(err_));                       \
                 }                                                       \
             }                                                           \
