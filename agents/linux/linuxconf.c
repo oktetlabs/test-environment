@@ -122,8 +122,6 @@ extern int linuxconf_daemons_init(rcf_pch_cfg_object **last);
 extern void linux_daemons_release();
 #endif
 
-extern char *crypt(const char *key, const char *salt);
-
 /* Auxiliary variables used for during configuration request processing */
 static struct ifreq req;
 
@@ -2889,8 +2887,8 @@ user_add(unsigned int gid, const char *oid, const char *value,
     if (ta_system("adduser --help >/dev/null 2>&1") != 0)
     {
         /* Red Hat/Fedora */
-        sprintf(buf, "/usr/sbin/adduser -d /tmp/%s -u %u -m -p %s %s ", 
-                user, uid, crypt(user, "salt"), user);
+        sprintf(buf, "/usr/sbin/adduser -d /tmp/%s -u %u -m %s ", 
+                user, uid, user);
         if (ta_system(buf) != 0) 
             return TE_RC(TE_TA_LINUX, ETESHCMD);
     }
@@ -2902,12 +2900,12 @@ user_add(unsigned int gid, const char *oid, const char *value,
                      "--uid %u %s >/dev/null 2>&1", user, uid, user);     
         if (ta_system(buf) != 0) 
             return TE_RC(TE_TA_LINUX, ETESHCMD);
-        sprintf(buf, "echo %s:%s | chpasswd", user, user);
-        if (ta_system(buf) != 0) 
-        {
-            user_del(gid, oid, user);
-            return TE_RC(TE_TA_LINUX, ETESHCMD);
-        }
+    }
+    sprintf(buf, "echo %s:%s | chpasswd", user, user);
+    if (ta_system(buf) != 0) 
+    {
+        user_del(gid, oid, user);
+        return TE_RC(TE_TA_LINUX, ETESHCMD);
     }
             
     sprintf(buf, "su - %s -c 'ssh-keygen -t dsa -N \"\" "
