@@ -84,7 +84,7 @@ typedef struct {
 
 typedef enum {
     FORW_DROP_DISABLED,
-    FORW_DROP_RANDROM,
+    FORW_DROP_RANDOM,
     FORW_DROP_PATTERN,
 } ndn_forw_drop_type_t;
 
