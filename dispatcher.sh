@@ -13,115 +13,90 @@ popd >/dev/null
 
 usage()
 {
-    echo Usage: dispatcher.sh ['<'generic options'>'] [['<'test options'>' tests ]...
-    echo -e Generic options:
-    echo -e '  '-q\\t\\t\\t\\t'Suppress part of output messages'
-    echo
-    echo -e '  '--conf-dir='<directory>'\\t'specify configuration file directory'
-    echo -e \\t\\t\\t\\t'(${TE_BASE}/conf or '.' by default)'
-    echo
-    echo -e '    In configuration files options below <filename> is full name of the'
-    echo -e '    configuration file or name of the file in the configuration directory.'
-    echo
-    echo -e '  --conf-builder=<filename>'\\t'Builder config file (builder.conf by default)'
-    echo -e '  --conf-cs=<filename>'\\t\\t'Configurator config file (cs.conf by default)'
-    echo -e '  --conf-logger=<filename>'\\t'Logger config file (logger.conf by default)'
-    echo -e '  --conf-rcf=<filename>'\\t\\t'RCF config file (rcf.conf by default)'
-    echo -e '  --conf-rgt=<filename>'\\t\\t'RGT config file (rgt.conf by default)'
-    echo -e '  --conf-tester=<filename>'\\t'Tester config file (tester.conf by default)'
-    echo
-    echo -e '  --env=<filename>'\\t\\t'Name of the file to get shell variables'
-    echo
-#    echo -e '  '--storage='<string>'\\t\\tconfiguration string for the storage
-#    echo -e \\t\\t\\t\\twith data to be updated by Dispatcher
-#    echo -e '  '--update-files='<list>'\\t\\tupdate files and directories specified
-#    echo -e \\t\\t\\t\\tin the '<list>' from the storage
-#    echo
-#    echo -e '  '--log-storage\\t\\t\\tconfiguration string for the storage
-#    echo -e \\t\\t\\t\\twhere raw log should be submitted
-#    echo -e '  '--log-storage-dir='<directory>'\\traw log directory in the storage 
-#    echo -e '  '--log-dir='<directory>'\\t\\t'local directory for raw log (. by default)'
-#    echo -e '  '--log-online\\t\\t\\tconvert and print log on stdout during work
-#    echo    
-    echo -e '  --live-log'\\t\\t\\t'Run RGT in live mode'
-    echo
-    echo -e '  --lock-dir=<directory>'\\t'lock file directory (/tmp/te/lock by default)'
-    echo
-    echo -e '  --log-html=<dirname>'\\t\\t'Name of the directory with structured HTML logs'
-    echo -e \\t\\t\\t\\t'to be generated (do not generate by default)'
-    echo -e '  --log-plain-html=<filename>'\\t'Name of the file with plain HTML logs'
-    echo -e \\t\\t\\t\\t'to be generated (do not generate by default)'
-    echo -e '  --log-txt=<filename>'\\t\\t'Name of the file with logs in text format'
-    echo -e \\t\\t\\t\\t'to be generated (log.txt by default)'
-    echo
-    echo -e '  --no-builder'\\t\\t\\t'Do not build TE'
-    echo -e '  --no-tester'\\t\\t\\t'Do not run Tester'
-    echo -e '  --no-cs'\\t\\t\\t'Do not run Configurator'
-    echo -e '  --no-rcf'\\t\\t\\t'Do not run RCF'
-    echo -e '  --no-run'\\t\\t\\t'Do not run Logger, RCF, Configurator and Tester'
-    echo
-    echo -e '  --opts=<filename>'\\t\\t'Get additional command-line options from file'
-    echo
-    echo -e '  --script-tester'\\t\\t'Use script Tester with text configuration files'
-    echo -e '  --vg-tests'\\t\\t\\t'Run tests under valgrind (without by default)'
-    echo -e \\t\\t\\t\\t'May be used with script Tester only'
-    echo
-    echo -e '  --cs-print-trees'\\t\\t'Print configurator trees.'
-    echo -e '  --cs-print-diff'\\t\\t'Log backup diff unconditionally.'
-    echo
-    echo -e '  --build=path'\\t\\t\\t'Build package specified in the path.'
-    echo -e '  --build-log=path'\\t\\t'Build package with log level 0xFFFF.'
-    echo -e '  --build-nolog=path'\\t\\t'Build package with undefined log level.'
-    echo -e '  --build-cs'\\t\\t\\t'Build configurator.'
-    echo -e '  --build-logger'\\t\\t'Build logger.'
-    echo -e '  --build-rcf'\\t\\t\\t'Build RCF.'
-    echo -e '  --build-tester'\\t\\t'Build tester.'
-    echo -e '  --build-lib-xxx'\\t\\t'Build host library xxx.'
-    echo -e '  --build-ta-xxx'\\t\\t'Build Test Agent xxx.'
-    echo -e '  --build-log-xxx'\\t\\t'Build package with log level 0xFFFF.'
-    echo -e '  --build-nolog-xxx'\\t\\t'Build package with undefined log level.'
-    echo
-    echo -e '  --tester-fake'\\t\\t\\t'Do not run any test scripts, just emulate'
-    echo -e \\t\\t\\t\\t'Usefull for configuration debugging'
-    echo -e '  --tester-nobuild'\\t\\t'Do not build Test Suite sources'
-    echo -e '  --tester-no-cs'\\t\\t'Do not interact with Configurator'
-    echo -e '  --tester-nocfgtrack'\\t\\t'Do not track configuration changes'
-    echo -e '  --tester-nologues'\\t\\t'Disable prologues and epilogues globally'
-#    echo -e '  --tester-norandom'\\t\\t'Force to run all tests in defined order as well'
-#    echo -e \\t\\t\\t\\t'as to get values of all arguments in defined'
-#    echo -e \\t\\t\\t\\t'order.  Usefull for debugging."'
-#    echo -e '  --tester-nosimultaneous'\\t'Force to run all tests in series.'
-#    echo -e \\t\\t\\t\\t'Usefull for debugging.'
-    echo -e '  --tester-suite=[NAME:PATH]'\\t'Specify location of Test Sutie sources'
-    echo -e '  --tester-req=[REQ|!REQ]'\\t'Requirement to be tested (or excluded,'
-    echo -e \\t\\t\\t\\t'if its first symbol is !)'
-    echo -e '  --tester-quietskip'\\t\\t'Quietly skip tests which do not meet'
-    echo -e \\t\\t\\t\\t'specified requirements'
-    echo -e '  --tester-run=[PATH]'\\t\\t'Run a test item defined by PATH'
-    echo -e '  --tester-vg=[PATH]'\\t\\t'Run test scripts in specified path under'
-    echo -e \\t\\t\\t\\t'valgrind'
-    echo -e '  --tester-gdb=[PATH]'\\t\\t'Run test scripts in specified path under gdb'
+cat <<EOF
+Usage: dispatcher.sh [<generic options>] [[<test options> tests ]...
+Generic options:
+  -q                            Suppress part of output messages
 
-    echo
-    echo -e '  --trc-db=<filename>'\\t\\t'TRC database to be used'
-    echo -e '  --trc-tag=<TAG>'\\t\\t'Tag to get specific expected results'
-    echo -e '  --trc-html=<filename>'\\t\\t'Name of the file for HTML report'
-    echo -e '  --trc-brief-html=<filename>'\\t'Name of the file for brief HTML report'
-    echo -e '  --trc-txt=<filename>'\\t\\t'Name of the file for text report'
-    echo -e \\t\\t\\t\\t'(by default, it is generated to stdout)'
-    echo -e '  --trc-quiet'\\t\\t\\t'Do not output total statistics to stdout'
-    echo -e '  --trc-update'\\t\\t\\t'Update TRC database'
-    echo -e '  --trc-init'\\t\\t\\t'Initialize TRC database (be careful,'
-    echo -e \\t\\t\\t\\t'TRC database file will be rewritten)'
-    echo
-    echo -e '  --vg-engine'\\t\\t\\t'Run RCF, Configurator, Logger and Tester under'
-    echo -e \\t\\t\\t\\t'valgrind (without by default)'
-    echo -e '  --vg-cs'\\t\\t\\t'Run Configurator under valgrind'
-    echo -e '  --vg-logger'\\t\\t\\t'Run Logger under valgrind (without by default)'
-    echo -e '  --vg-rcf'\\t\\t\\t'Run RCF under valgrind (without by default)'
-    echo -e \\t\\t\\t\\t'(without by default)'
-    echo -e '  --vg-tester'\\t\\t\\t'Run Tester under valgrind (without by default)'
-    echo
+  --conf-dir=<directory>        specify configuration file directory
+                                (${TE_BASE}/conf or . by default)
+
+    In configuration files options below <filename> is full name of the
+    configuration file or name of the file in the configuration directory.
+
+  --conf-builder=<filename>     Builder config file (builder.conf by default)
+  --conf-cs=<filename>          Configurator config file (cs.conf by default)
+  --conf-logger=<filename>      Logger config file (logger.conf by default)
+  --conf-rcf=<filename>         RCF config file (rcf.conf by default)
+  --conf-rgt=<filename>         RGT config file (rgt.conf by default)
+  --conf-tester=<filename>      Tester config file (tester.conf by default)
+
+  --env=<filename>              Name of the file to get shell variables
+
+  --live-log                    Run RGT in live mode
+
+  --lock-dir=<directory>        lock file directory (/tmp/te/lock by default)
+
+  --no-builder                  Do not build TE
+  --no-tester                   Do not run Tester
+  --no-cs                       Do not run Configurator
+  --no-rcf                      Do not run RCF
+  --no-run                      Do not run Logger, RCF, Configurator and Tester
+
+  --opts=<filename>             Get additional command-line options from file
+
+  --script-tester               Use script Tester with text configuration files
+  --vg-tests                    Run tests under valgrind (without by default)
+                                May be used with script Tester only
+
+  --cs-print-trees              Print configurator trees.
+  --cs-print-diff               Log backup diff unconditionally.
+
+  --build-cs                    Build configurator.
+  --build-logger                Build logger.
+  --build-rcf                   Build RCF.
+  --build-tester                Build tester.
+  --build-lib-xxx               Build host library xxx.
+  --build-ta-xxx                Build Test Agent xxx.
+  --build-log-xxx               Build package with log level 0xFFFF.
+  --build-nolog-xxx             Build package with undefined log level.
+
+  --tester-fake                 Do not run any test scripts, just emulate
+                                Usefull for configuration debugging
+  --tester-nobuild              Do not build Test Suite sources
+  --tester-no-cs                Do not interact with Configurator
+  --tester-nocfgtrack           Do not track configuration changes
+  --tester-nologues             Disable prologues and epilogues globally
+  --tester-suite=[NAME:PATH]    Specify location of Test Sutie sources
+  --tester-req=[REQ|!REQ]       Requirement to be tested (or excluded,
+                                if its first symbol is !)
+  --tester-quietskip            Quietly skip tests which do not meet
+                                specified requirements
+  --tester-run=[PATH]           Run a test item defined by PATH
+  --tester-vg=[PATH]            Run test scripts in specified path under
+                                valgrind
+  --tester-gdb=[PATH]           Run test scripts in specified path under gdb
+
+  --trc-db=<filename>           TRC database to be used
+  --trc-tag=<TAG>               Tag to get specific expected results
+  --trc-html=<filename>         Name of the file for HTML report
+  --trc-brief-html=<filename>   Name of the file for brief HTML report
+  --trc-txt=<filename>          Name of the file for text report
+                                (by default, it is generated to stdout)
+  --trc-quiet                   Do not output total statistics to stdout
+  --trc-update                  Update TRC database
+  --trc-init                    Initialize TRC database (be careful,
+                                TRC database file will be rewritten)
+
+  --vg-engine                   Run RCF, Configurator, Logger and Tester under
+                                valgrind (without by default)
+  --vg-cs                       Run Configurator under valgrind
+  --vg-logger                   Run Logger under valgrind (without by default)
+  --vg-rcf                      Run RCF under valgrind (without by default)
+                                (without by default)
+  --vg-tester                   Run Tester under valgrind (without by default)
+  
+EOF
 }
 
 exit_with_log()
