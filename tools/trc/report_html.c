@@ -369,7 +369,7 @@ static const char * const trc_test_exp_got_row =
 "      <TD>\n"
 "        <P>%s</P>\n"
 "      </TD>\n"
-"      <TD>n"
+"      <TD>"
 "        <P>%s</P>\n"
 "      </TD>\n"
 "    </TR>\n";
