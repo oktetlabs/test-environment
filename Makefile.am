@@ -98,7 +98,7 @@ suite:
 	        TE_INSTALL=$${TE_INSTALL} \
 	        TE_BASE=$${TE_BASE} \
 	        TE_CFLAGS="-Wall -W -O0 -ggdb -I$(srcdir)/include \
-	                   -I$${TE_INSTALL}/$(host)/include \
+	                   -I$${TE_INSTALL}/$(host)/include" \
 	        TE_LDFLAGS="-L$${TE_INSTALL}/$(host)/lib" \
 	        eval $${SOURCES}/configure '-q --prefix=$${TE_INSTALL_SUITE}' \
 	        || exit 1 ; \
