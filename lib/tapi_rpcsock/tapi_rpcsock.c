@@ -1264,6 +1264,67 @@ rpc_recv_gen(rcf_rpc_server *handle,
     RETVAL_VAL(out.retval, recv);
 }
 
+ssize_t 
+rpc_wsa_recv_ex(rcf_rpc_server *handle,
+                int s, void *buf, size_t len, 
+                rpc_send_recv_flags *flags, size_t rbuflen)
+{
+    rcf_rpc_op            op;
+    tarpc_wsa_recv_ex_in  in;
+    tarpc_wsa_recv_ex_out out;
+    
+    rpc_send_recv_flags in_flags = flags == NULL ? 0 : *flags;
+
+    if (handle == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        return -1;
+    }
+
+    op = handle->op;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (buf != NULL && len > rbuflen)
+    {
+        handle->_errno = TE_RC(TE_RCF, EINVAL);
+        return -1;
+    }
+
+    in.fd = s;
+    in.len = len;
+    if (buf != NULL && handle->op != RCF_RPC_WAIT)
+    {
+        in.buf.buf_len = rbuflen;
+        in.buf.buf_val = buf;
+    }
+    if (flags != NULL && handle->op != RCF_RPC_WAIT)
+    {
+        in.flags.flags_len = 1;
+        in.flags.flags_val = flags;
+    }
+
+    rcf_rpc_call(handle, _wsa_recv_ex, 
+                 &in, (xdrproc_t)xdr_tarpc_wsa_recv_ex_in,
+                 &out, (xdrproc_t)xdr_tarpc_wsa_recv_ex_out);
+
+    if (RPC_CALL_OK)
+    {
+        if (buf != NULL && out.buf.buf_val != NULL)
+            memcpy(buf, out.buf.buf_val, out.buf.buf_len);
+    }
+
+    RING("RPC (%s,%s)%s: WSARecvEx(%d, %p[%u], %x (%u->%u), %s) -> %d (%s)",
+         handle->ta, handle->name, rpcop2str(op),
+         s, buf, rbuflen, len, 
+         flags, send_recv_flags_rpc2str(in_flags), 
+         send_recv_flags_rpc2str(flags == NULL ? 0 : *flags),
+         out.retval, errno_rpc2str(RPC_ERRNO(handle)));
+
+    RETVAL_VAL(out.retval, wsa_recv_ex);
+}                
+
 int
 rpc_shutdown(rcf_rpc_server *handle, int s, rpc_shut_how how)
 {

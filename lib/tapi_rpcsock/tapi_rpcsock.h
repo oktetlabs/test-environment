@@ -175,6 +175,12 @@ extern ssize_t rpc_recv_gen(rcf_rpc_server *handle,
                             rpc_send_recv_flags flags,
                             size_t rbuflen);
 
+/* WSARecvEx() */
+extern ssize_t rpc_wsa_recv_ex(rcf_rpc_server *handle,
+                               int s, void *buf, size_t len, 
+                               rpc_send_recv_flags *flags,
+                               size_t rbuflen);
+
 static inline ssize_t
 rpc_recv(rcf_rpc_server *handle,
          int s, void *buf, size_t len, rpc_send_recv_flags flags)

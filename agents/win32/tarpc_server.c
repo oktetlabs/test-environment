@@ -1015,7 +1015,7 @@ TARPC_FUNC(recvmsg,
 
 /*------------------------------ WSARecvEx() ------------------------------*/
 
-TARPC_FUNC(wsarecv_ex,  
+TARPC_FUNC(wsa_recv_ex,  
 {
     COPY_ARG(buf);
     COPY_ARG(flags);

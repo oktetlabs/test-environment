@@ -351,7 +351,7 @@ struct tarpc_recv_out {
 
 /* WSARecvEx() */
 
-struct tarpc_wsarecv_ex_in {
+struct tarpc_wsa_recv_ex_in {
     struct tarpc_in_arg common;
 
     int                 fd;       /**< TA-local socket */
@@ -360,13 +360,12 @@ struct tarpc_wsarecv_ex_in {
     int                 flags<>;  /**< TA-independent flags */
 };
 
-struct tarpc_wsarecv_ex_out {
+struct tarpc_wsa_recv_ex_out {
     struct tarpc_out_arg common;
 
     tarpc_ssize_t        retval;  /**< Returned length */
 
-    unsigned char        buf<>;   /**< Returned buffer with received 
-                                       data */
+    unsigned char        buf<>;   /**< Returned buffer with received data */
     int                  flags<>; /**< TA-independent flags */
 };
 
@@ -1940,7 +1939,6 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(create_overlapped)
         RPC_DEF(delete_overlapped)
 
-        RPC_DEF(wsarecv_ex)
         RPC_DEF(connect_ex)
         RPC_DEF(wsa_accept)
         RPC_DEF(accept_ex)
@@ -1952,6 +1950,7 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(completion_callback)
         RPC_DEF(wsa_send)
         RPC_DEF(wsa_recv)
+        RPC_DEF(wsa_recv_ex)
         RPC_DEF(get_overlapped_result)
         RPC_DEF(wait_multiple_events)
         
