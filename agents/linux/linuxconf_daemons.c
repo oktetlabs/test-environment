@@ -2558,6 +2558,41 @@ RCF_PCH_CFG_NODE_RW(node_ds_smtp, "smtp",
                     &node_ds_smtp_server, NULL,
                     ds_smtp_get, ds_smtp_set);
 
+/**
+ * Flush the current SMTP server's queue, so that
+ * all messages be delivered instantly.
+ * Intended to be called via RPC.
+ */
+void
+flush_smtp_server_queue(void)
+{
+    int rc = 0;
+    if (smtp_current == NULL)
+        ERROR("No SMTP server running");
+    else if (strcmp(smtp_current, "postfix") == 0)
+    {
+        rc = ta_system("/etc/init.d/postfix flush");
+    }
+    else if (strcmp(smtp_current, "qmail") == 0)
+    {
+        rc = ta_system("killall -ALRM qmail-send");
+    }
+    else if (strcmp(smtp_current, "exim") == 0 ||
+             strcmp(smtp_current, "sendmail") == 0)
+    {
+        char tmp[80];
+        sprintf(tmp, "killall -HUP %s", smtp_current_daemon);
+        rc = ta_system(tmp);
+    }
+    else
+    {
+        WARN("Flushing not implemented for %s", smtp_current);
+    }
+    if (rc)
+        ERROR("Flushing failed with code %d", rc);
+}
+
+
 /** 
  * Initialize SMTP-related variables. 
  *
