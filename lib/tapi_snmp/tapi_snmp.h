@@ -300,15 +300,15 @@ extern int tapi_snmp_set(const char *ta, int sid, int csap_id,
  *                      message (OUT), may be zero if not need.
  * @param common_index  Common index part of OID, which should be concatened
  *                      to all varbind's OIDs below; may be NULL. 
- * @param var_binds     Begin of argument ellipsis, which is sequence of 
- *                      pointers to varbinds, ended by NULL.
+ * @param ...           Sequence of pointers to varbinds, ended by NULL.
+ *                      Passed pointers are desired as 'const',
+ *                      i.e. OID and data are not changed.
  * 
  * @return zero on success or error code.
  */
 extern int tapi_snmp_set_row(const char *ta, int sid, int csap_id, 
                              int *errstat, int *errindex,
-                             const tapi_snmp_oid_t *common_index,
-                             const tapi_snmp_varbind_t *var_binds, ...);
+                             const tapi_snmp_oid_t *common_index, ...);
 
 
 /**

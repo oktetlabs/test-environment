@@ -797,6 +797,57 @@ tapi_snmp_set(const char *ta, int sid, int csap_id,
     return TE_RC(TE_TAPI, rc);
 }
 
+
+struct tapi_vb_list {
+    const tapi_snmp_varbind_t *vb;
+    struct tapi_vb_list *next;
+};
+
+
+int 
+tapi_snmp_set_row(const char *ta, int sid, int csap_id, 
+                 int *errstat, int *errindex,
+                 const tapi_snmp_oid_t *common_index, ...)
+{
+    va_list ap;
+    int num_vars = 0;
+    int i;
+    struct tapi_vb_list *vbl_head = NULL; 
+    const tapi_snmp_varbind_t *vb;
+    tapi_snmp_varbind_t *vb_array;
+
+    va_start(ap, common_index);
+    do {
+        vb = va_arg(ap, const tapi_snmp_varbind_t *);
+        if (vb)
+        {
+            struct tapi_vb_list *new_vbl = calloc(1, sizeof(struct tapi_vb_list));
+            new_vbl->next = vbl_head;
+            new_vbl->vb = vb;
+            num_vars ++;
+        }
+    } while (vb);
+
+    if (!num_vars)
+        return 0; /* ??? */
+
+    vb_array = calloc(num_vars, sizeof(tapi_snmp_varbind_t)); 
+
+    i = num_vars; 
+    do {
+        struct tapi_vb_list *tail = vbl_head->next;
+        i--; 
+        vb_array[i] = *(vbl_head->vb);
+        free(vbl_head);
+        vbl_head = tail;
+        if (common_index)
+            tapi_snmp_cat_oid(&(vb_array[i].name), common_index);
+    } while (i > 0); 
+
+    return tapi_snmp_set(ta, sid, csap_id, vb_array, num_vars, errstat, errindex);
+}
+
+
 /* See description in tapi_snmp.h */
 int
 tapi_snmp_set_integer(const char *ta, int sid, int csap_id, 
