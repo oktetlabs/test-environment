@@ -1,9 +1,0 @@
-#eth get_any
-#eth eth2 eth_serial1 eth_serial2
-#bridge send0 recv1
-#bridge send0
-%suite selftad
-%package snmp
-
-snmptest ta="Agt_A" snmp_agt="192.168.37.14" mib_name="SNMPv2-MIB.txt" mib_object="sysDescr" snmp_version=2
-
