@@ -59,6 +59,7 @@
 #if HAVE_AIO_H
 #include <aio.h>
 #endif
+#include <pwd.h>
 #include <fcntl.h>
 #include <pthread.h>
 #include <sys/stat.h>
@@ -1602,7 +1603,9 @@ TARPC_FUNC(setsockopt, {},
             default:
                 ERROR("incorrect option type %d is received",
                       in->optval.optval_val[0].opttype);
-                opt = NULL;
+                out->common._errno = TE_RC(TE_TA_LINUX, EINVAL);
+                out->retval = -1;
+                goto finish;
                 break;
         }
         INIT_CHECKED_ARG(opt, optlen, 0);
@@ -1610,6 +1613,8 @@ TARPC_FUNC(setsockopt, {},
                                      sockopt_rpc2h(in->optname),
                                      opt, in->optlen));
     }
+    finish:
+    ;
 }
 )
 
@@ -2713,6 +2718,51 @@ TARPC_FUNC(popen, {},
 
 /*-------------- fileno() --------------------------------*/
 TARPC_FUNC(fileno, {}, { MAKE_CALL(out->fd = func(in->mem_ptr)); })
+
+/*-------------- getpwnam() --------------------------------*/
+#define PUT_STR(_field) \
+        do {                                                            \
+            out->passwd._field._field##_val = strdup(pw->pw_##_field);  \
+            if (out->passwd._field._field##_val == NULL)                \
+            {                                                           \
+                out->common._errno = TE_RC(TE_TA_LINUX, ENOMEM);        \
+                goto finish;                                            \
+            }                                                           \
+            out->passwd._field._field##_len =                           \
+                strlen(out->passwd._field._field##_val) + 1;            \
+        } while (0)
+TARPC_FUNC(getpwnam, {}, 
+{ 
+    struct passwd *pw;
+    
+    MAKE_CALL(pw = (struct passwd *)func((int)(in->name.name_val)));
+    
+    if (pw != NULL)
+    {
+            
+        PUT_STR(name);
+        PUT_STR(passwd);
+        out->passwd.uid = pw->pw_uid;
+        out->passwd.gid = pw->pw_gid;
+        PUT_STR(gecos);
+        PUT_STR(dir);
+        PUT_STR(shell);
+
+    } 
+    finish:
+    if (out->common._errno != 0)
+    {
+        free(out->passwd.name.name_val);
+        free(out->passwd.passwd.passwd_val);
+        free(out->passwd.gecos.gecos_val);
+        free(out->passwd.dir.dir_val);
+        free(out->passwd.shell.shell_val);
+        memset(&(out->passwd), 0, sizeof(out->passwd));
+    }
+    ;
+}
+)
+#undef PUT_STR
 
 /*-------------- getuid() --------------------------------*/
 TARPC_FUNC(getuid, {}, { MAKE_CALL(out->uid = func(0)); })
