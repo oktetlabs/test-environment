@@ -51,6 +51,11 @@
 #include "win32_rpc.h"
 #include "ta_rpc_log.h"
 
+#define PRINT(msg...) \
+    do {                                                \
+       printf(msg); printf("\n"); fflush(stdout);       \
+    } while (0)
+
 /* Microsoft extended defines */
 #define WSAID_ACCEPTEX \
     {0xb5367df1,0xcbac,0x11cf,{0x95,0xca,0x00,0x80,0x5f,0x48,0xa1,0x92}}
@@ -119,8 +124,51 @@ typedef int (*LPFN_WSARECVMSG)(SOCKET s,
 
 extern int ta_pid;
 extern sigset_t rpcs_received_signals;
-
 extern HINSTANCE ta_hinstance;
+
+static LPFN_CONNECTEX            pf_connect_ex = NULL;
+static LPFN_DISCONNECTEX         pf_disconnect_ex = NULL;
+static LPFN_ACCEPTEX             pf_accept_ex = NULL;
+static LPFN_GETACCEPTEXSOCKADDRS pf_get_accept_ex_sockaddrs = NULL;
+static LPFN_TRANSMITFILE         pf_transmit_file = NULL;
+static LPFN_WSARECVMSG           pf_wsa_recvmsg = NULL;
+
+void 
+wsa_func_handles_discover()
+{
+    GUID  guid_connect_ex = WSAID_CONNECTEX;
+    GUID  guid_disconnect_ex = WSAID_DISCONNECTEX;
+    GUID  guid_accept_ex = WSAID_ACCEPTEX;
+    GUID  guid_get_accept_ex_sockaddrs = WSAID_GETACCEPTEXSOCKADDRS;
+    GUID  guid_transmit_file = WSAID_TRANSMITFILE;
+    GUID  guid_wsa_recvmsg = WSAID_WSARECVMSG;
+    DWORD bytes_returned;
+    int   s = socket(AF_INET, SOCK_DGRAM, 0);
+    
+#define DISCOVER_FUNC(_func, _func_cup) \
+    do {                                                                \
+        if (WSAIoctl(s, SIO_GET_EXTENSION_FUNCTION_POINTER,             \
+                     (LPVOID)&guid_##_func, sizeof(GUID),               \
+                     (LPVOID)&pf_##_func, sizeof(LPFN_##_func_cup),     \
+                      &bytes_returned, NULL, NULL) == SOCKET_ERROR)     \
+        {                                                               \
+            int _errno = WSAGetLastError();                             \
+            PRINT("Cannot retrieve %s pointer via WSAIoctl();"          \
+                 " errno %d", #_func, _errno);                          \
+        }                                                               \
+    } while (0)
+
+    DISCOVER_FUNC(connect_ex, CONNECTEX);
+    DISCOVER_FUNC(disconnect_ex, DISCONNECTEX);
+    DISCOVER_FUNC(accept_ex, ACCEPTEX);
+    DISCOVER_FUNC(get_accept_ex_sockaddrs, GETACCEPTEXSOCKADDRS);
+    DISCOVER_FUNC(transmit_file, TRANSMITFILE);
+    DISCOVER_FUNC(wsa_recvmsg, WSARECVMSG);
+    
+#undef DISCOVER_FUNC    
+    
+    closesocket(s);
+}
 
 static int wsaerr2errno(int wsaerr);
 
@@ -716,20 +764,7 @@ TARPC_FUNC(connect_ex,
     COPY_ARG(len_sent);
 },
 {
-    LPFN_CONNECTEX   pf_connect_ex = NULL;
-    GUID             guid_connect_ex = WSAID_CONNECTEX;
-    DWORD            bytes_returned;
-
     PREPARE_ADDR(in->addr, 0);
-    if (WSAIoctl(in->fd, SIO_GET_EXTENSION_FUNCTION_POINTER,
-                 (LPVOID)&guid_connect_ex, sizeof(GUID),
-                 (LPVOID)&pf_connect_ex, sizeof(LPFN_CONNECTEX),
-                  &bytes_returned, NULL, NULL) == SOCKET_ERROR)
-    {
-        out->retval = 0;
-        ERROR("WSAIoctl() failed");
-        goto finish;
-    }
     if (in->overlapped != 0)
     {
         rpc_overlapped *overlapped = (rpc_overlapped *)(in->overlapped);
@@ -763,8 +798,6 @@ TARPC_FUNC(connect_ex,
                                                           len_sent_val),
                                        NULL));
     }
-    finish:
-    ;
 }
 )
 
@@ -772,27 +805,12 @@ TARPC_FUNC(connect_ex,
 
 TARPC_FUNC(disconnect_ex, {},
 {
-    LPFN_DISCONNECTEX   pf_disconnect_ex = NULL;
-    GUID                guid_disconnect_ex = WSAID_DISCONNECTEX;
-    DWORD               bytes_returned;
-    LPWSAOVERLAPPED     overlapped = NULL;
+    LPWSAOVERLAPPED overlapped = NULL;
 
-    if (WSAIoctl(in->fd, SIO_GET_EXTENSION_FUNCTION_POINTER,
-                 (LPVOID)&guid_disconnect_ex, sizeof(GUID),
-                 (LPVOID)&pf_disconnect_ex,
-                 sizeof(LPFN_DISCONNECTEX),
-                 &bytes_returned, NULL, NULL) == SOCKET_ERROR)
-    {
-        out->retval = 0;
-        ERROR("WSAIoctl() failed");
-        goto finish;
-    }
     if (in->overlapped != 0)
         overlapped = &(((rpc_overlapped *)(in->overlapped))->overlapped);
     MAKE_CALL(out->retval = (*pf_disconnect_ex)(in->fd, overlapped,
                                 transmit_file_flags_rpc2h(in->flags), 0));
-    finish:
-    ;
 }
 )
 
@@ -909,23 +927,11 @@ TARPC_FUNC(accept_ex,
     COPY_ARG(count);
 },
 {
-    LPFN_ACCEPTEX             pf_accept_ex = NULL;
-    GUID                      guid_accept_ex = WSAID_ACCEPTEX;
-    DWORD                     bytes_returned;
-    int                       buflen;
-    rpc_overlapped           *overlapped;
-    rpc_overlapped            tmp;
+    int             buflen;
+    rpc_overlapped *overlapped;
+    rpc_overlapped  tmp;
 
     buflen = in->buflen + 2 * (sizeof(struct sockaddr_storage) + 16);
-    if (WSAIoctl(in->fd, SIO_GET_EXTENSION_FUNCTION_POINTER,
-                 (LPVOID)&guid_accept_ex, sizeof(GUID),
-                 (LPVOID)&pf_accept_ex, sizeof(LPFN_ACCEPTEX),
-                  &bytes_returned, NULL, NULL) == SOCKET_ERROR)
-    {
-        out->retval = 0;
-        ERROR("WSAIoctl() failed for AcceptEx");
-        goto finish;
-    }
     if (in->overlapped != 0)
     {
         overlapped = (rpc_overlapped *)(in->overlapped);
@@ -933,7 +939,7 @@ TARPC_FUNC(accept_ex,
     else
     {
         memset(&tmp, 0, sizeof(tmp));
-    overlapped = &tmp;
+        overlapped = &tmp;
     }
     if (in->buflen > 0)
     {
@@ -967,27 +973,13 @@ TARPC_FUNC(get_accept_addr,
     COPY_ARG_ADDR(raddr);
 },
 {
+    struct sockaddr *l_a = 0;
+    struct sockaddr *r_a = 0 ;
+    int               addrlen1 = 0;
+    int               addrlen2 = 0;
+
     UNUSED(list);
 
-    LPFN_GETACCEPTEXSOCKADDRS pf_get_accept_ex_sockaddrs = NULL;
-    GUID                      guid_get_accept_ex_sockaddrs =
-                                  WSAID_GETACCEPTEXSOCKADDRS;
-    DWORD                     bytes_returned;
-    struct sockaddr         *l_a = 0;
-    struct sockaddr         *r_a = 0 ;
-    int                       addrlen1 = 0;
-    int                       addrlen2 = 0;
-
-    if (WSAIoctl(in->fd, SIO_GET_EXTENSION_FUNCTION_POINTER,
-                 (LPVOID)&guid_get_accept_ex_sockaddrs,
-                  sizeof(GUID),
-                  (LPVOID)&pf_get_accept_ex_sockaddrs,
-                  sizeof(LPFN_GETACCEPTEXSOCKADDRS),
-                  &bytes_returned, NULL, NULL))
-    {
-        ERROR("WSAIoctl() failed for GetAcceptExSockaddrs");
-        goto finish;
-    }
     (*pf_get_accept_ex_sockaddrs)(in->buf.buf_val,
                                   in->buflen,
                                   sizeof(struct sockaddr_storage) + 16,
@@ -995,8 +987,6 @@ TARPC_FUNC(get_accept_addr,
                                   &l_a, &addrlen1, &r_a, &addrlen2);
     sockaddr_h2rpc(l_a, &(out->laddr));
     sockaddr_h2rpc(r_a, &(out->raddr));
-    finish:
-    ;
 }
 )
 
@@ -1005,12 +995,9 @@ TARPC_FUNC(get_accept_addr,
 
 TARPC_FUNC(transmit_file, {},
 {
-    LPFN_TRANSMITFILE         pf_transmit_file = NULL;
-    GUID                      guid_transmit_file = WSAID_TRANSMITFILE;
-    DWORD                     bytes_returned;
-    TRANSMIT_FILE_BUFFERS     transmit_buffers;
-    DWORD                     flags;
-    HANDLE                    file = NULL;
+    TRANSMIT_FILE_BUFFERS transmit_buffers;
+    DWORD                 flags;
+    HANDLE                file = NULL;
 
     rpc_overlapped *overlapped = NULL;
 
@@ -1041,16 +1028,6 @@ TARPC_FUNC(transmit_file, {},
         overlapped->bufnum = 2;
     }
 
-    if (WSAIoctl(in->fd, SIO_GET_EXTENSION_FUNCTION_POINTER,
-                 (LPVOID)&guid_transmit_file, sizeof(GUID),
-                 (LPVOID)&pf_transmit_file,
-                 sizeof(LPFN_TRANSMITFILE),
-                 &bytes_returned, NULL, NULL) == SOCKET_ERROR)
-    {
-        out->retval = 0;
-        ERROR("WSAIoctl() failed");
-        goto finish;
-    }
     flags = transmit_file_flags_rpc2h(in->flags);
     if (in->file.file_len != 0)
         file = CreateFile(in->file.file_val, FILE_READ_DATA,
@@ -1177,23 +1154,10 @@ TARPC_FUNC(recvmsg,
     COPY_ARG(msg);
 },
 {
-    LPFN_WSARECVMSG           pf_wsa_recvmsg = NULL;
-    GUID                      guid_wsa_recvmsg = WSAID_WSARECVMSG;
-    DWORD                     bytes_returned;
-    WSABUF                    buf_arr[RCF_RPC_MAX_IOVEC];
-    unsigned int              i;
+    WSABUF       buf_arr[RCF_RPC_MAX_IOVEC];
+    unsigned int i;
 
     memset(buf_arr, 0, sizeof(buf_arr));
-    if (WSAIoctl(in->s, SIO_GET_EXTENSION_FUNCTION_POINTER,
-                 (LPVOID)&guid_wsa_recvmsg, sizeof(GUID),
-                 (LPVOID)&pf_wsa_recvmsg,
-                 sizeof(LPFN_WSARECVMSG),
-                 &bytes_returned, NULL, NULL) == SOCKET_ERROR)
-    {
-        out->retval = -1;
-        ERROR("WSAIoctl() failed");
-        goto finish;
-    }
     if (out->msg.msg_val == NULL)
     {
         MAKE_CALL(out->retval = (*pf_wsa_recvmsg)(in->s, NULL, NULL,
@@ -1256,8 +1220,6 @@ TARPC_FUNC(recvmsg,
         sockaddr_h2rpc(a, &(rpc_msg->msg_name));
         rpc_msg->msg_namelen = msg.namelen;
     }
-    finish:
-    ;
 }
 )
 
@@ -1733,11 +1695,9 @@ TARPC_FUNC(ioctl,
 
     if (in->access == IOCTL_WR)
         INIT_CHECKED_ARG(req, reqlen, 0);
-    printf("we are making the call\n");
     MAKE_CALL(out->retval = WSAIoctl(in->s, ioctl_rpc2h(in->code), req,
                                      reqlen, req, reqlen, &ret_num,
                                      NULL, NULL));
-    printf("we've made the call\n");
     if (req != NULL)
     {
         switch(out->req.req_val[0].type)
@@ -1757,7 +1717,6 @@ TARPC_FUNC(ioctl,
                break;
         }
     }
-    printf("all is well with agent");
     finish:
     ;
 }
@@ -2808,7 +2767,7 @@ LRESULT CALLBACK
 message_callback(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
     if (uMsg > WM_USER)
-        printf("Unexpected message %d is received\n", uMsg - WM_USER);
+        PRINT("Unexpected message %d is received", uMsg - WM_USER);
 
     return DefWindowProc(hwnd, uMsg, wParam, lParam);
 }
