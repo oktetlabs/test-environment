@@ -16,14 +16,6 @@ usage()
     echo Usage: dispatcher.sh ['<'generic options'>'] [['<'test options'>' tests ]...
     echo -e Generic options:
     echo -e '  '-q\\t\\t\\t\\t'Suppress part of output messages'
-    echo -e '  '--opts='<filename>'\\t\\t'Get additional command-line options from file'
-    echo -e '  '--live-log\\t\\t\\tRun RGT in live mode
-    echo
-    echo -e '  '--no-builder\\t\\t\\t'Do not build TE'
-    echo -e '  '--no-tester\\t\\t\\t'Do not run Tester'
-    echo -e '  '--no-cs\\t\\t\\t'Do not run Configurator'
-    echo -e '  '--no-rcf\\t\\t\\t'Do not run RCF'
-    echo -e '  '--no-run\\t\\t\\t'Do not run Logger, RCF, Configurator and Tester'
     echo
     echo -e '  '--conf-dir='<directory>'\\t'specify configuration file directory'
     echo -e \\t\\t\\t\\t'(${TE_BASE}/conf or '.' by default)'
@@ -31,12 +23,14 @@ usage()
     echo -e '    In configuration files options below <filename> is full name of the'
     echo -e '    configuration file or name of the file in the configuration directory.'
     echo
-    echo -e '  '--conf-builder='<filename>'\\t'Builder config file (builder.conf by default)'
-    echo -e '  '--conf-logger='<filename>'\\t'Logger config file (logger.conf by default)'
-    echo -e '  '--conf-tester='<filename>'\\t'Tester config file (tester.conf by default)'
-    echo -e '  '--conf-cs='<filename>'\\t\\t'Configurator config file (cs.conf by default)'
-    echo -e '  '--conf-rcf='<filename>'\\t\\t'RCF config file (rcf.conf by default)'
-    echo -e '  '--conf-rgt='<filename>'\\t\\t'RGT config file (rgt.conf by default)'
+    echo -e '  --conf-builder=<filename>'\\t'Builder config file (builder.conf by default)'
+    echo -e '  --conf-cs=<filename>'\\t\\t'Configurator config file (cs.conf by default)'
+    echo -e '  --conf-logger=<filename>'\\t'Logger config file (logger.conf by default)'
+    echo -e '  --conf-rcf=<filename>'\\t\\t'RCF config file (rcf.conf by default)'
+    echo -e '  --conf-rgt=<filename>'\\t\\t'RGT config file (rgt.conf by default)'
+    echo -e '  --conf-tester=<filename>'\\t'Tester config file (tester.conf by default)'
+    echo
+    echo -e '  --cs-print-trees'\\t\\t'Print configurator trees.'
     echo
 #    echo -e '  '--storage='<string>'\\t\\tconfiguration string for the storage
 #    echo -e \\t\\t\\t\\twith data to be updated by Dispatcher
@@ -49,18 +43,20 @@ usage()
 #    echo -e '  '--log-dir='<directory>'\\t\\t'local directory for raw log (. by default)'
 #    echo -e '  '--log-online\\t\\t\\tconvert and print log on stdout during work
 #    echo    
-    echo -e '  '--lock-dir='<directory>'\\t'lock file directory (/tmp/te/lock by default)'
+    echo -e '  --live-log'\\t\\t\\t'Run RGT in live mode'
     echo
-    echo -e '  '--vg-rcf\\t\\t\\t'Run RCF under valgrind (without by default)'
-    echo -e '  '--vg-cs\\t\\t\\t'Run Configurator under valgrind'
-    echo -e \\t\\t\\t\\t'(without by default)'
-    echo -e '  '--vg-logger\\t\\t\\t'Run Logger under valgrind (without by default)'
-    echo -e '  '--vg-tester\\t\\t\\t'Run Tester under valgrind (without by default)'
-    echo -e '  '--vg-engine\\t\\t\\t'Run RCF, Configurator, Logger and Tester under'
-    echo -e \\t\\t\\t\\t'valgrind (without by default)'
+    echo -e '  --lock-dir=<directory>'\\t'lock file directory (/tmp/te/lock by default)'
     echo
-    echo -e '  '--script-tester\\t\\t'Use script Tester with text configuration files'
-    echo -e '  '--vg-tests\\t\\t\\t'Run tests under valgrind (without by default)'
+    echo -e '  --no-builder'\\t\\t\\t'Do not build TE'
+    echo -e '  --no-tester'\\t\\t\\t'Do not run Tester'
+    echo -e '  --no-cs'\\t\\t\\t'Do not run Configurator'
+    echo -e '  --no-rcf'\\t\\t\\t'Do not run RCF'
+    echo -e '  --no-run'\\t\\t\\t'Do not run Logger, RCF, Configurator and Tester'
+    echo
+    echo -e '  --opts=<filename>'\\t\\t'Get additional command-line options from file'
+    echo
+    echo -e '  --script-tester'\\t\\t'Use script Tester with text configuration files'
+    echo -e '  --vg-tests'\\t\\t\\t'Run tests under valgrind (without by default)'
     echo -e \\t\\t\\t\\t'May be used with script Tester only'
     echo
     echo -e '  --tester-fake'\\t\\t\\t'Do not run any test scripts, just emulate'
@@ -88,13 +84,21 @@ usage()
     echo -e '  --trc-db=<filename>'\\t\\t'TRC database to be used'
     echo -e '  --trc-tag=<TAG>'\\t\\t'Tag to get specific expected results'
     echo -e '  --trc-html=<filename>'\\t\\t'Name of the file for HTML report'
+    echo -e '  --trc-brief-html=<filename>'\\t'Name of the file for brief HTML report'
     echo -e '  --trc-txt=<filename>'\\t\\t'Name of the file for text report'
     echo -e \\t\\t\\t\\t'(by default, it is generated to stdout)'
     echo -e '  --trc-quiet'\\t\\t\\t'Do not output total statistics to stdout'
     echo -e '  --trc-update'\\t\\t\\t'Update TRC database'
     echo -e '  --trc-init'\\t\\t\\t'Initialize TRC database (be careful,'
     echo -e \\t\\t\\t\\t'TRC database file will be rewritten)'
-    echo -e '  --cs-print-trees'\\t\\t'Print configurator trees.'
+    echo
+    echo -e '  --vg-engine'\\t\\t\\t'Run RCF, Configurator, Logger and Tester under'
+    echo -e \\t\\t\\t\\t'valgrind (without by default)'
+    echo -e '  --vg-cs'\\t\\t\\t'Run Configurator under valgrind'
+    echo -e '  --vg-logger'\\t\\t\\t'Run Logger under valgrind (without by default)'
+    echo -e '  --vg-rcf'\\t\\t\\t'Run RCF under valgrind (without by default)'
+    echo -e \\t\\t\\t\\t'(without by default)'
+    echo -e '  --vg-tester'\\t\\t\\t'Run Tester under valgrind (without by default)'
     echo
 }
 
