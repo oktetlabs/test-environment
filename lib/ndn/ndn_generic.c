@@ -395,6 +395,7 @@ ndn_match_data_units(const asn_value *pattern, asn_value *pkt_pdu,
     const asn_value  *du_val;
     const asn_type   *val_type;
     const asn_type   *du_type;
+    const asn_type   *du_sub_type;
     const char       *choice_ptr = NULL;
 
     int      rc = 0;
@@ -418,7 +419,15 @@ ndn_match_data_units(const asn_value *pattern, asn_value *pkt_pdu,
     if (rc)
         return rc;
 
-    plain_syntax = du_type->sp.named_entries[0].type->syntax;
+    if (du_type == NULL || 
+        du_type->sp.named_entries == NULL || 
+        (du_sub_type = du_type->sp.named_entries[0].type) == NULL)
+    {
+        WARN("%s: Wrong type of subleaf passed", __FUNCTION__);
+        return EASNGENERAL;
+    }
+
+    plain_syntax = du_sub_type->syntax;
 
     switch (plain_syntax)
     {
