@@ -4016,6 +4016,7 @@ rpc_ioctl(rcf_rpc_server *handle,
                              (unsigned char)((struct arpreq *)arg)->arp_ha.sa_data[4],
                              (unsigned char)((struct arpreq *)arg)->arp_ha.sa_data[5]);
                     {
+                         memset(flags, 0, sizeof(flags));
                          if (arp_flags & ATF_COM)
                              strcat(flags, "C");
                          if (arp_flags & ATF_PERM)
@@ -4028,6 +4029,8 @@ rpc_ioctl(rcf_rpc_server *handle,
                              strcat(flags, "!");
                          if (arp_flags & ATF_USETRAILERS)
                              strcat(flags, "T");
+                         if (!(arp_flags & ATF_COM) && !(arp_flags & ATF_PUBL))
+                             strcat(flags, "(incomplete)");
                     }
                     snprintf(arpreq_buf + strlen(arpreq_buf),
                              sizeof(arpreq_buf) - strlen(arpreq_buf),
