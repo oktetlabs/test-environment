@@ -98,7 +98,7 @@ main (int argc, char *argv[])
         if (current != buffer)                              \
         {                                                   \
             *current = '\0';                                \
-            LGR_MESSAGE(TE_LL_WARN, argv[1], "%s", buffer); \
+            LGR_MESSAGE(TE_LL_WARN, argv[2], "%s", buffer); \
             current_timeout = -1;                           \
             current = buffer;                               \
         }                                                   \
