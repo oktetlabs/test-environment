@@ -58,30 +58,40 @@ usage()
     echo -e \\t\\t\\t\\t'valgrind (without by default)'
     echo
     echo -e '  '--script-tester\\t\\t'Use script Tester with text configuration files'
-    echo -e '  '--vg-tests\\t\\t\\t'Run tests under valgrind (without by default).'
-    echo -e \\t\\t\\t\\t'May be used with script Tester only.'
+    echo -e '  '--vg-tests\\t\\t\\t'Run tests under valgrind (without by default)'
+    echo -e \\t\\t\\t\\t'May be used with script Tester only'
     echo
-    echo -e '  --tester-fake'\\t\\t\\t'Do not run any test scripts, just emulate.'
-    echo -e \\t\\t\\t\\t'Usefull for configuration debugging.'
+    echo -e '  --tester-fake'\\t\\t\\t'Do not run any test scripts, just emulate'
+    echo -e \\t\\t\\t\\t'Usefull for configuration debugging'
     echo -e '  --tester-nobuild'\\t\\t'Do not build Test Suite sources'
-    echo -e '  --tester-no-cs'\\t\\t'Do not interact with Configurator.'
-    echo -e '  --tester-nocfgtrack'\\t\\t'Do not track configuration changes.'
-    echo -e '  --tester-nologues'\\t\\t'Disable prologues and epilogues globally.'
+    echo -e '  --tester-no-cs'\\t\\t'Do not interact with Configurator'
+    echo -e '  --tester-nocfgtrack'\\t\\t'Do not track configuration changes'
+    echo -e '  --tester-nologues'\\t\\t'Disable prologues and epilogues globally'
 #    echo -e '  --tester-norandom'\\t\\t'Force to run all tests in defined order as well'
 #    echo -e \\t\\t\\t\\t'as to get values of all arguments in defined'
 #    echo -e \\t\\t\\t\\t'order.  Usefull for debugging."'
 #    echo -e '  --tester-nosimultaneous'\\t'Force to run all tests in series.'
 #    echo -e \\t\\t\\t\\t'Usefull for debugging.'
-    echo -e '  --tester-suite=[NAME:PATH]'\\t'Specify location of Test Sutie sources.'
+    echo -e '  --tester-suite=[NAME:PATH]'\\t'Specify location of Test Sutie sources'
     echo -e '  --tester-req=[REQ|!REQ]'\\t'Requirement to be tested (or excluded,'
-    echo -e \\t\\t\\t\\t'if its first symbol is !).'
+    echo -e \\t\\t\\t\\t'if its first symbol is !)'
     echo -e '  --tester-quietskip'\\t\\t'Quietly skip tests which do not meet'
-    echo -e \\t\\t\\t\\t'specified requirements.'
-    echo -e '  --tester-run=[PATH]'\\t\\t'Run a test item defined by PATH.'
+    echo -e \\t\\t\\t\\t'specified requirements'
+    echo -e '  --tester-run=[PATH]'\\t\\t'Run a test item defined by PATH'
     echo -e '  --tester-vg=[PATH]'\\t\\t'Run test scripts in specified path under'
-    echo -e \\t\\t\\t\\t'valgrind.'
-    echo -e '  --tester-gdb=[PATH]'\\t\\t'Run test scripts in specified path under gdb.'
+    echo -e \\t\\t\\t\\t'valgrind'
+    echo -e '  --tester-gdb=[PATH]'\\t\\t'Run test scripts in specified path under gdb'
 
+    echo
+    echo -e '  --trc-db=<filename>'\\t\\t'TRC database to be used'
+    echo -e '  --trc-tag=<TAG>'\\t\\t'Tag to get specific expected results'
+    echo -e '  --trc-html=<filename>'\\t\\t'Name of the file for HTML report'
+    echo -e '  --trc-txt=<filename>'\\t\\t'Name of the file for text report'
+    echo -e \\t\\t\\t\\t'(by default, it is generated to stdout)'
+    echo -e '  --trc-quiet'\\t\\t\\t'Do not output total statistics to stdout'
+    echo -e '  --trc-update'\\t\\t\\t'Update TRC database'
+    echo -e '  --trc-init'\\t\\t\\t'Initialize TRC database (be careful,'
+    echo -e \\t\\t\\t\\t'TRC database file will be rewritten)'
     echo
 }
 
@@ -104,6 +114,8 @@ QUIET=
 
 # No additional Tester options by default
 TESTER_OPTS=
+# No additional TRV options by default
+TRC_OPTS=
 
 LIVE_LOG=
 
@@ -227,6 +239,15 @@ process_opts()
             --script-tester) TESTER_EXT=".sh" ;;
 
             --tester-*) TESTER_OPTS="${TESTER_OPTS} --${1#--tester-}" ;;
+
+            --trc-db=*) 
+                TRC_DB="${1#--trc-db=}" ;
+                if test "${TRC_DB:0:1}" != "/" ; then 
+                    TRC_DB="${CONF_DIR}/${TRC_DB}" ;
+                fi ;
+                TRC_OPTS="${TRC_OPTS} --db=${TRC_DB}" ;
+                ;;
+            --trc-*) TRC_OPTS="${TRC_OPTS} --${1#--trc-}" ;;
 
             *)  echo "Unknown option: $1" >&2;
                 usage ;
@@ -553,6 +574,11 @@ if test $? -eq 0 ; then
     if test $? -eq 0 ; then
         rm -f ${TE_LOG_DIR}/tmp_raw_log.xml
     fi
+fi
+
+# Run TRC, if any its option is provided
+if test -n "${TRC_OPTS}" ; then
+    te_trc.sh ${TRC_OPTS} tmp_raw_log
 fi
 
 rm -f ${LOCK_DIR}/ds
