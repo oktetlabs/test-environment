@@ -745,7 +745,6 @@ struct tarpc_close_event_in {
 };
 typedef struct tarpc_int_retval_out tarpc_close_event_out;
 
-
 /* WSAResetEvent() */
 struct tarpc_reset_event_in {
     struct tarpc_in_arg common;
@@ -753,6 +752,127 @@ struct tarpc_reset_event_in {
 };
 
 typedef struct tarpc_int_retval_out tarpc_reset_event_out;
+
+/* WSASetEvent() */
+struct tarpc_set_event_in {
+    struct tarpc_in_arg common;
+    tarpc_wsaevent      hevent;
+};
+
+typedef struct tarpc_int_retval_out tarpc_set_event_out;
+
+/* WSAAddressToString */
+struct tarpc_wsa_address_to_string_in {
+    struct tarpc_in_arg  common;
+    struct tarpc_sa      addr;
+    tarpc_size_t         addrlen;
+    uint8_t              info<>; /**< Protocol Info */
+    char                 addrstr<>;
+    tarpc_size_t         addrstr_len<>;
+};
+
+struct tarpc_wsa_address_to_string_out {
+    struct tarpc_out_arg common;
+    tarpc_int            retval;
+    uint8_t              addrstr<>;
+    tarpc_socklen_t      addrstr_len<>;
+};
+
+typedef uint32_t    tarpc_handle;
+
+/* WSAAsyncGetHostByAddr */
+struct tarpc_wsa_async_get_host_by_addr_in {
+    struct tarpc_in_arg  common;
+    tarpc_hwnd           hwnd;
+    tarpc_uint           wmsg;
+    char                 addr<>;
+    tarpc_size_t         addrlen;
+    tarpc_int            type;   /**< TA-independent socket type */    
+    uint64_t             buf;    /**< Buffer in TA address space */
+    tarpc_size_t         buflen;
+};
+
+struct tarpc_wsa_async_get_host_by_addr_out {
+    struct tarpc_out_arg common;
+    tarpc_handle         retval;
+};
+
+/* WSAAsyncGetHostByName */
+struct tarpc_wsa_async_get_host_by_name_in {
+    struct tarpc_in_arg  common;
+    tarpc_hwnd           hwnd;
+    tarpc_uint           wmsg;
+    char                 name<>;
+    uint64_t             buf;    /**< Buffer in TA address space */
+    tarpc_size_t         buflen;
+};
+
+struct tarpc_wsa_async_get_host_by_name_out {
+    struct tarpc_out_arg common;
+    tarpc_handle         retval;
+};
+
+/* WSAAsyncGetProtoByName */
+struct tarpc_wsa_async_get_proto_by_name_in {
+    struct tarpc_in_arg  common;
+    tarpc_hwnd           hwnd;
+    tarpc_uint           wmsg;
+    char                 name<>;
+    uint64_t             buf;    /**< Buffer in TA address space */
+    tarpc_size_t         buflen;
+};
+
+struct tarpc_wsa_async_get_proto_by_name_out {
+    struct tarpc_out_arg common;
+    tarpc_handle         retval;
+};
+
+/* WSAAsyncGetProtoByNumber */
+struct tarpc_wsa_async_get_proto_by_number_in {
+    struct tarpc_in_arg  common;
+    tarpc_hwnd           hwnd;
+    tarpc_uint           wmsg;
+    tarpc_int            number;
+    uint64_t             buf;    /**< Buffer in TA address space */
+    tarpc_size_t         buflen;
+};
+
+struct tarpc_wsa_async_get_proto_by_number_out {
+    struct tarpc_out_arg common;
+    tarpc_handle         retval;
+};
+
+/* WSAAsyncGetServByName */
+struct tarpc_wsa_async_get_serv_by_name_in {
+    struct tarpc_in_arg  common;
+    tarpc_hwnd           hwnd;
+    tarpc_uint           wmsg;
+    char                 name<>;
+    char                 proto<>;
+    uint64_t             buf;    /**< Buffer in TA address space */
+    tarpc_size_t         buflen;
+};
+
+struct tarpc_wsa_async_get_serv_by_name_out {
+    struct tarpc_out_arg common;
+    tarpc_handle         retval;
+};
+
+/* WSAAsyncGetServByPort */
+struct tarpc_wsa_async_get_serv_by_port_in {
+    struct tarpc_in_arg  common;
+    tarpc_hwnd           hwnd;
+    tarpc_uint           wmsg;
+    tarpc_uint           port;
+    char                 proto<>;
+    uint64_t             buf;    /**< Buffer in TA address space */
+    tarpc_size_t         buflen;
+};
+
+struct tarpc_wsa_async_get_serv_by_port_out {
+    struct tarpc_out_arg common;
+    tarpc_handle         retval;
+};
 
 /* Create/delete WSAOVERLAPPED structure */
 struct tarpc_create_overlapped_in {
@@ -2173,6 +2293,7 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(get_accept_addr)
         RPC_DEF(disconnect_ex)
         RPC_DEF(reset_event)     
+        RPC_DEF(set_event)
         RPC_DEF(event_select)
         RPC_DEF(enum_network_events)
         RPC_DEF(transmit_file)
@@ -2187,6 +2308,13 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(wsa_send_disconnect)
         RPC_DEF(wsa_recv_disconnect)
         RPC_DEF(wsa_recv_msg)
+        RPC_DEF(wsa_address_to_string)
+        RPC_DEF(wsa_async_get_host_by_addr)
+        RPC_DEF(wsa_async_get_host_by_name)
+        RPC_DEF(wsa_async_get_proto_by_name)
+        RPC_DEF(wsa_async_get_proto_by_number)
+        RPC_DEF(wsa_async_get_serv_by_name)
+        RPC_DEF(wsa_async_get_serv_by_port)
 
         RPC_DEF(create_window)
         RPC_DEF(destroy_window)
