@@ -1,21 +1,38 @@
 
+#EXTRA_DIST = package.dox
+
 tetestdir=$(prefix)/@PACKAGE_NAME@/$(subdir)
 
 dist_tetest_DATA = package.xml
 
-AM_CPPFLAGS = -I$(DESTDIR)/$(prefix)/include \
-              -I$(DESTDIR)/$(prefix)/../include
+tetest_DATA = tests-info.xml
+
+tests-info.xml: $(srcdir)/*.c
+	@TE_PATH@/te_tests_info.sh $(srcdir) > tests-info.xml
+
+CLEANFILES = tests-info.xml
+
+
+AM_CPPFLAGS =
+
 AM_CFLAGS =
 
-AM_LDFLAGS = @TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/lib 
+AM_LDFLAGS = @TE_LDFLAGS@
 
 
-tetest_PROGRAMS = example
+tetest_PROGRAMS = \
+    example
 
 
 example_SOURCES = example.c
-example_LDADD = -llogger_ten -lrcfapi -lipc -ltapi -lconfapi -lconf_types -lconf_oid -lpthread
-example_DEPENDENCIES = ${TE_INSTALL}/@host@/lib/librcfapi.a \
-                       ${TE_INSTALL}/@host@/lib/liblogger_ten.a \
-                       ${TE_INSTALL}/@host@/lib/libipc.a
+example_LDADD = -llogger_ten -lrcfapi -lipc -ltapi -lconfapi \
+                -lconf_types -lconf_oid -lpthread
+example_DEPENDENCIES = \
+    ${TE_INSTALL}/@host@/lib/librcfapi.a \
+    ${TE_INSTALL}/@host@/lib/liblogger_ten.a \
+    ${TE_INSTALL}/@host@/lib/libipc.a \
+    ${TE_INSTALL}/@host@/lib/libtapi.a \
+    ${TE_INSTALL}/@host@/lib/libconfapi.a \
+    ${TE_INSTALL}/@host@/lib/libconf_types.a \
+    ${TE_INSTALL}/@host@/lib/libconf_oid
 

@@ -31,12 +31,12 @@
 #define ETHER_ADDR_LEN 6
 #define TE_TEST_NAME "example"
 #define TEST_START_VARS unsigned mtu; \
-			char ta[32]; \
-			char eth0_oid[128]; \
-			int num_interfaces; \
-			cfg_handle *interfaces; \
-			int len; \
-			uint8_t mac[ETHER_ADDR_LEN + 1];
+            char ta[32]; \
+            char eth0_oid[128]; \
+            int num_interfaces; \
+            cfg_handle *interfaces; \
+            int len; \
+            uint8_t mac[ETHER_ADDR_LEN + 1];
 
 #include <stdarg.h>
 #include <stdio.h>
@@ -49,27 +49,29 @@
 int
 main(int argc, char *argv[])
 {
-	TEST_START;
-	CHECK_RC(rcf_get_ta_list(ta, &len));
-	INFO("Agent is %s", ta);
-	snprintf(eth0_oid, sizeof(eth0_oid) - 1, "/agent:%s/interface:*", ta);
-	CHECK_RC(cfg_find_pattern(eth0_oid, &num_interfaces, &interfaces));
-	{
-		int i;
-		char *oid;
-		
-		for (i = 0; i < num_interfaces; i++)
-		{
-			CHECK_RC(cfg_get_oid_str(interfaces[i], &oid));
+    TEST_START;
+    CHECK_RC(rcf_get_ta_list(ta, &len));
+    INFO("Agent is %s", ta);
+    snprintf(eth0_oid, sizeof(eth0_oid) - 1, "/agent:%s/interface:*", ta);
+    CHECK_RC(cfg_find_pattern(eth0_oid, &num_interfaces, &interfaces));
+    {
+        int i;
+        char *oid;
+        
+        for (i = 0; i < num_interfaces; i++)
+        {
+            CHECK_RC(cfg_get_oid_str(interfaces[i], &oid));
 
-			CHECK_RC(tapi_cfg_base_if_get_mtu(oid, &mtu));
-			RING("MTU for %s is %u", oid, mtu);
-			free(oid);
-		}
-	}
-	free(interfaces);
-	CHECK_RC(rcf_ta_put_file(ta, 0, "/home/artem/test.txt", "/home/artem/tmp/test.txt"));
-	TEST_SUCCESS;
-	cleanup:
-	TEST_END;
+            CHECK_RC(tapi_cfg_base_if_get_mtu(oid, &mtu));
+            RING("MTU for %s is %u", oid, mtu);
+            free(oid);
+        }
+    }
+    free(interfaces);
+    CHECK_RC(rcf_ta_put_file(ta, 0, "/home/artem/test.txt", \
+                             "/home/artem/tmp/test.txt"));
+    TEST_SUCCESS;
+
+cleanup:
+    TEST_END;
 }
