@@ -520,6 +520,24 @@ enum {
     WSA_WAIT_EVENT_0
 };
 
+static const char *
+wsa_wait_rpc2str(int code)
+{
+    static char buf[32];
+    
+    switch (code)
+    {
+        case WSA_WAIT_FAILED:    return "WSA_WAIT_FAILED";
+        case WAIT_IO_COMPLETION: return "WSA_WAIT_COMPLETION";
+        case WSA_WAIT_TIMEOUT:   return "WSA_WAIT_TIMOUT";
+        default:
+            if (code < WSA_WAIT_EVENT_0)
+                return "WSA_UNKNOWN";
+            sprintf(buf, "WSA_WAIT_EVENT_%d", code - WSA_WAIT_EVENT_0);
+            return buf;
+    }
+}
+
 /** WSAWaitForMultipleEvents(), returns -1 if timeout expires */
 extern int rpc_wait_multiple_events(rcf_rpc_server *handle,
                                     int count, rpc_wsaevent *events, 

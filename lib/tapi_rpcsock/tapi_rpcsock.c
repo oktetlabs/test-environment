@@ -1302,7 +1302,7 @@ rpc_wsa_recv_ex(rcf_rpc_server *handle,
     if (flags != NULL && handle->op != RCF_RPC_WAIT)
     {
         in.flags.flags_len = 1;
-        in.flags.flags_val = flags;
+        in.flags.flags_val = (int *)flags;
     }
 
     rcf_rpc_call(handle, _wsa_recv_ex, 
@@ -5929,10 +5929,10 @@ rpc_wait_multiple_events(rcf_rpc_server *handle,
         }
     }
 
-    RING("RPC (%s,%s)%s: wait_multiple_events(%d, %p, %s, %d, %s) -> %d (%s)",
+    RING("RPC (%s,%s)%s: wait_multiple_events(%d, %p, %s, %d, %s) -> %s (%s)",
          handle->ta, handle->name, rpcop2str(op),
          count, events, wait_all ? "true" : "false", timeout,
-         alertable ? "true" : "false", out.retval,
+         alertable ? "true" : "false", wsa_wait_rpc2str(out.retval),
          errno_rpc2str(RPC_ERRNO(handle)));
 
     RETVAL_VAL(out.retval, wait_multiple_events);
