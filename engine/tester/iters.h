@@ -77,7 +77,7 @@ extern test_param_iteration *test_param_iteration_clone(
 /**
  * Free test parameters iteration.
  *
- * @param p     Iteration to be freed
+ * @param p         Iteration to be freed
  */
 extern void test_param_iteration_free(test_param_iteration *p);
 
@@ -91,7 +91,7 @@ extern void test_param_iterations_free(test_param_iterations *iters);
 /**
  * Free a test parameter.
  *
- * @param p     Test parameter to be freed 
+ * @param param     Test parameter to be freed 
  */
 extern void test_param_free(test_param *param);
 
