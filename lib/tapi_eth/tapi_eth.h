@@ -37,6 +37,8 @@
 #include <netinet/in.h>
 #endif
 
+#include <netinet/ether.h>
+
 #include "te_stdint.h"
 #include "te_defs.h"
 #include "tad_common.h"
