@@ -892,8 +892,7 @@ rcf_rpc_call(rcf_rpc_server *rpcs, int proc,
     }
 
     strcpy(in->name, rpcs->name);
-    in->start_high = rpcs->start >> 32;
-    in->start_low = rpcs->start & 0xFFFFFFFF;
+    in->start = rpcs->start;
     in->op = rpcs->op;
     in->tid = rpcs->tid0;
 

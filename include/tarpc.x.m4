@@ -37,6 +37,34 @@ enum tarpc_op {
     TARPC_CALL_WAIT   /**< Call blocking RPC */                        
 };
 
+typedef int32_t     tarpc_int;
+typedef uint32_t    tarpc_uint;
+typedef uint8_t     tarpc_bool;
+typedef uint32_t    tarpc_ptr;
+typedef uint32_t    tarpc_signum;
+
+/** RPC size_t analog */
+typedef uint32_t    tarpc_size_t;
+/** RPC pid_t analog */
+typedef int32_t     tarpc_pid_t;
+/** RPC ssize_t analog */
+typedef int32_t     tarpc_ssize_t;
+/** RPC socklen_t analog */
+typedef uint32_t    tarpc_socklen_t;
+/** Handle of the 'sigset_t' or 0 */
+typedef uint32_t    tarpc_sigset_t;
+/** Handle of the 'fd_set' or 0 */
+typedef uint32_t    tarpc_fd_set;
+/** RPC off_t analog */
+typedef int32_t     tarpc_off_t;
+
+/** Handle of the 'WSAEvent' or 0 */
+typedef uint32_t    tarpc_wsaevent;
+/** Handle of the window */
+typedef uint32_t    tarpc_hwnd;
+/** WSAOVERLAPPED structure */
+typedef uint32_t    tarpc_overlapped;
+
 /**
  * Input arguments common for all RPC calls.
  *
@@ -45,12 +73,11 @@ enum tarpc_op {
  *            parameters to this structure.
  */
 struct tarpc_in_arg {
-    char          name[16];   /**< Server name */
-    enum tarpc_op op;         /**< RPC operation */
-    unsigned long start_high; /**< Start time (in milliseconds) */
-    unsigned long start_low;
-    int           tid;        /**< Thread identifier (for checking and 
-                                   waiting) */
+    char            name[16];   /**< Server name */
+    enum tarpc_op   op;         /**< RPC operation */
+    uint64_t        start;
+    uint32_t        tid;        /**< Thread identifier (for checking and 
+                                     waiting) */
 };
 
 /**
@@ -61,25 +88,25 @@ struct tarpc_in_arg {
  *            parameters to this structure.
  */
 struct tarpc_out_arg {
-    unsigned long _errno;   /**< @e errno of the operation from
-                                 te_errno.h or rcf_rpc_defs.h */
-    unsigned long duration; /**< Duration of the called routine
-                                 execution (in microseconds) */
-    int           tid;      /**< Identifier of the thread which 
-                                 performs possibly blocking operation,
-                                 but caller does not want to block.
-                                 It should be passed as input when
-                                 RPC client want to check status or
-                                 wait for finish of the initiated
-                                 operation. */
-    unsigned long win_error;/**< Windows error as is */                                 
+    tarpc_int   _errno;      /**< @e errno of the operation from
+                                  te_errno.h or rcf_rpc_defs.h */
+    uint32_t    duration;    /**< Duration of the called routine
+                                  execution (in microseconds) */
+    uint32_t    tid;         /**< Identifier of the thread which 
+                                  performs possibly blocking operation,
+                                  but caller does not want to block.
+                                  It should be passed as input when
+                                  RPC client want to check status or
+                                  wait for finish of the initiated
+                                  operation. */
+    tarpc_int   win_error;   /**< Windows error as is */                                 
 };
 
 
 /** Generic address */
 struct tarpc_sa {
-    int           sa_family; /**< TA-independent domain */
-    unsigned char sa_data<>;
+    tarpc_int     sa_family; /**< TA-independent domain */
+    uint8_t       sa_data<>;
 };
 
 /** struct timeval */
@@ -93,53 +120,33 @@ struct tarpc_timeval {
 struct tarpc_ifreq {
 #define IFNAMESIZE 16
 
-    char rpc_ifr_name[IFNAMESIZE]; /**< Interface name */
+    char            rpc_ifr_name[IFNAMESIZE]; /**< Interface name */
     struct tarpc_sa rpc_ifr_addr;  /**< Different interface addresses */
-    short int       rpc_ifr_flags; /**< Interface flags */
-    int             rpc_ifr_mtu;   /**< Interface MTU */
+    tarpc_int       rpc_ifr_flags; /**< Interface flags */
+    uint32_t        rpc_ifr_mtu;   /**< Interface MTU */
 };
 
 /** struct ifconf */
 struct tarpc_ifconf {
-    tarpc_ifreq rpc_ifc_req<>;  
-                         /**< Interface list returned by the ioctl */
-    int         buflen;  /**< Length of the buffer to be passed to ioctl */
+    /** Interface list returned by the ioctl */
+    tarpc_ifreq     rpc_ifc_req<>;  
+    /** Length of the buffer to be passed to ioctl */
+    tarpc_int       buflen;
 };
 
 /** struct arpreq */
 struct tarpc_arpreq {
     struct tarpc_sa rpc_arp_pa;      /**< Protocol address */
     struct tarpc_sa rpc_arp_ha;      /**< Hardware address */
-    int             rpc_arp_flags;   /**< Flags */
+    tarpc_int       rpc_arp_flags;   /**< Flags */
     char            rpc_arp_dev[16]; /**< Device */
 };
 
 /** struct timespec */
 struct tarpc_timespec {
-    long tv_sec;
-    long tv_nsec;
+    int32_t     tv_sec;
+    int32_t     tv_nsec;
 };
-/** RPC size_t analog */
-typedef unsigned int tarpc_size_t;
-/** RPC pid_t analog */
-typedef unsigned int tarpc_pid_t;
-/** RPC ssize_t analog */
-typedef int tarpc_ssize_t;
-/** RPC socklen_t analog */
-typedef unsigned int tarpc_socklen_t;
-/** Handle of the 'sigset_t' or 0 */
-typedef unsigned int tarpc_sigset_t;
-/** Handle of the 'fd_set' or 0 */
-typedef unsigned int tarpc_fd_set;
-/** RPC off_t analog */
-typedef long int tarpc_off_t;
-
-/** Handle of the 'WSAEvent' or 0 */
-typedef unsigned int tarpc_wsaevent;
-/** Handle of the window */
-typedef unsigned int tarpc_hwnd;
-/** WSAOVERLAPPED structure */
-typedef unsigned int tarpc_overlapped;
 
 /** Function outputs nothing */
 struct tarpc_void_out {
@@ -150,7 +157,7 @@ struct tarpc_void_out {
 struct tarpc_int_retval_out {
     struct tarpc_out_arg    common;
 
-    int                     retval;
+    tarpc_int               retval;
 };
 
 
@@ -184,33 +191,35 @@ typedef struct tarpc_int_retval_out tarpc_setlibname_out;
 struct tarpc_socket_in {
     struct tarpc_in_arg common;
     
-    int domain;  /**< TA-independent domain */
-    int type;    /**< TA-independent socket type */
-    int proto;   /**< TA-independent socket protocol */
-    char info<>; /**< Protocol Info (for winsock2 only) */
-    int flags;   /**< If 1, the socket is overlapped (for winsock2 only) */
+    tarpc_int   domain; /**< TA-independent domain */
+    tarpc_int   type;   /**< TA-independent socket type */
+    tarpc_int   proto;  /**< TA-independent socket protocol */
+
+    char        info<>; /**< Protocol Info (for winsock2 only) */
+    tarpc_int   flags;  /**< If 1, the socket is overlapped 
+                             (for winsock2 only) */
 };
 
 struct tarpc_socket_out {
     struct tarpc_out_arg common;
 
-    int fd;     /**< TA-local socket */
+    tarpc_int   fd;     /**< TA-local socket */
 };
 
 /* WSADuplicateSocket() */
 struct tarpc_duplicate_socket_in {
     struct tarpc_in_arg common;
     
-    int  s;             /**< Old socket */
-    int  pid;           /**< Destination process PID */
-    char info<>;        /**< Location for protocol info */
+    tarpc_int   s;             /**< Old socket */
+    tarpc_pid_t pid;           /**< Destination process PID */
+    char        info<>;        /**< Location for protocol info */
 };
    
 struct tarpc_duplicate_socket_out {
     struct tarpc_out_arg common;
 
-    int  retval;
-    char info<>;
+    tarpc_int   retval;
+    char        info<>;
 };
 
 /* dup() */
@@ -218,7 +227,7 @@ struct tarpc_duplicate_socket_out {
 struct tarpc_dup_in {
     struct tarpc_in_arg common;
 
-    int oldfd;
+    tarpc_int   oldfd;
 };
 
 typedef struct tarpc_socket_out tarpc_dup_out;
@@ -229,8 +238,8 @@ typedef struct tarpc_socket_out tarpc_dup_out;
 struct tarpc_dup2_in {
     struct tarpc_in_arg common;
 
-    int oldfd;
-    int newfd;
+    tarpc_int   oldfd;
+    tarpc_int   newfd;
 };
 
 typedef struct tarpc_socket_out tarpc_dup2_out;
@@ -241,7 +250,7 @@ typedef struct tarpc_socket_out tarpc_dup2_out;
 struct tarpc_close_in {
     struct tarpc_in_arg common;
 
-    int fd;     /**< TA-local socket */
+    tarpc_int   fd; /**< TA-local socket */
 };
 
 typedef struct tarpc_int_retval_out tarpc_close_out;
@@ -252,8 +261,8 @@ typedef struct tarpc_int_retval_out tarpc_close_out;
 struct tarpc_shutdown_in {
     struct tarpc_in_arg common;
 
-    int fd;     /**< TA-local socket */
-    int how;    /**< rpc_shut_how */
+    tarpc_int   fd;     /**< TA-local socket */
+    tarpc_int   how;    /**< rpc_shut_how */
 };
 
 typedef struct tarpc_int_retval_out tarpc_shutdown_out;
@@ -266,17 +275,16 @@ typedef struct tarpc_int_retval_out tarpc_shutdown_out;
 struct tarpc_read_in {
     struct tarpc_in_arg common;
 
-    int                 fd;
-    unsigned char       buf<>;
-    tarpc_size_t        len;
+    tarpc_int       fd;
+    uint8_t         buf<>;
+    tarpc_size_t    len;
 };
 
 struct tarpc_read_out {
     struct tarpc_out_arg    common;
 
-    tarpc_ssize_t           retval;
-    
-    unsigned char           buf<>;
+    tarpc_ssize_t   retval;
+    uint8_t         buf<>;
 };
 
 
@@ -289,16 +297,16 @@ typedef struct tarpc_ssize_t_retval_out tarpc_write_out;
 /* readv() / writev() */
 
 struct tarpc_iovec {
-    unsigned char   iov_base<>;
+    uint8_t         iov_base<>;
     tarpc_size_t    iov_len;
 };
 
 struct tarpc_readv_in {
     struct tarpc_in_arg common;
 
-    int                 fd;
+    tarpc_int           fd;
     struct tarpc_iovec  vector<>;
-    int                 count;
+    tarpc_size_t        count;
 };
 
 struct tarpc_readv_out {
@@ -321,10 +329,10 @@ typedef struct tarpc_ssize_t_retval_out tarpc_writev_out;
 struct tarpc_send_in {
     struct tarpc_in_arg common;
 
-    int                 fd;
-    unsigned char       buf<>;
-    tarpc_size_t        len;
-    int                 flags;
+    tarpc_int       fd;
+    uint8_t         buf<>;
+    tarpc_size_t    len;
+    tarpc_int       flags;
 };
 
 typedef struct tarpc_ssize_t_retval_out tarpc_send_out;
@@ -335,18 +343,18 @@ typedef struct tarpc_ssize_t_retval_out tarpc_send_out;
 struct tarpc_recv_in {
     struct tarpc_in_arg common;
 
-    int                 fd;
-    unsigned char       buf<>;
-    tarpc_size_t        len;
-    int                 flags;
+    tarpc_int       fd;
+    uint8_t         buf<>;
+    tarpc_size_t    len;
+    tarpc_int       flags;
 };
 
 struct tarpc_recv_out {
     struct tarpc_out_arg    common;
 
-    tarpc_ssize_t           retval;
+    tarpc_ssize_t   retval;
 
-    unsigned char           buf<>;
+    uint8_t         buf<>;
 };
 
 /* WSARecvEx() */
@@ -354,10 +362,10 @@ struct tarpc_recv_out {
 struct tarpc_wsa_recv_ex_in {
     struct tarpc_in_arg common;
 
-    int                 fd;       /**< TA-local socket */
-    unsigned char       buf<>;    /**< Buffer for received data */
+    tarpc_int           fd;       /**< TA-local socket */
+    uint8_t             buf<>;    /**< Buffer for received data */
     tarpc_size_t        len;      /**< Maximum length of expected data */
-    int                 flags<>;  /**< TA-independent flags */
+    tarpc_int           flags<>;  /**< TA-independent flags */
 };
 
 struct tarpc_wsa_recv_ex_out {
@@ -365,8 +373,8 @@ struct tarpc_wsa_recv_ex_out {
 
     tarpc_ssize_t        retval;  /**< Returned length */
 
-    unsigned char        buf<>;   /**< Returned buffer with received data */
-    int                  flags<>; /**< TA-independent flags */
+    uint8_t              buf<>;   /**< Returned buffer with received data */
+    tarpc_int            flags<>; /**< TA-independent flags */
 };
 
 /* sendto() */
@@ -374,10 +382,10 @@ struct tarpc_wsa_recv_ex_out {
 struct tarpc_sendto_in {
     struct tarpc_in_arg common;
 
-    int                 fd;
-    unsigned char       buf<>;
+    tarpc_int           fd;
+    uint8_t             buf<>;
     tarpc_size_t        len;
-    int                 flags;
+    tarpc_int           flags;
     struct tarpc_sa     to;
     tarpc_socklen_t     tolen;
 };
@@ -390,10 +398,10 @@ typedef struct tarpc_ssize_t_retval_out tarpc_sendto_out;
 struct tarpc_recvfrom_in {
     struct tarpc_in_arg common;
 
-    int                 fd;         /**< TA-local socket */
-    unsigned char       buf<>;      /**< Buffer for received data */
+    tarpc_int           fd;         /**< TA-local socket */
+    uint8_t             buf<>;      /**< Buffer for received data */
     tarpc_size_t        len;        /**< Maximum length of expected data */
-    int                 flags;      /**< TA-independent flags */
+    tarpc_int           flags;      /**< TA-independent flags */
     struct tarpc_sa     from;       /**< Address to be passed as location
                                          for data source address */
     tarpc_socklen_t     fromlen<>;  /**< Maximum expected length of the
@@ -405,7 +413,7 @@ struct tarpc_recvfrom_out {
 
     tarpc_ssize_t   retval;     /**< Returned length */
 
-    unsigned char   buf<>;      /**< Returned buffer with received 
+    uint8_t         buf<>;      /**< Returned buffer with received 
                                      data */
     struct tarpc_sa from;       /**< Source address returned by the 
                                      function */
@@ -419,7 +427,7 @@ struct tarpc_sigaction {
                                              function */
     tarpc_sigset_t      xx_mask;        /**< Handle (pointer in server
                                              context) of the allocated set */
-    int                 xx_flags;
+    tarpc_int           xx_flags;
     char                xx_restorer<>;  /**< Name of the restorer function */
 };
 
@@ -430,17 +438,17 @@ struct tarpc_msghdr {
     tarpc_socklen_t     msg_namelen;
     struct tarpc_iovec  msg_iov<>;
     tarpc_size_t        msg_iovlen;
-    unsigned char       msg_control<>;
+    uint8_t             msg_control<>;
     tarpc_socklen_t     msg_controllen;
-    int                 msg_flags;
+    tarpc_int           msg_flags;
 };
 
 struct tarpc_sendmsg_in {
     struct tarpc_in_arg common;
 
-    int                 s;
+    tarpc_int           s;
     struct tarpc_msghdr msg<>;
-    int                 flags;
+    tarpc_int           flags;
 };
 
 typedef struct tarpc_int_retval_out tarpc_sendmsg_out;
@@ -448,9 +456,9 @@ typedef struct tarpc_int_retval_out tarpc_sendmsg_out;
 struct tarpc_recvmsg_in {
     struct tarpc_in_arg common;
 
-    int                 s;
+    tarpc_int           s;
     struct tarpc_msghdr msg<>;
-    int                 flags;
+    tarpc_int           flags;
 };                
 
 struct tarpc_recvmsg_out {
@@ -468,7 +476,7 @@ struct tarpc_recvmsg_out {
 struct tarpc_bind_in {
     struct tarpc_in_arg common;
 
-    int                 fd;     /**< TA-local socket */
+    tarpc_int           fd;     /**< TA-local socket */
     struct tarpc_sa     addr;   /**< Socket name */
     tarpc_socklen_t     len;    /**< Length to be passed to bind() */
 };
@@ -481,7 +489,7 @@ typedef struct tarpc_int_retval_out tarpc_bind_out;
 struct tarpc_connect_in {
     struct tarpc_in_arg   common;
 
-    int                 fd;     /**< TA-local socket */
+    tarpc_int           fd;     /**< TA-local socket */
     struct tarpc_sa     addr;   /**< Remote address */
     tarpc_socklen_t     len;    /**< Length to be passed to connect() */
 };
@@ -492,10 +500,10 @@ typedef struct tarpc_int_retval_out tarpc_connect_out;
 struct tarpc_connect_ex_in {
     struct tarpc_in_arg     common;
     
-    int                     fd;       /**< TA-local socket */
+    tarpc_int               fd;       /**< TA-local socket */
     struct tarpc_sa         addr;     /**< Remote address */
     tarpc_socklen_t         len;      /**< Length to be passed to connectEx() */
-    char                    buf<>;    /**< Buffer for data to be sent */
+    uint8_t                 buf<>;    /**< Buffer for data to be sent */
     tarpc_size_t            len_buf;  /**< Size of data passed to connectEx() */
     tarpc_overlapped        overlapped; /**< WSAOVERLAPPED structure */
     tarpc_size_t            len_sent<>; /**< Returned by the function
@@ -514,9 +522,9 @@ struct tarpc_connect_ex_out {
 struct tarpc_disconnect_ex_in {
     struct tarpc_in_arg    common;
     
-    int               fd;         /**< TA-local socket */   
+    tarpc_int         fd;         /**< TA-local socket */   
     tarpc_overlapped  overlapped; /**< WSAOVERLAPPED structure */
-    int               flags;      /**< Function call processing flag */
+    tarpc_int         flags;      /**< Function call processing flag */
 };
 
 typedef struct tarpc_int_retval_out tarpc_disconnect_ex_out;     
@@ -526,8 +534,8 @@ typedef struct tarpc_int_retval_out tarpc_disconnect_ex_out;
 struct tarpc_listen_in {
     struct tarpc_in_arg     common;
 
-    int                     fd;         /**< TA-local socket */
-    int                     backlog;    /**< Length of the backlog */
+    tarpc_int               fd;         /**< TA-local socket */
+    tarpc_int               backlog;    /**< Length of the backlog */
 };
 
 typedef struct tarpc_int_retval_out tarpc_listen_out;
@@ -538,7 +546,7 @@ typedef struct tarpc_int_retval_out tarpc_listen_out;
 struct tarpc_accept_in {
     struct tarpc_in_arg common;
 
-    int                 fd;     /**< TA-local socket */
+    tarpc_int           fd;     /**< TA-local socket */
     struct tarpc_sa     addr;   /**< Location for peer name */
     tarpc_socklen_t     len<>;  /**< Length of the location 
                                      for peer name */
@@ -547,7 +555,7 @@ struct tarpc_accept_in {
 struct tarpc_accept_out {
     struct tarpc_out_arg    common;
 
-    int                     retval;
+    tarpc_int               retval;
 
     struct tarpc_sa         addr;   /**< Location for peer name */
     tarpc_socklen_t         len<>;  /**< Length of the location 
@@ -570,7 +578,7 @@ struct tarpc_accept_cond {
 struct tarpc_wsa_accept_in {
     struct tarpc_in_arg common;
 
-    int                      fd;      /**< TA-local socket */
+    tarpc_int                fd;      /**< TA-local socket */
     struct tarpc_sa          addr;    /**< Location for peer name */
     tarpc_socklen_t          len<>;   /**< Length of the peer name location */
     struct tarpc_accept_cond cond<>;  /**< Data for the callback function */
@@ -579,7 +587,7 @@ struct tarpc_wsa_accept_in {
 struct tarpc_wsa_accept_out {
     struct tarpc_out_arg common;
 
-    int                  retval;
+    tarpc_int            retval;
 
     struct tarpc_sa      addr;   /**< Location for peer name */
     tarpc_socklen_t      len<>;  /**< Length of the peer name location */
@@ -591,11 +599,11 @@ struct tarpc_wsa_accept_out {
 struct tarpc_accept_ex_in {
     struct tarpc_in_arg common;
                                                                                
-    int                     fd;           /**< TA-local socket */
-    int                     fd_a;         /**< TA-local socket to wich the
+    tarpc_int               fd;           /**< TA-local socket */
+    tarpc_int               fd_a;         /**< TA-local socket to wich the
                                                connection will be actually
                                                made */
-    int                     buflen;       /**< Length of the buffer
+    tarpc_size_t            buflen;       /**< Length of the buffer
                                                passed to the AcceptEx() */
     tarpc_overlapped        overlapped;   /**< WSAOVERLAPPED structure */
     tarpc_size_t            count<>;      /**< Location for
@@ -605,7 +613,7 @@ struct tarpc_accept_ex_in {
 struct tarpc_accept_ex_out {
     struct tarpc_out_arg    common;
 
-    int                     retval;
+    tarpc_int               retval;
 
     tarpc_size_t            count<>;      /**< Location for
                                                count of received bytes */ 
@@ -614,9 +622,9 @@ struct tarpc_accept_ex_out {
 struct tarpc_get_accept_addr_in {
     struct tarpc_in_arg    common;
 
-    int             fd;          /**< TA-local socket */
-    char            buf<>;       /**< Buffer with addresses */
-    int             buflen;      /**< Length of the buffer
+    tarpc_int       fd;          /**< TA-local socket */
+    uint8_t         buf<>;       /**< Buffer with addresses */
+    tarpc_size_t    buflen;      /**< Length of the buffer
                                       passed to the AcceptEx() */
     struct tarpc_sa laddr;       /**< Local address */
     struct tarpc_sa raddr;       /**< Remote address */
@@ -634,7 +642,7 @@ struct tarpc_get_accept_addr_out {
 struct tarpc_transmit_file_in {
     struct tarpc_in_arg common;
                                                                                
-    int                     fd;           /**< TA-local socket */
+    tarpc_int               fd;           /**< TA-local socket */
     char                    file<>;       /**< Handle to the open file to be
                                                transmitted */
     tarpc_size_t            len;          /**< Number of file bytes to
@@ -742,8 +750,8 @@ typedef struct tarpc_int_retval_out tarpc_reset_event_out;
 struct tarpc_create_overlapped_in {
     struct tarpc_in_arg common;
     tarpc_wsaevent      hevent;
-    unsigned int        offset;
-    unsigned int        offset_high;
+    tarpc_uint          offset;
+    tarpc_uint          offset_high;
 };
 
 struct tarpc_create_overlapped_out {
@@ -763,7 +771,7 @@ typedef struct tarpc_void_out tarpc_delete_overlapped_out;
 struct tarpc_event_select_in {
     struct tarpc_in_arg common;
 
-    int             fd;           /**< TA-local socket */ 
+    tarpc_int       fd;           /**< TA-local socket */ 
     tarpc_wsaevent  event_object; /**< Event object to be associated
                                        with set of network events */   
     unsigned long   event;        /**< Bitmask that specifies the set
@@ -777,7 +785,7 @@ typedef struct tarpc_int_retval_out tarpc_event_select_out;
 struct tarpc_enum_network_events_in {
     struct tarpc_in_arg common;
 
-    int             fd;           /**< TA-local socket */ 
+    tarpc_int       fd;           /**< TA-local socket */ 
     tarpc_wsaevent  event_object; /**< Event object to be reset */   
     unsigned long   event<>;      /**< Bitmask that specifies the set
                                        of network events occurred */      
@@ -786,7 +794,7 @@ struct tarpc_enum_network_events_in {
 struct tarpc_enum_network_events_out {
     struct tarpc_out_arg common;
 
-    int                  retval;
+    tarpc_int            retval;
     unsigned long        event<>;    /**< Bitmask that specifies the set
                                           of network events occurred */      
 };
@@ -816,9 +824,9 @@ struct tarpc_completion_callback_in {
 
 struct tarpc_completion_callback_out {
     struct tarpc_out_arg common;
-    int                  called;        /**< 1 if callback was called    */
-    int                  error;         /**< Error code (as is for now)  */
-    int                  bytes;         /**< Number of bytes transferred */
+    tarpc_int            called;        /**< 1 if callback was called    */
+    tarpc_int            error;         /**< Error code (as is for now)  */
+    tarpc_int            bytes;         /**< Number of bytes transferred */
     tarpc_overlapped     overlapped;    /**< Overlapped passed to callback */
 };
 
@@ -826,9 +834,9 @@ struct tarpc_completion_callback_out {
 /* WSAAsyncSelect */
 struct tarpc_wsa_async_select_in {
     struct tarpc_in_arg common;
-    int                 sock;   /**< Socket for WSAAsyncSelect() */
+    tarpc_int           sock;   /**< Socket for WSAAsyncSelect() */
     tarpc_hwnd          hwnd;   /**< Window for messages receiving */
-    unsigned int        event;  /**< Network event to be listened */
+    tarpc_uint          event;  /**< Network event to be listened */
 };
 
 typedef struct tarpc_int_retval_out tarpc_wsa_async_select_out;
@@ -841,10 +849,10 @@ struct tarpc_peek_message_in {
 
 struct tarpc_peek_message_out {
     struct tarpc_out_arg common;
-    int                  retval; /**< 0 if there are no messages */
-    int                  sock;   /**< Socket about which the message is 
+    tarpc_int            retval; /**< 0 if there are no messages */
+    tarpc_int            sock;   /**< Socket about which the message is 
                                       received */
-    unsigned int         event;  /**< Event about which the message is 
+    tarpc_uint           event;  /**< Event about which the message is 
                                       received */
 };
 
@@ -853,7 +861,7 @@ struct tarpc_peek_message_out {
 struct tarpc_do_fd_set_in {
     struct tarpc_in_arg common;
 
-    int                 fd;
+    tarpc_int           fd;
     tarpc_fd_set        set;
 };
 
@@ -865,7 +873,7 @@ typedef struct tarpc_void_out tarpc_do_fd_set_out;
 struct tarpc_do_fd_clr_in {
     struct tarpc_in_arg common;
 
-    int                 fd;
+    tarpc_int           fd;
     tarpc_fd_set        set;
 };
 
@@ -877,7 +885,7 @@ typedef struct tarpc_void_out tarpc_do_fd_clr_out;
 struct tarpc_do_fd_isset_in {
     struct tarpc_in_arg common;
 
-    int                 fd;
+    tarpc_int           fd;
     tarpc_fd_set        set;
 };
 
@@ -894,7 +902,7 @@ typedef struct tarpc_int_retval_out tarpc_do_fd_isset_out;
 struct tarpc_select_in {
     struct tarpc_in_arg     common;
 
-    int                     n;
+    tarpc_int               n;
     tarpc_fd_set            readfds;
     tarpc_fd_set            writefds;
     tarpc_fd_set            exceptfds;
@@ -904,7 +912,7 @@ struct tarpc_select_in {
 struct tarpc_select_out {
     struct tarpc_out_arg    common;
 
-    int                     retval;
+    tarpc_int               retval;
 
     struct tarpc_timeval    timeout<>;
 };
@@ -915,7 +923,7 @@ struct tarpc_select_out {
 struct tarpc_pselect_in {
     struct tarpc_in_arg     common;
 
-    int                     n;
+    tarpc_int               n;
     tarpc_fd_set            readfds;
     tarpc_fd_set            writefds;
     tarpc_fd_set            exceptfds;
@@ -929,7 +937,7 @@ typedef struct tarpc_int_retval_out tarpc_pselect_out;
 /* poll() */
 
 struct tarpc_pollfd {
-    int     fd;
+    tarpc_int   fd;
     short   events;
     short   revents;
 };
@@ -938,14 +946,14 @@ struct tarpc_poll_in {
     struct tarpc_in_arg common;
 
     struct tarpc_pollfd ufds<>;
-    unsigned int        nfds;
-    int                 timeout;
+    tarpc_uint          nfds;
+    tarpc_int           timeout;
 };
 
 struct tarpc_poll_out {
     struct tarpc_out_arg    common;
 
-    int                     retval;
+    tarpc_int               retval;
 
     struct tarpc_pollfd     ufds<>;
 };
@@ -966,56 +974,56 @@ enum option_type {
 };
 
 struct option_value_linger {
-    int l_onoff; 
-    int l_linger;
+    tarpc_int l_onoff; 
+    tarpc_int l_linger;
 };
 
 struct option_value_mreqn {
-    char imr_multiaddr[4]; /* IP multicast group address */                  
-    char imr_address[4];   /* IP address of local interface */
-    int  imr_ifindex;      /* Interface index */
+    uint32_t    imr_multiaddr;  /**< IP multicast group address */
+    uint32_t    imr_address;    /**< IP address of local interface */
+    tarpc_int   imr_ifindex;    /**< Interpace index */
 };
 
 struct option_value_tcp_info {
-    unsigned char tcpi_state;
-    unsigned char tcpi_ca_state;
-    unsigned char tcpi_retransmits;
-    unsigned char tcpi_probes;
-    unsigned char tcpi_backoff;
-    unsigned char tcpi_options;
-    unsigned char tcpi_snd_wscale;
-    unsigned char tcpi_rcv_wscale;
+    uint8_t     tcpi_state;
+    uint8_t     tcpi_ca_state;
+    uint8_t     tcpi_retransmits;
+    uint8_t     tcpi_probes;
+    uint8_t     tcpi_backoff;
+    uint8_t     tcpi_options;
+    uint8_t     tcpi_snd_wscale;
+    uint8_t     tcpi_rcv_wscale;
 
-    unsigned int tcpi_rto;
-    unsigned int tcpi_ato;
-    unsigned int tcpi_snd_mss;
-    unsigned int tcpi_rcv_mss;
+    uint32_t    tcpi_rto;
+    uint32_t    tcpi_ato;
+    uint32_t    tcpi_snd_mss;
+    uint32_t    tcpi_rcv_mss;
 
-    unsigned int tcpi_unacked;
-    unsigned int tcpi_sacked;
-    unsigned int tcpi_lost;
-    unsigned int tcpi_retrans;
-    unsigned int tcpi_fackets;
+    uint32_t    tcpi_unacked;
+    uint32_t    tcpi_sacked;
+    uint32_t    tcpi_lost;
+    uint32_t    tcpi_retrans;
+    uint32_t    tcpi_fackets;
 
     /* Times. */
-    unsigned int tcpi_last_data_sent;
-    unsigned int tcpi_last_ack_sent;
-    unsigned int tcpi_last_data_recv;
-    unsigned int tcpi_last_ack_recv;
+    uint32_t    tcpi_last_data_sent;
+    uint32_t    tcpi_last_ack_sent;
+    uint32_t    tcpi_last_data_recv;
+    uint32_t    tcpi_last_ack_recv;
 
     /* Metrics. */
-    unsigned int tcpi_pmtu;
-    unsigned int tcpi_rcv_ssthresh;
-    unsigned int tcpi_rtt;
-    unsigned int tcpi_rttvar;
-    unsigned int tcpi_snd_ssthresh;
-    unsigned int tcpi_snd_cwnd;
-    unsigned int tcpi_advmss;
-    unsigned int tcpi_reordering;
+    uint32_t    tcpi_pmtu;
+    uint32_t    tcpi_rcv_ssthresh;
+    uint32_t    tcpi_rtt;
+    uint32_t    tcpi_rttvar;
+    uint32_t    tcpi_snd_ssthresh;
+    uint32_t    tcpi_snd_cwnd;
+    uint32_t    tcpi_advmss;
+    uint32_t    tcpi_reordering;
 };
 
 union option_value switch (option_type opttype) {
-    case OPT_INT:     int opt_int;
+    case OPT_INT:     tarpc_int opt_int;
     case OPT_LINGER:  struct option_value_linger opt_linger;
     case OPT_TIMEVAL: struct tarpc_timeval opt_timeval;
     case OPT_MREQN:   struct option_value_mreqn  opt_mreqn;
@@ -1029,11 +1037,11 @@ union option_value switch (option_type opttype) {
 struct tarpc_setsockopt_in {
     struct tarpc_in_arg  common;
 
-    int                  s; 
-    int                  level;
-    int                  optname;
-    option_value         optval<>;
-    int                  optlen;
+    tarpc_int       s; 
+    tarpc_int       level;
+    tarpc_int       optname;
+    option_value    optval<>;
+    tarpc_socklen_t optlen;
 };
 
 typedef struct tarpc_int_retval_out tarpc_setsockopt_out;
@@ -1043,19 +1051,19 @@ typedef struct tarpc_int_retval_out tarpc_setsockopt_out;
 struct tarpc_getsockopt_in {
     struct tarpc_in_arg  common;
 
-    int                  s;
-    int                  level; 
-    int                  optname;
-    option_value         optval<>;
-    int                  optlen<>;
+    tarpc_int       s;
+    tarpc_int       level; 
+    tarpc_int       optname;
+    option_value    optval<>;
+    tarpc_socklen_t optlen<>;
 };
 
 struct tarpc_getsockopt_out {
     struct tarpc_out_arg  common;
 
-    int                   retval;
+    tarpc_int             retval;
     option_value          optval<>;
-    int                   optlen<>;
+    tarpc_socklen_t       optlen<>;
 };
 
 
@@ -1080,7 +1088,7 @@ enum ioctl_access {
 };    
 
 union ioctl_request switch (ioctl_type type) {
-    case IOCTL_INT:     int           req_int;
+    case IOCTL_INT:     tarpc_int     req_int;
     case IOCTL_TIMEVAL: tarpc_timeval req_timeval;
     case IOCTL_IFREQ:   tarpc_ifreq   req_ifreq; 
     case IOCTL_IFCONF:  tarpc_ifconf  req_ifconf; 
@@ -1090,17 +1098,36 @@ union ioctl_request switch (ioctl_type type) {
 struct tarpc_ioctl_in {
     struct tarpc_in_arg common;
     
-    int                 s;
-    int                 code;
+    tarpc_int           s;
+    tarpc_int           code;
     ioctl_access        access;
     ioctl_request       req<>;
 };
 
 struct tarpc_ioctl_out {
     struct tarpc_out_arg common;
-    int                  retval;
+
+    tarpc_int            retval;
     ioctl_request        req<>;
 };
+
+
+/* fcntl() */
+
+struct tarpc_fcntl_in {
+    struct tarpc_in_arg common;
+    
+    tarpc_int   fd;
+    tarpc_int   cmd;
+    tarpc_int   arg;
+};
+
+struct tarpc_fcntl_out {
+    struct tarpc_out_arg common;
+    
+    tarpc_int   retval;
+};
+
 
 /*
  * Interface name/index
@@ -1117,7 +1144,7 @@ struct tarpc_if_nametoindex_in {
 struct tarpc_if_nametoindex_out {
     struct tarpc_out_arg    common;
 
-    unsigned int            ifindex;
+    tarpc_uint              ifindex;
 };
 
 
@@ -1126,7 +1153,7 @@ struct tarpc_if_nametoindex_out {
 struct tarpc_if_indextoname_in {
     struct tarpc_in_arg common;
 
-    unsigned int        ifindex;
+    tarpc_uint          ifindex;
     char                ifname<>;
 };
 
@@ -1140,7 +1167,7 @@ struct tarpc_if_indextoname_out {
 /* if_nameindex() */
 
 struct tarpc_if_nameindex {
-    unsigned int    ifindex;
+    tarpc_uint      ifindex;
     char            ifname<>;
 };
 
@@ -1152,16 +1179,16 @@ struct tarpc_if_nameindex_out {
     struct tarpc_out_arg        common;
 
     struct tarpc_if_nameindex   ptr<>;
-    unsigned int                mem_ptr;
+    tarpc_ptr                   mem_ptr;
 };
 
 
 /* if_freenameindex() */
 
 struct tarpc_if_freenameindex_in {
-    struct tarpc_in_arg         common;
+    struct tarpc_in_arg common;
 
-    unsigned int                mem_ptr;
+    tarpc_ptr           mem_ptr;
 };
 
 typedef struct tarpc_void_out tarpc_if_freenameindex_out;
@@ -1176,23 +1203,22 @@ typedef struct tarpc_void_out tarpc_if_freenameindex_out;
 struct tarpc_signal_in {
     struct tarpc_in_arg common;
 
-    int                 signum;
-    char                handler<>;  /**< Name of the signal handler
-                                         function */
+    tarpc_signum    signum;
+    char            handler<>;  /**< Name of the signal handler function */
 };
 
 struct tarpc_signal_out {
     struct tarpc_out_arg    common;
 
-    char                    handler<>;  /**< Name of the old signal
-                                             handler function */
+    char            handler<>;  /**< Name of the old signal
+                                     handler function */
 };
 
 /* sigaction() */
 struct tarpc_sigaction_in {
     struct tarpc_in_arg     common;
 
-    int                     signum;   /**< The signal number */
+    tarpc_signum            signum;   /**< The signal number */
     struct tarpc_sigaction  act<>;    /**< If it's non-null, the new action
                                            for signal signum is installed */
     struct tarpc_sigaction  oldact<>; /**< If it's non-null, the old action
@@ -1204,7 +1230,7 @@ struct tarpc_sigaction_out {
 
     struct tarpc_sigaction  oldact<>;   /**< If it's non-null, the previous
                                              action will be saved */
-    int                     retval;
+    tarpc_int               retval;
 };
 
 /*
@@ -1218,8 +1244,8 @@ struct tarpc_sigaction_out {
 struct tarpc_kill_in {
     struct tarpc_in_arg common;
 
-    tarpc_pid_t         pid;
-    int                 signum;
+    tarpc_pid_t     pid;
+    tarpc_signum    signum;
 };
 
 typedef struct tarpc_int_retval_out tarpc_kill_out;
@@ -1264,7 +1290,7 @@ typedef struct tarpc_void_out tarpc_sigset_delete_out;
 struct tarpc_sigprocmask_in {
     struct tarpc_in_arg common;
 
-    int                 how;
+    tarpc_int           how;
     tarpc_sigset_t      set;    /**< Handle of the signal set */
     tarpc_sigset_t      oldset; /**< Handle of the old signal set */
 };
@@ -1294,8 +1320,8 @@ typedef struct tarpc_sigemptyset_out tarpc_sigfillset_out;
 struct tarpc_sigaddset_in {
     struct tarpc_in_arg common;
 
-    tarpc_sigset_t      set;    /**< Handle of the signal set */
-    int                 signum;
+    tarpc_sigset_t  set;    /**< Handle of the signal set */
+    tarpc_signum    signum;
 };
 
 typedef struct tarpc_sigemptyset_out tarpc_sigaddset_out;
@@ -1350,8 +1376,8 @@ struct tarpc_h_alias {
 struct tarpc_hostent {
     char          h_name<>;         /**< Host name */
     tarpc_h_alias h_aliases<>;      /**< List of aliases */
-    int           h_addrtype;       /**< RPC domain */
-    int           h_length;         /**< Address length */
+    tarpc_int     h_addrtype;       /**< RPC domain */
+    tarpc_int     h_length;         /**< Address length */
     tarpc_h_addr  h_addr_list<>;    /**< List of addresses */
 };    
 
@@ -1370,7 +1396,7 @@ struct tarpc_gethostbyname_out {
 struct tarpc_gethostbyaddr_in {
     struct tarpc_in_arg common;
     tarpc_h_addr        addr; /**< Addresses */
-    int                 type; /**< RPC domain */
+    tarpc_int           type; /**< RPC domain */
 };    
 
 struct tarpc_gethostbyaddr_out {
@@ -1379,10 +1405,10 @@ struct tarpc_gethostbyaddr_out {
 };
 
 struct tarpc_ai {
-    int           flags;
-    int           family;
-    int           socktype;
-    int           protocol;
+    tarpc_int     flags;
+    tarpc_int     family;
+    tarpc_int     socktype;
+    tarpc_int     protocol;
     tarpc_size_t  addrlen;
     tarpc_sa      addr;
     char          canonname<>;
@@ -1397,14 +1423,14 @@ struct tarpc_getaddrinfo_in {
 
 struct tarpc_getaddrinfo_out {
     struct tarpc_out_arg common;
-    int                  retval;
-    int                  mem_ptr;
+    tarpc_int            retval;
+    tarpc_ptr            mem_ptr;
     tarpc_ai             res<>;
 };
 
 struct tarpc_freeaddrinfo_in {
     struct tarpc_in_arg common;
-    int                 mem_ptr;
+    tarpc_ptr           mem_ptr;
 };
 
 typedef struct tarpc_void_out tarpc_freeaddrinfo_out;
@@ -1417,8 +1443,8 @@ struct tarpc_pipe_in {
 
 struct tarpc_pipe_out {
     struct tarpc_out_arg common;
-    int retval;
-    int filedes[2];
+    tarpc_int   retval;
+    tarpc_int   filedes[2];
 };
 
 /* socketpair() */
@@ -1426,16 +1452,16 @@ struct tarpc_pipe_out {
 struct tarpc_socketpair_in {
     struct tarpc_in_arg common;
     
-    int domain; /**< TA-independent domain */
-    int type;   /**< TA-independent socket type */
-    int proto;  /**< TA-independent socket protocol */
+    tarpc_int   domain; /**< TA-independent domain */
+    tarpc_int   type;   /**< TA-independent socket type */
+    tarpc_int   proto;  /**< TA-independent socket protocol */
 };
 
 struct tarpc_socketpair_out {
     struct tarpc_out_arg common;
     
-    int retval; /**< Returned value */
-    int sv[2];  /**< Socket pair */
+    tarpc_int   retval; /**< Returned value */
+    tarpc_int   sv[2];  /**< Socket pair */
 };
 
 /* fopen() */
@@ -1449,7 +1475,7 @@ struct tarpc_fopen_in {
 struct tarpc_fopen_out {
     struct tarpc_out_arg common;
     
-    unsigned int mem_ptr;
+    tarpc_ptr   mem_ptr;
 };
 
 /* popen() */
@@ -1463,20 +1489,20 @@ struct tarpc_popen_in {
 struct tarpc_popen_out {
     struct tarpc_out_arg common;
     
-    unsigned int mem_ptr;
+    tarpc_ptr   mem_ptr;
 };
 
 /* fileno() */
 struct tarpc_fileno_in {
     struct tarpc_in_arg common;
     
-    unsigned int mem_ptr;
+    tarpc_ptr   mem_ptr;
 };
 
 struct tarpc_fileno_out {
     struct tarpc_out_arg common;
     
-    int fd;
+    tarpc_int fd;
 };
 
 /* getuid() */
@@ -1487,7 +1513,7 @@ struct tarpc_getuid_in {
 struct tarpc_getuid_out {
     struct tarpc_out_arg common;
     
-    unsigned int uid;
+    tarpc_uint  uid;
 };
 
 /* geteuid */
@@ -1498,7 +1524,7 @@ typedef struct tarpc_getuid_out tarpc_geteuid_out;
 struct tarpc_setuid_in {
     struct tarpc_in_arg common;
     
-    unsigned int uid;
+    tarpc_uint  uid;
 };
 
 typedef struct tarpc_int_retval_out tarpc_setuid_out;
@@ -1520,47 +1546,46 @@ typedef struct tarpc_int_retval_out tarpc_getpid_out;
 struct tarpc_simple_sender_in {
     struct tarpc_in_arg common;
     
-    int s;               /**< Socket to be used */
-    int size_min;        /**< Minimum size of the message */
-    int size_max;        /**< Maximum size of the message */
-    int size_rnd_once;   /**< If true, random size should be calculated
-                              only once and used for all messages;
-                              if false, random size is calculated for
-                              each message */
-    int delay_min;       /**< Minimum delay between messages in microseconds */
-    int delay_max;       /**< Maximum delay between messages in microseconds */
-    int delay_rnd_once;  /**< If true, random delay should be calculated
-                              only once and used for all messages;
-                              if false, random delay is calculated for
-                              each message */
-    int time2run;        /**< How long run (in seconds) */
-    int ignore_err;      /**< Ignore errors while run > */
+    tarpc_int   s;              /**< Socket to be used */
+    uint32_t    size_min;       /**< Minimum size of the message */
+    uint32_t    size_max;       /**< Maximum size of the message */
+    tarpc_bool  size_rnd_once;  /**< If true, random size should be
+                                     calculated only once and used for
+                                     all messages; if false, random size
+                                     is calculated for each message */
+    uint32_t    delay_min;      /**< Minimum delay between messages in 
+                                     microseconds */
+    uint32_t    delay_max;      /**< Maximum delay between messages in 
+                                     microseconds */
+    tarpc_bool  delay_rnd_once; /**< If true, random delay should be
+                                     calculated only once and used for
+                                     all messages; if false, random
+                                     delay is calculated for each
+                                     message */
+    uint32_t    time2run;       /**< How long run (in seconds) */
+    tarpc_bool  ignore_err;     /**< Ignore errors while run */
 };
 
 struct tarpc_simple_sender_out {
     struct tarpc_out_arg common;
     
-    /** Number of sent bytes */
-    unsigned int bytes_high;
-    unsigned int bytes_low;
+    tarpc_int   retval;     /**< 0 (success) or -1 (failure) */
     
-    int      retval;  /**< 0 (success) or -1 (failure) */
+    uint64_t    bytes;      /**< Number of sent bytes */
 };
 
 struct tarpc_simple_receiver_in {
     struct tarpc_in_arg common;
     
-    int s;               /**< Socket to be used */
+    tarpc_int   s;               /**< Socket to be used */
 };
 
 struct tarpc_simple_receiver_out {
     struct tarpc_out_arg common;
+
+    tarpc_int   retval;     /**< 0 (success) or -1 (failure) */
     
-    /** Number of received bytes */
-    unsigned int bytes_high;
-    unsigned int bytes_low;
-    
-    int      retval;  /**< 0 (success) or -1 (failure) */
+    uint64_t    bytes;      /**< Number of received bytes */
 };
 
 /*
@@ -1577,122 +1602,124 @@ struct tarpc_flooder_in {
     struct tarpc_in_arg common;
 
     /** Input */
-    int         sndrs<>;
-    int         rcvrs<>;
-    int         bulkszs;
-    int         time2run;        /**< How long run (in seconds) */
-    iomux_func  iomux;
-    int         rx_nonblock;
+    tarpc_int       sndrs<>;
+    tarpc_int       rcvrs<>;
+    tarpc_size_t    bulkszs;
+    uint32_t        time2run;        /**< How long run (in seconds) */
+    iomux_func      iomux;
+    tarpc_bool      rx_nonblock;
 
-    unsigned long   tx_stat<>;
-    unsigned long   rx_stat<>;
+    uint64_t        tx_stat<>;
+    uint64_t        rx_stat<>;
 };
 
 struct tarpc_flooder_out {
     struct tarpc_out_arg common;
 
-    int             retval;  /**< 0 (success) or -1 (failure) */
-    unsigned long   tx_stat<>;
-    unsigned long   rx_stat<>;
+    tarpc_int       retval;  /**< 0 (success) or -1 (failure) */
+
+    uint64_t        tx_stat<>;
+    uint64_t        rx_stat<>;
 };
 
 
 struct tarpc_echoer_in {
     struct tarpc_in_arg common;
 
-    int         sockets<>;
-    int         time2run;        /**< How long run (in seconds) */
+    tarpc_int   sockets<>;
+    uint32_t    time2run;        /**< How long run (in seconds) */
     iomux_func  iomux;
 
-    unsigned long   tx_stat<>;
-    unsigned long   rx_stat<>;
+    uint64_t    tx_stat<>;
+    uint64_t    rx_stat<>;
 };
 
 struct tarpc_echoer_out {
     struct tarpc_out_arg common;
 
-    int             retval;  /**< 0 (success) or -1 (failure) */
-    unsigned long   tx_stat<>;
-    unsigned long   rx_stat<>;
+    tarpc_int   retval;  /**< 0 (success) or -1 (failure) */
+    uint64_t    tx_stat<>;
+    uint64_t    rx_stat<>;
 };
 
 
 struct tarpc_aio_read_test_in {
     struct tarpc_in_arg common;
     
-    int  s;      /**< Socket to be used */
-    int  signum; /**< Signal to be used */
-    int  t;      /**< Timeout for select() */
-    int  buflen; /**< Buffer length to be passed to the read */
-    char buf<>;  /**< Read data */
-    char diag<>; /**< Error message */
+    tarpc_int       s;      /**< Socket to be used */
+    tarpc_signum    signum; /**< Signal to be used */
+    tarpc_int       t;      /**< Timeout for select() */
+    uint32_t        buflen; /**< Buffer length to be passed to the read */
+    uint8_t         buf<>;  /**< Read data */
+    char            diag<>; /**< Error message */
 };
 
 struct tarpc_aio_read_test_out {
     struct tarpc_out_arg common;
     
-    int  retval; /**< Status returned by the test routine */
-    char buf<>;  /**< Data buffer */
-    char diag<>; /**< Error message */
+    tarpc_int   retval; /**< Status returned by the test routine */
+    uint8_t     buf<>;  /**< Data buffer */
+    char        diag<>; /**< Error message */
 };
 
 struct tarpc_aio_error_test_in {
     struct tarpc_in_arg common;
-    char diag<>; /**< Error message */
+
+    char        diag<>; /**< Error message */
 };
 
 struct tarpc_aio_error_test_out {
     struct tarpc_out_arg common;
     
-    int  retval; /**< Status returned by the test routine */
-    char diag<>; /**< Error message */
+    tarpc_int   retval; /**< Status returned by the test routine */
+    char        diag<>; /**< Error message */
 };
 
 struct tarpc_aio_write_test_in {
     struct tarpc_in_arg common;
     
-    int s;       /**< Socket to be used */
-    int signum;  /**< Signal to be used */
-    char buf<>;  /**< Data to be sent*/
-    char diag<>; /**< Error message */
+    tarpc_int       s;      /**< Socket to be used */
+    tarpc_signum    signum; /**< Signal to be used */
+    uint8_t         buf<>;  /**< Data to be sent*/
+    char            diag<>; /**< Error message */
 };
 
 struct tarpc_aio_write_test_out {
     struct tarpc_out_arg common;
     
-    int  retval; /**< Status returned by the test routine */
-    char diag<>; /**< Error message */
+    tarpc_int       retval; /**< Status returned by the test routine */
+    char            diag<>; /**< Error message */
 };
 
 struct tarpc_aio_suspend_test_in {
     struct tarpc_in_arg common;
     
-    int s;       /**< Socket to be used */
-    int s_aux;   /**< Additional dummy socket */
-    int signum;  /**< Signal to be used */
-    int t;       /**< Timeout for suspend */
-    char buf<>;  /**< Data buffer */
-    char diag<>; /**< Error message */
+    tarpc_int       s;      /**< Socket to be used */
+    tarpc_int       s_aux;  /**< Additional dummy socket */
+    tarpc_signum    signum; /**< Signal to be used */
+    int32_t         t;      /**< Timeout for suspend */
+    uint8_t         buf<>;  /**< Data buffer */
+    char            diag<>; /**< Error message */
 };
 
 struct tarpc_aio_suspend_test_out {
     struct tarpc_out_arg common;
     
-    int  retval; /**< Status returned by the test routine */
-    char diag<>; /**< Error message */
-    char buf<>;  /**< Read data */
+    int32_t     retval; /**< Status returned by the test routine */
+    char        buf<>;  /**< Read data */
+    char        diag<>; /**< Error message */
 };
 
 struct tarpc_fork_in {
     struct tarpc_in_arg common;
     
-    char name[16];
+    char        name[16];
 };
 
 struct tarpc_fork_out {
     struct tarpc_out_arg common;
     
-    int pid;
+    int32_t     pid;
 };
 
 struct tarpc_pthread_create_in {
@@ -1704,20 +1731,20 @@ struct tarpc_pthread_create_in {
 struct tarpc_pthread_create_out {
     struct tarpc_out_arg common;
     
-    unsigned int tid;
-    int          retval;
+    uint32_t    tid;
+    tarpc_int   retval;
 };
 
 struct tarpc_pthread_cancel_in {
     struct tarpc_in_arg common;
     
-    unsigned int tid;
+    uint32_t    tid;
 };
 
 struct tarpc_pthread_cancel_out {
     struct tarpc_out_arg common;
     
-    int retval;
+    tarpc_int   retval;
 };
 
 struct tarpc_execve_in {
@@ -1733,8 +1760,8 @@ struct tarpc_execve_out {
 struct tarpc_sendfile_in {
     struct tarpc_in_arg common;
 
-    int                 out_fd;
-    int                 in_fd;
+    tarpc_int           out_fd;
+    tarpc_int           in_fd;
     tarpc_off_t         offset<>;
     tarpc_size_t        count;
 };
@@ -1751,9 +1778,9 @@ struct tarpc_sendfile_out {
 struct tarpc_socket_to_file_in {
     struct tarpc_in_arg common;
 
-    int                 sock;
-    char                path<>;
-    long                timeout;
+    tarpc_int   sock;
+    char        path<>;
+    uint32_t    timeout;
 };
 
 typedef struct tarpc_ssize_t_retval_out tarpc_socket_to_file_out;
@@ -1762,43 +1789,43 @@ typedef struct tarpc_ssize_t_retval_out tarpc_socket_to_file_out;
 struct tarpc_wsa_send_in {
     struct tarpc_in_arg common;
 
-    int                 s;              /**< Socket */
+    tarpc_int           s;              /**< Socket */
     struct tarpc_iovec  vector<>;       /**< Buffers */
-    int                 count;          /**< Number of buffers */
-    int                 bytes_sent<>;   /**< Location for sent bytes num */
-    int                 flags;          /**< Flags */
+    tarpc_size_t        count;          /**< Number of buffers */
+    tarpc_int           bytes_sent<>;   /**< Location for sent bytes num */
+    tarpc_int           flags;          /**< Flags */
     tarpc_overlapped    overlapped;     /**< WSAOVERLAPPED structure pointer */
-    int                 callback;       /**< If 1, completion callback should be 
+    tarpc_bool          callback;       /**< If 1, completion callback should be 
                                              specified */
 };
 
 struct tarpc_wsa_send_out {
     struct tarpc_out_arg common;
-    int                  retval;
-    int                  bytes_sent<>;
+    tarpc_int            retval;
+    tarpc_int            bytes_sent<>;
 };
 
 /* WSARecv */
 struct tarpc_wsa_recv_in {
     struct tarpc_in_arg common;
 
-    int                 s;              /**< Socket */
+    tarpc_int           s;              /**< Socket */
     struct tarpc_iovec  vector<>;       /**< Buffers */
-    int                 count;          /**< Number of buffers */
-    int                 bytes_received<>;   
+    tarpc_size_t        count;          /**< Number of buffers */
+    tarpc_int           bytes_received<>;   
                                         /**< Location for received bytes num */
-    int                 flags<>;        /**< Flags */
+    tarpc_int           flags<>;        /**< Flags */
     tarpc_overlapped    overlapped;     /**< WSAOVERLAPPED structure pointer */
-    int                 callback;       /**< If 1, completion callback should be 
-                                             specified */
+    tarpc_bool          callback;       /**< If 1, completion callback
+                                             should be specified */
 };
 
 struct tarpc_wsa_recv_out {
     struct tarpc_out_arg common;
-    int                  retval;
+    tarpc_int            retval;
     struct tarpc_iovec   vector<>;       
-    int                  bytes_received<>;   
-    int                  flags<>;        
+    tarpc_int            bytes_received<>;   
+    tarpc_int            flags<>;        
 };
 
 
@@ -1806,21 +1833,21 @@ struct tarpc_wsa_recv_out {
 struct tarpc_get_overlapped_result_in {
     struct tarpc_in_arg common;
 
-    int                 s;              /**< Socket    */
+    tarpc_int           s;              /**< Socket    */
     tarpc_overlapped    overlapped;     /**< WSAOVERLAPPED structure */
-    int                 wait;           /**< Wait flag */
-    int                 bytes<>;        /**< Transferred bytes location */
-    int                 flags<>;        /**< Flags location */
+    tarpc_int           wait;           /**< Wait flag */
+    tarpc_int           bytes<>;        /**< Transferred bytes location */
+    tarpc_int           flags<>;        /**< Flags location */
 };    
 
 struct tarpc_get_overlapped_result_out {
     struct tarpc_out_arg common;
 
-    int                  retval;
-    int                  bytes<>;     /**< Transferred bytes */
-    int                  flags<>;     /**< Flags             */
-    struct tarpc_iovec   vector<>;    /**< Buffer to receive buffers resulted
-                                           from overlapped operation */
+    tarpc_int           retval;
+    tarpc_int           bytes<>;    /**< Transferred bytes */
+    tarpc_int           flags<>;    /**< Flags             */
+    struct tarpc_iovec  vector<>;   /**< Buffer to receive buffers resulted
+                                         from overlapped operation */
 };    
 
 
@@ -1837,11 +1864,11 @@ enum tarpc_wait_code {
 struct tarpc_wait_multiple_events_in {
     struct tarpc_in_arg common; 
     
-    int            count;         /**< Number of events */
-    tarpc_wsaevent events<>;      /**< Events array */
-    int            wait_all;      /**< WaitAll flag */
-    unsigned int   timeout;       /**< Timeout (in milliseconds) */
-    int            alertable;     /**< Alertable flag */
+    tarpc_int       count;      /**< Number of events */
+    tarpc_wsaevent  events<>;   /**< Events array */
+    tarpc_int       wait_all;   /**< WaitAll flag */
+    tarpc_uint      timeout;    /**< Timeout (in milliseconds) */
+    tarpc_int       alertable;  /**< Alertable flag */
 };
 
 struct tarpc_wait_multiple_events_out {
@@ -1850,36 +1877,20 @@ struct tarpc_wait_multiple_events_out {
     tarpc_wait_code      retval;
 };    
 
-/* fcntl() */
-
-struct tarpc_fcntl_in {
-    struct tarpc_in_arg common;
-    
-    int fd;
-    int cmd;
-    int arg;
-};
-
-struct tarpc_fcntl_out {
-    struct tarpc_out_arg common;
-    
-    int retval;
-};
-
 /* ftp_open() */
 struct tarpc_ftp_open_in {
     struct tarpc_in_arg common;
     
-    char uri<>;         /**< URI to open */
-    int  rdonly;        /**< If 1, open to get file */
-    int  passive;       /**< If 1, use passive mode */
-    int  offset;        /**< File offset */
+    char        uri<>;         /**< URI to open */
+    tarpc_bool  rdonly;        /**< If 1, open to get file */
+    tarpc_bool  passive;       /**< If 1, use passive mode */
+    int32_t     offset;        /**< File offset */
 };
 
 struct tarpc_ftp_open_out {
     struct tarpc_out_arg common;
     
-    int fd;     /**< TCP socket file descriptor */
+    tarpc_int fd;     /**< TCP socket file descriptor */
 };    
 
 program tarpc

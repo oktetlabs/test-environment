@@ -899,8 +899,8 @@ extern int rpc_iomux_flooder(rcf_rpc_server *handle,
                              int *sndrs, int sndnum, int *rcvrs, int rcvnum,
                              int bulkszs, int time2run, int iomux,
                              te_bool rx_nonblock,
-                             unsigned long *tx_stat,
-                             unsigned long *rx_stat);
+                             uint64_t *tx_stat,
+                             uint64_t *rx_stat);
 
 /**
  * Routine which receives data from specified set of
@@ -923,7 +923,7 @@ extern int rpc_iomux_flooder(rcf_rpc_server *handle,
 extern int rpc_iomux_echoer(rcf_rpc_server *handle,
                             int *sockets, int socknum,
                             int time2run, int iomux,
-                            unsigned long *tx_stat, unsigned long *rx_stat);
+                            uint64_t *tx_stat, uint64_t *rx_stat);
 
 /**
  * Routine which copies data from file descriptor opened for reading

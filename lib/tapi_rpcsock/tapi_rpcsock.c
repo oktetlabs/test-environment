@@ -3193,10 +3193,10 @@ rpc_getsockopt_gen(rcf_rpc_server *handle,
                 val.opttype = OPT_MREQN;
                 if (roptlen >= sizeof(struct ip_mreqn))
                 {
-                    memcpy(val.option_value_u.opt_mreqn.imr_multiaddr,
+                    memcpy(&val.option_value_u.opt_mreqn.imr_multiaddr,
                         &(((struct ip_mreqn *)optval)->imr_multiaddr),
                         sizeof(((struct ip_mreqn *)optval)->imr_multiaddr));
-                    memcpy(val.option_value_u.opt_mreqn.imr_address,
+                    memcpy(&val.option_value_u.opt_mreqn.imr_address,
                         &(((struct ip_mreqn *)optval)->imr_address),
                         sizeof(((struct ip_mreqn *)optval)->imr_address));
                     val.option_value_u.opt_mreqn.imr_ifindex =
@@ -3372,13 +3372,13 @@ rpc_getsockopt_gen(rcf_rpc_server *handle,
 
                         memcpy(
                             &(((struct ip_mreqn *)optval)->imr_multiaddr),
-                            out.optval.optval_val[0].option_value_u.
-                                opt_mreqn.imr_multiaddr,
+                            &out.optval.optval_val[0].option_value_u.
+                                 opt_mreqn.imr_multiaddr,
                             sizeof(((struct ip_mreqn *)optval)->
                                        imr_multiaddr));
                         memcpy(&(((struct ip_mreqn *)optval)->imr_address),
-                               out.optval.optval_val[0].option_value_u.
-                                   opt_mreqn.imr_address,
+                               &out.optval.optval_val[0].option_value_u.
+                                    opt_mreqn.imr_address,
                                sizeof(((struct ip_mreqn *)optval)->
                                       imr_address));
                         ((struct ip_mreqn *)optval)->imr_ifindex =
@@ -3587,10 +3587,10 @@ rpc_setsockopt(rcf_rpc_server *handle,
                 char addr_buf1[INET_ADDRSTRLEN];
                 char addr_buf2[INET_ADDRSTRLEN];
 
-                memcpy(val.option_value_u.opt_mreqn.imr_multiaddr,
+                memcpy(&val.option_value_u.opt_mreqn.imr_multiaddr,
                     (char *)&(((struct ip_mreqn *)optval)->imr_multiaddr),
                     sizeof(((struct ip_mreqn *)optval)->imr_multiaddr));
-                memcpy(val.option_value_u.opt_mreqn.imr_address,
+                memcpy(&val.option_value_u.opt_mreqn.imr_address,
                     (char *)&(((struct ip_mreqn *)optval)->imr_address),
                     sizeof(((struct ip_mreqn *)optval)->imr_address));
                 val.option_value_u.opt_mreqn.imr_ifindex =
@@ -5257,7 +5257,7 @@ rpc_simple_sender(rcf_rpc_server *handle,
                  &out, (xdrproc_t)xdr_tarpc_simple_sender_out);
 
     if (out.retval == 0)
-        *sent = ((uint64_t)(out.bytes_high) << 32) + out.bytes_low;
+        *sent = out.bytes;
 
     RING("RPC (%s,%s)%s: "
          "simple_sender(%d, %d, %d, %d, %d, %d, %d, %d, %d) -> %d %u (%s)",
@@ -5304,7 +5304,7 @@ rpc_simple_receiver(rcf_rpc_server *handle,
                  &out, (xdrproc_t)xdr_tarpc_simple_receiver_out);
 
     if (out.retval == 0)
-        *received = ((uint64_t)(out.bytes_high) << 32) + out.bytes_low;
+        *received = out.bytes;
 
     RING("RPC (%s,%s)%s: simple_receiver(%d) -> %d %u (%s)",
          handle->ta, handle->name, rpcop2str(op),
@@ -5320,7 +5320,7 @@ int
 rpc_iomux_flooder(rcf_rpc_server *handle,
                   int *sndrs, int sndnum, int *rcvrs, int rcvnum,
                   int bulkszs, int time2run, int iomux, te_bool rx_nonblock,
-                  unsigned long *tx_stat, unsigned long *rx_stat)
+                  uint64_t *tx_stat, uint64_t *rx_stat)
 {
     rcf_rpc_op        op;
     tarpc_flooder_in  in;
@@ -5390,7 +5390,7 @@ rpc_iomux_flooder(rcf_rpc_server *handle,
 int
 rpc_iomux_echoer(rcf_rpc_server *handle,
                  int *sockets, int socknum, int time2run, int iomux,
-                 unsigned long *tx_stat, unsigned long *rx_stat)
+                 uint64_t *tx_stat, uint64_t *rx_stat)
 {
     rcf_rpc_op       op;
     tarpc_echoer_in  in;
@@ -5695,7 +5695,7 @@ rpc_sendfile(rcf_rpc_server *handle, int out_fd, int in_fd,
     if (offset != NULL && handle->op != RCF_RPC_WAIT)
     {
         in.offset.offset_len = 1;
-        in.offset.offset_val = offset;
+        in.offset.offset_val = (tarpc_off_t *)offset;
     }
 
     rcf_rpc_call(handle, _sendfile, &in, (xdrproc_t)xdr_tarpc_sendfile_in,

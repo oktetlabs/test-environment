@@ -382,11 +382,10 @@ check_args(checked_arg *list)
     } while (0)
 
 /** Wait time specified in the input argument. */
-#define WAIT_START(high, low)                                   \
+#define WAIT_START(msec_start)                                  \
     do {                                                        \
         struct timeval t;                                       \
                                                                 \
-        uint64_t msec_start = (((uint64_t)high) << 32) + (low); \
         uint64_t msec_now;                                      \
                                                                 \
         gettimeofday(&t, NULL);                                 \
@@ -408,7 +407,7 @@ check_args(checked_arg *list)
         struct timeval t_finish;                                 \
         int           _rc;                                       \
                                                                  \
-        WAIT_START(in->common.start_high, in->common.start_low); \
+        WAIT_START(in->common.start);                            \
         gettimeofday(&t_start, NULL);                            \
         errno = 0;                                               \
         x;                                                       \
@@ -1494,10 +1493,10 @@ TARPC_FUNC(setsockopt, {},
                 opt = (char *)&mreqn;
 
                 memcpy((char *)&(mreqn.imr_multiaddr),
-                       in->optval.optval_val[0].option_value_u.opt_mreqn.
+                       &in->optval.optval_val[0].option_value_u.opt_mreqn.
                        imr_multiaddr, sizeof(mreqn.imr_multiaddr));
                 memcpy((char *)&(mreqn.imr_address),
-                       in->optval.optval_val[0].option_value_u.opt_mreqn.
+                       &in->optval.optval_val[0].option_value_u.opt_mreqn.
                        imr_address, sizeof(mreqn.imr_address));
 
                 mreqn.imr_ifindex = in->optval.optval_val[0].option_value_u.
@@ -1634,10 +1633,10 @@ TARPC_FUNC(getsockopt,
             {
                 struct ip_mreqn *mreqn = (struct ip_mreqn *)opt;
 
-                memcpy(out->optval.optval_val[0].option_value_u.opt_mreqn.
+                memcpy(&out->optval.optval_val[0].option_value_u.opt_mreqn.
                        imr_multiaddr, (char *)&(mreqn->imr_multiaddr),
                        sizeof(mreqn->imr_multiaddr));
-                memcpy(out->optval.optval_val[0].option_value_u.opt_mreqn.
+                memcpy(&out->optval.optval_val[0].option_value_u.opt_mreqn.
                        imr_address, (char *)&(mreqn->imr_address),
                        sizeof(mreqn->imr_address));
                 out->optval.optval_val[0].option_value_u.opt_mreqn.
@@ -1785,7 +1784,7 @@ TARPC_FUNC(ioctl,
 
     if (out->req.req_val != NULL)
     {
-        switch(out->req.req_val[0].type)
+        switch (out->req.req_val[0].type)
         {
             case IOCTL_TIMEVAL:
             {
@@ -2657,8 +2656,6 @@ simple_sender(tarpc_simple_sender_in *in, tarpc_simple_sender_out *out)
     sock_api_func send_func;
     char          buf[1024];
 
-    uint64_t sent = 0;
-
     int size = rand_range(in->size_min, in->size_max);
     int delay = rand_range(in->delay_min, in->delay_max);
 
@@ -2668,6 +2665,8 @@ simple_sender(tarpc_simple_sender_in *in, tarpc_simple_sender_out *out)
 #ifdef TA_DEBUG
     uint64_t control = 0;
 #endif
+
+    out->bytes = 0;
 
     if (in->size_max > (int)sizeof(buf) || in->size_min > in->size_max ||
         in->delay_min > in->delay_max)
@@ -2682,7 +2681,7 @@ simple_sender(tarpc_simple_sender_in *in, tarpc_simple_sender_out *out)
     memset(buf, 0xDEADBEEF, sizeof(buf));
 
     for (start = now = time(NULL);
-         now - start <= in->time2run;
+         (unsigned int)(now - start) <= in->time2run;
          now = time(NULL))
     {
         int len;
@@ -2693,7 +2692,7 @@ simple_sender(tarpc_simple_sender_in *in, tarpc_simple_sender_out *out)
         if (!in->delay_rnd_once)
             delay = rand_range(in->delay_min, in->delay_max);
 
-        if (delay / 1000000 > in->time2run - (now - start) + 1)
+        if (delay / 1000000 > (int)(in->time2run) - (now - start) + 1)
             break;
 
         usleep(delay);
@@ -2721,11 +2720,8 @@ simple_sender(tarpc_simple_sender_in *in, tarpc_simple_sender_out *out)
             return -1;
         }
 #endif
-        sent += len;
+        out->bytes += len;
     }
-
-    out->bytes_high = sent >> 32;
-    out->bytes_low = sent & 0xFFFFFFFF;
 
     return 0;
 }
@@ -2752,11 +2748,12 @@ simple_receiver(tarpc_simple_receiver_in *in,
     sock_api_func recv_func;
     char          buf[1024];
 
-    uint64_t received = 0;
 #ifdef TA_DEBUG
     uint64_t control = 0;
     int start = time(NULL);
 #endif
+
+    out->bytes = 0;
 
     if (find_func((tarpc_in_arg *)in, "select", &select_func) != 0 ||
         find_func((tarpc_in_arg *)in, "recv", &recv_func) != 0)
@@ -2779,7 +2776,7 @@ simple_receiver(tarpc_simple_receiver_in *in,
         }
         if (!FD_ISSET(in->s, &set))
         {
-            if (received > 0)
+            if (out->bytes > 0)
                 break;
             else
                 continue;
@@ -2800,13 +2797,10 @@ simple_receiver(tarpc_simple_receiver_in *in,
             goto simple_receiver_exit;
         }
 
-        received += len;
+        out->bytes += len;
     }
 
 simple_receiver_exit:
-
-    out->bytes_high = received >> 32;
-    out->bytes_low = received & 0xFFFFFFFF;
 
     return 0;
 }
@@ -2865,8 +2859,8 @@ flooder(tarpc_flooder_in *in)
     iomux_func  iomux = in->iomux;
     te_bool     rx_nb = in->rx_nonblock;
 
-    unsigned long   *tx_stat = in->tx_stat.tx_stat_val;
-    unsigned long   *rx_stat = in->rx_stat.rx_stat_val;
+    uint64_t   *tx_stat = in->tx_stat.tx_stat_val;
+    uint64_t   *rx_stat = in->rx_stat.rx_stat_val;
 
     int      i;
     int      rc;
@@ -3239,8 +3233,8 @@ echoer(tarpc_echoer_in *in)
     int         time2run = in->time2run;
     iomux_func  iomux = in->iomux;
 
-    unsigned long   *tx_stat = in->tx_stat.tx_stat_val;
-    unsigned long   *rx_stat = in->rx_stat.rx_stat_val;
+    uint64_t   *tx_stat = in->tx_stat.tx_stat_val;
+    uint64_t   *rx_stat = in->rx_stat.rx_stat_val;
 
     int      i;
     int      rc;
