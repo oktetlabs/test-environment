@@ -358,28 +358,30 @@ cfg_add_instance_fmt(cfg_handle *p_handle, cfg_val_type type,
 }
 
 /**
- * Add child with specified sub-identifier, name and value to the
- * parent specified by handle.
+ * Add instance with the first part of OID specified by handle and
+ * the second part specified by format string and its parameters.
  *
  * @param p_handle      Locatin for handle of new instance
  * @param type          Type of value
  * @param val           Value
  * @param parent        Handle of the parent
- * @param subid         Sub-identifier
- * @param name          Instance name or NULL
+ * @param suboid_fmt    Sub-identifier format string
+ * @param ...           Format string arguments
  *
  * @return Status code.
  */
 static inline int
-cfg_add_instance_child(cfg_handle *p_handle, cfg_val_type type,
-                       const void *val, cfg_handle parent,
-                       const char *subid, const char *name)
+cfg_add_instance_child_fmt(cfg_handle *p_handle, cfg_val_type type,
+                           const void *val, cfg_handle parent,
+                           const char *suboid_fmt, ...)
 {
+    va_list     ap;
     int         rc;
     char       *parent_oid;
+    char        oid_fmt[CFG_OID_MAX];
     char        oid[CFG_OID_MAX];
 
-    if (subid == NULL)
+    if (suboid_fmt == NULL)
         return TE_RC(TE_CONF_API, EINVAL);
 
     rc = cfg_get_oid_str(parent, &parent_oid);
@@ -387,9 +389,12 @@ cfg_add_instance_child(cfg_handle *p_handle, cfg_val_type type,
         return rc;
     assert(parent_oid != NULL);
 
-    snprintf(oid, sizeof(oid),
-             "%s/%s:%s", parent_oid, subid, (name) ? : "");
+    snprintf(oid_fmt, sizeof(oid_fmt), "%s/%s", parent_oid, suboid_fmt);
     free(parent_oid);
+
+    va_start(ap, suboid_fmt);
+    vsnprintf(oid, sizeof(oid), oid_fmt, ap);
+    va_end(ap);
 
     return cfg_add_instance_str(oid, p_handle, type, val);
 }
