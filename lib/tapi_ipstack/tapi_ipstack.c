@@ -464,10 +464,7 @@ tapi_ip4_eth_csap_create(const char *ta_name, int sid, const char *eth_dev,
     asn_free_value(csap_eth_level);
     asn_free_value(csap_level_spec);
 
-
-#if 0
     unlink(csap_fname); 
-#endif
 
     return TE_RC(TE_TAPI, rc);
 }
@@ -530,9 +527,7 @@ tapi_ip4_eth_recv_start(const char *ta_name, int sid, csap_handle_t csap,
     rc = rcf_ta_trrecv_start(ta_name, sid, csap, template_fname,
                                 NULL, NULL, timeout, num);
 
-#if 0
     unlink(template_fname); 
-#endif
 
     return rc;
 }
