@@ -518,6 +518,37 @@ struct tarpc_accept_out {
                                          for peer name */
 };
 
+/* WSAAccept() */
+
+enum tarpc_accept_verdict {
+    TARPC_CF_REJECT,  
+    TARPC_CF_ACCEPT,
+    TARPC_CF_DEFER 
+};
+
+struct tarpc_accept_cond {
+    unsigned short       port;       /**< Caller port             */
+    tarpc_accept_verdict verdict;    /**< Verdict for this caller */
+};
+
+struct tarpc_wsa_accept_in {
+    struct tarpc_in_arg common;
+
+    int                      fd;      /**< TA-local socket */
+    struct tarpc_sa          addr;    /**< Location for peer name */
+    tarpc_socklen_t          len<>;   /**< Length of the peer name location */
+    struct tarpc_accept_cond cond<>;  /**< Data for the callback function */
+};
+
+struct tarpc_wsa_accept_out {
+    struct tarpc_out_arg common;
+
+    int                  retval;
+
+    struct tarpc_sa      addr;   /**< Location for peer name */
+    tarpc_socklen_t      len<>;  /**< Length of the peer name location */
+};
+
 /* AcceptEx() */
 /* Also arguments for call of GetAcceptExSockAddrs function are specified */
 
@@ -1757,6 +1788,7 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
 
         RPC_DEF(wsarecv_ex)
         RPC_DEF(connect_ex)
+        RPC_DEF(wsa_accept)
         RPC_DEF(accept_ex)
         RPC_DEF(disconnect_ex)
         RPC_DEF(reset_event)     
