@@ -552,6 +552,7 @@ cfg_db_add(char *oid_s, cfg_handle *handle,
     cfg_object     *obj;
     cfg_instance   *father = &cfg_inst_root;
     cfg_instance   *inst;
+    cfg_instance   *prev;
     cfg_inst_subid *s;
     int             i = 0;
     
@@ -604,14 +605,12 @@ cfg_db_add(char *oid_s, cfg_handle *handle,
         RET(ETEBADTYPE);
     
     /* Try to find instance with the same name */
-    for (inst = father->son; inst != NULL; inst = inst->brother)
-    {
-        if (strcmp(inst->obj->subid, s->subid) == 0 &&
-            strcmp(inst->name, s->name) == 0)
-        {
-            RET(EEXIST);
-        }
-    }
+    for (inst = father->son, prev = NULL; 
+         inst != NULL && strcmp(inst->oid, oid_s) < 0; 
+         prev = inst, inst = inst->brother);
+
+    if (inst != NULL && strcmp(inst->oid, oid_s) == 0)
+        RET(EEXIST);
 
     /* Now look for empty slot in the object instances array */
     for (i = 0; i < cfg_all_inst_size && cfg_all_inst[i] != NULL; i++);
@@ -659,8 +658,16 @@ cfg_db_add(char *oid_s, cfg_handle *handle,
     cfg_all_inst[i]->obj = obj;
     cfg_all_inst[i]->father = father;
     cfg_all_inst[i]->son = NULL;
-    cfg_all_inst[i]->brother = father->son;
-    father->son = cfg_all_inst[i];
+    if (prev)
+    {
+        cfg_all_inst[i]->brother = prev->brother;
+        prev->brother = cfg_all_inst[i];
+    }
+    else
+    {
+        cfg_all_inst[i]->brother = father->son;
+        father->son = cfg_all_inst[i];
+    }
     
     *handle = cfg_all_inst[i]->handle;
     
