@@ -160,7 +160,8 @@ wait_child_and_log(void)
     else
     {
         CHECK_LGR_LOCK;
-        ERROR("waitpid() failed with errno %d", errno);
+        if (errno != EINTR)
+            ERROR("waitpid() failed with errno %d", errno);
     }
 #undef CHECK_LGR_LOCK
 }
