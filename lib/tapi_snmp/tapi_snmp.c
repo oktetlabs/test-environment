@@ -652,6 +652,13 @@ tapi_snmp_msg_tail(FILE *f)
     return 0;
 }
 
+
+struct tapi_vb_list {
+    tapi_snmp_varbind_t *vb;
+    struct tapi_vb_list *next;
+};
+
+
 /**
  * Internal common procedure for SNMP operations. 
  */
@@ -731,12 +738,99 @@ tapi_snmp_operation (const char *ta, int sid, int csap_id,
     return TE_RC(TE_TAPI, rc);
 }
 
+int 
+tapi_snmp_get_row(const char *ta, int sid, int csap_id, 
+                  const tapi_snmp_oid_t *common_index, ...)
+{
+    va_list       ap;
+    int           num_vars = 0;
+    int           i;
+    char         *oid_name;
+    FILE         *f;
+    unsigned int  timeout;
+    char          tmp_name[100];
+    int           rc, num;
+    struct tapi_vb_list *vbl; 
+    struct tapi_vb_list *vbl_head = NULL; 
+
+    strcpy(tmp_name, "/tmp/te_snmp_get_row.XXXXXX"); 
+    mktemp(tmp_name);
+#if DEBUG
+    VERB ("tmp file: %s\n", tmp_name);
+#endif
+    f = fopen (tmp_name, "w+");
+    if (f == NULL)
+        return TE_RC(TE_TAPI, errno); /* return system errno */ 
+
+
+    rc = tapi_snmp_msg_head(f, NDN_SNMP_MSG_GET, 0);
+
+
+    va_start(ap, common_index);
+    while (1) {
+        tapi_snmp_varbind_t  var_bind;
+        tapi_snmp_oid_t      oid;
+        tapi_snmp_vartypes_t syntax;
+        char                 *oid_name = va_arg(ap, char *);
+        
+        if (!oid_name)
+            break;
+        
+        if ((rc = tapi_snmp_make_oid(oid_name, &var_bind.name)) != 0)
+            return TE_RC(TE_TAPI, rc);
+
+        if ((rc = tapi_snmp_get_syntax(&oid, &syntax)) != 0)
+            return TE_RC(TE_TAPI, rc);
+
+        var_bind.type = syntax;
+
+        switch (syntax) {
+            case TAPI_SNMP_OTHER:
+            case TAPI_SNMP_INTEGER:
+            case TAPI_SNMP_IPADDRESS:
+            case TAPI_SNMP_COUNTER:
+            case TAPI_SNMP_UNSIGNED:
+            case TAPI_SNMP_TIMETICKS:
+                var_bind.integer = va_arg(ap, int);
+                break;
+
+            case TAPI_SNMP_OCTET_STR:
+            {
+                var_bind.oct_string = va_arg(ap, unsigned char *);
+                var_bind.v_len = va_arg(ap, int);
+                break;
+            }
+
+            case TAPI_SNMP_OBJECT_ID:
+            {
+                var_bind.obj_id = va_arg(ap, tapi_snmp_oid_t *);
+                var_bind.v_len = var_bind.obj_id->length;
+                break;
+            }
+        }
+        
+        vbl = calloc(1, sizeof(struct tapi_vb_list));
+        vbl->next = vbl_head;
+        vbl_head = vbl;
+        num_vars++;
+    };
+    va_end(ap);
+
+    if (!num_vars)
+        return 0; /* ??? */
+
+
+    VERB("in %s: num_vars %d\n", __FUNCTION__, num_vars);
+
+
+     return 0;   
+}
 
 /* See description in tapi_snmp.h */
 int 
 tapi_snmp_set(const char *ta, int sid, int csap_id, 
-                         const tapi_snmp_varbind_t *var_binds, 
-                         size_t num_vars, int *errstat, int *errindex)
+              const tapi_snmp_varbind_t *var_binds, 
+              size_t num_vars, int *errstat, int *errindex)
 {
     FILE         *f;
     unsigned int  timeout, i;
@@ -744,7 +838,7 @@ tapi_snmp_set(const char *ta, int sid, int csap_id,
     int           rc, num;
     tapi_snmp_message_t msg;
 
-    strcpy(tmp_name, "/tmp/te_snmp_op.XXXXXX"); 
+    strcpy(tmp_name, "/tmp/te_snmp_set.XXXXXX"); 
     mktemp(tmp_name);
 #if DEBUG
     VERB ("tmp file: %s\n", tmp_name);
@@ -802,11 +896,6 @@ tapi_snmp_set(const char *ta, int sid, int csap_id,
     return TE_RC(TE_TAPI, rc);
 }
 
-
-struct tapi_vb_list {
-    tapi_snmp_varbind_t *vb;
-    struct tapi_vb_list *next;
-};
 
 #if 0
 int 
@@ -890,6 +979,9 @@ tapi_snmp_set_row(const char *ta, int sid, int csap_id,
         if ((rc = tapi_snmp_get_syntax(&oid, &syntax)) != 0)
             return TE_RC(TE_TAPI, rc);
 
+        vb->type = syntax;
+        vb->name = oid;
+
         switch (syntax) {
             case TAPI_SNMP_OTHER:
             case TAPI_SNMP_INTEGER:
@@ -897,15 +989,11 @@ tapi_snmp_set_row(const char *ta, int sid, int csap_id,
             case TAPI_SNMP_COUNTER:
             case TAPI_SNMP_UNSIGNED:
             case TAPI_SNMP_TIMETICKS:
-                vb->type = syntax;
-                vb->name = oid;
                 vb->integer = va_arg(ap, int);
                 break;
 
             case TAPI_SNMP_OCTET_STR:
             {
-                vb->type = syntax;
-                vb->name = oid;
                 vb->oct_string = va_arg(ap, unsigned char *);
                 vb->v_len = va_arg(ap, int);
                 break;
@@ -913,10 +1001,8 @@ tapi_snmp_set_row(const char *ta, int sid, int csap_id,
 
             case TAPI_SNMP_OBJECT_ID:
             {
-                vb->type = syntax;
-                vb->name = oid;
                 vb->obj_id = va_arg(ap, tapi_snmp_oid_t *);
-                vb->v_len = va_arg(ap, int);
+                vb->v_len = vb->obj_id->length;
                 break;
             }
         }
