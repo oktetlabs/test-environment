@@ -119,7 +119,7 @@ startElementLGR(void *ctx ATTRIBUTE_UNUSED,
         (atts[1] != NULL))
     {
         /* Get default polling value and assign it to the all TA */
-        if (!strcmp(atts[0], "default"))
+        if (strcmp(atts[0], "default") == 0)
         {
             uint32_t dft;
 

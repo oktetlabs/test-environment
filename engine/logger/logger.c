@@ -542,21 +542,6 @@ main(int argc, char *argv[])
     /* Futher we must goto 'exit' in the case of failure */
 
 
-    /* Log file must be processed before start of messages processing */
-    INFO("Logger configuration file parsing\n");
-    /* Parse configuration file */
-    if (argc < 1)
-    {
-        ERROR("No Logger configuration file passed\n");
-        goto exit;
-    }
-    if (configParser(argv[1]) != 0)
-    {
-        ERROR("Logger configuration file failure\n");
-        goto exit;
-    }
-
-
     /* Initialize IPC before any servers creation */
     if (ipc_init() != 0)
     {
@@ -628,6 +613,25 @@ main(int argc, char *argv[])
         ta_list = ta_el;
     }
     free(ta_names);
+
+    /* 
+     * FIXME:
+     * Log file must be processed before start of messages
+     * processing 
+     */
+    /* Parse log file when list of TAs is known */
+    INFO("Logger configuration file parsing\n");
+    /* Parse configuration file */
+    if (argc < 1)
+    {
+        ERROR("No Logger configuration file passed\n");
+        goto join_te_srv;
+    }
+    if (configParser(argv[1]) != 0)
+    {
+        ERROR("Logger configuration file failure\n");
+        goto join_te_srv;
+    }
 
     INFO("TA handlers creation\n");
     /* Create threads according to active TA list */
