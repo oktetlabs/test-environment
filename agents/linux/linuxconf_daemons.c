@@ -2393,6 +2393,12 @@ ds_smtp_server_set(unsigned int gid, const char *oid, const char *value)
     
     if (smtp_current != NULL && daemon_running(smtp_current_daemon))
         return TE_RC(TE_TA_LINUX, EPERM);
+        
+    if (*value == NULL)
+    {
+        smtp_current = NULL;
+        return 0;
+    }
 
     for (i = 0; i < sizeof(smtp_servers) / sizeof(char *); i++)
     {
