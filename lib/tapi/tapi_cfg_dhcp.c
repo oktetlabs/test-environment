@@ -66,7 +66,7 @@ tapi_cfg_dhcps_add_host(const char            *ta,
     char           *str;
     unsigned int    i;
 
-    if (ta == NULL || chaddr == NULL ||
+    if (ta == NULL ||
         (client_id != NULL && client_id_len != -1 && client_id_len <= 0))
     {
         ERROR("%s(): Invalid argument", __FUNCTION__);
@@ -132,24 +132,36 @@ tapi_cfg_dhcps_add_host(const char            *ta,
 
     if (group != NULL)
     {
-        rc = cfg_set_instance_local_fmt(CVT_STRING, group,
+        rc = cfg_set_instance_fmt(CVT_STRING, group,
                  TE_CFG_TA_DHCP_SERVER_FMT "/host:%s/group:",
                  ta, name);
         if (rc != 0)
             return rc;
     }
 
-    rc = cfg_set_instance_local_fmt(CVT_ADDRESS, chaddr,
-             TE_CFG_TA_DHCP_SERVER_FMT "/host:%s/chaddr:",
-             ta, name);
-    if (rc != 0)
-        return rc;
+    if (chaddr != NULL)
+    {
+        rc = cfg_types[CVT_ADDRESS].val2str(
+                 (cfg_inst_val)(struct sockaddr *)chaddr, &str);
+        if (rc != 0)
+        {
+            ERROR("%s(): Failed to convert IP address to string: %X",
+                  __FUNCTION__, rc);
+            return rc;
+        }
+        rc = cfg_set_instance_fmt(CVT_STRING, str,
+                 TE_CFG_TA_DHCP_SERVER_FMT "/host:%s/chaddr:",
+                 ta, name);
+        free(str);
+        if (rc != 0)
+            return rc;
+    }
 
     if (client_id != NULL)
     {
         if (client_id_len == -1)
         {
-            rc = cfg_set_instance_local_fmt(CVT_STRING, client_id,
+            rc = cfg_set_instance_fmt(CVT_STRING, client_id,
                      TE_CFG_TA_DHCP_SERVER_FMT "/host:%s/client-id:",
                      ta, name);
             if (rc != 0)
@@ -169,7 +181,7 @@ tapi_cfg_dhcps_add_host(const char            *ta,
                             "" : ":");
             }
 
-            rc = cfg_set_instance_local_fmt(CVT_STRING, cid_str,
+            rc = cfg_set_instance_fmt(CVT_STRING, cid_str,
                      TE_CFG_TA_DHCP_SERVER_FMT "/host:%s/client-id:",
                      ta, name);
             if (rc != 0)
@@ -179,16 +191,25 @@ tapi_cfg_dhcps_add_host(const char            *ta,
 
     if (fixed_ip != NULL)
     {
-        rc = cfg_set_instance_local_fmt(CVT_ADDRESS, chaddr,
+        rc = cfg_types[CVT_ADDRESS].val2str(
+                 (cfg_inst_val)(struct sockaddr *)fixed_ip, &str);
+        if (rc != 0)
+        {
+            ERROR("%s(): Failed to convert IP address to string: %X",
+                  __FUNCTION__, rc);
+            return rc;
+        }
+        rc = cfg_set_instance_fmt(CVT_STRING, str,
                  TE_CFG_TA_DHCP_SERVER_FMT "/host:%s/ip-address:",
                  ta, name);
+        free(str);
         if (rc != 0)
             return rc;
     }
 
     if (next_server != NULL)
     {
-        rc = cfg_set_instance_local_fmt(CVT_STRING, next_server,
+        rc = cfg_set_instance_fmt(CVT_STRING, next_server,
                  TE_CFG_TA_DHCP_SERVER_FMT "/host:%s/next:",
                  ta, name);
         if (rc != 0)
@@ -197,18 +218,11 @@ tapi_cfg_dhcps_add_host(const char            *ta,
 
     if (filename != NULL)
     {
-        rc = cfg_set_instance_local_fmt(CVT_STRING, filename,
+        rc = cfg_set_instance_fmt(CVT_STRING, filename,
                  TE_CFG_TA_DHCP_SERVER_FMT "/host:%s/file:",
                  ta, name);
         if (rc != 0)
             return rc;
-    }
-
-    rc = cfg_commit_fmt(TE_CFG_TA_DHCP_SERVER_FMT "/host:%s", ta, name);
-    if (rc != 0)
-    {
-        ERROR("%s(): Failed to commit changes: %X", __FUNCTION__, rc);
-        return rc;
     }
 
     return 0;

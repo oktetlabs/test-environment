@@ -63,6 +63,13 @@ extern "C" {
  *                      NULL
  *
  * @return Status code
+ *
+ * @attention In the case of failure, configuration changes are not
+ *            rolled back. It is assumed that test fails and
+ *            configuration backup will be restored.
+ *
+ * @note Ideally the function must used local set operations and, then,
+ *       commit. However, it does not work :(
  */
 extern int tapi_cfg_dhcps_add_host(const char            *ta,
                                    const char            *name,
