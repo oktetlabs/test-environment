@@ -40,20 +40,16 @@
 #if HAVE_ERRNO_H
 #include <errno.h>
 #endif
-#if HAVE_POPT_H
-#include <popt.h>
-#else
-#error popt library (development version) is required for TRC tool
-#endif
 
 #include "te_defs.h"
 #include "trc_log.h"
 #include "trc_db.h"
 
+
 #define WRITE_STR(str) \
     do {                                                \
         fflush(f);                                      \
-        if (write(fd, str, strlen(str)) != strlen(str)) \
+        if (fwrite(str, strlen(str), 1, f) != 1)        \
         {                                               \
             rc = errno ? : EIO;                         \
             ERROR("Writing to the file failed");        \
@@ -172,7 +168,7 @@ static const char * const trc_stats_table =
 "    </TD>\n"
 "  </TR>\n"
 "  <TR>\n"
-"    <TD ROWSPAN=2>\n"
+"    <TD ROWSPAN=3>\n"
 "      <P><FONT SIZE=5><B>Not Run</B></FONT></P>\n"
 "    </TD>\n"
 "    <TD>\n"
@@ -187,7 +183,19 @@ static const char * const trc_stats_table =
 "  <TR>\n"
 "    <TD>\n"
 "      <P STYLE=\"margin-left: 0.2in; margin-right: 0in\">\n"
-"        Skipped\n"
+"        Skipped, as expected\n"
+"      </P>\n"
+"    </TD>\n"
+"    <TD>\n"
+"      <P ALIGN=RIGHT STYLE=\"margin-left: 0.2in; margin-right: 0.2in\">\n"
+"      %u\n"
+"      </P>\n"
+"    </TD>\n"
+"  </TR>\n"
+"  <TR>\n"
+"    <TD>\n"
+"      <P STYLE=\"margin-left: 0.2in; margin-right: 0in\">\n"
+"        Skipped unexpectedly\n"
 "      </P>\n"
 "    </TD>\n"
 "    <TD>\n"
@@ -211,7 +219,7 @@ static const char * const trc_tests_stats_start =
 "      <TD COLSPAN=7>\n"
 "        <P ALIGN=CENTER><B>Run</B></P>\n"
 "      </TD>\n"
-"      <TD COLSPAN=2>\n"
+"      <TD COLSPAN=3>\n"
 "        <P ALIGN=CENTER><B>Not Run</B></P>\n"
 "      </TD>\n"
 "      <TD ROWSPAN=2>\n"
@@ -244,7 +252,10 @@ static const char * const trc_tests_stats_start =
 "        <P><B>Total</B></P>\n"
 "      </TD>\n"
 "      <TD>\n"
-"        <P>Skipped</P>\n"
+"        <P>Skipped, as expected</P>\n"
+"      </TD>\n"
+"      <TD>\n"
+"        <P>Skipped unexp</P>\n"
 "      </TD>\n"
 "    </TR>\n"
 "  </THEAD>\n"
@@ -300,6 +311,11 @@ static const char * const trc_tests_stats_row =
 "      <TD>\n"
 "        <P ALIGN=RIGHT STYLE=\"margin-left: 0.1in; margin-right: 0.1in\">\n"
 "          <B>%u</B>\n"
+"        </P>\n"
+"      </TD>\n"
+"      <TD>\n"
+"        <P ALIGN=RIGHT STYLE=\"margin-left: 0.1in; margin-right: 0.1in\">\n"
+"          %u\n"
 "        </P>\n"
 "      </TD>\n"
 "      <TD>\n"
@@ -367,7 +383,7 @@ stats_to_html(const trc_stats *stats)
             stats->pass_exp, stats->fail_exp,
             stats->pass_une, stats->fail_une,
             stats->aborted, stats->new_run,
-            TRC_STATS_NOT_RUN(stats), stats->skipped);
+            TRC_STATS_NOT_RUN(stats), stats->skip_exp, stats->skip_une);
 
     return 0;
 }
@@ -376,6 +392,30 @@ stats_to_html(const trc_stats *stats)
 static int tests_to_html(const test_runs *tests, unsigned int level,
                          unsigned int flags);
 
+static const char *
+trc_test_result_to_string(trc_test_result result)
+{
+    switch (result)
+    {
+        case TRC_TEST_PASSED:
+            return "passed";
+        case TRC_TEST_FAILED:
+            return "failed";
+        case TRC_TEST_CORED:
+            return "CORED";
+        case TRC_TEST_KILLED:
+            return "KILLED";
+        case TRC_TEST_FAKED:
+            return "faked";
+        case TRC_TEST_SKIPPED:
+            return "skipped";
+        case TRC_TEST_UNSPEC:
+            return "UNSPEC";
+        default:
+            return "OOps";
+    }
+}
+
 static int
 iters_to_html(const test_run *test, const test_iters *iters,
               unsigned int level, unsigned int flags)
@@ -383,17 +423,19 @@ iters_to_html(const test_run *test, const test_iters *iters,
     int         rc;
     test_iter  *p;
 
-    for (p = iters->tqh_first; p != NULL; p = p->links.tqe_next)
+    for (p = iters->head.tqh_first; p != NULL; p = p->links.tqe_next)
     {
         if ((~flags & TRC_OUT_STATS) &&
             ((test->type == TRC_TEST_PACKAGE) ||
              (~flags & TRC_OUT_PACKAGES_ONLY)))
         {
             fprintf(f, trc_test_exp_got_row,
-                    test->name, "ARGS", "PP", "FF",
+                    test->name, "ARGS",
+                    trc_test_result_to_string(p->exp_result),
+                    trc_test_result_to_string(p->got_result),
                     p->notes ? : "");
         }
-        rc = tests_to_html(&p->tests, level, flags);
+        rc = tests_to_html(&p->tests, level + 1, flags);
         if (rc != 0)
             return rc;
     }
@@ -406,11 +448,14 @@ tests_to_html(const test_runs *tests, unsigned int level, unsigned int flags)
     int         rc;
     test_run   *p;
 
-    if (flags & TRC_OUT_STATS)
-        WRITE_STR(trc_tests_stats_start);
-    else
-        WRITE_STR(trc_test_exp_got_start);
-    for (p = tests->tqh_first; p != NULL; p = p->links.tqe_next)
+    if (level == 0)
+    {
+        if (flags & TRC_OUT_STATS)
+            WRITE_STR(trc_tests_stats_start);
+        else
+            WRITE_STR(trc_test_exp_got_start);
+    }
+    for (p = tests->head.tqh_first; p != NULL; p = p->links.tqe_next)
     {
         if ((flags & TRC_OUT_STATS) &&
             ((p->type == TRC_TEST_PACKAGE) ||
@@ -422,21 +467,25 @@ tests_to_html(const test_runs *tests, unsigned int level, unsigned int flags)
                     p->stats.pass_exp, p->stats.fail_exp,
                     p->stats.pass_une, p->stats.fail_une,
                     p->stats.aborted, p->stats.new_run,
-                    TRC_STATS_NOT_RUN(&p->stats), p->stats.skipped,
+                    TRC_STATS_NOT_RUN(&p->stats),
+                    p->stats.skip_exp, p->stats.skip_une,
                     p->notes ? : "");
         }
         if ((p->type != TRC_TEST_SCRIPT) ||
             (~flags & TRC_OUT_PACKAGES_ONLY))
         {
-            rc = iters_to_html(p, &p->iters, level, flags);
+            rc = iters_to_html(p, &p->iters, level + 1, flags);
             if (rc != 0)
                 goto cleanup;
         }
     }
-    if (flags & TRC_OUT_STATS)
-        WRITE_STR(trc_tests_stats_end);
-    else
-        WRITE_STR(trc_test_exp_got_end);
+    if (level == 0)
+    {
+        if (flags & TRC_OUT_STATS)
+            WRITE_STR(trc_tests_stats_end);
+        else
+            WRITE_STR(trc_test_exp_got_end);
+    }
     return 0;
 
 cleanup:

@@ -41,16 +41,9 @@
 #include <errno.h>
 #endif
 
-#include <libxml/xmlmemory.h>
-#include <libxml/parser.h>
-
 #include "trc_log.h"
 #include "trc_db.h"
-
-
-#define CONST_CHAR2XML  (const xmlChar *)
-#define XML2CHAR(p)     ((char *)p)
-#define XML2CHAR_DUP(p) XML2CHAR(xmlStrdup(p))
+#include "trc_xml.h"
 
 
 /** Testing results comparison database */
@@ -61,53 +54,6 @@ static xmlDocPtr trc_db_doc = NULL;
 
 
 static int get_tests(xmlNodePtr *node, test_runs *tests);
-
-
-/**
- * Skip 'comment' nodes.
- *
- * @param node      XML node
- *
- * @return Current, one of next or NULL.
- */
-static xmlNodePtr
-xmlNodeSkipComment(xmlNodePtr node)
-{
-    while ((node != NULL) &&
-           (xmlStrcmp(node->name, CONST_CHAR2XML("comment")) == 0))
-    {
-        node = node->next;
-    }
-    return node;
-}
-
-/**
- * Go to the next XML node, skip 'comment' nodes.
- *
- * @param node      XML node
- *
- * @return The next XML node.
- */
-static xmlNodePtr
-xmlNodeChildren(xmlNodePtr node)
-{
-    assert(node != NULL);
-    return xmlNodeSkipComment(node->children);
-}
-
-/**
- * Go to the next XML node, skip 'comment' nodes.
- *
- * @param node      XML node
- *
- * @return The next XML node.
- */
-static xmlNodePtr
-xmlNodeNext(xmlNodePtr node)
-{
-    assert(node != NULL);
-    return xmlNodeSkipComment(node->next);
-}
 
 
 /**
@@ -152,7 +98,7 @@ get_bool_prop(xmlNodePtr node, const char *name, te_bool *value)
  *
  * @return Status code
  */
-static int
+int
 get_text_content(xmlNodePtr node, const char *name, char **content)
 {
     if (node->children == NULL)
@@ -234,7 +180,7 @@ alloc_and_get_test_arg(xmlNodePtr node, test_args *args)
         return errno;
     }
     p->node = node;
-    TAILQ_INSERT_TAIL(args, p, links);
+    TAILQ_INSERT_TAIL(&args->head, p, links);
 
     p->name = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("name")));
     if (p->name == NULL)
@@ -302,9 +248,9 @@ alloc_and_get_test_iter(xmlNodePtr node, test_iters *iters)
     }
     p->node = node;
     p->stats.not_run = 1;
-    TAILQ_INIT(&p->args);
-    TAILQ_INIT(&p->tests);
-    TAILQ_INSERT_TAIL(iters, p, links);
+    TAILQ_INIT(&p->args.head);
+    TAILQ_INIT(&p->tests.head);
+    TAILQ_INSERT_TAIL(&iters->head, p, links);
 
     tmp = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("result")));
     if (tmp == NULL)
@@ -313,9 +259,17 @@ alloc_and_get_test_iter(xmlNodePtr node, test_iters *iters)
         return EINVAL;
     }
     if (strcmp(tmp, "pass") == 0)
-        p->result = TEST_PASS;
+        p->exp_result = TRC_TEST_PASSED;
     else if (strcmp(tmp, "fail") == 0)
-        p->result = TEST_FAIL;
+        p->exp_result = TRC_TEST_FAILED;
+    else if (strcmp(tmp, "kill") == 0)
+        p->exp_result = TRC_TEST_KILLED;
+    else if (strcmp(tmp, "cored") == 0)
+        p->exp_result = TRC_TEST_CORED;
+    else if (strcmp(tmp, "skip") == 0)
+        p->exp_result = TRC_TEST_SKIPPED;
+    else if (strcmp(tmp, "UNSPEC") == 0)
+        p->exp_result = TRC_TEST_UNSPEC;
     else
     {
         ERROR("Unknown result '%s' of the test iteration", tmp);
@@ -331,6 +285,8 @@ alloc_and_get_test_iter(xmlNodePtr node, test_iters *iters)
         free(tmp);
         return EINVAL;
     }
+
+    p->args.node = node;
 
     node = xmlNodeChildren(node);
     
@@ -409,8 +365,8 @@ alloc_and_get_test(xmlNodePtr node, test_runs *tests)
         return errno;
     }
     p->node = node;
-    TAILQ_INIT(&p->iters);
-    TAILQ_INSERT_TAIL(tests, p, links);
+    TAILQ_INIT(&p->iters.head);
+    TAILQ_INSERT_TAIL(&tests->head, p, links);
     
     p->name = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("name")));
     if (p->name == NULL)
@@ -533,12 +489,45 @@ trc_parse_db(const char *filename)
     return rc;  
 }
 
+int
+trc_update_db_doc(test_runs *test)
+{
+    return 0;
+}
+
+
 /* See description in trc_db.h */
 int
 trc_dump_db(const char *filename)
 {
-    if (xmlSaveFormatFile(filename, trc_db_doc, 1) != 0)
+    int rc;
+
+    if (trc_init_db)
     {
+        xmlNodePtr node;
+
+        trc_db_doc = xmlNewDoc(BAD_CAST "1.0");
+        if (trc_db_doc == NULL)
+        {
+            ERROR("xmlNewDoc() failed");
+            return ENOMEM;
+        }
+        node = xmlNewNode(NULL, BAD_CAST "trc_db");
+        if (node == NULL)
+        {
+            ERROR("xmlNewNode() failed");
+            return ENOMEM;
+        }
+        xmlDocSetRootElement(trc_db_doc, node);
+    }
+    if ((rc = trc_update_db_doc(&trc_db.tests)) != 0)
+    {
+        ERROR("Failed to update DB XML document");
+        return rc;
+    }
+    if (xmlSaveFormatFileEnc(filename, trc_db_doc, "UTF-8", 1) == -1)
+    {
+        ERROR("xmlSaveFormatFileEnc(%s) failed", filename);
         return EINVAL;
     }
 

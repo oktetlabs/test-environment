@@ -41,11 +41,15 @@
 
 
 /** Enumeration of possible test results */
-typedef enum test_result_e {
-    TEST_PASS,      /**< Test should pass */
-    TEST_FAIL,      /**< Test should fail */
-    TEST_UNSPEC     /**< Expected test result is not specified yet */
-} test_result;
+typedef enum trc_test_result {
+    TRC_TEST_PASSED,      /**< Test should pass */
+    TRC_TEST_FAILED,      /**< Test should fail */
+    TRC_TEST_CORED,
+    TRC_TEST_KILLED,
+    TRC_TEST_FAKED,
+    TRC_TEST_SKIPPED,     /**< Test should be skipped */
+    TRC_TEST_UNSPEC       /**< Expected test result is not specified yet */
+} trc_test_result;
 
 typedef enum trc_test_type {
     TRC_TEST_SCRIPT,
@@ -57,11 +61,12 @@ typedef enum trc_test_type {
 /** Testing results conparator statistics */
 typedef struct trc_stats {
     unsigned int    not_run;
-    unsigned int    skipped;
     unsigned int    pass_exp;
     unsigned int    pass_une;
     unsigned int    fail_exp;
     unsigned int    fail_une;
+    unsigned int    skip_exp;
+    unsigned int    skip_une;
     unsigned int    aborted;
     unsigned int    new_run;
 } trc_stats;
@@ -70,7 +75,7 @@ typedef struct trc_stats {
     ((s)->pass_exp + (s)->pass_une + (s)->fail_exp + (s)->fail_une + \
      (s)->aborted + (s)->new_run)
 
-#define TRC_STATS_NOT_RUN(s)    ((s)->not_run + (s)->skipped)
+#define TRC_STATS_NOT_RUN(s)    ((s)->not_run + (s)->skip_exp + (s)->skip_une)
 
 
 /** Test argument */
@@ -84,14 +89,20 @@ typedef struct test_arg {
 } test_arg;
 
 /** Head of the list with test arguments */
-typedef TAILQ_HEAD(test_args, test_arg) test_args;
+typedef struct test_args {
+    TAILQ_HEAD(_test_args, test_arg) head;
+    xmlNodePtr                       node;   /**< XML node with this element */
+} test_args;
 
 
 /* Forward */
 struct test_run;
 
 /** Head of the list with tests */
-typedef TAILQ_HEAD(test_runs, test_run) test_runs;
+typedef struct test_runs {
+    TAILQ_HEAD(_test_runs, test_run) head;;
+    xmlNodePtr                       node;   /**< XML node with this element */
+} test_runs;
 
 
 /** Test iteration */
@@ -102,16 +113,18 @@ typedef struct test_iter {
     trc_stats       stats;          /**< Statistics */
 
     test_args       args;           /**< Iteration arguments */
-    unsigned int    n;              /**< Number of iterations
-                                         with the same parameters */
-    test_result     result;         /**< The expected result */
+    trc_test_result exp_result;     /**< The expected result */
     char           *notes;          /**< Some notes */
-
     test_runs       tests;          /**< Children tests of the session */
+
+    trc_test_result got_result;     /**< Got test result */
 } test_iter;
 
 /** Head of the list with test iterations */
-typedef TAILQ_HEAD(test_iters, test_iter) test_iters;
+typedef struct test_iters {
+    TAILQ_HEAD(_test_iters, test_iter) head;
+    xmlNodePtr                         node;
+} test_iters;
 
 
 /** Test run */
@@ -139,6 +152,10 @@ typedef struct trc_database {
 
 /** Testing results comparison database */
 extern trc_database trc_db;
+/** Should database be update */
+extern te_bool trc_update_db;
+/** Should database be initialized from scratch */
+extern te_bool trc_init_db;
 
 
 /**

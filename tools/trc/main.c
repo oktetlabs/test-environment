@@ -115,12 +115,12 @@ process_cmd_line_opts(int argc, char **argv)
     {
         switch (rc)
         {
-            case TRC_OPT_UPDATE:
-                trc_update_db = TRUE;
-                break;
-
             case TRC_OPT_INIT:
                 trc_init_db = TRUE;
+                /* Fall throught */
+
+            case TRC_OPT_UPDATE:
+                trc_update_db = TRUE;
                 break;
 
             case TRC_OPT_DB:
@@ -179,11 +179,13 @@ trc_stats_add(trc_stats *stats, const trc_stats *add)
 {
     stats->not_run += add->not_run;
     stats->new_run += add->new_run;
-    stats->skipped += add->skipped;
     stats->pass_exp += add->pass_exp;
     stats->pass_une += add->pass_une;
     stats->fail_exp += add->fail_exp;
     stats->fail_une += add->fail_une;
+    stats->skip_exp += add->skip_exp;
+    stats->skip_une += add->skip_une;
+    stats->aborted += add->aborted;
 }
 
 /**
@@ -197,7 +199,7 @@ trc_collect_iters_stats(test_iters *iters, trc_stats *stats)
 {
     test_iter *p;
 
-    for (p = iters->tqh_first; p != NULL; p = p->links.tqe_next)
+    for (p = iters->head.tqh_first; p != NULL; p = p->links.tqe_next)
     {
         trc_collect_tests_stats(&p->tests, &p->stats);
         trc_stats_add(stats, &p->stats);
@@ -215,7 +217,7 @@ trc_collect_tests_stats(test_runs *tests, trc_stats *stats)
 {
     test_run *p;
 
-    for (p = tests->tqh_first; p != NULL; p = p->links.tqe_next)
+    for (p = tests->head.tqh_first; p != NULL; p = p->links.tqe_next)
     {
         trc_collect_iters_stats(&p->iters, &p->stats);
         trc_stats_add(stats, &p->stats);
@@ -238,7 +240,7 @@ main(int argc, char *argv[])
     int         result = EXIT_FAILURE;
 
     memset(&trc_db, 0, sizeof(trc_db));
-    TAILQ_INIT(&trc_db.tests);
+    TAILQ_INIT(&trc_db.tests.head);
 
     /* Process and validate command-line options */
     if (process_cmd_line_opts(argc, argv) != EXIT_SUCCESS)
@@ -258,6 +260,12 @@ main(int argc, char *argv[])
     if (!trc_init_db && (trc_parse_db(trc_db_fn) != 0))
     {
         ERROR("Failed to parse expected testing results database");
+        goto exit;
+    }
+
+    if (trc_parse_log(trc_xml_log_fn) != 0)
+    {
+        ERROR("Failed to parse XML log");
         goto exit;
     }
 
