@@ -520,11 +520,10 @@ output_regular_log_msg(log_msg *msg)
                         }
                         /* End file tag */
                         fputs("</file>", output_fd);
+                        fclose(fd);
 
                         /* shift to the end of "%tf" */
                         i += 3;
-
-                        fclose(fd);
                         break;
                     }
                    

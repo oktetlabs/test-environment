@@ -1,4 +1,4 @@
-/** @file 
+/** @file
  * @brief Test Environment: Live mode specific routines.
  *
  * Interface for output control message events and regular messages 
@@ -292,6 +292,42 @@ rgt_expand_regular_log_msg(log_msg *msg)
                     int  default_format = FALSE;
                     int  k;
                     int rc = 10;
+
+                    /* @todo think of better way to implement this! */
+                    if (strstr(msg->fmt_str + i, "%tf") ==
+                            (msg->fmt_str + i))
+                    {
+                        FILE *fd;
+                        char  str[500];
+
+                        if ((arg = get_next_arg(msg)) == NULL)
+                        {
+                            fprintf(stderr,
+                                    "Too few arguments in the message\n");
+                            free_log_msg(msg);
+                            THROW_EXCEPTION;
+                        }
+                        if ((fd = fopen(arg->val, "r")) == NULL)
+                        {
+                            perror("Error during the processing of the log "
+                                   "message");
+                            free_log_msg(msg);
+                            THROW_EXCEPTION;
+                        }
+
+                        obstack_printf(msg->obstk, "File '%s':\n",
+                                       arg->val);
+
+                        while (fgets(str, sizeof(str), fd) != NULL)
+                        {
+                            obstack_grow(msg->obstk, str, strlen(str));
+                        }
+                        fclose(fd);
+
+                        /* shift to the end of "%tf" */
+                        i += 3;
+                        break;
+                    }
 
 /*
  *  %tm[[n].[w]] - memory dump, n - the number of elements after
