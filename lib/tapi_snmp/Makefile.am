@@ -9,7 +9,7 @@ AM_LDFLAGS=@TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/lib
 
 lib_LIBRARIES=libtapi_snmp.a 
 
-include_HEADERS=tapi_snmp.h tapi_snmp_iftable.h
+include_HEADERS=tapi_snmp.h tapi_snmp_iftable.h tapi_snmp_macro.h
 libtapi_snmp_a_SOURCES=tapi_snmp.c  
 
 # Tests (incorrect)
