@@ -81,6 +81,16 @@ extern "C" {
     } while (0)	    
 
 /**
+ * Macro around tapi_snmp_make_oid().
+ * 
+ * @param label_    SNMP label - OID string representation
+ * @param oid_      Location for parsed OID (OUT)
+ * 
+ */ 
+#define TAPI_SNMP_MAKE_OID(label_, oid_) \
+    CHECK_RC(tapi_snmp_make_oid(label_, oid_))
+
+/**
  * Append one SUB ID to OID (macro around tapi_snmp_oid_append()).
  *
  * @param oid_     OID to be appended
@@ -120,8 +130,7 @@ extern "C" {
  * 
  */ 
 #define SNMP_MAKE_INSTANCE(label_, oid_, indeces_...) \
-    do                                                                    \
-    {                       	                                          \
+    do {                       	                                          \
         int rc_;                                                          \
                                                                           \
         rc_ = tapi_snmp_make_instance(label_, &oid_, indeces_);           \
@@ -130,6 +139,9 @@ extern "C" {
             TEST_FAIL("Cannot make instance of %s OID: %X", label_, rc_); \
         }                                                                 \
     } while (0)
+
+#define TAPI_SNMP_MAKE_VB(vb_, oid_, type_, value_...) \
+        CHECK_RC(tapi_snmp_make_vb(vb_, oid_, type_, value_))
 
 /**
  * Macro around tapi_snmp_get_syntax().

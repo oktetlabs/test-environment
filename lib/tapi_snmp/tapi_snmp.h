@@ -91,7 +91,7 @@ enum snmp_obj_type {
 /** Type codes for SNMP variable binding values. Really SNMP uses some of 
     ASN.1 codes. Not all possible codes are defined, only usually used 
     and supported in TAD SNMP module. */
-typedef enum {
+typedef enum tapi_snmp_vartypes_t {
     TAPI_SNMP_OTHER     = 0,	
     TAPI_SNMP_INTEGER   = ASN_INTEGER,  /**<    2 */
     TAPI_SNMP_OCTET_STR = ASN_OCTET_STR,/**<    4 */
@@ -166,6 +166,18 @@ typedef struct tapi_snmp_var_access {
     tapi_snmp_oid_t               oid;
     tapi_snmp_mib_access          access;
 } tapi_snmp_var_access;    
+
+/** Definitions of values for SNMP TruthValue type */
+typedef enum tapi_snmp_truth_value {
+    SNMP_TRUE  = 1,
+    SNMP_FALSE = 2,
+} tapi_snmp_truth_value;
+
+typedef enum {
+    TAPI_SNMP_VB_VMP_OID_ONLY,
+    TAPI_SNMP_VB_VMP_VALUE_ONLY,
+    TAPI_SNMP_VB_VMP_FULL,
+} tapi_snmp_vb_cmp_type;
 
 /**
  * Concatenate two object identifiers and put result into first one. 
@@ -809,9 +821,50 @@ extern int tapi_snmp_trap_recv_start(const char *ta_name, int sid,
  *
  * @return  Status of the operation
  */
-int
-tapi_snmp_make_instance(const char *oid_str, tapi_snmp_oid_t *oid, ...);
+extern int tapi_snmp_make_instance(const char *oid_str,
+                                   tapi_snmp_oid_t *oid, ...);
 
+/**
+ * Create VarBind for specified OID with the particular value.
+ *
+ * @param vb       Pointer to VarBind data structure to be filled in 
+ *                 by the function (OUT)
+ * @param oid_str  OID string representation
+ * @param type     Type of the value, can be one of the following:
+ *                   i  INTEGER
+ *                   u  UNSIGNED
+ *                   s  STRING
+ *                   x  HEX STRING
+ *                   d  DECIMAL STRING
+ *                   n  NULLOBJ
+ *                   o  OBJID
+ *                   t  TIMETICKS
+ *                   a  IPADDRESS
+ *                   b  BITS
+ * @param value      VarBind value
+ * @param ...        For tabular objects, index of the entry - 
+ *                   type tapi_snmp_oid_t
+ *
+ * @return  Status of the operation
+ */
+extern int tapi_snmp_make_vb(tapi_snmp_varbind_t *vb, 
+                             const char *oid_str,
+                             const char *type, const char *value, ...);
+
+/**
+ * Compare two VarBinds
+ *
+ * @param vb1       First VarBind
+ * @param vb2       Second VarBind
+ * @param cmp_type  Type of comparision
+ *
+ * @return Result of comparision
+ * @retval 0 The values are the same
+ * @param -1 The values are different
+ */
+extern int tapi_snmp_cmp_vb(tapi_snmp_varbind_t *vb1,
+                            tapi_snmp_varbind_t *vb2,
+                            tapi_snmp_vb_cmp_type cmp_type);
 
 /**
  * Print SNMP OID struct to string and return pointer to this string. 
@@ -829,6 +882,12 @@ extern const char *snmp_error_h2str(int error_val);
 
 /** Convert SNMP Object type constants to string format */
 extern const char *snmp_obj_type_h2str(enum snmp_obj_type obj_type);
+
+/** Convert SNMP TruthValue constants to string format */
+extern const char *tapi_snmp_truth_value_h2str(enum tapi_snmp_truth_value val);
+
+/** Convert SNMP value types constants to string format */
+extern const char *tapi_snmp_val_type_h2str(enum tapi_snmp_vartypes_t type);
 
 #ifdef __cplusplus
 } /* extern "C" */

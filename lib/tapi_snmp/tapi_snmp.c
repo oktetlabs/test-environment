@@ -44,7 +44,8 @@
 #if HAVE_NET_SNMP_DEFINITIONS_H
 #include <net-snmp/net-snmp-config.h>
 #include <net-snmp/definitions.h> 
-#include <net-snmp/mib_api.h> 
+#include <net-snmp/mib_api.h>
+#include <net-snmp/varbind_api.h> /* For snmp_pdu_create() */
 #endif
 
 #include "asn_impl.h"
@@ -79,13 +80,28 @@ int         log_info_cur_len;
         log_info_buf[0] = '\0';   \
     } while (0)
 
-static char tapi_snmp_oid_buf[1024 * 2];
+static char *tapi_snmp_cur_oid_buf;
+
+#define TAPI_SNMP_OID_BUF_SIZE (1024 * 2)
+static inline char *tapi_snmp_get_next_oid_buf()
+{
+#define TAPI_SNMP_OID_BUF_NUM (4)
+    static int  tapi_snmp_oid_buf_cur = 0;
+    static char tapi_snmp_oid_buf[TAPI_SNMP_OID_BUF_NUM][TAPI_SNMP_OID_BUF_SIZE];
+
+    tapi_snmp_oid_buf_cur++;
+    tapi_snmp_oid_buf_cur %= TAPI_SNMP_OID_BUF_NUM;
+        
+    return tapi_snmp_oid_buf[tapi_snmp_oid_buf_cur];
+}
 
 #define GET_STR_OID(oid_ptr_) \
-    (((oid_ptr_) == NULL) ? "<NULL OID>" :                                 \
-      (snprint_objid(tapi_snmp_oid_buf, sizeof(tapi_snmp_oid_buf),         \
-                     (oid_ptr_)->id, (oid_ptr_)->length) < 0) ?            \
-      "TAPI_SNMP OID buffer is too short - update it" : tapi_snmp_oid_buf)
+    (tapi_snmp_cur_oid_buf = tapi_snmp_get_next_oid_buf(),           \
+     ((oid_ptr_) == NULL) ? "<NULL OID>" :                           \
+       (snprint_objid(tapi_snmp_cur_oid_buf, TAPI_SNMP_OID_BUF_SIZE, \
+                     (oid_ptr_)->id, (oid_ptr_)->length) < 0) ?      \
+        "TAPI_SNMP OID buffer is too short - update it" :            \
+        tapi_snmp_cur_oid_buf)
 
 static int tapi_snmp_get_object_type(const tapi_snmp_oid_t *oid,
                                      enum snmp_obj_type *obj_type);
@@ -380,7 +396,8 @@ tapi_snmp_packet_to_plain(asn_value *pkt, tapi_snmp_message_t *snmp_message)
                     rc = asn_read_value_field (var_bind, &value, &len, 
                                         "value.#plain.#simple.#integer-value");
                     snmp_message->vars[i].type = TAPI_SNMP_INTEGER;
-                    snmp_message->vars[i].v_len = 0;
+                    snmp_message->vars[i].v_len = 
+                        sizeof(snmp_message->vars[i].integer);
                     snmp_message->vars[i].integer = value;
                 }
                 else if (strcmp(choice_label, "string-value") == 0)
@@ -417,9 +434,9 @@ tapi_snmp_packet_to_plain(asn_value *pkt, tapi_snmp_message_t *snmp_message)
 
         }
         else if (rc == 0 && strcmp(choice_label, "application-wide") == 0)
-		{
+	{
             rc = asn_get_choice(var_bind, "value.#plain.#application-wide", 
-                                        choice_label, CL_MAX);
+                                choice_label, CL_MAX);
 
             if (strcmp(choice_label, "ipAddress-value") == 0)
             {
@@ -439,18 +456,18 @@ tapi_snmp_packet_to_plain(asn_value *pkt, tapi_snmp_message_t *snmp_message)
             }
             else 
             {
-                fprintf (stderr, "SNMP msg to C struct: "
-                            "unexpected choice in application-wide: %s \n",
-                            choice_label);
+                fprintf(stderr, "SNMP msg to C struct: "
+                        "unexpected choice in application-wide: %s\n",
+                        choice_label);
                 rc = EASNGENERAL;
             }
 
             len = sizeof(int);
             snmp_message->vars[i].v_len = len;
             if (rc == 0)
-                rc = asn_read_value_field (var_bind, 
-                                       &snmp_message->vars[i].integer, &len, 
-                                       "value.#plain.#application-wide"); 
+                rc = asn_read_value_field(var_bind, 
+                                          &snmp_message->vars[i].integer, &len, 
+                                          "value.#plain.#application-wide"); 
         }
         asn_free_value(var_bind);
     }
@@ -2441,31 +2458,33 @@ tapi_snmp_append_oid(tapi_snmp_oid_t *oid, int n, ...)
 int
 tapi_snmp_make_oid(const char *oid_str, tapi_snmp_oid_t *bin_oid)
 {
-    bin_oid->length = sizeof(bin_oid->id) / sizeof(bin_oid->id[0]);
-
     if (!snmp_lib_initialized)
     {
         init_snmp("");
         snmp_lib_initialized = 1;
     }
 
+    /* Initialize to zero */
+    memset(bin_oid, 0, sizeof(*bin_oid));
+    bin_oid->length = sizeof(bin_oid->id) / sizeof(bin_oid->id[0]);
+
     /* Check if we have the same length of an element of OID */
-    if (sizeof(bin_oid) == sizeof(bin_oid->id[0]))
+    if (sizeof(oid) == sizeof(bin_oid->id[0]))
     {
         if (snmp_parse_oid(oid_str, (oid *)bin_oid->id,
                            &(bin_oid->length)) == NULL)
         {
-            return ENOENT;
+            return TE_RC(TE_TAPI, ENOENT);
         }
     }
     else if (sizeof(bin_oid->id[0]) > sizeof(oid))
     {
-        oid name[bin_oid->length];
+        oid      name[bin_oid->length];
         unsigned i;
-        
+
         if (snmp_parse_oid(oid_str, name, &bin_oid->length) == NULL)
         {
-            return ENOENT;
+            return TE_RC(TE_TAPI, ENOENT);
         }
         for (i = 0; i < bin_oid->length; i++)
         {
@@ -2474,8 +2493,9 @@ tapi_snmp_make_oid(const char *oid_str, tapi_snmp_oid_t *bin_oid)
     }
     else
     {
-        /* Size of SUBID in NET-SNMP library is more than in tapi_snmp_oid_t */
-        /* assert(0); */
+        ERROR("Size of SUBID in NET-SNMP library is more than "
+              "in tapi_snmp_oid_t");
+        return TE_RC(TE_TAPI, EFAULT);
     }
 
     return 0;
@@ -2642,15 +2662,202 @@ tapi_snmp_make_instance(const char *oid_str, tapi_snmp_oid_t *bin_oid, ...)
     return 0;
 }
 
-#define SNMP_ERR_H2STR(val_) \
-    case SNMP_ERR_ ## val_:  \
-        return #val_
+/* See description in tapi_snmp.h */
+int
+tapi_snmp_make_vb(tapi_snmp_varbind_t *vb, const char *oid_str,
+                  const char *type, const char *value, ...)
+{
+    tapi_snmp_oid_t       bin_oid;
+    netsnmp_pdu          *pdu;
+    struct variable_list *var;
+    int                   rc;
+    enum snmp_obj_type    obj_type;
+
+    if ((rc = tapi_snmp_make_oid(oid_str, &bin_oid)) != 0)
+    {
+	ERROR("Make oid failed for %s oid string", oid_str);
+        return rc;
+    }
+
+    if ((rc = tapi_snmp_get_object_type(&bin_oid, &obj_type)) != 0)
+    {
+        ERROR("%s Cannot get type of %s object", __FUNCTION__, oid_str);
+        return rc;
+    }
+    switch (obj_type)
+    {
+        case SNMP_OBJ_SCALAR:
+            /* Scalar object - just append zero */
+            if ((bin_oid.length + 1) >= MAX_OID_LEN)
+            {
+                ERROR("%s: Object %s has too long OID", __FUNCTION__, oid_str);
+                return TE_RC(TE_TAPI, EFAULT);
+            }
+            tapi_snmp_append_oid(&bin_oid, 1, 0);
+
+            break;
+
+        case SNMP_OBJ_TBL_FIELD:
+        {
+            tapi_snmp_oid_t *tbl_index;
+            va_list          ap;
+
+            va_start(ap, value);
+
+            /* Table object - apend index */
+            tbl_index = va_arg(ap, tapi_snmp_oid_t *);
+            tapi_snmp_cat_oid(&bin_oid, tbl_index);
+
+            va_end(ap);
+
+            break;
+        }
+
+        default:
+            ERROR("%s: It is not allowed to pass objects other than "
+                  "table fields and scalars.", __FUNCTION__);
+            return TE_RC(TE_TAPI, EFAULT);
+    }
+
+    pdu = snmp_pdu_create(SNMP_MSG_SET);
+    rc = snmp_add_var(pdu, bin_oid.id, bin_oid.length, *type, value);
+    if (rc != 0)
+    {
+        ERROR("Net-SNMP library cannot create VarBind for "
+              "OID: %s, type: %c, value: %s", oid_str, *type, value);
+        snmp_free_pdu(pdu);
+        return TE_RC(TE_NET_SNMP, rc);
+    }
+    var = pdu->variables;
+    if (var == NULL)
+    {
+        ERROR("Net-SNMP library does not create VarBind for "
+              "OID: %s, type: %c, value: %s", oid_str, *type, value);
+        snmp_free_pdu(pdu);
+        return TE_RC(TE_TAPI, EFAULT);
+    }
+    memcpy(&(vb->name), &bin_oid, sizeof(bin_oid));
+    vb->type = var->type;
+    vb->v_len = var->val_len;
+
+    switch (vb->type)
+    {
+        case ASN_OCTET_STR:
+#ifdef OPAQUE_SPECIAL_TYPES 
+        case ASN_OPAQUE_U64: 
+#endif
+        case ASN_OBJECT_ID:
+            if ((vb->oct_string = (unsigned char *)malloc(vb->v_len)) == NULL)
+            {
+                snmp_free_pdu(pdu);
+                return TE_RC(TE_TAPI, ENOMEM);
+            }
+            memcpy(vb->oct_string, var->val.string, vb->v_len);
+            break;
+
+        default:
+            vb->integer = *(var->val.integer);
+            break;
+    }
+    INFO("%s vb_len = %d", __FUNCTION__, vb->v_len);
+    snmp_free_pdu(pdu);
+
+    return 0;
+}
+
+/* See description in tapi_snmp.h */
+int
+tapi_snmp_cmp_vb(tapi_snmp_varbind_t *vb1, tapi_snmp_varbind_t *vb2,
+                 tapi_snmp_vb_cmp_type cmp_type)
+{
+    switch (cmp_type)
+    {
+        case TAPI_SNMP_VB_VMP_FULL:
+            /* Fall through */
+        case TAPI_SNMP_VB_VMP_OID_ONLY:
+            if (vb1->name.length != vb2->name.length ||
+                memcmp(vb1->name.id, vb2->name.id, vb1->name.length) != 0)
+            {
+                INFO("'vb1' and 'vb2' has different length of their OIDs:\n"
+                     "OID('vb1'): %s - length %d\nOID('vb2'): %s - length %d",
+                     GET_STR_OID(&vb1->name), vb1->name.length,
+                     GET_STR_OID(&vb2->name), vb2->name.length);
+                return -1;
+            }
+            if (cmp_type == TAPI_SNMP_VB_VMP_OID_ONLY)
+                break;
+
+            /* Fall through in case of TAPI_SNMP_VB_VMP_FULL */
+
+        case TAPI_SNMP_VB_VMP_VALUE_ONLY:
+            if (vb1->type != vb2->type)
+            {
+                INFO("'vb1' and 'vb2' has different types of value:\n"
+                     "'vb1': %s - value type: %s\n'vb2': %s - value type: %s",
+                     GET_STR_OID(&vb1->name),
+                     tapi_snmp_val_type_h2str(vb1->type),
+                     GET_STR_OID(&vb2->name),
+                     tapi_snmp_val_type_h2str(vb2->type));
+                return -1;
+            }
+            if (vb1->v_len != vb2->v_len)
+            {
+                INFO("'vb1' and 'vb2' has the same value types %s but "
+                     "different length of values:\n"
+                     "'vb1': %s - value len: %d\n'vb2': %s - value len: %d",
+                     tapi_snmp_val_type_h2str(vb1->type),
+                     GET_STR_OID(&vb1->name), vb1->v_len,
+                     GET_STR_OID(&vb2->name), vb2->v_len);
+                return -1;
+            }
+            switch (vb1->type)
+            {
+                case ASN_OCTET_STR:
+#ifdef OPAQUE_SPECIAL_TYPES 
+                case ASN_OPAQUE_U64: 
+#endif
+                case ASN_OBJECT_ID:
+                    if (memcmp(vb1->oct_string, vb2->oct_string,
+                               vb1->v_len) != 0)
+                    {
+                        INFO("'vb1' and 'vb2' has different values:\n"
+                             "'vb1': %s\n'vb2': %s",
+                             GET_STR_OID(&vb1->name), GET_STR_OID(&vb2->name));
+                         return -1;
+                    }
+                    break;
+
+                default:
+                    if (vb1->integer != vb2->integer)
+                    {
+                        INFO("'vb1' and 'vb2' has different values:\n"
+                             "'vb1': %s - %d\n'vb2': %s - %d",
+                             GET_STR_OID(&vb1->name), vb1->integer,
+                             GET_STR_OID(&vb2->name), vb2->integer);
+                         return -1;
+                    }
+                    break;
+            }
+            break;
+        
+        default:
+            ERROR("Unknown comparision type");
+            return -1;
+    } /* end switch (cmp_type) */
+
+    return 0;
+}
+
 
 /** Convert SNMP ERROR constants to string format */
 const char *snmp_error_h2str(int error_val)
 {
     switch (error_val)
     {
+#define SNMP_ERR_H2STR(val_) \
+    case SNMP_ERR_ ## val_:  \
+        return #val_
+
         SNMP_ERR_H2STR(NOERROR);
         SNMP_ERR_H2STR(TOOBIG);
         SNMP_ERR_H2STR(NOSUCHNAME);
@@ -2672,10 +2879,13 @@ const char *snmp_error_h2str(int error_val)
         SNMP_ERR_H2STR(NOTWRITABLE);
         
         SNMP_ERR_H2STR(INCONSISTENTNAME);
+
+#undef SNMP_ERR_H2STR
         
         default:
 	{
             static char buf[255];
+
 	    snprintf(buf, sizeof(buf), "UNKNOWN (%d)", error_val);
             return buf;
 	}
@@ -2693,6 +2903,57 @@ snmp_obj_type_h2str(enum snmp_obj_type obj_type)
         case SNMP_OBJ_TBL_ENTRY: return "table entry";
         case SNMP_OBJ_TBL: return "table itself";
         default: return "unknown";
+    }
+    return "";
+}
+
+const char *
+tapi_snmp_val_type_h2str(enum tapi_snmp_vartypes_t type)
+{
+    switch (type)
+    {
+#define TAPI_SNMP_VAL_TYPE_H2STR(val_) \
+        case TAPI_SNMP_ ## val_:  \
+            return #val_
+
+        TAPI_SNMP_VAL_TYPE_H2STR(OTHER);
+        TAPI_SNMP_VAL_TYPE_H2STR(INTEGER);
+        TAPI_SNMP_VAL_TYPE_H2STR(OCTET_STR);
+        TAPI_SNMP_VAL_TYPE_H2STR(OBJECT_ID);
+        TAPI_SNMP_VAL_TYPE_H2STR(IPADDRESS);
+        TAPI_SNMP_VAL_TYPE_H2STR(COUNTER);
+        TAPI_SNMP_VAL_TYPE_H2STR(UNSIGNED);
+        TAPI_SNMP_VAL_TYPE_H2STR(TIMETICKS);
+        TAPI_SNMP_VAL_TYPE_H2STR(NOSUCHOBJ);
+        TAPI_SNMP_VAL_TYPE_H2STR(NOSUCHINS);
+        TAPI_SNMP_VAL_TYPE_H2STR(ENDOFMIB);
+
+#undef TAPI_SNMP_VAL_TYPE_H2STR
+        default:
+        {
+            static char buf[255];
+
+	    snprintf(buf, sizeof(buf), "UNKNOWN (%d)", type);
+            return buf;
+        }
+    }
+}
+
+const char *
+tapi_snmp_truth_value_h2str(enum tapi_snmp_truth_value val)
+{
+    switch (val)
+    {
+        case SNMP_FALSE: return "FALSE";
+        case SNMP_TRUE: return "TRUE";
+        
+        default:
+        {
+            static char buf[255];
+
+	    snprintf(buf, sizeof(buf), "UNKNOWN (%d)", val);
+            return buf;
+        }
     }
     return "";
 }
