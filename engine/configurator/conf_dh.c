@@ -626,7 +626,10 @@ cfg_dh_restore_backup(char *filename)
                 break;
             
         if (limit == NULL)
+        {
+            ERROR("Position of the backup in dynamic history not found");
             return ENOENT;
+        }
     }
         
     for (tmp = last; tmp != limit; tmp = prev)
@@ -647,12 +650,18 @@ cfg_dh_restore_backup(char *filename)
                                  &(msg.handle));
                
                 if (rc != 0)
+                {
+                    ERROR("%s(): cfg_db_find() failed: %X", __FUNCTION__, rc);
                     return rc;
+                }
                
                 cfg_process_msg(&p_msg, FALSE);
                
                 if (msg.rc != 0)
+                {
+                    ERROR("%s(): add failed: %X", __FUNCTION__, msg.rc);
                     RC_UPDATE(result, msg.rc);
+                }
                 break;
             }
                 
@@ -662,10 +671,14 @@ cfg_dh_restore_backup(char *filename)
                                                          CFG_MAX_INST_VALUE, 1);
                                                          
                 if (msg == NULL)
+                {
+                    ERROR("calloc() failed");
                     return ENOMEM;
+                }
                     
                 if ((rc = cfg_db_find(tmp->old_oid, &msg->handle)) != 0) 
                 {
+                    ERROR("cfg_db_find(%s) failed: %X", tmp->old_oid, rc);
                     free(msg);
                     return rc;
                 }
@@ -681,7 +694,10 @@ cfg_dh_restore_backup(char *filename)
                 rc = msg->rc;
                 free(msg);
                 if (rc != 0)
+                {
+                    ERROR("%s(): set failed: %X", __FUNCTION__, rc);
                     RC_UPDATE(result, rc);
+                }
                 break;
             }
                 
@@ -693,7 +709,10 @@ cfg_dh_restore_backup(char *filename)
                                               strlen(tmp->old_oid) + 1, 1);
                                                          
                 if (msg == NULL)
+                {
+                    ERROR("calloc() failed");
                     return ENOMEM;
+                }
                     
                 msg->type = CFG_ADD;
                 msg->len = sizeof(*msg);
@@ -709,7 +728,10 @@ cfg_dh_restore_backup(char *filename)
                 rc = msg->rc;
                 free(msg);
                 if (rc != 0)
+                {
+                    ERROR("%s(): delete failed: %X", __FUNCTION__, rc);
                     RC_UPDATE(result, rc);
+                }
                 break;
             }
         }
