@@ -31,6 +31,10 @@
 #ifndef __TE_LOGGER_TA_INTERNAL_H__
 #define __TE_LOGGER_TA_INTERNAL_H__
 
+#if HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+
 #include <stdio.h>
 #if HAVE_STDARG_H
 #include <stdarg.h>
@@ -38,8 +42,11 @@
 #if HAVE_STDLIB_H
 #include <stdlib.h>
 #endif
-#if HAVE_SYS_TYPES_H
-#include <sys/types.h>
+#if HAVE_STRING_H
+#include <string.h>
+#endif
+#if HAVE_STRINGS_H
+#include <strings.h>
 #endif
 #if HAVE_TIME_H
 #include <time.h>
@@ -47,20 +54,8 @@
 #if HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
-#if HAVE_STRING_H
-#include <string.h>
-#endif
-#if HAVE_STRINGS_H
-#include <strings.h>
-#endif
 #if HAVE_NETINET_IN_H
 #include <netinet/in.h>
-#endif
-#if HAVE_PTHREAD_H
-#include <pthread.h>
-#endif
-#if HAVE_SEMAPHORE_H
-#include <semaphore.h>
 #endif
 #if HAVE_ERRNO_H
 #include <errno.h>
@@ -85,6 +80,8 @@ typedef int ta_lgr_lock_key;
  * log buffer/file during processing
  */
 #if HAVE_PTHREAD_H
+
+#include <pthread.h>
 
 extern pthread_mutex_t  ta_lgr_mutex;
 
@@ -158,6 +155,7 @@ ta_lgr_trylock(ta_lgr_lock_key key)
 #elif HAVE_SEMAPHORE_H
 
 #error We only have semaphore.h
+#include <semaphore.h>
 
 extern sem_t    ta_lgr_sem;
 
