@@ -20,7 +20,7 @@ usage()
     echo -e '  '--no-tester\\t\\t\\t'Do not run Tester'
     echo -e '  '--no-cs\\t\\t\\t'Do not run Configurator'
     echo -e '  '--no-rcf\\t\\t\\t'Do not run RCF'
-    echo -e '  '--no-run\\t\\t\\t'Do not run RCF, Configurator and Tester'
+    echo -e '  '--no-run\\t\\t\\t'Do not run Logger, RCF, Configurator and Tester'
     echo
     echo -e '  '--conf-dir='<directory>'\\t'specify configuration file directory'
     echo -e \\t\\t\\t\\t'(${TE_BASE}/storage/conf or '.' by default)'
@@ -113,6 +113,7 @@ BUILDER=yes
 TESTER=yes
 RCF=yes
 CONFIGURATOR=yes
+LOGGER=yes
 
 # Tester executable extension (set to .sh for script tester)
 TESTER_EXT=
@@ -175,7 +176,7 @@ while test -n "$1" ; do
         --no-tester) TESTER= ;;
         --no-cs) CONFIGURATOR= ;;
         --no-rcf) RCF= ;;
-        --no-run) RCF= ; CONFIGURATOR= ; TESTER= ;;
+        --no-run) RCF= ; CONFIGURATOR= ; TESTER= ; LOGGER= ;;
         
         --conf-dir=*) CONF_DIR="${1#--conf-dir=}" ;;
         
@@ -438,12 +439,14 @@ if test -n "$RCF" ; then
     fi
 fi
 
-te_log_message Engine Dispatcher "Start Logger"
-myecho "--->>> Start Logger"
-if test -n "$VG_LGR" ; then
-    valgrind $VG_OPTIONS te_logger "${CONF_LOGGER}" 2>valgrind.logger &
-else
-    te_logger "${CONF_LOGGER}" &
+if test -n "$LOGGER" ; then
+    te_log_message Engine Dispatcher "Start Logger"
+    myecho "--->>> Start Logger"
+    if test -n "$VG_LGR" ; then
+        valgrind $VG_OPTIONS te_logger "${CONF_LOGGER}" 2>valgrind.logger &
+    else
+        te_logger "${CONF_LOGGER}" &
+    fi
 fi
 
 if test -n "$CONFIGURATOR" ; then
@@ -474,9 +477,11 @@ if test -n "$CONFIGURATOR" ; then
     te_cs_shutdown || kill $CS_PID
 fi
 
-te_log_message Engine Dispatcher "Flush log"
-myecho "--->>> Log FLUSH"
-te_log_flush
+if test -n "$LOGGER" ; then
+    te_log_message Engine Dispatcher "Flush log"
+    myecho "--->>> Log FLUSH"
+    te_log_flush
+fi
 
 if test -n "$RCF" ; then
     te_log_message Engine Dispatcher "Shutdown RCF"
@@ -486,9 +491,11 @@ fi
 
 #TODO: TCE
 
-te_log_message Engine Dispatcher "Shutdown Logger"
-myecho "--->>> Shutdown Logger"
-te_log_shutdown
+if test -n "$LOGGER" ; then
+    te_log_message Engine Dispatcher "Shutdown Logger"
+    myecho "--->>> Shutdown Logger"
+    te_log_shutdown
+fi
 
 #TODO: TCE
 
