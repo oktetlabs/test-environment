@@ -79,7 +79,6 @@ rcf_pch_file(struct rcf_comm_connection *conn, char *cbuf, size_t buflen,
     int     fd = -1;
     char    fname[RCF_MAX_PATH * 2];
 
-
     ENTRY("conn=0x%x cbuf='%s' buflen=%u answer_plen=%u ba=0x%x "
           "cmdlen=%u op=%d filename=%s\n", conn, cbuf, buflen, 
           answer_plen, ba, cmdlen, op, filename);
@@ -236,7 +235,6 @@ rcf_pch_file(struct rcf_comm_connection *conn, char *cbuf, size_t buflen,
         /* Substiute filename */
         sprintf(fname, RCF_FILE_TMP_DEF_DIR "%s", 
                 filename + strlen(RCF_FILE_TMP_PREFIX));
-        filename = fname;
 #else
         rc = ENOENT;
         goto reject;
@@ -247,12 +245,13 @@ rcf_pch_file(struct rcf_comm_connection *conn, char *cbuf, size_t buflen,
         
         sprintf(fname, "/var/ftp/%s", 
                 filename + strlen(RCF_FILE_FTP_PREFIX));
-        filename = fname;
-    }                
+    }            
+    else
+        strcpy(fname, filename);    
     
     if (op == RCFOP_FDEL)
     {
-        if (unlink(filename) < 0)
+        if (unlink(fname) < 0)
         {
             rc = errno;
             goto reject;
@@ -260,12 +259,12 @@ rcf_pch_file(struct rcf_comm_connection *conn, char *cbuf, size_t buflen,
         SEND_ANSWER("0");
     }
 
-    fd = open(filename, op == RCFOP_FPUT ? (O_WRONLY | O_CREAT | O_TRUNC) 
-                                         : O_RDONLY, 
+    fd = open(fname, op == RCFOP_FPUT ? (O_WRONLY | O_CREAT | O_TRUNC) 
+                                      : O_RDONLY, 
               S_IRWXU | S_IRWXG | S_IRWXO);
     if (fd < 0)
     {
-        ERROR("failed to open file '%s'", filename);
+        ERROR("failed to open file '%s'", fname);
         rc = ENOENT;
         goto reject;
     }
@@ -280,7 +279,7 @@ rcf_pch_file(struct rcf_comm_connection *conn, char *cbuf, size_t buflen,
         res = write(fd, ba, rw_len);
         if ((res < 0) || ((size_t)res < rw_len))
         {
-            ERROR("failed to write to file '%s'\n", filename);
+            ERROR("failed to write to file '%s'\n", fname);
             rc = errno;
             goto reject;
         }
@@ -316,8 +315,9 @@ rcf_pch_file(struct rcf_comm_connection *conn, char *cbuf, size_t buflen,
             res = write(fd, cbuf + answer_plen, rw_len);
             if ((res < 0) || ((size_t)res < rw_len))
             {
-                ERROR("failed to write in file '%s'\n", filename);
-                rc = errno;
+                rc = (res < 0) ? errno : ENOSPC;
+                unlink(fname);
+                ERROR("failed to write in file '%s'\n", fname);
                 goto reject;
             }
         }
@@ -355,7 +355,7 @@ rcf_pch_file(struct rcf_comm_connection *conn, char *cbuf, size_t buflen,
         close(fd);
         if ((rc == 0) && (stat_buf.st_size != 0))
         {
-            ERROR("Failed to read file '%s'", filename);
+            ERROR("Failed to read file '%s'", fname);
         }
         EXIT("%d", rc);
         return rc;
@@ -379,7 +379,7 @@ reject:
             {
                 return error;
             }
-        } while (rest > 0);
+        } while (error != 0);
     }
     EXIT("%d", rc);
     SEND_ANSWER("%d", rc);
