@@ -45,9 +45,9 @@
  * @param len   file length
  * @param c     file content
  *
- * @return name of the file or NULL in the case of failure
+ * @return name (memory is allocated) of the file or NULL in the case of failure
  *
- * @note the function is not thread-safe and re-enterable
+ * @note the function is not thread-safe 
  */
 char *
 tapi_file_create(int len, char c)
@@ -92,5 +92,5 @@ tapi_file_create(int len, char c)
         ERROR("fclose() failed: file %s errno=%d", pathname, errno);
         return NULL;
     }
-    return pathname;
+    return strdup(pathname);
 }

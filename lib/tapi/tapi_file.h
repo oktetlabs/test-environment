@@ -37,9 +37,9 @@ tapi_file_generate_name()
  * @param len   file length
  * @param c     file content
  *
- * @return name of the file or NULL in the case of failure
+ * @return name (memory is allocated) of the file or NULL in the case of failure
  *
- * @note the function is not thread-safe and re-enterable
+ * @note the function is not thread-safe 
  */
 extern char *tapi_file_create(int len, char c);
 

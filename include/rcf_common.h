@@ -49,13 +49,15 @@
 
 
 /** Prefix of the fake memory file system */
-#define RCF_FILE_MEM_PREFIX     "/memory/"
+#define RCF_FILE_MEM_PREFIX     "memory/"
 /** Separator used between memory address and length */
 #define RCF_FILE_MEM_SEP        ':'
 
 /** Prefix of the fake temporary file system */
-#define RCF_FILE_TMP_PREFIX     "/te_tmp/"
+#define RCF_FILE_TMP_PREFIX     "te_tmp/"
 
+/** Prefix for files, which should be created on in FTP public directory */
+#define RCF_FILE_FTP_PREFIX     "ftp/"
 
 /** Parameter and variable types */
 typedef enum {

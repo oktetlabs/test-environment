@@ -255,37 +255,37 @@ ftp_open(char *uri, int flags, int passive, int offset)
     }
 
 #define PUT_CMD(_cmd...) \
-    do {                                                            \
-        sprintf(buf, _cmd);                                         \
+    do {                                        \
+        sprintf(buf, _cmd);                     \
         VERB("%s", buf);                        \
-        if (write(s, buf, strlen(buf)) < 0)                         \
-        {                                                           \
-            ERROR("write() failed %d", errno);   \
-            close(s);                                               \
-            return -1;                                              \
-        }                                                           \
+        if (write(s, buf, strlen(buf)) < 0)     \
+        {                                       \
+            ERROR("write() failed %d", errno);  \
+            close(s);                           \
+            return -1;                          \
+        }                                       \
     } while (0)
 
 #define READ_ANS \
-    do {                                                            \
-        memset(buf, 0, sizeof(buf));                                \
-        if (read_string(s, buf, sizeof(buf)) < 0)                   \
-        {                                                           \
-            ERROR("read_string() failed");       \
-            if (sd >= 0)                                            \
-                close(sd);                                          \
-            close(s);                                               \
-            return -1;                                              \
-        }                                                           \
-        VERB("%s", buf);                        \
-        if (*buf == '4' || *buf == '5')                             \
-        {                                                           \
-            ERROR("Invalid answer '%s'", buf);   \
-            if (sd >= 0)                                            \
-                close(sd);                                          \
-            close(s);                                               \
-            return -1;                                              \
-        }                                                           \
+    do {                                           \
+        memset(buf, 0, sizeof(buf));               \
+        if (read_string(s, buf, sizeof(buf)) < 0)  \
+        {                                          \
+            ERROR("read_string() failed");         \
+            if (sd >= 0)                           \
+                close(sd);                         \
+            close(s);                              \
+            return -1;                             \
+        }                                          \
+        VERB("%s", buf);                           \
+        if (*buf == '4' || *buf == '5')            \
+        {                                          \
+            ERROR("Invalid answer '%s'", buf);     \
+            if (sd >= 0)                           \
+                close(sd);                         \
+            close(s);                              \
+            return -1;                             \
+        }                                          \
     } while (0)
     
 #define CMD(_cmd...) \
@@ -304,7 +304,6 @@ ftp_open(char *uri, int flags, int passive, int offset)
     
     /* Read greeting */
     read(s, buf, sizeof(buf));
-    
     CMD("USER %s\n", user);
     CMD("PASS %s\n", passwd);
     CMD("PASV\n");
