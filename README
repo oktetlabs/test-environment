@@ -8,6 +8,7 @@ The following packages are required to build and run.
 - popt-devel (libpopt-dev on Debian)
 - tcl (and tcl-devel, if applicable, e.g. on Fedora Core 2)
 - libxslt (we use 1.1.6)
+- expect and expect-dev (for TAD CLI only)
 
 We are using versions of libraries specified in parentheses.
 
