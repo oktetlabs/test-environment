@@ -77,6 +77,7 @@ tapi_cfg_dhcps_add_subnet(const char            *ta,
     rc = cfg_add_instance_fmt(handle, CVT_INTEGER, (void *)prefix_len,
                               TE_CFG_TA_DHCP_SERVER_FMT "/subnet:%s",
                               ta, str);
+    free(str);
     if (rc != 0)
     {
         /* Failure is logged in Configurator */
@@ -150,6 +151,7 @@ tapi_cfg_dhcps_add_host(const char            *ta,
                 free(str);
             }
         } while (i < n);
+        free(hs);
 
         name = autoname;
         INFO("%s(): Automatically selected DHCP host configuration "
