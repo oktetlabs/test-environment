@@ -68,3 +68,24 @@
 #ifndef __cplusplus
 #undef inline
 #endif
+
+/* RPC XDR for signed 16bit width type */
+#undef xdr_int16_t
+
+/* RPC XDR for signed 32bit width type */
+#undef xdr_int32_t
+
+/* RPC XDR for signed 8bit width type */
+#undef xdr_int8_t
+
+/* RPC XDR for unsigned 16bit width type */
+#undef xdr_uint16_t
+
+/* RPC XDR for unsigned 32bit width type */
+#undef xdr_uint32_t
+
+/* RPC XDR for unsigned 64bit width type */
+#undef xdr_uint64_t
+
+/* RPC XDR for unsigned 8bit width type */
+#undef xdr_uint8_t
