@@ -447,8 +447,9 @@
          Name: empty -->
     <object oid="/agent/vncpasswd" access="read_only" type="string"/>
     
-    <!-- Tester user.
-         Name: te_tester_<uid> -->
+    <!-- Tester user. 
+         Name: te_tester_<uid> 
+         Password is the same as user name. -->
     <object oid="/agent/user" access="read_create" type="none"/>
 
 </backup>
