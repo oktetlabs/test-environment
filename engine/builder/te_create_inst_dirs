@@ -2,9 +2,9 @@
 
 # Test Environment
 #
-# Script for logging of builder output
+# Script for creation of installation directories
 #
-# Copyright (C) 2003 Test Environment authors (see file AUTHORS in the 
+# Copyright (C) 2004 Test Environment authors (see file AUTHORS in the 
 # root directory of the distribution).
 #
 # Test Environment is free software; you can redistribute it and/or 
@@ -22,11 +22,22 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, 
 # MA  02111-1307  USA
 #
-# Author Elena Vengerova <Elena.Vengerova@oktet.ru>
+# Author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
 # 
-# $Id$
-#
+# $Id: te_cross_build 8185 2004-12-07 15:50:30Z arybchik $
 
-while read message ; do
-    te_log_message Engine Builder "$message" ;
-done ;
+if test -n "${TE_BUILD}" ; then
+    cd ${TE_BUILD}
+fi    
+if test -e builder.conf.processed ; then
+    . builder.conf.processed
+fi    
+
+for p in ${TE_BS_PLATFORMS} ; do
+    PLATFORM=`eval echo '$'${p}'_PLATFORM'`
+    mkdir -p $1/$PLATFORM
+done
+
+mkdir -p $1/agents
+
+exit 0

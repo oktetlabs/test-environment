@@ -4,10 +4,6 @@
 #
 # Script for building of cross packages.
 #
-# Usage: builder_generate_symtbl "$(NM)" <out C file name> <list of TA objects> 
-#
-# List of TA object may contain libraryies as well.
-#
 # Copyright (C) 2004 Test Environment authors (see file AUTHORS in the 
 # root directory of the distribution).
 #
@@ -37,7 +33,6 @@ DUMMY=
 
 for p in ${TE_BS_PLATFORMS} ; do
     PLATFORM=`eval echo '$'${p}'_PLATFORM'`
-    mkdir -p $TE_INSTALL/$PLATFORM
     if test $PLATFORM = $host ; then continue ; fi
     LIBS=`eval echo '$'${p}'_LIBS'`
     for package in $LIBS ; do

@@ -35,8 +35,7 @@ include_HEADERS = te_defs.h te_errno.h te_proto.h te_stdint.h \
 all: install
 
 install-data-hook:
-	mkdir -p $(DESTDIR)/$(prefix)/@host@
-	mkdir -p $(DESTDIR)/$(prefix)/agents
+	TE_BUILD=".." $(srcdir)/../engine/builder/te_create_inst_dirs $(DESTDIR)/$(prefix)
 	for i in $(include_HEADERS) ; do \
 	    touch -c -r $(srcdir)/$$i $(DESTDIR)/$(prefix)/include/$$i ; \
 	done

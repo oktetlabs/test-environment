@@ -98,6 +98,7 @@ if test -n "$with_config" ; then
     if ! test -e ${srcdir}/conf ; then
         cp -pR `dirname $with_config` .
         rm -rf conf/.svn
+        cp -f $with_config conf/builder.conf
     fi
 fi    
 

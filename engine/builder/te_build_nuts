@@ -24,7 +24,7 @@
 #
 # Author Elena Vengerova <Elena.Vengerova@oktet.ru>
 # 
-# $Id: $
+# $Id$
 #
 
 . builder.conf.processed

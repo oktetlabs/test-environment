@@ -4,10 +4,6 @@
 #
 # Script for the package configuring.
 #
-# Usage: builder_generate_symtbl "$(NM)" <out C file name> <list of TA objects> 
-#
-# List of TA object may contain libraryies as well.
-#
 # Copyright (C) 2004 Test Environment authors (see file AUTHORS in the 
 # root directory of the distribution).
 #
