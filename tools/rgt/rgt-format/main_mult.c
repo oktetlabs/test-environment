@@ -494,7 +494,7 @@ proc_logs_start(struct global_context *ctx, const xmlChar **atts)
 "        <tr>\n"
 "            <td width='50' class='tdsubhead'>Level</td>\n"
 "            <td width='100' class='tdsubhead'>Entity Name</td>\n"
-"            <td width='100' class='tdsubhead>User Name</td>\n"
+"            <td width='100' class='tdsubhead'>User Name</td>\n"
 "            <td width='150' class='tdsubhead'>Timestamp</td>\n"
 "            <td class='tdsubhead'>Log content</td>\n"
 "        </tr>\n"
