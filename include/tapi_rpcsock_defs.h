@@ -69,7 +69,6 @@
 
 #include "logger_api.h"
 
-
 /**
  * Coverts system native constant to its mirror in RPC namespace
  */
@@ -94,6 +93,7 @@ struct RPC_BIT_MAP_ENTRY {
     unsigned int  bit_val; /**< Numerical value */
 };
 
+
 /** Define one entry in the list of maping entries */
 #define RPC_BIT_MAP_ENTRY(entry_val_) \
             { #entry_val_, (int)RPC_ ## entry_val_ }
@@ -108,6 +108,7 @@ bitmap_name_ ## _rpc2str(int bitmap_name_)         \
     };                                             \
     return bitmask2str(maps_, bitmap_name_);       \
 }
+
 
 /**
  * Convert an arbitrary bitmask to string according to 
@@ -177,6 +178,10 @@ bitmask2str(struct RPC_BIT_MAP_ENTRY *maps, unsigned int val)
 #undef BUF_SIZE
 }
 
+#ifndef AF_LOCAL        
+#define AF_LOCAL        AF_UNIX
+#define PF_LOCAL        AF_LOCAL
+#endif
 
 /**
  * TA-independent protocol families.
@@ -792,12 +797,24 @@ sockopt_rpc2h(rpc_sockopt opt)
         RPC2H(SO_SNDLOWAT);
         RPC2H(SO_SNDTIMEO);
         RPC2H(SO_TYPE);
+#ifdef IP_ADD_MEMBERSHIP
         RPC2H(IP_ADD_MEMBERSHIP);
+#endif
+#ifdef IP_DROP_MEMBERSHIP
         RPC2H(IP_DROP_MEMBERSHIP);
+#endif
+#ifdef IP_MULTICAST_IF
         RPC2H(IP_MULTICAST_IF);
+#endif
+#ifdef IP_MULTICAST_LOOP
         RPC2H(IP_MULTICAST_LOOP);
+#endif
+#ifdef IP_MULTICAST_TTL
         RPC2H(IP_MULTICAST_TTL);
+#endif
+#ifdef IP_OPTIONS
         RPC2H(IP_OPTIONS);
+#endif
 #ifdef IP_PKTINFO
         RPC2H(IP_PKTINFO);
 #endif
@@ -811,11 +828,21 @@ sockopt_rpc2h(rpc_sockopt opt)
 #ifdef IP_RECVTTL
         RPC2H(IP_RECVTTL);
 #endif
+#ifdef IP_RETOPTS
         RPC2H(IP_RETOPTS);
+#endif
+#ifdef IP_TOS
         RPC2H(IP_TOS);
+#endif
+#ifdef IP_TTL
         RPC2H(IP_TTL);
+#endif
+#ifdef TCP_MAXSEG
         RPC2H(TCP_MAXSEG);
+#endif
+#ifdef TCP_NODELAY
         RPC2H(TCP_NODELAY);
+#endif
 #ifdef TCP_KEEPIDLE
         RPC2H(TCP_KEEPIDLE);
 #endif
@@ -1090,30 +1117,69 @@ ioctl_rpc2h(rpc_ioctl_code code)
 #ifdef SIOCGSTAMP
         RPC2H(SIOCGSTAMP);
 #endif
+#ifdef FIOASYNC
         RPC2H(FIOASYNC);
+#endif
+#ifdef FIONBIO
         RPC2H(FIONBIO);
+#endif
+#ifdef FIONREAD
         RPC2H(FIONREAD);
+#endif
+#ifdef SIOCATMARK
         RPC2H(SIOCATMARK);
+#endif
+#ifdef SIOCINQ
         RPC2H(SIOCINQ);
+#endif
+#ifdef SIOCSPGRP
         RPC2H(SIOCSPGRP);
+#endif
+#ifdef SIOCGPGRP
         RPC2H(SIOCGPGRP);
-
+#endif
+#ifdef SIOCGIFCONF
         RPC2H(SIOCGIFCONF);
+#endif
+#ifdef SIOCGIFFLAGS
         RPC2H(SIOCGIFFLAGS);
+#endif
+#ifdef SIOCSIFFLAGS
         RPC2H(SIOCSIFFLAGS);
+#endif
+#ifdef SIOCGIFADDR
         RPC2H(SIOCGIFADDR);
+#endif
+#ifdef SIOCSIFADDR
         RPC2H(SIOCSIFADDR);
+#endif
+#ifdef SIOCGIFNETMASK
         RPC2H(SIOCGIFNETMASK);
+#endif
+#ifdef SIOCSIFNETMASK
         RPC2H(SIOCSIFNETMASK);
+#endif
+#ifdef SIOCGIFBRDADDR
         RPC2H(SIOCGIFBRDADDR);
+#endif
+#ifdef SIOCSIFBRDADDR
         RPC2H(SIOCSIFBRDADDR);
+#endif
+#ifdef SIOCGIFDSTADDR
         RPC2H(SIOCGIFDSTADDR);
+#endif
+#ifdef SIOCGIFHWADDR
         RPC2H(SIOCSIFDSTADDR);
+#endif
 #ifdef SIOCGIFHWADDR
         RPC2H(SIOCGIFHWADDR);
 #endif
+#ifdef SIOCGIFMTU
         RPC2H(SIOCGIFMTU);
+#endif
+#ifdef SIOCSIFMTU
         RPC2H(SIOCSIFMTU);
+#endif
         default: return IOCTL_MAX;
     }
 }
@@ -1124,30 +1190,75 @@ ioctl_rpc2str(rpc_ioctl_code code)
 {
     switch (code)
     {
+#ifdef SIOCGSTAMP
         RPC2STR(SIOCGSTAMP);
+#endif
+#ifdef FIOASYNC
         RPC2STR(FIOASYNC);
+#endif
+#ifdef FIONBIO
         RPC2STR(FIONBIO);
+#endif
+#ifdef FIONREAD
         RPC2STR(FIONREAD);
+#endif
+#ifdef SIOCATMARK
         RPC2STR(SIOCATMARK);
+#endif
+#ifdef SIOCINQ
         RPC2STR(SIOCINQ);
+#endif
+#ifdef SIOCSPGRP
         RPC2STR(SIOCSPGRP);
+#endif
+#ifdef SIOCGPGRP
         RPC2STR(SIOCGPGRP);
-
+#endif
+#ifdef SIOCGIFCONF
         RPC2STR(SIOCGIFCONF);
+#endif
+#ifdef SIOCGIFFLAGS
         RPC2STR(SIOCGIFFLAGS);
+#endif
+#ifdef SIOCSIFFLAGS
         RPC2STR(SIOCSIFFLAGS);
+#endif
+#ifdef SIOCGIFADDR
         RPC2STR(SIOCGIFADDR);
+#endif
+#ifdef SIOCSIFADDR
         RPC2STR(SIOCSIFADDR);
+#endif
+#ifdef SIOCGIFNETMASK
         RPC2STR(SIOCGIFNETMASK);
+#endif
+#ifdef SIOCSIFNETMASK
         RPC2STR(SIOCSIFNETMASK);
+#endif
+#ifdef SIOCGIFBRDADDR
         RPC2STR(SIOCGIFBRDADDR);
+#endif
+#ifdef SIOCSIFBRDADDR
         RPC2STR(SIOCSIFBRDADDR);
+#endif
+#ifdef SIOCGIFDSTADDR
         RPC2STR(SIOCGIFDSTADDR);
+#endif
+#ifdef SIOCSIFDSTADDR
         RPC2STR(SIOCSIFDSTADDR);
+#endif
+#ifdef SIOCGIFHWADDR
         RPC2STR(SIOCGIFHWADDR);
+#endif
+#ifdef SIOCGIFMTU
         RPC2STR(SIOCGIFMTU);
+#endif
+#ifdef SIOCSIFMTU
         RPC2STR(SIOCSIFMTU);
+#endif
+#ifdef SIOUNKNOWN
         RPC2STR(SIOUNKNOWN);
+#endif
         default: return "<IOCTL_FATAL_ERROR>";
     }
 }
@@ -1281,6 +1392,8 @@ sighow_rpc2h(rpc_sighow how)
     }
 }
 
+#ifdef POLLIN
+
 typedef enum rpc_poll_event {
     RPC_POLLIN       = 0x0001, /* There is data to read */
     RPC_POLLPRI      = 0x0002, /* There is urgent data to read */
@@ -1339,7 +1452,6 @@ poll_event_h2rpc(short events)
            (!!(events & ~POLL_ALL) * RPC_POLL_UNKNOWN);
 }
 
-
 /**
  * poll_event_rpc2str()
  */
@@ -1348,6 +1460,10 @@ RPCBITMAP2STR(poll_event, POLL_EVENT_MAPPING_LIST)
 
 /** Maximum number of file descriptors passed to the poll */
 #define RPC_POLL_NFDS_MAX       64
+
+#endif /* POLLIN */
+
+#ifdef AI_PASSIVE
 
 /** TA-independent addrinfo flags */
 typedef enum rpc_ai_flags {
@@ -1434,6 +1550,10 @@ ai_rc_h2rpc(rpc_ai_rc rc)
         default: return RPC_EAI_UNKNOWN;
     }
 }
+
+#endif /* AI_PASSIVE */
+
+#ifdef IFF_UP
 
 /* ifreq flags */
 typedef enum tarpc_ioctl_flags {
@@ -1573,5 +1693,7 @@ RPCBITMAP2STR(if_fl, IF_FL_MAPPING_LIST)
 #undef HAVE_IFF_MASTER
 #undef HAVE_IFF_SLAVE
 #undef HAVE_IFF_PORTSEL
+
+#endif /* IFF_UP */
 
 #endif /* !__TE_TAPI_RPCSOCK_DEFS_H__ */
