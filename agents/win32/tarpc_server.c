@@ -3062,8 +3062,8 @@ TARPC_FUNC(duplicate_socket,
 {
     MAKE_CALL(out->retval =
                   WSADuplicateSocket(in->s, in->pid,
-                      in->info.info_len == 0 ? NULL :
-                      (LPWSAPROTOCOL_INFO)(in->info.info_val)));
+                      out->info.info_len == 0 ? NULL :
+                      (LPWSAPROTOCOL_INFO)(out->info.info_val)));
     out->info.info_len = sizeof(WSAPROTOCOL_INFO);
 }
 )
