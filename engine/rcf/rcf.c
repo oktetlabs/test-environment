@@ -1825,7 +1825,7 @@ rcf_shutdown()
 
     time_t t = time(NULL);
 
-    VERB("Shutting down");
+    RING("Shutting down");
 
     shutdown_num = ta_num;
 
@@ -1877,6 +1877,7 @@ rcf_shutdown()
         if ((agent->reboot)(agent->handle, NULL) != 0)
             ERROR("Cannot reboot TA '%s'", agent->name);
     }
+    RING("Test Agents are stopped");
 }
 
 /* Wait for shutdown message in the case of initialization error */
