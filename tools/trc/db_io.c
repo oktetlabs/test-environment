@@ -540,7 +540,7 @@ trc_update_iters(test_iters *iters)
             }
             if (xmlNewChild(p->tests.node, NULL,
                             BAD_CAST "notes",
-                            BAD_CAST (p->notes ? : "")) == NULL)
+                            BAD_CAST p->notes) == NULL)
             {
                 ERROR("xmlNewChild() failed for 'notes'");
                 return rc;
@@ -596,8 +596,7 @@ trc_update_tests(test_runs *tests)
                 return rc;
             }
             if (xmlNewChild(p->iters.node, NULL,
-                            BAD_CAST "notes",
-                            BAD_CAST "") == NULL)
+                            BAD_CAST "notes", NULL) == NULL)
             {
                 ERROR("xmlNewChild() failed for 'notes'");
                 return rc;
