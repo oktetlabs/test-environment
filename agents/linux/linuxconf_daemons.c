@@ -2484,7 +2484,12 @@ ds_smtp_server_set(unsigned int gid, const char *oid, const char *value)
     UNUSED(oid);
     
     if (smtp_current != NULL && daemon_running(smtp_current_daemon))
+    {
+        ERROR("Cannot set smtp to %s: %s is running", oid, 
+              smtp_current_daemon);
+        ta_system("ps -ax");
         return TE_RC(TE_TA_LINUX, EPERM);
+    }
         
     if (*value == '\0')
     {
