@@ -42,7 +42,7 @@
  * The first four octets of the 'options' field of the DHCP message
  * RFC 2131 section 3.
  */
-static unsigned char magic_dhcp[] = {99, 130, 83, 99};
+static unsigned char magic_dhcp[] = { 99, 130, 83, 99 };
 
 /**
  * Callback for read parameter value of ethernet CSAP.
@@ -208,50 +208,59 @@ fill_dhcp_options(void *buf, asn_value_p options)
 int 
 dhcp_gen_bin_cb(int csap_id, int layer, const asn_value *tmpl_pdu,
                 const tad_template_arg_t *args, size_t arg_num,
-                const csap_pkts_p  up_payload, csap_pkts_p pkts)
+                const csap_pkts_p up_payload, csap_pkts_p pkts)
 {
-    int rc;
-    int val_len;
-    int value;
+    int         rc;
+    uint8_t    *p; 
 #if OPTIONS_IMPL
     asn_value_p options = NULL;
 #endif
-    unsigned char *p; 
 
-    UNUSED (up_payload); /* DHCP has no payload */ 
-    UNUSED (csap_id); 
-    UNUSED (args); 
-    UNUSED (arg_num); 
-    UNUSED (layer); 
+    UNUSED(up_payload); /* DHCP has no payload */ 
+    UNUSED(csap_id); 
+    UNUSED(args); 
+    UNUSED(arg_num); 
+    UNUSED(layer); 
     
-    pkts->len = 236; /* total length of mandatory fields in DHCP message */ 
+    /* Total length of mandatory fields in DHCP message */
+    pkts->len = 236;
+
 #if OPTIONS_IMPL
     rc = asn_read_component_value(tmpl_pdu, &options, "options"); 
-    pkts->len += 
-        rc ? 0 : sizeof(magic_dhcp) + dhcp_calculate_options_data(options);
+    pkts->len += (rc != 0) ? 0 :
+        (sizeof(magic_dhcp) + dhcp_calculate_options_data(options));
 #endif
 
-    pkts->data = malloc(pkts->len);
+    pkts->data = calloc(1, pkts->len);
+    if (pkts->data == NULL)
+    {
+        ERROR("%s(): calloc(1, %u) failed", __FUNCTION__, pkts->len);
+        return errno;
+    }
     pkts->next = NULL;
     
     p = pkts->data;
 
 #define PUT_DHCP_FIELD(_label, _defval, _type, _conv) \
-    do {\
-        val_len = sizeof(value);\
-        rc = asn_read_value_field(tmpl_pdu, &value, &val_len, _label);\
-        if (rc == EASNINCOMPLVAL)\
-            value = _defval;\
-        else if (rc)\
-        {\
-            free(pkts->data);\
-            pkts->data = NULL;\
-            pkts->len = 0;\
-            return rc;\
-        }\
-        *((_type *)p) = _conv(value);\
-        p += sizeof(_type);\
-    } while(0) 
+    do {                                                               \
+        _type  value;                                                  \
+        size_t val_len = sizeof(value);                                \
+                                                                       \
+        rc = asn_read_value_field(tmpl_pdu, &value, &val_len, _label); \
+        if (rc == EASNINCOMPLVAL)                                      \
+        {                                                              \
+            value = _conv(_defval);                                    \
+        }                                                              \
+        else if (rc != 0)                                              \
+        {                                                              \
+            free(pkts->data);                                          \
+            pkts->data = NULL;                                         \
+            pkts->len = 0;                                             \
+            return rc;                                                 \
+        }                                                              \
+        *((_type *)p) = _conv(value);                                  \
+        p += sizeof(_type);                                            \
+    } while (0)
 
     PUT_DHCP_FIELD("op",     0, uint8_t, (uint8_t));
     PUT_DHCP_FIELD("htype",  0, uint8_t, (uint8_t));
@@ -266,35 +275,42 @@ dhcp_gen_bin_cb(int csap_id, int layer, const asn_value *tmpl_pdu,
     PUT_DHCP_FIELD("giaddr", 0, uint32_t, htonl);
 
 #define PUT_DHCP_LONG_FIELD(_label, _defval, _length) \
-    do {\
-        val_len = _length;\
-        rc = asn_read_value_field(tmpl_pdu, p, &val_len, _label);\
-        if (rc == EASNINCOMPLVAL)\
-            memset(p, _defval, _length);\
-        else if (rc)\
-        {\
-            free(pkts->data);\
-            pkts->data = NULL;\
-            pkts->len = 0;\
-            return rc;\
-        }\
-        p += _length;\
-    } while(0) 
+    do {                                                            \
+        size_t val_len = (_length);                                 \
+                                                                    \
+        rc = asn_read_value_field(tmpl_pdu, p, &val_len, _label);   \
+        if (rc == EASNINCOMPLVAL)                                   \
+        {                                                           \
+            memset(p, (_defval), (_length));                        \
+        }                                                           \
+        else if (rc != 0)                                           \
+        {                                                           \
+            free(pkts->data);                                       \
+            pkts->data = NULL;                                      \
+            pkts->len = 0;                                          \
+            return rc;                                              \
+        }                                                           \
+        p += (_length);                                             \
+    } while (0) 
 
     PUT_DHCP_LONG_FIELD("chaddr", 0,  16);
     PUT_DHCP_LONG_FIELD("sname",  0,  64);
     PUT_DHCP_LONG_FIELD("file",   0, 128); 
 
-    memcpy(p, magic_dhcp, sizeof(magic_dhcp));
-    p += sizeof(magic_dhcp);
-
-    if ((rc = fill_dhcp_options(p, options)) != 0)
+    if (options != NULL)
     {
-        free(pkts->data);
-        pkts->data = NULL;
-        pkts->len = 0;
+        memcpy(p, magic_dhcp, sizeof(magic_dhcp));
+        p += sizeof(magic_dhcp);
+
+        if ((rc = fill_dhcp_options(p, options)) != 0)
+        {
+            free(pkts->data);
+            pkts->data = NULL;
+            pkts->len = 0;
+            return rc;
+        }
     }
-    return rc;
+    return 0;
 }
 
 

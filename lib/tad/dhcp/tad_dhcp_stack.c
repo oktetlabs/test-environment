@@ -240,7 +240,6 @@ dhcp_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
                                        sizeof(struct sockaddr_storage) - 
                                        sizeof(struct sockaddr), 1); 
 
-    fprintf (stderr, "DHCP INIT called\n");
     if (csap_nds == NULL)
         return ETEWRONGPTR;
 
