@@ -230,7 +230,6 @@ ndn_forw_drop_to_plain(const asn_value *val, ndn_forw_drop_t *forw_drop)
     int rc;
 
     rc = asn_get_choice(val, "drop", drop_label, sizeof(drop_label));
-    RING("%s: get choice: %X", __FUNCTION__, rc); 
 
     if (rc) return rc;
 
@@ -239,9 +238,7 @@ ndn_forw_drop_to_plain(const asn_value *val, ndn_forw_drop_t *forw_drop)
         forw_drop->type = FORW_DROP_RANDOM;
         d_len = sizeof(forw_drop->rate);
         rc = asn_read_value_field(val, &forw_drop->rate, &d_len, 
-                                  "drop.#random-rate");
-
-    RING("%s: get random-rate: %X", __FUNCTION__, rc); 
+                                  "drop.#random-rate"); 
     }
     else
     {
@@ -253,8 +250,6 @@ ndn_forw_drop_to_plain(const asn_value *val, ndn_forw_drop_t *forw_drop)
 
         rc = asn_read_value_field(val, forw_drop->pattern_mask, &d_len, 
                                  "drop");
-
-    RING("%s: get pattern-mask: %X", __FUNCTION__, rc); 
     } 
 
     return rc; 
