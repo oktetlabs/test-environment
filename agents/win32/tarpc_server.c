@@ -2869,5 +2869,4 @@ TARPC_FUNC(wait_multiple_events, {},
 }
 )
 
-/* @TODO WSARecvEx, WSASendTo, WSARecvFrom, WSASendDisconnect, 
-         WSARecvDisconnect */
+/* @TODO WSASendTo, WSARecvFrom, WSASendDisconnect, WSARecvDisconnect */
