@@ -54,6 +54,8 @@ enum {
     TESTER_OPT_NOSIMULT,
     TESTER_OPT_SUITE_PATH,
     TESTER_OPT_RUN,
+    TESTER_OPT_VALGRIND,
+    TESTER_OPT_GDB,
     TESTER_OPT_REQ,
     TESTER_OPT_FAKE,
     TESTER_OPT_TIMEOUT,
@@ -404,6 +406,12 @@ process_cmd_line_opts(tester_ctx *ctx, tester_cfgs *cfgs,
         { "run", 'r', POPT_ARG_STRING, NULL, TESTER_OPT_RUN,
           "Run Test Suite with specified arguments.", "PATH" },
 
+        { "vg", '\0', POPT_ARG_STRING, NULL, TESTER_OPT_VALGRIND,
+          "Run test scripts in specified path under valgrind.", "PATH" },
+
+        { "gdb", '\0', POPT_ARG_STRING, NULL, TESTER_OPT_GDB,
+          "Run test scripts in specified path under gdb.", "PATH" },
+
         { "req", 'R', POPT_ARG_STRING, NULL, TESTER_OPT_REQ,
           "Requirement to be tested (or excluded, if its first symbol is !).",
           "[REQ|!REQ]" },
@@ -522,6 +530,22 @@ process_cmd_line_opts(tester_ctx *ctx, tester_cfgs *cfgs,
                     ERROR("test_requirement_new() failed");
                     poptFreeContext(optCon);
                     return EXIT_FAILURE;
+                }
+                break;
+            
+            case TESTER_OPT_VALGRIND:
+                ctx->flags |= TESTER_CTX_VALGRIND;
+                if (poptGetOptArg(optCon) != NULL)
+                {
+                    WARN("All test scripts are run under valgrind");
+                }
+                break;
+
+            case TESTER_OPT_GDB:
+                ctx->flags |= TESTER_CTX_GDB;
+                if (poptGetOptArg(optCon) != NULL)
+                {
+                    WARN("All test scripts are run under gdb");
                 }
                 break;
 

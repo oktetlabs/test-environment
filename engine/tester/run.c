@@ -897,11 +897,14 @@ static int
 run_test_script(tester_ctx *ctx, test_script *script, test_id id,
                 test_params *params)
 {
-    te_bool ctx_cloned = FALSE;
-    int     result = 0;
-    int     rc;
-    char   *params_str;
-    char    cmd[TESTER_CMD_BUF_SZ];
+    te_bool     ctx_cloned = FALSE;
+    int         result = 0;
+    int         rc;
+    char       *params_str;
+    char        cmd[TESTER_CMD_BUF_SZ];
+    char        shell[256] = "";
+    char        postfix[32] = "";
+    char        gdb_init[32] = "";
 
     ENTRY();
 
@@ -934,8 +937,64 @@ run_test_script(tester_ctx *ctx, test_script *script, test_id id,
 
     params_str = test_params_to_string(params);
 
-    snprintf(cmd, sizeof(cmd), "%s%s", script->execute,
-             PRINT_STRING(params_str));
+    if (ctx->flags & TESTER_CTX_GDB)
+    {
+        FILE *f;
+
+        if (snprintf(gdb_init, sizeof(gdb_init),
+                     TESTER_GDB_FILENAME_FMT, id) >=
+                (int)sizeof(gdb_init))
+        {
+            ERROR("Too short buffer is reserved for GDB init file name");
+            return ETESMALLBUF;
+        }
+        /* TODO Clean up */
+        f = fopen(gdb_init, "w");
+        if (f == NULL)
+        {
+            ERROR("Failed to create GDB init file: %s", strerror(errno));
+            return errno;
+        }
+        fprintf(f, "set args %s\n", params_str);
+        if (fclose(f) != 0)
+        {
+            ERROR("fclose() failed");
+            return errno;
+        }
+        if (snprintf(shell, sizeof(shell),
+                     "gdb -x %s ", gdb_init) >=
+                (int)sizeof(shell))
+        {
+            ERROR("Too short buffer is reserved for shell command prefix");
+            return ETESMALLBUF;
+        }
+    }
+    else if (ctx->flags & TESTER_CTX_VALGRIND)
+    {
+        if (snprintf(shell, sizeof(shell),
+                     "valgrind --num-callers=16 --leak-check=yes "
+                     "--show-reachable=yes ") >= (int)sizeof(shell))
+        {
+            ERROR("Too short buffer is reserved for shell command prefix");
+            return ETESMALLBUF;
+        }
+        if (snprintf(postfix, sizeof(postfix),
+                     " 2>" TESTER_VG_FILENAME_FMT, id) >= (int)sizeof(postfix))
+        {
+            ERROR("Too short buffer is reserved for test script "
+                  "command postfix");
+            return ETESMALLBUF;
+        }
+    }
+
+    if (snprintf(cmd, sizeof(cmd), "%s%s%s%s", shell, script->execute,
+                 (ctx->flags & TESTER_CTX_GDB) ? "" : PRINT_STRING(params_str),
+                 postfix) >= (int)sizeof(cmd))
+    {
+        ERROR("Too short buffer is reserved for test script command "
+              "line");
+        return ETESMALLBUF;
+    }
 
     /* Log call */
     if (ctx->flags & TESTER_CTX_VERBOSE)
@@ -955,9 +1014,13 @@ run_test_script(tester_ctx *ctx, test_script *script, test_id id,
     {
         result = ETESTSKIP;
     }
-    else if ((ctx->flags & TESTER_CTX_FAKE) == 0)
+    else if (ctx->flags & TESTER_CTX_FAKE)
     {
-        VERB("$T%d system(%s)", id, cmd);
+        result = ETESTFAKE;
+    }
+    else
+    {
+        ERROR("$T%d system(%s)", id, cmd);
         rc = system(cmd);
         if (rc == -1)
         {
@@ -1010,10 +1073,6 @@ run_test_script(tester_ctx *ctx, test_script *script, test_id id,
                     result = ETESTUNEXP;
             }
         }
-    }
-    else
-    {
-        result = ETESTFAKE;
     }
 
     log_test_result(ctx->id, id, result,

@@ -48,7 +48,13 @@
 /** Define it to enable support of timeouts in Tester */
 #undef TESTER_TIMEOUT_SUPPORT
 
-#define TESTER_TIMEOUT_DEF  60000
+#define TESTER_TIMEOUT_DEF      60000
+
+/** Format string for Valgrind output filename */
+#define TESTER_VG_FILENAME_FMT  "vg.test.%d"
+
+/** Format string for GDB init filename */
+#define TESTER_GDB_FILENAME_FMT "gdb.%d"
 
 
 /** Test ID */
@@ -337,14 +343,20 @@ typedef TAILQ_HEAD(tester_cfgs, tester_cfg) tester_cfgs;
 
 /** Flags of the Tester global context */
 enum tester_ctx_flags {
-    TESTER_CTX_NOLOGUES = 0x01,
-    TESTER_CTX_NORANDOM = 0x02,
-    TESTER_CTX_NOSIMULT = 0x04,
-    TESTER_CTX_FAKE     = 0x08,
-    TESTER_CTX_VERBOSE  = 0x10,
-    TESTER_CTX_VVERB    = 0x20,
-    TESTER_CTX_VVVERB   = 0x40,
-    TESTER_CTX_INLOGUE  = 0x80
+    TESTER_CTX_NOLOGUES = 0x01,     /**< Prologues/epilogues are disabled */
+    TESTER_CTX_NORANDOM = 0x02,     /**< Disable randomness */
+    TESTER_CTX_NOSIMULT = 0x04,     /**< Disable simultaneousness */
+    TESTER_CTX_FAKE     = 0x08,     /**< Fake run */
+    TESTER_CTX_VERBOSE  = 0x10,     /**< The first level of verbosity:
+                                         output of run path to stdout */
+    TESTER_CTX_VVERB    = 0x20,     /**< The second level of verbosity:
+                                         additional output of test IDs
+                                         on run paths */
+    TESTER_CTX_VVVERB   = 0x40,     /**< The third level of verbosity */
+    TESTER_CTX_INLOGUE  = 0x80,     /**< Is in prologue/epilogue */
+    TESTER_CTX_VALGRIND = 0x100,    /**< Run scripts under valgrind */
+    TESTER_CTX_GDB      = 0x200     /**< Run scripts under GDB in
+                                         interactive mode */
 };
 
 
