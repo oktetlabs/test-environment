@@ -58,8 +58,6 @@
 #define FTP_PORT                21
 #define FTP_DATA_PORT           20
 
-#define FTP_USER_PORT           30002
-
 static void
 sigint_handler(int n)
 {
@@ -243,19 +241,17 @@ ftp_open(char *uri, int flags, int passive, int offset)
     int   s;
     int   sd = -1;
     int   sd1 = -1;
-    int   i;
-    int   temp;
-    
-    unsigned char    inaddr[4];
-    unsigned char    portaddr[2];
     
     struct sockaddr_in addr;
     struct sockaddr_in addr1;
-    socklen_t          addr1_len;
+    socklen_t          addr1_len = sizeof(addr1);
+    uint8_t            inaddr[4];
     
     char user[FTP_TEST_LOGIN_MAX];
     char passwd[FTP_TEST_PASSWD_MAX];
     char file[FTP_TEST_PATHNAME_MAX];
+    
+    UNUSED(offset);
     
     if (parse_ftp_uri(uri, (struct sockaddr *)&addr,
                       user, passwd, file) != 0 ||
@@ -264,39 +260,34 @@ ftp_open(char *uri, int flags, int passive, int offset)
         ERROR("parse_ftp_uri() failed");
         return -1;
     }
+    
+#define RET_ERR(_msg...)    \
+    do {                 \
+        ERROR(_msg);     \
+        if (sd >= 0)     \
+            close(sd);   \
+        if (sd1 >= 0)    \
+            close(sd);   \
+        close(s);        \
+        return -1;       \
+    } while (0)
 
 #define PUT_CMD(_cmd...) \
     do {                                                \
         sprintf(buf, _cmd);                             \
         VERB("%s", buf);                                \
         if (write(s, buf, strlen(buf)) < 0)             \
-        {                                               \
-            ERROR("write() failed %d", errno);          \
-            close(s);                                   \
-            return -1;                                  \
-        }                                               \
+            RET_ERR("write() failed; errno %d", errno); \
     } while (0)
 
 #define READ_ANS \
     do {                                           \
         memset(buf, 0, sizeof(buf));               \
         if (read_string(s, buf, sizeof(buf)) < 0)  \
-        {                                          \
-            ERROR("read_string() failed");         \
-            if (sd >= 0)                           \
-                close(sd);                         \
-            close(s);                              \
-            return -1;                             \
-        }                                          \
+            RET_ERR("read_string() failed");       \
         VERB("%s", buf);                           \
         if (*buf == '4' || *buf == '5')            \
-        {                                          \
-            ERROR("Invalid answer '%s'", buf);     \
-            if (sd >= 0)                           \
-                close(sd);                         \
-            close(s);                              \
-            return -1;                             \
-        }                                          \
+            RET_ERR("Invalid answer: %s", buf);    \
     } while (0)
     
 #define CMD(_cmd...) \
@@ -305,32 +296,31 @@ ftp_open(char *uri, int flags, int passive, int offset)
         READ_ANS;      \
     } while (0)
         
+    VERB("Connecting...");
     s = socket(AF_INET, SOCK_STREAM, 0);
     if (connect(s, (struct sockaddr *)&addr, sizeof(addr)) < 0)
-    {
-        ERROR("connect() 1 failed %d", errno);
-        close(s);
-        return -1;
-    }
+        RET_ERR("connect() failed; errno %d", errno);
     
+    VERB("Connected");
     /* Determine parameters for PORT command */
-    if (!(passive))
+    if (!passive)
     {
-
         if (getsockname(s, (struct sockaddr *)&addr1, &addr1_len) < 0)
-        {
-            ERROR("getsockname() failed %d", errno);
-            close(s);
-            return -1;
-        }
-        temp = addr1.sin_addr.s_addr;
-        for (i = 0; i < 4; i++)
-        {
-            inaddr[i] = temp % 256;
-            temp = temp / 256;
-        }
-        portaddr[1] = FTP_USER_PORT % 256;
-        portaddr[0] = FTP_USER_PORT / 256;
+            RET_ERR("getsockname() failed; errno %d", errno);
+
+        memcpy(inaddr, &addr1.sin_addr, sizeof(inaddr));
+        memset(&addr1, 0, sizeof(addr1));
+        addr1.sin_family = AF_INET;
+        sd1 = socket(AF_INET, SOCK_STREAM, 0);
+
+        if (bind(sd1, (struct sockaddr *)&addr1, sizeof(addr1)) < 0)
+            RET_ERR("bind() failed; errno %d", errno);
+            
+        if (listen(sd1, 1) < 0)
+            RET_ERR("listen() failed; errno %d", errno);
+
+        if (getsockname(sd1, (struct sockaddr *)&addr1, &addr1_len) < 0)
+            RET_ERR("getsockname() failed; errno %d", errno);
     }
 
     /* Read greeting */
@@ -341,8 +331,8 @@ ftp_open(char *uri, int flags, int passive, int offset)
         CMD("PASV\n");
     else
         PUT_CMD("PORT %d,%d,%d,%d,%d,%d",
-                 inaddr[0], inaddr[1], inaddr[2], inaddr[3],
-                 portaddr[0], portaddr[1]);
+                inaddr[0], inaddr[1], inaddr[2], inaddr[3],
+                ntohs(addr1.sin_port) / 256, ntohs(addr1.sin_port) % 256);
     
     if ((str = strchr(buf, '(')) == NULL)
     {
@@ -350,7 +340,8 @@ ftp_open(char *uri, int flags, int passive, int offset)
     }
     else
     {
-        unsigned char *a = (unsigned char *)&(addr.sin_addr);
+        uint8_t *a = (uint8_t *)&(addr.sin_addr);
+        int      i;
         
         /* Here we assume that FTP server provides correct answer */
         for (i = 0, str++; i < 4; str = strchr(str, ',') + 1, i++)
@@ -371,51 +362,22 @@ ftp_open(char *uri, int flags, int passive, int offset)
     {
         sd = socket(AF_INET, SOCK_STREAM, 0);
         if (connect(sd, (struct sockaddr *)&addr, sizeof(addr)) < 0)
-        {
-             ERROR("connect() 2 failed %d", errno);
-             close(sd);
-             close(s);
-             return -1;
-        }
+             RET_ERR("connect() for data connection failed; "
+                     "errno %d", errno);
+        READ_ANS;
     }
     else
     {
-        sd1 = socket(AF_INET, SOCK_STREAM, 0);
- 
-        memset(&addr1, 0, sizeof(addr1));
-        addr1.sin_family = AF_INET;
-        addr1.sin_port = htons(FTP_USER_PORT);
+        READ_ANS;
+        if ((sd = accept(sd1, NULL, NULL)) < 0)
+            RET_ERR("accept() failed; errno %d", errno);
 
-        if( bind(sd1, (struct sockaddr *)&addr1, sizeof(addr1)) < 0)
-        {
-            ERROR(" bind() failed %d", errno);
-            close(sd1);
-            close(s);
-            return -1;
-        }
-        
-        if (listen(sd1, 1) < 0)
-        {
-            ERROR(" listen() failed %d", errno);
-            close(sd1);
-            close(s);
-            return -1;
-        }
-
-        if ( (sd = accept(sd1, NULL, NULL)) < 0)
-        {
-            printf("error accept() failed %d", errno);
-            close(sd1);
-            close(s);
-            return -1;
-        }  
-    }
-    READ_ANS;
-    close(s);
-    if (!(passive))
         close(sd1);
+    }
+    close(s);
     return sd;
-    
+
+#undef RET_ERR    
 #undef READ_ANS
 #undef PUT_CMD    
 }
