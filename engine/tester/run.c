@@ -927,34 +927,45 @@ run_test_script(tester_ctx *ctx, test_script *script, test_id id,
 
     if (ctx->flags & TESTER_CTX_GDB)
     {
-        FILE *f;
+        if (params_str != NULL)
+        {
+            FILE *f;
 
-        if (snprintf(gdb_init, sizeof(gdb_init),
-                     TESTER_GDB_FILENAME_FMT, id) >=
-                (int)sizeof(gdb_init))
-        {
-            ERROR("Too short buffer is reserved for GDB init file name");
-            return ETESMALLBUF;
+            if (snprintf(gdb_init, sizeof(gdb_init),
+                         TESTER_GDB_FILENAME_FMT, id) >=
+                    (int)sizeof(gdb_init))
+            {
+                ERROR("Too short buffer is reserved for GDB init file name");
+                return ETESMALLBUF;
+            }
+            /* TODO Clean up */
+            f = fopen(gdb_init, "w");
+            if (f == NULL)
+            {
+                ERROR("Failed to create GDB init file: %s", strerror(errno));
+                return errno;
+            }
+            fprintf(f, "set args %s\n", params_str);
+            if (fclose(f) != 0)
+            {
+                ERROR("fclose() failed");
+                return errno;
+            }
+            if (snprintf(shell, sizeof(shell),
+                         "gdb -x %s ", gdb_init) >=
+                    (int)sizeof(shell))
+            {
+                ERROR("Too short buffer is reserved for shell command prefix");
+                return ETESMALLBUF;
+            }
         }
-        /* TODO Clean up */
-        f = fopen(gdb_init, "w");
-        if (f == NULL)
+        else
         {
-            ERROR("Failed to create GDB init file: %s", strerror(errno));
-            return errno;
-        }
-        fprintf(f, "set args %s\n", params_str);
-        if (fclose(f) != 0)
-        {
-            ERROR("fclose() failed");
-            return errno;
-        }
-        if (snprintf(shell, sizeof(shell),
-                     "gdb -x %s ", gdb_init) >=
-                (int)sizeof(shell))
-        {
-            ERROR("Too short buffer is reserved for shell command prefix");
-            return ETESMALLBUF;
+            if (snprintf(shell, sizeof(shell), "gdb ") >= (int)sizeof(shell))
+            {
+                ERROR("Too short buffer is reserved for shell command prefix");
+                return ETESMALLBUF;
+            }
         }
     }
     else if (ctx->flags & TESTER_CTX_VALGRIND)
