@@ -986,12 +986,10 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
                 ERROR("%s() fails adding a new route %s %s on '%s' Agent "
                       "errno = %X", __FUNCTION__, route_inst_name,
                       rt_val, ta, rc);
-
-                return TE_RC(TE_TAPI, rc);
+                break;
             }
             if (cfg_hndl != NULL)
                 *cfg_hndl = handle;
-
             break;
 
         case OP_DEL:
@@ -1000,18 +998,18 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
             {
                 ERROR("%s() fails deleting route %s on '%s' Agent "
                       "errno = %X", __FUNCTION__, route_inst_name, ta, rc);
-                return TE_RC(TE_TAPI, rc);
             }
             break;
 
         default:
             ERROR("%s(): Operation %d is not supported", __FUNCTION__, op);
+            rc = TE_RC(TE_TAPI, EOPNOTSUPP);
             break;
     }
 
 #undef PUT_INTO_BUF
 
-    return 0;
+    return rc;
 }
 
 /**
@@ -1066,7 +1064,6 @@ tapi_cfg_arp_op(enum tapi_cfg_oper op, const char *ta,
                       *(((uint8_t *)link_addr) + 3),
                       *(((uint8_t *)link_addr) + 4),
                       *(((uint8_t *)link_addr) + 5), ta);
-                return rc;
             }
             break;
         }
@@ -1077,13 +1074,14 @@ tapi_cfg_arp_op(enum tapi_cfg_oper op, const char *ta,
             {
                 RING("There is no ARP entry for %s address on %s Agent",
                      net_addr_str, ta);
-                return 0;
+                rc = 0;
+                break;
             }
             if (rc != 0)
             {
                 ERROR("%s() fails finding '/agent:%s/arp:%s' instance "
                       "with errno %X", __FUNCTION__, ta, net_addr_str, rc);
-                return rc;
+                break;
             }
 
             if ((rc = cfg_del_instance_fmt(FALSE, "/agent:%s/arp:%s",
@@ -1091,16 +1089,16 @@ tapi_cfg_arp_op(enum tapi_cfg_oper op, const char *ta,
             {
                 ERROR("%s() fails deleting ARP entry for %s host "
                       "on TA '%s'", __FUNCTION__, net_addr_str, ta);
-                return rc;
             }
             break;
 
         default:
             ERROR("%s(): Operation %d is not supported", __FUNCTION__, op);
+            rc = TE_RC(TE_TAPI, EOPNOTSUPP);
             break;
     }
-    
-    return TE_RC(TE_TAPI, EOPNOTSUPP);
+
+    return rc;
 }
 
 /* See the description in tapi_cfg.h */
