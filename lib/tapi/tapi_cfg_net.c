@@ -668,7 +668,7 @@ tapi_cfg_net_all_up(void)
 
 /* See description in tapi_cfg_net.h */
 int
-tapi_cfg_net_assign_ip4(cfg_net_t *net, cfg_handle *ip4_net)
+tapi_cfg_net_assign_ip4(cfg_net_t *net, tapi_cfg_net_assigned *assigned)
 {
     int                 rc;
     cfg_val_type        type;
@@ -689,7 +689,8 @@ tapi_cfg_net_assign_ip4(cfg_net_t *net, cfg_handle *ip4_net)
     }
 
     /* Allocate or use passed IPv4 subnet */
-    if (ip4_net == NULL || *ip4_net == CFG_HANDLE_INVALID)
+    if (assigned == NULL ||
+        assigned->pool == CFG_HANDLE_INVALID)
     {
         rc = tapi_cfg_alloc_ip4_net(&ip4_net_hndl);
         if (rc != 0)
@@ -701,7 +702,7 @@ tapi_cfg_net_assign_ip4(cfg_net_t *net, cfg_handle *ip4_net)
     }
     else
     {
-        ip4_net_hndl = *ip4_net;
+        ip4_net_hndl = assigned->pool;
     }
 
     do { /* Fake loop */
@@ -747,6 +748,19 @@ tapi_cfg_net_assign_ip4(cfg_net_t *net, cfg_handle *ip4_net)
                   "instance with handle 0x%x: %X",
                   ip4_net_hndl, net->handle, rc);
             break;
+        }
+
+        if ((assigned != NULL) && (net->n_nodes > 0))
+        {
+            assigned->entries = calloc(net->n_nodes,
+                                       sizeof(*(assigned->entries)));
+            if (assigned->entries == NULL)
+            {
+                ERROR("calloc(%u, %u) failed", net->n_nodes,
+                      sizeof(*(assigned->entries)));
+                rc = ENOMEM;
+                break;
+            }
         }
 
         /*
@@ -802,14 +816,17 @@ tapi_cfg_net_assign_ip4(cfg_net_t *net, cfg_handle *ip4_net)
                 break;
             }
             free(ip4_addr);
+
+            if (assigned != NULL)
+                assigned->entries[i] = ip4_entry_hndl;
         }
 
     } while (0); /* End of fake loop */
 
     if ((rc == 0) &&
-        (ip4_net != NULL) && (*ip4_net == CFG_HANDLE_INVALID))
+        (assigned != NULL) && (assigned->pool == CFG_HANDLE_INVALID))
     {
-        *ip4_net = ip4_net_hndl;
+        assigned->pool= ip4_net_hndl;
     }
 
     free(ip4_net_oid);

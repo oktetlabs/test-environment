@@ -163,19 +163,28 @@ extern int tapi_cfg_net_get_switch_port(const char *ta_node,
  */
 extern int tapi_cfg_net_all_up(void);
 
+/** Information about made assignments */
+typedef struct tapi_cfg_net_assigned {
+    cfg_handle  pool;
+    cfg_handle *entries;
+} tapi_cfg_net_assigned;
+
 /**
  * Assign IPv4 subnet to specified configuration network.
  *
  * @param net       Configuration network
- * @param ip4_net   Location of IPv4 subnet Cfgr handle
+ * @param assigned  Information about done assignments
  *
- * If ip4_net is NULL or *ip4_net is CFG_HANDLE_INVALID, IPv4 subnet is
- * allocated using #tapi_cfg_alloc_ip4_net. Its handle is returned
- * in *ip4_net, if ip4_net is not NULL.
+ * If assigned is NULL or assigned->pool is CFG_HANDLE_INVALID, IPv4
+ * subnet is allocated using #tapi_cfg_alloc_ip4_net. Its handle is
+ * returned in assigned->pool. Pool entries assigned to net nodes are
+ * returned as array assigned->entries. Order of elements in the same
+ * as order of nodes in net->nodes array.
  *
  * @return Status code.
  */
-extern int tapi_cfg_net_assign_ip4(cfg_net_t *net, cfg_handle *ip4_net);
+extern int tapi_cfg_net_assign_ip4(cfg_net_t *net,
+                                   tapi_cfg_net_assigned *assigned);
 
 
 #ifdef __cplusplus
