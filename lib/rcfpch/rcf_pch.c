@@ -358,7 +358,7 @@ int
 rcf_pch_run(const char *confstr, const char *info)
 {
     char *cmd = NULL;
-    int   rc;
+    int   rc = 0;
     
     te_bool pending = FALSE;
 
@@ -868,6 +868,10 @@ rcf_pch_run(const char *confstr, const char *info)
                     results = 1;
                     ptr += strlen("results");
                     SKIP_SPACES(ptr);
+                }
+                else
+                {
+                    results = 0;
                 }
 
                 if (*ptr != 0)
