@@ -9,28 +9,21 @@ TE_PLATFORM([], [], [], [], \
             [ipc bsapi loggerten rcfapi conf_oid confapi tapi \
              comm_net_engine rcfunix \
              loggerta comm_net_agent rcfpch \
-             rcfrpc tapi_rpcsock \
-             asn ndn tad_ch \
-             tad_file \
-             tad_eth tapi_eth \
-             tad_bridge tapi_bridge \
-             tad_ipstack tapi_ipstack \
-             tad_dhcp tapi_dhcp \
-             tad_snmp tapi_snmp \
-             tad_cli \
+             rcfrpc asn ndn tad \
+             tapi_rpcsock tapi_eth tapi_bridge tapi_ipstack \
+             tapi_dhcp tapi_snmp \
             ])
 
 TE_APP_PARMS([rcf], [--enable-ltdl-install], [], [], [])
 
-TE_LIB_PARMS([tad_ch], [], [], \
+TE_LIB_PARMS([tad], [], [], \
              [--with-file --with-eth --with-bridge \
               --with-ipstack --with-dhcp --with-snmp --with-cli], [])
               
 TE_TA_TYPE([linux], [linux], [], \
            [--with-rcf-rpc --with-cfg-linux-daemons='ftp echo'], \
            [], [-lexpect -lsnmp -lcrypto], \
-           [tad_ch tad_file tad_eth tad_bridge tad_ipstack tad_dhcp tad_snmp \
-            tad_cli ndn asn])
+           [tad ndn asn])
 
 TE_TA_TYPE([linux_lite], [linux], [], [], [-DTAD_CH_DUMMY], [], [])
 

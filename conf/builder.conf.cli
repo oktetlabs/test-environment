@@ -1,41 +1,13 @@
-#
-# TE_HOST([i686-pc-gnu-linux])
-#
-# TE_PLATFORM([], [--with-customer=oktetlabs], [-Dfoo], [-Lbar], 
-#  [ipc bsapi loggerten rcfapi conf_oid confapi comm_net_engine rcfunix  \
-#   comm_net_agent loggerta rcfpch])
-# 
-# TE_TOOLS([rgt])
-#
-# TE_APP([builder rcf logger tester configurator])
-#
-# TE_APP_PARMS([rcf], [--enable-ltdl-install], [-Dfoo], [-Lbar], [mylibrary])
-#
-# TE_LIB_PARMS([mylibrary], [i686-pc-gnu-linux], [/home/tester/mylibrary],
-#              [--with-customer=oktetlabs], [-Dfoo], [-Lbar])
-#
-# TE_TA_TYPE([win32], [win32], [i686-pc-cygwin], \
-#            [--with-rcf-rpc], [-DTAD_CH_DUMMY], \
-#            [-Lbar], [ws2_32 rcfpch conf_oid loggerta comm_net_agent])
-# 
-# TE_NUT([mynut], [LIB], [/home/tester/mynut], [/home/tester/myscriptdir],
-#        [myscriptparamster1 myscriptpaarmeter2])
-#
-# TE_NUT_TCE([mynut], [ta1], [win32], [branch loop], [FILE])
-#
-# TE_NUT_TCE_SOURCES([mynut], [dir1 dir2 dir3/foo.c], [-Dfoo])
-#
-# TE_HOST_EXEC([java])
-#
+# This file contain build params for CLI usage only. 
 
 TE_APP_PARMS([rcf], [--enable-ltdl-install], [], [], [])
 
-TE_LIB_PARMS([tad_ch], [], [], [--with-cli], [], [])
+TE_LIB_PARMS([tad], [], [], [--with-cli], [], [])
 
 TE_PLATFORM([], [], [], [], \
     [ipc bsapi loggerten rcfapi conf_oid confapi tapi \
      comm_net_engine rcfunix loggerta rcfpch comm_net_agent \
-     asn ndn tad_ch tad_cli])
+     tad asn ndn])
 
 TE_TOOLS([rgt millicom])
 
