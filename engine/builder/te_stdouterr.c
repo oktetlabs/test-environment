@@ -167,6 +167,7 @@ main(int argc, char *const argv[])
 
     signal(SIGCHLD, sigchld_handler);
 
+    child_run = 1;
     if (fork() == 0)
     {
         rc = execvp(cmd, argv);
@@ -176,7 +177,6 @@ main(int argc, char *const argv[])
             return EXIT_FAILURE;
         }
     }
-    child_run = 1;
 
     do {
         
