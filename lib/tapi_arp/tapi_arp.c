@@ -392,55 +392,9 @@ int
 tapi_arp_prepare_pattern_eth_only(uint8_t *src_mac, uint8_t *dst_mac,
                                   asn_value **pattern)
 {
-    asn_value            *frame_hdr;
-    ndn_eth_header_plain  eth_hdr;
-    int                   syms;
-    int                   rc;
+    uint16_t eth_type = ETHERTYPE_ARP;
 
-    if (pattern == NULL)
-        return EINVAL;
-
-    memset(&eth_hdr, 0, sizeof(eth_hdr));
-
-    if (src_mac != NULL)
-        memcpy(eth_hdr.src_addr, src_mac, sizeof(eth_hdr.src_addr));
-    if (dst_mac != NULL)
-        memcpy(eth_hdr.dst_addr, dst_mac, sizeof(eth_hdr.dst_addr));
-
-    eth_hdr.eth_type_len = ETHERTYPE_ARP;
-
-    frame_hdr = ndn_eth_plain_to_packet(&eth_hdr);
-    if (frame_hdr == NULL)
-        return ENOMEM;
-
-    if (src_mac == NULL)
-    {
-        rc = asn_free_subvalue(frame_hdr, "src-addr");
-        WARN("asn_free_subvalue() returns %x\n", rc);
-    }
-    if (dst_mac == NULL)
-    {
-        rc = asn_free_subvalue(frame_hdr, "dst-addr");
-        WARN("asn_free_subvalue() returns %x\n", rc);
-    }
-
-    rc = asn_parse_value_text("{{ pdus { eth:{ }}}}",
-                              ndn_traffic_pattern,
-                              pattern, &syms);
-    if (rc != 0)
-    {
-        ERROR("asn_parse_value_text fails %x\n", rc);
-        return rc;
-    }
-    rc = asn_write_component_value(*pattern,
-                                   frame_hdr, "0.pdus.0.#eth");
-    if (rc != 0)
-    {
-        ERROR("asn_write_component_value fails %x\n", rc);
-        return rc;
-    }
-
-    return 0;
+    return tapi_eth_prepare_pattern(src_mac, dst_mac, &eth_type, pattern);
 }
 
 /* See the description in tapi_arp.h */

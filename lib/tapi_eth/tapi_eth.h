@@ -236,6 +236,23 @@ extern int tapi_eth_recv_start(const char *ta_name, int sid,
                                unsigned int timeout, int num);
 
 /**
+ * Creates traffic pattern for a single Ethernet frame.
+ *
+ * @param src_mac  Desired source MAC address value. if NULL, source address
+ *                 of the Ethernet frame can be any
+ * @param dst_mac  Desired destination MAC address value. if NULL,
+ *                 destination address of the Ethernet frame can be any
+ * @param type     Desired type of Ethernet payload
+ * @param pattern  Placeholder for the pattern (OUT)
+ *
+ * @returns Status of the operation
+ */
+extern int tapi_eth_prepare_pattern(uint8_t *src_mac,
+                                    uint8_t *dst_mac,
+                                    uint16_t *eth_type,
+                                    asn_value **pattern);
+
+/**
  * Print ethernet address to the specified file stream.
  *
  * @param f     - file stream handle

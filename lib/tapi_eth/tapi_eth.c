@@ -421,9 +421,7 @@ tapi_eth_pkt_handler(char *fn, void *user_param)
     return;
 }
 
-/**
- * See the description in tapi_eth.h
- */
+/* See the description in tapi_eth.h */
 int
 tapi_eth_recv_start(const char *ta_name, int sid,
                     csap_handle_t eth_csap,
@@ -468,4 +466,75 @@ tapi_eth_recv_start(const char *ta_name, int sid,
 #endif
 
     return rc;
+}
+
+/* See the description in tapi_eth.h */
+int
+tapi_eth_prepare_pattern(uint8_t *src_mac, uint8_t *dst_mac,
+                         uint16_t *eth_type, asn_value **pattern)
+{
+    asn_value            *frame_hdr;
+    ndn_eth_header_plain  eth_hdr;
+    int                   syms;
+    int                   rc;
+
+    if (pattern == NULL)
+        return EINVAL;
+
+    memset(&eth_hdr, 0, sizeof(eth_hdr));
+
+    if (src_mac != NULL)
+        memcpy(eth_hdr.src_addr, src_mac, sizeof(eth_hdr.src_addr));
+    if (dst_mac != NULL)
+        memcpy(eth_hdr.dst_addr, dst_mac, sizeof(eth_hdr.dst_addr));
+    if (eth_type != NULL)
+        eth_hdr.eth_type_len = *eth_type;
+
+    frame_hdr = ndn_eth_plain_to_packet(&eth_hdr);
+    if (frame_hdr == NULL)
+        return ENOMEM;
+
+    if (src_mac == NULL)
+    {
+        if ((rc = asn_free_subvalue(frame_hdr, "src-addr")) != 0)
+        {
+            ERROR("Cannot delete 'src-addr' subvalue from ETH header");
+            return rc;
+        }
+    }
+
+    if (dst_mac == NULL)
+    {
+        if ((rc = asn_free_subvalue(frame_hdr, "dst-addr")) != 0)
+        {
+            ERROR("Cannot delete 'dst-addr' subvalue from ETH header");
+            return rc;
+        }
+    }
+
+    if (eth_type == NULL)
+    {
+        if ((rc = asn_free_subvalue(frame_hdr, "eth-type")) != 0)
+        {
+            ERROR("Cannot delete 'eth-type' subvalue from ETH header");
+            return rc;
+        }
+    }
+
+    if ((rc = asn_parse_value_text("{{ pdus { eth:{ }}}}",
+                                   ndn_traffic_pattern,
+                                   pattern, &syms)) != 0)
+    {
+        ERROR("Caanot parse ASN data for ETH pattern %X\n", rc);
+        return rc;    
+    }
+    rc = asn_write_component_value(*pattern,
+                                   frame_hdr, "0.pdus.0.#eth");
+    if (rc != 0)
+    {
+        ERROR("asn_write_component_value fails %x\n", rc);
+        return rc;
+    }
+
+    return 0;
 }
