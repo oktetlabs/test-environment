@@ -34,7 +34,7 @@
 enum tarpc_op {
     TARPC_CALL,       /**< Call non-blocking RPC (if supported) */
     TARPC_WAIT,       /**< Wait until non-blocking RPC is finished */
-    TARPC_CALL_WAIT   /**< Call blocking RPC */                        
+    TARPC_CALL_WAIT,  /**< Call blocking RPC */                        
 };
 
 typedef int32_t     tarpc_int;
@@ -78,6 +78,10 @@ struct tarpc_in_arg {
     uint64_t        start;
     uint32_t        tid;        /**< Thread identifier (for checking and 
                                      waiting) */
+    tarpc_ptr       done;       /**< Pointer to the boolean variable in
+                                     TA context to be set when function
+                                     which is called using non-blocking
+                                     RPC call finishes */
 };
 
 /**
@@ -88,18 +92,22 @@ struct tarpc_in_arg {
  *            parameters to this structure.
  */
 struct tarpc_out_arg {
-    tarpc_int   _errno;      /**< @e errno of the operation from
-                                  te_errno.h or rcf_rpc_defs.h */
-    uint32_t    duration;    /**< Duration of the called routine
-                                  execution (in microseconds) */
-    uint32_t    tid;         /**< Identifier of the thread which 
-                                  performs possibly blocking operation,
-                                  but caller does not want to block.
-                                  It should be passed as input when
-                                  RPC client want to check status or
-                                  wait for finish of the initiated
-                                  operation. */
-    tarpc_int   win_error;   /**< Windows error as is */                                 
+    tarpc_int   _errno;     /**< @e errno of the operation from
+                                 te_errno.h or rcf_rpc_defs.h */
+    uint32_t    duration;   /**< Duration of the called routine
+                                 execution (in microseconds) */
+    uint32_t    tid;        /**< Identifier of the thread which 
+                                 performs possibly blocking operation,
+                                 but caller does not want to block.
+                                 It should be passed as input when
+                                 RPC client want to check status or
+                                 wait for finish of the initiated
+                                 operation. */
+    tarpc_ptr   done;       /**< Pointer to the boolean variable in
+                                 TA context to be set when function
+                                 which is called using non-blocking
+                                 RPC call finishes */
+    tarpc_int   win_error;  /**< Windows error as is */                                 
 };
 
 
@@ -148,6 +156,11 @@ struct tarpc_timespec {
     int32_t     tv_nsec;
 };
 
+/** Function gets nothing */
+struct tarpc_void_in {
+    struct tarpc_in_arg     common;
+};
+
 /** Function outputs nothing */
 struct tarpc_void_out {
     struct tarpc_out_arg    common;
@@ -162,7 +175,6 @@ struct tarpc_int_retval_out {
 
 
 
-
 /** Function outputs 'ssize_t' return value only */
 struct tarpc_ssize_t_retval_out {
     struct tarpc_out_arg    common;
@@ -174,6 +186,11 @@ struct tarpc_ssize_t_retval_out {
 /*
  * RPC arguments
  */
+
+/* rpc_is_op_done() */
+
+typedef struct tarpc_void_in  tarpc_rpc_is_op_done_in;
+typedef struct tarpc_void_out tarpc_rpc_is_op_done_out;
 
 /* setlibname() */
 
@@ -687,9 +704,7 @@ typedef struct tarpc_accept_out tarpc_getpeername_out;
 
 /* fd_set_new() */
 
-struct tarpc_fd_set_new_in {
-    struct tarpc_in_arg common;
-};
+typedef struct tarpc_void_in tarpc_fd_set_new_in;
 
 struct tarpc_fd_set_new_out {
     struct tarpc_out_arg    common;
@@ -1261,9 +1276,7 @@ typedef struct tarpc_int_retval_out tarpc_kill_out;
 
 /* sigset_new() */
 
-struct tarpc_sigset_new_in {
-    struct tarpc_in_arg common;
-};
+typedef struct tarpc_void_in tarpc_sigset_new_in;
 
 struct tarpc_sigset_new_out {
     struct tarpc_out_arg    common;
@@ -1357,7 +1370,7 @@ typedef struct tarpc_int_retval_out tarpc_sigsuspend_out;
 
 /* sigreceived() */
 
-typedef struct tarpc_sigset_new_in tarpc_sigreceived_in;
+typedef struct tarpc_void_in tarpc_sigreceived_in;
 
 typedef struct tarpc_sigset_new_out tarpc_sigreceived_out;
 
@@ -1907,6 +1920,7 @@ define([cnt], 1)
 define([counter], [cnt[]define([cnt],incr(cnt))])
 define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
 
+        RPC_DEF(rpc_is_op_done)
         RPC_DEF(setlibname)
 
         RPC_DEF(fork)
