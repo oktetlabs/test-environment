@@ -280,7 +280,7 @@ fi
 
 for i in BUILDER LOGGER TESTER CONFIGURATOR RCF RGT ; do
     CONF_FILE=`eval echo '$CONF_'$i` ;
-    if test -n ${CONF_FILE} -a "${CONF_FILE:0:1}" != "/" ; then
+    if test -n "${CONF_FILE}" -a "${CONF_FILE:0:1}" != "/" ; then
         eval CONF_$i="${CONF_DIR}/${CONF_FILE}" ;
     fi
 done
