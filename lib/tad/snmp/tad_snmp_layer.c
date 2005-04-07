@@ -698,7 +698,7 @@ int snmp_gen_pattern_cb(int csap_id, int layer, const asn_value *tmpl_pdu,
 
 
 /**
- * Action function for replying to SNMP V2 Inform PDUs
+ * Action function for replying to SNMPv2 InformRequest-PDU
  *
  * @param csap_descr    CSAP Descriptor structure.
  * @param usr_param     User-supplied optional parameter.
@@ -723,14 +723,15 @@ snmp_inform_response(csap_p csap_descr, const char *usr_param,
     }
     if (pdu->command != SNMP_MSG_INFORM)
     {
-        WARN("%s: call for non-Inform SNMP PDU", __FUNCTION__);
+        WARN("%s: call for non-InformRequest SNMP PDU", __FUNCTION__);
         return 0;
     }
 
     reply = snmp_clone_pdu(pdu);
     if (reply == NULL)
     {
-        ERROR("%s: cannot allocate memory for SNMP Response", __FUNCTION__);
+        ERROR("%s: cannot allocate memory for SNMP Response PDU",
+              __FUNCTION__);
         return ENOMEM;
     }
     reply->command = SNMP_MSG_RESPONSE;
@@ -739,11 +740,11 @@ snmp_inform_response(csap_p csap_descr, const char *usr_param,
 
     if (csap_descr->write_cb(csap_descr, reply, sizeof(*reply)) < 0)
     {
-        ERROR("%s: failed sending SNMP Inform Response", __FUNCTION__);
+        ERROR("%s: failed sending SNMP Response PDU", __FUNCTION__);
         snmp_free_pdu(reply);
         return TE_RC(TE_TAD_CSAP, ETADLOWER);
     }
-    VERB("%s: SNMP Response for Inform is sent", __FUNCTION__);
+    VERB("%s: SNMP Response on InformRequest is sent", __FUNCTION__);
 
     return 0;
 }
