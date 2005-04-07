@@ -136,7 +136,8 @@ snmp_gen_bin_cb(int csap_id, int layer, const asn_value *tmpl_pdu,
         case NDN_SNMP_MSG_GETBULK: ucd_snmp_op = SNMP_MSG_GETBULK; break;
         case NDN_SNMP_MSG_SET:     ucd_snmp_op = SNMP_MSG_SET;     break;
         case NDN_SNMP_MSG_TRAP1:   ucd_snmp_op = SNMP_MSG_TRAP;    break; 
-        case NDN_SNMP_MSG_TRAP2:   ucd_snmp_op = SNMP_MSG_TRAP2;   break; 
+        case NDN_SNMP_MSG_TRAP2:   ucd_snmp_op = SNMP_MSG_TRAP2;   break;
+        case NDN_SNMP_MSG_INFORM:  ucd_snmp_op = SNMP_MSG_INFORM;  break;
         default: 
             return ETADWRONGNDS;
     } 
@@ -191,7 +192,8 @@ snmp_gen_bin_cb(int csap_id, int layer, const asn_value *tmpl_pdu,
 
             case NDN_SNMP_MSG_SET:   
             case NDN_SNMP_MSG_TRAP1: 
-            case NDN_SNMP_MSG_TRAP2: 
+            case NDN_SNMP_MSG_TRAP2:
+            case NDN_SNMP_MSG_INFORM:
             {
                 const char* val_name;
                 asn_value_p value;
@@ -309,6 +311,10 @@ int snmp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
 
         case SNMP_MSG_GETBULK:
             type = NDN_SNMP_MSG_GETBULK;
+            break;
+
+        case SNMP_MSG_INFORM:
+            type = NDN_SNMP_MSG_INFORM;
             break;
 
         default:
@@ -691,3 +697,53 @@ int snmp_gen_pattern_cb(int csap_id, int layer, const asn_value *tmpl_pdu,
 }
 
 
+/**
+ * Action function for replying to SNMP V2 Inform PDUs
+ *
+ * @param csap_descr    CSAP Descriptor structure.
+ * @param usr_param     User-supplied optional parameter.
+ * @param pkt           Packet data (in the form of snmp_pdu structure).
+ * @param pkt_len       Length of packet data.
+ *
+ * @return Status code.
+ */
+int
+snmp_inform_response(csap_p csap_descr, const char *usr_param,
+                     const uint8_t *pkt, size_t pkt_len)
+{
+    struct snmp_pdu     *pdu = (struct snmp_pdu *)pkt;
+    struct snmp_pdu     *reply;
+    
+    UNUSED(usr_param);
+
+    if (pkt_len < sizeof(struct snmp_pdu))
+    {
+        WARN("%s: too small packet data supplied: %d bytes, %d required",
+             __FUNCTION__, pkt_len, sizeof(struct snmp_pdu));
+    }
+    if (pdu->command != SNMP_MSG_INFORM)
+    {
+        WARN("%s: call for non-Inform SNMP PDU", __FUNCTION__);
+        return 0;
+    }
+
+    reply = snmp_clone_pdu(pdu);
+    if (reply == NULL)
+    {
+        ERROR("%s: cannot allocate memory for SNMP Response", __FUNCTION__);
+        return ENOMEM;
+    }
+    reply->command = SNMP_MSG_RESPONSE;
+    reply->errstat = 0;
+    reply->errindex = 0;
+
+    if (csap_descr->write_cb(csap_descr, reply, sizeof(*reply)) < 0)
+    {
+        ERROR("%s: failed sending SNMP Inform Response", __FUNCTION__);
+        snmp_free_pdu(reply);
+        return TE_RC(TE_TAD_CSAP, ETADLOWER);
+    }
+    VERB("%s: SNMP Response for Inform is sent", __FUNCTION__);
+
+    return 0;
+}

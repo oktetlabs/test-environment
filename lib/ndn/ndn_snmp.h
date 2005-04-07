@@ -42,7 +42,8 @@ typedef enum {
     NDN_SNMP_MSG_SET,
     NDN_SNMP_MSG_TRAP1,
     NDN_SNMP_MSG_TRAP2,
-    NDN_SNMP_MSG_GETBULK
+    NDN_SNMP_MSG_GETBULK,
+    NDN_SNMP_MSG_INFORM
 } ndn_snmp_msg_t;
 
 typedef enum {

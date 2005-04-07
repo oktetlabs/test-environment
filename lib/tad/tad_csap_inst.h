@@ -364,13 +364,15 @@ typedef struct csap_instance {
  * Type for reference to user function for some magic processing 
  * with matched pkt
  *
- * @param usr_param   String passed by user
+ * @param csap_descr  CSAP descriptor structure.
+ * @param usr_param   String passed by user.
  * @param pkt         Packet binary data, as it was caught from net.
  * @param pkt_len     Length of pkt data.
  *
  * @return zero on success or error code.
  */
-typedef int (*tad_processing_pkt_method)(const char *usr_param, 
+typedef int (*tad_processing_pkt_method)(csap_p csap_descr,
+                                         const char *usr_param, 
                                          const uint8_t *pkt, 
                                          size_t pkt_len);
 

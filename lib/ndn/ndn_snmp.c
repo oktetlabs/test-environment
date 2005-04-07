@@ -174,7 +174,8 @@ asn_enum_entry_t _ndn_snmp_message_type_enum_entries[] =
     {"set",     NDN_SNMP_MSG_SET},
     {"trap1",   NDN_SNMP_MSG_TRAP1},
     {"trap2",   NDN_SNMP_MSG_TRAP2},
-    {"get-bulk",NDN_SNMP_MSG_GETBULK}
+    {"get-bulk",NDN_SNMP_MSG_GETBULK},
+    {"inform",  NDN_SNMP_MSG_INFORM},
 };
 
 asn_type ndn_snmp_message_type_s = {
@@ -376,6 +377,7 @@ ndn_snmp_msg_type_h2str(ndn_snmp_msg_t msg_type)
         NDN_SNMP_MSG_H2STR(TRAP1);
         NDN_SNMP_MSG_H2STR(TRAP2);
         NDN_SNMP_MSG_H2STR(GETBULK);
+        NDN_SNMP_MSG_H2STR(INFORM);
     }
 #undef NDN_SNMP_MSG_H2STR
     
