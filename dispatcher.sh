@@ -618,7 +618,13 @@ fi
 if test -n "$LOGGER" ; then
     te_log_message Engine Dispatcher "Flush log"
     myecho "--->>> Log FLUSH"
-    te_log_flush
+    te_log_flush &
+    PID=$!
+    for ((i = 0 ; i < 20 ; i++)) ; do
+        if ! kill -cont $PID >/dev/null 2>&1 ; then  break ; fi
+        sleep 1 ;
+    done    
+    kill $PID >/dev/null 2>&1
 fi
 
 if test -n "$RCF" ; then
