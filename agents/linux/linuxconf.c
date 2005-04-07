@@ -1907,8 +1907,15 @@ arp_del(unsigned int gid, const char *oid,
         const char *addr, const char *addr_volatile)
 {
     struct arpreq arp_req;
+    char          val[32];
+    int           rc;
 
     UNUSED(gid);
+
+    if ((rc = arp_get(gid, oid, val, addr, addr_volatile)) != 0)
+        return rc;
+    RING("arp_get() detected valid dotted:%s, volatile:%s arp "
+         "entry for delition", addr, addr_volatile);
 
     if (strstr(oid, node_volatile.sub_id) != NULL)
         addr = addr_volatile;
@@ -1921,10 +1928,11 @@ arp_del(unsigned int gid, const char *oid,
 #ifdef SIOCDARP
     if (ioctl(s, SIOCDARP, &arp_req) < 0)
     {
-        ERROR("ioctl(SIOCDARP) failed: %s", strerror(errno));
+        ERROR("ioctl(SIOCDARP) failed when dotted:%s, volatile:%s "
+              "delition: %s", addr, addr_volatile, strerror(errno));
         if (errno == ENXIO || errno == ENETDOWN || errno == ENETUNREACH)
             return TE_RC(TE_TA_LINUX, ENOENT);
-        else            
+        else
             return TE_RC(TE_TA_LINUX, errno);
     }
 
