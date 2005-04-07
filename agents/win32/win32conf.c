@@ -965,12 +965,10 @@ arp_get(unsigned int gid, const char *oid, char *value,
     
     if ((a = inet_addr(addr)) == INADDR_NONE)
         return TE_RC(TE_TA_WIN32, EINVAL);
-
+        
     GET_TABLE(MIB_IPNETTABLE, GetIpNetTable);
     if (table == NULL)
         return TE_RC(TE_TA_WIN32, ENOENT);
-
-    buf[0] = 0;
 
     for (i = 0; i < (int)table->dwNumEntries; i++)
     {
@@ -1048,7 +1046,7 @@ arp_add(unsigned int gid, const char *oid, const char *value,
     UNUSED(gid);
     UNUSED(oid);
     
-    if (arp_get(0, NULL, val, addr, addr_volatile) == 0)
+    if (arp_get(0, oid, val, addr, addr_volatile) == 0)
         return TE_RC(TE_TA_WIN32, EEXIST);
 
     memset(&entry, 0, sizeof(entry));
@@ -1073,6 +1071,7 @@ arp_add(unsigned int gid, const char *oid, const char *value,
     entry.dwAddr = inet_addr(addr);
     if ((rc = find_ifindex(entry.dwAddr, &entry.dwIndex)) != 0)
         return rc;
+
     entry.dwPhysAddrLen = 6;
     if ((rc = CreateIpNetEntry(&entry)) != NO_ERROR)
     {
