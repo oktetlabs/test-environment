@@ -414,7 +414,7 @@ xinetd_set(unsigned int gid, const char *oid, const char *value)
         PRINT("No backup");                          
         {                                            
             char buf[128];                           
-            sprintf("ls -l %s", ds_backup(index));  
+            sprintf(buf, "ls -l %s", ds_backup(index));  
             ta_system(buf);                          
         }                                            
         return rc;                                            

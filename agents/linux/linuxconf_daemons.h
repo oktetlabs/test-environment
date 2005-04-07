@@ -190,7 +190,7 @@ extern void ds_config_touch(int index);
             PRINT("No backup");                                 \
             {                                                   \
                 char buf[128];                                  \
-                sprintf("ls -l %s", ds_backup(_index));         \
+                sprintf(buf, "ls -l %s", ds_backup(_index));    \
                 ta_system(buf);                                 \
             }                                                   \
             return;                                             \
