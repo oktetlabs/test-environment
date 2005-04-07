@@ -630,7 +630,7 @@ tapi_snmp_csap_create(const char *ta, int sid, const char *snmp_agent,
     FILE *f;
 
     strcpy(tmp_name, "/tmp/te_snmp_csap_create.XXXXXX");
-    mktemp(tmp_name);
+    mkstemp(tmp_name);
 #if (DEBUG)
     VERB("tmp file: %s\n", tmp_name);
 #endif
@@ -1035,7 +1035,7 @@ tapi_snmp_get_row(const char *ta, int sid, int csap_id,
     tapi_get_row_par_list_t *get_par;
 
     strcpy(tmp_name, "/tmp/te_snmp_get_row.XXXXXX");
-    mktemp(tmp_name);
+    mkstemp(tmp_name);
 #if DEBUG
     VERB("tmp file: %s\n", tmp_name);
 #endif
@@ -1125,7 +1125,7 @@ tapi_snmp_get_row(const char *ta, int sid, int csap_id,
     VERB("in %s: num_vars %d\n", __FUNCTION__, num_vars);
 
     memset(&msg, 0, sizeof(msg));
-
+    timeout = 5000; /** @todo Fix me. */
     rc = rcf_ta_trsend_recv(ta, sid, csap_id, tmp_name,
                             tapi_snmp_pkt_handler, &msg, timeout, &num);
 
@@ -1208,7 +1208,7 @@ tapi_snmp_set_vbs(const char *ta, int sid, int csap_id,
     tapi_snmp_message_t msg;
 
     strcpy(tmp_name, "/tmp/te_snmp_set.XXXXXX");
-    mktemp(tmp_name);
+    mkstemp(tmp_name);
 #if DEBUG
     VERB("tmp file: %s\n", tmp_name);
 #endif
