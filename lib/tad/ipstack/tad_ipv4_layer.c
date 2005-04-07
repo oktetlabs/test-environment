@@ -161,7 +161,7 @@ ip4_gen_bin_cb(int csap_id, int layer, const asn_value *tmpl_pdu,
     if ((csap_descr = csap_find(csap_id)) == NULL)
         return TE_RC(TE_TAD_CSAP, EINVAL);
 
-    UNUSED(up_payload); /* DHCP has no payload */ 
+    UNUSED(up_payload);
     UNUSED(layer); 
     UNUSED(tmpl_pdu); 
     UNUSED(args); 

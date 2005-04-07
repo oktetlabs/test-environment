@@ -263,7 +263,7 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
         if (data_to_check.len)
         { /* There are non-parsed payload rest */
             rc = asn_write_value_field(*packet, data_to_check.data, 
-                                    data_to_check.len, "payload.#bytes");
+                                       data_to_check.len, "payload.#bytes");
             if (rc)
             {
                 ERROR( "ASN error in add rest payload 0x%x\n", rc);
