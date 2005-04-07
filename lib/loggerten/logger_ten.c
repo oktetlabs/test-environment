@@ -214,7 +214,7 @@ log_client_close(void)
 int
 log_flush_ten(const char *ta_name)
 {
-    const char * const msg = LGR_FLUSH;
+    const char *const msg = LGR_FLUSH;
 
     struct ipc_client *log_client;
 
@@ -231,7 +231,7 @@ log_flush_ten(const char *ta_name)
         return EINVAL;
     }
     
-    snprintf(clnt_name, "LOGGER_FLUSH_%s", ta_name);
+    snprintf(clnt_name, sizeof(clnt_name), "LOGGER_FLUSH_%s", ta_name);
 
     rc = ipc_init_client(clnt_name, &log_client);
     if (rc != 0)
