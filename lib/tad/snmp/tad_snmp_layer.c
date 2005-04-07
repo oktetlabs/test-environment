@@ -738,7 +738,7 @@ snmp_inform_response(csap_p csap_descr, const char *usr_param,
     reply->errstat = 0;
     reply->errindex = 0;
 
-    if (csap_descr->write_cb(csap_descr, reply, sizeof(*reply)) < 0)
+    if (csap_descr->write_cb(csap_descr, (char *)reply, sizeof(*reply)) < 0)
     {
         ERROR("%s: failed sending SNMP Response PDU", __FUNCTION__);
         snmp_free_pdu(reply);

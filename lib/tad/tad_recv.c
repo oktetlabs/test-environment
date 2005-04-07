@@ -231,7 +231,7 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
             }
             else 
             {
-                int i;
+                size_t i;
                 const uint8_t *d = data_to_check.data; 
 
                 for (i = 0; i < mask_len && i < data_to_check.len; 
@@ -242,7 +242,7 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
                         break;
                     }
                 if (rc != 0)
-                    F_VERB("Match payload fails, byte [%d] got %x;"
+                    F_VERB("Match payload fails, byte [%u] got %x;"
                            " expected %x, mask %x",
                            i, (int)*d, (int)(*pat), (int)(*mask));
             }

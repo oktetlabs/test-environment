@@ -906,7 +906,7 @@ tapi_snmp_operation(const char *ta, int sid, int csap_id,
     enum snmp_obj_type   obj_type;
 
     strcpy(tmp_name, "/tmp/te_snmp_op.XXXXXX");
-    mktemp(tmp_name);
+    mkstemp(tmp_name);
 #if DEBUG
     VERB("tmp file: %s\n", tmp_name);
 #endif
