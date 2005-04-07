@@ -63,8 +63,8 @@ int asn_impl_insert_subvalue (asn_value_p container, const char *label,
 static inline char *
 asn_strdup(const char* src)
 {
-    int len = strlen (src);
-    char *res = malloc (len + 1);
+    int len = strlen(src);
+    char *res = malloc(len + 1);
 
     if (res == NULL) return NULL;
 
@@ -97,7 +97,7 @@ asn_impl_fall_down_to_tree_writable (asn_value *container,
                     const char *field_labels, asn_value **found_value)
 {
     int rc;
-    char * rest_labels = asn_strdup(field_labels); 
+    char *rest_labels = asn_strdup(field_labels); 
     const asn_value *f_val;
 
     rc = asn_impl_fall_down_to_tree_nc (container, rest_labels, &f_val); 
@@ -410,7 +410,7 @@ asn_get_type(const asn_value *value)
 }
 
 /* See description in asn_usr.h */
-const char * 
+const char *
 asn_get_type_name(const asn_type *type)
 {
     if (!type) return NULL;
@@ -424,7 +424,7 @@ asn_get_type_name(const asn_type *type)
  *
  * @return value's name or NULL.
  */ 
-const char * 
+const char *
 asn_get_name(const asn_value *value)
 {
     if (!value) return NULL;
@@ -603,9 +603,9 @@ int
 asn_write_value_field(asn_value_p container, const void *data, int d_len, 
                       const char *field_labels)
 {
-    char * field_labels_int_copy = asn_strdup(field_labels); 
-    int    rc = asn_impl_write_value_field(container, data, d_len, 
-                                           field_labels_int_copy);
+    char *field_labels_int_copy = asn_strdup(field_labels); 
+    int   rc = asn_impl_write_value_field(container, data, d_len, 
+                                          field_labels_int_copy);
     free(field_labels_int_copy);
 
     return rc;
@@ -679,7 +679,7 @@ asn_impl_write_value_field(asn_value_p container,
 
     case CHAR_STRING:
         {
-            char * val = asn_strdup (data);
+            char *val = asn_strdup(data);
             if (container->data.other)
                 free (container->data.other);
             container->data.other = val;
@@ -745,8 +745,8 @@ asn_impl_write_value_field(asn_value_p container,
             switch (rc)
             {
                 case 0:
-                    rc = asn_impl_write_value_field (subvalue, data, d_len,
-                                                     rest_field_labels);
+                    rc = asn_impl_write_value_field(subvalue, data, d_len,
+                                                    rest_field_labels);
                 break;
 
                 case EASNINCOMPLVAL:
@@ -762,8 +762,8 @@ asn_impl_write_value_field(asn_value_p container,
                     if (container->syntax != TAGGED)
                         subvalue->name = asn_strdup(cur_label); 
 
-                    rc = asn_impl_write_value_field (subvalue, data, d_len,
-                                                     rest_field_labels);
+                    rc = asn_impl_write_value_field(subvalue, data, d_len,
+                                                    rest_field_labels);
                     if (rc) break; 
 
                     rc = asn_impl_insert_subvalue(container, cur_label, 
@@ -799,9 +799,9 @@ int
 asn_read_value_field  (const asn_value *container,  void *data, int *d_len,
                        const char *field_labels)
 {
-    char * field_labels_int_copy = asn_strdup(field_labels); 
-    int    rc = asn_impl_read_value_field(container, data, d_len, 
-                                                field_labels_int_copy);
+    char *field_labels_int_copy = asn_strdup(field_labels); 
+    int   rc = asn_impl_read_value_field(container, data, d_len, 
+                                         field_labels_int_copy);
     free (field_labels_int_copy);
 
     return rc;
@@ -931,10 +931,10 @@ int
 asn_write_component_value (asn_value_p container, 
                 const asn_value *elem_value, const char *subval_labels)
 {
-    char * field_labels_int_copy = asn_strdup(subval_labels); 
+    char *field_labels_int_copy = asn_strdup(subval_labels); 
 
-    int    rc = asn_impl_write_component_value(container, elem_value,
-                                                field_labels_int_copy);
+    int   rc = asn_impl_write_component_value(container, elem_value,
+                                              field_labels_int_copy);
     free (field_labels_int_copy);
 
     return rc;
@@ -1487,9 +1487,10 @@ asn_impl_fall_down_to_tree_nc (const asn_value *container, char *field_labels,
                             asn_value const **found_value)
 {
     const asn_value *value;
-    char * rest_labels = field_labels; 
-    char * cur_label;
-    int r_c = 0; 
+
+    char *rest_labels = field_labels; 
+    char *cur_label;
+    int   r_c = 0; 
 
     value = container;
 
@@ -1622,7 +1623,7 @@ asn_impl_find_subvalue(const asn_value *container, const char *label,
     return EASNGENERAL;
 }
 
-const char * 
+const char *
 asn_get_choice_ptr(const asn_value *container)
 { 
     const asn_value *sval;
