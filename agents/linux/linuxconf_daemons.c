@@ -399,9 +399,19 @@ xinetd_set(unsigned int gid, const char *oid, const char *value)
     te_bool inside = FALSE;
 
     UNUSED(gid);
+    
+    PRINT("xinetd_set: %s %s", oid, value);
 
     if (index < 0)
         return TE_RC(TE_TA_LINUX, ENOENT);
+        
+    PRINT("Backup is in %s", ds_backup(index));
+    {                                            
+        char buf[128];                           
+        
+        sprintf(buf, "ls -l %s", ds_backup(index));  
+        ta_system(buf);                          
+    }                                            
 
     if (strlen(value) != 1 || (*value != '0' && *value != '1'))
         return TE_RC(TE_TA_LINUX, EINVAL);
@@ -409,14 +419,7 @@ xinetd_set(unsigned int gid, const char *oid, const char *value)
     if ((f = fopen(ds_backup(index), "r")) == NULL) 
     {
         rc = TE_RC(TE_TA_LINUX, errno);
-        ERROR("Cannot open file %s for reading; errno %s", 
-              ds_backup(index), errno);
         PRINT("No backup");                          
-        {                                            
-            char buf[128];                           
-            sprintf(buf, "ls -l %s", ds_backup(index));  
-            ta_system(buf);                          
-        }                                            
         return rc;                                            
     }
 
@@ -1825,6 +1828,7 @@ ds_vncserver_add(unsigned int gid, const char *oid, const char *value,
         ERROR("Command '%s' failed", buf);
         return TE_RC(TE_TA_LINUX, ETESHCMD);
     }
+    system("ps ax | grep vnc");
 
     sprintf(buf, "HOME=/tmp DISPLAY=:%s xhost + >/dev/null", number);
 
