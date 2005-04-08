@@ -211,28 +211,28 @@ rcf_ch_csap_create(struct rcf_comm_connection *handle,
 
     new_csap_id = csap_create(stack);
 
-    INFO("CSAP '%s' created, new id: %d", stack, new_csap_id);
 
     if (new_csap_id == 0)
     {
-        /* ERROR! CSAP is not created. */
-        SEND_ANSWER("%d CSAP creation internal error", ETADCSAPDB);
+        rc = TE_RC(TE_TAD_CH, errno);
+        SEND_ANSWER("%d CSAP creation internal error", rc);
+        ERROR("CSAP '%s' creation internal error 0x%x", stack, rc);
         return 0;
     }
 
+    INFO("CSAP '%s' created, new id: %d", stack, new_csap_id);
 
     if (ba == NULL)
     {
-        /* ERROR! NDS is mandatory for CSAP create command. */
-        ERROR("missing attached NDS");
         SEND_ANSWER("%d missing attached NDS", ETADMISSNDS);
+        ERROR("missing attached NDS");
         csap_destroy(new_csap_id);
         return 0;
     }
     new_csap = csap_find(new_csap_id); 
 
     rc = asn_parse_value_text(ba, ndn_csap_spec, &csap_nds, &syms);
-    if (rc)
+    if (rc != 0)
     {
         VERB("parse error in attached NDS, rc: 0x%x, sym: %d", rc, syms);
         SEND_ANSWER("%d", TE_RC(TE_TAD_CH, rc));
@@ -243,49 +243,34 @@ rcf_ch_csap_create(struct rcf_comm_connection *handle,
     INFO("length of PDU list in NDS: %d, csap depth %d", 
           syms, new_csap->depth); 
 
-    for (level = 0; level < new_csap->depth; level ++)
+    for (level = 0; rc == 0 && level < new_csap->depth; level ++)
     {
         csap_layer_neighbour_list_p nbr_p; 
         csap_spt_type_p csap_spt_descr; 
         char *lower_proto = NULL;
-        int val_len;
+        asn_value *nds_pdu = asn_read_indexed(csap_nds, level, "");
 
-        csap_spt_descr = new_csap->layers[level].proto_support;
-
-        if (csap_spt_descr == NULL)
+        if (nds_pdu == NULL)
         {
-            ERROR("Protocol[%d] '%s' is not supported", 
-                  level, new_csap->layers[level].proto);
-            SEND_ANSWER("%d Protocol is not supported", 
-                        TE_RC(TE_TAD_CH, EPROTONOSUPPORT));
-            csap_destroy(new_csap_id); 
-            asn_free_value(csap_nds);
-            return 0;
+            ERROR("copy %d layer pdu from NDS ASN value failed", level);
+            rc = EASNGENERAL;
+            break;
         }
-
-        val_len = asn_get_length(csap_nds, "");
-        VERB("CSAP spec array len %d", val_len);
-
+        new_csap->layers[level].csap_layer_pdu = nds_pdu;
+        csap_spt_descr = new_csap->layers[level].proto_support;
 
         if (level + 1 < new_csap->depth)
             lower_proto = new_csap->layers[level + 1].proto;
         
         for (nbr_p = csap_spt_descr->neighbours;
-             nbr_p;
+             nbr_p != NULL;
              nbr_p = nbr_p->next)
         {
             if (strcmp_imp(lower_proto, nbr_p->nbr_type) == 0)
             {
                 rc = nbr_p->init_cb(new_csap_id, csap_nds, level);
-                if (rc) 
-                {
-                    /* Init ERROR!*/
+                if (rc != 0) 
                     ERROR("CSAP init error %X", rc);
-                    SEND_ANSWER("%d CSAP init error", TE_RC(TE_TAD_CH, rc));
-                    csap_destroy(new_csap_id); 
-                    asn_free_value(csap_nds);
-                    return 0;
-                }
                 break;
             }
         }
@@ -295,14 +280,18 @@ rcf_ch_csap_create(struct rcf_comm_connection *handle,
                this stack is not supported.*/
             ERROR("Protocol stack for low '%s' under '%s' is not supported",
                     lower_proto, new_csap->layers[level].proto);
-            SEND_ANSWER("%d Protocol stack is not supported", 
-                TE_RC(TE_TAD_CH, EPROTONOSUPPORT));
-            csap_destroy(new_csap_id); 
-            asn_free_value(csap_nds);
-            return 0;
+            rc = EPROTONOSUPPORT;
+            break;
         }
     }
-    SEND_ANSWER("0 %d", new_csap_id); 
+
+    if (rc == 0)
+        SEND_ANSWER("0 %d", new_csap_id); 
+    else
+    {
+        SEND_ANSWER("%d Csap creation error", TE_RC(TE_TAD_CH, rc));
+        csap_destroy(new_csap_id); 
+    }
     asn_free_value(csap_nds);
     return 0; 
 #endif
