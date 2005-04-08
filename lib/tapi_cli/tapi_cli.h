@@ -25,7 +25,7 @@
  *
  * @author Alexander Kukuta <Alexander.Kukuta@oktetlabs.ru>
  *
- * $Id: $
+ * $Id$
  */
 
 #ifndef __TE_TAPI_CLI_H__
@@ -164,7 +164,7 @@ extern int tapi_cli_send(const char *ta_name, int sid,
                          const char *command);
 
 /**
- * Sends CLI command according specified template from the CSAP.
+ * Sends CLI command according to specified template from the CSAP.
  * This function is blocking, returns after all commands are sent and
  * CSAP operation finished.
  *
@@ -172,6 +172,8 @@ extern int tapi_cli_send(const char *ta_name, int sid,
  * @param sid           RCF session identifier
  * @param cli_csap      CSAP handle
  * @param command       Command string to be sent to CLI session
+ * @param buf           buffer
+ * @param size          buffer size
  *
  * @return zero on success, otherwise standard or common TE error code.
  */
@@ -181,6 +183,18 @@ extern int tapi_cli_send_recv(const char *ta_name, int sid,
                               char *buf, ssize_t size);
 
 
+/**
+ * Macro around tapi_cli_csap_local_create()
+ *
+ * @param  ta_name    Test agent name
+ * @param  sid        RCF session id
+ * @param  device     local device name
+ * @param  user       Login name to be sent if login prompt is detected 
+ * @param  pwd        Password to be sent if password prompt is detected
+ * @param  cprompt    Expected command prompt (when commands may be sent)
+ * @param  cli_csap   Identifier of created CSAP
+ *
+ */
 #define TAPI_CLI_CSAP_CREATE_SERIAL(ta_name, sid, device, user, pwd,           \
                                     cprompt, cli_csap)                         \
     do {                                                                       \
@@ -192,6 +206,20 @@ extern int tapi_cli_send_recv(const char *ta_name, int sid,
         );                                                                     \
     } while (0)
 
+
+/**
+ * Macro around tapi_cli_csap_remote_create() when connection type is 
+ * @c TAPI_CLI_CSAP_TYPE_TELNET
+ *
+ * @param  ta_name    Test agent name
+ * @param  sid        RCF session id
+ * @param  host       Remote host name
+ * @param  user       Login name to be sent if login prompt is detected 
+ * @param  pwd        Password to be sent if password prompt is detected
+ * @param  cprompt    Expected command prompt (when commands may be sent)
+ * @param  cli_csap   Identifier of created @c CSAP
+ *
+ */
 #define TAPI_CLI_CSAP_CREATE_TELNET(ta_name, sid, host, user, pwd,             \
                                     cprompt, cli_csap)                         \
     do {                                                                       \
@@ -205,6 +233,19 @@ extern int tapi_cli_send_recv(const char *ta_name, int sid,
         );                                                                     \
     } while (0)
 
+/**
+ * Macro around tapi_cli_csap_remote_create() when connection type is 
+ * @c TAPI_CLI_CSAP_TYPE_SSH
+ *
+ * @param  ta_name    Test agent name
+ * @param  sid        RCF session id
+ * @param  host       Remote host name
+ * @param  user       Login name to be sent if login prompt is detected 
+ * @param  pwd        Password to be sent if password prompt is detected
+ * @param  cprompt    Expected command prompt (when commands may be sent)
+ * @param  cli_csap   Identifier of created @c CSAP
+ *
+ */
 #define TAPI_CLI_CSAP_CREATE_SSH(ta_name, sid, host, user, pwd,                \
                                  cprompt, cli_csap)                            \
     do {                                                                       \
