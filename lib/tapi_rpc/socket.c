@@ -498,7 +498,7 @@ rpc_shutdown(rcf_rpc_server *rpcs, int s, rpc_shut_how how)
 ssize_t
 rpc_sendto(rcf_rpc_server *rpcs,
            int s, const void *buf, size_t len,
-           int flags,
+           rpc_send_recv_flags flags,
            const struct sockaddr *to, socklen_t tolen)
 {
     rcf_rpc_op       op;
