@@ -76,7 +76,7 @@ extern int tapi_stp_plain_csap_create(const char *ta_name, int sid,
  *
  * @param ta_name       Test Agent name
  * @param sid           RCF session identifier
- * @param eth_csap      CSAP handle
+ * @param stp_csap      CSAP handle
  * @param templ         Traffic template
  *
  * @return Status of the operation
