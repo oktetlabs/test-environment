@@ -276,7 +276,7 @@ daemon_get(unsigned int gid, const char *oid, char *value)
     else if (strcmp(daemon_name, "postfix") == 0)
     {
         if (ta_system("ps ax | grep '/usr/lib/postfix/master'"
-                      "| grep -v grep") == 0)
+                      "| grep -v grep >/dev/null") == 0)
         {
             sprintf(value, "1");
             return 0;
@@ -1828,7 +1828,6 @@ ds_vncserver_add(unsigned int gid, const char *oid, const char *value,
         ERROR("Command '%s' failed", buf);
         return TE_RC(TE_TA_LINUX, ETESHCMD);
     }
-    system("ps ax | grep vnc");
 
     sprintf(buf, "HOME=/tmp DISPLAY=:%s xhost + >/dev/null", number);
 
