@@ -62,7 +62,8 @@ char* eth_get_param_cb (csap_p csap_descr, int level, const char *param)
         return NULL;
     }
 
-    spec_data = (eth_csap_specific_data_p) csap_descr->layer_data[level]; 
+    spec_data = (eth_csap_specific_data_p)
+            csap_descr->layers[level].specific_data; 
 
     if (strcmp (param, "total_bytes") == 0)
     {
@@ -100,7 +101,8 @@ int eth_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
         return ETADCSAPNOTEX;
     }
     
-    spec_data = (eth_csap_specific_data_p) csap_descr->layer_data[layer]; 
+    spec_data = (eth_csap_specific_data_p)
+        csap_descr->layers[layer].specific_data; 
     
     /* =========== Destination MAC address ============ */
 
@@ -360,7 +362,8 @@ int eth_gen_bin_cb(int csap_id, int layer, const asn_value *tmpl_pdu,
         return ETADWRONGNDS;
     frame_size = up_payload->len + ETH_HLEN;
 
-    spec_data = (eth_csap_specific_data_p) csap_descr->layer_data[layer]; 
+    spec_data = (eth_csap_specific_data_p)
+        csap_descr->layers[layer].specific_data; 
 
     is_tagged = (spec_data->du_cfi     .du_type != TAD_DU_UNDEF && 
                  spec_data->du_priority.du_type != TAD_DU_UNDEF &&
@@ -561,8 +564,8 @@ eth_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
         return ETADCSAPNOTEX;
     }
 
-    spec_data = (eth_csap_specific_data_p) csap_descr->layer_data[layer]; 
-
+    spec_data = (eth_csap_specific_data_p)
+        csap_descr->layers[layer].specific_data;
     data = pkt->data; 
 
 #if 1

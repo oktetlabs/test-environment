@@ -92,7 +92,8 @@ ip4_read_cb (csap_p csap_descr, int timeout, char *buf, size_t buf_len)
     
     layer = csap_descr->read_write_layer;
     
-    spec_data = (ip4_csap_specific_data_t *) csap_descr->layer_data[layer]; 
+    spec_data = (ip4_csap_specific_data_t *)
+        csap_descr->layers[layer].specific_data; 
 
 #ifdef TALOGDEBUG
     printf("Reading data from the socket: %d", spec_data->in);
@@ -149,7 +150,7 @@ ip4_write_cb (csap_p csap_descr, char *buf, size_t buf_len)
        
     layer = csap_descr->read_write_layer;
     
-    spec_data = (ip4_csap_specific_data_t *) csap_descr->layer_data[layer]; 
+    spec_data = (ip4_csap_specific_data_t *) csap_descr->layers[layer].specific_data; 
 
 #ifdef TALOGDEBUG
     printf("Writing data to socket: %d", spec_data->out);
@@ -258,8 +259,8 @@ ip4_single_init_cb (int csap_id, const asn_value *csap_nds, int layer)
     /* default read timeout */
     ip4_spec_data->read_timeout = 200000;
 
-    csap_descr->layer_data[layer] = ip4_spec_data;
-    csap_descr->get_param_cb[layer] = ip4_get_param_cb;
+    csap_descr->layers[layer].specific_data = ip4_spec_data;
+    csap_descr->layers[layer].get_param_cb = ip4_get_param_cb;
 
     if (csap_descr->type == TAD_CSAP_RAW)
     {
@@ -308,7 +309,7 @@ ip4_single_destroy_cb (int csap_id, int layer)
     csap_p csap_descr = csap_find(csap_id);
 
     ip4_csap_specific_data_t * spec_data = 
-        (ip4_csap_specific_data_t *) csap_descr->layer_data[layer]; 
+        (ip4_csap_specific_data_t *) csap_descr->layers[layer].specific_data; 
      
     if(spec_data->socket >= 0)
         close(spec_data->socket);    
@@ -350,8 +351,8 @@ ip4_eth_init_cb (int csap_id, const asn_value *csap_nds, int layer)
         return ENOMEM;
     }
 
-    csap_descr->layer_data[layer] = spec_data;
-    csap_descr->get_param_cb[layer] = ip4_get_param_cb;
+    csap_descr->layers[layer].specific_data = spec_data;
+    csap_descr->layers[layer].get_param_cb = ip4_get_param_cb;
 
     csap_descr->check_pdus_cb = ip4_check_pdus;
 

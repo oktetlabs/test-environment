@@ -74,7 +74,7 @@ file_read_cb (csap_p csap_descr, int timeout, char *buf, size_t buf_len)
     UNUSED(timeout);
 
     file_csap_specific_data_p spec_data = 
-        (file_csap_specific_data_p) csap_descr->layer_data[0]; 
+        (file_csap_specific_data_p) csap_descr->layers[0].specific_data; 
         /* Maybe this zero should be changed to something more appr. */ 
 
     csap_descr->last_errno = 0;
@@ -112,7 +112,7 @@ file_write_cb(csap_p csap_descr, char *buf, size_t buf_len)
     int rc; 
 
     file_csap_specific_data_p spec_data = 
-        (file_csap_specific_data_p) csap_descr->layer_data[0]; 
+        (file_csap_specific_data_p) csap_descr->layers[0].specific_data; 
         /* Maybe this zero should be changed to something more appr. */ 
 
 
@@ -204,7 +204,7 @@ file_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
 
 
     csap_descr->timeout          = 50000; 
-    csap_descr->layer_data[layer] = spec_data;
+    csap_descr->layers[layer].specific_data = spec_data;
     spec_data->filename = filename;
 
     printf ("open file for CSAP file: %s with mode <%s>\n", filename, mode);
@@ -241,7 +241,7 @@ file_single_destroy_cb(int csap_id, int layer)
     csap_p csap_descr = csap_find(csap_id);
 
     file_csap_specific_data_p spec_data = 
-        (file_csap_specific_data_p) csap_descr->layer_data[layer]; 
+        (file_csap_specific_data_p) csap_descr->layers[layer].specific_data; 
 
     if(spec_data->fstream)
         fclose(spec_data->fstream);

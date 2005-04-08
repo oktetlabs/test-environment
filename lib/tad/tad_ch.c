@@ -231,13 +231,9 @@ rcf_ch_csap_create(struct rcf_comm_connection *handle,
     }
     new_csap = csap_find(new_csap_id); 
 
-    /* NDS is parsed in textual form now*/
-
     rc = asn_parse_value_text(ba, ndn_csap_spec, &csap_nds, &syms);
     if (rc)
     {
-        /* ERROR! NDS is not parsed correctly */
-
         VERB("parse error in attached NDS, rc: 0x%x, sym: %d", rc, syms);
         SEND_ANSWER("%d", TE_RC(TE_TAD_CH, rc));
         csap_destroy(new_csap_id); 
@@ -254,15 +250,14 @@ rcf_ch_csap_create(struct rcf_comm_connection *handle,
         char *lower_proto = NULL;
         int val_len;
 
-        csap_spt_descr = new_csap->proto_supports[level];
+        csap_spt_descr = new_csap->layers[level].proto_support;
 
         if (csap_spt_descr == NULL)
         {
             ERROR("Protocol[%d] '%s' is not supported", 
-                    level, new_csap->proto[level]);
-            /* ERROR! asked protocol is not supported. */
+                  level, new_csap->layers[level].proto);
             SEND_ANSWER("%d Protocol is not supported", 
-                    TE_RC(TE_TAD_CH, EPROTONOSUPPORT));
+                        TE_RC(TE_TAD_CH, EPROTONOSUPPORT));
             csap_destroy(new_csap_id); 
             asn_free_value(csap_nds);
             return 0;
@@ -273,7 +268,7 @@ rcf_ch_csap_create(struct rcf_comm_connection *handle,
 
 
         if (level + 1 < new_csap->depth)
-            lower_proto = new_csap->proto[level + 1];
+            lower_proto = new_csap->layers[level + 1].proto;
         
         for (nbr_p = csap_spt_descr->neighbours;
              nbr_p;
@@ -299,7 +294,7 @@ rcf_ch_csap_create(struct rcf_comm_connection *handle,
             /* ERROR! there was not found neighvour -- 
                this stack is not supported.*/
             ERROR("Protocol stack for low '%s' under '%s' is not supported",
-                    lower_proto, new_csap->proto[level]);
+                    lower_proto, new_csap->layers[level].proto);
             SEND_ANSWER("%d Protocol stack is not supported", 
                 TE_RC(TE_TAD_CH, EPROTONOSUPPORT));
             csap_destroy(new_csap_id); 
@@ -362,7 +357,7 @@ rcf_ch_csap_destroy(struct rcf_comm_connection *handle,
         csap_spt_type_p  csap_spt_descr; 
         char            *lower_proto = NULL;
 
-        csap_spt_descr = csap_descr_p->proto_supports[level];
+        csap_spt_descr = csap_descr_p->layers[level].proto_support;
 
         if (csap_spt_descr == NULL)
         {
@@ -373,10 +368,10 @@ rcf_ch_csap_destroy(struct rcf_comm_connection *handle,
             return 0;
         }
         VERB("found protocol support for <%s>.", 
-             csap_descr_p->proto[level]);
+             csap_descr_p->layers[level].proto);
 
         if (level + 1 < csap_descr_p->depth)
-            lower_proto = csap_descr_p->proto[level + 1];
+            lower_proto = csap_descr_p->layers[level + 1].proto;
         
         for (nbr_p = csap_spt_descr->neighbours;
              nbr_p;
@@ -738,7 +733,7 @@ rcf_ch_trrecv_start(struct rcf_comm_connection *handle,
                 break;
             }
 
-            csap_spt_descr = csap_descr_p->proto_supports[level];
+            csap_spt_descr = csap_descr_p->layers[level].proto_support;
 
             rc = csap_spt_descr->confirm_cb(csap_descr_p->id, level, 
                                             level_pdu);
@@ -747,11 +742,11 @@ rcf_ch_trrecv_start(struct rcf_comm_connection *handle,
             {
                 WARN("%s(): csap %d confirm pat pdu lev %d(%s), fails: %x",
                      __FUNCTION__, csap, level,
-                     csap_descr_p->proto[level], rc);
+                     csap_descr_p->layers[level].proto, rc);
                 break;
             }
             snprintf(label_buf, sizeof(label_buf), "pdus.%d.#%s", 
-                     level, csap_descr_p->proto[level]);
+                     level, csap_descr_p->layers[level].proto);
 
             rc = asn_write_component_value(pattern_unit, level_pdu, 
                                            label_buf);
@@ -1013,7 +1008,9 @@ rcf_ch_csap_param(struct rcf_comm_connection *handle,
     VERB("CSAP param: handle %d param <%s>\n", csap, param);
     return -1;
 #else
-    csap_p csap_descr_p;
+    csap_p              csap_descr_p = NULL;
+    csap_get_param_cb_t get_param_cb;
+    int                 layer = csap_descr_p->read_write_layer;
 
     check_init();
     VERB("CSAP param: handle %d param <%s>\n", csap, param);
@@ -1067,7 +1064,8 @@ rcf_ch_csap_param(struct rcf_comm_connection *handle,
         SEND_ANSWER("0 %u.%u",  (uint32_t)csap_descr_p->last_pkt.tv_sec, 
                                 (uint32_t)csap_descr_p->last_pkt.tv_usec);
     }
-    else if (csap_descr_p->get_param_cb == NULL)
+    else if ((get_param_cb = csap_descr_p->layers[layer].get_param_cb)
+             == NULL)
     {
         VERB("CSAP does not support get_param\n");
         SEND_ANSWER("%d CSAP does not support get_param", 
@@ -1075,9 +1073,7 @@ rcf_ch_csap_param(struct rcf_comm_connection *handle,
     }
     else
     {
-        int layer = csap_descr_p->read_write_layer;
-        char *param_value = csap_descr_p->get_param_cb[layer](csap_descr_p,
-                                                              layer, param);
+        char *param_value = get_param_cb(csap_descr_p, layer, param);
         if (param_value)
         {
             VERB("got value: <%s>\n", param_value);

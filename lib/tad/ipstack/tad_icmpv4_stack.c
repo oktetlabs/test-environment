@@ -160,7 +160,7 @@ icmp4_write_cb (csap_p csap_descr, char *buf, size_t buf_len)
     
     layer = csap_descr->read_write_layer;
     
-    spec_data = (icmp4_csap_specific_data_t *) csap_descr->layer_data[layer]; 
+    spec_data = (icmp4_csap_specific_data_t *) csap_descr->specific_data[layer]; 
 
 #ifdef TALOGDEBUG
     printf("Writing data to socket: %d", spec_data->out);
@@ -238,8 +238,8 @@ icmp4_single_init_cb (int csap_id, const asn_value *csap_nds, int layer)
         return TE_RC(TE_TAD_CSAP, ETADCSAPNOTEX);
 
 
-    csap_descr->layer_data[layer] = NULL;
-    csap_descr->get_param_cb[layer] = NULL;
+    csap_descr->layers[layer].specific_data = NULL;
+    csap_descr->layers[layer].get_param_cb = NULL;
 
     csap_descr->read_cb         = icmp4_read_cb;
     csap_descr->write_cb        = icmp4_write_cb;

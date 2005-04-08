@@ -257,6 +257,21 @@ typedef int (*csap_echo_method)(csap_p csap_descr, uint8_t *pkt,
 
 
 /**
+ * Collection of common protocol layer attributes of CSAP.
+ */
+typedef struct csap_layer_t { 
+    char        *proto;          /**< procolol layer text label */
+    void        *specific_data;  /**< protocol-specific data */ 
+    asn_value   *csap_layer_pdu; /**< ASN value with CSAP specification
+                                      layer PDU */
+
+    struct csap_spt_type_t *proto_support; /**< protocol layer 
+                                                support descroptor */
+    csap_get_param_cb_t     get_param_cb;  /**< callbacks to get
+                                                CSAP parameters */
+} csap_layer_t;
+
+/**
  * Constants for last unprocessed traffic command to the CSAP 
  */
 typedef enum {
@@ -302,28 +317,22 @@ typedef struct csap_instance {
     int      depth;        /**< number of layers in stack */
     char    *csap_type;    /**< pointer to original CSAP type, proto[]
                                 entries are blocks of this string. */
-    char   **proto;        /**< array of protocol layers labels */
-    void   **layer_data;   /**< array of pointer to layer-specific 
-                                data */
 
     tad_csap_type_t type;  /**< type of CSAP */
 
-    struct csap_spt_type_t **proto_supports; /**< array of references to
-                                             protocol layer descroptors */
-    csap_get_param_cb_t *get_param_cb;  /**< array of pointers to callbacks
-                                             for get CSAP parameters */
+    csap_layer_t   *layers;/**< array of protocol layer descroptors */
 
     csap_read_cb_t       read_cb;       /**< read data from CSAP media */
     csap_write_cb_t      write_cb;      /**< write data to CSAP media */ 
     csap_write_read_cb_t write_read_cb; /**< write data and read answer.*/
     csap_check_pdus_cb_t check_pdus_cb; /**< check PDUs sequence */
+    csap_echo_method     echo_cb;       /**< method for echo */
 
     csap_low_resource_cb_t prepare_recv_cb; /**< prepare CSAP for receive */
     csap_low_resource_cb_t prepare_send_cb; /**< prepare CSAP for send */
     csap_low_resource_cb_t release_cb;      /**< release all lower non-TAD
                                                  send/recv resources */
 
-    csap_echo_method     echo_cb;/**< method for echo */
 
 
     int         read_write_layer;/**< index of layer in protocol stack 

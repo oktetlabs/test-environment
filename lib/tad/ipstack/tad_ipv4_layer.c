@@ -75,7 +75,7 @@ ip4_confirm_pdu_cb (int csap_id, int layer, asn_value *tmpl_pdu)
     int len;
 
     ip4_csap_specific_data_t * spec_data = 
-        (ip4_csap_specific_data_t *) csap_descr->layer_data[layer]; 
+        (ip4_csap_specific_data_t *) csap_descr->layers[layer].specific_data; 
 
 
     tad_data_unit_convert(tmpl_pdu, "version",         &spec_data->du_version);
@@ -210,7 +210,7 @@ int ip4_match_bin_cb (int csap_id, int layer, const asn_value *pattern_pdu,
         ERROR("null csap_descr for csap id %d", csap_id);
         return ETADCSAPNOTEX;
     } 
-    spec_data = (ip4_csap_specific_data_t*)csap_descr->layer_data[layer]; 
+    spec_data = (ip4_csap_specific_data_t*)csap_descr->layers[layer].specific_data; 
 
     data = pkt->data; 
 

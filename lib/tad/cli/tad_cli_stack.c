@@ -678,7 +678,8 @@ cli_write_cb (csap_p csap_descr, char *buf, size_t buf_len)
     
     layer = csap_descr->read_write_layer;
     
-    spec_data = (cli_csap_specific_data_p) csap_descr->layer_data[layer]; 
+    spec_data = (cli_csap_specific_data_p)
+        csap_descr->layers[layer].specific_data; 
 
 #ifdef TALOGDEBUG
     MYDEBUG("Writing data to CLI session: %d", spec_data->io);
@@ -765,7 +766,8 @@ cli_write_read_cb (csap_p csap_descr, int timeout,
     
     layer = csap_descr->read_write_layer;
     
-    spec_data = (cli_csap_specific_data_p) csap_descr->layer_data[layer]; 
+    spec_data = (cli_csap_specific_data_p)
+        csap_descr->layers[layer].specific_data; 
 
     {
         pid_t pid;
@@ -1104,7 +1106,7 @@ cli_single_init_cb (int csap_id, const asn_value * csap_nds, int layer)
     /* default read timeout */
     cli_spec_data->read_timeout = CLI_CSAP_DEFAULT_TIMEOUT; 
 
-    csap_descr->layer_data[layer] = cli_spec_data;
+    csap_descr->layers[layer].specific_data = cli_spec_data;
 
     csap_descr->read_cb           = cli_read_cb;
     csap_descr->write_cb          = cli_write_cb;
@@ -1214,7 +1216,7 @@ cli_single_destroy_cb (int csap_id, int layer)
     csap_p csap_descr = csap_find(csap_id);
 
     cli_csap_specific_data_p spec_data = 
-        (cli_csap_specific_data_p) csap_descr->layer_data[layer];
+        (cli_csap_specific_data_p) csap_descr->layers[layer].specific_data;
 
     if (spec_data->expect_pid > 0)
     {
@@ -1225,7 +1227,7 @@ cli_single_destroy_cb (int csap_id, int layer)
     
     free_cli_csap_data(spec_data);
 
-    csap_descr->layer_data[layer] = NULL;
+    csap_descr->layers[layer].specific_data = NULL;
    
     return 0;
 }

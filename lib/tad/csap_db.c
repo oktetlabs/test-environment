@@ -122,6 +122,19 @@ csap_db_clear()
 }
 
 /**
+ * Macro for failure processing in csap_create function.
+ *
+ * @param errno_        error status code
+ * @param fmt_          format string with possible firther arguments
+ *                      for error log message
+ */
+#define CSAP_CREATE_ERROR(errno_, fmt_...) \
+    do {               \
+        rc = (errno_); \
+        F_ERROR(fmt_); \
+        goto error;    \
+    } while (0)
+/**
  * Create new CSAP. 
  * This method does not perform any actions related to CSAP functionality,
  * neither processing of CSAP init parameters, nor initialyzing some 
@@ -150,16 +163,12 @@ csap_create(const char *type)
 
     char *layer_protos[MAX_CSAP_DEPTH];
 
-    if ((csap_type == NULL) || (new_csap == NULL) || (new_dp == NULL))
-    { 
-        free(csap_type);
-        free(new_csap);
-        free(new_dp);
-        errno = ENOMEM;
-        return 0;
-    }
+    if (new_csap != NULL)
+        new_csap->csap_type = csap_type;
 
-    new_csap->csap_type = csap_type;
+    if ((csap_type == NULL) || (new_csap == NULL) || (new_dp == NULL))
+        CSAP_CREATE_ERROR(ENOMEM, "%s(): no memory for new CSAP", 
+                          __FUNCTION__);
 
     VERB("%s(): %s\n", __FUNCTION__, csap_type);
     new_dp->inst = new_csap;
@@ -175,12 +184,8 @@ csap_create(const char *type)
     INSQUE(new_dp, dp->prev);
 
     if ((rc = pthread_mutex_init(&new_csap->data_access_lock, NULL)) != 0)
-    {
-        ERROR("%s(): mutex init fails: %d", __FUNCTION__, rc);
-        errno = EFAULT;
-        return 0;
-    }
-
+        CSAP_CREATE_ERROR(rc, "%s(): mutex init fails: %d",
+                          __FUNCTION__, rc); 
     depth = 0; 
 
     if (strncmp(csap_type, CSAP_DATA_PROTO, strlen(CSAP_DATA_PROTO)) != 0)
@@ -206,36 +211,39 @@ csap_create(const char *type)
     new_csap->depth = depth;
 
     /* Allocate memory for stack arrays */ 
-    new_csap->proto = calloc(depth, sizeof(new_csap->proto[0]));
-    new_csap->layer_data = calloc(depth, sizeof(new_csap->layer_data[0]));
-    new_csap->get_param_cb = calloc(depth,
-                                    sizeof(new_csap->get_param_cb[0]));
-    new_csap->proto_supports = calloc(depth,
-                                      sizeof(new_csap->proto_supports[0]));
+    new_csap->layers = calloc(depth, sizeof(new_csap->layers[0]));
 
-    if (new_csap->proto          == NULL ||
-        new_csap->layer_data     == NULL ||
-        new_csap->get_param_cb   == NULL ||
-        new_csap->proto_supports == NULL   )
-    { 
-        REMQUE(new_dp); 
-        free(new_dp); 
-        csap_free(new_csap); 
-        errno = ENOMEM; 
-        return 0; 
-    }
-
-    memcpy(new_csap->proto, layer_protos,
-           sizeof(new_csap->proto[0]) * depth);
+    if (new_csap->layers == NULL)
+        CSAP_CREATE_ERROR(ENOMEM, "%s(): no memory for layers", 
+                          __FUNCTION__);
 
     for (i = 0; i < depth; i++)
     {
-        new_csap->proto_supports[i] = find_csap_spt(new_csap->proto[i]);
-        VERB("%s(): layer %d: %s\n", __FUNCTION__, i, new_csap->proto[i]);
+        new_csap->layers[i].proto = layer_protos[i];
+        new_csap->layers[i].proto_support =
+                        find_csap_spt(new_csap->layers[i].proto);
+        VERB("%s(): layer %d: %s\n", __FUNCTION__,
+             i, new_csap->layers[i].proto);
+
+        if (new_csap->layers[i].proto_support == NULL)
+            CSAP_CREATE_ERROR(ETENOSUPP, "%s(): no support for proto %s", 
+                              __FUNCTION__);
     } 
 
     return new_csap->id;
+
+error:
+    if (new_dp != NULL && new_dp->next != NULL)
+        REMQUE(new_dp);
+    free(new_dp);
+    csap_free(new_csap);
+
+    errno = rc;
+    return 0;
 }
+
+
+#undef CSAP_CREATE_ERROR
 
 /**
  * Find CSAP DB entry by CSAP identifier.
@@ -270,25 +278,23 @@ csap_free(csap_p csap_descr)
     if (csap_descr == NULL)
         return;
 
-    VERB("%s(): csap %d, ptrs pr %x, l %x, g_p %x", __FUNCTION__,
-         csap_descr->id, csap_descr->proto, csap_descr->layer_data, 
-         csap_descr->get_param_cb);
+    VERB("%s(): csap %d, layers %x", __FUNCTION__,
+         csap_descr->id, csap_descr->layers);
     
     free(csap_descr->csap_type); 
-    free(csap_descr->proto); 
 
-    if (csap_descr->layer_data != NULL)
+    if (csap_descr->layers != NULL)
     {
         int i;
 
         for (i = 0; i < csap_descr->depth; i++)
-            free(csap_descr->layer_data[i]);
+        {
+            free(csap_descr->layers[i].specific_data);
+            asn_free_value(csap_descr->layers[i].csap_layer_pdu);
+        }
 
-        free(csap_descr->layer_data);
+        free(csap_descr->layers); 
     }
-
-    free(csap_descr->proto_supports); 
-    free(csap_descr->get_param_cb);
 
     free(csap_descr);
 }

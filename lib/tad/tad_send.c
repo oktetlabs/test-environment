@@ -183,7 +183,7 @@ tad_tr_send_prepare_bin(csap_p csap_descr, asn_value_p nds,
         memset(low_packets, 0, sizeof(csap_pkts));
 
         rc = asn_get_subvalue(nds, &level_pdu, label); 
-        if (rc)
+        if (rc != 0)
         {
             ERROR("get subvalue in generate packet fails %x", rc);
             rc = TE_RC(TE_TAD_CH, rc);
@@ -191,14 +191,13 @@ tad_tr_send_prepare_bin(csap_p csap_descr, asn_value_p nds,
 
         if (rc == 0)
         {
-            csap_spt_descr = csap_descr->proto_supports[level];
+            csap_spt_descr = csap_descr->layers[level].proto_support;
 
             F_VERB("before generate_cb, level: %d, up_pkts: %x\n",
                    level, up_packets);
             rc = csap_spt_descr->generate_cb(csap_descr->id, level, 
                                              level_pdu, args, arg_num,
-                                             up_packets, low_packets);
-        
+                                             up_packets, low_packets); 
         }
 
         if (up_packets)
@@ -212,7 +211,7 @@ tad_tr_send_prepare_bin(csap_p csap_descr, asn_value_p nds,
             up_packets = NULL;
         }
 
-        if (rc) 
+        if (rc != 0) 
         {
             ERROR("generate binary data error; "
                   "rc: 0x%x, csap id: %d, level: %d\n", 

@@ -123,7 +123,8 @@ eth_release(csap_p csap_descr)
     int layer;
 
     layer = csap_descr->read_write_layer; 
-    spec_data = (eth_csap_specific_data_p) csap_descr->layer_data[layer]; 
+    spec_data = (eth_csap_specific_data_p)
+                    csap_descr->layers[layer].specific_data; 
 
     if (spec_data->in >= 0)
     {
@@ -180,7 +181,7 @@ eth_prepare_recv(csap_p csap_descr)
 
     layer = csap_descr->read_write_layer;
     
-    spec_data = (eth_csap_specific_data_p) csap_descr->layer_data[layer]; 
+    spec_data = (eth_csap_specific_data_p) csap_descr->layers[layer].specific_data; 
     
     VERB("Before opened Socket %d", spec_data->in);
 
@@ -227,7 +228,7 @@ eth_prepare_send(csap_p csap_descr)
 
     layer = csap_descr->read_write_layer;
     
-    spec_data = (eth_csap_specific_data_p) csap_descr->layer_data[layer]; 
+    spec_data = (eth_csap_specific_data_p) csap_descr->layers[layer].specific_data; 
    
     /* outgoing socket */
     if ((rc = open_packet_socket(PACKET_OTHERHOST,
@@ -374,7 +375,7 @@ find_csap_layer(csap_p csap_descr, char *layer_name)
 {
     int i; 
     for (i = 0; i < csap_descr->depth; i++)
-        if (strcmp(csap_descr->proto[i], layer_name) == 0)
+        if (strcmp(csap_descr->layers[i].proto, layer_name) == 0)
             return i;
     return -1;
 }
@@ -524,7 +525,7 @@ eth_read_cb (csap_p csap_descr, int timeout, char *buf, size_t buf_len)
     
     layer = csap_descr->read_write_layer;
     
-    spec_data = (eth_csap_specific_data_p) csap_descr->layer_data[layer]; 
+    spec_data = (eth_csap_specific_data_p) csap_descr->layers[layer].specific_data; 
 
     VERB("IN eth_read_cb: spec_data->in = %d", spec_data->in);
 
@@ -652,7 +653,7 @@ eth_write_cb(csap_p csap_descr, char *buf, size_t buf_len)
     
     layer = csap_descr->read_write_layer;
     
-    spec_data = (eth_csap_specific_data_p) csap_descr->layer_data[layer]; 
+    spec_data = (eth_csap_specific_data_p) csap_descr->layers[layer].specific_data; 
 
     F_VERB("%s: writing data to socket: %d", __FUNCTION__, spec_data->out);
 
@@ -1017,7 +1018,7 @@ eth_single_init_cb (int csap_id, const asn_value *csap_nds, int layer)
     if (csap_descr->check_pdus_cb == NULL)
         csap_descr->check_pdus_cb = eth_single_check_pdus;
 
-    csap_descr->layer_data[layer] = eth_spec_data;
+    csap_descr->layers[layer].specific_data = eth_spec_data;
 
     csap_descr->read_cb         = eth_read_cb;
     csap_descr->write_cb        = eth_write_cb;
@@ -1029,24 +1030,7 @@ eth_single_init_cb (int csap_id, const asn_value *csap_nds, int layer)
     csap_descr->release_cb       = eth_release;
     csap_descr->echo_cb          = eth_echo_method;
 
-    if (csap_descr->get_param_cb == NULL)
-    {
-        /* initialize array of pointers to get_param callbacks */
-        csap_descr->get_param_cb = calloc(csap_descr->depth, 
-                                          sizeof (csap_get_param_cb_t)); 
-        /* TODO: correct process of ENOMEM!!! */
-        if (csap_descr->get_param_cb == NULL)
-        {
-            VERB("csap # %d, CLOSE SOCKET (%d): %s:%d",
-                       csap_descr->id, eth_spec_data->in, __FILE__, __LINE__);
-            if (close(eth_spec_data->in) < 0)
-                assert(0);
-            free_eth_csap_data(eth_spec_data, ETH_COMPLETE_FREE);
-            ERROR("Init, no mem");
-            return TE_RC(TE_TAD_CSAP, ENOMEM);
-        }
-    }
-    csap_descr->get_param_cb[layer] = eth_get_param_cb; 
+    csap_descr->layers[layer].get_param_cb = eth_get_param_cb; 
     
     return 0;
 }
@@ -1073,7 +1057,7 @@ eth_single_destroy_cb (int csap_id, int layer)
     VERB("CSAP N %d", csap_id);
 
     eth_csap_specific_data_p spec_data = 
-        (eth_csap_specific_data_p) csap_descr->layer_data[layer]; 
+        (eth_csap_specific_data_p) csap_descr->layers[layer].specific_data; 
 
     if (spec_data == NULL)
     {
@@ -1139,8 +1123,7 @@ eth_single_destroy_cb (int csap_id, int layer)
 
     free_eth_csap_data(spec_data, ETH_COMPLETE_FREE);
 
-    csap_descr->layer_data[layer] = NULL;
-   
+    csap_descr->layers[layer].specific_data = NULL; 
     return 0;
 }
 

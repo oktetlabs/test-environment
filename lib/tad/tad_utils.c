@@ -78,10 +78,10 @@ tad_confirm_pdus(csap_p csap_descr, asn_value *pdus)
 
         csap_spt_type_p csap_spt_descr; 
 
-        csap_spt_descr = find_csap_spt(csap_descr->proto[level]);
+        csap_spt_descr = csap_descr->layers[level].proto_support;
 
         snprintf(label, sizeof(label), "%d.#%s", 
-                level, csap_descr->proto[level]);
+                level, csap_descr->layers[level].proto);
 
         /* TODO: rewrite with more fast ASN method, that methods should 
          * be prepared and tested first */

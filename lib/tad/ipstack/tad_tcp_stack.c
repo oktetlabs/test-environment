@@ -96,7 +96,7 @@ tcp_read_cb (csap_p csap_descr, int timeout, char *buf, size_t buf_len)
     
     layer = csap_descr->read_write_layer;
     
-    spec_data = (tcp_csap_specific_data_t *) csap_descr->layer_data[layer]; 
+    spec_data = (tcp_csap_specific_data_t *) csap_descr->specific_data[layer]; 
 
 #ifdef TALOGDEBUG
     printf("Reading data from the socket: %d", spec_data->in);
@@ -166,7 +166,7 @@ tcp_write_cb (csap_p csap_descr, char *buf, size_t buf_len)
     
     layer = csap_descr->read_write_layer;
     
-    spec_data = (tcp_csap_specific_data_t *) csap_descr->layer_data[layer]; 
+    spec_data = (tcp_csap_specific_data_t *) csap_descr->specific_data[layer]; 
 
 #ifdef TALOGDEBUG
     printf("Writing data to socket: %d", spec_data->out);
@@ -383,8 +383,8 @@ tcp_single_init_cb (int csap_id, const asn_value *csap_nds, int layer)
     /* default read timeout */
     tcp_spec_data->read_timeout = 200000;
 
-    csap_descr->layer_data[layer] = tcp_spec_data;
-    csap_descr->get_param_cb[layer] = tcp_get_param_cb;
+    csap_descr->layers[layer].specific_data = tcp_spec_data;
+    csap_descr->layers[layer].get_param_cb = tcp_get_param_cb;
 
     csap_descr->read_cb         = tcp_read_cb;
     csap_descr->write_cb        = tcp_write_cb;
@@ -420,7 +420,7 @@ tcp_single_destroy_cb (int csap_id, int layer)
     csap_p csap_descr = csap_find(csap_id);
 
     tcp_csap_specific_data_t * spec_data = 
-        (tcp_csap_specific_data_t *) csap_descr->layer_data[layer]; 
+        (tcp_csap_specific_data_t *) csap_descr->layers[layer].specific_data; 
      
     if(spec_data->in >= 0)
         close(spec_data->in);    
@@ -465,8 +465,8 @@ tcp_ip4_init_cb (int csap_id, const asn_value *csap_nds, int layer)
         return ENOMEM;
     }
 
-    csap_descr->layer_data[layer] = spec_data;
-    csap_descr->get_param_cb[layer] = tcp_get_param_cb;
+    csap_descr->layers[layer].specific_data = spec_data;
+    csap_descr->layers[layer].get_param_cb = tcp_get_param_cb;
 
     csap_descr->check_pdus_cb = tcp_ip4_check_pdus;
 

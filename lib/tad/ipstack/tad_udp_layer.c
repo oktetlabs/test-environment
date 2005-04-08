@@ -45,7 +45,7 @@
 char* udp_get_param_cb (csap_p csap_descr, int level, const char *param)
 {
     udp_csap_specific_data_t *   spec_data; 
-    spec_data = (udp_csap_specific_data_t *) csap_descr->layer_data[level]; 
+    spec_data = (udp_csap_specific_data_t *) csap_descr->layers[level].specific_data; 
 
     if (strcmp (param, "ipaddr") == 0)
     { 
@@ -71,7 +71,7 @@ udp_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
     int len;
 
     udp_csap_specific_data_t * udp_spec_data = 
-        (udp_csap_specific_data_t *) csap_descr->layer_data[layer]; 
+        (udp_csap_specific_data_t *) csap_descr->layers[layer].specific_data; 
     len = sizeof(udp_spec_data->src_port);
 
     rc = asn_read_value_field(tmpl_pdu, &udp_spec_data->src_port, 
@@ -150,7 +150,7 @@ udp_gen_bin_cb(int csap_id, int layer, const asn_value *tmpl_pdu,
     if (csap_descr->type == TAD_CSAP_DATA)
     {
         spec_data = (udp_csap_specific_data_t *) 
-                            csap_descr->layer_data[layer];
+                            csap_descr->layers[layer].specific_data;
 
         pkts->data = malloc(up_payload->len);
         if (pkts->data == NULL)

@@ -49,7 +49,7 @@
 char* tcp_get_param_cb (csap_p csap_descr, int level, const char *param)
 {
     tcp_csap_specific_data_t *   spec_data; 
-    spec_data = (tcp_csap_specific_data_t *) csap_descr->layer_data[level]; 
+    spec_data = (tcp_csap_specific_data_t *) csap_descr->layers[level].specific_data; 
 
     static char buf[20];
 
@@ -82,7 +82,7 @@ tcp_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
     csap_p csap_descr = csap_find(csap_id);
 
     tcp_csap_specific_data_t * spec_data = 
-        (tcp_csap_specific_data_t *) csap_descr->layer_data[layer]; 
+        (tcp_csap_specific_data_t *) csap_descr->layers[layer].specific_data; 
 
     tad_data_unit_convert(tmpl_pdu, "src-port", &spec_data->du_src_port);
     tad_data_unit_convert(tmpl_pdu, "dst-port", &spec_data->du_dst_port);
@@ -269,7 +269,7 @@ int tcp_match_bin_cb (int csap_id, int layer, const asn_value *pattern_pdu,
         ERROR("null csap_descr for csap id %d", csap_id);
         return ETADCSAPNOTEX;
     } 
-    spec_data = (tcp_csap_specific_data_t*)csap_descr->layer_data[layer]; 
+    spec_data = (tcp_csap_specific_data_t*)csap_descr->layers[layer].specific_data; 
 
     data = pkt->data; 
 

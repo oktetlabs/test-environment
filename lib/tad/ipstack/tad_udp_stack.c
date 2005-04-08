@@ -88,7 +88,7 @@ udp_ip4_read_cb (csap_p csap_descr, int timeout, char *buf, size_t buf_len)
     
     layer = csap_descr->read_write_layer;
     
-    spec_data = (udp_csap_specific_data_t *) csap_descr->layer_data[layer]; 
+    spec_data = (udp_csap_specific_data_t *) csap_descr->layers[layer].specific_data; 
 
 #ifdef TALOGDEBUG
     printf("Reading data from the socket: %d", spec_data->in);
@@ -153,8 +153,8 @@ udp_ip4_write_cb (csap_p csap_descr, char *buf, size_t buf_len)
     
     layer = csap_descr->read_write_layer;
     
-    udp_spec_data = (udp_csap_specific_data_t *) csap_descr->layer_data[layer]; 
-    ip4_spec_data = (ip4_csap_specific_data_t *) csap_descr->layer_data[layer+1]; 
+    udp_spec_data = (udp_csap_specific_data_t *) csap_descr->layers[layer].specific_data; 
+    ip4_spec_data = (ip4_csap_specific_data_t *) csap_descr->layers[layer+1].specific_data; 
  
     dest.sin_family  = AF_INET;
     if (udp_spec_data->dst_port)
@@ -364,8 +364,8 @@ udp_ip4_init_cb (int csap_id, const asn_value *csap_nds, int layer)
 
 
 
-    csap_descr->layer_data[layer] = udp_spec_data;
-    csap_descr->get_param_cb[layer] = udp_get_param_cb;
+    csap_descr->layers[layer].specific_data = udp_spec_data;
+    csap_descr->layers[layer].get_param_cb = udp_get_param_cb;
 
     return 0;
 }
@@ -388,7 +388,7 @@ udp_ip4_destroy_cb (int csap_id, int layer)
     csap_p csap_descr = csap_find(csap_id);
 
     udp_csap_specific_data_t * spec_data = 
-        (udp_csap_specific_data_t *) csap_descr->layer_data[layer]; 
+        (udp_csap_specific_data_t *) csap_descr->layers[layer].specific_data; 
      
     if(spec_data->socket >= 0)
         close(spec_data->socket);    

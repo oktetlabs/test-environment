@@ -97,7 +97,8 @@ dhcp_read_cb (csap_p csap_descr, int timeout, char *buf, size_t buf_len)
     
     layer = csap_descr->read_write_layer;
     
-    spec_data = (dhcp_csap_specific_data_t *) csap_descr->layer_data[layer]; 
+    spec_data = (dhcp_csap_specific_data_t *)
+        csap_descr->layers[layer].specific_data; 
 
 #ifdef TALOGDEBUG
     printf("Reading data from the socket: %d", spec_data->in);
@@ -159,7 +160,8 @@ dhcp_write_cb (csap_p csap_descr, char *buf, size_t buf_len)
     }
     
     layer = csap_descr->read_write_layer;
-    spec_data = (dhcp_csap_specific_data_t *) csap_descr->layer_data[layer]; 
+    spec_data = (dhcp_csap_specific_data_t *)
+        csap_descr->layers[layer].specific_data; 
     dest.sin_family = AF_INET;
     dest.sin_port = htons(spec_data->mode == DHCP4_CSAP_MODE_SERVER ? 
                           DHCP_CLIENT_PORT : DHCP_SERVER_PORT);
@@ -374,8 +376,8 @@ dhcp_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
     /* default read timeout */
     dhcp_spec_data->read_timeout = 200000;
 
-    csap_descr->layer_data[layer] = dhcp_spec_data;
-    csap_descr->get_param_cb[layer] = dhcp_get_param_cb;
+    csap_descr->layers[layer].specific_data = dhcp_spec_data;
+    csap_descr->layers[layer].get_param_cb = dhcp_get_param_cb;
 
     csap_descr->read_cb         = dhcp_read_cb;
     csap_descr->write_cb        = dhcp_write_cb;
@@ -404,7 +406,8 @@ dhcp_single_destroy_cb (int csap_id, int layer)
     csap_p csap_descr = csap_find(csap_id);
 
     dhcp_csap_specific_data_t * spec_data = 
-        (dhcp_csap_specific_data_t *) csap_descr->layer_data[layer]; 
+        (dhcp_csap_specific_data_t *)
+        csap_descr->layers[layer].specific_data; 
      
     if(spec_data->in >= 0)
         close(spec_data->in);    

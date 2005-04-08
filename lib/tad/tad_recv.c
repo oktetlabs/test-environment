@@ -141,7 +141,7 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
         VERB("get subval with pattern unit for label %s rc 0x%x",
              label, rc);
 
-        csap_spt_descr = csap_descr->proto_supports[level];
+        csap_spt_descr = csap_descr->layers[level].proto_support;
 
         rc = csap_spt_descr->match_cb(csap_descr->id, level, level_pdu, 
                                       &data_to_check, &rest_payload,
@@ -488,7 +488,7 @@ tad_tr_sr_generate_pattern(csap_p csap_descr, asn_value_p template,
         asn_value_p level_pattern; 
         asn_value_p gen_pattern_pdu = asn_init_value(ndn_generic_pdu);
 
-        csap_spt_descr = csap_descr->proto_supports[level];
+        csap_spt_descr = csap_descr->layers[level].proto_support;
 
         level_tmpl_pdu = asn_read_indexed(template, level, "pdus"); 
 

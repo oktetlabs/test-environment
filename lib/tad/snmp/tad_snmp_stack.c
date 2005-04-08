@@ -152,7 +152,8 @@ snmp_read_cb (csap_p csap_descr, int timeout, char *buf, size_t buf_len)
 
     layer = csap_descr->read_write_layer;
 
-    spec_data = (snmp_csap_specific_data_p) csap_descr->layer_data[layer]; 
+    spec_data = (snmp_csap_specific_data_p)
+        csap_descr->layers[layer].specific_data; 
     ss = spec_data->ss;
 
     FD_ZERO(&fdset);
@@ -225,7 +226,8 @@ snmp_write_cb (csap_p csap_descr, char *buf, size_t buf_len)
 
     layer = csap_descr->read_write_layer;
 
-    spec_data = (snmp_csap_specific_data_p) csap_descr->layer_data[layer]; 
+    spec_data = (snmp_csap_specific_data_p)
+        csap_descr->layers[layer].specific_data; 
     ss = spec_data->ss;
 
     if (!snmp_send(ss, pdu))
@@ -274,7 +276,8 @@ snmp_write_read_cb(csap_p csap_descr, int timeout,
     if (csap_descr == NULL) return -1;
     layer = csap_descr->read_write_layer;
 
-    spec_data = (snmp_csap_specific_data_p) csap_descr->layer_data[layer]; 
+    spec_data = (snmp_csap_specific_data_p)
+        csap_descr->layers[layer].specific_data; 
     ss = spec_data->ss; 
 
     FD_ZERO(&fdset);
@@ -555,7 +558,7 @@ snmp_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
 #endif
 #endif
 
-    csap_descr->layer_data[layer] = snmp_spec_data;
+    csap_descr->layers[layer].specific_data = snmp_spec_data;
     snmp_spec_data->ss  = ss;
     snmp_spec_data->pdu = 0;
 
@@ -581,7 +584,7 @@ snmp_single_destroy_cb (int csap_id, int layer)
     csap_p csap_descr = csap_find(csap_id);
 
     snmp_csap_specific_data_p spec_data = 
-        (snmp_csap_specific_data_p) csap_descr->layer_data[layer]; 
+        (snmp_csap_specific_data_p) csap_descr->layers[layer].specific_data;
 
     VERB("Destroy callback, id %d\n", csap_id);
 

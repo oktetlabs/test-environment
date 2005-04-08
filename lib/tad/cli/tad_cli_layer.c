@@ -76,7 +76,8 @@ int cli_confirm_pdu_cb (int csap_id, int layer, asn_value * tmpl_pdu)
         return ETADCSAPNOTEX;
     }
     
-    spec_data = (cli_csap_specific_data_p) csap_descr->layer_data[layer]; 
+    spec_data = (cli_csap_specific_data_p)
+        csap_descr->layers[layer].specific_data; 
     
     return 0;
 }

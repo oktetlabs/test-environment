@@ -60,7 +60,8 @@ static unsigned char magic_dhcp[] = { 99, 130, 83, 99 };
 char* dhcp_get_param_cb (csap_p csap_descr, int level, const char *param)
 {
     dhcp_csap_specific_data_t *   spec_data; 
-    spec_data = (dhcp_csap_specific_data_t *) csap_descr->layer_data[level]; 
+    spec_data = (dhcp_csap_specific_data_t *)
+        csap_descr->layers[level].specific_data; 
 
     if (strcmp (param, "ipaddr") == 0)
     { 
