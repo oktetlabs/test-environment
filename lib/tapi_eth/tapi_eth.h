@@ -134,7 +134,7 @@ extern int tapi_eth_csap_create_with_mode(const char *ta_name, int sid,
  * @param eth_type_len  Default Ethernet type/length field.
  *                      See description in IEEE 802.3.
  * @param cfi           CFI field in VLAN header extension
- * @param pririty       Priority field in VLAN header extension
+ * @param priority      Priority field in VLAN header extension
  * @param vlan_id       VLAN identifier field in VLAN header extension
  * @param eth_csap      Identifier of created CSAP (OUT)
  *
@@ -236,14 +236,15 @@ extern int tapi_eth_recv_start(const char *ta_name, int sid,
                                unsigned int timeout, int num);
 
 /**
- * Creates traffic pattern for a single Ethernet frame.
+ * Creates traffic    pattern for a single Ethernet frame.
  *
- * @param src_mac  Desired source MAC address value. if NULL, source address
- *                 of the Ethernet frame can be any
- * @param dst_mac  Desired destination MAC address value. if NULL,
- *                 destination address of the Ethernet frame can be any
- * @param type     Desired type of Ethernet payload
- * @param pattern  Placeholder for the pattern (OUT)
+ * @param src_mac     Desired source MAC address value. if NULL, source
+ *                    address
+ *                    of the Ethernet frame can be any
+ * @param dst_mac     Desired destination MAC address value. if NULL,
+ *                    destination address of the Ethernet frame can be any
+ * @param eth_type    Desired type of Ethernet payload
+ * @param pattern     Placeholder for the pattern (OUT)
  *
  * @returns Status of the operation
  */
@@ -254,13 +255,14 @@ extern int tapi_eth_prepare_pattern(const uint8_t *src_mac,
 /**
  * Creates ASN value of Traffic-Pattern-Unit type with single Ethernet PDU.
  *
- * @param src_mac       Desired source MAC address value, may be NULL
- *                      for no matching by source MAC. 
- * @param dst_mac       Desired destination MAC address value, may be NULL
- *                      for no matching by source MAC. 
- * @param type          Desired type of Ethernet payload, zero value 
- *                      used to specify not matching by eth_type field. 
- * @param pattern_unit  Placeholder for the pattern-unit (OUT)
+ * @param src_mac           Desired source MAC address value, may be NULL
+ *                          for no matching by source MAC. 
+ * @param dst_mac           Desired destination MAC address value, 
+ *                          may be NULL
+ *                          for no matching by source MAC. 
+ * @param eth_type          Desired type of Ethernet payload, zero value 
+ *                          used to specify not matching by eth_type field. 
+ * @param pattern_unit      Placeholder for the pattern-unit (OUT)
  *
  * @returns zero on success or error status
  */
