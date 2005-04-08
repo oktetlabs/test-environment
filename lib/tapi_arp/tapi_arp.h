@@ -86,9 +86,9 @@ typedef struct tapi_arp_frame {
  * Fills in Ethernet header of ARP frame with 802.3 source and destination 
  * MAC addresses.
  *
- * @param arp_frame  ARP frame to be updated
- * @param src_mac    Source MAC address
- * @param dst_mac    Destination MAC address
+ * @param arp_frame_  ARP frame to be updated
+ * @param src_mac_    Source MAC address
+ * @param dst_mac_    Destination MAC address
  */
 #define TAPI_ARP_FILL_ETH_HDR(arp_frame_, src_mac_, dst_mac_) \
     do {                                                            \
@@ -101,7 +101,18 @@ typedef struct tapi_arp_frame {
         (arp_frame_)->eth_hdr.eth_type_len = ETHERTYPE_ARP;         \
         (arp_frame_)->eth_hdr.is_tagged = FALSE;                    \
     } while (0)
-
+    
+/**
+ * Fills in ARP frame header
+ *
+ * @param  arp_frame_    structure storing arp frame
+ * @param  op_           operation type
+ * @param  snd_hw_       sender hardware address
+ * @param  snd_proto_    sender protocol address
+ * @param  tgt_hw_       target hardware address
+ * @param  tgt_proto_    target protocol address
+ *
+ */
 #define TAPI_ARP_FILL_HDR(arp_frame_, op_, \
                           snd_hw_, snd_proto_, tgt_hw_, tgt_proto_) \
     do {                                                                \
