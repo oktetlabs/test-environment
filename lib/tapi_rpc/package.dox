@@ -1,0 +1,14 @@
+/** @page tapi_rpc Test API for Remote Procedure Call
+
+-# <A HREF="tapi__rpc__aio_8h.html">TAPI for asynchronous I/O calls</A>
+-# <A HREF="tapi__rpc__ifnameindex_8h.html">TAPI for interface name/index calls</A>
+-# <A HREF="tapi__rpc__netdb_8h.html">TAPI for name/address resolution remote calls</A>
+-# <A HREF="tapi__rpc__signal_8h.html">TAPI for signal and signal sets remote calls</A>
+-# <A HREF="tapi__rpc__socket_8h.html">TAPI for socket API remote calls</A>
+-# <A HREF="tapi__rpc__stdio_8h.html">TAPI for standard I/O calls</A>
+-# <A HREF="tapi__rpc__unistd_8h.html">TAPI for some file operations calls</A>
+-# <A HREF="tapi__rpc__winsock2_8h.html">TAPI for remote calls of Winsock2-specific routines</A>
+-# <A HREF="tapi__rpcsock__macros_8h.html">Macros for socket API remote calls</A>
+-# <A HREF="tapi__rpc__misc_8h.html">TAPI for miscellaneous remote calls</A>
+
+*/

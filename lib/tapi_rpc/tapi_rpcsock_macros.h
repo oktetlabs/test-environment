@@ -33,10 +33,14 @@
 #define __TE_TAPI_RPCSOCK_MACROS_H__
 
 #ifndef MACRO_ERROR_EXIT
+
+/** Cleanup on test exit */
 #define MACRO_ERROR_EXIT        (tapi_jmp_do(EXIT_FAILURE))
 #endif
 
 #ifndef MACRO_TEST_ERROR
+
+/** exit code on test failure */
 #define MACRO_TEST_ERROR        (result = EXIT_FAILURE)
 #endif
 

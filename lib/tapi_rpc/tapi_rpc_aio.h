@@ -68,7 +68,7 @@ extern int rpc_aio_read_test(rcf_rpc_server *rpcs,
 extern int rpc_aio_error_test(rcf_rpc_server *rpcs,
                               char *diag, int diag_len);
 
-/*
+/**
  * Asynchronous write test procedure.
  *
  * @param rpcs          RPC server

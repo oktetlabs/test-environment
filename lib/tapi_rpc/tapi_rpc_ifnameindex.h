@@ -39,16 +39,51 @@
 
 #include "rcf_rpc.h"
 
-
+/**
+ * Convert network interface name to index.
+ *
+ * @param handle    RPC server handle.
+ * @param ifname    interface name.
+ *
+ * @return interface index otherwise zero. 
+ */
 extern unsigned int rpc_if_nametoindex(rcf_rpc_server *handle,
                                        const char *ifname);
-
+                                       
+/**
+ * Map network interface name to its corresponding name.
+ *
+ * @param handle    RPC server handle.
+ * @param ifindex   index of the interface.
+ * @param ifname    pointer to the network interface name with 
+                    at least @c IF_NAMESIZE bytes size.
+ *
+ * @retval pointer to the interface name otherwise NULL
+ *
+ */
 extern char *rpc_if_indextoname(rcf_rpc_server *handle,
                                 unsigned int ifindex, char *ifname);
 
 #if HAVE_NET_IF_H
+/**
+ * Get an array of all existing network interface structures. The end of 
+ * the array is indicated by an structure with an if_index field equal to 
+ * zero and an if_name field of NULL.
+ * Applications should call @b rpc_freenameindex() to free memory used
+ * by the returned array.
+ *
+ * @param  handle RPC server handle
+ *
+ * @return Array of all existing interfaces otherwise NULL.
+ */
 extern struct if_nameindex *rpc_if_nameindex(rcf_rpc_server *handle);
 
+/**
+ * Free the memory allocated by @b rpc_if_nameindex().
+ *
+ * @param handle RPC server handle
+ * @param ptr    pointer to the array of interfaces
+ */
 extern void rpc_if_freenameindex(rcf_rpc_server *handle,
                                  struct if_nameindex *ptr);
 #endif

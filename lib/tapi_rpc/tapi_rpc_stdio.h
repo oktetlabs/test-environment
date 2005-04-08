@@ -37,13 +37,47 @@
 
 #include "rcf_rpc.h"
 
-
+/**
+ * Query the descriptor of the given file on RPC server side
+ *
+ * @note See fileno manual page for more information
+ * @param rpcs   RPC server handle
+ * @param f      file stream
+ *
+ * @return  The stream file descriptor, otherwise -1 when
+ *          error occured
+ */
 extern int rpc_fileno(rcf_rpc_server *rpcs,
                       FILE *f);
 
+/**
+ * Open a file on RPC server side and associate it with a stream
+ *
+ * @note See @b fopen manual page for more information
+ * @param rpcs     RPC server handle
+ * @param path     File name
+ * @param mode     type of file access
+ *
+ * @return Stream associated with the file name, otherwise @b NULL on error
+ */
 extern FILE *rpc_fopen(rcf_rpc_server *rpcs,
                        const char *path, const char *mode);
 
+/**
+ * Execute the command specified by the command string @b cmd,
+ * create a pipe between the calling process and the executed command and
+ * return a pointer to a stream that can be used to either read from or 
+ * write to the pipe.
+ *
+ * @param rpcs     RPC server handle
+ * @param cmd      Command string to execute
+ * @param mode     stream access type. the following values
+ *                 are supported
+ *                 - "w" write access to the pipe
+ *                 - "r" read access to the pipe
+ *
+ * @return Pointer to the created pipe, otherwise NULL on error
+ */
 extern FILE *rpc_popen(rcf_rpc_server *rpcs,
                        const char *cmd, const char *mode);
 
@@ -62,7 +96,7 @@ extern FILE *rpc_popen(rcf_rpc_server *rpcs,
  * @return 0 (success) or -1 (failure)
  */
 extern int rpc_shell(rcf_rpc_server *rpcs,
-                     char *buf, int buflen, const char *cmd,...);
+                     char *buf, int buflen, const char *cmd, ...);
 
 /**
  * Execute shell command on the IPC server and read the output.
@@ -70,13 +104,13 @@ extern int rpc_shell(rcf_rpc_server *rpcs,
  * null-terminated string to it.
  *
  * @param rpcs          RPC server handle
- * @param buf           location for the command output buffer 
+ * @param pbuf          location for the command output buffer 
  * @param cmd           format of the command to be executed
  *
  * @return 0 (success) or -1 (failure)
  */
 extern int rpc_shell_get_all(rcf_rpc_server *rpcs,
-                             char **pbuf, const char *cmd,...);
+                             char **pbuf, const char *cmd, ...);
 
 /**
  * Execute shell command on the IPC server and return file descriptor

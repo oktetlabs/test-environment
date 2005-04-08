@@ -122,6 +122,7 @@ extern int rpc_simple_sender(rcf_rpc_server *handle,
  *
  * @param handle            RPC server
  * @param s                 a socket to be user for receiving
+ * @param time2run          how long run (in seconds)
  * @param received          location for number of received bytes
  *
  * @return number of received bytes or -1 in the case of failure
@@ -257,7 +258,7 @@ extern int rpc_many_send(rcf_rpc_server *handle, int sock,
 /**
  * Overfill the buffers on receive and send sides of TCP connection.
  *
- * @param handle        RPC server
+ * @param rpcs          RPC server
  * @param sock          Socket for sending
  * @param sent          total bytes written to sending socket
  *                      while both sending and receiving side buffers
