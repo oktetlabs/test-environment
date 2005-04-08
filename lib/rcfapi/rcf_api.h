@@ -61,8 +61,8 @@ extern "C" {
  *
  * @param buf           location for the name list; 
  *                      names are put to the buffer one-by-one and are
- *                      separated by '\0'; the list is finished by '\0' as
- *                      well
+ *                      separated by "'\0'"; the list is finished by 
+ *                      "'\0'" as well
  *
  * @param len           pointer to length variable (should be set
  *                      to the length the buffer by caller;
@@ -518,6 +518,7 @@ extern int rcf_ta_trsend_start(const char *ta_name, int session,
  * rcf_ta_trsend_start called in non-blocking mode.
  *
  * @param ta_name       Test Agent name                 
+ * @param session       session identifier
  * @param csap_id       CSAP handle
  * @param num           location where number of sent packets should be
  *                      placed
@@ -593,9 +594,10 @@ extern int rcf_ta_trrecv_start(const char *ta_name, int session,
  * it is called for all received packets.
  * This function can only be called after rcf_ta_trrecv_start.
  *
- * @param ta_name   - Test Agent name.
- * @param csap_id   - CSAP handle.
- * @param num       - Number of received packets (OUT).
+ * @param ta_name   Test Agent name.
+ * @param session   session identifier.
+ * @param csap_id   CSAP handle.
+ * @param num       Number of received packets (OUT).
  *
  * @return error code
  *
@@ -620,6 +622,7 @@ extern int rcf_ta_trrecv_wait(const char *ta_name, int session,
  * it is called for all received packets.
  *
  * @param ta_name       Test Agent name                 
+ * @param session       session identifier
  * @param csap_id       CSAP handle
  * @param num           location where number of received packets 
  *                      should be placed
@@ -646,6 +649,7 @@ extern int rcf_ta_trrecv_stop(const char *ta_name, int session,
  * rcf_ta_trrecv_start is used for packets processing).
  *
  * @param ta_name       Test Agent name                 
+ * @param session       session identifier
  * @param csap_id       CSAP handle
  * @param num           location where number of processed packets 
  *                      should be placed
