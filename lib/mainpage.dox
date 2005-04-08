@@ -1,0 +1,34 @@
+/** @mainpage
+
+@copyright_notice
+
+Copyright (c) 2005 OKTET Labs, St.-Petersburg, Russia
+
+@section contact_information Contact Information
+
+Unit 3H, Universitetsky pr, 2/18, Petergoff, 198504, St.-Petersburg, Russia
+
+Phone: +7(812)428-6709    Fax: +7(812)428-5003
+
+Questions regarding this document may be forwarded to support@oktetlabs.ru
+
+@section libraries Libraries links
+
+- @ref confapi 
+  <BR>
+- @ref loggerten 
+  <BR>
+- @ref rcfapi 
+  <BR>
+- @ref rcfrpc
+- @ref tapi
+- @ref tapi_arp
+- @ref tapi_bridge
+- @ref tapi_cli
+- @ref tapi_eth
+- @ref tapi_ipstack
+- @ref tapi_rpc
+- @ref tapi_snmp
+- @ref tapi_tad
+
+*/
