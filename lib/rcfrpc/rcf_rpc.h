@@ -101,11 +101,11 @@ typedef struct rcf_rpc_server {
 
     /* Returned read-only fields with status of the last operation */
     uint64_t        duration;   /**< Call Duration in microseconds */
-    enum clnt_stat  stat;
-    int             _errno;
+    enum clnt_stat  stat;       /**< Status code returned by RPC calls */
+    int             _errno;     /**< error number */
     int             win_error;  /**< Value returned by GetLastError() */
     
-    pthread_mutex_t lock;
+    pthread_mutex_t lock;       /**< lock mutex */
     unsigned long   proc;       /**< Procedure called using NB RPC */
     int             tid0;       /**< Identifier of thread performing
                                      non-blocking operations */
@@ -129,7 +129,7 @@ typedef struct rcf_rpc_server {
  *
  * @param ta            a test agent
  * @param name          name of the new server
- * @param p_new         location for new RPC server handle
+ * @param p_handle      location for new RPC server handle
  *
  * @return status code
  */
