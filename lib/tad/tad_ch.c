@@ -997,9 +997,10 @@ rcf_ch_csap_param(struct rcf_comm_connection *handle,
     VERB("CSAP param: handle %d param <%s>\n", csap, param);
     return -1;
 #else
-    csap_p              csap_descr_p = NULL;
+    csap_p              csap_descr_p = csap_find(csap);
     csap_get_param_cb_t get_param_cb;
-    int                 layer = csap_descr_p->read_write_layer;
+    int                 layer = csap_descr_p == NULL ?
+                                0 : csap_descr_p->read_write_layer;
 
     check_init();
     VERB("CSAP param: handle %d param <%s>\n", csap, param);
