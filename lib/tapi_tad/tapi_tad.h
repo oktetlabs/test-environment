@@ -110,7 +110,7 @@ extern int tapi_csap_param_get_llint(const char *ta_name, int ta_sid,
                                      long long int *p_llint);
 
 /**
- * Get timestamp CSAP parameter from TA in format '<sec>.<usec>'.
+ * Get timestamp CSAP parameter from TA in format "<sec>.<usec>".
  *
  * @param ta_name       - name of the Test Agent
  * @param ta_sid        - session identfier to be used
