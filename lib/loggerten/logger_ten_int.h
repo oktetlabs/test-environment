@@ -210,7 +210,7 @@ log_message_va(uint8_t **msg_buf, size_t *msg_buf_len, uint16_t level,
  *     Argument field (1 .. 255 bytes) - logged string.
  *
  * @param _log_str      logged string location
- * @param _len          (OUT) string length
+ * @param _len          string length (OUT)
  *
  * @note If logged string pointer equal NULL, the "(NULL)" string
  *       is written in the raw log file.
