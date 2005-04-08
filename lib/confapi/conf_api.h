@@ -1,4 +1,4 @@
-/** @file
+/** @file 
  * @brief Configurator
  *
  * Exported API
@@ -26,6 +26,7 @@
  *
  * $Id$
  */
+  
 
 #ifndef __TE_CONF_API_H__
 #define __TE_CONF_API_H__
@@ -51,7 +52,8 @@
 extern "C" {
 #endif
 
-#define CFG_VOLATILE    "volatile" /**< Root name for volatile objects */
+/** Root name for volatile objects */
+#define CFG_VOLATILE    "volatile"
 
 
 /** Cast to Configurator Instance Value Pointer */
@@ -269,15 +271,15 @@ cfg_find_fmt(cfg_handle *p_handle, const char *oid_fmt, ...)
  */
 extern int cfg_find(const cfg_oid *oid, cfg_handle *handle);
 
-/*
+/**
  * Find object of the given instance.
  *
  * @param instance  instance handle
- * @param object    OUT: localtion for object handle
+ * @param object    location for object handle
  *
  * @return status code.
  */
-extern int cfg_find_object_by_instance(cfg_handle instance,
+extern int cfg_find_object_by_instance(cfg_handle instance, 
                                        cfg_handle *object);
 
 /**
@@ -313,6 +315,7 @@ cfg_find_pattern_fmt(unsigned int *p_num, cfg_handle **p_set,
  * Get handle of the oldest son of the object or object instance.
  *
  * @param handle    handle of the object or object instance
+ * @param son       pointer to oldest son of the object or object instance.
  *
  * @returns sun's handle or CFG_HANDLE_INVALID
  */
@@ -322,6 +325,7 @@ extern int cfg_get_son(cfg_handle handle, cfg_handle *son);
  * Get handle of the brother of the object or object instance.
  *
  * @param handle    handle of the object or object instance
+ * @param brother   pointer to the brother's handle
  *
  * @returns brother's handle or CFG_HANDLE_INVALID
  */
@@ -331,6 +335,7 @@ extern int cfg_get_brother(cfg_handle handle, cfg_handle *brother);
  * Get handle of the father of the object or object instance.
  *
  * @param handle    handle of the object or object instance
+ * @param father    pointer to the father's handle 
  *
  * @returns father's handle or CFG_HANDLE_INVALID
  */
@@ -546,7 +551,7 @@ cfg_commit_fmt(const char *oid_fmt, ...)
  * addresses is allocated by the routine using malloc().
  *
  * @param handle    object instance handle
- * @param p_type    location for value type, may be NULL
+ * @param type      location for value type, may be NULL
  * @param ...       OUT: location for the value
  *                    for integer values: int *
  *                    for strings: char **
@@ -571,6 +576,7 @@ cfg_get_instance_fmt(cfg_val_type *p_type, void *val,
  * addresses is allocated by the routine using malloc().
  *
  * @param handle    object instance handle
+ * @param type      location for the value type
  * @param  ...      OUT: location for the value
  *                    for integer values: int *
  *                    for strings: char **
@@ -641,7 +647,7 @@ extern int cfg_enumerate(cfg_handle handle, cfg_inst_handler callback,
 /**
  * Reboot the Test Agent.
  *
- * @param name      name of the Test Agent
+ * @param ta_name      name of the Test Agent
  * @param restore   if TRUE, restore the current configuration
  *
  * @return status code (see te_errno.h)

@@ -39,18 +39,20 @@ extern "C" {
 /** Maximum length of the instance in the message */
 #define CFG_MAX_INST_VALUE      128
 
+/** Number of configurator primary types */
 #define CFG_PRIMARY_TYPES_NUM   4
 
 /* Forward */
 struct cfg_msg;
 
+/** Object instance value */
 typedef union cfg_inst_val {
-        struct sockaddr *val_addr;
-        int              val_int;
-        char            *val_str;
+        struct sockaddr *val_addr;  /**< sockaddr value */
+        int              val_int;   /**< int value */
+        char            *val_str;   /**< string value */
 } cfg_inst_val;
 
-/* Primary type structure */
+/** Primary type structure */
 typedef struct cfg_primary_type {
     /* 
      * Conversion functions return errno from te_errno.h 
@@ -81,10 +83,11 @@ typedef struct cfg_primary_type {
      */
     void (* put_to_msg)(cfg_inst_val val, struct cfg_msg *msg);
     
-    /* Compare two values */
+    /** Compare two values */
     te_bool (* is_equal)(cfg_inst_val val1, cfg_inst_val val2);
 } cfg_primary_type;
 
+/** Primary types array */
 extern cfg_primary_type cfg_types[CFG_PRIMARY_TYPES_NUM];
 
 #ifdef __cplusplus
