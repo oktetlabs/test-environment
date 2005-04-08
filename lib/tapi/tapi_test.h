@@ -67,12 +67,12 @@ extern "C" {
 #define TEST_START_VARS
 #endif
 
-/* Define empty test start procedure if test does not care about it. */
+/** Define empty test start procedure if test does not care about it. */
 #ifndef TEST_START_SPECIFIC
 #define TEST_START_SPECIFIC
 #endif
 
-/* Define empty test end procedure if test does not care about it. */
+/** Define empty test end procedure if test does not care about it. */
 #ifndef TEST_END_SPECIFIC
 #define TEST_END_SPECIFIC do { } while (0)
 #endif
@@ -371,7 +371,7 @@ typedef enum sapi_buf_size {
  * Finds a particulat parameter in the list of parameters
  *
  * @param argc  number of parameters
- * @param argv  Array of parameters in form <param name>=<param value>
+ * @param argv  Array of parameters in form "<param name>=<param value>"
  * @param name  Parameter name whose value we want to obtain
  *
  * @return Pointer to the value of the parameter

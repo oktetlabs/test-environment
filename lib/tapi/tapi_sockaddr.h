@@ -298,7 +298,7 @@ extern void mreq_set_mr_multiaddr(int addr_family,
  *
  * @param addr_family  Address family
  * @param mreq         Generic mreq structure
- * @param if_addr      Interface address
+ * @param addr      Interface address
  *
  */
 extern void mreq_set_mr_interface(int addr_family,
@@ -309,7 +309,7 @@ extern void mreq_set_mr_interface(int addr_family,
  *
  * @param addr_family  Address family
  * @param mreq         Generic mreq structure
- * @param if_addr      Interface address
+ * @param ifindex      Interface index
  *
  */
 extern void mreq_set_mr_ifindex(int addr_family, void *mreq, int ifindex);

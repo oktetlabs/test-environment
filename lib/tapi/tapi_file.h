@@ -140,7 +140,7 @@ extern int tapi_file_create_ta(const char *ta, const char *filename,
 extern int tapi_file_read_ta(const char *ta, const char *filename, 
                              char **pbuf);
 
-/*
+/**
  * Copy file from the one TA to other.
  *
  * @param ta_src        source Test Agent

@@ -67,7 +67,7 @@ typedef struct arl_entry_t {
 } arl_entry_t;
 
 #ifndef DEFAULT_VLAN_NAME
-/* Default VLAN name used on the Switch */
+/** Default VLAN name used on the Switch */
 #define DEFAULT_VLAN_NAME "default"
 #endif
 

@@ -61,10 +61,47 @@ extern int tapi_cfg_get_son_mac(const char *father, const char *subid,
                                 const char *name, uint8_t *p_mac);
 
 
+/**
+ * Add VLAN on switch.
+ *
+ * @param ta_name   - name of the test agent
+ * @param vid       - VLAN identifier
+ *
+ * @return Status code.
+ */
 extern int tapi_cfg_switch_add_vlan(const char *ta_name, uint16_t vid);
+
+/**
+ * Delete VLAN from switch.
+ *
+ * @param ta_name   - name of the test agent
+ * @param vid       - VLAN identifier
+ *
+ * @return Status code.
+ */
 extern int tapi_cfg_switch_del_vlan(const char *ta_name, uint16_t vid);
+
+/**
+ * Add port to VLAN on switch.
+ *
+ * @param ta_name   - name of the test agent
+ * @param vid       - VLAN identifier
+ * @param port      - port number
+ *
+ * @return Status code.
+ */
 extern int tapi_cfg_switch_vlan_add_port(const char *ta_name,
                                          uint16_t vid, unsigned int port);
+                                         
+/**
+ * Delete port from VLAN on switch.
+ *
+ * @param ta_name   - name of the test agent
+ * @param vid       - VLAN identifier
+ * @param port      - port number
+ *
+ * @return Status code.
+ */
 extern int tapi_cfg_switch_vlan_del_port(const char *ta_name,
                                          uint16_t vid, unsigned int port);
 /** Routing entry data structure */
@@ -117,7 +154,7 @@ extern int tapi_cfg_get_route_table(const char *ta, int addr_family,
  * @param win          TCP window size for connections over this route
  * @param irtt         initial round trip time (irtt) for TCP connections
  *                     over this route (in milliseconds)
- * @param rt_handle    Route handle (OUT)
+ * @param rt_hndl      Route handle (OUT)
  *
  * @note For more information about the meaning of parameters see
  *       "man route".
@@ -310,7 +347,7 @@ extern int tapi_cfg_alloc_entry(const char *parent_oid, cfg_handle *entry);
  * Free earlier allocated child.
  * Entry handle is set to CFG_HANDLE_INVALID on success.
  *
- * @param child         Location of entry handle
+ * @param entry         Location of entry handle
  *
  * @return Status code.
  *
