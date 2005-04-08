@@ -24,7 +24,7 @@
  *
  * @author Boris Misenov <Boris.Misenov@oktetlabs.ru>
  *
- * $Id: $
+ * $Id$
  */
 #ifndef __TE__TAPI_SNMP_DEFS_H__
 #define __TE__TAPI_SNMP_DEFS_H__ 
@@ -70,12 +70,12 @@ typedef enum {
 
 /** RFC1213-MIB::ipAddrTable row */
 typedef struct tapi_snmp_ip_addr_table_row_s {
-    tapi_snmp_oid_t  *index_suffix;
-    uint8_t          *ipAdEntAddr;               /* IpAddress */
-    int              *ipAdEntIfIndex;            /* INTEGER */
-    uint8_t          *ipAdEntNetMask;            /* IpAddress */
-    int              *ipAdEntBcastAddr;          /* INTEGER (0 or 1) */
-    int              *ipAdEntReasmMaxSize;       /* INTEGER (0..65535) */
+    tapi_snmp_oid_t  *index_suffix;      /**< object identifier suffix */
+    uint8_t          *ipAdEntAddr;               /**< IpAddress */
+    int              *ipAdEntIfIndex;            /**< INTEGER */
+    uint8_t          *ipAdEntNetMask;            /**< IpAddress */
+    int              *ipAdEntBcastAddr;          /**< INTEGER (0 or 1) */
+    int              *ipAdEntReasmMaxSize;       /**< INTEGER (0..65535) */
 } tapi_snmp_ip_addr_table_row_t;
 
 

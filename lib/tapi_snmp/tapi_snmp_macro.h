@@ -40,12 +40,12 @@ extern "C" {
 /**
  * Macro around tapi_snmp_csap_create().
  * 
- * @param ta            Test Agent name.
- * @param sid           RCF Session ID.
- * @param snmp_agent    Address of SNMP agent.
- * @param community     SNMP community.
- * @param snmp_version  SNMP version.
- * @param csap_id       identifier of an SNMP CSAP. (OUT)
+ * @param ta_            Test Agent name.
+ * @param sid_           RCF Session ID.
+ * @param snmp_agent_    Address of SNMP agent.
+ * @param community_     SNMP community.
+ * @param snmp_version_  SNMP version.
+ * @param csap_id_       identifier of an SNMP CSAP. (OUT)
  * 
  */
 #define SNMP_CSAP_CREATE(ta_, sid_, snmp_agent_, community_, \
@@ -95,7 +95,7 @@ extern "C" {
  *
  * @param oid_     OID to be appended
  * @param len_     The number of sub ids to add
- * @param subid_   SUB ID value
+ * @param sub_ids_   SUB ID value
  */
 #define TAPI_SNMP_CREATE_OID(oid_, len_, sub_ids_...) \
     do {                                              \
@@ -126,7 +126,7 @@ extern "C" {
  * 
  * @param label_    SNMP label - OID string representation
  * @param oid_      Location for parsed OID (OUT)
- * @param ...       Indeces of table field instance
+ * @param indeces_  Indeces of table field instance
  * 
  */ 
 #define SNMP_MAKE_INSTANCE(label_, oid_, indeces_...) \
@@ -139,6 +139,16 @@ extern "C" {
             TEST_FAIL("Cannot make instance of %s OID: %X", label_, rc_); \
         }                                                                 \
     } while (0)
+    
+/**
+ * Macro around tapi_snmp_make_vb()
+ *
+ * @param   vb_    pointer to VarBind data structure.
+ * @param   oid_   OID string representation.
+ * @param   type_  type of value.
+ * @param   value_ VarBind value.
+ *
+ */
 
 #define TAPI_SNMP_MAKE_VB(vb_, oid_, type_, value_...) \
         CHECK_RC(tapi_snmp_make_vb(vb_, oid_, type_, value_))
@@ -210,9 +220,6 @@ extern "C" {
  * @note If there is no entry with specified index prefix,
  *       sub_tbl_ is set to NULL, and sub_tbl_size_ is set to zero.
  *
- * @example
- *
- * 
  */
 #define TAPI_SNMP_GET_SUBTABLE(tbl_, tbl_size_, index_prefix_, \
                                sub_tbl_, sub_tbl_size_)             \
@@ -358,6 +365,14 @@ extern "C" {
         }                                                       \
     } while (0)
 
+/**
+ * Macro around tapi_snmp_make_table_index()
+ *
+ * @param label_  table object identifier.
+ * @param index_  pointer to table index.
+ *
+ */
+
 #define SNMP_MAKE_TBL_INDEX(label_, index_... ) \
     do {                                                        \
         tapi_snmp_oid_t label_;                                 \
@@ -473,6 +488,10 @@ extern "C" {
  * @param err_stat      SNMP error status
  * @param err_index     Index of varbind where an error ocured
  * @param index         Index of table field instance or 0 for scalar field
+ * @param values        sequence of "varbind groups":
+ *                      label of MIB leaf and value, which is either 
+ *                      integer or pair <char *, int>, for OCTET_STRING 
+ *                      types; ended by NULL.
  * 
  */
 #define TAPI_SNMP_SET_ROW(ta, sid, csap_id, err_stat, err_index, index, \
@@ -492,7 +511,10 @@ extern "C" {
  * @param csap_id       Identifier of an SNMP CSAP.
  * @param err_stat      SNMP error status
  * @param err_index     Index of varbind where an error ocured
- * 
+ * @param values        sequence of "varbind groups":
+ *                      label of MIB leaf and value, which is either 
+ *                      integer or pair <char *, int>, for OCTET_STRING 
+ *                      types; ended by NULL.
  */
 #define TAPI_SNMP_SET(ta, sid, csap_id, err_stat, err_index, values...) \
     do {                                                                \
@@ -510,7 +532,8 @@ extern "C" {
  * @param name           name of an SNMP object the value is to be set
  * @param next           GetRequest or GetNextRequest
  * @param vb             Location for returned varbind
- * @param subid          index of table field instance (0 for scalar field)
+ * @param err_stat       SNMP error status
+ * @param sub_id         index of table field instance (0 for scalar field)
  *
  */
 #define TAPI_SNMP_GET(ta, sid, csap_id, name, next, vb, \
@@ -535,7 +558,7 @@ extern "C" {
  * @param name          Name of an SNMP object the value is to be set
  * @param value         Pointer to returned integer value
  * @param err_stat      Error status
- * @param subid         Index of table field instance (0 for scalar field)
+ * @param sub_id        Index of table field instance (0 for scalar field)
  * 
  */
 #define TAPI_SNMP_GET_INTEGER(ta, sid, csap_id, name, value, err_stat, \
@@ -562,7 +585,7 @@ extern "C" {
  * @param name          Name of an SNMP object the value is to be set
  * @param value         Pointer to returned unsigned integer value
  * @param err_stat      Error status
- * @param subid         Index of table field instance (0 for scalar field)
+ * @param sub_id        Index of table field instance (0 for scalar field)
  * 
  */
 #define TAPI_SNMP_GET_UNSIGNED(ta, sid, csap_id, name, value, err_stat, \
@@ -589,7 +612,7 @@ extern "C" {
  * @param value         Location for returned value
  * @param size          Size of returned value
  * @param err_stat      Error status
- * @param subid         Index of table field instance (0 for scalar field)
+ * @param sub_id        Index of table field instance (0 for scalar field)
  *
  */ 
 #define TAPI_SNMP_GET_OCTETSTRING(ta, sid, csap_id, name, value,    \
@@ -635,7 +658,8 @@ extern "C" {
  * @param csap_id       Identifier of an SNMP CSAP
  * @param name          Name of an SNMP object the value is to be set
  * @param value         Integer value to compare
- * @param subid         Index of table field instance (0 for scalar field)
+ * @param err_stat      Error status
+ * @param sub_id        Index of table field instance (0 for scalar field)
  * 
  */
 #define TAPI_SNMP_CHECK_INTEGER(ta, sid, csap_id, name, value, \
