@@ -18,7 +18,7 @@ asn_type my_sequence = {
 };
 
 
-char buffer [1000];
+char buffer[1000];
 
 int 
 main (void)

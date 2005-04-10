@@ -409,11 +409,12 @@ extern asn_value_p asn_read_indexed (const asn_value *container,
  *
  * @return zero on success, otherwise error code.
  */ 
-extern int asn_insert_indexed(asn_value_p container, const asn_value_p elem_value, 
+extern int asn_insert_indexed(asn_value_p container,
+                              const asn_value_p elem_value, 
                               int index, const char *labels );
 
 /**
- * Remove array element from indexed syntax (i.e. 'SEQUENCE OF' or 'SET OF') 
+ * Remove array element from indexed syntax (i.e. 'SEQUENCE OF' or 'SET OF')
  * subvalue of root ASN value container. 
  *
  * @param container     root of ASN value tree which subvalue is interested
@@ -448,7 +449,7 @@ extern int asn_remove_indexed(asn_value_p container,
  *
  * @return length subvalue, -1 if error occurred. 
  */ 
-extern int asn_get_length (const asn_value *container, const char *labels );
+extern int asn_get_length(const asn_value *container, const char *labels );
 
 /**
  * Obtain ASN syntax of specified field in value. 
@@ -562,6 +563,31 @@ extern int asn_get_indexed(const asn_value *container,
                            const asn_value ** subval, 
                            int index);
 
+
+/**
+ * Get constant pointer to direct subvalue of ASN value with named syntax 
+ * ('SEQUENCE' or 'SET') by its tag. If there are more then one 
+ * child with specified tag, method return first found. 
+ *
+ * User may try to discard 'const' qualifier of obtained subvalue only 
+ * if he (she) knows very well what he doing with ASN value. 
+ * In particular, got subvalue should NOT be freed!
+ *
+ * This method is much faster then "asn_read_component_value' because
+ * it does not make external copy of subvalue. 
+ * 
+ * @param container     root of ASN value tree which subvalue is interested
+ * @param subval        location for pointer to ASN sub-value (OUT)
+ * @param tag_class     class of ASN tag
+ * @param tag_val       value of ASN tag
+ *
+ * @return zero on success or error code.
+ */ 
+extern int asn_get_child_value(const asn_value *container,
+                          const asn_value **subval,
+                          asn_tag_class tag_class, 
+                          uint16_t tag_val);
+
 /**
  * Get constant pointer to data related to leaf (plain-syntax) sub-value 
  * of ASN value.
@@ -597,7 +623,7 @@ extern int asn_get_field_data(const asn_value *container,
  *
  * @return value's name or NULL.
  */ 
-extern unsigned short asn_get_tag (const asn_value_p container );
+extern unsigned short asn_get_tag(const asn_value_p container);
 
 
 /**

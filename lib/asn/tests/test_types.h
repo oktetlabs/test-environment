@@ -33,10 +33,20 @@
 
 char *te_lgr_entity = "test";
 
+int log_message(void) {return 0;}
+
+enum {
+    SEQ_NUMBER_TAG,
+    SEQ_STRING_TAG,
+    SEQ_NAME_TAG,
+    SEQ_INT_ARRAY_TAG,
+};
+
+
 /* 
 PlainSeq1 ::= [APPLICATION 1] SEQUENCE {
-    number INTEGER,
-    string UniversalString
+    number [0] INTEGER,
+    string [1] UniversalString
 }
 */
 
@@ -44,8 +54,8 @@ extern asn_type asn_base_integer_s;
 extern asn_type asn_base_charstring_s;
 
 asn_named_entry_t _plain_seq1_ne_array [] = {
-    { "number", &asn_base_integer_s },
-    { "string", &asn_base_charstring_s }
+    { "number", &asn_base_integer_s, {PRIVATE, SEQ_NUMBER_TAG} },
+    { "string", &asn_base_charstring_s, {PRIVATE, SEQ_STRING_TAG} }
 };
 
 asn_type at_plain_seq1 = {
@@ -86,14 +96,15 @@ asn_type at_plain_int_array = {
 
 /*
 NamedIntArray ::= SEQUENCE {
-    name UniversalString,
-    array PlainIntArray
+    name [2] UniversalString,
+    array [3] PlainIntArray
 }
 */
 
+
 asn_named_entry_t _at_named_int_array_ne [] = {
-    { "name", &asn_base_charstring_s },
-    { "array", &at_plain_int_array }
+    { "name", &asn_base_charstring_s, {PRIVATE, SEQ_NAME_TAG} },
+    { "array", &at_plain_int_array, {PRIVATE, SEQ_INT_ARRAY_TAG}  }
 };
 
 

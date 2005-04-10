@@ -1132,6 +1132,43 @@ asn_get_indexed(const asn_value *container, const asn_value **subval,
 /**
  * See description in asn_usr.h
  */
+int
+asn_get_child_value(const asn_value *container, const asn_value **subval,
+                    asn_tag_class tag_class, uint16_t tag_val)
+{
+    const asn_named_entry_t *n_en;
+    unsigned int             i;
+
+    if (!container || !subval)
+        return ETEWRONGPTR; 
+
+    if (container->syntax != SEQUENCE && 
+        container->syntax != SET)
+        return EINVAL;
+
+    for (i = 0, n_en = container->asn_type->sp.named_entries;
+         i < container->len;
+         i++, n_en++)
+    {
+        if (n_en->tag.cl == tag_class && 
+            n_en->tag.val == tag_val)
+        {
+            if (container->data.array[i] == NULL)
+                return EASNINCOMPLVAL;
+            else
+            {
+                *subval = container->data.array[i];
+                return 0;
+            }
+        }
+    }
+
+    return ENOENT;
+}
+
+/**
+ * See description in asn_usr.h
+ */
 int 
 asn_get_field_data(const asn_value *container, 
                    const uint8_t ** data_ptr, const char *subval_labels)
@@ -1459,7 +1496,7 @@ asn_remove_indexed(asn_value_p container, int index, const char *subval_labels)
  * @return number of elements in constractive subvalue, -1 if error occurred. 
  */ 
 int
-asn_get_length (const asn_value *container, const char *subval_labels )
+asn_get_length(const asn_value *container, const char *subval_labels)
 {
     const asn_value *val;
 
