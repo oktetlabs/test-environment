@@ -16,6 +16,7 @@ int
 main (void)
 { 
     asn_value_p seq_val   = asn_init_value(&at_plain_seq1);
+    asn_value_p ch_val   = asn_init_value(&at_plain_choice1);
 
     const asn_value **subval;
 
@@ -47,6 +48,16 @@ main (void)
 
     r = asn_get_child_value(seq_val, &subval, PRIVATE, SEQ_INT_ARRAY_TAG);
     printf("rc getting subval by tag 'ingeter_array': 0x%X\n", r); 
+
+    r = asn_write_value_field(ch_val, &a, sizeof(a), "#number");
+    if (r) { printf("write number to choice error: 0x%X\n", r); return 1; } 
+
+    subval = NULL;
+    r = asn_get_choice_value(ch_val, &subval, NULL, NULL);
+    printf("rc getting choice subval: 0x%X\n", r); 
+
+    if (r == 0 && subval != NULL)
+        printf("got subval syntax: %d\n", (*subval)->syntax);
 
     return 0;
 }

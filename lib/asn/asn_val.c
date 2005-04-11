@@ -32,6 +32,7 @@
 
 #include "asn_impl.h" 
 #include "te_errno.h"
+#include "te_defs.h"
 
 
 #define ASN_STOP_AT_CHOICE 1
@@ -1165,6 +1166,32 @@ asn_get_child_value(const asn_value *container, const asn_value **subval,
 
     return ENOENT;
 }
+
+
+/**
+ * See description in asn_usr.h
+ */
+int
+asn_get_choice_value(const asn_value *container, const asn_value **subval,
+                     asn_tag_class *tag_class, uint16_t *tag_val)
+{
+    UNUSED(tag_class);
+    UNUSED(tag_val);
+
+    if (!container || !subval)
+        return ETEWRONGPTR; 
+
+    if (container->syntax != CHOICE)
+        return EINVAL; 
+
+    if (container->len == 0 || container->data.array[0] == NULL)
+        return EASNINCOMPLVAL;
+
+    *subval = container->data.array[0];
+
+    return 0;
+}
+
 
 /**
  * See description in asn_usr.h
