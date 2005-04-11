@@ -500,8 +500,8 @@ overlapped2buf(rpc_overlapped *overlapped, int *buf_len, char **buf_val)
     if (overlapped->buffers == NULL)
     {
         *buf_val = NULL;
-    *buf_len = 0;
-    return;
+        *buf_len = 0;
+        return;
     }
     *buf_val = overlapped->buffers[0].buf;
     *buf_len = overlapped->buffers[0].len;
@@ -3926,61 +3926,65 @@ TARPC_FUNC(free_wsabuf, {},
 }
 )
 
+/*
+ * Copy the data from tarpc_flowspec to FLOWSPEC structure.
+ */
+static void tarpc_flowspec_to_flowspec(FLOWSPEC *fs, tarpc_flowspec *tfs)
+{
+    fs->TokenRate = tfs->TokenRate;
+    fs->TokenBucketSize = tfs->TokenBucketSize;
+    fs->PeakBandwidth = tfs->PeakBandwidth;
+    fs->Latency = tfs->Latency;
+    fs->DelayVariation = tfs->DelayVariation;
+    fs->ServiceType =
+        (SERVICETYPE)servicetype_flags_rpc2h(tfs->ServiceType);
+    fs->MaxSduSize = tfs->MaxSduSize;
+    fs->MinimumPolicedSize = tfs->MinimumPolicedSize;
+}
+
+static void flowspec_to_tarpc_flowspec(FLOWSPEC *fs, tarpc_flowspec *tfs)
+{
+    tfs->TokenRate = fs->TokenRate;
+    tfs->TokenBucketSize = fs->TokenBucketSize;
+    tfs->PeakBandwidth = fs->PeakBandwidth;
+    tfs->Latency = fs->Latency;
+    tfs->DelayVariation = fs->DelayVariation;
+    tfs->ServiceType =
+        servicetype_flags_h2rpc((unsigned int)fs->ServiceType);
+    tfs->MaxSduSize = fs->MaxSduSize;
+    tfs->MinimumPolicedSize = fs->MinimumPolicedSize;
+}
+
 /*-------------- WSAConnect -----------------------------*/
 TARPC_FUNC(wsa_connect, {},
 {
     QOS sqos;
-    QOS *psqos = &sqos;
-    tarpc_flowspec *fs;
+    QOS *psqos;
     PREPARE_ADDR(in->addr, 0);
 
-    memset(&sqos, 0, sizeof(sqos));
-    
-    if ((in->sending.sending_len != 0) && (in->sending.sending_val != NULL))
-    {
-        fs = in->sending.sending_val;
-        sqos.SendingFlowspec.TokenRate = fs->TokenRate;
-        sqos.SendingFlowspec.TokenBucketSize = fs->TokenBucketSize;
-        sqos.SendingFlowspec.PeakBandwidth = fs->PeakBandwidth;
-        sqos.SendingFlowspec.Latency = fs->Latency;
-        sqos.SendingFlowspec.DelayVariation = fs->DelayVariation;
-        sqos.SendingFlowspec.ServiceType =
-            (SERVICETYPE)servicetype_flags_rpc2h(fs->ServiceType);
-        sqos.SendingFlowspec.MaxSduSize = fs->MaxSduSize;
-        sqos.SendingFlowspec.MinimumPolicedSize = fs->MinimumPolicedSize;
-    }
-
-    if ((in->receiving.receiving_len != 0)
-        && (in->receiving.receiving_val != NULL))
-    {
-        fs = in->receiving.receiving_val;
-        sqos.ReceivingFlowspec.TokenRate = fs->TokenRate;
-        sqos.ReceivingFlowspec.TokenBucketSize = fs->TokenBucketSize;
-        sqos.ReceivingFlowspec.PeakBandwidth = fs->PeakBandwidth;
-        sqos.ReceivingFlowspec.Latency = fs->Latency;
-        sqos.ReceivingFlowspec.DelayVariation = fs->DelayVariation;
-        sqos.ReceivingFlowspec.ServiceType =
-            (SERVICETYPE)servicetype_flags_rpc2h(fs->ServiceType);
-        sqos.ReceivingFlowspec.MaxSduSize = fs->MaxSduSize;
-        sqos.ReceivingFlowspec.MinimumPolicedSize = fs->MinimumPolicedSize;
-    }
-    
-    sqos.ProviderSpecific.buf = (char*)in->provider_specific_buf;
-    sqos.ProviderSpecific.len = in->provider_specific_buf_len;
-
-    if ((in->sending.sending_val == NULL)
-        && (in->receiving.receiving_val == NULL)
-        && ((char*)in->provider_specific_buf == NULL)
-        && (in->provider_specific_buf_len == 0))
-    {
+    if (in->sqos_is_null == TRUE)
         psqos = NULL;
+    else
+    {
+        psqos = &sqos;
+        memset(&sqos, 0, sizeof(sqos));
+    
+        tarpc_flowspec_to_flowspec(&sqos.SendingFlowspec,
+                                      &in->sqos.sending);
+
+        tarpc_flowspec_to_flowspec(&sqos.ReceivingFlowspec,
+                                      &in->sqos.receiving);
+    
+        sqos.ProviderSpecific.buf =
+            (char*)in->sqos.provider_specific_buf.provider_specific_buf_val;
+        sqos.ProviderSpecific.len =
+            in->sqos.provider_specific_buf.provider_specific_buf_len;
     }
 
     MAKE_CALL(out->retval = WSAConnect(in->s, a, in->addrlen,
                                        (LPWSABUF)in->caller_wsabuf,
                                        (LPWSABUF)in->callee_wsabuf,
-                                        NULL, NULL));
-    /* fifth parameter shouldn't be NULL*/
+                                        psqos, NULL));
 }
 )
 

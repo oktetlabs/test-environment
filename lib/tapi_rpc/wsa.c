@@ -2317,17 +2317,11 @@ void rpc_free_wsabuf(rcf_rpc_server *rpcs, rpc_ptr wsabuf)
  *                               a call to rpc_alloc_wsabuf()).
  * @param callee_wsabuf          A pointer to the WSABUF structure in the
  *                               TA virtual address space.
- * @param provider_specific_buf  A pointer to the buffer in the TA virtual
- *                               address space (can be obtained by a call
- *                               to rpc_alloc_buf()).
  */
 int
 rpc_wsa_connect(rcf_rpc_server *rpcs, int s, struct sockaddr *addr,
                 socklen_t addrlen, rpc_ptr caller_wsabuf,
-                rpc_ptr callee_wsabuf, tarpc_flowspec *sending,
-                tarpc_flowspec *receiving,
-                rpc_ptr provider_specific_buf,
-                size_t provider_specific_buf_len)
+                rpc_ptr callee_wsabuf, rpc_qos *sqos)
 {
     rcf_rpc_op            op;
     tarpc_wsa_connect_in  in;
@@ -2341,7 +2335,6 @@ rpc_wsa_connect(rcf_rpc_server *rpcs, int s, struct sockaddr *addr,
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         RETVAL_INT(wsa_connect, -1);
     }
-
 
     op = rpcs->op;
     
@@ -2368,20 +2361,18 @@ rpc_wsa_connect(rcf_rpc_server *rpcs, int s, struct sockaddr *addr,
     in.caller_wsabuf = caller_wsabuf;
     in.callee_wsabuf = callee_wsabuf;
 
-    in.sending.sending_val = sending;
-    if (sending != NULL)
-        in.sending.sending_len = 1;
+    if (sqos == NULL)
+        in.sqos_is_null = TRUE;
     else
-        in.sending.sending_len = 0;
-
-    in.receiving.receiving_val = receiving;
-    if (receiving != NULL)
-        in.receiving.receiving_len = 1;
-    else
-        in.receiving.receiving_len = 0;
-
-    in.provider_specific_buf = (tarpc_ptr)provider_specific_buf;
-    in.provider_specific_buf_len = provider_specific_buf_len;
+    {
+        in.sqos_is_null = FALSE;
+        in.sqos.sending = *(tarpc_flowspec*)&sqos->sending;
+        in.sqos.receiving = *(tarpc_flowspec*)&sqos->receiving;
+        in.sqos.provider_specific_buf.provider_specific_buf_val =
+            sqos->provider_specific_buf;
+        in.sqos.provider_specific_buf.provider_specific_buf_len =
+            sqos->provider_specific_buf_len;
+    }
 
     rcf_rpc_call(rpcs, _wsa_connect,
                  &in, (xdrproc_t)xdr_tarpc_wsa_connect_in,

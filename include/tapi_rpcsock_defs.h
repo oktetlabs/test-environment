@@ -864,7 +864,7 @@ transmit_file_flags_rpc2h(rpc_transmit_file_flags flags)
 }
 
 /**
- * TA-independent SERVICETYPE flags. 
+ * TA-independent Win32 SERVICETYPE flags. 
  */
 typedef enum rpc_servicetype_flags {
     RPC_SERVICETYPE_NOTRAFFIC             = 0x00000000,
@@ -880,7 +880,6 @@ typedef enum rpc_servicetype_flags {
     RPC_SERVICE_NO_TRAFFIC_CONTROL        = 0x81000000,
     RPC_SERVICE_NO_QOS_SIGNALING          = 0x40000000
 } rpc_servicetype_flags;
-
 
 #ifndef SERVICETYPE_NOTRAFFIC
 /* Cygwin 1.5.10-3 does not provide us with required definitions */
@@ -927,6 +926,37 @@ servicetype_flags_rpc2h(rpc_servicetype_flags flags)
         (!!(flags & RPC_SERVICE_NO_QOS_SIGNALING)
             * SERVICE_NO_QOS_SIGNALING);
 }
+
+static inline rpc_servicetype_flags
+servicetype_flags_h2rpc(unsigned int flags)
+{
+    return
+        (!!(flags & SERVICETYPE_NOTRAFFIC)
+            * RPC_SERVICETYPE_NOTRAFFIC) |
+        (!!(flags & SERVICETYPE_BESTEFFORT)
+            * RPC_SERVICETYPE_BESTEFFORT) |
+        (!!(flags & SERVICETYPE_CONTROLLEDLOAD)
+            * RPC_SERVICETYPE_CONTROLLEDLOAD) |
+        (!!(flags & SERVICETYPE_GUARANTEED)
+            * RPC_SERVICETYPE_GUARANTEED) |
+        (!!(flags & SERVICETYPE_NETWORK_UNAVAILABLE)
+            * RPC_SERVICETYPE_NETWORK_UNAVAILABLE) |
+        (!!(flags & SERVICETYPE_GENERAL_INFORMATION)
+            * RPC_SERVICETYPE_GENERAL_INFORMATION) |
+        (!!(flags & SERVICETYPE_NOCHANGE)
+            * RPC_SERVICETYPE_NOCHANGE) |
+        (!!(flags & SERVICETYPE_NONCONFORMING)
+            * RPC_SERVICETYPE_NONCONFORMING) |
+        (!!(flags & SERVICETYPE_NETWORK_CONTROL)
+            * RPC_SERVICETYPE_NETWORK_CONTROL) |
+        (!!(flags & SERVICETYPE_QUALITATIVE)
+            * RPC_SERVICETYPE_QUALITATIVE) |
+        (!!(flags & SERVICE_NO_TRAFFIC_CONTROL)
+            * RPC_SERVICE_NO_TRAFFIC_CONTROL) |
+        (!!(flags & SERVICE_NO_QOS_SIGNALING)
+            * RPC_SERVICE_NO_QOS_SIGNALING);
+}
+
 
 /**
  * send_recv_flags_rpc2str()

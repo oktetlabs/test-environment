@@ -48,6 +48,35 @@ typedef void *rpc_hwnd;
 /** Windows HANDLE  :o\  */
 typedef void *rpc_handle;
 
+/* Windows FLOWSPEC structure */
+typedef struct _rpc_flowspec {
+    uint32_t TokenRate;
+    uint32_t TokenBucketSize;
+    uint32_t PeakBandwidth;
+    uint32_t Latency;
+    uint32_t DelayVariation;
+    uint32_t ServiceType;
+    uint32_t MaxSduSize;
+    uint32_t MinimumPolicedSize;
+} rpc_flowspec;
+
+/* Windows QOS structure */
+typedef struct _rpc_qos {
+    rpc_flowspec  sending;
+    rpc_flowspec  receiving;
+    char          *provider_specific_buf;
+    size_t        provider_specific_buf_len;
+} rpc_qos;
+
+/* Windows GUID */
+typedef struct _rpc_guid {
+    uint32_t data1;
+    uint16_t data2;
+    uint16_t data3;
+    uint8_t  data4[8];
+} rpc_guid;
+
+
 /** 
  * WSASocket() 
  *
@@ -414,16 +443,11 @@ extern int rpc_alloc_wsabuf(rcf_rpc_server *rpcs, size_t len,
  */
 extern void rpc_free_wsabuf(rcf_rpc_server *rpcs, rpc_ptr wsabuf);
 
-#if 0 /* It breaks the build */
 /* WSAConnect */
 extern int rpc_wsa_connect(rcf_rpc_server *rpcs, int s,
                            struct sockaddr *addr, socklen_t addrlen,
                            rpc_ptr caller_wsabuf, rpc_ptr callee_wsabuf,
-                           tarpc_flowspec *sending,
-                           tarpc_flowspec *receiving,
-                           rpc_ptr provider_specific_buf,
-                           size_t provider_specific_buf_len);
-#endif
+                           rpc_qos *sqos);
 
 /**
  * Asynchronously retrieve host information by given address.

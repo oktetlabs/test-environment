@@ -877,7 +877,7 @@ struct tarpc_free_wsabuf_out {
     struct tarpc_out_arg common;
 };
 
-/* WSAConnect */
+/* Windows FLOWSPEC structure */
 struct tarpc_flowspec {
     uint32_t TokenRate;
     uint32_t TokenBucketSize;
@@ -889,6 +889,14 @@ struct tarpc_flowspec {
     uint32_t MinimumPolicedSize;
 };
 
+/* Windows QOS structure */
+struct tarpc_qos {
+    struct tarpc_flowspec  sending;
+    struct tarpc_flowspec  receiving;
+    uint8_t                provider_specific_buf<>;
+};
+
+/* WSAConnect */
 struct tarpc_wsa_connect_in {
     struct tarpc_in_arg    common;
     tarpc_int              s;
@@ -898,11 +906,8 @@ struct tarpc_wsa_connect_in {
                                                in TA address space */
     tarpc_ptr              callee_wsabuf; /**< A pointer to WSABUF structure
                                                in TA address space */
-    struct tarpc_flowspec  sending<>;
-    struct tarpc_flowspec  receiving<>;
-    tarpc_ptr              provider_specific_buf;  /**< Buffer in the TA
-                                                        address space */
-    tarpc_ssize_t          provider_specific_buf_len;
+    struct tarpc_qos       sqos;
+    tarpc_bool             sqos_is_null;
 };
 
 struct tarpc_wsa_connect_out {
