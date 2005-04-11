@@ -59,13 +59,13 @@
 #include "rcf_ch_api.h"
 #include "rcf_pch_internal.h"
 
+#define OID_ETC "/..."
 
 /** Structure for temporary storing of instances/objects identifiers */
 typedef struct olist {
     struct olist *next;             /**< Pointer to the next element */
     char          oid[RCF_MAX_ID];  /**< Element OID */
 } olist;
-
 
 /** Postponed configuration commit operation */
 typedef struct rcf_pch_commit_op_t {
@@ -80,6 +80,18 @@ static TAILQ_HEAD(rcf_pch_commit_head_t, rcf_pch_commit_op_t)   commits;
 static te_bool      is_group = FALSE;       /**< Is group started? */
 static unsigned int gid;                    /**< Group identifier */
 
+/** Free all entries of the list */
+static inline void
+free_list(olist *list)
+{
+    olist *tmp;
+    
+    for (; list != NULL; list = tmp)
+    {
+        tmp = list->next;
+        free(list);
+    } 
+}
 
 /**
  * Read sub-identifier and instance name from the object or object instance
@@ -107,10 +119,11 @@ parse_one_level(char *oid, char **next_level, char **sub_id,
 
     if (inst_name == NULL)
     {
-        if (strcmp(oid, "*") == 0)
+        if (strcmp(oid, "*") == 0 || strcmp(oid, OID_ETC) == 0)
         {
-            if ((*sub_id = strdup("*")) == NULL)
+            if ((*sub_id = strdup(oid)) == NULL)
                 return ENOMEM;
+                
             *next_level = oid;
             return 0;
         }
@@ -136,11 +149,12 @@ parse_one_level(char *oid, char **next_level, char **sub_id,
         return 0;
     }
 
-    if (strcmp(oid, "*:*") == 0)
+    if (strcmp(oid, "*:*") == 0 || strcmp(oid, OID_ETC) == 0)
     {
-        if ((*sub_id = strdup("*")) == NULL)
+        if ((*sub_id = strdup(oid)) == NULL)
             return ENOMEM;
-        if ((*inst_name = strdup("*")) == NULL)
+            
+        if ((*inst_name = strdup(oid)) == NULL)
         {
             free(sub_id);
             return ENOMEM;
@@ -225,7 +239,9 @@ create_wildcard_inst_list(rcf_pch_cfg_object *obj, char *parsed, char *oid,
     char *sub_id = NULL;
     char *inst_name = NULL;
     char *next_level;
-
+    
+    te_bool all;
+    
 /**
  * Return from function with resources deallocation.
  *
@@ -234,16 +250,7 @@ create_wildcard_inst_list(rcf_pch_cfg_object *obj, char *parsed, char *oid,
 #define RET(_rc) \
     do {                                \
         if ((_rc) != 0)                 \
-        {                               \
-            olist *tmp;                 \
-                                        \
-            while (*list != NULL)       \
-            {                           \
-                tmp = (*list)->next;    \
-                free(*list);            \
-                *list = tmp;            \
-            }                           \
-        }                               \
+            free_list(*list);           \
         free(sub_id);                   \
         free(inst_name);                \
         return (_rc);                   \
@@ -251,19 +258,21 @@ create_wildcard_inst_list(rcf_pch_cfg_object *obj, char *parsed, char *oid,
 
     if (*oid == 0 || obj == NULL)
         return 0;
-
+        
     if (parse_one_level(oid, &next_level, &sub_id, &inst_name) != 0)
         RET(EINVAL);
-
+        
+    all = strcmp(full_oid, "*:*") == 0 || strcmp(sub_id, OID_ETC) == 0;
+    
     for ( ; obj != NULL; obj = obj->brother)
     {
         char *tmp_list = NULL;
         char *tmp_inst_name;
         char *tmp;
 
-        if (*sub_id != '*' && strcmp(obj->sub_id, sub_id) != 0)
+        if (!all && *sub_id != '*' && strcmp(obj->sub_id, sub_id) != 0)
             continue;
-
+            
         if (obj->list == NULL)
         {
             if ((tmp_list = strdup(" ")) == NULL)
@@ -306,7 +315,7 @@ create_wildcard_inst_list(rcf_pch_cfg_object *obj, char *parsed, char *oid,
             int   len;
             int   rc = 0;
             char *tmp_parsed;
-
+            
             if ((tmp = strchr(tmp_inst_name, ' ')) == NULL)
             {
                 tmp = tmp_inst_name + strlen(tmp_inst_name);
@@ -314,8 +323,11 @@ create_wildcard_inst_list(rcf_pch_cfg_object *obj, char *parsed, char *oid,
             else
                 *tmp++ = 0;
 
-            if (*inst_name != '*' && strcmp(inst_name, tmp_inst_name) != 0)
+            if (!all && *inst_name != '*' && 
+                strcmp(inst_name, tmp_inst_name) != 0)
+            {
                 continue;
+            }
 
             len = strlen(obj->sub_id) + strlen(tmp_inst_name) + 3;
             tmp_parsed = (char *)
@@ -324,7 +336,7 @@ create_wildcard_inst_list(rcf_pch_cfg_object *obj, char *parsed, char *oid,
             sprintf(tmp_parsed, "%s/%s:%s", parsed == NULL ? "" : parsed,
                     obj->sub_id, tmp_inst_name);
 
-            if (*next_level == 0 || strcmp(full_oid, "*:*") == 0)
+            if (*next_level == 0 || all)
             {
                 olist *new_entry;
 
@@ -341,7 +353,6 @@ create_wildcard_inst_list(rcf_pch_cfg_object *obj, char *parsed, char *oid,
                 *list = new_entry;
             }
 
-
             if (obj->son != NULL && *next_level != 0)
                 rc = create_wildcard_inst_list(obj->son, tmp_parsed,
                                                next_level, full_oid, list);
@@ -353,18 +364,18 @@ create_wildcard_inst_list(rcf_pch_cfg_object *obj, char *parsed, char *oid,
                 RET(rc);
             }
 
-            if (*inst_name != '*')
+            if (*inst_name != '*' && !all)
                 break;
         }
         free(tmp_list);
 
-        if (*sub_id != '*')
+        if (*sub_id != '*' && !all)
             break;
     }
 
     free(sub_id);
     free(inst_name);
-
+    
     return 0;
 
 #undef RET
@@ -392,6 +403,8 @@ create_wildcard_obj_list(rcf_pch_cfg_object *obj, char *parsed, char *oid,
 {
     char *next_level;
     char *sub_id = NULL;
+    
+    te_bool all;
 
 /**
  * Return from function with resources deallocation.
@@ -401,16 +414,7 @@ create_wildcard_obj_list(rcf_pch_cfg_object *obj, char *parsed, char *oid,
 #define RET(_rc) \
     do {                                \
         if ((_rc) != 0)                 \
-        {                               \
-            olist *tmp;                 \
-                                        \
-            while (*list != NULL)       \
-            {                           \
-                tmp = (*list)->next;    \
-                free(*list);            \
-                *list = tmp;            \
-            }                           \
-        }                               \
+            free_list(*list);           \
         free(sub_id);                   \
         return (_rc);                   \
     } while (FALSE)
@@ -421,6 +425,8 @@ create_wildcard_obj_list(rcf_pch_cfg_object *obj, char *parsed, char *oid,
 
     if (parse_one_level(oid, &next_level, &sub_id, NULL) != 0)
         RET(EINVAL);
+      
+    all = *full_oid =='*' || strcmp(sub_id, OID_ETC) == 0;
 
     for ( ; obj != NULL; obj = obj->brother)
     {
@@ -428,7 +434,7 @@ create_wildcard_obj_list(rcf_pch_cfg_object *obj, char *parsed, char *oid,
         int   rc = 0;
         char *tmp_parsed;
 
-        if (*sub_id != '*' && strcmp(obj->sub_id, sub_id) != 0)
+        if (!all && strcmp(obj->sub_id, sub_id) != 0)
             continue;
 
         len = strlen(obj->sub_id) + 2;
@@ -437,7 +443,7 @@ create_wildcard_obj_list(rcf_pch_cfg_object *obj, char *parsed, char *oid,
         sprintf(tmp_parsed, "%s/%s",
                 parsed == NULL ? "" : parsed, obj->sub_id);
 
-        if (*next_level == 0 || *full_oid == '*')
+        if (*next_level == 0 || all)
         {
             olist *new_entry;
 
@@ -460,7 +466,7 @@ create_wildcard_obj_list(rcf_pch_cfg_object *obj, char *parsed, char *oid,
         if (rc != 0)
             RET(rc);
 
-        if (*sub_id != '*')
+        if (*sub_id != '*' && !all)
             break;
     }
 
@@ -505,16 +511,10 @@ convert_to_answer(olist *list, char **answer)
 
     if ((*answer = (char *)malloc(len)) == NULL)
     {
-        /* Free list */
-        while (list != NULL)
-        {
-            tmp = list->next;
-            free(list);
-            list = tmp;
-        }
+        free_list(list);
         return ENOMEM;
     }
-
+    
     ptr = *answer;
     while (list != NULL)
     {
@@ -546,95 +546,33 @@ process_wildcard(struct rcf_comm_connection *conn, char *cbuf,
                  size_t buflen, size_t answer_plen, const char *oid)
 {
     int    rc;
+    char   copy[RCF_MAX_ID];
     char  *tmp;
     olist *list = NULL;
 
-
     ENTRY("OID='%s'", oid);
     VERB("Process wildcard request");
-
-    if ((tmp = strdup(oid)) == NULL)
-        SEND_ANSWER("%d", TE_RC(TE_RCF_PCH, ENOMEM));
-    if (strstr(oid, "...") != NULL)
-    {
-        VERB("Create list of instances due to the '...' request");
-        if (strchr(oid, ':') == NULL)
-        {
-            VERB("Feature is not supported yet");
-            rc = EOPNOTSUPP;
-        }
-        else
-        {
-            char   *obj_id = strdup(oid);
-            char   *level_all = "/*:*";
-            char   *c = NULL;
-            olist  *tmp_list = NULL;
-            olist  *level_list = NULL;
-
-            if (obj_id == NULL)
-            {
-                SEND_ANSWER("%d", TE_RC(TE_RCF_PCH, ENOMEM));
-            }
-            c = strrchr(obj_id, '/');
-            if (c != NULL)
-                *c = 0;
-
-            do {
-                char *tmp_id;
-                
-                free(tmp);
-                tmp_id = realloc(obj_id, strlen(obj_id) + sizeof("/*:*"));
-                if (tmp_id == NULL)
-                    SEND_ANSWER("%d", TE_RC(TE_RCF_PCH, ENOMEM));
-                
-                obj_id = tmp_id;
-
-                obj_id = strcat(tmp_id, level_all);
-                if ((tmp = strdup(obj_id)) == NULL)
-                {
-                    SEND_ANSWER("%d", TE_RC(TE_RCF_PCH, ENOMEM));
-                }
-                while (level_list != NULL)
-                {
-                    tmp_list = level_list;
-                    level_list = level_list->next;
-                }
-
-                level_list = NULL;
-                rc = create_wildcard_inst_list(rcf_ch_conf_root(), NULL, 
-                                               tmp, obj_id, &level_list);
-                if (tmp_list != NULL)
-                    tmp_list->next = level_list;
-                else
-                    list = level_list;
-                
-            } while (rc == 0 && level_list != NULL);
-
-            free(obj_id);
-        }
-    } 
-    else if (strchr(oid, ':') == NULL)
+    
+    strcpy(copy, oid);
+    if (strchr(oid, ':') == NULL)
     {
         VERB("Create list of objects by wildcard");
         rc = create_wildcard_obj_list(rcf_ch_conf_root(),
-                                      NULL, tmp, oid, &list);
+                                      NULL, copy, oid, &list);
     }
     else
     {
         VERB("Create list of instances by wildcard");
         
         rc = create_wildcard_inst_list(rcf_ch_conf_root(),
-                                       NULL, tmp, oid, &list);
+                                       NULL, copy, oid, &list);
     }
 
-    free(tmp);
     VERB("Wildcard processing result rc=%d list=0x%08x", rc, list);
 
     if ((rc != 0 )|| ((rc = convert_to_answer(list, &tmp)) != 0))
-    {
         SEND_ANSWER("%d", TE_RC(TE_RCF_PCH, rc));
-    }
-
+        
     if ((size_t)snprintf(cbuf + answer_plen, buflen - answer_plen,
                          "0 attach %u", strlen(tmp) + 1) >=
             (buflen - answer_plen))
@@ -655,10 +593,8 @@ process_wildcard(struct rcf_comm_connection *conn, char *cbuf,
                              strlen(tmp) + 1, rc);
     }
     rcf_ch_unlock();
-
+    
     free(tmp);
-
-    EXIT("%d", rc);
 
     return rc;
 }
@@ -835,7 +771,6 @@ rcf_pch_configure(struct rcf_comm_connection *conn,
     unsigned int        i;
     int                 rc;
 
-
     UNUSED(ba);
     UNUSED(cmdlen);
 
@@ -846,7 +781,7 @@ rcf_pch_configure(struct rcf_comm_connection *conn,
     if (oid != 0)
     {
         /* Now parse the oid and look for the object */
-        if ((strchr(oid, '*') != NULL) || (strstr(oid, "...") != NULL))
+        if ((strchr(oid, '*') != NULL) || (strstr(oid, OID_ETC) != NULL))
         {
             if (op != RCF_CH_CFG_GET)
             {
