@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schema version="$Id: $" xml:lang="en" 
+        xmlns="http://www.w3.org/2001/XMLSchema">
+  
+    <documentation>
+        Test Environment
+        XML schema for RCF XML RPC
+  
+        Copyright (C) 2005 Test Environment authors (see file
+        AUTHORS in the root directory of the distribution).
+  
+        Test Environment is free software; you can redistribute
+        it and/or modify it under the terms of the GNU General
+        Public License as published by the Free Software
+        Foundation; either version 2 of the License, or (at your
+        option) any later version.
+  
+        Test Environment is distributed in the hope that it will
+        be useful, but WITHOUT ANY WARRANTY; without even the
+        implied warranty of MERCHANTABILITY or FITNESS FOR A
+        PARTICULAR PURPOSE. See the GNU General Public License
+        for more details.
+  
+        You should have received a copy of the GNU General
+        Public License along with this program; if not, write
+        to the Free Software Foundation, Inc., 59 Temple Place,
+        Suite 330, Boston, MA  02111-1307  USA
+
+        Author: Elena Vengerova &lt;Elena.Vengerova@oktetlabs.ru&gt;
+    </documentation>
+
+    <element name="call">
+        <annotation>
+            <documentation>
+                RPC call request.
+            </documentation>
+        </annotation>
+
+        <complexType>
+            <attribute name="name" type="string" use="require">
+                <annotation>
+                    <documentation>
+                        Name of the routine to be called.
+                    </documentation>
+                </annotation>
+            </attribute>
+
+            <sequence>
+                <element ref="param" minOccurs="0" maxOccurs="unbounded"/>
+            </sequence>
+        </complexType>
+    </element>
+
+    <element name="result">
+        <annotation>
+            <documentation>
+                RPC call request.
+            </documentation>
+        </annotation>
+
+        <complexType>
+            <attribute ="rc" use="require">
+                <annotation>
+                    <documentation>
+                        Return code.
+                    </documentation>
+                </annotation>
+                <simpleType>
+                  <restriction base="token">
+                    <enumeration value="OK"/>
+                    <enumeration value="FAIL"/>
+                  </restriction>
+                </simpleType>
+            </attribute>
+            <attribute ="reason" type="string">
+                <annotation>
+                    <documentation>
+                        Error description.
+                    </documentation>
+                </annotation>
+            </attribute>
+
+            <sequence>
+                <element ref="param" minOccurs="0" maxOccurs="unbounded"/>
+            </sequence>
+        </complexType>
+    </element>
+
+    <element name="param">
+        <annotation>
+            <documentation>
+                In/out parameter value of element of the structure or array.
+            </documentation>
+        </annotation>
+
+        <complexType>
+            <attribute name="name" type="string">
+                <annotation>
+                    <documentation>
+                        Parameter/field name.
+                    </documentation>
+                </annotation>
+            </attribute>
+            
+            <sequence>
+                <choice>
+                    <element name="int8_t" type="integer"/>
+                    <element name="uint8_t" type="integer"/>
+                    <element name="int16_t" type="integer"/>
+                    <element name="uint16_t" type="integer"/>
+                    <element name="int32_t" type="integer"/>
+                    <element name="uint32_t" type="integer"/>
+                    <element name="int64_t" type="integer"/>
+                    <element name="uint64_t" type="integer"/>
+                    <element name="string" type="string"/>
+                    <element name="hex" type="string"/>
+                    <element ref="struct"/>
+                    <element ref="array"/>
+                </choice>
+            </sequence>
+        </complexType>
+    </element>
+
+    <element name="struct">
+        <complexType>
+            <annotation>
+                <documentation>
+                    Structure parameter.
+                </documentation>
+            </annotation>
+            
+            <sequence>
+                <element ref="param" minOccurs="1" maxOccurs="unbounded"/>
+            </sequence>
+        </complexType>
+    </element>
+
+    <element name="array">
+        <complexType>
+            <annotation>
+                <documentation>
+                    Array parameter.
+                </documentation>
+            </annotation>
+            
+            <sequence>
+                <element ref="param" minOccurs="0" maxOccurs="unbounded"/>
+            </sequence>
+        </complexType>
+    </element>
+
+</schema>
