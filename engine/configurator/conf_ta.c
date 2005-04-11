@@ -249,6 +249,49 @@ remove_excessive(cfg_instance *inst, char *list)
         cfg_db_del(inst->handle);
 }
 
+/** Sorted list element */
+typedef struct olist {
+    struct olist *next;
+    char          oid[RCF_MAX_ID];
+} olist;    
+
+/** Insert the entry in lexico-graphical order */
+static int
+insert_entry(char *oid, olist **list)
+{
+    olist *cur, *prev, *tmp;
+    
+    if ((tmp = malloc(sizeof(olist))) == NULL)
+        return ENOMEM;
+        
+    strcpy(tmp->oid, oid);
+        
+    for (prev = NULL, cur = *list; 
+         cur != NULL && strcmp(cur->oid, oid) < 0; 
+         prev = cur, cur = cur->next);
+         
+    tmp->next = cur;
+    if (!prev)
+        *list = tmp;
+    else
+        prev->next = tmp;
+        
+    return 0;
+}
+
+/** Free all entries of the list */
+static inline void
+free_list(olist *list)
+{
+    olist *tmp;
+    
+    for (; list != NULL; list = tmp)
+    {
+        tmp = list->next;
+        free(list);
+    } 
+}
+
 /**
  * Synchronize tree of object instances on the TA.
  *
@@ -264,10 +307,9 @@ sync_ta_subtree(char *ta, char *oid)
     char  *next;
     char  *limit;
     char  *wildcard_oid;
-    char **sorted;
-    int    n = 0;
-    int    i;
     int    rc;
+    
+    olist *list = NULL, *entry;
 
     cfg_handle    handle;
 
@@ -318,12 +360,13 @@ sync_ta_subtree(char *ta, char *oid)
         }
     }
     free(wildcard_oid);
-
+    
     /*
      * At first, remove all instances of the subtree, which do not present
      * in the list.
      */
     rc = cfg_db_find(oid, &handle);
+
     if (rc != 0 && TE_RC_GET_ERROR(rc) != ENOENT)
     {
         rcf_ta_cfg_group(ta, 0, FALSE);
@@ -343,36 +386,22 @@ sync_ta_subtree(char *ta, char *oid)
             *next++ = 0;
         else
             next = limit;
-        if (strncmp(tmp, oid, strlen(oid)) == 0)
-            n++;
+            
+        if ((rc = insert_entry(tmp, &list)) != 0)
+        {
+            free_list(list);
+            return rc;
+        }
     }
 
-    if ((sorted = (char **)calloc(sizeof(char **) * n, 1)) == NULL)
+    for (entry = list; entry != NULL; entry = entry->next)
     {
-        ERROR("Memory allocation failure");
-        rcf_ta_cfg_group(ta, 0, FALSE);
-        return ENOMEM;
+        if ((rc = sync_ta_instance(ta, entry->oid)) != 0)
+            break; 
     }
-
-    /* Put matching OIDs to the array */
-    
-    for (n = 0, tmp = cfg_get_buf; tmp < limit; tmp += strlen(tmp) + 1)
-        if (strcmp_start(oid, tmp) == 0)
-            sorted[n++] = strdup(tmp);
-    /*
-     * Attention! Temporary solution: assuming that RCF PCH returns
-     * OIDs in the order "closest to the root first".
-     */
-    for (i = 0; i < n; i++)
-    {
-        if ((rc = sync_ta_instance(ta, sorted[i])) != 0)
-            break;
-    }
-
-    for (i = 0; i < n; i++)
-        free(sorted[i]);
-    free(sorted);
     rcf_ta_cfg_group(ta, 0, FALSE);
+    
+    free_list(list);
 
     return rc;
 }
