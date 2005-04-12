@@ -1,4 +1,6 @@
 
+CFLAGS=-D_RPC_THREAD_SAFE_
+
 noinst_HEADERS=proto.h rpc_util.h rpc_parse.h rpc_scan.h
 
 bin_PROGRAMS = rpcgen
