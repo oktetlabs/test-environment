@@ -32,6 +32,47 @@
 #include "asn_usr.h"
 #include "ndn.h"
 
+typedef enum {
+    NDN_TAG_IP4_VERSION,
+    NDN_TAG_IP4_HLEN,
+    NDN_TAG_IP4_TOS,
+    NDN_TAG_IP4_LEN,
+    NDN_TAG_IP4_IDENT,
+    NDN_TAG_IP4_FLAGS,
+    NDN_TAG_IP4_OFFSET,
+    NDN_TAG_IP4_TTL,
+    NDN_TAG_IP4_PROTOCOL,
+    NDN_TAG_IP4_H_CHECKSUM,
+    NDN_TAG_IP4_SRC_ADDR,
+    NDN_TAG_IP4_DST_ADDR,
+    NDN_TAG_IP4_LOCAL_ADDR,
+    NDN_TAG_IP4_REMOTE_ADDR,
+    NDN_TAG_IP4_MTU,
+} ndn_ip4_tags_t;
+
+
+typedef enum {
+    NDN_TAG_TCP_SRC_PORT,
+    NDN_TAG_TCP_DST_PORT,
+    NDN_TAG_TCP_SEQN,
+    NDN_TAG_TCP_ACKN,
+    NDN_TAG_TCP_HLEN,
+    NDN_TAG_TCP_FLAGS,
+    NDN_TAG_TCP_WINDOW,
+    NDN_TAG_TCP_CHECKSUM,
+    NDN_TAG_TCP_URG,
+    NDN_TAG_TCP_LOCAL_PORT,
+    NDN_TAG_TCP_REMOTE_PORT,
+} ndn_tcp_tags_t;
+
+typedef enum {
+    NDN_TAG_UDP_SRC_PORT,
+    NDN_TAG_UDP_DST_PORT,
+    NDN_TAG_UDP_LENGTH,
+    NDN_TAG_UDP_CHECKSUM,
+} ndn_udp_tags_t;
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif
