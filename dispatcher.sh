@@ -430,7 +430,6 @@ mkdir -p ${TE_LOG_DIR}
 export TE_LOG_RAW=${TE_LOG_DIR}/tmp_raw_log
 
 # Export TE_INSTALL
-TE_PATH=
 if test -z "$TE_INSTALL" ; then
     if test -e $DISPATCHER_DIR/configure.ac ; then
         if test -n "${TE_BUILD}" ; then
