@@ -679,13 +679,21 @@ asn_impl_write_value_field(asn_value_p container,
         break;
 
     case CHAR_STRING:
+
+        free(container->data.other);
+        if (d_len == 0)
         {
-            char *val = asn_strdup(data);
-            if (container->data.other)
-                free (container->data.other);
-            container->data.other = val;
-            container->len = strlen(val) + 1; /* quantity of ALL used octets */
-            container->txt_len = container->len + 1;
+            container->data.other = NULL;
+            container->len = 0;
+            container->txt_len = 2;
+        }
+        else
+        { 
+            char *str = container->data.other = malloc(d_len + 1);
+            strncpy(str, data, d_len);
+            str[d_len] = '\0';
+            container->len = d_len + 1; /* quantity of ALL used octets */
+            container->txt_len = strlen(container->data.other) + 2;
         }
         break;
 
