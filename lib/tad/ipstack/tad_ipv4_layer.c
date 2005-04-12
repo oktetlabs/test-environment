@@ -156,22 +156,48 @@ ip4_gen_bin_cb(int csap_id, int layer, const asn_value *tmpl_pdu,
                const tad_tmpl_arg_t *args, size_t arg_num, 
                const csap_pkts_p  up_payload, csap_pkts_p pkts)
 {
-    csap_p csap_descr;
+    csap_p  csap_descr;
+    int     rc;
+
+    const asn_value *ip4_csap_pdu;
+    const asn_value *ip4_tmpl_pdu;
+
 
     if ((csap_descr = csap_find(csap_id)) == NULL)
         return TE_RC(TE_TAD_CSAP, EINVAL);
 
+    if (csap_descr->type == TAD_CSAP_DATA)
+        return 0;
+
+    if (asn_get_syntax(tmpl_pdu, "") == CHOICE)
+    {
+        if ((rc = asn_get_choice_value(tmpl_pdu, &ip4_tmpl_pdu, NULL, NULL))
+             != 0)
+            return rc;
+    }
+    else
+        ip4_tmpl_pdu = tmpl_pdu; 
+
+
+
+    ip4_csap_pdu = csap_descr->layers[layer].csap_layer_pdu; 
+    if (asn_get_syntax(ip4_csap_pdu, "") == CHOICE)
+    {
+        if ((rc = asn_get_choice_value(ip4_csap_pdu, &ip4_csap_pdu,
+                                       NULL, NULL)) != 0)
+            return rc;
+    }
+    else
+        ip4_tmpl_pdu = tmpl_pdu;
+
+    
     UNUSED(up_payload);
-    UNUSED(layer); 
-    UNUSED(tmpl_pdu); 
     UNUSED(args); 
     UNUSED(arg_num); 
     UNUSED(pkts); 
 
-    if (csap_descr->type == TAD_CSAP_DATA)
-        return 0;
 
-    return TE_RC(TE_TAD_CSAP, ETENOSUPP);
+    return 0;
 }
 
 /**
@@ -189,9 +215,10 @@ ip4_gen_bin_cb(int csap_id, int layer, const asn_value *tmpl_pdu,
  *
  * @return zero on success or error code.
  */
-int ip4_match_bin_cb (int csap_id, int layer, const asn_value *pattern_pdu,
-                       const csap_pkts *  pkt, csap_pkts * payload, 
-                       asn_value_p  parsed_packet )
+int
+ip4_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
+                 const csap_pkts *  pkt, csap_pkts * payload, 
+                 asn_value_p  parsed_packet )
 { 
     csap_p                    csap_descr;
     ip4_csap_specific_data_t *spec_data;

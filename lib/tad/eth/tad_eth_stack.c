@@ -256,7 +256,7 @@ eth_prepare_send(csap_p csap_descr)
  *
  * @param name      symbolic name of interface to find (e.g. eth0, eth1)
  * @param iface     pointer to interface structure to be filled
- *                  with found parameters
+ *                  with found parameters (OUT)
  *
  * @return ETH_IFACE_OK on success or one of the error codes
  *
@@ -278,6 +278,8 @@ eth_find_interface(char *name, eth_csap_interface_p iface)
     {
        return EINVAL;
     }
+
+    VERB("%s('%s') start", __FUNCTION__, name);
 
     if ((cfg_socket = socket(AF_INET, SOCK_DGRAM, 0)) == -1)
         return errno;
