@@ -449,6 +449,22 @@ extern int rpc_wsa_connect(rcf_rpc_server *rpcs, int s,
                            rpc_ptr caller_wsabuf, rpc_ptr callee_wsabuf,
                            rpc_qos *sqos);
 
+/* WSAIoctl */
+extern int rpc_wsa_ioctl(rcf_rpc_server *rpcs, int s,
+                         rpc_wsa_ioctl_code control_code,
+                         char *inbuf, unsigned int inbuf_len,
+                         char *outbuf, unsigned int outbuf_len,
+                         unsigned int *bytes_returned,
+                         rpc_overlapped overlapped, te_bool callback);
+
+/* rpc_get_wsa_ioctl_overlapped_result() */
+extern int rpc_get_wsa_ioctl_overlapped_result(rcf_rpc_server *rpcs,
+                                    int s, rpc_overlapped overlapped,
+                                    int *bytes, te_bool wait,
+                                    rpc_send_recv_flags *flags,
+                                    char *buf, int buflen,
+                                    rpc_wsa_ioctl_code control_code);
+
 /**
  * Asynchronously retrieve host information by given address.
  *  See @b WSAAsyncGetHostByAddr 

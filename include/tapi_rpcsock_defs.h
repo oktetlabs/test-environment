@@ -959,6 +959,112 @@ servicetype_flags_h2rpc(unsigned int flags)
 
 
 /**
+ * TA-independent control codes for Windows WSAIoctl().
+ */
+typedef enum rpc_wsa_ioctl_code {
+    RPC_WSA_FIONBIO = 1,
+    RPC_WSA_FIONREAD,
+    RPC_WSA_SIOCATMARK,
+    RPC_WSA_SIO_ADDRESS_LIST_CHANGE,
+    RPC_WSA_SIO_ADDRESS_LIST_QUERY,
+    RPC_WSA_SIO_ASSOCIATE_HANDLE,
+    RPC_WSA_SIO_CHK_QOS,
+    RPC_WSA_SIO_ENABLE_CIRCULAR_QUEUEING,
+    RPC_WSA_SIO_FIND_ROUTE,
+    RPC_WSA_SIO_FLUSH,
+    RPC_WSA_SIO_GET_BROADCAST_ADDRESS,
+    RPC_WSA_SIO_GET_EXTENSION_FUNCTION_POINTER,
+    RPC_WSA_SIO_GET_GROUP_QOS,
+    RPC_WSA_SIO_GET_QOS,
+    RPC_WSA_SIO_KEEPALIVE_VALS,
+    RPC_WSA_SIO_MULTIPOINT_LOOPBACK,
+    RPC_WSA_SIO_MULTICAST_SCOPE,
+    RPC_WSA_SIO_RCVALL,
+    RPC_WSA_SIO_RCVALL_IGMPMCAST,
+    RPC_WSA_SIO_RCVALL_MCAST,
+    RPC_WSA_SIO_ROUTING_INTERFACE_CHANGE,
+    RPC_WSA_SIO_ROUTING_INTERFACE_QUERY,
+    RPC_WSA_SIO_SET_QOS,
+    RPC_WSA_SIO_TRANSLATE_HANDLE,
+    RPC_WSA_SIO_UDP_CONNRESET
+} rpc_wsa_ioctl_code;
+
+#define RPCWSA2H(name_) \
+    case RPC_WSA_##name_: return name_;
+
+#ifdef SIO_ADDRESS_LIST_CHANGE
+/* Cygwin 1.5.10-3 does not provide us with some required definitions */
+#ifndef SIO_CHK_QOS
+#define    mIOC_IN       0x80000000
+#define    mIOC_OUT      0x40000000
+#define    mIOC_VENDOR   0x04000000
+#define    mCOMPANY      0x18000000
+#define    ioctl_code    0x00000001
+#define SIO_CHK_QOS mIOC_IN | mIOC_OUT | mIOC_VENDOR | mCOMPANY | ioctl_code
+#endif
+#ifndef SIO_RCVALL
+#define SIO_RCVALL            _WSAIOW(IOC_VENDOR,1)
+#endif
+#ifndef SIO_RCVALL_MCAST
+#define SIO_RCVALL_MCAST      _WSAIOW(IOC_VENDOR,2)
+#endif
+#ifndef SIO_RCVALL_IGMPMCAST
+#define SIO_RCVALL_IGMPMCAST  _WSAIOW(IOC_VENDOR,3)
+#endif
+#ifndef SIO_KEEPALIVE_VALS
+#define SIO_KEEPALIVE_VALS    _WSAIOW(IOC_VENDOR,4)
+struct tcp_keepalive {
+    u_long  onoff;
+    u_long  keepalivetime;
+    u_long  keepaliveinterval;
+};
+#endif
+#ifndef  SIO_UDP_CONNRESET
+#define SIO_UDP_CONNRESET     _WSAIOW(IOC_VENDOR,12)
+#endif
+#endif /* SIO_ADDRESS_LIST_CHANGE */
+
+static inline int
+wsa_ioctl_rpc2h(rpc_wsa_ioctl_code code)
+{
+    switch (code)
+    {
+#ifdef SIO_ADDRESS_LIST_CHANGE
+        RPCWSA2H(FIONBIO);
+        RPCWSA2H(FIONREAD);
+        RPCWSA2H(SIOCATMARK);
+        RPCWSA2H(SIO_ADDRESS_LIST_CHANGE);
+        RPCWSA2H(SIO_ADDRESS_LIST_QUERY);
+        RPCWSA2H(SIO_ASSOCIATE_HANDLE);
+        RPCWSA2H(SIO_CHK_QOS);
+        RPCWSA2H(SIO_ENABLE_CIRCULAR_QUEUEING);
+        RPCWSA2H(SIO_FIND_ROUTE);
+        RPCWSA2H(SIO_FLUSH);
+        RPCWSA2H(SIO_GET_BROADCAST_ADDRESS);
+        RPCWSA2H(SIO_GET_EXTENSION_FUNCTION_POINTER);
+        RPCWSA2H(SIO_GET_GROUP_QOS);
+        RPCWSA2H(SIO_GET_QOS);
+        RPCWSA2H(SIO_KEEPALIVE_VALS);
+        RPCWSA2H(SIO_MULTIPOINT_LOOPBACK);
+        RPCWSA2H(SIO_MULTICAST_SCOPE);
+        RPCWSA2H(SIO_RCVALL);
+        RPCWSA2H(SIO_RCVALL_IGMPMCAST);
+        RPCWSA2H(SIO_RCVALL_MCAST);
+        RPCWSA2H(SIO_ROUTING_INTERFACE_CHANGE);
+        RPCWSA2H(SIO_ROUTING_INTERFACE_QUERY);
+        RPCWSA2H(SIO_SET_QOS);
+        RPCWSA2H(SIO_TRANSLATE_HANDLE);
+        RPCWSA2H(SIO_UDP_CONNRESET);
+#endif /* SIO_ADDRESS_LIST_CHANGE */
+        default:
+            return 0;
+    }
+}
+
+#undef RPCWSA2H
+
+
+/**
  * send_recv_flags_rpc2str()
  */
 RPCBITMAP2STR(send_recv_flags, SEND_RECV_FLAGS_MAPPING_LIST)

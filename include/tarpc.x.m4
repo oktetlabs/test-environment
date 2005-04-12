@@ -915,6 +915,80 @@ struct tarpc_wsa_connect_out {
     tarpc_int            retval;
 };
 
+/* Windows GUID structure */
+struct tarpc_guid {
+    uint32_t data1;
+    uint16_t data2;
+    uint16_t data3;
+    uint8_t  data4[8];
+};
+
+/* Windows tcp_keepalive structure */
+struct tarpc_tcp_keepalive {
+    unsigned long onoff;
+    unsigned long keepalivetime;
+    unsigned long keepaliveinterval;
+};
+
+/* WSAIoctl() */
+enum wsa_ioctl_type {
+    WSA_IOCTL_VOID = 1,      /* no data */
+    WSA_IOCTL_INT,
+    WSA_IOCTL_SA,            /* socket address */
+    WSA_IOCTL_SAA,           /* socket addresses array */
+    WSA_IOCTL_GUID,
+    WSA_IOCTL_TCP_KEEPALIVE,
+    WSA_IOCTL_QOS,
+    WSA_IOCTL_PTR            /* a pointer valid in the TA address spase */
+};
+
+union wsa_ioctl_request switch (wsa_ioctl_type type) {
+    case WSA_IOCTL_INT:            tarpc_int              req_int;
+    case WSA_IOCTL_SA:             tarpc_sa               req_sa;
+    case WSA_IOCTL_SAA:            tarpc_sa               req_saa<>;
+    case WSA_IOCTL_GUID:           tarpc_guid             req_guid;
+    case WSA_IOCTL_TCP_KEEPALIVE:  tarpc_tcp_keepalive    req_tka;
+    case WSA_IOCTL_QOS:            tarpc_qos              req_qos;
+    case WSA_IOCTL_PTR:            tarpc_ptr              req_ptr;
+};
+
+struct tarpc_wsa_ioctl_in {
+    struct tarpc_in_arg common;
+    tarpc_int           s;
+    tarpc_int           code;
+    wsa_ioctl_request   req;
+    tarpc_size_t        inbuf_len;
+    tarpc_size_t        outbuf_len;
+    tarpc_overlapped    overlapped;
+    tarpc_bool          callback;
+};
+
+struct tarpc_wsa_ioctl_out {
+    struct tarpc_out_arg common;
+    tarpc_int            retval;
+    wsa_ioctl_request    result;
+    tarpc_uint           bytes_returned;
+};
+
+/* rpc_get_wsa_ioctl_overlapped_result() */
+struct tarpc_get_wsa_ioctl_overlapped_result_in {
+    struct tarpc_in_arg  common;
+    tarpc_int            s;              /**< Socket    */
+    tarpc_overlapped     overlapped;     /**< WSAOVERLAPPED structure */
+    tarpc_int            wait;           /**< Wait flag */
+    tarpc_int            bytes<>;        /**< Transferred bytes location */
+    tarpc_int            flags<>;        /**< Flags location */
+    tarpc_int            code;           /**< IOCTL control code */
+};    
+
+struct tarpc_get_wsa_ioctl_overlapped_result_out {
+    struct tarpc_out_arg  common;
+    tarpc_int             retval;
+    tarpc_int             bytes<>;    /**< Transferred bytes */
+    tarpc_int             flags<>;    /**< Flags */
+    wsa_ioctl_request     result;
+};    
+
 /* WSAAsyncGetHostByAddr */
 struct tarpc_wsa_async_get_host_by_addr_in {
     struct tarpc_in_arg  common;
@@ -2485,6 +2559,8 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(alloc_wsabuf)
         RPC_DEF(free_wsabuf)
         RPC_DEF(wsa_connect)
+        RPC_DEF(wsa_ioctl)
+        RPC_DEF(get_wsa_ioctl_overlapped_result)
 
         RPC_DEF(create_window)
         RPC_DEF(destroy_window)

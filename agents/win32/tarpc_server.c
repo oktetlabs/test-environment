@@ -3929,7 +3929,7 @@ TARPC_FUNC(free_wsabuf, {},
 /*
  * Copy the data from tarpc_flowspec to FLOWSPEC structure.
  */
-static void tarpc_flowspec_to_flowspec(FLOWSPEC *fs, tarpc_flowspec *tfs)
+static void flowspec_rpc2h(FLOWSPEC *fs, tarpc_flowspec *tfs)
 {
     fs->TokenRate = tfs->TokenRate;
     fs->TokenBucketSize = tfs->TokenBucketSize;
@@ -3942,7 +3942,10 @@ static void tarpc_flowspec_to_flowspec(FLOWSPEC *fs, tarpc_flowspec *tfs)
     fs->MinimumPolicedSize = tfs->MinimumPolicedSize;
 }
 
-static void flowspec_to_tarpc_flowspec(FLOWSPEC *fs, tarpc_flowspec *tfs)
+/*
+ * Copy the data from FLOWSPEC to tarpc_flowspec structure.
+ */
+static void flowspec_h2rpc(FLOWSPEC *fs, tarpc_flowspec *tfs)
 {
     tfs->TokenRate = fs->TokenRate;
     tfs->TokenBucketSize = fs->TokenBucketSize;
@@ -3969,11 +3972,11 @@ TARPC_FUNC(wsa_connect, {},
         psqos = &sqos;
         memset(&sqos, 0, sizeof(sqos));
     
-        tarpc_flowspec_to_flowspec(&sqos.SendingFlowspec,
-                                      &in->sqos.sending);
+        flowspec_rpc2h(&sqos.SendingFlowspec,
+                          &in->sqos.sending);
 
-        tarpc_flowspec_to_flowspec(&sqos.ReceivingFlowspec,
-                                      &in->sqos.receiving);
+        flowspec_rpc2h(&sqos.ReceivingFlowspec,
+                          &in->sqos.receiving);
     
         sqos.ProviderSpecific.buf =
             (char*)in->sqos.provider_specific_buf.provider_specific_buf_val;
@@ -3985,6 +3988,260 @@ TARPC_FUNC(wsa_connect, {},
                                        (LPWSABUF)in->caller_wsabuf,
                                        (LPWSABUF)in->callee_wsabuf,
                                         psqos, NULL));
+}
+)
+
+/**
+ * Convert the TA-dependent result (output) of the WSAIoctl() call into
+ * the wsa_ioctl_request structure representation.
+ */
+static void convert_wsa_ioctl_result(DWORD code, char *buf,
+                                     wsa_ioctl_request *res)
+{
+    if (buf == NULL)
+        return;
+
+    switch (code)
+    {
+        case RPC_WSA_FIONREAD: /* unsigned int */
+        case RPC_WSA_SIOCATMARK: /* BOOL */
+        case RPC_WSA_SIO_CHK_QOS: /* DWORD */
+        case RPC_WSA_SIO_UDP_CONNRESET: /* BOOL */
+        case RPC_WSA_SIO_TRANSLATE_HANDLE: /* HANDLE??? */
+            res->wsa_ioctl_request_u.req_int = *(int*)buf;
+            break;
+
+        case RPC_WSA_SIO_ADDRESS_LIST_QUERY:
+        {
+            SOCKET_ADDRESS_LIST *sal;
+            tarpc_sa            *tsa;
+            int                 i;
+        
+            sal = (SOCKET_ADDRESS_LIST *)buf;
+            tsa = (tarpc_sa *)calloc(sal->iAddressCount, sizeof(tarpc_sa));
+        
+            for (i = 0; i < sal->iAddressCount; i++)
+            {
+                sockaddr_h2rpc(sal->Address[i].lpSockaddr, &tsa[i]);
+            }
+            res->wsa_ioctl_request_u.req_saa.req_saa_val = tsa;
+            res->wsa_ioctl_request_u.req_saa.req_saa_len = i;
+            
+            break;
+        }
+
+        case RPC_WSA_SIO_GET_BROADCAST_ADDRESS:
+        case RPC_WSA_SIO_ROUTING_INTERFACE_QUERY:
+            sockaddr_h2rpc((struct sockaddr *)buf,
+                &res->wsa_ioctl_request_u.req_sa);
+            break;
+
+        case RPC_WSA_SIO_GET_EXTENSION_FUNCTION_POINTER:
+            res->wsa_ioctl_request_u.req_ptr = *(tarpc_ptr*)buf;
+            break;
+
+        case RPC_WSA_SIO_GET_GROUP_QOS:
+        case RPC_WSA_SIO_GET_QOS:
+        {
+            QOS       *qos;
+            tarpc_qos *tqos;
+            
+            qos = (QOS*)buf;
+            tqos = &res->wsa_ioctl_request_u.req_qos;
+
+            flowspec_h2rpc(&qos->SendingFlowspec,
+                                 &tqos->sending);
+            flowspec_h2rpc(&qos->ReceivingFlowspec,
+                                 &tqos->receiving);
+                                             
+            if (qos->ProviderSpecific.len != 0)
+            {
+               tqos->provider_specific_buf.provider_specific_buf_val =
+                   malloc(qos->ProviderSpecific.len);
+               memcpy(tqos->provider_specific_buf.provider_specific_buf_val,
+                   qos->ProviderSpecific.buf, qos->ProviderSpecific.len);
+               tqos->provider_specific_buf.provider_specific_buf_len =
+                   qos->ProviderSpecific.len;
+            }
+            else
+            {
+               tqos->provider_specific_buf.provider_specific_buf_val = NULL;
+               tqos->provider_specific_buf.provider_specific_buf_len = 0;
+            }
+        }
+    }
+}
+
+/*-------------- WSAIoctl -------------------------------*/
+TARPC_FUNC(wsa_ioctl, {},
+{
+    rpc_overlapped           *overlapped = NULL;
+    void                     *inbuf = NULL;
+    void                     *outbuf = NULL;
+    DWORD                    inbuf_len = 0;
+    DWORD                    outbuf_len = 0;
+    struct sockaddr_storage  addr;
+    QOS                      qos;
+    struct tcp_keepalive     tka;
+
+    switch (in->req.type)
+    {
+        case WSA_IOCTL_VOID:
+        case WSA_IOCTL_SAA:
+            break;
+
+        case WSA_IOCTL_INT:
+            inbuf = &in->req.wsa_ioctl_request_u.req_int;
+            inbuf_len = sizeof(tarpc_int);
+            break;
+
+        case WSA_IOCTL_SA:
+            inbuf = sockaddr_rpc2h(
+                    &in->req.wsa_ioctl_request_u.req_sa, &addr);
+            INIT_CHECKED_ARG((char *)inbuf,
+                in->req.wsa_ioctl_request_u.req_sa.sa_data.sa_data_len
+                 + SA_COMMON_LEN, 0);
+            inbuf_len = sizeof(struct sockaddr);
+            break;
+
+        case WSA_IOCTL_GUID:
+            inbuf = &in->req.wsa_ioctl_request_u.req_guid;
+            inbuf_len = sizeof(GUID);
+            break;
+
+        case WSA_IOCTL_TCP_KEEPALIVE:
+        {
+            tarpc_tcp_keepalive *intka;
+
+            intka = &in->req.wsa_ioctl_request_u.req_tka;
+            tka.onoff = intka->onoff;
+            tka.keepalivetime = intka->keepalivetime;
+            tka.keepaliveinterval = intka->keepaliveinterval;
+            inbuf = &tka;
+            inbuf_len = sizeof(tka);
+            break;
+        }
+
+        case WSA_IOCTL_QOS:
+        {
+            tarpc_qos *inqos;
+
+            inqos = &in->req.wsa_ioctl_request_u.req_qos;
+            flowspec_rpc2h(&qos.SendingFlowspec,
+                               &inqos->sending);
+            flowspec_rpc2h(&qos.ReceivingFlowspec,
+                               &inqos->receiving);
+            qos.ProviderSpecific.buf =
+                inqos->provider_specific_buf.provider_specific_buf_val;
+            qos.ProviderSpecific.len =
+                inqos->provider_specific_buf.provider_specific_buf_len;
+            inbuf = &qos;
+            inbuf_len = sizeof(QOS);
+            break;
+        }
+
+        case WSA_IOCTL_PTR:
+            inbuf = (void *)in->req.wsa_ioctl_request_u.req_ptr;
+            inbuf_len = in->inbuf_len;
+            break;
+    }
+
+    outbuf_len = in->outbuf_len;
+
+    if (outbuf_len != 0)
+    {
+        outbuf = calloc(1, outbuf_len);
+        if (outbuf == NULL)
+        {
+            out->common._errno = TE_RC(TE_TA_WIN32, ENOMEM);
+            goto finish;
+        }
+    }
+
+    if (in->overlapped != 0)
+    {
+        overlapped = (rpc_overlapped *)(in->overlapped);
+        rpc_overlapped_free_memory(overlapped);
+
+        if (outbuf_len != 0)
+        {
+            overlapped->buffers = malloc(sizeof(WSABUF));
+            if (overlapped->buffers == NULL)
+            {
+                out->common._errno = TE_RC(TE_TA_WIN32, ENOMEM);
+                goto finish;
+            }
+            overlapped->buffers[0].buf = outbuf;
+            overlapped->buffers[0].len = outbuf_len;
+        }
+    }
+
+    MAKE_CALL(out->retval = WSAIoctl(in->s, wsa_ioctl_rpc2h(in->code),
+                                inbuf,
+                                inbuf_len,
+                                outbuf,
+                                outbuf_len,
+                                &out->bytes_returned,
+                                in->overlapped == 0 ? NULL
+                                  : (LPWSAOVERLAPPED)overlapped,
+                                in->callback ?
+                                  (LPWSAOVERLAPPED_COMPLETION_ROUTINE)
+                                  completion_callback : NULL));
+
+    if (out->retval == 0)
+    {
+        if ((outbuf != NULL) && (out->bytes_returned != 0))
+        {
+            convert_wsa_ioctl_result(in->code, outbuf, &out->result);
+            if ( ! ((overlapped != NULL) &&
+                    (overlapped->buffers != NULL) &&
+                    (overlapped->buffers[0].buf == outbuf)))
+            {
+                free(outbuf);
+            }
+        }
+    }
+    else if ((overlapped != NULL) &&
+            (out->common.win_error != RPC_WSA_IO_PENDING))
+    {
+        rpc_overlapped_free_memory(overlapped);
+    }
+
+    finish:
+    ;
+}
+)
+
+TARPC_FUNC(get_wsa_ioctl_overlapped_result,
+{
+    COPY_ARG(bytes);
+    COPY_ARG(flags);
+},
+{
+    rpc_overlapped *overlapped = (rpc_overlapped *)(in->overlapped);
+
+    UNUSED(list);
+    MAKE_CALL(out->retval = WSAGetOverlappedResult(in->s,
+                                in->overlapped == 0 ?
+                                NULL : (LPWSAOVERLAPPED)overlapped,
+                                out->bytes.bytes_len == 0 ? NULL :
+                                (LPDWORD)(out->bytes.bytes_val),
+                                in->wait,
+                                out->flags.flags_len > 0 ?
+                                (LPDWORD)(out->flags.flags_val) :
+                                NULL));
+
+    if (out->retval)
+    {
+        if (out->flags.flags_len > 0)
+            out->flags.flags_val[0] =
+                send_recv_flags_h2rpc(out->flags.flags_val[0]);
+
+        convert_wsa_ioctl_result(in->code,
+            overlapped->buffers[0].buf, &out->result);
+
+        rpc_overlapped_free_memory(overlapped);
+    }
 }
 )
 
