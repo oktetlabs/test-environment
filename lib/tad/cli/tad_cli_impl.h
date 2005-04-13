@@ -77,11 +77,14 @@
 #include "tad_csap_inst.h"
 #include "tad_csap_support.h"
 #include "tad_utils.h"
+
+
 #include "logger_api.h"
 
 #define CLI_CONN_TYPE_SERIAL        0 /**< serial CLI connection (millicom) */
 #define CLI_CONN_TYPE_TELNET        1 /**< telnet CLI connection */
 #define CLI_CONN_TYPE_SSH           2 /**< ssh CLI connection */
+#define CLI_CONN_TYPE_SHELL         3 /**< shell (/bin/sh) CLI connection */
 
 #define CLI_MAX_PROMPTS             4 /**< Maximum number of allowed prompts */
 
@@ -105,7 +108,7 @@ struct cli_csap_specific_data;
 typedef struct cli_csap_specific_data *cli_csap_specific_data_p;
 typedef struct cli_csap_specific_data
 {
-    FILE  *dbg_file;        /**< file to gather debug data from expect session    */
+    FILE  *dbg_file;    /**< file to gather debug data from expect session    */
     int    io;          /**< file descriptor of CLI session stdin and stdout  */
     FILE  *fp;          /**< file descriptor of CLI session stdin and stdout  */
     pid_t  expect_pid;  /**< Expect process id                                */
@@ -115,14 +118,18 @@ typedef struct cli_csap_specific_data
     int    sync_c2p[2]; /**< Expect process to CSAP pipe filedescriptors      */
 
     int    conn_type;   /**< CLI protocol type                                */
-    char  *program;     /**< Default program to start (millicom, telnet, ssh) */
+    char  *program;     /**< Default program to start (millicom, telnet,
+                             ssh or sh) */
 
     char  *device;      /**< Default device (NULL if not defined)             */
     char  *host;        /**< Default remote host (NULL if not defined)        */
-    unsigned short port;      /**< remote host port                                 */
+    unsigned short port;    /**< remote host port                             */
+
+    char  *shell_args;  /**< Shell CLI session arguments (NULL if not defined)*/
 
     char  *user;        /**< Default user account (NULL if not defined)       */
     char  *password;    /**< Default user password (NULL if not defined)      */
+
 
     int    prompts_status;   /**< available prompts found on init             */
 
