@@ -56,6 +56,18 @@
                 <value>admin</value>
             </arg>
         </run>
+
+        <run>
+            <script name="tapi_cli_shell"/>
+            <arg name="ta"/>
+            <arg name="shell_args">
+                <value>gdb</value>
+            </arg>
+            <arg name="cprompt">
+                <value>(gdb) </value>
+            </arg>
+        </run>
+
     </session>
 
 </package>

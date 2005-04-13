@@ -11,7 +11,12 @@ AM_CPPFLAGS = -I$(DESTDIR)/$(prefix)/include
 AM_LDFLAGS = @TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/lib 
 
 
-tetest_PROGRAMS = clitest tapi_cli_test tapi_cli_telnet tapi_cli_serial
+tetest_PROGRAMS = \
+    clitest \
+    tapi_cli_test \
+    tapi_cli_telnet \
+    tapi_cli_serial \
+    tapi_cli_shell
 
 LDADD = -ltapi -ltapi_cli -lndn -lasn -lrcfapi -lconfapi -lconf_oid \
         -llogger_ten -lipc -lpthread
