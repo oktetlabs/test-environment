@@ -4264,7 +4264,8 @@ TARPC_FUNC(aio_read_test,
 int
 aio_read_test(tarpc_aio_read_test_in *in, tarpc_aio_read_test_out *out)
 {
-    struct aiocb   cb;
+    static struct aiocb cb;
+    
     struct timeval t;
     int            rc;
 
@@ -4329,8 +4330,9 @@ TARPC_FUNC(aio_error_test,
 int
 aio_error_test(tarpc_aio_error_test_in *in, tarpc_aio_error_test_out *out)
 {
-    struct aiocb cb;
-    int          rc;
+    static struct aiocb cb;
+    
+    int rc;
 
     sock_api_func aio_write_func;
     sock_api_func aio_error_func;
@@ -4378,8 +4380,9 @@ TARPC_FUNC(aio_write_test,
 int
 aio_write_test(tarpc_aio_write_test_in *in, tarpc_aio_write_test_out *out)
 {
-    struct aiocb   cb;
-    int            rc;
+    static struct aiocb cb;
+    
+    int rc;
 
     sock_api_func aio_write_func;
     sock_api_func aio_error_func;
@@ -4432,9 +4435,10 @@ int
 aio_suspend_test(tarpc_aio_suspend_test_in *in,
                  tarpc_aio_suspend_test_out *out)
 {
-    struct aiocb   cb1, cb2;
-    struct aiocb  *cb[3] = { &cb1 , NULL, &cb2};
-    int            rc;
+    static struct aiocb   cb1, cb2;
+    static struct aiocb  *cb[3] = { &cb1 , NULL, &cb2};
+    
+    int rc;
 
     struct timespec ts = { 0, 1000000 };
     struct timeval  tv1, tv2;
