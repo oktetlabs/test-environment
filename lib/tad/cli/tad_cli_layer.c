@@ -35,6 +35,9 @@
 
 #include <stdio.h>
 
+#define MYDEBUG(x...)
+
+
 /**
  * Callback for read parameter value of CLI CSAP.
  *
@@ -160,12 +163,16 @@ int cli_gen_bin_cb (int csap_id, int layer, const asn_value * tmpl_pdu,
  *
  * @return zero on success or error code.
  */
-int cli_match_bin_cb (int csap_id, int layer, const asn_value * pattern_pdu,
-                       const csap_pkts *  pkt, csap_pkts * payload, 
-                       asn_value *  parsed_packet )
+int
+cli_match_bin_cb(int                csap_id,
+                 int                layer,
+                 const asn_value   *pattern_pdu,
+                 const csap_pkts   *pkt,
+                 csap_pkts         *payload, 
+                 asn_value         *parsed_packet)
 {
     /* XXX: do not locate local array on stack */
-    char buf[10000];
+    char *buf = (char *)malloc(10000);
 
     char *msg = (char*) pkt->data;
     int msg_len = pkt->len;
@@ -176,15 +183,22 @@ int cli_match_bin_cb (int csap_id, int layer, const asn_value * pattern_pdu,
     UNUSED(pattern_pdu);
     UNUSED(payload);
 
-    printf ("cli_match. len: %d, message: %s\n", msg_len, msg);
+    MYDEBUG("cli_match. len: %d, message: %s\n", msg_len, msg);
 
     rc = asn_write_value_field(parsed_packet, msg, msg_len, 
                                 "#cli.message.#plain");
 
-    if (rc) return rc;
+    if (rc)
+    {
+        MYDEBUG("cli_match. asn_write_value_field() failed");
+        free(buf);
+        return rc;
+    }
 
     asn_sprint_value(parsed_packet, buf, sizeof(buf), 0);
-    printf ("cli_match. parsed packet:\n%s\n--\n", buf); 
+    MYDEBUG("cli_match. parsed packet:\n%s\n--\n", buf); 
+
+    free(buf);
 
     return 0;
 }
@@ -209,7 +223,7 @@ int cli_gen_pattern_cb (int csap_id, int layer, const asn_value * tmpl_pdu,
     UNUSED(tmpl_pdu);
 
     *pattern_pdu = asn_init_value (ndn_cli_message);
-    printf("'generate pattern' callback, layer %d\n", layer);
+    MYDEBUG("'generate pattern' callback, layer %d\n", layer);
     //VERB("'generate pattern' callback, layer %d", layer); 
     return 0;
 }
