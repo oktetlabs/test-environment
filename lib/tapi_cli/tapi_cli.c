@@ -25,7 +25,7 @@
  *
  * @author Alexander Kukuta <Alexander.Kukuta@oktetlabs.ru>
  *
- * $Id: $
+ * $Id$
  */
 
 #include "te_config.h"
@@ -59,9 +59,29 @@
 #undef TAPI_DEBUG
 #define TAPI_DEBUG  0
 
+#if 0
+#define CLI_DEBUG(args...) \
+    do {                                        \
+        fprintf(stdout, "\nTAPI_CLI " args);    \
+        INFO("TAPI_CLI " args);                 \
+    } while (0)
+
+#undef ERROR
+#define ERROR(args...) CLI_DEBUG("ERROR: " args)
+
+#undef RING
+#define RING(args...) CLI_DEBUG("RING: " args)
+
+#undef WARN
+#define WARN(args...) CLI_DEBUG("WARN: " args)
+
+#undef VERB
+#define VERB(args...) CLI_DEBUG("VERB: " args)
+#endif
 
 /** CLI CSAP type names */
-const char * const tapi_cli_csap_type_name[] = {"serial", "telnet", "ssh"};
+const char * const tapi_cli_csap_type_name[] =
+    {"serial", "telnet", "ssh", "sh"};
 
 /** Default command prompt on redhat is '[...]$ ' */
 const char * const tapi_cli_redhat_cprompt_dflt = "\\]\\$\\ ";
@@ -87,25 +107,46 @@ const char * const tapi_cli_ssh_lprompt_dflt = NULL;
 /** Default password prompt for ssh console is '[P|p]assword: ' */
 const char * const tapi_cli_ssh_pprompt_dflt = "assword: ";
 
+/** Default login prompt for shell console is '[L|l]ogin: ' */
+const char * const tapi_cli_shell_lprompt_dflt = "ogin: ";
+
+/** Default password prompt for shell console is '[P|p]assword: ' */
+const char * const tapi_cli_shell_pprompt_dflt = "assword: ";
+
 
 /**
  * Add prompts parameters to CLI CSAP initialisation string
  *
- * @param buf               Buffer that contains CLI CSAP initialisation string
- * @param buf_size          Buffer size
- * @param command_prompt    Expected command prompt (when commands may be sent)
- * @param login_prompt      Expected login prompt (when login name may be sent)
- * @param login_name        Login name to be sent if login prompt is detected
- * @param password_prompt   Expected password prompt (when password may be sent)
- * @param password          Password to be sent if password prompt is detected
+ * @param buf                   Buffer that contains CLI CSAP
+ *                              initialisation string
+ * @param buf_size              Buffer size
+ * @param command_prompt_type   Expected command prompt type
+ *                              (plain or regular expression)
+ * @param command_prompt        Expected command prompt
+ *                              (when commands may be sent)
+ * @param login_prompt_type     Expected login prompt type
+ *                              (plain or regular expression)
+ * @param login_prompt          Expected login prompt
+ *                              (when login name may be sent)
+ * @param login_name            Login name to be sent if login
+ *                              prompt is detected
+ * @param password_prompt_type  Expected password prompt type
+ *                              (plain or regular expression)
+ * @param password_prompt       Expected password prompt
+ *                              (when password may be sent)
+ * @param password              Password to be sent if password
+ *                              prompt is detected
  *
  * @return length of added parameters string.
  */
 static int
 tapi_cli_csap_add_prompts(char *buf, int buf_size,
+                          tapi_cli_prompt_t command_prompt_type,
                           const char *command_prompt,
+                          tapi_cli_prompt_t login_prompt_type,
                           const char *login_prompt,
                           const char *login_name,
+                          tapi_cli_prompt_t password_prompt_type,
                           const char *password_prompt,
                           const char *password)
 {
@@ -113,11 +154,17 @@ tapi_cli_csap_add_prompts(char *buf, int buf_size,
     
     if (command_prompt != NULL)
         len += snprintf(buf + len, buf_size - len,
-                        ", command-prompt plain : \"%s\"", command_prompt);
+                        ", command-prompt %s : \"%s\"",
+                        (command_prompt_type == TAPI_CLI_PROMPT_TYPE_REG_EXP) ?
+                        "script" : "plain",
+                        command_prompt);
 
     if (login_prompt != NULL)
         len += snprintf(buf + len, buf_size - len,
-                        ", login-prompt plain : \"%s\"", login_prompt);
+                        ", login-prompt %s : \"%s\"",
+                        (login_prompt_type == TAPI_CLI_PROMPT_TYPE_REG_EXP) ?
+                        "script" : "plain",
+                        login_prompt);
 
     if (login_name != NULL)
         len += snprintf(buf + len, buf_size - len,
@@ -125,7 +172,10 @@ tapi_cli_csap_add_prompts(char *buf, int buf_size,
 
     if (password_prompt != NULL)
         len += snprintf(buf + len, buf_size - len,
-                        ", password-prompt plain : \"%s\"", password_prompt);
+                        ", password-prompt %s : \"%s\"",
+                        (password_prompt_type == TAPI_CLI_PROMPT_TYPE_REG_EXP) ?
+                        "script" : "plain",
+                        password_prompt);
 
     if (password != NULL)
         len += snprintf(buf + len, buf_size - len,
@@ -138,27 +188,41 @@ tapi_cli_csap_add_prompts(char *buf, int buf_size,
 /**
  * Create common CLI CSAP on local device (using millicom).
  *
- * @param ta_name           Test Agent name
- * @param sid               RCF session
- * @param device            Local device name
- * @param command_prompt    Expected command prompt (when commands may be sent)
- * @param login_prompt      Expected login prompt (when login name may be sent)
- * @param login_name        Login name to be sent if login prompt is detected
- * @param password_prompt   Expected password prompt (when password may be sent)
- * @param password          Password to be sent if password prompt is detected
- * @param cli_csap          Identifier of created CSAP (OUT)
+ * @param ta_name               Test Agent name
+ * @param sid                   RCF session
+ * @param device                Local device name
+ * @param command_prompt_type   Expected command prompt type
+ *                              (plain or regular expression)
+ * @param command_prompt        Expected command prompt
+ *                              (when commands may be sent)
+ * @param login_prompt_type     Expected login prompt type
+ *                              (plain or regular expression)
+ * @param login_prompt          Expected login prompt
+ *                              (when login name may be sent)
+ * @param login_name            Login name to be sent if login
+ *                              prompt is detected
+ * @param password_prompt_type  Expected password prompt type
+ *                              (plain or regular expression)
+ * @param password_prompt       Expected password prompt
+ *                              (when password may be sent)
+ * @param password              Password to be sent if password
+ *                              prompt is detected
+ * @param cli_csap              Identifier of created CSAP (OUT)
  *
  * @return 0 on success, otherwise standard or common TE error code.
  */
-extern int
+int
 tapi_cli_csap_local_create(const char *ta_name, int sid,
-                    const char *device,
-                    const char *command_prompt,
-                    const char *login_prompt,
-                    const char *login_name,
-                    const char *password_prompt,
-                    const char *password,
-                    csap_handle_t *cli_csap)
+                           const char *device,
+                           tapi_cli_prompt_t command_prompt_type,
+                           const char *command_prompt,
+                           tapi_cli_prompt_t login_prompt_type,
+                           const char *login_prompt,
+                           const char *login_name,
+                           tapi_cli_prompt_t password_prompt_type,
+                           const char *password_prompt,
+                           const char *password,
+                           csap_handle_t *cli_csap)
 {
     int   rc = 0;
     int   len = 0;
@@ -175,7 +239,10 @@ tapi_cli_csap_local_create(const char *ta_name, int sid,
                     type, device);
 
     len += tapi_cli_csap_add_prompts(buf + len, buf_size - len,
-                                     command_prompt, login_prompt, login_name,
+                                     command_prompt_type, command_prompt,
+                                     login_prompt_type,
+                                     login_prompt, login_name,
+                                     password_prompt_type,
                                      password_prompt, password);
 
     len += snprintf(buf + len, buf_size - len, " } }");
@@ -190,26 +257,40 @@ tapi_cli_csap_local_create(const char *ta_name, int sid,
 /**
  * Create common CLI CSAP on remote connection (telnet or ssh).
  *
- * @param ta_name       Test Agent name
- * @param sid           RCF session
- * @param type          Remote connection type (telnet or ssh)
- * @param host          Remote host name
- * @param port          Remote port number
- * @param command_prompt    Expected command prompt (when commands may be sent)
- * @param login_prompt      Expected login prompt (when login name may be sent)
- * @param login_name        Login name to be sent if login prompt is detected
- * @param password_prompt   Expected password prompt (when password may be sent)
- * @param password          Password to be sent if password prompt is detected
- * @param cli_csap      Identifier of created CSAP (OUT)
+ * @param ta_name               Test Agent name
+ * @param sid                   RCF session
+ * @param type                  Remote connection type (telnet or ssh)
+ * @param host                  Remote host name
+ * @param port                  Remote port number
+ * @param command_prompt_type   Expected command prompt type
+ *                              (plain or regular expression)
+ * @param command_prompt        Expected command prompt
+ *                              (when commands may be sent)
+ * @param login_prompt_type     Expected login prompt type
+ *                              (plain or regular expression)
+ * @param login_prompt          Expected login prompt
+ *                              (when login name may be sent)
+ * @param login_name            Login name to be sent if login
+ *                              prompt is detected
+ * @param password_prompt_type  Expected password prompt type
+ *                              (plain or regular expression)
+ * @param password_prompt       Expected password prompt
+ *                              (when password may be sent)
+ * @param password              Password to be sent if password
+ *                              prompt is detected
+ * @param cli_csap              Identifier of created CSAP (OUT)
  *
  * @return 0 on success, otherwise standard or common TE error code.
  */
-extern int
+int
 tapi_cli_csap_remote_create(const char *ta_name, int sid,
                             int type, const char *host, int port,
+                            tapi_cli_prompt_t command_prompt_type,
                             const char *command_prompt,
+                            tapi_cli_prompt_t login_prompt_type,
                             const char *login_prompt,
                             const char *login_name,
+                            tapi_cli_prompt_t password_prompt_type,
                             const char *password_prompt,
                             const char *password,
                             csap_handle_t *cli_csap)
@@ -229,7 +310,10 @@ tapi_cli_csap_remote_create(const char *ta_name, int sid,
                     type, host, port);
 
     len += tapi_cli_csap_add_prompts(buf + len, buf_size - len,
-                                     command_prompt, login_prompt, login_name,
+                                     command_prompt_type, command_prompt,
+                                     login_prompt_type,
+                                     login_prompt, login_name,
+                                     password_prompt_type,
                                      password_prompt, password);
 
     len += snprintf(buf + len, buf_size - len, " } }");
@@ -240,6 +324,77 @@ tapi_cli_csap_remote_create(const char *ta_name, int sid,
     
     return rc;
 }
+
+
+/**
+ * Create common CLI CSAP using shell.
+ *
+ * @param ta_name               Test Agent name
+ * @param sid                   RCF session
+ * @param shell_args            Arguments to shell interpreter
+ * @param command_prompt_type   Expected command prompt type
+ *                              (plain or regular expression)
+ * @param command_prompt        Expected command prompt
+ *                              (when commands may be sent)
+ * @param login_prompt_type     Expected login prompt type
+ *                              (plain or regular expression)
+ * @param login_prompt          Expected login prompt
+ *                              (when login name may be sent)
+ * @param login_name            Login name to be sent if login
+ *                              prompt is detected
+ * @param password_prompt_type  Expected password prompt type
+ *                              (plain or regular expression)
+ * @param password_prompt       Expected password prompt
+ *                              (when password may be sent)
+ * @param password              Password to be sent if password
+ *                              prompt is detected
+ * @param cli_csap              Identifier of created CSAP (OUT)
+ *
+ * @return 0 on success, otherwise standard or common TE error code.
+ */
+int
+tapi_cli_csap_shell_create(const char *ta_name, int sid,
+                           const char *shell_args,
+                           tapi_cli_prompt_t command_prompt_type,
+                           const char *command_prompt,
+                           tapi_cli_prompt_t login_prompt_type,
+                           const char *login_prompt,
+                           const char *login_name,
+                           tapi_cli_prompt_t password_prompt_type,
+                           const char *password_prompt,
+                           const char *password,
+                           csap_handle_t *cli_csap)
+{
+    int   rc = 0;
+    int   len = 0;
+    char *buf = (char *)malloc(TAPI_CLI_CSAP_STR_MAXLEN);
+    int   buf_size = TAPI_CLI_CSAP_STR_MAXLEN;
+    int   type = TAPI_CLI_CSAP_TYPE_SHELL;
+
+    if (buf == NULL)
+        return TE_RC(TE_TAPI, ENOMEM);
+
+    len += snprintf(buf + len, buf_size - len,
+                    "{ cli : { conn-type %d,"
+                    "          conn-params shell : { args plain : \"%s\" }",
+                    type, shell_args);
+
+    len += tapi_cli_csap_add_prompts(buf + len, buf_size - len,
+                                     command_prompt_type, command_prompt,
+                                     login_prompt_type,
+                                     login_prompt, login_name,
+                                     password_prompt_type,
+                                     password_prompt, password);
+
+    len += snprintf(buf + len, buf_size - len, " } }");
+
+    rc = tapi_cli_csap_create (ta_name, sid, buf, cli_csap);
+    
+    free(buf);
+    
+    return rc;
+}
+
 
 /**
  * Create common CLI CSAP.
@@ -304,26 +459,13 @@ tapi_cli_csap_create(const char *ta_name, int sid,
 }
 
 
-/**
- * Send specified command to the CSAP's CLI session.
- *
- * @param ta_name       Test Agent name;
- * @param sid           RCF session identifier;
- * @param cli_csap      CSAP handle;
- * @param command       Command to send;
- * @param blk_mode      RCF Blocking mode;
- *
- * @return zero on success, otherwise standard or common TE error code.
- */
 static int
-tapi_internal_cli_send(const char *ta_name, int sid, csap_handle_t cli_csap,
-                       const char *command, rcf_call_mode_t blk_mode)
+tapi_internal_write_cmd_to_file(char **cmd_fname, const char *command)
 {
-    int   rc = 0;
     char *fname;
     FILE *f;
 
-    if ( (ta_name == NULL) || (command == NULL) )
+    if (command == NULL)
         return TE_RC(TE_TAPI, EINVAL);
 
     fname = (char *)malloc(TAPI_CLI_CSAP_INIT_FILENAME_MAXLEN);
@@ -348,6 +490,39 @@ tapi_internal_cli_send(const char *ta_name, int sid, csap_handle_t cli_csap,
     fprintf(f, "{ pdus { cli : { message plain : \"%s\" } } }", command);
 
     fclose(f);
+    
+    *cmd_fname = fname;
+    
+    return 0;
+}
+
+/**
+ * Send specified command to the CSAP's CLI session.
+ *
+ * @param ta_name       Test Agent name;
+ * @param sid           RCF session identifier;
+ * @param cli_csap      CSAP handle;
+ * @param command       Command to send;
+ * @param blk_mode      RCF Blocking mode;
+ *
+ * @return zero on success, otherwise standard or common TE error code.
+ */
+static int
+tapi_internal_cli_send(const char *ta_name, int sid, csap_handle_t cli_csap,
+                       const char *command, rcf_call_mode_t blk_mode)
+{
+    int   rc = 0;
+    char *fname = NULL;
+
+    if (ta_name == NULL)
+        return TE_RC(TE_TAPI, EINVAL);
+
+    if ((rc = tapi_internal_write_cmd_to_file(&fname, command)) != 0)
+    {
+        ERROR("Failed to create send pattern for CLI session");
+        free(fname);
+        return rc;
+    }
 
     rc = rcf_ta_trsend_start(ta_name, sid, cli_csap, fname, blk_mode);
     if (rc != 0)
@@ -364,6 +539,138 @@ tapi_internal_cli_send(const char *ta_name, int sid, csap_handle_t cli_csap,
 
     return rc;
 }
+
+
+/**
+ * Handler that is used as a callback routine for processing incoming
+ * messages
+ *
+ * @param msg_fname     File name with ASN.1 representation of the received
+ *                      packet
+ * @param msg_p         Pointer to the placeholder of the CLI message
+ *
+ * @se It allocates a memory for CLI message
+ */
+void
+tapi_cli_msg_handler(char *msg_fname, void *user_param)
+{
+    int                       rc;
+    int                       s_parsed;
+    asn_value_p               cli_response;
+    asn_value_p               cli_msg;
+    int                       msg_len;
+    char                     *msg = NULL;
+    char                    **msg_p = user_param;
+
+    VERB("%s(): msg_fname=%s, user_param=%x",
+         __FUNCTION__, msg_fname, user_param);
+    rc = asn_parse_dvalue_in_file(msg_fname, ndn_raw_packet,
+                                  &cli_response, &s_parsed);
+    if (rc != 0)
+    {
+        ERROR("Failed to parse ASN.1 text file to ASN.1 value: "
+              "rc=0x%x", rc);
+        return;
+    }
+
+    cli_msg = asn_read_indexed(cli_response, 0, "pdus");
+    if (cli_msg == NULL)
+    {
+        ERROR("Failed to get 'pdus' from CLI response");
+        return;
+    }
+
+    msg_len = asn_get_length(cli_msg, "message.#plain");
+    if (msg_len <= 0)
+    {
+        ERROR("Cannot get message.#plain field from CLI response");
+        return;
+    }
+
+    VERB("Try to get CLI message of %d bytes", msg_len);
+
+    msg = (char *)malloc(msg_len + 1);
+    if (msg == NULL)
+    {
+        ERROR("Cannot allocate enough memory for CLI response");
+        return;
+    }
+
+    msg[msg_len] = '\0';
+
+    rc = asn_read_value_field(cli_msg, msg,
+                              &msg_len, "message.#plain");
+    if (rc != 0)
+    {
+        ERROR("Failed to get message body from CLI response rc=0x%x", rc);
+        return;
+    }
+
+    VERB("Received msg : %s", msg);
+
+    *msg_p = msg;
+}
+
+
+/**
+ * Send specified command to the CSAP's CLI session and receive response.
+ *
+ * @param ta_name       Test Agent name;
+ * @param sid           RCF session identifier;
+ * @param cli_csap      CSAP handle;
+ * @param command       Command to send;
+ * @param msg           Returned CLI response to command;
+ * @param timeout       CLI response timeout in seconds;
+ * @param err           Error returned by rcf_send_recv() call;
+ *
+ * @return zero on success, otherwise standard or common TE error code.
+ */
+static int
+tapi_internal_cli_send_recv(const char *ta_name, int sid,
+                            csap_handle_t cli_csap, const char *command,
+                            char **msg, unsigned int timeout, int *err)
+{
+    int             rc = 0;
+    char           *fname = NULL;
+
+    *msg = NULL;
+
+    if (ta_name == NULL)
+        return TE_RC(TE_TAPI, EINVAL);
+
+    VERB("%s() started", __FUNCTION__);
+
+    if ((rc = tapi_internal_write_cmd_to_file(&fname, command)) != 0)
+    {
+        ERROR("Failed to create send pattern for CLI session");
+        free(fname);
+        return rc;
+    }
+
+    rc = rcf_ta_trsend_recv(ta_name, sid, cli_csap, fname,
+                            tapi_cli_msg_handler, (void *)msg,
+                            timeout, err);
+    if (rc != 0)
+    {
+        ERROR("rcf_ta_trsend_start() failed(0x%x) on TA %s:%d CSAP %d "
+              "file %s", rc, ta_name, sid, cli_csap, fname);
+    }
+
+#if 0
+    VERB("%s() response is : %s", __FUNCTION__, *msg);
+#endif
+
+#if !(TAPI_DEBUG)
+    unlink(fname);
+#endif
+
+    free(fname);
+
+    VERB("%s() finished", __FUNCTION__);
+
+    return rc;
+}
+
 
 /**
  * Send specified command to the CSAP's CLI session.
@@ -382,5 +689,26 @@ tapi_cli_send(const char *ta_name, int sid,
 {
     return tapi_internal_cli_send(ta_name, sid, cli_csap, command,
                                   RCF_MODE_BLOCKING);
+}
+
+/**
+ * Send specified command to the CSAP's CLI session and receive response.
+ *
+ * @param ta_name       Test Agent name;
+ * @param sid           RCF session identifier;
+ * @param cli_csap      CSAP handle;
+ * @param command       Command to send;
+ * @param msg           Returned CLI response to command;
+ * @param timeout       CLI response timeout in seconds;
+ *
+ * @return zero on success, otherwise standard or common TE error code.
+ */
+int
+tapi_cli_send_recv(const char *ta_name, int sid,
+                   csap_handle_t cli_csap, const char *command,
+                   char **msg, unsigned int timeout, int *err)
+{
+    return tapi_internal_cli_send_recv(ta_name, sid, cli_csap,
+                                       command, msg, timeout, err);
 }
 
