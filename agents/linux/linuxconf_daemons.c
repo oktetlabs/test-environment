@@ -221,6 +221,8 @@ void
 ds_restore_backup()
 {
     int i;
+    
+    RING("Restoring backups");
 
     for (i = 0; i < n_ds; i++)
     {
@@ -2762,6 +2764,35 @@ RCF_PCH_CFG_NODE_COLLECTION(node_ds_xvfb, "Xvfb",
                             NULL, NULL, 
                             ds_xvfb_add, ds_xvfb_del, ds_xvfb_list, NULL);
 
+
+static void *
+supervise_backups(void *arg)
+{
+    while (TRUE)
+    {
+        int i;
+        
+        for (i = 0; i < n_ds; i++)
+        {
+            const char *backup = ds_backup(i);
+            struct stat st;
+            
+            if (backup[0] == 0)
+                continue;
+            if (stat(backup, &st) != 0)
+            {
+                WARN("Backup %s disappeared", backup);
+                ta_system("ls /tmp/te*backup");
+                usleep(200);
+                ta_system("ps ax");
+                return NULL;
+            }
+        }
+        sleep(1);
+    }
+}
+
+
 /**
  * Initializes linuxconf_daemons support.
  *
@@ -2823,6 +2854,12 @@ linuxconf_daemons_init(rcf_pch_cfg_object **last)
     DS_REGISTER(sshd);
 
     DS_REGISTER(xvfb);
+    
+    {
+        int tid;
+        
+        pthread_create(&tid, NULL, supervise_backups, NULL);
+    }
 
     return 0;
 
