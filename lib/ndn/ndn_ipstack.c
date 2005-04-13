@@ -241,7 +241,7 @@ static asn_named_entry_t _ndn_tcp_csap_ne_array [] =
 
 asn_type ndn_tcp_csap_s =
 {
-    "UDP-CSAP", {PRIVATE, 102}, SEQUENCE, 
+    "TCP-CSAP", {PRIVATE, 102}, SEQUENCE, 
     sizeof(_ndn_tcp_csap_ne_array)/sizeof(asn_named_entry_t),
     {_ndn_tcp_csap_ne_array}
 };
