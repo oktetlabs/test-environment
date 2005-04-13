@@ -79,11 +79,28 @@ asn_type ndn_cli_serial_params_s =
 asn_type_p ndn_cli_serial_params = &ndn_cli_serial_params_s;
 
 
+/* CLI-Shell-Params definitions */
+static asn_named_entry_t _ndn_cli_shell_params_ne_array [] = 
+{
+    { "args", &ndn_data_unit_char_string_s, {PRIVATE, 1} }
+};
+
+asn_type ndn_cli_shell_params_s =
+{
+    "CLI-Shell-Params", {PRIVATE, 105}, SEQUENCE,
+    sizeof(_ndn_cli_shell_params_ne_array)/sizeof(asn_named_entry_t),
+    {_ndn_cli_shell_params_ne_array}
+};
+
+asn_type_p ndn_cli_shell_params = &ndn_cli_shell_params_s;
+
+
 /* CLI-Params definitions */
 static asn_named_entry_t _ndn_cli_params_ne_array [] = 
 {
     { "telnet", &ndn_cli_telnet_params_s, {PRIVATE, 1} },
-    { "serial", &ndn_cli_serial_params_s, {PRIVATE, 2} }
+    { "serial", &ndn_cli_serial_params_s, {PRIVATE, 2} },
+    { "shell",  &ndn_cli_shell_params_s,  {PRIVATE, 3} }
 };
 
 asn_type ndn_cli_params_s =
