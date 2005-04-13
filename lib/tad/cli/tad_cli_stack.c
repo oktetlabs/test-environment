@@ -42,6 +42,8 @@
 #define CLI_PROGRAM_NAME_SIZE           40
 #define CLI_SESSION_PARAM_LENGTH_MAX    40
 
+#define CLI_REMOVE_ECHO     1
+
 #define EXP_DEBUG
 #undef EXP_DEBUG
 
@@ -872,6 +874,11 @@ cli_write_read_cb (csap_p csap_descr, int timeout,
     size_t bytes_read = 0;
     int    rc = 0;
 
+#if CLI_REMOVE_ECHO
+    char  *echo_p = w_buf;
+    char  *echo_count = 0;
+#endif
+
     /* XXX: timeout should be used */
     UNUSED(timeout);
 
@@ -959,7 +966,18 @@ cli_write_read_cb (csap_p csap_descr, int timeout,
             return -1;
         }
         MYDEBUG("%s(): read returns %d\n", __FUNCTION__, rc);
-        
+
+#if CLI_REMOVE_ECHO
+        if ((echo_count++) < w_buf_len + 2)
+        {
+            if (*(echo_p++) == data)
+                continue;
+
+            if ((data == '\r') || (data == '\n'))
+                continue;
+        }
+#endif
+
         if ((bytes_read < r_buf_len) && (data != 0))
         {
             r_buf[bytes_read] = data;
