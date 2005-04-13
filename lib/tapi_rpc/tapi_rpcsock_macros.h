@@ -89,19 +89,19 @@
 /**
  * Macro to check errno after call of void function.
  *
- * @param _rpcs    RPS server
+ * @param _rpcs    RPC server
  * @param _func    RPC function name to call (without rpc_ prefix)
- * @param _args    A set of arguments pased to the function
+ * @param _args    a set of arguments pased to the function
  */
 #define RPC_FUNC_VOID(_rpcs, _func, _args...)  rpc_##_func(_rpcs, _args)
 
 /**
  * Macro to check function 'func_' on returning non negative value
  *
- * @param rpcs_    RPS server
- * @param retval_  Return value (OUT)
+ * @param rpcs_    RPC server
+ * @param retval_  return value (OUT)
  * @param func_    RPC function name to call (without rpc_ prefix)
- * @param args_    A set of arguments pased to the function
+ * @param args_    a set of arguments pased to the function
  */
 #define RPC_FUNC_WITH_RETVAL(rpcs_, retval_, func_, args_...) \
     (retval_) =  rpc_ ## func_(rpcs_, args_)
@@ -109,8 +109,8 @@
 /**
  * Macro to check function 'func_' on returning non negative value
  *
- * @param rpcs_    RPS server
- * @param retval_  Return value (OUT)
+ * @param rpcs_    RPC server
+ * @param retval_  return value (OUT)
  * @param func_    RPC function name to call (without rpc_ prefix)
  */
 #define RPC_FUNC_WITH_RETVAL0(rpcs_, retval_, func_)            \
@@ -119,11 +119,11 @@
 /**
  * Macro to check function 'func_' on returning exactly specified value.
  *
- * @param rpcs_     RPS server
- * @param retval_   Return value (OUT)
- * @param expect_   Expected return value
+ * @param rpcs_     RPC server
+ * @param retval_   return value (OUT)
+ * @param expect_   expected return value
  * @param func_     RPC function name to call (without rpc_ prefix)
- * @param args_     A set of arguments pased to the function
+ * @param args_     a set of arguments pased to the function
  */
 #define RPC_FUNC_WITH_EXACT_RETVAL(rpcs_, retval_, expect_, \
                                    func_, args_...)             \
@@ -140,10 +140,10 @@
 /**
  * Macro to check function 'func_' on returning non NULL value
  *
- * @param rpcs_    RPS server
- * @param retval_  Return value (OUT)
+ * @param rpcs_    RPC server
+ * @param retval_  return value (OUT)
  * @param func_    RPC function name to call (without rpc_ prefix)
- * @param args_    A set of arguments pased to the function
+ * @param args_    a set of arguments pased to the function
  */
 #define RPC_FUNC_WITH_PTR_RETVAL(rpcs_, retval_, func_, args_...) \
     (retval_) =  rpc_ ## func_(rpcs_, args_)
@@ -151,8 +151,8 @@
 /**
  * Macro to check function 'func_' on returning non NULL value
  *
- * @param rpcs_    RPS server
- * @param retval_  Return value (OUT)
+ * @param rpcs_    RPC server
+ * @param retval_  return value (OUT)
  * @param func_    RPC function name to call (without rpc_ prefix)
  */
 #define RPC_FUNC_WITH_PTR_RETVAL0(rpcs_, retval_, func_) \
@@ -161,9 +161,9 @@
 /**
  * Macro to check function 'func_' on returning zero value
  *
- * @param rpcs_    RPS server
+ * @param rpcs_    RPC server
  * @param func_    RPC function name to call (without rpc_ prefix)
- * @param args_    A set of arguments pased to the function
+ * @param args_    a set of arguments pased to the function
  */
 #define RPC_FUNC_ZERO_RETVAL(rpcs_, func_, args_...) \
     do {                                             \
@@ -182,12 +182,12 @@
 /**
  * Create a new socket on specified RPC server
  *
- * @param sockd_    Variable that is updated with the descriptor
+ * @param sockd_    variable that is updated with the descriptor
  *                  of created socket (OUT)
  * @param rpcs_     RPC server handle
- * @param domain_   Socket domain
- * @param type_     Socket type
- * @param proto_    Protocol value
+ * @param domain_   socket domain
+ * @param type_     socket type
+ * @param proto_    protocol value
  *
  * @se In case of failure it jumps to "cleanup" label
  */
@@ -198,7 +198,7 @@
 /**
  * Duplicate a file descriptor.
  *
- * @param sockd_    Variable that is updated with the descriptor of
+ * @param sockd_    variable that is updated with the descriptor of
  *                  created socket (OUT)
  * @param rpcs_     RPC server handle
  * @param oldfd_    FD to be duplicated
@@ -211,7 +211,7 @@
 /**
  * Duplicate a file descriptor to specified file descriptor.
  *
- * @param sockd_    Variable that is updated with the descriptor of
+ * @param sockd_    variable that is updated with the descriptor of
  *                  created socket (OUT)
  * @param rpcs_     RPC server handle
  * @param oldfd_    FD to be duplicated
@@ -228,7 +228,7 @@
  * with socket descriptor.
  *
  * @param rpcs_   RPC server handle
- * @param sockd_  Socket descriptor
+ * @param sockd_  socket descriptor
  */
 #define RPC_CLOSE_UNSAFE(rpcs_, sockd_)  rpc_close((rpcs_), (sockd_))
 
@@ -237,7 +237,7 @@
  * Close a socket on a particular RPC server
  *
  * @param rpcs_   RPC server handle
- * @param sockd_  Socket descriptor
+ * @param sockd_  socket descriptor
  *
  * @note @p sockd_ parameter is updated to -1 after successfull
  * completion of the macro.
@@ -253,9 +253,9 @@
  * Bind a socket that resides on specified RPC server
  *
  * @param rpcs_     - RPC server handle
- * @param sockd_    - Socket descriptor
- * @param addr_     - Address the socket to be bound to
- * @param addrlen_  - Address length value
+ * @param sockd_    - socket descriptor
+ * @param addr_     - address the socket to be bound to
+ * @param addrlen_  - address length value
  *
  * @se In case of failure it jumps to "cleanup" label
  */

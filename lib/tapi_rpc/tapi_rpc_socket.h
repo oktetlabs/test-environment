@@ -47,7 +47,7 @@
  *
  * @param rpcs      RPC server handle
  * @param domain    communication domain.
- *                  select the protocol family used for communication.
+ *                  Select the protocol family used for communication
  *                  supported protocol families are difined in 
  *                  tapi_rpcsock_defs.h
  * @param type      defines the semantic of communication. Current defined 
@@ -57,7 +57,7 @@
  *                  protocol number for the socket domain and type 
  *                  specified.
  * 
- * @return the socket descriptor to be used. Otherwose -1 is returned when 
+ * @return the socket descriptor to be used. Otherwise -1 is returned when 
  *         error occured.
  */
 
@@ -109,7 +109,7 @@ extern ssize_t rpc_send(rcf_rpc_server *rpcs,
 
 /**
  * Transmit a message to descriptor @b s.
- * this operation takes place on RPC server side
+ * This operation takes place on RPC server side
  *
  * @param rpcs  RPC server handle
  * @param s     socket descriptor
@@ -134,10 +134,10 @@ extern ssize_t rpc_sendto(rcf_rpc_server *rpcs,
 
 /**
  * Generic routine for receiving messages and store them in the buffer @b 
- * buf of length @b len.This operation takes place on RPC server side.
+ * buf of length @b len. This operation takes place on RPC server side.
  *
  * @param rpcs    RPC server handle
- * @param s       Socket descriptor
+ * @param s       socket descriptor
  * @param buf     pointer to buffer which store received messages
  * @param len     size of the buffer @b buf
  * @param flags   bitwise OR of zero or more of the following flags:
@@ -159,7 +159,7 @@ extern ssize_t rpc_recv_gen(rcf_rpc_server *rpcs,
  * This operation takes place on RPC server side
  *
  * @param rpcs  RPC server handle
- * @param s     Socket descriptor
+ * @param s     socket descriptor
  * @param buf   pointer to buffer which store received messages
  * @param len   size of the buffer @b buf
  * @param flags bitwise OR of zero or more of the following flags:
@@ -270,22 +270,22 @@ typedef struct rpc_msghdr {
  * @param flags     bitwise OR of zero or more of the following flags:
  *                   - @b RPC_MSG_OOB send out-of-band data if supported.
  *                   - @b RPC_MSG_DONTWAIT enable non-blocking operation.
- *                   - @b RPC_MSG_PEEK  Do not remove data from the queue 
- *                   - @b RPC_MSG_DONTROUTE Send to directly connected 
- *                        network
- *                   - @b RPC_MSG_WAITALL Block until full request is 
- *                        specified
- *                   - @b RPC_MSG_NOSIGNAL  Turn off raising of SIGPIPE
- *                   - @b RPC_MSG_TRUNC    Return the real length of the
- *                        packet
- *                   - @b RPC_MSG_CTRUNC    Control data lost before 
- *                        delivery
- *                   - @b RPC_MSG_ERRQUEUE Queued errors should be 
- *                        received from the socket error queue
- *                   - @b RPC_MSG_MCAST   Datagram was received as a 
- *                        link-layer multicast 
- *                   - @b RPC_MSG_BCAST Datagram was received as a 
- *                        link-layer broadcast
+ *                   - @b RPC_MSG_PEEK  do not remove data from the queue. 
+ *                   - @b RPC_MSG_DONTROUTE send to directly connected 
+ *                        network.
+ *                   - @b RPC_MSG_WAITALL block until full request is 
+ *                        specified.
+ *                   - @b RPC_MSG_NOSIGNAL  turn off raising of SIGPIPE.
+ *                   - @b RPC_MSG_TRUNC    return the real length of the
+ *                        packet.
+ *                   - @b RPC_MSG_CTRUNC    control data lost before 
+ *                        delivery.
+ *                   - @b RPC_MSG_ERRQUEUE queued errors should be 
+ *                        received from the socket error queue.
+ *                   - @b RPC_MSG_MCAST   datagram was received as a 
+ *                        link-layer multicast. 
+ *                   - @b RPC_MSG_BCAST datagram was received as a 
+ *                        link-layer broadcast.
  *
  * @return length of message, otherwise -1 is returned when an error 
  *         occured 
@@ -340,7 +340,7 @@ extern int rpc_bind(rcf_rpc_server *rpcs,
  * 
  * @param rpcs      RPC server handle
  * @param s         socket descriptor
- * @param addr      peer address to which the is to be connected
+ * @param addr      peer address to which the socket has to be connected
  * @param addrlen   size of peer address @b addr
  *
  * @retval   0 on success
@@ -352,7 +352,7 @@ extern int rpc_connect(rcf_rpc_server *rpcs,
                        socklen_t addrlen);
 
 /**
- * try to listen for incomming connections for connection oriented sockets
+ * Try to listen for incomming connections for connection oriented sockets
  * This operation takes place on RPC server side.
  *
  * @param rpcs        RPC server handle
@@ -379,10 +379,10 @@ extern int rpc_listen(rcf_rpc_server *rpcs,
  * @param rpcs     RPC server handle
  * @param s        listening socket descriptor
  * @param addr     pointer to a sockaddr structure
- * @param addrlen  contain size of structure pointed by @b addr. On return 
- *                 contain the actual size of the returned in @b addr 
- *                 address 
- * @param raddrlen 
+ * @param addrlen  pointer to size of structure pointed by @b addr. 
+ *                 On return contain the actual size of the returned
+ *                 in @b addr address 
+ * @param raddrlen real size of @b addr
  *
  * @retval 0 on success
  *        -1 on failure
@@ -421,7 +421,7 @@ rpc_accept(rcf_rpc_server *rpcs,
 }
 
 /**
- * This generic routine manupilates options associated with a socket.
+ * This generic routine manipulates options associated with a socket.
  * This operation takes place on RPC server side.
  *
  * @note For more information about supported option level, 
@@ -434,7 +434,7 @@ rpc_accept(rcf_rpc_server *rpcs,
  *                  - @b RPC_SOL_SOCKET  socket level
  *                  - @b RPC_SOL_IP      IPPROTO_IP level
  *                  - @b RPC_SOL_TCP     IPPROTO_TCP level
- * @param optname  Option name
+ * @param optname  option name
  * @param optval   pointer to a buffer containing the value associated 
  *                 with the selected option.
  * @param optlen   initially points to the length of supplied buffer.
@@ -560,7 +560,7 @@ rpc_getsockname(rcf_rpc_server *rpcs,
  *  and store the lenght of this address to the object pointed by @b
  *  namelen.
  *
- *  @note See @b getsockname manual page for more information
+ *  @note See @b getpeername manual page for more information
  *  @param rpcs      RPC server handle
  *  @param s         Socket descriptor whose peer name is requested
  *  @param name      pointer to a @b sockaddr structure that should

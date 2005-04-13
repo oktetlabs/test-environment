@@ -40,7 +40,7 @@
  * Asynchronous read test procedure.
  *
  * @param rpcs          RPC server
- * @param s             a socket to be user for receiving
+ * @param s             a socket to be used for receiving
  * @param signum        signal to be used as notification event
  * @param timeout       timeout for blocking on select() in seconds
  * @param buf           buffer for received data
@@ -72,7 +72,7 @@ extern int rpc_aio_error_test(rcf_rpc_server *rpcs,
  * Asynchronous write test procedure.
  *
  * @param rpcs          RPC server
- * @param s             a socket to be user for receiving
+ * @param s             a socket to be used for receiving
  * @param signum        signal to be used as notification event
  * @param buf           buffer for data to be sent
  * @param buflen        data length
@@ -87,7 +87,7 @@ extern int rpc_aio_write_test(rcf_rpc_server *rpcs,
                               char *diag, int diag_len);
 
 /**
- * Susending on asynchronous events test procedure.
+ * Suspending on asynchronous events test procedure.
  *
  * @param rpcs          RPC server
  * @param s             a socket to be user for receiving

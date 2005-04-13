@@ -75,7 +75,7 @@ typedef uint64_t rpc_ptr;
  * Get readability (there are data to read) or writability (it is allowed
  * to write) of a particular socket.
  *
- * @param answer     answer location
+ * @param answer     pointer a the answer
  * @param rpcs       RPC server handle
  * @param s          socket to be checked
  * @param timeout    timeout in seconds

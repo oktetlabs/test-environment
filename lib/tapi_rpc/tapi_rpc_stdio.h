@@ -55,7 +55,7 @@ extern int rpc_fileno(rcf_rpc_server *rpcs,
  *
  * @note See @b fopen manual page for more information
  * @param rpcs     RPC server handle
- * @param path     File name
+ * @param path     file name
  * @param mode     type of file access
  *
  * @return Stream associated with the file name, otherwise @b NULL on error
@@ -117,7 +117,11 @@ extern int rpc_shell_get_all(rcf_rpc_server *rpcs,
  * for it's standard input or output.
  *
  * @param rpcs          RPC server handle
- * @param mode          "r" or "w"
+ * @param mode          access mode. the following values
+ *                      are supported
+ *                      - "w" write access
+ *                      - "r" read access
+
  * @param cmd           format of the command to be executed
  *
  * @return File descriptor or -1 in the case of failure

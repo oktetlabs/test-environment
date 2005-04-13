@@ -32,6 +32,7 @@
 #ifndef __TE_TAPI_RPC_INTERNAL_H__
 #define __TE_TAPI_RPC_INTERNAL_H__
 
+/** Logger user */
 #define TE_LGR_USER     "TAPI RPC"
 
 #if HAVE_SIGNAL_H
@@ -95,7 +96,7 @@
  * The function assumes to have RPC server handle as 'rpcs' variable in
  * the context.
  *
- * @param _func         function
+ * @param _func         function name
  * @param _var          variable with return value
  * @param _cond         condition to be checked, if RPC call status is OK
  * @param _error_val    value to be assigned in the case of error
@@ -136,7 +137,7 @@
  * The function assumes to have RPC server handle as 'rpcs' variable in
  * the context.
  *
- * @param _func     function
+ * @param _func     function name
  * @param _var      variable with return value
  */
 #define CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(_func, _var) \

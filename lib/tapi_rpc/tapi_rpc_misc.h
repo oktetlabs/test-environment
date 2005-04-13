@@ -52,8 +52,8 @@
 /**
  * Set dynamic library name to be used for additional name resolution.
  *
- * @param rpcs          Existing RPC server handle
- * @param libname       Name of the dynamic library or NULL
+ * @param rpcs          existing RPC server handle
+ * @param libname       name of the dynamic library or NULL
  *
  * @return Status code
  */
@@ -136,13 +136,13 @@ extern int rpc_simple_receiver(rcf_rpc_server *handle,
  * toward different addresses.
  *
  * @param handle        RPC server
- * @param num           Number of UDP datagrams to being sent
- * @param s             List of sockets (num)
- * @param buf           Buffer to being sent
+ * @param num           number of UDP datagrams to being sent
+ * @param s             list of sockets (num)
+ * @param buf           buffer to being sent
  * @param len           buffer size
  * @param flags         flags passed to sendto()
- * @param to            List of sockaddr-s (num)
- * @param tolen         Address size
+ * @param to            list of sockaddr-s (num)
+ * @param tolen         address size
  * 
  * @return 0 in case of success, -1 in case of failure
  */ 
@@ -191,9 +191,9 @@ extern int rpc_iomux_flooder(rcf_rpc_server *handle,
  *
  * @param handle        RPC server
  * @param sockets       Set of sockets to be processed
- * @param socknum       Number of sockets to be processed
- * @param time2run      How long send data (in seconds)
- * @param iomux         Type of I/O Multiplexing function
+ * @param socknum       number of sockets to be processed
+ * @param time2run      how long send data (in seconds)
+ * @param iomux         type of I/O Multiplexing function
  *                      (@b select(), @b pselect(), @b poll())
  * @param tx_stat       Tx statistics for set of sender socket to be
  *                      updated (IN/OUT)
@@ -231,7 +231,7 @@ extern ssize_t rpc_socket_to_file(rcf_rpc_server *handle,
  * @param rdonly        if TRUE, get file
  * @param passive       if TRUE, passive mode
  * @param offset        file offset
- * @param sock          Pointer on a socket
+ * @param sock          pointer to a socket descriptor
  *
  * @return file descriptor, which may be used for reading/writing data
  */
@@ -244,10 +244,10 @@ extern int rpc_ftp_open(rcf_rpc_server *handle,
  *
  *
  * @param handle        RPC server
- * @param sock          Socket for sending
+ * @param sock          socket for sending
  * @param nops          The number of send() operation should be executed
  *                      (the length of len_array)
- * @param vector        Array of lenghts for appropriate send() operation
+ * @param vector        array of lenghts for appropriate send() operation
  * @param sent          total bytes are sent on exit
  *
  * @return   -1 in the case of failure or 0 on success
@@ -259,7 +259,7 @@ extern int rpc_many_send(rcf_rpc_server *handle, int sock,
  * Overfill the buffers on receive and send sides of TCP connection.
  *
  * @param rpcs          RPC server
- * @param sock          Socket for sending
+ * @param sock          socket for sending
  * @param sent          total bytes written to sending socket
  *                      while both sending and receiving side buffers
  *                      are overfilled.

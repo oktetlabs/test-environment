@@ -78,13 +78,13 @@ typedef struct _rpc_guid {
 
 
 /** 
- * WSASocket() 
+ * See @b WSASocket() 
  *
  * @param rpcs      RPC server handle
  * @param domain    communication domain
  * @param type      type specification of the new socket
- * @param protocol  specifies the protocol to be used.
- * @param info      pointer to an obecjt than defines the characteristics
+ * @param protocol  specifies the protocol to be used
+ * @param info      pointer to an object than defines the characteristics
  *                  of the created socket
  * @param info_len  length of @b info
  * @param overlapped support of overlapped I/O
@@ -115,12 +115,11 @@ extern int rpc_wsa_duplicate_socket(rcf_rpc_server *rpcs,
                                     uint8_t *info, int *info_len);
 
 /**
- *  ConnectEx()
  *  Establish a connection to a specified socket, and optionally send data
  *  once connection is established.
  *
  *  @param rpcs     RPC server handle
- *  @param s        Socket descriptor
+ *  @param s        socket descriptor
  *  @param addr     pointer to a @b sockaddr structure containing the 
  *                  address to connect to.
  *  @param addrlen  length of sockaddr structure
@@ -193,11 +192,11 @@ extern int rpc_wsa_accept(rcf_rpc_server *rpcs,
  * Client implementation of AcceptEx()-GetAcceptExSockAddr() call.
  *
  * @param rpcs              RPC server
- * @param s                 Descriptor of socket that has already been
+ * @param s                 descriptor of socket that has already been
  *                          called with the listen function
- * @param s_a               Descriptor of a socket on wich to accept
- *                          an incomming connection
- * @param len               Length of the buffer to receive data (should not
+ * @param s_a               descriptor idenfifying a socket on which to 
+ *                          accept an incomming connection
+ * @param len               length of the buffer to receive data (should not
  *                          include the size of local and remote addresses)
  * @param overlapped        WSAOVERLAPPED structure
  * @param bytes_received    number of received data bytes
@@ -230,8 +229,8 @@ extern void rpc_get_accept_addr(rcf_rpc_server *rpcs,
                                 struct sockaddr *raddr);
 /**
  * Transmit file data over a connected socket. This function uses the 
- * oprating system cache manager to retrive the file data, and perform 
- * high-performance file data tranfert over sockets.
+ * operating system cache manager to retrive the file data, and perform 
+ * high-performance file data transfert over sockets.
  *
  * @param rpcs         RPC server handle
  * @param s            connected socket descriptor
@@ -291,8 +290,8 @@ extern rpc_wsaevent rpc_create_event(rcf_rpc_server *rpcs);
  * @param rpcs    RPC server handle
  * @param hevent  handle of the event to be close
  *
- * @return value returned by @b WSACloseEvent upon successful completion
- *         Otherwise -1 is returned
+ * @return value returned by @b WSACloseEvent upon successful completion,
+ *         otherwise -1 is returned
  */
 extern int rpc_close_event(rcf_rpc_server *rpcs, rpc_wsaevent hevent);
 
@@ -472,7 +471,7 @@ extern int rpc_get_wsa_ioctl_overlapped_result(rcf_rpc_server *rpcs,
  *  @param rpcs    RPC server handle 
  *  @param hwnd    handle to a window that receive a message when the
  *                 asynchronous request completes
- *  @param wmsg    message to be received when when asynchronous request
+ *  @param wmsg    message to be received when asynchronous request
  *                 completes
  *  @param addr    pointer to the network address of the host
  *  @param addrlen length of address @b addr
@@ -496,7 +495,7 @@ rpc_wsa_async_get_host_by_addr(rcf_rpc_server *rpcs, rpc_hwnd hwnd,
  * @param rpcs    RPC server handle 
  * @param hwnd    handle to a window that receive a message when the
  *                asynchronous request completes
- * @param wmsg    message to be received when when asynchronous request
+ * @param wmsg    message to be received when asynchronous request
  *                completes
  * @param name    pointer to the host name
  * @param buf     valid buffer pointer in the TA address space. 
@@ -516,7 +515,7 @@ rpc_wsa_async_get_host_by_name(rcf_rpc_server *rpcs, rpc_hwnd hwnd,
  * @param rpcs    RPC server handle 
  * @param hwnd    handle to a window that receive a message when the
  *                 asynchronous request completes
- * @param wmsg    message to be received when when asynchronous request
+ * @param wmsg    message to be received when asynchronous request
  *                 completes
  * @param name    pointer to a null-terminated protocol name
  * @param buf     valid buffer pointer in the TA address space. 
@@ -537,7 +536,7 @@ rpc_wsa_async_get_proto_by_name(rcf_rpc_server *rpcs, rpc_hwnd hwnd,
  * @param rpcs    RPC server handle 
  * @param hwnd    handle to a window that receive a message when the
  *                 asynchronous request completes
- * @param wmsg    message to be received when when asynchronous request
+ * @param wmsg    message to be received when asynchronous request
  *                 completes
  * @param number  protocol number in host byte order
  * @param buf     valid buffer pointer in the TA address space. 
@@ -558,7 +557,7 @@ rpc_wsa_async_get_proto_by_number(rcf_rpc_server *rpcs, rpc_hwnd hwnd,
  * @param rpcs    RPC server handle 
  * @param hwnd    handle to a window that receive a message when the
  *                 asynchronous request completes
- * @param wmsg    message to be received when when asynchronous request
+ * @param wmsg    message to be received when asynchronous request
  *                 completes
  * @param name    pointer to a null-terminated service name
  * @param proto   pointer to a protocol name
@@ -580,7 +579,7 @@ rpc_wsa_async_get_serv_by_name(rcf_rpc_server *rpcs, rpc_hwnd hwnd,
  * @param rpcs    RPC server handle 
  * @param hwnd    handle to a window that receive a message when the
  *                 asynchronous request completes
- * @param wmsg    message to be received when when asynchronous request
+ * @param wmsg    message to be received when asynchronous request
  *                 completes
  * @param port    port for the service
  * @param proto   pointer to a protocol name
@@ -763,7 +762,7 @@ extern int rpc_wsa_recv_disconnect(rcf_rpc_server *rpcs,
  * @param msg            pointer to a @b rpc_msghdr structure containing
  *                       received data
  * @param bytes_received pointer to the number of bytes received
- * @param overlapped     overlapped structure * 
+ * @param overlapped     overlapped structure  
  * @param callback       support of completion routine. If true a completion
  *                       routine is call when the send operation has been 
  *                       completed
@@ -780,7 +779,7 @@ extern int rpc_wsa_recv_msg(rcf_rpc_server *rpcs, int s,
  * @param rpcs           RPC server handle
  * @param s              desccriptor identifying a socket
  * @param overlapped     overlapped structure
- * @param bytes          pointer to the number of bytes that was were 
+ * @param bytes          pointer to the number of bytes that were 
  *                       transfered by a send or receive operation
  * @param wait           specifies whether the function should wait for
  *                       the overlapped operation to complete
@@ -890,8 +889,7 @@ wsa_wait_rpc2str(int code)
  *                 tests the state of specified event objects and returns 
  *                 immediately. If @b timeout is WSA_INFINITE, the time-out
  *                 interval never expires.
- * @param alertable
- * @param rcount    specify whether the completion routine has to be 
+ * @param alertable specify whether the completion routine has to be 
  *                  executed before the function returns.
  * @param rcount    maximum number of events
  *                   
@@ -903,10 +901,9 @@ extern int rpc_wait_multiple_events(rcf_rpc_server *rpcs,
                                     te_bool wait_all, uint32_t timeout,
                                     te_bool alertable, int rcount);
 
-/* Window objects */
 
 /** 
- * CreateWIndow() 
+ * Create a window for receiving event notifications
  *
  * @param rpcs RPC server handle
  *
