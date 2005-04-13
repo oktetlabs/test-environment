@@ -145,6 +145,7 @@ extern "C" {
  */
 #define TEST_FAIL(fmt...) \
     do {                                                            \
+        ERROR("Test Failed on line %d", __LINE__);                  \
         ERROR(fmt);                                                 \
         TEST_STOP;                                                  \
     } while (0)
