@@ -84,15 +84,24 @@ tcp_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
     tcp_csap_specific_data_t * spec_data = 
         (tcp_csap_specific_data_t *) csap_descr->layers[layer].specific_data; 
 
-    tad_data_unit_convert(tmpl_pdu, "src-port", &spec_data->du_src_port);
-    tad_data_unit_convert(tmpl_pdu, "dst-port", &spec_data->du_dst_port);
-    tad_data_unit_convert(tmpl_pdu, "seqn",     &spec_data->du_seqn);
-    tad_data_unit_convert(tmpl_pdu, "acqn",     &spec_data->du_acqn);
-    tad_data_unit_convert(tmpl_pdu, "hlen",     &spec_data->du_hlen);
-    tad_data_unit_convert(tmpl_pdu, "flags",    &spec_data->du_flags);
-    tad_data_unit_convert(tmpl_pdu, "win-size", &spec_data->du_win_size);
-    tad_data_unit_convert(tmpl_pdu, "checksum", &spec_data->du_checksum);
-    tad_data_unit_convert(tmpl_pdu, "urg-p",    &spec_data->du_urg_p);
+    tad_data_unit_convert(tmpl_pdu, NDN_TAG_TCP_SRC_PORT,
+                          &spec_data->du_src_port);
+    tad_data_unit_convert(tmpl_pdu, NDN_TAG_TCP_DST_PORT,
+                          &spec_data->du_dst_port);
+    tad_data_unit_convert(tmpl_pdu, NDN_TAG_TCP_SEQN,
+                          &spec_data->du_seqn);
+    tad_data_unit_convert(tmpl_pdu, NDN_TAG_TCP_ACKN,
+                          &spec_data->du_acqn);
+    tad_data_unit_convert(tmpl_pdu, NDN_TAG_TCP_HLEN,
+                          &spec_data->du_hlen);
+    tad_data_unit_convert(tmpl_pdu, NDN_TAG_TCP_FLAGS,
+                          &spec_data->du_flags);
+    tad_data_unit_convert(tmpl_pdu, NDN_TAG_TCP_WINDOW,
+                          &spec_data->du_win_size);
+    tad_data_unit_convert(tmpl_pdu, NDN_TAG_TCP_CHECKSUM,
+                          &spec_data->du_checksum);
+    tad_data_unit_convert(tmpl_pdu, NDN_TAG_TCP_URG,
+                          &spec_data->du_urg_p);
  
     return rc;
 }

@@ -106,7 +106,8 @@ int eth_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
     
     /* =========== Destination MAC address ============ */
 
-    rc = tad_data_unit_convert(tmpl_pdu, "dst-addr", &spec_data->du_dst_addr);
+    rc = tad_data_unit_convert_by_label(tmpl_pdu, "dst-addr",
+                                        &spec_data->du_dst_addr);
 
     VERB("rc from DU convert dst-addr %x, du-type: %d", 
             rc, spec_data->du_dst_addr.du_type);
@@ -161,7 +162,8 @@ int eth_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
     
     /* =========== Source MAC address ============ */
 
-    rc = tad_data_unit_convert(tmpl_pdu, "src-addr", &spec_data->du_src_addr);
+    rc = tad_data_unit_convert_by_label(tmpl_pdu, "src-addr",
+                                        &spec_data->du_src_addr);
     VERB("rc from DU convert src-addr %x, du-type: %d", 
             rc, spec_data->du_src_addr.du_type);
 
@@ -218,7 +220,8 @@ int eth_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
     
 
     /* =========== Ethernet type/length field ============ */
-    rc = tad_data_unit_convert(tmpl_pdu, "eth-type", &spec_data->du_eth_type);
+    rc = tad_data_unit_convert_by_label(tmpl_pdu, "eth-type",
+                                        &spec_data->du_eth_type);
     VERB("rc from DU convert eth-type %x, du-type: %d", 
             rc, spec_data->du_eth_type.du_type); 
 
@@ -248,7 +251,7 @@ int eth_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
 
 #define CHECK_VLAN_FIELD(c_du_field, label, flag) \
     do { \
-        rc = tad_data_unit_convert(tmpl_pdu, label,             \
+        rc = tad_data_unit_convert_by_label(tmpl_pdu, label,    \
                                    &spec_data-> c_du_field );   \
         if (rc)                                                 \
         {                                                       \
@@ -392,67 +395,18 @@ int eth_gen_bin_cb(int csap_id, int layer, const asn_value *tmpl_pdu,
 
 #define PUT_BIN_DATA(c_du_field, length) \
     do {                                                                \
-        switch (spec_data-> c_du_field .du_type)                        \
+        rc = tad_data_unit_to_bin(&(spec_data->c_du_field),             \
+                                  args, arg_num, p, length);            \
+        if (rc != 0)                                                    \
         {                                                               \
-            case TAD_DU_EXPR:                                           \
-            {                                                           \
-                int64_t iterated, no_iterated;                          \
-                rc = tad_int_expr_calculate                             \
-                        (spec_data-> c_du_field .val_int_expr,             \
-                         args, &iterated);                              \
-                if (rc)                                                 \
-                {                                                       \
-                    ERROR(\
-                          " ## c_du_field ## int expr calc error %x", rc); \
-                }                                                       \
-                else                                                    \
-                {                                                       \
-                    no_iterated = tad_ntohll(iterated);                 \
-                    memcpy(p, ((uint8_t *)&no_iterated) +               \
-                                sizeof(no_iterated) - length,           \
-                           length);                                     \
-                    p += length;                                        \
-                }                                                       \
-            }                                                           \
-                break;                                                  \
-            case TAD_DU_OCTS:                                           \
-                if (spec_data-> c_du_field .val_data.oct_str == NULL)   \
-                {                                                       \
-                    ERROR(\
-                                "Have no binary data to be sent");      \
-                    rc = ETADLESSDATA;                                  \
-                }                                                       \
-                else                                                    \
-                {                                                       \
-                    memcpy(p, spec_data-> c_du_field .val_data.oct_str, \
-                            length);                                    \
-                    p += length;                                        \
-                }                                                       \
-                break;                                                  \
-            case TAD_DU_I32:                                            \
-            {                                                           \
-                int32_t no_int = htonl(spec_data-> c_du_field .val_i32);\
-                memcpy(p, ((uint8_t *)&no_int) + sizeof(no_int) - length,\
-                       length);                                         \
-                p += length;                                            \
-            }                                                           \
-                break;                                                  \
-            default:                                                    \
-                ERROR(\
-                        "Wrong type %d of DU for send, line %d",        \
-                            spec_data-> c_du_field .du_type, __LINE__); \
-                rc = ETADLESSDATA;                                      \
-        }                                                               \
-        if (rc)                                                         \
-        {                                                               \
-            ERROR("Something wrong in gen: %x", rc);  \
+            ERROR("%s(): generate " #c_du_field ", error: 0x%x",        \
+                  __FUNCTION__,  rc);                                   \
             return rc;                                                  \
         }                                                               \
+        p += length;                                                    \
     } while (0) 
 
-    VERB("put dst-addr");  
     PUT_BIN_DATA(du_dst_addr, ETH_ALEN);
-    VERB("put src-addr");  
     PUT_BIN_DATA(du_src_addr, ETH_ALEN); 
 
     if (is_tagged)
@@ -465,21 +419,14 @@ int eth_gen_bin_cb(int csap_id, int layer, const asn_value *tmpl_pdu,
 
 #define CALC_VLAN_PARAM(c_du_field, var) \
     do {\
-        int64_t iterated;                                               \
-        switch (spec_data-> c_du_field .du_type)                        \
+        rc = tad_data_unit_to_bin(&(spec_data->c_du_field),             \
+                                  args, arg_num,                        \
+                                  (uint8_t *)&var, sizeof(var));        \
+        if (rc != 0)                                                    \
         {                                                               \
-            case TAD_DU_I32:                                            \
-                var = spec_data-> c_du_field .val_i32;                  \
-                break;                                                  \
-            case TAD_DU_EXPR:                                           \
-                tad_int_expr_calculate(spec_data-> c_du_field .val_int_expr, \
-                                       args, &iterated);                \
-                var = iterated;                                         \
-                break;                                                  \
-            default:                                                    \
-                ERROR("Wrong type  %d of DU for send",\
-                            spec_data-> c_du_field .du_type);           \
-                return ETADLESSDATA;                                    \
+            ERROR("%s(): generate " #c_du_field ", error: 0x%x",        \
+                  __FUNCTION__,  rc);                                   \
+            return rc;                                                  \
         }                                                               \
     } while (0)
 
@@ -491,7 +438,8 @@ int eth_gen_bin_cb(int csap_id, int layer, const asn_value *tmpl_pdu,
         *((uint16_t *) p) = htons (ETH_TAGGED_TYPE_LEN); 
         p += ETH_TYPE_LEN; 
 
-        *((uint16_t *) p) = htons (vlan_id); 
+        /* vlan_id prepared already in network byte order */
+        *((uint16_t *)p) = vlan_id;
 
         *p |= (cfi ? 1 : 0) << 4;
 

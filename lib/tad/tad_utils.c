@@ -503,7 +503,8 @@ tad_int_expr_free(tad_int_expr_t *expr)
  */
 int 
 tad_int_expr_calculate(const tad_int_expr_t *expr, 
-                       const tad_tmpl_arg_t *args, int64_t *result)
+                       const tad_tmpl_arg_t *args, size_t num_args,
+                       int64_t *result) 
 {
     int rc;
 
@@ -520,50 +521,69 @@ tad_int_expr_calculate(const tad_int_expr_t *expr,
             break;
 
         case TAD_EXPR_ARG_LINK:
-            if (args == NULL)
-                return ETEWRONGPTR;
+            {
+                int ar_n = expr->arg_num;
 
-            if (args[expr->arg_num].type != TAD_TMPL_ARG_INT)
-                return EINVAL;
-            *result = args[expr->arg_num].arg_int;
+                if (args == NULL)
+                    return ETEWRONGPTR;
+
+                if (ar_n < 0 || ((size_t)ar_n) >= num_args)
+                {
+                    ERROR("%s(): wrong arg ref: %d, num of iter. args: %d",
+                          __FUNCTION__, ar_n, num_args); 
+                    return ETADWRONGNDS;
+                }
+
+                if (args[ar_n].type != TAD_TMPL_ARG_INT)
+                {
+                    ERROR("%s(): wrong arg %d type: %d, not integer",
+                          __FUNCTION__, ar_n, args[ar_n].type);
+                    return ETADWRONGNDS;
+                }
+                *result = args[ar_n].arg_int;
+            }
             break;
 
         default: 
+        {
+            int64_t r1, r2;
+
+            rc = tad_int_expr_calculate(expr->exprs, args, num_args, &r1);
+            if (rc != 0) 
+                return rc;
+
+            /* there is only one unary arithmetic operation */
+            if (expr->n_type != TAD_EXPR_U_MINUS)
             {
-                int64_t r1, r2;
-
-                rc = tad_int_expr_calculate(expr->exprs, args, &r1);
-                if (rc) 
+                rc = tad_int_expr_calculate(expr->exprs + 1, args,
+                                            num_args, &r2);
+                if (rc != 0) 
                     return rc;
-
-                if (expr->n_type != TAD_EXPR_U_MINUS)
-                {
-                    rc = tad_int_expr_calculate(expr->exprs + 1, args, &r2);
-                    if (rc) 
-                        return rc;
-                }
-
-                switch (expr->n_type)
-                {
-                    case TAD_EXPR_ADD:
-                        *result = r1 + r2; 
-                        break;
-                    case TAD_EXPR_SUBSTR:
-                        *result = r1 - r2; 
-                        break;
-                    case TAD_EXPR_MULT:
-                        *result = r1 * r2; 
-                        break;
-                    case TAD_EXPR_DIV:
-                        *result = r1 / r2; 
-                        break;
-                    case TAD_EXPR_U_MINUS:
-                        *result = - r1; 
-                        break;
-                    default:
-                        return EINVAL;
-                }
             }
+
+            switch (expr->n_type)
+            {
+                case TAD_EXPR_ADD:
+                    *result = r1 + r2; 
+                    break;
+                case TAD_EXPR_SUBSTR:
+                    *result = r1 - r2; 
+                    break;
+                case TAD_EXPR_MULT:
+                    *result = r1 * r2; 
+                    break;
+                case TAD_EXPR_DIV:
+                    *result = r1 / r2; 
+                    break;
+                case TAD_EXPR_U_MINUS:
+                    *result = - r1; 
+                    break;
+                default:
+                    ERROR("%s(): unknown type of expr node: %d",
+                          __FUNCTION__, expr->n_type);
+                    return EINVAL;
+            }
+        } /* end of 'default' sub-block */
     }
 
     return 0;
@@ -658,32 +678,62 @@ tad_ntohll(uint64_t n)
 }
 
 
+/* See description in tad_utils.h */ 
+int
+tad_data_unit_convert_by_label(const asn_value *pdu_val, 
+                               const char *label, 
+                               tad_data_unit_t *location)
+{
+    int         rc;
+    asn_tag_t   tag;
 
-/**
- * Convert DATA-UNIT ASN field to plain C structure.
- * Memory need to store dynamic data, is allocated in this method and
- * should be freed by user. 
- *
- * @param pdu_val       ASN value with pdu, which DATA-UNIT field should be 
- *                      converted.
- * @param label         label of DATA_UNIT field in PDU.
- * @param location      location for converted structure (OUT). 
-  *
- * @return zero on success or error code. 
- */ 
+    const asn_value *clear_pdu_val;
+    const asn_type  *clear_pdu_type;
+
+    if (pdu_val == NULL || label == NULL || location == NULL)
+        return ETEWRONGPTR;
+    
+    if (asn_get_syntax(pdu_val, "") == CHOICE)
+    {
+        if ((rc = asn_get_choice_value(pdu_val, &clear_pdu_val, NULL, NULL))
+             != 0)
+            return rc;
+    }
+    else
+        clear_pdu_val = pdu_val; 
+
+    clear_pdu_type = asn_get_type(clear_pdu_val);
+    rc = asn_label_to_tag(clear_pdu_type, label, &tag);
+
+    if (rc != 0)
+    {
+        ERROR("%s(): wrong label %s, ASN type %s", 
+             __FUNCTION__, label, asn_get_type_name(clear_pdu_type));
+        return rc;
+    }
+
+    rc = tad_data_unit_convert(clear_pdu_val, tag.val, location);
+
+    return rc;
+}
+
+
+/* See description in tad_utils.h */ 
 int 
-tad_data_unit_convert(const asn_value *pdu_val, const char *label, 
-                                 tad_data_unit_t *location)
+tad_data_unit_convert(const asn_value *pdu_val,
+                      uint16_t tag_value,
+                      tad_data_unit_t *location)
 {
     char choice[20]; 
     int  rc;
 
     const asn_value *du_field;
+    const asn_value *ch_du_field;
 
-    if (pdu_val == NULL || label == NULL || location == NULL)
+    if (pdu_val == NULL || location == NULL)
         return ETEWRONGPTR;
 
-    rc = asn_get_subvalue(pdu_val, &du_field, label);
+    rc = asn_get_child_value(pdu_val, &ch_du_field, PRIVATE, tag_value);
 
     if (rc != 0)
     {
@@ -694,16 +744,20 @@ tad_data_unit_convert(const asn_value *pdu_val, const char *label,
             return 0;
         }
         else
-        {
-            WARN("%s: get subvalue %s failed %X", __FUNCTION__, label, rc);
             return rc;
-        }
     } 
 
-    rc = asn_get_choice(pdu_val, label, choice, sizeof(choice));
+    rc = asn_get_choice(ch_du_field, "", choice, sizeof(choice));
     if (rc != 0)
     {
-        F_ERROR("rc from get choice: %x", rc);
+        F_ERROR("%s(): rc from get choice label: %x", __FUNCTION__, rc);
+        return rc;
+    }
+
+    rc = asn_get_choice_value(ch_du_field, &du_field, NULL, NULL);
+    if (rc != 0)
+    {
+        F_ERROR("%s(): rc from get choice val: %x", __FUNCTION__, rc);
         return rc;
     }
 
@@ -887,6 +941,63 @@ tad_data_unit_from_bin(const uint8_t *data, size_t d_len,
     return 0;
 }
 
+/* See description in tad_utils.h */
+int
+tad_data_unit_to_bin(const tad_data_unit_t *du_tmpl, 
+                     const tad_tmpl_arg_t *args, size_t arg_num, 
+                     uint8_t *data_place, size_t d_len)
+{
+    int rc = 0;
+
+    if (du_tmpl == NULL || data_place == NULL)
+        return ETEWRONGPTR;
+    if (d_len == 0)
+        return EINVAL;
+
+    switch (du_tmpl->du_type)
+    {
+        case TAD_DU_EXPR:
+        {               
+            int64_t iterated, no_iterated;
+            rc = tad_int_expr_calculate(du_tmpl->val_int_expr,
+                                        args, arg_num, &iterated);
+            if (rc != 0)                                    
+                ERROR("%s(): int expr calc error %x", __FUNCTION__, rc);
+            else
+            {
+                no_iterated = tad_ntohll(iterated);
+                memcpy(data_place, ((uint8_t *)&no_iterated) +
+                            sizeof(no_iterated) - d_len,
+                       d_len);
+            }
+        }
+            break;
+
+        case TAD_DU_OCTS:
+            if (du_tmpl->val_data.oct_str == NULL)
+            {
+                ERROR("Have no binary data to be sent");
+                rc = ETADLESSDATA;
+            }
+            else
+                memcpy(data_place, du_tmpl->val_data.oct_str, d_len);
+            break;
+        case TAD_DU_I32:
+            {
+                int32_t no_int = htonl(du_tmpl->val_i32);
+                memcpy(data_place,
+                       ((uint8_t *)&no_int) + sizeof(no_int) - d_len,
+                       d_len);
+            }
+            break;
+        default:
+            ERROR("%s(): wrong type %d of DU for send",
+                  __FUNCTION__, du_tmpl->du_type);
+            rc = ETADLESSDATA;
+    }
+
+    return rc;
+}
 
 /**
  * Make hex dump of packet into log with RING log level. 

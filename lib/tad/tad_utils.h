@@ -331,12 +331,14 @@ extern void tad_int_expr_free(tad_int_expr_t *expr);
  *
  * @param expr          Expression structure.
  * @param args          Array with arguments.
+ * @param num_args      Length of arguments array.
  * @param result        Location for result (OUT).
  *
  * @return status code.
  */
 extern int tad_int_expr_calculate(const tad_int_expr_t *expr, 
                                   const tad_tmpl_arg_t *args,
+                                  size_t num_args,
                                   int64_t *result);
 
 /**
@@ -397,7 +399,7 @@ extern int tad_iterate_tmpl_args(tad_tmpl_iter_spec_t *arg_specs,
 extern int tad_get_tmpl_arg_specs(const asn_value *arg_set, 
                                   tad_tmpl_iter_spec_t *arg_specs,
                                   size_t arg_num);
- 
+  
 /**
  * Convert DATA-UNIT ASN field of PDU to plain C structure.
  * Memory need to store dynamic data, is allocated in this method and
@@ -405,13 +407,30 @@ extern int tad_get_tmpl_arg_specs(const asn_value *arg_set,
  *
  * @param pdu_val       ASN value with pdu, which DATA-UNIT field 
  *                      should be converted.
- * @param label         Label of DATA_UNIT field in PDU.
+ * @param label         Textual label of DATA_UNIT field in PDU.
+ * @param location      Location for converted structure (OUT). 
+ *
+ * @return zero on success or error code. 
+ */ 
+extern int tad_data_unit_convert_by_label(const asn_value *pdu_val, 
+                                          const char *label,
+                                          tad_data_unit_t *location);
+
+/**
+ * Convert DATA-UNIT ASN field of PDU to plain C structure.
+ * Memory need to store dynamic data, is allocated in this method and
+ * should be freed by user. 
+ *
+ * @param pdu_val       ASN value with pdu, which DATA-UNIT field 
+ *                      should be converted.
+ * @param tag_value     ASN.1 tag value of field, tag class is
+ *                      assumed to be PRIVATE. 
  * @param location      Location for converted structure (OUT). 
  *
  * @return zero on success or error code. 
  */ 
 extern int tad_data_unit_convert(const asn_value *pdu_val, 
-                                 const char *label,
+                                 uint16_t tag_value,
                                  tad_data_unit_t *location);
 
 /**
@@ -461,6 +480,23 @@ extern void tad_data_unit_clear(tad_data_unit_t *du);
 extern int tad_univ_match_field(const tad_data_unit_t *pattern,
                                 asn_value *pkt_pdu, uint8_t *data, 
                                 size_t d_len, const char *label);
+
+/**
+ * Put binary data into specified place according with data unit, 
+ * already converted into plain C structure. All integers put in network
+ * byte order. 
+ *
+ * @param du_tmpl       data unit template structure
+ * @param args          Array with arguments.
+ * @param num_args      Length of arguments array.
+ * @param data_place    location for generated binary data (OUT)
+ * @param d_len         length of data field to be generated
+ *
+ * @return status code
+ */
+extern int tad_data_unit_to_bin(const tad_data_unit_t *du_tmpl, 
+                                const tad_tmpl_arg_t *args, size_t arg_num, 
+                                uint8_t *data_place, size_t d_len);
 
 #ifdef __cplusplus
 } /* extern "C" */

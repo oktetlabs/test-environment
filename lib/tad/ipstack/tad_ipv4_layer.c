@@ -68,30 +68,70 @@ char* ip4_get_param_cb (csap_p csap_descr, int level, const char *param)
  * @return zero on success or error code.
  */ 
 int 
-ip4_confirm_pdu_cb (int csap_id, int layer, asn_value *tmpl_pdu)
+ip4_confirm_pdu_cb(int csap_id, int layer, asn_value *tmpl_pdu)
 { 
     int rc;
-    csap_p csap_descr = csap_find(csap_id);
     int len;
+    csap_p csap_descr = csap_find(csap_id);
+
+    const asn_value *ip4_csap_pdu;
+    const asn_value *ip4_tmpl_pdu;
 
     ip4_csap_specific_data_t * spec_data = 
         (ip4_csap_specific_data_t *) csap_descr->layers[layer].specific_data; 
 
 
-    tad_data_unit_convert(tmpl_pdu, "version",         &spec_data->du_version);
-    tad_data_unit_convert(tmpl_pdu, "header-len",      &spec_data->du_header_len);
-    tad_data_unit_convert(tmpl_pdu, "type-of-service", &spec_data->du_tos);
-    tad_data_unit_convert(tmpl_pdu, "ip-len",          &spec_data->du_ip_len);
-    tad_data_unit_convert(tmpl_pdu, "ip-ident",        &spec_data->du_ip_ident);
-    tad_data_unit_convert(tmpl_pdu, "flags",           &spec_data->du_flags);
-    tad_data_unit_convert(tmpl_pdu, "ip-offset",       &spec_data->du_ip_offset);
-    tad_data_unit_convert(tmpl_pdu, "time-to-live",    &spec_data->du_ttl);
-    tad_data_unit_convert(tmpl_pdu, "protocol",        &spec_data->du_protocol);
-    tad_data_unit_convert(tmpl_pdu, "h-checksum",      &spec_data->du_h_checksum);
+    if (asn_get_syntax(tmpl_pdu, "") == CHOICE)
+    {
+        if ((rc = asn_get_choice_value(tmpl_pdu, &ip4_tmpl_pdu, NULL, NULL))
+             != 0)
+            return rc;
+    }
+    else
+        ip4_tmpl_pdu = tmpl_pdu; 
+
+
+
+    ip4_csap_pdu = csap_descr->layers[layer].csap_layer_pdu; 
+    if (asn_get_syntax(ip4_csap_pdu, "") == CHOICE)
+    {
+        if ((rc = asn_get_choice_value(ip4_csap_pdu, &ip4_csap_pdu,
+                                       NULL, NULL)) != 0)
+            return rc;
+    }
+
+    tad_data_unit_convert(tmpl_pdu, NDN_TAG_IP4_VERSION,
+                          &spec_data->du_version);
+    if (spec_data->du_version.du_type == TAD_DU_UNDEF)
+        tad_data_unit_convert(ip4_csap_pdu, NDN_TAG_IP4_VERSION,
+                              &spec_data->du_version);
+
+    tad_data_unit_convert(tmpl_pdu, NDN_TAG_IP4_HLEN,
+                          &spec_data->du_header_len);
+    tad_data_unit_convert(tmpl_pdu, NDN_TAG_IP4_TOS,
+                          &spec_data->du_tos);
+    if (spec_data->du_tos.du_type == TAD_DU_UNDEF)
+        tad_data_unit_convert(ip4_csap_pdu, NDN_TAG_IP4_TOS,
+                              &spec_data->du_tos);
+
+    tad_data_unit_convert(tmpl_pdu, NDN_TAG_IP4_LEN,
+                          &spec_data->du_ip_len);
+    tad_data_unit_convert(tmpl_pdu, NDN_TAG_IP4_IDENT,
+                          &spec_data->du_ip_ident);
+    tad_data_unit_convert(tmpl_pdu, NDN_TAG_IP4_FLAGS,
+                          &spec_data->du_flags);
+    tad_data_unit_convert(tmpl_pdu, NDN_TAG_IP4_OFFSET,
+                          &spec_data->du_ip_offset);
+    tad_data_unit_convert(tmpl_pdu, NDN_TAG_IP4_TTL,
+                          &spec_data->du_ttl);
+    tad_data_unit_convert(tmpl_pdu, NDN_TAG_IP4_PROTOCOL,
+                          &spec_data->du_protocol);
+    tad_data_unit_convert(tmpl_pdu, NDN_TAG_IP4_H_CHECKSUM,
+                          &spec_data->du_h_checksum);
 
     /* Source address */
 
-    rc = tad_data_unit_convert(tmpl_pdu, "src-addr", &spec_data->du_src_addr);
+    rc = tad_data_unit_convert(tmpl_pdu, NDN_TAG_IP4_SRC_ADDR, &spec_data->du_src_addr);
 
     len = sizeof(struct in_addr);
     rc = asn_read_value_field(tmpl_pdu, &spec_data->src_addr, 
@@ -103,7 +143,7 @@ ip4_confirm_pdu_cb (int csap_id, int layer, asn_value *tmpl_pdu)
     }
 
     /* Destination address */
-    rc = tad_data_unit_convert(tmpl_pdu, "dst-addr", &spec_data->du_dst_addr);
+    rc = tad_data_unit_convert(tmpl_pdu, NDN_TAG_IP4_DST_ADDR, &spec_data->du_dst_addr);
 
     if (rc == 0)
         rc = asn_read_value_field(tmpl_pdu, &spec_data->dst_addr, 
@@ -159,9 +199,8 @@ ip4_gen_bin_cb(int csap_id, int layer, const asn_value *tmpl_pdu,
     csap_p  csap_descr;
     int     rc;
 
-    const asn_value *ip4_csap_pdu;
-    const asn_value *ip4_tmpl_pdu;
-
+    ip4_csap_specific_data_t * spec_data = 
+        (ip4_csap_specific_data_t *) csap_descr->layers[layer].specific_data; 
 
     if ((csap_descr = csap_find(csap_id)) == NULL)
         return TE_RC(TE_TAD_CSAP, EINVAL);
@@ -169,26 +208,18 @@ ip4_gen_bin_cb(int csap_id, int layer, const asn_value *tmpl_pdu,
     if (csap_descr->type == TAD_CSAP_DATA)
         return 0;
 
-    if (asn_get_syntax(tmpl_pdu, "") == CHOICE)
-    {
-        if ((rc = asn_get_choice_value(tmpl_pdu, &ip4_tmpl_pdu, NULL, NULL))
-             != 0)
-            return rc;
-    }
-    else
-        ip4_tmpl_pdu = tmpl_pdu; 
-
-
-
-    ip4_csap_pdu = csap_descr->layers[layer].csap_layer_pdu; 
-    if (asn_get_syntax(ip4_csap_pdu, "") == CHOICE)
-    {
-        if ((rc = asn_get_choice_value(ip4_csap_pdu, &ip4_csap_pdu,
-                                       NULL, NULL)) != 0)
-            return rc;
-    }
-    else
-        ip4_tmpl_pdu = tmpl_pdu;
+#define PUT_BIN_DATA(c_du_field, length) \
+    do {                                                                \
+        rc = tad_data_unit_to_bin(&(spec_data->c_du_field),             \
+                                  args, arg_num, p, length);            \
+        if (rc != 0)                                                    \
+        {                                                               \
+            ERROR("%s(): generate " #c_du_field ", error: 0x%x",        \
+                  __FUNCTION__,  rc);                                   \
+            return rc;                                                  \
+        }                                                               \
+        p += length;                                                    \
+    } while (0) 
 
     
     UNUSED(up_payload);
