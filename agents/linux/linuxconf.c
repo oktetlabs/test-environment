@@ -41,7 +41,13 @@
 #include <fcntl.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#ifndef ENABLE_WIFI_SUPPORT
+/* 
+ * In case of iwlib.h we have a lot of redefinitions when we include 
+ * this file, so just do not include it.
+ */
 #include <net/if.h>
+#endif
 #include <sys/ioctl.h>
 #if HAVE_NET_IF_DL_H
 #include <net/if_dl.h>
@@ -52,6 +58,10 @@
 #include <net/ethernet.h>
 #endif
 #include <arpa/inet.h>
+
+#ifdef ENABLE_WIFI_SUPPORT
+#include <iwlib.h>
+#endif
 
 #include "te_stdint.h"
 #include "te_errno.h"
@@ -142,6 +152,31 @@ static int mtu_get(unsigned int, const char *, char *,
 static int mtu_set(unsigned int, const char *, const char *,
                    const char *);
 
+#ifdef ENABLE_WIFI_SUPPORT
+static int wifi_list(unsigned int, const char *, char **,
+                     const char *);
+static int wifi_essid_get(unsigned int, const char *, char *,
+                          const char *);
+static int wifi_essid_set(unsigned int, const char *, char *,
+                          const char *);
+static int wifi_wep_key_get(unsigned int, const char *, char *,
+                            const char *);
+static int wifi_wep_key_set(unsigned int, const char *, char *,
+                            const char *);
+static int wifi_wep_get(unsigned int, const char *, char *, const char *);
+static int wifi_wep_set(unsigned int, const char *, char *, const char *);
+static int wifi_auth_get(unsigned int, const char *, char *, const char *);
+static int wifi_auth_set(unsigned int, const char *, char *, const char *);
+static int wifi_channel_get(unsigned int, const char *, char *,
+                            const char *);
+static int wifi_channel_set(unsigned int, const char *, char *,
+                            const char *);
+static int wifi_channels_get(unsigned int, const char *, char *,
+                             const char *);
+static int wifi_ap_get(unsigned int, const char *, char *,
+                       const char *);
+#endif
+
 static int arp_get(unsigned int, const char *, char *,
                    const char *, const char *);
 static int arp_set(unsigned int, const char *, const char *,
@@ -197,8 +232,39 @@ RCF_PCH_CFG_NODE_RO(node_dns, "dns",
                     NULL, &node_arp,
                     (rcf_ch_cfg_list)nameserver_get);
 
+#ifdef ENABLE_WIFI_SUPPORT
+RCF_PCH_CFG_NODE_RW(node_wifi_wep_key, "key", NULL, NULL,
+                    wifi_wep_key_get, wifi_wep_key_set);
+
+RCF_PCH_CFG_NODE_RW(node_wifi_wep, "wep", &node_wifi_wep_key, NULL,
+                    wifi_wep_get, wifi_wep_set);
+
+RCF_PCH_CFG_NODE_RW(node_wifi_auth, "auth", NULL, &node_wifi_wep,
+                    wifi_auth_get, wifi_auth_set);
+
+RCF_PCH_CFG_NODE_RW(node_wifi_channel, "channel", NULL, &node_wifi_auth,
+                    wifi_channel_get, wifi_channel_set);
+
+RCF_PCH_CFG_NODE_RO(node_wifi_channels, "channels", NULL,
+                    &node_wifi_channel, wifi_channels_get);
+
+RCF_PCH_CFG_NODE_RO(node_wifi_ap, "ap", NULL, &node_wifi_channels,
+                    wifi_ap_get);
+
+RCF_PCH_CFG_NODE_RW(node_wifi_essid, "essid", NULL, &node_wifi_ap,
+                    wifi_essid_get, wifi_essid_set);
+
+RCF_PCH_CFG_NODE_COLLECTION(node_wifi, "wifi",
+                            &node_wifi_essid, NULL,
+                            NULL, NULL,
+                            wifi_list, NULL);
+
+RCF_PCH_CFG_NODE_RW(node_status, "status", NULL, &node_wifi,
+                    status_get, status_set);
+#else
 RCF_PCH_CFG_NODE_RW(node_status, "status", NULL, NULL,
                     status_get, status_set);
+#endif /* ENABLE_WIFI_SUPPORT */
 
 RCF_PCH_CFG_NODE_RW(node_mtu, "mtu", NULL, &node_status,
                     mtu_get, mtu_set);
@@ -1710,6 +1776,634 @@ status_set(unsigned int gid, const char *oid, const char *value,
     return 0;
 }
 #endif
+
+#ifdef ENABLE_WIFI_SUPPORT
+
+/**
+ * Returns socket descriptor that should be used in ioctl() calls
+ * for configuring wireless interface attributes
+ *
+ * @return Socket descriptor, or -errno in case of failure.
+ */
+static int
+wifi_get_skfd()
+{
+    static int skfd = -1;
+    
+    if (skfd == -1)
+    {
+        /* We'll never close this socket until agent shutdown */
+        if ((skfd = iw_sockets_open()) < 0)
+        {
+            ERROR("Cannot open socket for wireless extension");
+            return -(TE_RC(TE_TA_LINUX, errno));
+        }
+    }
+
+    return skfd;
+}
+
+/**
+ * Check if socket descriptor is valid
+ *
+ * @param skfd_ Socket descriptor to be checked
+ */
+#define WIFI_CHECK_SKFD(skfd_) \
+    do {                       \
+        if ((skfd_) < 0)       \
+            return -(skfd_);   \
+    } while (0);
+
+/**
+ * Returns configuration information about WiFi card.
+ *
+ * @param ifname  Wireless interface name
+ * @param cfg     Configuration information (OUT)
+ *
+ * @return Status of the operation
+ */
+static int
+wifi_get_config(const char *ifname, wireless_config *cfg)
+{
+    int skfd = wifi_get_skfd();
+
+    WIFI_CHECK_SKFD(skfd);
+
+    memset(cfg, 0, sizeof(*cfg));
+
+    if (iw_get_basic_config(skfd, ifname, cfg) != 0)
+    {
+        return TE_RC(TE_TA_LINUX, errno);
+    }
+    return 0;
+}
+
+/**
+ * Update a configuration item in WiFi card.
+ *
+ * @param ifname  Wireless interface name
+ * @param req     Request type
+ * @param wrp     request value
+ *
+ * @return Status of the operation
+ */
+static int
+wifi_set_item(const char *ifname, int req, struct iwreq *wrp)
+{
+    int skfd = wifi_get_skfd();
+
+    WIFI_CHECK_SKFD(skfd);
+    
+    if (iw_set_ext(skfd, ifname, req, wrp) < 0)
+        return TE_RC(TE_TA_LINUX, errno);
+
+    return 0;
+}
+
+/**
+ * Get a configuration item from WiFi card.
+ *
+ * @param ifname  Wireless interface name
+ * @param req     Request type
+ * @param wrp     request value (OUT)
+ *
+ * @return Status of the operation
+ */
+static int
+wifi_get_item(const char *ifname, int req, struct iwreq *wrp)
+{
+    int skfd = wifi_get_skfd();
+
+    WIFI_CHECK_SKFD(skfd);
+    
+    if (iw_get_ext(skfd, ifname, req, wrp) < 0)
+        return TE_RC(TE_TA_LINUX, errno);
+
+    return 0;
+}
+
+/**
+ * Determine if interface supports wireless extension or not.
+ *
+ * @param gid     group identifier (unused)
+ * @param oid     full object instence identifier
+ * @param list    location for the list pointer
+ * @param ifname  interface name
+ *
+ * @return error code
+ */
+static int
+wifi_list(unsigned int gid, const char *oid, char **list,
+          const char *ifname)
+{
+    wireless_config cfg;
+    int             rc;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if ((rc = wifi_get_config(ifname, &cfg)) != 0)
+    {
+        if (TE_RC_GET_ERROR(rc) == EOPNOTSUPP)
+        {
+            /* Interface does not support wireless extension */
+            *list = strdup("");
+            rc = 0;
+        }
+
+        return rc;
+    }
+
+    *list = strdup("enabled");
+    return 0;
+}
+
+/**
+ * Get WEP key value used on the wireless interface.
+ *
+ * @param gid     group identifier (unused)
+ * @param oid     full object instence identifier
+ * @param value   location for the value in format "XXXXXXXXXX" (5 bytes)
+ * @param ifname  interface name
+ *
+ * @return error code
+ */
+static int
+wifi_wep_key_get(unsigned int gid, const char *oid, char *value,
+                 const char *ifname)
+{
+    int             rc;
+    wireless_config cfg;
+    int             i;
+    
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if ((rc = wifi_get_config(ifname, &cfg)) != 0)
+        return rc;
+
+    if (!cfg.has_key)
+    {
+        ERROR("Cannot get information about encryption "
+              "on %s interface", ifname);
+        return TE_RC(TE_TA_LINUX, EFAULT);
+    }
+
+    value[0] = '\0';
+    for (i = 0; i < cfg.key_size; i++)
+    {
+        sprintf(value + strlen(value), "%02x", cfg.key[i]);
+    }
+
+    return 0;
+}
+
+/**
+ * Update WEP key value on the wireless interface.
+ *
+ * @param gid     group identifier (unused)
+ * @param oid     full object instence identifier
+ * @param value   location for the value in format "XXXXXXXXXX" (5 bytes)
+ * @param ifname  interface name
+ *
+ * @return error code
+ */
+static int
+wifi_wep_key_set(unsigned int gid, const char *oid, char *value,
+                 const char *ifname)
+{
+    struct iwreq wrq;
+    uint8_t      key[IW_ENCODING_TOKEN_MAX];
+    int          keylen;
+    int          skfd = wifi_get_skfd();
+ 
+    UNUSED(gid);
+    UNUSED(oid);
+
+    WIFI_CHECK_SKFD(skfd);
+
+    memset(&wrq, 0, sizeof(wrq));
+
+    keylen = iw_in_key_full(skfd, ifname, value, key, &wrq.u.data.flags);
+    if (keylen <= 0)
+    {
+        ERROR("Cannot set '%s' key on %s interface", value, ifname);
+        return TE_RC(TE_TA_LINUX, EFAULT);
+    }
+    wrq.u.data.length = keylen;
+    wrq.u.data.pointer = (caddr_t)key;
+
+    return wifi_set_item(ifname, SIOCSIWENCODE, &wrq);
+}
+
+/**
+ * Get the status of WEP on the wireless interface - wheter it is on or off.
+ *
+ * @param gid     group identifier (unused)
+ * @param oid     full object instence identifier
+ * @param value   location for the value ("0" - false or "1" - true)
+ * @param ifname  interface name
+ *
+ * @return error code
+ */
+static int
+wifi_wep_get(unsigned int gid, const char *oid, char *value,
+             const char *ifname)
+{
+    int             rc;
+    wireless_config cfg;
+    
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if ((rc = wifi_get_config(ifname, &cfg)) != 0)
+        return rc;
+
+    if (!cfg.has_key)
+    {
+        ERROR("Cannot get information about encryption "
+              "on %s interface", ifname);
+        return TE_RC(TE_TA_LINUX, EFAULT);
+    }
+    if (cfg.key_flags & IW_ENCODE_DISABLED || cfg.key_size == 0)
+        sprintf(value, "0");
+    else
+        sprintf(value, "1");
+
+    return 0;
+}
+
+/**
+ * Update the status of WEP on the wireless interface.
+ *
+ * @param gid     group identifier (unused)
+ * @param oid     full object instence identifier
+ * @param value   location for the value ("0" - false or "1" - true)
+ * @param ifname  interface name
+ *
+ * @return error code
+ */
+static int
+wifi_wep_set(unsigned int gid, const char *oid, char *value,
+             const char *ifname)
+{
+    struct iwreq wrq;
+
+    UNUSED(gid);
+
+    memset(&wrq, 0, sizeof(wrq));
+
+    if (strcmp(value, "0") == 0)
+    {
+        wrq.u.data.flags |= IW_ENCODE_DISABLED;
+    }
+    else if (strcmp(value, "1") != 0)
+    {
+        ERROR("Canot set '%s' instance to '%s'", oid, value);
+        return TE_RC(TE_TA_LINUX, EINVAL);
+    }
+    wrq.u.data.flags |= IW_ENCODE_NOKEY;
+
+    return wifi_set_item(ifname, SIOCSIWENCODE, &wrq);
+}
+
+/**
+ * Get authentication algorithm currenty enabled on the wireless interface.
+ *
+ * @param gid     group identifier (unused)
+ * @param oid     full object instence identifier
+ * @param value   location for the value
+ *                "open"   - open System
+ *                "shared" - shared Key
+ * @param ifname  interface name
+ *
+ * @return error code
+ */
+static int
+wifi_auth_get(unsigned int gid, const char *oid, char *value,
+              const char *ifname)
+{
+    int             rc;
+    wireless_config cfg;
+    
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if ((rc = wifi_get_config(ifname, &cfg)) != 0)
+        return rc;
+
+    if (!cfg.has_key)
+    {
+        ERROR("Cannot get information about encryption "
+              "on %s interface", ifname);
+        return TE_RC(TE_TA_LINUX, EFAULT);
+    }
+    if (cfg.key_flags & IW_ENCODE_DISABLED || 
+        cfg.key_flags & IW_ENCODE_OPEN)
+    {
+        sprintf(value, "open");
+    }
+    else
+    {
+        assert(cfg.key_flags & IW_ENCODE_RESTRICTED);
+        sprintf(value, "shared");
+    }
+
+    return 0;
+}
+
+/**
+ * Update authentication algorithm used on the wireless interface.
+ *
+ * @param gid     group identifier (unused)
+ * @param oid     full object instence identifier
+ * @param value   location for the value
+ *                "open"   - open System
+ *                "shared" - shared Key
+ * @param ifname  interface name
+ *
+ * @return error code
+ */
+static int
+wifi_auth_set(unsigned int gid, const char *oid, char *value,
+              const char *ifname)
+{
+    struct iwreq wrq;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    memset(&wrq, 0, sizeof(wrq));
+
+    if (strcmp(value, "open") == 0)
+    {
+        wrq.u.data.flags |= IW_ENCODE_OPEN;
+    }
+    else if (strcmp(value, "shared") == 0)
+    {
+        wrq.u.data.flags |= IW_ENCODE_RESTRICTED;
+    }
+    else
+    {
+        ERROR("Canot set authentication algorithm to '%s'", value);
+        return TE_RC(TE_TA_LINUX, EINVAL);
+    }
+
+    wrq.u.data.flags |= IW_ENCODE_NOKEY;
+
+    return wifi_set_item(ifname, SIOCSIWENCODE, &wrq);
+}
+
+/**
+ * Get channel number used on the wireless interface.
+ *
+ * @param gid     group identifier (unused)
+ * @param oid     full object instence identifier
+ * @param value   location for the value - channel number
+ * @param ifname  interface name
+ *
+ * @return error code
+ */
+static int
+wifi_channel_get(unsigned int gid, const char *oid, char *value,
+                 const char *ifname)
+{
+    int             rc;
+    struct iw_range range;
+    struct iwreq    wrq;
+    double          freq;
+    int             channel;
+    int             skfd = wifi_get_skfd();
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    WIFI_CHECK_SKFD(skfd);
+
+    if (iw_get_range_info(skfd, ifname, &range) < 0)
+        return TE_RC(TE_TA_LINUX, EFAULT);
+
+    if ((rc = wifi_get_item(ifname, SIOCGIWFREQ, &wrq)) != 0)
+        return rc;
+
+    freq = iw_freq2float(&(wrq.u.freq));
+    channel = iw_freq_to_channel(freq, &range);
+    if (freq < KILO)
+    {
+        WARN("iw_freq2float() function returns channel, not frequency");
+        channel = (int)freq;
+    }
+    if (channel <= 0)
+    {
+        ERROR("Cannot get current channel number on %s interface", ifname);
+        return TE_RC(TE_TA_LINUX, EFAULT);
+    }
+
+    sprintf(value, "%d", channel);
+
+    return 0;
+}
+
+/**
+ * Set channel number on the wireless interface.
+ *
+ * @param gid     group identifier (unused)
+ * @param oid     full object instence identifier
+ * @param value   location for the value - channel number
+ * @param ifname  interface name
+ *
+ * @return error code
+ */
+static int
+wifi_channel_set(unsigned int gid, const char *oid, char *value,
+                 const char *ifname)
+{
+    struct iwreq    wrq;
+    struct iw_range range;
+    int             skfd = wifi_get_skfd();
+    double          freq;
+    int             channel;
+    
+    UNUSED(gid);
+    UNUSED(oid);
+
+    WIFI_CHECK_SKFD(skfd);
+
+    if (sscanf(value, "%d", &channel) != 1)
+    {
+        ERROR("Incorrect format of channel value '%s'", value);
+        return TE_RC(TE_TA_LINUX, EINVAL);
+    }
+
+    if (iw_get_range_info(skfd, ifname, &range) < 0)
+        return TE_RC(TE_TA_LINUX, EFAULT);
+
+    if (iw_channel_to_freq(channel, &freq, &range) < 0)
+    {
+        ERROR("Cannot convert %d channel to an appropriate "
+              "frequency value", channel);
+        return TE_RC(TE_TA_LINUX, EFAULT);
+    }
+    iw_float2freq(freq, &(wrq.u.freq));
+
+    return wifi_set_item(ifname, SIOCSIWFREQ, &wrq);
+}
+
+/**
+ * Get the list of supported channels on the wireless interface.
+ *
+ * @param gid     group identifier (unused)
+ * @param oid     full object instence identifier
+ * @param value   location for the value - colon separated list of channels
+ * @param ifname  interface name
+ *
+ * @return error code
+ */
+static int
+wifi_channels_get(unsigned int gid, const char *oid, char *value,
+                  const char *ifname)
+{
+    struct iw_range range;
+    int             skfd = wifi_get_skfd();
+    int             i;
+    double          freq;
+    int             channel;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    WIFI_CHECK_SKFD(skfd);
+
+    if (iw_get_range_info(skfd, ifname, &range) < 0)
+        return TE_RC(TE_TA_LINUX, EFAULT);
+
+    *value = '\0';
+    for (i = 0; i < range.num_frequency; i++)
+    {
+        freq = iw_freq2float(&(range.freq[i]));
+        channel = iw_freq_to_channel(freq, &range);
+        sprintf(value + strlen(value), "%d%c", channel,
+                i == (range.num_frequency - 1) ? '\0' : ':');
+    }
+
+    return 0;
+}
+
+/**
+ * Get AP MAC address the STA is associated with.
+ *
+ * @param gid     group identifier (unused)
+ * @param oid     full object instence identifier
+ * @param value   location for the value - AP MAC address,
+ *                00:00:00:00:00:00 in case of STA is not associated
+ * @param ifname  interface name
+ *
+ * @return error code
+ */
+static int
+wifi_ap_get(unsigned int gid, const char *oid, char *value,
+            const char *ifname)
+{
+    int          rc;
+    struct iwreq wrq;
+    int          i;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if ((rc = wifi_get_item(ifname, SIOCGIWAP, &wrq)) != 0)
+        return rc;
+
+    for (i = 0; i < (ETHER_ADDR_LEN - 1); i++)
+    {
+        if (wrq.u.ap_addr.sa_data[i] != wrq.u.ap_addr.sa_data[i + 1])
+        {
+            sprintf(value, "%02x:%02x:%02x:%02x:%02x:%02x",
+                    (uint8_t)wrq.u.ap_addr.sa_data[0],
+                    (uint8_t)wrq.u.ap_addr.sa_data[1],
+                    (uint8_t)wrq.u.ap_addr.sa_data[2],
+                    (uint8_t)wrq.u.ap_addr.sa_data[3],
+                    (uint8_t)wrq.u.ap_addr.sa_data[4],
+                    (uint8_t)wrq.u.ap_addr.sa_data[5]);
+            return 0;
+        }
+    }
+
+    sprintf(value, "00:00:00:00:00:00");
+
+    return 0;
+}
+
+/**
+ * Get ESSID value configured on the wireless interface.
+ *
+ * @param gid     group identifier (unused)
+ * @param oid     full object instence identifier
+ * @param value   location for the value - ESSID
+ * @param ifname  interface name
+ *
+ * @return error code
+ */
+static int
+wifi_essid_get(unsigned int gid, const char *oid, char *value,
+               const char *ifname)
+{
+    int             rc;
+    wireless_config cfg;
+    
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if ((rc = wifi_get_config(ifname, &cfg)) != 0)
+        return rc;
+
+    sprintf(value, "%s", cfg.has_essid ? cfg.essid : "");
+
+    return 0;
+}
+
+/**
+ * Update ESSID value on the wireless interface.
+ *
+ * @param gid     group identifier (unused)
+ * @param oid     full object instence identifier
+ * @param value   location for the value - ESSID
+ * @param ifname  interface name
+ *
+ * @return error code
+ */
+static int
+wifi_essid_set(unsigned int gid, const char *oid, char *value,
+               const char *ifname)
+{
+    struct iwreq wrq;
+    char         essid[IW_ESSID_MAX_SIZE + 1];
+
+    UNUSED(gid);
+    UNUSED(oid);
+    
+    if (strcasecmp(value, "off") == 0 || strcasecmp(value, "any") == 0)
+    {
+        wrq.u.essid.flags = 0;
+        essid[0] = '\0';
+    }
+    else
+    {
+        if (strlen(value) > IW_ESSID_MAX_SIZE)
+        {
+            ERROR("ESSID string '%s' is too long. "
+                  "Maximum allowed length is %d", value, IW_ESSID_MAX_SIZE);
+            return TE_RC(TE_TA_LINUX, EINVAL);
+        }
+        wrq.u.essid.flags = 1;
+        strcpy(essid, value);
+    }
+    wrq.u.essid.pointer = (caddr_t)essid;
+    wrq.u.essid.length = strlen(essid) + 1;
+
+    return wifi_set_item(ifname, SIOCSIWESSID, &wrq);
+}
+#endif /* ENABLE_WIFI_SUPPORT */
 
 /**
  * Get ARP entry value (hardware address corresponding to IPv4).

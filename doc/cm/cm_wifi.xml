@@ -1,0 +1,72 @@
+<?xml version="1.0"?>
+<backup>
+
+    <!-- This configuration model is intended for describing of configuration
+         related to WiFi interfaces on Agents -->
+
+    <!--
+        Copyright (C) 2003 Test Environment authors (see file AUTHORS
+        in the root directory of the distribution).
+
+        Test Environment is free software; you can redistribute it
+        and/or modify it under the terms of the GNU General Public
+        License as published by the Free Software Foundation; either
+        version 2 of the License, or (at your option) any later
+        version.
+        
+        Test Environment is distributed in the hope that it will be
+        useful, but WITHOUT ANY WARRANTY; without even the implied
+        warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+        PURPOSE. See the GNU General Public License for more details.
+        
+        You should have received a copy of the GNU General Public
+        License along with this program; if not, write to the Free
+        Software Foundation, Inc., 59 Temple Place, Suite 330,
+        Boston, MA  02111-1307  USA
+        
+        Author: Oleg Kravtsov E-mail: Oleg.Kravtsov@oktetlabs.ru
+    -->
+    
+    <!-- Root object of wireless configuration for the interface.
+         Name: "enabled" - fixed name
+         Limit: 1 -->
+    <object oid="/agent/interface/wifi" access="read_create" type="none"/>
+
+    <!-- ESSID value
+         Name: empty -->
+    <object oid="/agent/interface/wifi/essid" access="read_write" type="string"/>
+
+    <!-- MAC address of Access Point the card is associated with.
+         Name: empty 
+         Value: An address equal to 00:00:00:00:00:00 means that the card
+                failed to associate with an Access Point -->
+    <object oid="/agent/interface/wifi/ap" access="read_write" type="address"/>
+
+    <!-- The list of available channels 
+         Name: empty
+         Value: ':' separated array of channels, like: 
+                1:2:3:4:5:6:7:8:9:10:11 -->
+    <object oid="/agent/interface/wifi/channels" access="read_write" type="string"/>
+
+    <!-- Operating channel number
+         Name: empty -->
+    <object oid="/agent/interface/wifi/channel" access="read_write" type="integer"/>
+
+    <!-- Authentication method used by the card
+         Name: empty
+         Value: "open"      - Open System authentication algorithm
+                "sharedKey" - Shared Key authentication algorithm -->
+    <object oid="/agent/interface/wifi/auth" access="read_write" type="string"/>
+
+    <!-- Wheter WEP is anabled on the interface or not 
+         Name: empty
+         Value: 0 - WEP is disabled
+                1 - WEP is enabled -->
+    <object oid="/agent/interface/wifi/wep" access="read_write" type="integer"/>
+
+    <!-- WEP key currently used (has sense only if WEP is enabled)
+         Name: empty
+         Value: Key in format XXXXXXXX -->
+    <object oid="/agent/interface/wifi/wep/key" access="read_write" type="string"/>
+
+</backup>
