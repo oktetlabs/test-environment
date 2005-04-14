@@ -1102,6 +1102,7 @@ arp_del(unsigned int gid, const char *oid, const char *addr,
     DWORD           a;
     int             rc;
     DWORD           type = ARP_STATIC;
+    te_bool         found = FALSE;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -1125,16 +1126,19 @@ arp_del(unsigned int gid, const char *oid, const char *addr,
         {
             if ((rc = DeleteIpNetEntry(table->table + i)) != 0)
             {
-                ERROR("DeleteIpNetEntry() failed, error %d", rc);
-                free(table);
-                return TE_RC(TE_TA_WIN32, ETEWIN);
+                if (type == ARP_STATIC)
+                {
+                    ERROR("DeleteIpNetEntry() failed, error %d", rc);
+                    free(table);
+                    return TE_RC(TE_TA_WIN32, ETEWIN);
+                }
             }
-            free(table);
-            return 0;
+            found = TRUE;
+            /* Continue to delete entries on other interfaces */
         }
     }
     free(table);
-    return TE_RC(TE_TA_WIN32, ENOENT);
+    return (!found && type == ARP_STATIC) ? TE_RC(TE_TA_WIN32, ENOENT) : 0;
 }
 
 /**
