@@ -42,8 +42,6 @@ fcntl.h \
 inttypes.h \
 limits.h \
 math.h \
-net-snmp/definitions.h \
-net-snmp/session_api.h \
 net/ethernet.h \
 net/if.h \
 net/if_arp.h \
@@ -96,6 +94,16 @@ unistd.h \
 #endif
 #if HAVE_SYS_TYPES_H
 #include <sys/socket.h>
+#endif
+])
+
+AC_CHECK_HEADERS([net-snmp/net-snmp-config.h])
+AC_CHECK_HEADERS([\
+net-snmp/definitions.h \
+net-snmp/session_api.h \
+], [], [],
+[#if HAVE_NET_SNMP_NET_SNMP_CONFIG_H
+#include <net-snmp/net-snmp-config.h>
 #endif
 ])
 
