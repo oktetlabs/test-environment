@@ -44,9 +44,11 @@ extern int number_of_digits(int value);
  * Declarations of local methods, for descriptions see their definition.
  */ 
 
-int asn_impl_named_subvalue_index(const asn_type * type, const char *label, int *index);
+int asn_impl_named_subvalue_index(const asn_type * type, const char *label,
+                                  int *index);
 
-int asn_impl_fall_down_to_tree_nc (const asn_value *, char *, asn_value const **);
+int asn_impl_fall_down_to_tree_nc (const asn_value *, char *,
+                                   asn_value const **);
 
 int asn_impl_write_value_field (asn_value_p , const void *, size_t , char *);
 
@@ -78,8 +80,8 @@ asn_strdup(const char* src)
  * and get writable subvalue. All parameters are same. 
  */ 
 static inline int
-asn_impl_find_subvalue_writable (asn_value *container, const char *label, 
-                   asn_value **found_val)
+asn_impl_find_subvalue_writable(asn_value *container, const char *label, 
+                                asn_value **found_val)
 {
     const asn_value *f_val;
     int rc = asn_impl_find_subvalue(container, label, &f_val);
@@ -1657,8 +1659,8 @@ asn_impl_find_subvalue(const asn_value *container, const char *label,
             return EASNINCOMPLVAL;
 
         default:
-            rc = asn_impl_named_subvalue_index (container->asn_type, 
-                                                      label, &index); 
+            rc = asn_impl_named_subvalue_index(container->asn_type, 
+                                               label, &index); 
             if (rc) return rc;
 
             if (arr[index] == NULL)
@@ -1899,6 +1901,25 @@ asn_get_subtype(const asn_type *container,
     free(rl_store_ptr);
 
     return r_c;
+}
+
+/* See description in asn_usr.h */
+int
+asn_label_to_tag(const asn_type *type, const char *label, asn_tag_t *tag)
+{
+    int rc = 0;
+    int index;
+
+    if (tag == NULL)
+        return ETEWRONGPTR;
+
+    rc = asn_impl_named_subvalue_index(type, label, &index);
+    if (rc != 0)
+        return rc; 
+
+    *tag = type->sp.named_entries[index].tag;
+
+    return 0;
 }
 
 

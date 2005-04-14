@@ -110,6 +110,12 @@ typedef enum {
 
 
 
+typedef struct asn_tag_t
+{
+    asn_tag_class  cl;
+    unsigned short val;
+} asn_tag_t;
+
 
 
 /**
@@ -659,6 +665,21 @@ extern unsigned short asn_get_tag(const asn_value_p container);
  *         presentation of specified value.
  */ 
 extern size_t asn_count_txt_len(const asn_value *value, unsigned int indent);
+
+
+
+/**
+ * Find ASN.1 tag value by textual label.
+ *
+ * @param type          ASN type descriptor, must have SEQUENCE of SET
+ *                      syntax 
+ * @param label         textual label of desired field
+ * @param tag           location for ASN.1 tag (OUT)
+ *
+ * @return status code
+ */
+extern int asn_label_to_tag(const asn_type *type, const char *label, 
+                            asn_tag_t *tag);
 
 /**
  * declaration of structures which describes basic ASN types. 

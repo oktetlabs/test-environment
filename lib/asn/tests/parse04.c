@@ -14,9 +14,9 @@ main (int argc, char *argv[])
 { 
     int rc, s_parsed;
 #if 1
-    asn_type *a_type = ndn_traffic_template;
+    asn_type *a_type = ndn_raw_packet;
 #else
-    asn_type *a_type = ndn_csap_spec;
+    asn_type *a_type = ndn_traffic_template;
 #endif
     asn_value_p packet, eth_header, snmp_message;
 

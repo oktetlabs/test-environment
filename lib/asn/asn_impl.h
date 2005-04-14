@@ -42,12 +42,6 @@ typedef enum {
     EXPLICIT
 } asn_tagging_type;
 
-typedef struct asn_tag_t
-{
-    asn_tag_class       cl;
-    unsigned short      val;
-} asn_tag_t;
-
 /**
  * Compare two ASN tags.
  *
