@@ -1,5 +1,5 @@
 
-AM_CPPFLAGS=-I$(DESTDIR)/$(prefix)/include \
+AM_CPPFLAGS=@TE_CFLAGS@ -I$(DESTDIR)/$(prefix)/include \
             -DCMU_COMPATIBLE -DUCD_COMPATIBLE -I$(top_srcdir)
 
 AM_CFLAGS=@NET_SNMP_CFLAGS@

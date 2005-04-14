@@ -6,8 +6,9 @@ tetestdir=$(prefix)/@PACKAGE_NAME@/$(subdir)
 dist_tetest_DATA = package.xml
 
 
-AM_CPPFLAGS = -I. -I$(DESTDIR)/$(prefix)/include -I$(top_srcdir)/lib
-
+AM_CPPFLAGS = @TE_CFLAGS@ -I. -I$(DESTDIR)/$(prefix)/include \
+              -I$(top_srcdir)/lib
+              
 AM_CFLAGS = @NET_SNMP_CFLAGS@
 
 AM_LDFLAGS = @TE_LDFLAGS@ -L. -L$(DESTDIR)/$(prefix)/lib

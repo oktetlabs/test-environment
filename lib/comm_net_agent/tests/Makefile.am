@@ -7,7 +7,8 @@ SUBDIRS = lib
 # XXXX: need to install here paths to include/ and lib/ directories
 # from some TE variables
 #
-AM_CFLAGS = -g -I$(srcdir)/include -I$(DESTDIR)/$(prefix)/include 
+AM_CPPFLAGS = @TE_CFLAGS@ -I$(srcdir)/include \
+              -I$(DESTDIR)/$(prefix)/include 
 AM_LDFLAGS = -L$(DESTDIR)/$(prefix)/lib -L@abs_top_builddir@/lib \
              -L@abs_top_builddir@/..
 

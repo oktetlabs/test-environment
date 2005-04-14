@@ -1,5 +1,5 @@
 
-MY_CPPFLAGS=-I$(DESTDIR)/$(prefix)/include \
+MY_CPPFLAGS=@TE_CFLAGS@ -I$(DESTDIR)/$(prefix)/include \
             -I$(DESTDIR)/$(prefix)/../@host@/include \
             -include te_config.h \
             -include config.h -fno-strict-aliasing

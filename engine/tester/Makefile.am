@@ -1,5 +1,5 @@
 
-AM_CPPFLAGS = -I$(DESTDIR)/$(prefix)/include 
+AM_CPPFLAGS = @TE_CFLAGS@ -I$(DESTDIR)/$(prefix)/include 
 AM_CFLAGS = @XML2_CFLAGS@
 AM_LFLAGS = --header-file=$*.h -o $(LEX_OUTPUT_ROOT).c
 AM_YFLAGS = -d

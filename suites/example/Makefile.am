@@ -13,10 +13,7 @@ tests-info.xml: $(srcdir)/*.c
 CLEANFILES = tests-info.xml
 
 
-AM_CPPFLAGS =
-
-AM_CFLAGS =
-
+AM_CPPFLAGS = @TE_CFLAGS@ 
 AM_LDFLAGS = @TE_LDFLAGS@
 
 
