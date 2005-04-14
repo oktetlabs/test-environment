@@ -36,7 +36,7 @@ extern "C" {
 #endif
 
 /** Maximum length of RCF message or protocol command/answer */
-#if (RCF_MAX_VAL + RCF_MAX_PATH * 2 + TE_OVERHEAD + RCF_MAX_ID) > 1024
+#if (RCF_MAX_VAL + RCF_MAX_PATH * 2 + TE_OVERHEAD + RCF_MAX_ID) > 4 * 1024
 #define RCF_MAX_LEN  (RCF_MAX_VAL + RCF_MAX_PATH * 2 + \
                       RCF_MAX_ID + TE_OVERHEAD)
 #else
