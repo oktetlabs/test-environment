@@ -619,19 +619,20 @@ tapi_cli_msg_handler(char *msg_fname, void *user_param)
  * @param sid           RCF session identifier;
  * @param cli_csap      CSAP handle;
  * @param command       Command to send;
- * @param msg           Returned CLI response to command;
+ * @param msg           Returned CLI response to command (memory for the
+ *                      response is allocated inside this routine);
  * @param timeout       CLI response timeout in seconds;
- * @param err           Error returned by rcf_send_recv() call;
  *
  * @return zero on success, otherwise standard or common TE error code.
  */
 static int
 tapi_internal_cli_send_recv(const char *ta_name, int sid,
                             csap_handle_t cli_csap, const char *command,
-                            char **msg, unsigned int timeout, int *err)
+                            char **msg, unsigned int timeout)
 {
     int             rc = 0;
     char           *fname = NULL;
+    int             err; /* useless parameter for rcf_ta_trsend_recv() */
 
     *msg = NULL;
 
@@ -649,7 +650,7 @@ tapi_internal_cli_send_recv(const char *ta_name, int sid,
 
     rc = rcf_ta_trsend_recv(ta_name, sid, cli_csap, fname,
                             tapi_cli_msg_handler, (void *)msg,
-                            timeout, err);
+                            timeout, &err);
     if (rc != 0)
     {
         ERROR("rcf_ta_trsend_start() failed(0x%x) on TA %s:%d CSAP %d "
@@ -698,7 +699,8 @@ tapi_cli_send(const char *ta_name, int sid,
  * @param sid           RCF session identifier;
  * @param cli_csap      CSAP handle;
  * @param command       Command to send;
- * @param msg           Returned CLI response to command;
+ * @param msg           Returned CLI response to command (memory for the
+ *                      response is allocated inside this routine);
  * @param timeout       CLI response timeout in seconds;
  *
  * @return zero on success, otherwise standard or common TE error code.
@@ -706,9 +708,9 @@ tapi_cli_send(const char *ta_name, int sid,
 int
 tapi_cli_send_recv(const char *ta_name, int sid,
                    csap_handle_t cli_csap, const char *command,
-                   char **msg, unsigned int timeout, int *err)
+                   char **msg, unsigned int timeout)
 {
     return tapi_internal_cli_send_recv(ta_name, sid, cli_csap,
-                                       command, msg, timeout, err);
+                                       command, msg, timeout);
 }
 

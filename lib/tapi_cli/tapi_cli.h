@@ -253,17 +253,15 @@ extern int tapi_cli_send(const char *ta_name, int sid,
  * @param sid           RCF session identifier;
  * @param cli_csap      CSAP handle;
  * @param command       Command to send;
- * @param msg           Returned CLI response to command;
+ * @param msg           Returned CLI response to command (memory for the
+ *                      response is allocated inside this routine);
  * @param timeout       CLI response timeout in seconds;
- * @param err           Error returned by rcf_send_recv() call;
- * @param buf           buffer
- * @param size          buffer size
  *
  * @return zero on success, otherwise standard or common TE error code.
  */
 extern int tapi_cli_send_recv(const char *ta_name, int sid,
                               csap_handle_t cli_csap, const char *command,
-                              char **msg, unsigned int timeout, int *err);
+                              char **msg, unsigned int timeout);
 
 
 /**
