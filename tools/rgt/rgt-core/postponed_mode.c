@@ -167,7 +167,7 @@ fwrite_string(struct obstack *obstk, const char *str)
                 break;
                 
             default:
-                if (isprint(str[i]))
+                if (str[i] == '\t' || isprint(str[i]))
                 {
                     if (obstk != NULL)
                         obstack_1grow(log_obstk, str[i]);
