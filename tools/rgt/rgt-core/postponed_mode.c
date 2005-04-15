@@ -40,6 +40,10 @@
 #include <time.h>
 #endif
 
+#if HAVE_CTYPE_H
+#include <ctype.h>
+#endif
+
 #include "log_msg.h"
 #include "rgt_common.h"
 #include "postponed_mode.h"
@@ -131,7 +135,7 @@ fwrite_string(struct obstack *obstk, const char *str)
                      */
                     break;
                 }
-                /* Process it as ordinary new line character */
+                /* Process it as an ordinary new line character */
                 /* FALLTHROUGH */
 
             case '\n':
@@ -161,12 +165,24 @@ fwrite_string(struct obstack *obstk, const char *str)
                 else
                     fputs("&amp;", output_fd);
                 break;
-            
+                
             default:
-                if (obstk != NULL)
-                    obstack_1grow(log_obstk, str[i]);
+                if (isprint(str[i]))
+                {
+                    if (obstk != NULL)
+                        obstack_1grow(log_obstk, str[i]);
+                    else
+                        fputc(str[i], output_fd);
+                }
                 else
-                    fputc(str[i], output_fd);
+                {
+                    if (obstk != NULL)
+                        obstack_printf(log_obstk, "&lt;0x%02x&gt;",
+                                       (unsigned char)str[i]);
+                    else
+                        fprintf(output_fd, "&lt;0x%02x&gt;",
+                                (unsigned char)str[i]);
+                }
                 break;
         }
         i++;

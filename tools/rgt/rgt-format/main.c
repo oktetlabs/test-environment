@@ -489,6 +489,26 @@ rgt_log_characters(void *user_data, const xmlChar *ch, int len)
     }
 }
 
+static xmlEntityPtr
+rgt_get_entity(void *user_data, const xmlChar *name)
+{
+    UNUSED(user_data);
+
+    return xmlGetPredefinedEntity(name);
+}
+
+static void
+rgt_report_problem(void *user_data, const char *msg, ...)
+{
+    va_list ap;
+
+    UNUSED(user_data);
+    
+    va_start(ap, msg);
+    vfprintf(stderr, msg, ap);
+    va_end(ap);
+}
+
 /**
  * The structure specifies all types callback routines that should be
  * called.
@@ -499,7 +519,7 @@ static xmlSAXHandler sax_handler = {
     .hasInternalSubset      = NULL,
     .hasExternalSubset      = NULL,
     .resolveEntity          = NULL,
-    .getEntity              = NULL,
+    .getEntity              = rgt_get_entity,
     .entityDecl             = NULL,
     .notationDecl           = NULL,
     .attributeDecl          = NULL, /* attributeDeclDebug, */
@@ -515,9 +535,9 @@ static xmlSAXHandler sax_handler = {
     .ignorableWhitespace    = NULL, /* ignorableWhitespaceDebug, */
     .processingInstruction  = NULL, /* processingInstructionDebug, */
     .comment                = NULL, /* commentDebug, */
-    .warning                = NULL, /* warningDebug, */
-    .error                  = NULL, /* errorDebug, */
-    .fatalError             = NULL, /* fatalErrorDebug, */
+    .warning                = rgt_report_problem, /* warningDebug, */
+    .error                  = rgt_report_problem, /* errorDebug, */
+    .fatalError             = rgt_report_problem, /* fatalErrorDebug, */
     .getParameterEntity     = NULL, /* getParameterEntityDebug, */
     .cdataBlock             = NULL, /* cdataBlockDebug, */
     .externalSubset         = NULL, /* externalSubsetDebug, */
