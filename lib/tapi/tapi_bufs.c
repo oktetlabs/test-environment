@@ -22,8 +22,8 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
  *
- *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
+ * @author Oleg Kravtosv <Oleg.Kravtosv@oktetlabs.ru>
  *
  * $Id$
  */
