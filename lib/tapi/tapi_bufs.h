@@ -40,6 +40,13 @@
 extern "C" {
 #endif
 
+/**
+ * Declaration of tapi_log_buf type, which is defined 
+ * in the implementation, so user can allocate and operate only 
+ * with pointer to this data structure.
+ */
+struct tapi_log_buf;
+typedef struct tapi_log_buf *tapi_log_buf;
 
 /**
  * Fill buffer by random numbers.
@@ -90,6 +97,55 @@ tapi_make_buf_min(size_t min, size_t *p_len)
 {
     return tapi_make_buf(min, min + 10, p_len);
 }
+
+
+/* Log buffer related functions */
+
+/**
+ * Allocates a buffer to be used for accumulating log message.
+ * Mainly used in tapi_snmp itself.
+ * 
+ * @return Pointer to the buffer.
+ *
+ * @note the caller does not have to check the returned 
+ * value against NULL, the function blocks the caller until it
+ * gets available buffer.
+ *
+ * @note This is thread safe function
+ */
+extern tapi_log_buf *tapi_log_buf_alloc();
+
+/**
+ * Appends format string to the log message, the behaviour of
+ * the function is the same as ordinary printf-like function.
+ *
+ * @param buf  Pointer to the buffer allocated with tapi_log_buf_alloc()
+ * @param fmt  Format string followed by parameters
+ *
+ * @return The number of characters appended
+ *
+ * @note This is NOT thread safe function, so you are not allowed 
+ * to append the same buffer from different threads simultaneously.
+ */
+extern int tapi_log_buf_append(tapi_log_buf *buf, const char *fmt, ...);
+
+/**
+ * Returns current log message accumulated in the buffer.
+ *
+ * @param buf  Pointer to the buffer
+ *
+ * @return log message
+ */
+extern const char *tapi_log_buf_get(tapi_log_buf *buf);
+
+/**
+ * Release buffer allocated by tapi_snmp_alloc_str_buf()
+ *
+ * @param ptr  Pointer to the buffer
+ *
+ * @note This is thread safe function
+ */
+extern void tapi_log_buf_free(tapi_log_buf *buf);
 
 #ifdef __cplusplus
 } /* extern "C" */
