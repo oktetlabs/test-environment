@@ -3971,13 +3971,8 @@ TARPC_FUNC(wsa_connect, {},
     {
         psqos = &sqos;
         memset(&sqos, 0, sizeof(sqos));
-    
-        flowspec_rpc2h(&sqos.SendingFlowspec,
-                          &in->sqos.sending);
-
-        flowspec_rpc2h(&sqos.ReceivingFlowspec,
-                          &in->sqos.receiving);
-    
+        flowspec_rpc2h(&sqos.SendingFlowspec, &in->sqos.sending);
+        flowspec_rpc2h(&sqos.ReceivingFlowspec, &in->sqos.receiving);
         sqos.ProviderSpecific.buf =
             (char*)in->sqos.provider_specific_buf.provider_specific_buf_val;
         sqos.ProviderSpecific.len =
@@ -4049,10 +4044,8 @@ static void convert_wsa_ioctl_result(DWORD code, char *buf,
             qos = (QOS*)buf;
             tqos = &res->wsa_ioctl_request_u.req_qos;
 
-            flowspec_h2rpc(&qos->SendingFlowspec,
-                                 &tqos->sending);
-            flowspec_h2rpc(&qos->ReceivingFlowspec,
-                                 &tqos->receiving);
+            flowspec_h2rpc(&qos->SendingFlowspec, &tqos->sending);
+            flowspec_h2rpc(&qos->ReceivingFlowspec, &tqos->receiving);
                                              
             if (qos->ProviderSpecific.len != 0)
             {
@@ -4127,10 +4120,8 @@ TARPC_FUNC(wsa_ioctl, {},
             tarpc_qos *inqos;
 
             inqos = &in->req.wsa_ioctl_request_u.req_qos;
-            flowspec_rpc2h(&qos.SendingFlowspec,
-                               &inqos->sending);
-            flowspec_rpc2h(&qos.ReceivingFlowspec,
-                               &inqos->receiving);
+            flowspec_rpc2h(&qos.SendingFlowspec, &inqos->sending);
+            flowspec_rpc2h(&qos.ReceivingFlowspec, &inqos->receiving);
             qos.ProviderSpecific.buf =
                 inqos->provider_specific_buf.provider_specific_buf_val;
             qos.ProviderSpecific.len =
