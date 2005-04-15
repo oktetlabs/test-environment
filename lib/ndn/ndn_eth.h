@@ -71,6 +71,19 @@ enum eth_csap_receive_mode {
     ETH_RECV_ALL = 31,
 };
 
+typedef enum {
+    NDN_TAG_ETH_DEVICE,
+    NDN_TAG_ETH_LOCAL,
+    NDN_TAG_ETH_REMOTE,
+    NDN_TAG_ETH_SRC,
+    NDN_TAG_ETH_DST,
+    NDN_TAG_ETH_TYPE_LEN,
+    NDN_TAG_ETH_CFI,
+    NDN_TAG_ETH_PRIO,
+    NDN_TAG_ETH_VLAN_ID,
+    NDN_TAG_ETH_RECV_MODE,
+} ndn_eth_tags_t;
+
 /** 
  * Convert Ehternet-Header ASN value to plain C structure. 
  * 

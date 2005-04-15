@@ -77,12 +77,18 @@ static asn_type ndn_vlan_cfi_s = {
 
 static asn_named_entry_t _ndn_eth_header_ne_array [] = 
 {
-    { "src-addr", &ndn_data_unit_eth_address_s, {PRIVATE, 1}},
-    { "dst-addr", &ndn_data_unit_eth_address_s, {PRIVATE, 1}},
-    { "eth-type", &ndn_data_unit_int16_s, {PRIVATE, 1}},
-    { "cfi",      &ndn_vlan_cfi_s, {PRIVATE, 1}},
-    { "priority", &ndn_data_unit_int8_s, {PRIVATE, 1}},
-    { "vlan-id",  &ndn_data_unit_int16_s, {PRIVATE, 1}},
+    { "src-addr", &ndn_data_unit_eth_address_s,
+        {PRIVATE, NDN_TAG_ETH_SRC} },
+    { "dst-addr", &ndn_data_unit_eth_address_s,
+        {PRIVATE, NDN_TAG_ETH_DST} },
+    { "eth-type", &ndn_data_unit_int16_s,
+        {PRIVATE, NDN_TAG_ETH_TYPE_LEN} },
+    { "cfi",      &ndn_vlan_cfi_s,
+        {PRIVATE, NDN_TAG_ETH_CFI} },
+    { "priority", &ndn_data_unit_int8_s,
+        {PRIVATE, NDN_TAG_ETH_PRIO} },
+    { "vlan-id",  &ndn_data_unit_int16_s,
+        {PRIVATE, NDN_TAG_ETH_VLAN_ID} },
 };
 
 asn_type ndn_eth_header_s =
@@ -103,14 +109,22 @@ const asn_type * const ndn_eth_header = &ndn_eth_header_s;
 
 static asn_named_entry_t _ndn_eth_csap_ne_array [] = 
 {
-    { "device-id",   &ndn_data_unit_char_string_s, {PRIVATE, 1} },
-    { "receive-mode",&asn_base_integer_s, {PRIVATE, 1} },
-    { "local-addr",  &ndn_data_unit_eth_address_s, {PRIVATE, 1} },
-    { "remote-addr", &ndn_data_unit_eth_address_s, {PRIVATE, 1} },
-    { "eth-type",    &ndn_data_unit_int16_s, {PRIVATE, 1} },
-    { "cfi",         &ndn_vlan_cfi_s, {PRIVATE, 1}},
-    { "priority",    &ndn_data_unit_int8_s, {PRIVATE, 1}},
-    { "vlan-id",     &ndn_data_unit_int16_s, {PRIVATE, 1}},
+    { "device-id",   &ndn_data_unit_char_string_s,
+        {PRIVATE, NDN_TAG_ETH_DEVICE} },
+    { "receive-mode",&asn_base_integer_s,
+        {PRIVATE, NDN_TAG_ETH_RECV_MODE} },
+    { "local-addr",  &ndn_data_unit_eth_address_s,
+        {PRIVATE, NDN_TAG_ETH_LOCAL} },
+    { "remote-addr", &ndn_data_unit_eth_address_s,
+        {PRIVATE, NDN_TAG_ETH_REMOTE} },
+    { "eth-type",    &ndn_data_unit_int16_s,
+        {PRIVATE, NDN_TAG_ETH_TYPE_LEN} },
+    { "cfi",         &ndn_vlan_cfi_s,
+        {PRIVATE, NDN_TAG_ETH_CFI} },
+    { "priority",    &ndn_data_unit_int8_s,
+        {PRIVATE, NDN_TAG_ETH_PRIO} },
+    { "vlan-id",     &ndn_data_unit_int16_s,
+        {PRIVATE, NDN_TAG_ETH_VLAN_ID} },
 };
 
 asn_type ndn_eth_csap_s =
