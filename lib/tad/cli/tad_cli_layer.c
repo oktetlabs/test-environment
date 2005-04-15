@@ -171,9 +171,6 @@ cli_match_bin_cb(int                csap_id,
                  csap_pkts         *payload, 
                  asn_value         *parsed_packet)
 {
-    /* XXX: do not locate local array on stack */
-    char *buf = (char *)malloc(10000);
-
     char *msg = (char*) pkt->data;
     int msg_len = pkt->len;
     int rc;
@@ -185,6 +182,7 @@ cli_match_bin_cb(int                csap_id,
 
     MYDEBUG("cli_match. len: %d, message: %s\n", msg_len, msg);
 
+#if 0
     rc = asn_write_value_field(parsed_packet, msg, msg_len, 
                                 "#cli.message.#plain");
 
@@ -195,10 +193,12 @@ cli_match_bin_cb(int                csap_id,
         return rc;
     }
 
-    asn_sprint_value(parsed_packet, buf, sizeof(buf), 0);
-    MYDEBUG("cli_match. parsed packet:\n%s\n--\n", buf); 
-
-    free(buf);
+#else
+    memset(payload, 0 , sizeof(*payload));
+    payload->len = pkt->len;
+    payload->data = malloc(payload->len);
+    memcpy(payload->data, pkt->data, payload->len); 
+#endif
 
     return 0;
 }
