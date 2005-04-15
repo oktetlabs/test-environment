@@ -63,8 +63,11 @@
 #include "tad_eth_impl.h"
 #include "ndn_eth.h" 
 
+
+
 #define TE_LGR_USER     "TAD Ethernet"
 #include "logger_ta.h"
+
 
 
 #ifndef INSQUE
@@ -99,10 +102,6 @@ find_iface_user_rec(const char *ifname)
     return NULL;
 }
 
-
-#define USE_PROMISC_MODE 1
-
-static int open_packet_socket(int pkt_type, int if_index, int *sock);
 
 typedef enum {
     IN_PACKET_SOCKET,
@@ -251,120 +250,6 @@ eth_prepare_send(csap_p csap_descr)
 }
 
 /**
- * Find ethernet interface by its name and initialize specified
- * structure with interface parameters
- *
- * @param name      symbolic name of interface to find (e.g. eth0, eth1)
- * @param iface     pointer to interface structure to be filled
- *                  with found parameters (OUT)
- *
- * @return ETH_IFACE_OK on success or one of the error codes
- *
- * @retval ETH_IFACE_OK            on success
- * @retval ETH_IFACE_NOT_FOUND     if config socket error occured or interface 
- *                                 can't be found by specified name
- * @retval ETH_IFACE_HWADDR_ERROR  if hardware address can't be extracted   
- * @retval ETH_IFACE_IFINDEX_ERROR if interface index can't be extracted
- */
-int
-eth_find_interface(char *name, eth_csap_interface_p iface) 
-{
-    char err_buf[200];
-    int    cfg_socket;
-    struct ifreq  if_req;
-    int rc;
-
-    if (name == NULL) 
-    {
-       return EINVAL;
-    }
-
-    VERB("%s('%s') start", __FUNCTION__, name);
-
-    if ((cfg_socket = socket(AF_INET, SOCK_DGRAM, 0)) == -1)
-        return errno;
-
-    memset(&if_req, 0, sizeof(if_req));
-    strcpy(if_req.ifr_name, name);
-
-    if (ioctl(cfg_socket, SIOCGIFHWADDR, &if_req))
-    {
-        rc = errno;
-        strerror_r(rc, err_buf, sizeof(err_buf)); 
-        ERROR("get if addr error %d \"%s\"", rc, err_buf);
-        return rc;
-    }
-
-    memcpy(iface->local_addr, if_req.ifr_hwaddr.sa_data, ETH_ALEN);
-    strcpy(if_req.ifr_name, name);
-
-    if (ioctl(cfg_socket, SIOCGIFINDEX, &if_req))
-    {
-        rc = errno;
-        strerror_r(rc, err_buf, sizeof(err_buf)); 
-        ERROR("get if index error %d \"%s\"", rc, err_buf);
-        return rc;
-    }
-    
-    /* saving if index  */
-    iface->if_index = if_req.ifr_ifindex;
-    
-    /* saving name     */
-    strncpy (iface->name, name, (IFNAME_SIZE - 1));
-    iface->name[IFNAME_SIZE - 1] = '\0';
-
-#if USE_PROMISC_MODE
-
-    memset(&if_req, 0, sizeof(if_req));
-    strcpy(if_req.ifr_name, name);
-
-    if (ioctl(cfg_socket, SIOCGIFFLAGS, &if_req) < 0)
-    {
-        rc = errno;
-        strerror_r(rc, err_buf, sizeof(err_buf)); 
-        ERROR("get if flags error %d \"%s\"", rc, err_buf);
-        return rc;
-    }
-
-    VERB("SIOCGIFFLAGS, promisc mode: %d, flags: %x\n", 
-                (int)(if_req.ifr_flags & IFF_PROMISC), (int)if_req.ifr_flags);
-
-    /* set interface to promiscuous mode */
-    VERB("set to promisc mode");
-    if_req.ifr_flags |= IFF_PROMISC;
-
-    if (ioctl(cfg_socket, SIOCSIFFLAGS, &if_req))
-    { 
-        rc = errno;
-        strerror_r(rc, err_buf, sizeof(err_buf)); 
-        ERROR("set PROMISC mode error %d \"%s\"", rc, err_buf);
-        return rc;
-    }
-#endif
-    
-    close(cfg_socket);
-
-    {
-        iface_user_rec *ir;
-
-        ir = find_iface_user_rec(name);
-        if (ir == NULL)
-        {
-            ir = calloc(1, sizeof(iface_user_rec));
-
-            if (ir == NULL)
-                return ENOMEM; 
-            strncpy(ir->name, name, IFNAME_SIZE);
-            INSQUE(ir, &iface_users_root); 
-        }
-
-        ir->num_users++; 
-    }
-    return ETH_IFACE_OK;
-} 
-
-
-/**
  * Find number of ethernet layer in CSAP stack.
  *
  * @param csap_descr    CSAP description structure.
@@ -405,96 +290,7 @@ free_eth_csap_data(eth_csap_specific_data_p spec_data, char is_complete)
        free(spec_data);   
 }
 
-/**
- * Create and bind packet socket to listen specified interface
- *
- * @param eth_type  Etherner protocol type 
- * @param pkt_type  Type of packet socket (PACKET_HOST, PACKET_OTHERHOST,
- *                  PACKET_OUTGOING
- * @param if_index  interface index
- * @param sock      pointer to place where socket handler will be saved
- *
- * @retval 0 on succees, -1 on fail
- */
-static int 
-open_packet_socket(int pkt_type, int if_index, int *sock)
-{
-    struct sockaddr_ll  bind_addr;
-    int rc;
-    char err_buf[200];
 
-    UNUSED(pkt_type);
-
-    memset (&bind_addr, 0, sizeof(bind_addr));
-
-    if (sock == NULL)
-    {
-        ERROR("Location for socket is NULL");
-        return EINVAL;
-    }
-
-    /* Create packet socket */
-    *sock = socket(PF_PACKET, SOCK_RAW, htons(ETH_P_ALL));
-    VERB("OPEN SOCKET (%d): %s:%d", *sock,
-               __FILE__, __LINE__);
-
-    VERB("socket system call returns %d\n", *sock);
-
-    if (*sock < 0)
-    {
-        rc = errno;
-        strerror_r(rc, err_buf, sizeof(err_buf)); 
-        ERROR("Socket creation failed, errno %d, \"%s\"\n", 
-                rc, err_buf);
-        return rc;
-    }
-
-    bind_addr.sll_family = AF_PACKET;
-    bind_addr.sll_protocol = htons(ETH_P_ALL);
-    bind_addr.sll_ifindex = if_index;
-    bind_addr.sll_hatype = ARPHRD_ETHER;
-    bind_addr.sll_pkttype = pkt_type;
-    bind_addr.sll_halen = ETH_ALEN;
-
-    VERB("RAW Socket opened");
-
-#if 0
-    switch (dir)
-    {
-        case IN_PACKET_SOCKET:
-            bind_addr.sll_pkttype = pkt_type;
-            shutdown_method = SHUT_WR;
-            break;
-        case OUT_PACKET_SOCKET:
-            shutdown_method = SHUT_RD;
-            break;
-    }
-
-    if (shutdown (*sock, shutdown_method) < 0)
-    {
-        perror ("ETH packet socket shutdown");
-        return errno;
-    }
-#endif
-
-    if (bind(*sock, (struct sockaddr *)&bind_addr, sizeof(bind_addr)) < 0)
-    {
-        rc = errno;
-        strerror_r(rc, err_buf, sizeof(err_buf)); 
-        ERROR("Socket bind failed, errno %d, \"%s\"\n", 
-                rc, err_buf);
-
-        VERB("CLOSE SOCKET (%d): %s:%d", 
-                *sock, __FILE__, __LINE__);
-        if (close(*sock) < 0)
-            assert(0);
-
-        *sock = -1;
-        return rc;
-    }
-
-    return 0;
-}
 
 /**
  * Callback for read data from media of ethernet CSAP. 
@@ -819,7 +615,7 @@ eth_single_init_cb (int csap_id, const asn_value *csap_nds, int layer)
     char     remote_addr[ETH_ALEN];  /**< remote ethernet address                      */    
     size_t   val_len;                /**< stores corresponding value length            */
     
-    eth_csap_interface_p iface_p; /**< pointer to interface structure to be used with csap */
+    eth_interface_p iface_p; /**< pointer to interface structure to be used with csap */
     csap_p   csap_descr;          /**< csap description                                    */
 
     eth_csap_specific_data_p    eth_spec_data; 
@@ -862,7 +658,7 @@ eth_single_init_cb (int csap_id, const asn_value *csap_nds, int layer)
     }
     
     /* allocating new interface structure and trying to init by name */    
-    iface_p = malloc(sizeof(eth_csap_interface_t));
+    iface_p = malloc(sizeof(eth_interface_t));
     
     if (iface_p == NULL)
     {
@@ -1067,49 +863,7 @@ eth_single_destroy_cb (int csap_id, int layer)
         return 0;
     }
 
-#if USE_PROMISC_MODE
-    do {
-        iface_user_rec *ir;
-        struct ifreq  if_req;
-        int cfg_socket;
-
-        VERB("unset to promisc mode iface %s",
-                spec_data->interface->name);
-
-        ir = find_iface_user_rec(spec_data->interface->name);
-        VERB("found iface_user_rec %x", ir);
-
-        if (ir == NULL || ir->num_users <= 1)
-        {
-            if ((cfg_socket = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
-                break;
-
-            VERB("unset promisc mode. do it. !!!", ir);
-
-            memset(&if_req, 0, sizeof(if_req));
-            strcpy(if_req.ifr_name, spec_data->interface->name);
-
-            if (ioctl(cfg_socket, SIOCGIFFLAGS, &if_req) < 0)
-            {
-                ERROR("get flags of interface failed, errno %d", errno);
-                break;
-            }
-
-            /* reset interface from promiscuous mode */
-            if_req.ifr_flags &= ~IFF_PROMISC;
-
-            if (ioctl(cfg_socket, SIOCSIFFLAGS, &if_req))
-            { 
-                ERROR("unset promisc mode failed %x\n", errno);
-                break;
-            }
-            REMQUE(ir);
-            free(ir);
-        }
-        else
-            ir->num_users--;
-    } while (0);
-#endif
+    eth_free_interface(spec_data->interface);
 
     if(spec_data->in >= 0)
     {

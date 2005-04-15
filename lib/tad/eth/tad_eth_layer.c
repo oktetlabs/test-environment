@@ -106,8 +106,8 @@ int eth_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
     
     /* =========== Destination MAC address ============ */
 
-    rc = tad_data_unit_convert_by_label(tmpl_pdu, "dst-addr",
-                                        &spec_data->du_dst_addr);
+    rc = tad_data_unit_convert(tmpl_pdu, NDN_TAG_ETH_DST,
+                               &spec_data->du_dst_addr);
 
     VERB("rc from DU convert dst-addr %x, du-type: %d", 
             rc, spec_data->du_dst_addr.du_type);
@@ -162,8 +162,8 @@ int eth_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
     
     /* =========== Source MAC address ============ */
 
-    rc = tad_data_unit_convert_by_label(tmpl_pdu, "src-addr",
-                                        &spec_data->du_src_addr);
+    rc = tad_data_unit_convert(tmpl_pdu, NDN_TAG_ETH_SRC,
+                               &spec_data->du_src_addr);
     VERB("rc from DU convert src-addr %x, du-type: %d", 
             rc, spec_data->du_src_addr.du_type);
 

@@ -52,9 +52,32 @@
 #include "tad_common.h"
 #include "rcf_ch_api.h"
 
+
+#ifndef IFNAME_SIZE
+#define IFNAME_SIZE 256
+#endif
+
+#ifndef ETH_IFACE_OK
+#define ETH_IFACE_OK 0
+#endif
+
+#ifndef ETH_IFACE_NOT_FOUND
+#define ETH_IFACE_NOT_FOUND 1
+#endif
+
+#ifndef ETH_IFACE_HWADDR_ERROR
+#define ETH_IFACE_HWADDR_ERROR 2
+#endif
+
+#ifndef ETH_IFACE_IFINDEX_ERROR
+#define ETH_IFACE_IFINDEX_ERROR 3
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+
 
 
 
@@ -67,9 +90,9 @@ extern "C" {
  * Ethernet interface related data
  * 
  */
-struct eth_csap_interface;
-typedef struct eth_csap_interface *eth_csap_interface_p;
-typedef struct eth_csap_interface
+struct eth_interface;
+typedef struct eth_interface *eth_interface_p;
+typedef struct eth_interface
 {
     char  name[IFNAME_SIZE];    /**< Etherner interface name (e.g. eth0) */
     int   if_index;             /**< Interface index                     */
@@ -80,7 +103,50 @@ typedef struct eth_csap_interface
                                      (may differ from real hardware address)
                                  */
     
-} eth_csap_interface_t;
+} eth_interface_t;
+
+
+/**
+ * Create and bind raw socket to listen specified interface
+ *
+ * @param pkt_type  Type of packet socket (PACKET_HOST, PACKET_OTHERHOST,
+ *                  PACKET_OUTGOING
+ * @param if_index  interface index
+ * @param sock      pointer to place where socket handler will be saved
+ *
+ * @param 0 on succees, -1 on fail
+ */
+extern int open_packet_socket(int pkt_type, int if_index, int *sock);
+
+
+/**
+ * Find ethernet interface by its name and initialize specified
+ * structure with interface parameters
+ *
+ * @param name      symbolic name of interface to find (e.g. eth0, eth1)
+ * @param iface     pointer to interface structure to be filled
+ *                  with found parameters
+ *
+ * @return ETH_IFACE_OK on success or one of the error codes
+ *
+ * @retval ETH_IFACE_OK            on success
+ * @retval ETH_IFACE_NOT_FOUND     if config socket error occured or
+ *                                 interface can't be found by name
+ * @retval ETH_IFACE_HWADDR_ERROR  if hardware address can't be extracted   
+ * @retval ETH_IFACE_IFINDEX_ERROR if interface index can't be extracted
+ */
+extern int eth_find_interface(char *name, eth_interface_p if_descr); 
+
+
+/**
+ * Free ethernet interface by its descriptor. 
+ * Mainly, this method drop promiscuous mode on interface.
+ *
+ * @param iface         interface structure descriptor
+ *
+ * @return error status code
+ */
+extern int eth_free_interface(eth_interface_p iface);
 
 #ifdef __cplusplus
 } /* extern "C" */

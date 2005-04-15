@@ -50,6 +50,7 @@
 #include "tad_csap_inst.h"
 #include "tad_csap_support.h"
 #include "tad_utils.h"
+#include "pkt_socket.h"
 
 
 #ifndef ETH_ALEN          /* Octets in one ethernet addr     */
@@ -89,21 +90,6 @@
 #define IFNAME_SIZE 256
 #endif
 
-#ifndef ETH_IFACE_OK
-#define ETH_IFACE_OK 0
-#endif
-
-#ifndef ETH_IFACE_NOT_FOUND
-#define ETH_IFACE_NOT_FOUND 1
-#endif
-
-#ifndef ETH_IFACE_HWADDR_ERROR
-#define ETH_IFACE_HWADDR_ERROR 2
-#endif
-
-#ifndef ETH_IFACE_IFINDEX_ERROR
-#define ETH_IFACE_IFINDEX_ERROR 3
-#endif
 
 #ifndef ETH_COMPLETE_FREE
 #define ETH_COMPLETE_FREE 1
@@ -129,32 +115,13 @@ extern "C" {
 #endif
 
 /* 
- * Ethernet interface related data
- * 
- */
-struct eth_csap_interface;
-typedef struct eth_csap_interface *eth_csap_interface_p;
-typedef struct eth_csap_interface
-{
-    char  name[IFNAME_SIZE];        /**< Etherner interface name (e.g. eth0) */
-    int   if_index;                 /**< Interface index                     */
-    
-    char  local_addr[ETH_ALEN];     /**< Hardware address of the home interface
-                                     *   Extracted through ioctls if not defined
-                                     *   by the user in the configuration param.
-                                     *   (may differ from real hardware address)
-                                     */
-    
-} eth_csap_interface_t;
-
-/* 
  * Ethernet CSAP specific data
  */
 struct eth_csap_specific_data;
 typedef struct eth_csap_specific_data *eth_csap_specific_data_p;
 typedef struct eth_csap_specific_data
 {
-    eth_csap_interface_p interface; /**< Ethernet interface data        */
+    eth_interface_p interface; /**< Ethernet interface data        */
 
     int   out;          /**< Socket for sending data to the media       */
     int   in;           /**< Socket for receiving data                  */
@@ -343,24 +310,6 @@ extern int eth_match_bin_cb (int csap_id, int layer,
 extern int eth_gen_pattern_cb(int csap_id, int layer,
                               const asn_value *tmpl_pdu, 
                               asn_value_p  *pattern_pdu);
-
-/**
- * Find ethernet interface by its name and initialize specified
- * structure with interface parameters
- *
- * @param name      symbolic name of interface to find (e.g. eth0, eth1)
- * @param iface     pointer to interface structure to be filled
- *                  with found parameters
- *
- * @return ETH_IFACE_OK on success or one of the error codes
- *
- * @retval ETH_IFACE_OK            on success
- * @retval ETH_IFACE_NOT_FOUND     if config socket error occured or interface 
- *                                 can't be found by specified name
- * @retval ETH_IFACE_HWADDR_ERROR  if hardware address can't be extracted   
- * @retval ETH_IFACE_IFINDEX_ERROR if interface index can't be extracted
- */
-extern int eth_find_interface(char *name, eth_csap_interface_p iface); 
 
 /**
  * Create and bind raw socket to listen specified interface

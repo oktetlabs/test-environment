@@ -6,7 +6,7 @@ AM_CPPFLAGS=@TAD_CH_DEFS@ -I$(DESTDIR)/$(prefix)/include -I$(top_srcdir)
 AM_LDFLAGS=@TE_LDFLAGS@ 
 
 include_HEADERS=tad_csap_inst.h
-noinst_HEADERS=tad_csap_support.h tad_utils.h
+noinst_HEADERS=tad_csap_support.h tad_utils.h pkt_socket.h
 
 noinst_LIBRARIES=libtad_core.a
 
@@ -15,7 +15,7 @@ AM_CPPFLAGS+= -DDUMMY_TAD
 libtad_core_a_SOURCES=tad_ch.c
 else 
 libtad_core_a_SOURCES=tad_ch.c csap_db.c csap_spt_db.c tad_recv.c \
-                      tad_send.c tad_utils.c
+                      tad_send.c tad_utils.c pkt_socket.c
 endif 
 
 
