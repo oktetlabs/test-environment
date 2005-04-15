@@ -206,8 +206,8 @@ int cli_session_open(cli_csap_specific_data_p spec_data)
 
 #ifdef EXP_DEBUG
     exp_console = 1;
-    exp_is_debugging = 1;
-    exp_loguser = 1;
+    exp_is_debugging = 0;
+    exp_loguser = 0;
     exp_logfile_all = 1;
     
     exp_debugfile = dbg;
