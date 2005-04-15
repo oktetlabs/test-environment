@@ -48,10 +48,12 @@
 
 #include "rcf_api.h"
 #include "ndn_cli.h"
-#include "tapi_cli.h"
+
 
 #define TE_LGR_USER     "TAPI CLI"
 #include "logger_api.h"
+
+#include "tapi_cli.h"
 
 #define TAPI_CLI_CSAP_STR_MAXLEN            512
 #define TAPI_CLI_CSAP_INIT_FILENAME_MAXLEN  128
@@ -573,6 +575,7 @@ tapi_cli_msg_handler(char *msg_fname, void *user_param)
         return;
     }
 
+#if 0
     cli_msg = asn_read_indexed(cli_response, 0, "pdus");
     if (cli_msg == NULL)
     {
@@ -605,6 +608,22 @@ tapi_cli_msg_handler(char *msg_fname, void *user_param)
         ERROR("Failed to get message body from CLI response rc=0x%x", rc);
         return;
     }
+#else
+    msg_len = asn_get_length(cli_response, "payload");
+    if (msg_len <= 0)
+        return 0;
+
+    msg = (char *)malloc(msg_len + 1);
+    if (msg == NULL)
+    {
+        ERROR("Cannot allocate enough memory for CLI response");
+        return;
+    }
+
+    msg[msg_len] = '\0';
+
+    rc = asn_read_value_field(cli_response, msg, &msg_len, "payload");
+#endif
 
     VERB("Received msg : %s", msg);
 
