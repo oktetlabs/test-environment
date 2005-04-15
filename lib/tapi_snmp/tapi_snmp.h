@@ -500,8 +500,8 @@ extern int tapi_snmp_set_unsigned(const char *ta, int sid, int csap_id,
  */
 extern int tapi_snmp_set_octetstring(const char *ta, int sid, int csap_id, 
                                      const tapi_snmp_oid_t *oid,
-                                     const unsigned char *value, 
-                                     size_t size, int *errstat);
+                                     const uint8_t *value, size_t size,
+                                     int *errstat);
 
 /**
  * The function makes an attempt to set a string value for an SNMP object by
