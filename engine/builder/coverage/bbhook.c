@@ -43,7 +43,6 @@ static const char *make_coverage_path(const char *name)
 {
     static char path_buf[PATH_MAX + 1];
     const char *te_tmp = getenv("TE_TMP");
-    const char *tce_prefix = getenv("TCE_PREFIX");
     const char *next_slash, *iter;
     
     if (!te_tmp)
@@ -52,12 +51,6 @@ static const char *make_coverage_path(const char *name)
     strcpy(path_buf, te_tmp);
     strcat(path_buf, "/coverage/");
     mkdir(path_buf);
-    if (tce_prefix)
-    {
-        int preflen = strlen(tce_prefix);
-        if (strncmp(name, tce_prefix, preflen) == 0)
-            name += preflen;
-    }
     for (iter = name + (*name == '/'), next_slash = strchr(iter, '/'); next_slash != NULL;
          iter = next_slash + 1, next_slash = strchr(iter, '/'))
     {
