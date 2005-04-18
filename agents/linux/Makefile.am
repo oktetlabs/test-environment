@@ -26,6 +26,11 @@ noinst_HEADERS=linux_rpc.h linux_internal.h linuxconf_daemons.h
 CLEANFILES=symtbl.c
 BUILT_SOURCES=
 
+if CFG_NETLINK_USE
+MY_CPPFLAGS+=-I/usr/include/iproute
+MY_LDADD+=-lnetlink -lutil
+endif
+
 if CFG_RCF_RPC
 
 MY_CPPFLAGS+=-DRCF_RPC -I.

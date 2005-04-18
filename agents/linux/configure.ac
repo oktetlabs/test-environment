@@ -161,6 +161,7 @@ AM_CONDITIONAL(CFG_LINUX_DAEMONS_NAMED,
 AM_CONDITIONAL(CFG_LINUX_DAEMONS_ISC_DHCP_SERVER,
     [expr "$with_cfg_linux_daemons" : ".*dhcp" >/dev/null])
 AM_CONDITIONAL(CFG_RCF_RPC, test -n "$with_rcf_rpc")
+AM_CONDITIONAL(CFG_NETLINK_USE, test -n "$with_netlink")
 
 
 dnl #######################################################################
@@ -257,6 +258,20 @@ if test -n "$with_rcf_rpc" ; then
         [AC_CHECK_FUNC([xdr_u_int64_t],
             [AC_DEFINE([xdr_uint64_t], [xdr_u_int64_t])],
             [AC_ERROR([There is no xdr_uint64_t or xdr_u_int64_t!])])])
+fi
+
+if test -n "$with_netlink" ; then
+    if test -n "$with_ifconfig" ; then
+        AC_ERROR([Test Environment cannot 
+        use both ioctl calls and netlink calls
+        to configure interfaces]) ;
+    fi        
+    CPPFLAGS="$CPPFLAGS -DUSE_NETLINK"
+else
+    if test -n "$with_ifconfig" ; then
+        CPPFLAGS="$CPPFLAGS -DUSE_IFCONFIG"
+    fi    
+    CPPFLAGS="$CPPFLAGS -DUSE_IOCTL"
 fi
 
 export PKG_CONFIG_PATH=$DESTDIR/$prefix/../$host/lib/pkgconfig/
