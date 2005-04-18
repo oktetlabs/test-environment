@@ -475,7 +475,7 @@ static int
 ds_xinetd_service_addr_set(const char *service, const char *value)
 {
     unsigned int  addr;
-    char         *DS_path = NULL; /* Path to xinetd service
+    char         *ds_path = NULL; /* Path to xinetd service
                                           configuration file */
     char         *tmp_path = NULL; /* Path to temporary file */
     char         *cmd = NULL;
@@ -493,12 +493,12 @@ ds_xinetd_service_addr_set(const char *service, const char *value)
 
 #define FREE_BUFFERS \
     do {                     \
-        free(DS_path);  \
+        free(ds_path);       \
         free(tmp_path);      \
         free(cmd);           \
     } while (0)
 
-    if ((DS_path = (char *)malloc(path_len)) == NULL ||
+    if ((ds_path = (char *)malloc(path_len)) == NULL ||
         (tmp_path = (char *)malloc(path_len)) == NULL ||
         (cmd = (char *)malloc(2 * path_len + strlen(fmt))) == NULL)
     {
@@ -506,12 +506,12 @@ ds_xinetd_service_addr_set(const char *service, const char *value)
         return TE_RC(TE_TA_LINUX, ENOMEM);
     }
 
-    snprintf(DS_path, path_len, "%s%s", XINETD_ETC_DIR, service);
+    snprintf(ds_path, path_len, "%s%s", XINETD_ETC_DIR, service);
     snprintf(tmp_path, path_len, "%s%s%s",
              TE_TMP_PATH, service, TE_TMP_FILE_SUFFIX);
-    snprintf(cmd, 2 * path_len + strlen(fmt), fmt, tmp_path, DS_path);
+    snprintf(cmd, 2 * path_len + strlen(fmt), fmt, tmp_path, ds_path);
 
-    if ((f = fopen(DS_path, "r")) == NULL)
+    if ((f = fopen(ds_path, "r")) == NULL)
     {
         FREE_BUFFERS;
         return TE_RC(TE_TA_LINUX, errno);
@@ -1397,7 +1397,6 @@ ftp_create_backup(enum ftp_server_kinds kind)
         return FALSE;
     ftp_server_kind = kind;
     return TRUE;
-    
 }
 
 
@@ -1409,11 +1408,9 @@ ftp_create_backup(enum ftp_server_kinds kind)
 void
 ds_init_ftp_server(rcf_pch_cfg_object **last)
 {
-
     ftp_create_backup(FTP_PROFTPD);
     ftp_create_backup(FTP_WUFTPD);
     ftp_create_backup(FTP_VSFTPD);
-
 
 #ifdef WITH_XINETD
     if (file_exists(XINETD_ETC_DIR "ftp"))
@@ -2856,7 +2853,7 @@ linuxconf_daemons_init(rcf_pch_cfg_object **last)
     DS_REGISTER(xvfb);
     
     {
-        int tid;
+        pthread_t tid = 0;
         
         pthread_create(&tid, NULL, supervise_backups, NULL);
     }

@@ -493,13 +493,14 @@ rcf_ch_start_task_thr(struct rcf_comm_connection *handle,
                 iter->is_argv = is_argv;
                 iter->params = params;
                 iter->rc = 0;
+                iter->id = 0;
                 if (!iter->sem_created)
                 {
                     sem_init(&iter->params_processed, FALSE, 0);
                     iter->sem_created = TRUE;
                 }
                 if ((rc = pthread_create(&iter->id, NULL, 
-                                         rcf_ch_thread_wrapper,iter)) != 0)
+                                         rcf_ch_thread_wrapper, iter)) != 0)
                 {
                     pthread_mutex_unlock(&thread_pool_mutex);
                     SEND_ANSWER("%d", rc);                    
