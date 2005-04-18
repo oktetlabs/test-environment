@@ -213,9 +213,11 @@ ip4_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
         return ETENOSUPP;
 
     /* TODO: IPv4 options generating */ 
+    /* TODO: IPv4 fragmentation, if payload greather then MTU -- ?? */ 
 
     pkt_len = pkts->len = up_payload->len + 20;
     p = pkts->data = malloc(pkt_len);
+    pkts->next = NULL;
 
 
 #define PUT_BIN_DATA(c_du_field, length) \
@@ -224,22 +226,82 @@ ip4_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
                                   args, arg_num, p, length);            \
         if (rc != 0)                                                    \
         {                                                               \
-            ERROR("%s(): generate " #c_du_field ", error: 0x%x",        \
-                  __FUNCTION__,  rc);                                   \
-            return rc;                                                  \
+            ERROR("%s():%d: generate " #c_du_field ", error: 0x%x",     \
+                  __FUNCTION__,  __LINE__, rc);                         \
+            goto cleanup;                                               \
         }                                                               \
         p += length;                                                    \
     } while (0) 
 
-    PUT_BIN_DATA(du_version, 1);
+
+#define CUT_BITS(var_, n_bits_) \
+    do {                                                                \
+        if ( (((uint32_t)-1) << n_bits_) & var_)                        \
+        {                                                               \
+            RING("%s():%d: var " #var_ " is : 0x%x, but should %d bits",\
+                 __FUNCTION__, __LINE__, var_, n_bits_);                \
+            var_ &= ~(((uint32_t)-1) << n_bits_);                       \
+        }                                                               \
+    } while (0);
+        
+
+    {
+        uint8_t version, hlen;
+
+        rc = tad_data_unit_to_bin(&spec_data->du_version, 
+                                  args, arg_num, &version, 1);
+
+        if (rc == 0) 
+            rc = tad_data_unit_to_bin(&spec_data->du_header_len, 
+                                      args, arg_num, &hlen, 1);
+        if (rc != 0)
+        {
+            ERROR("%s(): generate version or hlen error %X", 
+                  __FUNCTION__, rc);
+            goto cleanup;
+        }
+        CUT_BITS(version, 4);
+        CUT_BITS(hlen, 4);
+
+        *p = version << 4 | hlen;
+        p++;
+    }
+
+    PUT_BIN_DATA(du_tos, 1);
+    PUT_BIN_DATA(du_ip_len, 2);
+    PUT_BIN_DATA(du_ip_ident, 2);
+
+    {
+        uint8_t flags;
+
+        rc = tad_data_unit_to_bin(&spec_data->du_flags,
+                                  args, arg_num, &flags, 1);
+        if (rc != 0)
+        {
+            ERROR ("%s(): flags error %X", __FUNCTION__, rc);
+            goto cleanup;
+        }
+        CUT_BITS(flags, 3);
+        
+    }
+    PUT_BIN_DATA(du_ip_ident, 2);
 
     
     UNUSED(tmpl_pdu); 
-    UNUSED(pkts); 
 
 #undef PUT_BIN_DATA
 
     return 0;
+cleanup:
+    {
+        csap_pkts_p pkt_fr;
+        for (pkt_fr = pkts; pkt_fr != NULL; pkt_fr = pkt_fr->next)
+        {
+            free(pkt_fr->data);
+            pkt_fr->data = NULL; pkt_fr->len = 0;
+        }
+    }
+    return rc;
 }
 
 /**
