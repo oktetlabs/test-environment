@@ -88,7 +88,6 @@ extern "C" {
 
 /* 
  * Ethernet interface related data
- * 
  */
 struct eth_interface;
 typedef struct eth_interface *eth_interface_p;
@@ -107,17 +106,25 @@ typedef struct eth_interface
 
 
 /**
- * Create and bind raw socket to listen specified interface
+ * Create and bind packet socket to operate with network interface
  *
- * @param pkt_type  Type of packet socket (PACKET_HOST, PACKET_OTHERHOST,
- *                  PACKET_OUTGOING
- * @param if_index  interface index
+ * @param ifname    name of network interface
  * @param sock      pointer to place where socket handler will be saved
  *
- * @param 0 on succees, -1 on fail
+ * @param 0 on succees, error code otherwise
  */
-extern int open_packet_socket(int pkt_type, int if_index, int *sock);
+extern int open_packet_socket(const char* ifname, int *sock);
 
+
+/**
+ * Close packet socket
+ *
+ * @param ifname    name of network interface socket bound to
+ * @param sock      pointer to place where socket handler will be saved
+ *
+ * @param 0 on succees, error code otherwise
+ */
+extern int close_packet_socket(const char* ifname, int sock);
 
 /**
  * Find ethernet interface by its name and initialize specified
@@ -135,7 +142,7 @@ extern int open_packet_socket(int pkt_type, int if_index, int *sock);
  * @retval ETH_IFACE_HWADDR_ERROR  if hardware address can't be extracted   
  * @retval ETH_IFACE_IFINDEX_ERROR if interface index can't be extracted
  */
-extern int eth_find_interface(char *name, eth_interface_p if_descr); 
+extern int eth_find_interface(const char *name, eth_interface_p if_descr); 
 
 
 /**

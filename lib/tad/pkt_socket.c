@@ -67,7 +67,6 @@
 #include "pkt_socket.h"
 
 
-#if 0
 #ifndef INSQUE
 /* macros to insert element p into queue _after_ element q */
 #define INSQUE(p, q) do {(p)->prev = q; (p)->next = (q)->next; \
@@ -81,11 +80,11 @@
 
 typedef struct iface_user_rec {
     struct iface_user_rec *next, *prev;
-    char name[IFNAME_SIZE];
-    int  num_users;
+    eth_interface_t        descr;
 } iface_user_rec;
 
-static iface_user_rec iface_users_root = {&iface_users_root, &iface_users_root, {0,},0};
+static iface_user_rec iface_users_root = 
+    {&iface_users_root, &iface_users_root, {{0,}, 0, {0,}}};
 
 static iface_user_rec *
 find_iface_user_rec(const char *ifname)
@@ -93,38 +92,34 @@ find_iface_user_rec(const char *ifname)
     iface_user_rec *ir;
 
     for (ir = iface_users_root.next; ir != &iface_users_root; ir = ir->next)
-        if (strncmp(ir->name, ifname, IFNAME_SIZE) == 0)
+        if (strncmp(ir->descr.name, ifname, IFNAME_SIZE) == 0)
             return ir;
 
     return NULL;
 }
-#endif
 
 
 #define USE_PROMISC_MODE 1
 
  
-
-/**
- * Create and bind packet socket to listen specified interface
- *
- * @param pkt_type  Type of packet socket (PACKET_HOST, PACKET_OTHERHOST,
- *                  PACKET_OUTGOING
- * @param if_index  interface index
- * @param sock      pointer to place where socket handler will be saved
- *
- * @return error status
- */
+/* See description in pkt_socket.h */
 int 
-open_packet_socket(int pkt_type, int if_index, int *sock)
+open_packet_socket(const char *ifname, int *sock)
 {
-    struct sockaddr_ll  bind_addr;
-    int rc;
+    int  rc;
     char err_buf[200];
 
-    UNUSED(pkt_type);
+    eth_interface_t     ifdescr;
+    struct sockaddr_ll  bind_addr;
 
     memset (&bind_addr, 0, sizeof(bind_addr));
+
+    rc = eth_find_interface(ifname,  &ifdescr);
+    if (rc != 0)
+    {
+        ERROR("%s(): find interface failed %X", __FUNCTION__, rc);
+        return rc;
+    }
 
     if (sock == NULL)
     {
@@ -150,9 +145,9 @@ open_packet_socket(int pkt_type, int if_index, int *sock)
 
     bind_addr.sll_family = AF_PACKET;
     bind_addr.sll_protocol = htons(ETH_P_ALL);
-    bind_addr.sll_ifindex = if_index;
+    bind_addr.sll_ifindex = ifdescr.if_index;
     bind_addr.sll_hatype = ARPHRD_ETHER;
-    bind_addr.sll_pkttype = pkt_type;
+    bind_addr.sll_pkttype = 0;
     bind_addr.sll_halen = ETH_ALEN;
 
     VERB("RAW Socket opened");
@@ -196,6 +191,33 @@ open_packet_socket(int pkt_type, int if_index, int *sock)
 }
 
 
+/* See description in pkt_socket.h */
+int
+close_packet_socket(const char* ifname, int sock)
+{
+    iface_user_rec *ir;
+    int rc; 
+
+    ir = find_iface_user_rec(ifname);
+    if (ir == NULL)
+    {
+        ERROR("%s(): iface %d not used before for create packet socket", 
+              __FUNCTION__, ifname);
+        return EINVAL;
+    }
+
+    rc = eth_free_interface(&(ir->descr));
+    if (rc != 0)
+    {
+        ERROR("%s(): error free interface %d",
+              __FUNCTION__, ir->descr.name);
+        return rc;
+    }
+
+    close(sock);
+
+    return 0;
+}
 
 /**
  * Find ethernet interface by its name and initialize specified
@@ -214,12 +236,13 @@ open_packet_socket(int pkt_type, int if_index, int *sock)
  * @retval ETH_IFACE_IFINDEX_ERROR if interface index can't be extracted
  */
 int
-eth_find_interface(char *name, eth_interface_p ifdescr)
+eth_find_interface(const char *name, eth_interface_p ifdescr)
 {
     char err_buf[200];
     int    cfg_socket;
     struct ifreq  if_req;
     int rc;
+    iface_user_rec *ir;
 
     if (name == NULL) 
     {
@@ -230,6 +253,15 @@ eth_find_interface(char *name, eth_interface_p ifdescr)
 
     if ((cfg_socket = socket(AF_INET, SOCK_DGRAM, 0)) == -1)
         return errno;
+
+    ir = find_iface_user_rec(name);
+    if (ir != NULL)
+    {
+        memcpy(ifdescr, &(ir->descr), sizeof(*ifdescr));
+        goto promisc_mode;
+    }
+
+    ir = calloc(1, sizeof(*ir));
 
     memset(&if_req, 0, sizeof(if_req));
     strcpy(if_req.ifr_name, name);
@@ -243,7 +275,7 @@ eth_find_interface(char *name, eth_interface_p ifdescr)
     }
 
     memcpy(ifdescr->local_addr, if_req.ifr_hwaddr.sa_data, ETH_ALEN);
-    strcpy(if_req.ifr_name, name);
+    strncpy(if_req.ifr_name, name, sizeof(if_req.ifr_name));
 
     if (ioctl(cfg_socket, SIOCGIFINDEX, &if_req))
     {
@@ -257,9 +289,14 @@ eth_find_interface(char *name, eth_interface_p ifdescr)
     ifdescr->if_index = if_req.ifr_ifindex;
     
     /* saving name     */
-    strncpy (ifdescr->name, name, (IFNAME_SIZE - 1));
+    strncpy(ifdescr->name, if_req.ifr_name, (IFNAME_SIZE - 1));
     ifdescr->name[IFNAME_SIZE - 1] = '\0';
 
+
+    memcpy(&(ir->descr), ifdescr, sizeof(*ifdescr));
+    INSQUE(ir, &iface_users_root); 
+
+promisc_mode:
 #if USE_PROMISC_MODE
 
     memset(&if_req, 0, sizeof(if_req));
@@ -291,24 +328,6 @@ eth_find_interface(char *name, eth_interface_p ifdescr)
     
     close(cfg_socket);
 
-#if 0
-    {
-        iface_user_rec *ir;
-
-        ir = find_iface_user_rec(name);
-        if (ir == NULL)
-        {
-            ir = calloc(1, sizeof(iface_user_rec));
-
-            if (ir == NULL)
-                return ENOMEM; 
-            strncpy(ir->name, name, IFNAME_SIZE);
-            INSQUE(ir, &iface_users_root); 
-        }
-
-        ir->num_users++; 
-    }
-#endif
     return 0;
 } 
 

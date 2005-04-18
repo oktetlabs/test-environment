@@ -129,7 +129,7 @@ eth_release(csap_p csap_descr)
     {
         VERB("%s: CSAP %d, close input socket %d", 
              __FUNCTION__, csap_descr->id, spec_data->in);
-        if (close(spec_data->in) < 0)
+        if (close_packet_socket(spec_data->interface->name, spec_data->in) < 0)
         {
             csap_descr->last_errno = errno;
             perror("close input socket");
@@ -143,7 +143,7 @@ eth_release(csap_p csap_descr)
     {
         VERB("%s: CSAP %d, close output socket %d", 
              __FUNCTION__, csap_descr->id, spec_data->out);
-        if (close(spec_data->out) < 0)
+        if (close_packet_socket(spec_data->interface->name, spec_data->out) < 0)
         {
             csap_descr->last_errno = errno;
             perror("close output socket");
@@ -185,8 +185,7 @@ eth_prepare_recv(csap_p csap_descr)
     VERB("Before opened Socket %d", spec_data->in);
 
     /* opening incoming socket */
-    if ((rc = open_packet_socket(PACKET_HOST,
-                                spec_data->interface->if_index,
+    if ((rc = open_packet_socket(spec_data->interface->name,
                                  &spec_data->in)) != 0)
     {
         ERROR("open_packet_socket error %d", rc);
@@ -230,8 +229,7 @@ eth_prepare_send(csap_p csap_descr)
     spec_data = (eth_csap_specific_data_p) csap_descr->layers[layer].specific_data; 
    
     /* outgoing socket */
-    if ((rc = open_packet_socket(PACKET_OTHERHOST,
-                                spec_data->interface->if_index,
+    if ((rc = open_packet_socket(spec_data->interface->name,
                                  &spec_data->out)) != 0)
     { 
         ERROR("open_packet_socket error %d", rc);
@@ -379,9 +377,9 @@ eth_read_cb (csap_p csap_descr, int timeout, char *buf, size_t buf_len)
 
     if (pkt_size < 0)
     {
+        csap_descr->last_errno = errno;
         VERB("recvfrom fails: spec_data->in = %d",
                    spec_data->in);
-        csap_descr->last_errno = errno;
         return -1;
     }
     if (pkt_size == 0)
@@ -869,13 +867,14 @@ eth_single_destroy_cb (int csap_id, int layer)
     {
         VERB("csap # %d, CLOSE SOCKET (%d): %s:%d",
                    csap_descr->id, spec_data->in, __FILE__, __LINE__);
-        if (close(spec_data->in) < 0)
+        if (close_packet_socket(spec_data->interface->name, spec_data->in) < 0)
             assert(0);
         spec_data->in = -1;
     }
     
     if (spec_data->out >= 0)
-        close(spec_data->out);    
+        if (close_packet_socket(spec_data->interface->name, spec_data->out) < 0)
+            assert(0);
 
     free_eth_csap_data(spec_data, ETH_COMPLETE_FREE);
 
