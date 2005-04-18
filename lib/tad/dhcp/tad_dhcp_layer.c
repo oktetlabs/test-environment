@@ -189,7 +189,7 @@ fill_dhcp_options(void *buf, asn_value_p options)
 /**
  * Callback for generate binary data to be sent to media.
  *
- * @param csap_id       identifier of CSAP
+ * @param csap_descr    CSAP instance
  * @param layer         numeric index of layer in CSAP type to be processed.
  * @param tmpl_pdu      asn_value with PDU. 
  * @param up_payload    pointer to data which is already generated for upper 
@@ -209,7 +209,7 @@ fill_dhcp_options(void *buf, asn_value_p options)
  * @return zero on success or error code.
  */ 
 int 
-dhcp_gen_bin_cb(int csap_id, int layer, const asn_value *tmpl_pdu,
+dhcp_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
                 const tad_tmpl_arg_t *args, size_t arg_num,
                 const csap_pkts_p up_payload, csap_pkts_p pkts)
 {
@@ -220,7 +220,7 @@ dhcp_gen_bin_cb(int csap_id, int layer, const asn_value *tmpl_pdu,
 #endif
 
     UNUSED(up_payload); /* DHCP has no payload */ 
-    UNUSED(csap_id); 
+    UNUSED(csap_descr); 
     UNUSED(args); 
     UNUSED(arg_num); 
     UNUSED(layer); 

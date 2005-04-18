@@ -41,6 +41,7 @@
 #include "tad_csap_inst.h"
 #include "tad_csap_support.h"
 #include "tad_utils.h"
+#include "asn_usr.h" 
 #include "ndn.h" 
 
 #define TE_LGR_USER     "TAD CH"

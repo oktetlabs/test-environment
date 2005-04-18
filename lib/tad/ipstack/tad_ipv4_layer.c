@@ -172,7 +172,7 @@ ip4_confirm_pdu_cb(int csap_id, int layer, asn_value *tmpl_pdu)
 /**
  * Callback for generate binary data to be sent to media.
  *
- * @param csap_id       identifier of CSAP
+ * @param csap_descr    CSAP instance
  * @param layer         numeric index of layer in CSAP type to be processed.
  * @param tmpl_pdu      asn_value with PDU. 
  * @param up_payload    pointer to data which is already generated for upper 
@@ -192,21 +192,31 @@ ip4_confirm_pdu_cb(int csap_id, int layer, asn_value *tmpl_pdu)
  * @return zero on success or error code.
  */ 
 int 
-ip4_gen_bin_cb(int csap_id, int layer, const asn_value *tmpl_pdu,
+ip4_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
                const tad_tmpl_arg_t *args, size_t arg_num, 
                const csap_pkts_p  up_payload, csap_pkts_p pkts)
 {
-    csap_p  csap_descr;
     int     rc;
 
-    ip4_csap_specific_data_t * spec_data = 
-        (ip4_csap_specific_data_t *) csap_descr->layers[layer].specific_data; 
+    uint8_t *p;
+    size_t   pkt_len;
 
-    if ((csap_descr = csap_find(csap_id)) == NULL)
-        return TE_RC(TE_TAD_CSAP, EINVAL);
+    ip4_csap_specific_data_t *spec_data;
 
-    if (csap_descr->type == TAD_CSAP_DATA)
-        return 0;
+    if (csap_descr  == NULL)
+        return TE_RC(TE_TAD_CSAP, ETADCSAPNOTEX);
+
+    spec_data = (ip4_csap_specific_data_t *)
+                csap_descr->layers[layer].specific_data; 
+
+    if (csap_descr->type == TAD_CSAP_DATA) /* TODO */
+        return ETENOSUPP;
+
+    /* TODO: IPv4 options generating */ 
+
+    pkt_len = pkts->len = up_payload->len + 20;
+    p = pkts->data = malloc(pkt_len);
+
 
 #define PUT_BIN_DATA(c_du_field, length) \
     do {                                                                \
@@ -221,12 +231,13 @@ ip4_gen_bin_cb(int csap_id, int layer, const asn_value *tmpl_pdu,
         p += length;                                                    \
     } while (0) 
 
+    PUT_BIN_DATA(du_version, 1);
+
     
-    UNUSED(up_payload);
-    UNUSED(args); 
-    UNUSED(arg_num); 
+    UNUSED(tmpl_pdu); 
     UNUSED(pkts); 
 
+#undef PUT_BIN_DATA
 
     return 0;
 }

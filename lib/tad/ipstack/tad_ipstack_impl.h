@@ -257,7 +257,7 @@ extern int ip4_single_destroy_cb (int csap_id, int layer);
  *
  * @return zero on success or error code.
  */ 
-extern int ip4_eth_destroy_cb (int csap_id, int layer);
+extern int ip4_eth_destroy_cb(int csap_id, int layer);
 
 /**
  * Callback for confirm PDU with ehternet CSAP parameters and possibilities.
@@ -268,12 +268,12 @@ extern int ip4_eth_destroy_cb (int csap_id, int layer);
  *
  * @return zero on success or error code.
  */ 
-extern int ip4_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu); 
+extern int ip4_confirm_pdu_cb(int csap_id, int layer, asn_value_p tmpl_pdu); 
 
 /**
  * Callback for generate binary data to be sent to media.
  *
- * @param csap_id       identifier of CSAP
+ * @param csap_descr    CSAP instance
  * @param layer         numeric index of layer in CSAP type to be processed.
  * @param tmpl_pdu      asn_value with PDU. 
  * @param up_payload    pointer to data which is already generated for upper 
@@ -292,9 +292,9 @@ extern int ip4_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu);
  *
  * @return zero on success or error code.
  */ 
-extern int ip4_gen_bin_cb (int csap_id, int layer, const asn_value *tmpl_pdu,
-                           const tad_tmpl_arg_t *args, size_t arg_num, 
-                           csap_pkts_p up_payload, csap_pkts_p pkts);
+extern int ip4_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
+                          const tad_tmpl_arg_t *args, size_t arg_num, 
+                          csap_pkts_p up_payload, csap_pkts_p pkts);
 
 
 /**
@@ -436,7 +436,7 @@ extern int icmp4_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu);
 /**
  * Callback for generate binary data to be sent to media.
  *
- * @param csap_id       identifier of CSAP
+ * @param csap_descr    CSAP instance
  * @param layer         numeric index of layer in CSAP type to be processed.
  * @param tmpl_pdu      asn_value with PDU. 
  * @param up_payload    pointer to data which is already generated for upper 
@@ -455,9 +455,10 @@ extern int icmp4_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu);
  *
  * @return zero on success or error code.
  */ 
-extern int icmp4_gen_bin_cb (int csap_id, int layer, const asn_value *tmpl_pdu,
-                           const tad_tmpl_arg_t *args, size_t arg_num, 
-                           csap_pkts_p up_payload, csap_pkts_p pkts);
+extern int icmp4_gen_bin_cb(csap_p csap_descr, int layer,
+                            const asn_value *tmpl_pdu,
+                            const tad_tmpl_arg_t *args, size_t arg_num, 
+                            csap_pkts_p up_payload, csap_pkts_p pkts);
 
 
 /**
@@ -599,7 +600,7 @@ extern int udp_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu);
 /**
  * Callback for generate binary data to be sent to media.
  *
- * @param csap_id       identifier of CSAP
+ * @param csap_descr    CSAP instance
  * @param layer         numeric index of layer in CSAP type to be processed.
  * @param tmpl_pdu      asn_value with PDU. 
  * @param up_payload    pointer to data which is already generated for upper 
@@ -618,9 +619,9 @@ extern int udp_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu);
  *
  * @return zero on success or error code.
  */ 
-extern int udp_gen_bin_cb (int csap_id, int layer, const asn_value *tmpl_pdu,
-                           const tad_tmpl_arg_t *args, size_t arg_num, 
-                           csap_pkts_p up_payload, csap_pkts_p pkts);
+extern int udp_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
+                          const tad_tmpl_arg_t *args, size_t arg_num, 
+                          csap_pkts_p up_payload, csap_pkts_p pkts);
 
 
 /**
@@ -762,7 +763,7 @@ extern int tcp_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu);
 /**
  * Callback for generate binary data to be sent to media.
  *
- * @param csap_id       identifier of CSAP
+ * @param csap_descr    CSAP instance
  * @param layer         numeric index of layer in CSAP type to be processed.
  * @param tmpl_pdu      asn_value with PDU. 
  * @param up_payload    pointer to data which is already generated for upper 
@@ -781,9 +782,9 @@ extern int tcp_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu);
  *
  * @return zero on success or error code.
  */ 
-extern int tcp_gen_bin_cb (int csap_id, int layer, const asn_value *tmpl_pdu,
-                           const tad_tmpl_arg_t *args, size_t arg_num, 
-                           csap_pkts_p up_payload, csap_pkts_p pkts);
+extern int tcp_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
+                          const tad_tmpl_arg_t *args, size_t arg_num, 
+                          csap_pkts_p up_payload, csap_pkts_p pkts);
 
 
 /**

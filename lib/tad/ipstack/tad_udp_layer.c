@@ -108,7 +108,7 @@ udp_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
 /**
  * Callback for generate binary data to be sent to media.
  *
- * @param csap_id     identifier of CSAP
+ * @param csap_descr    CSAP instance
  * @param layer       numeric index of layer in CSAP type to be processed.
  * @param tmpl_pdu    asn_value with PDU. 
  * @param up_payload  pointer to data which is already generated for upper 
@@ -128,16 +128,16 @@ udp_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
  * @return zero on success or error code.
  */ 
 int 
-udp_gen_bin_cb(int csap_id, int layer, const asn_value *tmpl_pdu,
+udp_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
                const tad_tmpl_arg_t *args, size_t arg_num, 
                const csap_pkts_p  up_payload, csap_pkts_p pkts)
 {
     int rc;
-    csap_p csap_descr;
     udp_csap_specific_data_t *spec_data;
  
-    if ((csap_descr = csap_find(csap_id)) == NULL)
+    if (csap_descr == NULL)
     {
+        ERROR("%s(): null csap descr passed", __FUNCTION__);
         return TE_RC(TE_TAD_CSAP, ETADCSAPNOTEX);
     }
  

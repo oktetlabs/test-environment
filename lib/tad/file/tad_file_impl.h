@@ -156,7 +156,7 @@ extern int file_confirm_pdu_cb(int csap_id, int layer,
 /**
  * Callback for generate binary data to be sent to media.
  *
- * @param csap_id       identifier of CSAP
+ * @param csap_descr    CSAP instance
  * @param layer         numeric index of layer in CSAP type to be processed.
  * @param tmpl_pdu      asn_value with PDU. 
  * @param up_payload    pointer to data which is already generated for upper 
@@ -177,7 +177,7 @@ extern int file_confirm_pdu_cb(int csap_id, int layer,
  *
  * @return zero on success or error code.
  */ 
-extern int file_gen_bin_cb(int csap_id, int layer,
+extern int file_gen_bin_cb(csap_p csap_descr, int layer,
                            const asn_value *tmpl_pdu,
                            const tad_tmpl_arg_t *args, size_t arg_num,
                            csap_pkts_p up_payload, csap_pkts_p pkts);

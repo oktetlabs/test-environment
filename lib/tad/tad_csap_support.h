@@ -144,7 +144,7 @@ typedef struct csap_pkts {
  * upper level of template processing, this callback is called for every
  * set of iteration parameters values. 
  *
- * @param csap_id       Identifier of CSAP
+ * @param csap_descr    CSAP instance.
  * @param layer         Numeric index of layer in CSAP type to be processed.
  * @param tmpl_pdu      Asn_value with PDU. 
  * @param args          Array with values of template iteration parameters,
@@ -170,7 +170,7 @@ typedef struct csap_pkts {
  *
  * @return zero on success or error code.
  */ 
-typedef int (*csap_gen_bin_cb_t)(int csap_id, int layer,
+typedef int (*csap_gen_bin_cb_t)(csap_p csap_descr, int layer,
                                  const asn_value *tmpl_pdu,
                                  const struct tad_tmpl_arg_t *args,
                                  size_t arg_num,
