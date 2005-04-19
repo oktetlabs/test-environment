@@ -27,8 +27,7 @@ CLEANFILES=symtbl.c
 BUILT_SOURCES=
 
 if CFG_NETLINK_USE
-MY_CPPFLAGS+=-I/usr/include/iproute
-MY_LDADD+=-lnetlink -lutil
+MY_LDADD+=-lnetlink
 endif
 
 if CFG_RCF_RPC

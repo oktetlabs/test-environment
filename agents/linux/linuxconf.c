@@ -78,11 +78,11 @@
 #include <linux/netlink.h>
 #include <fnmatch.h>
 #include <linux/sockios.h>
-#include <libnetlink.h>
-#include <rt_names.h>
-#include <utils.h>
-#include <ll_map.h>
-#include <ip_common.h>
+#include <iproute/libnetlink.h>
+#include <iproute/rt_names.h>
+#include <iproute/utils.h>
+#include <iproute/ll_map.h>
+#include <iproute/ip_common.h>
 #endif
 
 #ifndef IF_NAMESIZE
