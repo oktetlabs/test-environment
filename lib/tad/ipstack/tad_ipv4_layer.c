@@ -219,17 +219,21 @@ ip4_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
     p = pkts->data = malloc(pkt_len);
     pkts->next = NULL;
 
+#define CHECK(fail_cond_, msg_...) \
+    do {                                \
+        if (fail_cond_)                 \
+        {                               \
+            ERROR(msg_);                \
+            goto cleanup;               \
+        }                               \
+    } while (0)
 
 #define PUT_BIN_DATA(c_du_field, length) \
     do {                                                                \
         rc = tad_data_unit_to_bin(&(spec_data->c_du_field),             \
                                   args, arg_num, p, length);            \
-        if (rc != 0)                                                    \
-        {                                                               \
-            ERROR("%s():%d: generate " #c_du_field ", error: 0x%x",     \
-                  __FUNCTION__,  __LINE__, rc);                         \
-            goto cleanup;                                               \
-        }                                                               \
+        CHECK(rc != 0, "%s():%d: generate " #c_du_field ", error: 0x%x",\
+              __FUNCTION__,  __LINE__, rc);                             \
         p += length;                                                    \
     } while (0) 
 
@@ -249,18 +253,13 @@ ip4_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
         uint8_t version, hlen;
 
         rc = tad_data_unit_to_bin(&spec_data->du_version, 
-                                  args, arg_num, &version, 1);
-
-        if (rc == 0) 
-            rc = tad_data_unit_to_bin(&spec_data->du_header_len, 
-                                      args, arg_num, &hlen, 1);
-        if (rc != 0)
-        {
-            ERROR("%s(): generate version or hlen error %X", 
-                  __FUNCTION__, rc);
-            goto cleanup;
-        }
+                                  args, arg_num, &version, 1); 
+        CHECK(rc != 0, "%s(): version error %X", __FUNCTION__, rc);
         CUT_BITS(version, 4);
+
+        rc = tad_data_unit_to_bin(&spec_data->du_header_len, 
+                                  args, arg_num, &hlen, 1);
+        CHECK(rc != 0, "%s(): hlen error %X", __FUNCTION__, rc); 
         CUT_BITS(hlen, 4);
 
         *p = version << 4 | hlen;
@@ -275,16 +274,14 @@ ip4_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
         uint8_t flags;
 
         rc = tad_data_unit_to_bin(&spec_data->du_flags,
-                                  args, arg_num, &flags, 1);
-        if (rc != 0)
-        {
-            ERROR ("%s(): flags error %X", __FUNCTION__, rc);
-            goto cleanup;
-        }
+                                  args, arg_num, &flags, sizeof(flags));
+        CHECK(rc != 0, "%s(): flags error %X", __FUNCTION__, rc); 
         CUT_BITS(flags, 3);
-        
+
+        *p = flags << 5; 
     }
-    PUT_BIN_DATA(du_ip_ident, 2);
+    PUT_BIN_DATA(du_ip_offset, 2); 
+
 
     
     UNUSED(tmpl_pdu); 
