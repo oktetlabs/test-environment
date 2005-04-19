@@ -419,13 +419,18 @@ extern int tad_data_unit_convert_by_label(const asn_value *pdu_val,
 /**
  * Convert DATA-UNIT ASN field of PDU to plain C structure.
  * Memory need to store dynamic data, is allocated in this method and
- * should be freed by user. 
+ * should be freed with 'tad_data_unit_clear'. 
+ * Template specifications, which was stored in plain C structure 
+ * at the call of this method, will be cleared.
+ * 
  *
  * @param pdu_val       ASN value with pdu, which DATA-UNIT field 
  *                      should be converted.
  * @param tag_value     ASN.1 tag value of field, tag class is
  *                      assumed to be PRIVATE. 
- * @param location      Location for converted structure (OUT). 
+ * @param location      Location for converted structure, should not
+ *                      contain any 'data staff' - i.e. should be 
+ *                      correctly filled or zeroed (OUT). 
  *
  * @return zero on success or error code. 
  */ 

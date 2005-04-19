@@ -734,6 +734,9 @@ tad_data_unit_convert(const asn_value *pdu_val,
     if (pdu_val == NULL || location == NULL)
         return ETEWRONGPTR;
 
+    if (location ->du_type != TAD_DU_UNDEF)
+        tad_data_unit_clear(location);
+
     rc = asn_get_child_value(pdu_val, &ch_du_field, PRIVATE, tag_value);
 
     if (rc != 0)
