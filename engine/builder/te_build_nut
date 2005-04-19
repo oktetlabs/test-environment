@@ -53,20 +53,33 @@ fi
 NUT_ST_LOCATION=`eval echo '$NUT_'$NUT'_ST_LOCATION'`
 NUT_ST_STRING=`eval echo '$NUT_'$i'_ST_STRING'` 
 
-TCE_FMT=`eval echo '$NUT_'$NUT'_TCE_FMT'` 
-if test -n "${TCE_FMT}" ; then 
-    TCE_TYPE=`eval echo '$NUT_'$NUT'_TCE_TYPE'` 
-    TCE_SRC=`eval echo '$NUT_'$NUT'_TCE_SOURCES'` 
-    tce_instrument_sources ${TCE_TYPE} -p ${NUT_SOURCES} \
-                           ${TCE_TYPE} ${TCE_FMT} ${TCE_SRC} || exit 1 
+
+if test -n "`eval echo '$NUT_'$NUT'_TCE_TANAME'`" ; then 
+    TCE_SRC=`eval echo '$NUT_'$NUT'_TCE_SOURCES'`     
+    if test -z "$TCE_SRC"; then
+        tce_src=$NUT_SOURCES
+    else
+        tce_src=
+        for i in $TCE_SRC; do
+            tce_src="$tce_src $NUT_SOURCES/$i"
+        done
+    fi
+    export TCE_SRC=$tce_src
+    export TCE_CC=`eval echo '$NUT_'$NUT'_TCE_CC'`
+    export TCE_CFLAGS=`eval echo '$NUT_'$NUT'_TCE_CFLAGS'`
+    if test -z "`${TCE_CC}" ; then
+        export TCE_CC=${CC:-gcc}
+    fi
+    export CC=`which tce_gcc`
+    export CLINK=`which tce_gcc`
+    export TCE_BBHOOK_O=`dirname $CC`/../lib/bbhook.o
+    ${TCE_CC} -o $TCE_BBHOOK_O ${TCE_CFLAGS} \
+        ${TE_BASE}/engine/builder/coverage/bbhook.c || exit 1
+    
 fi 
 
 TE_INSTALL=${TE_INSTALL} TE_INSTALL_NUT=${TE_INSTALL_NUT} \ 
     ${NUT_SCRIPT} ${NUT} ${NUT_PARMS} 
 NUT_SCRIPT_RC=$? 
-
-if test -n "${TCE_FMT}" ; then 
-    tce_uninstrument_sources -p ${NUT_SOURCES} || exit 1
-fi 
 
 exit ${NUT_SCRIPT_RC}
