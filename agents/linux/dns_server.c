@@ -214,7 +214,7 @@ ds_init_dns_server(rcf_pch_cfg_object **last)
         dir = "/etc/";
     else
     {
-        WARN("Failed to locate DNS configuration file");
+        INFO("Failed to locate DNS configuration file");
     }
 
     if (dir != NULL)

@@ -170,6 +170,7 @@ int
 ds_create_backup(const char *dir, const char *name, int *index)
 {
     const char *filename;
+    struct stat st;
 
     if (name == NULL)
     {
@@ -192,13 +193,21 @@ ds_create_backup(const char *dir, const char *name, int *index)
     ds[n_ds].backup = strdup(buf);
     sprintf(buf, "%s%s", dir ? : "", name);
     ds[n_ds].config_file = strdup(buf);
-    ds[n_ds].changed = FALSE; 
+    ds[n_ds].changed = FALSE;
     
     if (ds[n_ds].backup == NULL || ds[n_ds].config_file == NULL)
     {
         free(ds[n_ds].config_file);
         free(ds[n_ds].backup);
         return TE_RC(TE_TA_LINUX, ENOMEM);
+    }
+    
+    if (stat(ds[n_ds].backup, &st) == 0)
+    {
+        WARN("Failed to create backup %s - it's already exists");
+        free(ds[n_ds].config_file);
+        free(ds[n_ds].backup);
+        return TE_RC(TE_TA_LINUX, EEXIST);
     }
     
     sprintf(buf, "cp %s %s", ds[n_ds].config_file, ds[n_ds].backup);
@@ -1395,10 +1404,11 @@ ftp_create_backup(enum ftp_server_kinds kind)
     if (ds_create_backup(dir, ftp_config_files[kind], 
                          &ftp_indices[kind]) != 0)
         return FALSE;
+        
     ftp_server_kind = kind;
+    
     return TRUE;
 }
-
 
 /**
  * Initialize FTP daemon.
@@ -1408,17 +1418,22 @@ ftp_create_backup(enum ftp_server_kinds kind)
 void
 ds_init_ftp_server(rcf_pch_cfg_object **last)
 {
-    ftp_create_backup(FTP_PROFTPD);
-    ftp_create_backup(FTP_WUFTPD);
-    ftp_create_backup(FTP_VSFTPD);
+    te_bool ftp_register;
+    
+    ftp_register = ftp_create_backup(FTP_PROFTPD) |
+                   ftp_create_backup(FTP_WUFTPD) |
+                   ftp_create_backup(FTP_VSFTPD);
 
 #ifdef WITH_XINETD
     if (file_exists(XINETD_ETC_DIR "ftp"))
     {
-        if (ds_create_backup(XINETD_ETC_DIR, "ftp", &ftp_xinetd_index) != 0)
-            return;
+        ftp_register |= ds_create_backup(XINETD_ETC_DIR, "ftp", 
+                                         &ftp_xinetd_index);
     }
 #endif
+
+    if (!ftp_register)
+        return;
 
     ds_ftpserver_update_config();
     if (ta_system("mkdir -p /var/ftp/pub") != 0)
