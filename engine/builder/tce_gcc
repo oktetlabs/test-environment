@@ -27,29 +27,26 @@
 # $Id$
 
 coverage_options=
+processed_options=
 for arg in $@; do
     case "$arg" in
-      -*) ;;
-      *) for tce in ${TCE_SRC}; do
-            if test "x$arg" = "x$tce"; then
-                coverage_options="-g -ftest-coverage -fprofile-arcs"
-            fi
-         done
-         ;;
+        -c) TCE_BBHOOK_O=""
+        processed_options="$processed_options -c"
+        -O*|-g|-ftest-coverage|-fprofile-arcs) ;;         
+        -*) processed_options="$processed_options $arg"
+        *) mydir=`dirname $arg`
+           myself=`basename $arg`
+           fullpath=`cd $mydir; echo $PWD`/$myself
+           for tce in ${TCE_SRC}; do
+              case "$fullpath" in
+                 $tce*)
+                 coverage_options="-g -ftest-coverage -fprofile-arcs"
+                 ;;
+              esac
+           done   
+           processed_options="$processed_options $arg"
+           ;;
     esac
 done
 
-if test -n "$coverage_options"; then
-    bbhook=${TE_BUILD}/engine/builder/coverage/bbhook.o
-    for arg in $@; do
-        case "$arg" in
-            -c) bbhook=""; processed_options="$processed_options -c" ;;
-            -O[1-9]|-O|-g|-ftest-coverage|-fprofile-arcs) ;;         
-            *) processed_options="$processed_options $arg" ;;
-        esac
-    done
-else
-    processed_options="$@"
-fi
-
-exec ${TE_CC} -g -ftest-coverage -fprofile-arcs $processed_options $bbhook
+exec ${TCE_CC} $coverage_options $processed_options $TCE_BBHOOK_O
