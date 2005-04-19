@@ -82,6 +82,7 @@
                     </xs:restriction>
                 </xs:simpleType>
             </xs:attribute>
+            <xs:attribute name="default" type="xs:string"/>
         </xs:complexType>
     </xs:element>
 
