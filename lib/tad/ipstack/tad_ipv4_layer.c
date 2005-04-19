@@ -124,8 +124,30 @@ ip4_confirm_pdu_cb(int csap_id, int layer, asn_value *tmpl_pdu)
                           &spec_data->du_ip_offset);
     tad_data_unit_convert(tmpl_pdu, NDN_TAG_IP4_TTL,
                           &spec_data->du_ttl);
+
     tad_data_unit_convert(tmpl_pdu, NDN_TAG_IP4_PROTOCOL,
                           &spec_data->du_protocol);
+    if (spec_data->du_protocol.du_type == TAD_DU_UNDEF)
+    {
+        if (layer > 0) /* There is in CSAP upper protocol */
+        {
+            const char *up_proto = csap_descr->layers[layer - 1].proto;
+
+            if (strcmp(up_proto, "tcp") == 0) 
+                spec_data->protocol = IPPROTO_TCP;
+            else if (strcmp(up_proto, "udp") == 0) 
+                spec_data->protocol = IPPROTO_UDP;
+            else if (strcmp(up_proto, "icmp4") == 0) 
+                spec_data->protocol = IPPROTO_ICMP;
+            else if (strcmp(up_proto, "ip4") == 0) 
+                spec_data->protocol = IPPROTO_IPIP;
+            else
+                spec_data->protocol = 0;
+        }
+        else
+            spec_data->protocol = 0;
+    }
+
     tad_data_unit_convert(tmpl_pdu, NDN_TAG_IP4_H_CHECKSUM,
                           &spec_data->du_h_checksum);
 
@@ -194,12 +216,13 @@ ip4_confirm_pdu_cb(int csap_id, int layer, asn_value *tmpl_pdu)
 int 
 ip4_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
                const tad_tmpl_arg_t *args, size_t arg_num, 
-               const csap_pkts_p  up_payload, csap_pkts_p pkts)
+               const csap_pkts_p up_payload, csap_pkts_p pkts)
 {
-    int     rc;
+    int     rc = 0;
 
     uint8_t *p;
-    size_t   pkt_len;
+    uint8_t *checksum_place = NULL;
+    size_t   pkt_len, h_len;
 
     ip4_csap_specific_data_t *spec_data;
 
@@ -215,7 +238,9 @@ ip4_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
     /* TODO: IPv4 options generating */ 
     /* TODO: IPv4 fragmentation, if payload greather then MTU -- ?? */ 
 
-    pkt_len = pkts->len = up_payload->len + 20;
+    h_len = 20 / 4;
+
+    pkt_len = pkts->len = up_payload->len + (h_len * 4);
     p = pkts->data = malloc(pkt_len);
     pkts->next = NULL;
 
@@ -228,13 +253,35 @@ ip4_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
         }                               \
     } while (0)
 
-#define PUT_BIN_DATA(c_du_field, length) \
+
+    /* field should be integer and should have length 1, 2, or 4 */
+#define PUT_BIN_DATA(c_du_field_, def_val_, length_) \
     do {                                                                \
-        rc = tad_data_unit_to_bin(&(spec_data->c_du_field),             \
-                                  args, arg_num, p, length);            \
-        CHECK(rc != 0, "%s():%d: generate " #c_du_field ", error: 0x%x",\
+        if (spec_data->c_du_field_.du_type != TAD_DU_UNDEF)             \
+        {                                                               \
+            rc = tad_data_unit_to_bin(&(spec_data->c_du_field_),        \
+                                      args, arg_num, p, length_);       \
+            CHECK(rc != 0, "%s():%d: " #c_du_field_ " error: 0x%x",     \
               __FUNCTION__,  __LINE__, rc);                             \
-        p += length;                                                    \
+        }                                                               \
+        else                                                            \
+        {                                                               \
+            switch (length_)                                            \
+            {                                                           \
+                case 1:                                                 \
+                    *p = def_val_;                                      \
+                    break;                                              \
+                                                                        \
+                case 2:                                                 \
+                    *((uint16_t *)p) = htons((uint16_t)def_val_);       \
+                    break;                                              \
+                                                                        \
+                case 4:                                                 \
+                    *((uint32_t *)p) = htonl((uint32_t)def_val_);       \
+                    break;                                              \
+            }                                                           \
+        }                                                               \
+        p += length_;                                                   \
     } while (0) 
 
 
@@ -250,43 +297,92 @@ ip4_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
         
 
     {
-        uint8_t version, hlen;
+        uint8_t version, hlen_field;
 
-        rc = tad_data_unit_to_bin(&spec_data->du_version, 
-                                  args, arg_num, &version, 1); 
+        if (spec_data->du_version.du_type != TAD_DU_UNDEF)
+            rc = tad_data_unit_to_bin(&spec_data->du_version, 
+                                      args, arg_num, &version, 1); 
+        else
+            version = 4;
+
         CHECK(rc != 0, "%s(): version error %X", __FUNCTION__, rc);
         CUT_BITS(version, 4);
 
-        rc = tad_data_unit_to_bin(&spec_data->du_header_len, 
-                                  args, arg_num, &hlen, 1);
+        if (spec_data->du_header_len.du_type != TAD_DU_UNDEF)
+            rc = tad_data_unit_to_bin(&spec_data->du_header_len, 
+                                      args, arg_num, &hlen_field, 1);
+        else 
+            hlen_field = h_len;
         CHECK(rc != 0, "%s(): hlen error %X", __FUNCTION__, rc); 
-        CUT_BITS(hlen, 4);
 
-        *p = version << 4 | hlen;
+        CUT_BITS(hlen_field, 4);
+
+        *p = version << 4 | hlen_field;
         p++;
     }
 
-    PUT_BIN_DATA(du_tos, 1);
-    PUT_BIN_DATA(du_ip_len, 2);
-    PUT_BIN_DATA(du_ip_ident, 2);
+    PUT_BIN_DATA(du_tos, 0, 1); 
+    PUT_BIN_DATA(du_ip_len, pkt_len, 2);
+    {
+        uint16_t ident = random();
+        PUT_BIN_DATA(du_ip_ident, ident, 2);
+    }
 
     {
         uint8_t flags;
 
-        rc = tad_data_unit_to_bin(&spec_data->du_flags,
-                                  args, arg_num, &flags, sizeof(flags));
-        CHECK(rc != 0, "%s(): flags error %X", __FUNCTION__, rc); 
+        if (spec_data->du_flags.du_type != TAD_DU_UNDEF)
+        {
+            rc = tad_data_unit_to_bin(&spec_data->du_flags,
+                                      args, arg_num, &flags, sizeof(flags));
+            CHECK(rc != 0, "%s(): flags error %X", __FUNCTION__, rc); 
+        }
+        else
+            flags = 0; /* TODO: investigate correct default */
         CUT_BITS(flags, 3);
 
         *p = flags << 5; 
     }
-    PUT_BIN_DATA(du_ip_offset, 2); 
 
+    PUT_BIN_DATA(du_ip_offset, 0, 2); 
+    PUT_BIN_DATA(du_ttl, 64, 1); 
+    PUT_BIN_DATA(du_protocol, spec_data->protocol, 1);
+
+    if (spec_data->du_h_checksum.du_type == TAD_DU_UNDEF)
+        checksum_place = p; 
+    PUT_BIN_DATA(du_h_checksum, 0, 2);
+
+
+    PUT_BIN_DATA(du_src_addr, 0, 4); 
+    PUT_BIN_DATA(du_dst_addr, 0, 4); 
+
+    if (checksum_place != NULL) /* Have to calculate header checksum */
+    {
+        unsigned int i;
+        uint16_t     checksum;
+        uint16_t    *ch_p;
+
+        for (i = 0, ch_p = pkts->data, checksum = 0; 
+             i < (h_len * 2);
+             i++, checksum += *(ch_p++)); 
+
+        *((uint16_t *)checksum_place) = ~checksum;
+    }
+
+    if (up_payload->free_data_cb)
+        up_payload->free_data_cb(up_payload->data);
+    else
+        free(up_payload->data);
+
+    up_payload->data = NULL;
+    up_payload->len = 0;
 
     
     UNUSED(tmpl_pdu); 
 
 #undef PUT_BIN_DATA
+
+    memcpy(p, up_payload->data, up_payload->len);
 
     return 0;
 cleanup:

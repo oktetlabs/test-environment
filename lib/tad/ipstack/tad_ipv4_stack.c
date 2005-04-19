@@ -81,7 +81,7 @@ extern int ip4_check_pdus(csap_p csap_descr, asn_value *traffic_nds);
  *      quantity of read octets, or -1 if error occured, 0 if timeout expired. 
  */ 
 int 
-ip4_read_cb (csap_p csap_descr, int timeout, char *buf, size_t buf_len)
+ip4_read_cb(csap_p csap_descr, int timeout, char *buf, size_t buf_len)
 {
     int    rc; 
     int    layer;    
@@ -141,7 +141,7 @@ ip4_read_cb (csap_p csap_descr, int timeout, char *buf, size_t buf_len)
  *      quantity of written octets, or -1 if error occured. 
  */ 
 int 
-ip4_write_cb (csap_p csap_descr, char *buf, size_t buf_len)
+ip4_write_cb(csap_p csap_descr, char *buf, size_t buf_len)
 {
     ip4_csap_specific_data_t * spec_data;
     int layer;    
@@ -188,9 +188,9 @@ ip4_write_cb (csap_p csap_descr, char *buf, size_t buf_len)
  *      quantity of read octets, or -1 if error occured, 0 if timeout expired. 
  */ 
 int 
-ip4_write_read_cb (csap_p csap_descr, int timeout,
-                   char *w_buf, size_t w_buf_len,
-                   char *r_buf, size_t r_buf_len)
+ip4_write_read_cb(csap_p csap_descr, int timeout,
+                  char *w_buf, size_t w_buf_len,
+                  char *r_buf, size_t r_buf_len)
 {
     int rc; 
 
@@ -213,13 +213,13 @@ ip4_write_read_cb (csap_p csap_descr, int timeout,
  * @return zero on success or error code.
  */ 
 int 
-ip4_single_init_cb (int csap_id, const asn_value *csap_nds, int layer)
-{
-    csap_p   csap_descr;          /**< csap descriptor        */ 
+ip4_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
+{ 
+    ip4_csap_specific_data_t *ip4_spec_data; 
 
-    ip4_csap_specific_data_t *   ip4_spec_data; 
     struct sockaddr_in local;
 
+    csap_p csap_descr;
     int    opt = 1;
     int    rc;
     char   opt_label[100];
@@ -231,10 +231,10 @@ ip4_single_init_cb (int csap_id, const asn_value *csap_nds, int layer)
     if (csap_nds == NULL)
         return ETEWRONGPTR;
 
-    if ((csap_descr = csap_find (csap_id)) == NULL)
+    if ((csap_descr = csap_find(csap_id)) == NULL)
         return ETADCSAPNOTEX;
 
-    ip4_spec_data = calloc (1, sizeof(ip4_csap_specific_data_t));
+    ip4_spec_data = calloc(1, sizeof(ip4_csap_specific_data_t));
     
     if (ip4_spec_data == NULL)
     {
@@ -242,7 +242,7 @@ ip4_single_init_cb (int csap_id, const asn_value *csap_nds, int layer)
     }
     
 
-    sprintf (opt_label, "%d.local-addr", layer);
+    sprintf(opt_label, "%d.local-addr", layer);
     len = sizeof(struct in_addr);
     rc = asn_read_value_field(csap_nds, 
                               &ip4_spec_data->sa_op.sin_addr.s_addr, &len, 
@@ -304,7 +304,7 @@ ip4_single_init_cb (int csap_id, const asn_value *csap_nds, int layer)
  * @return zero on success or error code.
  */ 
 int 
-ip4_single_destroy_cb (int csap_id, int layer)
+ip4_single_destroy_cb(int csap_id, int layer)
 {
     csap_p csap_descr = csap_find(csap_id);
 
@@ -331,7 +331,7 @@ ip4_single_destroy_cb (int csap_id, int layer)
  * @return zero on success or error code.
  */ 
 int 
-ip4_eth_init_cb (int csap_id, const asn_value *csap_nds, int layer)
+ip4_eth_init_cb(int csap_id, const asn_value *csap_nds, int layer)
 { 
     csap_p csap_descr;      /**< csap description   */ 
     ip4_csap_specific_data_t *   spec_data; 
@@ -341,10 +341,10 @@ ip4_eth_init_cb (int csap_id, const asn_value *csap_nds, int layer)
     if (csap_nds == NULL)
         return ETEWRONGPTR;
 
-    if ((csap_descr = csap_find (csap_id)) == NULL)
+    if ((csap_descr = csap_find(csap_id)) == NULL)
         return ETADCSAPNOTEX;
 
-    spec_data = calloc (1, sizeof(ip4_csap_specific_data_t));
+    spec_data = calloc(1, sizeof(ip4_csap_specific_data_t));
     
     if (spec_data == NULL)
     {
@@ -382,7 +382,7 @@ ip4_eth_init_cb (int csap_id, const asn_value *csap_nds, int layer)
  * @return zero on success or error code.
  */ 
 int 
-ip4_eth_destroy_cb (int csap_id, int layer)
+ip4_eth_destroy_cb(int csap_id, int layer)
 { 
     UNUSED(csap_id);
     UNUSED(layer);

@@ -73,11 +73,13 @@ typedef struct ip4_csap_specific_data
                                     to the media   */ 
     int    read_timeout;       /**< Number of second to wait for data   */ 
 
-    struct in_addr     local_addr;
-    struct in_addr     remote_addr;
+    uint16_t         protocol; /**< Up layer default protocol */
 
-    struct in_addr     src_addr;
-    struct in_addr     dst_addr;
+    struct in_addr   local_addr;
+    struct in_addr   remote_addr;
+
+    struct in_addr   src_addr;
+    struct in_addr   dst_addr;
 
     tad_data_unit_t  du_version;
     tad_data_unit_t  du_header_len;
