@@ -1171,12 +1171,46 @@ rgt_log_characters(void *user_data, const xmlChar *ch, int len)
     }
 }
 
+/**
+ * The callback is called for resolving entities (& NAME ;)
+ * In case of SAX parser it converts standard entities into their values
+ * (&gt; -> ">", &lt; -> "<", &amp; -> "&"),
+ * but in case of HTML we must not convert them, but leave them as they are,
+ * so that this function makes a HACK for that.
+ * If you want how to force libxml2 SAX parser leave standard entries 
+ * without expanding - update this code!
+ */
 static xmlEntityPtr
 rgt_get_entity(void *user_data, const xmlChar *name)
 {
+    static xmlEntity ent;
+    
     UNUSED(user_data);
 
-    return xmlGetPredefinedEntity(name);
+    ent.etype = XML_INTERNAL_PREDEFINED_ENTITY;
+
+    if (strcmp(name, "lt") == 0)
+    {
+        ent.name = "lt";
+        ent.orig = "&lt;";
+        ent.content = "&lt;";
+    }
+    else if (strcmp(name, "gt") == 0)
+    {
+        ent.name = "gt";
+        ent.orig = "&gt;";
+        ent.content = "&gt;";    
+    }
+    else if (strcmp(name, "amp") == 0)
+    {
+        ent.name = "amp";
+        ent.orig = "&amp;";
+        ent.content = "&amp;";    
+    }
+    else
+        assert(0);
+
+    return &ent;
 }
 
 static void
