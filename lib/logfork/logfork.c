@@ -110,7 +110,9 @@ typedef struct list {
     pid_t  pid;
 } list;
 
+#ifdef HAVE_PTHREAD_H
 static pthread_mutex_t lock_sockd = PTHREAD_MUTEX_INITIALIZER;
+#endif
 
 /** Address to which notification listerner is bound */
 static struct sockaddr_in logfork_saddr;
