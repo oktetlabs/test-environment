@@ -16,6 +16,7 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <ta_logfork.h>
 
 struct bb_function_info 
 {
@@ -29,7 +30,7 @@ struct bb
 {
     long zero_word;
     const char *filename;
-    gcov_type *counts;
+    long long *counts;
     long ncounts;
     struct bb *next;
     
@@ -37,30 +38,6 @@ struct bb
     long sizeof_bb;
     struct bb_function_info *function_infos;
 };
-
-
-static const char *make_coverage_path(const char *name)
-{
-    static char path_buf[PATH_MAX + 1];
-    const char *te_tmp = getenv("TE_TMP");
-    const char *next_slash, *iter;
-    
-    if (!te_tmp)
-        return name;
-    memset(path_buf, 0, sizeof(path_buf));
-    strcpy(path_buf, te_tmp);
-    strcat(path_buf, "/coverage/");
-    mkdir(path_buf);
-    for (iter = name + (*name == '/'), next_slash = strchr(iter, '/'); next_slash != NULL;
-         iter = next_slash + 1, next_slash = strchr(iter, '/'))
-    {
-        strncat(path_buf, iter, next_slash - iter);
-        mkdir(path_buf);
-        strcat(path_buf, "/");
-    }
-    strcat(path_buf, iter);
-    return path_buf;
-}
 
 
 /* Chain of per-object file bb structures.  */
@@ -74,159 +51,75 @@ __bb_exit_func (void)
 {
     struct bb *ptr;
     int i;
-    gcov_type program_sum = 0;
-    gcov_type program_max = 0;
+    long long program_sum = 0;
+    long long program_max = 0;
     long program_arcs = 0;
-    gcov_type merged_sum = 0;
-    gcov_type merged_max = 0;
-    long merged_arcs = 0;
-    const char *da_filename;
 
-  
-#if 1
-  struct flock s_flock;
+    if (logfork_register_user("TCE"))
+        return;
+    
+    /* Non-merged stats for this program.  */
+    for (ptr = __bb_head; ptr; ptr = ptr->next)
+    {
+        for (i = 0; i < ptr->ncounts; i++)
+        {
+            program_sum += ptr->counts[i];
+            
+            if (ptr->counts[i] > program_max)
+                program_max = ptr->counts[i];
+        }
+        program_arcs += ptr->ncounts;
+    }
+    
+    for (ptr = __bb_head; ptr; ptr = ptr->next)
+    {
+        long long object_max = 0;
+        long long object_sum = 0;
+        long object_functions = 0;
+        int error = 0;
+        struct bb_function_info *fn_info;
+        long long *count_ptr;
+        
+        if (!ptr->filename)
+            continue;
+        
+        for (fn_info = ptr->function_infos; fn_info->arc_count != -1; fn_info++)
+            object_functions++;
+        
+        /* Calculate the per-object statistics.  */
+        for (i = 0; i < ptr->ncounts; i++)
+        {
+            object_sum += ptr->counts[i];
+            
+            if (ptr->counts[i] > object_max)
+                object_max = ptr->counts[i];
+        }
 
-  s_flock.l_type = F_WRLCK;
-  s_flock.l_whence = SEEK_SET;
-  s_flock.l_start = 0;
-  s_flock.l_len = 0; /* Until EOF.  */
-  s_flock.l_pid = getpid ();
-#endif
-
-  /* Non-merged stats for this program.  */
-  for (ptr = __bb_head; ptr; ptr = ptr->next)
-  {
-      for (i = 0; i < ptr->ncounts; i++)
-      {
-          program_sum += ptr->counts[i];
-
-          if (ptr->counts[i] > program_max)
-              program_max = ptr->counts[i];
-      }
-      program_arcs += ptr->ncounts;
-  }
-  
-  for (ptr = __bb_head; ptr; ptr = ptr->next)
-  {
-      FILE *da_file;
-      gcov_type object_max = 0;
-      gcov_type object_sum = 0;
-      long object_functions = 0;
-      int error = 0;
-      struct bb_function_info *fn_info;
-      gcov_type *count_ptr;
+        LOGF_RING("TCE", "total %s %ld:%Ld:%Ld:%ld:%Ld:%Ld\n", 
+                  ptr->filename,
+                  object_functions, 
+                  program_arcs, 
+                  program_sum, 
+                  program_max, 
+                  ptr->ncounts, 
+                  object_sum, 
+                  object_max);
       
-      if (!ptr->filename)
-          continue;
-      
-      da_filename = make_coverage_path(ptr->filename);
-      /* Try for appending */
-      da_file = fopen (da_filename, "ab");
-      /* Some old systems might not allow the 'b' mode modifier.
-         Therefore, try to open without it.  This can lead to a
-         race condition so that when you delete and re-create the
-         file, the file might be opened in text mode, but then,
-         you shouldn't delete the file in the first place.  */
-      if (!da_file)
-          da_file = fopen (da_filename, "a");
-      
-      if (!da_file)
-      {
-          fprintf (stderr, "arc profiling: Can't open output file %s.\n",
-                   da_filename);
-          ptr->filename = 0;
-          continue;
-      }
-
-#if 1
-      /* After a fork, another process might try to read and/or write
-         the same file simultanously.  So if we can, lock the file to
-         avoid race conditions.  */
-      while (fcntl (fileno (da_file), F_SETLKW, &s_flock)
-             && errno == EINTR)
-          continue;
-#endif
-      for (fn_info = ptr->function_infos; fn_info->arc_count != -1; fn_info++)
-          object_functions++;
-
-      /* Calculate the per-object statistics.  */
-      for (i = 0; i < ptr->ncounts; i++)
-      {
-          object_sum += ptr->counts[i];
-
-          if (ptr->counts[i] > object_max)
-              object_max = ptr->counts[i];
-      }
-      merged_sum += object_sum;
-      if (merged_max < object_max)
-          merged_max = object_max;
-      merged_arcs += ptr->ncounts;
-      
-      /* Write out the data.  */
-      if (/* magic */
-          __write_long (-123, da_file, 4)
-          /* number of functions in object file.  */
-          || __write_long (object_functions, da_file, 4)
-          /* length of extra data in bytes.  */
-          || __write_long ((4 + 8 + 8) + (4 + 8 + 8), da_file, 4)
-
-          /* whole program statistics. If merging write per-object
-             now, rewrite later */
-          /* number of instrumented arcs.  */
-          || __write_long (program_arcs, da_file, 4)
-          /* sum of counters.  */
-          || __write_gcov_type (program_sum, da_file, 8)
-          /* maximal counter.  */
-          || __write_gcov_type (program_max, da_file, 8)
-
-          /* per-object statistics.  */
-          /* number of counters.  */
-          || __write_long (ptr->ncounts, da_file, 4)
-          /* sum of counters.  */
-          || __write_gcov_type (object_sum, da_file, 8)
-          /* maximal counter.  */
-          || __write_gcov_type (object_max, da_file, 8))
-      {
-          fprintf (stderr, "arc profiling: Error writing output file %s.\n",
-                   da_filename);
-      }
-      else
-      {
-          /* Write execution counts for each function.  */
-          count_ptr = ptr->counts;
-
-          for (fn_info = ptr->function_infos; fn_info->arc_count != -1;
-               fn_info++)
-          {
-              if (__write_gcov_string (fn_info->name,
-                                       strlen (fn_info->name), da_file, -1)
-                  || __write_long (fn_info->checksum, da_file, 4)
-                  || __write_long (fn_info->arc_count, da_file, 4))
-              {
-                  fprintf (stderr, "arc profiling: Error writing output file %s.\n",
-                           da_filename);
-
-              }
-              else
-              {
-                  for (i = fn_info->arc_count; i > 0; i--, count_ptr++)
-                  {
-                      if (__write_gcov_type (*count_ptr, da_file, 8))
-                          fprintf (stderr, "arc profiling: Error writing output file %s.\n",
-                                   da_filename);
-                  }
-              }
-          }
-      }
-
-      if (fclose (da_file))
-      {
-          fprintf (stderr, "arc profiling: Error closing output file %s.\n",
-                   da_filename);
-      }
-  }
-
-
+        /* Write execution counts for each function.  */
+        count_ptr = ptr->counts;
+        
+        for (fn_info = ptr->function_infos; fn_info->arc_count != -1;
+             fn_info++)
+        {          
+            LOGF_RING("TCE", "function %s %ld:%ld\n", fn_info->name,
+                      fn_info->checksum, fn_info->arc_count);
+            for (i = fn_info->arc_count; i > 0; i--, count_ptr++)
+            {
+                LOGF_RING("TCE", "arc %Ld\n", *count_ptr);
+            }
+        }
+    }
+    
 }
 
 /* Add a new object file onto the bb chain.  Invoked automatically
