@@ -21,8 +21,8 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
  *
- *
- * @author Elena Vengerova <Elena.Vengerova@oktetlabs.ru>
+ * @author Renata Sayakhova <Renata.Sayakhova@oktetlabs.ru>
+ * @author Elena Vengerova  <Elena.Vengerova@oktetlabs.ru>
  *
  * $Id$
  */
@@ -76,7 +76,8 @@
 /* Locals */
 /* Convertion functions for type 'int' */
 static int str2int(char *val_str, cfg_inst_val *val);
-static int int2str(cfg_inst_val val, char ** val_str);
+static int int2str(cfg_inst_val val, char **val_str);
+static int int_def_val(cfg_inst_val *val);
 static void int_free(cfg_inst_val val);
 static int int_copy(cfg_inst_val src, cfg_inst_val *dst);
 static int int_get(cfg_msg *msg, cfg_inst_val *val);
@@ -86,6 +87,7 @@ static te_bool int_equal(cfg_inst_val first, cfg_inst_val second);
 /* Convertion functions for type 'char *' */
 static int str2char(char *val_str, cfg_inst_val *val);
 static int char2str(cfg_inst_val val, char **val_str);
+static int str_def_val(cfg_inst_val *val);
 static void str_free(cfg_inst_val val);
 static int str_copy(cfg_inst_val src, cfg_inst_val *dst);
 static int str_get(cfg_msg *msg, cfg_inst_val *val);
@@ -94,7 +96,8 @@ static te_bool str_equal(cfg_inst_val first, cfg_inst_val second);
 
 /* Convertion functions for type 'sockaddr *' */
 static int str2addr(char *val_str, cfg_inst_val *val);
-static int addr2str(cfg_inst_val val, char ** val_str);
+static int addr2str(cfg_inst_val val, char **val_str);
+static int addr_def_val(cfg_inst_val *val);
 static void addr_free(cfg_inst_val val);
 static int addr_copy(cfg_inst_val src, cfg_inst_val *dst);
 static int addr_get(cfg_msg *msg, cfg_inst_val *val);
@@ -103,7 +106,8 @@ static te_bool addr_equal(cfg_inst_val first, cfg_inst_val second);
 
 /* Convertion dummy functions for type 'none' */
 static int str2none(char *val_str, cfg_inst_val *val);
-static int none2str(cfg_inst_val val, char ** val_str);
+static int none2str(cfg_inst_val val, char **val_str);
+static int none_def_val(cfg_inst_val *val);
 static void none_free(cfg_inst_val val);
 static int none_copy(cfg_inst_val src, cfg_inst_val *dst);
 static int none_get(cfg_msg *msg, cfg_inst_val *val);
@@ -112,23 +116,18 @@ static te_bool none_equal(cfg_inst_val first, cfg_inst_val second);
 
 /* Primary types' convertion functions */
 cfg_primary_type cfg_types[CFG_PRIMARY_TYPES_NUM] = {
-    {str2int, int2str, int_free, int_copy, int_get, int_put, int_equal},
-    {str2char, char2str, str_free, str_copy, str_get, str_put, str_equal},
-    {str2addr, addr2str, addr_free, addr_copy, addr_get, addr_put,
-     addr_equal},
-    {str2none, none2str, none_free, none_copy, none_get, none_put,
-     none_equal}
+    { str2int, int2str, int_def_val, 
+      int_free, int_copy, int_get, int_put, int_equal },
+    { str2char, char2str, str_def_val, 
+      str_free, str_copy, str_get, str_put, str_equal },
+    { str2addr, addr2str, addr_def_val, 
+      addr_free, addr_copy, addr_get, addr_put, addr_equal },
+    { str2none, none2str, none_def_val,
+      none_free, none_copy, none_get, none_put, none_equal }
  };
 
-/*
- * Primary type 'int' convertion function. Convert string into 'int' value.
- *
- * @param        val_str        string to convert
- * @param        val        location for 'int' value
- *
- * @return
- *         status code
- */         
+/*----------------------- Integer type handlers -------------------------*/
+
 static int 
 str2int(char *val_str, cfg_inst_val *val)
 {
@@ -144,16 +143,6 @@ str2int(char *val_str, cfg_inst_val *val)
     return 0;
 }
 
-/*
- *
- * Convert 'int' value into string.
- *
- * @param        val        'int' value to be converted
- * @param        val_str        location for string
- *
- * @return
- *         status code
- */         
 static int
 int2str(cfg_inst_val val, char **val_str)
 {
@@ -175,12 +164,13 @@ int2str(cfg_inst_val val, char **val_str)
     return 0;
 }
 
-/*
- *
- * Free memory, allocated for 'int'.
- *
- * @param        val        'int' value
- */          
+static int 
+int_def_val(cfg_inst_val *val)
+{
+    val->val_int = 0;
+    return 0;
+}
+
 static void
 int_free(cfg_inst_val val)
 {
@@ -188,16 +178,6 @@ int_free(cfg_inst_val val)
     return;
 }
 
-/*
- *
- * Copy 'int' value into another one.
- *
- * @param        src        'int' value to be copied
- * @param        dst        location for copy        
- *
- * @return
- *         status code
- */         
 static int
 int_copy(cfg_inst_val src, cfg_inst_val *dst)
 {
@@ -205,16 +185,6 @@ int_copy(cfg_inst_val src, cfg_inst_val *dst)
     return 0;
 }
 
-/*
- *
- * Get 'int' value from get message.
- *
- * @param        msg        message
- * @param        val        location for value obtained
- *
- * @return
- *         status code
- */                 
 static int
 int_get(cfg_msg *msg, cfg_inst_val *val)
 {
@@ -224,20 +194,11 @@ int_get(cfg_msg *msg, cfg_inst_val *val)
     return 0;
 }
 
-/*
- *
- * Put 'int' value into add/set message
- *
- * @param        val        'int' value to be transferred
- * @param        msg        message
- *
- * @return
- *         status code
- */         
 static void
 int_put(cfg_inst_val val, cfg_msg *msg)
 {
     int *msg_val;
+    
     if (msg == NULL)
         return;
         
@@ -249,25 +210,16 @@ int_put(cfg_inst_val val, cfg_msg *msg)
     SET_MSG_LEN(msg);
 }
 
-/*
- *
- * Compare two 'int' values.
- *
- * @param        first        'int' value
- * @param        second        another 'int' value
- *
- * @return
- *         TRUE - values are equal
- *         FALSE - otherwise
- */         
 static te_bool
 int_equal(cfg_inst_val first, cfg_inst_val second)
 {
     return ((first.val_int - second.val_int) == 0) ? TRUE : FALSE;
 }
 
+/*----------------------- String type handlers --------------------------*/
 
-static int str2char(char *val_str, cfg_inst_val *val)
+static int 
+str2char(char *val_str, cfg_inst_val *val)
 {
     if (val_str == NULL)
         return EINVAL;
@@ -275,7 +227,8 @@ static int str2char(char *val_str, cfg_inst_val *val)
     return (*(char **)val = strdup(val_str)) == NULL ? ENOMEM : 0;
 }
 
-static int char2str(cfg_inst_val val, char **val_str)
+static int 
+char2str(cfg_inst_val val, char **val_str)
 {
     if (val.val_str == NULL)
         return EINVAL;
@@ -283,6 +236,11 @@ static int char2str(cfg_inst_val val, char **val_str)
     return (*val_str = strdup(val.val_str)) == NULL ? ENOMEM : 0;
 }
 
+static int 
+str_def_val(cfg_inst_val *val)
+{
+    return (*(char **)val = strdup("")) == NULL ? ENOMEM : 0;
+}
 
 static void
 str_free(cfg_inst_val val)
@@ -351,6 +309,8 @@ str_equal(cfg_inst_val first, cfg_inst_val second)
 {
     return (strcmp(first.val_str, second.val_str) == 0) ? TRUE : FALSE;
 }
+
+/*----------------------- Address type handlers --------------------------*/
 
 
 static int 
@@ -434,7 +394,7 @@ str2addr(char *val_str, cfg_inst_val *val)
 }
 
 static int
-addr2str(cfg_inst_val val, char ** val_str)
+addr2str(cfg_inst_val val, char **val_str)
 {
     char val_buf[CFG_TP_MAX_BUF];
     const char *ret_val;
@@ -498,6 +458,12 @@ addr2str(cfg_inst_val val, char ** val_str)
     memcpy((void *)(*val_str), val_buf, len);
     return 0;
 #undef CVT_ADDR    
+}
+
+static int 
+addr_def_val(cfg_inst_val *val)
+{
+    return str2addr("0.0.0.0", val);
 }
 
 static void
@@ -701,6 +667,8 @@ addr_equal(cfg_inst_val first, cfg_inst_val second)
 #undef CMP_ADDR    
 }
 
+/*----------------------- None type handlers -------------------------*/
+
 static int 
 str2none(char *val_str, cfg_inst_val *val)
 {
@@ -710,11 +678,18 @@ str2none(char *val_str, cfg_inst_val *val)
 }
 
 static int 
-none2str(cfg_inst_val val, char ** val_str)
+none2str(cfg_inst_val val, char **val_str)
 {
     UNUSED(val);
     UNUSED(val_str);
     return 0;
+}
+
+static int 
+none_def_val(cfg_inst_val *val)
+{
+    UNUSED(val);
+    return EINVAL;
 }
 
 static void 

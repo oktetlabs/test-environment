@@ -126,13 +126,21 @@ int
 cfg_register_object_str(const char *oid, cfg_obj_descr *descr,
                         cfg_handle *handle)
 {
-    size_t  len;
+    size_t  len, def_val_len;
     int     ret_val = 0;
 
     cfg_register_msg *msg;
 
     if ((oid == NULL) || (descr == NULL))
+        return TE_RC(TE_CONF_API, EINVAL);
+    
+    len = strlen(oid) + 1;
+    def_val_len = descr->def_val == NULL ? 0 : strlen(descr->def_val) + 1;
+    
+    if (sizeof(*msg) + len + def_val_len > CFG_MSG_MAX ||
+        len > RCF_MAX_ID)
     {
+        ERROR("Too long OID or default value");
         return TE_RC(TE_CONF_API, EINVAL);
     }
 
@@ -149,13 +157,19 @@ cfg_register_object_str(const char *oid, cfg_obj_descr *descr,
     }
     msg = (cfg_register_msg *)cfgl_msg_buf;
     msg->type = CFG_REGISTER;
-    memcpy((void *)&(msg->descr), (void *)descr, sizeof(cfg_obj_descr));
+    msg->val_type = descr->type;
+    msg->access = descr->access;
 
     len = strlen(oid) + 1;
-    memcpy((void *)(msg->oid), (void *)oid, len);
-    msg->len = sizeof(cfg_register_msg) + len;
-    len = CFG_MSG_MAX;
+    memcpy(msg->oid, oid, len);
+    if (descr->def_val != NULL)
+    {
+        msg->def_val = len;
+        memcpy(msg->oid + len, descr->def_val, def_val_len);
+    }
+    msg->len = sizeof(cfg_register_msg) + len + def_val_len;
 
+    len = CFG_MSG_MAX;
     if ((ret_val = ipc_send_message_with_answer(cfgl_ipc_client,
                                                 CONFIGURATOR_SERVER,
                                                 msg, msg->len,

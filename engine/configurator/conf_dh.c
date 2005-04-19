@@ -132,15 +132,12 @@ xmlNodeNext(xmlNodePtr node)
 #define RETERR(_rc, _str...)    \
     do {                        \
         int _err = _rc;         \
+                                \
         ERROR(_str);            \
-        if (oid != NULL)        \
-            free(oid);       \
-        if (val_s != NULL)      \
-            free(val_s);     \
-        if (attr != NULL)       \
-            xmlFree(attr);      \
-        if (msg != NULL)        \
-            free(msg);          \
+        xmlFree(oid);           \
+        xmlFree(val_s);         \
+        xmlFree(attr);          \
+        free(msg);              \
         return _err;            \
     } while (0)
 
@@ -186,11 +183,14 @@ cfg_dh_process_add(xmlNodePtr node)
         if (val_s != NULL && strlen(val_s) >= CFG_MAX_INST_VALUE)
             RETERR(ENOMEM, "Too long value");
             
-        if (obj->type != CVT_NONE)
+        if (obj->type == CVT_NONE && val_s != NULL)
+            RETERR(EINVAL, "Value is prohibited for %s", oid);
+            
+        if (val_s == NULL)
+            msg->val_type = CVT_NONE; /* Default will be assigned */ 
+            
+        if (val_s != NULL)
         {
-            if (val_s == NULL)
-                RETERR(ENOENT, "Value is necessary for %s", oid);
-
             if ((rc = cfg_types[obj->type].str2val(val_s, &val)) != 0)
                 RETERR(rc, "Value conversion error for %s", oid);
                 
@@ -199,8 +199,6 @@ cfg_dh_process_add(xmlNodePtr node)
             free(val_s);
             val_s = NULL;
         }
-        else if (val_s != NULL)
-            RETERR(EINVAL, "Value is prohibited for %s", oid);
         
         msg->oid_offset = msg->len;
         msg->len += strlen(oid) + 1;
@@ -309,39 +307,58 @@ cfg_dh_process_file(xmlNodePtr node)
                     RETERR(EINVAL, "Incorrect %s command format",
                            cmd->name);
 
-                len = sizeof(cfg_register_msg) + strlen(oid) + 1;
+                val_s = xmlGetProp(tmp, (const xmlChar *)"default");
+
+                len = sizeof(cfg_register_msg) + strlen(oid) + 1 +
+                      (val_s == NULL ? 0 : strlen(val_s) + 1);
+                      
                 if ((msg = (cfg_register_msg *)calloc(1, len)) == NULL)
                     RETERR(ENOMEM, "Cannot allocate memory");
                 
                 msg->type = CFG_REGISTER;
                 msg->len = len;
                 msg->rc = 0;
-                msg->descr.access = CFG_READ_CREATE;
-                msg->descr.type = CVT_NONE;
+                msg->access = CFG_READ_CREATE;
+                msg->val_type = CVT_NONE;
 
                 strcpy(msg->oid, oid);
+                if (val_s != NULL)
+                {
+                    msg->def_val = strlen(msg->oid) + 1;
+                    strcpy(msg->oid + msg->def_val, val_s);
+                }
                 
                 attr = xmlGetProp(tmp, (const xmlChar *)"type");
                 if (attr != NULL)
                 {
                     if (strcmp(attr, "integer") == 0)
-                        msg->descr.type = CVT_INTEGER;
+                        msg->val_type = CVT_INTEGER;
                     else if (strcmp(attr, "address") == 0)
-                        msg->descr.type = CVT_ADDRESS;
+                        msg->val_type = CVT_ADDRESS;
                     else if (strcmp(attr, "string") == 0)
-                        msg->descr.type = CVT_STRING;
+                        msg->val_type = CVT_STRING;
                     else if (strcmp(attr, "none") != 0)
                         RETERR(EINVAL, "Unsupported object type %s", attr);
                     xmlFree(attr);
                 }
-
+                
+                if (val_s != NULL)
+                {
+                    cfg_inst_val val;
+                    
+                    if (cfg_types[msg->val_type].str2val(val_s, &val) != 0)
+                        RETERR(EINVAL, "Incorrect default value %s", val_s);
+                    
+                    cfg_types[msg->val_type].free(val);
+                }
+                
                 attr = xmlGetProp(tmp, (const xmlChar *)"access");
                 if (attr != NULL)
                 {
                     if (strcmp(attr, "read_write") == 0)
-                        msg->descr.access = CFG_READ_WRITE;
+                        msg->access = CFG_READ_WRITE;
                     else if (strcmp(attr, "read_only") == 0)
-                        msg->descr.access = CFG_READ_ONLY;
+                        msg->access = CFG_READ_ONLY;
                     else if (strcmp(attr, "read_create") != 0)
                         RETERR(EINVAL, 
                                "Wrong value %s of 'access' attribute",
@@ -526,17 +543,19 @@ cfg_dh_create_file(char *filename)
                 
                 fprintf(f, "\n  <register>\n");
                 fprintf(f, "    <object oid=\"%s\" "
-                        "access=\"%s\" type=\"%s\"/>\n",
+                        "access=\"%s\" type=\"%s\"",
                         msg->oid, 
-                        msg->descr.access == CFG_READ_CREATE ?
+                        msg->access == CFG_READ_CREATE ?
                             "read_create" :
-                        msg->descr.access == CFG_READ_WRITE ?
+                        msg->access == CFG_READ_WRITE ?
                             "read_write" : "read_only",
-                        msg->descr.type == CVT_NONE ?    "none" :
-                        msg->descr.type == CVT_INTEGER ? "integer" :
-                        msg->descr.type == CVT_ADDRESS ? "address" :
-                                                         "string");
-                fprintf(f, "  </register>\n");
+                        msg->val_type == CVT_NONE ?    "none" :
+                        msg->val_type == CVT_INTEGER ? "integer" :
+                        msg->val_type == CVT_ADDRESS ? "address" :
+                                                       "string");
+                if (msg->def_val)
+                    fprintf(f, " default=\"%s\"", msg->oid + msg->def_val);
+                fprintf(f, "/>\n  </register>\n");
                 break;
             }
                 

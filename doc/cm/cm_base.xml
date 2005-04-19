@@ -47,8 +47,9 @@
          Name:   address in human notation: 
                      dotted notation for IPv4
                      RFC 2373 (or RFC 1924 :) for IPv6
+         Value:  initial prefix (if 0, default is assigned)
          Limit:  depends on Test Agent (may be limited to 1 for IPv4) -->
-    <object oid="/agent/interface/net_addr" access="read_create" type="none"/>
+    <object oid="/agent/interface/net_addr" access="read_create" type="integer"/>
     
     <!-- Network prefix for the address.
          Name:  empty

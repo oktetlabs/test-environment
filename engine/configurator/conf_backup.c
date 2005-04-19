@@ -47,6 +47,7 @@ register_objects(xmlNodePtr *node, te_bool reg)
         cfg_register_msg *msg;
         
         xmlChar   *oid  = NULL;
+        xmlChar   *def_val  = NULL;
         xmlChar   *attr = NULL;
         int        len;
         
@@ -66,21 +67,32 @@ register_objects(xmlNodePtr *node, te_bool reg)
             ERROR("Incorrect description of the object %s", cur->name);
             return EINVAL;
         }
-        
-        len = sizeof(cfg_register_msg) + strlen(oid) + 1;
-        if ((msg = (cfg_register_msg *)malloc(len)) == NULL)
+
+        def_val = xmlGetProp(cur, (const xmlChar *)"default");
+
+        len = sizeof(cfg_register_msg) + strlen(oid) + 1 +
+              (def_val == NULL ? 0 : strlen(def_val) + 1);
+              
+        if ((msg = (cfg_register_msg *)calloc(1, len)) == NULL)
         {
             xmlFree(oid);
+            xmlFree(def_val);
             return ENOMEM;
         }
-            
+
         msg->type = CFG_REGISTER;
         msg->len = len;
         msg->rc = 0;
-        msg->descr.access = CFG_READ_CREATE;
-        msg->descr.type = CVT_NONE;
+        msg->access = CFG_READ_CREATE;
+        msg->val_type = CVT_NONE;
         strcpy(msg->oid, oid);
+        if (def_val != NULL)
+        {
+            msg->def_val = strlen(msg->oid) + 1;
+            strcpy(msg->oid + msg->def_val, def_val);
+        }
         xmlFree(oid);
+        xmlFree(def_val);
         
 /**
  * Log error, deallocate resource and return from function.
@@ -102,22 +114,32 @@ register_objects(xmlNodePtr *node, te_bool reg)
         if ((attr = xmlGetProp(cur, (const xmlChar *)"type")) != NULL)
         {
             if (strcmp(attr, "integer") == 0)
-                msg->descr.type = CVT_INTEGER;
+                msg->val_type = CVT_INTEGER;
             else if (strcmp(attr, "address") == 0)
-                msg->descr.type = CVT_ADDRESS;
+                msg->val_type = CVT_ADDRESS;
             else if (strcmp(attr, "string") == 0)
-                msg->descr.type = CVT_STRING;
+                msg->val_type = CVT_STRING;
             else if (strcmp(attr, "none") != 0)
                 RETERR(EINVAL, "Unsupported object type %s", attr);
             xmlFree(attr);
         }
 
+        if (def_val != NULL)
+        {
+            cfg_inst_val val;
+            
+            if (cfg_types[msg->val_type].str2val(def_val, &val) != 0)
+                RETERR(EINVAL, "Incorrect default value %s", def_val);
+            
+            cfg_types[msg->val_type].free(val);
+        }
+
         if ((attr = xmlGetProp(cur, (const xmlChar *)"access")) != NULL)
         {
             if (strcmp(attr, "read_write") == 0)
-                msg->descr.access = CFG_READ_WRITE;
+                msg->access = CFG_READ_WRITE;
             else if (strcmp(attr, "read_only") == 0)
-                msg->descr.access = CFG_READ_ONLY;
+                msg->access = CFG_READ_ONLY;
             else if (strcmp(attr, "read_create") != 0)
                 RETERR(EINVAL, 
                        "Wrong value %s of \"access\" attribute", attr);
@@ -602,13 +624,18 @@ put_object(FILE *f, cfg_object *obj)
     if (obj != &cfg_obj_root && strcmp(obj->subid, "agent") != 0)
     {
         fprintf(f, "\n  <object oid=\"%s\" "
-                "access=\"%s\" type=\"%s\"/>\n",
+                "access=\"%s\" type=\"%s\"",
                 obj->oid, 
                 obj->access == CFG_READ_CREATE ? "read_create" : 
                 obj->access == CFG_READ_WRITE ? "read_write" : "read_only",
                 obj->type == CVT_NONE ? "none" : 
                 obj->type == CVT_INTEGER ? "integer" :
                 obj->type == CVT_ADDRESS ? "address" : "string");
+                
+        if (obj->def_val != NULL)
+            fprintf(f, " default=\"%s\"", obj->def_val);
+        fprintf(f, "/>\n");
+                
     }
     for (obj = obj->son; obj != NULL; obj = obj->brother)
         put_object(f, obj);

@@ -300,10 +300,11 @@ RCF_PCH_CFG_NODE_RW(node_broadcast, "broadcast", NULL, NULL,
 RCF_PCH_CFG_NODE_RW(node_prefix, "prefix", NULL, &node_broadcast,
                     prefix_get, prefix_set);
 
-RCF_PCH_CFG_NODE_COLLECTION(node_net_addr, "net_addr",
-                            &node_prefix, &node_link_addr,
-                            net_addr_add, net_addr_del,
-                            net_addr_list, NULL);
+static rcf_pch_cfg_object node_net_addr =
+    { "net_addr", 0, &node_prefix, &node_link_addr,
+      (rcf_ch_cfg_get)prefix_get, (rcf_ch_cfg_set)prefix_set,
+      (rcf_ch_cfg_add)net_addr_add, (rcf_ch_cfg_del)net_addr_del,
+      (rcf_ch_cfg_list)net_addr_list, NULL, NULL };
 
 RCF_PCH_CFG_NODE_RO(node_ifindex, "index", NULL, &node_net_addr,
                     ifindex_get);
@@ -1049,7 +1050,6 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
         return FALSE;
     }
     
-
     if (inet_pton(AF_INET, addr, (void *)&new_addr) <= 0 ||
         new_addr == 0 ||
         (new_addr & 0xe0000000) == 0xe0000000)
@@ -1111,6 +1111,15 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
 
     if (ta_system(trash) != 0)
         return TE_RC(TE_TA_LINUX, ETESHCMD);
+        
+    if (*value != 0)
+    {
+        if ((rc = prefix_set(gid, oid, value, ifname, addr)) != 0)
+        {
+            net_addr_del(gid, oid, ifname, addr);
+            return rc;
+        }
+    }
         
     return 0;
 }
@@ -1232,6 +1241,15 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
     return TE_RC(TE_TA_LINUX, EOPNOTSUPP);
 #endif
 
+    if (*value != 0)
+    {
+        if ((rc = prefix_set(gid, oid, value, ifname, addr)) != 0)
+        {
+            net_addr_del(gid, oid, ifname, addr);
+            return rc;
+        }
+    }
+
     return 0;
 }
 #endif
@@ -1246,11 +1264,17 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
     uint32_t     broadcast;
     unsigned int prefix;
     char        *name;
+    char        *end;
 
     UNUSED(gid);
     UNUSED(oid);
-    UNUSED(value);
-
+    
+    if (strlen(ifname) >= IF_NAMESIZE || strchr(ifname, ':') != NULL)
+    {
+        /* Alias does not exist from Configurator point of view */
+        return FALSE;
+    }
+    
     if (inet_pton(AF_INET, addr, (void *)&new_addr) <= 0 ||
         new_addr == 0 ||
         (ntohl(new_addr) & 0xe0000000) == 0xe0000000)
@@ -1258,22 +1282,37 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_LINUX, EINVAL);
     }
     
-    /* FIXME */
-    if (strlen(ifname) >= IF_NAMESIZE || strchr(ifname, ':') != NULL)
+    prefix = strtol(value, &end, 10);
+    if (value == end)
     {
-        /* Alias does not exist from Configurator point of view */
-        return FALSE;
+        ERROR("Invalid value '%s' of prefix length", value);
+        return TE_RC(TE_TA_LINUX, ETEFMT);
     }
+
+    if (prefix > 32)
+    {
+        ERROR("Invalid prefix '%s' to be set", value);
+        return TE_RC(TE_TA_LINUX, EINVAL);
+    }
+    
     if ((name = find_net_addr(NULL, addr, &prefix)) != NULL)
     {
         ERROR("%s: address %s already exists on interface %s",
               __FUNCTION__, addr, name);
         return TE_RC(TE_TA_LINUX, EEXIST);
     }
-    mask = ((new_addr) & htonl(0x80000000)) == 0 ? htonl(0xFF000000) :
-           ((new_addr) & htonl(0xC0000000)) == htonl(0x80000000) ?
-           htonl(0xFFFF0000) : htonl(0xFFFFFF00);
-    MASK2PREFIX(ntohl(mask), prefix);
+    
+    if (prefix == 0)
+    {
+        mask = ((new_addr) & htonl(0x80000000)) == 0 ? htonl(0xFF000000) :
+               ((new_addr) & htonl(0xC0000000)) == htonl(0x80000000) ?
+               htonl(0xFFFF0000) : htonl(0xFFFFFF00);
+        MASK2PREFIX(ntohl(mask), prefix);
+    }
+    else
+    {
+        mask = PREFIX2MASK(prefix);
+    }
     broadcast = (~mask) | new_addr;
 
     return ip_addr_modify(RTM_NEWADDR, ifname, new_addr, broadcast, prefix);
@@ -1353,7 +1392,8 @@ find_net_addr(const char *ifname, const char *addr, unsigned int *prefix)
     ifindex = (a != NULL) ? ifa->ifa_index : 0;
     *prefix = (a != NULL) ? ifa->ifa_prefixlen : 0;
     free_nlmsg(ainfo);
-    return (ifindex != 0) ? ll_index_to_name(ifindex) : NULL;
+    
+    return (ifindex != 0) ? (char *)ll_index_to_name(ifindex) : NULL;
 }
 #endif
 
@@ -1853,7 +1893,7 @@ prefix_get(unsigned int gid, const char *oid, char *value,
 #ifdef USE_NETLINK
 static int
 prefix_set(unsigned int gid, const char *oid, const char *value,
-            const char *ifname, const char *addr)
+           const char *ifname, const char *addr)
 {
     unsigned int prefix;
     char        *name;
@@ -1893,14 +1933,13 @@ prefix_set(unsigned int gid, const char *oid, const char *value,
         ERROR("%s: Cannot delete address %s on interface %s",
               __FUNCTION__, addr, ifname);
     }
-    return ip_addr_modify(RTM_NEWADDR, ifname, int_addr, 
-                          0, prefix);
+    return ip_addr_modify(RTM_NEWADDR, ifname, int_addr, 0, prefix);
 }
 #endif
 #ifdef USE_IOCTL
 static int
 prefix_set(unsigned int gid, const char *oid, const char *value,
-            const char *ifname, const char *addr)
+           const char *ifname, const char *addr)
 {
     unsigned int prefix;
     char        *name;
@@ -1929,8 +1968,6 @@ prefix_set(unsigned int gid, const char *oid, const char *value,
     return set_prefix(name, prefix);
 }
 #endif
-
-
 
 
 /**

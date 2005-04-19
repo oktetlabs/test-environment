@@ -121,6 +121,7 @@ typedef struct cfg_obj_descr {
 #define CFG_READ_WRITE  2 /**< Instance is created automatically by TA,
                                but its value can be changed */
 #define CFG_READ_CREATE 3 /**< Instance may be added, changed and deleted */
+    char        *def_val;     /**< Default value string or NULL */
 } cfg_obj_descr;
 
 /**

@@ -210,39 +210,15 @@ tapi_cfg_base_add_net_addr(const char *oid, const struct sockaddr *addr,
         return TE_RC(TE_TAPI, EAFNOSUPPORT);
     }
 
-    rc = cfg_add_instance_fmt(cfg_hndl, CVT_NONE, NULL,
+    rc = cfg_add_instance_fmt(cfg_hndl, 
+                              prefix == -1 ? CVT_NONE : CVT_INTEGER, 
+                              prefix == -1 ? NULL : (void *)prefix,
                               "%s/net_addr:%s", oid,
                               inet_ntop(addr->sa_family,
                                         &SIN(addr)->sin_addr,
                                         buf, sizeof(buf)));
     if (rc == 0)
     {
-        if (prefix != -1)
-        {
-            /* Set address mask */
-            rc = cfg_set_instance_fmt(CVT_INTEGER, (void *)prefix,
-                                      "%s/net_addr:%s/prefix:", oid,
-                                      inet_ntop(addr->sa_family,
-                                                &SIN(addr)->sin_addr,
-                                                buf, sizeof(buf)));
-            if (rc != 0)
-            {
-                int rc2;
-
-                ERROR("Failed to set address prefix length: %X", rc);
-                rc2 = cfg_del_instance_fmt(FALSE, 
-                                           "%s/net_addr:%s", oid,
-                                           inet_ntop(addr->sa_family,
-                                                     &SIN(addr)->sin_addr,
-                                                     buf, sizeof(buf)));
-                if (rc2 != 0)
-                {
-                    ERROR("Failed to delete address to rollback: %X", rc2);
-                }
-                return rc;
-            }
-        }
-
         if (set_bcast)
         {
             struct sockaddr_in  bcast;

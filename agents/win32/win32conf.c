@@ -206,17 +206,16 @@ RCF_PCH_CFG_NODE_RW(node_mtu, "mtu", NULL, &node_status,
 RCF_PCH_CFG_NODE_RO(node_link_addr, "link_addr", NULL, &node_mtu,
                     link_addr_get);
 
-
 RCF_PCH_CFG_NODE_RW(node_broadcast, "broadcast", NULL, NULL,
                     broadcast_get, broadcast_set);
 RCF_PCH_CFG_NODE_RW(node_prefix, "prefix", NULL, &node_broadcast,
                     prefix_get, prefix_set);
 
-
-RCF_PCH_CFG_NODE_COLLECTION(node_net_addr, "net_addr",
-                            &node_prefix, &node_link_addr,
-                            net_addr_add, net_addr_del,
-                            net_addr_list, NULL);
+static rcf_pch_cfg_object node_net_addr =
+    { "net_addr", 0, &node_prefix, &node_link_addr,
+      (rcf_ch_cfg_get)prefix_get, (rcf_ch_cfg_set)prefix_set,
+      (rcf_ch_cfg_add)net_addr_add, (rcf_ch_cfg_del)net_addr_del,
+      (rcf_ch_cfg_list)net_addr_list, NULL, NULL };
 
 RCF_PCH_CFG_NODE_RO(node_ifindex, "index", NULL, &node_net_addr,
                     ifindex_get);
@@ -457,6 +456,42 @@ ip_addr_exist(DWORD addr, MIB_IPADDRROW *data)
     return TE_RC(TE_TA_WIN32, ENOENT);
 }
 
+/** Parse address and fill mask by specified or default value */
+static int
+get_addr_mask(const char *addr, const char *value, DWORD *p_a, DWORD *p_m)
+{
+    DWORD a;
+    int   prefix;
+    char *end;
+    
+    if ((a = inet_addr(addr)) == INADDR_NONE ||
+        (a & 0xe0000000) == 0xe0000000)
+        return TE_RC(TE_TA_WIN32, EINVAL);
+        
+    prefix = strtol(value, &end, 10);
+    if (value == end || *end != 0)
+    {
+        ERROR("Invalid value '%s' of prefix length", value);
+        return TE_RC(TE_TA_WIN32, ETEFMT);
+    }
+
+    if (prefix > 32)
+    {
+        ERROR("Invalid prefix '%s' to be set", value);
+        return TE_RC(TE_TA_WIN32, EINVAL);
+    }
+    
+    if (prefix != 0)
+        *p_m = PREFIX2MASK(prefix);
+    else
+        *p_m = (a & htonl(0x80000000)) == 0 ? htonl(0xFF000000) :
+               (a & htonl(0xC0000000)) == htonl(0x80000000) ?
+               htonl(0xFFFF0000) : htonl(0xFFFFFF00);
+     *p_a = a;         
+     
+     return 0;
+}
+
 /**
  * Configure IPv4 address for the interface.
  * If the address does not exist, alias interface is created.
@@ -482,15 +517,9 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
 
     UNUSED(gid);
     UNUSED(oid);
-    UNUSED(value);
-
-    if ((a = inet_addr(addr)) == INADDR_NONE ||
-        (a & 0xe0000000) == 0xe0000000)
-        return TE_RC(TE_TA_WIN32, EINVAL);
-
-    m = (a & htonl(0x80000000)) == 0 ? htonl(0xFF000000) :
-        (a & htonl(0xC0000000)) == htonl(0x80000000) ?
-        htonl(0xFFFF0000) : htonl(0xFFFFFF00);
+    
+    if ((rc = get_addr_mask(addr, value, &a, &m)) != 0)
+        return rc;
 
     GET_IF_ENTRY;
 
@@ -682,35 +711,21 @@ static int
 prefix_set(unsigned int gid, const char *oid, const char *value,
             const char *ifname, const char *addr)
 {
-    DWORD    a, m;
-    uint8_t  prefix;
-    char    *end;
-    int      rc;
+    DWORD a, m;
+    int   rc;
 
     ULONG nte_context;
     ULONG nte_instance;
 
     UNUSED(gid);
     UNUSED(oid);
+
+    if ((rc = get_addr_mask(addr, value, &a, &m)) != 0)
+        return rc;
     
     if ((a = inet_addr(addr)) == INADDR_NONE)
         return TE_RC(TE_TA_WIN32, EINVAL);
 
-    prefix = strtol(value, &end, 10);
-    if (value == end || *end != 0)
-    {
-        ERROR("Invalid value '%s' of prefix length", value);
-        return TE_RC(TE_TA_WIN32, ETEFMT);
-    }
-
-    if (prefix > 32)
-    {
-        ERROR("Invalid prefix '%s' to be set", value);
-        return TE_RC(TE_TA_WIN32, EINVAL);
-    }
-
-    m = PREFIX2MASK(prefix);
-    
     if ((rc = net_addr_del(0, NULL, ifname, addr)) != 0)
         return rc;
 

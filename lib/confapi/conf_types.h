@@ -64,9 +64,13 @@ typedef struct cfg_primary_type {
     
     /** Convert value from string representation to cfg_inst_val */
     int (* str2val)(char *val_str, cfg_inst_val *val); 
+
     
     /** Convert value from cfg_inst_val to string representation */
     int (* val2str)(cfg_inst_val val, char **val_str);
+    
+    /** Put default value of the type to cfg_inst_val */
+    int (* def_val)(cfg_inst_val *val); 
     
     /** Free memory allocated for the value (dummy for int type) */
     void (* free)(cfg_inst_val val);

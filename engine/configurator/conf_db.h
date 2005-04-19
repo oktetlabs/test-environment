@@ -43,6 +43,7 @@ typedef struct cfg_object {
                                 /**< Own sub-identifier of the object */
     cfg_val_type       type;    /**< Type of the object instance value */
     uint8_t            access;  /**< Access rights */
+    char              *def_val; /**< Default value */
     
     /** @name Family */
     struct cfg_object *father;  /**< Link to father */

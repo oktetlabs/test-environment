@@ -36,11 +36,11 @@
 /** "/agent" object */
 static cfg_object cfg_obj_agent = 
     { 1, "/agent", { 'a', 'g', 'e', 'n', 't', 0 },
-      CVT_NONE, CFG_READ_ONLY, &cfg_obj_root, NULL, NULL };
+      CVT_NONE, CFG_READ_ONLY, NULL, &cfg_obj_root, NULL, NULL };
 
 /** Root of configuration objects */
 cfg_object cfg_obj_root = 
-    { 0, "/", { 0 }, CVT_NONE, CFG_READ_ONLY, NULL, 
+    { 0, "/", { 0 }, CVT_NONE, CFG_READ_ONLY, NULL, NULL,
       &cfg_obj_agent, NULL };
 /** Pool with configuration objects */
 cfg_object **cfg_all_obj = NULL;
@@ -128,6 +128,7 @@ cfg_db_destroy(void)
         if (cfg_all_obj[i] != NULL)
         {
             free(cfg_all_obj[i]->oid);
+            free(cfg_all_obj[i]->def_val);
             free(cfg_all_obj[i]);
         }
     }
@@ -222,11 +223,21 @@ cfg_process_msg_register(cfg_register_msg *msg)
         return;
     }
     
+    if (msg->def_val > 0 && 
+        (cfg_all_obj[i]->def_val = strdup(msg->oid + msg->def_val)) == NULL)
+    {
+        free(cfg_all_obj[i]->oid);
+        cfg_all_obj[i] = NULL;
+        cfg_free_oid(oid);
+        msg->rc = ENOMEM;
+        return;
+    }
+    
     cfg_all_obj[i]->handle = i;
     strcpy(cfg_all_obj[i]->subid, 
            ((cfg_object_subid *)(oid->ids))[oid->len - 1].subid);
-    cfg_all_obj[i]->type = msg->descr.type;
-    cfg_all_obj[i]->access = msg->descr.access;
+    cfg_all_obj[i]->type = msg->val_type;
+    cfg_all_obj[i]->access = msg->access;
     cfg_all_obj[i]->father = father;
     cfg_all_obj[i]->son = NULL;
     cfg_all_obj[i]->brother = father->son;
@@ -601,7 +612,7 @@ cfg_db_add(char *oid_s, cfg_handle *handle,
     if (obj == NULL)
         RET(ENOENT);
         
-    if (obj->type != type)
+    if (obj->type != type && type != CVT_NONE)
         RET(ETEBADTYPE);
     
     /* Try to find instance with the same name */
@@ -643,7 +654,16 @@ cfg_db_add(char *oid_s, cfg_handle *handle,
     
     if (obj->type != CVT_NONE)
     {
-        int err = cfg_types[obj->type].copy(val, &(cfg_all_inst[i]->val));
+        int err;
+        
+        if (type != CVT_NONE)
+            err = cfg_types[obj->type].copy(val, &(cfg_all_inst[i]->val));
+        else if (obj->def_val != NULL)
+            err = cfg_types[obj->type].str2val(obj->def_val, 
+                                               &(cfg_all_inst[i]->val));
+        else
+            err = cfg_types[obj->type].def_val(&(cfg_all_inst[i]->val));
+        
         if (err)
         {
             free(cfg_all_inst[i]->oid);

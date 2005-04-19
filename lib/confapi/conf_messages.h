@@ -83,8 +83,12 @@ typedef struct cfg_msg {
 /** Configurator message structure */
 typedef struct cfg_register_msg {
     CFG_MSG_FIELDS
-    cfg_obj_descr descr;        /**< Object description */
-    cfg_handle    handle;   /**< OUT: handle of created object */
+    cfg_val_type  val_type; /**< Type of the object instance value */
+    uint8_t       access;   /**< Access rights */
+    uint16_t      def_val;  /**< Default value offset from start of OID 
+                                 or 0 if no default value is provided */ 
+    cfg_handle    handle;   /**< OUT: handle of created object 
+                                 object identifier */
     char          oid[0];   /**< IN: start of the object identifier */
 } cfg_register_msg;
 
