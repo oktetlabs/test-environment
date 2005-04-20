@@ -101,21 +101,19 @@
                     </documentation>
                 </annotation>
             </attribute>
+
+            <attribute name="value" type="string">
+                <annotation>
+                    <documentation>
+                        Value for simple type parameters.
+                    </documentation>
+                </annotation>
+            </attribute>
             
             <sequence>
                 <choice>
-                    <element name="int8_t" type="integer"/>
-                    <element name="uint8_t" type="integer"/>
-                    <element name="int16_t" type="integer"/>
-                    <element name="uint16_t" type="integer"/>
-                    <element name="int32_t" type="integer"/>
-                    <element name="uint32_t" type="integer"/>
-                    <element name="int64_t" type="integer"/>
-                    <element name="uint64_t" type="integer"/>
-                    <element name="string" type="string"/>
-                    <element name="hex" type="string"/>
-                    <element ref="struct"/>
-                    <element ref="array"/>
+                    <element ref="struct" minOccurs="0"/>
+                    <element ref="array" minOccurs="0"/>
                 </choice>
             </sequence>
         </complexType>
