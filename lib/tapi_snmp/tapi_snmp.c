@@ -762,6 +762,7 @@ tapi_snmp_gen_csap_create(const char *ta, int sid, const char *snmp_agent,
                         break;
 
                     default:
+                        assert(0);
                         break;
                 }
                 if (security->auth_pass != NULL)
@@ -778,12 +779,18 @@ tapi_snmp_gen_csap_create(const char *ta, int sid, const char *snmp_agent,
                         break;
 
                     default:
+                        assert(0);
                         break;
                 }
                 if (security->priv_pass != NULL)
                     fprintf(f, ", priv-pass \"%s\"", security->priv_pass);
 
                 fprintf(f, "}");
+                break;
+
+            default:
+                ERROR("%s: unknown security model %d", security->model);
+                assert(0);
                 break;
         }
     }
