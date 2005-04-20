@@ -1,0 +1,115 @@
+\documentclass[a4paper]{book}
+\usepackage{a4wide}
+\usepackage{makeidx}
+\usepackage{fancyhdr}
+\usepackage{graphicx}
+\usepackage{multicol}
+\usepackage{float}
+\usepackage{textcomp}
+\usepackage{alltt}
+\usepackage{times}
+\ifx\pdfoutput\undefined
+\usepackage[ps2pdf,
+            pagebackref=true,
+            colorlinks=true,
+            linkcolor=blue
+           ]{hyperref}
+\usepackage{pspicture}
+\else
+\usepackage[pdftex,
+            pagebackref=true,
+            colorlinks=true,
+            linkcolor=blue
+           ]{hyperref}
+\fi
+\usepackage{doxygen}
+\makeindex
+\setcounter{tocdepth}{1}
+\renewcommand{\footrulewidth}{0.4pt}
+\begin{document}
+\begin{titlepage}
+\vspace*{7cm}
+\begin{center}
+{\Large Test Environment Libraries Reference Manual}\\
+\end{center}
+\end{titlepage}
+\clearemptydoublepage
+\pagenumbering{roman}
+\tableofcontents
+\clearemptydoublepage
+\pagenumbering{arabic}
+\chapter{Configurator}
+\input{structcfg__obj__descr}
+\include{conf__api_8h}
+\chapter{Test Engine Logger Subsystem}
+\input{logger__ten_8h}
+\chapter{Remote Control Facility}
+\input{rcf__api_8h}
+\chapter{SUN RPC Control Interface}
+\input{structrcf__rpc__server}
+\include{rcf__rpc_8h}
+\chapter{Test Application Programming Interface}
+\input{structtapi__rt__entry}
+\include{structarl__entry__t}
+\include{structcfg__net__node__t}
+\include{structcfg__net__t}
+\include{structcfg__nets__t}
+\include{structtapi__jmp__point}
+\include{structparam__map__entry}
+\include{structtapi__cfg__net__assigned}
+\include{tapi__cfg_8h}
+\include{tapi__bufs_8h}
+\include{tapi__cfg__net_8h}
+\include{tapi__cfg__arl_8h}
+\include{tapi__cfg__base_8h}
+\include{tapi__cfg__dhcp_8h}
+\include{tapi__file_8h}
+\include{tapi__jmp_8h}
+\include{tapi__sockaddr_8h}
+\include{tapi__test_8h}
+\chapter{Test API for Address Resolution Protocol}
+\input{structtapi__arp__hdr}
+\include{structtapi__arp__frame}
+\include{tapi__arp_8h}
+\chapter{Test API for Spanning Tree protocol}
+\input{tapi__stp_8h}
+\chapter{Test API for Command Line Interface}
+\input{tapi__cli_8h}
+\chapter{Test API for Ethernet}
+\input{tapi__eth_8h}
+\chapter{Test API for IPstack CSAP}
+\input{structudp4__datagram}
+\include{tapi__ipstack_8h}
+\chapter{Test API for Remote Procedure Call}
+\input{structrpc__struct__sigaction}
+\include{structrpc__pollfd}
+\include{structrpc__msghdr}
+\include{structrpc__iovec}
+\include{struct__rpc__flowspec}
+\include{struct__rpc__guid}
+\include{struct__rpc__qos}
+\include{structaccept__cond}
+\include{tapi__rpc__aio_8h}
+\include{tapi__rpc__ifnameindex_8h}
+\include{tapi__rpc__netdb_8h}
+\include{tapi__rpc__signal_8h}
+\include{tapi__rpc__socket_8h}
+\include{tapi__rpc__stdio_8h}
+\include{tapi__rpc__unistd_8h}
+\include{tapi__rpcsock__macros_8h}
+\include{tapi__rpc__misc_8h}
+\include{tapi__rpc__winsock2_8h}
+\chapter{Test API for SNMP protocol Implementation}
+\input{structtapi__snmp__oid__t}
+\include{structtapi__snmp__varbind__t}
+\include{structtapi__snmp__message__t}
+\include{structtapi__snmp__oct__string__t}
+\include{structtapi__snmp__var__access}
+\include{structtapi__snmp__common__table__row__s}
+\include{structtapi__snmp__if__table__row__t}
+\include{structtapi__snmp__ip__addr__table__row__s}
+\include{tapi__snmp_8h}
+\chapter{Test API for Traffic Application Domain}
+\input{tapi__tad_8h}
+\printindex
+\end{document}
