@@ -376,7 +376,8 @@ rcf_ch_conf_root()
 #ifdef USE_NETLINK
         if (rtnl_open(&rth, 0) < 0)
             exit(1);
-        ll_init_map(&rth);    
+        ll_init_map(&rth);
+        rtnl_close(&rth);
 #endif
         init = TRUE;
     }
@@ -564,6 +565,7 @@ ip_addr_get(int family, struct nlmsg_list **list)
     {
         ERROR("%s: Cannot send dump request, %s", 
               __FUNCTION__, strerror(errno));
+        rtnl_close(&rth);
         return TE_RC(TE_TA_LINUX, errno);
     }
 
@@ -571,8 +573,10 @@ ip_addr_get(int family, struct nlmsg_list **list)
     {
         ERROR("%s: Dump terminated, %s",
               __FUNCTION__, strerror(errno));
+        rtnl_close(&rth);
         return TE_RC(TE_TA_LINUX, errno);
     }
+    rtnl_close(&rth);
     return 0;
 }
 
@@ -645,8 +649,10 @@ ip_addr_modify(int cmd, const char * ifname,
     if (rtnl_talk(&rth, &req.n, 0, 0, NULL, NULL, NULL) < 0)
     {
         ERROR("%s: rtnl_talk() failed", __FUNCTION__);
+        rtnl_close(&rth);
         return TE_RC(TE_TA_LINUX, errno);
     }
+    rtnl_close(&rth);
     return 0;
 }
 
