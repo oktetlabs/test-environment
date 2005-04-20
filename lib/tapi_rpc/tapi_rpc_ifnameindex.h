@@ -51,7 +51,7 @@ extern unsigned int rpc_if_nametoindex(rcf_rpc_server *handle,
                                        const char *ifname);
                                        
 /**
- * Map network interface name to its corresponding name.
+ * Map network interface index to its corresponding name.
  *
  * @param handle    RPC server handle.
  * @param ifindex   index of the interface.
@@ -74,7 +74,8 @@ extern char *rpc_if_indextoname(rcf_rpc_server *handle,
  *
  * @param  handle RPC server handle
  *
- * @return Array of all existing interfaces otherwise NULL.
+ * @return array of all existing interfaces, upon successful completion,
+ *         otherwise NULL is returned.
  */
 extern struct if_nameindex *rpc_if_nameindex(rcf_rpc_server *handle);
 
