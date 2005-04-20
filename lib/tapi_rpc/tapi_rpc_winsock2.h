@@ -45,35 +45,42 @@ typedef void *rpc_overlapped;
 /** Windows HWND */
 typedef void *rpc_hwnd;
 
-/** Windows HANDLE  :o\  */
+/** Windows HANDLE  */
 typedef void *rpc_handle;
 
-/* Windows FLOWSPEC structure */
+/** Windows FLOWSPEC structure */
 typedef struct _rpc_flowspec {
-    uint32_t TokenRate;
-    uint32_t TokenBucketSize;
-    uint32_t PeakBandwidth;
-    uint32_t Latency;
-    uint32_t DelayVariation;
-    uint32_t ServiceType;
-    uint32_t MaxSduSize;
-    uint32_t MinimumPolicedSize;
+    uint32_t TokenRate;    /**< Permitted rate at which data can be 
+                                transmitted*/
+    uint32_t TokenBucketSize; /**< Muximum amount of credits a given 
+                                   direction of a flow can accrue */
+    uint32_t PeakBandwidth; /**< Upper limit of time-based transmission */
+    uint32_t Latency; /**< Maximum acceptable delay between transmission */
+    uint32_t DelayVariation; /**< Difference between Max and Min possible
+                                  delay a packet will experience */
+    uint32_t ServiceType;/**< Level of service to negociate for the flow */
+    uint32_t MaxSduSize; /**< Maximum packet size permitted */
+    uint32_t MinimumPolicedSize;/**< Minimum packet size for which the 
+                                     requested quality of service is 
+                                     provided */
 } rpc_flowspec;
 
-/* Windows QOS structure */
+/** Windows QOS structure */
 typedef struct _rpc_qos {
-    rpc_flowspec  sending;
-    rpc_flowspec  receiving;
-    char          *provider_specific_buf;
-    size_t        provider_specific_buf_len;
+    rpc_flowspec  sending;            /**< QOS parameters for sending */
+    rpc_flowspec  receiving;          /**< QOS parameters for receiving */
+    char          *provider_specific_buf; /**< Provider specific buffer */
+    size_t        provider_specific_buf_len;/**< length of buffer */
 } rpc_qos;
 
-/* Windows GUID */
+/** Windows GUID */
 typedef struct _rpc_guid {
-    uint32_t data1;
-    uint16_t data2;
-    uint16_t data3;
-    uint8_t  data4[8];
+    uint32_t data1;    /**< First 8 hexadecimal digits */
+    uint16_t data2;    /**< First group of 4 hexadecimal digits */
+    uint16_t data3;    /**< Second group of 4 hexadecimal digits */
+    uint8_t  data4[8]; /**< 2 first bytes for third group of 4 
+                            hexadecimal digits and 6 bytes for final
+                            12 hexadecimal digits */
 } rpc_guid;
 
 
@@ -442,13 +449,13 @@ extern int rpc_alloc_wsabuf(rcf_rpc_server *rpcs, size_t len,
  */
 extern void rpc_free_wsabuf(rcf_rpc_server *rpcs, rpc_ptr wsabuf);
 
-/* WSAConnect */
+/** WSAConnect */
 extern int rpc_wsa_connect(rcf_rpc_server *rpcs, int s,
                            struct sockaddr *addr, socklen_t addrlen,
                            rpc_ptr caller_wsabuf, rpc_ptr callee_wsabuf,
                            rpc_qos *sqos);
 
-/* WSAIoctl */
+/** WSAIoctl */
 extern int rpc_wsa_ioctl(rcf_rpc_server *rpcs, int s,
                          rpc_wsa_ioctl_code control_code,
                          char *inbuf, unsigned int inbuf_len,
@@ -456,7 +463,7 @@ extern int rpc_wsa_ioctl(rcf_rpc_server *rpcs, int s,
                          unsigned int *bytes_returned,
                          rpc_overlapped overlapped, te_bool callback);
 
-/* rpc_get_wsa_ioctl_overlapped_result() */
+/** rpc_get_wsa_ioctl_overlapped_result() */
 extern int rpc_get_wsa_ioctl_overlapped_result(rcf_rpc_server *rpcs,
                                     int s, rpc_overlapped overlapped,
                                     int *bytes, te_bool wait,
