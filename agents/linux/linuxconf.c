@@ -773,7 +773,8 @@ interface_exists(const char *ifname)
 /**
  * Get instance list for object "agent/interface".
  *
- * @param id            full identifier of the father instance
+ * @param gid           group identifier (unused)
+ * @param oid           full identifier of the father instance
  * @param list          location for the list pointer
  *
  * @return error code
@@ -985,7 +986,7 @@ interface_del(unsigned int gid, const char *oid, const char *ifname)
     UNUSED(oid);
     
     if (!interface_exists(ifname))
-        return TE_RC(TE_TA_LINUX, ENOENT);
+        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
         
     sprintf(buf, "/sbin/vconfig rem %s", ifname);
     
@@ -3383,7 +3384,7 @@ arp_del(unsigned int gid, const char *oid,
         ERROR("ioctl(SIOCDARP) failed when dotted:%s, volatile:%s "
               "delition: %s", addr, addr_volatile, strerror(errno));
         if (errno == ENXIO || errno == ENETDOWN || errno == ENETUNREACH)
-            return TE_RC(TE_TA_LINUX, ENOENT);
+            return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
         else
             return TE_RC(TE_TA_LINUX, errno);
     }
@@ -4041,9 +4042,10 @@ nameserver_get(unsigned int gid, const char *oid, char *result,
                const char *instance, ...)
 {
     FILE *resolver = NULL;
-    char buf[256];
+    char  buf[256];
     char *found = NULL, *endaddr = NULL;
-    int rc = TE_RC(TE_TA_LINUX, ENOENT);
+    int   rc = TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
+    
     static const char ip_symbols[] = "0123456789.";
 
     UNUSED(gid);

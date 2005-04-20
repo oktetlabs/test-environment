@@ -240,7 +240,7 @@ static MIB_IFROW if_entry;
              tmp == ifname) || *tmp != 0 ||                     \
             GetIfEntry(&if_entry) != 0)                         \
         {                                                       \
-            return TE_RC(TE_TA_WIN32, ENOENT);                  \
+            return TE_RC(TE_TA_WIN32, ETENOSUCHNAME);           \
         }                                                       \
     } while (0)
 
@@ -300,7 +300,7 @@ find_ifindex(DWORD addr, DWORD *ifindex)
     GET_TABLE(MIB_IPFORWARDTABLE, GetIpForwardTable);
     
     if (table == NULL)
-        return TE_RC(TE_TA_WIN32, ENOENT);
+        return TE_RC(TE_TA_WIN32, ETENOSUCHNAME);
 
     for (i = 0; i < (int)table->dwNumEntries; i++)
     {
@@ -322,7 +322,7 @@ find_ifindex(DWORD addr, DWORD *ifindex)
     free(table);
 
     if (index == 0)
-        return TE_RC(TE_TA_WIN32, ENOENT);
+        return TE_RC(TE_TA_WIN32, ETENOSUCHNAME);
         
     *ifindex = index;
     
@@ -437,7 +437,7 @@ ip_addr_exist(DWORD addr, MIB_IPADDRROW *data)
     GET_TABLE(MIB_IPADDRTABLE, GetIpAddrTable);
 
     if (table == NULL)
-        return TE_RC(TE_TA_WIN32, ENOENT);
+        return TE_RC(TE_TA_WIN32, ETENOSUCHNAME);
 
     for (i = 0; i < (int)table->dwNumEntries; i++)
     {
@@ -453,7 +453,7 @@ ip_addr_exist(DWORD addr, MIB_IPADDRROW *data)
 
     free(table);
 
-    return TE_RC(TE_TA_WIN32, ENOENT);
+    return TE_RC(TE_TA_WIN32, ETENOSUCHNAME);
 }
 
 /** Parse address and fill mask by specified or default value */
@@ -598,7 +598,7 @@ net_addr_del(unsigned int gid, const char *oid,
     }
     free(table);
 
-    return TE_RC(TE_TA_WIN32, ENOENT);
+    return TE_RC(TE_TA_WIN32, ETENOSUCHNAME);
 }
 
 /**
@@ -930,7 +930,7 @@ status_set(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_WIN32, EINVAL);
 
     if (SetIfEntry(&if_entry) != 0)
-        return TE_RC(TE_TA_WIN32, ENOENT);
+        return TE_RC(TE_TA_WIN32, ETENOSUCHNAME);
 
     return 0;
 }
@@ -983,7 +983,7 @@ arp_get(unsigned int gid, const char *oid, char *value,
         
     GET_TABLE(MIB_IPNETTABLE, GetIpNetTable);
     if (table == NULL)
-        return TE_RC(TE_TA_WIN32, ENOENT);
+        return TE_RC(TE_TA_WIN32, ETENOSUCHNAME);
 
     for (i = 0; i < (int)table->dwNumEntries; i++)
     {
@@ -994,7 +994,7 @@ arp_get(unsigned int gid, const char *oid, char *value,
             if (table->table[i].dwPhysAddrLen != 6)
             {
                 free(table);
-                return TE_RC(TE_TA_WIN32, ENOENT);
+                return TE_RC(TE_TA_WIN32, ETENOSUCHNAME);
             }
             snprintf(value, RCF_MAX_VAL, "%02x:%02x:%02x:%02x:%02x:%02x",
                      ptr[0], ptr[1], ptr[2], ptr[3], ptr[4], ptr[5]);
@@ -1005,7 +1005,7 @@ arp_get(unsigned int gid, const char *oid, char *value,
 
     free(table);
 
-    return TE_RC(TE_TA_WIN32, ENOENT);
+    return TE_RC(TE_TA_WIN32, ETENOSUCHNAME);
 }
 
 
@@ -1133,7 +1133,7 @@ arp_del(unsigned int gid, const char *oid, const char *addr,
 
     GET_TABLE(MIB_IPNETTABLE, GetIpNetTable);
     if (table == NULL)
-        return TE_RC(TE_TA_WIN32, ENOENT);
+        return TE_RC(TE_TA_WIN32, ETENOSUCHNAME);
 
     for (i = 0; i < (int)table->dwNumEntries; i++)
     {
@@ -1153,7 +1153,8 @@ arp_del(unsigned int gid, const char *oid, const char *addr,
         }
     }
     free(table);
-    return (!found && type == ARP_STATIC) ? TE_RC(TE_TA_WIN32, ENOENT) : 0;
+    return (!found && type == ARP_STATIC) ? 
+           TE_RC(TE_TA_WIN32, ETENOSUCHNAME) : 0;
 }
 
 /**
@@ -1364,7 +1365,7 @@ route_get(unsigned int gid, const char *oid, char *value,
 
     GET_TABLE(MIB_IPFORWARDTABLE, GetIpForwardTable);
     if (table == NULL)
-        return TE_RC(TE_TA_WIN32, ENOENT);
+        return TE_RC(TE_TA_WIN32, ETENOSUCHNAME);
 
     for (i = 0; i < (int)table->dwNumEntries; i++)
     {
@@ -1398,7 +1399,7 @@ route_get(unsigned int gid, const char *oid, char *value,
 
     free(table);
 
-    return TE_RC(TE_TA_WIN32, ENOENT);
+    return TE_RC(TE_TA_WIN32, ETENOSUCHNAME);
 }
 
 /**
@@ -1544,7 +1545,7 @@ route_del(unsigned int gid, const char *oid, const char *route)
 
     GET_TABLE(MIB_IPFORWARDTABLE, GetIpForwardTable);
     if (table == NULL)
-        return TE_RC(TE_TA_WIN32, ENOENT);
+        return TE_RC(TE_TA_WIN32, ETENOSUCHNAME);
         
     if (rt.metric == 0)
         rt.metric = METRIC_DEFAULT;
@@ -1579,7 +1580,7 @@ route_del(unsigned int gid, const char *oid, const char *route)
         return 0;
     }
 
-    return TE_RC(TE_TA_WIN32, ENOENT);
+    return TE_RC(TE_TA_WIN32, ETENOSUCHNAME);
 }
 
 /**

@@ -217,7 +217,7 @@ ds_create_backup(const char *dir, const char *name, int *index)
         WARN("Cannot create backup file %s", ds[n_ds].backup);
         free(ds[n_ds].config_file);
         free(ds[n_ds].backup);
-        return TE_RC(TE_TA_LINUX, ENOENT); 
+        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME); 
     }
     if (index != NULL)                                        
         *index = n_ds;
@@ -271,7 +271,7 @@ daemon_get(unsigned int gid, const char *oid, char *value)
 
     if (daemon_name == NULL)
     {
-        return TE_RC(TE_TA_LINUX, ENOENT);
+        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
     }
 
     if (strcmp(daemon_name, "sendmail") == 0)
@@ -336,7 +336,7 @@ daemon_set(unsigned int gid, const char *oid, const char *value)
 
     if (daemon_name == NULL)
     {
-        return TE_RC(TE_TA_LINUX, ENOENT);
+        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
     }
 
     if (value0[0] == value[0])
@@ -374,7 +374,7 @@ xinetd_get(unsigned int gid, const char *oid, char *value)
     UNUSED(gid);
     
     if (index < 0)
-        return TE_RC(TE_TA_LINUX, ENOENT);
+        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
         
     if ((f = fopen(ds_config(index), "r")) == NULL)
         return TE_RC(TE_TA_LINUX, errno);
@@ -414,7 +414,7 @@ xinetd_set(unsigned int gid, const char *oid, const char *value)
     PRINT("xinetd_set: %s %s", oid, value);
 
     if (index < 0)
-        return TE_RC(TE_TA_LINUX, ENOENT);
+        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
         
     PRINT("Backup is in %s", ds_backup(index));
     {                                            
@@ -1562,7 +1562,7 @@ ds_sshd_del(unsigned int gid, const char *oid, const char *port)
     UNUSED(oid);
 
     if (pid == 0)
-        return TE_RC(TE_TA_LINUX, ENOENT);
+        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
         
     if (kill(pid, SIGTERM) != 0)
     {
@@ -1711,7 +1711,7 @@ ds_xvfb_del(unsigned int gid, const char *oid, const char *number)
     UNUSED(oid);
 
     if (pid == 0)
-        return TE_RC(TE_TA_LINUX, ENOENT);
+        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
         
     if (kill(pid, SIGTERM) != 0)
     {
@@ -1873,7 +1873,7 @@ ds_vncserver_del(unsigned int gid, const char *oid, const char *number)
     UNUSED(oid);
 
     if (!vncserver_exists((char *)number))
-        return TE_RC(TE_TA_LINUX, ENOENT);
+        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
         
     sprintf(buf, "HOME=/tmp vncserver -kill :%s >/dev/null 2>&1", number);
 
@@ -2090,7 +2090,7 @@ sendmail_smarthost_set(te_bool enable)
     if (sendmail_index < 0)
     {
         ERROR("Cannot find sendmail configuration file");
-        return ENOENT;
+        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
     }
     
     ds_config_touch(sendmail_index);
@@ -2175,7 +2175,7 @@ postfix_smarthost_set(te_bool enable)
     if (postfix_index < 0)
     {
         ERROR("Cannot find postfix configuration file");
-        return ENOENT;
+        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
     }
     
     ds_config_touch(postfix_index);
@@ -2264,7 +2264,7 @@ exim_smarthost_set(te_bool enable)
     if (exim_index < 0)
     {
         ERROR("Cannot find exim configuration file");
-        return ENOENT;
+        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
     }
     
     ds_config_touch(exim_index);
@@ -2345,7 +2345,7 @@ qmail_smarthost_set(te_bool enable, const char *relay)
     if (qmail_index < 0)
     {
         ERROR("Cannot find qmail configuration file");
-        return ENOENT;
+        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
     }
     
     ds_config_touch(qmail_index);
