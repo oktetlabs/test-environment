@@ -273,22 +273,13 @@ cfg_sync_agt_volatile(const char *inst_name)
 static void
 process_add(cfg_add_msg *msg, te_bool update_dh)
 {
-    cfg_handle    handle;
+    cfg_handle    handle = 0;
     cfg_instance *inst;
     cfg_object   *obj;
-    char         *val_str = "";
     char         *oid = (char *)msg + msg->oid_offset;
     cfg_inst_val  val;
+    char         *val_str = "";
     char         *inst_name_str = (char *)msg + msg->oid_offset;
-
-    msg->rc = cfg_types[msg->val_type].get_from_msg((cfg_msg *)msg, &val);
-
-    if (msg->rc != 0)
-        return;
-
-    /* Get the value of the new instance to log it in case of error */
-    if (cfg_types[msg->val_type].val2str(val, &val_str) != 0)
-        assert(0);
 
     /* Synchronize /agent/volatile subtree if necessary */
     if ((msg->rc = cfg_sync_agt_volatile(inst_name_str)) != 0)
@@ -298,16 +289,18 @@ process_add(cfg_add_msg *msg, te_bool update_dh)
         return;
     }
 
-    msg->rc = cfg_db_add(oid, &handle, msg->val_type, val);
-    
-    if (msg->rc != 0)
+    if ((msg->rc = cfg_types[msg->val_type].get_from_msg((cfg_msg *)msg, 
+                                                         &val)) != 0)
+        return;
+
+    if ((msg->rc = cfg_db_add(oid, &handle, msg->val_type, val)) != 0)
     {
-        ERROR("Failed to add a new instance %s with value '%s' into "
-              "configuration database; errno 0x%x", inst_name_str, val_str,
-              msg->rc);
-        cfg_types[msg->val_type].free(val);
+        ERROR("Failed to add a new instance %s into configuration "
+              "database; errno 0x%X", inst_name_str, msg->rc);
+        cfg_types[msg->val_type].free(val); 
         return;
     }
+    cfg_types[msg->val_type].free(val);
 
     inst = CFG_GET_INST(handle);
     obj = inst->obj;
@@ -317,67 +310,66 @@ process_add(cfg_add_msg *msg, te_bool update_dh)
     if (obj->access != CFG_READ_CREATE)
     {
         cfg_db_del(handle);
-        cfg_types[obj->type].free(val);
         msg->rc = EACCES;
-        ERROR("Failed to add a new instance %s with value %s because "
-              "object %s is not read-create", inst_name_str, val_str,
-              obj->oid);
+        ERROR("Failed to add a new instance %s "
+              "object %s is not read-create", inst_name_str, obj->oid);
         return;
     }
 
     if (update_dh && (msg->rc = cfg_dh_add_command((cfg_msg *)msg)) != 0)
     {
         cfg_db_del(handle);
-        cfg_types[obj->type].free(val);
-        ERROR("Failed to add a new instance %s with value %s in DH: "
-              "error=%X", inst_name_str, val_str, msg->rc);
+        ERROR("Failed to add a new instance %s in DH: error=0x%X", 
+              inst_name_str, msg->rc);
         return;
     }
 
     if (strncmp(oid, "/agent:", strlen("/agent:")) != 0) /* Success */
     {
-        cfg_types[obj->type].free(val);
         msg->handle = handle;
-
-        if (obj->type != CVT_NONE)
-            free(val_str);
-
         return;
     }
-
+    
     while (strcmp(inst->obj->subid, "agent") != 0)
         inst = inst->father;
 
     if (obj->type != CVT_NONE)
     {
+        if ((msg->rc = cfg_db_get(handle, &val)) != 0)
+        {
+            if (update_dh)
+                cfg_dh_delete_last_command();
+            cfg_db_del(handle);
+            return;
+        }
+
         msg->rc = cfg_types[obj->type].val2str(val, &val_str);
+        cfg_types[obj->type].free(val);
+        
         if (msg->rc != 0)
         {
             cfg_db_del(handle);
             if (update_dh)
                 cfg_dh_delete_last_command();
-            cfg_types[obj->type].free(val);
             return;
         }
     }
 
     msg->rc = rcf_ta_cfg_add(inst->name, 0, oid, val_str);
+    if (obj->type != CVT_NONE)
+        free(val_str);
 
     if (msg->rc != 0)
     {
         cfg_db_del(handle);
+        
         if (update_dh)
             cfg_dh_delete_last_command();
+            
         ERROR("Failed to add a new instance %s with value %s into TA "
-              "error=%X", inst->name, val_str, msg->rc);
+              "error=0x%X", inst->name, val_str, msg->rc);
+        return;              
     }
-
-    cfg_types[obj->type].free(val);
-    if (obj->type != CVT_NONE)
-        free(val_str);
-        
-    if (msg->rc != 0)
-        return;
 
     if ((msg->rc = cfg_ta_sync(oid, TRUE)) != 0)
     {
