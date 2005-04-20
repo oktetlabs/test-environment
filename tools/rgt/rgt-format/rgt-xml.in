@@ -199,6 +199,6 @@ if [ "@utility@" = "rgt-xml2html" ]; then
              $xml_file $out_file"
     fi
 else
-    eval "${bindir}/rgt-xml-translator -t ${pkgdatadir}/@utility@.tmpls \
+    eval "${bindir}/rgt-xml-translator -e -t ${pkgdatadir}/@utility@.tmpls \
          $xml_file >$out_file" || rm -f $out_file
 fi

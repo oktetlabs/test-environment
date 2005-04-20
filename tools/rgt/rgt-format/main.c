@@ -116,6 +116,10 @@ struct global_context {
         int cur_num; /**< Current number of elements in memory row */
         int first_row;
     } mem_dump;
+    
+    int expand_entities; /**< Wheter to expand standard XML entities 
+                              like &lt; and &gt; or not? */
+    /* @todo Make it te_bool */
 };
 
 #ifndef TRUE
@@ -501,9 +505,11 @@ rgt_log_characters(void *user_data, const xmlChar *ch, int len)
 static xmlEntityPtr
 rgt_get_entity(void *user_data, const xmlChar *name)
 {
-    static xmlEntity ent;
+    static xmlEntity       ent;
+    struct global_context *ctx = (struct global_context *)user_data;
     
-    UNUSED(user_data);
+    if (ctx->expand_entities)
+        return NULL;
 
     ent.etype = XML_INTERNAL_PREDEFINED_ENTITY;
 
@@ -674,6 +680,9 @@ process_cmd_line_opts(int argc, char **argv)
            "in form \"var_name@@var_value\", for example \"name@@oleg\"",
            NULL },
 
+        { "expand-entities", 'e', POPT_ARG_NONE, NULL, 'e', 
+          "Wheter to expand standard XML entities or not.", "FILE" },
+
         { "version", 'v', POPT_ARG_NONE, NULL, 'v', 
           "Display version information.", NULL },
 
@@ -746,6 +755,10 @@ process_cmd_line_opts(int argc, char **argv)
             user_vars[n_user_vars * 2 - 2] = param;
             user_vars[n_user_vars * 2 - 1] = var_val;
             user_vars[n_user_vars * 2]     = NULL;
+        }
+        else if (rc == 'e')
+        {
+            global_ctx.expand_entities = TRUE;
         }
         else if (rc == 'v')
         {
