@@ -267,6 +267,9 @@ if test -n "$with_netlink" ; then
         to configure interfaces]) ;
     fi        
     CPPFLAGS="$CPPFLAGS -DUSE_NETLINK"
+    AC_CHECK_LIB([netlink], [rtnl_open], [],
+            AC_MSG_ERROR([Cannot find libnetlink!]))
+
 else
     if test -n "$with_ifconfig" ; then
         CPPFLAGS="$CPPFLAGS -DUSE_IFCONFIG"

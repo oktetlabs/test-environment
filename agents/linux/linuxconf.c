@@ -1397,7 +1397,8 @@ find_net_addr(const char *ifname, const char *addr, unsigned int *prefix)
         }
     }
     ifindex = (a != NULL) ? ifa->ifa_index : 0;
-    *prefix = (a != NULL) ? ifa->ifa_prefixlen : 0;
+    if (a != NULL)
+        *prefix = ifa->ifa_prefixlen;
     free_nlmsg(ainfo);
     
     return (ifindex != 0) ? (char *)ll_index_to_name(ifindex) : NULL;
@@ -1562,7 +1563,7 @@ static int
 net_addr_del(unsigned int gid, const char *oid,
              const char *ifname, const char *addr)
 {
-    char              *name;
+    char        *name;
     uint32_t     int_addr;
     unsigned int prefix = 0;
 
