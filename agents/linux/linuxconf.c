@@ -1129,8 +1129,8 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
              const char *ifname, const char *addr)
 {
     uint32_t     new_addr;
-#ifdef __linux__
     int           rc;
+#ifdef __linux__
     char         *cur;
     char         *next;
     char          slots[32] = { 0, };
