@@ -318,19 +318,115 @@ asn_type_p ndn_snmp_message = &ndn_snmp_message_s;
 
 
 
-
-
-
-
-
-static asn_named_entry_t _ndn_snmp_csap_ne_array [] = 
+/** SNMPv3 USM Security level */
+static asn_enum_entry_t _ndn_snmp_security_level_enum_entries[] =
 {
-    { "version",        &ndn_data_unit_int8_s, {PRIVATE, 1} },
-    { "remote-port",    &ndn_data_unit_int16_s, {PRIVATE, 1} },
-    { "local-port",     &ndn_data_unit_int16_s, {PRIVATE, 1} },
-    { "community",      &ndn_data_unit_char_string_s, {PRIVATE, 1} },
-    { "timeout",        &ndn_data_unit_int32_s, {PRIVATE, 1} },
-    { "snmp-agent",     &ndn_data_unit_char_string_s, {PRIVATE, 1} }
+    {"noAuth",      NDN_SNMP_SEC_LEVEL_NOAUTH},
+    {"authNoPriv",  NDN_SNMP_SEC_LEVEL_AUTHNOPRIV},
+    {"authPriv",    NDN_SNMP_SEC_LEVEL_AUTHPRIV},
+};
+asn_type ndn_snmp_security_level_s = {
+    "SNMP-Security-Level",
+    {UNIVERSAL, 10},
+    ENUMERATED,
+    sizeof(_ndn_snmp_security_level_enum_entries)/sizeof(asn_enum_entry_t),
+    {_ndn_snmp_security_level_enum_entries}
+};
+const asn_type * const ndn_snmp_security_level = 
+                       &ndn_snmp_security_level_s;
+
+
+/** SNMPv3 USM Authentication protocol */
+static asn_enum_entry_t _ndn_snmp_auth_proto_enum_entries[] = 
+{
+    {"md5",  NDN_SNMP_AUTH_PROTO_MD5},
+    {"sha",  NDN_SNMP_AUTH_PROTO_SHA},
+};
+
+asn_type ndn_snmp_auth_proto_s = {
+    "SNMP-USM-AuthProtocol",
+    {UNIVERSAL, 10},
+    ENUMERATED,
+    sizeof(_ndn_snmp_auth_proto_enum_entries)/sizeof(asn_enum_entry_t),
+    {_ndn_snmp_auth_proto_enum_entries}
+};
+
+const asn_type * const ndn_snmp_auth_proto = &ndn_snmp_auth_proto_s;
+
+
+/** SNMPv3 USM Privacy protocol */
+static asn_enum_entry_t _ndn_snmp_priv_proto_enum_entries[] =
+{
+    {"des",  NDN_SNMP_PRIV_PROTO_DES},
+    {"aes",  NDN_SNMP_PRIV_PROTO_AES},
+};
+
+asn_type ndn_snmp_priv_proto_s = {
+    "SNMP-USM-PrivProtocol",
+    {UNIVERSAL, 10},
+    ENUMERATED,
+    sizeof(_ndn_snmp_priv_proto_enum_entries)/sizeof(asn_enum_entry_t),
+    {_ndn_snmp_priv_proto_enum_entries}
+};
+
+
+/** SNMP User-based security model */
+static asn_named_entry_t _ndn_snmp_security_usm_ne_array[] =
+{
+    {"name",           &asn_base_charstring_s, {PRIVATE, 1}},
+    {"level",          &ndn_snmp_security_level_s,  {PRIVATE, 1}},
+    {"auth-protocol",  &ndn_snmp_auth_proto_s, {PRIVATE, 1}},
+    {"auth-pass",      &asn_base_charstring_s, {PRIVATE, 1}},
+    {"priv-protocol",  &ndn_snmp_priv_proto_s, {PRIVATE, 1}},
+    {"priv-pass",      &asn_base_charstring_s, {PRIVATE, 1}},
+};
+asn_type ndn_snmp_security_usm_s =
+{
+    "SNMP-Security-USM", {PRIVATE, 100}, SEQUENCE,
+    sizeof(_ndn_snmp_security_usm_ne_array)/sizeof(asn_named_entry_t),
+    {_ndn_snmp_security_usm_ne_array}
+};
+const asn_type * ndn_snmp_security_usm = &ndn_snmp_security_usm_s;
+
+
+/** SNMP v2c community-based security model */
+static asn_named_entry_t _ndn_snmp_security_v2c_ne_array[] =
+{
+    {"community",      &asn_base_charstring_s, {PRIVATE, 1}},
+};
+asn_type ndn_snmp_security_v2c_s =
+{
+    "SNMP-Security-v2c", {PRIVATE, 100}, SEQUENCE,
+    sizeof(_ndn_snmp_security_v2c_ne_array)/sizeof(asn_named_entry_t),
+    {_ndn_snmp_security_v2c_ne_array}
+};
+const asn_type * ndn_snmp_security_v2c = &ndn_snmp_security_v2c_s;
+
+
+/** SNMP Security model */
+static asn_named_entry_t _ndn_snmp_security_ne_array[] = 
+{
+    {"v2c",  &ndn_snmp_security_v2c_s, {PRIVATE, 1}},
+    {"usm" , &ndn_snmp_security_usm_s, {PRIVATE, 1}}
+};
+asn_type ndn_snmp_security_s =
+{
+    "SNMP-Security", {APPLICATION, 1}, CHOICE, 
+    sizeof(_ndn_snmp_security_ne_array)/sizeof(asn_named_entry_t),
+    {_ndn_snmp_security_ne_array}
+}; 
+const asn_type * const ndn_snmp_security = &ndn_snmp_security_s;
+
+
+/** SNMP CSAP parameters */
+static asn_named_entry_t _ndn_snmp_csap_ne_array[] = 
+{
+    { "version",       &ndn_data_unit_int8_s, {PRIVATE, 1} },
+    { "remote-port",   &ndn_data_unit_int16_s, {PRIVATE, 1} },
+    { "local-port",    &ndn_data_unit_int16_s, {PRIVATE, 1} },
+    { "security",      &ndn_snmp_security_s, {PRIVATE, 1} },
+    { "timeout",       &ndn_data_unit_int32_s, {PRIVATE, 1} },
+    { "snmp-agent",    &ndn_data_unit_char_string_s, {PRIVATE, 1} },
 };
 
 asn_type ndn_snmp_csap_s =

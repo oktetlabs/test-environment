@@ -16,7 +16,8 @@ SnmpErrorStatus ::= INTEGER {
     tooBig(1),
     noSuchName(2),   -- for proxy compatibility
     badValue(3),     -- for proxy compatibility
-    readOnly(4),     -- for proxy compatibility genErr(5), 
+    readOnly(4),     -- for proxy compatibility
+    genErr(5), 
     noAccess(6),
     wrongType(7),
     wrongLength(8),
@@ -34,19 +35,64 @@ SnmpErrorStatus ::= INTEGER {
 
 max-bindings INTEGER ::= 2147483647
 
-SNMP-Message ::= SEQUENCE { 
-    type        INTEGER {get(0), get-next(1), response(2),  set(3), trap(4), get-bulk(5)}, 
-
-    community   DATA-UNIT{PrintableString} OPTIONAL,
-    request-id  DATA-UNIT{ Integer32 } OPTIONAL,
-
-    err-status  DATA-UNIT{ SnmpErrorStatus } OPTIONAL, 
-    err-index   DATA-UNIT{ INTEGER (0..max-bindings)} OPTIONAL,
-
-    vbs         SEQUENCE OF VarBind OPTIONAL
-
+SNMPMessageType ::= INTEGER {
+    get(0),
+    get-next(1),
+    response(2),
+    set(3),
+    trap1(4),
+    trap2(5),
+    get-bulk(6),
+    inform(7)
 }
 
+SNMP-Security-Level ::= INTEGER {
+    noAuth(0),
+    authNoPriv(1),
+    authPriv(2)
+}
+
+SNMP-USM-AuthProtocol ::= INTEGER {
+    md5(1),
+    sha(2)
+}
+
+SNMP-USM-PrivProtocol ::= INTEGER {
+    des(1),
+    aes(2)
+}
+
+SNMP-Security-v2c ::= SEQUENCE {
+    community   UniversalString
+}
+
+SNMP-Security-USM ::= SEQUENCE {
+    name            UniversalString,
+    level           SNMP-Security-Level,
+    auth-protocol   SNMP-USM-AuthProtocol OPTIONAL,
+    auth-pass       UniversalString OPTIONAL,
+    priv-protocol   SNMP-USM-PrivProtocol OPTIONAL,
+    priv-pass       UniversalString OPTIONAL
+}
+
+SNMP-Security ::= CHOICE {
+    v2c     SNMP-Security-v2c,
+    usm     SNMP-Security-USM
+}
+
+SNMP-Message ::= SEQUENCE { 
+    type        DATA-UNIT{ SNMPMessageType }, 
+    community   DATA-UNIT{ PrintableString } OPTIONAL,
+    repeats     DATA-UNIT{ Integer32 } OPTIONAL,
+    request-id  DATA-UNIT{ Integer32 } OPTIONAL,
+    err-status  DATA-UNIT{ SnmpErrorStatus } OPTIONAL, 
+    err-index   DATA-UNIT{ INTEGER (0..max-bindings) } OPTIONAL,
+    enterprise  DATA-UNIT{ objectID-value } OPTIONAL,
+    gen-trap    DATA-UNIT{ Integer32 } OPTIONAL,
+    spec-trap   DATA-UNIT{ Integer32 } OPTIONAL,
+    agent-addr  DATA-UNIT{ IpAddress },
+    variable-bindings         SEQUENCE OF VarBind OPTIONAL
+}
 
 VarBind ::= SEQUENCE {
     name DATA_UNIT{OBJECT IDENTIFIER},
@@ -64,10 +110,9 @@ SNMP-CSAP ::= SEQUENCE {
     version     DATA-UNIT{INTEGER(1..3)} OPTIONAL,
     remote-port DATA-UNIT{INTEGER(1..65535)} OPTIONAL, 
     local-port  DATA-UNIT{INTEGER(1..65535)} OPTIONAL, 
-    community   DATA-UNIT{PrintableString} OPTIONAL,
-    snmp-agent  DATA-UNIT{PrintableString} OPTIONAL,
+    security    SNMP-Security,
     timeout     DATA-UNIT{INTEGER}  OPTIONAL,
-    ...
+    snmp-agent  DATA-UNIT{PrintableString} OPTIONAL,
 }
 
 END

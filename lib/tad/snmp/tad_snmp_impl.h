@@ -54,6 +54,8 @@
 #include<net-snmp/net-snmp-config.h> 
 #include<net-snmp/session_api.h> 
 #include<net-snmp/pdu_api.h> 
+#include <net-snmp/snmpv3_api.h>
+#include <net-snmp/library/tools.h>
 #elif HAVE_UCD_SNMP_SNMP_CLIENT_H
 #include<ucd-snmp/asn1.h>
 #include<ucd-snmp/snmp.h>

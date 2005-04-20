@@ -99,6 +99,40 @@ enum snmp_obj_type {
     SNMP_OBJ_UNKNOWN,
 };
 
+/** SNMP Protocol version */
+typedef enum tapi_snmp_version_t {
+    TAPI_SNMP_VERSION_1  = 1,
+    TAPI_SNMP_VERSION_2c = 2,
+    TAPI_SNMP_VERSION_3,
+} tapi_snmp_version_t;
+
+/** SNMP Security model */
+typedef enum tapi_snmp_sec_model_t {
+    TAPI_SNMP_SEC_MODEL_V2C,
+    TAPI_SNMP_SEC_MODEL_USM,
+} tapi_snmp_sec_model_t;
+
+/** SNMPv3 USM Security Level */
+typedef enum tapi_snmp_sec_level_t {
+    TAPI_SNMP_SEC_LEVEL_NOAUTH,
+    TAPI_SNMP_SEC_LEVEL_AUTHNOPRIV,
+    TAPI_SNMP_SEC_LEVEL_AUTHPRIV,
+} tapi_snmp_sec_level_t;
+
+/** SNMPv3 USM Authentication protocol */
+typedef enum tapi_snmp_auth_proto_t {
+    TAPI_SNMP_AUTH_PROTO_DEFAULT = 0,
+    TAPI_SNMP_AUTH_PROTO_MD5,
+    TAPI_SNMP_AUTH_PROTO_SHA,
+} tapi_snmp_auth_proto_t;
+
+/** SNMPv3 USM Privacy protocol */
+typedef enum tapi_snmp_priv_proto_t {
+    TAPI_SNMP_PRIV_PROTO_DEFAULT = 0,
+    TAPI_SNMP_PRIV_PROTO_DES,
+    TAPI_SNMP_PRIV_PROTO_AES,
+} tapi_snmp_priv_proto_t;
+
 /** 
  * Type codes for SNMP variable binding values. Really SNMP uses some of
  * ASN.1 codes. Not all possible codes are defined, only usually used and
@@ -231,6 +265,24 @@ typedef struct tapi_snmp_common_table_row_s {
 } tapi_snmp_common_table_row_t;
 
 /**
+ * SNMP security parameters
+ */
+typedef struct tapi_snmp_security_s {
+    tapi_snmp_sec_model_t    model;
+    union {
+        const char                  *community;  /**< v2c community */
+        struct {
+            tapi_snmp_sec_level_t    level;      /**< Security level */ 
+            const char              *name;       /**< User name */
+            tapi_snmp_auth_proto_t   auth_proto; /**< Auth protocol */
+            const char              *auth_pass;  /**< Auth passphrase */
+            tapi_snmp_priv_proto_t   priv_proto; /**< Privacy protocol */
+            const char              *priv_pass;  /**< Privacy passphrase */
+        };
+    };
+} tapi_snmp_security_t;
+
+/**
  * Concatenate two object identifiers and put result into first one. 
  * Mainly intended for table indexes. 
  * 
@@ -315,7 +367,8 @@ extern int tapi_snmp_packet_to_plain(asn_value *pkt,
 extern int tapi_snmp_csap_create(const char *ta, int sid, 
                                  const char *snmp_agent,
                                  const char *community,
-                                 int snmp_version, int *csap_id);
+                                 tapi_snmp_version_t snmp_version,
+                                 int *csap_id);
 
 
 /**
@@ -335,8 +388,8 @@ extern int tapi_snmp_csap_create(const char *ta, int sid,
  */
 extern int tapi_snmp_gen_csap_create(const char *ta, int sid, 
                                      const char *snmp_agent, 
-                                     const char *community, 
-                                     int snmp_version,
+                                     tapi_snmp_security_t *security, 
+                                     tapi_snmp_version_t snmp_version,
                                      uint16_t rem_port,
                                      uint16_t loc_port,
                                      int timeout, int *csap_id);

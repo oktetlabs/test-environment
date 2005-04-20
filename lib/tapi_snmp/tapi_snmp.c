@@ -654,16 +654,52 @@ tapi_snmp_packet_to_plain(asn_value *pkt, tapi_snmp_message_t *snmp_message)
 /* See description in tapi_snmp.h */
 int
 tapi_snmp_csap_create(const char *ta, int sid, const char *snmp_agent,
-                      const char *community, int snmp_version, int *csap_id)
+                      const char *community, 
+                      tapi_snmp_version_t snmp_version, int *csap_id)
 {
-    return tapi_snmp_gen_csap_create(ta, sid, snmp_agent, community,
+    tapi_snmp_security_t security;
+
+    memset(&security, 0, sizeof(security));
+    security.model = TAPI_SNMP_SEC_MODEL_V2C;
+    security.community = community;
+
+    return tapi_snmp_gen_csap_create(ta, sid, snmp_agent, &security,
                                      snmp_version, 0, 0,  -1, csap_id);
+}
+
+/**
+ * Convert SNMP protocol version in TAPI SNMP notation 
+ * to protocol version NET-SNMP Library notation 
+ *
+ * @param version   SNMP protocol version in TAPI
+ *
+ * @return Protocol version in NET-SNMP, or -1 for unknown input value
+ */
+static int
+tapi_snmp_version_to_netsnmp_version(tapi_snmp_version_t version)
+{
+    switch (version)
+    {
+        case TAPI_SNMP_VERSION_1:
+            return SNMP_VERSION_1;
+
+        case TAPI_SNMP_VERSION_2c:
+            return SNMP_VERSION_2c;
+
+        case TAPI_SNMP_VERSION_3:
+            return SNMP_VERSION_3;
+
+        default:
+            ERROR("Unknown SNMP version %d is requested!", version);
+    }
+    return -1;
 }
 
 /* See description in tapi_snmp.h */
 int
 tapi_snmp_gen_csap_create(const char *ta, int sid, const char *snmp_agent,
-                          const char *community, int snmp_version,
+                          tapi_snmp_security_t *security,
+                          tapi_snmp_version_t snmp_version,
                           uint16_t rem_port, uint16_t loc_port,
                           int timeout, int *csap_id)
 {
@@ -681,7 +717,7 @@ tapi_snmp_gen_csap_create(const char *ta, int sid, const char *snmp_agent,
         return TE_RC(TE_TAPI, errno); /* return system errno */
 
     fprintf(f, "{ snmp:{ version plain:%d ",
-             snmp_version - 1 /* convert "human"->ASN SNMP version */
+             tapi_snmp_version_to_netsnmp_version(snmp_version)
              );
 
     if (rem_port)
@@ -690,8 +726,67 @@ tapi_snmp_gen_csap_create(const char *ta, int sid, const char *snmp_agent,
     if (loc_port)
         fprintf(f, ", local-port plain:%d ", loc_port);
 
-    if (community)
-        fprintf(f, ", community plain:\"%s\" ", community);
+    if (security != NULL)
+    {
+        fprintf(f, ", security ");
+        switch (security->model)
+        {
+            case TAPI_SNMP_SEC_MODEL_V2C:
+                fprintf(f, "v2c:{community \"%s\"}", security->community);
+                break;
+
+            case TAPI_SNMP_SEC_MODEL_USM:
+                fprintf(f, "usm:{name \"%s\"", security->name);
+                switch (security->level)
+                {
+                    case TAPI_SNMP_SEC_LEVEL_AUTHPRIV:
+                        fprintf(f, ", level authPriv");
+                        break;
+
+                    case TAPI_SNMP_SEC_LEVEL_AUTHNOPRIV:
+                        fprintf(f, ", level authNoPriv");
+                        break;
+
+                    default:
+                        fprintf(f, ", level noAuth");
+                        break;
+                }
+                switch (security->auth_proto)
+                {
+                    case TAPI_SNMP_AUTH_PROTO_MD5:
+                        fprintf(f, ", auth-protocol md5");
+                        break;
+
+                    case TAPI_SNMP_AUTH_PROTO_SHA:
+                        fprintf(f, ", auth-protocol sha");
+                        break;
+
+                    default:
+                        break;
+                }
+                if (security->auth_pass != NULL)
+                    fprintf(f, ", auth-pass \"%s\"", security->auth_pass);
+
+                switch (security->priv_proto)
+                {
+                    case TAPI_SNMP_PRIV_PROTO_DES:
+                        fprintf(f, ", priv-protocol des");
+                        break;
+
+                    case TAPI_SNMP_PRIV_PROTO_AES:
+                        fprintf(f, ", priv-protocol aes");
+                        break;
+
+                    default:
+                        break;
+                }
+                if (security->priv_pass != NULL)
+                    fprintf(f, ", priv-pass \"%s\"", security->priv_pass);
+
+                fprintf(f, "}");
+                break;
+        }
+    }
 
     if (timeout >= 0)
         fprintf(f, ", timeout plain:%d ", timeout);

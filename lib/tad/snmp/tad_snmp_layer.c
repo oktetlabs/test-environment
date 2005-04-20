@@ -344,8 +344,11 @@ int snmp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
                     sizeof(net_ordered));                       \
     } while(0)
 
-    CHECK_INT_FIELD("type", type); 
-    CHECK_FIELD("community", pdu->community, pdu->community_len + 1); 
+    CHECK_INT_FIELD("type", type);
+
+    if (pdu->community != NULL)
+        CHECK_FIELD("community", pdu->community, pdu->community_len + 1);
+
     CHECK_INT_FIELD("request-id", pdu->reqid);
     CHECK_INT_FIELD("err-status", pdu->errstat);
     CHECK_INT_FIELD("err-index", pdu->errindex); 

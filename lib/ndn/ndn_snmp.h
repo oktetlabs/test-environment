@@ -58,6 +58,36 @@ typedef enum {
     NDN_SNMP_OBJSYN_UINT
 } ndn_snmp_objsyn_t;
 
+/** SNMPv3 USM Authentication protocol */
+typedef enum {
+    NDN_SNMP_AUTH_PROTO_DEFAULT,    /**< NET-SNMP default */
+    NDN_SNMP_AUTH_PROTO_MD5,        /**< usmHMACMD5AuthProtocol */
+    NDN_SNMP_AUTH_PROTO_SHA,        /**< usmHMACSHA1AuthProtocol */
+} ndn_snmp_auth_proto_t;
+
+/** SNMPv3 USM Privacy protocol */
+typedef enum {
+    NDN_SNMP_PRIV_PROTO_DEFAULT,    /**< NET-SNMP default */
+    NDN_SNMP_PRIV_PROTO_DES,        /**< usmDESPrivProtocol */
+    NDN_SNMP_PRIV_PROTO_AES,        /**< usmAESPrivProtocol */
+} ndn_snmp_priv_proto_t;
+
+/** SNMPv3 USM Security level */
+typedef enum {
+    NDN_SNMP_SEC_LEVEL_NOAUTH,
+    NDN_SNMP_SEC_LEVEL_AUTHNOPRIV,
+    NDN_SNMP_SEC_LEVEL_AUTHPRIV,
+} ndn_snmp_sec_level_t;
+
+/** SNMP Security model */
+typedef enum {
+    NDN_SNMP_SEC_MODEL_V2C,         /**< Community-based */
+    NDN_SNMP_SEC_MODEL_USM,         /**< SNMPv3 User-based */
+} ndn_snmp_sec_model_t;
+
+/** Default SNMP security model */
+#define NDN_SNMP_SEC_MODEL_DEFAULT NDN_SNMP_SEC_MODEL_V2C
+
 extern asn_type_p ndn_snmp_message;
 extern asn_type_p ndn_snmp_csap;
 

@@ -47,12 +47,27 @@
 #if HAVE_STRING_H
 #include <string.h>
 #endif
-
+#if HAVE_ASSERT_H
+#include <assert.h>
+#else
+#define assert(x)
+#endif
 
 
 #undef SNMPDEBUG
 
 #define NEW_SNMP_API 1
+
+/* AES defined as AES128 in NET-SNMP 5.1 */
+#undef WITHOUT_AES
+#ifndef USM_PRIV_PROTO_AES_LEN
+#ifdef USM_PRIV_PROTO_AES128_LEN
+#define usmAESPrivProtocol usmAES128PrivProtocol
+#define USM_PRIV_PROTO_AES_LEN USM_PRIV_PROTO_AES128_LEN
+#else
+#define WITHOUT_AES
+#endif
+#endif
 
 #ifdef SNMPDEBUG
 void 
@@ -371,7 +386,6 @@ snmp_single_check_pdus(csap_p csap_descr, asn_value *traffic_nds)
 
 #define COMMUNITY 1
 
-
 /**
  * Callback for init 'snmp' CSAP layer  if single in stack.
  *
@@ -386,21 +400,30 @@ int
 snmp_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
 {
     int      rc;
-    char     community[COMMUNITY_MAX_LEN]; 
+    char     community[COMMUNITY_MAX_LEN + 1]; 
     char     snmp_agent[100]; 
     int      timeout;
     int      version;
     size_t   v_len;
-    int      l_port = 0;
-    int      r_port = 0;
 
     csap_p csap_descr;
 
     struct snmp_session         csap_session; 
-    struct snmp_session       * ss = NULL; 
+    struct snmp_session        *ss = NULL; 
 
     snmp_csap_specific_data_p   snmp_spec_data;
     asn_value_p                 snmp_csap_spec;
+
+    char                        security_model_name[32];
+    ndn_snmp_sec_model_t        security_model;
+    ndn_snmp_sec_level_t        security_level;
+    ndn_snmp_priv_proto_t       priv_proto;
+    ndn_snmp_auth_proto_t       auth_proto;
+
+    uint8_t const              *auth_pass = NULL;
+    uint8_t const              *priv_pass = NULL;
+    char                        security_name[SNMP_MAX_SEC_NAME_SIZE + 1];
+    size_t                      security_name_len;
 
 
     VERB("Init callback\n");
@@ -409,62 +432,326 @@ snmp_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
         return ETEWRONGPTR;
 
     snmp_csap_spec = asn_read_indexed(csap_nds, layer, "");
+    
+#if NEW_SNMP_API
+    snmp_sess_init(&csap_session);
+#else
+    memset(&csap_session, 0, sizeof(csap_session));
+#endif
 
-    v_len = sizeof(community);
-    rc = asn_read_value_field(snmp_csap_spec, community, &v_len, "community.#plain");
-    if (rc == EASNINCOMPLVAL) 
-        strcpy (community, SNMP_CSAP_DEF_COMMUNITY);
-    else if (rc) return rc;
-
+    /* Timeout */
     v_len = sizeof(timeout); 
-    rc = asn_read_value_field(snmp_csap_spec, &timeout, &v_len, "timeout.#plain");
+    rc = asn_read_value_field(snmp_csap_spec, &timeout,
+                              &v_len, "timeout.#plain");
     if (rc == EASNINCOMPLVAL) 
         timeout = SNMP_CSAP_DEF_TIMEOUT;
-    else if (rc) return rc;
+    else if (rc != 0)
+    {
+        ERROR("%s: error reading 'timeout': %X", __FUNCTION__, rc);
+        return rc;
+    }
+    csap_session.timeout = timeout * 1000000L;
 
+    /* Version */
     v_len = sizeof(version); 
-    rc = asn_read_value_field(snmp_csap_spec, &version, &v_len, "version.#plain");
+    rc = asn_read_value_field(snmp_csap_spec, &version,
+                              &v_len, "version.#plain");
     if (rc == EASNINCOMPLVAL) 
         version = SNMP_CSAP_DEF_VERSION;
-    else if (rc) return rc;
+    else if (rc != 0)
+    {
+        ERROR("%s: error reading 'version': %X", __FUNCTION__, rc);
+        return rc;
+    }
+    csap_session.version = version;
 
-    v_len = sizeof(l_port); 
-    rc = asn_read_value_field(snmp_csap_spec, &l_port, &v_len, "local-port.#plain");
+    /* Local port */
+    v_len = sizeof(csap_session.local_port); 
+    rc = asn_read_value_field(snmp_csap_spec, &csap_session.local_port,
+                              &v_len, "local-port.#plain");
     if (rc == EASNINCOMPLVAL) 
-        l_port = SNMP_CSAP_DEF_LOCPORT;
-    else if (rc) return rc;
-
-    v_len = sizeof(r_port); 
-    rc = asn_read_value_field(snmp_csap_spec, &r_port, &v_len, "remote-port.#plain");
-    if (l_port == SNMP_CSAP_DEF_LOCPORT) 
-    { 
-        if (rc == EASNINCOMPLVAL) 
-            r_port = SNMP_CSAP_DEF_REMPORT;
-        else 
-            if (rc) return rc;
-    } else {
-        r_port = 0;
-        if (rc == 0) 
-            RING("Init of SNMP CSAP, local port set to %d, "
-                 "ignoring remote port", l_port);
+        csap_session.local_port = SNMP_CSAP_DEF_LOCPORT;
+    else if (rc != 0)
+    {
+        ERROR("%s: error reading 'local-port': %X", __FUNCTION__, rc);
+        return rc;
     }
 
+    /* Remote port */
+    v_len = sizeof(csap_session.remote_port); 
+    rc = asn_read_value_field(snmp_csap_spec, &csap_session.remote_port,
+                              &v_len, "remote-port.#plain");
+    if (csap_session.local_port == SNMP_CSAP_DEF_LOCPORT) 
+    { 
+        if (rc == EASNINCOMPLVAL) 
+            csap_session.remote_port = SNMP_CSAP_DEF_REMPORT;
+        else if (rc != 0)
+        {
+            ERROR("%s: error reading 'remote-port': %X", __FUNCTION__, rc);
+            return rc;
+        }
+    } 
+    else
+    {
+        csap_session.remote_port = 0;
+        if (rc == 0)
+        {
+            RING("%s: local port set to %d, ignoring remote port",
+                 __FUNCTION__, csap_session.local_port);
+        }
+    }
+
+    /* Agent name */
     v_len = sizeof(snmp_agent);
-    rc = asn_read_value_field(snmp_csap_spec, snmp_agent, &v_len, "snmp-agent.#plain");
+    rc = asn_read_value_field(snmp_csap_spec, snmp_agent,
+                              &v_len, "snmp-agent.#plain");
     if (rc == EASNINCOMPLVAL) 
     {
-        if (l_port == SNMP_CSAP_DEF_LOCPORT)
-            strcpy (snmp_agent, SNMP_CSAP_DEF_AGENT);
+        if (csap_session.local_port == SNMP_CSAP_DEF_LOCPORT)
+            strcpy(snmp_agent, SNMP_CSAP_DEF_AGENT);
         else 
             snmp_agent[0] = '\0';
     }
-    else if (rc) return rc; 
+    else if (rc != 0)
+    {
+        ERROR("%s: error reading 'snmp-agent': %X", __FUNCTION__, rc);
+        return rc;
+    }
+    csap_session.peername = snmp_agent;
+
+    /* Security model */
+    v_len = sizeof(security_model_name);
+    rc = asn_get_choice(snmp_csap_spec, "security", security_model_name,
+                        sizeof(security_model_name));
+    if (rc == EASNINCOMPLVAL)
+        security_model = NDN_SNMP_SEC_MODEL_DEFAULT;
+    else if (rc != 0)
+    {
+        ERROR("%s: error reading 'security': %X", __FUNCTION__, rc);
+        return rc;
+    }
+    else if (strcmp(security_model_name, "usm") == 0)
+        security_model = NDN_SNMP_SEC_MODEL_USM;
+    else if (strcmp(security_model_name, "v2c") == 0)
+        security_model = NDN_SNMP_SEC_MODEL_V2C;
+    else
+    {
+        ERROR("%s: unknown security model '%s'", __FUNCTION__,
+              security_model_name);
+        return ENOENT;
+    }
+   
+    /* Community-based security model */
+    if (security_model == NDN_SNMP_SEC_MODEL_V2C)
+    {
+        v_len = sizeof(community);
+        rc = asn_read_value_field(snmp_csap_spec, community,
+                                  &v_len, "security.#v2c.community");
+        if (rc == EASNINCOMPLVAL) 
+            strcpy(community, SNMP_CSAP_DEF_COMMUNITY);
+        else if (rc != 0)
+        {
+            ERROR("%s: error reading community: %X", __FUNCTION__, rc);
+            return rc;
+        }
+
+        csap_session.securityModel = SNMP_SEC_MODEL_SNMPv2c;
+        csap_session.community = community;
+        csap_session.community_len = strlen(community);
+    }
+
+    /* User-based security model */
+    else if (security_model == NDN_SNMP_SEC_MODEL_USM)
+    {
+        /* Security name */
+        security_name_len = sizeof(security_name);
+        rc = asn_read_value_field(snmp_csap_spec, security_name,
+                                  &security_name_len, "security.#usm.name");
+        if (rc == EASNINCOMPLVAL)
+        {
+            ERROR("%s: there is no securityName provided",  __FUNCTION__);
+            return rc;
+        }
+        if (rc == ETESMALLBUF)
+        {
+            ERROR("%s: securityName is too long (max %d is valid)",
+                  __FUNCTION__, SNMP_MAX_SEC_NAME_SIZE);
+            return rc;
+        }
+        if (rc != 0)
+        {
+            ERROR("%s: error reading securityName, rc=%X",
+                  __FUNCTION__, rc);
+            return rc;
+        }
+
+        csap_session.securityModel = SNMP_SEC_MODEL_USM;
+        csap_session.securityName = security_name;
+        csap_session.securityNameLen = strlen(security_name);
+
+        /* Security level */
+        v_len = sizeof(security_level);
+        rc = asn_read_value_field(snmp_csap_spec, &security_level,
+                                  &v_len, "security.#usm.level");
+        if (rc == EASNINCOMPLVAL)
+            security_level = NDN_SNMP_SEC_LEVEL_NOAUTH;
+        else if (rc != 0)
+        {
+            ERROR("%s: error reading securityLevel: %X", __FUNCTION__, rc);
+            return rc;
+        }
+
+        if (security_level == NDN_SNMP_SEC_LEVEL_NOAUTH)
+        {
+            csap_session.securityLevel = SNMP_SEC_LEVEL_NOAUTH;
+        }
+        else if (security_level == NDN_SNMP_SEC_LEVEL_AUTHNOPRIV ||
+                 security_level == NDN_SNMP_SEC_LEVEL_AUTHPRIV)
+        {
+            csap_session.securityLevel = SNMP_SEC_LEVEL_AUTHNOPRIV;
+
+            /* Authentication parameters */
+            v_len = sizeof(auth_proto);
+            rc = asn_read_value_field(snmp_csap_spec, &auth_proto, 
+                                      &v_len,
+                                      "security.#usm.auth-protocol");
+            if (rc == EASNINCOMPLVAL)
+                auth_proto = NDN_SNMP_AUTH_PROTO_DEFAULT;
+            else if (rc != 0)
+            {
+                ERROR("%s: error reading 'auth-protocol': %X",
+                      __FUNCTION__, rc);
+                return rc;
+            }
+
+            switch (auth_proto)
+            {
+                case NDN_SNMP_AUTH_PROTO_DEFAULT:
+                    csap_session.securityAuthProto = SNMP_DEFAULT_AUTH_PROTO;
+                    csap_session.securityAuthProtoLen = 
+                        SNMP_DEFAULT_AUTH_PROTOLEN;
+                    break;
+
+                case NDN_SNMP_AUTH_PROTO_MD5:
+                    csap_session.securityAuthProto = usmHMACMD5AuthProtocol;
+                    csap_session.securityAuthProtoLen = USM_AUTH_PROTO_MD5_LEN;
+                    break;
+
+                case NDN_SNMP_AUTH_PROTO_SHA:
+                    csap_session.securityAuthProto = usmHMACSHA1AuthProtocol;
+                    csap_session.securityAuthProtoLen = USM_AUTH_PROTO_SHA_LEN;
+                    break;
+
+                default:
+                    assert(0);
+            }
+
+            rc = asn_get_field_data(snmp_csap_spec, &auth_pass,
+                                    "security.#usm.auth-pass");
+            if (rc != 0)
+            {
+                ERROR("%s: error reading 'auth-pass': %X",
+                      __FUNCTION__, rc);
+                return rc;
+            }
+
+            /* Key generation */
+            csap_session.securityAuthKeyLen = 
+                sizeof(csap_session.securityAuthKey);
+            if (generate_Ku(csap_session.securityAuthProto,
+                            csap_session.securityAuthProtoLen,
+                            (unsigned char *)auth_pass, strlen(auth_pass),
+                            csap_session.securityAuthKey,
+                            &csap_session.securityAuthKeyLen)
+                    != SNMPERR_SUCCESS)
+            {
+                ERROR("%s: failed to generate a key from authentication "
+                      "passphrase: %s", __FUNCTION__, 
+                      snmp_api_errstring(snmp_errno));
+                return ETADLOWER;
+            }
+        }
+
+        if (security_level == NDN_SNMP_SEC_LEVEL_AUTHPRIV)
+        {
+            csap_session.securityLevel = SNMP_SEC_LEVEL_AUTHPRIV;
+
+            /* Privacy parameters */
+            v_len = sizeof(priv_proto);
+            rc = asn_read_value_field(snmp_csap_spec, &priv_proto,
+                                      &v_len, 
+                                      "security.#usm.priv-protocol");
+            if (rc == EASNINCOMPLVAL)
+                priv_proto = NDN_SNMP_PRIV_PROTO_DEFAULT;
+            else if (rc != 0)
+            {
+                ERROR("%s: error reading 'priv-protocol': %X",
+                      __FUNCTION__, rc);
+                return rc;
+            }
+
+            switch (priv_proto)
+            {
+                case NDN_SNMP_PRIV_PROTO_DEFAULT:
+                    csap_session.securityPrivProto = SNMP_DEFAULT_PRIV_PROTO;
+                    csap_session.securityPrivProtoLen = 
+                        SNMP_DEFAULT_PRIV_PROTOLEN;
+                    break;
+
+                case NDN_SNMP_PRIV_PROTO_DES:
+                    csap_session.securityPrivProto = usmDESPrivProtocol;
+                    csap_session.securityPrivProtoLen = USM_PRIV_PROTO_DES_LEN;
+                    break;
+
+                case NDN_SNMP_PRIV_PROTO_AES:
+#ifndef WITHOUT_AES
+                    csap_session.securityPrivProto = usmAESPrivProtocol;
+                    csap_session.securityPrivProtoLen = USM_PRIV_PROTO_AES_LEN;
+#else
+                    ERROR("%s: there is no AES support in NET-SNMP",
+                          __FUNCTION__);
+                    return ETADLOWER;
+#endif
+                    break;
+
+                default:
+                    assert(0);
+            }
+
+            rc = asn_get_field_data(snmp_csap_spec, &priv_pass,
+                                    "security.#usm.priv-pass");
+            if (rc != 0)
+            {
+                ERROR("%s: error reading 'priv-pass': %X",
+                      __FUNCTION__, rc);
+                return rc;
+            }
+
+            /* Key generation */
+            csap_session.securityPrivKeyLen =
+                sizeof(csap_session.securityPrivKey);
+            if (generate_Ku(csap_session.securityAuthProto,
+                            csap_session.securityAuthProtoLen,
+                            (unsigned char *)priv_pass, strlen(priv_pass),
+                            csap_session.securityPrivKey,
+                            &csap_session.securityPrivKeyLen)
+                    != SNMPERR_SUCCESS)
+            {
+                ERROR("%s: failed to generate a key from privacy "
+                      "passphrase: %s", __FUNCTION__,
+                      snmp_api_errstring(snmp_errno));
+                return ETADLOWER;
+            }
+        }
+    }
 
     csap_descr = csap_find(csap_id);
-    snmp_spec_data = malloc (sizeof(snmp_csap_specific_data_t));
-
-    memset(&csap_session, 0, sizeof(csap_session));
-
+    snmp_spec_data = malloc(sizeof(snmp_csap_specific_data_t));
+    if (snmp_spec_data == NULL)
+    {
+        ERROR("%s: malloc failed", __FUNCTION__);
+        return ENOMEM;
+    }
     
     if (csap_descr->check_pdus_cb == NULL)
         csap_descr->check_pdus_cb = snmp_single_check_pdus;
@@ -474,27 +761,6 @@ snmp_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
     csap_descr->write_read_cb    = snmp_write_read_cb; 
     csap_descr->read_write_layer = layer; 
     csap_descr->timeout          = 2000000; 
-
-#if NEW_SNMP_API
-    snmp_sess_init(&csap_session);
-#endif
-
-    csap_session.version     = version;
-    csap_session.remote_port = r_port; 
-    csap_session.local_port  = l_port; 
-    csap_session.timeout     = timeout * 1000000L;
-    csap_session.community   = malloc (strlen(community)+1);
-    strcpy (csap_session.community, community);
-
-    csap_session.community_len = strlen(community);
-
-    if (strlen(snmp_agent))
-    {
-        csap_session.peername = malloc (strlen(snmp_agent)+1);
-        strcpy (csap_session.peername, snmp_agent);
-    }
-    else
-        csap_session.peername = NULL;
 
     VERB("try to open SNMP session: \n");
     VERB("  version:    %d\n", csap_session.version);
@@ -510,19 +776,26 @@ snmp_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
     csap_session.callback_magic = snmp_spec_data;
 
     snmp_spec_data->sock = -1;
+
+    init_snmp("snmpapp");
+    
     do {
 #if NEW_SNMP_API
         char buf[32];
         netsnmp_transport *transport = NULL; 
 
         snprintf(buf, sizeof(buf), "%s:%d", 
-                (r_port && strlen(snmp_agent)) ? snmp_agent : "0.0.0.0", 
-                r_port ? r_port : l_port);
+                (csap_session.remote_port != 0 && strlen(snmp_agent) > 0) 
+                ? snmp_agent : "0.0.0.0", 
+                csap_session.remote_port != 0 
+                ? csap_session.remote_port : csap_session.local_port);
 
-        transport = netsnmp_tdomain_transport(buf, !r_port, "udp");
+        transport = netsnmp_tdomain_transport(buf, 
+                                        !csap_session.remote_port, "udp");
         if (transport == NULL)
         {
-            ERROR("NULL transport!");
+            ERROR("%s: failed to create transport: %s",
+                  __FUNCTION__, snmp_api_errstring(snmp_errno));
             break;
         }
 
@@ -537,9 +810,8 @@ snmp_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
 
     if (ss == NULL)
     {
-        ERROR("open session or transport error\n");
-
-        snmp_perror("open session or transport error");
+        ERROR("%s: open session or transport error: %s",
+              __FUNCTION__, snmp_api_errstring(snmp_errno));
 
         free(snmp_spec_data);
         return ETADLOWER;
@@ -594,6 +866,7 @@ snmp_single_destroy_cb (int csap_id, int layer)
 
         snmp_close(s);
     }
+    snmp_shutdown("snmpapp");
 
     return 0;
 }
