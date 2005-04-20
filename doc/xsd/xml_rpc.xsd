@@ -59,6 +59,14 @@
         </annotation>
 
         <complexType>
+            <attribute name="name" type="string" use="require">
+                <annotation>
+                    <documentation>
+                        Name of the routine returning the result.
+                    </documentation>
+                </annotation>
+            </attribute>
+            
             <attribute ="rc" use="require">
                 <annotation>
                     <documentation>
