@@ -138,6 +138,15 @@ AC_ARG_WITH([cli],,
  fi
 ], [w_cli=false])
 
+AC_ARG_WITH([pcap],, 
+[if test "${withval}" = yes; then
+    w_pcap=true;
+    proto_specific pcap;
+    TA_TAD_LIBS="$TA_TAD_LIBS -lpcap";
+    AC_CONFIG_FILES([pcap/Makefile])
+ fi
+], [w_pcap=false])
+
 
 AC_SUBST([TAD_LIBLIST])
 AC_SUBST([TAD_SUBDIRS])

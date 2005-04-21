@@ -99,6 +99,10 @@ extern int csap_support_bridge_register(void);
 extern int csap_support_cli_register(void);
 #endif
 
+#ifdef WITH_PCAP
+extern int csap_support_pcap_register(void);
+#endif
+
 
 static void
 check_init(void)
@@ -128,6 +132,9 @@ check_init(void)
 #endif
 #ifdef WITH_BRIDGE
     csap_support_bridge_register();
+#endif
+#ifdef WITH_PCAP
+    csap_support_pcap_register();
 #endif
 #endif /* DUMMY_TAD */
 
