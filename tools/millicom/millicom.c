@@ -12,6 +12,8 @@
 #include <stdio.h>
 #include <termio.h>
 #include <signal.h>
+#include <unistd.h>
+#include <stdlib.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -232,7 +234,6 @@ main(int argc, char *argv[])
     for (;;)
     {
         ssize_t len;
-        struct timeval tv;
         char buf[BUF_SIZE];
         fd_set  read_fds;
         fd_set  except_fds;
@@ -275,7 +276,7 @@ main(int argc, char *argv[])
         DBG(fprintf(stderr, "\ntty->stdout\n"));
         while ((len = read(tty_fd, buf, BUF_SIZE)) > 0) {
             DBG(fprintf(stderr, "\nRead from tty: %d bytes", len));
-            if (fwrite(buf, 1, len, stdout) != len) {
+            if (fwrite(buf, 1, len, stdout) != (size_t)len) {
                 fprintf(stderr, "I/O error: failed write stdout\n");
                 goto err;
             }
