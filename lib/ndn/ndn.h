@@ -47,6 +47,7 @@ typedef enum {
     NDN_TAD_CLI,
     NDN_TAD_DHCP,
     NDN_TAD_ETH,
+    NDN_TAD_PCAP,
     NDN_TAD_FILE,
     NDN_TAD_ICMP4,
     NDN_TAD_IP4,

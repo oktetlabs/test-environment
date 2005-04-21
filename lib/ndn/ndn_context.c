@@ -37,6 +37,7 @@
 
 #include "ndn_file.h"
 #include "ndn_eth.h"
+#include "ndn_pcap.h"
 #include "ndn_ipstack.h"
 #include "ndn_cli.h"
 #include "ndn_bridge.h"
@@ -47,6 +48,8 @@ extern asn_type ndn_file_csap_s;
 extern asn_type ndn_snmp_csap_s;
 
 extern asn_type ndn_eth_csap_s;
+
+extern asn_type ndn_pcap_csap_s;
 
 extern asn_type ndn_ip4_csap_s;
 extern asn_type ndn_icmp4_csap_s;
@@ -67,6 +70,7 @@ static asn_named_entry_t _ndn_generic_csap_level_ne_array[] =
     { "snmp",   &ndn_snmp_csap_s,       {PRIVATE, NDN_TAD_SNMP} },
 #endif
     { "eth",    &ndn_eth_csap_s,        {PRIVATE, NDN_TAD_ETH} }, 
+    { "pcap",   &ndn_pcap_csap_s,       {PRIVATE, NDN_TAD_PCAP} }, 
     { "ip4",    &ndn_ip4_csap_s,        {PRIVATE, NDN_TAD_IP4} },
     { "icmp4",  &ndn_icmp4_csap_s,      {PRIVATE, NDN_TAD_ICMP4} },
     { "udp",    &ndn_udp_csap_s,        {PRIVATE, NDN_TAD_UDP} },
@@ -91,6 +95,7 @@ extern asn_type ndn_file_message_s;
 extern asn_type ndn_snmp_message_s;
 #endif
 extern asn_type ndn_eth_header_s; 
+extern asn_type ndn_pcap_filter_s; 
 extern asn_type ndn_ip4_header_s;
 extern asn_type ndn_icmp4_message_s;
 extern asn_type ndn_udp_header_s;
@@ -107,6 +112,7 @@ static asn_named_entry_t _ndn_generic_pdu_ne_array[] =
     { "snmp",   &ndn_snmp_message_s,      {PRIVATE, NDN_TAD_SNMP} },
 #endif
     { "eth",    &ndn_eth_header_s,        {PRIVATE, NDN_TAD_ETH} }, 
+    { "pcap",   &ndn_pcap_filter_s,       {PRIVATE, NDN_TAD_PCAP} }, 
     { "ip4",    &ndn_ip4_header_s,        {PRIVATE, NDN_TAD_IP4} },
     { "icmp4",  &ndn_icmp4_message_s,     {PRIVATE, NDN_TAD_ICMP4} },
     { "udp",    &ndn_udp_header_s,        {PRIVATE, NDN_TAD_UDP} },
