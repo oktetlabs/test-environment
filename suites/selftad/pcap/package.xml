@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<package version="1.0">
+    
+    <description>PCAP CSAP tests</description>
+    
+    <author mailto="Alexander.Kukuta@oktetlabs.ru"/>
+
+    <session>
+        <arg name="ta" handdown="true">
+            <value>Agt_A</value>
+        </arg>
+
+        <run>
+            <script name="tapi_pcap_test"/>
+            <arg name="ta"/>
+        </run>
+
+    </session>
+
+</package>
