@@ -3367,10 +3367,15 @@ arp_del(unsigned int gid, const char *oid,
     UNUSED(gid);
 
     if ((rc = arp_get(gid, oid, val, addr, addr_volatile)) != 0)
+    {
+        if (TE_RC_GET_ERROR(rc) == ETENOSUCHNAME)
+        {
+            WARN("Cannot delete ARP entry: it disappeared");
+            rc = 0;
+        }
         return rc;
-    RING("arp_get() detected valid dotted:%s, volatile:%s arp "
-         "entry for delition", addr, addr_volatile);
-
+    }
+        
     if (strstr(oid, node_volatile.sub_id) != NULL)
         addr = addr_volatile;
 
@@ -3380,12 +3385,14 @@ arp_del(unsigned int gid, const char *oid,
         return TE_RC(TE_TA_LINUX, EINVAL);
 
 #ifdef SIOCDARP
+    
     if (ioctl(s, SIOCDARP, &arp_req) < 0)
     {
-        ERROR("ioctl(SIOCDARP) failed when dotted:%s, volatile:%s "
-              "delition: %s", addr, addr_volatile, strerror(errno));
-        if (errno == ENXIO || errno == ENETDOWN || errno == ENETUNREACH)
-            return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
+        int err = errno;
+        
+        ERROR("Here: %d", err);
+        if (err == ENXIO || err == ENETDOWN || err == ENETUNREACH)
+            return 0;
         else
             return TE_RC(TE_TA_LINUX, errno);
     }
