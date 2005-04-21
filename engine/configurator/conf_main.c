@@ -279,10 +279,9 @@ process_add(cfg_add_msg *msg, te_bool update_dh)
     char         *oid = (char *)msg + msg->oid_offset;
     cfg_inst_val  val;
     char         *val_str = "";
-    char         *inst_name_str = (char *)msg + msg->oid_offset;
 
     /* Synchronize /agent/volatile subtree if necessary */
-    if ((msg->rc = cfg_sync_agt_volatile(inst_name_str)) != 0)
+    if ((msg->rc = cfg_sync_agt_volatile(oid)) != 0)
     {
         ERROR("Cannot synchronize /agent/volatile subtree, "
               "errno 0x%X", msg->rc);
@@ -296,7 +295,7 @@ process_add(cfg_add_msg *msg, te_bool update_dh)
     if ((msg->rc = cfg_db_add(oid, &handle, msg->val_type, val)) != 0)
     {
         ERROR("Failed to add a new instance %s into configuration "
-              "database; errno 0x%X", inst_name_str, msg->rc);
+              "database; errno 0x%X", oid, msg->rc);
         cfg_types[msg->val_type].free(val); 
         return;
     }
@@ -311,8 +310,8 @@ process_add(cfg_add_msg *msg, te_bool update_dh)
     {
         cfg_db_del(handle);
         msg->rc = EACCES;
-        ERROR("Failed to add a new instance %s "
-              "object %s is not read-create", inst_name_str, obj->oid);
+        ERROR("Failed to add a new instance %s: "
+             "object %s is not read-create", oid, obj->oid);
         return;
     }
 
@@ -320,11 +319,11 @@ process_add(cfg_add_msg *msg, te_bool update_dh)
     {
         cfg_db_del(handle);
         ERROR("Failed to add a new instance %s in DH: error=0x%X", 
-              inst_name_str, msg->rc);
+              oid, msg->rc);
         return;
     }
 
-    if (strncmp(oid, "/agent:", strlen("/agent:")) != 0) /* Success */
+    if (strcmp_start("/agent:", oid) != 0) /* Success */
     {
         msg->handle = handle;
         return;
@@ -367,7 +366,7 @@ process_add(cfg_add_msg *msg, te_bool update_dh)
             cfg_dh_delete_last_command();
             
         ERROR("Failed to add a new instance %s with value %s into TA "
-              "error=0x%X", inst->name, val_str, msg->rc);
+              "error=0x%X", oid, val_str, msg->rc);
         return;              
     }
 
