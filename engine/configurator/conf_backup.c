@@ -368,6 +368,10 @@ add_or_set(cfg_instance *inst)
     if (strcmp(inst->obj->subid, "agent") == 0)
         return 0;
         
+    /* Entry may appear after addition of previous ones */
+    if (inst->handle == CFG_HANDLE_INVALID)
+        cfg_db_find(inst->oid, &inst->handle);
+        
     if (inst->handle != CFG_HANDLE_INVALID)
     {
         cfg_set_msg *msg;
