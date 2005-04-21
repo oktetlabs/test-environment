@@ -1,7 +1,7 @@
 /** @file
  * @brief Proteos, TAD file protocol, NDN.
  *
- * Declarations of ASN.1 types for NDN for Ethernet-CSAP protocol. 
+ * Declarations of ASN.1 types for NDN for Ethernet-PCAP CSAP protocol. 
  *
  * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
  * root directory of the distribution).
@@ -43,6 +43,15 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+enum pcap_csap_receive_mode {
+    PCAP_RECV_HOST      = 0x01,
+    PCAP_RECV_BROADCAST = 0x02,
+    PCAP_RECV_MULTICAST = 0x04,
+    PCAP_RECV_OTHERHOST = 0x08,
+    PCAP_RECV_OUTGOING  = 0x10,
+    PCAP_RECV_ALL       = 0x1F,
+};
 
 
 extern const asn_type * const ndn_pcap_filter;
