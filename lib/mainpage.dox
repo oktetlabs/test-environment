@@ -1,4 +1,4 @@
-/** @mainpage
+/**@mainpage
 
 @copyright_notice
 
@@ -15,11 +15,8 @@ Questions regarding this document may be forwarded to support@oktetlabs.ru
 @section libraries Libraries links
 
 - @ref confapi 
-  <BR>
 - @ref loggerten 
-  <BR>
 - @ref rcfapi 
-  <BR>
 - @ref rcfrpc
 - @ref tapi
 - @ref tapi_arp
