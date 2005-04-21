@@ -16,7 +16,10 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <te_config.h>
 #include <ta_logfork.h>
+
+DEFINE_LGR_ENTITY("TCE");
 
 struct bb_function_info 
 {
@@ -141,18 +144,16 @@ __bb_init_func (struct bb *blocks)
     __bb_head = blocks;
 }
 
-/* Called before fork or exec - write out profile information gathered so
-   far and reset it to zero.  This avoids duplication or loss of the
+/* Called before fork or exec - reset gathered coverage info to zero.  
+   This avoids duplication or loss of the
    profile information gathered so far.  */
 
-/* ??? Will this be called multiple times or not ? */
 
 void
 __bb_fork_func (void)
 {
     struct bb *ptr;
 
-    __bb_exit_func ();
     for (ptr = __bb_head; ptr != NULL; ptr = ptr->next)
     {
         long i;
