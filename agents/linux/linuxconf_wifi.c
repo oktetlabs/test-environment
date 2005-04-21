@@ -49,8 +49,6 @@
 #include "logger_api.h"
 #include "linux_internal.h"
 
-#define WIFI_CARD_PRISM54
-
 /** The list of ioctls supported by the Agent */
 enum ta_priv_ioctl_e {
     TA_PRIV_IOCTL_RESET = 0, /**< ioctl for card reset */
