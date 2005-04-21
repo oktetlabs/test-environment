@@ -48,14 +48,16 @@ then
 dnl
 dnl Check that we have iwlib installed in our system
 dnl
-    AC_CHECK_HEADER([iwlib.h], [],
-                    AC_MSG_ERROR([Cannot find iwlib.h header]))
+    AC_CHECK_HEADERS([iwlib.h], [],
+                     AC_MSG_ERROR([Cannot find iwlib.h header]))
     AC_CHECK_LIB([iw], [iw_sockets_open], [],
                  AC_MSG_ERROR([Cannot find iw library]))
 
     AC_DEFINE([ENABLE_WIFI_SUPPORT], [], [Wheter to enable WiFi support])
     LDADD="$LDADD -liw"
 fi
+
+AM_CONDITIONAL([CFG_LINUX_WIFI], test x"$ac_cv_enable_wifi" != xno)
 
 if test -z "$with_tad" ; then
     with_tad=tad

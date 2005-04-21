@@ -102,6 +102,10 @@ endif
 
 endif
 
+if CFG_LINUX_WIFI
+MY_SOURCES+=linuxconf_wifi.c
+endif
+
 LIBS+=@TAD_LIBS@
 
 AM_CPPFLAGS=$(MY_CPPFLAGS)
