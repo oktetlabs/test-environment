@@ -53,7 +53,6 @@ fi
 NUT_ST_LOCATION=`eval echo '$NUT_'$NUT'_ST_LOCATION'`
 NUT_ST_STRING=`eval echo '$NUT_'$i'_ST_STRING'` 
 
-
 if test -n "`eval echo '$NUT_'$NUT'_TCE_TANAME'`" ; then 
     TCE_SRC=`eval echo '$NUT_'$NUT'_TCE_SOURCES'`     
     if test -z "$TCE_SRC"; then
@@ -67,19 +66,21 @@ if test -n "`eval echo '$NUT_'$NUT'_TCE_TANAME'`" ; then
     export TCE_SRC=$tce_src
     export TCE_CC=`eval echo '$NUT_'$NUT'_TCE_CC'`
     export TCE_CFLAGS=`eval echo '$NUT_'$NUT'_TCE_CFLAGS'`
-    if test -z "`${TCE_CC}" ; then
+    if test -z "${TCE_CC}" ; then
         export TCE_CC=${CC:-gcc}
     fi
     export CC=`which tce_gcc`
     export CLINK=`which tce_gcc`
-    export TCE_BBHOOK_O=`dirname $CC`/../lib/bbhook.o
-    ${TCE_CC} -o $TCE_BBHOOK_O ${TCE_CFLAGS} \
-        ${TE_BASE}/engine/builder/coverage/bbhook.c || exit 1
-    
+    libpath=`dirname $CC`/../lib
+    export TCE_BBHOOK_O=$libpath/bbhook.o
+    export TCE_LOGFORK="-lpthread -L$libpath -llogfork -lloggerta"
+    ${TCE_CC} -c -o $TCE_BBHOOK_O ${TCE_CFLAGS} -I${TE_BASE}/include \
+        -I${TE_BASE}/lib/logfork -I${TE_BASE}/lib/loggerta \
+        -I${TE_BUILD}/include \
+        ${TE_BASE}/engine/builder/coverage/bbhook.c || exit 1 
 fi 
 
-TE_INSTALL=${TE_INSTALL} TE_INSTALL_NUT=${TE_INSTALL_NUT} \ 
-    ${NUT_SCRIPT} ${NUT} ${NUT_PARMS} 
+TE_INSTALL=${TE_INSTALL} TE_INSTALL_NUT=${TE_INSTALL_NUT} ${NUT_SCRIPT} ${NUT} ${NUT_PARMS} 
 NUT_SCRIPT_RC=$? 
 
 exit ${NUT_SCRIPT_RC}
