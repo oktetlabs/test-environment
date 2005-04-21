@@ -43,7 +43,7 @@ csap_layer_neighbour_list_t pcap_nbr_list =
     pcap_single_destroy_cb,
 };
 
-csap_spt_type_t eth_csap_spt = 
+csap_spt_type_t pcap_csap_spt = 
 {
     "pcap",
     pcap_confirm_pdu_cb,

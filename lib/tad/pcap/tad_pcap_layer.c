@@ -37,8 +37,28 @@
 #define TE_LGR_USER     "TAD Ethernet-PCAP"
 #include "logger_ta.h"
 
-#include "tad_eth_impl.h"
+#include "tad_pcap_impl.h"
 #include "te_defs.h"
+
+#if 1
+#define PCAP_DEBUG(args...) \
+    do {                                        \
+        fprintf(stdout, "\nTAD PCAP stack " args);    \
+        INFO("TAD PCAP stack " args);                 \
+    } while (0)
+
+#undef ERROR
+#define ERROR(args...) PCAP_DEBUG("ERROR: " args)
+
+#undef RING
+#define RING(args...) PCAP_DEBUG("RING: " args)
+
+#undef WARN
+#define WARN(args...) PCAP_DEBUG("WARN: " args)
+
+#undef VERB
+#define VERB(args...) PCAP_DEBUG("VERB: " args)
+#endif
 
 /**
  * Callback for read parameter value of Ethernet-PCAP CSAP.
@@ -55,6 +75,8 @@ char* pcap_get_param_cb (csap_p csap_descr, int level, const char *param)
 {
     char   *param_buf;            
     pcap_csap_specific_data_p spec_data;
+
+    VERB("%s() started", __FUNCTION__);
 
     if (csap_descr == NULL)
     {
@@ -75,6 +97,93 @@ char* pcap_get_param_cb (csap_p csap_descr, int level, const char *param)
     VERB("error in pcap_get_param %s: not supported parameter\n", param);
 
     return NULL;
+}
+
+
+/**
+ * Callback for confirm PDU with Ethernet-PCAP CSAP
+ * parameters and possibilities.
+ *
+ * @param csap_id       identifier of CSAP
+ * @param layer         numeric index of layer in CSAP type to be processed.
+ * @param tmpl_pdu      asn_value with PDU (IN/OUT)
+ *
+ * @return zero on success or error code.
+ */ 
+int pcap_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
+{
+    pcap_csap_specific_data_p   spec_data; 
+    csap_p                      csap_descr;
+
+    int                         val_len;
+    char                       *pcap_str;
+    int                         rc; 
+
+    struct bpf_program         *bpf_program;
+    
+    VERB("%s() started", __FUNCTION__);
+    
+    if ((csap_descr = csap_find(csap_id)) == NULL)
+    {
+        ERROR("null csap_descr for csap id %d", csap_id);
+        return ETADCSAPNOTEX;
+    }
+    
+    spec_data = (pcap_csap_specific_data_p)
+        csap_descr->layers[layer].specific_data; 
+
+    rc = asn_get_length(tmpl_pdu, "filter");
+    if (rc < 0)
+    {
+        ERROR("%s(): asn_get_length() failed, rc=%d", __FUNCTION__, rc);
+        return rc;
+    }
+    
+    val_len = rc;
+
+    pcap_str = (char *)malloc(val_len + 1);
+    if (pcap_str == NULL)
+    {
+        return TE_RC(TE_TAD_CSAP, ENOMEM);
+    }
+    
+    rc = asn_read_value_field(tmpl_pdu, pcap_str, &val_len, "filter");
+    if (rc < 0)
+    {
+        ERROR("%s(): asn_read_value_field() failed, rc=%d", __FUNCTION__, rc);
+        return rc;
+    }
+
+#define TAD_PCAP_SNAPLEN 0xffff
+
+    bpf_program = (struct bpf_program *)malloc(sizeof(struct bpf_program));
+    if (bpf_program == NULL)
+    {
+        return TE_RC(TE_TAD_CSAP, ENOMEM);
+    }
+    
+    rc = pcap_compile_nopcap(TAD_PCAP_SNAPLEN, spec_data->iftype,
+                             bpf_program, pcap_str, TRUE, 0);
+    if (rc != 0)
+    {
+        ERROR("%s(): pcap_compile_nopcap() failed, rc=%d", __FUNCTION__, rc);
+        return TE_RC(TE_TAD_CSAP, EINVAL);
+    }
+
+    spec_data->bpfs[++spec_data->bpf_count] = bpf_program;
+
+    val_len = sizeof(int);
+    rc = asn_write_value_field(tmpl_pdu, &spec_data->bpf_count,
+                               val_len, "bpf-id");
+    if (rc < 0)
+    {
+        ERROR("%s(): asn_write_value_field() failed, rc=%d", __FUNCTION__, rc);
+        return rc;
+    }
+
+    VERB("exit, return 0");
+    
+    return 0;
 }
 
 
@@ -102,8 +211,13 @@ pcap_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
     pcap_csap_specific_data_p   spec_data;
     int                         rc;
     uint8_t                    *data;
-    asn_value                  *pcap_pdu = NULL;
-  
+    int                         bpf_id;
+    struct bpf_program         *bpf_program;
+	struct bpf_insn            *bpf_code;
+    int                         tmp_len;
+
+    VERB("%s() started", __FUNCTION__);
+
     if ((csap_descr = csap_find(csap_id)) == NULL)
     {
         ERROR("null csap_descr for csap id %d", csap_id);
@@ -114,34 +228,50 @@ pcap_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
         csap_descr->layers[layer].specific_data;
     data = pkt->data; 
 
-#if 1
-    {
-        char buf[50], *p = buf;
-        int i;
-        for (i = 0; i < 14; i++)
-            p += sprintf (p, "%02x ", data[i]);
-            
-        VERB("got data: %s", buf);
-    } 
-#endif
-
     if (pattern_pdu == NULL)
     {
         VERB("pattern pdu is NULL, packet matches");
     }
 
-    if (parsed_packet)
-        pcap_pdu = asn_init_value(ndn_pcap_packet);
-
-    /* Perform matching */
-    rc = tad_pcap_match(pattern_pdu, data);
+    tmp_len = sizeof(int);
+    rc = asn_read_value_field(pattern_pdu, &bpf_id, &tmp_len, "bpf-id");
     if (rc != 0)
     {
-        asn_free_value(pcap_pdu);
+        ERROR("%s(): Cannot read \"bpf-id\" field from PDU pattern",
+              __FUNCTION__);
         return rc;
     }
 
-    rc = tad_pcap_packet_write_to_asn(parsed_packet, data);
+    /* bpf_id == 0 means that filter string is not compiled yet */
+    if ((bpf_id <= 0) || (bpf_id > spec_data->bpf_count))
+    {
+        ERROR("%s(): Invalid bpf_id value in PDU pattern", __FUNCTION__);
+        return TE_RC(TE_TAD_CSAP, EINVAL);
+    }
+
+    bpf_program = spec_data->bpfs[bpf_id];
+    if (bpf_program == NULL)
+    {
+        ERROR("%s(): Invalid bpf_id value in PDU pattern", __FUNCTION__);
+        return TE_RC(TE_TAD_CSAP, EINVAL);
+    }
+    
+    bpf_code = bpf_program->bf_insns;
+    
+    rc = bpf_filter(bpf_code, pkt->data, pkt->len, pkt->len);
+    VERB("bpf_filter() returns 0x%x (%d)", rc, rc);
+    if (rc <= 0)
+    {
+        return ETADNOTMATCH;
+    }
+
+    /* Fill parsed packet value */
+    if (parsed_packet)
+    {
+        rc = asn_write_component_value(parsed_packet, pattern_pdu, "#pcap"); 
+        if (rc)
+            ERROR("write pcap filter to packet rc %x\n", rc);
+    }
 
     /* passing payload to upper layer */
     memset(payload, 0 , sizeof(*payload));
@@ -150,7 +280,7 @@ pcap_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
     payload->data = malloc(payload->len);
     memcpy(payload->data, pkt->data, payload->len);
 
-    F_VERB("Eth-PCAP csap N %d, packet matches, pkt len %d, pld len %d", 
+    F_VERB("PCAP csap N %d, packet matches, pkt len %d, pld len %d", 
            csap_id, pkt->len, payload->len);
     
     return 0;
@@ -177,10 +307,49 @@ pcap_gen_pattern_cb(int csap_id, int layer, const asn_value *tmpl_pdu,
     UNUSED(layer);
     UNUSED(tmpl_pdu);
 
+    VERB("%s() started", __FUNCTION__);
+
     if (pattern_pdu)
         *pattern_pdu = NULL;
 
     return ETENOSUPP;
 }
 
+
+/**
+ * Callback for generate binary data to be sent to media.
+ *
+ * @param csap_descr    CSAP instance
+ * @param layer         numeric index of layer in CSAP type to be processed.
+ * @param tmpl_pdu      asn_value with PDU. 
+ * @param up_payload    pointer to data which is already generated for upper 
+ *                      layers and is payload for this protocol level. 
+ *                      May be zero.  Presented as list of packets. 
+ *                      Almost always this list will contain only one element, 
+ *                      but need in fragmentation sometimes may occur. 
+ *                      Of cause, on up level only one PDU is passed, 
+ *                      but upper layer (if any present) may perform 
+ *                      fragmentation, and current layer may have possibility 
+ *                      to de-fragment payload.
+ * @param pkts          Callback have to fill this structure with list of 
+ *                      generated packets. Almost always this list will 
+ *                      contain only one element, but need 
+ *                      in fragmentation sometimes may occur. (OUT)
+ *
+ * @return zero on success or error code.
+ */ 
+int pcap_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
+                    const tad_tmpl_arg_t *args, size_t arg_num, 
+                    const csap_pkts_p up_payload, csap_pkts_p pkts)
+{
+    UNUSED(csap_descr);
+    UNUSED(layer);
+    UNUSED(tmpl_pdu);
+    UNUSED(args);
+    UNUSED(arg_num);
+    UNUSED(up_payload);
+    UNUSED(pkts);
+    
+    return EOPNOTSUPP;
+}
 

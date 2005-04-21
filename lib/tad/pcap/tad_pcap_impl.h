@@ -30,6 +30,8 @@
 #ifndef __TE_TAD_PCAP_IMPL_H__
 #define __TE_TAD_PCAP_IMPL_H__ 
 
+#define TE_LOG_LEVEL 0xff
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -42,6 +44,8 @@
 #include <linux/if_packet.h>
 #include <netinet/if_ether.h>
 
+#include <pcap.h>
+#include <pcap-bpf.h>
 
 #include "te_errno.h"
 
@@ -51,31 +55,37 @@
 #include "tad_csap_inst.h"
 #include "tad_csap_support.h"
 #include "tad_utils.h"
+#include "pkt_socket.h"
 
 
 /* Default recv mode: all except OUTGOING packets. */
-#define PCAP_RECV_MODE_DEF (ETH_RECV_HOST      | ETH_RECV_BROADCAST | \
-                            ETH_RECV_MULTICAST | ETH_RECV_OTHERHOST )
+#define PCAP_RECV_MODE_DEF (PCAP_RECV_HOST      | PCAP_RECV_BROADCAST | \
+                            PCAP_RECV_MULTICAST | PCAP_RECV_OTHERHOST )
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/* 
- * Ethernet-PCAP interface related data
- * 
- */
-struct pcap_csap_interface;
-
-typedef struct pcap_csap_interface *pcap_csap_interface_p;
-
-typedef struct pcap_csap_interface
-{
-    char  name[IFNAME_SIZE];        /**< Ethernet interface name (e.g. eth0) */
-    int   if_index;                 /**< Interface index                     */
-} pcap_csap_interface_t;
 
 #define PCAP_COMPILED_BPF_PROGRAMS_MAX  1024
+
+#ifndef DEFAULT_PCAP_TYPE
+#define DEFAULT_PCAP_TYPE 0
+#endif
+
+#ifndef IFNAME_SIZE
+#define IFNAME_SIZE 256
+#endif
+
+#ifndef PCAP_COMPLETE_FREE
+#define PCAP_COMPLETE_FREE 1
+#endif
+
+#ifndef PCAP_CSAP_DEFAULT_TIMEOUT  /* Seconds to wait for incoming data */ 
+#define PCAP_CSAP_DEFAULT_TIMEOUT 5 
+#endif
+
+#define PCAP_LINKTYPE_DEFAULT   DLT_EN10MB
 
 /* 
  * Ethernet-PCAP CSAP specific data
@@ -87,13 +97,14 @@ typedef struct pcap_csap_specific_data *pcap_csap_specific_data_p;
 
 typedef struct pcap_csap_specific_data
 {
-    pcap_csap_interface_p interface; /**< Ethernet-PCAP interface data        */
+    char *ifname;       /**< Name of the net interface to filter packet on */
+    int   iftype;       /**< Default link type (see man 3 pcap) */
 
     int   out;          /**< Socket for sending data to the media       */
     int   in;           /**< Socket for receiving data                  */
    
     uint8_t recv_mode;  /**< Receive mode, bit mask from values in 
-                             enum eth_csap_receive_mode in ndn_eth.h    */
+                             enum pcap_csap_receive_mode in ndn_pcap.h  */
     
     int   read_timeout; /**< Number of second to wait for data          */
 
@@ -270,37 +281,6 @@ extern int pcap_gen_pattern_cb(int csap_id, int layer,
                                const asn_value *tmpl_pdu, 
                                asn_value_p  *pattern_pdu);
 
-/**
- * Find ethernet interface by its name and initialize specified
- * structure with interface parameters
- *
- * @param name      symbolic name of interface to find (e.g. eth0, eth1)
- * @param iface     pointer to interface structure to be filled
- *                  with found parameters
- *
- * @return ETH_IFACE_OK on success or one of the error codes
- *
- * @retval ETH_IFACE_OK            on success
- * @retval ETH_IFACE_NOT_FOUND     if config socket error occured or interface 
- *                                 can't be found by specified name
- * @retval ETH_IFACE_HWADDR_ERROR  if hardware address can't be extracted   
- * @retval ETH_IFACE_IFINDEX_ERROR if interface index can't be extracted
- */
-extern int pcap_find_interface(char *name, eth_csap_interface_p iface); 
-
-/**
- * Create and bind raw socket to listen specified interface
- *
- * @param eth_type  Ethernet protocol type 
- * @param pkt_type  Type of packet socket (PACKET_HOST, PACKET_OTHERHOST,
- *                  PACKET_OUTGOING
- * @param if_index  interface index
- * @param sock      pointer to place where socket handler will be saved
- *
- * @param 0 on succees, -1 on fail
- */
-extern int open_raw_socket(int eth_type, int pkt_type, int if_index, int *sock);
-
 
 /**
  * Free all memory allocated by Ethernet-PCAP csap specific data
@@ -309,7 +289,7 @@ extern int open_raw_socket(int eth_type, int pkt_type, int if_index, int *sock);
  * @param is_complete if not 0 the final free() will be called on passed pointer
  *
  */ 
-extern void free_pcap_csap_data(pcap_csap_specific_data_p spec_data, char is_complete);
+extern void free_pcap_csap_data(pcap_csap_specific_data_p spec_data, te_bool is_complete);
 
 /**
  * Find number of Ethernet-PCAP layer in CSAP stack.
@@ -321,29 +301,6 @@ extern void free_pcap_csap_data(pcap_csap_specific_data_p spec_data, char is_com
  */ 
 extern int find_csap_layer(csap_p csap_descr, char *layer_name);
 
-
-/**
- * Open receive socket for Ethernet-PCAP CSAP 
- *
- * @param csap_descr    CSAP descriptor
- *
- * @return status code
- */
-extern int pcap_prepare_recv(csap_p csap_descr);
-
-/**
- * Ethernet-PCAP echo CSAP method. 
- * Method should prepare binary data to be send as "echo" and call 
- * respective write method to send it. 
- * Method may change data stored at passed location.  
- *
- * @param csap_descr    identifier of CSAP
- * @param pkt           Got packet, plain binary data. 
- * @param len           length of data.
- *
- * @return zero on success or error code.
- */
-extern int pcap_echo_method (csap_p csap_descr, uint8_t *pkt, size_t len);
 
 #ifdef __cplusplus
 } /* extern "C" */

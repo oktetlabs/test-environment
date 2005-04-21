@@ -67,48 +67,26 @@
 #include "logger_ta.h"
 
 
-#ifndef INSQUE
-/* macros to insert element p into queue _after_ element q */
-#define INSQUE(p, q) do {(p)->prev = q; (p)->next = (q)->next; \
-                      (q)->next = p; (p)->next->prev = p; } while (0)
-/* macros to remove element p from queue  */
-#define REMQUE(p) do {(p)->prev->next = (p)->next; (p)->next->prev = (p)->prev; \
-                   (p)->next = (p)->prev = p; } while(0)
+#if 1
+#define PCAP_DEBUG(args...) \
+    do {                                        \
+        fprintf(stdout, "\nTAD PCAP stack " args);    \
+        INFO("TAD PCAP stack " args);                 \
+    } while (0)
+
+#undef ERROR
+#define ERROR(args...) PCAP_DEBUG("ERROR: " args)
+
+#undef RING
+#define RING(args...) PCAP_DEBUG("RING: " args)
+
+#undef WARN
+#define WARN(args...) PCAP_DEBUG("WARN: " args)
+
+#undef VERB
+#define VERB(args...) PCAP_DEBUG("VERB: " args)
 #endif
 
-                   
-
-typedef struct iface_user_rec
-{
-    struct iface_user_rec *next, *prev;
-    char name[IFNAME_SIZE];
-    int  num_users;
-} iface_user_rec;
-
-static iface_user_rec iface_users_root =
-    {&iface_users_root, &iface_users_root, {0,},0};
-
-static iface_user_rec *
-find_iface_user_rec(const char *ifname)
-{
-    iface_user_rec *ir;
-
-    for (ir = iface_users_root.next; ir != &iface_users_root; ir = ir->next)
-        if (strncmp(ir->name, ifname, IFNAME_SIZE) == 0)
-            return ir;
-
-    return NULL;
-}
-
-
-#define USE_PROMISC_MODE 1
-
-static int open_packet_socket(int pkt_type, int if_index, int *sock);
-
-typedef enum {
-    IN_PACKET_SOCKET,
-    OUT_PACKET_SOCKET,
-} tad_packet_dir_t;
 
 /**
  * Release CSAP resources. 
@@ -120,8 +98,10 @@ typedef enum {
 int
 pcap_release(csap_p csap_descr)
 {
-    eth_csap_specific_data_p spec_data;
+    pcap_csap_specific_data_p spec_data;
     int layer;
+
+    VERB("%s() started", __FUNCTION__);
 
     layer = csap_descr->read_write_layer; 
     spec_data = (pcap_csap_specific_data_p)
@@ -171,29 +151,27 @@ pcap_prepare_recv(csap_p csap_descr)
     pcap_csap_specific_data_p spec_data;
     int layer;
     int buf_size, rc;
-    
+
+    VERB("%s() started", __FUNCTION__);
 
     layer = csap_descr->read_write_layer;
     
     spec_data =
-        (pcpa_csap_specific_data_p) csap_descr->layers[layer].specific_data;
+        (pcap_csap_specific_data_p) csap_descr->layers[layer].specific_data;
     
     VERB("Before opened Socket %d", spec_data->in);
 
     /* opening incoming socket */
-    if ((rc = open_packet_socket(PACKET_HOST,
-                                spec_data->interface->if_index,
-                                 &spec_data->in)) != 0)
+    if ((rc = open_packet_socket(spec_data->ifname, &spec_data->in)) != 0)
     {
         ERROR("open_packet_socket error %d", rc);
         return TE_RC(TE_TAD_CSAP, rc);
     }
 
-    VERB("csap %d Opened Socket %d", 
-                 csap_descr->id, spec_data->in);
+    VERB("csap %d Opened Socket %d", csap_descr->id, spec_data->in);
 
-    buf_size = 0x100000; 
     /* TODO: reasonable size of receive buffer to be investigated */
+    buf_size = 0x100000; 
     if (setsockopt(spec_data->in, SOL_SOCKET, SO_RCVBUF,
                    &buf_size, sizeof(buf_size)) < 0)
     {
@@ -221,22 +199,22 @@ pcap_prepare_send(csap_p csap_descr)
     int layer;
     int buf_size, rc;
 
+    VERB("%s() started", __FUNCTION__);
+
     layer = csap_descr->read_write_layer;
     
     spec_data =
         (pcap_csap_specific_data_p) csap_descr->layers[layer].specific_data;
    
     /* outgoing socket */
-    if ((rc = open_packet_socket(PACKET_OTHERHOST,
-                                spec_data->interface->if_index,
-                                 &spec_data->out)) != 0)
+    if ((rc = open_packet_socket(spec_data->ifname, &spec_data->out)) != 0)
     { 
         ERROR("open_packet_socket error %d", rc);
         return TE_RC(TE_TAD_CSAP, rc);
     }
 
-    buf_size = 0x100000; 
     /* TODO: reasonable size of send buffer to be investigated */
+    buf_size = 0x100000; 
     if (setsockopt(spec_data->out, SOL_SOCKET, SO_SNDBUF,
                 &buf_size, sizeof(buf_size)) < 0)
     {
@@ -245,119 +223,6 @@ pcap_prepare_send(csap_p csap_descr)
     }
     return 0;
 }
-
-/**
- * Find ethernet interface by its name and initialize specified
- * structure with interface parameters
- *
- * @param name      symbolic name of interface to find (e.g. eth0, eth1)
- * @param iface     pointer to interface structure to be filled
- *                  with found parameters (OUT)
- *
- * @return ETH_IFACE_OK on success or one of the error codes
- *
- * @retval ETH_IFACE_OK            on success
- * @retval ETH_IFACE_NOT_FOUND     if config socket error occured or interface 
- *                                 can't be found by specified name
- * @retval ETH_IFACE_HWADDR_ERROR  if hardware address can't be extracted   
- * @retval ETH_IFACE_IFINDEX_ERROR if interface index can't be extracted
- */
-int
-pcap_find_interface(char *name, pcap_csap_interface_p iface) 
-{
-    char err_buf[200];
-    int    cfg_socket;
-    struct ifreq  if_req;
-    int rc;
-
-    if (name == NULL) 
-    {
-       return EINVAL;
-    }
-
-    VERB("%s('%s') start", __FUNCTION__, name);
-
-    if ((cfg_socket = socket(AF_INET, SOCK_DGRAM, 0)) == -1)
-        return errno;
-
-    memset(&if_req, 0, sizeof(if_req));
-    strcpy(if_req.ifr_name, name);
-
-    if (ioctl(cfg_socket, SIOCGIFHWADDR, &if_req))
-    {
-        rc = errno;
-        strerror_r(rc, err_buf, sizeof(err_buf)); 
-        ERROR("get if addr error %d \"%s\"", rc, err_buf);
-        return rc;
-    }
-
-    memcpy(iface->local_addr, if_req.ifr_hwaddr.sa_data, ETH_ALEN);
-    strcpy(if_req.ifr_name, name);
-
-    if (ioctl(cfg_socket, SIOCGIFINDEX, &if_req))
-    {
-        rc = errno;
-        strerror_r(rc, err_buf, sizeof(err_buf)); 
-        ERROR("get if index error %d \"%s\"", rc, err_buf);
-        return rc;
-    }
-    
-    /* saving if index  */
-    iface->if_index = if_req.ifr_ifindex;
-    
-    /* saving name     */
-    strncpy (iface->name, name, (IFNAME_SIZE - 1));
-    iface->name[IFNAME_SIZE - 1] = '\0';
-
-#if USE_PROMISC_MODE
-
-    memset(&if_req, 0, sizeof(if_req));
-    strcpy(if_req.ifr_name, name);
-
-    if (ioctl(cfg_socket, SIOCGIFFLAGS, &if_req) < 0)
-    {
-        rc = errno;
-        strerror_r(rc, err_buf, sizeof(err_buf)); 
-        ERROR("get if flags error %d \"%s\"", rc, err_buf);
-        return rc;
-    }
-
-    VERB("SIOCGIFFLAGS, promisc mode: %d, flags: %x\n", 
-                (int)(if_req.ifr_flags & IFF_PROMISC), (int)if_req.ifr_flags);
-
-    /* set interface to promiscuous mode */
-    VERB("set to promisc mode");
-    if_req.ifr_flags |= IFF_PROMISC;
-
-    if (ioctl(cfg_socket, SIOCSIFFLAGS, &if_req))
-    { 
-        rc = errno;
-        strerror_r(rc, err_buf, sizeof(err_buf)); 
-        ERROR("set PROMISC mode error %d \"%s\"", rc, err_buf);
-        return rc;
-    }
-#endif
-    
-    close(cfg_socket);
-
-    {
-        iface_user_rec *ir;
-
-        ir = find_iface_user_rec(name);
-        if (ir == NULL)
-        {
-            ir = calloc(1, sizeof(iface_user_rec));
-
-            if (ir == NULL)
-                return ENOMEM; 
-            strncpy(ir->name, name, IFNAME_SIZE);
-            INSQUE(ir, &iface_users_root); 
-        }
-
-        ir->num_users++; 
-    }
-    return ETH_IFACE_OK;
-} 
 
 
 /**
@@ -372,6 +237,9 @@ int
 find_csap_layer(csap_p csap_descr, char *layer_name)
 {
     int i; 
+
+    VERB("%s() started", __FUNCTION__);
+
     for (i = 0; i < csap_descr->depth; i++)
         if (strcmp(csap_descr->layers[i].proto, layer_name) == 0)
             return i;
@@ -390,106 +258,10 @@ find_csap_layer(csap_p csap_descr, char *layer_name)
 void 
 free_pcap_csap_data(pcap_csap_specific_data_p spec_data, te_bool is_complete)
 {
-    free(spec_data->interface);
-    
-    if (spec_data->remote_addr != NULL)
-       free(spec_data->remote_addr);
-    
-    if (spec_data->local_addr != NULL)
-       free(spec_data->local_addr);   
-       
+    VERB("%s() started", __FUNCTION__);
+
     if (is_complete)
        free(spec_data);   
-}
-
-/**
- * Create and bind packet socket to listen specified interface
- *
- * @param pkt_type  Type of packet socket (PACKET_HOST, PACKET_OTHERHOST,
- *                  PACKET_OUTGOING
- * @param if_index  interface index
- * @param sock      pointer to place where socket handler will be saved
- *
- * @retval 0 on succees, -1 on fail
- */
-static int 
-open_packet_socket(int pkt_type, int if_index, int *sock)
-{
-    struct sockaddr_ll  bind_addr;
-    int rc;
-    char err_buf[200];
-
-    UNUSED(pkt_type);
-
-    memset (&bind_addr, 0, sizeof(bind_addr));
-
-    if (sock == NULL)
-    {
-        ERROR("Location for socket is NULL");
-        return EINVAL;
-    }
-
-    /* Create packet socket */
-    *sock = socket(PF_PACKET, SOCK_RAW, htons(ETH_P_ALL));
-    VERB("OPEN SOCKET (%d): %s:%d", *sock,
-               __FILE__, __LINE__);
-
-    VERB("socket system call returns %d\n", *sock);
-
-    if (*sock < 0)
-    {
-        rc = errno;
-        strerror_r(rc, err_buf, sizeof(err_buf)); 
-        ERROR("Socket creation failed, errno %d, \"%s\"\n", 
-                rc, err_buf);
-        return rc;
-    }
-
-    bind_addr.sll_family = AF_PACKET;
-    bind_addr.sll_protocol = htons(ETH_P_ALL);
-    bind_addr.sll_ifindex = if_index;
-    bind_addr.sll_hatype = ARPHRD_ETHER;
-    bind_addr.sll_pkttype = pkt_type;
-    bind_addr.sll_halen = ETH_ALEN;
-
-    VERB("RAW Socket opened");
-
-#if 0
-    switch (dir)
-    {
-        case IN_PACKET_SOCKET:
-            bind_addr.sll_pkttype = pkt_type;
-            shutdown_method = SHUT_WR;
-            break;
-        case OUT_PACKET_SOCKET:
-            shutdown_method = SHUT_RD;
-            break;
-    }
-
-    if (shutdown (*sock, shutdown_method) < 0)
-    {
-        perror ("ETH packet socket shutdown");
-        return errno;
-    }
-#endif
-
-    if (bind(*sock, (struct sockaddr *)&bind_addr, sizeof(bind_addr)) < 0)
-    {
-        rc = errno;
-        strerror_r(rc, err_buf, sizeof(err_buf)); 
-        ERROR("Socket bind failed, errno %d, \"%s\"\n", 
-                rc, err_buf);
-
-        VERB("CLOSE SOCKET (%d): %s:%d", 
-                *sock, __FILE__, __LINE__);
-        if (close(*sock) < 0)
-            assert(0);
-
-        *sock = -1;
-        return rc;
-    }
-
-    return 0;
 }
 
 /**
@@ -514,6 +286,8 @@ pcap_read_cb(csap_p csap_descr, int timeout, char *buf, size_t buf_len)
     socklen_t                   fromlen = sizeof(from);
     struct timeval              timeout_val;
     int                         pkt_size;
+
+    VERB("%s() started", __FUNCTION__);
 
     if (csap_descr == NULL)
     {
@@ -590,24 +364,24 @@ pcap_read_cb(csap_p csap_descr, int timeout, char *buf, size_t buf_len)
     switch(from.sll_pkttype)
     {
         case PACKET_HOST:
-            if ((spec_data->recv_mode & ETH_RECV_HOST) == 0)
+            if ((spec_data->recv_mode & PCAP_RECV_HOST) == 0)
                 return 0;
             break;
 
         case PACKET_BROADCAST:
-            if ((spec_data->recv_mode & ETH_RECV_BROADCAST) == 0)
+            if ((spec_data->recv_mode & PCAP_RECV_BROADCAST) == 0)
                 return 0;
             break;
         case PACKET_MULTICAST:
-            if ((spec_data->recv_mode & ETH_RECV_MULTICAST) == 0)
+            if ((spec_data->recv_mode & PCAP_RECV_MULTICAST) == 0)
                 return 0;
             break;
         case PACKET_OTHERHOST:
-            if ((spec_data->recv_mode & ETH_RECV_OTHERHOST) == 0)
+            if ((spec_data->recv_mode & PCAP_RECV_OTHERHOST) == 0)
                 return 0;
             break;
         case PACKET_OUTGOING:
-            if ((spec_data->recv_mode & ETH_RECV_OUTGOING) == 0)
+            if ((spec_data->recv_mode & PCAP_RECV_OUTGOING) == 0)
                 return 0;
             break;
     }
@@ -617,12 +391,14 @@ pcap_read_cb(csap_p csap_descr, int timeout, char *buf, size_t buf_len)
 
 
 int 
-eth_single_check_pdus(csap_p csap_descr, asn_value *traffic_nds)
+pcap_single_check_pdus(csap_p csap_descr, asn_value *traffic_nds)
 {
     char choice_label[20];
     int rc;
 
     UNUSED(csap_descr);
+
+    VERB("%s() started", __FUNCTION__);
 
     rc = asn_get_choice(traffic_nds, "pdus.0", choice_label, 
                         sizeof(choice_label));
@@ -632,16 +408,16 @@ eth_single_check_pdus(csap_p csap_descr, asn_value *traffic_nds)
 
     if (rc == EASNINCOMPLVAL)
     {
-        asn_value *eth_pdu = asn_init_value(ndn_eth_header); 
+        asn_value *pcap_pdu = asn_init_value(ndn_pcap_filter); 
         asn_value *asn_pdu    = asn_init_value(ndn_generic_pdu); 
         
-        asn_write_component_value(asn_pdu, eth_pdu, "#eth");
+        asn_write_component_value(asn_pdu, pcap_pdu, "#pcap");
         asn_insert_indexed(traffic_nds, asn_pdu, 0, "pdus"); 
 
         asn_free_value(asn_pdu);
-        asn_free_value(eth_pdu);
+        asn_free_value(pcap_pdu);
     } 
-    else if (strcmp (choice_label, "eth") != 0)
+    else if (strcmp (choice_label, "pcap") != 0)
     {
         return ETADWRONGNDS;
     }
@@ -663,21 +439,19 @@ pcap_single_init_cb (int csap_id, const asn_value *csap_nds, int layer)
 {
     int      rc; 
     char     choice[100] = "";
-    char     device_id[IFNAME_SIZE]; /**< ethernet interface id
+    char     ifname[IFNAME_SIZE];    /**< ethernet interface id
                                           (e.g. eth0, eth1) */
     size_t   val_len;                /**< stores corresponding value length */
     
-    pcap_csap_interface_p iface_p;   /**< pointer to interface structure to be
-                                          used with csap */
     csap_p   csap_descr;             /**< csap description */
 
     pcap_csap_specific_data_p   pcap_spec_data; 
-    const asn_value_p           pcap_csap_spec; /**< ASN value with csap init
+    const asn_value            *pcap_csap_spec; /**< ASN value with csap init
                                                      parameters  */
                         
-    int                         eth_type;      /**< Ethernet type                          */
     char                        str_index_buf[10];
     
+    VERB("%s() started", __FUNCTION__);
 
     if (csap_nds == NULL)
         return TE_RC(TE_TAD_CSAP, ETEWRONGPTR);
@@ -701,55 +475,17 @@ pcap_single_init_cb (int csap_id, const asn_value *csap_nds, int layer)
     VERB("eth_single_init_cb called for csap %d, layer %d, ndn with type %s\n", 
                 csap_id, layer, choice);
     
-    val_len = sizeof(device_id);
-    rc = asn_read_value_field(pcap_csap_spec, device_id, &val_len, "device-id");
+    val_len = sizeof(ifname);
+    rc = asn_read_value_field(pcap_csap_spec, ifname, &val_len, "ifname");
     if (rc) 
     {
         F_ERROR("device-id for ethernet not found: %x\n", rc);
         return TE_RC(TE_TAD_CSAP, rc);
     }
     
-    /* allocating new interface structure and trying to init by name */    
-    iface_p = malloc(sizeof(pcap_csap_interface_t));
-    
-    if (iface_p == NULL)
-    {
-#ifdef TALOGDEBUG
-        printf("Can't allocate memory for interface");
-#endif    
-        return TE_RC(TE_TAD_CSAP, ENOMEM);
-    }
-    
-    if ((rc = eth_find_interface(device_id, iface_p)) != ETH_IFACE_OK)
-    {
-        switch (rc) 
-        {
-            case ETH_IFACE_HWADDR_ERROR:
-                ERROR("Get iface <%s> hwaddr error", device_id);
-                rc = errno; /* TODO: correct rc */
-                break;
-            case ETH_IFACE_IFINDEX_ERROR:
-                ERROR("Interface index for <%s> could not get", 
-                        device_id);
-                rc = errno; /* TODO: correct rc */ 
-                break;
-            case ETH_IFACE_NOT_FOUND:
-                rc = ENODEV;
-                ERROR("Interface <%s> not found", device_id);
-                break;
-            default:
-                ERROR("Interface <%s> config failure %x", 
-                        device_id, rc);
-                break;
-        }
-        free(iface_p);        
-        return TE_RC(TE_TAD_CSAP, rc); 
-    }
-
     pcap_spec_data = calloc (1, sizeof(pcap_csap_specific_data_t));
     if (pcap_spec_data == NULL)
     {
-        free(iface_p);
         ERROR("Init, not memory for spec_data");
         return TE_RC(TE_TAD_CSAP,  ENOMEM);
     }
@@ -757,22 +493,20 @@ pcap_single_init_cb (int csap_id, const asn_value *csap_nds, int layer)
     pcap_spec_data->in = -1;
     pcap_spec_data->out = -1;
 
-    /* setting default interface    */
-    pcap_spec_data->interface = iface_p;
-
+    pcap_spec_data->ifname = strdup(ifname);
     
     val_len = sizeof(pcap_spec_data->recv_mode);
     rc = asn_read_value_field(pcap_csap_spec, &pcap_spec_data->recv_mode, 
                               &val_len, "receive-mode");
     if (rc != 0)
     {
-        pcap_spec_data->recv_mode = ETH_RECV_MODE_DEF;
+        pcap_spec_data->recv_mode = PCAP_RECV_MODE_DEF;
     }
 
-    pcap_spec_data->eth_type = DEFAULT_ETH_TYPE;
+    pcap_spec_data->iftype = PCAP_LINKTYPE_DEFAULT;;
 
     /* default read timeout */
-    eth_spec_data->read_timeout = ETH_CSAP_DEFAULT_TIMEOUT; 
+    pcap_spec_data->read_timeout = PCAP_CSAP_DEFAULT_TIMEOUT; 
 
     if (csap_descr->check_pdus_cb == NULL)
         csap_descr->check_pdus_cb = pcap_single_check_pdus;
@@ -787,7 +521,7 @@ pcap_single_init_cb (int csap_id, const asn_value *csap_nds, int layer)
     csap_descr->prepare_recv_cb  = pcap_prepare_recv;
     csap_descr->prepare_send_cb  = pcap_prepare_send;
     csap_descr->release_cb       = pcap_release;
-    csap_descr->echo_cb          = pcap_echo_method;
+    csap_descr->echo_cb          = NULL;
 
     csap_descr->layers[layer].get_param_cb = pcap_get_param_cb; 
     
@@ -809,122 +543,45 @@ pcap_single_init_cb (int csap_id, const asn_value *csap_nds, int layer)
  * @return zero on success or error code.
  */ 
 int 
-eth_single_destroy_cb (int csap_id, int layer)
+pcap_single_destroy_cb (int csap_id, int layer)
 {
     csap_p csap_descr = csap_find(csap_id);
 
+    VERB("%s() started", __FUNCTION__);
+
     VERB("CSAP N %d", csap_id);
 
-    eth_csap_specific_data_p spec_data = 
-        (eth_csap_specific_data_p) csap_descr->layers[layer].specific_data; 
+    pcap_csap_specific_data_p spec_data = 
+        (pcap_csap_specific_data_p) csap_descr->layers[layer].specific_data; 
 
     if (spec_data == NULL)
     {
-        WARN("Not ethernet CSAP %d special data found!", csap_id);
+        WARN("No PCAP CSAP %d special data found!", csap_id);
         return 0;
     }
 
-#if USE_PROMISC_MODE
-    do {
-        iface_user_rec *ir;
-        struct ifreq  if_req;
-        int cfg_socket;
-
-        VERB("unset to promisc mode iface %s",
-                spec_data->interface->name);
-
-        ir = find_iface_user_rec(spec_data->interface->name);
-        VERB("found iface_user_rec %x", ir);
-
-        if (ir == NULL || ir->num_users <= 1)
-        {
-            if ((cfg_socket = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
-                break;
-
-            VERB("unset promisc mode. do it. !!!", ir);
-
-            memset(&if_req, 0, sizeof(if_req));
-            strcpy(if_req.ifr_name, spec_data->interface->name);
-
-            if (ioctl(cfg_socket, SIOCGIFFLAGS, &if_req) < 0)
-            {
-                ERROR("get flags of interface failed, errno %d", errno);
-                break;
-            }
-
-            /* reset interface from promiscuous mode */
-            if_req.ifr_flags &= ~IFF_PROMISC;
-
-            if (ioctl(cfg_socket, SIOCSIFFLAGS, &if_req))
-            { 
-                ERROR("unset promisc mode failed %x\n", errno);
-                break;
-            }
-            REMQUE(ir);
-            free(ir);
-        }
-        else
-            ir->num_users--;
-    } while (0);
-#endif
 
     if(spec_data->in >= 0)
     {
         VERB("csap # %d, CLOSE SOCKET (%d): %s:%d",
                    csap_descr->id, spec_data->in, __FILE__, __LINE__);
-        if (close(spec_data->in) < 0)
+        if (close_packet_socket(spec_data->ifname, spec_data->in) < 0)
             assert(0);
         spec_data->in = -1;
     }
     
     if (spec_data->out >= 0)
-        close(spec_data->out);    
+    {
+        VERB("csap # %d, CLOSE SOCKET (%d): %s:%d",
+                   csap_descr->id, spec_data->out, __FILE__, __LINE__);
+        if (close_packet_socket(spec_data->ifname, spec_data->out) < 0)
+            assert(0);
+        spec_data->in = -1;
+    }
 
-    free_eth_csap_data(spec_data, ETH_COMPLETE_FREE);
+    free_pcap_csap_data(spec_data, PCAP_COMPLETE_FREE);
 
     csap_descr->layers[layer].specific_data = NULL; 
-    return 0;
-}
-
-
-/**
- * Ethernet echo CSAP method. 
- * Method should prepare binary data to be send as "echo" and call 
- * respective write method to send it. 
- * Method may change data stored at passed location.  
- *
- * @param csap_descr    identifier of CSAP
- * @param pkt           Got packet, plain binary data. 
- * @param len           length of data.
- *
- * @return zero on success or error code.
- */
-int 
-eth_echo_method (csap_p csap_descr, uint8_t *pkt, size_t len)
-{
-    uint8_t tmp_buffer [10000]; 
-
-    if (csap_descr == NULL || pkt == NULL || len == 0)
-        return EINVAL;
-#if 1
-    memcpy (tmp_buffer, pkt + ETH_ALEN, ETH_ALEN);
-    memcpy (tmp_buffer + ETH_ALEN, pkt, ETH_ALEN);
-    memcpy (tmp_buffer + 2*ETH_ALEN, pkt + 2*ETH_ALEN, len - 2*ETH_ALEN);
-
-#if 0
-    /* Correction for number of read bytes was insered to synchronize 
-     * with OS interface statistics, but it cause many side effects, 
-     * therefore it is disabled now. */
-
-    eth_write_cb (csap_descr, tmp_buffer, len - ETH_TAILING_CHECKSUM);
-#else
-    eth_write_cb (csap_descr, tmp_buffer, len);
-#endif
-
-
-#endif
 
     return 0;
 }
-
-
