@@ -252,9 +252,9 @@ dnl Parameters:
 dnl       NUT image name
 dnl       Test Agent name
 dnl       Test Agent type
-dnl       TCE type: branch, loop, multi, relational, routine, call or all
-dnl               (see OKT-HLD-0000037-TE_TCE for details).
-dnl       TCE data format (FILE or LOGGER)
+dnl Optional parameters:
+dnl       TCE compiler
+dnl       TCE compiler flags
 dnl
 define([TE_NUT_TCE],
 [
@@ -268,63 +268,11 @@ fi
 ]
 NUT_$1_TCE_TANAME=$2
 NUT_$1_TCE_TATYPE=$3
-[
-TMP=
-ALL=
-for i in $4 ; do
-    if echo $TMP | grep -q $i ;
-    then
-        TE_BS_CONF_ERR="incorrect TCE type expression for the NUT $1" ;
-        break 2 ;
-    fi
-        
-    case $i in
-        all) ALL=yes ;;
-        branch) ;;
-        loop) ;;
-        multi) ;;
-        relational) ;;
-        routine) ;;
-        call) ;;
-        *) 
-            TE_BS_CONF_ERR="wrong TCE type for the NUT $1" ; 
-            break 2 ; 
-        ;;
-    esac
-    
-    if test -z "$TMP" ;
-    then
-        TMP=$i ;
-    else
-        TMP=$TMP",$i" ;
-    fi
-done    
-if test "$ALL" = "yes" -a "$TMP" != "all"  ;
-then
-    TE_BS_CONF_ERR="incorrect TCE type expression for the NUT $1" ;
-    break;
-fi
-if test -z "$TMP" ;
-then
-    TE_BS_CONF_ERR="TCE type is not specified for the NUT $1" ;
-    break;
-fi
-NUT_$1_TCE_TYPE="-t "$TMP
-]
-[
-case $5 in
-    FILE) ;;
-    LOGGER) ;;
-    *) 
-        TE_BS_CONF_ERR="wrong TCE data format for the NUT $1" ; 
-        break ; 
-        ;;
-esac
-]
-NUT_$1_TCE_FMT="-x "$5
+NUT_$1_TCE_CC=$4
+NUT_$1_TCE_CFLAGS=$5
 ])
 
-dnl Specifies NUT sources to be instrumented. May be called several times.
+dnl Specifies NUT sources to be TCEed. May be called several times.
 dnl 
 dnl Parameters:
 dnl       NUT image name
@@ -333,12 +281,11 @@ dnl               if a directory is specified, all .c and .h files in it
 dnl               and in all its subdirectories are instrumented; 
 dnl               TCE data array and auxiliary routine definitions are 
 dnl               appended to the first .c file met during macros processing
-dnl       additional compiler flags to be used for sources compilation
 dnl               
 define([TE_NUT_TCE_SOURCES],
 [
 TE_HOST_DEFINED=yes
-NUT_$1_TCE_SOURCES="$NUT_$1_TCE_SOURCES -c \"$3\" $2"
+NUT_$1_TCE_SOURCES="$NUT_$1_TCE_SOURCES $2"
 ])
 
 dnl Requests for checking of program presence. May be called several times.
