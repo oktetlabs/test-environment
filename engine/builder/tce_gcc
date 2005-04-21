@@ -31,9 +31,10 @@ processed_options=
 for arg in $@; do
     case "$arg" in
         -c) TCE_BBHOOK_O=""
-        processed_options="$processed_options -c"
+        TCE_LOGFORK=""
+        processed_options="$processed_options -c" ;;
         -O*|-g|-ftest-coverage|-fprofile-arcs) ;;         
-        -*) processed_options="$processed_options $arg"
+        -*) processed_options="$processed_options $arg" ;;
         *) mydir=`dirname $arg`
            myself=`basename $arg`
            fullpath=`cd $mydir; echo $PWD`/$myself
@@ -49,4 +50,5 @@ for arg in $@; do
     esac
 done
 
-exec ${TCE_CC} $coverage_options $processed_options $TCE_BBHOOK_O
+# echo ${TCE_CC} $coverage_options $processed_options $TCE_BBHOOK_O $TCE_LOGFORK
+exec ${TCE_CC} $coverage_options $processed_options $TCE_BBHOOK_O $TCE_LOGFORK
