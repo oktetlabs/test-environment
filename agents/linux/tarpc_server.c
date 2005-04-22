@@ -3623,6 +3623,8 @@ flooder(tarpc_flooder_in *in)
     sock_api_func p_func;
     sock_api_func write_func;
     sock_api_func read_func;
+    sock_api_func send_func;
+    sock_api_func recv_func;
     sock_api_func ioctl_func;
 
     flood_api_func poll_func;
@@ -3659,16 +3661,22 @@ flooder(tarpc_flooder_in *in)
     te_bool         time2run_not_expired = TRUE;
     te_bool         session_rx;
 
+    int             file_d = -1;
+    char           *path = "/tmp/igorv.txt";
+
 
     INFO("%d flooder start", getpid());
     memset(rcv_buf, 0x0, FLOODER_BUF);
-    memset(snd_buf, 0xA, FLOODER_BUF);
+    memset(snd_buf, 'X', FLOODER_BUF);
 
     if ((find_func("select", &select_func) != 0)   ||
         (find_func("pselect", &pselect_func) != 0) ||
         (find_func("poll", &p_func) != 0)          ||
         (find_func("read", &read_func) != 0)       ||
         (find_func("write", &write_func) != 0)     ||
+        (find_func("recv", &recv_func) != 0)       ||
+        (find_func("send", &send_func) != 0)       ||
+
         (find_func("ioctl", &ioctl_func) != 0))
     {
         ERROR("failed to resolve function");
@@ -3702,6 +3710,14 @@ flooder(tarpc_flooder_in *in)
     {
         if (sndrs[i] > max_descr)
             max_descr = sndrs[i];
+    }
+
+    file_d = open(path, O_CREAT | O_RDWR, S_IRWXU | S_IRWXG | S_IRWXO);
+    if (file_d < 0)
+    {
+        ERROR("%s(): open(%s, O_CREAT, S_IRWXU | S_IRWXG | S_IRWXO) "
+              "failed: %X", __FUNCTION__, path, errno);
+        return -1;;
     }
 
     /*
@@ -3790,7 +3806,12 @@ flooder(tarpc_flooder_in *in)
                 {
                     if (FD_ISSET(sndrs[i], &wfds))
                     {
+#ifdef USE_WRITE_FUNC
                         sent = write_func(sndrs[i], snd_buf, bulkszs);
+#else
+                        sent = send_func(sndrs[i], snd_buf, bulkszs,
+                                         MSG_DONTWAIT);
+#endif
                         if ((sent < 0) &&
                             (errno != EAGAIN) && (errno != EWOULDBLOCK))
                         {
@@ -3811,8 +3832,13 @@ flooder(tarpc_flooder_in *in)
             {
                 if (FD_ISSET(rcvrs[i], &rfds))
                 {
+#ifdef USE_READ_FUNC
                     received = read_func(rcvrs[i], rcv_buf,
                                          sizeof(rcv_buf));
+#else
+                    received = recv_func(rcvrs[i], rcv_buf,
+                                         sizeof(rcv_buf), MSG_DONTWAIT);
+#endif
                     if ((received < 0) &&
                         (errno != EAGAIN) && (errno != EWOULDBLOCK))
                     {
@@ -3822,6 +3848,7 @@ flooder(tarpc_flooder_in *in)
                     }
                     if (received > 0)
                     {
+                        write(file_d, rcv_buf, received);
                         session_rx = TRUE;
                         if (rx_stat != NULL)
                         {
