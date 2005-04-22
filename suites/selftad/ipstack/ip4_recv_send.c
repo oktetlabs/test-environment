@@ -49,7 +49,7 @@
 
 #include "rcf_rpc.h"
 #include "conf_api.h"
-#include "tapi_rpc.h"
+#include "tapi_tad.h"
 
 #include "tapi_test.h"
 #include "tapi_ipstack.h"
@@ -61,6 +61,7 @@
 int
 main(int argc, char *argv[])
 {
+    int  syms;
     int  sid_a;
     int  sid_b;
     char ta[32];
@@ -71,7 +72,15 @@ main(int argc, char *argv[])
     csap_handle_t ip4_send_csap = CSAP_INVALID_HANDLE;
     csap_handle_t ip4_listen_csap = CSAP_INVALID_HANDLE;
 
+    asn_value *template;/*  iteration template for traffic generation */ 
+
+    int num_pkts;
+    int pld_len;
+
     TEST_START; 
+
+    TEST_GET_INT_PARAM(num_pkts);
+    TEST_GET_INT_PARAM(pld_len);
     
     if ((rc = rcf_get_ta_list(ta, &len)) != 0)
         TEST_FAIL("rcf_get_ta_list failed: %X", rc);
@@ -97,39 +106,63 @@ main(int argc, char *argv[])
         TEST_FAIL("rcf_ta_create_session failed");
     }
     INFO("Test: Created session for B: %d", sid_b); 
- 
+
+    /* Fill in value for iteration */
+    rc = asn_parse_value_text("{ arg-sets { simple-for:{begin 1} }, "
+                              "  pdus     {} }",
+                              ndn_traffic_template,
+                              &template, &syms);
+    if (rc != 0)
+        TEST_FAIL("parse of template failed %X, syms %d", rc, syms);
+
+    rc = asn_write_value_field(template, &num_pkts, sizeof(num_pkts),
+                               "arg-sets.0.#simple-for.end");
+    if (rc != 0)
+        TEST_FAIL("write num_pkts failed %X", rc);
+
+    rc = asn_write_value_field(template, &pld_len, sizeof(pld_len),
+                               "payload.#length");
+    if (rc != 0)
+        TEST_FAIL("write payload len failed %X", rc); 
+  
     do {
-        in_addr_t src_addr = inet_addr("192.168.123.231");
-        in_addr_t dst_addr = inet_addr("192.168.123.232");
+        uint8_t mac_a[6] = {
+            0x01,0x02,0x03,0x04,0x05,0x06};
+        uint8_t mac_b[6] = {
+            0x16,0x15,0x14,0x13,0x12,0x11};
+        in_addr_t ip_a = inet_addr("192.168.123.231");
+        in_addr_t ip_b = inet_addr("192.168.123.232");
 
         int num;
-        int rc_mod;
 
-        rc = tapi_ip4_eth_csap_create(agt_a, sid_a, "eth0", NULL, NULL,
-                                      NULL, NULL, &ip4_send_csap);
+        rc = tapi_ip4_eth_csap_create(agt_a, sid_a, "eth0", mac_a, mac_b,
+                                      (uint8_t *)&ip_a, (uint8_t *)&ip_b,
+                                      &ip4_send_csap);
         if (rc != 0)
-        {
             TEST_FAIL("CSAP create failed, rc from module %d is 0x%x\n", 
-                        TE_RC_GET_MODULE(rc), TE_RC_GET_ERROR(rc));
+                        TE_RC_GET_MODULE(rc), TE_RC_GET_ERROR(rc)); 
 
-        } 
+        rc = tapi_ip4_eth_csap_create(agt_b, sid_b, "eth0", mac_b, mac_a,
+                                      (uint8_t *)&ip_b, (uint8_t *)&ip_a,
+                                      &ip4_listen_csap);
+        if (rc != 0)
+            TEST_FAIL("CSAP create failed, rc from module %d is 0x%x\n", 
+                        TE_RC_GET_MODULE(rc), TE_RC_GET_ERROR(rc)); 
 
         
-        rc = tapi_ip4_eth_recv_start(agt_a, sid_a, ip4_send_csap,
-                                     NULL, NULL, NULL, (uint8_t*)&my_addr,
-                                     5000, 4);
-        if (rc) break;
+        rc = tapi_ip4_eth_recv_start(agt_b, sid_b, ip4_listen_csap,
+                                     NULL, NULL, NULL, NULL, 5000, 4);
+        if (rc != 0) 
+            TEST_FAIL("recv start failed %X", rc); 
 
-
-        num = 2;
-        INFO ("sleep %d secs before wait\n", num);
-        sleep (num);
+        rc = tapi_tad_trsend_start(agt_a, sid_a, ip4_send_csap,
+                                   template, RCF_MODE_NONBLOCKING);
+        if (rc != 0) 
+            TEST_FAIL("send start failed %X", rc); 
 
         INFO ("try to wait\n");
-        rc = rcf_ta_trrecv_wait(ta, sid, csap, &num);
-        INFO("trrecv_wait: 0x%X num: %d\n", rc, num);
-
-        INFO("csap %d destroy: 0x%X ", csap, rc); 
+        rc = rcf_ta_trrecv_wait(agt_b, sid_b, ip4_listen_csap, &num);
+        RING("trrecv_wait: 0x%X num: %d\n", rc, num);
 
     } while(0);
 
