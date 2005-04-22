@@ -333,10 +333,12 @@ ip4_single_destroy_cb(int csap_id, int layer)
 int 
 ip4_eth_init_cb(int csap_id, const asn_value *csap_nds, int layer)
 { 
-    csap_p csap_descr;      /**< csap description   */ 
-    ip4_csap_specific_data_t *   spec_data; 
+    ip4_csap_specific_data_t *spec_data; 
+    const asn_value          *ip4_pdu;   
 
+    csap_p csap_descr;      /**< csap descriptor   */ 
     size_t val_len;
+    int    rc;
 
     if (csap_nds == NULL)
         return ETEWRONGPTR;
@@ -347,20 +349,27 @@ ip4_eth_init_cb(int csap_id, const asn_value *csap_nds, int layer)
     spec_data = calloc(1, sizeof(ip4_csap_specific_data_t));
     
     if (spec_data == NULL)
-    {
         return ENOMEM;
-    }
 
     csap_descr->layers[layer].specific_data = spec_data;
     csap_descr->layers[layer].get_param_cb = ip4_get_param_cb;
 
-    csap_descr->check_pdus_cb = ip4_check_pdus;
+    csap_descr->check_pdus_cb = ip4_check_pdus; 
 
-    val_len = asn_get_length(csap_nds, "");
-    
+    rc = asn_read_value_field(csap_descr->layers[layer].csap_layer_pdu,
+                              &spec_data->remote_addr, 4,
+                              "remote-addr.#plain");
+    if (rc != 0);
+        WARN("%s(): read remote addr fails %X", __FUNCTION__, rc);
 
-    F_VERB("%s called for csap %d, layer %d, nds array len %d",
-            __FUNCTION__, csap_id, layer, val_len); 
+    rc = asn_read_value_field(csap_descr->layers[layer].csap_layer_pdu,
+                              &spec_data->local_addr, 4,
+                              "local-addr.#plain");
+    if (rc != 0);
+        WARN("%s(): read local addr fails %X", __FUNCTION__, rc);
+
+    F_VERB("%s(): csap %d, layer %d",
+            __FUNCTION__, csap_id, layer); 
 
     UNUSED(csap_nds);
     return 0;

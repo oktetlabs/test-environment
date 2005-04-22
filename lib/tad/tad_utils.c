@@ -866,8 +866,7 @@ tad_data_unit_convert(const asn_value *pdu_val,
         if (rc)
         {
             free(d_ptr);
-            ERROR(
-                    "rc from asn_read for some string: %x", rc);
+            ERROR("rc from asn_read for some string: %x", rc);
             return rc;
         } 
 
