@@ -5,8 +5,6 @@ AM_CPPFLAGS=@TE_CFLAGS@ -I$(DESTDIR)/$(prefix)/include
 AM_CFLAGS = 
 AM_LDFLAGS=@TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/lib 
 
-SUBDIRS = coverage
-
 bin_PROGRAMS=te_stdouterr
 
 te_stdouterr_SOURCES=te_stdouterr.c
