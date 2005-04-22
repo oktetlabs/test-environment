@@ -109,7 +109,7 @@ main(int argc, char *argv[])
 
     /* Fill in value for iteration */
     rc = asn_parse_value_text("{ arg-sets { simple-for:{begin 1} }, "
-                              "  pdus     {} }",
+                              "  pdus     { ip4:{}, eth:{}} }",
                               ndn_traffic_template,
                               &template, &syms);
     if (rc != 0)
