@@ -31,6 +31,7 @@
 #include <stdlib.h>
 
 #define TE_LGR_USER     "TAD IPv4"
+#define TE_LOG_LEVEL 0xff
 
 #include "tad_ipstack_impl.h"
 
@@ -165,7 +166,8 @@ ip4_confirm_pdu_cb(int csap_id, int layer, asn_value *tmpl_pdu)
     }
 
     /* Destination address */
-    rc = tad_data_unit_convert(tmpl_pdu, NDN_TAG_IP4_DST_ADDR, &spec_data->du_dst_addr);
+    rc = tad_data_unit_convert(tmpl_pdu, NDN_TAG_IP4_DST_ADDR,
+                               &spec_data->du_dst_addr);
 
     if (rc == 0)
         rc = asn_read_value_field(tmpl_pdu, &spec_data->dst_addr, 
@@ -178,7 +180,8 @@ ip4_confirm_pdu_cb(int csap_id, int layer, asn_value *tmpl_pdu)
         { 
             if (spec_data->remote_addr.s_addr == INADDR_ANY)
             {
-                WARN("%s(): cannot send without dst IP address, EINVAL");
+                WARN("%s(): cannot send without dst IP address, EINVAL",
+                     __FUNCTION__);
                 rc = EINVAL;
             }
             else
@@ -444,8 +447,8 @@ ip4_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
                                   data, _size, _asn_label);     \
         if (rc)                                                 \
         {                                                       \
-            F_VERB("%s: field %s not match, rc %X",             \
-                    __FUNCTION__, _asn_label, rc);              \
+            F_VERB("%s: csap %d field %s not match, rc %X",     \
+                    csap_id, __FUNCTION__, _asn_label, rc);     \
             return rc;                                          \
         }                                                       \
         data += _size;                                          \
