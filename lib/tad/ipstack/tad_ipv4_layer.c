@@ -370,7 +370,7 @@ ip4_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
              i++, checksum += *(ch_p++)); 
 
         *((uint16_t *)checksum_place) = 
-            ~(checksum & 0xffff + checksum >> 16);
+            ~((checksum & 0xffff) + (checksum >> 16));
     }
 
     if (up_payload->free_data_cb)
