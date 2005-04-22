@@ -16,6 +16,17 @@
                 <req id="TAD_IP4"/>
             </script>
         </run> 
+        <run>
+            <script name="ip4_recv_send">
+                <req id="TAD_IP4"/>
+            </script>
+            <arg name="num_pkts">
+                <value>2</value>
+            </arg>
+            <arg name="pld_len">
+                <value>50</value>
+            </arg>
+        </run> 
 
         <!--
         <run>
