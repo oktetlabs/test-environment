@@ -280,5 +280,4 @@ extern int tapi_eth_prepare_pattern_unit(uint8_t *src_mac,
  * @return nothing.
  */
 extern void tapi_eth_fprint_mac(FILE *f, const uint8_t *addr);
-
 #endif /* __TE_TAPI_ETH_H__ */

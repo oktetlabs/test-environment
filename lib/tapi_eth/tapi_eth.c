@@ -52,6 +52,7 @@
 #include "te_errno.h"
 #include "rcf_api.h"
 #include "ndn_eth.h"
+#include "tapi_tad.h"
 #include "tapi_eth.h"
 
 #define TE_LGR_USER     "TAPI Ethernet"
@@ -281,39 +282,6 @@ tapi_eth_tagged_csap_create(const char *ta_name, int sid,
     return rc;
 }
 
-static int
-tapi_internal_eth_send(const char *ta_name, int sid, csap_handle_t eth_csap,
-                       const asn_value *templ, rcf_call_mode_t blk_mode)
-{
-    int rc;
-    char tmp_name[100];
-
-    if ( (ta_name == NULL) || (templ == NULL) )
-        return TE_RC(TE_TAPI, EINVAL);
-
-    strcpy(tmp_name, "/tmp/te_eth_trsend.XXXXXX");
-    mkstemp(tmp_name);
-    rc = asn_save_to_file(templ, tmp_name);
-    if (rc)
-        return TE_RC(TE_TAPI, rc);
-
-    VERB("Eth send, CSAP # %d, traffic template in file %s", 
-         eth_csap, tmp_name);
-
-    rc = rcf_ta_trsend_start(ta_name, sid, eth_csap, tmp_name, blk_mode);
-    if (rc != 0)
-    {
-        ERROR("rcf_ta_trsend_start() failed(0x%x) on TA %s:%d CSAP %d "
-              "file %s", rc, ta_name, sid, eth_csap, tmp_name);
-    }
-
-#if !(TAPI_DEBUG)
-    VERB("Eth send, CSAP # %d, remove file %s", eth_csap, tmp_name);
-    unlink(tmp_name);
-#endif
-
-    return rc;
-}
 
 /**
  * Sends traffic template from specified CSAP
@@ -329,8 +297,8 @@ tapi_internal_eth_send(const char *ta_name, int sid, csap_handle_t eth_csap,
 int tapi_eth_send_start(const char *ta_name, int sid,
                         csap_handle_t eth_csap, const asn_value *templ)
 {
-    return tapi_internal_eth_send(ta_name, sid, eth_csap, templ,
-                                  RCF_MODE_NONBLOCKING);
+    return tapi_tad_trsend_start(ta_name, sid, eth_csap, templ,
+                                 RCF_MODE_NONBLOCKING);
 }
 
 /**
@@ -348,8 +316,8 @@ int
 tapi_eth_send(const char *ta_name, int sid, csap_handle_t eth_csap,
               const asn_value *templ)
 {
-    return tapi_internal_eth_send(ta_name, sid, eth_csap, templ,
-                                  RCF_MODE_BLOCKING);
+    return tapi_tad_trsend_start(ta_name, sid, eth_csap, templ,
+                                 RCF_MODE_BLOCKING);
 }
 
 struct tapi_pkt_handler_data
