@@ -355,9 +355,6 @@ process_add(cfg_add_msg *msg, te_bool update_dh)
     }
 
     msg->rc = rcf_ta_cfg_add(inst->name, 0, oid, val_str);
-    if (obj->type != CVT_NONE)
-        free(val_str);
-
     if (msg->rc != 0)
     {
         cfg_db_del(handle);
@@ -367,8 +364,13 @@ process_add(cfg_add_msg *msg, te_bool update_dh)
             
         ERROR("Failed to add a new instance %s with value %s into TA "
               "error=0x%X", oid, val_str, msg->rc);
+        if (obj->type != CVT_NONE)
+            free(val_str);
         return;              
     }
+
+    if (obj->type != CVT_NONE)
+        free(val_str);
 
     if ((msg->rc = cfg_ta_sync(oid, TRUE)) != 0)
     {
