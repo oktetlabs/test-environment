@@ -76,6 +76,7 @@ main(int argc, char *argv[])
 
     int num_pkts;
     int pld_len;
+    int delay;
 
     TEST_START; 
 
@@ -124,6 +125,12 @@ main(int argc, char *argv[])
                                "payload.#length");
     if (rc != 0)
         TEST_FAIL("write payload len failed %X", rc); 
+
+    delay = 500;
+    rc = asn_write_value_field(template, &delay, sizeof(delay),
+                               "delays.#plain");
+    if (rc != 0)
+        TEST_FAIL("write delay failed %X", rc); 
   
     do {
         uint8_t mac_a[6] = {
