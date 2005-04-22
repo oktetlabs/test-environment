@@ -356,14 +356,16 @@ ip4_eth_init_cb(int csap_id, const asn_value *csap_nds, int layer)
 
     csap_descr->check_pdus_cb = ip4_check_pdus; 
 
+    val_len = sizeof(spec_data->remote_addr);
     rc = asn_read_value_field(csap_descr->layers[layer].csap_layer_pdu,
-                              &spec_data->remote_addr, 4,
+                              &spec_data->remote_addr, val_len,
                               "remote-addr.#plain");
     if (rc != 0);
         WARN("%s(): read remote addr fails %X", __FUNCTION__, rc);
 
+    val_len = sizeof(spec_data->local_addr);
     rc = asn_read_value_field(csap_descr->layers[layer].csap_layer_pdu,
-                              &spec_data->local_addr, 4,
+                              &spec_data->local_addr, val_len,
                               "local-addr.#plain");
     if (rc != 0);
         WARN("%s(): read local addr fails %X", __FUNCTION__, rc);
