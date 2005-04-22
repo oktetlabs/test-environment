@@ -143,7 +143,7 @@ main(int argc, char *argv[])
                         TE_RC_GET_MODULE(rc), TE_RC_GET_ERROR(rc)); 
 
         rc = tapi_ip4_eth_csap_create(agt_b, sid_b, "eth0", mac_b, mac_a,
-                                      (uint8_t *)&ip_b, (uint8_t *)&ip_a,
+                                      NULL, NULL,
                                       &ip4_listen_csap);
         if (rc != 0)
             TEST_FAIL("CSAP create failed, rc from module %d is 0x%x\n", 
