@@ -334,7 +334,6 @@ int
 ip4_eth_init_cb(int csap_id, const asn_value *csap_nds, int layer)
 { 
     ip4_csap_specific_data_t *spec_data; 
-    const asn_value          *ip4_pdu;   
 
     csap_p csap_descr;      /**< csap descriptor   */ 
     size_t val_len;

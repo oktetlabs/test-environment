@@ -356,8 +356,8 @@ ip4_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
     PUT_BIN_DATA(du_h_checksum, 0, 2);
 
 
-    PUT_BIN_DATA(du_src_addr, 0, 4); 
-    PUT_BIN_DATA(du_dst_addr, 0, 4); 
+    PUT_BIN_DATA(du_src_addr, ntohl(spec_data->local_addr.s_addr), 4); 
+    PUT_BIN_DATA(du_dst_addr, ntohl(spec_data->local_addr.s_addr), 4); 
 
     if (checksum_place != NULL) /* Have to calculate header checksum */
     {
