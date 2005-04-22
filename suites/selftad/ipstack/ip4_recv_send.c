@@ -126,7 +126,7 @@ main(int argc, char *argv[])
     if (rc != 0)
         TEST_FAIL("write payload len failed %X", rc); 
 
-    delay = 500;
+    delay = 100;
     rc = asn_write_value_field(template, &delay, sizeof(delay),
                                "delays.#plain");
     if (rc != 0)
