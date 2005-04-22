@@ -362,14 +362,15 @@ ip4_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
     if (checksum_place != NULL) /* Have to calculate header checksum */
     {
         unsigned int i;
-        uint16_t     checksum;
+        uint32_t     checksum;
         uint16_t    *ch_p;
 
         for (i = 0, ch_p = pkts->data, checksum = 0; 
              i < (h_len * 2);
              i++, checksum += *(ch_p++)); 
 
-        *((uint16_t *)checksum_place) = ~checksum;
+        *((uint16_t *)checksum_place) = 
+            ~(checksum & 0xffff + checksum >> 16);
     }
 
     if (up_payload->free_data_cb)
@@ -460,7 +461,7 @@ ip4_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
                               &tmp8, 1, "version");
     if (rc) 
     {
-        F_VERB("%s: field verxion not match, rc %X", __FUNCTION__, rc); 
+        F_VERB("%s: field version not match, rc %X", __FUNCTION__, rc); 
         return rc;
     }
 
