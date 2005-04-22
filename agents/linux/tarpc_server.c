@@ -3661,10 +3661,6 @@ flooder(tarpc_flooder_in *in)
     te_bool         time2run_not_expired = TRUE;
     te_bool         session_rx;
 
-    int             file_d = -1;
-    char           *path = "/tmp/igorv.txt";
-
-
     INFO("%d flooder start", getpid());
     memset(rcv_buf, 0x0, FLOODER_BUF);
     memset(snd_buf, 'X', FLOODER_BUF);
@@ -3710,14 +3706,6 @@ flooder(tarpc_flooder_in *in)
     {
         if (sndrs[i] > max_descr)
             max_descr = sndrs[i];
-    }
-
-    file_d = open(path, O_CREAT | O_RDWR, S_IRWXU | S_IRWXG | S_IRWXO);
-    if (file_d < 0)
-    {
-        ERROR("%s(): open(%s, O_CREAT, S_IRWXU | S_IRWXG | S_IRWXO) "
-              "failed: %X", __FUNCTION__, path, errno);
-        return -1;;
     }
 
     /*
@@ -3848,7 +3836,6 @@ flooder(tarpc_flooder_in *in)
                     }
                     if (received > 0)
                     {
-                        write(file_d, rcv_buf, received);
                         session_rx = TRUE;
                         if (rx_stat != NULL)
                         {
