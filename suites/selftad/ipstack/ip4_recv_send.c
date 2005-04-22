@@ -151,7 +151,8 @@ main(int argc, char *argv[])
 
         
         rc = tapi_ip4_eth_recv_start(agt_b, sid_b, ip4_listen_csap,
-                                     NULL, NULL, NULL, NULL, 5000, 4);
+                                     NULL, NULL, NULL, NULL, 5000,
+                                     num_pkts);
         if (rc != 0) 
             TEST_FAIL("recv start failed %X", rc); 
 
