@@ -25,6 +25,7 @@
  *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
+ * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  *
  * $Id$
  */
@@ -281,17 +282,17 @@ tapi_tad_csap_create(const char *ta_name, int session,
 /* Description in tapi_tad.h */
 int 
 tapi_tad_trsend_start(const char *ta_name, int session, 
-                      int handle, const asn_value *templ,
+                      csap_handle_t csap, const asn_value *templ,
                       rcf_call_mode_t blk_mode)
 {
     int rc = 0;
-    char tmp_file_name[] = "/tmp/te_tapi_tad__trsend_start.XXXXXX";
+    char tmp_file_name[] = "/tmp/te_tapi_tad_trsend_start.XXXXXX";
 
     mkstemp(tmp_file_name);
 
     asn_save_to_file(templ, tmp_file_name); 
 
-    rc = rcf_ta_trsend_start(ta_name, session, handle, 
+    rc = rcf_ta_trsend_start(ta_name, session, csap, 
                              tmp_file_name, blk_mode); 
     unlink(tmp_file_name);
     if (rc)

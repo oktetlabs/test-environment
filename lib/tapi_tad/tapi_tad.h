@@ -156,7 +156,7 @@ extern int tapi_tad_csap_create(const char *ta_name, int session,
  * @return zero on success or error code
  */
 extern int tapi_tad_trsend_start(const char *ta_name, int session, 
-                                 int handle, const asn_value *templ,
+                                 csap_handle_t csap, const asn_value *templ,
                                  rcf_call_mode_t blk_mode);
 
 /**
