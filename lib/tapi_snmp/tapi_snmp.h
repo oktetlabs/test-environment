@@ -353,7 +353,8 @@ extern int tapi_snmp_packet_to_plain(asn_value *pkt,
 
 
 /**
- * Creates usual SNMP CSAP on specified Test Agent and got its handle.
+ * Creates usual SNMP (community-based security model) CSAP 
+ * on specified Test Agent and got its handle.
  * 
  * @param ta            Test Agent name
  * @param sid           RCF Session ID
@@ -377,7 +378,7 @@ extern int tapi_snmp_csap_create(const char *ta, int sid,
  * @param ta            Test Agent name.
  * @param sid           RCF Session ID.
  * @param snmp_agent    Address of SNMP agent.
- * @param community     SNMP community.
+ * @param security      SNMP security parameters.
  * @param snmp_version  SNMP version.
  * @param rem_port      Remote UDP port.
  * @param loc_port      Local UDP port.
