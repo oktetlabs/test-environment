@@ -60,6 +60,7 @@ main(int argc, char *argv[])
     int snmp_version;
 
     const char *ta;
+    tapi_snmp_security_t security;
 
     csap_handle_t trap_csap = CSAP_INVALID_HANDLE;
 
@@ -85,7 +86,9 @@ main(int argc, char *argv[])
         pattern = asn_parse_value_text("{{}}", const asn_type *type, );
 
 #endif
-        rc = tapi_snmp_gen_csap_create(ta, sid, NULL, "public",
+        security.model = TAPI_SNMP_SEC_MODEL_V2C;
+        security.community = "public";
+        rc = tapi_snmp_gen_csap_create(ta, sid, NULL, &security,
                                        snmp_version,
                                        0, 162, 2000, &trap_csap);
         if (rc != 0)
