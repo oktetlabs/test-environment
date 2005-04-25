@@ -204,7 +204,8 @@ ds_create_backup(const char *dir, const char *name, int *index)
     
     if (stat(ds[n_ds].backup, &st) == 0)
     {
-        WARN("Failed to create backup %s - it's already exists");
+        WARN("Failed to create backup %s - it's already exists", 
+             ds[n_ds].backup);
         free(ds[n_ds].config_file);
         free(ds[n_ds].backup);
         return TE_RC(TE_TA_LINUX, EEXIST);
