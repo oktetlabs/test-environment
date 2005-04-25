@@ -29,6 +29,6 @@ CPPFLAGS=${CPPFLAGS}" "${TE_CFLAGS}
 
 AC_CONFIG_HEADERS([package.h])
 
-AC_CONFIG_FILES([Makefile])
+AC_CONFIG_FILES([Makefile coverage/Makefile])
 
 AC_OUTPUT
