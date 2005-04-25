@@ -1,2 +1,0 @@
-#!/bin/sh
-make -f Makefile -k LANGUAGES="c c++ proto" CC=stage2/xgcc XCFLAGS=-Bstage2/ CFLAGS="-mpa-risc-1-0 -O2" $*

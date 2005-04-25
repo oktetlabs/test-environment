@@ -1,3 +1,0 @@
-X_CFLAGS=-DPOSIX
-# we are native.
-prefix=/usr

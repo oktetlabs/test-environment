@@ -1,1 +1,0 @@
-cd /suptools2/gct-2.0.hpux; cp ./gct_backup/exec.c ./exec.c; chmod 644 ./exec.c

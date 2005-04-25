@@ -1,8 +1,0 @@
-* Make __objc_frame_... macros or builtins for more targets.
-        - will be done after 2.4
-
-* Incorporate class Nil.
-        - will talk to Michael Uhlenberg
-
-* Write a Streams library
-
