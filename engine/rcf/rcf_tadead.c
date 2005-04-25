@@ -95,6 +95,6 @@ main(int argc, char **argv)
         fprintf(stderr, "ipc_close_client() failed");
         result = EXIT_FAILURE;
     }
-
+ 
     return result;
 }
