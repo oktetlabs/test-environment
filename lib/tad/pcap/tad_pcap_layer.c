@@ -34,6 +34,10 @@
 
 #include <string.h>
 
+#if 0
+#define TE_LOG_LEVEL    0xff
+#endif
+
 #define TE_LGR_USER     "TAD Ethernet-PCAP"
 #include "logger_ta.h"
 
@@ -154,14 +158,14 @@ int pcap_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
         return rc;
     }
 
-#define TAD_PCAP_SNAPLEN 0xffff
+    VERB("%s: Try to compile filter string \"%s\"", __FUNCTION__, pcap_str);    
 
     bpf_program = (struct bpf_program *)malloc(sizeof(struct bpf_program));
     if (bpf_program == NULL)
     {
         return TE_RC(TE_TAD_CSAP, ENOMEM);
     }
-    
+
     rc = pcap_compile_nopcap(TAD_PCAP_SNAPLEN, spec_data->iftype,
                              bpf_program, pcap_str, TRUE, 0);
     if (rc != 0)
@@ -169,6 +173,7 @@ int pcap_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
         ERROR("%s(): pcap_compile_nopcap() failed, rc=%d", __FUNCTION__, rc);
         return TE_RC(TE_TAD_CSAP, EINVAL);
     }
+    VERB("%s: pcap_compile_nopcap() returns %d", __FUNCTION__, rc);
 
     spec_data->bpfs[++spec_data->bpf_count] = bpf_program;
 
@@ -177,9 +182,13 @@ int pcap_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
                                val_len, "bpf-id");
     if (rc < 0)
     {
-        ERROR("%s(): asn_write_value_field() failed, rc=%d", __FUNCTION__, rc);
+        ERROR("%s(): asn_write_value_field() failed, rc=%d",
+              __FUNCTION__, rc);
         return rc;
     }
+
+    VERB("%s: filter string compiled, bpf-id %d", __FUNCTION__,
+         spec_data->bpf_count);
 
     VERB("exit, return 0");
     
@@ -265,6 +274,54 @@ pcap_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
         return ETADNOTMATCH;
     }
 
+#if 1
+    do {
+        int filter_id;
+        int filter_len;
+        char *filter = NULL;
+
+        VERB("Packet matches, try to get filter string");
+
+        filter_len = sizeof(int);
+        
+        if (asn_read_value_field(pattern_pdu, &filter_id, 
+                                 &filter_len, "filter-id") < 0)
+        {
+            ERROR("Cannot get filter-id");
+            filter_id = -1;
+        }
+        
+        filter_len = asn_get_length(pattern_pdu, "filter");
+        if (filter_len < 0)
+        {
+            ERROR("Cannot get length of filter string");
+            break;
+        }
+        
+        filter = (char *) malloc(filter_len + 1);
+        if (filter == NULL)
+        {
+            ERROR("Cannot allocate memory for filter string");
+            break;
+        }
+        
+        if (asn_read_value_field(pattern_pdu, filter,
+                                 &filter_len, "filter") < 0)
+        {
+            ERROR("Cannot get filter string");
+            free(filter);
+            break;
+        }
+        
+        filter[filter_len] = '\0';
+        
+        VERB("Received packet matches to filter: \"%s\", filter-id=%d",
+             filter, filter_id);
+        
+        free(filter);
+    } while (0);
+#endif
+
     /* Fill parsed packet value */
     if (parsed_packet)
     {
@@ -272,6 +329,8 @@ pcap_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
         if (rc)
             ERROR("write pcap filter to packet rc %x\n", rc);
     }
+
+    VERB("Try to copy payload of %d bytes", pkt->len);
 
     /* passing payload to upper layer */
     memset(payload, 0 , sizeof(*payload));
