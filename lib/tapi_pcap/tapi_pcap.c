@@ -178,16 +178,13 @@ tapi_pcap_pkt_handler(char *fn, void *user_param)
     pcap_filtered_pdu = asn_read_indexed (frame_val, 0, "pdus");
     if (pcap_filtered_pdu == NULL)
     {
-        ERROR("tapi eth int cb, read_indexed error\n");
+        ERROR("%s, read_indexed error\n", __FUNCTION__);
         return;
     }
 
-#if 0
-    asn_save_to_file(pcap_filtered_pdu, "/tmp/pcap_rx_pdu");
-#endif
 
     tmp_len = sizeof(int);
-    rc = asn_read_value_field(pcap_filtered_pdu, &filter_id, &tmp_len, "filter_id");
+    rc = asn_read_value_field(pcap_filtered_pdu, &filter_id, &tmp_len, "filter-id");
     if (rc < 0)
     {
         filter_id = -1;
@@ -196,9 +193,11 @@ tapi_pcap_pkt_handler(char *fn, void *user_param)
     pkt_len = asn_get_length(frame_val, "payload.#bytes");
     if (pkt_len < 0)
     {
-        ERROR( "tapi eth int cb, get_len error \n");
+        ERROR( "%s, get_len error \n", __FUNCTION__);
         return;
     }
+    
+    VERB("%s: Packet payload length %d bytes\n", __FUNCTION__, pkt_len);
 
     pkt = malloc(pkt_len);
     if (pkt == NULL)
@@ -210,7 +209,7 @@ tapi_pcap_pkt_handler(char *fn, void *user_param)
     rc = asn_read_value_field(frame_val, pkt, &pkt_len, "payload.#bytes");
     if (rc < 0)
     {
-        ERROR( "tapi eth int cb, read payload error %x\n", rc);
+        ERROR( "%s, read payload error %x\n", __FUNCTION__, rc);
         return;
     }
 
