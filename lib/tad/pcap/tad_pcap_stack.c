@@ -60,14 +60,18 @@
 #include <assert.h>
 
 #include <string.h>
-#include "tad_pcap_impl.h"
-#include "ndn_pcap.h" 
+
+#if 0
+#define TE_LOG_LEVEL    0xff
+#endif
 
 #define TE_LGR_USER     "TAD Ethernet-PCAP"
 #include "logger_ta.h"
 
+#include "tad_pcap_impl.h"
+#include "ndn_pcap.h" 
 
-#if 1
+#if 0
 #define PCAP_DEBUG(args...) \
     do {                                        \
         fprintf(stdout, "\nTAD PCAP stack " args);    \
