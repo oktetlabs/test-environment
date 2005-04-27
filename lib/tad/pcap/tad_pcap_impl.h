@@ -30,8 +30,6 @@
 #ifndef __TE_TAD_PCAP_IMPL_H__
 #define __TE_TAD_PCAP_IMPL_H__ 
 
-#define TE_LOG_LEVEL 0xff
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -86,6 +84,9 @@ extern "C" {
 #endif
 
 #define PCAP_LINKTYPE_DEFAULT   DLT_EN10MB
+
+#define TAD_PCAP_SNAPLEN        0xffff
+
 
 /* 
  * Ethernet-PCAP CSAP specific data
