@@ -29,7 +29,9 @@
 
 #define TE_TEST_NAME    "cli/shell"
 
+#if 0
 #define TE_LOG_LEVEL 0xff
+#endif
 
 #include "config.h"
 
@@ -52,7 +54,7 @@
 
 #include "logger_api.h"
 
-#if 1
+#if 0
 #define PCAP_DEBUG(args...) \
     do {                                        \
         fprintf(stdout, "\nTEST PCAP " args);    \
@@ -80,7 +82,8 @@ pcap_recv_cb(const int filter_id, const uint8_t *pkt_data,
              const uint16_t pkt_len, void *userdata)
 {
     VERB("Packet: FID %d, pkt_num %d at 0x%x of %d bytes, userdata at 0x%x",
-         filter_id, pkt_num++, pkt_data, pkt_len, userdata);
+         filter_id, pkt_num, pkt_data, pkt_len, userdata);
+    pkt_num++;
 }
 
 
@@ -89,9 +92,11 @@ main(int argc, char *argv[])
 {
     char           *ta;
     char           *pcap_filter = "port 22";
+    char           *pcap_filter2 = "port nfs";
     char           *pcap_ifname = "eth0";
     int             pcap_iftype = DLT_EN10MB;
     int             pcap_filter_id = 1;
+    int             pcap_filter2_id = 2;
     int             pcap_recv_mode = PCAP_RECV_MODE_DEF;
 
     int             sid;
@@ -118,9 +123,15 @@ main(int argc, char *argv[])
     CHECK_RC(tapi_pcap_csap_create(ta, sid, pcap_ifname, pcap_iftype,
                                    pcap_recv_mode, &pcap_csap));
 
-    VERB("Create recv pattern to filter \"%s\"", pcap_filter);
+
+    VERB("Create recv pattern for filter \"%s\"", pcap_filter);
 
     CHECK_RC(tapi_pcap_pattern_add(pcap_filter, pcap_filter_id, &pcap_pattern));
+
+
+    VERB("Add to recv pattern to filter \"%s\"", pcap_filter2);
+
+    CHECK_RC(tapi_pcap_pattern_add(pcap_filter2, pcap_filter2_id, &pcap_pattern));
 
 
     VERB("Try to recv_start()");
