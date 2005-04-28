@@ -237,6 +237,7 @@ pcap_prepare_send(csap_p csap_descr)
  *
  * @return number of layer (start from zero) or -1 if not found. 
  */ 
+#if 0
 int 
 find_csap_layer(csap_p csap_descr, char *layer_name)
 {
@@ -249,7 +250,7 @@ find_csap_layer(csap_p csap_descr, char *layer_name)
             return i;
     return -1;
 }
-
+#endif
 
 /**
  * Free all memory allocated by Ethernet-PCAP csap specific data
