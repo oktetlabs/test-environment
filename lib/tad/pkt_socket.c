@@ -112,6 +112,8 @@ open_packet_socket(const char *ifname, int *sock)
     eth_interface_t     ifdescr;
     struct sockaddr_ll  bind_addr;
 
+    struct packet_mreq  mr;
+
     memset (&bind_addr, 0, sizeof(bind_addr));
 
     rc = eth_find_interface(ifname,  &ifdescr);
@@ -186,7 +188,16 @@ open_packet_socket(const char *ifname, int *sock)
         *sock = -1;
         return rc;
     }
-
+#if 1
+    memset(&mr, 0, sizeof(mr));
+    mr.mr_ifindex = ifdescr.if_index;
+    mr.mr_type    = PACKET_MR_PROMISC;
+    if (setsockopt(*sock, SOL_PACKET,
+        PACKET_ADD_MEMBERSHIP, &mr, sizeof(mr)) == -1)
+    {
+        ERROR("setsockopt: PACKET_ADD_MEMBERSHIP failed");
+    }
+#endif
     return 0;
 }
 
@@ -297,6 +308,8 @@ eth_find_interface(const char *name, eth_interface_p ifdescr)
     INSQUE(ir, &iface_users_root); 
 
 promisc_mode:
+
+#if 0
 #if USE_PROMISC_MODE
 
     memset(&if_req, 0, sizeof(if_req));
@@ -324,6 +337,7 @@ promisc_mode:
         ERROR("set PROMISC mode error %d \"%s\"", rc, err_buf);
         return rc;
     }
+#endif
 #endif
     
     close(cfg_socket);
