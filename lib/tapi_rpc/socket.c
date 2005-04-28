@@ -83,6 +83,7 @@ rpc_socket(rcf_rpc_server *rpcs,
     in.domain = domain;
     in.type = type;
     in.proto = protocol;
+    in.flags = 1;
 
     rcf_rpc_call(rpcs, _socket,
                  &in,  (xdrproc_t)xdr_tarpc_socket_in,
