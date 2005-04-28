@@ -1243,15 +1243,22 @@ TARPC_FUNC(transmit_file, {},
     }
 
     flags = transmit_file_flags_rpc2h(in->flags);
-    if (in->file.file_len != 0)
-        file = CreateFile(in->file.file_val, FILE_READ_DATA,
-                          FILE_SHARE_DELETE, NULL, OPEN_ALWAYS,
-                          FILE_ATTRIBUTE_NORMAL, NULL);
-    MAKE_CALL(out->retval =
-        (*pf_transmit_file)(in->fd, file,
-                            in->len, in->len_per_send,
-                            (LPWSAOVERLAPPED)overlapped,
-                            &transmit_buffers, flags));
+
+    MAKE_CALL(
+        if (in->file.file_len != 0)
+            file = CreateFile(in->file.file_val, FILE_READ_DATA,
+                FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE,
+                NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+
+        if (file != INVALID_HANDLE_VALUE)
+            out->retval = (*pf_transmit_file)(in->fd, file,
+                              in->len, in->len_per_send,
+                              (LPWSAOVERLAPPED)overlapped,
+                              &transmit_buffers, flags);
+        else
+            out->retval = FALSE;
+    );
+
     finish:
     ;
 }
@@ -3857,10 +3864,19 @@ TARPC_FUNC(set_buf, {},
 TARPC_FUNC(get_buf, {},
 {
     UNUSED(list);
-    if (((char*)in->src_buf != NULL) && (in->len != 0))
+    if (((void*)in->src_buf != NULL) && (in->len != 0))
     {
-        out->dst_buf.dst_buf_val = (char*)in->src_buf;
-        out->dst_buf.dst_buf_len = in->len;
+        char *buf;
+
+        buf = malloc(in->len);
+        if (buf == NULL)
+            out->common._errno = TE_RC(TE_TA_WIN32, ENOMEM);
+        else
+        {
+            memcpy(buf, (void*)in->src_buf, in->len);
+            out->dst_buf.dst_buf_val = buf;
+            out->dst_buf.dst_buf_len = in->len;
+        }
     }
     else
     {
