@@ -1,0 +1,16 @@
+#! /bin/sh
+
+cd `dirname "$1"`
+objname=`basename "$1" .da`.o
+for file in `objdump -l -d "$objname" | sed -e '/^.*:[0-9][0-9]*$/s/:[0-9][0-9]*$//
+t
+d' | sort | uniq`; do
+  cd `dirname $file`
+  sfile=`basename $file`
+  rm -f $sfile.gcov
+  gcov -o "$1" $sfile
+  if test -f $sfile.gcov; then
+      cat $sfile.gcov
+      rm -f $sfile.gcov
+  fi
+done

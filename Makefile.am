@@ -64,15 +64,6 @@ te: install-data
 	te_cross_build $(prefix)
 	te_build_nuts nuts
 
-tce-report:
-	. builder.conf.processed ; \
-	for i in $${TE_BS_NUTS}  $${TE_BS_NUTLIBS}; do \
-	    tce_taname=`eval echo '$$NUT_'$$i'_TCE_TANAME'` ; \
-	    if test -n "$${tce_taname}" ; then \
-	        tce_report $${tce_taname} || exit 1 ; \
-	    fi ; \
-	done
-
 dist-hook:
 	cp -pR @TE_CONF_DIR@ $(distdir)
 	rm -rf $(distdir)/conf/.svn $(distdir)/conf/CVS

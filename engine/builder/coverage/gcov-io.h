@@ -27,8 +27,8 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
    the executable file might be covered by the GNU General Public
    License.  */
 
-#ifndef GCC_GCOV_IO_H
-#define GCC_GCOV_IO_H
+#ifndef GCOV_IO_H
+#define GCOV_IO_H
 #include <stdio.h>
 #include <sys/types.h>
 
@@ -306,4 +306,4 @@ __read_gcov_string (string, max_length, file, delim)
 }
 
 
-#endif /* ! GCC_GCOV_IO_H */
+#endif /* ! GCOV_IO_H */

@@ -32,7 +32,7 @@
  *
  */
 
-#include "config.h"
+#include "te_config.h"
 
 #define ETHER_ADDR_LEN 6
 #define TE_TEST_NAME "example"
@@ -61,51 +61,32 @@
 #include "tapi_cfg_base.h"
 #include "tapi_sockaddr.h"
 #include "rcf_api.h"
+#include "rcf_rpc.h"
+#include "tapi_rpc.h"
+#include "tapi_rpc_stdio.h"
+#include "tapi_rpcsock_macros.h"
 
 int
 main(int argc, char *argv[])
 {
+    rcf_rpc_server *srv = NULL;
+    int rc1;
+    FILE *f;
     TEST_START;
     
     len = sizeof(ta);
     CHECK_RC(rcf_get_ta_list(ta, &len));
     INFO("Agent is %s", ta);
 
-#if 0
-    CHECK_RC(cfg_set_instance_fmt(CVT_INTEGER, (void *)0, "/agent:%s/smtp:", ta));
-    CHECK_RC(cfg_set_instance_fmt(CVT_STRING, "qmail", "/agent:%s/smtp:/server:", ta));
-    host_addr.sin_family = AF_INET;
-    host_addr.sin_addr.s_addr = 0xdeadbeeef;
-    CHECK_RC(cfg_set_instance_fmt(CVT_ADDRESS, &host_addr, "/agent:%s/smtp:/smarthost:", ta));
-    CHECK_RC(cfg_set_instance_fmt(CVT_INTEGER, (void *)1, "/agent:%s/smtp:", ta));
-#endif
+    CHECK_RC(rcf_rpc_server_create(ta, "test", &srv));
+    CHECK_RC(rpc_setlibname(srv, strdup("/home/artem/src/v5/build/gnu/lib/transport/unix/libcitransport0.so")));
+    RING("kuku");
+    RPC_FOPEN(f, srv, "test", "w");
 
-    sleep(120);
-#if 0
-    CHECK_RC(cfg_set_instance_fmt(CVT_INTEGER, (void *)0, "/agent:%s/smtp:", ta));
-#endif
-    snprintf(eth0_oid, sizeof(eth0_oid) - 1, "/agent:%s/interface:*", ta);
-    CHECK_RC(cfg_find_pattern(eth0_oid, &num_interfaces, &interfaces));
-    {
-        int i;
-        char *oid;
-        
-        for (i = 0; i < num_interfaces; i++)
-        {
-            CHECK_RC(cfg_get_oid_str(interfaces[i], &oid));
-
-            CHECK_RC(tapi_cfg_base_if_get_mtu(oid, &mtu));
-            RING("MTU for %s is %u", oid, mtu);
-            free(oid);
-        }
-    }
-    free(interfaces);
-#if 0
-    CHECK_RC(rcf_ta_put_file(ta, 0, "/home/artem/test.txt", \
-                             "/home/artem/tmp/test.txt"));
-#endif
     TEST_SUCCESS;
 
 cleanup:
+    if (srv != NULL)
+        CLEANUP_CHECK_RC(rcf_rpc_server_destroy(srv));
     TEST_END;
 }

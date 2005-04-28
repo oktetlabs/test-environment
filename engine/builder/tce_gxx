@@ -1,0 +1,5 @@
+#! /bin/sh
+# A wrapper around tce_gcc to simulate g++
+
+export TCE_CC=${TCE_CXX}
+exec tce_gcc "$@"

@@ -1,5 +1,11 @@
 /* Copyright (C) 1989, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999,
    2000, 2001, 2002  Free Software Foundation, Inc. */
+/* Copyright (C) 2005  The authors of the Test Environment */
+
+/* This code is based on libgcc2.c from GCC distribution.
+   It uses gcov-related routines from there modifying them to
+   use TE logger instead of normal file I/O
+*/
 
 /* As a special exception, if you link this library with other files,
    some of which are compiled with GCC, to produce an executable,
@@ -17,9 +23,6 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <te_config.h>
-#include <ta_logfork.h>
-
-DEFINE_LGR_ENTITY("TCE");
 
 struct bb_function_info 
 {
@@ -58,9 +61,8 @@ __bb_exit_func (void)
     long long program_max = 0;
     long program_arcs = 0;
 
-    if (logfork_register_user("TCE"))
-        return;
-    
+    fputs("Dumping GCOV data\n", stderr);
+
     /* Non-merged stats for this program.  */
     for (ptr = __bb_head; ptr; ptr = ptr->next)
     {
@@ -98,27 +100,27 @@ __bb_exit_func (void)
                 object_max = ptr->counts[i];
         }
 
-        LOGF_RING("TCE", "total %s %ld:%Ld:%Ld:%ld:%Ld:%Ld\n", 
-                  ptr->filename,
-                  object_functions, 
-                  program_arcs, 
-                  program_sum, 
-                  program_max, 
-                  ptr->ncounts, 
-                  object_sum, 
-                  object_max);
+        fprintf(stderr, "TCE total %s %d:%d:%Ld:%Ld:%d:%Ld:%Ld\n", 
+                ptr->filename,
+                object_functions, 
+                program_arcs,
+                program_sum, 
+                program_max, 
+                ptr->ncounts, 
+                object_sum,
+                object_max);
       
         /* Write execution counts for each function.  */
         count_ptr = ptr->counts;
         
-        for (fn_info = ptr->function_infos; fn_info->arc_count != -1;
+        for (fn_info = ptr->function_infos; fn_info->arc_count >= 0;
              fn_info++)
         {          
-            LOGF_RING("TCE", "function %s %ld:%ld\n", fn_info->name,
-                      fn_info->checksum, fn_info->arc_count);
+            fprintf(stderr, "TCE function %s %d:%d\n", fn_info->name,
+                    fn_info->checksum, fn_info->arc_count);
             for (i = fn_info->arc_count; i > 0; i--, count_ptr++)
             {
-                LOGF_RING("TCE", "arc %Ld\n", *count_ptr);
+                fprintf(stderr, "TCE arc %Ld\n", *count_ptr);
             }
         }
     }
@@ -131,6 +133,7 @@ __bb_exit_func (void)
 void
 __bb_init_func (struct bb *blocks)
 {
+    fputs("Initializing GCOV data\n", stderr);
     if (blocks->zero_word)
         return;
 

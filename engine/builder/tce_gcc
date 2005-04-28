@@ -28,7 +28,7 @@
 
 coverage_options=
 processed_options=
-for arg in $@; do
+for arg in "$@"; do
     case "$arg" in
         -c) TCE_BBHOOK_O=""
         TCE_LOGFORK=""
@@ -50,5 +50,4 @@ for arg in $@; do
     esac
 done
 
-# echo ${TCE_CC} $coverage_options $processed_options $TCE_BBHOOK_O $TCE_LOGFORK
 exec ${TCE_CC} $coverage_options $processed_options $TCE_BBHOOK_O $TCE_LOGFORK

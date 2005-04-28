@@ -6,6 +6,14 @@ AUTOMAKE_OPTIONS = foreign
 srcdir=@srcdir@
 VPATH=@srcdir@
 
-EXTRA_DIST = bbhook.c gcov-io.h
+AM_CPPFLAGS=@TE_CFLAGS@ -I$(DESTDIR)/$(prefix)/include 
+AM_CFLAGS = 
+AM_LDFLAGS=@TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/lib 
+
+bin_PROGRAMS = log2da
+
+log2da_SOURCES = log2da.c gcov-io.h
+
+EXTRA_DIST = bbhook.c 
 
 

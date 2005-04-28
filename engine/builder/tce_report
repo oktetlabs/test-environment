@@ -1,2 +1,18 @@
+#! /bin/sh
 
-echo TCE report for TA $1
+
+if test -e ${TE_BUILD}/builder.conf.processed ; then
+    . ${TE_BUILD}/builder.conf.processed
+fi    
+
+for i in ${TE_BS_NUTS} ${TE_BS_NUTLIBS}; do 
+    tce_taname=`eval echo '$NUT_'$i'_TCE_TANAME'` ; 
+    if test -n "${tce_taname}" ; then 
+        NUT_SOURCES=`eval echo '$NUT_'$i'_SOURCES'` 
+        echo "*** Test coverage report for $i:"
+        log2da ${tce_taname} <"$1" && find $NUT_SOURCES -name '*.da' -exec tce_gcov '{}' ';' 
+    fi        
+done
+
+
+
