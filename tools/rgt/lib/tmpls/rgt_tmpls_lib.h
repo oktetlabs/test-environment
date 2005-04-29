@@ -127,14 +127,57 @@ typedef struct rgt_tmpl {
     int           n_blocks; /**< Total number of blocks */
 } rgt_tmpl_t;
 
+/**
+ * Create rgt attribute list based on libxml attribute format
+ *
+ * @param xml_attrs  XML attributes in libxml native format 
+ *                   (array of pairs: attribute name, attribute value)
+ *
+ * @return Pointer to the list of attributes in rgt format
+ *
+ * @note Currently you can only use one attribute list at the same time,
+ * so that after using the list free it with rgt_tmpls_attrs_free().
+ */
 extern rgt_attrs_t *rgt_tmpls_attrs_new(const char **xml_attrs);
+
+/**
+ * Free the list of attributes.
+ *
+ * @param attrs  Rgt attributes
+ */
 extern void rgt_tmpls_attrs_free(rgt_attrs_t *attrs);
 
+/**
+ * Add a new string attribute into the list of rgt attributes.
+ * 
+ * @param attrs    Rgt attributes list
+ * @param name     A new attribute name
+ * @param fmt_str  Format string for the attribute value followed by 
+ *                 the list of arguments
+ */
 extern void rgt_tmpls_attrs_add_fstr(rgt_attrs_t *attrs, const char *name,
                                      const char *fmt_str, ...);
+
+/**
+ * Add a new uint32_t attribute into the list of rgt attributes.
+ * 
+ * @param attrs  Rgt attributes list
+ * @param name   A new attribute name
+ * @param val    Attribute value
+ */
 extern void rgt_tmpls_attrs_add_uint32(rgt_attrs_t *attrs, const char *name,
                                        uint32_t val);
 
+/**
+ * Get the value of attribute from the list of attributes in 
+ * libxml native format.
+ *
+ * @param attrs  XML attributes in libxml native format 
+ *               (array of pairs: attribute name, attribute value)
+ * @param name   Attribute name, whose value we want to get
+ *
+ * @return Attribute value.
+ */
 extern const char *rgt_tmpls_xml_attrs_get(const char **attrs,
                                            const char *name);
 

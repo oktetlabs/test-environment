@@ -45,15 +45,20 @@ static void get_error_point(const char *file, unsigned long offset,
                             int *n_row, int *n_col);
 
 
+/** Array of Rgt attributes */
 static rgt_attrs_t global_attrs[20];
 #define ATTR_NUM (sizeof(global_attrs) / sizeof(global_attrs[0]))
 
+/** The number of attributes in attribute array */
 static unsigned int global_attr_num = 0;
+/** Wheter the attribute array is currently used or not */
 static te_bool      attr_locked = FALSE;
 
 #define N_BUFS 10
 #define BUF_LEN 128
+/** The array of buffers for keeping string value attributes */
 static char bufs[N_BUFS][BUF_LEN];
+/** Currently used buffer */
 static int cur_buf = 0;
 
 /* The description see in rgt_tmpls_lib.h */
