@@ -777,10 +777,6 @@ snmp_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
 
     snmp_spec_data->sock = -1;
 
-#if 0
-    init_snmp("snmpapp");
-#endif
-    
     do {
 #if NEW_SNMP_API
         char buf[32];
@@ -868,9 +864,6 @@ snmp_single_destroy_cb (int csap_id, int layer)
 
         snmp_close(s);
     }
-#if 0
-    snmp_shutdown("snmpapp");
-#endif
     return 0;
 }
 

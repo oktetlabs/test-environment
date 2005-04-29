@@ -62,6 +62,8 @@ csap_spt_type_t snmp_csap_spt =
  */ 
 int csap_support_snmp_register (void)
 { 
+    init_snmp("snmpapp");
+
     return add_csap_spt(&snmp_csap_spt);
 }
 
