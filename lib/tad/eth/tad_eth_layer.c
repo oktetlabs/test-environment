@@ -499,6 +499,7 @@ eth_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
                  const csap_pkts *pkt, csap_pkts *payload, 
                  asn_value_p parsed_packet)
 {
+    struct timeval moment;
     csap_p                   csap_descr;
     eth_csap_specific_data_p spec_data;
     int      rc;
@@ -515,14 +516,18 @@ eth_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
         csap_descr->layers[layer].specific_data;
     data = pkt->data; 
 
-#if 1
+#if 0
     {
         char buf[50], *p = buf;
         int i;
+        gettimeofday(&moment, NULL);
+
         for (i = 0; i < 14; i++)
             p += sprintf (p, "%02x ", data[i]);
+
             
-        VERB("got data: %s", buf);
+        VERB("%s(): CSAP %d got data: %s, mcs %d",
+             __FUNCTION__, csap_id, buf, moment.tv_usec);
     } 
 #endif
 
@@ -629,8 +634,9 @@ eth_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
     payload->data = malloc(payload->len);
     memcpy(payload->data, pkt->data + ETH_HLEN, payload->len); 
 
-    F_VERB("Eth csap N %d, packet matches, pkt len %d, pld len %d", 
-           csap_id, pkt->len, payload->len);
+    gettimeofday(&moment, NULL);
+    F_VERB("Eth csap %d, packet matches, pkt len %d, pld len %d, mcs %d", 
+           csap_id, pkt->len, payload->len, moment.tv_usec);
 
     asn_free_value(eth_hdr_pdu);
     
