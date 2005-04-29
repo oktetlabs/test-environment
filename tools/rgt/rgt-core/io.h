@@ -41,14 +41,14 @@ extern "C" {
 #endif
 
 /** Modes of reading raw log file */
-enum read_mode {
-    RMODE_BLOCKING,    /**< Blocking mode. Read operation in this mode
-                            blocks caller until all bytes read */
-    RMODE_NONBLOCKING, /**< Nonblocking mode. If number of bytes caller
-                            wants to read less than actually available
-                            in file, it reads only them without waiting
-                            for more data. */
-}; 
+typedef enum rgt_io_mode {
+    RGT_IO_MODE_BLK, /**< Blocking mode. Read operation in this mode
+                          blocks caller until all bytes read */
+    RGT_IO_MODE_NBLK, /**< Nonblocking mode. If number of bytes caller
+                           wants to read less than actually available
+                           in file, it reads only them without waiting
+                           for more data. */
+} rgt_io_mode_t;
 
 /**
  * Attempts to read up to count bytes from file descriptor fd into
@@ -57,10 +57,10 @@ enum read_mode {
  * in file it blocks until count bytes available for read.
  * If read_mode equals to RMODE_NONBLOCKING it doesn't block in any cases.
  *
- * @param  fd      File descriptor used for reading.
- * @param  buf     Pointer to the user specified buffer.
- * @param  count   Number of bytes user wants to be read.
- * @param  rmode   Blocking or non-blocking mode of reading should be used.
+ * @param  fd       File descriptor used for reading.
+ * @param  buf      Pointer to the user specified buffer.
+ * @param  count    Number of bytes user wants to be read.
+ * @param  io_mode  Blocking or non-blocking mode of reading should be used.
  *
  * @return  Number of bytes read is returned.
  *
@@ -68,8 +68,8 @@ enum read_mode {
  * @retval 0     An error occurs, or the end-of-file is reached.
  *               User has to check it with feof() or ferror().
  */
-size_t universal_read(FILE *fd, void *buf, size_t count,
-                      enum read_mode rmode);
+extern size_t universal_read(FILE *fd, void *buf, size_t count,
+                             rgt_io_mode_t io_mode);
 
 #ifdef __cplusplus
 }

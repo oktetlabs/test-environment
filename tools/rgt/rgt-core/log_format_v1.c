@@ -121,13 +121,13 @@ static struct debug_msg {
  * @se It may never return control.
  */
 #define READ(_fd, _buf, _len) \
-    do {                                                                \
-        if (universal_read((_fd), (_buf), (_len), rgt_rmode) != (_len)) \
-        {                                                               \
-            /* Error: File is truncated */                              \
-            PRINT_ERROR;                                                \
-            THROW_EXCEPTION;                                            \
-        }                                                               \
+    do {                                                                   \
+        if (universal_read((_fd), (_buf), (_len), ctx->io_mode) != (_len)) \
+        {                                                                  \
+            /* Error: File is truncated */                                 \
+            PRINT_ERROR;                                                   \
+            THROW_EXCEPTION;                                               \
+        }                                                                  \
     } while (0)
 
 /* 
@@ -170,7 +170,7 @@ static struct debug_msg {
  *   longjmp call.
  */
 int
-fetch_log_msg_v1(log_msg **msg, FILE *fd)
+fetch_log_msg_v1(log_msg **msg, rgt_gen_ctx_t *ctx)
 {
     te_log_nfl_t      nflen; /* Next field length */
     uint8_t           log_ver[TE_LOG_VERSION_SZ];
@@ -178,6 +178,7 @@ fetch_log_msg_v1(log_msg **msg, FILE *fd)
     te_log_level_t    log_level;
     te_log_msg_len_t  msg_len;
     uint8_t          *msg_content;
+    FILE             *fd = ctx->rawlog_fd;
 
     char     *entity_name;
     char     *user_name;
@@ -194,7 +195,7 @@ fetch_log_msg_v1(log_msg **msg, FILE *fd)
     assert(sizeof(nflen) == TE_LOG_NFL_SZ);
 
     /* Read length of entity name */
-    if (universal_read(fd, &nflen, TE_LOG_NFL_SZ, rgt_rmode) == 0)
+    if (universal_read(fd, &nflen, TE_LOG_NFL_SZ, ctx->io_mode) == 0)
     {
         /*
          * There are no messages left (rgt operation mode is postponed)

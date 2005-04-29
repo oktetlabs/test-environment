@@ -658,7 +658,7 @@ fi
 if test -n "${RGT_LOG_TXT}" -o -n "${RGT_LOG_HTML_PLAIN}" ; then
     # Generate XML log do not taking into account control messages
     LOG_XML_PLAIN="log_plain.xml"
-    rgt-conv -m postponed ${CONF_RGT} \
+    rgt-conv --no-cntrl-msg  -m postponed ${CONF_RGT} \
         -f ${TE_LOG_RAW} -o ${LOG_XML_PLAIN}
     if test $? -eq 0 -a -e ${LOG_XML_PLAIN} ; then
         if test -n "${RGT_LOG_TXT}" ; then
@@ -672,10 +672,10 @@ fi
 if test -n "${RGT_LOG_HTML}" ; then
     # Generate XML log taking into account control messages
     LOG_XML_STRUCT="log_struct.xml"
-    rgt-conv --no-cntrl-msg -m postponed ${CONF_RGT} \
+    rgt-conv -m postponed ${CONF_RGT} \
         -f ${TE_LOG_RAW} -o ${LOG_XML_STRUCT}
     if test $? -eq 0 -a -e ${LOG_XML_STRUCT} ; then
-        rgt-xml2html -m ${LOG_XML_STRUCT} ${RGT_LOG_HTML}
+        rgt-xml2html-multi ${LOG_XML_STRUCT} ${RGT_LOG_HTML}
     fi
 fi
 

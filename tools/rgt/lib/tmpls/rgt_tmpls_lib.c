@@ -28,9 +28,15 @@
  * $Id$
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <assert.h>
+#include <stdarg.h>
 
 #include "rgt_tmpls_lib.h"
 
@@ -38,30 +44,200 @@
 static void get_error_point(const char *file, unsigned long offset,
                             int *n_row, int *n_col);
 
-/**
- * Parses themplate files and fills in an appropriate data structure.
- *
- * @param  files     An array of template files to be parsed
- * @param  tmpls     An array of internal representation of the templates
- * @param  tmpl_num  Number of templates in the arrays
- *
- * @return  Status of the operation
- *
- * @retval 0  On success
- * @retval 1  On failure
- *
- * @se  If an error occures the function output error message into stderr
- */
-int
-rgt_tmpls_lib_parse(const char **files, struct log_tmpl *tmpls,
-                    int tmpl_num)
+
+static rgt_attrs_t global_attrs[20];
+#define ATTR_NUM (sizeof(global_attrs) / sizeof(global_attrs[0]))
+
+static unsigned int global_attr_num = 0;
+static te_bool      attr_locked = FALSE;
+
+#define N_BUFS 10
+#define BUF_LEN 128
+static char bufs[N_BUFS][BUF_LEN];
+static int cur_buf = 0;
+
+/* The description see in rgt_tmpls_lib.h */
+rgt_attrs_t *
+rgt_tmpls_attrs_new(const char **xml_attrs)
 {
-    FILE *fd;
-    int   i;
-    long  fsize; /* Number of bytes in a template file */
-    char *cur_ptr;
-    char *var_ptr;
-    char *p_tmp;
+    unsigned int i, j;
+
+    assert(attr_locked == FALSE);
+    attr_locked = TRUE;
+
+    global_attr_num = 0;
+
+    if (xml_attrs == NULL)
+    {
+        global_attrs[0].type = RGT_ATTR_TYPE_UNKNOWN;
+        return global_attrs;
+    }
+    
+    for (i = 0, j = 0;
+         xml_attrs != NULL && xml_attrs[j] != NULL &&
+         xml_attrs[j + 1] != NULL;
+         i++, j += 2)
+    {
+        if (i + 2 >= ATTR_NUM)
+            assert(0);
+
+        global_attrs[i].type = RGT_ATTR_TYPE_STR;
+        global_attrs[i].name = xml_attrs[j];
+        global_attrs[i].str_val = xml_attrs[j + 1];
+    }
+
+    global_attrs[i].type = RGT_ATTR_TYPE_UNKNOWN;
+    
+    global_attr_num = i;
+    if (i == ATTR_NUM)
+        assert(0);
+
+    return global_attrs;
+}
+
+/* The description see in rgt_tmpls_lib.h */
+void
+rgt_tmpls_attrs_free(rgt_attrs_t *attrs)
+{
+    assert(attr_locked == TRUE);
+    assert(attrs == global_attrs);
+    cur_buf = 0;
+    attr_locked = FALSE;
+}
+
+/* The description see in rgt_tmpls_lib.h */
+void
+rgt_tmpls_attrs_add_fstr(rgt_attrs_t *attrs, const char *name,
+                         const char *fmt_str, ...)
+{
+    va_list ap;
+
+    assert(attr_locked == TRUE);
+    assert(global_attr_num + 2 <= ATTR_NUM);
+    assert(cur_buf + 1 <= N_BUFS);
+    assert(attrs == global_attrs);
+    
+    va_start(ap, fmt_str);
+
+    global_attrs[global_attr_num].type = RGT_ATTR_TYPE_STR;
+    global_attrs[global_attr_num].name = name;
+    vsnprintf(bufs[cur_buf], BUF_LEN, fmt_str, ap);
+    global_attrs[global_attr_num].str_val = bufs[cur_buf];
+
+    va_end(ap);
+    
+    cur_buf++;
+    global_attr_num++;
+
+    global_attrs[global_attr_num].type = RGT_ATTR_TYPE_UNKNOWN;
+}
+
+/* The description see in rgt_tmpls_lib.h */
+void
+rgt_tmpls_attrs_add_uint32(rgt_attrs_t *attrs, const char *name,
+                           uint32_t val)
+{
+    assert(attr_locked == TRUE);
+    assert(global_attr_num + 2 <= ATTR_NUM);
+    assert(attrs == global_attrs);
+
+    global_attrs[global_attr_num].type = RGT_ATTR_TYPE_UINT32;
+    global_attrs[global_attr_num].name = name;
+    global_attrs[global_attr_num].uint32_val = val;
+
+    global_attr_num++;
+
+    global_attrs[global_attr_num].type = RGT_ATTR_TYPE_UNKNOWN;
+}
+
+/* The description see in rgt_tmpls_lib.h */
+int
+rgt_tmpls_output(FILE *out_fd, rgt_tmpl_t *tmpl, const rgt_attrs_t *attrs)
+{
+    int i;
+
+    for (i = 0; i < tmpl->n_blocks; i++)
+    {
+        if (tmpl->blocks[i].type == RGT_BLK_TYPE_CSTR)
+        {
+            fprintf(out_fd, "%s", tmpl->blocks[i].start_data);
+        }
+        else
+        {
+            int j = 0;
+
+            for (j = 0; attrs[j].type != RGT_ATTR_TYPE_UNKNOWN; j++)
+            {
+                if (strcmp(attrs[j].name, tmpl->blocks[i].var.name) == 0)
+                {
+                    switch (attrs[j].type)
+                    {
+                        case RGT_ATTR_TYPE_STR:
+                            fprintf(out_fd, tmpl->blocks[i].var.fmt_str,
+                                    attrs[j].str_val);
+                            break;
+
+                        case RGT_ATTR_TYPE_UINT32:
+                            fprintf(out_fd, tmpl->blocks[i].var.fmt_str,
+                                    attrs[j].uint32_val);
+                            break;
+
+                        default:
+                            assert(0);
+                    }
+                    break;
+                }
+            }
+
+            if (attrs[j].type == RGT_ATTR_TYPE_UNKNOWN)
+            {
+                int n_row;
+                int n_col;
+                
+                get_error_point(tmpl->fname,
+                                tmpl->blocks[i].var.name -
+                                tmpl->raw_ptr,
+                                &n_row, &n_col);
+                fprintf(stderr, "Variable %s isn't specified in "
+                                "context\n"
+                                "%s:%d:%d\n",
+                        tmpl->blocks[i].var.name,
+                        tmpl->fname, n_row, n_col);
+                return 1;
+            }
+        }
+    }
+
+    return 0;
+}
+
+/* The description see in rgt_tmpls_lib.h */
+void
+rgt_tmpls_free(rgt_tmpl_t *tmpls, size_t tmpl_num)
+{
+    size_t i;
+
+    for (i = 0; i < tmpl_num; i++)
+    {
+        if (tmpls[i].raw_ptr != NULL)
+            free(tmpls[i].raw_ptr);
+        if (tmpls[i].fname != NULL)
+            free(tmpls[i].fname);
+        if (tmpls[i].blocks != NULL)
+            free(tmpls[i].blocks);
+    }
+}
+
+/* The description see in rgt_tmpls_lib.h */
+int
+rgt_tmpls_parse(const char **files, rgt_tmpl_t *tmpls, size_t tmpl_num)
+{
+    FILE   *fd;
+    size_t  i;
+    long    fsize; /* Number of bytes in a template file */
+    char   *cur_ptr;
+    char   *var_ptr;
+    char   *p_tmp;
 
     memset(tmpls, 0, sizeof(*tmpls) * tmpl_num);
 
@@ -71,7 +247,7 @@ rgt_tmpls_lib_parse(const char **files, struct log_tmpl *tmpls,
         if ((fd = fopen(files[i], "r")) == NULL)
         {
             perror(files[i]);
-            rgt_tmpls_lib_free(tmpls, tmpl_num);
+            rgt_tmpls_free(tmpls, tmpl_num);
             return 1;
         }
 
@@ -83,11 +259,11 @@ rgt_tmpls_lib_parse(const char **files, struct log_tmpl *tmpls,
          */
         tmpls[i].raw_ptr = (char *)malloc((fsize = ftell(fd)) + 1);
         if (tmpls[i].raw_ptr == NULL || 
-            (tmpls[i].fname = (char *)malloc(strlen(files[i]) + 1)) == NULL)
+            (tmpls[i].fname = strdup(files[i])) == NULL)
         {
             fprintf(stderr, "Not enough memory\n");
             fclose(fd);
-            rgt_tmpls_lib_free(tmpls, tmpl_num);
+            rgt_tmpls_free(tmpls, tmpl_num);
             return 1;
         }
         tmpls[i].raw_ptr[fsize] = '\0';
@@ -99,7 +275,7 @@ rgt_tmpls_lib_parse(const char **files, struct log_tmpl *tmpls,
             fprintf(stderr, "Cannot read the whole template %s\n",
                     files[i]);
             fclose(fd);
-            rgt_tmpls_lib_free(tmpls, tmpl_num);
+            rgt_tmpls_free(tmpls, tmpl_num);
             return 1;
         }
         fclose(fd);
@@ -117,17 +293,17 @@ rgt_tmpls_lib_parse(const char **files, struct log_tmpl *tmpls,
             {
                 /* Create constant string block */
                 p_tmp = (char *)tmpls[i].blocks;
-                tmpls[i].blocks = (struct block *)realloc(tmpls[i].blocks,
-                            sizeof(struct block) * (tmpls[i].n_blocks + 1));
+                tmpls[i].blocks = (rgt_blk_t *)realloc(tmpls[i].blocks,
+                            sizeof(rgt_blk_t) * (tmpls[i].n_blocks + 1));
                 if (tmpls[i].blocks == NULL)
                 {
                     fprintf(stderr, "Not enough memory\n");
                     if (p_tmp != NULL)
                         free(p_tmp);
-                    rgt_tmpls_lib_free(tmpls, tmpl_num);
+                    rgt_tmpls_free(tmpls, tmpl_num);
                     return 1;
                 }
-                tmpls[i].blocks[tmpls[i].n_blocks].blk_type = BLK_TYPE_STR;
+                tmpls[i].blocks[tmpls[i].n_blocks].type = RGT_BLK_TYPE_CSTR;
                 tmpls[i].blocks[tmpls[i].n_blocks].start_data = cur_ptr;
                 tmpls[i].n_blocks++;
             }
@@ -135,6 +311,7 @@ rgt_tmpls_lib_parse(const char **files, struct log_tmpl *tmpls,
             if (var_ptr != NULL)
             {
                 char *end_var_ptr;
+                char *fmt_ptr;
                 int   n_row;
                 int   n_col;
 
@@ -152,9 +329,29 @@ rgt_tmpls_lib_parse(const char **files, struct log_tmpl *tmpls,
                             "variable started at %s:%d:%d\n",
                             RGT_TMPLS_VAR_DELIMETER, files[i],
                             n_row, n_col);
-                    rgt_tmpls_lib_free(tmpls, tmpl_num);
+                    rgt_tmpls_free(tmpls, tmpl_num);
                     return 1;
                 }
+
+                /* Terminate variable name with '\0' */
+                end_var_ptr[0] = '\0';
+
+                fmt_ptr = var_ptr;
+
+                /* Get variable name */
+                var_ptr = strrchr(fmt_ptr, ':');
+                if (var_ptr == NULL || var_ptr[1] == '\0')
+                {
+                    get_error_point(files[i], fmt_ptr - tmpls[i].raw_ptr,
+                                    &n_row, &n_col);
+                    fprintf(stderr, "Cannot get format string or "
+                            "variable name at %s:%d:%d\n",
+                            files[i], n_row, n_col);
+                    rgt_tmpls_free(tmpls, tmpl_num);
+                    return 1;                    
+                }
+                *var_ptr = '\0';
+                var_ptr++;
 
                 /* 
                  * Check that variable name hasn't got any space
@@ -169,27 +366,26 @@ rgt_tmpls_lib_parse(const char **files, struct log_tmpl *tmpls,
                         fprintf(stderr, "Variable name cannot contain any "
                                 "space characters\n%s:%d:%d\n",
                                 files[i], n_row, n_col);
-                        rgt_tmpls_lib_free(tmpls, tmpl_num);
+                        rgt_tmpls_free(tmpls, tmpl_num);
                         return 1;
                     }
                 }
 
                 p_tmp = (char *)tmpls[i].blocks;
-                tmpls[i].blocks = (struct block *)realloc(tmpls[i].blocks,
-                            sizeof(struct block) * (tmpls[i].n_blocks + 1));
+                tmpls[i].blocks = (rgt_blk_t *)realloc(tmpls[i].blocks,
+                            sizeof(rgt_blk_t) * (tmpls[i].n_blocks + 1));
                 if (tmpls[i].blocks == NULL)
                 {
                     fprintf(stderr, "Not enough memory\n");
                     if (p_tmp != NULL)
                         free(p_tmp);
-                    rgt_tmpls_lib_free(tmpls, tmpl_num);
+                    rgt_tmpls_free(tmpls, tmpl_num);
                     return 1;
                 }
-                tmpls[i].blocks[tmpls[i].n_blocks].blk_type = BLK_TYPE_VAR;
-                tmpls[i].blocks[tmpls[i].n_blocks].var_name = var_ptr;
+                tmpls[i].blocks[tmpls[i].n_blocks].type = RGT_BLK_TYPE_VAR;
+                tmpls[i].blocks[tmpls[i].n_blocks].var.name = var_ptr;
+                tmpls[i].blocks[tmpls[i].n_blocks].var.fmt_str = fmt_ptr;
                 tmpls[i].n_blocks++;
-                /* Terminate variable name with '\0' */
-                end_var_ptr[0] = '\0';
                 cur_ptr = end_var_ptr + 2;
             }
         } while (var_ptr != NULL);
@@ -198,112 +394,24 @@ rgt_tmpls_lib_parse(const char **files, struct log_tmpl *tmpls,
     return 0;
 }
 
-/**
- * Frees internal representation of log templates
- *
- * @param  tmpls     Pointer to an array of templates
- * @param  tmpl_num  Number of templates in the array
- */
-void
-rgt_tmpls_lib_free(struct log_tmpl *tmpls, int tmpl_num)
+/* The description see in rgt_tmpls_lib.h */
+const char *
+rgt_tmpls_xml_attrs_get(const char **xml_attrs, const char *name)
 {
     int i;
 
-    for (i = 0; i < tmpl_num; i++)
+    for (i = 0;
+         xml_attrs != NULL && xml_attrs[i] != NULL &&
+         xml_attrs[i + 1] != NULL;
+         i += 2)
     {
-        if (tmpls[i].raw_ptr != NULL)
-            free(tmpls[i].raw_ptr);
-        if (tmpls[i].fname != NULL)
-            free(tmpls[i].fname);
-        if (tmpls[i].blocks != NULL)
-            free(tmpls[i].blocks);
-    }
-}
-
-/**
- * Outputs a template block by block into specified file.
- *
- * @param out_fd    Output file descriptor
- * @param tmpl      Pointer to a template to be output
- * @param vars      Pointer to an array of pairs (variable name, 
- *                  variable value).  Variable names have even indeces
- *                  and variable values odd ones.
- * @param user_vars TODO
- *
- * @return  Status of the operation
- *
- * @retval  0  On success
- * @retval  1  On failure
- *
- * @se  If an error occures the function output error message into stderr 
- *
- * @todo Document user_vars parameter.
- */
-int
-rgt_tmpls_lib_output(FILE *out_fd, struct log_tmpl *tmpl,
-                     const char **vars, const char **user_vars)
-{
-    int i;
-
-    for (i = 0; i < tmpl->n_blocks; i++)
-    {
-        if (tmpl->blocks[i].blk_type == BLK_TYPE_STR)
-        {
-            fprintf(out_fd, "%s", tmpl->blocks[i].start_data);
-        }
-        else
-        {
-            int j;
-
-            for (j = 0;
-                 vars != NULL && vars[j] != NULL && vars[j + 1] != NULL;
-                 j += 2)
-            {
-                if (strcmp(vars[j], tmpl->blocks[i].var_name) == 0)
-                {
-                    fprintf(out_fd, "%s", vars[j + 1]);
-                    break;
-                }
-            }
-
-            if (vars == NULL || vars[j] == NULL || vars[j + 1] == NULL)
-            {
-                /* Try to find variable between user variables */
-                for (j = 0;
-                     user_vars != NULL && user_vars[j] != NULL &&
-                     user_vars[j + 1] != NULL;
-                     j += 2)
-                {
-                    if (strcmp(user_vars[j], tmpl->blocks[i].var_name) == 0)
-                    {
-                        fprintf(out_fd, "%s", user_vars[j + 1]);
-                        break;
-                    }
-                }
-
-                if (user_vars == NULL || user_vars[j] == NULL || 
-                    user_vars[j + 1] == NULL)
-                {
-                    int n_row;
-                    int n_col;
-                
-                    get_error_point(tmpl->fname,
-                                    tmpl->blocks[i].var_name -
-                                        tmpl->raw_ptr,
-                                    &n_row, &n_col);
-                    fprintf(stderr, "Variable %s isn't specified in "
-                                    "context\n"
-                                    "%s:%d:%d\n",
-                            tmpl->blocks[i].var_name,
-                            tmpl->fname, n_row, n_col);
-                    return 1;
-                }
-            }
-        }
+        if (strcmp(xml_attrs[i], name) == 0)
+            return xml_attrs[i + 1];
     }
 
-    return 0;
+    return NULL;
 }
+
 
 /**
  * Determines a line and column in a file by offset from the beginning.

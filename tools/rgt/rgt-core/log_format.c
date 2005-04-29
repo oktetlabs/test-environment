@@ -29,34 +29,19 @@
 
 #include <obstack.h>
 
-#include "rgt_common.h"
-#include "log_msg.h"
 #include "log_format.h"
 
-/**
- * Determines RLF version of the format and returns pointer to the
- * function that should be used for extracting log messages from
- * a raw log file.
- *
- * @param  fd   Raw log file descriptor.
- * @param  err  Pointer to the pointer on string that can be set to
- *              an error message string if the function returns NULL.
- *
- * @return  pointer to the log message extracting function.
- * 
- * @retval  !NULL   Pointer to the log message extracting function.
- * @retval  NULL    Unknown format of RLF.
- */
+/* The description see in log_format.h */
 f_fetch_log_msg
-rgt_define_rlf_format(FILE *fd, char **err)
+rgt_define_rlf_format(rgt_gen_ctx_t *ctx, char **err)
 {
     uint8_t version;
 
     /* The first byte of Raw log file contains raw log file version */
-    if (universal_read(fd, &version, 1, rgt_rmode) != 1)
+    if (universal_read(ctx->rawlog_fd, &version, 1, ctx->io_mode) != 1)
     {
         /* Postponed mode: File has zero size */
-        if (*err != NULL)
+        if (err != NULL)
             *err = "Raw log file is too short to extract version number\n";
         return NULL;
     }

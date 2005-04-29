@@ -53,79 +53,132 @@
 
 #include <stdio.h>
 
-#ifndef UNUSED
-#define UNUSED(x) ((void)x)
-#endif
+#include "te_defs.h"
+#include "te_stdint.h"
 
 /** Delimiter to be used for determination variables in templates */
 #define RGT_TMPLS_VAR_DELIMETER "@@"
-
-/** The list of template types */
-enum e_log_part {
-    LOG_PART_DOCUMENT_START = 0,
-    LOG_PART_DOCUMENT_END   = 1,
-    LOG_PART_LOG_MSG_START  = 2,
-    LOG_PART_LOG_MSG_END    = 3,
-    LOG_PART_MEM_DUMP_START = 4,
-    LOG_PART_MEM_DUMP_END   = 5,
-    LOG_PART_MEM_ROW_START  = 6,
-    LOG_PART_MEM_ROW_END    = 7,
-    LOG_PART_MEM_ELEM_START = 8,
-    LOG_PART_MEM_ELEM_END   = 9,
-    LOG_PART_MEM_ELEM_EMPTY = 10,
-    LOG_PART_BR             = 11,
-};
-
-/** The total number of all templates (depends on "enum e_log_part") */
-#define RGT_TMPLS_NUM         12
 
 /**
  * Each template before using is parsed onto blocks each block can be
  * whether a constant sting or a variable value.
  * For example the following single line template:
- *  The value of A is @@A@@, the value of B is @@B@@.
+ *  The value of A is @@%s:A@@, the value of B is @@%s:B@@.
  * Will be split into five blocks:
  *  1. const string: "The value of A is "
- *  2. a value of variable: $A
+ *  2. a value of variable: $A (output via %s format string)
  *  3. const string: ", the value of B is "
- *  4. a value of variable: $B
+ *  4. a value of variable: $B (output via %s format string)
  *  5. const string: "."
  *
  */
 
+/** The list of possible attribyte types */
+typedef enum rgt_attr_type {
+    RGT_ATTR_TYPE_STR, /**< attribute of type string */
+    RGT_ATTR_TYPE_UINT32, /**< attribute of type uint32_t */
+    RGT_ATTR_TYPE_UNKNOWN, /**< Unknown attribute type */
+} rgt_attr_type_t;
+
+/** Structure to keep attribute value */
+typedef struct rgt_attrs {
+    rgt_attr_type_t  type; /**< Attribute type */
+    const char      *name; /**< Attribute name */
+    union {
+        const char *str_val; /**< The value for string attribute */
+        uint32_t    uint32_val; /**< The value for uint32_t attribute */
+    };
+} rgt_attrs_t;
+
 /** Specifies the type of block */
-enum e_block_type {
-    BLK_TYPE_STR, /**< A block contains a constant string */
-    BLK_TYPE_VAR, /**< A block contains a value of a variable */
-};
+typedef enum rgt_blk_type {
+    RGT_BLK_TYPE_CSTR, /**< A block contains a constant string */
+    RGT_BLK_TYPE_VAR, /**< A block contains a value of a variable */
+} rgt_blk_type_t;
+
+/** The structure represents single variable in template */
+typedef struct rgt_var_def {
+    const char *name; /**< Name of a variable whose value should be 
+                           output in this block */
+    const char *fmt_str; /**< Format string for output this variable */
+} rgt_var_def_t;
+
 
 /** The structure represents one block of a template */
-struct block {
-    enum e_block_type blk_type; /**< Defines the type of a block */
+typedef struct rgt_blk {
+    rgt_blk_type_t type; /**< Defines the type of a block */
 
     /** The union field to access depends on the value of blk_type field */
     union {
-        const char *start_data; /**< Pointer to the beginning of a constant 
-                                     string, which should be output in 
-                                     this block */
-        const char *var_name; /**< Name of a variable whose value should be 
-                                   output in this block */
+        const char    *start_data; /**< Pointer to the beginning of
+                                        a constant string, which should 
+                                        be output in this block */
+        rgt_var_def_t  var; /**< Variable data structure */
     };
-};
+    
+} rgt_blk_t;
 
-struct log_tmpl {
+/** Structure to keep a single template */
+typedef struct rgt_tmpl {
     char         *fname; /**< Themplate file name */
     char         *raw_ptr; /**< Pointer to the beginning of the memory 
                                 allocated under a log template */
-    struct block *blocks; /**< Pointer to an array of blocks */
+    rgt_blk_t    *blocks; /**< Pointer to an array of blocks */
     int           n_blocks; /**< Total number of blocks */
-};
+} rgt_tmpl_t;
 
+extern rgt_attrs_t *rgt_tmpls_attrs_new(const char **xml_attrs);
+extern void rgt_tmpls_attrs_free(rgt_attrs_t *attrs);
 
-int rgt_tmpls_lib_parse(const char **files, struct log_tmpl *tmpls,
-                        int tmpl_num);
-void rgt_tmpls_lib_free(struct log_tmpl *tmpls, int tmpl_num);
-int rgt_tmpls_lib_output(FILE *out_fd, struct log_tmpl *tmpl,
-                         const char **vars, const char **user_vars);
+extern void rgt_tmpls_attrs_add_fstr(rgt_attrs_t *attrs, const char *name,
+                                     const char *fmt_str, ...);
+extern void rgt_tmpls_attrs_add_uint32(rgt_attrs_t *attrs, const char *name,
+                                       uint32_t val);
+
+extern const char *rgt_tmpls_xml_attrs_get(const char **attrs,
+                                           const char *name);
+
+/**
+ * Parses themplate files and fills in an appropriate data structure.
+ *
+ * @param files     An array of template files to be parsed
+ * @param tmpls     An array of internal representation of the templates
+ * @param tmpl_num  Number of templates in the arrays (the same as the
+ *                  number of files passed)
+ *
+ * @return  Status of the operation
+ *
+ * @retval 0  On success
+ * @retval 1  On failure
+ *
+ * @se If an error occures the function output error message into stderr
+ */
+extern int rgt_tmpls_parse(const char **files, 
+                           rgt_tmpl_t *tmpls, size_t tmpl_num);
+
+/**
+ * Frees internal representation of templates
+ *
+ * @param  tmpls     Pointer to an array of templates
+ * @param  tmpl_num  Number of templates in the array
+ */
+extern void rgt_tmpls_free(rgt_tmpl_t *tmpls, size_t tmpl_num);
+
+/**
+ * Outputs a template block by block into specified file.
+ *
+ * @param out_fd    Output file descriptor
+ * @param tmpl      Pointer to a template to be output
+ * @param attrs     Pointer to an array of attributes for that template
+ *
+ * @return  Status of the operation
+ *
+ * @retval 0  On success
+ * @retval 1  On failure
+ *
+ * @se If an error occures the function output error message into stderr
+ */
+extern int rgt_tmpls_output(FILE *out_fd, rgt_tmpl_t *tmpl,
+                            const rgt_attrs_t *attrs);
 
 #endif /* __TE_RGT_TMPLS_LIB_H__ */

@@ -1,7 +1,7 @@
 <HTML>
 <HEAD>
 <TITLE>Log report</TITLE>
-<link rel="stylesheet" type="text/css" href="@@PATH_TO_AUX_FILE@@/style/style.css">
+<link rel="stylesheet" type="text/css" href="@@%s:DATADIR@@/misc/style.css">
 
 <script>
 var hide = new Array();
@@ -24,7 +24,7 @@ function getAllLogs()
 
 function open_filter_window()
 {
-    window.open("@@PATH_TO_AUX_FILE@@/misc/filter_conf.html", "parwin", "dependent,toolbar=no,menubar=no,status=no,width=400,height=300,screenX=300,screenY=100,scrollbars=no");
+    window.open("@@%s:DATADIR@@/misc/filter_conf.html", "parwin", "dependent,toolbar=no,menubar=no,status=no,width=400,height=300,screenX=300,screenY=100,scrollbars=no");
 }
 
 </script> 

@@ -47,8 +47,40 @@
 #include "log_format.h"
 #include "memory.h"
 
+#ifdef RGT_PROF_STAT
+/** Counter for the number of messages added into the queue tail. */
+static unsigned long msg_put_to_tail;
+/** Counter for the number of messages added by using cache information. */
+static unsigned long msg_use_cache;
+/**
+ * Counter for the number of messages that added immediately after 
+ * cached message.
+ */
+static unsigned long msg_put_after_cache_quick;
+/**
+ * Counter for the number of messages that added after cached message,
+ * but not immediately after it.
+ */
+static unsigned long msg_put_after_cache_slow;
+/**
+ * Counter for the number of messages added before cached message.
+ */
+static unsigned long msg_put_before_cache;
+/**
+ * Counter for the number of messages added with no cache information
+ * available.
+ */
+static unsigned long msg_nocache;
+/**
+ * The number of times timestamp compare function was called
+ */
+static unsigned long timestamp_cmp_cnt;
+#endif /* RGT_PROF_STAT */
+
+
 /* Forward declaration */
 struct node_t;
+
 
 /**
  * Status of the session branch
@@ -90,8 +122,15 @@ typedef struct node_t {
     uint32_t            start_ts[2]; /**< Node start timestamp */
     uint32_t            end_ts[2];   /**< Node end timestamp */
 
-    GSList *msg_att;        /**< Messages attachement for the node */
-    GSList *msg_after_att;  /**< Messages that are followed by the node */
+    GQueue *msg_att;        /**< Messages attachement for the node */
+    GQueue *msg_after_att;  /**< Messages that are followed by the node */
+    
+    GList *msg_att_cache; /**< A slot in "msg_att" queue after which the
+                               next message could be added with high
+                               probability */
+    GList *msg_after_att_cache; /**< A slot in "msg_after_att" queue after 
+                                     which the next message could be added
+                                     with high probability */
 
     int n_branches;        /**< Number of branches under the node */
     int n_active_branches; /**< Number of active branches */
@@ -122,7 +161,8 @@ static uint32_t max_timestamp[2]  = {UINT32_MAX, UINT32_MAX};
     } while (0)
 
 /* Function that is used for comparision of two timestamps */
-static gint timestamp_cmp(gconstpointer a, gconstpointer b);
+static gint timestamp_cmp(gconstpointer a, gconstpointer b,
+                          gpointer user_data);
 
 /** Set of nodes that can accept a new child node */
 static GHashTable *new_set;
@@ -158,9 +198,13 @@ flow_tree_init()
     root->self = root;
     root->fmode = DEF_FILTER_MODE;
     root->name = "";
-    root->msg_att = NULL;
-    root->msg_after_att = NULL;
+    root->msg_att = g_queue_new();
+    root->msg_after_att = g_queue_new();
+    root->msg_att_cache = NULL;
+    root->msg_after_att_cache = NULL;
     root->user_data = NULL;
+    
+    assert(root->msg_att != NULL && root->msg_after_att != NULL);
 
     memcpy(root->start_ts, zero_timestamp, sizeof(root->start_ts));
     memcpy(root->end_ts, max_timestamp, sizeof(root->end_ts));
@@ -189,12 +233,12 @@ flow_tree_free_attachments(node_t *cur_node)
 
     if (cur_node->msg_att != NULL)
     {
-        g_slist_free(cur_node->msg_att);
+        g_queue_free(cur_node->msg_att);
     }
 
     if (cur_node->msg_after_att != NULL)
     {
-        g_slist_free(cur_node->msg_after_att);
+        g_queue_free(cur_node->msg_after_att);
     }
 
     if (cur_node->type != NT_TEST)
@@ -282,8 +326,11 @@ flow_tree_add_node(node_id_t parent_id, node_id_t node_id,
     cur_node->type = new_node_type;
     cur_node->user_data = user_data;
 
-    cur_node->msg_att = NULL;
-    cur_node->msg_after_att = NULL;
+    cur_node->msg_att = g_queue_new();
+    cur_node->msg_after_att = g_queue_new();
+    assert(cur_node->msg_att != NULL && cur_node->msg_after_att != NULL);
+    cur_node->msg_att_cache = NULL;
+    cur_node->msg_after_att_cache = NULL;
 
     memcpy(cur_node->start_ts, timestamp, sizeof(cur_node->start_ts));
     memcpy(cur_node->end_ts, max_timestamp, sizeof(cur_node->end_ts));
@@ -610,6 +657,163 @@ flow_tree_filter_message(log_msg *msg)
     return closed_tree_get_mode(root, msg->timestamp);
 }
 
+static void
+attach_msg_to_queue(GQueue *queue, GList **cache, log_msg *msg)
+{
+    log_msg *tail_msg = g_queue_peek_tail(queue);
+
+    if (tail_msg != NULL && 
+        TIMESTAMP_CMP(msg->timestamp, tail_msg->timestamp) >= 0)
+    {
+        /*
+         * Just add to the tail - do not need to traverse 
+         * through the list.
+         */
+        g_queue_push_tail(queue, msg);
+
+#ifdef RGT_PROF_STAT
+        msg_put_to_tail++;
+#endif
+    }
+    else
+    {
+        /*
+         * First try to add message just after cached message.
+         */
+        if (*cache != NULL)
+        {
+            GList   *after_cache_elem;
+            log_msg *after_cache_msg;
+
+#ifdef RGT_PROF_STAT
+            msg_use_cache++;
+#endif
+
+            tail_msg = (log_msg *)((*cache)->data);
+
+            if (TIMESTAMP_CMP(msg->timestamp, tail_msg->timestamp) >= 0 &&
+                (after_cache_elem = g_list_next(*cache)) != NULL &&
+                (after_cache_msg = 
+                    (log_msg *)after_cache_elem->data) != NULL)
+            {
+                /*
+                 * The message we want to put into the queue should go 
+                 * after cached message (as its timestamp is bigger than
+                 * one of the cached message):
+                 * ... -> / cached msg / -> /after cache msg / -> ...
+                 *
+                 * Now try to find out if it should go just immediately 
+                 * after chached message:
+                 * ... ->/ cached msg / -> / MSG / -> /after cache msg / ->
+                 *
+                 * or we should go further the queue.
+                 * ... ->/ cached msg / ->/after cache msg / -> ... / MSG /
+                 */
+
+                if (TIMESTAMP_CMP(msg->timestamp, 
+                                  after_cache_msg->timestamp) <= 0)
+                {
+#ifdef RGT_PROF_STAT
+                    msg_put_after_cache_quick++;
+#endif
+
+                    /* 
+                     * Insert the message just after cached and 
+                     * update cache with this new message.
+                     */
+                    g_queue_insert_after(queue, *cache, msg);
+
+                    *cache = g_list_next(*cache);
+                    assert((*cache)->data == msg);
+                }
+                else
+                {
+                    GList *queue_elem = g_list_next(after_cache_elem);
+
+#ifdef RGT_PROF_STAT
+                    msg_put_after_cache_slow++;
+#endif
+
+                    /* 
+                     * Find the place in the queue where the message 
+                     * should be inserted, starting from the cached message.
+                     */
+
+                    /*
+                     * We can be sure that queue_elem won't be NULL
+                     * on any iteration, because the message timestamp
+                     * less than tail's timestamp.
+                     */
+                    while (TIMESTAMP_CMP(msg->timestamp,
+                        ((log_msg *)queue_elem->data)->timestamp) > 0)
+                    {
+                        queue_elem = g_list_next(queue_elem);
+                    }
+
+                    g_queue_insert_before(queue, queue_elem, msg);
+
+                    *cache = g_list_previous(queue_elem);
+                    assert((*cache)->data == msg);
+                }
+            }
+            else
+            {
+                GList   *queue_elem = g_list_previous(*cache);
+
+#ifdef RGT_PROF_STAT
+                msg_put_before_cache++;
+#endif
+
+                /*
+                 * The message we want to put into the queue should go 
+                 * before cached message (as its timestamp is less than
+                 * one of the cached message):
+                 * go in backward directon to find the place 
+                 * for the message.
+                 */
+
+                while (queue_elem != NULL &&
+                    TIMESTAMP_CMP(msg->timestamp,
+                       ((log_msg *)queue_elem->data)->timestamp) < 0)
+                {
+                    queue_elem = g_list_previous(queue_elem);
+                }
+
+                if (queue_elem == NULL)
+                {
+                    /* Add into the head of the queue */
+                    g_queue_push_head(queue, msg);
+                }
+                else
+                {
+                    /* Append after the element */
+                    g_queue_insert_after(queue, queue_elem, msg);
+
+                    /*
+                     * Do not update cache here:
+                     * for some samples this might make productivity worse.
+                     */
+                }
+            }
+
+            return;
+        }
+
+        /*
+         * The message was delayed, and there is no cache for the message.
+         * Go through the queue to find out the right place for the message.
+         */
+        g_queue_insert_sorted(queue, msg, timestamp_cmp, NULL);
+        
+        /* Find the entry we've just put into the queue */
+        *cache = g_queue_find(queue, msg);
+
+#ifdef RGT_PROF_STAT
+        msg_nocache++;
+#endif
+    }
+}
+
 int
 flow_tree_attach_from_node(node_t *node, log_msg *msg)
 {
@@ -624,16 +828,16 @@ flow_tree_attach_from_node(node_t *node, log_msg *msg)
     if (TIMESTAMP_CMP(ts, node->end_ts) > 0)
     {
         /* Append message to the "after" list of messages */
-        node->msg_after_att = 
-            g_slist_insert_sorted(node->msg_after_att, msg, timestamp_cmp);
+        attach_msg_to_queue(node->msg_after_att, 
+                            &node->msg_after_att_cache, msg);
         return 0;
     }
 
     if (node->type == NT_TEST)
     {
         /* Attach message to the node */
-        node->msg_att = 
-            g_slist_insert_sorted(node->msg_att, msg, timestamp_cmp);
+        attach_msg_to_queue(node->msg_att,
+                            &(node->msg_att_cache), msg);
         return 0;
     }
     else
@@ -643,7 +847,7 @@ flow_tree_attach_from_node(node_t *node, log_msg *msg)
 
         for (i = 0; i < node->n_branches; i++)
         {
-            if (TIMESTAMP_CMP(ts, node->branches[i].start_ts) <= 0)
+            if (TIMESTAMP_CMP(ts, node->branches[i].start_ts) < 0)
             {
                 continue;
             }
@@ -667,8 +871,7 @@ flow_tree_attach_from_node(node_t *node, log_msg *msg)
         if (cur_node == NULL)
         {
             /* message came before starting any branch of the session */
-            node->msg_att = 
-                g_slist_insert_sorted(node->msg_att, msg, timestamp_cmp);
+            attach_msg_to_queue(node->msg_att, &(node->msg_att_cache), msg);
         }
 
         return 0;
@@ -720,7 +923,7 @@ flow_tree_wander(node_t *cur_node)
         
         /* Output messages that belongs to the node */
         if (cur_node->msg_att != NULL)
-            g_slist_foreach(cur_node->msg_att,
+            g_queue_foreach(cur_node->msg_att,
                             wrapper_process_regular_msg, NULL);
     }
 
@@ -758,7 +961,7 @@ flow_tree_wander(node_t *cur_node)
     if (cur_node->msg_after_att != NULL && 
         cur_node->parent->fmode == NFMODE_INCLUDE)
     {
-        g_slist_foreach(cur_node->msg_after_att, 
+        g_queue_foreach(cur_node->msg_after_att, 
                         wrapper_process_regular_msg, NULL);
     }
 
@@ -777,9 +980,27 @@ flow_tree_wander(node_t *cur_node)
 void
 flow_tree_trace()
 {
+#ifdef RGT_PROF_STAT
+    fprintf(stderr,
+           "Msg put to tail: %ld\n"
+           "Msg use cache: %ld\n"
+           "Msg put immediately after cache: %ld\n"
+           "Msg put after cache (slow): %ld\n"
+           "Msg put before cache: %ld\n"
+           "Msg no cache: %ld\n"
+           "Number of comparing timestamp : %ld\n",
+           msg_put_to_tail,
+           msg_use_cache,
+           msg_put_after_cache_quick,
+           msg_put_after_cache_slow,
+           msg_put_before_cache,
+           msg_nocache,
+           timestamp_cmp_cnt);
+#endif
+
     /* Output messages that belongs to the root node */
     if (root->msg_att != NULL && root->fmode == NFMODE_INCLUDE)
-        g_slist_foreach(root->msg_att, wrapper_process_regular_msg, NULL);
+        g_queue_foreach(root->msg_att, wrapper_process_regular_msg, NULL);
 
     /* Usually n_branches of the root session is equlas to 1 */
     if (root->n_branches > 0)
@@ -792,14 +1013,19 @@ flow_tree_trace()
     if (root->msg_after_att != NULL && 
         root->fmode == NFMODE_INCLUDE)
     {
-        g_slist_foreach(root->msg_after_att, 
+        g_queue_foreach(root->msg_after_att, 
                         wrapper_process_regular_msg, NULL);
     }
 }
 
 static gint
-timestamp_cmp(gconstpointer a, gconstpointer b)
+timestamp_cmp(gconstpointer a, gconstpointer b, gpointer user_data)
 {
+    UNUSED(user_data);
+
+#ifdef RGT_PROF_STAT
+    timestamp_cmp_cnt++;
+#endif
     return TIMESTAMP_CMP((((log_msg *)a)->timestamp),
                          (((log_msg *)b)->timestamp));
 }

@@ -27,6 +27,5 @@ SUBDIRS = .
 
 noinst_LIBRARIES = libtmpls.a
 libtmpls_a_SOURCES = rgt_tmpls_lib.c rgt_tmpls_lib.h
-AM_CFLAGS = -W -Wall -ggdb -O0 
+AM_CFLAGS = -W -Wall
 
-EXTRA_DIST=tmpl_files.inc.in

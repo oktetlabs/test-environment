@@ -3,7 +3,7 @@
 
 AC_PREREQ([2.59])
 
-AC_INIT(rgt, 0.03, Oleg.Kravtsov@oktetlabs.ru)
+AC_INIT(rgt, 1.00, Oleg.Kravtsov@oktetlabs.ru)
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_SRCDIR([rgt-core/rgt_core.c])
 AC_CONFIG_AUX_DIR([auxdir])
@@ -57,8 +57,8 @@ fi
 
 AC_C_BIGENDIAN
 
-GLIB_REQUIRED_VERSION=1.2.0
-AM_PATH_GLIB($GLIB_REQUIRED_VERSION, :,
+GLIB_REQUIRED_VERSION=2.0.0
+AM_PATH_GLIB_2_0($GLIB_REQUIRED_VERSION, [],
   AC_MSG_WARN("GLIB $GLIB_REQUIRED_VERSION or better is required. 
  The latest version of GLIB is always available from ftp://ftp.gtk.org/
  The package can't be built without this library, so you are allowed to 
@@ -110,9 +110,14 @@ AC_CONFIG_FILES([Makefile
                  rgt-core/rgt-filter-prepare
                  rgt-core/rgt-conv
                  rgt-format/Makefile
+                 rgt-format/xml2html-multi/Makefile
+                 rgt-format/xml2html-multi/tmpls/Makefile
+                 rgt-format/xml2html-multi/images/Makefile
+                 rgt-format/xml2html-multi/misc/Makefile
                  rgt-format/xml2html/Makefile
                  rgt-format/xml2html/tmpls/Makefile
-                 rgt-format/xml2html/pics/Makefile
+                 rgt-format/xml2html/images/Makefile
+                 rgt-format/xml2html/misc/Makefile
                  rgt-format/xml2text/Makefile
                  rgt-format/xml2text/tmpls/Makefile])
 
@@ -158,12 +163,6 @@ AC_TYPE_OFF_T
 AC_TYPE_SIZE_T
 
 dnl Set some constants for the package
-TE_COPYRIGHT="Copyright (C) 2003 Test Environment authors "\
-"(see file AUTHORS in the root directory of the distribution)."
-AC_DEFINE_UNQUOTED([TE_COPYRIGHT], "${TE_COPYRIGHT}",
-                   [Generic Copyrigth string])
-
-AC_SUBST([TE_COPYRIGHT])
 AC_SUBST([TE_CFLAGS])
 AC_SUBST([TE_LDFLAGS])
 AC_SUBST([TE_LDADD])

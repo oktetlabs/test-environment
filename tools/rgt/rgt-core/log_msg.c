@@ -52,14 +52,7 @@ f_process_reg_log_msg  reg_msg_proc;
 static node_info_t *create_node_by_msg(log_msg *msg, node_type_t type, 
                                        int node_id, int parent_id);
 
-/**
- * Defines type of control message.
- *
- * @param  msg   Pointer to control message to be processed.
- *
- * @se
- *    In the case of errors it frees log message and calls longjmp.
- */
+/* See the description in log_msg.h */
 int
 rgt_process_control_message(log_msg *msg)
 {
@@ -146,10 +139,8 @@ rgt_process_control_message(log_msg *msg)
               strncmp(fmt_str, "SKIPPED", strlen("SKIPPED")) == 0) ||
              (res = RES_STATUS_FAKED, 
               strncmp(fmt_str, "FAKED", strlen("FAKED")) == 0) ||
-#if 1
              (res = RES_STATUS_PASSED, 
               strncmp(fmt_str, "EMPTY", strlen("EMPTY")) == 0) ||
-#endif
              (res = RES_STATUS_FAILED, 
               strncmp(fmt_str, "FAILED", strlen("FAILED")) == 0))
     {
@@ -186,26 +177,17 @@ rgt_process_control_message(log_msg *msg)
 
     free_log_msg(msg);
 
-    if (rgt_op_mode == RGT_OP_MODE_LIVE)
+    if (rgt_ctx.op_mode == RGT_OP_MODE_LIVE)
         ctrl_msg_proc[evt_type][node->type](node);
 
     return ESUCCESS;
 }
 
-/**
- * Filters log message and in the case of successful filtering processes
- * it. In the live mode it calls log message processing function and
- * frees message. In postponed mode it inserts message in the flow tree
- * object.
- *
- * @param msg   Log message to be processed
- *
- * @todo Don't free log message but rather use it for storing the next one.
- */
+/* See the description in log_msg.h */
 void
 rgt_process_regular_message(log_msg *msg)
 {
-    if (rgt_op_mode == RGT_OP_MODE_LIVE)
+    if (rgt_ctx.op_mode == RGT_OP_MODE_LIVE)
     {
         /* 
          * We should only check if there is at least one node 

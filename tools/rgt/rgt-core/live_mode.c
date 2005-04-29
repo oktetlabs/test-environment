@@ -96,7 +96,7 @@ print_ts(uint32_t *ts)
     res = strftime(time_buf, TIME_BUF_LEN, "%T", &tm);
 #endif
     assert(res > 0);
-    fprintf(output_fd, "%s %u ms", time_buf, ts[1] / 1000);
+    fprintf(rgt_ctx.out_fd, "%s %u ms", time_buf, ts[1] / 1000);
 
 #undef TIME_BUF_LEN
 }
@@ -108,12 +108,12 @@ print_params(param *prms)
     
     if (prm != NULL)
     {
-        fprintf(output_fd, "|- Parameters:\n");
+        fprintf(rgt_ctx.out_fd, "|- Parameters:\n");
     }
     
     while (prm != NULL)
     {
-        fprintf(output_fd, "     + %s = %s\n", prm->name, prm->val);
+        fprintf(rgt_ctx.out_fd, "     + %s = %s\n", prm->name, prm->val);
         prm = prm->next;
     }
 }
@@ -121,19 +121,21 @@ print_params(param *prms)
 static inline int
 live_process_start_event(node_info_t *node, const char *node_name)
 {
-    fprintf(output_fd, "| Starting %s: %s\n", node_name, node->descr.name);
-    fprintf(output_fd, "|- Date: ");
+    fprintf(rgt_ctx.out_fd, "| Starting %s: %s\n",
+            node_name, node->descr.name);
+    fprintf(rgt_ctx.out_fd, "|- Date: ");
     print_ts(node->start_ts);
-    fprintf(output_fd, "\n");
+    fprintf(rgt_ctx.out_fd, "\n");
 
     if (node->descr.objective != NULL)
-        fprintf(output_fd, "|- Objective: %s\n", node->descr.objective);
+        fprintf(rgt_ctx.out_fd, "|- Objective: %s\n",
+                node->descr.objective);
     if (node->descr.authors)
-        fprintf(output_fd, "|- Authors: %s\n", node->descr.authors);
+        fprintf(rgt_ctx.out_fd, "|- Authors: %s\n", node->descr.authors);
 
     print_params(node->params);
 
-    fprintf(output_fd, "\n");
+    fprintf(rgt_ctx.out_fd, "\n");
 
     return 1;
 }
@@ -141,13 +143,13 @@ live_process_start_event(node_info_t *node, const char *node_name)
 static inline int
 live_process_end_event(node_info_t *node, const char *node_name)
 {
-    fprintf(output_fd, "| %s complited %-55s %s\n", node_name,
+    fprintf(rgt_ctx.out_fd, "| %s complited %-55s %s\n", node_name,
             node->descr.name,
             (node->result.status == RES_STATUS_PASSED) ?
                 "PASSED" : "FAILED");
-    fprintf(output_fd, "|- Date: ");
+    fprintf(rgt_ctx.out_fd, "|- Date: ");
     print_ts(node->end_ts);
-    fprintf(output_fd, "\n\n");
+    fprintf(rgt_ctx.out_fd, "\n\n");
 
     return 1;
 }
@@ -207,9 +209,10 @@ live_process_regular_msg(log_msg *msg)
 {
     rgt_expand_regular_log_msg(msg);
 
-    fprintf(output_fd, "%s %s %s ", msg->level, msg->entity, msg->user);
+    fprintf(rgt_ctx.out_fd, "%s %s %s ",
+            msg->level, msg->entity, msg->user);
     print_ts(msg->timestamp);
-    fprintf(output_fd, "\n  %s\n\n", msg->txt_msg);
+    fprintf(rgt_ctx.out_fd, "\n  %s\n\n", msg->txt_msg);
 
     return 1;
 }

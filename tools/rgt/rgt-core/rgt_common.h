@@ -66,10 +66,6 @@ extern "C" {
 #include <setjmp.h>
 #include <stdio.h>
 
-#ifndef UNUSED
-#define UNUSED(x) ((void)x)
-#endif
-
 /* For byte order conversions */
 #ifdef HAVE_NETINET_IN_H
 # include <netinet/in.h>
@@ -96,6 +92,9 @@ extern "C" {
 # endif
 #endif /* HAVE_NETINET_IN_H */
 
+#include "io.h"
+
+#include "te_defs.h"
 
 #ifndef TRUE
 #define TRUE 1
@@ -112,16 +111,15 @@ extern "C" {
 /** 
  * Compares two timestamp values and returns the following values depending
  * on ts1 and ts2 values:
- *  if ts1 <  ts2 it returns -1
- *  if ts1 >= ts2 it returns  1
- *
- * @note This function cannot be used for determination if two timestamps 
- * are the same.
+ *  if ts1 < ts2 it returns -1
+ *  if ts1 > ts2 it returns  1
+ *  if ts1 = ts2 it returns  0
  */
 #define TIMESTAMP_CMP(ts1, ts2) \
         ((ts1[0] < ts2[0]) ? -1 :              \
              ((ts1[0] > ts2[0]) ? 1 :          \
-                 (ts1[1] < ts2[1]) ? -1 : 1))
+                 (ts1[1] < ts2[1]) ? -1 :      \
+                 (ts1[1] > ts2[1]) ? 1 : 0))
 
 #ifndef ESUCCESS
 #define ESUCCESS 0
@@ -144,6 +142,14 @@ extern jmp_buf rgt_mainjmp;
 #define TRACE(str)               fprintf(stderr, "%s", str)
 #define FMT_TRACE(fmt, _args...) fprintf(stderr, fmt "\n", _args + 0)
 
+/** RGT operation mode constants */
+typedef enum rgt_op_mode {
+    RGT_OP_MODE_LIVE      = 0, /**< Live operation mode */
+    RGT_OP_MODE_POSTPONED = 1, /**< Postponed operation mode */
+    RGT_OP_MODE_DEFAULT   = RGT_OP_MODE_POSTPONED /**< Default operation
+                                                       mode */
+} rgt_op_mode_t;
+
 /* Two modes of operation in string representation */
 #define RGT_OP_MODE_LIVE_STR      "live"
 #define RGT_OP_MODE_POSTPONED_STR "postponed"
@@ -151,30 +157,59 @@ extern jmp_buf rgt_mainjmp;
 /* Define default mode of operation */
 #define RGT_OP_MODE_DEFAULT_STR RGT_OP_MODE_POSTPONED_STR
 
-/** Possible node types */
-typedef enum node_type {
-    NT_SESSION, /**< Node of session type */
-    NT_PACKAGE, /**< Node of package type */
-    NT_TEST,    /**< Node of test type */
-    NT_BRANCH,  /**< It is used only for generation events 
-                     "branch start" / "branch end" */
-    NT_LAST     /**< Last marker - the biggest value of the all evements */
-} node_type_t;
 
-/** RGT operation mode constants */
-enum e_rgt_op_mode {
-    RGT_OP_MODE_LIVE      = 0, /**< Live operation mode */
-    RGT_OP_MODE_POSTPONED = 1, /**< Postponed operation mode */
-    RGT_OP_MODE_DEFAULT   = RGT_OP_MODE_POSTPONED /**< Default operation
-                                                       mode */
-};
+struct log_msg;
+struct rgt_gen_ctx;
 
-/** RGT operation mode in string and numerical representations */
-extern enum e_rgt_op_mode  rgt_op_mode;
-extern const char         *rgt_op_mode_str;
+/**
+ * Type of function that is used for extracting log messages from
+ * a raw log file. Such function is responsible for only raw-level
+ * parsing and it doesn't generates the complete log string, so that
+ * it shouldn't fill "txt_msg" field of "log_msg" structure.
+ */
+typedef int (* f_fetch_log_msg)(struct log_msg **msg,
+                                struct rgt_gen_ctx *ctx);
 
-/** Whether Rgt should process control messages or not */
-extern int                 process_control_msg;
+/** 
+ * Structure that keeps generic data used in processing raw log file.
+ */
+typedef struct rgt_gen_ctx {
+    const char    *rawlog_fname; /**< Raw log file name */
+    FILE          *rawlog_fd; /**< Raw log file pointer */
+    long           rawlog_size; /**< Size of Raw log file,
+                                     has sense only in postponed mode */
+    const char    *out_fname; /**< Output file name */
+    FILE          *out_fd; /**< Output file pointer */
+
+    const char    *fltr_fname; /**< TCL filter file name */
+
+    rgt_op_mode_t  op_mode; /**< Rgt operation mode */
+    const char    *op_mode_str; /**< Rgt operation mode in string 
+                                     representation */
+
+    /**
+     * Operation mode (live or postponed) influences on desirable 
+     * read behaviour that can be blocking or nonblocking.
+     * This field keeps current rgt reading mode.
+     */
+    rgt_io_mode_t  io_mode;
+
+    /**
+     * Pointer to a function that should be used for 
+     * extracting of log messages from a raw log file.
+     * This field is set to an appropriate function according to
+     * RLF version determined from the first byte of the RLF.
+     */
+    f_fetch_log_msg fetch_log_msg;
+        
+    te_bool         proc_cntrl_msg; /**< Whether Rgt should process control 
+                                         messages or not */
+                                        
+    te_bool         verb; /**< Whether to use verbose output or not */
+} rgt_gen_ctx_t;
+
+
+extern rgt_gen_ctx_t rgt_ctx;
 
 /** The structure keeps statistic on processing raw log file */
 struct rgt_statistics {
@@ -202,15 +237,37 @@ struct rgt_statistics {
      */
 };
 
-/**
- * Operation mode (live or postponed) influences on desirable read behaviour
- * that can be blocking or nonblocking.
- * This variable is a global for rgt-core and determines read mode 
- * that is currently used.
+/** 
+ * Structure that represents argument in its raw representation
+ * There must be some more information given to determine which type
+ * of data it consists of. (This information can be obtained form
+ * format string)
  */
-extern enum read_mode rgt_rmode;
+typedef struct msg_arg {
+    struct msg_arg *next; /**< Pointer to the next argument */
+    uint8_t        *val;  /**< Pointer to raw argument content 
+                               (numbers are keeped in network byte order) */
+    int             len;  /**< Number of bytes allocated for the argument */
+} msg_arg;
 
-extern FILE *output_fd;
+
+/** Structure that keeps log message in an universal format */
+typedef struct log_msg {
+    struct obstack *obstk;    /**< Internal field: 
+                                   Obstack for the message */
+
+    char       *entity;       /**< Entity name of the message */
+    char       *user;         /**< User name of the message */
+    uint32_t    timestamp[2]; /**< Timestamp value */
+    const char *level;        /**< Log level */
+    char       *fmt_str;      /**< Raw format string */
+    msg_arg    *args;         /**< List of arguments for format string */
+    msg_arg    *cur_arg;      /**< Internal field: 
+                                   used by get_next_arg function */
+    int         args_count;   /**< Total number of the arguments */
+
+    char       *txt_msg;
+} log_msg;
 
 #ifdef __cplusplus
 }

@@ -33,24 +33,28 @@
 
 #include <tcl.h>
 
-#include "filter.h"
 #include "rgt_common.h"
+#include "filter.h"
 
 static Tcl_Interp *tcl_interp = NULL;
+static te_bool     initialized = FALSE;
 
-/**
- * Initialize filter module. 
- *
- * @param fltr_file_name  Name of the TCL filter file
- *
- * @return  Status of operation
- *
- * @retval  0  Success
- * @retval -1  Failure
- */
+/* See the description in filter.h */
 int
-rgt_filter_init(const char *fltr_file_name)
+rgt_filter_init(const char *fltr_fname)
 {
+    if (initialized)
+    {
+        TRACE("rgt_filter library has already been initialized");
+        return -1;
+    }
+    
+    if (fltr_fname == NULL)
+    {
+        initialized = TRUE;
+        return 0;
+    }
+
     /* Create "pure" Tcl interpreter */
     if ((tcl_interp = Tcl_CreateInterp()) == NULL)
     {
@@ -59,13 +63,14 @@ rgt_filter_init(const char *fltr_file_name)
     }
 
     /* Load TCL filters */
-    if (Tcl_EvalFile(tcl_interp, (char *)fltr_file_name) != TCL_OK)
+    if (Tcl_EvalFile(tcl_interp, (char *)fltr_fname) != TCL_OK)
     {
         FMT_TRACE("%s", Tcl_GetStringResult(tcl_interp));
         Tcl_DeleteInterp(tcl_interp);
         return -1;
     }
     
+    initialized = TRUE;
     return 0;
 }
 
@@ -77,6 +82,12 @@ rgt_filter_init(const char *fltr_file_name)
 void
 rgt_filter_destroy()
 {
+    if (!initialized)
+    {
+        TRACE("rgt_filter library has not been initialized");
+        return;
+    }
+
     if (tcl_interp == NULL)
         return;
 
@@ -106,6 +117,9 @@ rgt_filter_check_message(const char *level,
 {
     enum node_fltr_mode  fmode = NFMODE_DEFAULT;
     char                *cmd;
+
+    if (initialized && tcl_interp == NULL)
+        return NFMODE_INCLUDE;
 
 #define RGT_MSG_FILTER_FUNC "rgt_msg_filter {%s} {%s} {%s} %d"
 
@@ -177,6 +191,9 @@ rgt_filter_check_branch(const char *path)
         
     char *cmd_name = "rgt_branch_filter ";
     char *cmd;
+
+    if (initialized && tcl_interp == NULL)
+        return NFMODE_INCLUDE;
         
     if ((cmd = malloc(strlen(cmd_name) + strlen(path) + 1)) == NULL)
     {

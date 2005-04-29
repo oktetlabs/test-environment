@@ -48,14 +48,14 @@ enum node_fltr_mode {
 /**
  * Initialize filter module. 
  *
- * @param fltr_file_name  Name of the TCL filter file
+ * @param fltr_fname  Name of the TCL filter file
  *
  * @return  Status of operation
  *
  * @retval  0  Success
  * @retval -1  Failure
  */
-extern int rgt_filter_init(const char *fltr_file_name);
+extern int rgt_filter_init(const char *fltr_fname);
 
 /**
  * Destroys filter module.

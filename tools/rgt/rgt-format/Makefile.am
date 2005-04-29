@@ -24,52 +24,64 @@
 # Author: Oleg N. Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
 #
 
-RGT_SUBDIRS = xml2html xml2text
-RGT_FORMAT_UTILS = $(RGT_SUBDIRS:%=rgt-%)
-RGT_FORMAT_UTILS_TMPLS = $(RGT_FORMAT_UTILS:%=%.tmpls)
+RGT_SUBDIRS = xml2html xml2text xml2html-multi
 
 SUBDIRS = $(RGT_SUBDIRS) .
 
 pkgdatadir = $(datadir)/$(subdir)
-pkgdata_DATA = $(RGT_FORMAT_UTILS_TMPLS)
 
-bin_PROGRAMS = rgt-xml-translator rgt-xml-translator-mult
-rgt_xml_translator_SOURCES = main.c
-rgt_xml_translator_CFLAGS = -I$(top_srcdir) @TE_CFLAGS@ \
-                            -I$(top_srcdir)/lib/tmpls \
-                            @XML2_CFLAGS@
-rgt_xml_translator_LDADD = @TE_LDFLAGS@ \
-                           -L$(top_builddir)/lib/tmpls -ltmpls -lpopt \
-                           @XML2_LIBS@
+GEN_CFLAGS = -I$(top_srcdir) @TE_CFLAGS@ -I$(top_srcdir)/lib/tmpls \
+             @XML2_CFLAGS@ @GLIB_CFLAGS@
+GEN_LDADD = -L. -L$(top_builddir)/lib/tmpls @TE_LDFLAGS@ \
+            @XML2_LIBS@ @GLIB_LIBS@ -lxml2fmt_core -ltmpls -lpopt
 
-rgt_xml_translator_mult_SOURCES = main_mult.c
-rgt_xml_translator_mult_CFLAGS = @GLIB_CFLAGS@ -I$(top_srcdir) @TE_CFLAGS@ \
-                                 @XML2_CFLAGS@
-rgt_xml_translator_mult_LDADD = @GLIB_LIBS@ @TE_LDFLAGS@ -lpopt @XML2_LIBS@
+noinst_LIBRARIES = libxml2fmt_core.a
+libxml2fmt_core_a_SOURCES = xml2fmt_core.c
+libxml2fmt_core_a_CFLAGS = $(GEN_CFLAGS)
 
-AM_CFLAGS = -W -Wall -ggdb -O0
+bin_PROGRAMS = rgt-xml2html rgt-xml2text rgt-xml2html-multi
 
-bin_SCRIPTS = $(RGT_FORMAT_UTILS)
+rgt_xml2text_SOURCES = xml2text/xml2text.c xml2text.h
+rgt_xml2text_CFLAGS = $(GEN_CFLAGS)
+rgt_xml2text_LDADD = $(GEN_LDADD)
 
-EXTRA_DIST=rgt-xml.in
+rgt_xml2html_SOURCES = xml2html/xml2html.c xml2html.h
+rgt_xml2html_CFLAGS = $(GEN_CFLAGS)
+rgt_xml2html_LDADD = $(GEN_LDADD)
 
-CLEANFILES=$(RGT_FORMAT_UTILS) $(RGT_FORMAT_UTILS_TMPLS)
+rgt_xml2html_multi_SOURCES = xml2html-multi/xml2html-multi.c \
+                             xml2html-multi.h
+rgt_xml2html_multi_CFLAGS = $(GEN_CFLAGS)
+rgt_xml2html_multi_LDADD = $(GEN_LDADD)
 
-$(RGT_FORMAT_UTILS): $(top_srcdir)/rgt-format/rgt-xml.in
-	for i in $(RGT_FORMAT_UTILS) ; do \
-		cat $(top_srcdir)/rgt-format/rgt-xml.in | \
-			sed "s,\@SHELL\@,${SHELL},g; s,\@PACKAGE\@,${PACKAGE},g; \
-				 s/\@TE_COPYRIGHT\@/${TE_COPYRIGHT}/g; \
-				 s,\@UTIL_FORMAT\@,$${i#rgt-},g; \
-				 s,\@UTIL_DIR\@,${pkgdatadir}/$${i#rgt-},g; \
-				 s,\@VERSION\@,${VERSION},g; s,\@bindir\@,${bindir},g; \
-				 s,\@pkgdatadir\@,${pkgdatadir},g; \
-				 s,@utility@,$${i},g" > $${i} ; \
-	done
+BUILT_SOURCES = xml2text.h xml2html.h xml2html-multi.h 
 
-$(RGT_FORMAT_UTILS_TMPLS): $(top_srcdir)/lib/tmpls/tmpl_files.inc.in
-	for i in $(RGT_FORMAT_UTILS) ; do \
-		cat $(top_srcdir)/lib/tmpls/tmpl_files.inc.in | \
-			sed "s,\@datadir\@,${datadir},g; s,@subdir@,${subdir},g; \
-				 s,@utility@,$${i#rgt-},g" > $${i}.tmpls ; \
+CLEANFILES=$(RGT_SUBDIRS:%=%.h)
+
+$(RGT_SUBDIRS:%=%.h):
+	for util in $(RGT_SUBDIRS); do \
+	    echo -E "enum {" > $${util}.h; \
+	    for i in `ls $(srcdir)/$${util}/tmpls/*.tmpl`; do \
+	        basename $${i} | sed 's,\.tmpl,,' | \
+	            tr [:lower:] [:upper:] | \
+	            awk '{ printf "%s", $$1 }' >> $${util}.h; \
+	        echo "," >> $${util}.h; \
+	    done; \
+	    echo -E "};" >> $${util}.h; \
+	    echo -E "const char *xml2fmt_files[] = {" >> $${util}.h; \
+	    for i in `ls $(srcdir)/$${util}/tmpls/*.tmpl`; do \
+	        basename $${i} | \
+	            sed "s,\(.*\),\"$(pkgdatadir)/$${util}/tmpls/\1\"," | \
+	                awk '{ printf "%s", $$1 }'>> $${util}.h; \
+	        echo "," >> $${util}.h; \
+	    done; \
+	    echo -E "};" >> $${util}.h; \
+	    echo -E -n "rgt_tmpl_t xml2fmt_tmpls[" >> $${util}.h; \
+	    echo -E -n "sizeof(xml2fmt_files) / " >> $${util}.h; \
+	    echo -E "sizeof(xml2fmt_files[0])];" >> $${util}.h; \
+	    echo -E -n "size_t     xml2fmt_tmpls_num = " >> $${util}.h; \
+	    echo -E -n "sizeof(xml2fmt_files) / " >> $${util}.h; \
+	    echo -E "sizeof(xml2fmt_files[0]);" >> $${util}.h; \
+	    echo "#define INSTALL_DIR \"${pkgdatadir}/$${util}/\"" >> \
+	            $${util}.h; \
 	done

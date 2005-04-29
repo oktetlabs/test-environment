@@ -29,14 +29,12 @@
 
 #ifndef __TE_RGT_LOG_MSG_H__
 #define __TE_RGT_LOG_MSG_H__
-#ifdef __cplusplus
-extern "C" {
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>
 #endif
 
 #include <obstack.h>
-
-#include "rgt_common.h"
-#include "io.h"
 
 /* Check if we have definitions from Test Envirounment */
 #ifdef HAVE_TE_RAW_LOG_H
@@ -50,6 +48,8 @@ extern "C" {
 #error RGT cannot be built without logger_defs.h file exported by TE sources
 #endif
 
+#include "rgt_common.h"
+
 
 /** @name A set of macros used in string representation of log level */
 #define RGT_LL_ERROR_STR       "ERROR"
@@ -60,42 +60,6 @@ extern "C" {
 #define RGT_LL_ENTRY_EXIT_STR  "ENTRY/EXIT"
 #define RGT_LL_UNKNOWN_STR     "UNKNOWN"
 /*@}*/
-
-/* Forward declaration */
-struct log_msg;
-
-/** 
- * Structure that represents argument in its raw representation
- * There must be some more information given to determine which type
- * of data it consists of. (This information can be obtained form
- * format string)
- */
-typedef struct msg_arg {
-    struct msg_arg *next; /**< Pointer to the next argument */
-    uint8_t        *val;  /**< Pointer to raw argument content 
-                               (numbers are keeped in network byte order) */
-    int             len;  /**< Number of bytes allocated for the argument */
-} msg_arg;
-
-
-/** Structure that keeps log message in an universal format */
-typedef struct log_msg {
-    struct obstack *obstk;    /**< Internal field: 
-                                   Obstack for the message */
-
-    char       *entity;       /**< Entity name of the message */
-    char       *user;         /**< User name of the message */
-    uint32_t    timestamp[2]; /**< Timestamp value */
-    const char *level;        /**< Log level */
-    char       *fmt_str;      /**< Raw format string */
-    msg_arg    *args;         /**< List of arguments for format string */
-    msg_arg    *cur_arg;      /**< Internal field: 
-                                   used by get_next_arg function */
-    int         args_count;   /**< Total number of the arguments */
-
-    char       *txt_msg;
-} log_msg;
-
 
 /* 
  * The following declarations are about Control Log Messages that 
@@ -117,6 +81,10 @@ typedef struct log_msg {
     (val_ == NT_TEST ? CNTR_MSG_TEST :            \
      val_ == NT_PACKAGE ? CNTR_MSG_PACKAGE :      \
      val_ == NT_SESSION ? CNTR_MSG_SESSION : (assert(0), ""))
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* 
  * Structures that are used for representation of control log messages.
@@ -149,6 +117,16 @@ typedef struct result_info {
                                      status field different from
                                      RES_STATUS_PASS */
 } result_info_t;
+
+/** Possible node types */
+typedef enum node_type {
+    NT_SESSION, /**< Node of session type */
+    NT_PACKAGE, /**< Node of package type */
+    NT_TEST,    /**< Node of test type */
+    NT_BRANCH,  /**< It is used only for generation events 
+                     "branch start" / "branch end" */
+    NT_LAST     /**< Last marker - the biggest value of the all evements */
+} node_type_t;
 
 /**
  * Structure that represents information about a particular entry.
@@ -197,9 +175,12 @@ enum event_type {
  * Process control message: Insert a new node into the flow tree if it's 
  * a start event; Close node if it's an end event.
  *
- * @param  msg   Pointer to the log message to be processed.
+ * @param msg  Pointer to the log message to be processed.
  *
  * @return  Status of operation.
+ *
+ * @se
+ *    In the case of errors it frees log message and calls longjmp.
  */
 extern int rgt_process_control_message(log_msg *msg);
 
@@ -209,9 +190,13 @@ extern int rgt_process_control_message(log_msg *msg);
  *   Attaches a message to the flow tree, or calls reg_msg_proc function
  *   depending on operation mode of the rgt.
  *
- * @param  msg   Pointer to the log message to be processed.
+ * @param msg  Pointer to the log message to be processed.
  *
  * @return  Nothing.
+ *
+ * @se In the case of errors it frees log message and calls longjmp.
+ *
+ * @todo Don't free log message but rather use it for storing the next one.
  */
 extern void rgt_process_regular_message(log_msg *msg);
 

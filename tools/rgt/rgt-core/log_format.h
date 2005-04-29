@@ -31,30 +31,24 @@
 #define __TE_RGT_CORE_LOG_FORMAT_H__
 
 #include <stdio.h>
-#include "log_msg.h"
+#include "rgt_common.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+struct log_msg;
+
 /* Current version supported */
 #define RGT_RLF_V1  (1)
-
-/**
- * Type of function that is used for extracting log messages from
- * a raw log file. Such function is responsible for only raw-level
- * parsing and it doesn't generates the complete log string, so that
- * it shouldn't fill "txt_msg" field of "log_msg" structure.
- */
-typedef int (* f_fetch_log_msg)(log_msg **msg, FILE *fd);
 
 /**
  * Determines RLF version of the format and returns pointer to the function
  * that should be used for extracting log messages from a raw log file.
  *
- * @param  fd   Raw log file descriptor.
- * @param  err  Pointer to the pointer on string that can be set to
- *              an error message string if the function returns NULL.
+ * @param ctx  Rgt utility context.
+ * @param err  Pointer to the pointer on string that can be set to
+ *             an error message string if the function returns NULL.
  *
  * @return  pointer to the log message extracting function.
  *
@@ -62,15 +56,15 @@ typedef int (* f_fetch_log_msg)(log_msg **msg, FILE *fd);
  * @retval  NULL    Unknown format of RLF.
  */
 f_fetch_log_msg
-rgt_define_rlf_format(FILE *fd, char **err);
+rgt_define_rlf_format(rgt_gen_ctx_t *ctx, char **err);
 
 /**
  * Extracts the next log message from a raw log file version 1.
  * The format of raw log file version 1 can be found in
  * OKT-HLD-0000095-TE_TS.
  *
- * @param  msg        Storage for log message to be extracted.
- * @param  fd         File descriptor of the raw log file.
+ * @param msg  Storage for log message to be extracted.
+ * @param ctx  Rgt utility context.
  *
  * @return  Status of the operation.
  *
@@ -82,7 +76,7 @@ rgt_define_rlf_format(FILE *fd, char **err);
  *   this function never returns, but rather it throws an exception with
  *   longjmp call.
  */
-int fetch_log_msg_v1(log_msg **msg, FILE *fd);
+int fetch_log_msg_v1(struct log_msg **msg, rgt_gen_ctx_t *ctx);
 
 #ifdef __cplusplus
 }

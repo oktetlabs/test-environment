@@ -24,31 +24,16 @@
 # Author: Oleg N. Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
 #
 
-SUBDIRS = .
+miscdatadir = $(datadir)/$(subdir)
 
-picsdatadir = $(datadir)/$(subdir)
+dist_miscdata_DATA = style.css \
+                     filter_conf.html
 
-dist_picsdata_DATA = tr.gif \
-diffDoc.gif \
-diffFolder.gif \
-ftv2blank.gif \
-ftv2doc.gif \
-ftv2folderclosed.gif \
-ftv2folderopen.gif \
-ftv2lastnode.gif \
-ftv2link.gif \
-ftv2mlastnode.gif \
-ftv2mnode.gif \
-ftv2node.gif \
-ftv2plastnode.gif \
-ftv2pnode.gif \
-ftv2vertline.gif \
-ftvFAILED2doc.gif \
-ftvPASSED2doc.gif \
-ftvCORED2doc.gif \
-ftvSKIPPED2doc.gif \
-ftvKILLED2doc.gif \
-ftvFAKED2doc.gif
+EXTRA_DIST = filter_conf.html.in
+BUILT_SOURCES = filter_conf.html
+CLEANFILES=filter_conf.html
 
-EXTRA_DIST=arrow.gif
-
+filter_conf.html: $(srcdir)/filter_conf.html.in
+	cat $(srcdir)/filter_conf.html.in | \
+        sed 's,\@\@DATADIR\@\@,${miscdatadir}/..,g;' > \
+        filter_conf.html

@@ -67,43 +67,12 @@
 #define TE_COPYRIGHT ""
 #endif
 
-
 static void rgt_core_process_log_msg(log_msg *msg);
+static void rgt_ctx_set_defaults(rgt_gen_ctx_t *ctx);
+static void rgt_update_progress_bar(rgt_gen_ctx_t *ctx);
 
-/** Glabal variables */
-
-/** TCL filter file name */
-static const char *fltr_file_name = NULL;
-/** Raw log file name */
-static const char *raw_file_name = NULL;
-/** Output file name */
-static const char *output_file_name = NULL;
-
-/** Raw log and output file descriptors */
-FILE *output_fd = NULL;
-FILE *rawlog_fd = NULL;
-
-/** Rgt operation mode in string and numerical representations */
-enum e_rgt_op_mode  rgt_op_mode     = RGT_OP_MODE_DEFAULT;
-const char         *rgt_op_mode_str = RGT_OP_MODE_DEFAULT_STR;
-
-/** Whether Rgt should process control messages or not */
-int                 process_control_msg = FALSE; /* @todo Change to TRUE!*/
-
-/**
- * Operation mode (live or postponed) influences on desirable read behaviour
- * that can be blocking or nonblocking.
- * This global variable contains current rgt reading mode.
- */
-enum read_mode      rgt_rmode;
-
-/**
- * rgt_fetch_log_msg is a pointer to a function that should be used for 
- * extraction log messages from a raw log file.
- * Actually this variable is set to an appropriate function according to
- * RLF version determined from the first byte of the RLF.
- */
-static f_fetch_log_msg rgt_fetch_log_msg;
+/** Global RGT context */
+rgt_gen_ctx_t rgt_ctx;
 
 /** 
  * The stack context of the main procedure.
@@ -127,7 +96,7 @@ static void
 usage(poptContext optCon, int exitcode, char *error, char *addl)
 {
     poptSetOtherOptionHelp(optCon, 
-        "<filter file> <raw log file> [<output file>]");
+        "<raw log file> [<output file>]");
     poptPrintUsage(optCon, stderr, 0);
     if (error)
     {
@@ -168,13 +137,16 @@ usage(poptContext optCon, int exitcode, char *error, char *addl)
  *    In the case of an error it calls exit() function with code 1.
  */
 static void
-process_cmd_line_opts(int argc, char **argv)
+process_cmd_line_opts(int argc, char **argv, rgt_gen_ctx_t *ctx)
 {
     poptContext  optCon; /* context for parsing command-line options */
     int          rc;
     
     /* Option Table */
     struct poptOption optionsTable[] = {
+        { "filter", 'f', POPT_ARG_STRING, NULL, 'f',
+          "TCL filter file.", "FILE" },
+
         { "mode", 'm', POPT_ARG_STRING, NULL, 'm',
           "Mode of operation, can be " 
           RGT_OP_MODE_LIVE_STR " or " RGT_OP_MODE_POSTPONED_STR ". "
@@ -183,6 +155,9 @@ process_cmd_line_opts(int argc, char **argv)
         { "no-cntrl-msg", '\0', POPT_ARG_NONE, NULL, 'n',
           "Process TESTER control messages as ordinary: do not process "
           "test flow structure.", NULL },
+
+        { NULL, 'V', POPT_ARG_NONE, NULL, 'V',
+          "Verbose trace.", NULL },
           
         { "version", 'v', POPT_ARG_NONE, NULL, 'v', 
           "Display version information.", 0 },
@@ -197,22 +172,29 @@ process_cmd_line_opts(int argc, char **argv)
                             0);
   
     poptSetOtherOptionHelp(optCon, 
-        "[OPTION...] <filter file> [<raw log file>] [<output file>]");
+        "[OPTION...] [<raw log file>] [<output file>]");
 
     while ((rc = poptGetNextOpt(optCon)) >= 0)
     {
-        if (rc == 'm')
+        if (rc == 'f')
         {
-            if ((rgt_op_mode_str = poptGetOptArg(optCon)) == NULL ||
-                (strcmp(rgt_op_mode_str, RGT_OP_MODE_LIVE_STR) != 0 && 
-                 strcmp(rgt_op_mode_str, RGT_OP_MODE_POSTPONED_STR) != 0))
+            if ((ctx->fltr_fname = poptGetOptArg(optCon)) == NULL)
+            {
+                usage(optCon, 1, "Specify TCL filter file", NULL);
+            }
+        }
+        else if (rc == 'm')
+        {
+            if ((ctx->op_mode_str = poptGetOptArg(optCon)) == NULL ||
+                (strcmp(ctx->op_mode_str, RGT_OP_MODE_LIVE_STR) != 0 && 
+                 strcmp(ctx->op_mode_str, RGT_OP_MODE_POSTPONED_STR) != 0))
             {
                 usage(optCon, 1, "Specify mode of operation", 
                       RGT_OP_MODE_LIVE_STR " or "
                       RGT_OP_MODE_POSTPONED_STR);
             }
-            rgt_op_mode = 
-                strcmp(rgt_op_mode_str, RGT_OP_MODE_LIVE_STR) == 0 ?
+            ctx->op_mode = 
+                strcmp(ctx->op_mode_str, RGT_OP_MODE_LIVE_STR) == 0 ?
                 RGT_OP_MODE_LIVE : RGT_OP_MODE_POSTPONED;
         }
         else if (rc == 'v')
@@ -225,7 +207,11 @@ process_cmd_line_opts(int argc, char **argv)
         else if (rc == 'n')
         {
             /* User do not want us to process control messages */
-            process_control_msg = TRUE; /* @todo Change to FALSE!*/
+            ctx->proc_cntrl_msg = FALSE;
+        }
+        else if (rc == 'V')
+        {
+            ctx->verb = TRUE;
         }
     }
 
@@ -239,39 +225,35 @@ process_cmd_line_opts(int argc, char **argv)
         exit(1);
     }
 
-    /* Get <filter file> name */
-    if ((fltr_file_name = poptGetArg(optCon)) == NULL)
+    /* Get <raw log file> name */
+    if ((ctx->rawlog_fname = poptGetArg(optCon)) == NULL)
     {
-        usage(optCon, 1, "Specify TCL filter file", NULL);
+        usage(optCon, 1, "Specify RAW log file", NULL);
     }
-    
-    /* Get <raw log file> names */
-    if ((raw_file_name = poptGetArg(optCon)) == NULL)
+
+    /* Try to open Raw log file */
+    if ((ctx->rawlog_fd = fopen(ctx->rawlog_fname, "r")) == NULL)
     {
-        rawlog_fd = stdin;
+        perror(ctx->rawlog_fname);
+        poptFreeContext(optCon);
+        exit(1);
     }
-    else
+
+    if (ctx->op_mode == RGT_OP_MODE_POSTPONED)
     {
-        /* Try to open Raw log file */
-        if ((rawlog_fd = fopen(raw_file_name, "r")) == NULL)
-        {
-            perror(raw_file_name);
-            poptFreeContext(optCon);
-            exit(1);
-        }
+        fseek(ctx->rawlog_fd, 0L, SEEK_END);
+        ctx->rawlog_size = ftell(ctx->rawlog_fd);
+        fseek(ctx->rawlog_fd, 0L, SEEK_SET);
     }
-    
-    if ((output_file_name = poptGetArg(optCon)) == NULL)
-    {
-        output_fd = stdout;
-    }
-    else
+
+    ctx->out_fd = stdout;
+    if ((ctx->out_fname = poptGetArg(optCon)) != NULL)
     {
         /* Try to open file */
-        if ((output_fd = fopen(output_file_name, "w")) == NULL)
+        if ((ctx->out_fd = fopen(ctx->out_fname, "w")) == NULL)
         {
-            perror(output_file_name);
-            fclose(rawlog_fd);
+            perror(ctx->out_fname);
+            fclose(ctx->rawlog_fd);
             poptFreeContext(optCon);
             exit(1);
         }
@@ -279,22 +261,27 @@ process_cmd_line_opts(int argc, char **argv)
 
     if (poptPeekArg(optCon) != NULL)
     {
-        if (output_fd != stdout)
-            unlink(output_file_name);
+        if (ctx->out_fd != stdout)
+            unlink(ctx->out_fname);
         usage(optCon, 1, "Too many parameters specified", NULL);
     }
 
     poptFreeContext(optCon);
 
-    if (rgt_op_mode == RGT_OP_MODE_LIVE)
+    switch (ctx->op_mode)
     {
-        rgt_rmode = RMODE_BLOCKING;
-        live_mode_init(ctrl_msg_proc, &reg_msg_proc);
-    }
-    else if (rgt_op_mode == RGT_OP_MODE_POSTPONED)
-    {
-        rgt_rmode = RMODE_NONBLOCKING;
-        postponed_mode_init(ctrl_msg_proc, &reg_msg_proc);
+        case RGT_OP_MODE_LIVE:
+            ctx->io_mode = RGT_IO_MODE_BLK;
+            live_mode_init(ctrl_msg_proc, &reg_msg_proc);
+            break;
+
+        case RGT_OP_MODE_POSTPONED:
+            ctx->io_mode = RGT_IO_MODE_NBLK;
+            postponed_mode_init(ctrl_msg_proc, &reg_msg_proc);
+            break;
+
+        default:
+            assert(0);
     }
 }
 
@@ -320,12 +307,12 @@ static void free_resources(int signo)
     rgt_filter_destroy();
     destroy_node_info_pool();
     destroy_log_msg_pool();
-    fclose(rawlog_fd);
-    fclose(output_fd);
+    fclose(rgt_ctx.rawlog_fd);
+    fclose(rgt_ctx.out_fd);
 
     if (signo == 0)
     {
-        unlink(output_file_name);
+        unlink(rgt_ctx.out_fname);
     }
 
     /* Exit 0 in the case of CTRL^C or normal completion */
@@ -345,25 +332,26 @@ static void free_resources(int signo)
 int
 main(int argc, char **argv)
 {
-    log_msg *msg = NULL;
-    char    *err_msg;
+    log_msg       *msg = NULL;
+    char          *err_msg;
 
-    process_cmd_line_opts(argc, argv);
+    rgt_ctx_set_defaults(&rgt_ctx);
+    process_cmd_line_opts(argc, argv, &rgt_ctx);
 
 #ifdef HAVE_SIGNAL_H
     /* Set signal handler for catching CTRL^C interruption */
     signal(SIGINT, free_resources);
 #endif
 
-    if (rgt_filter_init(fltr_file_name) < 0)
+    if (rgt_filter_init(rgt_ctx.fltr_fname) < 0)
     {
         /* This function never returns */
         free_resources(0);
     }
 
     /* Determine version of the format of raw log file */
-    if ((rgt_fetch_log_msg = rgt_define_rlf_format(rawlog_fd, 
-                                                   &err_msg)) == NULL)
+    rgt_ctx.fetch_log_msg = rgt_define_rlf_format(&rgt_ctx, &err_msg);
+    if (rgt_ctx.fetch_log_msg == NULL)
     {
         fprintf(stderr, "%s", err_msg);
         free_resources(0);
@@ -379,13 +367,15 @@ main(int argc, char **argv)
         /* Log message processing loop */
         while (1)
         {
-            if (rgt_fetch_log_msg(&msg, rawlog_fd) == 0)
+            rgt_update_progress_bar(&rgt_ctx);
+
+            if (rgt_ctx.fetch_log_msg(&msg, &rgt_ctx) == 0)
                 break;
 
             rgt_core_process_log_msg(msg);
         }
 
-        if (rgt_op_mode == RGT_OP_MODE_POSTPONED)
+        if (rgt_ctx.op_mode == RGT_OP_MODE_POSTPONED)
         {
             /* Process flow tree (call callback routines for each node) */
             postponed_process_open();
@@ -408,7 +398,7 @@ main(int argc, char **argv)
  * Verifies if a message is control or regular one and calls appropriate
  * message processing function.
  *
- * @param  msg   Pointer to message to be processed.
+ * @param msg  Pointer to message to be processed
  *
  * @return  Nothing.
  */
@@ -422,7 +412,7 @@ rgt_core_process_log_msg(log_msg *msg)
      */
     if (strcmp(msg->entity, CMSG_ENTITY_NAME) == 0 &&
         strcmp(msg->user, CMSG_USER_NAME) == 0 &&
-        process_control_msg)
+        rgt_ctx.proc_cntrl_msg)
     {
         rgt_process_control_message(msg);
     }
@@ -430,4 +420,38 @@ rgt_core_process_log_msg(log_msg *msg)
     {
         rgt_process_regular_message(msg);
     }
+}
+
+/** 
+ * Set default values into rgt context data structure
+ *
+ * @param ctx  context to be updated 
+ */
+static void
+rgt_ctx_set_defaults(rgt_gen_ctx_t *ctx)
+{
+    memset(ctx, 0, sizeof(*ctx));
+
+    ctx->op_mode = RGT_OP_MODE_DEFAULT;
+    ctx->op_mode_str = RGT_OP_MODE_DEFAULT_STR;
+    ctx->proc_cntrl_msg = TRUE;
+    ctx->verb = FALSE;
+}
+
+/**
+ * Output progress bar processing status
+ *
+ * @param ctx  Rgt utility context
+ */
+static void
+rgt_update_progress_bar(rgt_gen_ctx_t *ctx)
+{
+    long offset;
+
+    if (ctx->op_mode != RGT_OP_MODE_POSTPONED || !ctx->verb)
+        return;
+
+    offset = ftell(ctx->rawlog_fd);
+    fprintf(stderr, "\r%ld%%",
+            (long)(((long long)offset * 100L) / ctx->rawlog_size));
 }

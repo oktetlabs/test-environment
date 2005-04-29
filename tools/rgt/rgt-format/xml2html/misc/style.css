@@ -1,0 +1,66 @@
+/*  TAG REDEFINITION SECTION  */
+BODY {
+     COLOR: #000000; 
+     FONT-FAMILY:  Tahoma, Verdana,  sans-serif; 
+     FONT-SIZE: 10pt; 
+     MARGIN-LEFT: 10px; 
+     MARGIN-RIGHT: 10px;
+     MARGIN-TOP: 10px;
+     MARGIN-BOTTOM: 10px;
+     scrollbar-face-color: #E3EBF4;
+     scrollbar-highlight-color: #FFFFFF;
+     scrollbar-shadow-color: #C2CAE9;
+     scrollbar-3dlight-color: #C2CAE9;
+     scrollbar-arrow-color: #85A2C4;
+     scrollbar-track-color: #E3EBF4;
+     scrollbar-darkshadow-color: #85A2C4;
+     BACKGROUND-POSITION: center 50%;
+     BACKGROUND-REPEAT: no-repeat;
+     BACKGROUND-ATTACHMENT: fixed;
+     background-color: #F8FEF6; 
+     }
+STRONG {FONT-FAMILY:Tahoma, Arial, Verdana,  sans-serif;}
+B {FONT-FAMILY:Tahoma, Arial, Verdana,  sans-serif; FONT-SIZE: 10pt; FONT-WEIGHT: bold}
+SMALL {FONT-FAMILY:Tahoma, Arial, Verdana,  sans-serif; FONT-SIZE: 8pt}
+TD {FONT-FAMILY:Tahoma, Arial, Verdana,  sans-serif; FONT-SIZE: 10pt;}
+/*  END of REDEFINITION SECTION  */
+
+/*  BACKGROUNDS SECTION  */
+.tdheading { background-color: #BFCCBE; }
+.tdsubheading { background-color: #E5ECE5;  padding-left: 5px;}
+.tdlight { background-color: #F3DDF3; valign: top; }
+.tddark { background-color: #EFF5EE; valign: top; }
+
+.ERROR { background-color: #FF2A17; valign: top; }
+.WARN { background-color: #FFA857; valign: top; }
+.RING { background-color: #AB94FF; valign: top; }
+.INFO { background-color: #B2FFDF; valign: top; }
+.VERB { background-color: #EFF2FF; valign: top; }
+
+/*  END of BACKGROUNDS SECTION  */
+
+/*  TEXT CLASSES SECTION  */
+.t8 {FONT-WEIGHT: normal; FONT-SIZE: 8pt; COLOR: #636563; FONT-FAMILY: Arial, Verdana, arial, sans-serif;} 
+.h8 {FONT-WEIGHT: bold; FONT-SIZE: 8pt; COLOR: #636563; FONT-FAMILY: Arial, Verdana, arial, sans-serif;} 
+.address {letter-spacing: 1px}
+.heading {COLOR: #000000; FONT-VARIANT: small-caps; FONT-FAMILY: Tahoma, Arial, Verdana, sans-serif; FONT-WEIGHT: bold; FONT-SIZE: 12pt;}
+.tdsubhead {COLOR: #838383; FONT-FAMILY: Tahoma, Verdana, sans-serif; FONT-WEIGHT: bold; FONT-SIZE: 10pt;}
+.formhead {COLOR: #585858; FONT-FAMILY: Arial, Verdana, sans-serif; FONT-WEIGHT: bold; FONT-SIZE: 10pt;}
+.formsubhead {COLOR: #878787; FONT-FAMILY: Arial, Verdana, sans-serif; FONT-WEIGHT: bold; FONT-SIZE: 10pt;}
+.smalltext {COLOR: #000000; FONT-FAMILY:Tahoma, Arial, Verdana,  sans-serif; FONT-SIZE: 8pt;}
+
+.entityname {COLOR: #35662E; FONT-FAMILY:Tahoma, Arial, Verdana,  sans-serif; FONT-SIZE: 10pt; vertical-align: top; padding-left: 5px;}
+.username {COLOR: #650000; FONT-FAMILY:Tahoma, Arial, Verdana,  sans-serif; FONT-SIZE: 10pt; vertical-align: top; padding-left: 5px;}
+.timestamp {COLOR: #676A36; FONT-FAMILY:Tahoma, Arial, Verdana,  sans-serif; FONT-SIZE: 10pt; vertical-align: top; padding-left: 5px;}
+.log {color: #000000; #COLOR: #606060; FONT-FAMILY:Tahoma, Arial, Verdana,  sans-serif; FONT-SIZE: 10pt; padding-left: 10px; vertical-align: top;}
+.mem_dump {COLOR: #606060; FONT-FAMILY:Tahoma, Arial, Verdana,  sans-serif; FONT-SIZE: 10pt; padding-left: 10px;}
+
+/*  END of TEXT CLASSES SECTION  */
+
+/*  LINKS <A> CLASSES SECTION  */
+A { CURSOR: hand; FONT-SIZE: 10pt; COLOR: #E91B1A; FONT-FAMILY: Arial, Verdana, arial, sans-serif; TEXT-DECORATION: underline}
+A:active { CURSOR: hand; COLOR: "#E91B1A"; }
+A:link { CURSOR: hand; COLOR: "#E91B1A"; }
+A:hover { CURSOR: hand;  COLOR: "#333333"; }
+/*  END of LINKS <A> CLASSES SECTION  */
+

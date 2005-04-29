@@ -37,7 +37,6 @@ unset extra_flags
 op_mode="postponed"
 end_opts="false"
 
-DEFAULT_CFG_FILE_NAME=default-rgt-filter.xml
 prog_name=`basename $0`
 
 #
@@ -249,29 +248,23 @@ do
     shift
 done
 
-if [ -z "$cfg_file" ]; then
-# Specify default filter file
-    cfg_file="$datadir/$DEFAULT_CFG_FILE_NAME"
-fi
-
+if [ -n "$cfg_file" ]; then
 # Convert XML filter file in TCL file
-TMP_FILE=""
-get_tmp_file_name TMP_FILE
+    TMP_FILE=""
+    get_tmp_file_name TMP_FILE
 
-# Destroy temporarely file on exit
-trap 'exit_status=$?; rm -f $TMP_FILE && exit $exit_status' 0
-trap '{ (exit 1); exit 1; }' 1 2 13 15
+    # Destroy temporarely file on exit
+    trap 'exit_status=$?; rm -f $TMP_FILE && exit $exit_status' 0
+    trap '{ (exit 1); exit 1; }' 1 2 13 15
 
-$bindir/rgt-filter-prepare $cfg_file $TMP_FILE || exit 1
-
-if [ -z "$rlf_file" ]; then
-    rlf_file="&0"
+    $bindir/rgt-filter-prepare $cfg_file $TMP_FILE || exit 1
+    extra_flags="$extra_flags -f $TMP_FILE"
 fi
+
 if [ -z "$out_file" ]; then
     out_file="&1"
 fi
 
 # Process raw log file with filter
-eval "$bindir/rgt-core -m $op_mode $extra_flags $TMP_FILE <$rlf_file >$out_file" || 
+eval "$bindir/rgt-core -m $op_mode $extra_flags $rlf_file >$out_file" || 
     rm -f $out_file
-

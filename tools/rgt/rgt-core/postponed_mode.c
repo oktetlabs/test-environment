@@ -142,28 +142,28 @@ fwrite_string(struct obstack *obstk, const char *str)
                 if (obstk != NULL)
                     obstack_grow(log_obstk, "<br/>", 5);
                 else
-                    fputs("<br/>", output_fd);
+                    fputs("<br/>", rgt_ctx.out_fd);
                 break;
 
             case '<':
                 if (obstk != NULL)
                     obstack_grow(log_obstk, "&lt;", 4);
                 else
-                    fputs("&lt;", output_fd);
+                    fputs("&lt;", rgt_ctx.out_fd);
                 break;
             
             case '>':
                 if (obstk != NULL)
                     obstack_grow(log_obstk, "&gt;", 4);
                 else
-                    fputs("&gt;", output_fd);
+                    fputs("&gt;", rgt_ctx.out_fd);
                 break;
             
             case '&':
                 if (obstk != NULL)
                     obstack_grow(log_obstk, "&amp;", 5);
                 else
-                    fputs("&amp;", output_fd);
+                    fputs("&amp;", rgt_ctx.out_fd);
                 break;
                 
             default:
@@ -172,7 +172,7 @@ fwrite_string(struct obstack *obstk, const char *str)
                     if (obstk != NULL)
                         obstack_1grow(log_obstk, str[i]);
                     else
-                        fputc(str[i], output_fd);
+                        fputc(str[i], rgt_ctx.out_fd);
                 }
                 else
                 {
@@ -180,7 +180,7 @@ fwrite_string(struct obstack *obstk, const char *str)
                         obstack_printf(log_obstk, "&lt;0x%02x&gt;",
                                        (unsigned char)str[i]);
                     else
-                        fprintf(output_fd, "&lt;0x%02x&gt;",
+                        fprintf(rgt_ctx.out_fd, "&lt;0x%02x&gt;",
                                 (unsigned char)str[i]);
                 }
                 break;
@@ -192,12 +192,12 @@ fwrite_string(struct obstack *obstk, const char *str)
 static void
 print_ts_info(node_info_t *node)
 {
-    fprintf(output_fd, "<start-ts>");
-    print_ts(output_fd, node->start_ts);
-    fprintf(output_fd, "</start-ts>\n");
-    fprintf(output_fd, "<end-ts>");
-    print_ts(output_fd, node->end_ts);
-    fprintf(output_fd, "</end-ts>\n");
+    fprintf(rgt_ctx.out_fd, "<start-ts>");
+    print_ts(rgt_ctx.out_fd, node->start_ts);
+    fprintf(rgt_ctx.out_fd, "</start-ts>\n");
+    fprintf(rgt_ctx.out_fd, "<end-ts>");
+    print_ts(rgt_ctx.out_fd, node->end_ts);
+    fprintf(rgt_ctx.out_fd, "</end-ts>\n");
 }
 
 int
@@ -206,8 +206,8 @@ postponed_process_open()
     if (log_obstk == NULL)
         log_obstk = obstack_initialize();
 
-    fprintf(output_fd, "<?xml version=\"1.0\"?>\n");
-    fprintf(output_fd, "<proteos:log_report "
+    fprintf(rgt_ctx.out_fd, "<?xml version=\"1.0\"?>\n");
+    fprintf(rgt_ctx.out_fd, "<proteos:log_report "
             "xmlns:proteos=\"http://www.oktetlabs.ru/proteos\">\n");
 
     return 0;
@@ -221,12 +221,12 @@ postponed_process_close()
 
     if (!logs_closed)
     {
-        fprintf(output_fd, "</logs>\n");
+        fprintf(rgt_ctx.out_fd, "</logs>\n");
         logs_opened = 0;
         logs_closed = 1;
     }
 
-    fprintf(output_fd, "</proteos:log_report>\n");
+    fprintf(rgt_ctx.out_fd, "</proteos:log_report>\n");
     return 0;
 }
 
@@ -237,14 +237,14 @@ print_params(node_info_t *node)
     {
         param *prm = node->params;
 
-        fprintf(output_fd, "<params>\n");
+        fprintf(rgt_ctx.out_fd, "<params>\n");
         while (prm != NULL)
         {
-            fprintf(output_fd, "<param name=\"%s\" value=\"%s\"/>\n",
+            fprintf(rgt_ctx.out_fd, "<param name=\"%s\" value=\"%s\"/>\n",
                     prm->name, prm->val);
             prm = prm->next;
         }
-        fprintf(output_fd, "</params>\n");
+        fprintf(rgt_ctx.out_fd, "</params>\n");
     }
 }
 
@@ -253,20 +253,20 @@ postponed_process_start_event(node_info_t *node, const char *node_name)
 {
     if (!logs_closed)
     {
-        fprintf(output_fd, "</logs>\n");
+        fprintf(rgt_ctx.out_fd, "</logs>\n");
         logs_opened = 0;
         logs_closed = 1;
     }
 
-    fprintf(output_fd, "<%s", node_name);
+    fprintf(rgt_ctx.out_fd, "<%s", node_name);
     if (node->descr.name)
-        fprintf(output_fd, " name=\"%s\"", node->descr.name);
+        fprintf(rgt_ctx.out_fd, " name=\"%s\"", node->descr.name);
 
     switch (node->result.status)
     {
 #define NODE_RES_CASE(res_) \
         case RES_STATUS_ ## res_:                \
-            fprintf(output_fd, " result=\"" #res_ "\""); \
+            fprintf(rgt_ctx.out_fd, " result=\"" #res_ "\""); \
             break
 
         NODE_RES_CASE(PASSED);
@@ -283,34 +283,34 @@ postponed_process_start_event(node_info_t *node, const char *node_name)
 
     if (node->result.err)
     {
-        fprintf(output_fd, " err=\"%s\"", node->result.err);
+        fprintf(rgt_ctx.out_fd, " err=\"%s\"", node->result.err);
     }
-    fprintf(output_fd, ">\n");
+    fprintf(rgt_ctx.out_fd, ">\n");
 
     if (node->descr.n_branches > 1)
     {
-        fprintf(output_fd, "<meta nbranches=\"%d\">\n",
+        fprintf(rgt_ctx.out_fd, "<meta nbranches=\"%d\">\n",
                 node->descr.n_branches);
     }
     else
     {
-        fprintf(output_fd, "<meta>\n");
+        fprintf(rgt_ctx.out_fd, "<meta>\n");
     }
 
     print_ts_info(node);
 
     if (node->descr.objective != NULL)
     {
-        fputs("<objective>", output_fd);
+        fputs("<objective>", rgt_ctx.out_fd);
         fwrite_string(NULL, node->descr.objective);
-        fputs("</objective>\n", output_fd);
+        fputs("</objective>\n", rgt_ctx.out_fd);
     }
     if (node->descr.authors)
     {
         char *author = node->descr.authors;
         char *ptr;
 
-        fputs("<authors>", output_fd);
+        fputs("<authors>", rgt_ctx.out_fd);
 
         /* Authors are separated with a space */
         do {
@@ -320,18 +320,18 @@ postponed_process_start_event(node_info_t *node, const char *node_name)
                 ptr++;
             }
 
-            fputs("<author email=\"", output_fd);
+            fputs("<author email=\"", rgt_ctx.out_fd);
             author += strlen("mailto:");
             fwrite_string(NULL, author);
-            fputs("\"/>", output_fd);
+            fputs("\"/>", rgt_ctx.out_fd);
             author = ptr;
         } while (ptr != NULL);
 
-        fputs("</authors>\n", output_fd);
+        fputs("</authors>\n", rgt_ctx.out_fd);
     }
 
     print_params(node);
-    fprintf(output_fd, "</meta>\n");
+    fprintf(rgt_ctx.out_fd, "</meta>\n");
     logs_opened = 0;
 
     return 1;
@@ -344,12 +344,12 @@ postponed_process_end_event(node_info_t *node, const char *node_name)
 
     if (!logs_closed)
     {
-        fprintf(output_fd, "</logs>\n");
+        fprintf(rgt_ctx.out_fd, "</logs>\n");
         logs_opened = 0;
         logs_closed = 1;
     }
     
-    fprintf(output_fd, "</%s>\n", node_name);
+    fprintf(rgt_ctx.out_fd, "</%s>\n", node_name);
     return 1;
 }
 
@@ -396,11 +396,11 @@ postponed_process_branch_start(node_info_t *node)
 
     if (!logs_closed)
     {
-        fprintf(output_fd, "</logs>\n");
+        fprintf(rgt_ctx.out_fd, "</logs>\n");
         logs_opened = 0;
         logs_closed = 1;
     }
-    fprintf(output_fd, "<branch>\n");
+    fprintf(rgt_ctx.out_fd, "<branch>\n");
     return 1;
 }
 
@@ -411,11 +411,11 @@ postponed_process_branch_end(node_info_t *node)
 
     if (!logs_closed)
     {
-        fprintf(output_fd, "</logs>\n");
+        fprintf(rgt_ctx.out_fd, "</logs>\n");
         logs_opened = 0;
         logs_closed = 1;
     }
-    fprintf(output_fd, "</branch>\n");
+    fprintf(rgt_ctx.out_fd, "</branch>\n");
     return 1;
 }
 
@@ -424,16 +424,17 @@ postponed_process_regular_msg(log_msg *msg)
 {
     if (!logs_opened)
     {
-        fprintf(output_fd, "<logs>");
+        fprintf(rgt_ctx.out_fd, "<logs>");
         logs_opened = 1;
         logs_closed = 0;
     }
-    fprintf(output_fd, "<msg level=\"%s\" entity=\"%s\" user=\"%s\" ts=\"",
+    fprintf(rgt_ctx.out_fd,
+            "<msg level=\"%s\" entity=\"%s\" user=\"%s\" ts=\"",
             msg->level, msg->entity, msg->user);
-    print_ts(output_fd, msg->timestamp);
-    fprintf(output_fd, "\">");
+    print_ts(rgt_ctx.out_fd, msg->timestamp);
+    fprintf(rgt_ctx.out_fd, "\">");
     output_regular_log_msg(msg);
-    fprintf(output_fd, "</msg>\n");
+    fprintf(rgt_ctx.out_fd, "</msg>\n");
 
     return 1;
 }
@@ -462,7 +463,7 @@ output_regular_log_msg(log_msg *msg)
                                                       \
         obstack_1grow(log_obstk, '\0');               \
         out_str = (char *)obstack_finish(log_obstk);  \
-        fprintf(output_fd, "%s", out_str);            \
+        fprintf(rgt_ctx.out_fd, "%s", out_str);            \
         obstack_free(log_obstk, out_str);             \
     } while (0)
 
@@ -563,13 +564,14 @@ output_regular_log_msg(log_msg *msg)
                         }
 
                         /* Strart file tag */
-                        fprintf(output_fd, "<file name=\"%s\">", arg->val);
+                        fprintf(rgt_ctx.out_fd, "<file name=\"%s\">",
+                                arg->val);
                         while (fgets(str, sizeof(str), fd) != NULL)
                         {
                             fwrite_string(NULL, str);
                         }
                         /* End file tag */
-                        fputs("</file>", output_fd);
+                        fputs("</file>", rgt_ctx.out_fd);
                         fclose(fd);
 
                         /* shift to the end of "%tf" */
@@ -716,7 +718,7 @@ output_regular_log_msg(log_msg *msg)
         }
         *(out_str + str_len + br_len - i) = '\0';
 
-        fprintf(output_fd, "%s", out_str);
+        fprintf(rgt_ctx.out_fd, "%s", out_str);
         obstack_free(log_obstk, out_str);
     }
 
