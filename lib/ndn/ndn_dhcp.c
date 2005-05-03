@@ -56,7 +56,7 @@ static asn_type ndn_dhcpv4_option_s =
 static asn_type ndn_dhcpv4_options_s =
 { 
     "DHCPv4-Options", {PRIVATE, 601}, SEQUENCE_OF, 
-    0, {&ndn_dhcpv4_option_s} 
+    0, {subtype: &ndn_dhcpv4_option_s} 
 };
 
 
@@ -108,7 +108,7 @@ asn_type ndn_dhcp_mode_s = {
     {UNIVERSAL, 10},
     ENUMERATED,
     sizeof(_ndn_dhcp_mode_enum_entries)/sizeof(asn_enum_entry_t), 
-    {_ndn_dhcp_mode_enum_entries}
+    {enum_entries: _ndn_dhcp_mode_enum_entries}
 };
 
 

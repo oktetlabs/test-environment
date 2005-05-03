@@ -70,7 +70,7 @@ static asn_enum_entry_t _ndn_vlan_cfi_enum_entries[] =
 static asn_type ndn_vlan_cfi_s = {
     "VLAN-CFI-mode", {APPLICATION, 15}, ENUMERATED,
     sizeof(_ndn_vlan_cfi_enum_entries)/sizeof(asn_enum_entry_t), 
-    {_ndn_vlan_cfi_enum_entries}
+    {enum_entries: _ndn_vlan_cfi_enum_entries}
 };
 
 

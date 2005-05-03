@@ -74,7 +74,7 @@ const asn_type *const ndn_interval = &ndn_interval_static;
 
 asn_type ndn_data_unit_ints_s = 
 {   "DATA-UNIT-intervals", {PRIVATE, 2}, SEQUENCE_OF, 0,
-    {&ndn_interval_static} 
+    {subtype: &ndn_interval_static} 
 };
 
 const asn_type * const  ndn_interval_sequence = &ndn_data_unit_ints_s;
@@ -83,8 +83,8 @@ const asn_type * const  ndn_interval_sequence = &ndn_data_unit_ints_s;
 
 
 asn_type ndn_data_unit_enum_s = 
-{ "DATA-UNIT-enum", {PRIVATE, 2}, SET_OF, 1,
-   {&asn_base_integer_s} 
+{ "DATA-UNIT-enum", {PRIVATE, 2}, SET_OF, 0,
+   {subtype: &asn_base_integer_s} 
 };
 
 
@@ -180,7 +180,8 @@ const asn_type * const  ndn_payload = &ndn_payload_s;
 
 
 static asn_type ndn_csap_spec_s =
-{ "CSAP-spec", {PRIVATE, 2}, SEQUENCE_OF, 0, {&ndn_generic_csap_level_s} };
+{ "CSAP-spec", {PRIVATE, 2}, SEQUENCE_OF, 0,
+    {subtype: &ndn_generic_csap_level_s} };
 
 const asn_type * const  ndn_csap_spec = &ndn_csap_spec_s;
 
@@ -191,13 +192,13 @@ const asn_type * const  ndn_csap_spec = &ndn_csap_spec_s;
 static asn_type ndn_integer_seq_s = 
 { 
     "SEQENCE OF INTEGER", {PRIVATE, 20}, SEQUENCE_OF, 0,
-    {&asn_base_integer_s} 
+    {subtype: &asn_base_integer_s} 
 };
 
 static asn_type ndn_chstring_seq_s = 
 { 
     "SEQENCE OF UniversalString", {PRIVATE, 20}, SEQUENCE_OF, 0,
-    {&asn_base_charstring_s} 
+    {subtype: &asn_base_charstring_s} 
 };
 
 
@@ -239,12 +240,12 @@ const asn_type * const ndn_template_parameter = &ndn_template_parameter_s;
 
 static asn_type ndn_template_parameter_sequence_s = 
 { "SEQENCE OF Template-Parameter", {PRIVATE, 20}, 
-  SEQUENCE_OF, 1, {&ndn_template_parameter_s} 
+  SEQUENCE_OF, 0, {subtype: &ndn_template_parameter_s} 
 };
 
 static asn_type ndn_generic_pdu_sequence_s = 
 { "Generic-PDU-sequence", {PRIVATE, 20}, 
-  SEQUENCE_OF, 1, {&ndn_generic_pdu_s} 
+  SEQUENCE_OF, 0, {subtype: &ndn_generic_pdu_s} 
 };
 
 const asn_type * const ndn_generic_pdu_sequence = 
@@ -328,8 +329,8 @@ Traffic-Pattern ::= SEQUENCE OF Traffic-Pattern-Unit
 */
 
 asn_type ndn_traffic_pattern_s =
-{ "Traffic-Pattern", {PRIVATE, 30}, SEQUENCE_OF, 1,
-  {&ndn_traffic_pattern_unit_s}
+{ "Traffic-Pattern", {PRIVATE, 30}, SEQUENCE_OF, 0,
+  {subtype: &ndn_traffic_pattern_unit_s}
 };
 
 const asn_type * const  ndn_traffic_pattern = &ndn_traffic_pattern_s;
