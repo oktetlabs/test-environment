@@ -315,7 +315,7 @@ eth_read_cb (csap_p csap_descr, int timeout, char *buf, size_t buf_len)
 
     if (csap_descr == NULL)
     {
-        csap_descr->last_errno = EINVAL;
+        F_ERROR("%s called with NULL csap_descr", __FUNCTION__);
         return -1;
     }
     
@@ -323,7 +323,10 @@ eth_read_cb (csap_p csap_descr, int timeout, char *buf, size_t buf_len)
     
     spec_data = (eth_csap_specific_data_p) csap_descr->layers[layer].specific_data; 
 
-    VERB("IN eth_read_cb: spec_data->in = %d", spec_data->in);
+    gettimeofday(&timeout_val, NULL);
+    F_VERB("%s(CSAP %d): spec_data->in = %d, mcs %d",
+           __FUNCTION__, csap_descr->id, spec_data->in,
+           timeout_val.tv_usec);
 
 #ifdef TALOGDEBUG
     printf ("ETH recv: timeout %d; spec_data->read_timeout: %d\n", 
@@ -378,12 +381,18 @@ eth_read_cb (csap_p csap_descr, int timeout, char *buf, size_t buf_len)
     if (pkt_size < 0)
     {
         csap_descr->last_errno = errno;
-        VERB("recvfrom fails: spec_data->in = %d",
+        WARN("recvfrom fails: spec_data->in = %d",
                    spec_data->in);
         return -1;
     }
     if (pkt_size == 0)
         return 0;
+
+    gettimeofday(&timeout_val, NULL);
+    F_VERB("%s(): CSAP %d read %d bytes, pkttype %d, mcs %d, begin 0x%x, ethtype %x", 
+           __FUNCTION__, csap_descr->id, pkt_size, from.sll_pkttype,
+           timeout_val.tv_usec, *((uint32_t *)buf),
+           (uint32_t)(*((uint16_t *)(buf + 12))));
 
     switch(from.sll_pkttype)
     {
@@ -409,6 +418,7 @@ eth_read_cb (csap_p csap_descr, int timeout, char *buf, size_t buf_len)
                 return 0;
             break;
     }
+
 
 #if 0 
     /* Correction for number of read bytes was insered to synchronize 

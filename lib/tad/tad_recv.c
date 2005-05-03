@@ -49,6 +49,7 @@
 #include "ndn.h" 
 
 #define TE_LGR_USER     "TAD CH"
+
 #include "logger_ta.h"
 
 #define SEND_ANSWER(_fmt...) \
@@ -1003,7 +1004,8 @@ tad_tr_recv_thread(void *arg)
     csap_descr->last_errno       = 0;
     CSAP_DA_UNLOCK(csap_descr);
 
-    F_VERB("CSAP %d recv process finished", csap_descr->id);
+    F_VERB("CSAP %d recv process finished, %d pkts got",
+           csap_descr->id, pkt_count);
 
     free(context);
     return NULL;
