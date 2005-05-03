@@ -130,7 +130,7 @@ main(int argc, char *argv[])
 
         int rc_code;
 #else
-        in_addr_t my_addr = inet_addr("195.19.254.40");
+        in_addr_t my_addr = inet_addr("192.168.37.18");
 #endif
 
         int csap;

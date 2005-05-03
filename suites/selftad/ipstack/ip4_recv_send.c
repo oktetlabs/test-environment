@@ -50,6 +50,7 @@
 #include "rcf_rpc.h"
 #include "conf_api.h"
 #include "tapi_tad.h"
+#include "tapi_eth.h"
 
 #include "tapi_test.h"
 #include "tapi_ipstack.h"
@@ -71,8 +72,11 @@ main(int argc, char *argv[])
 
     csap_handle_t ip4_send_csap = CSAP_INVALID_HANDLE;
     csap_handle_t ip4_listen_csap = CSAP_INVALID_HANDLE;
+    csap_handle_t eth_listen_csap_1 = CSAP_INVALID_HANDLE;
+    csap_handle_t eth_listen_csap_2 = CSAP_INVALID_HANDLE;
 
     asn_value *template;/*  iteration template for traffic generation */ 
+    asn_value *eth_pattern;
 
     int num_pkts;
     int pld_len;
@@ -107,6 +111,12 @@ main(int argc, char *argv[])
         TEST_FAIL("rcf_ta_create_session failed");
     }
     INFO("Test: Created session for B: %d", sid_b); 
+
+    rc = asn_parse_value_text("{{ pdus {  eth:{}} }}",
+                              ndn_traffic_pattern,
+                              &eth_pattern, &syms);
+    if (rc != 0)
+        TEST_FAIL("parse of pattern failed %X, syms %d", rc, syms);
 
     /* Fill in value for iteration */
     rc = asn_parse_value_text("{ arg-sets { simple-for:{begin 1} }, "
@@ -153,15 +163,34 @@ main(int argc, char *argv[])
                                       (uint8_t *)&ip_b, (uint8_t *)&ip_a,
                                       &ip4_listen_csap);
         if (rc != 0)
-            TEST_FAIL("CSAP create failed, rc from module %d is 0x%x\n", 
+            TEST_FAIL("CSAP create failed, rc from mod %d is 0x%x\n", 
                         TE_RC_GET_MODULE(rc), TE_RC_GET_ERROR(rc)); 
 
+        rc = tapi_eth_csap_create(agt_b, sid_b, "eth0", mac_a, mac_b,
+                                  NULL, &eth_listen_csap_1);
+        if (rc != 0)
+            TEST_FAIL("ETH CSAP create failed, rc from mod %d is 0x%x\n",
+                        TE_RC_GET_MODULE(rc), TE_RC_GET_ERROR(rc)); 
+
+        rc = tapi_eth_csap_create(agt_b, sid_b, "eth0", mac_a, mac_b,
+                                  NULL, &eth_listen_csap_2);
+        if (rc != 0)
+            TEST_FAIL("ETH CSAP create failed, rc from mod %d is 0x%x\n",
+                        TE_RC_GET_MODULE(rc), TE_RC_GET_ERROR(rc)); 
         
         rc = tapi_ip4_eth_recv_start(agt_b, sid_b, ip4_listen_csap,
                                      NULL, NULL, NULL, NULL, 5000,
                                      num_pkts);
         if (rc != 0) 
             TEST_FAIL("recv start failed %X", rc); 
+
+        rc = tapi_eth_recv_start(agt_b, sid_b, eth_listen_csap_2,
+                                 eth_pattern, NULL, NULL, 5000, num_pkts);
+
+        rc = tapi_eth_recv_start(agt_b, sid_b, eth_listen_csap_1,
+                                 eth_pattern, NULL, NULL, 5000, num_pkts);
+        if (rc != 0) 
+            TEST_FAIL("Eth recv start failed %X", rc); 
 
         rc = tapi_tad_trsend_start(agt_a, sid_a, ip4_send_csap,
                                    template, RCF_MODE_NONBLOCKING);
@@ -171,6 +200,12 @@ main(int argc, char *argv[])
         INFO ("try to wait\n");
         rc = rcf_ta_trrecv_wait(agt_b, sid_b, ip4_listen_csap, &num);
         RING("trrecv_wait: 0x%X num: %d\n", rc, num);
+
+        rc = rcf_ta_trrecv_stop(agt_b, sid_b, eth_listen_csap_2, &num);
+        RING("Eth trrecv_stop: 0x%X num: %d\n", rc, num);
+
+        rc = rcf_ta_trrecv_stop(agt_b, sid_b, eth_listen_csap_1, &num);
+        RING("Eth trrecv_stop: 0x%X num: %d\n", rc, num);
 
     } while(0);
 
@@ -193,6 +228,8 @@ cleanup:
                                                                     
     CLEANUP_CSAP(agt_a, sid_a, ip4_send_csap);
     CLEANUP_CSAP(agt_b, sid_b, ip4_listen_csap);
+    CLEANUP_CSAP(agt_b, sid_b, eth_listen_csap_1);
+    CLEANUP_CSAP(agt_b, sid_b, eth_listen_csap_2);
 
     TEST_END;
 }
