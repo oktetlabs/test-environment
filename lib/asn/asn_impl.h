@@ -77,10 +77,12 @@ struct asn_type
     asn_tag_t    tag;    /**< tag value of type. */
     asn_syntax   syntax; /**< syntax of type, that is "type" of value itself. */
 
-    size_t       len; /**< size of value, if any specified. 
+    size_t       len; /**< Size of value, if any specified as SIZE clause
+                           in ASN.1 type specification.. 
+                           Zero if not specified.
                            Whereas clause SIZE may not be used with
                            constructions with named fields, for such types
-                           this structure member contain quantity of 
+                           this structure member used for quantity of 
                            named fields. 
                            For INTEGER -- zero for usual native 'int' 
                            or number of bits used.
@@ -88,8 +90,6 @@ struct asn_type
                         */ 
     union 
     {
-        const void    * other;
-
         const asn_named_entry_t 
                        * named_entries; /**< for syntaxies SEQUENCE, SET 
                                                     and CHOICE */
