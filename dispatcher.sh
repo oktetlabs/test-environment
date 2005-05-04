@@ -680,7 +680,7 @@ if test -n "${RGT_LOG_HTML}" ; then
 fi
 
 
-echo "Doing TCE processing"
+myecho "--->>> TCE processing"
 tce_report ${RGT_LOG_TXT} > ${TE_LOG_DIR}/coverage.log
 
 # Run TRC, if any its option is provided
