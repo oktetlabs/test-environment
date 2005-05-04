@@ -678,6 +678,72 @@ struct tarpc_transmit_file_in {
 
 typedef struct tarpc_int_retval_out tarpc_transmit_file_out;
 
+/* TransmitFile(), 2nd version */
+
+struct tarpc_transmit_file2_in {
+    struct tarpc_in_arg common;
+                                                                               
+    tarpc_int           s;            /**< TA-local socket */
+    char                file<>;       /**< Handle to the open file to be
+                                           transmitted */
+    tarpc_size_t        len;          /**< Number of file bytes to transmite */
+    tarpc_size_t        bytes_per_send; /**< Number of bytes of each block of
+                                             data sent in each send operarion */
+    tarpc_overlapped    overlapped;   /**< WSAOVERLAPPED structure */
+    tarpc_ptr           head;         /**< Buffer to be transmitted before
+                                           the file data is transmitted */
+    tarpc_ssize_t       head_len;
+    tarpc_ptr           tail;         /**< Buffer to be transmitted after
+                                           the file data is transmitted */
+    tarpc_ssize_t       tail_len;
+    tarpc_size_t        flags;        /**< Parameter of TransmitFile() */
+};
+
+typedef struct tarpc_int_retval_out tarpc_transmit_file2_out;
+
+/* HasOverlappedIoCompleted() */
+
+struct tarpc_has_overlapped_io_completed_in {
+    struct tarpc_in_arg  common;
+    tarpc_overlapped     overlapped;     /**< WSAOVERLAPPED structure */
+};    
+
+struct tarpc_has_overlapped_io_completed_out {
+    struct tarpc_out_arg  common;
+    tarpc_int             retval;
+};    
+
+/* rpc_get_ram_size() */
+struct tarpc_get_ram_size_in {
+    struct tarpc_in_arg  common;
+};
+
+struct tarpc_get_ram_size_out {
+    struct tarpc_out_arg  common;
+    uint64_t              ram_size;
+};
+
+/* rpc_vm_trasher() */
+struct tarpc_vm_trasher_in {
+    struct tarpc_in_arg  common;
+};    
+
+typedef struct tarpc_int_retval_out tarpc_vm_trasher_out;
+
+/* rpc_write_at_offset() */
+struct tarpc_write_at_offset_in {
+    struct tarpc_in_arg   common;
+    tarpc_int             fd;
+    uint8_t               buf<>;
+    tarpc_off_t           offset;
+};
+
+struct tarpc_write_at_offset_out {
+    struct tarpc_out_arg  common;
+    tarpc_off_t           offset;
+    tarpc_ssize_t         written;
+};
+
 /* getsockname() */
 
 typedef struct tarpc_accept_in tarpc_getsockname_in;
@@ -2217,6 +2283,8 @@ struct tarpc_get_overlapped_result_in {
     tarpc_int           wait;           /**< Wait flag */
     tarpc_int           bytes<>;        /**< Transferred bytes location */
     tarpc_int           flags<>;        /**< Flags location */
+    tarpc_bool          get_data;       /**< Whether the data should be 
+                                         *   returned in out.vector */
 };    
 
 struct tarpc_get_overlapped_result_out {
@@ -2532,6 +2600,11 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(event_select)
         RPC_DEF(enum_network_events)
         RPC_DEF(transmit_file)
+        RPC_DEF(transmit_file2)
+        RPC_DEF(has_overlapped_io_completed)
+        RPC_DEF(get_ram_size)
+        RPC_DEF(vm_trasher)
+        RPC_DEF(write_at_offset)
         RPC_DEF(completion_callback)
         RPC_DEF(wsa_send)
         RPC_DEF(wsa_recv)

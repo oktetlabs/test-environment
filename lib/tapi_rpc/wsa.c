@@ -441,10 +441,10 @@ rpc_transmit_file(rcf_rpc_server *rpcs, int s, char *file,
                   void *head, ssize_t head_len,
                   void *tail, ssize_t tail_len, ssize_t flags)
 {
-    rcf_rpc_op        op;
-    tarpc_transmit_file_in  in;
-    tarpc_transmit_file_out out;
-
+    rcf_rpc_op               op;
+    tarpc_transmit_file_in   in;
+    tarpc_transmit_file_out  out;
+ 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
 
@@ -495,6 +495,129 @@ rpc_transmit_file(rcf_rpc_server *rpcs, int s, char *file,
                  errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_INT(transmit_file, out.retval);
+}
+
+/**
+ * Attention: when using the overlapped I/O the supplied buffers head
+ * and tail will be freed when you call rpc_get_overlapped_result().
+ */
+int
+rpc_transmit_file2(rcf_rpc_server *rpcs, int s, char *file,
+                   ssize_t len, ssize_t bytes_per_send,
+                   rpc_overlapped overlapped,
+                   rpc_ptr head, ssize_t head_len,
+                   rpc_ptr tail, ssize_t tail_len, ssize_t flags)
+{
+    rcf_rpc_op               op;
+    tarpc_transmit_file2_in  in;
+    tarpc_transmit_file2_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(transmit_file2, -1);
+    }
+    op = rpcs->op;
+    
+    in.s = s;
+
+    in.file.file_val = file;
+    if (file == NULL)
+        in.file.file_len = 0;
+    else
+        in.file.file_len = strlen(file) + 1;
+
+    in.len = len;
+    in.bytes_per_send = bytes_per_send;
+    in.overlapped = (tarpc_overlapped)overlapped;
+    in.head = (tarpc_ptr)head;
+    in.head_len = head_len;
+    in.tail = (tarpc_ptr)tail;
+    in.tail_len = tail_len;
+    in.flags = flags;
+
+    rcf_rpc_call(rpcs, _transmit_file2,
+                 &in,  (xdrproc_t)xdr_tarpc_transmit_file2_in,
+                 &out, (xdrproc_t)xdr_tarpc_transmit_file2_out);
+
+    CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(transmit_file2, out.retval);
+
+    TAPI_RPC_LOG("RPC (%s,%s)%s: transmit_file2(%d, %s, %d, %d, %p, ...) "
+                 "-> %s (%s)", rpcs->ta, rpcs->name, rpcop2str(op),
+                 s, file, len, bytes_per_send, overlapped,
+                 out.retval ? "true" : "false",
+                 errno_rpc2str(RPC_ERRNO(rpcs)));
+
+    RETVAL_INT(transmit_file2, out.retval);
+}
+
+int
+rpc_has_overlapped_io_completed(rcf_rpc_server *rpcs,
+                                rpc_overlapped overlapped)
+{
+    rcf_rpc_op                            op;
+    tarpc_has_overlapped_io_completed_in  in;
+    tarpc_has_overlapped_io_completed_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(has_overlapped_io_completed, -1);
+    }
+
+    op = rpcs->op;
+
+    in.overlapped = (tarpc_overlapped)overlapped;
+
+    rcf_rpc_call(rpcs, _has_overlapped_io_completed,
+             &in,  (xdrproc_t)xdr_tarpc_has_overlapped_io_completed_in,
+             &out, (xdrproc_t)xdr_tarpc_has_overlapped_io_completed_out);
+
+    TAPI_RPC_LOG("RPC (%s,%s)%s: has_overlapped_io_completed"
+                 "(%p) -> %s (%s)",
+                 rpcs->ta, rpcs->name, rpcop2str(op),
+                 overlapped, out.retval ? "true" : "false",
+                 errno_rpc2str(RPC_ERRNO(rpcs)));
+
+    RETVAL_INT(has_overlapped_io_completed, out.retval);
+}
+
+void
+rpc_get_ram_size(rcf_rpc_server *rpcs, uint64_t *ram_size)
+{
+    rcf_rpc_op             op;
+    tarpc_get_ram_size_in  in;
+    tarpc_get_ram_size_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_VOID(get_ram_size);
+    }
+
+    op = rpcs->op;
+
+    rcf_rpc_call(rpcs, _get_ram_size,
+             &in,  (xdrproc_t)xdr_tarpc_get_ram_size_in,
+             &out, (xdrproc_t)xdr_tarpc_get_ram_size_out);
+
+    TAPI_RPC_LOG("RPC (%s,%s)%s: get_ram_size -> %llu (%s)",
+                 rpcs->ta, rpcs->name, rpcop2str(op),
+                 out.ram_size, errno_rpc2str(RPC_ERRNO(rpcs)));
+
+    if (ram_size != NULL)
+        *ram_size = out.ram_size;
+
+    RETVAL_VOID(get_ram_size);
 }
 
 ssize_t
@@ -1739,10 +1862,9 @@ rpc_get_overlapped_result(rcf_rpc_server *rpcs,
                           rpc_send_recv_flags *flags,
                           char *buf, int buflen)
 {
-    rcf_rpc_op op;
-
-    tarpc_get_overlapped_result_in  in;
-    tarpc_get_overlapped_result_out out;
+    rcf_rpc_op                       op;
+    tarpc_get_overlapped_result_in   in;
+    tarpc_get_overlapped_result_out  out;
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
@@ -1754,7 +1876,6 @@ rpc_get_overlapped_result(rcf_rpc_server *rpcs,
     }
 
     op = rpcs->op;
-
 
     in.s = s;
     in.overlapped = (tarpc_overlapped)overlapped;
@@ -1769,6 +1890,7 @@ rpc_get_overlapped_result(rcf_rpc_server *rpcs,
         in.flags.flags_len = 1;
         in.flags.flags_val = (int *)flags;
     }
+    in.get_data = buf == NULL ? FALSE : TRUE;
 
     rcf_rpc_call(rpcs, _get_overlapped_result,
                  &in,  (xdrproc_t)xdr_tarpc_get_overlapped_result_in,
@@ -1776,7 +1898,7 @@ rpc_get_overlapped_result(rcf_rpc_server *rpcs,
 
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(get_overlapped_result, out.retval);
 
-    if (out.retval)
+    if ((out.retval) && (buf != NULL) && (buflen > 0))
     {
         int filled = 0;
         int i;
@@ -2195,46 +2317,6 @@ rpc_wsa_cancel_async_request(rcf_rpc_server *rpcs,
                  win_error_rpc2str(out.common.win_error));
 
     RETVAL_INT(wsa_cancel_async_request, out.retval);
-}
-
-/**
- * Copy the data from the src_buf buffer located at TA to dst_buf buffer.
- */
-void
-rpc_get_buf(rcf_rpc_server *rpcs, rpc_ptr src_buf,
-            size_t len, char *dst_buf)
-{
-    rcf_rpc_op        op;
-    tarpc_get_buf_in  in;
-    tarpc_get_buf_out out;
-
-    memset(&in, 0, sizeof(in));
-    memset(&out, 0, sizeof(out));
-
-    if (rpcs == NULL)
-    {
-        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        RETVAL_VOID(get_buf);
-    }
-
-    op = rpcs->op;
-
-    in.src_buf = (tarpc_ptr)src_buf;
-    in.len = len;
-
-    rcf_rpc_call(rpcs, _get_buf,
-                 &in, (xdrproc_t)xdr_tarpc_get_buf_in,
-                 &out, (xdrproc_t)xdr_tarpc_get_buf_out);
-
-    TAPI_RPC_LOG("RPC (%s,%s)%s: get_buf() -> (%s %s)",
-                 rpcs->ta, rpcs->name, rpcop2str(op),
-                 errno_rpc2str(RPC_ERRNO(rpcs)),
-                 win_error_rpc2str(out.common.win_error));
-
-    if ((out.dst_buf.dst_buf_len != 0) && (out.dst_buf.dst_buf_val != NULL))
-        memcpy(dst_buf, out.dst_buf.dst_buf_val, out.dst_buf.dst_buf_len);
-
-    RETVAL_VOID(get_buf);
 }
 
 /**

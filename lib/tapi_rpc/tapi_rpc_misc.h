@@ -269,4 +269,7 @@ extern int rpc_many_send(rcf_rpc_server *handle, int sock,
 extern int rpc_overfill_buffers(rcf_rpc_server *rpcs, int sock,
                                 uint64_t *sent);
 
+/** VM trasher to keep memory pressure */
+extern void rpc_vm_trasher(rcf_rpc_server *rpcs);
+
 #endif /* !__TE_TAPI_RPC_MISC_H__ */

@@ -45,6 +45,9 @@
 extern int rpc_close(rcf_rpc_server *rpcs,
                      int fd);
 
+extern ssize_t rpc_write_at_offset(rcf_rpc_server *rpcs, int fd, char* buf,
+                                   size_t buflen, off_t offset);
+
 /**
  * Duplicate a file descriptor on RPC server side
  *

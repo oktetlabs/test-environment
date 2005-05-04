@@ -179,6 +179,57 @@ rpc_close(rcf_rpc_server *rpcs, int fd)
     RETVAL_INT(close, out.retval);
 }
 
+/**
+ * Write the buffer to the file starting with the specified file offset.
+ * Return the amount of written data in case of success.
+ *
+ * \retval -2  Failed to reposition the file offset.
+ * \retval -1  Failed to write the data.
+ * \retval -3  Other errors.
+ */
+ssize_t
+rpc_write_at_offset(rcf_rpc_server *rpcs, int fd, char* buf,
+                    size_t buflen, off_t offset)
+{
+    rcf_rpc_op                op;
+    tarpc_write_at_offset_in  in;
+    tarpc_write_at_offset_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+    
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(write_at_offset, -3);
+    }
+
+    op = rpcs->op;
+
+    in.fd = fd;
+    in.buf.buf_len = buflen;
+    if (buf != NULL)
+        in.buf.buf_val = buf;
+    else
+        in.buf.buf_val = NULL;
+    in.offset = offset;
+
+    rcf_rpc_call(rpcs, _write_at_offset,
+                 &in,  (xdrproc_t)xdr_tarpc_write_at_offset_in,
+                 &out, (xdrproc_t)xdr_tarpc_write_at_offset_out);
+
+    TAPI_RPC_LOG("RPC (%s,%s)%s: write_at_offset(%d, %p %d, %d)"
+                 " -> %d, %d (%s)",
+                 rpcs->ta, rpcs->name, rpcop2str(op),
+                 fd, buf, buflen, offset, out.offset, out.written,
+                 errno_rpc2str(RPC_ERRNO(rpcs)));
+
+    if (out.offset == (off_t)-1)  /* failed to repsition the file offset */
+        RETVAL_INT(write_at_offset, -2);
+    else
+        RETVAL_INT(write_at_offset, out.written);
+}
+
 int
 rpc_dup(rcf_rpc_server *rpcs,
         int oldfd)

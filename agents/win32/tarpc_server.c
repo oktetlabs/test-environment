@@ -1264,6 +1264,136 @@ TARPC_FUNC(transmit_file, {},
 }
 )
 
+/*----------- TransmitFile(), 2nd version ------------------*/
+
+TARPC_FUNC(transmit_file2, {},
+{
+    TRANSMIT_FILE_BUFFERS  transmit_buffers;
+    HANDLE                 file = NULL;
+    rpc_overlapped        *overlapped = NULL;
+
+    memset(&transmit_buffers, 0, sizeof(transmit_buffers));
+    transmit_buffers.Head = (void *)in->head;
+    transmit_buffers.HeadLength = in->head_len;
+    transmit_buffers.Tail = (void *)in->tail;
+    transmit_buffers.TailLength = in->tail_len;
+
+    if (in->overlapped != 0)
+    {
+        overlapped = (rpc_overlapped *)in->overlapped;
+        rpc_overlapped_free_memory(overlapped);
+        if ((overlapped->buffers = calloc(2, sizeof(WSABUF))) == NULL)
+        {
+            out->common._errno = TE_RC(TE_TA_WIN32, ENOMEM);
+            goto finish;
+        }
+        overlapped->buffers[0].buf = (void *)in->head;
+        overlapped->buffers[0].len = in->head_len;
+        overlapped->buffers[1].buf = (void *)in->tail;
+        overlapped->buffers[1].len = in->tail_len;
+        overlapped->bufnum = 2;
+    }
+
+    MAKE_CALL(
+        if (in->file.file_len != 0)
+            file = CreateFile(in->file.file_val, FILE_READ_DATA,
+                FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE,
+                NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+
+        if (file != INVALID_HANDLE_VALUE)
+            out->retval = (*pf_transmit_file)(in->s, file,
+                              in->len, in->bytes_per_send,
+                              (LPWSAOVERLAPPED)overlapped,
+                              &transmit_buffers,
+                              transmit_file_flags_rpc2h(in->flags));
+        else
+            out->retval = FALSE;
+    );
+
+    finish:
+    ;
+}
+)
+
+/*-------------- HasOverlappedIoCompleted() --------------*/
+TARPC_FUNC(has_overlapped_io_completed, {},
+{
+    UNUSED(list);
+    MAKE_CALL(out->retval =
+            HasOverlappedIoCompleted((LPWSAOVERLAPPED)in->overlapped));
+}
+)
+
+/* Get the amount of physical memory (RAM) */
+TARPC_FUNC(get_ram_size, {},
+{
+    MEMORYSTATUS ms;
+    
+    UNUSED(list);
+
+    memset(&ms, 0, sizeof(ms));
+    MAKE_CALL(GlobalMemoryStatus(&ms));
+    out->ram_size = ms.dwTotalPhys;
+}
+)
+
+TARPC_FUNC(vm_trasher, {},
+{
+    MEMORYSTATUS    ms;
+    SIZE_T          len;
+    SIZE_T          pos;
+    double          dpos;
+    char            *buf;
+    struct timeval  tv;
+
+    UNUSED(list);
+    UNUSED(in);
+    UNUSED(out);
+
+    memset(&ms, 0, sizeof(ms));
+    GlobalMemoryStatus(&ms);
+
+    len = ms.dwTotalPhys / 2 * 3; /* 1.5 RAM */
+    buf = malloc(len);
+    if (buf == NULL)
+    {
+        INFO("vm_trasher() could not allocate %u bytes", len);
+        goto finish;
+    }
+
+    /* Make dirty each page of buffer */
+    for (pos = 0; pos < len; pos += 4096)
+        buf[pos] = 0x5A;
+
+    gettimeofday(&tv, NULL);
+    srand(tv.tv_usec);
+    
+    /* Perform VM trashing to keep memory pressure */
+    while (1)
+    {
+        /* Choose a random page */
+        dpos = (double)rand() / (double)RAND_MAX * (double)(len / 4096 - 1);
+        /* Read and write a byte of the chosen page */
+        buf[(SIZE_T)dpos * 4096] |= 0x5A;    
+    }
+
+finish: ;
+}
+)
+
+/*-------------- rpc_write_at_offset() -------------------*/
+
+TARPC_FUNC(write_at_offset, {},
+{
+    MAKE_CALL(
+        out->offset = lseek(in->fd, (off_t)in->offset, SEEK_SET);
+        if (out->offset != (off_t)-1)
+            out->written = write(in->fd, in->buf.buf_val, in->buf.buf_len);
+    );
+}
+)
+
+
 /*-------------- recvfrom() ------------------------------*/
 
 TARPC_FUNC(recvfrom,
@@ -3219,8 +3349,17 @@ TARPC_FUNC(get_overlapped_result,
         if (out->flags.flags_len > 0)
             out->flags.flags_val[0] =
                 send_recv_flags_h2rpc(out->flags.flags_val[0]);
-        overlapped2iovec(overlapped, &out->vector.vector_len,
-                         &out->vector.vector_val);
+
+        if (in->get_data)
+        {
+            overlapped2iovec(overlapped, &out->vector.vector_len,
+                             &out->vector.vector_val);
+        }
+        else
+        {
+            out->vector.vector_val = NULL;
+            out->vector.vector_len = 0;
+        }
     }
 }
 )
@@ -3823,7 +3962,7 @@ TARPC_FUNC(alloc_buf, {},
     void *buf;
     
     UNUSED(list);
-    buf = calloc(1, in->size);
+    MAKE_CALL( buf = calloc(1, in->size); );
 
     if (buf == NULL)
     {
@@ -3842,7 +3981,7 @@ TARPC_FUNC(free_buf, {},
 {
     UNUSED(list);
     UNUSED(out);
-    free((void *)in->buf);
+    MAKE_CALL( free((void *)in->buf); );
 }
 )
 
@@ -3864,6 +4003,7 @@ TARPC_FUNC(set_buf, {},
 TARPC_FUNC(get_buf, {},
 {
     UNUSED(list);
+
     if (((void*)in->src_buf != NULL) && (in->len != 0))
     {
         char *buf;
@@ -3898,8 +4038,9 @@ TARPC_FUNC(alloc_wsabuf, {},
     void *buf;
 
     UNUSED(list);
+
     wsabuf = malloc(sizeof(WSABUF));
-    if (in->len != 0)
+    if ((wsabuf != NULL) && (in->len != 0))
         buf = calloc(1, in->len);
     else
         buf = NULL;
@@ -3936,9 +4077,11 @@ TARPC_FUNC(free_wsabuf, {},
     UNUSED(list);
     UNUSED(out);
     wsabuf = (WSABUF*)in->wsabuf;
-    if ((void*)wsabuf->buf != NULL)
-        free((void*)wsabuf->buf);
-    free((void*)wsabuf);
+    MAKE_CALL(
+        if ((void*)wsabuf->buf != NULL)
+            free((void*)wsabuf->buf);
+        free((void*)wsabuf);
+    );
 }
 )
 

@@ -945,3 +945,72 @@ rpc_set_buf(rcf_rpc_server *rpcs, char *src_buf,
 
     RETVAL_VOID(set_buf);
 }
+
+/**
+ * Copy the data from the src_buf buffer located at TA to dst_buf buffer.
+ */
+void
+rpc_get_buf(rcf_rpc_server *rpcs, rpc_ptr src_buf,
+            size_t len, char *dst_buf)
+{
+    rcf_rpc_op        op;
+    tarpc_get_buf_in  in;
+    tarpc_get_buf_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_VOID(get_buf);
+    }
+
+    op = rpcs->op;
+
+    in.src_buf = (tarpc_ptr)src_buf;
+    in.len = len;
+
+    rcf_rpc_call(rpcs, _get_buf,
+                 &in, (xdrproc_t)xdr_tarpc_get_buf_in,
+                 &out, (xdrproc_t)xdr_tarpc_get_buf_out);
+
+    TAPI_RPC_LOG("RPC (%s,%s)%s: get_buf() -> (%s %s)",
+                 rpcs->ta, rpcs->name, rpcop2str(op),
+                 errno_rpc2str(RPC_ERRNO(rpcs)),
+                 win_error_rpc2str(out.common.win_error));
+
+    if ((out.dst_buf.dst_buf_len != 0) && (out.dst_buf.dst_buf_val != NULL))
+        memcpy(dst_buf, out.dst_buf.dst_buf_val, out.dst_buf.dst_buf_len);
+
+    RETVAL_VOID(get_buf);
+}
+
+void
+rpc_vm_trasher(rcf_rpc_server *rpcs)
+{
+    rcf_rpc_op           op;
+    tarpc_vm_trasher_in  in;
+    tarpc_vm_trasher_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_VOID(vm_trasher);
+    }
+
+    op = rpcs->op;
+
+    rcf_rpc_call(rpcs, _vm_trasher,
+             &in,  (xdrproc_t)xdr_tarpc_vm_trasher_in,
+             &out, (xdrproc_t)xdr_tarpc_vm_trasher_out);
+
+    TAPI_RPC_LOG("RPC (%s,%s)%s: vm_trasher -> (%s)",
+                 rpcs->ta, rpcs->name, rpcop2str(op),
+                 errno_rpc2str(RPC_ERRNO(rpcs)));
+
+    RETVAL_VOID(vm_trasher);
+}
