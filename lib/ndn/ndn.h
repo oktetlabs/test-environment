@@ -58,12 +58,12 @@ typedef enum {
 
 
 /** 
- * ASN tag values for DATA-UNIT choice, see definition of DATA-UNIT
+ * ASN.1 tag values for DATA-UNIT choice, see definition of DATA-UNIT
  * macro in ASN module TE-Network-Data-Notation-General 
  * ($TE_BASE/doc/ndn/ndn-gen.asn).
  */
 typedef enum { 
-    NDN_DU_PLAIN = 1, 
+    NDN_DU_PLAIN, 
     NDN_DU_SCRIPT, 
     NDN_DU_ENUM, 
     NDN_DU_MASK, 
@@ -72,7 +72,53 @@ typedef enum {
     NDN_DU_FUNC, 
 } ndn_data_unit_tags_t;
 
+/**
+ * ASN.1 tag values for entries in 'Interval' type.
+ */
+typedef enum {
+    NDN_INTERVALS_BEGIN,
+    NDN_INTERVALS_END,
+} ndn_intervals_tags_t;
 
+/**
+ * ASN.1 tag values for entries in 'DATA-UNIT-mask' type.
+ */
+typedef enum {
+    NDN_MASK_VALUE,
+    NDN_MASK_PATTERN,
+    NDN_MASK_EXACT_LEN,
+} ndn_mask_tags_t;
+
+
+/**
+ * ASN.1 tag values for entries in 'DATA-UNIT-env' type.
+ */
+typedef enum {
+    NDN_ENV_NAME,
+    NDN_ENV_TYPE,
+} ndn_env_tags_t;
+
+
+/**
+ * ASN.1 tag values for entries in 'Payload' type.
+ */ 
+typedef enum {
+    NDN_PLD_BYTES,
+    NDN_PLD_MASK,
+    NDN_PLD_FUNC,
+    NDN_PLD_FILE,
+    NDN_PLD_LEN,
+} ndn_pld_tags_t;
+
+/**
+ * ASN.1 tag values for entries in 'Traffic-Template' type.
+ */ 
+typedef enum {
+    NDN_TMPL_ARGS,
+    NDN_TMPL_DELAYS,
+    NDN_TMPL_PDUS,
+    NDN_TMPL_PAYLOAD,
+} ndn_traffic_template_tags_t;
 
 /* Generic useful ASN types */
 extern const asn_type *const asn_base_int4;
