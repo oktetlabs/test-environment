@@ -282,6 +282,7 @@ eth_find_interface(const char *name, eth_interface_p ifdescr)
         rc = errno;
         strerror_r(rc, err_buf, sizeof(err_buf)); 
         ERROR("get if addr error %d \"%s\"", rc, err_buf);
+        close(cfg_socket);
         return rc;
     }
 
@@ -293,6 +294,7 @@ eth_find_interface(const char *name, eth_interface_p ifdescr)
         rc = errno;
         strerror_r(rc, err_buf, sizeof(err_buf)); 
         ERROR("get if index error %d \"%s\"", rc, err_buf);
+        close(cfg_socket);
         return rc;
     }
     
@@ -350,13 +352,14 @@ promisc_mode:
 int
 eth_free_interface(eth_interface_p iface)
 { 
+    int rc = 0;
+#if 0
 #if USE_PROMISC_MODE
 #if 0
     iface_user_rec *ir;
 #endif
     struct ifreq  if_request;
     int cfg_socket;
-    int rc = 0;
 
     VERB("unset to promisc mode iface %s", iface->name);
 
@@ -385,9 +388,9 @@ eth_free_interface(eth_interface_p iface)
     { 
         rc = errno;
         ERROR("%s(): unset promisc mode failed %x\n", __FUNCTION__, rc);
-        close(cfg_socket);
-        return rc;
     }
+    close(cfg_socket);
 #endif 
-    return 0;
+#endif 
+    return rc;
 }
