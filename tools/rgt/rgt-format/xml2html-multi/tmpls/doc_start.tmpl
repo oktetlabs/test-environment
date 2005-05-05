@@ -3,8 +3,10 @@
 <title>Logs from @@%s:reporter@@</title>
 <link rel='stylesheet' type='text/css' href='style.css'>
 
+<script src="node_@@%u:depth@@_@@%u:seq@@_log_names.js">
+</script>
+
 <script>
-var hide = new Array();
 
 function getAllLogs()
 {
@@ -24,9 +26,11 @@ function getAllLogs()
 
 function open_filter_window()
 {
-    window.open("filter_conf.html",
-                "parwin",
-                "dependent,toolbar=no,menubar=no,status=no,width=400,height=300,screenX=300,screenY=100,scrollbars=no");
+    window.top.filter_win = window.open(
+        "filter_conf.html",
+        "parwin",
+        "dependent,toolbar=no,menubar=no,status=no," +
+        "width=400,height=300,top=0,left=1000,scrollbars=no");
 }
 
 function activate_link(name, doc_name)
@@ -35,11 +39,26 @@ function activate_link(name, doc_name)
     document.location.href=doc_name;
 }
 
+var filter_win_reloaded = false;
+
+function refresh_filter_window()
+{
+    if (typeof(window.top.filter_win) != "undefined")
+    {
+        // test to see if a window is still open
+        if (!(window.top.filter_win.closed))
+        {
+            filter_win_reloaded = true;
+            window.top.filter_win.location.reload();
+        }
+    }
+}
+
 </script>
 
 </head>
 
-<body>
+<body onLoad='javascript:refresh_filter_window()'>
 
 <table border='0' cellpadding='0' cellspacing='0' width='100%%'>
 <tr class='tdheading'>

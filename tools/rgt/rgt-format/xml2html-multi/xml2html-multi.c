@@ -40,6 +40,11 @@
 /** Structure to keep basic user data in general parsing context */
 typedef struct gen_ctx_user {
     FILE *js_fd; /**< File descriptor of JavaScript file */
+    GStringChunk *strings; /**< Chunk of strings that are log message
+                                entity and user names */
+    GHashTable *log_names; /**< Hash table for all log names:
+                                key - entity name,
+                                value - array of user names */
 } gen_ctx_user_t;
 
 /** Structure to keep user data in depth-specific context */
@@ -47,11 +52,27 @@ typedef struct depth_ctx_user {
     FILE *fd; /**< File descriptor of the node currently being processed
                    on the particular depth */
     char *log_level; /**< Log level value in string representation */
+
+    GHashTable *depth_log_names; /**< Hash table for log names for 
+                                      the particular node:
+                                      key - entity name,
+                                      value - array of user names */
 } depth_ctx_user_t;
 
+/**< Struct to keep values related to log message name JS callback */
+typedef struct log_msg_name {
+    FILE       *fd; /**< File pointer used for JS output */
+    GHashTable *entity_hash; /**< Pointer to entity name hash */
+} log_msg_name_t;
 
 static depth_ctx_user_t *alloc_depth_user_data(uint32_t depth);
 static void free_depth_user_data();
+static void add_log_user(gen_ctx_user_t *gen_user,
+                         depth_ctx_user_t *depth_user,
+                         const char *entity, const char *user);
+static void output_log_names(GHashTable **entity_hash,
+                             uint32_t depth, uint32_t seq);
+
 
 RGT_DEF_FUNC(proc_document_start)
 {
@@ -126,6 +147,7 @@ RGT_DEF_FUNC(proc_document_start)
     /* Initialize depth-specific user data pointer */
     depth_ctx->user_data = alloc_depth_user_data(ctx->depth);
     depth_user = depth_ctx->user_data;
+    depth_user->depth_log_names = NULL;
 
     if ((depth_user->fd = fopen("node_1_0.html", "w")) == NULL)
     {
@@ -134,6 +156,8 @@ RGT_DEF_FUNC(proc_document_start)
 
     attrs = rgt_tmpls_attrs_new(NULL);
     rgt_tmpls_attrs_add_fstr(attrs, "reporter", "TE start-up");
+    rgt_tmpls_attrs_add_uint32(attrs, "depth", ctx->depth);
+    rgt_tmpls_attrs_add_uint32(attrs, "seq", depth_ctx->seq);
     rgt_tmpls_output(depth_user->fd, &xml2fmt_tmpls[DOC_START], attrs);
     rgt_tmpls_attrs_free(attrs);
 
@@ -148,18 +172,139 @@ RGT_DEF_FUNC(proc_document_start)
     rgt_tmpls_attrs_add_uint32(attrs, "seq", depth_ctx->seq);
     rgt_tmpls_output(gen_user->js_fd, &xml2fmt_tmpls[JS_DOC_START], attrs);
     rgt_tmpls_attrs_free(attrs);
+    
+    /* Initialize log names hash */
+    gen_user->strings = g_string_chunk_new(1024);
+    if (gen_user->strings == NULL)
+        exit(1);
+
+    gen_user->log_names = g_hash_table_new(g_str_hash, g_str_equal);
+    if (gen_user->log_names == NULL)
+        exit(1);
+}
+
+static gint
+my_strcmp(gconstpointer a, gconstpointer b)
+{
+    return strcmp(*(const char **)a, *(const char **)b);
+}
+
+static void
+key_append_to_array(gpointer key, gpointer value, gpointer user_data)
+{
+    GPtrArray *array = (GPtrArray *)user_data;
+
+    UNUSED(value);
+
+    g_ptr_array_add(array, key);
+}
+
+static void
+log_entity_out(gpointer data, gpointer user_data)
+{
+    const char     *entity = (const char *)data;
+    log_msg_name_t *cb_data = (log_msg_name_t *)user_data;
+    FILE           *fd = cb_data->fd;
+    GHashTable     *entity_hash = cb_data->entity_hash;
+    rgt_attrs_t    *attrs;
+    GHashTable     *user_hash;
+    GPtrArray      *users;
+    const char     *user;
+    guint           i;
+    
+    user_hash = (GHashTable *)g_hash_table_lookup(entity_hash, entity);
+
+    assert(user_hash != NULL);
+
+    users = g_ptr_array_new();
+    assert(users != NULL);
+    g_hash_table_foreach(user_hash, key_append_to_array, users);
+    g_ptr_array_sort(users, (GCompareFunc)my_strcmp);
+
+    for (i = 0; i < users->len; i++)
+    {
+        user = g_ptr_array_index(users, i);
+
+        attrs = rgt_tmpls_attrs_new(NULL);
+        rgt_tmpls_attrs_add_fstr(attrs, "user", "%s", user);
+        rgt_tmpls_output(fd, &xml2fmt_tmpls[JS_LOG_NAMES_USER], attrs);
+        rgt_tmpls_attrs_free(attrs);
+    }
+    g_ptr_array_free(users, TRUE);
+    g_hash_table_destroy(user_hash);
+
+    /* Output line about entity entry */
+    attrs = rgt_tmpls_attrs_new(NULL);
+    rgt_tmpls_attrs_add_fstr(attrs, "entity", "%s", entity);
+    rgt_tmpls_output(fd, &xml2fmt_tmpls[JS_LOG_NAMES_ENTITY], attrs);
+    rgt_tmpls_attrs_free(attrs);
+}
+
+static void
+output_log_names(GHashTable **entity_hash, uint32_t depth, uint32_t seq)
+{
+    log_msg_name_t  cb_data;
+    GPtrArray      *entries;
+    char            fname[256];
+
+    assert(entity_hash != NULL);
+
+    cb_data.entity_hash = *entity_hash;
+    
+    snprintf(fname, sizeof(fname), "node_%u_%u_log_names.js", depth, seq);
+    if ((cb_data.fd = fopen(fname, "w")) == NULL)
+    {
+        perror(fname);
+        exit(2);
+    }
+
+    rgt_tmpls_output(cb_data.fd,
+                     &xml2fmt_tmpls[JS_LOG_NAMES_START], NULL);
+
+    if (cb_data.entity_hash == NULL)
+    {
+        /* Create the array with no log names */
+        fclose(cb_data.fd);
+        return;
+    }
+
+    /* Flush the list of log names into the file */
+
+    entries = g_ptr_array_new();
+    g_hash_table_foreach(cb_data.entity_hash, key_append_to_array, entries);
+    g_ptr_array_sort(entries, (GCompareFunc)my_strcmp);
+    
+    /* Now we have sorted array of entity names */
+    g_ptr_array_foreach(entries, log_entity_out, &cb_data);
+    g_ptr_array_free(entries, TRUE);
+
+    g_hash_table_destroy(cb_data.entity_hash);
+    *entity_hash = NULL;
+
+    fclose(cb_data.fd);
 }
 
 RGT_DEF_FUNC(proc_document_end)
 {
-    FILE *js_fd = ((gen_ctx_user_t *)ctx->user_data)->js_fd;
-    FILE *fd = ((depth_ctx_user_t *)depth_ctx->user_data)->fd;
+    gen_ctx_user_t   *gen_user = (gen_ctx_user_t *)ctx->user_data;
+    depth_ctx_user_t *depth_user = (depth_ctx_user_t *)depth_ctx->user_data;
+    FILE             *js_fd = gen_user->js_fd;
+    FILE             *fd = ((depth_ctx_user_t *)depth_ctx->user_data)->fd;
 
     RGT_FUNC_UNUSED_PRMS();
 
     fclose(js_fd);
     rgt_tmpls_output(fd, &xml2fmt_tmpls[DOC_END], NULL);
     fclose(fd);
+
+    /* Output the list of log names for root node */
+    output_log_names(&(depth_user->depth_log_names),
+                     ctx->depth, depth_ctx->seq);
+
+    /* Output the list of accumulated log names */
+    output_log_names(&(gen_user->log_names), 0, 0);
+
+    g_string_chunk_free(gen_user->strings);
 
     free_depth_user_data();
 }
@@ -180,6 +325,7 @@ control_node_start(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
     assert(ctx->depth >= 2);
 
     depth_user = depth_ctx->user_data = alloc_depth_user_data(ctx->depth);
+    depth_user->depth_log_names = NULL;
 
     if (name == NULL)
         name = "session";
@@ -199,6 +345,8 @@ control_node_start(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
     attrs = rgt_tmpls_attrs_new(xml_attrs);
     rgt_tmpls_attrs_add_fstr(attrs, "reporter", "%s %s", node_type,
                              name == NULL ? "<anonimous>" : name);
+    rgt_tmpls_attrs_add_uint32(attrs, "depth", ctx->depth);
+    rgt_tmpls_attrs_add_uint32(attrs, "seq", depth_ctx->seq);
     rgt_tmpls_output(depth_user->fd, &xml2fmt_tmpls[DOC_START], attrs);
     rgt_tmpls_attrs_free(attrs);
 
@@ -238,11 +386,15 @@ static void
 control_node_end(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
                  const char **xml_attrs, const char *node_type)
 {
-    FILE *fd = ((depth_ctx_user_t *)depth_ctx->user_data)->fd;
+    depth_ctx_user_t *depth_user = (depth_ctx_user_t *)depth_ctx->user_data;
+    FILE             *fd = ((depth_ctx_user_t *)depth_ctx->user_data)->fd;
 
     UNUSED(ctx);
     UNUSED(xml_attrs);
     UNUSED(node_type);
+
+    output_log_names(&(depth_user->depth_log_names),
+                     ctx->depth, depth_ctx->seq);
 
     rgt_tmpls_output(fd, &xml2fmt_tmpls[DOC_END], NULL);
     fclose(fd);
@@ -291,14 +443,20 @@ RGT_DEF_FUNC(proc_test_end)
 
 RGT_DEF_FUNC(proc_log_msg_start)
 {
+    gen_ctx_user_t   *gen_user = (gen_ctx_user_t *)ctx->user_data;
     const char       *level = rgt_tmpls_xml_attrs_get(xml_attrs, "level");
+    const char       *entity = rgt_tmpls_xml_attrs_get(xml_attrs, "entity");
+    const char       *user = rgt_tmpls_xml_attrs_get(xml_attrs, "user");
     depth_ctx_user_t *depth_user = (depth_ctx_user_t *)depth_ctx->user_data;
     rgt_attrs_t      *attrs;
 
     RGT_FUNC_UNUSED_PRMS();
 
-    assert(level != NULL);
+    assert(level != NULL && entity != NULL && user != NULL);
     depth_user->log_level = strdup(level);
+
+    /* Add information about entity/user name into users tree */
+    add_log_user(gen_user, depth_user, entity, user);
 
     attrs = rgt_tmpls_attrs_new(xml_attrs);
     rgt_tmpls_output(depth_user->fd, &xml2fmt_tmpls[LOG_MSG_START], attrs);
@@ -546,6 +704,46 @@ proc_chars(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
     fwrite(ch, len, 1, fd);
 }
 
+static void
+add_log_user_to_hash(GHashTable *hash, gchar *entity, gchar *user)
+{
+    GHashTable *user_hash;
+
+    user_hash = (GHashTable *)g_hash_table_lookup(hash, entity);
+    if (user_hash == NULL)
+    {
+        /* Add a new entry */
+        user_hash = g_hash_table_new(g_str_hash, g_str_equal);
+        assert(user_hash != NULL);
+    }
+    g_hash_table_insert(user_hash, user, user);
+    g_hash_table_insert(hash, entity, user_hash);
+}
+
+static void
+add_log_user(gen_ctx_user_t *gen_user, depth_ctx_user_t *depth_user,
+             const char *entity, const char *user)
+{
+    gchar *entity_cp;
+    gchar *user_cp;
+    
+    entity_cp = g_string_chunk_insert_const(gen_user->strings, entity);
+    user_cp = g_string_chunk_insert_const(gen_user->strings, user);
+    
+    assert(entity_cp != NULL && user_cp != NULL);
+
+    add_log_user_to_hash(gen_user->log_names, entity_cp, user_cp);
+    
+    if (depth_user->depth_log_names == NULL)
+    {
+        depth_user->depth_log_names = 
+            g_hash_table_new(g_str_hash, g_str_equal);
+        assert(depth_user->depth_log_names != NULL);
+    }
+
+    add_log_user_to_hash(depth_user->depth_log_names, entity_cp, user_cp);
+}
+
 static GPtrArray *depth_array = NULL;
 
 static depth_ctx_user_t *
@@ -589,3 +787,4 @@ free_depth_user_data()
     g_ptr_array_free(depth_array, TRUE);
     depth_array = NULL;
 }
+

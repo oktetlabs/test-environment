@@ -45,9 +45,6 @@ TD {FONT-FAMILY:Tahoma, Arial, Verdana,  sans-serif; FONT-SIZE: 10pt;}
 .address {letter-spacing: 1px}
 .heading {COLOR: #000000; FONT-VARIANT: small-caps; FONT-FAMILY: Tahoma, Arial, Verdana, sans-serif; FONT-WEIGHT: bold; FONT-SIZE: 12pt;}
 .tdsubhead {COLOR: #838383; FONT-FAMILY: Tahoma, Verdana, sans-serif; FONT-WEIGHT: bold; FONT-SIZE: 10pt;}
-.formhead {COLOR: #585858; FONT-FAMILY: Arial, Verdana, sans-serif; FONT-WEIGHT: bold; FONT-SIZE: 10pt;}
-.formsubhead {COLOR: #878787; FONT-FAMILY: Arial, Verdana, sans-serif; FONT-WEIGHT: bold; FONT-SIZE: 10pt;}
-.smalltext {COLOR: #000000; FONT-FAMILY:Tahoma, Arial, Verdana,  sans-serif; FONT-SIZE: 8pt;}
 
 .entityname {COLOR: #35662E; FONT-FAMILY:Tahoma, Arial, Verdana,  sans-serif; FONT-SIZE: 10pt; vertical-align: top; padding-left: 5px;}
 .username {COLOR: #650000; FONT-FAMILY:Tahoma, Arial, Verdana,  sans-serif; FONT-SIZE: 10pt; vertical-align: top; padding-left: 5px;}
@@ -55,56 +52,13 @@ TD {FONT-FAMILY:Tahoma, Arial, Verdana,  sans-serif; FONT-SIZE: 10pt;}
 .log {color: #000000; #COLOR: #606060; FONT-FAMILY:Tahoma, Arial, Verdana,  sans-serif; FONT-SIZE: 10pt; padding-left: 10px; vertical-align: top;}
 .mem_dump {COLOR: #606060; FONT-FAMILY:Tahoma, Arial, Verdana,  sans-serif; FONT-SIZE: 10pt; padding-left: 10px;}
 
-.required {COLOR: #548EBA; FONT-FAMILY:Verdana, Arial,  Tahoma,  sans-serif; FONT-SIZE: 11pt;}
 /*  END of TEXT CLASSES SECTION  */
-
-/*  FORM CLASSES SECTION  */
-.forminput {
-COLOR: #333333;
-PADDING-BOTTOM:2px;
-PADDING-LEFT: 3px;
-PADDING-RIGHT: 3px;
-BORDER-RIGHT: #333347 1px solid;
-BORDER-TOP: #A5A6C4 1px solid;
-FONT-SIZE: 10pt;
-BORDER-LEFT: #A5A6C4 1px solid;
-CURSOR: text;
-BORDER-BOTTOM: #333347 1px solid;
-FONT-FAMILY: Arial, Verdana, Helvetica, tahoma, Arial, sans-serif;
-FONT-WEIGHT: normal;
-BACKGROUND: url(./pics/bg_text_field.gif) repeat-x;
-BACKGROUND-COLOR: #FFFFFF;
-}
-.formselect {
-COLOR: #333333;
-PADDING-BOTTOM:2px;
-PADDING-LEFT: 3px;
-PADDING-RIGHT: 3px;
-BORDER-RIGHT: #333347 1px solid;
-BORDER-TOP: #A5A6C4 1px solid;
-FONT-SIZE: 10pt;
-BORDER-LEFT: #A5A6C4 1px solid;
-CURSOR: text;
-BORDER-BOTTOM: #333347 1px solid;
-FONT-FAMILY: Arial, Verdana, Helvetica, tahoma, Arial, sans-serif;
-FONT-WEIGHT: normal;
-BACKGROUND: url(./pics/bg_text_field.gif) repeat-x;
-BACKGROUND-COLOR: #FFFFFF;
-}
-
-
-/*  END of FORM CLASSES SECTION  */
 
 /*  LINKS <A> CLASSES SECTION  */
 A { CURSOR: hand; FONT-SIZE: 10pt; COLOR: #E91B1A; FONT-FAMILY: Arial, Verdana, arial, sans-serif; TEXT-DECORATION: underline}
 A:active { CURSOR: hand; COLOR: "#E91B1A"; }
 A:link { CURSOR: hand; COLOR: "#E91B1A"; }
 A:hover { CURSOR: hand;  COLOR: "#333333"; }
-
-A.bettype { CURSOR: hand; FONT-SIZE: 10pt; COLOR: #000000; FONT-FAMILY: Arial, Verdana, arial, sans-serif; TEXT-DECORATION: none}
-A.bettype:active { CURSOR: hand; COLOR: "#548EBA"; }
-A.bettype:link { CURSOR: hand; COLOR: "#000000"; }
-A.bettype:hover { CURSOR: hand;  COLOR: "#548EBA"; }
 
 /*  END of LINKS <A> CLASSES SECTION  */
 

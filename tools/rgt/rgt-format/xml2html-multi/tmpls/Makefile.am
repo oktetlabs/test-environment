@@ -34,6 +34,9 @@ dist_pkgdata_DATA = \
     js_doc_start.tmpl\
     js_add_folder_node.tmpl\
     js_add_test_node.tmpl\
+    js_log_names_entity.tmpl\
+    js_log_names_user.tmpl\
+    js_log_names_start.tmpl\
     doc_ref_to_node.tmpl\
     doc_cntrl_node_title.tmpl\
     log_msg_start.tmpl\

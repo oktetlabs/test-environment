@@ -34,6 +34,7 @@ GEN_CFLAGS = -I$(top_srcdir) @TE_CFLAGS@ -I$(top_srcdir)/lib/tmpls \
              @XML2_CFLAGS@ @GLIB_CFLAGS@
 GEN_LDADD = -L. -L$(top_builddir)/lib/tmpls @TE_LDFLAGS@ \
             @XML2_LIBS@ @GLIB_LIBS@ -lxml2fmt_core -ltmpls -lpopt
+GEN_DEP = libxml2fmt_core.a $(top_builddir)/lib/tmpls/libtmpls.a
 
 noinst_LIBRARIES = libxml2fmt_core.a
 libxml2fmt_core_a_SOURCES = xml2fmt_core.c
@@ -44,15 +45,18 @@ bin_PROGRAMS = rgt-xml2html rgt-xml2text rgt-xml2html-multi
 rgt_xml2text_SOURCES = xml2text/xml2text.c xml2text.h
 rgt_xml2text_CFLAGS = $(GEN_CFLAGS)
 rgt_xml2text_LDADD = $(GEN_LDADD)
+rgt_xml2text_DEPENDENCIES = $(GEN_DEP)
 
 rgt_xml2html_SOURCES = xml2html/xml2html.c xml2html.h
 rgt_xml2html_CFLAGS = $(GEN_CFLAGS)
 rgt_xml2html_LDADD = $(GEN_LDADD)
+rgt_xml2html_DEPENDENCIES = $(GEN_DEP)
 
 rgt_xml2html_multi_SOURCES = xml2html-multi/xml2html-multi.c \
                              xml2html-multi.h
 rgt_xml2html_multi_CFLAGS = $(GEN_CFLAGS)
 rgt_xml2html_multi_LDADD = $(GEN_LDADD)
+rgt_xml2html_multi_DEPENDENCIES = $(GEN_DEP)
 
 BUILT_SOURCES = xml2text.h xml2html.h xml2html-multi.h 
 

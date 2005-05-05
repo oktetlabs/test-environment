@@ -1,1 +1,20 @@
-</body></html>
+</body>
+<script>
+    all_entities = window.top.entities;
+    divList = getAllLogs();
+      
+    for (i = 0; i < divList.length; i++)
+    {
+        DivElem = divList.item(i);
+
+        if (all_entities[DivElem.getAttribute("entityname")][DivElem.getAttribute("username")])
+        {
+            divList.item(i).style.display = "";
+        }
+        else
+        {
+            divList.item(i).style.display = "none";
+        }
+    }
+</script>
+</html>

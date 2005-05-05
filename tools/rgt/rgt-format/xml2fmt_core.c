@@ -66,8 +66,6 @@ rgt_log_start_document(void *user_data)
                                rgt_depth_ctx_t, (ctx->depth - 1));
 
     proc_document_start(ctx, depth_ctx, NULL);
-
-    depth_ctx->seq++;
 }
 
 /**
@@ -131,7 +129,6 @@ rgt_process_cntrl_start(rgt_gen_ctx_t *ctx,
     {
         assert(0);
     }
-    depth_ctx->seq++;
 }
 
 /**
@@ -211,6 +208,7 @@ rgt_log_end_element(void *user_data, const xmlChar *tag)
                 (cb_func = proc_session_end, strcmp(tag, "session") == 0))
             {
                 cb_func(ctx, depth_ctx, NULL);
+                depth_ctx->seq++;
                 ctx->depth--;
             }
             else if (strcmp(tag, "branch") == 0)
