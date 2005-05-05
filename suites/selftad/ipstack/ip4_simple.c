@@ -66,7 +66,10 @@ int
 main(int argc, char *argv[])
 {
 #if USE_RPC_CHECK
-    rcf_rpc_server *srv_src, *srv_dst;
+    rcf_rpc_server *srv_src = NULL, *srv_dst = NULL;
+    int sock_src = -1;
+    int sock_dst = -1;
+    struct sockaddr_in srv_addr;
 #endif
     int  sid;
     char ta[32];
@@ -136,11 +139,6 @@ main(int argc, char *argv[])
         int csap;
         int num;
         int rc_mod;
-#if USE_RPC_CHECK 
-        int sock_src;
-        int sock_dst;
-        struct sockaddr_in srv_addr;
-#endif
 
 #if USE_RPC_CHECK
         if ((sock_src = rpc_socket(srv_src, RPC_AF_INET, RPC_SOCK_STREAM, 
@@ -246,12 +244,23 @@ main(int argc, char *argv[])
 
 cleanup:
 #if USE_RPC_CHECK
-    if (srv_dst && (rcf_rpc_server_destroy(srv_dst) != 0))
+    if (sock_dst >= 0 && rpc_close(srv_dst, sock_dst) < 0)
+    {
+        int err = RPC_ERRNO(srv_dst);
+        ERROR("close DST socket failed %X", err);
+    }
+    if (sock_src >= 0 && rpc_close(srv_src, sock_src) < 0)
+    {
+        int err = RPC_ERRNO(srv_src);
+        ERROR("close SRC socket failed %X", err);
+    }
+
+    if (srv_dst != NULL && (rcf_rpc_server_destroy(srv_dst) != 0))
     {
         WARN("Cannot delete dst RPC server\n");
     }
 
-    if (srv_src && (rcf_rpc_server_destroy(srv_src) != 0))
+    if (srv_src  != NULL&& (rcf_rpc_server_destroy(srv_src) != 0))
     {
         WARN("Cannot delete src RPC server\n");
     }
