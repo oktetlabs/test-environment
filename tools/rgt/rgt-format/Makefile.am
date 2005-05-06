@@ -40,6 +40,8 @@ noinst_LIBRARIES = libxml2fmt_core.a
 libxml2fmt_core_a_SOURCES = xml2fmt_core.c
 libxml2fmt_core_a_CFLAGS = $(GEN_CFLAGS)
 
+noinst_HEADERS = xml2gen.h
+
 bin_PROGRAMS = rgt-xml2html rgt-xml2text rgt-xml2html-multi
 
 rgt_xml2text_SOURCES = xml2text/xml2text.c xml2text.h
