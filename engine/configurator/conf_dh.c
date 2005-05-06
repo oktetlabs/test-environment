@@ -371,6 +371,8 @@ cfg_dh_process_file(xmlNodePtr node)
                     RETERR(msg->rc, "Failed to execute register command "
                                     "for object %s", oid);
 
+                free(val_s);
+                val_s = NULL;
                 free(msg);
                 msg = NULL;
                 free(oid);
@@ -415,6 +417,7 @@ cfg_dh_process_file(xmlNodePtr node)
                 if ((msg = (cfg_set_msg *)calloc(1, len)) == NULL)
                     RETERR(ENOMEM, "Cannot allocate memory");
                 
+                msg->handle = handle;
                 msg->type = CFG_SET;
                 msg->len = sizeof(cfg_set_msg);
                 msg->rc = 0;
@@ -433,6 +436,7 @@ cfg_dh_process_file(xmlNodePtr node)
                 
                 cfg_types[obj->type].put_to_msg(val, (cfg_msg *)msg);
                 free(val_s);
+                val_s = NULL;
                 cfg_types[obj->type].free(val);
                 cfg_process_msg((cfg_msg **)&msg, TRUE);
                 

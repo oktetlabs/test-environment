@@ -545,6 +545,104 @@ cfg_process_msg_pattern(cfg_pattern_msg *msg)
 #undef RETERR
 }
 
+/** 
+ * Add instance children if they are read/write.
+ *
+ * @param inst   pointer on the instance.
+ *
+ * @return  status code.
+ */ 
+static int
+cfg_db_add_children(cfg_instance *inst)
+{
+    cfg_object     *obj1 = inst->obj;
+    char           *oid_s;
+    int             i = 0;
+    int             len;
+    int             err;
+    
+    len = strlen(inst->oid);
+    obj1 = obj1->son;
+    while (obj1)
+    {
+        if (obj1->access != CFG_READ_WRITE)
+        {
+            obj1 = obj1->brother;
+            continue;
+        }
+
+        /* make up instance oid string */
+        oid_s = malloc(sizeof(char)*(len + strlen(obj1->subid) + 3));
+        if (!oid_s)
+            return ENOMEM;
+        sprintf(oid_s, "%s/%s:", inst->oid, obj1->subid);
+        
+        /* Adding instance */
+        for (i = 0; i < cfg_all_inst_size && cfg_all_inst[i] != NULL; i++);
+        
+        if (i == cfg_all_inst_size)
+        {
+            void *tmp = realloc(cfg_all_inst, 
+                sizeof(void *) * (cfg_all_inst_size + CFG_INST_NUM));
+
+            if (tmp == NULL)
+            {
+                free(oid_s);
+                return ENOMEM;
+            }
+            
+            memset(tmp + sizeof(void *) * cfg_all_inst_size, 0, 
+                 sizeof(void *) * CFG_INST_NUM);
+        
+            cfg_all_inst = (cfg_instance **)tmp;
+            cfg_all_inst_size += CFG_INST_NUM;
+        }
+    
+        cfg_all_inst[i] = (cfg_instance *)calloc(sizeof(cfg_instance), 1);
+        if (cfg_all_inst[i] == NULL)
+        {
+            free(oid_s);
+            return ENOMEM;
+        }
+        
+        /* Setting all parameters*/
+        cfg_all_inst[i]->oid = oid_s;
+        if (obj1->type != CVT_NONE)
+        {
+            int err;
+        
+            if (obj1->def_val != NULL)
+                err = cfg_types[obj1->type].str2val(obj1->def_val, 
+                                               &(cfg_all_inst[i]->val));
+            else
+                err = 
+                    cfg_types[obj1->type].def_val(&(cfg_all_inst[i]->val));
+        
+            if (err)
+            {
+                free(cfg_all_inst[i]->oid);
+                free(cfg_all_inst[i]);
+                cfg_all_inst[i] = NULL;
+                return err;
+            }
+        }
+ 
+        cfg_all_inst[i]->handle = i | (cfg_inst_seq_num++) << 16;
+        cfg_all_inst[i]->name[0] = '\0';
+        cfg_all_inst[i]->obj = obj1;
+        cfg_all_inst[i]->father = inst;
+        cfg_all_inst[i]->son = NULL;
+        cfg_all_inst[i]->brother = inst->son;
+        inst->son =  cfg_all_inst[i]; 
+        
+        /* Adding all its children*/
+        if ( (err = cfg_db_add_children(cfg_all_inst[i])) != 0)
+            return err;
+        obj1 = obj1->brother;
+    }
+    return 0;
+}
+
 /**
  * Add instance to the database.
  *
@@ -691,7 +789,10 @@ cfg_db_add(char *oid_s, cfg_handle *handle,
     
     *handle = cfg_all_inst[i]->handle;
     
-    RET(0);
+    cfg_free_oid(oid);
+    if (strcmp_start("/agent", cfg_all_inst[i]->oid) != 0)
+        return cfg_db_add_children(cfg_all_inst[i]);
+    return 0;
 
 #undef RET
 }
