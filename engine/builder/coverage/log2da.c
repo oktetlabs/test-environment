@@ -51,10 +51,10 @@ const char *find_line(enum PROCESSING_LEVELS level)
     static char buffer[1024] = ""; 
     static enum PROCESSING_LEVELS level_in_buffer = NO_LEVEL;
     static te_bool line_block = FALSE;
+    static char *bufptr;
 
     static const char *level_markers[] = 
         {"TCE total", "TCE function", "TCE arc", NULL};
-    char *bufptr;
     int l;
 
     while (level_in_buffer < 0)
@@ -65,13 +65,12 @@ const char *find_line(enum PROCESSING_LEVELS level)
             {
                 return NULL;
             }
-            if (strncmp(buffer, "WARN", 4) != 0 ||
+            if (strncmp(buffer, "RING", 4) != 0 ||
                 strstr(buffer, agent_name) == NULL)
             {
                     continue;
             }
         }
-        
         
         if (fgets(buffer, sizeof(buffer) - 1, stdin) == NULL)
         {
@@ -86,7 +85,7 @@ const char *find_line(enum PROCESSING_LEVELS level)
         line_block = TRUE;
         for (l = level; l >= 0; l--)
         {
-            if (strcmp_start(level_markers[l], buffer) == 0)
+            if ((bufptr = strstr(buffer, level_markers[l])) != NULL)
             {
                 level_in_buffer = l;
                 break;
@@ -97,8 +96,8 @@ const char *find_line(enum PROCESSING_LEVELS level)
     
     if (level_in_buffer != level)
         return NULL;
+    bufptr += strlen(level_markers[level_in_buffer]);
     level_in_buffer = NO_LEVEL;
-    bufptr = buffer + strlen(level_markers[level]) + 1;
     return bufptr;
 }
 
@@ -183,15 +182,19 @@ int main(int argc, char *argv[])
             long arc_count; 
             long long counter;
            
-            for (;;)
+            for (; object_functions != 0; object_functions--)
             {
                 
                 if ((logline = find_line(FUNCTION_LEVEL)) == NULL)
+                {
+                    fprintf(stderr, "function profiling: log corrupted in %s\n", da_filename);
                     break;
+                }
+                
                 if (sscanf(logline, "%s %ld:%ld", name,
                            &checksum, &arc_count) != 3)
                 {
-                    fprintf(stderr, "Cannot parse '%s'", logline);
+                    fprintf(stderr, "Cannot parse function '%s'", logline);
                     return EXIT_FAILURE;
                 }
 
@@ -205,16 +208,17 @@ int main(int argc, char *argv[])
                     return EXIT_FAILURE;
                 }
              
-                for (;;)
+                for (; arc_count != 0; arc_count--)
                 {
                     if ((logline = find_line(ARC_LEVEL)) == NULL)
                     {
+                        fprintf(stderr, "arc profiling: log is corrupted near %s:'%s'\n", da_filename, name);
                         break;
                     }
 
                     if (sscanf(logline, "%Ld", &counter) != 1)
                     {
-                        fprintf(stderr, "Cannot parse '%s'", logline);
+                        fprintf(stderr, "Cannot parse arc '%s'", logline);
                         return EXIT_FAILURE;
                     }
 

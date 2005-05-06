@@ -10,7 +10,9 @@ for i in ${TE_BS_NUTS} ${TE_BS_NUTLIBS}; do
     if test -n "${tce_taname}" ; then 
         NUT_SOURCES=`eval echo '$NUT_'$i'_SOURCES'` 
         echo "*** Test coverage report for $i:"
-        log2da ${tce_taname} <"$1" && find $NUT_SOURCES -name '*.da' -exec tce_gcov '{}' ';' 
+        find $NUT_SOURCES -name '*.gcov' -exec rm -f '{}' ';'
+        log2da ${tce_taname} <"$1" && find $NUT_SOURCES -name '*.da' -exec tce_gcov '{}' ';' && \
+            find $NUT_SOURCES -name '*.gcov' -exec cat '{}' ';'
     fi        
 done
 

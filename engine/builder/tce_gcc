@@ -33,7 +33,7 @@ for arg in "$@"; do
         -c) TCE_BBHOOK_O=""
         TCE_LOGFORK=""
         processed_options="$processed_options -c" ;;
-        -O*|-g|-ftest-coverage|-fprofile-arcs) ;;         
+        -O*|-g|-ftest-coverage|-fprofile-arcs|-nostartfiles) ;;         
         -*) processed_options="$processed_options $arg" ;;
         *) mydir=`dirname $arg`
            myself=`basename $arg`
@@ -41,7 +41,7 @@ for arg in "$@"; do
            for tce in ${TCE_SRC}; do
               case "$fullpath" in
                  $tce*)
-                 coverage_options="-g -ftest-coverage -fprofile-arcs"
+                 coverage_options="-g -ftest-coverage -fprofile-arcs -D_init=_target_init -D_fini=_target_fini"
                  ;;
               esac
            done   

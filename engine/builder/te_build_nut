@@ -79,8 +79,9 @@ if test -n "`eval echo '$NUT_'$NUT'_TCE_TANAME'`" ; then
     export CLINK=`which tce_gcc`
     libpath=`dirname $CC`/../lib
     export TCE_BBHOOK_O=$libpath/bbhook.o
-    export TCE_LOGFORK="-lpthread -L$libpath"
+    export TCE_LOGFORK="-lpthread -L$libpath -llogfork -lloggerta"
     ${TCE_CC} -c -o $TCE_BBHOOK_O ${TCE_CFLAGS} -I${TE_BASE}/include \
+        -I${TE_BASE}/lib/logfork -I${TE_BASE}/lib/loggerta \
         -I${TE_BUILD}/include \
         ${TE_BASE}/engine/builder/coverage/bbhook.c || exit 1 
 fi 

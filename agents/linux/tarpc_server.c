@@ -541,6 +541,8 @@ int
 setlibname(const tarpc_setlibname_in *in)
 {
     const char *libname;
+    void (*logfork_set_socket)(int);
+    char **lib_te_lgr_entity;
 
     if (dynamic_library_set)
     {
@@ -562,8 +564,26 @@ setlibname(const tarpc_setlibname_in *in)
         return TE_RC(TE_TA_LINUX, ENOMEM);
     }
     dynamic_library_set = TRUE;
+
+    /* All the following is to support TCE */
+
+    /* This works around logfork being statically linked, so the data 
+       structures in the library are not shared with TA 
+    */
+    logfork_set_socket = dlsym(dynamic_library_handle, "logfork_set_sock");
+    if (logfork_set_socket != NULL)
+    {
+        logfork_set_socket(logfork_get_sock());
+    }
+    lib_te_lgr_entity = dlsym(dynamic_library_handle, "te_lgr_entity");
+    if (lib_te_lgr_entity != NULL)
+    {
+        *lib_te_lgr_entity = te_lgr_entity;
+    }
+
     return 0;
 }
+
 
 bool_t
 _setlibname_1_svc(tarpc_setlibname_in *in, tarpc_setlibname_out *out,

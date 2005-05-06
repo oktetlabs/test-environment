@@ -23,6 +23,9 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <te_config.h>
+#include <ta_logfork.h>
+
+const char *te_lgr_entity = "BBHOOK";
 
 struct bb_function_info 
 {
@@ -61,7 +64,6 @@ __bb_exit_func (void)
     long long program_max = 0;
     long program_arcs = 0;
 
-    fputs("Dumping GCOV data\n", stderr);
 
     /* Non-merged stats for this program.  */
     for (ptr = __bb_head; ptr; ptr = ptr->next)
@@ -100,15 +102,15 @@ __bb_exit_func (void)
                 object_max = ptr->counts[i];
         }
 
-        fprintf(stderr, "TCE total %s %d:%d:%Ld:%Ld:%d:%Ld:%Ld\n", 
-                ptr->filename,
-                object_functions, 
-                program_arcs,
-                program_sum, 
-                program_max, 
-                ptr->ncounts, 
-                object_sum,
-                object_max);
+        LOG_RING("TCE", "TCE total %s %d:%d:%Ld:%Ld:%d:%Ld:%Ld\n", 
+                 ptr->filename,
+                 object_functions, 
+                 program_arcs,
+                 program_sum, 
+                 program_max, 
+                 ptr->ncounts, 
+                 object_sum,
+                 object_max);
       
         /* Write execution counts for each function.  */
         count_ptr = ptr->counts;
@@ -116,11 +118,16 @@ __bb_exit_func (void)
         for (fn_info = ptr->function_infos; fn_info->arc_count >= 0;
              fn_info++)
         {          
-            fprintf(stderr, "TCE function %s %d:%d\n", fn_info->name,
-                    fn_info->checksum, fn_info->arc_count);
+            LOG_RING("TCE", "TCE function %s %d:%d\n", fn_info->name,
+                     fn_info->checksum, fn_info->arc_count);
             for (i = fn_info->arc_count; i > 0; i--, count_ptr++)
             {
-                fprintf(stderr, "TCE arc %Ld\n", *count_ptr);
+                struct timespec delay;
+                delay.tv_sec = 0;
+                delay.tv_nsec = 10000000;
+                
+                LOG_RING("TCE", "TCE arc %Ld\n", *count_ptr);
+                nanosleep(&delay, NULL);
             }
         }
     }
@@ -133,7 +140,6 @@ __bb_exit_func (void)
 void
 __bb_init_func (struct bb *blocks)
 {
-    fputs("Initializing GCOV data\n", stderr);
     if (blocks->zero_word)
         return;
 
@@ -165,3 +171,32 @@ __bb_fork_func (void)
     }
 }
 
+
+void _target_init(void) __attribute__ ((weak));
+void _target_fini(void) __attribute__ ((weak));
+
+
+void
+_target_init(void) 
+{
+} 
+
+void
+_target_fini(void) 
+{
+} 
+
+static void target_init_caller(void) __attribute__ ((constructor));
+static void target_fini_caller(void) __attribute__ ((destructor));
+
+static void
+target_init_caller (void) 
+{
+    _target_init();
+} 
+
+static void
+target_fini_caller (void) 
+{
+    _target_fini();
+}
