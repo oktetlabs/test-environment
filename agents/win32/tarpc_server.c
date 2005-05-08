@@ -1266,7 +1266,7 @@ TARPC_FUNC(transmit_file, {},
 
 /*----------- TransmitFile(), 2nd version ------------------*/
 
-TARPC_FUNC(transmit_file2, {},
+TARPC_FUNC(transmitfile_tabufs, {},
 {
     TRANSMIT_FILE_BUFFERS  transmit_buffers;
     HANDLE                 file = NULL;

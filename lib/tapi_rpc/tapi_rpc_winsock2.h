@@ -262,11 +262,37 @@ extern int rpc_transmit_file(rcf_rpc_server *rpcs, int s, char *file,
                              void *head, ssize_t head_len,
                              void *tail, ssize_t tail_len, ssize_t flags);
 
-extern int rpc_transmit_file2(rcf_rpc_server *rpcs, int s, char *file,
-                              ssize_t len, ssize_t bytes_per_send,
-                              rpc_overlapped overlapped, rpc_ptr head,
-                              ssize_t head_len, rpc_ptr tail,
-                              ssize_t tail_len, ssize_t flags);
+/**
+ * Transmit file data over a connected socket. This function uses the 
+ * operating system cache manager to retrive the file data, and perform 
+ * high-performance file data transfert over sockets.
+ *
+ * @param rpcs           RPC server handle.
+ * @param s              connected socket descriptor.
+ * @param file           path (on TA) to the file to transmit.
+ * @param len            amount of file data to transmit.
+ * @param bytes_per_send size of each block of data in each send operation.
+ * @param overlapped     pointer to an rpc_overlapped structure.
+ * @param head           a pointer valid in the TA virtual address space
+ *                       and pointing to a buffer to be transmitted before
+ *                       the file data.
+ * @param head_len       size of buffer @b head.
+ * @param tail           a pointer valid in the TA virtual address space
+ *                       and pointing to a buffer to be transmitted after
+ *                       the file data.
+ * @param tail_len       size of buffer @b tail.
+ * @param flags          @b TransmitFile call flags.
+ *
+ * @return   @c TRUE in case of success, @c FALSE otherwise.
+ *
+ * ATTENTION: when using the overlapped I/O the supplied buffers @b head
+ * and @b tail will be freed when you call rpc_get_overlapped_result().
+ */
+extern int rpc_transmitfile_tabufs(rcf_rpc_server *rpcs, int s, char *file,
+                                   ssize_t len, ssize_t bytes_per_send,
+                                   rpc_overlapped overlapped, rpc_ptr head,
+                                   ssize_t head_len, rpc_ptr tail,
+                                   ssize_t tail_len, ssize_t flags);
 
 /** HasOverlappedIoCompleted() */
 extern int rpc_has_overlapped_io_completed(rcf_rpc_server *rpcs,

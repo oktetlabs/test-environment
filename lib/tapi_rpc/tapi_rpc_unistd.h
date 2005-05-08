@@ -45,6 +45,14 @@
 extern int rpc_close(rcf_rpc_server *rpcs,
                      int fd);
 
+/**
+ * Write the buffer to the file starting with the specified file offset.
+ * Return the amount of written data in case of success.
+ *
+ * \retval -2  Failed to reposition the file offset.
+ * \retval -1  Failed to write the data.
+ * \retval -3  Other errors.
+ */
 extern ssize_t rpc_write_at_offset(rcf_rpc_server *rpcs, int fd, char* buf,
                                    size_t buflen, off_t offset);
 

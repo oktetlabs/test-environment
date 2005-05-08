@@ -502,15 +502,15 @@ rpc_transmit_file(rcf_rpc_server *rpcs, int s, char *file,
  * and tail will be freed when you call rpc_get_overlapped_result().
  */
 int
-rpc_transmit_file2(rcf_rpc_server *rpcs, int s, char *file,
-                   ssize_t len, ssize_t bytes_per_send,
-                   rpc_overlapped overlapped,
-                   rpc_ptr head, ssize_t head_len,
-                   rpc_ptr tail, ssize_t tail_len, ssize_t flags)
+rpc_transmitfile_tabufs(rcf_rpc_server *rpcs, int s, char *file,
+                        ssize_t len, ssize_t bytes_per_send,
+                        rpc_overlapped overlapped,
+                        rpc_ptr head, ssize_t head_len,
+                        rpc_ptr tail, ssize_t tail_len, ssize_t flags)
 {
-    rcf_rpc_op               op;
-    tarpc_transmit_file2_in  in;
-    tarpc_transmit_file2_out out;
+    rcf_rpc_op                    op;
+    tarpc_transmitfile_tabufs_in  in;
+    tarpc_transmitfile_tabufs_out out;
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
@@ -518,7 +518,7 @@ rpc_transmit_file2(rcf_rpc_server *rpcs, int s, char *file,
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        RETVAL_INT(transmit_file2, -1);
+        RETVAL_INT(transmitfile_tabufs, -1);
     }
     op = rpcs->op;
     
@@ -539,19 +539,19 @@ rpc_transmit_file2(rcf_rpc_server *rpcs, int s, char *file,
     in.tail_len = tail_len;
     in.flags = flags;
 
-    rcf_rpc_call(rpcs, _transmit_file2,
-                 &in,  (xdrproc_t)xdr_tarpc_transmit_file2_in,
-                 &out, (xdrproc_t)xdr_tarpc_transmit_file2_out);
+    rcf_rpc_call(rpcs, _transmitfile_tabufs,
+                 &in,  (xdrproc_t)xdr_tarpc_transmitfile_tabufs_in,
+                 &out, (xdrproc_t)xdr_tarpc_transmitfile_tabufs_out);
 
-    CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(transmit_file2, out.retval);
+    CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(transmitfile_tabufs, out.retval);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: transmit_file2(%d, %s, %d, %d, %p, ...) "
-                 "-> %s (%s)", rpcs->ta, rpcs->name, rpcop2str(op),
+    TAPI_RPC_LOG("RPC (%s,%s)%s: transmitfile_tabufs(%d, %s, %d, %d, %p, "
+                 "...) -> %s (%s)", rpcs->ta, rpcs->name, rpcop2str(op),
                  s, file, len, bytes_per_send, overlapped,
                  out.retval ? "true" : "false",
                  errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_INT(transmit_file2, out.retval);
+    RETVAL_INT(transmitfile_tabufs, out.retval);
 }
 
 int

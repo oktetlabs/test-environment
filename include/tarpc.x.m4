@@ -680,7 +680,7 @@ typedef struct tarpc_int_retval_out tarpc_transmit_file_out;
 
 /* TransmitFile(), 2nd version */
 
-struct tarpc_transmit_file2_in {
+struct tarpc_transmitfile_tabufs_in {
     struct tarpc_in_arg common;
                                                                                
     tarpc_int           s;            /**< TA-local socket */
@@ -699,7 +699,7 @@ struct tarpc_transmit_file2_in {
     tarpc_size_t        flags;        /**< Parameter of TransmitFile() */
 };
 
-typedef struct tarpc_int_retval_out tarpc_transmit_file2_out;
+typedef struct tarpc_int_retval_out tarpc_transmitfile_tabufs_out;
 
 /* HasOverlappedIoCompleted() */
 
@@ -2600,7 +2600,7 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(event_select)
         RPC_DEF(enum_network_events)
         RPC_DEF(transmit_file)
-        RPC_DEF(transmit_file2)
+        RPC_DEF(transmitfile_tabufs)
         RPC_DEF(has_overlapped_io_completed)
         RPC_DEF(get_ram_size)
         RPC_DEF(vm_trasher)
