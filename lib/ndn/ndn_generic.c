@@ -96,7 +96,7 @@ static asn_named_entry_t _ndn_data_unit_mask_ne_array[] =
 {
     { "v", &asn_base_octstring_s, {PRIVATE, NDN_MASK_VALUE} },
     { "m", &asn_base_octstring_s, {PRIVATE, NDN_MASK_PATTERN} },
-    { "exact-len", &asn_base_boolean_s, {PRIVATE, NDN_MASK_EXACT_LEN} }
+    { "free-len", &asn_base_null_s, {PRIVATE, NDN_MASK_EXACT_LEN} }
 }; 
 
 asn_type ndn_data_unit_mask_s = 
