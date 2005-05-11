@@ -512,6 +512,8 @@ tapi_arp_prepare_pattern_with_arp(const uint8_t *eth_src_mac,
 
     *pattern = eth_pattern;
 
+    asn_save_to_file(eth_pattern, "/tmp/arp-pattern.asn");
+
     free(pkt_mask);
     free(arp_pkt);
 
