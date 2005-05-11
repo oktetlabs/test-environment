@@ -579,13 +579,41 @@ rpc_has_overlapped_io_completed(rcf_rpc_server *rpcs,
              &in,  (xdrproc_t)xdr_tarpc_has_overlapped_io_completed_in,
              &out, (xdrproc_t)xdr_tarpc_has_overlapped_io_completed_out);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: has_overlapped_io_completed"
-                 "(%p) -> %s (%s)",
-                 rpcs->ta, rpcs->name, rpcop2str(op),
+    TAPI_RPC_LOG("RPC (%s,%s)%s: has_overlapped_io_completed(%p)"
+                 " -> %s (%s)", rpcs->ta, rpcs->name, rpcop2str(op),
                  overlapped, out.retval ? "true" : "false",
                  errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_INT(has_overlapped_io_completed, out.retval);
+}
+
+int
+rpc_get_current_process_id(rcf_rpc_server *rpcs)
+{
+    rcf_rpc_op                       op;
+    tarpc_get_current_process_id_in  in;
+    tarpc_get_current_process_id_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(get_current_process_id, -1);
+    }
+
+    op = rpcs->op;
+
+    rcf_rpc_call(rpcs, _get_current_process_id,
+             &in,  (xdrproc_t)xdr_tarpc_get_current_process_id_in,
+             &out, (xdrproc_t)xdr_tarpc_get_current_process_id_out);
+
+    TAPI_RPC_LOG("RPC (%s,%s)%s: get_current_process_id() -> %d (%s)",
+                 rpcs->ta, rpcs->name, rpcop2str(op),
+                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
+
+    RETVAL_INT(get_current_process_id, out.retval);
 }
 
 void

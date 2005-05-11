@@ -298,6 +298,9 @@ extern int rpc_transmitfile_tabufs(rcf_rpc_server *rpcs, int s, char *file,
 extern int rpc_has_overlapped_io_completed(rcf_rpc_server *rpcs,
                                            rpc_overlapped overlapped);
 
+/* GetCurrentProcessId() */
+extern int rpc_get_current_process_id(rcf_rpc_server *rpcs);
+
 /** Get the total amount of physical memory (RAM size). */
 extern void rpc_get_ram_size(rcf_rpc_server *rpcs, uint64_t *ram_size);
 

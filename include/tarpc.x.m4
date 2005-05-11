@@ -713,6 +713,17 @@ struct tarpc_has_overlapped_io_completed_out {
     tarpc_int             retval;
 };    
 
+/* GetCurrentProcessId() */
+
+struct tarpc_get_current_process_id_in {
+    struct tarpc_in_arg  common;
+};    
+
+struct tarpc_get_current_process_id_out {
+    struct tarpc_out_arg  common;
+    tarpc_int             retval;
+};
+
 /* rpc_get_ram_size() */
 struct tarpc_get_ram_size_in {
     struct tarpc_in_arg  common;
@@ -2602,6 +2613,7 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(transmit_file)
         RPC_DEF(transmitfile_tabufs)
         RPC_DEF(has_overlapped_io_completed)
+        RPC_DEF(get_current_process_id)
         RPC_DEF(get_ram_size)
         RPC_DEF(vm_trasher)
         RPC_DEF(write_at_offset)

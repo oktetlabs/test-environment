@@ -1324,6 +1324,15 @@ TARPC_FUNC(has_overlapped_io_completed, {},
 }
 )
 
+/*-------------- GetCurrentProcessId() -------------------*/
+
+TARPC_FUNC(get_current_process_id, {},
+{
+    UNUSED(list);
+    out->retval = GetCurrentProcessId();
+}
+)
+
 /* Get the amount of physical memory (RAM) */
 TARPC_FUNC(get_ram_size, {},
 {
@@ -1332,7 +1341,7 @@ TARPC_FUNC(get_ram_size, {},
     UNUSED(list);
 
     memset(&ms, 0, sizeof(ms));
-    MAKE_CALL(GlobalMemoryStatus(&ms));
+    GlobalMemoryStatus(&ms);
     out->ram_size = ms.dwTotalPhys;
 }
 )
@@ -1392,7 +1401,6 @@ TARPC_FUNC(write_at_offset, {},
     );
 }
 )
-
 
 /*-------------- recvfrom() ------------------------------*/
 
