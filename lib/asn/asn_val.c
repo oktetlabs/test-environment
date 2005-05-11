@@ -651,15 +651,15 @@ asn_impl_write_value_field(asn_value_p container,
     switch(container->syntax)
     {
     case BOOL:
-        if (* (char*)data)
+        if (* (char*)data) /* TRUE */
         {
             container->data.integer = 0xff;
-            container->txt_len = 5;
+            container->txt_len = 4;
         } 
-        else 
+        else  /* FALSE */
         {
             container->data.integer = 0;
-            container->txt_len = 4;
+            container->txt_len = 5;
         }
         break;
 

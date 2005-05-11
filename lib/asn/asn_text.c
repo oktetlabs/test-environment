@@ -61,6 +61,9 @@ int asn_impl_pt_label(const char*text, char *label, int *parsed_syms);
 int asn_impl_pt_charstring(const char *text, const asn_type *type, 
                            asn_value_p *parsed, int *parsed_syms);
 
+int asn_impl_pt_bool(const char *text, const asn_type *type, 
+                     asn_value_p *parsed, int *parsed_syms);
+
 int asn_impl_pt_integer(const char *text, const asn_type *type, 
                         asn_value_p *parsed, int *parsed_syms);
 
@@ -328,6 +331,43 @@ asn_impl_pt_integer(const char*text, const asn_type *type,
     *parsed = asn_init_value(type); 
     (*parsed)->data.integer = p_value; 
     (*parsed)->txt_len = number_of_digits(p_value);
+
+    return 0;
+}
+
+
+/**
+ * Parse textual presentation of single ASN.1 value of BOOL type,
+ * create new instance of asn_value type with its internal presentation.
+ *
+ * @param text          text to be parsed;
+ * @param type          ASN type of value to be parsed;
+ * @param parsed        parsed ASN value (OUT);
+ * @param syms_parsed   quantity of parsed symbols in 'text' (OUT);
+ *
+ * @return zero on success, otherwise error code.
+ */ 
+int 
+asn_impl_pt_bool(const char*text, const asn_type *type, 
+                 asn_value_p *parsed, int *syms_parsed)
+{
+    if (!text || !parsed || !syms_parsed)
+        return ETEWRONGPTR; 
+
+
+    *parsed = asn_init_value(type); 
+    if (strncmp(text, "TRUE", strlen("TRUE")) == 0)
+    {
+        (*parsed)->data.integer = 0xff; 
+        *syms_parsed = (*parsed)->txt_len = strlen("TRUE");
+    }
+    else if (strncmp(text, "FALSE", strlen("FALSE")) == 0)
+    {
+        (*parsed)->data.integer = 0; 
+        *syms_parsed = (*parsed)->txt_len = strlen("FALSE");
+    }
+    else
+        return EASNTXTPARSE;
 
     return 0;
 }
@@ -800,6 +840,9 @@ asn_parse_value_text(const char *text, const asn_type *type,
 
     switch (type->syntax)
     {
+        case BOOL:
+            return asn_impl_pt_bool      (text, type, parsed, syms_parsed);
+
         case INTEGER:
             return asn_impl_pt_integer   (text, type, parsed, syms_parsed);
             
