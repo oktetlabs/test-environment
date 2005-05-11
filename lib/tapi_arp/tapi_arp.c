@@ -499,8 +499,9 @@ tapi_arp_prepare_pattern_with_arp(const uint8_t *eth_src_mac,
                                    "0.payload.#mask.m");
     if (rc == 0)
     {
-        rc = asn_write_value_field(eth_pattern, NULL, 0,
-                                   "0.payload.#mask.free-len");
+        int val = 0;
+        rc = asn_write_value_field(eth_pattern, &val, sizeof(val),
+                                   "0.payload.#mask.exact-len");
     }
 
     if (rc != 0)

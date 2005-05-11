@@ -201,12 +201,13 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
             const uint8_t *pat = NULL;
             unsigned int   mask_len;
 
-            int fixed_len_flag = 1;
+            int fixed_len_flag;
+            size_t fl_sz = sizeof(fixed_len_flag);
 
-            rc = asn_get_field_data(pattern_unit, &mask, 
-                    "payload.#mask.free-len");
-            if (rc == 0)
-                fixed_len_flag = 0;
+            rc = asn_read_value_field(pattern_unit, &fixed_len_flag, 
+                                      &fl_sz, "payload.#mask.exact-len");
+            if (rc != 0) /* set default value */
+                fixed_len_flag  = 1;
 
             rc = asn_get_field_data(pattern_unit, &mask, 
                                     "payload.#mask.m");
