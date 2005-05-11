@@ -209,6 +209,8 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
             if (rc != 0) /* set default value */
                 fixed_len_flag  = 1;
 
+            F_RING("%s(): fix len flag: %d", __FUNCTION__, fixed_len_flag);
+
             rc = asn_get_field_data(pattern_unit, &mask, 
                                     "payload.#mask.m");
 
@@ -227,7 +229,7 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
             if (mask_len > data_to_check.len || 
                 (fixed_len_flag && mask_len < data_to_check.len))
             {
-                F_VERB("Match payload fails, got pld len %d, mask len %d", 
+                F_RING("Match payload fails, got pld len %d, mask len %d", 
                         data_to_check.len, mask_len);
                 rc = ETADNOTMATCH;
             }
