@@ -860,6 +860,7 @@ asn_impl_read_value_field  (const asn_value *container,  void *data,
     switch(value->syntax)
     {
     case BOOL:
+#if 0
         if (*d_len)
         {
             *((char*)data) = (char) value->data.integer;
@@ -868,7 +869,7 @@ asn_impl_read_value_field  (const asn_value *container,  void *data,
         else 
             return ETESMALLBUF;
         break;
-
+#endif
     case INTEGER: 
     case ENUMERATED: 
         {
