@@ -294,14 +294,33 @@ extern int rpc_transmitfile_tabufs(rcf_rpc_server *rpcs, int s, char *file,
                                    ssize_t head_len, rpc_ptr tail,
                                    ssize_t tail_len, ssize_t flags);
 
-/** HasOverlappedIoCompleted() */
+/**
+ * Windows HasOverlappedIoCompleted()
+ *
+ * @param rpcs        RPC server handle
+ * @param overlapped  overlapped structure
+ *
+ * @return   @c TRUE if overlapped I/O has completed, @c FALSE otherwise.
+ */
 extern int rpc_has_overlapped_io_completed(rcf_rpc_server *rpcs,
                                            rpc_overlapped overlapped);
 
-/* GetCurrentProcessId() */
+/**
+ * Windows GetCurrentProcessId()
+ *
+ * @param rpcs   RPC server handle
+ *
+ * @return   The specified RPC server process identifier.
+ */
 extern int rpc_get_current_process_id(rcf_rpc_server *rpcs);
 
-/** Get the total amount of physical memory (RAM size). */
+/**
+ * Get the total amount of physical memory (RAM size)
+ * on the host where the specified RPC server runs.
+ *
+ * @param rpcs       RPC server handle
+ * @param ram_size   where to store the RAM size value
+ */
 extern void rpc_get_ram_size(rcf_rpc_server *rpcs, uint64_t *ram_size);
 
 /** 
@@ -491,13 +510,50 @@ extern int rpc_alloc_wsabuf(rcf_rpc_server *rpcs, size_t len,
  */
 extern void rpc_free_wsabuf(rcf_rpc_server *rpcs, rpc_ptr wsabuf);
 
-/** WSAConnect */
+/**
+ * Windows WSAConnect().
+ *
+ * @param rpcs           RPC server handle
+ * @param s              Descriptor identifying an unconnected socket
+ * @param addr           pointer to a @b sockaddr structure containing the 
+ *                       address to connect to
+ * @param addrlen        length of @b addr structure
+ * @param caller_wsabuf  TA virtual address space valid pointer to a WSABUF
+ *                       structure describing the user data that is to be
+ *                       transferred to the other socket during connection
+ *                       establishment
+ * @param callee_wsabuf  TA virtual address space valid pointer to a WSABUF
+ *                       structure describing the user data that is to be
+ *                       transferred back from the other socket during
+ *                       connection establishment.
+ * @param sqos           TA virtual address space valid pointer to a QOS
+ *                       structure for socket @b s.
+ *
+ * @return   0 in case of success, nonzero otherwise.
+ */
 extern int rpc_wsa_connect(rcf_rpc_server *rpcs, int s,
                            struct sockaddr *addr, socklen_t addrlen,
                            rpc_ptr caller_wsabuf, rpc_ptr callee_wsabuf,
                            rpc_qos *sqos);
 
-/** WSAIoctl */
+/**
+ * Windows WSAIoctl().
+ *
+ * @param rpcs            RPC server handle
+ * @param s               Descriptor identifying a socket
+ * @param control_code    Control code of operation to perform
+ * @param inbuf           Pointer to the input buffer
+ * @param inbuf_len       Size of the input buffer
+ * @param outbuf          Pointer to the output buffer
+ * @param outbuf_len      Size of the output buffer
+ * @param bytes_returned  Pointer to the actual number of bytes of output
+ * @param overlapped      Overlapped structure
+ * @param callback        Support of completion routine; if true than a
+ *                        completion routine is called when the overlapped
+ *                        operation has been completed.
+ *
+ * @return   0 in case of success, nonzero otherwise.
+ */
 extern int rpc_wsa_ioctl(rcf_rpc_server *rpcs, int s,
                          rpc_wsa_ioctl_code control_code,
                          char *inbuf, unsigned int inbuf_len,
@@ -505,7 +561,26 @@ extern int rpc_wsa_ioctl(rcf_rpc_server *rpcs, int s,
                          unsigned int *bytes_returned,
                          rpc_overlapped overlapped, te_bool callback);
 
-/** rpc_get_wsa_ioctl_overlapped_result() */
+/**
+ * Retrieve the result of the preceding overlapped WSAIoctl() call.
+ *
+ * @param rpcs           RPC server handle
+ * @param s              desccriptor identifying a socket
+ * @param overlapped     overlapped structure
+ * @param bytes          pointer to the variable that will accept the
+ *                       number of bytes returned in @b buf
+ * @param wait           specifies whether the function should wait
+ *                       for the overlapped operation to complete
+ *                       (should wait, if TRUE)
+ * @param flags          pointer to a variable that will receive one or
+ *                       more flags that supplement the completion status
+ * @param buf            pointer to a buffer containing result data
+ * @param buflen         size of buffer @b buf
+ * @param control_code   the control code the preceding WSAIoctl()
+ *                       call has been called with
+ *
+ * @return   Nonzero in case of success, otherwise 0.
+ */
 extern int rpc_get_wsa_ioctl_overlapped_result(rcf_rpc_server *rpcs,
                                     int s, rpc_overlapped overlapped,
                                     int *bytes, te_bool wait,
@@ -762,7 +837,7 @@ extern int rpc_wsa_send_to(rcf_rpc_server *rpcs, int s,
  * @param fromlen        size of the address @b from
  * @param overlapped     overlapped structure
  * @param callback       support of completion routine. If true a completion
- *                       routine is call when the send operation has been 
+ *                       routine is called when the send operation has been 
  *                       completed
  * @retval  0 on success
  * @retval -1 on failure
