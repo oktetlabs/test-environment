@@ -1328,6 +1328,7 @@ TARPC_FUNC(has_overlapped_io_completed, {},
 
 TARPC_FUNC(get_current_process_id, {},
 {
+    UNUSED(in);
     UNUSED(list);
     out->retval = GetCurrentProcessId();
 }
@@ -1337,7 +1338,8 @@ TARPC_FUNC(get_current_process_id, {},
 TARPC_FUNC(get_ram_size, {},
 {
     MEMORYSTATUS ms;
-    
+
+    UNUSED(in);
     UNUSED(list);
 
     memset(&ms, 0, sizeof(ms));
