@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<!-- 
+    Test for exclusion of all the log messages
+ -->
+<filters>
+    <entity-filter>
+        <exclude entity=""/>
+    </entity-filter>
+</filters>

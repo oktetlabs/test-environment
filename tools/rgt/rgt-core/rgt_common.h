@@ -121,6 +121,14 @@ extern "C" {
                  (ts1[1] < ts2[1]) ? -1 :      \
                  (ts1[1] > ts2[1]) ? 1 : 0))
 
+/**
+ * Performs the following operation:
+ * res_ts = ts2 - ts1;
+ */
+#define TIMESTAMP_SUB(res_ts, ts2, ts1) \
+     (res_ts[0] = ts2[0] - ts1[0] + ((ts1[1] > ts2[1]) ? -1 : 0), \
+      res_ts[1] = (1000000 - ts1[1] + ts2[1]) % 1000000)
+
 #ifndef ESUCCESS
 #define ESUCCESS 0
 #endif

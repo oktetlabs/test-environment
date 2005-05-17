@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<!-- 
+   Exclude everything but two particular log names.
+  -->
+
+<filters>
+    <entity-filter>
+        <exclude entity=""/>
+        <include entity="Tester">
+            <user name="FlowNoRGT"/>
+        </include>
+        <include entity="ABS">
+            <user name="FlowNoRGT"/>
+        </include>
+    </entity-filter>
+</filters>

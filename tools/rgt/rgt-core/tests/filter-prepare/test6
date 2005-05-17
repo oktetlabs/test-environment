@@ -1,0 +1,33 @@
+#!/bin/sh
+# the next line restarts using tclsh \
+exec tclsh "$0" "$@"
+
+source "test6.tcl"
+source "test_gen.tcl"
+
+set test_cases_pass [list \
+    "Tester" "FlowNoRGT"  \
+    "Tester" "Self"       \
+    "A"  "Self"           \
+    ""   "Self"           \
+    "ABS"    "Self"       \
+    "Logger"    "Self"    \
+]
+
+set test_cases_fail [list \
+    "A"   "B"         \
+    "A"   ""          \
+    ""    "B"         \
+    ""    ""          \
+    "ABA" "BBB"       \
+    "Tester" "ABS"    \
+    "Tester" ""       \
+]
+
+foreach { entity user } $test_cases_fail {
+    check_rgt_entity_filter $entity $user "fail"
+}
+
+foreach { entity user } $test_cases_pass {
+    check_rgt_entity_filter $entity $user "pass"
+}

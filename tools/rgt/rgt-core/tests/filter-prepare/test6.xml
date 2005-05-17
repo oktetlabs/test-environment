@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+
+<filters>
+    <entity-filter>
+        <exclude entity=""/>
+        <include entity="Tester">
+            <user name="FlowNoRGT"/>
+        </include>
+        <include entity="">
+            <user name="Self"/>
+        </include>
+    </entity-filter>
+</filters>

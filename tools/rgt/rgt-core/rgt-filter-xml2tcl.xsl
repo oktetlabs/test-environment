@@ -95,9 +95,7 @@ proc rgt_msg_filter { level entity user timestamp } {
 <xsl:variable name="incl-value">pass</xsl:variable>
 <xsl:variable name="excl-value">fail</xsl:variable>
 <xsl:variable name="max_timestamp_value">40000</xsl:variable>
-
 <xsl:param name="def-mode" select="$incl-value"/>
-
 
 <!-- 
      Template that generates procedure for filtering by entity and user names.
@@ -132,7 +130,7 @@ proc rgt_entity_filter { entity user } {
         <xsl:for-each select="include | exclude">
         <xsl:sort select="@entity" data-type="text" order="descending"/>
 
-            <!-- Create new case branch only if we hasn't met such 
+            <!-- Create new case branch only if we haven't met such 
                  entity name before.
               -->
             <xsl:if test="count(
@@ -190,18 +188,49 @@ proc rgt_entity_filter { entity user } {
                     <xsl:otherwise>
 
 <!-- THE SECOND CASE -->
-
     <!-- 
         There is no empty element specified: 
         apply default behaviour 
       -->
+
+    <xsl:choose>
+    <xsl:when test="$empty_entity_name!=0">
+        <xsl:choose>
+            <xsl:when test="
+                name(preceding-sibling::*[@entity=''][count(child::*)=0] | 
+                     following-sibling::*[@entity=''][count(child::*)=0] | 
+                     self::*[@entity=''][count(child::*)=0])='include'">
+      <xsl:call-template name="process_new_entity_name">
+          <xsl:with-param name="entity" select="@entity"/>
+          <xsl:with-param name="def-match" select="$incl-value"/>
+      </xsl:call-template>
+            </xsl:when>
+            <xsl:when test="
+                name(preceding-sibling::*[@entity=''][count(child::*)=0] | 
+                     following-sibling::*[@entity=''][count(child::*)=0] | 
+                     self::*[@entity=''][count(child::*)=0])='exclude'">
+      <xsl:call-template name="process_new_entity_name">
+          <xsl:with-param name="entity" select="@entity"/>
+          <xsl:with-param name="def-match" select="$excl-value"/>
+      </xsl:call-template>
+            </xsl:when>
+            <xsl:otherwise>
+      <xsl:call-template name="process_new_entity_name">
+          <xsl:with-param name="entity" select="@entity"/>
+          <xsl:with-param name="def-match" select="$def-mode"/>
+      </xsl:call-template>
+            </xsl:otherwise>
+        </xsl:choose>
+    </xsl:when>
+    <xsl:otherwise>
+      <xsl:call-template name="process_new_entity_name">
+          <xsl:with-param name="entity" select="@entity"/>
+          <xsl:with-param name="def-match" select="$def-mode"/>
+      </xsl:call-template>
+    </xsl:otherwise>
+    </xsl:choose>
     
-    <xsl:call-template name="process_new_entity_name">
-        <xsl:with-param name="entity" select="@entity"/>
-        <xsl:with-param name="def-match" select="$def-mode"/>
-    </xsl:call-template>
-    
-<!-- THE SECOND CASE -->
+<!-- END THE SECOND CASE -->
 
                     </xsl:otherwise>
                     
@@ -221,7 +250,6 @@ proc rgt_entity_filter { entity user } {
                 <xsl:with-param name="def-match" select="$def-mode"/>
             </xsl:call-template>
         </xsl:if>
-
 <xsl:text>
     }
 }
@@ -317,7 +345,34 @@ proc rgt_entity_filter { entity user } {
                 </xsl:for-each>
                 
             </xsl:for-each>
-            
+
+            <xsl:if test="$entity!=''">
+            <xsl:for-each select="
+                preceding-sibling::*[@entity=''] | 
+                following-sibling::*[@entity='']">
+                <xsl:for-each select="user">
+
+                    <xsl:text>                </xsl:text>
+                    <xsl:value-of select="@name"/>
+                    <xsl:text> { return "</xsl:text>
+
+                    <xsl:choose>
+                        <xsl:when test="name(parent::node()[1])='include'">
+                            <xsl:value-of select="$incl-value"/>
+                        </xsl:when>
+
+                        <xsl:when test="name(parent::node()[1])='exclude'">
+                            <xsl:value-of select="$excl-value"/>
+                        </xsl:when>
+                    </xsl:choose>
+                    
+                    <xsl:text>" }&#xA;</xsl:text>
+
+                    
+                </xsl:for-each>
+            </xsl:for-each>
+            </xsl:if>
+
         <!-- Output default branch -->
         <xsl:text>                </xsl:text>
         <xsl:text>default { return "</xsl:text>

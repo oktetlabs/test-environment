@@ -109,6 +109,8 @@ AC_CONFIG_FILES([Makefile
                  rgt-core/Makefile 
                  rgt-core/rgt-filter-prepare
                  rgt-core/rgt-conv
+                 rgt-core/tests/Makefile
+                 rgt-core/tests/filter-prepare/Makefile
                  rgt-format/Makefile
                  rgt-format/xml2html-multi/Makefile
                  rgt-format/xml2html-multi/tmpls/Makefile

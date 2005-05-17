@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+
+<filters>
+    <entity-filter>
+        <exclude entity="Tester"/>
+        <exclude entity="A">
+            <user name="B"/>
+        </exclude>
+    </entity-filter>
+</filters>

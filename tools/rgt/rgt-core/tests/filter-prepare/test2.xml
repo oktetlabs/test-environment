@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<!-- 
+    Test for inclusion of all the log messages
+ -->
+<filters>
+    <entity-filter>
+        <include entity=""/>
+    </entity-filter>
+</filters>

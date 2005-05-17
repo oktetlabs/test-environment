@@ -1,5 +1,5 @@
 #
-# automake file for Report Generator Core directory
+# automake file for Report Generator tests directory
 # Process it with automake
 #
 # Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
@@ -24,29 +24,4 @@
 # Author: Oleg N. Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
 #
 
-SUBDIRS = . tests
-
-bin_PROGRAMS = rgt-core
-
-rgt_core_SOURCES = filter.c filter.h \
-                   flow_tree.c flow_tree.h \
-                   log_msg.c log_msg.h \
-                   log_format.c log_format.h \
-                   log_format_v1.c \
-                   io.c io.h \
-                   memory.c memory.h \
-                   live_mode.c live_mode.h \
-                   postponed_mode.c postponed_mode.h \
-                   rgt_core.c rgt_common.h
-
-rgt_core_LDADD = @GLIB_LIBS@ -lpopt @TCL_LIB_SPEC@ -lm -ldl
-AM_CPPFLAGS = @GLIB_CFLAGS@ -I$(top_srcdir) @TCL_CFLAGS@
-
-AM_CFLAGS = -W -Wall
-bin_SCRIPTS = rgt-filter-prepare rgt-conv
-
-dist_data_DATA = rgt-filter-xml2tcl.xsl
-
-EXTRA_DIST=rgt-conv.in rgt-filter-prepare.in
-
-CLEANFILES = rgt-filter-prepare rgt-conv
+SUBDIRS = filter-prepare

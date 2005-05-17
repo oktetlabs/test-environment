@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<!-- 
+    Test for exclusion of all the log messages apart from one
+    particular log message.
+ -->
+<filters>
+    <entity-filter>
+        <exclude entity=""/>
+        <include entity="TEST_ENTITY">
+            <user name="TEST_USER"/>
+        </include>
+    </entity-filter>
+</filters>

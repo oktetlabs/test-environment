@@ -192,12 +192,27 @@ fwrite_string(struct obstack *obstk, const char *str)
 static void
 print_ts_info(node_info_t *node)
 {
+    uint32_t duration[2];
+
     fprintf(rgt_ctx.out_fd, "<start-ts>");
     print_ts(rgt_ctx.out_fd, node->start_ts);
     fprintf(rgt_ctx.out_fd, "</start-ts>\n");
     fprintf(rgt_ctx.out_fd, "<end-ts>");
     print_ts(rgt_ctx.out_fd, node->end_ts);
     fprintf(rgt_ctx.out_fd, "</end-ts>\n");
+    
+    /*
+     * This information is surplus but it could be useful to get it
+     * without additional processing "start-ts" and "end-ts" tags.
+     */
+    fprintf(rgt_ctx.out_fd, "<duration>");
+    TIMESTAMP_SUB(duration, node->end_ts, node->start_ts);
+    fprintf(rgt_ctx.out_fd, "%u:%u:%u %u ms",
+            duration[0] / (60 * 60),
+            (duration[0] % (60 * 60)) / 60,
+            (duration[0] % (60 * 60)) % 60,
+            duration[1] / 1000);
+    fprintf(rgt_ctx.out_fd, "</duration>\n");
 }
 
 int

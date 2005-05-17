@@ -1,0 +1,23 @@
+#!/bin/sh
+# the next line restarts using tclsh \
+exec tclsh "$0" "$@"
+
+source "test4.tcl"
+source "test_gen.tcl"
+
+# The fileter should include everything, but TEST_ENTITY/TEST_USER
+set test_cases [list \
+    "A"   "B"         \
+    "A"   ""          \
+    ""    "B"         \
+    ""    ""          \
+    "ABA" "BBB"       \
+    "TEST_ENTITY" "B" \
+    "A" "TEST_USER"   \
+]
+
+foreach { entity user } $test_cases {
+    check_rgt_entity_filter $entity $user "pass"
+}
+
+check_rgt_entity_filter "TEST_ENTITY" "TEST_USER" "fail"

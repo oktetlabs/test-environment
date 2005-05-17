@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<!-- 
+    Include everything but from user A, B and C.
+  -->
+
+<filters>
+    <entity-filter>
+        <exclude entity="">
+            <user name="A"/>
+            <user name="B"/>
+        </exclude>
+        <exclude entity="">
+            <user name="C"/>
+        </exclude>
+    </entity-filter>
+</filters>

@@ -1,0 +1,19 @@
+#!/bin/sh
+# the next line restarts using tclsh \
+exec tclsh "$0" "$@"
+
+source "test1.tcl"
+source "test_gen.tcl"
+
+# The fileter should exclude everything
+set test_cases [list \
+    "A"   "B"        \
+    "A"   ""         \
+    ""    "B"        \
+    ""    ""         \
+    "ABA" "BBB"      \
+]
+
+foreach { entity user } $test_cases {
+    check_rgt_entity_filter $entity $user "fail"
+}

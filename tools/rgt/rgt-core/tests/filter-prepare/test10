@@ -1,0 +1,36 @@
+#!/bin/sh
+# the next line restarts using tclsh \
+exec tclsh "$0" "$@"
+
+source "test10.tcl"
+source "test_gen.tcl"
+
+# Include everything but from user A, B and C.
+set test_cases_pass [list \
+    "A"   "CA"          \
+    "A"   "AS"          \
+    ""    "BB"          \
+    ""    ""            \
+    "ABS" "B1"          \
+    "T" "Tester"        \
+    "Teste" "C1"        \
+    "A"      "B"        \
+    "A"      "A"        \
+    "C"      "C"        \
+    ""       "B"        \
+]
+
+set test_cases_fail [list \
+    "Tester" "A"      \
+    "Tester" "B"      \
+    "Tester" "C"      \
+]
+
+
+foreach { entity user } $test_cases_fail {
+    check_rgt_entity_filter $entity $user "fail"
+}
+
+foreach { entity user } $test_cases_pass {
+    check_rgt_entity_filter $entity $user "pass"
+}
