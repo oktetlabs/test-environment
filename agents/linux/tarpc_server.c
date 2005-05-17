@@ -556,14 +556,20 @@ setlibname(const tarpc_setlibname_in *in)
     void (*logfork_set_socket)(int);
     char **lib_te_lgr_entity;
 
+    libname = (in->libname.libname_len == 0) ?
+                  NULL : in->libname.libname_val;
+                  
     if (dynamic_library_set)
     {
+        if (libname != NULL && dynamic_library_name != NULL &&
+            strcmp(libname, dynamic_library_name) == 0)
+        {
+            return 0;
+        }
         ERROR("Dynamic library has already been set to %s",
               dynamic_library_name);
         return TE_RC(TE_TA_LINUX, EEXIST);
     }
-    libname = (in->libname.libname_len == 0) ?
-                  NULL : in->libname.libname_val;
     if ((dynamic_library_handle = dlopen(libname, RTLD_LAZY)) == NULL)
     {
         ERROR("Cannot load shared library %s: %s", libname, dlerror());
