@@ -143,10 +143,29 @@ live_process_start_event(node_info_t *node, const char *node_name)
 static inline int
 live_process_end_event(node_info_t *node, const char *node_name)
 {
+    const char *result;
+
+    switch (node->result.status)
+    {
+#define NODE_RES_CASE(res_) \
+        case RES_STATUS_ ## res_: \
+            result = #res_;       \
+            break
+
+        NODE_RES_CASE(PASSED);
+        NODE_RES_CASE(KILLED);
+        NODE_RES_CASE(CORED);
+        NODE_RES_CASE(SKIPPED);
+        NODE_RES_CASE(FAKED);
+        NODE_RES_CASE(FAILED);
+
+#undef NODE_RES_CASE
+        default:
+            assert(0);
+    }
+
     fprintf(rgt_ctx.out_fd, "| %s complited %-55s %s\n", node_name,
-            node->descr.name,
-            (node->result.status == RES_STATUS_PASSED) ?
-                "PASSED" : "FAILED");
+            node->descr.name, result);
     fprintf(rgt_ctx.out_fd, "|- Date: ");
     print_ts(node->end_ts);
     fprintf(rgt_ctx.out_fd, "\n\n");
