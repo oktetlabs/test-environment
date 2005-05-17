@@ -179,6 +179,12 @@ static int
 find_func(char *name, sock_api_func *func)
 {
     static void *libc_handle = NULL;
+    
+    if (strcmp(name, "getpid") == 0)
+    {
+        func = getpid;
+        return 0;
+    }
 
     if (!dynamic_library_set)
     {
