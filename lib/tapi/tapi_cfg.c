@@ -738,7 +738,7 @@ tapi_cfg_del_arp_dynamic(const char *ta)
     {
         if ((rc = cfg_del_instance(hndls[i], FALSE)) != 0)
         {
-            RC_UPDATE(result, rc);
+            TE_RC_UPDATE(result, rc);
         }
     }
 
