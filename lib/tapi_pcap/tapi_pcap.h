@@ -25,7 +25,7 @@
  *
  * @author Konstantin Abramenko <konst@oktetlabs.ru>
  *
- * $Id: tapi_eth.h 13866 2005-04-08 16:25:17Z mamadou $
+ * $Id$
  */
 
 #ifndef __TE_TAPI_ETH_H__
@@ -70,7 +70,8 @@
  * @return Zero on success, otherwise standard or common TE error code.
  */
 extern int tapi_pcap_csap_create(const char *ta_name, int sid,
-                                 const char *ifname, int iftype, int recv_mode,
+                                 const char *ifname, int iftype, 
+                                 int recv_mode,
                                  csap_handle_t *pcap_csap);
 
 

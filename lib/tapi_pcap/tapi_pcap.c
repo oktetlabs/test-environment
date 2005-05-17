@@ -25,7 +25,7 @@
  *
  * @author Alexander Kukuta <Alexander.Kukuta@oktetlabs.ru>
  *
- * $Id: $
+ * $Id$
  */
 
 #include "te_config.h"
@@ -117,7 +117,8 @@ tapi_pcap_csap_create(const char *ta_name, int sid,
         return TE_RC(TE_TAPI, errno); /* return system errno */
     }
 
-    fprintf(f, "{ pcap:{ ifname plain:\"%s\", iftype %d, receive-mode %d } }",
+    fprintf(f, "{ pcap:{ ifname plain:\"%s\", "
+               "iftype %d, receive-mode %d } }",
             ifname, iftype, recv_mode);
     fclose(f);
 
@@ -184,7 +185,8 @@ tapi_pcap_pkt_handler(char *fn, void *user_param)
 
 
     tmp_len = sizeof(int);
-    rc = asn_read_value_field(pcap_filtered_pdu, &filter_id, &tmp_len, "filter-id");
+    rc = asn_read_value_field(pcap_filtered_pdu, &filter_id, 
+                              &tmp_len, "filter-id");
     if (rc < 0)
     {
         filter_id = -1;
