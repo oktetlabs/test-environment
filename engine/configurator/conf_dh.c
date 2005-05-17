@@ -340,6 +340,7 @@ cfg_dh_process_file(xmlNodePtr node)
                     else if (strcmp(attr, "none") != 0)
                         RETERR(EINVAL, "Unsupported object type %s", attr);
                     xmlFree(attr);
+                    attr = NULL;
                 }
                 
                 if (val_s != NULL)
@@ -364,6 +365,7 @@ cfg_dh_process_file(xmlNodePtr node)
                                "Wrong value %s of 'access' attribute",
                                attr);
                     xmlFree(attr);
+                    attr = NULL;
                 }
 
                 cfg_process_msg((cfg_msg **)&msg, TRUE);
@@ -499,8 +501,8 @@ cfg_dh_process_file(xmlNodePtr node)
         {
             assert(FALSE);
         }
-        if (val_s != NULL)
-            free(val_s);
+        free(val_s);
+        val_s = NULL;
     }
     
     return 0;
