@@ -182,7 +182,7 @@ find_func(char *name, sock_api_func *func)
     
     if (strcmp(name, "getpid") == 0)
     {
-        func = getpid;
+        *func = getpid;
         return 0;
     }
 
