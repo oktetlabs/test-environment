@@ -78,7 +78,6 @@
 
 extern void *rcf_ch_symbol_addr_auto(const char *name, te_bool is_func);
 extern char *rcf_ch_symbol_name_auto(const void *addr);
-extern void  wsa_func_handles_discover();
 
 DEFINE_LGR_ENTITY("(win32)");
 
@@ -652,10 +651,6 @@ WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance,
     pthread_create(&tid, NULL, (void *)logfork_entry, NULL);
 
     sigemptyset(&rpcs_received_signals);
-
-#ifdef RCF_RPC
-    wsa_func_handles_discover();
-#endif        
 
     rc = rcf_pch_run(tmp, buf);
     if (rc != 0)

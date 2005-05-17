@@ -136,6 +136,8 @@ static LPFN_GETACCEPTEXSOCKADDRS pf_get_accept_ex_sockaddrs = NULL;
 static LPFN_TRANSMITFILE         pf_transmit_file = NULL;
 static LPFN_WSARECVMSG           pf_wsa_recvmsg = NULL;
 
+static te_bool init = FALSE;
+
 /**
  * Translates WSAError to errno.
  */ 
@@ -348,7 +350,7 @@ wsaerr2errno(int wsaerr)
     return err;    
 }
 
-void 
+static void 
 wsa_func_handles_discover()
 {
     GUID  guid_connect_ex = WSAID_CONNECTEX;
@@ -759,6 +761,12 @@ _##_func##_1_svc(tarpc_##_func##_in *in, tarpc_##_func##_out *out,      \
     checked_arg  *list = NULL;                                          \
     _func##_arg  *arg;                                                  \
     enum xdr_op  op = XDR_FREE;                                         \
+                                                                        \
+    if (!init)                                                          \
+    {                                                                   \
+        wsa_func_handles_discover();                                    \
+        init = TRUE;                                                    \
+    }                                                                   \
                                                                         \
     UNUSED(rqstp);                                                      \
     memset(out, 0, sizeof(*out));                                       \
