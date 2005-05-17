@@ -65,6 +65,7 @@ typedef struct log_msg_name {
     GHashTable *entity_hash; /**< Pointer to entity name hash */
 } log_msg_name_t;
 
+/* Forward declaration */
 static depth_ctx_user_t *alloc_depth_user_data(uint32_t depth);
 static void free_depth_user_data();
 static void add_log_user(gen_ctx_user_t *gen_user,
@@ -183,12 +184,34 @@ RGT_DEF_FUNC(proc_document_start)
         exit(1);
 }
 
+/**
+ * Compares two strings passed by pointer.
+ *
+ * @param a  Pointer to the first string (const char **)
+ * @param b  Pointer to the second string (const char **)
+ *
+ * @return The same result as strcmp.
+ */
 static gint
-my_strcmp(gconstpointer a, gconstpointer b)
+ptr_strcmp(gconstpointer a, gconstpointer b)
 {
     return strcmp(*(const char **)a, *(const char **)b);
 }
 
+/**
+ * Auxiliary function that appends string key into array of pointers.
+ *
+ * @param key        String value representing string key 
+ *                   (entity or user name)
+ * @param value      Unused (when key is entity name, it is the hash of
+ *                   user names for this entity name.
+ *                   when key is user name, it is the same as key)
+ * @param user_data  Pointer to an array of pointers where we want to
+ *                   append the key to
+ *
+ * @note The function is intended to be used as callback for 
+ * g_hash_table_foreach() calls.
+ */
 static void
 key_append_to_array(gpointer key, gpointer value, gpointer user_data)
 {
@@ -199,6 +222,21 @@ key_append_to_array(gpointer key, gpointer value, gpointer user_data)
     g_ptr_array_add(array, key);
 }
 
+/**
+ * Output the information about a single entity name into file 
+ * prepared by user (JavaScript file).
+ *
+ * @param data       Pointer to string representing entity name for 
+ *                   which all the pairs (entity name, user name) 
+ *                   should be output (const char *)
+ * @param user_data  Pointer to user callback data, 
+ *                   here it is the data of type (log_msg_name_t *)
+ *
+ * @note The function is intended to be used as callback for
+ * g_ptr_array_foreach() function.
+ *
+ * @se The function destroys user names hash passed via @p user_data.
+ */
 static void
 log_entity_out(gpointer data, gpointer user_data)
 {
@@ -219,7 +257,7 @@ log_entity_out(gpointer data, gpointer user_data)
     users = g_ptr_array_new();
     assert(users != NULL);
     g_hash_table_foreach(user_hash, key_append_to_array, users);
-    g_ptr_array_sort(users, (GCompareFunc)my_strcmp);
+    g_ptr_array_sort(users, (GCompareFunc)ptr_strcmp);
 
     for (i = 0; i < users->len; i++)
     {
@@ -240,6 +278,22 @@ log_entity_out(gpointer data, gpointer user_data)
     rgt_tmpls_attrs_free(attrs);
 }
 
+/**
+ * Output the information about all entity and user names kept
+ * in @p entity_hash hash.
+ * The file name is structured as follows:
+ * node_${depth}_${seq}_log_names.js
+ *
+ * @param entity_hash  Hash of entity names (value of each element in
+ *                     the hash is a hash of all user names for this 
+ *                     particular entity name)
+ * @param depth        The depth of processing
+ * @param seq          The sequence number of processing
+ *
+ * @note Even for enpth hash it generates JaveScript file.
+ *
+ * @se The function destroys @p entity_hash and updates it with @c NULL.
+ */
 static void
 output_log_names(GHashTable **entity_hash, uint32_t depth, uint32_t seq)
 {
@@ -272,7 +326,7 @@ output_log_names(GHashTable **entity_hash, uint32_t depth, uint32_t seq)
 
     entries = g_ptr_array_new();
     g_hash_table_foreach(cb_data.entity_hash, key_append_to_array, entries);
-    g_ptr_array_sort(entries, (GCompareFunc)my_strcmp);
+    g_ptr_array_sort(entries, (GCompareFunc)ptr_strcmp);
     
     /* Now we have sorted array of entity names */
     g_ptr_array_foreach(entries, log_entity_out, &cb_data);
@@ -309,6 +363,14 @@ RGT_DEF_FUNC(proc_document_end)
     free_depth_user_data();
 }
 
+/**
+ * Function for processing start of control node event.
+ * 
+ * @param ctx        Pointer to the global processing context
+ * @param depth_ctx  Pointer to the depth processing context 
+ * @param xml_attrs  Pointer to the list of attributes in libxml style
+ * @param node_type  String representation of the node type
+ */
 static void
 control_node_start(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
                    const char **xml_attrs, const char *node_type)
@@ -382,6 +444,14 @@ control_node_start(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
     rgt_tmpls_attrs_free(attrs);
 }
 
+/**
+ * Function for processing end of control node event.
+ * 
+ * @param ctx        Pointer to the global processing context
+ * @param depth_ctx  Pointer to the depth processing context 
+ * @param xml_attrs  Pointer to the list of attributes in libxml style
+ * @param node_type  String representation of the node type
+ */
 static void
 control_node_end(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
                  const char **xml_attrs, const char *node_type)
@@ -512,59 +582,24 @@ RGT_DEF_DUMMY_FUNC(proc_logs_end)
 RGT_DEF_DUMMY_FUNC(proc_meta_start)
 RGT_DEF_DUMMY_FUNC(proc_meta_end)
 
-RGT_DEF_FUNC(proc_meta_start_ts_start)
-{
-    depth_ctx_user_t *depth_user = (depth_ctx_user_t *)depth_ctx->user_data;
-
-    RGT_FUNC_UNUSED_PRMS();
-
-    rgt_tmpls_output(depth_user->fd, &xml2fmt_tmpls[META_START_TS_START], NULL);
+#define DEF_FUNC_WITHOUT_ATTRS(name_, enum_const_) \
+RGT_DEF_FUNC(name_)                                            \
+{                                                              \
+    FILE *fd = ((depth_ctx_user_t *)depth_ctx->user_data)->fd; \
+                                                               \
+    RGT_FUNC_UNUSED_PRMS();                                    \
+                                                               \
+    rgt_tmpls_output(fd, &xml2fmt_tmpls[enum_const_], NULL);   \
 }
 
-RGT_DEF_FUNC(proc_meta_start_ts_end)
-{
-    depth_ctx_user_t *depth_user = (depth_ctx_user_t *)depth_ctx->user_data;
-
-    RGT_FUNC_UNUSED_PRMS();
-
-    rgt_tmpls_output(depth_user->fd, &xml2fmt_tmpls[META_START_TS_END], NULL);
-}
-
-RGT_DEF_FUNC(proc_meta_end_ts_start)
-{
-    depth_ctx_user_t *depth_user = (depth_ctx_user_t *)depth_ctx->user_data;
-
-    RGT_FUNC_UNUSED_PRMS();
-
-    rgt_tmpls_output(depth_user->fd, &xml2fmt_tmpls[META_END_TS_START], NULL);
-}
-
-RGT_DEF_FUNC(proc_meta_end_ts_end)
-{
-    depth_ctx_user_t *depth_user = (depth_ctx_user_t *)depth_ctx->user_data;
-
-    RGT_FUNC_UNUSED_PRMS();
-
-    rgt_tmpls_output(depth_user->fd, &xml2fmt_tmpls[META_END_TS_END], NULL);
-}
-
-RGT_DEF_FUNC(proc_meta_objective_start)
-{
-    depth_ctx_user_t *depth_user = (depth_ctx_user_t *)depth_ctx->user_data;
-
-    RGT_FUNC_UNUSED_PRMS();
-
-    rgt_tmpls_output(depth_user->fd, &xml2fmt_tmpls[META_OBJ_START], NULL);
-}
-
-RGT_DEF_FUNC(proc_meta_objective_end)
-{
-    depth_ctx_user_t *depth_user = (depth_ctx_user_t *)depth_ctx->user_data;
-
-    RGT_FUNC_UNUSED_PRMS();
-
-    rgt_tmpls_output(depth_user->fd, &xml2fmt_tmpls[META_OBJ_END], NULL);
-}
+DEF_FUNC_WITHOUT_ATTRS(proc_meta_start_ts_start, META_START_TS_START)
+DEF_FUNC_WITHOUT_ATTRS(proc_meta_start_ts_end, META_START_TS_END)
+DEF_FUNC_WITHOUT_ATTRS(proc_meta_end_ts_start, META_END_TS_START)
+DEF_FUNC_WITHOUT_ATTRS(proc_meta_end_ts_end, META_END_TS_END)
+DEF_FUNC_WITHOUT_ATTRS(proc_meta_duration_start, META_DURATION_START)
+DEF_FUNC_WITHOUT_ATTRS(proc_meta_duration_end, META_DURATION_END)
+DEF_FUNC_WITHOUT_ATTRS(proc_meta_objective_start, META_OBJ_START)
+DEF_FUNC_WITHOUT_ATTRS(proc_meta_objective_end, META_OBJ_END)
 
 RGT_DEF_FUNC(proc_meta_author_start)
 {
@@ -594,104 +629,17 @@ RGT_DEF_FUNC(proc_meta_author_start)
 
 RGT_DEF_DUMMY_FUNC(proc_meta_author_end)
 
-RGT_DEF_FUNC(proc_meta_authors_start)
-{
-    depth_ctx_user_t *depth_user = (depth_ctx_user_t *)depth_ctx->user_data;
-
-    RGT_FUNC_UNUSED_PRMS();
-
-    rgt_tmpls_output(depth_user->fd, &xml2fmt_tmpls[META_AUTHORS_START], NULL);
-}
-
-RGT_DEF_FUNC(proc_meta_authors_end)
-{
-    depth_ctx_user_t *depth_user = (depth_ctx_user_t *)depth_ctx->user_data;
-
-    RGT_FUNC_UNUSED_PRMS();
-
-    rgt_tmpls_output(depth_user->fd, &xml2fmt_tmpls[META_AUTHORS_END], NULL);
-}
-
-RGT_DEF_FUNC(proc_meta_params_start)
-{
-    depth_ctx_user_t *depth_user = (depth_ctx_user_t *)depth_ctx->user_data;
-
-    RGT_FUNC_UNUSED_PRMS();
-
-    rgt_tmpls_output(depth_user->fd, &xml2fmt_tmpls[META_PARAMS_START], NULL);
-}
-
-RGT_DEF_FUNC(proc_meta_params_end)
-{
-    depth_ctx_user_t *depth_user = (depth_ctx_user_t *)depth_ctx->user_data;
-
-    RGT_FUNC_UNUSED_PRMS();
-
-    rgt_tmpls_output(depth_user->fd, &xml2fmt_tmpls[META_PARAMS_END], NULL);
-}
-
-RGT_DEF_FUNC(proc_mem_dump_start)
-{
-    depth_ctx_user_t *depth_user = (depth_ctx_user_t *)depth_ctx->user_data;
-
-    RGT_FUNC_UNUSED_PRMS();
-
-    rgt_tmpls_output(depth_user->fd, &xml2fmt_tmpls[MEM_DUMP_START], NULL);
-}
-
-RGT_DEF_FUNC(proc_mem_dump_end)
-{
-    depth_ctx_user_t *depth_user = (depth_ctx_user_t *)depth_ctx->user_data;
-
-    RGT_FUNC_UNUSED_PRMS();
-
-    rgt_tmpls_output(depth_user->fd, &xml2fmt_tmpls[MEM_DUMP_END], NULL);
-}
-
-RGT_DEF_FUNC(proc_mem_row_start)
-{
-    depth_ctx_user_t *depth_user = (depth_ctx_user_t *)depth_ctx->user_data;
-
-    RGT_FUNC_UNUSED_PRMS();
-
-    rgt_tmpls_output(depth_user->fd, &xml2fmt_tmpls[MEM_ROW_START], NULL);
-}
-
-RGT_DEF_FUNC(proc_mem_row_end)
-{
-    depth_ctx_user_t *depth_user = (depth_ctx_user_t *)depth_ctx->user_data;
-
-    RGT_FUNC_UNUSED_PRMS();
-
-    rgt_tmpls_output(depth_user->fd, &xml2fmt_tmpls[MEM_ROW_END], NULL);
-}
-
-RGT_DEF_FUNC(proc_mem_elem_start)
-{
-    depth_ctx_user_t *depth_user = (depth_ctx_user_t *)depth_ctx->user_data;
-
-    RGT_FUNC_UNUSED_PRMS();
-
-    rgt_tmpls_output(depth_user->fd, &xml2fmt_tmpls[MEM_ELEM_START], NULL);
-}
-
-RGT_DEF_FUNC(proc_mem_elem_end)
-{
-    depth_ctx_user_t *depth_user = (depth_ctx_user_t *)depth_ctx->user_data;
-
-    RGT_FUNC_UNUSED_PRMS();
-
-    rgt_tmpls_output(depth_user->fd, &xml2fmt_tmpls[MEM_ELEM_END], NULL);
-}
-
-RGT_DEF_FUNC(proc_log_msg_br)
-{
-    depth_ctx_user_t *depth_user = (depth_ctx_user_t *)depth_ctx->user_data;
-
-    RGT_FUNC_UNUSED_PRMS();
-
-    rgt_tmpls_output(depth_user->fd, &xml2fmt_tmpls[LOG_BR], NULL);
-}
+DEF_FUNC_WITHOUT_ATTRS(proc_meta_authors_start, META_AUTHORS_START)
+DEF_FUNC_WITHOUT_ATTRS(proc_meta_authors_end, META_AUTHORS_END)
+DEF_FUNC_WITHOUT_ATTRS(proc_meta_params_start, META_PARAMS_START)
+DEF_FUNC_WITHOUT_ATTRS(proc_meta_params_end, META_PARAMS_END)
+DEF_FUNC_WITHOUT_ATTRS(proc_mem_dump_start, MEM_DUMP_START)
+DEF_FUNC_WITHOUT_ATTRS(proc_mem_dump_end, MEM_DUMP_END)
+DEF_FUNC_WITHOUT_ATTRS(proc_mem_row_start, MEM_ROW_START)
+DEF_FUNC_WITHOUT_ATTRS(proc_mem_row_end, MEM_ROW_END)
+DEF_FUNC_WITHOUT_ATTRS(proc_mem_elem_start, MEM_ELEM_START)
+DEF_FUNC_WITHOUT_ATTRS(proc_mem_elem_end, MEM_ELEM_END)
+DEF_FUNC_WITHOUT_ATTRS(proc_log_msg_br, LOG_BR)
 
 void
 proc_chars(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
@@ -704,6 +652,13 @@ proc_chars(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
     fwrite(ch, len, 1, fd);
 }
 
+/**
+ * Add entity/user name pair to specific hash (can be duplicate).
+ *
+ * @param hash    Hash where we want to add the pair to
+ * @param entity  Entity name
+ * @param user    User name
+ */
 static void
 add_log_user_to_hash(GHashTable *hash, gchar *entity, gchar *user)
 {
@@ -720,6 +675,17 @@ add_log_user_to_hash(GHashTable *hash, gchar *entity, gchar *user)
     g_hash_table_insert(hash, entity, user_hash);
 }
 
+/**
+ * Accept information about entity/user name pair.
+ *
+ * @param gen_user    Pointer to global-user-specific data structure
+ * @param depth_user  Pointer to depth-user-specific data structure
+ * @param entity      Entity name
+ * @param user        User name
+ *
+ * @alg It adds the pair into node log messages hash, and into global
+ * log messages hash.
+ */
 static void
 add_log_user(gen_ctx_user_t *gen_user, depth_ctx_user_t *depth_user,
              const char *entity, const char *user)
@@ -744,8 +710,19 @@ add_log_user(gen_ctx_user_t *gen_user, depth_ctx_user_t *depth_user,
     add_log_user_to_hash(depth_user->depth_log_names, entity_cp, user_cp);
 }
 
+/** 
+ * Array of pointer to depth-specific user data
+ * (it is used as stack).
+ */
 static GPtrArray *depth_array = NULL;
 
+/**
+ * Returns a pointer to depth-specific user data
+ * 
+ * @param depth  Processing depth value
+ *
+ * @return Pointer to depth-specific user data (not initialized)
+ */
 static depth_ctx_user_t *
 alloc_depth_user_data(uint32_t depth)
 {
@@ -773,6 +750,13 @@ alloc_depth_user_data(uint32_t depth)
     return g_ptr_array_index(depth_array, depth - 1);
 }
 
+/**
+ * Free resources allocated under depth-specific user data -
+ * on the particular depth.
+ *
+ * @note The function is intended to be used as callback for
+ * g_ptr_array_foreach() function.
+ */
 static void
 free_depth_user_data_part(gpointer data, gpointer user_data)
 {
@@ -780,6 +764,11 @@ free_depth_user_data_part(gpointer data, gpointer user_data)
 
     g_free(data);
 }
+
+/**
+ * Free resources allocated under depth-specific user data -
+ * for all the depths.
+ */
 static void
 free_depth_user_data()
 {
@@ -787,4 +776,3 @@ free_depth_user_data()
     g_ptr_array_free(depth_array, TRUE);
     depth_array = NULL;
 }
-

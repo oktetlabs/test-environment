@@ -47,6 +47,8 @@ dist_pkgdata_DATA = \
     meta_start_ts_end.tmpl\
     meta_end_ts_start.tmpl\
     meta_end_ts_end.tmpl\
+    meta_duration_start.tmpl\
+    meta_duration_end.tmpl\
     meta_obj_start.tmpl\
     meta_obj_end.tmpl\
     meta_authors_start.tmpl\

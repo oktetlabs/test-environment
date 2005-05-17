@@ -250,6 +250,12 @@ rgt_log_end_element(void *user_data, const xmlChar *tag)
             ctx->state = RGT_XML2HTML_STATE_META;
             break;
 
+        case RGT_XML2HTML_STATE_DURATION:
+            assert(ctx->depth >= 1);
+            proc_meta_duration_end(ctx, depth_ctx, NULL);
+            ctx->state = RGT_XML2HTML_STATE_META;
+            break;
+
         case RGT_XML2HTML_STATE_OBJECTIVE:
             assert(strcmp(tag, "objective") == 0);
             assert(ctx->depth >= 1);
@@ -362,6 +368,11 @@ rgt_log_start_element(void *user_data,
                 proc_meta_end_ts_start(ctx, depth_ctx, RGT_XML2CHAR(attrs));
                 ctx->state = RGT_XML2HTML_STATE_END_TS;
             }
+            else if (strcmp(tag, "duration") == 0)
+            {
+                proc_meta_duration_start(ctx, depth_ctx, RGT_XML2CHAR(attrs));
+                ctx->state = RGT_XML2HTML_STATE_DURATION;
+            }
             else if (strcmp(tag, "objective") == 0)
             {
                 proc_meta_objective_start(ctx, depth_ctx, RGT_XML2CHAR(attrs));
@@ -469,6 +480,7 @@ rgt_log_characters(void *user_data, const xmlChar *ch, int len)
     {
         case RGT_XML2HTML_STATE_START_TS:
         case RGT_XML2HTML_STATE_END_TS:
+        case RGT_XML2HTML_STATE_DURATION:
         case RGT_XML2HTML_STATE_OBJECTIVE:
         case RGT_XML2HTML_STATE_LOG_MSG:
         case RGT_XML2HTML_STATE_MEM_DUMP_ELEM:

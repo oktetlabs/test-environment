@@ -54,6 +54,7 @@ typedef enum rgt_state {
     
     RGT_XML2HTML_STATE_START_TS,
     RGT_XML2HTML_STATE_END_TS,
+    RGT_XML2HTML_STATE_DURATION,
     RGT_XML2HTML_STATE_AUTHORS,
     RGT_XML2HTML_STATE_AUTHOR,
     RGT_XML2HTML_STATE_OBJECTIVE,
@@ -186,6 +187,8 @@ RGT_EXTERN_FUNC(proc_meta_start_ts_start);
 RGT_EXTERN_FUNC(proc_meta_start_ts_end);
 RGT_EXTERN_FUNC(proc_meta_end_ts_start);
 RGT_EXTERN_FUNC(proc_meta_end_ts_end);
+RGT_EXTERN_FUNC(proc_meta_duration_start);
+RGT_EXTERN_FUNC(proc_meta_duration_end);
 RGT_EXTERN_FUNC(proc_meta_objective_start);
 RGT_EXTERN_FUNC(proc_meta_objective_end);
 RGT_EXTERN_FUNC(proc_meta_authors_start);
@@ -200,6 +203,14 @@ RGT_EXTERN_FUNC(proc_mem_elem_start);
 RGT_EXTERN_FUNC(proc_mem_elem_end);
 RGT_EXTERN_FUNC(proc_log_msg_br);
 
+/**
+ * Callback function for processing a group of characters.
+ *
+ * @param ctx        Global processing context
+ * @param depth_ctx  Depth-specific context
+ * @param ch         Pointer to the start of a character string
+ * @param len        The number of characters in @p ch string
+ */
 extern void proc_chars(rgt_gen_ctx_t *ctx,
                        rgt_depth_ctx_t *depth_ctx,
                        const xmlChar *ch, size_t len);
