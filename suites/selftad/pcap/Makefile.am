@@ -13,6 +13,6 @@ AM_LDFLAGS = @TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/lib
 tetest_PROGRAMS = \
     tapi_pcap_test
 
-LDADD = -ltapi -ltapi_pcap -lndn -lasn -lrcfapi -lconfapi -lconf_oid \
-        -llogger_ten -lipc -lpthread
+LDADD = -ltapi -ltapi_pcap -lndn -lasn -lrcfapi -lrpcxdr -lconfapi \
+        -lconf_oid -llogger_ten -lipc -lpthread
  

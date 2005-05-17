@@ -301,6 +301,8 @@ rcf_ch_conf_root()
 
     if (!init)
     {
+        init = TRUE;
+        
 #ifdef ENABLE_WIFI_SUPPORT
         rcf_pch_cfg_object *agt_if_tail = &node_status;
 
@@ -320,7 +322,9 @@ rcf_ch_conf_root()
 #endif
 
         if ((s = socket(AF_INET, SOCK_DGRAM, IPPROTO_IP)) < 0)
+        {
             return NULL;
+        }
 
 #ifdef CFG_LINUX_DAEMONS
         if (linuxconf_daemons_init(&tail) != 0)
@@ -336,7 +340,11 @@ rcf_ch_conf_root()
         ll_init_map(&rth);
         rtnl_close(&rth);
 #endif
-        init = TRUE;
+
+#ifdef RCF_RPC
+        /* Link RPC nodes */
+        rcf_pch_rpc_init();
+#endif        
     }
 
     return &node_agent;
@@ -1462,7 +1470,6 @@ net_addr_del(unsigned int gid, const char *oid,
 {
     char              *name;
     struct sockaddr_in sin;
-    int                rc;
 
     UNUSED(gid);
     UNUSED(oid);

@@ -45,17 +45,20 @@
 #undef ERROR
 #include "te_defs.h"
 #include "te_errno.h"
+#include "rcf_pch.h"
 #include "rcf_ch_api.h"
 #include "rcf_rpc_defs.h"
 
 #include "tapi_rpcsock_defs.h"
-#include "win32_rpc.h"
 #include "ta_logfork.h"
 
 #define PRINT(msg...) \
     do {                                                \
        printf(msg); printf("\n"); fflush(stdout);       \
     } while (0)
+
+/** Obtain RCF RPC errno code */
+#define RPC_ERRNO errno_h2rpc(errno)
 
 /* Microsoft extended defines */
 #define WSAID_ACCEPTEX \
@@ -123,7 +126,6 @@ typedef int (__stdcall *LPFN_WSARECVMSG)(SOCKET s,
                                LPWSAOVERLAPPED_COMPLETION_ROUTINE
                                lpCompletionRoutine);
 
-extern int ta_pid;
 extern sigset_t rpcs_received_signals;
 extern HINSTANCE ta_hinstance;
 
@@ -739,6 +741,8 @@ _func##_proc(void *arg)                                                 \
     tarpc_##_func##_out *out = &(((_func##_arg *)arg)->out);            \
     checked_arg         *list = NULL;                                   \
                                                                         \
+    logfork_register_user(#_func);                                      \
+                                                                        \
     VERB("Entry thread %s", #_func);                                    \
                                                                         \
     { _actions }                                                        \
@@ -829,10 +833,8 @@ TARPC_FUNC(fork, {},
 
     if (out->pid == 0)
     {
-#ifdef HAVE_SVC_EXIT
-        svc_exit();
-#endif
-        tarpc_server(in->name.name_val);
+        rcf_pch_detach();
+        rcf_pch_rpc_server(in->name.name_val);
         exit(EXIT_FAILURE);
     }
 }
@@ -842,7 +844,7 @@ TARPC_FUNC(fork, {},
 TARPC_FUNC(pthread_create, {},
 {
     MAKE_CALL(out->retval = pthread_create((pthread_t *)&(out->tid), NULL,
-                                           tarpc_server,
+                                           (void *)rcf_pch_rpc_server,
                                            strdup(in->name.name_val)));
 }
 )
@@ -1330,6 +1332,7 @@ TARPC_FUNC(get_current_process_id, {},
 {
     UNUSED(in);
     UNUSED(list);
+    UNUSED(in);
     out->retval = GetCurrentProcessId();
 }
 )
@@ -3305,6 +3308,7 @@ TARPC_FUNC(wsa_recv,
     if (out->flags.flags_len > 0)
         out->flags.flags_val[0] =
             send_recv_flags_rpc2h(out->flags.flags_val[0]);
+
     MAKE_CALL(out->retval =
                   WSARecv(in->s, overlapped->buffers, in->count,
                       out->bytes_received.bytes_received_len == 0 ?

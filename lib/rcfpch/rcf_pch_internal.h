@@ -101,10 +101,10 @@ extern "C" {
  * Write string to the answer buffer (inserting '\' before '"')
  * in double quotes.
  *
- * @param dst   - pointer in the answer buffer where string should be
+ * @param dst     pointer in the answer buffer where string should be
  *                placed
- * @param src   - string to be written to
- * @param len   - maximum number of symbols to be copied
+ * @param src     string to be written to
+ * @param len     maximum number of symbols to be copied
  */
 static inline void
 write_str_in_quotes(char *dst, const char *src, size_t len)
@@ -125,6 +125,10 @@ write_str_in_quotes(char *dst, const char *src, size_t len)
     *p++ = '\"';
     *p = '\0';
 }
+
+#define PRINT(msg...) \
+    do { printf(msg); printf("\n"); fflush(stdout); } while (0)
+
 
 /*
  * When ANSI C compiler mode is enabled, the following functions are

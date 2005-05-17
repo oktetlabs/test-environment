@@ -308,9 +308,7 @@ rpc_ioctl(rcf_rpc_server *rpcs,
             RETVAL_INT(ioctl, -1);;
     }
 
-    rcf_rpc_call(rpcs, _ioctl,
-                 &in,  (xdrproc_t)xdr_tarpc_ioctl_in,
-                 &out, (xdrproc_t)xdr_tarpc_ioctl_out);
+    rcf_rpc_call(rpcs, "ioctl", &in, &out);
 
     if (out.retval == 0 && out.req.req_val != NULL && in.access == IOCTL_RD)
     {

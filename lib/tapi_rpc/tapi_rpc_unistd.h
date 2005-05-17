@@ -487,8 +487,7 @@ extern int rpc_fcntl(rcf_rpc_server *rpcs, int fd,
  * @return Upon successful completion this function returns 0.
  *         On error -1 is returned.
  */
-extern int rpc_pipe(rcf_rpc_server *rpcs,
-                    int filedes[2]);
+extern int rpc_pipe(rcf_rpc_server *rpcs, int filedes[2]);
 
 /**
  * Create a unnamed pair of connected socket on RPC server side.
@@ -511,12 +510,20 @@ extern int rpc_socketpair(rcf_rpc_server *rpcs,
                           rpc_socket_proto protocol, int sv[2]);
 
 /**
+ * Get RPC server process identification.
+ *
+ * @param rpcs  RPC server handle
+ *
+ * @return The effective user ID of the RPC server process
+ */
+extern pid_t rpc_getpid(rcf_rpc_server *rpcs);
+
+/**
  * Query the real user ID on the RPC server.
  *
  * @param rpcs RPC server handle
  *
  * @return The real user ID
- * @note This function is always successful
  */
 extern uid_t rpc_getuid(rcf_rpc_server *rpcs);
 
@@ -550,6 +557,7 @@ extern int rpc_setuid(rcf_rpc_server *rpcs,
  */
 extern struct passwd *rpc_getpwnam(rcf_rpc_server *rpcs, const char *name);
 
+
 /**
  * Get the effective user ID of the RPC server process. The effective user
  * ID corresponds to the set ID bit of the file currently executed.
@@ -557,7 +565,6 @@ extern struct passwd *rpc_getpwnam(rcf_rpc_server *rpcs, const char *name);
  * @param rpcs  RPC server handle
  *
  * @return The effective user ID of the RPC server process
- * @note   This function is always successful
  */
 extern uid_t rpc_geteuid(rcf_rpc_server *rpcs);
 
@@ -572,8 +579,7 @@ extern uid_t rpc_geteuid(rcf_rpc_server *rpcs);
  * @return Upon successful completion this function returns 0, otherwise
  * -1 is returned.
  */
-extern int rpc_seteuid(rcf_rpc_server *rpcs,
-                       uid_t uid);
+extern int rpc_seteuid(rcf_rpc_server *rpcs, uid_t uid);
 
 
 #endif /* !__TE_TAPI_RPC_UNISTD_H__ */

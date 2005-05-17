@@ -58,8 +58,8 @@
                                           resource is not available */
 #define ETEFMT          (TE_BASE | 8)  /* Invalid format */
 #define ETEENV          (TE_BASE | 9)  /* Inappropriate environment */
-#define ETEWIN          (TE_BASE | 10) /* WIndows API function failed,
-                                         see log for the description */
+#define ETEWIN          (TE_BASE | 10) /* Windows API function failed,
+                                          see log for the description */
 /*@}*/
 
 /** @name Remote Control Facility errno's */
@@ -242,13 +242,13 @@
 /**
  * Update \i main return code, if it's OK, otherwise keep it.
  *
- * @param _rc       - main return code to be updated
- * @param _rc_new   - new return code to be assigned to main, if
+ * @param _rc         main return code to be updated
+ * @param _rc_new     new return code to be assigned to main, if
  *                    main is OK
  *
  * @return Updated return code.
  */
-#define RC_UPDATE(_rc, _rc_new) \
+#define TE_RC_UPDATE(_rc, _rc_new) \
     ((_rc) = (((_rc) == 0) ? (_rc_new) : (_rc)))
 
 

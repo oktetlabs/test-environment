@@ -175,13 +175,6 @@ AC_CHECK_TYPES([struct rtentry, struct ortentry], [], [],
                 #include <net/route.h>])
 
 dnl
-dnl Check for 'sa_len'-like members in 'struct sockaddr'-like structures.
-dnl
-AC_CHECK_MEMBERS([struct sockaddr.sa_len], [], [],
-                 [#include <sys/types.h>
-                  #include <sys/socket.h>])
-
-dnl
 dnl Check for 'sa_restorer' member in 'struct sigaction'.
 dnl
 AC_CHECK_MEMBERS([struct sigaction.sa_restorer], [], [],

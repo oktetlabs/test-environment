@@ -79,6 +79,7 @@
 #include "rcf_methods.h"
 #include "rcf_api.h"
 #include "rcf_internal.h"
+#include "rpc_xdr.h"
 
 #define RCF_NEED_TYPES      1
 #define RCF_NEED_TYPE_LEN   1
@@ -92,6 +93,11 @@
 
 #define RCF_SELECT_TIMEOUT      1   /**< Default select timeout
                                          in seconds */
+#define RCF_CMD_TIMEOUT         10  /**< Default timeout for command
+                                         processing on the TA */
+#define RCF_CMD_TIMEOUT_HUGE    10000  
+                                    /**< Default timeout for command
+                                         processing on the TA */
 #define RCF_REBOOT_TIMEOUT      60  /**< TA reboot timeout in seconds */
 #define RCF_SHUTDOWN_TIMEOUT    5   /**< TA shutdown timeout in seconds */
 
@@ -141,6 +147,8 @@ typedef struct usrreq {
     struct usrreq            *prev;
     rcf_msg                  *message;
     struct ipc_server_client *user;
+    uint32_t                  timeout;
+    time_t                    sent;
 } usrreq;
 
 /** A description for a task/thread to be executed at TA startup */
@@ -1110,9 +1118,14 @@ process_reply(ta *agent)
 
 
     VERB("Answer \"%s\" is received from TA '%s'", cmd, agent->name);
-
+    
     if (strncmp(ptr, "SID ", strlen("SID ")) != 0)
     {
+        if (strstr(ptr, "bad command") != NULL)
+        {
+            ERROR("TA %s received incorrect command", agent->name);
+            return;
+        }
         ERROR("BAD PROTO: %s, %d", __FILE__, __LINE__);
         goto bad_protocol;
     }
@@ -1123,7 +1136,8 @@ process_reply(ta *agent)
     if ((req = find_user_request(&(agent->sent), sid)) == NULL)
     {
         ERROR("Can't find user request with SID %d", sid);
-        goto bad_protocol;
+        send_pending_command(agent, sid);
+        return;
     }
 
     msg = req->message;
@@ -1265,6 +1279,55 @@ process_reply(ta *agent)
                     READ_INT(msg->handle);
                 break;
 
+            case RCFOP_RPC:
+            {
+#define INSIDE_LEN \
+    (sizeof(((rcf_msg *)0)->file) + sizeof(((rcf_msg *)0)->value))
+                int n = ba ? len - (ba - cmd) : strlen(ptr);
+                
+                if (msg->intparm < n && n > (int)INSIDE_LEN)
+                {
+                    rcf_msg *new_msg = 
+                        (rcf_msg *)malloc(n + sizeof(*msg) - INSIDE_LEN);
+                    
+                    if (new_msg == NULL)
+                    {
+                        msg->error = TE_RC(TE_RCF, EINVAL);
+                        break;
+                    }
+                    *new_msg = *msg;
+                    free(msg);
+                    msg = req->message = new_msg;
+                }
+                
+                if (ba)
+                {
+                    int start_len = sizeof(cmd) - (ba - cmd);
+                    
+                    if (start_len > n)
+                        start_len = n;
+                        
+                    msg->intparm = n;
+                    memcpy(msg->file, ba, start_len);
+                    if (rc != 0)
+                    {
+                        n -= start_len;
+                        msg->error = (agent->receive)(agent->handle, 
+                                         msg->file + start_len, &n, NULL);
+                    }
+                }
+                else
+                {
+                    read_str(&ptr, msg->file);
+                    msg->intparm = strlen(msg->file) + 1;
+                }
+                msg->data_len = msg->intparm  < (int)INSIDE_LEN ? 0 
+                                : msg->intparm - INSIDE_LEN;
+                
+                break;
+#undef INSIDE_LEN                
+            }
+
             default:
                 ERROR("Unhandled case value %d", msg->opcode);
         }
@@ -1297,10 +1360,12 @@ bad_protocol:
 static int
 transmit_cmd(ta *agent, usrreq *req)
 {
-    int rc, len;
-    int file = -1;
+    int   rc, len;
+    int   file = -1;
+    char *data = cmd;
 
-    if (req->message->flags & BINARY_ATTACHMENT)
+    if (req->message->flags & BINARY_ATTACHMENT && 
+        req->message->opcode != RCFOP_RPC)
     {
         struct stat st;
 
@@ -1327,9 +1392,9 @@ transmit_cmd(ta *agent, usrreq *req)
                      "'%s'", cmd, agent->name);
 
     len = strlen(cmd) + 1;
-    while (1)
+    while (TRUE)
     {
-        if ((rc = (agent->transmit)(agent->handle, cmd, len)) != 0)
+        if ((rc = (agent->transmit)(agent->handle, data, len)) != 0)
         {
             req->message->error = TE_RC(TE_RCF, rc);
             ERROR("Failed to transmit command to TA '%s' errno %d", 
@@ -1343,6 +1408,16 @@ transmit_cmd(ta *agent, usrreq *req)
 
             return -1;
         }
+        if (req->message->opcode == RCFOP_RPC && 
+            req->message->flags & BINARY_ATTACHMENT)
+        {
+            if (data == req->message->file)
+                break;
+            data = req->message->file;
+            len = req->message->intparm;
+            continue;
+        }
+            
         if (file < 0 || (len = read(file, cmd, sizeof(cmd))) == 0)
             break;
 
@@ -1355,10 +1430,13 @@ transmit_cmd(ta *agent, usrreq *req)
             answer_user_request(req);
             return -1;
         }
+        
     }
 
     if (file != -1)
         close(file);
+        
+    req->sent = time(NULL);
 
     return 0;
 }
@@ -1455,6 +1533,7 @@ send_cmd(ta *agent, usrreq *req)
     rcf_msg *msg = req->message;
 
     sprintf(cmd, "SID %d ", msg->sid);
+    req->timeout = RCF_CMD_TIMEOUT_HUGE;
     switch (msg->opcode)
     {
         case RCFOP_REBOOT:
@@ -1467,12 +1546,14 @@ send_cmd(ta *agent, usrreq *req)
             strcat(cmd, TE_PROTO_CONFGET);
             strcat(cmd, " ");
             strncat(cmd, msg->id, RCF_MAX_ID);
+            req->timeout = RCF_CMD_TIMEOUT;
             break;
 
         case RCFOP_CONFDEL:
             strcat(cmd, TE_PROTO_CONFDEL);
             strcat(cmd, " ");
             strncat(cmd, msg->id, RCF_MAX_ID);
+            req->timeout = RCF_CMD_TIMEOUT;
             break;
 
         case RCFOP_CONFADD:
@@ -1480,6 +1561,7 @@ send_cmd(ta *agent, usrreq *req)
             strcat(cmd, " ");
             strncat(cmd, msg->id, RCF_MAX_ID);
             write_str(msg->value, RCF_MAX_VAL);
+            req->timeout = RCF_CMD_TIMEOUT;
             break;
 
         case RCFOP_CONFSET:
@@ -1487,14 +1569,17 @@ send_cmd(ta *agent, usrreq *req)
             strcat(cmd, " ");
             strncat(cmd, msg->id, RCF_MAX_ID);
             write_str(msg->value, RCF_MAX_VAL);
+            req->timeout = RCF_CMD_TIMEOUT;
             break;
 
         case RCFOP_CONFGRP_START:
             strcat(cmd, TE_PROTO_CONFGRP_START);
+            req->timeout = RCF_CMD_TIMEOUT;
             break;
 
         case RCFOP_CONFGRP_END:
             strcat(cmd, TE_PROTO_CONFGRP_END);
+            req->timeout = RCF_CMD_TIMEOUT;
             break;
 
         case RCFOP_GET_LOG:
@@ -1504,12 +1589,14 @@ send_cmd(ta *agent, usrreq *req)
                 return -1;
             }
             strcat(cmd, TE_PROTO_GET_LOG);
+            req->timeout = RCF_CMD_TIMEOUT;
             break;
 
         case RCFOP_VREAD:
             strcat(cmd, TE_PROTO_VREAD);
             sprintf(cmd + strlen(cmd), " %s %s", msg->id,
                     rcf_types[msg->intparm]);
+            req->timeout = RCF_CMD_TIMEOUT;
             break;
 
         case RCFOP_VWRITE:
@@ -1520,6 +1607,7 @@ send_cmd(ta *agent, usrreq *req)
                 write_str(msg->value, RCF_MAX_VAL);
             else
                 sprintf(cmd + strlen(cmd), "%s", msg->value);
+            req->timeout = RCF_CMD_TIMEOUT;
             break;
 
         case RCFOP_FPUT:
@@ -1639,10 +1727,32 @@ send_cmd(ta *agent, usrreq *req)
                 }
             }
             break;
+            
+        case RCFOP_RPC:
+        {
+            char *s = cmd + strlen(cmd);
+            
+            s += sprintf(s, "%s %s %d ", 
+                         TE_PROTO_RPC, msg->id, msg->timeout);
+            
+            if (msg->intparm < RCF_MAX_VAL && 
+                strcmp_start("<?xml", msg->file) == 0)
+            {
+                write_str(msg->file, strlen(msg->file));
+            }
+            else
+            {
+                sprintf(s, "attach %u", (unsigned int)msg->intparm);
+                req->message->flags |= BINARY_ATTACHMENT;
+            }
+            req->timeout = req->message->timeout / 1000 + 1;
+            break;
+        }
 
         case RCFOP_KILL:
             strcat(cmd, TE_PROTO_KILL);
             sprintf(cmd + strlen(cmd), " %u", msg->handle);
+            req->timeout = RCF_CMD_TIMEOUT;
             break;
 
         default:
@@ -1663,9 +1773,10 @@ rcf_ta_check()
     te_bool   dead = FALSE;
     te_bool   reb_success = FALSE;
     ta        *agent;
+    
     struct timeval tv;
     fd_set         set;
-    int         num_live = 0;
+    int            num_live = 0;
 
     time_t t = time(NULL);
 
@@ -1686,8 +1797,6 @@ rcf_ta_check()
 
         for (agent = agents; agent != NULL; agent = agent->next)
         {
-            VERB("Flags %x %x Dead %d", agent->flags,
-                 TA_CHECKED, agent->dead);
             if ((agent->flags & TA_CHECKED) || (agent->dead))
                 continue;
 
@@ -1751,6 +1860,17 @@ process_user_request(usrreq *req)
 
     if (msg->opcode == RCFOP_TALIST)
     {
+        rcf_msg *new_msg = (rcf_msg *)malloc(sizeof(rcf_msg) + names_len);
+        
+        if (new_msg == NULL)
+        {
+            msg->error = TE_RC(TE_RCF, ENOMEM);
+            answer_user_request(req);
+            return;
+        }
+        *new_msg = *msg;
+        free(msg);
+        msg = req->message = new_msg;
         msg->data_len = names_len;
         memcpy(msg->data, names, names_len);
         answer_user_request(req);
@@ -2063,6 +2183,7 @@ main(int argc, char **argv)
         struct timeval  tv = tv0;
         fd_set          set = set0;
         size_t          len;
+        time_t          now;
         
         req = NULL;
         rc = -1;
@@ -2073,42 +2194,84 @@ main(int argc, char **argv)
 
         if (FD_ISSET(server_fd, &set))
         {
+            len = sizeof(rcf_msg);
+            
             if ((req = (usrreq *)calloc(sizeof(usrreq), 1)) == NULL)
                 goto error;
 
-            if ((req->message = (rcf_msg *)malloc(RCF_MAX_LEN)) == NULL)
+            if ((req->message = (rcf_msg *)calloc(len, 1)) == NULL)
             {
                 free(req);
                 goto error;
             }
 
-            len = RCF_MAX_LEN;
-            if ((rc = ipc_receive_message(server, (char *)req->message,
-                                          &len, &(req->user))) != 0)
+            rc = ipc_receive_message(server, (char *)req->message,
+                                     &len, &(req->user));
+
+            if (TE_RC_GET_ERROR(rc) == ETESMALLBUF) 
             {
-                ERROR("Failed to receive user request: errno=%d", rc);
+                int n = len;
+                
+                len += sizeof(rcf_msg);
+                if ((req->message = 
+                         (rcf_msg *)realloc(req->message, len)) == NULL)
+                {
+                    ERROR("Cannot allocate memory for user request");
+                    free(req);
+                    continue;
+                }
+                rc = ipc_receive_message(server, (char *)(req->message + 1),
+                                         &n, &(req->user));
+            }
+            
+            if (rc != 0)
+            {
+                ERROR("Failed to receive user request: errno=0x%X", rc);
                 free(req->message);
                 free(req);
                 continue;
             }
-            else
+            
+            if (len != sizeof(rcf_msg) + req->message->data_len)
             {
-                VERB("Request '%s' from user is received",
-                     rcf_op_to_string(req->message->opcode));
-                if (req->message->opcode == RCFOP_SHUTDOWN)
-                {
-                    VERB("Shutdown command is recieved");
-                    break;
-                }
-                process_user_request(req);
+                ERROR("Incorrect user request is received: data_len field "
+                     "does not match to IPC message size");
+                free(req->message);
+                free(req);
+                continue;
             }
-
+            
+            VERB("Request '%s' from user is received",
+                 rcf_op_to_string(req->message->opcode));
+            if (req->message->opcode == RCFOP_SHUTDOWN)
+            {
+                VERB("Shutdown command is recieved");
+                break;
+            }
+            process_user_request(req);
         }
+        now = time(NULL);
         for (agent = agents; agent != NULL; agent = agent->next)
         {
+            usrreq *next;
+            
             if ((agent->is_ready)(agent->handle))
                 process_reply(agent);
-        } 
+                
+            for (req = agent->sent.next; 
+                 req != &(agent->sent); 
+                 req = next)
+            {
+                next = req->next;
+                
+                if ((uint32_t)(now - req->sent) < req->timeout)
+                    continue;
+
+                ERROR("Request to TA %s is timed out", agent->name);
+                req->message->error = TE_RC(TE_RCF, ETIMEDOUT);
+                answer_user_request(req);
+            }
+        }
 
         if (rcf_wait_shutdown)
         {

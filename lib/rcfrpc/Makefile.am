@@ -1,5 +1,5 @@
 
-AM_CPPFLAGS = -I$(DESTDIR)/$(prefix)/include
+AM_CPPFLAGS = @TE_CFLAGS@ -I$(DESTDIR)/$(prefix)/include
 AM_LDFLAGS = @TE_LDFLAGS@ 
 
 
@@ -7,27 +7,7 @@ include_HEADERS=rcf_rpc.h
 
 lib_LTLIBRARIES=librcfrpc.la
 
-librcfrpc_la_SOURCES=rcf_rpc.c tarpc_xdr.c
-
-CLEANFILES=tarpc.x tarpc.h tarpc_xdr.c
-
-rcf_rpc.lo: tarpc.h
-
-tarpc.x: @RPC_XFILE@
-	m4 @RPC_XFILE@ > tarpc.x
-
-tarpc.h: tarpc.x
-	$(RM) -f tarpc.h
-	rpcgen -h -M tarpc.x -o tarpc.h
-
-tarpc_xdr.c: tarpc.h
-	$(RM) -f tarpc_xdr.c
-	rpcgen -c -M tarpc.x -o tarpc_xdr.c
-	awk '\
-            /buf;/ { print $0 ; printf("\t(void)buf;") ; next ; } \
-            { print $0 ; next ;}' tarpc_xdr.c > tarpc_xdr.c.new
-	mv tarpc_xdr.c.new tarpc_xdr.c
-
+librcfrpc_la_SOURCES=rcf_rpc.c 
 
 install-exec-hook:
 	touch -c -r .libs/librcfrpc.la $(DESTDIR)/$(prefix)/lib/librcfrpc.*

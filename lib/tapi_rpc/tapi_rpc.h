@@ -61,6 +61,7 @@
 /** To store the pointer, which is valid in the TA address space */
 typedef uint64_t rpc_ptr;
 
+#include "rcf_rpc.h"
 #include "tapi_rpc_socket.h"
 #include "tapi_rpc_unistd.h"
 #include "tapi_rpc_signal.h"

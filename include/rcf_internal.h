@@ -55,7 +55,7 @@ extern "C" {
 #define INTERMEDIATE_ANSWER     2   /**< Packet is received on the TA, but
                                          traffic receiving continues */
 #define PARAMETERS_ARGV         4   /**< Routine parameters are passed in 
-                                         arc/argv mode */
+                                         argc/argv mode */
 /*@}*/
 
 /** @name Traffic flags */
@@ -93,6 +93,7 @@ typedef enum {
     RCFOP_TRRECV_WAIT,      /**< Wait for finish receiving packets */
     RCFOP_TRSEND_RECV,      /**< Send one packet and receive an answer */
     RCFOP_EXECUTE,          /**< Execute a routine in various contexts */
+    RCFOP_RPC,              /**< Execute an RPC */
     RCFOP_KILL,             /**< Kill the process */
     RCFOP_CONFGRP_START,    /**< Start of configuration group */
     RCFOP_CONFGRP_END,      /**< End of configuration group */
@@ -102,42 +103,43 @@ typedef enum {
 
 /** Definition of the RCF internal protocol message format */
 typedef struct rcf_msg {
-    rcf_op_t opcode;          /**< Operation code - see above */
-    int   flags;              /**< Auxiliary flag */
-    int   sid;                /**< Session identifier */
-    int   error;              /**< Error code (in the answer) */
-    char  ta[RCF_MAX_NAME];   /**< Test Agent name */
-    int   handle;             /**< CSAP handle or PID */
-    int   num;                /**< Number of sent/received packets or 
-                                   function arguments */
-    unsigned int timeout;     /**< Timeout value (RCFOP_TRSEND_RECV,
-                                   RCFOP_TRRECV_START) */
-    int   intparm;            /**< Integer parameter: 
-                                   variable type;
-                                   routine arguments passing mode (argv);
-                                   process priority (valid is >= 0);
-                                   postponed and results flags
-                                   (tr_* commands);
-                                   routine return code (RCFOP_EXECUTE);
-                                   answer error (RCFOP_TRSEND_RECV) */
-    size_t data_len;          /**< Length of additional data */
-    
-    char  id[RCF_MAX_ID];     /**< TA type;
-                                   variable name;
-                                   routine name;
-                                   object identifier;
-                                   stack identifier */
+    rcf_op_t opcode;             /**< Operation code - see above */
+    int      flags;              /**< Auxiliary flag */
+    int      sid;                /**< Session identifier */
+    int      error;              /**< Error code (in the answer) */
+    char     ta[RCF_MAX_NAME];   /**< Test Agent name */
+    int      handle;             /**< CSAP handle or PID */
+    int      num;                /**< Number of sent/received packets */
+    uint32_t timeout;            /**< Timeout value (RCFOP_TRSEND_RECV,
+                                      RCFOP_TRRECV_START, RCFOP_RPC) */
+    int      intparm;            /**< Integer parameter: 
+                                      variable type;
+                                       routine arguments passing mode;
+                                       process priority (valid is >= 0);
+                                       postponed and results flags
+                                       (tr_* commands);
+                                       routine return code (RCFOP_EXECUTE);
+                                       encode data length (RCFOP_RPC);
+                                       answer error (RCFOP_TRSEND_RECV) */
+    size_t   data_len;          /**< Length of additional data */
+    char     id[RCF_MAX_ID];    /**< TA type;
+                                     variable name;
+                                     routine name;
+                                     object identifier;
+                                     stack identifier;
+                                     RPC server name */
                                  
-    char  file[RCF_MAX_PATH]; /**< Local full file name */
-    char  value[RCF_MAX_VAL]; /**< Value of the variable or object
-                                   instance */
+    char  file[RCF_MAX_PATH];   /**< Local full file name */
+    char  value[RCF_MAX_VAL];   /**< Value of the variable or object
+                                     instance */
 
-    char  data[0];            /**< Start of additional for commands:
-                                   RCFOP_TALIST (list of names);
-                                   RCFOP_TAREBOOT (parameters);
-                                   RCFOP_CSAP_CREATE (parameters);
-                                   RCFOP_EXECUTE (parameters);
-                                   RCFOP_GET and RCFOP_PUT (remote file) */
+    char  data[0];              /**< Start of additional for commands:
+                                     RCFOP_TALIST (list of names);
+                                     RCFOP_TAREBOOT (parameters);
+                                     RCFOP_CSAP_CREATE (parameters);
+                                     RCFOP_EXECUTE (parameters);
+                                     RCFOP_RPC (encoded data);
+                                     RCFOP_GET/PUT (remote file) */
 } rcf_msg;
 
 /** Parameters generated by rcf_make_params function */
@@ -206,6 +208,7 @@ rcf_op_to_string(rcf_op_t op)
         case RCFOP_TRRECV_WAIT:     return "trrecv wait";
         case RCFOP_TRSEND_RECV:     return "trsendrecv";
         case RCFOP_EXECUTE:         return "execute";
+        case RCFOP_RPC:             return "rpc";
         case RCFOP_KILL:            return "kill";
         default:                    return "(unknown)";
     }

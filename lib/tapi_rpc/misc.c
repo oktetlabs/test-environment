@@ -221,9 +221,7 @@ rpc_setlibname(rcf_rpc_server *rpcs, const char *libname)
     in.libname.libname_val = (char *)libname;
 
     rpcs->op = RCF_RPC_CALL_WAIT;
-    rcf_rpc_call(rpcs, _setlibname,
-                 &in,  (xdrproc_t)xdr_tarpc_setlibname_in,
-                 &out, (xdrproc_t)xdr_tarpc_setlibname_out);
+    rcf_rpc_call(rpcs, "setlibname", &in, &out);
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(setlibname, out.retval);
 
@@ -321,9 +319,7 @@ rpc_send_traffic(rcf_rpc_server *rpcs, int num,
     }
     in.flags = flags;
 
-    rcf_rpc_call(rpcs, _send_traffic,
-                 &in,  (xdrproc_t)xdr_tarpc_send_traffic_in,
-                 &out, (xdrproc_t)xdr_tarpc_send_traffic_out);
+    rcf_rpc_call(rpcs, "send_traffic", &in, &out);
 
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(send_traffic, out.retval);
 
@@ -402,9 +398,7 @@ rpc_simple_sender(rcf_rpc_server *rpcs,
     in.time2run = time2run;
     in.ignore_err = ignore_err;
 
-    rcf_rpc_call(rpcs, _simple_sender,
-                 &in,  (xdrproc_t)xdr_tarpc_simple_sender_in,
-                 &out, (xdrproc_t)xdr_tarpc_simple_sender_out);
+    rcf_rpc_call(rpcs, "simple_sender", &in, &out);
 
     if (out.retval == 0)
         *sent = out.bytes;
@@ -454,9 +448,7 @@ rpc_simple_receiver(rcf_rpc_server *rpcs,
     in.s = s;
     in.time2run = time2run;
 
-    rcf_rpc_call(rpcs, _simple_receiver,
-                 &in,  (xdrproc_t)xdr_tarpc_simple_receiver_in,
-                 &out, (xdrproc_t)xdr_tarpc_simple_receiver_out);
+    rcf_rpc_call(rpcs, "simple_receiver", &in, &out);
 
     if (out.retval == 0)
         *received = out.bytes;
@@ -521,9 +513,7 @@ rpc_iomux_flooder(rcf_rpc_server *rpcs,
         in.rx_stat.rx_stat_len = rcvnum;
     }
 
-    rcf_rpc_call(rpcs, _flooder,
-                 &in,  (xdrproc_t)xdr_tarpc_flooder_in,
-                 &out, (xdrproc_t)xdr_tarpc_flooder_out);
+    rcf_rpc_call(rpcs, "flooder", &in, &out);
 
     if (RPC_IS_CALL_OK(rpcs))
     {
@@ -591,9 +581,7 @@ rpc_iomux_echoer(rcf_rpc_server *rpcs,
         in.rx_stat.rx_stat_len = socknum;
     }
 
-    rcf_rpc_call(rpcs, _echoer,
-                 &in,  (xdrproc_t)xdr_tarpc_echoer_in,
-                 &out, (xdrproc_t)xdr_tarpc_echoer_out);
+    rcf_rpc_call(rpcs, "echoer", &in, &out);
 
     if (RPC_IS_CALL_OK(rpcs))
     {
@@ -643,9 +631,7 @@ rpc_sendfile(rcf_rpc_server *rpcs, int out_fd, int in_fd,
         in.offset.offset_val = (tarpc_off_t *)offset;
     }
 
-    rcf_rpc_call(rpcs, _sendfile,
-                 &in,  (xdrproc_t)xdr_tarpc_sendfile_in,
-                 &out, (xdrproc_t)xdr_tarpc_sendfile_out);
+    rcf_rpc_call(rpcs, "sendfile", &in, &out);
 
     if (RPC_IS_CALL_OK(rpcs))
     {
@@ -694,9 +680,7 @@ rpc_socket_to_file(rcf_rpc_server *rpcs, int sock,
         in.path.path_val = (char *)path;
     }
 
-    rcf_rpc_call(rpcs, _socket_to_file,
-                 &in, (xdrproc_t)xdr_tarpc_socket_to_file_in,
-                 &out, (xdrproc_t)xdr_tarpc_socket_to_file_out);
+    rcf_rpc_call(rpcs, "socket_to_file", &in, &out);
 
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(socket_to_file, out.retval);
 
@@ -738,9 +722,7 @@ rpc_ftp_open(rcf_rpc_server *rpcs,
         in.sock.sock_len = 1;
     }
 
-    rcf_rpc_call(rpcs, _ftp_open,
-                 &in,  (xdrproc_t)xdr_tarpc_ftp_open_in,
-                 &out, (xdrproc_t)xdr_tarpc_ftp_open_out);
+    rcf_rpc_call(rpcs, "ftp_open", &in, &out);
 
     if (RPC_IS_CALL_OK(rpcs) && sock != NULL)
         *sock = out.sock;
@@ -782,9 +764,8 @@ rpc_many_send(rcf_rpc_server *rpcs, int sock,
         in.vector.vector_val = (tarpc_int *)vector;
     }
 
-    rcf_rpc_call(rpcs, _many_send,
-                 &in,  (xdrproc_t)xdr_tarpc_many_send_in,
-                 &out, (xdrproc_t)xdr_tarpc_many_send_out);
+    rcf_rpc_call(rpcs, "many_send", &in, &out);
+
     if (out.retval == 0)
         *sent = out.bytes;
 
@@ -818,9 +799,8 @@ rpc_overfill_buffers(rcf_rpc_server *rpcs, int sock, uint64_t *sent)
 
     in.sock = sock;
 
-    rcf_rpc_call(rpcs, _overfill_buffers,
-                 &in,  (xdrproc_t)xdr_tarpc_overfill_buffers_in,
-                 &out, (xdrproc_t)xdr_tarpc_overfill_buffers_out);
+    rcf_rpc_call(rpcs, "overfill_buffers", &in, &out);
+
     if (out.retval == 0)
         *sent = out.bytes;
     
@@ -857,9 +837,7 @@ rpc_alloc_buf(rcf_rpc_server *rpcs, size_t size)
 
     in.size = size;
 
-    rcf_rpc_call(rpcs, _alloc_buf,
-                 &in, (xdrproc_t)xdr_tarpc_alloc_buf_in,
-                 &out, (xdrproc_t)xdr_tarpc_alloc_buf_out);
+    rcf_rpc_call(rpcs, "alloc_buf", &in, &out);
 
     TAPI_RPC_LOG("RPC (%s,%s)%s: alloc_buf() -> %p (%s %s)",
                  rpcs->ta, rpcs->name, rpcop2str(op),
@@ -892,9 +870,7 @@ rpc_free_buf(rcf_rpc_server *rpcs, rpc_ptr buf)
 
     in.buf = (tarpc_ptr)buf;
 
-    rcf_rpc_call(rpcs, _free_buf,
-                 &in, (xdrproc_t)xdr_tarpc_free_buf_in,
-                 &out, (xdrproc_t)xdr_tarpc_free_buf_out);
+    rcf_rpc_call(rpcs, "free_buf", &in, &out);
 
     TAPI_RPC_LOG("RPC (%s,%s)%s: free_buf() -> (%s %s)",
                  rpcs->ta, rpcs->name, rpcop2str(op),
@@ -934,9 +910,7 @@ rpc_set_buf(rcf_rpc_server *rpcs, char *src_buf,
 
     in.dst_buf = (tarpc_ptr)dst_buf;
 
-    rcf_rpc_call(rpcs, _set_buf,
-                 &in, (xdrproc_t)xdr_tarpc_set_buf_in,
-                 &out, (xdrproc_t)xdr_tarpc_set_buf_out);
+    rcf_rpc_call(rpcs, "set_buf", &in, &out);
 
     TAPI_RPC_LOG("RPC (%s,%s)%s: set_buf() -> (%s %s)",
                  rpcs->ta, rpcs->name, rpcop2str(op),
@@ -971,9 +945,7 @@ rpc_get_buf(rcf_rpc_server *rpcs, rpc_ptr src_buf,
     in.src_buf = (tarpc_ptr)src_buf;
     in.len = len;
 
-    rcf_rpc_call(rpcs, _get_buf,
-                 &in, (xdrproc_t)xdr_tarpc_get_buf_in,
-                 &out, (xdrproc_t)xdr_tarpc_get_buf_out);
+    rcf_rpc_call(rpcs, "get_buf", &in, &out);
 
     TAPI_RPC_LOG("RPC (%s,%s)%s: get_buf() -> (%s %s)",
                  rpcs->ta, rpcs->name, rpcop2str(op),
@@ -1004,9 +976,7 @@ rpc_vm_trasher(rcf_rpc_server *rpcs)
 
     op = rpcs->op;
 
-    rcf_rpc_call(rpcs, _vm_trasher,
-             &in,  (xdrproc_t)xdr_tarpc_vm_trasher_in,
-             &out, (xdrproc_t)xdr_tarpc_vm_trasher_out);
+    rcf_rpc_call(rpcs, "vm_trasher", &in, &out);
 
     TAPI_RPC_LOG("RPC (%s,%s)%s: vm_trasher -> (%s)",
                  rpcs->ta, rpcs->name, rpcop2str(op),

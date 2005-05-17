@@ -86,6 +86,7 @@ ${TE_INSTALL}/${host}/lib/libconfapi.a \
 ${TE_INSTALL}/${host}/lib/libconf_oid.a \
 ${TE_INSTALL}/${host}/lib/libconf_types.a \
 ${TE_INSTALL}/${host}/lib/librcfrpc.a \
+${TE_INSTALL}/@host@/lib/librpcxdr.a \
 ${TE_INSTALL}/${host}/lib/liblogger_ten.a \
 ${TE_INSTALL}/${host}/lib/libtapi.a \
 ${TE_INSTALL}/${host}/lib/libndn.a \

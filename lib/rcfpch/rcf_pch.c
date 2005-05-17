@@ -77,17 +77,18 @@ static struct rcf_comm_connection *conn;
 /* Buffer for raw log to be transmitted to the TEN */
 static char log_data[RCF_PCH_LOG_BULK];
 
+
 /**
  * Parse the string stripping off quoting and excape symbols.
  * Parsed string is placed instead of old one. Pointer to next token
  * in the command line (or to end symbol). Pointer to the start
  * of parsed string is put to s.
  *
- * @param ptr   - location of command pointer
- * @param str   - location for parsed string beginning pointer
+ * @param ptr   location of command pointer
+ * @param str   location for parsed string beginning pointer
  *
- * @retval 0    - success
- * @retval 1    - no matching '\"' has been found
+ * @retval 0    success
+ * @retval 1    no matching '\"' has been found
  */
 static int
 transform_str(char **ptr, char **str)
@@ -300,6 +301,7 @@ get_opcode(char **ptr, rcf_op_t *opcode)
     TRY_CMD(TRRECV_WAIT);
     TRY_CMD(TRSEND_RECV);
     TRY_CMD(EXECUTE);
+    TRY_CMD(RPC);
     TRY_CMD(KILL);
 
 #undef TRY_COMMAND
@@ -359,6 +361,8 @@ rcf_pch_run(const char *confstr, const char *info)
 {
     char *cmd = NULL;
     int   rc = 0;
+    int   sid = 0;
+
     
     te_bool pending = FALSE;
 
@@ -438,7 +442,6 @@ rcf_pch_run(const char *confstr, const char *info)
         char   *ptr = cmd;
         char   *ba;         /* Binary attachment pointer */
 
-
         if ((rc = rcf_comm_agent_wait(conn, cmd, &len, &ba)) != 0 &&
             rc != ETEPENDING)
             goto communication_problem;
@@ -450,8 +453,6 @@ rcf_pch_run(const char *confstr, const char *info)
         /* Skipping SID */
         if (strncmp(ptr, "SID ", strlen("SID ")) == 0)
         {
-            int sid;
-
             ptr += strlen("SID ");
 
             READ_INT(sid);
@@ -793,7 +794,7 @@ rcf_pch_run(const char *confstr, const char *info)
                     goto bad_protocol;
 
                 READ_INT(handle);
-                if (strncmp(ptr, "postponed", strlen("postponed")) == 0)
+                if (strcmp_start("postponed", ptr) == 0)
                 {
                     postponed = 1;
                     ptr += strlen("postponed");
@@ -863,7 +864,7 @@ rcf_pch_run(const char *confstr, const char *info)
                 READ_INT(handle);
                 READ_INT(timeout);
 
-                if (strncmp(ptr, "results", strlen("results")) == 0)
+                if (strcmp_start("results", ptr) == 0)
                 {
                     results = 1;
                     ptr += strlen("results");
@@ -897,20 +898,20 @@ rcf_pch_run(const char *confstr, const char *info)
                 int      priority = -1;
                 enum rcf_start_modes mode; 
 
-                if (strncmp(ptr, "function ", 9) == 0)
+                if (strcmp_start("function ", ptr) == 0)
                 {
                     mode = RCF_START_FUNC;
-                    ptr += 9;
+                    ptr += strlen("function ");
                 }
-                else if(strncmp(ptr, "thread ", 7) == 0)
+                else if(strcmp_start("thread ", ptr) == 0)
                 {
                     mode = RCF_START_THREAD;
-                    ptr += 7;
+                    ptr += strlen("thread ");
                 }
-                else if(strncmp(ptr, "fork ", 5) == 0)
+                else if(strcmp_start("fork ", ptr) == 0)
                 {
                     mode = RCF_START_FORK;
-                    ptr += 5;
+                    ptr += strlen("fork ");
                 }
                 else
                 {
@@ -969,6 +970,52 @@ rcf_pch_run(const char *confstr, const char *info)
                 }
                 break;
             }
+
+            case RCFOP_RPC:
+            {
+                char    *server;
+                uint32_t timeout;
+                int      data_len;
+                
+                if (*ptr == 0 || transform_str(&ptr, &server) != 0)
+                    goto bad_protocol;
+                    
+                READ_INT(timeout);
+                
+                if (ba)
+                {
+                    if (len > RCF_MAX_LEN)
+                    {
+                        data_len = RCF_MAX_LEN - (ba - cmd);
+                        len -= (ba - cmd);
+                    }
+                    else
+                    {
+                        len -= (ba - cmd);
+                        data_len = len;
+                    }
+                    ptr = ba;
+                }
+                else
+                {
+                    /* XML */
+                    char *tmp;
+                      
+                    if (transform_str(&ptr, &tmp) != 0)
+                        goto bad_protocol;
+                    ptr = tmp;
+                    len = data_len = strlen(ptr);
+                }
+
+                rc = rcf_pch_rpc(conn, sid, ptr, data_len, 
+                                 len, server, timeout);
+                                                 
+                if (rc != 0)
+                     goto communication_problem;
+                
+                break;
+            }
+            
             case RCFOP_KILL:
             {
                 unsigned int pid;
@@ -993,7 +1040,7 @@ rcf_pch_run(const char *confstr, const char *info)
         continue;
 
     bad_protocol:
-        VERB("Bad protocol command is received");
+        ERROR("Bad protocol command <%s> is received", cmd);
         SEND_ANSWER("%d bad command", ETEBADFORMAT);
     }
 
@@ -1003,6 +1050,7 @@ communication_problem:
 
 exit:
     rcf_ch_conf_release();
+    rcf_pch_rpc_shutdown();
     rcf_comm_agent_close(&conn);
     free(cmd);
 

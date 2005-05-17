@@ -85,9 +85,6 @@
 extern const char *ta_name;
 /** Test Agent executable name */ 
 extern const char *ta_execname;
-/* TA pid */
-extern int ta_pid;
-
 
 extern int ftp_open(char *uri, int flags, int passive, int offset);
 

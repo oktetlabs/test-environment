@@ -33,16 +33,15 @@
 #ifndef __TE_RCF_RPC_H__
 #define __TE_RCF_RPC_H__
 
-#undef MAX
-#undef MIN
-#include <rpc/rpc.h>
-#include <rpc/clnt.h>
-#include <semaphore.h>
-
 #include "te_defs.h"
 #include "rcf_common.h"
 #include "rcf_rpc_defs.h"
 
+#ifdef HAVE_PTHREAD_H
+#include <pthread.h>
+#endif
+
+#include "tarpc.h"
 
 /** Default RPC timeout in milliseconds */
 #define RCF_RPC_DEFAULT_TIMEOUT     100000
@@ -92,37 +91,48 @@ typedef struct rcf_rpc_server {
     te_bool     err_log;        /**< Log error with ERROR log level */
 
     /* Read-only fields filled by API internals when server is created */
-    char            ta[RCF_MAX_NAME];   /**< Test Agent name */
-    char            name[RCF_MAX_NAME]; /**< RPC server name */
-    int             pid;                /**< RPC server process identifier
-                                             (for fork()-ed server) */
-    int             tid;                /**< RPC server thread identifier
-                                             (for thread) */
+    char        ta[RCF_MAX_NAME];   /**< Test Agent name */
+    char        name[RCF_MAX_NAME]; /**< RPC server name */
+    int         sid;                /**< RCF session identifier */
 
     /* Returned read-only fields with status of the last operation */
     uint64_t        duration;   /**< Call Duration in microseconds */
-    enum clnt_stat  stat;       /**< Status code returned by RPC calls */
     int             _errno;     /**< error number */
     int             win_error;  /**< Value returned by GetLastError() */
     
+#ifdef HAVE_PTHREAD_H
     pthread_mutex_t lock;       /**< lock mutex */
-    unsigned long   proc;       /**< Procedure called using NB RPC */
+#endif    
     int             tid0;       /**< Identifier of thread performing
                                      non-blocking operations */
+    char            proc[RCF_MAX_NAME];
+                                /**< Last called function */
     uint32_t        is_done_ptr;
                                 /**< Pointer to the variable in
                                      RPC server context to check
                                      state of non-blocking RPC */
-    te_bool         dead;       /**< The server is dead and could not
-                                     process RPCs */
-    sem_t           fw_sem;     /**< Semaphore to be used to synchronize
-                                     with forwarding thread */ 
-    struct rcf_rpc_server *father;     
-                                /**< Father of the server created using
-                                     pthread_create() */
-    unsigned int    children;   /**< Number of children */
 } rcf_rpc_server;
 
+/**
+ * Obtain server handle. RPC server is created/restarted, if necessary.
+ *
+ * @param ta            a test agent
+ * @param name          name of the new server (should not start from
+ *                      fork_ or thread_)
+ * @param father        father name or NULL (should be NULL if clear is 
+ *                      FALSE or existing is TRUE)
+ * @param thread        if TRUE, the thread should be created instead 
+ *                      process
+ * @param existing      get only existing RPC server
+ * @param clear         get newly created or restarted RPC server
+ * @param p_handle      location for new RPC server handle
+ *
+ * @return Status code
+ */
+extern int rcf_rpc_server_get(const char *ta, const char *name,
+                              const char *father, te_bool thread, 
+                              te_bool existing, te_bool clear, 
+                              rcf_rpc_server **p_new);
 
 /**
  * Create RPC server.
@@ -131,10 +141,14 @@ typedef struct rcf_rpc_server {
  * @param name          name of the new server
  * @param p_handle      location for new RPC server handle
  *
- * @return status code
+ * @return Status code
  */
-extern int rcf_rpc_server_create(const char *ta, const char *name, 
-                                 rcf_rpc_server **p_handle);
+static inline int 
+rcf_rpc_server_create(const char *ta, const char *name, 
+                      rcf_rpc_server **p_handle)
+{
+    return rcf_rpc_server_get(ta, name, NULL, FALSE, FALSE, TRUE, p_handle);
+}                      
 
 /**
  * Create thread in the process with RPC server.
@@ -143,11 +157,18 @@ extern int rcf_rpc_server_create(const char *ta, const char *name,
  * @param name          name of the new server
  * @param p_new         location for new RPC server handle
  *
- * @return status code
+ * @return Status code
  */
-extern int rcf_rpc_server_thread_create(rcf_rpc_server *rpcs,
-                                        const char *name,
-                                        rcf_rpc_server **p_new);
+static inline int 
+rcf_rpc_server_thread_create(rcf_rpc_server *rpcs, const char *name,
+                             rcf_rpc_server **p_new)
+{
+    if (rpcs == NULL)
+        return TE_RC(TE_RCF_API, EINVAL);
+
+    return rcf_rpc_server_get(rpcs->ta, name, rpcs->name, 
+                              TRUE, FALSE, TRUE, p_new);
+}                             
 
 /**
  * Fork RPC server.
@@ -156,10 +177,18 @@ extern int rcf_rpc_server_thread_create(rcf_rpc_server *rpcs,
  * @param name          name of the new server
  * @param p_new         location for new RPC server handle
  *
- * @return status code
+ * @return Status code
  */
-extern int rcf_rpc_server_fork(rcf_rpc_server *rpcs, const char *name,
-                               rcf_rpc_server **p_new);
+static inline int 
+rcf_rpc_server_fork(rcf_rpc_server *rpcs, const char *name,
+                    rcf_rpc_server **p_new)
+{
+    if (rpcs == NULL)
+        return TE_RC(TE_RCF_API, EINVAL);
+
+    return rcf_rpc_server_get(rpcs->ta, name, rpcs->name, 
+                              FALSE, FALSE, TRUE, p_new);
+}                    
 
 /**
  * Perform execve() on the RPC server. Filename of the running process
@@ -167,16 +196,41 @@ extern int rcf_rpc_server_fork(rcf_rpc_server *rpcs, const char *name,
  *
  * @param rpcs          RPC server handle
  *
- * @return status code
+ * @return Status code
  */
 extern int rcf_rpc_server_exec(rcf_rpc_server *rpcs);
+
+/**
+ * Restart RPC server.
+ *
+ * @param rpcs          RPC server handle
+ *
+ * @return Status code
+ */
+static inline int 
+rcf_rpc_server_restart(rcf_rpc_server *rpcs)
+{
+    rcf_rpc_server *new_rpcs;
+    int             rc;
+    
+    rc = rcf_rpc_server_get(rpcs->ta, rpcs->name, NULL, FALSE, FALSE,
+                            TRUE, &new_rpcs);
+                            
+    if (rc == 0)
+    {
+        *rpcs = *new_rpcs;
+        free(new_rpcs);
+    }
+     
+    return rc;       
+}
 
 /**
  * Destroy RPC server.
  *
  * @param rpcs          RPC server handle
  *
- * @return status code
+ * @return Status code
  */
 extern int rcf_rpc_server_destroy(rcf_rpc_server *rpcs);
 
@@ -189,18 +243,13 @@ extern int rcf_rpc_server_destroy(rcf_rpc_server *rpcs);
  * @param rpcs          RPC server
  * @param proc          RPC to be called
  * @param in_arg        input argument
- * @param in_proc       function for handling of the input argument
- *                      (generated)
  * @param out_arg       output argument
- * @param out_proc      function for handling of output argument
- *                      (generated)
  *
- * @attention The status code is returned in rpcs _errno.
+ * @attention The Status code is returned in rpcs _errno.
  *            If rpcs is NULL the function does nothing.
  */
-extern void rcf_rpc_call(rcf_rpc_server *rpcs, int proc,
-                         void *in_arg, xdrproc_t in_proc, 
-                         void *out_arg, xdrproc_t out_proc);
+extern void rcf_rpc_call(rcf_rpc_server *rpcs, const char *proc,
+                         void *in_arg, void *out_arg);
 
 /**
  * Check whether a function called using non-blocking RPC has been done.
@@ -208,7 +257,7 @@ extern void rcf_rpc_call(rcf_rpc_server *rpcs, int proc,
  * @param rpcs          existing RPC server handle
  * @param done          location for the result
  *
- * @return status code
+ * @return Status code
  */
 extern int rcf_rpc_server_is_op_done(rcf_rpc_server *rpcs,
                                      te_bool *done);

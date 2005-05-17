@@ -84,9 +84,7 @@ rpc_pipe(rcf_rpc_server *rpcs,
         in.filedes.filedes_val = filedes;
     }
 
-    rcf_rpc_call(rpcs, _pipe,
-                 &in,  (xdrproc_t)xdr_tarpc_pipe_in,
-                 &out, (xdrproc_t)xdr_tarpc_pipe_out);
+    rcf_rpc_call(rpcs, "pipe", &in, &out);
 
     if (RPC_IS_CALL_OK(rpcs) && filedes != NULL)
         memcpy(filedes, out.filedes.filedes_val, sizeof(int) * 2);
@@ -128,9 +126,7 @@ rpc_socketpair(rcf_rpc_server *rpcs,
         in.sv.sv_val = sv;
     }
 
-    rcf_rpc_call(rpcs, _socketpair,
-                 &in, (xdrproc_t)xdr_tarpc_socketpair_in,
-                 &out, (xdrproc_t)xdr_tarpc_socketpair_out);
+    rcf_rpc_call(rpcs, "socketpair", &in, &out);
 
     if (RPC_IS_CALL_OK(rpcs) && sv != NULL)
         memcpy(sv, out.sv.sv_val, sizeof(int) * 2);
@@ -166,9 +162,7 @@ rpc_close(rcf_rpc_server *rpcs, int fd)
 
     in.fd = fd;
 
-    rcf_rpc_call(rpcs, _close,
-                 &in,  (xdrproc_t)xdr_tarpc_close_in,
-                 &out, (xdrproc_t)xdr_tarpc_close_out);
+    rcf_rpc_call(rpcs, "close", &in, &out);
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(close, out.retval);
 
@@ -206,9 +200,7 @@ rpc_write_at_offset(rcf_rpc_server *rpcs, int fd, char* buf,
         in.buf.buf_val = NULL;
     in.offset = offset;
 
-    rcf_rpc_call(rpcs, _write_at_offset,
-                 &in,  (xdrproc_t)xdr_tarpc_write_at_offset_in,
-                 &out, (xdrproc_t)xdr_tarpc_write_at_offset_out);
+    rcf_rpc_call(rpcs, "write_at_offset", &in, &out);
 
     TAPI_RPC_LOG("RPC (%s,%s)%s: write_at_offset(%d, %p %d, %d)"
                  " -> %d, %d (%s)",
@@ -245,9 +237,7 @@ rpc_dup(rcf_rpc_server *rpcs,
 
     in.oldfd = oldfd;
 
-    rcf_rpc_call(rpcs, _dup,
-                 &in,  (xdrproc_t)xdr_tarpc_close_in,
-                 &out, (xdrproc_t)xdr_tarpc_close_out);
+    rcf_rpc_call(rpcs, "dup", &in, &out);
 
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(dup, out.fd);
 
@@ -281,9 +271,7 @@ rpc_dup2(rcf_rpc_server *rpcs,
     in.oldfd = oldfd;
     in.newfd = newfd;
 
-    rcf_rpc_call(rpcs, _dup,
-                 &in,  (xdrproc_t)xdr_tarpc_close_in,
-                 &out, (xdrproc_t)xdr_tarpc_close_out);
+    rcf_rpc_call(rpcs, "dup", &in, &out);
 
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(dup2, out.fd);
 
@@ -327,9 +315,7 @@ rpc_read_gen(rcf_rpc_server *rpcs,
         in.buf.buf_len = rbuflen;
         in.buf.buf_val = buf;
     }
-    rcf_rpc_call(rpcs, _read,
-                 &in,  (xdrproc_t)xdr_tarpc_read_in,
-                 &out, (xdrproc_t)xdr_tarpc_read_out);
+    rcf_rpc_call(rpcs, "read", &in, &out);
 
     if (RPC_IS_CALL_OK(rpcs))
     {
@@ -374,9 +360,7 @@ rpc_write(rcf_rpc_server *rpcs,
         in.buf.buf_val = (char *)buf;
     }
 
-    rcf_rpc_call(rpcs, _write,
-                 &in,  (xdrproc_t)xdr_tarpc_write_in,
-                 &out, (xdrproc_t)xdr_tarpc_write_out);
+    rcf_rpc_call(rpcs, "write", &in, &out);
 
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(write, out.retval);
 
@@ -444,9 +428,7 @@ rpc_readv_gen(rcf_rpc_server *rpcs,
         }
     }
 
-    rcf_rpc_call(rpcs, _readv,
-                 &in,  (xdrproc_t)xdr_tarpc_readv_in,
-                 &out, (xdrproc_t)xdr_tarpc_readv_out);
+    rcf_rpc_call(rpcs, "readv", &in, &out);
 
     if (RPC_IS_CALL_OK(rpcs) &&
         iov != NULL && out.vector.vector_val != NULL)
@@ -521,9 +503,7 @@ rpc_writev(rcf_rpc_server *rpcs,
     in.fd = fd;
     in.count = iovcnt;
 
-    rcf_rpc_call(rpcs, _writev,
-                 &in,  (xdrproc_t)xdr_tarpc_writev_in,
-                 &out, (xdrproc_t)xdr_tarpc_writev_out);
+    rcf_rpc_call(rpcs, "writev", &in, &out);
 
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(writev, out.retval);
 
@@ -553,9 +533,7 @@ rpc_fd_set_new(rcf_rpc_server *rpcs)
 
     rpcs->op = RCF_RPC_CALL_WAIT;
 
-    rcf_rpc_call(rpcs, _fd_set_new,
-                 &in, (xdrproc_t)xdr_tarpc_fd_set_new_in,
-                 &out, (xdrproc_t)xdr_tarpc_fd_set_new_out);
+    rcf_rpc_call(rpcs, "fd_set_new", &in, &out);
 
     TAPI_RPC_LOG("RPC (%s,%s): fd_set_new() -> %p (%s)",
                  rpcs->ta, rpcs->name,
@@ -584,9 +562,7 @@ rpc_fd_set_delete(rcf_rpc_server *rpcs, rpc_fd_set *set)
 
     in.set = (tarpc_fd_set)set;
 
-    rcf_rpc_call(rpcs, _fd_set_delete,
-                 &in,  (xdrproc_t)xdr_tarpc_fd_set_delete_in,
-                 &out, (xdrproc_t)xdr_tarpc_fd_set_delete_out);
+    rcf_rpc_call(rpcs, "fd_set_delete", &in, &out);
 
     TAPI_RPC_LOG("RPC (%s,%s): fd_set_delete(%p) -> (%s)",
                  rpcs->ta, rpcs->name,
@@ -614,9 +590,7 @@ rpc_do_fd_zero(rcf_rpc_server *rpcs, rpc_fd_set *set)
 
     in.set = (tarpc_fd_set)set;
 
-    rcf_rpc_call(rpcs, _do_fd_zero,
-                 &in, (xdrproc_t)xdr_tarpc_do_fd_zero_in,
-                 &out, (xdrproc_t)xdr_tarpc_do_fd_zero_out);
+    rcf_rpc_call(rpcs, "do_fd_zero", &in, &out);
 
     TAPI_RPC_LOG("RPC (%s,%s): do_fd_zero(%p) -> (%s)",
                  rpcs->ta, rpcs->name,
@@ -645,9 +619,7 @@ rpc_do_fd_set(rcf_rpc_server *rpcs, int fd, rpc_fd_set *set)
     in.set = (tarpc_fd_set)set;
     in.fd = fd;
 
-    rcf_rpc_call(rpcs, _do_fd_set,
-                 &in, (xdrproc_t)xdr_tarpc_do_fd_set_in,
-                 &out, (xdrproc_t)xdr_tarpc_do_fd_set_out);
+    rcf_rpc_call(rpcs, "do_fd_set", &in, &out);
 
     TAPI_RPC_LOG("RPC (%s,%s): do_fd_set(%d, %p) -> (%s)",
                  rpcs->ta, rpcs->name,
@@ -676,9 +648,7 @@ rpc_do_fd_clr(rcf_rpc_server *rpcs, int fd, rpc_fd_set *set)
     in.set = (tarpc_fd_set)set;
     in.fd = fd;
 
-    rcf_rpc_call(rpcs, _do_fd_clr,
-                 &in, (xdrproc_t)xdr_tarpc_do_fd_clr_in,
-                 &out, (xdrproc_t)xdr_tarpc_do_fd_clr_out);
+    rcf_rpc_call(rpcs, "do_fd_clr", &in, &out);
 
     TAPI_RPC_LOG("RPC (%s,%s): do_fd_clr(%d, %p) -> (%s)",
                  rpcs->ta, rpcs->name,
@@ -707,9 +677,7 @@ rpc_do_fd_isset(rcf_rpc_server *rpcs, int fd, rpc_fd_set *set)
     in.set = (tarpc_fd_set)set;
     in.fd = fd;
 
-    rcf_rpc_call(rpcs, _do_fd_isset,
-                 &in, (xdrproc_t)xdr_tarpc_do_fd_isset_in,
-                 &out, (xdrproc_t)xdr_tarpc_do_fd_isset_out);
+    rcf_rpc_call(rpcs, "do_fd_isset", &in, &out);
 
     CHECK_RETVAL_VAR(do_fd_isset, out.retval,
                      (out.retval != 0 && out.retval != 1), 0);
@@ -761,9 +729,7 @@ rpc_select(rcf_rpc_server *rpcs,
         timeout_in = *timeout;
     }
 
-    rcf_rpc_call(rpcs, _select, 
-                 &in,  (xdrproc_t)xdr_tarpc_select_in,
-                 &out, (xdrproc_t)xdr_tarpc_select_out);
+    rcf_rpc_call(rpcs, "select", &in, &out);
 
     if (op != RCF_RPC_CALL && timeout != NULL &&
         out.timeout.timeout_val != NULL && RPC_IS_CALL_OK(rpcs))
@@ -820,9 +786,7 @@ rpc_pselect(rcf_rpc_server *rpcs,
         in.timeout.timeout_val = &tv;
     }
 
-    rcf_rpc_call(rpcs, _pselect,
-                 &in,  (xdrproc_t)xdr_tarpc_pselect_in,
-                 &out, (xdrproc_t)xdr_tarpc_pselect_out);
+    rcf_rpc_call(rpcs, "pselect", &in, &out);
 
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(pselect, out.retval);
 
@@ -912,9 +876,7 @@ rpc_poll_gen(rcf_rpc_server *rpcs,
 
     pollreq2str(ufds, rnfds, str_buf_1, sizeof(str_buf_1));
 
-    rcf_rpc_call(rpcs, _poll,
-                 &in,  (xdrproc_t)xdr_tarpc_poll_in,
-                 &out, (xdrproc_t)xdr_tarpc_poll_out);
+    rcf_rpc_call(rpcs, "poll", &in, &out);
 
     if (RPC_IS_CALL_OK(rpcs))
     {
@@ -960,9 +922,7 @@ rpc_fcntl(rcf_rpc_server *rpcs, int fd,
     in.cmd = cmd;
     in.arg = arg;
 
-    rcf_rpc_call(rpcs, _fcntl,
-                 &in,  (xdrproc_t)xdr_tarpc_fcntl_in,
-                 &out, (xdrproc_t)xdr_tarpc_fcntl_out);
+    rcf_rpc_call(rpcs, "fcntl", &in, &out);
 
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(fcntl, out.retval);
 
@@ -972,6 +932,33 @@ rpc_fcntl(rcf_rpc_server *rpcs, int fd,
                  arg, out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_INT(fcntl, out.retval);
+}
+
+pid_t
+rpc_getpid(rcf_rpc_server *rpcs)
+{
+    tarpc_getpid_in  in;
+    tarpc_getpid_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(getuid, -1);
+    }
+
+    rpcs->op = RCF_RPC_CALL_WAIT;
+    rcf_rpc_call(rpcs, "getpid", &in, &out);
+
+    CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(getpid, out.retval);
+
+    TAPI_RPC_LOG("RPC (%s,%s): getpid() -> %d (%s)",
+                 rpcs->ta, rpcs->name,
+                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
+
+    RETVAL_INT(getpid, out.retval);
 }
 
 
@@ -991,9 +978,7 @@ rpc_getuid(rcf_rpc_server *rpcs)
     }
 
     rpcs->op = RCF_RPC_CALL_WAIT;
-    rcf_rpc_call(rpcs, _getuid,
-                 &in,  (xdrproc_t)xdr_tarpc_getuid_in,
-                 &out, (xdrproc_t)xdr_tarpc_getuid_out);
+    rcf_rpc_call(rpcs, "getuid", &in, &out);
 
     CHECK_RETVAL_VAR(getuid, out.uid, FALSE, 0);
 
@@ -1023,9 +1008,7 @@ rpc_setuid(rcf_rpc_server *rpcs,
     rpcs->op = RCF_RPC_CALL_WAIT;
     in.uid = uid;
 
-    rcf_rpc_call(rpcs, _setuid,
-                 &in,  (xdrproc_t)xdr_tarpc_setuid_in,
-                 &out, (xdrproc_t)xdr_tarpc_setuid_out);
+    rcf_rpc_call(rpcs, "setuid", &in, &out);
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(setuid, out.retval);
 
@@ -1053,9 +1036,7 @@ rpc_geteuid(rcf_rpc_server *rpcs)
 
     rpcs->op = RCF_RPC_CALL_WAIT;
 
-    rcf_rpc_call(rpcs, _geteuid,
-                 &in,  (xdrproc_t)xdr_tarpc_geteuid_in,
-                 &out, (xdrproc_t)xdr_tarpc_geteuid_out);
+    rcf_rpc_call(rpcs, "geteuid", &in, &out);
 
     CHECK_RETVAL_VAR(geteuid, out.uid, FALSE, 0);
 
@@ -1085,9 +1066,7 @@ rpc_seteuid(rcf_rpc_server *rpcs,
     rpcs->op = RCF_RPC_CALL_WAIT;
     in.uid = uid;
 
-    rcf_rpc_call(rpcs, _seteuid,
-                 &in,  (xdrproc_t)xdr_tarpc_seteuid_in,
-                 &out, (xdrproc_t)xdr_tarpc_seteuid_out);
+    rcf_rpc_call(rpcs, "seteuid", &in, &out);
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(seteuid, out.retval);
 
@@ -1132,9 +1111,7 @@ rpc_getpwnam(rcf_rpc_server *rpcs, const char *name)
     }
     in.name.name_len = strlen(name) + 1;
 
-    rcf_rpc_call(rpcs, _getpwnam,
-                 &in,  (xdrproc_t)xdr_tarpc_getpwnam_in,
-                 &out, (xdrproc_t)xdr_tarpc_getpwnam_out);
+    rcf_rpc_call(rpcs, "getpwnam", &in, &out);
                  
     free(in.name.name_val);
     res = (!RPC_IS_CALL_OK(rpcs) || out.passwd.name.name_val == NULL) ?

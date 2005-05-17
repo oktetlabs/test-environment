@@ -189,7 +189,7 @@ rand_range(int min, int max)
  * @return result of strncmp
  */
 static inline int
-strcmp_start(char *pattern, char *str)
+strcmp_start(const char *pattern, const char *str)
 {
     return strncmp(pattern, str, strlen(pattern));
 }

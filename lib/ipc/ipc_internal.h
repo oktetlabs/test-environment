@@ -94,7 +94,7 @@ extern "C" {
  * The maximal size of the datagram
  * (has effect only if IPC_UNIX is defined).
  */
-#define IPC_SEGMENT_SIZE    512
+#define IPC_SEGMENT_SIZE    2048
 
 /** Structure of the datagram header */
 struct ipc_packet_header {

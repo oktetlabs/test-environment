@@ -326,7 +326,7 @@ sync_ta_subtree(char *ta, char *oid)
     rc = rcf_ta_cfg_group(ta, 0, TRUE);
     if (rc != 0)
     {
-        ERROR("Out of memory");
+        ERROR("rcf_ta_cfg_group() failed");
         free(wildcard_oid);
         return ENOMEM;
     }
@@ -361,10 +361,8 @@ sync_ta_subtree(char *ta, char *oid)
     }
     free(wildcard_oid);
     
-    /*
-     * At first, remove all instances of the subtree, which do not present
-     * in the list.
-     */
+    VERB("%s instances:\n%s", ta, cfg_get_buf);
+    
     rc = cfg_db_find(oid, &handle);
 
     if (rc != 0 && TE_RC_GET_ERROR(rc) != ENOENT)
@@ -395,10 +393,9 @@ sync_ta_subtree(char *ta, char *oid)
     }
 
     for (entry = list; entry != NULL; entry = entry->next)
-    {
         if ((rc = sync_ta_instance(ta, entry->oid)) != 0)
             break; 
-    }
+
     rcf_ta_cfg_group(ta, 0, FALSE);
     
     free_list(list);

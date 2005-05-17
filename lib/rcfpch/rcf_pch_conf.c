@@ -705,8 +705,8 @@ commit_all_postponed(void)
 /**
  * Initialize configuration subtree using specified depth for its root.
  *
- * @param p     - root of subtree
- * @param depth - root depth (length of the OID)
+ * @param p      root of subtree
+ * @param depth  root depth (length of the OID)
  */
 static void
 rcf_pch_cfg_subtree_init(rcf_pch_cfg_object *p, unsigned int depth)

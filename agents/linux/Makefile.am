@@ -11,7 +11,7 @@ AM_YFLAGS=-d
 # functions provided by -l@TAD@. @TE_LDADD@ must be after -l@TAD@,
 # since @TE_LDADD@ may contain ASN and NDN libraries.
 #
-MY_LDADD=symtbl.o -lrcfpch -llogfork -l@TAD@ @TE_LDADD@ \
+MY_LDADD=symtbl.o -lrcfpch -lrpcxdr -llogfork -l@TAD@ @TE_LDADD@ \
          -lconf_oid -lloggerta 
 
 #if HAS_NET_SNMP
@@ -21,7 +21,7 @@ MY_LDADD=symtbl.o -lrcfpch -llogfork -l@TAD@ @TE_LDADD@ \
 MY_SOURCES=linux.c linuxconf.c ftp_routines.c log_serial.c
 MY_SYMTBL_OBJECTS=linux.o ftp_routines.o log_serial.o 
 
-noinst_HEADERS=linux_rpc.h linux_internal.h linuxconf_daemons.h
+noinst_HEADERS=linux_internal.h linuxconf_daemons.h
 
 CLEANFILES=symtbl.c
 BUILT_SOURCES=
@@ -33,29 +33,11 @@ endif
 if CFG_RCF_RPC
 
 MY_CPPFLAGS+=-DRCF_RPC -I.
-MY_SOURCES+=linux_rpc.c tarpc_server.c 
-MY_NODIST_SOURCES=tarpc_xdr.c tarpc_svc.c rpc_unsupported.c
-MY_SYMTBL_OBJECTS+=linux_rpc.o tarpc_server.o
+MY_SOURCES+=tarpc_server.c 
+MY_NODIST_SOURCES=rpc_unsupported.c rpc_unsupported.h
+MY_SYMTBL_OBJECTS+=tarpc_server.o
 
-CLEANFILES+=tarpc.h tarpc_xdr.c tarpc_svc.c rpc_unsupported.c \
-            rpc_supported.h
-
-linux_rpc.o tarpc_server.o: tarpc.h
-
-tarpc.h tarpc_xdr.c tarpc_svc.c: $(srcdir)/../../include/tarpc.x.m4
-	rm -f tarpc.h tarpc_xdr.c tarpc_svc.c
-	m4 $< > tarpc.x
-	rpcgen -h -M tarpc.x -o tarpc.h
-	rpcgen -c -M tarpc.x -o tarpc_xdr.c
-	awk '\
-            /buf;/ { print $0 ; printf("\t(void)buf;") ; next ; } \
-            { print $0 ; next ;}' tarpc_xdr.c > tarpc_xdr.c.new
-	mv tarpc_xdr.c.new tarpc_xdr.c
-	rpcgen -m -M tarpc.x -o tarpc_svc.c 
-	echo "#include <stdio.h>" > tarpc_svc.c.new
-	cat tarpc_svc.c >> tarpc_svc.c.new
-	mv tarpc_svc.c.new tarpc_svc.c
-	rm -f tarpc.x
+CLEANFILES+=rpc_unsupported.c rpc_supported.h
 
 rpc_unsupported.c: $(srcdir)/../../include/tarpc.x.m4 rpc_supported.h \
                    $(srcdir)/../../include/rpc_unsupported.m4
@@ -65,11 +47,11 @@ rpc_unsupported.c: $(srcdir)/../../include/tarpc.x.m4 rpc_supported.h \
         
 rpc_supported.h: tarpc_server.o
 	$(srcdir)/../../engine/builder/te_rpc_supported "${NM}" 
-        
+
 else
 
-EXTRA_DIST=linux_rpc.h linux_rpc.c
-
+EXTRA_DIST=tarpc_server.c
+        
 endif
 
 
@@ -127,6 +109,7 @@ talinuxtmpl_LDADD=$(MY_LDADD)
 
 talinuxtmpl_DEPENDENCIES=@TE_DEPENDENCIES@ symtbl.o \
     $(DESTDIR)/$(prefix)/../@host@/lib/librcfpch.a \
+    $(DESTDIR)/$(prefix)/../@host@/lib/librpcxdr.a \
     $(DESTDIR)/$(prefix)/../@host@/lib/liblogfork.a \
     $(DESTDIR)/$(prefix)/../@host@/lib/lib@TAD@.a \
     $(DESTDIR)/$(prefix)/../@host@/lib/libconf_oid.a \

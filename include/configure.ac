@@ -97,6 +97,18 @@ unistd.h \
 #endif
 ])
 
+dnl
+dnl Check for 'sa_len'-like members in 'struct sockaddr'-like structures.
+dnl
+AC_CHECK_MEMBERS([struct sockaddr.sa_len], [], [],
+[#if HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#if HAVE_SYS_TYPES_H
+#include <sys/socket.h>
+#endif
+])
+
 AC_CHECK_HEADERS([net-snmp/net-snmp-config.h])
 AC_CHECK_HEADERS([\
 net-snmp/definitions.h \

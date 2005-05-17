@@ -73,10 +73,10 @@
 /** @name IPC Client retry parameters */
 
 /** Maximum number of retries for IPC client to send message */
-#define IPC_CLIENT_RETRY_MAX        10
+#define IPC_CLIENT_RETRY_MAX        100
 
 /** Timeout in seconds between IPC client retries to send message */
-#define IPC_CLIENT_RETRY_TIMEOUT    1
+#define IPC_CLIENT_RETRY_TIMEOUT    100
 
 /*@}*/
 
@@ -606,15 +606,22 @@ ipc_send_message(struct ipc_client *ipcc, const char *server_name,
                        ipcc->tmp_buffer, ipc_msg_size,
                        MSG_DONTWAIT, SA(&dst), sizeof(dst));
 
-        } while ((r < 0) &&
-                 ((++retry) < IPC_CLIENT_RETRY_MAX) &&
-                 (sleep(IPC_CLIENT_RETRY_TIMEOUT) == 0));
+            if (r < 0)
+            {
+                if (retry > IPC_CLIENT_RETRY_MAX)
+                    break;
+                retry++;
+                usleep(IPC_CLIENT_RETRY_TIMEOUT);
+            }
+            else
+                retry = 0;
+        } while (r < 0);
                 
         if (r != (ssize_t)(ipc_msg_size))
         {
             fprintf(stderr, "IPC client '%s' failed to send message "
-                            "to '%s': %s\n", ipcc->name, server_name,
-                            strerror(errno));
+                            "of the length %d to '%s': %s\n", ipcc->name, 
+                            ipc_msg_size, server_name, strerror(errno));
             return TE_RC(TE_IPC, errno);
         }
         if (msg_len == 0)
@@ -867,7 +874,7 @@ ipc_receive_answer(struct ipc_client *ipcc, const char *server_name,
             if (full_message_length != iph->length)
             {
 #if IPC_CLIENT_DEBUG_REASSEMBLING
-                perror("DIfferent length 1 of the single message!!");
+                perror("Different length 1 of the single message!!");
                 printf("%d != %d\n", full_message_length, iph->length);
 #endif
                 return TE_RC(TE_IPC, ESYNCFAILED);
@@ -1000,7 +1007,7 @@ ipc_receive_rest_answer(struct ipc_client *ipcc, const char *server_name,
 #endif
             if (server->length != iph->length)
             {
-        perror("DIfferent length 2 of the single message!!");
+        perror("Different length 2 of the single message!!");
         return TE_RC(TE_IPC, ESYNCFAILED);
             }
             if (server->octets_received != iph->length - iph->left)

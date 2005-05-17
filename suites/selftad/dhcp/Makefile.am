@@ -13,7 +13,7 @@ AM_LDFLAGS = @TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/lib
 tetest_PROGRAMS = wait_discover
 
 LDADD= -ltapi -ltapi_dhcp -ltapi_tad -lndn -lasn -lconfapi -lrcfapi \
-       -lconf_oid -llogger_ten -lipc -lpthread 
+       -lrpcxdr -lconf_oid -llogger_ten -lipc -lpthread 
 
 MYDEPS = @SELFTAD_TE_DEPS@ @TE_INSTALL@/@host@/lib/libtapi_dhcp.a 
 

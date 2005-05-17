@@ -72,6 +72,7 @@
 #define TE_LGR_USER     "RCF API"
 #include "logger_api.h"
 
+#include "rpc_xdr.h"
 
 /** Busy CSAPs state */
 #define CSAP_SEND       1
@@ -266,9 +267,9 @@ msg_buffer_insert(msg_buf_head_t *buf_head, rcf_msg *message)
  * Find message in RCF message buffer with desired SID, and remove 
  * it from buffer.
  *
- * @param msg_buf       - RCF message buffer head
- * @param opcode        - RCF operational code
- * @param session       - SID which message must have
+ * @param msg_buf         RCF message buffer head
+ * @param opcode          RCF operational code
+ * @param session         SID which message must have
  *
  * @return pointer to found message or zero if not found
  * After ussage of message pointer should be freed. 
@@ -298,33 +299,89 @@ msg_buffer_find(msg_buf_head_t *msg_buf, rcf_op_t opcode, int session)
     return NULL;
 }
 
-
+/**
+ * Receive complete message from IPC server.
+ * If message is too long, the memory is allocated and its address
+ * is placed to p_answer.
+ *
+ * @param ipcc            pointer to the ipc_client structure returned
+ *                        by ipc_init_client()
+ * @param recv_msg        pointer to the buffer for answer
+ * @param recv_size       pointer to the variable to store:
+ * @param p_answer        location for address of the memory
+ *                        allocated for the answer or NULL
+ *
+ * @return zero on success or error code
+ */
+static int
+rcf_ipc_receive_answer(struct ipc_client *ipcc, rcf_msg *recv_msg, 
+                       size_t *recv_size, rcf_msg **p_answer)
+{
+    int buflen = *recv_size;
+    int rc;
+    int len;
+    
+    if ((rc = ipc_receive_answer(ipcc, RCF_SERVER,
+                                 (char *)recv_msg, recv_size)) == 0)
+    {
+        if (p_answer != NULL)
+            *p_answer = NULL;
+        return 0;
+    }                                     
+    else if (TE_RC_GET_ERROR(rc) != ETESMALLBUF)
+    {
+        return TE_RC(TE_RCF_API, ETEIO);
+    }
+    
+    if (p_answer == NULL)
+    {
+        ERROR("Unexpected large message is received");
+        return TE_RC(TE_RCF_API, ETEIO);
+     }
+    
+    *p_answer = malloc(*recv_size);
+    
+    if (*p_answer == NULL)
+        return TE_RC(TE_RCF_API, ENOMEM);
+    
+    memcpy(*p_answer, (char *)recv_msg, buflen);
+    len = *recv_size - buflen;
+    if ((rc = ipc_receive_rest_answer(ipcc, RCF_SERVER, 
+                                      (char *)*p_answer + buflen, 
+                                      &len)) != 0)
+    {
+        return TE_RC(TE_RCF_API, ETEIO);
+    }
+    
+    return 0;
+}                       
 
 /**
  * Wait for IPC RCF message with desired SID. 
+ * If message is too long, the memory is allocated and its address
+ * is placed to p_answer.
  *
- * @param ipcc          - pointer to the ipc_client structure returned
+ * @param ipcc            pointer to the ipc_client structure returned
  *                        by ipc_init_client()
- * @param rcf_msg_queue - message buffer head
- * @param opcode        - RCF operational code
- * @param sid           - session id
- * @param recv_msg      - pointer to the buffer for answer
- * @param recv_size     - pointer to the variable to store:
- *                          on entry - length of the available buffer;
- *                          on exit - length of the message received
- *                                    (or full length of the message
- *                                     if ETESMALLBUF is returned)
+ * @param rcf_msg_queue   message buffer head
+ * @param opcode          RCF operational code
+ * @param sid             session id
+ * @param recv_msg        pointer to the buffer for answer
+ * @param recv_size       pointer to the variable to store:
+ * @param p_answer        location for address of the memory
+ *                        allocated for the answer or NULL
  * 
  * @return zero on success or error code
  */
-static inline int
+static int
 wait_rcf_ipc_message(struct ipc_client *ipcc,
                      msg_buf_head_t *rcf_msg_queue,
                      rcf_op_t opcode, int session, 
-                     rcf_msg *recv_msg, size_t *recv_size)
+                     rcf_msg *recv_msg, size_t *recv_size, 
+                     rcf_msg **p_answer)
 {
-    int rc;
     rcf_msg *message;
+    int      rc;
 
     if (ipcc == NULL || recv_msg == NULL || recv_size == NULL)
         return ETEWRONGPTR;
@@ -333,30 +390,38 @@ wait_rcf_ipc_message(struct ipc_client *ipcc,
     {
         size_t len = sizeof(*message) + message->data_len;
         
-        if (len > *recv_size)
-        {
-            RING("%s: message will be truncated to len %d", 
-                 __FUNCTION__, *recv_size);
-            len = *recv_size;
-        }
-        else 
-            *recv_size = len;
-
         VERB("Message found: TA %s, SID %d flags %x;"
              " waiting for SID %d", 
              message->ta, message->sid, message->flags, session);
 
-        memcpy(recv_msg, message, len); 
-        free(message);
+        if (len > *recv_size)
+        {
+            if (p_answer == NULL)
+            {
+                ERROR("Unexpected large message is received");
+                return TE_RC(TE_RCF_API, ETEIO);
+            }
+            *p_answer = message;
+        }
+        else
+        {
+            memcpy(recv_msg, message, len); 
+            free(message);
+        }
+        
+        *recv_size = len;
+
         return 0; 
     }
 
-    message = recv_msg;
-
-    do {
-        if ((rc = ipc_receive_answer(ipcc, RCF_SERVER,
-                                     (char *)recv_msg, recv_size)) != 0)
+    while (TRUE)
+    {
+        if ((rc = rcf_ipc_receive_answer(ipcc, recv_msg, 
+                                         recv_size, p_answer)) != 0)
             return TE_RC(TE_RCF_API, rc);
+            
+        message = (p_answer != NULL && *p_answer != NULL) ? *p_answer 
+                                                          : recv_msg;
 
         VERB("Message cought: TA %s, SID %d flags %x;"
              " waiting for SID %d", 
@@ -365,8 +430,12 @@ wait_rcf_ipc_message(struct ipc_client *ipcc,
         if (rcf_message_match(message, opcode, session) == 0)
             break; 
 
-        msg_buffer_insert(rcf_msg_queue, message);
-    } while (1);
+        if (msg_buffer_insert(rcf_msg_queue, message) != 0)
+            ERROR("RCF message is lost");
+            
+        if (message != recv_msg)
+            free(message);
+    }
 
     return 0;
 }
@@ -374,56 +443,67 @@ wait_rcf_ipc_message(struct ipc_client *ipcc,
 
 
 /**
- * Send IPC RCF message and receive appropriate answer
+ * Send IPC RCF message and receive appropriate answer.
+ * If message is too long, the memory is allocated and its address
+ * is placed to p_answer.
  *
- * @param ipcc          - pointer to the ipc_client structure returned
+ * @param ipcc            pointer to the ipc_client structure returned
  *                        by ipc_init_client()
- * @param rcf_msg_queue - message buffer head
- * @param send_msg      - pointer to the message to be sent
- * @param send_size     - size of message to be sent
- * @param recv_msg      - pointer to the buffer for answer
- * @param recv_size     - pointer to the variable to store:
+ * @param rcf_msg_queue   message buffer head
+ * @param send_msg        pointer to the message to be sent
+ * @param send_size       size of message to be sent
+ * @param recv_msg        pointer to the buffer for answer
+ * @param recv_size       pointer to the variable to store:
  *                          on entry - length of the available buffer;
  *                          on exit - length of the message received
- *                                    (or full length of the message
- *                                     if ETESMALLBUF is returned)
+ * @param p_answer        location for address of the memory
+ *                        allocated for the answer or NULL
  * 
  * @return zero on success or error code
  */
-static inline int
+static int
 send_recv_rcf_ipc_message(struct ipc_client *ipcc, 
                           msg_buf_head_t *rcf_msg_queue,
                           rcf_msg *send_buf, size_t send_size,
-                          rcf_msg *recv_buf, size_t *recv_size)
+                          rcf_msg *recv_buf, size_t *recv_size,
+                          rcf_msg **p_answer)
 { 
     int      rc;
     int      sid;
     rcf_op_t opcode;
+    rcf_msg *message;
 
     if (ipcc == NULL || rcf_msg_queue == NULL ||
         send_buf == NULL || recv_buf == NULL || recv_size == NULL)
-        return ETEWRONGPTR;
+        return TE_RC(TE_RCF_API, ETEWRONGPTR);
 
     sid = send_buf->sid;
     opcode = send_buf->opcode;
 
-    if ((rc = ipc_send_message_with_answer(ipcc, RCF_SERVER,
-                                           send_buf, send_size,
-                                           recv_buf, recv_size)) != 0)
+    if ((rc = ipc_send_message(ipcc, RCF_SERVER,
+                               send_buf, send_size)) != 0)
     {
         INFO("%s() failed with rc %X", __FUNCTION__, rc);
-        return rc;
+        return TE_RC(TE_RCF_API, ETEIO);
     }
 
+    if ((rc = rcf_ipc_receive_answer(ipcc, recv_buf, 
+                                     recv_size, p_answer)) != 0)
+        return rc;
+
+    message = (p_answer != NULL && *p_answer != NULL) ? *p_answer 
+                                                      : recv_buf;
     if (rcf_message_match(recv_buf, opcode, sid) == 0)
         return 0;
-    else
-    {
-        msg_buffer_insert(rcf_msg_queue, recv_buf);
-        rc = wait_rcf_ipc_message(ipcc, rcf_msg_queue, opcode, sid, 
-                                  recv_buf, recv_size);
-    }
-    return rc;
+        
+    if (msg_buffer_insert(rcf_msg_queue, message) != 0)
+        ERROR("RCF message is lost");
+    
+    if (message != recv_buf)
+        free(message);
+            
+    return wait_rcf_ipc_message(ipcc, rcf_msg_queue, opcode, sid, 
+                                recv_buf, recv_size, p_answer);
 }
 
 #ifndef PTHREAD_SETSPECIFIC_BUG
@@ -799,44 +879,48 @@ check_params_len(const char *params, int maxlen, int *necessary)
 int 
 rcf_get_ta_list(char *buf, size_t *len)
 {
-    rcf_msg *msg;
-    size_t   anslen = RCF_MAX_LEN;
+    rcf_msg  msg;
+    rcf_msg *ans;
+    size_t   anslen = sizeof(msg);
+    int      rc;
 
     INIT_IPC;
     
     if (buf == NULL || len == NULL)
-        return TE_RC(TE_RCF_API, EINVAL);
+        return TE_RC(TE_RCF_API, ETEWRONGPTR);
         
-    if ((msg = (rcf_msg *)calloc(RCF_MAX_LEN, 1)) == NULL)
-        return TE_RC(TE_RCF_API, ENOMEM);
+    memset(&msg, 0, sizeof(msg));
+    msg.opcode = RCFOP_TALIST;
         
-    msg->opcode = RCFOP_TALIST;
+    rc = send_recv_rcf_ipc_message(ipc_handle, 
+                                   &(ctx_handle->msg_buf_head), &msg,
+                                   sizeof(msg), &msg, &anslen, &ans);
+                                   
+    if (rc != 0)                                   
+        return rc;
         
-    if (send_recv_rcf_ipc_message(ipc_handle,
-                                  &(ctx_handle->msg_buf_head),
-                                  msg, sizeof(rcf_msg), msg, &anslen)
-        != 0)
+    if (ans == NULL)
     {
-        free(msg);
+        ERROR("Unexpected short message");
         return TE_RC(TE_RCF_API, ETEIO);
     }
-
-    if (msg->error != 0)
+        
+    if (ans->error != 0)
     {
-        int error = msg->error;
-        free(msg);
-        return error;
+        rc = ans->error;
+        free(ans);
+        return rc;
     }
     
-    if (msg->data_len > *len)
+    if (ans->data_len > *len)
     {
-        free(msg);
+        free(ans);
         return TE_RC(TE_RCF_API, ETESMALLBUF);
     }
         
-    memcpy(buf, msg->data, msg->data_len);
-    *len = msg->data_len;
-    free(msg);
+    memcpy(buf, ans->data, ans->data_len);
+    *len = ans->data_len;
+    free(ans);
     
     return 0;
 }
@@ -860,6 +944,8 @@ rcf_ta_name2type(const char *ta_name, char *ta_type)
 {
     rcf_msg msg;
     size_t  anslen = sizeof(msg);
+    int     rc;
+    
     INIT_IPC;
     
     if (ta_type == NULL || BAD_TA)
@@ -869,16 +955,14 @@ rcf_ta_name2type(const char *ta_name, char *ta_type)
     msg.opcode = RCFOP_TATYPE;
     strcpy(msg.ta, ta_name);
     
-    if (send_recv_rcf_ipc_message(ipc_handle,
-                                  &(ctx_handle->msg_buf_head),
-                                  &msg, sizeof(msg), &msg, &anslen)
-        != 0)
-        return TE_RC(TE_RCF_API, ETEIO);
-        
-    if (msg.error == 0)
+    rc = send_recv_rcf_ipc_message(ipc_handle,
+                                   &(ctx_handle->msg_buf_head),
+                                   &msg, sizeof(msg), &msg, &anslen, NULL);
+                 
+    if (rc == 0 && (rc = msg.error) == 0)                                   
         strcpy(ta_type, msg.id);
         
-    return msg.error;
+    return rc;
 }
 
 /**
@@ -905,6 +989,8 @@ rcf_ta_create_session(const char *ta_name, int *session)
 {
     rcf_msg msg;
     size_t  anslen = sizeof(msg);
+    int     rc;
+    
     INIT_IPC;
     
     if (session == NULL || BAD_TA)
@@ -914,18 +1000,14 @@ rcf_ta_create_session(const char *ta_name, int *session)
     msg.opcode = RCFOP_SESSION;
     strcpy(msg.ta, ta_name);
     
-    if (send_recv_rcf_ipc_message(ipc_handle,
-                                  &(ctx_handle->msg_buf_head),
-                                  &msg, sizeof(msg), &msg, &anslen)
-        != 0)
-    {
-        return TE_RC(TE_RCF_API, ETEIO);
-    }
+    rc = send_recv_rcf_ipc_message(ipc_handle,
+                                   &(ctx_handle->msg_buf_head),
+                                   &msg, sizeof(msg), &msg, &anslen, NULL);
         
-    if (msg.error == 0)
+    if (rc == 0 && (rc = msg.error) == 0)                                   
         *session = msg.sid;
         
-    return msg.error;
+    return rc;
 }
 
 /**
@@ -964,8 +1046,8 @@ rcf_ta_reboot(const char *ta_name,
     
     size_t  anslen = sizeof(*msg);
     size_t  len = 0;
-    int     error;
     int     fd;
+    int     rc;
 
     INIT_IPC;
     
@@ -1052,20 +1134,17 @@ rcf_ta_reboot(const char *ta_name,
 
     msg->opcode = RCFOP_REBOOT;
      
-    if (send_recv_rcf_ipc_message(ipc_handle,
-                                  &(ctx_handle->msg_buf_head),
-                                  msg, sizeof(rcf_msg) + len,
-                                  msg, &anslen)
-        != 0)
-    {
-        free(msg);
-        return TE_RC(TE_RCF_API, ETEIO);
-    }
-    
-    error = msg->error;
+    rc = send_recv_rcf_ipc_message(ipc_handle,
+                                   &(ctx_handle->msg_buf_head),
+                                   msg, sizeof(rcf_msg) + len,
+                                   msg, &anslen, NULL);
+
+    if (rc == 0)
+        rc = msg->error;
+
     free(msg);
         
-    return error;
+    return rc;
 }
 
 /**
@@ -1097,6 +1176,7 @@ rcf_ta_cfg_get(const char *ta_name, int session, const char *oid,
     rcf_msg msg;
     size_t  anslen = sizeof(msg);
     int     rc;
+    
     INIT_IPC;
 
     if (oid == NULL || val_buf == NULL || strlen(oid) >= RCF_MAX_ID ||
@@ -1113,15 +1193,10 @@ rcf_ta_cfg_get(const char *ta_name, int session, const char *oid,
     
     rc = send_recv_rcf_ipc_message(ipc_handle,
                                    &(ctx_handle->msg_buf_head),
-                                   &msg, sizeof(msg), &msg, &anslen);
+                                   &msg, sizeof(msg), &msg, &anslen, NULL);
 
-    if (rc != 0)
-    {
-        return TE_RC(TE_RCF_API, rc);
-    }
-        
-    if (msg.error != 0)
-        return msg.error;    
+    if (rc != 0 || (rc = msg.error) != 0)
+        return rc;
         
     if (msg.flags & BINARY_ATTACHMENT)
     {
@@ -1181,6 +1256,8 @@ conf_add_set(const char *ta_name, int session, const char *oid,
 {
     rcf_msg msg;
     size_t  anslen = sizeof(msg);
+    int     rc;
+    
     INIT_IPC;
     
     if (oid == NULL || val == NULL || strlen(oid) >= RCF_MAX_ID ||
@@ -1196,15 +1273,11 @@ conf_add_set(const char *ta_name, int session, const char *oid,
     msg.opcode = opcode;
     msg.sid = session;
     
-    if (send_recv_rcf_ipc_message(ipc_handle,
-                                  &(ctx_handle->msg_buf_head),
-                                  &msg, sizeof(msg), &msg, &anslen)
-        != 0)
-    {
-        return TE_RC(TE_RCF_API, ETEIO);
-    }
-        
-    return msg.error;    
+    rc = send_recv_rcf_ipc_message(ipc_handle,
+                                   &(ctx_handle->msg_buf_head),
+                                   &msg, sizeof(msg), &msg, &anslen, NULL);
+                                   
+    return rc == 0 ? msg.error : rc;
 }
 
 /**
@@ -1286,6 +1359,8 @@ rcf_ta_cfg_del(const char *ta_name, int session, const char *oid)
 {
     rcf_msg msg;
     size_t  anslen = sizeof(msg);
+    int     rc;
+    
     INIT_IPC;
     
     if (oid == NULL || strlen(oid) >= RCF_MAX_ID || BAD_TA)
@@ -1297,15 +1372,11 @@ rcf_ta_cfg_del(const char *ta_name, int session, const char *oid)
     msg.opcode = RCFOP_CONFDEL;
     msg.sid = session;
     
-    if (send_recv_rcf_ipc_message(ipc_handle,
-                                  &(ctx_handle->msg_buf_head),
-                                  &msg, sizeof(msg), &msg, &anslen)
-        != 0)
-    {
-        return TE_RC(TE_RCF_API, ETEIO);
-    }
-        
-    return msg.error;    
+    rc = send_recv_rcf_ipc_message(ipc_handle,
+                                   &(ctx_handle->msg_buf_head),
+                                   &msg, sizeof(msg), &msg, &anslen, NULL);
+                                   
+    return rc == 0 ? msg.error : rc;
 }
 
 /* See description in rcf_api.h */
@@ -1314,6 +1385,8 @@ rcf_ta_cfg_group(const char *ta_name, int session, te_bool is_start)
 {
     rcf_msg msg;
     size_t  anslen = sizeof(msg);
+    int     rc;
+    
     INIT_IPC;
     
     memset((char *)&msg, 0, sizeof(msg));
@@ -1321,15 +1394,11 @@ rcf_ta_cfg_group(const char *ta_name, int session, te_bool is_start)
     msg.sid = session;
     msg.opcode = (is_start) ? RCFOP_CONFGRP_START : RCFOP_CONFGRP_END;
     
-    if (send_recv_rcf_ipc_message(ipc_handle,
-                                  &(ctx_handle->msg_buf_head),
-                                  &msg, sizeof(msg), &msg, &anslen)
-        != 0)
-    {
-        return TE_RC(TE_RCF_API, ETEIO);
-    }
-        
-    return msg.error;    
+    rc = send_recv_rcf_ipc_message(ipc_handle,
+                                   &(ctx_handle->msg_buf_head),
+                                   &msg, sizeof(msg), &msg, &anslen, NULL);
+
+    return rc == 0 ? msg.error : rc;
 }
 
 /**
@@ -1356,6 +1425,8 @@ rcf_ta_get_log(const char *ta_name, char *log_file)
 {
     rcf_msg msg;
     size_t  anslen = sizeof(msg);
+    int     rc;
+    
     INIT_IPC;
     
     if (log_file == NULL || strlen(log_file) >= RCF_MAX_PATH || BAD_TA)
@@ -1367,17 +1438,14 @@ rcf_ta_get_log(const char *ta_name, char *log_file)
     msg.opcode = RCFOP_GET_LOG;
     msg.sid = RCF_TA_GET_LOG_SID;
     
-    if (send_recv_rcf_ipc_message(ipc_handle,
-                                  &(ctx_handle->msg_buf_head),
-                                  &msg, sizeof(msg), &msg, &anslen)
-        != 0)
-    {
-        return TE_RC(TE_RCF_API, ETEIO);
-    }
+    rc = send_recv_rcf_ipc_message(ipc_handle,
+                                   &(ctx_handle->msg_buf_head),
+                                   &msg, sizeof(msg), &msg, &anslen, NULL);
+
+    if (rc == 0 && (rc = msg.error) == 0)
+        strcpy(log_file, msg.file);
         
-    strcpy(log_file, msg.file);
-        
-    return msg.error;    
+    return rc;    
 }
 
 /**
@@ -1413,6 +1481,8 @@ rcf_ta_get_var(const char *ta_name, int session, const char *var_name,
     size_t   anslen = sizeof(msg);
     uint64_t value;
     char    *tmp;
+    int      rc;
+    
     INIT_IPC;
     
     if (var_name == NULL || val == NULL ||
@@ -1429,17 +1499,12 @@ rcf_ta_get_var(const char *ta_name, int session, const char *var_name,
     msg.opcode = RCFOP_VREAD;
     msg.sid = session;
 
-    
-    if (send_recv_rcf_ipc_message(ipc_handle,
+    rc = send_recv_rcf_ipc_message(ipc_handle,
                                   &(ctx_handle->msg_buf_head),
-                                  &msg, sizeof(msg), &msg, &anslen)
-        != 0)
-    {
-        return TE_RC(TE_RCF_API, ETEIO);
-    }
+                                  &msg, sizeof(msg), &msg, &anslen, NULL);
     
-    if (msg.error != 0)    
-        return msg.error;
+    if (rc != 0 || (rc = msg.error) != 0)    
+        return rc;
     
     if (var_type == RCF_STRING)
     {
@@ -1520,6 +1585,8 @@ rcf_ta_set_var(const char *ta_name, int session, const char *var_name,
 {
     rcf_msg msg;
     size_t  anslen = sizeof(msg);
+    int     rc;
+    
     INIT_IPC;
     
     if (var_name == NULL || val == NULL ||
@@ -1576,15 +1643,11 @@ rcf_ta_set_var(const char *ta_name, int session, const char *var_name,
             break;
     }
     
-    if (send_recv_rcf_ipc_message(ipc_handle,
-                                  &(ctx_handle->msg_buf_head),
-                                  &msg, sizeof(msg), &msg, &anslen)
-        != 0)
-    {
-        return TE_RC(TE_RCF_API, ETEIO);
-    }
-
-    return msg.error;
+    rc = send_recv_rcf_ipc_message(ipc_handle,
+                                   &(ctx_handle->msg_buf_head),
+                                   &msg, sizeof(msg), &msg, &anslen, NULL);
+                                   
+    return rc == 0 ? msg.error : rc;
 }
 
 /** 
@@ -1605,7 +1668,8 @@ get_put_file(const char *ta_name, int session,
 {
     rcf_msg *msg;
     size_t   anslen = sizeof(*msg);
-    int      error;
+    int      rc;
+    
     INIT_IPC;
     
     if (rfile == NULL || lfile == NULL || strlen(lfile) >= RCF_MAX_PATH ||
@@ -1642,20 +1706,17 @@ get_put_file(const char *ta_name, int session,
     if (opcode == RCFOP_FPUT)
         msg->flags |= BINARY_ATTACHMENT;
     
-    if (send_recv_rcf_ipc_message(ipc_handle,
-                                  &(ctx_handle->msg_buf_head),
-                                  msg, sizeof(*msg) + msg->data_len,
-                                  msg, &anslen)
-        != 0)
-    {
-        free(msg);
-        return TE_RC(TE_RCF_API, ETEIO);
-    }    
+    rc = send_recv_rcf_ipc_message(ipc_handle,
+                                   &(ctx_handle->msg_buf_head),
+                                   msg, sizeof(*msg) + msg->data_len,
+                                   msg, &anslen, NULL);
     
-    error = msg->error;
+    if (rc == 0)
+        rc = msg->error;
+        
     free(msg);
     
-    return error;
+    return rc;
 }
 
 /**
@@ -1772,6 +1833,8 @@ rcf_ta_csap_create(const char *ta_name, int session,
     size_t   len = 0;
     int      flags = 0;
     size_t   anslen = sizeof(*msg);
+    int      rc;
+    
     INIT_IPC;
     
     if (stack_id == NULL || csap_id == NULL || BAD_TA)
@@ -1822,30 +1885,17 @@ rcf_ta_csap_create(const char *ta_name, int session,
         memcpy(msg->data, params, len);
     }
     
-    if (send_recv_rcf_ipc_message(ipc_handle,
-                                  &(ctx_handle->msg_buf_head),
-                                  msg, sizeof(rcf_msg) + len,
-                                  msg, &anslen)
-        != 0)
-    {
-        free(msg);
-        return TE_RC(TE_RCF_API, ETEIO);
-    }
+    rc = send_recv_rcf_ipc_message(ipc_handle,
+                                   &(ctx_handle->msg_buf_head),
+                                   msg, sizeof(rcf_msg) + len,
+                                   msg, &anslen, NULL);
     
-    
-    if (msg->error != 0)
-    {
-        int error = msg->error;
-
-        free(msg);
-        ERROR("RCF engine returned error 0x%x", error);
-        return TE_RC(TE_RCF_API, error);
-    }
-    
-    *csap_id = msg->handle;
+    if (rc == 0 && (rc = msg->error) == 0)
+        *csap_id = msg->handle;
+        
     free(msg);
         
-    return 0;
+    return rc;
 }
 
 /**
@@ -1873,6 +1923,8 @@ rcf_ta_csap_destroy(const char *ta_name, int session,
 {
     rcf_msg msg;
     size_t  anslen = sizeof(msg);
+    int     rc;
+    
     INIT_IPC;
     
     if (csap_id == CSAP_INVALID_HANDLE)
@@ -1891,15 +1943,11 @@ rcf_ta_csap_destroy(const char *ta_name, int session,
     msg.sid = session;
     msg.handle = csap_id;
         
-    if (send_recv_rcf_ipc_message(ipc_handle,
-                                  &(ctx_handle->msg_buf_head),
-                                  &msg, sizeof(msg), &msg, &anslen)
-        != 0)
-    {
-        return TE_RC(TE_RCF_API, ETEIO);
-    }
-   
-    return msg.error;
+    rc = send_recv_rcf_ipc_message(ipc_handle,
+                                   &(ctx_handle->msg_buf_head),
+                                   &msg, sizeof(msg), &msg, &anslen, NULL);
+                                   
+    return rc == 0 ? msg.error : rc;
 }
 
 /**
@@ -1928,6 +1976,8 @@ rcf_ta_csap_param(const char *ta_name, int session, csap_handle_t csap_id,
 {
     rcf_msg  msg;
     size_t   anslen = sizeof(msg);
+    int      rc;
+    
     INIT_IPC;
     
     if (var_name == NULL || val == NULL ||
@@ -1944,16 +1994,12 @@ rcf_ta_csap_param(const char *ta_name, int session, csap_handle_t csap_id,
     msg.sid = session;
     msg.handle = csap_id;
     
-    if (send_recv_rcf_ipc_message(ipc_handle,
-                                  &(ctx_handle->msg_buf_head),
-                                  &msg, sizeof(msg), &msg, &anslen)
-        != 0)
-    {
-        return TE_RC(TE_RCF_API, ETEIO);
-    }
+    rc = send_recv_rcf_ipc_message(ipc_handle,
+                                   &(ctx_handle->msg_buf_head),
+                                   &msg, sizeof(msg), &msg, &anslen, NULL);
    
-    if (msg.error != 0)    
-        return msg.error;
+    if (rc != 0 || (rc = msg.error) != 0)
+        return rc;
   
     if (var_len <= strlen(msg.value))
         return TE_RC(TE_RCF_API, ETESMALLBUF);
@@ -2001,6 +2047,7 @@ rcf_ta_trsend_start(const char *ta_name, int session,
     size_t        anslen = sizeof(msg);
     int           fd;
     traffic_op_t *tr_op;
+    int           rc;
 
     INIT_IPC;
     
@@ -2056,19 +2103,14 @@ rcf_ta_trsend_start(const char *ta_name, int session,
         return TE_RC(TE_RCF_API, EEXIST);
     }
     
-    if (send_recv_rcf_ipc_message(ipc_handle,
-                                  &(ctx_handle->msg_buf_head),
-                                  &msg, sizeof(msg), &msg, &anslen)
-        != 0)
-    {
-        remove_traffic_op(ta_name, csap_id);
-        return TE_RC(TE_RCF_API, ETEIO);
-    } 
+    rc = send_recv_rcf_ipc_message(ipc_handle,
+                                   &(ctx_handle->msg_buf_head),
+                                   &msg, sizeof(msg), &msg, &anslen, NULL);
 
-    if ((msg.error != 0) || (blk_mode == RCF_MODE_BLOCKING))
+    if (rc != 0 || (rc = msg.error) != 0 || (blk_mode == RCF_MODE_BLOCKING))
         remove_traffic_op(ta_name, csap_id);
 
-    return msg.error;
+    return rc;
 }
 
 /**
@@ -2099,7 +2141,9 @@ rcf_ta_trsend_stop(const char *ta_name, int session,
 {
     rcf_msg       msg;
     size_t        anslen = sizeof(msg);
-    traffic_op_t  *tr_op;
+    traffic_op_t *tr_op;
+    int           rc;
+    
     INIT_IPC;
     
     if (BAD_TA)
@@ -2137,21 +2181,17 @@ rcf_ta_trsend_stop(const char *ta_name, int session,
     strcpy(msg.ta, ta_name);
     msg.handle = csap_id;
         
-    if (send_recv_rcf_ipc_message(ipc_handle,
-                                  &(ctx_handle->msg_buf_head),
-                                  &msg, sizeof(msg), &msg, &anslen)
-        != 0)
-    {
-        return TE_RC(TE_RCF_API, ETEIO);
-    }
-        
-    if (msg.error == 0)
+    rc = send_recv_rcf_ipc_message(ipc_handle,
+                                   &(ctx_handle->msg_buf_head),
+                                   &msg, sizeof(msg), &msg, &anslen, NULL);
+
+    if (rc == 0 && (rc = msg.error) == 0)
     {
         remove_traffic_op(ta_name, csap_id);
         *num = msg.num;
     }
     
-    return msg.error;
+    return rc;
 }
 
 /**
@@ -2223,19 +2263,12 @@ rcf_ta_trrecv_start(const char *ta_name, int session,
         
     rc = send_recv_rcf_ipc_message(ipc_handle,
                                   &(ctx_handle->msg_buf_head),
-                                  &msg, sizeof(msg), &msg, &anslen);
-    if (rc != 0)
-    {
-        remove_traffic_op(ta_name, csap_id);
-        return TE_RC(TE_RCF_API, rc);
-    }
-
-    if (msg.error != 0)
+                                  &msg, sizeof(msg), &msg, &anslen, NULL);
+                                  
+    if (rc != 0 || (rc = msg.error) != 0)
         remove_traffic_op(ta_name, csap_id);
 
-    VERB("msg.error = %x", msg.error);
-
-    return msg.error;
+    return rc;
 }
 
 /**
@@ -2314,12 +2347,12 @@ csap_tr_recv_get(const char *ta_name, int session, csap_handle_t csap_id,
     if ((rc = send_recv_rcf_ipc_message(ipc_handle,
                                         &(ctx_handle->msg_buf_head),
                                         &msg, sizeof(msg),
-                                        &msg, &anslen)) != 0)
+                                        &msg, &anslen, NULL)) != 0)
     {
         remove_traffic_op(ta_name, csap_id);
         ERROR("%s: IPC send with answer fails, rc %X", 
               __FUNCTION__, rc);
-        return TE_RC(TE_RCF_API, ETEIO);
+        return rc;
     }
 
     while ((msg.flags & INTERMEDIATE_ANSWER))
@@ -2329,8 +2362,8 @@ csap_tr_recv_get(const char *ta_name, int session, csap_handle_t csap_id,
         anslen = sizeof(msg);
         if ((rc = wait_rcf_ipc_message(ipc_handle, 
                                        &(ctx_handle->msg_buf_head),
-                                       opcode, session, &msg, &anslen))
-            != 0)
+                                       opcode, session, &msg, 
+                                       &anslen, NULL)) != 0)
         {
             ERROR("%s: IPC receive answer fails, rc %X", 
                   __FUNCTION__, rc);
@@ -2339,9 +2372,7 @@ csap_tr_recv_get(const char *ta_name, int session, csap_handle_t csap_id,
     }
     
     if (msg.error == 0 || opcode != RCFOP_TRRECV_GET)
-    {
         *num = msg.num;
-    }
 
     if (tr_op != NULL)
         tr_op->num_users--;
@@ -2370,14 +2401,15 @@ rcf_ta_trrecv_wait(const char *ta_name, int session,
                    csap_handle_t csap_id, int *num)
 {
     int rc;
+    
     VERB("%s(ta %s, csap %d, *num  %p) called", 
          __FUNCTION__, ta_name, csap_id, num);
     rc = csap_tr_recv_get(ta_name, session, csap_id, num,
                           RCFOP_TRRECV_WAIT);
-
     VERB("%s(ta %s, csap %d, *num  %p) return %X, num %d", 
          __FUNCTION__, ta_name, csap_id, num, rc, 
          (num == NULL ? -1: *num));
+         
     return rc;
 }
                       
@@ -2418,6 +2450,7 @@ rcf_ta_trrecv_stop(const char *ta_name, int session,
     VERB("%s(ta %s, csap %d, *num  %p) return %X, num %d", 
          __FUNCTION__, ta_name, csap_id, num, rc,
          (num == NULL ? -1: *num));
+         
     return rc;
 }
 
@@ -2459,6 +2492,7 @@ rcf_ta_trrecv_get(const char *ta_name, int session,
 
     VERB("%s(ta %s, csap %d, *num  %p) return %X, num %d", 
          ta_name, csap_id, num, rc, (num == NULL ? -1: *num)); 
+
     return rc;
 }
 
@@ -2505,6 +2539,8 @@ rcf_ta_trsend_recv(const char *ta_name, int session, csap_handle_t csap_id,
     traffic_op_t *tr_op;
     size_t        anslen = sizeof(msg);
     int           fd;
+    int           rc;
+    
     INIT_IPC;
     
     if (BAD_TA || templ == NULL)
@@ -2552,25 +2588,26 @@ rcf_ta_trsend_recv(const char *ta_name, int session, csap_handle_t csap_id,
         return TE_RC(TE_RCF_API, EBUSY);
     }
         
-    if (send_recv_rcf_ipc_message(ipc_handle,
-                                  &(ctx_handle->msg_buf_head),
-                                  &msg, sizeof(msg), &msg, &anslen)
-        != 0)
+    rc = send_recv_rcf_ipc_message(ipc_handle,
+                                   &(ctx_handle->msg_buf_head),
+                                   &msg, sizeof(msg), &msg, &anslen, NULL);
+        
+    if (rc != 0)
     {
         remove_traffic_op(ta_name, csap_id);
-        return TE_RC(TE_RCF_API, ETEIO);
+        return rc;
     }
     
     while (msg.flags & INTERMEDIATE_ANSWER)
     {
         handler(msg.file, user_param);
         anslen = sizeof(msg);
-        if (wait_rcf_ipc_message(ipc_handle, 
-                                 &(ctx_handle->msg_buf_head),
-                                 RCFOP_TRSEND_RECV, session,
-                                 &msg, &anslen) != 0)
+        if ((rc = wait_rcf_ipc_message(ipc_handle, 
+                                       &(ctx_handle->msg_buf_head),
+                                       RCFOP_TRSEND_RECV, session,
+                                       &msg, &anslen, NULL)) != 0)
         {
-            return TE_RC(TE_RCF_API, ETEIO);
+            return rc;
         }
     }
     
@@ -2734,8 +2771,8 @@ call_start(const char *ta_name, int session, int priority, const char *rtn,
 {
     rcf_msg *msg;
     size_t   anslen = sizeof(*msg);
+    int      rc;
     
-    int error;
     INIT_IPC;
     
     if (rtn == NULL || strlen(rtn) >= RCF_MAX_NAME || BAD_TA || res == NULL)
@@ -2757,37 +2794,31 @@ call_start(const char *ta_name, int session, int priority, const char *rtn,
         if (argv)
             msg->flags |= PARAMETERS_ARGV;
         msg->num = argc;
-        if ((error = make_params(argc, argv, msg->data, 
+        if ((rc = make_params(argc, argv, msg->data, 
                                  &(msg->data_len), ap)) != 0)
         {
             VERB("possibly too many or too long routine "
                              "parameters are provided - change of "
                              "memory constants may help\n");
             free(msg);
-            return TE_RC(TE_RCF_API, error);
+            return TE_RC(TE_RCF_API, rc);
         }
     }
         
-    if (send_recv_rcf_ipc_message(ipc_handle,
-                                  &(ctx_handle->msg_buf_head),
-                                  msg, sizeof(rcf_msg) + msg->data_len, 
-                                  msg, &anslen)
-        != 0)
+    rc = send_recv_rcf_ipc_message(ipc_handle,
+                                   &(ctx_handle->msg_buf_head),
+                                   msg, sizeof(rcf_msg) + msg->data_len, 
+                                   msg, &anslen, NULL);
+
+    if (rc == 0 && (rc = msg->error) == 0)
     {
-        free(msg);
-        return TE_RC(TE_RCF_API, ETEIO);
-    }
-        
-    error = msg->error;
-    if (error == 0)
         *res = (mode == RCF_START_FUNC ? msg->intparm : msg->handle);
+        VERB("Call/start %s on the TA %s", rtn, ta_name);
+    }
         
     free(msg);
     
-    if (error == 0)
-        VERB("Call/start %s on the TA %s", rtn, ta_name);
-    
-    return error;
+    return rc;
 }
 
 
@@ -2872,6 +2903,8 @@ rcf_ta_kill_task(const char *ta_name, int session, pid_t pid)
 {
     rcf_msg msg;
     size_t  anslen = sizeof(msg);
+    int     rc;
+    
     INIT_IPC;
     
     if (BAD_TA)
@@ -2883,15 +2916,11 @@ rcf_ta_kill_task(const char *ta_name, int session, pid_t pid)
     msg.handle = pid;
     msg.sid = session;
         
-    if (send_recv_rcf_ipc_message(ipc_handle,
-                                  &(ctx_handle->msg_buf_head),
-                                  &msg, sizeof(msg), &msg, &anslen)
-        != 0)
-    {
-        return TE_RC(TE_RCF_API, ETEIO);
-    }
+    rc = send_recv_rcf_ipc_message(ipc_handle,
+                                   &(ctx_handle->msg_buf_head),
+                                   &msg, sizeof(msg), &msg, &anslen, NULL);
     
-    return msg.error;
+    return rc == 0 ? msg.error : rc;
 }
 
 /**
@@ -2912,18 +2941,129 @@ rcf_check_agents(void)
 { 
     rcf_msg  msg;
     size_t   anslen = sizeof(msg);
+    int      rc;
+    
     INIT_IPC;
     
     memset((char *)&msg, 0, sizeof(msg));
     msg.opcode = RCFOP_TACHECK;
         
-    if (send_recv_rcf_ipc_message(ipc_handle,
-                                  &(ctx_handle->msg_buf_head),
-                                  &msg, sizeof(msg), &msg, &anslen)
-        != 0)
-    {
-        return TE_RC(TE_RCF_API, ETEIO);
-    }
-
-    return msg.error;
+    rc = send_recv_rcf_ipc_message(ipc_handle,
+                                   &(ctx_handle->msg_buf_head),
+                                   &msg, sizeof(msg), &msg, &anslen, NULL);
+    return rc == 0 ? msg.error : rc;
 }
+
+#include "tarpc.h"
+/**
+ * Call SUN RPC on the TA.
+ *
+ * @param ta_name       Test Agent name                 
+ * @param session       TA session or 0
+ * @param rpcserver     Name of the RPC server
+ * @param timeout       RPC timeout in milliseconds or 0 (unlimited)
+ * @param rpc_name      Name of the RPC (e.g. "bind")
+ * @param in            Input parameter C structure
+ * @param in            Output parameter C structure
+ *
+ * @return Status code
+ */
+int 
+rcf_ta_call_rpc(const char *ta_name, int session, 
+                const char *rpcserver, int timeout,
+                const char *rpc_name, void *in, void *out)
+{
+/** Length of RPC data inside the message */     
+#define INSIDE_LEN \
+    (sizeof(((rcf_msg *)0)->file) + sizeof(((rcf_msg *)0)->value))
+    
+/** Length of message part before RPC data */
+#define PREFIX_LEN  \
+    (sizeof(rcf_msg) - INSIDE_LEN)
+
+    char     msg_buf[PREFIX_LEN + RCF_RPC_BUF_LEN];
+    rcf_msg *msg = (rcf_msg *)msg_buf;
+    rcf_msg *ans = NULL;
+    int      rc;
+    int      anslen = sizeof(msg_buf);
+    int      len;
+    
+    INIT_IPC;
+
+    if (BAD_TA || rpcserver == NULL || rpc_name == NULL || 
+        in == NULL || out == NULL)
+    {
+        return TE_RC(TE_RCF_API, EINVAL);
+    }
+    
+    if (strlen(rpc_name) >= RCF_RPC_MAX_NAME)
+    {
+        ERROR("Too long RPC name: %s - change RCF_RPC_MAX_NAME constant", 
+              rpc_name);
+        return TE_RC(TE_RCF_API, EINVAL);
+    }
+    
+    len = RCF_RPC_BUF_LEN;
+    if ((rc = rpc_xdr_encode_call(rpc_name, msg->file, &len, in)) != 0)
+    {
+        if (TE_RC_GET_ERROR(rc) == ENOENT)
+        {
+            ERROR("Unknown RPC %s", rpc_name);
+            return rc;
+        }
+        
+        /* Try to allocate more memory */
+        len = RCF_RPC_HUGE_BUF_LEN;
+        anslen = PREFIX_LEN + RCF_RPC_HUGE_BUF_LEN;
+        if ((msg = (rcf_msg *)malloc(anslen)) == NULL)
+            return TE_RC(TE_RCF_API, ENOMEM);
+
+        if ((rc = rpc_xdr_encode_call(rpc_name, msg->file, &len, in)) != 0)
+        {
+            ERROR("Encoding of RPC %s input parameters failed", rpc_name);
+            free(msg);
+            return rc;
+        }
+    }
+    
+    memset(msg, 0, PREFIX_LEN);
+    msg->opcode = RCFOP_RPC;
+    msg->sid = session;
+    strcpy(msg->ta, ta_name);
+    strcpy(msg->id, rpcserver);
+    msg->timeout = timeout;
+    msg->intparm = len;
+    msg->data_len = len - INSIDE_LEN;
+
+    rc = send_recv_rcf_ipc_message(ipc_handle,
+                                   &(ctx_handle->msg_buf_head),
+                                   msg, PREFIX_LEN + len, 
+                                   msg, &anslen, &ans);
+    if (ans != NULL)
+    {
+        if ((char *)msg != msg_buf)
+            free(msg);
+            
+        msg = ans;
+    }
+    
+    if (rc != 0 || (rc = msg->error) != 0)
+    {
+       if ((char *)msg != msg_buf)
+            free(msg);
+        return rc;
+    }
+    
+    rc = rpc_xdr_decode_result(rpc_name, msg->file, msg->intparm, out);
+    
+    if (rc != 0)
+        ERROR("Decoding of RPC %s output parameters failed", rpc_name);
+        
+    if ((char *)msg != msg_buf)
+        free(msg);
+        
+    return rc;        
+    
+#undef INSIDE_LEN    
+#undef PREFIX_LEN    
+}                

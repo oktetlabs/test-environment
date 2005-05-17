@@ -1300,12 +1300,12 @@ run_test(tester_ctx *ctx, run_item *test, test_id id, test_params *params)
     if (close(pipefds[0]) != 0)
     {
         ERROR("close() of pipefds[0] failed: %X", errno);
-        RC_UPDATE(rc, errno);
+        TE_RC_UPDATE(rc, errno);
     }
     if (close(pipefds[1]) != 0)
     {
         ERROR("close() of pipefds[1] failed: %X", errno);
-        RC_UPDATE(rc, errno);
+        TE_RC_UPDATE(rc, errno);
     }
 #endif
 
@@ -1600,7 +1600,7 @@ iterate_test(tester_ctx *ctx, run_item *test,
                     {
                         RING("Configuration successfully restored "
                              "using backup");
-                        RC_UPDATE(test_result, ETESTCONF);
+                        TE_RC_UPDATE(test_result, ETESTCONF);
                     }
                 }
                 else if (rc != 0)

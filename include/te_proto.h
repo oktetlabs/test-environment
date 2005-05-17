@@ -56,6 +56,7 @@
 #define TE_PROTO_TRRECV_WAIT    "trrecv_wait"
 #define TE_PROTO_TRRECV_GET     "trrecv_get"
 #define TE_PROTO_EXECUTE        "execute"
+#define TE_PROTO_RPC            "rpc"
 #define TE_PROTO_KILL           "kill"
 
 #ifdef RCF_NEED_TYPES

@@ -735,7 +735,7 @@ cfg_dh_restore_backup(char *filename)
                     {
                         ERROR("%s(): cfg_db_find() failed: %X", 
                               __FUNCTION__, rc);
-                        RC_UPDATE(result, msg.rc);
+                        TE_RC_UPDATE(result, msg.rc);
                     }
                     break;
                 }
@@ -745,7 +745,7 @@ cfg_dh_restore_backup(char *filename)
                 if (msg.rc != 0)
                 {
                     ERROR("%s(): add failed: %X", __FUNCTION__, msg.rc);
-                    RC_UPDATE(result, msg.rc);
+                    TE_RC_UPDATE(result, msg.rc);
                 }
                 break;
             }
@@ -782,7 +782,7 @@ cfg_dh_restore_backup(char *filename)
                 if (rc != 0)
                 {
                     ERROR("%s(): set failed: %X", __FUNCTION__, rc);
-                    RC_UPDATE(result, rc);
+                    TE_RC_UPDATE(result, rc);
                 }
                 break;
             }
@@ -816,7 +816,7 @@ cfg_dh_restore_backup(char *filename)
                 if (rc != 0)
                 {
                     ERROR("%s(): delete failed: %X", __FUNCTION__, rc);
-                    RC_UPDATE(result, rc);
+                    TE_RC_UPDATE(result, rc);
                 }
                 break;
             }

@@ -1,5 +1,5 @@
 
-AM_CPPFLAGS = -I$(DESTDIR)/$(prefix)/include
+AM_CPPFLAGS = @TE_CFLAGS@ -I$(DESTDIR)/$(prefix)/include
 AM_LDFLAGS = @TE_LDFLAGS@ 
 
 include_HEADERS = tapi_tad.h

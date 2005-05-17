@@ -17,7 +17,7 @@ te_stdouterr_DEPENDENCIES=@TE_DEPENDENCIES@ \
 
 mybindir=$(prefix)/bin
 dist_mybin_SCRIPTS=te_builder_log te_create_inst_dirs te_discover_host \
-                   te_generate_symtbl te_rpc_supported \
+                   te_generate_symtbl te_generate_rpctbl te_rpc_supported \
                    tce_instrument_sources tce_uninstrument_sources \
                    tce_report tce_gcc tce_gxx tce_gcov \
                    te_configure_package te_cross_build \

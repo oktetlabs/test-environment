@@ -75,9 +75,7 @@ rpc_signal(rcf_rpc_server *rpcs,
     in.handler.handler_val = (char *)handler;
     in.handler.handler_len = (handler == NULL) ? 0 : (strlen(handler) + 1);
 
-    rcf_rpc_call(rpcs, _signal,
-                 &in,  (xdrproc_t)xdr_tarpc_signal_in,
-                 &out, (xdrproc_t)xdr_tarpc_signal_out);
+    rcf_rpc_call(rpcs, "signal", &in, &out);
                  
     TAPI_RPC_LOG("RPC (%s,%s): signal(%s, %s) -> %s (%s)",
                  rpcs->ta, rpcs->name,
@@ -115,9 +113,7 @@ rpc_kill(rcf_rpc_server *rpcs, pid_t pid, rpc_signum signum)
     in.signum = signum;
     in.pid = pid;
 
-    rcf_rpc_call(rpcs, _kill,
-                 &in,  (xdrproc_t)xdr_tarpc_kill_in,
-                 &out, (xdrproc_t)xdr_tarpc_kill_out);
+    rcf_rpc_call(rpcs, "kill", &in, &out);
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(kill, out.retval);
 
@@ -146,9 +142,7 @@ rpc_sigset_new(rcf_rpc_server *rpcs)
 
     rpcs->op = RCF_RPC_CALL_WAIT;
 
-    rcf_rpc_call(rpcs, _sigset_new,
-                 &in, (xdrproc_t)xdr_tarpc_sigset_new_in,
-                 &out, (xdrproc_t)xdr_tarpc_sigset_new_out);
+    rcf_rpc_call(rpcs, "sigset_new", &in, &out);
 
     TAPI_RPC_LOG("RPC (%s,%s): sigset_new() -> %p (%s)",
                  rpcs->ta, rpcs->name,
@@ -176,9 +170,7 @@ rpc_sigset_delete(rcf_rpc_server *rpcs, rpc_sigset_t *set)
 
     in.set = (tarpc_sigset_t)set;
 
-    rcf_rpc_call(rpcs, _sigset_delete,
-                 &in, (xdrproc_t)xdr_tarpc_sigset_delete_in,
-                 &out, (xdrproc_t)xdr_tarpc_sigset_delete_out);
+    rcf_rpc_call(rpcs, "sigset_delete", &in, &out);
 
     TAPI_RPC_LOG("RPC (%s,%s): sigset_delete(%p) -> (%s)",
                  rpcs->ta, rpcs->name, set,
@@ -211,9 +203,7 @@ rpc_sigprocmask(rcf_rpc_server *rpcs,
     in.oldset = (tarpc_sigset_t)oldset;
     in.how = how;
 
-    rcf_rpc_call(rpcs, _sigprocmask,
-                 &in, (xdrproc_t)xdr_tarpc_sigprocmask_in,
-                 &out, (xdrproc_t)xdr_tarpc_sigprocmask_out);
+    rcf_rpc_call(rpcs, "sigprocmask", &in, &out);
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(sigprocmask, out.retval);
 
@@ -244,9 +234,7 @@ rpc_sigemptyset(rcf_rpc_server *rpcs, rpc_sigset_t *set)
 
     in.set = (tarpc_sigset_t)set;
 
-    rcf_rpc_call(rpcs, _sigemptyset,
-                 &in, (xdrproc_t)xdr_tarpc_sigemptyset_in,
-                 &out, (xdrproc_t)xdr_tarpc_sigemptyset_out);
+    rcf_rpc_call(rpcs, "sigemptyset", &in, &out);
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(sigemptyset, out.retval);
 
@@ -276,9 +264,7 @@ rpc_sigpending(rcf_rpc_server *rpcs, rpc_sigset_t *set)
 
     in.set = (tarpc_sigset_t)set;
 
-    rcf_rpc_call(rpcs, _sigpending,
-                 &in, (xdrproc_t)xdr_tarpc_sigpending_in,
-                 &out, (xdrproc_t)xdr_tarpc_sigpending_out);
+    rcf_rpc_call(rpcs, "sigpending", &in, &out);
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(sigpending, out.retval);
 
@@ -306,9 +292,7 @@ rpc_sigsuspend(rcf_rpc_server *rpcs, const rpc_sigset_t *set)
 
     in.set = (tarpc_sigset_t)set;
 
-    rcf_rpc_call(rpcs, _sigsuspend,
-                 &in, (xdrproc_t)xdr_tarpc_sigsuspend_in,
-                 &out, (xdrproc_t)xdr_tarpc_sigsuspend_out);
+    rcf_rpc_call(rpcs, "sigsuspend", &in, &out);
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(sigsuspend, out.retval);
 
@@ -336,9 +320,7 @@ rpc_sigreceived(rcf_rpc_server *rpcs)
 
     rpcs->op = RCF_RPC_CALL_WAIT;
 
-    rcf_rpc_call(rpcs, _sigreceived,
-                 &in, (xdrproc_t)xdr_tarpc_sigreceived_in,
-                 &out, (xdrproc_t)xdr_tarpc_sigreceived_out);
+    rcf_rpc_call(rpcs, "sigreceived", &in, &out);
 
     TAPI_RPC_LOG("RPC (%s,%s): sigreceived() -> %p (%s)",
                  rpcs->ta, rpcs->name,
@@ -366,9 +348,7 @@ rpc_sigfillset(rcf_rpc_server *rpcs, rpc_sigset_t *set)
 
     in.set = (tarpc_sigset_t)set;
 
-    rcf_rpc_call(rpcs, _sigfillset,
-                 &in, (xdrproc_t)xdr_tarpc_sigfillset_in,
-                 &out, (xdrproc_t)xdr_tarpc_sigfillset_out);
+    rcf_rpc_call(rpcs, "sigfillset", &in, &out);
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(sigfillset, out.retval);
 
@@ -399,9 +379,7 @@ rpc_sigaddset(rcf_rpc_server *rpcs, rpc_sigset_t *set, rpc_signum signum)
     in.set = (tarpc_sigset_t)set;
     in.signum = signum;
 
-    rcf_rpc_call(rpcs, _sigaddset,
-                 &in, (xdrproc_t)xdr_tarpc_sigaddset_in,
-                 &out, (xdrproc_t)xdr_tarpc_sigaddset_out);
+    rcf_rpc_call(rpcs, "sigaddset", &in, &out);
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(sigaddset, out.retval);
 
@@ -433,9 +411,7 @@ rpc_sigdelset(rcf_rpc_server *rpcs, rpc_sigset_t *set, rpc_signum signum)
     in.set = (tarpc_sigset_t)set;
     in.signum = signum;
 
-    rcf_rpc_call(rpcs, _sigdelset,
-                 &in, (xdrproc_t)xdr_tarpc_sigdelset_in,
-                 &out, (xdrproc_t)xdr_tarpc_sigdelset_out);
+    rcf_rpc_call(rpcs, "sigdelset", &in, &out);
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(sigdelset, out.retval);
 
@@ -468,9 +444,7 @@ rpc_sigismember(rcf_rpc_server *rpcs,
     in.set = (tarpc_sigset_t)set;
     in.signum = signum;
 
-    rcf_rpc_call(rpcs, _sigismember,
-                 &in,  (xdrproc_t)xdr_tarpc_sigismember_in,
-                 &out, (xdrproc_t)xdr_tarpc_sigismember_out);
+    rcf_rpc_call(rpcs, "sigismember", &in, &out);
 
     CHECK_RETVAL_VAR(sigismember, out.retval,
         (out.retval != 0 && out.retval != 1 && out.retval != -1), -1);
@@ -552,9 +526,7 @@ rpc_sigaction(rcf_rpc_server *rpcs, rpc_signum signum,
         in_oldact.xx_flags = oldact->mm_flags;
     }
 
-    rcf_rpc_call(rpcs, _sigaction,
-                 &in,  (xdrproc_t)xdr_tarpc_sigaction_in,
-                 &out, (xdrproc_t)xdr_tarpc_sigaction_out);
+    rcf_rpc_call(rpcs, "sigaction", &in, &out);
 
     if (RPC_IS_CALL_OK(rpcs) && oldact != NULL)
     {

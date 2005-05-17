@@ -60,11 +60,6 @@
 
 #include "linux_internal.h"
 
-#ifdef RCF_RPC
-#include "linux_rpc.h"
-#endif    
-
-
 /** Send answer to the TEN */
 #define SEND_ANSWER(_fmt...) \
     do {                                                                \
@@ -85,6 +80,9 @@
 extern void *rcf_ch_symbol_addr_auto(const char *name, te_bool is_func);
 extern char *rcf_ch_symbol_name_auto(const void *addr);
 
+/** Function to start RPC server after execve */
+extern void tarpc_init(int argc, char **argv);
+
 
 /** Logger entity name */
 DEFINE_LGR_ENTITY("(linux)");
@@ -93,9 +91,6 @@ DEFINE_LGR_ENTITY("(linux)");
 const char *ta_execname = NULL;
 /** Test Agent name */
 const char *ta_name = "(linux)";
-/** Test Agent process ID */
-int ta_pid = -1;
-
 
 /** Tasks to be killed during TA shutdown */
 static unsigned int     tasks_len = 0;
@@ -466,9 +461,9 @@ rcf_ch_thread_wrapper(void *arg)
 /* See description in rcf_ch_api.h */
 int
 rcf_ch_start_task_thr(struct rcf_comm_connection *handle,
-                  char *cbuf, size_t buflen, size_t answer_plen,
-                  int priority, const char *rtn, te_bool is_argv,
-                  int argc, uint32_t *params)
+                      char *cbuf, size_t buflen, size_t answer_plen,
+                      int priority, const char *rtn, te_bool is_argv,
+                      int argc, uint32_t *params)
 {
     void *addr = rcf_ch_symbol_addr(rtn, TRUE);
     struct rcf_thread_parameter *iter;
@@ -718,6 +713,76 @@ ta_sigpipe_handler(int sig)
     WARN("Test Agent received SIGPIPE signal");
 }
 
+/**
+ * Wait for a child and log its exit status information.
+ */
+static void
+ta_sigchld_handler(int sig)
+{
+    int status;
+    int pid;
+    
+    UNUSED(sig);
+
+#define CHECK_LGR_LOCK \
+    do {                                                              \
+        ta_lgr_lock_key key;                                          \
+                                                                      \
+        if (ta_lgr_trylock(key) != 0)                                 \
+        {                                                             \
+            fprintf(stderr, "Logger is locked, drop the message\n");  \
+            return;                                                   \
+        }                                                             \
+        (void)ta_lgr_unlock(key);                                     \
+    } while (0)
+    
+    if ((pid = waitpid(-1, &status, WNOHANG)) > 0)
+    {
+        CHECK_LGR_LOCK;
+        if (WIFEXITED(status))
+            VERB("Child process with PID %d is deleted", pid);
+        else if (WIFSIGNALED(status))
+        {
+            if (WTERMSIG(status) == SIGTERM)
+                VERB("Child process with PID %d is deleted", pid);
+            else
+                WARN("Child process with PID %d is killed "
+                     "by the signal %d", pid, WTERMSIG(status));
+        }
+#ifdef WCOREDUMP
+        else if (WCOREDUMP(status))
+            ERROR("Child process with PID %d core dumped", pid);
+#endif
+        else
+            WARN("Child process with PID %d exited due unknown reason", 
+                 pid);
+    }
+    else if (pid == 0)
+    {
+        CHECK_LGR_LOCK;
+        WARN("No child was available");
+    }
+    else
+    {
+        CHECK_LGR_LOCK;
+        if (errno != EINTR)
+            ERROR("waitpid() failed with errno %d", errno);
+    }
+#undef CHECK_LGR_LOCK
+}
+
+sigset_t rpcs_received_signals;
+
+/**
+ * Special signal handler which registers signals.
+ * 
+ * @param signum    received signal
+ */
+void
+signal_registrar(int signum)
+{
+    sigaddset(&rpcs_received_signals, signum);
+}
 
 /**
  * Entry point of the Linux Test Agent.
@@ -741,6 +806,10 @@ main(int argc, char **argv)
     }
 
     ta_execname = argv[0];
+
+    pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);    
+
+    sigemptyset(&rpcs_received_signals);
     
 #ifdef RCF_RPC
     /* After execve */
@@ -751,16 +820,15 @@ main(int argc, char **argv)
     }
 #endif
 
-    ta_pid = getpid();
-
-    (void)signal(SIGINT, ta_sigint_handler);
-    (void)signal(SIGPIPE, ta_sigpipe_handler);
-
     if ((rc = log_init()) != 0)
     {
         fprintf(stderr, "log_init() failed: error=%d\n", rc);
         return rc;
     }
+    
+    (void)signal(SIGINT, ta_sigint_handler);
+    (void)signal(SIGPIPE, ta_sigpipe_handler);
+    (void)signal(SIGCHLD, ta_sigchld_handler);
 
     te_lgr_entity = ta_name = argv[1];
     VERB("Started\n");
@@ -776,10 +844,6 @@ main(int argc, char **argv)
         if (retval == 0)
             retval = rc;
     }
-
-#ifdef RCF_RPC
-    tarpc_destroy_all();
-#endif    
 
     rc = log_shutdown();
     if (rc != 0)
@@ -808,6 +872,7 @@ sig_handler(int s)
 {
     UNUSED(s);
 }
+
 
 #if 1 /* This is work-around, additional investigation is necessary */
 int 

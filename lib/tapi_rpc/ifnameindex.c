@@ -65,9 +65,7 @@ rpc_if_nametoindex(rcf_rpc_server *rpcs,
     in.ifname.ifname_val = (char *)ifname;
     in.ifname.ifname_len = (ifname == NULL) ? 0 : (strlen(ifname) + 1);
 
-    rcf_rpc_call(rpcs, _if_nametoindex,
-                 &in,  (xdrproc_t)xdr_tarpc_if_nametoindex_in,
-                 &out, (xdrproc_t)xdr_tarpc_if_nametoindex_out);
+    rcf_rpc_call(rpcs, "if_nametoindex", &in, &out);
 
     CHECK_RETVAL_VAR(if_nametoindex, out.ifindex, FALSE, 0);
 
@@ -100,9 +98,7 @@ rpc_if_indextoname(rcf_rpc_server *rpcs,
     in.ifname.ifname_val = ifname;
     in.ifname.ifname_len = (ifname == NULL) ? 0 : (strlen(ifname) + 1);
 
-    rcf_rpc_call(rpcs, _if_indextoname,
-                 &in,  (xdrproc_t)xdr_tarpc_if_indextoname_in,
-                 &out, (xdrproc_t)xdr_tarpc_if_indextoname_out);
+    rcf_rpc_call(rpcs, "if_indextoname", &in, &out);
 
     if (RPC_IS_CALL_OK(rpcs))
     {
@@ -138,9 +134,7 @@ rpc_if_nameindex(rcf_rpc_server *rpcs)
 
     rpcs->op = RCF_RPC_CALL_WAIT;
 
-    rcf_rpc_call(rpcs, _if_nameindex,
-                 &in,  (xdrproc_t)xdr_tarpc_if_nameindex_in,
-                 &out, (xdrproc_t)xdr_tarpc_if_nameindex_out);
+    rcf_rpc_call(rpcs, "if_nameindex", &in, &out);
 
     if (RPC_IS_CALL_OK(rpcs) && out.ptr.ptr_val != NULL)
     {
@@ -206,9 +200,7 @@ rpc_if_freenameindex(rcf_rpc_server *rpcs,
         free(p);
     }
 
-    rcf_rpc_call(rpcs, _if_freenameindex,
-                 &in,  (xdrproc_t)xdr_tarpc_if_freenameindex_in,
-                 &out, (xdrproc_t)xdr_tarpc_if_freenameindex_out);
+    rcf_rpc_call(rpcs, "if_freenameindex", &in, &out);
 
     TAPI_RPC_LOG("RPC (%s,%s): if_freenameindex(%p) -> (%s)",
                  rpcs->ta, rpcs->name, ptr,

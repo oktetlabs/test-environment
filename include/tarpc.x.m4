@@ -70,7 +70,6 @@ typedef uint32_t    tarpc_op;
  *            parameters to this structure.
  */
 struct tarpc_in_arg {
-    char            name<>;     /**< Server name */
     tarpc_op        op;         /**< RPC operation */
     uint64_t        start;
     uint32_t        tid;        /**< Thread identifier (for checking and 
@@ -2169,7 +2168,7 @@ struct tarpc_aio_suspend_test_out {
 struct tarpc_fork_in {
     struct tarpc_in_arg common;
     
-    char        name<>;
+    char name<>;        /**< RPC server name */
 };
 
 struct tarpc_fork_out {
@@ -2205,6 +2204,8 @@ struct tarpc_pthread_cancel_out {
 
 struct tarpc_execve_in {
     struct tarpc_in_arg common;
+
+    string name<>;        /**< RPC server name */
 };
 
 struct tarpc_execve_out {

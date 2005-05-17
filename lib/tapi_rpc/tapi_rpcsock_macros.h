@@ -709,7 +709,8 @@
             (ret_handler_) = rpc_signal((rpcs_), (signum_), (handler_));\
             if ((old_handler_) != NULL)                                 \
             {                                                           \
-                if (strcmp(ret_handler_, (old_handler_)) != 0)          \
+                if (ret_handler_ == NULL ||                             \
+                    strcmp(ret_handler_, (old_handler_)) != 0)          \
                 {                                                       \
                     ERROR("Value returned from rpc_signal() is "        \
                           "not the same as expected ");                 \

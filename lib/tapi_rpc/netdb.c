@@ -152,9 +152,7 @@ rpc_gethostbyname(rcf_rpc_server *rpcs, const char *name)
     in.name.name_val = (char *)name;
     in.name.name_len = (name == NULL) ? 0 : (strlen(name) + 1);
 
-    rcf_rpc_call(rpcs, _gethostbyname,
-                 &in,  (xdrproc_t)xdr_tarpc_gethostbyname_in,
-                 &out, (xdrproc_t)xdr_tarpc_gethostbyname_out);
+    rcf_rpc_call(rpcs, "gethostbyname", &in, &out);
 
     if (RPC_IS_CALL_OK(rpcs) && out.res.res_val != NULL)
     {
@@ -195,9 +193,7 @@ rpc_gethostbyaddr(rcf_rpc_server *rpcs,
         in.addr.val.val_len = len;
     }
 
-    rcf_rpc_call(rpcs, _gethostbyaddr,
-                 &in,  (xdrproc_t)xdr_tarpc_gethostbyaddr_in,
-                 &out, (xdrproc_t)xdr_tarpc_gethostbyaddr_out);
+    rcf_rpc_call(rpcs, "gethostbyaddr",  &in, &out);
 
     if (RPC_IS_CALL_OK(rpcs) && out.res.res_val != NULL)
     {
@@ -315,9 +311,7 @@ rpc_getaddrinfo(rcf_rpc_server *rpcs,
         in.hints.hints_len = 1;
     }
 
-    rcf_rpc_call(rpcs, _getaddrinfo,
-                 &in,  (xdrproc_t)xdr_tarpc_getaddrinfo_in,
-                 &out, (xdrproc_t)xdr_tarpc_getaddrinfo_out);
+    rcf_rpc_call(rpcs, "getaddrinfo", &in, &out);
 
     if (RPC_IS_CALL_OK(rpcs) && out.res.res_val != NULL)
     {
@@ -382,9 +376,7 @@ rpc_freeaddrinfo(rcf_rpc_server *rpcs,
     if (res != NULL)
         in.mem_ptr = *((int *)res - 1);
 
-    rcf_rpc_call(rpcs, _freeaddrinfo,
-                 &in, (xdrproc_t)xdr_tarpc_freeaddrinfo_in,
-                 &out, (xdrproc_t)xdr_tarpc_freeaddrinfo_out);
+    rcf_rpc_call(rpcs, "freeaddrinfo",  &in, &out);
 
     TAPI_RPC_LOG("RPC (%s,%s): freeaddrinfo(%p) -> (%s)",
                  rpcs->ta, rpcs->name, res,

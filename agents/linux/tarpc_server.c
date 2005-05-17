@@ -71,12 +71,16 @@
 #include "rcf_ch_api.h"
 #include "rcf_pch.h"
 #include "rcf_rpc_defs.h"
-#include "linux_rpc.h"
 #include "tapi_rpcsock_defs.h"
 
 #include "ta_logfork.h"
 
 #include "linux_internal.h"
+
+/** Obtain RCF RPC errno code */
+#define RPC_ERRNO errno_h2rpc(errno)
+
+extern char **environ;
 
 #if HAVE_AIO_H
 void *dummy = aio_read;
@@ -445,6 +449,8 @@ _func##_proc(void *arg)                                             \
     tarpc_##_func##_out *out = &(data->out);                        \
     checked_arg         *list = NULL;                               \
                                                                     \
+    logfork_register_user(#_func);                                  \
+                                                                    \
     VERB("Entry thread %s", #_func);                                \
                                                                     \
     sigprocmask(SIG_SETMASK, &(data->mask), NULL);                  \
@@ -578,7 +584,7 @@ setlibname(const tarpc_setlibname_in *in)
     lib_te_lgr_entity = dlsym(dynamic_library_handle, "te_lgr_entity");
     if (lib_te_lgr_entity != NULL)
     {
-        *lib_te_lgr_entity = te_lgr_entity;
+        *lib_te_lgr_entity = (char *)te_lgr_entity;
     }
 
     return 0;
@@ -630,12 +636,6 @@ _rpc_is_op_done_1_svc(tarpc_rpc_is_op_done_in  *in,
 
 /*-------------- fork() ---------------------------------*/
 
-#ifdef HAVE_SVC_EXIT
-#define SVC_EXIT    svc_exit()
-#else
-#define SVC_EXIT
-#endif
-
 TARPC_FUNC(fork, {},
 {
     MAKE_CALL(out->pid = func(0));
@@ -643,19 +643,16 @@ TARPC_FUNC(fork, {},
     if (out->pid == 0)
     {
         rcf_pch_detach();
-        SVC_EXIT;
-        tarpc_server(in->name.name_val);
+        rcf_pch_rpc_server(in->name.name_val);
         exit(EXIT_FAILURE);
     }
 }
 )
 
-#undef SVC_EXIT
-
 /*-------------- pthread_create() -----------------------------*/
 TARPC_FUNC(pthread_create, {},
 {
-    MAKE_CALL(out->retval = func((int)&(out->tid), NULL, tarpc_server,
+    MAKE_CALL(out->retval = func((int)&(out->tid), NULL, rcf_pch_rpc_server,
                                  strdup(in->name.name_val)));
 }
 )
@@ -668,17 +665,15 @@ void
 tarpc_init(int argc, char **argv)
 {
     const char *name = argv[2];
-    const char *pid = argv[3];
-    const char *log_sock = argv[4];
-    const char *libname = argv[5];
+    const char *log_sock = argv[3];
+    const char *libname = argv[4];
     
     int sock;
 
     tarpc_setlibname_in  in_local;
     tarpc_setlibname_in *in = &in_local;
-
-    if (name == NULL || pid == NULL || log_sock == NULL ||
-        (sock = atoi(log_sock)) <= 0)
+    
+    if (name == NULL || log_sock == NULL || (sock = atoi(log_sock)) <= 0)
     {
         PRINT("%s(): Invalid argument", __FUNCTION__);
         return;
@@ -689,12 +684,8 @@ tarpc_init(int argc, char **argv)
     memset(&in_local, 0, sizeof(in_local));
 
     UNUSED(argc);
-    ta_pid = atoi(pid);
 
     /* Emulate setlibname() call */
-    in->common.name.name_val = (char *)name;
-    in->common.name.name_len = strlen(name) + 1;
-
     if (libname == NULL || strcmp(libname, "(NULL)") == 0)
     {
         in->libname.libname_len = 0;
@@ -706,8 +697,8 @@ tarpc_init(int argc, char **argv)
         in->libname.libname_val = (char *)libname;
     }
     setlibname(in);
-
-    tarpc_server(name);
+    
+    rcf_pch_rpc_server(name);
 }
 
 /**
@@ -732,7 +723,6 @@ _sigreceived_1_svc(tarpc_sigreceived_in *in, tarpc_sigreceived_out *out,
 TARPC_FUNC(execve, {},
 {
     const char *args[7];
-    static char buf[16];
     static char logsock[16];
     int rc;
     
@@ -740,20 +730,18 @@ TARPC_FUNC(execve, {},
 
     args[0] = ta_execname;
     args[1] = "rpcserver";
-    args[2] = strdup(in->common.name.name_val);
-    snprintf(buf, sizeof(buf), "%d", ta_pid);
-    args[3] = buf;
-    args[4] = logsock;
-    args[5] = dynamic_library_name;
-    args[6] = NULL;
+    args[2] = strdup(in->name);
+    args[3] = logsock;
+    args[4] = dynamic_library_name;
+    args[5] = NULL;
 
     /* Wait until main thread sends answer to non-blocking RPC call */
     sleep(1);
 
-    VERB("execve() args: %s, %s, %s, %s, %s, %s",
-         args[0], args[1], args[2], args[3], args[4], args[5]);
+    VERB("execve() args: %s, %s, %s, %s, %s",
+         args[0], args[1], args[2], args[3], args[4]);
     /* Call execve() */
-    MAKE_CALL(rc = func((int)ta_execname, args, NULL));
+    MAKE_CALL(rc = func((int)ta_execname, args, environ));
     if (rc != 0)
     {
         rc = errno;

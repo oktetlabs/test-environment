@@ -813,6 +813,22 @@ extern int rcf_ta_start_thread(const char *ta_name, int session,
  */
 extern int rcf_ta_kill_task(const char *ta_name, int session, pid_t pid);
 
+/**
+ * Call SUN RPC on the TA.
+ *
+ * @param ta_name       Test Agent name                 
+ * @param session       TA session or 0
+ * @param rpcserver     Name of the RPC server
+ * @param timeout       RPC timeout in milliseconds or 0 (unlimited)
+ * @param rpc_name      Name of the RPC (e.g. "bind")
+ * @param in            Input parameter C structure
+ * @param in            Output parameter C structure
+ *
+ * @return Status code
+ */
+extern int rcf_ta_call_rpc(const char *ta_name, int session, 
+                           const char *rpcserver, int timeout,
+                           const char *rpc_name, void *in, void *out);
 
 /**
  * Clean up resources allocated by RCF API.

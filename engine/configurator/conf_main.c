@@ -59,7 +59,7 @@ enum {
 };
 
 
-/*static */void
+static void
 print_tree(cfg_instance *inst, int indent)
 {
     static FILE *f = NULL;

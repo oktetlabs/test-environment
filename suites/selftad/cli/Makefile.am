@@ -18,7 +18,6 @@ tetest_PROGRAMS = \
     tapi_cli_serial \
     tapi_cli_shell
 
-LDADD = -ltapi -ltapi_cli -lndn -lasn -lrcfapi -lconfapi -lconf_oid \
-        -llogger_ten -lipc -lpthread
+LDADD = -ltapi -ltapi_cli -lndn -lasn -lrcfapi -lrpcxdr -lconfapi \
+        -lconf_oid -llogger_ten -lipc -lpthread
  
-#clitest_DEPENDENCIES = ${TE_INSTALL}/i686-pc-linux-gnu/lib/librcfapi.a

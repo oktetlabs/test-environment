@@ -75,9 +75,7 @@ rpc_fopen(rcf_rpc_server *rpcs,
     in.mode.mode_len = strlen(mode) + 1;
     in.mode.mode_val = (char *)strdup(mode);    /* FIXME */
 
-    rcf_rpc_call(rpcs, _fopen,
-                 &in,  (xdrproc_t)xdr_tarpc_fopen_in,
-                 &out, (xdrproc_t)xdr_tarpc_fopen_out);
+    rcf_rpc_call(rpcs, "fopen", &in, &out);
 
     TAPI_RPC_LOG("RPC (%s,%s): fopen(%s, %s) -> %p (%s)",
                  rpcs->ta, rpcs->name,
@@ -113,9 +111,7 @@ rpc_popen(rcf_rpc_server *rpcs,
     in.mode.mode_len = strlen(mode) + 1;
     in.mode.mode_val = (char *)mode_dup;
 
-    rcf_rpc_call(rpcs, _popen,
-                 &in,  (xdrproc_t)xdr_tarpc_popen_in,
-                 &out, (xdrproc_t)xdr_tarpc_popen_out);
+    rcf_rpc_call(rpcs, "popen", &in, &out);
                  
     free(cmd_dup);
     free(mode_dup);  
@@ -146,9 +142,7 @@ rpc_fileno(rcf_rpc_server *rpcs,
     rpcs->op = RCF_RPC_CALL_WAIT;
     in.mem_ptr = (unsigned int)f;
 
-    rcf_rpc_call(rpcs, _fileno,
-                 &in,  (xdrproc_t)xdr_tarpc_fileno_in,
-                 &out, (xdrproc_t)xdr_tarpc_fileno_out);
+    rcf_rpc_call(rpcs, "fileno", &in, &out);
 
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(fileno, out.fd);
 

@@ -34,7 +34,10 @@
 #include <signal.h>
 #include <sys/ioctl.h>
 #include <sys/poll.h>
+#include <assert.h>
 #include <netdb.h>
+
+#include "te_config.h"
 #include "te_defs.h"
 #include "te_stdint.h"
 #include "te_errno.h"
@@ -42,123 +45,69 @@
 #include "rcf_rpc.h"
 #include "conf_api.h"
 #include "tapi_rpc.h"
+#include "tapi_test.h"
+#include "conf_api.h"
+#include "tarpc.h"
+#include "tapi_rpc.h"
 
-
-DEFINE_LGR_ENTITY("rpctest");
-
-
-static int
-handler(int s)
-{
-    exit(1);
-}
+#define TE_TEST_NAME    "rpctest"
 
 int
-main(void)
+main(int argc, char **argv)
 {
     char ta[32];
     int  len = sizeof(ta);
+    int  sid;
     
-    rcf_rpc_server *srv, *srv1;
+    rcf_rpc_server *srv1 = NULL, *srv2 = NULL, *srv3 = NULL;
     
-    int  res;
-    char msg[32] = { 0, };
-    int  s;
-    int  rc;
+    rcf_rpc_server *dup;
     
-    struct sockaddr_in addr;
+    cfg_handle handle;
     
-    char buf[16];
-    int  fromlen = sizeof(struct sockaddr_in);
+    int s1, s2, s3;
+
+    tarpc_socket_in  in;
+    tarpc_socket_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
     
-    signal(SIGINT, handler);
+    TEST_START;
     
     if (rcf_get_ta_list(ta, &len) != 0)
-    {
-        ERROR("rcf_get_ta_list() failed\n");
-        return EXIT_FAILURE;
-    }
+        TEST_FAIL("rcf_get_ta_list() failed");
 
-    if ((rc = rcf_rpc_server_create(ta, "FIRST", &srv)) != 0)
-    {
-        ERROR("Cannot create server %x\n", rc);
-        return EXIT_FAILURE;
-    }
-    srv->def_timeout = 5000;
+    if ((rc = rcf_rpc_server_create(ta, "Main", &srv1)) != 0)
+        TEST_FAIL("Cannot create server 0x%X", rc);
     
-    rpc_setlibname(srv, NULL);
+    if ((rc = rcf_rpc_server_fork(srv1, "Forked", &srv2)) != 0)
+        TEST_FAIL("Cannot fork server 0x%X", rc);
     
-    if ((rc = rcf_rpc_server_thread_create(srv, "SECOND", &srv1)) != 0)
-    {
-        ERROR("Cannot create server %x\n", rc);
-        return EXIT_FAILURE;
-    }
-    srv1->def_timeout = 5000;
+    if ((rc = rcf_rpc_server_thread_create(srv2, "Thread", &srv3)) != 0)
+        TEST_FAIL("Cannot create threadserver 0x%X", rc);
+        
+    s1 = rpc_socket(srv1, RPC_AF_INET, RPC_SOCK_DGRAM, RPC_IPPROTO_UDP);
 
-    if ((s = rpc_socket(srv, RPC_AF_INET, RPC_SOCK_DGRAM, 
-                        RPC_IPPROTO_UDP)) < 0 || srv->_errno != 0)
-    {
-        ERROR("Calling of RPC socket() failed %x\n", srv->_errno);
-        return EXIT_FAILURE;
-    }
+    s2 = rpc_socket(srv2, RPC_AF_INET, RPC_SOCK_DGRAM, RPC_IPPROTO_UDP);
 
-    if ((s = rpc_socket(srv1, RPC_AF_INET, RPC_SOCK_DGRAM, 
-                        RPC_IPPROTO_UDP)) < 0 || srv1->_errno != 0)
-    {
-        ERROR("Calling of RPC socket() failed %x\n", srv1->_errno);
-        return EXIT_FAILURE;
-    }
+    s3 = rpc_socket(srv3, RPC_AF_INET, RPC_SOCK_DGRAM, RPC_IPPROTO_UDP);
     
-    memset(&addr, 0, sizeof(addr));
-    addr.sin_family = AF_INET;
-    addr.sin_port = htons(9002);
-    addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+    rpc_close(srv1, s1);
+    rpc_close(srv2, s2);
+    rpc_close(srv3, s3);
+    
+    TEST_SUCCESS;
+    
+cleanup:    
+    if (srv3 != NULL && rcf_rpc_server_destroy(srv3) != 0)
+        ERROR("Cannot delete thread server");
 
-    if (rpc_bind(srv, s, (struct sockaddr *)&addr, sizeof(addr)) < 0 ||
-        srv->_errno != 0)
-    {
-        ERROR("Calling of RPC bind() failed %x %d\n", srv->_errno,
-               srv->stat);
-        return EXIT_FAILURE;
-    }
-    
-#if 0
-    memset(&addr, 0, sizeof(addr));
-    srv->op = RCF_RPC_CALL;
-    if (rpc_recvfrom(srv, s, buf, 16, 0, &addr, &fromlen) < 0 ||
-        srv->_errno != 0)
-    {
-        ERROR("Calling of RPC recvfrom() failed %x\n", srv->_errno);
-        return EXIT_FAILURE;
-    }
-    ERROR("Calling wait\n");
-    srv->op = RCF_RPC_WAIT;
-    if (rpc_recvfrom(srv, s, buf, 16, 0, &addr, &fromlen) < 0 ||
-        srv->_errno != 0)
-    {
-        ERROR("Calling of RPC recvfrom() failed %x\n", srv->_errno);
-        return EXIT_FAILURE;
-    }
-    ERROR("Received: %s from %s\n", buf, inet_ntoa(addr.sin_addr));  
-#endif
-    
-    if (rpc_close(srv, s) < 0 || srv->_errno != 0)
-    {
-        ERROR("Calling of RPC close() failed %x\n", srv->_errno);
-        return EXIT_FAILURE;
-    }
-    
-    if (rcf_rpc_server_destroy(srv1) != 0)
-    {
-        ERROR("Cannot delete server\n");
-        return EXIT_FAILURE;
-    }
+    if (srv2 != NULL && rcf_rpc_server_destroy(srv2) != 0)
+        ERROR("Cannot delete forked server");
 
-    if (rcf_rpc_server_destroy(srv) != 0)
-    {
-        ERROR("Cannot delete server\n");
-        return EXIT_FAILURE;
-    }
+    if (srv1 != NULL && rcf_rpc_server_destroy(srv1) != 0)
+        ERROR("Cannot delete main server");
 
-    return EXIT_SUCCESS;
+    TEST_END;
 }

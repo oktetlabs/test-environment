@@ -338,6 +338,17 @@ find_ifindex(DWORD addr, DWORD *ifindex)
 rcf_pch_cfg_object *
 rcf_ch_conf_root()
 {
+    static te_bool init = FALSE;
+    
+#ifdef RCF_RPC
+    /* Link RPC nodes */
+    if (!init)
+    {
+        init = TRUE;
+        rcf_pch_rpc_init();
+    }
+#endif        
+
     return &node_agent;
 }
 
@@ -526,7 +537,7 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
     if ((rc = AddIPAddress(*(IPAddr *)&a, *(IPAddr *)&m, if_entry.dwIndex,
                             &nte_context, &nte_instance)) != NO_ERROR)
     {
-        ERROR("AddIpAddress() failed, error %x", rc);
+        ERROR("AddIpAddress() failed, error %d", rc);
         return TE_RC(TE_TA_WIN32, ETEWIN);
     }
 

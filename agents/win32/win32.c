@@ -53,10 +53,6 @@
 #include "rcf_ch_api.h"
 #include "rcf_pch.h"
 
-#ifdef RCF_RPC
-#include "win32_rpc.h"
-#endif    
-
 #define TE_LGR_USER      "Main"
 #include "logger_ta.h"
 #include "logfork.h"
@@ -87,8 +83,6 @@ extern void  wsa_func_handles_discover();
 DEFINE_LGR_ENTITY("(win32)");
 
 char *ta_name = "(win32)";
-
-int ta_pid;
 
 static pthread_mutex_t ta_lock = PTHREAD_MUTEX_INITIALIZER;
 
@@ -592,6 +586,19 @@ ta_sigpipe_handler(int sig)
     WARN("Test Agent received SIGPIPE signal");
 }
 
+sigset_t rpcs_received_signals;
+
+/**
+ * Special signal handler which registers signals.
+ * 
+ * @param signum    received signal
+ */
+void
+signal_registrar(int signum)
+{
+    sigaddset(&rpcs_received_signals, signum);
+}
+
 HINSTANCE ta_hinstance;
 
 /**
@@ -627,8 +634,6 @@ WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance,
     strncpy(cmd, lpCmdLine, sizeof(cmd) - 1);
     ta_name = strtok(cmd, " ");
     tmp = strtok(NULL, " ");
-    
-    ta_pid = getpid();
 
     (void)signal(SIGINT, ta_sigint_handler);
     (void)signal(SIGPIPE, ta_sigpipe_handler);
@@ -646,6 +651,8 @@ WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance,
 
     pthread_create(&tid, NULL, (void *)logfork_entry, NULL);
 
+    sigemptyset(&rpcs_received_signals);
+
 #ifdef RCF_RPC
     wsa_func_handles_discover();
 #endif        
@@ -657,10 +664,6 @@ WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance,
         if (retval == 0)
             retval = rc;
     }
-
-#ifdef RCF_RPC
-    tarpc_destroy_all();
-#endif    
 
     rc = log_shutdown();
     if (rc != 0)

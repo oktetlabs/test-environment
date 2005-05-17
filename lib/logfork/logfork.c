@@ -84,6 +84,7 @@
 typedef struct udp_msg {
     te_bool  is_notif;
     pid_t    pid;
+    uint32_t tid;
     union {
         struct {
             char name[LOGFORK_MAXUSER]; /** Logfork user name */
@@ -106,8 +107,9 @@ typedef struct udp_msg {
 typedef struct list {
     struct list *next;
 
-    char name[LOGFORK_MAXLEN];    
-    pid_t  pid;
+    char     name[LOGFORK_MAXLEN];    
+    pid_t    pid;
+    uint32_t tid;
 } list;
 
 #ifdef HAVE_PTHREAD_H
@@ -143,23 +145,25 @@ logfork_set_sock(int sock)
 }
 
 /** 
- * Find process name by its pid in the internal list of
+ * Find process name by its pid and tid in the internal list of
  * processes
  *
- * @param          pid  process or thread identifier
- * @param          name pointer to process or thread name
- *          
+ * @param pid   process or thread identifier
+ * @param tid   thread identifier      
+ * @param name  pointer to process or thread name
  *
  * @retval  0   -  found
  * @retval -1   -  not found
  */
 int 
-logfork_find_name_by_pid(list **proc_list, char **name, int pid)
+logfork_find_name_by_pid(list **proc_list, char **name, int pid, 
+                         uint32_t tid)
 {
     list *tmp = *proc_list;
+    
     for (; tmp; tmp = tmp->next)
     {
-        if (tmp->pid == pid)
+        if (tmp->pid == pid && tmp->tid == tid)
         {
             *name = tmp->name;
             return 0;
@@ -171,16 +175,17 @@ logfork_find_name_by_pid(list **proc_list, char **name, int pid)
 /** 
  * Used to add process info in the internal list
  *
- * @param  proc_list pointer to the list
- * @param  name  pointer to searched process name
- * @param  pid   process pid
+ * @param  proc_list  pointer to the list
+ * @param  name       pointer to searched process name
+ * @param  pid        process pid
+ * @param  tid        thread pid
  *
  * @retval  0    success
  * @retval  -1   memory allocation failure
  */
 int
 logfork_list_add(list **proc_list, char *name, 
-                 unsigned int pid)
+                 pid_t pid, uint32_t tid)
 {  
     list *item = NULL;
 
@@ -191,6 +196,7 @@ logfork_list_add(list **proc_list, char *name,
     
     strcpy(item->name, name);
     item->pid = pid;            
+    item->tid = tid;
     if (*proc_list == NULL)
     {
         *proc_list = item; 
@@ -309,7 +315,8 @@ logfork_entry(void)
         /* If udp message */
         if (!msg.is_notif)
         {   
-            if (logfork_find_name_by_pid(&proc_list, &name, msg.pid) == 0)
+            if (logfork_find_name_by_pid(&proc_list, &name, 
+                                         msg.pid, msg.tid) == 0)
             {
                 sprintf(name_pid, "%s.%u", name, msg.pid);
                 log_message(msg.__log_level, TE_LGR_ENTITY, 
@@ -319,10 +326,12 @@ logfork_entry(void)
         }
         else 
         {
-            if (logfork_find_name_by_pid(&proc_list, &name, msg.pid) == 0)
+            if (logfork_find_name_by_pid(&proc_list, &name, 
+                                         msg.pid, msg.tid) == 0)
                 continue;
 
-            if (logfork_list_add(&proc_list, msg.__name, msg.pid) != 0)
+            if (logfork_list_add(&proc_list, msg.__name, 
+                                 msg.pid, msg.tid) != 0)
             {
                 ERROR("logfork_entry(): out of Memory");
                 break;
@@ -345,6 +354,9 @@ logfork_register_user(const char *name)
     memset(&msg, 0, sizeof(msg));
     strncpy(msg.__name, name, sizeof(msg.__name) - 1);
     msg.pid = getpid();
+#ifdef HAVE_PTHREAD_H
+    msg.tid = (uint32_t)pthread_self();
+#endif    
     msg.is_notif = TRUE;
     
 #ifdef HAVE_PTHREAD_H
@@ -415,6 +427,9 @@ logfork_log_message(int level, char *lgruser, const char *fmt, ...)
     }
 
     msg.pid = getpid();
+#ifdef HAVE_PTHREAD_H
+    msg.tid = (uint32_t)pthread_self();
+#endif    
     msg.is_notif = FALSE;
     strncpy(msg.__lgr_user, lgruser, sizeof(msg.__lgr_user) - 1);
     msg.__log_level = level;

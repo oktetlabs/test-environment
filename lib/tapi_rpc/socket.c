@@ -85,9 +85,7 @@ rpc_socket(rcf_rpc_server *rpcs,
     in.proto = protocol;
     in.flags = 1;
 
-    rcf_rpc_call(rpcs, _socket,
-                 &in,  (xdrproc_t)xdr_tarpc_socket_in,
-                 &out, (xdrproc_t)xdr_tarpc_socket_out);
+    rcf_rpc_call(rpcs, "socket", &in, &out);
 
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(socket, out.fd);
 
@@ -137,9 +135,7 @@ rpc_bind(rcf_rpc_server *rpcs,
     }
     in.len = addrlen;
 
-    rcf_rpc_call(rpcs, _bind,
-                 &in,  (xdrproc_t)xdr_tarpc_bind_in,
-                 &out, (xdrproc_t)xdr_tarpc_bind_out);
+    rcf_rpc_call(rpcs, "bind", &in, &out);
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(bind, out.retval);
 
@@ -188,9 +184,7 @@ rpc_connect(rcf_rpc_server *rpcs,
     }
     in.len = addrlen;
 
-    rcf_rpc_call(rpcs, _connect,
-                 &in,  (xdrproc_t)xdr_tarpc_connect_in,
-                 &out, (xdrproc_t)xdr_tarpc_connect_out);
+    rcf_rpc_call(rpcs, "connect", &in, &out);
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(connect, out.retval);
 
@@ -221,9 +215,7 @@ rpc_listen(rcf_rpc_server *rpcs, int fd, int backlog)
     in.fd = fd;
     in.backlog = backlog;
 
-    rcf_rpc_call(rpcs, _listen,
-                 &in,  (xdrproc_t)xdr_tarpc_listen_in,
-                 &out, (xdrproc_t)xdr_tarpc_listen_out);
+    rcf_rpc_call(rpcs, "listen", &in, &out);
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(listen, out.retval);
 
@@ -284,9 +276,7 @@ rpc_accept_gen(rcf_rpc_server *rpcs,
         }
     }
 
-    rcf_rpc_call(rpcs, _accept,
-                 &in,  (xdrproc_t)xdr_tarpc_accept_in,
-                 &out, (xdrproc_t)xdr_tarpc_accept_out);
+    rcf_rpc_call(rpcs, "accept", &in, &out);
 
     if (RPC_IS_CALL_OK(rpcs))
     {
@@ -375,9 +365,7 @@ rpc_recvfrom_gen(rcf_rpc_server *rpcs,
     }
     in.flags = flags;
 
-    rcf_rpc_call(rpcs, _recvfrom,
-                 &in,  (xdrproc_t)xdr_tarpc_recvfrom_in,
-                 &out, (xdrproc_t)xdr_tarpc_recvfrom_out);
+    rcf_rpc_call(rpcs, "recvfrom", &in, &out);
 
     if (RPC_IS_CALL_OK(rpcs))
     {
@@ -444,9 +432,7 @@ rpc_recv_gen(rcf_rpc_server *rpcs,
     }
     in.flags = flags;
 
-    rcf_rpc_call(rpcs, _recv,
-                 &in,  (xdrproc_t)xdr_tarpc_recv_in,
-                 &out, (xdrproc_t)xdr_tarpc_recv_out);
+    rcf_rpc_call(rpcs, "recv", &in, &out);
 
     if (RPC_IS_CALL_OK(rpcs))
     {
@@ -483,9 +469,7 @@ rpc_shutdown(rcf_rpc_server *rpcs, int s, rpc_shut_how how)
     in.fd = s;
     in.how = how;
 
-    rcf_rpc_call(rpcs, _shutdown,
-                 &in,  (xdrproc_t)xdr_tarpc_shutdown_in,
-                 &out, (xdrproc_t)xdr_tarpc_shutdown_out);
+    rcf_rpc_call(rpcs, "shutdown", &in, &out);
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(shutdown, out.retval);
 
@@ -543,9 +527,7 @@ rpc_sendto(rcf_rpc_server *rpcs,
     }
     in.flags = flags;
 
-    rcf_rpc_call(rpcs, _sendto,
-                 &in,  (xdrproc_t)xdr_tarpc_sendto_in,
-                 &out, (xdrproc_t)xdr_tarpc_sendto_out);
+    rcf_rpc_call(rpcs, "sendto", &in, &out);
 
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(sendto, out.retval);
 
@@ -587,9 +569,7 @@ rpc_send(rcf_rpc_server *rpcs,
     }
     in.flags = flags;
 
-    rcf_rpc_call(rpcs, _send,
-                 &in,  (xdrproc_t)xdr_tarpc_send_in,
-                 &out, (xdrproc_t)xdr_tarpc_send_out);
+    rcf_rpc_call(rpcs, "send", &in, &out);
 
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(send, out.retval);
 
@@ -701,9 +681,7 @@ rpc_sendmsg(rcf_rpc_server *rpcs,
         rpc_msg.msg_controllen = msg->msg_controllen;
     }
 
-    rcf_rpc_call(rpcs, _sendmsg,
-                 &in,  (xdrproc_t)xdr_tarpc_sendmsg_in,
-                 &out, (xdrproc_t)xdr_tarpc_sendmsg_out);
+    rcf_rpc_call(rpcs, "sendmsg", &in, &out);
 
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(sendmsg, out.retval);
 
@@ -822,9 +800,7 @@ rpc_recvmsg(rcf_rpc_server *rpcs,
         rpc_msg.msg_controllen = msg->msg_controllen;
     }
 
-    rcf_rpc_call(rpcs, _recvmsg,
-                 &in,  (xdrproc_t)xdr_tarpc_recvmsg_in,
-                 &out, (xdrproc_t)xdr_tarpc_recvmsg_out);
+    rcf_rpc_call(rpcs, "recvmsg", &in, &out);
 
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(recvmsg, out.retval);
 
@@ -934,9 +910,7 @@ rpc_getsockname_gen(rcf_rpc_server *rpcs,
         }
     }
 
-    rcf_rpc_call(rpcs, _getsockname,
-                 &in, (xdrproc_t)xdr_tarpc_getsockname_in,
-                 &out, (xdrproc_t)xdr_tarpc_getsockname_out);
+    rcf_rpc_call(rpcs, "getsockname", &in, &out);
 
     if (RPC_IS_CALL_OK(rpcs))
     {
@@ -1015,9 +989,7 @@ rpc_getpeername_gen(rcf_rpc_server *rpcs,
         }
     }
 
-    rcf_rpc_call(rpcs, _getpeername,
-                 &in, (xdrproc_t)xdr_tarpc_getpeername_in,
-                 &out, (xdrproc_t)xdr_tarpc_getpeername_out);
+    rcf_rpc_call(rpcs, "getpeername", &in, &out);
 
     if (RPC_IS_CALL_OK(rpcs))
     {
@@ -1225,9 +1197,7 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
         }
     }
 
-    rcf_rpc_call(rpcs, _getsockopt,
-                 &in, (xdrproc_t)xdr_tarpc_getsockopt_in,
-                 &out, (xdrproc_t)xdr_tarpc_getsockopt_out);
+    rcf_rpc_call(rpcs, "getsockopt", &in, &out);
 
     if (RPC_IS_CALL_OK(rpcs))
     {
@@ -1577,9 +1547,7 @@ rpc_setsockopt(rcf_rpc_server *rpcs,
         }
     }
 
-    rcf_rpc_call(rpcs, _setsockopt,
-                 &in, (xdrproc_t)xdr_tarpc_setsockopt_in,
-                 &out, (xdrproc_t)xdr_tarpc_setsockopt_out);
+    rcf_rpc_call(rpcs, "setsockopt", &in, &out);
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(setsockopt, out.retval);
 
