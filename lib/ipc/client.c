@@ -75,8 +75,8 @@
 /** Maximum number of retries for IPC client to send message */
 #define IPC_CLIENT_RETRY_MAX        100
 
-/** Timeout in seconds between IPC client retries to send message */
-#define IPC_CLIENT_RETRY_TIMEOUT    100
+/** Timeout in milliseconds between IPC client retries to send message */
+#define IPC_CLIENT_RETRY_TIMEOUT    300
 
 /*@}*/
 
