@@ -213,6 +213,9 @@ rcf_rpc_server_restart(rcf_rpc_server *rpcs)
     rcf_rpc_server *new_rpcs;
     int             rc;
     
+    if (rpcs == NULL)
+        return TE_RC(TE_RCF_API, EINVAL);
+    
     rc = rcf_rpc_server_get(rpcs->ta, rpcs->name, NULL, FALSE, FALSE,
                             TRUE, &new_rpcs);
                             
