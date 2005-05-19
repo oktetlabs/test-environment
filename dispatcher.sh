@@ -105,6 +105,7 @@ Generic options:
   --vg-rcf                      Run RCF under valgrind (without by default)
                                 (without by default)
   --vg-tester                   Run Tester under valgrind (without by default)
+  --tce=<agent>                 Do Test Coverage Estimation for <agent>
   
 EOF
 #    echo -e '  '--storage='<string>'\\t\\tconfiguration string for the storage
@@ -268,6 +269,8 @@ process_opts()
             --vg-tester) VG_TESTER=yes ;;
             --vg-engine) VG_RCF=yes; VG_CS=yes; VG_LGR=yes ; VG_TESTER=yes ;;    
         
+            --tce=*) TCE_AGENTS="$TCE_AGENTS ${1##--tce=}" ;;
+
             --no-builder) BUILDER= ;;
             --no-tester) TESTER= ;;
             --no-cs) CONFIGURATOR= ;;
@@ -614,6 +617,7 @@ if test -n "$CONFIGURATOR" ; then
     te_cs_shutdown || kill $CS_PID
 fi
 
+
 if test -n "$LOGGER" ; then
     te_log_message Engine Dispatcher "Flush log"
     myecho "--->>> Log FLUSH"
@@ -623,7 +627,16 @@ if test -n "$LOGGER" ; then
         if ! kill -cont $PID >/dev/null 2>&1 ; then  break ; fi
         sleep 1 ;
     done    
+    sleep 20
     kill $PID >/dev/null 2>&1
+fi
+
+if test -n "$TCE_AGENTS" ; then
+    te_log_message Engine Dispatcher "Dumping TCE"
+    myecho "--->>> Dump TCE"
+    for i in $TCE_AGENTS; do
+        tce_dump $i "/tmp/tcedump" "${TE_BUILD}/tce_"
+    done
 fi
 
 if test -n "$RCF" ; then
@@ -632,15 +645,11 @@ if test -n "$RCF" ; then
     te_rcf_shutdown 
 fi
 
-#TODO: TCE
-
 if test -n "$LOGGER" ; then
     te_log_message Engine Dispatcher "Shutdown Logger"
     myecho "--->>> Shutdown Logger"
     te_log_shutdown
 fi
-
-#TODO: TCE
 
 # Wait for RGT in live mode finish
 if test -n "$LIVE_LOG" ; then
@@ -680,8 +689,12 @@ if test -n "${RGT_LOG_HTML}" ; then
 fi
 
 
-myecho "--->>> TCE processing"
-tce_report ${RGT_LOG_TXT} > ${TE_LOG_DIR}/coverage.log
+if test -n "$TCE_AGENTS" ; then
+    myecho "--->>> TCE processing"
+    for i in $TCE_AGENTS; do
+        tce_report $i ${TE_LOG_DIR}/${i}_coverage.log
+    done
+fi
 
 # Run TRC, if any its option is provided
 if test -n "${TRC_OPTS}" ; then

@@ -813,7 +813,11 @@ rpcserver_add(unsigned int gid, const char *oid, const char *value,
             rcf_ch_unlock();
             rcf_pch_detach();
             rcf_pch_rpc_server(rpcs->name);
+#ifdef __CYGWIN__
             _exit(0);
+#else
+            exit(0);
+#endif
         }
         
         if (rpcs->pid < 0)

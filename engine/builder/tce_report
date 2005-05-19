@@ -5,16 +5,23 @@ if test -e ${TE_BUILD}/builder.conf.processed ; then
     . ${TE_BUILD}/builder.conf.processed
 fi    
 
-for i in ${TE_BS_NUTS} ${TE_BS_NUTLIBS}; do 
-    tce_taname=`eval echo '$NUT_'$i'_TCE_TANAME'` ; 
-    if test -n "${tce_taname}" ; then 
-        NUT_SOURCES=`eval echo '$NUT_'$i'_SOURCES'` 
-        echo "*** Test coverage report for $i:"
-        find $NUT_SOURCES -name '*.gcov' -exec rm -f '{}' ';'
-        log2da ${tce_taname} <"$1" && find $NUT_SOURCES -name '*.da' -exec tce_gcov '{}' ';' && \
-            find $NUT_SOURCES -name '*.gcov' -exec cat '{}' ';'
-    fi        
-done
+tce_taname=$1 
+outfile=$2
+NUT=`eval echo '$TCE_TANAME_'$tce_taname'_NUT'`
+
+if test -n "$NUT"; then
+    NUT_SOURCES=`eval echo '$NUT_'$NUT'_SOURCES'` 
+    echo "*** Test coverage report for $i:" >$outfile
+    find $NUT_SOURCES \( -name '*.gcov' -o -name '*.da' \) -exec rm -f '{}' ';'
+        tar -x -P -f ${TE_BUILD}/tce_${tce_taname}.tar
+        (find $NUT_SOURCES -name '*.da' -exec tce_gcov '{}' ';' && \
+            find $NUT_SOURCES -name '*.gcov' -exec cat '{}' ';') >> $outfile
+        non_execed=`grep '^[[:space:]]*##*:' $outfile | wc | awk '{ print $1 }'`
+        execed=`grep '^[[:space:]]*[0-9][0-9]*:' $outfile | wc | awk '{ print $1 }'`
+        echo >>$outfile
+        echo "*** Grand Total: `expr $execed \* 100 / \( $non_execed + $execed \)`% covered" >>$outfile
+fi        
+
 
 
 

@@ -138,7 +138,13 @@ kill_tasks(void)
         if (tasks[i] != 0)
         {
             kill(-tasks[i], SIGTERM);
-            usleep(100);
+        }
+    }
+    sleep(1);
+    for (i = 0; i < tasks_index; i++)
+    {
+        if (tasks[i] != 0)
+        {
             kill(-tasks[i], SIGKILL);
         }
     }
@@ -773,6 +779,7 @@ ta_sigchld_handler(int sig)
 
 sigset_t rpcs_received_signals;
 
+
 /**
  * Special signal handler which registers signals.
  * 
@@ -783,6 +790,45 @@ signal_registrar(int signum)
 {
     sigaddset(&rpcs_received_signals, signum);
 }
+
+#ifdef WITH_TCE
+extern int run_tce_collector(int argc, char *argv[]);
+extern int stop_tce_collector(void);
+extern int dump_tce_collector(void);
+extern int init_tce_collector(int argc, char *argv[]);
+
+int
+collect_tce(int argc, char *argv[])
+{
+    return run_tce_collector(argc, argv);
+}
+
+int
+init_collect_tce(int argc, char *argv[])
+{
+    return init_tce_collector(argc, argv);
+}
+
+int
+dump_collected_tce(int argc, char *argv[])
+{
+    return dump_tce_collector();
+}
+
+int
+stop_collect_tce(int argc, char *argv[])
+{
+    return stop_tce_collector();
+}
+
+int
+obtain_tce_peer_id(int unused, char *argv[])
+{
+    return getpid();
+}
+    
+#endif
+
 
 /**
  * Entry point of the Linux Test Agent.
@@ -845,6 +891,12 @@ main(int argc, char **argv)
             retval = rc;
     }
 
+#ifdef WITH_TCE
+    stop_tce_collector();
+#endif
+    kill_tasks();
+    kill_threads();
+
     rc = log_shutdown();
     if (rc != 0)
     {
@@ -852,9 +904,6 @@ main(int argc, char **argv)
         if (retval == 0)
             retval = rc;
     }
-
-    kill_threads();
-    kill_tasks();
     
     return retval;
 }

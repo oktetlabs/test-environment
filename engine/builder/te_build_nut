@@ -63,6 +63,7 @@ if test -n "`eval echo '$NUT_'$NUT'_TCE_TANAME'`" ; then
             tce_src="$tce_src $NUT_SOURCES/$i"
         done
     fi
+
     export TCE_SRC=$tce_src
     export TCE_CC=`eval echo '$NUT_'$NUT'_TCE_CC'`
     export TCE_CFLAGS=`eval echo '$NUT_'$NUT'_TCE_CFLAGS'`

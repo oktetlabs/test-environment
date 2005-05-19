@@ -553,8 +553,10 @@ int
 setlibname(const tarpc_setlibname_in *in)
 {
     const char *libname;
-    void (*logfork_set_socket)(int);
-    char **lib_te_lgr_entity;
+#ifdef WITH_TCE
+    void (*tce_initializer)(const char *, int) = NULL;
+#endif
+    extern const char *obtain_principal_tce_connect(void);
 
     libname = (in->libname.libname_len == 0) ?
                   NULL : in->libname.libname_val;
@@ -582,22 +584,21 @@ setlibname(const tarpc_setlibname_in *in)
         return TE_RC(TE_TA_LINUX, ENOMEM);
     }
     dynamic_library_set = TRUE;
-
-    /* All the following is to support TCE */
-
-    /* This works around logfork being statically linked, so the data 
-       structures in the library are not shared with TA 
-    */
-    logfork_set_socket = dlsym(dynamic_library_handle, "logfork_set_sock");
-    if (logfork_set_socket != NULL)
+#ifdef WITH_TCE
+    tce_initializer = dlsym(dynamic_library_handle, "__bb_init_connection");
+    if (tce_initializer == NULL)
     {
-        logfork_set_socket(logfork_get_sock());
+        WARN("%s is compiled without TCE support", dynamic_library_name);
     }
-    lib_te_lgr_entity = dlsym(dynamic_library_handle, "te_lgr_entity");
-    if (lib_te_lgr_entity != NULL)
+    else
     {
-        *lib_te_lgr_entity = (char *)te_lgr_entity;
+        const char *ptc = obtain_principal_tce_connect();
+        if (ptc == NULL)
+            WARN("init_tce_connect has not been called");
+        else
+            tce_initializer(ptc, getppid()); 
     }
+#endif
 
     return 0;
 }

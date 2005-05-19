@@ -164,6 +164,7 @@ AM_CONDITIONAL(CFG_LINUX_DAEMONS_ISC_DHCP_SERVER,
     [expr "$with_cfg_linux_daemons" : ".*dhcp" >/dev/null])
 AM_CONDITIONAL(CFG_RCF_RPC, test -n "$with_rcf_rpc")
 AM_CONDITIONAL(CFG_NETLINK_USE, test -n "$with_netlink")
+AM_CONDITIONAL(CFG_WITH_TCE, test -n "$with_tce")
 
 
 dnl #######################################################################
@@ -270,6 +271,10 @@ else
         CPPFLAGS="$CPPFLAGS -DUSE_IFCONFIG"
     fi    
     CPPFLAGS="$CPPFLAGS -DUSE_IOCTL"
+fi
+
+if test -n "$with_tce" ; then
+   CPPFLAGS="$CPPFLAGS -DWITH_TCE"
 fi
 
 export PKG_CONFIG_PATH=$DESTDIR/$prefix/../$host/lib/pkgconfig/

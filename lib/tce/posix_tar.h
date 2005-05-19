@@ -18,8 +18,8 @@
    Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
    02111-1307 USA.  */
 
-#ifndef	_TAR_H
-#define	_TAR_H	1
+#ifndef _POSIX_TAR_H
+#define _POSIX_TAR_H    1
 
 /* A tar archive consists of 512-byte blocks.
    Each file in the archive has a header block followed by 0+ data blocks.
@@ -46,63 +46,81 @@
    uname and gname are used in preference to uid and gid, if those
    names exist locally.
 
-   Field Name	Byte Offset	Length in Bytes	Field Type
-   name		0		100		NUL-terminated if NUL fits
-   mode		100		8
-   uid		108		8
-   gid		116		8
-   size		124		12
-   mtime	136		12
-   chksum	148		8
-   typeflag	156		1		see below
-   linkname	157		100		NUL-terminated if NUL fits
-   magic	257		6		must be TMAGIC (NUL term.)
-   version	263		2		must be TVERSION
-   uname	265		32		NUL-terminated
-   gname	297		32		NUL-terminated
-   devmajor	329		8
-   devminor	337		8
-   prefix	345		155		NUL-terminated if NUL fits
+   Field Name   Byte Offset Length in Bytes Field Type
+   name     0       100     NUL-terminated if NUL fits
+   mode     100     8
+   uid      108     8
+   gid      116     8
+   size     124     12
+   mtime    136     12
+   chksum   148     8
+   typeflag 156     1       see below
+   linkname 157     100     NUL-terminated if NUL fits
+   magic    257     6       must be TMAGIC (NUL term.)
+   version  263     2       must be TVERSION
+   uname    265     32      NUL-terminated
+   gname    297     32      NUL-terminated
+   devmajor 329     8
+   devminor 337     8
+   prefix   345     155     NUL-terminated if NUL fits
 
    If the first character of prefix is '\0', the file name is name;
    otherwise, it is prefix/name.  Files whose pathnames don't fit in that
    length can not be stored in a tar archive.  */
 
+#define TAR_NAME      0
+#define TAR_NAME_LENGTH 100
+#define TAR_MODE    100
+#define TAR_UID     108
+#define TAR_GID     116
+#define TAR_SIZE    124
+#define TAR_MTIME   136
+#define TAR_CHKSUM  148
+#define TAR_TYPE    156
+#define TAR_LINK    157
+#define TAR_MAGIC   257
+#define TAR_VERSION 263
+#define TAR_UNAME   265
+#define TAR_GNAME   297
+#define TAR_DEVMAJ  329
+#define TAR_DEVMIN  337
+#define TAR_PREFIX  345
+
 /* The bits in mode: */
-#define TSUID	04000
-#define TSGID	02000
-#define TSVTX	01000
-#define TUREAD	00400
-#define TUWRITE	00200
-#define TUEXEC	00100
-#define TGREAD	00040
-#define TGWRITE	00020
-#define TGEXEC	00010
-#define TOREAD	00004
-#define TOWRITE	00002
-#define TOEXEC	00001
+#define TSUID   04000
+#define TSGID   02000
+#define TSVTX   01000
+#define TUREAD  00400
+#define TUWRITE 00200
+#define TUEXEC  00100
+#define TGREAD  00040
+#define TGWRITE 00020
+#define TGEXEC  00010
+#define TOREAD  00004
+#define TOWRITE 00002
+#define TOEXEC  00001
 
 /* The values for typeflag:
    Values 'A'-'Z' are reserved for custom implementations.
    All other values are reserved for future POSIX.1 revisions.  */
 
-#define REGTYPE		'0'	/* Regular file (preferred code).  */
-#define AREGTYPE	'\0'	/* Regular file (alternate code).  */
-#define LNKTYPE		'1'	/* Hard link.  */
-#define SYMTYPE		'2'	/* Symbolic link (hard if not supported).  */
-#define CHRTYPE		'3'	/* Character special.  */
-#define BLKTYPE		'4'	/* Block special.  */
-#define DIRTYPE		'5'	/* Directory.  */
-#define FIFOTYPE	'6'	/* Named pipe.  */
-#define CONTTYPE	'7'	/* Contiguous file */
+#define REGTYPE     '0' /* Regular file (preferred code).  */
+#define AREGTYPE    '\0'    /* Regular file (alternate code).  */
+#define LNKTYPE     '1' /* Hard link.  */
+#define SYMTYPE     '2' /* Symbolic link (hard if not supported).  */
+#define CHRTYPE     '3' /* Character special.  */
+#define BLKTYPE     '4' /* Block special.  */
+#define DIRTYPE     '5' /* Directory.  */
+#define FIFOTYPE    '6' /* Named pipe.  */
+#define CONTTYPE    '7' /* Contiguous file */
  /* (regular file if not supported).  */
 
 /* Contents of magic field and its length.  */
-#define TMAGIC	"ustar"
-#define TMAGLEN	6
+#define TMAGIC  "ustar"
+#define TMAGLEN 6
 
 /* Contents of the version field and its length.  */
-#define TVERSION	"00"
-#define TVERSLEN	2
+#define TVERSION    "00"
+#define TVERSLEN    2
 
 #endif /* tar.h */

@@ -36,24 +36,24 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 #define ATTRIBUTE_UNUSED __attribute__ ((unused))
 typedef long gcov_type;
 
-static int __fetch_long	PARAMS ((long *, char *, size_t))
-	ATTRIBUTE_UNUSED;
+static int __fetch_long PARAMS ((long *, char *, size_t))
+    ATTRIBUTE_UNUSED;
 static int __read_long  PARAMS ((long *, FILE *, size_t))
-	ATTRIBUTE_UNUSED;
+    ATTRIBUTE_UNUSED;
 static int __write_long PARAMS ((long, FILE *, size_t))
-	ATTRIBUTE_UNUSED;
+    ATTRIBUTE_UNUSED;
 static int __fetch_gcov_type PARAMS ((gcov_type *, char *, size_t))
-	ATTRIBUTE_UNUSED;
+    ATTRIBUTE_UNUSED;
 static int __store_gcov_type PARAMS ((gcov_type, char *, size_t))
-	ATTRIBUTE_UNUSED;
+    ATTRIBUTE_UNUSED;
 static int __read_gcov_type  PARAMS ((gcov_type *, FILE *, size_t))
-	ATTRIBUTE_UNUSED;
+    ATTRIBUTE_UNUSED;
 static int __write_gcov_type PARAMS ((gcov_type, FILE *, size_t))
-	ATTRIBUTE_UNUSED;
+    ATTRIBUTE_UNUSED;
 static int __write_gcov_string PARAMS ((const char *, size_t, FILE*, long))
-	ATTRIBUTE_UNUSED;
+    ATTRIBUTE_UNUSED;
 static int __read_gcov_string PARAMS ((char *, size_t, FILE*, long))
-	ATTRIBUTE_UNUSED;
+    ATTRIBUTE_UNUSED;
 
 /* These routines only work for signed values.  */
 
@@ -75,7 +75,7 @@ __store_gcov_type (value, dest, bytes)
       gcov_type oldvalue = value;
       value = -value;
       if (oldvalue != -value)
-	return 1;
+    return 1;
     }
 
   for(i = 0 ; i < (sizeof (value) < bytes ? sizeof (value) : bytes) ; i++) {
@@ -110,7 +110,11 @@ __fetch_gcov_type (dest, source, bytes)
       return 1;
 
   for (; i >= 0; i--)
-    value = value * 256 + (source[i] & ((size_t)i == (bytes - 1) ? 127 : 255));
+  {
+      value = value * 256 + 
+          (source[i] & ((size_t)i == (bytes - 1) ? 127 : 255));
+  }
+  
 
   if ((source[bytes - 1] & 128) && (value > 0))
     value = - value;
@@ -133,7 +137,11 @@ __fetch_long (dest, source, bytes)
       return 1;
 
   for (; i >= 0; i--)
-    value = value * 256 + (source[i] & ((size_t)i == (bytes - 1) ? 127 : 255));
+  {
+    value = value * 256 + 
+        (source[i] & ((size_t)i == (bytes - 1) ? 127 : 255));
+  }
+  
 
   if ((source[bytes - 1] & 128) && (value > 0))
     value = - value;
@@ -247,7 +255,7 @@ __write_gcov_string (string, length, file, delim)
       c[0] = c[1] = c[2] = c[3] = 0;
 
       if (fwrite (c, sizeof (char), 4 - temp, file) != 4 - temp)
-	return 1;
+    return 1;
     }
 
   if (__write_long (delim, file, 4) != 0)

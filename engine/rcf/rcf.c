@@ -714,7 +714,8 @@ startup_tasks(ta *agent)
     for (task = agent->initial_tasks; task; task = task->next)
     {
         strcpy(cmd, "SID 0 " TE_PROTO_EXECUTE " ");
-        strcat(cmd, task->mode == RCF_START_THREAD ? "thread " : "fork ");
+        strcat(cmd, (task->mode == RCF_START_FUNC) ? "function " :
+               (task->mode == RCF_START_THREAD) ? "thread " : "fork ");
         strcat(cmd, task->entry);
         args = cmd + strlen(cmd);
         if (task->argc > 0)
