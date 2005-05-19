@@ -1,0 +1,46 @@
+#
+# TE_HOST([i686-pc-gnu-linux])
+#
+# TE_PLATFORM([], [--with-customer=oktetlabs], [-Dfoo], [-Lbar], 
+#  [ipc bsapi loggerten rcfapi conf_oid confapi comm_net_engine rcfunix  \
+#   comm_net_agent loggerta rcfpch])
+# 
+# TE_TOOLS([rgt])
+#
+# TE_APP([builder rcf logger tester configurator])
+#
+# TE_APP_PARMS([rcf], [--enable-ltdl-install], [-Dfoo], [-Lbar], [mylibrary])
+#
+# TE_LIB_PARMS([mylibrary], [i686-pc-gnu-linux], [/home/tester/mylibrary],
+#              [--with-customer=oktetlabs], [-Dfoo], [-Lbar])
+#
+# TE_TA_TYPE([win32], [i686-pc-cygwin], [win32], \
+#            [--with-rcf-rpc], [-DMY_DEFINE], \
+#            [-Lbar], [ws2_32 comm_net_agent])
+# 
+# TE_NUT([mynut], [LIB], [/home/tester/mynut], [/home/tester/myscriptdir],
+#        [myscriptparamster1 myscriptpaarmeter2])
+#
+#TE_NUT_TCE([mynut], [ta1], [win32], [gcc], [-Wall])
+#
+# TE_NUT_TCE_SOURCES([mynut], [dir1 dir2 dir3/foo.c])
+#
+# TE_HOST_EXEC([java])
+#
+
+TE_TOOLS([rgt rpcgen])
+
+TE_APP_PARMS([rcf], [--enable-ltdl-install], [], [], [])
+
+TE_PLATFORM([], [], [], [], \
+            [ipc bsapi loggerten rcfapi conf_oid confapi asn tapi \
+             comm_net_engine rcfunix loggerta rcfpch comm_net_agent \
+             tad logfork tapi_rpc rcfrpc tce])
+
+TE_TA_TYPE([linux], [], [], [--with-rcf-rpc --with-tce], [], [],
+           [comm_net_agent])
+
+TE_NUT([mynut], [LIB], [/home/tester/mynut], [/home/tester/myscriptdir])
+
+TE_NUT_TCE([mynut], [Agt_A], [linux])
+

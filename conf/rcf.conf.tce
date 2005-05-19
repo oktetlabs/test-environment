@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<rcf>
+    <ta name="Agt_A" type="linux" rcflib="rcfunix" confstr=":5012:sudo:">
+        <function name="collect_tce">
+            <arg value="/tmp/tcedump" />
+            <arg value="fifo:/tmp/tce_fifo" />
+        </function>
+    </ta>
+    <ta name="Agt_B" type="linux" rcflib="rcfunix" confstr="varda:5013:sudo:"/>
+</rcf>
+
