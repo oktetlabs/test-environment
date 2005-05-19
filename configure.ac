@@ -110,7 +110,7 @@ else
     HOST=`echo $host | sed s/-/_/g`
     TE_BS_PLATFORMS=$HOST
     echo TE_BS_PLATFORMS=$TE_BS_PLATFORMS >> ${TE_BUILD}/builder.conf.processed.new
-    eval ${HOST}_LIBS="ipc bsapi loggerten rcfapi conf_oid confapi tad"
+    eval ${HOST}_LIBS="ipc bsapi loggerten rcfapi rpcxdr conf_oid confapi tad"
     echo ${HOST}_LIBS=\"ipc bsapi loggerten rcfapi conf_oid confapi tad\" >> ${TE_BUILD}/builder.conf.processed.new
     echo TE_BS_APP=\"$TE_BS_APP\" >> ${TE_BUILD}/builder.conf.processed.new
 fi
