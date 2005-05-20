@@ -1,8 +1,8 @@
 # This file contain build params for CLI usage only. 
 
 TE_PLATFORM([], [], [], [], \
-            [ipc bsapi loggerten rcfapi conf_oid confapi tapi \
-             comm_net_engine rcfunix loggerta rcfpch comm_net_agent rpcxdr \
+            [ipc bsapi loggerten rpcxdr rcfapi conf_oid confapi tapi \
+             comm_net_engine rcfunix loggerta rcfpch comm_net_agent \
              tapi_pcap asn ndn tad logfork])
 
 TE_APP_PARMS([rcf], [--enable-ltdl-install], [], [], [])
