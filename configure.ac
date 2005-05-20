@@ -40,8 +40,6 @@ pushd $TE_BASE_DIR >/dev/null
 export TE_BASE=`pwd` 
 popd >/dev/null
 
-#AC_CANONICAL_HOST
-
 # Do not use config.guess to avoid problems with 64-bit architecture
 # and i686 tools.
 host=`${TE_BASE}/engine/builder/te_discover_host`
