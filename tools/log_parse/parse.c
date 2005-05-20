@@ -88,12 +88,8 @@ main(int argc, char *argv[])
         return -1;
     
     if (gettime(line, &first_ts) != 0)
-        return -1;
-    
-    c = strchr(line, '\n');
-    *c = 0;
-    
-    fprintf(output_file, "%s%s%i%i%s", line, "       ", 0, 0, "\n");
+        return -1;    
+    fprintf(output_file, "%s", line);
 
     c = fgets(line, LINE_LENGTH, parse_file);
     if (c == NULL)
@@ -119,8 +115,8 @@ main(int argc, char *argv[])
             snprintf(c, 60 - strlen(line), "%s",
                      "                                                     ");
             fprintf(output_file, "%s%s%i%s%i%s", line, "     ", 
-                    (curr_ts - first_ts) / 1000, " s ",
-                    (curr_ts - first_ts) % 1000, " ms\n");
+                    (curr_ts - first_ts) / 1000, ".",
+                    (curr_ts - first_ts) % 1000, "\n");
         }
     } while(1);
         
