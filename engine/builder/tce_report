@@ -16,10 +16,10 @@ if test -n "$NUT"; then
         tar -x -P -f ${TE_BUILD}/tce_${tce_taname}.tar
         (find $NUT_SOURCES -name '*.da' -exec tce_gcov '{}' ';' && \
             find $NUT_SOURCES -name '*.gcov' -exec cat '{}' ';') >> $outfile
-        non_execed=`grep '^[[:space:]]*##*:' $outfile | wc | awk '{ print $1 }'`
-        execed=`grep '^[[:space:]]*[0-9][0-9]*:' $outfile | wc | awk '{ print $1 }'`
+        non_execed=`grep '^branch[[:space:]]*[0-9]* never executed' $outfile | wc | awk '{ print $1 }'`
+        execed=`grep '^branch[[:space:]]*[0-9]* taken' $outfile | wc | awk '{ print $1 }'`
         echo >>$outfile
-        echo "*** Grand Total: `expr $execed \* 100 / \( $non_execed + $execed \)`% covered" >>$outfile
+        echo "*** Grand Total: `expr $execed \* 100 / \( $non_execed + $execed \)`% branches covered" >>$outfile
 fi        
 
 
