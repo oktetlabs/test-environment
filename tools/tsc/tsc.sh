@@ -133,16 +133,8 @@ EXTRA_DIST = package.dox
 
 tetestdir=\$(prefix)/@PACKAGE_NAME@/\$(subdir)
 
-tetest_DATA = tests-info.xml
-
 dist_tetest_DATA = package.xml
 
-tests-info.xml: \$(srcdir)/*.c
-	@TE_PATH@/te_tests_info.sh \$(srcdir) > tests-info.xml
-
-CLEANFILES = tests-info.xml
-
-tetest_PROGRAMS =
 EOF
  
         echo >> Makefile.am
@@ -308,16 +300,41 @@ update_configure_ac()
 
 update_makefile_am_test()
 {
-    echo Adding test $1 to ${DIR}Makefile.am
-    cat ${DIR}Makefile.am | awk --assign name=$1 '\
-    /^tetest_PROGRAMS/ { printf("%s %s\n", $0, name); next; } \
-    { print $0 ; next ; }' > tmp
+    FILE=${DIR}Makefile.am
+    echo Adding test $1 to ${FILE}
+    if cat ${FILE} | grep -q tetest_PROGRAMS ; then
+        cat ${FILE} | awk --assign name=$1 '\
+        /^tetest_PROGRAMS/ \
+        {
+            if (substr($0, length(), 1) == "\\") \
+                printf("%s\n%s \\\n", $0, name); \
+            else \
+                printf("%s \\\n%s\n", $0, name); \
+            next; \
+        } \
+        { print $0 ; next ; }' > tmp
+        mv tmp ${FILE}
+    else
+        cat >> ${FILE} << EOF
+tetest_DATA = tests-info.xml
 
-    echo >> tmp
-    echo $1_SOURCES = $1.c >> tmp
-    echo $1_LDADD = '$(MYLDADD)' >> tmp
-    echo $1_DEPENDENCIES = '$(MYDEPS)' >> tmp
-    mv tmp ${DIR}Makefile.am
+tests-info.xml: \$(srcdir)/*.c
+	@TE_PATH@/te_tests_info.sh \$(srcdir) > tests-info.xml
+
+CLEANFILES = tests-info.xml
+
+tetest_PROGRAMS = $1
+    
+EOF
+    fi
+
+    cat >> ${FILE} << EOF
+
+$1_SOURCES = $1.c 
+$1_LDADD = \$(MYLDADD)
+$1_DEPENDENCIES = \$(MYDEPS)
+
+EOF
 }
 
 create_test()
