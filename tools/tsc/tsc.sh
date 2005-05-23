@@ -299,20 +299,21 @@ update_makefile_am_test()
 
 create_test()
 {
-    if test ! -e $1.c ; then
-        echo Creating ${DIR}$1.c
-
-        cat > ${DIR}$1.c << EOF
+    if test ! -e ${TEST_NAME}.c ; then
+        echo Creating ${DIR}${TEST_NAME}.c
+        SUITE_NAME=`basename ${DIR}`
+        
+        cat > ${DIR}${TEST_NAME}.c << EOF
 /* 
- * ${SUITE_NAME}
- * ${SUITE_DESCR}
+ * ${TEST_NAME}
+ * ${TEST_DESCR}
  *
  * Copyright (C) 2005 OKTET Labs, St.-Petersburg, Russia
  * 
  * \$Id: $
  */
 
-/** @page ${SUITE_NAME}-$1  ${TEST_DESCR}
+/** @page ${SUITE_NAME}-${TEST_NAME}  ${TEST_DESCR}
  *
  * @objective 
  *
@@ -326,7 +327,7 @@ create_test()
  * @author ${AUTHOR_NAME} ${AUTHOR_FNAME} <${AUTHOR_NAME}.${AUTHOR_FNAME}}@oktetlabs.ru>
  */
 
-#define TE_TEST_NAME  "${DIR}$1"
+#define TE_TEST_NAME  "${DIR}${TEST_NAME}"
 
 int
 main(int argc, char *argv[])
@@ -364,7 +365,10 @@ process_line()
     update_makefile_am_test $1
     update_package_dox ${DIR}$1
     update_package_xml ${DIR}$1 test
-    create_test $1
+    TEST_NAME=$1
+    shift 1
+    TEST_DESCR="$*"
+    create_test 
 }
 
 # Go via directories creating necessary files
