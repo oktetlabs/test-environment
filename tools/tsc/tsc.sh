@@ -214,9 +214,7 @@ AC_ARG_VAR([TE_PATH])
 
 AC_CONFIG_HEADERS([package.h])
 
-AC_CONFIG_FILES([\\
-Makefile \\
-])
+AC_CONFIG_FILES([Makefile])
 
 AC_OUTPUT
 EOF
@@ -279,6 +277,17 @@ update_makefile_am_subdir()
     echo Adding subdirectory $SUBDIR to ${FILE}
     cat ${FILE} | awk --assign name=${SUBDIR} '\
     /^SUBDIRS/ { printf("%s %s\n", $0, name); next; } \
+    { print $0 ; }' > tmp
+    mv tmp ${FILE}
+}
+
+update_configure_ac()
+{
+    FILE=${START_DIR}/configure.ac
+    echo Adding generation of ${DIR}Makefile to ${FILE}
+    cat ${FILE} | awk --assign dir=${DIR} '\
+    /AC_CONFIG_FILES/ { printf("AC_CONFIG_FILES([%sMakefile])\n", \
+                               dir); } \
     { print $0 ; }' > tmp
     mv tmp ${FILE}
 }
@@ -352,6 +361,7 @@ process_line()
         create_makefile_am
         cd ${START_DIR}
         update_makefile_am_subdir
+        update_configure_ac
         update_package_dox ${DIR}
         update_package_xml ${DIR} package
         return
