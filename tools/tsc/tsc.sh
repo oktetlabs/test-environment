@@ -364,6 +364,7 @@ process_line()
     update_makefile_am_test $1
     update_package_dox ${DIR}$1
     update_package_xml ${DIR}$1 test
+    create_test $1
 }
 
 # Go via directories creating necessary files
