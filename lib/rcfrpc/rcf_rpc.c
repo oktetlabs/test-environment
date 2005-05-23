@@ -146,8 +146,7 @@ rcf_rpc_server_get(const char *ta, const char *name,
     }
 
     /* Try to find existing RPC server */
-    rc = cfg_get_instance_fmt(NULL, &tmp, 
-                              "/agent:%s/rpcserver_sid:%s",
+    rc = cfg_get_instance_fmt(NULL, &tmp, "/agent:%s/rpcserver:%s",
                               ta, name);
 
     if (rc != 0 && existing)
