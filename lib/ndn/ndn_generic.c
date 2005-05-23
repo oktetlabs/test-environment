@@ -46,10 +46,13 @@
 #include "logger_api.h"
 
 /*
-IpAddress ::= OCTET STRING (SIZE(4)) 
+Defined in SNMPv2-SMI:
+IpAddress ::=
+    [APPLICATION 0]
+        IMPLICIT OCTET STRING (SIZE (4))
 */
 asn_type ndn_ip_address_s = 
-{ "IpAddress", {APPLICATION, 1}, OCT_STRING, 4, {0}};
+{ "IpAddress", {APPLICATION, 0}, OCT_STRING, 4, {0}};
 
 const asn_type * const ndn_ip_address = &ndn_ip_address_s;
 
@@ -125,26 +128,6 @@ asn_type ndn_data_unit_env_s =
 
 
 
-
-
-asn_type asn_base_int4_s = 
-{ "INTEGER (0..15)", {UNIVERSAL, 2}, INTEGER, 4, {0}};
-
-const asn_type * const  asn_base_int4 = &asn_base_int4_s;
-
-
-asn_type asn_base_int8_s = 
-{ "INTEGER (0..255)", {UNIVERSAL, 2}, INTEGER, 8, {0}};
-
-const asn_type * const  asn_base_int8 = &asn_base_int8_s;
-
-
-asn_type asn_base_int16_s = 
-{ "INTEGER (0..65535)", {UNIVERSAL, 2}, INTEGER, 16, {0}};
-
-const asn_type * const  asn_base_int16 = &asn_base_int16_s;
-
-
 asn_type ndn_octet_string6_s = 
 {  "OCTET STRING (SIZE (6))", {UNIVERSAL, 4}, OCT_STRING, 6, {0}};
 
@@ -176,20 +159,20 @@ static asn_named_entry_t _ndn_payload_ne_array[] =
 }; 
 
 asn_type ndn_payload_s =
-{ "Payload", {PRIVATE, 2}, CHOICE, 
+{ "Payload", {PRIVATE, NDN_TMPL_PAYLOAD}, CHOICE, 
   sizeof(_ndn_payload_ne_array) / sizeof(_ndn_payload_ne_array[0]), 
   {_ndn_payload_ne_array} 
 };
 
-const asn_type * const  ndn_payload = &ndn_payload_s;
+const asn_type * const ndn_payload = &ndn_payload_s;
 
 
 
 static asn_type ndn_csap_spec_s =
-{ "CSAP-spec", {PRIVATE, 2}, SEQUENCE_OF, 0,
+{ "CSAP-spec", {PRIVATE, NDN_CSAP_SPEC}, SEQUENCE_OF, 0,
     {subtype: &ndn_generic_csap_level_s} };
 
-const asn_type * const  ndn_csap_spec = &ndn_csap_spec_s;
+const asn_type * const ndn_csap_spec = &ndn_csap_spec_s;
 
 
 
@@ -197,27 +180,28 @@ const asn_type * const  ndn_csap_spec = &ndn_csap_spec_s;
 
 static asn_type ndn_integer_seq_s = 
 { 
-    "SEQENCE OF INTEGER", {PRIVATE, 20}, SEQUENCE_OF, 0,
+    "SEQENCE OF INTEGER", {PRIVATE, NDN_ITER_INTS}, SEQUENCE_OF, 0,
     {subtype: &asn_base_integer_s} 
 };
 
 static asn_type ndn_chstring_seq_s = 
 { 
-    "SEQENCE OF UniversalString", {PRIVATE, 20}, SEQUENCE_OF, 0,
+    "SEQENCE OF UniversalString",
+    {PRIVATE, NDN_ITER_STRINGS}, SEQUENCE_OF, 0,
     {subtype: &asn_base_charstring_s} 
 };
 
 
 static asn_named_entry_t _ndn_template_parameter_simple_for_ne_array[] =
 {
-    { "begin",  &asn_base_integer_s, {PRIVATE, 1} },
-    { "end",    &asn_base_integer_s, {PRIVATE, 1} },
-    { "step",   &asn_base_integer_s, {PRIVATE, 1} }
+    { "begin",  &asn_base_integer_s, {PRIVATE, NDN_FOR_BEGIN} },
+    { "end",    &asn_base_integer_s, {PRIVATE, NDN_FOR_END} },
+    { "step",   &asn_base_integer_s, {PRIVATE, NDN_FOR_STEP} }
 }; 
 
 static asn_type ndn_template_parameter_simple_for_s = 
 { 
-    "Templ-Param-simple-for", {PRIVATE, 20}, SEQUENCE, 
+    "Templ-Param-simple-for", {PRIVATE, NDN_ITER_FOR}, SEQUENCE, 
     sizeof(_ndn_template_parameter_simple_for_ne_array) /
         sizeof(_ndn_template_parameter_simple_for_ne_array[0]), 
     {_ndn_template_parameter_simple_for_ne_array} 
@@ -226,14 +210,15 @@ static asn_type ndn_template_parameter_simple_for_s =
 
 static asn_named_entry_t _ndn_template_parameter_ne_array[] = 
 {
-    { "ints",       &ndn_integer_seq_s, {PRIVATE, 1} },
-    { "strings",    &ndn_chstring_seq_s, {PRIVATE, 1} },
-    { "simple-for", &ndn_template_parameter_simple_for_s, {PRIVATE, 1} },
+    { "ints",       &ndn_integer_seq_s, {PRIVATE, NDN_ITER_INTS} },
+    { "strings",    &ndn_chstring_seq_s, {PRIVATE, NDN_ITER_STRINGS} },
+    { "simple-for", &ndn_template_parameter_simple_for_s,
+        {PRIVATE, NDN_ITER_FOR} },
 }; 
 
 asn_type ndn_template_parameter_s =
 {
-    "Template-Parameter", {PRIVATE, 20}, CHOICE,
+    "Template-Parameter", {PRIVATE, NDN_TMPL_ARGS}, CHOICE,
     sizeof(_ndn_template_parameter_ne_array) /
         sizeof(_ndn_template_parameter_ne_array[0]), 
     {_ndn_template_parameter_ne_array}
@@ -246,12 +231,12 @@ const asn_type * const ndn_template_parameter = &ndn_template_parameter_s;
 
 
 static asn_type ndn_template_parameter_sequence_s = 
-{ "SEQENCE OF Template-Parameter", {PRIVATE, 20}, 
+{ "SEQENCE OF Template-Parameter", {PRIVATE, NDN_TMPL_ARGS}, 
   SEQUENCE_OF, 0, {subtype: &ndn_template_parameter_s} 
 };
 
 static asn_type ndn_generic_pdu_sequence_s = 
-{ "Generic-PDU-sequence", {PRIVATE, 20}, 
+{ "Generic-PDU-sequence", {PRIVATE, NDN_TMPL_PDUS}, 
   SEQUENCE_OF, 0, {subtype: &ndn_generic_pdu_s} 
 };
 
@@ -275,7 +260,7 @@ static asn_named_entry_t _ndn_traffic_template_ne_array[] =
 }; 
 
 asn_type ndn_traffic_template_s =
-{ "Traffic-Template", {PRIVATE, 22}, SEQUENCE, 
+{ "Traffic-Template", {PRIVATE, NDN_TRAFFIC_TEMPLATE}, SEQUENCE, 
    sizeof(_ndn_traffic_template_ne_array) /
        sizeof(_ndn_traffic_template_ne_array[0]), 
    {_ndn_traffic_template_ne_array}
@@ -293,9 +278,9 @@ Packet-Action ::= CHOICE {
 
 static asn_named_entry_t _ndn_packet_action_ne_array[] = 
 {
-    { "echo",    &asn_base_null_s, {PRIVATE, 1} },
-    { "function",&asn_base_charstring_s, {PRIVATE, 1} },
-    { "file",    &asn_base_charstring_s, {PRIVATE, 1} },
+    { "echo",    &asn_base_null_s, {PRIVATE, NDN_ACT_ECHO} },
+    { "function",&asn_base_charstring_s, {PRIVATE, NDN_ACT_FUNCTION} },
+    { "file",    &asn_base_charstring_s, {PRIVATE, NDN_ACT_FILE} },
 }; 
 
 asn_type ndn_packet_action_s =
@@ -320,13 +305,13 @@ Traffic-Pattern-Unit ::= SEQUENCE {
 
 static asn_named_entry_t _ndn_traffic_pattern_unit_ne_array[] = 
 {
-    { "pdus",      &ndn_generic_pdu_sequence_s, {PRIVATE, 1} },
-    { "payload",   &ndn_payload_s, {PRIVATE, 1} },
-    { "action",    &ndn_packet_action_s, {PRIVATE, 1} },
+    { "pdus",      &ndn_generic_pdu_sequence_s, {PRIVATE, NDN_PU_PDUS} },
+    { "payload",   &ndn_payload_s,       {PRIVATE, NDN_PU_PAYLOAD} },
+    { "action",    &ndn_packet_action_s, {PRIVATE, NDN_PU_ACTION} },
 }; 
 
 asn_type ndn_traffic_pattern_unit_s =
-{ "Traffic-Pattern-Unit", {PRIVATE, 20}, SEQUENCE, 
+{ "Traffic-Pattern-Unit", {PRIVATE, NDN_TRAFFIC_PATTERN_UNIT}, SEQUENCE, 
    sizeof(_ndn_traffic_pattern_unit_ne_array) /
        sizeof(_ndn_traffic_pattern_unit_ne_array[0]),
   {_ndn_traffic_pattern_unit_ne_array}
@@ -343,7 +328,7 @@ Traffic-Pattern ::= SEQUENCE OF Traffic-Pattern-Unit
 */
 
 asn_type ndn_traffic_pattern_s =
-{ "Traffic-Pattern", {PRIVATE, 30}, SEQUENCE_OF, 0,
+{ "Traffic-Pattern", {PRIVATE, NDN_TRAFFIC_PATTERN}, SEQUENCE_OF, 0,
   {subtype: &ndn_traffic_pattern_unit_s}
 };
 
@@ -359,12 +344,12 @@ NDN-TimeStamp ::= SEQUENCE {
  */
 static asn_named_entry_t _ndn_time_stamp_ne_array[] = 
 {
-    { "seconds",       &asn_base_integer_s, {PRIVATE, 1} },
-    { "micro-seconds", &asn_base_integer_s, {PRIVATE, 1} },
+    { "seconds",       &asn_base_integer_s, {PRIVATE, NDN_TIME_SEC} },
+    { "micro-seconds", &asn_base_integer_s, {PRIVATE, NDN_TIME_MCS} },
 }; 
 
 asn_type ndn_time_stamp_s =
-{ "NDN-TimeStamp", {PRIVATE, 20}, SEQUENCE, 
+{ "NDN-TimeStamp", {PRIVATE, NDN_PKT_TIMESTAMP}, SEQUENCE, 
    sizeof(_ndn_time_stamp_ne_array) / sizeof(_ndn_time_stamp_ne_array[0]),
   {_ndn_time_stamp_ne_array}
 
@@ -385,13 +370,13 @@ Raw-Packet ::= SEQUENCE -- values of this type are passed from CSAP to test
 
 static asn_named_entry_t _ndn_raw_packet_ne_array[] = 
 {
-    { "received",  &ndn_time_stamp_s, {PRIVATE, 1} },
-    { "pdus",      &ndn_generic_pdu_sequence_s, {PRIVATE, 1} },
-    { "payload",   &ndn_payload_s, {PRIVATE, 1} },
+    { "received",  &ndn_time_stamp_s, {PRIVATE, NDN_PKT_TIMESTAMP} },
+    { "pdus",      &ndn_generic_pdu_sequence_s, {PRIVATE, NDN_PKT_PDUS} },
+    { "payload",   &ndn_payload_s,    {PRIVATE, NDN_PKT_PAYLOAD} },
 }; 
 
 asn_type ndn_raw_packet_s =
-{ "Raw-Packet", {PRIVATE, 20}, SEQUENCE, 
+{ "Raw-Packet", {PRIVATE, NDN_TRAFFIC_PACKET}, SEQUENCE, 
    sizeof(_ndn_raw_packet_ne_array) / sizeof(_ndn_raw_packet_ne_array[0]), 
   {_ndn_raw_packet_ne_array}
 

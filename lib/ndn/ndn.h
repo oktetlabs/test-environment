@@ -40,6 +40,16 @@ extern "C" {
 #endif
 
 /**
+ * Constants for ASN tags of NDN messages
+ */
+typedef enum {
+    NDN_TRAFFIC_TEMPLATE,
+    NDN_TRAFFIC_PACKET,
+    NDN_TRAFFIC_PATTERN,
+    NDN_TRAFFIC_PATTERN_UNIT,
+    NDN_CSAP_SPEC,
+} ndn_message_tags_t;
+/**
  * Constants for ASN tags of protocol choices in PDUs and CSAPs 
  */
 typedef enum { 
@@ -111,6 +121,18 @@ typedef enum {
 } ndn_pld_tags_t;
 
 /**
+ * ASN.1 tag values for template iterated parameters
+ */
+typedef enum {
+    NDN_FOR_BEGIN,
+    NDN_FOR_END,
+    NDN_FOR_STEP,
+    NDN_ITER_INTS,
+    NDN_ITER_STRINGS,
+    NDN_ITER_FOR,
+} ndn_tmpl_iter_tags_t;
+
+/**
  * ASN.1 tag values for entries in 'Traffic-Template' type.
  */ 
 typedef enum {
@@ -120,10 +142,42 @@ typedef enum {
     NDN_TMPL_PAYLOAD,
 } ndn_traffic_template_tags_t;
 
-/* Generic useful ASN types */
-extern const asn_type *const asn_base_int4;
-extern const asn_type *const asn_base_int8;
-extern const asn_type *const asn_base_int16;
+/**
+ * ASN.1 tag values for entries in 'Packet-Action' type.
+ */ 
+typedef enum {
+    NDN_ACT_ECHO,
+    NDN_ACT_FUNCTION,
+    NDN_ACT_FILE,
+} ndn_packet_action_tags_t;
+
+
+/**
+ * ASN.1 tag values for entries in 'Pattern-Unit'' type.
+ */ 
+typedef enum {
+    NDN_PU_PDUS,
+    NDN_PU_PAYLOAD,
+    NDN_PU_ACTION,
+} ndn_pattern_unit_tags_t;
+
+/**
+ * ASN.1 tag values for entries in 'NDN-TimeStamp' type.
+ */ 
+typedef enum {
+    NDN_TIME_SEC,
+    NDN_TIME_MCS,
+} ndn_timestamp_tags_t;
+
+/**
+ * ASN.1 tag values for entries in 'Raw-Packet' type.
+ */ 
+typedef enum {
+    NDN_PKT_TIMESTAMP,
+    NDN_PKT_PDUS,
+    NDN_PKT_PAYLOAD,
+} ndn_raw_packet_tags_t;
+
 
 
 /* NDN ASN types. */
