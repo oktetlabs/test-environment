@@ -37,6 +37,28 @@
 extern "C" {
 #endif
 
+/**
+ * ASN.1 tags for Bridge PDUs
+ */
+typedef enum {
+    NDN_BRIDGE_PROTO_ID,
+    NDN_BRIDGE_VERSION_ID,
+    NDN_BRIDGE_BPDU_TYPE,
+    NDN_BRIDGE_CONTENT,
+    NDN_BRIDGE_CFG,
+    NDN_BRIDGE_TCN,
+    NDN_BRIDGE_FLAGS,
+    NDN_BRIDGE_ROOT_ID,
+    NDN_BRIDGE_PATH_COST,
+    NDN_BRIDGE_BRIDGE_ID,
+    NDN_BRIDGE_PORT_ID,
+    NDN_BRIDGE_MESSAGE_AGE,
+    NDN_BRIDGE_MAX_AGE,
+    NDN_BRIDGE_HELLO_TIME,
+    NDN_BRIDGE_FORWARD_DELAY,
+    NDN_BRIDGE_,
+} ndn_bridge_tags_t;
+
 /** Structure represents Configuration BPDU */
 typedef struct ndn_stp_cfg_bpdu_t {
     uint8_t  flags;          /**< Value of the Flags field */

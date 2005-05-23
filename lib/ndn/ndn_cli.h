@@ -35,6 +35,26 @@
 extern "C" {
 #endif
 
+/**
+ * ASN.1 tags for CLI CSAP NDN
+ */
+typedef enum {
+    NDN_CLI_MESSAGE,
+    NDN_CLI_HOST,
+    NDN_CLI_PORT,
+    NDN_CLI_DEVICE,
+    NDN_CLI_ARGS,
+    NDN_CLI_TELNET,
+    NDN_CLI_SHELL,
+    NDN_CLI_SERIAL,
+    NDN_CLI_CONN_TYPE,
+    NDN_CLI_CONN_PARAMS,
+    NDN_CLI_COMMAND_PROMPT,
+    NDN_CLI_LOGIN_PROMPT,
+    NDN_CLI_PASSWORD_PROMPT,
+    NDN_CLI_USER,
+    NDN_CLI_PASSWORD,
+} ndn_cli_tags_t;
 
 extern asn_type_p ndn_cli_message;
 extern asn_type_p ndn_cli_serial_params;
