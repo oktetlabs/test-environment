@@ -57,12 +57,33 @@ fi
 
 AC_C_BIGENDIAN
 
+AC_ARG_WITH([glib],
+            AS_HELP_STRING([--with-glib=[PFX]],
+                           [Specify location for glib-2.0 installation]),
+              [ac_cv_with_glib=$withval], [ac_cv_with_glib=])
+
+if test "x$ac_cv_with_glib" != "x"
+then
+    OLD_PKG_CONFIG_PATH=$PKG_CONFIG_PATH
+    # Find glib library at this path first
+    PKG_CONFIG_PATH="$ac_cv_with_glib/lib/pkgconfig:$PKG_CONFIG_PATH"
+    export PKG_CONFIG_PATH
+fi
+
 GLIB_REQUIRED_VERSION=2.0.0
 AM_PATH_GLIB_2_0($GLIB_REQUIRED_VERSION, [],
   AC_MSG_WARN("GLIB $GLIB_REQUIRED_VERSION or better is required. 
  The latest version of GLIB is always available from ftp://ftp.gtk.org/
  The package can't be built without this library, so you are allowed to 
  make only 'dist' target."), )
+
+
+if test "x$ac_cv_with_glib" != "x"
+then
+    # Reset pkg-config APTH to its original value
+    PKG_CONFIG_PATH=$OLD_PKG_CONFIG_PATH
+    export PKG_CONFIG_PATH
+fi
 
 LIBXML_CONFIG_PREFIX=""
 AC_ARG_WITH([libxml-prefix],
