@@ -119,7 +119,7 @@ static asn_named_entry_t _ndn_cli_csap_ne_array [] =
     { "conn-type",      &asn_base_integer_s,          
         {PRIVATE, NDN_CLI_CONN_TYPE} },
     { "conn-params",    &ndn_cli_params_s,            
-        {PRIVATE, NDN_CLI_CONN_PARAMS}, 
+        {PRIVATE, NDN_CLI_CONN_PARAMS} }, 
     { "command-prompt", &ndn_data_unit_char_string_s, 
         {PRIVATE, NDN_CLI_COMMAND_PROMPT} },
     { "login-prompt",   &ndn_data_unit_char_string_s, 
