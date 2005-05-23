@@ -1947,8 +1947,20 @@ asn_type asn_base_enum_s =
 asn_type asn_base_charstring_s = 
 { "UniversalString",   {UNIVERSAL,28}, CHAR_STRING, 0, {NULL} }; 
 
+asn_type asn_base_int4_s = 
+{ "INTEGER (0..15)",   {UNIVERSAL, 2}, INTEGER, 4, {0}}; 
+asn_type asn_base_int8_s = 
+{ "INTEGER (0..255)",  {UNIVERSAL, 2}, INTEGER, 8, {0}}; 
+asn_type asn_base_int16_s = 
+{ "INTEGER (0..65535)",{UNIVERSAL, 2}, INTEGER, 16, {0}};
+
+
+
 const asn_type * const asn_base_boolean     = &asn_base_boolean_s;
 const asn_type * const asn_base_integer     = &asn_base_integer_s;
+const asn_type * const asn_base_int4        = &asn_base_int4_s;
+const asn_type * const asn_base_int8        = &asn_base_int8_s;
+const asn_type * const asn_base_int16       = &asn_base_int16_s;
 const asn_type * const asn_base_bitstring   = &asn_base_bitstring_s;
 const asn_type * const asn_base_octstring   = &asn_base_octstring_s;
 const asn_type * const asn_base_null        = &asn_base_null_s;

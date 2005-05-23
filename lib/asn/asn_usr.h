@@ -695,6 +695,11 @@ extern const asn_type * const asn_base_real;
 extern const asn_type * const asn_base_null;
 extern const asn_type * const asn_base_objid;
 
+extern const asn_type * const asn_base_int4;
+extern const asn_type * const asn_base_int8;
+extern const asn_type * const asn_base_int16;
+
+
 #ifdef __cplusplus
 } /* for 'extern "C" {' */
 #endif
