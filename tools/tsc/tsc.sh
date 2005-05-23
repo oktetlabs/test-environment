@@ -313,7 +313,7 @@ create_test()
  * \$Id: $
  */
 
-/** @page ${SUITE_NAME}-${TEST_NAME}  ${TEST_DESCR}
+/** @page ${TEST_NAME}  ${TEST_DESCR}
  *
  * @objective 
  *
@@ -324,7 +324,7 @@ create_test()
  * @par Scenario
  * -# Step
  *
- * @author ${AUTHOR_NAME} ${AUTHOR_FNAME} <${AUTHOR_NAME}.${AUTHOR_FNAME}}@oktetlabs.ru>
+ * @author ${AUTHOR_NAME} ${AUTHOR_FNAME} <${AUTHOR_NAME}.${AUTHOR_FNAME}@oktetlabs.ru>
  */
 
 #define TE_TEST_NAME  "${DIR}${TEST_NAME}"
