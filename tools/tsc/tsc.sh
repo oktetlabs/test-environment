@@ -234,7 +234,7 @@ update_package_xml()
     cat >> $FILE << EOF
         <run>
             <$2 name="$NAME"/>
-        <run>
+        </run>
              
     </session>
 </package>
