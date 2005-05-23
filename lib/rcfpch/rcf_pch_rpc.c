@@ -107,7 +107,6 @@ typedef struct rpcserver {
 
     char name[RCF_MAX_ID]; /**< RPC server name */
     int  sock;             /**< Socket for interaction with the server */
-    int  sid;              /**< RCF session identifier */
     int  ref;              /**< Number of thread children */
     
     int       pid;         /**< Process identifier */
@@ -129,18 +128,6 @@ static int rpcserver_add(unsigned int, const char *, const char *,
 static int rpcserver_del(unsigned int, const char *,
                          const char *);
 static int rpcserver_list(unsigned int, const char *, char **);
-
-static int sid_get(unsigned int, const char *, char *, const char *,
-                   const char *);
-static int sid_set(unsigned int, const char *, const char *, const char *,
-                   const char *);
-
-static rcf_pch_cfg_object node_sid = { "rpcserver_sid", 0, NULL, NULL, 
-                                       (rcf_ch_cfg_get)sid_get, 
-                                       (rcf_ch_cfg_set)sid_set, 
-                                       NULL, NULL,
-                                       (rcf_ch_cfg_list)rpcserver_list, 
-                                       NULL, NULL };
 
 static rcf_pch_cfg_object node_rpcserver =
     { "rpcserver", 0, NULL, NULL,
@@ -573,7 +560,6 @@ void
 rcf_pch_rpc_init()
 {
     rcf_pch_cfg_object *root = rcf_ch_conf_root();
-    rcf_pch_cfg_object *vol;
 #ifdef TCP_TRANSPORT    
     struct sockaddr_in  addr;
 #else    
@@ -582,16 +568,6 @@ rcf_pch_rpc_init()
     int                 len;
     char                port[16];
     pthread_t           tid = 0;
-    
-    for (vol = root->son; 
-         vol != NULL && strcmp(vol->sub_id, "volatile") != 0;
-         vol = vol->brother);
-         
-    if (vol == NULL)
-    {
-        ERROR("Failed to find \"/agent/volatile\" node");
-        return;
-    }
     
 #define RETERR(msg...) \
     do {                  \
@@ -662,8 +638,6 @@ rcf_pch_rpc_init()
     
     node_rpcserver.brother = root->son;
     root->son = &node_rpcserver;
-    node_sid.brother = vol->son;
-    vol->son = &node_sid;
     
 #undef RETERR    
 }
@@ -952,91 +926,6 @@ rpcserver_list(unsigned int gid, const char *oid, char **value)
     rcf_ch_unlock();
     
     return 0;
-}
-
-/**
- * Get RPC server SID.
- *
- * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
- * @param value         value location
- * @param vol           volatile node name (empty)
- * @param name          RPC server name
- *
- * @return Status code
- */
-static int 
-sid_get(unsigned int gid, const char *oid, char *value, 
-        const char *vol, const char *name)
-{
-    rpcserver *rpcs;
-    
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(vol);
-    
-    rcf_ch_lock();
-    
-    for (rpcs = list; 
-         rpcs != NULL && strcmp(rpcs->name, name) != 0;
-         rpcs = rpcs->next);
-         
-    if (rpcs == NULL)
-    {
-        rcf_ch_unlock();
-        return TE_RC(TE_RCF_PCH, ETENOSUCHNAME);
-    }
-        
-    sprintf(value, "%d", rpcs->sid);
-    rcf_ch_unlock();        
-        
-    return 0;        
-}
-
-/**
- * Get RPC server SID.
- *
- * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
- * @param value         new SID value
- * @param vol           volatile node name (empty)
- * @param name          RPC server name
- *
- * @return Status code
- */
-static int 
-sid_set(unsigned int gid, const char *oid, 
-        const char *value, const char *vol, const char *name)
-{
-    rpcserver *rpcs;
-    char      *end;
-    int        sid;
-    
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(vol);
-    
-    sid = strtol(value, &end, 10);
-    
-    if (end == value || *end != 0 || sid <= 0)
-        return TE_RC(TE_RCF_PCH, EINVAL);
-    
-    rcf_ch_lock();
-    
-    for (rpcs = list; 
-         rpcs != NULL && strcmp(rpcs->name, name) != 0;
-         rpcs = rpcs->next);
-         
-    if (rpcs == NULL)
-    {
-        rcf_ch_unlock();
-        return TE_RC(TE_RCF_PCH, ETENOSUCHNAME);
-    }
-        
-    rpcs->sid = sid;
-    rcf_ch_unlock();        
-        
-    return 0;        
 }
 
 /**

@@ -105,6 +105,12 @@
          -->
     <object oid="/agent/route" access="read_create" type="string"/>
 
+    <!-- RPC server.
+         Name: RPC server name
+         Value: name of the father -->
+    <object oid="/agent/rpcserver" 
+            access="read_create" type="string"/>
+
     <!-- DNS server.
          Name:  empty    
          Limit: 1 -->
@@ -119,6 +125,12 @@
          Name:  empty
          Limit: 1 -->
     <object oid="/agent/volatile" access="read_create" type="none"/>
+
+    <!-- SID for interacting with RPC server.
+         Name: <ta>:<rpcserver>
+         Value: SID -->
+    <object oid="/volatile/rpcserver_sid" 
+            access="read_create" type="integer"/>
 
     <!-- Dynamic ARP entries.
          Name:  IPv4 address in dotted notation -->

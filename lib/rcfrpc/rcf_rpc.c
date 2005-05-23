@@ -127,14 +127,13 @@ rcf_rpc_server_get(const char *ta, const char *name,
                    rcf_rpc_server **p_handle)
 {
     int   sid;
-    char *val0 = NULL;
+    char *val0 = NULL, *tmp;
     int   rc;
     
     rcf_rpc_server *rpcs = NULL;
     cfg_handle      handle = CFG_HANDLE_INVALID;
     char            val[RCF_RPC_NAME_LEN];
     
-
     /* Validate parameters */
     if (ta == NULL || p_handle == NULL || name == NULL ||
         strlen(name) >= RCF_RPC_NAME_LEN - strlen("thread_") ||
@@ -145,7 +144,35 @@ rcf_rpc_server_get(const char *ta, const char *name,
     {
         return TE_RC(TE_RCF_API, EINVAL);
     }
+
+    /* Try to find existing RPC server */
+    rc = cfg_get_instance_fmt(NULL, &tmp, 
+                              "/agent:%s/rpcserver_sid:%s",
+                              ta, name);
+
+    if (rc != 0 && existing)
+        return TE_RC(TE_RCF_API, ENOENT);
     
+    if (cfg_get_instance_fmt(NULL, &sid, 
+                             "/volatile:/rpcserver_sid:%s:%s",
+                             ta, name) != 0)
+    {
+         /* Server is created in the configurator.conf */
+        if ((rc = rcf_ta_create_session(ta, &sid)) != 0)
+        {
+            ERROR("Cannot allocate RCF SID");
+            return rc;
+        }
+            
+        if (cfg_add_instance_fmt(&handle, CVT_INTEGER, (void *)sid, 
+                                 "/volatile:/rpcserver_sid:%s:%s", 
+                                 ta, name) != 0)
+        {
+            ERROR("Failed to specify SID for the RPC server %s", name);
+            return rc;
+        }
+    }        
+        
     if (father != NULL && 
         cfg_get_instance_fmt(NULL, &val0, "/agent:%s/rpcserver:%s", 
                              ta, father) != 0)
@@ -160,7 +187,6 @@ rcf_rpc_server_get(const char *ta, const char *name,
         sprintf(val, "thread_%s", father);
     else
         sprintf(val, "fork_%s", father);
-    
 
     if ((rpcs = (rcf_rpc_server *)
                     calloc(1, sizeof(rcf_rpc_server))) == NULL)
@@ -181,41 +207,10 @@ rcf_rpc_server_get(const char *ta, const char *name,
         ERROR(msg);                     \
         return TE_RC(TE_RCF_API, rc);   \
     } while (0)
-
-    /* Try to find existing RPC server */
-    rc = cfg_get_instance_fmt(NULL, &sid, 
-                              "/agent:%s/volatile:/rpcserver_sid:%s",
-                              ta, name);
-
-    if (rc != 0 && TE_RC_GET_ERROR(rc) != ENOENT)
-        RETERR(rc, "cfg_get_instance() failed with unexpected error 0x%X", 
-               rc);
-    
-    if (rc != 0 && existing)
-    {
-        free(rpcs);
-        free(val0);
-        return TE_RC(TE_RCF_API, ENOENT);
-    }
-        
-    if (rc == 0 && sid == 0)
-    {
-         /* Server is created in the configurator.conf */
-        if ((rc = rcf_ta_create_session(ta, &sid)) != 0)
-            RETERR(rc, "Cannot allocate RCF SID");
-            
-        if (cfg_set_instance_fmt(CVT_INTEGER, (void *)sid, 
-                                 "/agent:%s/volatile:/rpcserver_sid:%s", 
-                                 ta, name) != 0)
-        {
-            RETERR(rc, "Cannot set SID for the RPC server %s", name);
-        }
-        
-        goto fill;
-    }        
         
     if (rc == 0 && !clear)
     {
+#ifdef RCF_RPC_CHECK_USABILITY    
         /* Check that it is not dead */
         tarpc_getpid_in  in;
         tarpc_getpid_out out;
@@ -241,10 +236,9 @@ rcf_rpc_server_get(const char *ta, const char *name,
                      "will be restarted", name);
             }
         }
-        rc = 0;
+#endif        
     }
-    
-    if (rc == 0 && clear)
+    else if (rc == 0 && clear)
     {
         /* Restart it */
         if ((rc = cfg_del_instance_fmt(FALSE, "/agent:%s/rpcserver:%s", 
@@ -255,40 +249,19 @@ rcf_rpc_server_get(const char *ta, const char *name,
         {
             RETERR(rc, "Failed to restart RPC server %s", name);
         }
-        
-        if (cfg_set_instance_fmt(CVT_INTEGER, (void *)sid, 
-                                 "/agent:%s/volatile:/rpcserver_sid:%s", 
-                                 ta, name) != 0)
-        {
-            cfg_del_instance(handle, FALSE);
-            RETERR(rc, "Cannot set SID for the RPC server %s", name);
-        }
     }
-    else if (rc != 0)
+    else 
     {
-        /* Start a new one */
-        if ((rc = rcf_ta_create_session(ta, &sid)) != 0)
-            RETERR(rc, "Cannot allocate RCF SID");
-        
         if ((rc = cfg_add_instance_fmt(&handle, CVT_STRING, val, 
                                        "/agent:%s/rpcserver:%s", 
                                        ta, name)) != 0)
         {
             RETERR(rc, "Cannot add RPC server instance");
         }
-        
-        if (cfg_set_instance_fmt(CVT_INTEGER, (void *)sid, 
-                                 "/agent:%s/volatile:/rpcserver_sid:%s", 
-                                 ta, name) != 0)
-        {
-            cfg_del_instance(handle, FALSE);
-            RETERR(rc, "Cannot set SID for the RPC server %s", name);
-        }
     }
         
 #undef RETERR    
 
-fill:
     /* Create RPC server structure and fill it */
     strcpy(rpcs->ta, ta);
     strcpy(rpcs->name, name);
@@ -299,7 +272,7 @@ fill:
     *p_handle = rpcs;
     
     free(val0);
-    
+
     return 0;
 }
 
@@ -461,12 +434,18 @@ rcf_rpc_call(rcf_rpc_server *rpcs, const char *proc,
 
     rpcs->timeout = 0;
     rpcs->start = 0;
+    if (TE_RC_GET_ERROR(rpcs->_errno) == ETERPCTIMEOUT ||
+        TE_RC_GET_ERROR(rpcs->_errno) == ETIMEDOUT)
+    {
+        rpcs->timed_out = TRUE;
+    }
     
     if (rpcs->_errno == 0)
     {
         rpcs->duration = out->duration; 
         rpcs->_errno = out->_errno;
         rpcs->win_error = out->win_error;
+        rpcs->timed_out = FALSE;
         if (rpcs->op == RCF_RPC_CALL)
         {
             rpcs->tid0 = out->tid;

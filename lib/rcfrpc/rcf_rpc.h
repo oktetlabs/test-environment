@@ -89,6 +89,9 @@ typedef struct rcf_rpc_server {
     te_bool     iut_err_jump;   /**< Jump in the case of IUT error
                                      (true by default) */
     te_bool     err_log;        /**< Log error with ERROR log level */
+    te_bool     timed_out;      /**< Timeout was received from this
+                                     RPC server - it is unusable
+                                     unless someone has restarted it */
 
     /* Read-only fields filled by API internals when server is created */
     char        ta[RCF_MAX_NAME];   /**< Test Agent name */
