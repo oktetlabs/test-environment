@@ -1,0 +1,16 @@
+AM_CPPFLAGS = -I$(top_srcdir)/lib
+AM_LDFLAGS = -L$(top_builddir)/lib @TE_LDFLAGS@
+MYLDADD = @SOCKAPI_TE_LIBS@
+MYDEPS = @SOCKAPI_TE_DEPS@ 
+
+dir attacks     Attacks and vulnerabilities
+
+dir attacks/ip  IP level attacks
+frag_flood      Flood of fragmented IP packets.
+
+dir attacks/icmp ICMP attacks
+param_problem   Crash of TCP connection using ICMP Parameter Problem message.
+source_quench   Degrade TCP connection using ICMP Source Quench message.
+
+dir attacks/tcp TCP attacks
+syn_flood       TCP SYN flood.
