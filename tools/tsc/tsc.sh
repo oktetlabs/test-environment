@@ -276,7 +276,14 @@ update_makefile_am_subdir()
     SUBDIR=`basename ${DIR}`
     echo Adding subdirectory $SUBDIR to ${FILE}
     cat ${FILE} | awk --assign name=${SUBDIR} '\
-    /^SUBDIRS/ { printf("%s %s\n", $0, name); next; } \
+    /^SUBDIRS/ \
+    { \
+        if (substr($0, length(), 1) == "\\") \
+            printf("%s\n%s \\\n", $0, name); \
+        else \
+            printf("%s \\\n%s\n", $0, name); \
+        next; \
+    } \
     { print $0 ; }' > tmp
     mv tmp ${FILE}
 }
