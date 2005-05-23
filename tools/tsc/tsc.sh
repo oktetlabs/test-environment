@@ -321,7 +321,7 @@ create_test()
         
         cat > ${DIR}${TEST_NAME}.c << EOF
 /* 
- * ${TEST_NAME}
+ * Test ${DIR}${TEST_NAME}  
  * ${TEST_DESCR}
  *
  * Copyright (C) 2005 OKTET Labs, St.-Petersburg, Russia
@@ -394,3 +394,8 @@ DIR=
 cat $1 | while read msg ; do process_line $msg ; done
 
 rm -f Makefile.am.inc
+
+aclocal
+autoheader
+autoconf
+automake
