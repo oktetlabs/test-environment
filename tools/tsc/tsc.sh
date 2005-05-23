@@ -286,8 +286,15 @@ update_configure_ac()
     FILE=${START_DIR}/configure.ac
     echo Adding generation of ${DIR}Makefile to ${FILE}
     cat ${FILE} | awk --assign dir=${DIR} '\
-    /AC_CONFIG_FILES/ { printf("AC_CONFIG_FILES([%sMakefile])\n", \
-                               dir); } \
+    BEGIN { wr=1 ; } \
+    /AC_CONFIG_FILES/ \
+    { \
+        if (wr) \
+        { \
+            printf("AC_CONFIG_FILES([%sMakefile])\n",  dir); \
+            wr = 0; \
+        } \
+    } \
     { print $0 ; }' > tmp
     mv tmp ${FILE}
 }
