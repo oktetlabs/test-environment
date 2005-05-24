@@ -61,9 +61,9 @@ typedef enum {
  * Modes for TCP messages/acks exchange methods 
  */
 typedef enum {
-    TAPI_TCP_AUTO,
-    TAPI_TCP_EXPLICIT,
-    TAPI_TCP_QUIET,
+    TAPI_TCP_AUTO,      /**< Fill seq or ack number automatically */
+    TAPI_TCP_EXPLICIT,  /**< Fill seq or ack number with specified value */
+    TAPI_TCP_QUIET,     /**< Do NOT fill seq or ack number */ 
 } tapi_tcp_protocol_mode_t;
 
 typedef int tapi_tcp_handler_t;
