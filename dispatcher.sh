@@ -627,7 +627,6 @@ if test -n "$LOGGER" ; then
         if ! kill -cont $PID >/dev/null 2>&1 ; then  break ; fi
         sleep 1 ;
     done    
-    sleep 20
     kill $PID >/dev/null 2>&1
 fi
 
