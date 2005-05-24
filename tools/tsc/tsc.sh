@@ -94,7 +94,7 @@ create_package_dox()
          /@ref/ { next; }
          /@author/ { printf("@author %s %s <%s.%s@oktetlabs.ru>\n", \
                             author_name, author_fname, \
-                            athor_name, author_fname); next; } \
+                            author_name, author_fname); next; } \
          { print $0 ; }' > tmp
          mv tmp package.dox
     fi
@@ -405,7 +405,7 @@ process_line()
     fi
     update_makefile_am_test $1
     update_package_dox ${DIR}$1
-    update_package_xml ${DIR}$1 test
+    update_package_xml ${DIR}$1 script
     TEST_NAME=$1
     shift 1
     TEST_DESCR="$*"
