@@ -22,21 +22,16 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
  *
- * Author: Alexander Kukuta <Alexander.Kukuta@oktetlabs.ru>
+ * @author Alexander Kukuta <Alexander.Kukuta@oktetlabs.ru>
  *
  * @(#) $Id$
  */
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+#include "te_config.h"
 
 #include "tad_cli_impl.h"
 
 #include <stdio.h>
-
-#define MYDEBUG(x...)
-
 
 /**
  * Callback for read parameter value of CLI CSAP.
@@ -49,7 +44,8 @@
  *     String with textual presentation of parameter value, or NULL 
  *     if error occured. User have to free memory at returned pointer.
  */ 
-char* cli_get_param_cb (int csap_id, int level, const char *param)
+char *
+cli_get_param_cb(int csap_id, int level, const char *param)
 {
     UNUSED(csap_id);
     UNUSED(level);
@@ -67,7 +63,8 @@ char* cli_get_param_cb (int csap_id, int level, const char *param)
  *
  * @return zero on success or error code.
  */ 
-int cli_confirm_pdu_cb (int csap_id, int layer, asn_value * tmpl_pdu)
+int
+cli_confirm_pdu_cb(int csap_id, int layer, asn_value * tmpl_pdu)
 {
     csap_p                   csap_descr;
     cli_csap_specific_data_p spec_data;
@@ -84,6 +81,7 @@ int cli_confirm_pdu_cb (int csap_id, int layer, asn_value * tmpl_pdu)
     
     return 0;
 }
+
 /**
  * Callback for generate binary data to be sent to media.
  *
@@ -110,11 +108,11 @@ int cli_confirm_pdu_cb (int csap_id, int layer, asn_value * tmpl_pdu)
  *                      in fragmentation sometimes may occur. (OUT)
  *
  * @return zero on success or error code.
- */ 
-
-int cli_gen_bin_cb (csap_p csap_descr, int layer, const asn_value * tmpl_pdu,
-                    const tad_tmpl_arg_t *args, size_t arg_num,
-                    const csap_pkts_p  up_payload, csap_pkts_p pkts)
+ */
+int
+cli_gen_bin_cb(csap_p csap_descr, int layer, const asn_value * tmpl_pdu,
+               const tad_tmpl_arg_t *args, size_t arg_num,
+               const csap_pkts_p  up_payload, csap_pkts_p pkts)
 {
     int rc;
     int msg_len;
@@ -134,7 +132,7 @@ int cli_gen_bin_cb (csap_p csap_descr, int layer, const asn_value * tmpl_pdu,
         return 1;
     }
 
-    if ((msg = malloc (msg_len)) == NULL)
+    if ((msg = malloc(msg_len)) == NULL)
         return ENOMEM;
     rc = asn_read_value_field(tmpl_pdu, msg, &msg_len, "message");
 
@@ -180,7 +178,7 @@ cli_match_bin_cb(int                csap_id,
     UNUSED(pattern_pdu);
     UNUSED(payload);
 
-    MYDEBUG("cli_match. len: %d, message: %s\n", msg_len, msg);
+    VERB("cli_match. len: %d, message: %s\n", msg_len, msg);
 
 #if 0
     rc = asn_write_value_field(parsed_packet, msg, msg_len, 
@@ -188,7 +186,7 @@ cli_match_bin_cb(int                csap_id,
 
     if (rc)
     {
-        MYDEBUG("cli_match. asn_write_value_field() failed");
+        VERB("cli_match. asn_write_value_field() failed");
         free(buf);
         return rc;
     }
@@ -197,7 +195,7 @@ cli_match_bin_cb(int                csap_id,
     memset(payload, 0 , sizeof(*payload));
     payload->len = pkt->len;
     payload->data = malloc(payload->len);
-    memcpy(payload->data, pkt->data, payload->len); 
+    memcpy(payload->data, pkt->data, payload->len);
 #endif
 
     return 0;
@@ -216,14 +214,14 @@ cli_match_bin_cb(int                csap_id,
  *
  * @return zero on success or error code.
  */
-int cli_gen_pattern_cb (int csap_id, int layer, const asn_value * tmpl_pdu, 
-                                         asn_value **pattern_pdu)
+int
+cli_gen_pattern_cb(int csap_id, int layer, const asn_value * tmpl_pdu, 
+                   asn_value **pattern_pdu)
 {
     UNUSED(csap_id);
     UNUSED(tmpl_pdu);
 
-    *pattern_pdu = asn_init_value (ndn_cli_message);
-    MYDEBUG("'generate pattern' callback, layer %d\n", layer);
-    //VERB("'generate pattern' callback, layer %d", layer); 
+    *pattern_pdu = asn_init_value(ndn_cli_message);
+    VERB("%s(): called, layer %d", __FUNCTION__, layer);
     return 0;
 }

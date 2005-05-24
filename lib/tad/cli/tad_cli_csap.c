@@ -22,14 +22,12 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
  *
- * Author: Alexander Kukuta <Alexander.Kukuta@oktetlabs.ru>
+ * @author Alexander Kukuta <Alexander.Kukuta@oktetlabs.ru>
  *
  * @(#) $Id$
  */
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+#include "te_config.h"
 
 #include "tad_cli_impl.h"
 
@@ -57,7 +55,8 @@ csap_spt_type_t cli_csap_spt =
  *
  * @return zero on success or error code.
  */ 
-int csap_support_cli_register (void)
+int
+csap_support_cli_register(void)
 { 
     return add_csap_spt(&cli_csap_spt);
 }

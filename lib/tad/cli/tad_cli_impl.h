@@ -22,7 +22,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
  *
- * Author: Alexander Kukuta <Alexander.Kukuta@oktetlabs.ru>
+ * @author Alexander Kukuta <Alexander.Kukuta@oktetlabs.ru>
  *
  * @(#) $Id$
  */
@@ -81,21 +81,23 @@
 
 #include "logger_api.h"
 
-#define CLI_CONN_TYPE_SERIAL        0 /**< serial CLI connection (millicom) */
-#define CLI_CONN_TYPE_TELNET        1 /**< telnet CLI connection */
-#define CLI_CONN_TYPE_SSH           2 /**< ssh CLI connection */
-#define CLI_CONN_TYPE_SHELL         3 /**< shell (/bin/sh) CLI connection */
+typedef enum cli_conn_type {
+    CLI_CONN_TYPE_SERIAL, /**< Serial CLI connection (millicom) */
+    CLI_CONN_TYPE_TELNET, /**< Telnet CLI connection */
+    CLI_CONN_TYPE_SSH, /**< Ssh CLI connection */
+    CLI_CONN_TYPE_SHELL, /**< Shell (/bin/sh) CLI connection */
+} cli_conn_type_t;
 
 #define CLI_MAX_PROMPTS             4 /**< Maximum number of allowed prompts */
 
+/* Define timeout used for waiting for prompt in CSAP creation procedure */
 #ifndef CLI_CSAP_DEFAULT_TIMEOUT
-#define CLI_CSAP_DEFAULT_TIMEOUT    5 /**< Seconds to wait for incoming data */
+#define CLI_CSAP_DEFAULT_TIMEOUT    10 /**< Seconds to wait for prompt */
 #endif
 
-#define CLI_PROMPT_STATUS           0x7 /**< prompt status mask */
-#define CLI_PROMPT_STATUS_COMMAND   0x1 /**< command-prompt is present */
-#define CLI_PROMPT_STATUS_LOGIN     0x2 /**< login-prompt is present */
-#define CLI_PROMPT_STATUS_PASSWORD  0x4 /**< password-prompt is present */
+#define CLI_PROMPT_STATUS_COMMAND   0x1 /**< command-prompt present */
+#define CLI_PROMPT_STATUS_LOGIN     0x2 /**< login-prompt present */
+#define CLI_PROMPT_STATUS_PASSWORD  0x4 /**< password-prompt present */
 
 #ifdef __cplusplus
 extern "C" {
@@ -111,14 +113,19 @@ typedef struct cli_csap_specific_data
     FILE  *dbg_file;    /**< file to gather debug data from expect session    */
     int    io;          /**< file descriptor of CLI session stdin and stdout  */
     FILE  *fp;          /**< file descriptor of CLI session stdin and stdout  */
-    pid_t  expect_pid;  /**< Expect process id                                */
-    pid_t  session_pid; /**< CLI session process id                           */
+    pid_t  expect_pid;  /**< Expect process ID                                */
+    pid_t  session_pid; /**< CLI session process ID                           */
 
-    int    sync_p2c[2]; /**< CSAP to Expect process pipe filedescriptors      */
-    int    sync_c2p[2]; /**< Expect process to CSAP pipe filedescriptors      */
+    int data_sock; /**< Endpoint for communication with peer:
+                        - on CSAP Engine: Used for sending commands and
+                          for reading command results,
+                        - on Expect side: For reading commands and
+                          for sending command results */
+    int sync_pipe; /**< Used for sync mesages sent from Expect side to
+                        CSAP Engine. */
 
-    int    conn_type;   /**< CLI protocol type                                */
-    char  *program;     /**< Default program to start (millicom, telnet,
+    cli_conn_type_t conn_type; /**< CLI protocol type                         */
+    char *program;     /**< Default program to start (millicom, telnet,
                              ssh or sh) */
 
     char  *device;      /**< Default device (NULL if not defined)             */
@@ -131,7 +138,7 @@ typedef struct cli_csap_specific_data
     char  *password;    /**< Default user password (NULL if not defined)      */
 
 
-    int    prompts_status;   /**< available prompts found on init             */
+    uint32_t prompts_status;   /**< available prompts found on init             */
 
     struct exp_case prompts[CLI_MAX_PROMPTS]; /**< expect cases structure that
                                                    contains known prompts     */
@@ -210,7 +217,7 @@ extern int cli_write_read_cb(csap_p csap_descr, int timeout,
  *
  * @return zero on success or error code.
  */ 
-extern int cli_single_init_cb (int csap_id, const asn_value * csap_nds, int layer);
+extern int cli_single_init_cb(int csap_id, const asn_value * csap_nds, int layer);
 
 /**
  * Callback for destroy 'file' CSAP layer if single in stack.
@@ -224,7 +231,7 @@ extern int cli_single_init_cb (int csap_id, const asn_value * csap_nds, int laye
  *
  * @return zero on success or error code.
  */ 
-extern int cli_single_destroy_cb (int csap_id, int layer);
+extern int cli_single_destroy_cb(int csap_id, int layer);
 
 /**
  * Callback for confirm PDU with ehternet CSAP parameters and possibilities.
@@ -235,7 +242,7 @@ extern int cli_single_destroy_cb (int csap_id, int layer);
  *
  * @return zero on success or error code.
  */ 
-extern int cli_confirm_pdu_cb (int csap_id, int layer, asn_value * tmpl_pdu); 
+extern int cli_confirm_pdu_cb(int csap_id, int layer, asn_value * tmpl_pdu); 
 
 /**
  * Callback for generate binary data to be sent to media.
@@ -283,10 +290,10 @@ extern int cli_gen_bin_cb(csap_p csap_descr, int layer,
  *
  * @return zero on success or error code.
  */
-extern int cli_match_bin_cb (int csap_id, int layer, 
+extern int cli_match_bin_cb(int csap_id, int layer, 
                             const asn_value * pattern_pdu,
-                             const csap_pkts *  pkt, csap_pkts * payload, 
-                             asn_value *  parsed_packet );
+                            const csap_pkts *  pkt, csap_pkts * payload, 
+                            asn_value *  parsed_packet );
 
 /**
  * Callback for generating pattern to filter 
@@ -301,8 +308,8 @@ extern int cli_match_bin_cb (int csap_id, int layer,
  *
  * @return zero on success or error code.
  */
-extern int cli_gen_pattern_cb (int csap_id, int layer, const asn_value * tmpl_pdu, 
-                               asn_value *   *pattern_pdu);
+extern int cli_gen_pattern_cb(int csap_id, int layer, const asn_value * tmpl_pdu, 
+                              asn_value *   *pattern_pdu);
 
 
 /**
@@ -326,19 +333,6 @@ extern int open_raw_socket(int cli_type, int pkt_type, int if_index, int *sock);
  *
  */ 
 extern void free_cli_csap_data(cli_csap_specific_data_p spec_data);
-
-#if 0
-/**
- * Find number of CLI layer in CSAP stack.
- *
- * @param csap_descr    CSAP description structure.
- * @param layer_name    Name of the layer to find.
- *
- * @return number of layer (start from zero) or -1 if not found. 
- */ 
-extern int find_csap_layer(csap_p csap_descr, char *layer_name);
-#endif
-
 
 #ifdef __cplusplus
 } /* extern "C" */
