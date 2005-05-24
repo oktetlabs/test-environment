@@ -40,22 +40,22 @@ static asn_type ndn_dhcpv4_options_s;
 
 static asn_named_entry_t _ndn_dhcpv4_option_ne_array [] = 
 {
-    { "type",    &ndn_data_unit_int8_s, {PRIVATE, 1} },
-    { "length",  &ndn_data_unit_int8_s, {PRIVATE, 2} },
-    { "value",   &ndn_data_unit_octet_string_s, {PRIVATE, 3} },
-    { "options", &ndn_dhcpv4_options_s, {PRIVATE, 4} },
+    { "type",    &ndn_data_unit_int8_s, {PRIVATE, NDN_DHCP_TYPE} },
+    { "length",  &ndn_data_unit_int8_s, {PRIVATE, NDN_DHCP_LENGTH} },
+    { "value",   &ndn_data_unit_octet_string_s, {PRIVATE, NDN_DHCP_VALUE} },
+    { "options", &ndn_dhcpv4_options_s, {PRIVATE, NDN_DHCP_OPTIONS} },
 };
 
 static asn_type ndn_dhcpv4_option_s = 
 {
-    "DHCPv4-Option", {PRIVATE, 600}, SEQUENCE, 
+    "DHCPv4-Option", {PRIVATE, NDN_DHCP_OPTIONS}, SEQUENCE, 
     sizeof(_ndn_dhcpv4_option_ne_array)/sizeof(asn_named_entry_t),
     {_ndn_dhcpv4_option_ne_array}
 };
 
 static asn_type ndn_dhcpv4_options_s =
 { 
-    "DHCPv4-Options", {PRIVATE, 601}, SEQUENCE_OF, 
+    "DHCPv4-Options", {PRIVATE, NDN_DHCP_OPTIONS}, SEQUENCE_OF, 
     0, {subtype: &ndn_dhcpv4_option_s} 
 };
 
@@ -66,26 +66,26 @@ asn_type_p ndn_dhcpv4_options = &ndn_dhcpv4_options_s;
 
 static asn_named_entry_t _ndn_dhcpv4_message_ne_array [] = 
 {
-    { "op",     &ndn_data_unit_int8_s, {PRIVATE, 1} },
-    { "htype",  &ndn_data_unit_int8_s, {PRIVATE, 2} },
-    { "hlen",   &ndn_data_unit_int8_s, {PRIVATE, 3} },
-    { "hops",   &ndn_data_unit_int8_s, {PRIVATE, 4} },
-    { "xid",    &ndn_data_unit_int32_s, {PRIVATE, 5} },
-    { "secs",   &ndn_data_unit_int16_s, {PRIVATE, 6} },
-    { "flags",  &ndn_data_unit_int16_s, {PRIVATE, 7} },
-    { "ciaddr", &ndn_data_unit_ip_address_s, {PRIVATE, 8} },
-    { "yiaddr", &ndn_data_unit_ip_address_s, {PRIVATE, 9} },
-    { "siaddr", &ndn_data_unit_ip_address_s, {PRIVATE,10} },
-    { "giaddr", &ndn_data_unit_ip_address_s, {PRIVATE,11} },
-    { "chaddr", &ndn_data_unit_octet_string_s, {PRIVATE,12} },
-    { "sname",  &ndn_data_unit_octet_string_s, {PRIVATE,13} },
-    { "file",   &ndn_data_unit_octet_string_s, {PRIVATE,14} },
-    { "options",  &ndn_dhcpv4_options_s, {PRIVATE,15} },
+    { "op",     &ndn_data_unit_int8_s, {PRIVATE, NDN_DHCP_OP} },
+    { "htype",  &ndn_data_unit_int8_s, {PRIVATE, NDN_DHCP_HTYPE} },
+    { "hlen",   &ndn_data_unit_int8_s, {PRIVATE, NDN_DHCP_HLEN} },
+    { "hops",   &ndn_data_unit_int8_s, {PRIVATE, NDN_DHCP_HOPS} },
+    { "xid",    &ndn_data_unit_int32_s, {PRIVATE, NDN_DHCP_XID} },
+    { "secs",   &ndn_data_unit_int16_s, {PRIVATE, NDN_DHCP_SECS} },
+    { "flags",  &ndn_data_unit_int16_s, {PRIVATE, NDN_DHCP_FLAGS} },
+    { "ciaddr", &ndn_data_unit_ip_address_s, {PRIVATE, NDN_DHCP_CIADDR} },
+    { "yiaddr", &ndn_data_unit_ip_address_s, {PRIVATE, NDN_DHCP_YIADDR} },
+    { "siaddr", &ndn_data_unit_ip_address_s, {PRIVATE,NDN_DHCP_SIADDR} },
+    { "giaddr", &ndn_data_unit_ip_address_s, {PRIVATE,NDN_DHCP_GIADDR} },
+    { "chaddr", &ndn_data_unit_octet_string_s, {PRIVATE,NDN_DHCP_CHADDR} },
+    { "sname",  &ndn_data_unit_octet_string_s, {PRIVATE,NDN_DHCP_SNAME} },
+    { "file",   &ndn_data_unit_octet_string_s, {PRIVATE,NDN_DHCP_FILE} },
+    { "options",  &ndn_dhcpv4_options_s, {PRIVATE,NDN_DHCP_OPTIONS} },
 };
 
 asn_type ndn_dhcpv4_message_s = 
 {
-    "DHCPv4-Message", {PRIVATE, 602}, SEQUENCE, 
+    "DHCPv4-Message", {PRIVATE, NDN_TAD_DHCP}, SEQUENCE, 
     sizeof(_ndn_dhcpv4_message_ne_array)/sizeof(asn_named_entry_t),
     {_ndn_dhcpv4_message_ne_array}
 };
@@ -105,7 +105,7 @@ asn_enum_entry_t _ndn_dhcp_mode_enum_entries[] =
 
 asn_type ndn_dhcp_mode_s = {
     "DHCPv4-CSAP-Mode",
-    {UNIVERSAL, 10},
+    {PRIVATE, NDN_DHCP_MODE},
     ENUMERATED,
     sizeof(_ndn_dhcp_mode_enum_entries)/sizeof(asn_enum_entry_t), 
     {enum_entries: _ndn_dhcp_mode_enum_entries}
@@ -116,13 +116,13 @@ asn_type ndn_dhcp_mode_s = {
 
 static asn_named_entry_t _ndn_dhcpv4_csap_ne_array [] = 
 {
-    { "mode",   &ndn_dhcp_mode_s, {PRIVATE, 1} },
-    { "iface",  &asn_base_charstring_s, {PRIVATE, 2} },
+    { "mode",   &ndn_dhcp_mode_s, {PRIVATE, NDN_DHCP_MODE } },
+    { "iface",  &asn_base_charstring_s, {PRIVATE, NDN_DHCP_IFACE} },
 };
 
 asn_type ndn_dhcpv4_csap_s =
 {
-    "DHCPv4-CSAP", {PRIVATE, 606}, SEQUENCE, 
+    "DHCPv4-CSAP", {PRIVATE, NDN_TAD_DHCP}, SEQUENCE, 
     sizeof(_ndn_dhcpv4_csap_ne_array)/sizeof(asn_named_entry_t),
     {_ndn_dhcpv4_csap_ne_array}
 };

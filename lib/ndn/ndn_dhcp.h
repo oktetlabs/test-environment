@@ -34,6 +34,31 @@
 extern "C" {
 #endif
 
+/**
+ * ASN.1 tags for DHCP CSAP NDN
+ */
+typedef enum {
+    NDN_DHCP_OP,
+    NDN_DHCP_HTYPE,
+    NDN_DHCP_HLEN,
+    NDN_DHCP_HOPS,
+    NDN_DHCP_XID,
+    NDN_DHCP_SECS,
+    NDN_DHCP_FLAGS,
+    NDN_DHCP_CIADDR,
+    NDN_DHCP_YIADDR,
+    NDN_DHCP_SIADDR,
+    NDN_DHCP_GIADDR,
+    NDN_DHCP_CHADDR,
+    NDN_DHCP_SNAME,
+    NDN_DHCP_FILE,
+    NDN_DHCP_OPTIONS,
+    NDN_DHCP_TYPE,
+    NDN_DHCP_LENGTH,
+    NDN_DHCP_VALUE,
+    NDN_DHCP_MODE,
+    NDN_DHCP_IFACE,
+} ndn_dhcp_tags_t;
 
 extern asn_type_p ndn_dhcpv4_message;
 extern asn_type_p ndn_dhcpv4_options;
