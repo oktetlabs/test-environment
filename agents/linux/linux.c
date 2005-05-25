@@ -826,7 +826,37 @@ obtain_tce_peer_id(int unused, char *argv[])
 {
     return getpid();
 }
-    
+#else    
+int
+collect_tce(int argc, char *argv[])
+{
+    return 0;
+}
+
+int
+init_collect_tce(int argc, char *argv[])
+{
+    return 0;
+}
+
+int
+dump_collected_tce(int argc, char *argv[])
+{
+    return 0;
+}
+
+int
+stop_collect_tce(int argc, char *argv[])
+{
+    return 0;
+}
+
+int
+obtain_tce_peer_id(int unused, char *argv[])
+{
+    return 0;
+}
+
 #endif
 
 

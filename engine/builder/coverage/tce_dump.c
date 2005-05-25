@@ -45,43 +45,72 @@ main(int argc, char *argv[])
     int rc;
     int result;
     int peer_id;
+
+    static char ta_list[4096];
+    int ta_list_len = sizeof(ta_list);
+    char *ta;
+
     char buffer[PATH_MAX + 1];
     char buffer2[PATH_MAX + 1];
-    
-    
-    VERB("Forcing TCE");
-    rc = rcf_ta_call(argv[1], 0, "dump_collected_tce", &result, 0, 
-                     FALSE, NULL);
-    if (rc != 0 || result != 0)
-    {
-        ERROR("Unable to dump TCE, error code = %d", rc ? rc : result);
-        return EXIT_FAILURE;
-    }
-    
-    rc = rcf_ta_call(argv[1], 0, "obtain_tce_peer_id", &peer_id, 0, 
-                     FALSE, NULL);
-    if (rc != 0)
-    {
-        ERROR("Unable to obtain TCE peer id, error code = %d", rc);
-        return EXIT_FAILURE;
-    }
 
-    sprintf(buffer, "%s%d.tar", argv[2], peer_id);
-    sprintf(buffer2, "%s%s.tar", argv[3], argv[1]);
-    if ((rc = rcf_ta_get_file(argv[1], 0, buffer, buffer2)) != 0)
+
+    if (strcmp(argv[1], "--all") != 0)
     {
-        ERROR("Unable to obtain TCE data file, error code = %d", rc);
-        return EXIT_FAILURE;
+        strcpy(ta_list, argv[1]);        
+    }
+    else
+    {
+        rc = rcf_get_ta_list(ta_list, &ta_list_len);
+        if (rc != 0)
+        {
+            ERROR("Unable to obtain TA list, error code = %d", rc);
+            return EXIT_FAILURE;
+        }
     }
     
-    rc = rcf_ta_call(argv[1], 0, "stop_tce_collect", &result, 0, 
-                     FALSE, NULL);
-    if (rc != 0 || result != 0)
+
+    for (ta = ta_list; *ta; ta += strlen(ta) + 1)
     {
-        ERROR("Unable to stop TCE, error code = %d", rc ? rc : result);
-        return EXIT_FAILURE;
+        VERB("Forcing TCE");
+        rc = rcf_ta_call(ta, 0, "obtain_tce_peer_id", &peer_id, 0, 
+                         FALSE, NULL);
+        if (rc != 0)
+        {
+            ERROR("Unable to obtain TCE peer id, error code = %d", rc);
+            return EXIT_FAILURE;
+        }
+        
+        if (peer_id != 0)
+        {
+            rc = rcf_ta_call(ta, 0, "dump_collected_tce", &result, 0, 
+                             FALSE, NULL);
+            if (rc != 0 || result != 0)
+            {
+                ERROR("Unable to dump TCE, error code = %d", 
+                      rc ? rc : result);
+                return EXIT_FAILURE;
+            }
+            
+            sprintf(buffer, "%s%d.tar", argv[2], peer_id);
+            sprintf(buffer2, "%s%s.tar", argv[3], ta);
+            if ((rc = rcf_ta_get_file(ta, 0, buffer, buffer2)) != 0)
+            {
+                ERROR("Unable to obtain TCE data file, error code = %d", 
+                      rc);
+                return EXIT_FAILURE;
+            }
+            
+            rc = rcf_ta_call(ta, 0, "stop_tce_collect", &result, 0, 
+                             FALSE, NULL);
+            if (rc != 0 || result != 0)
+            {
+                ERROR("Unable to stop TCE, error code = %d", 
+                      rc ? rc : result);
+                return EXIT_FAILURE;
+            }
+            puts(ta);
+        }    
     }
-    
         
     return 0;
 }

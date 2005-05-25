@@ -630,13 +630,18 @@ if test -n "$LOGGER" ; then
     kill $PID >/dev/null 2>&1
 fi
 
-if test -n "$TCE_AGENTS" ; then
+if test -n "$TESTER" ; then
     te_log_message Engine Dispatcher "Dumping TCE"
     myecho "--->>> Dump TCE"
-    for i in $TCE_AGENTS; do
-        tce_dump $i "/tmp/tcedump" "${TE_BUILD}/tce_"
-    done
+    if test -n "$TCE_AGENTS"; then
+        for i in $TCE_AGENTS; do
+            tce_dump $i "/tmp/tcedump" "${TE_BUILD}/tce_" >/dev/null
+        done
+    else
+        TCE_AGENTS=`tce_dump --all /tmp/tcedump "${TE_BUILD}/tce_"`
+    fi
 fi
+
 
 if test -n "$RCF" ; then
     te_log_message Engine Dispatcher "Shutdown RCF"
@@ -688,7 +693,7 @@ if test -n "${RGT_LOG_HTML}" ; then
 fi
 
 
-if test -n "$TCE_AGENTS" ; then
+if test -n "$TESTER" -a -n "$TCE_AGENTS" ; then
     myecho "--->>> TCE processing"
     for i in $TCE_AGENTS; do
         tce_report $i ${TE_LOG_DIR}/${i}_coverage.log

@@ -271,6 +271,7 @@ TCE_TANAME_$2_NUT=$1
 NUT_$1_TCE_TATYPE=$3
 NUT_$1_TCE_CC=$4
 NUT_$1_TCE_CFLAGS=$5
+TE_BS_TA_$1_PARMS="--with-tce $TE_BS_TA_$1_PARMS"
 ])
 
 dnl Specifies NUT sources to be TCEed. May be called several times.
