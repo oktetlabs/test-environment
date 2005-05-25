@@ -95,12 +95,13 @@ main(int argc, char *argv[])
             sprintf(buffer2, "%s%s.tar", argv[3], ta);
             if ((rc = rcf_ta_get_file(ta, 0, buffer, buffer2)) != 0)
             {
-                ERROR("Unable to obtain TCE data file, error code = %d", 
-                      rc);
+                ERROR("Unable to obtain TCE data file (%s -> %s), "
+                      "error code = %d", 
+                      buffer, buffer2, rc);
                 return EXIT_FAILURE;
             }
             
-            rc = rcf_ta_call(ta, 0, "stop_tce_collect", &result, 0, 
+            rc = rcf_ta_call(ta, 0, "stop_collect_tce", &result, 0, 
                              FALSE, NULL);
             if (rc != 0 || result != 0)
             {

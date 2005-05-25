@@ -79,9 +79,11 @@ main(int argc, char *argv[])
     INFO("Agent is %s", ta);
 
     CHECK_RC(rcf_rpc_server_create(ta, "test", &srv));
-    CHECK_RC(rpc_setlibname(srv, strdup("/home/artem/src/v5/build/gnu/lib/transport/unix/libcitransport0.so")));
+    CHECK_RC(rpc_setlibname(srv, strdup("/home/artem/src/testnut/build/libtestnut.so")));
     RING("kuku");
-    RPC_FOPEN(f, srv, "test", "w");
+    RPC_DUP(rc1, srv, 1);
+    RPC_DUP(rc1, srv, 2);
+    RPC_DUP(rc1, srv, 3);
 
     TEST_SUCCESS;
 

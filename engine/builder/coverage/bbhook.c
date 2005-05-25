@@ -309,6 +309,5 @@ target_init_caller (void)
 static void
 target_fini_caller (void) 
 {
-    fputs("FINI called\n", stderr);
     _target_fini();
 }

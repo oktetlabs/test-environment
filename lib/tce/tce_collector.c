@@ -405,7 +405,7 @@ dump_tce_collector(void)
 {
     struct flock lock;
     if (tce_collector_pid == 0)
-        return TE_RC(TE_TA_LINUX, ESRCH);
+        return 0;
 
     if (kill(tce_collector_pid, SIGHUP) != 0)
         return TE_RC(TE_TA_LINUX, errno);
@@ -425,7 +425,7 @@ stop_tce_collector(void)
     int tce_status;
     
     if (tce_collector_pid == 0)
-        return TE_RC(TE_TA_LINUX, ESRCH);
+        return 0;
     if (kill(tce_collector_pid, SIGTERM) != 0)
         return TE_RC(TE_TA_LINUX, errno);
     if (waitpid(tce_collector_pid, &tce_status, 0) < 0)
