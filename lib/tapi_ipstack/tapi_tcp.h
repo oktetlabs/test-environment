@@ -68,12 +68,31 @@ typedef enum {
 
 typedef int tapi_tcp_handler_t;
 
+/**
+ * Initialize TCP connection. This method blocks until connection is 
+ * established or timeout expired.
+ *
+ * @param agt           name of TA;
+ * @param mode          TCP mode: server or client, really, this means
+ *                      choice "wait for SYN" or "send SYN first";
+ * @param local_addr    local socket address, unspecified values 
+ *                      are zeroes, (IN/OUT);
+ * @param remote_addr   remote socket address, unspecified values 
+ *                      are zeroes, (IN/OUT);
+ * @param timeout       time in milliseconds, while TA should wait for 
+ *                      SYN or ACK for his SYN;
+ * @param handle        TAPI handler of created TCP connection (OUT);
+ *
+ * @return status code
+ */
 extern int tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode, 
-                                    struct sockaddr_in *src_addr, 
-                                    struct sockaddr_in *dst_addr, 
+                                    struct sockaddr_in *local_addr, 
+                                    struct sockaddr_in *remote_addr, 
+                                    int timeout,
                                     tapi_tcp_handler_t *handler);
 
-extern int tapi_tcp_close_connection(tapi_tcp_handler_t handler);
+extern int tapi_tcp_close_connection(tapi_tcp_handler_t handler, 
+                                     int timeout);
 
 extern int tapi_tcp_send_msg(tapi_tcp_handler_t handler, uint8_t *pld, 
                              tapi_tcp_protocol_mode_t seq_mode, int seqn,
