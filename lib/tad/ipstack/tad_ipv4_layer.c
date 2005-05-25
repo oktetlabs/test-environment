@@ -31,7 +31,10 @@
 #include <stdlib.h>
 
 #define TE_LGR_USER     "TAD IPv4"
-#define TE_LOG_LEVEL 0xff
+
+#if 0
+#define TE_LOG_LEVEL    0xff
+#endif
 
 #include "tad_ipstack_impl.h"
 
