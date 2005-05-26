@@ -715,8 +715,8 @@ ta_sigint_handler(int sig)
 static void
 ta_sigpipe_handler(int sig)
 {
+    fprintf(stderr, "SIGPIPE is recaived\n");
     UNUSED(sig);
-    WARN("Test Agent received SIGPIPE signal");
 }
 
 /**
@@ -887,7 +887,6 @@ main(int argc, char **argv)
 
     (void)signal(SIGINT, ta_sigint_handler);
     (void)signal(SIGPIPE, ta_sigpipe_handler);
-    (void)signal(SIGCHLD, ta_sigchld_handler);
 
     sigemptyset(&rpcs_received_signals);
     
@@ -907,6 +906,9 @@ main(int argc, char **argv)
     }
     
     te_lgr_entity = ta_name = argv[1];
+
+    (void)signal(SIGCHLD, ta_sigchld_handler);
+
     VERB("Started\n");
 
     sprintf(buf, "PID %u", getpid());
