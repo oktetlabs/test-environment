@@ -69,6 +69,11 @@ typedef enum {
 typedef int tapi_tcp_handler_t;
 
 /**
+ * Type for SEQ and ACK numbers
+ */
+typedef uint32_t tapi_tcp_pos_t;
+
+/**
  * Initialize TCP connection. This method blocks until connection is 
  * established or timeout expired.
  *
@@ -91,26 +96,124 @@ extern int tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode,
                                     int timeout,
                                     tapi_tcp_handler_t *handler);
 
+/**
+ * Correct close TCP connection, established by 'tapi_tcp_init_connection'.
+ *
+ * @param handler       TAPI handler of TCP connection;
+ * @param timeout       time in milliseconds, while TA should wait 
+ *                      for answer for FIN;
+ *
+ * @return status code
+ */
 extern int tapi_tcp_close_connection(tapi_tcp_handler_t handler, 
                                      int timeout);
 
-extern int tapi_tcp_send_msg(tapi_tcp_handler_t handler, uint8_t *pld, 
-                             tapi_tcp_protocol_mode_t seq_mode, int seqn,
-                             tapi_tcp_protocol_mode_t ack_mode, int ackn);
+/**
+ * Send TCP message via established connection.
+ *
+ * @param handler       TAPI handler of TCP connection;     
+ * @param payload       data for message payload;
+ * @param len           length of payload;
+ * @param seq_mode      mode of insertion SEQ number into message;
+ * @param seqn          explicit SEQ number for message, used only
+ *                      if 'seq_mode' passed is TAPI_TCP_EXPLICIT;
+ * @param ack_mode      mode of insertion ACK number into message;
+ * @param ackn          explicit ACK number for message, used only
+ *                      if 'ack_mode' passed is TAPI_TCP_EXPLICIT;
+ *
+ * @return status code
+ */
+extern int tapi_tcp_send_msg(tapi_tcp_handler_t handler,
+                             uint8_t *payload, size_t len,
+                             tapi_tcp_protocol_mode_t seq_mode, 
+                             tapi_tcp_pos_t seqn,
+                             tapi_tcp_protocol_mode_t ack_mode, 
+                             tapi_tcp_pos_t ackn);
 
-extern int tapi_tcp_recv_msg();
+/**
+ * Wait for next incoming TCP message in connection.
+ *
+ * @param handler       TAPI handler of TCP connection;     
+ * @param ack_mode      mode of sending ACK to the message, for this
+ *                      method valid values are 'AUTO' or 'QUIET' only;
+ * @param payload       pointer to message payload buffer (OUT);
+ * @param len           length of buffer/ got payload (IN/OUT);
+ * @param seqn_got      received SEQ number or zero (OUT);
+ * @param ackn_got      received ACK number or zero (OUT);
+ *
+ * @return status code
+ */
+extern int tapi_tcp_recv_msg(tapi_tcp_handler_t handler,
+                             tapi_tcp_protocol_mode_t ack_mode, 
+                             uint8_t *buffer, size_t *len, 
+                             tapi_tcp_pos_t *seqn_got, 
+                             tapi_tcp_pos_t *ackn_got);
 
-extern int tapi_tcp_send_ack();
+/**
+ * Send ACK via established TCP connection.
+ *
+ * @param handler       TAPI handler of TCP connection;     
+ * @param ackn          ACK number
+ *
+ * @return status code
+ */
+extern int tapi_tcp_send_ack(tapi_tcp_handler_t handler, 
+                             tapi_tcp_pos_t ackn);
 
-extern int tapi_tcp_recv_ack();
 
-extern int tapi_tcp_last_seqn_got();
+/**
+ * Return last received SEQ number in established TCP connection.
+ *
+ * @param handler       TAPI handler of TCP connection;     
+ *
+ * @return SEQ number of zero if 'hanlder' not valid.
+ */
+extern tapi_tcp_pos_t tapi_tcp_last_seqn_got(tapi_tcp_handler_t handler);
 
-extern int tapi_tcp_last_ackn_got();
+/**
+ * Return last received ACK number in established TCP connection.
+ *
+ * @param handler       TAPI handler of TCP connection;     
+ *
+ * @return ACK number of zero if 'hanlder' not valid.
+ */
+extern tapi_tcp_pos_t tapi_tcp_last_ackn_got(tapi_tcp_handler_t handler);
 
-extern int tapi_tcp_last_seqn_sent();
+/**
+ * Return last sent SEQ number in established TCP connection.
+ *
+ * @param handler       TAPI handler of TCP connection;     
+ *
+ * @return SEQ number of zero if 'hanlder' not valid.
+ */
+extern tapi_tcp_pos_t tapi_tcp_last_seqn_sent(tapi_tcp_handler_t handler);
 
-extern int tapi_tcp_last_ackn_sent();
+/**
+ * Return last sent ACK number in established TCP connection.
+ *
+ * @param handler       TAPI handler of TCP connection;     
+ *
+ * @return ACK number of zero if 'hanlder' not valid.
+ */
+extern tapi_tcp_pos_t tapi_tcp_last_ackn_sent(tapi_tcp_handler_t handler);
+
+/**
+ * Return next SEQ number to be sent in established TCP connection.
+ *
+ * @param handler       TAPI handler of TCP connection;     
+ *
+ * @return SEQ number of zero if 'hanlder' not valid.
+ */
+extern tapi_tcp_pos_t tapi_tcp_next_seqn(tapi_tcp_handler_t handler);
+
+/**
+ * Return next ACK number to be sent in established TCP connection.
+ *
+ * @param handler       TAPI handler of TCP connection;     
+ *
+ * @return ACK number of zero if 'hanlder' not valid.
+ */
+extern tapi_tcp_pos_t tapi_tcp_next_ackn(tapi_tcp_handler_t handler);
 
 
 #endif /* !__TE_TAPI_TAD_H__ */
