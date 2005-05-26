@@ -885,6 +885,10 @@ main(int argc, char **argv)
 
     pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);    
 
+    (void)signal(SIGINT, ta_sigint_handler);
+    (void)signal(SIGPIPE, ta_sigpipe_handler);
+    (void)signal(SIGCHLD, ta_sigchld_handler);
+
     sigemptyset(&rpcs_received_signals);
     
 #ifdef RCF_RPC
@@ -902,10 +906,6 @@ main(int argc, char **argv)
         return rc;
     }
     
-    (void)signal(SIGINT, ta_sigint_handler);
-    (void)signal(SIGPIPE, ta_sigpipe_handler);
-    (void)signal(SIGCHLD, ta_sigchld_handler);
-
     te_lgr_entity = ta_name = argv[1];
     VERB("Started\n");
 
