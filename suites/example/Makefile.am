@@ -28,6 +28,7 @@ example_LDADD = -llogger_ten -lrcfapi -lipc -ltapi -lconfapi -ltapi_rpc \
 				 -L/home/artem/src/testnut/libtestnut.so
 example_DEPENDENCIES = \
     ${TE_INSTALL}/@host@/lib/librcfapi.a \
+    ${TE_INSTALL}/@host@/lib/librpcxdr.a \
     ${TE_INSTALL}/@host@/lib/liblogger_ten.a \
     ${TE_INSTALL}/@host@/lib/libipc.a \
     ${TE_INSTALL}/@host@/lib/libtapi.a \
