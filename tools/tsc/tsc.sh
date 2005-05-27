@@ -245,7 +245,6 @@ update_package_dox()
 {
     NAME=`basename $1`
     DIRNAME=`dirname $1`
-
     
     if test ${DIRNAME} = "." ; then
         echo Adding $NAME reference to ${START_DIR}/mainpage.dox
@@ -256,7 +255,7 @@ update_package_dox()
     else        
         echo Adding $NAME reference to ${START_DIR}/package.dox
         cat ${DIRNAME}/package.dox | grep -v '*/' >tmp
-        echo '-# @ref '$NAME >>tmp
+        echo '-# @ref '${SUITE_NAME}${NAME} >>tmp
         echo '*/' >>tmp
         mv tmp ${DIRNAME}/package.dox
     fi
@@ -341,8 +340,6 @@ create_test()
 {
     if test ! -e ${TEST_NAME}.c ; then
         echo Creating ${DIR}${TEST_NAME}.c
-        SUITE_NAME=`basename ${DIR}`
-        
         cat > ${DIR}${TEST_NAME}.c << EOF
 /* 
  * Test ${DIR}${TEST_NAME}  
@@ -353,7 +350,7 @@ create_test()
  * \$Id: $
  */
 
-/** @page ${TEST_NAME}  ${TEST_DESCR}
+/** @page ${SUITE_NAME}${TEST_NAME}  ${TEST_DESCR}
  *
  * @objective 
  *
@@ -393,6 +390,7 @@ process_line()
         cd ${START_DIR}
         update_makefile_am_subdir
         update_configure_ac
+        SUITE_NAME=
         update_package_dox ${DIR}
         update_package_xml ${DIR} package
         return
@@ -404,6 +402,7 @@ process_line()
         return;
     fi
     update_makefile_am_test $1
+    SUITE_NAME=`basename ${DIR}`"-"
     update_package_dox ${DIR}$1
     update_package_xml ${DIR}$1 script
     TEST_NAME=$1
