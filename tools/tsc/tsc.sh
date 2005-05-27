@@ -329,6 +329,10 @@ update_makefile_am_subdir()
 update_configure_ac()
 {
     FILE=${START_DIR}/configure.ac
+    if cat ${FILE} | grep -q ${DIR}Makefile ; then
+        return ;
+    fi
+
     echo Adding generation of ${DIR}Makefile to ${FILE}
     cat ${FILE} | awk --assign dir=${DIR} '\
     BEGIN { wr=1 ; } \
