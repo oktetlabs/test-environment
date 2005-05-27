@@ -220,6 +220,10 @@ update_package_xml()
 {
     NAME=`basename $1`
     FILE=`dirname $1`/package.xml
+    if cat ${FILE} | grep -q $2' name="'${NAME}'"' ; then
+        return ;
+    fi
+    
     echo Adding $2 $NAME to $FILE
     
     cat $FILE | awk ' \
@@ -241,18 +245,47 @@ update_package_xml()
 EOF
 }
 
+
+check_presence()
+{
+    cat $1 | awk --assign name=$2 ' \
+    /@ref/ \
+    {  \
+        if ($2 != "@ref") next ; \
+        n = index($3, "-"); \
+        if (n != 0) \
+            s = substr($3, n + 1); \
+        else \
+            s = $3 ; \
+        if (s == name) \
+        { \
+            printf("yes"); nextfile ; \
+        } \
+    }' >tmp
+    RES=`cat tmp`
+    rm -f tmp
+}
+
 update_package_dox()
 {
     NAME=`basename $1`
     DIRNAME=`dirname $1`
     
     if test ${DIRNAME} = "." ; then
+        check_presence ${START_DIR}/mainpage.dox $NAME ;
+        if test -n "$RES" ; then
+            return ;
+        fi
         echo Adding $NAME reference to ${START_DIR}/mainpage.dox
         cat ${START_DIR}/mainpage.dox | grep -v '*/' >tmp
         echo '- @ref '$NAME >>tmp
         echo '*/' >>tmp
         mv tmp ${START_DIR}/mainpage.dox
     else        
+        check_presence ${DIRNAME}/package.dox $NAME ; 
+        if test -n "$RES" ; then
+            return ;
+        fi
         echo Adding $NAME reference to ${START_DIR}/package.dox
         cat ${DIRNAME}/package.dox | grep -v '*/' >tmp
         echo '-# @ref '${SUITE_NAME}${NAME} >>tmp
@@ -265,6 +298,20 @@ update_makefile_am_subdir()
 {
     FILE=`dirname ${DIR}`/Makefile.am
     SUBDIR=`basename ${DIR}`
+    
+    cat ${FILE} | awk --assign name=$SUBDIR ' \
+    /^SUBDIRS/ { check = 1 ; } \
+    { \
+      if (check == 0) next ; \
+      for (i = 1 ; i <= NF ; i++) \
+          if ($i == name) { printf("yes") ; nextfile ; } \
+      if ($NF != "\\") nextfile ; \
+    }' > tmp
+    RES=`cat tmp` ; rm tmp ;
+    if test -n "$RES" ; then
+        return
+    fi
+    
     echo Adding subdirectory $SUBDIR to ${FILE}
     cat ${FILE} | awk --assign name=${SUBDIR} '\
     /^SUBDIRS/ \
@@ -300,6 +347,20 @@ update_configure_ac()
 update_makefile_am_test()
 {
     FILE=${DIR}Makefile.am
+
+    cat ${FILE} | awk --assign name=$1 ' \
+    /^tetest_PROGRAMS/ { check = 1 ; } \
+    { \
+      if (check == 0) next ; \
+      for (i = 1 ; i <= NF ; i++) \
+          if ($i == name) { printf("yes") ; nextfile ; } \
+      if ($NF != "\\") nextfile ; \
+    }' > tmp
+    RES=`cat tmp` ; rm tmp ;
+    if test -n "$RES" ; then
+        return
+    fi
+    
     echo Adding test $1 to ${FILE}
     if cat ${FILE} | grep -q tetest_PROGRAMS ; then
         cat ${FILE} | awk --assign name=$1 '\
@@ -338,7 +399,7 @@ EOF
 
 create_test()
 {
-    if test ! -e ${TEST_NAME}.c ; then
+    if test ! -e ${DIR}${TEST_NAME}.c ; then
         echo Creating ${DIR}${TEST_NAME}.c
         cat > ${DIR}${TEST_NAME}.c << EOF
 /* 
@@ -418,7 +479,7 @@ cat $1 | while read msg ; do process_line $msg ; done
 
 rm -f Makefile.am.inc
 
-aclocal
-autoheader
-autoconf
-automake
+#aclocal
+#autoheader
+#autoconf
+#automake
