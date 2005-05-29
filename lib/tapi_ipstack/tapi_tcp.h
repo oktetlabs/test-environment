@@ -41,7 +41,7 @@
 /** 
  * Callback type for receiving data in TCP connection.
  *
- * @param pkt           Received UDP datagram. After return from this
+ * @param pkt           Received TCP datagram. After return from this
  *                      callback memory block under this datagram will
  *                      be freed. 
  * @param userdata      Parameter, provided by the caller.
@@ -91,8 +91,8 @@ typedef uint32_t tapi_tcp_pos_t;
  * @return status code
  */
 extern int tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode, 
-                                    struct sockaddr_in *local_addr, 
-                                    struct sockaddr_in *remote_addr, 
+                                    struct sockaddr *local_addr, 
+                                    struct sockaddr *remote_addr, 
                                     int timeout,
                                     tapi_tcp_handler_t *handler);
 
