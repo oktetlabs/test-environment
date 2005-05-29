@@ -1,0 +1,59 @@
+
+    }
+    switch (xdrs->x_op)
+    {
+        case XDR_ENCODE:
+        {
+            ((xml_app_data *)(xdrs->x_private))->depth--;
+            indent = (((xml_app_data *)(xdrs->x_private))->depth) * INDENT;
+    
+            buff = xdrs->x_public + strlen(xdrs->x_public);
+            buflen = &(xdrs->x_handy);
+
+            if (indent > *buflen)
+            {
+                printf("%s %d: small buffer, exit\n", __FUNCTION__, __LINE__);
+                return FALSE;
+            }    
+
+            memset(buff, ' ', indent);
+            *buflen -= indent;
+            buff += indent;
+
+            if ((u_int)(printed = snprintf(buff, *buflen, "</%s>\n", elem)) >= *buflen || printed < 0)
+            {
+                printf("%s %d: small buffer, exit\n", __FUNCTION__, __LINE__);
+                return FALSE;
+            }    
+
+            *buflen -= printed;
+            buff += printed;
+            break;
+        }
+        case XDR_DECODE:
+        {
+            ((xml_app_data *)(xdrs->x_private))->depth--;
+            indent = (((xml_app_data *)(xdrs->x_private))->depth) * INDENT;
+            parser = data->parser;
+ 
+            buff = xdrs->x_public + (strlen(xdrs->x_public) + 1 - *buflen);
+            end = strchr(buff, '>');
+            end++;
+            printed = end - buff;
+            XML_SetUserData(parser, (void *)data);
+            XML_SetElementHandler(parser, start_compound_data, 
+                                  end_compound_data);
+            if (XML_Parse(parser, buff, printed, 0) == XML_STATUS_ERROR)
+            {
+                printf("%s %d: %s at line %d\n",
+                       __FUNCTION__, __LINE__,
+                        XML_ErrorString(XML_GetErrorCode(parser)),
+                        XML_GetCurrentLineNumber(parser));
+                return FALSE;        
+            }
+            *buflen -= printed;
+            break;
+        }
+        case XDR_FREE:
+            break;
+    }

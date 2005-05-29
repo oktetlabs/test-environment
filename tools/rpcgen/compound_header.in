@@ -1,0 +1,94 @@
+    
+    const char   *elem = NULL;
+    xml_app_data *data = (xml_app_data *)(xdrs->x_private);
+    char         *buff = NULL;
+    char         *end = NULL;
+    u_int        *buflen = &(xdrs->x_handy);
+    int           printed;
+    char          format[MAXBUFSIZE + 1] = {0,};
+    char         *rc = NULL; 
+
+    const char  *name;
+    u_int        indent;
+    XML_Parser   parser;
+    
+    switch (xdrs->x_op)
+    {
+        case  XDR_ENCODE:
+        {
+            buff = xdrs->x_public + strlen(xdrs->x_public);
+            name = data->name;
+            indent = (data->depth) * INDENT;
+            
+            if (indent > *buflen)
+            {
+                printf("%s %d: small buffer, exit\n", __FUNCTION__, __LINE__);
+                return FALSE;
+            }    
+
+            elem = (indent > 0) ? "param" : (data->op == rpc_xml_call) ? "call" : "result";
+
+            if (indent == 0 && data->op == rpc_xml_result)
+            {
+                rc = (data->rc == TRUE) ? "TRUE" : "FALSE";
+            }
+            else
+                rc = "";
+            
+            memset(format, ' ', indent);
+            snprintf(format + indent, MAXBUFSIZE - strlen(format), "<%%s");
+            if (name != NULL)
+            {
+                snprintf(format + strlen(format), MAXBUFSIZE - strlen(format), " name=\"%%s\"");
+            }
+            if (indent == 0 && data->op == rpc_xml_result)
+            {
+                snprintf(format + strlen(format), MAXBUFSIZE - strlen(format), " rc=\"%%s\"");
+            }
+                
+            snprintf(format + strlen(format), MAXBUFSIZE - strlen(format), ">\n");
+            if ((u_int)(printed = snprintf(buff, *buflen, format, elem, 
+                                           (name == NULL) ? "" : name,
+                                           rc)) >= *buflen || printed < 0)
+            {
+                printf("%s %d: small buffer, exit\n", __FUNCTION__, __LINE__);
+                return FALSE;
+            }
+
+            *buflen -= printed;
+            buff += printed;
+            ((xml_app_data *)(xdrs->x_private))->depth++;
+
+            break;
+        }
+        case XDR_DECODE:
+        {
+            buff = xdrs->x_public + (strlen(xdrs->x_public) + 1 - *buflen);
+            name = data->name;
+            indent = (data->depth) * INDENT;
+            parser = data->parser;
+
+            end = strchr(buff, '>');
+            end++;
+            printed = end - buff;
+            XML_SetUserData(parser, (void *)data);
+            XML_SetElementHandler(parser, start_compound_data, 
+                                  end_compound_data);
+            if (XML_Parse(parser, buff, printed, 0) == XML_STATUS_ERROR)
+            {
+                printf("%s %d: %s at line %d\n",
+                       __FUNCTION__, __LINE__, 
+                       XML_ErrorString(XML_GetErrorCode(parser)),
+                       XML_GetCurrentLineNumber(parser));
+                return FALSE;        
+            }
+            *buflen -= printed;
+            ((xml_app_data *)(xdrs->x_private))->depth++;
+            break;
+        }
+        case XDR_FREE:
+            break;
+    }
+
+    if ((xdrs->x_op == XDR_ENCODE || xdrs->x_op == XDR_DECODE) && !(data->op == rpc_xml_result && data->rc == FALSE))
+    {
