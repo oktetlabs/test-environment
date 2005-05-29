@@ -115,8 +115,8 @@ struct tarpc_sa {
 
 /** struct timeval */
 struct tarpc_timeval {
-    long tv_sec;
-    long tv_usec;
+    int32_t tv_sec;
+    int32_t tv_usec;
 };
 
 
@@ -582,7 +582,7 @@ enum tarpc_accept_verdict {
 };
 
 struct tarpc_accept_cond {
-    unsigned short       port;       /**< Caller port             */
+    uint16_t             port;       /**< Caller port             */
     tarpc_accept_verdict verdict;    /**< Verdict for this caller */
 };
 
@@ -1001,9 +1001,9 @@ struct tarpc_guid {
 
 /* Windows tcp_keepalive structure */
 struct tarpc_tcp_keepalive {
-    unsigned long onoff;
-    unsigned long keepalivetime;
-    unsigned long keepaliveinterval;
+    uint32_t onoff;
+    uint32_t keepalivetime;
+    uint32_t keepaliveinterval;
 };
 
 /* WSAIoctl() */
@@ -1187,7 +1187,7 @@ struct tarpc_event_select_in {
     tarpc_int       fd;           /**< TA-local socket */ 
     tarpc_wsaevent  event_object; /**< Event object to be associated
                                        with set of network events */   
-    unsigned long   event;        /**< Bitmask that specifies the set
+    uint32_t        event;        /**< Bitmask that specifies the set
                                          of network events */      
 };
 
@@ -1200,7 +1200,7 @@ struct tarpc_enum_network_events_in {
 
     tarpc_int       fd;           /**< TA-local socket */ 
     tarpc_wsaevent  event_object; /**< Event object to be reset */   
-    unsigned long   event<>;      /**< Bitmask that specifies the set
+    uint32_t        event<>;      /**< Bitmask that specifies the set
                                        of network events occurred */      
 };
 
@@ -1208,7 +1208,7 @@ struct tarpc_enum_network_events_out {
     struct tarpc_out_arg common;
 
     tarpc_int            retval;
-    unsigned long        event<>;    /**< Bitmask that specifies the set
+    uint32_t             event<>;    /**< Bitmask that specifies the set
                                           of network events occurred */      
 };
 
@@ -1351,8 +1351,8 @@ typedef struct tarpc_int_retval_out tarpc_pselect_out;
 
 struct tarpc_pollfd {
     tarpc_int   fd;
-    short   events;
-    short   revents;
+    int16_t     events;
+    int16_t     revents;
 };
 
 struct tarpc_poll_in {

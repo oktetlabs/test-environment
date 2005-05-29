@@ -8,7 +8,8 @@ MY_CPPFLAGS=-I$(DESTDIR)/$(prefix)/../@host@/include \
 #
 MY_LDADD=symtbl.o -lrcfpch -lrpcxdr -llogfork \
          -l@TAD@ @TE_LDADD@ -lconf_oid -lloggerta -lpthread \
-         -lws2_32 -lmswsock -lwsock32 -liphlpapi -lrpc -lcygwin
+         -lws2_32 -lmswsock -lwsock32 -liphlpapi -lrpc -lcygwin \
+         -lexpat
          
 MY_LDAFLAGS=-rdynamic -export-dynamic 
 
