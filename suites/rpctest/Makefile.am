@@ -13,7 +13,7 @@ tetest_PROGRAMS = rpctest
 rpctest_SOURCES = rpctest.c 
 
 rpctest_LDADD = -ltapi_rpc -ltapi -lrcfrpc -lconfapi -lconf_oid \
-                -lrcfapi -lrpcxdr -llogger_ten -lipc -lpthread
+                -lrcfapi -lrpcxdr -llogger_ten -lipc -lpthread -lexpat
 
 rpctest_DEPENDENCIES = ${TE_INSTALL}/@host@/lib/librcfapi.a \
                        ${TE_INSTALL}/@host@/lib/librcfrpc.a \

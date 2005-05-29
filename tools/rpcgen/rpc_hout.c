@@ -150,8 +150,14 @@ print_xdr_func_def (char *name, int pointerp, int i)
       return;
     }
   else
+#ifdef RPC_XML
+    f_print(fout, "extern bool_t xmlxdr_%s (XDR *, %s%s);\n", name,
+            name, pointerp ? "*" : "");
+    f_print(fout, "#define xdr_%s xmlxdr_%s\n", name, name);
+#else  
     f_print(fout, "extern  bool_t xdr_%s (XDR *, %s%s);\n", name,
-	    name, pointerp ? "*" : "");
+            name, pointerp ? "*" : "");
+#endif        
 }
 
 static void

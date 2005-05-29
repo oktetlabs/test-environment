@@ -52,6 +52,7 @@
 #include "te_errno.h"
 
 #include "rpc_xdr.h"
+#include "xml_xdr.h"
 
 /**
  * Find information corresponding to RPC function by its name.
@@ -93,14 +94,15 @@ rpc_xdr_encode_call(const char *name, char *buf, int *buflen, void *objp)
     
     rpc_info *info;
     uint32_t  len;
-    
+
     if ((info = rpc_find_info(name)) == NULL)
         return TE_RC(TE_RCF_RPC, ENOENT);
     
     len = strlen(name) + 1;
     
 #ifdef RPC_XML    
-    xdrxml_create(&xdrs, buf, *buflen, XDR_ENCODE);
+    xdrxml_create(&xdrs, buf, *buflen, rpc_xml_call, 
+                  TRUE, name, XDR_ENCODE);
     /* Put header */
 #else    
     /* Encode routine name */
@@ -114,14 +116,14 @@ rpc_xdr_encode_call(const char *name, char *buf, int *buflen, void *objp)
         return TE_RC(TE_RCF_RPC, ETESUNRPC);
     
 #ifdef RPC_XML    
-    /* Put trailer */
-#endif
-    
+    xdrxml_free(&xdrs);
+    *buflen = strlen(buf) + 1;
+#else
     *buflen = xdrs.x_ops->x_getpostn(&xdrs);
+#endif    
     
     return 0;
 }
-                               
 
 /**
  * Decode RPC result.
@@ -142,9 +144,10 @@ rpc_xdr_decode_result(const char *name, char *buf, int buflen, void *objp)
     uint32_t rc;
     
     rpc_info *info;
-    
+
 #ifdef RPC_XML    
-    xdrxml_create(&xdrs, buf, buflen, XDR_DECODE);
+    xdrxml_create(&xdrs, buf, buflen, rpc_xml_result, 
+                  TRUE, name, XDR_DECODE);
     /* Decode  - how can we get the routine name? */
 #else    
     /* Decode rc */
@@ -161,7 +164,13 @@ rpc_xdr_decode_result(const char *name, char *buf, int buflen, void *objp)
     /* Decode argument */
     if (!info->out(&xdrs, objp))
         return TE_RC(TE_RCF_RPC, ETESUNRPC);
-    
+#ifdef RPC_XML
+    rc = xdrxml_return_code(&xdrs);
+    xdrxml_free(&xdrs);
+    if (rc == FALSE)
+        return TE_RC(TE_RCF_RPC, ETESUNRPC);
+#endif    
+   
     return 0;
 }
 
@@ -180,6 +189,10 @@ rpc_xdr_free(rpc_func func, void *objp)
     func(&xdrs, objp);
 }
 
+#define XML_CALL_PREFIX         "<call name=\""
+#define XML_CALL_PREFIX_LEN     strlen(XML_CALL_PREFIX)
+
+
 /**
  * Decode RPC call.
  *
@@ -196,14 +209,25 @@ rpc_xdr_decode_call(char *buf, int buflen, char *name, void **objp_p)
 {
     XDR xdrs;
     
-    uint32_t len;
     void     *objp;
     rpc_info *info;
-    
+
 #ifdef RPC_XML    
-    xdrxml_create(&xdrs, buf, buflen, XDR_DECODE);
-    /* Decode  - how can we get the routine name? */
-#else    
+    char     *tmp;
+    int       n;
+
+    xdrxml_create(&xdrs, buf, buflen, rpc_xml_call, TRUE, name, XDR_DECODE);
+    if (strncmp(XML_CALL_PREFIX, buf, XML_CALL_PREFIX_LEN) != 0 ||
+        (tmp = strchr(buf + XML_CALL_PREFIX_LEN, '"')) == NULL ||
+        (n = (tmp - buf) - XML_CALL_PREFIX_LEN) >= RCF_RPC_MAX_NAME)
+    {
+        return ETESUNRPC;
+    }
+    memcpy(name, buf + XML_CALL_PREFIX_LEN, n);
+    name[n] = 0;
+#else   
+    uint32_t len;
+    
     /* Decode routine name */
     xdrmem_create(&xdrs, buf, buflen, XDR_DECODE);
     xdrs.x_ops->x_getint32(&xdrs, &len);
@@ -211,18 +235,25 @@ rpc_xdr_decode_call(char *buf, int buflen, char *name, void **objp_p)
 #endif
 
     if ((info = rpc_find_info(name)) == NULL)
+    {
         return TE_RC(TE_RCF_RPC, ENOENT);
+    }
     
     /* Allocate memory for the argument */
     if ((objp = calloc(1, info->in_len)) == NULL)
+    {
         return TE_RC(TE_RCF_RPC, ENOMEM);
-    
+    }
+   
     /* Encode argument */
     if (!info->in(&xdrs, objp))
     {
         free(objp);
         return TE_RC(TE_RCF_RPC, ETESUNRPC);
     }
+#ifdef RPC_XML
+    xdrxml_free(&xdrs);
+#endif    
     
     *objp_p = objp;
     
@@ -250,29 +281,34 @@ rpc_xdr_encode_result(char *name, te_bool rc,
     XDR xdrs;
     
     rpc_info *info;
-    uint32_t  rc_int32 = rc;
-    
+
     if ((info = rpc_find_info(name)) == NULL)
+    {
+        printf("%s %d: Cannot find info", __FUNCTION__, __LINE__);
         rc = FALSE;
+    }
     
-#ifdef RPC_XML    
-    xdrxml_create(&xdrs, buf, *buflen, XDR_ENCODE);
-    /* Put header and rc */
+#ifdef RPC_XML
+    xdrxml_create(&xdrs, buf, *buflen, rpc_xml_result, 
+                  rc, name, XDR_ENCODE);
 #else    
     xdrmem_create(&xdrs, buf, *buflen, XDR_ENCODE);
     /* Encode return code */
-    xdrs.x_ops->x_putint32(&xdrs, &rc_int32);
-#endif
-
+    {
+        uint32_t rc_int32 = rc;
+        
+        xdrs.x_ops->x_putint32(&xdrs, &rc_int32);
+    }    
+#endif    
     /* Encode argument */
     if (rc && !info->out(&xdrs, objp))
         return TE_RC(TE_RCF_RPC, ETESUNRPC);
-    
+
 #ifdef RPC_XML    
-    /* Put trailer */
-#endif
-    
+    *buflen = strlen(buf) + 1;
+    xdrxml_free(&xdrs);
+#else
     *buflen = xdrs.x_ops->x_getpostn(&xdrs);
-    
+#endif    
     return 0;
 }                      

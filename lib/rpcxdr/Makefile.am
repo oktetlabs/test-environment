@@ -2,11 +2,11 @@
 AM_CPPFLAGS = @TE_CFLAGS@ -I$(DESTDIR)/$(prefix)/include -include config.h
 AM_LDFLAGS = @TE_LDFLAGS@ 
 
-include_HEADERS=rpc_xdr.h tarpc.h
+include_HEADERS=rpc_xdr.h tarpc.h xml_xdr.h
 
 lib_LIBRARIES=librpcxdr.a
 
-librpcxdr_a_SOURCES=rpc_xdr.c
+librpcxdr_a_SOURCES=xml_xdr.c rpc_xdr.c
 
 nodist_librpcxdr_a_SOURCES=tarpc_xdr.c tarpc_dummy.c
 

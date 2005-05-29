@@ -67,6 +67,17 @@ static void print_header (const definition * def);
 static void print_trailer (void);
 static char *upcase (const char *str);
 
+#ifdef RPC_XML
+
+static void print_compound_name_header();
+static void print_compound_name_trailer();
+/*
+ * Path to files containing text to be added to generated C-routines
+ */
+extern char xml_add_header[];
+extern char xml_add_trailer[];
+#endif
+
 /*
  * Emit the C-routine for the given definition
  */
@@ -103,7 +114,13 @@ emit (definition * def)
       emit_enum (def);
       break;
     case DEF_STRUCT:
+#ifdef RPC_XML      
+      print_compound_name_header(); 
+#endif      
       emit_struct (def);
+#ifdef RPC_XML      
+      print_compound_name_trailer();
+#endif      
       break;
     case DEF_TYPEDEF:
       emit_typedef (def);
@@ -144,11 +161,15 @@ print_generic_header (const char *procname, int pointerp)
   f_print (fout, "bool_t\n");
   if (Cflag)
     {
-      f_print (fout, "xdr_%s (", procname);
+#ifdef RPC_XML
+      f_print (fout, "xmlxdr_%s (", procname);
+#else
+      f_print(fout, "xdr_%s (", procname);
+#endif
       f_print (fout, "XDR *xdrs, ");
       f_print (fout, "%s ", procname);
       if (pointerp)
-	f_print (fout, "*");
+          f_print (fout, "*");
       f_print (fout, "objp)\n{\n");
     }
   else
@@ -196,7 +217,11 @@ static void
 print_ifopen (int indent, const char *name)
 {
   tabify (fout, indent);
+#ifdef RPC_XML  
+  f_print (fout, " if (!xmlxdr_%s (xdrs", name);
+#else
   f_print (fout, " if (!xdr_%s (xdrs", name);
+#endif
 }
 
 static void
@@ -225,7 +250,11 @@ print_ifsizeof (int indent, const char *prefix, const char *type)
 	{
 	  f_print (fout, "%s ", prefix);
 	}
-      fprintf (fout, "%s), (xdrproc_t) xdr_%s", type, type);
+#ifdef RPC_XML    
+      fprintf (fout, "%s), (xdrproc_t) xmlxdr_%s", type, type);
+#else
+      f_print (fout, "%s), (xdrproc_t) xdr_%s", type, type);
+#endif            
     }
 }
 
@@ -236,6 +265,46 @@ print_ifclose (int indent)
   tabify (fout, indent);
   f_print (fout, "\t return FALSE;\n");
 }
+
+#ifdef RPC_XML
+void filecopy(FILE * ifp, FILE *ofp)
+{
+    int c;
+
+    while ((c = fgetc (ifp)) != EOF)
+        fputc (c, ofp);
+}
+
+static void
+print_compound_name_header()
+{
+    FILE *fp;
+
+    if ((fp = fopen(xml_add_header, "r")) == NULL)    
+    {
+        printf("cannot open compound_header.in %s, exit\n", xml_add_header);
+        exit (-1);
+    }
+    filecopy(fp, fout);
+    fclose(fp);
+    return;
+}
+
+static void
+print_compound_name_trailer()
+{
+    FILE *fp;
+
+    if ((fp = fopen(xml_add_trailer, "r")) == NULL)    
+    {
+        printf("Cannot open compound_trailer.in %s, exit\n", xml_add_trailer);
+        exit (-1);
+    }
+    filecopy(fp, fout);
+    fclose(fp);
+    return;
+}
+#endif
 
 static void
 print_ifstat (int indent, const char *prefix, const char *type, relation rel,
@@ -690,6 +759,13 @@ emit_typedef (const definition * def)
   const char *amax = def->def.ty.array_max;
   relation rel = def->def.ty.rel;
 
+#ifdef RPC_XML  
+  f_print(fout, "    if (xdrs->x_op != XDR_FREE)\n");
+  f_print(fout, "    {\n");
+  f_print(fout, "        ((xml_app_data *)(xdrs->x_private))->type = \"%s\";\n", type);
+  f_print(fout, "    }\n");
+#endif  
+
   print_ifstat (1, prefix, type, rel, amax, "objp", def->def_name);
 }
 
@@ -710,6 +786,13 @@ print_stat (int indent, const declaration * dec)
     {
       s_print (name, "&objp->%s", dec->name);
     }
+
+  f_print(fout, "\n");
+#ifdef RPC_XML
+  f_print(fout, "        ((xml_app_data *)(xdrs->x_private))->name = \"%s\";\n", dec->name);
+  f_print(fout, "        ((xml_app_data *)(xdrs->x_private))->type = \"%s\";\n", dec->type);
+#endif
+
   print_ifstat (indent, prefix, type, rel, amax, name, dec->name);
 }
 

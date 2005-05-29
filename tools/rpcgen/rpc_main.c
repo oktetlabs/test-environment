@@ -179,6 +179,11 @@ int tirpcflag = 1;		/* generating code for tirpc, by default */
 xdrfunc *xdrfunc_head;		/* xdr function list */
 xdrfunc *xdrfunc_tail;		/* xdr function list */
 
+#ifdef RPC_XML
+char xml_add_header[512] = {0,};
+char xml_add_trailer[512] = {0,};
+#endif
+
 int
 main (int argc, const char *argv[])
 {
@@ -188,6 +193,37 @@ main (int argc, const char *argv[])
   clear_args ();
   if (!parseargs (argc, argv, &cmd))
     usage ();
+#ifdef RPC_XML
+  {
+      FILE *f;
+      char *result;
+      char *end;
+
+      snprintf(xml_add_header, sizeof(xml_add_header), "which %s", argv[0]);
+      f = popen(xml_add_header, "r");
+      result = fgets(xml_add_header, sizeof(xml_add_header), f);
+      if (result == NULL)
+      {
+          printf("Cannot get rpcgen additional files, exit\n");
+          exit (-1);
+      }
+      pclose(f);
+      end = strstr(xml_add_header, "bin");
+      if (end == NULL)
+      {
+          printf("Cannot find bin in rpcgen path, exit\n");
+          exit (-1);
+      }
+      *end = '\0';
+      
+      strncpy(xml_add_trailer, xml_add_header, strlen(xml_add_header));
+      strncpy(xml_add_header + strlen(xml_add_header), 
+              "/share/compound_header.in", strlen("/share/compound_header.in"));
+      
+      strncpy(xml_add_trailer + strlen(xml_add_trailer),
+              "/share/compound_trailer.in", strlen("/share/compound_trailer.in"));
+  }
+#endif
 
   if (cmd.cflag || cmd.hflag || cmd.lflag || cmd.tflag || cmd.sflag ||
       cmd.mflag || cmd.nflag || cmd.Ssflag || cmd.Scflag)
@@ -485,6 +521,11 @@ c_output (const char *infile, const char *define, int extend,
     {
       fprintf (fout, "#include \"%s\"\n", include);
       free (include);
+#ifdef RPC_XML      
+      fprintf (fout, "#include \"xml_xdr.h\"\n");
+      fprintf(fout, "extern void start_compound_data(void *data, const XML_Char *elem, const XML_Char **atts);\n");
+      fprintf(fout, "extern void end_compound_data(void *data, const XML_Char *elem);\n");
+#endif      
       /* .h file already contains rpc/rpc.h */
     }
   else
@@ -580,6 +621,9 @@ h_output (const char *infile, const char *define, int extend,
     {
       fprintf (fout, "#include <pthread.h>\n");
     }
+#ifdef RPC_XML
+  fprintf(fout, "#include \"xml_xdr.h\"\n");
+#endif
 
   /* put the C++ support */
   if (Cflag && !CCflag)

@@ -13,7 +13,7 @@ AM_LDFLAGS=@TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/lib
 bin_PROGRAMS = tce_dump
 
 tce_dump_SOURCES = tce_dump.c
-tce_dump_LDADD = -llogger_ten -lrcfapi -lrpcxdr -lipc @TE_LDADD@ -lpthread
+tce_dump_LDADD = -llogger_ten -lrcfapi -lrpcxdr -lipc @TE_LDADD@ -lpthread -lexpat
 te_tee_DEPENDENCIES=@TE_DEPENDENCIES@ \
                     $(DESTDIR)/$(prefix)/lib/liblogger_ten.a \
                     $(DESTDIR)/$(prefix)/lib/libipc.a
