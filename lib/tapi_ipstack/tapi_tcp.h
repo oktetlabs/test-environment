@@ -27,8 +27,8 @@
  */
 
 
-#ifndef __TE_TAPI_TAD_H__
-#define __TE_TAPI_TAD_H__
+#ifndef __TE_TAPI_TCP_H__
+#define __TE_TAPI_TCP_H__
 
 #include <netinet/in.h>
 
@@ -326,4 +326,4 @@ extern tapi_tcp_pos_t tapi_tcp_next_seqn(tapi_tcp_handler_t handler);
 extern tapi_tcp_pos_t tapi_tcp_next_ackn(tapi_tcp_handler_t handler);
 
 
-#endif /* !__TE_TAPI_TAD_H__ */
+#endif /* !__TE_TAPI_TCP_H__ */
