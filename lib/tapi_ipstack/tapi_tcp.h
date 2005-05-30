@@ -35,8 +35,118 @@
 #include "te_stdint.h"
 #include "tad_common.h"
 #include "asn_usr.h"
+#include "tapi_ip.h"
 
 
+/**
+ * Prepare ASN Pattern-Unit value for 'tcp.ip4.eth' CSAP.
+ * 
+ * @param src_mac_addr  Source MAC address (or NULL)
+ * @param dst_mac_addr  Destination MAC address (or NULL)
+ * @param src_ip4_addr  Source IP address in network order (or NULL)
+ * @param dst_ip4_addr  Destination IP address in network order (or NULL)
+ * @param result_value  Location for pointer to new ASN value (OUT)
+ * 
+ * @return Zero on success or error code.
+ */
+extern int tapi_ip4_eth_pattern_unit(const uint8_t *src_mac_addr,
+                                     const uint8_t *dst_mac_addr,
+                                     const uint8_t *src_ip4_addr,
+                                     const uint8_t *dst_ip4_addr,
+                                     asn_value **result_value);
+
+
+
+
+/**
+ * Find in passed ASN value of Pattern-Unit type IPv4 PDU in 'pdus' array
+ * and set in it specified masks for src and/or dst addresses.
+ *
+ * @param pattern_unit  ASN value of type Traffic-Pattern-Unit (IN/OUT)
+ * @param src_mask_len  Length of mask for IPv4 source address or zero
+ * @param dst_mask_len  Length of mask for IPv4 dest. address or zero
+ *
+ * @return Zero on success or error code.
+ */
+extern int tapi_pattern_unit_ip4_mask(asn_value *pattern_unit, 
+                                      size_t src_mask_len,
+                                      size_t dst_mask_len);
+
+
+/**
+ * Creates 'tcp.ip4.eth' CSAP
+ *
+ * @param ta_name       Test Agent name
+ * @param sid           RCF SID
+ * @param eth_dev       Name of Ethernet interface
+ * @param loc_addr      Local IP address in network order (or NULL)
+ * @param rem_addr      Remote IP address in network order (or NULL)
+ * @param loc_port      Local TCP port in HOST byte order 
+ * @param rem_port      Remote TCP port in HOST byte order 
+ * @param tcp_csap      Location for the IPv4 CSAP handle (OUT)
+ *
+ * @return  Status of the operation
+ */
+extern int tapi_tcp_ip4_eth_csap_create(const char *ta_name, int sid, 
+                                        const char *eth_dev,
+                                        const uint8_t *loc_addr,
+                                        const uint8_t *rem_addr,
+                                        uint16_t loc_port,
+                                        uint16_t rem_port,
+                                        csap_handle_t *tcp_csap);
+
+
+/**
+ * Start receiving of IPv4 packets 'tcp.ip4.eth' CSAP, non-block
+ * method. It cannot report received packets, only count them.
+ *
+ * Started receiving process may be controlled by rcf_ta_trrecv_get, 
+ * rcf_ta_trrecv_wait, and rcf_ta_trrecv_stop methods.
+ * 
+ * @param ta_name       Test Agent name
+ * @param sid           RCF SID
+ * @param csap          Identifier of CSAP
+ * @param src_addr      Source IP address in network order (or NULL)
+ * @param dst_addr      Destination IP address in network order (or NULL)
+ * @param loc_port      Local TCP port in HOST byte order 
+ * @param rem_port      Remote TCP port in HOST byte order 
+ * @param timeout       Timeout of operation (in milliseconds, 
+ *                      zero for infinitive)
+ * @param num           nubmer of packets to be caugth
+ * 
+ * @return Zero on success or error code.
+ */
+extern int tapi_tcp_ip4_eth_recv_start(const char *ta_name, int sid, 
+                        csap_handle_t csap,
+                        const uint8_t *src_addr, const uint8_t *dst_addr,
+                        uint16_t loc_port, uint16_t rem_port,
+                        unsigned int timeout, int num);
+
+
+/**
+ * Prepare ASN Pattern-Unit value for 'tcp.ip4.eth' CSAP.
+ * 
+ * @param src_addr      Source IP address in network order (or NULL)
+ * @param dst_addr      Destination IP address in network order (or NULL)
+ * @param src_port      Source TCP port in HOST byte order 
+ * @param dst_port      Destination TCP port in HOST byte order 
+ * @param result_value  Location for pointer to new ASN value
+ * 
+ * @return Zero on success or error code.
+ */
+extern int tapi_tcp_ip4_pattern_unit(
+                        const uint8_t *src_addr, const uint8_t *dst_addr,
+                        uint16_t src_port, uint16_t dst_port,
+                        asn_value **result_value);
+
+
+typedef struct tcp_message_t {
+    struct sockaddr_storage source_sa;
+    struct sockaddr_storage dest_sa;
+
+    uint8_t *payload;
+    size_t pld_len;
+} tcp_message_t;
 
 /** 
  * Callback type for receiving data in TCP connection.
@@ -46,7 +156,7 @@
  *                      be freed. 
  * @param userdata      Parameter, provided by the caller.
  */
-typedef void (*tcp_callback)(const tcp_message *pkt, void *userdata);
+typedef void (*tcp_callback)(const tcp_message_t *pkt, void *userdata);
 
 
 /**

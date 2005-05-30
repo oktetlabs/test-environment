@@ -2,11 +2,11 @@
 AM_CPPFLAGS=@TE_CFLAGS@ -I$(DESTDIR)/$(prefix)/include
 AM_LDFLAGS=@TE_LDFLAGS@ 
 
-include_HEADERS=tapi_ipstack.h
+include_HEADERS=tapi_ip.h tapi_tcp.h tapi_udp.h
 
 lib_LTLIBRARIES=libtapi_ipstack.la
 
-libtapi_ipstack_la_SOURCES=tapi_ipstack.c
+libtapi_ipstack_la_SOURCES=tapi_ip.c tapi_tcp.c tapi_udp.c
 
 
 install-exec-hook:
