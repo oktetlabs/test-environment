@@ -7,7 +7,7 @@ noinst_HEADERS=rcf_pch_internal.h
 
 lib_LIBRARIES=librcfpch.a
 
-librcfpch_a_SOURCES=rcf_pch.c rcf_pch_rpc.c \
+librcfpch_a_SOURCES=rcf_pch.c rcf_pch_rpc.c rcf_pch_mem.c \
                     rcf_pch_file.c rcf_pch_conf.c rcf_pch_var.c 
 
 install-exec-hook:
