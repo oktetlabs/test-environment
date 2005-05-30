@@ -122,6 +122,26 @@ __bb_exit_func (void)
     int fd;
     static char buffer[128];
 
+    if (peer_id == 0) /* __bb_init_function has not been called */
+    {
+        const char *env = getenv("TCE_CONNECTION");
+        char name[PATH_MAX + 1];
+        char *space_at;
+        int peer_id;
+        if (env == NULL)
+            return;
+        strncpy(name, env, sizeof(name) - 1);
+        space_at = strchr(name, ' ');
+        if (space_at == NULL ||
+            (peer_id = strtol(space_at, NULL, 0)) == 0)
+        {
+            fprintf("invalid TCE_CONNECTION var '%s'\n", env);
+            return;
+        }
+        *space_at = '\0';
+        __bb_init_connection(name, peer_id);
+    }
+
     errno = 0;
 
     switch (connect_mode)

@@ -19,6 +19,6 @@ te_tee_DEPENDENCIES=@TE_DEPENDENCIES@ \
                     $(DESTDIR)/$(prefix)/lib/libipc.a
 
 
-EXTRA_DIST = bbhook.c 
+dist_data_DATA = bbhook.c 
 
 

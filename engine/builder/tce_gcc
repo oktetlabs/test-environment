@@ -30,8 +30,7 @@ coverage_options=
 processed_options=
 for arg in "$@"; do
     case "$arg" in
-        -c) TCE_BBHOOK_O=""
-        TCE_LOGFORK=""
+        -c) nobbhook=yes
         processed_options="$processed_options -c" ;;
         -O*|-g|-ftest-coverage|-fprofile-arcs|-nostartfiles) ;;         
         -*) processed_options="$processed_options $arg" ;;
@@ -50,4 +49,12 @@ for arg in "$@"; do
     esac
 done
 
-exec ${TCE_CC} $coverage_options $processed_options $TCE_BBHOOK_O $TCE_LOGFORK
+if test -z "$nobbhook"; then
+    BBHOOK_O=/tmp/bbhook.o
+    selfpath=`dirname $CC`
+    ${TCE_CC} -c ${TCE_CFLAGS} -o $BBHOOK_O -I${selfpath}/../include ${selfpath}/../share/bbhook.c
+else
+    BBHOOK_O=""
+fi
+
+exec ${TCE_CC} $coverage_options $processed_options $BBHOOK_O
