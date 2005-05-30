@@ -40,6 +40,39 @@
  * IPv4
  */ 
 
+static asn_named_entry_t _ndn_ip4_frag_spec_ne_array [] = 
+{
+    { "hdr-offset",         &asn_base_integer_s,
+        {PRIVATE, NDN_TAG_IP4_FR_HO} }, 
+    { "real-offset",         &asn_base_integer_s,
+        {PRIVATE, NDN_TAG_IP4_FR_RO} }, 
+    { "hdr-lenght",         &asn_base_integer_s,
+        {PRIVATE, NDN_TAG_IP4_FR_HL} }, 
+    { "real-length",         &asn_base_integer_s,
+        {PRIVATE, NDN_TAG_IP4_FR_RL} }, 
+    { "more-frags",         &asn_base_boolean_s,
+        {PRIVATE, NDN_TAG_IP4_FR_MORE} }, 
+};
+
+asn_type ndn_ip4_frag_spec_s =
+{
+    "IPv4-Fragment", {PRIVATE, NDN_TAG_IP4_FRAGMENTS}, SEQUENCE, 
+    sizeof(_ndn_ip4_frag_spec_ne_array)/
+        sizeof(_ndn_ip4_frag_spec_ne_array[0]),
+    {_ndn_ip4_frag_spec_ne_array}
+};
+
+
+asn_type_p ndn_ip4_frag_spec = &ndn_ip4_frag_spec_s;
+
+asn_type ndn_ip4_frag_seq_s =
+{
+    "IPv4-Fragments", {PRIVATE, NDN_TAG_IP4_FRAGMENTS}, SEQUENCE_OF, 0,
+    {subtype: &ndn_ip4_frag_spec_s}
+};
+
+asn_type_p ndn_ip4_frag_seq = &ndn_ip4_frag_seq_s;
+
 static asn_named_entry_t _ndn_ip4_header_ne_array [] = 
 {
     { "version",         &ndn_data_unit_int8_s,
@@ -66,12 +99,15 @@ static asn_named_entry_t _ndn_ip4_header_ne_array [] =
         {PRIVATE, NDN_TAG_IP4_SRC_ADDR} },
     { "dst-addr",        &ndn_data_unit_ip_address_s, 
         {PRIVATE, NDN_TAG_IP4_DST_ADDR} }, 
+    { "fragment-spec",   &ndn_ip4_frag_seq_s, 
+        {PRIVATE, NDN_TAG_IP4_FRAGMENTS} }, 
 };
 
 asn_type ndn_ip4_header_s =
 {
     "IPv4-Header", {PRIVATE, 100}, SEQUENCE, 
-    sizeof(_ndn_ip4_header_ne_array)/sizeof(asn_named_entry_t),
+    sizeof(_ndn_ip4_header_ne_array)/
+        sizeof(_ndn_ip4_header_ne_array[0]),
     {_ndn_ip4_header_ne_array}
 };
 
