@@ -875,6 +875,8 @@ main(int argc, char **argv)
     
     char buf[16];
     
+    chdir("/tmp");
+    
     if (argc < 3)
     {
         fprintf(stderr, "Invalid number of arguments\n");
