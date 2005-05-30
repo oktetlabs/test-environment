@@ -66,6 +66,36 @@ extern int rcf_pch_run(const char *confstr, const char *info);
 /** Detach from the Test Engine after fork() */
 extern void rcf_pch_detach(void);
 
+/** Library for registering/unregistering of memory addresses */
+
+/** An identifier corresponding to memory address */
+typedef uint32_t rcf_pch_mem_id;
+
+/**
+ * Assign the identifier to memory.
+ *
+ * @param mem       location of real memory address (in)
+ *
+ * @return Memory identifier or 0 in the case of failure
+ */
+extern rcf_pch_mem_id rcf_pch_mem_alloc(void *mem);
+
+/**
+ * Mark the memory identifier as "unused".
+ *
+ * @param id       memory identifier returned by rcf_pch_mem_alloc
+ */     
+extern void rcf_pch_mem_free(rcf_pch_mem_id id);
+
+/**
+ * Obtain address of the real memory by its identifier.
+ *
+ * @param id       memory identifier returned by rcf_pch_mem_alloc
+ *
+ * @return Memory address or NULL
+ */
+extern void *rcf_pch_mem_get(rcf_pch_mem_id id);
+
 /** @name Default Command Handlers.
  *
  * Default Command Handlers are called from rcf_pch_run() routine

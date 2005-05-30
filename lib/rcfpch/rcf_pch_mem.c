@@ -56,29 +56,16 @@ static uint32_t ids_len;        /**< Current array length       */
 static uint32_t used;           /**< Number of used identifiers */
 
 /**
- * Allocate a piece of memory (if necessary) and assign the identifier 
- * to it.
+ * Assign the identifier to memory.
  *
- * @param size      size of memory to be allocated 
- *                  (ignored if allocate is FALSE)
- * @param mem       if allocate is TRUE, location for real memory address 
- *                  (out); otherwise - location of real memory address (in)
- * @param allocate  if TRUE, allocate real memory in the routine; 
- *                  otherwise - register the memory provided by the user
+ * @param mem       location of real memory address (in)
  *
  * @return Memory identifier or 0 in the case of failure
  */
 rcf_pch_mem_id 
-rcf_pch_mem_alloc(size_t size, void **mem, te_bool allocate)
+rcf_pch_mem_alloc(void *mem)
 {
-    void *m;
-    
     rcf_pch_mem_id id = 0;
-    
-    if (allocate && (m = malloc(size)) == NULL)
-        return 0;
-    else if ((m = *mem) == NULL)
-        return 0;
 
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_lock(&lock);
@@ -90,11 +77,10 @@ rcf_pch_mem_alloc(size_t size, void **mem, te_bool allocate)
         
         if (tmp== NULL)
         {
+            printf(stderr, "Out of memory!");
 #ifdef HAVE_PTHREAD_H
             pthread_mutex_unlock(&lock);
 #endif            
-            if (allocate)
-                free(m);
             return 0;
         }
             
@@ -108,28 +94,23 @@ rcf_pch_mem_alloc(size_t size, void **mem, te_bool allocate)
     for (; ids[id] == NULL && id < ids_len; id++);
     
     assert(id < ids_len);
-    ids[id] = m;
+    ids[id] = mem;
     used++;
 
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_unlock(&lock);
 #endif            
     
-    if (allocate)
-        *mem = m;
-        
     return id + 1;
 }
 
 /**
- * Mark the memory identifier as "unused" and release the memory, 
- * if necessary.
+ * Mark the memory identifier as "unused".
  *
  * @param id       memory identifier returned by rcf_pch_mem_alloc
- * @param release  if TRUE, release the real memory
  */     
 void 
-rcf_pch_mem_free(rcf_pch_mem_id id, te_bool release)
+rcf_pch_mem_free(rcf_pch_mem_id id)
 {
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_lock(&lock);
@@ -137,8 +118,6 @@ rcf_pch_mem_free(rcf_pch_mem_id id, te_bool release)
 
     if (id > 0 && (id--, id < ids_len) && ids[id] != NULL)
     {
-        if (release)
-            free(ids[id]);
         ids[id] = NULL;
         used--;
     }
