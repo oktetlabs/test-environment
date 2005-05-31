@@ -255,7 +255,7 @@ cfg_dh_process_file(xmlNodePtr node)
             rc = cfg_dh_process_file(cmd);
             if (rc != 0)
             {
-                ERROR("Processing of embedded history failed 0x%x", rc);
+                ERROR("Processing of embedded history failed 0x%X", rc);
                 return rc;
             }
             continue;
@@ -735,7 +735,7 @@ cfg_dh_restore_backup(char *filename)
                 {
                     if (rc != ENOENT)
                     {
-                        ERROR("%s(): cfg_db_find() failed: %X", 
+                        ERROR("%s(): cfg_db_find() failed: 0x%X", 
                               __FUNCTION__, rc);
                         TE_RC_UPDATE(result, msg.rc);
                     }
@@ -746,7 +746,7 @@ cfg_dh_restore_backup(char *filename)
                
                 if (msg.rc != 0)
                 {
-                    ERROR("%s(): add failed: %X", __FUNCTION__, msg.rc);
+                    ERROR("%s(): add failed: 0x%X", __FUNCTION__, msg.rc);
                     TE_RC_UPDATE(result, msg.rc);
                 }
                 break;
@@ -766,7 +766,7 @@ cfg_dh_restore_backup(char *filename)
                     
                 if ((rc = cfg_db_find(tmp->old_oid, &msg->handle)) != 0) 
                 {
-                    ERROR("cfg_db_find(%s) failed: %X", tmp->old_oid, rc);
+                    ERROR("cfg_db_find(%s) failed: 0x%X", tmp->old_oid, rc);
                     free(msg);
                     return rc;
                 }
@@ -783,7 +783,7 @@ cfg_dh_restore_backup(char *filename)
                 free(msg);
                 if (rc != 0)
                 {
-                    ERROR("%s(): set failed: %X", __FUNCTION__, rc);
+                    ERROR("%s(): set failed: 0x%X", __FUNCTION__, rc);
                     TE_RC_UPDATE(result, rc);
                 }
                 break;
@@ -817,7 +817,7 @@ cfg_dh_restore_backup(char *filename)
                 free(msg);
                 if (rc != 0)
                 {
-                    ERROR("%s(): delete failed: %X", __FUNCTION__, rc);
+                    ERROR("%s(): delete failed: 0x%X", __FUNCTION__, rc);
                     TE_RC_UPDATE(result, rc);
                 }
                 break;

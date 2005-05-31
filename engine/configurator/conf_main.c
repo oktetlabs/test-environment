@@ -530,13 +530,14 @@ process_del(cfg_del_msg *msg, te_bool update_dh)
 
     if ((msg->rc = cfg_db_del_check(handle)) != 0)
     {
-        ERROR("%s: cfg_db_del_check fails %X", __FUNCTION__, msg->rc);
+        ERROR("%s: cfg_db_del_check fails 0x%X", __FUNCTION__, msg->rc);
         return;
     }
 
     if (update_dh && (msg->rc = cfg_dh_add_command((cfg_msg *)msg)) != 0)
     {
-        ERROR("%s: Failed to add into DH errno %X", __FUNCTION__, msg->rc);
+        ERROR("%s: Failed to add into DH errno 0x%X", 
+              __FUNCTION__, msg->rc);
         return;
     }
 
@@ -553,7 +554,7 @@ process_del(cfg_del_msg *msg, te_bool update_dh)
 
     if (msg->rc != 0)
     {
-        ERROR("%s: rcf_ta_cfg_del returns %X", __FUNCTION__, msg->rc);
+        ERROR("%s: rcf_ta_cfg_del returns 0x%X", __FUNCTION__, msg->rc);
         if (update_dh)
             cfg_dh_delete_last_command();
         return;
@@ -628,7 +629,7 @@ log_msg(cfg_msg *msg, te_bool before)
     {
         level = TE_LL_ERROR;
         addon = buf;
-        snprintf(buf, sizeof(buf), " failed (errno=0x%x)", msg->rc);
+        snprintf(buf, sizeof(buf), " failed (errno=0x%X)", msg->rc);
     }
 /**
  * Construct strings to be printed for handle identification.
@@ -1214,7 +1215,10 @@ main(int argc, char **argv)
 
     ipc_init();
     if (ipc_register_server(CONFIGURATOR_SERVER, &server) != 0)
+    {
+        ERROR("Failed to register IPC server");
         goto error;
+    }
     assert(server != NULL);
 
     VERB("Starting...");
@@ -1249,10 +1253,16 @@ main(int argc, char **argv)
     }
 
     if ((rc = parse_config(argv[1], FALSE)) != 0)
+    {
+        ERROR("Fatal error during configuration file parsing");
         goto error;
+    }
     
     if ((rc = process_cmd_line_opts(argc, argv)) != EXIT_SUCCESS)
+    {
+        ERROR("Fatal error during command line options processing");
         goto error;
+    }
      
     if (cs_print_tree)
     {
@@ -1269,7 +1279,7 @@ main(int argc, char **argv)
 
         if ((rc = ipc_receive_message(server, buf, &len, &user)) != 0)
         {
-            ERROR("Failed receive user request: errno=0x%x", rc);
+            ERROR("Failed receive user request: errno=0x%X", rc);
             continue;
         }
 
@@ -1280,7 +1290,7 @@ main(int argc, char **argv)
         rc = ipc_send_answer(server, user, (char *)msg, msg->len);
         if (rc != 0)
         {
-            ERROR("Cannot send an answer to user: errno=0x%x", rc);
+            ERROR("Cannot send an answer to user: errno=0x%X", rc);
         }
 
         if ((char *)msg != buf)

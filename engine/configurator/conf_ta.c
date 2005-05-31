@@ -191,7 +191,7 @@ sync_ta_instance(char *ta, char *oid)
         }
         else
         {
-            ERROR("Failed(0x%x) to get '%s' from TA '%s'", rc, oid, ta);
+            ERROR("Failed(0x%X) to get '%s' from TA '%s'", rc, oid, ta);
             return rc;
         }
     }
@@ -353,7 +353,7 @@ sync_ta_subtree(char *ta, char *oid)
             break;
         else
         {
-            ERROR("rcf_ta_cfg_get() failed: TA=%s, error=%x", ta, rc);
+            ERROR("rcf_ta_cfg_get() failed: TA=%s, error=0x%X", ta, rc);
             rcf_ta_cfg_group(ta, 0, FALSE);
             free(wildcard_oid);
             return rc;
@@ -494,7 +494,7 @@ cfg_ta_commit_instance(const char *ta, cfg_instance *inst)
     char           *val_str;
 
     
-    ENTRY("ta=%s inst=0x%x", ta, inst);
+    ENTRY("ta=%s inst=0x%X", ta, inst);
     VERB("Commit to '%s' instance '%s'", ta, inst->oid);
     if ((obj->type == CVT_NONE) || (obj->access != CFG_READ_WRITE &&
                                     obj->access != CFG_READ_CREATE))
@@ -560,13 +560,13 @@ cfg_ta_commit(const char *ta, cfg_instance *inst)
     assert(ta != NULL);
     assert(inst != NULL);
 
-    ENTRY("ta=%s inst=0x%x", ta, inst);
+    ENTRY("ta=%s inst=0x%X", ta, inst);
     VERB("Commit to TA '%s' start at '%s'", ta, inst->oid);
 
     rc = rcf_ta_cfg_group(ta, 0, TRUE);
     if (rc != 0)
     {
-        ERROR("Failed(0x%x) to start group on TA '%s'", rc, ta);
+        ERROR("Failed(0x%X) to start group on TA '%s'", rc, ta);
         EXIT("%d", rc);
         return rc;
     }
@@ -578,7 +578,7 @@ cfg_ta_commit(const char *ta, cfg_instance *inst)
             rc = cfg_ta_commit_instance(ta, p);
             if (rc != 0)
             {
-                ERROR("Failed(0x%x) to commit '%s'", rc, p->oid);
+                ERROR("Failed(0x%X) to commit '%s'", rc, p->oid);
                 ret = rc;
                 break;
             }
@@ -610,7 +610,7 @@ cfg_ta_commit(const char *ta, cfg_instance *inst)
     rc = rcf_ta_cfg_group(ta, 0, FALSE);
     if (rc != 0)
     {
-        ERROR("Failed(0x%x) to end group on TA '%s'", rc, ta);
+        ERROR("Failed(0x%X) to end group on TA '%s'", rc, ta);
         if (ret == 0)
             ret = rc;
     }
@@ -666,7 +666,7 @@ cfg_tas_commit(const char *oid)
         rc = cfg_db_find(oid, &handle);
         if (rc != 0)
         {
-            ERROR("Failed(0x%x) to find object instance '%s'", rc, oid);
+            ERROR("Failed(0x%X) to find object instance '%s'", rc, oid);
             EXIT("%d", rc);
             return rc;
         }

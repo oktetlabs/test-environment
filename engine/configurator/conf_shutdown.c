@@ -84,7 +84,7 @@ main(void)
 
     if ((rc = ipc_init_client(name, &ipcc)) != 0)
     {
-        ERROR("Failed to initialize IPC client '%s': %X", name, rc);
+        ERROR("Failed to initialize IPC client '%s': 0x%X", name, rc);
         return EXIT_FAILURE;
     }
 
@@ -93,14 +93,14 @@ main(void)
                                       (char *)&msg, &anslen);
     if (rc != 0)
     {
-        ERROR("Failed to send IPC message with answer to %s: %X",
+        ERROR("Failed to send IPC message with answer to %s: 0x%X",
               CONFIGURATOR_SERVER, rc);
         result = EXIT_FAILURE;
     }
 
     if ((rc = ipc_close_client(ipcc)) != 0)
     {
-        ERROR("Failed to close IPC client: %X", rc);
+        ERROR("Failed to close IPC client: 0x%X", rc);
         result = EXIT_FAILURE;
     }
 
