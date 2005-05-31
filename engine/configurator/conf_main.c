@@ -1324,7 +1324,7 @@ error:
     if (rc != 0)
         ERROR("Error exit");
     else
-        VERB("Exit");
+        RING("Exit");
 
     return rc;
 }
