@@ -52,7 +52,9 @@
 #include "te_errno.h"
 
 #include "rpc_xdr.h"
+#ifdef RPC_XML
 #include "xml_xdr.h"
+#endif
 
 /**
  * Find information corresponding to RPC function by its name.

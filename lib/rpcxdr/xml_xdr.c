@@ -25,6 +25,8 @@
  *
  * $Id$
  */
+
+#ifdef RPC_XML
  
 #ifdef HAVE_STDLIB_H
 #include <stdlib.h>
@@ -56,7 +58,6 @@
 #include "te_defs.h"
 #include "xml_xdr.h"
 
-#ifdef RPC_XML
 
 #define LASTUNSIGNED    ((u_int)0-1)
 
