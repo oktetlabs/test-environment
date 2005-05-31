@@ -177,6 +177,9 @@ cli_match_bin_cb(int                csap_id,
     UNUSED(layer);
     UNUSED(pattern_pdu);
     UNUSED(payload);
+#if 1
+    UNUSED(parsed_packet);
+#endif
 
     VERB("cli_match. len: %d, message: %s\n", msg_len, msg);
 

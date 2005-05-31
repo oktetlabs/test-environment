@@ -99,6 +99,9 @@ typedef enum cli_conn_type {
 #define CLI_PROMPT_STATUS_LOGIN     0x2 /**< login-prompt present */
 #define CLI_PROMPT_STATUS_PASSWORD  0x4 /**< password-prompt present */
 
+/** We still haven't got a reply for the previous command */
+#define CLI_CSAP_STATUS_REPLY_WAITING 0x01
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -123,6 +126,7 @@ typedef struct cli_csap_specific_data
                           for sending command results */
     int sync_pipe; /**< Used for sync mesages sent from Expect side to
                         CSAP Engine. */
+    size_t last_cmd_len; /**< The length of the last command run */
 
     cli_conn_type_t conn_type; /**< CLI protocol type                         */
     char *program;     /**< Default program to start (millicom, telnet,
@@ -138,7 +142,8 @@ typedef struct cli_csap_specific_data
     char  *password;    /**< Default user password (NULL if not defined)      */
 
 
-    uint32_t prompts_status;   /**< available prompts found on init             */
+    uint32_t status; /**< Status bits of the CSAP */
+    uint32_t prompts_status;   /**< Available prompts found on init             */
 
     struct exp_case prompts[CLI_MAX_PROMPTS]; /**< expect cases structure that
                                                    contains known prompts     */
