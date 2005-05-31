@@ -39,42 +39,8 @@
 
 
 /**
- * Prepare ASN Pattern-Unit value for 'tcp.ip4.eth' CSAP.
- * 
- * @param src_mac_addr  Source MAC address (or NULL)
- * @param dst_mac_addr  Destination MAC address (or NULL)
- * @param src_ip4_addr  Source IP address in network order (or NULL)
- * @param dst_ip4_addr  Destination IP address in network order (or NULL)
- * @param result_value  Location for pointer to new ASN value (OUT)
- * 
- * @return Zero on success or error code.
- */
-extern int tapi_ip4_eth_pattern_unit(const uint8_t *src_mac_addr,
-                                     const uint8_t *dst_mac_addr,
-                                     const uint8_t *src_ip4_addr,
-                                     const uint8_t *dst_ip4_addr,
-                                     asn_value **result_value);
-
-
-
-
-/**
- * Find in passed ASN value of Pattern-Unit type IPv4 PDU in 'pdus' array
- * and set in it specified masks for src and/or dst addresses.
- *
- * @param pattern_unit  ASN value of type Traffic-Pattern-Unit (IN/OUT)
- * @param src_mask_len  Length of mask for IPv4 source address or zero
- * @param dst_mask_len  Length of mask for IPv4 dest. address or zero
- *
- * @return Zero on success or error code.
- */
-extern int tapi_pattern_unit_ip4_mask(asn_value *pattern_unit, 
-                                      size_t src_mask_len,
-                                      size_t dst_mask_len);
-
-
-/**
- * Creates 'tcp.ip4.eth' CSAP
+ * Creates 'tcp.ip4.eth' CSAP.
+ * Created CSAP can catch only packets, incoming to TA host. 
  *
  * @param ta_name       Test Agent name
  * @param sid           RCF SID
@@ -117,10 +83,11 @@ extern int tapi_tcp_ip4_eth_csap_create(const char *ta_name, int sid,
  * @return Zero on success or error code.
  */
 extern int tapi_tcp_ip4_eth_recv_start(const char *ta_name, int sid, 
-                        csap_handle_t csap,
-                        const uint8_t *src_addr, const uint8_t *dst_addr,
-                        uint16_t loc_port, uint16_t rem_port,
-                        unsigned int timeout, int num);
+                                    csap_handle_t csap,
+                                    const uint8_t *src_addr,
+                                    const uint8_t *dst_addr,
+                                    uint16_t src_port, uint16_t dst_port,
+                                    unsigned int timeout, int num);
 
 
 /**
@@ -218,6 +185,20 @@ extern int tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode,
 extern int tapi_tcp_close_connection(tapi_tcp_handler_t handler, 
                                      int timeout);
 
+/** 
+ * Send TCP SYN message.
+ *
+ * @param ta            TA name;
+ * @param csap          TCP CSAP identifier;
+ * @param src_addr      source socket address;
+ * @param dst_addr      destination socket address;
+ *
+ * @return status code
+ */
+extern int tapi_tcp_send_syn(const char *ta, csap_handle_t csap, 
+                             struct sockaddr *src_addr,
+                             struct sockaddr *dst_addr, 
+                             int window);
 /**
  * Send TCP message via established connection.
  *
@@ -238,7 +219,9 @@ extern int tapi_tcp_send_msg(tapi_tcp_handler_t handler,
                              tapi_tcp_protocol_mode_t seq_mode, 
                              tapi_tcp_pos_t seqn,
                              tapi_tcp_protocol_mode_t ack_mode, 
-                             tapi_tcp_pos_t ackn);
+                             tapi_tcp_pos_t ackn, 
+                             tapi_ip_frag_spec_t *frags,
+                             size_t frag_num);
 
 /**
  * Wait for next incoming TCP message in connection.

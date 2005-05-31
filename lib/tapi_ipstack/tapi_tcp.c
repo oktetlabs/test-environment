@@ -53,6 +53,8 @@
 #include "logger_api.h"
 
 #include "tapi_tcp.h"
+#include "tapi_tad.h"
+
 #include "ndn_ipstack.h"
 #include "ndn_eth.h"
 
@@ -187,3 +189,46 @@ tapi_tcp_ip4_pattern_unit(const uint8_t *src_addr, const uint8_t *dst_addr,
 }
 
 
+/* see description in tapi_tcp.h */
+int
+tapi_tcp_ip4_eth_recv_start(const char *ta_name, int sid, 
+                            csap_handle_t csap,
+                            const uint8_t *src_addr,
+                            const uint8_t *dst_addr,
+                            uint16_t src_port, uint16_t dst_port,
+                            unsigned int timeout, int num)
+{ 
+    asn_value *pattern;
+    asn_value *pattern_unit; 
+    int rc = 0;
+
+    
+    if ((rc = tapi_tcp_ip4_pattern_unit(src_addr, dst_addr, 
+                                        src_port, dst_port, 
+                                        &pattern_unit)) != 0)
+    {
+        ERROR("%s: create pattern unit error %X", __FUNCTION__, rc);
+        return rc;
+    }
+
+    pattern = asn_init_value(ndn_traffic_pattern); 
+
+    if ((rc = asn_insert_indexed(pattern, pattern_unit, 0, "")) != 0)
+    {
+        asn_free_value(pattern_unit);
+        asn_free_value(pattern);
+        ERROR("%s: insert pattern unit error %X", __FUNCTION__, rc);
+        return rc; 
+    } 
+
+    asn_free_value(pattern_unit);
+
+    if ((rc = tapi_tad_trrecv_start(ta_name, sid, csap, pattern,
+                                NULL, NULL, timeout, num)) != 0) 
+    {
+        ERROR("%s: trrecv_start failed: %X", __FUNCTION__, rc);
+    }
+    asn_free_value(pattern);
+
+    return rc;
+}
