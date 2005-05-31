@@ -80,6 +80,9 @@
 /** Obtain RCF RPC errno code */
 #define RPC_ERRNO errno_h2rpc(errno)
 
+#define IN_SIGSET       ((sigset_t *)(rcf_pch_mem_get(in->set)))
+#define IN_FDSET        ((fd_set *)(rcf_pch_mem_get(in->set)))
+
 extern char **environ;
 
 #if HAVE_AIO_H
@@ -182,7 +185,7 @@ find_func(char *name, sock_api_func *func)
     
     if (strcmp(name, "getpid") == 0)
     {
-        *func = getpid;
+        *func = (sock_api_func)getpid;
         return 0;
     }
 
@@ -519,15 +522,16 @@ _##_func##_1_svc(tarpc_##_func##_in *in, tarpc_##_func##_out *out,  \
                                                                     \
         memset(in,  0, sizeof(*in));                                \
         memset(out, 0, sizeof(*out));                               \
-        out->common.tid = _tid;                                     \
-        out->common.done = (tarpc_ptr)&arg->done;                   \
+        out->common.tid = rcf_pch_mem_alloc(_tid);                  \
+        out->common.done = rcf_pch_mem_alloc(&arg->done);           \
                                                                     \
         return TRUE;                                                \
     }                                                               \
                                                                     \
     VERB("%s(): WAIT", #_func);                                     \
     assert(in->common.op == RCF_RPC_WAIT);                          \
-    if (pthread_join(in->common.tid, (void **)&(arg)) != 0)         \
+    if (pthread_join(rcf_pch_mem_get(in->common.tid),               \
+                     (void **)&(arg)) != 0)                         \
     {                                                               \
         out->common._errno = TE_RC(TE_TA_LINUX, errno);             \
         return TRUE;                                                \
@@ -539,6 +543,8 @@ _##_func##_1_svc(tarpc_##_func##_in *in, tarpc_##_func##_out *out,  \
     }                                                               \
     xdr_tarpc_##_func##_out((XDR *)&op, out);                       \
     *out = arg->out;                                                \
+    rcf_pch_mem_free(in->common.done);                              \
+    rcf_pch_mem_free(in->common.tid);                               \
     free(arg);                                                      \
     return TRUE;                                                    \
 }
@@ -628,7 +634,7 @@ _rpc_is_op_done_1_svc(tarpc_rpc_is_op_done_in  *in,
                       tarpc_rpc_is_op_done_out *out,
                       struct svc_req           *rqstp)
 {
-    te_bool *is_done = (te_bool *)(in->common.done);
+    te_bool *is_done = (te_bool *)rcf_pch_mem_get(in->common.done);
 
     UNUSED(rqstp);
 
@@ -723,10 +729,15 @@ bool_t
 _sigreceived_1_svc(tarpc_sigreceived_in *in, tarpc_sigreceived_out *out,
                    struct svc_req *rqstp)
 {
+    static rcf_pch_mem_id id = 0;
+    
     UNUSED(in);
     UNUSED(rqstp);
     memset(out, 0, sizeof(*out));
-    out->set = (tarpc_sigset_t)&rpcs_received_signals;
+    
+    if (id == 0)
+        id = rcf_pch_mem_alloc(&rpcs_received_signals);
+    out->set = id;
 
     return TRUE;
 }
@@ -1051,7 +1062,7 @@ _fd_set_new_1_svc(tarpc_fd_set_new_in *in, tarpc_fd_set_new_out *out,
     else
     {
         out->common._errno = RPC_ERRNO;
-        out->retval = (tarpc_fd_set)set;
+        out->retval = rcf_pch_mem_alloc(set);
     }
 
     return TRUE;
@@ -1069,7 +1080,8 @@ _fd_set_delete_1_svc(tarpc_fd_set_delete_in *in,
     memset(out, 0, sizeof(*out));
 
     errno = 0;
-    free((void *)(in->set));
+    free(IN_FDSET);
+    rcf_pch_mem_free(in->set);
     out->common._errno = RPC_ERRNO;
 
     return TRUE;
@@ -1085,7 +1097,7 @@ _do_fd_zero_1_svc(tarpc_do_fd_zero_in *in, tarpc_do_fd_zero_out *out,
 
     memset(out, 0, sizeof(*out));
 
-    FD_ZERO((fd_set *)(in->set));
+    FD_ZERO(IN_FDSET);
     return TRUE;
 }
 
@@ -1099,7 +1111,7 @@ _do_fd_set_1_svc(tarpc_do_fd_set_in *in, tarpc_do_fd_set_out *out,
 
     memset(out, 0, sizeof(*out));
 
-    FD_SET(in->fd, (fd_set *)(in->set));
+    FD_SET(in->fd, IN_FDSET);
     return TRUE;
 }
 
@@ -1113,7 +1125,7 @@ _do_fd_clr_1_svc(tarpc_do_fd_clr_in *in, tarpc_do_fd_clr_out *out,
 
     memset(out, 0, sizeof(*out));
 
-    FD_SET(in->fd, (fd_set *)(in->set));
+    FD_SET(in->fd, IN_FDSET);
     return TRUE;
 }
 
@@ -1127,7 +1139,7 @@ _do_fd_isset_1_svc(tarpc_do_fd_isset_in *in, tarpc_do_fd_isset_out *out,
 
     memset(out, 0, sizeof(*out));
 
-    out->retval = FD_ISSET(in->fd, (fd_set *)(in->set));
+    out->retval = FD_ISSET(in->fd, IN_FDSET);
     return TRUE;
 }
 
@@ -1146,9 +1158,10 @@ TARPC_FUNC(select,
         tv.tv_usec = out->timeout.timeout_val[0].tv_usec;
     }
 
-    MAKE_CALL(out->retval = func(in->n, (fd_set *)(in->readfds),
-                                 (fd_set *)(in->writefds),
-                                 (fd_set *)(in->exceptfds),
+    MAKE_CALL(out->retval = func(in->n, 
+                                 (fd_set *)rcf_pch_mem_get(in->readfds),
+                                 (fd_set *)rcf_pch_mem_get(in->writefds),
+                                 (fd_set *)rcf_pch_mem_get(in->exceptfds),
                                  out->timeout.timeout_len == 0 ? NULL :
                                  &tv));
 
@@ -1274,7 +1287,7 @@ _sigset_new_1_svc(tarpc_sigset_new_in *in, tarpc_sigset_new_out *out,
     else
     {
         out->common._errno = RPC_ERRNO;
-        out->set = (tarpc_sigset_t)set;
+        out->set = rcf_pch_mem_alloc(set);
     }
 
     return TRUE;
@@ -1292,7 +1305,8 @@ _sigset_delete_1_svc(tarpc_sigset_delete_in *in,
     memset(out, 0, sizeof(*out));
 
     errno = 0;
-    free((void *)(in->set));
+    free(IN_SIGSET);
+    rcf_pch_mem_free(in->set);
     out->common._errno = RPC_ERRNO;
 
     return TRUE;
@@ -1302,7 +1316,7 @@ _sigset_delete_1_svc(tarpc_sigset_delete_in *in,
 
 TARPC_FUNC(sigemptyset, {},
 {
-    MAKE_CALL(out->retval = func(in->set));
+    MAKE_CALL(out->retval = func((int)IN_SIGSET));
 }
 )
 
@@ -1310,7 +1324,7 @@ TARPC_FUNC(sigemptyset, {},
 
 TARPC_FUNC(sigpending, {},
 {
-    MAKE_CALL(out->retval = func(in->set));
+    MAKE_CALL(out->retval = func((int)IN_SIGSET));
 }
 )
 
@@ -1318,7 +1332,7 @@ TARPC_FUNC(sigpending, {},
 
 TARPC_FUNC(sigsuspend, {},
 {
-    MAKE_CALL(out->retval = func(in->set));
+    MAKE_CALL(out->retval = func((int)IN_SIGSET));
 }
 )
 
@@ -1326,7 +1340,7 @@ TARPC_FUNC(sigsuspend, {},
 
 TARPC_FUNC(sigfillset, {},
 {
-    MAKE_CALL(out->retval = func(in->set));
+    MAKE_CALL(out->retval = func((int)IN_SIGSET));
 }
 )
 
@@ -1334,7 +1348,7 @@ TARPC_FUNC(sigfillset, {},
 
 TARPC_FUNC(sigaddset, {},
 {
-    MAKE_CALL(out->retval = func(in->set, signum_rpc2h(in->signum)));
+    MAKE_CALL(out->retval = func((int)IN_SIGSET, signum_rpc2h(in->signum)));
 }
 )
 
@@ -1342,7 +1356,7 @@ TARPC_FUNC(sigaddset, {},
 
 TARPC_FUNC(sigdelset, {},
 {
-    MAKE_CALL(out->retval = func(in->set, signum_rpc2h(in->signum)));
+    MAKE_CALL(out->retval = func((int)IN_SIGSET, signum_rpc2h(in->signum)));
 }
 )
 
@@ -1350,17 +1364,17 @@ TARPC_FUNC(sigdelset, {},
 
 TARPC_FUNC(sigismember, {},
 {
-    INIT_CHECKED_ARG((char *)(in->set), sizeof(sigset_t), 0);
-    MAKE_CALL(out->retval = func(in->set, signum_rpc2h(in->signum)));
+    INIT_CHECKED_ARG((char *)(IN_SIGSET), sizeof(sigset_t), 0);
+    MAKE_CALL(out->retval = func((int)IN_SIGSET, signum_rpc2h(in->signum)));
 }
 )
 
 /*-------------- sigprocmask() ------------------------------*/
 TARPC_FUNC(sigprocmask, {},
 {
-    INIT_CHECKED_ARG((char *)in->set, sizeof(sigset_t), 0);
-    MAKE_CALL(out->retval = func(sighow_rpc2h(in->how), in->set,
-                                 in->oldset));
+    INIT_CHECKED_ARG((char *)IN_SIGSET, sizeof(sigset_t), 0);
+    MAKE_CALL(out->retval = func(sighow_rpc2h(in->how), (int)IN_SIGSET,
+                                 (sigset_t *)rcf_pch_mem_get(in->oldset)));
 }
 )
 
@@ -1470,7 +1484,7 @@ TARPC_FUNC(sigaction,
         void *tmp_handler = NULL;
 
         act.sa_flags = sigaction_flags_rpc2h(in_act->xx_flags);
-        act.sa_mask = *((sigset_t *)in_act->xx_mask);
+        act.sa_mask = *((sigset_t *)rcf_pch_mem_get(in_act->xx_mask));
 
         tmp_err =
             get_name2handler(in_act->xx_handler.xx_handler_val,
@@ -1498,7 +1512,7 @@ TARPC_FUNC(sigaction,
             p_oldact = &oldact;
 
         MAKE_CALL(out->retval = func(signum_rpc2h(in->signum),
-                                      p_act, p_oldact));
+                                     p_act, p_oldact));
 
         if (out->retval == 0 && p_oldact != NULL)
         {
@@ -1520,7 +1534,7 @@ TARPC_FUNC(sigaction,
             {
                out_oldact->xx_flags = sigaction_flags_h2rpc(oldact.
                                                                  sa_flags);
-               out_oldact->xx_mask = (tarpc_sigset_t)&oldact.sa_mask;
+               out_oldact->xx_mask = rcf_pch_mem_alloc(&oldact.sa_mask);
             }
         }
     }
@@ -1565,7 +1579,7 @@ TARPC_FUNC(sigaction,
         void *tmp_handler = NULL;
 
         act.sa_flags = sigaction_flags_rpc2h(in_act->xx_flags);
-        act.sa_mask = *((sigset_t *)in_act->xx_mask);
+        act.sa_mask = *((sigset_t *)rcf_pch_mem_get(in_act->xx_mask));
 
         tmp_err =
             get_name2handler(in_act->xx_handler.xx_handler_val,
@@ -1597,7 +1611,7 @@ TARPC_FUNC(sigaction,
             {
                out_oldact->xx_flags = sigaction_flags_h2rpc(oldact.
                                                                  sa_flags);
-               out_oldact->xx_mask = (tarpc_sigset_t)&oldact.sa_mask;
+               out_oldact->xx_mask = rcf_pch_mem_alloc(&oldact.sa_mask);
             }
         }
     }
@@ -2111,14 +2125,15 @@ TARPC_FUNC(pselect, {},
      * data, but we want to check that the data are unchanged even in
      * this case.
      */
-    INIT_CHECKED_ARG((char *)(in->sigmask), sizeof(sigset_t), 0);
+    INIT_CHECKED_ARG((char *)rcf_pch_mem_get(in->sigmask), 
+                     sizeof(sigset_t), 0);
 
     MAKE_CALL(out->retval = func(in->n,
-                                 (fd_set *)(in->readfds),
-                                 (fd_set *)(in->writefds),
-                                 (fd_set *)(in->exceptfds),
+                                 (fd_set *)rcf_pch_mem_get(in->readfds),
+                                 (fd_set *)rcf_pch_mem_get(in->writefds),
+                                 (fd_set *)rcf_pch_mem_get(in->exceptfds),
                                  in->timeout.timeout_len == 0 ? NULL : &tv,
-                                 in->sigmask));
+                                 rcf_pch_mem_get(in->sigmask)));
 }
 )
 

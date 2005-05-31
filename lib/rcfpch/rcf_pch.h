@@ -88,6 +88,13 @@ extern rcf_pch_mem_id rcf_pch_mem_alloc(void *mem);
 extern void rcf_pch_mem_free(rcf_pch_mem_id id);
 
 /**
+ * Mark the memory identifier corresponding to memory address as "unused".
+ *
+ * @param mem   memory address
+ */     
+extern void rcf_pch_mem_free_mem(void *mem);
+
+/**
  * Obtain address of the real memory by its identifier.
  *
  * @param id       memory identifier returned by rcf_pch_mem_alloc
@@ -95,6 +102,15 @@ extern void rcf_pch_mem_free(rcf_pch_mem_id id);
  * @return Memory address or NULL
  */
 extern void *rcf_pch_mem_get(rcf_pch_mem_id id);
+
+/**
+ * Find memory identifier by memory address.
+ *
+ * @param mem   memory address
+ *
+ * @return memory identifier or 0
+ */     
+extern rcf_pch_mem_id rcf_pch_mem_get_id(void *mem);
 
 /** @name Default Command Handlers.
  *

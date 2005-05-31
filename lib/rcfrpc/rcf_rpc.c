@@ -426,6 +426,7 @@ rcf_rpc_call(rcf_rpc_server *rpcs, const char *proc,
     in->start = rpcs->start;
     in->op = rpcs->op;
     in->tid = rpcs->tid0;
+    in->done = rpcs->is_done_ptr;
     if (!op_is_done)
         strcpy(rpcs->proc, proc); 
 

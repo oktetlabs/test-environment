@@ -518,9 +518,14 @@ create_data_file(char *pathname, char c, int len)
 {
     char  buf[1024];
     FILE *f;
+    int   err;
     
     if ((f = fopen(pathname, "w")) == NULL)
-        return TE_RC(TE_TA_WIN32, errno);
+    {
+        err = errno;
+        ERROR("fopen(\"%s\", \"w\") failed; errno %d", pathname, err);
+        return TE_RC(TE_TA_WIN32, err);
+    }
     
     memset(buf, c, sizeof(buf));
     
@@ -531,15 +536,20 @@ create_data_file(char *pathname, char c, int len)
 
         if ((copy_len = fwrite((void *)buf, sizeof(char), copy_len, f)) < 0)
         {
+            int err = errno;
+            
+            ERROR("fwrite() failed errno=%d", err);
+            
             fclose(f);
-            return TE_RC(TE_TA_WIN32, errno);
+            return TE_RC(TE_TA_WIN32, err);
         }
         len -= copy_len;
     }
     if (fclose(f) < 0)
     {
-        ERROR("fclose() failed errno=%d", errno);
-        return TE_RC(TE_TA_WIN32, errno);
+        err = errno;
+        ERROR("fclose() failed errno=%d", err);
+        return TE_RC(TE_TA_WIN32, err);
     }
 
     return 0;

@@ -936,7 +936,7 @@ rpc_wsa_event_select(rcf_rpc_server *rpcs,
 
 
     in.fd = s;
-    in.event_object = (tarpc_wsaevent)event_object;
+    in.hevent = (tarpc_wsaevent)event_object;
     in.event = event;
 
     rpcs->op = RCF_RPC_CALL_WAIT;
@@ -971,12 +971,12 @@ rpc_enum_network_events(rcf_rpc_server *rpcs,
 
 
     in.fd = s;
-    in.event_object = (tarpc_wsaevent)event_object;
+    in.hevent = (tarpc_wsaevent)event_object;
     if (event == NULL)
         in.event.event_len = 0;
     else
         in.event.event_len = 1;
-    in.event.event_val = (unsigned long *)event;
+    in.event.event_val = (uint32_t *)event;
 
     rpcs->op = RCF_RPC_CALL_WAIT;
     rcf_rpc_call(rpcs, "enum_network_events", &in, &out);
@@ -1960,7 +1960,7 @@ int
 rpc_wait_multiple_events(rcf_rpc_server *rpcs,
                         int count, rpc_wsaevent *events,
                         te_bool wait_all, uint32_t timeout,
-                        te_bool alertable, int rcount)
+                        te_bool alertable)
 {
     rcf_rpc_op                      op;
     tarpc_wait_multiple_events_in   in;
@@ -1975,17 +1975,8 @@ rpc_wait_multiple_events(rcf_rpc_server *rpcs,
         RETVAL_INT(wait_multiple_events, -1);
     }
 
-    if (events != NULL && count > rcount)
-    {
-        rpcs->_errno = TE_RC(TE_RCF, EINVAL);
-        RETVAL_INT(wait_multiple_events, -1);
-    }
-
     op = rpcs->op;
-
-
-    in.count = count;
-    in.events.events_len = rcount;
+    in.events.events_len = count;
     in.events.events_val = (tarpc_wsaevent *)events;
     in.wait_all = wait_all;
     in.timeout = timeout;
@@ -2310,7 +2301,8 @@ rpc_alloc_wsabuf(rcf_rpc_server *rpcs, size_t len,
     RETVAL_INT(alloc_wsabuf, out.retval);
 }
 
-void rpc_free_wsabuf(rcf_rpc_server *rpcs, rpc_ptr wsabuf)
+void 
+rpc_free_wsabuf(rcf_rpc_server *rpcs, rpc_ptr wsabuf)
 {
     rcf_rpc_op            op;
     tarpc_free_wsabuf_in  in;

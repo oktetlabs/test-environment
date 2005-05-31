@@ -43,6 +43,7 @@
 #include "te_defs.h"
 #include "te_stdint.h"
 #include "rcf_pch.h"
+#include "rcf_pch_internal.h"
 
 /** Chunk of reallocation of identifiers array */
 #define IDS_CHUNK   128
@@ -66,18 +67,18 @@ rcf_pch_mem_id
 rcf_pch_mem_alloc(void *mem)
 {
     rcf_pch_mem_id id = 0;
-
+    
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_lock(&lock);
 #endif
 
     if (ids_len == used)
     {
-        void **tmp = realloc(ids, ids_len + IDS_CHUNK * sizeof(void *));
+        void **tmp = realloc(ids, (ids_len + IDS_CHUNK) * sizeof(void *));
         
-        if (tmp== NULL)
+        if (tmp == NULL)
         {
-            printf(stderr, "Out of memory!");
+            fprintf(stderr, "Out of memory!");
 #ifdef HAVE_PTHREAD_H
             pthread_mutex_unlock(&lock);
 #endif            
@@ -86,12 +87,12 @@ rcf_pch_mem_alloc(void *mem)
             
         memset(tmp + ids_len, 0, IDS_CHUNK * sizeof(void *));
         
-        *ids = tmp;
+        ids = tmp;
         id = ids_len;
         ids_len += IDS_CHUNK;
     }
     
-    for (; ids[id] == NULL && id < ids_len; id++);
+    for (; ids[id] != NULL && id < ids_len; id++);
     
     assert(id < ids_len);
     ids[id] = mem;
@@ -100,7 +101,7 @@ rcf_pch_mem_alloc(void *mem)
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_unlock(&lock);
 #endif            
-    
+
     return id + 1;
 }
 
@@ -117,6 +118,33 @@ rcf_pch_mem_free(rcf_pch_mem_id id)
 #endif
 
     if (id > 0 && (id--, id < ids_len) && ids[id] != NULL)
+    {
+        ids[id] = NULL;
+        used--;
+    }
+
+#ifdef HAVE_PTHREAD_H
+    pthread_mutex_unlock(&lock);
+#endif
+}
+
+/**
+ * Mark the memory identifier corresponding to memory address as "unused".
+ *
+ * @param mem   memory address
+ */     
+void 
+rcf_pch_mem_free_mem(void *mem)
+{
+    rcf_pch_mem_id id;
+    
+#ifdef HAVE_PTHREAD_H
+    pthread_mutex_lock(&lock);
+#endif
+
+    for (id = 0; id < ids_len && ids[id] != mem; id++);
+    
+    if (id < ids_len)
     {
         ids[id] = NULL;
         used--;
@@ -153,3 +181,32 @@ rcf_pch_mem_get(rcf_pch_mem_id id)
     return m;
 }
 
+/**
+ * Find memory identifier by memory address.
+ *
+ * @param mem   memory address
+ *
+ * @return memory identifier or 0
+ */     
+rcf_pch_mem_id 
+rcf_pch_mem_get_id(void *mem)
+{
+    rcf_pch_mem_id id;
+    
+#ifdef HAVE_PTHREAD_H
+    pthread_mutex_lock(&lock);
+#endif
+
+    for (id = 0; id < ids_len && ids[id] != mem; id++);
+    
+    if (id < ids_len)
+        id++;
+    else
+        id = 0;
+
+#ifdef HAVE_PTHREAD_H
+    pthread_mutex_unlock(&lock);
+#endif
+
+    return id;
+}

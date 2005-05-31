@@ -812,48 +812,64 @@ init_collect_tce(int argc, char *argv[])
 int
 dump_collected_tce(int argc, char *argv[])
 {
+    UNUSED(argc);
+    UNUSED(argv);
     return dump_tce_collector();
 }
 
 int
 stop_collect_tce(int argc, char *argv[])
 {
+    UNUSED(argc);
+    UNUSED(argv);
     return stop_tce_collector();
 }
 
 int
 obtain_tce_peer_id(int unused, char *argv[])
 {
+    UNUSED(unused);
+    UNUSED(argv);
     return getpid();
 }
 #else    
 int
 collect_tce(int argc, char *argv[])
 {
+    UNUSED(argc);
+    UNUSED(argv);
     return 0;
 }
 
 int
 init_collect_tce(int argc, char *argv[])
 {
+    UNUSED(argc);
+    UNUSED(argv);
     return 0;
 }
 
 int
 dump_collected_tce(int argc, char *argv[])
 {
+    UNUSED(argc);
+    UNUSED(argv);
     return 0;
 }
 
 int
 stop_collect_tce(int argc, char *argv[])
 {
+    UNUSED(argc);
+    UNUSED(argv);
     return 0;
 }
 
 int
 obtain_tce_peer_id(int unused, char *argv[])
 {
+    UNUSED(unused);
+    UNUSED(argv);
     return 0;
 }
 

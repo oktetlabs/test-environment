@@ -45,20 +45,20 @@ typedef int32_t     tarpc_ssize_t;
 /** RPC socklen_t analog */
 typedef uint32_t    tarpc_socklen_t;
 /** Handle of the 'sigset_t' or 0 */
-typedef uint32_t    tarpc_sigset_t;
+typedef tarpc_ptr   tarpc_sigset_t;
 /** Handle of the 'fd_set' or 0 */
-typedef uint32_t    tarpc_fd_set;
+typedef tarpc_ptr   tarpc_fd_set;
 /** RPC off_t analog */
 typedef int32_t     tarpc_off_t;
 
 /** Handle of the 'WSAEvent' or 0 */
-typedef uint32_t    tarpc_wsaevent;
+typedef tarpc_ptr   tarpc_wsaevent;
 /** Handle of the window */
-typedef uint32_t    tarpc_hwnd;
+typedef tarpc_ptr   tarpc_hwnd;
 /** WSAOVERLAPPED structure */
-typedef uint32_t    tarpc_overlapped;
+typedef tarpc_ptr   tarpc_overlapped;
 /** HANDLE */
-typedef uint32_t    tarpc_handle;
+typedef tarpc_ptr   tarpc_handle;
 
 typedef uint32_t    tarpc_op;
 
@@ -72,7 +72,7 @@ typedef uint32_t    tarpc_op;
 struct tarpc_in_arg {
     tarpc_op        op;         /**< RPC operation */
     uint64_t        start;
-    uint32_t        tid;        /**< Thread identifier (for checking and 
+    tarpc_ptr       tid;        /**< Thread identifier (for checking and 
                                      waiting) */
     tarpc_ptr       done;       /**< Pointer to the boolean variable in
                                      TA context to be set when function
@@ -92,7 +92,7 @@ struct tarpc_out_arg {
                                  te_errno.h or rcf_rpc_defs.h */
     uint32_t    duration;   /**< Duration of the called routine
                                  execution (in microseconds) */
-    uint32_t    tid;        /**< Identifier of the thread which 
+    tarpc_ptr   tid;        /**< Identifier of the thread which 
                                  performs possibly blocking operation,
                                  but caller does not want to block.
                                  It should be passed as input when
@@ -819,14 +819,14 @@ struct tarpc_create_event_out {
 /* WSACloseEvent() */
 struct tarpc_close_event_in {
     struct tarpc_in_arg common;
-    tarpc_wsaevent hevent;
+    tarpc_wsaevent      hevent;
 };
 typedef struct tarpc_int_retval_out tarpc_close_event_out;
 
 /* WSAResetEvent() */
 struct tarpc_reset_event_in {
     struct tarpc_in_arg common;
-    tarpc_wsaevent hevent;
+    tarpc_wsaevent      hevent;
 };
 
 typedef struct tarpc_int_retval_out tarpc_reset_event_out;
@@ -1185,7 +1185,7 @@ struct tarpc_event_select_in {
     struct tarpc_in_arg common;
 
     tarpc_int       fd;           /**< TA-local socket */ 
-    tarpc_wsaevent  event_object; /**< Event object to be associated
+    tarpc_wsaevent  hevent;       /**< Event object to be associated
                                        with set of network events */   
     uint32_t        event;        /**< Bitmask that specifies the set
                                          of network events */      
@@ -1199,7 +1199,7 @@ struct tarpc_enum_network_events_in {
     struct tarpc_in_arg common;
 
     tarpc_int       fd;           /**< TA-local socket */ 
-    tarpc_wsaevent  event_object; /**< Event object to be reset */   
+    tarpc_wsaevent  hevent;       /**< Event object to be reset */   
     uint32_t        event<>;      /**< Bitmask that specifies the set
                                        of network events occurred */      
 };
@@ -2323,7 +2323,6 @@ enum tarpc_wait_code {
 struct tarpc_wait_multiple_events_in {
     struct tarpc_in_arg common; 
     
-    tarpc_int       count;      /**< Number of events */
     tarpc_wsaevent  events<>;   /**< Events array */
     tarpc_int       wait_all;   /**< WaitAll flag */
     tarpc_uint      timeout;    /**< Timeout (in milliseconds) */

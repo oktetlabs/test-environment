@@ -1015,7 +1015,6 @@ wsa_wait_rpc2str(int code)
  *                 interval never expires.
  * @param alertable specify whether the completion routine has to be 
  *                  executed before the function returns.
- * @param rcount    maximum number of events
  *                   
  * @return the event object that make the function to return.
  *         -1 is returned in the case of RPC error 
@@ -1023,7 +1022,7 @@ wsa_wait_rpc2str(int code)
 extern int rpc_wait_multiple_events(rcf_rpc_server *rpcs,
                                     int count, rpc_wsaevent *events,
                                     te_bool wait_all, uint32_t timeout,
-                                    te_bool alertable, int rcount);
+                                    te_bool alertable);
 
 
 /** 
