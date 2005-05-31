@@ -16,6 +16,13 @@ main (void)
     int s_parsed;
     asn_value_p new_val; 
 
+    rc = asn_impl_parse_text("\"berberber\"", &asn_base_charstring,
+                             &new_val, &s_parsed);
+    printf ("ret code from parse: %6x, syms: %d\n", rc, s_parsed);
+
+    asn_sprint_value(new_val, buffer, 1000, 0);
+    printf ("\nparsed value: \n--\n%s\n--\n", buffer); 
+
 #if 0
     rc = asn_impl_parse_text("14", &asn_base_integer, &new_val, &s_parsed);
     printf ("ret code from parse: %6x, syms: %d\n", rc, s_parsed);
@@ -23,11 +30,6 @@ main (void)
     asn_sprint_value(new_val, buffer, 1000, 0);
     printf ("\nparsed value: \n--\n%s\n--\n", buffer); 
 
-    rc = asn_impl_parse_text("\"berberber\"", &asn_base_charstring, &new_val, &s_parsed);
-    printf ("ret code from parse: %6x, syms: %d\n", rc, s_parsed);
-
-    asn_sprint_value(new_val, buffer, 1000, 0);
-    printf ("\nparsed value: \n--\n%s\n--\n", buffer); 
     
     rc = asn_impl_parse_text("\"berbe\"rber\"", &asn_base_charstring, 
                                 &new_val, &s_parsed);
@@ -61,6 +63,7 @@ main (void)
     asn_free_value (new_val); 
 
 #endif
+#if 0
     rc = asn_parse_value_text("{ arg-sets { simple-for:{begin 1}}, "
                               "  pdus     { eth:{}               } } }",
                               ndn_traffic_template,
@@ -80,6 +83,6 @@ main (void)
     asn_sprint_value(new_val, buf, sizeof(buf), 0);
     printf ("parsed value: <%s>\n", buf);
 }
-
+#endif
     return 0;
 }

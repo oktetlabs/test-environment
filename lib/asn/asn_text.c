@@ -1233,6 +1233,9 @@ int
 asn_sprint_charstring(const asn_value *value, char *buffer, size_t buf_len)
 {
     char *string;
+    char *quote_place;
+    char *buf_place;
+    size_t total_syms = 0, interval = 0;
 
     if ((value == NULL) || (buffer == NULL) || (buf_len == 0) )
         return 0;
@@ -1243,14 +1246,43 @@ asn_sprint_charstring(const asn_value *value, char *buffer, size_t buf_len)
     if ((int)buf_len <= value->txt_len)
         return -1;
 
+    buf_place = buffer;
+    strcpy(buf_place, "\""); 
+    total_syms++;
+    buf_place++;
+
+#define PUT_PIECE(_src, _len) \
+    do {                                        \
+        total_syms += (interval = (_len));      \
+        if (total_syms >= buf_len)              \
+            return -1;                          \
+        strncpy(buf_place, (_src), interval);   \
+        buf_place += interval;                  \
+    } while (0)
+
     string = value->data.other;
+    while (string != NULL && string[0] != '\0')
+    {
+        char quote[] = "\\\"";
+        quote_place = index(string, '"');
+        if (quote_place == NULL)
+            break;
 
-    strcpy(buffer, "\""); 
-    if (string)
-        strncat(buffer, string, buf_len-1); 
-    strcat(buffer, "\""); 
+        PUT_PIECE(string, quote_place - string);
 
-    return strlen(buffer);
+        PUT_PIECE(quote, strlen(quote));
+
+        string = quote_place + 1;
+    }
+
+    PUT_PIECE(string, strlen(string));
+    
+    strcpy(buf_place, "\""); 
+    total_syms++;
+
+#undef PUT_PIECE
+
+    return total_syms;
 }
 
 
