@@ -64,6 +64,10 @@
 
 #define MAC_ADDR_LEN        6
 
+#ifndef PATH_MAX
+#define PATH_MAX        4096
+#endif
+
 /** Directory where xinetd service configuration files are located */
 #define XINETD_ETC_DIR      "/etc/xinetd.d/"
 

@@ -2781,6 +2781,8 @@ RCF_PCH_CFG_NODE_COLLECTION(node_ds_xvfb, "Xvfb",
 static void *
 supervise_backups(void *arg)
 {
+    UNUSED(arg);
+    
     while (TRUE)
     {
         int i;
