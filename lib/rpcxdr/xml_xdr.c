@@ -1,14 +1,62 @@
+/** @file
+ * @brief RCF RPC encoding/decoding routines
+ *
+ * Implementation of routines used by RCF RPC to encode/decode RPC data.
+ *
+ * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
+ * root directory of the distribution).
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation; either version 2.1 of
+ * the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+ * MA  02111-1307  USA
+ *
+ * @author Renata Sayakhova <Renata.Sayakhova@oktetlabs.ru>
+ *
+ * $Id$
+ */
+ 
+#ifdef HAVE_STDLIB_H
 #include <stdlib.h>
+#endif
+#ifdef HAVE_STRING_H
 #include <string.h>
+#endif
+#ifdef HAVE_FEATURES_H
 #include <features.h>
+#endif
+#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
+#endif
+#ifdef HAVE_RPC_TYPES_H
 #include <rpc/types.h>
+#endif
+#ifdef HAVE_STDIO_H
 #include <stdio.h>
+#endif
+#ifdef HAVE_RPC_XDR_H
 #include <rpc/xdr.h>
+#endif
+#ifdef HAVE_EXPAT_H
 #include <expat.h>
+#endif
+#ifdef HAVE_LIMITS_H
 #include <limits.h>
+#endif
 #include "te_defs.h"
 #include "xml_xdr.h"
+
+#ifdef RPC_XML
 
 #define LASTUNSIGNED    ((u_int)0-1)
 
@@ -1837,3 +1885,5 @@ xdrxml_return_code(XDR *xdrs)
 
     return data->rc;
 }
+
+#endif

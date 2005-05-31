@@ -1,16 +1,55 @@
+/** @file
+ * @brief RCF RPC encoding/decoding routines
+ *
+ * Definition of the API used by RCF RPC to encode/decode RPC data.
+ *
+ * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
+ * root directory of the distribution).
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation; either version 2.1 of
+ * the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+ * MA  02111-1307  USA
+ *
+ * @author Renata Sayakhova <Renata.Sayakhova@oktetlabs.ru>
+ *
+ * $Id$
+ */
 #ifndef __BASE_TYPE_CVT_H__
 #define __BASE_TYPE_CVT_H__
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include <string.h>    
+#ifdef HAVE_STRING_H
+#include <string.h>
+#endif
+#ifdef HAVE_FEATURES_H
 #include <features.h>
+#endif
+#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
-#include <rpc/types.h>
+#endif
+#ifdef HAVE_STDIO_H
 #include <stdio.h>
+#endif
+#ifdef HAVE_RPC_XDR_H
 #include <rpc/xdr.h>    
-#include <expat.h>    
+#endif
+#ifdef HAVE_EXPAT_H
+#include <expat.h> 
+#endif
+
     
 #define MAXBUFSIZE      256
 #define INDENT          2 
@@ -44,7 +83,9 @@ typedef struct xml_app_data {
 } xml_app_data;
 
 /**
- * Conversion procedures for base data types
+ * Conversion procedures for base data types.
+ * These are analogs to SUN RPC base data types
+ * convertion procedures, used in RPC XML.
  */
 extern bool_t xmlxdr_uint8_t(XDR *xdrs, uint8_t *ip);
 extern bool_t xmlxdr_int(XDR *xdrs, int *ip);

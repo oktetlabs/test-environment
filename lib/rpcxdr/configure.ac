@@ -26,6 +26,11 @@ AC_ARG_VAR([TE_CPPFLAGS])
 AC_ARG_VAR([TE_CFLAGS])
 AC_ARG_VAR([TE_LDFLAGS])
 
+AC_CHECK_HEADERS([\
+rpc/xdr.h \
+expat.h \
+])
+
 LIBS=${TE_LDFLAGS}
 AC_CHECK_LIB([rpc], [xdr_bytes], 
              [LIBS="${LIBS} -lrpc"],
@@ -82,6 +87,9 @@ AC_CHECK_FUNC([xdr_uint64_t], [],
     [AC_CHECK_FUNC([xdr_u_int64_t],
         [AC_DEFINE([xdr_uint64_t], [xdr_u_int64_t])],
         [AC_ERROR([There is no xdr_uint64_t or xdr_u_int64_t!])])])
+
+AC_CHECK_LIB([expat], [XML_ParserCreate], [],
+             AC_MSG_ERROR([Cannot find expat!]))
 
 AC_CONFIG_HEADER(config.h)
 
