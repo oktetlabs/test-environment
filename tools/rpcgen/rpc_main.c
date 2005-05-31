@@ -621,9 +621,6 @@ h_output (const char *infile, const char *define, int extend,
     {
       fprintf (fout, "#include <pthread.h>\n");
     }
-#ifdef RPC_XML
-  fprintf(fout, "#include \"xml_xdr.h\"\n");
-#endif
 
   /* put the C++ support */
   if (Cflag && !CCflag)
