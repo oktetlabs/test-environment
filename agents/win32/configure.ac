@@ -16,7 +16,9 @@ AC_PROG_INSTALL
 
 AC_CHECK_TOOL(NM, nm)
 
+if test -z "$host" ; then
 AC_CANONICAL_HOST
+fi 
 
 AC_SUBST([host])
 AC_SUBST([TE_CPPFLAGS])

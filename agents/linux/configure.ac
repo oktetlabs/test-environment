@@ -9,8 +9,6 @@ AC_CONFIG_AUX_DIR([../../auxdir])
 
 AM_INIT_AUTOMAKE([1.8.5 foreign -Wall])
 
-AC_CANONICAL_HOST
-
 dnl Checks for programs.
 AC_PROG_CC
 AC_C_INLINE
@@ -21,6 +19,9 @@ AC_PROG_YACC
 
 AC_CHECK_TOOL(NM, nm)
 
+if test -z "$host" ; then
+AC_CANONICAL_HOST
+fi
 
 AC_SUBST([host])
 AC_SUBST([with_name])

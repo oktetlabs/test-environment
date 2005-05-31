@@ -54,7 +54,6 @@
 #include "te_errno.h"
 #include "te_defs.h"
 #include "comm_agent.h"
-#include "rcf_api.h"
 #include "rcf_ch_api.h"
 #include "rcf_pch.h"
 
