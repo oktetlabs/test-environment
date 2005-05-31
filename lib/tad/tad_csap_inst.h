@@ -43,7 +43,6 @@
 #include <unistd.h>
 #endif
 #if HAVE_PTHREAD_H
-#define __USE_GNU
 #include <pthread.h>
 #endif
 
