@@ -42,9 +42,9 @@ if test -z "${NUT_SOURCES}" ; then
 fi    
 
 NUT_SCRIPT=`eval echo '$NUT_'$NUT'_SCRIPT'` 
-if test -z"${NUT_SCRIPT}" ; then
+if test -z "${NUT_SCRIPT}" ; then
     NUT_SCRIPT=${NUT_SOURCES}/te_build_nut
-fi    
+fi
 
 if test -z "${NUT_PARMS}" ; then
     NUT_PARMS=`eval echo '$NUT_'$NUT'_PARMS'` 
