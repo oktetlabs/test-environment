@@ -436,7 +436,8 @@ rcf_rpc_call(rcf_rpc_server *rpcs, const char *proc,
     rpcs->timeout = 0;
     rpcs->start = 0;
     if (TE_RC_GET_ERROR(rpcs->_errno) == ETERPCTIMEOUT ||
-        TE_RC_GET_ERROR(rpcs->_errno) == ETIMEDOUT)
+        TE_RC_GET_ERROR(rpcs->_errno) == ETIMEDOUT ||
+        TE_RC_GET_ERROR(rpcs->_errno) == ETERPCDEAD)
     {
         rpcs->timed_out = TRUE;
     }
