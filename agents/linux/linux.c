@@ -510,7 +510,7 @@ rcf_ch_start_task_thr(struct rcf_comm_connection *handle,
                 iter->active = TRUE;
                 sem_wait(&iter->params_processed);
                 pthread_mutex_unlock(&thread_pool_mutex);
-                SEND_ANSWER("0 %d", iter - thread_pool);
+                SEND_ANSWER("0 %d", (int)(iter - thread_pool));
             }
         }
         pthread_mutex_unlock(&thread_pool_mutex);

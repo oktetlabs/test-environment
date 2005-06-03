@@ -92,6 +92,17 @@ void *dummy = aio_read;
 extern sigset_t rpcs_received_signals;
 
 typedef int (*sock_api_func)(int param,...);
+typedef int (*sock_api_func_ptr)(void *param,...);
+typedef int (*sock_api_func_void)();
+typedef void *(*sock_api_func_ret_ptr)(int param,...);
+typedef void *(*sock_api_func_ptr_ret_ptr)(void *param,...);
+typedef void *(*sock_api_func_void_ret_ptr)();
+
+#define func_ptr                ((sock_api_func_ptr)func)
+#define func_void               ((sock_api_func_void)func)
+#define func_ret_ptr            ((sock_api_func_ret_ptr)func)
+#define func_ptr_ret_ptr        ((sock_api_func_ptr_ret_ptr)func)
+#define func_void_ret_ptr       ((sock_api_func_void_ret_ptr)func)
 
 /**
  * Convert shutdown parameter from RPC to native representation.
@@ -185,7 +196,7 @@ find_func(char *name, sock_api_func *func)
     
     if (strcmp(name, "getpid") == 0)
     {
-        *func = (sock_api_func)getpid;
+        *func = (void *)getpid;
         return 0;
     }
 
@@ -281,7 +292,15 @@ get_handler2name(void *handler, char *name, int name_len)
         }
         else
         {
-            sprintf(tmp, "0x%x", (unsigned int)handler);
+            int id = 0;
+                    
+            if (handler != NULL &&
+                (id = rcf_pch_mem_get_id(handler)) == 0)
+            {
+                id = rcf_pch_mem_alloc(handler);
+            }
+
+            sprintf(tmp, "%d", id);
             memcpy(name, tmp, strlen(tmp) + 1);
             free(tmp);
         }
@@ -388,14 +407,14 @@ check_args(checked_arg *list)
  * out variable is assumed in the context.
  */
 #define FIND_FUNC(_name, _func) \
-    do {                                         \
-        int rc = find_func(_name, &(_func));     \
-                                                 \
-        if (rc != 0)                             \
-        {                                        \
-             out->common._errno = rc;            \
-             return TRUE;                        \
-        }                                        \
+    do {                                     \
+        int rc = find_func(_name, &(_func)); \
+                                             \
+        if (rc != 0)                         \
+        {                                    \
+             out->common._errno = rc;        \
+             return TRUE;                    \
+        }                                    \
     } while (0)
 
 /** Wait time specified in the input argument. */
@@ -452,8 +471,9 @@ typedef struct _func##_arg {                                        \
 static void *                                                       \
 _func##_proc(void *arg)                                             \
 {                                                                   \
-    _func##_arg         *data = (_func##_arg *)arg;                 \
-    sock_api_func        func = data->func;                         \
+    _func##_arg       *data = (_func##_arg *)arg;                   \
+    sock_api_func      func = data->func;                           \
+                                                                    \
     tarpc_##_func##_in  *in = &(data->in);                          \
     tarpc_##_func##_out *out = &(data->out);                        \
     checked_arg         *list = NULL;                               \
@@ -475,7 +495,8 @@ bool_t                                                              \
 _##_func##_1_svc(tarpc_##_func##_in *in, tarpc_##_func##_out *out,  \
                  struct svc_req *rqstp)                             \
 {                                                                   \
-    sock_api_func  func;                                            \
+    sock_api_func      func;                                        \
+                                                                    \
     checked_arg   *list = NULL;                                     \
     _func##_arg   *arg;                                             \
     enum xdr_op    op = XDR_FREE;                                   \
@@ -522,7 +543,7 @@ _##_func##_1_svc(tarpc_##_func##_in *in, tarpc_##_func##_out *out,  \
                                                                     \
         memset(in,  0, sizeof(*in));                                \
         memset(out, 0, sizeof(*out));                               \
-        out->common.tid = rcf_pch_mem_alloc(_tid);                  \
+        out->common.tid = rcf_pch_mem_alloc((void *)_tid);          \
         out->common.done = rcf_pch_mem_alloc(&arg->done);           \
                                                                     \
         return TRUE;                                                \
@@ -530,7 +551,7 @@ _##_func##_1_svc(tarpc_##_func##_in *in, tarpc_##_func##_out *out,  \
                                                                     \
     VERB("%s(): WAIT", #_func);                                     \
     assert(in->common.op == RCF_RPC_WAIT);                          \
-    if (pthread_join(rcf_pch_mem_get(in->common.tid),               \
+    if (pthread_join((pthread_t)rcf_pch_mem_get(in->common.tid),    \
                      (void **)&(arg)) != 0)                         \
     {                                                               \
         out->common._errno = TE_RC(TE_TA_LINUX, errno);             \
@@ -657,7 +678,7 @@ _rpc_is_op_done_1_svc(tarpc_rpc_is_op_done_in  *in,
 
 TARPC_FUNC(fork, {},
 {
-    MAKE_CALL(out->pid = func(0));
+    MAKE_CALL(out->pid = func_void());
 
     if (out->pid == 0)
     {
@@ -671,13 +692,22 @@ TARPC_FUNC(fork, {},
 /*-------------- pthread_create() -----------------------------*/
 TARPC_FUNC(pthread_create, {},
 {
-    MAKE_CALL(out->retval = func((int)&(out->tid), NULL, rcf_pch_rpc_server,
-                                 strdup(in->name.name_val)));
+    pthread_t tid;
+    
+    MAKE_CALL(out->retval = func_ptr(&tid, NULL, rcf_pch_rpc_server,
+                                     strdup(in->name.name_val)));
+    if (out->retval == 0)                                 
+        out->tid = rcf_pch_mem_alloc((void *)tid);
 }
 )
 
 /*-------------- pthread_cancel() -----------------------------*/
-TARPC_FUNC(pthread_cancel, {}, { MAKE_CALL(out->retval = func(in->tid)); })
+TARPC_FUNC(pthread_cancel, {}, 
+{ 
+    MAKE_CALL(out->retval = func_ptr(rcf_pch_mem_get(in->tid)));
+    rcf_pch_mem_free(in->tid);
+}
+)
 
 /** Function to start RPC server after execve */
 void
@@ -765,7 +795,7 @@ TARPC_FUNC(execve, {},
     VERB("execve() args: %s, %s, %s, %s, %s",
          args[0], args[1], args[2], args[3], args[4]);
     /* Call execve() */
-    MAKE_CALL(rc = func((int)ta_execname, args, environ));
+    MAKE_CALL(rc = func_ptr((void *)ta_execname, args, environ));
     if (rc != 0)
     {
         rc = errno;
@@ -775,7 +805,7 @@ TARPC_FUNC(execve, {},
 )
 
 /*-------------- getpid() --------------------------------*/
-TARPC_FUNC(getpid, {}, { MAKE_CALL(out->retval = func(0)); })
+TARPC_FUNC(getpid, {}, { MAKE_CALL(out->retval = func_void()); })
 
 
 /*-------------- socket() ------------------------------*/
@@ -1178,7 +1208,7 @@ TARPC_FUNC(select,
 TARPC_FUNC(if_nametoindex, {},
 {
     INIT_CHECKED_ARG(in->ifname.ifname_val, in->ifname.ifname_len, 0);
-    MAKE_CALL(out->ifindex = func((int)in->ifname.ifname_val));
+    MAKE_CALL(out->ifindex = func_ptr(in->ifname.ifname_val));
 }
 )
 
@@ -1193,7 +1223,8 @@ TARPC_FUNC(if_indextoname,
 
     memcmp(name, out->ifname.ifname_val, out->ifname.ifname_len);
 
-    MAKE_CALL(name = (char *)func(in->ifindex, out->ifname.ifname_val));
+    MAKE_CALL(name = (char *)func_ret_ptr(in->ifindex, 
+                                          out->ifname.ifname_val));
 
     if (name != NULL && name != out->ifname.ifname_val)
     {
@@ -1219,14 +1250,13 @@ TARPC_FUNC(if_nameindex, {},
 
     int i = 0;
 
-    MAKE_CALL(out->mem_ptr = (unsigned int)func(0));
-
-    ret = (struct if_nameindex *)(out->mem_ptr);
+    MAKE_CALL(ret = (struct if_nameindex *)func_void_ret_ptr());
 
     if (ret != NULL)
     {
         int j;
 
+        out->mem_ptr = rcf_pch_mem_alloc(ret);
         while (ret[i++].if_index != 0);
         arr = (tarpc_if_nameindex *)calloc(sizeof(*arr) * i, 1);
         if (arr == NULL)
@@ -1262,7 +1292,8 @@ TARPC_FUNC(if_nameindex, {},
 
 TARPC_FUNC(if_freenameindex, {},
 {
-    MAKE_CALL(func(in->mem_ptr));
+    MAKE_CALL(func_ptr(rcf_pch_mem_get(in->mem_ptr)));
+    rcf_pch_mem_free(in->mem_ptr);
 }
 )
 
@@ -1316,7 +1347,7 @@ _sigset_delete_1_svc(tarpc_sigset_delete_in *in,
 
 TARPC_FUNC(sigemptyset, {},
 {
-    MAKE_CALL(out->retval = func((int)IN_SIGSET));
+    MAKE_CALL(out->retval = func_ptr(IN_SIGSET));
 }
 )
 
@@ -1324,7 +1355,7 @@ TARPC_FUNC(sigemptyset, {},
 
 TARPC_FUNC(sigpending, {},
 {
-    MAKE_CALL(out->retval = func((int)IN_SIGSET));
+    MAKE_CALL(out->retval = func_ptr(IN_SIGSET));
 }
 )
 
@@ -1332,7 +1363,7 @@ TARPC_FUNC(sigpending, {},
 
 TARPC_FUNC(sigsuspend, {},
 {
-    MAKE_CALL(out->retval = func((int)IN_SIGSET));
+    MAKE_CALL(out->retval = func_ptr(IN_SIGSET));
 }
 )
 
@@ -1340,7 +1371,7 @@ TARPC_FUNC(sigsuspend, {},
 
 TARPC_FUNC(sigfillset, {},
 {
-    MAKE_CALL(out->retval = func((int)IN_SIGSET));
+    MAKE_CALL(out->retval = func_ptr(IN_SIGSET));
 }
 )
 
@@ -1348,7 +1379,7 @@ TARPC_FUNC(sigfillset, {},
 
 TARPC_FUNC(sigaddset, {},
 {
-    MAKE_CALL(out->retval = func((int)IN_SIGSET, signum_rpc2h(in->signum)));
+    MAKE_CALL(out->retval = func_ptr(IN_SIGSET, signum_rpc2h(in->signum)));
 }
 )
 
@@ -1356,7 +1387,7 @@ TARPC_FUNC(sigaddset, {},
 
 TARPC_FUNC(sigdelset, {},
 {
-    MAKE_CALL(out->retval = func((int)IN_SIGSET, signum_rpc2h(in->signum)));
+    MAKE_CALL(out->retval = func_ptr(IN_SIGSET, signum_rpc2h(in->signum)));
 }
 )
 
@@ -1365,7 +1396,7 @@ TARPC_FUNC(sigdelset, {},
 TARPC_FUNC(sigismember, {},
 {
     INIT_CHECKED_ARG((char *)(IN_SIGSET), sizeof(sigset_t), 0);
-    MAKE_CALL(out->retval = func((int)IN_SIGSET, signum_rpc2h(in->signum)));
+    MAKE_CALL(out->retval = func_ptr(IN_SIGSET, signum_rpc2h(in->signum)));
 }
 )
 
@@ -1373,7 +1404,7 @@ TARPC_FUNC(sigismember, {},
 TARPC_FUNC(sigprocmask, {},
 {
     INIT_CHECKED_ARG((char *)IN_SIGSET, sizeof(sigset_t), 0);
-    MAKE_CALL(out->retval = func(sighow_rpc2h(in->how), (int)IN_SIGSET,
+    MAKE_CALL(out->retval = func(sighow_rpc2h(in->how), IN_SIGSET,
                                  (sigset_t *)rcf_pch_mem_get(in->oldset)));
 }
 )
@@ -1414,7 +1445,7 @@ TARPC_FUNC(signal,
     }
     if (out->common._errno == 0)
     {
-        MAKE_CALL(old_handler = (sighandler_t)func(
+        MAKE_CALL(old_handler = (sighandler_t)func_ret_ptr(
                       signum_rpc2h(in->signum), handler));
         if (old_handler != SIG_ERR)
         {
@@ -2776,22 +2807,23 @@ msghdr2str(const struct msghdr *msg)
     char   *p = buf;
     size_t  i;
 
-    p += snprintf(p, buf_end - p, "{name={0x%x,%u},{",
-                  (unsigned int)msg->msg_name, msg->msg_namelen);
+    p += snprintf(p, buf_end - p, "{name={0x%lx,%u},{",
+                  (long unsigned int)msg->msg_name, msg->msg_namelen);
     if (p >= buf_end)
         return "(too long)";
     for (i = 0; i < msg->msg_iovlen; ++i)
     {
-        p += snprintf(p, buf_end - p, "%s{0x%x,%u}",
+        p += snprintf(p, buf_end - p, "%s{0x%lx,%u}",
                       (i == 0) ? "" : ",",
-                      (unsigned int)msg->msg_iov[i].iov_base,
-                      msg->msg_iov[i].iov_len);
+                      (long unsigned int)msg->msg_iov[i].iov_base,
+                      (unsigned int)msg->msg_iov[i].iov_len);
         if (p >= buf_end)
             return "(too long)";
     }
-    p += snprintf(p, buf_end - p, "},control={0x%x,%u},flags=0x%x}",
-                  (unsigned int)msg->msg_control, msg->msg_controllen,
-                  msg->msg_flags);
+    p += snprintf(p, buf_end - p, "},control={0x%lx,%u},flags=0x%x}",
+                  (unsigned long int)msg->msg_control, 
+                  (unsigned int)msg->msg_controllen,
+                  (unsigned int)msg->msg_flags);
     if (p >= buf_end)
         return "(too long)";
 
@@ -2984,9 +3016,9 @@ TARPC_FUNC(poll,
 
     unsigned int i;
 
-    VERB("poll(): IN ufds=0x%x[%u] nfds=%u timeout=%d",
-         (unsigned int)out->ufds.ufds_val, out->ufds.ufds_len, in->nfds,
-         in->timeout);
+    VERB("poll(): IN ufds=0x%lx[%u] nfds=%u timeout=%d",
+         (unsigned long int)out->ufds.ufds_val, out->ufds.ufds_len, 
+         in->nfds, in->timeout);
     for (i = 0; i < out->ufds.ufds_len; i++)
     {
         ufds[i].fd = out->ufds.ufds_val[i].fd;
@@ -3001,7 +3033,7 @@ TARPC_FUNC(poll,
 
     VERB("poll(): call with ufds=0x%x, nfds=%u, timeout=%d",
          (unsigned int)ufds, in->nfds, in->timeout);
-    MAKE_CALL(out->retval = func((int)ufds, in->nfds, in->timeout));
+    MAKE_CALL(out->retval = func_ptr(ufds, in->nfds, in->timeout));
     VERB("poll(): retval=%d", out->retval);
 
     for (i = 0; i < out->ufds.ufds_len; i++)
@@ -3121,7 +3153,7 @@ TARPC_FUNC(gethostbyname, {},
 {
     struct hostent *he;
 
-    MAKE_CALL(he = (struct hostent *)func((int)(in->name.name_val)));
+    MAKE_CALL(he = (struct hostent *)func_ptr_ret_ptr(in->name.name_val));
     if (he != NULL)
     {
         if ((out->res.res_val = hostent_h2rpc(he)) == NULL)
@@ -3140,9 +3172,10 @@ TARPC_FUNC(gethostbyaddr, {},
 
     INIT_CHECKED_ARG(in->addr.val.val_val, in->addr.val.val_len, 0);
 
-    MAKE_CALL(he = (struct hostent *)func((int)(in->addr.val.val_val),
-                                          in->addr.val.val_len,
-                                          addr_family_rpc2h(in->type)));
+    MAKE_CALL(he = (struct hostent *)
+                       func_ptr_ret_ptr(in->addr.val.val_val,
+                                        in->addr.val.val_len,
+                                        addr_family_rpc2h(in->type)));
     if (he != NULL)
     {
         if ((out->res.res_val = hostent_h2rpc(he)) == NULL)
@@ -3235,8 +3268,8 @@ TARPC_FUNC(getaddrinfo, {},
                      in->service.service_len, 0);
     /* I do not understand, which function is found by usual way */
     func = (sock_api_func)getaddrinfo;
-    MAKE_CALL(out->retval = func((int)(in->node.node_val),
-                                 in->service.service_val, info, &res));
+    MAKE_CALL(out->retval = func_ptr(in->node.node_val,
+                                     in->service.service_val, info, &res));
     if (out->retval != 0 && res != NULL)
     {
         out->common._errno = TE_RC(TE_TA_LINUX, ETECORRUPTED);
@@ -3276,7 +3309,7 @@ TARPC_FUNC(getaddrinfo, {},
         }
         else
         {
-            out->mem_ptr = (unsigned int)res;
+            out->mem_ptr = rcf_pch_mem_alloc(res);
             out->res.res_val = arr;
             out->res.res_len = i;
         }
@@ -3288,7 +3321,8 @@ TARPC_FUNC(getaddrinfo, {},
 TARPC_FUNC(freeaddrinfo, {},
 {
     func = (sock_api_func)freeaddrinfo;
-    MAKE_CALL(func(in->mem_ptr));
+    MAKE_CALL(func_ptr(rcf_pch_mem_get(in->mem_ptr)));
+    rcf_pch_mem_free(in->mem_ptr);
 }
 )
 
@@ -3298,9 +3332,8 @@ TARPC_FUNC(pipe,
     COPY_ARG(filedes);
 },
 {
-    MAKE_CALL(out->retval = func((int)((out->filedes.filedes_len > 0) ?
-                                            out->filedes.filedes_val :
-                                            NULL)));
+    MAKE_CALL(out->retval = func_ptr(out->filedes.filedes_len > 0 ?
+                                     out->filedes.filedes_val : NULL));
 }
 )
 
@@ -3323,8 +3356,9 @@ TARPC_FUNC(socketpair,
 TARPC_FUNC(fopen, {},
 {
     func = (sock_api_func)fopen;
-    MAKE_CALL(out->mem_ptr = func((int)(in->path.path_val),
-                                  in->mode.mode_val));
+    MAKE_CALL(out->mem_ptr = 
+                  rcf_pch_mem_alloc(func_ptr_ret_ptr(in->path.path_val, 
+                                                     in->mode.mode_val)));
 }
 )
 
@@ -3332,13 +3366,20 @@ TARPC_FUNC(fopen, {},
 TARPC_FUNC(popen, {},
 {
     func = (sock_api_func)popen;
-    MAKE_CALL(out->mem_ptr = func((int)(in->cmd.cmd_val),
-                                  in->mode.mode_val));
+    MAKE_CALL(out->mem_ptr = 
+                  rcf_pch_mem_alloc(func_ptr_ret_ptr(in->cmd.cmd_val,
+                                                     in->mode.mode_val)));
 }
 )
 
 /*-------------- fileno() --------------------------------*/
-TARPC_FUNC(fileno, {}, { MAKE_CALL(out->fd = func(in->mem_ptr)); })
+TARPC_FUNC(fileno, {}, 
+{ 
+    MAKE_CALL(out->fd = func_ptr(rcf_pch_mem_get(in->mem_ptr)));
+    /* Free the memory, it should not be necessary any more */
+    rcf_pch_mem_free(in->mem_ptr); 
+}
+)
 
 /*-------------- getpwnam() --------------------------------*/
 #define PUT_STR(_field) \
@@ -3356,11 +3397,10 @@ TARPC_FUNC(getpwnam, {},
 { 
     struct passwd *pw;
     
-    MAKE_CALL(pw = (struct passwd *)func((int)(in->name.name_val)));
+    MAKE_CALL(pw = (struct passwd *)func_ptr_ret_ptr(in->name.name_val));
     
     if (pw != NULL)
     {
-            
         PUT_STR(name);
         PUT_STR(passwd);
         out->passwd.uid = pw->pw_uid;
@@ -3386,10 +3426,10 @@ TARPC_FUNC(getpwnam, {},
 #undef PUT_STR
 
 /*-------------- getuid() --------------------------------*/
-TARPC_FUNC(getuid, {}, { MAKE_CALL(out->uid = func(0)); })
+TARPC_FUNC(getuid, {}, { MAKE_CALL(out->uid = func_void()); })
 
 /*-------------- getuid() --------------------------------*/
-TARPC_FUNC(geteuid, {}, { MAKE_CALL(out->uid = func(0)); })
+TARPC_FUNC(geteuid, {}, { MAKE_CALL(out->uid = func_void()); })
 
 /*-------------- setuid() --------------------------------*/
 TARPC_FUNC(setuid, {}, { MAKE_CALL(out->retval = func(in->uid)); })
@@ -3400,7 +3440,7 @@ TARPC_FUNC(seteuid, {}, { MAKE_CALL(out->retval = func(in->uid)); })
 /*-------------- simple_sender() -----------------------------*/
 TARPC_FUNC(simple_sender, {},
 {
-    MAKE_CALL(out->retval = func((int)in, out));
+    MAKE_CALL(out->retval = func_ptr(in, out));
 }
 )
 
@@ -3495,7 +3535,7 @@ simple_sender(tarpc_simple_sender_in *in, tarpc_simple_sender_out *out)
 /*-------------- simple_receiver() --------------------------*/
 TARPC_FUNC(simple_receiver, {},
 {
-    MAKE_CALL(out->retval = func((int)in, out));
+    MAKE_CALL(out->retval = func_ptr(in, out));
 }
 )
 
@@ -3587,7 +3627,7 @@ simple_receiver(tarpc_simple_receiver_in *in,
 /*-------------- send_traffic() --------------------------*/
 TARPC_FUNC(send_traffic, {},
 {
-    MAKE_CALL(out->retval = func((int)in, out));
+    MAKE_CALL(out->retval = func_ptr(in, out));
 }
 )
 
@@ -3632,7 +3672,7 @@ send_traffic(tarpc_send_traffic_in *in,
 /*-------------- flooder() --------------------------*/
 TARPC_FUNC(flooder, {},
 {
-    MAKE_CALL(out->retval = func((int)in));
+    MAKE_CALL(out->retval = func_ptr(in));
     COPY_ARG(tx_stat);
     COPY_ARG(rx_stat);
 }
@@ -3716,7 +3756,6 @@ flooder(tarpc_flooder_in *in)
         (find_func("write", &write_func) != 0)     ||
         (find_func("recv", &recv_func) != 0)       ||
         (find_func("send", &send_func) != 0)       ||
-
         (find_func("ioctl", &ioctl_func) != 0))
     {
         ERROR("failed to resolve function");
@@ -4039,7 +4078,7 @@ flooder(tarpc_flooder_in *in)
 /*-------------- echoer() --------------------------*/
 TARPC_FUNC(echoer, {},
 {
-    MAKE_CALL(out->retval = func((int)in));
+    MAKE_CALL(out->retval = func_ptr(in));
     COPY_ARG(tx_stat);
     COPY_ARG(rx_stat);
 }
@@ -4315,7 +4354,7 @@ TARPC_FUNC(aio_read_test,
 },
 {
     INIT_CHECKED_ARG(out->buf.buf_val, out->buf.buf_len, in->buflen);
-    MAKE_CALL(out->retval = func((int)in, out));
+    MAKE_CALL(out->retval = func_ptr(in, out));
 }
 )
 
@@ -4327,13 +4366,13 @@ aio_read_test(tarpc_aio_read_test_in *in, tarpc_aio_read_test_out *out)
     struct timeval t;
     int            rc;
 
-    sock_api_func aio_read_func;
-    sock_api_func aio_error_func;
-    sock_api_func aio_return_func;
+    sock_api_func_ptr aio_read_func;
+    sock_api_func_ptr aio_error_func;
+    sock_api_func_ptr aio_return_func;
 
-    if (find_func("aio_read", &aio_read_func) != 0   ||
-        find_func("aio_error", &aio_error_func) != 0 ||
-        find_func("aio_return", &aio_return_func) != 0)
+    if (find_func("aio_read", (sock_api_func *)&aio_read_func) != 0   ||
+        find_func("aio_error", (sock_api_func *)&aio_error_func) != 0 ||
+        find_func("aio_return", (sock_api_func *)&aio_return_func) != 0)
     {
         DIAG("Failed to resolve asynchronous IO function");
         return -1;
@@ -4348,25 +4387,25 @@ aio_read_test(tarpc_aio_read_test_in *in, tarpc_aio_read_test_out *out)
     t.tv_sec = in->t;
     t.tv_usec = 0;
 
-    if (aio_read_func((int)&cb) < 0)
+    if (aio_read_func(&cb) < 0)
     {
         DIAG("aio_read() returnred -1");
         return -1;
     }
 
-    if ((rc = aio_error_func((int)&cb)) != EINPROGRESS)
+    if ((rc = aio_error_func(&cb)) != EINPROGRESS)
     {
         DIAG("aio_error() called immediately after aio_read()"
              "returned %d instead EINPROGRESS", rc);
         return -1;
     }
     select(0, NULL, NULL, NULL, &t);
-    if ((rc = aio_error_func((int)&cb)) != 0)
+    if ((rc = aio_error_func(&cb)) != 0)
     {
         snprintf(out->diag.diag_val, out->diag.diag_len,
                  "aio_error() returned %d after select() unblocking", rc);
     }
-    if ((rc = aio_return_func((int)&cb)) <= 0)
+    if ((rc = aio_return_func(&cb)) <= 0)
     {
         DIAG("aio_return() returned %d - no data are received", rc);
     }
@@ -4381,7 +4420,7 @@ TARPC_FUNC(aio_error_test,
     COPY_ARG(diag);
 },
 {
-    MAKE_CALL(out->retval = func((int)in, out));
+    MAKE_CALL(out->retval = func_ptr(in, out));
 }
 )
 
@@ -4392,13 +4431,13 @@ aio_error_test(tarpc_aio_error_test_in *in, tarpc_aio_error_test_out *out)
     
     int rc;
 
-    sock_api_func aio_write_func;
-    sock_api_func aio_error_func;
+    sock_api_func_ptr aio_write_func;
+    sock_api_func_ptr aio_error_func;
 
     UNUSED(in);
 
-    if (find_func("aio_write", &aio_write_func) != 0 ||
-        find_func("aio_error", &aio_error_func) != 0)
+    if (find_func("aio_write", (sock_api_func *)&aio_write_func) != 0 ||
+        find_func("aio_error", (sock_api_func *)&aio_error_func) != 0)
     {
         DIAG("Failed to resolve asynchronous IO function");
         return -1;
@@ -4408,13 +4447,13 @@ aio_error_test(tarpc_aio_error_test_in *in, tarpc_aio_error_test_out *out)
     cb.aio_fildes = -1;
     cb.aio_buf = "dummy";
     cb.aio_nbytes = 5;
-    if (aio_write_func((int)&cb) < 0)
+    if (aio_write_func(&cb) < 0)
     {
         DIAG("aio_write() failed");
         return -1;
     }
     usleep(100);
-    if ((rc = aio_error_func((int)&cb)) != EBADF)
+    if ((rc = aio_error_func(&cb)) != EBADF)
     {
         DIAG("aio_error() returned %d instead EBADF for bad request", rc);
         return -1;
@@ -4431,7 +4470,7 @@ TARPC_FUNC(aio_write_test,
 {
     INIT_CHECKED_ARG(in->buf.buf_val, in->buf.buf_len, in->buf.buf_len);
     out->retval = -1;
-    MAKE_CALL(out->retval = func((int)in, out));
+    MAKE_CALL(out->retval = func_ptr(in, out));
 }
 )
 
@@ -4442,13 +4481,13 @@ aio_write_test(tarpc_aio_write_test_in *in, tarpc_aio_write_test_out *out)
     
     int rc;
 
-    sock_api_func aio_write_func;
-    sock_api_func aio_error_func;
-    sock_api_func aio_return_func;
+    sock_api_func_ptr aio_write_func;
+    sock_api_func_ptr aio_error_func;
+    sock_api_func_ptr aio_return_func;
 
-    if (find_func("aio_write", &aio_write_func) != 0 ||
-        find_func("aio_error", &aio_error_func) != 0 ||
-        find_func("aio_return", &aio_return_func) != 0)
+    if (find_func("aio_write", (sock_api_func *)&aio_write_func) != 0 ||
+        find_func("aio_error", (sock_api_func *)&aio_error_func) != 0 ||
+        find_func("aio_return",(sock_api_func *) &aio_return_func) != 0)
     {
         DIAG("Failed to resolve asynchronous IO function");
         return -1;
@@ -4461,16 +4500,16 @@ aio_write_test(tarpc_aio_write_test_in *in, tarpc_aio_write_test_out *out)
     cb.aio_sigevent.sigev_signo =
         in->signum == 0 ? 0 : signum_rpc2h(in->signum);
 
-    if (aio_write_func((int)&cb) < 0)
+    if (aio_write_func(&cb) < 0)
     {
         DIAG("aio_write() failed: %s", strerror(errno));
         return -1;
     }
 
-    while (aio_error_func((int)&cb) != 0)
+    while (aio_error_func(&cb) != 0)
         usleep(100);
 
-    if ((rc = aio_return_func((int)&cb)) <= 0)
+    if ((rc = aio_return_func(&cb)) <= 0)
     {
         DIAG("aio_return() returned %d - no data are sent", rc);
         return -1;
@@ -4485,7 +4524,7 @@ TARPC_FUNC(aio_suspend_test,
     COPY_ARG(diag);
 },
 {
-    MAKE_CALL(out->retval = func((int)in, out));
+    MAKE_CALL(out->retval = func_ptr(in, out));
 }
 )
 
@@ -4501,15 +4540,15 @@ aio_suspend_test(tarpc_aio_suspend_test_in *in,
     struct timespec ts = { 0, 1000000 };
     struct timeval  tv1, tv2;
 
-    sock_api_func aio_read_func;
-    sock_api_func aio_return_func;
-    sock_api_func aio_suspend_func;
+    sock_api_func_ptr aio_read_func;
+    sock_api_func_ptr aio_return_func;
+    sock_api_func_ptr aio_suspend_func;
 
     char aux_buf[8];
 
-    if (find_func("aio_read", &aio_read_func) != 0   ||
-        find_func("aio_suspend", &aio_suspend_func) != 0 ||
-        find_func("aio_return", &aio_return_func) != 0)
+    if (find_func("aio_read", (sock_api_func *)&aio_read_func) != 0   ||
+        find_func("aio_suspend", (sock_api_func *)&aio_suspend_func) != 0 ||
+        find_func("aio_return", (sock_api_func *)&aio_return_func) != 0)
     {
         DIAG("Failed to resolve asynchronous IO function");
         return -1;
@@ -4520,7 +4559,7 @@ aio_suspend_test(tarpc_aio_suspend_test_in *in,
     cb1.aio_nbytes = sizeof(aux_buf);
     cb1.aio_sigevent.sigev_signo =
         in->signum == 0 ? 0 : signum_rpc2h(in->signum);
-    if (aio_read_func((int)&cb1) < 0)
+    if (aio_read_func(&cb1) < 0)
     {
         DIAG("aio_read() returnred -1");
         return -1;
@@ -4531,14 +4570,14 @@ aio_suspend_test(tarpc_aio_suspend_test_in *in,
     cb2.aio_nbytes = out->buf.buf_len;
     cb2.aio_sigevent.sigev_signo =
         in->signum == 0 ? 0 : signum_rpc2h(in->signum);
-    if (aio_read_func((int)&cb2) < 0)
+    if (aio_read_func(&cb2) < 0)
     {
         DIAG("aio_read() returnred -1");
         return -1;
     }
 
     gettimeofday(&tv1, NULL);
-    if (aio_suspend_func((int)cb, 3, &ts) == 0)
+    if (aio_suspend_func(cb, 3, &ts) == 0)
     {
         DIAG("aio_suspend() returned 0 whereas requests are not satisfied");
         return -1;
@@ -4560,7 +4599,7 @@ aio_suspend_test(tarpc_aio_suspend_test_in *in,
 
     ts.tv_sec = in->t;
     ts.tv_nsec = 0;
-    rc = aio_suspend_func((int)cb, 3, &ts);
+    rc = aio_suspend_func(cb, 3, &ts);
     if (in->signum == 0 && rc < 0)
     {
         DIAG("aio_suspend() returned -1\n");
@@ -4576,7 +4615,7 @@ aio_suspend_test(tarpc_aio_suspend_test_in *in,
         }
     }
 
-    if ((rc = aio_return_func((int)&cb2)) <= 0)
+    if ((rc = aio_return_func(&cb2)) <= 0)
     {
         DIAG("aio_return() returned %d - no data are received", rc);
     }
@@ -4606,7 +4645,7 @@ TARPC_FUNC(sendfile,
 
 TARPC_FUNC(socket_to_file, {},
 {
-   MAKE_CALL(out->retval = func((int)in));
+   MAKE_CALL(out->retval = func_ptr(in));
 }
 )
 
@@ -4811,11 +4850,11 @@ local_exit:
 
 TARPC_FUNC(ftp_open, {},
 {
-    MAKE_CALL(out->fd = func((int)(in->uri.uri_val),
-                              in->rdonly ? O_RDONLY : O_WRONLY,
-                              in->passive, in->offset,
-                              (in->sock.sock_len == 0) ? NULL:
-                                  in->sock.sock_val));
+    MAKE_CALL(out->fd = func_ptr(in->uri.uri_val,
+                                 in->rdonly ? O_RDONLY : O_WRONLY,
+                                 in->passive, in->offset,
+                                 (in->sock.sock_len == 0) ? NULL:
+                                     in->sock.sock_val));
     if (in->sock.sock_len > 0)
         out->sock = in->sock.sock_val[0];
 }
@@ -4824,7 +4863,7 @@ TARPC_FUNC(ftp_open, {},
 /*-------------- many_send() -----------------------------*/
 TARPC_FUNC(many_send,{},
 {
-    MAKE_CALL(out->retval = func((int)in, out));
+    MAKE_CALL(out->retval = func_ptr(in, out));
 }
 )
 
@@ -4906,7 +4945,7 @@ many_send_exit:
 /*-------------- overfill_buffers() -----------------------------*/
 TARPC_FUNC(overfill_buffers,{},
 {
-    MAKE_CALL(out->retval = func((int)in, out));
+    MAKE_CALL(out->retval = func_ptr(in, out));
 }
 )
 

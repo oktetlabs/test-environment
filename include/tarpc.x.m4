@@ -2186,14 +2186,14 @@ struct tarpc_pthread_create_in {
 struct tarpc_pthread_create_out {
     struct tarpc_out_arg common;
     
-    uint32_t    tid;
+    tarpc_ptr   tid;
     tarpc_int   retval;
 };
 
 struct tarpc_pthread_cancel_in {
     struct tarpc_in_arg common;
     
-    uint32_t    tid;
+    tarpc_ptr           tid;
 };
 
 struct tarpc_pthread_cancel_out {

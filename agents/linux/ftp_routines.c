@@ -424,7 +424,7 @@ read_test(void *arg)
 {
     char    buf[FTP_GET_BULK];
     int     len = 0;
-    int     sock = (int)arg;
+    int     sock = (int)(long int)arg;
     fd_set  rd;
     int     ret, l;
 
