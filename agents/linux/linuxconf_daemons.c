@@ -1421,9 +1421,9 @@ ds_init_ftp_server(rcf_pch_cfg_object **last)
 {
     te_bool ftp_register;
     
-    ftp_register = ftp_create_backup(FTP_PROFTPD) |
-                   ftp_create_backup(FTP_WUFTPD) |
-                   ftp_create_backup(FTP_VSFTPD);
+    ftp_register = ftp_create_backup(FTP_PROFTPD);
+    ftp_register |= ftp_create_backup(FTP_WUFTPD);
+    ftp_register |= ftp_create_backup(FTP_VSFTPD);
 
 #ifdef WITH_XINETD
     if (file_exists(XINETD_ETC_DIR "ftp"))
