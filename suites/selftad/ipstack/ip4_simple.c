@@ -52,7 +52,9 @@
 #include "tapi_rpc.h"
 
 #include "tapi_test.h"
-#include "tapi_ipstack.h"
+#include "tapi_ip.h"
+#include "tapi_udp.h"
+#include "tapi_tcp.h"
 
 #include "ndn_eth.h"
 #include "ndn_ipstack.h"
