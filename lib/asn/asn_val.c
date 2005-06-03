@@ -46,6 +46,9 @@ extern int number_of_digits(int value);
 
 int asn_impl_named_subvalue_index(const asn_type * type, const char *label,
                                   int *index);
+int asn_subvalue_tag_index(const asn_type *type, 
+                           asn_tag_class tag_class, uint16_t tag_val,
+                           int *index);
 
 int asn_impl_fall_down_to_tree_nc (const asn_value *, char *,
                                    asn_value const **);
@@ -66,13 +69,18 @@ int asn_impl_insert_subvalue (asn_value_p container, const char *label,
 static inline char *
 asn_strdup(const char* src)
 {
-    int len = strlen(src);
-    char *res = malloc(len + 1);
+    if (src == NULL)
+        return NULL;
+    else
+    {
+        int   len = strlen(src);
+        char *res = malloc(len + 1);
 
-    if (res == NULL) return NULL;
+        if (res == NULL) return NULL;
 
-    strcpy(res, src);
-    return res;
+        strcpy(res, src); 
+        return res;
+    }
 }
 
 /**
@@ -197,14 +205,15 @@ asn_init_value(const asn_type * type)
  * @return pointer to new ASN_value instance or NULL if error occurred. 
  */
 asn_value_p 
-asn_init_value_tagged(const asn_type * type, asn_tag_class tc, int tag)
+asn_init_value_tagged(const asn_type * type, asn_tag_class tc, uint16_t tag)
 {
     asn_value_p new_value = asn_init_value(type);
 
-    if (new_value == NULL) return NULL;
+    if (new_value == NULL)
+        return NULL;
 
-    new_value->tag.cl   = tc;
-    new_value->tag.val  = tag;
+    new_value->tag.cl  = tc;
+    new_value->tag.val = tag;
 
     return new_value;
 }
@@ -434,6 +443,48 @@ asn_get_name(const asn_value *value)
     return value->name;
 }
 
+/**
+ * Determine numeric index of field in structure presenting ASN.1 type
+ * by tag of subvalue.
+ * This method is applicable only to values with CONSTRAINT syntax with
+ * named components: 'SEQUENCE', 'SET' and 'CHOICE'. 
+ *
+ * @param type       ASN type which subvalue is interested. 
+ * @param tag_class  class of ASN tag
+ * @param tag_val    value of ASN tag
+ * @param index      found index, unchanged if error occurred (OUT).
+ *
+ * @return zero on success, otherwise error code. 
+ */
+int 
+asn_subvalue_tag_index(const asn_type *type, 
+                       asn_tag_class tag_class, uint16_t tag_val,
+                       int *index)
+{
+    const asn_named_entry_t *n_en;
+    unsigned i; 
+
+    if(!type || !index)
+        return ETEWRONGPTR; 
+
+    if( !(type->syntax & CONSTRAINT) || (type->syntax & 1))
+        return EASNGENERAL; 
+
+    n_en = type->sp.named_entries; 
+        
+    /* 
+     * TODO: make something more efficient, then linear search, 
+     * leafs in ASN type specification should be sorted by tag value.
+     */
+    for (i = 0; i < type->len; i++, n_en++)
+        if(n_en->tag.cl == tag_class && n_en->tag.val == tag_val)
+        {            
+            *index = i;
+            return 0;
+        }
+
+    return EASNWRONGLABEL;
+}
 
 /**
  * Determine numeric index of field label in structure presenting ASN.1 type.
@@ -447,7 +498,8 @@ asn_get_name(const asn_value *value)
  * @return zero on success, otherwise error code. 
  */
 int 
-asn_impl_named_subvalue_index(const asn_type * type, const char *label, int *index)
+asn_impl_named_subvalue_index(const asn_type *type, const char *label,
+                              int *index)
 {
     const asn_named_entry_t *n_en;
     unsigned i; 
@@ -511,6 +563,59 @@ asn_impl_find_subtype(const asn_type * type, const char *label,
 
 
 
+/* see description in asn_usr.h */
+int
+asn_put_subvalue(asn_value *container, asn_value *new_value, 
+                 asn_tag_class tag_class, uint16_t tag_val)
+{
+    int rc;
+    int index = 0, leaf_type_index;
+
+    if (container == NULL) 
+        return ETEWRONGPTR; 
+
+    container->txt_len = -1;
+
+    rc = asn_subvalue_tag_index(container->asn_type,
+                                tag_class, tag_val,
+                                &leaf_type_index);
+    if (rc != 0)
+        return rc; 
+
+    switch (container->syntax)
+    {
+        case SEQUENCE:
+        case SET:
+            index = leaf_type_index;
+            /* pass through ... */
+
+        case CHOICE:
+
+            if (container->data.array[index] != NULL)
+                asn_free_value(container->data.array[index]);
+
+            container->data.array[index] = new_value; 
+            break;
+
+        default:
+            return EASNGENERAL; 
+    }
+
+    /* now set name of new subvalue, if it is. */
+    if (new_value)
+    {
+        if (new_value->syntax & CONSTRAINT)
+            new_value->txt_len = -1;
+
+        if (new_value->name) 
+            free(new_value->name); 
+
+        new_value->name = asn_strdup(container->asn_type->
+                                sp.named_entries[leaf_type_index].name);
+    }
+
+    return 0;
+}
 
 
 /**
@@ -528,8 +633,8 @@ asn_impl_find_subtype(const asn_type * type, const char *label,
  * @return zero on success, otherwise error code. 
  */ 
 int
-asn_impl_insert_subvalue (asn_value_p container, const char *label, 
-                          asn_value_p new_value)
+asn_impl_insert_subvalue(asn_value_p container, const char *label, 
+                         asn_value_p new_value)
 {
 
     if(!label || !container)
@@ -545,8 +650,8 @@ asn_impl_insert_subvalue (asn_value_p container, const char *label,
                 int index;
                 int rc;
 
-                rc = asn_impl_named_subvalue_index (container->asn_type, 
-                                                          label, &index); 
+                rc = asn_impl_named_subvalue_index(container->asn_type, 
+                                                   label, &index); 
                 if (rc) 
                     return rc;
 
@@ -807,12 +912,13 @@ asn_impl_write_value_field(asn_value_p container,
  * @return zero on success, otherwise error code.
  */ 
 int
-asn_read_value_field  (const asn_value *container,  void *data, int *d_len,
-                       const char *field_labels)
+asn_read_value_field(const asn_value *container, void *data, int *d_len,
+                     const char *field_labels)
 {
     char *field_labels_int_copy = asn_strdup(field_labels); 
     int   rc = asn_impl_read_value_field(container, data, d_len, 
                                          field_labels_int_copy);
+
     free (field_labels_int_copy);
 
     return rc;
@@ -837,8 +943,8 @@ asn_read_value_field  (const asn_value *container,  void *data, int *d_len,
  * @return zero on success, otherwise error code.
  */ 
 int
-asn_impl_read_value_field  (const asn_value *container,  void *data, 
-                            unsigned int *d_len, char *field_labels)
+asn_impl_read_value_field(const asn_value *container,  void *data, 
+                          unsigned int *d_len, char *field_labels)
 {
     const asn_value *value;
     int m_len;
@@ -940,8 +1046,9 @@ asn_impl_read_value_field  (const asn_value *container,  void *data,
  * @return zero on success, otherwise error code.
  */ 
 int
-asn_write_component_value (asn_value_p container, 
-                const asn_value *elem_value, const char *subval_labels)
+asn_write_component_value(asn_value_p container, 
+                          const asn_value *elem_value,
+                          const char *subval_labels)
 {
     char *field_labels_int_copy = asn_strdup(subval_labels); 
 
@@ -970,11 +1077,12 @@ asn_write_component_value (asn_value_p container,
  * @return zero on success, otherwise error code.
  */ 
 int
-asn_impl_write_component_value (asn_value_p container, 
-                const asn_value *elem_value,  char *subval_labels)
+asn_impl_write_component_value(asn_value_p container, 
+                               const asn_value *elem_value,
+                               char *subval_labels)
 {
-    char       * rest_field_labels = subval_labels;
-    char       * cur_label = "";
+    char        *rest_field_labels = subval_labels;
+    char        *cur_label = "";
     asn_value_p  subvalue;
     int          rc;
 

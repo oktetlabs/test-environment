@@ -35,6 +35,6 @@ AC_ARG_VAR([TE_DEPENDENCIES])
 
 AC_CONFIG_HEADER(package.h)
 
-AC_CONFIG_FILES([Makefile])
+AC_CONFIG_FILES([Makefile tests/Makefile])
 
 AC_OUTPUT

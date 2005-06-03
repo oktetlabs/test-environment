@@ -137,7 +137,7 @@ extern asn_value_p asn_init_value(const asn_type *type);
  * @return pointer to new asn_value instance or NULL if error occurred. 
  */
 extern asn_value_p asn_init_value_tagged(const asn_type *type, 
-                                         asn_tag_class tc, int tag);
+                                         asn_tag_class tc, uint16_t tag);
 
 /**
  * Make a copy of ASN value instance.
@@ -303,6 +303,19 @@ extern asn_value_p asn_decode(const void *data);
 
 
 
+/**
+ * Put ASN value to the named leaf to the ASN value,
+ * free old subvalue, if there was one. 
+ *
+ * @param container     ASN value which child should be updated
+ * @param subvalue      new ASN value for child
+ * @param tag_class     class of ASN tag
+ * @param tag_val       value of ASN tag
+ *
+ * @return zero on success, otherwise error code.
+ */
+extern int asn_put_subvalue(asn_value *container, asn_value *subvalue, 
+                            asn_tag_class tag_class, uint16_t tag_val);
 
 /**
  * Write data into primitive syntax leaf in specified ASN value.
@@ -319,9 +332,9 @@ extern asn_value_p asn_decode(const void *data);
  *
  * @return zero on success, otherwise error code.
  */ 
-extern int asn_write_value_field (asn_value_p container, 
-                                  const void *data, int d_len, 
-                                  const char *labels);
+extern int asn_write_value_field(asn_value_p container, 
+                                 const void *data, int d_len, 
+                                 const char *labels);
 
 /**
  * Read data from primitive syntax leaf in specified ASN value.
@@ -337,9 +350,9 @@ extern int asn_write_value_field (asn_value_p container,
  *
  * @return zero on success, otherwise error code.
  */ 
-extern int asn_read_value_field  (const asn_value *container,  
-                                  void *data, int *d_len,
-                                  const char *labels);
+extern int asn_read_value_field(const asn_value *container,  
+                                void *data, int *d_len,
+                                const char *labels);
 
 
 /**
@@ -353,8 +366,9 @@ extern int asn_read_value_field  (const asn_value *container,
  *
  * @return zero on success, otherwise error code.
  */ 
-extern int asn_write_component_value (asn_value_p container, 
-                const asn_value *elem_value, const char *labels);
+extern int asn_write_component_value(asn_value_p container, 
+                                     const asn_value *elem_value,
+                                     const char *labels);
 
 /**
  * Read component of CONSTRAINT subvalue in ASN value tree. 
@@ -367,8 +381,9 @@ extern int asn_write_component_value (asn_value_p container,
  *
  * @return zero on success, otherwise error code.
  */ 
-extern int asn_read_component_value (const asn_value *container, 
-                asn_value_p *elem_value, const char *labels);
+extern int asn_read_component_value(const asn_value *container, 
+                                    asn_value_p *elem_value,
+                                    const char *labels);
 
 
 /**
@@ -384,8 +399,9 @@ extern int asn_read_component_value (const asn_value *container,
  *
  * @return zero on success, otherwise error code.
  */ 
-extern int asn_write_indexed (asn_value_p container, const asn_value_p elem_value, 
-                              int index, const char *labels);
+extern int asn_write_indexed(asn_value_p container,
+                             const asn_value_p elem_value, 
+                             int index, const char *labels);
 
 /**
  * Read array element in indexed ('SEQUENCE OF' or 'SET OF') subvalue 
@@ -398,8 +414,8 @@ extern int asn_write_indexed (asn_value_p container, const asn_value_p elem_valu
  *
  * @return pointer to new asn_value instance or NULL if error occurred. 
  */ 
-extern asn_value_p asn_read_indexed (const asn_value *container, 
-                                     int index, const char *labels);
+extern asn_value_p asn_read_indexed(const asn_value *container, 
+                                    int index, const char *labels);
 
 /**
  * Insert array element in indexed syntax (i.e. 'SEQUENCE OF' or 'SET OF') 
@@ -510,7 +526,7 @@ extern int asn_get_choice(const asn_value *container, const char *labels,
  *
  * @return value's name or NULL.
  */ 
-extern const char * asn_get_name(const asn_value *container);
+extern const char *asn_get_name(const asn_value *container);
 
 
 /**
