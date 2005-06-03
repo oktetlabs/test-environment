@@ -35,7 +35,7 @@
 #endif
 
 #include "logger_ta.h"
-
+#include "rcf_pch.h"
 
 /** Local log buffer instance */
 struct lgr_rb log_buffer;
@@ -86,14 +86,14 @@ log_message(uint16_t level, const char *entity_name,
     
     static char *null_str = "(NULL)";
     static char *skip_flags, *skip_width;
-
+    
     UNUSED(entity_name);
     
     skip_flags = "#-+ 0";
     skip_width = "*0123456789";
 
     log_entries_slow++;
-
+    
     memset(&header, 0, sizeof(struct lgr_mess_header));
     header.user_name = (user_name != NULL) ? user_name : null_str;
     header.level = level;
@@ -127,7 +127,6 @@ log_message(uint16_t level, const char *entity_name,
             case 'X':
             case 'u':
             case 'c':
-            case 'p':
             case 'r':   /* TE-specific specifier for error codes */
             {
                 int tmp = va_arg(ap, int);
@@ -136,11 +135,19 @@ log_message(uint16_t level, const char *entity_name,
                 break;
             }
 
+            case 'p':
+            {
+                int tmp = rcf_pch_mem_alloc(va_arg(ap, void *));
+                
+                LGR_SET_ARG(header, narg, tmp);
+                break;
+            }
+
             case 's':
             {
                 size_t  length;
                 char   *addr = va_arg(ap, char *);
-
+                
                 if (addr == NULL)
                     addr = null_str;
                 length = strlen(addr) + 1;
@@ -210,7 +217,7 @@ log_message(uint16_t level, const char *entity_name,
             goto resume;
         }
 
-        *arg_location = (uint32_t)arg_addr;
+        *arg_location = rcf_pch_mem_alloc(arg_addr);
         val = LGR_GET_ELEMENTS_FIELD(&log_buffer, position);
         val += res;
         LGR_SET_ELEMENTS_FIELD(&log_buffer, position, val);
@@ -358,7 +365,7 @@ log_get_message(uint32_t length, uint8_t *buffer)
     tmp_buf += sizeof(te_log_nfl_t);
     strncpy(tmp_buf, fs, tmp_length);
     tmp_buf += tmp_length;
-
+    
     /* Parse format string */
     for (; *fs; fs++)
     {
@@ -378,7 +385,7 @@ log_get_message(uint32_t length, uint8_t *buffer)
 
         /* skip to conversion char */
         for (; index(skip_width, *fs); ++fs);
-
+        
         switch (*fs)
         {
             case 'd':
@@ -387,7 +394,6 @@ log_get_message(uint32_t length, uint8_t *buffer)
             case 'x':
             case 'X':
             case 'u':
-            case 'p':
             case 'r':   /* TE-specific specifier for error codes */
             {
                 int32_t val;
@@ -401,6 +407,40 @@ log_get_message(uint32_t length, uint8_t *buffer)
                 break;
             }
 
+            case 'p':
+            {
+                int   id;
+                void *val;
+                
+                LGR_CHECK_LENGTH(sizeof(te_log_nfl_t) + sizeof(void *));
+                *((te_log_nfl_t *)tmp_buf) = log_nfl_hton(sizeof(void *));
+                tmp_buf += sizeof(te_log_nfl_t);
+                id = LGR_GET_ARG(header, argn++);
+                val = rcf_pch_mem_get(id);
+                rcf_pch_mem_free(id);
+                
+                switch (sizeof(void *))
+                {
+                    case sizeof(uint64_t):
+                    {
+                        uint64_t val_h = (uint32_t)((uint64_t)val >> 32);
+                        uint64_t val_l = (uint32_t)
+                            ((uint64_t)val & 0xFFFFFFFF);
+                            
+                        LGR_32_TO_NET(val_h, tmp_buf);
+                        tmp_buf += sizeof(uint32_t);
+                        LGR_32_TO_NET(val_l, tmp_buf);
+                        tmp_buf += sizeof(uint32_t);
+                        break;
+                    }
+                    
+                    default: /* 4 bytes */
+                        LGR_32_TO_NET((uint32_t)val, tmp_buf);
+                        tmp_buf += sizeof(uint32_t);
+                        break;
+                }
+            }
+
             case 'c':
                 LGR_CHECK_LENGTH(sizeof(te_log_nfl_t) + sizeof(char));
                 *((te_log_nfl_t *)tmp_buf) = log_nfl_hton(sizeof(char));
@@ -412,7 +452,10 @@ log_get_message(uint32_t length, uint8_t *buffer)
             case 's':
             {
                 te_log_nfl_t *arglen_location;
-                char *arg_str = (char *)LGR_GET_ARG(header, argn++);
+                int           id = LGR_GET_ARG(header, argn++);
+                char         *arg_str = (char *)rcf_pch_mem_get(id);
+                
+                rcf_pch_mem_free(id);
 
                 LGR_CHECK_LENGTH(sizeof(te_log_nfl_t));
                 arglen_location = (te_log_nfl_t *)tmp_buf;

@@ -1401,15 +1401,16 @@ TARPC_FUNC(signal,
 {
     sighandler_t handler = rcf_ch_symbol_addr(in->handler.handler_val, 1);
     sighandler_t old_handler;
-
+    
     if (handler == NULL && in->handler.handler_val != NULL)
     {
         char *tmp;
-
-        handler = (sighandler_t)strtol(in->handler.handler_val, &tmp, 16);
-
+        int   id;
+        
+        id = strtol(in->handler.handler_val, &tmp, 10);
         if (tmp == in->handler.handler_val || *tmp != 0)
             out->common._errno = TE_RC(TE_TA_LINUX, EINVAL);
+        handler = (sighandler_t)rcf_pch_mem_get(id);
     }
     if (out->common._errno == 0)
     {
@@ -1438,7 +1439,14 @@ TARPC_FUNC(signal,
                 }
                 else
                 {
-                    sprintf(name, "0x%x", (unsigned int)old_handler);
+                    int id = 0;
+                    
+                    if (old_handler != NULL &&
+                        (id = rcf_pch_mem_get_id(old_handler)) == 0)
+                    {
+                        id = rcf_pch_mem_alloc(old_handler);
+                    }
+                    sprintf(name, "%d", id);
                     out->handler.handler_val = name;
                     out->handler.handler_len = strlen(name) + 1;
                 }
