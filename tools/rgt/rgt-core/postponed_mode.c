@@ -120,25 +120,49 @@ print_ts(FILE *fd, uint32_t *ts)
 static void
 fwrite_string(struct obstack *obstk, const char *str)
 {
-    int i = 0;
+    te_bool br_cntrl_start = TRUE;
+    int     i = 0;
     
     while (str[i] != '\0')
     {
         switch (str[i])
         {
             case '\r':
-                if (i > 0 && str[i - 1] == '\n')
+                /* FALLTHROUGH */
+            case '\n':
+                /*
+                 * Skip \r after \n (or \n after \r) because it does not 
+                 * bring any formating, but just follows after \r (\n) 
+                 * on some systems.
+                 *
+                 * So that if we meet \r\n or \r\n we should 
+                 * output single <br/>
+                 *
+                 * In case of \r\r\r or \n\n\n -> <br/><br/><br/>
+                 * In case of \r\n\r or \n\r\r -> <br/><br/>
+                 * In case of \n\r\r\n or \r\n\n\r -> <br/><br/>
+                 *
+                 * If br_cntrl_start is TRUE, we output </BR>
+                 * just after we meet '\n' ('\r') checking that there 
+                 * was no '\r' ('\n') as the previous character.
+                 */
+                if (i > 0 && str[i - 1] != '\n' && str[i - 1] != '\r')
+                    br_cntrl_start = TRUE;
+
+/* Returns '\r' ('\n') when ch_ is '\n' ('\r') */
+#define BR_CTRL_INVERT(ch_) (((ch_) == '\n') ? '\r' : '\n')
+
+                if (br_cntrl_start && i > 0 && 
+                    str[i - 1] == BR_CTRL_INVERT(str[i]))
                 {
-                    /*
-                     * Skip \r after \n, because it does not bring any
-                     * formating, but just follows after ]n on some systems
-                     */
+                    /* Skip this character */
+                    br_cntrl_start = FALSE;
                     break;
                 }
-                /* Process it as an ordinary new line character */
-                /* FALLTHROUGH */
+#undef BR_CTRL_INVERT
 
-            case '\n':
+                br_cntrl_start = TRUE;
+
                 if (obstk != NULL)
                     obstack_grow(log_obstk, "<br/>", 5);
                 else
@@ -501,7 +525,6 @@ output_regular_log_msg(log_msg *msg)
                 case 'o':
                 case 'x':
                 case 'X':
-                case 'p': /* FIXME: Add 0x before %p automatically */
                 {
                     char  format[3] = {'%', msg->fmt_str[i + 1], '\0'};
 
@@ -522,6 +545,43 @@ output_regular_log_msg(log_msg *msg)
 
                     continue;
                 }
+
+                case 'p':
+                {
+                    uint32_t val;
+                    int      j;
+
+                    if ((arg = get_next_arg(msg)) == NULL)
+                    {
+                        fprintf(stderr,
+                                "Too few arguments in the message:\n");
+                        print_message_info(msg);
+                        THROW_EXCEPTION;
+                    }
+
+                    /* Address should be 4 bytes aligned */
+                    assert(arg->len % 4 == 0);
+
+                    obstack_grow(log_obstk, "0x", strlen("0x"));
+                    for (j = 0; j < arg->len / 4; j++)
+                    {
+                        val = *(((uint32_t *)arg->val) + j);
+
+                        /* Skip not trailing zero words */
+                        if (val == 0 && (j + 1) < arg->len / 4)
+                        {
+                            continue;
+                        }
+                        val = ntohl(val);
+
+                        obstack_printf(log_obstk, "%08x", val);
+                    }
+
+                    i++;
+
+                    continue;
+                }
+
                 case 's':
                 {
                     if ((arg = get_next_arg(msg)) == NULL)

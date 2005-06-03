@@ -239,6 +239,8 @@ live_process_regular_msg(log_msg *msg)
 static void
 rgt_expand_regular_log_msg(log_msg *msg)
 {
+    static char tmp[40];
+
     msg_arg *arg;
     int      str_len;
     int      i;
@@ -260,10 +262,8 @@ rgt_expand_regular_log_msg(log_msg *msg)
                 case 'o':
                 case 'x':
                 case 'X':
-                case 'p': /* FIXME: Add 0x before %p automatically */
                 {
-                    char  format[3] = {'%', msg->fmt_str[i + 1], '\0'};
-                    char *tmp;
+                    char format[3] = {'%', msg->fmt_str[i + 1], '\0'};
 
                     if ((arg = get_next_arg(msg)) == NULL)
                     {
@@ -273,18 +273,53 @@ rgt_expand_regular_log_msg(log_msg *msg)
                         THROW_EXCEPTION;
                     }
 
-                    tmp = (char *)malloc(40);
-
                     *((uint32_t *)arg->val) = 
                         ntohl(*(uint32_t *)arg->val);
 
                     sprintf(tmp, format, *((uint32_t *)arg->val));
                     obstack_grow(msg->obstk, tmp, strlen(tmp));
                     i++;
-                    free(tmp);
-                    
+
                     continue;
                 }
+
+                case 'p':
+                {
+                    uint32_t val;
+                    int      j;
+
+                    if ((arg = get_next_arg(msg)) == NULL)
+                    {
+                        fprintf(stderr,
+                                "Too few arguments in the message");
+                        free_log_msg(msg);
+                        THROW_EXCEPTION;
+                    }
+
+                    /* Address should be 4 bytes aligned */
+                    assert(arg->len % 4 == 0);
+
+                    obstack_grow(msg->obstk, "0x", strlen("0x"));
+                    for (j = 0; j < arg->len / 4; j++)
+                    {
+                        val = *(((uint32_t *)arg->val) + j);
+
+                        /* Skip not trailing zero words */
+                        if (val == 0 && (j + 1) < arg->len / 4)
+                        {
+                            continue;
+                        }
+                        val = ntohl(val);
+
+                        sprintf(tmp, "%08x", val);
+                        obstack_grow(msg->obstk, tmp, strlen(tmp));
+                    }
+
+                    i++;
+
+                    continue;
+                }
+
                 case 's':
                 {
                     if ((arg = get_next_arg(msg)) == NULL)
