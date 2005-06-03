@@ -1063,6 +1063,34 @@ wsa_ioctl_rpc2h(rpc_wsa_ioctl_code code)
 
 #undef RPCWSA2H
 
+/**
+ * TA-independent definitions for Windows CreateFile().
+ * Attention: these flags are the most frequently used,
+ * there are in Windows much more flags for CreateFile().
+ */
+typedef enum rpc_cf_access_right {
+    RPC_CF_GENERIC_EXECUTE  = 0x01,
+    RPC_CF_GENERIC_READ     = 0x02,
+    RPC_CF_GENERIC_WRITE    = 0x04
+} rpc_cf_access_right;
+
+typedef enum rpc_cf_share_mode {
+    RPC_CF_FILE_SHARE_DELETE  = 0x01,
+    RPC_CF_FILE_SHARE_READ    = 0x02,
+    RPC_CF_FILE_SHARE_WRITE   = 0x04
+} rpc_cf_share_mode;
+
+typedef enum rpc_cf_creation_disposition {
+    RPC_CF_CREATE_ALWAYS      = 0x01,
+    RPC_CF_CREATE_NEW         = 0x02,
+    RPC_CF_OPEN_ALWAYS        = 0x04,
+    RPC_CF_OPEN_EXISTING      = 0x08,
+    RPC_CF_TRUNCATE_EXISTING  = 0x10
+} rpc_cf_creation_disposition;
+
+typedef enum rpc_cf_flags_attributes {
+    RPC_CF_FILE_ATTRIBUTE_NORMAL = 0x01
+} rpc_cf_flags_attributes;
 
 /**
  * send_recv_flags_rpc2str()

@@ -84,6 +84,33 @@ rpc_fopen(rcf_rpc_server *rpcs,
     RETVAL_PTR(fopen, out.mem_ptr);
 }
 
+int
+rpc_fclose(rcf_rpc_server *rpcs, FILE *file)
+{
+    tarpc_fclose_in  in;
+    tarpc_fclose_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(fclose, EOF);
+    }
+
+    rpcs->op = RCF_RPC_CALL_WAIT;
+    in.mem_ptr = (tarpc_ptr)file;
+
+    rcf_rpc_call(rpcs, "fclose", &in, &out);
+
+    TAPI_RPC_LOG("RPC (%s,%s): fclose(%x) -> %d (%s)",
+                 rpcs->ta, rpcs->name, file,
+                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
+
+    RETVAL_INT(fclose, out.retval);
+}
+
 FILE *
 rpc_popen(rcf_rpc_server *rpcs,
           const char *cmd, const char *mode)

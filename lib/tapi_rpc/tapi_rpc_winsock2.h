@@ -241,7 +241,8 @@ extern void rpc_get_accept_addr(rcf_rpc_server *rpcs,
  *
  * @param rpcs         RPC server handle
  * @param s            connected socket descriptor
- * @param file         name of the file that contain data to be transmited.
+ * @param file         handle of the file containing the data to be
+ *                     transmited; should be got by rpc_create_file().
  * @param len          length of data to transmit
  * @param len_per_send size of each block of data in each send operation.
  * @param overlapped   pointer to an rpc_overlapped structure
@@ -256,11 +257,11 @@ extern void rpc_get_accept_addr(rcf_rpc_server *rpcs,
  * @return value returned by @b TransmitFile upon successful completion,
  *         otherwise -1 is returned.
  */
-extern int rpc_transmit_file(rcf_rpc_server *rpcs, int s, char *file,
+extern int rpc_transmit_file(rcf_rpc_server *rpcs, int s, rpc_handle file,
                              ssize_t len, ssize_t len_per_send,
                              rpc_overlapped overlapped,
-                             void *head, ssize_t head_len,
-                             void *tail, ssize_t tail_len, ssize_t flags);
+                             void *head, ssize_t head_len, void *tail,
+                             ssize_t tail_len, ssize_t flags);
 
 /**
  * Transmit file data over a connected socket. This function uses the 
@@ -269,7 +270,8 @@ extern int rpc_transmit_file(rcf_rpc_server *rpcs, int s, char *file,
  *
  * @param rpcs           RPC server handle.
  * @param s              connected socket descriptor.
- * @param file           path (on TA) to the file to transmit.
+ * @param file           handle of the file containing the data to be
+ *                       transmited; should be got by rpc_create_file().
  * @param len            amount of file data to transmit.
  * @param bytes_per_send size of each block of data in each send operation.
  * @param overlapped     pointer to an rpc_overlapped structure.
@@ -288,11 +290,47 @@ extern int rpc_transmit_file(rcf_rpc_server *rpcs, int s, char *file,
  * ATTENTION: when using the overlapped I/O the supplied buffers @b head
  * and @b tail will be freed when you call rpc_get_overlapped_result().
  */
-extern int rpc_transmitfile_tabufs(rcf_rpc_server *rpcs, int s, char *file,
-                                   ssize_t len, ssize_t bytes_per_send,
+extern int rpc_transmitfile_tabufs(rcf_rpc_server *rpcs, int s,
+                                   rpc_handle file, ssize_t len,
+                                   ssize_t bytes_per_send,
                                    rpc_overlapped overlapped, rpc_ptr head,
                                    ssize_t head_len, rpc_ptr tail,
                                    ssize_t tail_len, ssize_t flags);
+
+/**
+ * Windows CreateFile().
+ *
+ * @param rpcs                  RPC server handle.
+ * @param name                  Null-terminated string - the name
+ *                              of object to create or open.
+ * @param desired_access        The access to object.
+ * @param share_mode            The sharing mode of object.
+ * @param security_attributes   TA-side pointer to a Windows
+ *                              SECURITY_ATTRIBUTES structure.
+ * @param creation_disposition  An action to take on files that
+ *                              exist and do not exist.
+ * @param flags_attributes      The file attributes and flags.
+ * @param template_file         TA-side handle to a template file.
+ *
+ * @return   TA-side handle of the object, otherwise -1.
+ */
+extern rpc_handle rpc_create_file(rcf_rpc_server *rpcs, char *name,
+                      rpc_cf_access_right desired_access,
+                      rpc_cf_share_mode share_mode,
+                      rpc_ptr security_attributes,
+                      rpc_cf_creation_disposition creation_disposition,
+                      rpc_cf_flags_attributes flags_attributes,
+                      rpc_handle template_file);
+
+/**
+ * Windows CloseHandle().
+ *
+ * @param rpcs           RPC server handle.
+ * @param handle         Handle to close.
+ *
+ * @return   Nonzero on success, zero otherwise.
+ */
+extern int rpc_close_handle(rcf_rpc_server *rpcs, rpc_handle handle);
 
 /**
  * Windows HasOverlappedIoCompleted()
@@ -466,13 +504,14 @@ extern void rpc_free_buf(rcf_rpc_server *rpcs, rpc_ptr buf);
 /**
  * Copy the @b src_buf buffer in @b dst_buf located in TA address space
  *
- * @param rpcs    RPC server handle
- * @param src_buf pointer to the source buffer
- * @param len     length of data to be copied
- * @param dst_buf pointer to the destination buffer
+ * @param rpcs     RPC server handle
+ * @param src_buf  pointer to the source buffer
+ * @param len      length of data to be copied
+ * @param dst_buf  pointer to the destination buffer
+ * @param offset   displacement in the destination buffer
  */
 extern void rpc_set_buf(rcf_rpc_server *rpcs, char *src_buf,
-                        size_t len, rpc_ptr dst_buf);
+                        size_t len, rpc_ptr dst_buf, rpc_ptr offset);
 
 /**
  * Copy the @b src_buf buffer located in TA address space to the 
@@ -480,11 +519,12 @@ extern void rpc_set_buf(rcf_rpc_server *rpcs, char *src_buf,
  *
  * @param rpcs     RPC server handle
  * @param src_buf  source buffer
+ * @param offset   displacement in the source buffer
  * @param len      length of data to be copied
  * @param dst_buf  destination buffer
  */
 extern void rpc_get_buf(rcf_rpc_server *rpcs, rpc_ptr src_buf,
-                        size_t len, char *dst_buf);
+                        rpc_ptr offset, size_t len, char *dst_buf);
 
 /**
  * Allocate a WSABUF structure, a buffer of specified length and fill in

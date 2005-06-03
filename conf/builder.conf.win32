@@ -11,18 +11,14 @@ TE_LIB_PARMS([tad], [], [],
              [--with-eth --with-ipstack --with-dhcp --with-cli], [])
 TE_LIB_PARMS([forwarder], [], [${TAD_FORW_DIR}], [], [])
 
-TE_TA_TYPE([linux], [], [],
-           [--with-rcf-rpc \
-            --with-cfg-linux-daemons='ftp Xvfb smtp telnet rsh vncserver dhcp dns'], 
-           [], [], 
+TE_TA_TYPE([linux], [], [], [--with-rcf-rpc --with-netlink], [], [], 
            [forwarder ndn asn comm_net_agent])
 
 TE_PLATFORM([i686-pc-cygwin],[],
             [-I${CYGWIN_HOME}/include -I${CYGWIN_HOME}/include/ws32api \
              -D__CYGWIN__],
             [-L${CYGWIN_HOME}/lib -L${CYGWIN_HOME}/lib/w32api], 
-            [comm_net_agent loggerta logfork conf_oid rpcxdr rcfpch tad ])
+            [comm_net_agent loggerta logfork conf_oid rpcxdr rcfpch tad])
 
 TE_TA_TYPE([win32], [i686-pc-cygwin], [],
-           [--with-rcf-rpc], [],
-           [], [ws2_32 rcfpch conf_oid loggerta comm_net_agent])
+           [--with-rcf-rpc], [], [], [comm_net_agent])

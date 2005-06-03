@@ -423,7 +423,7 @@ rpc_get_accept_addr(rcf_rpc_server *rpcs,
 }
 
 int
-rpc_transmit_file(rcf_rpc_server *rpcs, int s, char *file,
+rpc_transmit_file(rcf_rpc_server *rpcs, int s, rpc_handle file,
                   ssize_t len, ssize_t len_per_send,
                   rpc_overlapped overlapped,
                   void *head, ssize_t head_len,
@@ -450,11 +450,7 @@ rpc_transmit_file(rcf_rpc_server *rpcs, int s, char *file,
     op = rpcs->op;
     
     in.fd = s;
-    if (file == NULL)
-        in.file.file_len = 0;
-    else
-        in.file.file_len = strlen(file) + 1;
-    in.file.file_val = file;
+    in.file = (tarpc_handle)file;
     in.len = len;
     in.len_per_send = len_per_send;
     in.overlapped = (tarpc_overlapped)overlapped;
@@ -474,7 +470,7 @@ rpc_transmit_file(rcf_rpc_server *rpcs, int s, char *file,
 
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(transmit_file, out.retval);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: transmit_file(%d, %s, %d, %d, %p, ...) "
+    TAPI_RPC_LOG("RPC (%s,%s)%s: transmit_file(%d, %x, %d, %d, %p, ...) "
                  "-> %s (%s)", rpcs->ta, rpcs->name, rpcop2str(op),
                  s, file, len, len_per_send, overlapped,
                  out.retval ? "true" : "false",
@@ -488,7 +484,7 @@ rpc_transmit_file(rcf_rpc_server *rpcs, int s, char *file,
  * and tail will be freed when you call rpc_get_overlapped_result().
  */
 int
-rpc_transmitfile_tabufs(rcf_rpc_server *rpcs, int s, char *file,
+rpc_transmitfile_tabufs(rcf_rpc_server *rpcs, int s, rpc_handle file,
                         ssize_t len, ssize_t bytes_per_send,
                         rpc_overlapped overlapped,
                         rpc_ptr head, ssize_t head_len,
@@ -509,13 +505,7 @@ rpc_transmitfile_tabufs(rcf_rpc_server *rpcs, int s, char *file,
     op = rpcs->op;
     
     in.s = s;
-
-    in.file.file_val = file;
-    if (file == NULL)
-        in.file.file_len = 0;
-    else
-        in.file.file_len = strlen(file) + 1;
-
+    in.file = (tarpc_handle)file;
     in.len = len;
     in.bytes_per_send = bytes_per_send;
     in.overlapped = (tarpc_overlapped)overlapped;
@@ -529,13 +519,86 @@ rpc_transmitfile_tabufs(rcf_rpc_server *rpcs, int s, char *file,
 
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(transmitfile_tabufs, out.retval);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: transmitfile_tabufs(%d, %s, %d, %d, %p, "
+    TAPI_RPC_LOG("RPC (%s,%s)%s: transmitfile_tabufs(%d, %x, %d, %d, %p, "
                  "...) -> %s (%s)", rpcs->ta, rpcs->name, rpcop2str(op),
                  s, file, len, bytes_per_send, overlapped,
                  out.retval ? "true" : "false",
                  errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_INT(transmitfile_tabufs, out.retval);
+}
+
+rpc_handle
+rpc_create_file(rcf_rpc_server *rpcs, char *name,
+                rpc_cf_access_right desired_access,
+                rpc_cf_share_mode share_mode,
+                rpc_ptr security_attributes,
+                rpc_cf_creation_disposition creation_disposition,
+                rpc_cf_flags_attributes flags_attributes,
+                rpc_handle template_file)
+{
+    rcf_rpc_op            op;
+    tarpc_create_file_in  in;
+    tarpc_create_file_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_PTR(create_file, -1);
+    }
+    op = rpcs->op;
+    
+    in.name.name_val = name;
+    if (name == NULL)
+        in.name.name_len = 0;
+    else
+        in.name.name_len = strlen(name) + 1;
+
+    in.desired_access = desired_access;
+    in.share_mode = share_mode;
+    in.security_attributes = (tarpc_ptr)security_attributes;
+    in.creation_disposition = creation_disposition;
+    in.flags_attributes = flags_attributes;
+    in.template_file = (tarpc_handle)template_file;
+
+    rcf_rpc_call(rpcs, "create_file", &in, &out);
+
+    TAPI_RPC_LOG("RPC (%s,%s)%s: create_file(%s) -> %x (%s)",
+                 rpcs->ta, rpcs->name, rpcop2str(op),
+                 name, out.handle, errno_rpc2str(RPC_ERRNO(rpcs)));
+
+    RETVAL_PTR(create_file, out.handle);
+}
+
+int
+rpc_close_handle(rcf_rpc_server *rpcs, rpc_handle handle)
+{
+    rcf_rpc_op             op;
+    tarpc_close_handle_in  in;
+    tarpc_close_handle_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(close_handle, -1);
+    }
+    op = rpcs->op;
+    
+    in.handle = (tarpc_handle)handle;
+
+    rcf_rpc_call(rpcs, "close_handle", &in, &out);
+
+    TAPI_RPC_LOG("RPC (%s,%s)%s: close_handle(%x) -> %x (%s)",
+                 rpcs->ta, rpcs->name, rpcop2str(op),
+                 handle, out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
+
+    RETVAL_INT(close_handle, out.retval);
 }
 
 int
@@ -710,7 +773,6 @@ rpc_create_event(rcf_rpc_server *rpcs)
     }
 
     rpcs->op = RCF_RPC_CALL_WAIT;
-
 
     rcf_rpc_call(rpcs, "create_event", &in, &out);
 

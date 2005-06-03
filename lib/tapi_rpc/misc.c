@@ -885,7 +885,7 @@ rpc_free_buf(rcf_rpc_server *rpcs, rpc_ptr buf)
  */
 void
 rpc_set_buf(rcf_rpc_server *rpcs, char *src_buf,
-             size_t len, rpc_ptr dst_buf)
+            size_t len, rpc_ptr dst_buf, rpc_ptr offset)
 {
     rcf_rpc_op        op;
     tarpc_set_buf_in  in;
@@ -909,6 +909,7 @@ rpc_set_buf(rcf_rpc_server *rpcs, char *src_buf,
         in.src_buf.src_buf_len = 0;
 
     in.dst_buf = (tarpc_ptr)dst_buf;
+    in.offset = (tarpc_ptr)offset;
 
     rcf_rpc_call(rpcs, "set_buf", &in, &out);
 
@@ -925,7 +926,7 @@ rpc_set_buf(rcf_rpc_server *rpcs, char *src_buf,
  */
 void
 rpc_get_buf(rcf_rpc_server *rpcs, rpc_ptr src_buf,
-            size_t len, char *dst_buf)
+            rpc_ptr offset, size_t len, char *dst_buf)
 {
     rcf_rpc_op        op;
     tarpc_get_buf_in  in;
@@ -943,6 +944,7 @@ rpc_get_buf(rcf_rpc_server *rpcs, rpc_ptr src_buf,
     op = rpcs->op;
 
     in.src_buf = (tarpc_ptr)src_buf;
+    in.offset = (tarpc_ptr)offset;
     in.len = len;
 
     rcf_rpc_call(rpcs, "get_buf", &in, &out);
@@ -959,9 +961,8 @@ rpc_get_buf(rcf_rpc_server *rpcs, rpc_ptr src_buf,
 }
 
 void
-rpc_vm_trasher(rcf_rpc_server *rpcs)
+rpc_vm_trasher(rcf_rpc_server *rpcs, te_bool start)
 {
-    rcf_rpc_op           op;
     tarpc_vm_trasher_in  in;
     tarpc_vm_trasher_out out;
 
@@ -974,12 +975,14 @@ rpc_vm_trasher(rcf_rpc_server *rpcs)
         RETVAL_VOID(vm_trasher);
     }
 
-    op = rpcs->op;
+    rpcs->op = RCF_RPC_CALL_WAIT;
+    in.start = start;
 
     rcf_rpc_call(rpcs, "vm_trasher", &in, &out);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: vm_trasher -> (%s)",
-                 rpcs->ta, rpcs->name, rpcop2str(op),
+    TAPI_RPC_LOG("RPC (%s,%s)%s: vm_trasher(%s) -> (%s)",
+                 rpcs->ta, rpcs->name, rpcop2str(rpcs->op),
+                 start == FALSE ? "stop" : "start",
                  errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_VOID(vm_trasher);

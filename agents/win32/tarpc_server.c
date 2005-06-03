@@ -1224,16 +1224,12 @@ TARPC_FUNC(get_accept_addr,
 }
 )
 
-
 /*-------------- TransmitFile() ----------------------------*/
 
 TARPC_FUNC(transmit_file, {},
 {
-    TRANSMIT_FILE_BUFFERS transmit_buffers;
-    DWORD                 flags;
-    HANDLE                file = NULL;
-
-    rpc_overlapped *overlapped = IN_OVERLAPPED;
+    TRANSMIT_FILE_BUFFERS  transmit_buffers;
+    rpc_overlapped        *overlapped = IN_OVERLAPPED;
 
     memset(&transmit_buffers, 0, sizeof(transmit_buffers));
     if (in->head.head_len != 0)
@@ -1262,23 +1258,11 @@ TARPC_FUNC(transmit_file, {},
         overlapped->bufnum = 2;
     }
 
-    flags = transmit_file_flags_rpc2h(in->flags);
-
-    MAKE_CALL(
-        if (in->file.file_len != 0)
-            file = CreateFile(in->file.file_val, FILE_READ_DATA,
-                FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE,
-                NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-
-        if (file != INVALID_HANDLE_VALUE)
-            out->retval = (*pf_transmit_file)(in->fd, file,
+    MAKE_CALL( out->retval = (*pf_transmit_file)(in->fd, (HANDLE)in->file,
                               in->len, in->len_per_send,
                               (LPWSAOVERLAPPED)overlapped,
-                              &transmit_buffers, flags);
-        else
-            out->retval = FALSE;
-    );
-
+                              &transmit_buffers,
+                              transmit_file_flags_rpc2h(in->flags)); );
     finish:
     ;
 }
@@ -1289,7 +1273,6 @@ TARPC_FUNC(transmit_file, {},
 TARPC_FUNC(transmitfile_tabufs, {},
 {
     TRANSMIT_FILE_BUFFERS  transmit_buffers;
-    HANDLE                 file = NULL;
     rpc_overlapped        *overlapped = IN_OVERLAPPED;
 
     memset(&transmit_buffers, 0, sizeof(transmit_buffers));
@@ -1313,24 +1296,66 @@ TARPC_FUNC(transmitfile_tabufs, {},
         overlapped->bufnum = 2;
     }
 
-    MAKE_CALL(
-        if (in->file.file_len != 0)
-            file = CreateFile(in->file.file_val, FILE_READ_DATA,
-                FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE,
-                NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-
-        if (file != INVALID_HANDLE_VALUE)
-            out->retval = (*pf_transmit_file)(in->s, file,
+    MAKE_CALL( out->retval = (*pf_transmit_file)(in->s, (HANDLE)in->file,
                               in->len, in->bytes_per_send,
                               (LPWSAOVERLAPPED)overlapped,
                               &transmit_buffers,
-                              transmit_file_flags_rpc2h(in->flags));
-        else
-            out->retval = FALSE;
-    );
-
+                              transmit_file_flags_rpc2h(in->flags)); );
     finish:
     ;
+}
+)
+
+/*------------------------- CreateFile() -------------------------
+ *------ Attention: not all flags currently are supported. ------*/
+static inline DWORD cf_access_right_rpc2h(unsigned int ar)
+{
+    return (!!(ar & RPC_CF_GENERIC_EXECUTE) * GENERIC_EXECUTE) |
+           (!!(ar & RPC_CF_GENERIC_READ) * GENERIC_READ) |
+           (!!(ar & RPC_CF_GENERIC_WRITE) * GENERIC_WRITE);
+}
+
+static inline DWORD cf_share_mode_rpc2h(unsigned int sm)
+{
+    return (!!(sm & RPC_CF_FILE_SHARE_DELETE) * FILE_SHARE_DELETE) |
+           (!!(sm & RPC_CF_FILE_SHARE_READ) * FILE_SHARE_READ) |
+           (!!(sm & RPC_CF_FILE_SHARE_WRITE) * FILE_SHARE_WRITE);
+}
+
+static inline DWORD cf_creation_disposition_rpc2h(unsigned int cd)
+{
+    return (!!(cd & RPC_CF_CREATE_ALWAYS) * CREATE_ALWAYS) |
+           (!!(cd & RPC_CF_CREATE_NEW) * CREATE_NEW) |
+           (!!(cd & RPC_CF_OPEN_ALWAYS) * OPEN_ALWAYS) |
+           (!!(cd & RPC_CF_OPEN_EXISTING) * OPEN_EXISTING) |
+           (!!(cd & RPC_CF_TRUNCATE_EXISTING) * TRUNCATE_EXISTING);
+}
+
+static inline DWORD cf_flags_attributes_rpc2h(unsigned int fa)
+{
+    return (!!(fa & RPC_CF_FILE_ATTRIBUTE_NORMAL) * FILE_ATTRIBUTE_NORMAL);
+}
+
+TARPC_FUNC(create_file, {},
+{
+    MAKE_CALL(
+        out->handle = (tarpc_handle) CreateFile(in->name.name_val,
+                cf_access_right_rpc2h(in->desired_access),
+                cf_share_mode_rpc2h(in->share_mode),
+                (LPSECURITY_ATTRIBUTES)
+                    rcf_pch_mem_get(in->security_attributes),
+                cf_creation_disposition_rpc2h(in->creation_disposition),
+                cf_flags_attributes_rpc2h(in->flags_attributes),
+                (HANDLE)in->template_file);
+    );
+}
+)
+
+/*-------------- CloseHandle() --------------*/
+TARPC_FUNC(close_handle, {},
+{
+    UNUSED(list);
+    out->retval = CloseHandle((HANDLE)in->handle);
 }
 )
 
@@ -1368,7 +1393,15 @@ TARPC_FUNC(get_ram_size, {},
 }
 )
 
-TARPC_FUNC(vm_trasher, {},
+/*-------------------- VM trasher --------------------*/
+
+static pthread_mutex_t vm_trasher_lock = PTHREAD_MUTEX_INITIALIZER;
+/* Is set to TRUE when the VM trasher thread must exit */
+static volatile te_bool vm_trasher_stop = FALSE;
+/* VM trasher thread identifier */
+static pthread_t vm_trasher_thread_id = (pthread_t)-1;
+
+void *vm_trasher_thread(void *arg)
 {
     MEMORYSTATUS    ms;
     SIZE_T          len;
@@ -1377,9 +1410,7 @@ TARPC_FUNC(vm_trasher, {},
     char            *buf;
     struct timeval  tv;
 
-    UNUSED(list);
-    UNUSED(in);
-    UNUSED(out);
+    UNUSED(arg);
 
     memset(&ms, 0, sizeof(ms));
     GlobalMemoryStatus(&ms);
@@ -1388,8 +1419,8 @@ TARPC_FUNC(vm_trasher, {},
     buf = malloc(len);
     if (buf == NULL)
     {
-        INFO("vm_trasher() could not allocate %u bytes", len);
-        goto finish;
+        INFO("vm_trasher_thread() could not allocate %u bytes", len);
+        return (void *)-1;
     }
 
     /* Make dirty each page of buffer */
@@ -1400,7 +1431,7 @@ TARPC_FUNC(vm_trasher, {},
     srand(tv.tv_usec);
     
     /* Perform VM trashing to keep memory pressure */
-    while (1)
+    while (vm_trasher_stop == FALSE)
     {
         /* Choose a random page */
         dpos = (double)rand() / (double)RAND_MAX * (double)(len / 4096 - 1);
@@ -1408,7 +1439,46 @@ TARPC_FUNC(vm_trasher, {},
         buf[(SIZE_T)dpos * 4096] |= 0x5A;    
     }
 
-finish: ;
+    return (void *)0;
+}
+
+TARPC_FUNC(vm_trasher, {},
+{
+    UNUSED(list);
+    UNUSED(out);
+
+    pthread_mutex_lock(&vm_trasher_lock);
+
+    if (in->start)
+    {
+        /* If the VM trasher thread is not started yet */
+        if (vm_trasher_thread_id == (pthread_t)-1)
+        {
+            /* Start the VM trasher thread */
+            pthread_create(&vm_trasher_thread_id, NULL,
+                              vm_trasher_thread, NULL);
+        }
+    }
+    else
+    {
+        /* If the VM trasher thread is already started */
+        if (vm_trasher_thread_id != (pthread_t)-1)
+        {
+            /* Stop the VM trasher thread */
+            vm_trasher_stop = TRUE;
+            /* Wait for VM trasher thread exit */
+            if (pthread_join(vm_trasher_thread_id, NULL) != 0)
+            {
+                INFO("vm_trasher: pthread_join() returned "
+                              "non-zero, errno = ", errno);
+            }
+            /* Allow another one VM trasher thread to start later */
+            vm_trasher_stop = FALSE;
+            vm_trasher_thread_id = (pthread_t)-1;
+        }
+    }
+
+    pthread_mutex_unlock(&vm_trasher_lock);
 }
 )
 
@@ -2142,6 +2212,13 @@ TARPC_FUNC(fopen, {},
 {
     MAKE_CALL(out->mem_ptr = (int)fopen(in->path.path_val,
                                         in->mode.mode_val));
+}
+)
+
+/*-------------- fclose() -------------------------------*/
+TARPC_FUNC(fclose, {},
+{
+    MAKE_CALL(out->retval = fclose((FILE *)in->mem_ptr));
 }
 )
 
@@ -4022,7 +4099,10 @@ TARPC_FUNC(set_buf, {},
     
     dst_buf = rcf_pch_mem_get(in->dst_buf);
     if (dst_buf != NULL && in->src_buf.src_buf_len != 0)
-        memcpy(dst_buf, in->src_buf.src_buf_val, in->src_buf.src_buf_len);
+    {
+        memcpy(dst_buf + (unsigned int)in->offset,
+               in->src_buf.src_buf_val, in->src_buf.src_buf_len);
+    }
 }
 )
 
@@ -4042,7 +4122,7 @@ TARPC_FUNC(get_buf, {},
             out->common._errno = TE_RC(TE_TA_WIN32, ENOMEM);
         else
         {
-            memcpy(buf, src_buf, in->len);
+            memcpy(buf, src_buf + (unsigned int)in->offset, in->len);
             out->dst_buf.dst_buf_val = buf;
             out->dst_buf.dst_buf_len = in->len;
         }

@@ -64,6 +64,16 @@ extern FILE *rpc_fopen(rcf_rpc_server *rpcs,
                        const char *path, const char *mode);
 
 /**
+ * Close the stream associated with the file.
+ *
+ * @param rpcs           RPC server handle.
+ * @param file           Stream to close.
+ *
+ * @return   Zero on success, otherwise -1.
+ */
+extern int rpc_fclose(rcf_rpc_server *rpcs, FILE *file);
+
+/**
  * Execute the command specified by the command string @b cmd,
  * create a pipe between the calling process and the executed command and
  * return a pointer to a stream that can be used to either read from or 

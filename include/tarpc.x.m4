@@ -654,10 +654,10 @@ struct tarpc_transmit_file_in {
     struct tarpc_in_arg common;
                                                                                
     tarpc_int               fd;           /**< TA-local socket */
-    char                    file<>;       /**< Handle to the open file to be
+    tarpc_handle            file;         /**< Handle to the open file to be
                                                transmitted */
     tarpc_size_t            len;          /**< Number of file bytes to
-                                               transmite */
+                                               transmit */
     tarpc_size_t            len_per_send; /**< Number of bytes of each block of
                                                data sent in each send operarion */
     tarpc_size_t            offset;       /**< Offset to be passed
@@ -683,9 +683,9 @@ struct tarpc_transmitfile_tabufs_in {
     struct tarpc_in_arg common;
                                                                                
     tarpc_int           s;            /**< TA-local socket */
-    char                file<>;       /**< Handle to the open file to be
+    tarpc_handle        file;         /**< Handle to the open file to be
                                            transmitted */
-    tarpc_size_t        len;          /**< Number of file bytes to transmite */
+    tarpc_size_t        len;          /**< Number of file bytes to transmit */
     tarpc_size_t        bytes_per_send; /**< Number of bytes of each block of
                                              data sent in each send operarion */
     tarpc_overlapped    overlapped;   /**< WSAOVERLAPPED structure */
@@ -699,6 +699,34 @@ struct tarpc_transmitfile_tabufs_in {
 };
 
 typedef struct tarpc_int_retval_out tarpc_transmitfile_tabufs_out;
+
+/* Windows CreateFile() */
+struct tarpc_create_file_in {
+    struct tarpc_in_arg  common;
+    char                 name<>;       /**< File name */
+    tarpc_uint           desired_access;
+    tarpc_uint           share_mode;
+    tarpc_ptr            security_attributes;
+    tarpc_uint           creation_disposition;
+    tarpc_uint           flags_attributes;
+    tarpc_handle         template_file;
+};
+
+struct tarpc_create_file_out {
+    struct tarpc_out_arg  common;
+    tarpc_handle          handle;
+};
+
+/* Windows CloseHandle() */
+struct tarpc_close_handle_in {
+    struct tarpc_in_arg  common;
+    tarpc_handle         handle;       /**< HANDLE to close */
+};
+
+struct tarpc_close_handle_out {
+    struct tarpc_out_arg  common;
+    int                   retval;
+};
 
 /* HasOverlappedIoCompleted() */
 
@@ -736,7 +764,8 @@ struct tarpc_get_ram_size_out {
 /* rpc_vm_trasher() */
 struct tarpc_vm_trasher_in {
     struct tarpc_in_arg  common;
-};    
+    tarpc_bool           start;
+};
 
 typedef struct tarpc_int_retval_out tarpc_vm_trasher_out;
 
@@ -908,7 +937,8 @@ struct tarpc_free_buf_out {
 struct tarpc_set_buf_in {
     struct tarpc_in_arg  common;
     char                 src_buf<>;
-    tarpc_ptr            dst_buf;  /**< A pointer in the TA address space */
+    tarpc_ptr            dst_buf; /**< A pointer in the TA address space */
+    tarpc_ptr            offset;  /**< A displacement in dest. buffer */
 };
 
 struct tarpc_set_buf_out {
@@ -919,6 +949,7 @@ struct tarpc_set_buf_out {
 struct tarpc_get_buf_in {
     struct tarpc_in_arg  common;
     tarpc_ptr            src_buf;  /**< A pointer in the TA address space */
+    tarpc_ptr            offset;   /**< A displacement in source buffer */
     tarpc_size_t         len;      /**< How much to get */
 };
 
@@ -1894,6 +1925,17 @@ struct tarpc_fopen_out {
     tarpc_ptr   mem_ptr;
 };
 
+/* fclose() */
+struct tarpc_fclose_in {
+    struct tarpc_in_arg  common;
+    tarpc_ptr            mem_ptr;
+};
+
+struct tarpc_fclose_out {
+    struct tarpc_out_arg  common;
+    tarpc_int             retval;
+};
+
 /* popen() */
 struct tarpc_popen_in {
     struct tarpc_in_arg common;
@@ -2574,6 +2616,7 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(pipe)
         RPC_DEF(socketpair)
         RPC_DEF(fopen)
+        RPC_DEF(fclose)
         RPC_DEF(popen)
         RPC_DEF(fileno)
         RPC_DEF(getpwnam)
@@ -2612,6 +2655,8 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(enum_network_events)
         RPC_DEF(transmit_file)
         RPC_DEF(transmitfile_tabufs)
+        RPC_DEF(create_file)
+        RPC_DEF(close_handle)
         RPC_DEF(has_overlapped_io_completed)
         RPC_DEF(get_current_process_id)
         RPC_DEF(get_ram_size)

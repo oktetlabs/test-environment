@@ -269,7 +269,14 @@ extern int rpc_many_send(rcf_rpc_server *handle, int sock,
 extern int rpc_overfill_buffers(rcf_rpc_server *rpcs, int sock,
                                 uint64_t *sent);
 
-/** VM trasher to keep memory pressure */
-extern void rpc_vm_trasher(rcf_rpc_server *rpcs);
+/**
+ * VM trasher to keep memory pressure on the
+ * host where the specified RPC server runs.
+ *
+ * @param rpcs          RPC server
+ * @param start         TRUE if want to start the VM trasher,
+ *                      FALSE if want to stop the VM trasher.
+ */
+extern void rpc_vm_trasher(rcf_rpc_server *rpcs, te_bool start);
 
 #endif /* !__TE_TAPI_RPC_MISC_H__ */
