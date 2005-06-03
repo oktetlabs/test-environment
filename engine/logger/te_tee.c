@@ -74,6 +74,7 @@
 #endif
 
 #define TE_LGR_USER     "Self"
+#include "te_defs.h"
 #include "logger_api.h"
 #include "logger_ten.h"
 #include "te_raw_log.h"

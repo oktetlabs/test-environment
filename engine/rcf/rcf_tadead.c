@@ -55,13 +55,14 @@ int
 main(int argc, char **argv)
 {
     rcf_msg msg;
-    char   *name = "rcftadead_client";
+    char    name[64];
     size_t  anslen = sizeof(msg);
     int     rc;
     int     result = EXIT_SUCCESS;
 
     struct ipc_client *handle = NULL;
 
+    sprintf(name, "rcf_tadead_%d", getpid());
 
     if (argc != 2)
     {

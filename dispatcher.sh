@@ -35,8 +35,6 @@ Generic options:
 
   --live-log                    Run RGT in live mode
 
-  --lock-dir=<directory>        lock file directory (/tmp/te/lock by default)
-
   --log-html=<dirname>          Name of the directory with structured HTML logs
                                 to be generated (do not generate by default)
   --log-plain-html=<filename>   Name of the file with plain HTML logs
@@ -131,7 +129,6 @@ exit_with_log()
 {
     te_log_archive --storage="${LOG_STORAGE}" \
                    --storage-dir="${LOG_STORAGE_DIR}" ;
-    rm -f ${LOCK_DIR}/ds
     rm -rf ${TE_TMP}
     popd >/dev/null
     exit 1
@@ -214,11 +211,6 @@ RGT_LOG_HTML_PLAIN=
 # Name of the directory for structured HTML logs to be genetated
 RGT_LOG_HTML=
 
-# Directory for lock file
-#LOCK_DIR=/var/lock/te
-# RedHat does not allow to write usual users in /var/lock directory
-LOCK_DIR=/tmp/te_lock
-
 #
 # Process Dispatcher options.
 #
@@ -294,8 +286,6 @@ process_opts()
             --log-dir=*) TE_LOG_DIR="${1#--log-dir=}" ;;
             --log-online) LOG_ONLINE=yes ;;
             
-            --lock-dir=*) LOCK_DIR="${1#--lock-dir=}" ;;
-
             --no-ts-build) BUILD_TS= ; TESTER_OPTS="${TESTER_OPTS} --nobuild" ;;
 
             --script-tester) TESTER_EXT=".sh" ;;
@@ -362,22 +352,6 @@ fi
 # Process command-line options
 process_opts "$@"
 
-
-if test -e ${LOCK_DIR}/ds ; then
-    echo "Cannot obtain lock" >&2
-    exit 2
-fi
-
-# Lock directory must be world readable/writable with sticky tag
-mkdir -p -m 1777 ${LOCK_DIR}
-# Lock file should be writable for creator only
-touch ${LOCK_DIR}/ds
-if test $? -ne 0 ; then
-    echo "Cannot obtain lock" >&2
-    exit 2
-fi
-
-
 if test -z "${LOG_STORAGE_DIR}" ; then
     LOG_STORAGE=
 fi
@@ -395,7 +369,6 @@ done
 
 if test -z "$TE_BASE" -a -n "$BUILDER" ; then
     echo "Cannot find TE sources for building - exiting." >&2
-    rm -f ${LOCK_DIR}/ds
     exit 1
 fi
 
@@ -560,6 +533,10 @@ myecho() {
     fi
 }
 
+export TE_RCF="TE_RCF_"$$
+export TE_LOGGER="TE_LOGGER_"$$
+export TE_CS="TE_CS_"$$
+
 # Run RGT in live mode in background
 if test -n "$LIVE_LOG" ; then
     rgt-conv -m live -f ${TE_LOG_RAW} &
@@ -705,7 +682,6 @@ if test -n "${TRC_OPTS}" ; then
     te_trc.sh ${TRC_OPTS} ${TE_LOG_RAW}
 fi
 
-rm -f ${LOCK_DIR}/ds
 rm -rf ${TE_TMP}
 
 exit 0

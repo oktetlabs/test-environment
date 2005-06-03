@@ -43,7 +43,7 @@
 #include "te_raw_log.h"
 #include "logger_int.h"
 #include "logger_internal.h"
-
+#include "logger_ten.h"
 
 #define LGR_TA_MAX_BUF      0x4000 /* FIXME */
 
@@ -319,7 +319,7 @@ ta_handler(void *ta)
 {
     /* TA and IPC server data and related variables */
     ta_inst            *inst = (ta_inst *)ta;
-    char                srv_name[LGR_MAX_NAME] = LGR_SRV_FOR_TA_PREFIX;
+    char                srv_name[LGR_MAX_NAME];
     struct ipc_server  *srv = NULL;
     int                 fd_server;
     fd_set              rfds;
@@ -346,7 +346,7 @@ ta_handler(void *ta)
 
 
     /* Register IPC Server for the TA */
-    strcat(srv_name, inst->agent);
+    sprintf(srv_name, "%s%s", LGR_SRV_FOR_TA_PREFIX, inst->agent);
     rc = ipc_register_server(srv_name, &srv);
     if (rc != 0)
     {

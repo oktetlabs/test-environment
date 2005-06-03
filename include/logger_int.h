@@ -36,15 +36,6 @@
 extern "C" {
 #endif
 
-
-/** Name of the Logger server */
-#define LGR_SRV_NAME            "TE_LOGGER"
-/** Prefix of the name of the per Test Agent Logger server */
-#define LGR_SRV_FOR_TA_PREFIX   LGR_SRV_NAME "-"
-
-/** Logger flush command */
-#define LGR_FLUSH               "LGR-FLUSH"
-
 /*
  * Number of bytes is not added to the Log_message_length (except entity
  * name length with its NFL): Log_ver, Timestamp, Level, Log_message_length.

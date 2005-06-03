@@ -39,6 +39,20 @@
 #include "rcf_common.h"
 #include "tad_common.h"
 
+/** Discover name of the RCF IPC server */
+static inline const char *
+rcf_server_name()
+{
+    static const char *rcf_name = NULL;
+    
+    if ((rcf_name == NULL) && (rcf_name = getenv("TE_RCF")) == NULL)
+        rcf_name = "TE_RCF";
+        
+    return rcf_name;
+}
+
+/** IPC RCF Server name */
+#define RCF_SERVER      rcf_server_name()
 
 /** 
  * List of modes that can be used while calling RCF functions especially

@@ -61,7 +61,6 @@
 #include "te_raw_log.h"
 #include "logger_int.h"
 
-
 /*   Raw log file format. Max length of the raw log message
  *   is a sum of:
  *      NFL(Entity_name) - 1 byte

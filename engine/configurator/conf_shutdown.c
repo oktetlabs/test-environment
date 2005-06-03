@@ -73,12 +73,14 @@ sigint_handler(int sig)
 int
 main(void)
 {
-    const char         *name = "confshutdown_client";
+    char                name[64];
     struct ipc_client  *ipcc = NULL;
     cfg_shutdown_msg    msg = { CFG_SHUTDOWN, sizeof(msg), 0 };
     size_t              anslen = sizeof(msg);
     int                 result = EXIT_SUCCESS;
     int                 rc;
+
+    sprintf(name, "cs_shut_%d", getpid());
 
     signal(SIGINT, sigint_handler);
 

@@ -55,13 +55,14 @@ int
 main(void)
 {
     rcf_msg msg;
-    char   *name = "rcfshutdown_client";
+    char    name[64];
     size_t  anslen = sizeof(msg);
     int     rc;
     int     result = EXIT_SUCCESS;
 
     struct ipc_client *handle = NULL;
 
+    sprintf(name, "rcf_shut_%d", getpid());
 
     if ((rc = ipc_init_client(name, &handle)) != 0)
     {

@@ -37,7 +37,7 @@
 #include "logger_int.h"
 #include "ipc_client.h"
 #include "logger_internal.h"
-
+#include "logger_ten.h"
 
 /**
  * This is an entry point of te_log_shutdown task.

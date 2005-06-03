@@ -40,6 +40,63 @@ extern "C" {
 
 #include "logger_api.h"
 
+/** Discover name of the Logger IPC server */
+static inline const char *
+logger_server_name()
+{
+    static const char *logger_name = NULL;
+    
+    if ((logger_name == NULL) && 
+        (logger_name = getenv("TE_LOGGER")) == NULL)
+    {
+        logger_name = "TE_LOGGER";
+    }
+        
+    return logger_name;
+}
+
+
+/** Name of the Logger server */
+#define LGR_SRV_NAME            logger_server_name()
+
+/** Discover name of the Logger client for TA */
+static inline const char *
+logger_ta_prefix()
+{
+    static char    prefix[64];
+    static te_bool init = FALSE;
+    
+    if (!init)
+    {
+        sprintf(prefix, "%s-ta-", LGR_SRV_NAME);
+        init = TRUE;
+    }
+    
+    return prefix;
+}
+
+/** Prefix of the name of the per Test Agent Logger server */
+#define LGR_SRV_FOR_TA_PREFIX   logger_ta_prefix()
+
+/** Discover name of the log flush client */
+static inline const char *
+logger_flush_name()
+{
+    static char    name[64];
+    static te_bool init = FALSE;
+    
+    if (!init)
+    {
+        sprintf(name, "%s-flush", LGR_SRV_NAME);
+        init = TRUE;
+    }
+    
+    return name;
+}
+
+/** Logger flush command */
+#define LGR_FLUSH       logger_flush_name()
+
 /** 
  * Close IPC with Logger server and release resources.
  *

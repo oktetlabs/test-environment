@@ -4874,13 +4874,13 @@ many_send(tarpc_many_send_in *in, tarpc_many_send_out *out)
 
     for (i = 0; i < in->vector.vector_len; i++)
     {
-        RING("%s(): [%d] send(%d, %p, %u, 0)", __FUNCTION__, i,
-             in->sock, buf, in->vector.vector_val[i]);
+        RING("%s(): [%d] send(%d, buf, %u, 0)", __FUNCTION__, i,
+             in->sock, in->vector.vector_val[i]);
         rc = send_func(in->sock, buf, in->vector.vector_val[i], 0);
         if (rc != (ssize_t)in->vector.vector_val[i])
         {
-           ERROR("%s(): send(%d, %p, %u, 0) failed: %X", __FUNCTION__,
-                 in->sock, buf, in->vector.vector_val[i], errno);
+           ERROR("%s(): send(%d, buf, %u, 0) failed: %X", __FUNCTION__,
+                 in->sock, in->vector.vector_val[i], errno);
             rc = -1;
             goto many_send_exit;
         }

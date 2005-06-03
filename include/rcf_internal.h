@@ -43,9 +43,6 @@ extern "C" {
 #define RCF_MAX_LEN  (4 * 1024)
 #endif 
 
-/** IPC RCF Server name */
-#define RCF_SERVER      "TE_RCF"
-
 /** Special SID for TA get log operation */
 #define RCF_TA_GET_LOG_SID      1
 

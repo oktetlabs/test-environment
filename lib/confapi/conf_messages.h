@@ -37,8 +37,20 @@
 #include <sys/socket.h>
 #endif
 
+/** Discover name of the Configurator IPC server */
+static inline const char *
+cs_server_name()
+{
+    static const char *cs_name = NULL;
+    
+    if ((cs_name == NULL) && (cs_name = getenv("TE_CS")) == NULL)
+        cs_name = "TE_CS";
+        
+    return cs_name;
+}
+
 /** Configurator's server name */
-#define CONFIGURATOR_SERVER     "TE_CS"
+#define CONFIGURATOR_SERVER     cs_server_name()
 
 /** Message types */
 enum {
