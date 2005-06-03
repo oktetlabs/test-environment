@@ -45,7 +45,6 @@
 #include "rcf_api.h"
 #include "logger_api.h"
 
-#include "rcf_rpc.h"
 #include "conf_api.h"
 #include "tapi_rpc.h"
 
