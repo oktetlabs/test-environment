@@ -545,16 +545,6 @@ fi
 
 te_log_message Engine Dispatcher "Starting TEN applications"
 
-if test -n "$RCF" ; then
-    te_log_message Engine Dispatcher "Start RCF"
-    myecho "--->>> Start RCF"
-    if test -n "$VG_RCF" ; then
-        valgrind $VG_OPTIONS te_rcf "${CONF_RCF}" 2>valgrind.rcf &
-    else
-        te_rcf "${CONF_RCF}" &
-    fi
-fi
-
 if test -n "$LOGGER" ; then
     te_log_message Engine Dispatcher "Start Logger"
     myecho "--->>> Start Logger"
@@ -562,6 +552,16 @@ if test -n "$LOGGER" ; then
         valgrind $VG_OPTIONS te_logger "${CONF_LOGGER}" 2>valgrind.logger &
     else
         te_logger "${CONF_LOGGER}" &
+    fi
+fi
+
+if test -n "$RCF" ; then
+    te_log_message Engine Dispatcher "Start RCF"
+    myecho "--->>> Start RCF"
+    if test -n "$VG_RCF" ; then
+        valgrind $VG_OPTIONS te_rcf "${CONF_RCF}" 2>valgrind.rcf &
+    else
+        te_rcf "${CONF_RCF}" &
     fi
 fi
 
