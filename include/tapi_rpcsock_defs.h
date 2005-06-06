@@ -2832,4 +2832,7 @@ sigaction_flags_h2rpc(int flags)
         (!!(flags & ~SA_FLAGS_ALL) * RPC_SA_UNKNOWN);
 }
 
+/** Option length should be calculated automatically */
+#define RPC_OPTLEN_AUTO         0xFFFFFFFF
+
 #endif /* !__TE_TAPI_RPCSOCK_DEFS_H__ */

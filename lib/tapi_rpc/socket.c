@@ -1036,6 +1036,12 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
         RETVAL_INT(getsockopt, -1);
     }
 
+    if (optlen != NULL && *optlen > roptlen)
+    {
+        rpcs->_errno = TE_RC(TE_RCF, EINVAL);
+        RETVAL_INT(getsockopt, -1);
+    }
+
     rpcs->op = RCF_RPC_CALL_WAIT;
     in.s = s;
     in.level = level;
@@ -1427,7 +1433,7 @@ rpc_setsockopt(rcf_rpc_server *rpcs,
     in.s = s;
     in.level = level;
     in.optname = optname;
-    in.optlen = optlen;
+    in.optlen = optlen; /* optlen is corrected to auto automatically! */
     rpcs->op = RCF_RPC_CALL_WAIT;
 
     if (optval != NULL)
@@ -1469,6 +1475,9 @@ rpc_setsockopt(rcf_rpc_server *rpcs,
                 val.option_value_u.opt_linger.l_linger =
                     ((struct linger *)optval)->l_linger;
                 val.opttype = OPT_LINGER;
+                
+                if (optlen == sizeof(struct linger))
+                    in.optlen = RPC_OPTLEN_AUTO;
 
                 snprintf(opt_val_str, sizeof(opt_val_str),
                          "{ l_onoff: %d, l_linger: %d }",
@@ -1483,6 +1492,9 @@ rpc_setsockopt(rcf_rpc_server *rpcs,
                 val.option_value_u.opt_timeval.tv_usec =
                     ((struct timeval *)optval)->tv_usec;
                 val.opttype = OPT_TIMEVAL;
+
+                if (optlen == sizeof(struct timeval))
+                    in.optlen = RPC_OPTLEN_AUTO;
 
                 snprintf(opt_val_str, sizeof(opt_val_str),
                          "{ tv_sec: %ld, tv_usec: %ld }",
@@ -1505,6 +1517,9 @@ rpc_setsockopt(rcf_rpc_server *rpcs,
                 val.option_value_u.opt_mreqn.imr_ifindex =
                        ((struct ip_mreqn *)optval)->imr_ifindex;
                 val.opttype = OPT_MREQN;
+
+                if (optlen == sizeof(struct ip_mreqn))
+                    in.optlen = RPC_OPTLEN_AUTO;
 
                 snprintf(opt_val_str, sizeof(opt_val_str),
                          "{ imr_multiaddr: %s, imr_address: %s, "
@@ -1529,6 +1544,9 @@ rpc_setsockopt(rcf_rpc_server *rpcs,
                        sizeof(struct in_addr));
                 val.opttype = OPT_IPADDR;
 
+                if (optlen == sizeof(struct in_addr))
+                    in.optlen = RPC_OPTLEN_AUTO;
+
                 snprintf(opt_val_str, sizeof(opt_val_str),
                          "{ addr: %s } ",
                          inet_ntop(AF_INET, (char *)optval,
@@ -1540,6 +1558,9 @@ rpc_setsockopt(rcf_rpc_server *rpcs,
             default:
                 val.option_value_u.opt_int = *(int *)optval;
                 val.opttype = OPT_INT;
+
+                if (optlen == sizeof(int))
+                    in.optlen = RPC_OPTLEN_AUTO;
 
                 snprintf(opt_val_str, sizeof(opt_val_str), "%d",
                          *(int *)optval);

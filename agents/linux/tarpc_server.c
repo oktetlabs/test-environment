@@ -1698,6 +1698,7 @@ TARPC_FUNC(setsockopt, {},
                 optlen = sizeof(int);
                 break;
             }
+            
             case OPT_LINGER:
             {
                 opt = (char *)&linger;
@@ -1767,6 +1768,8 @@ TARPC_FUNC(setsockopt, {},
                 break;
         }
         INIT_CHECKED_ARG(opt, optlen, 0);
+        if (in->optlen == RPC_OPTLEN_AUTO)
+            in->optlen = optlen;
         MAKE_CALL(out->retval = func(in->s, socklevel_rpc2h(in->level),
                                      sockopt_rpc2h(in->optname),
                                      opt, in->optlen));
@@ -3032,8 +3035,8 @@ TARPC_FUNC(poll,
              ufds[i].fd, ufds[i].events, ufds[i].revents);
     }
 
-    VERB("poll(): call with ufds=0x%x, nfds=%u, timeout=%d",
-         (unsigned int)ufds, in->nfds, in->timeout);
+    VERB("poll(): call with ufds=0x%lx, nfds=%u, timeout=%d",
+         (unsigned long int)ufds, in->nfds, in->timeout);
     MAKE_CALL(out->retval = func_ptr(ufds, in->nfds, in->timeout));
     VERB("poll(): retval=%d", out->retval);
 
