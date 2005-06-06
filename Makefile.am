@@ -57,7 +57,6 @@ te: install-data
 	. builder.conf.processed 
 	cd include ; make install
 	cd tools ; make install
-	cd lib/rpcxdr ; make clean
 	cd lib ; make install 
 	te_build_nuts nutlibs
 	cd engine ; make install
