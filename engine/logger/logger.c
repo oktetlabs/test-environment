@@ -696,6 +696,8 @@ main(int argc, char *argv[])
     }
     /* Further we must goto 'join_te_srv' in the case of failure */
 
+    /* to be sure about completed in srvers starting */
+    sleep(1);
 
     INFO("Request RCF about list of active TA\n");
     /* Get list of active TA */
