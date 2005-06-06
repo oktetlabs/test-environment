@@ -30,21 +30,29 @@ coverage_options=
 processed_options=
 for arg in "$@"; do
     case "$arg" in
+        --version|-E|-version) 
+        exec ${TCE_CC} "$@"
+        ;;
         -c) nobbhook=yes
         processed_options="$processed_options -c" ;;
         -O*|-g|-ftest-coverage|-fprofile-arcs|-nostartfiles) ;;         
         -*) processed_options="$processed_options $arg" ;;
-        *) mydir=`dirname $arg`
-           myself=`basename $arg`
-           fullpath=`cd $mydir; echo $PWD`/$myself
-           for tce in ${TCE_SRC}; do
-              case "$fullpath" in
-                 $tce*)
-                 coverage_options="-g -ftest-coverage -fprofile-arcs -D_init=_target_init -D_fini=_target_fini"
-                 ;;
-              esac
-           done   
-           processed_options="$processed_options $arg"
+        *) 
+        if test -n "$TCE_SRC"; then
+            mydir=`dirname $arg`
+            myself=`basename $arg`
+            fullpath=`cd $mydir; echo $PWD`/$myself         
+            for tce in ${TCE_SRC}; do
+                case "$fullpath" in
+                    $tce*)
+                    coverage_options="-g -ftest-coverage -fprofile-arcs -D_init=_target_init -D_fini=_target_fini"
+                    ;;
+                esac
+            done   
+        else
+            coverage_options="-g -ftest-coverage -fprofile-arcs -D_init=_target_init -D_fini=_target_fini"
+        fi
+        processed_options="$processed_options $arg"
            ;;
     esac
 done
@@ -56,5 +64,7 @@ if test -z "$nobbhook"; then
 else
     BBHOOK_O=""
 fi
+
+
 
 exec ${TCE_CC} $coverage_options $processed_options $BBHOOK_O

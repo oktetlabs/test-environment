@@ -28,6 +28,7 @@
  * $Id$
  */
 
+#define _FILE_OFFSET_BITS 64
 #include <te_config.h>
 #include <te_defs.h>
 
@@ -103,10 +104,10 @@ struct channel_data
     channel_data *next;
 };
 
-static sig_atomic_t catched_signo;
+static sig_atomic_t caught_signo;
 static void signal_handler(int no)
 {
-    catched_signo = no;
+    caught_signo = no;
 }
 
 
@@ -119,13 +120,30 @@ static void object_header_state(channel_data *ch);
 static void read_data(int channel);
 static void collect_line(channel_data *ch);
 static bb_object_info * get_object_info(int peer_id, const char *filename);
+static bb_function_info *get_function_info(bb_object_info *oi,
+                                           const char *name, 
+                                           long arc_count, long checksum);
 static void dump_data(void);
 static void dump_object(bb_object_info *oi);
 static te_bool dump_object_data(bb_object_info *oi, FILE *tar_file);
 static void clear_data(void);
 
+static void get_kernel_coverage(void);
+struct bb;
+static void process_gcov_syms(FILE *symfile, int core_file,
+                              void (*functor)(int, struct bb *, void *), 
+                              void *extra);
+static void do_gcov_sum(int core_file, struct bb *object, void *extra);
+static void get_kernel_gcov_data(int core_file, 
+                                 struct bb *object, void *extra);
+
+
+
 static char **collector_args;
 static int data_lock = -1;
+static char *ksymtable = "/proc/kallsyms";
+
+te_bool tce_standalone = FALSE;
 
 int 
 init_tce_collector(int argc, char **argv)
@@ -283,6 +301,10 @@ tce_collector(void)
         }
 #endif
 #endif /* HAVE_SYS_SOCKET_H */
+        else if (strncmp(*args, "kallsyms:", 9) == 0)
+        {
+            ksymtable = *args + 9;
+        }
         else
         {
             report_error("invalid argument '%s'", *args);
@@ -323,16 +345,17 @@ tce_collector(void)
         {
             if (errno == EINTR)
             {
-                int signo = catched_signo;
-                report_notice("TCE collector catched signal %d", signo);
-                catched_signo = 0;
+                int signo = caught_signo;
+                report_notice("TCE collector caught signal %d", signo);
+                caught_signo = 0;
                 if (signo == SIGHUP)
                     dump_data();
                 else if (signo == SIGUSR1)
                     clear_data();
                 else if (signo == SIGTERM)
                 {
-                    clear_data();
+                    if (!tce_standalone)
+                        clear_data();
                     break;
                 }
             }
@@ -415,6 +438,9 @@ dump_tce_collector(void)
     lock.l_len = 0;
     fcntl(data_lock, F_SETLKW, &lock);
     lock.l_type = F_UNLCK;
+    lock.l_whence = SEEK_SET;
+    lock.l_start = 0;
+    lock.l_len = 0;
     fcntl(data_lock, F_SETLK, &lock);
     return 0;
 }
@@ -493,39 +519,12 @@ function_header_state(channel_data *ch)
 
             *space++ = '\0';
             sscanf(space, "%ld %ld", &checksum, &arc_count);
-            for (fi = ch->object->function_infos; fi != NULL; fi = fi->next)
-            {
-                if (strcmp(fi->name, ch->buffer + 1) == 0)
-                    break;
-            }
+            fi = get_function_info(ch->object, ch->buffer + 1, 
+                                   arc_count, checksum);
             if (fi == NULL)
             {
-                fi = malloc(sizeof(*fi));
-                fi->name = strdup(ch->buffer + 1);
-                fi->arc_count = arc_count;
-                fi->checksum = checksum;
-                fi->next = ch->object->function_infos;
-                fi->counts = calloc(fi->arc_count, sizeof(*fi->counts));
-                ch->object->function_infos = fi;
-            }
-            else
-            {
-                if (fi->arc_count != arc_count)
-                {
-                    report_error("arc count mismatch for peer %d, "
-                                 "function %s", 
-                                 ch->peer_id, fi->name);
-                    ch->state = NULL;
-                    return;
-                }
-                if (fi->checksum != checksum)
-                {
-                    report_error("arc count mismatch for peer %d, "
-                                 "function %s", 
-                                 ch->peer_id, fi->name);
-                    ch->state = NULL;
-                    return;
-                }
+                ch->state = NULL;
+                return;
             }
             if (fi->arc_count != 0)
             {
@@ -600,6 +599,7 @@ object_header_state(channel_data *ch)
         else
         {
             oi->ncounts = ncounts;
+            oi->program_arcs = program_arcs;
             oi->object_functions = object_functions;
             oi->object_sum = object_sum;
             oi->program_sum += program_sum;
@@ -747,6 +747,45 @@ get_object_info(int peer_id, const char *filename)
     return found;
 }
 
+static bb_function_info *
+get_function_info(bb_object_info *oi, const char *name, 
+                  long arc_count, long checksum)
+{
+    bb_function_info *fi;
+    for (fi = oi->function_infos; fi != NULL; fi = fi->next)
+    {
+        if (strcmp(fi->name, name) == 0)
+            break;
+    }
+    if (fi == NULL)
+    {
+        fi = malloc(sizeof(*fi));
+        fi->name = strdup(name);
+        fi->arc_count = arc_count;
+        fi->checksum = checksum;
+        fi->next = oi->function_infos;
+        fi->counts = calloc(fi->arc_count, sizeof(*fi->counts));
+        oi->function_infos = fi;
+    }
+    else
+    {
+        if (fi->arc_count != arc_count)
+        {
+            report_error("arc count mismatch for function %s", 
+                         fi->name);
+            return NULL;
+        }
+        if (fi->checksum != checksum)
+        {
+            report_error("arc count mismatch for function %s", 
+                         fi->name);
+            return NULL;
+        }
+    }
+    return fi;
+}
+
+
 static void
 dump_data(void)
 {
@@ -759,11 +798,13 @@ dump_data(void)
 
     clear_data();
     report_notice("Dumping TCE data");
+    get_kernel_coverage();
     for (idx = 0; idx < BB_HASH_SIZE; idx++)
     {
         for (iter = bb_hash_table[idx]; iter != NULL; iter = iter->next)
             dump_object(iter);
     }
+
     lock.l_type = F_UNLCK;
     lock.l_start = 0;
     lock.l_len = 0;
@@ -923,4 +964,257 @@ clear_data(void)
 
 }
 
+
+struct bb_raw_function_info 
+{
+    long checksum;
+    int arc_count;
+    const char *name;
+};
+
+/* Structure emitted by --profile-arcs  */
+struct bb
+{
+    long zero_word;
+    const char *filename;
+    long long *counts;
+    long ncounts;
+    struct bb *next;
+    
+    /* Older GCC's did not emit these fields.  */
+    long sizeof_bb;
+    struct bb_raw_function_info *function_infos;
+};
+
+
+typedef struct summary_data
+{
+    long long sum;
+    long long max;
+    long arcs;
+} summary_data;
+
+static void
+get_kernel_coverage(void)
+{
+    FILE *symfile = fopen(ksymtable, "r");
+    int core_file;
+    summary_data summary = {0, 0, 0};
+    
+    if (symfile == NULL)
+    {
+        report_error("Cannot open kernel symtable file %s: %s", 
+                     ksymtable, strerror(errno));
+        return;
+    }
+    core_file = open("/dev/kmem", O_RDONLY);
+    if (core_file < 0)
+    {
+        report_error("Cannot open kernel memory file: %s", strerror(errno));
+        fclose(symfile);
+        return;
+    }
+
+    process_gcov_syms(symfile, core_file, do_gcov_sum, &summary);
+    process_gcov_syms(symfile, core_file, get_kernel_gcov_data, &summary);
+    close(core_file);
+    fclose(symfile);
+}
+
+
+static ssize_t
+read_at(int fildes, off_t offset, void *buffer, size_t size)
+{
+    if(lseek(fildes, offset, SEEK_SET) == (off_t)-1)
+        return (ssize_t)-1;
+    return read(fildes, buffer, size);
+}
+
+static int
+read_str(int fildes, off_t offset, char *buffer, size_t maxlen)
+{
+    if(lseek(fildes, offset, SEEK_SET) == (off_t)-1)
+        return -1;
+    while(--maxlen)
+    {
+        if(read(fildes, buffer, 1) <= 0)
+            return -1;
+        if(*buffer++ == '\0')
+            return 0;
+    }
+    *buffer = '\0';
+    errno = ENAMETOOLONG;
+    return -1;
+}
+
+static void
+process_gcov_syms(FILE *symfile, int core_file,
+                  void (*functor)(int, struct bb *, void *), void *extra)
+{
+    size_t offset;
+    static char symbuf[256];
+    char *token;
+    
+    rewind(symfile);
+    while (fgets(symbuf, sizeof(symbuf) - 1, symfile) != NULL)
+    {
+        offset = strtoul(symbuf, &token, 16);
+        strtok(token, " \t\n");
+        token = strtok(NULL, "\t\n");
+        if (strstr(token, "GCOV") != NULL)
+        {
+            /* This is a very crude hack relying on internals of GCC */
+            /* It is necessary because GCOV symbols are pointing to
+               constructors, rather than actual data. 
+               On x86, the pointer to the actual data happen to be
+               4 bytes later (an immediate argument to mov).
+               Most probably, this won't work on x86-64 :(
+            */
+            unsigned long tmp;
+            struct bb bb_buf;
+            
+            report_notice("offset is %lu", (unsigned long)offset);
+            if(read_at(core_file, offset + 4, &tmp, sizeof(tmp)) < 
+               (ssize_t)sizeof(tmp))
+            {
+                report_error("read error on /dev/kmem: %s", 
+                             strerror(errno));
+                continue;
+            }
+            report_notice("new offset is %lu", tmp);
+            if(read_at(core_file, tmp, &bb_buf, sizeof(bb_buf)) < 
+               (ssize_t)sizeof(bb_buf))
+            {
+                report_error("read error on /dev/kmem: %s", 
+                             strerror(errno));
+                continue;
+            }
+            
+            functor(core_file, &bb_buf, extra);
+        }
+    }
+
+}
+
+static void
+do_gcov_sum(int core_file, struct bb *object, void *extra)
+{
+    summary_data *summary = extra;
+    int i;
+    long long counter;
+
+    if(lseek(core_file, (size_t)object->counts, SEEK_SET) == (off_t)-1)
+    {
+        report_error("seeking error on /dev/kmem: %s", strerror(errno));
+        return;
+    }
+    for (i = 0; i < object->ncounts; i++)
+    {
+        if(read(core_file, &counter, sizeof(counter)) < 
+           (ssize_t)sizeof(counter))
+        {
+            report_error("error reading from /dev/kmem: %s", 
+                         strerror(errno));
+            return;
+        }
+        summary->sum += counter;
+        
+        if (counter > summary->max)
+            summary->max = counter;
+    }
+    summary->arcs += object->ncounts;
+}
+
+
+static void
+get_kernel_gcov_data(int core_file, struct bb *object, void *extra)
+{
+    summary_data *summary = extra;
+    summary_data object_summary = {0, 0, 0};
+    long object_functions = 0;
+    struct bb_raw_function_info fn_info;
+    bb_function_info *fi;
+    bb_object_info *oi;
+    long long *target_counters;
+    long long counter;
+    int i;
+    static char name_buffer[PATH_MAX + 1];
+    char *real_start;
+        
+
+    if (lseek(core_file, (size_t)object->function_infos, SEEK_SET) == 
+        (off_t)-1)
+    {
+        report_error("seeking error on /dev/kmem: %s", strerror(errno));
+        return;
+    }
+    for (;;)
+    {
+        if(read(core_file, &fn_info, sizeof(fn_info)) < 
+           (ssize_t)sizeof(fn_info))
+        {
+            report_error("error reading from /dev/kmem: %s", 
+                         strerror(errno));
+            return;
+        }
+        if (fn_info.arc_count < 0)
+            break;
+        
+        object_functions++;
+    }
+
+    do_gcov_sum(core_file, object, &object_summary);
+    if (read_str(core_file, (size_t)object->filename, 
+                 name_buffer, sizeof(name_buffer)) != 0)
+    {
+        report_error("error reading from /dev/kmem: %s", strerror(errno));
+        return;
+    }
+    real_start = strstr(name_buffer, "//");
+    oi = get_object_info(getpid(), 
+                         real_start ? real_start + 1 : name_buffer);
+    oi->ncounts = object->ncounts;
+    oi->object_functions = object_functions;
+    oi->object_sum += object_summary.sum;
+    oi->program_sum += summary->sum;
+    oi->program_arcs += summary->arcs;
+    if (object_summary.max > oi->object_max)
+        oi->object_max = object_summary.max;
+    if (summary->max > oi->program_max)
+        oi->program_max = summary->max;
+
+    for(;;)
+    {          
+        if(read_at(core_file, (size_t)object->function_infos++, 
+                   &fn_info, sizeof(fn_info)) < (ssize_t)sizeof(fn_info))
+        {
+            report_error("error reading from /dev/kmem: %s", 
+                         strerror(errno));
+            return;
+        }
+        if (fn_info.arc_count < 0)
+            break;
+        if (read_str(core_file, (size_t)fn_info.name, 
+                     name_buffer, sizeof(name_buffer)) != 0)
+        {
+            report_error("error reading from /dev/kmem: %s", 
+                         strerror(errno));
+            return;
+        }
+        fi = get_function_info(oi, name_buffer, 
+                               fn_info.arc_count, fn_info.checksum);
+        if (fi != NULL)
+        {
+            for (i = fn_info.arc_count, target_counters = fi->counts;
+                 i > 0; 
+                 i--, object->counts++, target_counters++)
+            {
+                read_at(core_file, (size_t)object->counts, 
+                        &counter, sizeof(counter));
+                *target_counters += counter;
+            }
+        }
+    }
+
+}
 

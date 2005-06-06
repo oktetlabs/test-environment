@@ -12,6 +12,8 @@ libtce_a_SOURCES=tce_collector.c gcov-io.h posix_tar.h
 
 tce_collector_SOURCES=main.c tce_collector.c
 
+bin_SCRIPTS=tce_kallsyms
+
 install-exec-hook:
 	touch -c -r libtce.a $(DESTDIR)/$(prefix)/lib/libtce.a
 

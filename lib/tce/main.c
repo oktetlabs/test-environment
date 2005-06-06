@@ -5,9 +5,11 @@
 DEFINE_LGR_ENTITY("TCE collector");
 
 extern int tce_collector(int, char **);
+extern te_bool tce_standalone;
 
 int main(int argc, char *argv[])
 {
+    tce_standalone = TRUE;
     init_tce_collector(argc - 1, argv + 1);
     return tce_collector(0, NULL);
 }

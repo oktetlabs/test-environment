@@ -14,11 +14,13 @@ bin_PROGRAMS = tce_dump
 
 tce_dump_SOURCES = tce_dump.c
 tce_dump_LDADD = -llogger_ten -lrcfapi -lrpcxdr -lipc @TE_LDADD@ -lpthread -lexpat
-te_tee_DEPENDENCIES=@TE_DEPENDENCIES@ \
+tce_dump_DEPENDENCIES=@TE_DEPENDENCIES@ \
                     $(DESTDIR)/$(prefix)/lib/liblogger_ten.a \
                     $(DESTDIR)/$(prefix)/lib/libipc.a
 
 
-dist_data_DATA = bbhook.c 
+
+nobase_dist_data_DATA = bbhook.c modules/Makefile-2.6 modules/bbinit.c
+
 
 
