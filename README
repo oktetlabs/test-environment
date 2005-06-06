@@ -18,6 +18,7 @@ TA:
 
 - expect and expect-dev (for TAD CLI only)
 - libnetlink + iproute/ headers
+- flex >= 2.5.31-31 from sourceforge; flex 2.5.4a from gnu.org will not work
 - libexpat
 
 We are using versions of libraries specified in parentheses.
