@@ -567,7 +567,7 @@ ndn_match_data_units(const asn_value *pattern, asn_value *pkt_pdu,
  * @param packet ASN-value of Raw-Packet type.
  * @param ts     location for timestamp (OUT).
  *
- * return zero on success or appropriate error code otherwise.
+ * @return status code
  */
 int
 ndn_get_timestamp(const asn_value *packet, struct timeval *ts)
@@ -585,3 +585,103 @@ ndn_get_timestamp(const asn_value *packet, struct timeval *ts)
     return rc;
 }
 
+
+/**
+ * Get valid pointer to Data-Unit PDU subvalue. If there is no
+ * such subvalue in passed PDU, creates it. 
+ * 
+ * @param pdu     ASN value with NDN PDU
+ * @param tag     ASN tag of Data-Unit subvalue
+ * @param du_leaf place for Data-Unit subvalue (OUT)
+ *
+ * @return status code
+ */
+static int
+ndn_get_du_field(asn_value *pdu, uint16_t tag, asn_value **du_leaf)
+{
+    int rc = 0;
+
+    if (du_leaf == NULL)
+        return ETEWRONGPTR;
+
+    rc = asn_get_child_value(pdu, (const asn_value **)du_leaf,
+                             PRIVATE, tag);
+    if (rc == EASNINCOMPLVAL)
+    { 
+        const asn_type *du_type;
+        rc = asn_get_child_type(asn_get_type(pdu), &du_type, 
+                                PRIVATE, tag);
+        if (rc != 0) 
+            return rc; 
+
+        *du_leaf = asn_init_value(du_type);
+        rc = asn_put_child_value(pdu, *du_leaf, PRIVATE, tag);
+        if (rc != 0)
+        {
+            asn_free_value(*du_leaf);
+            *du_leaf = NULL;
+            return rc;
+        }
+    }
+    return rc;
+}
+
+
+/* see description in ndn.h */
+int
+ndn_du_write_plain_int(asn_value *pdu, uint16_t tag, int value)
+{
+    asn_value *du_leaf;
+    int rc;
+
+    if ((rc = asn_free_child_value(pdu, PRIVATE, tag)) != 0)
+        return rc;
+
+    if ((rc = ndn_get_du_field(pdu, tag, &du_leaf)) != 0)
+        return rc;
+
+    rc = asn_write_value_field(du_leaf, &value, sizeof(value), "#plain");
+
+    return rc;
+}
+
+
+
+/* see description in ndn.h */
+int
+ndn_du_write_plain_string(asn_value *pdu, uint16_t tag, const char *value)
+{
+    asn_value *du_leaf;
+    int rc;
+
+    if ((rc = asn_free_child_value(pdu, PRIVATE, tag)) != 0)
+        return rc;
+
+    if ((rc = ndn_get_du_field(pdu, tag, &du_leaf)) != 0)
+        return rc;
+
+    rc = asn_write_value_field(du_leaf, value, strlen(value) + 1, "#plain");
+
+    return rc;
+}
+
+
+
+/* see description in ndn.h */
+int
+ndn_du_write_plain_oct(asn_value *pdu, uint16_t tag,
+                       const uint8_t *value, size_t len) 
+{
+    asn_value *du_leaf;
+    int rc;
+
+    if ((rc = asn_free_child_value(pdu, PRIVATE, tag)) != 0)
+        return rc;
+
+    if ((rc = ndn_get_du_field(pdu, tag, &du_leaf)) != 0)
+        return rc;
+
+    rc = asn_write_value_field(du_leaf, value, len, "#plain");
+
+    return rc;
+}

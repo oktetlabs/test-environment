@@ -214,6 +214,45 @@ extern const asn_type *const ndn_generic_pdu;
 
 
 /**
+ * Write integer "plain" value into specified Data-Unit field of NDS PDU.
+ *
+ * @param pdu       ASN value with NDN PDU
+ * @param tag       tag of Data-Unit field
+ * @param value     new value to be written
+ *
+ * @return status code
+ */
+extern int ndn_du_write_plain_int(asn_value *pdu, uint16_t tag, int value);
+
+/**
+ * Write character string "plain" value into specified Data-Unit field
+ * of NDS PDU.
+ *
+ * @param pdu       ASN value with NDN PDU
+ * @param tag       tag of Data-Unit field
+ * @param value     new value to be written
+ *
+ * @return status code
+ */
+extern int ndn_du_write_plain_string(asn_value *pdu, uint16_t tag,
+                                     const char *value);
+
+/**
+ * Write octet string "plain" value into specified Data-Unit field
+ * of NDS PDU.
+ *
+ * @param pdu       ASN value with NDN PDU
+ * @param tag       tag of Data-Unit field
+ * @param value     new value to be written
+ * @param len       length of data to be written
+ *
+ * @return status code
+ */
+extern int ndn_du_write_plain_oct(asn_value *pdu, uint16_t tag,
+                                  const uint8_t *value,
+                                  size_t len);
+
+/**
  * Match data with DATA-UNIT pattern.  
  *
  * @param pat           ASN value with pattern PDU. 
