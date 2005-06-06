@@ -22,6 +22,12 @@ main (int argc, char *argv[])
 
     const asn_value *pattern_unit;
 
+    if (argc < 2)
+    {
+        printf("usage: %s <filename>\n", argv[0]);
+        return 0;
+    }
+
     rc = asn_parse_dvalue_in_file(argv[1], a_type, &packet, &s_parsed);
 
     printf ("parse file , rc = %x, symbol %d\n", rc, s_parsed); 
