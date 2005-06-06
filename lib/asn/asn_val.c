@@ -405,6 +405,27 @@ asn_free_subvalue(asn_value_p value, const char* labels)
     return rc;
 }
 
+int
+asn_free_child_value(asn_value_p value, 
+                     asn_tag_class tag_class, uint16_t tag_val)
+{
+    int rc;
+    int index;
+
+    if (value == NULL)
+        return ETEWRONGPTR;
+
+    rc = asn_child_tag_index(value->asn_type, tag_class, tag_val,
+                             &index);
+    if (rc != 0)
+        return rc;
+
+    value->txt_len = -1;
+    asn_free_value(value->data.array[index]);
+    value->data.array[index] = NULL;
+
+    return 0;
+}
 
 
 /**

@@ -67,5 +67,14 @@ main (void)
     asn_sprint_value(child_val, buffer, 1000, 0);
     printf("got child value: \n%s\n", buffer);
 
+    rc = asn_free_child_value(seq_val,  PRIVATE, SEQ_STRING_TAG);
+    if (rc) 
+    {
+        result = 1;
+        fprintf(stderr, "free child value failed %X\n", rc);
+    }
+    asn_sprint_value(seq_val, buffer, 1000, 0);
+    printf("after free value: \n%s\n", buffer);
+
     return result;
 }

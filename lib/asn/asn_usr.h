@@ -173,6 +173,19 @@ extern void asn_free_value(asn_value_p value);
 extern int asn_free_subvalue(asn_value_p value, const char *labels);
 
 /**
+ * Free subvalue of constraint ASN value instance byt tag.
+ *
+ * @param container   ASN value which subvalue should be destroyed
+ * @param tag_class     class of ASN tag
+ * @param tag_val       value of ASN tag
+ *
+ * @return zero on success, otherwise error code.
+ */
+extern int asn_free_child_value(asn_value_p value, 
+                               asn_tag_class tag_class, uint16_t tag_val);
+
+
+/**
  * Obtain ASN type to which specified value belongs. 
  *
  * @param value       ASN value which type is interested
