@@ -483,8 +483,9 @@ log_get_message(uint32_t length, uint8_t *buffer)
                 if ((*++fs != 0) && (*fs == 'm'))
                 {
                     uint8_t *mem_addr;
+                    int      id = LGR_GET_ARG(header, argn++);
 
-                    mem_addr = (uint8_t *)LGR_GET_ARG(header, argn++);
+                    mem_addr = (uint8_t *)rcf_pch_mem_get(id);
                     tmp_length = LGR_GET_ARG(header, argn++);
 
                     LGR_CHECK_LENGTH(sizeof(te_log_nfl_t) + tmp_length);
