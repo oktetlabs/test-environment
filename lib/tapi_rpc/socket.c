@@ -1026,6 +1026,8 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
     tarpc_getsockopt_out  out;
     struct option_value   val;
     char                  opt_val_str[4096] = {};
+    
+    socklen_t             optlen_copy;
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
@@ -1049,7 +1051,8 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
     if (optlen != NULL)
     {
         in.optlen.optlen_len = 1;
-        in.optlen.optlen_val = optlen;
+        optlen_copy = *optlen;
+        in.optlen.optlen_val = &optlen_copy;
     }
     if (optval != NULL)
     {
@@ -1083,6 +1086,8 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
                          "sizeof(struct linger)=%u, value is ignored",
                          sockopt_rpc2str(optname), sizeof(struct linger));
                 }
+                if (optlen_copy == sizeof(struct linger))
+                    optlen_copy = RPC_OPTLEN_AUTO;
                 break;
 
             case RPC_SO_RCVTIMEO:
@@ -1101,6 +1106,8 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
                          "sizeof(struct timeval)=%u, value is ignored",
                          sockopt_rpc2str(optname), sizeof(struct timeval));
                 }
+                if (optlen_copy == sizeof(struct timeval))
+                    optlen_copy = RPC_OPTLEN_AUTO;
                 break;
 
             case RPC_IP_ADD_MEMBERSHIP:
@@ -1123,6 +1130,8 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
                          "sizeof(struct ip_mreqn)=%u, value is ignored",
                          sockopt_rpc2str(optname), sizeof(struct ip_mreqn));
                 }
+                if (optlen_copy == sizeof(struct ip_mreqn))
+                    optlen_copy = RPC_OPTLEN_AUTO;
                 break;
 
             case RPC_IP_MULTICAST_IF:
@@ -1138,6 +1147,8 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
                          "sizeof(struct in_addr)=%u, value is ignored",
                          sockopt_rpc2str(optname), sizeof(struct in_addr));
                 }
+                if (optlen_copy == sizeof(struct in_addr))
+                    optlen_copy = RPC_OPTLEN_AUTO;
                 break;
 
             case RPC_TCP_INFO:
@@ -1185,6 +1196,8 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
                          "sizeof(struct tcp_info)=%u, value is ignored",
                          sockopt_rpc2str(optname), sizeof(struct tcp_info));
                 }
+                if (optlen_copy == sizeof(struct tcp_info))
+                    optlen_copy = RPC_OPTLEN_AUTO;
                 break;
 
             default:
@@ -1199,6 +1212,8 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
                          "sizeof(int)=%u, value is ignored",
                          sockopt_rpc2str(optname), sizeof(int));
                 }
+                if (optlen_copy == sizeof(int))
+                    optlen_copy = RPC_OPTLEN_AUTO;
                 break;
         }
     }
