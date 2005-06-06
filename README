@@ -3,14 +3,20 @@ Required packages:
 ~~~~~~~~~~~~~~~~~~
 The following packages are required to build and run.
 
+Engine:
+
 - libxml2-devel at least 2.6.x (2.6.10)
 - glib-devel (1.2.10)
 - popt-devel (libpopt-dev on Debian)
 - tcl (and tcl-devel, if applicable, e.g. on Fedora Core 2)
 - libxslt (we use 1.1.6)
-- expect and expect-dev (for TAD CLI only)
 - libexpat
+
+TA:
+
+- expect and expect-dev (for TAD CLI only)
 - libnetlink + iproute/ headers
+- libexpat
 
 We are using versions of libraries specified in parentheses.
 
