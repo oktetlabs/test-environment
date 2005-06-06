@@ -314,8 +314,8 @@ extern asn_value_p asn_decode(const void *data);
  *
  * @return zero on success, otherwise error code.
  */
-extern int asn_put_subvalue(asn_value *container, asn_value *subvalue, 
-                            asn_tag_class tag_class, uint16_t tag_val);
+extern int asn_put_child_value(asn_value *container, asn_value *subvalue, 
+                               asn_tag_class tag_class, uint16_t tag_val);
 
 /**
  * Write data into primitive syntax leaf in specified ASN value.
@@ -585,6 +585,20 @@ extern int asn_get_indexed(const asn_value *container,
                            const asn_value ** subval, 
                            int index);
 
+/**
+ * Get ASN type of on-level child of constaint ASN type by child tag.
+ * 
+ * @param type      root of ASN value tree which subvalue is interested
+ * @param subtype   location for pointer to ASN sub-value (OUT)
+ * @param tag_class class of ASN tag
+ * @param tag_val   value of ASN tag
+ *
+ * @return zero on success or error code.
+ */ 
+extern int asn_get_child_type(const asn_type *type,
+                              const asn_type **subtype,
+                              asn_tag_class tag_class, 
+                              uint16_t tag_val);
 
 /**
  * Get constant pointer to direct subvalue of ASN value with named syntax 

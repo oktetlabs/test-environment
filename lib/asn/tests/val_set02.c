@@ -21,28 +21,6 @@ asn_type my_sequence = {
 };
 #endif
 
-asn_named_entry_t my_cmpl_entry_array [] = {
-    { "choice", &at_plain_choice1 },
-    { "subseq", &at_plain_seq1 }
-};
-
-asn_type my_complex = {
-    "MySequence",
-    {APPLICATION, 1},
-    SEQUENCE,
-    2,
-    {&my_cmpl_entry_array}
-};
-
-
-asn_type my_tagged = {
-    "MyTagged",
-    {APPLICATION, 5},
-    TAGGED,
-    1,
-    {&at_plain_seq1}
-};
-
 
 char buffer [1000];
 

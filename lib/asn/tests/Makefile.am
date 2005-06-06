@@ -9,13 +9,13 @@ AM_LDFLAGS=@TE_LDFLAGS@
 
 CFLAGS=@CFLAGS@ $(SNMP_F)
 
-TESTS=parse01 parse04
+TESTS=parse01 put_get
 #TESTS=ndn_set01 oid1 parse00 parse01 parse03 parse04 prn01 prn02 \
 #val_set01 val_set02 val_set03 val_set04 write_ind1
 check_PROGRAMS=$(TESTS)
 
 extra_DIST= \
-tests/ndn_set01.c \
+tests/put_get.c \
 tests/oid1.c \
 tests/parse00.c \
 tests/parse01.c \

@@ -8,7 +8,7 @@ char te_lgr_entity[] = "test";
 int log_message(void)
 { ; }
 
-char buffer [1000];
+char buffer [10000];
 
 int 
 main (int argc, char *argv[])

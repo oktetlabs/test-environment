@@ -90,7 +90,7 @@ asn_type at_plain_int_array = {
     {APPLICATION, 3},
     SEQUENCE_OF,
     0,
-    {&asn_base_integer_s}
+    {subtype:&asn_base_integer_s}
 };
 
 
@@ -136,7 +136,32 @@ asn_type at_our_names = {
     {UNIVERSAL, 10},
     ENUMERATED,
     sizeof(_at_our_names_enum_entries)/sizeof(asn_enum_entry_t), 
-    {_at_our_names_enum_entries}
+    {enum_entries:_at_our_names_enum_entries}
 };
+
+
+asn_named_entry_t my_cmpl_entry_array [] = {
+    { "choice", &at_plain_choice1, {PRIVATE, 1} },
+    { "subseq", &at_plain_seq1 , {PRIVATE, 2}}
+};
+
+asn_type my_complex = {
+    "MySequence",
+    {APPLICATION, 1},
+    SEQUENCE,
+    2,
+    {my_cmpl_entry_array}
+};
+
+
+asn_type my_tagged = {
+    "MyTagged",
+    {APPLICATION, 5},
+    TAGGED,
+    1,
+    {subtype:&at_plain_seq1}
+};
+
+
 
 #endif /* __TE_ASN_TESTS_TYPES_H__ */

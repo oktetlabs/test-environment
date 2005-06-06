@@ -72,7 +72,7 @@ typedef struct asn_enum_entry_t
  */
 struct asn_type
 {
-    const char * name;   /**< ASN.1 name of type, if any assigned. */
+    const char  *name;   /**< ASN.1 name of type, if any assigned. */
 
     asn_tag_t    tag;    /**< tag value of type. */
     asn_syntax   syntax; /**< syntax of type, that is "type" of value itself. */
@@ -91,12 +91,12 @@ struct asn_type
     union 
     {
         const asn_named_entry_t 
-                       * named_entries; /**< for syntaxies SEQUENCE, SET 
+                       *named_entries; /**< for syntaxies SEQUENCE, SET 
                                                     and CHOICE */
-        const asn_type * subtype;       /**< for syntaxies *_OF and TAGGED */
+        const asn_type *subtype;       /**< for syntaxies *_OF and TAGGED */
 
         const asn_enum_entry_t  
-                       * enum_entries;  /**< for syntax ENUMERATED */
+                       *enum_entries;  /**< for syntax ENUMERATED */
     } sp; /* syntax specific info */
 };
 

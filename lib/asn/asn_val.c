@@ -46,21 +46,21 @@ extern int number_of_digits(int value);
 
 int asn_impl_named_subvalue_index(const asn_type * type, const char *label,
                                   int *index);
-int asn_subvalue_tag_index(const asn_type *type, 
-                           asn_tag_class tag_class, uint16_t tag_val,
-                           int *index);
 
-int asn_impl_fall_down_to_tree_nc (const asn_value *, char *,
-                                   asn_value const **);
+int asn_child_tag_index(const asn_type *type, asn_tag_class tag_class,
+                        uint16_t tag_val, int *index);
 
-int asn_impl_write_value_field (asn_value_p , const void *, size_t , char *);
+int asn_impl_fall_down_to_tree_nc(const asn_value *, char *,
+                                  asn_value const **);
 
-int asn_impl_read_value_field (const asn_value *, void *, unsigned int *, char *);
+int asn_impl_write_value_field(asn_value_p , const void *, size_t , char *);
 
-int asn_impl_write_component_value (asn_value_p , const asn_value *,  char *);
+int asn_impl_read_value_field(const asn_value *, void *, unsigned int *, char *);
 
-int asn_impl_insert_subvalue (asn_value_p container, const char *label, 
-                              asn_value_p new_value);
+int asn_impl_write_component_value(asn_value_p , const asn_value *,  char *);
+
+int asn_impl_insert_subvalue(asn_value_p container, const char *label, 
+                             asn_value_p new_value);
 
 /*
  * Implementation of static inline functions 
@@ -457,9 +457,8 @@ asn_get_name(const asn_value *value)
  * @return zero on success, otherwise error code. 
  */
 int 
-asn_subvalue_tag_index(const asn_type *type, 
-                       asn_tag_class tag_class, uint16_t tag_val,
-                       int *index)
+asn_child_tag_index(const asn_type *type, asn_tag_class tag_class,
+                    uint16_t tag_val, int *index)
 {
     const asn_named_entry_t *n_en;
     unsigned i; 
@@ -565,8 +564,8 @@ asn_impl_find_subtype(const asn_type * type, const char *label,
 
 /* see description in asn_usr.h */
 int
-asn_put_subvalue(asn_value *container, asn_value *new_value, 
-                 asn_tag_class tag_class, uint16_t tag_val)
+asn_put_child_value(asn_value *container, asn_value *new_value, 
+                    asn_tag_class tag_class, uint16_t tag_val)
 {
     int rc;
     int index = 0, leaf_type_index;
@@ -576,9 +575,8 @@ asn_put_subvalue(asn_value *container, asn_value *new_value,
 
     container->txt_len = -1;
 
-    rc = asn_subvalue_tag_index(container->asn_type,
-                                tag_class, tag_val,
-                                &leaf_type_index);
+    rc = asn_child_tag_index(container->asn_type, tag_class, tag_val,
+                             &leaf_type_index);
     if (rc != 0)
         return rc; 
 
@@ -635,8 +633,7 @@ asn_put_subvalue(asn_value *container, asn_value *new_value,
 int
 asn_impl_insert_subvalue(asn_value_p container, const char *label, 
                          asn_value_p new_value)
-{
-
+{ 
     if(!label || !container)
         return ETEWRONGPTR; 
 
@@ -1253,11 +1250,31 @@ asn_get_indexed(const asn_value *container, const asn_value **subval,
  * See description in asn_usr.h
  */
 int
+asn_get_child_type(const asn_type *type, const asn_type **subtype,
+                   asn_tag_class tag_class, uint16_t tag_val)
+{
+    int index, rc;
+
+    if (type == NULL || subtype == NULL)
+        return ETEWRONGPTR; 
+
+    rc = asn_child_tag_index(type, tag_class, tag_val, &index);
+    if (rc != 0)
+        return rc;
+    
+    *subtype = type->sp.named_entries[index].type;
+
+    return 0;
+}
+
+/**
+ * See description in asn_usr.h
+ */
+int
 asn_get_child_value(const asn_value *container, const asn_value **subval,
                     asn_tag_class tag_class, uint16_t tag_val)
 {
-    const asn_named_entry_t *n_en;
-    unsigned int             i;
+    int index, rc;
 
     if (!container || !subval)
         return ETEWRONGPTR; 
@@ -1266,24 +1283,15 @@ asn_get_child_value(const asn_value *container, const asn_value **subval,
         container->syntax != SET)
         return EINVAL;
 
-    for (i = 0, n_en = container->asn_type->sp.named_entries;
-         i < container->len;
-         i++, n_en++)
-    {
-        if (n_en->tag.cl == tag_class && 
-            n_en->tag.val == tag_val)
-        {
-            if (container->data.array[i] == NULL)
-                return EASNINCOMPLVAL;
-            else
-            {
-                *subval = container->data.array[i];
-                return 0;
-            }
-        }
-    }
+    rc = asn_child_tag_index(container->asn_type, tag_class, tag_val,
+                             &index);
+    if (rc != 0)
+        return rc;
 
-    return ENOENT;
+    if ((*subval = container->data.array[index]) == NULL)
+        return EASNINCOMPLVAL;
+
+    return 0;
 }
 
 
@@ -1420,14 +1428,16 @@ asn_read_component_value (const asn_value *container,
  * @return zero on success, otherwise error code.
  */ 
 int
-asn_write_indexed (asn_value_p container, const asn_value_p elem_value, 
-                              int index, const char *subval_labels)
+asn_write_indexed(asn_value_p container, const asn_value_p elem_value, 
+                  int index, const char *subval_labels)
 {
     asn_value_p value = container;
+
     int rc;
 
     rc = asn_impl_fall_down_to_tree_writable(container, subval_labels, &value); 
-    if (rc) return rc;
+    if (rc)
+        return rc;
 
     container->txt_len = -1;
 
