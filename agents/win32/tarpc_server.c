@@ -1258,7 +1258,8 @@ TARPC_FUNC(transmit_file, {},
         overlapped->bufnum = 2;
     }
 
-    MAKE_CALL( out->retval = (*pf_transmit_file)(in->fd, (HANDLE)in->file,
+    MAKE_CALL( out->retval = (*pf_transmit_file)(in->fd,
+                              (HANDLE)rcf_pch_mem_get(in->file),
                               in->len, in->len_per_send,
                               (LPWSAOVERLAPPED)overlapped,
                               &transmit_buffers,
@@ -1296,7 +1297,8 @@ TARPC_FUNC(transmitfile_tabufs, {},
         overlapped->bufnum = 2;
     }
 
-    MAKE_CALL( out->retval = (*pf_transmit_file)(in->s, (HANDLE)in->file,
+    MAKE_CALL( out->retval = (*pf_transmit_file)(in->s,
+                              (HANDLE)rcf_pch_mem_get(in->file),
                               in->len, in->bytes_per_send,
                               (LPWSAOVERLAPPED)overlapped,
                               &transmit_buffers,
@@ -1338,16 +1340,21 @@ static inline DWORD cf_flags_attributes_rpc2h(unsigned int fa)
 
 TARPC_FUNC(create_file, {},
 {
-    MAKE_CALL(
-        out->handle = (tarpc_handle) CreateFile(in->name.name_val,
-                cf_access_right_rpc2h(in->desired_access),
-                cf_share_mode_rpc2h(in->share_mode),
-                (LPSECURITY_ATTRIBUTES)
-                    rcf_pch_mem_get(in->security_attributes),
-                cf_creation_disposition_rpc2h(in->creation_disposition),
-                cf_flags_attributes_rpc2h(in->flags_attributes),
-                (HANDLE)in->template_file);
+    HANDLE handle;
+
+    MAKE_CALL(handle = CreateFile(in->name.name_val,
+        cf_access_right_rpc2h(in->desired_access),
+        cf_share_mode_rpc2h(in->share_mode),
+        (LPSECURITY_ATTRIBUTES)rcf_pch_mem_get(in->security_attributes),
+        cf_creation_disposition_rpc2h(in->creation_disposition),
+        cf_flags_attributes_rpc2h(in->flags_attributes),
+        (HANDLE)rcf_pch_mem_get(in->template_file))
     );
+    
+    if (handle != NULL)
+        out->handle = (tarpc_handle)rcf_pch_mem_alloc((void *)handle);
+    else
+        out->handle = (tarpc_handle)NULL;
 }
 )
 
@@ -1355,7 +1362,8 @@ TARPC_FUNC(create_file, {},
 TARPC_FUNC(close_handle, {},
 {
     UNUSED(list);
-    out->retval = CloseHandle((HANDLE)in->handle);
+    out->retval = CloseHandle((HANDLE)rcf_pch_mem_get(in->handle));
+    rcf_pch_mem_free(in->handle);
 }
 )
 
