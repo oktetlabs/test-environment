@@ -11,6 +11,8 @@ Engine:
 - tcl (and tcl-devel, if applicable, e.g. on Fedora Core 2)
 - libxslt (we use 1.1.6)
 - libexpat
+- flex >= 2.5.31-31 from sourceforge; flex 2.5.4a from gnu.org will not work
+- gawk (mawk will not work)
 
 TA:
 
@@ -20,9 +22,7 @@ TA:
 
 We are using versions of libraries specified in parentheses.
 
-Also all works fine with RedHat 9.0 native packages.
-
-Of course, gcc, make, gawk, sed and other standard development tools
+Of course, gcc, make, sed and other standard development tools
 are required to build sources.
 
 To control DHCP daemon using OMAPI from Linux TA DHCP development
@@ -39,6 +39,18 @@ to build and run from distributive:
 - autoconf (at least 2.59)
 - automake (at least 1.8)
 - pkg-config (on Debian) or pkgconfig (on RedHat or FC)
+
+
+Supported OSes:
+~~~~~~~~~~~~~~~
+All works fine with Debian 3.1 (Sarge) native packages.
+
+For Fedora Core 3, you need to install new flex (we use package from PLD
+distribution) and netlink library (we use home-made iproute rpm which
+includes the library).
+
+If you know success stories/problems for other Linux/*BSD/* distributions,
+add your comments here.
 
 
 BASH-completion:
