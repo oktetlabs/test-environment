@@ -1315,7 +1315,7 @@ process_reply(ta *agent)
                         n -= start_len;
                         msg->error = (agent->receive)(agent->handle, 
                                          msg->file + start_len, &n, NULL);
-                    }
+                    } 
                 }
                 else
                 {
@@ -2236,7 +2236,7 @@ main(int argc, char **argv)
             if (len != sizeof(rcf_msg) + req->message->data_len)
             {
                 ERROR("Incorrect user request is received: data_len field "
-                     "does not match to IPC message size");
+                      "does not match to IPC message size");
                 free(req->message);
                 free(req);
                 continue;
