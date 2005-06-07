@@ -184,40 +184,91 @@ static void *dynamic_library_handle = NULL;
 /**
  * Find the function by its name.
  *
+ * @param lib   library name or empty string
  * @param name  function name
  * @param func  location for function address
  *
  * @return status code
  */
 static int
-find_func(char *name, sock_api_func *func)
+find_func(const char *lib, const char *name, sock_api_func *func)
 {
-    static void *libc_handle = NULL;
-    
+    void    *handle;
+    te_bool  use_libc = FALSE;
+
     if (strcmp(name, "getpid") == 0)
     {
         *func = (void *)getpid;
         return 0;
     }
-
-    if (!dynamic_library_set)
+    
+    /*
+     * Use libc when user intensionally wants it, or if we were not
+     * informed about something special to use before
+     * (with setlibname() function).
+     */
+    if (strcmp(lib, "libc") == 0 ||
+        (*lib == '\0' && dynamic_library_handle == NULL))
     {
-        dynamic_library_set = TRUE;
-        dynamic_library_name = "(NULL)";
-        RING("Dynamic library is set to NULL implicitly");
+        use_libc = TRUE;
     }
-    if (libc_handle == NULL)
+
+    if (use_libc)
     {
-        if ((libc_handle = dlopen(NULL, RTLD_LAZY)) == NULL)
+        static void *libc_handle = NULL;
+
+        if (!dynamic_library_set)
         {
-            ERROR("dlopen() failed for myself: %s", dlerror());
+            dynamic_library_set = TRUE;
+            dynamic_library_name = "(NULL)";
+            RING("Dynamic library is set to NULL implicitly");
+        }
+
+        if (libc_handle == NULL)
+        {
+            if ((libc_handle = dlopen(NULL, RTLD_LAZY)) == NULL)
+            {
+                ERROR("dlopen() failed for myself: %s", dlerror());
+                return TE_RC(TE_TA_LINUX, ENOENT);
+            }
+        }
+        handle = libc_handle;
+        RING("Call from libc");
+    }
+    else if (*lib != '\0')
+    {
+        /* User wants something special for this call */
+        if ((handle = dlopen(lib, RTLD_LAZY)) == NULL)
+        {
+            ERROR("Cannot load shared library %s: %s", lib, dlerror());
             return TE_RC(TE_TA_LINUX, ENOENT);
         }
+        RING("Call from smth special");
+    }
+    else
+    {
+        /*
+         * We get this branch of the code only if user set some 
+         * library to be used with setlibname() function earlier,
+         * and so we should use it to find symbol.
+         */
+        assert(dynamic_library_set == TRUE);
+        assert(dynamic_library_handle != NULL);
+        
+        handle = dynamic_library_handle;
+        RING("Call from registered library");
     }
 
-    if (((dynamic_library_handle == NULL) ||
-         (*func = dlsym(dynamic_library_handle, name)) == NULL) &&
-        (*func = dlsym(libc_handle, name)) == NULL)
+    *func = dlsym(handle, name);
+
+    /* 
+     * Close library only in case it is something special
+     * particulary for this call.
+     */
+    if (*lib != '\0' && !use_libc)
+        dlclose(handle);
+    
+    if (*func == NULL)
     {
         VERB("Cannot resolve symbol %s in libraries: %s", name, dlerror());
         if ((*func = rcf_ch_symbol_addr(name, 1)) == NULL)
@@ -406,15 +457,15 @@ check_args(checked_arg *list)
  * Find function by its name with check.
  * out variable is assumed in the context.
  */
-#define FIND_FUNC(_name, _func) \
-    do {                                     \
-        int rc = find_func(_name, &(_func)); \
-                                             \
-        if (rc != 0)                         \
-        {                                    \
-             out->common._errno = rc;        \
-             return TRUE;                    \
-        }                                    \
+#define FIND_FUNC(_lib, _name, _func) \
+    do {                                           \
+        int rc = find_func(_lib, _name, &(_func)); \
+                                                   \
+        if (rc != 0)                               \
+        {                                          \
+             out->common._errno = rc;              \
+             return TRUE;                          \
+        }                                          \
     } while (0)
 
 /** Wait time specified in the input argument. */
@@ -507,7 +558,7 @@ _##_func##_1_svc(tarpc_##_func##_in *in, tarpc_##_func##_out *out,  \
     VERB("PID=%d TID=%d: Entry %s",                                 \
          (int)getpid(), (int)pthread_self(), #_func);               \
                                                                     \
-    FIND_FUNC(#_func, func);                                        \
+    FIND_FUNC(in->common.lib, #_func, func);                        \
                                                                     \
     _copy_args                                                      \
                                                                     \
@@ -3519,7 +3570,7 @@ simple_sender(tarpc_simple_sender_in *in, tarpc_simple_sender_out *out)
         return -1;
     }
 
-    if (find_func("send", &send_func) != 0)
+    if (find_func(in->common.lib, "send", &send_func) != 0)
         return -1;
 
     memset(buf, 0xDEADBEEF, sizeof(buf));
@@ -3606,8 +3657,8 @@ simple_receiver(tarpc_simple_receiver_in *in,
 
     RING("%s() started", __FUNCTION__);
 
-    if (find_func("select", &select_func) != 0 ||
-        find_func("recv", &recv_func) != 0)
+    if (find_func(in->common.lib, "select", &select_func) != 0 ||
+        find_func(in->common.lib, "recv", &recv_func) != 0)
     {
         return -1;
     }
@@ -3690,7 +3741,7 @@ send_traffic(tarpc_send_traffic_in *in,
 
     out->retval= 0;
 
-    if (find_func("sendto", &sendto_func) != 0)
+    if (find_func(in->common.lib, "sendto", &sendto_func) != 0)
     {
         return -1;
     }
@@ -3790,14 +3841,14 @@ flooder(tarpc_flooder_in *in)
     memset(rcv_buf, 0x0, FLOODER_BUF);
     memset(snd_buf, 'X', FLOODER_BUF);
 
-    if ((find_func("select", &select_func) != 0)   ||
-        (find_func("pselect", &pselect_func) != 0) ||
-        (find_func("poll", &p_func) != 0)          ||
-        (find_func("read", &read_func) != 0)       ||
-        (find_func("write", &write_func) != 0)     ||
-        (find_func("recv", &recv_func) != 0)       ||
-        (find_func("send", &send_func) != 0)       ||
-        (find_func("ioctl", &ioctl_func) != 0))
+    if ((find_func(in->common.lib, "select", &select_func) != 0)   ||
+        (find_func(in->common.lib, "pselect", &pselect_func) != 0) ||
+        (find_func(in->common.lib, "poll", &p_func) != 0)          ||
+        (find_func(in->common.lib, "read", &read_func) != 0)       ||
+        (find_func(in->common.lib, "write", &write_func) != 0)     ||
+        (find_func(in->common.lib, "recv", &recv_func) != 0)       ||
+        (find_func(in->common.lib, "send", &send_func) != 0)       ||
+        (find_func(in->common.lib, "ioctl", &ioctl_func) != 0))
     {
         ERROR("failed to resolve function");
         return -1;
@@ -4179,11 +4230,11 @@ echoer(tarpc_echoer_in *in)
 
     memset(buf, 0x0, FLOODER_BUF);
 
-    if ((find_func("select", &select_func) != 0)   ||
-        (find_func("pselect", &pselect_func) != 0) ||
-        (find_func("poll", &p_func) != 0)          ||
-        (find_func("read", &read_func) != 0)       ||
-        (find_func("write", &write_func) != 0))
+    if ((find_func(in->common.lib, "select", &select_func) != 0)   ||
+        (find_func(in->common.lib, "pselect", &pselect_func) != 0) ||
+        (find_func(in->common.lib, "poll", &p_func) != 0)          ||
+        (find_func(in->common.lib, "read", &read_func) != 0)       ||
+        (find_func(in->common.lib, "write", &write_func) != 0))
     {
         return -1;
     }
@@ -4411,9 +4462,12 @@ aio_read_test(tarpc_aio_read_test_in *in, tarpc_aio_read_test_out *out)
     sock_api_func_ptr aio_error_func;
     sock_api_func_ptr aio_return_func;
 
-    if (find_func("aio_read", (sock_api_func *)&aio_read_func) != 0   ||
-        find_func("aio_error", (sock_api_func *)&aio_error_func) != 0 ||
-        find_func("aio_return", (sock_api_func *)&aio_return_func) != 0)
+    if (find_func(in->common.lib, "aio_read",
+                  (sock_api_func *)&aio_read_func) != 0 ||
+        find_func(in->common.lib, "aio_error",
+                  (sock_api_func *)&aio_error_func) != 0 ||
+        find_func(in->common.lib, "aio_return",
+                  (sock_api_func *)&aio_return_func) != 0)
     {
         DIAG("Failed to resolve asynchronous IO function");
         return -1;
@@ -4477,8 +4531,10 @@ aio_error_test(tarpc_aio_error_test_in *in, tarpc_aio_error_test_out *out)
 
     UNUSED(in);
 
-    if (find_func("aio_write", (sock_api_func *)&aio_write_func) != 0 ||
-        find_func("aio_error", (sock_api_func *)&aio_error_func) != 0)
+    if (find_func(in->common.lib, "aio_write",
+                  (sock_api_func *)&aio_write_func) != 0 ||
+        find_func(in->common.lib, "aio_error",
+                  (sock_api_func *)&aio_error_func) != 0)
     {
         DIAG("Failed to resolve asynchronous IO function");
         return -1;
@@ -4526,9 +4582,12 @@ aio_write_test(tarpc_aio_write_test_in *in, tarpc_aio_write_test_out *out)
     sock_api_func_ptr aio_error_func;
     sock_api_func_ptr aio_return_func;
 
-    if (find_func("aio_write", (sock_api_func *)&aio_write_func) != 0 ||
-        find_func("aio_error", (sock_api_func *)&aio_error_func) != 0 ||
-        find_func("aio_return",(sock_api_func *) &aio_return_func) != 0)
+    if (find_func(in->common.lib, "aio_write",
+                  (sock_api_func *)&aio_write_func) != 0 ||
+        find_func(in->common.lib, "aio_error",
+                  (sock_api_func *)&aio_error_func) != 0 ||
+        find_func(in->common.lib, "aio_return",
+                  (sock_api_func *) &aio_return_func) != 0)
     {
         DIAG("Failed to resolve asynchronous IO function");
         return -1;
@@ -4587,9 +4646,12 @@ aio_suspend_test(tarpc_aio_suspend_test_in *in,
 
     char aux_buf[8];
 
-    if (find_func("aio_read", (sock_api_func *)&aio_read_func) != 0   ||
-        find_func("aio_suspend", (sock_api_func *)&aio_suspend_func) != 0 ||
-        find_func("aio_return", (sock_api_func *)&aio_return_func) != 0)
+    if (find_func(in->common.lib, "aio_read",
+                  (sock_api_func *)&aio_read_func) != 0 ||
+        find_func(in->common.lib, "aio_suspend",
+                  (sock_api_func *)&aio_suspend_func) != 0 ||
+        find_func(in->common.lib, "aio_return",
+                  (sock_api_func *)&aio_return_func) != 0)
     {
         DIAG("Failed to resolve asynchronous IO function");
         return -1;
@@ -4727,9 +4789,9 @@ socket_to_file(tarpc_socket_to_file_in *in)
     INFO("%s() called with: sock=%d, path=%s, timeout=%ld",
          __FUNCTION__, sock, path, time2run);
 
-    if ((find_func("select", &select_func) != 0)   ||
-        (find_func("read", &read_func) != 0)       ||
-        (find_func("write", &write_func) != 0))
+    if ((find_func(in->common.lib, "select", &select_func) != 0)   ||
+        (find_func(in->common.lib, "read", &read_func) != 0)       ||
+        (find_func(in->common.lib, "write", &write_func) != 0))
     {
         ERROR("Failed to resolve functions addresses");
         rc = -1;
@@ -4953,7 +5015,7 @@ many_send(tarpc_many_send_in *in, tarpc_many_send_out *out)
 
     memset(buf, 0xDEADBEEF, sizeof(max_len));
 
-    if (find_func("send", &send_func) != 0)
+    if (find_func(in->common.lib, "send", &send_func) != 0)
     {
         ERROR("Failed to resolve send() function");
         rc = -1;
@@ -5017,14 +5079,14 @@ overfill_buffers(tarpc_overfill_buffers_in *in,
 
     memset(buf, 0xDEADBEEF, sizeof(max_len));
 
-    if (find_func("send", &send_func) != 0)
+    if (find_func(in->common.lib, "send", &send_func) != 0)
     {
         ERROR("%s(): Failed to resolve send() function", __FUNCTION__);
         rc = -1;
         goto overfill_buffers_exit;
     }
 
-    if (find_func("select", &select_func) != 0)
+    if (find_func(in->common.lib, "select", &select_func) != 0)
     {
         ERROR("%s(): Failed to resolve select() function", __FUNCTION__);
         rc = -1;

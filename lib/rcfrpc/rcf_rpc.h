@@ -93,6 +93,10 @@ typedef struct rcf_rpc_server {
                                      RPC server - it is unusable
                                      unless someone has restarted it */
 
+    char        lib[RCF_MAX_NAME]; /**< Library name to be used for the 
+                                        call (is set to empty line after
+                                        each call) */
+
     /* Read-only fields filled by API internals when server is created */
     char        ta[RCF_MAX_NAME];   /**< Test Agent name */
     char        name[RCF_MAX_NAME]; /**< RPC server name */

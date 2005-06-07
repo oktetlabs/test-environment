@@ -427,6 +427,8 @@ rcf_rpc_call(rcf_rpc_server *rpcs, const char *proc,
     in->op = rpcs->op;
     in->tid = rpcs->tid0;
     in->done = rpcs->is_done_ptr;
+    in->lib = rpcs->lib;
+
     if (!op_is_done)
         strcpy(rpcs->proc, proc); 
 
@@ -435,6 +437,7 @@ rcf_rpc_call(rcf_rpc_server *rpcs, const char *proc,
 
     rpcs->timeout = 0;
     rpcs->start = 0;
+    *(rpcs->lib) = '\0';
     if (TE_RC_GET_ERROR(rpcs->_errno) == ETERPCTIMEOUT ||
         TE_RC_GET_ERROR(rpcs->_errno) == ETIMEDOUT ||
         TE_RC_GET_ERROR(rpcs->_errno) == ETERPCDEAD)

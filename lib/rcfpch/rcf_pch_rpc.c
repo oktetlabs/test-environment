@@ -230,6 +230,9 @@ call(rpcserver *rpcs, char *name, void *in, void *out)
 {
     uint32_t len = RCF_RPC_HUGE_BUF_LEN;
     int      rc;
+    char     c = '\0';
+
+    ((tarpc_in_arg *)in)->lib = &c;
     
     if (rpcs->sent > 0)
     {
