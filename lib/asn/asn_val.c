@@ -55,7 +55,7 @@ int asn_impl_fall_down_to_tree_nc(const asn_value *, char *,
 
 int asn_impl_write_value_field(asn_value_p , const void *, size_t , char *);
 
-int asn_impl_read_value_field(const asn_value *, void *, unsigned int *, char *);
+int asn_impl_read_value_field(const asn_value *, void *, size_t *, char *);
 
 int asn_impl_write_component_value(asn_value_p , const asn_value *,  char *);
 
@@ -362,7 +362,7 @@ asn_free_value(asn_value_p value)
 int 
 asn_free_subvalue(asn_value_p value, const char* labels)
 {
-    int   len = strlen (labels);
+    int   len;
     char *low_label;
     char *up_labels = asn_strdup(labels);
     int   rc = 0;
@@ -375,8 +375,9 @@ asn_free_subvalue(asn_value_p value, const char* labels)
         return ETEWRONGPTR; 
     }
 
+    len = strlen(labels);
     low_label = up_labels + len - 1;
-    while ((low_label> up_labels) && (*low_label != '.')) 
+    while ((low_label > up_labels) && (*low_label != '.')) 
         low_label --;
 
     rc = 0;
@@ -415,10 +416,22 @@ asn_free_child_value(asn_value_p value,
     if (value == NULL)
         return ETEWRONGPTR;
 
-    rc = asn_child_tag_index(value->asn_type, tag_class, tag_val,
-                             &index);
-    if (rc != 0)
-        return rc;
+    switch (value->syntax)
+    {
+        case SEQUENCE:
+        case SET:
+            if ((rc = asn_child_tag_index(value->asn_type, tag_class,
+                                          tag_val, &index)) != 0)
+                return rc;
+            break;
+
+        case CHOICE:
+            index = 0;
+            break;
+
+        default:
+            return EASNWRONGTYPE; 
+    }
 
     value->txt_len = -1;
     asn_free_value(value->data.array[index]);
@@ -726,7 +739,7 @@ asn_impl_insert_subvalue(asn_value_p container, const char *label,
  * @return zero on success, otherwise error code.
  */ 
 int
-asn_write_value_field(asn_value_p container, const void *data, int d_len, 
+asn_write_value_field(asn_value_p container, const void *data, size_t d_len, 
                       const char *field_labels)
 {
     char *field_labels_int_copy = asn_strdup(field_labels); 
@@ -795,7 +808,7 @@ asn_impl_write_value_field(asn_value_p container,
                 case sizeof(char) : val = *((const unsigned char *) data); break;
                 case sizeof(short): val = *((const short *)data); break;
                 case sizeof(long) : val = *((const long *) data); break;
-                default: val = *((int *) data);
+                default: val = *((const int *) data);
             }
             if (container->syntax == INTEGER)
                 container->txt_len = number_of_digits(val);
@@ -871,7 +884,7 @@ asn_impl_write_value_field(asn_value_p container,
                     else 
                         break;
                 default:
-                    cur_label = strsep (&rest_field_labels, ".");
+                    cur_label = strsep(&rest_field_labels, ".");
             }
             rc = asn_impl_find_subvalue_writable(container, cur_label, 
                                                  &subvalue);
@@ -914,7 +927,6 @@ asn_impl_write_value_field(asn_value_p container,
     return 0;
 }
 
-
 /**
  * Read data from primitive syntax leaf in specified ASN value.
  *
@@ -930,7 +942,7 @@ asn_impl_write_value_field(asn_value_p container,
  * @return zero on success, otherwise error code.
  */ 
 int
-asn_read_value_field(const asn_value *container, void *data, int *d_len,
+asn_read_value_field(const asn_value *container, void *data, size_t *d_len,
                      const char *field_labels)
 {
     char *field_labels_int_copy = asn_strdup(field_labels); 
@@ -962,7 +974,7 @@ asn_read_value_field(const asn_value *container, void *data, int *d_len,
  */ 
 int
 asn_impl_read_value_field(const asn_value *container,  void *data, 
-                          unsigned int *d_len, char *field_labels)
+                          size_t *d_len, char *field_labels)
 {
     const asn_value *value;
     int m_len;
@@ -1046,6 +1058,69 @@ asn_impl_read_value_field(const asn_value *container,  void *data,
     }
 
     return 0;
+}
+
+
+/* see description in asn_usr.h */
+int
+asn_write_int32(asn_value_p container, int32_t value, const char *labels)
+{
+    return asn_write_value_field(container, &value, sizeof(value), labels);
+}
+
+/* see description in asn_usr.h */
+int
+asn_read_int32(asn_value_p container, int32_t *value, const char *labels)
+{
+    size_t len = sizeof(*value);
+    return asn_read_value_field(container, value, &len, labels);
+}
+
+
+/* see description in asn_usr.h */
+int
+asn_write_string(asn_value_p container, const char *value,
+                 const char *labels)
+{
+    const asn_value *leaf_val;
+    int rc;
+
+    if (container == NULL || value == NULL)
+        return ETEWRONGPTR;
+
+    if ((rc = asn_get_subvalue(container, &leaf_val, labels)) != 0) 
+        return rc;
+
+    if (leaf_val->syntax != CHAR_STRING)
+        return EASNWRONGTYPE;
+
+    return asn_write_value_field((asn_value *)leaf_val,
+                                 value, strlen(value)+1, NULL);
+}
+
+/* see description in asn_usr.h */
+int
+asn_read_string(asn_value_p container, char **value,
+                const char *labels)
+{
+    const asn_value *leaf_val;
+    int rc;
+
+    if (container == NULL || value == NULL)
+        return ETEWRONGPTR;
+
+    if ((rc = asn_get_subvalue(container, &leaf_val, labels)) != 0) 
+        return rc;
+
+    if (leaf_val->syntax != CHAR_STRING)
+        return EASNWRONGTYPE;
+
+    if (leaf_val->data.other == NULL)
+        return EASNINCOMPLVAL; 
+
+    *value = asn_strdup(leaf_val->data.other); 
+ 
+    return (*value != NULL) ? 0 : ENOMEM;
 }
 
 

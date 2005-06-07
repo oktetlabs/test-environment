@@ -173,11 +173,12 @@ extern void asn_free_value(asn_value_p value);
 extern int asn_free_subvalue(asn_value_p value, const char *labels);
 
 /**
- * Free subvalue of constraint ASN value instance byt tag.
+ * Free one-level subvalue of constraint ASN value instance by tag.
+ * For CHOICE syntax value tag is ignored.
  *
- * @param container   ASN value which subvalue should be destroyed
- * @param tag_class     class of ASN tag
- * @param tag_val       value of ASN tag
+ * @param value       ASN value which subvalue should be destroyed
+ * @param tag_class   class of ASN tag
+ * @param tag_val     value of ASN tag
  *
  * @return zero on success, otherwise error code.
  */
@@ -346,7 +347,7 @@ extern int asn_put_child_value(asn_value *container, asn_value *subvalue,
  * @return zero on success, otherwise error code.
  */ 
 extern int asn_write_value_field(asn_value_p container, 
-                                 const void *data, int d_len, 
+                                 const void *data, size_t d_len, 
                                  const char *labels);
 
 /**
@@ -364,8 +365,62 @@ extern int asn_write_value_field(asn_value_p container,
  * @return zero on success, otherwise error code.
  */ 
 extern int asn_read_value_field(const asn_value *container,  
-                                void *data, int *d_len,
+                                void *data, size_t *d_len,
                                 const char *labels);
+
+
+/**
+ * Write 32-bit integer into leaf in specified ASN value.
+ *
+ * @param container     pointer to ASN value which leaf field is interested
+ * @param value         integer value to be written
+ * @param labels        textual ASN labels of subvalue; see 
+ *                      asn_free_subvalue method for more description
+ *
+ * @return zero on success, otherwise error code.
+ */ 
+extern int asn_write_int32(asn_value_p container, 
+                           int32_t value, const char *labels);
+
+/**
+ * Read 32-bit integer from leaf in specified ASN value.
+ *
+ * @param container     pointer to ASN value which leaf field is interested
+ * @param value         place for integer value to be read (OUT)
+ * @param labels        textual ASN labels of subvalue; see 
+ *                      asn_free_subvalue method for more description
+ *
+ * @return zero on success, otherwise error code.
+ */ 
+
+extern int asn_read_int32(asn_value_p container, 
+                          int32_t *value, const char *labels);
+/**
+ * Write character string into leaf in specified ASN value.
+ *
+ * @param container     pointer to ASN value which leaf field is interested
+ * @param value         string to be written
+ * @param labels        textual ASN labels of subvalue; see 
+ *                      asn_free_subvalue method for more description
+ *
+ * @return zero on success, otherwise error code.
+ */ 
+extern int asn_write_string(asn_value_p container, 
+                           const char *value, const char *labels);
+
+/**
+ * Read character string from leaf in specified ASN value.
+ * User have to free() got pointer to string.
+ *
+ * @param container     pointer to ASN value which leaf field is interested
+ * @param value         place for pointer to read string (OUT)
+ * @param labels        textual ASN labels of subvalue; see 
+ *                      asn_free_subvalue method for more description
+ *
+ * @return zero on success, otherwise error code.
+ */ 
+extern int asn_read_string(asn_value_p container, 
+                          char **value, const char *labels);
 
 
 /**
