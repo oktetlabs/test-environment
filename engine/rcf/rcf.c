@@ -1284,9 +1284,9 @@ process_reply(ta *agent)
             {
 #define INSIDE_LEN \
     (sizeof(((rcf_msg *)0)->file) + sizeof(((rcf_msg *)0)->value))
-                int n = ba ? len - (ba - cmd) : strlen(ptr);
+                size_t n = ba ? len - (ba - cmd) : strlen(ptr);
                 
-                if (msg->intparm < n && n > (int)INSIDE_LEN)
+                if (msg->intparm < (int)n && n > INSIDE_LEN)
                 {
                     rcf_msg *new_msg = 
                         (rcf_msg *)malloc(n + sizeof(*msg) - INSIDE_LEN);
@@ -1303,7 +1303,7 @@ process_reply(ta *agent)
                 
                 if (ba)
                 {
-                    int start_len = sizeof(cmd) - (ba - cmd);
+                    size_t start_len = sizeof(cmd) - (ba - cmd);
                     
                     if (start_len > n)
                         start_len = n;
@@ -2211,7 +2211,7 @@ main(int argc, char **argv)
 
             if (TE_RC_GET_ERROR(rc) == ETESMALLBUF) 
             {
-                int n = len;
+                size_t n = len;
                 
                 len += sizeof(rcf_msg);
                 if ((req->message = 
@@ -2236,7 +2236,8 @@ main(int argc, char **argv)
             if (len != sizeof(rcf_msg) + req->message->data_len)
             {
                 ERROR("Incorrect user request is received: data_len field "
-                      "does not match to IPC message size");
+                      "does not match to IPC message size: %d != %d + %d",
+                      len, req->message->data_len, sizeof(rcf_msg));
                 free(req->message);
                 free(req);
                 continue;
