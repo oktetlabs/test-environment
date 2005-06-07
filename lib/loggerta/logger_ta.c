@@ -439,6 +439,7 @@ log_get_message(uint32_t length, uint8_t *buffer)
                         tmp_buf += sizeof(uint32_t);
                         break;
                 }
+                break;
             }
 
             case 'c':
