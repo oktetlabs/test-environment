@@ -220,11 +220,11 @@ log_flush_ten(const char *ta_name)
 
     int     rc;
     char    ta_srv[strlen(LGR_SRV_FOR_TA_PREFIX) + 1 +
-                   (ta_name != NULL) ? strlen(ta_name) : 0];
+                   ((ta_name != NULL) ? strlen(ta_name) : 0)];
     char    answer[strlen(msg)];
     size_t  answer_len = sizeof(answer);
     char    clnt_name[64];
-
+    
     if (ta_name == NULL)
     {
         ERROR("Invalid TA name");
@@ -241,8 +241,7 @@ log_flush_ten(const char *ta_name)
     }
     assert(log_client != NULL);
 
-    strcpy(ta_srv, LGR_SRV_FOR_TA_PREFIX);
-    strcat(ta_srv, ta_name);
+    sprintf(ta_srv, "%s%s", LGR_SRV_FOR_TA_PREFIX, ta_name);
     rc = ipc_send_message_with_answer(log_client, ta_srv, msg, strlen(msg),
                                       answer, &answer_len);
     if (rc != 0)
