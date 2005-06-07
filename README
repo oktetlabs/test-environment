@@ -6,7 +6,7 @@ The following packages are required to build and run.
 Engine:
 
 - libxml2-devel at least 2.6.x (2.6.10)
-- glib-devel (1.2.10)
+- glib2-devel (glib-2.0 package we use 2.4.8)
 - popt-devel (libpopt-dev on Debian)
 - tcl (and tcl-devel, if applicable, e.g. on Fedora Core 2)
 - libxslt (we use 1.1.6)
