@@ -222,7 +222,20 @@ extern const asn_type *const ndn_generic_pdu;
  *
  * @return status code
  */
-extern int ndn_du_write_plain_int(asn_value *pdu, uint16_t tag, int value);
+extern int ndn_du_write_plain_int(asn_value *pdu, uint16_t tag,
+                                  int32_t value);
+
+/**
+ * Read integer "plain" value from specified Data-Unit field of NDS PDU.
+ *
+ * @param pdu       ASN value with NDN PDU
+ * @param tag       tag of Data-Unit field
+ * @param value     location for read value (OUT)
+ *
+ * @return status code
+ */
+extern int ndn_du_read_plain_int(asn_value *pdu, uint16_t tag,
+                                 int32_t *value);
 
 /**
  * Write character string "plain" value into specified Data-Unit field
@@ -238,6 +251,20 @@ extern int ndn_du_write_plain_string(asn_value *pdu, uint16_t tag,
                                      const char *value);
 
 /**
+ * Read character string "plain" value from specified Data-Unit field
+ * of NDS PDU.
+ * User have to free() got pointer.
+ *
+ * @param pdu       ASN value with NDN PDU
+ * @param tag       tag of Data-Unit field
+ * @param value     place for pointer to read string (OUT)
+ *
+ * @return status code
+ */
+extern int ndn_du_read_plain_string(asn_value *pdu, uint16_t tag,
+                                    char **value);
+
+/**
  * Write octet string "plain" value into specified Data-Unit field
  * of NDS PDU.
  *
@@ -249,8 +276,21 @@ extern int ndn_du_write_plain_string(asn_value *pdu, uint16_t tag,
  * @return status code
  */
 extern int ndn_du_write_plain_oct(asn_value *pdu, uint16_t tag,
-                                  const uint8_t *value,
-                                  size_t len);
+                                  const uint8_t *value, size_t len);
+
+/**
+ * Read octet string "plain" value from specified Data-Unit field
+ * of NDS PDU.
+ *
+ * @param pdu       ASN value with NDN PDU
+ * @param tag       tag of Data-Unit field
+ * @param value     location for read octet string (OUT)
+ * @param len       length of buffer/read data (IN/OUT)
+ *
+ * @return status code
+ */
+extern int ndn_du_read_plain_oct(asn_value *pdu, uint16_t tag,
+                                 uint8_t *value, size_t *len);
 
 /**
  * Match data with DATA-UNIT pattern.  
