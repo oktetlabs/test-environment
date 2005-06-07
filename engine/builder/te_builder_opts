@@ -46,7 +46,11 @@ function build()
        if test -n "$CFLAGS" ; then
            make clean
        fi
-       make CFLAGS=$CFLAGS install || exit 1 
+       if test -z "$CFLAGS" ; then
+           make install || exit 1 
+       else
+           make CFLAGS=$CFLAGS install || exit 1 
+       fi
        cd ${CURRDIR}
     done
 }
