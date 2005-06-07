@@ -701,14 +701,36 @@ wifi_get_config(const char *ifname, wireless_config *cfg)
 static int
 wifi_set_item(const char *ifname, int req, struct iwreq *wrp)
 {
+    int rc;
+    int retry = 0;
     int skfd = wifi_get_skfd();
+
+#define RETRY_LIMIT 500
 
     WIFI_CHECK_SKFD(skfd);
     
-    if (iw_set_ext(skfd, ifname, req, wrp) < 0)
-        return TE_RC(TE_TA_LINUX, errno);
+    while ((rc = iw_set_ext(skfd, ifname, req, wrp)) != 0)
+    {
+        if (errno == EBUSY)
+        {
+            /* Try again */
+            if (++retry < RETRY_LIMIT)
+            {
+                usleep(50);
+                continue;
+            }
+        }
+        
+        rc = TE_RC(TE_TA_LINUX, errno);
+        break;
+    }
 
-    return 0;
+#undef RETRY_LIMIT
+
+    if (retry != 0)
+        WARN("%s: The number of retries %d", __FUNCTION__, retry);
+ 
+    return rc;
 }
 
 /**
@@ -723,13 +745,35 @@ wifi_set_item(const char *ifname, int req, struct iwreq *wrp)
 static int
 wifi_get_item(const char *ifname, int req, struct iwreq *wrp)
 {
+    int rc;
+    int retry = 0;
     int skfd = wifi_get_skfd();
 
-    WIFI_CHECK_SKFD(skfd);
-    
-    if (iw_get_ext(skfd, ifname, req, wrp) < 0)
-        return TE_RC(TE_TA_LINUX, errno);
+#define RETRY_LIMIT 500
 
+    WIFI_CHECK_SKFD(skfd);
+
+    while ((rc = iw_get_ext(skfd, ifname, req, wrp)) != 0)
+    {
+        if (errno == EBUSY)
+        {
+            /* Try again */
+            if (++retry < RETRY_LIMIT)
+            {
+                usleep(50);
+                continue;
+            }
+        }
+
+        rc = TE_RC(TE_TA_LINUX, errno);
+        break;
+    }
+
+#undef RETRY_LIMIT
+
+    if (retry != 0)
+        WARN("%s: The number of retries %d", __FUNCTION__, retry);
+ 
     return 0;
 }
 
@@ -1228,7 +1272,7 @@ wifi_channel_get(unsigned int gid, const char *oid, char *value,
         WARN("iw_freq2float() function returns channel, not frequency");
         channel = (int)freq;
     }
-    if (channel <= 0)
+    if (channel < 0)
     {
         ERROR("Cannot get current channel number on %s interface", ifname);
         return TE_RC(TE_TA_LINUX, EFAULT);
