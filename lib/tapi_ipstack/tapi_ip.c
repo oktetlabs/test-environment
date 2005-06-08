@@ -219,9 +219,75 @@ tapi_ip4_eth_recv_start(const char *ta_name, int sid, csap_handle_t csap,
 /* see description in tapi_ip.h */
 int
 tapi_ip4_pdu(const uint8_t *src_ip4_addr, const uint8_t *dst_ip4_addr,
-             tapi_ip_frag_spec_t *fragments, int ttl, int protocol, 
-             asn_value **result_value)
+             tapi_ip_frag_spec_t *fragments, size_t num_frags,
+             int ttl, int protocol, asn_value **result_value)
 {
+    int          rc, syms; 
+    unsigned int fr_i; 
+
+    tapi_ip_frag_spec_t *frag;
+
+    if (result_value == NULL)
+        return ETEWRONGPTR;
+
+    if ((rc = asn_parse_value_text("ip4:{}", ndn_generic_pdu,
+                                   result_value, &syms)) != 0)
+        return rc;
+
+    if (src_ip4_addr != NULL &&
+        (rc = ndn_du_write_plain_oct(*result_value, NDN_TAG_IP4_SRC_ADDR,
+                                     src_ip4_addr, 4)) != 0)
+    {
+        ERROR("%s(): set IP4 src failed %X", __FUNCTION__, rc);
+        return rc;
+    }
+
+    if (dst_ip4_addr != NULL &&
+        (rc = ndn_du_write_plain_oct(*result_value, NDN_TAG_IP4_DST_ADDR,
+                                     dst_ip4_addr, 4)) != 0)
+    {
+        ERROR("%s(): set IP4 dst failed %X", __FUNCTION__, rc);
+        return rc;
+    }
+
+    if (ttl >= 0 &&
+        (rc = ndn_du_write_plain_int(*result_value, NDN_TAG_IP4_TTL,
+                                     ttl)) != 0)
+    {
+        ERROR("%s(): set IP4 ttl failed %X", __FUNCTION__, rc);
+        return rc;
+    }
+
+    if (protocol >= 0 &&
+        (rc = ndn_du_write_plain_int(*result_value, NDN_TAG_IP4_PROTOCOL,
+                                     protocol)) != 0)
+    {
+        ERROR("%s(): set IP4 protocol failed %X", __FUNCTION__, rc);
+        return rc;
+    }
+
+    if (fragments != NULL)
+    {
+        asn_value *frag_seq = asn_init_value(ndn_ip4_frag_seq);
+
+        for (fr_i = 0, frag = fragments; fr_i < num_frags; fr_i++, frag++)
+        {
+            asn_value *frag_val = asn_init_value(ndn_ip4_frag_spec);
+
+            asn_write_int32(frag_val, frag->hdr_offset, "hdr-offset");
+            asn_write_int32(frag_val, frag->real_offset, "real-offset");
+            asn_write_int32(frag_val, frag->hdr_length, "hdr-length");
+            asn_write_int32(frag_val, frag->real_length, "real-length");
+            asn_write_int32(frag_val, frag->more_frags_flag, "more-frags");
+
+            asn_insert_indexed(frag_seq, frag_val, fr_i, "");
+        }
+
+        asn_put_child_value(*result_value, frag_seq, 
+                            PRIVATE, NDN_TAG_IP4_FRAGMENTS);
+        /* do NOT free frag_seq here! */
+    }
+
     return 0; 
 }
 

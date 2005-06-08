@@ -40,9 +40,9 @@
 
 
 typedef struct tapi_ip_frag_spec_t {
-    uint32_t    pkt_offset;     /**< value for "offset" in IP header */
+    uint32_t    hdr_offset;     /**< value for "offset" in IP header */
     uint32_t    real_offset;    /**< begin of frag data in real payload */
-    size_t      pkt_length;     /**< vlaue for "length" in IP header */
+    size_t      hdr_length;     /**< vlaue for "length" in IP header */
     size_t      real_length;    /**< length of frag data in real payload */
     int         more_frags_flag;/**< value for "more frags flag" */
 } tapi_ip_frag_spec_t;
@@ -103,7 +103,8 @@ extern int tapi_ip4_eth_recv_start(const char *ta_name, int sid,
  *
  * @param src_ip4_addr  source IP address in network order, or NULL;
  * @param dst_ip4_addr  destination IP address in network order, or NULL;
- * @param fragments     IP fragments specifictaion, or NULL;
+ * @param fragments     array with IP fragments specifictaions, or NULL;
+ * @param num_frags     number of IP fragments;
  * @param ttl           time-to-live field, or negative for CSAP default;
  * @param protocol      protocol field, or negative for CSAP default;
  * @param result_value  location for pointer to new ASN value (OUT);
@@ -113,6 +114,7 @@ extern int tapi_ip4_eth_recv_start(const char *ta_name, int sid,
 extern int tapi_ip4_pdu(const uint8_t *src_ip4_addr,
                         const uint8_t *dst_ip4_addr,
                         tapi_ip_frag_spec_t *fragments,
+                        size_t num_frags,
                         int ttl, int protocol, 
                         asn_value **result_value);
 
