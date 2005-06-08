@@ -35,7 +35,7 @@
 #endif
 
 #include "logger_ta.h"
-#include "rcf_pch.h"
+#include "rcf_pch_mem.h"
 
 /** Local log buffer instance */
 struct lgr_rb log_buffer;
