@@ -98,17 +98,35 @@ extern int tapi_ip4_eth_recv_start(const char *ta_name, int sid,
                                    const uint8_t *src_ip4_addr,
                                    const uint8_t *dst_ip4_addr,
                                    unsigned int timeout, int num);
+/**
+ * Prepare ASN PDU value of IPv4 CSAP layer type for Traffic-Template. 
+ *
+ * @param src_ip4_addr  source IP address in network order, or NULL;
+ * @param dst_ip4_addr  destination IP address in network order, or NULL;
+ * @param fragments     IP fragments specifictaion, or NULL;
+ * @param ttl           time-to-live field, or negative for CSAP default;
+ * @param protocol      protocol field, or negative for CSAP default;
+ * @param result_value  location for pointer to new ASN value (OUT);
+ * 
+ * @return status code.
+ */
+extern int tapi_ip4_pdu(const uint8_t *src_ip4_addr,
+                        const uint8_t *dst_ip4_addr,
+                        tapi_ip_frag_spec_t *fragments,
+                        int ttl, int protocol, 
+                        asn_value **result_value);
+
 
 /**
- * Prepare ASN Pattern-Unit value for 'tcp.ip4.eth' CSAP.
+ * Prepare ASN Pattern-Unit value for 'ip4.eth' CSAP.
  * 
- * @param src_mac_addr  Source MAC address (or NULL)
- * @param dst_mac_addr  Destination MAC address (or NULL)
- * @param src_ip4_addr  Source IP address in network order (or NULL)
- * @param dst_ip4_addr  Destination IP address in network order (or NULL)
- * @param result_value  Location for pointer to new ASN value (OUT)
+ * @param src_mac_addr  source MAC address, or NULL;
+ * @param dst_mac_addr  destination MAC address, or NULL;
+ * @param src_ip4_addr  source IP address in network order, or NULL;
+ * @param dst_ip4_addr  destination IP address in network order, or NULL;
+ * @param result_value  location for pointer to new ASN value (OUT);
  * 
- * @return Zero on success or error code.
+ * @return status code.
  */
 extern int tapi_ip4_eth_pattern_unit(const uint8_t *src_mac_addr,
                                      const uint8_t *dst_mac_addr,

@@ -216,6 +216,14 @@ tapi_ip4_eth_recv_start(const char *ta_name, int sid, csap_handle_t csap,
     return rc;
 }
 
+/* see description in tapi_ip.h */
+int
+tapi_ip4_pdu(const uint8_t *src_ip4_addr, const uint8_t *dst_ip4_addr,
+             tapi_ip_frag_spec_t *fragments, int ttl, int protocol, 
+             asn_value **result_value)
+{
+    return 0; 
+}
 
 /* see description in tapi_ip.h */
 int
