@@ -282,6 +282,8 @@ export PKG_CONFIG_PATH=$DESTDIR/$prefix/../$host/lib/pkgconfig/
 
 PKG_CHECK_MODULES(TAD, te-$with_tad)
 
+LIBS="$LIBS -lutil"
+
 AC_CONFIG_FILES([Makefile])
 
 AC_OUTPUT

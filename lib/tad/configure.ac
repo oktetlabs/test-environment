@@ -15,6 +15,33 @@ AC_PROG_CC
 AC_PROG_RANLIB
 AC_PROG_INSTALL
 
+# FIXME: make it AC macro
+find_lib()
+{
+LIB_PATHNAME=
+START=`pwd`
+for i in `${CC} --print-search-dirs | grep libraries | \
+          sed s/libraries// | sed s/=//g | sed s/:/\ /g` ; do
+    if cd $i 2>/dev/null ; then
+        DIR=`pwd`
+        FILES=`find $DIR -name lib$1\*.a` ;
+        if test -n "$FILES" ; then break; fi ;
+    fi
+    cd $START
+done
+cd $START
+
+if test -z "$FILES" ; then
+    return ;
+fi    
+
+for i in $FILES ; do
+    LIB_PATHNAME=$i ;
+    return ;
+done
+}
+
+
 # Check for C compiler features
 AC_C_CONST
 AC_C_INLINE
@@ -131,7 +158,11 @@ AC_ARG_WITH([cli],,
 [if test "${withval}" = yes; then
     w_cli=true;
     proto_specific cli;
-    TA_TAD_LIBS="$TA_TAD_LIBS -lexpect";
+    find_lib expect
+    if test -z "${LIB_PATHNAME}" ; then
+        AC_ERROR([Cannot find static expect library])
+    fi
+    TA_TAD_LIBS="$TA_TAD_LIBS ${LIB_PATHNAME}";
     AC_CONFIG_FILES([cli/Makefile])
  fi
 ], [w_cli=false])
