@@ -78,6 +78,7 @@
 enum tapi_cfg_oper {
     OP_ADD, /**< Add operation */
     OP_DEL, /**< Delete operation */
+    OP_GET  /**< Get operation */
 };
 
 /* Forward declarations */
@@ -89,7 +90,8 @@ static int tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta,
                              int win, int irtt, cfg_handle *cfg_hndl);
 
 static int tapi_cfg_arp_op(enum tapi_cfg_oper op, const char *ta,
-                           const void *net_addr, const void *link_addr);
+                           const void *net_addr, const void *link_addr,
+                           void *ret_addr);
 
 
 /* See description in tapi_cfg.h */
@@ -706,17 +708,25 @@ tapi_cfg_del_route(cfg_handle *rt_hndl)
 
 /* See the description in tapi_cfg.h */
 int
+tapi_cfg_get_arp_entry(const char *ta,
+                       const void *net_addr, void *ret_addr)
+{
+    return tapi_cfg_arp_op(OP_GET, ta, net_addr, NULL, ret_addr);
+}
+
+/* See the description in tapi_cfg.h */
+int
 tapi_cfg_add_arp_entry(const char *ta,
                        const void *net_addr, const void *link_addr)
 {
-    return tapi_cfg_arp_op(OP_ADD, ta, net_addr, link_addr);
+    return tapi_cfg_arp_op(OP_ADD, ta, net_addr, link_addr, NULL);
 }
 
 /* See the description in tapi_cfg.h */
 int
 tapi_cfg_del_arp_entry(const char *ta, const void *net_addr)
 {
-    return tapi_cfg_arp_op(OP_DEL, ta, net_addr, NULL);
+    return tapi_cfg_arp_op(OP_DEL, ta, net_addr, NULL, NULL);
 }
 
 /* See the description in tapi_cfg.h */
@@ -937,14 +947,15 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
  * @param ta            Test agent
  * @param net_addr      Network address
  * @param link_addr     Link-leyer address
+ * @param ret_addr      Returned by OP_GET operation link_addr
  *
  * @return Status code
  *
  * @retval 0  on success
  */                   
 static int
-tapi_cfg_arp_op(enum tapi_cfg_oper op, const char *ta,
-                const void *net_addr, const void *link_addr)
+tapi_cfg_arp_op(enum tapi_cfg_oper op, const char *ta, const void *net_addr,
+                const void *link_addr, void *ret_addr)
 {
     cfg_handle      handle;
     char            net_addr_str[INET_ADDRSTRLEN];
@@ -960,6 +971,34 @@ tapi_cfg_arp_op(enum tapi_cfg_oper op, const char *ta,
 
     switch (op)
     {
+        case OP_GET:
+        {
+            struct sockaddr *lnk_addr = NULL;
+            rc = cfg_get_instance_fmt(NULL, &lnk_addr,
+                                      "/agent:%s/arp:%s",
+                                      ta, net_addr_str);
+            if (rc != 0 && rc != TE_RC(TE_CS, ENOENT))
+            {
+                ERROR("%s() fails to get ARP entry on TA '%s'",
+                      __FUNCTION__, ta);
+            }
+            else
+            {
+                if (ret_addr == NULL)
+                {
+                    ERROR("%s() invalid lovcation for copying", 
+                          __FUNCTION__);
+                    rc = TE_RC(TE_CS, EINVAL);
+                }
+                else
+                {
+                    memcpy(ret_addr, &(lnk_addr->sa_data), IFHWADDRLEN);
+                }
+            }
+            free(lnk_addr);
+            break;
+        }
+
         case OP_ADD:
         {
             struct sockaddr lnk_addr;

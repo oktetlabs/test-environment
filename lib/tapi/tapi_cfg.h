@@ -252,6 +252,25 @@ tapi_cfg_del_route_via_gw(const char *ta, int addr_family,
 }
 
 /**
+ * Get ARP entry on specified agent
+ *
+ * @param ta           Test agent name
+ * @param net_addr     IPv4 network address
+ * @param ret_addr    returned IEEE 802.3 Link layer address
+ *
+ * @return Status code
+ *
+ * @retval 0  - on success
+ *
+ * @note Currently the function supports only (IPv4 -> IEEE 802.3 ethernet) 
+ * entries. In the future it might be extended with an additional parameter
+ * hw_type to support different classes of link layer addresses.
+ */
+extern int tapi_cfg_get_arp_entry(const char *ta,
+                                  const void *net_addr,
+                                  void *ret_addr);
+
+/**
  * Add a new static ARP entry on specified agent
  *
  * @param ta           Test agent name
