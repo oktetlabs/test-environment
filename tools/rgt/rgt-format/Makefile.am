@@ -64,6 +64,11 @@ BUILT_SOURCES = xml2text.h xml2html.h xml2html-multi.h
 
 CLEANFILES=$(RGT_SUBDIRS:%=%.h)
 
+dist-hook:
+	for util in $(RGT_SUBDIRS); do \
+	    rm -f $(distdir)/$${util}.h; \
+	done
+
 $(RGT_SUBDIRS:%=%.h):
 	for util in $(RGT_SUBDIRS); do \
 	    echo -E "enum {" > $${util}.h; \

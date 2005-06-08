@@ -33,6 +33,9 @@ EXTRA_DIST = filter_conf.html.in
 BUILT_SOURCES = filter_conf.html
 CLEANFILES=filter_conf.html
 
+dist-hook:
+	rm -f $(distdir)/filter_conf.html
+
 filter_conf.html: $(srcdir)/filter_conf.html.in
 	cat $(srcdir)/filter_conf.html.in | \
         sed 's,\@\@DATADIR\@\@,${miscdatadir}/..,g;' > \
