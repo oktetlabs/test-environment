@@ -214,11 +214,13 @@ rcf_rpc_server_get(const char *ta, const char *name,
         /* Check that it is not dead */
         tarpc_getpid_in  in;
         tarpc_getpid_out out;
+        char             lib = 0;
         
         memset(&in, 0, sizeof(in));
         memset(&out, 0, sizeof(out));
 
         in.common.op = RCF_RPC_CALL_WAIT;
+        in.common.lib = &lib;
  
         if ((rc = rcf_ta_call_rpc(ta, sid, name, 1000, "getpid", 
                                   &in, &out)) != 0)
@@ -290,7 +292,8 @@ rcf_rpc_server_exec(rcf_rpc_server *rpcs)
     tarpc_execve_in  in;
     tarpc_execve_out out;
     
-    int rc;
+    int  rc;
+    char lib = 0;
 
     if (rpcs == NULL)
         return TE_RC(TE_RCF, EINVAL);
@@ -301,6 +304,7 @@ rcf_rpc_server_exec(rcf_rpc_server *rpcs)
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
     in.name = rpcs->name;
+    in.common.lib = &lib;
 
     rpcs->op = RCF_RPC_CALL_WAIT;
     rc = rcf_ta_call_rpc(rpcs->ta, rpcs->sid, rpcs->name, 0xFFFFFFFF, 
