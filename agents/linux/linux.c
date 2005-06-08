@@ -715,7 +715,7 @@ ta_sigint_handler(int sig)
 static void
 ta_sigpipe_handler(int sig)
 {
-    fprintf(stderr, "SIGPIPE is recaived\n");
+    fprintf(stderr, "SIGPIPE is received\n");
     UNUSED(sig);
 }
 
