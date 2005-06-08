@@ -20,8 +20,10 @@ find_lib()
 {
 LIB_PATHNAME=
 START=`pwd`
-for i in `${CC} --print-search-dirs | grep libraries | \
-          sed s/libraries// | sed s/=//g | sed s/:/\ /g` ; do
+DIRS="`${CC} --print-search-dirs | grep libraries | \
+      sed s/libraries// | sed s/=//g | sed s/:/\ /g`"
+DIRS="$DIRS `echo $LD_LIBRARY_PATH | sed s/:/\ /g`"
+for i in $DIRS ; do
     if cd $i 2>/dev/null ; then
         DIR=`pwd`
         FILES=`find $DIR -name lib$1\*.a` ;
