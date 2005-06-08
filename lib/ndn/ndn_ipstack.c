@@ -46,7 +46,7 @@ static asn_named_entry_t _ndn_ip4_frag_spec_ne_array [] =
         {PRIVATE, NDN_TAG_IP4_FR_HO} }, 
     { "real-offset",         &asn_base_integer_s,
         {PRIVATE, NDN_TAG_IP4_FR_RO} }, 
-    { "hdr-lenght",         &asn_base_integer_s,
+    { "hdr-length",         &asn_base_integer_s,
         {PRIVATE, NDN_TAG_IP4_FR_HL} }, 
     { "real-length",         &asn_base_integer_s,
         {PRIVATE, NDN_TAG_IP4_FR_RL} }, 
