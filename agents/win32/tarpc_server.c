@@ -1427,7 +1427,8 @@ void *vm_trasher_thread(void *arg)
     buf = malloc(len);
     if (buf == NULL)
     {
-        INFO("vm_trasher_thread() could not allocate %u bytes", len);
+        INFO("vm_trasher_thread() could not allocate "
+             "%u bytes, errno = %d", len, errno);
         return (void *)-1;
     }
 
@@ -1446,7 +1447,8 @@ void *vm_trasher_thread(void *arg)
         /* Read and write a byte of the chosen page */
         buf[(SIZE_T)dpos * 4096] |= 0x5A;    
     }
-
+    
+    free(buf);
     return (void *)0;
 }
 
