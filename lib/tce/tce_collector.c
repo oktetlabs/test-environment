@@ -806,6 +806,7 @@ dump_data(void)
     }
 
     lock.l_type = F_UNLCK;
+    lock.l_whence = SEEK_SET;
     lock.l_start = 0;
     lock.l_len = 0;
     fcntl(data_lock, F_SETLK, &lock);
