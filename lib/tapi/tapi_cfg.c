@@ -960,7 +960,7 @@ tapi_cfg_arp_op(enum tapi_cfg_oper op, const char *ta, const void *net_addr,
     cfg_handle      handle;
     char            net_addr_str[INET_ADDRSTRLEN];
     int             rc;
-
+    
     if (inet_ntop(AF_INET, net_addr, net_addr_str, 
                   sizeof(net_addr_str)) == NULL)
     {
@@ -981,6 +981,10 @@ tapi_cfg_arp_op(enum tapi_cfg_oper op, const char *ta, const void *net_addr,
             {
                 ERROR("%s() fails to get ARP entry on TA '%s'",
                       __FUNCTION__, ta);
+            }
+            else if (rc != 0)
+            {
+                return rc;
             }
             else
             {
