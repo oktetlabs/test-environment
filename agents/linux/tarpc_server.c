@@ -233,7 +233,7 @@ find_func(const char *lib, const char *name, sock_api_func *func)
             }
         }
         handle = libc_handle;
-        RING("Call from libc");
+        VERB("Call from libc");
     }
     else if (*lib != '\0')
     {
@@ -243,7 +243,7 @@ find_func(const char *lib, const char *name, sock_api_func *func)
             ERROR("Cannot load shared library %s: %s", lib, dlerror());
             return TE_RC(TE_TA_LINUX, ENOENT);
         }
-        RING("Call from smth special");
+        VERB("Call from smth special");
     }
     else
     {
@@ -256,7 +256,7 @@ find_func(const char *lib, const char *name, sock_api_func *func)
         assert(dynamic_library_handle != NULL);
         
         handle = dynamic_library_handle;
-        RING("Call from registered library");
+        VERB("Call from registered library");
     }
 
     *func = dlsym(handle, name);
@@ -2922,6 +2922,20 @@ msghdr2str(const struct msghdr *msg)
     return buf;
 }
 
+/** Calculate the auxiliary buffer length for msghdr */
+static inline int
+calculate_msg_controllen(struct tarpc_msghdr *rpc_msg)
+{
+    unsigned int i;
+    int          len = 0;
+    
+    for (i = 0; i < rpc_msg->msg_control.msg_control_len; i++)
+        len += CMSG_SPACE(rpc_msg->msg_control.msg_control_val[i].
+                          data.data_len);
+        
+    return len;
+}
+
 /*-------------- sendmsg() ------------------------------*/
 
 TARPC_FUNC(sendmsg,
@@ -2976,10 +2990,38 @@ TARPC_FUNC(sendmsg,
             msg.msg_iov = iovec_arr;
             INIT_CHECKED_ARG((char *)iovec_arr, sizeof(iovec_arr), 0);
         }
-        INIT_CHECKED_ARG(rpc_msg->msg_control.msg_control_val,
-                         rpc_msg->msg_control.msg_control_len, 0);
-        msg.msg_control = rpc_msg->msg_control.msg_control_val;
-        msg.msg_controllen = rpc_msg->msg_controllen;
+        
+        if (rpc_msg->msg_control.msg_control_val != NULL)
+        {
+            struct cmsghdr *c;
+            unsigned int    i;
+            int             len = calculate_msg_controllen(rpc_msg);
+            
+            struct tarpc_cmsghdr *rpc_c = 
+                rpc_msg->msg_control.msg_control_val;
+            
+            if ((msg.msg_control = calloc(1, len)) == NULL)
+            {
+                out->common._errno = TE_RC(TE_TA_LINUX, ENOMEM);
+                goto finish;
+            }
+            msg.msg_controllen = len;
+            
+            for (i = 0, c = CMSG_FIRSTHDR(&msg); 
+                 i < rpc_msg->msg_control.msg_control_len; 
+                 i++, c = CMSG_NXTHDR(&msg, c), rpc_c++)
+            {
+                c->cmsg_level = socklevel_rpc2h(rpc_c->level);
+                c->cmsg_type = sockopt_rpc2h(rpc_c->type);
+                c->cmsg_len = CMSG_LEN(rpc_c->data.data_len);
+                if (rpc_c->data.data_val != NULL)
+                    memcpy(CMSG_DATA(c), rpc_c->data.data_val, 
+                           rpc_c->data.data_len);
+            }
+            
+            INIT_CHECKED_ARG(msg.msg_control, msg.msg_controllen, 0);
+        }
+        
         msg.msg_flags = send_recv_flags_rpc2h(rpc_msg->msg_flags);
         INIT_CHECKED_ARG((char *)&msg, sizeof(msg), 0);
 
@@ -2987,7 +3029,10 @@ TARPC_FUNC(sendmsg,
              msghdr2str(&msg), send_recv_flags_rpc2h(in->flags));
         MAKE_CALL(out->retval = func(in->s, &msg,
                                      send_recv_flags_rpc2h(in->flags)));
+        free(msg.msg_control);
     }
+    finish:
+    ;
 }
 )
 
@@ -3008,9 +3053,12 @@ TARPC_FUNC(recvmsg,
 {
     struct iovec iovec_arr[RCF_RPC_MAX_IOVEC];
 
-    unsigned int i;
+    unsigned int  i;
+    struct msghdr msg;
 
     memset(iovec_arr, 0, sizeof(iovec_arr));
+    memset(&msg, 0, sizeof(msg));
+    
     if (out->msg.msg_val == NULL)
     {
         MAKE_CALL(out->retval = func(in->s, NULL,
@@ -3018,11 +3066,7 @@ TARPC_FUNC(recvmsg,
     }
     else
     {
-        struct msghdr msg;
-
         struct tarpc_msghdr *rpc_msg = out->msg.msg_val;
-
-        memset(&msg, 0, sizeof(msg));
 
         PREPARE_ADDR(rpc_msg->msg_name, rpc_msg->msg_namelen);
         msg.msg_namelen = rpc_msg->msg_namelen;
@@ -3045,13 +3089,27 @@ TARPC_FUNC(recvmsg,
             msg.msg_iov = iovec_arr;
             INIT_CHECKED_ARG((char *)iovec_arr, sizeof(iovec_arr), 0);
         }
-
-        INIT_CHECKED_ARG(rpc_msg->msg_control.msg_control_val,
-                         rpc_msg->msg_control.msg_control_len,
-                         rpc_msg->msg_controllen);
-        msg.msg_control = rpc_msg->msg_control.msg_control_val;
-        msg.msg_controllen = rpc_msg->msg_controllen;
-
+        if (rpc_msg->msg_control.msg_control_val != NULL)
+        {
+            int len = calculate_msg_controllen(rpc_msg);
+            int rlen = len * 2;
+            int data_len = rpc_msg->msg_control.msg_control_val[0].
+                           data.data_len;
+            
+            free(rpc_msg->msg_control.msg_control_val[0].data.data_val);
+            free(rpc_msg->msg_control.msg_control_val);
+            rpc_msg->msg_control.msg_control_val = NULL;
+            rpc_msg->msg_control.msg_control_len = 0;
+            
+            msg.msg_controllen = len;
+            if ((msg.msg_control = calloc(1, rlen)) == NULL)
+            {
+                out->common._errno = TE_RC(TE_TA_LINUX, ENOMEM);
+                goto finish;
+            }
+            CMSG_FIRSTHDR(&msg)->cmsg_len = CMSG_LEN(data_len);
+            INIT_CHECKED_ARG((char *)(msg.msg_control), rlen, len);
+        }
         msg.msg_flags = send_recv_flags_rpc2h(rpc_msg->msg_flags);
 
         /*
@@ -3075,7 +3133,6 @@ TARPC_FUNC(recvmsg,
                   );
         VERB("recvmsg(): out msg=%s", msghdr2str(&msg));
 
-        rpc_msg->msg_controllen = msg.msg_controllen;
         rpc_msg->msg_flags = send_recv_flags_h2rpc(msg.msg_flags);
         sockaddr_h2rpc(a, &(rpc_msg->msg_name));
         rpc_msg->msg_namelen = msg.msg_namelen;
@@ -3087,7 +3144,59 @@ TARPC_FUNC(recvmsg,
                     iovec_arr[i].iov_len;
             }
         }
+
+        if (msg.msg_control != NULL)
+        {
+            struct cmsghdr *c;
+            int             i;
+
+            struct tarpc_cmsghdr *rpc_c;
+            
+            /* Calculate number of elements to allocate an array */
+            for (i = 0, c = CMSG_FIRSTHDR(&msg);
+                 c != NULL;
+                 i++, c = CMSG_NXTHDR(&msg, c));
+
+            rpc_c = rpc_msg->msg_control.msg_control_val = 
+                calloc(1, sizeof(*rpc_c) * i);
+                
+            if (rpc_msg->msg_control.msg_control_val == NULL)
+            {
+                out->common._errno = TE_RC(TE_TA_LINUX, ENOMEM);
+                goto finish;
+            }
+            /* Fill the array */
+            for (i = 0, c = CMSG_FIRSTHDR(&msg); 
+                 c != NULL;
+                 i++, c = CMSG_NXTHDR(&msg, c))
+            {
+                char *data = CMSG_DATA(c);
+                
+                rpc_c->level = socklevel_h2rpc(c->cmsg_level);
+                rpc_c->type = sockopt_h2rpc(c->cmsg_level, c->cmsg_type);
+                if ((rpc_c->data.data_len = 
+                         c->cmsg_len - (data - (char *)c)) > 0)
+                {
+                    rpc_c->data.data_val = malloc(rpc_c->data.data_len);
+                    if (rpc_c->data.data_val == NULL)
+                    {
+                        for (i--, rpc_c--; i >= 0; i--, rpc_c--)
+                            free(rpc_c->data.data_val);
+                        free(rpc_msg->msg_control.msg_control_val);
+                        rpc_msg->msg_control.msg_control_val = NULL;
+                        
+                        out->common._errno = TE_RC(TE_TA_LINUX, ENOMEM);
+                        goto finish;
+                    }
+                    memcpy(rpc_c->data.data_val, data, 
+                           rpc_c->data.data_len);
+                }
+            }
+            rpc_msg->msg_control.msg_control_len = i;
+        }
     }
+    finish:
+    free(msg.msg_control);
 }
 )
 

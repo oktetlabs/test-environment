@@ -591,11 +591,13 @@ rpc_sendmsg(rcf_rpc_server *rpcs,
 
     struct tarpc_msghdr rpc_msg;
 
-    struct tarpc_iovec iovec_arr[RCF_RPC_MAX_IOVEC];
+    struct tarpc_iovec   iovec_arr[RCF_RPC_MAX_IOVEC];
+    struct tarpc_cmsghdr cmsg_hdrs[RCF_RPC_MAX_CMSGHDR];
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
     memset(iovec_arr, 0, sizeof(iovec_arr));
+    memset(cmsg_hdrs, 0, sizeof(cmsg_hdrs));
     memset(&rpc_msg, 0, sizeof(rpc_msg));
 
     size_t i;
@@ -627,9 +629,7 @@ rpc_sendmsg(rcf_rpc_server *rpcs,
         if (((msg->msg_iov != NULL) &&
              (msg->msg_iovlen > msg->msg_riovlen)) ||
             ((msg->msg_name != NULL) &&
-             (msg->msg_namelen > msg->msg_rnamelen)) ||
-            ((msg->msg_control != NULL) &&
-             (msg->msg_controllen > msg->msg_rcontrollen)))
+             (msg->msg_namelen > msg->msg_rnamelen)))
         {
             ERROR("Inconsistent real and declared lengths of buffers");
             rpcs->_errno = TE_RC(TE_RCF, EINVAL);
@@ -675,10 +675,50 @@ rpc_sendmsg(rcf_rpc_server *rpcs,
 
         if (msg->msg_control != NULL)
         {
-            rpc_msg.msg_control.msg_control_val = msg->msg_control;
-            rpc_msg.msg_control.msg_control_len = msg->msg_rcontrollen;
+            struct cmsghdr *c;
+            unsigned int    i;
+
+            struct tarpc_cmsghdr *rpc_c = 
+                rpc_msg.msg_control.msg_control_val;
+
+            rpc_msg.msg_control.msg_control_val = cmsg_hdrs;
+            for (i = 0, c = CMSG_FIRSTHDR((struct msghdr *)msg); 
+                 i < RCF_RPC_MAX_CMSGHDR && c != NULL;
+                 i++, c = CMSG_NXTHDR((struct msghdr *)msg, c))
+            {
+                char *data = CMSG_DATA(c);
+                
+                if ((int)(c->cmsg_len) < (char *)c - data)
+                {
+                    ERROR("Incorrect content of cmsg is not supported");
+                    rpcs->_errno = TE_RC(TE_RCF, EINVAL);
+                    RETVAL_INT(sendmsg, -1);
+                }
+                
+                rpc_c->level = socklevel_h2rpc(c->cmsg_level);
+                rpc_c->type = sockopt_h2rpc(c->cmsg_level, c->cmsg_type);
+                if ((rpc_c->data.data_len = 
+                         c->cmsg_len - ((char *)c - data)) > 0)
+                {
+                    rpc_c->data.data_val = data;
+                }
+            }
+            
+            if (i == RCF_RPC_MAX_CMSGHDR)
+            {
+                rpcs->_errno = TE_RC(TE_RCF, ENOMEM);
+                ERROR("Too many cmsg headers - increase "
+                      "RCF_RPC_MAX_CMSGHDR");
+                RETVAL_INT(sendmsg, -1);
+            }
+            
+            if (i == 0)
+            {
+                WARN("Incorrect msg_control length is not supported"); 
+                rpc_msg.msg_control.msg_control_val = NULL;
+            }
+            rpc_msg.msg_control.msg_control_len = i;
         }
-        rpc_msg.msg_controllen = msg->msg_controllen;
     }
 
     rcf_rpc_call(rpcs, "sendmsg", &in, &out);
@@ -714,7 +754,8 @@ rpc_recvmsg(rcf_rpc_server *rpcs,
 
     struct tarpc_msghdr rpc_msg;
 
-    struct tarpc_iovec iovec_arr[RCF_RPC_MAX_IOVEC];
+    struct tarpc_iovec   iovec_arr[RCF_RPC_MAX_IOVEC];
+    struct tarpc_cmsghdr cmsg_hdrs[RCF_RPC_MAX_CMSGHDR];
 
     size_t i;
 
@@ -722,7 +763,8 @@ rpc_recvmsg(rcf_rpc_server *rpcs,
     memset(&out, 0, sizeof(out));
     memset(iovec_arr, 0, sizeof(iovec_arr));
     memset(&rpc_msg, 0, sizeof(rpc_msg));
-
+    memset(cmsg_hdrs, 0, sizeof(cmsg_hdrs));
+    
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
@@ -747,9 +789,22 @@ rpc_recvmsg(rcf_rpc_server *rpcs,
             RETVAL_INT(recvmsg, -1);
         }
 
+        if (msg->msg_cmsghdr_num > RCF_RPC_MAX_CMSGHDR)
+        {
+            rpcs->_errno = TE_RC(TE_RCF, ENOMEM);
+            ERROR("Too many cmsg headers - increase RCF_RPC_MAX_CMSGHDR");
+            RETVAL_INT(recvmsg, -1);
+        }
+        
+        if (msg->msg_control != NULL && msg->msg_cmsghdr_num == 0)
+        {
+            rpcs->_errno = TE_RC(TE_RCF, EINVAL);
+            ERROR("Number of cmsg headers is incorrect");
+            RETVAL_INT(recvmsg, -1);
+        }
+
         if (msg->msg_iovlen > msg->msg_riovlen ||
-            msg->msg_namelen > msg->msg_rnamelen ||
-            msg->msg_controllen > msg->msg_rcontrollen)
+            msg->msg_namelen > msg->msg_rnamelen)
         {
             rpcs->_errno = TE_RC(TE_RCF, EINVAL);
             RETVAL_INT(recvmsg, -1);
@@ -794,10 +849,13 @@ rpc_recvmsg(rcf_rpc_server *rpcs,
 
         if (msg->msg_control != NULL)
         {
-            rpc_msg.msg_control.msg_control_val = msg->msg_control;
-            rpc_msg.msg_control.msg_control_len = msg->msg_rcontrollen;
-        }
-        rpc_msg.msg_controllen = msg->msg_controllen;
+            rpc_msg.msg_control.msg_control_val = cmsg_hdrs;
+            rpc_msg.msg_control.msg_control_len = msg->msg_cmsghdr_num;
+            cmsg_hdrs[0].data.data_val = msg->msg_control;
+            cmsg_hdrs[0].data.data_len = msg->msg_controllen -
+                                         msg->msg_cmsghdr_num *
+                                         CMSG_ALIGN(sizeof(struct cmsghdr));
+        } 
     }
 
     rcf_rpc_call(rpcs, "recvmsg", &in, &out);
@@ -811,7 +869,7 @@ rpc_recvmsg(rcf_rpc_server *rpcs,
     if (RPC_IS_CALL_OK(rpcs) && msg != NULL && out.msg.msg_val != NULL)
     {
         rpc_msg = out.msg.msg_val[0];
-
+        
         if (msg->msg_name != NULL)
         {
             ((struct sockaddr *)(msg->msg_name))->sa_family =
@@ -832,10 +890,34 @@ rpc_recvmsg(rcf_rpc_server *rpcs,
         }
         if (msg->msg_control != NULL)
         {
-            memcpy(msg->msg_control, rpc_msg.msg_control.msg_control_val,
-                   msg->msg_rcontrollen);
+            struct cmsghdr *c;
+            unsigned int    i;
+            
+            struct tarpc_cmsghdr *rpc_c = 
+                rpc_msg.msg_control.msg_control_val;
+            
+            for (i = 0, c = CMSG_FIRSTHDR((struct msghdr *)msg); 
+                 i < rpc_msg.msg_control.msg_control_len && c != NULL; 
+                 i++, c = CMSG_NXTHDR((struct msghdr *)msg, c), rpc_c++)
+            {
+                c->cmsg_level = socklevel_rpc2h(rpc_c->level);
+                c->cmsg_type = sockopt_rpc2h(rpc_c->type);
+                c->cmsg_len = CMSG_LEN(rpc_c->data.data_len);
+                if (rpc_c->data.data_val != NULL)
+                    memcpy(CMSG_DATA(c), rpc_c->data.data_val, 
+                           rpc_c->data.data_len);
+            }
+            
+            if (c == NULL && i < rpc_msg.msg_control.msg_control_len)
+            {
+                ERROR("Unexpected lack of space in auxiliary buffer");
+                rpcs->_errno = TE_RC(TE_RCF, EINVAL);
+                RETVAL_INT(recvmsg, -1);
+            }
+            
+            if (c != NULL)
+                msg->msg_controllen = (char *)c - (char *)msg->msg_control;
         }
-        msg->msg_controllen = rpc_msg.msg_controllen;
 
         msg->msg_flags = (rpc_send_recv_flags)rpc_msg.msg_flags;
 

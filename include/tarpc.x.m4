@@ -445,14 +445,20 @@ struct tarpc_sigaction {
 
 /* sendmsg() / recvmsg() */
 
+struct tarpc_cmsghdr {
+    uint32_t level;     /**< Originating protocol */
+    uint32_t type;      /**< Protocol-specific type */
+    uint8_t  data<>;    /**< Data */
+};    
+
 struct tarpc_msghdr {
-    struct tarpc_sa     msg_name;
-    tarpc_socklen_t     msg_namelen;
-    struct tarpc_iovec  msg_iov<>;
-    tarpc_size_t        msg_iovlen;
-    uint8_t             msg_control<>;
-    tarpc_socklen_t     msg_controllen;
-    tarpc_int           msg_flags;
+    struct tarpc_sa      msg_name;       /**< Destination/source address */
+    tarpc_socklen_t      msg_namelen;    /**< To be passed to 
+                                              recvmsg/sendmsg */
+    struct tarpc_iovec   msg_iov<>;      /**< Vector */
+    tarpc_size_t         msg_iovlen;     /**< Passed to recvmsg() */
+    struct tarpc_cmsghdr msg_control<>;  /**< Control info array */
+    tarpc_int            msg_flags;      /**< Flags on received message */
 };
 
 struct tarpc_sendmsg_in {

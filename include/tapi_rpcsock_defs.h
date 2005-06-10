@@ -1398,13 +1398,13 @@ sockopt_rpc2h(rpc_sockopt opt)
     }
 }
 
-#if 0
 /** Convert native socket options to RPC one */
 static inline rpc_sockopt
 sockopt_h2rpc(int opt_type, int opt)
 {
     switch (opt_type)
     {
+#ifdef SOL_SOCKET    
         case SOL_SOCKET:
             switch (opt)
             {
@@ -1436,7 +1436,9 @@ sockopt_h2rpc(int opt_type, int opt)
                 default: return RPC_SOCKOPT_MAX;
             }
             break;
+#endif
 
+#ifdef SOL_TCP
         case SOL_TCP:
             switch (opt)
             {
@@ -1457,7 +1459,9 @@ sockopt_h2rpc(int opt_type, int opt)
                 default: return RPC_SOCKOPT_MAX;
             }
             break;
-        
+#endif
+
+#ifdef SOL_IP        
         case SOL_IP:
             switch (opt)
             {
@@ -1484,11 +1488,11 @@ sockopt_h2rpc(int opt_type, int opt)
                 default: return RPC_SOCKOPT_MAX;
             }
             break;
+#endif
 
         default: return RPC_SOCKOPT_MAX;
     }
 }
-#endif
 
 /** Convert RPC socket option to string */
 static inline const char *
@@ -1577,6 +1581,27 @@ socklevel_rpc2h(rpc_socklevel level)
         RPC2H(SOL_TCP);
 #endif
         default: return SOL_MAX;
+    }
+}
+
+/** Convert native socket option constants to RPC ones */
+static inline rpc_socklevel
+socklevel_h2rpc(int level)
+{
+    switch (level)
+    {
+        H2RPC(SOL_SOCKET);
+#ifndef SOL_IP
+        case IPPROTO_IP: return RPC_SOL_IP;
+#else
+        H2RPC(SOL_IP);
+#endif
+#ifndef SOL_TCP
+        case IPPROTO_TCP: return RPC_SOL_TCP;
+#else
+        H2RPC(SOL_TCP);
+#endif
+        default: return RPC_SOL_UNKNOWN;
     }
 }
 

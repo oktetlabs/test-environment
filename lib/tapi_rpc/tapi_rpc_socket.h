@@ -238,13 +238,13 @@ rpc_recvfrom(rcf_rpc_server *rpcs,
 
 /** Store information about message */
 typedef struct rpc_msghdr {
+    /* Standard fields - do not change types/order! */
     void             *msg_name;         /**< protocol address */
     socklen_t         msg_namelen;      /**< size of protocol address */
     struct rpc_iovec *msg_iov;          /**< scatter/gather array */
-    size_t            msg_iovlen;       /**< # elements in msg_iov */
-    void             *msg_control;      /**< ancillary data; must be
-                                             aligned for a cmsghdr
-                                             stucture */
+    size_t            msg_iovlen;       /**< elements in msg_iov */
+    void             *msg_control;      /**< ancillary data */
+    
     socklen_t            msg_controllen; /**< length of ancillary data */
     rpc_send_recv_flags  msg_flags;      /**< flags returned by recvmsg() */
 
@@ -254,9 +254,8 @@ typedef struct rpc_msghdr {
                                              by RPC */
     size_t            msg_riovlen;      /**< real number of elements
                                              in msg_iov */
-    socklen_t         msg_rcontrollen;  /**< real length of the
-                                             ancillary data buffer bo be
-                                             copied by RPC */
+    int               msg_cmsghdr_num;  /**< Number of elements in
+                                             the array */ 
 } rpc_msghdr;
 
 /**

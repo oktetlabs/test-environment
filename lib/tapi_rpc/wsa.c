@@ -1717,13 +1717,15 @@ rpc_wsa_recv_msg(rcf_rpc_server *rpcs, int s,
     rcf_rpc_op             op;
     tarpc_wsa_recv_msg_in  in;
     tarpc_wsa_recv_msg_out out;
-    struct                 tarpc_msghdr rpc_msg;
-    struct                 tarpc_iovec iovec_arr[RCF_RPC_MAX_IOVEC];
+    struct tarpc_msghdr    rpc_msg;
+    struct tarpc_iovec     iovec_arr[RCF_RPC_MAX_IOVEC];
+    struct tarpc_cmsghdr   cmsg_hdrs[RCF_RPC_MAX_CMSGHDR];
     size_t                 i;
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
     memset(iovec_arr, 0, sizeof(iovec_arr));
+    memset(cmsg_hdrs, 0, sizeof(cmsg_hdrs));
 
     if (rpcs == NULL)
     {
@@ -1751,9 +1753,22 @@ rpc_wsa_recv_msg(rcf_rpc_server *rpcs, int s,
             RETVAL_INT(wsa_recv_msg, -1);
         }
 
+        if (msg->msg_cmsghdr_num > RCF_RPC_MAX_CMSGHDR)
+        {
+            rpcs->_errno = TE_RC(TE_RCF, ENOMEM);
+            ERROR("Too many cmsg headers - increase RCF_RPC_MAX_CMSGHDR");
+            RETVAL_INT(recvmsg, -1);
+        }
+        
+        if (msg->msg_control != NULL && msg->msg_cmsghdr_num == 0)
+        {
+            rpcs->_errno = TE_RC(TE_RCF, EINVAL);
+            ERROR("Number of cmsg headers is incorrect");
+            RETVAL_INT(recvmsg, -1);
+        }
+
         if (msg->msg_iovlen > msg->msg_riovlen ||
-            msg->msg_namelen > msg->msg_rnamelen ||
-            msg->msg_controllen > msg->msg_rcontrollen)
+            msg->msg_namelen > msg->msg_rnamelen)
         {
             rpcs->_errno = TE_RC(TE_RCF, EINVAL);
             RETVAL_INT(wsa_recv_msg, -1);
@@ -1798,10 +1813,13 @@ rpc_wsa_recv_msg(rcf_rpc_server *rpcs, int s,
 
         if (msg->msg_control != NULL)
         {
-            rpc_msg.msg_control.msg_control_val = msg->msg_control;
-            rpc_msg.msg_control.msg_control_len = msg->msg_rcontrollen;
+            rpc_msg.msg_control.msg_control_val = cmsg_hdrs;
+            rpc_msg.msg_control.msg_control_len = msg->msg_cmsghdr_num;
+            cmsg_hdrs[0].data.data_val = msg->msg_control;
+            cmsg_hdrs[0].data.data_len = msg->msg_controllen -
+                                         msg->msg_cmsghdr_num *
+                                         sizeof(struct cmsghdr);
         }
-        rpc_msg.msg_controllen = msg->msg_controllen;
     }
 
     if (bytes_received != NULL)
@@ -1846,11 +1864,35 @@ rpc_wsa_recv_msg(rcf_rpc_server *rpcs, int s,
             }
             if (msg->msg_control != NULL)
             {
-                memcpy(msg->msg_control,
-                       rpc_msg.msg_control.msg_control_val,
-                       msg->msg_rcontrollen);
+                struct cmsghdr *c;
+                unsigned int    i;
+                
+                struct tarpc_cmsghdr *rpc_c = 
+                    rpc_msg.msg_control.msg_control_val;
+                
+                for (i = 0, c = CMSG_FIRSTHDR((struct msghdr *)msg); 
+                     i < rpc_msg.msg_control.msg_control_len && c != NULL; 
+                     i++, c = CMSG_NXTHDR((struct msghdr *)msg, c), rpc_c++)
+                {
+                    c->cmsg_level = socklevel_rpc2h(rpc_c->level);
+                    c->cmsg_type = sockopt_rpc2h(rpc_c->type);
+                    c->cmsg_len = CMSG_LEN(rpc_c->data.data_len);
+                    if (rpc_c->data.data_val != NULL)
+                        memcpy(CMSG_DATA(c), rpc_c->data.data_val, 
+                               rpc_c->data.data_len);
+                }
+                
+                if (c == NULL && i < rpc_msg.msg_control.msg_control_len)
+                {
+                    ERROR("Unexpected lack of space in auxiliary buffer");
+                    rpcs->_errno = TE_RC(TE_RCF, EINVAL);
+                    RETVAL_INT(recvmsg, -1);
+                }
+                
+                if (c != NULL)
+                    msg->msg_controllen = 
+                        (char *)c - (char *)msg->msg_control;
             }
-            msg->msg_controllen = rpc_msg.msg_controllen;
 
             msg->msg_flags = (rpc_send_recv_flags)rpc_msg.msg_flags;
 

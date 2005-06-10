@@ -3784,12 +3784,12 @@ TARPC_FUNC(wsa_recv_msg,
 
             INIT_CHECKED_ARG((char *)buf_arr, sizeof(buf_arr), 0);
         }
-
-        INIT_CHECKED_ARG(rpc_msg->msg_control.msg_control_val,
-                         rpc_msg->msg_control.msg_control_len,
-                         rpc_msg->msg_controllen);
-        msg.Control.buf = rpc_msg->msg_control.msg_control_val;
-        msg.Control.len = rpc_msg->msg_controllen;
+        if (rpc_msg->msg_control.msg_control_len > 0)
+        {
+            ERROR("Non-zero Control is not supported");
+            out->common._errno = TE_RC(TE_TA_WIN32, EINVAL);
+            goto finish;
+        }
 
         msg.dwFlags = send_recv_flags_rpc2h(rpc_msg->msg_flags);
 
@@ -3816,9 +3816,10 @@ TARPC_FUNC(wsa_recv_msg,
 
         sockaddr_h2rpc(a, &(rpc_msg->msg_name));
         rpc_msg->msg_namelen = msg.namelen;
-        rpc_msg->msg_controllen = msg.Control.len;
         rpc_msg->msg_flags = send_recv_flags_h2rpc(msg.dwFlags);
     }
+    finish:
+    ;
 }
 )
 

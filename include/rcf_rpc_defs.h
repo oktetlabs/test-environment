@@ -898,6 +898,7 @@ typedef enum {
 
 #define RCF_RPC_MAX_BUF     1048576
 #define RCF_RPC_MAX_IOVEC   32
+#define RCF_RPC_MAX_CMSGHDR 8
 
 #define RCF_RPC_EOR_TIMEOUT 1000000
 
