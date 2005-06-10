@@ -24,9 +24,6 @@
 #
 # Author: Igor B. Vasiliev <Igor.Vasiliev@oktetlabs.ru>
 
-TE_LOG_PATH=${TE_LOG_DIR}
-TE_TMP_LOG=${TE_LOG_PATH}/tmp_raw_log
-
 # ISSUES:
 # 1. storage_config
 # 2. storage_dir

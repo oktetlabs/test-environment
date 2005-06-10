@@ -45,6 +45,7 @@
 #include "logger_internal.h"
 #include "logger_ten.h"
 
+
 #define LGR_TA_MAX_BUF      0x4000 /* FIXME */
 
 /** Initial (minimum) Logger message buffer size */
@@ -53,8 +54,8 @@
 #define FREAD(_fd, _buf, _len) \
     fread((_buf), sizeof(uint8_t), (_len), (_fd))
 
-#define SET_SEC(_poll)  ((_poll)/1000000)
-#define SET_MSEC(_poll) ((_poll)%1000000)
+#define SET_SEC(_poll)  ((_poll) / 1000000)
+#define SET_MSEC(_poll) ((_poll) % 1000000)
 
 
 DEFINE_LGR_ENTITY("Logger");
@@ -65,12 +66,11 @@ te_inst *te_list = NULL;
 /* TA single linked list */
 ta_inst *ta_list = NULL;
 
+/* Path to the directory for logs */
+const char *te_log_dir = NULL;
 
-/* Temporary raw log file */
-static FILE *raw_file;
-
-char te_log_dir[TE_LOG_FIELD_MAX];
-static char te_log_tmp[TE_LOG_FIELD_MAX];
+/* Raw log file */
+static FILE *raw_file = NULL;
 
 
 #if 0
@@ -652,24 +652,26 @@ main(int argc, char *argv[])
     int         scale = 0;
     pthread_t   te_thread;
     ta_inst    *ta_el;
-    char       *te_tmp = NULL;
+    char       *te_log_raw = NULL;
 
 
-    /* Get environment variable value for temporary TE location. */
-    te_tmp = getenv("TE_LOG_DIR");
-    if (te_tmp == NULL)
+    /* Get environment variable value for logs. */
+    te_log_dir = getenv("TE_LOG_DIR");
+    if (te_log_dir == NULL)
     {
         fprintf(stderr, "TE_LOG_DIR is not defined\n");
         return EXIT_FAILURE;
     }
-
-    /* Form full names for temporary log location and temporary log file */
-    strcpy(te_log_dir, te_tmp);
-    strcpy(te_log_tmp, te_log_dir);
-    strcat(te_log_tmp, "/tmp_raw_log");
+    /* Get environment variable value with raw log file location. */
+    te_log_raw = getenv("TE_LOG_RAW");
+    if (te_log_raw == NULL)
+    {
+        fprintf(stderr, "TE_LOG_RAW is not defined\n");
+        return EXIT_FAILURE;
+    }
 
     /* Open raw log file for addition */
-    raw_file = fopen(te_log_tmp, "ab");
+    raw_file = fopen(te_log_raw, "ab");
     if (raw_file == NULL)
     {
         perror("fopen() failure");

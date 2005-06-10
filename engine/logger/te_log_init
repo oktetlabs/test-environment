@@ -28,24 +28,21 @@
 # Author: Igor B. Vasiliev <Igor.Vasiliev@oktetlabs.ru>
 #
 
-if [ -z ${TE_LOG_DIR} ]; then
-    echo "TE_LOG_DIR environment variable must be set" >&2
-    exit 1
-fi
-
-TE_LOG_PATH=${TE_LOG_DIR}
-TE_TMP_LOG=${TE_LOG_PATH}/tmp_raw_log
-
 if [ ${#@} -ne 0 ]; then
     echo "Usage: te_log_init" >&2
     exit 1
 fi
 
-mkdir -p $TE_LOG_PATH
-rm -rf $TE_TMP_LOG
+if [ -z ${TE_LOG_DIR} ]; then
+    echo "TE_LOG_DIR environment variable must be set" >&2
+    exit 1
+fi
+
+mkdir -p $TE_LOG_DIR
+rm -rf $TE_LOG_RAW
 
 # File version is set 1
-echo -ne "\1" > $TE_TMP_LOG
-chmod 666 $TE_TMP_LOG
+echo -ne "\1" > $TE_LOG_RAW
+chmod 666 $TE_LOG_RAW
 
 exit 0

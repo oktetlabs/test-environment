@@ -43,6 +43,5 @@ te_tee_DEPENDENCIES=@TE_DEPENDENCIES@ \
 
 
 mybindir=$(prefix)/bin
-dist_mybin_SCRIPTS = te_log_archive te_log_full_name te_log_init \
-                     te_log_message
+dist_mybin_SCRIPTS = te_log_archive te_log_init te_log_message
 

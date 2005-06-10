@@ -53,10 +53,10 @@ if ((@ARGV < 3) || (@ARGV > 4))
 }
 
 my $te_log_path = $ENV{TE_LOG_DIR};
-my $te_log_tmp  = $te_log_path . "/tmp_raw_log";
+my $te_log_raw  = $ENV{TE_LOG_RAW};
 
-open(OUTFILE, ">>" . $te_log_tmp) or 
-    die("Can't to open output file " . $te_log_tmp . ": $!");
+open(OUTFILE, ">>" . $te_log_raw) or 
+    die("Can't to open output file " . $te_log_raw . ": $!");
 
 binmode OUTFILE;
 
