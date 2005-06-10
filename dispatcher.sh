@@ -103,6 +103,7 @@ Generic options:
   --vg-rcf                      Run RCF under valgrind (without by default)
                                 (without by default)
   --vg-tester                   Run Tester under valgrind (without by default)
+
   --tce=<agent>                 Do Test Coverage Estimation for <agent>
   
 EOF
