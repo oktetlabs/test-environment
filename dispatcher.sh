@@ -598,7 +598,7 @@ fi
 
 if test -n "$LOGGER" ; then
     te_log_message Engine Dispatcher "Flush log"
-    myecho "--->>> Log FLUSH"
+    myecho "--->>> Flush Logs"
     te_log_flush &
     PID=$!
     for ((i = 0 ; i < 20 ; i++)) ; do
