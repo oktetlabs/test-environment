@@ -1950,7 +1950,8 @@ TARPC_FUNC(getsockopt,
         char opt[sizeof(struct linger)
                  + sizeof(struct ip_mreqn) + sizeof(struct tcp_info)];
                  
-        if (*(out->optlen.optlen_val) == RPC_OPTLEN_AUTO)
+        if (out->optlen.optlen_val != NULL &&
+            *(out->optlen.optlen_val) == RPC_OPTLEN_AUTO)
         {
             switch (out->optval.optval_val[0].opttype)
             {
