@@ -1120,7 +1120,11 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
         RETVAL_INT(getsockopt, -1);
     }
 
-    if (optlen != NULL && *optlen > roptlen)
+    /*
+     * Validate roptlen vs *optlen.
+     * roptlen makes sence, iff optval is not NULL.
+     */
+    if (optlen != NULL && optval != NULL && *optlen > roptlen)
     {
         rpcs->_errno = TE_RC(TE_RCF, EINVAL);
         RETVAL_INT(getsockopt, -1);
