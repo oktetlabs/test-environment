@@ -157,14 +157,14 @@ VG_OPTIONS="--tool=memcheck --leak-check=yes --show-reachable=yes --num-callers=
 VG_TESTS=
 VG_RCF=
 VG_CS=
-VG_LGR=
+VG_LOGGER=
 VG_TESTER=
 
 # Subsystems to be initialized
 BUILDER=yes
 TESTER=yes
 RCF=yes
-CONFIGURATOR=yes
+CS=yes
 LOGGER=yes
 
 # Tester executable extension (set to .sh for script tester)
@@ -186,7 +186,7 @@ TE_LOG_DIR=`pwd`
 CONF_BUILDER=builder.conf
 CONF_LOGGER=logger.conf
 CONF_TESTER=tester.conf
-CONF_CONFIGURATOR=configurator.conf
+CONF_CS=configurator.conf
 CONF_RCF=rcf.conf
 CONF_RGT=
 
@@ -258,7 +258,7 @@ process_opts()
             --vg-tests)  VG_TESTS=yes ;;
             --vg-rcf)    VG_RCF=yes ;;
             --vg-cs)     VG_CS=yes ;;
-            --vg-logger) VG_LGR=yes ;;
+            --vg-logger) VG_LOGGER=yes ;;
             --vg-tester) VG_TESTER=yes ;;
             --vg-engine) VG_RCF=yes; VG_CS=yes; VG_LGR=yes ; VG_TESTER=yes ;;    
         
@@ -266,16 +266,16 @@ process_opts()
 
             --no-builder) BUILDER= ;;
             --no-tester) TESTER= ;;
-            --no-cs) CONFIGURATOR= ;;
+            --no-cs) CS= ;;
             --no-rcf) RCF= ;;
-            --no-run) RCF= ; CONFIGURATOR= ; TESTER= ; LOGGER= ;;
+            --no-run) RCF= ; CS= ; TESTER= ; LOGGER= ;;
             
             --conf-dir=*) CONF_DIR="${1#--conf-dir=}" ;;
             
             --conf-builder=*) CONF_BUILDER="${1#--conf-builder=}" ;;
             --conf-logger=*) CONF_LOGGER="${1#--conf-logger=}" ;;
             --conf-tester=*) CONF_TESTER="${1#--conf-tester=}" ;;
-            --conf-cs=*) CONF_CONFIGURATOR="${1#--conf-cs=}" ;;
+            --conf-cs=*) CONF_CS="${1#--conf-cs=}" ;;
             --conf-rcf=*) CONF_RCF=${1#--conf-rcf=} ;;
             --conf-rgt=*) CONF_RGT=${1#--conf-rgt=} ;;
             
@@ -361,7 +361,7 @@ if test -z "${LOG_STORAGE}" ; then
     LOG_STORAGE_DIR=
 fi
 
-for i in BUILDER LOGGER TESTER CONFIGURATOR RCF RGT ; do
+for i in BUILDER LOGGER TESTER CS RCF RGT ; do
     CONF_FILE=`eval echo '$CONF_'$i` ;
     if test -n "${CONF_FILE}" -a "${CONF_FILE:0:1}" != "/" ; then
         eval CONF_$i="${CONF_DIR}/${CONF_FILE}" ;
@@ -546,57 +546,54 @@ fi
 
 te_log_message Engine Dispatcher "Starting TEN applications"
 
-if test -n "$LOGGER" ; then
-    te_log_message Engine Dispatcher "Start Logger"
-    myecho "--->>> Start Logger"
-    if test -n "$VG_LGR" ; then
-        valgrind $VG_OPTIONS te_logger "${CONF_LOGGER}" 2>valgrind.logger &
-    else
-        te_logger "${CONF_LOGGER}" &
-    fi
-fi
+LOGGER_NAME=Logger
+LOGGER_EXEC=te_logger
+RCF_NAME=RCF
+RCF_EXEC=te_rcf
+CS_NAME=Configurator
+CS_EXEC=te_cs
 
-if test -n "$RCF" ; then
-    te_log_message Engine Dispatcher "Start RCF"
-    myecho "--->>> Start RCF"
-    if test -n "$VG_RCF" ; then
-        valgrind $VG_OPTIONS te_rcf "${CONF_RCF}" 2>valgrind.rcf &
-    else
-        te_rcf "${CONF_RCF}" &
+for i in LOGGER RCF CS ; do
+    if test -n "`eval echo '$'$i`" ; then
+        DAEMON_NAME=`eval echo '$'$i'_NAME'`
+        DAEMON_EXEC=`eval echo '$'$i'_EXEC'`
+        DAEMON_CONF=`eval echo '$CONF_'$i`
+        te_log_message Engine Dispatcher "Start $DAEMON_NAME"
+        myecho "--->>> Start $DAEMON_NAME"
+        if test -n "`eval echo '$VG_'$i`" ; then
+            # Run in foreground under valgrind
+            valgrind $VG_OPTIONS $DAEMON_EXEC -f "$DAEMON_CONF" \
+                2>valgrind.$DAEMON_EXEC &
+        else
+            $DAEMON_EXEC "$DAEMON_CONF" &
+        fi
+        START_OK=$?
+        if test $START_OK -eq 0 ; then
+            eval `echo $i'_OK'`=yes
+        else
+            break
+        fi
     fi
-fi
+done
 
-if test -n "$CONFIGURATOR" ; then
-    te_log_message Engine Dispatcher "Start Configurator"
-    myecho "--->>> Start Configurator"
-    if test -n "$VG_CS" ; then
-        valgrind $VG_OPTIONS te_cs "${CONF_CONFIGURATOR}" \
-            ${CS_OPTS} 2>valgrind.cs &
-    else
-        te_cs "${CONF_CONFIGURATOR}" ${CS_OPTS} &
-    fi
-    CS_PID=$!
-fi
-
-if test -n "$TESTER" ; then
+if test $START_OK -eq 0 -a -n "$TESTER" ; then
     myecho "--->>> Start Tester"
     if test -n "$VG_TESTER" ; then
         VG_TESTS=$VG_TESTS valgrind $VG_OPTIONS te_tester${TESTER_EXT} \
-            ${TESTER_OPTS} "${CONF_TESTER}" 2>valgrind.tester
+            ${TESTER_OPTS} "${CONF_TESTER}" 2>valgrind.te_tester
     else
         VG_TESTS=$VG_TESTS te_tester${TESTER_EXT} ${TESTER_OPTS} \
             "${CONF_TESTER}" 
     fi
 fi
 
-if test -n "$CONFIGURATOR" ; then
+if test -n "$CS_OK" ; then
     te_log_message Engine Dispatcher "Shutdown Configurator"
     myecho "--->>> Shutdown Configurator"
-    te_cs_shutdown || kill $CS_PID
+    te_cs_shutdown
 fi
 
-
-if test -n "$LOGGER" ; then
+if test -n "$LOGGER_OK" ; then
     te_log_message Engine Dispatcher "Flush log"
     myecho "--->>> Flush Logs"
     te_log_flush &
@@ -608,7 +605,7 @@ if test -n "$LOGGER" ; then
     kill $PID >/dev/null 2>&1
 fi
 
-if test -n "$TESTER" ; then
+if test $START_OK -eq 0 -a -n "$TESTER" ; then
     te_log_message Engine Dispatcher "Dumping TCE"
     myecho "--->>> Dump TCE"
     if test -n "$TCE_AGENTS"; then
@@ -620,14 +617,13 @@ if test -n "$TESTER" ; then
     fi
 fi
 
-
-if test -n "$RCF" ; then
+if test -n "$RCF_OK" ; then
     te_log_message Engine Dispatcher "Shutdown RCF"
     myecho "--->>> Shutdown RCF"
     te_rcf_shutdown 
 fi
 
-if test -n "$LOGGER" ; then
+if test -n "$LOGGER_OK" ; then
     te_log_message Engine Dispatcher "Shutdown Logger"
     myecho "--->>> Shutdown Logger"
     te_log_shutdown
