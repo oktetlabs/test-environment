@@ -653,7 +653,7 @@ rcf_pch_rpc_shutdown()
 {
     rpcserver *rpcs, *next;
 #ifndef TCP_TRANSPORT
-    char *pipename = "TE_RPC_PORT";
+    char *pipename = getenv("TE_RPC_PORT");
 #endif        
     
     if (lsock >= 0)
