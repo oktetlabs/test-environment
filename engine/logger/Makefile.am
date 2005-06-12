@@ -11,7 +11,7 @@ noinst_HEADERS = logger_internal.h
 
 te_logger_SOURCES = logger.c logger_cnf.c logger_prc.c
 te_logger_LDADD = @TE_LDADD@ -lipcserver -lrcfapi -lrpcxdr -llogger_ten \
-                  -lipc @XML2_LIBS@ -lpthread -lexpat
+                  -lipc @XML2_LIBS@ -lpopt -lexpat -lpthread
 te_logger_DEPENDENCIES = @TE_DEPENDENCIES@ \
                          $(DESTDIR)/$(prefix)/lib/libipc.a \
                          $(DESTDIR)/$(prefix)/lib/libipcserver.a \
