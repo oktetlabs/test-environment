@@ -91,5 +91,11 @@ extern int ftp_open(char *uri, int flags, int passive, int offset);
 /** Work-around for system/waitpid problem */
 extern int ta_system(char *cmd);
 
+/**
+ * Special signal handler which registers signals.
+ * 
+ * @param signum    received signal
+ */
+extern void signal_registrar(int signum);
 
 #endif /* __TE_TA_LINUX_INTERNAL_H__ */

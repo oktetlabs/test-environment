@@ -1482,6 +1482,7 @@ TARPC_FUNC(signal,
     }
 },
 {
+    int          signum = signum_rpc2h(in->signum);
     sighandler_t handler = rcf_ch_symbol_addr(in->handler.handler_val, 1);
     sighandler_t old_handler;
     
@@ -1497,8 +1498,8 @@ TARPC_FUNC(signal,
     }
     if (out->common._errno == 0)
     {
-        MAKE_CALL(old_handler = (sighandler_t)func_ret_ptr(
-                      signum_rpc2h(in->signum), handler));
+        MAKE_CALL(old_handler = (sighandler_t)func_ret_ptr(signum,
+                                                           handler));
         if (old_handler != SIG_ERR)
         {
             char *name = rcf_ch_symbol_name(old_handler);
@@ -1507,7 +1508,7 @@ TARPC_FUNC(signal,
             {
                 if ((out->handler.handler_val = strdup(name)) == NULL)
                 {
-                    func(signum_rpc2h(in->signum), old_handler);
+                    func(signum, old_handler);
                     out->common._errno = TE_RC(TE_TA_LINUX, ENOMEM);
                 }
                 else
@@ -1517,7 +1518,7 @@ TARPC_FUNC(signal,
             {
                 if ((name = calloc(1, 16)) == NULL)
                 {
-                    func(signum_rpc2h(in->signum), old_handler);
+                    func(signum, old_handler);
                     out->common._errno = TE_RC(TE_TA_LINUX, ENOMEM);
                 }
                 else
@@ -1533,6 +1534,14 @@ TARPC_FUNC(signal,
                     out->handler.handler_val = name;
                     out->handler.handler_len = strlen(name) + 1;
                 }
+            }
+            /* 
+             * Delete signal from set of received signals when
+             * signal registrar is set for the signal.
+             */
+            if (out->common._errno == 0 && handler == signal_registrar)
+            {
+                sigdelset(&rpcs_received_signals, signum);
             }
         }
     }

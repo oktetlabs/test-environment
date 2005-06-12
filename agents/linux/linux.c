@@ -780,11 +780,7 @@ ta_sigchld_handler(int sig)
 sigset_t rpcs_received_signals;
 
 
-/**
- * Special signal handler which registers signals.
- * 
- * @param signum    received signal
- */
+/* See description in linux_internal.h */
 void
 signal_registrar(int signum)
 {
