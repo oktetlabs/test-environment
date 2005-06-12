@@ -39,6 +39,11 @@
 #if HAVE_NETINET_IN_H
 #include <netinet/in.h>
 #endif
+#if HAVE_POPT_H
+#include <popt.h>
+#else
+#error popt library (development version) is required for Logger
+#endif
 
 #include "te_raw_log.h"
 #include "logger_int.h"
@@ -58,6 +63,12 @@
 #define SET_MSEC(_poll) ((_poll) % 1000000)
 
 
+/** Logger application command line options */
+enum {
+    LOGGER_OPT_FOREGROUND = 1,
+};
+
+
 DEFINE_LGR_ENTITY("Logger");
 
 /* TEN entities linked list */
@@ -71,6 +82,10 @@ const char *te_log_dir = NULL;
 
 /* Raw log file */
 static FILE *raw_file = NULL;
+
+static te_bool              foreground = FALSE;
+static const char          *cfg_file = NULL;
+static struct ipc_server   *logger_ten_srv = NULL;
 
 
 #if 0
@@ -137,8 +152,7 @@ lgr_register_message(const void *buf, size_t len)
 static void *
 te_handler(void)
 {
-    char                        err_buf[BUFSIZ];
-    struct ipc_server          *srv = NULL;
+    struct ipc_server          *srv = logger_ten_srv;
     struct ipc_server_client   *ipcsc_p;
     size_t                      buf_len;
     uint8_t                    *buf;
@@ -153,17 +167,6 @@ te_handler(void)
         ERROR("%s(): malloc() failed", __FUNCTION__);
         return NULL;
     }
-
-    /* Register TEN server */
-    rc = ipc_register_server(LGR_SRV_NAME, &srv);
-    if (rc != 0)
-    {
-        ERROR("IPC server '%s' registration failed: %X",
-              LGR_SRV_NAME, rc);
-        return NULL;
-    }
-    assert(srv != NULL);
-    INFO("IPC server '%s' registered\n", LGR_SRV_NAME);
 
     while (TRUE) /* Forever loop */
     {
@@ -260,14 +263,6 @@ te_handler(void)
                 lgr_register_message(buf, len);
         }
     } /* end of forever loop */
-
-    INFO("Close IPC server '%s'\n", LGR_SRV_NAME);
-    if (ipc_close_server(srv) != 0)
-    {
-        strerror_r(errno, err_buf, sizeof(err_buf));
-        ERROR("IPC server '%s' shutdown failed: %s\n",
-              LGR_SRV_NAME, err_buf);
-    }
 
     return NULL;
 }
@@ -630,6 +625,78 @@ ta_handler(void *ta)
 }
 
 /**
+ * Process command line options and parameters specified in argv.
+ * The procedure contains "Option table" that should be updated 
+ * if some new options are going to be added.
+ *
+ * @param argc  Number of elements in array "argv".
+ * @param argv  Array of strings that represents all command line arguments.
+ *
+ * @return EXIT_SUCCESS or EXIT_FAILURE
+ */
+static int
+process_cmd_line_opts(int argc, const char **argv)
+{
+    poptContext  optCon;
+    int          rc;
+
+    /* Option Table */
+    struct poptOption options_table[] = {
+        { "foreground", 'f', POPT_ARG_NONE, NULL, LOGGER_OPT_FOREGROUND,
+          "Run logger in foreground (usefull for Logger debugging).",
+          NULL },
+
+        POPT_AUTOHELP
+        
+        { NULL, 0, 0, NULL, 0, NULL, 0 },
+    };
+    
+    /* Process command line options */
+    optCon = poptGetContext(NULL, argc, argv, options_table, 0);
+  
+    poptSetOtherOptionHelp(optCon, "[OPTIONS] <cfg-file>");
+
+    while ((rc = poptGetNextOpt(optCon)) >= 0)
+    {
+        switch (rc)
+        {
+            case LOGGER_OPT_FOREGROUND:
+                fprintf(stderr, "LOGGER_OPT_FOREGROUND\n");
+                foreground = TRUE;
+                break;
+
+            default:
+                fprintf(stderr, "Unexpected option number %d", rc);
+                poptFreeContext(optCon);
+                return EXIT_FAILURE;
+        }
+    }
+
+    if (rc < -1)
+    {
+        /* An error occurred during option processing */
+        fprintf(stderr, "%s: %s\n",
+                poptBadOption(optCon, POPT_BADOPTION_NOALIAS),
+                poptStrerror(rc));
+        poptFreeContext(optCon);
+        return EXIT_FAILURE;
+    }
+
+    /* Get Logger configuration file name (optional) */
+    cfg_file = poptGetArg(optCon);
+
+    if ((cfg_file != NULL) && (poptGetArg(optCon) != NULL))
+    {
+        poptFreeContext(optCon);
+        return EXIT_FAILURE;
+    }
+
+    poptFreeContext(optCon);
+
+    return EXIT_SUCCESS;
+}
+
+/**
  * This is an entry point of Logger process running on TEN side.
  *
  * @param argc  Argument count.
@@ -641,7 +708,7 @@ ta_handler(void *ta)
  * @retval EXIT_FAILURE     Failure.
  */
 int
-main(int argc, char *argv[])
+main(int argc, const char *argv[])
 {
     int         result = EXIT_FAILURE;
     char        err_buf[BUFSIZ];
@@ -655,6 +722,12 @@ main(int argc, char *argv[])
     char       *te_log_raw = NULL;
 
 
+    if (process_cmd_line_opts(argc, argv) != EXIT_SUCCESS)
+    {
+        fprintf(stderr, "Command line options processing failure\n");
+        return EXIT_FAILURE;
+    }
+    
     /* Get environment variable value for logs. */
     te_log_dir = getenv("TE_LOG_DIR");
     if (te_log_dir == NULL)
@@ -685,6 +758,27 @@ main(int argc, char *argv[])
     {
         strerror_r(errno, err_buf, sizeof(err_buf));
         ERROR("IPC initialization failed: %s\n", err_buf);
+        goto exit;
+    }
+
+    /* Register TEN server */
+    res = ipc_register_server(LGR_SRV_NAME, &logger_ten_srv);
+    if (res != 0)
+    {
+        ERROR("IPC server '%s' registration failed: %X",
+              LGR_SRV_NAME, res);
+        goto exit;
+    }
+    assert(logger_ten_srv != NULL);
+    INFO("IPC server '%s' registered\n", LGR_SRV_NAME);
+
+    /* 
+     * Go to background, if foreground mode is not requested.
+     * No threads should be created before become a daemon.
+     */
+    if (!foreground && daemon(TRUE, TRUE) != 0)
+    {
+        ERROR("daemon() failed");
         goto exit;
     }
 
@@ -761,13 +855,7 @@ main(int argc, char *argv[])
      */
     /* Parse log file when list of TAs is known */
     INFO("Logger configuration file parsing\n");
-    /* Parse configuration file */
-    if (argc < 1)
-    {
-        ERROR("No Logger configuration file passed\n");
-        goto join_te_srv;
-    }
-    if (configParser(argv[1]) != 0)
+    if (configParser(cfg_file) != 0)
     {
         ERROR("Logger configuration file failure\n");
         goto join_te_srv;
@@ -829,6 +917,15 @@ exit:
         te_list = te_el->next;
         LGR_FREE_FLTR_LIST(&te_el->filters);
         free(te_el);
+    }
+
+    INFO("Close IPC server '%s'\n", LGR_SRV_NAME);
+    if (ipc_close_server(logger_ten_srv) != 0)
+    {
+        strerror_r(errno, err_buf, sizeof(err_buf));
+        ERROR("IPC server '%s' shutdown failed: %s\n",
+              LGR_SRV_NAME, err_buf);
+        result = EXIT_FAILURE;
     }
 
     if (ipc_kill() != 0)
