@@ -53,9 +53,12 @@
 DEFINE_LGR_ENTITY("Tester");
 
 
-/** Tester application command line options */
+/**
+ * Tester application command line options. Values must be started from
+ * one, since zero has special meaning for popt.
+ */
 enum {
-    TESTER_OPT_NOLOGUES,
+    TESTER_OPT_NOLOGUES = 1,
     TESTER_OPT_NORANDOM,
     TESTER_OPT_NOSIMULT,
     TESTER_OPT_SUITE_PATH,
