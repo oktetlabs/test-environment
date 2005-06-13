@@ -562,7 +562,7 @@ for i in LOGGER RCF CS ; do
         myecho "--->>> Start $DAEMON_NAME"
         if test -n "`eval echo '$VG_'$i`" ; then
             # Run in foreground under valgrind
-            valgrind $VG_OPTIONS $DAEMON_EXEC -f "$DAEMON_CONF" \
+            valgrind $VG_OPTIONS $DAEMON_EXEC "$DAEMON_CONF" \
                 2>valgrind.$DAEMON_EXEC &
         else
             $DAEMON_EXEC "$DAEMON_CONF" &
