@@ -260,7 +260,10 @@ process_opts()
             --vg-cs)     VG_CS=yes ;;
             --vg-logger) VG_LOGGER=yes ;;
             --vg-tester) VG_TESTER=yes ;;
-            --vg-engine) VG_RCF=yes; VG_CS=yes; VG_LGR=yes ; VG_TESTER=yes ;;    
+            --vg-engine) VG_RCF=yes ;
+                         VG_CS=yes ;
+                         VG_LOGGER=yes ;
+                         VG_TESTER=yes ;;
         
             --tce=*) TCE_AGENTS="$TCE_AGENTS ${1##--tce=}" ;;
 
