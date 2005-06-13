@@ -564,7 +564,7 @@ ip_addr_modify(int cmd, const char * ifname,
     struct {
         struct nlmsghdr  n;
         struct ifaddrmsg ifa;
-    char             buf[256];
+        char             buf[256];
     } req;
     
     inet_prefix  lcl;
@@ -576,6 +576,7 @@ ip_addr_modify(int cmd, const char * ifname,
     memset(&req, 0, sizeof(req));
     memset(&lcl, 0, sizeof(lcl));
     memset(&brd, 0, sizeof(brd));
+    memset(&rth, 0, sizeof(rth));
 
     req.n.nlmsg_len = NLMSG_LENGTH(sizeof(struct ifaddrmsg));
     req.n.nlmsg_flags = NLM_F_REQUEST;
