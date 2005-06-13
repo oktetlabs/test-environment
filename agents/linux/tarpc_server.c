@@ -381,13 +381,13 @@ init_checked_arg(checked_arg **list, char *real_arg,
 
     if ((arg = calloc(1, sizeof(*arg))) == NULL)
     {
-        ERROR("No enough memory");
+        ERROR("Out of memory");
         return;
     }
 
     if ((arg->control = malloc(len - len_visible)) == NULL)
     {
-        ERROR("No enough memory");
+        ERROR("Out of memory");
         free(arg);
         return;
     }
@@ -2423,16 +2423,18 @@ TARPC_FUNC(ioctl,
                 req = (char *)&req_ifconf;
                 reqlen = sizeof(req_ifconf);
 
-                if (buflen > 0 && (buf = calloc(1, buflen + 10)) == NULL)
+                if (buflen > 0 && (buf = calloc(1, buflen + 64)) == NULL)
                 {
-                    ERROR("No enough memory");
+                    ERROR("Out of memory");
                     out->common._errno = TE_RC(TE_TA_LINUX, ENOMEM);
                     goto finish;
                 }
                 req_ifconf.ifc_buf = buf;
                 req_ifconf.ifc_len = buflen;
+#if 0                
                 if (buf != NULL)
-                    INIT_CHECKED_ARG(buf, buflen + 10, buflen);
+                    INIT_CHECKED_ARG(buf, buflen + 64, buflen);
+#endif                    
                 break;
             }
             case IOCTL_ARPREQ:
@@ -2564,7 +2566,7 @@ TARPC_FUNC(ioctl,
                 if ((req_t = calloc(n, sizeof(*req_t))) == NULL)
                 {
                     free(req_ifconf.ifc_buf);
-                    ERROR("No enough memory");
+                    ERROR("Out of memory");
                     out->common._errno = TE_RC(TE_TA_LINUX, ENOMEM);
                     goto finish;
                 }
@@ -2581,7 +2583,7 @@ TARPC_FUNC(ioctl,
                     if (req_t->rpc_ifr_name.rpc_ifr_name_val == NULL)
                     {
                         free(req_ifconf.ifc_buf);
-                        ERROR("No enough memory");
+                        ERROR("Out of memory");
                         out->common._errno = TE_RC(TE_TA_LINUX, ENOMEM);
                         goto finish;
                     }
@@ -2598,7 +2600,7 @@ TARPC_FUNC(ioctl,
                          * by RPC
                          */
                         free(req_ifconf.ifc_buf);
-                        ERROR("No enough memory");
+                        ERROR("Out of memory");
                         out->common._errno = TE_RC(TE_TA_LINUX, ENOMEM);
                         goto finish;
                     }
@@ -2730,7 +2732,7 @@ TARPC_FUNC(ioctl,
 
                 if (buflen > 0 && (buf = calloc(1, buflen + 10)) == NULL)
                 {
-                    ERROR("No enough memory");
+                    ERROR("Out of memory");
                     out->common._errno = TE_RC(TE_TA_LINUX, ENOMEM);
                     goto finish;
                 }
@@ -2861,7 +2863,7 @@ TARPC_FUNC(ioctl,
                 if ((req_t = calloc(n, sizeof(*req_t))) == NULL)
                 {
                     free(req_ifconf.ifc_buf);
-                    ERROR("No enough memory");
+                    ERROR("Out of memory");
                     out->common._errno = TE_RC(TE_TA_LINUX, ENOMEM);
                     goto finish;
                 }
@@ -2878,7 +2880,7 @@ TARPC_FUNC(ioctl,
                     if (req_t->rpc_ifr_name.rpc_ifr_name_val == NULL)
                     {
                         free(req_ifconf.ifc_buf);
-                        ERROR("No enough memory");
+                        ERROR("Out of memory");
                         out->common._errno = TE_RC(TE_TA_LINUX, ENOMEM);
                         goto finish;
                     }
@@ -2895,7 +2897,7 @@ TARPC_FUNC(ioctl,
                          * by RPC
                          */
                         free(req_ifconf.ifc_buf);
-                        ERROR("No enough memory");
+                        ERROR("Out of memory");
                         out->common._errno = TE_RC(TE_TA_LINUX, ENOMEM);
                         goto finish;
                     }
@@ -5162,7 +5164,7 @@ many_send(tarpc_many_send_in *in, tarpc_many_send_out *out)
     buf = calloc(1, max_len);
     if (buf == NULL)
     {
-        ERROR("%s(): No enough memory", __FUNCTION__);
+        ERROR("%s(): Out of memory", __FUNCTION__);
         out->common._errno = TE_RC(TE_TA_LINUX, ENOMEM);
         rc = -1;
         goto many_send_exit;
@@ -5226,7 +5228,7 @@ overfill_buffers(tarpc_overfill_buffers_in *in,
     buf = calloc(1, max_len);
     if (buf == NULL)
     {
-        ERROR("%s(): No enough memory", __FUNCTION__);
+        ERROR("%s(): Out of memory", __FUNCTION__);
         out->common._errno = TE_RC(TE_TA_LINUX, ENOMEM);
         rc = -1;
         goto overfill_buffers_exit;
