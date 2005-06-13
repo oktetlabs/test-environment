@@ -2154,6 +2154,42 @@ TARPC_FUNC(getsockopt,
     {
         char opt[sizeof(struct linger)];
 
+        if (out->optlen.optlen_val != NULL &&
+            *(out->optlen.optlen_val) == RPC_OPTLEN_AUTO)
+        {
+            switch (out->optval.optval_val[0].opttype)
+            {
+                case OPT_INT:
+                    *(out->optlen.optlen_val) = sizeof(int);
+                    break;
+                    
+                case OPT_LINGER:
+                    *(out->optlen.optlen_val) = sizeof(struct linger);
+                    break;
+
+                case OPT_MREQN:
+                    *(out->optlen.optlen_val) = sizeof(struct ip_mreqn);
+                    break;
+
+                case OPT_IPADDR:
+                    *(out->optlen.optlen_val) = sizeof(struct in_addr);
+                    break;
+
+                case OPT_TIMEVAL:
+                    *(out->optlen.optlen_val) = sizeof(struct timeval);
+                    break;
+
+                case OPT_TCP_INFO:
+                    *(out->optlen.optlen_val) = sizeof(struct tcp_info);
+                    break;
+
+                default:
+                    ERROR("incorrect option type %d is received",
+                          out->optval.optval_val[0].opttype);
+                    break;
+            }
+        }
+
         memset(opt, 0, sizeof(opt));
         INIT_CHECKED_ARG(opt, sizeof(opt),
                          (out->optlen.optlen_val == NULL) ?
