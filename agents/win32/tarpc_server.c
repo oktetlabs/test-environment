@@ -1909,20 +1909,12 @@ TARPC_FUNC(getsockopt,
                     *(out->optlen.optlen_val) = sizeof(struct linger);
                     break;
 
-                case OPT_MREQN:
-                    *(out->optlen.optlen_val) = sizeof(struct ip_mreqn);
-                    break;
-
                 case OPT_IPADDR:
                     *(out->optlen.optlen_val) = sizeof(struct in_addr);
                     break;
 
                 case OPT_TIMEVAL:
                     *(out->optlen.optlen_val) = sizeof(struct timeval);
-                    break;
-
-                case OPT_TCP_INFO:
-                    *(out->optlen.optlen_val) = sizeof(struct tcp_info);
                     break;
 
                 default:
