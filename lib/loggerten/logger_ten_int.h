@@ -302,7 +302,6 @@ log_message_va(uint8_t **msg_buf, size_t *msg_buf_len, uint16_t level,
             case 'X':
             case 'u':
             case 'r':   /* TE-specific specifier for error codes */
-            case 'T':   /* TE-specific specified for Test ID */
             {
                 int32_t val;
 
@@ -316,32 +315,29 @@ log_message_va(uint8_t **msg_buf, size_t *msg_buf_len, uint16_t level,
 
             case 'p':
             {
-                void *val;
+                void       *val;
+                uint32_t    tmp;
                 
+                assert(sizeof(val) == SIZEOF_VOID_P);
                 LGR_CHECK_BUF_LEN(TE_LOG_NFL_SZ + sizeof(val));
                 LGR_NFL_PUT(sizeof(val), msg_ptr);
                 val = va_arg(ap, void *);
 
-                switch (sizeof(void *))
-                {
-                    case sizeof(uint64_t):
-                    {
-                        uint64_t val_h = (uint32_t)((uint64_t)val >> 32);
-                        uint64_t val_l = (uint32_t)
-                            ((uint64_t)val & 0xFFFFFFFF);
-                            
-                        LGR_32_TO_NET(val_h, msg_ptr);
-                        msg_ptr += sizeof(uint32_t);
-                        LGR_32_TO_NET(val_l, msg_ptr);
-                        msg_ptr += sizeof(uint32_t);
-                        break;
-                    }
-                    
-                    default: /* 4 bytes */
-                        LGR_32_TO_NET((uint32_t)val, msg_ptr);
-                        msg_ptr += sizeof(uint32_t);
-                        break;
-                }
+#if (SIZEOF_VOID_P == 4)
+                tmp = (uint32_t)val;
+                LGR_32_TO_NET(tmp, msg_ptr);
+                msg_ptr += sizeof(uint32_t);
+#elif (SIZEOF_VOID_P == 8)
+                tmp = (uint32_t)((uint64_t)val >> 32);
+                LGR_32_TO_NET(tmp, msg_ptr);
+                msg_ptr += sizeof(uint32_t);
+
+                tmp = (uint32_t)val;
+                LGR_32_TO_NET(tmp, msg_ptr);
+                msg_ptr += sizeof(uint32_t);
+#else
+#error Such sizeof(void *) is not supported by Logger TEN library.
+#endif
                 break;
             }
 
