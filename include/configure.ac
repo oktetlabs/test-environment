@@ -119,6 +119,10 @@ net-snmp/session_api.h \
 #endif
 ])
 
+AC_CHECK_SIZEOF([void *])
+AC_CHECK_SIZEOF([int])
+AC_CHECK_SIZEOF([long])
+
 AC_C_INLINE
 
 AC_CONFIG_FILES([Makefile])
