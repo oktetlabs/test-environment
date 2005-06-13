@@ -159,8 +159,10 @@ rpc_ioctl(rcf_rpc_server *rpcs,
             if (arg != NULL)
             {
                 in.req.req_val[0].type = IOCTL_IFCONF;
-                in.req.req_val[0].ioctl_request_u.req_ifconf.buflen =
-                    ((struct ifconf *)arg)->ifc_len;
+                in.req.req_val[0].ioctl_request_u.req_ifconf.nmemb =
+                    ((struct ifconf *)arg)->ifc_len / sizeof(struct ifreq);
+                in.req.req_val[0].ioctl_request_u.req_ifconf.extra =
+                    ((struct ifconf *)arg)->ifc_len % sizeof(struct ifreq);
             }
             break;
 
@@ -370,25 +372,32 @@ rpc_ioctl(rcf_rpc_server *rpcs,
                     rpc_ifc_req.rpc_ifc_req_val;
 
                 struct ifreq *req = ((struct ifconf *)arg)->ifc_req;
-                uint32_t n = ((struct ifconf *)arg)->ifc_len / sizeof(*req);
-                uint32_t i;
+                    
+                int n = out.req.req_val[0].ioctl_request_u.req_ifconf.nmemb;
                 int max_addrlen = sizeof(req->ifr_addr) - SA_COMMON_LEN;
-
-                ((struct ifconf *)arg)->ifc_len =
-                    out.req.req_val[0].ioctl_request_u.req_ifconf.buflen;
+                
+                if ((int)(n * sizeof(struct ifreq)) > 
+                    ((struct ifconf *)arg)->ifc_len)
+                {
+                    ERROR("TA returned too many interfaces from "
+                          "ioctl(SIOCGIFCONF) - it seems that it "
+                          "ignores ifc_len");
+                }
+                
+                ((struct ifconf *)arg)->ifc_len = n * sizeof(struct ifreq) +
+                    out.req.req_val[0].ioctl_request_u.req_ifconf.extra;
 
                 if (req == NULL)
                    break;
 
-                if (n > ((struct ifconf *)arg)->ifc_len / sizeof(*req))
-                    n = ((struct ifconf *)arg)->ifc_len / sizeof(*req);
-
-                for (i = 0; i < n; i++, req++, rpc_req++)
+                for (; n > 0; n--, req++, rpc_req++)
                 {
                     strcpy(req->ifr_name,
                            rpc_req->rpc_ifr_name.rpc_ifr_name_val);
                     req->ifr_addr.sa_family =
                         addr_family_rpc2h(rpc_req->rpc_ifr_addr.sa_family);
+                    RING("Interface %s family %d", req->ifr_name, 
+                         req->ifr_addr.sa_family);
 
                     if (rpc_req->rpc_ifr_addr.sa_data.sa_data_val != NULL)
                     {

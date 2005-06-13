@@ -132,7 +132,9 @@ struct tarpc_ifreq {
 /** struct ifconf */
 struct tarpc_ifconf {
     /** Length of the buffer to be passed to ioctl */
-    tarpc_int       buflen;
+    tarpc_int       nmemb;      /**< Number of ifreq structures 
+                                     to be fit into the buffer */
+    tarpc_int       extra;      /**< Extra space */
     /** Interface list returned by the ioctl */
     tarpc_ifreq     rpc_ifc_req<>;  
 };

@@ -2316,11 +2316,13 @@ TARPC_FUNC(pselect, {},
 
 TARPC_FUNC(fcntl, {},
 {
-    int arg = in->arg;
-
+    long arg = in->arg;
+    
     if (in->cmd == RPC_F_GETFD || in->cmd == RPC_F_GETFL ||
         in->cmd == RPC_F_SETFL)
-        arg = fcntl_flag_rpc2h(arg);
+    {
+        arg = fcntl_flag_rpc2h(in->arg);
+    }
 
     if (in->cmd == RPC_F_GETFD || in->cmd == RPC_F_GETFL)
         MAKE_CALL(out->retval = func(in->fd, fcntl_rpc2h(in->cmd)));
@@ -2418,7 +2420,9 @@ TARPC_FUNC(ioctl,
             {
                 char *buf = NULL;
                 int   buflen = out->req.req_val[0].ioctl_request_u.
-                               req_ifconf.buflen;
+                               req_ifconf.nmemb * sizeof(struct ifreq) +
+                               out->req.req_val[0].ioctl_request_u.
+                               req_ifconf.extra;
 
                 req = (char *)&req_ifconf;
                 reqlen = sizeof(req_ifconf);
@@ -2546,19 +2550,10 @@ TARPC_FUNC(ioctl,
                 int n = 1;
                 int i;
 
-                if (req_ifconf.ifc_len >
-                    out->req.req_val[0].ioctl_request_u.req_ifconf.buflen)
-                {
-                    n = out->req.req_val[0].ioctl_request_u.
-                            req_ifconf.buflen / sizeof(struct ifreq);
-                }
-                else
-                {
-                    n = req_ifconf.ifc_len / sizeof(struct ifreq);
-                }
-
-                out->req.req_val[0].ioctl_request_u.req_ifconf.buflen =
-                    req_ifconf.ifc_len;
+                n = out->req.req_val[0].ioctl_request_u.req_ifconf.nmemb =
+                    req_ifconf.ifc_len / sizeof(struct ifreq);
+                out->req.req_val[0].ioctl_request_u.req_ifconf.extra =
+                    req_ifconf.ifc_len % sizeof(struct ifreq);
 
                 if (req_ifconf.ifc_req == NULL)
                     break;
