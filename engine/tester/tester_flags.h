@@ -58,7 +58,7 @@ enum tester_flags {
     TESTER_NOCFGTRACK   = 0x4000,   /**< Don't track configuration 
                                          changes */
     TESTER_INLOGUE      = 0x8000,   /**< Is in prologue/epilogue */
-    
+    TESTER_SHUTDOWN     = 0x10000,  /**< Shutdown test scenario */   
 };
 
 #endif /* !__TE_TESTER_FLAGS_H__ */

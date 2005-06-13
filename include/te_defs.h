@@ -70,6 +70,9 @@ typedef unsigned char te_bool;
 
 #define C_ASSERT(x)
 
+/** Exit from application because of caught SIGINT signal */
+#define TE_EXIT_SIGINT      0x7f
+
 
 /**
  * Marks unused argument of the function in order to avoid compilation

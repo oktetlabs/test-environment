@@ -925,6 +925,13 @@ run_test_script(tester_ctx *ctx, test_script *script, test_id id,
                     result = ETESTPASS;
                     break;
 
+                case TE_EXIT_SIGINT:
+                    result = ETESTKILL;
+                    ctx->flags |= TESTER_SHUTDOWN;
+                    ERROR("ID=%d was interrupted by SIGINT, shut down",
+                          id);
+                    break;
+
                 default:
                     result = ETESTUNEXP;
             }
@@ -997,12 +1004,12 @@ run_test_session(tester_ctx *ctx, test_session *session, test_id id,
                 VERB("Running test session prologue...");
                 ctx->flags |= TESTER_INLOGUE;
                 rc = iterate_test(ctx, session->prologue, &iters);
+                ctx->flags &= ~TESTER_INLOGUE;
                 if ((rc != ETESTPASS) && (rc != ETESTFAKE))
                 {
                     result = ETESTPROLOG;
                     break;
                 }
-                ctx->flags &= ~TESTER_INLOGUE;
             }
         }
         else
@@ -1016,7 +1023,7 @@ run_test_session(tester_ctx *ctx, test_session *session, test_id id,
         }
 
         for (test = session->run_items.tqh_first;
-             test != NULL;
+             test != NULL && (~(ctx->flags) & TESTER_SHUTDOWN);
              test = test->links.tqe_next)
         {
             if (session->keepalive != NULL)
@@ -1054,15 +1061,26 @@ run_test_session(tester_ctx *ctx, test_session *session, test_id id,
             }
             else
             {
+                te_bool shutdown = !!(ctx->flags & TESTER_SHUTDOWN);
+
                 VERB("Running test session epilogue...");
+
+                /* Temporary remove shutdown flag for epilogue */
+                ctx->flags &= ~TESTER_SHUTDOWN;
+
                 ctx->flags |= TESTER_INLOGUE;
                 rc = iterate_test(ctx, session->epilogue, &iters);
+                ctx->flags &= ~TESTER_INLOGUE;
+
+                /* Restore shutdown flag */
+                if (shutdown)
+                    ctx->flags |= TESTER_SHUTDOWN;
+
                 if ((rc != ETESTPASS) && (rc != ETESTFAKE))
                 {
                     result = ETESTEPILOG;
                     break;
                 }
-                ctx->flags &= ~TESTER_INLOGUE;
             }
         }
         else
@@ -1356,6 +1374,7 @@ static int
 iterate_test(tester_ctx *ctx, run_item *test,
              test_param_iterations *base_iters)
 {
+    tester_ctx             *parent_ctx = ctx;
     te_bool                 ctx_cloned = FALSE;
     int                     rc;
     int                     test_result = ETESTPASS;
@@ -1500,7 +1519,8 @@ iterate_test(tester_ctx *ctx, run_item *test,
 
     /* Iterate parameters */
     for (i = 0, iter = iters.tqh_first;
-         i < test->iterate && iter != NULL;
+         i < test->iterate && iter != NULL &&
+         (~(ctx->flags) & TESTER_SHUTDOWN);
          ++i,
          (i == test->iterate) ? (iter = iter->links.tqe_next, i = 0) : 0)
     {
@@ -1617,7 +1637,10 @@ iterate_test(tester_ctx *ctx, run_item *test,
                         ctx->id, id, ctx->flags, test_result);
 
         if (test_ctx_cloned)
+        {
+            ctx->flags |= (test_ctx->flags & TESTER_SHUTDOWN);
             tester_ctx_free(test_ctx);
+        }
         
         /* Update result of all iterations */
         if (!TEST_RESULT(test_result))
@@ -1644,7 +1667,10 @@ iterate_test(tester_ctx *ctx, run_item *test,
 
     test_param_iterations_free(&iters);
     if (ctx_cloned)
+    {
+        parent_ctx->flags |= (ctx->flags & TESTER_SHUTDOWN);
         tester_ctx_free(ctx);
+    }
 
     if (test_skipped && ((all_result == ETESTPASS) ||
                          (all_result == ETESTEMPTY)))
@@ -1720,7 +1746,7 @@ tester_run_config(tester_ctx *ctx, tester_cfg *cfg)
      * Run all listed tests.
      */
     for (test = cfg->runs.tqh_first;
-         test != NULL;
+         test != NULL && (~(ctx->flags) & TESTER_SHUTDOWN);
          test = test->links.tqe_next)
     {
         rc = iterate_test(ctx, test, NULL);

@@ -55,7 +55,7 @@ void
 sigint_handler(int signum)
 {
     UNUSED(signum);
-    exit(EXIT_FAILURE);
+    exit(TE_EXIT_SIGINT);
 }
 
 
