@@ -409,9 +409,11 @@ log_get_message(uint32_t length, uint8_t *buffer)
 
             case 'p':
             {
-                int   id;
-                void *val;
+                int         id;
+                void       *val;
+                uint32_t    tmp;
                 
+                assert(sizeof(val) == SIZEOF_VOID_P);
                 LGR_CHECK_LENGTH(sizeof(te_log_nfl_t) + sizeof(void *));
                 *((te_log_nfl_t *)tmp_buf) = log_nfl_hton(sizeof(void *));
                 tmp_buf += sizeof(te_log_nfl_t);
@@ -419,26 +421,21 @@ log_get_message(uint32_t length, uint8_t *buffer)
                 val = rcf_pch_mem_get(id);
                 rcf_pch_mem_free(id);
                 
-                switch (sizeof(void *))
-                {
-                    case sizeof(uint64_t):
-                    {
-                        uint64_t val_h = (uint32_t)((uint64_t)val >> 32);
-                        uint64_t val_l = (uint32_t)
-                            ((uint64_t)val & 0xFFFFFFFF);
-                            
-                        LGR_32_TO_NET(val_h, tmp_buf);
-                        tmp_buf += sizeof(uint32_t);
-                        LGR_32_TO_NET(val_l, tmp_buf);
-                        tmp_buf += sizeof(uint32_t);
-                        break;
-                    }
-                    
-                    default: /* 4 bytes */
-                        LGR_32_TO_NET((uint32_t)val, tmp_buf);
-                        tmp_buf += sizeof(uint32_t);
-                        break;
-                }
+#if (SIZEOF_VOID_P == 4)
+                tmp = (uint32_t)val;
+                LGR_32_TO_NET(tmp, tmp_buf);
+                tmp_buf += sizeof(uint32_t);
+#elif (SIZEOF_VOID_P == 8)
+                tmp = (uint32_t)((uint64_t)val >> 32);
+                LGR_32_TO_NET(tmp, tmp_buf);
+                tmp_buf += sizeof(uint32_t);
+
+                tmp = (uint32_t)val;
+                LGR_32_TO_NET(tmp, tmp_buf);
+                tmp_buf += sizeof(uint32_t);
+#else
+#error Such sizeof(void *) is not supported by Logger TEN library.
+#endif
                 break;
             }
 
