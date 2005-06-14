@@ -680,7 +680,7 @@ rpc_do_fd_isset(rcf_rpc_server *rpcs, int fd, rpc_fd_set *set)
     rcf_rpc_call(rpcs, "do_fd_isset", &in, &out);
 
     CHECK_RETVAL_VAR(do_fd_isset, out.retval,
-                     (out.retval != 0 && out.retval != 1), 0);
+                     (out.retval != 0 && out.retval != 1), -1);
 
     TAPI_RPC_LOG("RPC (%s,%s): do_fd_isset(%d, %p) -> %d (%s)",
                  rpcs->ta, rpcs->name, fd, set,
