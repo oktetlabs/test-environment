@@ -396,8 +396,6 @@ rpc_ioctl(rcf_rpc_server *rpcs,
                            rpc_req->rpc_ifr_name.rpc_ifr_name_val);
                     req->ifr_addr.sa_family =
                         addr_family_rpc2h(rpc_req->rpc_ifr_addr.sa_family);
-                    RING("Interface %s family %d", req->ifr_name, 
-                         req->ifr_addr.sa_family);
 
                     if (rpc_req->rpc_ifr_addr.sa_data.sa_data_val != NULL)
                     {
