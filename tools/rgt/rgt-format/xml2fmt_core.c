@@ -664,8 +664,7 @@ process_cmd_line_opts(int argc, char **argv, rgt_gen_ctx_t *ctx)
           "Display version information.", NULL },
 
         POPT_AUTOHELP
-
-        { NULL, 0, 0, NULL, 0, NULL, NULL },
+        POPT_TABLEEND
     };
 
     /* Process command line options */
