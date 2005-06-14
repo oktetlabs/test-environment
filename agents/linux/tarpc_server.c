@@ -2426,7 +2426,7 @@ TARPC_FUNC(ioctl,
 
                 req = (char *)&req_ifconf;
                 reqlen = sizeof(req_ifconf);
-
+                
                 if (buflen > 0 && (buf = calloc(1, buflen + 64)) == NULL)
                 {
                     ERROR("Out of memory");
@@ -2435,10 +2435,9 @@ TARPC_FUNC(ioctl,
                 }
                 req_ifconf.ifc_buf = buf;
                 req_ifconf.ifc_len = buflen;
-#if 0                
+
                 if (buf != NULL)
                     INIT_CHECKED_ARG(buf, buflen + 64, buflen);
-#endif                    
                 break;
             }
             case IOCTL_ARPREQ:
