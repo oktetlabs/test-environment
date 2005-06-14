@@ -45,18 +45,22 @@ static char  tmp_buf[1024];
 static char *tmp_dir = NULL;
 static char *filename;
 
-/* If true, shutdown after message processing */
-static te_bool cfg_shutdown = FALSE;
+static struct ipc_server *server = NULL; /**< IPC Server handle */
 
-static struct ipc_server *server = NULL; /* IPC Server handle */
+static const char *cs_cfg_file = NULL;  /**< Configuration file name */
 
-static te_bool cs_print_tree = FALSE; /* For --cs-print-trees option */
-static te_bool cs_print_diff = FALSE; /* For --cs-print-diff option */
 
-enum {
-    CS_OPT_TREE,
-    CS_OPT_DIFF,
-};
+/** @name Configurator global options */
+#define CS_PRINT_TREES  0x1     /**< Print objects and object instances
+                                     trees after initialization */
+#define CS_LOG_DIFF     0x2     /**< Log diff if backup verificatino 
+                                     failed */
+#define CS_FOREGROUND   0x4     /**< Run Configurator in foreground */
+#define CS_SHUTDOWN     0x8     /**< Shutdown after message processing */
+/*@}*/
+
+/** Configurator global flags */
+static unsigned int cs_flags = 0;
 
 
 static void
@@ -129,7 +133,7 @@ print_otree(cfg_object *obj, int indent)
  * @return status code (see te_errno.h)
  */
 static int
-parse_config(char *file, te_bool restore)
+parse_config(const char *file, te_bool restore)
 {
     xmlDocPtr   doc;
     xmlNodePtr  root;
@@ -934,7 +938,7 @@ process_backup(cfg_backup_msg *msg)
                 cfg_dh_release_after(msg->filename);
             else
             {
-                if (cs_print_diff)
+                if (cs_flags & CS_LOG_DIFF)
                     log_message(TE_LL_INFO, TE_LGR_ENTITY, TE_LGR_USER,
                                 "Backup diff: %tf", diff_file);
                 else
@@ -1089,7 +1093,7 @@ cfg_process_msg(cfg_msg **msg, te_bool update_dh)
         case CFG_SHUTDOWN:
             /* Remove commands initiated by configuration file */
             cfg_dh_restore_backup(NULL);
-            cfg_shutdown = TRUE;
+            cs_flags |= CS_SHUTDOWN;
             break;
 
         default: /* Should not occur */
@@ -1153,40 +1157,29 @@ process_cmd_line_opts(int argc, char **argv)
     
     /* Option Table */
     struct poptOption options_table[] = {
-        { "print-trees", '\0', POPT_ARG_NONE, NULL, CS_OPT_TREE + 1,
-          "Update expected testing results database.", NULL },
+        { "print-trees", '\0', POPT_ARG_NONE | POPT_BIT_SET, &cs_flags,
+          CS_PRINT_TREES, "Print objects and object instances trees "
+          "after initialization.", NULL },
 
-        { "print-diff", '\0', POPT_ARG_NONE, NULL, CS_OPT_DIFF + 1,
-          "Initialize expected testing results database.", NULL },
+        { "log-diff", '\0', POPT_ARG_NONE | POPT_BIT_SET, &cs_flags,
+          CS_LOG_DIFF, "Log diff if backup verification failed.", NULL },
+
+        { "foreground", 'f', POPT_ARG_NONE | POPT_BIT_SET, &cs_flags,
+          CS_FOREGROUND,
+          "Run in foreground (usefull for debugging).", NULL },
 
         POPT_AUTOHELP
-        
-        { NULL, 0, 0, NULL, 0, NULL, 0 },
+        POPT_TABLEEND
     };
     
     /* Process command line options */
     optCon = poptGetContext(NULL, argc, (const char **)argv,
                             options_table, 0);
       
-    while ((rc = poptGetNextOpt(optCon)) >= 0)
-    {
-        switch (rc)
-        {
-            case (CS_OPT_TREE + 1):
-                cs_print_tree = TRUE;
-                break;
+    poptSetOtherOptionHelp(optCon, "[OPTIONS] <cfg-file>");
 
-            case (CS_OPT_DIFF + 1):
-                cs_print_diff = TRUE;
-                break;
-               
-            default:
-                ERROR("Unexpected option number %d", rc);
-                poptFreeContext(optCon);
-                return EXIT_FAILURE;
-        }
-    }
-    if (rc < -1)
+    rc = poptGetNextOpt(optCon);
+    if (rc != -1)
     {
         /* An error occurred during option processing */
         ERROR("%s: %s", poptBadOption(optCon, POPT_BADOPTION_NOALIAS),
@@ -1194,7 +1187,23 @@ process_cmd_line_opts(int argc, char **argv)
         poptFreeContext(optCon);
         return EXIT_FAILURE;
     }
+
+    cs_cfg_file = poptGetArg(optCon);
+    if (cs_cfg_file == NULL)
+    {
+        ERROR("No configuration file in command-line arguments");
+        poptFreeContext(optCon);
+        return EXIT_FAILURE;
+    }
+    if (poptGetArg(optCon) != NULL)
+    {
+        ERROR("Unexpected arguments in command-line");
+        poptFreeContext(optCon);
+        return EXIT_FAILURE;
+    }
+
     poptFreeContext(optCon);
+
     return EXIT_SUCCESS;
 }
 
@@ -1213,6 +1222,14 @@ main(int argc, char **argv)
 {
     int rc = 1;
 
+    if ((rc = process_cmd_line_opts(argc, argv)) != EXIT_SUCCESS)
+    {
+        ERROR("Fatal error during command line options processing");
+        goto error;
+    }
+
+    VERB("Starting...");
+
     ipc_init();
     if (ipc_register_server(CONFIGURATOR_SERVER, &server) != 0)
     {
@@ -1220,15 +1237,6 @@ main(int argc, char **argv)
         goto error;
     }
     assert(server != NULL);
-
-    VERB("Starting...");
-
-    if (argc < 2)
-    {
-        ERROR("Wrong arguments");
-        rc = EINVAL;
-        goto error;
-    }
 
     if ((tmp_dir = getenv("TE_TMP")) == NULL)
     {
@@ -1252,19 +1260,13 @@ main(int argc, char **argv)
         goto error;
     }
 
-    if ((rc = parse_config(argv[1], FALSE)) != 0)
+    if ((rc = parse_config(cs_cfg_file, FALSE)) != 0)
     {
         ERROR("Fatal error during configuration file parsing");
         goto error;
     }
-    
-    if ((rc = process_cmd_line_opts(argc, argv)) != EXIT_SUCCESS)
-    {
-        ERROR("Fatal error during command line options processing");
-        goto error;
-    }
-     
-    if (cs_print_tree)
+
+    if (cs_flags & CS_PRINT_TREES)
     {
         print_otree(&cfg_obj_root, 0);
         print_tree(&cfg_inst_root, 0);
@@ -1297,7 +1299,7 @@ main(int argc, char **argv)
             free(msg);
 
 
-        if (cfg_shutdown)
+        if (cs_flags & CS_SHUTDOWN)
             goto error;
     }
 
