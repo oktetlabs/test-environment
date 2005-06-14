@@ -566,9 +566,9 @@ for i in LOGGER RCF CS ; do
         if test -n "`eval echo '$VG_'$i`" ; then
             # Run in foreground under valgrind
             valgrind $VG_OPTIONS $DAEMON_EXEC "$DAEMON_CONF" \
-                2>valgrind.$DAEMON_EXEC &
+                2>valgrind.$DAEMON_EXEC
         else
-            $DAEMON_EXEC "$DAEMON_CONF" &
+            $DAEMON_EXEC "$DAEMON_CONF"
         fi
         START_OK=$?
         if test $START_OK -eq 0 ; then
