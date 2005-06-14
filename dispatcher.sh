@@ -55,7 +55,7 @@ Generic options:
                                 May be used with script Tester only
 
   --cs-print-trees              Print configurator trees.
-  --cs-print-diff               Log backup diff unconditionally.
+  --cs-log-diff                 Log backup diff unconditionally.
 
   --build=path                  Build package specified in the path.
   --build-log=path              Build package with log level 0xFFFF.
