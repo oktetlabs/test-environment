@@ -3909,6 +3909,348 @@ send_traffic(tarpc_send_traffic_in *in,
     return 0;
 }
 
+
+struct msghdr *
+make_msghdr(size_t namelen, size_t iovlen, 
+            size_t buflen, size_t controllen)
+{
+    struct msghdr *hdr;
+    int i;
+    int j;
+    int k;
+    struct iovec *res;
+
+    hdr = calloc(1, sizeof(struct msghdr));
+    if (hdr == NULL)
+    {
+        printf("No resources for make_msghdr\n");
+        return NULL;
+    }
+    hdr->msg_namelen = (namelen > 0) ? namelen : 
+                                       sizeof(struct sockaddr_storage);
+    if (hdr->msg_namelen != 0)
+    {
+        hdr->msg_name = calloc(1, hdr->msg_namelen);
+        if (hdr->msg_name == NULL)
+        {
+            printf("No resources for make_msghdr\n");
+            free(hdr);
+            return NULL;
+        }
+    }
+    hdr->msg_iovlen = iovlen;
+    res = (struct iovec *)calloc(iovlen, sizeof(struct iovec));
+    if (res == NULL)
+    {
+        printf("No resources for make_msghdr\n");
+        free(hdr->msg_name);
+        free(hdr);
+        return NULL;
+    }
+    
+    for (i = 0; i < iovlen - 1; i++)
+    {
+        res[i].iov_len = rand_range(0, buflen);
+        for (j = i - 1, k = i; j >= 0; --j)
+        {
+            if (res[k].iov_len < res[j].iov_len)
+            {
+                size_t tmp = res[k].iov_len;
+                
+                res[k].iov_len = res[j].iov_len;
+                res[j].iov_len = tmp;
+                k = j;
+            }
+        }
+    }
+    
+    res[iovlen - 1].iov_len = buflen;
+    for (i = iovlen - 1; i > 0; --i)
+    {
+        res[i].iov_len -= res[i - 1].iov_len;
+    }
+    for (i = 0; i < iovlen; ++i)
+    {
+        res[i].iov_base = calloc(1, res[i].iov_len);
+        if (res[i].iov_base == NULL)
+        {
+            for (j = 0; j < i; j++)
+                free(res[j].iov_base);
+            free(res);
+            free(hdr->msg_name);
+            free(hdr);
+            printf("No resources for make_msghdr\n");
+            return NULL;
+        }
+    }
+    hdr->msg_iov = res;
+    hdr->msg_controllen = controllen;
+    if (controllen != 0)
+    {
+        hdr->msg_control = calloc(1, controllen);
+        if (hdr->msg_control == NULL)
+        {
+            for (i = 0; i < iovlen; i++)
+                free(res[i].iov_base);
+            free(res);
+            free(hdr->msg_name);
+            free(hdr);
+            printf("No resources for make msghdr\n");
+            return NULL;
+        }
+    }
+    return hdr;
+}
+
+int
+free_msghdr(struct msghdr *hdr)
+{
+    int i;
+
+    if (hdr != NULL)
+    {
+        free(hdr->msg_name);
+        free(hdr->msg_control);
+        if (hdr->msg_iov != NULL)
+            for (i = 0; i < hdr->msg_iovlen; i++)
+                free((hdr->msg_iov)[i].iov_base);
+        free(hdr->msg_iov);
+    }
+    free(hdr);
+    return 0;
+}
+
+
+/*-------------- timely_round_trip() --------------------------*/
+TARPC_FUNC(timely_round_trip, {},
+{
+    MAKE_CALL(out->retval = func_ptr(in, out));
+}
+)
+
+
+int
+timely_round_trip(tarpc_timely_round_trip_in *in,
+                  tarpc_timely_round_trip_out *out)
+{
+    checked_arg  *list = NULL;
+    
+    sock_api_func_ret_ptr make_msghdr_func;
+    sock_api_func_ptr     free_msghdr_func;
+    sock_api_func         sendmsg_func;
+    sock_api_func         recvmsg_func;
+    sock_api_func         select_func;
+
+    struct timeval        timeout; 
+    struct timeval        time2wait;
+    struct timeval        temp;
+        
+    struct msghdr *tx_hdr = NULL;
+    struct msghdr *rx_hdr = NULL;
+    int i;
+
+    fd_set         rfds;
+    int            res = 0;
+    char           buf[INET_ADDRSTRLEN];
+
+    out->index = 0;
+
+    if ((find_func(in->common.lib, "select", &select_func) != 0)   ||
+        (find_func(in->common.lib, "sendmsg", &sendmsg_func) != 0) ||
+        (find_func(in->common.lib, "recvmsg", &recvmsg_func) != 0) ||
+        (find_func(in->common.lib, "make_msghdr", &make_msghdr_func) != 0)
+                                                                   ||
+        (find_func(in->common.lib, "free_msghdr", &free_msghdr_func) != 0)
+       )
+    {
+        ERROR("Failed to resolve functions");
+        res = ROUND_TRIP_ERROR_OTHER;
+        goto cleanup;
+    }
+
+    if ((tx_hdr = (struct msghdr *)
+                       make_msghdr_func(in->tolen,
+                                        in->vector_len,
+                                        in->size,
+                                        0)) == NULL)
+    {
+        ERROR("Failed to prepare msghdr");
+        res = ROUND_TRIP_ERROR_OTHER;
+        goto cleanup;
+    }
+    
+    if ((rx_hdr = (struct msghdr *)
+                       make_msghdr_func(in->tolen,
+                                        in->vector_len,
+                                        in->size,
+                                        0)) == NULL)
+    {
+        ERROR("Failed to prepare msghdr");
+        res = ROUND_TRIP_ERROR_OTHER;
+        goto cleanup;
+    }
+    FD_ZERO(&rfds);
+    FD_SET(in->fd, &rfds);
+    timeout.tv_sec = 0;
+    time2wait.tv_sec = 0;
+
+    /* Timeout passed in milliseconds */
+    timeout.tv_usec = in->timeout * 1000;
+    time2wait.tv_usec = in->time2wait * 1000;
+    
+    for (i = 0; i < in->num; i++, out->index++)
+    {
+        PREPARE_ADDR(in->to.to_val[i], 0);
+        memcpy(tx_hdr->msg_name, a, in->tolen);
+        
+        if (gettimeofday(&temp, NULL))
+        {
+            ERROR("%s(): gettimeofday(timeout) failed: %X",
+                  __FUNCTION__, errno);
+            return ROUND_TRIP_ERROR_OTHER;
+        }
+        timeradd(&time2wait, &temp, &time2wait); 
+
+        if (sendmsg_func(in->fd, tx_hdr, 
+                         send_recv_flags_rpc2h(in->flags)) == -1)
+        {
+            ERROR("sendmsg failed");
+            res = ROUND_TRIP_ERROR_SEND;
+            goto cleanup;
+        }
+        if (select_func(in->fd + 1, &rfds, NULL, NULL, &timeout) == -1)
+        {
+            ERROR("Timeout occuring while calling select()");
+            res = ROUND_TRIP_ERROR_TIMEOUT;
+            goto cleanup;
+        }
+        
+        if (gettimeofday(&temp, NULL))
+        {
+            ERROR("%s(): gettimeofday(timeout) failed: %X",
+                  __FUNCTION__, errno);
+            return ROUND_TRIP_ERROR_OTHER;
+        }
+
+        if (timercmp(&time2wait, &temp, <))
+        {
+            ERROR("time2wait expired");
+            res = ROUND_TRIP_ERROR_TIME_EXPIRED;
+            goto cleanup;
+        }
+ 
+        ERROR("time2wait passed");
+        if (FD_ISSET(in->fd, &rfds))
+        {
+            if (recvmsg_func(in->fd, rx_hdr, 
+                             send_recv_flags_rpc2h(in->flags)) == -1)
+            {
+                ERROR("recvmsg failed");
+                res = ROUND_TRIP_ERROR_RECV;
+                goto cleanup;
+            }
+        }
+    }
+cleanup:
+    free_msghdr_func(tx_hdr);
+    free_msghdr_func(rx_hdr);
+
+    return res;
+}
+
+/*-------------- round_trip_echoer() --------------------------*/
+TARPC_FUNC(round_trip_echoer, {},
+{
+    MAKE_CALL(out->retval = func_ptr(in, out));
+}
+)
+
+
+int
+round_trip_echoer(tarpc_round_trip_echoer_in *in,
+                  tarpc_round_trip_echoer_out *out)
+{
+    sock_api_func_ret_ptr make_msghdr_func;
+    sock_api_func_ptr     free_msghdr_func;
+    sock_api_func         sendmsg_func;
+    sock_api_func         recvmsg_func;
+    sock_api_func         select_func;
+
+    struct timeval        timeout; 
+
+    struct msghdr *hdr = NULL;
+
+    fd_set         rfds;
+    int            res = 0;
+
+    out->index = 0;
+
+    if ((find_func(in->common.lib, "select", &select_func) != 0)   ||
+        (find_func(in->common.lib, "sendmsg", &sendmsg_func) != 0) ||
+        (find_func(in->common.lib, "recvmsg", &recvmsg_func) != 0) ||
+        (find_func(in->common.lib, "make_msghdr", &make_msghdr_func) != 0)
+                                                                   ||
+        (find_func(in->common.lib, "free_msghdr", &free_msghdr_func) != 0)
+       )
+    {
+        ERROR("Failed to resolve functions");
+        res = ROUND_TRIP_ERROR_OTHER;
+        goto cleanup;
+    }
+
+    if ((hdr = (struct msghdr *)
+                    make_msghdr_func(sizeof(struct sockaddr_in),
+                                     in->vector_len,
+                                     in->size,
+                                     0)) == NULL)
+    {
+        ERROR("Failed to prepare msghdr");
+        res = ROUND_TRIP_ERROR_OTHER;
+        goto cleanup;
+    }
+    FD_ZERO(&rfds);
+    FD_SET(in->fd, &rfds);
+    timeout.tv_sec = 0;
+
+    /* Timeout passed in milliseconds */
+    timeout.tv_usec = in->timeout * 1000;
+
+    do {
+        if (select_func(in->fd + 1, &rfds, NULL, NULL, &timeout) == -1)
+        {
+            ERROR("Timeout ocuured while calling select()");
+            res = ROUND_TRIP_ERROR_TIMEOUT;
+            goto cleanup;
+        }
+
+        if (FD_ISSET(in->fd, &rfds))
+        {
+            if (recvmsg_func(in->fd, hdr, 
+                             send_recv_flags_rpc2h(in->flags)) == -1)
+            {
+                ERROR("recvmsg failed");
+                res = ROUND_TRIP_ERROR_RECV;
+                goto cleanup;
+            }
+
+            /* Send message back */
+            if (sendmsg_func(in->fd, hdr, 
+                             send_recv_flags_rpc2h(in->flags)) == -1)
+            {
+                ERROR("sendmsg failed");
+                res = ROUND_TRIP_ERROR_SEND;
+                goto cleanup;
+            }
+        }
+        out->index++;
+    } while (0);
+    
+cleanup:
+    free_msghdr_func(hdr);
+    return res;
+}
+
+
 #define FLOODER_ECHOER_WAIT_FOR_RX_EMPTY        1
 #define FLOODER_BUF                             4096
 

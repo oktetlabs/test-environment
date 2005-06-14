@@ -157,7 +157,17 @@
  */
 #define CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(_func, _var) \
     CHECK_RETVAL_VAR(_func, _var, (((_var) != 0) && ((_var) != -1)), -1)
-        
+
+/** Return with check (for functions returning zero value) */
+#define RETVAL_ZERO_INT(_func, _retval) \
+    do {                                                            \
+        int __retval = (_retval);                                   \
+                                                                    \
+        TAPI_RPC_OUT(_func, (__retval) != 0);                       \
+                                                                    \
+        return __retval;                                            \
+    } while (0)
+
 
 /** Return with check (for functions returning value >= -1) */
 #define RETVAL_INT(_func, _retval) \

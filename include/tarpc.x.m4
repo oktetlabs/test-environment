@@ -2093,6 +2093,53 @@ struct tarpc_send_traffic_in {
 };
 typedef struct tarpc_ssize_t_retval_out tarpc_send_traffic_out;
 
+struct tarpc_timely_round_trip_in {
+    struct tarpc_in_arg common;
+    tarpc_int           fd;          /**< Socket */
+    tarpc_size_t        size;        /**< Buffer length */
+    tarpc_size_t        vector_len;  /**< Vector length */
+    uint32_t            timeout;     /**< Timeout passed to select */
+    uint32_t            time2wait;   /**< Time during for a roundtrip 
+                                          should be performed */
+    tarpc_int           flags;       /**< Flags */
+    tarpc_int           num;         /**< Number of addresses */
+    struct tarpc_sa     to<>;        /**< Adresses list */
+    tarpc_socklen_t     tolen;       /**< Address length */
+};    
+
+enum round_trip_error {
+    ROUND_TRIP_ERROR_OTHER = 1,
+    ROUND_TRIP_ERROR_SEND = 2,
+    ROUND_TRIP_ERROR_RECV = 3,
+    ROUND_TRIP_ERROR_TIMEOUT = 4,
+    ROUND_TRIP_ERROR_TIME_EXPIRED = 5
+};    
+
+struct tarpc_timely_round_trip_out {
+    struct tarpc_out_arg  common;
+    tarpc_int             retval;
+    tarpc_int             index;  /**< Index in addresses list
+                                       for which address 
+                                       error occured */
+};
+
+struct tarpc_round_trip_echoer_in {
+    struct tarpc_in_arg common;
+    tarpc_int           fd;          /**< Socket */
+    tarpc_size_t        size;        /**< Buffer length */
+    tarpc_size_t        vector_len;  /**< Vector length */
+    uint32_t            timeout;     /**< Timeout passed to select */
+    tarpc_int           flags;       /**< Flags */
+};
+
+struct tarpc_round_trip_echoer_out {
+    struct tarpc_out_arg  common;
+    tarpc_int             retval;
+    tarpc_int             index;  /**< How many times echoes 
+                                       were done */
+};
+
+
 /*
  * IOMUX functions
  */
@@ -2637,6 +2684,8 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(simple_sender)
         RPC_DEF(simple_receiver)
         RPC_DEF(send_traffic)
+        RPC_DEF(timely_round_trip)
+        RPC_DEF(round_trip_echoer)
         RPC_DEF(flooder)
         RPC_DEF(echoer)
         

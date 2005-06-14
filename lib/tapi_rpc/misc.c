@@ -233,6 +233,213 @@ rpc_setlibname(rcf_rpc_server *rpcs, const char *libname)
 }
 
 int
+rpc_timely_round_trip(rcf_rpc_server *rpcs, int s,
+                      size_t size, size_t vector_len,
+                      uint32_t timeout, uint32_t time2wait,
+                      int flags, int num, struct sockaddr *to,
+                      socklen_t tolen)
+{
+    rcf_rpc_op op;
+    
+    tarpc_timely_round_trip_in  in;
+    tarpc_timely_round_trip_out out;
+
+    struct sockaddr *addrs = NULL;
+    int              i;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(timely_round_trip, -1);
+    }
+    if (to == NULL)
+    {
+        ERROR("%s(): Invalid pointers to addresses",
+              __FUNCTION__);
+        RETVAL_INT(timely_round_trip, -1);
+    }
+    if (size == 0 || vector_len == 0)
+    {
+        ERROR("%s(): Invalid parameters of size and vector_len",
+              __FUNCTION__);
+        RETVAL_INT(timely_round_trip, -1);
+    }
+    op = rpcs->op;
+
+    /* Socket */
+    in.fd = s;
+    /* Size */
+    in.size = size;
+    /* Vector length */
+    in.vector_len = vector_len;
+    /* Timeout */
+    in.timeout = timeout;
+    /* time2wait */
+    in.time2wait = time2wait;
+    /* Flags */
+    in.flags = flags;
+    /* Number of addresses */
+    in.num = num;
+    /* Address length */
+    in.tolen = tolen;
+
+    /* Adresses */
+    addrs = (struct sockaddr *)calloc(num, sizeof(struct sockaddr));
+    in.to.to_val = (struct tarpc_sa *)addrs;
+    if (in.to.to_val == NULL)
+    {
+        ERROR("%s(): Memory allocation failure", __FUNCTION__);
+        return -1;
+    }
+    in.to.to_len = num;
+    for (i = 0; i < num; i++)
+    {    
+        if ((to + i) != NULL && rpcs->op != RCF_RPC_WAIT)
+        {
+            if (tolen >= SA_COMMON_LEN)
+            {
+                in.to.to_val[i].sa_family = 
+                    addr_family_h2rpc((to + i)->sa_family);
+                in.to.to_val[i].sa_data.sa_data_len = tolen - SA_COMMON_LEN;
+                in.to.to_val[i].sa_data.sa_data_val = 
+                    (uint8_t *)((to + i)->sa_data);
+            }
+            else
+            {
+                in.to.to_val[i].sa_family = RPC_AF_UNSPEC;
+                in.to.to_val[i].sa_data.sa_data_len = 0;
+                /* Any no-NULL pointer is suitable here */
+                in.to.to_val[i].sa_data.sa_data_val = (uint8_t *)(to + i);
+            }
+        }
+    }
+    rcf_rpc_call(rpcs, "timely_round_trip", &in, &out);
+
+    CHECK_RETVAL_VAR(round_trip_echoer, out.retval,
+                     (out.retval < 0) || 
+                     (out.retval > ROUND_TRIP_ERROR_TIME_EXPIRED),
+                     -1);
+
+    TAPI_RPC_LOG("RPC (%s,%s)%s: timely_trip_around ->%d (%s)",
+                 rpcs->ta, rpcs->name, rpcop2str(op),
+                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
+        
+    switch (out.retval)
+    {
+        case ROUND_TRIP_ERROR_SEND:
+        {
+            TAPI_RPC_LOG("error occured while sending message to %s", 
+                         sockaddr2str(to + out.index));
+            break;
+        }
+        case ROUND_TRIP_ERROR_RECV:
+        {
+            TAPI_RPC_LOG("error ocuured while receiving message from %s",
+                         sockaddr2str(to + out.index));
+            break;
+        }    
+        case ROUND_TRIP_ERROR_TIMEOUT:
+        {
+            TAPI_RPC_LOG("Timeout occured, no answer from %s",
+                         sockaddr2str(to + out.index));
+            break;
+        }
+        case ROUND_TRIP_ERROR_TIME_EXPIRED:    
+        { 
+            TAPI_RPC_LOG("Time expired while waiting for answer from %s",
+                         sockaddr2str(to + out.index));
+            break;
+        }
+        default:
+        {
+            break;
+        }
+    }
+
+    free(addrs);
+
+    RETVAL_ZERO_INT(timely_round_trip, out.retval);
+}
+    
+int
+rpc_round_trip_echoer(rcf_rpc_server *rpcs, int s,
+                      size_t size, size_t vector_len,
+                      uint32_t timeout, int flags)
+{
+    rcf_rpc_op op;
+    
+    tarpc_round_trip_echoer_in  in;
+    tarpc_round_trip_echoer_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(round_trip_echoer, -1);
+    }
+    if (size == 0 || vector_len == 0)
+    {
+        ERROR("%s(): Invalid parameters of size and vector_len",
+              __FUNCTION__);
+        RETVAL_INT(round_trip_echoer, -1);
+    }
+    op = rpcs->op;
+
+    /* Socket */
+    in.fd = s;
+    /* Size */
+    in.size = size;
+    /* Vector length */
+    in.vector_len = vector_len;
+    /* Timeout */
+    in.timeout = timeout;
+    /* Flags */
+    in.flags = flags;
+
+    rcf_rpc_call(rpcs, "round_trip_echoer", &in, &out);
+
+    CHECK_RETVAL_VAR(round_trip_echoer, out.retval,
+                     (out.retval < 0) || 
+                     (out.retval > ROUND_TRIP_ERROR_TIMEOUT),
+                     -1);
+
+    TAPI_RPC_LOG("RPC (%s,%s)%s: round_trip_echoer ->%d (%s)",
+                 rpcs->ta, rpcs->name, rpcop2str(op),
+                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
+
+    switch (out.retval)
+    {
+        case ROUND_TRIP_ERROR_SEND:
+        {
+            TAPI_RPC_LOG("error occured while sending message");
+            break;
+        }
+        case ROUND_TRIP_ERROR_RECV:
+        {
+            TAPI_RPC_LOG("error occured while receiving message");
+            break;
+        }    
+        case ROUND_TRIP_ERROR_TIMEOUT:
+        {
+            TAPI_RPC_LOG("Timeout occured, no request from peer");
+            break;
+        }
+        default:
+        {
+            break;
+        }
+    }
+
+    RETVAL_ZERO_INT(round_trip_echoer, out.retval);
+}
+ 
+
+int
 rpc_send_traffic(rcf_rpc_server *rpcs, int num,
                  int *s, const void *buf, size_t len,
                  int flags,
