@@ -533,7 +533,7 @@ trap "" SIGINT
 
 myecho() {
     if test -z "$LIVE_LOG" ; then
-        echo $1
+        echo $*
     fi
 }
 
@@ -551,10 +551,13 @@ te_log_message Engine Dispatcher "Starting TEN applications"
 
 LOGGER_NAME=Logger
 LOGGER_EXEC=te_logger
+LOGGER_SHUT=te_log_shutdown
 RCF_NAME=RCF
 RCF_EXEC=te_rcf
+RCF_SHUT=te_rcf_shutdown
 CS_NAME=Configurator
 CS_EXEC=te_cs
+CS_SHUT=te_cs_shutdown
 
 for i in LOGGER RCF CS ; do
     if test -n "`eval echo '$'$i`" ; then
@@ -562,7 +565,7 @@ for i in LOGGER RCF CS ; do
         DAEMON_EXEC=`eval echo '$'$i'_EXEC'`
         DAEMON_CONF=`eval echo '$CONF_'$i`
         te_log_message Engine Dispatcher "Start $DAEMON_NAME"
-        myecho "--->>> Start $DAEMON_NAME"
+        myecho -n "--->>> Starting $DAEMON_NAME... "
         if test -n "`eval echo '$VG_'$i`" ; then
             # Run in foreground under valgrind
             valgrind $VG_OPTIONS $DAEMON_EXEC "$DAEMON_CONF" \
@@ -572,8 +575,10 @@ for i in LOGGER RCF CS ; do
         fi
         START_OK=$?
         if test $START_OK -eq 0 ; then
+            myecho "done"
             eval `echo $i'_OK'`=yes
         else
+            myecho "failed"
             break
         fi
     fi
@@ -590,11 +595,24 @@ if test $START_OK -eq 0 -a -n "$TESTER" ; then
     fi
 fi
 
-if test -n "$CS_OK" ; then
-    te_log_message Engine Dispatcher "Shutdown Configurator"
-    myecho "--->>> Shutdown Configurator"
-    te_cs_shutdown
-fi
+
+shutdown_daemon() {
+    DAEMON=$1
+    if test -n "`eval echo '$'$DAEMON'_OK'`" ; then
+        DAEMON_NAME=`eval echo '$'$DAEMON'_NAME'`
+        DAEMON_SHUT=`eval echo '$'$DAEMON'_SHUT'`
+        te_log_message Engine Dispatcher "Shutdown $DAEMON_NAME"
+        myecho -n "--->>> Shutdown $DAEMON_NAME... "
+        $DAEMON_SHUT
+        if test $? -eq 0 ; then
+            myecho "done"
+        else
+            myecho "failed"
+        fi
+    fi
+}
+
+shutdown_daemon CS
 
 if test -n "$LOGGER_OK" ; then
     te_log_message Engine Dispatcher "Flush log"
@@ -620,17 +638,9 @@ if test $START_OK -eq 0 -a -n "$TESTER" ; then
     fi
 fi
 
-if test -n "$RCF_OK" ; then
-    te_log_message Engine Dispatcher "Shutdown RCF"
-    myecho "--->>> Shutdown RCF"
-    te_rcf_shutdown 
-fi
+shutdown_daemon RCF 
 
-if test -n "$LOGGER_OK" ; then
-    te_log_message Engine Dispatcher "Shutdown Logger"
-    myecho "--->>> Shutdown Logger"
-    te_log_shutdown
-fi
+shutdown_daemon LOGGER
 
 # Wait for RGT in live mode finish
 if test -n "$LIVE_LOG" ; then
