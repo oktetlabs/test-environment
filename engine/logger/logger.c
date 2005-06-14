@@ -647,8 +647,7 @@ process_cmd_line_opts(int argc, const char **argv)
           NULL },
 
         POPT_AUTOHELP
-        
-        { NULL, 0, 0, NULL, 0, NULL, 0 },
+        POPT_TABLEEND
     };
     
     /* Process command line options */
