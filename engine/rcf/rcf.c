@@ -2198,12 +2198,13 @@ main(int argc, const char *argv[])
 {
     usrreq *req = NULL;
     ta     *agent;
-    int     rc = -1;
+    int     result = EXIT_FAILURE;
+    int     rc;
 
     if ((rc = process_cmd_line_opts(argc, argv)) != EXIT_SUCCESS)
     {
         ERROR("Fatal error during command line options processing");
-        goto error;
+        goto exit;
     }
 
     /* Register SIGPIPE handler, by default SIGPIPE kills the process */
@@ -2211,7 +2212,7 @@ main(int argc, const char *argv[])
 
     ipc_init();
     if (ipc_register_server(RCF_SERVER, &server) != 0)
-        goto no_ipcs_error;
+        goto exit;
     assert(server != NULL);
 
     FD_ZERO(&set0);
@@ -2225,11 +2226,11 @@ main(int argc, const char *argv[])
     if ((tmp_dir = getenv("TE_TMP")) == NULL)
     {
         ERROR("FATAL ERROR: TE_TMP is empty");
-        goto error;
+        goto exit;
     }
 
     if (parse_config(cfg_file) != 0)
-        goto error;
+        goto exit;
 
     /* Initialize Test Agents */
     if (agents == NULL)
@@ -2241,8 +2242,18 @@ main(int argc, const char *argv[])
         if (init_agent(agent) != 0)
         {
             ERROR("FATAL ERROR: TA initialization failed");
-            goto error;
+            goto exit;
         }
+    }
+
+    /* 
+     * Go to background, if foreground mode is not requested.
+     * No threads should be created before become a daemon.
+     */
+    if ((~flags & RCF_FOREGROUND) && daemon(TRUE, TRUE) != 0)
+    {
+        ERROR("daemon() failed");
+        goto exit;
     }
 
     INFO("Initialization is finished");
@@ -2354,19 +2365,20 @@ main(int argc, const char *argv[])
     if (req != NULL && req->message->opcode == RCFOP_SHUTDOWN)
         answer_user_request(req);
 
+    result = EXIT_SUCCESS;
+
 error:
     if (rc != 0)
         wait_shutdown();
         
-no_ipcs_error:
+exit:
     free_ta_list();
-    if (server != NULL)
-        ipc_close_server(server);
+    ipc_close_server(server);
 
-    if (rc != 0)
+    if (result != 0)
         ERROR("Error exit");
     else
         RING("Exit");
 
-    return rc < 0 ? 1 : 0;
+    return result;
 }
