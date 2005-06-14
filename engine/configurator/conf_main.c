@@ -1107,6 +1107,7 @@ cfg_process_msg(cfg_msg **msg, te_bool update_dh)
 }
 
 
+#if 0
 /* Wait for shutdown message after initialization failure */
 static void
 wait_shutdown()
@@ -1137,6 +1138,29 @@ wait_shutdown()
         if (msg->type == CFG_SHUTDOWN)
             return;
     }
+}
+#endif
+
+/**
+ * Free globally allocated resources.
+ */
+static void
+free_resources(void)
+{
+    VERB("Destroy history");
+    cfg_dh_destroy();
+
+    VERB("Destroy database");
+    cfg_db_destroy();
+
+    VERB("Free resources");
+    free(cfg_ta_list);
+    free(cfg_get_buf);
+
+    VERB("Closing server");
+    ipc_close_server(server);
+
+    free(filename);
 }
 
 /**
@@ -1220,12 +1244,20 @@ process_cmd_line_opts(int argc, char **argv)
 int
 main(int argc, char **argv)
 {
-    int rc = 1;
+    int result = EXIT_FAILURE;
+    int rc;
+
+
+    if (atexit(free_resources) != 0)
+    {
+        ERROR("atexit() failed");
+        goto exit;
+    }
 
     if ((rc = process_cmd_line_opts(argc, argv)) != EXIT_SUCCESS)
     {
         ERROR("Fatal error during command line options processing");
-        goto error;
+        goto exit;
     }
 
     VERB("Starting...");
@@ -1234,36 +1266,34 @@ main(int argc, char **argv)
     if (ipc_register_server(CONFIGURATOR_SERVER, &server) != 0)
     {
         ERROR("Failed to register IPC server");
-        goto error;
+        goto exit;
     }
     assert(server != NULL);
 
     if ((tmp_dir = getenv("TE_TMP")) == NULL)
     {
         ERROR("Fatal error: TE_TMP is empty");
-        rc = ENOENT;
-        goto error;
+        goto exit;
     }
 
     if ((filename = (char *)malloc(strlen(tmp_dir) +
                                    strlen("/te_cfg_tmp.xml") + 1)) == NULL)
     {
         ERROR("No enough memory");
-        rc = ENOMEM;
-        goto error;
+        goto exit;
     }
     sprintf(filename, "%s/te_cfg_tmp.xml", tmp_dir);
 
     if ((rc = cfg_db_init()) != 0)
     {
         ERROR("Fatal error: cannot initialize database");
-        goto error;
+        goto exit;
     }
 
     if ((rc = parse_config(cs_cfg_file, FALSE)) != 0)
     {
         ERROR("Fatal error during configuration file parsing");
-        goto error;
+        goto exit;
     }
 
     if (cs_flags & CS_PRINT_TREES)
@@ -1271,6 +1301,18 @@ main(int argc, char **argv)
         print_otree(&cfg_obj_root, 0);
         print_tree(&cfg_inst_root, 0);
     }
+
+    /* 
+     * Go to background, if foreground mode is not requested.
+     * No threads should be created before become a daemon.
+     */
+    if ((~cs_flags & CS_FOREGROUND) && daemon(TRUE, TRUE) != 0)
+    {
+        ERROR("daemon() failed");
+        goto exit;
+    }
+
+    INFO("Initialization is finished");
 
     while (TRUE)
     {
@@ -1298,36 +1340,18 @@ main(int argc, char **argv)
         if ((char *)msg != buf)
             free(msg);
 
-
         if (cs_flags & CS_SHUTDOWN)
-            goto error;
+        {
+            result = EXIT_SUCCESS;
+            break;
+        }
     }
 
-error:
-    VERB("Destroy history");
-    cfg_dh_destroy();
-
-    VERB("Destroy database");
-    cfg_db_destroy();
-
-    VERB("Free resources");
-    free(cfg_ta_list);
-    free(cfg_get_buf);
-
-    if ((rc != 0) && (server != NULL))
-        wait_shutdown();
-
-    VERB("Closing server");
-    if (server != NULL)
-        ipc_close_server(server);
-
-    free(filename);
-
-    if (rc != 0)
+exit:
+    if (result != EXIT_SUCCESS)
         ERROR("Error exit");
     else
         RING("Exit");
 
-    return rc;
+    return result;
 }
-
