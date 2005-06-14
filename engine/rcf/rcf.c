@@ -66,6 +66,11 @@
 #ifdef HAVE_SIGNAL_H
 #include <signal.h>
 #endif
+#if HAVE_POPT_H
+#include <popt.h>
+#else
+#error popt library (development version) is required for RCF
+#endif
 
 #include <libxml/xmlmemory.h>
 #include <libxml/parser.h>
@@ -196,7 +201,10 @@ typedef struct ta {
 
 DEFINE_LGR_ENTITY("RCF");
 
+#define RCF_FOREGROUND  0x01    /**< Flag to run RCF in foreground */
+static unsigned int flags = 0;  /**< Global flags */
 
+static const char *cfg_file;    /**< Configuration file name */
 static ta *agents = NULL;       /**< List of Test Agents */
 static int ta_num = 0;          /**< Number of Test Agents */
 static int reboot_num = 0;      /**< Number of TA which should be 
@@ -363,7 +371,7 @@ resolve_ta_methods(ta *agent, char *libname)
  * @return 0 (success) or -1 (failure)
  */
 static int
-parse_config(char *filename)
+parse_config(const char *filename)
 {
     char *name_ptr = names;
     ta   *agent;
@@ -2119,6 +2127,66 @@ sigpipe_handler(int sig)
     rcf_wait_shutdown = TRUE;
 }
 
+/**
+ * Process command line options and parameters specified in argv.
+ * The procedure contains "Option table" that should be updated 
+ * if some new options are going to be added.
+ *
+ * @param argc  Number of elements in array "argv".
+ * @param argv  Array of strings that represents all command line arguments
+ *
+ * @return EXIT_SUCCESS or EXIT_FAILURE
+ */
+static int
+process_cmd_line_opts(int argc, const char **argv)
+{
+    poptContext  optCon;
+    int          rc;
+    
+    /* Option Table */
+    struct poptOption options_table[] = {
+        { "foreground", 'f', POPT_ARG_NONE | POPT_BIT_SET, &flags,
+          RCF_FOREGROUND,
+          "Run in foreground (usefull for debugging).", NULL },
+
+        POPT_AUTOHELP
+        POPT_TABLEEND
+    };
+    
+    /* Process command line options */
+    optCon = poptGetContext(NULL, argc, (const char **)argv,
+                            options_table, 0);
+      
+    poptSetOtherOptionHelp(optCon, "[OPTIONS] <cfg-file>");
+
+    rc = poptGetNextOpt(optCon);
+    if (rc != -1)
+    {
+        /* An error occurred during option processing */
+        ERROR("%s: %s", poptBadOption(optCon, POPT_BADOPTION_NOALIAS),
+              poptStrerror(rc));
+        poptFreeContext(optCon);
+        return EXIT_FAILURE;
+    }
+
+    cfg_file = poptGetArg(optCon);
+    if (cfg_file == NULL)
+    {
+        ERROR("No configuration file in command-line arguments");
+        poptFreeContext(optCon);
+        return EXIT_FAILURE;
+    }
+    if (poptGetArg(optCon) != NULL)
+    {
+        ERROR("Unexpected arguments in command-line");
+        poptFreeContext(optCon);
+        return EXIT_FAILURE;
+    }
+
+    poptFreeContext(optCon);
+
+    return EXIT_SUCCESS;
+}
 
 /**
  * Main routine of the RCF process. Usage: rcf <configuration file name>
@@ -2126,11 +2194,17 @@ sigpipe_handler(int sig)
  * @return 0 (success) or 1 (failure)
  */
 int
-main(int argc, char **argv)
+main(int argc, const char *argv[])
 {
     usrreq *req = NULL;
     ta     *agent;
     int     rc = -1;
+
+    if ((rc = process_cmd_line_opts(argc, argv)) != EXIT_SUCCESS)
+    {
+        ERROR("Fatal error during command line options processing");
+        goto error;
+    }
 
     /* Register SIGPIPE handler, by default SIGPIPE kills the process */
     signal(SIGPIPE, sigpipe_handler);
@@ -2147,12 +2221,6 @@ main(int argc, char **argv)
     tv0.tv_usec = 0;
 
     VERB("Starting...\n");
-    if (argc != 2)
-    {
-        ERROR("FATAL ERROR: Wrong arguments - configuration "
-                         "file name only should be provided");
-        goto error;
-    }
 
     if ((tmp_dir = getenv("TE_TMP")) == NULL)
     {
@@ -2160,10 +2228,14 @@ main(int argc, char **argv)
         goto error;
     }
 
-    if (parse_config(argv[1]) != 0)
+    if (parse_config(cfg_file) != 0)
         goto error;
 
     /* Initialize Test Agents */
+    if (agents == NULL)
+    {
+        RING("Empty list with TAs");
+    }
     for (agent = agents; agent != NULL; agent = agent->next)
     {
         if (init_agent(agent) != 0)
@@ -2173,12 +2245,7 @@ main(int argc, char **argv)
         }
     }
 
-    if (agents == NULL)
-    {
-        VERB("Empty list with TAs");
-    }
-
-    VERB("Initialization is finished");
+    INFO("Initialization is finished");
     while (1)
     {
         struct timeval  tv = tv0;

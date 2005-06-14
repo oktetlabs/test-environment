@@ -14,7 +14,7 @@ te_rcf_SOURCES = rcf.c
 te_rcf_LDFLAGS = -rdynamic -export-dynamic 
 
 te_rcf_LDADD = @TE_LDADD@ -lrpcxdr -llogger_ten -lipcserver -lipc \
-               @XML2_LIBS@ -ldl -lpthread -lexpat
+               @XML2_LIBS@ -ldl -lexpat -lpopt -lpthread
 
 te_rcf_DEPENDENCIES = @TE_DEPENDENCIES@ \
                       $(DESTDIR)/$(prefix)/lib/liblogger_ten.a \
