@@ -3948,7 +3948,7 @@ make_msghdr(size_t namelen, size_t iovlen,
         return NULL;
     }
     
-    for (i = 0; i < iovlen - 1; i++)
+    for (i = 0; i < (int)iovlen - 1; i++)
     {
         res[i].iov_len = rand_range(0, buflen);
         for (j = i - 1, k = i; j >= 0; --j)
@@ -3969,7 +3969,7 @@ make_msghdr(size_t namelen, size_t iovlen,
     {
         res[i].iov_len -= res[i - 1].iov_len;
     }
-    for (i = 0; i < iovlen; ++i)
+    for (i = 0; i < (int)iovlen; ++i)
     {
         res[i].iov_base = calloc(1, res[i].iov_len);
         if (res[i].iov_base == NULL)
@@ -3990,7 +3990,7 @@ make_msghdr(size_t namelen, size_t iovlen,
         hdr->msg_control = calloc(1, controllen);
         if (hdr->msg_control == NULL)
         {
-            for (i = 0; i < iovlen; i++)
+            for (i = 0; i < (int)iovlen; i++)
                 free(res[i].iov_base);
             free(res);
             free(hdr->msg_name);
@@ -4012,7 +4012,7 @@ free_msghdr(struct msghdr *hdr)
         free(hdr->msg_name);
         free(hdr->msg_control);
         if (hdr->msg_iov != NULL)
-            for (i = 0; i < hdr->msg_iovlen; i++)
+            for (i = 0; i < (int)(hdr->msg_iovlen); i++)
                 free((hdr->msg_iov)[i].iov_base);
         free(hdr->msg_iov);
     }
@@ -4051,16 +4051,17 @@ timely_round_trip(tarpc_timely_round_trip_in *in,
 
     fd_set         rfds;
     int            res = 0;
-    char           buf[INET_ADDRSTRLEN];
 
     out->index = 0;
 
     if ((find_func(in->common.lib, "select", &select_func) != 0)   ||
         (find_func(in->common.lib, "sendmsg", &sendmsg_func) != 0) ||
         (find_func(in->common.lib, "recvmsg", &recvmsg_func) != 0) ||
-        (find_func(in->common.lib, "make_msghdr", &make_msghdr_func) != 0)
+        (find_func(in->common.lib, "make_msghdr", 
+                   (sock_api_func *)&make_msghdr_func) != 0)
                                                                    ||
-        (find_func(in->common.lib, "free_msghdr", &free_msghdr_func) != 0)
+        (find_func(in->common.lib, "free_msghdr", 
+                   (sock_api_func *)&free_msghdr_func) != 0)
        )
     {
         ERROR("Failed to resolve functions");
@@ -4188,9 +4189,11 @@ round_trip_echoer(tarpc_round_trip_echoer_in *in,
     if ((find_func(in->common.lib, "select", &select_func) != 0)   ||
         (find_func(in->common.lib, "sendmsg", &sendmsg_func) != 0) ||
         (find_func(in->common.lib, "recvmsg", &recvmsg_func) != 0) ||
-        (find_func(in->common.lib, "make_msghdr", &make_msghdr_func) != 0)
+        (find_func(in->common.lib, "make_msghdr", 
+                   (sock_api_func *)&make_msghdr_func) != 0)
                                                                    ||
-        (find_func(in->common.lib, "free_msghdr", &free_msghdr_func) != 0)
+        (find_func(in->common.lib, "free_msghdr", 
+                   (sock_api_func *)&free_msghdr_func) != 0)
        )
     {
         ERROR("Failed to resolve functions");
