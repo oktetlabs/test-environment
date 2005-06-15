@@ -451,6 +451,7 @@ rgt_log_start_element(void *user_data,
             
         case RGT_XML2HTML_STATE_FILE:
             assert(strcmp(tag, "br") == 0);
+            proc_log_msg_br(ctx, depth_ctx, RGT_XML2CHAR(attrs));
             break;
 
         default:
