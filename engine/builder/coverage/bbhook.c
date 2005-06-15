@@ -135,7 +135,7 @@ __bb_exit_func (void)
         if (space_at == NULL ||
             (peer_id = strtol(space_at, NULL, 0)) == 0)
         {
-            fprintf("invalid TCE_CONNECTION var '%s'\n", env);
+            fprintf(stderr, "invalid TCE_CONNECTION var '%s'\n", env);
             return;
         }
         *space_at = '\0';

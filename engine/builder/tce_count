@@ -1,0 +1,19 @@
+#! /bin/sh
+
+outfile=$1
+nopattern="$2"
+yespattern="$3"
+
+non_execed=`egrep "$nopattern" $outfile | wc | awk '{ print $1 }'`
+execed=`egrep "$yespattern" $outfile | wc | awk '{ print $1 }'`
+sum=$((non_execed + execed))
+if test $sum -eq 0; then
+    percent=0
+    rem=0
+else
+    ratio=$((execed * 10000 / sum))
+    percent=$((ratio / 100))
+    rem=$((ratio % 100))
+fi
+
+echo "$percent.$rem $sum"

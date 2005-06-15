@@ -1,7 +1,8 @@
 #! /bin/sh
 
 tce_taname=$1 
-outfile=$2
+mergefile=$2
+outfile=${mergefile}.new
 
 if test -e ${TE_BUILD}/builder.conf.processed ; then
     . ${TE_BUILD}/builder.conf.processed
@@ -18,12 +19,19 @@ if test -n "$NUT_SOURCES"; then
     find $NUT_SOURCES \( -name '*.gcov' -o -name '*.da' \) -exec rm -f '{}' ';'
         tar -x -P -f ${TE_BUILD}/tce_${tce_taname}.tar
         (find $NUT_SOURCES -name '*.da' -exec tce_gcov '{}' ';' && \
-            find $NUT_SOURCES -name '*.gcov' -exec cat '{}' ';') >> $outfile
-        non_execed=`grep '^branch[[:space:]]*[0-9]* never executed' $outfile | wc | awk '{ print $1 }'`
-        execed=`grep '^branch[[:space:]]*[0-9]* taken' $outfile | wc | awk '{ print $1 }'`
+            find $NUT_SOURCES -name '*.gcov' -exec tce_merge $mergefile '{}' ';') >> $outfile
         echo >>$outfile
-        echo "*** Grand Total: `expr $execed \* 100 / \( $non_execed + $execed \)`% branches covered" >>$outfile
+        tce_count $outfile '^branch[[:space:]]*[0-9]+ never executed' '^branch[[:space:]]*[0-9]+ taken' | 
+        (
+            read ratio sum
+            echo "*** Grand Total: $ratio% of $sum branches covered" >>$outfile
+        )
+        if test -f $mergefile; then
+            mv -f $mergefile $mergefile.prev
+        fi
+        mv -f $outfile $mergefile
 fi        
+
 
 
 

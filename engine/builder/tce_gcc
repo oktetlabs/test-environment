@@ -59,7 +59,10 @@ done
 
 if test -z "$nobbhook"; then
     BBHOOK_O=/tmp/bbhook.o
-    selfpath=`dirname $CC`
+    for i in $CC; do
+        tmpcc=$i
+    done
+    selfpath=`dirname $tmpcc`
     ${TCE_CC} -c ${TCE_CFLAGS} -o $BBHOOK_O -I${selfpath}/../include ${selfpath}/../share/bbhook.c
 else
     BBHOOK_O=""

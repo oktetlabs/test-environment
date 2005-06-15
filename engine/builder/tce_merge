@@ -1,0 +1,112 @@
+#! /bin/sh
+
+mergefile=$1
+gcovfile=$2
+resultfile=${gcovfile}.new
+
+source=`head -n1 $gcovfile | awk -F: '{ print $NF }'`
+stamp=`head -n2 $gcovfile | md5sum`
+if test -f "$mergefile"; then
+    (sed -n "\\!^=== $stamp!,/^======/p" $mergefile | 
+        awk -F: -v curfile="$gcovfile" \
+        '/^===/ { next }
+         /^(branch|call)/ { 
+            nf1 = split($0, new, " ");        
+            if ((getline current < curfile) <= 0) { 
+                print "missing lines" > "/dev/stderr"; 
+                exit 1 
+            }
+            if (split(current, fields, " ") != nf1) { 
+                print "mismatch field count" > "/dev/stderr"; 
+                exit 1 
+            }
+            if (fields[1] != new[1] || fields[2] != new[2]) 
+            { 
+                print "mismatch fields" > "/dev/stderr"; 
+                exit 1 
+            }
+            if (fields[3] != "never" || new[3] == "never")
+            {
+                fields[3] = fields[1] == "call" ? "returns" : "taken"
+                fields[4] += new[4]
+            }
+            print fields[1], fields[2], fields[3], fields[4]
+            next
+        }
+        { if ((getline current < curfile) <= 0) { 
+              print "missing lines" > "/dev/stderr"; 
+              exit 1 
+          }
+          if (split(current, fields) != NF) { 
+              print "mismatch at field count" > "/dev/stderr"; 
+              exit 1 
+          }
+          sourceline = ""
+          if (fields[2] != $2) { 
+              print "mismatch with " field[2] " and " $2 > "/dev/stderr"; 
+              exit 1 
+          }
+          for (i = 3; i <= NF; i++)
+          {
+              if (fields[i] != $i) { 
+                  print "mismatch between " fields[i] " and " $i > "/dev/stderr"; 
+                  exit 1 
+              }
+              sourceline = (sourceline ? sourceline ":" $i : $i)
+          }
+          if ($1 ~ /^[[:space:]]*-/) {
+              if (fields[1] ~ /^[[:space:]]*-/) {
+                  print
+                  next
+              }
+              else {
+                  print "mismatch between " fields[1] " and " $1  > "/dev/stderr"
+                  exit 1
+             }
+          }
+          else {
+             sum = $1 + fields[1]
+             printf "%9s:%5s:%s\n", sum, $2, sourceline
+             next
+          }
+        }
+        END { if ((getline < curfile) > 0) { 
+                print "extra line: " $0 > "/dev/stderr"; 
+                exit 1 
+              }
+        }
+'> $resultfile
+    ) || (  echo "Files ($gcovfile) mismatch, not merging" >/dev/stderr
+        cat $gcovfile >$resultfile )
+else
+    cat $gcovfile >$resultfile
+fi
+
+tce_count $resultfile '^[[:space:]]*#+:' '^[[:space:]]*[0-9]+:' |
+(
+    read ratio sum
+    echo "$ratio% of $sum lines of code executed in file $source"
+)
+
+tce_count $resultfile '^branch[[:space:]]*[0-9]+ never executed' '^branch[[:space:]]*[0-9]+ taken' | 
+(
+    read ratio sum
+    echo "$ratio% of $sum branches of code executed in file $source"
+)
+tce_count $resultfile '^branch[[:space:]]*[0-9]+ (never executed|taken 0$)' \
+    '^branch[[:space:]]*[0-9]+ taken[[:space:]]*[1-9][0-9]*' |
+(
+    read ratio sum
+    echo "$ratio% of $sum branches of code taken at least once in file $source"
+)
+ 
+tce_count $resultfile '^call[[:space:]]*[0-9]+ never executed' '^call[[:space:]]*[0-9]+ returns' |
+(
+    read ratio sum
+    echo "$ratio% of $sum calls executed in file $source"
+)
+
+echo "=== $stamp" 
+cat $resultfile
+echo "======"
+rm -f $resultfile

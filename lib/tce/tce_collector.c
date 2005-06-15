@@ -141,7 +141,7 @@ static void get_kernel_gcov_data(int core_file,
 
 static char **collector_args;
 static int data_lock = -1;
-static char *ksymtable = "/proc/kallsyms";
+static char *ksymtable;
 
 te_bool tce_standalone = FALSE;
 
@@ -222,6 +222,7 @@ tce_collector(void)
         listen_on = -1;
         if (strncmp(*args, "fifo:", 5) == 0)
         {
+            remove(*args + 5);
             report_notice("opening %s", *args + 5);
             mkfifo(*args + 5, S_IRUSR | S_IWUSR);
             listen_on = open(*args + 5, O_RDONLY | O_NONBLOCK, 0);
@@ -237,6 +238,7 @@ tce_collector(void)
         {
             struct sockaddr_un addr;
             is_socket = TRUE;
+            remove(*args + 5);            
             listen_on = socket(PF_UNIX, SOCK_STREAM, 0);
             if (listen_on < 0)
             {
@@ -340,26 +342,28 @@ tce_collector(void)
     {
         int result;
         memcpy(&current, &active_channels, sizeof(current));
+        errno = 0;
         result = select(max_fd + 1, &current, NULL, NULL, NULL);
-        if (result < 0)
+        if (caught_signo != 0)
         {
-            if (errno == EINTR)
+            int signo = caught_signo;
+            report_notice("TCE collector caught signal %d", signo);
+            caught_signo = 0;
+            if (signo == SIGHUP)
+                dump_data();
+            else if (signo == SIGUSR1)
+                clear_data();
+            else if (signo == SIGTERM)
             {
-                int signo = caught_signo;
-                report_notice("TCE collector caught signal %d", signo);
-                caught_signo = 0;
-                if (signo == SIGHUP)
-                    dump_data();
-                else if (signo == SIGUSR1)
+                if (!tce_standalone)
                     clear_data();
-                else if (signo == SIGTERM)
-                {
-                    if (!tce_standalone)
-                        clear_data();
-                    break;
-                }
+                break;
             }
-            else
+            continue;
+        }
+        if (result <= 0)
+        {            
+            if (errno != 0)
             {
                 report_error("select error %s", strerror(errno));
             }
@@ -798,7 +802,10 @@ dump_data(void)
 
     clear_data();
     report_notice("Dumping TCE data");
-    get_kernel_coverage();
+    if (ksymtable != NULL)
+    {
+        get_kernel_coverage();
+    }
     for (idx = 0; idx < BB_HASH_SIZE; idx++)
     {
         for (iter = bb_hash_table[idx]; iter != NULL; iter = iter->next)
