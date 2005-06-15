@@ -2125,7 +2125,8 @@ struct tarpc_timely_round_trip_out {
 
 struct tarpc_round_trip_echoer_in {
     struct tarpc_in_arg common;
-    tarpc_int           fd;          /**< Socket */
+    tarpc_int           num;         /**< Number of sockets */
+    tarpc_int           fd<>;        /**< Sockets list */
     tarpc_size_t        size;        /**< Buffer length */
     tarpc_size_t        vector_len;  /**< Vector length */
     uint32_t            timeout;     /**< Timeout passed to select */
