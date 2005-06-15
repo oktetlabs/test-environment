@@ -789,8 +789,9 @@ run_test_script(tester_ctx *ctx, test_script *script, test_id id,
     char       *params_str;
     char        cmd[TESTER_CMD_BUF_SZ];
     char        shell[256] = "";
-    char        postfix[32] = "";
     char        gdb_init[32] = "";
+    char        postfix[32] = "";
+    char        vg_filename[32] = "";
 
     ENTRY();
 
@@ -854,8 +855,15 @@ run_test_script(tester_ctx *ctx, test_script *script, test_id id,
             ERROR("Too short buffer is reserved for shell command prefix");
             return ETESMALLBUF;
         }
-        if (snprintf(postfix, sizeof(postfix),
-                     " 2>" TESTER_VG_FILENAME_FMT, id) >=
+        if (snprintf(vg_filename, sizeof(vg_filename),
+                     TESTER_VG_FILENAME_FMT, id) >=
+                (int)sizeof(vg_filename))
+        {
+            ERROR("Too short buffer is reserved for Vagrind output "
+                  "filename");
+            return ETESMALLBUF;
+        }
+        if (snprintf(postfix, sizeof(postfix), " 2>%s", vg_filename) >=
                 (int)sizeof(postfix))
         {
             ERROR("Too short buffer is reserved for test script "
@@ -935,6 +943,12 @@ run_test_script(tester_ctx *ctx, test_script *script, test_id id,
                 default:
                     result = ETESTUNEXP;
             }
+        }
+        if (ctx->flags & TESTER_VALGRIND)
+        {
+            log_message(TE_LL_INFO, TE_LGR_ENTITY, TE_LGR_USER,
+                        "Standard error output of the script with "
+                        "ID=%d:\n%tf", id, vg_filename);
         }
     }
 
