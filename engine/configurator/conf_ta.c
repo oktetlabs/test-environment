@@ -51,12 +51,18 @@ ta_list_init()
     int   rc;
     
     if ((cfg_get_buf = (char *)malloc(cfg_get_buf_len)) == NULL)
+    {
+        ERROR("Out of memory");
         return ENOMEM;
+    }
         
     while (TRUE)
     {
         if ((cfg_ta_list = (char *)calloc(ta_list_size, 1)) == NULL)
+        {
+            ERROR("Out of memory");
             return ENOMEM;
+        }
 
         rc = rcf_get_ta_list(cfg_ta_list, &ta_list_size);
         if (rc == 0)
@@ -65,7 +71,10 @@ ta_list_init()
         free(cfg_ta_list);
         cfg_ta_list = NULL;
         if (TE_RC_GET_ERROR(rc) != ETESMALLBUF)
+        {
+            ERROR("rcf_get_ta_list() returned 0x%X", rc);
             return rc;
+        }
 
         ta_list_size += TA_LIST_SIZE;
     }
@@ -109,6 +118,7 @@ cfg_ta_add_agent_instances()
                 free(cfg_all_inst[i]->oid);
                 free(cfg_all_inst[i]);
             }
+            ERROR("Out of memory");
             return ENOMEM;
         }
         strcpy(cfg_all_inst[i]->name, ta);

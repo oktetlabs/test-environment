@@ -75,6 +75,7 @@ cfg_db_init(void)
     if ((cfg_all_obj = (cfg_object **)calloc(CFG_OBJ_NUM, 
                                              sizeof(void *))) == NULL)
     {
+        ERROR("Out of memory");
         return ENOMEM;
     }
     cfg_all_obj_size = CFG_OBJ_NUM;
@@ -88,6 +89,7 @@ cfg_db_init(void)
     {
         free(cfg_all_obj);
         cfg_all_obj = NULL;
+        ERROR("Out of memory");
         return ENOMEM;
     }
     cfg_all_inst_size = CFG_INST_NUM;
