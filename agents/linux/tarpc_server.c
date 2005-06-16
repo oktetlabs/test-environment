@@ -2598,6 +2598,7 @@ TARPC_FUNC(ioctl,
                 free(req_ifconf.ifc_buf);
                 break;
             }
+
             case IOCTL_ARPREQ:
             {
                 if (in->code == RPC_SIOCGARP)
@@ -2711,12 +2712,14 @@ TARPC_FUNC(ioctl,
             {
                 char *buf = NULL;
                 int   buflen = out->req.req_val[0].ioctl_request_u.
-                               req_ifconf.buflen;
+                               req_ifconf.nmemb * sizeof(struct ifreq) +
+                               out->req.req_val[0].ioctl_request_u.
+                               req_ifconf.extra;
 
                 req = (char *)&req_ifconf;
                 reqlen = sizeof(req_ifconf);
-
-                if (buflen > 0 && (buf = calloc(1, buflen + 10)) == NULL)
+                
+                if (buflen > 0 && (buf = calloc(1, buflen + 64)) == NULL)
                 {
                     ERROR("Out of memory");
                     out->common._errno = TE_RC(TE_TA_LINUX, ENOMEM);
@@ -2724,10 +2727,12 @@ TARPC_FUNC(ioctl,
                 }
                 req_ifconf.ifc_buf = buf;
                 req_ifconf.ifc_len = buflen;
+
                 if (buf != NULL)
-                    INIT_CHECKED_ARG(buf, buflen + 10, buflen);
+                    INIT_CHECKED_ARG(buf, buflen + 64, buflen);
                 break;
             }
+
             case IOCTL_ARPREQ:
             {
                 req = (char *)&req_arpreq;
@@ -2829,19 +2834,10 @@ TARPC_FUNC(ioctl,
                 int n = 1;
                 int i;
 
-                if (req_ifconf.ifc_len >
-                    out->req.req_val[0].ioctl_request_u.req_ifconf.buflen)
-                {
-                    n = out->req.req_val[0].ioctl_request_u.
-                            req_ifconf.buflen / sizeof(struct ifreq);
-                }
-                else
-                {
-                    n = req_ifconf.ifc_len / sizeof(struct ifreq);
-                }
-
-                out->req.req_val[0].ioctl_request_u.req_ifconf.buflen =
-                    req_ifconf.ifc_len;
+                n = out->req.req_val[0].ioctl_request_u.req_ifconf.nmemb =
+                    req_ifconf.ifc_len / sizeof(struct ifreq);
+                out->req.req_val[0].ioctl_request_u.req_ifconf.extra =
+                    req_ifconf.ifc_len % sizeof(struct ifreq);
 
                 if (req_ifconf.ifc_req == NULL)
                     break;
@@ -2895,6 +2891,7 @@ TARPC_FUNC(ioctl,
                 free(req_ifconf.ifc_buf);
                 break;
             }
+
             case IOCTL_ARPREQ:
             {
                 if (in->code == RPC_SIOCGARP)
