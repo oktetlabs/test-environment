@@ -202,13 +202,22 @@ ds_create_backup(const char *dir, const char *name, int *index)
         return TE_RC(TE_TA_LINUX, ENOMEM);
     }
     
-    if (stat(ds[n_ds].backup, &st) == 0)
+    if (file_exists(ds[n_ds].backup))
     {
         WARN("Failed to create backup %s - it's already exists", 
              ds[n_ds].backup);
         free(ds[n_ds].config_file);
         free(ds[n_ds].backup);
         return TE_RC(TE_TA_LINUX, EEXIST);
+    }
+
+    if (!file_exists(ds[n_ds].config_file))
+    {
+        WARN("Failed to create backup for %s - no such file", 
+             ds[n_ds].config_file);
+        free(ds[n_ds].config_file);
+        free(ds[n_ds].backup);
+        return TE_RC(TE_TA_LINUX, ENOENT);
     }
     
     sprintf(buf, "cp %s %s", ds[n_ds].config_file, ds[n_ds].backup);
