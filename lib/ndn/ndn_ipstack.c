@@ -26,9 +26,7 @@
  * $Id$
  */
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+#include "te_config.h" 
 
 #include "asn_impl.h"
 #include "ndn_internal.h"
@@ -51,7 +49,9 @@ static asn_named_entry_t _ndn_ip4_frag_spec_ne_array [] =
     { "real-length",         &asn_base_integer_s,
         {PRIVATE, NDN_TAG_IP4_FR_RL} }, 
     { "more-frags",         &asn_base_boolean_s,
-        {PRIVATE, NDN_TAG_IP4_FR_MORE} }, 
+        {PRIVATE, NDN_TAG_IP4_FR_MF} }, 
+    { "dont-frag",         &asn_base_boolean_s,
+        {PRIVATE, NDN_TAG_IP4_FR_DF} }, 
 };
 
 asn_type ndn_ip4_frag_spec_s =
@@ -72,6 +72,32 @@ asn_type ndn_ip4_frag_seq_s =
 };
 
 asn_type_p ndn_ip4_frag_seq = &ndn_ip4_frag_seq_s;
+
+/*
+IP-Payload-Checksum ::= CHOICE {
+    offset  INTEGER, 
+    disable NULL
+}
+*/
+static asn_named_entry_t _ndn_ip4_pld_chksm_ne_array [] = 
+{
+    { "offset", &asn_base_integer_s, 
+        { PRIVATE, NDN_TAG_IP4_PLD_CH_OFFSET } },
+    { "disable", &asn_base_null_s, 
+        { PRIVATE, NDN_TAG_IP4_PLD_CH_DISABLE } },
+};
+
+asn_type ndn_ip4_pld_chksm_s =
+{
+    "IP-Payload-Checksum", {PRIVATE, NDN_TAG_IP4_PLD_CHECKSUM}, CHOICE, 
+    sizeof(_ndn_ip4_pld_chksm_ne_array)/
+        sizeof(_ndn_ip4_pld_chksm_ne_array[0]),
+    {_ndn_ip4_pld_chksm_ne_array}
+};
+
+asn_type_p ndn_ip4_pld_chksm = &ndn_ip4_pld_chksm_s;
+
+/* IPv4 PDU */
 
 static asn_named_entry_t _ndn_ip4_header_ne_array [] = 
 {
@@ -101,6 +127,8 @@ static asn_named_entry_t _ndn_ip4_header_ne_array [] =
         {PRIVATE, NDN_TAG_IP4_DST_ADDR} }, 
     { "fragment-spec",   &ndn_ip4_frag_seq_s, 
         {PRIVATE, NDN_TAG_IP4_FRAGMENTS} }, 
+    { "pld-checksum",    &ndn_ip4_pld_chksm_s, 
+        {PRIVATE, NDN_TAG_IP4_PLD_CHECKSUM} }, 
 };
 
 asn_type ndn_ip4_header_s =

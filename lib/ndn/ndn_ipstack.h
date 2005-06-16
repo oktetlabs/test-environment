@@ -49,11 +49,15 @@ typedef enum {
     NDN_TAG_IP4_REMOTE_ADDR,
     NDN_TAG_IP4_MTU,
     NDN_TAG_IP4_FRAGMENTS,
-    NDN_TAG_IP4_FR_HO,   /**< fragment offset: value for IP header */
-    NDN_TAG_IP4_FR_RO,   /**< "real" fragment offset */
-    NDN_TAG_IP4_FR_HL,   /**< fragment length: value for IP header */
-    NDN_TAG_IP4_FR_RL,   /**< "real" fragment length */
-    NDN_TAG_IP4_FR_MORE, /**< value for 'more fragments flag in fragment */
+    NDN_TAG_IP4_FR_HO, /**< fragment offset: value for IP header */
+    NDN_TAG_IP4_FR_RO, /**< "real" fragment offset */
+    NDN_TAG_IP4_FR_HL, /**< fragment length: value for IP header */
+    NDN_TAG_IP4_FR_RL, /**< "real" fragment length */
+    NDN_TAG_IP4_FR_MF, /**< value for "more fragments" flag in fragment */
+    NDN_TAG_IP4_FR_DF, /**< value for "don't fragment" flag in fragment */
+    NDN_TAG_IP4_PLD_CHECKSUM,
+    NDN_TAG_IP4_PLD_CH_OFFSET,
+    NDN_TAG_IP4_PLD_CH_DISABLE,
 } ndn_ip4_tags_t;
 
 
