@@ -28,6 +28,7 @@ main (void)
     asn_value_p int_val; 
     asn_value_p str_val; 
     asn_value_p child_val; 
+    asn_value_p choice_val; 
     size_t syms; 
     int rc;
 
@@ -75,6 +76,19 @@ main (void)
     }
     asn_sprint_value(seq_val, buffer, 1000, 0);
     printf("after free value: \n%s\n", buffer);
+
+    rc = asn_parse_value_text("string:\"uuulalal\"", &at_plain_choice1,
+                              &choice_val, &syms);
+    if (rc)
+    {
+        result = 1;
+        fprintf(stderr, "parse choice failed %X, syms %d\n", rc, syms);
+    }
+    else
+    {
+        uint16_t tag = asn_get_tag(choice_val);
+        printf("got tag: %d\n", tag);
+    }
 
     return result;
 }

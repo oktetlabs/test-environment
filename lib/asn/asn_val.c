@@ -644,6 +644,11 @@ asn_put_child_value(asn_value *container, asn_value *new_value,
 
         new_value->name = asn_strdup(container->asn_type->
                                 sp.named_entries[leaf_type_index].name);
+        if (container->syntax == CHOICE)
+        {
+            container->tag.cl = tag_class;
+            container->tag.val = tag_val;
+        }
     }
 
     return 0;
@@ -668,8 +673,17 @@ int
 asn_impl_insert_subvalue(asn_value_p container, const char *label, 
                          asn_value_p new_value)
 { 
+    int index;
+    int rc;
+
+
     if(!label || !container)
         return ETEWRONGPTR; 
+
+    rc = asn_impl_named_subvalue_index(container->asn_type, 
+                                       label, &index); 
+    if (rc) 
+        return rc;
 
     container->txt_len = -1;
 
@@ -677,17 +691,7 @@ asn_impl_insert_subvalue(asn_value_p container, const char *label,
     {
         case SEQUENCE:
         case SET:
-            {
-                int index;
-                int rc;
-
-                rc = asn_impl_named_subvalue_index(container->asn_type, 
-                                                   label, &index); 
-                if (rc) 
-                    return rc;
-
-                container->data.array[index] = new_value; 
-            }
+            container->data.array[index] = new_value; 
             break;
 
         case CHOICE:
@@ -715,6 +719,10 @@ asn_impl_insert_subvalue(asn_value_p container, const char *label,
             new_value->name = asn_strdup(label);
         else                  
             new_value->name = NULL;
+
+        if (container->syntax == CHOICE)
+            container->tag =
+                container->asn_type->sp.named_entries[index].tag;
     }
 
     return 0;
@@ -1063,23 +1071,39 @@ asn_impl_read_value_field(const asn_value *container,  void *data,
 
 /* see description in asn_usr.h */
 int
-asn_write_int32(asn_value_p container, int32_t value, const char *labels)
+asn_write_int32(asn_value *container, int32_t value, const char *labels)
 {
     return asn_write_value_field(container, &value, sizeof(value), labels);
 }
 
 /* see description in asn_usr.h */
 int
-asn_read_int32(asn_value_p container, int32_t *value, const char *labels)
+asn_read_int32(const asn_value *container, int32_t *value,
+               const char *labels)
 {
     size_t len = sizeof(*value);
     return asn_read_value_field(container, value, &len, labels);
 }
 
+/* see description in asn_usr.h */
+int
+asn_write_bool(asn_value *container, te_bool value, const char *labels)
+{
+    return asn_write_value_field(container, &value, sizeof(value), labels);
+}
 
 /* see description in asn_usr.h */
 int
-asn_write_string(asn_value_p container, const char *value,
+asn_read_bool(const asn_value *container, te_bool *value,
+              const char *labels)
+{
+    size_t len = sizeof(*value);
+    return asn_read_value_field(container, value, &len, labels);
+}
+
+/* see description in asn_usr.h */
+int
+asn_write_string(asn_value *container, const char *value,
                  const char *labels)
 {
     const asn_value *leaf_val;
@@ -1100,7 +1124,7 @@ asn_write_string(asn_value_p container, const char *value,
 
 /* see description in asn_usr.h */
 int
-asn_read_string(asn_value_p container, char **value,
+asn_read_string(const asn_value *container, char **value,
                 const char *labels)
 {
     const asn_value *leaf_val;
@@ -1139,7 +1163,7 @@ asn_read_string(asn_value_p container, char **value,
  * @return zero on success, otherwise error code.
  */ 
 int
-asn_write_component_value(asn_value_p container, 
+asn_write_component_value(asn_value *container, 
                           const asn_value *elem_value,
                           const char *subval_labels)
 {
@@ -1245,7 +1269,7 @@ asn_impl_write_component_value(asn_value_p container,
                 { 
                     const asn_type *subtype = NULL;
                     rc = asn_impl_find_subtype(container->asn_type, 
-                                                         cur_label, &subtype);
+                                               cur_label, &subtype);
                     if (rc) return rc;
                     
                     if (strcmp(subtype->name, elem_value->asn_type->name))
@@ -1272,7 +1296,7 @@ asn_impl_write_component_value(asn_value_p container,
                 if (new_value == NULL) 
                     return EASNGENERAL;
                 rc = asn_impl_insert_subvalue(container, cur_label, 
-                                                         new_value);
+                                              new_value);
 
             }
             default:
@@ -1398,9 +1422,6 @@ int
 asn_get_choice_value(const asn_value *container, const asn_value **subval,
                      asn_tag_class *tag_class, uint16_t *tag_val)
 {
-    UNUSED(tag_class);
-    UNUSED(tag_val);
-
     if (!container || !subval)
         return ETEWRONGPTR; 
 
@@ -1411,6 +1432,10 @@ asn_get_choice_value(const asn_value *container, const asn_value **subval,
         return EASNINCOMPLVAL;
 
     *subval = container->data.array[0];
+    if (tag_class != NULL)
+        *tag_class = (*subval)->tag.cl;
+    if (tag_val   != NULL)
+        *tag_val   = (*subval)->tag.val;
 
     return 0;
 }
@@ -1996,11 +2021,11 @@ asn_get_choice(const asn_value *container, const char *subval_labels,
  * @return tag value or -1 on error.
  */ 
 unsigned short 
-asn_get_tag (const asn_value_p container )
+asn_get_tag (const asn_value *container )
 {
     if (container)
         return container->tag.val;
-    return -1;
+    return (unsigned short)-1;
 }
 
 /**

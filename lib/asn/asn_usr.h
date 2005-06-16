@@ -31,6 +31,7 @@
 #include <sys/types.h>
 
 #include "te_stdint.h"
+#include "te_defs.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -379,7 +380,7 @@ extern int asn_read_value_field(const asn_value *container,
  *
  * @return zero on success, otherwise error code.
  */ 
-extern int asn_write_int32(asn_value_p container, 
+extern int asn_write_int32(asn_value *container, 
                            int32_t value, const char *labels);
 
 /**
@@ -392,9 +393,35 @@ extern int asn_write_int32(asn_value_p container,
  *
  * @return zero on success, otherwise error code.
  */ 
-
-extern int asn_read_int32(asn_value_p container, 
+extern int asn_read_int32(const asn_value *container, 
                           int32_t *value, const char *labels);
+
+/**
+ * Write boolean into leaf in specified ASN value.
+ *
+ * @param container     pointer to ASN value which leaf field is interested
+ * @param value         boolean value to be written
+ * @param labels        textual ASN labels of subvalue; see 
+ *                      asn_free_subvalue method for more description
+ *
+ * @return zero on success, otherwise error code.
+ */ 
+extern int asn_write_bool(asn_value *container, 
+                          te_bool value, const char *labels);
+
+/**
+ * Read boolean from leaf in specified ASN value.
+ *
+ * @param container     pointer to ASN value which leaf field is interested
+ * @param value         place for boolean value to be read (OUT)
+ * @param labels        textual ASN labels of subvalue; see 
+ *                      asn_free_subvalue method for more description
+ *
+ * @return zero on success, otherwise error code.
+ */ 
+extern int asn_read_bool(const asn_value *container, 
+                         te_bool *value, const char *labels);
+
 /**
  * Write character string into leaf in specified ASN value.
  *
@@ -405,8 +432,8 @@ extern int asn_read_int32(asn_value_p container,
  *
  * @return zero on success, otherwise error code.
  */ 
-extern int asn_write_string(asn_value_p container, 
-                           const char *value, const char *labels);
+extern int asn_write_string(asn_value *container, 
+                            const char *value, const char *labels);
 
 /**
  * Read character string from leaf in specified ASN value.
@@ -419,8 +446,8 @@ extern int asn_write_string(asn_value_p container,
  *
  * @return zero on success, otherwise error code.
  */ 
-extern int asn_read_string(asn_value_p container, 
-                          char **value, const char *labels);
+extern int asn_read_string(const asn_value *container, 
+                           char **value, const char *labels);
 
 
 /**
@@ -434,7 +461,7 @@ extern int asn_read_string(asn_value_p container,
  *
  * @return zero on success, otherwise error code.
  */ 
-extern int asn_write_component_value(asn_value_p container, 
+extern int asn_write_component_value(asn_value *container, 
                                      const asn_value *elem_value,
                                      const char *labels);
 
@@ -561,6 +588,7 @@ extern asn_syntax asn_get_syntax(const asn_value *value, const char *labels);
  * @return syntax of specified leaf in value.
  */
 extern asn_syntax asn_get_syntax_of_type(const asn_type *type);
+
 
 /**
  * Get choice in subvalue of root ASN value container.  
@@ -750,7 +778,7 @@ extern int asn_get_field_data(const asn_value *container,
  *
  * @return value's name or NULL.
  */ 
-extern unsigned short asn_get_tag(const asn_value_p container);
+extern unsigned short asn_get_tag(const asn_value *container);
 
 
 /**
