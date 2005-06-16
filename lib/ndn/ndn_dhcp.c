@@ -25,6 +25,8 @@
  *
  * $Id$
  */
+#include "te_config.h" 
+
 
 #include <stdlib.h>
 #include "asn_impl.h"

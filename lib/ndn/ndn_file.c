@@ -25,6 +25,8 @@
  *
  * $Id$
  */
+#include "te_config.h" 
+
 
 #include "asn_impl.h"
 #include "ndn_internal.h"

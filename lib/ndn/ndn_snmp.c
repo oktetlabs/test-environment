@@ -26,9 +26,7 @@
  * $Id$
  */
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+#include "te_config.h" 
 
 #include "asn_impl.h"
 #include "ndn_internal.h"
