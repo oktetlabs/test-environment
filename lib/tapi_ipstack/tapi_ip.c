@@ -274,11 +274,12 @@ tapi_ip4_pdu(const uint8_t *src_ip4_addr, const uint8_t *dst_ip4_addr,
         {
             asn_value *frag_val = asn_init_value(ndn_ip4_frag_spec);
 
-            asn_write_int32(frag_val, frag->hdr_offset, "hdr-offset");
+            asn_write_int32(frag_val, frag->hdr_offset,  "hdr-offset");
             asn_write_int32(frag_val, frag->real_offset, "real-offset");
-            asn_write_int32(frag_val, frag->hdr_length, "hdr-length");
+            asn_write_int32(frag_val, frag->hdr_length,  "hdr-length");
             asn_write_int32(frag_val, frag->real_length, "real-length");
-            asn_write_int32(frag_val, frag->more_frags_flag, "more-frags");
+            asn_write_bool(frag_val,  frag->more_frags,  "more-frags");
+            asn_write_bool(frag_val,  frag->dont_frag,   "dont-frag");
 
             asn_insert_indexed(frag_seq, frag_val, fr_i, "");
         }

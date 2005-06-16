@@ -44,7 +44,8 @@ typedef struct tapi_ip_frag_spec_t {
     uint32_t    real_offset;    /**< begin of frag data in real payload */
     size_t      hdr_length;     /**< vlaue for "length" in IP header */
     size_t      real_length;    /**< length of frag data in real payload */
-    int         more_frags_flag;/**< value for "more frags flag" */
+    te_bool     more_frags;     /**< value for "more frags" flag */
+    te_bool     dont_frag;      /**< value for "dont frag" flag */
 } tapi_ip_frag_spec_t;
 
 
