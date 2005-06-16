@@ -1,0 +1,117 @@
+<?xml version="1.0"?>
+<backup>
+
+    <!-- This configuration model is intended for describing of configuration
+         virtual tunnels provided by vtund daemon -->
+
+    <!--
+        Copyright (C) 2003 Test Environment authors (see file AUTHORS
+        in the root directory of the distribution).
+
+        Test Environment is free software; you can redistribute it
+        and/or modify it under the terms of the GNU General Public
+        License as published by the Free Software Foundation; either
+        version 2 of the License, or (at your option) any later
+        version.
+        
+        Test Environment is distributed in the hope that it will be
+        useful, but WITHOUT ANY WARRANTY; without even the implied
+        warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+        PURPOSE. See the GNU General Public License for more details.
+        
+        You should have received a copy of the GNU General Public
+        License along with this program; if not, write to the Free
+        Software Foundation, Inc., 59 Temple Place, Suite 330,
+        Boston, MA  02111-1307  USA
+        
+        Author: Alexander Kukuta E-mail: Alexander.Kukuta@oktetlabs.ru
+    -->
+    
+
+    <!-- ************** Network configuration ************** -->
+
+    <!-- Vtun session
+         Name: "AgtX-AgtY-N"-like -->
+    <object oid="/agent/vtund" access="read_create" type="none"/>
+    
+    <!-- Vtund listening port
+         Name: empty -->
+    <object oid="/agent/vtund/port" access="read_create" type="integer"/>
+
+    <!-- General timeout
+         Name: empty -->
+    <object oid="/agent/vtund/timeout" access="read_create" type="integer"/>
+
+    <!-- Vtund Persist mode (try to recoonnect after connection termination
+         Name: empty -->
+    <object oid="/agent/vtund/persist" access="read_create" type="boolean"/>
+
+    <!-- Vtund syslog specification
+         Name: empty -->
+    <object oid="/agent/vtund/syslog" access="read_create" type="string"/>
+
+    <!-- Path to ppp program
+         Name: empty -->
+    <object oid="/agent/vtund/ppp" access="read_create" type="string"/>
+
+    <!-- Path to ifconfig program
+         Name: empty -->
+    <object oid="/agent/vtund/ifconfig" access="read_create" type="string"/>
+
+    <!-- Path to route program
+         Name: empty -->
+    <object oid="/agent/vtund/route" access="read_create" type="string"/>
+
+    <!-- Path to ip program
+         Name: empty -->
+    <object oid="/agent/vtund/ip" access="read_create" type="string"/>
+
+    <!-- Path to firewall program
+         Name: empty -->
+    <object oid="/agent/vtund/firewall" access="read_create" type="string"/>
+
+    <!-- Password for Vtund connection
+         Name: empty -->
+    <object oid="/agent/vtund/type" access="read_create" type="integer"/>
+
+    <!-- Type of Vtund connection
+         Name: tun, ether, tty or pipe -->
+    <object oid="/agent/vtund/type" access="read_create" type="integer"/>
+
+    <!-- Vtund device name
+         Name: "tun1"-like -->
+    <object oid="/agent/vtund/device" access="read_create" type="none"/>
+
+    <!-- Protocol used for Vtund connection
+         Name: empty -->
+    <object oid="/agent/vtund/proto" access="read_create" type="none"/>
+
+    <!-- Compression method to use for Vtund connection
+         Name: empty -->
+    <object oid="/agent/vtund/compress" access="read_create" type="none"/>
+
+    <!-- Encryption method to use for Vtund connection
+         Name: empty -->
+    <object oid="/agent/vtund/encrypt" access="read_create" type="none"/>
+
+    <!-- Enable/disable connection keep-alive for Vtund connection
+         Name: empty -->
+    <object oid="/agent/vtund/keepalive" access="read_create" type="none"/>
+
+    <!-- Enable/disable connection statistics for Vtund connection
+         Name: empty -->
+    <object oid="/agent/vtund/stats" access="read_create" type="none"/>
+
+    <!-- Vtund connection speed
+         Name: <In/Out> or <In>:<Out> -->
+    <object oid="/agent/vtund/speed" access="read_create" type="none"/>
+
+    <!-- Source network interface name for Vtund connection
+         Name: "eth0"-like -->
+    <object oid="/agent/vtund/iface" access="read_create" type="none"/>
+
+    <!-- Wheter to allow multiple connections
+         Name: empty -->
+    <object oid="/agent/vtund/multi" access="read_create" type="none"/>
+
+</backup>
