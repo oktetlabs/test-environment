@@ -197,9 +197,17 @@ parse_parameters(char *params, te_bool *is_argv, int *argc, uint32_t *param)
         {
             if (transform_str(&ptr, (char **)(param + n)) != 0)
                 return EINVAL;
+#if (SIZEOF_VOID_P == 8)
+            n += 2;
+#else            
             n++;
+#endif
         }
+#if (SIZEOF_VOID_P == 8)
+        *argc = n / 2;
+#else        
         *argc = n;
+#endif
         return 0;
     }
     else
@@ -222,7 +230,11 @@ parse_parameters(char *params, te_bool *is_argv, int *argc, uint32_t *param)
             {
                 if (transform_str(&ptr, (char **)(param + n)) != 0)
                     return EINVAL;
+#if (SIZEOF_VOID_P == 8)
+                n += 2;
+#else                
                 n++;
+#endif
                 continue;
             }
             val = strtoll(ptr, &tmp, 10);
