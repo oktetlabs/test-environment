@@ -589,7 +589,8 @@ shell(int argc, char * const argv[])
     int             i;
     unsigned int    used = 0;
     int             rc;
-
+    
+    PRINT("shell %d %p", argc, argv);
 
     for (i = 0; (i < argc) && (used < cmdlen); ++i)
     {
@@ -599,15 +600,20 @@ shell(int argc, char * const argv[])
         return TE_RC(TE_TA_LINUX, ETESMALLBUF);
 
     VERB("SHELL: run %s, errno before the run is %d\n", cmdbuf, errno);
+    PRINT("Run <%s>", cmdbuf);
     rc = ta_system(cmdbuf);
     
     if (rc == -1)
     {
-        VERB("The command fails with errno %d\n", errno);
+        int err = errno;
+        
+        VERB("The command fails with errno %d\n", err);
+        PRINT("The command fails with errno %d\n", err);
         return TE_RC(TE_TA_LINUX, errno);
     }
 
     VERB("Successfully completes");
+    PRINT("Successfully completes %d", rc);
 
 #ifdef WCOREDUMP
     if (WCOREDUMP(rc))
