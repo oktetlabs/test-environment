@@ -548,6 +548,7 @@ if test -n "$LIVE_LOG" ; then
 fi
 
 te_log_message Engine Dispatcher "Starting TEN applications"
+START_OK=0
 
 LOGGER_NAME=Logger
 LOGGER_EXEC=te_logger
