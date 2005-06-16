@@ -336,6 +336,7 @@ ip4_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
                 break;
             default:
                 /* do nothing, keep defautl offset value = -1 */
+                break;
         }
     }
     else
