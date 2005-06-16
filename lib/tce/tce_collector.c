@@ -1179,7 +1179,7 @@ get_kernel_gcov_data(int core_file, struct bb *object, void *extra)
         return;
     }
     real_start = strstr(name_buffer, "//");
-    oi = get_object_info(getpid(), 
+    oi = get_object_info(tce_standalone ? getpid() : getppid(), 
                          real_start ? real_start + 1 : name_buffer);
     oi->ncounts = object->ncounts;
     oi->object_functions = object_functions;

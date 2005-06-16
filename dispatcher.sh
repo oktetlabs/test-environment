@@ -685,6 +685,7 @@ if test -n "$TESTER" -a -n "$TCE_AGENTS" ; then
     myecho "--->>> TCE processing"
     for i in $TCE_AGENTS; do
         tce_report $i ${TE_LOG_DIR}/${i}_coverage.log
+        tce_summary ${TE_LOG_DIR}/${i}_coverage.log >${TE_LOG_DIR}/${i}_coverage.html
     done
 fi
 

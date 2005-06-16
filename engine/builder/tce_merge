@@ -66,7 +66,7 @@ if test -f "$mergefile"; then
           }
           else {
              sum = $1 + fields[1]
-             printf "%9s:%5s:%s\n", sum, $2, sourceline
+             printf "%9s:%5s:%s\n", sum == 0 ? "#####" : sum, $2, sourceline
              next
           }
         }
