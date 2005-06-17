@@ -128,8 +128,8 @@ EOF
 
 exit_with_log()
 {
-    te_log_archive --storage="${LOG_STORAGE}" \
-                   --storage-dir="${LOG_STORAGE_DIR}" ;
+    #te_log_archive --storage="${LOG_STORAGE}" \
+    #               --storage-dir="${LOG_STORAGE_DIR}" ;
     rm -rf ${TE_TMP}
     popd >/dev/null
     exit 1
