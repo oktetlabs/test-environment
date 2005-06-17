@@ -171,7 +171,9 @@ cli_match_bin_cb(int                csap_id,
 {
     char *msg = (char*) pkt->data;
     int msg_len = pkt->len;
+#if 0
     int rc;
+#endif
 
     UNUSED(csap_id);
     UNUSED(layer);

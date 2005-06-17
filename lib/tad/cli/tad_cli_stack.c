@@ -133,6 +133,52 @@ sync_res_h2str(cli_sync_res_t sync_res)
     return "";
 }
 
+/**
+ * Define Linux kernel version.
+ * This information is necessary for cli_session_alive() function,
+ * that checks if child process is still alive.
+ * In 2.4 kernels linux threads work differently from most recent 
+ * kernels. Each thread has its own PID and so waitpid() function 
+ * can't be used in the folowing situation:
+ * 1. create CSAP in main thread, which forks to get a child process 
+ *    call it "expect" process (let's keep its PID as CHLDPID).
+ * 2. On processing send_recv operation, TAD core creates a separate 
+ *    thread and in case of 2.4 kernel it has PID different from main
+ *    thread's PID.
+ * 3. Calling waitpid() in this new thread for CHLDPID. As "expect"
+ *    process's parent is main, we get -1 telling us that it is 
+ *    not our child.
+ * 
+ * @param spec_data  CSAP-specific data pointer
+ *
+ * @se If we failed to define linux kernel version we set it to 2.4
+ * as in the worst case.
+ */
+static void
+define_kernel_version(cli_csap_specific_data_p spec_data)
+{
+    FILE *fd;
+    char  buf[128];
+    char *ptr;
+    int   major_ver = 0;
+    int   minor_ver = 0;
+    
+    spec_data->kernel_like_2_4 = TRUE;
+
+    if ((fd = fopen("/proc/version", "r")) == NULL)
+        return;
+
+    if (fgets(buf, sizeof(buf), fd) != NULL &&
+        (ptr = strstr(buf, "version ")) != NULL &&
+        (ptr += strlen("version ")) != NULL &&
+        sscanf(ptr, "%d.%d.", &major_ver, &minor_ver) == 2)
+    {
+        if (major_ver >= 2 && minor_ver > 4)
+            spec_data->kernel_like_2_4 = FALSE;
+    }
+
+    fclose(fd);
+}
 
 /**
  * Reads synchronization data mark from Expect side.
@@ -341,7 +387,7 @@ parent_read_reply(cli_csap_specific_data_p spec_data,
              * the next command.
              */
             spec_data->status |= CLI_CSAP_STATUS_REPLY_WAITING;
-            RING("%s(): Timeout", __FUNCTION__);
+            VERB("%s(): Timeout", __FUNCTION__);
             return 0;
         }
         else if (rc != 0)
@@ -406,6 +452,17 @@ cli_session_alive(cli_csap_specific_data_p spec_data)
 {
     pid_t pid;
     int   status;
+
+    if (spec_data->kernel_like_2_4)
+    {
+        /*
+         * We are working with 2.4 kernel, so we can't define 
+         * status of main child, as we are a thread created from main.
+         * Always return TRUE, if child crashed, that will be defined 
+         * as the result of write failure, or read returning 0.
+         */
+        return TRUE;
+    }
 
     pid = waitpid(spec_data->expect_pid, &status, WNOHANG);
     if (pid < 0)
@@ -566,7 +623,7 @@ cli_read_cb(csap_p csap_descr, int timeout, char *buf, size_t buf_len)
     if (csap_descr == NULL)
         return -1;
 
-    RING("%s() Called with CSAP %d", __FUNCTION__, csap_descr->id);
+    VERB("%s() Called with CSAP %d", __FUNCTION__, csap_descr->id);
 
     layer = csap_descr->read_write_layer;
     
@@ -583,7 +640,7 @@ cli_read_cb(csap_p csap_descr, int timeout, char *buf, size_t buf_len)
 
     if ((spec_data->status & CLI_CSAP_STATUS_REPLY_WAITING) == 0)
     {
-        RING("Nothing to read!");
+        VERB("Nothing to read!");
         /*
          * Nothing to read, we've sent reply for the previous command
          * and now you should first run some command to get something
@@ -645,7 +702,7 @@ cli_write_cb(csap_p csap_descr, char *buf, size_t buf_len)
     if (csap_descr == NULL)
         return -1;
 
-    RING("%s() Called with CSAP %d", __FUNCTION__, csap_descr->id);
+    VERB("%s() Called with CSAP %d", __FUNCTION__, csap_descr->id);
 
     layer = csap_descr->read_write_layer;
     
@@ -722,7 +779,7 @@ cli_write_read_cb(csap_p csap_descr, int timeout,
     size_t bytes_written;
     int    rc;
 
-    RING("%s() Called with CSAP %d", __FUNCTION__, csap_descr->id);
+    VERB("%s() Called with CSAP %d", __FUNCTION__, csap_descr->id);
 
     if (csap_descr == NULL)
         return -1;
@@ -746,14 +803,14 @@ cli_write_read_cb(csap_p csap_descr, int timeout,
          * We haven't got a reply for the previous command,
          * see if it has finished by now.
          */
-        RING("A reply for the previous command hasn't been got yet, "
+        VERB("A reply for the previous command hasn't been got yet, "
              "so read out sync_pipe to see if now it's waiting us");
         if ((rc = process_sync_pipe(spec_data)) != 0)
         {
-            RING("Not yet ...");
+            VERB("Not yet ...");
             return -TE_RC(TE_TAD_CSAP, rc);
         }
-        RING("Yes we've just read out reply notification!\n"
+        VERB("Yes we've just read out reply notification!\n"
              "We are ready to run next command.");
 
         /* Read out pending reply */
@@ -762,7 +819,7 @@ cli_write_read_cb(csap_p csap_descr, int timeout,
             return rc;
     }
 
-    RING("Send command '%s' to Expect side", w_buf);
+    VERB("Send command '%s' to Expect side", w_buf);
 
     rc = write(spec_data->data_sock, &timeout, sizeof(timeout));
     bytes_written = write(spec_data->data_sock, w_buf, w_buf_len);
@@ -778,7 +835,7 @@ cli_write_read_cb(csap_p csap_descr, int timeout,
 
     /* Wait for CLI response */
     rc = parent_read_reply(spec_data, w_buf_len, r_buf, r_buf_len);
-    RING("Reading reply from Expect side finishes with %d return code", rc);
+    VERB("Reading reply from Expect side finishes with %d return code", rc);
 
     return rc;
 }
@@ -828,6 +885,16 @@ cli_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
 
     /* Initialize pipe descriptors to undefined value */
     cli_spec_data->data_sock = cli_spec_data->sync_pipe = -1;
+
+    define_kernel_version(cli_spec_data);
+    if (cli_spec_data->kernel_like_2_4)
+    {
+        WARN("You are working with 2.4 kernel so we assume that you "
+             "do not have NPTL Thread Library on your system.");
+    }
+    
+    VERB("We are working with %s kernel",
+         cli_spec_data->kernel_like_2_4 ? "2.4": "not 2.4");
 
     /* Get conn-type value (mandatory) */
     tmp_len = sizeof(cli_spec_data->conn_type);
@@ -1082,7 +1149,7 @@ cli_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
         cli_spec_data->sync_pipe = pipe_descrs[0];
         close(pipe_descrs[1]);
 
-        RING("Parent process continues, child_pid = %d",
+        VERB("Parent process continues, child_pid = %d",
              cli_spec_data->expect_pid);
 
         /* Wait for child initialisation finished */
@@ -1092,7 +1159,7 @@ cli_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
             return TE_RC(TE_TAD_CSAP, MAP_SYN_RES2ERRNO(sync_res));
         }
 
-        RING("Child has just been initialised");
+        VERB("Child has just been initialised");
     }
 
     return 0;
@@ -1126,7 +1193,7 @@ cli_single_destroy_cb(int csap_id, int layer)
     cli_csap_specific_data_p spec_data = 
         (cli_csap_specific_data_p)csap_descr->layers[layer].specific_data;
 
-    RING("%s() started, CSAP %d", __FUNCTION__, csap_id);
+    VERB("%s() started, CSAP %d", __FUNCTION__, csap_id);
 
     if (spec_data == NULL)
     {
@@ -1136,11 +1203,11 @@ cli_single_destroy_cb(int csap_id, int layer)
 
     if (spec_data->expect_pid > 0)
     {
-        RING("kill CLI session, pid=%d", spec_data->expect_pid);
+        VERB("kill CLI session, pid=%d", spec_data->expect_pid);
         kill(spec_data->expect_pid, SIGKILL);
     }
     
-    RING("waitpid() for CLI session: PID = %d", spec_data->expect_pid);
+    VERB("waitpid() for CLI session: PID = %d", spec_data->expect_pid);
 
     child_pid = waitpid(spec_data->expect_pid, &status, 0);
     if (child_pid < 0)
@@ -1150,17 +1217,17 @@ cli_single_destroy_cb(int csap_id, int layer)
     
     if (WIFEXITED(status))
     {
-        RING("CLI session, PID %d finished with code %d",
+        INFO("CLI session, PID %d finished with code %d",
              child_pid, WEXITSTATUS(status));
     }
     else if (WIFSIGNALED(status))
     {
-        RING("CLI session, PID %d was killed with %d signal",
+        INFO("CLI session, PID %d was killed with %d signal",
              child_pid, WTERMSIG(status));
     }
     else
     {
-        RING("CLI session finished not by signal nor itself");
+        INFO("CLI session finished not by signal nor itself");
     }
     
     VERB("%s(): try to free CLI CSAP specific data", __FUNCTION__);
@@ -1263,7 +1330,7 @@ cli_session_open(cli_csap_specific_data_p spec_data)
 
     if (spec_data->conn_type == CLI_CONN_TYPE_SERIAL)
     {
-        RING("> %s -l %s", spec_data->program, spec_data->device);
+        VERB("> %s -l %s", spec_data->program, spec_data->device);
         sleep(4);
         spec_data->io = exp_spawnl(spec_data->program, spec_data->program,
                                    "-l", spec_data->device, NULL);
@@ -1319,7 +1386,7 @@ cli_session_open(cli_csap_specific_data_p spec_data)
         if (spec_data->shell_args != NULL)
         {
             sprintf(shell_args_param, "-c");
-            RING("> %s %s %s",
+            VERB("> %s %s %s",
                  spec_data->program, shell_args_param, spec_data->shell_args);
             spec_data->io = exp_spawnl(spec_data->program, spec_data->program,
                                        shell_args_param, spec_data->shell_args,
@@ -1327,7 +1394,7 @@ cli_session_open(cli_csap_specific_data_p spec_data)
         }
         else
         {
-            RING("> %s", spec_data->program);
+            VERB("> %s", spec_data->program);
             spec_data->io = exp_spawnl(spec_data->program, spec_data->program,
                                        NULL);
         }
@@ -1397,7 +1464,7 @@ static void
 cli_expect_finalize(cli_csap_specific_data_p spec_data,
                     cli_sync_res_t sync_val)
 {
-    RING("%s(): Called with sync_val %s",
+    VERB("%s(): Called with sync_val %s",
          __FUNCTION__, sync_res_h2str(sync_val));
 
     child_send_sync(spec_data, sync_val);
@@ -1441,7 +1508,7 @@ cli_expect_wait_for_prompt(cli_csap_specific_data_p spec_data)
             break;
 
         case CLI_LOGIN_PROMPT:
-            RING("Got login prompt");
+            VERB("Got login prompt");
             if (write_string_to_expect(spec_data, spec_data->user) != 0)
             {
                 cli_expect_finalize(spec_data, SYNC_RES_FAILED);
@@ -1449,7 +1516,7 @@ cli_expect_wait_for_prompt(cli_csap_specific_data_p spec_data)
             break;
 
         case CLI_PASSWORD_PROMPT:
-            RING("Got password prompt");
+            VERB("Got password prompt");
             if (write_string_to_expect(spec_data, spec_data->password) != 0)
             {
                 cli_expect_finalize(spec_data, SYNC_RES_FAILED);
@@ -1457,7 +1524,7 @@ cli_expect_wait_for_prompt(cli_csap_specific_data_p spec_data)
             break;
 
         case EXP_EOF:
-            RING("EOF detected");
+            VERB("EOF detected");
             cli_expect_finalize(spec_data, SYNC_RES_ABORTED);
             break;
         
@@ -1501,7 +1568,7 @@ cli_expect_main(cli_csap_specific_data_p spec_data)
         cli_expect_finalize(spec_data, SYNC_RES_FAILED);
     }
 
-    RING("CLI session is opened");
+    INFO("CLI session is opened");
 
     /*
      * Capture command prompt to be sure that CSAP is ready to
@@ -1519,12 +1586,12 @@ cli_expect_main(cli_csap_specific_data_p spec_data)
     /* Tell CSAP Engine that expect session is ready */
     child_send_sync(spec_data, SYNC_RES_OK);
     
-    RING("CLI session is synchronized with CSAP Engine");
+    VERB("CLI session is synchronized with CSAP Engine");
 
     /* Wait for command from CSAP Engine */
     while (TRUE)
     {
-        RING("Start waiting for a command from CSAP Engine");
+        VERB("Start waiting for a command from CSAP Engine");
 
         /* First read timeout value */
         rc = read(spec_data->data_sock, &timeout, sizeof(timeout));
@@ -1535,7 +1602,7 @@ cli_expect_main(cli_csap_specific_data_p spec_data)
             cli_expect_finalize(spec_data, SYNC_RES_FAILED);
         }
         
-        RING("Start command mark, timeout %d", timeout);
+        VERB("Start command mark, timeout %d", timeout);
 
         /* Update Expect timeout value */
         exp_timeout = timeout;
@@ -1564,7 +1631,7 @@ cli_expect_main(cli_csap_specific_data_p spec_data)
         }
 
         cmd_buf[i] = data;
-        RING("We are about to run '%s' command", cmd_buf);
+        INFO("We are about to run '%s' command", cmd_buf);
 
         /* Send '\r' to CLI session to finish the command sequence */
         if (write(spec_data->io, "\r", 1) != 1)
@@ -1577,19 +1644,19 @@ cli_expect_main(cli_csap_specific_data_p spec_data)
          * Start waiting for command prompt to 
          * send back the command result.
          */
-        RING("Start waiting prompt");
+        VERB("Start waiting prompt");
 
         do {
             rc = cli_expect_wait_for_prompt(spec_data);
             if (rc == EXP_TIMEOUT)
             {
-                RING("Timeout waiting for prompt");
+                VERB("Timeout waiting for prompt");
                 timeout_notif_sent = TRUE;
                 child_send_sync(spec_data, SYNC_RES_TIMEOUT);
             }
         } while (rc != CLI_COMMAND_PROMPT);
 
-        RING("We've got prompt");
+        VERB("We've got prompt");
 
         if (timeout_notif_sent)
         {
@@ -1598,13 +1665,13 @@ cli_expect_main(cli_csap_specific_data_p spec_data)
              * now everything is OK, and we are ready to run 
              * next commands. Send notification about that.
              */
-            RING("Notify CSAP Engine that eventually we've got prompt");
+            VERB("Notify CSAP Engine that eventually we've got prompt");
             child_send_sync(spec_data, SYNC_RES_OK);
 
             timeout_notif_sent = FALSE;
         }
 
-        RING("Send reply for the command");
+        VERB("Send reply for the command");
 
         /* Transfer CLI session output to the CSAP Engine */
         reply_len = (exp_match - exp_buffer);

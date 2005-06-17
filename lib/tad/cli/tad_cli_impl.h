@@ -119,6 +119,8 @@ typedef struct cli_csap_specific_data
     pid_t  expect_pid;  /**< Expect process ID                                */
     pid_t  session_pid; /**< CLI session process ID                           */
 
+    te_bool kernel_like_2_4; /**< Wheter we are working with 2.4 kernel or not */
+
     int data_sock; /**< Endpoint for communication with peer:
                         - on CSAP Engine: Used for sending commands and
                           for reading command results,
