@@ -105,9 +105,8 @@ main(int argc, char *argv[])
                              FALSE, NULL);
             if (rc != 0 || result != 0)
             {
-                ERROR("Unable to stop TCE, error code = %d", 
+                WARN("Unable to stop TCE, error code = %d", 
                       rc ? rc : result);
-                return EXIT_FAILURE;
             }
             puts(ta);
         }    

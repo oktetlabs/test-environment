@@ -34,6 +34,7 @@
 #include <sys/un.h>
 #endif
 #endif
+#include <signal.h>
 #include <unistd.h>
 
 
@@ -142,6 +143,7 @@ __bb_exit_func (void)
         __bb_init_connection(name, peer_id);
     }
 
+    signal(SIGPIPE, SIG_IGN);
     errno = 0;
 
     switch (connect_mode)

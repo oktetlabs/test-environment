@@ -666,8 +666,7 @@ collect_line(channel_data *ch)
     len = read(ch->fd, ch->bufptr, ch->remaining);
     if (len <= 0)
     {
-        if ((len != 0 && errno != EPIPE) || 
-            (ch->state != object_header_state))
+        if (len != 0 && errno != EPIPE)
         {
             report_error("read error on %d: %s", ch->fd,
                     strerror(errno));
