@@ -9,7 +9,7 @@ cat <<EOF
 </HEAD>
 <BODY LANG="en-US" DIR="LTR">
 <H1 ALIGN=CENTER>TCE Summary</H1>
-<H2>`grep "Grand Total" $1`
+<H2>`grep "Grand Total" $1 | sed 's/\*//g'`</H2>
 <TABLE BORDER=1 CELLPADDING=4 CELLSPACING=3>
 <TH>% of taken branches</TH>
 <TH>Total branches</TH>
