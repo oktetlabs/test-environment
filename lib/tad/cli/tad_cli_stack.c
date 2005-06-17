@@ -194,11 +194,19 @@ parent_wait_sync(cli_csap_specific_data_p spec_data)
     fd_set         read_set;
     int            rc;
     
-    FD_ZERO(&read_set);
-    FD_SET(spec_data->sync_pipe, &read_set);
+    while (TRUE)
+    {
+        FD_ZERO(&read_set);
+        FD_SET(spec_data->sync_pipe, &read_set);
 
-    /* Wait for sync mark indefinitely */
-    rc = select(spec_data->sync_pipe + 1, &read_set, NULL, NULL, NULL);
+        /* Wait for sync mark indefinitely */
+        rc = select(spec_data->sync_pipe + 1,
+                    &read_set, NULL, NULL, NULL);
+        if (rc == -1 && errno == EINTR)
+            continue;
+
+        break;
+    }
 
     if (rc != 1)
     {
