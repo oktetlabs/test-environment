@@ -34,6 +34,12 @@
             </script>
         </run> 
 
+        <run>
+            <script name="ip4_fragments">
+                <req id="TAD_IP4"/>
+            </script>
+        </run> 
+
         <!--
         <run>
             <script name="tcp_simple">
