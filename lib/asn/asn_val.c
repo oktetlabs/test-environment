@@ -410,7 +410,7 @@ int
 asn_free_child_value(asn_value_p value, 
                      asn_tag_class tag_class, uint16_t tag_val)
 {
-    int rc;
+    int rc = 0;
     int index;
 
     if (value == NULL)
@@ -1422,6 +1422,7 @@ int
 asn_get_choice_value(const asn_value *container, const asn_value **subval,
                      asn_tag_class *tag_class, uint16_t *tag_val)
 {
+    asn_value *sv;
     if (!container || !subval)
         return ETEWRONGPTR; 
 
@@ -1431,11 +1432,14 @@ asn_get_choice_value(const asn_value *container, const asn_value **subval,
     if (container->len == 0 || container->data.array[0] == NULL)
         return EASNINCOMPLVAL;
 
-    *subval = container->data.array[0];
+    sv = container->data.array[0];
+
+    if (subval != NULL)
+        *subval = sv;
     if (tag_class != NULL)
-        *tag_class = (*subval)->tag.cl;
+        *tag_class = sv->tag.cl;
     if (tag_val   != NULL)
-        *tag_val   = (*subval)->tag.val;
+        *tag_val   = sv->tag.val;
 
     return 0;
 }
