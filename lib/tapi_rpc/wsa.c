@@ -153,7 +153,7 @@ rpc_connect_ex(rcf_rpc_server *rpcs,
                  "-> %s (%s)", rpcs->ta, rpcs->name, rpcop2str(op),
                  s, sockaddr2str(addr), addrlen, overlapped,
                  out.retval ? "true" : "false",
-                 errno_rpc2str(RPC_ERRNO(rpcs)));
+                 win_error_rpc2str(out.common.win_error));
 
     RETVAL_INT(connect_ex, out.retval);
 }
@@ -1259,7 +1259,7 @@ rpc_wsa_send(rcf_rpc_server *rpcs,
 
     TAPI_RPC_LOG("RPC (%s,%s)%s: wsa_send() -> %d (%s)",
                  rpcs->ta, rpcs->name, rpcop2str(op), out.retval,
-                 errno_rpc2str(RPC_ERRNO(rpcs)));
+                 win_error_rpc2str(out.common.win_error));
 
     RETVAL_INT(wsa_send, out.retval);
 }
@@ -1458,7 +1458,7 @@ rpc_wsa_send_to(rcf_rpc_server *rpcs, int s, const struct rpc_iovec *iov,
     TAPI_RPC_LOG("RPC (%s,%s)%s: wsa_send_to(%s, %u) -> %d (%s)",
                  rpcs->ta, rpcs->name, rpcop2str(op),
                  sockaddr2str(to), tolen,         
-                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
+                 out.retval, win_error_rpc2str(out.common.win_error));
 
     RETVAL_INT(wsa_send_to, out.retval);
 }
@@ -1644,7 +1644,7 @@ rpc_wsa_send_disconnect(rcf_rpc_server *rpcs,
 
     TAPI_RPC_LOG("RPC (%s,%s)%s: wsa_send_disconnect() -> %d (%s)",
                  rpcs->ta, rpcs->name, rpcop2str(op), out.retval,
-                 errno_rpc2str(RPC_ERRNO(rpcs)));
+                 win_error_rpc2str(out.common.win_error));
 
     RETVAL_INT(wsa_send_disconnect, out.retval);
 }
@@ -1916,7 +1916,7 @@ rpc_wsa_recv_msg(rcf_rpc_server *rpcs, int s,
 
     snprintf(str_buf + strlen(str_buf), sizeof(str_buf) - strlen(str_buf),
              ")) -> %d (%s)",
-             out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
+             out.retval, win_error_rpc2str(out.common.win_error));
 
     TAPI_RPC_LOG("%s", str_buf);
 
