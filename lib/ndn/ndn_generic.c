@@ -620,12 +620,16 @@ ndn_get_du_field(asn_value *pdu, ndn_du_get_oper_t oper,
             rc = asn_get_child_type(asn_get_type(pdu), &du_type, 
                                     PRIVATE, tag);
             if (rc != 0) 
+            {
+                ERROR("%s(): get child type failed %x", __FUNCTION__, rc);
                 return rc; 
+            }
 
             *du_leaf = asn_init_value(du_type);
             rc = asn_put_child_value(pdu, *du_leaf, PRIVATE, tag);
             if (rc != 0)
             {
+                ERROR("%s(): put child value failed %x", __FUNCTION__, rc);
                 asn_free_value(*du_leaf);
                 *du_leaf = NULL;
                 return rc;
