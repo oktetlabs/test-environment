@@ -586,14 +586,16 @@ consume_answer(ta *agent)
             size_t len = sizeof(cmd);
 
             if ((agent->receive)(agent->handle, cmd, &len, &ba) != 0)
-                break;
+            {
+                ERROR("Failed to receive answer from TA %s", agent->name);
+                return -1;
+            }
             return 0;
         }
         t = time(NULL);
     }
 
-
-    ERROR("Failed to receive answer from TA %s", agent->name);
+    ERROR("Failed to receive answer from TA %s - timed out", agent->name);
     return -1;
 
 }
