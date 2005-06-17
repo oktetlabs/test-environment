@@ -2310,18 +2310,15 @@ TARPC_FUNC(fcntl, {},
 {
     long arg = in->arg;
     
-    if (in->cmd == RPC_F_GETFD || in->cmd == RPC_F_GETFL ||
-        in->cmd == RPC_F_SETFL)
-    {
+    if (in->cmd == RPC_F_SETFL)
         arg = fcntl_flag_rpc2h(in->arg);
-    }
 
     if (in->cmd == RPC_F_GETFD || in->cmd == RPC_F_GETFL)
         MAKE_CALL(out->retval = func(in->fd, fcntl_rpc2h(in->cmd)));
     else
         MAKE_CALL(out->retval = func(in->fd, fcntl_rpc2h(in->cmd), arg));
 
-    if (in->cmd == RPC_F_GETFL || in->cmd == RPC_F_SETFL)
+    if (in->cmd == RPC_F_GETFL)
         out->retval = fcntl_flag_h2rpc(out->retval);
 }
 )
@@ -5231,9 +5228,14 @@ TARPC_FUNC(sendfile,
     COPY_ARG(offset);
 },
 {
+    off_t offset = 0;
+    
+    if (out->offset.offset_len > 0)
+        offset = *out->offset.offset_val;
+
     MAKE_CALL(out->retval =
         func(in->out_fd, in->in_fd,
-             out->offset.offset_len == 0 ? NULL : out->offset.offset_val,
+             out->offset.offset_len == 0 ? NULL : &offset,
              in->count));
 }
 )

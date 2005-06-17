@@ -1496,8 +1496,10 @@ TARPC_FUNC(vm_trasher, {},
 
 TARPC_FUNC(write_at_offset, {},
 {
+    off_t offset = in->offset;
+    
     MAKE_CALL(
-        out->offset = lseek(in->fd, (off_t)in->offset, SEEK_SET);
+        out->offset = lseek(in->fd, offset, SEEK_SET);
         if (out->offset != (off_t)-1)
             out->written = write(in->fd, in->buf.buf_val, in->buf.buf_len);
     );
