@@ -224,46 +224,54 @@ tapi_ip4_pdu(const uint8_t *src_ip4_addr, const uint8_t *dst_ip4_addr,
 {
     int          rc, syms; 
     unsigned int fr_i; 
+    asn_value   *ip4_pdu;
 
     tapi_ip_frag_spec_t *frag;
 
     if (result_value == NULL)
-        return ETEWRONGPTR;
+        return TE_RC(TE_TAPI, ETEWRONGPTR);
 
     if ((rc = asn_parse_value_text("ip4:{}", ndn_generic_pdu,
                                    result_value, &syms)) != 0)
-        return rc;
+        return TE_RC(TE_TAPI, rc);
+
+    if ((rc = asn_get_choice_value(*result_value, &ip4_pdu, NULL, NULL))
+            != 0)
+    {
+        ERROR("%s(): get ip4 pdu subvalue failed 0x%X", __FUNCTION__, rc);
+        return TE_RC(TE_TAPI, rc);
+    }
 
     if (src_ip4_addr != NULL &&
-        (rc = ndn_du_write_plain_oct(*result_value, NDN_TAG_IP4_SRC_ADDR,
+        (rc = ndn_du_write_plain_oct(ip4_pdu, NDN_TAG_IP4_SRC_ADDR,
                                      src_ip4_addr, 4)) != 0)
     {
-        ERROR("%s(): set IP4 src failed %X", __FUNCTION__, rc);
-        return rc;
+        ERROR("%s(): set IP4 src failed 0x%X", __FUNCTION__, rc);
+        return TE_RC(TE_TAPI, rc);
     }
 
     if (dst_ip4_addr != NULL &&
-        (rc = ndn_du_write_plain_oct(*result_value, NDN_TAG_IP4_DST_ADDR,
+        (rc = ndn_du_write_plain_oct(ip4_pdu, NDN_TAG_IP4_DST_ADDR,
                                      dst_ip4_addr, 4)) != 0)
     {
-        ERROR("%s(): set IP4 dst failed %X", __FUNCTION__, rc);
-        return rc;
+        ERROR("%s(): set IP4 dst failed 0x%X", __FUNCTION__, rc);
+        return TE_RC(TE_TAPI, rc);
     }
 
     if (ttl >= 0 &&
-        (rc = ndn_du_write_plain_int(*result_value, NDN_TAG_IP4_TTL,
+        (rc = ndn_du_write_plain_int(ip4_pdu, NDN_TAG_IP4_TTL,
                                      ttl)) != 0)
     {
-        ERROR("%s(): set IP4 ttl failed %X", __FUNCTION__, rc);
-        return rc;
+        ERROR("%s(): set IP4 ttl failed 0x%X", __FUNCTION__, rc);
+        return TE_RC(TE_TAPI, rc);
     }
 
     if (protocol >= 0 &&
-        (rc = ndn_du_write_plain_int(*result_value, NDN_TAG_IP4_PROTOCOL,
+        (rc = ndn_du_write_plain_int(ip4_pdu, NDN_TAG_IP4_PROTOCOL,
                                      protocol)) != 0)
     {
-        ERROR("%s(): set IP4 protocol failed %X", __FUNCTION__, rc);
-        return rc;
+        ERROR("%s(): set IP4 protocol failed 0x%X", __FUNCTION__, rc);
+        return TE_RC(TE_TAPI, rc);
     }
 
     if (fragments != NULL)
@@ -284,7 +292,7 @@ tapi_ip4_pdu(const uint8_t *src_ip4_addr, const uint8_t *dst_ip4_addr,
             asn_insert_indexed(frag_seq, frag_val, fr_i, "");
         }
 
-        asn_put_child_value(*result_value, frag_seq, 
+        asn_put_child_value(ip4_pdu, frag_seq, 
                             PRIVATE, NDN_TAG_IP4_FRAGMENTS);
         /* do NOT free frag_seq here! */
     }
