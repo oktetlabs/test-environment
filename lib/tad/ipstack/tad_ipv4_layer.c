@@ -32,7 +32,7 @@
 
 #define TE_LGR_USER     "TAD IPv4"
 
-#if 1
+#if 0
 #define TE_LOG_LEVEL    0xff
 #endif
 
@@ -404,6 +404,7 @@ ip4_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
     do {
         const asn_value *frag_spec = NULL;
         int32_t          hdr_field;
+        size_t           ip4_pld_real_len;
 
         checksum_place = NULL;
         h_len = 20 / 4;
@@ -413,19 +414,20 @@ ip4_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
         {
             rc = asn_get_indexed(fragments_seq, &frag_spec, fr_index); 
             CHECK(rc != 0, "%s(): get frag fail %X", __FUNCTION__, rc);
-            asn_read_int32(frag_spec, &pkt_len, "real-length");
+            asn_read_int32(frag_spec, &ip4_pld_real_len, "real-length");
 
             if (pkt_prev != NULL) 
                 pkt_curr = pkt_prev->next = calloc(1, sizeof(*pkt_curr));
         }
         else
         {
-            pkt_len = up_payload->len + (h_len * 4);
-            pkt_list->len = pkt_len;
+            ip4_pld_real_len = up_payload->len;
         }
 
+        pkt_len = ip4_pld_real_len + (h_len * 4);
         p = pkt_curr->data = malloc(pkt_len);
         pkt_curr->next = NULL;
+        pkt_curr->len = pkt_len;
 
         /* version, header len */
         {
@@ -457,7 +459,7 @@ ip4_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
 
         PUT_BIN_DATA(du_tos, 0, 1); 
         if (frag_spec == NULL)
-            PUT_BIN_DATA(du_ip_len, pkt_len, 2);
+            PUT_BIN_DATA(du_ip_len, ip4_pld_real_len, 2);
         else
         {
             asn_read_int32(frag_spec, &hdr_field, "hdr-length");
@@ -530,8 +532,8 @@ ip4_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
             asn_read_int32(frag_spec, &pkt_offset, "real-offset");
             frag_data_len = up_payload->len - pkt_offset; 
 
-            if (frag_data_len > (int32_t)pkt_len)
-                frag_data_len = pkt_len;
+            if (frag_data_len > (int32_t)ip4_pld_real_len)
+                frag_data_len = ip4_pld_real_len;
 
             if (frag_data_len < 0)
                 frag_data_len = 0;
@@ -542,13 +544,14 @@ ip4_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
                 p += frag_data_len;
             }
 
-            while (frag_data_len < (int32_t)pkt_len)
+            while (frag_data_len < (int32_t)ip4_pld_real_len)
             {
                 *p = rand();
                 p++, frag_data_len++;
             }
             F_VERB("%s(CSAP %d): fill fragment, real offset %d, %d bytes",
-                   __FUNCTION__, csap_descr->id, pkt_offset, pkt_len);
+                   __FUNCTION__, csap_descr->id, pkt_offset,
+                   ip4_pld_real_len);
         }
         /* fragment iteration procedures */
         fr_index++;
