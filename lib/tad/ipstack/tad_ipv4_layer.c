@@ -32,7 +32,7 @@
 
 #define TE_LGR_USER     "TAD IPv4"
 
-#if 0
+#if 1
 #define TE_LOG_LEVEL    0xff
 #endif
 
@@ -242,6 +242,10 @@ ip4_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
 
     ip4_csap_specific_data_t *spec_data;
 
+    uint8_t src_ip_addr[4];
+    uint8_t dst_ip_addr[4];
+    uint8_t protocol;
+
 #define CHECK(fail_cond_, msg_...) \
     do {                                \
         if (fail_cond_)                 \
@@ -303,8 +307,18 @@ ip4_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
         }                                                               \
     } while (0);
 
-    if (csap_descr  == NULL)
+    if (csap_descr == NULL)
         return TE_RC(TE_TAD_CSAP, ETADCSAPNOTEX);
+
+    if (pkt_list == NULL)
+        return TE_RC(TE_TAD_CSAP, ETEWRONGPTR);
+
+    if (up_payload == NULL)
+    {
+        ERROR("%s(CSAP %d): Cannot generate IP packet without payload",
+              __FUNCTION__, csap_descr->id);
+        return TE_RC(TE_TAD_CSAP, ETADLESSDATA);
+    }
 
     spec_data = (ip4_csap_specific_data_t *)
                 csap_descr->layers[layer].specific_data; 
@@ -320,13 +334,14 @@ ip4_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
     else
         fr_number = asn_get_length(fragments_seq, "");
 
+    GEN_BIN_DATA(du_protocol, spec_data->protocol, 1, &protocol); 
 
     /* init payload checksum offset */
     if ((rc = asn_get_child_value(tmpl_pdu, &pld_checksum, 
                                   PRIVATE, NDN_TAG_IP4_PLD_CHECKSUM)) != 0)
     {
         pld_checksum = NULL;
-        switch (spec_data->protocol)
+        switch (protocol)
         {
             case IPPROTO_TCP:
                 pld_chksm_offset = 16;
@@ -338,6 +353,8 @@ ip4_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
                 /* do nothing, keep defautl offset value = -1 */
                 break;
         }
+        F_VERB("%s(CSAP %d): proto %d, auto pld checksum offset %d", 
+               __FUNCTION__, csap_descr->id, protocol, pld_chksm_offset);
     }
     else
     {
@@ -345,10 +362,44 @@ ip4_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
 
         if (tag == NDN_TAG_IP4_PLD_CH_OFFSET)
             asn_read_int32(pld_checksum, &pld_chksm_offset, "#offset");
+
+        F_VERB("%s(CSAP %d): explicit payload checksum offset %d", 
+               __FUNCTION__, csap_descr->id, pld_chksm_offset);
     }
         
     pkt_prev = NULL;
     pkt_curr = pkt_list; 
+
+    GEN_BIN_DATA(du_src_addr, ntohl(spec_data->local_addr.s_addr),
+                 4, src_ip_addr); 
+    GEN_BIN_DATA(du_dst_addr, ntohl(spec_data->remote_addr.s_addr),
+                 4, dst_ip_addr); 
+
+    if (pld_chksm_offset > 0)
+    {
+        uint32_t full_checksum;
+        uint8_t pseudo_header[12];
+
+        memcpy(pseudo_header, src_ip_addr, 4);
+        memcpy(pseudo_header + 4, dst_ip_addr, 4);
+
+        pseudo_header[8] = 0;
+        pseudo_header[9] = protocol;
+        *((uint16_t *)(&pseudo_header[10])) = htons(up_payload->len);
+
+        *((uint16_t *)(up_payload->data + pld_chksm_offset)) = (uint16_t)0;
+
+        full_checksum = calculate_checksum(pseudo_header,
+                                           sizeof(pseudo_header));
+        full_checksum += calculate_checksum(up_payload->data, 
+                                            up_payload->len);
+
+        F_VERB("%s(CSAP %d): calculated checksum %x", 
+               __FUNCTION__, csap_descr->id, full_checksum);
+
+        *((uint16_t *)(up_payload->data + pld_chksm_offset)) =
+            (uint16_t)(~((full_checksum & 0xffff) + (full_checksum >> 16)));
+    }
 
     do {
         const asn_value *frag_spec = NULL;
@@ -369,7 +420,8 @@ ip4_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
         }
         else
         {
-            pkt_len = pkt_list->len = up_payload->len + (h_len * 4);
+            pkt_len = up_payload->len + (h_len * 4);
+            pkt_list->len = pkt_len;
         }
 
         p = pkt_curr->data = malloc(pkt_len);
@@ -379,6 +431,7 @@ ip4_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
         {
             uint8_t version, hlen_field;
 
+            rc = 0;
             if (spec_data->du_version.du_type != TAD_DU_UNDEF)
                 rc = tad_data_unit_to_bin(&spec_data->du_version, 
                                           args, arg_num, &version, 1); 
@@ -388,6 +441,7 @@ ip4_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
             CHECK(rc != 0, "%s(): version error %X", __FUNCTION__, rc);
             CUT_BITS(version, 4);
 
+            rc = 0;
             if (spec_data->du_header_len.du_type != TAD_DU_UNDEF)
                 rc = tad_data_unit_to_bin(&spec_data->du_header_len, 
                                           args, arg_num, &hlen_field, 1);
@@ -442,34 +496,32 @@ ip4_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
         } 
 
         PUT_BIN_DATA(du_ttl, 64, 1); 
-        PUT_BIN_DATA(du_protocol, spec_data->protocol, 1);
+
+        *p = protocol;
+        p++;
 
         if (spec_data->du_h_checksum.du_type == TAD_DU_UNDEF)
             checksum_place = p; 
-        PUT_BIN_DATA(du_h_checksum, 0, 2);
+        PUT_BIN_DATA(du_h_checksum, 0, 2); 
 
-
-        PUT_BIN_DATA(du_src_addr, ntohl(spec_data->local_addr.s_addr), 4); 
-        PUT_BIN_DATA(du_dst_addr, ntohl(spec_data->local_addr.s_addr), 4); 
+        memcpy(p, src_ip_addr, 4);
+        p += 4;
+        memcpy(p, dst_ip_addr, 4);
+        p += 4;
 
         if (checksum_place != NULL) /* Have to calculate header checksum */
         {
-            unsigned int i;
-            uint32_t     checksum;
-            uint16_t    *ch_p;
-
-            for (i = 0, ch_p = pkt_curr->data, checksum = 0; 
-                 i < (h_len * 2);
-                 i++, checksum += *(ch_p++)); 
-
             *((uint16_t *)checksum_place) = 
-                ~((checksum & 0xffff) + (checksum >> 16));
-        }
-
+                ~(calculate_checksum(pkt_curr->data, h_len * 4));
+        } 
         
 
         if (frag_spec == NULL)
+        { 
+            F_VERB("%s(CSAP %d): simple copy up payload %d bytes",
+                   __FUNCTION__, csap_descr->id, up_payload->len);
             memcpy(p, up_payload->data, up_payload->len); 
+        }
         else
         {
             int32_t pkt_offset,
@@ -495,6 +547,8 @@ ip4_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
                 *p = rand();
                 p++, frag_data_len++;
             }
+            F_VERB("%s(CSAP %d): fill fragment, real offset %d, %d bytes",
+                   __FUNCTION__, csap_descr->id, pkt_offset, pkt_len);
         }
         /* fragment iteration procedures */
         fr_index++;
@@ -502,6 +556,7 @@ ip4_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
             pkt_prev = pkt_curr;
     } while (fragments_seq != NULL && fr_index < fr_number);
 
+#if 0
     if (up_payload->free_data_cb)
         up_payload->free_data_cb(up_payload->data);
     else
@@ -509,6 +564,7 @@ ip4_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
 
     up_payload->data = NULL;
     up_payload->len = 0;
+#endif
 
 #undef PUT_BIN_DATA
 #undef GEN_BIN_DATA
