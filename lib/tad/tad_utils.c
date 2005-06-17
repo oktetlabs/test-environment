@@ -1028,3 +1028,16 @@ tad_dump_hex(csap_p csap_descr, const char *usr_param,
     return 0;
 }
 
+/* See description in tad_utils.h */
+uint16_t
+calculate_checksum(const void *data, size_t length)
+{
+    uint32_t  checksum;
+    uint16_t *ch_p;
+
+    for (ch_p = (uint16_t *)data, checksum = 0; 
+         length >= 2;
+         length -= 2, checksum += *(ch_p++)); 
+
+    return (checksum & 0xffff) + (checksum >> 16);
+}
