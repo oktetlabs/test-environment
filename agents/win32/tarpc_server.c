@@ -1340,7 +1340,7 @@ static inline DWORD cf_flags_attributes_rpc2h(unsigned int fa)
 
 TARPC_FUNC(create_file, {},
 {
-    HANDLE handle;
+    HANDLE handle = NULL;
 
     MAKE_CALL(handle = CreateFile(in->name.name_val,
         cf_access_right_rpc2h(in->desired_access),
