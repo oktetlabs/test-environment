@@ -165,8 +165,9 @@ extern int tapi_cfg_net_all_up(void);
 
 /** Information about made assignments */
 typedef struct tapi_cfg_net_assigned {
-    cfg_handle  pool;      /**< subnet handle */
-    cfg_handle *entries;   /**< assigned pool entries*/
+    cfg_handle  pool;      /**< subnet handle, i.e. handle of the object
+                                instance "/ip4_net_pool:/entry:X" */
+    cfg_handle *entries;   /**< assigned pool entries */
 } tapi_cfg_net_assigned;
 
 /**
