@@ -378,8 +378,11 @@ process_add(cfg_add_msg *msg, te_bool update_dh)
 
     if ((msg->rc = cfg_ta_sync(oid, TRUE)) != 0)
     {
+        ERROR("Failed to synchronize subtree of a new instance %s "
+              "error=0x%X", oid, msg->rc);
         if ((inst = CFG_GET_INST(handle)) != NULL)
         {
+            /* FIXME BUG here - instance name is not a TA name */
             rcf_ta_cfg_del(inst->name, 0, inst->oid); 
             cfg_db_del(handle);
         }
