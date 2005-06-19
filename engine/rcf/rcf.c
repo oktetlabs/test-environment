@@ -1898,7 +1898,8 @@ process_user_request(usrreq *req)
     
     if ((agent = find_ta_by_name(msg->ta)) == NULL)
     {
-        ERROR("Unknown TA %s", msg->ta);
+        ERROR("Request '%s' to unknown TA '%s'",
+              rcf_op_to_string(msg->opcode), msg->ta);
         msg->error = TE_RC(TE_RCF, EINVAL);
         answer_user_request(req);
         return;
@@ -1906,7 +1907,8 @@ process_user_request(usrreq *req)
     
     if (agent->dead)
     {
-        ERROR("Request to dead TA %s", msg->ta);
+        ERROR("Request '%s' to dead TA '%s'",
+              rcf_op_to_string(msg->opcode), msg->ta);
         msg->error = TE_RC(TE_RCF, ETADEAD);
         answer_user_request(req);
         return;
@@ -1921,7 +1923,8 @@ process_user_request(usrreq *req)
     
     if (req->message->sid > agent->sid)
     {
-        ERROR("Invalid SID %d for TA %s", req->message->sid, msg->ta);
+        ERROR("Request '%s' with invalid SID %d for TA '%s'",
+              rcf_op_to_string(msg->opcode), req->message->sid, msg->ta);
         msg->error = TE_RC(TE_RCF, EINVAL);
         answer_user_request(req);
         return;
@@ -1968,7 +1971,7 @@ process_user_request(usrreq *req)
                                      req->message->data : NULL);
                 if (rc != 0)
                 {
-                    ERROR("Cannot reboot TA %s", agent->name);
+                    ERROR("Cannot reboot TA '%s'", agent->name);
                     msg->error = TE_RC(TE_RCF, rc);
                     answer_user_request(req);
                     return;
@@ -1980,7 +1983,7 @@ process_user_request(usrreq *req)
             QEL_INSERT(&(agent->sent), req);
             reboot_num++;
             agent->reboot_timestamp = time(NULL);
-            VERB("Reboot of TA '%s' initiated", agent->name);
+            RING("Reboot of TA '%s' initiated", agent->name);
             return;
 
         default:
@@ -1992,8 +1995,7 @@ process_user_request(usrreq *req)
     if (find_user_request(&(agent->sent), msg->sid) != NULL ||
         shutdown_num > 0 || agent->reboot_timestamp > 0)
     {
-        VERB("Pending user request for TA %s:%d",
-                         agent->name, msg->sid);
+        VERB("Pending user request for TA %s:%d", agent->name, msg->sid);
         QEL_INSERT(&(agent->pending), req);
     }
     else
