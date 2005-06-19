@@ -283,6 +283,7 @@ process_add(cfg_add_msg *msg, te_bool update_dh)
     char         *oid = (char *)msg + msg->oid_offset;
     cfg_inst_val  val;
     char         *val_str = "";
+    char         *ta;
 
     /* Synchronize /agent/volatile subtree if necessary */
     if ((msg->rc = cfg_sync_agt_volatile(oid)) != 0)
@@ -335,6 +336,8 @@ process_add(cfg_add_msg *msg, te_bool update_dh)
     
     while (strcmp(inst->obj->subid, "agent") != 0)
         inst = inst->father;
+        
+    ta = inst->name;        
 
     if (obj->type != CVT_NONE)
     {
@@ -358,7 +361,7 @@ process_add(cfg_add_msg *msg, te_bool update_dh)
         }
     }
 
-    msg->rc = rcf_ta_cfg_add(inst->name, 0, oid, val_str);
+    msg->rc = rcf_ta_cfg_add(ta, 0, oid, val_str);
     if (msg->rc != 0)
     {
         cfg_db_del(handle);
@@ -382,8 +385,7 @@ process_add(cfg_add_msg *msg, te_bool update_dh)
               "error=0x%X", oid, msg->rc);
         if ((inst = CFG_GET_INST(handle)) != NULL)
         {
-            /* FIXME BUG here - instance name is not a TA name */
-            rcf_ta_cfg_del(inst->name, 0, inst->oid); 
+            rcf_ta_cfg_del(ta, 0, inst->oid); 
             cfg_db_del(handle);
         }
         if (update_dh)
