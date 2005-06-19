@@ -5237,6 +5237,8 @@ TARPC_FUNC(sendfile,
         func(in->out_fd, in->in_fd,
              out->offset.offset_len == 0 ? NULL : &offset,
              in->count));
+    if (out->offset.offset_len > 0)
+        out->offset.offset_val[0] = (tarpc_off_t)offset;
 }
 )
 
