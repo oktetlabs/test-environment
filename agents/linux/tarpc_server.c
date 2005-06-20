@@ -3684,7 +3684,7 @@ int
 simple_sender(tarpc_simple_sender_in *in, tarpc_simple_sender_out *out)
 {
     sock_api_func send_func;
-    char          buf[1024];
+    char         *buf;
 
     int size = rand_range(in->size_min, in->size_max);
     int delay = rand_range(in->delay_min, in->delay_max);
@@ -3697,21 +3697,27 @@ simple_sender(tarpc_simple_sender_in *in, tarpc_simple_sender_out *out)
 #endif
 
     out->bytes = 0;
+    in->size_max = 1500;
 
     RING("%s() started", __FUNCTION__);
 
-    if (in->size_max > (int)sizeof(buf) || in->size_min > in->size_max ||
-        in->delay_min > in->delay_max)
+    if (in->size_min > in->size_max || in->delay_min > in->delay_max)
     {
-        ERROR("Incorrect size of delay parameters");
+        ERROR("Incorrect size or delay parameters");
         return -1;
     }
-
+    
     if (find_func(in->common.lib, "send", &send_func) != 0)
         return -1;
 
-    memset(buf, 0xDEADBEEF, sizeof(buf));
+    if ((buf = malloc(in->size_max)) == NULL)
+    {
+        ERROR("Out of memory");
+        return -1;
+    }
 
+    memset(buf, 'A', in->size_max);
+    
     for (start = now = time(NULL);
          (unsigned int)(now - start) <= in->time2run;
          now = time(NULL))
@@ -3720,7 +3726,7 @@ simple_sender(tarpc_simple_sender_in *in, tarpc_simple_sender_out *out)
 
         if (!in->size_rnd_once)
             size = rand_range(in->size_min, in->size_max);
-
+            
         if (!in->delay_rnd_once)
             delay = rand_range(in->delay_min, in->delay_max);
 
@@ -3728,7 +3734,7 @@ simple_sender(tarpc_simple_sender_in *in, tarpc_simple_sender_out *out)
             break;
 
         usleep(delay);
-
+        
         len = send_func(in->s, buf, size, 0);
 
         if (len < 0)
@@ -3736,6 +3742,7 @@ simple_sender(tarpc_simple_sender_in *in, tarpc_simple_sender_out *out)
             if (!in->ignore_err)
             {
                 ERROR("send() failed in simple_sender(): errno %x", errno);
+                free(buf);
                 return -1;
             }
             else
@@ -3749,6 +3756,7 @@ simple_sender(tarpc_simple_sender_in *in, tarpc_simple_sender_out *out)
         {
             ERROR("send() returned %d instead %d in simple_sender()",
                   len, size);
+            free(buf);
             return -1;
         }
 #endif
@@ -3757,6 +3765,8 @@ simple_sender(tarpc_simple_sender_in *in, tarpc_simple_sender_out *out)
 
     RING("simple_sender() stopped, sent %llu bytes",
          out->bytes);
+         
+    free(buf);
 
     return 0;
 }
@@ -3781,7 +3791,7 @@ simple_receiver(tarpc_simple_receiver_in *in,
 {
     sock_api_func   select_func;
     sock_api_func   recv_func;
-    char            buf[1024];
+    char            buf[2048];
     fd_set          set;
     int             rc;
     ssize_t         len;
