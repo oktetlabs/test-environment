@@ -620,7 +620,7 @@ RGT_DEF_FUNC(proc_meta_author_start)
     attrs = rgt_tmpls_attrs_new(xml_attrs);
     rgt_tmpls_attrs_add_fstr(attrs, "name", name);
 
-    rgt_tmpls_output(depth_user->fd, &xml2fmt_tmpls[META_AUTHORS_START], attrs);
+    rgt_tmpls_output(depth_user->fd, &xml2fmt_tmpls[META_AUTHOR_START], attrs);
 
     rgt_tmpls_attrs_free(attrs);
 
