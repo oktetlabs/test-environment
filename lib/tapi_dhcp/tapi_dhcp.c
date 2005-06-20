@@ -133,7 +133,7 @@ ndn_dhcpv4_packet_to_plain(asn_value_p pkt, struct dhcp_message **dhcp_msg)
     asn_value_p dhcp_opts;
     asn_value_p opt;
     int         rc = 0;
-    int         len;
+    size_t      len;
     int         i;
     int         n_opts;
 
@@ -153,7 +153,7 @@ ndn_dhcpv4_packet_to_plain(asn_value_p pkt, struct dhcp_message **dhcp_msg)
                                       &len, #field_ ".#plain");    \
             if (rc == 0)                                           \
                 (*dhcp_msg)->is_ ## field_ ## _set = TRUE;         \
-            if (rc == EASNINCOMPLVAL)                              \
+            else if (rc == EASNINCOMPLVAL)                         \
             {                                                      \
                 /*                                                 \
                  * Field name is valid but the value               \
@@ -162,6 +162,9 @@ ndn_dhcpv4_packet_to_plain(asn_value_p pkt, struct dhcp_message **dhcp_msg)
                 (*dhcp_msg)->is_ ## field_ ## _set = FALSE;        \
                 rc = 0;                                            \
             }                                                      \
+            else                                                   \
+                WARN("%s() at line %d: error 0x%X for fld %s",     \
+                     __FUNCTION__, __LINE__, rc, #field_);         \
         }                                                          \
     } while (0)
 
@@ -232,7 +235,7 @@ ndn_dhcpv4_option_to_plain(asn_value_p dhcp_opt, struct dhcp_option **opt_p)
 {
     int rc = 0;
     uint8_t len_buf;
-    int len;
+    size_t len;
     int i;
     int n_subopts;
 
@@ -335,7 +338,7 @@ int
 ndn_dhcpv4_plain_to_packet(const struct dhcp_message *dhcp_msg,
                            asn_value_p *pkt)
 {
-    int len;
+    size_t len;
     int rc = 0;
 
 /**
