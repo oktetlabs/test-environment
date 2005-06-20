@@ -1,0 +1,85 @@
+<?xml version="1.0" ?>
+<backup>
+    <!-- RADIUS server enabling/disabling
+    1 -- enable
+    0 -- disable
+    -->
+    <object oid="/agent/radiusserver" access="read_write" type="integer" />
+    
+    <!-- The nodes under radiusserver/conf are 1:1 mapping to RADIUS config parameters.
+    The following is only a small subset of all possible options. 
+    If anything else is necessary, feel free to add it. 
+    There should be a separate node for each (sub)section. 
+    If the section has a name, the corresponding node's name is the same.
+    All other nodes's names are just sequential numbers (this allows to
+    preserve order, which may be important)
+    -->
+    <object oid="/agent/radiusserver/conf" access="read_create" type="none" />
+    <object oid="/agent/radiusserver/conf/bind_address" access="read_write" type="string" />
+    <object oid="/agent/radiusserver/conf/port" access="read_write" type="integer" />
+    <object oid="/agent/radiusserver/conf/snmp" access="read_write" type="string" />
+    <object oid="/agent/radiusserver/conf/smux_password" access="read_write" type="string" />
+    <object oid="/agent/radiusserver/conf/snmp_write_access" access="read_write" type="string" />
+    <object oid="/agent/radiusserver/conf/client" access="read_write" type="none" />
+    <object oid="/agent/radiusserver/conf/client/secret" access="read_write" type="string" />
+    <object oid="/agent/radiusserver/conf/client/shortname" access="read_write" type="string" />
+    <object oid="/agent/radiusserver/conf/client/nastype" access="read_write" type="string" />
+    <object oid="/agent/radiusserver/conf/eap" access="read_create" type="none" />
+    <object oid="/agent/radiusserver/conf/eap/default_eap_type" access="read_create" type="string" />
+    
+    <!-- This is a mapping of RADIUS users file. 
+    The node 'user' has a sequential number as its name and the user name as a value.
+    'check' is a collection of all check items (named with sequential numbers) and
+    'set' is a collection of actions.
+    Both 'check' and 'set' are decomposed into attribute name, operator and value.
+
+    That is (examples from users man page:
+       bob  User-Password == "hello"
+
+        DEFAULT   Auth-Type = System
+                 Fall-Through = Yes
+
+        DEFAULT Service-Type == Framed-User, Framed-Protocol == PPP
+                Service-Type = Framed-User,
+                Framed-Protocol = PPP,
+                Fall-Through = Yes
+
+    would map into:
+    /user:0                    bob
+    /user:0/check:0/attribute  User-Password
+    /user:0/check:0/operator   ==
+    /user:0/check:0/value      "hello"
+    /user:1                    DEFAULT
+    /user:1/check:0/attribute  Auth-Type
+    /user:1/check:0/operator   =
+    /user:1/check:0/value      System
+    /user:1/set:0/attribute    Fall-Through
+    /user:1/set:0/operator     =
+    /user:1/set:0/value        Yes
+    /user:2                    DEFAULT
+    /user:2/check:0/attribute  Service-Type
+    /user:2/check:0/operator   ==
+    /user:2/check:0/value      Framed-User
+    /user:2/check:1/attribute  Framed-Protocol
+    /user:2/check:1/operator   ==
+    /user:2/check:1/value      PPP
+    /user:2/set:0/attribute    Service-Type
+    /user:2/set:0/operator     =
+    /user:2/set:0/value        Framed-User
+    /user:2/set:1/attribute    Framed-Protocol
+    /user:2/set:1/operator     =
+    /user:2/set:1/value        PPP
+    /user:2/set:2/attribute    Fall-Through
+    /user:2/set:2/operator     =
+    /user:2/set:2/value        Yes
+    --> 
+    <object oid="/agent/radiusserver/user" access="read_write" type="string" />
+    <object oid="/agent/radiusserver/user/check" access="read_create" type="none" />
+    <object oid="/agent/radiusserver/user/check/attribute" access="read_write" type="string" />
+    <object oid="/agent/radiusserver/user/check/operator" access="read_write" type="string" />
+    <object oid="/agent/radiusserver/user/check/value" access="read_write" type="string" />
+    <object oid="/agent/radiusserver/user/set" access="read_create" type="none" />
+    <object oid="/agent/radiusserver/user/set/attribute" access="read_write" type="string" />
+    <object oid="/agent/radiusserver/user/set/operator" access="read_write" type="string" />
+    <object oid="/agent/radiusserver/user/set/value" access="read_write" type="string" />
+</backup>
