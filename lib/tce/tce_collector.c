@@ -94,7 +94,7 @@ struct channel_data
 {
     int fd;
     void (*state)(channel_data *me);
-    char buffer[128];
+    char buffer[256];
     char *bufptr;
     int remaining;
     int peer_id;
@@ -103,6 +103,8 @@ struct channel_data
     int counter_guard;
     channel_data *next;
 };
+static channel_data *channels;
+
 
 static sig_atomic_t caught_signo;
 static void signal_handler(int no)
@@ -113,6 +115,7 @@ static void signal_handler(int no)
 
 static fd_set active_channels;
 static te_bool already_dumped = FALSE;
+static te_bool dump_request = TRUE;
 
 /* forward declarations */
 static void function_header_state(channel_data *ch);
@@ -343,7 +346,10 @@ tce_collector(void)
         int result;
         memcpy(&current, &active_channels, sizeof(current));
         errno = 0;
-        result = select(max_fd + 1, &current, NULL, NULL, NULL);
+        if (caught_signo == 0)
+        {
+            result = select(max_fd + 1, &current, NULL, NULL, NULL);
+        }
         if (caught_signo != 0)
         {
             int signo = caught_signo;
@@ -627,10 +633,25 @@ auth_state(channel_data *ch)
     ch->state = (ch->peer_id != 0 ? object_header_state : NULL);
 }
 
+static te_bool 
+are_there_working_channels(void)
+{
+    channel_data *iter;
+    for (iter = channels; iter != NULL; iter = iter->next)
+    {
+        if (iter->state != NULL)
+        {
+            report_notice("there are working channels");
+            return TRUE;
+        }
+    }
+    return FALSE;
+}
+
+
 static void
 read_data(int channel)
 {
-    static channel_data *channels;
     channel_data *found;
     
     for (found = channels; found != NULL; found = found->next)
@@ -656,6 +677,8 @@ read_data(int channel)
     {
         FD_CLR(found->fd, &active_channels);
         close(found->fd);
+        if (dump_request && !are_there_working_channels())
+            raise(SIGHUP);
     }
 }
 
@@ -663,19 +686,18 @@ static void
 collect_line(channel_data *ch)
 {
     int len;
+    report_notice("requesting %d bytes on %d", ch->remaining, ch->fd);
     len = read(ch->fd, ch->bufptr, ch->remaining);
+    report_notice("read %d bytes from %d", len, ch->fd);
     if (len <= 0)
     {
-        if (len != 0 && errno != EPIPE)
-        {
-            report_error("read error on %d: %s", ch->fd,
-                    strerror(errno));
-        }
+        report_error("read error on %d: %s", ch->fd,
+                     strerror(errno));
         ch->state = NULL;
     }
     else
     {
-        char *found_newline; 
+        char *found_newline;
 
         ch->bufptr += len;
         ch->remaining -= len;
@@ -799,6 +821,13 @@ dump_data(void)
     if (already_dumped)
         return;
 
+    if (are_there_working_channels())
+    {
+        dump_request = TRUE;
+        return;
+    }
+
+    dump_request = FALSE;
     clear_data();
     report_notice("Dumping TCE data");
     if (ksymtable != NULL)
