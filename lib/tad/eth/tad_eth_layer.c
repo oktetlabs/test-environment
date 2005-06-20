@@ -341,7 +341,11 @@ int eth_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
                    const tad_tmpl_arg_t *args, size_t arg_num, 
                    const csap_pkts_p up_payload, csap_pkts_p pkts)
 {
-    eth_csap_specific_data_p spec_data;
+    eth_csap_specific_data_p spec_data; 
+    csap_pkts_p pld_fragment;
+    csap_pkts_p prev_frame = NULL,
+                curr_frame = pkts;
+
     int rc = 0;
     int frame_size;
     int is_tagged;
@@ -362,110 +366,132 @@ int eth_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
 
     if (up_payload == NULL)
         return ETADWRONGNDS;
-    frame_size = up_payload->len + ETH_HLEN;
 
-    spec_data = (eth_csap_specific_data_p)
-        csap_descr->layers[layer].specific_data; 
+    pld_fragment = up_payload;
+    do {
 
-    is_tagged = (spec_data->du_cfi     .du_type != TAD_DU_UNDEF && 
-                 spec_data->du_priority.du_type != TAD_DU_UNDEF &&
-                 spec_data->du_vlan_id .du_type != TAD_DU_UNDEF); 
+        frame_size = pld_fragment->len + ETH_HLEN;
 
-    if (is_tagged)
-        frame_size += ETH_TAG_EXC_LEN + ETH_TYPE_LEN;
-    
-    if (frame_size < ETH_ZLEN)
-    {
-        frame_size = ETH_ZLEN;
-    }
-    else if (frame_size > ETH_FRAME_LEN) 
-    { /* TODO: this check seems to be not correct, compare with interface MTU
-              should be here. */
-        ERROR("too greate frame size %d", frame_size);
-        return EMSGSIZE; 
-    }
+        F_RING("%s(): pld_fragment len %d, frame size %d", 
+               __FUNCTION__, pld_fragment->len, frame_size);
 
-    if ((data = malloc(frame_size)) == NULL)
-    {
-        return ENOMEM; /* can't allocate memory for frame data */
-    } 
-    memset(data, 0, frame_size); 
-    p = data;
+        spec_data = (eth_csap_specific_data_p)
+            csap_descr->layers[layer].specific_data; 
+
+        is_tagged = (spec_data->du_cfi     .du_type != TAD_DU_UNDEF && 
+                     spec_data->du_priority.du_type != TAD_DU_UNDEF &&
+                     spec_data->du_vlan_id .du_type != TAD_DU_UNDEF); 
+
+        if (is_tagged)
+            frame_size += ETH_TAG_EXC_LEN + ETH_TYPE_LEN;
+        
+        if (frame_size < ETH_ZLEN)
+        {
+            frame_size = ETH_ZLEN;
+        }
+        else if (frame_size > ETH_FRAME_LEN) 
+        { /* TODO: this check seems to be not correct, compare with interface MTU
+                  should be here. */
+            ERROR("too greate frame size %d", frame_size);
+            return EMSGSIZE; 
+        }
+
+        F_RING("%s(): corrected frame size %d", 
+               __FUNCTION__, frame_size);
+
+        if ((data = malloc(frame_size)) == NULL)
+        {
+            return ENOMEM; /* can't allocate memory for frame data */
+        } 
+        memset(data, 0, frame_size); 
+        p = data;
 
 #define PUT_BIN_DATA(c_du_field, length) \
-    do {                                                                \
-        rc = tad_data_unit_to_bin(&(spec_data->c_du_field),             \
-                                  args, arg_num, p, length);            \
-        if (rc != 0)                                                    \
-        {                                                               \
-            ERROR("%s(): generate " #c_du_field ", error: 0x%x",        \
-                  __FUNCTION__,  rc);                                   \
-            return rc;                                                  \
-        }                                                               \
-        p += length;                                                    \
-    } while (0) 
+        do {                                                                \
+            rc = tad_data_unit_to_bin(&(spec_data->c_du_field),             \
+                                      args, arg_num, p, length);            \
+            if (rc != 0)                                                    \
+            {                                                               \
+                ERROR("%s(): generate " #c_du_field ", error: 0x%x",        \
+                      __FUNCTION__,  rc);                                   \
+                return rc;                                                  \
+            }                                                               \
+            p += length;                                                    \
+        } while (0) 
 
-    PUT_BIN_DATA(du_dst_addr, ETH_ALEN);
-    PUT_BIN_DATA(du_src_addr, ETH_ALEN); 
+        PUT_BIN_DATA(du_dst_addr, ETH_ALEN);
+        PUT_BIN_DATA(du_src_addr, ETH_ALEN); 
 
-    if (is_tagged)
-    { 
-        uint8_t cfi;
-        uint8_t priority;
-        uint16_t vlan_id;
+        if (is_tagged)
+        { 
+            uint8_t cfi;
+            uint8_t priority;
+            uint16_t vlan_id;
 
-        F_VERB("tagged frame will be formed");
+            F_VERB("tagged frame will be formed");
 
 #define CALC_VLAN_PARAM(c_du_field, var) \
-    do {\
-        rc = tad_data_unit_to_bin(&(spec_data->c_du_field),             \
-                                  args, arg_num,                        \
-                                  (uint8_t *)&var, sizeof(var));        \
-        if (rc != 0)                                                    \
-        {                                                               \
-            ERROR("%s(): generate " #c_du_field ", error: 0x%x",        \
-                  __FUNCTION__,  rc);                                   \
-            return rc;                                                  \
-        }                                                               \
-    } while (0)
+        do {\
+            rc = tad_data_unit_to_bin(&(spec_data->c_du_field),             \
+                                      args, arg_num,                        \
+                                      (uint8_t *)&var, sizeof(var));        \
+            if (rc != 0)                                                    \
+            {                                                               \
+                ERROR("%s(): generate " #c_du_field ", error: 0x%x",        \
+                      __FUNCTION__,  rc);                                   \
+                return rc;                                                  \
+            }                                                               \
+        } while (0)
 
-        CALC_VLAN_PARAM(du_cfi, cfi);
-        CALC_VLAN_PARAM(du_priority, priority);
-        CALC_VLAN_PARAM(du_vlan_id, vlan_id);
+            CALC_VLAN_PARAM(du_cfi, cfi);
+            CALC_VLAN_PARAM(du_priority, priority);
+            CALC_VLAN_PARAM(du_vlan_id, vlan_id);
 
-        /* put "tagged special" eth type/length */
-        *((uint16_t *) p) = htons (ETH_TAGGED_TYPE_LEN); 
-        p += ETH_TYPE_LEN; 
+            /* put "tagged special" eth type/length */
+            *((uint16_t *) p) = htons (ETH_TAGGED_TYPE_LEN); 
+            p += ETH_TYPE_LEN; 
 
-        /* vlan_id prepared already in network byte order */
-        *((uint16_t *)p) = vlan_id;
+            /* vlan_id prepared already in network byte order */
+            *((uint16_t *)p) = vlan_id;
 
-        *p |= (cfi ? 1 : 0) << 4;
+            *p |= (cfi ? 1 : 0) << 4;
 
-        *p |= priority << 5; 
+            *p |= priority << 5; 
 
-        p += ETH_TAG_EXC_LEN; 
+            p += ETH_TAG_EXC_LEN; 
 #undef CALC_VLAN_PARAM
-    }
+        }
 
-    VERB("put eth-type");  
-    if (spec_data->du_eth_type.du_type == TAD_DU_UNDEF)
-    { /* ethernet type-len field is not specified neither in csap, 
-         nor in template put length of payload to the frame. */
-        VERB("not specified, put payload length");  
-        spec_data->du_eth_type.du_type = TAD_DU_I32;
-        spec_data->du_eth_type.val_i32 = up_payload->len;
+        VERB("put eth-type");  
+        if (spec_data->du_eth_type.du_type == TAD_DU_UNDEF)
+        { /* ethernet type-len field is not specified neither in csap, 
+             nor in template put length of payload to the frame. */
+            VERB("not specified, put payload length");  
+            spec_data->du_eth_type.du_type = TAD_DU_I32;
+            spec_data->du_eth_type.val_i32 = pld_fragment->len;
 
-    }
-    PUT_BIN_DATA(du_eth_type, ETH_TYPE_LEN); 
+        }
+        PUT_BIN_DATA(du_eth_type, ETH_TYPE_LEN); 
 
-    memcpy (p, up_payload->data, up_payload->len);
+        memcpy (p, pld_fragment->data, pld_fragment->len);
 
-    pkts->data = data;
-    pkts->len  = frame_size;
-    pkts->next = NULL;
+        if (prev_frame != NULL)
+        {
+            curr_frame = prev_frame->next = malloc(sizeof(*curr_frame));
+        }
 
+        curr_frame->data = data;
+        curr_frame->len  = frame_size;
+        curr_frame->next = NULL; 
+        curr_frame->free_data_cb = NULL; 
 
+        pld_fragment = pld_fragment->next;
+        if (prev_frame == NULL)
+            prev_frame = curr_frame;
+
+    } while (pld_fragment != NULL);
+
+#if 0
     if (up_payload->free_data_cb)
         up_payload->free_data_cb(up_payload->data);
     else
@@ -473,6 +499,8 @@ int eth_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
 
     up_payload->data = NULL;
     up_payload->len = 0;
+#endif
+
 #undef PUT_BIN_DATA
 
     return 0;
