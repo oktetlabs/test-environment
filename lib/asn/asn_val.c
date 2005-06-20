@@ -1019,14 +1019,15 @@ asn_impl_read_value_field(const asn_value *container,  void *data,
         {
             long int val = value->data.integer;
 
-            if (*d_len > sizeof (long int))
-                *d_len = sizeof (long int);
+            if (*d_len > sizeof(long int))
+                *d_len = sizeof(long int);
 
             switch (*d_len)
             {
-                case sizeof(char) : *((char *) data) = val; break;
-                case sizeof(short): *((short *)data) = val; break;
-                case sizeof(long) : *((long *) data) = val; break;
+                case sizeof(int8_t) : *((int8_t *) data) = val; break;
+                case sizeof(int16_t): *((int16_t *)data) = val; break;
+                case sizeof(int32_t): *((int32_t *)data) = val; break;
+                case sizeof(int64_t): *((int64_t *)data) = val; break;
                 default: 
                     return EASNGENERAL;
             }
@@ -2001,7 +2002,7 @@ asn_get_choice(const asn_value *container, const char *subval_labels,
 
     if (val->data.array == NULL)
     {
-        printf ("data array is null\n");
+        printf("data array is null\n");
         return EASNGENERAL; 
     }
 
