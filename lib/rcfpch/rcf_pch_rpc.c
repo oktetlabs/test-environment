@@ -391,7 +391,7 @@ kill_rpcserver(rpcserver *rpcs)
 static int
 connect_getpid(rpcserver *rpcs)
 {
-    struct timeval  tv = { 5, 0 };
+    struct timeval  tv = { 50, 0 };
     fd_set          set;
     struct sockaddr addr;
     int             len = sizeof(addr);
