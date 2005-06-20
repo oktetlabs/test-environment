@@ -1,8 +1,8 @@
 <?xml version="1.0" ?>
 <backup>
     <!-- RADIUS server enabling/disabling
-    1 -- enable
-    0 -- disable
+    1 - enable
+    0 - disable
     -->
     <object oid="/agent/radiusserver" access="read_write" type="integer" />
     
