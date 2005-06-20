@@ -170,7 +170,6 @@ int
 ds_create_backup(const char *dir, const char *name, int *index)
 {
     const char *filename;
-    struct stat st;
 
     if (name == NULL)
     {
@@ -1646,6 +1645,12 @@ xvfb_exists(char *number)
     {
         char *tmp = strstr(line, "Xvfb");
 
+        if (tmp == NULL)
+        {
+            ERROR("xvfb_list: ps returned %s", line);
+            break;
+        }
+        
         if ((tmp  = strstr(tmp, ":")) == NULL)
             continue;
         
@@ -1760,6 +1765,12 @@ ds_xvfb_list(unsigned int gid, const char *oid, char **list)
     {
         char *tmp = strstr(line, "Xvfb");
         int   n;
+        
+        if (tmp == NULL)
+        {
+            ERROR("xvfb_list: ps returned %s", line);
+            break;
+        }
 
         if ((tmp  = strstr(tmp, ":")) == NULL || (n = atoi(tmp + 1)) == 0)
             continue;
