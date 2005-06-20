@@ -459,7 +459,7 @@ ip4_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
 
         PUT_BIN_DATA(du_tos, 0, 1); 
         if (frag_spec == NULL)
-            PUT_BIN_DATA(du_ip_len, ip4_pld_real_len, 2);
+            PUT_BIN_DATA(du_ip_len, pkt_len, 2);
         else
         {
             asn_read_int32(frag_spec, &hdr_field, "hdr-length");
@@ -484,16 +484,20 @@ ip4_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
                 te_bool flag_value = 0;
 
                 asn_read_int32(frag_spec, &hdr_field, "hdr-offset");
-                offset = htons((uint16_t)hdr_field);
+                offset = htons((uint16_t)(hdr_field >> 3));
                 asn_read_bool(frag_spec, &flag_value, "more-frags");
                 flags = !!(flag_value);
                 asn_read_bool(frag_spec, &flag_value, "dont-frag");
-                flags = (!!(flag_value) << 1);
+                flags |= (!!(flag_value) << 1);
             }
+
+            F_VERB("+ header offset (in network order) %x, flags %d",
+                   offset, flags);
 
             *((uint16_t *)p) = offset; /* already in network byte order */
             *p &= 0x1f; /* clear 3 high bits for flags */
             *p |= (flags << 5); 
+            F_VERB("put data: 0x%x, 0x%x", (int)p[0], (int)p[1]);
             p += 2;
         } 
 
