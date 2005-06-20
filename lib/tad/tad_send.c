@@ -200,15 +200,17 @@ tad_tr_send_prepare_bin(csap_p csap_descr, asn_value_p nds,
                                              up_packets, low_packets); 
         }
 
-        if (up_packets)
+        while (up_packets != NULL)
         {
+            csap_pkts_p next = up_packets->next;
+
             if (up_packets->free_data_cb)
                 up_packets->free_data_cb(up_packets->data);
             else
                 free(up_packets->data);
 
             free(up_packets);
-            up_packets = NULL;
+            up_packets = next;
         }
 
         if (rc != 0) 
