@@ -78,9 +78,11 @@ main(int argc, char *argv[])
 
     tapi_ip_frag_spec_t frags[] = {
             { hdr_offset:0, real_offset:0,
-                hdr_length:4, real_length:4, 1, 0},
-            { hdr_offset:4, real_offset:0,
-                hdr_length:40, real_length:40, 0, 0},
+                hdr_length:44, real_length:24, 1, 0},
+#if 1
+            { hdr_offset:24, real_offset:24,
+                hdr_length:40, real_length:20, 0, 0},
+#endif
         };
 
     csap_handle_t ip4_send_csap = CSAP_INVALID_HANDLE;
@@ -95,16 +97,20 @@ main(int argc, char *argv[])
 
     /* src port = 20000, dst port = 20001, checksum = 0 */
     uint8_t udp_dgm_image[] = {0x4e, 0x20, 0x4e, 0x21,
+                               0x00, 0x00, 0x00, 0x00, /* end UDP header */
+                               0x00, 0x00, 0x00, 0x00,
+                               0x03, 0x04, 0x05, 0x06,
+                               0x00, 0x00, 0x00, 0x00,
+                               0x07, 0x08, 0x08, 0x09,
                                0x00, 0x00, 0x00, 0x00,
                                0x01, 0x01, 0x02, 0x02};
-
-    udp_dgm_image[5] = sizeof(udp_dgm_image);
 
     struct sockaddr_in listen_sa;
     struct sockaddr_in from_sa;
     size_t from_len = sizeof(from_sa);
 
     uint8_t rcv_buffer[2000];
+
 
     TEST_START; 
 
@@ -164,6 +170,12 @@ main(int argc, char *argv[])
         TEST_FAIL("bind failed");
 
     /******** Create Traffic Template *************/
+    udp_dgm_image[5] = sizeof(udp_dgm_image); 
+
+    frags[1].hdr_length = 
+        20 + (frags[1].real_length = 
+              (sizeof(udp_dgm_image) - frags[0].real_length));
+
     rc = asn_parse_value_text("{ pdus { eth:{ "
                               "    dst-addr plain:'00 0D 88 4F 55 AF'H}} }",
                               ndn_traffic_template,
@@ -181,6 +193,7 @@ main(int argc, char *argv[])
     if (rc != 0)
         TEST_FAIL("insert ip4 pdu failed: %x", rc);
   
+
     rc = asn_write_value_field(template, udp_dgm_image,
                                sizeof(udp_dgm_image), "payload.#bytes");
     if (rc != 0)
@@ -202,6 +215,9 @@ main(int argc, char *argv[])
     if (rc != 0) 
         TEST_FAIL("send start failed %X", rc); 
 
+    RPC_AWAIT_IUT_ERROR(srv_listen);
+
+    sleep(1);
     rc = rpc_recvfrom(srv_listen, udp_socket,
                       rcv_buffer, sizeof(rcv_buffer), RPC_MSG_DONTWAIT, 
                       &from_sa, &from_len);

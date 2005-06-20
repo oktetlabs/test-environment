@@ -88,9 +88,9 @@ main(int argc, char *argv[])
     /* src port = 20000, dst port = 20001, checksum = 0 */
     uint8_t udp_dgm_image[] = {0x4e, 0x20, 0x4e, 0x21,
                                0x00, 0x00, 0x00, 0x00,
+                               0x03, 0x04, 0x05, 0x06,
+                               0x00, 0x00, 0x00, 0x00,
                                0x01, 0x01, 0x02, 0x02};
-
-    udp_dgm_image[5] = sizeof(udp_dgm_image);
 
     struct sockaddr_in listen_sa;
     struct sockaddr_in from_sa;
@@ -163,6 +163,8 @@ main(int argc, char *argv[])
     if (rc != 0)
         TEST_FAIL("parse of template failed %X, syms %d", rc, syms);
 
+    udp_dgm_image[5] = sizeof(udp_dgm_image);
+
   
     rc = asn_write_value_field(template, udp_dgm_image,
                                sizeof(udp_dgm_image), "payload.#bytes");
@@ -182,6 +184,8 @@ main(int argc, char *argv[])
                                template, RCF_MODE_BLOCKING);
     if (rc != 0) 
         TEST_FAIL("send start failed %X", rc); 
+
+    RPC_AWAIT_IUT_ERROR(srv_listen);
 
     rc = rpc_recvfrom(srv_listen, udp_socket,
                       rcv_buffer, sizeof(rcv_buffer), RPC_MSG_DONTWAIT, 
