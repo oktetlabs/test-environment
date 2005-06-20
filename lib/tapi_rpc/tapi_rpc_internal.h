@@ -67,24 +67,30 @@
  */
 #define TAPI_RPC_OUT(_func, _res) \
     do {                                                                \
-        if (rpcs == NULL)                                               \
-            tapi_jmp_do(ETEFAIL);                                       \
-                                                                        \
-        rcf_rpc_free_result(&out, (xdrproc_t)xdr_tarpc_##_func##_out);  \
-        if (!RPC_IS_CALL_OK(rpcs))                                      \
+        if (rpcs != NULL)                                               \
         {                                                               \
-            rpcs->iut_err_jump = TRUE;                                  \
-            tapi_jmp_do(ETEFAIL);                                       \
-        }                                                               \
-        if (_res)                                                       \
-        {                                                               \
-            if (rpcs->iut_err_jump)                                     \
+            rcf_rpc_free_result(&out,                                   \
+                                (xdrproc_t)xdr_tarpc_##_func##_out);    \
+            if (!RPC_IS_CALL_OK(rpcs))                                  \
             {                                                           \
                 rpcs->iut_err_jump = TRUE;                              \
                 tapi_jmp_do(ETEFAIL);                                   \
             }                                                           \
+            if (_res)                                                   \
+            {                                                           \
+                if (rpcs->iut_err_jump)                                 \
+                {                                                       \
+                    rpcs->iut_err_jump = TRUE;                          \
+                    tapi_jmp_do(ETEFAIL);                               \
+                }                                                       \
+            }                                                           \
+            rpcs->iut_err_jump = TRUE;                                  \
         }                                                               \
-        rpcs->iut_err_jump = TRUE;                                      \
+        else                                                            \
+        {                                                               \
+            /* Try to jump */                                           \
+            tapi_jmp_do(ETEFAIL);                                       \
+        }                                                               \
     } while (0)
 
 /**
