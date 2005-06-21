@@ -3752,7 +3752,6 @@ TARPC_FUNC(wsa_recv_disconnect, {},
 }
 )
 
-/* WSARecvMsg */
 /*--------------- WSARecvMsg -----------------------------*/
 TARPC_FUNC(wsa_recv_msg,
 {
@@ -3768,26 +3767,31 @@ TARPC_FUNC(wsa_recv_msg,
     COPY_ARG(bytes_received);
 },
 {
-    WSABUF               buf_arr[RCF_RPC_MAX_IOVEC];
-    WSAMSG               msg;
-    LPWSAOVERLAPPED      overlapped = (LPWSAOVERLAPPED)IN_OVERLAPPED;
-    struct tarpc_msghdr *rpc_msg;
-    unsigned int         i;
+    WSABUF                buf_arr[RCF_RPC_MAX_IOVEC];
+    WSAMSG                msg;
+    rpc_overlapped       *overlapped = IN_OVERLAPPED;
+    rpc_overlapped        tmp;
+    struct tarpc_msghdr  *rpc_msg;
 
     memset(buf_arr, 0, sizeof(buf_arr));
+    
+    if (overlapped == NULL)
+    {
+        memset(&tmp, 0, sizeof(tmp));
+        overlapped = &tmp;    
+    }
 
     rpc_msg = out->msg.msg_val;
 
     if (rpc_msg == NULL)
     {
         MAKE_CALL(out->retval =
-                  (*pf_wsa_recvmsg)(in->s, NULL,
-                      out->bytes_received.bytes_received_len == 0 ?
-                          NULL :
-                          (LPDWORD)(out->bytes_received.bytes_received_val),
-                      overlapped,
-                      in->callback ? (LPWSAOVERLAPPED_COMPLETION_ROUTINE)
-                          completion_callback : NULL));
+            (*pf_wsa_recvmsg)(in->s, NULL,
+                out->bytes_received.bytes_received_len == 0 ? NULL :
+                    (LPDWORD)(out->bytes_received.bytes_received_val),
+                in->overlapped == 0 ? NULL : (LPWSAOVERLAPPED)overlapped,
+                in->callback ? (LPWSAOVERLAPPED_COMPLETION_ROUTINE)
+                    completion_callback : NULL));
     }
     else
     {
@@ -3800,21 +3804,15 @@ TARPC_FUNC(wsa_recv_msg,
         msg.dwBufferCount = rpc_msg->msg_iovlen;
         if (rpc_msg->msg_iov.msg_iov_val != NULL)
         {
-            for (i = 0; i < rpc_msg->msg_iov.msg_iov_len; i++)
+            if (iovec2overlapped(overlapped, rpc_msg->msg_iov.msg_iov_len,
+                                 rpc_msg->msg_iov.msg_iov_val) != 0)
             {
-                INIT_CHECKED_ARG(
-                    rpc_msg->msg_iov.msg_iov_val[i].iov_base.iov_base_val,
-                    rpc_msg->msg_iov.msg_iov_val[i].iov_base.iov_base_len,
-                    rpc_msg->msg_iov.msg_iov_val[i].iov_len);
-                buf_arr[i].buf =
-                    rpc_msg->msg_iov.msg_iov_val[i].iov_base.iov_base_val;
-                buf_arr[i].len =
-                    rpc_msg->msg_iov.msg_iov_val[i].iov_len;
+                out->common._errno = TE_RC(TE_TA_WIN32, ENOMEM);
+                goto finish;
             }
-            msg.lpBuffers = buf_arr;
-
-            INIT_CHECKED_ARG((char *)buf_arr, sizeof(buf_arr), 0);
+            msg.lpBuffers = overlapped->buffers;
         }
+
         if (rpc_msg->msg_control.msg_control_len > 0)
         {
             ERROR("Non-zero Control is not supported");
@@ -3827,7 +3825,6 @@ TARPC_FUNC(wsa_recv_msg,
         /*
          * msg_name, msg_iov, msg_iovlen and msg_control MUST NOT be
          * changed.
-         *
          * msg_namelen, msg_controllen and msg_flags MAY be changed.
          */
         INIT_CHECKED_ARG((char *)&msg.name, sizeof(msg.name), 0);
@@ -3837,18 +3834,18 @@ TARPC_FUNC(wsa_recv_msg,
         INIT_CHECKED_ARG((char *)&msg.Control, sizeof(msg.Control), 0);
             
         MAKE_CALL(out->retval =
-                  (*pf_wsa_recvmsg)(in->s, &msg,
-                      out->bytes_received.bytes_received_len == 0 ?
-                        NULL :
-                        (LPDWORD)(out->bytes_received.bytes_received_val),
-                      overlapped,
-                      in->callback ? (LPWSAOVERLAPPED_COMPLETION_ROUTINE)
-                        completion_callback : NULL));
+            (*pf_wsa_recvmsg)(in->s, &msg,
+                out->bytes_received.bytes_received_len == 0 ? NULL :
+                    (LPDWORD)(out->bytes_received.bytes_received_val),
+                in->overlapped == 0 ? NULL : (LPWSAOVERLAPPED)overlapped,
+                in->callback ? (LPWSAOVERLAPPED_COMPLETION_ROUTINE)
+                completion_callback : NULL));
 
         sockaddr_h2rpc(a, &(rpc_msg->msg_name));
         rpc_msg->msg_namelen = msg.namelen;
         rpc_msg->msg_flags = send_recv_flags_h2rpc(msg.dwFlags);
     }
+
     finish:
     ;
 }
