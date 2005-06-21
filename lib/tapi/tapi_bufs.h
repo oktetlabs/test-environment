@@ -60,19 +60,19 @@ extern void tapi_fill_buf(void *buf, size_t len);
  * Allocate buffer of random size from @b min to @b max and preset
  * it by random numbers.
  *
- * @param min   - minimum size of buffer
- * @param max   - maximum size of buffer
- * @param p_len - location for real size of allocated buffer
+ * @param min     minimum size of buffer
+ * @param max     maximum size of buffer
+ * @param p_len   location for real size of allocated buffer
  *
  * @return Pointer to allocated buffer.
  */
-extern void * tapi_make_buf(size_t min, size_t max, size_t *p_len);
+extern void *tapi_make_buf(size_t min, size_t max, size_t *p_len);
 
 
 /** 
  * Create a buffer of specified size
  * 
- * @param len  - Buffer length
+ * @param len    Buffer length
  *
  * @return Pointer to allocated buffer.
  */
