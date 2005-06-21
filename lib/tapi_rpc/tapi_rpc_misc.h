@@ -149,6 +149,67 @@ extern int rpc_simple_receiver(rcf_rpc_server *handle,
 extern int rpc_send_traffic(rcf_rpc_server *handle, int num, int *s,
                             const void *buf, size_t len, int flags,
                             struct sockaddr *to, socklen_t tolen);
+                            
+/**
+ * For each address from addresses list routine sends UDP datagram,
+ * receives it back and check that it happens within determined
+ * period of time. sendmsg() and recvmsg() are used.
+ *
+ * @param rpcs          RPC server
+ * @param s             DGRAM socket to send/receive UDP datagram
+ * @param size          Size of UDP datagram
+ * @param vector_len    iovec_len in msghdr structure
+ * @param timeout       routine waiting for UDP datagram coming back
+ *                      within timeout given (passed to select)
+ * @param time2wait     UDP datagram must be sent and received within
+ *                      time2wait period
+ * @param flags         flags passed to sendmsg(recvmsg)
+ * @param num           number of addresses in addresses list
+ * @param to            addresses list
+ * @param tolen         address length
+ *
+ * @return 
+ *     0 - success
+ *     ROUND_TRIP_ERROR_SEND - sendmsg() failed
+ *     ROUND_TRIP_ERROR_RECV - recvmsg() failed
+ *     ROUND_TRIP_ERROR_TIMEOUT - select() returned because
+ *                                timeout expired
+ *     ROUND_TRIP_ERROR_TIME_EXPIRED - time2wait expired
+ *     ROUND_TRIP_ERROR_OTHER - some other error occured 
+ *                             (memory allocation etc.)
+ */ 
+extern int rpc_timely_round_trip(rcf_rpc_server *rpcs, int s,
+                                 size_t size, size_t vector_len,
+                                 uint32_t timeout, uint32_t time2wait,
+                                 int flags, int num, struct sockaddr *to,
+                                 socklen_t tolen);
+  
+/**
+ * For each DGRAM socket in socket list routine determines 
+ * if the socket is readable, if it so, routine called recvmsg() 
+ * to receive UDP datagram, and sends it back using recvmsg().
+ *
+ * @param rpcs           RPC server
+ * @param num            number of sockets in sockets list
+ * @param s              DGRAM sockets list
+ * @param size           Size of UDP datagram
+ * @param vector_len     iovec_len in msghdr structure
+ * @param timeout        routine waiting for UDP daragram coming
+ *                       withing timeout given (passed to select)
+ * @param flags          flags passed to recvmsg(sendmsg)
+ *
+ * @return
+ *     0 - success
+ *     ROUND_TRIP_ERROR_SEND - sendmsg() failed
+ *     ROUND_TRIP_ERROR_RECV - recvmsg() failed
+ *     ROUND_TRIP_ERROR_TIMEOUT - select() returned because
+ *                                timeout expired
+ *     ROUND_TRIP_ERROR_OTHER - some other error occured
+ *                              (memory allocation etc.)
+ */ 
+extern int rpc_round_trip_echoer(rcf_rpc_server *rpcs, int num, int *s,
+                                 size_t size, size_t vector_len,
+                                 uint32_t timeout, int flags);
 
 /**
  * Routine which receives data from specified set of sockets and sends
