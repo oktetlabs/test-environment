@@ -831,3 +831,172 @@ tapi_cfg_net_assign_ip4(cfg_net_t *net, tapi_cfg_net_assigned *assigned)
 
     return rc;
 }
+
+/* See description in tapi_cfg_net.h */
+int
+tapi_cfg_net_assign_ip4_one_end(cfg_net_t *net, 
+                                tapi_cfg_net_assigned *assigned)
+{
+    int                 rc;
+    cfg_val_type        type;
+    char               *str;
+    unsigned int        i;
+    cfg_handle          ip4_net_hndl;
+    char               *ip4_net_oid = NULL;
+    unsigned int        ip4_net_pfx;
+    struct sockaddr    *ip4_net_addr;
+    cfg_handle          ip4_entry_hndl;
+    cfg_handle          ip4_addr_hndl;
+    struct sockaddr_in *ip4_addr;
+
+    if (net == NULL)
+    {
+        ERROR("%s: Net pointer is NULL", __FUNCTION__);
+        return TE_RC(TE_TAPI, EINVAL);
+    }
+
+    /* Allocate or use passed IPv4 subnet */
+    if (assigned == NULL ||
+        assigned->pool == CFG_HANDLE_INVALID)
+    {
+        rc = tapi_cfg_alloc_ip4_net(&ip4_net_hndl);
+        if (rc != 0)
+        {
+            ERROR("%s: Failed to allocate IPv4 net to assign: %X",
+                  __FUNCTION__, rc);
+            return rc;
+        }
+    }
+    else
+    {
+        ip4_net_hndl = assigned->pool;
+    }
+
+    do { /* Fake loop */
+
+        /* 
+         * Get all information about this IPv4 subnet
+         */
+        rc = cfg_get_inst_name_type(ip4_net_hndl, CVT_ADDRESS,
+                                    CFG_IVP(&ip4_net_addr));
+        if (rc != 0)
+        {
+            ERROR("%s(): cfg_get_inst_name_type(0x%x) failed",
+                  __FUNCTION__, ip4_net_hndl);
+            break;
+        }
+
+        /* Get OID as string */
+        rc = cfg_get_oid_str(ip4_net_hndl, &ip4_net_oid);
+        if (rc != 0)
+        {
+            ERROR("%s(): cfg_get_oid_str(0x%x) failed",
+                  __FUNCTION__, ip4_net_hndl);
+            break;
+        }
+        /* Get prefix length */
+        type = CVT_INTEGER;
+        rc = cfg_get_instance_fmt(&type, &ip4_net_pfx,
+                                  "%s/prefix:", ip4_net_oid);
+        if (rc != 0)
+        {
+            ERROR("Failed to get IPv4 subnet '%s' prefix: %X",
+                  ip4_net_oid, rc);
+            break;
+        }
+
+        /* Add the subnet to the list of IPv4 subnets of the net */
+        rc = cfg_add_instance_child_fmt(NULL, CVT_ADDRESS, ip4_net_addr,
+                                        net->handle, "/ip4_subnet:%u",
+                                        ip4_net_hndl);
+        if (rc != 0)
+        {
+            ERROR("Failed to add '/ip4_subnet:%u' child to "
+                  "instance with handle 0x%x: %X",
+                  ip4_net_hndl, net->handle, rc);
+            break;
+        }
+
+        if ((assigned != NULL) && (net->n_nodes > 0))
+        {
+            assigned->entries = calloc(net->n_nodes,
+                                       sizeof(*(assigned->entries)));
+            if (assigned->entries == NULL)
+            {
+                ERROR("calloc(%u, %u) failed", net->n_nodes,
+                      sizeof(*(assigned->entries)));
+                rc = ENOMEM;
+                break;
+            }
+        }
+
+        /*
+         * Assign IPv4 addresses to each node of the net.
+         */
+        for (i = 1; i < net->n_nodes; ++i)
+        {
+            rc = tapi_cfg_alloc_ip4_addr(ip4_net_hndl, &ip4_entry_hndl,
+                                         &ip4_addr);
+            if (rc != 0)
+            {
+                ERROR("Failed to allocate address for node #%u: %X",
+                      i, rc);
+                break;
+            }
+
+            /* Get interface OID */
+            type = CVT_STRING;
+            rc = cfg_get_instance(net->nodes[i].handle, &type,
+                                  &str);
+            if (rc != 0)
+            {
+                ERROR("Failed to get Configurator instance by handle "
+                      "0x%x: %X", net->nodes[i].handle, rc);
+                free(ip4_addr);
+                break;
+            }
+
+            rc = tapi_cfg_base_add_net_addr(str, SA(ip4_addr),
+                                            ip4_net_pfx, TRUE,
+                                            &ip4_addr_hndl);
+            if (TE_RC_GET_ERROR(rc) == EEXIST)
+            {
+                /* Address already assigned - continue */
+                rc = 0;
+            } else if (rc != 0)
+            {
+                free(ip4_addr);
+                break;
+            }
+
+            rc = cfg_add_instance_child_fmt(NULL, CVT_ADDRESS,
+                                            SA(ip4_addr),
+                                            net->nodes[i].handle,
+                                            "/ip4_address:%u",
+                                            ip4_entry_hndl);
+            if (rc != 0)
+            {
+                ERROR("Failed to add 'ip4_address:%u' child to "
+                      "instance with handle 0x%x: %X",
+                      ip4_entry_hndl, net->nodes[i].handle, rc);
+                free(ip4_addr);
+                break;
+            }
+            free(ip4_addr);
+
+            if (assigned != NULL)
+                assigned->entries[i] = ip4_entry_hndl;
+        }
+
+    } while (0); /* End of fake loop */
+
+    if ((rc == 0) &&
+        (assigned != NULL) && (assigned->pool == CFG_HANDLE_INVALID))
+    {
+        assigned->pool= ip4_net_hndl;
+    }
+
+    free(ip4_net_oid);
+
+    return rc;
+}

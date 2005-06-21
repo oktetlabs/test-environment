@@ -187,6 +187,12 @@ typedef struct tapi_cfg_net_assigned {
 extern int tapi_cfg_net_assign_ip4(cfg_net_t *net,
                                    tapi_cfg_net_assigned *assigned);
 
+/**
+ * Dirty hack, must be removed after sockts_get_host_addr() 
+ * will be repaired.
+ */
+extern int tapi_cfg_net_assign_ip4_one_end(cfg_net_t *net, 
+                                           tapi_cfg_net_assigned *assigned);
 
 #ifdef __cplusplus
 } /* extern "C" */
