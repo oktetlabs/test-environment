@@ -1,8 +1,8 @@
 dnl                                               -*- Autoconf -*-
 dnl Process this file with autoconf to produce a configure script.
 
-AC_PREREQ([2.59])
-AC_INIT([ta-linux], [0.4], [Elena.Vengerova@oktetlabs.ru])
+AC_PREREQ(2.59)
+AC_INIT([ta-linux],[0.4],[Elena.Vengerova@oktetlabs.ru])
 AC_CONFIG_SRCDIR([linux.c])
 
 AC_CONFIG_AUX_DIR([../../auxdir])
@@ -236,30 +236,31 @@ if test -n "$with_rcf_rpc" ; then
             [AC_DEFINE([xdr_uint8_t], [xdr_u_int8_t])],
             [AC_CHECK_FUNC([xdr_u_char],
                 [AC_DEFINE([xdr_uint8_t], [xdr_u_char])],
-                [AC_ERROR([There is no xdr_uint8_t or xdr_u_int8_t!])])])])
+                [AC_MSG_ERROR([There is no xdr_uint8_t or xdr_u_int8_t!])]
+             )])])
 
     AH_TEMPLATE([xdr_uint16_t], [RPC XDR for unsigned 8bit width type])
     AC_CHECK_FUNC([xdr_uint16_t], [],
         [AC_CHECK_FUNC([xdr_u_int16_t],
             [AC_DEFINE([xdr_uint16_t], [xdr_u_int16_t])],
-            [AC_ERROR([There is no xdr_uint16_t or xdr_u_int16_t!])])])
+            [AC_MSG_ERROR([There is no xdr_uint16_t or xdr_u_int16_t!])])])
 
     AH_TEMPLATE([xdr_uint32_t], [RPC XDR for unsigned 32bit width type])
     AC_CHECK_FUNC([xdr_uint32_t], [],
         [AC_CHECK_FUNC([xdr_u_int32_t],
             [AC_DEFINE([xdr_uint32_t], [xdr_u_int32_t])],
-            [AC_ERROR([There is no xdr_uint32_t or xdr_u_int32_t!])])])
+            [AC_MSG_ERROR([There is no xdr_uint32_t or xdr_u_int32_t!])])])
 
     AH_TEMPLATE([xdr_uint64_t], [RPC XDR for unsigned 64bit width type])
     AC_CHECK_FUNC([xdr_uint64_t], [],
         [AC_CHECK_FUNC([xdr_u_int64_t],
             [AC_DEFINE([xdr_uint64_t], [xdr_u_int64_t])],
-            [AC_ERROR([There is no xdr_uint64_t or xdr_u_int64_t!])])])
+            [AC_MSG_ERROR([There is no xdr_uint64_t or xdr_u_int64_t!])])])
 fi
 
 if test -n "$with_netlink" ; then
     if test -n "$with_ifconfig" ; then
-        AC_ERROR([Test Environment cannot 
+        AC_MSG_ERROR([Test Environment cannot 
         use both ioctl calls and netlink calls
         to configure interfaces]) ;
     fi        
