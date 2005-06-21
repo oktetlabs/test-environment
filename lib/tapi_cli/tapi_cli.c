@@ -559,7 +559,9 @@ tapi_cli_msg_handler(char *msg_fname, void *user_param)
     int                       rc;
     int                       s_parsed;
     asn_value_p               cli_response;
+#if 0
     asn_value_p               cli_msg;
+#endif
     int                       msg_len;
     char                     *msg = NULL;
     char                    **msg_p = user_param;
@@ -611,7 +613,10 @@ tapi_cli_msg_handler(char *msg_fname, void *user_param)
 #else
     msg_len = asn_get_length(cli_response, "payload");
     if (msg_len <= 0)
-        return 0;
+    {
+        ERROR("Invalid CLI response payload length");
+        return;
+    }
 
     msg = (char *)malloc(msg_len + 1);
     if (msg == NULL)
