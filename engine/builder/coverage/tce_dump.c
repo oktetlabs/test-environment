@@ -53,6 +53,7 @@ main(int argc, char *argv[])
     char buffer[PATH_MAX + 1];
     char buffer2[PATH_MAX + 1];
 
+    UNUSED(argc);
 
     if (strcmp(argv[1], "--all") != 0)
     {
