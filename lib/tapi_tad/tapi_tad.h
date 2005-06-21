@@ -187,6 +187,35 @@ extern int tapi_tad_trrecv_start(const char *ta_name, int session,
                                  unsigned int timeout, int num);
 
 
+/**
+ * Insert arithmetical progression iterator argument into Traffic-Template
+ * ASN value, at the end of iterator list. 
+ * New iterator became most internal. 
+ * 
+ * @param templ         ASN value of Traffic-Template type 
+ * @param begin         start of arithmetic progression
+ * @param end           end of arithmetic progression
+ * @param step          step of arithmetic progression
+ *
+ * @return status code
+ */
+extern int tapi_tad_add_iterator_for(asn_value *templ, int begin, int end,
+                                     int step);
+
+/**
+ * Insert 'enumeration' iterator argument into Traffic-Template ASN value,
+ * at the end of iterator list. 
+ * New iterator became most internal. 
+ * 
+ * @param templ         ASN value of Traffic-Template type 
+ * @param array         pointer to array with enumerated values
+ * @param length        length of array
+ *
+ * @return status code
+ */
+extern int tapi_tad_add_iterator_ints(asn_value *templ, int *array,
+                                      size_t length);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

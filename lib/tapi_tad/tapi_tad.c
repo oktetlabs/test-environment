@@ -34,6 +34,7 @@
 
 #ifdef STDC_HEADERS
 #include <stdlib.h>
+#include <stdio.h>
 #endif
 #ifdef HAVE_ASSERT_H
 #include <assert.h>
@@ -48,6 +49,7 @@
 #include "rcf_api.h"
 
 #include "tapi_tad.h"
+#include "ndn.h"
 
 #define SEC_USEC_SEPARATOR  '.'
 
@@ -321,3 +323,55 @@ tapi_tad_trrecv_start(const char *ta_name, int session, int handle,
         WARN("trrecv_start failed with rc %X", rc);
     return rc;
 }
+
+
+/* Description in tapi_tad.h */
+int
+tapi_tad_add_iterator_for(asn_value *templ, int begin, int end, int step)
+{
+    asn_value *iterators;
+    asn_value *simple_for;
+
+    char buf[1000] = {0,};
+    int rc, syms;
+
+    if (templ == NULL)
+        return TE_RC(TE_TAPI, ETEWRONGPTR);
+
+    rc = asn_get_child_value(templ, (const asn_value **)&iterators,
+                                  PRIVATE, NDN_TMPL_ARGS);
+    if (rc == EASNINCOMPLVAL)
+    {
+        iterators = asn_init_value(ndn_template_params_seq);
+        rc = asn_put_child_value(templ, iterators,
+                                 PRIVATE, NDN_TMPL_ARGS);
+    }
+    if (rc != 0)
+    {
+        ERROR("%s(): error of init iterators ASN value: %X",
+              __FUNCTION__, rc);
+        return TE_RC(TE_TAPI, rc);
+    } 
+
+    snprintf(buf, sizeof(buf), "simple-for:{begin %d, end %d, step %d}",
+             begin, end, step);
+    rc = asn_parse_value_text(buf, ndn_template_parameter, 
+                              &simple_for, &syms);
+    if (rc != 0)
+    {
+        ERROR("%s(): parse simple-for failed %X on sym %d", 
+              __FUNCTION__, rc, syms);
+        return TE_RC(TE_TAPI, rc); 
+    }
+
+    rc = asn_insert_indexed(iterators, simple_for, -1, "");
+    if (rc != 0)
+    {
+        ERROR("%s(): insert iterator failed %X", __FUNCTION__, rc);
+        return TE_RC(TE_TAPI, rc); 
+    }
+
+    return 0;
+}
+
+
