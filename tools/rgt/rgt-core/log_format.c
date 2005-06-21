@@ -52,7 +52,7 @@ rgt_define_rlf_format(rgt_gen_ctx_t *ctx, char **err)
             return fetch_log_msg_v1;
 
         default:
-            if (*err != NULL)
+            if (err != NULL)
                 *err = "File format isn't recognized\n";
             break;
     }
