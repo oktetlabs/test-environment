@@ -352,3 +352,58 @@ tapi_ip4_eth_pattern_unit(const uint8_t *src_mac_addr,
     return TE_RC(TE_TAPI, rc);
 }
 
+
+/* see description in tapi_ip.h */
+int
+tapi_ip4_eth_template(const uint8_t *src_mac_addr,
+                      const uint8_t *dst_mac_addr,
+                      const uint8_t *src_ip4_addr,
+                      const uint8_t *dst_ip4_addr,
+                      tapi_ip_frag_spec_t *fragments,
+                      size_t num_frags,
+                      int ttl, int protocol, 
+                      const uint8_t *payload,
+                      size_t pld_len,
+                      asn_value **result_value)
+{ 
+    int rc, syms;
+
+    asn_value *ip4_pdu;
+
+#define CHECK_RC(msg_...) \
+    do {                                \
+        if (rc != 0)                    \
+        {                               \
+            ERROR(msg_);                \
+            return TE_RC(TE_TAPI, rc);  \
+        }                               \
+    } while (0)
+
+    if (result_value == NULL)
+        return TE_RC(TE_TAPI, ETEWRONGPTR); 
+
+    rc = asn_parse_value_text("{ pdus { eth:{} } }",
+                              ndn_traffic_template, result_value, &syms); 
+    CHECK_RC("%s(): init of traffic template from text failed %X, sym %d",
+              __FUNCTION__, rc, syms);
+
+    if ((src_mac_addr != NULL) && 
+        ((rc = asn_write_value_field(*result_value, src_mac_addr, ETH_ALEN,
+                                     "pdus.0.#eth.src-addr.#plain")) != 0)) 
+    {
+        ERROR("%s(): src MAC specified, but write error %X", 
+              __FUNCTION__, rc);
+        return TE_RC(TE_TAPI, rc);
+    } 
+
+    rc = tapi_ip4_pdu(src_ip4_addr, dst_ip4_addr,
+                      fragments, num_frags, ttl, protocol, &ip4_pdu);
+    CHECK_RC("%s(): construct IP4 pdu error %X", __FUNCTION__, rc);
+
+    rc = asn_insert_indexed(*result_value, ip4_pdu, 0, "pdus");
+    CHECK_RC("%s(): insert IP4 pdu error %X", __FUNCTION__, rc);
+
+    return 0;
+}
+
+
