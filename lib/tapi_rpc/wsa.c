@@ -1533,6 +1533,13 @@ rpc_wsa_recv_from(rcf_rpc_server *rpcs, int s,
         }
     }
 
+    if ((overlapped != NULL) && ((from != NULL) || (fromlen != NULL)))
+    {
+        ERROR("%s(): currently can't deal with non-NULL 'from' or "
+              "'fromlen' when overlapped is non-NULL", __FUNCTION__);
+        RETVAL_INT(wsa_recv_from, -1);
+    }
+
     if (fromlen != NULL && rpcs->op != RCF_RPC_WAIT)
     {
         in.fromlen.fromlen_len = 1;
@@ -1741,6 +1748,15 @@ rpc_wsa_recv_msg(rcf_rpc_server *rpcs, int s,
 
     if (msg != NULL && rpcs->op != RCF_RPC_WAIT)
     {
+        if ((overlapped != NULL) &&
+            ((msg->msg_name != NULL) || (msg->msg_control != NULL)))
+        {
+            ERROR("%s(): currently can't deal with non-NULL 'msg_name' "
+                  "or 'msg_control' when 'overlapped' is non-NULL",
+                  __FUNCTION__);
+            RETVAL_INT(wsa_recv_msg, -1);
+        }
+
         in.msg.msg_val = &rpc_msg;
         in.msg.msg_len = 1;
 
@@ -1757,14 +1773,14 @@ rpc_wsa_recv_msg(rcf_rpc_server *rpcs, int s,
         {
             rpcs->_errno = TE_RC(TE_RCF, ENOMEM);
             ERROR("Too many cmsg headers - increase RCF_RPC_MAX_CMSGHDR");
-            RETVAL_INT(recvmsg, -1);
+            RETVAL_INT(wsa_recv_msg, -1);
         }
         
         if (msg->msg_control != NULL && msg->msg_cmsghdr_num == 0)
         {
             rpcs->_errno = TE_RC(TE_RCF, EINVAL);
             ERROR("Number of cmsg headers is incorrect");
-            RETVAL_INT(recvmsg, -1);
+            RETVAL_INT(wsa_recv_msg, -1);
         }
 
         if (msg->msg_iovlen > msg->msg_riovlen ||
@@ -1886,7 +1902,7 @@ rpc_wsa_recv_msg(rcf_rpc_server *rpcs, int s,
                 {
                     ERROR("Unexpected lack of space in auxiliary buffer");
                     rpcs->_errno = TE_RC(TE_RCF, EINVAL);
-                    RETVAL_INT(recvmsg, -1);
+                    RETVAL_INT(wsa_recv_msg, -1);
                 }
                 
                 if (c != NULL)
