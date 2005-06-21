@@ -154,5 +154,33 @@ extern int tapi_pattern_unit_ip4_mask(asn_value *pattern_unit,
                                       size_t src_mask_len,
                                       size_t dst_mask_len);
 
+/**
+ * Preapre ASN Traffic-Template value for 'ip4.eth' CSAP.
+ *
+ * @param src_mac_addr  source MAC address, or NULL;
+ * @param dst_mac_addr  destination MAC address, or NULL;
+ * @param src_ip4_addr  source IP address in network order, or NULL;
+ * @param dst_ip4_addr  destination IP address in network order, or NULL;
+ * @param fragments     array with IP fragments specifictaions, or NULL;
+ * @param num_frags     number of IP fragments;
+ * @param ttl           time-to-live field, or negative for CSAP default;
+ * @param protocol      protocol field, or negative for CSAP default;
+ * @param payload       payload of IPv4 packet, or NULL;
+ * @param pld_len       length of payload;
+ * @param result_value  location for pointer to new ASN value (OUT);
+ *
+ * @return status code
+ */ 
+extern int tapi_ip4_eth_template(const uint8_t *src_mac_addr,
+                                 const uint8_t *dst_mac_addr,
+                                 const uint8_t *src_ip4_addr,
+                                 const uint8_t *dst_ip4_addr,
+                                 tapi_ip_frag_spec_t *fragments,
+                                 size_t num_frags,
+                                 int ttl, int protocol, 
+                                 const uint8_t *payload,
+                                 size_t pld_len,
+                                 asn_value **result_value);
+
 
 #endif /* !__TE_TAPI_IP_H__ */
