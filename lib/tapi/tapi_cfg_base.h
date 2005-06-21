@@ -69,9 +69,8 @@ extern int tapi_cfg_base_if_get_mac(const char *oid, uint8_t *mac);
  *
  * @return Status code
  */ 
-int
-tapi_cfg_base_if_get_link_addr(const char *ta, const char *dev,
-                               struct sockaddr *link_addr);
+extern int tapi_cfg_base_if_get_link_addr(const char *ta, const char *dev,
+                                          struct sockaddr *link_addr);
 /**
  * Get MTU (layer 2 payload) of the Test Agent interface.
  *
