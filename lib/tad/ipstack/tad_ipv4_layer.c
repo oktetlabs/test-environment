@@ -74,8 +74,9 @@ char* ip4_get_param_cb (csap_p csap_descr, int level, const char *param)
 int 
 ip4_confirm_pdu_cb(int csap_id, int layer, asn_value *tmpl_pdu)
 { 
-    int rc;
-    int len;
+    int    rc;
+    size_t len;
+
     csap_p csap_descr = csap_find(csap_id);
 
     const asn_value *ip4_csap_pdu;
@@ -414,7 +415,8 @@ ip4_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
         {
             rc = asn_get_indexed(fragments_seq, &frag_spec, fr_index); 
             CHECK(rc != 0, "%s(): get frag fail %X", __FUNCTION__, rc);
-            asn_read_int32(frag_spec, &ip4_pld_real_len, "real-length");
+            asn_read_int32(frag_spec, &hdr_field, "real-length");
+            ip4_pld_real_len = hdr_field;
 
             if (pkt_prev != NULL) 
                 pkt_curr = pkt_prev->next = calloc(1, sizeof(*pkt_curr));

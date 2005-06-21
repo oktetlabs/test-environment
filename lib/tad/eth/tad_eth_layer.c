@@ -68,7 +68,7 @@ char* eth_get_param_cb (csap_p csap_descr, int level, const char *param)
     if (strcmp (param, "total_bytes") == 0)
     {
         par_buffer  = malloc(20);
-        sprintf(par_buffer, "%u", spec_data->total_bytes);
+        sprintf(par_buffer, "%u", (uint32_t)spec_data->total_bytes);
         return par_buffer;
     }
 
@@ -89,10 +89,11 @@ char* eth_get_param_cb (csap_p csap_descr, int level, const char *param)
  */ 
 int eth_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
 {
-    int rc; 
     csap_p                   csap_descr;
     eth_csap_specific_data_p spec_data; 
-    int  val_len;
+
+    size_t  val_len;
+    int     rc; 
     
     
     if ((csap_descr = csap_find(csap_id)) == NULL)

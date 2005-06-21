@@ -97,13 +97,13 @@ tad_tr_send_prepare_bin(csap_p csap_descr, asn_value_p nds,
             pld_type = tad_payload_asn_label_to_enum(pld_label);
             if (pld_data == NULL)
             {
-                int      pld_data_len = asn_get_length(nds, "payload");
+                size_t   pld_data_len = asn_get_length(nds, "payload");
                 uint8_t *pld_data_local = malloc(pld_data_len);
 
                 if (pld_data_local == NULL) 
                     return ENOMEM;
-                rc = asn_read_value_field(nds, 
-                                pld_data_local, &pld_data_len, "payload");
+                rc = asn_read_value_field(nds, pld_data_local,
+                                          &pld_data_len, "payload");
                 if (rc)
                     return TE_RC(TE_TAD_CH, rc);
                 pld_data = pld_data_local;
@@ -130,8 +130,8 @@ tad_tr_send_prepare_bin(csap_p csap_descr, asn_value_p nds,
         } /* fall through! */
         case TAD_PLD_BYTES:
         {
-            int   d_len = asn_get_length(nds, "payload.#bytes");
-            void *data = malloc(d_len);
+            size_t d_len = asn_get_length(nds, "payload.#bytes");
+            void  *data = malloc(d_len);
 
             rc = asn_read_value_field(nds, data, &d_len, "payload.#bytes");
             if (rc)
@@ -147,7 +147,7 @@ tad_tr_send_prepare_bin(csap_p csap_descr, asn_value_p nds,
         }
         case TAD_PLD_LENGTH:
         {
-            int d_len, l;
+            size_t d_len, l;
             void *data;
 
             l = sizeof(d_len);
@@ -193,8 +193,6 @@ tad_tr_send_prepare_bin(csap_p csap_descr, asn_value_p nds,
         {
             csap_spt_descr = csap_descr->layers[level].proto_support;
 
-            F_VERB("before generate_cb, level: %d, up_pkts: %x\n",
-                   level, up_packets);
             rc = csap_spt_descr->generate_cb(csap_descr, level, 
                                              level_pdu, args, arg_num,
                                              up_packets, low_packets); 
@@ -291,7 +289,7 @@ tad_tr_send_thread(void * arg)
         const asn_value *arg_sets;
 
         char pld_label[10] = "";
-        int  pld_spec_len; 
+        size_t pld_spec_len; 
 
         if (csap_descr->prepare_send_cb)
         {
@@ -342,8 +340,8 @@ tad_tr_send_thread(void * arg)
                     break;
                 pld_data = calloc(1, pld_spec_len); 
 
-                rc = asn_read_value_field(nds, 
-                        pld_data, &pld_spec_len, "payload");
+                rc = asn_read_value_field(nds, pld_data, &pld_spec_len,
+                                          "payload");
                 if (pld_type == TAD_PLD_FUNCTION)
                 {
                     tad_user_generate_method function_addr;
@@ -693,7 +691,7 @@ tad_get_tmpl_arg_specs(const asn_value *arg_set,
                     i, choice);
         if (strcmp(choice, "simple-for") == 0)
         {
-            int v_len;
+            size_t v_len;
             arg_specs[i].type = TAD_TMPL_ITER_FOR;
             v_len = sizeof(arg_specs[i].simple_for.begin);
             rc = asn_read_value_field (arg_val, 
