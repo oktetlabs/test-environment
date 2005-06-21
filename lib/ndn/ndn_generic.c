@@ -234,6 +234,8 @@ static asn_type ndn_template_parameter_sequence_s =
 { "SEQENCE OF Template-Parameter", {PRIVATE, NDN_TMPL_ARGS}, 
   SEQUENCE_OF, 0, {subtype: &ndn_template_parameter_s} 
 };
+const asn_type * const ndn_template_params_seq = 
+                            &ndn_template_parameter_sequence_s;
 
 static asn_type ndn_generic_pdu_sequence_s = 
 { "Generic-PDU-sequence", {PRIVATE, NDN_TMPL_PDUS}, 

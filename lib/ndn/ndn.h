@@ -205,6 +205,7 @@ extern const asn_type *const ndn_interval_sequence;
 extern const asn_type *const ndn_csap_spec;
 extern const asn_type *const ndn_traffic_template;
 extern const asn_type *const ndn_template_parameter;
+extern const asn_type *const ndn_template_params_seq;
 extern const asn_type *const ndn_traffic_pattern;
 extern const asn_type *const ndn_traffic_pattern_unit;
 extern const asn_type *const ndn_raw_packet;
