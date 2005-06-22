@@ -2882,6 +2882,10 @@ linuxconf_daemons_init(rcf_pch_cfg_object **last)
     ds_init_dhcp_server(last);
 #endif /* WITH_DHCP_SERVER */
 
+#ifdef WITH_RADIUS_SERVER
+    ds_init_radius_server(last);
+#endif /* WITH_RADIUS_SERVER */
+
 #ifdef WITH_DNS_SERVER
     ds_init_dns_server(last);
 #endif /* WITH_DMS_SERVER */

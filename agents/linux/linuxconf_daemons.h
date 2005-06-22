@@ -88,7 +88,7 @@ get_ds_name(const char *oid)
          (strstr(oid, "tftpserver") != NULL) ? "tftp" :        
          (strstr(oid, "ftpserver") != NULL) ? get_ftp_daemon_name() :       
          (strstr(oid, "telnetd") != NULL) ? "telnet" :         
-         (strstr(oid, "rshd") != NULL) ? "rsh" :               
+         (strstr(oid, "rshd") != NULL) ? "rsh" :
          (strstr(oid, "echoserver") != NULL) ? "echo" : oid;
 }         
 
@@ -276,5 +276,6 @@ extern void ds_init_ftp_server(rcf_pch_cfg_object **last);
 extern void ds_shutdown_ftp_server();
 extern void ds_init_tftp_server(rcf_pch_cfg_object **last);
 extern void ds_init_dns_server(rcf_pch_cfg_object **last);
+extern void ds_init_radius_server(rcf_pch_cfg_object **last);
 
 #endif /* __TE_TA_LINUXCONF_DAEMONS */
