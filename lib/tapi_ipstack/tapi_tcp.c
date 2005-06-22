@@ -237,7 +237,7 @@ tapi_tcp_ip4_eth_recv_start(const char *ta_name, int sid,
 
 int
 tapi_tcp_make_msg(uint16_t src_port, uint16_t dst_port,
-                  uint32_t seqn, uint32_t ackn, 
+                  tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn, 
                   te_bool syn_flag, te_bool ack_flag,
                   uint8_t *msg)
 {

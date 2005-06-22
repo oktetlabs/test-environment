@@ -315,7 +315,7 @@ extern tapi_tcp_pos_t tapi_tcp_next_ackn(tapi_tcp_handler_t handler);
  * @param src_port      source port in network byte order
  * @param dst_port      destination port in network byte order
  * @param seqn          sequence number in host byte order
- * @param acqn          acknowledge number in host byte order
+ * @param ackn          acknowledge number in host byte order
  * @param syn_flag      syn flag
  * @param ack_flag      ack flag
  * @param msg           location where TCP header should be placed (OUT)
@@ -323,7 +323,7 @@ extern tapi_tcp_pos_t tapi_tcp_next_ackn(tapi_tcp_handler_t handler);
  * @return status code.
  */
 extern int tapi_tcp_make_msg(uint16_t src_port, uint16_t dst_port,
-                             uint32_t seqn, uint32_t ackn, 
+                             tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn, 
                              te_bool syn_flag, te_bool ack_flag,
                              uint8_t *msg);
 
