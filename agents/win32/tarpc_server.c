@@ -3455,15 +3455,14 @@ TARPC_FUNC(wsa_recv,
                       in->callback ?
                         (LPWSAOVERLAPPED_COMPLETION_ROUTINE)
                           completion_callback : NULL));
-    
-    
-    overlapped2iovec(overlapped, &(out->vector.vector_len),
-                     &(out->vector.vector_val));
+
     if (out->retval >= 0)
     {
+        overlapped2iovec(overlapped, &(out->vector.vector_len),
+                         &(out->vector.vector_val));
         if (out->flags.flags_len > 0)
             out->flags.flags_val[0] =
-            send_recv_flags_h2rpc(out->flags.flags_val[0]);
+                send_recv_flags_h2rpc(out->flags.flags_val[0]);
     }
     else if (in->overlapped == 0 ||
              out->common.win_error != RPC_WSA_IO_PENDING)
@@ -3677,12 +3676,11 @@ TARPC_FUNC(wsa_recv_from,
             in->overlapped == 0 ? NULL : (LPWSAOVERLAPPED)overlapped,
             in->callback ? (LPWSAOVERLAPPED_COMPLETION_ROUTINE)
                 completion_callback : NULL));
-
-    overlapped2iovec(overlapped, &(out->vector.vector_len),
-                         &(out->vector.vector_val));
     
     if (out->retval >= 0)
     {
+        overlapped2iovec(overlapped, &(out->vector.vector_len),
+                         &(out->vector.vector_val));
         if (out->flags.flags_len > 0)
             out->flags.flags_val[0] =
                 send_recv_flags_h2rpc(out->flags.flags_val[0]);
