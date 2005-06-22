@@ -15,6 +15,21 @@ void __bb_init_func(void *unused)
 {
 }
 
+#if 1
+#undef ntohs
+unsigned short int ntohs(unsigned short int x)
+{
+    return ((x & 0xff) << 8) | (x >> 8);
+}
+EXPORT_SYMBOL(ntohs);
+#undef htons
+unsigned short int htons(unsigned short int x)
+{
+    return ((x & 0xff) << 8) | (x >> 8);
+}
+EXPORT_SYMBOL(htons);
+#endif
+
 EXPORT_SYMBOL(__bb_init_func);
 
 MODULE_LICENSE("GPL");
