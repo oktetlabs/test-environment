@@ -282,3 +282,38 @@ tapi_tcp_make_msg(uint16_t src_port, uint16_t dst_port,
     return 0;
 }
 
+
+
+typedef struct tapi_tcp_connection_t {
+    const char    *agt; 
+    csap_handle_t  tcp_csap;
+
+    struct sockaddr_storage loc_addr;
+    struct sockaddr_storage rem_addr;
+
+    int window;
+
+    tapi_tcp_pos_t pos_incoming;
+    tapi_tcp_pos_t pos_outgoing;
+
+
+} tapi_tcp_connection_t;
+
+int
+tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode, 
+                         struct sockaddr *local_addr, 
+                         struct sockaddr *remote_addr, 
+                         int timeout,
+                         tapi_tcp_handler_t *handler)
+{
+    int rc;
+    UNUSED(agt);
+    UNUSED(mode);
+    UNUSED(local_addr);
+    UNUSED(remote_addr);
+    UNUSED(timeout);
+    UNUSED(handler);
+    UNUSED(rc);
+
+    return 0;
+}
