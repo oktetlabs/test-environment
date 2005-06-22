@@ -461,6 +461,7 @@ if test -z "${QUIET}" ; then
     echo "Exporting path to host executables:"
     echo "    ${TE_PATH}/bin"
 fi
+export TE_PATH
 export PATH=${TE_PATH}/bin:$PATH ;
 export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${TE_PATH}/lib
 
