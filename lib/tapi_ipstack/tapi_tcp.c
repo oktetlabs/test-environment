@@ -232,3 +232,53 @@ tapi_tcp_ip4_eth_recv_start(const char *ta_name, int sid,
 
     return rc;
 }
+
+
+
+int
+tapi_tcp_make_msg(uint16_t src_port, uint16_t dst_port,
+                  uint32_t seqn, uint32_t ackn, 
+                  te_bool syn_flag, te_bool ack_flag,
+                  uint8_t *msg)
+{
+    if (msg == NULL)
+        return TE_RC(TE_TAPI, ETEWRONGPTR); 
+
+    *((uint16_t *) msg) = src_port;
+    msg += 2;
+
+    *((uint16_t *) msg) = dst_port;
+    msg += 2;
+
+    *((uint32_t *) msg) = htonl(seqn);
+    msg += 4;
+
+    if (ack_flag)
+        *((uint32_t *) msg) = htonl(ackn);
+    msg += 4;
+
+    *msg = (5 << 4); 
+    msg++;
+
+    *msg = 0;
+
+    if (ack_flag)
+        *msg |= (1 << 4); 
+    if (syn_flag)
+        *msg |= (1 << 1); 
+    msg++;
+
+    /* window: rather reasonable value? */
+    *((uint16_t *) msg) = htons(2000); 
+    msg += 2;
+
+    /* checksum */
+    *((uint16_t *) msg) = 0; 
+    msg += 2;
+
+    /* urg pointer */
+    *((uint16_t *) msg) = 0; 
+
+    return 0;
+}
+
