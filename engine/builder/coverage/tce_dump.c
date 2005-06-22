@@ -47,7 +47,7 @@ main(int argc, char *argv[])
     int peer_id;
 
     static char ta_list[4096];
-    int ta_list_len = sizeof(ta_list);
+    size_t ta_list_len = sizeof(ta_list);
     char *ta;
 
     char buffer[PATH_MAX + 1];
