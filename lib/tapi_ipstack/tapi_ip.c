@@ -403,6 +403,10 @@ tapi_ip4_eth_template(const uint8_t *src_mac_addr,
     rc = asn_insert_indexed(*result_value, ip4_pdu, 0, "pdus");
     CHECK_RC("%s(): insert IP4 pdu error %X", __FUNCTION__, rc);
 
+    rc = asn_write_value_field(*result_value, payload, pld_len,
+                               "payload.#bytes");
+    CHECK_RC("%s(): write payload error %X", __FUNCTION__, rc);
+
     return 0;
 }
 
