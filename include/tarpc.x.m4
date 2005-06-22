@@ -2095,14 +2095,15 @@ typedef struct tarpc_ssize_t_retval_out tarpc_send_traffic_out;
 
 struct tarpc_timely_round_trip_in {
     struct tarpc_in_arg common;
-    tarpc_int           fd;          /**< Socket */
+    tarpc_int           sock_num;    /**< Number of sockets */
+    tarpc_int           fd<>;        /**< Socket */
     tarpc_size_t        size;        /**< Buffer length */
     tarpc_size_t        vector_len;  /**< Vector length */
     uint32_t            timeout;     /**< Timeout passed to select */
     uint32_t            time2wait;   /**< Time during for a roundtrip 
                                           should be performed */
     tarpc_int           flags;       /**< Flags */
-    tarpc_int           num;         /**< Number of addresses */
+    tarpc_int           addr_num;    /**< Number of addresses */
     struct tarpc_sa     to<>;        /**< Adresses list */
     tarpc_socklen_t     tolen;       /**< Address length */
 };    
@@ -2125,8 +2126,10 @@ struct tarpc_timely_round_trip_out {
 
 struct tarpc_round_trip_echoer_in {
     struct tarpc_in_arg common;
-    tarpc_int           num;         /**< Number of sockets */
+    tarpc_int           sock_num;    /**< Number of sockets */
     tarpc_int           fd<>;        /**< Sockets list */
+    tarpc_int           addr_num;    /**< Number of addresses for which echo
+                                          must be done */
     tarpc_size_t        size;        /**< Buffer length */
     tarpc_size_t        vector_len;  /**< Vector length */
     uint32_t            timeout;     /**< Timeout passed to select */

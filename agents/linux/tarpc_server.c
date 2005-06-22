@@ -4045,8 +4045,11 @@ timely_round_trip(tarpc_timely_round_trip_in *in,
     struct msghdr *rx_hdr = NULL;
     int i;
 
-    fd_set         rfds;
-    int            res = 0;
+    fd_set          rfds;
+    int             fd;
+    struct tarpc_sa to;
+    int             max;
+    int             res = 0;
 
     out->index = 0;
 
@@ -4086,16 +4089,14 @@ timely_round_trip(tarpc_timely_round_trip_in *in,
         res = ROUND_TRIP_ERROR_OTHER;
         goto cleanup;
     }
-    FD_ZERO(&rfds);
-    FD_SET(in->fd, &rfds);
-    timeout.tv_sec = 0;
-
-    /* Timeout passed in milliseconds */
-    timeout.tv_usec = in->timeout * 1000;
+    max = (in->sock_num != 1) ? in->sock_num : in->addr_num;
     
-    for (i = 0; i < in->num; i++, out->index++)
+    for (i = 0; i < max; i++, out->index++)
     {
-        PREPARE_ADDR(in->to.to_val[i], 0);
+        to = (in->addr_num != 1) ? in->to.to_val[i] : in->to.to_val[0];
+        fd = (in->sock_num == 1) ? in->fd.fd_val[0] : in->fd.fd_val[i];
+
+        PREPARE_ADDR(to, 0);
         memcpy(tx_hdr->msg_name, a, in->tolen);
 
         time2wait.tv_sec = 0;
@@ -4109,14 +4110,22 @@ timely_round_trip(tarpc_timely_round_trip_in *in,
         }
         timeradd(&time2wait, &temp, &time2wait); 
 
-        if (sendmsg_func(in->fd, tx_hdr, 
+        if (sendmsg_func(fd, tx_hdr, 
                          send_recv_flags_rpc2h(in->flags)) == -1)
         {
             ERROR("sendmsg failed");
             res = ROUND_TRIP_ERROR_SEND;
             goto cleanup;
         }
-        if (select_func(in->fd + 1, &rfds, NULL, NULL, &timeout) == -1)
+       
+        FD_ZERO(&rfds);
+        FD_SET(fd, &rfds);
+        
+        timeout.tv_sec = 0;
+        /* Timeout passed in milliseconds */
+        timeout.tv_usec = in->timeout * 1000;
+       
+        if (select_func(fd + 1, &rfds, NULL, NULL, &timeout) == -1)
         {
             ERROR("Timeout occuring while calling select()");
             res = ROUND_TRIP_ERROR_TIMEOUT;
@@ -4137,9 +4146,9 @@ timely_round_trip(tarpc_timely_round_trip_in *in,
             goto cleanup;
         }
  
-        if (FD_ISSET(in->fd, &rfds))
+        if (FD_ISSET(fd, &rfds))
         {
-            if (recvmsg_func(in->fd, rx_hdr, 
+            if (recvmsg_func(fd, rx_hdr, 
                              send_recv_flags_rpc2h(in->flags)) == -1)
             {
                 ERROR("recvmsg failed");
@@ -4179,7 +4188,8 @@ round_trip_echoer(tarpc_round_trip_echoer_in *in,
 
     fd_set         rfds;
     int            res = 0;
-    int            max_descr = 0;
+    int            max;
+    int            fd;
     int            i = 0;
 
     out->index = 0;
@@ -4210,32 +4220,28 @@ round_trip_echoer(tarpc_round_trip_echoer_in *in,
         goto cleanup;
     }
     
-    for (i = 0; i < in->num; i++)
-    {
-        if (max_descr < in->fd.fd_val[i])
-            max_descr = in->fd.fd_val[i];
-    }    
-    max_descr++;
-    timeout.tv_sec = 0;
+    max = (in->sock_num != 1) ? in->sock_num : in->addr_num;
 
-    /* Timeout passed in milliseconds */
-    timeout.tv_usec = in->timeout * 1000;
-
-    for (i = 0; i < in->num; i++)
+    for (i = 0; i < max; i++)
     {   
+        fd = (in->sock_num != 1) ? in->fd.fd_val[i] : in->fd.fd_val[0];
         FD_ZERO(&rfds);
-        FD_SET(in->fd.fd_val[i], &rfds);
+        FD_SET(fd, &rfds);
         
-        if (select_func(max_descr, &rfds, NULL, NULL, &timeout) == -1)
+        timeout.tv_sec = 0;
+        /* Timeout passed in milliseconds */
+        timeout.tv_usec = in->timeout * 1000;
+
+       if (select_func(fd + 1, &rfds, NULL, NULL, &timeout) == -1)
         {
             ERROR("Timeout ocuured while calling select()");
             res = ROUND_TRIP_ERROR_TIMEOUT;
             goto cleanup;
         }
 
-        if (FD_ISSET(in->fd.fd_val[i], &rfds))
+        if (FD_ISSET(fd, &rfds))
         {
-            if (recvmsg_func(in->fd.fd_val[i], hdr, 
+            if (recvmsg_func(fd, hdr, 
                              send_recv_flags_rpc2h(in->flags)) == -1)
             {
                 ERROR("recvmsg failed");
@@ -4244,7 +4250,7 @@ round_trip_echoer(tarpc_round_trip_echoer_in *in,
             }
 
             /* Send message back */
-            if (sendmsg_func(in->fd.fd_val[i], hdr, 
+            if (sendmsg_func(fd, hdr, 
                              send_recv_flags_rpc2h(in->flags)) == -1)
             {
                 ERROR("sendmsg failed");

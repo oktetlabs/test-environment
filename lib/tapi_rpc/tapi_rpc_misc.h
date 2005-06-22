@@ -156,7 +156,8 @@ extern int rpc_send_traffic(rcf_rpc_server *handle, int num, int *s,
  * period of time. sendmsg() and recvmsg() are used.
  *
  * @param rpcs          RPC server
- * @param s             DGRAM socket to send/receive UDP datagram
+ * @param sock_num      Number of sockets
+ * @param s             DGRAM sockets list to send/receive UDP datagram
  * @param size          Size of UDP datagram
  * @param vector_len    iovec_len in msghdr structure
  * @param timeout       routine waiting for UDP datagram coming back
@@ -164,7 +165,7 @@ extern int rpc_send_traffic(rcf_rpc_server *handle, int num, int *s,
  * @param time2wait     UDP datagram must be sent and received within
  *                      time2wait period
  * @param flags         flags passed to sendmsg(recvmsg)
- * @param num           number of addresses in addresses list
+ * @param addr_num      number of addresses
  * @param to            addresses list
  * @param tolen         address length
  *
@@ -178,20 +179,22 @@ extern int rpc_send_traffic(rcf_rpc_server *handle, int num, int *s,
  *     ROUND_TRIP_ERROR_OTHER - some other error occured 
  *                             (memory allocation etc.)
  */ 
-extern int rpc_timely_round_trip(rcf_rpc_server *rpcs, int s,
+extern int rpc_timely_round_trip(rcf_rpc_server *rpcs, int sock_num, int *s,
                                  size_t size, size_t vector_len,
                                  uint32_t timeout, uint32_t time2wait,
-                                 int flags, int num, struct sockaddr *to,
+                                 int flags, int addr_num, 
+                                 struct sockaddr *to,
                                  socklen_t tolen);
-  
+ 
 /**
  * For each DGRAM socket in socket list routine determines 
  * if the socket is readable, if it so, routine called recvmsg() 
  * to receive UDP datagram, and sends it back using recvmsg().
  *
  * @param rpcs           RPC server
- * @param num            number of sockets in sockets list
+ * @param sock_num       number of sockets in sockets list
  * @param s              DGRAM sockets list
+ * @param addr_num       number of addresses passed to rpc_timely_round_trip
  * @param size           Size of UDP datagram
  * @param vector_len     iovec_len in msghdr structure
  * @param timeout        routine waiting for UDP daragram coming
@@ -207,8 +210,9 @@ extern int rpc_timely_round_trip(rcf_rpc_server *rpcs, int s,
  *     ROUND_TRIP_ERROR_OTHER - some other error occured
  *                              (memory allocation etc.)
  */ 
-extern int rpc_round_trip_echoer(rcf_rpc_server *rpcs, int num, int *s,
-                                 size_t size, size_t vector_len,
+extern int rpc_round_trip_echoer(rcf_rpc_server *rpcs, int sock_num, int *s,
+                                 int addr_num, size_t size, 
+                                 size_t vector_len,
                                  uint32_t timeout, int flags);
 
 /**

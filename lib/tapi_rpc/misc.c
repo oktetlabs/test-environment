@@ -233,13 +233,14 @@ rpc_setlibname(rcf_rpc_server *rpcs, const char *libname)
 }
 
 int
-rpc_timely_round_trip(rcf_rpc_server *rpcs, int s,
+rpc_timely_round_trip(rcf_rpc_server *rpcs, int sock_num, int *s,
                       size_t size, size_t vector_len,
                       uint32_t timeout, uint32_t time2wait,
-                      int flags, int num, struct sockaddr *to,
+                      int flags, int addr_num, struct sockaddr *to,
                       socklen_t tolen)
 {
     rcf_rpc_op op;
+    int       *ss; 
     
     tarpc_timely_round_trip_in  in;
     tarpc_timely_round_trip_out out;
@@ -269,8 +270,21 @@ rpc_timely_round_trip(rcf_rpc_server *rpcs, int s,
     }
     op = rpcs->op;
 
-    /* Socket */
-    in.fd = s;
+    /* Number of sockets */
+    in.sock_num = sock_num;
+ 
+    /* Sockets */
+    ss = (int *)calloc(sock_num, sizeof(int));
+    in.fd.fd_val = (tarpc_int *)ss;
+    if (in.fd.fd_val == NULL)
+    {
+        ERROR("%s(): Memory allocation failure", __FUNCTION__);
+        return -1;
+    }
+    in.fd.fd_len = sock_num;
+    for (i = 0; i < sock_num; i++)
+        in.fd.fd_val[i] = *(s + i);
+
     /* Size */
     in.size = size;
     /* Vector length */
@@ -281,21 +295,21 @@ rpc_timely_round_trip(rcf_rpc_server *rpcs, int s,
     in.time2wait = time2wait;
     /* Flags */
     in.flags = flags;
-    /* Number of addresses */
-    in.num = num;
     /* Address length */
     in.tolen = tolen;
 
     /* Adresses */
-    addrs = (struct sockaddr *)calloc(num, sizeof(struct sockaddr));
+    in.addr_num = addr_num;
+
+    addrs = (struct sockaddr *)calloc(addr_num, sizeof(struct sockaddr));
     in.to.to_val = (struct tarpc_sa *)addrs;
     if (in.to.to_val == NULL)
     {
         ERROR("%s(): Memory allocation failure", __FUNCTION__);
         return -1;
     }
-    in.to.to_len = num;
-    for (i = 0; i < num; i++)
+    in.to.to_len = addr_num;
+    for (i = 0; i < addr_num; i++)
     {    
         if ((to + i) != NULL && rpcs->op != RCF_RPC_WAIT)
         {
@@ -365,8 +379,8 @@ rpc_timely_round_trip(rcf_rpc_server *rpcs, int s,
 }
     
 int
-rpc_round_trip_echoer(rcf_rpc_server *rpcs, int num, int *s,
-                      size_t size, size_t vector_len,
+rpc_round_trip_echoer(rcf_rpc_server *rpcs, int sock_num, int *s,
+                      int addr_num, size_t size, size_t vector_len,
                       uint32_t timeout, int flags)
 {
     rcf_rpc_op op;
@@ -394,19 +408,21 @@ rpc_round_trip_echoer(rcf_rpc_server *rpcs, int num, int *s,
     op = rpcs->op;
 
     /* Number of sockets */
-    in.num = num;
+    in.sock_num = sock_num;
  
     /* Sockets */
-    ss = (int *)calloc(num, sizeof(int));
+    ss = (int *)calloc(sock_num, sizeof(int));
     in.fd.fd_val = (tarpc_int *)ss;
     if (in.fd.fd_val == NULL)
     {
         ERROR("%s(): Memory allocation failure", __FUNCTION__);
         return -1;
     }
-    in.fd.fd_len = num;
-    for (i = 0; i < num; i++)
+    in.fd.fd_len = sock_num;
+    for (i = 0; i < sock_num; i++)
         in.fd.fd_val[i] = *(s + i);
+
+    in.addr_num = addr_num;
 
     /* Size */
     in.size = size;
