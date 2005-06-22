@@ -165,7 +165,7 @@ typedef uint32_t tapi_tcp_pos_t;
  *                      SYN or ACK for his SYN;
  * @param handle        TAPI handler of created TCP connection (OUT);
  *
- * @return status code
+ * @return Status code
  */
 extern int tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode, 
                                     struct sockaddr *local_addr, 
@@ -180,7 +180,7 @@ extern int tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode,
  * @param timeout       time in milliseconds, while TA should wait 
  *                      for answer for FIN;
  *
- * @return status code
+ * @return Status code
  */
 extern int tapi_tcp_close_connection(tapi_tcp_handler_t handler, 
                                      int timeout);
@@ -193,7 +193,7 @@ extern int tapi_tcp_close_connection(tapi_tcp_handler_t handler,
  * @param src_addr      source socket address;
  * @param dst_addr      destination socket address;
  *
- * @return status code
+ * @return Status code
  */
 extern int tapi_tcp_send_syn(const char *ta, csap_handle_t csap, 
                              struct sockaddr *src_addr,
@@ -212,7 +212,7 @@ extern int tapi_tcp_send_syn(const char *ta, csap_handle_t csap,
  * @param ackn          explicit ACK number for message, used only
  *                      if 'ack_mode' passed is TAPI_TCP_EXPLICIT;
  *
- * @return status code
+ * @return Status code
  */
 extern int tapi_tcp_send_msg(tapi_tcp_handler_t handler,
                              uint8_t *payload, size_t len,
@@ -234,7 +234,7 @@ extern int tapi_tcp_send_msg(tapi_tcp_handler_t handler,
  * @param seqn_got      received SEQ number or zero (OUT);
  * @param ackn_got      received ACK number or zero (OUT);
  *
- * @return status code
+ * @return Status code
  */
 extern int tapi_tcp_recv_msg(tapi_tcp_handler_t handler,
                              tapi_tcp_protocol_mode_t ack_mode, 
@@ -248,7 +248,7 @@ extern int tapi_tcp_recv_msg(tapi_tcp_handler_t handler,
  * @param handler       TAPI handler of TCP connection;     
  * @param ackn          ACK number
  *
- * @return status code
+ * @return Status code
  */
 extern int tapi_tcp_send_ack(tapi_tcp_handler_t handler, 
                              tapi_tcp_pos_t ackn);
@@ -320,7 +320,7 @@ extern tapi_tcp_pos_t tapi_tcp_next_ackn(tapi_tcp_handler_t handler);
  * @param ack_flag      ack flag
  * @param msg           location where TCP header should be placed (OUT)
  *
- * @return status code.
+ * @return Status code.
  */
 extern int tapi_tcp_make_msg(uint16_t src_port, uint16_t dst_port,
                              tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn, 
