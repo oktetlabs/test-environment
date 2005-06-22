@@ -159,14 +159,14 @@ extern "C" {
  * @param expr_  Expression to be checked
  */
 #define CHECK_RC(expr_) \
-    do {                                                        \
-        int rc_;                                                \
-                                                                \
-        if ((rc_ = (expr_)) != 0)                               \
-        {                                                       \
-            TEST_FAIL("line %d: %s returns %X, but expected 0", \
-                      __LINE__, # expr_, rc_);                  \
-        }                                                       \
+    do {                                                          \
+        int rc_;                                                  \
+                                                                  \
+        if ((rc_ = (expr_)) != 0)                                 \
+        {                                                         \
+            TEST_FAIL("line %d: %s returns 0x%X, but expected 0", \
+                      __LINE__, # expr_, rc_);                    \
+        }                                                         \
     } while (0)
 
 /**
@@ -176,15 +176,15 @@ extern "C" {
  * @param expr_  Expression to be checked
  */
 #define CLEANUP_CHECK_RC(expr_) \
-    do {                                                     \
-        int rc_;                                             \
-                                                             \
-        if ((rc_ = (expr_)) != 0)                            \
-        {                                                    \
-            ERROR("line %d: %s returns %d, but expected 0",  \
-                  __LINE__, # expr_, rc_);                   \
-            result = EXIT_FAILURE;                           \
-        }                                                    \
+    do {                                                       \
+        int rc_;                                               \
+                                                               \
+        if ((rc_ = (expr_)) != 0)                              \
+        {                                                      \
+            ERROR("line %d: %s returns 0x%X, but expected 0",  \
+                  __LINE__, # expr_, rc_);                     \
+            result = EXIT_FAILURE;                             \
+        }                                                      \
     } while (0)
 
 /**
