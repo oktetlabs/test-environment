@@ -235,7 +235,9 @@ tapi_ip4_pdu(const uint8_t *src_ip4_addr, const uint8_t *dst_ip4_addr,
                                    result_value, &syms)) != 0)
         return TE_RC(TE_TAPI, rc);
 
-    if ((rc = asn_get_choice_value(*result_value, &ip4_pdu, NULL, NULL))
+    if ((rc = asn_get_choice_value(*result_value,
+                                   (const asn_value **)&ip4_pdu,
+                                   NULL, NULL))
             != 0)
     {
         ERROR("%s(): get ip4 pdu subvalue failed 0x%X", __FUNCTION__, rc);
@@ -392,6 +394,15 @@ tapi_ip4_eth_template(const uint8_t *src_mac_addr,
                                      "pdus.0.#eth.src-addr.#plain")) != 0)) 
     {
         ERROR("%s(): src MAC specified, but write error %X", 
+              __FUNCTION__, rc);
+        return TE_RC(TE_TAPI, rc);
+    } 
+
+    if ((dst_mac_addr != NULL) && 
+        ((rc = asn_write_value_field(*result_value, dst_mac_addr, ETH_ALEN,
+                                     "pdus.0.#eth.dst-addr.#plain")) != 0)) 
+    {
+        ERROR("%s(): dst MAC specified, but write error %X", 
               __FUNCTION__, rc);
         return TE_RC(TE_TAPI, rc);
     } 
