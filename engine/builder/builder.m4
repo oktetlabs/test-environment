@@ -207,8 +207,7 @@ dnl       NUT image name
 dnl       LIB (if NUT is a library and should be built before engine
 dnl             and Test Agents) or PRG otherwise
 dnl       source directory (absolute or relative from ${TE_BASE})
-dnl       building script location directory (absolute or 
-dnl             relative from ${TE_BASE})
+dnl       building script (absolute or relative from ${TE_BASE})
 dnl       additional parameters to the building script (may be empty)
 dnl
 dnl Optional parameters:
@@ -239,7 +238,7 @@ SCRIPT=$4
 if test "${SCRIPT:0:1}" != "/" ; then
     SCRIPT=${TE_BASE}/${SCRIPT}
 fi
-NUT_$1_SCRIPT=${SCRIPT}/te_build_nut
+NUT_$1_SCRIPT=${SCRIPT}
 NUT_$1_PARMS="$5"
 NUT_$1_ST_LOCATION=$6
 NUT_$1_ST_STRING="$7"
