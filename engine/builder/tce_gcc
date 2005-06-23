@@ -35,7 +35,8 @@ for arg in "$@"; do
         ;;
         -c) nobbhook=yes
         processed_options="$processed_options -c" ;;
-        -O*|-g|-ftest-coverage|-fprofile-arcs|-nostartfiles) ;;         
+        -O[1-9]|-O) processed_options="$processed_options -D__OPTIMIZE__=1" ;;
+        -g|-ftest-coverage|-fprofile-arcs|-nostartfiles) ;;         
         -*) processed_options="$processed_options $arg" ;;
         *) 
         if test -n "$TCE_SRC"; then
