@@ -230,7 +230,7 @@ else
     TE_BS_NUTS="$TE_BS_NUTS $1"
 fi
 SOURCES=$3 ;
-if test "${SOURCES:0:1}" != "/" ; then
+if test -n "${SOURCES}" -a "${SOURCES:0:1}" != "/" ; then
     SOURCES=${TE_BASE}/${SOURCES}
 fi
 NUT_$1_SOURCES=${SOURCES}
