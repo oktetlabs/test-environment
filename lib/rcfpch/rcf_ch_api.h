@@ -577,7 +577,7 @@ extern int rcf_ch_trsend_recv(struct rcf_comm_connection *handle,
 extern int rcf_ch_call(struct rcf_comm_connection *handle,
                        char *cbuf, size_t buflen, size_t answer_plen,
                        const char *rtn, te_bool is_argv,
-                       int argc, uint32_t *params);
+                       int argc, void **params);
 
 
 /**
@@ -614,7 +614,7 @@ extern int rcf_ch_start_task(struct rcf_comm_connection *handle,
                              char *cbuf, size_t buflen,
                              size_t answer_plen, int priority,
                              const char *rtn, te_bool is_argv,
-                             int argc, uint32_t *params);
+                             int argc, void **params);
 
 /**
  * This function is similar to rcf_ch_start_task_thr, but
@@ -627,7 +627,7 @@ extern int rcf_ch_start_task_thr(struct rcf_comm_connection *handle,
                                  char *cbuf, size_t buflen,
                                  size_t answer_plen, int priority,
                                  const char *rtn, te_bool is_argv,
-                                 int argc, uint32_t *params);
+                                 int argc, void **params);
 
 
 /**

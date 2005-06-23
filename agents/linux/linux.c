@@ -307,7 +307,7 @@ rcf_ch_file(struct rcf_comm_connection *handle,
 int
 rcf_ch_call(struct rcf_comm_connection *handle,
             char *cbuf, size_t buflen, size_t answer_plen,
-            const char *rtn, te_bool is_argv, int argc, uint32_t *params)
+            const char *rtn, te_bool is_argv, int argc, void **params)
 {
     UNUSED(handle);
     UNUSED(cbuf);
@@ -328,7 +328,7 @@ int
 rcf_ch_start_task(struct rcf_comm_connection *handle,
                   char *cbuf, size_t buflen, size_t answer_plen,
                   int priority, const char *rtn, te_bool is_argv,
-                  int argc, uint32_t *params)
+                  int argc, void **params)
 {
     void *addr = rcf_ch_symbol_addr(rtn, TRUE);
     int   pid;
@@ -425,7 +425,7 @@ struct rcf_thread_parameter {
     void      *addr;
     te_bool is_argv;
     int        argc;
-    uint32_t  *params;
+    void     **params;
     int        rc;
     te_bool    sem_created;
     sem_t params_processed;
@@ -469,9 +469,10 @@ int
 rcf_ch_start_task_thr(struct rcf_comm_connection *handle,
                       char *cbuf, size_t buflen, size_t answer_plen,
                       int priority, const char *rtn, te_bool is_argv,
-                      int argc, uint32_t *params)
+                      int argc, void **params)
 {
     void *addr = rcf_ch_symbol_addr(rtn, TRUE);
+    
     struct rcf_thread_parameter *iter;
 
 

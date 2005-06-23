@@ -181,12 +181,12 @@ get_type(char **ptr)
  * and most significant second for little-endian architecture.
  */
 static int
-parse_parameters(char *params, te_bool *is_argv, int *argc, uint32_t *param)
+parse_parameters(char *params, te_bool *is_argv, int *argc, void **param)
 {
     char *ptr = params;
     int   n = 0;
 
-    memset((char *)param, 0, RCF_MAX_PARAMS * sizeof(uint32_t));
+    memset((char *)param, 0, RCF_MAX_PARAMS * sizeof(void *));
 
     if (strncmp(ptr, "argv ", strlen("argv ")) == 0)
     {
@@ -197,17 +197,9 @@ parse_parameters(char *params, te_bool *is_argv, int *argc, uint32_t *param)
         {
             if (transform_str(&ptr, (char **)(param + n)) != 0)
                 return EINVAL;
-#if (SIZEOF_VOID_P == 8)
-            n += 2;
-#else            
             n++;
-#endif
         }
-#if (SIZEOF_VOID_P == 8)
-        *argc = n / 2;
-#else        
         *argc = n;
-#endif
         return 0;
     }
     else
@@ -230,11 +222,7 @@ parse_parameters(char *params, te_bool *is_argv, int *argc, uint32_t *param)
             {
                 if (transform_str(&ptr, (char **)(param + n)) != 0)
                     return EINVAL;
-#if (SIZEOF_VOID_P == 8)
-                n += 2;
-#else                
                 n++;
-#endif
                 continue;
             }
             val = strtoll(ptr, &tmp, 10);
@@ -247,11 +235,11 @@ parse_parameters(char *params, te_bool *is_argv, int *argc, uint32_t *param)
             if (type == RCF_INT64 || type == RCF_UINT64)
             {
                 *(uint64_t *)(param + n) = val;
-                n += 2;
+                n += sizeof(uint64_t) / sizeof(void *);
             }
             else
             {
-                param[n] = (uint32_t)val;
+                param[n] = (void *)val;
                 n++;
             }
         }
@@ -903,7 +891,7 @@ rcf_pch_run(const char *confstr, const char *info)
 
             case RCFOP_EXECUTE:
             {
-                uint32_t param[RCF_MAX_PARAMS];
+                void    *param[RCF_MAX_PARAMS];
                 char    *rtn;
                 int      argc;
                 te_bool  is_argv;

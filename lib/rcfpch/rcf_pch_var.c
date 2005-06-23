@@ -317,7 +317,7 @@ int
 rcf_pch_call(struct rcf_comm_connection *conn,
              char *cbuf, size_t buflen, size_t answer_plen,
              const char *rtn, te_bool is_argv, int argc,
-             uint32_t *params)
+             void **params)
 {
     void *addr;
     int   rc;
