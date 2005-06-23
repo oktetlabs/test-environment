@@ -2288,7 +2288,7 @@ main(int argc, const char *argv[])
                 goto error;
             }
 
-            rc = ipc_receive_message(server, (char *)req->message,
+            rc = ipc_receive_message(server, req->message,
                                      &len, &(req->user));
 
             if (TE_RC_GET_ERROR(rc) == ETESMALLBUF) 
@@ -2303,7 +2303,7 @@ main(int argc, const char *argv[])
                     free(req);
                     continue;
                 }
-                rc = ipc_receive_message(server, (char *)(req->message + 1),
+                rc = ipc_receive_message(server, req->message + 1,
                                          &n, &(req->user));
             }
             
