@@ -356,3 +356,150 @@ tapi_radius_recv_start(const char *ta, int sid, csap_handle_t csap,
     return tapi_udp4_dgram_start_recv(ta, sid, csap, NULL,
                                     tapi_radius_callback, cb_data);
 }
+
+
+
+/* See the description in tapi_radius.h */
+int
+tapi_radius_serv_enable(const char *ta_name)
+{
+    assert(ta_name != NULL);
+
+    return cfg_set_instance_fmt(CVT_INTEGER, (void *)TRUE,
+                                "/agent:%s/radiusserver:", ta_name);
+}
+
+/* See the description in tapi_radius.h */
+int
+tapi_radius_serv_disable(const char *ta_name)
+{
+    assert(ta_name != NULL);
+
+    return cfg_set_instance_fmt(CVT_INTEGER, (void *)FALSE,
+                                "/agent:%s/radiusserver:", ta_name);
+}
+
+/* See the description in tapi_radius.h */
+int
+tapi_radius_serv_set(const char *ta_name, const tapi_radius_serv_t *cfg)
+{
+    struct sockaddr_in addr;
+
+    assert(ta_name != NULL && cfg != NULL);
+
+    memeset(&addr, 0, sizeof(addr));
+    addr.sin_family = AF_INET;
+    memcpy(&(addr.sin_addr), &(cfg->net_addr), sizeof(addr.sin_addr));
+
+#define RADIUS_CFG_SET_VALUE(sub_oid_, type_, value_, err_msg_) \
+    do {                                                            \
+        int rc;                                                     \
+                                                                    \
+        rc = cfg_set_instance_fmt(type_, (void *)value_,            \
+                 "/agent:%s/radiusserver:/" sub_oid_ ":", ta_name); \
+        if (rc != 0)                                                \
+        {                                                           \
+            ERROR("Cannot set RADIUS %s on '%s' Agent",             \
+                  err_msg_, ta_name);                               \
+            return rc;                                              \
+        }                                                           \
+    } while (0)
+
+    RADIUS_CFG_SET_VALUE("auth_port", CVT_INTEGER, cfg->auth_port,
+                         "Authentication Port");
+    RADIUS_CFG_SET_VALUE("acct_port", CVT_INTEGER, cfg->acct_port,
+                         "Accounting Port");
+    RADIUS_CFG_SET_VALUE("net_addr", CVT_ADDRESS, &addr,
+                         "Network Address");
+
+#undef RADIUS_CFG_SET_VALUE
+
+    return 0;
+}
+
+/* See the description in tapi_radius.h */
+int
+tapi_radius_serv_add_client(const char *ta_name,
+                            const tapi_radius_clnt_t *cfg)
+{
+    int        rc;
+    cfg_handle handle;
+    char       clnt_name[INET_ADDRSTRLEN];
+
+    assert(ta_name != NULL && cfg != NULL);
+    
+    if (cfg->secret == NULL)
+    {
+        ERROR("Incorrect secret value for RADIUS Client");
+        return TE_RC(TE_TAPI, EINVAL);
+    }
+
+    if (inet_ntop(AF_INET, &(cfg->net_addr),
+                  clnt_name, sizeof(clnt_name)) == NULL)
+    {
+        ERROR("Cannot convert network address of RADIUS Client into "
+              "string representation");
+        return TE_RC(TE_TAPI, EINVAL);
+    }
+    
+    rc = cfg_add_instance_fmt(&handle, CVT_NONE, NULL,
+                              "/agent:%s/radiusserver:/client:%s",
+                              ta_name, clnt_name);
+
+    if (rc != 0)
+    {
+        ERROR("Cannot add a new RADIUS Client on '%s' Agent", ta_name);
+        return rc;
+    }
+
+    /* Set secret phrase */
+    return cfg_set_instance_fmt(CVT_STRING, (void *)cfg->secret,
+                                "/agent:%s/radiusserver:/client:%s/secret:",
+                                ta_name, clnt_name);
+}
+
+/* See the description in tapi_radius.h */
+int
+tapi_radius_serv_del_client(const char *ta_name,
+                            const struct in_addr *net_addr)
+{
+    int  rc;
+    char clnt_name[INET_ADDRSTRLEN];
+
+    assert(ta_name != NULL && net_addr != NULL);
+    
+    if (inet_ntop(AF_INET, net_addr,
+                  clnt_name, sizeof(clnt_name)) == NULL)
+    {
+        ERROR("Cannot convert network address of RADIUS Client into "
+              "string representation");
+        return TE_RC(TE_TAPI, EINVAL);
+    }
+
+    if ((rc = cfg_del_instance_fmt(FALSE,
+                                   "/agent:%s/radiusserver:/client:%s",
+                                   ta_name, clnt_name)) != 0)
+    {
+        ERROR("Cannot delete RADIUS Client %s on '%s' Agent",
+              clnt_name, ta_name);
+    }
+
+    return rc;
+}
+
+/* See the description in tapi_radius.h */
+int
+tapi_radius_serv_add_user(const char *ta_name,
+                          const char *user_name,
+                          te_bool acpt_user,
+                          const tapi_radius_attr_list_t *acpt_attrs,
+                          const tapi_radius_attr_list_t *chlg_attrs)
+{
+}
+
+/* See the description in tapi_radius.h */
+int
+tapi_radius_serv_del_user(const char *ta_name, const char *user_name)
+{
+}
+

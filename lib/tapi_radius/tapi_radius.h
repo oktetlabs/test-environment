@@ -138,18 +138,6 @@ extern int tapi_radius_csap_create(const char *ta, int sid,
  */
 
 /** 
- * Structure that keeps configuration of RADIUS Client.
- * This structure was created to make tapi_radius_serv_add_client()
- * function backward compatible when someone adds a new configuration 
- * value for RADIUS Client.
- */
-typedef struct tapi_radius_clnt_s {
-    const char     *secret; /**< Secret string that should be shared 
-                                 between RADIUS Server and Client */
-    struct in_addr  net_addr; /**< Network address of RADIUS Client */
-} tapi_radius_clnt_t;
-
-/** 
  * Structure that keeps configuration of RADIUS Server.
  * This structure was created to make tapi_radius_serv_set()
  * function backward compatible when someone adds a new configuration 
@@ -167,6 +155,19 @@ typedef struct tapi_radius_serv_s {
                                   INADDR_ANY means that we want RADIUS 
                                   Server listen on all interfaces. */
 } tapi_radius_serv_t;
+
+/** 
+ * Structure that keeps configuration of RADIUS Client.
+ * This structure was created to make tapi_radius_serv_add_client()
+ * function backward compatible when someone adds a new configuration 
+ * value for RADIUS Client.
+ */
+typedef struct tapi_radius_clnt_s {
+    const char     *secret; /**< Secret string that should be shared 
+                                 between RADIUS Server and Client */
+    struct in_addr  net_addr; /**< Network address of RADIUS Client */
+} tapi_radius_clnt_t;
+
 
 /**
  * Enables RADIUS Server on the particular Agent.
