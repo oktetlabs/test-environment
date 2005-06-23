@@ -3456,7 +3456,8 @@ TARPC_FUNC(wsa_recv,
                         (LPWSAOVERLAPPED_COMPLETION_ROUTINE)
                           completion_callback : NULL));
 
-    if (out->retval >= 0)
+     
+    if ((out->retval >= 0) || (out->common.win_error == RPC_WSAEMSGSIZE))
     {
         overlapped2iovec(overlapped, &(out->vector.vector_len),
                          &(out->vector.vector_val));
@@ -3677,7 +3678,7 @@ TARPC_FUNC(wsa_recv_from,
             in->callback ? (LPWSAOVERLAPPED_COMPLETION_ROUTINE)
                 completion_callback : NULL));
     
-    if (out->retval >= 0)
+    if ((out->retval >= 0) || (out->common.win_error == RPC_WSAEMSGSIZE))
     {
         overlapped2iovec(overlapped, &(out->vector.vector_len),
                          &(out->vector.vector_val));
