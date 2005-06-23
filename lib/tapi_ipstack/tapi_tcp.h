@@ -45,18 +45,22 @@
  * @param ta_name       Test Agent name
  * @param sid           RCF SID
  * @param eth_dev       Name of Ethernet interface
+ * @param loc_mac       Local MAC address  (or NULL)
+ * @param rem_mac       Remote MAC address  (or NULL)
  * @param loc_addr      Local IP address in network order (or NULL)
  * @param rem_addr      Remote IP address in network order (or NULL)
- * @param loc_port      Local TCP port in HOST byte order 
- * @param rem_port      Remote TCP port in HOST byte order 
+ * @param loc_port      Local TCP port in network byte order 
+ * @param rem_port      Remote TCP port in network byte order 
  * @param tcp_csap      Location for the IPv4 CSAP handle (OUT)
  *
  * @return  Status of the operation
  */
 extern int tapi_tcp_ip4_eth_csap_create(const char *ta_name, int sid, 
                                         const char *eth_dev,
-                                        const uint8_t *loc_addr,
-                                        const uint8_t *rem_addr,
+                                        const uint8_t *loc_mac,
+                                        const uint8_t *rem_mac,
+                                        in_addr_t loc_addr,
+                                        in_addr_t rem_addr,
                                         uint16_t loc_port,
                                         uint16_t rem_port,
                                         csap_handle_t *tcp_csap);
@@ -170,6 +174,9 @@ typedef uint32_t tapi_tcp_pos_t;
 extern int tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode, 
                                     struct sockaddr *local_addr, 
                                     struct sockaddr *remote_addr, 
+                                    const char *local_iface,
+                                    uint8_t *local_mac,
+                                    uint8_t *remote_mac,
                                     int timeout,
                                     tapi_tcp_handler_t *handler);
 

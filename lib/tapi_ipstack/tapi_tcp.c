@@ -61,14 +61,19 @@
 
 
 
+#ifndef IFNAME_SIZE
+#define IFNAME_SIZE 256
+#endif
 
 /* see description in tapi_tcp.h */
 int 
 tapi_tcp_ip4_eth_csap_create(const char *ta_name, int sid, 
-                         const char *eth_dev,
-                         const uint8_t *loc_addr, const uint8_t *rem_addr,
-                         uint16_t loc_port, uint16_t rem_port,
-                         csap_handle_t *tcp_csap)
+                             const char *eth_dev,
+                             const uint8_t *loc_mac,
+                             const uint8_t *rem_mac,
+                             in_addr_t loc_addr, in_addr_t rem_addr,
+                             uint16_t loc_port, uint16_t rem_port,
+                             csap_handle_t *tcp_csap)
 {
     char  csap_fname[] = "/tmp/te_tcp_csap.XXXXXX";
     int   rc;
@@ -89,24 +94,42 @@ tapi_tcp_ip4_eth_csap_create(const char *ta_name, int sid,
                     eth_dev, strlen(eth_dev), "2.#eth.device-id.#plain");
         if (rc) break; 
 
+        if (loc_mac)
+            rc = asn_write_value_field(csap_spec, 
+                    loc_mac, 6, "2.#eth.local-addr.#plain");
+        if (rc) break; 
+
+        if (rem_mac)
+            rc = asn_write_value_field(csap_spec, 
+                    rem_mac, 6, "2.#eth.remote-addr.#plain");
+        if (rc) break; 
+
         if(loc_addr)
-            rc = asn_write_value_field(csap_spec, loc_addr, 4,
-                                           "1.#ip4.local-addr.#plain");
+            rc = asn_write_value_field(csap_spec,
+                                       &loc_addr, sizeof(loc_addr),
+                                       "1.#ip4.local-addr.#plain");
         if (rc) break; 
 
         if(rem_addr)
-            rc = asn_write_value_field(csap_spec, rem_addr, 4,
-                                           "1.#ip4.remote-addr.#plain");
+            rc = asn_write_value_field(csap_spec,
+                                       &rem_addr, sizeof(rem_addr),
+                                       "1.#ip4.remote-addr.#plain");
         if (rc) break; 
 
         if(loc_port)
+        {
+            loc_port = ntohs(loc_port);
             rc = asn_write_value_field(csap_spec, 
                 &loc_port, sizeof(loc_port), "0.#tcp.local-port.#plain");
+        }
         if (rc) break; 
 
         if(rem_port)
+        {
+            rem_port = ntohs(rem_port);
             rc = asn_write_value_field(csap_spec, 
                 &rem_port, sizeof(rem_port), "0.#tcp.remote-port.#plain");
+        }
         if (rc) break;
 
         rc = asn_save_to_file(csap_spec, csap_fname);
@@ -285,8 +308,18 @@ tapi_tcp_make_msg(uint16_t src_port, uint16_t dst_port,
 
 
 typedef struct tapi_tcp_connection_t {
+    struct tapi_tcp_connection_t *next,
+                                 *prev;
+    tapi_tcp_handler_t id;
+
     const char    *agt; 
+    int            sid;
     csap_handle_t  tcp_csap;
+
+    char loc_iface[IFNAME_SIZE];
+
+    uint8_t loc_mac[ETH_ALEN];
+    uint8_t rem_mac[ETH_ALEN];
 
     struct sockaddr_storage loc_addr;
     struct sockaddr_storage rem_addr;
@@ -299,21 +332,60 @@ typedef struct tapi_tcp_connection_t {
 
 } tapi_tcp_connection_t;
 
+
+tapi_tcp_connection_t conns_root = {NULL, NULL, 0, };
+
 int
 tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode, 
                          struct sockaddr *local_addr, 
                          struct sockaddr *remote_addr, 
-                         int timeout,
-                         tapi_tcp_handler_t *handler)
+                         const char *local_iface,
+                         uint8_t *local_mac, uint8_t *remote_mac,
+                         int timeout, tapi_tcp_handler_t *handler)
 {
     int rc;
-    UNUSED(agt);
+    int sid;
+    csap_handle_t tcp_csap = CSAP_INVALID_HANDLE;
+
+    struct sockaddr_in *local_in_addr  = (struct sockaddr_in *)local_addr;
+    struct sockaddr_in *remote_in_addr = (struct sockaddr_in *)remote_addr;
+
+    tapi_tcp_connection_t *conn_descr = NULL;
+
+    if (agt == NULL || local_addr == NULL || remote_addr == NULL)
+        return TE_RC(TE_TAPI, ETEWRONGPTR);
+
+    /*
+     * TODO: Make automatic investigation of local interface and
+     * MAC addresses.
+     */
+    if (local_iface == NULL || local_mac == NULL || remote_mac == NULL)
+        return TE_RC(TE_TAPI, ETENOSUPP);
+
+#define CHECK_ERROR(cond_, msg_...)\
+    do {                                \
+        if (cond_)                      \
+        {                               \
+            ERROR(msg_);                \
+            return TE_RC(TE_TAPI, rc);  \
+        }                               \
+    } while (0)
+
+    rc = rcf_ta_create_session(agt, &sid);
+    CHECK_ERROR(rc != 0, "%s(); create session failed %X",
+                __FUNCTION__, rc);
+
+    rc = tapi_tcp_ip4_eth_csap_create(agt, sid, local_iface,
+                                      local_mac, remote_mac,
+                                      local_in_addr->sin_addr.s_addr,
+                                      remote_in_addr->sin_addr.s_addr,
+                                      local_in_addr->sin_port,
+                                      remote_in_addr->sin_port,
+                                      &tcp_csap);
+
+    UNUSED(conn_descr);
     UNUSED(mode);
-    UNUSED(local_addr);
-    UNUSED(remote_addr);
     UNUSED(timeout);
     UNUSED(handler);
-    UNUSED(rc);
-
     return 0;
 }
