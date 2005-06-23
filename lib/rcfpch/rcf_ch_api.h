@@ -57,10 +57,10 @@ extern "C" {
  */
 
 /** Generic routine prototype */
-typedef int (* rcf_rtn)(int32_t arg, ...);
+typedef int (* rcf_rtn)(void *arg, ...);
 
 /** Generic threaded routine prototype */
-typedef int (* rcf_thr_rtn)(void *sem, int32_t arg, ...);
+typedef int (* rcf_thr_rtn)(void *sem, void *arg, ...);
 
 
 /**
