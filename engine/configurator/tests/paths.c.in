@@ -1,0 +1,2 @@
+char *te_install = "@prefix@";
+char *srcdir = "@srcdir@";
