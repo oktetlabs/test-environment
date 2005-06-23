@@ -1,0 +1,73 @@
+  /net
+    /net/node
+      /net/node/type
+  /agent
+    /agent/interface
+      /agent/interface/status
+      /agent/interface/ip4_ttl
+      /agent/interface/mtu
+      /agent/interface/link_addr
+      /agent/interface/net_addr
+        /agent/interface/net_addr/broadcast
+        /agent/interface/net_addr/netmask
+    /agent/route
+    /agent/arp
+    /agent/ip4_fw
+***DB_OBJECTS_END***
+/agent:Agt_T
+/agent:Agt_T/interface:eth0 
+/agent:Agt_T/interface:eth0/link_addr: 00:11:2f:6b:22:ca
+/agent:Agt_T/interface:eth0/mtu: 1500
+/agent:Agt_T/interface:eth0/net_addr:192.168.37.12 
+/agent:Agt_T/interface:eth0/net_addr:192.168.37.12/broadcast: 192.168.37.255
+/agent:Agt_T/interface:eth0/status: 1
+/agent:Agt_T/interface:eth1 
+/agent:Agt_T/interface:eth1/link_addr: 00:0d:88:b5:8c:8e
+/agent:Agt_T/interface:eth1/mtu: 1500
+/agent:Agt_T/interface:eth1/net_addr:192.168.111.12 
+/agent:Agt_T/interface:eth1/net_addr:192.168.111.12/broadcast: 192.168.111.255
+/agent:Agt_T/interface:eth1/status: 1
+/agent:Agt_T/interface:eth2 
+/agent:Agt_T/interface:eth2/link_addr: 00:0d:88:65:d4:96
+/agent:Agt_T/interface:eth2/mtu: 1500
+/agent:Agt_T/interface:eth2/net_addr:10.13.12.2 
+/agent:Agt_T/interface:eth2/net_addr:10.13.12.2/broadcast: 192.168.41.255
+/agent:Agt_T/interface:eth2/net_addr:192.168.41.12 
+/agent:Agt_T/interface:eth2/net_addr:192.168.41.12/broadcast: 192.168.41.255
+/agent:Agt_T/interface:eth2/status: 1
+/agent:Agt_T/interface:lo 
+/agent:Agt_T/interface:lo/link_addr: 00:00:00:00:00:00
+/agent:Agt_T/interface:lo/mtu: 16436
+/agent:Agt_T/interface:lo/net_addr:127.0.0.1 
+/agent:Agt_T/interface:lo/net_addr:127.0.0.1/broadcast: 0.0.0.0
+/agent:Agt_T/interface:lo/status: 1
+/agent:Agt_T/interface:sit0 
+/agent:Agt_T/interface:sit0/link_addr: 00:00:00:00:00:00
+/agent:Agt_T/interface:sit0/mtu: 1480
+/agent:Agt_T/interface:sit0/status: 0
+/agent:Agt_T/interface:tap0 
+/agent:Agt_T/interface:tap0/link_addr: 00:ff:7c:30:bd:61
+/agent:Agt_T/interface:tap0/mtu: 1500
+/agent:Agt_T/interface:tap0/status: 0
+/agent:Agt_T/interface:vmnet1 
+/agent:Agt_T/interface:vmnet1/link_addr: 00:50:56:c0:00:01
+/agent:Agt_T/interface:vmnet1/mtu: 1500
+/agent:Agt_T/interface:vmnet1/net_addr:172.16.249.1 
+/agent:Agt_T/interface:vmnet1/net_addr:172.16.249.1/broadcast: 172.16.249.255
+/agent:Agt_T/interface:vmnet1/status: 1
+/agent:Agt_T/interface:vmnet8 
+/agent:Agt_T/interface:vmnet8/link_addr: 00:50:56:c0:00:08
+/agent:Agt_T/interface:vmnet8/mtu: 1500
+/agent:Agt_T/interface:vmnet8/net_addr:192.168.53.1 
+/agent:Agt_T/interface:vmnet8/net_addr:192.168.53.1/broadcast: 192.168.53.255
+/agent:Agt_T/interface:vmnet8/status: 1
+/agent:Agt_T/ip4_fw: 
+/agent:Agt_T/route:0.0.0.0|0,gw=192.168.37.2  
+/agent:Agt_T/route:10.13.12.0|24,dev=eth2  
+/agent:Agt_T/route:172.16.249.0|24,dev=vmnet1  
+/agent:Agt_T/route:192.168.111.0|24,dev=eth1  
+/agent:Agt_T/route:192.168.37.0|24,dev=eth0  
+/agent:Agt_T/route:192.168.41.0|24,dev=eth2  
+/agent:Agt_T/route:192.168.53.0|24,dev=vmnet8  
+
+***DB_INSTANCES_END***

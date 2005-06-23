@@ -1,0 +1,162 @@
+<?xml version="1.0"?>
+<history>
+
+  <register>
+    <object oid="/agent/env" access="read_create" type="string"/>
+  </register>
+
+  <register>
+    <object oid="/agent/volatile" access="read_create" type="none"/>
+  </register>
+
+  <register>
+    <object oid="/agent/ip4_fw" access="read_write" type="integer"/>
+    <object oid="/agent/arp" access="read_create" type="address"/>
+    <object oid="/agent/volatile/arp" access="read_create" type="address"/>
+    <object oid="/agent/route" access="read_create" type="string"/>
+  </register>
+
+  <register>
+    <object oid="/agent/interface"
+            access="read_create" type="none"/>
+    <object oid="/agent/interface/index"
+            access="read_create" type="integer"/>
+    <object oid="/agent/interface/net_addr"
+            access="read_create" type="none"/>
+    <object oid="/agent/interface/net_addr/prefix"
+            access="read_write" type="integer"/>
+    <object oid="/agent/interface/net_addr/broadcast"
+            access="read_write" type="address"/>
+    <object oid="/agent/interface/link_addr"
+            access="read_write" type="address"/>
+    <object oid="/agent/interface/arp"
+            access="read_write" type="integer"/>
+    <object oid="/agent/interface/mtu"
+            access="read_write" type="integer"/>
+    <object oid="/agent/interface/ip4_ttl"
+            access="read_write" type="integer"/>
+    <object oid="/agent/interface/status"
+            access="read_write" type="integer"/>
+    <object oid="/agent/user" access="read_create" type="none"/>
+    <object oid="/agent/dns" access="read_only" type="address"/>
+  </register>
+  
+  <register>
+    <object oid="/agent/ftpserver" access="read_write" type="integer"/>
+    <object oid="/agent/ftpserver/server" access="read_write" type="string"/>
+    <object oid="/agent/sshd" access="read_create" type="none"/>
+    <object oid="/agent/Xvfb" access="read_create" type="none"/>
+    <object oid="/agent/smtp" access="read_create" type="integer"/>
+    <object oid="/agent/smtp/server" access="read_write" type="string"/>
+    <object oid="/agent/smtp/smarthost" access="read_create" type="address"/>
+    <object oid="/agent/telnetd" access="read_write" type="integer"/>
+    <object oid="/agent/rshd" access="read_write" type="integer"/>
+    <object oid="/agent/vncserver" access="read_create" type="none"/>
+    <object oid="/agent/vncpasswd" access="read_only" type="string"/>
+  </register>
+
+  <register>
+    <object oid="/agent/dhcpserver" access="read_write" type="integer"/>
+    <object oid="/agent/dhcpserver/interfaces"
+            access="read_write" type="string"/>
+    <object oid="/agent/dhcpserver/subnet"
+            access="read_create" type="integer"/>
+    <object oid="/agent/dhcpserver/host" access="read_create"/>
+    <object oid="/agent/dhcpserver/host/group" access="read_write"
+            type="string" />
+    <object oid="/agent/dhcpserver/host/chaddr" access="read_write"
+            type="string"/>
+    <object oid="/agent/dhcpserver/host/client-id" access="read_write"
+            type="string"/>
+    <object oid="/agent/dhcpserver/host/ip-address" access="read_write"
+            type="string"/>
+    <object oid="/agent/dhcpserver/host/next" access="read_write"
+            type="string"/>
+    <object oid="/agent/dhcpserver/host/file" access="read_write"
+            type="string"/>
+    <object oid="/agent/dhcpserver/host/option" access="read_create"
+            type="string"/>
+    <object oid="/agent/dhcpserver/group" access="read_create"/>
+    <object oid="/agent/dhcpserver/group/next" access="read_write"
+            type="string"/>
+    <object oid="/agent/dhcpserver/group/file" access="read_write"
+            type="string"/>
+    <object oid="/agent/dhcpserver/group/option" access="read_create"
+            type="string"/>
+  </register>
+
+  <register>
+    <object oid="/agent/dnsserver" access="read_write" type="integer"/>
+    <object oid="/agent/dnsserver/forwarder"
+            access="read_write" type="address"/>
+    <object oid="/agent/dnsserver/recursive"
+            access="read_write" type="integer"/>
+  </register>
+
+  <register>
+    <object oid="/net" access="read_create" type="none"/>
+    <object oid="/net/ip4_subnet" access="read_create" type="address"/>
+    <object oid="/net/node" access="read_create" type="string"/>
+    <object oid="/net/node/type" access="read_create" type="integer"/>
+    <object oid="/net/node/ip4_address" access="read_create" type="address"/>
+  </register>
+
+  <register>
+    <object oid="/ip4_net_pool"
+            access="read_create" type="none"/>
+    <object oid="/ip4_net_pool/entry"
+            access="read_create" type="integer"/>
+    <object oid="/ip4_net_pool/entry/prefix"
+            access="read_create" type="integer"/>
+    <object oid="/ip4_net_pool/entry/n_entries"
+            access="read_create" type="integer"/>
+    <object oid="/ip4_net_pool/entry/pool"
+            access="read_create" type="none"/>
+    <object oid="/ip4_net_pool/entry/pool/entry"
+            access="read_create" type="integer"/>
+  </register>
+
+  <register>
+    <object oid="/local" access="read_create" type="none"/>
+  </register>
+
+  <register>
+    <object oid="/local/prologue_sleep"
+            access="read_create" type="integer"/>
+    <object oid="/local/socklib"
+            access="read_create" type="string"/>
+    <object oid="/local/ef_log_file"
+            access="read_create" type="string"/>
+    <object oid="/local/use_static_arp"
+            access="read_create" type="integer"/>
+    <object oid="/local/arp_wait"
+            access="read_create" type="integer"/>
+    <object oid="/local/forwarder"
+            access="read_create" type="string"/>
+    <object oid="/local/forwarder/iut_iface"
+            access="read_create" type="string"/>
+    <object oid="/local/forwarder/tst_iface"
+            access="read_create" type="string"/>
+  </register>
+
+  <register>
+    <object oid="/volatile"               access="read_create" type="none"/>
+    <object oid="/volatile/sockaddr_port" access="read_create" type="integer"/>
+    <object oid="/volatile/ta_sockets" access="read_create" type="string"/>
+  </register>
+
+  <add>
+    <instance oid="/ip4_net_pool:"/>
+    <instance oid="/local:"/>
+    <!-- Default value for 'use_static_arp' -->
+    <instance oid="/local:/use_static_arp:" value="0"/>
+    <!-- Default value for 'arp_wait' -->
+    <instance oid="/local:/arp_wait:" value="0"/>
+  </add>
+
+  <add>
+    <instance oid="/volatile:"/>
+    <instance oid="/volatile:/sockaddr_port:" value="0"/>
+  </add>
+
+</history>
