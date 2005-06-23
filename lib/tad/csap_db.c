@@ -261,7 +261,7 @@ csap_db_entry_find(int id)
     while ((dp != &root_csap_db) && (dp->inst->id < id)) 
         dp = dp->next;
 
-    return (dp->inst->id == id) ? dp : NULL;
+    return (dp->inst != NULL && dp->inst->id == id) ? dp : NULL;
 }
 
 
