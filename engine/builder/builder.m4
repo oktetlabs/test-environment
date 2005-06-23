@@ -101,9 +101,7 @@ eval `echo TE_BS_LIB_${PLATFORM_NAME}_$1_PLATFORM=$PLATFORM`
 
 if test -z "$SOURCES" ; then 
     SOURCES=${TE_BASE}/lib/$1 ; 
-fi
-
-if test "${SOURCES:0:1}" != "/" ; then 
+elif test "${SOURCES:0:1}" != "/" ; then 
     SOURCES=${TE_BASE}/lib/$SOURCES ; 
 fi
 ]
@@ -235,7 +233,7 @@ if test -n "${SOURCES}" -a "${SOURCES:0:1}" != "/" ; then
 fi
 NUT_$1_SOURCES=${SOURCES}
 SCRIPT=$4
-if test "${SCRIPT:0:1}" != "/" ; then
+if test -n "${SCRIPT}" -a "${SCRIPT:0:1}" != "/" ; then
     SCRIPT=${TE_BASE}/${SCRIPT}
 fi
 NUT_$1_SCRIPT=${SCRIPT}
@@ -327,9 +325,7 @@ fi
 SOURCES=$3
 if test -z "$SOURCES" ; then 
     SOURCES=${TE_BASE}/agents/$1 ; 
-fi
-
-if test "${SOURCES:0:1}" != "/" ; then 
+elif test "${SOURCES:0:1}" != "/" ; then 
     SOURCES=${TE_BASE}/agents/$SOURCES ; 
 fi
 TE_BS_TA="$TE_BS_TA $1"
