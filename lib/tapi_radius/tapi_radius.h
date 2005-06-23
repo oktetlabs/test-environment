@@ -23,6 +23,7 @@
  * MA  02111-1307  USA
  *
  * @author Boris Misenov <Boris.Misenov@oktetlabs.ru>
+ * @author Oleg Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
  *
  * $Id$
  */
@@ -128,6 +129,132 @@ extern int tapi_radius_csap_create(const char *ta, int sid,
                                    const char *device,
                                    const uint8_t *net_addr, uint16_t port,
                                    csap_handle_t *csap);
+                                   
+/*
+ * Interface to configure RADIUS Server:
+ * This API simplify managing of RADIUS Server configuration, which is
+ * done via Configurator DB. The configuration model can be found at 
+ * doc/cm/cm_radius.xml
+ */
+
+/** 
+ * Structure that keeps configuration of RADIUS Client.
+ * This structure was created to make tapi_radius_serv_add_client()
+ * function backward compatible when someone adds a new configuration 
+ * value for RADIUS Client.
+ */
+typedef struct tapi_radius_clnt_s {
+    const char     *secret; /**< Secret string that should be shared 
+                                 between RADIUS Server and Client */
+    struct in_addr  net_addr; /**< Network address of RADIUS Client */
+} tapi_radius_clnt_t;
+
+/** 
+ * Structure that keeps configuration of RADIUS Server.
+ * This structure was created to make tapi_radius_serv_set()
+ * function backward compatible when someone adds a new configuration 
+ * value for RADIUS Server.
+ */
+typedef struct tapi_radius_serv_s {
+    uint16_t       auth_port; /**< RADIUS Authentication Server port,
+                                   zero value means that we want use
+                                   default value. */
+    uint16_t       acct_port; /**< RADIUS Accounting Server port,
+                                   zero value means that we want use
+                                   default value. */
+    struct in_addr net_addr; /**< Network address on which RADIUS Server
+                                  listens incoming Requests,
+                                  INADDR_ANY means that we want RADIUS 
+                                  Server listen on all interfaces. */
+} tapi_radius_serv_t;
+
+/**
+ * Enables RADIUS Server on the particular Agent.
+ *
+ * @param ta_name Test Agent name
+ *
+ * @return Zero on success or error code.
+ */
+extern int tapi_radius_serv_enable(const char *ta_name);
+
+/**
+ * Disables RADIUS Server on the particular Agent.
+ *
+ * @param ta_name  Test Agent name
+ *
+ * @return Zero on success or error code.
+ */
+extern int tapi_radius_serv_disable(const char *ta_name);
+
+/**
+ * Update RADIUS Server Configuration.
+ *
+ * @param ta_name  Test Agent name
+ * @param cfg      RADIUS Server configuration information
+ *
+ * @return Zero on success or error code.
+ */
+extern int tapi_radius_serv_set(const char *ta_name,
+                                const tapi_radius_serv_t *cfg);
+
+/**
+ * Add a new RADIUS Client record on RADIUS Server.
+ * Clients differ in network address, which is specified as a field of
+ * tapi_radius_clnt_t data structure.
+ *
+ * @param ta_name  Test Agent name
+ * @param cfg      RADIUS Client configuration information
+ *
+ * @return Zero on success or error code.
+ */
+extern int tapi_radius_serv_add_client(const char *ta_name,
+                                       const tapi_radius_clnt_t *cfg);
+
+/**
+ * Delete RADIUS Client record from RADIUS Server.
+ *
+ * @param ta_name   Test Agent name
+ * @param net_addr  RADIUS Client's network address
+ *
+ * @return Zero on success or error code.
+ */
+extern int tapi_radius_serv_del_client(const char *ta_name,
+                                       const struct in_addr *net_addr);
+
+/**
+ * Add user configuration on RADIUS Server.
+ *
+ * @param ta_name     Test Agent name
+ * @param user_name   User name
+ * @param acpt_user   Wheter this user should be accepted on successful
+ *                    authentication
+ * @param acpt_attrs  A list of RADIUS attributes that should be sent
+ *                    to this user in Access-Accept RADIUS message.
+ *                    May be NULL if no special attributes desired.
+ * @param chlg_attrs  A list of RADIUS attributes that should be sent
+ *                    to this user in Access-Challenge RADIUS message
+ *                    May be NULL if no special attributes desired.
+ *
+ * @return Zero on success or error code.
+ */
+extern int tapi_radius_serv_add_user(
+                            const char *ta_name,
+                            const char *user_name,
+                            te_bool acpt_user,
+                            const tapi_radius_attr_list_t *acpt_attrs,
+                            const tapi_radius_attr_list_t *chlg_attrs);
+
+/**
+ * Delete user configuration from RADIUS Server.
+ *
+ * @param ta_name     Test Agent name
+ * @param user_name   User name
+ *
+ * @return Zero on success or error code.
+ */
+extern int tapi_radius_serv_del_user(const char *ta_name,
+                                     const char *user_name);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
