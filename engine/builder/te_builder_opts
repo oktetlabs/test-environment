@@ -46,7 +46,7 @@ function build()
     for i in $1 ; do
         CURRDIR=`pwd`
         if ! cd ${TE_BUILD}/$i ; then
-            echo directory ${TE_BUILD}/$i not found ; exit 1 ;
+            echo Directory ${TE_BUILD}/$i not found ; exit 1 ;
         fi
         if test -n "$CFLAGS" ; then
             if test -n "${QUIET}" ; then
