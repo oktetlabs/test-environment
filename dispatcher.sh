@@ -518,7 +518,11 @@ if test -n "$BUILDER" ; then
     fi
 fi
 
-te_builder_opts $BUILDER_OPTS || exit_with_log
+if test -n "${QUIET}" ; then
+    te_builder_opts --quiet=${TE_BUILD_LOG} $BUILDER_OPTS || exit_with_log
+else
+    te_builder_opts $BUILDER_OPTS || exit_with_log
+fi
 
 # Goto the directory where the script was called
 cd ${TE_RUN_DIR}
