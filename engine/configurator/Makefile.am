@@ -4,6 +4,12 @@ AM_CPPFLAGS = @TE_CFLAGS@ -I$(DESTDIR)/$(prefix)/include \
 AM_CFLAGS = @XML2_CFLAGS@
 AM_LDFLAGS = @TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/lib 
 
+if CONFIGURATOR_DEBUG
+SUBDIRS = . tests
+else
+EXTRA_DIST = tests
+endif
+
 bin_PROGRAMS = te_cs te_cs_shutdown 
 
 noinst_HEADERS = conf_db.h conf_dh.h conf_backup.h conf_ta.h conf_defs.h
@@ -30,4 +36,5 @@ te_cs_DEPENDENCIES = @TE_DEPENDENCIES@ \
 te_cs_shutdown_DEPENDENCIES = @TE_DEPENDENCIES@ \
                               $(DESTDIR)/$(prefix)/lib/liblogger_ten.a \
                               $(DESTDIR)/$(prefix)/lib/libipc.a
+
 

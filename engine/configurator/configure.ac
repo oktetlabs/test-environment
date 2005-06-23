@@ -14,6 +14,7 @@ AC_PROG_CC
 
 AC_PROG_INSTALL
 
+AC_PROG_LIBTOOL
 
 # Checks for libraries
 LIBXML_CONFIG_PREFIX=""
@@ -64,6 +65,15 @@ AC_CONFIG_HEADERS([config.h])
 
 AC_CHECK_TYPES([xmlError], [], [], [#include <libxml/xmlerror.h>])
 
+AM_CONDITIONAL(CONFIGURATOR_DEBUG, test -n "$with-tests")
+
 AC_CONFIG_FILES([Makefile])
+
+if test -n "$with-tests"; then
+    AC_SUBST([prefix])
+    AC_SUBST([srcdir])
+    AC_CONFIG_FILES([tests/Makefile tests/db/Makefile tests/paths.c \
+                    tests/rcf_emul/Makefile tests/suites/Makefile])
+fi
 
 AC_OUTPUT
