@@ -62,6 +62,12 @@ typedef int (* rcf_rtn)(void *arg, ...);
 /** Generic threaded routine prototype */
 typedef int (* rcf_thr_rtn)(void *sem, void *arg, ...);
 
+/** argv/argc routine prototype */
+typedef int (* rcf_argv_rtn)(int argv, char **argc);
+
+/** argv/argc threaded routine prototype */
+typedef int (* rcf_argv_thr_rtn)(void *sem, int argc, char **argv);
+
 
 /**
  * Initialize structures.

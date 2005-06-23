@@ -937,9 +937,7 @@ rpcserver_list(unsigned int gid, const char *oid, char **value)
  * @param conn          connection handle
  * @param sid           session identifier
  * @param data          pointer to data in the command buffer
- * @param data_len      length of data in the command buffer
- * @param len           full length of encoded data (is equal to data_len
- *                      if there is no binary attachment)
+ * @param len           length of encoded data 
  * @param server        RPC server name
  * @param timeout       timeout in seconds or 0 for unlimited
  *
@@ -947,12 +945,10 @@ rpcserver_list(unsigned int gid, const char *oid, char **value)
  */
 int 
 rcf_pch_rpc(struct rcf_comm_connection *conn, int sid, 
-            const char *data, size_t data_len, size_t len,
+            const char *data, size_t len,
             const char *server, uint32_t timeout)
 {
     rpcserver *rpcs;
-    char      *rpc_data;
-    int        rc;
     uint32_t   rpc_data_len = len;
     
     conn_saved = conn;
@@ -968,24 +964,6 @@ rcf_pch_rpc(struct rcf_comm_connection *conn, int sid,
     } while (0)
     
     rcf_ch_lock();
-    
-    /* Read binary attachment or XML string */
-    if (data_len == len)
-    {
-        rpc_data = (char *)data;
-    }
-    else
-    {   
-        int n = len - data_len;
-        
-        memcpy(rpc_buf, data, data_len);
-        rc = rcf_comm_agent_wait(conn, rpc_buf + data_len, &n, NULL);
-        
-        if (rc != 0)
-            RETERR(rc);
-            
-        rpc_data = rpc_buf;
-    }
     
     /* Look for the RPC server */
     for (rpcs = list; 
@@ -1017,7 +995,7 @@ rcf_pch_rpc(struct rcf_comm_connection *conn, int sid,
     /* Send encoded data to server */
     if (send(rpcs->sock, &rpc_data_len, sizeof(rpc_data_len), 0) != 
         sizeof(rpc_data_len) ||
-        send(rpcs->sock, rpc_data, rpc_data_len, 0) != (int)rpc_data_len)
+        send(rpcs->sock, data, rpc_data_len, 0) != (int)rpc_data_len)
     {
         ERROR("Failed to send RPC data to the server %s", rpcs->name);
         RETERR(ETESUNRPC);

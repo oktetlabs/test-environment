@@ -334,7 +334,7 @@ rcf_pch_call(struct rcf_comm_connection *conn,
     }
 
     if (is_argv)
-        rc = ((rcf_rtn)(addr))(argc, params);
+        rc = ((rcf_argv_rtn)(addr))(argc, (char **)params);
     else
         rc = ((rcf_rtn)(addr))(params[0], params[1], params[2],
                                params[3], params[4], params[5],

@@ -212,16 +212,14 @@ extern int rcf_pch_call(struct rcf_comm_connection *conn,
  * @param conn          connection handle
  * @param sid           session identifier
  * @param data          pointer to data in the command buffer
- * @param data_len      length of data in the command buffer
- * @param len           full length of encoded data (is equal to data_len
- *                      if there is no binary attachment)
+ * @param len           length of encoded data
  * @param server        RPC server name
  * @param timeout       timeout in seconds or 0 for unlimited
  *
  * @return 0 or error returned by communication library
  */
 extern int rcf_pch_rpc(struct rcf_comm_connection *conn, int sid, 
-                       const char *data, size_t data_len, size_t len,
+                       const char *data, size_t len,
                        const char *server, uint32_t timeout);
 
 /** 

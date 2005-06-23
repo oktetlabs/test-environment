@@ -239,7 +239,11 @@ parse_parameters(char *params, te_bool *is_argv, int *argc, void **param)
             }
             else
             {
+#if (SIZEOF_VOID_P == 8)
                 param[n] = (void *)val;
+#else                
+                param[n] = (void *)(uint32_t)val;
+#endif                
                 n++;
             }
         }
@@ -362,10 +366,8 @@ rcf_pch_run(const char *confstr, const char *info)
     char *cmd = NULL;
     int   rc = 0;
     int   sid = 0;
-
+    int   cmd_buf_len = RCF_MAX_LEN;
     
-    te_bool pending = FALSE;
-
 /**
  * Read any integer parameter from the command.
  *
@@ -392,20 +394,11 @@ rcf_pch_run(const char *confstr, const char *info)
     do {                                                            \
         size_t len;                                                 \
                                                                     \
-        while (pending)                                             \
-        {                                                           \
-            len = RCF_MAX_LEN - answer_plen;                        \
-            if ((rc = rcf_comm_agent_wait(conn, cmd + answer_plen,  \
-                                          &len, NULL)) != 0 &&      \
-                rc != ETEPENDING)                                   \
-                goto communication_problem;                         \
-            pending = (rc == ETEPENDING);                           \
-        }                                                           \
-        len = RCF_MAX_LEN - answer_plen;                            \
+        len = cmd_buf_len - answer_plen;                            \
         if (snprintf(cmd + answer_plen, len, _fmt) >= (int)len)     \
         {                                                           \
             ERROR("Answer truncated");                              \
-            cmd[RCF_MAX_LEN - 1] = '\0';                            \
+            cmd[cmd_buf_len - 1] = '\0';                            \
         }                                                           \
         rcf_ch_lock();                                              \
         rc = rcf_comm_agent_reply(conn, cmd, strlen(cmd) + 1);      \
@@ -435,21 +428,40 @@ rcf_pch_run(const char *confstr, const char *info)
 
     while (1)
     {
-        size_t   len = RCF_MAX_LEN;
+        size_t   len = cmd_buf_len;
         size_t   answer_plen = 0; /* Len of data to be copied to answer */
         rcf_op_t opcode;
-
-        char   *ptr = cmd;
-        char   *ba;         /* Binary attachment pointer */
+        char    *ptr;
+        char    *ba;         /* Binary attachment pointer */
 
         if ((rc = rcf_comm_agent_wait(conn, cmd, &len, &ba)) != 0 &&
             rc != ETEPENDING)
             goto communication_problem;
 
-        pending = (rc == ETEPENDING);
-
+        if (rc == ETEPENDING)
+        {
+            size_t tmp;
+            
+            int received = cmd_buf_len;
+            int ba_offset = ba == NULL ? 0 : ba - cmd;
+            
+            if ((cmd = realloc(cmd, len)) == NULL)
+            {
+                PRINT("Out of memory!");
+                return -1;
+            }
+            cmd_buf_len = len;
+            tmp = len - received;
+            if (ba_offset > 0)
+                ba = cmd + ba_offset;
+            
+            if ((rc = rcf_comm_agent_wait(conn, cmd + received, 
+                                          &tmp, NULL)) != 0)
+                goto communication_problem;
+        }
         VERB("Command <%s> is received", cmd);
 
+        ptr = cmd;
         /* Skipping SID */
         if (strncmp(ptr, "SID ", strlen("SID ")) == 0)
         {
@@ -470,7 +482,7 @@ rcf_pch_run(const char *confstr, const char *info)
                 if (*ptr != 0 || ba != NULL)
                     goto bad_protocol;
 
-                if (rcf_ch_shutdown(conn, cmd, RCF_MAX_LEN,
+                if (rcf_ch_shutdown(conn, cmd, cmd_buf_len,
                                     answer_plen) < 0)
                 {
                     SEND_ANSWER("0");
@@ -485,7 +497,7 @@ rcf_pch_run(const char *confstr, const char *info)
                 if (*ptr != 0 && transform_str(&ptr, &params) != 0)
                     goto bad_protocol;
 
-                if (rcf_ch_reboot(conn, cmd, RCF_MAX_LEN, answer_plen,
+                if (rcf_ch_reboot(conn, cmd, cmd_buf_len, answer_plen,
                                   ba, len, params) < 0)
                 {
                     ERROR("Reboot is NOT supported by CH");
@@ -503,11 +515,11 @@ rcf_pch_run(const char *confstr, const char *info)
                 if (*ptr != 0)
                     goto bad_protocol;
 
-                rc = rcf_ch_configure(conn, cmd, RCF_MAX_LEN, answer_plen,
+                rc = rcf_ch_configure(conn, cmd, cmd_buf_len, answer_plen,
                                       ba, len, op, NULL, NULL);
 
                 if (rc < 0)
-                    rc = rcf_pch_configure(conn, cmd, RCF_MAX_LEN,
+                    rc = rcf_pch_configure(conn, cmd, cmd_buf_len,
                                            answer_plen, ba, len, 
                                            op, NULL, NULL);
 
@@ -550,11 +562,11 @@ rcf_pch_run(const char *confstr, const char *info)
                         goto bad_protocol;
                 }
 
-                rc = rcf_ch_configure(conn, cmd, RCF_MAX_LEN, answer_plen,
+                rc = rcf_ch_configure(conn, cmd, cmd_buf_len, answer_plen,
                                       ba, len, op, oid, val);
 
                 if (rc < 0)
-                    rc = rcf_pch_configure(conn, cmd, RCF_MAX_LEN,
+                    rc = rcf_pch_configure(conn, cmd, cmd_buf_len,
                                            answer_plen, ba, len, 
                                            op, oid, val);
 
@@ -567,7 +579,7 @@ rcf_pch_run(const char *confstr, const char *info)
                 if (*ptr != 0 || ba != NULL)
                     goto bad_protocol;
 
-                rc = transmit_log(conn, cmd, RCF_MAX_LEN, answer_plen);
+                rc = transmit_log(conn, cmd, cmd_buf_len, answer_plen);
                 if (rc != 0)
                     goto communication_problem;
 
@@ -620,21 +632,21 @@ rcf_pch_run(const char *confstr, const char *info)
 
                     if (type == RCF_STRING)
                     {
-                        rc = rcf_ch_vwrite(conn, cmd, RCF_MAX_LEN,
+                        rc = rcf_ch_vwrite(conn, cmd, cmd_buf_len,
                                            answer_plen, type, var,
                                            val_string);
                         if (rc < 0)
-                            rc = rcf_pch_vwrite(conn, cmd, RCF_MAX_LEN,
+                            rc = rcf_pch_vwrite(conn, cmd, cmd_buf_len,
                                                 answer_plen, type, var,
                                                 val_string);
                     }
                     else
                     {
-                        rc = rcf_ch_vwrite(conn, cmd, RCF_MAX_LEN,
+                        rc = rcf_ch_vwrite(conn, cmd, cmd_buf_len,
                                            answer_plen, type, var,
                                            val_int);
                         if (rc < 0)
-                            rc = rcf_pch_vwrite(conn, cmd, RCF_MAX_LEN,
+                            rc = rcf_pch_vwrite(conn, cmd, cmd_buf_len,
                                                 answer_plen, type, var,
                                                 val_int);
                     }
@@ -646,10 +658,10 @@ rcf_pch_run(const char *confstr, const char *info)
                     if (*ptr != 0)
                         goto bad_protocol;
 
-                    rc = rcf_ch_vread(conn, cmd, RCF_MAX_LEN,
+                    rc = rcf_ch_vread(conn, cmd, cmd_buf_len,
                                       answer_plen, type, var);
                     if (rc < 0)
-                        rc = rcf_pch_vread(conn, cmd, RCF_MAX_LEN, 
+                        rc = rcf_pch_vread(conn, cmd, cmd_buf_len, 
                                            answer_plen, type, var);
                     if (rc != 0)
                         goto communication_problem;
@@ -668,10 +680,10 @@ rcf_pch_run(const char *confstr, const char *info)
                     *ptr != 0 || (put != (ba != 0)))
                     goto bad_protocol;
 
-                rc = rcf_ch_file(conn, cmd, RCF_MAX_LEN, answer_plen,
+                rc = rcf_ch_file(conn, cmd, cmd_buf_len, answer_plen,
                                  ba, len, put, filename);
                 if (rc < 0)
-                    rc = rcf_pch_file(conn, cmd, RCF_MAX_LEN, answer_plen,
+                    rc = rcf_pch_file(conn, cmd, cmd_buf_len, answer_plen,
                                       ba, len, opcode, filename);
 
                 if (rc != 0)
@@ -700,7 +712,7 @@ rcf_pch_run(const char *confstr, const char *info)
                         goto bad_protocol;
                 }
 
-                if (rcf_ch_csap_create(conn, cmd, RCF_MAX_LEN, answer_plen,
+                if (rcf_ch_csap_create(conn, cmd, cmd_buf_len, answer_plen,
                                        ba, len, stack, params) < 0)
                 {
                     ERROR("CSAP stack %s (%s) is NOT supported", stack, 
@@ -725,7 +737,7 @@ rcf_pch_run(const char *confstr, const char *info)
                     *ptr != 0)
                     goto bad_protocol;
 
-                if (rcf_ch_csap_param(conn, cmd, RCF_MAX_LEN, 
+                if (rcf_ch_csap_param(conn, cmd, cmd_buf_len, 
                                       answer_plen, handle, var) < 0)
                 {
                     ERROR("CSAP parameter '%s' is NOT supported",
@@ -742,9 +754,9 @@ rcf_pch_run(const char *confstr, const char *info)
             case RCFOP_TRRECV_WAIT:
             case RCFOP_TRRECV_GET:
             {
-                int handle;
                 int (*rtn)(struct rcf_comm_connection *, char *,
-                           size_t, size_t, csap_handle_t);
+                           size_t, size_t, csap_handle_t) = NULL;
+                int   handle;
 
                 if (*ptr == 0 || ba != NULL)
                     goto bad_protocol;
@@ -779,7 +791,7 @@ rcf_pch_run(const char *confstr, const char *info)
                         assert(FALSE);
                  }
 
-                if (rtn(conn, cmd, RCF_MAX_LEN, answer_plen, handle) < 0)
+                if (rtn(conn, cmd, cmd_buf_len, answer_plen, handle) < 0)
                     SEND_ANSWER("%d", EOPNOTSUPP);
 
                 break;
@@ -792,7 +804,7 @@ rcf_pch_run(const char *confstr, const char *info)
 
                 if (*ptr == 0 || ba == NULL)
                     goto bad_protocol;
-
+                    
                 READ_INT(handle);
                 if (strcmp_start("postponed", ptr) == 0)
                 {
@@ -803,7 +815,7 @@ rcf_pch_run(const char *confstr, const char *info)
                 if (*ptr != 0)
                     goto bad_protocol;
 
-                if (rcf_ch_trsend_start(conn, cmd, RCF_MAX_LEN,
+                if (rcf_ch_trsend_start(conn, cmd, cmd_buf_len,
                                         answer_plen, ba, len, handle,
                                         postponed) < 0)
                 {
@@ -840,7 +852,7 @@ rcf_pch_run(const char *confstr, const char *info)
                 if (*ptr != 0)
                     goto bad_protocol;
 
-                if (rcf_ch_trrecv_start(conn, cmd, RCF_MAX_LEN, 
+                if (rcf_ch_trrecv_start(conn, cmd, cmd_buf_len, 
                                         answer_plen, ba, len, handle,
                                         num, results, timeout) < 0)
                 {
@@ -878,7 +890,7 @@ rcf_pch_run(const char *confstr, const char *info)
                 if (*ptr != 0)
                     goto bad_protocol;
 
-                if (rcf_ch_trsend_recv(conn, cmd, RCF_MAX_LEN,
+                if (rcf_ch_trsend_recv(conn, cmd, cmd_buf_len,
                                        answer_plen, ba, len, handle,
                                        results, timeout) < 0)
                 {
@@ -936,11 +948,11 @@ rcf_pch_run(const char *confstr, const char *info)
                 switch(mode)
                 {
                     case RCF_START_FUNC:
-                        rc = rcf_ch_call(conn, cmd, RCF_MAX_LEN, 
+                        rc = rcf_ch_call(conn, cmd, cmd_buf_len, 
                                          answer_plen,
                                          rtn, is_argv, argc, param);
                         if (rc < 0)
-                            rc = rcf_pch_call(conn, cmd, RCF_MAX_LEN, 
+                            rc = rcf_pch_call(conn, cmd, cmd_buf_len, 
                                               answer_plen,
                                               rtn, is_argv, argc, param);
 
@@ -952,7 +964,7 @@ rcf_pch_run(const char *confstr, const char *info)
                     case RCF_START_FORK:
                         if ((mode == RCF_START_FORK ? rcf_ch_start_task :
                              rcf_ch_start_task_thr)
-                            (conn, cmd, RCF_MAX_LEN, answer_plen,
+                            (conn, cmd, cmd_buf_len, answer_plen,
                              priority, rtn, is_argv,
                              argc, param) < 0)
                         {
@@ -975,7 +987,6 @@ rcf_pch_run(const char *confstr, const char *info)
             {
                 char    *server;
                 uint32_t timeout;
-                int      data_len;
                 
                 if (*ptr == 0 || transform_str(&ptr, &server) != 0)
                     goto bad_protocol;
@@ -984,16 +995,7 @@ rcf_pch_run(const char *confstr, const char *info)
                 
                 if (ba)
                 {
-                    if (len > RCF_MAX_LEN)
-                    {
-                        data_len = RCF_MAX_LEN - (ba - cmd);
-                        len -= (ba - cmd);
-                    }
-                    else
-                    {
-                        len -= (ba - cmd);
-                        data_len = len;
-                    }
+                    len -= (ba - cmd);
                     ptr = ba;
                 }
                 else
@@ -1004,11 +1006,10 @@ rcf_pch_run(const char *confstr, const char *info)
                     if (transform_str(&ptr, &tmp) != 0)
                         goto bad_protocol;
                     ptr = tmp;
-                    len = data_len = strlen(ptr);
+                    len = strlen(ptr);
                 }
 
-                rc = rcf_pch_rpc(conn, sid, ptr, data_len, 
-                                 len, server, timeout);
+                rc = rcf_pch_rpc(conn, sid, ptr, len, server, timeout);
                                                  
                 if (rc != 0)
                      goto communication_problem;
@@ -1027,7 +1028,7 @@ rcf_pch_run(const char *confstr, const char *info)
                 if (*ptr != 0)
                     goto bad_protocol;
 
-                if (rcf_ch_kill_task(conn, cmd, RCF_MAX_LEN,
+                if (rcf_ch_kill_task(conn, cmd, cmd_buf_len,
                                      answer_plen, pid) < 0)
                     SEND_ANSWER("%d", EOPNOTSUPP);
 

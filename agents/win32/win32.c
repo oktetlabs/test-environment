@@ -280,7 +280,7 @@ rcf_ch_start_task(struct rcf_comm_connection *handle,
         {
             logfork_register_user(rtn);
             if (is_argv)
-                ((rcf_rtn)(addr))(argc, params);
+                ((rcf_argv_rtn)(addr))(argc, (char **)params);
             else
                 ((rcf_rtn)(addr))(params[0], params[1], params[2],
                                   params[3], params[4], params[5],
@@ -339,8 +339,9 @@ rcf_ch_thread_wrapper(void *arg)
     struct rcf_thread_parameter *parm = arg;
 
     if (parm->is_argv)
-        parm->rc = ((rcf_thr_rtn)(parm->addr))(&parm->params_processed, 
-                                               parm->argc, parm->params);
+        parm->rc = ((rcf_argv_thr_rtn)(parm->addr))(
+                       &parm->params_processed, parm->argc, 
+                       (char **)(parm->params));
     else
     {
         parm->rc = ((rcf_thr_rtn)(parm->addr))(&parm->params_processed,

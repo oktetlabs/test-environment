@@ -574,7 +574,8 @@ process_wildcard(struct rcf_comm_connection *conn, char *cbuf,
         SEND_ANSWER("%d", TE_RC(TE_RCF_PCH, rc));
         
     if ((size_t)snprintf(cbuf + answer_plen, buflen - answer_plen,
-                         "0 attach %u", strlen(tmp) + 1) >=
+                         "0 attach %u", 
+                         (unsigned int)(strlen(tmp) + 1)) >=
             (buflen - answer_plen))
     {
         free(tmp);
