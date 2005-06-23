@@ -189,6 +189,8 @@ tapi_radius_parse_packet(const uint8_t *data, size_t data_len,
     packet->identifier = *p++;
     memcpy(&radius_len, p, sizeof(radius_len));
     radius_len = ntohs(radius_len);
+    p += sizeof(radius_len);
+
     if (radius_len > data_len)
     {
         ERROR("%s: buffer size (%u) is smaller than RADIUS packet length (%u)",
