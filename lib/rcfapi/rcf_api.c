@@ -961,7 +961,7 @@ rcf_ta_name2type(const char *ta_name, char *ta_type)
                  
     if (rc == 0 && (rc = msg.error) == 0)                                   
         strcpy(ta_type, msg.id);
-        
+
     return rc;
 }
 
@@ -3066,4 +3066,23 @@ rcf_ta_call_rpc(const char *ta_name, int session,
     
 #undef INSIDE_LEN    
 #undef PREFIX_LEN    
-}                
+}
+
+int
+rcf_shutdown_call(void)
+{
+    rcf_msg msg;
+    size_t  anslen = sizeof(msg);
+    int     rc;
+    
+    INIT_IPC;
+    
+    memset((char *)&msg, 0, sizeof(msg));
+    msg.opcode = RCFOP_SHUTDOWN;
+    
+    rc = send_recv_rcf_ipc_message(ipc_handle,
+                                   &(ctx_handle->msg_buf_head),
+                                   &msg, sizeof(msg), &msg, &anslen, NULL);
+
+    return rc == 0 ? msg.error : rc;
+}

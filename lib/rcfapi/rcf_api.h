@@ -868,6 +868,13 @@ extern void rcf_api_cleanup(void);
  */
 extern int rcf_check_agents(void);
 
+/**
+ * This function is used to shutdown the RCF.
+ *
+ * @return error code
+ */
+extern int rcf_shutdown_call(void);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
