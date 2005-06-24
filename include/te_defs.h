@@ -31,6 +31,8 @@
 #ifndef __TE_DEFS_H__
 #define __TE_DEFS_H__
 
+#include "te_config.h"
+
 #if HAVE_ASSERT_H
 #include <assert.h>
 #endif
