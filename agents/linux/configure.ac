@@ -98,7 +98,12 @@ int a = IP_MTU;],
     "s/#[ \t]*define[ \t][ \t]*IP_MTU[ \t][ \t]*\([0-9]*\)[ \t]*$/\1/"`
                     AC_DEFINE_UNQUOTED([MY_IP_MTU], [$my_ip_mtu])],
                    [AC_MSG_RESULT([not found])])
-              ], [], [#include <sys/socket.h>])])])
+              ], [], [#include <sys/socket.h>])])], [],
+[
+#if HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+])
 
 DS_SOURCES=
 if test -n "$with_cfg_linux_daemons" ; then
