@@ -125,6 +125,8 @@ AC_CHECK_SIZEOF([short])
 AC_CHECK_SIZEOF([int])
 AC_CHECK_SIZEOF([long])
 AC_CHECK_SIZEOF([long long])
+AC_CHECK_SIZEOF([size_t])
+AC_CHECK_SIZEOF([socklen_t])
 
 AC_C_INLINE
 

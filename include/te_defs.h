@@ -236,6 +236,32 @@ strcmp_start(const char *pattern, const char *str)
 #error Unable to print 64-bit integers
 #endif
 
+/** printf()-like length modified for (s)size_t integers */
+#if (SIZEOF_INT == SIZEOF_SIZE_T)
+#define TE_PRINTF_SIZE_T    ""
+#elif (SIZEOF_LONG == SIZEOF_SIZE_T)
+#define TE_PRINTF_SIZE_T    "l"
+#else
+#error Unable to print (s)size_t integers
+#endif
+
+/** printf()-like length modified for socklen_t integers */
+#if (SIZEOF_INT == SIZEOF_SOCKLEN_T)
+#define TE_PRINTF_SOCKLEN_T ""
+#elif (SIZEOF_LONG == SIZEOF_SOCKLEN_T)
+#define TE_PRINTF_SOCKLEN_T "l"
+#else
+#error Unable to print socklen_t integers
+#endif
+
+#if (SIZEOF_INT == SIZEOF_VOID_P)
+#define TE_TYPE_INT_SIZEOF_PTR  int
+#elif (SIZEOF_LONG == SIZEOF_VOID_P)
+#define TE_TYPE_INT_SIZEOF_PTR  long
+#else
+#error Unable to find integer type of pointer size
+#endif
+
 
 #ifdef __cplusplus
 } /* extern "C" */
