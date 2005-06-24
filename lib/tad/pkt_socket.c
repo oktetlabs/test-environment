@@ -391,6 +391,8 @@ eth_free_interface(eth_interface_p iface)
     }
     close(cfg_socket);
 #endif 
+#else
+    UNUSED(iface);
 #endif 
     return rc;
 }

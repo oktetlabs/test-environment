@@ -413,8 +413,7 @@ int snmp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
                 break;
             } 
 
-            rc = asn_get_field_data(pat_var_bind, 
-                                    (const uint8_t **)&pat_oid,
+            rc = asn_get_field_data(pat_var_bind, &pat_oid,
                                     "name.#plain");
             if (rc == EASNINCOMPLVAL)
             {

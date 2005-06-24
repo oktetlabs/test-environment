@@ -90,18 +90,6 @@ typedef struct iface_user_rec
 
 static iface_user_rec iface_users_root = {&iface_users_root, &iface_users_root, {0,},0};
 
-static iface_user_rec *
-find_iface_user_rec(const char *ifname)
-{
-    iface_user_rec *ir;
-
-    for (ir = iface_users_root.next; ir != &iface_users_root; ir = ir->next)
-        if (strncmp(ir->name, ifname, IFNAME_SIZE) == 0)
-            return ir;
-
-    return NULL;
-}
-
 
 typedef enum {
     IN_PACKET_SOCKET,
