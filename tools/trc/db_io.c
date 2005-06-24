@@ -142,7 +142,7 @@ alloc_and_get_test_arg(xmlNodePtr node, test_args *args)
     p = calloc(1, sizeof(*p));
     if (p == NULL)
     {
-        ERROR("calloc(1, %u) failed", sizeof(*p));
+        ERROR("calloc(1, %u) failed", (unsigned)sizeof(*p));
         return errno;
     }
     p->node = node;
@@ -247,7 +247,7 @@ alloc_and_get_test_iter(xmlNodePtr node, trc_test_type type,
     p = calloc(1, sizeof(*p));
     if (p == NULL)
     {
-        ERROR("calloc(1, %u) failed", sizeof(*p));
+        ERROR("calloc(1, %u) failed", (unsigned)sizeof(*p));
         return errno;
     }
     p->node = p->tests.node = node;
@@ -358,7 +358,7 @@ alloc_and_get_test(xmlNodePtr node, test_runs *tests)
     p = calloc(1, sizeof(*p));
     if (p == NULL)
     {
-        ERROR("calloc(1, %u) failed", sizeof(*p));
+        ERROR("calloc(1, %u) failed", (unsigned)sizeof(*p));
         return errno;
     }
     p->node = p->iters.node = node;

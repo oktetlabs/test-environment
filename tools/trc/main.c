@@ -100,7 +100,7 @@ trc_add_tag(const char *name)
 
     if (p == NULL)
     {
-        ERROR("calloc(1, %u) failed", sizeof(*p));
+        ERROR("calloc(1, %u) failed", (unsigned)sizeof(*p));
         return ENOMEM;
     }
     TAILQ_INSERT_TAIL(&tags, p, links);

@@ -519,7 +519,7 @@ tests_to_html(const test_run *parent, const test_runs *tests,
                 obj_link = malloc(len);
                 if (obj_link == NULL)
                 {
-                    ERROR("malloc(%u) failed", len);
+                    ERROR("malloc(%u) failed", (unsigned)len);
                     return ENOMEM;
                 }
                 sprintf(obj_link, "%s-%s",

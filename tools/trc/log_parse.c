@@ -253,7 +253,7 @@ alloc_and_get_test_param(xmlNodePtr node, test_args *args)
     p = calloc(1, sizeof(*p));
     if (p == NULL)
     {
-        ERROR("calloc(1, %u) failed", sizeof(*p));
+        ERROR("calloc(1, %u) failed", (unsigned)sizeof(*p));
         return errno;
     }
     p->node = node;
