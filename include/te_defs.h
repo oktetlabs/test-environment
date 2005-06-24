@@ -250,8 +250,6 @@ strcmp_start(const char *pattern, const char *str)
 #define TE_PRINTF_SOCKLEN_T ""
 #elif (SIZEOF_LONG == SIZEOF_SOCKLEN_T)
 #define TE_PRINTF_SOCKLEN_T "l"
-#else
-#error Unable to print socklen_t integers
 #endif
 
 #if (SIZEOF_INT == SIZEOF_VOID_P)
