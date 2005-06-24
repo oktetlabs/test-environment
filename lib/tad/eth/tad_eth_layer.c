@@ -373,7 +373,7 @@ int eth_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
 
         frame_size = pld_fragment->len + ETH_HLEN;
 
-        F_RING("%s(): pld_fragment len %d, frame size %d", 
+        F_VERB("%s(): pld_fragment len %d, frame size %d", 
                __FUNCTION__, pld_fragment->len, frame_size);
 
         spec_data = (eth_csap_specific_data_p)
@@ -397,7 +397,7 @@ int eth_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
             return EMSGSIZE; 
         }
 
-        F_RING("%s(): corrected frame size %d", 
+        F_VERB("%s(): corrected frame size %d", 
                __FUNCTION__, frame_size);
 
         if ((data = malloc(frame_size)) == NULL)
