@@ -27,6 +27,8 @@
  * $Id$
  */
 
+#include "te_config.h"
+
 #include "tapi_radius.h"
 #include <string.h>
 #include <net/ethernet.h>
