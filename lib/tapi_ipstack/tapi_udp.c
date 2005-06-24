@@ -99,7 +99,7 @@ int
 ndn_udp4_dgram_to_plain(asn_value_p pkt, udp4_datagram **udp_dgram)
 {
     int         rc = 0;
-    int         len;
+    size_t      len;
     asn_value  *pdu;
 
     *udp_dgram = (struct udp4_datagram *)malloc(sizeof(**udp_dgram));
