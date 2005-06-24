@@ -78,6 +78,7 @@
 #include <dlfcn.h>
 
 #include "te_stdint.h"
+#include "te_printf.h"
 #include "te_errno.h"
 #include "te_defs.h"
 #include "ipc_server.h"
@@ -1493,35 +1494,35 @@ print_value(char *cmd, unsigned char type, void *value)
     switch (type)
     {
         case RCF_INT8:
-            sprintf(cmd, "%d", *(int8_t *)value);
+            sprintf(cmd, "%" TE_PRINTF_8 "d", *(int8_t *)value);
             break;
 
         case RCF_INT16:
-            sprintf(cmd, "%d", *(int16_t *)value);
+            sprintf(cmd, "%" TE_PRINTF_16 "d", *(int16_t *)value);
             break;
 
         case RCF_INT32:
-            sprintf(cmd, "%d", *(int32_t *)value);
+            sprintf(cmd, "%" TE_PRINTF_32 "d", *(int32_t *)value);
             break;
 
         case RCF_INT64:
-            sprintf(cmd, "%lld", *(int64_t *)value);
+            sprintf(cmd, "%" TE_PRINTF_64 "d", *(int64_t *)value);
             break;
 
         case RCF_UINT8:
-            sprintf(cmd, "%u", *(uint8_t *)value);
+            sprintf(cmd, "%" TE_PRINTF_8 "u", *(uint8_t *)value);
             break;
 
         case RCF_UINT16:
-            sprintf(cmd, "%u", *(uint16_t *)value);
+            sprintf(cmd, "%" TE_PRINTF_16 "u", *(uint16_t *)value);
             break;
 
         case RCF_UINT32:
-            sprintf(cmd, "%u", *(uint32_t *)value);
+            sprintf(cmd, "%" TE_PRINTF_32 "u", *(uint32_t *)value);
             break;
 
         case RCF_UINT64:
-            sprintf(cmd, "%llu", *(uint64_t *)value);
+            sprintf(cmd, "%" TE_PRINTF_64 "u", *(uint64_t *)value);
             break;
 
         case RCF_STRING:
