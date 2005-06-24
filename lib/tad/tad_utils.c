@@ -775,7 +775,7 @@ tad_data_unit_convert(const asn_value *pdu_val,
             case INTEGER:
             case ENUMERATED:
                 {
-                    int val_len = sizeof(location->val_i32);
+                    size_t val_len = sizeof(location->val_i32);
                     location->du_type = TAD_DU_I32; 
                     rc = asn_read_value_field(du_field, 
                             &location->val_i32, &val_len, "");
@@ -850,7 +850,7 @@ tad_data_unit_convert(const asn_value *pdu_val,
 
     /* process string values */ 
     {
-        int   len = asn_get_length(du_field, "");
+        size_t len = asn_get_length(du_field, "");
         void *d_ptr;
 
         if (len <= 0)

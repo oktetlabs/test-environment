@@ -68,7 +68,7 @@ udp_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
 { 
     int rc;
     csap_p csap_descr = csap_find(csap_id);
-    int len;
+    size_t len;
 
     udp_csap_specific_data_t * udp_spec_data = 
         (udp_csap_specific_data_t *) csap_descr->layers[layer].specific_data; 

@@ -510,7 +510,8 @@ cli_get_asn_string_value(asn_value * csap_spec,
                          char **str_value)
 {
     int rc = 0;
-    int tmp_len = asn_get_length(csap_spec, asn_name);
+    size_t tmp_len = asn_get_length(csap_spec, asn_name);
+
     if (tmp_len > 0)
     {
         /* allocate memory for the string */
@@ -862,7 +863,7 @@ int
 cli_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
 {
     int rc;
-    int tmp_len;
+    size_t tmp_len;
     int sv[2];
     int pipe_descrs[2];
 

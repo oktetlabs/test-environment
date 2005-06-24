@@ -1042,8 +1042,8 @@ rcf_ch_csap_param(struct rcf_comm_connection *handle,
     else if (strcmp(param, CSAP_PARAM_TOTAL_BYTES) == 0)
     {
         VERB("CSAP get_param, get total bytes %d\n", 
-             csap_descr_p->total_bytes);
-        SEND_ANSWER("0 %u", csap_descr_p->total_bytes);
+             (int)csap_descr_p->total_bytes);
+        SEND_ANSWER("0 %u", (int)csap_descr_p->total_bytes);
     }
     else if (strcmp(param, CSAP_PARAM_FIRST_PACKET_TIME) == 0)
     {

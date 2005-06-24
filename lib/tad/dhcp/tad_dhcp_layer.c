@@ -84,7 +84,7 @@ dhcp_confirm_pdu_cb (int csap_id, int layer, asn_value *tmpl_pdu)
 { 
     int rc;
     int xid;
-    int len = sizeof (xid);
+    size_t len = sizeof (xid);
     rc = asn_read_value_field(tmpl_pdu, &xid, &len, "xid.#plain");
     if (rc == EASNINCOMPLVAL)
     {
@@ -140,7 +140,7 @@ fill_dhcp_options(void *buf, asn_value_p options)
 {
     asn_value_p opt;
     int         i;
-    int         len;
+    size_t      len;
     int         n_opts;
     int         rc = 0;
     uint8_t     opt_type;
@@ -501,7 +501,8 @@ dhcp_gen_pattern_cb(int csap_id, int layer, const asn_value *tmpl_pdu,
 {
     int rc;
     int xid;
-    int len = sizeof (xid);
+    size_t len = sizeof (xid);
+
     *pattern_pdu = asn_init_value(ndn_dhcpv4_message); 
     rc = asn_read_value_field(tmpl_pdu, &xid, &len, "xid.#plain");
     if (rc == 0)

@@ -300,7 +300,7 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
 
                 char  buffer[200] = {0,};
                 char *usr_place;
-                int   buf_len = sizeof(buffer);
+                size_t buf_len = sizeof(buffer);
 
                 rc = asn_read_value_field(pattern_unit, buffer, &buf_len, 
                                           "action");

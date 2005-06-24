@@ -146,7 +146,7 @@ fill_tcp_options(void *buf, asn_value_p options)
 {
     asn_value_p opt;
     int         i;
-    int         len;
+    size_t      len;
     int         n_opts;
     int         rc = 0;
     uint8_t     opt_type;

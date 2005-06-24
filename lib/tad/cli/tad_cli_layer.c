@@ -115,7 +115,7 @@ cli_gen_bin_cb(csap_p csap_descr, int layer, const asn_value * tmpl_pdu,
                const csap_pkts_p  up_payload, csap_pkts_p pkts)
 {
     int rc;
-    int msg_len;
+    size_t msg_len;
 
     char *msg;
 
