@@ -430,7 +430,11 @@ log_get_message(uint32_t length, uint8_t *buffer)
                 LGR_32_TO_NET(tmp, tmp_buf);
                 tmp_buf += sizeof(uint32_t);
 
-                tmp = (uint32_t)val;
+                /* 
+                 * At first, cast to the integer of appropriate size,
+                 * then reject the most significant bits.
+                 */
+                tmp = (uint32_t)(uint64_t)val;
                 LGR_32_TO_NET(tmp, tmp_buf);
                 tmp_buf += sizeof(uint32_t);
 #else
