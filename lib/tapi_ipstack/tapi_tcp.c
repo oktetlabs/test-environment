@@ -39,14 +39,27 @@
 #include <strings.h>
 #endif
 
+#ifdef HAVE_SYS_QUEUE_H
+#include <sys/queue.h>
+#endif
+
+
+#ifdef HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
+#ifdef HAVE_NETINET_IN_H
+#include <netinet/ether.h>
+#endif
+#ifdef HAVE_ARPA_INET_H
+#include <arpa/inet.h>
+#endif
+#ifdef HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif
+
+#include <unistd.h>
 #include <stdio.h>
 #include <assert.h>
-
-#include <netinet/in.h>
-#include <netinet/ether.h>
-#include <arpa/inet.h>
-#include <sys/socket.h>
-#include <unistd.h>
 
 #include "rcf_api.h"
 #include "conf_api.h"
@@ -308,8 +321,8 @@ tapi_tcp_make_msg(uint16_t src_port, uint16_t dst_port,
 
 
 typedef struct tapi_tcp_connection_t {
-    struct tapi_tcp_connection_t *next,
-                                 *prev;
+    CIRCLEQ_ENTRY(tapi_tcp_connection_t) link;
+
     tapi_tcp_handler_t id;
 
     const char    *agt; 
@@ -332,8 +345,94 @@ typedef struct tapi_tcp_connection_t {
 
 } tapi_tcp_connection_t;
 
+CIRCLEQ_HEAD(tapi_tcp_conn_list_head, tapi_tcp_connection_t) 
+    *conns_root = NULL;
 
-tapi_tcp_connection_t conns_root = {NULL, NULL, 0, };
+static inline void
+tapi_tcp_conns_db_init(void)
+{
+    if (conns_root == NULL)
+    {
+        conns_root = calloc(1, sizeof(*conns_root));
+        CIRCLEQ_INIT(conns_root);
+    }
+}
+
+
+
+/**
+ * Find TCP connection descriptor by handle
+ *
+ * @param handler       identifier of TCP connecion
+ *
+ * @return pointer to found descriptor or NULL if not found.
+ */
+static inline tapi_tcp_connection_t *
+tapi_tcp_find_conn(tapi_tcp_handler_t handler)
+{
+    tapi_tcp_connection_t *conn;
+
+    tapi_tcp_conns_db_init();
+
+    for (conn = conns_root->cqh_first; conn != (void *) conns_root;
+         conn = (void *) conn->link.cqe_next)
+    {
+        if (conn->id == handler)
+            return conn;
+    }
+    return NULL;
+}
+
+/**
+ * Add new TCP connection descriptor into databse and assign hanlder to it.
+ * Descriptor structure should be already filled with TCP-related info.
+ *
+ * @param descr         pointer to descriptor to be inserted
+ *
+ * @return status code
+ */
+/* see description in tapi_tcp.h */
+static inline int
+tapi_tcp_insert_conn(tapi_tcp_connection_t *descr)
+{
+    tapi_tcp_conns_db_init();
+
+    descr->id = conns_root->cqh_last->id + 1;
+
+    CIRCLEQ_INSERT_TAIL(conns_root, descr, link);
+
+    return 0;
+}
+/**
+ * Remove TCP connection descriptor from data base
+ *
+ * @param conn_descr    pointer to descriptor 
+ *
+ * @return status code
+ */
+static inline int
+tapi_tcp_destroy_conn_descr(tapi_tcp_connection_t *conn_descr)
+{ 
+    tapi_tcp_conns_db_init();
+
+    if (conn_descr == NULL || conn_descr == (void *)conns_root)
+        return 0;
+
+    if (conn_descr->tcp_csap != CSAP_INVALID_HANDLE)
+    {
+        int rc = rcf_ta_csap_destroy(conn_descr->agt, conn_descr->sid,
+                                     conn_descr->tcp_csap);
+        if (rc != 0)
+        {
+            WARN("%s(id %d): CSAP %d on agt %s destroy failed %X", 
+                 __FUNCTION__, conn_descr->id, conn_descr->tcp_csap,
+                 conn_descr->agt, rc);
+        }
+    } 
+    CIRCLEQ_REMOVE(conns_root, conn_descr, link);
+    free(conn_descr);
+    return 0;
+}
 
 int
 tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode, 
@@ -352,6 +451,8 @@ tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode,
 
     tapi_tcp_connection_t *conn_descr = NULL;
 
+    tapi_tcp_conns_db_init();
+
     if (agt == NULL || local_addr == NULL || remote_addr == NULL)
         return TE_RC(TE_TAPI, ETEWRONGPTR);
 
@@ -363,12 +464,12 @@ tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode,
         return TE_RC(TE_TAPI, ETENOSUPP);
 
 #define CHECK_ERROR(cond_, msg_...)\
-    do {                                \
-        if (cond_)                      \
-        {                               \
-            ERROR(msg_);                \
-            return TE_RC(TE_TAPI, rc);  \
-        }                               \
+    do {                           \
+        if (cond_)                 \
+        {                          \
+            ERROR(msg_);           \
+            goto cleanup;          \
+        }                          \
     } while (0)
 
     rc = rcf_ta_create_session(agt, &sid);
@@ -383,9 +484,21 @@ tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode,
                                       remote_in_addr->sin_port,
                                       &tcp_csap);
 
-    UNUSED(conn_descr);
+    CHECK_ERROR(rc != 0, "%s(): csap create failed %X",
+                __FUNCTION__, rc);
+    conn_descr = calloc(1, sizeof(*conn_descr));
+    conn_descr->tcp_csap = tcp_csap;
+    conn_descr->sid = sid;
+    conn_descr->agt = agt;
+    tapi_tcp_insert_conn(conn_descr);
+
+
     UNUSED(mode);
     UNUSED(timeout);
     UNUSED(handler);
     return 0;
+
+cleanup:
+    tapi_tcp_destroy_conn_descr(conn_descr);
+    return TE_RC(TE_TAPI, rc);
 }
