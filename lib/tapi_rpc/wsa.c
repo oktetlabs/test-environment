@@ -1914,9 +1914,13 @@ rpc_wsa_recv_msg(rcf_rpc_server *rpcs, int s,
 
             snprintf(str_buf + strlen(str_buf),
                      sizeof(str_buf) - strlen(str_buf),
-                     "msg_name: %p, msg_namelen: %d, "
-                     "msg_iov: %p, msg_iovlen: %d, "
-                     "msg_control: %p, msg_controllen: %d, msg_flags: %s",
+                     "msg_name: %p, "
+                     "msg_namelen: %" TE_PRINTF_SOCKLEN_T "d, "
+                     "msg_iov: %p, "
+                     "msg_iovlen: %" TE_PRINTF_SIZE_T "d, "
+                     "msg_control: %p, "
+                     "msg_controllen: %" TE_PRINTF_SOCKLEN_T "d, "
+                     "msg_flags: %s",
                      msg->msg_name, msg->msg_namelen,
                      msg->msg_iov, msg->msg_iovlen,
                      msg->msg_control, msg->msg_controllen,
