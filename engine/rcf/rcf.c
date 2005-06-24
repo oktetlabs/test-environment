@@ -1063,8 +1063,8 @@ read_str(char **ptr, char *s)
         if (tmp - s == RCF_MAX_VAL - 1)
         {
             cut = 1;
-            ERROR("Too long string value is received in the answer - "
-                  "cutting\n");
+            WARN("Too long string value is received in the answer - "
+                 "cutting\n");
         }
     }
 
