@@ -547,7 +547,7 @@ rpc_create_file(rcf_rpc_server *rpcs, char *name,
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        RETVAL_PTR(create_file, -1);
+        RETVAL_RPC_PTR(create_file, -1);
     }
     op = rpcs->op;
     
@@ -570,7 +570,7 @@ rpc_create_file(rcf_rpc_server *rpcs, char *name,
                  rpcs->ta, rpcs->name, rpcop2str(op),
                  name, out.handle, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_PTR(create_file, out.handle);
+    RETVAL_RPC_PTR(create_file, out.handle);
 }
 
 int
@@ -769,7 +769,7 @@ rpc_create_event(rcf_rpc_server *rpcs)
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        RETVAL_PTR(create_event, NULL);
+        RETVAL_RPC_PTR(create_event, RPC_NULL);
     }
 
     rpcs->op = RCF_RPC_CALL_WAIT;
@@ -780,7 +780,7 @@ rpc_create_event(rcf_rpc_server *rpcs)
                  rpcs->ta, rpcs->name,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_PTR(create_event, out.retval);
+    RETVAL_RPC_PTR(create_event, out.retval);
 }
 
 int
@@ -887,7 +887,7 @@ rpc_create_overlapped(rcf_rpc_server *rpcs, rpc_wsaevent hevent,
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        RETVAL_PTR(create_overlapped, NULL);
+        RETVAL_RPC_PTR(create_overlapped, RPC_NULL);
     }
 
 
@@ -902,7 +902,7 @@ rpc_create_overlapped(rcf_rpc_server *rpcs, rpc_wsaevent hevent,
                  rpcs->ta, rpcs->name, hevent,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_PTR(create_overlapped, out.retval);
+    RETVAL_RPC_PTR(create_overlapped, out.retval);
 }
 
 void
@@ -1072,7 +1072,7 @@ rpc_create_window(rcf_rpc_server *rpcs)
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        RETVAL_PTR(create_window, NULL);
+        RETVAL_RPC_PTR(create_window, RPC_NULL);
     }
 
 
@@ -1083,7 +1083,7 @@ rpc_create_window(rcf_rpc_server *rpcs)
                  rpcs->ta, rpcs->name,
                  out.hwnd, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_PTR(create_window, out.hwnd);
+    RETVAL_RPC_PTR(create_window, out.hwnd);
 }
 
 void
@@ -1533,7 +1533,7 @@ rpc_wsa_recv_from(rcf_rpc_server *rpcs, int s,
         }
     }
 
-    if ((overlapped != NULL) && ((from != NULL) || (fromlen != NULL)))
+    if ((overlapped != RPC_NULL) && ((from != NULL) || (fromlen != NULL)))
     {
         ERROR("%s(): currently can't deal with non-NULL 'from' or "
               "'fromlen' when overlapped is non-NULL", __FUNCTION__);
@@ -1748,7 +1748,7 @@ rpc_wsa_recv_msg(rcf_rpc_server *rpcs, int s,
 
     if (msg != NULL && rpcs->op != RCF_RPC_WAIT)
     {
-        if ((overlapped != NULL) &&
+        if ((overlapped != RPC_NULL) &&
             ((msg->msg_name != NULL) || (msg->msg_control != NULL)))
         {
             ERROR("%s(): currently can't deal with non-NULL 'msg_name' "
@@ -2179,7 +2179,7 @@ rpc_is_winsock2(rcf_rpc_server *rpcs)
 
     RPC_AWAIT_IUT_ERROR(rpcs);
     hevent = rpc_create_event(rpcs);
-    if (hevent == NULL)
+    if (hevent == RPC_NULL)
     {
         if (RPC_ERRNO(rpcs) != RPC_ERPCNOTSUPP)
         {
@@ -2905,7 +2905,7 @@ rpc_wsa_async_get_host_by_addr(rcf_rpc_server *rpcs, rpc_hwnd hwnd,
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        RETVAL_PTR(wsa_async_get_host_by_addr,  NULL);
+        RETVAL_RPC_PTR(wsa_async_get_host_by_addr,  RPC_NULL);
     }
 
 
@@ -2933,7 +2933,7 @@ rpc_wsa_async_get_host_by_addr(rcf_rpc_server *rpcs, rpc_hwnd hwnd,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)),
                  win_error_rpc2str(out.common.win_error));
 
-    RETVAL_PTR(wsa_async_get_host_by_addr, out.retval);
+    RETVAL_RPC_PTR(wsa_async_get_host_by_addr, out.retval);
 }
 
 rpc_handle
@@ -2951,7 +2951,7 @@ rpc_wsa_async_get_host_by_name(rcf_rpc_server *rpcs, rpc_hwnd hwnd,
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        RETVAL_PTR(wsa_async_get_host_by_name, NULL);
+        RETVAL_RPC_PTR(wsa_async_get_host_by_name, RPC_NULL);
     }
 
 
@@ -2976,7 +2976,7 @@ rpc_wsa_async_get_host_by_name(rcf_rpc_server *rpcs, rpc_hwnd hwnd,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)),
                  win_error_rpc2str(out.common.win_error));
 
-    RETVAL_PTR(wsa_async_get_host_by_name, out.retval);
+    RETVAL_RPC_PTR(wsa_async_get_host_by_name, out.retval);
 }
 
 rpc_handle
@@ -2994,7 +2994,7 @@ rpc_wsa_async_get_proto_by_name(rcf_rpc_server *rpcs, rpc_hwnd hwnd,
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        RETVAL_PTR(wsa_async_get_proto_by_name, NULL);
+        RETVAL_RPC_PTR(wsa_async_get_proto_by_name, RPC_NULL);
     }
 
     op = rpcs->op;
@@ -3018,7 +3018,7 @@ rpc_wsa_async_get_proto_by_name(rcf_rpc_server *rpcs, rpc_hwnd hwnd,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)),
                  win_error_rpc2str(out.common.win_error));
 
-    RETVAL_PTR(wsa_async_get_proto_by_name, out.retval);
+    RETVAL_RPC_PTR(wsa_async_get_proto_by_name, out.retval);
 }
 
 rpc_handle
@@ -3036,7 +3036,7 @@ rpc_wsa_async_get_proto_by_number(rcf_rpc_server *rpcs, rpc_hwnd hwnd,
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        RETVAL_PTR(wsa_async_get_proto_by_number, NULL);
+        RETVAL_RPC_PTR(wsa_async_get_proto_by_number, RPC_NULL);
     }
 
     op = rpcs->op;
@@ -3054,7 +3054,7 @@ rpc_wsa_async_get_proto_by_number(rcf_rpc_server *rpcs, rpc_hwnd hwnd,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)),
                  win_error_rpc2str(out.common.win_error));
 
-    RETVAL_PTR(wsa_async_get_proto_by_number, out.retval);
+    RETVAL_RPC_PTR(wsa_async_get_proto_by_number, out.retval);
 }
 
 rpc_handle
@@ -3072,7 +3072,7 @@ rpc_wsa_async_get_serv_by_name(rcf_rpc_server *rpcs, rpc_hwnd hwnd,
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        RETVAL_PTR(wsa_async_get_serv_by_name, NULL);
+        RETVAL_RPC_PTR(wsa_async_get_serv_by_name, RPC_NULL);
     }
 
     op = rpcs->op;
@@ -3102,7 +3102,7 @@ rpc_wsa_async_get_serv_by_name(rcf_rpc_server *rpcs, rpc_hwnd hwnd,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)),
                  win_error_rpc2str(out.common.win_error));
 
-    RETVAL_PTR(wsa_async_get_serv_by_name, out.retval);
+    RETVAL_RPC_PTR(wsa_async_get_serv_by_name, out.retval);
 }
 
 rpc_handle
@@ -3120,9 +3120,8 @@ rpc_wsa_async_get_serv_by_port(rcf_rpc_server *rpcs, rpc_hwnd hwnd,
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        RETVAL_PTR(wsa_async_get_serv_by_port, NULL);
-    }
-
+        RETVAL_RPC_PTR(wsa_async_get_serv_by_port, RPC_NULL);
+    } 
 
     op = rpcs->op;
 
@@ -3146,5 +3145,5 @@ rpc_wsa_async_get_serv_by_port(rcf_rpc_server *rpcs, rpc_hwnd hwnd,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)),
                  win_error_rpc2str(out.common.win_error));
 
-    RETVAL_PTR(wsa_async_get_serv_by_port, out.retval);
+    RETVAL_RPC_PTR(wsa_async_get_serv_by_port, out.retval);
 }

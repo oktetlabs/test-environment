@@ -58,9 +58,6 @@
 #include <pwd.h>
 #endif
 
-/** To store the pointer, which is valid in the TA address space */
-typedef uint64_t rpc_ptr;
-
 #include "rcf_rpc.h"
 #include "tapi_rpc_socket.h"
 #include "tapi_rpc_unistd.h"
@@ -71,6 +68,7 @@ typedef uint64_t rpc_ptr;
 #include "tapi_rpc_aio.h"
 #include "tapi_rpc_winsock2.h"
 #include "tapi_rpc_misc.h"
+
 
 /**
  * Get readability (there are data to read) or writability (it is allowed

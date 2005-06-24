@@ -125,7 +125,7 @@ rpc_kill(rcf_rpc_server *rpcs, pid_t pid, rpc_signum signum)
     RETVAL_INT(kill, out.retval);
 }
 
-rpc_sigset_t *
+rpc_sigset_p
 rpc_sigset_new(rcf_rpc_server *rpcs)
 {
     tarpc_sigset_new_in  in;
@@ -137,7 +137,7 @@ rpc_sigset_new(rcf_rpc_server *rpcs)
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        RETVAL_PTR(sigset_new, NULL);
+        RETVAL_RPC_PTR(sigset_new, RPC_NULL);
     }
 
     rpcs->op = RCF_RPC_CALL_WAIT;
@@ -148,11 +148,11 @@ rpc_sigset_new(rcf_rpc_server *rpcs)
                  rpcs->ta, rpcs->name,
                  out.set, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_PTR(sigset_new, out.set);
+    RETVAL_RPC_PTR(sigset_new, out.set);
 }
 
 void
-rpc_sigset_delete(rcf_rpc_server *rpcs, rpc_sigset_t *set)
+rpc_sigset_delete(rcf_rpc_server *rpcs, rpc_sigset_p set)
 {
     tarpc_sigset_delete_in  in;
     tarpc_sigset_delete_out out;
@@ -182,8 +182,8 @@ rpc_sigset_delete(rcf_rpc_server *rpcs, rpc_sigset_t *set)
 
 int
 rpc_sigprocmask(rcf_rpc_server *rpcs,
-                rpc_sighow how, const rpc_sigset_t *set,
-                rpc_sigset_t *oldset)
+                rpc_sighow how, const rpc_sigset_p set,
+                rpc_sigset_p oldset)
 {
     tarpc_sigprocmask_in  in;
     tarpc_sigprocmask_out out;
@@ -216,7 +216,7 @@ rpc_sigprocmask(rcf_rpc_server *rpcs,
 
 
 int
-rpc_sigemptyset(rcf_rpc_server *rpcs, rpc_sigset_t *set)
+rpc_sigemptyset(rcf_rpc_server *rpcs, rpc_sigset_p set)
 {
     tarpc_sigemptyset_in  in;
     tarpc_sigemptyset_out out;
@@ -246,7 +246,7 @@ rpc_sigemptyset(rcf_rpc_server *rpcs, rpc_sigset_t *set)
 }
 
 int
-rpc_sigpending(rcf_rpc_server *rpcs, rpc_sigset_t *set)
+rpc_sigpending(rcf_rpc_server *rpcs, rpc_sigset_p set)
 {
     tarpc_sigpending_in  in;
     tarpc_sigpending_out out;
@@ -276,7 +276,7 @@ rpc_sigpending(rcf_rpc_server *rpcs, rpc_sigset_t *set)
 }
 
 int
-rpc_sigsuspend(rcf_rpc_server *rpcs, const rpc_sigset_t *set)
+rpc_sigsuspend(rcf_rpc_server *rpcs, const rpc_sigset_p set)
 {
     tarpc_sigsuspend_in  in;
     tarpc_sigsuspend_out out;
@@ -303,7 +303,7 @@ rpc_sigsuspend(rcf_rpc_server *rpcs, const rpc_sigset_t *set)
     RETVAL_INT(sigsuspend, out.retval);
 }
 
-rpc_sigset_t *
+rpc_sigset_p
 rpc_sigreceived(rcf_rpc_server *rpcs)
 {
     tarpc_sigreceived_in  in;
@@ -315,7 +315,7 @@ rpc_sigreceived(rcf_rpc_server *rpcs)
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        RETVAL_PTR(sigreceived, NULL);
+        RETVAL_RPC_PTR(sigreceived, RPC_NULL);
     }
 
     rpcs->op = RCF_RPC_CALL_WAIT;
@@ -326,11 +326,11 @@ rpc_sigreceived(rcf_rpc_server *rpcs)
                  rpcs->ta, rpcs->name,
                  out.set, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_PTR(sigreceived, out.set);
+    RETVAL_RPC_PTR(sigreceived, out.set);
 }
 
 int
-rpc_sigfillset(rcf_rpc_server *rpcs, rpc_sigset_t *set)
+rpc_sigfillset(rcf_rpc_server *rpcs, rpc_sigset_p set)
 {
     tarpc_sigfillset_in  in;
     tarpc_sigfillset_out out;
@@ -360,7 +360,7 @@ rpc_sigfillset(rcf_rpc_server *rpcs, rpc_sigset_t *set)
 }
 
 int
-rpc_sigaddset(rcf_rpc_server *rpcs, rpc_sigset_t *set, rpc_signum signum)
+rpc_sigaddset(rcf_rpc_server *rpcs, rpc_sigset_p set, rpc_signum signum)
 {
     tarpc_sigaddset_in  in;
     tarpc_sigaddset_out out;
@@ -392,7 +392,7 @@ rpc_sigaddset(rcf_rpc_server *rpcs, rpc_sigset_t *set, rpc_signum signum)
 }
 
 int
-rpc_sigdelset(rcf_rpc_server *rpcs, rpc_sigset_t *set, rpc_signum signum)
+rpc_sigdelset(rcf_rpc_server *rpcs, rpc_sigset_p set, rpc_signum signum)
 {
     tarpc_sigdelset_in  in;
     tarpc_sigdelset_out out;
@@ -425,7 +425,7 @@ rpc_sigdelset(rcf_rpc_server *rpcs, rpc_sigset_t *set, rpc_signum signum)
 
 int
 rpc_sigismember(rcf_rpc_server *rpcs,
-                const rpc_sigset_t *set, rpc_signum signum)
+                const rpc_sigset_p set, rpc_signum signum)
 {
     tarpc_sigismember_in  in;
     tarpc_sigismember_out out;
@@ -477,14 +477,14 @@ rpc_sigaction(rcf_rpc_server *rpcs, rpc_signum signum,
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         RETVAL_INT(sigaction, out.retval);
     }
-    if (act != NULL && act->mm_mask == NULL)
+    if (act != NULL && act->mm_mask == RPC_NULL)
     {
         ERROR("%s(): Invalid 'act->mm_mask' argument",
                 __FUNCTION__);
         rpcs->_errno = EINVAL;
         RETVAL_INT(sigaction, out.retval);
     }
-    if (oldact != NULL && oldact->mm_mask == NULL)
+    if (oldact != NULL && oldact->mm_mask == RPC_NULL)
     {
         ERROR("%s(): Invalid 'oldact->mm_mask' argument",
                 __FUNCTION__);
@@ -545,7 +545,7 @@ rpc_sigaction(rcf_rpc_server *rpcs, rpc_signum signum,
                out_oldact->xx_restorer.xx_restorer_val,
                out_oldact->xx_restorer.xx_restorer_len);
 
-        oldact->mm_mask = (rpc_sigset_t *)out_oldact->xx_mask;
+        oldact->mm_mask = (rpc_sigset_p)out_oldact->xx_mask;
         oldact->mm_flags = out_oldact->xx_flags;
     }
 

@@ -198,9 +198,9 @@
 /** Return with check (for functions returning pointers) */
 #define RETVAL_RPC_PTR(_func, _retval) \
     do {                                                            \
-        rpc_ptr __retval = _retval;                                 \
+        rpc_ptr __retval = (_retval);                               \
                                                                     \
-        TAPI_RPC_OUT(_func, __retval == 0);                         \
+        TAPI_RPC_OUT(_func, __retval == RPC_NULL);                  \
                                                                     \
         return __retval;                                            \
     } while (0)

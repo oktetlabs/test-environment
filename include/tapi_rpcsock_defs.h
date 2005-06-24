@@ -1131,10 +1131,12 @@ shut_how_rpc2str(int how)
 }
 
 
-typedef uint32_t rpc_fd_set;
 
+typedef uint32_t rpc_ptr;
+typedef rpc_ptr rpc_fd_set_p;
+typedef rpc_ptr rpc_sigset_p;
 
-typedef uint32_t rpc_sigset_t;
+#define RPC_NULL    0
 
 /* @todo Enum for poll events */
 

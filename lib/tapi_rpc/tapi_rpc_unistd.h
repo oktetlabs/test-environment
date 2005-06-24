@@ -239,7 +239,7 @@ rpc_readv(rcf_rpc_server *rpcs,
  *
  * @return set of descriptors,otherwise @b NULL is returned on error
  */
-extern rpc_fd_set *rpc_fd_set_new(rcf_rpc_server *rpcs);
+extern rpc_fd_set_p rpc_fd_set_new(rcf_rpc_server *rpcs);
 
 /**
  * Destroy a specified set of file descriptors allocated by 
@@ -249,7 +249,7 @@ extern rpc_fd_set *rpc_fd_set_new(rcf_rpc_server *rpcs);
  * @param set      set of descriptors to be deleted
  */
 extern void rpc_fd_set_delete(rcf_rpc_server *rpcs,
-                              rpc_fd_set *set);
+                              rpc_fd_set_p set);
 
 /**
  * Initialize the specified set of descriptors (clear the set)
@@ -258,7 +258,7 @@ extern void rpc_fd_set_delete(rcf_rpc_server *rpcs,
  * @param set    set of descriptors to initialize
  */
 extern void rpc_do_fd_zero(rcf_rpc_server *rpcs,
-                           rpc_fd_set *set);
+                           rpc_fd_set_p set);
 
 /**
  * Add a specified descriptor @b fd to a given set of descriptors @b set
@@ -269,7 +269,7 @@ extern void rpc_do_fd_zero(rcf_rpc_server *rpcs,
  * @param set   set to which descriptor is added
  */
 extern void rpc_do_fd_set(rcf_rpc_server *rpcs,
-                          int fd, rpc_fd_set *set);
+                          int fd, rpc_fd_set_p set);
 
 /**
  * Remove a specified descriptor from the set of descriptors
@@ -279,7 +279,7 @@ extern void rpc_do_fd_set(rcf_rpc_server *rpcs,
  * @param set    set from which descriptor is removed
  */
 extern void rpc_do_fd_clr(rcf_rpc_server *rpcs,
-                          int fd, rpc_fd_set *set);
+                          int fd, rpc_fd_set_p set);
 
 /**
  * Test existance of specified descriptor @b fd in a given set of 
@@ -292,7 +292,7 @@ extern void rpc_do_fd_clr(rcf_rpc_server *rpcs,
  * @return value other than zero, other return 0 when failed. 
  */
 extern int  rpc_do_fd_isset(rcf_rpc_server *rpcs,
-                            int fd, rpc_fd_set *set);
+                            int fd, rpc_fd_set_p set);
 
 /**
  * Examine the file descriptor sets whose addresses are passed in the 
@@ -322,8 +322,8 @@ extern int  rpc_do_fd_isset(rcf_rpc_server *rpcs,
  *         otherwise -1 is returned.
  */
 extern int rpc_select(rcf_rpc_server *rpcs,
-                      int n, rpc_fd_set *readfds, rpc_fd_set *writefds,
-                      rpc_fd_set *exceptfds, struct timeval *timeout);
+                      int n, rpc_fd_set_p readfds, rpc_fd_set_p writefds,
+                      rpc_fd_set_p exceptfds, struct timeval *timeout);
 
 /**
  * Examine the file descriptor sets whose addresses are passed in the 
@@ -358,9 +358,9 @@ extern int rpc_select(rcf_rpc_server *rpcs,
  * @note See @b pselect manual page for more information
  */
 extern int rpc_pselect(rcf_rpc_server *rpcs,
-                       int n, rpc_fd_set *readfds, rpc_fd_set *writefds,
-                       rpc_fd_set *exceptfds, struct timespec *timeout,
-                       const rpc_sigset_t *sigmask);
+                       int n, rpc_fd_set_p readfds, rpc_fd_set_p writefds,
+                       rpc_fd_set_p exceptfds, struct timespec *timeout,
+                       const rpc_sigset_p sigmask);
 
 
 /** Analog of pollfd structure */
@@ -581,5 +581,23 @@ extern uid_t rpc_geteuid(rcf_rpc_server *rpcs);
  */
 extern int rpc_seteuid(rcf_rpc_server *rpcs, uid_t uid);
 
+/**
+ * Allocate a buffer of specified size in the TA address space
+ *
+ * @param rpcs    RPC server handle
+ * @param size    size of the buffer to be allocated
+ *
+ * @return   pointer to the allocated buffer upon successful completion
+ *           otherwise NULL is retruned.
+ */
+extern rpc_ptr rpc_malloc(rcf_rpc_server *rpcs, size_t size);
+
+/**
+ * Free the specified buffer in TA address space
+ *
+ * @param rpcs   RPC server handle
+ * @param buf    pointer to the buffer to be freed
+ */
+extern void rpc_free(rcf_rpc_server *rpcs, rpc_ptr buf);
 
 #endif /* !__TE_TAPI_RPC_UNISTD_H__ */

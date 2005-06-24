@@ -37,16 +37,16 @@
 
 
 /** Windows Event Objects */
-typedef void *rpc_wsaevent;
+typedef rpc_ptr rpc_wsaevent;
 
 /** Windows WSAOVERLAPPED structure */
-typedef void *rpc_overlapped;
+typedef rpc_ptr rpc_overlapped;
 
 /** Windows HWND */
-typedef void *rpc_hwnd;
+typedef rpc_ptr rpc_hwnd;
 
 /** Windows HANDLE  */
-typedef void *rpc_handle;
+typedef rpc_ptr rpc_handle;
 
 /** Windows FLOWSPEC structure */
 typedef struct _rpc_flowspec {
@@ -481,25 +481,6 @@ extern int rpc_wsa_string_to_address(rcf_rpc_server *rpcs, char *addrstr,
  */
 extern int rpc_wsa_cancel_async_request(rcf_rpc_server *rpcs,
                                         rpc_handle async_task_handle);
-
-/**
- * Allocate a buffer of specified size in the TA address space
- *
- * @param rpcs    RPC server handle
- * @param size    size of the buffer to be allocated
- *
- * @return   pointer to the allocated buffer upon successful completion
- *           otherwise NULL is retruned.
- */
-extern rpc_ptr rpc_alloc_buf(rcf_rpc_server *rpcs, size_t size);
-
-/**
- * Free the specified buffer in TA address space
- *
- * @param rpcs   RPC server handle
- * @param buf    pointer to the buffer to be freed
- */
-extern void rpc_free_buf(rcf_rpc_server *rpcs, rpc_ptr buf);
 
 /**
  * Copy the @b src_buf buffer in @b dst_buf located in TA address space

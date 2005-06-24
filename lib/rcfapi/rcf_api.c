@@ -63,6 +63,7 @@
 #include "te_defs.h"
 #include "te_stdint.h"
 #include "te_errno.h"
+#include "te_printf.h"
 #include "rcf_api.h"
 #include "rcf_internal.h"
 #define RCF_NEED_TYPE_LEN 1

@@ -516,7 +516,7 @@ rpc_writev(rcf_rpc_server *rpcs,
 }
 
 
-rpc_fd_set *
+rpc_fd_set_p
 rpc_fd_set_new(rcf_rpc_server *rpcs)
 {
     tarpc_fd_set_new_in  in;
@@ -528,7 +528,7 @@ rpc_fd_set_new(rcf_rpc_server *rpcs)
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        RETVAL_PTR(fd_set_new, NULL);
+        RETVAL_RPC_PTR(fd_set_new, RPC_NULL);
     }
 
     rpcs->op = RCF_RPC_CALL_WAIT;
@@ -539,12 +539,12 @@ rpc_fd_set_new(rcf_rpc_server *rpcs)
                  rpcs->ta, rpcs->name,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_PTR(fd_set_new, out.retval);
+    RETVAL_RPC_PTR(fd_set_new, out.retval);
 }
 
 
 void
-rpc_fd_set_delete(rcf_rpc_server *rpcs, rpc_fd_set *set)
+rpc_fd_set_delete(rcf_rpc_server *rpcs, rpc_fd_set_p set)
 {
     tarpc_fd_set_delete_in  in;
     tarpc_fd_set_delete_out out;
@@ -572,7 +572,7 @@ rpc_fd_set_delete(rcf_rpc_server *rpcs, rpc_fd_set *set)
 }
 
 void
-rpc_do_fd_zero(rcf_rpc_server *rpcs, rpc_fd_set *set)
+rpc_do_fd_zero(rcf_rpc_server *rpcs, rpc_fd_set_p set)
 {
     tarpc_do_fd_zero_in  in;
     tarpc_do_fd_zero_out out;
@@ -600,7 +600,7 @@ rpc_do_fd_zero(rcf_rpc_server *rpcs, rpc_fd_set *set)
 }
 
 void
-rpc_do_fd_set(rcf_rpc_server *rpcs, int fd, rpc_fd_set *set)
+rpc_do_fd_set(rcf_rpc_server *rpcs, int fd, rpc_fd_set_p set)
 {
     tarpc_do_fd_set_in  in;
     tarpc_do_fd_set_out out;
@@ -629,7 +629,7 @@ rpc_do_fd_set(rcf_rpc_server *rpcs, int fd, rpc_fd_set *set)
 }
 
 void
-rpc_do_fd_clr(rcf_rpc_server *rpcs, int fd, rpc_fd_set *set)
+rpc_do_fd_clr(rcf_rpc_server *rpcs, int fd, rpc_fd_set_p set)
 {
     tarpc_do_fd_clr_in  in;
     tarpc_do_fd_clr_out out;
@@ -658,7 +658,7 @@ rpc_do_fd_clr(rcf_rpc_server *rpcs, int fd, rpc_fd_set *set)
 }
 
 int
-rpc_do_fd_isset(rcf_rpc_server *rpcs, int fd, rpc_fd_set *set)
+rpc_do_fd_isset(rcf_rpc_server *rpcs, int fd, rpc_fd_set_p set)
 {
     tarpc_do_fd_isset_in  in;
     tarpc_do_fd_isset_out out;
@@ -691,8 +691,8 @@ rpc_do_fd_isset(rcf_rpc_server *rpcs, int fd, rpc_fd_set *set)
 
 int
 rpc_select(rcf_rpc_server *rpcs,
-           int n, rpc_fd_set *readfds, rpc_fd_set *writefds,
-           rpc_fd_set *exceptfds, struct timeval *timeout)
+           int n, rpc_fd_set_p readfds, rpc_fd_set_p writefds,
+           rpc_fd_set_p exceptfds, struct timeval *timeout)
 {
     rcf_rpc_op       op;
     tarpc_select_in  in;
@@ -751,9 +751,9 @@ rpc_select(rcf_rpc_server *rpcs,
 
 int
 rpc_pselect(rcf_rpc_server *rpcs,
-            int n, rpc_fd_set *readfds, rpc_fd_set *writefds,
-            rpc_fd_set *exceptfds, struct timespec *timeout,
-            const rpc_sigset_t *sigmask)
+            int n, rpc_fd_set_p readfds, rpc_fd_set_p writefds,
+            rpc_fd_set_p exceptfds, struct timespec *timeout,
+            const rpc_sigset_p sigmask)
 {
     rcf_rpc_op        op;
     tarpc_pselect_in  in;

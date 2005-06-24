@@ -53,7 +53,7 @@
 #include "tapi_rpc_stdio.h"
 
 
-FILE *
+rpc_file_p
 rpc_fopen(rcf_rpc_server *rpcs,
           const char *path, const char *mode)
 {
@@ -66,7 +66,7 @@ rpc_fopen(rcf_rpc_server *rpcs,
     if (rpcs == NULL || path == NULL || mode == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        RETVAL_PTR(fopen, NULL);
+        RETVAL_RPC_PTR(fopen, RPC_NULL);
     }
 
     rpcs->op = RCF_RPC_CALL_WAIT;
@@ -81,11 +81,11 @@ rpc_fopen(rcf_rpc_server *rpcs,
                  rpcs->ta, rpcs->name,
                  path, mode, out.mem_ptr, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_PTR(fopen, out.mem_ptr);
+    RETVAL_RPC_PTR(fopen, out.mem_ptr);
 }
 
 int
-rpc_fclose(rcf_rpc_server *rpcs, FILE *file)
+rpc_fclose(rcf_rpc_server *rpcs, rpc_file_p file)
 {
     tarpc_fclose_in  in;
     tarpc_fclose_out out;
@@ -111,7 +111,7 @@ rpc_fclose(rcf_rpc_server *rpcs, FILE *file)
     RETVAL_INT(fclose, out.retval);
 }
 
-FILE *
+rpc_file_p
 rpc_popen(rcf_rpc_server *rpcs,
           const char *cmd, const char *mode)
 {
@@ -129,7 +129,7 @@ rpc_popen(rcf_rpc_server *rpcs,
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         free(cmd_dup);
         free(mode_dup);
-        RETVAL_PTR(popen, NULL);
+        RETVAL_RPC_PTR(popen, RPC_NULL);
     }
 
     rpcs->op = RCF_RPC_CALL_WAIT;
@@ -147,12 +147,12 @@ rpc_popen(rcf_rpc_server *rpcs,
                  rpcs->ta, rpcs->name,
                  cmd, mode, out.mem_ptr, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_PTR(popen, out.mem_ptr);
+    RETVAL_RPC_PTR(popen, out.mem_ptr);
 }
 
 int
 rpc_fileno(rcf_rpc_server *rpcs,
-           FILE *f)
+           rpc_file_p f)
 {
     tarpc_fileno_in  in;
     tarpc_fileno_out out;
@@ -193,9 +193,9 @@ rpc_fileno(rcf_rpc_server *rpcs,
 int 
 rpc_cmd_spawn(rcf_rpc_server *rpcs, const char *mode, const char *cmd, ...)
 {
-    FILE *f;
-    int   fd;
-    char  cmdline[RPC_SHELL_CMDLINE_MAX];
+    rpc_file_p  f;
+    int         fd;
+    char        cmdline[RPC_SHELL_CMDLINE_MAX];
 
     va_list ap;
 
@@ -203,7 +203,7 @@ rpc_cmd_spawn(rcf_rpc_server *rpcs, const char *mode, const char *cmd, ...)
     vsnprintf(cmdline, sizeof(cmdline), cmd, ap);
     va_end(ap);
     
-    if ((f = rpc_popen(rpcs, cmdline, mode)) == NULL)
+    if ((f = rpc_popen(rpcs, cmdline, mode)) == RPC_NULL)
     {
         ERROR("Cannot execute the command: rpc_popen() failed");
         return -1;
@@ -232,18 +232,18 @@ int
 rpc_shell(rcf_rpc_server *rpcs,
           char *buf, int buflen, const char *cmd, ...)
 {
-    FILE *f;
-    int   fd;
-    int   rc = 0;
-    char  cmdline[RPC_SHELL_CMDLINE_MAX];
+    rpc_file_p  f;
+    int         fd;
+    int         rc = 0;
+    char        cmdline[RPC_SHELL_CMDLINE_MAX];
 
-    va_list ap;
+    va_list     ap;
 
     va_start(ap, cmd);
     vsnprintf(cmdline, sizeof(cmdline), cmd, ap);
     va_end(ap);
     
-    if ((f = rpc_popen(rpcs, cmdline, "r")) == NULL)
+    if ((f = rpc_popen(rpcs, cmdline, "r")) == RPC_NULL)
     {
         ERROR("Cannot execute the command: rpc_popen() failed");
         return -1;
@@ -285,13 +285,13 @@ rpc_shell(rcf_rpc_server *rpcs,
 int 
 rpc_shell_get_all(rcf_rpc_server *rpcs, char **pbuf, const char *cmd, ...)
 {
-    char *buf = calloc(1, RPC_SHELL_BUF_CHUNK);
-    int   buflen = RPC_SHELL_BUF_CHUNK;
-    int   offset = 0;
-    char  cmdline[RPC_SHELL_CMDLINE_MAX];
-    FILE *f;
-    int   fd;
-    int   rc = -1;
+    char       *buf = calloc(1, RPC_SHELL_BUF_CHUNK);
+    int         buflen = RPC_SHELL_BUF_CHUNK;
+    int         offset = 0;
+    char        cmdline[RPC_SHELL_CMDLINE_MAX];
+    rpc_file_p  f;
+    int         fd;
+    int         rc = -1;
 
     va_list ap;
     
@@ -305,7 +305,7 @@ rpc_shell_get_all(rcf_rpc_server *rpcs, char **pbuf, const char *cmd, ...)
     vsnprintf(cmdline, sizeof(cmdline), cmd, ap);
     va_end(ap);
     
-    if ((f = rpc_popen(rpcs, cmdline, "r")) == NULL)
+    if ((f = rpc_popen(rpcs, cmdline, "r")) == RPC_NULL)
     {
         ERROR("Cannot execute the command: rpc_popen() failed");
         free(buf);

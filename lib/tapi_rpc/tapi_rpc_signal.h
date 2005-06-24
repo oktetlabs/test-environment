@@ -76,7 +76,7 @@ extern int rpc_kill(rcf_rpc_server *rpcs,
  */
 typedef struct rpc_struct_sigaction {
     char          mm_handler[RCF_RPC_MAX_FUNC_NAME]; /**< Action handler*/
-    rpc_sigset_t *mm_mask;   /**< bitmask of signal numbers*/
+    rpc_sigset_p  mm_mask;   /**< bitmask of signal numbers*/
     rpc_sa_flags  mm_flags;/**< flags that modify the signal handling 
                                 process */
     char     mm_restorer[RCF_RPC_MAX_FUNC_NAME];/**< should not be 
@@ -112,7 +112,7 @@ extern int rpc_sigaction(rcf_rpc_server *rpcs,
  *
  * @return Handle of allocated signal set or NULL.
  */
-extern rpc_sigset_t *rpc_sigset_new(rcf_rpc_server *rpcs);
+extern rpc_sigset_p rpc_sigset_new(rcf_rpc_server *rpcs);
 
 /**
  * Free allocated using rpc_sigset_new() signal set.
@@ -120,7 +120,7 @@ extern rpc_sigset_t *rpc_sigset_new(rcf_rpc_server *rpcs);
  * @param rpcs      RPC server handle
  * @param set       signal set handler
  */
-extern void rpc_sigset_delete(rcf_rpc_server *rpcs, rpc_sigset_t *set);
+extern void rpc_sigset_delete(rcf_rpc_server *rpcs, rpc_sigset_p set);
 
 /**
  * Get rpcs of set of signals received by special signal handler
@@ -131,7 +131,7 @@ extern void rpc_sigset_delete(rcf_rpc_server *rpcs, rpc_sigset_t *set);
  * @return Handle of the signal set (unique for RPC server,
  *         i.e. for each thread).
  */
-extern rpc_sigset_t *rpc_sigreceived(rcf_rpc_server *rpcs);
+extern rpc_sigset_p rpc_sigreceived(rcf_rpc_server *rpcs);
 
 /**
  * Examin or change list of currently blocked signal on RPC server side.
@@ -151,8 +151,8 @@ extern rpc_sigset_t *rpc_sigreceived(rcf_rpc_server *rpcs);
  *              -1 on failure
  */
 extern int rpc_sigprocmask(rcf_rpc_server *rpcs,
-                           rpc_sighow how, const rpc_sigset_t *set,
-                           rpc_sigset_t *oldset);
+                           rpc_sighow how, const rpc_sigset_p set,
+                           rpc_sigset_p oldset);
 
 /**
  * Initialize the signal set pointed by @b set, so that all signals are 
@@ -165,7 +165,7 @@ extern int rpc_sigprocmask(rcf_rpc_server *rpcs,
  *         -1 on failure
  */
 extern int rpc_sigemptyset(rcf_rpc_server *rpcs,
-                           rpc_sigset_t *set);
+                           rpc_sigset_p set);
 
 /**
  * Initialize the signal set pointed by @b set, so that all signals are 
@@ -178,7 +178,7 @@ extern int rpc_sigemptyset(rcf_rpc_server *rpcs,
  *         -1 on failure
  */
 extern int rpc_sigfillset(rcf_rpc_server *rpcs,
-                          rpc_sigset_t *set);
+                          rpc_sigset_p set);
                           
 /**
  * Add a given @b signum signal to a signal set on RPC server side.
@@ -191,7 +191,7 @@ extern int rpc_sigfillset(rcf_rpc_server *rpcs,
  *         -1 on failure
  */
 extern int rpc_sigaddset(rcf_rpc_server *rpcs,
-                         rpc_sigset_t *set, rpc_signum signum);
+                         rpc_sigset_p set, rpc_signum signum);
 
 /**
  * Delete a given @b signum signal from the signal set on RPC server side.
@@ -204,7 +204,7 @@ extern int rpc_sigaddset(rcf_rpc_server *rpcs,
  *         -1 on failure
  */
 extern int rpc_sigdelset(rcf_rpc_server *rpcs,
-                         rpc_sigset_t *set, rpc_signum signum);
+                         rpc_sigset_p set, rpc_signum signum);
 
 /**
  * Check membership of signal with number @b signum, in the 
@@ -219,7 +219,7 @@ extern int rpc_sigdelset(rcf_rpc_server *rpcs,
  *         -1 on failure
  */
 extern int rpc_sigismember(rcf_rpc_server *rpcs,
-                           const rpc_sigset_t *set, rpc_signum signum);
+                           const rpc_sigset_p set, rpc_signum signum);
 
 /**
  * Return the set of signal blocked by the signal mask on RPC server side 
@@ -231,7 +231,7 @@ extern int rpc_sigismember(rcf_rpc_server *rpcs,
  * @retval  0 on success
  *         -1 on failure
  */
-extern int rpc_sigpending(rcf_rpc_server *rpcs, rpc_sigset_t *set);
+extern int rpc_sigpending(rcf_rpc_server *rpcs, rpc_sigset_p set);
 
 /**
  * Replace the current signal mask on RPC server side by the set pointed  
@@ -243,7 +243,7 @@ extern int rpc_sigpending(rcf_rpc_server *rpcs, rpc_sigset_t *set);
  *
  * @retval  alwyas -1 with errno normally set to RPC_EINTR (to be fixed)
  */
-extern int rpc_sigsuspend(rcf_rpc_server *rpcs, const rpc_sigset_t *set);
+extern int rpc_sigsuspend(rcf_rpc_server *rpcs, const rpc_sigset_p set);
 
 
 #endif /* !__TE_TAPI_RPC_SIGNAL_H__ */

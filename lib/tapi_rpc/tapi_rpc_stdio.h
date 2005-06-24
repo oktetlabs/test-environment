@@ -37,6 +37,9 @@
 
 #include "rcf_rpc.h"
 
+/** 'FILE *' equivalent */
+typedef rpc_ptr rpc_file_p;
+
 /**
  * Query the descriptor of the given file on RPC server side
  *
@@ -48,7 +51,7 @@
  *          error occured
  */
 extern int rpc_fileno(rcf_rpc_server *rpcs,
-                      FILE *f);
+                      rpc_file_p f);
 
 /**
  * Open a file on RPC server side and associate it with a stream
@@ -60,9 +63,9 @@ extern int rpc_fileno(rcf_rpc_server *rpcs,
  *
  * @return Stream associated with the file name, otherwise @b NULL on error
  */
-extern FILE *rpc_fopen(rcf_rpc_server *rpcs,
-                       const char *path, const char *mode);
-
+extern rpc_file_p rpc_fopen(rcf_rpc_server *rpcs,
+                            const char *path, const char *mode);
+ 
 /**
  * Close the stream associated with the file.
  *
@@ -71,7 +74,7 @@ extern FILE *rpc_fopen(rcf_rpc_server *rpcs,
  *
  * @return   Zero on success, otherwise -1.
  */
-extern int rpc_fclose(rcf_rpc_server *rpcs, FILE *file);
+extern int rpc_fclose(rcf_rpc_server *rpcs, rpc_file_p file);
 
 /**
  * Execute the command specified by the command string @b cmd,
@@ -88,8 +91,8 @@ extern int rpc_fclose(rcf_rpc_server *rpcs, FILE *file);
  *
  * @return Pointer to the created pipe, otherwise NULL on error
  */
-extern FILE *rpc_popen(rcf_rpc_server *rpcs,
-                       const char *cmd, const char *mode);
+extern rpc_file_p rpc_popen(rcf_rpc_server *rpcs,
+                            const char *cmd, const char *mode);
 
 
 /** Maximum resulting command length for rpc_shell() */

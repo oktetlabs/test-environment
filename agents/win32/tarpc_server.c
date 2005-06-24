@@ -4122,7 +4122,7 @@ TARPC_FUNC(wsa_cancel_async_request, {},
 /**
  * Allocate a single buffer of specified size and return a pointer to it.
  */
-TARPC_FUNC(alloc_buf, {},
+TARPC_FUNC(malloc, {},
 {
     void *buf;
     
@@ -4140,7 +4140,7 @@ TARPC_FUNC(alloc_buf, {},
 /**
  * Free a previously allocated buffer.
  */
-TARPC_FUNC(free_buf, {},
+TARPC_FUNC(free, {},
 {
     UNUSED(list);
     UNUSED(out);

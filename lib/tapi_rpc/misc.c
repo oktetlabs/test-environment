@@ -47,6 +47,7 @@
 #include <sys/socket.h>
 #endif
 
+#include "te_printf.h"
 #include "tapi_rpc_internal.h"
 #include "tapi_rpc_unistd.h"
 
@@ -1057,11 +1058,11 @@ rpc_overfill_buffers(rcf_rpc_server *rpcs, int sock, uint64_t *sent)
  * Allocate a buffer of specified size in the TA address space.
  */
 rpc_ptr
-rpc_alloc_buf(rcf_rpc_server *rpcs, size_t size)
+rpc_malloc(rcf_rpc_server *rpcs, size_t size)
 {
     rcf_rpc_op          op;
-    tarpc_alloc_buf_in  in;
-    tarpc_alloc_buf_out out;
+    tarpc_malloc_in     in;
+    tarpc_malloc_out    out;
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
@@ -1069,32 +1070,32 @@ rpc_alloc_buf(rcf_rpc_server *rpcs, size_t size)
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        RETVAL_RPC_PTR(alloc_buf, 0);
+        RETVAL_RPC_PTR(malloc, 0);
     }
 
     op = rpcs->op;
 
     in.size = size;
 
-    rcf_rpc_call(rpcs, "alloc_buf", &in, &out);
+    rcf_rpc_call(rpcs, "malloc", &in, &out);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: alloc_buf() -> %p (%s %s)",
-                 rpcs->ta, rpcs->name, rpcop2str(op),
-                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)),
+    TAPI_RPC_LOG("RPC (%s,%s)%s: malloc(%" TE_PRINTF_SIZE_T "u) -> "
+                 "%p (%s %s)", rpcs->ta, rpcs->name, rpcop2str(op),
+                 size, out.retval, errno_rpc2str(RPC_ERRNO(rpcs)),
                  win_error_rpc2str(out.common.win_error));
 
-    RETVAL_RPC_PTR(alloc_buf, (rpc_ptr)out.retval);
+    RETVAL_RPC_PTR(malloc, (rpc_ptr)out.retval);
 }
 
 /**
  * Free a buffer in the TA address space.
  */
 void
-rpc_free_buf(rcf_rpc_server *rpcs, rpc_ptr buf)
+rpc_free(rcf_rpc_server *rpcs, rpc_ptr buf)
 {
-    rcf_rpc_op         op;
-    tarpc_free_buf_in  in;
-    tarpc_free_buf_out out;
+    rcf_rpc_op      op;
+    tarpc_free_in   in;
+    tarpc_free_out  out;
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
@@ -1102,21 +1103,21 @@ rpc_free_buf(rcf_rpc_server *rpcs, rpc_ptr buf)
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        RETVAL_VOID(free_buf);
+        RETVAL_VOID(free);
     }
 
     op = rpcs->op;
 
     in.buf = (tarpc_ptr)buf;
 
-    rcf_rpc_call(rpcs, "free_buf", &in, &out);
+    rcf_rpc_call(rpcs, "free", &in, &out);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: free_buf() -> (%s %s)",
-                 rpcs->ta, rpcs->name, rpcop2str(op),
+    TAPI_RPC_LOG("RPC (%s,%s)%s: free(%p) -> (%s %s)",
+                 rpcs->ta, rpcs->name, rpcop2str(op), buf,
                  errno_rpc2str(RPC_ERRNO(rpcs)),
                  win_error_rpc2str(out.common.win_error));
 
-    RETVAL_VOID(free_buf);
+    RETVAL_VOID(free);
 }
 
 /**

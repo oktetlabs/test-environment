@@ -56,6 +56,7 @@
 #include <netinet/tcp.h>
 #endif
 
+#include "te_printf.h"
 #include "tapi_rpc_internal.h"
 #include "tapi_rpc_unistd.h"
 #include "tapi_rpc_socket.h"
@@ -1700,12 +1701,12 @@ tapi_rpc_get_rw_ability(te_bool *answer, rcf_rpc_server *rpcs,
                         int s, int timeout, char *type)
 {
     struct timeval  tv = { 0 , 0 };
-    rpc_fd_set     *fds;
+    rpc_fd_set_p    fds = RPC_NULL;
     int             rc = -1; 
     int             result = -1;
                                                  
     fds = rpc_fd_set_new(rpcs);                    
-    if (fds == NULL)                                               
+    if (fds == RPC_NULL)                                               
     {                                                               
         ERROR("Failed to create a new rpc_fd_set entry"); 
         return -1;
@@ -1725,9 +1726,9 @@ tapi_rpc_get_rw_ability(te_bool *answer, rcf_rpc_server *rpcs,
     tv.tv_sec = timeout;                                        
                                                                     
     if (type[0] == 'R')                                  
-        RPC_SELECT(rc, rpcs, s + 1, fds, NULL, NULL, &tv);
+        RPC_SELECT(rc, rpcs, s + 1, fds, RPC_NULL, RPC_NULL, &tv);
     else
-        RPC_SELECT(rc, rpcs, s + 1, NULL, fds, NULL, &tv);
+        RPC_SELECT(rc, rpcs, s + 1, RPC_NULL, fds, RPC_NULL, &tv);
 
     *answer = (rc == 1);
     result = 0;

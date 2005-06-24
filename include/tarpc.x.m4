@@ -921,24 +921,24 @@ struct tarpc_wsa_cancel_async_request_out {
     tarpc_int            retval;
 };
 
-/* alloc_buf */
-struct tarpc_alloc_buf_in {
+/* malloc */
+struct tarpc_malloc_in {
     struct tarpc_in_arg  common;
     tarpc_size_t         size; /**< Bytes to allocate */
 };
 
-struct tarpc_alloc_buf_out {
+struct tarpc_malloc_out {
     struct tarpc_out_arg common;
     tarpc_ptr            retval; /**< A pointer in the TA address space */
 };
 
-/* free_buf */
-struct tarpc_free_buf_in {
+/* free */
+struct tarpc_free_in {
     struct tarpc_in_arg  common;
     tarpc_ptr            buf;    /**< A pointer in the TA address space */
 };
 
-struct tarpc_free_buf_out {
+struct tarpc_free_out {
     struct tarpc_out_arg common;
 };
 
@@ -2744,8 +2744,8 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(wsa_async_get_serv_by_name)
         RPC_DEF(wsa_async_get_serv_by_port)
         RPC_DEF(wsa_cancel_async_request)
-        RPC_DEF(alloc_buf)
-        RPC_DEF(free_buf)
+        RPC_DEF(malloc)
+        RPC_DEF(free)
         RPC_DEF(set_buf)
         RPC_DEF(get_buf)
         RPC_DEF(alloc_wsabuf)
