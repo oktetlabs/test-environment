@@ -574,7 +574,8 @@ ndn_match_data_units(const asn_value *pattern, asn_value *pkt_pdu,
 int
 ndn_get_timestamp(const asn_value *packet, struct timeval *ts)
 { 
-    int rc, len;
+    int rc;
+    size_t len;
 
     len = sizeof(ts->tv_sec);
     rc = asn_read_value_field(packet, &ts->tv_sec, &len, 

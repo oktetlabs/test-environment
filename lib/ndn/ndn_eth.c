@@ -152,7 +152,7 @@ ndn_eth_packet_to_plain(const asn_value *pkt,
 {
     int rc;
     int val;
-    int len;
+    size_t len;
 
     len = ETH_ALEN;
     rc = asn_read_value_field(pkt, eth_header->dst_addr, &len, 

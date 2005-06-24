@@ -236,7 +236,7 @@ int
 ndn_forw_delay_to_plain(const asn_value *val, ndn_forw_delay_t *forw_delay)
 {
     int rc = 0;
-    int d_len; 
+    size_t d_len; 
 
     const char *choice_ptr;
 
@@ -318,7 +318,7 @@ ndn_forw_reorder_to_plain(const asn_value *val,
                           ndn_forw_reorder_t *forw_reorder)
 {
     int rc = 0;
-    int d_len; 
+    size_t d_len; 
 
     if (val == NULL || forw_reorder == NULL) 
         return EINVAL;
@@ -397,7 +397,9 @@ ndn_forw_action_asn_to_plain(const asn_value *val,
                                ndn_forw_action_plain *forw_action)
 {
     int rc = 0; 
-    int id_len, d_len;
+    int id_len;
+
+    size_t d_len;
 
     const asn_value *subval;
 

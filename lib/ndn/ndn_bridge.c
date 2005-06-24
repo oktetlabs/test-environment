@@ -148,8 +148,8 @@ const asn_type * const ndn_bridge_csap = &ndn_bridge_csap_s;
 int 
 ndn_bpdu_asn_to_plain(const asn_value *pkt, ndn_stp_bpdu_t *bpdu) 
 {
-    int rc = 0;
-    int len;
+    int      rc = 0;
+    size_t   len;
     uint16_t proto_id = 0;
 
     /* @todo insert normal log, but currently this is impossible,
