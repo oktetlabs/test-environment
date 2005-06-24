@@ -434,7 +434,7 @@ rcf_ch_trsend_start(struct rcf_comm_connection *handle,
 
     if ((csap_descr_p = csap_find(csap)) == NULL)
     {
-        ERROR("CSAP not exists");
+        WARN("%s: CSAP %d not exists", __FUNCTION__, csap);
         SEND_ANSWER("%d Wrong CSAP id", TE_RC(TE_TAD_CH, ETADCSAPNOTEX));
         return 0;
     }
@@ -538,7 +538,7 @@ rcf_ch_trsend_stop(struct rcf_comm_connection *handle,
 
     if ((csap_descr_p = csap_find(csap)) == NULL)
     {
-        VERB("CSAP not exists");
+        WARN("%s: CSAP %d not exists", __FUNCTION__, csap);
         SEND_ANSWER("%d Wrong CSAP id", TE_RC(TE_TAD_CH, ETADCSAPNOTEX));
         return 0;
     }
@@ -621,7 +621,7 @@ rcf_ch_trrecv_start(struct rcf_comm_connection *handle,
 
     if ((csap_descr_p = csap_find(csap)) == NULL)
     {
-        WARN("CSAP not exists");
+        WARN("%s: CSAP %d not exists", __FUNCTION__, csap);
         SEND_ANSWER("%d", TE_RC(TE_TAD_CH, ETADCSAPNOTEX));
         return 0;
     }
@@ -845,7 +845,7 @@ rcf_ch_trrecv_stop(struct rcf_comm_connection *handle,
 
     if ((csap_descr_p = csap_find(csap)) == NULL)
     {
-        ERROR("%s: CSAP %d not exists", __FUNCTION__, csap);
+        WARN("%s: CSAP %d not exists", __FUNCTION__, csap);
         SEND_ANSWER("%d 0", TE_RC(TE_TAD_CH, ETADCSAPNOTEX));
         return 0;
     }
@@ -911,7 +911,7 @@ rcf_ch_trrecv_wait(struct rcf_comm_connection *handle,
 
     if ((csap_descr_p = csap_find(csap)) == NULL)
     {
-        VERB("CSAP not exists");
+        WARN("%s: CSAP %d not exists", __FUNCTION__, csap);
         SEND_ANSWER("%d 0", TE_RC(TE_TAD_CH, ETADCSAPNOTEX));
         return 0;
     }
@@ -961,7 +961,7 @@ rcf_ch_trrecv_get(struct rcf_comm_connection *handle,
 
     if ((csap_descr_p = csap_find(csap)) == NULL)
     {
-        F_ERROR("CSAP #%d not exists", csap);
+        WARN("%s: CSAP %d not exists", __FUNCTION__, csap);
         SEND_ANSWER("%d 0", TE_RC(TE_TAD_CH, ETADCSAPNOTEX));
         return 0;
     }
@@ -1013,7 +1013,7 @@ rcf_ch_csap_param(struct rcf_comm_connection *handle,
     VERB("CSAP param: handle %d param <%s>\n", csap, param);
     if ((csap_descr_p = csap_find(csap)) == NULL)
     {
-        VERB("CSAP not exists");
+        WARN("%s: CSAP %d not exists", __FUNCTION__, csap);
         SEND_ANSWER("%d Wrong CSAP id", TE_RC(TE_TAD_CH, ETADCSAPNOTEX));
     }
     else if (strcmp(param, CSAP_PARAM_STATUS) == 0)
