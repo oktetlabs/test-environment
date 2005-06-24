@@ -71,7 +71,9 @@ typedef unsigned char te_bool;
 #define C_ASSERT(x)
 
 /** Exit from application because of caught SIGINT signal */
-#define TE_EXIT_SIGINT      0x7f
+#define TE_EXIT_SIGINT      0x2
+/** Script to be run not found */
+#define TE_EXIT_NOT_FOUND   0x7f
 
 
 /**

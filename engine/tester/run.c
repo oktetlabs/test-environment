@@ -940,6 +940,11 @@ run_test_script(tester_ctx *ctx, test_script *script, test_id id,
                           id);
                     break;
 
+                case TE_EXIT_NOT_FOUND:
+                    result = ETESTUNEXP;
+                    ERROR("ID=%d was not run, executable not found", id);
+                    break;
+
                 default:
                     result = ETESTUNEXP;
             }
