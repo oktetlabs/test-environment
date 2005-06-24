@@ -162,7 +162,7 @@ write_binary_attachment(rcf_msg *msg,  char *buf, uint32_t buf_len)
         return ENOENT;
     }
 
-    rc = write(file, buf, buf_len + sizeof('\0'));
+    rc = write(file, buf, buf_len);
     if (rc < 0)
     {
         ERROR("Failed to write buffer to the file");
@@ -228,7 +228,7 @@ process_user_request(usrreq *req)
     {
         strcpy(msg->file, TA_LOG_FILE);
         msg->data_len = 0;
-        rc = write_binary_attachment(msg, "", -sizeof('\0'));
+        rc = write_binary_attachment(msg, "", 0);
         if (rc < 0)
         {
             ERROR("Failed to write agents log to the file, "
