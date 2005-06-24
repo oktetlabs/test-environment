@@ -1451,21 +1451,23 @@ asn_get_choice_value(const asn_value *container, const asn_value **subval,
  */
 int 
 asn_get_field_data(const asn_value *container, 
-                   const uint8_t ** data_ptr, const char *subval_labels)
+                   void *location, const char *subval_labels)
 {
-    const asn_value *subval = container;
+    const asn_value  *subval = container;
+    const void      **data_ptr = (const void **)location;    
+
     int rc;
 
 
-    if (!data_ptr || !container)
+    if (data_ptr == NULL || container == NULL)
     {
         return ETEWRONGPTR;
     }
 
-    if(container->syntax & CONSTRAINT)
+    if (container->syntax & CONSTRAINT)
     {
-        rc = asn_get_subvalue (container, &subval, subval_labels);
-        if (rc)
+        if ((rc = asn_get_subvalue(container, &subval, subval_labels))
+            != 0)
             return rc;
     }
     else if (subval_labels && *subval_labels)
@@ -1478,7 +1480,7 @@ asn_get_field_data(const asn_value *container,
         case BOOL: 
         case INTEGER: 
         case ENUMERATED: 
-            *data_ptr = (uint8_t *)&subval->data.integer; 
+            *data_ptr = &subval->data.integer; 
             break;
 
         case OID:

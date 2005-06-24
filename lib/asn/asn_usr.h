@@ -744,30 +744,31 @@ extern int asn_get_choice_value(const asn_value *container,
                                 uint16_t *tag_val);
 
 /**
- * Get constant pointer to data related to leaf (plain-syntax) sub-value 
+ * Get constant pointer to data related to leaf plain-syntax sub-value 
  * of ASN value.
- * User may to try discard 'const' qualifier of obtained subvalue only 
- * if he (she) knows very well what he doing with ASN value. 
- * In particular, got subvalue should NOT be freed!
  *
- * Unlike 'asn_get_subvalue' method, write to got memory location is 
- * acceptable in case of simple data syntax (e.g. PrintableString or INTEGER)
- * AND if new data has length not greater then set in ASN value leaf; user 
- * has no way to change data length except via 'asn_write_value_field' method. 
+ * Got pointer should NOT be freed!
+ *
+ * Write to got memory location is acceptable in case of simple data syntax
+ * (e.g. PrintableString or INTEGER) and if new data has length not greater
+ * then set in ASN value leaf; user has no way to change data length except
+ * via 'asn_write_value_field' method. 
  *
  * This method is much faster then "asn_read_value_field' because it does
- * not copy data to user location, with large octet strings it may be
- * significant.
+ * not copy data to user location, with large octet strings or OIDs
+ * it may be significant.
  * 
  * @param container     root of ASN value tree which subvalue is interested
- * @param data_ptr      location for pointer to plain data (OUT)
+ * @param data_ptr      pointer to location for plain data pointer; 
+ *                      usually it should be something like '&str', where
+ *                      'srt' has type 'const char *' (OUT)
  * @param labels        textual ASN labels of subvalue; see 
  *                      asn_free_subvalue method for more description
  *
  * @return zero on success or error code.
  */ 
 extern int asn_get_field_data(const asn_value *container, 
-                              uint8_t const **data_ptr, const char *labels);
+                              void *data_ptr, const char *labels);
 
 
 
