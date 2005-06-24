@@ -185,6 +185,7 @@ rand_range(int min, int max)
 }
 #endif
 
+#if HAVE_STRING_H || HAVE_STRINGS_H
 /**
  * Check that string starts fro the specified substring.
  *
@@ -198,6 +199,7 @@ strcmp_start(const char *pattern, const char *str)
 {
     return strncmp(pattern, str, strlen(pattern));
 }
+#endif
 
 #ifdef __cplusplus
 } /* extern "C" */
