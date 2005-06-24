@@ -33,7 +33,9 @@
 
 #include <stdlib.h>
 #include "te_stdint.h"
+#include "te_defs.h"
 #include "tad_common.h"
+#include <netinet/in.h>
 
 #ifdef __cplusplus
 extern "C" {

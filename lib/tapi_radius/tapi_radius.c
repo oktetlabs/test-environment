@@ -31,6 +31,7 @@
 #include <string.h>
 #include <net/ethernet.h>
 #include "tapi_udp.h"
+#include "conf_api.h"
 #include "logger_api.h"
 #include "te_errno.h"
 #include <netinet/in.h>
@@ -304,7 +305,7 @@ tapi_radius_csap_create(const char *ta, int sid, const char *device,
         if (rc != 0) break;
 
         rc = rcf_ta_csap_create(ta, sid, "udp.ip4.eth", csap_fname, csap);
-        unlink(csap_fname);
+//        unlink(csap_fname);
     } while (0);
 
     asn_free_value(csap_spec);
@@ -387,7 +388,7 @@ tapi_radius_serv_set(const char *ta_name, const tapi_radius_serv_t *cfg)
 
     assert(ta_name != NULL && cfg != NULL);
 
-    memeset(&addr, 0, sizeof(addr));
+    memset(&addr, 0, sizeof(addr));
     addr.sin_family = AF_INET;
     memcpy(&(addr.sin_addr), &(cfg->net_addr), sizeof(addr.sin_addr));
 
@@ -427,7 +428,7 @@ tapi_radius_serv_add_client(const char *ta_name,
     char       clnt_name[INET_ADDRSTRLEN];
 
     assert(ta_name != NULL && cfg != NULL);
-    
+
     if (cfg->secret == NULL)
     {
         ERROR("Incorrect secret value for RADIUS Client");
@@ -441,7 +442,7 @@ tapi_radius_serv_add_client(const char *ta_name,
               "string representation");
         return TE_RC(TE_TAPI, EINVAL);
     }
-    
+
     rc = cfg_add_instance_fmt(&handle, CVT_NONE, NULL,
                               "/agent:%s/radiusserver:/client:%s",
                               ta_name, clnt_name);
@@ -467,7 +468,7 @@ tapi_radius_serv_del_client(const char *ta_name,
     char clnt_name[INET_ADDRSTRLEN];
 
     assert(ta_name != NULL && net_addr != NULL);
-    
+
     if (inet_ntop(AF_INET, net_addr,
                   clnt_name, sizeof(clnt_name)) == NULL)
     {
@@ -495,11 +496,13 @@ tapi_radius_serv_add_user(const char *ta_name,
                           const tapi_radius_attr_list_t *acpt_attrs,
                           const tapi_radius_attr_list_t *chlg_attrs)
 {
+    return 0;
 }
 
 /* See the description in tapi_radius.h */
 int
 tapi_radius_serv_del_user(const char *ta_name, const char *user_name)
 {
+    return 0;
 }
 
