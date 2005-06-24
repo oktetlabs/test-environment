@@ -261,7 +261,7 @@ logfork_entry(void)
     char  name_pid[LOGFORK_MAXLEN];
     list *proc_list = NULL;
         
-    size_t  addrlen = sizeof(struct sockaddr_in);
+    socklen_t   addrlen = sizeof(struct sockaddr_in);
     
     udp_msg msg;
     size_t  msg_len = sizeof(msg);
