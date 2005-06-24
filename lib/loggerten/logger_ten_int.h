@@ -58,6 +58,7 @@
 #endif
 
 #include "te_stdint.h"
+#include "te_printf.h"
 #include "te_raw_log.h"
 #include "logger_int.h"
 
@@ -191,8 +192,8 @@ log_message_va(uint8_t **msg_buf, size_t *msg_buf_len, uint16_t level,
             (*msg_buf) = realloc(*msg_buf, *msg_buf_len);           \
             if ((*msg_buf) == NULL)                                 \
             {                                                       \
-                fprintf(stderr, "%s(): realloc(%u) failed",         \
-                        __FUNCTION__, *msg_buf_len);                \
+                fprintf(stderr, "%s(): realloc(%" TE_PRINTF_SIZE_T  \
+                        "u) failed", __FUNCTION__, *msg_buf_len);   \
                 return;                                             \
             }                                                       \
             if (msg_len_ptr != NULL)                                \
@@ -332,7 +333,12 @@ log_message_va(uint8_t **msg_buf, size_t *msg_buf_len, uint16_t level,
                 LGR_32_TO_NET(tmp, msg_ptr);
                 msg_ptr += sizeof(uint32_t);
 
-                tmp = (uint32_t)val;
+                /*
+                 * At first, cast to the integer of appropriate size,
+                 * then get 32 least significant bits using the second
+                 * type cast.
+                 */
+                tmp = (uint32_t)(uint64_t)val;
                 LGR_32_TO_NET(tmp, msg_ptr);
                 msg_ptr += sizeof(uint32_t);
 #else
