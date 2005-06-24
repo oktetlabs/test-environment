@@ -120,10 +120,11 @@ net-snmp/session_api.h \
 ])
 
 AC_CHECK_SIZEOF([void *])
-AC_CHECK_SIZEOF([short int])
+AC_CHECK_SIZEOF([char])
+AC_CHECK_SIZEOF([short])
 AC_CHECK_SIZEOF([int])
-AC_CHECK_SIZEOF([long int])
-AC_CHECK_SIZEOF([long long int])
+AC_CHECK_SIZEOF([long])
+AC_CHECK_SIZEOF([long long])
 
 AC_C_INLINE
 
