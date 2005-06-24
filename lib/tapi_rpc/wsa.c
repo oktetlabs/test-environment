@@ -44,6 +44,7 @@
 #include <strings.h>
 #endif
 
+#include "te_printf.h"
 #include "tapi_rpc_internal.h"
 #include "tapi_rpc_winsock2.h"
 #include "conf_api.h"
