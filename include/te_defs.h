@@ -31,6 +31,8 @@
 #ifndef __TE_DEFS_H__
 #define __TE_DEFS_H__
 
+#include "te_config.h"
+
 #if HAVE_ASSERT_H
 #include <assert.h>
 #endif
@@ -198,6 +200,42 @@ strcmp_start(const char *pattern, const char *str)
 {
     return strncmp(pattern, str, strlen(pattern));
 }
+
+
+/** printf()-like length modified for 8-bit integers */
+#if (SIZEOF_CHAR == 1)
+#define TE_PRINTF_8         "hh"
+#else
+#error Unable to print 8-bit integers
+#endif
+
+/** printf()-like length modified for 16-bit integers */
+#if (SIZEOF_SHORT == 2)
+#define TE_PRINTF_16        "h"
+#else
+#error Unable to print 16-bit integers
+#endif
+
+/** printf()-like length modified for 32-bit integers */
+#if (SIZEOF_INT == 4)
+#define TE_PRINTF_32        ""
+#elif (SIZEOF_LONG == 4)
+#define TE_PRINTF_32        "l"
+#else
+#error Unable to print 32-bit integers
+#endif
+
+/** printf()-like length modified for 64-bit integers */
+#if (SIZEOF_INT == 8)
+#define TE_PRINTF_64        ""
+#elif (SIZEOF_LONG == 8)
+#define TE_PRINTF_64        "l"
+#elif (SIZEOF_LONG_LONG == 8)
+#define TE_PRINTF_64        "ll"
+#else
+#error Unable to print 64-bit integers
+#endif
+
 
 #ifdef __cplusplus
 } /* extern "C" */
