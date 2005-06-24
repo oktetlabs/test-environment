@@ -131,7 +131,7 @@ csap_db_clear()
 #define CSAP_CREATE_ERROR(errno_, fmt_...) \
     do {               \
         rc = (errno_); \
-        F_ERROR(fmt_); \
+        ERROR(fmt_); \
         goto error;    \
     } while (0)
 /**
@@ -226,8 +226,8 @@ csap_create(const char *type)
              i, new_csap->layers[i].proto);
 
         if (new_csap->layers[i].proto_support == NULL)
-            CSAP_CREATE_ERROR(ETENOSUPP, "%s(): no support for proto %s", 
-                              __FUNCTION__);
+            CSAP_CREATE_ERROR(ETENOSUPP, "%s(): no support for proto '%s'", 
+                              __FUNCTION__, new_csap->layers[i].proto);
     } 
 
     return new_csap->id;
