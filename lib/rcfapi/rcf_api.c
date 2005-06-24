@@ -317,12 +317,12 @@ static int
 rcf_ipc_receive_answer(struct ipc_client *ipcc, rcf_msg *recv_msg, 
                        size_t *recv_size, rcf_msg **p_answer)
 {
-    int buflen = *recv_size;
-    int rc;
-    int len;
+    int     rc;
+    size_t  buflen = *recv_size;
+    size_t  len;
     
     if ((rc = ipc_receive_answer(ipcc, RCF_SERVER,
-                                 (char *)recv_msg, recv_size)) == 0)
+                                 recv_msg, recv_size)) == 0)
     {
         if (p_answer != NULL)
             *p_answer = NULL;
@@ -340,14 +340,13 @@ rcf_ipc_receive_answer(struct ipc_client *ipcc, rcf_msg *recv_msg,
      }
     
     *p_answer = malloc(*recv_size);
-    
     if (*p_answer == NULL)
         return TE_RC(TE_RCF_API, ENOMEM);
     
     memcpy(*p_answer, (char *)recv_msg, buflen);
     len = *recv_size - buflen;
     if ((rc = ipc_receive_rest_answer(ipcc, RCF_SERVER, 
-                                      (char *)*p_answer + buflen, 
+                                      ((uint8_t *)*p_answer) + buflen, 
                                       &len)) != 0)
     {
         return TE_RC(TE_RCF_API, ETEIO);
@@ -1605,35 +1604,35 @@ rcf_ta_set_var(const char *ta_name, int session, const char *var_name,
     switch (var_type)
     {
         case RCF_INT8:  
-            sprintf(msg.value, "%d", *(int8_t *)val);
+            sprintf(msg.value, "%" TE_PRINTF_8 "d", *(int8_t *)val);
             break;
             
         case RCF_UINT8:  
-            sprintf(msg.value, "%u", *(uint8_t *)val);
+            sprintf(msg.value, "%" TE_PRINTF_8 "u", *(uint8_t *)val);
             break;
             
         case RCF_INT16: 
-            sprintf(msg.value, "%d", *(int16_t *)val);
+            sprintf(msg.value, "%" TE_PRINTF_16 "d", *(int16_t *)val);
             break;
             
         case RCF_UINT16:
-            sprintf(msg.value, "%u", *(uint16_t *)val);
+            sprintf(msg.value, "%" TE_PRINTF_16 "u", *(uint16_t *)val);
             break;
             
         case RCF_INT32: 
-            sprintf(msg.value, "%d", *(int32_t *)val);
+            sprintf(msg.value, "%" TE_PRINTF_32 "d", *(int32_t *)val);
             break;
             
         case RCF_UINT32:
-            sprintf(msg.value, "%u", *(uint32_t *)val);
+            sprintf(msg.value, "%" TE_PRINTF_32 "u", *(uint32_t *)val);
             break;
             
         case RCF_INT64:
-            sprintf(msg.value, "%lld", *(int64_t *)val);
+            sprintf(msg.value, "%" TE_PRINTF_64 "d", *(int64_t *)val);
             break;
 
         case RCF_UINT64:
-            sprintf(msg.value, "%llu", *(uint64_t *)val);
+            sprintf(msg.value, "%" TE_PRINTF_64 "u", *(uint64_t *)val);
             break;
             
         case RCF_STRING:
@@ -2635,7 +2634,7 @@ rcf_ta_trsend_recv(const char *ta_name, int session, csap_handle_t csap_id,
  * @return error code
  */
 static int
-make_params(int argc,  int argv, char *data, int *data_len, va_list ap)
+make_params(int argc,  int argv, char *data, size_t *data_len, va_list ap)
 {
     int     i, n;
     size_t  len = 0;
@@ -2795,7 +2794,7 @@ call_start(const char *ta_name, int session, int priority, const char *rtn,
             msg->flags |= PARAMETERS_ARGV;
         msg->num = argc;
         if ((rc = make_params(argc, argv, msg->data, 
-                                 &(msg->data_len), ap)) != 0)
+                              &(msg->data_len), ap)) != 0)
         {
             VERB("possibly too many or too long routine "
                              "parameters are provided - change of "
@@ -2985,7 +2984,7 @@ rcf_ta_call_rpc(const char *ta_name, int session,
     rcf_msg *msg = (rcf_msg *)msg_buf;
     rcf_msg *ans = NULL;
     int      rc;
-    int      anslen = sizeof(msg_buf);
+    size_t   anslen = sizeof(msg_buf);
     int      len;
     
     INIT_IPC;
