@@ -247,11 +247,12 @@ tcp_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
     pkt_list->next = NULL; 
     p = pkt_list->data;
 
-#define CHECK(fail_cond_, msg_...) \
+#define CHECK_ERROR(fail_cond_, error_, msg_...) \
     do {                                \
         if (fail_cond_)                 \
         {                               \
             ERROR(msg_);                \
+            rc = (error_);              \
             goto cleanup;               \
         }                               \
     } while (0)
@@ -262,8 +263,9 @@ tcp_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
         {                                                               \
             rc = tad_data_unit_to_bin(&(spec_data->c_du_field_),        \
                                       args, arg_num, p, length_);       \
-            CHECK(rc != 0, "%s():%d: " #c_du_field_ " error: 0x%x",     \
-              __FUNCTION__,  __LINE__, rc);                             \
+            CHECK_ERROR(rc != 0, rc,                                    \
+                        "%s():%d: " #c_du_field_ " error: 0x%x",        \
+                        __FUNCTION__,  __LINE__, rc);                   \
         }                                                               \
         else                                                            \
         {                                                               \
@@ -285,24 +287,30 @@ tcp_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
         p += (length_);                                                 \
     } while (0) 
 
+
+    CHECK_ERROR(spec_data->du_src_port.du_type == TAD_DU_UNDEF && 
+                spec_data->local_port == 0,
+                ETADLESSDATA, 
+                "%s(): CSAP %d, no source port specified",
+                __FUNCTION__, csap_descr->id);
     PUT_BIN_DATA(du_src_port, spec_data->local_port, 2);
+
+    CHECK_ERROR(spec_data->du_dst_port.du_type == TAD_DU_UNDEF && 
+                spec_data->remote_port == 0,
+                ETADLESSDATA, 
+                "%s(): CSAP %d, no destination port specified",
+                __FUNCTION__, csap_descr->id);
     PUT_BIN_DATA(du_dst_port, spec_data->remote_port, 2);
 
-    if (spec_data->du_seqn.du_type == TAD_DU_UNDEF)
-    {
-        ERROR("%s(CSAP %d): sequence number required in NDS",
-              __FUNCTION__, csap_descr->id);
-        rc = ETADLESSDATA;
-        goto cleanup;
-    }
-    else
-    {
-        rc = tad_data_unit_to_bin(&(spec_data->du_seqn),
-                                  args, arg_num, p, 4);
-        CHECK(rc != 0, "%s():%d: seqn error: 0x%x",
-          __FUNCTION__,  __LINE__, rc);
-        p += 4;
-    }
+    CHECK_ERROR(spec_data->du_seqn.du_type == TAD_DU_UNDEF,
+                ETADLESSDATA, 
+                "%s(): CSAP %d, no sequence number specified",
+                __FUNCTION__, csap_descr->id); 
+    rc = tad_data_unit_to_bin(&(spec_data->du_seqn),
+                              args, arg_num, p, 4);
+    CHECK_ERROR(rc != 0, rc, "%s():%d: seqn error: 0x%x",
+                __FUNCTION__,  __LINE__, rc);
+    p += 4;
 
     PUT_BIN_DATA(du_ackn, 0, 4);
     if (spec_data->du_hlen.du_type != TAD_DU_UNDEF)
