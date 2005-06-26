@@ -384,6 +384,9 @@ extern int cfg_add_instance_str(const char *oid, cfg_handle *p_handle,
 /**
  * The same function as cfg_add_instance_str,
  * but OID may be format string.
+ *
+ * Use macro CFG_VAL() to make the second and the third arguments pair.
+ * E.g. rc = cfg_add_instance_fmt(NULL, CFG_VAL(INTEGER, 1), "/hello:tom");
  */
 static inline int
 cfg_add_instance_fmt(cfg_handle *p_handle, cfg_val_type type,
@@ -494,7 +497,12 @@ cfg_del_instance_fmt(te_bool with_children, const char *oid_fmt, ...)
  */
 extern int cfg_set_instance(cfg_handle handle, cfg_val_type type, ...);
 
-/** Set instance by the OID. OID may be format string */
+/**
+ * Set instance by the OID. OID may be format string.
+ *
+ * Use macro CFG_VAL() to make the second and the third arguments pair.
+ * E.g. rc = cfg_set_instance_fmt(NULL, CFG_VAL(INTEGER, 1), "/hello:");
+ */
 static inline int
 cfg_set_instance_fmt(cfg_val_type type, const void *val,
                      const char *oid_fmt, ...)

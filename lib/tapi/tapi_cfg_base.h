@@ -131,7 +131,7 @@ int tapi_cfg_base_if_up(const char *ta, const char *iface)
 {
     int if_status = 1; /* enable */
 
-    return cfg_set_instance_fmt(CVT_INTEGER, (void *)if_status,
+    return cfg_set_instance_fmt(CFG_VAL(INTEGER, if_status),
                                 "/agent:%s/interface:%s/status:",
                                 ta, iface);
 }
@@ -141,7 +141,7 @@ int tapi_cfg_base_if_down(const char *ta, const char *iface)
 {
     int if_status = 0; /* disable */
 
-    return cfg_set_instance_fmt(CVT_INTEGER, (void *)if_status,
+    return cfg_set_instance_fmt(CFG_VAL(INTEGER, if_status),
                                 "/agent:%s/interface:%s/status:",
                                 ta, iface);
 
@@ -152,7 +152,7 @@ int tapi_cfg_base_if_arp_enable(const char *ta, const char * iface)
 {
     int arp_use = 1; /* enable */
 
-    return cfg_set_instance_fmt(CVT_INTEGER, (void *)arp_use,
+    return cfg_set_instance_fmt(CFG_VAL(INTEGER, arp_use),
                                 "/agent:%s/interface:%s/arp:",
                                 ta, iface);
 }
@@ -162,7 +162,7 @@ int tapi_cfg_base_if_arp_disable(const char *ta, const char * iface)
 {
     int arp_use = 0; /* enable */
 
-    return cfg_set_instance_fmt(CVT_INTEGER, (void *)arp_use,
+    return cfg_set_instance_fmt(CFG_VAL(INTEGER, arp_use),
                                 "/agent:%s/interface:%s/arp:",
                                 ta, iface);
 }

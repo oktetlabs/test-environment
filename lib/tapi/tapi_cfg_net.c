@@ -638,7 +638,7 @@ tapi_cfg_net_all_up(void)
             }
             if (status != 1)
             {
-                rc = cfg_set_instance_fmt(type, (void *)1,
+                rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, 1),
                                           "%s/status:", oid);
                 if (rc != 0)
                 {

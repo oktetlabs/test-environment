@@ -176,7 +176,7 @@ tapi_cfg_arl_add_entry(const char *ta,
         return rc;
     }
 
-    if ((rc = cfg_add_instance_fmt(&handle, CVT_NONE, NULL,
+    if ((rc = cfg_add_instance_fmt(&handle, CFG_VAL(NONE, NULL),
                                    "/agent:%s/arl:/entry:"
                                    "%d.%u.%02x:%02x:%02x:%02x:%02x:%02x.%s",
                                    ta, type, port_num,

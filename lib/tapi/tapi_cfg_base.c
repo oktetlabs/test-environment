@@ -86,7 +86,7 @@ tapi_cfg_base_ipv4_fw(const char *ta, te_bool *enabled)
     {
         int new_val = *enabled;
 
-        rc = cfg_set_instance_fmt(val_type, (void *)new_val,
+        rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, new_val),
                                   "/agent:%s/ip4_fw:", ta);
         if (rc != 0)
         {
@@ -210,13 +210,22 @@ tapi_cfg_base_add_net_addr(const char *oid, const struct sockaddr *addr,
         return TE_RC(TE_TAPI, EAFNOSUPPORT);
     }
 
-    rc = cfg_add_instance_fmt(cfg_hndl, 
-                              prefix == -1 ? CVT_NONE : CVT_INTEGER, 
-                              prefix == -1 ? NULL : (void *)prefix,
-                              "%s/net_addr:%s", oid,
-                              inet_ntop(addr->sa_family,
-                                        &SIN(addr)->sin_addr,
-                                        buf, sizeof(buf)));
+    if (prefix == -1)
+    {
+        rc = cfg_add_instance_fmt(cfg_hndl, CFG_VAL(NONE, NULL),
+                                  "%s/net_addr:%s", oid,
+                                  inet_ntop(addr->sa_family,
+                                            &SIN(addr)->sin_addr,
+                                            buf, sizeof(buf)));
+    }
+    else
+    {
+        rc = cfg_add_instance_fmt(cfg_hndl, CFG_VAL(INTEGER, prefix),
+                                  "%s/net_addr:%s", oid,
+                                  inet_ntop(addr->sa_family,
+                                            &SIN(addr)->sin_addr,
+                                            buf, sizeof(buf)));
+    }
     if (rc == 0)
     {
         if (set_bcast)
@@ -249,7 +258,7 @@ tapi_cfg_base_add_net_addr(const char *oid, const struct sockaddr *addr,
             bcast.sin_addr.s_addr |= htonl(nmask);
 
             /* Set broadcast address */
-            rc = cfg_set_instance_fmt(CVT_ADDRESS, &bcast,
+            rc = cfg_set_instance_fmt(CFG_VAL(ADDRESS, &bcast),
                                       "%s/net_addr:%s/broadcast:", oid,
                                       inet_ntop(addr->sa_family,
                                                 &SIN(addr)->sin_addr,

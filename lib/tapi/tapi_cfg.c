@@ -907,7 +907,7 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
     switch (op)
     {
         case OP_ADD:
-            if ((rc = cfg_add_instance_fmt(&handle, CVT_STRING, rt_val,
+            if ((rc = cfg_add_instance_fmt(&handle, CFG_VAL(STRING, rt_val),
                                            "/agent:%s/route:%s",
                                            ta, route_inst_name)) != 0)
             {
@@ -1011,7 +1011,8 @@ tapi_cfg_arp_op(enum tapi_cfg_oper op, const char *ta, const void *net_addr,
             lnk_addr.sa_family = AF_LOCAL;
             memcpy(&(lnk_addr.sa_data), link_addr, IFHWADDRLEN);
 
-            if ((rc = cfg_add_instance_fmt(&handle, CVT_ADDRESS, &lnk_addr,
+            if ((rc = cfg_add_instance_fmt(&handle,
+                                           CFG_VAL(ADDRESS, &lnk_addr),
                                            "/agent:%s/arp:%s",
                                            ta, net_addr_str)) != 0)
             {
@@ -1311,14 +1312,14 @@ tapi_cfg_add_ip4_net(struct sockaddr_in *ip4_net_addr, int prefix,
 
     /* Add new entry to the pool */
     snprintf(oid, sizeof(oid), "/ip4_net_pool:/entry:%s", buf);
-    rc = cfg_add_instance_str(oid, &net, CVT_INTEGER, (void *)state);
+    rc = cfg_add_instance_str(oid, &net, CVT_INTEGER, state);
     if (rc != 0)
     {
         ERROR("%s: Failed to add %s to the pool: %X",
               __FUNCTION__, oid, rc);
         return rc;
     }
-    rc = cfg_add_instance_fmt(&handle, CVT_INTEGER, (void *)prefix,
+    rc = cfg_add_instance_fmt(&handle, CFG_VAL(INTEGER, prefix),
                               "%s/prefix:", oid);
     if (rc != 0)
     {
@@ -1326,7 +1327,7 @@ tapi_cfg_add_ip4_net(struct sockaddr_in *ip4_net_addr, int prefix,
               __FUNCTION__, oid, rc);
         return rc;
     }
-    rc = cfg_add_instance_fmt(&handle, CVT_INTEGER, (void *)0,
+    rc = cfg_add_instance_fmt(&handle, CFG_VAL(INTEGER, 0),
                               "%s/n_entries:", oid);
     if (rc != 0)
     {
@@ -1381,7 +1382,7 @@ tapi_cfg_insert_ip4_addr(cfg_handle ip4_net, struct sockaddr_in *ip4_addr,
     rc = cfg_find_fmt(&pool, "%s/pool:", ip4_net_oid);
     if (TE_RC_GET_ERROR(rc) == ENOENT)
     {
-        rc = cfg_add_instance_fmt(&pool, CVT_NONE, NULL,
+        rc = cfg_add_instance_fmt(&pool, CFG_VAL(NONE, NULL),
                                   "%s/pool:", ip4_net_oid);
         if (rc != 0)
         {
@@ -1427,7 +1428,7 @@ tapi_cfg_insert_ip4_addr(cfg_handle ip4_net, struct sockaddr_in *ip4_addr,
     rc = cfg_find_fmt(&n_entries_hndl, "%s/n_entries:", ip4_net_oid);
     if (TE_RC_GET_ERROR(rc) == ENOENT)
     {
-        rc = cfg_add_instance_fmt(&n_entries_hndl, CVT_INTEGER, (void *)0,
+        rc = cfg_add_instance_fmt(&n_entries_hndl, CFG_VAL(INTEGER, 0),
                                   "%s/n_entries:", ip4_net_oid);
         if (rc != 0)
         {
@@ -1541,7 +1542,7 @@ tapi_cfg_insert_ip4_addr(cfg_handle ip4_net, struct sockaddr_in *ip4_addr,
     }
 
     /* Add used entry in the pool */
-    rc = cfg_add_instance_fmt(&entry, CVT_INTEGER, (void *)1,
+    rc = cfg_add_instance_fmt(&entry, CFG_VAL(INTEGER, 1),
                               "%s/pool:/entry:%s", ip4_net_oid, buf);
     if (rc != 0)
     {

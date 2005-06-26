@@ -164,7 +164,7 @@ rcf_rpc_server_get(const char *ta, const char *name,
             return rc1;
         }
             
-        if ((rc1 = cfg_add_instance_fmt(&handle, CVT_INTEGER, (void *)sid, 
+        if ((rc1 = cfg_add_instance_fmt(&handle, CFG_VAL(INTEGER, sid),
                                         "/volatile:/rpcserver_sid:%s:%s", 
                                         ta, name)) != 0)
         {
