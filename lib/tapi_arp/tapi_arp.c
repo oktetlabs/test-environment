@@ -327,7 +327,7 @@ tapi_arp_prepare_template(const tapi_arp_frame_t *frame, asn_value **templ)
     if (frame == NULL || templ == NULL)
         return EINVAL;
     
-    if ((uint32_t)(frame->data) ^ (uint32_t)(frame->data_len))
+    if ((frame->data == NULL) != (frame->data_len == 0))
     {
         ERROR("'data' and 'data_len' fields should be 'NULL' and zero, "
               "or non 'NULL' and not zero.");
