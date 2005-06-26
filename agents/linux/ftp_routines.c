@@ -443,14 +443,12 @@ read_test(void *arg)
         gettimeofday(&after, NULL);fflush(stdout);
         if (ret < 0)
         {
-            ERROR("FTP get select() error errno=%d",
-                                     errno);
+            ERROR("FTP get select() error errno=%d", errno);
             return (void *)errno;
         }
         if (ret == 0)
         {
-            ERROR("FTP get timed out: received %d",
-                       len);
+            ERROR("FTP get timed out: received %d", len);
             return (void *)ETIMEDOUT;
         }
 
@@ -459,8 +457,7 @@ read_test(void *arg)
             l = read(sock, buf, sizeof(buf));
             if (l < 0)
             {
-                ERROR("FTP get read() error "
-                                         "errno=%d", errno);
+                ERROR("FTP get read() error errno=%d", errno);
                 return (void *)errno;
             }
             if (l == 0)
@@ -512,8 +509,7 @@ write_test(void *arg_void)
 
             if (errno != EAGAIN)
             {
-                ERROR("FTP put write() error "
-                                         "errno=%d", errno);
+                ERROR("FTP put write() error errno=%d", errno);
                 return (void *)errno;
             }
 
@@ -545,15 +541,13 @@ write_test(void *arg_void)
             }
             if (ret == 0)
             {
-                ERROR("FTP put timed out: sent %d",
-                           len);
+                ERROR("FTP put timed out: sent %d", len);
                 return (void *)ETIMEDOUT;
             }
         }
         else if (l == 0)
         {
-            ERROR("FTP put write() failed - "
-                                     "connection broken");
+            ERROR("FTP put write() failed - connection broken");
             return (void *)ECONNRESET;
         }
         else
@@ -588,16 +582,14 @@ ftp_test(char *uri_get, char *uri_put, int size)
     if (uri_get != NULL && *uri_get != 0 && 
         (si = ftp_open(uri_get, O_RDONLY, 1, 0, NULL)) < 0)
     {
-        ERROR("Failed to open URI %s to read from",
-                   uri_get);
+        ERROR("Failed to open URI %s to read from", uri_get);
         return EIO;
     }
 
     if (uri_put != NULL && *uri_put != 0 && 
         (so = ftp_open(uri_put, O_WRONLY, 1, 0, NULL)) < 0)
     {
-        ERROR("Failed to open URI %s to write to",
-                   uri_put);
+        ERROR("Failed to open URI %s to write to", uri_put);
         close(si);
         return EIO;
     }
