@@ -661,12 +661,13 @@ ndn_du_write_plain_int(asn_value *pdu, uint16_t tag, int32_t value)
 
 /* see description in ndn.h */
 int
-ndn_du_read_plain_int(asn_value *pdu, uint16_t tag, int32_t *value)
+ndn_du_read_plain_int(const asn_value *pdu, uint16_t tag, int32_t *value)
 {
     asn_value *du_leaf;
     int rc;
 
-    if ((rc = ndn_get_du_field(pdu, NDN_DU_RO, tag, &du_leaf)) != 0)
+    if ((rc = ndn_get_du_field((asn_value *)pdu, NDN_DU_RO, tag, &du_leaf))
+        != 0)
         return rc; 
 
     return asn_read_int32(du_leaf, value, "#plain");
@@ -689,12 +690,13 @@ ndn_du_write_plain_string(asn_value *pdu, uint16_t tag, const char *value)
 
 /* see description in ndn.h */
 int
-ndn_du_read_plain_string(asn_value *pdu, uint16_t tag, char **value)
+ndn_du_read_plain_string(const asn_value *pdu, uint16_t tag, char **value)
 {
     asn_value *du_leaf;
     int rc;
 
-    if ((rc = ndn_get_du_field(pdu, NDN_DU_RO, tag, &du_leaf)) != 0)
+    if ((rc = ndn_get_du_field((asn_value *)pdu, NDN_DU_RO, tag, &du_leaf))
+        != 0)
         return rc; 
 
     return asn_read_string(du_leaf, value, "#plain");
@@ -717,13 +719,14 @@ ndn_du_write_plain_oct(asn_value *pdu, uint16_t tag,
 
 /* see description in ndn.h */
 int
-ndn_du_read_plain_oct(asn_value *pdu, uint16_t tag,
+ndn_du_read_plain_oct(const asn_value *pdu, uint16_t tag,
                       uint8_t *value, size_t *len) 
 {
     asn_value *du_leaf;
     int rc;
 
-    if ((rc = ndn_get_du_field(pdu, NDN_DU_RO, tag, &du_leaf)) != 0)
+    if ((rc = ndn_get_du_field((asn_value *)pdu, NDN_DU_RO, tag, &du_leaf))
+        != 0)
         return rc; 
 
     return asn_read_value_field(du_leaf, value, len, "#plain");

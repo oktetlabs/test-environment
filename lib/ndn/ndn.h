@@ -235,7 +235,7 @@ extern int ndn_du_write_plain_int(asn_value *pdu, uint16_t tag,
  *
  * @return status code
  */
-extern int ndn_du_read_plain_int(asn_value *pdu, uint16_t tag,
+extern int ndn_du_read_plain_int(const asn_value *pdu, uint16_t tag,
                                  int32_t *value);
 
 /**
@@ -262,7 +262,7 @@ extern int ndn_du_write_plain_string(asn_value *pdu, uint16_t tag,
  *
  * @return status code
  */
-extern int ndn_du_read_plain_string(asn_value *pdu, uint16_t tag,
+extern int ndn_du_read_plain_string(const asn_value *pdu, uint16_t tag,
                                     char **value);
 
 /**
@@ -290,7 +290,7 @@ extern int ndn_du_write_plain_oct(asn_value *pdu, uint16_t tag,
  *
  * @return status code
  */
-extern int ndn_du_read_plain_oct(asn_value *pdu, uint16_t tag,
+extern int ndn_du_read_plain_oct(const asn_value *pdu, uint16_t tag,
                                  uint8_t *value, size_t *len);
 
 /**
