@@ -1,6 +1,4 @@
 
-AUTOMAKE_OPTIONS = foreign
-
 SUBDIRS = lib
 
 #
@@ -16,8 +14,8 @@ TESTS = init01 init02 reply01 close01 \
         wait01 wait02 wait03 wait04 wait05 \
         wait07 wait08 wait09 wait10 wait11 \
         wait12 wait13 wait14 wait15 wait16 wait17 \
-	sanity_close01 sanity_init01 sanity_init02 sanity_reply01 \
-	sanity_reply02 sanity_wait01 sanity_wait02
+        sanity_close01 sanity_init01 sanity_init02 sanity_reply01 \
+        sanity_reply02 sanity_wait01 sanity_wait02
 
 check_PROGRAMS = $(TESTS)
 
