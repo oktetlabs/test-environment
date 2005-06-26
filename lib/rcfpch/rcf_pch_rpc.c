@@ -404,10 +404,20 @@ connect_getpid(rpcserver *rpcs)
     FD_SET(lsock, &set);
     
     /* Accept the connection */
-    if (select(lsock + 1, &set, NULL, NULL, &tv) <= 0)
+    while ((rc = select(lsock + 1, &set, NULL, NULL, &tv)) <= 0)
     {
-        ERROR("RPC server %s does not try to connect", rpcs->name);
-        return TE_RC(TE_RCF_PCH, ETIMEDOUT);
+        if (rc == 0)
+        {
+            ERROR("RPC server %s does not try to connect", rpcs->name);
+            return TE_RC(TE_RCF_PCH, ETIMEDOUT);
+        }
+        else if (errno != EINTR)
+        {
+            int err = errno;
+        
+            ERROR("select() failed with unexpected errno=%d", err);
+            return TE_RC(TE_RCF_PCH, err);
+        }
     }
     if ((rpcs->sock = accept(lsock, &addr, &len)) < 0)
     {
