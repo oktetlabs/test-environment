@@ -38,6 +38,12 @@
 #include "tapi_ip.h"
 
 
+#define TCP_FIN_FLAG    0x01
+#define TCP_SYN_FLAG    0x02
+#define TCP_RST_FLAG    0x04
+#define TCP_PSH_FLAG    0x08
+#define TCP_ACK_FLAG    0x10
+#define TCP_URG_FLAG    0x20
 /**
  * Creates 'tcp.ip4.eth' CSAP.
  * Created CSAP can catch only packets, incoming to TA host. 
@@ -165,6 +171,7 @@ typedef uint32_t tapi_tcp_pos_t;
  *                      are zeroes, (IN/OUT);
  * @param remote_addr   remote socket address, unspecified values 
  *                      are zeroes, (IN/OUT);
+ * @param window        default window size, or zero
  * @param timeout       time in milliseconds, while TA should wait for 
  *                      SYN or ACK for his SYN;
  * @param handle        TAPI handler of created TCP connection (OUT);
@@ -177,7 +184,7 @@ extern int tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode,
                                     const char *local_iface,
                                     uint8_t *local_mac,
                                     uint8_t *remote_mac,
-                                    int timeout,
+                                    int window, int timeout,
                                     tapi_tcp_handler_t *handler);
 
 /**
@@ -238,8 +245,8 @@ extern int tapi_tcp_send_msg(tapi_tcp_handler_t handler,
  *                      method valid values are 'AUTO' or 'QUIET' only;
  * @param payload       pointer to message payload buffer (OUT);
  * @param len           length of buffer/ got payload (IN/OUT);
- * @param seqn_got      received SEQ number or zero (OUT);
- * @param ackn_got      received ACK number or zero (OUT);
+ * @param seqn_got      place for received SEQ number or NULL (OUT);
+ * @param ackn_got      place for received ACK number or NULL (OUT);
  *
  * @return Status code
  */
@@ -333,6 +340,24 @@ extern int tapi_tcp_make_msg(uint16_t src_port, uint16_t dst_port,
                              tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn, 
                              te_bool syn_flag, te_bool ack_flag,
                              uint8_t *msg);
+
+/**
+ * Prepare TCP header PDU by specified parameter values.
+ *
+ * @param src_port      source port in network byte order
+ * @param dst_port      destination port in network byte order
+ * @param seqn          sequence number in host byte order
+ * @param ackn          acknowledge number in host byte order
+ * @param syn_flag      syn flag
+ * @param ack_flag      ack flag
+ * @param pdu           location for pointer to ASN value (OUT)
+ *
+ * @return Status code.
+ */
+extern int tapi_tcp_pdu(uint16_t src_port, uint16_t dst_port,
+                        tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn, 
+                        te_bool syn_flag, te_bool ack_flag,
+                        asn_value **pdu);
 
 
 #endif /* !__TE_TAPI_TCP_H__ */
