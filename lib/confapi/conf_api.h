@@ -59,6 +59,12 @@ extern "C" {
 /** Cast to Configurator Instance Value Pointer */
 #define CFG_IVP(x)     ((cfg_inst_val *)(x))
 
+/** 
+ * Macro definition to be used in cfg_{add,set}_instance_fmp() calls.
+ * Here it is assumed that 'long' type has the same size as 'void *'.
+ */
+#define CFG_VAL(_t, _v)     CVT_##_t, ((const void *)(long)(_v))
+
 
 /**
  * This macro MUST NOT be used out of the header.  It's very context
