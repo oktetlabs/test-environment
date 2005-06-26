@@ -120,8 +120,8 @@ typedef struct udp_csap_specific_data
  */
 typedef struct tcp_csap_specific_data
 {
-    unsigned short   local_port;    /**< Local TCP port */
-    unsigned short   remote_port;   /**< Remote TCP port */ 
+    unsigned short   local_port;    /**< Local TCP port, in HOST order*/
+    unsigned short   remote_port;   /**< Remote TCP port, in HOST order*/ 
 
     unsigned short   src_port;    /**< Source TCP port for current packet*/
     unsigned short   dst_port;    /**< Dest.  TCP port for current packet*/
@@ -133,7 +133,7 @@ typedef struct tcp_csap_specific_data
     tad_data_unit_t  du_src_port;
     tad_data_unit_t  du_dst_port;
     tad_data_unit_t  du_seqn;
-    tad_data_unit_t  du_acqn;
+    tad_data_unit_t  du_ackn;
     tad_data_unit_t  du_hlen;
     tad_data_unit_t  du_flags;
     tad_data_unit_t  du_win_size;

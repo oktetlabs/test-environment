@@ -82,7 +82,7 @@ tcp_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
     csap_p csap_descr = csap_find(csap_id);
 
     tcp_csap_specific_data_t * spec_data = 
-        (tcp_csap_specific_data_t *) csap_descr->layers[layer].specific_data; 
+        (tcp_csap_specific_data_t *)csap_descr->layers[layer].specific_data;
 
     tad_data_unit_convert(tmpl_pdu, NDN_TAG_TCP_SRC_PORT,
                           &spec_data->du_src_port);
@@ -91,7 +91,7 @@ tcp_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
     tad_data_unit_convert(tmpl_pdu, NDN_TAG_TCP_SEQN,
                           &spec_data->du_seqn);
     tad_data_unit_convert(tmpl_pdu, NDN_TAG_TCP_ACKN,
-                          &spec_data->du_acqn);
+                          &spec_data->du_ackn);
     tad_data_unit_convert(tmpl_pdu, NDN_TAG_TCP_HLEN,
                           &spec_data->du_hlen);
     tad_data_unit_convert(tmpl_pdu, NDN_TAG_TCP_FLAGS,
@@ -217,24 +217,122 @@ fill_tcp_options(void *buf, asn_value_p options)
 int 
 tcp_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
                const tad_tmpl_arg_t *args, size_t arg_num, 
-               csap_pkts_p up_payload, csap_pkts_p pkts)
+               csap_pkts_p up_payload, csap_pkts_p pkt_list)
 {
     int rc = 0;
     unsigned char *p; 
 
-    UNUSED(up_payload); /* DHCP has no payload */ 
-    UNUSED(csap_descr); 
-    UNUSED(layer); 
-    UNUSED(args); 
-    UNUSED(arg_num); 
-    UNUSED(tmpl_pdu); 
+    int hdr_len = 20;
+    int pld_len = (up_payload == NULL) ? 0 : up_payload->len;
 
-    pkts->len = 236; /* total length of mandatory fields in DHCP message */ 
+    tcp_csap_specific_data_t *spec_data = NULL;
 
-    pkts->data = malloc(pkts->len);
-    pkts->next = NULL;
-    
-    p = pkts->data;
+    /* TODO: TCP options */
+
+    if (csap_descr == NULL)
+        return TE_RC(TE_TAD_CSAP, ETADCSAPNOTEX);
+
+    if (pkt_list == NULL || tmpl_pdu == NULL)
+        return TE_RC(TE_TAD_CSAP, ETEWRONGPTR);
+
+    if (csap_descr->type == TAD_CSAP_DATA) /* TODO */
+        return ETENOSUPP; 
+
+    spec_data = (tcp_csap_specific_data_t *)
+                csap_descr->layers[layer].specific_data; 
+
+
+    pkt_list->len = hdr_len + pld_len; 
+    pkt_list->data = malloc(pkt_list->len);
+    pkt_list->next = NULL; 
+    p = pkt_list->data;
+
+#define CHECK(fail_cond_, msg_...) \
+    do {                                \
+        if (fail_cond_)                 \
+        {                               \
+            ERROR(msg_);                \
+            goto cleanup;               \
+        }                               \
+    } while (0)
+
+#define PUT_BIN_DATA(c_du_field_, def_val_, length_) \
+    do {                                                                \
+        if (spec_data->c_du_field_.du_type != TAD_DU_UNDEF)             \
+        {                                                               \
+            rc = tad_data_unit_to_bin(&(spec_data->c_du_field_),        \
+                                      args, arg_num, p, length_);       \
+            CHECK(rc != 0, "%s():%d: " #c_du_field_ " error: 0x%x",     \
+              __FUNCTION__,  __LINE__, rc);                             \
+        }                                                               \
+        else                                                            \
+        {                                                               \
+            switch (length_)                                            \
+            {                                                           \
+                case 1:                                                 \
+                    *((uint8_t *)p) = (def_val_);                       \
+                    break;                                              \
+                                                                        \
+                case 2:                                                 \
+                    *((uint16_t *)p) = htons((uint16_t)(def_val_));     \
+                    break;                                              \
+                                                                        \
+                case 4:                                                 \
+                    *((uint32_t *)p) = htonl((uint32_t)(def_val_));     \
+                    break;                                              \
+            }                                                           \
+        }                                                               \
+        p += (length_);                                                 \
+    } while (0) 
+
+    PUT_BIN_DATA(du_src_port, spec_data->local_port, 2);
+    PUT_BIN_DATA(du_dst_port, spec_data->remote_port, 2);
+
+    if (spec_data->du_seqn.du_type == TAD_DU_UNDEF)
+    {
+        ERROR("%s(CSAP %d): sequence number required in NDS",
+              __FUNCTION__, csap_descr->id);
+        rc = ETADLESSDATA;
+        goto cleanup;
+    }
+    else
+    {
+        rc = tad_data_unit_to_bin(&(spec_data->du_seqn),
+                                  args, arg_num, p, 4);
+        CHECK(rc != 0, "%s():%d: seqn error: 0x%x",
+          __FUNCTION__,  __LINE__, rc);
+        p += 4;
+    }
+
+    PUT_BIN_DATA(du_ackn, 0, 4);
+    if (spec_data->du_hlen.du_type != TAD_DU_UNDEF)
+    {
+        WARN("%s(CSAP %d): hlen field is ignored required in NDS",
+              __FUNCTION__, csap_descr->id);
+    }
+    *p = (hdr_len / 4) << 4;
+    p++;
+    PUT_BIN_DATA(du_flags, 0, 1);
+    PUT_BIN_DATA(du_win_size, 1400, 2); /* TODO: good default window */
+    PUT_BIN_DATA(du_checksum, 0, 2);
+    PUT_BIN_DATA(du_urg_p, 0, 2); 
+
+    if (pld_len > 0 && up_payload != NULL)
+    {
+        memcpy(p, up_payload->data, pld_len);
+    }
+
+    return 0;
+#undef PUT_BIN_DATA
+cleanup:
+    {
+        csap_pkts_p pkt_fr;
+        for (pkt_fr = pkt_list; pkt_fr != NULL; pkt_fr = pkt_fr->next)
+        {
+            free(pkt_fr->data);
+            pkt_fr->data = NULL; pkt_fr->len = 0;
+        }
+    }
     return rc;
 }
 
@@ -298,7 +396,7 @@ int tcp_match_bin_cb (int csap_id, int layer, const asn_value *pattern_pdu,
     CHECK_FIELD("src-port", 2);
     CHECK_FIELD("dst-port", 2);
     CHECK_FIELD("seqn", 4);
-    CHECK_FIELD("acqn", 4);
+    CHECK_FIELD("ackn", 4);
 
     tmp8 = (*data) >> 4;
     rc = ndn_match_data_units(pattern_pdu, tcp_header_pdu, 
