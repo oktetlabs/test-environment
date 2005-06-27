@@ -487,9 +487,7 @@ int eth_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
         curr_frame->free_data_cb = NULL; 
 
         pld_fragment = pld_fragment->next;
-        if (prev_frame == NULL)
-            prev_frame = curr_frame;
-
+        prev_frame = curr_frame; 
     } while (pld_fragment != NULL);
 
 #if 0

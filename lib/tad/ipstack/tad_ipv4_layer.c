@@ -561,9 +561,8 @@ ip4_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
         }
         /* fragment iteration procedures */
         fr_index++;
-        if (pkt_prev == NULL) 
-            pkt_prev = pkt_curr;
-    } while (fragments_seq != NULL && fr_index < fr_number);
+        pkt_prev = pkt_curr;
+    } while ((fragments_seq != NULL) && (fr_index < fr_number));
 
 #if 0
     if (up_payload->free_data_cb)
