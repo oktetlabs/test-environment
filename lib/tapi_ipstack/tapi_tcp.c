@@ -591,6 +591,28 @@ tapi_tcp_insert_conn(tapi_tcp_connection_t *descr)
 
     return 0;
 }
+
+
+/**
+ * Clear first (earliest) TCP message in queue, if it present.
+ */
+static inline void
+tapi_tcp_clear_tcp_msg(tapi_tcp_connection_t *conn_descr)
+{
+    tapi_tcp_msg_queue_t *msg;
+
+    if (conn_descr != NULL &&
+        conn_descr->messages != NULL &&
+        (msg = conn_descr->messages->cqh_first) !=
+            (void *)conn_descr->messages)
+    {
+        free(msg->data);
+        CIRCLEQ_REMOVE(conn_descr->messages, msg, link);
+        free(msg);
+    }
+}
+
+
 /**
  * Remove TCP connection descriptor from data base
  *
@@ -642,24 +664,6 @@ tapi_tcp_destroy_conn_descr(tapi_tcp_connection_t *conn_descr)
 }
 
 
-/**
- * Clear first (earliest) TCP message in queue, if it present.
- */
-static inline void
-tapi_tcp_clear_tcp_msg(tapi_tcp_connection_t *conn_descr)
-{
-    tapi_tcp_msg_queue_t *msg;
-
-    if (conn_descr != NULL &&
-        conn_descr->messages != NULL &&
-        (msg = conn_descr->messages->cqh_first) !=
-            (void *)conn_descr->messages)
-    {
-        free(msg->data);
-        CIRCLEQ_REMOVE(conn_descr->messages, msg, link);
-        free(msg);
-    }
-}
 
 /* handler for data, see description of 'rcf_pkt_handler' type */
 static void 
@@ -805,8 +809,6 @@ tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode,
 
     asn_value *syn_ack_template;
     asn_value *syn_pattern;
-    uint8_t    flag_mask,
-               flag_value;
 
     csap_handle_t rcv_csap = CSAP_INVALID_HANDLE;
     csap_handle_t snd_csap = CSAP_INVALID_HANDLE;
@@ -1082,7 +1084,7 @@ tapi_tcp_send_msg(tapi_tcp_handler_t handler, uint8_t *payload, size_t len,
     switch (seq_mode)
     {
         case TAPI_TCP_AUTO:
-            new_seq = tapi_tcp_next_seqn(conn_descr);
+            new_seq = tapi_tcp_next_seqn(handler);
             break;
 
         case TAPI_TCP_EXPLICIT:
@@ -1096,7 +1098,7 @@ tapi_tcp_send_msg(tapi_tcp_handler_t handler, uint8_t *payload, size_t len,
     switch (ack_mode)
     {
         case TAPI_TCP_AUTO:
-            new_ack = tapi_tcp_next_ackn(conn_descr);
+            new_ack = tapi_tcp_next_ackn(handler);
             break;
 
         case TAPI_TCP_EXPLICIT:
