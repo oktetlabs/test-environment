@@ -227,20 +227,24 @@ extern int tapi_tcp_send_msg(tapi_tcp_handler_t handler,
  * Wait for next incoming TCP message in connection.
  *
  * @param handler       TAPI handler of TCP connection;     
+ * @param timeout       timeout in milliseconds;
  * @param ack_mode      mode of sending ACK to the message, for this
  *                      method valid values are 'AUTO' or 'QUIET' only;
  * @param payload       pointer to message payload buffer (OUT);
  * @param len           length of buffer/ got payload (IN/OUT);
  * @param seqn_got      place for received SEQ number or NULL (OUT);
  * @param ackn_got      place for received ACK number or NULL (OUT);
+ * @param fin_state     flag, whether connection got FIN or RESET (OUT);
  *
  * @return Status code
  */
 extern int tapi_tcp_recv_msg(tapi_tcp_handler_t handler,
+                             int timeout,
                              tapi_tcp_protocol_mode_t ack_mode, 
                              uint8_t *buffer, size_t *len, 
                              tapi_tcp_pos_t *seqn_got, 
-                             tapi_tcp_pos_t *ackn_got);
+                             tapi_tcp_pos_t *ackn_got,
+                             te_bool *fin_state);
 
 /**
  * Send ACK via established TCP connection.

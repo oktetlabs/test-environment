@@ -518,9 +518,14 @@ typedef struct tapi_tcp_connection_t {
     tapi_tcp_pos_t ack_got;
     tapi_tcp_pos_t ack_sent;
 
+    tapi_tcp_pos_t our_isn;
+    tapi_tcp_pos_t peer_isn;
+
     size_t         last_len_got;
     size_t         last_len_sent;
 
+    te_bool        fin_got;
+    te_bool        reset_got; 
 
     CIRCLEQ_HEAD(tapi_tcp_msg_queue_head, tapi_tcp_msg_queue_t) 
         *messages; 
@@ -601,6 +606,13 @@ tapi_tcp_destroy_conn_descr(tapi_tcp_connection_t *conn_descr)
     if (conn_descr == NULL || conn_descr == (void *)conns_root)
         return 0;
 
+    if (conn_descr->messages != NULL)
+        while (conn_descr->messages->cqh_first != 
+               (void *)conn_descr->messages)
+            tapi_tcp_clear_tcp_msg(conn_descr);
+
+    free(conn_descr->messages);
+
     if (conn_descr->rcv_csap != CSAP_INVALID_HANDLE)
     {
         int rc = rcf_ta_csap_destroy(conn_descr->agt, conn_descr->rcv_sid,
@@ -630,6 +642,25 @@ tapi_tcp_destroy_conn_descr(tapi_tcp_connection_t *conn_descr)
 }
 
 
+/**
+ * Clear first (earliest) TCP message in queue, if it present.
+ */
+static inline void
+tapi_tcp_clear_tcp_msg(tapi_tcp_connection_t *conn_descr)
+{
+    tapi_tcp_msg_queue_t *msg;
+
+    if (conn_descr != NULL &&
+        conn_descr->messages != NULL &&
+        (msg = conn_descr->messages->cqh_first) !=
+            (void *)conn_descr->messages)
+    {
+        free(msg->data);
+        CIRCLEQ_REMOVE(conn_descr->messages, msg, link);
+        free(msg);
+    }
+}
+
 /* handler for data, see description of 'rcf_pkt_handler' type */
 static void 
 tapi_tad_pkt_handler(char *pkt_file, void *user_param)
@@ -643,6 +674,7 @@ tapi_tad_pkt_handler(char *pkt_file, void *user_param)
             syms; 
     uint8_t flags;
     int32_t pdu_field;
+    size_t  pld_len = 0;
 
     tapi_tcp_pos_t seq_got, 
                    ack_got;
@@ -702,49 +734,52 @@ tapi_tad_pkt_handler(char *pkt_file, void *user_param)
     CHECK_ERROR("read TCP ackn error");
     ack_got = pdu_field;
 
+
+    if ((rc = asn_get_length(tcp_message, "payload")) > 0)
+        pld_len = rc;
+
+    if (flags & TCP_SYN_FLAG) /* this is SYN or SYN-ACK */
+        conn_descr->peer_isn = seq_got;
+
+    conn_descr->seq_got = seq_got;
+    if (flags & TCP_ACK_FLAG)
+        conn_descr->ack_got = ack_got;
+
+    if (flags & TCP_FIN_FLAG)
+        conn_descr->fin_got = TRUE;
+
+    if (flags & TCP_RST_FLAG)
+        conn_descr->reset_got = TRUE; 
+
     if (conn_descr->messages == NULL)
-    {
-        if (flags & TCP_SYN_FLAG) /* this is SYN or SYN-ACK */
-        {
-            conn_descr->messages =
-                calloc(1, sizeof(*(conn_descr->messages)));
-            CIRCLEQ_INIT(conn_descr->messages);
-        }
-        else 
-        {
-            ERROR("%s(): id %d; buffer for messages not inited, "
-                  "but have no SYN got!", __FUNCTION__, conn_descr->id); 
-            asn_free_value(tcp_message);
-            return;
-        }
+    { 
+        conn_descr->messages =
+            calloc(1, sizeof(*(conn_descr->messages)));
+        CIRCLEQ_INIT(conn_descr->messages);
     }
-    else /* there was already SYN/SYN-ACK earlier, put this into queue */
+
+    if (!(flags & TCP_SYN_FLAG))
     {
-        tapi_tcp_msg_queue_t *pkt = calloc(1, sizeof(*pkt));
+        tapi_tcp_msg_queue_t *pkt;
         size_t                pld_len;
 
-        if ((rc = asn_get_length(tcp_message, "payload")) < 0)
-        {
-            ERROR("%s(): id %d; get lenth of payload error",
-                  __FUNCTION__, conn_descr->id); 
-            asn_free_value(tcp_message);
-            return;
-        }
-        pld_len = pkt->len = rc;
-        pkt->data = malloc(pld_len);
+        pkt = calloc(1, sizeof(*pkt));
 
-        rc = asn_read_value_field(tcp_message, pkt->data, &pld_len,
-                                  "payload.#bytes");
-        CHECK_ERROR("read TCP payload error");
+        pkt->len = pld_len;
+        if (pld_len > 0)
+        {
+            pkt->data = malloc(pld_len);
+
+            rc = asn_read_value_field(tcp_message, pkt->data, &pld_len,
+                                      "payload.#bytes");
+            CHECK_ERROR("read TCP payload error");
+        }
 
         pkt->flags = flags;
         pkt->seqn  = seq_got;
         pkt->ackn  = ack_got;
     }
 
-    conn_descr->seq_got = seq_got;
-    if (flags & TCP_ACK_FLAG)
-        conn_descr->ack_got = ack_got;
 
 #undef CHECK_ERROR
     asn_free_value(tcp_message);
@@ -763,9 +798,16 @@ tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode,
                          tapi_tcp_handler_t *handler)
 {
     int rc;
+    int num;
     int syms;
     int rcv_sid;
     int snd_sid;
+
+    asn_value *syn_ack_template;
+    asn_value *syn_pattern;
+    uint8_t    flag_mask,
+               flag_value;
+
     csap_handle_t rcv_csap = CSAP_INVALID_HANDLE;
     csap_handle_t snd_csap = CSAP_INVALID_HANDLE;
 
@@ -773,6 +815,7 @@ tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode,
     struct sockaddr_in *remote_in_addr = (struct sockaddr_in *)remote_addr;
 
     tapi_tcp_connection_t *conn_descr = NULL;
+
 
     tapi_tcp_conns_db_init();
 
@@ -786,9 +829,9 @@ tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode,
     if (local_iface == NULL || local_mac == NULL || remote_mac == NULL)
         return TE_RC(TE_TAPI, ETENOSUPP);
 
-#define CHECK_ERROR(cond_, msg_...)\
+#define CHECK_ERROR(msg_...)\
     do {                           \
-        if (cond_)                 \
+        if (rc != 0)                 \
         {                          \
             ERROR(msg_);           \
             goto cleanup;          \
@@ -796,11 +839,11 @@ tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode,
     } while (0)
 
     rc = rcf_ta_create_session(agt, &rcv_sid);
-    CHECK_ERROR(rc != 0, "%s(); create rcv session failed %X",
+    CHECK_ERROR("%s(); create rcv session failed %X",
                 __FUNCTION__, rc);
 
     rc = rcf_ta_create_session(agt, &snd_sid);
-    CHECK_ERROR(rc != 0, "%s(); create snd session failed %X",
+    CHECK_ERROR("%s(); create snd session failed %X",
                 __FUNCTION__, rc);
 
     rc = tapi_tcp_ip4_eth_csap_create(agt, rcv_sid, local_iface,
@@ -810,7 +853,7 @@ tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode,
                                       local_in_addr->sin_port,
                                       remote_in_addr->sin_port,
                                       &rcv_csap); 
-    CHECK_ERROR(rc != 0, "%s(): rcv csap create failed %X",
+    CHECK_ERROR("%s(): rcv csap create failed %X",
                 __FUNCTION__, rc);
 
     rc = tapi_tcp_ip4_eth_csap_create(agt, snd_sid, local_iface,
@@ -820,7 +863,7 @@ tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode,
                                       local_in_addr->sin_port,
                                       remote_in_addr->sin_port,
                                       &snd_csap);
-    CHECK_ERROR(rc != 0, "%s(): snd csap create failed %X",
+    CHECK_ERROR("%s(): snd csap create failed %X",
                 __FUNCTION__, rc);
 
     conn_descr = calloc(1, sizeof(*conn_descr));
@@ -829,36 +872,113 @@ tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode,
     conn_descr->snd_csap = snd_csap;
     conn_descr->snd_sid = snd_sid;
     conn_descr->agt = agt;
+    conn_descr->our_isn = rand();
     conn_descr->window = ((window == 0) ? 1000 : window);
     tapi_tcp_insert_conn(conn_descr); 
     *handler = conn_descr->id;
 
-    /* wait SYN - if we are server */
+    RING("%s(): init TCP connection started, id %d, our ISN %d",
+         __FUNCTION__, conn_descr->id, conn_descr->our_isn);
+
+    /* make template for this connection */
+    rc = asn_parse_value_text("{{pdus {tcp:{}, ip4:{}, eth:{}}}}",
+                              ndn_traffic_pattern,
+                              &syn_pattern, &syms);
+    CHECK_ERROR("%s(): parse pattern failed, rc %X, sym %d",
+                __FUNCTION__, rc, syms);
+
+    rc = tapi_tad_trrecv_start(agt, conn_descr->rcv_sid,
+                               conn_descr->rcv_csap, syn_pattern, 
+                               tapi_tad_pkt_handler, conn_descr, 
+                               TAD_TIMEOUT_INF, 0); 
+
+    /* send SYN - if we are client */
+    if (mode == TAPI_TCP_CLIENT)
+    {
+        asn_value *syn_template;
+
+        rc = tapi_tcp_template(conn_descr->our_isn, 0, TRUE, FALSE, 
+                               NULL, 0, &syn_template);
+        CHECK_ERROR("%s(): make syn template failed, rc %X",
+                    __FUNCTION__, rc);
+
+        rc = tapi_tad_trsend_start(agt, snd_sid, snd_csap, 
+                                   syn_template, RCF_MODE_BLOCKING);
+
+        CHECK_ERROR("%s(): make SYN template failed, rc %X",
+                    __FUNCTION__, rc);
+    }
+
+    num = 0;
+
+    /* wait SYN */ 
+
+    rc = rcf_ta_trrecv_get(agt, conn_descr->rcv_sid,
+                           conn_descr->rcv_csap, &num);
+    CHECK_ERROR("%s(): get for SYN of SYN-ACK failed, rc %X",
+                __FUNCTION__, rc); 
+    if (num == 0)
+    {
+        sleep((timeout + 999)/1000);
+        rc = rcf_ta_trrecv_get(agt, conn_descr->rcv_sid,
+                               conn_descr->rcv_csap, &num);
+        CHECK_ERROR("%s(): get for SYN of SYN-ACK failed, rc %X",
+                __FUNCTION__, rc); 
+    }
+
+    if (conn_descr->peer_isn == 0)
+    {
+        ERROR("%s(id %d): wait for SYN of SYN-ACK timed out",
+                __FUNCTION__, conn_descr->id);
+        rc = ETIMEDOUT;
+        goto cleanup;
+    }
+
+
+    rc = tapi_tcp_template(conn_descr->our_isn, conn_descr->peer_isn,
+                           mode == TAPI_TCP_SERVER ? TRUE : FALSE,
+                           TRUE, NULL, 0, &syn_ack_template);
+    CHECK_ERROR("%s(): make SYN-ACK template failed, rc %X",
+                __FUNCTION__, rc);
+
+    rc = tapi_tad_trsend_start(agt, snd_sid, snd_csap, 
+                               syn_ack_template, RCF_MODE_BLOCKING);
+
+    CHECK_ERROR("%s(): send ACK failed, rc %X",
+                __FUNCTION__, rc);
+
+    /* wait for ACK */ 
     if (mode == TAPI_TCP_SERVER)
     {
-        asn_value *syn_pattern;
-        uint8_t flag_mask, flag_value;
-
-        rc = asn_parse_value_text("{{pdus {tcp:{}, ip4:{}, eth:{}}}}",
-                                  ndn_traffic_pattern,
-                                  &syn_pattern, &syms);
-        CHECK_ERROR(rc != 0, "%s(): parse pattern failed, rc %X, sym %d",
-                    __FUNCTION__, rc, syms);
-
-        /* TODO: investigate for correct mask here */
-        flag_mask = 0xff; 
-        flag_value = TCP_SYN_FLAG;
-
-        asn_write_value_field(syn_pattern, &flag_mask, sizeof(flag_mask),
-                              "0.pdus.0.#tcp.flags.#mask.m");
-        asn_write_value_field(syn_pattern, &flag_value, sizeof(flag_value),
-                              "0.pdus.0.#tcp.flags.#mask.v");
-
-        rc = tapi_tad_trrecv_start(agt, conn_descr->rcv_sid,
-                                   conn_descr->rcv_csap, syn_pattern, 
-                                   tapi_tad_pkt_handler, conn_descr, 
-                                   timeout, 1); 
+        num = 0;
+        rc = rcf_ta_trrecv_get(agt, conn_descr->rcv_sid,
+                               conn_descr->rcv_csap, &num);
+        CHECK_ERROR("%s(): get ACK failed, rc %X",
+                    __FUNCTION__, rc); 
+        if (num == 0)
+        {
+            sleep((timeout + 999)/1000);
+            rc = rcf_ta_trrecv_get(agt, conn_descr->rcv_sid,
+                                   conn_descr->rcv_csap, &num);
+            CHECK_ERROR("%s(): get for ACK failed, rc %X",
+                    __FUNCTION__, rc); 
+        }
     }
+
+    /* check if we got ACK for our SYN */
+    if (conn_descr->ack_got < conn_descr->our_isn)
+    {
+        ERROR("%s(id %d): ACK for our SYN dont got",
+                __FUNCTION__, conn_descr->id);
+        rc = ETIMEDOUT;
+        goto cleanup;
+    }
+
+
+    conn_descr->seq_sent = conn_descr->our_isn + 1;
+    conn_descr->ack_sent = conn_descr->peer_isn + 1;
+
+    tapi_tcp_clear_tcp_msg(conn_descr);
 
     return 0;
 
@@ -867,3 +987,125 @@ cleanup:
     *handler = 0;
     return TE_RC(TE_TAPI, rc);
 }
+
+
+int
+tapi_tcp_close_connection(tapi_tcp_handler_t handler, 
+                                     int timeout)
+{
+}
+
+
+int
+tapi_tcp_send_msg(tapi_tcp_handler_t handler,
+                             uint8_t *payload, size_t len,
+                             tapi_tcp_protocol_mode_t seq_mode, 
+                             tapi_tcp_pos_t seqn,
+                             tapi_tcp_protocol_mode_t ack_mode, 
+                             tapi_tcp_pos_t ackn, 
+                             tapi_ip_frag_spec_t *frags,
+                             size_t frag_num)
+{
+}
+
+
+int
+tapi_tcp_recv_msg(tapi_tcp_handler_t handler,
+                             int timeout,
+                             tapi_tcp_protocol_mode_t ack_mode, 
+                             uint8_t *buffer, size_t *len, 
+                             tapi_tcp_pos_t *seqn_got, 
+                             tapi_tcp_pos_t *ackn_got,
+                             te_bool *fin_state)
+{
+}
+
+int
+tapi_tcp_send_ack(tapi_tcp_handler_t handler, tapi_tcp_pos_t ackn)
+{
+}
+
+
+tapi_tcp_pos_t
+tapi_tcp_last_seqn_got(tapi_tcp_handler_t handler)
+{
+    tapi_tcp_connection_t *conn_descr;
+
+    tapi_tcp_conns_db_init();
+
+    if ((conn_descr = tapi_tcp_find_conn(handler)) == NULL)
+        return 0;
+
+    return conn_descr->seq_got;
+}
+
+
+tapi_tcp_pos_t
+tapi_tcp_last_ackn_got(tapi_tcp_handler_t handler)
+{
+    tapi_tcp_connection_t *conn_descr;
+
+    tapi_tcp_conns_db_init();
+
+    if ((conn_descr = tapi_tcp_find_conn(handler)) == NULL)
+        return 0;
+
+    return conn_descr->ack_got;
+}
+
+
+tapi_tcp_pos_t
+tapi_tcp_last_seqn_sent(tapi_tcp_handler_t handler)
+{
+    tapi_tcp_connection_t *conn_descr;
+
+    tapi_tcp_conns_db_init();
+
+    if ((conn_descr = tapi_tcp_find_conn(handler)) == NULL)
+        return 0;
+
+    return conn_descr->seq_sent;
+}
+
+
+tapi_tcp_pos_t
+tapi_tcp_last_ackn_sent(tapi_tcp_handler_t handler)
+{
+    tapi_tcp_connection_t *conn_descr;
+
+    tapi_tcp_conns_db_init();
+
+    if ((conn_descr = tapi_tcp_find_conn(handler)) == NULL)
+        return 0;
+
+    return conn_descr->ack_sent;
+}
+
+tapi_tcp_pos_t
+tapi_tcp_next_seqn(tapi_tcp_handler_t handler)
+{
+    tapi_tcp_connection_t *conn_descr;
+
+    tapi_tcp_conns_db_init();
+
+    if ((conn_descr = tapi_tcp_find_conn(handler)) == NULL)
+        return 0;
+
+    return conn_descr->seq_sent + conn_descr->last_len_sent;
+}
+
+tapi_tcp_pos_t
+tapi_tcp_next_ackn(tapi_tcp_handler_t handler)
+{
+    tapi_tcp_connection_t *conn_descr;
+
+    tapi_tcp_conns_db_init();
+
+    if ((conn_descr = tapi_tcp_find_conn(handler)) == NULL)
+        return 0;
+
+    /* TODO this seems to be not quiet correct */
+    return conn_descr->ack_sent + conn_descr->last_len_got;
+}
+
+
