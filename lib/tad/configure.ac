@@ -26,8 +26,16 @@ DIRS="$DIRS `echo $LD_LIBRARY_PATH | sed s/:/\ /g`"
 for i in $DIRS ; do
     if cd $i 2>/dev/null ; then
         DIR=`pwd`
-        FILES=`find $DIR -name lib$1\*.a` ;
-        if test -n "$FILES" ; then break; fi ;
+
+        for j in `find $DIR -name lib$1\*.a` ; do
+            name=`basename $j`;
+            suffix=${name/lib$1/};
+            if test "$suffix" = ".a" ||
+               test -z `echo $suffix | sed -s "s,^[[0-9._-]]*.a$,,"`; then
+                FILES=$j;
+                break 2;
+            fi
+        done
     fi
     cd $START
 done
@@ -144,7 +152,17 @@ AC_ARG_WITH([snmp],,
 [if test "${withval}" = yes; then
     w_snmp=true;
     proto_specific snmp;
-    TA_TAD_LIBS="$TA_TAD_LIBS `net-snmp-config --libs` "
+
+    for i in `net-snmp-config --libs`; do
+        if test ${i:0:2} = "-l"; then
+            find_lib ${i:2}
+            if test -z "${LIB_PATHNAME}" ; then
+                AC_WARN([Cannot find ${i:2} library])
+            fi
+            TA_TAD_LIBS="$TA_TAD_LIBS ${LIB_PATHNAME}";
+        fi
+    done
+
     AC_CONFIG_FILES([snmp/Makefile])
  fi
 ], [w_snmp=false])
