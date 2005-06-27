@@ -990,21 +990,81 @@ cleanup:
 
 
 int
-tapi_tcp_close_connection(tapi_tcp_handler_t handler, 
-                                     int timeout)
+tapi_tcp_close_connection(tapi_tcp_handler_t handler, int timeout)
 {
+    int num;
+    int syms;
+    int rc;
+    asn_value *fin_template = NULL;
+
+    uint8_t flags;
+
+    rc = asn_parse_value_text("{ pdus {tcp:{}, ip4:{}, eth{} } }", 
+                              ndn_traffic_template, 
+                              &fin_template, &syms);
+    if (rc != 0)
+    {
+        ERROR("%s(): cannot parse template: %X, sym %d", 
+              __FUNCTION__, rc, syms);
+        return TE_RC(TE_TAPI, rc);
+    }
+
+    flags = TCP_FIN_FLAG;
+    rc = asn_write_value_field(fin_template, &flags, sizeof(flags), 
+                               "pdus.0.#tcp.flags.#plain");
+    if (rc != 0)
+    {
+        ERROR("%s(): set fin flag failed %X", 
+              __FUNCTION__, rc);
+        return TE_RC(TE_TAPI, rc);
+    }
+
+    rc = tapi_tad_trsend_start(conn_descr->agt, conn_descr->snd_sid,
+                               conn_descr->snd_csap, 
+                               fin_template, RCF_MODE_BLOCKING);
+    if (rc != 0)
+    {
+        ERROR("%s(): send FIN failed %X", __FUNCTION__, rc);
+        return TE_RC(TE_TAPI, rc);
+    } 
+
+    num = 0;
+    rc = rcf_ta_trrecv_get(conn_descr->agt, conn_descr->rcv_sid,
+                           conn_descr->rcv_csap, &num);
+    if (rc != 0)
+    {
+        ERROR("%s(): get FIN failed, rc %X", __FUNCTION__, rc); 
+        return rc;
+    }
+
+    if (num == 0)
+    {
+        sleep((timeout + 999)/1000);
+        rc = rcf_ta_trrecv_get(agt, conn_descr->rcv_sid,
+                               conn_descr->rcv_csap, &num);
+        if (rc != 0)
+        {
+            ERROR("%s(): get for ACK failed, rc %X", __FUNCTION__, rc); 
+            return rc;
+        }
+    }
+
+    if (!conn_descr->fin_got)
+    {
+        ERROR("%s(): send FIN failed %X", __FUNCTION__, rc);
+        return ETIMEDOUT;
+    }
+    return 0;
 }
 
 
 int
-tapi_tcp_send_msg(tapi_tcp_handler_t handler,
-                             uint8_t *payload, size_t len,
-                             tapi_tcp_protocol_mode_t seq_mode, 
-                             tapi_tcp_pos_t seqn,
-                             tapi_tcp_protocol_mode_t ack_mode, 
-                             tapi_tcp_pos_t ackn, 
-                             tapi_ip_frag_spec_t *frags,
-                             size_t frag_num)
+tapi_tcp_send_msg(tapi_tcp_handler_t handler, uint8_t *payload, size_t len,
+                  tapi_tcp_protocol_mode_t seq_mode, 
+                  tapi_tcp_pos_t seqn,
+                  tapi_tcp_protocol_mode_t ack_mode, 
+                  tapi_tcp_pos_t ackn, 
+                  tapi_ip_frag_spec_t *frags, size_t frag_num)
 {
 }
 
