@@ -992,6 +992,7 @@ cleanup:
 int
 tapi_tcp_close_connection(tapi_tcp_handler_t handler, int timeout)
 {
+    tapi_tcp_connection_t *conn_descr = tapi_tcp_find_conn(handler);
     int num;
     int syms;
     int rc;
@@ -1040,7 +1041,7 @@ tapi_tcp_close_connection(tapi_tcp_handler_t handler, int timeout)
     if (num == 0)
     {
         sleep((timeout + 999)/1000);
-        rc = rcf_ta_trrecv_get(agt, conn_descr->rcv_sid,
+        rc = rcf_ta_trrecv_get(conn_descr->agt, conn_descr->rcv_sid,
                                conn_descr->rcv_csap, &num);
         if (rc != 0)
         {
@@ -1156,6 +1157,32 @@ tapi_tcp_recv_msg(tapi_tcp_handler_t handler, int timeout,
 int
 tapi_tcp_send_ack(tapi_tcp_handler_t handler, tapi_tcp_pos_t ackn)
 {
+    tapi_tcp_connection_t *conn_descr = tapi_tcp_find_conn(handler);
+
+    asn_value *ack_template = NULL;
+    int rc;
+
+    if (conn_descr == NULL)
+        return TE_RC(TE_TAPI, EINVAL); 
+
+    rc = tapi_tcp_template(conn_descr->seq_sent, ackn, FALSE, TRUE, 
+                           NULL, 0, &ack_template);
+    if (rc != 0)
+    {
+        ERROR("%s: make ACK template error %X", __FUNCTION__, rc);
+        return rc;
+    } 
+
+    rc = tapi_tad_trsend_start(conn_descr->agt, conn_descr->snd_sid,
+                               conn_descr->snd_csap, 
+                               ack_template, RCF_MODE_BLOCKING);
+    if (rc != 0)
+    {
+        ERROR("%s: send ACK %X", __FUNCTION__, rc);
+    }
+    return rc;
+
+
 }
 
 
