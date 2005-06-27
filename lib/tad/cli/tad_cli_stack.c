@@ -370,6 +370,7 @@ process_sync_pipe(cli_csap_specific_data_p spec_data)
  *                       bytes from the reply because they just echoed.
  * @param reply_buf      Buffer for reply message, can be NULL (OUT)
  * @param reply_buf_len  Length of reply buffer
+ * @param tv             Time to wait for reply
  *
  * @return 0 on timeout detection, -errno on error,
  *         > 0 - the number of bytes in @a reply_buf
@@ -377,7 +378,8 @@ process_sync_pipe(cli_csap_specific_data_p spec_data)
 static int
 parent_read_reply(cli_csap_specific_data_p spec_data,
                   size_t cmd_buf_len,
-                  char *reply_buf, size_t reply_buf_len)
+                  char *reply_buf, size_t reply_buf_len,
+                  struct timeval *tv)
 {
     int     rc;
     char    data;
@@ -387,7 +389,7 @@ parent_read_reply(cli_csap_specific_data_p spec_data,
 
     /* Wait for CLI response */
     do {
-        rc = parent_read_byte(spec_data, NULL, &data);
+        rc = parent_read_byte(spec_data, tv, &data);
         if (rc == ETIMEDOUT)
         {
             /*
@@ -628,6 +630,8 @@ cli_read_cb(csap_p csap_descr, int timeout, char *buf, size_t buf_len)
     int    timeout_rate;
     int    layer;
     int    rc;
+
+    struct timeval tv = { timeout / 1000000, timeout % 1000000 };
     
     if (csap_descr == NULL)
         return -1;
@@ -685,7 +689,7 @@ cli_read_cb(csap_p csap_descr, int timeout, char *buf, size_t buf_len)
      * so read out the reply.
      */
     return parent_read_reply(spec_data, spec_data->last_cmd_len,
-                             buf, buf_len);
+                             buf, buf_len, &tv);
 }
 
 /**
@@ -707,7 +711,11 @@ cli_write_cb(csap_p csap_descr, char *buf, size_t buf_len)
     int    layer;
     size_t bytes_written;
     int    rc;
-    
+
+    struct timeval tv = {
+        csap_descr->timeout / 1000000, csap_descr->timeout % 1000000
+    };
+
     if (csap_descr == NULL)
         return -1;
 
@@ -751,7 +759,7 @@ cli_write_cb(csap_p csap_descr, char *buf, size_t buf_len)
     spec_data->last_cmd_len = buf_len;
 
     /* Wait for CLI response */
-    if ((rc = parent_read_reply(spec_data, buf_len, NULL, 0)) <= 0)
+    if ((rc = parent_read_reply(spec_data, buf_len, NULL, 0, &tv)) <= 0)
     {
         /*
          * @todo Remove this checking when CSAP interpret rc 0 as timeout
@@ -788,6 +796,8 @@ cli_write_read_cb(csap_p csap_descr, int timeout,
     size_t bytes_written;
     int    rc;
 
+    struct timeval tv = { timeout / 1000000, timeout % 1000000 };
+
     VERB("%s() Called with CSAP %d", __FUNCTION__, csap_descr->id);
 
     if (csap_descr == NULL)
@@ -823,7 +833,7 @@ cli_write_read_cb(csap_p csap_descr, int timeout,
              "We are ready to run next command.");
 
         /* Read out pending reply */
-        rc = parent_read_reply(spec_data, spec_data->last_cmd_len, NULL, 0);
+        rc = parent_read_reply(spec_data, spec_data->last_cmd_len, NULL, 0, &tv);
         if (rc <= 0)
             return rc;
     }
@@ -843,7 +853,7 @@ cli_write_read_cb(csap_p csap_descr, int timeout,
     spec_data->last_cmd_len = w_buf_len;
 
     /* Wait for CLI response */
-    rc = parent_read_reply(spec_data, w_buf_len, r_buf, r_buf_len);
+    rc = parent_read_reply(spec_data, w_buf_len, r_buf, r_buf_len, &tv);
     VERB("Reading reply from Expect side finishes with %d return code", rc);
 
     return rc;
