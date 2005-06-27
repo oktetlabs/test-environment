@@ -769,7 +769,7 @@ tapi_tad_pkt_handler(char *pkt_file, void *user_param)
 
         pkt = calloc(1, sizeof(*pkt));
 
-        pkt->len = pld_len;
+        conn_descr->last_len_got = pkt->len = pld_len;
         if (pld_len > 0)
         {
             pkt->data = malloc(pld_len);
@@ -1097,16 +1097,15 @@ tapi_tcp_send_msg(tapi_tcp_handler_t handler, uint8_t *payload, size_t len,
 
     switch (ack_mode)
     {
-        case TAPI_TCP_AUTO:
-            new_ack = tapi_tcp_next_ackn(handler);
-            break;
-
         case TAPI_TCP_EXPLICIT:
             new_ack = ackn;
             break;
 
         case TAPI_TCP_QUIET:
             new_ack = 0;
+
+        case TAPI_TCP_AUTO:
+            return EINVAL; /* this is very hard to support */
     }
 
     rc = tapi_tcp_template(new_seq, new_ack, FALSE, (new_ack != 0), 
@@ -1142,6 +1141,12 @@ tapi_tcp_send_msg(tapi_tcp_handler_t handler, uint8_t *payload, size_t len,
     {
         ERROR("%s: send msg %X", __FUNCTION__, rc);
     }
+    else
+    {
+        conn_descr->seq_sent = new_seq;
+        if (new_ack != 0)
+            conn_descr->ack_sent = new_ack;
+    }
     return rc;
 }
 
@@ -1154,6 +1159,51 @@ tapi_tcp_recv_msg(tapi_tcp_handler_t handler, int timeout,
                   tapi_tcp_pos_t *ackn_got,
                   te_bool *fin_state)
 {
+    tapi_tcp_msg_queue_t *msg;
+    tapi_tcp_connection_t *conn_descr = tapi_tcp_find_conn(handler);
+    int rc = 0;
+    int num;
+
+    if ((msg = conn_descr->messages->cqh_first) ==
+            (void *)conn_descr->messages)
+    {
+        sleep((timeout + 999)/1000);
+        rc = rcf_ta_trrecv_get(conn_descr->agt, conn_descr->rcv_sid,
+                               conn_descr->rcv_csap, &num);
+        if (rc != 0)
+        {
+            ERROR("%s(): get for ACK failed, rc %X", __FUNCTION__, rc); 
+            return rc;
+        }
+    }
+
+    if ((msg = conn_descr->messages->cqh_first) !=
+            (void *)conn_descr->messages)
+    {
+        if (buffer != NULL && (*len >= msg->len))
+        {
+            memcpy(buffer, msg->data, msg->len);
+            *len = msg->len;
+        }
+        if (seqn_got != NULL)
+            *seqn_got = msg->seqn;
+        if (ackn_got != NULL)
+            *ackn_got = msg->ackn;
+        if (fin_state != NULL && (msg->flags & TCP_FIN_FLAG))
+            *fin_state = TRUE;
+
+        if (ack_mode == TAPI_TCP_AUTO)
+        {
+            tapi_tcp_send_ack(handler, tapi_tcp_next_ackn(handler));
+        }
+    }
+    else
+    {
+        WARN("%s(id %d) no message got", __FUNCTION__, conn_descr->id);
+        return TE_RC(TE_TAPI, ETIMEDOUT);
+    }
+
+    return 0;
 }
 
 int
@@ -1182,6 +1232,9 @@ tapi_tcp_send_ack(tapi_tcp_handler_t handler, tapi_tcp_pos_t ackn)
     {
         ERROR("%s: send ACK %X", __FUNCTION__, rc);
     }
+    else
+        conn_descr->ack_sent = ackn;
+
     return rc;
 
 
