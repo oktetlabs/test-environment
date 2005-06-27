@@ -1060,7 +1060,7 @@ rcf_pch_rpc_server(const char *name)
 
     char *buf = NULL;
     int   s = -1;
-    int   len;
+    int   sock_len;
 
 #define STOP(msg...)    \
     do {                \
@@ -1089,16 +1089,16 @@ rcf_pch_rpc_server(const char *name)
     addr.sin_family = AF_INET;
     addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
     addr.sin_port = atoi(getenv("TE_RPC_PORT"));
-    len = sizeof(struct sockaddr_in);
+    sock_len = sizeof(struct sockaddr_in);
 #else
     addr.sun_family = AF_UNIX;
     strcpy(addr.sun_path, getenv("TE_RPC_PORT"));
-    len = sizeof(struct sockaddr_un) - PIPENAME_LEN +  
-          strlen(addr.sun_path);
+    sock_len = sizeof(struct sockaddr_un) - PIPENAME_LEN +  
+               strlen(addr.sun_path);
 #endif
 
 #ifdef HAVE_STRUCT_SOCKADDR_SA_LEN
-    ((struct sockaddr *)&addr)->sa_len = len;
+    ((struct sockaddr *)&addr)->sa_len = sock_len;
 #endif
 
 #ifdef TCP_TRANSPORT    
@@ -1106,7 +1106,6 @@ rcf_pch_rpc_server(const char *name)
 #else
     s = socket(AF_UNIX, SOCK_STREAM, 0);
 #endif    
-    
     if (s < 0)
     {
         ERROR("Failed to open socket");
@@ -1209,7 +1208,7 @@ rcf_pch_rpc_server(const char *name)
 
 cleanup:    
     free(buf);
-    if (s > 0)
+    if (s >= 0)
         close(s);
     
 #undef STOP    
