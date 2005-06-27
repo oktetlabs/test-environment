@@ -199,20 +199,6 @@ extern int tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode,
 extern int tapi_tcp_close_connection(tapi_tcp_handler_t handler, 
                                      int timeout);
 
-/** 
- * Send TCP SYN message.
- *
- * @param ta            TA name;
- * @param csap          TCP CSAP identifier;
- * @param src_addr      source socket address;
- * @param dst_addr      destination socket address;
- *
- * @return Status code
- */
-extern int tapi_tcp_send_syn(const char *ta, csap_handle_t csap, 
-                             struct sockaddr *src_addr,
-                             struct sockaddr *dst_addr, 
-                             int window);
 /**
  * Send TCP message via established connection.
  *
@@ -344,8 +330,8 @@ extern int tapi_tcp_make_msg(uint16_t src_port, uint16_t dst_port,
 /**
  * Prepare TCP header PDU by specified parameter values.
  *
- * @param src_port      source port in network byte order
- * @param dst_port      destination port in network byte order
+ * @param src_port      source TCP port in network byte order
+ * @param dst_port      destination TCP port in network byte order
  * @param seqn          sequence number in host byte order
  * @param ackn          acknowledge number in host byte order
  * @param syn_flag      syn flag
@@ -354,10 +340,33 @@ extern int tapi_tcp_make_msg(uint16_t src_port, uint16_t dst_port,
  *
  * @return Status code.
  */
-extern int tapi_tcp_pdu(uint16_t src_port, uint16_t dst_port,
+extern int tapi_tcp_pdu(uint16_t src_port, uint16_t dst_port, 
                         tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn, 
                         te_bool syn_flag, te_bool ack_flag,
                         asn_value **pdu);
+
+/**
+ * Prepare Traffic-Template ASN value for 'tcp.ip4.eth' CSAP. 
+ * It is assumed that all connection parameters 
+ * (src/dst MACs, IP, and ports) are already set in CSAP.
+ * If it is not, fill there parameters in obtained traffic template
+ * explicitely. 
+ *
+ * @param seqn          sequence number in host byte order
+ * @param ackn          acknowledge number in host byte order
+ * @param syn_flag      syn flag
+ * @param ack_flag      ack flag
+ * @param data          pointer to data with payload or NULL
+ * @param pld_len       length of payload
+ * @param tmpl          location for pointer to ASN value (OUT)
+ *
+ * @return Status code.
+ */
+extern int tapi_tcp_template(tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn, 
+                             te_bool syn_flag, te_bool ack_flag,
+                             uint8_t *data, size_t pld_len,
+                             asn_value **tmpl);
+
 
 
 #endif /* !__TE_TAPI_TCP_H__ */

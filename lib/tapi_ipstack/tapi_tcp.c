@@ -271,6 +271,7 @@ tapi_tcp_ip4_eth_recv_start(const char *ta_name, int sid,
 
 
 
+/* see description in tapi_tcp.h */
 int
 tapi_tcp_make_msg(uint16_t src_port, uint16_t dst_port,
                   tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn, 
@@ -318,11 +319,12 @@ tapi_tcp_make_msg(uint16_t src_port, uint16_t dst_port,
     return 0;
 }
 
+/* see description in tapi_tcp.h */
 int
-tapi_tcp_make_pdu(uint16_t src_port, uint16_t dst_port,
-                  tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn, 
-                  te_bool syn_flag, te_bool ack_flag,
-                  asn_value **pdu)
+tapi_tcp_pdu(uint16_t src_port, uint16_t dst_port,
+             tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn, 
+             te_bool syn_flag, te_bool ack_flag,
+             asn_value **pdu)
 {
     int         rc,
                 syms;
@@ -400,7 +402,66 @@ tapi_tcp_make_pdu(uint16_t src_port, uint16_t dst_port,
 }
 
 
+/* see description in tapi_tcp.h */
+int
+tapi_tcp_template(tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn, 
+                  te_bool syn_flag, te_bool ack_flag,
+                  uint8_t *data, size_t pld_len,
+                  asn_value **tmpl)
+{
+    int rc = 0,
+        syms; 
 
+    asn_value *tcp_pdu = NULL;
+
+    if (tmpl == NULL)
+        return TE_RC(TE_TAPI, ETEWRONGPTR);
+
+    *tmpl = NULL; 
+
+    rc = asn_parse_value_text("{ pdus {ip4:{}, eth{} } }", 
+                              ndn_traffic_template, 
+                              tmpl, &syms);
+    if (rc != 0)
+    {
+        ERROR("%s(): cannot parse template: %X, sym %d", 
+              __FUNCTION__, rc, syms);
+        return TE_RC(TE_TAPI, rc);
+    }
+
+    rc = tapi_tcp_pdu(0, 0, seqn, ackn, syn_flag, ack_flag, &tcp_pdu);
+    if (rc != 0)
+    {
+        ERROR("%s(): make tcp pdu eror: %X", __FUNCTION__, rc);
+        goto cleanup;
+    }
+
+    rc = asn_insert_indexed(*tmpl, tcp_pdu, 0, "pdus");
+    if (rc != 0)
+    {
+        ERROR("%s(): insert tcp pdu eror: %X", __FUNCTION__, rc);
+        goto cleanup;
+    }
+
+    if (data != NULL && pld_len > 0)
+    {
+        rc = asn_write_value_field(*tmpl, data, pld_len, "payload.#bytes");
+        if (rc != 0)
+        {
+            ERROR("%s(): write payload eror: %X", __FUNCTION__, rc);
+            goto cleanup;
+        }
+    }
+
+cleanup:
+    if (tcp_pdu != NULL)
+        asn_free_value(tcp_pdu); 
+
+    if (rc != 0 && *tmpl != NULL)
+        asn_free_value(*tmpl); 
+
+    return TE_RC(TE_TAPI, rc); 
+}
 
 
 /*
@@ -783,7 +844,9 @@ tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode,
                                   &syn_pattern, &syms);
         CHECK_ERROR(rc != 0, "%s(): parse pattern failed, rc %X, sym %d",
                     __FUNCTION__, rc, syms);
-        flag_mask = 0xff;
+
+        /* TODO: investigate for correct mask here */
+        flag_mask = 0xff; 
         flag_value = TCP_SYN_FLAG;
 
         asn_write_value_field(syn_pattern, &flag_mask, sizeof(flag_mask),
