@@ -887,15 +887,21 @@ rpcserver_del(unsigned int gid, const char *oid, const char *name)
         if (strcmp(rpcs->name, name) == 0)
             break;
     }
+    if (rpcs == NULL)
+    {
+        rcf_ch_unlock();
+        ERROR("RPC server '%s' to be deleted not found", name);
+        return TE_RC(TE_RCF_PCH, ENOENT);
+    }
     
     if (rpcs->ref > 0)
     {
         rcf_ch_unlock();
-        ERROR("Cannot delete RPC server with threads");
+        ERROR("Cannot delete RPC server '%s' with threads", name);
         return TE_RC(TE_RCF_PCH, EPERM);
     }
     
-    if (prev)
+    if (prev != NULL)
         prev->next = rpcs->next;
     else
         list = rpcs->next;
@@ -909,7 +915,7 @@ rpcserver_del(unsigned int gid, const char *oid, const char *name)
         recv_timeout(rpcs->sock, rpc_buf, sizeof(rpc_buf), 5) != 3 || 
         strcmp(rpc_buf, "OK") != 0)
     {
-        WARN("Soft shutdown of RPC server %s failed", rpcs->name);
+        WARN("Soft shutdown of RPC server '%s' failed", rpcs->name);
         if (rpcs->tid > 0)
             delete_thread_child(rpcs);
         else
