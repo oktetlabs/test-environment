@@ -343,7 +343,7 @@ tce_collector(void)
     report_notice("TCE collector started");
     for (;;)
     {
-        int result;
+        int result = 0;
         memcpy(&current, &active_channels, sizeof(current));
         errno = 0;
         if (caught_signo == 0)

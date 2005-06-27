@@ -4,6 +4,7 @@
 
 DEFINE_LGR_ENTITY("TCE collector");
 
+extern int init_tce_collector(int, char **);
 extern int tce_collector(int, char **);
 extern te_bool tce_standalone;
 
