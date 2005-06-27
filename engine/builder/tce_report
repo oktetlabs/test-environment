@@ -3,8 +3,10 @@
 tce_taname=$1 
 mergefile=$2
 outfile=${mergefile}.new
-
-if test -e ${TE_BUILD}/builder.conf.processed ; then
+if test -n "$3"; then
+    TE_BUILD=$3
+    NUT_SOURCES=$4
+elif test -e ${TE_BUILD}/builder.conf.processed ; then
     . ${TE_BUILD}/builder.conf.processed
     NUT=`eval echo '$TCE_TANAME_'$tce_taname'_NUT'`
     if test -n "$NUT"; then
