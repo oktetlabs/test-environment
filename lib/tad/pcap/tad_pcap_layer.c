@@ -25,7 +25,7 @@
  * @author Konstantin Abramenko <konst@oktetlabs.ru>
  * @author Alexander Kukuta <Alexander.Kukuta@oktetlabs.ru>
  *
- * $Id: $
+ * $Id$
  */
 
 #ifdef HAVE_CONFIG_H
@@ -222,7 +222,7 @@ pcap_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
     uint8_t                    *data;
     int                         bpf_id;
     struct bpf_program         *bpf_program;
-	struct bpf_insn            *bpf_code;
+    struct bpf_insn            *bpf_code;
     int                         tmp_len;
 
     VERB("%s() started", __FUNCTION__);

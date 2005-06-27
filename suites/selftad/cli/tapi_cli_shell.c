@@ -24,7 +24,7 @@
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
  * @author Konstantin Abramenko <konst@oktetlabs.ru>
  * 
- * $Id: tapi_cli_serial.c 13501 2005-03-31 13:02:08Z arybchik $
+ * $Id$
  */
 
 #define TE_TEST_NAME    "cli/shell"

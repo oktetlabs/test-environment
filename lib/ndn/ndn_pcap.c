@@ -23,7 +23,7 @@
  *
  * @author Alexander Kukuta <Alexander.Kukuta@oktetlabs.ru>
  *
- * $Id: $
+ * $Id$
  */
 
 #include "te_config.h"

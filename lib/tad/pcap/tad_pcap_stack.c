@@ -25,7 +25,7 @@
  * @author Konstantin Abramenko <konst@oktetlabs.ru>
  * @author Alexander Kukuta <Alexander.Kukuta@oktetlabs.ru>
  *
- * $Id: $
+ * $Id$
  */
 
 #ifdef HAVE_CONFIG_H

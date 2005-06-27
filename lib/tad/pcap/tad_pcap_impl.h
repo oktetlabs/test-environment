@@ -25,7 +25,7 @@
  * @author Konstantin Abramenko <konst@oktetlabs.ru>
  * @author Alexander Kukuta <Alexander.Kukuta@oktetlabs.ru>
  *
- * $Id: $
+ * $Id$
  */
 #ifndef __TE_TAD_PCAP_IMPL_H__
 #define __TE_TAD_PCAP_IMPL_H__ 

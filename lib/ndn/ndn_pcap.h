@@ -23,7 +23,7 @@
  *
  * @author Alexander Kukuta <Alexander.Kukuta@oktetlabs.ru>
  *
- * $Id: $
+ * $Id$
  */ 
 #ifndef __TE_NDN_PCAP_H__
 #define __TE_NDN_PCAP_H__
