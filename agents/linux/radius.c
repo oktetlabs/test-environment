@@ -27,6 +27,7 @@
  * $Id$
  */
 
+#ifdef WITH_RADIUS_SERVER
 #include "linuxconf_daemons.h"
 
 enum radius_parameters { RP_FLAG, RP_ATTRIBUTE, RP_SECTION, RP_FILE};
@@ -37,6 +38,7 @@ typedef struct radius_parameter
     enum radius_parameters kind;
     char *name;
     char *value;
+    int backup_index;
     struct radius_parameter *parent;
     struct radius_parameter *next;
     struct radius_parameter *children, *last_child;
@@ -55,11 +57,18 @@ typedef struct radius_action
     struct radius_action *next;
 } radius_action;
 
+typedef struct radius_user_record
+{
+    radius_action *checks, *last_check;
+    radius_action *sets, *last_set;
+    struct radius_user_record *next;
+} radius_user_record;
+
 typedef struct radius_user
 {
     char *name;
-    radius_action *checks;
-    radius_action *sets;
+    radius_user_record *records;
+    radius_user_record *last_record;
     struct radius_user *next;
 } radius_user;
 
@@ -126,6 +135,20 @@ read_radius_file (const char *filename, radius_parameter *top)
 {
     FILE *newfile; 
     radius_parameter *fp;
+    int index;
+    static char directory[PATH_MAX + 1];
+    const char *dirptr;
+
+    dirptr = strrchr(filename, '/');
+    if (dirptr == NULL)
+        *directory = '\0';
+    else
+    {
+        memcpy(directory, filename, dirptr - filename + 1);
+        directory[dirptr - filename + 2] = '\0';
+    }
+    if (ds_create_backup(directory, dirptr == NULL ? filename : dirptr + 1, &index) != 0)
+        return NULL;
 
     RING("Reading RADIUS config %s", filename);
     newfile = fopen(filename, "r");
@@ -137,7 +160,10 @@ read_radius_file (const char *filename, radius_parameter *top)
     
     fp = make_rp(RP_FILE, filename, NULL, top);
     if (fp != NULL)
+    {
+        fp->backup_index = index;
         read_radius(newfile, fp);
+    }
     fclose(newfile);
     return fp;
 }
@@ -146,10 +172,13 @@ static void
 read_radius(FILE *conf, radius_parameter *top)
 {
     static char buffer[256];
+    radius_parameter *initial_top = top;
+    int skip_spaces;
     
     while (fgets(buffer, sizeof(buffer) - 1, conf) != NULL)
     {
-        if (strncmp(buffer, "$INCLUDE", 8) == 0)
+        skip_spaces = strspn(buffer, " \t\n");
+        if (strncmp(buffer + skip_spaces, "$INCLUDE", 8) == 0)
         {
             char *fname;
             strtok(buffer, " \t\n");
@@ -157,7 +186,7 @@ read_radius(FILE *conf, radius_parameter *top)
             read_radius_file(fname, top);
             free(fname);
         }
-        else if(*buffer == '#')
+        else if(buffer[skip_spaces] == '#')
         {
             continue;
         }
@@ -171,6 +200,7 @@ read_radius(FILE *conf, radius_parameter *top)
 
             if (*name == '}' && name[1] == '\0')
             {
+                VERB("end RADIUS section %s", top->name);
                 top = top->parent;
                 continue;
             }
@@ -178,21 +208,27 @@ read_radius(FILE *conf, radius_parameter *top)
             next = strtok(NULL, " \t\n");
             if (next == NULL)
             {
+                VERB("processing RADIUS parameter %s", name);
                 make_rp(RP_FLAG, name, NULL, top);
             }
             else if (*next == '=' && next[1] == '\0')
             {
                 char *val = strtok(NULL, "\n");
+                VERB("processing RADIUS attribute %s = %s", name, val ? val : "");
                 make_rp(RP_ATTRIBUTE, name, val, top);
             }
             else
             {
                 if (*next == '{' && next[1] == '\0')
                     next = NULL;
+                VERB("start RADIUS section %s %s", name, next ? next : "");
                 top = make_rp(RP_SECTION, name, next, top);
             }
+
         }
     }
+    if (top != initial_top)
+        ERROR("section %s is not closed!!!", top->name);
 }
 
 static int
@@ -203,7 +239,11 @@ write_radius(radius_parameter *top, te_bool recursive)
     int i;
 
     if (top->kind != RP_FILE)
-        return;
+    {
+        ERROR("attempt to write a RADIUS branch that is not a file");
+        return EINVAL;
+    }
+    ds_config_touch(top->backup_index);
     outfile = fopen(top->name, "w");
     if (outfile == NULL)
     {
@@ -212,27 +252,43 @@ write_radius(radius_parameter *top, te_bool recursive)
         return rc;
     }
 
-    for (top = top->children; top != NULL; top = top->next)
+    RING("updating RADIUS config %s", top->name);
+    for (top = top->children; top != NULL;)
     { 
-        for(i = indent; i > 0; i--)
-            putc(' ', outfile);
-        switch(top->kind)
+        if (!top->deleted)
         {
-            case RP_FLAG:
-                fputs(top->name, outfile);
-                fputc('\n', outfile);
-                break;
-            case RP_ATTRIBUTE:
-                fprintf(outfile, "%s = %s\n", top->name, top->value);
-                break;
-            case RP_SECTION:
-                fprintf(outfile, "%s %s {\n", top->name, top->value == NULL ? "" : top->value);
-                break;
-            case RP_FILE:
-                if (recursive)
-                    write_radius(top, TRUE);
+            for(i = indent; i > 0; i--)
+                putc(' ', outfile);
+            switch(top->kind)
+            {
+                case RP_FLAG:
+                    fputs(top->name, outfile);
+                    fputc('\n', outfile);
+                    break;
+                case RP_ATTRIBUTE:
+                    fprintf(outfile, "%s = %s\n", top->name, top->value);
+                    break;
+                case RP_SECTION:
+                    fprintf(outfile, "%s %s {\n", top->name, top->value == NULL ? "" : top->value);
+                    if (top->children == NULL)
+                    {
+                        for(i = indent; i > 0; i--)
+                            putc(' ', outfile);
+                        fputs("}\n", outfile);
+                    }
+                    else
+                    {
+                        top = top->children;
+                        indent += 4;
+                        continue;
+                    }
+                    break;
+                case RP_FILE:
+                    if (recursive)
+                        write_radius(top, TRUE);
+            }
         }
-        if (top->next == NULL)
+        while (top->next == NULL && top->parent != NULL)
         {
             top = top->parent;
             indent -= 4;
@@ -240,6 +296,7 @@ write_radius(radius_parameter *top, te_bool recursive)
                 putc(' ', outfile);
             fputs("}\n", outfile);
         }
+        top = top->next;
     }
     fclose(outfile);
     return 0;
@@ -247,11 +304,13 @@ write_radius(radius_parameter *top, te_bool recursive)
 
 
 static radius_parameter *
-find_rp (radius_parameter *top, const char *name)
+find_rp (radius_parameter *top, const char *name, te_bool create, 
+         te_bool (*enumerator)(radius_parameter *, void *), void *extra)
 {
     const char *next  = NULL;
     const char *value = NULL;
     int         name_length;
+    int         value_counter;
     
     if (*name == '.')
         name++;
@@ -267,7 +326,7 @@ find_rp (radius_parameter *top, const char *name)
     }
     for (next = name; *next != '\0' && *next != '.'; next++)
     {
-        if (value == NULL && *next == ':')
+        if (value == NULL && (*next == ':' || *next == '#'))
             value = next + 1;
     }
     name_length = (value == NULL ? next : value - 1) - name;
@@ -277,40 +336,55 @@ find_rp (radius_parameter *top, const char *name)
             top = top->children;
         else
         {
-            if (strncmp(top->name, name, name_length) == 0 &&
-                top->name[name_length] == '\0')
+            if (create || !top->deleted)
             {
-                if (value == NULL || 
-                    (top->value != NULL && 
-                     strncmp(top->value, value, value - name - 1) == 0 &&
-                     top->value[value - name - 1] == '\0'))
+                if (strncmp(top->name, name, name_length) == 0 &&
+                    top->name[name_length] == '\0')
                 {
-                    break;
+                    if (value == NULL || 
+                        (top->value != NULL && 
+                         strncmp(top->value, value, value - name - 1) == 0 &&
+                         top->value[value - name - 1] == '\0'))
+                    {
+                        if (enumerator == NULL || enumerator(top, extra))
+                            break;
+                    }
                 }
             }
-            if (top->next == NULL && top->parent != NULL && 
-                top->parent->kind == RP_FILE)
+            if (top->next == NULL)
             {
-                top = top->parent;
+                if (top->parent != NULL && 
+                    top->parent->kind == RP_FILE)
+                {
+                    top = top->parent;
+                }
+                else if (create)
+                {
+                    top = make_rp(*next == '\0' ? RP_ATTRIBUTE : RP_SECTION, 
+                                  name, value, top->parent);
+                    break;
+                }
             }
             top = top->next;
         }
     }
     
     return top == NULL || *next == '\0' ? top : 
-        find_rp(top, next + 1);
+        find_rp(top, next + 1, create, enumerator, extra);
 }
 
 static te_bool
 retrieve_rp (radius_parameter *top, const char *name, const char **value)
 {
-    radius_parameter *rp = find_rp(top, name);
+    radius_parameter *rp = find_rp(top, name, FALSE, NULL, NULL);
     if (rp != NULL)
     {
-        *value = rp->value;
+        if (value != NULL)
+            *value = rp->value;
         return TRUE;       
     }
-    *value = NULL;
+    if (value != NULL)
+        *value = NULL;
     return FALSE;
 }
 
@@ -352,31 +426,35 @@ expand_rp (const char *value, radius_parameter *top)
             new_ptr += rpv_len - 1;
         }
     }
-    VERB("Parameter %s expanded to %s", value, new_val);        
     return new_val;
 }
 
 static int
-update_rp (radius_parameter *top, const char *name, const char *value)
+update_rp (radius_parameter *top, enum radius_parameters kind, 
+           const char *name, const char *value)
 {
-    radius_parameter *rp = find_rp(top, name);
+    radius_parameter *rp = find_rp(top, name, TRUE, NULL, NULL);
     radius_parameter *file;
     
     if (rp == NULL)
     {
-        return -1;
+        return ENOENT;
     }
 
-    if (rp->value != NULL)
+    if (rp->kind != RP_SECTION && rp->value != NULL)
         free(rp->value);
     if (value == RP_DELETE_VALUE)
     {
         rp->deleted = TRUE;
-        rp->value = NULL;      
+        if (rp->kind != RP_SECTION)
+            rp->value = NULL;
     }
     else
     {
-        rp->value = value ? strdup(value) : NULL;
+        rp->kind = kind;
+        rp->deleted = FALSE;
+        if (rp->kind != RP_SECTION)
+            rp->value = value ? strdup(value) : NULL;
     }
 
     for (file = rp->parent; file->kind != RP_FILE; file = file->parent)
@@ -385,29 +463,81 @@ update_rp (radius_parameter *top, const char *name, const char *value)
     return 0;
 }
 
+static radius_user *
+make_radius_user (const char *name)
+{
+    radius_user *user = malloc(sizeof(*user));
+    user->name = strdup(name);
+    user->records = malloc(sizeof(*user->records));
+    user->last_record = user->records;
+    user->records->checks = user->records->last_check = NULL;
+    user->records->sets   = user->records->last_set   = NULL;
+    user->records->next   = NULL;
+    user->next   = NULL;
+    if (radius_last_user != NULL)
+        radius_last_user->next = user;
+    else
+        radius_users = user;
+    radius_last_user = user;
+    return user;
+}
+
+static radius_action *
+make_radius_action (const char *attribute, const char *op, const char *value)
+{
+    radius_action *action = malloc(sizeof(*action));
+
+    action->attribute = strdup(attribute);
+    action->operator  = strdup(op);
+    action->value     = strdup(value);
+    action->next      = NULL;
+    return action;
+}
+
+static radius_user *
+find_radius_user (const char *name)
+{
+    radius_user *user;
+
+    for (user = radius_users; user != NULL; user = user->next)
+    {
+        if (strcmp(user->name, name) == 0)
+        {
+            break;
+        }
+    }
+    return user;
+}
+
 static void
 write_radius_users (FILE *conf, radius_user *users)
 {
+    radius_user_record *rec;
     radius_action *action;
 
     for (; users != NULL; users = users->next)
     {
-        fputs(users->name, conf);
-        fputc(' ', conf);
-        for (action = users->checks; action != NULL; action = action->next)
+        for (rec = users->records; rec != NULL; rec = rec->next)
         {
-            fprintf(conf, "%s %s %s%s", 
-                    action->attribute, action->operator, action->value,
-                    action->next == NULL ? "\n" : ", ");
-        }
-        for (action = users->sets; action != NULL; action = action->next)
-        {
-            fprintf(conf, "    %s %s %s%s\n", 
-                    action->attribute, action->operator, action->value,
-                    action->next == NULL ? "" : ",");
+            fputs(users->name, conf);
+            fputc(' ', conf);
+            for (action = rec->checks; action != NULL; action = action->next)
+            {
+                fprintf(conf, "%s %s %s%s", 
+                        action->attribute, action->operator, action->value,
+                        action->next == NULL ? "\n" : ", ");
+            }
+            for (action = rec->sets; action != NULL; action = action->next)
+            {
+                fprintf(conf, "    %s %s %s%s\n", 
+                        action->attribute, action->operator, action->value,
+                        action->next == NULL ? "" : ",");
+            }
+            fputc('\n', conf);
         }
     }
 }
+
 
 static char *radius_daemon = NULL;
 
@@ -419,7 +549,8 @@ ds_radiusserver_get(unsigned int gid, const char *oid,
 
     UNUSED(oid);
     UNUSED(instance);
-    
+
+    VERB("Querying RADIUS status");
     if (radius_daemon != NULL)
         return daemon_get(gid, radius_daemon, value);
 
@@ -444,12 +575,14 @@ ds_radiusserver_get(unsigned int gid, const char *oid,
     return 0;
 }
 
+
 static int
 ds_radiusserver_set(unsigned int gid, const char *oid,
                     const char *value, const char *instance, ...)
 {
     int rc1, rc2;
 
+    UNUSED(oid);
     UNUSED(instance);
     if (radius_daemon != NULL)
         return daemon_set(gid, radius_daemon, value);
@@ -463,16 +596,246 @@ ds_radiusserver_set(unsigned int gid, const char *oid,
         radius_daemon = "freeradius";
     if (radius_daemon != NULL)
         INFO("RADIUS server is named %s", radius_daemon);
-    return rc1;
+    return rc1 != 0 && rc2 != 0 ? rc2 : 0;
 }
 
-RCF_PCH_CFG_NODE_RW(node_ds_radiusserver, "radiusserver",
+static int
+ds_radius_accept_get(unsigned int gid, const char *oid,
+                    char *value, const char *instance, ...)
+{
+}
+
+static int
+ds_radius_accept_set(unsigned int gid, const char *oid,
+                     const char *value, const char *instance, ...)
+{
+}
+
+static int
+ds_radius_user_add(unsigned int gid, const char *oid,
+                   const char *value, const char *instance, ...)
+{
+    make_radius_user(instance);
+}
+
+static int
+ds_radius_user_del(unsigned int gid, const char *oid,
+                   const char *instance, ...)
+{
+    return TE_RC(TE_TA_LINUX, ETENOSUPP);
+}
+
+static int
+ds_radius_user_list(unsigned int gid, const char *oid,
+                    char **list,
+                    const char *instance, ...)
+{
+    radius_user *user;
+    int size;
+    char *iter;
+    
+    for (user = radius_users, size = 0; user != NULL; size += strlen(user->name) + 1, user = user->next)
+        ;
+    *list = malloc(size + 1);
+    for (user = radius_users, iter = *list; user != NULL; user = user->next, iter += size + 1)
+    {
+        size = strlen(user->name);
+        memcpy(iter, user->name, size);
+        iter[size] = ' ';
+    }
+    *iter = '\0';
+    return 0;
+}
+
+static char client_buffer[256];
+
+static int
+ds_radius_client_add(unsigned int gid, const char *oid,
+                   const char *value, const char *instance, ...)
+{
+    snprintf(client_buffer, sizeof(client_buffer), "client:%s", instance);
+    RING("adding RADIUS client %s for %s", client_buffer, oid);
+    update_rp(radius_conf, RP_SECTION, client_buffer, NULL);
+    RING("added client %s", client_buffer);
+    return 0;
+}
+
+static int
+ds_radius_client_del(unsigned int gid, const char *oid,
+                   const char *instance, ...)
+{
+    snprintf(client_buffer, sizeof(client_buffer), "client:%s", instance);
+    update_rp(radius_conf, RP_SECTION, client_buffer, RP_DELETE_VALUE);
+    return 0;
+}
+
+static te_bool client_count(radius_parameter *rp, void *extra)
+{
+    int *count = extra;
+    UNUSED(rp);
+    (*count) += strlen(rp->name) + 1;
+    return FALSE;
+}
+
+static te_bool client_list(radius_parameter *rp, void *extra)
+{
+    char **iter = extra;
+    int len = strlen(rp->value);
+    memcpy(*iter, rp->name, len);
+    (*iter)[len] = ' ';
+    (*iter) += len + 1;
+    return FALSE;
+}
+
+static int
+ds_radius_client_list(unsigned int gid, const char *oid,
+                    char **list,
+                    const char *instance, ...)
+{
+    int size = 0;
+    char *c_iter;
+
+    find_rp(radius_conf, "client", FALSE, client_count, &size);
+    c_iter = *list = malloc(size + 1);
+    find_rp(radius_conf, "client", FALSE, client_list, &c_iter);
+    *c_iter = '\0';
+    return 0;
+}
+
+static int
+ds_radius_secret_get(unsigned int gid, const char *oid,
+                             char *value, const char *instance, ...)
+{
+}
+
+static int
+ds_radius_secret_set(unsigned int gid, const char *oid,
+                     const char *value, const char *instance, ...)
+{
+}
+
+RCF_PCH_CFG_NODE_RW(node_ds_radiusserver_user_accept_attrs, "accept-attrs",
                     NULL, NULL,
+                    ds_radius_accept_get, ds_radius_accept_set);
+RCF_PCH_CFG_NODE_RW(node_ds_radiusserver_user_challenge_attrs, "challenge-attrs",
+                    NULL, &node_ds_radiusserver_user_accept_attrs,
                     ds_radiusserver_get, ds_radiusserver_set);
+RCF_PCH_CFG_NODE_RW(node_ds_radiusserver_user_check, "check",
+                    NULL, &node_ds_radiusserver_user_challenge_attrs,
+                    ds_radiusserver_get, ds_radiusserver_set);
+RCF_PCH_CFG_NODE_COLLECTION(node_ds_radiusserver_user, "user",
+                            &node_ds_radiusserver_user_check,
+                            NULL,
+                            ds_radius_user_add,
+                            ds_radius_user_del,
+                            ds_radius_user_list,
+                            NULL);
+RCF_PCH_CFG_NODE_RW(node_ds_radiusserver_client_secret, "secret",
+                    NULL, NULL,
+                    ds_radius_secret_get, ds_radius_secret_set);
+RCF_PCH_CFG_NODE_COLLECTION(node_ds_radiusserver_client, "client",
+                            &node_ds_radiusserver_client_secret,
+                            &node_ds_radiusserver_user,
+                            ds_radius_client_add,
+                            ds_radius_client_del,
+                            ds_radius_client_list,
+                            NULL);
+
+static int
+ds_radiusserver_netaddr_get(unsigned int gid, const char *oid,
+                            char *value, const char *instance, ...)
+{
+    const char *v;
+    retrieve_rp(radius_conf, "listen.ipaddr", &v);
+    strcpy(value, v);
+}
+
+static int
+ds_radiusserver_netaddr_set(unsigned int gid, const char *oid,
+                            const char *value, const char *instance, ...)
+{
+    update_rp(radius_conf, RP_ATTRIBUTE, "listen#0.ipaddr", value);
+    update_rp(radius_conf, RP_ATTRIBUTE, "listen#1.ipaddr", value);
+}
+
+static int
+ds_radiusserver_acctport_get(unsigned int gid, const char *oid,
+                            char *value, const char *instance, ...)
+{
+    const char *v;
+    retrieve_rp(radius_conf, "listen#1.port", &v);
+    strcpy(value, v);
+}
+
+static int
+ds_radiusserver_acctport_set(unsigned int gid, const char *oid,
+                            const char *value, const char *instance, ...)
+{
+    update_rp(radius_conf, RP_ATTRIBUTE, "listen#1.port", value);
+}
+
+static int
+ds_radiusserver_authport_get(unsigned int gid, const char *oid,
+                            char *value, const char *instance, ...)
+{
+    const char *v;
+    retrieve_rp(radius_conf, "listen#0.port", &v);
+    strcpy(value, v);
+}
+
+static int
+ds_radiusserver_authport_set(unsigned int gid, const char *oid,
+                            const char *value, const char *instance, ...)
+{
+    update_rp(radius_conf, RP_ATTRIBUTE, "listen#0.port", value);
+}
+
+RCF_PCH_CFG_NODE_RW(node_ds_radiusserver_net_addr, "net_addr",
+                    NULL, &node_ds_radiusserver_client,
+                    ds_radiusserver_netaddr_get, 
+                    ds_radiusserver_netaddr_set);
+RCF_PCH_CFG_NODE_RW(node_ds_radiusserver_acct_port, "acct_port",
+                    NULL, &node_ds_radiusserver_net_addr,
+                    ds_radiusserver_acctport_get, ds_radiusserver_acctport_set);
+RCF_PCH_CFG_NODE_RW(node_ds_radiusserver_auth_port, "auth_port",
+                    NULL, &node_ds_radiusserver_acct_port,
+                    ds_radiusserver_authport_get, ds_radiusserver_authport_set);
+RCF_PCH_CFG_NODE_RW(node_ds_radiusserver, "radiusserver",
+                    &node_ds_radiusserver_auth_port, NULL,
+                    ds_radiusserver_get, ds_radiusserver_set);
+
+const char *radius_ignored_params[] = {"bind_address", 
+                                       "port", 
+                                       "listen",
+                                       "client",
+                                       "authorize",
+                                       "authenticate",
+                                       "post-auth",
+                                       NULL
+};
+
+static te_bool
+rp_delete_all(radius_parameter *rp, void *extra)
+{
+    UNUSED(extra);
+    RING("Wiping out RADIUS parameter %s %s", rp->name, 
+         rp->value == NULL ? "" : rp->value);
+    if (rp->kind != RP_SECTION && rp->value != NULL)
+    {
+        free(rp->value);
+        rp->value = NULL;
+    }
+    rp->deleted = TRUE;
+    for (rp = rp->parent; rp->kind != RP_FILE; rp = rp->parent)
+        ;
+    write_radius(rp, FALSE);
+    return FALSE;
+}
 
 void
 ds_init_radius_server (rcf_pch_cfg_object **last)
 {
+    const char **ignored;
     RING("Initializing RADIUS");
     if (file_exists("/etc/raddb/radiusd.conf"))
         radius_conf = read_radius_file("/etc/raddb/radiusd.conf", NULL);
@@ -484,4 +847,10 @@ ds_init_radius_server (rcf_pch_cfg_object **last)
         return;
     }
     DS_REGISTER(radiusserver);
+    for (ignored = radius_ignored_params; *ignored != NULL; ignored++)
+    {
+        find_rp(radius_conf, *ignored, FALSE, rp_delete_all, NULL);
+    }
 }
+
+#endif /* ! WITH_RADIUS_SERVER */

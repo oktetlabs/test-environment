@@ -43,7 +43,7 @@
             cfg_handle *interfaces; \
             struct sockaddr *addr; \
             char *dirname; \
-            cfg_val_type type = CVT_ADDRESS; \
+            cfg_val_type type = CVT_INTEGER; \
             int flag; \
             int len; \
             int shell_tid; \
@@ -72,23 +72,25 @@ main(int argc, char *argv[])
     rcf_rpc_server *srv = NULL;
     int rc1;
     FILE *f;
+    cfg_handle new_client;
     TEST_START;
-    
+
     len = sizeof(ta);
     CHECK_RC(rcf_get_ta_list(ta, &len));
-    INFO("Agent is %s", ta);
-
-    CHECK_RC(rcf_rpc_server_create(ta, "test", &srv));
-    CHECK_RC(rpc_setlibname(srv, strdup("/home/artem/src/testnut/build/libtestnut.so")));
-    RING("kuku");
-    RPC_DUP(rc1, srv, 1);
-    RPC_DUP(rc1, srv, 2);
-    RPC_DUP(rc1, srv, 3);
+    RING("Agent is %s", ta);
+    CHECK_RC(cfg_set_instance_fmt(CVT_INTEGER, 0, "/agent:%s/radiusserver:", ta));
+    CHECK_RC(cfg_get_instance_fmt(&type, &flag, "/agent:%s/radiusserver:", ta));
+    CHECK_RC(!(flag == 0));
+    // CHECK_RC(cfg_add_instance_fmt(&new_client, CVT_NONE, NULL, "/agent:%s/radiusserver:/client:%s", 
+    //                              ta, "127.0.0.1"));
+    CHECK_RC(cfg_set_instance_fmt(CVT_INTEGER, (void *)1, "/agent:%s/radiusserver:", ta));
+    CHECK_RC(cfg_get_instance_fmt(&type, &flag, "/agent:%s/radiusserver:", ta));
+    CHECK_RC(!(flag != 0));
+    sleep(60);
+    CHECK_RC(cfg_set_instance_fmt(type, 0, "/agent:%s/radiusserver:", ta));
 
     TEST_SUCCESS;
 
 cleanup:
-    if (srv != NULL)
-        CLEANUP_CHECK_RC(rcf_rpc_server_destroy(srv));
     TEST_END;
 }
