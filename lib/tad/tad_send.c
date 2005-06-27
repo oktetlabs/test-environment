@@ -499,7 +499,7 @@ tad_tr_send_thread(void * arg)
 
             /* Delay performed, now send prepared data. */ 
 
-            for(pkt = &packets_root; pkt!= NULL; pkt = pkt->next)
+            for (pkt = &packets_root; pkt!= NULL; pkt = pkt->next)
             {
                 rc = csap_descr->write_cb(csap_descr, pkt->data, pkt->len);
 
