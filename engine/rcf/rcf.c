@@ -99,8 +99,8 @@
 
 #define RCF_SELECT_TIMEOUT      1   /**< Default select timeout
                                          in seconds */
-#define RCF_CMD_TIMEOUT         10  /**< Default timeout for command
-                                         processing on the TA */
+#define RCF_CMD_TIMEOUT         10  /**< Default timeout (in seconds) for
+                                         command processing on the TA */
 #define RCF_CMD_TIMEOUT_HUGE    10000  
                                     /**< Default timeout for command
                                          processing on the TA */
@@ -1755,9 +1755,9 @@ send_cmd(ta *agent, usrreq *req)
             else
             {
                 sprintf(s, "attach %u", (unsigned int)msg->intparm);
-                req->message->flags |= BINARY_ATTACHMENT;
+                msg->flags |= BINARY_ATTACHMENT;
             }
-            req->timeout = req->message->timeout / 1000 + 1;
+            req->timeout = msg->timeout / 1000 + 5;
             break;
         }
 
