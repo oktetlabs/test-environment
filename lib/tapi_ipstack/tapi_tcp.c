@@ -574,11 +574,22 @@ static void
 tapi_tad_pkt_handler(char *pkt_file, void *user_param)
 {
     tapi_tcp_connection_t *conn_descr = (tapi_tcp_connection_t *)user_param;
-    asn_value *tcp_message = NULL;
-    int rc, syms; 
+    asn_value             *tcp_message = NULL;
+    const asn_value       *tcp_pdu;
+    const asn_value       *val, *subval;
 
-    const asn_value *val, *subval;
-    const asn_value *tcp_pdu;
+    int     rc, 
+            syms; 
+    uint8_t flags;
+    int32_t pdu_field;
+
+    tapi_tcp_pos_t seq_got, 
+                   ack_got;
+
+    /*
+     * This handler DOES NOT check that got packet related to
+     * connection, which descriptor passed as user data. 
+     */ 
 
     if (pkt_file == NULL || user_param == NULL)
     {
@@ -590,7 +601,8 @@ tapi_tad_pkt_handler(char *pkt_file, void *user_param)
         if (rc != 0)                                            \
         {                                                       \
             asn_free_value(tcp_message);                        \
-            ERROR("%s(): %s, rc %X", __FUNCTION__, msg_, rc);   \
+            ERROR("%s(id %d): %s, rc %X", __FUNCTION__,         \
+                  conn_descr->id, msg_, rc);                    \
             return;                                             \
         }                                                       \
     } while (0)
@@ -617,9 +629,64 @@ tapi_tad_pkt_handler(char *pkt_file, void *user_param)
 
     tcp_pdu = subval;
 
-    UNUSED(conn_descr);
+    rc = ndn_du_read_plain_int(tcp_pdu, NDN_TAG_TCP_FLAGS, &pdu_field);
+    CHECK_ERROR("read TCP flag error");
+    flags = pdu_field;
+
+    rc = ndn_du_read_plain_int(tcp_pdu, NDN_TAG_TCP_SEQN, &pdu_field);
+    CHECK_ERROR("read TCP seqn error");
+    seq_got = pdu_field;
+
+    rc = ndn_du_read_plain_int(tcp_pdu, NDN_TAG_TCP_ACKN, &pdu_field);
+    CHECK_ERROR("read TCP ackn error");
+    ack_got = pdu_field;
+
+    if (conn_descr->messages == NULL)
+    {
+        if (flags & TCP_SYN_FLAG) /* this is SYN or SYN-ACK */
+        {
+            conn_descr->messages =
+                calloc(1, sizeof(*(conn_descr->messages)));
+            CIRCLEQ_INIT(conn_descr->messages);
+        }
+        else 
+        {
+            ERROR("%s(): id %d; buffer for messages not inited, "
+                  "but have no SYN got!", __FUNCTION__, conn_descr->id); 
+            asn_free_value(tcp_message);
+            return;
+        }
+    }
+    else /* there was already SYN/SYN-ACK earlier, put this into queue */
+    {
+        tapi_tcp_msg_queue_t *pkt = calloc(1, sizeof(*pkt));
+        size_t                pld_len;
+
+        if ((rc = asn_get_length(tcp_message, "payload")) < 0)
+        {
+            ERROR("%s(): id %d; get lenth of payload error",
+                  __FUNCTION__, conn_descr->id); 
+            asn_free_value(tcp_message);
+            return;
+        }
+        pld_len = pkt->len = rc;
+        pkt->data = malloc(pld_len);
+
+        rc = asn_read_value_field(tcp_message, pkt->data, &pld_len,
+                                  "payload.#bytes");
+        CHECK_ERROR("read TCP payload error");
+
+        pkt->flags = flags;
+        pkt->seqn  = seq_got;
+        pkt->ackn  = ack_got;
+    }
+
+    conn_descr->seq_got = seq_got;
+    if (flags & TCP_ACK_FLAG)
+        conn_descr->ack_got = ack_got;
 
 #undef CHECK_ERROR
+    asn_free_value(tcp_message);
 }
 
 
@@ -703,6 +770,7 @@ tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode,
     conn_descr->agt = agt;
     conn_descr->window = ((window == 0) ? 1000 : window);
     tapi_tcp_insert_conn(conn_descr); 
+    *handler = conn_descr->id;
 
     /* wait SYN - if we are server */
     if (mode == TAPI_TCP_SERVER)
@@ -729,11 +797,10 @@ tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode,
                                    timeout, 1); 
     }
 
-    UNUSED(timeout);
-    UNUSED(handler);
     return 0;
 
 cleanup:
     tapi_tcp_destroy_conn_descr(conn_descr);
+    *handler = 0;
     return TE_RC(TE_TAPI, rc);
 }
