@@ -1066,17 +1066,90 @@ tapi_tcp_send_msg(tapi_tcp_handler_t handler, uint8_t *payload, size_t len,
                   tapi_tcp_pos_t ackn, 
                   tapi_ip_frag_spec_t *frags, size_t frag_num)
 {
+    tapi_tcp_connection_t *conn_descr = tapi_tcp_find_conn(handler);
+
+    asn_value *msg_template = NULL;
+    asn_value *ip_pdu = NULL;
+    int rc;
+
+    tapi_tcp_pos_t new_seq = 0;
+    tapi_tcp_pos_t new_ack = 0;
+
+    if (conn_descr == NULL)
+        return TE_RC(TE_TAPI, EINVAL); 
+
+    switch (seq_mode)
+    {
+        case TAPI_TCP_AUTO:
+            new_seq = tapi_tcp_next_seqn(conn_descr);
+            break;
+
+        case TAPI_TCP_EXPLICIT:
+            new_seq = seqn;
+            break;
+
+        default:
+            return EINVAL;
+    }
+
+    switch (ack_mode)
+    {
+        case TAPI_TCP_AUTO:
+            new_ack = tapi_tcp_next_ackn(conn_descr);
+            break;
+
+        case TAPI_TCP_EXPLICIT:
+            new_ack = ackn;
+            break;
+
+        case TAPI_TCP_QUIET:
+            new_ack = 0;
+    }
+
+    rc = tapi_tcp_template(new_seq, new_ack, FALSE, (new_ack != 0), 
+                           payload, len, &msg_template);
+    if (rc != 0)
+    {
+        ERROR("%s: make msg template error %X", __FUNCTION__, rc);
+        return rc;
+    }
+
+    if (frags != NULL)
+    {
+        rc = tapi_ip4_pdu(NULL, NULL, frags, frag_num, 64, IPPROTO_TCP, 
+                          &ip_pdu);
+        if (rc != 0)
+        {
+            ERROR("%s: make ip pdu error %X", __FUNCTION__, rc);
+            return rc;
+        }
+
+        rc = asn_write_indexed(msg_template, ip_pdu, 1, "pdus");
+        if (rc != 0)
+        {
+            ERROR("%s: insert ip pdu error %X", __FUNCTION__, rc);
+            return rc;
+        }
+    }
+
+    rc = tapi_tad_trsend_start(conn_descr->agt, conn_descr->snd_sid,
+                               conn_descr->snd_csap, 
+                               msg_template, RCF_MODE_BLOCKING);
+    if (rc != 0)
+    {
+        ERROR("%s: send msg %X", __FUNCTION__, rc);
+    }
+    return rc;
 }
 
 
 int
-tapi_tcp_recv_msg(tapi_tcp_handler_t handler,
-                             int timeout,
-                             tapi_tcp_protocol_mode_t ack_mode, 
-                             uint8_t *buffer, size_t *len, 
-                             tapi_tcp_pos_t *seqn_got, 
-                             tapi_tcp_pos_t *ackn_got,
-                             te_bool *fin_state)
+tapi_tcp_recv_msg(tapi_tcp_handler_t handler, int timeout,
+                  tapi_tcp_protocol_mode_t ack_mode, 
+                  uint8_t *buffer, size_t *len, 
+                  tapi_tcp_pos_t *seqn_got, 
+                  tapi_tcp_pos_t *ackn_got,
+                  te_bool *fin_state)
 {
 }
 
