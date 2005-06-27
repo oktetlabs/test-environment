@@ -764,7 +764,7 @@ rcf_pch_configure(struct rcf_comm_connection *conn,
     /* Array of instance names */
     char *inst_names[RCF_MAX_PARAMS]; /* 10 */
 
-    cfg_oid            *p_oid;
+    cfg_oid            *p_oid = NULL;
     cfg_inst_subid     *p_ids;
     rcf_pch_cfg_object *obj = NULL;
     rcf_pch_cfg_object *next;
