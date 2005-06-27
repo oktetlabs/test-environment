@@ -1,41 +1,99 @@
 <?xml version="1.0" ?>
 <backup>
-    <!-- RADIUS server enabling/disabling
-    1 - enable
-    0 - disable
+
+    <!-- This configuration model is intended for describing of
+         RADIUS Server configuration -->
+
+    <!--
+        Copyright (C) 2005 Test Environment authors (see file AUTHORS
+        in the root directory of the distribution).
+
+        Test Environment is free software; you can redistribute it
+        and/or modify it under the terms of the GNU General Public
+        License as published by the Free Software Foundation; either
+        version 2 of the License, or (at your option) any later
+        version.
+        
+        Test Environment is distributed in the hope that it will be
+        useful, but WITHOUT ANY WARRANTY; without even the implied
+        warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+        PURPOSE. See the GNU General Public License for more details.
+        
+        You should have received a copy of the GNU General Public
+        License along with this program; if not, write to the Free
+        Software Foundation, Inc., 59 Temple Place, Suite 330,
+        Boston, MA  02111-1307  USA
+        
+        Author: Artem Andreev E-mail: Artem.Andreev@oktetlabs.ru
+        Author: Oleg Kravtsov E-mail: Oleg.Kravtsov@oktetlabs.ru
     -->
-    <object oid="/agent/radiusserver" access="read_write" type="integer" />
+
+
+    <!-- Root object of RADIUS Server configuration.
+         Name: Empty
+         Value: 0 (disabled) or 1 (enabled) -->
+    <object oid="/agent/radiusserver" access="read_write" type="integer"/>
     
-    <object oid="/agent/radiusserver/auth_port" access="read_write" type="integer"/>
-    <object oid="/agent/radiusserver/acct_port" access="read_write" type="integer"/>
-    <object oid="/agent/radiusserver/net_addr" access="read_write"  type="address"/>
-    
-    <object oid="/agent/radiusserver/client" access="read_create" type="none"/>
+    <!-- RADIUS Authentication port number.
+         Name: Empty
+         Value: UDP port -->
+    <object oid="/agent/radiusserver/auth_port" access="read_write"
+            type="integer"/>
+
+    <!-- RADIUS Accounting port number.
+         Name: Empty
+         Value: UDP port -->
+    <object oid="/agent/radiusserver/acct_port" access="read_write"
+            type="integer"/>
+
+    <!-- Network address RADIUS server is bound to.
+         Name:  Empty
+         Value: Wildcard address if the Server listens on all addresses -->
+    <object oid="/agent/radiusserver/net_addr" access="read_write"
+            type="address"/>
+
+    <!-- RADIUS clients configuration (usually client is a NAS).
+         Name: IP address of RADIUS Client 
+         Value: None -->
+    <object oid="/agent/radiusserver/client" access="read_create"
+            type="none"/>
+
+    <!-- The shared secret between the NAS and RADIUS Server,
+         which is used to "encrypt" and "sign" packets between
+         the NAS and RADIUS Server.
+         Name: Empty
+         Value: Shared secret -->
     <object oid="/agent/radiusserver/client/secret" access="read_write" 
-        type="string"/>
+            type="string"/>
     
-    <!--
-    Instance name is "User name" value,
-    Instance value - 0 - Reject user, 1 - Accept user
-    -->
-    <object oid="/agent/radiusserver/user" access="read_create" type="none"/>
+    <!-- RADIUS users configuration.
+         Name: User name
+         Value: 0 (Reject this user unconditionally),
+                1 (Accept this user if authenticated) -->
+    <object oid="/agent/radiusserver/user" access="read_create"
+            type="integer"/>
     
-    <!--
-    Attribute checks for a given user
-    Instance name - empty,
-    Instance value - a list of the form:
-                     AttributeName=Value[,AttributeName=Value]
-    -->
-    <object oid="/agent/radiusserver/user/check" access="read_write" type="string"/>
+    <!-- A set of attributes that should be checked for this user.
+         Name: empty
+         Value: a list of attributes in format:
+                [AttributeName=Value[,AttributeName=Value]*] -->
+    <object oid="/agent/radiusserver/user/check" access="read_write"
+            type="string"/>
     
-    <!--
-    Instance name - empty
-    Instance value - same as the above
-    Attributes to set for Access-Challenge and Access-Accept resp.
-    Each check element is mapped onto "Attribute = Value" directive in
-    configuration file.
-     -->
-    <object oid="/agent/radiusserver/user/challenge-attrs" access="read_write"  type="string"/>
-    <object oid="/agent/radiusserver/user/accept-attrs" access="read_write"  type="string"/>
+    <!-- A set of attributes that should be included into
+        Access-Challenge RADIUS message sent to this user.
+         Name: empty
+         Value: a list of attributes in format:
+                [AttributeName=Value[,AttributeName=Value]*] -->
+    <object oid="/agent/radiusserver/user/challenge-attrs" access="read_write"
+            type="string"/>
+
+    <!-- A set of attributes that should be included into
+        Access-Accept RADIUS message sent to this user.
+         Name: empty
+         Value: a list of attributes in format:
+                [AttributeName=Value[,AttributeName=Value]*] -->
+    <object oid="/agent/radiusserver/user/accept-attrs" access="read_write"
+            type="string"/>
 
 </backup>
