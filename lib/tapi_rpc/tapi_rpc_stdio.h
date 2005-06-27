@@ -143,4 +143,28 @@ extern int rpc_cmd_spawn(rcf_rpc_server *rpcs, const char *mode,
                          const char *cmd,...);
 
 
+/**
+ * Get environment variable.
+ *
+ * @param rpcs          RPC server handle
+ * @param name          variable name
+ *
+ * @return variable value (memory is allocated by the function) or NULL
+ */
+extern char *rpc_getenv(rcf_rpc_server *rpcs, const char *name);
+
+/**
+ * Add the variable with specified value to the environment or change
+ * value of the existing variable.
+ *
+ * @param rpcs          RPC server handle
+ * @param name          variable name
+ * @param value         new value
+ * @param overwrite     0, value of the existing variable is not changed
+ *
+ * @return variable value (memory is allocated by the function) or NULL
+ */
+extern int rpc_setenv(rcf_rpc_server *rpcs, 
+                      const char *name, const char *value, int overwrite);
+
 #endif /* !__TE_TAPI_RPC_STDIO_H__ */

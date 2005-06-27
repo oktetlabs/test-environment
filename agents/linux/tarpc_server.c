@@ -3601,6 +3601,24 @@ TARPC_FUNC(popen, {},
 }
 )
 
+/*-------------- getenv() --------------------------------*/
+TARPC_FUNC(getenv, {},
+{
+    char *val;
+    
+    MAKE_CALL(val = func_ptr_ret_ptr(in->name));
+    out->val = strdup(val == NULL ? "" : val);
+}
+)
+
+/*-------------- setenv() --------------------------------*/
+TARPC_FUNC(setenv, {},
+{
+    MAKE_CALL(out->retval = func_ptr(in->name, in->val, 
+                                     (int)(in->overwrite)));
+}
+)
+
 /*-------------- fileno() --------------------------------*/
 TARPC_FUNC(fileno, {}, 
 { 

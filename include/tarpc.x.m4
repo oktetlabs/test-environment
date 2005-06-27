@@ -1959,6 +1959,35 @@ struct tarpc_popen_out {
     tarpc_ptr   mem_ptr;
 };
 
+/* getenv() */
+struct tarpc_getenv_in {
+    struct tarpc_in_arg common;
+    
+    string name<>;
+};
+
+struct tarpc_getenv_out {
+    struct tarpc_out_arg common;
+    
+    string val<>;
+};
+
+/* setenv() */
+struct tarpc_setenv_in {
+    struct tarpc_in_arg common;
+    
+    string     name<>;
+    string     val<>;
+    tarpc_bool overwrite;
+};
+
+
+struct tarpc_setenv_out {
+    struct tarpc_out_arg common;
+    
+    tarpc_int retval;
+};
+
 /* fileno() */
 struct tarpc_fileno_in {
     struct tarpc_in_arg common;
@@ -2684,6 +2713,8 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(geteuid)
         RPC_DEF(setuid)
         RPC_DEF(seteuid)
+        RPC_DEF(getenv)
+        RPC_DEF(setenv)
 
         RPC_DEF(simple_sender)
         RPC_DEF(simple_receiver)

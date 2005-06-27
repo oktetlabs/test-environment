@@ -65,7 +65,7 @@ rpc_fopen(rcf_rpc_server *rpcs,
 
     if (rpcs == NULL || path == NULL || mode == NULL)
     {
-        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        ERROR("%s(): Invalid RPC parameter", __FUNCTION__);
         RETVAL_RPC_PTR(fopen, RPC_NULL);
     }
 
@@ -124,9 +124,9 @@ rpc_popen(rcf_rpc_server *rpcs,
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
 
-    if (rpcs == NULL || cmd == NULL || mode == NULL)
+    if (rpcs == NULL)
     {
-        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        ERROR("%s(): Invalid RPC parameter", __FUNCTION__);
         free(cmd_dup);
         free(mode_dup);
         RETVAL_RPC_PTR(popen, RPC_NULL);
@@ -351,4 +351,88 @@ rpc_shell_get_all(rcf_rpc_server *rpcs, char **pbuf, const char *cmd, ...)
     
     return rc;
     
+}
+
+/**
+ * Get environment variable.
+ *
+ * @param rpcs          RPC server handle
+ * @param name          variable name
+ *
+ * @return variable value (memory is allocated by the function) or NULL
+ */
+char *
+rpc_getenv(rcf_rpc_server *rpcs, const char *name)
+{
+    tarpc_getenv_in  in;
+    tarpc_getenv_out out;
+    
+    char *val;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+    
+    if (rpcs == NULL || name == NULL)
+    {
+        ERROR("%s(): Invalid RPC parameter", __FUNCTION__);
+        RETVAL_PTR(getenv, RPC_NULL);
+    }
+
+    rpcs->op = RCF_RPC_CALL_WAIT;
+    in.name = (char *)name;
+
+    rcf_rpc_call(rpcs, "getenv", &in, &out);
+
+    TAPI_RPC_LOG("RPC (%s,%s): getenv(%s) -> %s (%s)",
+                 rpcs->ta, rpcs->name,
+                 name, out.val, errno_rpc2str(RPC_ERRNO(rpcs)));
+                 
+    val = out.val;
+    out.val = NULL;                 
+
+    RETVAL_PTR(getenv, val);
+}
+
+/**
+ * Add the variable with specified value to the environment or change
+ * value of the existing variable.
+ *
+ * @param rpcs          RPC server handle
+ * @param name          variable name
+ * @param value         new value
+ * @param overwrite     0, value of the existing variable is not changed
+ *
+ * @return variable value (memory is allocated by the function) or NULL
+ */
+int 
+rpc_setenv(rcf_rpc_server *rpcs, const char *name, 
+           const char *value, int overwrite)
+{
+    tarpc_setenv_in  in;
+    tarpc_setenv_out out;
+    
+    char *val = (value == NULL) ? "" : (char *)value;
+    
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+    
+    if (rpcs == NULL || name == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_RPC_PTR(setenv, RPC_NULL);
+    }
+    
+    rpcs->op = RCF_RPC_CALL_WAIT;
+    in.name = (char *)name;
+    in.val = val;
+    in.overwrite = overwrite;
+
+    rcf_rpc_call(rpcs, "setenv", &in, &out);
+
+    TAPI_RPC_LOG("RPC (%s,%s): setenv(%s, %s, %d) -> %d (%s)",
+                 rpcs->ta, rpcs->name,
+                 name, val, overwrite,
+                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
+                 
+    RETVAL_INT(fclose, out.retval);
 }

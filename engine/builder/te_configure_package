@@ -103,6 +103,7 @@ mkdir -p $PKGNAME ;
 cd $PKGNAME ;
 
 if test -e Makefile ; then
+    make install-data || exit 1
     exit 0 
 fi        
     
@@ -142,6 +143,7 @@ eval ${PKGSRC}/configure --${option}=$PLATFORM $add_option \
 if test $? -ne 0 ; then
     exit 1 ;
 fi
-make install-data
+
+make install-data || exit 1
 
 exit 0
