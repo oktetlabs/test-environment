@@ -335,6 +335,7 @@ rcf_ch_conf_root()
         assert(tail->brother == NULL);
 #endif
 #ifdef USE_NETLINK
+        memset(&rth, 0, sizeof(rth));
         if (rtnl_open(&rth, 0) < 0)
             exit(1);
         ll_init_map(&rth);
@@ -516,6 +517,7 @@ ip_addr_get(int family, struct nlmsg_list **list)
     struct rtnl_handle rth;
     int                type;
     
+    memset(&rth, 0, sizeof(rth));
     if (rtnl_open(&rth, 0) < 0)
     {
         ERROR("%s: rtnl_open() failed, %s",
@@ -603,6 +605,7 @@ ip_addr_modify(int cmd, const char * ifname,
     req.ifa.ifa_prefixlen = lcl.bitlen;
     req.ifa.ifa_family = lcl.family;
 
+    memset(&rth, 0, sizeof(rth));
     if (rtnl_open(&rth, 0) < 0)
     {
         ERROR("%s: Cannot open netlink socket", __FUNCTION__);
