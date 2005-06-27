@@ -283,6 +283,9 @@ create_thread_child(rpcserver *rpcs)
     tarpc_pthread_create_in  in;
     tarpc_pthread_create_out out;
 
+    RING("Create thread RPC server '%s' from '%s'",
+         rpcs->name, rpcs->father->name);
+
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
     in.common.op = RCF_RPC_CALL_WAIT;
@@ -344,6 +347,9 @@ fork_child(rpcserver *rpcs)
 
     tarpc_fork_in  in;
     tarpc_fork_out out;
+
+    RING("Fork RPC server '%s' from '%s'",
+         rpcs->name, rpcs->father->name);
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
@@ -738,50 +744,52 @@ rpcserver_get(unsigned int gid, const char *oid, char *value,
  * @param oid           full object instence identifier (unused)
  * @param value         fork_<father_name> or thread_<father_name> or
  *                      empty string
- * @param name          RPC server name
+ * @param new_name      New RPC server name
  *
  * @return Status code
  */
 static int 
 rpcserver_add(unsigned int gid, const char *oid, const char *value,
-              const char *name)
+              const char *new_name)
 {
-    rpcserver  *rpcs, *father = NULL;
-    const char *fname;
+    rpcserver  *rpcs;
+    rpcserver  *father = NULL;
+    const char *father_name;
     int         rc;
     
     UNUSED(gid);
     UNUSED(oid);
     
     if (strcmp_start("thread_", value) == 0)
-        fname = value + strlen("thread_");
+        father_name = value + strlen("thread_");
     else if (strcmp_start("fork_", value) == 0)
-        fname = value + strlen("fork_");
-    else if (*value == 0)
-        fname = "";
+        father_name = value + strlen("fork_");
+    else if (value[0] == '\0')
+        father_name = NULL;
     else
     {
-        ERROR("Incorrect RPC server father");
+        ERROR("Incorrect RPC server '%s' father '%s'", new_name, value);
         return TE_RC(TE_RCF_PCH, EINVAL);
     }
     
     rcf_ch_lock();
     for (rpcs = list; rpcs != NULL; rpcs = rpcs->next)
     {
-        if (strcmp(rpcs->name, name) == 0)
+        if (strcmp(rpcs->name, new_name) == 0)
         {
             rcf_ch_unlock();
             return TE_RC(TE_RCF_PCH, EEXIST);
         }
             
-        if (strcmp(rpcs->name, fname) == 0)
+        if (father_name != NULL && strcmp(rpcs->name, father_name) == 0)
             father = rpcs;
     }
     
-    if (*fname != 0 && father == NULL)
+    if (father_name != NULL && father == NULL)
     {
         rcf_ch_unlock();
-        ERROR("Cannot find a father for RPC server");
+        ERROR("Cannot find father '%s' for RPC server '%s' (%s)",
+              father_name, new_name, value);
         return TE_RC(TE_RCF_PCH, EEXIST);
     }
     
@@ -791,7 +799,7 @@ rpcserver_add(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_RCF_PCH, ENOMEM);
     }
     
-    strcpy(rpcs->name, name);
+    strcpy(rpcs->name, new_name);
     rpcs->father = father;
     if (father == NULL)
     {
@@ -811,9 +819,9 @@ rpcserver_add(unsigned int gid, const char *oid, const char *value,
         {
             int err = errno;
             
-            ERROR("Failed to spawn RPC server process; errno 0x%X", err);
-            free(rpcs);
             rcf_ch_unlock();
+            free(rpcs);
+            ERROR("Failed to spawn RPC server process; errno 0x%X", err);
             return TE_RC(TE_RCF_PCH, err);
         }
     }
@@ -826,8 +834,8 @@ rpcserver_add(unsigned int gid, const char *oid, const char *value,
             
         if (rc != 0)
         {
-            free(rpcs);
             rcf_ch_unlock();
+            free(rpcs);
             return TE_RC(TE_RCF_PCH, rc);
         }
     }
@@ -838,8 +846,8 @@ rpcserver_add(unsigned int gid, const char *oid, const char *value,
             delete_thread_child(rpcs);
         else
             kill_rpcserver(rpcs);
-        free(rpcs);
         rcf_ch_unlock();
+        free(rpcs);
         return TE_RC(TE_RCF_PCH, rc);
     }
     
