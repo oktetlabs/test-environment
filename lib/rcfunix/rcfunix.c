@@ -26,6 +26,8 @@
  * $Id$
  */
 
+#define TE_LGR_USER     "RCF Unix"
+
 #include "te_config.h"
 
 #include <stdio.h>
