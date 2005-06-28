@@ -225,6 +225,8 @@ ip4_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
                const tad_tmpl_arg_t *args, size_t arg_num, 
                const csap_pkts_p up_payload, csap_pkts_p pkt_list)
 {
+    static uint16_t ident = 1;
+
     int      rc = 0; 
     uint8_t *p;
     uint8_t *checksum_place = NULL;
@@ -232,7 +234,6 @@ ip4_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
              h_len;
     int      fr_index = 0,
              fr_number = 0;
-    uint16_t ident = random();
 
     int      pld_chksm_offset = -1;
 
@@ -246,6 +247,8 @@ ip4_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
     uint8_t src_ip_addr[4];
     uint8_t dst_ip_addr[4];
     uint8_t protocol;
+
+    ident++;
 
 #define CHECK(fail_cond_, msg_...) \
     do {                                \
