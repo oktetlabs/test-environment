@@ -1038,6 +1038,13 @@ calculate_checksum(const void *data, size_t length)
     for (ch_p = (uint16_t *)data, checksum = 0; 
          length >= 2;
          length -= 2, checksum += *(ch_p++)); 
+    if (length == 1)
+    {
+        union {uint8_t bytes[2]; uint16_t num;} a;
+        a.bytes[0] = *((uint8_t *)ch_p);
+        a.bytes[1] = 0;
+        checksum += a.num;
+    }
 
     return (checksum & 0xffff) + (checksum >> 16);
 }
