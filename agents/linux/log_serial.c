@@ -368,10 +368,12 @@ log_serial(void *ready, int argc, char *argv[])
         return TE_RC(TE_TA_LINUX, rc);
     }
 
-    sem_post(ready);
     if (*argv[3] != '/')
     {
-        poller.fd = open_conserver(argv[3]);
+        static char tmp[128];
+        strncpy(tmp, argv[3], sizeof(tmp) - 1);
+        sem_post(ready);
+        poller.fd = open_conserver(tmp);
         if (poller.fd < 0)
         {
             return TE_RC(TE_TA_LINUX, errno);
@@ -384,6 +386,7 @@ log_serial(void *ready, int argc, char *argv[])
             sprintf(tmp, "fuser -s %s", argv[3]);
             if (ta_system(tmp) == 0)
             {
+                sem_post(ready);
                 ERROR("%s is already is use, won't log", argv[3]);
                 return TE_RC(TE_TA_LINUX, EBUSY);
             }
@@ -402,6 +405,7 @@ log_serial(void *ready, int argc, char *argv[])
         }
         else
         {
+            sem_post(ready);
             ERROR("Invalid sharing mode '%s'", argv[4]);
             return TE_RC(TE_TA_LINUX, EINVAL);
         }
@@ -411,11 +415,13 @@ log_serial(void *ready, int argc, char *argv[])
         {
             int rc = errno;
             
+            sem_post(ready);
             ERROR("Cannot open %s: %d", argv[3], rc);
             return TE_RC(TE_TA_LINUX, rc);
         }
+        sem_post(ready);
     }
-    
+
 
     current = buffer;
     fence   = buffer + TE_LOG_FIELD_MAX;
