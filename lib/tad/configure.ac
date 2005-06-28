@@ -150,8 +150,8 @@ AC_ARG_WITH([dhcp],,
 
 AC_ARG_WITH([snmp],, 
 [if test "${withval}" = yes; then
-    w_snmp=true;
-    proto_specific snmp;
+    w_snmp=true
+    proto_specific snmp
 
     for i in `net-snmp-config --libs`; do
         if test ${i:0:2} = "-l"; then
@@ -159,9 +159,22 @@ AC_ARG_WITH([snmp],,
             if test -z "${LIB_PATHNAME}" ; then
                 AC_WARN([Cannot find ${i:2} library])
             fi
-            TA_TAD_LIBS="$TA_TAD_LIBS ${LIB_PATHNAME}";
+            TA_TAD_LIBS="$TA_TAD_LIBS ${LIB_PATHNAME}"
         fi
     done
+#
+# On some systems net-snmp-config --libs does not include
+# libcrypto library thinking that this is something 
+# that should be dynamically linked and there is no need to
+# specify it explicitly.
+# In our case we want it to be linked statically, so that
+# we should take care about this.
+#
+    LIB_PATHNAME=
+    net-snmp-config --libs | grep crypto >/dev/null || find_lib crypto
+    if test -n "${LIB_PATHNAME}" ; then
+        TA_TAD_LIBS="$TA_TAD_LIBS ${LIB_PATHNAME}"
+    fi
 
     AC_CONFIG_FILES([snmp/Makefile])
  fi
