@@ -562,7 +562,7 @@ tapi_cli_msg_handler(char *msg_fname, void *user_param)
 #if 0
     asn_value_p               cli_msg;
 #endif
-    int                       msg_len;
+    size_t                    msg_len;
     char                     *msg = NULL;
     char                    **msg_p = user_param;
 

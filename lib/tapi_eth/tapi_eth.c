@@ -337,7 +337,7 @@ tapi_eth_pkt_handler(char *fn, void *user_param)
     asn_value *frame_val;
     asn_value *eth_hdr_val;
 
-    int p_len;
+    size_t p_len;
     uint8_t *payload;
 
     if (user_param == NULL)
@@ -369,13 +369,8 @@ tapi_eth_pkt_handler(char *fn, void *user_param)
     }
 
     p_len = asn_get_length(frame_val, "payload.#bytes");
-    if (p_len < 0)
-    {
-        ERROR( "tapi eth int cb, get_len error \n");
-        return;
-    }
 
-    payload = malloc(p_len);
+    payload = malloc(p_len + 1);
     rc = asn_read_value_field(frame_val, payload, &p_len, "payload.#bytes");
 
     if (rc)
