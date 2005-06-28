@@ -3796,6 +3796,8 @@ TARPC_FUNC(simple_receiver, {},
 }
 )
 
+#define MAX_PKT (1024 * 1024)
+
 /**
  * Simple receiver.
  *
@@ -3809,7 +3811,7 @@ simple_receiver(tarpc_simple_receiver_in *in,
 {
     sock_api_func   select_func;
     sock_api_func   recv_func;
-    char            buf[2048];
+    char           *buf;
     fd_set          set;
     int             rc;
     ssize_t         len;
@@ -3827,6 +3829,12 @@ simple_receiver(tarpc_simple_receiver_in *in,
     {
         return -1;
     }
+    
+    if ((buf = malloc(MAX_PKT)) == NULL)
+    {
+        ERROR("Out of memory");
+        return -1;
+    }
 
     for (start = now = time(NULL);
          (in->time2run != 0) ?
@@ -3842,6 +3850,7 @@ simple_receiver(tarpc_simple_receiver_in *in,
         if (rc < 0)
         {
             ERROR("select() failed in simple_receiver(): errno %x", errno);
+            free(buf);
             return -1;
         }
         else if (rc == 0)
@@ -3855,13 +3864,15 @@ simple_receiver(tarpc_simple_receiver_in *in,
         {
             ERROR("select() waited for reading on the socket, "
                   "returned %d, but the socket in not in set", rc);
+            free(buf);
             return -1;
         }
 
-        len = recv_func(in->s, buf, sizeof(buf), 0);
+        len = recv_func(in->s, buf, MAX_PKT, 0);
         if (len < 0)
         {
             ERROR("recv() failed in simple_receiver(): errno %x", errno);
+            free(buf);
             return -1;
         }
         if (len == 0)
@@ -3874,6 +3885,7 @@ simple_receiver(tarpc_simple_receiver_in *in,
         out->bytes += len;
     }
 
+    free(buf);
     RING("simple_receiver() stopped, received %llu bytes",
          out->bytes);
 
