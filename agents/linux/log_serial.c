@@ -349,57 +349,6 @@ log_serial(void *ready, int argc, char *argv[])
         return TE_RC(TE_TA_LINUX, EINVAL);
     }
 
-    if (*argv[3] != '/')
-    {
-        poller.fd = open_conserver(argv[3]);
-        if (poller.fd < 0)
-        {
-            sem_post(ready);
-            return TE_RC(TE_TA_LINUX, errno);
-        }
-    }
-    else
-    {
-        if (argc < 5 || strcmp(argv[4], "exclusive") == 0)
-        {
-            sprintf(tmp, "fuser -s %s", argv[3]);
-            if (ta_system(tmp) == 0)
-            {
-                ERROR("%s is already is use, won't log", argv[3]);
-                sem_post(ready);
-                return TE_RC(TE_TA_LINUX, EBUSY);
-            }
-        }
-        else if (strcmp(argv[4], "force") == 0)
-        {
-            sprintf(tmp, "fuser -s -k %s", argv[3]);
-            if (ta_system(tmp) == 0)
-                WARN("%s was in use, killing the process", argv[3]);
-        }
-        else if (strcmp(argv[4], "shared") == 0)
-        {
-            sprintf(tmp, "fuser -s %s", argv[3]);
-            if (ta_system(tmp) == 0)
-                WARN("%s is in use, logging anyway", argv[3]);
-        }
-        else
-        {
-            ERROR("Invalid sharing mode '%s'", argv[4]);
-            sem_post(ready);
-            return TE_RC(TE_TA_LINUX, EINVAL);
-        }
-        
-        poller.fd = open(argv[3], O_RDONLY | O_NOCTTY | O_NONBLOCK);
-        if (poller.fd < 0)
-        {
-            int rc = errno;
-            
-            ERROR("Cannot open %s: %d", argv[3], rc);
-            sem_post(ready);
-            return TE_RC(TE_TA_LINUX, rc);
-        }
-    }
-    
     if ((buffer = malloc(TE_LOG_FIELD_MAX + 1)) == NULL)
     {
         int rc = errno;
@@ -419,12 +368,59 @@ log_serial(void *ready, int argc, char *argv[])
         return TE_RC(TE_TA_LINUX, rc);
     }
 
+    sem_post(ready);
+    if (*argv[3] != '/')
+    {
+        poller.fd = open_conserver(argv[3]);
+        if (poller.fd < 0)
+        {
+            return TE_RC(TE_TA_LINUX, errno);
+        }
+    }
+    else
+    {
+        if (argc < 5 || strcmp(argv[4], "exclusive") == 0)
+        {
+            sprintf(tmp, "fuser -s %s", argv[3]);
+            if (ta_system(tmp) == 0)
+            {
+                ERROR("%s is already is use, won't log", argv[3]);
+                return TE_RC(TE_TA_LINUX, EBUSY);
+            }
+        }
+        else if (strcmp(argv[4], "force") == 0)
+        {
+            sprintf(tmp, "fuser -s -k %s", argv[3]);
+            if (ta_system(tmp) == 0)
+                WARN("%s was in use, killing the process", argv[3]);
+        }
+        else if (strcmp(argv[4], "shared") == 0)
+        {
+            sprintf(tmp, "fuser -s %s", argv[3]);
+            if (ta_system(tmp) == 0)
+                WARN("%s is in use, logging anyway", argv[3]);
+        }
+        else
+        {
+            ERROR("Invalid sharing mode '%s'", argv[4]);
+            return TE_RC(TE_TA_LINUX, EINVAL);
+        }
+        
+        poller.fd = open(argv[3], O_RDONLY | O_NOCTTY | O_NONBLOCK);
+        if (poller.fd < 0)
+        {
+            int rc = errno;
+            
+            ERROR("Cannot open %s: %d", argv[3], rc);
+            return TE_RC(TE_TA_LINUX, rc);
+        }
+    }
+    
+
     current = buffer;
     fence   = buffer + TE_LOG_FIELD_MAX;
     *fence  = '\0';
     
-    sem_post(ready);
-    /* FIXME: Cast of (int) to (void *) is not a good idea really */
     pthread_cleanup_push((void (*)(void *))close, (void *)poller.fd);
     pthread_cleanup_push(free, buffer);
     pthread_cleanup_push(free, other_buffer);
