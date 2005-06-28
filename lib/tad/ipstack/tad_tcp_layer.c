@@ -272,7 +272,7 @@ tcp_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
             switch (length_)                                            \
             {                                                           \
                 case 1:                                                 \
-                    *((uint8_t *)p) = (def_val_);                       \
+                    *((uint8_t *)p) = (uint8_t)(def_val_);              \
                     break;                                              \
                                                                         \
                 case 2:                                                 \
