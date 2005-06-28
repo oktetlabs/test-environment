@@ -2642,18 +2642,21 @@ flush_smtp_server_queue(void)
     {
         rc = ta_system("killall -ALRM qmail-send");
     }
-    else if (strcmp(smtp_current, "exim") == 0 ||
-             strcmp(smtp_current, "sendmail") == 0)
+    else if (strcmp(smtp_current, "sendmail") == 0)
     {
-        char tmp[80];
-        sprintf(tmp, "killall -HUP %s", smtp_current_daemon);
-        rc = ta_system(tmp);
+        rc = ta_system("sendmail-mta -q");
+        if (rc != 0)
+            rc = ta_system("sendmail -q");
+    }
+    else if (strcmp(smtp_current, "exim") == 0)
+    {
+        rc = ta_system("killall -HUP exim");
     }
     else
     {
         WARN("Flushing not implemented for %s", smtp_current);
     }
-    if (rc)
+    if (rc != 0)
         ERROR("Flushing failed with code %d", rc);
 }
 
