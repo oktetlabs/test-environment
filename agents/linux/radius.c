@@ -310,7 +310,7 @@ find_rp (radius_parameter *top, const char *name, te_bool create,
     const char *next  = NULL;
     const char *value = NULL;
     int         name_length;
-    int         value_counter;
+    int         value_counter = -1;
     
     if (*name == '.')
         name++;
@@ -330,6 +330,11 @@ find_rp (radius_parameter *top, const char *name, te_bool create,
             value = next + 1;
     }
     name_length = (value == NULL ? next : value - 1) - name;
+    if (value != NULL && value[-1] == '#')
+    {
+        value_counter = strtoul(value, NULL, 10);
+    }
+    
     for (top = top->children; top != NULL; )
     {
         if (top->kind == RP_FILE)
@@ -342,6 +347,7 @@ find_rp (radius_parameter *top, const char *name, te_bool create,
                     top->name[name_length] == '\0')
                 {
                     if (value == NULL || 
+                        (value_counter == 0) ||
                         (top->value != NULL && 
                          strncmp(top->value, value, value - name - 1) == 0 &&
                          top->value[value - name - 1] == '\0'))
@@ -349,6 +355,8 @@ find_rp (radius_parameter *top, const char *name, te_bool create,
                         if (enumerator == NULL || enumerator(top, extra))
                             break;
                     }
+                    if (value_counter > 0)
+                        value_counter--;
                 }
             }
             if (top->next == NULL)
@@ -712,6 +720,8 @@ static int
 ds_radius_secret_set(unsigned int gid, const char *oid,
                      const char *value, const char *instance, ...)
 {
+    snprintf(client_buffer, sizeof(client_buffer), "client:%s.secret", instance);
+    update_rp(radius_conf, RP_SECTION, client_buffer, value);    
 }
 
 RCF_PCH_CFG_NODE_RW(node_ds_radiusserver_user_accept_attrs, "accept-attrs",
