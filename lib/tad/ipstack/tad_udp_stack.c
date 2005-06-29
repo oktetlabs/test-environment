@@ -287,30 +287,47 @@ udp_ip4_init_cb (int csap_id, const asn_value *csap_nds, int layer)
 
 
     udp_spec_data = calloc (1, sizeof(udp_csap_specific_data_t));
-    
     if (udp_spec_data == NULL)
-    {
         return TE_RC(TE_TAD_CSAP, ENOMEM);
-    } 
-    
 
-    sprintf (opt_label, "%d.local-port", layer);
+    sprintf(opt_label, "%d.local-port", layer);
     len = sizeof(udp_spec_data->local_port);
-    rc = asn_read_value_field(csap_nds, &udp_spec_data->local_port, 
-                                &len, opt_label); 
-    if (rc == 0)
+    rc = asn_read_value_field(csap_nds, &udp_spec_data->local_port,
+                              &len, opt_label);
+    if (rc != 0)
     {
-        sprintf (opt_label, "%d.remote-port", layer);
-        len = sizeof(udp_spec_data->remote_port);
-        rc = asn_read_value_field(csap_nds, &udp_spec_data->remote_port, 
-                                    &len, opt_label);
+        if (csap_descr->type != TAD_CSAP_DATA)
+        {
+            WARN("%s: %d.local-port is not found in CSAP pattern, set to 0",
+                 __FUNCTION__, layer);
+            udp_spec_data->local_port = 0;
+        }
+        else
+        {
+            free(udp_spec_data);
+            ERROR("%s: %d.local-port is not specified", __FUNCTION__, layer);
+            return TE_RC(TE_TAD_CSAP, rc);
+        }
     }
 
-    if (rc)
+    sprintf(opt_label, "%d.remote-port", layer);
+    len = sizeof(udp_spec_data->remote_port);
+    rc = asn_read_value_field(csap_nds, &udp_spec_data->remote_port, 
+                              &len, opt_label);
+    if (rc != 0)
     {
-        /* If this field is not set, then CSAP cannot process */ 
-        free(udp_spec_data);
-        return TE_RC(TE_TAD_CSAP, rc); 
+        if (csap_descr->type != TAD_CSAP_DATA)
+        {
+            WARN("%s: %d.remote-port is not found in CSAP pattern, set to 0",
+                 __FUNCTION__, layer);
+            udp_spec_data->remote_port = 0;
+        }
+        else
+        {
+            free(udp_spec_data);
+            ERROR("%s: %d.remote-port is not specified", __FUNCTION__, layer);
+            return TE_RC(TE_TAD_CSAP, rc);
+        }
     }
 
     if (csap_descr->type == TAD_CSAP_DATA)
