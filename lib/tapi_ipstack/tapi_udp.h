@@ -50,8 +50,7 @@ typedef struct udp4_datagram {
 } udp4_datagram;
 
 /** 
- * Callback function for the tapi_snmp_walk() routine, it is called
- * for each variable in a walk subtree.
+ * Callback function for the receiving UDP datagrams.
  *
  * @param pkt           Received UDP datagram. After return from this
  *                      callback memory block under this datagram will

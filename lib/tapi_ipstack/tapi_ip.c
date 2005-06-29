@@ -57,7 +57,82 @@
 #include "ndn_eth.h"
 
 
+typedef struct tapi_ip4_cb_data_t {
+    ip4_callback  user_cb;
+    void         *user_data;
+} tapi_ip4_cb_data_t;
 
+
+/* 
+ * Pkt handler for IP packets 
+ */
+static void
+ip4_pkt_handler(char *pkt_fname, void *user_param)
+{
+    tapi_ip4_cb_data_t *cb_data = (tapi_ip4_cb_data_t *)user_param;
+    asn_value          *pkt = NULL;
+    const asn_value    *ip_pdu;
+
+    tapi_ip4_packet_t   plain_pkt;
+    size_t              len;
+
+    int s_parsed = 0;
+    int rc = 0;
+
+    RING("%s called file %s", __FUNCTION__, pkt_fname);
+
+    if (user_param == NULL) 
+    {
+        WARN("%s called with NULL user param", __FUNCTION__);
+        return;
+    }
+
+    if (cb_data->user_cb == NULL)
+    {
+        WARN("%s called with NULL user cb", __FUNCTION__);
+        return; 
+    }
+
+#define TEST_FAIL(msg_...) \
+    do {                        \
+        if (rc != 0)            \
+        {                       \
+            ERROR(msg_);        \
+            return;             \
+        }                       \
+    } while (0)
+
+    rc = asn_parse_dvalue_in_file(pkt_fname, ndn_raw_packet,
+                                  &pkt, &s_parsed);
+    TEST_FAIL("%s(): parse packet fails, rc = 0x%X,sym %d",
+              __FUNCTION__, rc, s_parsed);
+
+    rc = asn_get_subvalue(pkt, &ip_pdu, "pdus.0.#ip4");
+    TEST_FAIL("%s(): get IP4 PDU fails, rc = 0x%X",
+              __FUNCTION__, rc);
+
+    len = sizeof(plain_pkt.src_addr);
+    rc = ndn_du_read_plain_oct(ip_pdu, NDN_TAG_IP4_SRC_ADDR, 
+                               (uint8_t *)&(plain_pkt.src_addr), &len);
+    TEST_FAIL("%s(): get IP4 src fails, rc = 0x%X",
+              __FUNCTION__, rc);
+
+    len = sizeof(plain_pkt.dst_addr);
+    rc = ndn_du_read_plain_oct(ip_pdu, NDN_TAG_IP4_DST_ADDR, 
+                               (uint8_t *)&(plain_pkt.dst_addr), &len);
+    TEST_FAIL("%s(): get IP4 dst fails, rc = 0x%X",
+              __FUNCTION__, rc);
+
+    len = plain_pkt.pld_len = asn_get_length(pkt, "payload");
+    plain_pkt.payload = malloc(len);
+
+    rc = asn_read_value_field(pkt, plain_pkt.payload, &len, "payload");
+
+    cb_data->user_cb(&plain_pkt, cb_data->user_data);
+
+    free(plain_pkt.payload);
+#undef TEST_FAIL
+}
 
 /* see description in tapi_ip.h */
 int
@@ -164,11 +239,30 @@ tapi_ip4_eth_recv_start(const char *ta_name, int sid, csap_handle_t csap,
                         const uint8_t *dst_ip4_addr,
                         unsigned int timeout, int num)
 {
+    return tapi_ip4_eth_recv_start_pkt(ta_name, sid, csap, 
+                                       src_mac_addr, dst_mac_addr,
+                                       src_ip4_addr, dst_ip4_addr,
+                                       timeout, num, NULL, NULL);
+}
+
+/* see description in tapi_ip.h */
+int
+tapi_ip4_eth_recv_start_pkt(const char *ta_name, int sid, 
+                            csap_handle_t csap,
+                            const uint8_t *src_mac_addr,
+                            const uint8_t *dst_mac_addr,
+                            const uint8_t *src_ip4_addr,
+                            const uint8_t *dst_ip4_addr,
+                            unsigned int timeout, int num, 
+                            ip4_callback callback,
+                            void *userdata)
+{
     char  template_fname[] = "/tmp/te_ip4_eth_recv.XXXXXX";
     int   rc;
     FILE *f;
 
     const uint8_t *b;
+    tapi_ip4_cb_data_t cb_data;
 
     mktemp(template_fname);
 
@@ -208,9 +302,17 @@ tapi_ip4_eth_recv_start(const char *ta_name, int sid, csap_handle_t csap,
     fprintf(f, "}}}\n");
     fclose(f);
 
+    if (callback != NULL)
+    {
+        cb_data.user_cb = callback;
+        cb_data.user_data = userdata;
+    }
     rc = rcf_ta_trrecv_start(ta_name, sid, csap, template_fname,
-                                NULL, NULL, timeout, num);
+                                (callback == NULL) ? NULL : ip4_pkt_handler,
+                                (callback == NULL) ? NULL : &cb_data,
+                                timeout, num);
 
+    RING("%s(): rc %x", __FUNCTION__, rc);
     unlink(template_fname); 
 
     return rc;

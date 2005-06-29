@@ -49,6 +49,26 @@ typedef struct tapi_ip_frag_spec_t {
 } tapi_ip_frag_spec_t;
 
 
+typedef struct tapi_ip4_packet_t {
+    in_addr_t   src_addr;
+    in_addr_t   dst_addr;
+
+    uint8_t    *payload;
+    size_t      pld_len;
+} tapi_ip4_packet_t;
+
+
+/** 
+ * Callback function for the receiving UDP datagrams.
+ *
+ * Nєither pkt, nor pkt->payload MAY NOT be stored for future use
+ * by this callback: they are freed just after callback return.
+ *
+ * @param pkt           Received IP packet.
+ * @param userdata      Parameter, provided by the caller.
+ */
+typedef void (*ip4_callback)(const tapi_ip4_packet_t *pkt, void *userdata);
+
 /**
  * Creates 'ip4.eth' CSAP
  *
@@ -99,6 +119,39 @@ extern int tapi_ip4_eth_recv_start(const char *ta_name, int sid,
                                    const uint8_t *src_ip4_addr,
                                    const uint8_t *dst_ip4_addr,
                                    unsigned int timeout, int num);
+
+/**
+ * Start receiving of IPv4 packets 'ip4.eth' CSAP, non-block
+ * method. 
+ *
+ * Started receiving process may be controlled by rcf_ta_trrecv_get, 
+ * rcf_ta_trrecv_wait, and rcf_ta_trrecv_stop methods.
+ * 
+ * @param ta_name       test Agent name
+ * @param sid           RCF SID
+ * @param csap          identifier of CSAP
+ * @param src_mac_addr  source MAC address (or NULL)
+ * @param dst_mac_addr  destination MAC address (or NULL)
+ * @param src_ip4_addr  source IP address in network order (or NULL)
+ * @param dst_ip4_addr  destination IP address in network order (or NULL)
+ * @param timeout       timeout of operation (in milliseconds, 
+ *                      zero for infinitive)
+ * @param num           nubmer of packets to be caugth
+ * @param callback      pointer of method to be called for every packet
+ * @param userdata      magic pointer which will be passed to user callback
+ * 
+ * @return Zero on success or error code.
+ */
+extern int tapi_ip4_eth_recv_start_pkt(const char *ta_name, int sid, 
+                                       csap_handle_t csap,
+                                       const uint8_t *src_mac_addr,
+                                       const uint8_t *dst_mac_addr,
+                                       const uint8_t *src_ip4_addr,
+                                       const uint8_t *dst_ip4_addr,
+                                       unsigned int timeout, int num, 
+                                       ip4_callback callback,
+                                       void *userdata);
+
 /**
  * Prepare ASN PDU value of IPv4 CSAP layer type for Traffic-Template. 
  *

@@ -419,7 +419,7 @@ tapi_tcp_template(tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn,
 
     *tmpl = NULL; 
 
-    rc = asn_parse_value_text("{ pdus {ip4:{}, eth{} } }", 
+    rc = asn_parse_value_text("{ pdus {ip4:{}, eth:{} } }", 
                               ndn_traffic_template, 
                               tmpl, &syms);
     if (rc != 0)
@@ -637,7 +637,17 @@ tapi_tcp_destroy_conn_descr(tapi_tcp_connection_t *conn_descr)
 
     if (conn_descr->rcv_csap != CSAP_INVALID_HANDLE)
     {
-        int rc = rcf_ta_csap_destroy(conn_descr->agt, conn_descr->rcv_sid,
+        int rc = rcf_ta_trrecv_stop(conn_descr->agt, conn_descr->rcv_sid,
+                                     conn_descr->rcv_csap, NULL);
+
+        if (rc != 0)
+        {
+            WARN("%s(id %d): rcv CSAP %d on agt %s trrecv_stop failed %X", 
+                 __FUNCTION__, conn_descr->id, conn_descr->rcv_csap,
+                 conn_descr->agt, rc);
+        }
+
+        rc = rcf_ta_csap_destroy(conn_descr->agt, conn_descr->rcv_sid,
                                      conn_descr->rcv_csap);
         if (rc != 0)
         {
@@ -1057,6 +1067,8 @@ tapi_tcp_close_connection(tapi_tcp_handler_t handler, int timeout)
         ERROR("%s(): send FIN failed %X", __FUNCTION__, rc);
         return ETIMEDOUT;
     }
+    tapi_tcp_destroy_conn_descr(conn_descr);
+
     return 0;
 }
 
