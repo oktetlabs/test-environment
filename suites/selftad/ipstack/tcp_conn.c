@@ -37,6 +37,9 @@
 #include <string.h>
 #include <sys/time.h>
 #include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 #include <unistd.h>
 
 
@@ -60,24 +63,26 @@
 int
 main(int argc, char *argv[])
 {
+    tapi_tcp_handler_t conn_hand;
+
     rcf_rpc_server *rpc_srv;
+
     int  sid_a;
     char ta[32];
     char *agt_a = ta;
     char *agt_b;
-    int  len = sizeof(ta);
-
-    char path[1000];
-
-    struct timeval to;
+    size_t len = sizeof(ta);
 
     int tcp_sock = -1;
 
-    int timeout = 30;
-    int rc_mod, rc_code;
-
     struct sockaddr_in srv_addr;
+    struct sockaddr_in from_sa;
 
+    uint8_t csap_mac[6] = {0x00, 0x05, 0x5D, 0x74, 0xAB, 0xB4};
+    uint8_t sock_mac[6] = {0x00, 0x0D, 0x88, 0x4F, 0x55, 0xAF};
+
+    in_addr_t csap_ip_addr = inet_addr("192.168.72.18");
+    in_addr_t sock_ip_addr = inet_addr("192.168.72.38");
 
     TEST_START; 
     
@@ -105,21 +110,53 @@ main(int argc, char *argv[])
     }
 
     if ((rc = rcf_rpc_server_create(agt_b, "FIRST", &rpc_srv)) != 0)
-    {
         TEST_FAIL("Cannot create server %x", rc);
-    }
+
     rpc_srv->def_timeout = 5000;
     
     rpc_setlibname(rpc_srv, NULL); 
+
+    memset(&srv_addr, 0, sizeof(srv_addr)); 
+
+    srv_addr.sin_family = AF_INET;
+    srv_addr.sin_addr.s_addr = sock_ip_addr;
+    srv_addr.sin_port = htons(20001); /* TODO generic port */
+
+    from_sa.sin_family = AF_INET;
+    from_sa.sin_addr.s_addr = csap_ip_addr;
+    from_sa.sin_port = htons(20000); /* TODO generic port */
+
     
     if ((tcp_sock = rpc_socket(rpc_srv, RPC_AF_INET, RPC_SOCK_STREAM, 
                         RPC_IPPROTO_TCP)) < 0 || rpc_srv->_errno != 0)
         TEST_FAIL("Calling of RPC socket() failed %x", rpc_srv->_errno);
 
+    rc = rpc_bind(rpc_srv, tcp_sock, SA(&srv_addr), sizeof(srv_addr));
+    if (rc != 0)
+        TEST_FAIL("bind failed");
+
+    rc = rpc_listen(rpc_srv, tcp_sock, 1);
+    if (rc != 0)
+        TEST_FAIL("listen failed");
+
+    rc = tapi_tcp_init_connection(agt_a, TAPI_TCP_CLIENT, 
+                                  SA(&from_sa), SA(&srv_addr), 
+                                  "eth2", csap_mac, sock_mac,
+                                  1000, 2000,
+                                  &conn_hand);
+    if (rc != 0)
+        TEST_FAIL("init connection failed: %X", rc); 
+
+    RING("connection inited, handle %d", conn_hand);
+
+    rc = tapi_tcp_close_connection(conn_hand, 2000);
+    if (rc != 0)
+        TEST_FAIL("close connection failed: %X", rc); 
 
     TEST_SUCCESS;
 
 cleanup:
+
     if (rpc_srv && (rcf_rpc_server_destroy(rpc_srv) != 0))
     {
         WARN("Cannot delete dst RPC server\n");

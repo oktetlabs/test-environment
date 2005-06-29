@@ -165,12 +165,12 @@ main(int argc, char *argv[])
 
     udp_dgm_image[5] = sizeof(udp_dgm_image);
 
-  
+#if 0 
     rc = asn_write_value_field(template, NULL, 0,
                                "pdus.0.#ip4.pld-checksum.#disable");
     if (rc != 0)
         TEST_FAIL("set payload to template failed %X", rc);
-
+#endif
     rc = asn_write_value_field(template, udp_dgm_image,
                                sizeof(udp_dgm_image), "payload.#bytes");
     if (rc != 0)

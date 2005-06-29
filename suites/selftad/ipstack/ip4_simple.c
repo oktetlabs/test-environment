@@ -63,6 +63,22 @@
 
 #define USE_TAPI 1
 
+
+#if USE_TAPI
+static void 
+user_pkt_handler(tapi_ip4_packet_t *pkt, void *userdata)
+{
+    struct in_addr src;
+    struct in_addr dst;
+
+    src.s_addr = pkt->src_addr;
+    dst.s_addr = pkt->dst_addr;
+    RING("%s(): pkt from %s to %s with pld %d bytes caugth",
+         __FUNCTION__, inet_ntoa(src), inet_ntoa(dst),
+         pkt->pld_len);
+}
+
+#endif
 int
 main(int argc, char *argv[])
 {
@@ -184,8 +200,9 @@ main(int argc, char *argv[])
 
 #if USE_TAPI
         
-        rc = tapi_ip4_eth_recv_start(ta, sid, csap, NULL, NULL, NULL, 
-                                     (uint8_t*)&my_addr, 5000, 4);
+        rc = tapi_ip4_eth_recv_start_pkt(ta, sid, csap, NULL, NULL, NULL, 
+                                     (uint8_t*)&my_addr, 5000, 4,
+                                     user_pkt_handler, NULL);
 #else
         strcpy(path, "/tmp/te_ip4_pattern.XXXXXX"); 
         mkstemp(path); 
