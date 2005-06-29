@@ -262,7 +262,7 @@ tapi_ip4_eth_recv_start_pkt(const char *ta_name, int sid,
     FILE *f;
 
     const uint8_t *b;
-    tapi_ip4_cb_data_t cb_data;
+    tapi_ip4_cb_data_t *cb_data;
 
     mktemp(template_fname);
 
@@ -304,12 +304,13 @@ tapi_ip4_eth_recv_start_pkt(const char *ta_name, int sid,
 
     if (callback != NULL)
     {
-        cb_data.user_cb = callback;
-        cb_data.user_data = userdata;
+        cb_data = malloc(sizeof(*cb_data));
+        cb_data->user_cb = callback;
+        cb_data->user_data = userdata;
     }
     rc = rcf_ta_trrecv_start(ta_name, sid, csap, template_fname,
                                 (callback == NULL) ? NULL : ip4_pkt_handler,
-                                (callback == NULL) ? NULL : &cb_data,
+                                (callback == NULL) ? NULL : cb_data,
                                 timeout, num);
 
     RING("%s(): rc %x", __FUNCTION__, rc);
