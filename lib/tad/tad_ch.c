@@ -161,9 +161,11 @@ tad_ch_init(void)
  *
  * @return same value as strcmp. 
  */
-static int
+static inline int
 strcmp_imp(const char *l, const char *r)
 {
+    RING("%s(): %s and %s", __FUNCTION__, l, r);
+
     if (l == NULL)
     {
         if ((r == NULL) || (*r == 0))
@@ -204,6 +206,7 @@ rcf_ch_csap_create(struct rcf_comm_connection *handle,
 #else
     csap_p      new_csap;
     asn_value_p csap_nds;
+    char *lower_proto = NULL;
 
     int new_csap_id; 
     int level;
@@ -250,12 +253,18 @@ rcf_ch_csap_create(struct rcf_comm_connection *handle,
     INFO("length of PDU list in NDS: %d, csap depth %d", 
           syms, new_csap->depth); 
 
-    for (level = 0; rc == 0 && level < new_csap->depth; level ++)
-    {
+    /*
+     * Init csap layers from lower to upper 
+     */
+    level = new_csap->depth;
+    do {
         csap_layer_neighbour_list_p nbr_p; 
         csap_spt_type_p csap_spt_descr; 
-        char *lower_proto = NULL;
-        asn_value *nds_pdu = asn_read_indexed(csap_nds, level, "");
+        asn_value *nds_pdu;
+
+        level--;
+
+        nds_pdu = asn_read_indexed(csap_nds, level, "");
 
         if (nds_pdu == NULL)
         {
@@ -266,31 +275,44 @@ rcf_ch_csap_create(struct rcf_comm_connection *handle,
         new_csap->layers[level].csap_layer_pdu = nds_pdu;
         csap_spt_descr = new_csap->layers[level].proto_support;
 
-        if (level + 1 < new_csap->depth)
-            lower_proto = new_csap->layers[level + 1].proto;
+        RING("Try to init low proto '%s' curr proto '%s'",
+              (lower_proto == NULL) ? "(nil)" : lower_proto,
+              new_csap->layers[level].proto);
         
         for (nbr_p = csap_spt_descr->neighbours;
              nbr_p != NULL;
              nbr_p = nbr_p->next)
         {
-            if (strcmp_imp(lower_proto, nbr_p->nbr_type) == 0)
+            int a;
+            RING("test nbr proto %s", nbr_p->nbr_type);
+
+            if ((a = strcmp_imp(lower_proto, nbr_p->nbr_type)) == 0)
             {
                 rc = nbr_p->init_cb(new_csap_id, csap_nds, level);
                 if (rc != 0) 
                     ERROR("CSAP init error %X", rc);
+                RING("init low proto '%s' upper proto '%s' success",
+                      (lower_proto == NULL) ? "(nil)" : lower_proto,
+                      new_csap->layers[level].proto);
                 break;
             }
+            RING("cmp result %d", a);
         }
         if (nbr_p == NULL)
         {
             /* ERROR! there was not found neighvour -- 
                this stack is not supported.*/
             ERROR("Protocol stack for low '%s' under '%s' is not supported",
-                    lower_proto, new_csap->layers[level].proto);
+                  (lower_proto == NULL) ? "(nil)" : lower_proto,
+                  new_csap->layers[level].proto);
             rc = EPROTONOSUPPORT;
             break;
         }
-    }
+
+        RING("init loop, rc %X, level %d", rc, level);
+
+        lower_proto = new_csap->layers[level].proto; 
+    } while (rc == 0 && level > 0);
 
     if (rc == 0)
         SEND_ANSWER("0 %d", new_csap_id); 
@@ -691,11 +713,11 @@ rcf_ch_trrecv_start(struct rcf_comm_connection *handle,
     rc = 0;
     for (i = 0; i < num_units; i++)
     {
-        asn_value *pattern_unit;
-        int level;
+        asn_value *pattern_unit = NULL;
+        asn_value *pdus = NULL;
 
         if (sr_flag == 0)
-            pattern_unit = asn_read_indexed(nds, i, "");
+            asn_get_indexed(nds, (const asn_value **)&pattern_unit, i);
         else
             pattern_unit = nds;
 
@@ -709,60 +731,16 @@ rcf_ch_trrecv_start(struct rcf_comm_connection *handle,
         if (csap_descr_p->check_pdus_cb)
         {
             rc = csap_descr_p->check_pdus_cb(csap_descr_p, pattern_unit);
-            if (rc) 
+            if (rc != 0) 
             {
-                WARN("recv nds check_pdus error: %x", rc);
+                WARN("%s(): CSAP %d, check_pdus error: 0x%X",
+                     __FUNCTION__, csap_descr_p->id, rc);
                 break;
             }
         }
+        asn_get_subvalue(pattern_unit, (const asn_value **)&pdus, "pdus");
 
-        for (level = 0; (rc == 0) && (level < csap_descr_p->depth); level++)
-        {
-            csap_spt_type_p csap_spt_descr; 
-            asn_value_p level_pdu; 
-
-            level_pdu = asn_read_indexed(pattern_unit, level, "pdus"); 
-            if (level_pdu == NULL)
-            {
-                WARN("CSAP #%d, cannot get level pdu #%d", csap, level);
-                rc = ETADWRONGNDS;
-                break;
-            }
-
-            csap_spt_descr = csap_descr_p->layers[level].proto_support;
-
-            rc = csap_spt_descr->confirm_cb(csap_descr_p->id, level, 
-                                            level_pdu);
-
-            if (rc) 
-            {
-                WARN("%s(): csap %d confirm pat pdu lev %d(%s), fails: %x",
-                     __FUNCTION__, csap, level,
-                     csap_descr_p->layers[level].proto, rc);
-                break;
-            }
-            snprintf(label_buf, sizeof(label_buf), "pdus.%d.#%s", 
-                     level, csap_descr_p->layers[level].proto);
-
-            rc = asn_write_component_value(pattern_unit, level_pdu, 
-                                           label_buf);
-
-            asn_free_value(level_pdu);
-
-            if (rc)
-            {
-                WARN("replace component value with confirmed pdu " 
-                     "fails; 0x%x\n", rc);
-            } 
-        } /* loop by levels in pdus array */
-        if (sr_flag == 0)
-        {
-            if (rc == 0)
-            {
-                rc = asn_write_indexed(nds, pattern_unit, i, "");
-            }
-            asn_free_value(pattern_unit);
-        }
+        rc = tad_confirm_pdus(csap_descr_p, pdus);
         if (rc)
             break; 
     } /* loop by pattern units */
@@ -785,7 +763,7 @@ rcf_ch_trrecv_start(struct rcf_comm_connection *handle,
             (csap_descr_p->wait_for.tv_usec / 1000000);
         csap_descr_p->wait_for.tv_usec %= 1000000;
 
-        VERB("trrecv_start: csap %d, wait_for set to %u.%u", 
+        VERB("%s(): csap %d, wait_for set to %u.%u", __FUNCTION__,
              csap_descr_p->id,  
              csap_descr_p->wait_for.tv_sec,
              csap_descr_p->wait_for.tv_usec);

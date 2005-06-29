@@ -223,8 +223,8 @@ int eth_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
     /* =========== Ethernet type/length field ============ */
     rc = tad_data_unit_convert_by_label(tmpl_pdu, "eth-type",
                                         &spec_data->du_eth_type);
-    VERB("rc from DU convert eth-type %x, du-type: %d", 
-            rc, spec_data->du_eth_type.du_type); 
+    VERB("%s(CSAP %d): rc from DU convert eth-type %x, du-type: %d", 
+         __FUNCTION__, csap_id, rc, spec_data->du_eth_type.du_type); 
 
     if (rc)
     {
@@ -240,6 +240,8 @@ int eth_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
         asn_write_value_field(tmpl_pdu, &(spec_data->eth_type), 
                               sizeof(spec_data->eth_type), 
                               "eth-type.#plain");
+        RING("%s(CSAP %d): chosen eth-type %d", 
+             __FUNCTION__, csap_id, spec_data->eth_type); 
     }
 
     {
@@ -356,8 +358,10 @@ int eth_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
 
     UNUSED(arg_num);
     UNUSED(tmpl_pdu);/* All data from tmpl_pdu analyzed in confirm */
-
-    VERB("entered");
+#if 1
+    asn_save_to_file(tmpl_pdu, "/tmp/eth-tmpl.asn");
+#endif
+    F_VERB("%s(): entered", __FUNCTION__);
 
     if (csap_descr == NULL)
     {

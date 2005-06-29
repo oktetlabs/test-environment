@@ -238,6 +238,8 @@ tcp_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
     if (csap_descr->type == TAD_CSAP_DATA) /* TODO */
         return ETENOSUPP; 
 
+    asn_save_to_file(tmpl_pdu, "/tmp/tcp­tmpl.asn");
+
     spec_data = (tcp_csap_specific_data_t *)
                 csap_descr->layers[layer].specific_data; 
 
@@ -360,9 +362,9 @@ cleanup:
  *
  * @return zero on success or error code.
  */
-int tcp_match_bin_cb (int csap_id, int layer, const asn_value *pattern_pdu,
-                       const csap_pkts *  pkt, csap_pkts * payload, 
-                       asn_value_p  parsed_packet )
+int tcp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
+                     const csap_pkts *  pkt, csap_pkts * payload, 
+                     asn_value_p  parsed_packet )
 { 
     csap_p                    csap_descr;
     tcp_csap_specific_data_t *spec_data;

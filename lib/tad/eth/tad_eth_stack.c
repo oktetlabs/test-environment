@@ -566,7 +566,7 @@ eth_single_check_pdus(csap_p csap_descr, asn_value *traffic_nds)
     char choice_label[20];
     int rc;
 
-    UNUSED(csap_descr);
+    RING("%s(CSAP %d) called", __FUNCTION__, csap_descr->id);
 
     rc = asn_get_choice(traffic_nds, "pdus.0", choice_label, 
                         sizeof(choice_label));
@@ -605,7 +605,6 @@ int
 eth_single_init_cb (int csap_id, const asn_value *csap_nds, int layer)
 {
     int      rc; 
-    char     choice[100] = "";
     char     device_id[IFNAME_SIZE]; /**< ethernet interface id (e.g. eth0, eth1)      */
     char     local_addr[ETH_ALEN];   /**< local ethernet address                       */
     char     remote_addr[ETH_ALEN];  /**< remote ethernet address                      */    
@@ -620,6 +619,8 @@ eth_single_init_cb (int csap_id, const asn_value *csap_nds, int layer)
     int                         eth_type;      /**< Ethernet type                          */
     char     str_index_buf[10];
     
+    RING("%s called for csap %d, layer %d",
+         __FUNCTION__, csap_id, layer); 
 
     if (csap_nds == NULL)
         return TE_RC(TE_TAD_CSAP, ETEWRONGPTR);
@@ -633,17 +634,11 @@ eth_single_init_cb (int csap_id, const asn_value *csap_nds, int layer)
     if (rc)
     {
         val_len = asn_get_length(csap_nds, "");
-        ERROR("eth_single_init_cb called for csap %d, layer %d,"
-              "rc %X getting '%s', ndn has len %d\n", 
-              csap_id, layer, rc, str_index_buf, val_len);
+        ERROR("%s(CSAP %d), layer %d, rc %X getting '%s', ndn has len %d", 
+              __FUNCTION__, csap_id, layer, rc, str_index_buf, val_len);
         return TE_RC(TE_TAD_CSAP, EINVAL);
     }
 
-#if 1
-    rc = asn_get_choice(eth_csap_spec, "", choice, sizeof(choice));
-    VERB("eth_single_init_cb called for csap %d, layer %d, ndn with type %s\n", 
-                csap_id, layer, choice);
-#endif
     
     val_len = sizeof(device_id);
     rc = asn_read_value_field(eth_csap_spec, device_id, &val_len, "device-id");

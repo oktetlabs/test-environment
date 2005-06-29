@@ -552,9 +552,8 @@ tad_tr_send_thread(void * arg)
     if ((csap_descr->state   & TAD_STATE_FOREGROUND) || 
         (csap_descr->command == TAD_OP_STOP) )
     {
-        VERB(
-                "blocked or long trsend finished. rc %x, sent %d", 
-                rc, sent);
+        VERB("blocked or long trsend finished. rc %x, sent %d", 
+             rc, sent);
 
         csap_descr->command = TAD_OP_IDLE;
         csap_descr->state   = 0;

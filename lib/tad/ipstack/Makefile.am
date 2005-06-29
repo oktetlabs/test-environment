@@ -1,5 +1,5 @@
 
-AM_CPPFLAGS=-I$(DESTDIR)/$(prefix)/include -I$(top_srcdir)
+AM_CPPFLAGS=@TAD_CH_DEFS@ -I$(DESTDIR)/$(prefix)/include -I$(top_srcdir)
 AM_LDFLAGS=@TE_LDFLAGS@ 
 
 

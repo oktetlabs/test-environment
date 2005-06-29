@@ -56,11 +56,13 @@
 #endif
 
 #include <sys/ioctl.h>
-#include <net/if.h>
-#include <sys/ioctl.h>
 #include <netinet/in.h>
 #include <errno.h>
 #include <string.h>
+
+#ifdef WITH_ETH
+#include "../eth/tad_eth_impl.h"
+#endif
 
 #include "tad_ipstack_impl.h"
 
@@ -320,6 +322,7 @@ ip4_single_destroy_cb(int csap_id, int layer)
 }
 
 
+#ifdef WITH_ETH
 /**
  * Callback for init ip CSAP layer  if single in stack.
  *
@@ -334,10 +337,13 @@ int
 ip4_eth_init_cb(int csap_id, const asn_value *csap_nds, int layer)
 { 
     ip4_csap_specific_data_t *spec_data; 
-
+    eth_csap_specific_data_t *eth_spec_data; 
     csap_p csap_descr;      /**< csap descriptor   */ 
     size_t val_len;
     int    rc;
+
+    VERB("%s called for csap %d, layer %d",
+         __FUNCTION__, csap_id, layer); 
 
     if (csap_nds == NULL)
         return ETEWRONGPTR;
@@ -350,6 +356,17 @@ ip4_eth_init_cb(int csap_id, const asn_value *csap_nds, int layer)
     if (spec_data == NULL)
         return ENOMEM;
 
+
+    if (layer + 1 >= csap_descr->depth)
+    {
+        ERROR("%s(CSAP %d) too large layer %d!, depth %d", 
+              __FUNCTION__, csap_id, layer, csap_descr->depth);
+        return EINVAL;
+    }
+
+    eth_spec_data = (eth_csap_specific_data_t *)
+        csap_descr->layers[layer + 1].specific_data;
+
     csap_descr->layers[layer].specific_data = spec_data;
     csap_descr->layers[layer].get_param_cb = ip4_get_param_cb;
 
@@ -360,17 +377,26 @@ ip4_eth_init_cb(int csap_id, const asn_value *csap_nds, int layer)
                               &spec_data->remote_addr, &val_len,
                               "remote-addr.#plain");
     if (rc != 0)
-        WARN("%s(): read remote addr fails %X", __FUNCTION__, rc);
+    {
+        RING("%s(): read remote addr fails %X", __FUNCTION__, rc);
+        spec_data->remote_addr.s_addr = 0;
+    }
 
     val_len = sizeof(spec_data->local_addr);
     rc = asn_read_value_field(csap_descr->layers[layer].csap_layer_pdu,
                               &spec_data->local_addr, &val_len,
                               "local-addr.#plain");
     if (rc != 0)
-        WARN("%s(): read local addr fails %X", __FUNCTION__, rc);
+    {
+        RING("%s(): read local addr fails %X", __FUNCTION__, rc);
+        spec_data->local_addr.s_addr = 0;
+    }
 
     F_VERB("%s(): csap %d, layer %d",
             __FUNCTION__, csap_id, layer); 
+
+    if (eth_spec_data->eth_type == 0)
+        eth_spec_data->eth_type = 0x0800;
 
     UNUSED(csap_nds);
     return 0;
@@ -399,12 +425,16 @@ ip4_eth_destroy_cb(int csap_id, int layer)
     return 0;
 }
 
+#endif /* WITH_ETH */
 
 int 
 ip4_check_pdus(csap_p csap_descr, asn_value *traffic_nds)
 {
     UNUSED(csap_descr);
     UNUSED(traffic_nds);
+
+    RING("%s(CSAP %d) called", __FUNCTION__, csap_descr->id);
+
     return 0;
 }
 
