@@ -164,8 +164,6 @@ tad_ch_init(void)
 static inline int
 strcmp_imp(const char *l, const char *r)
 {
-    RING("%s(): %s and %s", __FUNCTION__, l, r);
-
     if (l == NULL)
     {
         if ((r == NULL) || (*r == 0))
@@ -275,28 +273,22 @@ rcf_ch_csap_create(struct rcf_comm_connection *handle,
         new_csap->layers[level].csap_layer_pdu = nds_pdu;
         csap_spt_descr = new_csap->layers[level].proto_support;
 
-        RING("Try to init low proto '%s' curr proto '%s'",
-              (lower_proto == NULL) ? "(nil)" : lower_proto,
-              new_csap->layers[level].proto);
-        
         for (nbr_p = csap_spt_descr->neighbours;
              nbr_p != NULL;
              nbr_p = nbr_p->next)
         {
             int a;
-            RING("test nbr proto %s", nbr_p->nbr_type);
 
             if ((a = strcmp_imp(lower_proto, nbr_p->nbr_type)) == 0)
             {
                 rc = nbr_p->init_cb(new_csap_id, csap_nds, level);
                 if (rc != 0) 
                     ERROR("CSAP init error %X", rc);
-                RING("init low proto '%s' upper proto '%s' success",
-                      (lower_proto == NULL) ? "(nil)" : lower_proto,
-                      new_csap->layers[level].proto);
+                INFO("init low proto '%s' upper proto '%s' success",
+                     (lower_proto == NULL) ? "(nil)" : lower_proto,
+                     new_csap->layers[level].proto);
                 break;
             }
-            RING("cmp result %d", a);
         }
         if (nbr_p == NULL)
         {
@@ -308,8 +300,6 @@ rcf_ch_csap_create(struct rcf_comm_connection *handle,
             rc = EPROTONOSUPPORT;
             break;
         }
-
-        RING("init loop, rc %X, level %d", rc, level);
 
         lower_proto = new_csap->layers[level].proto; 
     } while (rc == 0 && level > 0);
