@@ -31,6 +31,8 @@
 #ifndef __TE_TAD_COMMON_H__
 #define __TE_TAD_COMMON_H__
 
+#include "te_stdint.h"
+
 /**
  * Infinitive timeout to wait forever.
  *
@@ -66,5 +68,34 @@ typedef enum {
                              waiting for *_stop command from Test. */
 } tad_csap_status_t;
     
+/**
+ * Calculate 16-bit checksum: 16-bit one's complement of the one's
+ * complement sum of all 16 bit words.
+ * Function works correctly with length less then 64k.
+ *
+ * @param data    pointer to the data which checksum should be calculated
+ * @param length  length of the data
+ *
+ * @return calculated checksum.
+ */
+static inline uint16_t
+calculate_checksum(const void *data, size_t length)
+{
+    uint32_t  checksum;
+    uint16_t *ch_p;
+
+    for (ch_p = (uint16_t *)data, checksum = 0; 
+         length >= 2;
+         length -= 2, checksum += *(ch_p++)); 
+    if (length == 1)
+    {
+        union {uint8_t bytes[2]; uint16_t num;} a;
+        a.bytes[0] = *((uint8_t *)ch_p);
+        a.bytes[1] = 0;
+        checksum += a.num;
+    }
+
+    return (checksum & 0xffff) + (checksum >> 16);
+}
 
 #endif /* !__TE_TAD_COMMON_H__ */

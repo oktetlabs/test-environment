@@ -45,7 +45,9 @@
 
 #include "te_defs.h"
 #include "te_errno.h"
+#include "te_stdint.h"
 #include "tad_common.h"
+
 #include "rcf_api.h"
 
 #include "tapi_tad.h"

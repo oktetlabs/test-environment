@@ -504,17 +504,6 @@ extern int tad_data_unit_to_bin(const tad_data_unit_t *du_tmpl,
                                 uint8_t *data_place, size_t d_len);
 
 
-/**
- * Calculate 16-bit checksum: 16-bit one's complement of the one's
- * complement sum of all 16 bit words.
- * Function works correctly with length less then 64k.
- *
- * @param data    pointer to the data which checksum should be calculated
- * @param length  length of the data
- *
- * @return calculated checksum.
- */
-extern uint16_t calculate_checksum(const void *data, size_t length);
 
 #ifdef __cplusplus
 } /* extern "C" */
