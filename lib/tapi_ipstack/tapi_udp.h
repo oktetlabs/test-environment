@@ -134,6 +134,26 @@ extern int tapi_udp4_dgram_start_recv(const char *ta_name,  int sid,
             udp4_callback callback, void *user_data);
 
 /**
+ * Start receiving of UDP datagrams via 'udp.ip4.eth' CSAP, non-block
+ * method.
+ * 
+ * @param ta_name       Test Agent name
+ * @param sid           RCF SID
+ * @param csap          Identifier of CSAP
+ * @param udp_dgram     UDP datagram with pattern for filter
+ * @param callback      Callback function, which will be call for each
+ *                      received packet
+ * @param user_data     Opaque data to be passed into the callback function
+ *
+ * @return Zero on success or error code.
+ */
+extern int tapi_udp_ip4_eth_recv_start(const char *ta_name, int sid,
+                                       csap_handle_t csap,
+                                       const udp4_datagram *udp_dgram,
+                                       udp4_callback callback,
+                                       void *user_data);
+
+/**
  * Receive some number of UDP datagrams via 'data.udp.ip4' CSAP, block
  * method.
  * 
@@ -177,5 +197,30 @@ extern int tapi_udp4_dgram_send_recv(const char *ta_name, int sid,
                                      const udp4_datagram *dgram_sent,
                                      udp4_datagram *dgram_recv);
 
+/**
+ * Create 'udp.ip4.eth' CSAP on the specified Agent
+ *
+ * @param ta_name       Test Agent name
+ * @param sid           RCF SID
+ * @param eth_dev       Name of Ethernet interface
+ * @param loc_mac       Local MAC address (or NULL)
+ * @param rem_mac       Remote MAC address (or NULL)
+ * @param loc_addr      Local IP address in network byte order (or NULL)
+ * @param rem_addr      Remote IP address in network byte order (or NULL)
+ * @param loc_port      Local UDP port in network byte order
+ * @param rem_port      Remote UDP port in network byte order
+ * @param udp_csap      Location for the CSAP handle (OUT)
+ *
+ * @return Zero on success or error code
+ */
+extern int tapi_udp_ip4_eth_csap_create(const char *ta_name, int sid,
+                                        const char *eth_dev,
+                                        const uint8_t *loc_mac,
+                                        const uint8_t *rem_mac,
+                                        in_addr_t loc_addr,
+                                        in_addr_t rem_addr,
+                                        uint16_t loc_port,
+                                        uint16_t rem_port,
+                                        csap_handle_t *udp_csap);
 
 #endif /* !__TE_TAPI_UDP_H__ */
