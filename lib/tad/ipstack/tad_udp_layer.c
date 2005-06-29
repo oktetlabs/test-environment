@@ -65,44 +65,130 @@ char* udp_get_param_cb (csap_p csap_descr, int level, const char *param)
  */ 
 int 
 udp_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
-{ 
-    int rc;
-    csap_p csap_descr = csap_find(csap_id);
-    size_t len;
+{
+    int                       rc;
+    csap_p                    csap_descr;
+    size_t                    len;
+    udp_csap_specific_data_t *udp_spec_data;
 
-    udp_csap_specific_data_t * udp_spec_data = 
-        (udp_csap_specific_data_t *) csap_descr->layers[layer].specific_data; 
-    len = sizeof(udp_spec_data->src_port);
-
-    rc = asn_read_value_field(tmpl_pdu, &udp_spec_data->src_port, 
-                                &len, "src-port");
-    if (rc == EASNINCOMPLVAL)
+    if ((csap_descr = csap_find(csap_id)) == NULL)
     {
-        udp_spec_data->src_port = 0;
-        rc = 0;
+        ERROR("%s: failed to find csap_descr by csap_id %d",
+              __FUNCTION__, csap_id);
+        return ETADCSAPNOTEX;
+    }
+    udp_spec_data = (udp_csap_specific_data_t *)
+                    csap_descr->layers[layer].specific_data;
+    if (udp_spec_data == NULL)
+    {
+        ERROR("%s: CSAP-specific data is NULL", __FUNCTION__);
+        return ETEWRONGPTR;
     }
 
+    /* Read parameters from pattern to CSAP spec_data */
+    len = sizeof(udp_spec_data->src_port);
+    rc = asn_read_value_field(tmpl_pdu, &udp_spec_data->src_port, 
+                              &len, "src-port");
+    if (rc == EASNINCOMPLVAL)
+        udp_spec_data->src_port = 0;
+    else if (rc != 0)
+    {
+        ERROR("%s: failed to read src-port from pattern: %X",
+              __FUNCTION__, rc);
+        return TE_RC(TE_TAD_CSAP, rc);
+    }
 
-    if (rc == 0)
-        rc = asn_read_value_field(tmpl_pdu, &udp_spec_data->dst_port, 
-                                &len, "dst-port");
+    rc = asn_read_value_field(tmpl_pdu, &udp_spec_data->dst_port, 
+                              &len, "dst-port");
     if (rc == EASNINCOMPLVAL)
     {
         udp_spec_data->dst_port = 0;
+    }
+    else if (rc != 0)
+    {
+        ERROR("%s: failed to read dst-port from pattern: %X",
+              __FUNCTION__, rc);
+        return TE_RC(TE_TAD_CSAP, rc);
+    }
 
-        if ((udp_spec_data->remote_port == 0) && 
-            (csap_descr->state & TAD_OP_SEND))
+    /* Update pattern with CSAP defaults */
+    if (csap_descr->command == TAD_OP_RECV)
+    {
+        /* receive, local is destination */
+        if (udp_spec_data->dst_port == 0 && udp_spec_data->local_port != 0)
         {
-            WARN("%s: sending csap #%d, "
-                 "has no dst-port in template and has no remote port",
-                 __FUNCTION__, csap_id);
-            rc = EINVAL;
+            VERB("%s: set dst-port to %u",
+                  __FUNCTION__, udp_spec_data->local_port);
+            rc = asn_write_value_field(tmpl_pdu, &udp_spec_data->local_port,
+                                       sizeof(udp_spec_data->local_port),
+                                       "dst-port.#plain");
+            if (rc != 0)
+            {
+                ERROR("%s: failed to update dst-port in pattern: %X",
+                      __FUNCTION__, rc);
+                return TE_RC(TE_TAD_CSAP, rc);
+            }
         }
-        else
-            rc = 0;
-    } 
+        if (udp_spec_data->src_port == 0 && udp_spec_data->remote_port != 0)
+        {
+            VERB("%s: set src-port to %u",
+                  __FUNCTION__, udp_spec_data->remote_port);
+            rc = asn_write_value_field(tmpl_pdu, &udp_spec_data->remote_port,
+                                       sizeof(udp_spec_data->remote_port),
+                                       "src-port.#plain");
+            if (rc != 0)
+            {
+                ERROR("%s: failed to update src-port in pattern: %X",
+                      __FUNCTION__, rc);
+                return TE_RC(TE_TAD_CSAP, rc);
+            }
+        }
+    }
+    else
+    {
+        /* send, local is source */
+        if (udp_spec_data->src_port == 0 && udp_spec_data->local_port != 0)
+        {
+            VERB("%s: set src-port to %u",
+                  __FUNCTION__, udp_spec_data->local_port);
+            rc = asn_write_value_field(tmpl_pdu, &udp_spec_data->local_port,
+                                       sizeof(udp_spec_data->local_port),
+                                       "src-port.#plain");
+            if (rc != 0)
+            {
+                ERROR("%s: failed to update src-port in pattern: %X",
+                      __FUNCTION__, rc);
+                return TE_RC(TE_TAD_CSAP, rc);
+            }
+        }
+        if (udp_spec_data->dst_port == 0)
+        {
+            if (udp_spec_data->remote_port != 0)
+            {
+                VERB("%s: set dst-port to %u",
+                      __FUNCTION__, udp_spec_data->remote_port);
+                rc = asn_write_value_field(tmpl_pdu,
+                                           &udp_spec_data->remote_port,
+                                           sizeof(udp_spec_data->remote_port),
+                                           "dst-port.#plain");
+                if (rc != 0)
+                {
+                    ERROR("%s: failed to update dst-port in pattern: %X",
+                          __FUNCTION__, rc);
+                    return TE_RC(TE_TAD_CSAP, rc);
+                }
+            }
+            else
+            {
+                ERROR("%s: sending csap #%d, "
+                      "has no dst-port in template and has no remote port",
+                      __FUNCTION__, csap_id);
+                return TE_RC(TE_TAD_CSAP, EINVAL);
+            }
+        }
+    }
 
-    return TE_RC(TE_TAD_CSAP, rc);
+    return 0;
 }
 
 /**
@@ -188,17 +274,76 @@ udp_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
  *
  * @return zero on success or error code.
  */
-int udp_match_bin_cb (int csap_id, int layer, const asn_value *pattern_pdu,
-                       const csap_pkts *  pkt, csap_pkts * payload, 
-                       asn_value_p  parsed_packet )
-{ 
-    UNUSED(csap_id);
+int udp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
+                     const csap_pkts *pkt, csap_pkts *payload,
+                     asn_value_p parsed_packet)
+{
+    asn_value  *udp_header_pdu = NULL;
+    csap_p      csap_descr;
+    uint8_t    *data;
+    int         rc = 0;
+
     UNUSED(layer);
-    UNUSED(pattern_pdu);
-    UNUSED(pkt);
-    UNUSED(payload);
-    UNUSED(parsed_packet); 
-    return 0;
+
+    if (pkt == NULL || payload == NULL)
+    {
+        ERROR("%s: pkt or payload is NULL", __FUNCTION__);
+        return ETEWRONGPTR;
+    }
+    data = (uint8_t *)(pkt->data);
+
+    if ((csap_descr = csap_find(csap_id)) == NULL)
+    {
+        ERROR("%s: csap_descr is NULL for csap id %d", __FUNCTION__, csap_id);
+        return ETADCSAPNOTEX;
+    }
+
+    /* Match UDP header fields */
+    if (parsed_packet != 0)
+        udp_header_pdu = asn_init_value(ndn_udp_header);
+
+#define CHECK_FIELD(_asn_label, _size) \
+    do {                                                        \
+        rc = ndn_match_data_units(pattern_pdu, udp_header_pdu,  \
+                                  data, _size, _asn_label);     \
+        if (rc != 0)                                            \
+        {                                                       \
+            VERB("%s: field '%s' not match: %X",                \
+                 __FUNCTION__, _asn_label, rc);                 \
+            return rc;                                          \
+        }                                                       \
+        data += _size;                                          \
+    } while(0)
+
+    CHECK_FIELD("src-port", 2);
+    CHECK_FIELD("dst-port", 2);
+    CHECK_FIELD("length", 2);
+    CHECK_FIELD("checksum", 2);
+#undef CHECK_FIELD
+
+    /* Passing payload to upper layer */
+    memset(payload, 0, sizeof(*payload));
+    payload->len = (pkt->len - (data - (uint8_t *)(pkt->data)));
+    payload->data = malloc(payload->len);
+    if (payload->data == NULL)
+    {
+        ERROR("%s: failed to allocate memory for payload", __FUNCTION__);
+        asn_free_value(udp_header_pdu);
+        return ENOMEM;
+    }
+    memcpy(payload->data, data, payload->len);
+
+    /* Insert UDP header data */
+    if (parsed_packet != NULL)
+    {
+        rc = asn_write_component_value(parsed_packet, udp_header_pdu, "#udp");
+        if (rc != 0)
+            ERROR("%s: failed to insert UDP header to packet: %X",
+                  __FUNCTION__, rc);
+    }
+    asn_free_value(udp_header_pdu);
+
+    return rc;
 }
 
 
