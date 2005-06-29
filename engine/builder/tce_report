@@ -20,7 +20,7 @@ if test -n "$NUT_SOURCES"; then
     echo "*** Test coverage report for $tce_taname:" >$outfile
     find $NUT_SOURCES \( -name '*.gcov' -o -name '*.da' \) -exec rm -f '{}' ';'
         tar -x -P -f ${TE_BUILD}/tce_${tce_taname}.tar
-        (find $NUT_SOURCES -name '*.da' -exec tce_gcov '{}' ';' && \
+        (find $NUT_SOURCES \( -name '*.da' -o -name '.[a-z]*.da' \) -exec tce_gcov '{}' ';' && \
             find $NUT_SOURCES -name '*.gcov' -exec tce_merge $mergefile '{}' ';') >> $outfile
         echo >>$outfile
         tce_count $outfile '^branch[[:space:]]*[0-9]+ never executed' '^branch[[:space:]]*[0-9]+ taken' | 
