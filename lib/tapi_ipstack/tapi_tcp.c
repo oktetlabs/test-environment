@@ -91,7 +91,7 @@ tapi_tcp_ip4_eth_csap_create(const char *ta_name, int sid,
     char  csap_fname[] = "/tmp/te_tcp_csap.XXXXXX";
     int   rc;
 
-    asn_value *csap_spec;
+    asn_value *csap_spec = NULL;
 
     do {
         int num = 0;
