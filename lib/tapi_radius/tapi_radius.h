@@ -129,9 +129,9 @@ extern int tapi_radius_recv_start(const char *ta, int sid, csap_handle_t csap,
                                   void *user_data, unsigned int timeout);
 extern int tapi_radius_csap_create(const char *ta, int sid,
                                    const char *device,
-                                   const uint8_t *net_addr, uint16_t port,
+                                   const in_addr_t net_addr, uint16_t port,
                                    csap_handle_t *csap);
-                                   
+
 /*
  * Interface to configure RADIUS Server:
  * This API simplify managing of RADIUS Server configuration, which is

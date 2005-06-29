@@ -272,47 +272,12 @@ tapi_radius_parse_packet(const uint8_t *data, size_t data_len,
 
 int
 tapi_radius_csap_create(const char *ta, int sid, const char *device,
-                        const uint8_t *net_addr, uint16_t port,
+                        const in_addr_t net_addr, uint16_t port,
                         csap_handle_t *csap)
 {
-    int        rc;
-    int        num = 0;
-    char       csap_fname[] = "/tmp/te_radius_csap.XXXXXX";
-    asn_value *csap_spec;
-
-    mkstemp(csap_fname);
-    rc = asn_parse_value_text("{ udp:{}, ip4:{}, eth:{} }",
-                              ndn_csap_spec, &csap_spec, &num);
-    if (rc != 0)
-        return rc;
-
-    do {
-        if (device != NULL)
-        {
-            rc = asn_write_value_field(csap_spec, device, strlen(device),
-                                       "2.#eth.device-id.#plain");
-            if (rc != 0) break;
-        }
-        if (net_addr != NULL)
-        {
-            rc = asn_write_value_field(csap_spec, net_addr, 4,
-                                       "1.#ip4.local-addr.#plain");
-            if (rc != 0) break;
-        }
-        rc = asn_write_value_field(csap_spec, &port, sizeof(port),
-                                   "0.#udp.local-port.#plain");
-        if (rc != 0) break;
-
-        rc = asn_save_to_file(csap_spec, csap_fname);
-        if (rc != 0) break;
-
-        rc = rcf_ta_csap_create(ta, sid, "udp.ip4.eth", csap_fname, csap);
-//        unlink(csap_fname);
-    } while (0);
-
-    asn_free_value(csap_spec);
-
-    return rc;
+    return tapi_udp_ip4_eth_csap_create(ta, sid, device, NULL, NULL,
+                                        net_addr, INADDR_ANY,
+                                        port, 0, csap);
 }
 
 typedef struct {
@@ -346,7 +311,7 @@ tapi_radius_recv_start(const char *ta, int sid, csap_handle_t csap,
 {
     radius_cb_data_t  *cb_data;
 
-    cb_data = (radius_cb_data_t *)malloc(sizeof(radius_cb_data_t));
+    cb_data = (radius_cb_data_t *)calloc(1, sizeof(radius_cb_data_t));
     if (cb_data == NULL)
     {
         ERROR("%s: failed to allocate memory", __FUNCTION__);
@@ -354,10 +319,9 @@ tapi_radius_recv_start(const char *ta, int sid, csap_handle_t csap,
     }
     cb_data->callback = user_callback;
     cb_data->userdata = user_data;
-/*    rc = tapi_tad_trrecv_start(ta, sid, csap, NULL, tapi_radius_callback,
-                               cb_data, timeout, 0);*/
-    return tapi_udp4_dgram_start_recv(ta, sid, csap, NULL,
-                                    tapi_radius_callback, cb_data);
+
+    return tapi_udp_ip4_eth_recv_start(ta, sid, csap, NULL,
+                                      tapi_radius_callback, cb_data);
 }
 
 
