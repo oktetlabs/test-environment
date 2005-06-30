@@ -585,7 +585,6 @@ rcf_ch_trrecv_start(struct rcf_comm_connection *handle,
                     unsigned int num, te_bool results, unsigned int timeout)
 {
 #ifndef DUMMY_TAD 
-    char        label_buf[20];
     pthread_t   recv_thread;
     int         syms;
     int         rc;
