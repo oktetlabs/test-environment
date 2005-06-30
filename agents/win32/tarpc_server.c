@@ -4411,6 +4411,7 @@ TARPC_FUNC(wsa_ioctl, {},
     struct sockaddr_storage  addr;
     QOS                      qos;
     struct tcp_keepalive     tka;
+    GUID                     guid;
 
     switch (in->req.type)
     {
@@ -4433,7 +4434,12 @@ TARPC_FUNC(wsa_ioctl, {},
             break;
 
         case WSA_IOCTL_GUID:
-            inbuf = &in->req.wsa_ioctl_request_u.req_guid;
+            guid.Data1 = in->req.wsa_ioctl_request_u.req_guid.data1;
+            guid.Data2 = in->req.wsa_ioctl_request_u.req_guid.data2;
+            guid.Data3 = in->req.wsa_ioctl_request_u.req_guid.data3;
+            memcpy(guid.Data4,
+                   in->req.wsa_ioctl_request_u.req_guid.data4.data4_val, 8);
+            inbuf = &guid;
             inbuf_len = sizeof(GUID);
             break;
 

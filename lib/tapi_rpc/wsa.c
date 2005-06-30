@@ -2666,9 +2666,10 @@ rpc_wsa_ioctl(rcf_rpc_server *rpcs, int s, rpc_wsa_ioctl_code control_code,
               unsigned int outbuf_len, unsigned int *bytes_returned,
               rpc_overlapped overlapped, te_bool callback)
 {
-    rcf_rpc_op          op;
-    tarpc_wsa_ioctl_in  in;
-    tarpc_wsa_ioctl_out out;
+    rcf_rpc_op           op;
+    tarpc_wsa_ioctl_in   in;
+    tarpc_wsa_ioctl_out  out;
+    void                *buf = NULL;
 
     if (rpcs == NULL)
     {
@@ -2724,10 +2725,18 @@ rpc_wsa_ioctl(rcf_rpc_server *rpcs, int s, rpc_wsa_ioctl_code control_code,
             if (inbuf != NULL)
             {
                 in.req.type = WSA_IOCTL_GUID;
-                /* Here inbuf must be a pointer to rpc_guid structure.
-                 * rpc_guid and tarpc_guid declarations are identical,
-                 * so we can freely cast each to other. */
-                in.req.wsa_ioctl_request_u.req_guid = *(tarpc_guid *)inbuf;
+                /* Here inbuf must be a pointer to rpc_guid structure. */
+                in.req.wsa_ioctl_request_u.req_guid.data1 =
+                    ((rpc_guid *)inbuf)->data1;
+                in.req.wsa_ioctl_request_u.req_guid.data2 =
+                    ((rpc_guid *)inbuf)->data2;
+                in.req.wsa_ioctl_request_u.req_guid.data3 =
+                    ((rpc_guid *)inbuf)->data3;
+                buf = malloc(8);
+                memcpy(buf, ((rpc_guid *)inbuf)->data4, 8);
+                in.req.wsa_ioctl_request_u.req_guid.data4.data4_val =
+                    (uint8_t *)buf;
+                in.req.wsa_ioctl_request_u.req_guid.data4.data4_len = 8;
             }
             break;
 
@@ -2804,6 +2813,8 @@ rpc_wsa_ioctl(rcf_rpc_server *rpcs, int s, rpc_wsa_ioctl_code control_code,
                 *bytes_returned = out.bytes_returned;
         }
     }
+
+    free(buf);
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(wsa_ioctl, out.retval);
 
