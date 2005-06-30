@@ -572,7 +572,7 @@ tapi_tcp_find_conn(tapi_tcp_handler_t handler)
 }
 
 /**
- * Add new TCP connection descriptor into databse and assign hanlder to it.
+ * Add new TCP connection descriptor into databse and assign handler to it.
  * Descriptor structure should be already filled with TCP-related info.
  *
  * @param descr         pointer to descriptor to be inserted
@@ -905,6 +905,7 @@ tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode,
                                TAD_TIMEOUT_INF, 0); 
 
     /* send SYN - if we are client */
+
     if (mode == TAPI_TCP_CLIENT)
     {
         asn_value *syn_template;
@@ -913,6 +914,8 @@ tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode,
                                NULL, 0, &syn_template);
         CHECK_ERROR("%s(): make syn template failed, rc %X",
                     __FUNCTION__, rc);
+
+        asn_save_to_file(syn_template, "/tmp/syn-tmpl.asn");
 
         rc = tapi_tad_trsend_start(agt, snd_sid, snd_csap, 
                                    syn_template, RCF_MODE_BLOCKING);
@@ -923,7 +926,7 @@ tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode,
 
     num = 0;
 
-    /* wait SYN */ 
+    /* wait SYN of SYN_ACK */ 
 
     rc = rcf_ta_trrecv_get(agt, conn_descr->rcv_sid,
                            conn_descr->rcv_csap, &num);
@@ -946,6 +949,7 @@ tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode,
         goto cleanup;
     }
 
+    /* Send ACK or SYN-ACK*/ 
 
     rc = tapi_tcp_template(conn_descr->our_isn + 1,
                            conn_descr->peer_isn + 1,
@@ -953,6 +957,8 @@ tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode,
                            TRUE, NULL, 0, &syn_ack_template);
     CHECK_ERROR("%s(): make SYN-ACK template failed, rc %X",
                 __FUNCTION__, rc);
+
+    asn_save_to_file(syn_ack_template, "/tmp/syn-ack-tmpl.asn");
 
     rc = tapi_tad_trsend_start(agt, snd_sid, snd_csap, 
                                syn_ack_template, RCF_MODE_BLOCKING);
@@ -1006,25 +1012,27 @@ cleanup:
 int
 tapi_tcp_close_connection(tapi_tcp_handler_t handler, int timeout)
 {
-    tapi_tcp_connection_t *conn_descr = tapi_tcp_find_conn(handler);
+    tapi_tcp_connection_t *conn_descr;
     int num;
-    int syms;
     int rc;
     asn_value *fin_template = NULL;
 
+    tapi_tcp_pos_t new_seqn;
+    tapi_tcp_pos_t new_ackn;
+
     uint8_t flags;
 
-    rc = asn_parse_value_text("{ pdus {tcp:{}, ip4:{}, eth{} } }", 
-                              ndn_traffic_template, 
-                              &fin_template, &syms);
-    if (rc != 0)
-    {
-        ERROR("%s(): cannot parse template: %X, sym %d", 
-              __FUNCTION__, rc, syms);
-        return TE_RC(TE_TAPI, rc);
-    }
+    tapi_tcp_conns_db_init();
+    if ((conn_descr = tapi_tcp_find_conn(handler)) == NULL)
+        return TE_RC(TE_TAPI, EINVAL);
 
-    flags = TCP_FIN_FLAG;
+
+    new_seqn = conn_descr->seq_sent + 1;
+    new_ackn = conn_descr->seq_got + 1;
+    tapi_tcp_template(new_seqn, new_ackn, FALSE, TRUE, 
+                      NULL, 0, &fin_template);
+
+    flags = TCP_FIN_FLAG | TCP_ACK_FLAG;
     rc = asn_write_value_field(fin_template, &flags, sizeof(flags), 
                                "pdus.0.#tcp.flags.#plain");
     if (rc != 0)
@@ -1032,7 +1040,7 @@ tapi_tcp_close_connection(tapi_tcp_handler_t handler, int timeout)
         ERROR("%s(): set fin flag failed %X", 
               __FUNCTION__, rc);
         return TE_RC(TE_TAPI, rc);
-    }
+    } 
 
     rc = tapi_tad_trsend_start(conn_descr->agt, conn_descr->snd_sid,
                                conn_descr->snd_csap, 
@@ -1042,6 +1050,8 @@ tapi_tcp_close_connection(tapi_tcp_handler_t handler, int timeout)
         ERROR("%s(): send FIN failed %X", __FUNCTION__, rc);
         return TE_RC(TE_TAPI, rc);
     } 
+    conn_descr->seq_sent = new_seqn;
+    conn_descr->ack_sent = new_ackn;
 
     num = 0;
     rc = rcf_ta_trrecv_get(conn_descr->agt, conn_descr->rcv_sid,
@@ -1064,11 +1074,49 @@ tapi_tcp_close_connection(tapi_tcp_handler_t handler, int timeout)
         }
     }
 
-    if (!conn_descr->fin_got)
+    if (conn_descr->fin_got)
     {
-        ERROR("%s(): send FIN failed %X", __FUNCTION__, rc);
+        asn_value *ack_template;
+
+        tapi_tcp_template(conn_descr->seq_sent,
+                          conn_descr->seq_got + 1, FALSE, TRUE, 
+                          NULL, 0, &ack_template);
+
+        asn_save_to_file(ack_template, "/tmp/syn-tmpl.asn");
+
+        rc = tapi_tad_trsend_start(conn_descr->agt, conn_descr->snd_sid,
+                                   conn_descr->snd_csap, 
+                                   ack_template, RCF_MODE_BLOCKING);
+
+        if (rc != 0)
+        {
+            ERROR("%s(): send ACK failed, rc %X", __FUNCTION__, rc); 
+            return rc;
+        }
+        conn_descr->ack_sent = conn_descr->seq_got + 1;
+    }
+    else
+    {
+        ERROR("%s(conn %d): wait for answer FIN timed out",
+              __FUNCTION__, handler);
         return ETIMEDOUT;
     }
+
+    if (conn_descr->ack_got < conn_descr->seq_sent)
+    {
+        ERROR("%s(conn %d): don't receive ack for our FIN"
+              " ack got %x, seq sent %x",
+              __FUNCTION__, handler,
+              conn_descr->ack_got, conn_descr->seq_sent);
+        return ETIMEDOUT;
+    }
+
+    rc = rcf_ta_trrecv_stop(conn_descr->agt, conn_descr->rcv_sid,
+                            conn_descr->rcv_csap, &num);
+    if (rc != 0)
+        WARN("$s(conn %d) trrecv_stop on CSAP %d failed %X", 
+             __FUNCTION__, handler, conn_descr->rcv_csap, rc);
+
     tapi_tcp_destroy_conn_descr(conn_descr);
 
     return 0;
