@@ -73,7 +73,8 @@ main(int argc, char *argv[])
     char *agt_b;
     size_t len = sizeof(ta);
 
-    int tcp_sock = -1;
+    int listen_sock = -1;
+    int acc_sock = -1;
 
     struct sockaddr_in srv_addr;
     struct sockaddr_in from_sa;
@@ -120,22 +121,22 @@ main(int argc, char *argv[])
 
     srv_addr.sin_family = AF_INET;
     srv_addr.sin_addr.s_addr = sock_ip_addr;
-    srv_addr.sin_port = htons(20001); /* TODO generic port */
+    srv_addr.sin_port = htons(20002); /* TODO generic port */
 
     from_sa.sin_family = AF_INET;
     from_sa.sin_addr.s_addr = csap_ip_addr;
     from_sa.sin_port = htons(20000); /* TODO generic port */
 
     
-    if ((tcp_sock = rpc_socket(rpc_srv, RPC_AF_INET, RPC_SOCK_STREAM, 
+    if ((listen_sock = rpc_socket(rpc_srv, RPC_AF_INET, RPC_SOCK_STREAM, 
                         RPC_IPPROTO_TCP)) < 0 || rpc_srv->_errno != 0)
         TEST_FAIL("Calling of RPC socket() failed %x", rpc_srv->_errno);
 
-    rc = rpc_bind(rpc_srv, tcp_sock, SA(&srv_addr), sizeof(srv_addr));
+    rc = rpc_bind(rpc_srv, listen_sock, SA(&srv_addr), sizeof(srv_addr));
     if (rc != 0)
         TEST_FAIL("bind failed");
 
-    rc = rpc_listen(rpc_srv, tcp_sock, 1);
+    rc = rpc_listen(rpc_srv, listen_sock, 1);
     if (rc != 0)
         TEST_FAIL("listen failed");
 
@@ -149,18 +150,32 @@ main(int argc, char *argv[])
 
     RING("connection inited, handle %d", conn_hand);
 
+    acc_sock = rpc_accept(rpc_srv, listen_sock, NULL, NULL);
+
+#if 1
+    rpc_close(rpc_srv, acc_sock);
+    acc_sock = -1;
+#endif
+#if 1
     rc = tapi_tcp_close_connection(conn_hand, 2000);
     if (rc != 0)
         TEST_FAIL("close connection failed: %X", rc); 
-
+#endif
     TEST_SUCCESS;
 
 cleanup:
+
+    if (acc_sock > 0)
+        rpc_close(rpc_srv, acc_sock);
+
+    if (listen_sock > 0)
+        rpc_close(rpc_srv, listen_sock);
 
     if (rpc_srv && (rcf_rpc_server_destroy(rpc_srv) != 0))
     {
         WARN("Cannot delete dst RPC server\n");
     }
+    
 
 
     TEST_END;
