@@ -14,10 +14,9 @@ elif test -e ${TE_BUILD}/builder.conf.processed ; then
     fi
 fi    
 
-
-
 if test -n "$NUT_SOURCES"; then
     echo "*** Test coverage report for $tce_taname:" >$outfile
+    echo "*** Sources are at $NUT_SOURCES:" >>$outfile
     find $NUT_SOURCES \( -name '*.gcov' -o -name '*.da' \) -exec rm -f '{}' ';'
         tar -x -P -f ${TE_BUILD}/tce_${tce_taname}.tar
         (find $NUT_SOURCES \( -name '*.da' -o -name '.[a-z]*.da' \) -exec tce_gcov '{}' ';' && \
@@ -32,6 +31,9 @@ if test -n "$NUT_SOURCES"; then
             mv -f $mergefile $mergefile.prev
         fi
         mv -f $outfile $mergefile
+else
+    echo "No sources specified!!!!"
+    exit 1
 fi        
 
 
