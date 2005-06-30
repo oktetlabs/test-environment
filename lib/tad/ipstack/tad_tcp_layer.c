@@ -378,6 +378,7 @@ int tcp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
     uint8_t *data;
     uint8_t  tmp8;
     int      rc;
+    size_t   h_len = 0;
 
     UNUSED(pattern_pdu);
     UNUSED(parsed_packet);
@@ -414,7 +415,7 @@ int tcp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
     CHECK_FIELD("seqn", 4);
     CHECK_FIELD("ackn", 4);
 
-    tmp8 = (*data) >> 4;
+    h_len = tmp8 = (*data) >> 4;
     rc = ndn_match_data_units(pattern_pdu, tcp_header_pdu, 
                               &tmp8, 1, "hlen");
     if (rc) return rc;
@@ -435,10 +436,10 @@ int tcp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
     /* TODO: Process TCP options */
 
     /* passing payload to upper layer */ 
-    memset (payload, 0 , sizeof(*payload));
-    payload->len = (pkt->len - (data - (uint8_t*)(pkt->data)));
+    memset(payload, 0 , sizeof(*payload));
+    payload->len = pkt->len - (h_len * 4);
     payload->data = malloc (payload->len);
-    memcpy(payload->data, data, payload->len);
+    memcpy(payload->data, pkt->data + (h_len * 4), payload->len);
 
     if (parsed_packet)
     {

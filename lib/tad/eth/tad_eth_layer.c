@@ -240,7 +240,7 @@ int eth_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
         asn_write_value_field(tmpl_pdu, &(spec_data->eth_type), 
                               sizeof(spec_data->eth_type), 
                               "eth-type.#plain");
-        RING("%s(CSAP %d): chosen eth-type %d", 
+        VERB("%s(CSAP %d): chosen eth-type %d", 
              __FUNCTION__, csap_id, spec_data->eth_type); 
     }
 

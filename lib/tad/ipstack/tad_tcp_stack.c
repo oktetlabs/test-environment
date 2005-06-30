@@ -67,7 +67,7 @@ tcp_ip4_check_pdus(csap_p csap_descr, asn_value *traffic_nds)
 {
     UNUSED(csap_descr);
     UNUSED(traffic_nds);
-    RING("%s(CSAP %d) called", __FUNCTION__, csap_descr->id);
+    VERB("%s(CSAP %d) called", __FUNCTION__, csap_descr->id);
 
     return 0;
 }

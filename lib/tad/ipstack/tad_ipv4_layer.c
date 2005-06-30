@@ -636,8 +636,8 @@ cleanup:
  */
 int
 ip4_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
-                 const csap_pkts *  pkt, csap_pkts * payload, 
-                 asn_value_p  parsed_packet )
+                 const csap_pkts *pkt, csap_pkts *payload, 
+                 asn_value_p parsed_packet)
 { 
     csap_p                    csap_descr;
     ip4_csap_specific_data_t *spec_data;
@@ -645,6 +645,8 @@ ip4_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
     uint8_t *data;
     uint8_t  tmp8;
     int      rc = 0;
+    size_t   h_len = 0;
+    size_t   ip_len = 0;
 
     asn_value *ip4_header_pdu = NULL;
 
@@ -683,7 +685,7 @@ ip4_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
         return rc;
     }
 
-    tmp8 = (*data) & 0x0f;
+    h_len = tmp8 = (*data) & 0x0f;
     rc = ndn_match_data_units(pattern_pdu, ip4_header_pdu, 
                               &tmp8, 1, "header-len");
     if (rc) 
@@ -694,6 +696,8 @@ ip4_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
     data++;
 
     CHECK_FIELD("type-of-service", 1); 
+
+    ip_len = ntohs(*(uint16_t *)data);
     CHECK_FIELD("ip-len", 2);
     CHECK_FIELD("ip-ident", 2);
 
@@ -716,12 +720,10 @@ ip4_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
 
     /* passing payload to upper layer */ 
     {
-        int parsed_len = (data - (uint8_t*)(pkt->data));
-
-        memset (payload, 0 , sizeof(*payload));
-        payload->len = (pkt->len - parsed_len);
-        payload->data = malloc (payload->len);
-        memcpy(payload->data, data, payload->len);
+        memset(payload, 0 , sizeof(*payload));
+        payload->len = ip_len - (h_len * 4);
+        payload->data = malloc(payload->len);
+        memcpy(payload->data, pkt->data + (h_len * 4), payload->len);
     }
 
     if (parsed_packet)
