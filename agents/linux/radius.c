@@ -28,6 +28,7 @@
  */
 
 #ifdef WITH_RADIUS_SERVER
+#include <stddef.h>
 #include "linuxconf_daemons.h"
 
 enum radius_parameters { RP_FLAG, RP_ATTRIBUTE, RP_SECTION, RP_FILE};
@@ -50,26 +51,28 @@ typedef struct radius_parameter
 
 static struct radius_parameter *radius_conf;
 
-typedef struct radius_action
+typedef struct radius_user_check
 {
     char *attribute;
-    char *operator;
     char *value;
-    struct radius_action *next;
-} radius_action;
+} radius_user_check;
 
-typedef struct radius_user_record
+typedef struct radius_user_reply
 {
-    radius_action *checks, *last_check;
-    radius_action *sets, *last_set;
-    struct radius_user_record *next;
-} radius_user_record;
+    char *attribute;
+    char *in_accept;
+    char *in_challenge;
+} radius_user_reply;
 
 typedef struct radius_user
 {
+    te_bool reject;
     char *name;
-    radius_user_record *records;
-    radius_user_record *last_record;
+    radius_user_check *checks;
+    int n_replies;
+    int n_checks;
+    te_bool has_accept_reply;
+    radius_user_reply *replies;
     struct radius_user *next;
 } radius_user;
 
@@ -249,6 +252,9 @@ static int write_radius(radius_parameter *top);
 static void
 write_radius_parameter (FILE *outfile, radius_parameter *parm, int indent)
 {
+    if (parm->value && strcmp(parm->value, "secret") == 0)
+        RING("writing secret = %s", parm->value ? parm->value : "EMPTY");
+    
     if (!parm->deleted)
     {
         int i;
@@ -288,8 +294,6 @@ static int
 write_radius(radius_parameter *top)
 {
     FILE *outfile;
-    int indent = 0;
-    int i;
 
     if (top->kind != RP_FILE)
     {
@@ -297,23 +301,33 @@ write_radius(radius_parameter *top)
         return EINVAL;
     }
     if (!top->modified)
-        VERB("nothing to write");
-    top->modified = FALSE;
-    ds_config_touch(top->backup_index);
-    outfile = fopen(top->name, "w");
-    if (outfile == NULL)
     {
-        int rc = errno;
-        ERROR("cannot open %s: %s", top->name, strerror(rc));
-        return rc;
+        for (top = top->children; top != NULL; top = top->next)
+        { 
+            if (top->kind == RP_FILE)
+                write_radius(top);
+        }
     }
+    else
+    {
+        top->modified = FALSE;
+        ds_config_touch(top->backup_index);
+        RING("Writing RADIUS config %s", top->name);
+        outfile = fopen(top->name, "w");
+        if (outfile == NULL)
+        {
+            int rc = errno;
+            ERROR("cannot open %s: %s", top->name, strerror(rc));
+            return rc;
+        }
 
-    INFO("updating RADIUS config %s", top->name);
-    for (top = top->children; top != NULL; top = top->next)
-    { 
-        write_radius_parameter(outfile, top, 0);
+        INFO("updating RADIUS config %s", top->name);
+        for (top = top->children; top != NULL; top = top->next)
+        { 
+            write_radius_parameter(outfile, top, 0);
+        }
+        fclose(outfile);
     }
-    fclose(outfile);
     return 0;
 }
 
@@ -502,7 +516,7 @@ expand_rp (const char *value, radius_parameter *top)
     return new_val;
 }
 
-static int
+static void
 mark_rp_changes(radius_parameter *rp)
 {
     radius_parameter *file;
@@ -576,31 +590,19 @@ static radius_user *
 make_radius_user (const char *name)
 {
     radius_user *user = malloc(sizeof(*user));
+    user->reject = FALSE;
     user->name = strdup(name);
-    user->records = malloc(sizeof(*user->records));
-    user->last_record = user->records;
-    user->records->checks = user->records->last_check = NULL;
-    user->records->sets   = user->records->last_set   = NULL;
-    user->records->next   = NULL;
-    user->next   = NULL;
+    user->n_checks = 0;
+    user->checks = NULL;
+    user->n_replies = 0;
+    user->has_accept_reply = FALSE;
+    user->replies = NULL;
     if (radius_last_user != NULL)
         radius_last_user->next = user;
     else
         radius_users = user;
     radius_last_user = user;
     return user;
-}
-
-static radius_action *
-make_radius_action (const char *attribute, const char *op, const char *value)
-{
-    radius_action *action = malloc(sizeof(*action));
-
-    action->attribute = strdup(attribute);
-    action->operator  = strdup(op);
-    action->value     = strdup(value);
-    action->next      = NULL;
-    return action;
 }
 
 static radius_user *
@@ -618,32 +620,265 @@ find_radius_user (const char *name)
     return user;
 }
 
+static const char *
+parse_attr_value_pair (const char *string, char **attr, char **value)
+{
+    static char attr_buffer[64];
+    static char value_buffer[256];
+    char *bufptr;
+
+    for (bufptr = attr_buffer; *string != '='; string++, bufptr++)
+    {
+        if (*string == '\0')
+        {
+            *attr = *value = NULL;
+            ERROR("syntax error in attribute string");
+            return NULL;
+        }
+        if (bufptr == attr_buffer + sizeof(attr_buffer))
+        {
+            *attr = *value = NULL;
+            ERROR("too long attribute name");
+            return NULL;
+        }
+        *bufptr = *string;
+    }
+    *bufptr = '\0';
+    *attr = attr_buffer;
+    for (bufptr = value_buffer, string++; 
+         *string != ',' && *string != '\0'; 
+         string++, bufptr++)
+    {
+        if (bufptr == value_buffer + sizeof(value_buffer))
+        {
+            *attr = *value = NULL;
+            ERROR("too long value name");
+            return NULL;
+        }
+        *bufptr = *string;
+    }
+    *bufptr = '\0';
+    *value = value_buffer;
+    if (*string == ',')
+        string++;
+    return *string == '\0' ? NULL : string;
+}
+
+static int
+set_user_checks(const char *name, const char *checks)
+{
+    radius_user *user = find_radius_user(name);
+    radius_user_check *ch;
+    char *attr;
+    char *value;
+
+    if (user == NULL)
+        return TE_RC(TE_TA_LINUX, ENOENT);
+
+    do
+    {
+        checks = parse_attr_value_pair(checks, &attr, &value);
+        if (attr == NULL)
+            return TE_RC(TE_TA_LINUX, EINVAL);
+        for (ch = user->checks; ch != NULL && ch->attribute != NULL; ch++)
+        {
+            if (strcmp(ch->attribute, attr) == 0)
+            {
+                if (ch->value != NULL)
+                    free(ch->value);
+                ch->value = *value == '\0' ? NULL : strdup(value);
+                break;
+            }
+        }
+        if (ch->attribute == NULL && *value != '\0')
+        {
+            user->n_checks++;
+            user->checks = realloc(user->checks, (user->n_checks + 1) * sizeof(*user->checks));
+            user->checks[user->n_checks - 1].attribute = strdup(attr);
+            user->checks[user->n_checks - 1].value     = strdup(value);
+            user->checks[user->n_checks].attribute = NULL;
+        }
+    } while(checks != NULL);
+    return 0;
+}
+
+static int
+set_user_replies(const char *name, const char *replies, te_bool in_accept)
+{
+    radius_user *user = find_radius_user(name);
+    radius_user_reply *rep, *rep2;
+    char *attr;
+    char *value;
+
+    if (user == NULL)
+        return TE_RC(TE_TA_LINUX, ENOENT);
+
+    do
+    {
+        replies = parse_attr_value_pair(replies, &attr, &value);
+        if (attr == NULL)
+            return TE_RC(TE_TA_LINUX, EINVAL);
+        for (rep = user->replies; rep != NULL && rep->attribute != NULL; rep++)
+        {
+            if (strcmp(rep->attribute, attr) == 0)
+            {
+                if ((in_accept ? rep->in_accept : rep->in_challenge) != NULL)
+                    free(in_accept ? rep->in_accept : rep->in_challenge);
+                if (*value == '\0')
+                {
+                    if (in_accept) 
+                    {
+                        rep->in_accept = NULL;
+                        for (rep2 = user->replies; rep2->attribute != NULL; rep2++)
+                        {
+                            if ((in_accept ? rep2->in_accept : rep2->in_challenge) != NULL)
+                                break;
+                        }
+                        if (rep2->attribute == NULL)
+                        {
+                            user->has_accept_reply = FALSE;
+                        }
+                    }
+                    else
+                    {
+                        rep->in_challenge = NULL;
+                    }
+                }
+                else
+                {
+                    if (in_accept) 
+                    {
+                        rep->in_accept = strdup(value);
+                        user->has_accept_reply = TRUE;
+                    }
+                    else
+                    {
+                        rep->in_challenge = strdup(value);
+                    }
+                }
+                break;
+            }
+        }
+        if (rep->attribute == NULL && *value != '\0')
+        {
+            user->n_replies++;
+            user->replies = realloc(user->replies, (user->n_replies + 1) * sizeof(*user->replies));
+            user->replies[user->n_replies - 1].attribute = strdup(attr);
+            if (in_accept)
+                user->replies[user->n_replies - 1].in_accept     = strdup(value);
+            else
+                user->replies[user->n_replies - 1].in_challenge  = strdup(value);
+            user->replies[user->n_replies].attribute = NULL;
+        }
+    } while(replies != NULL);
+    return 0;
+}
+
+static char *
+stringify_attribute_values(void *data, size_t itemsize, size_t attr_at, size_t value_at)
+{
+    void *ptr;
+    int buflen = 0;
+    int tmp;
+    char *result, *bufptr;
+
+#define ATTR(ptr)  *(char **)((char *)ptr + attr_at)
+#define VALUE(ptr) *(char **)((char *)ptr + value_at)
+    for (ptr = data; ATTR(ptr) != NULL; ptr = (char *)ptr + itemsize)
+    {
+        buflen += strlen(ATTR(ptr)) + strlen(VALUE(ptr)) + 2;
+    }
+    bufptr = result = malloc(buflen);
+    for (ptr = data; ATTR(ptr) != NULL; ptr = (char *)ptr + itemsize)
+    {
+        if (ptr != data)
+        {
+            *bufptr++ = ',';
+        }
+        tmp = strlen(ATTR(ptr));
+        memcpy(bufptr, ATTR(ptr), tmp);
+        bufptr += tmp;
+        *bufptr++ = '=';
+        tmp = strlen(VALUE(ptr));
+        memcpy(bufptr, VALUE(ptr), tmp);
+        bufptr += tmp;
+    }
+    *bufptr = '\0';
+#undef ATTR
+#undef VALUE
+    return result;
+}
+
 static void
 write_radius_users (FILE *conf, radius_user *users)
 {
-    radius_user_record *rec;
-    radius_action *action;
+    radius_user_check *check;
+    radius_user_reply *action;
 
     for (; users != NULL; users = users->next)
     {
-        for (rec = users->records; rec != NULL; rec = rec->next)
+        te_bool need_comma = FALSE;
+        if (users->has_accept_reply && !users->reject)
         {
-            fputs(users->name, conf);
-            fputc(' ', conf);
-            for (action = rec->checks; action != NULL; action = action->next)
+            fprintf(conf, "\"%s\" Response-Packet-Type == Access-Accept",
+                    users->name);
+            for (check = users->checks; check != NULL && check->attribute != NULL; check++)
             {
-                fprintf(conf, "%s %s %s%s", 
-                        action->attribute, action->operator, action->value,
-                        action->next == NULL ? "\n" : ", ");
-            }
-            for (action = rec->sets; action != NULL; action = action->next)
-            {
-                fprintf(conf, "    %s %s %s%s\n", 
-                        action->attribute, action->operator, action->value,
-                        action->next == NULL ? "" : ",");
+                if (check->value != NULL)
+                {
+                    fprintf(conf, ", %s == %s", 
+                            check->attribute, check->value);
+                }
             }
             fputc('\n', conf);
+            need_comma = FALSE;
+            for (action = users->replies; action->attribute != NULL; action++)
+            {
+                if (action->in_accept != NULL)
+                {
+                    if (action->in_challenge == NULL || 
+                        strcmp(action->in_accept, action->in_challenge) != 0)
+                    {
+                        fprintf(conf, "%s    %s := %s", 
+                                need_comma ? ",\n" : "",
+                                action->attribute,
+                                action->in_accept);
+                        need_comma = TRUE;
+                    }
+                }
+                else if (action->in_challenge != NULL)
+                {
+                    fprintf(conf, "%s    %s -= %s", 
+                            need_comma ? ",\n" : "",
+                            action->attribute,
+                            action->in_accept);
+                    need_comma = TRUE;
+                }
+            }
+            fputs("\n\n", conf);
         }
+        fprintf(conf, "\"%s\" Auth-Type := %s",
+                users->name, users->reject ? "Reject" : "EAP");
+        for (check = users->checks; check != NULL && check->attribute != NULL; check++)
+        {
+            if (check->value != NULL)
+            {
+                fprintf(conf, ", %s == %s", 
+                        check->attribute, check->value);
+            }
+        }
+        need_comma = FALSE;
+        for (action = users->replies; action->attribute != NULL; action++)
+        {
+            if (action->in_challenge != NULL)
+            {
+                fprintf(conf, "%s    %s += %s\n", 
+                        need_comma ? ",\n" : "",
+                        action->attribute,
+                        action->in_challenge);
+            }
+        }
+        fputc('\n', conf);
     }
 }
 
@@ -721,15 +956,89 @@ ds_radius_accept_set(unsigned int gid, const char *oid,
 }
 
 static int
-ds_radius_user_add(unsigned int gid, const char *oid,
-                   const char *value, const char *instance, ...)
+ds_radius_challenge_get(unsigned int gid, const char *oid,
+                    char *value, const char *instance, ...)
 {
-    make_radius_user(instance);
+}
+
+static int
+ds_radius_challenge_set(unsigned int gid, const char *oid,
+                     const char *value, const char *instance, ...)
+{
+}
+
+static int
+ds_radius_check_get(unsigned int gid, const char *oid,
+                    char *value, const char *instance, 
+                    const char *username, ...)
+{
+    radius_user *user = find_radius_user(username);
+    char *data;
+
+    if (user == NULL)
+        return TE_RC(TE_TA_LINUX, ENOENT);
+    data = stringify_attribute_values(user->checks, sizeof(*user->checks), 
+                                      offsetof(radius_user_check, attribute),
+                                      offsetof(radius_user_check, value));
+    strcpy(value, data);
+    free(data);
+    return 0;
+}
+
+static int
+ds_radius_check_set(unsigned int gid, const char *oid,
+                    const char *value, const char *instance, 
+                    const char *username, ...)
+{
+    return set_user_checks(username, value);
+}
+
+static int
+ds_radius_user_add(unsigned int gid, const char *oid,
+                   const char *value, const char *instance, 
+                   const char *username, ...)
+{
+    radius_user *user = find_radius_user(username);
+    
+    if (user != NULL)
+        return TE_RC(TE_TA_LINUX, EEXIST);
+    user = make_radius_user(instance);
+    if (user == NULL)
+        return TE_RC(TE_TA_LINUX, EFAULT);
+    user->reject = (*value == '0');
+    return 0;
+}
+
+static int
+ds_radius_user_set(unsigned int gid, const char *oid,
+                   const char *value, const char *instance, 
+                   const char *username, ...)
+{
+    radius_user *user = find_radius_user(username);
+    
+    if (user == NULL)
+        return TE_RC(TE_TA_LINUX, ENOENT);
+    user->reject = (*value == '0');
+    return 0;
+}
+
+static int
+ds_radius_user_get(unsigned int gid, const char *oid,
+                   char *value, const char *instance,
+                   const char *username, ...)
+{
+    radius_user *user = find_radius_user(username);
+    
+    if (user == NULL)
+        return TE_RC(TE_TA_LINUX, ENOENT);
+    *value = (user->reject ? '0' : '1');
+    value[1] = '\0';
+    return 0;
 }
 
 static int
 ds_radius_user_del(unsigned int gid, const char *oid,
-                   const char *instance, ...)
+                   const char *instance, const char *username, ...)
 {
     return TE_RC(TE_TA_LINUX, ETENOSUPP);
 }
@@ -769,7 +1078,7 @@ ds_radius_client_add(unsigned int gid, const char *oid,
     UNUSED(oid);
     UNUSED(gid);
     snprintf(client_buffer, sizeof(client_buffer), "client(%s)", client_name);
-    RING("adding RADIUS client %s for %s", client_buffer, oid);
+    VERB("adding RADIUS client %s for %s", client_buffer, oid);
     rc = update_rp(radius_conf, RP_SECTION, client_buffer, NULL);
     if (rc == 0)
     {
@@ -778,7 +1087,7 @@ ds_radius_client_add(unsigned int gid, const char *oid,
         if (rc == 0)
         {
             write_radius(radius_conf);
-            RING("added client %s", client_buffer);
+            VERB("added client %s", client_buffer);
         }
     }
     return rc;
@@ -799,17 +1108,21 @@ static te_bool client_count(radius_parameter *rp, void *extra)
 {
     int *count = extra;
     UNUSED(rp);
-    (*count) += strlen(rp->name) + 1;
+    if (rp->value != NULL)
+        (*count) += strlen(rp->value) + 1;
     return FALSE;
 }
 
 static te_bool client_list(radius_parameter *rp, void *extra)
 {
     char **iter = extra;
-    int len = strlen(rp->value);
-    memcpy(*iter, rp->name, len);
-    (*iter)[len] = ' ';
-    (*iter) += len + 1;
+    if (rp->value != NULL)
+    {
+        int len = strlen(rp->value);
+        memcpy(*iter, rp->value, len);
+        (*iter)[len] = ' ';
+        (*iter) += len + 1;
+    }
     return FALSE;
 }
 
@@ -821,10 +1134,13 @@ ds_radius_client_list(unsigned int gid, const char *oid,
     int size = 0;
     char *c_iter;
 
+    VERB("obtaining client list");
     find_rp(radius_conf, "client", FALSE, FALSE, client_count, &size);
+    VERB("allocation %d bytes for list of clients", size);
     c_iter = *list = malloc(size + 1);
     find_rp(radius_conf, "client", FALSE, FALSE, client_list, &c_iter);
     *c_iter = '\0';
+    VERB("client list is '%s'", *list);
     return 0;
 }
 
@@ -834,7 +1150,7 @@ ds_radius_secret_get(unsigned int gid, const char *oid,
                      const char *client_name, ...)
 {
     const char *val;
-    RING("getting client secret");
+    VERB("getting client secret");
     snprintf(client_buffer, sizeof(client_buffer), "client(%s).secret", client_name);
     if(!retrieve_rp(radius_conf, client_buffer, &val))
     {
@@ -853,10 +1169,17 @@ ds_radius_secret_set(unsigned int gid, const char *oid,
                      const char *value, const char *instance,
                      const char *client_name)
 {
-    RING("setting client secret");
+    int rc;
+
+    VERB("setting client secret to %s", value);
     snprintf(client_buffer, sizeof(client_buffer), "client(%s).secret", client_name);
-    update_rp(radius_conf, RP_SECTION, client_buffer, value);    
+    rc = update_rp(radius_conf, RP_ATTRIBUTE, client_buffer, value);    
+    if (rc != 0)
+    {
+        return rc;
+    }
     write_radius(radius_conf);
+    return 0;
 }
 
 RCF_PCH_CFG_NODE_RW(node_ds_radiusserver_user_accept_attrs, "accept-attrs",
@@ -864,17 +1187,22 @@ RCF_PCH_CFG_NODE_RW(node_ds_radiusserver_user_accept_attrs, "accept-attrs",
                     ds_radius_accept_get, ds_radius_accept_set);
 RCF_PCH_CFG_NODE_RW(node_ds_radiusserver_user_challenge_attrs, "challenge-attrs",
                     NULL, &node_ds_radiusserver_user_accept_attrs,
-                    ds_radiusserver_get, ds_radiusserver_set);
+                    ds_radius_challenge_get, ds_radius_challenge_set);
 RCF_PCH_CFG_NODE_RW(node_ds_radiusserver_user_check, "check",
                     NULL, &node_ds_radiusserver_user_challenge_attrs,
-                    ds_radiusserver_get, ds_radiusserver_set);
-RCF_PCH_CFG_NODE_COLLECTION(node_ds_radiusserver_user, "user",
-                            &node_ds_radiusserver_user_check,
-                            NULL,
-                            ds_radius_user_add,
-                            ds_radius_user_del,
-                            ds_radius_user_list,
-                            NULL);
+                    ds_radius_check_get, ds_radius_check_set);
+
+static rcf_pch_cfg_object node_ds_radiusserver_user = {
+    "user", 0,
+    &node_ds_radiusserver_user_check, NULL,
+    ds_radius_user_get,
+    ds_radius_user_set,
+    ds_radius_user_add,
+    ds_radius_user_del,
+    ds_radius_user_list,
+    NULL
+};
+
 RCF_PCH_CFG_NODE_RW(node_ds_radiusserver_client_secret, "secret",
                     NULL, NULL,
                     ds_radius_secret_get, ds_radius_secret_set);
@@ -998,7 +1326,7 @@ static te_bool
 rp_delete_all(radius_parameter *rp, void *extra)
 {
     UNUSED(extra);
-    RING("Wiping out RADIUS parameter %s %s", rp->name, 
+    INFO("Wiping out RADIUS parameter %s %s", rp->name, 
          rp->value == NULL ? "" : rp->value);
     if (rp->kind != RP_SECTION && rp->value != NULL)
     {
