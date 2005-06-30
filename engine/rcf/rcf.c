@@ -99,7 +99,7 @@
 
 #define RCF_SELECT_TIMEOUT      1   /**< Default select timeout
                                          in seconds */
-#define RCF_CMD_TIMEOUT         10  /**< Default timeout (in seconds) for
+#define RCF_CMD_TIMEOUT         20  /**< Default timeout (in seconds) for
                                          command processing on the TA */
 #define RCF_CMD_TIMEOUT_HUGE    10000  
                                     /**< Default timeout for command
