@@ -947,7 +947,8 @@ tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode,
     }
 
 
-    rc = tapi_tcp_template(conn_descr->our_isn, conn_descr->peer_isn,
+    rc = tapi_tcp_template(conn_descr->our_isn + 1,
+                           conn_descr->peer_isn + 1,
                            mode == TAPI_TCP_SERVER ? TRUE : FALSE,
                            TRUE, NULL, 0, &syn_ack_template);
     CHECK_ERROR("%s(): make SYN-ACK template failed, rc %X",
@@ -958,6 +959,9 @@ tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode,
 
     CHECK_ERROR("%s(): send ACK failed, rc %X",
                 __FUNCTION__, rc);
+
+    conn_descr->seq_sent = conn_descr->our_isn + 1;
+    conn_descr->ack_sent = conn_descr->peer_isn + 1;
 
     /* wait for ACK */ 
     if (mode == TAPI_TCP_SERVER)
@@ -987,8 +991,6 @@ tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode,
     }
 
 
-    conn_descr->seq_sent = conn_descr->our_isn + 1;
-    conn_descr->ack_sent = conn_descr->peer_isn + 1;
 
     tapi_tcp_clear_tcp_msg(conn_descr);
 
