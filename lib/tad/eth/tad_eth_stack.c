@@ -312,7 +312,7 @@ eth_read_cb (csap_p csap_descr, int timeout, char *buf, size_t buf_len)
     spec_data = (eth_csap_specific_data_p) csap_descr->layers[layer].specific_data; 
 
     gettimeofday(&timeout_val, NULL);
-    F_VERB("%s(CSAP %d): spec_data->in = %d, mcs %d",
+    VERB("%s(CSAP %d): spec_data->in = %d, mcs %d",
            __FUNCTION__, csap_descr->id, spec_data->in,
            timeout_val.tv_usec);
 
@@ -377,10 +377,11 @@ eth_read_cb (csap_p csap_descr, int timeout, char *buf, size_t buf_len)
         return 0;
 
     gettimeofday(&timeout_val, NULL);
-    F_VERB("%s(): CSAP %d read %d bytes, pkttype %d, mcs %d, begin 0x%x, ethtype %x", 
-           __FUNCTION__, csap_descr->id, pkt_size, from.sll_pkttype,
-           timeout_val.tv_usec, *((uint32_t *)buf),
-           (uint32_t)(*((uint16_t *)(buf + 12))));
+    VERB("%s(): CSAP %d read %d bytes, pkttype %d, mcs %d, begin 0x%x, "
+         "ethtype %x", 
+         __FUNCTION__, csap_descr->id, pkt_size, from.sll_pkttype,
+         timeout_val.tv_usec, *((uint32_t *)buf),
+         (uint32_t)(*((uint16_t *)(buf + 12))));
 
     switch(from.sll_pkttype)
     {
