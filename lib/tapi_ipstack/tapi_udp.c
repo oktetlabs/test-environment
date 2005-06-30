@@ -53,6 +53,7 @@
 #include "logger_api.h"
 
 #include "tapi_udp.h"
+#include "tapi_tad.h"
 #include "ndn_ipstack.h"
 #include "ndn_eth.h"
 
