@@ -234,7 +234,7 @@ extern int tapi_tcp_send_msg(tapi_tcp_handler_t handler,
  * @param len           length of buffer/ got payload (IN/OUT);
  * @param seqn_got      place for received SEQ number or NULL (OUT);
  * @param ackn_got      place for received ACK number or NULL (OUT);
- * @param fin_state     flag, whether connection got FIN or RESET (OUT);
+ * @param flags         location for TCP flags (OUT);
  *
  * @return Status code
  */
@@ -244,7 +244,7 @@ extern int tapi_tcp_recv_msg(tapi_tcp_handler_t handler,
                              uint8_t *buffer, size_t *len, 
                              tapi_tcp_pos_t *seqn_got, 
                              tapi_tcp_pos_t *ackn_got,
-                             te_bool *fin_state);
+                             uint8_t *flags);
 
 /**
  * Send ACK via established TCP connection.
@@ -312,6 +312,17 @@ extern tapi_tcp_pos_t tapi_tcp_next_seqn(tapi_tcp_handler_t handler);
  */
 extern tapi_tcp_pos_t tapi_tcp_next_ackn(tapi_tcp_handler_t handler);
 
+/**
+ * Update internal TAPI TCP connection fields according with 
+ * next sent data in connection.
+ *
+ * @param handler       TAPI handler of TCP connection
+ * @param new_sent_len  length of sent data
+ *
+ * @return status code
+ */
+extern int tapi_tcp_update_sent_seq(tapi_tcp_handler_t handler,
+                                    size_t new_sent_len);
 
 /**
  * Correct fill TCP header by specified parameter values.
