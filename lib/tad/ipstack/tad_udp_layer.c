@@ -128,6 +128,7 @@ udp_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
                       __FUNCTION__, rc);
                 return TE_RC(TE_TAD_CSAP, rc);
             }
+            udp_spec_data->dst_port = udp_spec_data->local_port;
         }
         if (udp_spec_data->src_port == 0 && udp_spec_data->remote_port != 0)
         {
@@ -142,6 +143,7 @@ udp_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
                       __FUNCTION__, rc);
                 return TE_RC(TE_TAD_CSAP, rc);
             }
+            udp_spec_data->src_port = udp_spec_data->remote_port;
         }
     }
     else
@@ -160,6 +162,7 @@ udp_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
                       __FUNCTION__, rc);
                 return TE_RC(TE_TAD_CSAP, rc);
             }
+            udp_spec_data->src_port = udp_spec_data->local_port;
         }
         if (udp_spec_data->dst_port == 0)
         {
@@ -177,6 +180,7 @@ udp_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
                           __FUNCTION__, rc);
                     return TE_RC(TE_TAD_CSAP, rc);
                 }
+                udp_spec_data->dst_port = udp_spec_data->remote_port;
             }
             else
             {
@@ -229,21 +233,27 @@ udp_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
  
     UNUSED(args); 
     UNUSED(arg_num); 
-    UNUSED(up_payload); 
-    UNUSED(layer); 
     UNUSED(tmpl_pdu); 
+
+    spec_data = (udp_csap_specific_data_t *)
+                    csap_descr->layers[layer].specific_data;
 
     if (csap_descr->type == TAD_CSAP_DATA)
     {
-        spec_data = (udp_csap_specific_data_t *) 
-                            csap_descr->layers[layer].specific_data;
+        if (up_payload != NULL)
+        {
+            pkts->data = malloc(up_payload->len);
+            if (pkts->data == NULL)
+                return TE_RC(TE_TAD_CSAP, ENOMEM);
 
-        pkts->data = malloc(up_payload->len);
-        if (pkts->data == NULL)
-            return TE_RC(TE_TAD_CSAP, ENOMEM);
-
-        pkts->len  = up_payload->len;
-        memcpy (pkts->data, up_payload->data, up_payload->len); 
+            pkts->len  = up_payload->len;
+            memcpy(pkts->data, up_payload->data, up_payload->len);
+        }
+        else
+        {
+            pkts->data = NULL;
+            pkts->len = 0;
+        }
 
         pkts->free_data_cb = NULL;
         pkts->next = NULL; 
@@ -253,6 +263,49 @@ udp_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
     else
     {
         return TE_RC(TE_TAD_CSAP, ETENOSUPP);
+        int       header_len = 8; /* sizeof(struct udphdr) */
+        int       payload_len = (up_payload == NULL) ? 0 : up_payload->len;
+        uint16_t  value;
+        uint8_t  *p;
+
+        pkts->len = header_len + payload_len;
+        pkts->data = malloc(pkts->len);
+        if (pkts->data == NULL)
+            return TE_RC(TE_TAD_CSAP, ENOMEM);
+
+        pkts->next = NULL;
+        p = (uint8_t *)pkts->data;
+
+#define PUT_UINT16(data) \
+        value = htons(data);              \
+        memcpy(p, &value, sizeof(value)); \
+        p += sizeof(value)
+
+        if (spec_data->src_port == 0)
+        {
+            ERROR("%s: CSAP %d, no source port specified",
+                  __FUNCTION__, csap_descr->id);
+            return TE_RC(TE_TAD_CSAP, ETADLESSDATA);
+        }
+        PUT_UINT16(spec_data->src_port);
+
+        if (spec_data->dst_port == 0)
+        {
+            ERROR("%s: CSAP %d, no destination port specified",
+                  __FUNCTION__, csap_descr->id);
+            return TE_RC(TE_TAD_CSAP, ETADLESSDATA);
+        }
+        PUT_UINT16(spec_data->dst_port);
+
+        /* Length */
+        PUT_UINT16(pkts->len);
+
+        /* Checksum */
+        PUT_UINT16(0);
+#undef PUT_UINT16
+
+        if (payload_len > 0)
+            memcpy(p, up_payload->data, payload_len);
     }
 
     return rc;
