@@ -44,6 +44,12 @@
             <script name="tcp_conn">
                 <req id="TAD_IP4"/>
             </script>
+            <arg name="is_server">
+                <value>FALSE</value>
+            </arg>
+            <arg name="init_close">
+                <value>FALSE</value>
+            </arg>
         </run> 
 
         <!--

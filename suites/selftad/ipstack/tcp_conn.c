@@ -75,6 +75,10 @@ main(int argc, char *argv[])
 
     int listen_sock = -1;
     int acc_sock = -1;
+    int opt_val = 1;
+
+    te_bool is_server;
+    te_bool init_close;
 
     struct sockaddr_in srv_addr;
     struct sockaddr_in from_sa;
@@ -86,6 +90,9 @@ main(int argc, char *argv[])
     in_addr_t sock_ip_addr = inet_addr("192.168.72.38");
 
     TEST_START; 
+
+    TEST_GET_BOOL_PARAM(is_server);
+    TEST_GET_BOOL_PARAM(init_close);
     
     if ((rc = rcf_get_ta_list(ta, &len)) != 0)
         TEST_FAIL("rcf_get_ta_list failed: %X", rc);
@@ -121,26 +128,41 @@ main(int argc, char *argv[])
 
     srv_addr.sin_family = AF_INET;
     srv_addr.sin_addr.s_addr = sock_ip_addr;
-    srv_addr.sin_port = htons(20002); /* TODO generic port */
-
+    srv_addr.sin_port = htons(20000 + 4);
+                    /* TODO generic port */ 
     from_sa.sin_family = AF_INET;
     from_sa.sin_addr.s_addr = csap_ip_addr;
     from_sa.sin_port = htons(20000); /* TODO generic port */
 
     
     if ((listen_sock = rpc_socket(rpc_srv, RPC_AF_INET, RPC_SOCK_STREAM, 
-                        RPC_IPPROTO_TCP)) < 0 || rpc_srv->_errno != 0)
+                                  RPC_IPPROTO_TCP)) < 0 ||
+        rpc_srv->_errno != 0)
         TEST_FAIL("Calling of RPC socket() failed %x", rpc_srv->_errno);
+
+    opt_val = 1;
+    rpc_setsockopt(rpc_srv, listen_sock, RPC_SOL_SOCKET, RPC_SO_REUSEADDR,
+                   &opt_val, sizeof(opt_val));
 
     rc = rpc_bind(rpc_srv, listen_sock, SA(&srv_addr), sizeof(srv_addr));
     if (rc != 0)
         TEST_FAIL("bind failed");
 
-    rc = rpc_listen(rpc_srv, listen_sock, 1);
-    if (rc != 0)
-        TEST_FAIL("listen failed");
 
-    rc = tapi_tcp_init_connection(agt_a, TAPI_TCP_CLIENT, 
+
+    if (is_server)
+    {
+    }
+    else
+    {
+        rc = rpc_listen(rpc_srv, listen_sock, 1);
+        if (rc != 0)
+            TEST_FAIL("listen failed");
+    }
+
+    rc = tapi_tcp_init_connection(agt_a,
+                                  is_server ? TAPI_TCP_SERVER :
+                                              TAPI_TCP_CLIENT, 
                                   SA(&from_sa), SA(&srv_addr), 
                                   "eth2", csap_mac, sock_mac,
                                   1000, 2000,
@@ -152,12 +174,17 @@ main(int argc, char *argv[])
 
     acc_sock = rpc_accept(rpc_srv, listen_sock, NULL, NULL);
 
+    opt_val = 1;
+    rpc_setsockopt(rpc_srv, acc_sock, RPC_SOL_SOCKET, RPC_SO_REUSEADDR,
+                   &opt_val, sizeof(opt_val));
+
+    if (!init_close)
+    {
+        rpc_close(rpc_srv, acc_sock);
+        acc_sock = -1;
+    }
 #if 1
-    rpc_close(rpc_srv, acc_sock);
-    acc_sock = -1;
-#endif
-#if 1
-    rc = tapi_tcp_close_connection(conn_hand, 2000);
+    rc = tapi_tcp_close_connection(conn_hand, 10000);
     if (rc != 0)
         TEST_FAIL("close connection failed: %X", rc); 
 #endif
