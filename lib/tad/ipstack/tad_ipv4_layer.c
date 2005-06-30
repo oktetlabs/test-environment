@@ -81,6 +81,7 @@ ip4_confirm_pdu_cb(int csap_id, int layer, asn_value *tmpl_pdu)
 
     const asn_value *ip4_csap_pdu;
     const asn_value *ip4_tmpl_pdu;
+    const asn_value *du_field;
 
     ip4_csap_specific_data_t * spec_data = 
         (ip4_csap_specific_data_t *) csap_descr->layers[layer].specific_data; 
@@ -102,36 +103,59 @@ ip4_confirm_pdu_cb(int csap_id, int layer, asn_value *tmpl_pdu)
     {
         if ((rc = asn_get_choice_value(ip4_csap_pdu, &ip4_csap_pdu,
                                        NULL, NULL)) != 0)
+        {
+            ERROR("%s(CSAP %d) get choice value of csap pdu fails %X",
+                  __FUNCTION__, csap_descr->id, rc);
             return rc;
+        }
     }
 
-    tad_data_unit_convert(tmpl_pdu, NDN_TAG_IP4_VERSION,
-                          &spec_data->du_version);
-    if (spec_data->du_version.du_type == TAD_DU_UNDEF)
-        tad_data_unit_convert(ip4_csap_pdu, NDN_TAG_IP4_VERSION,
-                              &spec_data->du_version);
+    /**
+     * Macro only set into gen-bin du fields specifications according
+     * pdu in traffic nds and csap specification, if respective field
+     * in traffic pdu is undefined. 
+     * Clever choose of defaults and checks to pdu fields 
+     * should be done manually. 
+     *
+     * Be careful! ASN tag (passed in this macro) should be same in
+     * CSAP specification pdu and traffic PDU for the PDU field. 
+     */
+#define CONFIRM_FIELD(du_field_name_, tag_, label_) \
+    do {                                                                \
+        tad_data_unit_convert(ip4_tmpl_pdu, tag_,                       \
+                              &(spec_data-> du_field_name_ ));          \
+        if (spec_data-> du_field_name_ .du_type == TAD_DU_UNDEF &&      \
+            asn_get_child_value(ip4_csap_pdu, &du_field,                \
+                                PRIVATE, tag_) == 0)                    \
+        {                                                               \
+            asn_write_component_value(tmpl_pdu, du_field, label_);      \
+            tad_data_unit_convert(ip4_csap_pdu, NDN_TAG_IP4_VERSION,    \
+                                  &(spec_data-> du_field_name_ ));      \
+        }                                                               \
+    } while (0)
+
+    CONFIRM_FIELD(du_version, NDN_TAG_IP4_VERSION, "version");
 
     tad_data_unit_convert(tmpl_pdu, NDN_TAG_IP4_HLEN,
                           &spec_data->du_header_len);
-    tad_data_unit_convert(tmpl_pdu, NDN_TAG_IP4_TOS,
-                          &spec_data->du_tos);
-    if (spec_data->du_tos.du_type == TAD_DU_UNDEF)
-        tad_data_unit_convert(ip4_csap_pdu, NDN_TAG_IP4_TOS,
-                              &spec_data->du_tos);
+
+    CONFIRM_FIELD(du_tos, NDN_TAG_IP4_TOS, "type-of-service");
 
     tad_data_unit_convert(tmpl_pdu, NDN_TAG_IP4_LEN,
                           &spec_data->du_ip_len);
-    tad_data_unit_convert(tmpl_pdu, NDN_TAG_IP4_IDENT,
-                          &spec_data->du_ip_ident);
-    tad_data_unit_convert(tmpl_pdu, NDN_TAG_IP4_FLAGS,
-                          &spec_data->du_flags);
-    tad_data_unit_convert(tmpl_pdu, NDN_TAG_IP4_OFFSET,
-                          &spec_data->du_ip_offset);
-    tad_data_unit_convert(tmpl_pdu, NDN_TAG_IP4_TTL,
-                          &spec_data->du_ttl);
 
-    tad_data_unit_convert(tmpl_pdu, NDN_TAG_IP4_PROTOCOL,
-                          &spec_data->du_protocol);
+    CONFIRM_FIELD(du_ip_ident, NDN_TAG_IP4_IDENT, "ip-ident");
+
+    CONFIRM_FIELD(du_flags, NDN_TAG_IP4_FLAGS, "flags");
+    CONFIRM_FIELD(du_ttl, NDN_TAG_IP4_TTL, "time-to-live");
+
+    tad_data_unit_convert(tmpl_pdu, NDN_TAG_IP4_OFFSET,
+                          &spec_data->du_ip_offset); 
+
+    CONFIRM_FIELD(du_protocol, NDN_TAG_IP4_PROTOCOL, "protocol");
+
+#if 0
+    /* this should be done in init of upper CSAP layer. */
     if (spec_data->du_protocol.du_type == TAD_DU_UNDEF)
     {
         if (layer > 0) /* There is in CSAP upper protocol */
@@ -152,6 +176,7 @@ ip4_confirm_pdu_cb(int csap_id, int layer, asn_value *tmpl_pdu)
         else
             spec_data->protocol = 0;
     }
+#endif
 
     tad_data_unit_convert(tmpl_pdu, NDN_TAG_IP4_H_CHECKSUM,
                           &spec_data->du_h_checksum);
