@@ -272,9 +272,11 @@ udp_ip4_write_read_cb (csap_p csap_descr, int timeout,
 int 
 udp_ip4_init_cb (int csap_id, const asn_value *csap_nds, int layer)
 {
-    csap_p   csap_descr;          /**< csap description        */ 
-    udp_csap_specific_data_t *   udp_spec_data; 
-    struct sockaddr_in local;
+    csap_p                    csap_descr;
+    udp_csap_specific_data_t *udp_spec_data; 
+    ip4_csap_specific_data_t *ip4_spec_data; 
+    struct sockaddr_in        local;
+
     size_t len; 
     char   opt_label[100];
     int    rc; 
@@ -285,11 +287,24 @@ udp_ip4_init_cb (int csap_id, const asn_value *csap_nds, int layer)
     if ((csap_descr = csap_find (csap_id)) == NULL)
         return TE_RC(TE_TAD_CSAP, ETADCSAPNOTEX);
 
+    if (layer + 1 >= csap_descr->depth)
+    {
+        ERROR("%s(CSAP %d) too large layer %d!, depth %d", 
+              __FUNCTION__, csap_id, layer, csap_descr->depth);
+        return EINVAL;
+    }
+
+    ip4_spec_data = (ip4_csap_specific_data_t *)
+        csap_descr->layers[layer + 1].specific_data;
+
+    if (ip4_spec_data != NULL && ip4_spec_data->protocol == 0)
+        ip4_spec_data->protocol = IPPROTO_UDP;
 
     udp_spec_data = calloc (1, sizeof(udp_csap_specific_data_t));
     if (udp_spec_data == NULL)
         return TE_RC(TE_TAD_CSAP, ENOMEM);
 
+    /* Init local port */
     sprintf(opt_label, "%d.local-port", layer);
     len = sizeof(udp_spec_data->local_port);
     rc = asn_read_value_field(csap_nds, &udp_spec_data->local_port,
@@ -310,6 +325,7 @@ udp_ip4_init_cb (int csap_id, const asn_value *csap_nds, int layer)
         }
     }
 
+    /* Init remote port */
     sprintf(opt_label, "%d.remote-port", layer);
     len = sizeof(udp_spec_data->remote_port);
     rc = asn_read_value_field(csap_nds, &udp_spec_data->remote_port, 

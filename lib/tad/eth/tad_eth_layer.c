@@ -358,10 +358,8 @@ int eth_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
 
     UNUSED(arg_num);
     UNUSED(tmpl_pdu);/* All data from tmpl_pdu analyzed in confirm */
-#if 1
-    asn_save_to_file(tmpl_pdu, "/tmp/eth-tmpl.asn");
-#endif
-    F_VERB("%s(): entered", __FUNCTION__);
+
+    VERB("%s(): entered", __FUNCTION__);
 
     if (csap_descr == NULL)
     {

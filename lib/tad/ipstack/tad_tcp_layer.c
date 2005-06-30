@@ -323,6 +323,12 @@ tcp_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
     *p = (hdr_len / 4) << 4;
     p++;
     PUT_BIN_DATA(du_flags, 0, 1);
+
+    VERB("du flags type %d, value %d, put value %d",
+         spec_data->du_flags.du_type, 
+         spec_data->du_flags.val_i32,
+         (int)(*(p-1)));
+
     PUT_BIN_DATA(du_win_size, 1400, 2); /* TODO: good default window */
     PUT_BIN_DATA(du_checksum, 0, 2);
     PUT_BIN_DATA(du_urg_p, 0, 2); 

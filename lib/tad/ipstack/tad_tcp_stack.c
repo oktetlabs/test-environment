@@ -450,11 +450,13 @@ tcp_single_destroy_cb (int csap_id, int layer)
 int 
 tcp_ip4_init_cb (int csap_id, const asn_value *csap_nds, int layer)
 {
-    csap_p csap_descr;      /**< csap description   */ 
-    tcp_csap_specific_data_t *   spec_data; 
-    const asn_value *tcp_pdu;
+    csap_p                    csap_descr;      
+    tcp_csap_specific_data_t *spec_data; 
+    ip4_csap_specific_data_t *ip4_spec_data; 
+    const asn_value          *tcp_pdu;
+
     int32_t value_in_pdu;
-    int rc;
+    int     rc;
 
     VERB("%s called for csap %d, layer %d",
          __FUNCTION__, csap_id, layer); 
@@ -479,7 +481,18 @@ tcp_ip4_init_cb (int csap_id, const asn_value *csap_nds, int layer)
 
     csap_descr->check_pdus_cb = tcp_ip4_check_pdus; 
 
+    if (layer + 1 >= csap_descr->depth)
+    {
+        ERROR("%s(CSAP %d) too large layer %d!, depth %d", 
+              __FUNCTION__, csap_id, layer, csap_descr->depth);
+        return EINVAL;
+    }
 
+    ip4_spec_data = (ip4_csap_specific_data_t *)
+        csap_descr->layers[layer + 1].specific_data;
+
+    if (ip4_spec_data != NULL && ip4_spec_data->protocol == 0)
+        ip4_spec_data->protocol = IPPROTO_TCP;
     /*
      * Set local port
      */
