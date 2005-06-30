@@ -30,18 +30,32 @@
 #include "te_config.h"
 
 #include "tapi_radius.h"
-#include <string.h>
-#include <net/ethernet.h>
 #include "tapi_udp.h"
 #include "conf_api.h"
 #include "logger_api.h"
 #include "te_errno.h"
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <unistd.h>
 #include "asn_usr.h"
 #include "ndn.h"
 #include "rcf_api.h"
+
+#ifdef HAVE_STRING_H
+#include <string.h>
+#endif
+#ifdef HAVE_STDARG_H
+#include <stdarg.h>
+#endif
+#ifdef HAVE_NET_ETHERNET_H
+#include <net/ethernet.h>
+#endif
+#ifdef HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
+#ifdef HAVE_ARPA_INET_H
+#include <arpa/inet.h>
+#endif
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
 
 /* Attribute dictionary length */
 #define TAPI_RADIUS_DICT_LEN     256
@@ -49,13 +63,18 @@
 /* Index for undefined entries */
 #define TAPI_RADIUS_ATTR_UNKNOWN 255
 
+#define TAPI_RADIUS_TYPE_IS_DYNAMIC(type) \
+    ((type) == TAPI_RADIUS_TYPE_STRING || \
+     (type) == TAPI_RADIUS_TYPE_TEXT || \
+     (type) == TAPI_RADIUS_TYPE_UNKNOWN)
+
 static uint8_t tapi_radius_dict_index[TAPI_RADIUS_DICT_LEN];
 
 /* RADIUS attributes dictionary */
 static const tapi_radius_attr_info_t tapi_radius_dict[] =
 {
-    { 1, "User-Name",     TAPI_RADIUS_TYPE_STRING },
-    { 2, "User-Password", TAPI_RADIUS_TYPE_STRING },
+    { 1, "User-Name",     TAPI_RADIUS_TYPE_TEXT },
+    { 2, "User-Password", TAPI_RADIUS_TYPE_TEXT },
 };
 
 void
@@ -85,7 +104,7 @@ tapi_radius_dict_init()
  * Lookup RADIUS attribute dictionary entry by the attribute type
  */
 const tapi_radius_attr_info_t *
-tapi_radius_dict_lookup(uint8_t type)
+tapi_radius_dict_lookup(tapi_radius_attr_type_t type)
 {
     uint8_t index = tapi_radius_dict_index[type];
 
@@ -115,7 +134,7 @@ tapi_radius_attr_list_push(tapi_radius_attr_list_t *list,
 {
     tapi_radius_attr_t *p;
 
-    p = realloc(list->attr, list->len + 1);
+    p = realloc(list->attr, (list->len + 1) * sizeof(list->attr[0]));
     if (p == NULL)
     {
         ERROR("%s: failed to allocate memory for attribute", __FUNCTION__);
@@ -128,9 +147,77 @@ tapi_radius_attr_list_push(tapi_radius_attr_list_t *list,
     return 0;
 }
 
+/* See description in tapi_radius.h */
+int
+tapi_radius_attr_list_push_value(tapi_radius_attr_list_t *list,
+                                 const char *name, ...)
+{
+    const tapi_radius_attr_info_t  *info;
+    tapi_radius_attr_t              attr;
+    va_list                         va;
+    int                             rc = 0;
+
+    info = tapi_radius_dict_lookup_by_name(name);
+    if (info == NULL)
+    {
+        ERROR("%s: attribute '%s' is not found in dictionary",
+              __FUNCTION__, name);
+        return ENOENT;
+    }
+    attr.type = info->id;
+    attr.datatype = info->type;
+    va_start(va, name);
+    switch (info->type)
+    {
+        case TAPI_RADIUS_TYPE_ADDRESS:
+        case TAPI_RADIUS_TYPE_TIME:
+        case TAPI_RADIUS_TYPE_INTEGER:  /* (int) */
+            attr.integer = va_arg(va, int);
+            attr.len = sizeof(attr.integer);
+            break;
+
+        case TAPI_RADIUS_TYPE_STRING:   /* (uint8_t *, size_t) */
+            {
+                const uint8_t *p = va_arg(va, uint8_t *);
+                attr.len = va_arg(va, size_t);
+                attr.string = calloc(1, attr.len + 1);
+                if (attr.string == NULL)
+                {
+                    ERROR("%s: failed to allocate memory for attribute '%s'",
+                          __FUNCTION__, name);
+                    rc = ENOMEM;
+                }
+                else
+                    memcpy(attr.string, p, attr.len);
+            }
+            break;
+
+        case TAPI_RADIUS_TYPE_TEXT:     /* (char *) */
+            {
+                const char *s = va_arg(va, char *);
+                attr.string = strdup(s);
+                if (attr.string == NULL)
+                {
+                    ERROR("%s: failed to allocate memory for attribute '%s'",
+                          __FUNCTION__, name);
+                    rc = ENOMEM;
+                }
+                else
+                    attr.len = strlen(s);
+            }
+            break;
+        default:
+            ERROR("%s: unknown type %u for attribute",
+                  __FUNCTION__, info->type);
+            rc = EINVAL;
+    }
+    va_end(va);
+    return rc;
+}
+
 const tapi_radius_attr_t *
 tapi_radius_attr_list_find(const tapi_radius_attr_list_t *list,
-                           uint8_t type)
+                           tapi_radius_attr_type_t type)
 {
     size_t i;
 
@@ -155,18 +242,120 @@ tapi_radius_attr_list_free(tapi_radius_attr_list_t *list)
 
     for (i = 0; i < list->len; i++)
     {
-        const tapi_radius_attr_info_t *attr_info;
-
-        attr_info = tapi_radius_dict_lookup(list->attr[i].type);
-        if (attr_info != NULL &&
-            (attr_info->type == TAPI_RADIUS_TYPE_TEXT ||
-             attr_info->type == TAPI_RADIUS_TYPE_STRING))
-        {
-                free(list->attr[i].string);
-        }
+        if (TAPI_RADIUS_TYPE_IS_DYNAMIC(list->attr[i].datatype))
+            free(list->attr[i].string);
     }
     free(list->attr);
     list->attr = NULL;
+}
+
+#if 0
+void
+tapi_radius_attr_list_enumerate(tapi_radius_attr_list_t *list,
+                                tapi_radius_attr_cb_t callback,
+                                void *user_data)
+{
+    size_t  i;
+
+    if (callback == NULL)
+        return;
+
+    for (i = 0; i < list->len; i++)
+    {
+        callback(&list->attr[i], user_data);
+    }
+}
+
+int
+tapi_radius_attr_init(tapi_radius_attr_t *attr,
+                      tapi_radius_type_t *data_type,
+                      tapi_radius_attr_type_t attr_type,
+                      const uint8_t *data, size_t data_len)
+{
+    tapi_radius_attr_info_t  attr_info;
+
+    attr_info = tapi_radius_dict_lookup(attr_type);
+    if (attr_info == NULL)
+    {
+        ERROR("%s: unknown attribute %u", __FUNCTION__, attr_type);
+        return EINVAL;
+    }
+    *data_type = attr_info->type;
+    switch (attr_info->type)
+    {
+        case TAPI_RADIUS_TYPE_INTEGER:
+        case TAPI_RADIUS_TYPE_ADDRESS:
+        case TAPI_RADIUS_TYPE_TIME:
+            if (data_len != sizeof(attr->integer))
+            {
+                ERROR("%s: invalid length of attribute %u",
+                      __FUNCTION__, attr_type);
+                return EINVAL;
+            }
+            memcpy(&attr->integer, data, sizeof(attr->integer));
+            attr->len = sizeof(attr->integer);
+            break;
+
+        case TAPI_RADIUS_TYPE_TEXT:
+        case TAPI_RADIUS_TYPE_STRING:
+            attr->string = calloc(data_len + 1, sizeof(char));
+            if (attr->string == NULL)
+            {
+                ERROR("%s: failed to allocate memory for attribute %u",
+                      __FUNCTION__, attr_type);
+                return ENOMEM;
+            }
+            memcpy(attr->string, data, data_len);
+            attr->len = data_len;
+            break;
+
+        default:
+            ERROR("%s: unknown type %u for attribute %u", __FUNCTION__,
+                  attr_info->type, attr.type);
+            return EINVAL;
+    }
+    return 0;
+}
+#endif
+
+int
+tapi_radius_attr_copy(tapi_radius_attr_t *dst,
+                      const tapi_radius_attr_t *src)
+{
+    memcpy(dst, src, sizeof(*dst));
+    if (TAPI_RADIUS_TYPE_IS_DYNAMIC(src->datatype))
+    {
+        dst->string = calloc(1, src->len + 1);
+        if (dst->string == NULL)
+        {
+            ERROR("%s: failed to allocate memory", __FUNCTION__);
+            return ENOMEM;
+        }
+        memcpy(dst->string, src->string, src->len);
+    }
+    return 0;
+}
+
+int
+tapi_radius_attr_list_copy(tapi_radius_attr_list_t *dst,
+                           const tapi_radius_attr_list_t *src)
+{
+    int    rc;
+    size_t i;
+
+    memcpy(dst, src, sizeof(*dst));
+    dst->attr = (tapi_radius_attr_t *)malloc(src->len * sizeof(src->attr[0]));
+    if (dst->attr == NULL)
+    {
+        ERROR("%s: failed to allocate memory", __FUNCTION__);
+        return ENOMEM;
+    }
+    for (i = 0; i < src->len; i++)
+    {
+        if ((rc = tapi_radius_attr_copy(&dst->attr[i], &src->attr[i])) != 0)
+            return rc;
+    }
+    return 0;
 }
 
 int
@@ -228,10 +417,13 @@ tapi_radius_parse_packet(const uint8_t *data, size_t data_len,
         attr_info = tapi_radius_dict_lookup(attr.type);
         if (attr_info == NULL)
         {
-            ERROR("%s: unknown attribute %u", __FUNCTION__, attr.type);
-            return EINVAL;
+            WARN("%s: unknown attribute %u", __FUNCTION__, attr.type);
+            attr.datatype = TAPI_RADIUS_TYPE_UNKNOWN;
         }
-        switch (attr_info->type)
+        else
+            attr.datatype = attr_info->type;
+
+        switch (attr.datatype)
         {
             case TAPI_RADIUS_TYPE_INTEGER:
             case TAPI_RADIUS_TYPE_ADDRESS:
@@ -248,6 +440,7 @@ tapi_radius_parse_packet(const uint8_t *data, size_t data_len,
 
             case TAPI_RADIUS_TYPE_TEXT:
             case TAPI_RADIUS_TYPE_STRING:
+            case TAPI_RADIUS_TYPE_UNKNOWN:
                 attr.string = calloc(attr.len + 1, sizeof(char));
                 if (attr.string == NULL)
                 {
@@ -260,7 +453,7 @@ tapi_radius_parse_packet(const uint8_t *data, size_t data_len,
 
             default:
                 ERROR("%s: unknown type %u for attribute %u", __FUNCTION__,
-                      attr_info->type, attr.type);
+                      attr.datatype, attr.type);
                 return EINVAL;
         }
         p += attr.len;
@@ -321,7 +514,7 @@ tapi_radius_recv_start(const char *ta, int sid, csap_handle_t csap,
     cb_data->userdata = user_data;
 
     return tapi_udp_ip4_eth_recv_start(ta, sid, csap, NULL,
-                                      tapi_radius_callback, cb_data);
+                                       tapi_radius_callback, cb_data);
 }
 
 

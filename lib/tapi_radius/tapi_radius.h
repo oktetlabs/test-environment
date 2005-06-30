@@ -53,42 +53,47 @@ typedef enum {
     TAPI_RADIUS_CODE_STATUS_CLIENT       = 13,
 } tapi_radius_code_t;
 
-/** Type of RADIUS attribute */
+/** Type of RADIUS attribute data */
 typedef enum {
     TAPI_RADIUS_TYPE_TEXT,
     TAPI_RADIUS_TYPE_STRING,
     TAPI_RADIUS_TYPE_ADDRESS,
     TAPI_RADIUS_TYPE_INTEGER,
-    TAPI_RADIUS_TYPE_TIME
+    TAPI_RADIUS_TYPE_TIME,
+    TAPI_RADIUS_TYPE_UNKNOWN
 } tapi_radius_type_t;
 
-/* Minimal length of attribute in packet */
+/** Type of RADIUS attribute */
+typedef uint8_t tapi_radius_attr_type_t;
+
+/** Minimal length of attribute in packet */
 #define TAPI_RADIUS_ATTR_MIN_LEN   2
 
-/* RADIUS attribute */
+/** RADIUS attribute */
 typedef struct {
-    uint8_t   type;
-    uint8_t   len;
+    tapi_radius_attr_type_t type;
+    tapi_radius_type_t      datatype;
+    uint8_t                 len;
     union {
         uint32_t    integer;
         char       *string;
     };
 } tapi_radius_attr_t;
 
-/* RADIUS attributes list */
+/** RADIUS attributes list */
 typedef struct {
     size_t              len;
     tapi_radius_attr_t *attr;
 } tapi_radius_attr_list_t;
 
-/* Length of packet */
+/** Length of packet */
 #define TAPI_RADIUS_PACKET_MIN_LEN  20
 #define TAPI_RADIUS_PACKET_MAX_LEN  4096
 
-/* Length of authenticator */
+/** Length of authenticator */
 #define TAPI_RADIUS_AUTH_LEN  16
 
-/* RADIUS packet */
+/** RADIUS packet */
 typedef struct {
     tapi_radius_code_t       code;
     uint8_t                  identifier;
@@ -96,37 +101,156 @@ typedef struct {
     tapi_radius_attr_list_t  attrs;
 } tapi_radius_packet_t;
 
-/* RADIUS attributes dictionary entry */
+/** RADIUS attributes dictionary entry */
 typedef struct {
-    uint8_t             id;
-    char               *name;
-    tapi_radius_type_t  type;
+    tapi_radius_attr_type_t  id;
+    char                    *name;
+    tapi_radius_type_t       type;
 } tapi_radius_attr_info_t;
 
+/** Default UDP port for RADIUS authentication service */
 #define TAPI_RADIUS_AUTH_PORT   1812
+
+/** Default UDP port for RADIUS accounting service */
 #define TAPI_RADIUS_ACCT_PORT   1813
 
 typedef void (*radius_callback)(const tapi_radius_packet_t *pkt,
                                 void *userdata);
 
+/** 
+ * Initialize RADIUS attribute dictionary
+ * (this function should be called before any other TAPI RADIUS calls)
+ */
 extern void tapi_radius_dict_init();
-extern const tapi_radius_attr_info_t *tapi_radius_dict_lookup(uint8_t type);
-extern const tapi_radius_attr_info_t
-            *tapi_radius_dict_lookup_by_name(const char *name);
 
+/**
+ * Lookup specified attribute in RADIUS dictionary by its numeric type
+ *
+ * @param  type         Attribute type to lookup
+ *
+ * @return Pointer to dictionary entry or NULL if not found
+ */
+extern const tapi_radius_attr_info_t
+             *tapi_radius_dict_lookup(tapi_radius_attr_type_t type);
+
+/**
+ * Lookup specified attribute in RADIUS dictionary by its name
+ *
+ * @param name          Attribute name to lookup
+ *
+ * @return Pointer to dictionary entry or NULL if not found
+ */
+extern const tapi_radius_attr_info_t
+             *tapi_radius_dict_lookup_by_name(const char *name);
+
+/**
+ * Initialize a list of RADIUS attributes
+ *
+ * @param list          List to initialize
+ */
 extern void tapi_radius_attr_list_init(tapi_radius_attr_list_t *list);
+
+/**
+ * Push an attribute to the end of RADIUS attribute list
+ *
+ * @param list          Attribute list
+ * @param attr          Attribute to push
+ *
+ * @return Zero on success or error code.
+ */
+
 extern int tapi_radius_attr_list_push(tapi_radius_attr_list_t *list,
                                       const tapi_radius_attr_t *attr);
-extern void tapi_radius_attr_list_free(tapi_radius_attr_list_t *list);
-extern const tapi_radius_attr_t *tapi_radius_attr_list_find(
-                           const tapi_radius_attr_list_t *list,
-                           uint8_t type);
 
+/**
+ * Create RADIUS attribute by name and value and push it to the end
+ * of attribute list. Type of value is determined from the dictionary.
+ * Values are:
+ *   for TAPI_RADIUS_TYPE_INTEGER       (int value)
+ *   for TAPI_RADIUS_TYPE_TEXT          (char *value)
+ *   for TAPI_RADIUS_TYPE_STRING        (uint8_t *value, int length)
+ * E.g.: tapi_radius_attr_list_push_value(&list, "NAS-Port", 20);
+ *
+ * @param list          Attribute list to push attribute to
+ * @param name          Attribute name
+ *
+ * @return Zero on success or error code.
+ */
+extern int tapi_radius_attr_list_push_value(tapi_radius_attr_list_t *list,
+                                            const char *name, ...);
+
+/**
+ * Free memory allocated for attribute list
+ *
+ * @param  list     List to free
+ */
+extern void tapi_radius_attr_list_free(tapi_radius_attr_list_t *list);
+
+/**
+ * Copy RADIUS attribute list
+ *
+ * @param dst       Location for the new copy of list
+ * @param src       Original attribute list
+ *
+ * @return Zero on success or error code.
+ */
+extern int tapi_radius_attr_list_copy(tapi_radius_attr_list_t *dst,
+                                      const tapi_radius_attr_list_t *src);
+
+/**
+ * Find specified attribute in the attribute list
+ *
+ * @param   list        Attribute list
+ * @param   type        Identifier of attribute to find
+ *
+ * @return Pointer to attribute in the list or NULL if not found.
+ */
+extern const tapi_radius_attr_t
+             *tapi_radius_attr_list_find(const tapi_radius_attr_list_t *list,
+                                         tapi_radius_attr_type_t type);
+
+/**
+ * Parse binary RADIUS packet payload to C structure
+ *
+ * @param data      RADIUS packet data
+ * @param data_len  Length of packet data
+ * @param packet    Packet structure to be filled
+ *
+ * @return Zero on success or error code.
+ */
 extern int tapi_radius_parse_packet(const uint8_t *data, size_t data_len,
                                     tapi_radius_packet_t *packet);
+
+/**
+ * Start receiving RADIUS packets using 'udp.ip4.eth' CSAP on the specified
+ * Test Agent
+ *
+ * @param ta              Test Agent name
+ * @param sid             RCF session identifier
+ * @param csap            Handle of 'udp.ip4.eth' CSAP on the Test Agent
+ * @param user_callback   Callback for RADIUS packets handling
+ * @param user_data       User-supplied data to be passed to callback
+ * @param timeout         
+ *
+ * @return Zero on success or error code.
+ */
 extern int tapi_radius_recv_start(const char *ta, int sid, csap_handle_t csap,
                                   radius_callback user_callback,
                                   void *user_data, unsigned int timeout);
+
+/**
+ * Create 'udp.ip4.eth' CSAP for capturing RADIUS packets
+ *
+ * @param ta               Test Agent name
+ * @param sid              RCF session identifier
+ * @param device           Ethernet device name on agent to attach
+ * @param net_addr         Local IP address on Test Agent
+ * @param port             UDP port on Test Agent (TAPI_RADIUS_AUTH_PORT
+ *                          or TAPI_RADIUS_ACCT_PORT)
+ * @param csap             Handle of new CSAP (OUT)
+ *
+ * @return Zero on success or error code.
+ */
 extern int tapi_radius_csap_create(const char *ta, int sid,
                                    const char *device,
                                    const in_addr_t net_addr, uint16_t port,
