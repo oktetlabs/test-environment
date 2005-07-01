@@ -41,7 +41,7 @@
 extern "C" {
 #endif
 
-/** Type of RADIUS packet */
+/** Type of RADIUS packet, see RFC 2865 */
 typedef enum {
     TAPI_RADIUS_CODE_ACCESS_REQUEST      = 1,
     TAPI_RADIUS_CODE_ACCESS_ACCEPT       = 2,
@@ -53,13 +53,14 @@ typedef enum {
     TAPI_RADIUS_CODE_STATUS_CLIENT       = 13,
 } tapi_radius_code_t;
 
-/** Type of RADIUS attribute data */
+/** Type of RADIUS attribute data, see RFC 2865 */
 typedef enum {
-    TAPI_RADIUS_TYPE_TEXT,
-    TAPI_RADIUS_TYPE_STRING,
-    TAPI_RADIUS_TYPE_ADDRESS,
-    TAPI_RADIUS_TYPE_INTEGER,
-    TAPI_RADIUS_TYPE_TIME,
+    TAPI_RADIUS_TYPE_TEXT,      /* UTF-8 encoded text string, 1-253 octets */
+    TAPI_RADIUS_TYPE_STRING,    /* Binary data, 1-253 octets */
+    TAPI_RADIUS_TYPE_ADDRESS,   /* IPv4 address, 32 bit value */
+    TAPI_RADIUS_TYPE_INTEGER,   /* 32 bit unsigned value */
+    TAPI_RADIUS_TYPE_TIME,      /* 32 bit unsigned value,
+                                   seconds since 19700101T000000Z */
     TAPI_RADIUS_TYPE_UNKNOWN
 } tapi_radius_type_t;
 
