@@ -2355,6 +2355,8 @@ main(int argc, const char *argv[])
                 ERROR("Request to TA %s is timed out", agent->name);
                 req->message->error = TE_RC(TE_RCF, ETIMEDOUT);
                 answer_user_request(req);
+                set_ta_dead(agent);
+                break;
             }
         }
 
