@@ -161,8 +161,9 @@ typedef int tapi_tcp_handler_t;
 typedef uint32_t tapi_tcp_pos_t;
 
 /**
- * Initialize TCP connection. This method blocks until connection is 
- * established or timeout expired.
+ * Initialize process for open TCP connection.
+ * This method does not blocks. Use 'tapi_tcp_wait_open' for wait 
+ * complete open of TCP connection.
  *
  * @param agt           name of TA;
  * @param mode          TCP mode: server or client, really, this means
@@ -172,9 +173,7 @@ typedef uint32_t tapi_tcp_pos_t;
  * @param remote_addr   remote socket address, unspecified values 
  *                      are zeroes, (IN/OUT);
  * @param window        default window size, or zero
- * @param timeout       time in milliseconds, while TA should wait for 
- *                      SYN or ACK for his SYN;
- * @param handle        TAPI handler of created TCP connection (OUT);
+ * @param handler       TAPI handler of created TCP connection (OUT);
  *
  * @return Status code
  */
@@ -184,11 +183,37 @@ extern int tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode,
                                     const char *local_iface,
                                     uint8_t *local_mac,
                                     uint8_t *remote_mac,
-                                    int window, int timeout,
+                                    int window,
                                     tapi_tcp_handler_t *handler);
 
 /**
- * Correct close TCP connection, established by 'tapi_tcp_init_connection'.
+ * Destroy TAPI TCP connection handler: stop receive process on CSAPs, etc. 
+ *
+ * This method DOES NOT close TCP connection!
+ *
+ * @param handler       TAPI handler of TCP connection;
+ *
+ * @return Status code
+ */
+extern int tapi_tcp_destroy_connection(tapi_tcp_handler_t handler);
+
+/**
+ * Wait for complete process of opening TCP connection: blocks until
+ * SYN and ACKs from peer will be recєived.
+ * If timed out, TAPI connection hanlder will be destroyed.
+ * 
+ * @param handler       TAPI handler of TCP connection;
+ * @param timeout       time in milliseconds, while TA should wait for 
+ *                      SYN or ACK for his SYN;
+ *
+ * @return Status code
+ */ 
+extern int tapi_tcp_wait_open(tapi_tcp_handler_t hanlder, int timeout);
+
+/**
+ * Send FIN in TCP connection, and wait ACK for it.
+ * This is either part of close process, or shutdown for writing.
+ * This meþhod blocks until ACK will be received. 
  *
  * @param handler       TAPI handler of TCP connection;
  * @param timeout       time in milliseconds, while TA should wait 
@@ -196,8 +221,8 @@ extern int tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode,
  *
  * @return Status code
  */
-extern int tapi_tcp_close_connection(tapi_tcp_handler_t handler, 
-                                     int timeout);
+extern int tapi_tcp_send_fin(tapi_tcp_handler_t handler, int timeout);
+
 
 /**
  * Send TCP message via established connection.
