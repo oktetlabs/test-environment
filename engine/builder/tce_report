@@ -17,15 +17,20 @@ fi
 if test -n "$NUT_SOURCES"; then
     echo "*** Test coverage report for $tce_taname:" >$outfile
     echo "*** Sources are at $NUT_SOURCES:" >>$outfile
-    find $NUT_SOURCES \( -name '*.gcov' -o -name '*.da' \) -exec rm -f '{}' ';'
+    find $NUT_SOURCES -follow \( -name '*.gcov' -o -name '*.da' \) -exec rm -f '{}' ';'
         tar -x -P -f ${TE_BUILD}/tce_${tce_taname}.tar
-        (find $NUT_SOURCES \( -name '*.da' -o -name '.[a-z]*.da' \) -exec tce_gcov '{}' ';' && \
-            find $NUT_SOURCES -name '*.gcov' -exec tce_merge $mergefile '{}' ';') >> $outfile
+        (find $NUT_SOURCES -follow \( -name '*.da' -o -name '.[a-z]*.da' \) -exec tce_gcov '{}' ';' && \
+            find $NUT_SOURCES -follow -name '*.gcov' -exec tce_merge $mergefile '{}' ';') >> $outfile
         echo >>$outfile
         tce_count $outfile '^branch[[:space:]]*[0-9]+ never executed' '^branch[[:space:]]*[0-9]+ taken' | 
         (
             read ratio sum
             echo "*** Grand Total: $ratio% of $sum branches covered" >>$outfile
+        )
+        tce_count $outfile '^[[:space:]]*#+:' '^[[:space:]]*[0-9]+:' |
+        (
+            read ratio sum
+            echo "*** Grand Total: $ratio% of $sum lines covered" >>$outfile
         )
         if test -f $mergefile; then
             mv -f $mergefile $mergefile.prev
