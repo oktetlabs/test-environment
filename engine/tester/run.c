@@ -61,7 +61,7 @@
 #define TESTER_CONTROL_MSG_PREFIX  "%u %u "
 
 /** Size of the Tester shell command buffer */
-#define TESTER_CMD_BUF_SZ   1024
+#define TESTER_CMD_BUF_SZ           32768
 
 /** Size of the bulk used to allocate space for a string */
 #define TESTER_STR_BULK 64
@@ -787,7 +787,7 @@ run_test_script(tester_ctx *ctx, test_script *script, test_id id,
     int         result = 0;
     int         rc;
     char       *params_str;
-    char        cmd[TESTER_CMD_BUF_SZ];
+    char       *cmd = NULL;
     char        shell[256] = "";
     char        gdb_init[32] = "";
     char        postfix[32] = "";
@@ -872,12 +872,20 @@ run_test_script(tester_ctx *ctx, test_script *script, test_id id,
         }
     }
 
-    if (snprintf(cmd, sizeof(cmd), "%s%s%s%s", shell, script->execute,
+    cmd = malloc(TESTER_CMD_BUF_SZ);
+    if (cmd == NULL)
+    {
+        ERROR("%s():%u: malloc(%u) failed",
+              __FUNCTION__, __LINE__, TESTER_CMD_BUF_SZ);
+        return errno;
+    }
+    if (snprintf(cmd, TESTER_CMD_BUF_SZ, "%s%s%s%s", shell, script->execute,
                  (ctx->flags & TESTER_GDB) ? "" : PRINT_STRING(params_str),
-                 postfix) >= (int)sizeof(cmd))
+                 postfix) >= TESTER_CMD_BUF_SZ)
     {
         ERROR("Too short buffer is reserved for test script command "
               "line");
+        free(cmd);
         return ETESMALLBUF;
     }
     free(params_str);
@@ -893,6 +901,7 @@ run_test_script(tester_ctx *ctx, test_script *script, test_id id,
         if (rc == -1)
         {
             ERROR("system(%s) failed: %X", cmd, errno);
+            free(cmd);
             return errno;
         }
 
@@ -956,6 +965,8 @@ run_test_script(tester_ctx *ctx, test_script *script, test_id id,
                         "ID=%d:\n%tf", id, vg_filename);
         }
     }
+
+    free(cmd);
 
     EXIT("%X", result);
 
