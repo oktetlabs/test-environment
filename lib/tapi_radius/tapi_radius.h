@@ -109,7 +109,7 @@ typedef struct {
 /** RADIUS attributes dictionary entry */
 typedef struct {
     tapi_radius_attr_type_t  id;
-    char                    *name;
+    const char              *name;
     tapi_radius_type_t       type;
 } tapi_radius_attr_info_t;
 
@@ -213,6 +213,19 @@ extern int tapi_radius_attr_list_copy(tapi_radius_attr_list_t *dst,
 extern const tapi_radius_attr_t
              *tapi_radius_attr_list_find(const tapi_radius_attr_list_t *list,
                                          tapi_radius_attr_type_t type);
+
+/**
+ * Convert attribute list into a string of comma-separated pairs
+ * 'Attribute=Value'
+ *
+ * @param   list        Attribute list
+ * @param   str         Location for a pointer to result string (will be
+ *                      allocated by this function)
+ *
+ * @return Zero on success or result code.
+ */
+extern int tapi_radius_attr_list_to_string(const tapi_radius_attr_list_t *list,
+                                           char **str);
 
 /**
  * Parse binary RADIUS packet payload to C structure
@@ -360,6 +373,8 @@ extern int tapi_radius_serv_del_client(const char *ta_name,
  * @param user_name   User name
  * @param acpt_user   Wheter this user should be accepted on successful
  *                    authentication
+ * @param check_attrs A list of RADIUS attributes that should be checked
+ *                    additionally for this user
  * @param acpt_attrs  A list of RADIUS attributes that should be sent
  *                    to this user in Access-Accept RADIUS message.
  *                    May be NULL if no special attributes desired.
@@ -373,6 +388,7 @@ extern int tapi_radius_serv_add_user(
                             const char *ta_name,
                             const char *user_name,
                             te_bool acpt_user,
+                            const tapi_radius_attr_list_t *check_attrs,
                             const tapi_radius_attr_list_t *acpt_attrs,
                             const tapi_radius_attr_list_t *chlg_attrs);
 

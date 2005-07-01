@@ -73,8 +73,10 @@ static uint8_t tapi_radius_dict_index[TAPI_RADIUS_DICT_LEN];
 /* RADIUS attributes dictionary */
 static const tapi_radius_attr_info_t tapi_radius_dict[] =
 {
-    { 1, "User-Name",     TAPI_RADIUS_TYPE_TEXT },
-    { 2, "User-Password", TAPI_RADIUS_TYPE_TEXT },
+    {  1, "User-Name",     TAPI_RADIUS_TYPE_TEXT },
+    {  2, "User-Password", TAPI_RADIUS_TYPE_TEXT },
+    {  5, "NAS-Port",      TAPI_RADIUS_TYPE_INTEGER },
+    { 61, "NAS-Port-Type", TAPI_RADIUS_TYPE_INTEGER },
 };
 
 void
@@ -212,6 +214,8 @@ tapi_radius_attr_list_push_value(tapi_radius_attr_list_t *list,
             rc = EINVAL;
     }
     va_end(va);
+    tapi_radius_attr_list_push(list, &attr);
+
     return rc;
 }
 
@@ -247,6 +251,77 @@ tapi_radius_attr_list_free(tapi_radius_attr_list_t *list)
     }
     free(list->attr);
     list->attr = NULL;
+}
+
+int
+tapi_radius_attr_list_to_string(const tapi_radius_attr_list_t *list,
+                                char **str)
+{
+    size_t       i;
+    char        *result = NULL;
+    size_t       len = 0;
+
+    assert(str != NULL);
+    *str = NULL;
+    for (i = 0; i < list->len; i++)
+    {
+        const tapi_radius_attr_t       *attr = &list->attr[i];
+        const tapi_radius_attr_info_t  *info;
+        char                            buf[INET_ADDRSTRLEN];
+        const char                     *value;
+        char                           *s;
+        size_t                          attr_strlen;
+
+        if ((info = tapi_radius_dict_lookup(attr->type)) == NULL)
+        {
+            ERROR("%s: failed to find attribute %u in RADIUS dictionary",
+                  __FUNCTION__, attr->type);
+            return ENOENT;
+        }
+        assert(attr->datatype == info->type);
+        switch (attr->datatype)
+        {
+            case TAPI_RADIUS_TYPE_INTEGER:
+                snprintf(buf, sizeof(buf), "%u", attr->integer);
+                value = buf;
+                break;
+            case TAPI_RADIUS_TYPE_ADDRESS:
+                if (inet_ntop(AF_INET, &attr->integer,
+                              buf, sizeof(buf)) == NULL)
+                {
+                    ERROR("%s: failed to convert value of attribute '%s' "
+                          "to string", __FUNCTION__, info->name);
+                    free(result);
+                    return EINVAL;
+                }
+                value = buf;
+                break;
+            case TAPI_RADIUS_TYPE_TEXT:
+                value = attr->string;
+                break;
+            default:
+                WARN("%s: attribute '%s' type is unsupported, skipping",
+                     __FUNCTION__, info->name);
+                continue;
+        }
+        attr_strlen = strlen(info->name) + strlen(value) + 2;
+        s = realloc(result, len + attr_strlen);
+        if (s == NULL)
+        {
+            ERROR("%s: failed to allocate memory", __FUNCTION__);
+            free(result);
+            return ENOMEM;
+        }
+        result = s;
+        if (len > 0)
+            strcat(result, ",");
+        strcat(result, info->name);
+        strcat(result, "=");
+        strcat(result, value);
+        len += attr_strlen;
+    }
+    *str = result;
+    return 0;
 }
 
 #if 0
@@ -504,6 +579,8 @@ tapi_radius_recv_start(const char *ta, int sid, csap_handle_t csap,
 {
     radius_cb_data_t  *cb_data;
 
+    UNUSED(timeout);
+
     cb_data = (radius_cb_data_t *)calloc(1, sizeof(radius_cb_data_t));
     if (cb_data == NULL)
     {
@@ -551,11 +628,11 @@ tapi_radius_serv_set(const char *ta_name, const tapi_radius_serv_t *cfg)
     addr.sin_family = AF_INET;
     memcpy(&(addr.sin_addr), &(cfg->net_addr), sizeof(addr.sin_addr));
 
-#define RADIUS_CFG_SET_VALUE(sub_oid_, type_, value_, err_msg_) \
+#define RADIUS_CFG_SET_VALUE(sub_oid_, cfg_value_, err_msg_)        \
     do {                                                            \
         int rc;                                                     \
                                                                     \
-        rc = cfg_set_instance_fmt(type_, (void *)value_,            \
+        rc = cfg_set_instance_fmt(cfg_value_,                       \
                  "/agent:%s/radiusserver:/" sub_oid_ ":", ta_name); \
         if (rc != 0)                                                \
         {                                                           \
@@ -565,11 +642,11 @@ tapi_radius_serv_set(const char *ta_name, const tapi_radius_serv_t *cfg)
         }                                                           \
     } while (0)
 
-    RADIUS_CFG_SET_VALUE("auth_port", CVT_INTEGER, cfg->auth_port,
+    RADIUS_CFG_SET_VALUE("auth_port", CFG_VAL(INTEGER, cfg->auth_port),
                          "Authentication Port");
-    RADIUS_CFG_SET_VALUE("acct_port", CVT_INTEGER, cfg->acct_port,
+    RADIUS_CFG_SET_VALUE("acct_port", CFG_VAL(INTEGER, cfg->acct_port),
                          "Accounting Port");
-    RADIUS_CFG_SET_VALUE("net_addr", CVT_ADDRESS, &addr,
+    RADIUS_CFG_SET_VALUE("net_addr", CFG_VAL(ADDRESS, &addr),
                          "Network Address");
 
 #undef RADIUS_CFG_SET_VALUE
@@ -652,9 +729,51 @@ int
 tapi_radius_serv_add_user(const char *ta_name,
                           const char *user_name,
                           te_bool acpt_user,
+                          const tapi_radius_attr_list_t *check_attrs,
                           const tapi_radius_attr_list_t *acpt_attrs,
                           const tapi_radius_attr_list_t *chlg_attrs)
 {
+    int        rc;
+    char      *attr_str;
+    cfg_handle handle;
+
+    assert(ta_name != NULL && user_name != NULL);
+
+    if ((rc = cfg_add_instance_fmt(&handle,
+                                   CFG_VAL(INTEGER, acpt_user ? 1 : 0),
+                                   "/agent:%s/radiusserver:/user:%s",
+                                   ta_name, user_name)) != 0)
+    {
+        ERROR("Failed to add RADIUS user '%s' on Agent '%s'",
+              user_name, ta_name);
+        return TE_RC(TE_TAPI, rc);
+    }
+#define ADD_ATTR_LIST(_attrs, _name, _cfg_name) \
+    if (_attrs != NULL)                                                     \
+    {                                                                       \
+        if ((rc = tapi_radius_attr_list_to_string(_attrs, &attr_str)) != 0) \
+        {                                                                   \
+            ERROR("Failed to convert " _name " RADIUS attributes list "     \
+                  "for user '%s' to string", user_name);                    \
+            return TE_RC(TE_TAPI, rc);                                      \
+        }                                                                   \
+        if ((rc = cfg_set_instance_fmt(CFG_VAL(STRING, attr_str),           \
+                    "/agent:%s/radiusserver:/user:%s/" _cfg_name ":")) != 0)\
+        {                                                                   \
+            ERROR("Failed to add " _name " RADIUS attributes list '%s'"     \
+                  "for user '%s'", attr_str, user_name);                    \
+            free(attr_str);                                                 \
+            return TE_RC(TE_TAPI, rc);                                      \
+        }                                                                   \
+        free(attr_str);                                                     \
+    }
+
+    ADD_ATTR_LIST(check_attrs, "check", "check");
+    ADD_ATTR_LIST(acpt_attrs, "Access-Accept", "accept-attrs");
+    ADD_ATTR_LIST(chlg_attrs, "Access-Challenge", "challenge-attrs");
+
+#undef ADD_ATTR_LIST
+
     return 0;
 }
 
@@ -662,6 +781,14 @@ tapi_radius_serv_add_user(const char *ta_name,
 int
 tapi_radius_serv_del_user(const char *ta_name, const char *user_name)
 {
-    return 0;
+    int rc;
+
+    if ((rc = cfg_del_instance_fmt(TRUE, "/agent:%s/radiusserver:/user:%s",
+                                   ta_name, user_name)) != 0)
+    {
+        ERROR("Failed to remove RADIUS user '%s' from the Configurator DB",
+              user_name);
+    }
+    return rc;
 }
 
