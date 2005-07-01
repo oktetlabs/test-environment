@@ -76,6 +76,7 @@ typedef struct radius_user
     struct radius_user *next;
 } radius_user;
 
+static FILE *radius_users_file;
 static struct radius_user *radius_users, *radius_last_user;
 
 static char *expand_rp (const char *value, radius_parameter *top);
@@ -252,9 +253,6 @@ static int write_radius(radius_parameter *top);
 static void
 write_radius_parameter (FILE *outfile, radius_parameter *parm, int indent)
 {
-    if (parm->value && strcmp(parm->value, "secret") == 0)
-        RING("writing secret = %s", parm->value ? parm->value : "EMPTY");
-    
     if (!parm->deleted)
     {
         int i;
@@ -321,7 +319,7 @@ write_radius(radius_parameter *top)
             return rc;
         }
 
-        INFO("updating RADIUS config %s", top->name);
+        RING("updating RADIUS config %s", top->name);
         for (top = top->children; top != NULL; top = top->next)
         { 
             write_radius_parameter(outfile, top, 0);
@@ -408,10 +406,7 @@ find_rp (radius_parameter *base, const char *name, te_bool create, te_bool creat
         {
             radius_parameter *tmp = find_rp(iter, name, create, FALSE, enumerator, extra);
             if (tmp != NULL)
-            {
-                iter = tmp;
-                break;
-            }
+                return tmp;
         }
         else
         {
@@ -452,8 +447,14 @@ find_rp (radius_parameter *base, const char *name, te_bool create, te_bool creat
         VERB("created RADIUS parameter %s %s", iter->name, iter->value ? iter->value : "");
     }
     
-    
-    return iter == NULL || *next == '\0' ? iter : 
+    if (*next != '\0' && iter != NULL && iter->kind != RP_SECTION)
+    {
+        ERROR("attempting to find %s under %s which is not a section",
+              next, iter->name);
+        return NULL;
+    }
+
+    return iter == NULL || *next == '\0' ? iter :
         find_rp(iter, next + 1, create, create, enumerator, extra);
 }
 
@@ -597,6 +598,7 @@ make_radius_user (const char *name)
     user->n_replies = 0;
     user->has_accept_reply = FALSE;
     user->replies = NULL;
+    user->next = NULL;
     if (radius_last_user != NULL)
         radius_last_user->next = user;
     else
@@ -618,6 +620,32 @@ find_radius_user (const char *name)
         }
     }
     return user;
+}
+
+static void
+delete_radius_user (const char *name)
+{
+    radius_user *user, *prev = NULL;
+
+    for (user = radius_users; user != NULL; prev = user, user = user->next)
+    {
+        if (strcmp(user->name, name) == 0)
+        {
+            if (prev == NULL)
+                radius_users = user->next;
+            else 
+                prev->next = user->next;
+            if (user == radius_last_user)
+                radius_last_user = prev;
+            free(user->name);
+            if (user->checks != NULL)
+                free(user->checks);
+            if (user->replies != NULL)
+                free(user->replies);
+            free(user);
+            return;
+        }
+    }
 }
 
 static const char *
@@ -690,7 +718,7 @@ set_user_checks(const char *name, const char *checks)
                 break;
             }
         }
-        if (ch->attribute == NULL && *value != '\0')
+        if ((ch == NULL || ch->attribute == NULL) && *value != '\0')
         {
             user->n_checks++;
             user->checks = realloc(user->checks, (user->n_checks + 1) * sizeof(*user->checks));
@@ -759,7 +787,7 @@ set_user_replies(const char *name, const char *replies, te_bool in_accept)
                 break;
             }
         }
-        if (rep->attribute == NULL && *value != '\0')
+        if ((rep == NULL || rep->attribute == NULL) && *value != '\0')
         {
             user->n_replies++;
             user->replies = realloc(user->replies, (user->n_replies + 1) * sizeof(*user->replies));
@@ -774,39 +802,38 @@ set_user_replies(const char *name, const char *replies, te_bool in_accept)
     return 0;
 }
 
-static char *
-stringify_attribute_values(void *data, size_t itemsize, size_t attr_at, size_t value_at)
+static void
+stringify_attribute_values(char *dest, 
+                           void *data, size_t itemsize, size_t attr_at, size_t value_at)
 {
     void *ptr;
-    int buflen = 0;
     int tmp;
-    char *result, *bufptr;
+
+    if (data == NULL)
+    {
+        *dest = '\0';
+        return;
+    }
 
 #define ATTR(ptr)  *(char **)((char *)ptr + attr_at)
 #define VALUE(ptr) *(char **)((char *)ptr + value_at)
     for (ptr = data; ATTR(ptr) != NULL; ptr = (char *)ptr + itemsize)
     {
-        buflen += strlen(ATTR(ptr)) + strlen(VALUE(ptr)) + 2;
-    }
-    bufptr = result = malloc(buflen);
-    for (ptr = data; ATTR(ptr) != NULL; ptr = (char *)ptr + itemsize)
-    {
         if (ptr != data)
         {
-            *bufptr++ = ',';
+            *dest++ = ',';
         }
         tmp = strlen(ATTR(ptr));
-        memcpy(bufptr, ATTR(ptr), tmp);
-        bufptr += tmp;
-        *bufptr++ = '=';
+        memcpy(dest, ATTR(ptr), tmp);
+        dest += tmp;
+        *dest++ = '=';
         tmp = strlen(VALUE(ptr));
-        memcpy(bufptr, VALUE(ptr), tmp);
-        bufptr += tmp;
+        memcpy(dest, VALUE(ptr), tmp);
+        dest += tmp;
     }
-    *bufptr = '\0';
+    *dest = '\0';
 #undef ATTR
 #undef VALUE
-    return result;
 }
 
 static void
@@ -815,6 +842,7 @@ write_radius_users (FILE *conf, radius_user *users)
     radius_user_check *check;
     radius_user_reply *action;
 
+    rewind(conf);
     for (; users != NULL; users = users->next)
     {
         te_bool need_comma = FALSE;
@@ -861,6 +889,7 @@ write_radius_users (FILE *conf, radius_user *users)
                 users->name, users->reject ? "Reject" : "EAP");
         for (check = users->checks; check != NULL && check->attribute != NULL; check++)
         {
+            RING("check is %s %s", check->attribute, check->value);
             if (check->value != NULL)
             {
                 fprintf(conf, ", %s == %s", 
@@ -868,7 +897,7 @@ write_radius_users (FILE *conf, radius_user *users)
             }
         }
         need_comma = FALSE;
-        for (action = users->replies; action->attribute != NULL; action++)
+        for (action = users->replies; action != NULL && action->attribute != NULL; action++)
         {
             if (action->in_challenge != NULL)
             {
@@ -880,8 +909,18 @@ write_radius_users (FILE *conf, radius_user *users)
         }
         fputc('\n', conf);
     }
+    fflush(conf);
 }
 
+static void
+log_radius_tree (radius_parameter *parm)
+{
+    RING("%p %d %s = %s %s %p %p\n", parm, parm->kind, parm->name,
+         parm->value ? parm->value : "EMPTY", 
+         parm->deleted ? "DELETED" : "", parm->children, parm->next);
+    for (parm = parm->children; parm != NULL; parm = parm->next)
+        log_radius_tree(parm);
+}
 
 static char *radius_daemon = NULL;
 
@@ -947,24 +986,30 @@ static int
 ds_radius_accept_get(unsigned int gid, const char *oid,
                     char *value, const char *instance, ...)
 {
+    *value = '\0';
+    return 0;
 }
 
 static int
 ds_radius_accept_set(unsigned int gid, const char *oid,
                      const char *value, const char *instance, ...)
 {
+    return 0;
 }
 
 static int
 ds_radius_challenge_get(unsigned int gid, const char *oid,
                     char *value, const char *instance, ...)
 {
+    *value = '\0';
+    return 0;
 }
 
 static int
 ds_radius_challenge_set(unsigned int gid, const char *oid,
                      const char *value, const char *instance, ...)
 {
+    return 0;
 }
 
 static int
@@ -973,15 +1018,12 @@ ds_radius_check_get(unsigned int gid, const char *oid,
                     const char *username, ...)
 {
     radius_user *user = find_radius_user(username);
-    char *data;
 
     if (user == NULL)
         return TE_RC(TE_TA_LINUX, ENOENT);
-    data = stringify_attribute_values(user->checks, sizeof(*user->checks), 
+    stringify_attribute_values(value, user->checks, sizeof(*user->checks), 
                                       offsetof(radius_user_check, attribute),
                                       offsetof(radius_user_check, value));
-    strcpy(value, data);
-    free(data);
     return 0;
 }
 
@@ -990,7 +1032,13 @@ ds_radius_check_set(unsigned int gid, const char *oid,
                     const char *value, const char *instance, 
                     const char *username, ...)
 {
-    return set_user_checks(username, value);
+    int rc;
+    if (radius_users_file == NULL)
+        return TE_RC(TE_TA_LINUX, EBADF);
+    rc = set_user_checks(username, value);
+    if (rc == 0)
+        write_radius_users(radius_users_file, radius_users);
+    return rc;
 }
 
 static int
@@ -998,15 +1046,21 @@ ds_radius_user_add(unsigned int gid, const char *oid,
                    const char *value, const char *instance, 
                    const char *username, ...)
 {
-    radius_user *user = find_radius_user(username);
-    
-    if (user != NULL)
-        return TE_RC(TE_TA_LINUX, EEXIST);
-    user = make_radius_user(instance);
-    if (user == NULL)
-        return TE_RC(TE_TA_LINUX, EFAULT);
-    user->reject = (*value == '0');
-    return 0;
+    if (radius_users_file == NULL)
+        return TE_RC(TE_TA_LINUX, EBADF);
+    else
+    {
+        radius_user *user = find_radius_user(username);
+        
+        if (user != NULL)
+            return TE_RC(TE_TA_LINUX, EEXIST);
+        user = make_radius_user(username);
+        if (user == NULL)
+            return TE_RC(TE_TA_LINUX, EFAULT);
+        user->reject = (*value == '0');
+        write_radius_users(radius_users_file, radius_users);
+        return 0;
+    }
 }
 
 static int
@@ -1040,7 +1094,9 @@ static int
 ds_radius_user_del(unsigned int gid, const char *oid,
                    const char *instance, const char *username, ...)
 {
-    return TE_RC(TE_TA_LINUX, ETENOSUPP);
+    delete_radius_user(username);
+    write_radius_users(radius_users_file, radius_users);
+    return 0;
 }
 
 static int
@@ -1084,6 +1140,11 @@ ds_radius_client_add(unsigned int gid, const char *oid,
     {
         snprintf(client_buffer, sizeof(client_buffer), "client(%s).secret", client_name);
         rc = update_rp(radius_conf, RP_ATTRIBUTE, client_buffer, NULL);
+        if (rc == 0)
+        {
+            snprintf(client_buffer, sizeof(client_buffer), "client(%s).shortname", client_name);
+            rc = update_rp(radius_conf, RP_ATTRIBUTE, client_buffer, client_name);
+        }
         if (rc == 0)
         {
             write_radius(radius_conf);
@@ -1195,12 +1256,12 @@ RCF_PCH_CFG_NODE_RW(node_ds_radiusserver_user_check, "check",
 static rcf_pch_cfg_object node_ds_radiusserver_user = {
     "user", 0,
     &node_ds_radiusserver_user_check, NULL,
-    ds_radius_user_get,
-    ds_radius_user_set,
-    ds_radius_user_add,
-    ds_radius_user_del,
+    (rcf_ch_cfg_get)ds_radius_user_get,
+    (rcf_ch_cfg_set)ds_radius_user_set,
+    (rcf_ch_cfg_add)ds_radius_user_add,
+    (rcf_ch_cfg_del)ds_radius_user_del,
     ds_radius_user_list,
-    NULL
+    NULL, NULL
 };
 
 RCF_PCH_CFG_NODE_RW(node_ds_radiusserver_client_secret, "secret",
@@ -1220,13 +1281,15 @@ ds_radiusserver_netaddr_get(unsigned int gid, const char *oid,
 {
     const char *v;
     retrieve_rp(radius_conf, "listen.ipaddr", &v);
-    strcpy(value, v);
+    strcpy(value, *v == '*' ? "0.0.0.0" : v);
 }
 
 static int
 ds_radiusserver_netaddr_set(unsigned int gid, const char *oid,
                             const char *value, const char *instance, ...)
 {
+    if (strcmp(value, "0.0.0.0") == 0)
+        value = "*";
     update_rp(radius_conf, RP_ATTRIBUTE, "listen(#auth).ipaddr", value);
     update_rp(radius_conf, RP_ATTRIBUTE, "listen(#acct).ipaddr", value);
     write_radius(radius_conf);
@@ -1299,12 +1362,16 @@ const char *radius_ignored_params[] = {"bind_address",
 
 #define RP_DEFAULT_EMPTY_SECTION ((const char *)-1)
 
+#define RADIUS_USERS_FILE "/tmp/te_radius_users"
+
 const char *radius_predefined_params[] = {
     "listen(#auth).type", "auth",
+    "listen(#auth).ipaddr", "*",
     "listen(#acct).type", "acct",
+    "listen(#acct).ipaddr", "*",
     "modules.pap.encryption_scheme", "crypt",
     "modules.chap.authtype", "chap",
-    "modules.files.usersfile", "/tmp/te_radius_users",
+    "modules.files.usersfile", RADIUS_USERS_FILE,
     "modules.eap.default_eap_type", "md5",
     "modules.eap.md5", RP_DEFAULT_EMPTY_SECTION,
     "modules.eap.gtc.auth_type", "PAP",
@@ -1369,6 +1436,32 @@ ds_init_radius_server (rcf_pch_cfg_object **last)
                   defaulted[1] == RP_DEFAULT_EMPTY_SECTION ? NULL : defaulted[1]);
     }
     write_radius(radius_conf);
+    {
+        int fd = open(RADIUS_USERS_FILE, O_WRONLY | O_CREAT | O_EXCL, S_IRUSR | S_IWUSR | S_IROTH);
+        if (fd < 0)
+        {
+            ERROR("Unable to create " RADIUS_USERS_FILE ", %s", strerror(errno));
+        }
+        else
+        {
+            radius_users_file = fdopen(fd, "w");
+            if (radius_users_file == NULL)
+            {
+                close(fd);
+                ERROR("cannot reopen " RADIUS_USERS_FILE ", %s", strerror(errno));
+            }
+        }
+    }
+}
+
+void
+ds_shutdown_radius_server(void)
+{
+    if (radius_users_file != NULL)
+    {
+        fclose(radius_users_file);
+        remove(RADIUS_USERS_FILE);
+    }
 }
 
 #endif /* ! WITH_RADIUS_SERVER */

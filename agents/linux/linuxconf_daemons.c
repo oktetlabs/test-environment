@@ -2929,6 +2929,10 @@ linux_daemons_release()
     ds_shutdown_smtp();
 #endif
 
+#ifdef WITH_RADIUS_SERVER
+    ds_shutdown_radius_server();
+#endif
+
     ta_system("/etc/init.d/xinetd restart >/dev/null 2>&1");
 }
 
