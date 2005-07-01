@@ -134,12 +134,9 @@ main(int argc, char *argv[])
     }
 
     do {
-        struct timeval to;
-
         int csap;
         int num;
-        int timeout = 30;
-        int rc_mod, rc_code;
+        int rc_mod;
 
         char *te_suites = getenv("TE_INSTALL_SUITE");
 

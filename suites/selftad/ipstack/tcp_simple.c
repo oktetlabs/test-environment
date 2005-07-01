@@ -113,7 +113,6 @@ main(int argc, char *argv[])
     rpc_setlibname(srv_dst, NULL);
  
     do {
-        struct timeval to;
         asn_value *csap_spec, *pattern;
 
         int sock_src;
@@ -121,10 +120,7 @@ main(int argc, char *argv[])
 
         int csap;
         int num;
-        int timeout = 30;
-        int rc_mod, rc_code;
-
-        struct sockaddr_in srv_addr;
+        int rc_mod;
 
         if ((sock_src = rpc_socket(srv_src, RPC_AF_INET, RPC_SOCK_STREAM, 
                             RPC_IPPROTO_TCP)) < 0 || srv_src->_errno != 0)
