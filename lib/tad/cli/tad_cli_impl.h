@@ -113,7 +113,6 @@ struct cli_csap_specific_data;
 typedef struct cli_csap_specific_data *cli_csap_specific_data_p;
 typedef struct cli_csap_specific_data
 {
-    FILE  *dbg_file;    /**< file to gather debug data from expect session    */
     int    io;          /**< file descriptor of CLI session stdin and stdout  */
     FILE  *fp;          /**< file descriptor of CLI session stdin and stdout  */
     pid_t  expect_pid;  /**< Expect process ID                                */

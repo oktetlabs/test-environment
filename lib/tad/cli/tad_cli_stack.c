@@ -77,6 +77,7 @@ typedef enum cli_sync_res {
      ((sync_res_) == SYNC_RES_TIMEOUT) ? ETIMEDOUT :    \
          (assert(0), 0))
 
+
 /* Forward declarations */
 static int cli_expect_main(cli_csap_specific_data_p spec_data);
 
@@ -1382,16 +1383,19 @@ cli_session_open(cli_csap_specific_data_p spec_data)
         if (spec_data->user != NULL)
         {
             sprintf(user_param, "-l%s", spec_data->user);
+
+
+
             INFO("> %s %s %s %s",
                  spec_data->program, spec_data->host, port_param, user_param);
             spec_data->io = exp_spawnl(spec_data->program, spec_data->program,
                                        spec_data->host, port_param, user_param, NULL);
 
-            fprintf(spec_data->dbg_file, "returned %d\n", spec_data->io);
+            INFO("returned %d\n", spec_data->io);
         }
         else
         {
-            fprintf(spec_data->dbg_file, "> %s %s %s\n",
+            INFO("> %s %s %s\n",
                     spec_data->program, spec_data->host, port_param);
             spec_data->io = exp_spawnl(spec_data->program, spec_data->program,
                                        spec_data->host, port_param, NULL);
