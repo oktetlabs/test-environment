@@ -31,11 +31,15 @@
 #ifndef __TE_TAPI_RADIUS_H__
 #define __TE_TAPI_RADIUS_H__
 
-#include <stdlib.h>
+#include "te_config.h"
 #include "te_stdint.h"
 #include "te_defs.h"
 #include "tad_common.h"
+
+#include <stdlib.h>
+#ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>
+#endif
 
 #ifdef __cplusplus
 extern "C" {
