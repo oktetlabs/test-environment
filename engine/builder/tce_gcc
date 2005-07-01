@@ -59,12 +59,13 @@ for arg in "$@"; do
 done
 
 if test -z "$nobbhook"; then
-    BBHOOK_O=/tmp/bbhook.o
+    BBHOOK_O=/tmp/bbhook$PID.o
     for i in $CC; do
         tmpcc=$i
     done
     selfpath=`dirname $tmpcc`
     ${TCE_CC} -c ${TCE_CFLAGS} -o $BBHOOK_O -I${selfpath}/../include ${selfpath}/../share/bbhook.c
+    rm -f $BBHOOK_O
 else
     BBHOOK_O=""
 fi
