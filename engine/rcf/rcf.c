@@ -2280,10 +2280,10 @@ main(int argc, const char *argv[])
         {
             len = sizeof(rcf_msg);
             
-            if ((req = (usrreq *)calloc(sizeof(usrreq), 1)) == NULL)
+            if ((req = (usrreq *)calloc(1, sizeof(usrreq))) == NULL)
                 goto error;
 
-            if ((req->message = (rcf_msg *)calloc(len, 1)) == NULL)
+            if ((req->message = (rcf_msg *)calloc(1, len)) == NULL)
             {
                 free(req);
                 goto error;
