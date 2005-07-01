@@ -18,7 +18,7 @@ __bb_init_func(void *unused)
 {
 }
 
-#if 1
+#if 0
 #undef ntohs
 unsigned short int
 ntohs(unsigned short int x)
