@@ -604,7 +604,7 @@ ipc_send_message(struct ipc_client *ipcc, const char *server_name,
         do {
             r = sendto(ipcc->socket,
                        ipcc->tmp_buffer, ipc_msg_size,
-                       MSG_DONTWAIT, SA(&dst), sizeof(dst));
+                       0 /* flags */, SA(&dst), sizeof(dst));
 
             if (r < 0)
             {
@@ -620,9 +620,9 @@ ipc_send_message(struct ipc_client *ipcc, const char *server_name,
         if (r != (ssize_t)(ipc_msg_size))
         {
             fprintf(stderr, "IPC client '%s' failed to send message "
-                            "of the length %u to '%s': %s\n", ipcc->name, 
-                            (unsigned)ipc_msg_size, server_name,
-                            strerror(errno));
+                            "of the length %u (sent %d) to '%s': %s(%d)\n",
+                            ipcc->name, (unsigned)ipc_msg_size, (int)r,
+                            server_name, strerror(errno), errno);
             return TE_RC(TE_IPC, errno);
         }
         if (msg_len == 0)
