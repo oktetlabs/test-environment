@@ -63,15 +63,17 @@
 int
 main(int argc, char *argv[])
 {
+
     tapi_tcp_handler_t conn_hand;
 
     rcf_rpc_server *rpc_srv;
 
-    int  sid_a;
-    char ta[32];
+    char  ta[32];
     char *agt_a = ta;
     char *agt_b;
-    size_t len = sizeof(ta);
+
+    size_t  len = sizeof(ta);
+    uint8_t flags;
 
     int socket = -1;
     int acc_sock = -1;
@@ -80,8 +82,8 @@ main(int argc, char *argv[])
     te_bool is_server;
     te_bool init_close;
 
-    struct sockaddr_in srv_addr;
-    struct sockaddr_in from_sa;
+    struct sockaddr_in sock_addr;
+    struct sockaddr_in csap_addr;
 
     uint8_t csap_mac[6] = {0x00, 0x05, 0x5D, 0x74, 0xAB, 0xB4};
     uint8_t sock_mac[6] = {0x00, 0x0D, 0x88, 0x4F, 0x55, 0xAF};
@@ -93,6 +95,12 @@ main(int argc, char *argv[])
 
     TEST_GET_BOOL_PARAM(is_server);
     TEST_GET_BOOL_PARAM(init_close);
+
+    {
+        struct timeval now;
+        gettimeofday(&now, NULL);
+        srand(now.tv_usec);
+    }
     
     if ((rc = rcf_get_ta_list(ta, &len)) != 0)
         TEST_FAIL("rcf_get_ta_list failed: %X", rc);
@@ -106,15 +114,6 @@ main(int argc, char *argv[])
     agt_b = ta + strlen(ta) + 1;
 
     INFO("Found second TA: %s", agt_b, len);
-    /* Session */
-    {
-        if (rcf_ta_create_session(agt_a, &sid_a) != 0)
-        {
-            TEST_FAIL("rcf_ta_create_session failed");
-            return 1;
-        }
-        INFO("Test: Created session: %d", sid_a); 
-    }
 
     if ((rc = rcf_rpc_server_create(agt_b, "FIRST", &rpc_srv)) != 0)
         TEST_FAIL("Cannot create server %x", rc);
@@ -123,15 +122,17 @@ main(int argc, char *argv[])
     
     rpc_setlibname(rpc_srv, NULL); 
 
-    memset(&srv_addr, 0, sizeof(srv_addr)); 
+    memset(&sock_addr, 0, sizeof(sock_addr)); 
 
-    srv_addr.sin_family = AF_INET;
-    srv_addr.sin_addr.s_addr = sock_ip_addr;
-    srv_addr.sin_port = htons(20000 + 4);
-                    /* TODO generic port */ 
-    from_sa.sin_family = AF_INET;
-    from_sa.sin_addr.s_addr = csap_ip_addr;
-    from_sa.sin_port = htons(20000); /* TODO generic port */
+    sock_addr.sin_family = AF_INET;
+    sock_addr.sin_addr.s_addr = sock_ip_addr;
+    sock_addr.sin_port = htons(rand_range(20000, 21000));
+
+    memset(&csap_addr, 0, sizeof(csap_addr)); 
+
+    csap_addr.sin_family = AF_INET;
+    csap_addr.sin_addr.s_addr = csap_ip_addr;
+    csap_addr.sin_port = htons(20000); 
 
     
     if ((socket = rpc_socket(rpc_srv, RPC_AF_INET, RPC_SOCK_STREAM, 
@@ -144,7 +145,7 @@ main(int argc, char *argv[])
                    &opt_val, sizeof(opt_val));
 
 
-    rc = rpc_bind(rpc_srv, socket, SA(&srv_addr), sizeof(srv_addr));
+    rc = rpc_bind(rpc_srv, socket, SA(&sock_addr), sizeof(sock_addr));
     if (rc != 0)
         TEST_FAIL("bind failed");
 
@@ -160,7 +161,7 @@ main(int argc, char *argv[])
     rc = tapi_tcp_init_connection(agt_a,
                                   is_server ? TAPI_TCP_SERVER :
                                               TAPI_TCP_CLIENT, 
-                                  SA(&from_sa), SA(&srv_addr), 
+                                  SA(&csap_addr), SA(&sock_addr), 
                                   "eth2", csap_mac, sock_mac,
                                   1000, &conn_hand);
     if (rc != 0)
@@ -168,9 +169,11 @@ main(int argc, char *argv[])
 
     if (is_server)
     {
-        rc = rpc_connect(rpc_srv, socket, SA(&from_sa), sizeof(from_sa));
+        rpc_srv->op = RCF_RPC_CALL;
+        rc = rpc_connect(rpc_srv, socket,
+                         SA(&csap_addr), sizeof(csap_addr));
         if (rc != 0)
-            TEST_FAIL("connect() failed: %X", rc); 
+            TEST_FAIL("connect() 'call' failed: %X", rc); 
     } 
 
     rc = tapi_tcp_wait_open(conn_hand, 2000);
@@ -180,14 +183,21 @@ main(int argc, char *argv[])
     RING("connection inited, handle %d", conn_hand);
 
     if (is_server)
+    {
+        rpc_srv->op = RCF_RPC_WAIT;
+        rc = rpc_connect(rpc_srv, socket,
+                         SA(&csap_addr), sizeof(csap_addr));
+        if (rc != 0)
+            TEST_FAIL("connect() 'wait' failed: %X", rc); 
+    }
+    else
     { 
         acc_sock = rpc_accept(rpc_srv, socket, NULL, NULL);
 
         rpc_close(rpc_srv, socket);
         socket = acc_sock;
         acc_sock = -1;
-    }
-
+    } 
 
     opt_val = 1;
     rpc_setsockopt(rpc_srv, socket, RPC_SOL_SOCKET, RPC_SO_REUSEADDR,
@@ -201,7 +211,7 @@ main(int argc, char *argv[])
 #if 1
     rc = tapi_tcp_send_fin(conn_hand, 1000);
     if (rc != 0)
-        TEST_FAIL("wait for FIN failed: %X", rc); 
+        TEST_FAIL("wait for ACK to our FIN failed: %X", rc); 
 
     if (init_close)
     {
@@ -209,8 +219,7 @@ main(int argc, char *argv[])
         socket = -1;
     }
 
-    {
-        uint8_t flags;
+    do {
         rc = tapi_tcp_recv_msg(conn_hand, 2000, TAPI_TCP_AUTO,
                                NULL, 0, NULL, NULL, &flags);
         if (rc != 0)
@@ -220,7 +229,7 @@ main(int argc, char *argv[])
         {
             RING("FIN received!");
         }
-    }
+    } while (!(flags & TCP_FIN_FLAG) && !(flags & TCP_RST_FLAG));
 #endif
     TEST_SUCCESS;
 

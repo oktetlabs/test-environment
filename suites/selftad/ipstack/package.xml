@@ -46,9 +46,11 @@
             </script>
             <arg name="is_server">
                 <value>FALSE</value>
+                <value>TRUE</value>
             </arg>
             <arg name="init_close">
                 <value>FALSE</value>
+                <value>TRUE</value>
             </arg>
         </run> 
 
