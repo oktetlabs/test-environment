@@ -1152,6 +1152,10 @@ tapi_tcp_send_fin(tapi_tcp_handler_t handler, int timeout)
                  __FUNCTION__, handler);
             return TE_RC(TE_TAPI, ETIMEDOUT);
         } 
+        else /* remove ACK for our FIN from msg queue */
+        {
+            tapi_tcp_clear_msg(conn_descr);
+        }
     }
 
     return 0;
@@ -1265,6 +1269,8 @@ tapi_tcp_send_msg(tapi_tcp_handler_t handler, uint8_t *payload, size_t len,
     }
     else
     {
+        INFO("%s(conn %d) sent msg %d bytes, %u seq, %u ack", 
+             __FUNCTION__, handler, len, new_seq, new_ack);
         conn_descr->seq_sent = new_seq;
         if (new_ack != 0)
             conn_descr->ack_sent = new_ack;
@@ -1291,10 +1297,13 @@ tapi_tcp_recv_msg(tapi_tcp_handler_t handler, int timeout,
         return TE_RC(TE_TAPI, EINVAL);
 
     if ((msg = conn_get_oldest_msg(conn_descr)) == NULL)
+    {
         conn_wait_msg(conn_descr, timeout);
+        msg = conn_get_oldest_msg(conn_descr);
+    }
 
 
-    if ((msg = conn_get_oldest_msg(conn_descr)) != NULL)
+    if (msg != NULL)
     {
         if (buffer != NULL && (*len >= msg->len))
         {
@@ -1308,10 +1317,18 @@ tapi_tcp_recv_msg(tapi_tcp_handler_t handler, int timeout,
         if (flags != NULL)
             *flags = msg->flags;
 
+        RING("%s(conn %d): msg with seq %u, ack %u, len %d, flags 0x%x",
+             __FUNCTION__, handler,
+             msg->seqn, msg->ackn, msg->len, msg->flags);
         if (ack_mode == TAPI_TCP_AUTO)
         {
-            tapi_tcp_send_ack(handler, msg->seqn + msg->len);
+            if (msg->len == 0)
+                RING("%s(conn %d): do not send ACK to msg with zero len",
+                     __FUNCTION__, handler);
+            else
+                tapi_tcp_send_ack(handler, msg->seqn + msg->len);
         }
+        tapi_tcp_clear_msg(conn_descr);
     }
     else
     {

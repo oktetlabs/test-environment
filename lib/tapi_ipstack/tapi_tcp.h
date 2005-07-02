@@ -249,7 +249,8 @@ extern int tapi_tcp_send_msg(tapi_tcp_handler_t handler,
                              size_t frag_num);
 
 /**
- * Wait for next incoming TCP message in connection.
+ * Wait for next incoming TCP message in connection, if buffer is empty,
+ * or get oldest received message in buffer queue.
  *
  * @param handler       TAPI handler of TCP connection;     
  * @param timeout       timeout in milliseconds;
