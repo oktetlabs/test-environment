@@ -59,11 +59,11 @@
 #include "ndn_eth.h"
 #include "ndn_ipstack.h"
 
+uint8_t buffer[10000];
 
 int
 main(int argc, char *argv[])
-{
-
+{ 
     tapi_tcp_handler_t conn_hand;
 
     rcf_rpc_server *rpc_srv;
@@ -203,12 +203,40 @@ main(int argc, char *argv[])
     rpc_setsockopt(rpc_srv, socket, RPC_SOL_SOCKET, RPC_SO_REUSEADDR,
                    &opt_val, sizeof(opt_val));
 
+    /*
+     * Send data
+     */
+
+    rc = rpc_send(rpc_srv, socket, buffer, 200, 0);
+
+    {
+        tapi_tcp_pos_t seq, ack;
+        len = sizeof(buffer);
+        rc = tapi_tcp_recv_msg(conn_hand, 2000, TAPI_TCP_AUTO,
+                               buffer, &len, &seq, &ack, &flags);
+        if (rc != 0)
+            TEST_FAIL("recv_msg() failed: %X", rc); 
+
+        RING("msg received: %d bytes, seq %u", len, seq);
+    }
+#if 0
+    rc = tapi_tcp_send_msg(conn_hand, buffer, 50, TAPI_TCP_AUTO, 0, 
+                           TAPI_TCP_QUIET, 0, NULL, 0);
+    if (rc != 0)
+        TEST_FAIL("recv_msg() failed: %X", rc); 
+
+    rc = rpc_recv(rpc_srv, socket, buffer, sizeof(buffer), 0);
+#endif
+
+    /*
+     * Closing connection
+     */
     if (!init_close)
     {
         rpc_close(rpc_srv, socket);
         socket = -1;
     }
-#if 1
+
     rc = tapi_tcp_send_fin(conn_hand, 1000);
     if (rc != 0)
         TEST_FAIL("wait for ACK to our FIN failed: %X", rc); 
@@ -230,7 +258,7 @@ main(int argc, char *argv[])
             RING("FIN received!");
         }
     } while (!(flags & TCP_FIN_FLAG) && !(flags & TCP_RST_FLAG));
-#endif
+
     TEST_SUCCESS;
 
 cleanup:
