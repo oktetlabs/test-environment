@@ -619,6 +619,9 @@ tapi_tcp_clear_msg(tapi_tcp_connection_t *conn_descr)
         (msg = conn_descr->messages->cqh_first) !=
             (void *)conn_descr->messages)
     {
+        VERB("%s() clear msg: seq %u, ack %u, len %d, flags 0x%x",
+             __FUNCTION__, msg->seqn, msg->ackn, msg->len,
+             (int)msg->flags);
         free(msg->data);
         CIRCLEQ_REMOVE(conn_descr->messages, msg, link);
         free(msg);
@@ -1152,11 +1155,9 @@ tapi_tcp_send_fin(tapi_tcp_handler_t handler, int timeout)
                  __FUNCTION__, handler);
             return TE_RC(TE_TAPI, ETIMEDOUT);
         } 
-        else /* remove ACK for our FIN from msg queue */
-        {
-            tapi_tcp_clear_msg(conn_descr);
-        }
     }
+    /* remove ACK for our FIN from msg queue */
+    tapi_tcp_clear_msg(conn_descr);
 
     return 0;
 }
