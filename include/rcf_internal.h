@@ -101,6 +101,7 @@ typedef enum {
 /** Definition of the RCF internal protocol message format */
 typedef struct rcf_msg {
     rcf_op_t opcode;             /**< Operation code - see above */
+    uint32_t seqno;              /**< Sequence number */
     int      flags;              /**< Auxiliary flag */
     int      sid;                /**< Session identifier */
     int      error;              /**< Error code (in the answer) */

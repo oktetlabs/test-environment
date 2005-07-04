@@ -661,8 +661,15 @@ answer_user_request(usrreq *req)
 {
     if (req->user != NULL)
     {
-        int rc = ipc_send_answer(server, req->user, (char *)req->message,
-                                 sizeof(rcf_msg) + req->message->data_len);
+        int rc;
+
+        INFO("Send reply for %u:%d:%s to user '%s'",
+             (unsigned)req->message->seqno, req->message->sid,
+             rcf_op_to_string(req->message->opcode),
+             ipc_server_client_name(req->user));
+
+        rc = ipc_send_answer(server, req->user, (char *)req->message,
+                             sizeof(rcf_msg) + req->message->data_len);
         if (rc != 0)
         {
             ERROR("Cannot send an answer to user: errno %d", rc);
@@ -2098,8 +2105,7 @@ wait_shutdown()
         if ((rc = ipc_receive_message(server, (char *)req->message,
                                       &len, &(req->user))) != 0)
         {
-            ERROR("Failed to receive user request: "
-                             "errno %d", rc);
+            ERROR("Failed to receive user request: errno %d", rc);
         }
         else
         {
@@ -2315,7 +2321,7 @@ main(int argc, const char *argv[])
                 free(req);
                 continue;
             }
-            
+
             if (len != sizeof(rcf_msg) + req->message->data_len)
             {
                 ERROR("Incorrect user request is received: data_len field "
@@ -2326,8 +2332,11 @@ main(int argc, const char *argv[])
                 continue;
             }
             
-            VERB("Request '%s' from user is received",
-                 rcf_op_to_string(req->message->opcode));
+            INFO("Got request %u:%d:%s from user '%s'",
+                 (unsigned)req->message->seqno, req->message->sid,
+                 rcf_op_to_string(req->message->opcode),
+                 ipc_server_client_name(req->user));
+
             if (req->message->opcode == RCFOP_SHUTDOWN)
             {
                 VERB("Shutdown command is recieved");
