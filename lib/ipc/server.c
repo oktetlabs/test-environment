@@ -57,7 +57,7 @@
 #include <sys/queue.h>
 #endif
 
-#ifndef IPC_UNIX
+#ifndef TE_IPC_AF_UNIX
 #if HAVE_NETINET_IN_H
 #include <netinet/in.h>
 #endif
@@ -89,7 +89,7 @@ struct ipc_server_client {
     /** Links to neighbour clients in the list */
     LIST_ENTRY(ipc_server_client)   links;
 
-#ifdef IPC_UNIX
+#ifdef TE_IPC_AF_UNIX
     struct sockaddr_un  sa;         /**< Address of the sender */
     socklen_t           sa_len;     /**< Length of the sockaddr_un struct */
     void               *buffer;     /**< Buffer for datagram */
@@ -118,7 +118,7 @@ struct ipc_server {
     /** List of "active" IPC clients */
     LIST_HEAD(ipc_server_clients, ipc_server_client) clients;
 
-#ifdef IPC_UNIX
+#ifdef TE_IPC_AF_UNIX
     char                   *buffer;     /**< Used to avoid data copying
                                              on receiving datagrams */
     struct ipc_datagrams    datagrams;  /**< Delayed datagrams */
@@ -133,7 +133,7 @@ struct ipc_server {
  * Static functions declaration.
  */
 
-#ifdef IPC_UNIX
+#ifdef TE_IPC_AF_UNIX
 
 static struct ipc_server_client * ipc_int_client_by_addr(
                                       struct ipc_server *ipcs,
@@ -147,7 +147,7 @@ static int ipc_int_get_datagram_from_pool(struct ipc_server *ipcs,
 static int ipc_int_get_datagram(struct ipc_server *ipcs,
                                 struct ipc_server_client **p_ipcsc);
 
-#else /* !IPC_UNIX */
+#else /* !TE_IPC_AF_UNIX */
 
 static int read_socket(int socket, void *buffer, size_t len);
 static int write_socket(int socket, const void *buffer, size_t len);
@@ -157,7 +157,7 @@ static int ipc_pmap_register_server(const char *server_name,
 static int ipc_pmap_unregister_server(const char *server_name,
                                       uint16_t port);
 
-#endif /* !IPC_UNIX */
+#endif /* !TE_IPC_AF_UNIX */
 
 
 /*
@@ -195,7 +195,7 @@ ipc_register_server(const char *name, struct ipc_server **p_ipcs)
     strcpy(ipcs->name, name);
     LIST_INIT(&ipcs->clients);
 
-#ifdef IPC_UNIX
+#ifdef TE_IPC_AF_UNIX
     TAILQ_INIT(&ipcs->datagrams);
 
     ipcs->buffer = calloc(1, IPC_SEGMENT_SIZE);
@@ -239,7 +239,7 @@ ipc_register_server(const char *name, struct ipc_server **p_ipcs)
         }
     }
 
-#else /* !IPC_UNIX */
+#else /* !TE_IPC_AF_UNIX */
 
     if (IPC_TCP_SERVER_BUFFER_SIZE != 0)
     {
@@ -299,7 +299,7 @@ ipc_register_server(const char *name, struct ipc_server **p_ipcs)
         }
     }
 
-#endif /* !IPC_UNIX */
+#endif /* !TE_IPC_AF_UNIX */
 
 #if HAVE_FCNTL_H
     /* 
@@ -330,7 +330,7 @@ int
 ipc_close_server(struct ipc_server *ipcs)
 {
     struct ipc_server_client *ipcsc;
-#ifdef IPC_UNIX
+#ifdef TE_IPC_AF_UNIX
     struct ipc_datagram *p;
 #endif
 
@@ -339,7 +339,7 @@ ipc_close_server(struct ipc_server *ipcs)
 
     close(ipcs->socket);
 
-#ifdef IPC_UNIX
+#ifdef TE_IPC_AF_UNIX
     /* Free datagram's buffer */
     while ((p = ipcs->datagrams.tqh_first) != NULL)
     {
@@ -356,7 +356,7 @@ ipc_close_server(struct ipc_server *ipcs)
     while ((ipcsc = ipcs->clients.lh_first) != NULL)
     {
         LIST_REMOVE(ipcsc, links);
-#ifdef IPC_UNIX
+#ifdef TE_IPC_AF_UNIX
         free(ipcsc->buffer);
 #else
         close(ipcsc->socket);
@@ -364,7 +364,7 @@ ipc_close_server(struct ipc_server *ipcs)
         free(ipcsc);
     }
 
-#ifndef IPC_UNIX
+#ifndef TE_IPC_AF_UNIX
     if (ipc_pmap_unregister_server(ipcs->name, ipcs->port) != 0)
     {
         perror("Cannot unregister server");
@@ -385,7 +385,7 @@ ipc_server_client_name(const struct ipc_server_client *ipcsc)
     if (ipcsc == NULL)
         return NULL;
 
-#ifdef IPC_UNIX
+#ifdef TE_IPC_AF_UNIX
     return (ipcsc->sa.sun_path[0] != '\0') ? ipcsc->sa.sun_path :
                (ipcsc->sa.sun_path + 1);
 #else
@@ -394,7 +394,7 @@ ipc_server_client_name(const struct ipc_server_client *ipcsc)
 }
 
 
-#ifdef IPC_UNIX
+#ifdef TE_IPC_AF_UNIX
 
 /* See description in ipc_server.h */
 int
@@ -599,7 +599,7 @@ ipc_send_answer(struct ipc_server *ipcs, struct ipc_server_client *ipcsc,
     return 0;
 }
 
-#else /* !IPC_UNIX */
+#else /* !TE_IPC_AF_UNIX */
 
 
 /* See description in ipc_server.h */
@@ -835,14 +835,14 @@ ipc_send_answer(struct ipc_server *ipcs, struct ipc_server_client *ipcsc,
     }
 }
 
-#endif /* !IPC_UNIX */
+#endif /* !TE_IPC_AF_UNIX */
 
 
 /*
  * Local functions implementation
  */
 
-#ifdef IPC_UNIX
+#ifdef TE_IPC_AF_UNIX
 
 /**
  * Search in pool for the item with specified address and return
@@ -1051,7 +1051,7 @@ ipc_int_get_datagram(struct ipc_server *ipcs,
     return TE_RC(TE_IPC, EFAULT);
 }
 
-#else /* !IPC_UNIX */
+#else /* !TE_IPC_AF_UNIX */
 
 /**
  * Connect to the my pmap server and register pair (server, port)
@@ -1187,4 +1187,4 @@ write_socket(int socket, const void *buffer, size_t len)
     return 0;
 }
 
-#endif /* !IPC_UNIX */
+#endif /* !TE_IPC_AF_UNIX */

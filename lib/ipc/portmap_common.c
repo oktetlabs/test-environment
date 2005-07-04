@@ -32,7 +32,7 @@
 
 #include "ipc_internal.h"
 
-#ifndef IPC_UNIX
+#ifndef TE_IPC_AF_UNIX
 
 #ifdef HAVE_STDIO_H
 #include <stdio.h>
@@ -161,4 +161,4 @@ ipc_pmap_process_command(enum ipc_pm_command_type_e cmd_type,
     return answer_data;
 }
 
-#endif /* !IPC_UNIX */
+#endif /* !TE_IPC_AF_UNIX */

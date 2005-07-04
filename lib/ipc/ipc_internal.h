@@ -82,17 +82,17 @@ extern "C" {
 
 
 /** Should AF_UNIX/UDP be used (plain TCP will be used otherwise) */
-#define IPC_UNIX
+#define TE_IPC_AF_UNIX
 
 #define IPC_RETRY   5   /**< Number of retries for connecting to server */
 #define IPC_SLEEP   1   /**< Interval (in seconds) between retries */
 
 
-#ifdef IPC_UNIX
+#ifdef TE_IPC_AF_UNIX
 
 /**
  * The maximal size of the datagram
- * (has effect only if IPC_UNIX is defined).
+ * (has effect only if TE_IPC_AF_UNIX is defined).
  */
 #define IPC_SEGMENT_SIZE    2048
 

@@ -33,7 +33,7 @@
 #include "ipc_internal.h"
 #include "ipc_server.h"
 
-#ifdef IPC_UNIX
+#ifdef TE_IPC_AF_UNIX
 
 /* See description in ipc_server.h */
 int

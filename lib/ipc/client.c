@@ -53,7 +53,7 @@
 
 #include "ipc_internal.h"
 
-#ifndef IPC_UNIX
+#ifndef TE_IPC_AF_UNIX
 #ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>
 #endif
@@ -63,7 +63,7 @@
 #ifdef HAVE_NETDB_H
 #include <netdb.h>
 #endif
-#endif /* !IPC_UNIX */
+#endif /* !TE_IPC_AF_UNIX */
 
 #include "te_defs.h"
 #include "te_errno.h"
@@ -103,7 +103,7 @@ struct ipc_client_server {
     struct sockaddr_un sa;          /**< Address of the server */
     socklen_t sa_len;               /**< Length of the sockaddr_un struct */
 
-#ifdef IPC_UNIX
+#ifdef TE_IPC_AF_UNIX
     char *buffer;            /**< Buffer for datagram */
     size_t length;           /**< Length of the currently receiving
                                   message, 0 if none */
@@ -132,7 +132,7 @@ struct ipc_client_server {
 struct ipc_client {
     struct ipc_client_server *pool;   /**< Pool of the used servers */
     char   name[UNIX_PATH_MAX];       /**< IPC client name */
-#ifdef IPC_UNIX
+#ifdef TE_IPC_AF_UNIX
     int socket;                       /**< Socket */
     struct ipc_datagrams datagrams;   /**< Pool for the datagrams */
     char *tmp_buffer;                 /**< Buffer for datagram */
@@ -171,7 +171,7 @@ get_pool_item_by_name(struct ipc_client *ipcc, const char *name)
 
     while (ipccs != NULL)
     {
-#ifdef IPC_UNIX
+#ifdef TE_IPC_AF_UNIX
         if (strcmp(ipccs->sa.sun_path + 1, name) == 0)
 #else
 #if IPC_CLIENT_DEBUG_TCP
@@ -192,7 +192,7 @@ get_pool_item_by_name(struct ipc_client *ipcc, const char *name)
     if (*parent == NULL)
         return NULL;
 
-#ifdef IPC_UNIX
+#ifdef TE_IPC_AF_UNIX
     (*parent)->sa.sun_family = AF_UNIX;
     memset((*parent)->sa.sun_path, 0, UNIX_PATH_MAX);
     strcpy((*parent)->sa.sun_path + 1, name);
@@ -228,7 +228,7 @@ ipc_free_client_server_pool(struct ipc_client *ipcc)
     while (ipccs != NULL)
     {
         tmp = ipccs->next;
-#ifdef IPC_UNIX
+#ifdef TE_IPC_AF_UNIX
         free(ipccs->buffer);
 #else
         close(ipccs->socket);
@@ -240,7 +240,7 @@ ipc_free_client_server_pool(struct ipc_client *ipcc)
 }
 
 
-#ifdef IPC_UNIX
+#ifdef TE_IPC_AF_UNIX
 
 /**
  * Write datagram to the ipcc->pool pool from the ipcc->datagrams pool
@@ -487,7 +487,7 @@ write_socket(int socket, const char *buffer, size_t len)
 #endif
 
 
-#ifdef IPC_UNIX
+#ifdef TE_IPC_AF_UNIX
 
 /* See description in ipc_client.h */
 int
