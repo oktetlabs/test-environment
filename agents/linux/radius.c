@@ -732,7 +732,7 @@ static int
 set_user_replies(const char *name, const char *replies, te_bool in_accept)
 {
     radius_user *user = find_radius_user(name);
-    radius_user_reply *rep, *rep2;
+    radius_user_reply *rep;
     char *attr;
     char *value;
 
@@ -991,6 +991,10 @@ ds_radius_accept_get(unsigned int gid, const char *oid,
 {
     radius_user *user = find_radius_user(username);
 
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(instance);
+
     if (user == NULL)
         return TE_RC(TE_TA_LINUX, ENOENT);
     stringify_attribute_values(value, user->replies, sizeof(*user->replies), 
@@ -1005,6 +1009,12 @@ ds_radius_accept_set(unsigned int gid, const char *oid,
                      const char *username, ...)
 {
     int rc;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(instance);
+    
+
     if (radius_users_file == NULL)
         return TE_RC(TE_TA_LINUX, EBADF);
     rc = set_user_replies(username, value, TRUE);
@@ -1021,6 +1031,10 @@ ds_radius_challenge_get(unsigned int gid, const char *oid,
 {
     radius_user *user = find_radius_user(username);
 
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(instance);
+
     if (user == NULL)
         return TE_RC(TE_TA_LINUX, ENOENT);
     stringify_attribute_values(value, user->replies, sizeof(*user->replies), 
@@ -1035,6 +1049,11 @@ ds_radius_challenge_set(unsigned int gid, const char *oid,
                         const char *username, ...)
 {
     int rc;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(instance);
+
     if (radius_users_file == NULL)
         return TE_RC(TE_TA_LINUX, EBADF);
     rc = set_user_replies(username, value, FALSE);
@@ -1050,6 +1069,10 @@ ds_radius_check_get(unsigned int gid, const char *oid,
 {
     radius_user *user = find_radius_user(username);
 
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(instance);
+
     if (user == NULL)
         return TE_RC(TE_TA_LINUX, ENOENT);
     stringify_attribute_values(value, user->checks, sizeof(*user->checks), 
@@ -1064,6 +1087,11 @@ ds_radius_check_set(unsigned int gid, const char *oid,
                     const char *username, ...)
 {
     int rc;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(instance);
+
     if (radius_users_file == NULL)
         return TE_RC(TE_TA_LINUX, EBADF);
     rc = set_user_checks(username, value);
@@ -1077,6 +1105,10 @@ ds_radius_user_add(unsigned int gid, const char *oid,
                    const char *value, const char *instance, 
                    const char *username, ...)
 {
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(instance);
+
     if (radius_users_file == NULL)
         return TE_RC(TE_TA_LINUX, EBADF);
     else
@@ -1100,6 +1132,10 @@ ds_radius_user_set(unsigned int gid, const char *oid,
                    const char *username, ...)
 {
     radius_user *user = find_radius_user(username);
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(instance);
     
     if (user == NULL)
         return TE_RC(TE_TA_LINUX, ENOENT);
@@ -1113,6 +1149,10 @@ ds_radius_user_get(unsigned int gid, const char *oid,
                    const char *username, ...)
 {
     radius_user *user = find_radius_user(username);
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(instance);
     
     if (user == NULL)
         return TE_RC(TE_TA_LINUX, ENOENT);
@@ -1125,6 +1165,9 @@ static int
 ds_radius_user_del(unsigned int gid, const char *oid,
                    const char *instance, const char *username, ...)
 {
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(instance);
     delete_radius_user(username);
     write_radius_users(radius_users_file, radius_users);
     return 0;
@@ -1139,6 +1182,10 @@ ds_radius_user_list(unsigned int gid, const char *oid,
     int size;
     char *iter;
     
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(instance);
+
     for (user = radius_users, size = 0; user != NULL; size += strlen(user->name) + 1, user = user->next)
         ;
     *list = malloc(size + 1);
@@ -1190,6 +1237,9 @@ ds_radius_client_del(unsigned int gid, const char *oid,
                      const char *instance, 
                      const char *client_name, ...)
 {
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(instance);
     snprintf(client_buffer, sizeof(client_buffer), "client(%s)", client_name);
     update_rp(radius_conf, RP_SECTION, client_buffer, RP_DELETE_VALUE);
     write_radius(radius_conf);
@@ -1226,6 +1276,10 @@ ds_radius_client_list(unsigned int gid, const char *oid,
     int size = 0;
     char *c_iter;
 
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(instance);
+
     VERB("obtaining client list");
     find_rp(radius_conf, "client", FALSE, FALSE, client_count, &size);
     VERB("allocation %d bytes for list of clients", size);
@@ -1242,6 +1296,10 @@ ds_radius_secret_get(unsigned int gid, const char *oid,
                      const char *client_name, ...)
 {
     const char *val;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(instance);
     VERB("getting client secret");
     snprintf(client_buffer, sizeof(client_buffer), "client(%s).secret", client_name);
     if(!retrieve_rp(radius_conf, client_buffer, &val))
@@ -1263,6 +1321,10 @@ ds_radius_secret_set(unsigned int gid, const char *oid,
 {
     int rc;
 
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(instance);
     VERB("setting client secret to %s", value);
     snprintf(client_buffer, sizeof(client_buffer), "client(%s).secret", client_name);
     rc = update_rp(radius_conf, RP_ATTRIBUTE, client_buffer, value);    
@@ -1311,19 +1373,27 @@ ds_radiusserver_netaddr_get(unsigned int gid, const char *oid,
                             char *value, const char *instance, ...)
 {
     const char *v;
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(instance);
     retrieve_rp(radius_conf, "listen.ipaddr", &v);
     strcpy(value, *v == '*' ? "0.0.0.0" : v);
+    return 0;
 }
 
 static int
 ds_radiusserver_netaddr_set(unsigned int gid, const char *oid,
                             const char *value, const char *instance, ...)
 {
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(instance);
     if (strcmp(value, "0.0.0.0") == 0)
         value = "*";
     update_rp(radius_conf, RP_ATTRIBUTE, "listen(#auth).ipaddr", value);
     update_rp(radius_conf, RP_ATTRIBUTE, "listen(#acct).ipaddr", value);
     write_radius(radius_conf);
+    return 0;
 }
 
 static int
@@ -1331,16 +1401,24 @@ ds_radiusserver_acctport_get(unsigned int gid, const char *oid,
                             char *value, const char *instance, ...)
 {
     const char *v;
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(instance);
     retrieve_rp(radius_conf, "listen(#acct).port", &v);
     strcpy(value, v);
+    return 0;
 }
 
 static int
 ds_radiusserver_acctport_set(unsigned int gid, const char *oid,
                             const char *value, const char *instance, ...)
 {
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(instance);
     update_rp(radius_conf, RP_ATTRIBUTE, "listen(#acct).port", value);
     write_radius(radius_conf);
+    return 0;
 }
 
 static int
@@ -1348,16 +1426,24 @@ ds_radiusserver_authport_get(unsigned int gid, const char *oid,
                             char *value, const char *instance, ...)
 {
     const char *v;
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(instance);
     retrieve_rp(radius_conf, "listen(#auth).port", &v);
     strcpy(value, v);
+    return 0;
 }
 
 static int
 ds_radiusserver_authport_set(unsigned int gid, const char *oid,
                             const char *value, const char *instance, ...)
 {
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(instance);
     update_rp(radius_conf, RP_ATTRIBUTE, "listen(#auth).port", value);
     write_radius(radius_conf);
+    return 0;
 }
 
 RCF_PCH_CFG_NODE_RW(node_ds_radiusserver_net_addr, "net_addr",
