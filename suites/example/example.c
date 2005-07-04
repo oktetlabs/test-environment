@@ -80,14 +80,28 @@ main(int argc, char *argv[])
     RING("Agent is %s", ta);
     CHECK_RC(cfg_set_instance_fmt(CVT_INTEGER, 0, "/agent:%s/radiusserver:", ta));
     CHECK_RC(cfg_get_instance_fmt(&type, &flag, "/agent:%s/radiusserver:", ta));
-    CHECK_RC(!(flag == 0));
-    // CHECK_RC(cfg_add_instance_fmt(&new_client, CVT_NONE, NULL, "/agent:%s/radiusserver:/client:%s", 
-    //                              ta, "127.0.0.1"));
+    CHECK_RC(cfg_add_instance_fmt(&new_client, CVT_NONE, NULL, "/agent:%s/radiusserver:/client:%s", 
+                                  ta, "127.0.0.1"));
+    CHECK_RC(cfg_set_instance_fmt(CVT_STRING, "secret", "/agent:%s/radiusserver:/client:%s/secret:", 
+                                  ta, "127.0.0.1"));
+    CHECK_RC(cfg_add_instance_fmt(&new_client, CVT_INTEGER, 1, "/agent:%s/radiusserver:/user:%s", 
+                                  ta, "artem"));
+    CHECK_RC(cfg_set_instance_fmt(CVT_STRING, "User-Password=\"kuku\"", 
+                                  "/agent:%s/radiusserver:/user:%s/check:", 
+                                  ta, "artem"));
+    CHECK_RC(cfg_set_instance_fmt(CVT_STRING, "Session-Timeout=100,Framed-IP-Address=192.168.1.1", 
+                                  "/agent:%s/radiusserver:/user:%s/challenge-attrs:", 
+                                  ta, "artem"));
+    CHECK_RC(cfg_set_instance_fmt(CVT_STRING, "Framed-IP-Address=192.168.1.1", 
+                                  "/agent:%s/radiusserver:/user:%s/accept-attrs:", 
+                                  ta, "artem"));
+    sleep(60);
     CHECK_RC(cfg_set_instance_fmt(CVT_INTEGER, (void *)1, "/agent:%s/radiusserver:", ta));
     CHECK_RC(cfg_get_instance_fmt(&type, &flag, "/agent:%s/radiusserver:", ta));
-    CHECK_RC(!(flag != 0));
-    sleep(60);
     CHECK_RC(cfg_set_instance_fmt(type, 0, "/agent:%s/radiusserver:", ta));
+    CHECK_RC(cfg_get_instance_fmt(&type, &flag, "/agent:%s/radiusserver:", ta));
+
+    RING("RADIUS server is %s", flag ? "on" : "off");
 
     TEST_SUCCESS;
 
