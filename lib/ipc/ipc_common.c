@@ -42,6 +42,8 @@
 #include "ipc_internal.h"
 
 
+#ifdef TE_IPC_CONNECTIONLESS
+
 /* See description in ipc_internal.h */
 int
 ipc_remember_datagram(struct ipc_datagrams *p_pool, void *data, size_t len,
@@ -68,3 +70,5 @@ ipc_remember_datagram(struct ipc_datagrams *p_pool, void *data, size_t len,
 
     return 0;
 }
+
+#endif /* TE_IPC_CONNECTIONLESS */

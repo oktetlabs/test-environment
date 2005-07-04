@@ -76,10 +76,6 @@
 #include "ipc_internal.h"
 
 
-/** Debug TCP? */
-#define TCP_DEBUG 0
-
-
 /**
  * The ipc_server_client structure is used to store information about
  * sender of the message. This structure used in both UDP/UNIX and 
@@ -92,6 +88,9 @@ struct ipc_server_client {
 #ifdef TE_IPC_AF_UNIX
     struct sockaddr_un  sa;         /**< Address of the sender */
     socklen_t           sa_len;     /**< Length of the sockaddr_un struct */
+#endif
+
+#ifdef TE_IPC_CONNECTIONLESS
     void               *buffer;     /**< Buffer for datagram */
     size_t              frag_size;  /**< Size of current fragment */
     size_t              frag_rest;  /**< Number of octets in the current
@@ -102,7 +101,7 @@ struct ipc_server_client {
                                          the current message */
 #else
     int         socket;         /**< Connected socket to client */
-    uint32_t    pending_octets; /**< Number of octets in current message
+    uint32_t    pending;        /**< Number of octets in current message
                                      left to read from socket and to
                                      return to user. This field MUST
                                      be 4-octets long. */
@@ -118,13 +117,15 @@ struct ipc_server {
     /** List of "active" IPC clients */
     LIST_HEAD(ipc_server_clients, ipc_server_client) clients;
 
-#ifdef TE_IPC_AF_UNIX
+#ifndef TE_IPC_AF_UNIX
+    uint16_t    port;           /**< Port number used for this server */
+#endif
+#ifdef TE_IPC_CONNECTIONLESS
     char                   *buffer;     /**< Used to avoid data copying
                                              on receiving datagrams */
     struct ipc_datagrams    datagrams;  /**< Delayed datagrams */
 #else
-    uint16_t    port;           /**< Port number used for this server */
-    char       *out_buffer;     /**< Buffer for outgoing messages */
+    char                   *out_buffer; /**< Buffer for outgoing messages */
 #endif
 };
 
@@ -133,12 +134,24 @@ struct ipc_server {
  * Static functions declaration.
  */
 
-#ifdef TE_IPC_AF_UNIX
+#ifndef TE_IPC_AF_UNIX
 
+static int ipc_pmap_register_server(const char *server_name,
+                                    uint16_t port);
+static int ipc_pmap_unregister_server(const char *server_name,
+                                      uint16_t port);
+
+#endif /* !TE_IPC_AF_UNIX */
+
+
+#ifdef TE_IPC_CONNECTIONLESS
+
+#ifdef TE_IPC_AF_UNIX
 static struct ipc_server_client * ipc_int_client_by_addr(
                                       struct ipc_server *ipcs,
                                       struct sockaddr_un *sa_ptr,
                                       socklen_t sa_len);
+#endif
 
 static int ipc_int_get_datagram_from_pool(struct ipc_server *ipcs,
                                           struct ipc_server_client
@@ -147,17 +160,12 @@ static int ipc_int_get_datagram_from_pool(struct ipc_server *ipcs,
 static int ipc_int_get_datagram(struct ipc_server *ipcs,
                                 struct ipc_server_client **p_ipcsc);
 
-#else /* !TE_IPC_AF_UNIX */
+#else /* !TE_IPC_CONNECTIONLESS */
 
 static int read_socket(int socket, void *buffer, size_t len);
 static int write_socket(int socket, const void *buffer, size_t len);
 
-static int ipc_pmap_register_server(const char *server_name,
-                                    uint16_t port);
-static int ipc_pmap_unregister_server(const char *server_name,
-                                      uint16_t port);
-
-#endif /* !TE_IPC_AF_UNIX */
+#endif /* !TE_IPC_CONNECTIONLESS */
 
 
 /*
@@ -195,29 +203,28 @@ ipc_register_server(const char *name, struct ipc_server **p_ipcs)
     strcpy(ipcs->name, name);
     LIST_INIT(&ipcs->clients);
 
-#ifdef TE_IPC_AF_UNIX
-    TAILQ_INIT(&ipcs->datagrams);
-
-    ipcs->buffer = calloc(1, IPC_SEGMENT_SIZE);
-    if (ipcs->buffer == NULL)
-    {
-        rc = errno;
-        perror("ipc_register_server(): calloc() error");
-        free(ipcs);
-        return TE_RC(TE_IPC, rc);
-    }
-
     /* Create a socket */
-    ipcs->socket = socket(PF_UNIX, SOCK_DGRAM, 0);
+    ipcs->socket = socket(
+#ifdef TE_IPC_AF_UNIX
+                          PF_UNIX,
+#else
+                          PF_INET,
+#endif
+#ifdef TE_IPC_CONNECTIONLESS
+                          SOCK_DGRAM,
+#else
+                          SOCK_STREAM,
+#endif
+                          0);
     if (ipcs->socket < 0)
     {
         rc = errno;
         perror("ipc_register_server(): socket() error");
-        free(ipcs->buffer);
         free(ipcs);
         return TE_RC(TE_IPC, rc);
     }
 
+#ifdef TE_IPC_AF_UNIX
     {
         struct sockaddr_un  sa;
         
@@ -233,50 +240,27 @@ ipc_register_server(const char *name, struct ipc_server **p_ipcs)
             fprintf(stderr, "Failed to register IPC server '%s': %s\n",
                             SUN_NAME(&sa), strerror(rc));
             close(ipcs->socket);
-            free(ipcs->buffer);
             free(ipcs);
             return TE_RC(TE_IPC, rc);
         }
     }
+#endif /* TE_IPC_AF_UNIX */
 
-#else /* !TE_IPC_AF_UNIX */
-
-    if (IPC_TCP_SERVER_BUFFER_SIZE != 0)
-    {
-        ipcs->out_buffer = calloc(1, IPC_TCP_SERVER_BUFFER_SIZE);
-        if (ipcs->out_buffer == NULL)
-        {
-            rc = errno;
-            perror("ipc_register_server(): calloc() error");
-            free(ipcs);
-            return TE_RC(TE_IPC, rc);
-        }
-    }
-
-    /* Create a socket */
-    ipcs->socket = socket(AF_INET, SOCK_STREAM, 0);
-    if (ipcs->socket < 0)
-    {
-        rc = errno;
-        perror("ipc_register_server(): socket() error");
-        free(ipcs->out_buffer);
-        free(ipcs);
-        return TE_RC(TE_IPC, rc);
-    }
-
+#ifndef TE_IPC_CONNECTIONLESS
     if (listen(ipcs->socket, SOMAXCONN) != 0)
     {
         rc = errno;
         perror("listen() error");
         close(ipcs->socket);
-        free(ipcs->out_buffer);
         free(ipcs);
         return TE_RC(TE_IPC, rc);
     }
+#endif /* !TE_IPC_CONNECTIONLESS */
 
+#ifndef TE_IPC_AF_UNIX
     {
-        struct sockaddr_in addr;;
-        int addr_len = sizeof(addr);
+        struct sockaddr_in  addr;
+        int                 addr_len = sizeof(addr);
 
         if (getsockname(ipcs->socket, (struct sockaddr*)&addr,
                         &addr_len) != 0)
@@ -284,7 +268,6 @@ ipc_register_server(const char *name, struct ipc_server **p_ipcs)
             rc = errno;
             perror("getsockname() error");
             close(ipcs->socket);
-            free(ipcs->out_buffer);
             free(ipcs);
             return TE_RC(TE_IPC, rc);
         }
@@ -293,12 +276,10 @@ ipc_register_server(const char *name, struct ipc_server **p_ipcs)
             rc = errno;
             perror("Cannot register server's port");
             close(ipcs->socket);
-            free(ipcs->out_buffer);
             free(ipcs);
             return TE_RC(TE_IPC, rc);
         }
     }
-
 #endif /* !TE_IPC_AF_UNIX */
 
 #if HAVE_FCNTL_H
@@ -308,6 +289,37 @@ ipc_register_server(const char *name, struct ipc_server **p_ipcs)
      */
     (void)fcntl(ipcs->socket, F_SETFD, FD_CLOEXEC);
 #endif
+    
+#ifdef TE_IPC_CONNECTIONLESS
+
+    TAILQ_INIT(&ipcs->datagrams);
+
+    ipcs->buffer = calloc(1, IPC_SEGMENT_SIZE);
+    if (ipcs->buffer == NULL)
+    {
+        rc = errno;
+        perror("ipc_register_server(): calloc() error");
+        close(ipcs->socket);
+        free(ipcs);
+        return TE_RC(TE_IPC, rc);
+    }
+
+#else /* !TE_IPC_CONNECTIONLESS */
+    
+    if (IPC_TCP_SERVER_BUFFER_SIZE != 0)
+    {
+        ipcs->out_buffer = calloc(1, IPC_TCP_SERVER_BUFFER_SIZE);
+        if (ipcs->out_buffer == NULL)
+        {
+            rc = errno;
+            perror("ipc_register_server(): calloc() error");
+            close(ipcs->socket);
+            free(ipcs);
+            return TE_RC(TE_IPC, rc);
+        }
+    }
+
+#endif /* !TE_IPC_AF_UNIX */
 
     *p_ipcs = ipcs;
 
@@ -319,9 +331,7 @@ ipc_register_server(const char *name, struct ipc_server **p_ipcs)
 int
 ipc_get_server_fd(const struct ipc_server *ipcs)
 {
-    assert(ipcs != NULL);
-
-    return ipcs->socket;
+    return (ipcs != NULL) ? ipcs->socket : -1;
 }
 
 
@@ -330,16 +340,27 @@ int
 ipc_close_server(struct ipc_server *ipcs)
 {
     struct ipc_server_client *ipcsc;
-#ifdef TE_IPC_AF_UNIX
-    struct ipc_datagram *p;
+#ifdef TE_IPC_CONNECTIONLESS
+    struct ipc_datagram      *p;
 #endif
 
     if (ipcs == NULL)
         return 0;
 
-    close(ipcs->socket);
+#ifndef TE_IPC_AF_UNIX
+    if (ipc_pmap_unregister_server(ipcs->name, ipcs->port) != 0)
+    {
+        perror("Cannot unregister server");
+        return TE_RC(TE_IPC, errno);
+    }
+#endif
 
-#ifdef TE_IPC_AF_UNIX
+    if (close(ipcs->socket) != 0)
+        fprintf(stderr, "close() failed\n");
+
+#ifdef TE_IPC_CONNECTIONLESS
+    if (ipcs->datagrams.tqh_first != NULL)
+        fprintf(stderr, "IPC server: drop some datagrams\n");
     /* Free datagram's buffer */
     while ((p = ipcs->datagrams.tqh_first) != NULL)
     {
@@ -356,21 +377,13 @@ ipc_close_server(struct ipc_server *ipcs)
     while ((ipcsc = ipcs->clients.lh_first) != NULL)
     {
         LIST_REMOVE(ipcsc, links);
-#ifdef TE_IPC_AF_UNIX
+#ifdef TE_IPC_CONNECTIONLESS
         free(ipcsc->buffer);
 #else
         close(ipcsc->socket);
 #endif
         free(ipcsc);
     }
-
-#ifndef TE_IPC_AF_UNIX
-    if (ipc_pmap_unregister_server(ipcs->name, ipcs->port) != 0)
-    {
-        perror("Cannot unregister server");
-        return TE_RC(TE_IPC, errno);
-    }
-#endif
 
     /* Free instance */
     free(ipcs);
@@ -389,12 +402,12 @@ ipc_server_client_name(const struct ipc_server_client *ipcsc)
     return (ipcsc->sa.sun_path[0] != '\0') ? ipcsc->sa.sun_path :
                (ipcsc->sa.sun_path + 1);
 #else
-    return "UNKNOWN";
+    return "UNKNOWN - TODO";
 #endif
 }
 
 
-#ifdef TE_IPC_AF_UNIX
+#ifdef TE_IPC_CONNECTIONLESS
 
 /* See description in ipc_server.h */
 int
@@ -423,7 +436,7 @@ ipc_receive_message(struct ipc_server *ipcs,
     do {
         if ((client == NULL) || (client->frag_rest == 0))
         {
-            struct ipc_packet_header   *ipch;
+            struct ipc_dgram_header   *ipch;
 
             KTRC("Get datagram\n");
             /*
@@ -436,13 +449,13 @@ ipc_receive_message(struct ipc_server *ipcs,
                 return TE_RC(TE_IPC, rc);
             }
 
-            ipch = (struct ipc_packet_header*)client->buffer;
+            ipch = (struct ipc_dgram_header*)client->buffer;
 
             KTRC("Datagram frag=%u len=%u left=%u\n",
                  client->frag_size, ipch->length, ipch->left);
 
             data_size = client->frag_size -
-                            sizeof(struct ipc_packet_header);
+                            sizeof(struct ipc_dgram_header);
             if (data_size > ipch->left)
             {
                 /* 
@@ -455,7 +468,7 @@ ipc_receive_message(struct ipc_server *ipcs,
             }
 
             data = (uint8_t *)client->buffer +
-                   sizeof(struct ipc_packet_header);
+                   sizeof(struct ipc_dgram_header);
 
             if (*p_ipcsc == NULL)
             {
@@ -553,7 +566,7 @@ int
 ipc_send_answer(struct ipc_server *ipcs, struct ipc_server_client *ipcsc,
                 const void *msg, size_t msg_len)
 {
-    struct ipc_packet_header   *ipch;
+    struct ipc_dgram_header   *ipch;
     size_t                      octets_sent;
     size_t                      segm_size;
     ssize_t                     r;
@@ -567,7 +580,7 @@ ipc_send_answer(struct ipc_server *ipcs, struct ipc_server_client *ipcsc,
     }
 
     /* We use ipcs->buffer to construct the datagram */
-    ipch = (struct ipc_packet_header *)(ipcs->buffer);
+    ipch = (struct ipc_dgram_header *)(ipcs->buffer);
     memset(ipch, 0, sizeof(*ipch));
     ipch->length = msg_len;
 
@@ -599,8 +612,67 @@ ipc_send_answer(struct ipc_server *ipcs, struct ipc_server_client *ipcsc,
     return 0;
 }
 
-#else /* !TE_IPC_AF_UNIX */
 
+#else /* !TE_IPC_CONNECTIONLESS */
+
+
+/**
+ * Receive the message from IPC client.
+ *
+ * @param ipcs          Pointer to the ipc_server structure returned
+ *                      by ipc_register_server()
+ * @param buf           Buffer for the message
+ * @param p_buf_len     Pointer to the variable to store:
+ *                          on entry - length of the buffer;
+ *                          on exit - length of the received message
+ *                                    (or full length of the message if
+ *                                     ETESMALLBUF returned).
+ * @param ipcsc         Pointer to the ipc_server_client structure
+ *                      returned by the ipc_receive_message() function
+ *
+ * @return Status code.
+ *
+ * @retval 0            Success
+ * @retval ETESMALLBUF  Buffer is too small for the rest of the
+ *                      message, the part of the message is written
+ *                      to the buffer, the ipc_receive_message()
+ *                      for the client should be called again
+ * @retval errno        Other failure
+ */
+static int
+ipc_server_int_receive(struct ipc_server *ipcs,
+                       void *buf, size_t *p_buf_len,
+                       struct ipc_server_client *ipcsc)
+{
+    size_t octets_to_read;
+    int    rc;
+
+    assert(ipcs != NULL);
+    assert(buf != NULL);
+    assert(p_buf_len != NULL);
+    assert(*p_buf_len > 0);
+    assert(ipcsc != NULL);
+
+    octets_to_read = MIN(*p_buf_len, ipcsc->pending);
+    rc = read_socket(ipcsc->socket, buf, octets_to_read);
+    if (rc != 0)
+    {
+        /* Error occured */
+        return rc;
+    }
+
+    ipcsc->pending -= octets_to_read;
+    if (ipcsc->pending > 0)
+    {
+        *p_buf_len = ipcsc->pending + octets_to_read;
+        return TE_RC(TE_IPC, ETESMALLBUF);
+    }
+    else
+    {
+        *p_buf_len = octets_to_read;
+        return 0;
+    }
+}
 
 /* See description in ipc_server.h */
 int
@@ -609,7 +681,7 @@ ipc_receive_message(struct ipc_server *ipcs,
                     struct ipc_server_client **p_ipcsc)
 {
     fd_set                    my_set;
-    struct ipc_server_client *ptr;
+    struct ipc_server_client *client;
     int                       max_n;
     int                       rc;
 
@@ -630,22 +702,16 @@ ipc_receive_message(struct ipc_server *ipcs,
         FD_SET(ipcs->socket, &my_set);
         max_n = ipcs->socket;
 
-        ptr = ipcs->pool;
-        while (ptr)
+        for (client = ipcs->clients.lh_first;
+             client != NULL;
+             client = client->links.le_next)
         {
-            FD_SET(ptr->socket, &my_set);
-            max_n = MAX(max_n, ptr->socket);
-            ptr = ptr->next;
+            FD_SET(client->socket, &my_set);
+            max_n = MAX(max_n, client->socket);
         }
-#if TCP_DEBUG
-        printf("Selecting...\n");
-#endif
+        
         /* Waiting forever */
         rc = select(max_n + 1, &my_set, NULL, NULL, NULL);
-#if TCP_DEBUG
-        printf("Selected\n");
-#endif
-        /* What's happened? */
         if (rc <= 0) /* Error? */
         {
             perror("select() error");
@@ -653,26 +719,20 @@ ipc_receive_message(struct ipc_server *ipcs,
         }
 
         /* Data in the connection? */
-        ptr = ipcs->pool;
-        while (ptr)
+        for (client = ipcs->clients.lh_first;
+             client != NULL;
+             client = client->links.le_next)
         {
-            if (FD_ISSET(ptr->socket, &my_set))
+            if (FD_ISSET(client->socket, &my_set))
             {
                 /*
                  * Connection with data found. Check that no pending data
                  * for them exists.
                  */
-#if TCP_DEBUG
-                printf("Connection wants to be read\n");
-#endif
-                if (ptr->pending_octets)
+                if (client->pending != 0)
                 {
-                    /* Error! */
-#if TCP_DEBUG
-                    printf("IPC/TCP: Trying to read new message while "
-                           "old one is not fully read %d!\n",
-                           ptr->pending_octets);
-#endif
+                    fprintf(stderr,
+                            "IPC: Unexpected client connection state\n");
                     return TE_RC(TE_IPC, ESYNCFAILED);
                 }
 
@@ -680,17 +740,20 @@ ipc_receive_message(struct ipc_server *ipcs,
                  * Let's read the length of the message and call
                  * ipc_receive_rest_message.
                  */
-                if (read_socket(ptr->socket, &(ptr->pending_octets),
-                                sizeof(ptr->pending_octets)) != 0)
+                rc = read_socket(client->socket, &(client->pending),
+                                 sizeof(client->pending));
+                if (rc != 0)
                 {
-                    return TE_RC(TE_IPC, errno);
+                    if (rc != TE_RC(TE_IPC, ECONNABORTED))
+                        return TE_RC(TE_IPC, errno);
+                    else
+                        /*TODO*/;
                 }
 
-                *p_ipcsc = ptr;
+                *p_ipcsc = client;
 
-                return ipc_receive_rest_message(ipcs, buf, p_buf_len, ptr);
+                return ipc_server_int_receive(ipcs, buf, p_buf_len, client);
             }
-            ptr = ptr->next;
         }
 
         /* New connection? */
@@ -704,20 +767,25 @@ ipc_receive_message(struct ipc_server *ipcs,
         /* New connection requested. Accept it */
 
         /* Create new entry in the pool. We can just insert it first */
-        ptr = calloc(1, sizeof(struct ipc_server_client));
-        assert(ptr != NULL);
-
-        ptr->next = ipcs->pool;
-        ipcs->pool = ptr;
-
-#if TCP_DEBUG
-        printf("Accepting socket\n");
+        client = calloc(1, sizeof(*client));
+        assert(client != NULL);
+        client->socket = accept(ipcs->socket,
+#ifdef TE_IPC_AF_UNIX
+                                SA(&client->sa), &client->sa_len
+#else
+                                NULL, NULL
 #endif
-        ptr->socket = accept(ipcs->socket, NULL, NULL);
-#if TCP_DEBUG
-        printf("Socket %d accepted, Entry = 0x%08X\n",
-               ptr->socket, (int)ptr);
-#endif
+                                );
+        if (client->socket < 0)
+        {
+            perror("accept() failed");
+            free(client);
+        }
+        else
+        {
+            LIST_INSERT_HEAD(&ipcs->clients, client, links);
+        }
+
         /*
          * We've accepted the connection but have not receive any message.
          * So we have to repeat select.
@@ -725,80 +793,6 @@ ipc_receive_message(struct ipc_server *ipcs,
     }
     /* Unreachable */
 }
-
-
-#if 0 /* Use ipc_receive_message() */
-
-/**
- * Receive the rest of the message from IPC client.
- *
- * @param ipcs          Pointer to the ipc_server structure returned
- *                      by ipc_register_server()
- * @param buf           Buffer for the message
- * @param p_buf_len     Pointer to the variable to store:
- *                          on entry - length of the buffer;
- *                          on exit - length of the received message
- *                                    (or full length of the message if
- *                                     ETESMALLBUF returned).
- * @param ipcsc         Pointer to the ipc_server_client structure
- *                      returned by the ipc_receive_message() function
- *
- * @return Status code.
- *
- * @retval 0            Success
- * @retval ETESMALLBUF  Buffer is too small for the rest of the
- *                      message, the part of the message is written
- *                      to the buffer, the ipc_receive_rest_message
- *                      should be called again
- * @retval errno        Other failure
- */
-extern int ipc_receive_rest_message(struct ipc_server *ipcs,
-                                    void *buf, size_t *p_buf_len,
-                                    struct ipc_server_client *ipcsc);
-
-/* See description in ipc_server.h */
-static int
-ipc_receive_rest_message(struct ipc_server *ipcs,
-                         void *buf, size_t *p_buf_len,
-                         struct ipc_server_client *ipcsc)
-{
-    size_t octets_to_read;
-    int    rc;
-
-    assert(ipcs != NULL);
-    assert(buf != NULL);
-    assert(p_buf_len != NULL);
-    assert(*p_buf_len > 0);
-    assert(ipcsc != NULL);
-
-    octets_to_read = MIN(*p_buf_len, ipcsc->pending_octets);
-
-    /* If we have something to read */
-    rc = read_socket(ipcsc->socket, buf, octets_to_read);
-    if (rc != 0)
-    {
-        /* Error occured */
-        return TE_RC(TE_IPC, rc);
-    }
-
-    ipcsc->pending_octets -= octets_to_read;
-
-    if (ipcsc->pending_octets > 0)
-    {
-        *p_buf_len = ipcsc->pending_octets + octets_to_read;
-
-        /* Something to read more */
-        return TE_RC(TE_IPC, ETESMALLBUF);
-    }
-    else
-    {
-        *p_buf_len = octets_to_read;
-
-        /* Nothing to read */
-        return 0;
-    }
-}
-#endif
 
 
 /* See description in ipc_server.h */
@@ -835,14 +829,65 @@ ipc_send_answer(struct ipc_server *ipcs, struct ipc_server_client *ipcsc,
     }
 }
 
-#endif /* !TE_IPC_AF_UNIX */
+#endif /* !TE_IPC_CONNECTIONLESS */
 
 
 /*
  * Local functions implementation
  */
 
-#ifdef TE_IPC_AF_UNIX
+#ifndef TE_IPC_AF_UNIX
+
+/**
+ * Connect to the my pmap server and register pair (server, port)
+ *
+ * @param server_name   The name of the server.
+ * @param port          Port number.
+ *
+ * @return Status code.
+ *
+ * @retval 0        success
+ * @retval -1       failure
+ */
+static int
+ipc_pmap_register_server(const char *server_name, uint16_t port)
+{
+    unsigned short rc =
+        ipc_pmap_process_command(IPC_PM_REG_SERVER, server_name, port);
+
+    if (rc)
+        return 0;
+    else
+        return -1;
+}
+
+/**
+ * Connect to the my pmap server and unregister pair (server, port)
+ *
+ * @param server_name   The name of the server.
+ * @param port          Port number.
+ *
+ * @return Status code.
+ *
+ * @retval 0        success
+ * @retval -1       failure
+ */
+static int
+ipc_pmap_unregister_server(const char *server_name, uint16_t port)
+{
+    unsigned short rc =
+        ipc_pmap_process_command(IPC_PM_UNREG_SERVER, server_name, port);
+
+    if (rc)
+        return 0;
+    else
+        return -1;
+}
+
+#endif /* !TE_IPC_AF_UNIX */
+
+
+#ifdef TE_IPC_CONNECTIONLESS
 
 /**
  * Search in pool for the item with specified address and return
@@ -1051,53 +1096,7 @@ ipc_int_get_datagram(struct ipc_server *ipcs,
     return TE_RC(TE_IPC, EFAULT);
 }
 
-#else /* !TE_IPC_AF_UNIX */
-
-/**
- * Connect to the my pmap server and register pair (server, port)
- *
- * @param server_name   The name of the server.
- * @param port          Port number.
- *
- * @return Status code.
- *
- * @retval 0        success
- * @retval -1       failure
- */
-static int
-ipc_pmap_register_server(const char *server_name, uint16_t port)
-{
-    unsigned short rc =
-        ipc_pmap_process_command(IPC_PM_REG_SERVER, server_name, port);
-
-    if (rc)
-        return 0;
-    else
-        return -1;
-}
-
-/**
- * Connect to the my pmap server and unregister pair (server, port)
- *
- * @param server_name   The name of the server.
- * @param port          Port number.
- *
- * @return Status code.
- *
- * @retval 0        success
- * @retval -1       failure
- */
-static int
-ipc_pmap_unregister_server(const char *server_name, uint16_t port)
-{
-    unsigned short rc =
-        ipc_pmap_process_command(IPC_PM_UNREG_SERVER, server_name, port);
-
-    if (rc)
-        return 0;
-    else
-        return -1;
-}
+#else /* !TE_IPC_CONNECTIONLESS */
 
 /**
  * Read specified number of octets (not less) from the connection.
@@ -1114,30 +1113,23 @@ ipc_pmap_unregister_server(const char *server_name, uint16_t port)
 static int
 read_socket(int socket, void *buffer, size_t len)
 {
-#if TCP_DEBUG
-    printf("Reading %d octets...\n", len);
-#endif
     while (len > 0)
     {
         int r = recv(socket, buffer, len, 0);
 
         if (r < 0)
         {
-            perror("read_socket recv() error\n");
+            perror("read_socket(): recv() error");
             return TE_RC(TE_IPC, errno);
         }
         else if (r == 0)
         {
-            fprintf(stderr, "Remote peer closed connection\n");
+            return TE_RC(TE_IPC, ECONNABORTED);
         }
 
         len -= r;
         buffer += r;
     }
-
-#if TCP_DEBUG
-    printf("Done\n");
-#endif
 
     return 0;
 }
@@ -1158,10 +1150,6 @@ read_socket(int socket, void *buffer, size_t len)
 static int
 write_socket(int socket, const void *buffer, size_t len)
 {
-#if TCP_DEBUG
-    printf("Writing %d octets... \n", len);
-#endif
-
     while (len > 0)
     {
         int r = send(socket, buffer, len, 0);
@@ -1180,11 +1168,7 @@ write_socket(int socket, const void *buffer, size_t len)
         buffer += r;
     }
 
-#if TCP_DEBUG
-    printf("Done\n");
-#endif
-
     return 0;
 }
 
-#endif /* !TE_IPC_AF_UNIX */
+#endif /* !TE_IPC_CONNECTIONLESS */

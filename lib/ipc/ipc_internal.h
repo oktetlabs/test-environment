@@ -81,14 +81,20 @@ extern "C" {
 #endif
 
 
-/** Should AF_UNIX/UDP be used (plain TCP will be used otherwise) */
+/** Should AF_UNIX be used (AF_INET is used otherwise) */
 #define TE_IPC_AF_UNIX
+#ifndef TE_IPC_AF_UNIX
+#define TE_IPC_AF_INET
+#endif
+
+/** Should connectionless (or connectin oriented) sockets be used */
+#define TE_IPC_CONNECTIONLESS
 
 #define IPC_RETRY   5   /**< Number of retries for connecting to server */
 #define IPC_SLEEP   1   /**< Interval (in seconds) between retries */
 
 
-#ifdef TE_IPC_AF_UNIX
+#ifdef TE_IPC_CONNECTIONLESS
 
 /**
  * The maximal size of the datagram
@@ -97,7 +103,7 @@ extern "C" {
 #define IPC_SEGMENT_SIZE    2048
 
 /** Structure of the datagram header */
-struct ipc_packet_header {
+struct ipc_dgram_header {
     size_t length;  /**< Length of the whole message */
     size_t left;    /**< Number of bytes left in the message, including
                          payload of this datagram */
@@ -138,10 +144,7 @@ extern int ipc_remember_datagram(struct ipc_datagrams *p_pool,
                                  struct sockaddr_un *addr,
                                  size_t addr_len);
 
-#else
-
-/** RPC program name of Test Environment */
-#define IPC_TE_NAME   "TE"
+#else /* !TE_IPC_CONNECTIONLESS */
 
 /** @name
  * Sizes of the internal server/clent buffers. It is used to avoid
@@ -154,6 +157,13 @@ extern int ipc_remember_datagram(struct ipc_datagrams *p_pool,
 #define IPC_TCP_CLIENT_BUFFER_SIZE 500
 /*@}*/
 
+#endif /* !TE_IPC_CONNECTIONLESS */
+
+
+#ifndef TE_IPC_AF_UNIX
+
+/** RPC program name of Test Environment */
+#define IPC_TE_NAME   "TE"
 
 /** Possible commands for IPC PMAP server */
 enum ipc_pm_command_type_e {
@@ -194,6 +204,6 @@ extern uint16_t ipc_pmap_process_command(
                     enum ipc_pm_command_type_e cmd_type,
                     const char *server_name, uint16_t port);
 
-#endif
+#endif /* !TE_IPC_AF_UNIX */
 
 #endif /* !__TE_IPC_INTERNAL_H__ */
