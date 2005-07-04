@@ -53,32 +53,29 @@ ipc_kill(void)
 
 #else
 
-#include "te_config.h"
-
 #include <stdio.h>
-
-#ifdef  HAVE_STDLIB_H
+#if  HAVE_STDLIB_H
 #include <stdlib.h>
 #endif
-#ifdef  HAVE_ASSERT_H
+#if  HAVE_ASSERT_H
 #include <assert.h>
 #endif
-#ifdef  HAVE_STRING_H
+#if  HAVE_STRING_H
 #include <string.h>
 #endif
-#ifdef HAVE_UNISTD_H
+#if HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-#ifdef  HAVE_SYS_TYPES_H
+#if  HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
-#ifdef  HAVE_SYS_SOCKET_H
+#if  HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif
-#ifdef  HAVE_NETDB_H
+#if  HAVE_NETDB_H
 #include <netdb.h>
 #endif
-#ifdef HAVE_RPC_PMAP_CLNT_H
+#if HAVE_RPC_PMAP_CLNT_H
 #include <rpc/pmap_clnt.h>
 #endif
 
@@ -385,7 +382,6 @@ ipc_init(void)
     return 0;
 }
 
-
 /* See description in ipc_server.h */
 int
 ipc_kill(void)
@@ -399,4 +395,4 @@ ipc_kill(void)
     return 0;
 }
 
-#endif
+#endif /* !TE_IPC_AF_UNIX */
