@@ -34,28 +34,28 @@
 
 #ifndef TE_IPC_AF_UNIX
 
-#ifdef HAVE_STDIO_H
+#if HAVE_STDIO_H
 #include <stdio.h>
 #endif
-#ifdef HAVE_UNISTD_H
+#if HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-#ifdef HAVE_STRING_H
+#if HAVE_STRING_H
 #include <string.h>
 #endif
-#ifdef HAVE_SYS_SOCKET_H
+#if HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
-#ifdef HAVE_SYS_SOCKET_H
+#if HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif
-#ifdef HAVE_NETINET_IN_H
+#if HAVE_NETINET_IN_H
 #include <netinet/in.h>
 #endif
-#ifdef  HAVE_NETDB_H
+#if  HAVE_NETDB_H
 #include <netdb.h>
 #endif
-#ifdef HAVE_RPC_PMAP_CLNT_H
+#if HAVE_RPC_PMAP_CLNT_H
 #include <rpc/pmap_clnt.h>
 #endif
 
