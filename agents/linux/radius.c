@@ -443,7 +443,7 @@ find_rp (radius_parameter *base, const char *name, te_bool create, te_bool creat
             memcpy(iter->value, value, value_length);
             iter->value[value_length] = '\0';
         }
-        VERB("created RADIUS parameter %s %s", iter->name, iter->value ? iter->value : "");
+        VERB("created RADIUS parameter %s %s", iter->name, iter->value ? iter->value : "EMPTY");
     }
     
     if (*next != '\0' && iter != NULL && iter->kind != RP_SECTION)
@@ -559,8 +559,10 @@ update_rp (radius_parameter *top, enum radius_parameters kind,
         return ENOENT;
     }
 
-    if (rp->kind != RP_SECTION && rp->value != NULL)
+    if (value != NULL)
+    {
         free(rp->value);
+    }
     if (value == RP_DELETE_VALUE)
     {
         rp->deleted = TRUE;
@@ -576,10 +578,10 @@ update_rp (radius_parameter *top, enum radius_parameters kind,
     {
         rp->deleted = FALSE;
         rp->kind = kind;
-        if (rp->kind != RP_SECTION || rp->value == NULL)
-            rp->value = value ? strdup(value) : NULL;
+        if (value != NULL)
+            rp->value = strdup(value);
 
-        VERB("updated RADIUS parameter %s to %s", name, rp->value ? rp->value : "empty");
+        RING("updated RADIUS parameter %s to %s", name, rp->value ? rp->value : "empty");
     }
     mark_rp_changes(rp);
 
@@ -1214,6 +1216,7 @@ ds_radius_client_add(unsigned int gid, const char *oid,
     snprintf(client_buffer, sizeof(client_buffer), "client(%s)", client_name);
     VERB("adding RADIUS client %s for %s", client_buffer, oid);
     rc = update_rp(radius_conf, RP_SECTION, client_buffer, NULL);
+    log_radius_tree(radius_conf);
     if (rc == 0)
     {
         snprintf(client_buffer, sizeof(client_buffer), "client(%s).secret", client_name);
