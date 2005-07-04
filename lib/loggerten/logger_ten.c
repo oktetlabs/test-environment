@@ -112,7 +112,7 @@ log_message_ipc(const void *msg, size_t len)
 {
     if (ipc_send_message(lgr_client, LGR_SRV_NAME, msg, len) != 0)
     {
-        fprintf(stderr, "Failed to send message to IPC server '%s': %s",
+        fprintf(stderr, "Failed to send message to IPC server '%s': %s\n",
                 LGR_SRV_NAME, strerror(errno));
     }
 }
