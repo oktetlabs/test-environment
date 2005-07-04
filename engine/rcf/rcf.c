@@ -663,7 +663,7 @@ answer_user_request(usrreq *req)
     {
         int rc;
 
-        INFO("Send reply for %u:%d:%s to user '%s'",
+        INFO("Send reply for %u:%d:'%s' to user '%s'",
              (unsigned)req->message->seqno, req->message->sid,
              rcf_op_to_string(req->message->opcode),
              ipc_server_client_name(req->user));
@@ -2332,7 +2332,7 @@ main(int argc, const char *argv[])
                 continue;
             }
             
-            INFO("Got request %u:%d:%s from user '%s'",
+            INFO("Got request %u:%d:'%s' from user '%s'",
                  (unsigned)req->message->seqno, req->message->sid,
                  rcf_op_to_string(req->message->opcode),
                  ipc_server_client_name(req->user));
