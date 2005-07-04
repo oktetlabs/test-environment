@@ -87,6 +87,16 @@ extern int ipc_register_server(const char *name,
  */
 extern int ipc_get_server_fd(const struct ipc_server *ipcs);
 
+/**
+ * Get name of the IPC server client.
+ *
+ * @param ipcsc         Pointer to the ipc_server_client structure
+ *                      returned by ipc_receive_message()
+ *
+ * @return Pointer to '\0'-terminated string, "UNKNOWN" or NULL
+ */
+extern const char *
+    ipc_server_client_name(const struct ipc_server_client *ipcsc);
 
 /**
  * Receive a message from IPC client.

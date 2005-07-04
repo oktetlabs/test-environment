@@ -141,6 +141,15 @@ struct ipc_client {
 #endif
 };
 
+
+/* See description in ipc_client.h */
+const char *
+ipc_client_name(const struct ipc_client *ipcc)
+{
+    return (ipcc == NULL) ? NULL : ipcc->name;
+}
+
+
 /**
  * Search in pool for the item with specified server name and return
  * pointer to this item. Allocate a new entry if entry not found.

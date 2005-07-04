@@ -59,6 +59,16 @@ typedef struct ipc_client ipc_client;
 extern int ipc_init_client(const char *client_name,
                            struct ipc_client **p_client);
 
+/**
+ * Get IPC client name.
+ *
+ * @param ipcc          Pointer to the ipc_client structure returned
+ *                      by ipc_init_client()
+ *
+ * @return Pointer to '\0'-terminated string or NULL
+ */
+extern const char *ipc_client_name(const struct ipc_client *ipcc);
+
 
 /**
  * Send the message to the server with specified name.

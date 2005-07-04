@@ -378,6 +378,21 @@ ipc_close_server(struct ipc_server *ipcs)
     return 0;
 }
 
+/* See description in ipc_server.h */
+const char *
+ipc_server_client_name(const struct ipc_server_client *ipcsc)
+{
+    if (ipcsc == NULL)
+        return NULL;
+
+#ifdef IPC_UNIX
+    return (ipcsc->sa.sun_path[0] != '\0') ? ipcsc->sa.sun_path :
+               (ipcsc->sa.sun_path + 1);
+#else
+    return "UNKNOWN";
+#endif
+}
+
 
 #ifdef IPC_UNIX
 
