@@ -31,14 +31,22 @@
 #include <stddef.h>
 #include "linuxconf_daemons.h"
 
-enum radius_parameters { RP_FLAG, RP_ATTRIBUTE, RP_SECTION, RP_FILE};
+/** RADIUS configuration parameter types */
+enum radius_parameters { 
+    RP_FLAG,          /**< a parameter which has no value */
+    RP_ATTRIBUTE,     /**< a parameter with the value */
+    RP_SECTION,       /**< a (sub)section */ 
+    RP_FILE           /**< an included config file */
+};    
 
+/** Node of the RADIUS configuration parameter */
 typedef struct radius_parameter
 {
     te_bool deleted;
     enum radius_parameters kind;
     char *name;
     char *value;
+    /* The following two are only meaningful for RP_FILE */
     int backup_index;
     te_bool modified;
     struct radius_parameter *parent;
@@ -51,19 +59,22 @@ typedef struct radius_parameter
 
 static struct radius_parameter *radius_conf;
 
+/** An attribute==value check in RADIUS users file */
 typedef struct radius_user_check
 {
     char *attribute;
     char *value;
 } radius_user_check;
 
+/** A reply record for a RADIUS user */
 typedef struct radius_user_reply
 {
-    char *attribute;
-    char *in_accept;
-    char *in_challenge;
+    char *attribute;    /**< Attribute to set */
+    char *in_accept;    /**< A value to set in Access-Accept packets */
+    char *in_challenge; /**< A value to set in Access-Challenge packets */
 } radius_user_reply;
 
+/** A record for a RADIUS user */
 typedef struct radius_user
 {
     te_bool reject;
@@ -80,6 +91,9 @@ static struct radius_user *radius_users, *radius_last_user;
 
 static char *expand_rp (const char *value, radius_parameter *top);
 
+/** 
+ * Creates a new RADIUS parameter inside 'parent' 
+ */
 static radius_parameter *
 make_rp(enum radius_parameters kind,
         const char *name, 
@@ -120,6 +134,12 @@ make_rp(enum radius_parameters kind,
     return parm;
 }
 
+/**
+ * Destroys the parameter and all its children if any 
+ * Note: this function does not exclude the parameter
+ * from its parent's children list, so it's normally
+ * should be called on a topmost parameter only.
+ */
 static void
 destroy_rp (radius_parameter *parm)
 {
@@ -139,6 +159,11 @@ destroy_rp (radius_parameter *parm)
 
 static void read_radius(FILE *conf, radius_parameter *top);
 
+/**
+ * Reads a RADIUS config file named 'filename' and creates 
+ * a RP_FILE record inside 'top'. All the parameters read
+ * from the file will be inside that record.
+ */
 static radius_parameter *
 read_radius_file (const char *filename, radius_parameter *top)
 {
@@ -177,6 +202,10 @@ read_radius_file (const char *filename, radius_parameter *top)
     return fp;
 }
 
+/**
+ * Reads lines from 'conf' until EOF, skips comments and
+ * creates RADIUS parameters inside 'top'
+ */
 static void 
 read_radius(FILE *conf, radius_parameter *top)
 {
@@ -249,6 +278,10 @@ read_radius(FILE *conf, radius_parameter *top)
 
 static int write_radius(radius_parameter *top);
 
+/**
+ * Writes a single RADIUS parameter 'parm' to 'outfile'
+ * precedent by 'indent' spaces
+ */
 static void
 write_radius_parameter (FILE *outfile, radius_parameter *parm, int indent)
 {
@@ -287,6 +320,12 @@ write_radius_parameter (FILE *outfile, radius_parameter *parm, int indent)
     }
 }
 
+/**
+ * Updates a RADIUS config file corresponding to 'top' which must
+ * be a RP_FILE record.
+ * If the record has not been modified, all the RP_FILE subrecords
+ * are still attempted to update
+ */
 static int
 write_radius(radius_parameter *top)
 {
@@ -318,7 +357,6 @@ write_radius(radius_parameter *top)
             return rc;
         }
 
-        RING("updating RADIUS config %s", top->name);
         for (top = top->children; top != NULL; top = top->next)
         { 
             write_radius_parameter(outfile, top, 0);
@@ -328,7 +366,9 @@ write_radius(radius_parameter *top)
     return 0;
 }
 
-
+/**
+ * Converts a relative RADIUS parameter name to an absolute one
+ */
 static radius_parameter *
 resolve_rp_name (radius_parameter *origin, const char **name)
 {
@@ -348,6 +388,17 @@ resolve_rp_name (radius_parameter *origin, const char **name)
 }
 
 
+/**
+ * Finds a RADIUS parameter inside 'name' and creates it if there isn't one and 
+ * 'create' is TRUE.
+ * 
+ * @param create_now  This parameter is for recursive calls on RP_FILE records.
+                      A user should normally set it equal to 'create'.
+ * @param enumerator  If not NULL, the function that is called on every parameter
+                      with matching name. If it returns FALSE, the parameter is
+                      not considered matching.
+ * @param extra       Passed to 'enumerator' as its second argument
+ */
 static radius_parameter *
 find_rp (radius_parameter *base, const char *name, te_bool create, te_bool create_now,
          te_bool (*enumerator)(radius_parameter *rp, void *extra), void *extra)
@@ -457,6 +508,15 @@ find_rp (radius_parameter *base, const char *name, te_bool create, te_bool creat
         find_rp(iter, next + 1, create, create, enumerator, extra);
 }
 
+/**
+ * Finds a RADIUS parameter 'name' inside 'top'. The name is absolutized.
+ *
+ * @returns TRUE if the parameter is found, FALSE otherwise
+ *
+ * @param top   The root of the tree to search
+ * @param name  The parameter name
+ * @param value The value of the found parameter (OUT)
+ */
 static te_bool
 retrieve_rp (radius_parameter *top, const char *name, const char **value)
 {
@@ -475,6 +535,11 @@ retrieve_rp (radius_parameter *top, const char *name, const char **value)
     return FALSE;
 }
 
+/**
+ * Expands a string which may contain references to RADIUS parameters*
+ *
+ * @returns A malloced string with references expanded.
+ */
 static char *
 expand_rp (const char *value, radius_parameter *top)
 {
@@ -516,6 +581,9 @@ expand_rp (const char *value, radius_parameter *top)
     return new_val;
 }
 
+/**
+ *  Marks the RP_FILE record containing (may be indirectly) 'top' as modified.
+ */
 static void
 mark_rp_changes(radius_parameter *rp)
 {
@@ -525,6 +593,9 @@ mark_rp_changes(radius_parameter *rp)
     file->modified = TRUE;
 }
 
+/**
+ * Recursively marks as deleted all descendands of a given node
+ */
 static void
 wipe_rp_section (radius_parameter *rp)
 {
@@ -547,6 +618,13 @@ wipe_rp_section (radius_parameter *rp)
     }
 }
 
+/**
+ * Updates a parameter 'name' within 'top' to hold a 'value'.
+ * If the parameter does not exist, it is created.
+ * If 'value' == RP_DELETED_VALUE, the parameter is marked as deleted.
+ * If 'value' == NULL, the parameter is just created with a default
+ * value (which may be encoded in 'name').
+ */
 static int
 update_rp (radius_parameter *top, enum radius_parameters kind, 
            const char *name, const char *value)
@@ -581,13 +659,17 @@ update_rp (radius_parameter *top, enum radius_parameters kind,
         if (value != NULL)
             rp->value = strdup(value);
 
-        RING("updated RADIUS parameter %s to %s", name, rp->value ? rp->value : "empty");
+        VERB("updated RADIUS parameter %s to %s", name, rp->value ? rp->value : "empty");
     }
     mark_rp_changes(rp);
 
     return 0;
 }
 
+/**
+ * Creates a RADIUS user record named 'name' and adds it 
+ * to 'radius_users' list
+ */
 static radius_user *
 make_radius_user (const char *name)
 {
@@ -607,6 +689,9 @@ make_radius_user (const char *name)
     return user;
 }
 
+/**
+ * Finds a record for a user named 'name'
+ */
 static radius_user *
 find_radius_user (const char *name)
 {
@@ -622,6 +707,9 @@ find_radius_user (const char *name)
     return user;
 }
 
+/**
+ * Deletes a user named 'name' from 'radius_users' list
+ */
 static void
 delete_radius_user (const char *name)
 {
@@ -648,6 +736,12 @@ delete_radius_user (const char *name)
     }
 }
 
+/**
+ * Given the 'string' has the form "Attribute=Value[,Attribute=Value...]",
+ * puts the attribute into 'attr' and the value into value
+ *
+ * @returns the pointer to the next pair or the terminating zero.
+ */
 static const char *
 parse_attr_value_pair (const char *string, char **attr, char **value)
 {
@@ -692,6 +786,10 @@ parse_attr_value_pair (const char *string, char **attr, char **value)
     return *string == '\0' ? NULL : string;
 }
 
+/**
+ * Parses 'check' as per 'parse_attr_value_pair' and
+ * adds the result to a list of checks for a user named 'name'
+ */
 static int
 set_user_checks(const char *name, const char *checks)
 {
@@ -730,6 +828,13 @@ set_user_checks(const char *name, const char *checks)
     return 0;
 }
 
+/**
+ * Parses 'replies' as per 'parse_attr_value_pair' and 
+ * adds the results to a list of replies for a user named 'name'.
+ *
+ * The replies are for Access-Accept if 'in_accept' is TRUE,
+ * for Access-Challenge otherwise
+ */
 static int
 set_user_replies(const char *name, const char *replies, te_bool in_accept)
 {
@@ -798,6 +903,16 @@ set_user_replies(const char *name, const char *replies, te_bool in_accept)
     return 0;
 }
 
+/**
+ * A generic routine to convert a user check or reply list 
+ * to a textual form 
+ *
+ * @param dest         The address of the buffer to put data
+ * @param data         The list
+ * @param itemsize     The size of a list item
+ * @param attr_at      The offset inside an item of an attribute field
+ * @param value_at     The offset inside an item of a value field
+ */
 static void
 stringify_attribute_values(char *dest, 
                            void *data, size_t itemsize, size_t attr_at, size_t value_at)
@@ -837,6 +952,9 @@ stringify_attribute_values(char *dest,
 #undef VALUE
 }
 
+/**
+ * Writes user records from 'users' to 'conf'
+ */
 static void
 write_radius_users (FILE *conf, radius_user *users)
 {
@@ -891,7 +1009,6 @@ write_radius_users (FILE *conf, radius_user *users)
                 users->name, users->reject ? "Reject" : "EAP");
         for (check = users->checks; check != NULL && check->attribute != NULL; check++)
         {
-            RING("check is %s %s", check->attribute, check->value);
             if (check->value != NULL)
             {
                 fprintf(conf, ", %s == %s", 
@@ -928,6 +1045,13 @@ log_radius_tree (radius_parameter *parm)
 
 static char *radius_daemon = NULL;
 
+/**
+ * The functions to query/change the status of RADIUS server
+ * 
+ * Since the server may be named either 'freeradius' or 'radiusd',
+ * both names are first tried and, if either is detected, 
+ * 'radius_daemon' is set appropriately.
+ */
 static int
 ds_radiusserver_get(unsigned int gid, const char *oid,
                     char *value, const char *instance, ...)
@@ -1463,6 +1587,7 @@ RCF_PCH_CFG_NODE_RW(node_ds_radiusserver, "radiusserver",
                     &node_ds_radiusserver_auth_port, NULL,
                     ds_radiusserver_get, ds_radiusserver_set);
 
+/** The list of parameters that must be deleted on startup */
 const char *radius_ignored_params[] = {"bind_address", 
                                        "port", 
                                        "listen",
@@ -1484,6 +1609,9 @@ const char *radius_ignored_params[] = {"bind_address",
 
 #define RADIUS_USERS_FILE "/tmp/te_radius_users"
 
+/** The list of pairs attribute, value that must be set on startup.
+ *  Use RP_DEFAULT_EMPTY_SECTION to create an empty section
+ */ 
 const char *radius_predefined_params[] = {
     "listen(#auth).type", "auth",
     "listen(#auth).ipaddr", "*",
@@ -1527,6 +1655,12 @@ rp_delete_all(radius_parameter *rp, void *extra)
     return FALSE;
 }
 
+/**
+ * Initializes support for RADIUS server.
+ * - The config files are read and parsed
+ * - Ignored and defaulted parameters are processed
+ * - RP_RADIUS_USERS_FILE is created and opened
+ */
 void
 ds_init_radius_server (rcf_pch_cfg_object **last)
 {
