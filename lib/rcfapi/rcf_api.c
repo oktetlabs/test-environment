@@ -488,7 +488,7 @@ send_recv_rcf_ipc_message(thread_ctx_t *ctx,
     opcode = send_buf->opcode;
     send_buf->seqno = ctx->seqno++;
 
-    INFO("%s: send request %u:%s:%d", ipc_client_name(ctx->ipc_handle),
+    INFO("%s: send request %u:%d:%s", ipc_client_name(ctx->ipc_handle),
          (unsigned)send_buf->seqno, send_buf->sid,
          rcf_op_to_string(send_buf->opcode));
 
