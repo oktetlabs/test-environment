@@ -2271,17 +2271,28 @@ main(int argc, const char *argv[])
         fd_set          set = set0;
         size_t          len;
         time_t          now;
+        int             select_rc;
         
         req = NULL;
         rc = -1;
 
         (void)ipc_get_server_fds(server, &set);
 
-        select(FD_SETSIZE, &set, NULL, NULL, &tv);
+        select_rc = select(FD_SETSIZE, &set, NULL, NULL, &tv);
+        if (select_rc < 0)
+        {
+            if (errno != EINTR)
+                ERROR("Unexpected failure of select(): rc=%d, errno=%d",
+                      select_rc, errno);
+            else
+                INFO("select() has been interrupted by signal");
+        }
+
         if (reboot_num > 0)
             check_reboot();
 
-        if (ipc_is_server_ready(server, &set, FD_SETSIZE))
+        if ((select_rc > 0) &&
+            ipc_is_server_ready(server, &set, FD_SETSIZE))
         {
             len = sizeof(rcf_msg);
             
@@ -2323,8 +2334,9 @@ main(int argc, const char *argv[])
 
             if (len != sizeof(rcf_msg) + req->message->data_len)
             {
-                ERROR("Incorrect user request is received: data_len field "
-                      "does not match to IPC message size: %d != %d + %d",
+                ERROR("Incorrect user request is received: "
+                      "data_len field does not match to IPC "
+                      "message size: %d != %d + %d",
                       len, req->message->data_len, sizeof(rcf_msg));
                 free(req->message);
                 free(req);
@@ -2343,6 +2355,7 @@ main(int argc, const char *argv[])
             }
             process_user_request(req);
         }
+
         now = time(NULL);
         for (agent = agents; agent != NULL; agent = agent->next)
         {
