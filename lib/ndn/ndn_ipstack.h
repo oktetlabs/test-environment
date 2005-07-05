@@ -76,6 +76,8 @@ typedef enum {
 } ndn_tcp_tags_t;
 
 typedef enum {
+    NDN_TAG_UDP_LOCAL_PORT,
+    NDN_TAG_UDP_REMOTE_PORT,
     NDN_TAG_UDP_SRC_PORT,
     NDN_TAG_UDP_DST_PORT,
     NDN_TAG_UDP_LENGTH,

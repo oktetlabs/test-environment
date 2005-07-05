@@ -207,8 +207,10 @@ asn_type_p ndn_icmp4_message = &ndn_icmp4_message_s;
 
 static asn_named_entry_t _ndn_icmp4_csap_ne_array [] = 
 {
-    { "remote-port",    &ndn_data_unit_int16_s, {PRIVATE, 1} },
-    { "local-port",     &ndn_data_unit_int16_s, {PRIVATE, 1} },
+    { "remote-port",    &ndn_data_unit_int16_s,
+        {PRIVATE, NDN_TAG_UDP_REMOTE_PORT} },
+    { "local-port",     &ndn_data_unit_int16_s,
+        {PRIVATE, NDN_TAG_UDP_LOCAL_PORT} },
 };
 
 asn_type ndn_icmp4_csap_s =
@@ -226,10 +228,10 @@ asn_type ndn_icmp4_csap_s =
 
 static asn_named_entry_t _ndn_udp_header_ne_array [] = 
 {
-    { "src-port", &ndn_data_unit_int16_s, {PRIVATE, 1} },
-    { "dst-port", &ndn_data_unit_int16_s, {PRIVATE, 1} },
-    { "length",   &ndn_data_unit_int16_s, {PRIVATE, 1} },
-    { "checksum", &ndn_data_unit_int16_s, {PRIVATE, 1} },
+    { "src-port", &ndn_data_unit_int16_s, {PRIVATE, NDN_TAG_UDP_SRC_PORT} },
+    { "dst-port", &ndn_data_unit_int16_s, {PRIVATE, NDN_TAG_UDP_DST_PORT} },
+    { "length",   &ndn_data_unit_int16_s, {PRIVATE, NDN_TAG_UDP_LENGTH} },
+    { "checksum", &ndn_data_unit_int16_s, {PRIVATE, NDN_TAG_UDP_CHECKSUM} },
 };
 
 asn_type ndn_udp_header_s =
