@@ -993,11 +993,9 @@ asn_impl_read_value_field(const asn_value *container,  void *data,
     rc = asn_get_subvalue(container, &value, field_labels); 
     if (rc) return rc;
 
-    if (value->syntax != PR_ASN_NULL && (!data || !d_len))
+    if (value->syntax != PR_ASN_NULL &&
+        ((data == NULL) || (d_len == NULL)))
         return ETEWRONGPTR; 
-
-    if (d_len && *d_len < value->len)
-        return ETESMALLBUF;
 
     m_len = value->len; 
 
@@ -1046,6 +1044,9 @@ asn_impl_read_value_field(const asn_value *container,  void *data,
     case OCT_STRING:
     case REAL:
         { 
+            if (*d_len < m_len)
+                return ETESMALLBUF;
+
             *d_len = value->len;
             memcpy (data, value->data.other, m_len);
         }
