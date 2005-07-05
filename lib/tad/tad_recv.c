@@ -434,6 +434,7 @@ tad_tr_recv_send_results(received_packets_queue_t *queue_root,
                          char *answer_buffer, int ans_len) 
 {
     int rc;
+    int pkt_num = 0;
 
     received_packets_queue_t *pkt_qelem;
 
@@ -447,11 +448,14 @@ tad_tr_recv_send_results(received_packets_queue_t *queue_root,
             if (rc != 0) 
                 return rc;
 
+            pkt_num++;
             asn_free_value(pkt_qelem->pkt);
         } 
         REMQUE(pkt_qelem);
         free(pkt_qelem);
     }
+    
+    VERB("The number of reported packets is %d", pkt_num);
 
     return 0; 
 }
@@ -629,6 +633,9 @@ tad_tr_recv_thread(void *arg)
     nds        = context->nds; 
     context->nds = NULL;
 
+    VERB("START %s() CSAP %d, timeout %u", __FUNCTION__,
+         csap_descr->id, csap_descr->timeout);
+
     if (csap_descr == NULL)
     {
         ERROR("trrecv thread start point: null csap! exit.");
@@ -676,8 +683,10 @@ tad_tr_recv_thread(void *arg)
          (csap_descr->command == TAD_OP_SEND_RECV))
     { 
         do {
+            asn_value_p pattern_unit;
             csap_pkts   packets_root;
             asn_value_p pattern = NULL;
+
             const asn_value *pdus;
 
             if (csap_descr->prepare_send_cb)
@@ -709,7 +718,7 @@ tad_tr_recv_thread(void *arg)
                 break;
             
             asn_free_value(nds);
-            nds = NULL;
+            nds = pattern; 
 
             d_len = csap_descr->write_read_cb(csap_descr, 
                                               csap_descr->timeout,
@@ -733,13 +742,11 @@ tad_tr_recv_thread(void *arg)
             if (d_len == 0)
                 break;
 
-            nds = pattern; 
-
-            asn_value_p pattern_unit = asn_read_indexed(pattern, 0, "");
+            pattern_unit = asn_read_indexed(pattern, 0, "");
             rc = tad_tr_recv_match_with_unit(read_buffer, d_len, csap_descr,
                                              pattern_unit, &result); 
 
-            VERB("match_with_unit returned %d", rc);
+            VERB("match_with_unit returned 0x%X", rc);
 
             if (rc != 0)
             {
@@ -759,7 +766,6 @@ tad_tr_recv_thread(void *arg)
             csap_descr->state |= TAD_STATE_COMPLETE;
             csap_descr->total_bytes += d_len;
             asn_free_value(pattern_unit);
-
         } while (0); 
     } /* finish of 'trsend_recv' special actions */
 
@@ -778,7 +784,7 @@ tad_tr_recv_thread(void *arg)
      * of "STOP" received for 'background' operation. */ 
     while(!(csap_descr->state & TAD_STATE_COMPLETE)  || 
           !(csap_descr->state & TAD_STATE_FOREGROUND)  )
-    { 
+    {
         int num_pattern_units;
         int unit;
 
@@ -868,7 +874,7 @@ tad_tr_recv_thread(void *arg)
             }
 
             d_len = csap_descr->read_cb(csap_descr, csap_descr->timeout, 
-                                         read_buffer, RBUF); 
+                                        read_buffer, RBUF); 
             gettimeofday(&pkt_caught, NULL);
 
             if (d_len == 0)
