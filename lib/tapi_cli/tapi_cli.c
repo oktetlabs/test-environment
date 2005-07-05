@@ -674,7 +674,7 @@ tapi_internal_cli_send_recv(const char *ta_name, int sid,
 
     rc = rcf_ta_trsend_recv(ta_name, sid, cli_csap, fname,
                             tapi_cli_msg_handler, (void *)msg,
-                            timeout, &err);
+                            timeout * 1000, &err);
     if (rc != 0)
     {
         ERROR("rcf_ta_trsend_start() failed(0x%x) on TA %s:%d CSAP %d "
