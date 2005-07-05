@@ -4010,7 +4010,7 @@ overfill_buffers(tarpc_overfill_buffers_in *in,
         goto overfill_buffers_exit;
     }
 
-    memset(buf, 0xDEADBEEF, sizeof(max_len));
+    memset(buf, 0xAB, sizeof(max_len));
     
     /* ATTENTION! socket is assumed in blocking state */
     
