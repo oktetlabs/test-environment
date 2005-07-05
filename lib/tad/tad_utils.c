@@ -84,21 +84,19 @@ tad_confirm_pdus(csap_p csap_descr, asn_value *pdus)
         snprintf(label, sizeof(label), "%d.#%s", 
                 level, csap_descr->layers[level].proto);
 
-        /* TODO: rewrite with more fast ASN method, that methods should 
-         * be prepared and tested first */
-        rc  = asn_get_subvalue(pdus, (const asn_value **)&level_pdu, label);
+        rc = asn_get_subvalue(pdus, (const asn_value **)&level_pdu, label);
 
-        if (rc) 
+        if (rc != 0) 
         {
-            ERROR("asn_write_ind rc: %x, write for level %d", 
-                  rc, level);
+            ERROR("asn_get_subvalue rc: 0x%X, confirm level %d, label %s",
+                  rc, level, label);
             break;
         }
 
         rc = csap_spt_descr->confirm_cb(csap_descr->id, level, level_pdu);
         VERB("confirm rc: %d", rc);
 
-        if (rc)
+        if (rc != 0)
         {
             ERROR("template does not confirm to CSAP; "
                   "rc: 0x%x, csap id: %d, level: %d\n", 
@@ -317,6 +315,8 @@ tad_int_expr_parse(const char *string, tad_int_expr_t **expr, int *syms)
     if (string == NULL || expr == NULL || syms == NULL)
         return ETEWRONGPTR;
 
+    VERB("%s <%s> called", __FUNCTION__, string);
+
     if ((*expr = calloc(1, sizeof(tad_int_expr_t))) == NULL)
         return ENOMEM;
 
@@ -352,6 +352,7 @@ tad_int_expr_parse(const char *string, tad_int_expr_t **expr, int *syms)
         (*expr)->exprs = calloc((*expr)->d_len, sizeof(tad_int_expr_t));
 
         rc = tad_int_expr_parse(p, &sub_expr, &sub_expr_parsed);
+        VERB("first subexpr parsed, rc 0x%X, syms %d", rc, sub_expr_parsed);
         if (rc)
             goto parse_error;
 
@@ -376,7 +377,11 @@ tad_int_expr_parse(const char *string, tad_int_expr_t **expr, int *syms)
                 case '/':
                     (*expr)->n_type = TAD_EXPR_DIV;
                     break;
+                case '%':
+                    (*expr)->n_type = TAD_EXPR_MOD;
+                    break;
                 default: 
+                    WARN("%s(): unknown op %d", __FUNCTION__, (int)*p);
                     goto parse_error;
             }
             p++;
@@ -385,6 +390,8 @@ tad_int_expr_parse(const char *string, tad_int_expr_t **expr, int *syms)
                 p++; 
 
             rc = tad_int_expr_parse(p, &sub_expr, &sub_expr_parsed);
+            VERB("second subexpr parsed, rc 0x%X, syms %d",
+                 rc, sub_expr_parsed);
             if (rc)
                 goto parse_error;
 
@@ -397,6 +404,9 @@ tad_int_expr_parse(const char *string, tad_int_expr_t **expr, int *syms)
 
         if (*p != ')')
             goto parse_error;
+        p++;
+
+        *syms = p - string; 
     }
     else if (isdigit(*p)) /* integer constant */
     {
@@ -575,6 +585,9 @@ tad_int_expr_calculate(const tad_int_expr_t *expr,
                     break;
                 case TAD_EXPR_DIV:
                     *result = r1 / r2; 
+                    break;
+                case TAD_EXPR_MOD:
+                    *result = r1 % r2; 
                     break;
                 case TAD_EXPR_U_MINUS:
                     *result = - r1; 

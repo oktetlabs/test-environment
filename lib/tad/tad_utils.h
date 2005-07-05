@@ -156,6 +156,7 @@ typedef enum {
     TAD_EXPR_SUBSTR,       /**< Binary substraction node */
     TAD_EXPR_MULT,         /**< Binary multiplication node */
     TAD_EXPR_DIV,          /**< Binary division node */
+    TAD_EXPR_MOD,          /**< Binary modulo */
     TAD_EXPR_U_MINUS,      /**< Unary minus node */
 } tad_expr_node_type;
 
