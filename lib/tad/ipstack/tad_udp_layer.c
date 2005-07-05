@@ -70,7 +70,7 @@ udp_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
 {
     int                       rc;
     csap_p                    csap_descr;
-    size_t                    len;
+    asn_value *               udp_tmpl_pdu;
     udp_csap_specific_data_t *udp_spec_data;
 
     if ((csap_descr = csap_find(csap_id)) == NULL)
@@ -81,15 +81,18 @@ udp_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
     }
     udp_spec_data = (udp_csap_specific_data_t *)
                     csap_descr->layers[layer].specific_data;
+
     if (udp_spec_data == NULL)
     {
         ERROR("%s: CSAP-specific data is NULL", __FUNCTION__);
         return ETEWRONGPTR;
-    }
+    } 
 
-    /* Read parameters from pattern to CSAP spec_data */
-    len = sizeof(udp_spec_data->src_port);
-
+    if(asn_get_syntax(tmpl_pdu, "") != CHOICE)
+        asn_get_choice_value(tmpl_pdu, (const asn_value **)&udp_tmpl_pdu,
+                             NULL, NULL);
+    else
+        udp_tmpl_pdu = tmpl_pdu;
 
     rc = tad_data_unit_convert(tmpl_pdu, NDN_TAG_UDP_SRC_PORT,
                               &(udp_spec_data->du_src_port)); 
@@ -276,7 +279,6 @@ udp_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
     {
         int       header_len = 8; /* sizeof(struct udphdr) */
         int       payload_len = (up_payload == NULL) ? 0 : up_payload->len;
-        uint16_t  value;
         uint8_t  *p;
 
         pkts->len = header_len + payload_len;
