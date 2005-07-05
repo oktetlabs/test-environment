@@ -116,6 +116,29 @@
          Limit: 1 -->
     <object oid="/agent/dns" access="read_create" type="address"/>
 
+
+    <!-- IP-tables Linux firewall; for details see 'man iptables' 
+         Name:  empty    
+         Limit: 1 -->
+    <object oid="/agent/iptables"
+            access="read_create" type="none"/>
+
+    <!-- IP-tables Linux firewall chain
+         Name:  chain lable: "INPUT", "OUTPUT", "FORWARD", or user-defined.
+         -->
+    <object oid="/agent/iptables/chain"
+            access="read_create" type="none"/>
+
+    <!-- IP-tables Linux firewall rule in chain
+         Name: rule label in the chain, does not passed to 'iptables' 
+               utility, used only as internal identifer.
+         Value: rule-speciication for 'iptables' utility; 
+                e.g  "-s 192.168.0.10 -d 191.168.0.20"
+         -->
+    <object oid="/agent/iptables/chain/rule"
+            access="read_create" type="string"/>
+
+
     <!-- ************** Agent volatile subtree ************** -->
 
     <!-- Volatile subtree of the Test Agent.
