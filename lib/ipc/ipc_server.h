@@ -35,6 +35,8 @@
 #include <sys/types.h>
 #endif
 
+#include "te_defs.h"
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -86,6 +88,32 @@ extern int ipc_register_server(const char *name,
  *      It seems to be unusefull in the TCP implementation.
  */
 extern int ipc_get_server_fd(const struct ipc_server *ipcs);
+
+/**
+ * Get a file descriptor of the server.
+ *
+ * @param ipcs          Pointer to the ipc_server structure returned
+ *                      by ipc_register_server()
+ * @param set           Set to be updated
+ *
+ * @return Maximum file descriptor number or -1.
+ */
+extern int ipc_get_server_fds(const struct ipc_server *ipcs,
+                              fd_set *set);
+
+/**
+ * Is server ready on the base of knowledge in specified set of
+ * file descriptors?
+ *
+ * @param ipcs          Pointer to the ipc_server structure returned
+ *                      by ipc_register_server()
+ * @param set           Set to be analyzed
+ * @param max_fd        Maximum file descriptor to be analyzed
+ *
+ * @return Is server ready or not?
+ */
+extern te_bool ipc_is_server_ready(struct ipc_server *ipcs,
+                                   const fd_set *set, int max_fd);
 
 /**
  * Get name of the IPC server client.

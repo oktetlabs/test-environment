@@ -217,8 +217,7 @@ static te_bool rcf_wait_shutdown = FALSE;   /**< Should RCF go to wait
                                                  of shut down state */
 
 static struct ipc_server *server = NULL;    /**< IPC Server handle */
-static int server_fd;                       /**< IPC file descriptor 
-                                                 of the server */
+
 static char cmd[RCF_MAX_LEN];   /**< Test Protocol command location */
 static char names[RCF_MAX_LEN - sizeof(rcf_msg)];   /**< TA names */
 static int  names_len = 0;      /**< Length of TA name list */
@@ -2227,8 +2226,6 @@ main(int argc, const char *argv[])
     assert(server != NULL);
 
     FD_ZERO(&set0);
-    server_fd = ipc_get_server_fd(server);
-    FD_SET(server_fd, &set0);
     tv0.tv_sec = RCF_SELECT_TIMEOUT;
     tv0.tv_usec = 0;
 
@@ -2278,11 +2275,13 @@ main(int argc, const char *argv[])
         req = NULL;
         rc = -1;
 
+        (void)ipc_get_server_fds(server, &set);
+
         select(FD_SETSIZE, &set, NULL, NULL, &tv);
         if (reboot_num > 0)
             check_reboot();
 
-        if (FD_ISSET(server_fd, &set))
+        if (ipc_is_server_ready(server, &set, FD_SETSIZE))
         {
             len = sizeof(rcf_msg);
             

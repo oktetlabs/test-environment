@@ -101,6 +101,7 @@ struct ipc_server_client {
                                          the current message */
 #else
     int         socket;         /**< Connected socket to client */
+    te_bool     is_ready;       /**< Is client socket ready for reading? */
     uint32_t    pending;        /**< Number of octets in current message
                                      left to read from socket and to
                                      return to user. This field MUST
@@ -113,6 +114,7 @@ struct ipc_server_client {
 struct ipc_server {
     char    name[UNIX_PATH_MAX];    /**< Name of the server */
     int     socket;                 /**< Server socket */
+    te_bool is_ready;               /**< Is server socket ready? */
 
     /** List of "active" IPC clients */
     LIST_HEAD(ipc_server_clients, ipc_server_client) clients;
@@ -125,7 +127,7 @@ struct ipc_server {
                                              on receiving datagrams */
     struct ipc_datagrams    datagrams;  /**< Delayed datagrams */
 #else
-    char                   *out_buffer; /**< Buffer for outgoing messages */
+    char        *out_buffer;    /**< Buffer for outgoing messages */
 #endif
 };
 
@@ -334,6 +336,82 @@ ipc_get_server_fd(const struct ipc_server *ipcs)
     return (ipcs != NULL) ? ipcs->socket : -1;
 }
 
+/* See description in ipc_server.h */
+int
+ipc_get_server_fds(const struct ipc_server *ipcs, fd_set *set)
+{
+    int                             max_fd;
+#ifndef TE_IPC_CONNECTIONLESS
+    const struct ipc_server_client *client;
+#endif
+
+    if (ipcs == NULL)
+        return -1;
+
+    FD_SET(ipcs->socket, set);
+    max_fd = ipcs->socket;
+#ifndef TE_IPC_CONNECTIONLESS
+    for (client = ipcs->clients.lh_first;
+         client != NULL;
+         client = client->links.le_next)
+    {
+        FD_SET(client->socket, set);
+        max_fd = MAX(max_fd, client->socket);
+    }
+#endif
+        
+    return max_fd;
+}
+
+/* See description in ipc_server.h */
+te_bool
+ipc_is_server_ready(struct ipc_server *ipcs, const fd_set *set, int max_fd)
+{
+    te_bool                     is_ready = FALSE;
+#ifndef TE_IPC_CONNECTIONLESS
+    struct ipc_server_client   *client;
+#endif
+
+    if (ipcs == NULL || set == NULL)
+        return is_ready;
+
+    if (ipcs->socket <= max_fd)
+    {
+        is_ready = is_ready ||
+            (ipcs->is_ready = FD_ISSET(ipcs->socket, set));
+    }
+#ifndef TE_IPC_CONNECTIONLESS
+    for (client = ipcs->clients.lh_first;
+         client != NULL;
+         client = client->links.le_next)
+    {
+        if (client->socket <= max_fd)
+        {
+            is_ready = is_ready ||
+                (client->is_ready = FD_ISSET(client->socket, set));
+        }
+    }
+#endif
+        
+    return is_ready;
+}
+
+/**
+ * Close IPC server association with client.
+ *
+ * @param ipcsc     IPC server client
+ */
+static void
+ipc_server_close_client(struct ipc_server_client *ipcsc)
+{
+    LIST_REMOVE(ipcsc, links);
+#ifdef TE_IPC_CONNECTIONLESS
+    free(ipcsc->buffer);
+#else
+    close(ipcsc->socket);
+#endif
+    free(ipcsc);
+}
 
 /* See description in ipc_server.h */
 int
@@ -376,13 +454,7 @@ ipc_close_server(struct ipc_server *ipcs)
     /* Free the pool */
     while ((ipcsc = ipcs->clients.lh_first) != NULL)
     {
-        LIST_REMOVE(ipcsc, links);
-#ifdef TE_IPC_CONNECTIONLESS
-        free(ipcsc->buffer);
-#else
-        close(ipcsc->socket);
-#endif
-        free(ipcsc);
+        ipc_server_close_client(ipcsc);
     }
 
     /* Free instance */
@@ -640,7 +712,7 @@ ipc_send_answer(struct ipc_server *ipcs, struct ipc_server_client *ipcsc,
  * @retval errno        Other failure
  */
 static int
-ipc_server_int_receive(struct ipc_server *ipcs,
+ipc_server_receive(struct ipc_server *ipcs,
                        void *buf, size_t *p_buf_len,
                        struct ipc_server_client *ipcsc)
 {
@@ -657,14 +729,15 @@ ipc_server_int_receive(struct ipc_server *ipcs,
     rc = read_socket(ipcsc->socket, buf, octets_to_read);
     if (rc != 0)
     {
-        /* Error occured */
+        fprintf(stderr, "ipc_server_receive(): read_socket() failed "
+                        "in the middle of message\n");
         return rc;
     }
 
     ipcsc->pending -= octets_to_read;
     if (ipcsc->pending > 0)
     {
-        *p_buf_len = ipcsc->pending + octets_to_read;
+        *p_buf_len = ipcsc->pending;
         return TE_RC(TE_IPC, ETESMALLBUF);
     }
     else
@@ -682,7 +755,8 @@ ipc_receive_message(struct ipc_server *ipcs,
 {
     fd_set                    my_set;
     struct ipc_server_client *client;
-    int                       max_n;
+    struct ipc_server_client *next_client;
+    int                       max_fd;
     int                       rc;
 
     if ((ipcs == NULL) || (buf == NULL) || (p_ipcsc == NULL) ||
@@ -691,48 +765,53 @@ ipc_receive_message(struct ipc_server *ipcs,
         return TE_RC(TE_IPC, EINVAL);
     }
 
+    if (*p_ipcsc != NULL)
+    {
+        client = *p_ipcsc;
+
+        if (client->pending == 0)
+        {
+            rc = read_socket(client->socket, &(client->pending),
+                             sizeof(client->pending));
+            if (rc != 0)
+            {
+                if (rc != TE_RC(TE_IPC, ECONNABORTED))
+                {
+                    return rc;
+                }
+                else
+                {
+                    ipc_server_close_client(client);
+                    return rc;
+                }
+            }
+        }
+
+        return ipc_server_receive(ipcs, buf, p_buf_len, client);
+    }
+
     while (TRUE)
     {
-        /*
-         * Wait for one of:
-         *  - client tries to establish connection
-         *  - client sends data via established connection
-         */
-        FD_ZERO(&my_set);
-        FD_SET(ipcs->socket, &my_set);
-        max_n = ipcs->socket;
-
-        for (client = ipcs->clients.lh_first;
-             client != NULL;
-             client = client->links.le_next)
-        {
-            FD_SET(client->socket, &my_set);
-            max_n = MAX(max_n, client->socket);
-        }
-        
-        /* Waiting forever */
-        rc = select(max_n + 1, &my_set, NULL, NULL, NULL);
-        if (rc <= 0) /* Error? */
-        {
-            perror("select() error");
-            return TE_RC(TE_IPC, errno);
-        }
-
         /* Data in the connection? */
         for (client = ipcs->clients.lh_first;
              client != NULL;
-             client = client->links.le_next)
+             client = next_client)
         {
-            if (FD_ISSET(client->socket, &my_set))
+            next_client = client->links.le_next;
+
+            if (client->is_ready)
             {
+                client->is_ready = FALSE;
+
                 /*
                  * Connection with data found. Check that no pending data
                  * for them exists.
                  */
                 if (client->pending != 0)
                 {
-                    fprintf(stderr,
-                            "IPC: Unexpected client connection state\n");
+                    fprintf(stderr, "IPC(%d): Unexpected client "
+                            "connection state, pending=%u\n",
+                            (int)getpid(), (unsigned)client->pending);
                     return TE_RC(TE_IPC, ESYNCFAILED);
                 }
 
@@ -745,51 +824,75 @@ ipc_receive_message(struct ipc_server *ipcs,
                 if (rc != 0)
                 {
                     if (rc != TE_RC(TE_IPC, ECONNABORTED))
-                        return TE_RC(TE_IPC, errno);
+                    {
+                        return rc;
+                    }
                     else
-                        /*TODO*/;
+                    {
+                        ipc_server_close_client(client);
+                        continue;
+                    }
                 }
 
                 *p_ipcsc = client;
 
-                return ipc_server_int_receive(ipcs, buf, p_buf_len, client);
+                return ipc_server_receive(ipcs, buf, p_buf_len, client);
             }
         }
 
-        /* New connection? */
-        if (!FD_ISSET(ipcs->socket, &my_set))
+        if (ipcs->is_ready)
         {
-            /* No! */
-            perror("Can't understand what is going on with select()");
-            return -1;
-        }
+            ipcs->is_ready = FALSE;
 
-        /* New connection requested. Accept it */
+            /* New connection requested. Accept it */
+ 
+            client = calloc(1, sizeof(*client));
+            assert(client != NULL);
 
-        /* Create new entry in the pool. We can just insert it first */
-        client = calloc(1, sizeof(*client));
-        assert(client != NULL);
-        client->socket = accept(ipcs->socket,
 #ifdef TE_IPC_AF_UNIX
-                                SA(&client->sa), &client->sa_len
-#else
-                                NULL, NULL
+            client->sa_len = sizeof(client->sa);
 #endif
-                                );
-        if (client->socket < 0)
-        {
-            perror("accept() failed");
-            free(client);
-        }
-        else
-        {
-            LIST_INSERT_HEAD(&ipcs->clients, client, links);
+
+            client->socket = accept(ipcs->socket,
+#ifdef TE_IPC_AF_UNIX
+                                    SA(&client->sa), &client->sa_len
+#else
+                                    NULL, NULL
+#endif
+                                    );
+            if (client->socket < 0)
+            {
+                perror("accept() failed");
+                free(client);
+            }
+            else
+            {
+                LIST_INSERT_HEAD(&ipcs->clients, client, links);
+            }
+
+            /*
+             * We've accepted the connection but have not receive any
+             * message. So we have to repeat select.
+             */
         }
 
         /*
-         * We've accepted the connection but have not receive any message.
-         * So we have to repeat select.
+         * Wait for one of:
+         *  - client tries to establish connection
+         *  - client sends data via established connection
          */
+        FD_ZERO(&my_set);
+        max_fd = ipc_get_server_fds(ipcs, &my_set);
+        
+        /* Waiting forever */
+        rc = select(max_fd + 1, &my_set, NULL, NULL, NULL);
+        if (rc <= 0) /* Error? */
+        {
+            perror("select() error");
+            return TE_RC(TE_IPC, errno);
+        }
+
+        (void)ipc_is_server_ready(ipcs, &my_set, max_fd);
     }
     /* Unreachable */
 }
