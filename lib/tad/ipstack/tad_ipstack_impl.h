@@ -112,6 +112,10 @@ typedef struct udp_csap_specific_data
     int              socket;        /**< Network socket for 'data' CSAP*/ 
     struct sockaddr *low_sa_dest;   /**< Network sockaddr for 'data' CSAP,*/
     size_t           low_sa_dest_len;
+
+    tad_data_unit_t  du_src_port;
+    tad_data_unit_t  du_dst_port;
+
 } udp_csap_specific_data_t;
 
 

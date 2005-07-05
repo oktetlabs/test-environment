@@ -29,6 +29,8 @@
 
 #include <string.h>
 #include <stdlib.h>
+#define TE_LGR_USER "TAD UDP" 
+
 #include "tad_ipstack_impl.h"
 
 /**
@@ -87,35 +89,38 @@ udp_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
 
     /* Read parameters from pattern to CSAP spec_data */
     len = sizeof(udp_spec_data->src_port);
-    rc = asn_read_value_field(tmpl_pdu, &udp_spec_data->src_port, 
-                              &len, "src-port");
-    if (rc == EASNINCOMPLVAL)
-        udp_spec_data->src_port = 0;
-    else if (rc != 0)
-    {
-        ERROR("%s: failed to read src-port from pattern: %X",
-              __FUNCTION__, rc);
-        return TE_RC(TE_TAD_CSAP, rc);
-    }
 
-    rc = asn_read_value_field(tmpl_pdu, &udp_spec_data->dst_port, 
-                              &len, "dst-port");
-    if (rc == EASNINCOMPLVAL)
+
+    rc = tad_data_unit_convert(tmpl_pdu, NDN_TAG_UDP_SRC_PORT,
+                              &(udp_spec_data->du_src_port)); 
+    if (rc != 0)
     {
-        udp_spec_data->dst_port = 0;
-    }
-    else if (rc != 0)
-    {
-        ERROR("%s: failed to read dst-port from pattern: %X",
+        ERROR("%s: failed to convert src-port from pattern: %X",
               __FUNCTION__, rc);
         return TE_RC(TE_TAD_CSAP, rc);
     }
+    if (udp_spec_data->du_src_port.du_type == TAD_DU_I32)
+        udp_spec_data->src_port = udp_spec_data->du_src_port.val_i32;
+
+
+    rc = tad_data_unit_convert(tmpl_pdu, NDN_TAG_UDP_DST_PORT,
+                              &(udp_spec_data->du_dst_port)); 
+    if (rc != 0)
+    {
+        ERROR("%s: failed to convert dst-port from pattern: %X",
+              __FUNCTION__, rc);
+        return TE_RC(TE_TAD_CSAP, rc);
+    }
+    if (udp_spec_data->du_dst_port.du_type == TAD_DU_I32)
+        udp_spec_data->dst_port = udp_spec_data->du_dst_port.val_i32;
+
 
     /* Update pattern with CSAP defaults */
     if (csap_descr->command == TAD_OP_RECV)
     {
         /* receive, local is destination */
-        if (udp_spec_data->dst_port == 0 && udp_spec_data->local_port != 0)
+        if (udp_spec_data->dst_port == 0 && 
+            udp_spec_data->local_port != 0)
         {
             VERB("%s: set dst-port to %u",
                   __FUNCTION__, udp_spec_data->local_port);
@@ -130,7 +135,8 @@ udp_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
             }
             udp_spec_data->dst_port = udp_spec_data->local_port;
         }
-        if (udp_spec_data->src_port == 0 && udp_spec_data->remote_port != 0)
+        if (udp_spec_data->src_port == 0 &&
+            udp_spec_data->remote_port != 0)
         {
             VERB("%s: set src-port to %u",
                   __FUNCTION__, udp_spec_data->remote_port);
@@ -149,7 +155,8 @@ udp_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
     else
     {
         /* send, local is source */
-        if (udp_spec_data->src_port == 0 && udp_spec_data->local_port != 0)
+        if (udp_spec_data->du_src_port.du_type == TAD_DU_UNDEF &&
+            udp_spec_data->local_port != 0)
         {
             VERB("%s: set src-port to %u",
                   __FUNCTION__, udp_spec_data->local_port);
@@ -163,8 +170,10 @@ udp_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
                 return TE_RC(TE_TAD_CSAP, rc);
             }
             udp_spec_data->src_port = udp_spec_data->local_port;
+            udp_spec_data->du_src_port.val_i32 = udp_spec_data->local_port;
+            udp_spec_data->du_src_port.du_type = TAD_DU_I32;
         }
-        if (udp_spec_data->dst_port == 0)
+        if (udp_spec_data->du_dst_port.du_type == TAD_DU_UNDEF)
         {
             if (udp_spec_data->remote_port != 0)
             {
@@ -181,6 +190,9 @@ udp_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
                     return TE_RC(TE_TAD_CSAP, rc);
                 }
                 udp_spec_data->dst_port = udp_spec_data->remote_port;
+                udp_spec_data->du_dst_port.val_i32 =
+                                          udp_spec_data->remote_port;
+                udp_spec_data->du_dst_port.du_type = TAD_DU_I32;
             }
             else
             {
@@ -262,7 +274,6 @@ udp_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
     }
     else
     {
-        return TE_RC(TE_TAD_CSAP, ETENOSUPP);
         int       header_len = 8; /* sizeof(struct udphdr) */
         int       payload_len = (up_payload == NULL) ? 0 : up_payload->len;
         uint16_t  value;
@@ -276,37 +287,48 @@ udp_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
         pkts->next = NULL;
         p = (uint8_t *)pkts->data;
 
-#define PUT_UINT16(data) \
-        value = htons(data);              \
-        memcpy(p, &value, sizeof(value)); \
-        p += sizeof(value)
+#define PUT_BIN_DATA(c_du_field_, def_val_) \
+    do {                                                                \
+        if (spec_data->c_du_field_.du_type != TAD_DU_UNDEF)             \
+        {                                                               \
+            rc = tad_data_unit_to_bin(&(spec_data->c_du_field_),        \
+                                      args, arg_num, p, 2);             \
+            if (rc != 0)                                                \
+            {                                                           \
+                ERROR("%s():%d: " #c_du_field_ " error: 0x%x",          \
+                      __FUNCTION__,  __LINE__, rc);                     \
+                goto cleanup;                                           \
+            }                                                           \
+        }                                                               \
+        else                                                            \
+            *((uint16_t *)p) = htons((uint16_t)def_val_);               \
+        p += 2;                                                         \
+    } while (0) 
 
-        if (spec_data->src_port == 0)
-        {
-            ERROR("%s: CSAP %d, no source port specified",
-                  __FUNCTION__, csap_descr->id);
-            return TE_RC(TE_TAD_CSAP, ETADLESSDATA);
-        }
-        PUT_UINT16(spec_data->src_port);
 
-        if (spec_data->dst_port == 0)
-        {
-            ERROR("%s: CSAP %d, no destination port specified",
-                  __FUNCTION__, csap_descr->id);
-            return TE_RC(TE_TAD_CSAP, ETADLESSDATA);
-        }
-        PUT_UINT16(spec_data->dst_port);
+#define PUT_UINT16(val_)                                \
+    do {                                                \
+        *((uint16_t *)p) = htons((uint16_t)val_);       \
+        p +=  2;                                        \
+    } while (0) 
 
-        /* Length */
-        PUT_UINT16(pkts->len);
+        PUT_BIN_DATA(du_src_port, spec_data->local_port);
+        PUT_BIN_DATA(du_dst_port, spec_data->remote_port);
 
+        PUT_UINT16(pkts->len); 
         /* Checksum */
         PUT_UINT16(0);
 #undef PUT_UINT16
+#undef PUT_BIN_DATA
 
         if (payload_len > 0)
             memcpy(p, up_payload->data, payload_len);
     }
+
+    return 0;
+cleanup:
+    free(pkts->data);
+    pkts->data = NULL; pkts->len = 0;
 
     return rc;
 }
