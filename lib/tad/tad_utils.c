@@ -821,14 +821,14 @@ tad_data_unit_convert(const asn_value *pdu_val,
         if (strncmp(expr_label, script, sizeof(expr_label)-1) == 0)
         {
             tad_int_expr_t *expression;
-            int syms;
+            char           *expr_string = script + sizeof(expr_label) - 1;
+            int             syms;
 
-            rc = tad_int_expr_parse(script + sizeof(expr_label) - 1,
-                                    &expression, &syms);
+            rc = tad_int_expr_parse(expr_string, &expression, &syms);
             if (rc != 0)
             {
-                ERROR("expr script parse error %x, syms %d",
-                      rc, syms);
+                ERROR("expr script parse error %x, script '%s', syms %d",
+                      rc, expr_string, syms);
                 return rc;
             }
             location->du_type = TAD_DU_EXPR;
