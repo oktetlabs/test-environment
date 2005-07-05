@@ -926,7 +926,7 @@ main(int argc, char **argv)
 
     (void)signal(SIGCHLD, ta_sigchld_handler);
 
-    VERB("Started\n");
+    VERB("Started");
 
     sprintf(buf, "PID %u", getpid());
 
