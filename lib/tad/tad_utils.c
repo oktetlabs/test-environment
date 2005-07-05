@@ -761,7 +761,10 @@ tad_data_unit_convert(const asn_value *pdu_val,
             return 0;
         }
         else
+        {
+            ERROR("%s(): rc from get_child 0x%X", __FUNCTION__, rc);
             return rc;
+        }
     } 
 
     rc = asn_get_choice(ch_du_field, "", choice, sizeof(choice));
@@ -792,6 +795,9 @@ tad_data_unit_convert(const asn_value *pdu_val,
                     location->du_type = TAD_DU_I32; 
                     rc = asn_read_value_field(du_field, 
                             &location->val_i32, &val_len, "");
+                    if (rc != 0)
+                        ERROR("%s(): read integer value rc %X", 
+                              __FUNCTION__, rc);
                     return rc;
                 }
                 break;
