@@ -95,5 +95,57 @@
                 [AttributeName=Value[,AttributeName=Value]*] -->
     <object oid="/agent/radiusserver/user/accept-attrs" access="read_write"
             type="string"/>
+            
+    <!-- Root object of the supplicant daemon (XSupplicant assumed)
+         Name: empty
+         Value: 0 (disabled) or 1 (enabled)
+    -->
+    <object oid="/agent/supplicant" access="read_write" type="integer" />
 
+    <!-- A collection of network interfaces XSupplicant will use 
+         Name: interface name
+         Value: none
+    -->
+    <object oid="/agent/supplicant/interface" access="read_create" type="none" />
+
+    <!-- The following three are hooks that are executed by XSupplicant 
+         at startup, after the first authentication and after the re-authentication resp.
+         QUESTION: do we really need these? Or rather some appropriate values should
+         be hardcoded into TA?
+    -->
+    <object oid="/agent/supplicant/startup-command" access="read_write" type="string" />
+    <object oid="/agent/supplicant/first-auth-command" access="read_write" type="string" />
+    <object oid="/agent/supplicant/reauth-command" access="read_write" type="string" />
+
+    <!-- The network description for XSupplicant.
+         QUESTION: do we need multiple networks? 
+         If not, then the name of this node shall be empty, and the value
+         shall be the name of the network.
+         If yes, then the value will be empty, and the name will be actual name
+    -->
+    <object oid="/agent/supplicant/network" access="read_write" type="string" />
+<!-- OR:
+    <object oid="/agent/supplicant/network" access="read_create" type="none" />
+-->
+    <!-- Network identity for XSupplicant 
+         Name: empty
+         Value: identity string
+    -->
+    <object oid="/agent/supplicant/network/identity" access="read_write" type="string" />
+
+    <!-- QUESTION: do we need various EAP flavors or just EAP-MD5?
+         If we actually do, the following need to be augemented.
+    -->
+
+    <!-- Username for XSupplicant 
+         Name: empty
+         Value: username for EAP-MD5
+    -->
+    <object oid="/agent/supplicant/network/username" access="read_write" type="string" />
+
+    <!-- Password for XSupplicant 
+         Name: empty
+         Value: password for EAP-MD5
+    -->
+    <object oid="/agent/supplicant/network/password" access="read_write" type="string" />
 </backup>
