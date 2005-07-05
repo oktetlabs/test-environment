@@ -76,34 +76,37 @@ char* tcp_get_param_cb (csap_p csap_descr, int level, const char *param)
  * @return zero on success or error code.
  */ 
 int 
-tcp_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
+tcp_confirm_pdu_cb(int csap_id, int layer, asn_value_p tmpl_pdu)
 { 
     int rc = 0;
     csap_p csap_descr = csap_find(csap_id);
 
-    tcp_csap_specific_data_t * spec_data = 
+    tcp_csap_specific_data_t *spec_data = 
         (tcp_csap_specific_data_t *)csap_descr->layers[layer].specific_data;
 
-    tad_data_unit_convert(tmpl_pdu, NDN_TAG_TCP_SRC_PORT,
-                          &spec_data->du_src_port);
-    tad_data_unit_convert(tmpl_pdu, NDN_TAG_TCP_DST_PORT,
-                          &spec_data->du_dst_port);
-    tad_data_unit_convert(tmpl_pdu, NDN_TAG_TCP_SEQN,
-                          &spec_data->du_seqn);
-    tad_data_unit_convert(tmpl_pdu, NDN_TAG_TCP_ACKN,
-                          &spec_data->du_ackn);
-    tad_data_unit_convert(tmpl_pdu, NDN_TAG_TCP_HLEN,
-                          &spec_data->du_hlen);
-    tad_data_unit_convert(tmpl_pdu, NDN_TAG_TCP_FLAGS,
-                          &spec_data->du_flags);
-    tad_data_unit_convert(tmpl_pdu, NDN_TAG_TCP_WINDOW,
-                          &spec_data->du_win_size);
-    tad_data_unit_convert(tmpl_pdu, NDN_TAG_TCP_CHECKSUM,
-                          &spec_data->du_checksum);
-    tad_data_unit_convert(tmpl_pdu, NDN_TAG_TCP_URG,
-                          &spec_data->du_urg_p);
- 
-    return rc;
+#define CONVERT_FIELD(tag_, du_field_)                                  \
+    do {                                                                \
+        rc = tad_data_unit_convert(tmpl_pdu, tag_,                      \
+                           &(spec_data->du_field_));                    \
+        if (rc != 0)                                                    \
+        {                                                               \
+            ERROR("%s(csap %d),line %d, convert %s failed,rc 0x%X",     \
+                  __FUNCTION__, csap_id, __LINE__, #du_field_, rc);     \
+            return rc;                                                  \
+        }                                                               \
+    } while (0) 
+
+    CONVERT_FIELD(NDN_TAG_TCP_SRC_PORT, du_src_port); 
+    CONVERT_FIELD(NDN_TAG_TCP_DST_PORT, du_dst_port);
+    CONVERT_FIELD(NDN_TAG_TCP_SEQN, du_seqn);
+    CONVERT_FIELD(NDN_TAG_TCP_ACKN, du_ackn);
+    CONVERT_FIELD(NDN_TAG_TCP_HLEN, du_hlen);
+    CONVERT_FIELD(NDN_TAG_TCP_FLAGS, du_flags);
+    CONVERT_FIELD(NDN_TAG_TCP_WINDOW, du_win_size);
+    CONVERT_FIELD(NDN_TAG_TCP_CHECKSUM, du_checksum);
+    CONVERT_FIELD(NDN_TAG_TCP_URG, du_urg_p);
+#undef CONVERT_FIELD 
+    return 0;
 }
 
 
