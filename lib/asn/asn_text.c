@@ -1770,9 +1770,13 @@ asn_save_to_file(const asn_value *value, const char *filename)
         return errno;
 
     buffer = malloc(len + 11);
-    if (buffer == NULL) 
-        return ENOMEM; 
-    memset(buffer, 0, len+11);
+    if (buffer == NULL)
+    {
+        /* We need to close files - this comment is for "konst" */
+        fclose(fp);
+        return ENOMEM;
+    }
+    memset(buffer, 0, len + 11);
     
     asn_sprint_value(value, buffer, len + 10, 0);
     fwrite(buffer, strlen(buffer), 1, fp);
