@@ -185,6 +185,7 @@ void report_error(const char *fmt, ...)
 }
 
 #define report_notice report_error
+#define DEBUGGING
 
 int 
 tce_collector(void)
@@ -686,9 +687,10 @@ static void
 collect_line(channel_data *ch)
 {
     int len;
-    report_notice("requesting %d bytes on %d", ch->remaining, ch->fd);
+    DEBUGGING(report_notice("requesting %d bytes on %d", 
+                            ch->remaining, ch->fd));
     len = read(ch->fd, ch->bufptr, ch->remaining);
-    report_notice("read %d bytes from %d", len, ch->fd);
+    DEBUGGING(report_notice("read %d bytes from %d", len, ch->fd));
     if (len <= 0)
     {
         report_error("read error on %d: %s", ch->fd,
@@ -861,7 +863,7 @@ dump_object(bb_object_info *oi)
     unsigned idx;
 
     sprintf(tar_name, "%s%d.tar", tar_file_prefix, oi->peer_id);
-    report_notice("dumping to %s", tar_name);
+    DEBUGGING(report_notice("dumping to %s", tar_name));
     tar_file = fopen(tar_name, "r+");
     if (tar_file == NULL)
     {
@@ -1109,7 +1111,8 @@ process_gcov_syms(FILE *symfile, int core_file,
             unsigned long tmp;
             struct bb bb_buf;
             
-            report_notice("offset is %lu", (unsigned long)offset);
+            DEBUGGING(report_notice("offset is %lu", 
+                                    (unsigned long)offset));
             if(read_at(core_file, offset + 4, &tmp, sizeof(tmp)) < 
                (ssize_t)sizeof(tmp))
             {
@@ -1117,7 +1120,7 @@ process_gcov_syms(FILE *symfile, int core_file,
                              strerror(errno));
                 continue;
             }
-            report_notice("new offset is %lu", tmp);
+            DEBUGGING(report_notice("new offset is %lu", tmp));
             if(read_at(core_file, tmp, &bb_buf, sizeof(bb_buf)) < 
                (ssize_t)sizeof(bb_buf))
             {
