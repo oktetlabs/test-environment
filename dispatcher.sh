@@ -105,6 +105,8 @@ Generic options:
   --vg-tester                   Run Tester under valgrind (without by default)
 
   --tce=<agent>                 Do Test Coverage Estimation for <agent>
+  --tces-datadir=<dir>          Directory for TCE summary results splitted
+                                into many files
   
 EOF
 #    echo -e '  '--storage='<string>'\\t\\tconfiguration string for the storage
@@ -144,8 +146,10 @@ QUIET=
 
 # No additional Tester options by default
 TESTER_OPTS=
-# No additional TRV options by default
+# No additional TRC options by default
 TRC_OPTS=
+# No additional TCE summary options by default
+TCES_OPTS=
 # Configurator options
 CS_OPTS=
 # Building options
@@ -172,9 +176,6 @@ TESTER_EXT=
 
 # Whether Test Suite should be built
 BUILD_TS=yes
-
-# Tests to be started if Tester is not initialized
-TESTS=
 
 # Configuration directory
 CONF_DIR=
@@ -266,6 +267,7 @@ process_opts()
                          VG_TESTER=yes ;;
         
             --tce=*) TCE_AGENTS="$TCE_AGENTS ${1##--tce=}" ;;
+            --tces-*) TCES_OPTS="${TCES_OPTS} --${1#--tces-}" ;;
 
             --no-builder) BUILDER= ;;
             --no-tester) TESTER= ;;
@@ -690,7 +692,8 @@ if test -n "$TESTER" -a -n "$TCE_AGENTS" ; then
     myecho "--->>> TCE processing"
     for i in $TCE_AGENTS; do
         tce_report $i ${TE_LOG_DIR}/${i}_coverage.log
-        tce_summary ${TE_LOG_DIR}/${i}_coverage.log >${TE_LOG_DIR}/${i}_coverage.html
+        tce_summary ${TCES_OPTS} ${TE_LOG_DIR}/${i}_coverage.log \
+            >${TE_LOG_DIR}/${i}_coverage.html
     done
 fi
 
