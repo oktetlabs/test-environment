@@ -1,5 +1,10 @@
 #! /bin/sh
 
+if test "$1" == "--ignore-directories"; then
+    ignoredir=yes
+    shift
+fi
+
 tce_taname=$1 
 mergefile=$2
 outfile=${mergefile}.new
@@ -19,8 +24,17 @@ if test -n "$NUT_SOURCES"; then
     echo "*** Sources are at $NUT_SOURCES:" >>$outfile
     find $NUT_SOURCES -follow \( -name '*.gcov' -o -name '*.da' \) -exec rm -f '{}' ';'
         tar -x -P -f ${TE_BUILD}/tce_${tce_taname}.tar
-        (find $NUT_SOURCES -follow \( -name '*.da' -o -name '.[a-z]*.da' \) -exec tce_gcov '{}' ';' && \
-            find $NUT_SOURCES -follow -name '*.gcov' -exec tce_merge $mergefile '{}' ';') >> $outfile
+        find $NUT_SOURCES -follow \( -name '*.da' -o -name '.[a-z]*.da' \) -exec tce_gcov '{}' ';' && 
+            (
+                if test -n "$ignoredir" -a ! -f "$mergefile"; then
+                    auxfile=${mergefile}.aux
+                    find $NUT_SOURCES -follow -name '*.gcov' -exec tce_merge "" '{}' true ';' >$auxfile
+                    find $NUT_SOURCES -follow -name '*.gcov' -exec tce_merge $auxfile '{}' true ';' >>$outfile
+                    rm -f $auxfile
+                else
+                    find $NUT_SOURCES -follow -name '*.gcov' -exec tce_merge $mergefile '{}' $ignoredir ';' >>$outfile
+                fi
+            ) 
         echo >>$outfile
         tce_count $outfile '^branch[[:space:]]*[0-9]+ never executed' '^branch[[:space:]]*[0-9]+ taken' | 
         (

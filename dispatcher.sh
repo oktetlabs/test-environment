@@ -107,7 +107,16 @@ Generic options:
   --tce=<agent>                 Do Test Coverage Estimation for <agent>
   --tces-datadir=<dir>          Directory for TCE summary results splitted
                                 into many files
-  
+  --tces-sort-by=<mode>         Sort TCE summary table by covered branch
+                                percentage (mode=branches, the default),
+                                covered line percentage (mode=lines),
+                                or source file names (mode=sources)
+  --tce-ignore-directories      Respect only base file names when doing TCE report
+                                (useful when a given file is used in different contexts,
+                                e. g. in a user-space library and a kernel module,
+                                and you want total statistics. Note, however, that this
+                                will lead to unexpected results if there are actually
+                                files with equal base names in different directories.
 EOF
 #    echo -e '  '--storage='<string>'\\t\\tconfiguration string for the storage
 #    echo -e \\t\\t\\t\\twith data to be updated by Dispatcher
@@ -268,7 +277,7 @@ process_opts()
         
             --tce=*) TCE_AGENTS="$TCE_AGENTS ${1##--tce=}" ;;
             --tces-*) TCES_OPTS="${TCES_OPTS} --${1#--tces-}" ;;
-
+            --tce-ignore-directories) TCE_REPORT_OPTS=--ignore-directories ;;
             --no-builder) BUILDER= ;;
             --no-tester) TESTER= ;;
             --no-cs) CS= ;;
@@ -691,7 +700,7 @@ fi
 if test -n "$TESTER" -a -n "$TCE_AGENTS" ; then
     myecho "--->>> TCE processing"
     for i in $TCE_AGENTS; do
-        tce_report $i ${TE_LOG_DIR}/${i}_coverage.log
+        tce_report $TCE_REPORT_OPTS $i ${TE_LOG_DIR}/${i}_coverage.log
         tce_summary ${TCES_OPTS} ${TE_LOG_DIR}/${i}_coverage.log \
             >${TE_LOG_DIR}/${i}_coverage.html
     done
