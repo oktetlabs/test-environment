@@ -121,7 +121,7 @@ __bb_exit_func (void)
     long long program_max = 0;
     long program_arcs = 0;
     int fd;
-    static char buffer[128];
+    static char buffer[PATH_MAX + 64];
 
     if (peer_id == 0) /* __bb_init_function has not been called */
     {
