@@ -132,12 +132,15 @@ static void
 kill_tasks(void)
 {
     unsigned int i;
+    int          rc;
 
     for (i = 0; i < tasks_index; i++)
     {
         if (tasks[i] != 0)
         {
-            kill(-tasks[i], SIGTERM);
+            rc = kill(-tasks[i], SIGTERM);
+            RING("Sent SIGTERM to PID=%d - rc=%d, errno=%d",
+                 -tasks[i], rc, (rc == 0) ? 0 : errno);
         }
     }
     sleep(1);
@@ -145,7 +148,9 @@ kill_tasks(void)
     {
         if (tasks[i] != 0)
         {
-            kill(-tasks[i], SIGKILL);
+            rc = kill(-tasks[i], SIGKILL);
+            RING("Sent SIGTERM to PID=%d - rc=%d, errno=%d",
+                 -tasks[i], rc, (rc == 0) ? 0 : errno);
         }
     }
     free(tasks);
@@ -565,9 +570,22 @@ rcf_ch_kill_task(struct rcf_comm_connection *handle,
         kill_errno = errno;
         ERROR("Failed to send SIGTERM to process with PID=%u: %X",
               pid, kill_errno);
-        /* Just to make sure */
-        kill(p, SIGKILL);
+
+        if (kill(p, SIGKILL) != 0)
+        {
+            ERROR("Failed to send SIGKILL to process with PID=%u: %X",
+                  pid, errno);
+        }
+        else
+        {
+            RING("Sent SIGKILL to PID=%d");
+        }
     }
+    else
+    {
+        RING("Sent SIGTERM to PID=%d");
+    }
+
     SEND_ANSWER("%d", kill_errno);
 }
 
