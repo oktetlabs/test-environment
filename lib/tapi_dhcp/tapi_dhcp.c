@@ -919,7 +919,12 @@ dhcpv4_prepare_traffic_pattern(const dhcp_message *dhcp_msg,
     *pattern_fname = calloc(1, 100);
 
     strcpy(*pattern_fname, "/tmp/te-dhcp-pattern.asn.XXXXXX");
-    mkstemp(*pattern_fname); 
+
+    if ((rc = te_make_tmp_file(*pattern_fname)) != 0)
+    {
+        free(*pattern_fname);
+        return TE_RC(TE_TAPI, rc);
+    }
 
     rc = asn_save_to_file(asn_pattern, *pattern_fname);
 

@@ -27,8 +27,6 @@
  * @(#) $Id$
  */
 
-
-
 #include "tad_snmp_impl.h"
 
 #define TE_LGR_USER     "TAD SNMP"
@@ -68,6 +66,8 @@
 #define WITHOUT_AES
 #endif
 #endif
+
+#define WITHOUT_AES
 
 #ifdef SNMPDEBUG
 void 

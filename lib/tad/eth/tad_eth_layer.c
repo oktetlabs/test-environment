@@ -32,6 +32,7 @@
 #endif
 
 #include <string.h>
+#include <fcntl.h>
 
 #define TE_LGR_USER     "TAD Ethernet"
 #include "logger_ta.h"

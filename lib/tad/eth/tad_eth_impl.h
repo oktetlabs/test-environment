@@ -40,7 +40,8 @@
 #include <netinet/in.h>
 #include <linux/if_packet.h>
 #include <netinet/if_ether.h>
-
+#include <unistd.h>
+#include <fcntl.h>
 
 #include "te_errno.h"
 

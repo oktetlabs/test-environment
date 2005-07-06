@@ -34,6 +34,9 @@
 #if HAVE_ASSERT_H
 #include <assert.h>
 #endif
+#if HAVE_ERRNO_H
+#include <errno.h>
+#endif
 #if HAVE_STDLIB_H
 #include <stdlib.h>
 #endif
@@ -198,6 +201,33 @@ static inline int
 strcmp_start(const char *pattern, const char *str)
 {
     return strncmp(pattern, str, strlen(pattern));
+}
+#endif
+
+#if HAVE_STDLIB_H && HAVE_ERRNO_H
+/**
+ * Creates a temporary file base on template passed in @a tmp_name
+ * parameter.
+ *
+ * @param tmp_name  template of the temporary file name, which must
+ *                  comply @a templateparameter of mkstemp() function
+ *
+ * @return Status of the operation.
+ */
+static inline int
+te_make_tmp_file(char *tmp_name)
+{
+    int fd;
+
+    if ((fd = mkstemp(tmp_name)) < 0)
+    {
+        return errno;
+    }
+
+    /* We need to close file descriptor. */
+    close(fd);
+
+    return 0;
 }
 #endif
 

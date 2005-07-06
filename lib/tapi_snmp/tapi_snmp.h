@@ -39,6 +39,12 @@
 #include <net-snmp/mib_api.h> 
 #endif
 
+#undef PACKAGE_BUGREPORT
+#undef PACKAGE_NAME
+#undef PACKAGE_STRING
+#undef PACKAGE_TARNAME
+#undef PACKAGE_VERSION
+
 #if 0
 /* If there is no NET-SNMP package on your system, but there is UCD-SNMP, 
  * include these headers: */

@@ -151,14 +151,14 @@ tapi_eth_csap_create_with_mode(const char *ta_name, int sid,
                                csap_handle_t *eth_csap)
 {
     int     rc;
-    char    tmp_name[100];
+    char    tmp_name[] = "/tmp/te_eth_csap_create.XXXXXX";
     FILE   *f;
 
     if ((ta_name == NULL) || (device == NULL) || (eth_csap == NULL))
         return TE_RC(TE_TAPI, EINVAL);
 
-    strcpy(tmp_name, "/tmp/te_eth_csap_create.XXXXXX");
-    mkstemp(tmp_name);
+    if ((rc = te_make_tmp_file(tmp_name)) != 0)
+        return TE_RC(TE_TAPI, rc);
 
     VERB("file: %s\n", tmp_name);
 
@@ -237,21 +237,21 @@ tapi_eth_tagged_csap_create(const char *ta_name, int sid,
                             uint16_t    vlan_id,
                             csap_handle_t *eth_csap)
 {
-    int rc;
-    char tmp_name[100];
+    int   rc;
+    char  tmp_name[] = "/tmp/te_eth_csap_create.XXXXXX";
     FILE *f;
 
-    if (
-        (ta_name == NULL) || (device == NULL) ||
+    if ((ta_name == NULL) || (device == NULL) ||
         (remote_addr == NULL) || (local_addr == NULL) ||
-        (eth_csap == NULL)
-       )
+        (eth_csap == NULL))
+    {
         return TE_RC(TE_TAPI, EINVAL);
+    }
 
-    strcpy(tmp_name, "/tmp/te_eth_csap_create.XXXXXX");
-    mkstemp(tmp_name);
-    f = fopen (tmp_name, "w+");
-    if (f == NULL)
+    if ((rc = te_make_tmp_file(tmp_name)) != 0)
+        return TE_RC(TE_TAPI, rc);
+
+    if ((f = fopen(tmp_name, "w+")) == NULL)
     {
         ERROR("fopen() of %s failed(%d)", tmp_name, errno);
         return TE_RC(TE_TAPI, errno); /* return system errno */
@@ -397,7 +397,7 @@ tapi_eth_recv_start(const char *ta_name, int sid,
                     unsigned int timeout, int num)
 {
     int    rc;
-    char   tmp_name[100];
+    char   tmp_name[] = "/tmp/te_eth_trrecv.XXXXXX";
     struct tapi_pkt_handler_data *i_data;
 
     if (ta_name == NULL || pattern == NULL)
@@ -409,8 +409,12 @@ tapi_eth_recv_start(const char *ta_name, int sid,
     i_data->user_callback = cb;
     i_data->user_data = cb_data;
 
-    strcpy(tmp_name, "/tmp/te_eth_trrecv.XXXXXX");
-    mkstemp(tmp_name);
+    if ((rc = te_make_tmp_file(tmp_name)) != 0)
+    {
+        free(i_data);
+        return TE_RC(TE_TAPI, rc);
+    }
+
     rc = asn_save_to_file(pattern, tmp_name);
     if (rc)
     {

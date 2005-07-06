@@ -266,18 +266,18 @@ tapi_tad_csap_create(const char *ta_name, int session,
                      const char *stack_id, 
                      const asn_value *csap_spec, int *handle)
 {
-    int rc = 0;
-    char tmp_file_name[] = "/tmp/te_tapi_tad_csap_create.XXXXXX";
+    int  rc;
+    char tmp_name[] = "/tmp/te_tapi_tad_csap_create.XXXXXX";
 
-    mkstemp(tmp_file_name);
+    if ((rc = te_make_tmp_file(tmp_name)) != 0)
+        return TE_RC(TE_TAPI, rc);
 
-    asn_save_to_file(csap_spec, tmp_file_name); 
+    asn_save_to_file(csap_spec, tmp_name); 
 
-    rc = rcf_ta_csap_create(ta_name, session, stack_id, 
-                            tmp_file_name, handle); 
+    rc = rcf_ta_csap_create(ta_name, session, stack_id, tmp_name, handle);
 
-    unlink(tmp_file_name);
-    if (rc)
+    unlink(tmp_name);
+    if (rc != 0)
         WARN("Csap create failed with rc %X", rc);
     return rc;
 }
@@ -288,17 +288,17 @@ tapi_tad_trsend_start(const char *ta_name, int session,
                       csap_handle_t csap, const asn_value *templ,
                       rcf_call_mode_t blk_mode)
 {
-    int rc = 0;
-    char tmp_file_name[] = "/tmp/te_tapi_tad_trsend_start.XXXXXX";
+    int  rc;
+    char tmp_name[] = "/tmp/te_tapi_tad_trsend_start.XXXXXX";
 
-    mkstemp(tmp_file_name);
+    if ((rc = te_make_tmp_file(tmp_name)) != 0)
+        return TE_RC(TE_TAPI, rc);
 
-    asn_save_to_file(templ, tmp_file_name); 
+    asn_save_to_file(templ, tmp_name);
 
-    rc = rcf_ta_trsend_start(ta_name, session, csap, 
-                             tmp_file_name, blk_mode); 
-    unlink(tmp_file_name);
-    if (rc)
+    rc = rcf_ta_trsend_start(ta_name, session, csap, tmp_name, blk_mode);
+    unlink(tmp_name);
+    if (rc != 0)
         WARN("trsend_start failed with rc %X", rc);
     return rc;
 }
@@ -310,17 +310,18 @@ tapi_tad_trrecv_start(const char *ta_name, int session, int handle,
                       void *user_param, unsigned int timeout, int num)
 {
     int rc = 0;
-    char tmp_file_name[] = "/tmp/te_tapi_tad_trsend_start.XXXXXX";
+    char tmp_name[] = "/tmp/te_tapi_tad_trsend_start.XXXXXX";
 
-    mkstemp(tmp_file_name);
+    if ((rc = te_make_tmp_file(tmp_name)) != 0)
+        return TE_RC(TE_TAPI, rc);
 
-    asn_save_to_file(pattern, tmp_file_name); 
+    asn_save_to_file(pattern, tmp_name); 
 
     rc = rcf_ta_trrecv_start(ta_name, session, handle, 
-                             tmp_file_name, handler, user_param, 
-                             timeout, num); 
-    unlink(tmp_file_name);
-    if (rc)
+                             tmp_name, handler, user_param, 
+                             timeout, num);
+    unlink(tmp_name);
+    if (rc != 0)
         WARN("trrecv_start failed with rc %X", rc);
     return rc;
 }

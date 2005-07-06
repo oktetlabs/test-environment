@@ -34,6 +34,9 @@
 #if HAVE_STDARG_H
 #include <stdarg.h>
 #endif
+#if HAVE_FCNTL_H
+#include <fcntl.h> 
+#endif
 
 #if HAVE_PTHREAD_H
 #include <pthread.h>

@@ -101,7 +101,7 @@ tapi_stp_plain_csap_create(const char *ta_name, int sid, const char *ifname,
                            csap_handle_t *stp_csap)
 {
     FILE *f;
-    char  tmp_name[100];
+    char  tmp_name[] = "/tmp/te_stp_csap_create.XXXXXX";
     int   rc = 0;
 
     if ((ta_name == NULL) || (ifname == NULL) || (stp_csap == NULL) ||
@@ -111,16 +111,16 @@ tapi_stp_plain_csap_create(const char *ta_name, int sid, const char *ifname,
         return TE_RC(TE_TAPI, EINVAL);
     }
 
-    strcpy(tmp_name, "/tmp/te_stp_csap_create.XXXXXX");
-    mkstemp(tmp_name);
+    if ((rc = te_make_tmp_file(tmp_name)) != 0)
+        return TE_RC(TE_TAPI, rc);
+
 #if TAPI_STP_DEBUG
     printf("tmp file: %s\n", tmp_name);
 #endif
-    f = fopen(tmp_name, "w+");
-    if (f == NULL)
+    if ((f = fopen(tmp_name, "w+")) == NULL)
     {
 #if TAPI_STP_DEBUG
-        perror ("fopen error\n");
+        perror("fopen error\n");
 #endif
         return TE_RC(TE_TAPI, errno); /* return system errno */
     }
@@ -181,14 +181,15 @@ tapi_stp_bpdu_send(const char *ta_name, int sid,
                    csap_handle_t stp_csap,
                    const asn_value *templ)
 {
-    char tmp_name[100];
+    char tmp_name[] = "/tmp/te_stp_trsend.XXXXXX";
     int  rc;
 
     if ((ta_name == NULL) || (templ == NULL))
         return TE_RC(TE_TAPI, EINVAL);
 
-    strcpy(tmp_name, "/tmp/te_stp_trsend.XXXXXX"); 
-    mkstemp(tmp_name);
+    if ((rc = te_make_tmp_file(tmp_name)) != 0)
+        return TE_RC(TE_TAPI, rc);
+
 #if TAPI_STP_DEBUG
     printf("tmp file: %s\n", tmp_name);
     VERB("tmp file: %s\n", tmp_name);
@@ -304,7 +305,7 @@ tapi_stp_bpdu_recv_start(const char *ta_name, int sid,
                          unsigned int timeout, int num)
 {
     int  rc;
-    char tmp_name[100];
+    char tmp_name[] = "/tmp/te_stp_trrecv.XXXXXX";
 
     struct tapi_pkt_handler_data *i_data;
 
@@ -319,8 +320,12 @@ tapi_stp_bpdu_recv_start(const char *ta_name, int sid,
     i_data->current_call = 0;
     i_data->total_num = num;
 
-    strcpy(tmp_name, "/tmp/te_stp_trrecv.XXXXXX"); 
-    mkstemp(tmp_name);
+    if ((rc = te_make_tmp_file(tmp_name)) != 0)
+    {
+        free(i_data);
+        return TE_RC(TE_TAPI, rc);
+    }
+
 #if TAPI_STP_DEBUG
     printf("tmp file: %s\n", tmp_name);
 #endif

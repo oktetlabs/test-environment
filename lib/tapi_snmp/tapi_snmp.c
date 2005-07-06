@@ -704,11 +704,12 @@ tapi_snmp_gen_csap_create(const char *ta, int sid, const char *snmp_agent,
                           int timeout, int *csap_id)
 {
     int   rc;
-    char  tmp_name[100];
+    char  tmp_name[] = "/tmp/te_snmp_csap_create.XXXXXX";
     FILE *f;
 
-    strcpy(tmp_name, "/tmp/te_snmp_csap_create.XXXXXX");
-    mkstemp(tmp_name);
+    if ((rc = te_make_tmp_file(tmp_name)) != 0)
+        return TE_RC(TE_TAPI, rc);
+
 #if DEBUG
     VERB("tmp file: %s\n", tmp_name);
 #endif
@@ -1004,12 +1005,13 @@ tapi_snmp_operation(const char *ta, int sid, int csap_id,
 {
     FILE                *f;
     unsigned int         timeout;
-    char                 tmp_name[100];
+    char                 tmp_name[] = "/tmp/te_snmp_op.XXXXXX";
     int                  rc, num;
     tapi_snmp_varbind_t  var_bind;
 
-    strcpy(tmp_name, "/tmp/te_snmp_op.XXXXXX");
-    mkstemp(tmp_name);
+    if ((rc = te_make_tmp_file(tmp_name)) != 0)
+        return TE_RC(TE_TAPI, rc);
+
 #if DEBUG
     VERB("tmp file: %s\n", tmp_name);
 #endif
@@ -1099,14 +1101,15 @@ tapi_snmp_get_row(const char *ta, int sid, int csap_id,
     int           i;
     FILE         *f;
     unsigned int  timeout;
-    char          tmp_name[100];
+    char          tmp_name[] = "/tmp/te_snmp_get_row.XXXXXX";
     int           rc, num;
     tapi_snmp_message_t msg;
     tapi_get_row_par_list_t *gp_head = NULL;
     tapi_get_row_par_list_t *get_par;
 
-    strcpy(tmp_name, "/tmp/te_snmp_get_row.XXXXXX");
-    mkstemp(tmp_name);
+    if ((rc = te_make_tmp_file(tmp_name)) != 0)
+        return TE_RC(TE_TAPI, rc);
+
 #if DEBUG
     VERB("tmp file: %s\n", tmp_name);
 #endif
@@ -1274,18 +1277,21 @@ tapi_snmp_set_vbs(const char *ta, int sid, int csap_id,
 {
     FILE         *f;
     unsigned int  timeout, i;
-    char          tmp_name[100];
+    char          tmp_name[] = "/tmp/te_snmp_set.XXXXXX";
     int           rc, num;
     tapi_snmp_message_t msg;
 
-    strcpy(tmp_name, "/tmp/te_snmp_set.XXXXXX");
-    mkstemp(tmp_name);
+    if ((rc = te_make_tmp_file(tmp_name)) != 0)
+        return TE_RC(TE_TAPI, rc);
+
 #if DEBUG
     VERB("tmp file: %s\n", tmp_name);
 #endif
-    f = fopen(tmp_name, "w+");
-    if (f == NULL)
-        return TE_RC(TE_TAPI, errno); /* return system errno */
+    if ((f = fopen(tmp_name, "w+")) == NULL)
+    {
+        unlink(tmp_name);
+        return TE_RC(TE_TAPI, errno);
+    }
 
     rc = tapi_snmp_msg_head(f, NDN_SNMP_MSG_SET, 0);
 
@@ -3135,7 +3141,7 @@ tapi_snmp_trap_recv_start(const char *ta_name, int sid,
                          unsigned int timeout, int num)
 {
     int    rc;
-    char   tmp_name[100];
+    char   tmp_name[] = "/tmp/te_snmp_trap_trrecv.XXXXXX";
     struct tapi_pkt_handler_data *i_data;
 
     if (ta_name == NULL || pattern == NULL)
@@ -3147,11 +3153,16 @@ tapi_snmp_trap_recv_start(const char *ta_name, int sid,
     i_data->user_callback = cb;
     i_data->user_data = cb_data;
 
-    strcpy(tmp_name, "/tmp/te_snmp_trap_trrecv.XXXXXX");
-    mkstemp(tmp_name);
+    if ((rc = te_make_tmp_file(tmp_name)) != 0)
+    {
+        free(i_data);
+        return TE_RC(TE_TAPI, rc);
+    }
+
     rc = asn_save_to_file(pattern, tmp_name);
     if (rc)
     {
+        unlink(tmp_name);
         free(i_data);
         return TE_RC(TE_TAPI, rc);
     }

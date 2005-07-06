@@ -30,6 +30,10 @@
 
 #include "te_config.h"
 
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+ 
 #include <stdio.h>
 #if HAVE_STDLIB_H
 #include <stdlib.h>
@@ -412,88 +416,62 @@ int
 tapi_cli_csap_create(const char *ta_name, int sid,
                      const char *buf, csap_handle_t *cli_csap)
 {
-    int     rc;
-    char   *fname;
-    FILE   *f;
+    int   rc;
+    char  tmp_name[] = "/tmp/te_cli_csap_create.XXXXXX";
+    FILE *f;
 
     if ((ta_name == NULL) || (buf == NULL) || (cli_csap == NULL))
         return TE_RC(TE_TAPI, EINVAL);
 
-    VERB("%s(): %s\n", __FUNCTION__, buf);
+    if ((rc = te_make_tmp_file(tmp_name)) != 0)
+        return TE_RC(TE_TAPI, rc);
 
-    fname = (char *)malloc(TAPI_CLI_CSAP_INIT_FILENAME_MAXLEN);
-    if (fname == NULL)
-        return TE_RC(TE_TAPI, ENOMEM);
-
-    strcpy(fname, "/tmp/te_cli_csap_create.XXXXXX");
-    mkstemp(fname);
-
-    VERB("file: %s\n", fname);
-
-    f = fopen(fname, "w+");
-    if (f == NULL)
+    if ((f = fopen(tmp_name, "w+")) == NULL)
     {
-        ERROR("fopen() of %s failed(%d)", fname, errno);
-
-        free(fname);
-
-        return TE_RC(TE_TAPI, errno); /* return system errno */
+        ERROR("fopen(%s, \"w+\") failed with errno %d", tmp_name, errno);
+        return TE_RC(TE_TAPI, errno);
     }
 
     fprintf(f, "%s", buf);
-
     fclose(f);
 
-    rc = rcf_ta_csap_create(ta_name, sid, "cli", fname, cli_csap);
+    rc = rcf_ta_csap_create(ta_name, sid, "cli", tmp_name, cli_csap);
     if (rc != 0)
     {
         ERROR("rcf_ta_csap_create() failed(0x%x) on TA %s:%d file %s",
-              rc, ta_name, sid, fname);
+              rc, ta_name, sid, tmp_name);
     }
 
 #if !(TAPI_DEBUG)
-    unlink(fname);
+    unlink(tmp_name);
 #endif
-
-    free(fname);
 
     return rc;
 }
 
 
 static int
-tapi_internal_write_cmd_to_file(char **cmd_fname, const char *command)
+tapi_internal_write_cmd_to_file(char *tmp_name, const char *command)
 {
-    char *fname;
+    int   rc;
     FILE *f;
 
     if (command == NULL)
         return TE_RC(TE_TAPI, EINVAL);
 
-    fname = (char *)malloc(TAPI_CLI_CSAP_INIT_FILENAME_MAXLEN);
-    if (fname == NULL)
-        return TE_RC(TE_TAPI, ENOMEM);
+    if ((rc = te_make_tmp_file(tmp_name)) != 0)
+        return TE_RC(TE_TAPI, rc);
 
-    strcpy(fname, "/tmp/te_cli_trsend.XXXXXX");
-    mkstemp(fname);
+    VERB("%s() file: %s\n", __FUNCTION__, tmp_name);
 
-    VERB("file: %s\n", fname);
-
-    f = fopen(fname, "w+");
-    if (f == NULL)
+    if ((f = fopen(tmp_name, "w+")) == NULL)
     {
-        ERROR("fopen() of %s failed(%d)", fname, errno);
-
-        free(fname);
-
-        return TE_RC(TE_TAPI, errno); /* return system errno */
+        ERROR("fopen(%s, \"w+\" failed with errno %d", tmp_name, errno);
+        return TE_RC(TE_TAPI, errno);
     }
 
     fprintf(f, "{ pdus { cli : { message plain : \"%s\" } } }", command);
-
     fclose(f);
-    
-    *cmd_fname = fname;
     
     return 0;
 }
@@ -513,31 +491,28 @@ static int
 tapi_internal_cli_send(const char *ta_name, int sid, csap_handle_t cli_csap,
                        const char *command, rcf_call_mode_t blk_mode)
 {
-    int   rc = 0;
-    char *fname = NULL;
+    int  rc = 0;
+    char tmp_name[] = "/tmp/te_cli_trsend.XXXXXX";
 
     if (ta_name == NULL)
         return TE_RC(TE_TAPI, EINVAL);
 
-    if ((rc = tapi_internal_write_cmd_to_file(&fname, command)) != 0)
+    if ((rc = tapi_internal_write_cmd_to_file(tmp_name, command)) != 0)
     {
         ERROR("Failed to create send pattern for CLI session");
-        free(fname);
         return rc;
     }
 
-    rc = rcf_ta_trsend_start(ta_name, sid, cli_csap, fname, blk_mode);
+    rc = rcf_ta_trsend_start(ta_name, sid, cli_csap, tmp_name, blk_mode);
     if (rc != 0)
     {
         ERROR("rcf_ta_trsend_start() failed(0x%x) on TA %s:%d CSAP %d "
-              "file %s", rc, ta_name, sid, cli_csap, fname);
+              "file %s", rc, ta_name, sid, cli_csap, tmp_name);
     }
 
 #if !(TAPI_DEBUG)
-    unlink(fname);
+    unlink(tmp_name);
 #endif
-
-    free(fname);
 
     return rc;
 }
@@ -654,9 +629,9 @@ tapi_internal_cli_send_recv(const char *ta_name, int sid,
                             csap_handle_t cli_csap, const char *command,
                             char **msg, unsigned int timeout)
 {
-    int             rc = 0;
-    char           *fname = NULL;
-    int             err; /* useless parameter for rcf_ta_trsend_recv() */
+    int  rc = 0;
+    char tmp_fname[] = "/tmp/te_cli_tr_sendrecv.XXXXXX";
+    int  err; /* useless parameter for rcf_ta_trsend_recv() */
 
     *msg = NULL;
 
@@ -665,20 +640,19 @@ tapi_internal_cli_send_recv(const char *ta_name, int sid,
 
     VERB("%s() started", __FUNCTION__);
 
-    if ((rc = tapi_internal_write_cmd_to_file(&fname, command)) != 0)
+    if ((rc = tapi_internal_write_cmd_to_file(tmp_fname, command)) != 0)
     {
         ERROR("Failed to create send pattern for CLI session");
-        free(fname);
         return rc;
     }
 
-    rc = rcf_ta_trsend_recv(ta_name, sid, cli_csap, fname,
+    rc = rcf_ta_trsend_recv(ta_name, sid, cli_csap, tmp_fname,
                             tapi_cli_msg_handler, (void *)msg,
                             timeout * 1000, &err);
     if (rc != 0)
     {
         ERROR("rcf_ta_trsend_start() failed(0x%x) on TA %s:%d CSAP %d "
-              "file %s", rc, ta_name, sid, cli_csap, fname);
+              "file %s", rc, ta_name, sid, cli_csap, tmp_fname);
     }
 
 #if 0
@@ -686,16 +660,13 @@ tapi_internal_cli_send_recv(const char *ta_name, int sid,
 #endif
 
 #if !(TAPI_DEBUG)
-    unlink(fname);
+    unlink(tmp_fname);
 #endif
-
-    free(fname);
 
     VERB("%s() finished", __FUNCTION__);
 
     return rc;
 }
-
 
 /**
  * Send specified command to the CSAP's CLI session.
