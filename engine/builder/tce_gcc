@@ -59,7 +59,7 @@ for arg in "$@"; do
 done
 
 if test -z "$nobbhook"; then
-    BBHOOK_O=/tmp/bbhook$PID.o
+    BBHOOK_O=/tmp/bbhook$$.o
     for i in $CC; do
         tmpcc=$i
     done
@@ -69,8 +69,11 @@ else
     BBHOOK_O=""
 fi
 
-exec ${TCE_CC} $coverage_options $processed_options $BBHOOK_O
+${TCE_CC} $coverage_options $processed_options $BBHOOK_O
+gccstatus=$?
 
 if test -z "$nobbhook"; then
     rm -f $BBHOOK_O
 fi
+
+exit $gccstatus
