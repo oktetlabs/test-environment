@@ -30,44 +30,44 @@
 
 
     <!-- Root object of RADIUS Server configuration.
-         Name: Empty
+         Name: empty
          Value: 0 (disabled) or 1 (enabled) -->
     <object oid="/agent/radiusserver" access="read_write" type="integer"/>
     
     <!-- RADIUS Authentication port number.
-         Name: Empty
+         Name: empty
          Value: UDP port -->
     <object oid="/agent/radiusserver/auth_port" access="read_write"
             type="integer"/>
 
     <!-- RADIUS Accounting port number.
-         Name: Empty
+         Name: empty
          Value: UDP port -->
     <object oid="/agent/radiusserver/acct_port" access="read_write"
             type="integer"/>
 
     <!-- Network address RADIUS server is bound to.
-         Name:  Empty
-         Value: Wildcard address if the Server listens on all addresses -->
+         Name:  empty
+         Value: wildcard address if the Server listens on all addresses -->
     <object oid="/agent/radiusserver/net_addr" access="read_write"
             type="address"/>
 
     <!-- RADIUS clients configuration (usually client is a NAS).
          Name: IP address of RADIUS Client 
-         Value: None -->
+         Value: none -->
     <object oid="/agent/radiusserver/client" access="read_create"
             type="none"/>
 
     <!-- The shared secret between the NAS and RADIUS Server,
          which is used to "encrypt" and "sign" packets between
          the NAS and RADIUS Server.
-         Name: Empty
-         Value: Shared secret -->
+         Name: empty
+         Value: shared secret -->
     <object oid="/agent/radiusserver/client/secret" access="read_write" 
             type="string"/>
     
     <!-- RADIUS users configuration.
-         Name: User name
+         Name: user name
          Value: 0 (Reject this user unconditionally),
                 1 (Accept this user if authenticated) -->
     <object oid="/agent/radiusserver/user" access="read_create"
@@ -95,57 +95,47 @@
                 [AttributeName=Value[,AttributeName=Value]*] -->
     <object oid="/agent/radiusserver/user/accept-attrs" access="read_write"
             type="string"/>
+
             
-    <!-- Root object of the supplicant daemon (XSupplicant assumed)
+    <!-- Supplicant Service configuration model -->
+
+            
+    <!-- Root object of the supplicant daemon.
+         Name: interface name where this supplicant works
+         Value: 0 (disabled) or 1 (enabled) -->
+    <object oid="/agent/supplicant" access="read_create" type="integer" />
+
+    <!-- Identity value used on this supplicant.
          Name: empty
-         Value: 0 (disabled) or 1 (enabled)
-    -->
-    <object oid="/agent/supplicant" access="read_write" type="integer" />
-
-    <!-- A collection of network interfaces XSupplicant will use 
-         Name: interface name
-         Value: none
-    -->
-    <object oid="/agent/supplicant/interface" access="read_create" type="none" />
-
-    <!-- The following three are hooks that are executed by XSupplicant 
-         at startup, after the first authentication and after the re-authentication resp.
-         QUESTION: do we really need these? Or rather some appropriate values should
-         be hardcoded into TA?
-    -->
-    <object oid="/agent/supplicant/startup-command" access="read_write" type="string" />
-    <object oid="/agent/supplicant/first-auth-command" access="read_write" type="string" />
-    <object oid="/agent/supplicant/reauth-command" access="read_write" type="string" />
-
-    <!-- The network description for XSupplicant.
-         QUESTION: do we need multiple networks? 
-         If not, then the name of this node shall be empty, and the value
-         shall be the name of the network.
-         If yes, then the value will be empty, and the name will be actual name
-    -->
-    <object oid="/agent/supplicant/network" access="read_write" type="string" />
-<!-- OR:
-    <object oid="/agent/supplicant/network" access="read_create" type="none" />
--->
-    <!-- Network identity for XSupplicant 
+         Value: identity string -->
+    <object oid="/agent/supplicant/identity" access="read_write"
+            type="string"/>
+    
+    <!-- EAP method that is currently being used on the supplicant.
          Name: empty
-         Value: identity string
-    -->
-    <object oid="/agent/supplicant/network/identity" access="read_write" type="string" />
+         Value: md5, tls -->
+    <object oid="/agent/supplicant/cur_method" access="read_write"
+            type="string"/>
 
-    <!-- QUESTION: do we need various EAP flavors or just EAP-MD5?
-         If we actually do, the following need to be augemented.
-    -->
+    
+    <!-- Configuration subtree for supported EAP methods.
+         Name: EAP method - any value valid for "cur_method" object
+         Value: none -->
+    <object oid="/agent/supplicant/method" access="read_create"
+            type="string"/>
 
-    <!-- Username for XSupplicant 
+    <!-- MD5-specific object - User name
          Name: empty
-         Value: username for EAP-MD5
-    -->
-    <object oid="/agent/supplicant/network/username" access="read_write" type="string" />
-
-    <!-- Password for XSupplicant 
+         Value: username for EAP-MD5 -->
+    <object oid="/agent/supplicant/method/username"
+            access="read_write" type="string"/>
+    
+    <!-- MD5-specific object - User password
          Name: empty
-         Value: password for EAP-MD5
-    -->
-    <object oid="/agent/supplicant/network/password" access="read_write" type="string" />
+         Value: password for EAP-MD5 -->
+    <object oid="/agent/supplicant/method/passwd"
+            access="read_write" type="string"/>
+
+    <!-- @todo Write objects for TLS -->
+
 </backup>
