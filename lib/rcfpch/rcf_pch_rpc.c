@@ -381,9 +381,15 @@ fork_child(rpcserver *rpcs)
 static void
 kill_rpcserver(rpcserver *rpcs)
 {
-    kill(SIGTERM, rpcs->pid);
+    int rc;
+
+    rc = kill(rpcs->pid, SIGTERM);
+    RING("Sent SIGTERM signal to RPC server %s:%d - rc=%d, errno=%d",
+         rpcs->name, rpcs->pid, rc, (rc == 0) ? 0 : errno);
     sleep(1);
-    kill(SIGKILL, rpcs->pid);
+    rc = kill(rpcs->pid, SIGKILL);
+    RING("Sent SIGKILL signal to RPC server %s:%d - rc=%d, errno=%d",
+         rpcs->name, rpcs->pid, rc, (rc == 0) ? 0 : errno);
 }
 
 /**
