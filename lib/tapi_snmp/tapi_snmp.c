@@ -58,6 +58,7 @@
 #include <net-snmp/varbind_api.h> /* For snmp_pdu_create() */
 #endif
 
+#include "te_defs.h" 
 #include "asn_impl.h"
 #include "ndn_snmp.h"
 #include "rcf_api.h"
@@ -1162,7 +1163,7 @@ tapi_snmp_get_row(const char *ta, int sid, int csap_id,
             case TAPI_SNMP_OCTET_STR:
                 get_par->type = ROW_PAR_OS;
                 get_par->oct_str_place = va_arg(ap, unsigned char **);
-                get_par->oct_str_len_place = va_arg(ap, int*);
+                get_par->oct_str_len_place = va_arg(ap, size_t*);
                 break;
 
             case TAPI_SNMP_OBJECT_ID:
