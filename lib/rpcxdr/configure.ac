@@ -26,9 +26,11 @@ AC_ARG_VAR([TE_CPPFLAGS])
 AC_ARG_VAR([TE_CFLAGS])
 AC_ARG_VAR([TE_LDFLAGS])
 
-AC_CHECK_HEADERS([\
-rpc/xdr.h \
-expat.h \
+AC_CHECK_HEADERS([expat.h rpc/types.h])
+AC_CHECK_HEADERS([rpc/xdr.h], [], [], [
+#if HAVE_RPC_TYPES_H
+#include <rpc/types.h>
+#endif
 ])
 
 LIBS=${TE_LDFLAGS}
@@ -38,13 +40,25 @@ AC_CHECK_LIB([rpc], [xdr_bytes],
 
 AH_TEMPLATE([x_putint32], [Put 32-bit integer to the stream])
 AC_CHECK_MEMBER(struct XDR.x_ops->x_putint32, [],
-    [AC_DEFINE([x_putint32],[x_putlong])],
-    [#include <rpc/xdr.h>])
+    [AC_DEFINE([x_putint32],[x_putlong])], [
+#if HAVE_RPC_TYPES_H
+#include <rpc/types.h>
+#endif
+#if HAVE_RPC_XDR_H
+#include <rpc/xdr.h>
+#endif
+])
 
 AH_TEMPLATE([x_getint32], [Get 32-bit integer to the stream])
 AC_CHECK_MEMBER(struct XDR.x_ops->x_getint32, [],
-    [AC_DEFINE([x_getint32],[x_getlong])],
-    [#include <rpc/xdr.h>])
+    [AC_DEFINE([x_getint32],[x_getlong])], [
+#if HAVE_RPC_TYPES_H
+#include <rpc/types.h>
+#endif
+#if HAVE_RPC_XDR_H
+#include <rpc/xdr.h>
+#endif
+])
  
 AH_TEMPLATE([xdr_int8_t], [RPC XDR for signed 8bit width type])
 AC_CHECK_FUNC([xdr_int8_t], [],
