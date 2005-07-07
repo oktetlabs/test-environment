@@ -579,7 +579,7 @@ eth_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
                               data, ETH_ALEN, "dst-addr");
     data += ETH_ALEN; 
 
-    VERB("univ match for dst rc %x\n", rc);
+    VERB("%s(): univ match for dst rc %x\n", __FUNCTION__, rc);
 
     if (rc == 0)
     {
@@ -587,7 +587,7 @@ eth_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
         rc = ndn_match_data_units(pattern_pdu, eth_hdr_pdu, 
                                   data, ETH_ALEN, "src-addr");
         data += ETH_ALEN;
-        VERB("univ match for src rc %x\n", rc);
+        VERB("%s(): univ match for src rc %x\n", __FUNCTION__, rc);
     }
 
     if (rc == 0 && *((uint16_t *)data) == htons(ETH_TAGGED_TYPE_LEN))
@@ -637,7 +637,7 @@ eth_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
     { 
         rc = ndn_match_data_units(pattern_pdu, eth_hdr_pdu, 
                                   data, ETH_TYPE_LEN, "eth-type");
-        VERB("univ match for eth-type rc %x\n", rc);
+        VERB("%s(): univ match for eth-type rc %x\n", __FUNCTION__, rc);
     }
 
     if (rc == 0 && eth_hdr_pdu)
