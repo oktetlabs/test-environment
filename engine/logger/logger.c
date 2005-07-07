@@ -442,8 +442,16 @@ ta_handler(void *ta)
         *log_file = '\0';
         if ((rc = rcf_ta_get_log(inst->agent, log_file)) != 0)
         {
-            if (TE_RC_GET_ERROR(rc) == ETAREBOOTED ||
-                TE_RC_GET_ERROR(rc) == ETADEAD)
+            if (rc == TE_RC(TE_RCF, ETIMEDOUT))
+            {
+                /* 
+                 * Ignore error if request to TA is timed out by RCF,
+                 * continue processing as is.
+                 */
+                continue;
+            }
+            else if (rc == TE_RC(TE_RCF, ETAREBOOTED) ||
+                     rc == TE_RC(TE_RCF, ETADEAD))
             {
                 /* 
                  * Ignore error if TA is rebooted by RCF, but terminate
