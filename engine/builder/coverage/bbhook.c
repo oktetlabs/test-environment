@@ -38,6 +38,78 @@
 #include <unistd.h>
 
 
+#if __GNUC__ > 3 || \
+    (__GNUC__ == 3 && __GNUC_MINOR__ >= 4)
+
+/* Cumulative counter data.  */
+struct gcov_ctr_summary
+{
+  gcov_unsigned_t num;      /* number of counters.  */
+  gcov_unsigned_t runs;     /* number of program runs */
+  gcov_type sum_all;        /* sum of all counters accumulated.  */
+  gcov_type run_max;        /* maximum value on a single run.  */
+  gcov_type sum_max;        /* sum of individual run max values.  */
+};
+
+/* Object & program summary record.  */
+struct gcov_summary
+{
+  gcov_unsigned_t checksum; /* checksum of program */
+  struct gcov_ctr_summary ctrs[GCOV_COUNTERS_SUMMABLE];
+};
+
+/* Structures embedded in coveraged program.  The structures generated
+   by write_profile must match these.  */
+
+/* Information about a single function.  This uses the trailing array
+   idiom. The number of counters is determined from the counter_mask
+   in gcov_info.  We hold an array of function info, so have to
+   explicitly calculate the correct array stride.  */
+struct gcov_fn_info
+{
+  gcov_unsigned_t ident;    /* unique ident of function */
+  gcov_unsigned_t checksum; /* function checksum */
+  unsigned n_ctrs[0];       /* instrumented counters */
+};
+
+/* Type of function used to merge counters.  */
+typedef void (*gcov_merge_fn) (gcov_type *, gcov_unsigned_t);
+
+/* Information about counters.  */
+struct gcov_ctr_info
+{
+  gcov_unsigned_t num;      /* number of counters.  */
+  gcov_type *values;        /* their values.  */
+  gcov_merge_fn merge;      /* The function used to merge them.  */
+};
+
+/* Information about a single object file.  */
+struct gcov_info
+{
+  gcov_unsigned_t version;  /* expected version number */
+  struct gcov_info *next;   /* link to next, used by libgcov */
+
+  gcov_unsigned_t stamp;    /* uniquifying time stamp */
+  const char *filename;     /* output file name */
+  
+  unsigned n_functions;     /* number of functions */
+  const struct gcov_fn_info *functions; /* table of functions */
+
+  unsigned ctr_mask;        /* mask of counters instrumented.  */
+  struct gcov_ctr_info counts[0]; /* count data. The number of bits
+                     set in the ctr_mask field
+                     determines how big this array
+                     is.  */
+};
+
+/* Chain of per-object gcov structures.  */
+struct gcov_info *__gcov_list;
+
+/* A program checksum allows us to distinguish program data for an
+   object file included in multiple programs.  */
+gcov_unsigned_t __gcov_crc32;
+
+#else 
 
 struct bb_function_info 
 {
@@ -60,9 +132,11 @@ struct bb
     struct bb_function_info *function_infos;
 };
 
-
 /* Chain of per-object file bb structures.  */
 struct bb *__bb_head;
+
+#endif
+
 
 enum CONNECT_MODES { CONNECT_FIFO, CONNECT_UNIX, CONNECT_TCP };
 
@@ -268,6 +342,49 @@ __bb_exit_func (void)
 /* Add a new object file onto the bb chain.  Invoked automatically
    when running an object file's global ctors.  */
 
+
+#if __GNUC__ > 3 || \
+    (__GNUC__ == 3 && __GNUC_MINOR__ >= 4)
+
+void
+__gcov_init (struct gcov_info *info)
+{
+    if (!info->version)
+        return;
+    if (gcov_version (info, info->version))
+    {
+        const char *ptr = info->filename;
+        gcov_unsigned_t crc32 = gcov_crc32;
+        
+        do
+        {
+            unsigned ix;
+            gcov_unsigned_t value = *ptr << 24;
+            
+            for (ix = 8; ix--; value <<= 1)
+            {
+                gcov_unsigned_t feedback;
+                
+                feedback = (value ^ crc32) & 0x80000000 ? 0x04c11db7 : 0;
+                crc32 <<= 1;
+                crc32 ^= feedback;
+            }
+        }
+        while (*ptr++);
+        
+        gcov_crc32 = crc32;
+        
+        if (!gcov_list)
+            atexit (gcov_exit);
+        
+        info->next = __gcov_list;
+        __gcov_list = info;
+    }
+    info->version = 0;
+}
+
+#else
+
 void
 __bb_init_func (struct bb *blocks)
 {
@@ -285,6 +402,8 @@ __bb_init_func (struct bb *blocks)
     blocks->next = __bb_head;
     __bb_head = blocks;
 }
+
+#endif
 
 /* Called before fork or exec - reset gathered coverage info to zero.  
    This avoids duplication or loss of the
