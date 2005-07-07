@@ -37,14 +37,14 @@
 #if (SIZEOF_CHAR == 1)
 #define TE_PRINTF_8         "hh"
 #else
-#error Unable to print 8-bit integers
+#warn Unable to print 8-bit integers
 #endif
 
 /** printf()-like length modified for 16-bit integers */
 #if (SIZEOF_SHORT == 2)
 #define TE_PRINTF_16        "h"
 #else
-#error Unable to print 16-bit integers
+#warn Unable to print 16-bit integers
 #endif
 
 /** printf()-like length modified for 32-bit integers */
@@ -53,7 +53,7 @@
 #elif (SIZEOF_LONG == 4)
 #define TE_PRINTF_32        "l"
 #else
-#error Unable to print 32-bit integers
+#warn Unable to print 32-bit integers
 #endif
 
 /** printf()-like length modified for 64-bit integers */
@@ -64,7 +64,7 @@
 #elif (SIZEOF_LONG_LONG == 8)
 #define TE_PRINTF_64        "ll"
 #else
-#error Unable to print 64-bit integers
+#warn Unable to print 64-bit integers
 #endif
 
 /** printf()-like length modified for (s)size_t integers */
@@ -73,7 +73,7 @@
 #elif (SIZEOF_LONG == SIZEOF_SIZE_T)
 #define TE_PRINTF_SIZE_T    "l"
 #else
-#error Unable to print (s)size_t integers
+#warn Unable to print (s)size_t integers
 #endif
 
 /** printf()-like length modified for socklen_t integers */
@@ -82,7 +82,7 @@
 #elif (SIZEOF_LONG == SIZEOF_SOCKLEN_T)
 #define TE_PRINTF_SOCKLEN_T "l"
 #else
-#error Unable to print socklen_t integers
+#warn Unable to print socklen_t integers
 #endif
 
 #ifdef __cplusplus
