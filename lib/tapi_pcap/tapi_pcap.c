@@ -191,12 +191,13 @@ tapi_pcap_pkt_handler(char *fn, void *user_param)
         filter_id = -1;
     }
 
-    pkt_len = asn_get_length(frame_val, "payload.#bytes");
-    if (pkt_len < 0)
+    rc = asn_get_length(frame_val, "payload.#bytes");
+    if (rc < 0)
     {
         ERROR( "%s, get_len error \n", __FUNCTION__);
         return;
     }
+    pkt_len = rc;
     
     VERB("%s: Packet payload length %ld bytes\n", __FUNCTION__, pkt_len);
 
