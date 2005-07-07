@@ -104,12 +104,25 @@ pcap_release(csap_p csap_descr)
 {
     pcap_csap_specific_data_p spec_data;
     int layer;
+    int bpf_id;
 
     VERB("%s() started", __FUNCTION__);
 
     layer = csap_descr->read_write_layer; 
     spec_data = (pcap_csap_specific_data_p)
                  csap_descr->layers[layer].specific_data; 
+
+    for (bpf_id = 1; bpf_id <= spec_data->bpf_count; bpf_id++)
+    {
+        if (spec_data->bpfs[bpf_id] != 0)
+        {
+            pcap_freecode(spec_data->bpfs[bpf_id]);
+            free(spec_data->bpfs[bpf_id]);
+            spec_data->bpfs[bpf_id] = NULL;
+        }
+    }
+
+    spec_data->bpf_count = 0;
 
     if (spec_data->in >= 0)
     {
