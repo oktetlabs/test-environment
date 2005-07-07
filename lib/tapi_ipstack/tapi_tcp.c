@@ -1030,12 +1030,13 @@ tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode,
 
     trafic_param = 1;
     rc = tapi_arp_prepare_pattern_with_arp
-                        (remote_mac, NULL, NULL,
-                         remote_mac, NULL, 
-                         NULL, (uint8_t *)&(local_in_addr->sin_addr), 
+                        (remote_mac, broadcast_mac, &trafic_param,
+                         remote_mac, NULL, NULL,
+                         (uint8_t *)&(local_in_addr->sin_addr), 
                          &arp_pattern);
     CHECK_ERROR("%s(): create arp pattern fails 0x%X", __FUNCTION__, rc);
-    UNUSED(broadcast_mac);
+
+    asn_save_to_file(arp_pattern, "/tmp/arp-pattern.asn");
 
     func_len = snprintf(arp_reply_method, sizeof(arp_reply_method), 
                         "tad_eth_arp_reply:%02x:%02x:%02x:%02x:%02x:%02x",
@@ -1051,9 +1052,11 @@ tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode,
 
     trafic_param = ETH_P_ARP;
 
-    rc = tapi_eth_csap_create(agt, arp_sid, local_iface, NULL, remote_mac,
+    rc = tapi_eth_csap_create(agt, arp_sid, local_iface, remote_mac, NULL,
                               &trafic_param, &arp_csap);
     CHECK_ERROR("%s(): create arp csap fails 0x%X", __FUNCTION__, rc);
+
+    RING("%s(): created arp csap: %d", __FUNCTION__, arp_csap);
 
     rc = tapi_tcp_ip4_eth_csap_create(agt, rcv_sid, local_iface,
                                       local_mac, remote_mac,
