@@ -148,7 +148,7 @@ static struct rcf_comm_connection *conn_saved;
  * @return recv() return code or -2 if timeout expired
  */
 static int
-recv_timeout(int s, char *buf, int len, int t)
+recv_timeout(int s, void *buf, int len, int t)
 {
     struct timeval tv = { t, 0 };
     fd_set         set;
@@ -179,7 +179,7 @@ recv_result(rpcserver *rpcs, uint32_t *p_len)
 {
     uint32_t len = RCF_RPC_HUGE_BUF_LEN, offset = 0;
     
-    int rc = recv_timeout(rpcs->sock, (char *)&len, sizeof(len), 5);
+    int rc = recv_timeout(rpcs->sock, &len, sizeof(len), 5);
     
     if (rc == -2)      /* AF_UNIX bug work-around */
         return EAGAIN;
@@ -228,7 +228,8 @@ recv_result(rpcserver *rpcs, uint32_t *p_len)
 static int
 call(rpcserver *rpcs, char *name, void *in, void *out)
 {
-    uint32_t len = RCF_RPC_HUGE_BUF_LEN;
+    size_t   buflen = RCF_RPC_HUGE_BUF_LEN;
+    uint32_t len;
     int      rc;
     char     c = '\0';
 
@@ -240,7 +241,7 @@ call(rpcserver *rpcs, char *name, void *in, void *out)
         return TE_RC(TE_RCF_PCH, EBUSY);
     }
     
-    if ((rc = rpc_xdr_encode_call(name, rpc_buf, &len, in)) != 0) 
+    if ((rc = rpc_xdr_encode_call(name, rpc_buf, &buflen, in)) != 0) 
     {
         if (TE_RC_GET_ERROR(rc) == ENOENT)
             ERROR("Unknown RPC %s is called from TA", name);
@@ -249,8 +250,9 @@ call(rpcserver *rpcs, char *name, void *in, void *out)
         return rc;
     }
     
-    if (send(rpcs->sock, &len, sizeof(len), 0) != sizeof(len) ||
-        send(rpcs->sock, rpc_buf, len, 0) != (int)len)
+    len = buflen;
+    if (send(rpcs->sock, &len, sizeof(len), 0) != (ssize_t)sizeof(len) ||
+        send(rpcs->sock, rpc_buf, len, 0) != (ssize_t)len)
     {
         ERROR("Failed to send RPC data to the server %s", rpcs->name);
         return TE_RC(TE_RCF_PCH, ETESUNRPC);
@@ -1026,7 +1028,7 @@ rcf_pch_rpc(struct rcf_comm_connection *conn, int sid,
     /* Send encoded data to server */
     if (send(rpcs->sock, &rpc_data_len, sizeof(rpc_data_len), 0) != 
         sizeof(rpc_data_len) ||
-        send(rpcs->sock, data, rpc_data_len, 0) != (int)rpc_data_len)
+        send(rpcs->sock, data, rpc_data_len, 0) != (ssize_t)rpc_data_len)
     {
         ERROR("Failed to send RPC data to the server %s", rpcs->name);
         RETERR(ETESUNRPC);
@@ -1144,6 +1146,7 @@ rcf_pch_rpc_server(const char *name)
         rpc_info *info = NULL;          /* RPC information */
         te_bool   result = FALSE;       /* "rc" attribute */
 
+        size_t    buflen;
         uint32_t  len, offset = 0;
         
         strcpy(rpc_name, "Unknown");
@@ -1154,7 +1157,7 @@ rcf_pch_rpc_server(const char *name)
          * alertable state and async I/O callbacks are not called.
          */
         
-        if (recv_timeout(s, (char *)&len, sizeof(len), 0xFFFF) < 
+        if (recv_timeout(s, &len, sizeof(len), 0xFFFF) < 
             (int)sizeof(len))
         {
             STOP("recv() failed");
@@ -1203,8 +1206,8 @@ rcf_pch_rpc_server(const char *name)
             rpc_xdr_free(info->in, in);
         free(in);
             
-        len = RCF_RPC_HUGE_BUF_LEN;
-        if (rpc_xdr_encode_result(rpc_name, result, buf, &len, out) != 0)
+        buflen = RCF_RPC_HUGE_BUF_LEN;
+        if (rpc_xdr_encode_result(rpc_name, result, buf, &buflen, out) != 0)
             STOP("Fatal error: encoding of RPC %s output "
                  "parameters failed", rpc_name);
             
@@ -1212,8 +1215,9 @@ rcf_pch_rpc_server(const char *name)
             rpc_xdr_free(info->out, out);
         free(out);
         
-        if (send(s, &len, sizeof(len), 0) < (int)sizeof(len) ||
-            send(s, buf, len, 0) < (int)len)
+        len = buflen;
+        if (send(s, &len, sizeof(len), 0) < (ssize_t)sizeof(len) ||
+            send(s, buf, len, 0) < (ssize_t)len)
         {
             STOP("send() failed");
         }
