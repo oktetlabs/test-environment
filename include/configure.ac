@@ -29,7 +29,17 @@ AH_BOTTOM([
 #endif])
 
 AC_HEADER_STDC
+
+dnl
+dnl At first check headers used by other headers to be checked
+dnl 
 AC_CHECK_HEADERS([sys/types.h])
+AC_CHECK_HEADERS([sys/socket.h], [], [], [
+#if HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+])
+
 AC_CHECK_HEADERS([\
 aio.h \
 arpa/inet.h \
@@ -77,7 +87,6 @@ sys/queue.h \
 sys/resource.h \
 sys/select.h \
 sys/sendfile.h \
-sys/socket.h \
 sys/stat.h \
 sys/time.h \
 sys/un.h \
