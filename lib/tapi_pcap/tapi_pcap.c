@@ -154,10 +154,10 @@ tapi_pcap_pkt_handler(char *fn, void *user_param)
     asn_value *pcap_filtered_pdu;
 
     uint8_t   *pkt;
-    int        pkt_len;
+    size_t     pkt_len;
 
     int        filter_id;
-    int        tmp_len;
+    size_t     tmp_len;
 
     VERB("%s() started", __FUNCTION__);
 
@@ -198,7 +198,7 @@ tapi_pcap_pkt_handler(char *fn, void *user_param)
         return;
     }
     
-    VERB("%s: Packet payload length %d bytes\n", __FUNCTION__, pkt_len);
+    VERB("%s: Packet payload length %ld bytes\n", __FUNCTION__, pkt_len);
 
     pkt = malloc(pkt_len);
     if (pkt == NULL)
