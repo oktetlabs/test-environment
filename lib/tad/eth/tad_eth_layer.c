@@ -393,12 +393,14 @@ int eth_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
         {
             frame_size = ETH_ZLEN;
         }
+#if 0 /* for attacks tests we decided theat this check is not necessary */
         else if (frame_size > ETH_FRAME_LEN) 
         { /* TODO: this check seems to be not correct, compare with interface MTU
                   should be here. */
             ERROR("too greate frame size %d", frame_size);
             return EMSGSIZE; 
         }
+#endif
 
         F_VERB("%s(): corrected frame size %d", 
                __FUNCTION__, frame_size);
