@@ -4,7 +4,7 @@ if test "$1" == "--ignore-directories"; then
     ignoredir=yes
     shift
 elif test "$1" == "--help"; then
-    cat <<HELP
+    cat >&2 <<EOF
 USAGE: tce_report [--ignore-directories] <agent-name> <output-file> [<data-directory> <source-directory>]
 
 Processes GCOV data contained in the file "<data-directory>/tce_<agent-name>.tar" 
@@ -18,7 +18,7 @@ If <data-directory> is not present, TE_BUILD environment variable is used, in wh
 case it must contain "builder.conf.processed" that determines the location to sources.
 
 --ignore-directories causes treating the files with the same base name as the same file.
-HELP
+EOF
     exit 1
 fi
 
@@ -28,7 +28,7 @@ if test -z "$binaries"; then
     if test -x ${mydir}/tce_merge; then
         export PATH=${mydir}:$PATH
     else
-        echo "Supporting scripts not found!!!" >/dev/stderr
+        echo "Supporting scripts not found!!!" >&2
         exit 1
     fi
 fi
@@ -79,11 +79,6 @@ if test -n "$NUT_SOURCES"; then
         fi
         mv -f $outfile $mergefile
 else
-    echo "No sources specified!!!!" >/dev/stderr
+    echo "No sources specified!!!!" >&2
     exit 1
 fi        
-
-
-
-
-
