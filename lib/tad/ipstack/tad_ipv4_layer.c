@@ -122,15 +122,22 @@ ip4_confirm_pdu_cb(int csap_id, int layer, asn_value *tmpl_pdu)
      */
 #define CONFIRM_FIELD(du_field_name_, tag_, label_) \
     do {                                                                \
-        tad_data_unit_convert(ip4_tmpl_pdu, tag_,                       \
-                              &(spec_data-> du_field_name_ ));          \
-        if (spec_data-> du_field_name_ .du_type == TAD_DU_UNDEF &&      \
+        rc = tad_data_unit_convert(ip4_tmpl_pdu, tag_,                  \
+                                   &(spec_data-> du_field_name_ ));     \
+        if (rc == 0 &&                                                  \
+            spec_data-> du_field_name_ .du_type == TAD_DU_UNDEF &&      \
             asn_get_child_value(ip4_csap_pdu, &du_field,                \
                                 PRIVATE, tag_) == 0)                    \
         {                                                               \
             asn_write_component_value(tmpl_pdu, du_field, label_);      \
-            tad_data_unit_convert(ip4_csap_pdu, NDN_TAG_IP4_VERSION,    \
-                                  &(spec_data-> du_field_name_ ));      \
+            rc = tad_data_unit_convert(ip4_csap_pdu, tag_,              \
+                                       &(spec_data-> du_field_name_ )); \
+        }                                                               \
+        if (rc != 0)                                                    \
+        {                                                               \
+            ERROR("%s(CSAP %d): du convert fails %X, tag %d, label %s", \
+                  __FUNCTION__, csap_id, rc, tag_, label_);             \
+            return TE_RC(TE_TAD_CSAP, rc);                              \
         }                                                               \
     } while (0)
 
