@@ -74,11 +74,53 @@
 #include "ndn_eth.h"
 
 
-
-
 #ifndef IFNAME_SIZE
 #define IFNAME_SIZE 256
 #endif
+
+/** Data to be passed to intermediate callback */
+typedef struct tapi_ip4_cb_data_t {
+    tcp_row_callback  user_cb;
+    void             *user_data;
+} tapi_tcp_cb_data_t;
+
+/* 
+ * Pkt handler for TCP packets 
+ */
+static void
+tcp_pkt_handler(char *pkt_fname, void *user_param)
+{
+    tapi_tcp_cb_data_t *cb_data = (tapi_tcp_cb_data_t *)user_param;
+    asn_value          *pkt = NULL;
+
+    int s_parsed = 0;
+    int rc;
+
+    if (user_param == NULL) 
+    {
+        ERROR("%s called with NULL user param", __FUNCTION__);
+        return;
+    }
+
+    if (cb_data->user_cb == NULL)
+    {
+        ERROR("%s called with NULL user cb", __FUNCTION__);
+        return; 
+    }
+
+    if ((rc = asn_parse_dvalue_in_file(pkt_fname, ndn_raw_packet,
+                                       &pkt, &s_parsed)) != 0)
+    {                                      
+        ERROR("%s(): parse packet fails, rc = 0x%X, sym %d",
+              __FUNCTION__, rc, s_parsed);
+        return;
+    }
+
+    cb_data->user_cb(pkt, cb_data->user_data);
+    
+    asn_free_value(pkt);
+}
+
 
 /* see description in tapi_tcp.h */
 int 
@@ -148,7 +190,7 @@ tapi_tcp_ip4_eth_csap_create(const char *ta_name, int sid,
         if (rc) break;
 
         rc = asn_save_to_file(csap_spec, csap_fname);
-        VERB("TAPI: udp create csap, save to file %s, rc: %x\n",
+        VERB("TAPI: udp create csap, save to file %s, rc: 0x%X\n",
                 csap_fname, rc);
         if (rc) break;
 
@@ -217,7 +259,7 @@ tapi_tcp_ip4_pattern_unit(const uint8_t *src_addr, const uint8_t *dst_addr,
 
     if (rc)
     {
-        ERROR("%s: error %X", __FUNCTION__, rc);
+        ERROR("%s: error 0x%X", __FUNCTION__, rc);
         asn_free_value(pu);
     }
     else
@@ -234,18 +276,20 @@ tapi_tcp_ip4_eth_recv_start(const char *ta_name, int sid,
                             const uint8_t *src_addr,
                             const uint8_t *dst_addr,
                             uint16_t src_port, uint16_t dst_port,
-                            unsigned int timeout, int num)
+                            unsigned int timeout, int num,
+                            tcp_row_callback callback, void *userdata)
 { 
     asn_value *pattern;
     asn_value *pattern_unit; 
-    int rc = 0;
+    int        rc;
 
+    tapi_tcp_cb_data_t *cb_data = NULL;
     
     if ((rc = tapi_tcp_ip4_pattern_unit(src_addr, dst_addr, 
                                         src_port, dst_port, 
                                         &pattern_unit)) != 0)
     {
-        ERROR("%s: create pattern unit error %X", __FUNCTION__, rc);
+        ERROR("%s: create pattern unit error 0x%X", __FUNCTION__, rc);
         return rc;
     }
 
@@ -255,16 +299,25 @@ tapi_tcp_ip4_eth_recv_start(const char *ta_name, int sid,
     {
         asn_free_value(pattern_unit);
         asn_free_value(pattern);
-        ERROR("%s: insert pattern unit error %X", __FUNCTION__, rc);
+        ERROR("%s: insert pattern unit error 0x%X", __FUNCTION__, rc);
         return rc; 
     } 
 
     asn_free_value(pattern_unit);
+    
+    if (callback != NULL)
+    {
+        cb_data = malloc(sizeof(*cb_data));
+        cb_data->user_cb = callback;
+        cb_data->user_data = userdata;
+    }
 
     if ((rc = tapi_tad_trrecv_start(ta_name, sid, csap, pattern,
-                                NULL, NULL, timeout, num)) != 0) 
+                                    (callback == NULL) ? NULL : 
+                                        tcp_pkt_handler,
+                                    cb_data, timeout, num)) != 0) 
     {
-        ERROR("%s: trrecv_start failed: %X", __FUNCTION__, rc);
+        ERROR("%s: trrecv_start failed: 0x%X", __FUNCTION__, rc);
     }
     asn_free_value(pattern);
 
@@ -426,7 +479,7 @@ tapi_tcp_template(tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn,
                               tmpl, &syms);
     if (rc != 0)
     {
-        ERROR("%s(): cannot parse template: %X, sym %d", 
+        ERROR("%s(): cannot parse template: 0x%X, sym %d", 
               __FUNCTION__, rc, syms);
         return TE_RC(TE_TAPI, rc);
     }
@@ -434,14 +487,14 @@ tapi_tcp_template(tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn,
     rc = tapi_tcp_pdu(0, 0, seqn, ackn, syn_flag, ack_flag, &tcp_pdu);
     if (rc != 0)
     {
-        ERROR("%s(): make tcp pdu eror: %X", __FUNCTION__, rc);
+        ERROR("%s(): make tcp pdu eror: 0x%X", __FUNCTION__, rc);
         goto cleanup;
     }
 
     rc = asn_insert_indexed(*tmpl, tcp_pdu, 0, "pdus");
     if (rc != 0)
     {
-        ERROR("%s(): insert tcp pdu eror: %X", __FUNCTION__, rc);
+        ERROR("%s(): insert tcp pdu eror: 0x%X", __FUNCTION__, rc);
         goto cleanup;
     }
 
@@ -450,7 +503,7 @@ tapi_tcp_template(tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn,
         rc = asn_write_value_field(*tmpl, data, pld_len, "payload.#bytes");
         if (rc != 0)
         {
-            ERROR("%s(): write payload eror: %X", __FUNCTION__, rc);
+            ERROR("%s(): write payload eror: 0x%X", __FUNCTION__, rc);
             goto cleanup;
         }
     }
@@ -623,7 +676,7 @@ tapi_tcp_clear_msg(tapi_tcp_connection_t *conn_descr)
         (msg = conn_descr->messages->cqh_first) !=
             (void *)conn_descr->messages)
     {
-        VERB("%s() clear msg: seq %u, ack %u, len %d, flags 0x%x",
+        VERB("%s() clear msg: seq %u, ack %u, len %d, flags 0x%X",
              __FUNCTION__, msg->seqn, msg->ackn, msg->len,
              (int)msg->flags);
         free(msg->data);
@@ -662,7 +715,7 @@ tapi_tcp_destroy_conn_descr(tapi_tcp_connection_t *conn_descr)
 
         if (rc != 0)
         {
-            WARN("%s(id %d): rcv CSAP %d on agt %s trrecv_stop failed %X", 
+            WARN("%s(id %d): rcv CSAP %d on agt %s trrecv_stop failed 0x%X",
                  __FUNCTION__, conn_descr->id, conn_descr->rcv_csap,
                  conn_descr->agt, rc);
         }
@@ -671,7 +724,7 @@ tapi_tcp_destroy_conn_descr(tapi_tcp_connection_t *conn_descr)
                                  conn_descr->rcv_csap);
         if (rc != 0)
         {
-            WARN("%s(id %d): rcv CSAP %d on agt %s destroy failed %X", 
+            WARN("%s(id %d): rcv CSAP %d on agt %s destroy failed 0x%X", 
                  __FUNCTION__, conn_descr->id, conn_descr->rcv_csap,
                  conn_descr->agt, rc);
         }
@@ -683,7 +736,7 @@ tapi_tcp_destroy_conn_descr(tapi_tcp_connection_t *conn_descr)
                                      conn_descr->snd_csap);
         if (rc != 0)
         {
-            WARN("%s(id %d): snd CSAP %d on agt %s destroy failed %X", 
+            WARN("%s(id %d): snd CSAP %d on agt %s destroy failed 0x%X", 
                  __FUNCTION__, conn_descr->id, conn_descr->snd_csap,
                  conn_descr->agt, rc);
         }
@@ -696,7 +749,7 @@ tapi_tcp_destroy_conn_descr(tapi_tcp_connection_t *conn_descr)
 
         if (rc != 0)
         {
-            WARN("%s(id %d): arp CSAP %d on agt %s trrecv_stop failed %X", 
+            WARN("%s(id %d): arp CSAP %d on agt %s trrecv_stop failed 0x%X",
                  __FUNCTION__, conn_descr->id, conn_descr->rcv_csap,
                  conn_descr->agt, rc);
         }
@@ -705,7 +758,7 @@ tapi_tcp_destroy_conn_descr(tapi_tcp_connection_t *conn_descr)
                                  conn_descr->arp_csap);
         if (rc != 0)
         {
-            WARN("%s(id %d): arp CSAP %d on agt %s destroy failed %X", 
+            WARN("%s(id %d): arp CSAP %d on agt %s destroy failed 0x%X", 
                  __FUNCTION__, conn_descr->id, conn_descr->arp_csap,
                  conn_descr->agt, rc);
         }
@@ -804,7 +857,7 @@ tapi_tad_pkt_handler(char *pkt_file, void *user_param)
         if (rc != 0)                                            \
         {                                                       \
             asn_free_value(tcp_message);                        \
-            ERROR("%s(id %d): %s, rc %X", __FUNCTION__,         \
+            ERROR("%s(id %d): %s, rc 0x%X", __FUNCTION__,       \
                   conn_descr->id, msg_, rc);                    \
             return;                                             \
         }                                                       \
@@ -814,7 +867,7 @@ tapi_tad_pkt_handler(char *pkt_file, void *user_param)
                                   &tcp_message, &syms);
     if (rc != 0)
     {
-        ERROR("%s(): cannot parse message file: %X, sym %d", 
+        ERROR("%s(): cannot parse message file: 0x%X, sym %d", 
               __FUNCTION__, rc, syms);
         return;
     }
@@ -898,7 +951,7 @@ tapi_tad_pkt_handler(char *pkt_file, void *user_param)
 #undef CHECK_ERROR
     asn_free_value(tcp_message);
 
-    RING("%s(conn %d): seq got %u; len %d; ack %u, flags %x",
+    RING("%s(conn %d): seq got %u; len %d; ack %u, flags 0x%X",
          __FUNCTION__, conn_descr->id, seq_got, 
          conn_descr->last_len_got, ack_got, 
          flags);
@@ -964,15 +1017,15 @@ tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode,
     } while (0)
 
     rc = rcf_ta_create_session(agt, &rcv_sid);
-    CHECK_ERROR("%s(); create rcv session failed %X",
+    CHECK_ERROR("%s(); create rcv session failed 0x%X",
                 __FUNCTION__, rc);
 
     rc = rcf_ta_create_session(agt, &snd_sid);
-    CHECK_ERROR("%s(); create snd session failed %X",
+    CHECK_ERROR("%s(); create snd session failed 0x%X",
                 __FUNCTION__, rc);
 
     rc = rcf_ta_create_session(agt, &arp_sid);
-    CHECK_ERROR("%s(); create snd session failed %X",
+    CHECK_ERROR("%s(); create snd session failed 0x%X",
                 __FUNCTION__, rc);
 
     trafic_param = 1;
@@ -981,7 +1034,7 @@ tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode,
                          remote_mac, NULL, 
                          NULL, (uint8_t *)&(local_in_addr->sin_addr), 
                          &arp_pattern);
-    CHECK_ERROR("%s(): create arp pattern fails %X", __FUNCTION__, rc);
+    CHECK_ERROR("%s(): create arp pattern fails 0x%X", __FUNCTION__, rc);
     UNUSED(broadcast_mac);
 
     func_len = snprintf(arp_reply_method, sizeof(arp_reply_method), 
@@ -992,7 +1045,7 @@ tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode,
 
     rc = asn_write_value_field(arp_pattern, arp_reply_method, func_len + 1,
                                "0.action.#function");
-    CHECK_ERROR("%s(): write arp reply method name failed %X", 
+    CHECK_ERROR("%s(): write arp reply method name failed 0x%X", 
                 __FUNCTION__, rc);
 
 
@@ -1000,7 +1053,7 @@ tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode,
 
     rc = tapi_eth_csap_create(agt, arp_sid, local_iface, NULL, remote_mac,
                               &trafic_param, &arp_csap);
-    CHECK_ERROR("%s(): create arp csap fails %X", __FUNCTION__, rc);
+    CHECK_ERROR("%s(): create arp csap fails 0x%X", __FUNCTION__, rc);
 
     rc = tapi_tcp_ip4_eth_csap_create(agt, rcv_sid, local_iface,
                                       local_mac, remote_mac,
@@ -1009,7 +1062,7 @@ tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode,
                                       local_in_addr->sin_port,
                                       remote_in_addr->sin_port,
                                       &rcv_csap); 
-    CHECK_ERROR("%s(): rcv csap create failed %X",
+    CHECK_ERROR("%s(): rcv csap create failed 0x%X",
                 __FUNCTION__, rc);
 
     rc = tapi_tcp_ip4_eth_csap_create(agt, snd_sid, local_iface,
@@ -1019,7 +1072,7 @@ tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode,
                                       local_in_addr->sin_port,
                                       remote_in_addr->sin_port,
                                       &snd_csap);
-    CHECK_ERROR("%s(): snd csap create failed %X",
+    CHECK_ERROR("%s(): snd csap create failed 0x%X",
                 __FUNCTION__, rc);
 
     conn_descr = calloc(1, sizeof(*conn_descr));
@@ -1042,14 +1095,14 @@ tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode,
     rc = asn_parse_value_text("{{pdus {tcp:{}, ip4:{}, eth:{}}}}",
                               ndn_traffic_pattern,
                               &syn_pattern, &syms);
-    CHECK_ERROR("%s(): parse pattern failed, rc %X, sym %d",
+    CHECK_ERROR("%s(): parse pattern failed, rc 0x%X, sym %d",
                 __FUNCTION__, rc, syms);
 
     /* start catch our ARP */
     rc = tapi_tad_trrecv_start(agt, conn_descr->arp_sid,
                                conn_descr->arp_csap, arp_pattern, 
                                NULL, NULL, TAD_TIMEOUT_INF, 0); 
-    CHECK_ERROR("%s(): start recv ARPs failed %X",
+    CHECK_ERROR("%s(): start recv ARPs failed 0x%X",
                 __FUNCTION__, rc);
 
     rc = tapi_tad_trrecv_start(agt, conn_descr->rcv_sid,
@@ -1066,13 +1119,13 @@ tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode,
 
         rc = tapi_tcp_template(conn_descr->our_isn, 0, TRUE, FALSE, 
                                NULL, 0, &syn_template);
-        CHECK_ERROR("%s(): make syn template failed, rc %X",
+        CHECK_ERROR("%s(): make syn template failed, rc 0x%X",
                     __FUNCTION__, rc);
 
         rc = tapi_tad_trsend_start(agt, snd_sid, snd_csap, 
                                    syn_template, RCF_MODE_BLOCKING);
 
-        CHECK_ERROR("%s(): send SYN failed, rc %X",
+        CHECK_ERROR("%s(): send SYN failed, rc 0x%X",
                     __FUNCTION__, rc);
         conn_update_sent_seq(conn_descr, 1);
     } 
@@ -1108,7 +1161,7 @@ tapi_tcp_wait_open(tapi_tcp_handler_t handler, int timeout)
 
     rc = conn_wait_msg(conn_descr, timeout);
 
-    CHECK_ERROR("%s(): get for SYN of SYN-ACK failed, rc %X",
+    CHECK_ERROR("%s(): get for SYN of SYN-ACK failed, rc 0x%X",
                 __FUNCTION__, rc); 
 
     msg = conn_get_oldest_msg(conn_descr);
@@ -1132,14 +1185,14 @@ tapi_tcp_wait_open(tapi_tcp_handler_t handler, int timeout)
                            conn_descr->ack_sent,
                            is_server,
                            TRUE, NULL, 0, &syn_ack_template);
-    CHECK_ERROR("%s(): make SYN-ACK template failed, rc %X",
+    CHECK_ERROR("%s(): make SYN-ACK template failed, rc 0x%X",
                 __FUNCTION__, rc);
 
     rc = tapi_tad_trsend_start(conn_descr->agt,
                                conn_descr->snd_sid, conn_descr->snd_csap, 
                                syn_ack_template, RCF_MODE_BLOCKING);
 
-    CHECK_ERROR("%s(): send ACK or SYN-ACK failed, rc %X",
+    CHECK_ERROR("%s(): send ACK or SYN-ACK failed, rc 0x%X",
                 __FUNCTION__, rc);
 
 
@@ -1150,7 +1203,7 @@ tapi_tcp_wait_open(tapi_tcp_handler_t handler, int timeout)
         /* wait for ACK */ 
         rc = conn_wait_msg(conn_descr, timeout);
 
-        CHECK_ERROR("%s(): get for SYN of SYN-ACK failed, rc %X",
+        CHECK_ERROR("%s(): get for SYN of SYN-ACK failed, rc 0x%X",
                     __FUNCTION__, rc); 
         tapi_tcp_clear_msg(conn_descr);
     }
@@ -1205,7 +1258,7 @@ tapi_tcp_send_fin(tapi_tcp_handler_t handler, int timeout)
                                "pdus.0.#tcp.flags.#plain");
     if (rc != 0)
     {
-        ERROR("%s(): set fin flag failed %X", 
+        ERROR("%s(): set fin flag failed 0x%X", 
               __FUNCTION__, rc);
         return TE_RC(TE_TAPI, rc);
     } 
@@ -1215,7 +1268,7 @@ tapi_tcp_send_fin(tapi_tcp_handler_t handler, int timeout)
                                fin_template, RCF_MODE_BLOCKING);
     if (rc != 0)
     {
-        ERROR("%s(): send FIN failed %X", __FUNCTION__, rc);
+        ERROR("%s(): send FIN failed 0x%X", __FUNCTION__, rc);
         return TE_RC(TE_TAPI, rc);
     } 
     conn_descr->ack_sent = new_ackn;
@@ -1254,7 +1307,7 @@ tapi_tcp_destroy_connection(tapi_tcp_handler_t handler)
     rc = rcf_ta_trrecv_stop(conn_descr->agt, conn_descr->rcv_sid,
                             conn_descr->rcv_csap, &num);
     if (rc != 0)
-        WARN("$s(conn %d) trrecv_stop on CSAP %d failed %X", 
+        WARN("$s(conn %d) trrecv_stop on CSAP %d failed 0x%X", 
              __FUNCTION__, handler, conn_descr->rcv_csap, rc);
 
     tapi_tcp_destroy_conn_descr(conn_descr);
@@ -1317,7 +1370,7 @@ tapi_tcp_send_msg(tapi_tcp_handler_t handler, uint8_t *payload, size_t len,
                            payload, len, &msg_template);
     if (rc != 0)
     {
-        ERROR("%s: make msg template error %X", __FUNCTION__, rc);
+        ERROR("%s: make msg template error 0x%X", __FUNCTION__, rc);
         return rc;
     }
 
@@ -1327,14 +1380,14 @@ tapi_tcp_send_msg(tapi_tcp_handler_t handler, uint8_t *payload, size_t len,
                           &ip_pdu);
         if (rc != 0)
         {
-            ERROR("%s: make ip pdu error %X", __FUNCTION__, rc);
+            ERROR("%s: make ip pdu error 0x%X", __FUNCTION__, rc);
             return rc;
         }
 
         rc = asn_write_indexed(msg_template, ip_pdu, 1, "pdus");
         if (rc != 0)
         {
-            ERROR("%s: insert ip pdu error %X", __FUNCTION__, rc);
+            ERROR("%s: insert ip pdu error 0x%X", __FUNCTION__, rc);
             return rc;
         }
     }
@@ -1344,7 +1397,7 @@ tapi_tcp_send_msg(tapi_tcp_handler_t handler, uint8_t *payload, size_t len,
                                msg_template, RCF_MODE_BLOCKING);
     if (rc != 0)
     {
-        ERROR("%s: send msg %X", __FUNCTION__, rc);
+        ERROR("%s: send msg 0x%X", __FUNCTION__, rc);
     }
     else
     {
@@ -1396,7 +1449,7 @@ tapi_tcp_recv_msg(tapi_tcp_handler_t handler, int timeout,
         if (flags != NULL)
             *flags = msg->flags;
 
-        RING("%s(conn %d): msg with seq %u, ack %u, len %d, flags 0x%x",
+        RING("%s(conn %d): msg with seq %u, ack %u, len %d, flags 0x%X",
              __FUNCTION__, handler,
              msg->seqn, msg->ackn, msg->len, msg->flags);
         if (ack_mode == TAPI_TCP_AUTO)
@@ -1433,7 +1486,7 @@ tapi_tcp_send_ack(tapi_tcp_handler_t handler, tapi_tcp_pos_t ackn)
                            NULL, 0, &ack_template);
     if (rc != 0)
     {
-        ERROR("%s: make ACK template error %X", __FUNCTION__, rc);
+        ERROR("%s: make ACK template error 0x%X", __FUNCTION__, rc);
         return rc;
     } 
 
@@ -1442,7 +1495,7 @@ tapi_tcp_send_ack(tapi_tcp_handler_t handler, tapi_tcp_pos_t ackn)
                                ack_template, RCF_MODE_BLOCKING);
     if (rc != 0)
     {
-        ERROR("%s: send ACK %X", __FUNCTION__, rc);
+        ERROR("%s: send ACK 0x%X", __FUNCTION__, rc);
     }
     else
         conn_descr->ack_sent = ackn;

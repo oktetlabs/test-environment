@@ -59,9 +59,9 @@ typedef struct tapi_ip4_packet_t {
 
 
 /** 
- * Callback function for the receiving UDP datagrams.
+ * Callback function for the receiving IP datagrams.
  *
- * Nєither pkt, nor pkt->payload MAY NOT be stored for future use
+ * Neither pkt, nor pkt->payload MAY NOT be stored for future use
  * by this callback: they are freed just after callback return.
  *
  * @param pkt           Received IP packet.

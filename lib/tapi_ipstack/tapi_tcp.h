@@ -37,13 +37,22 @@
 #include "asn_usr.h"
 #include "tapi_ip.h"
 
-
 #define TCP_FIN_FLAG    0x01
 #define TCP_SYN_FLAG    0x02
 #define TCP_RST_FLAG    0x04
 #define TCP_PSH_FLAG    0x08
 #define TCP_ACK_FLAG    0x10
 #define TCP_URG_FLAG    0x20
+
+/** 
+ * Callback function for the receiving TCP datagrams.
+ *
+ * @param pkt           Received IP packet.
+ * @param userdata      Parameter, provided by the caller.
+ */
+typedef void (*tcp_row_callback)(const asn_value *pkt, void *userdata);
+
+
 /**
  * Creates 'tcp.ip4.eth' CSAP.
  * Created CSAP can catch only packets, incoming to TA host. 
@@ -89,6 +98,8 @@ extern int tapi_tcp_ip4_eth_csap_create(const char *ta_name, int sid,
  * @param timeout       Timeout of operation (in milliseconds, 
  *                      zero for infinitive)
  * @param num           nubmer of packets to be caugth
+ * @param callback      pointer of method to be called for every packet
+ * @param userdata      magic pointer which will be passed to user callback
  * 
  * @return Zero on success or error code.
  */
@@ -97,7 +108,9 @@ extern int tapi_tcp_ip4_eth_recv_start(const char *ta_name, int sid,
                                        const uint8_t *src_addr,
                                        const uint8_t *dst_addr,
                                        uint16_t src_port, uint16_t dst_port,
-                                       unsigned int timeout, int num);
+                                       unsigned int timeout, int num,
+                                       tcp_row_callback callback,
+                                       void *userdata); 
 
 
 /**
