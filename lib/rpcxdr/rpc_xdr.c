@@ -90,7 +90,7 @@ rpc_find_info(const char *name)
  *                      ocurred
  */
 int 
-rpc_xdr_encode_call(const char *name, char *buf, int *buflen, void *objp)
+rpc_xdr_encode_call(const char *name, char *buf, size_t *buflen, void *objp)
 {
     XDR xdrs;
     
@@ -278,7 +278,7 @@ rpc_xdr_decode_call(char *buf, int buflen, char *name, void **objp_p)
  */
 int 
 rpc_xdr_encode_result(char *name, te_bool rc, 
-                      char *buf, int *buflen, void *objp)
+                      char *buf, size_t *buflen, void *objp)
 {
     XDR xdrs;
     

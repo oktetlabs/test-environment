@@ -84,7 +84,7 @@ extern rpc_info *rpc_find_info(const char *name);
  * @retval ETESUNRPC    Buffer is too small or another encoding error
  *                      ocurred
  */
-extern int rpc_xdr_encode_call(const char *name, char *buf, int *buflen, 
+extern int rpc_xdr_encode_call(const char *name, char *buf, size_t *buflen, 
                                void *objp);
                                
 /**
@@ -102,7 +102,7 @@ extern int rpc_xdr_encode_call(const char *name, char *buf, int *buflen,
  *                      ocurred
  */
 extern int rpc_xdr_encode_result(char *name, te_bool rc, 
-                                 char *buf, int *buflen, void *objp);
+                                 char *buf, size_t *buflen, void *objp);
 
 
 /**
