@@ -1,7 +1,7 @@
 # Process this file with autoconf to produce a configure script.
 
-AC_PREREQ([2.59])
-AC_INIT([tad], [0.1], [konst@oktetlabs.ru])
+AC_PREREQ(2.59)
+AC_INIT([tad],[0.1],[konst@oktetlabs.ru])
     
 AC_CONFIG_AUX_DIR([../../auxdir])
 AC_CONFIG_SRCDIR([tad_ch.c])
@@ -157,7 +157,7 @@ AC_ARG_WITH([snmp],,
         if test ${i:0:2} = "-l"; then
             find_lib ${i:2}
             if test -z "${LIB_PATHNAME}" ; then
-                AC_WARN([Cannot find ${i:2} library])
+                AC_MSG_WARN([Cannot find ${i:2} library])
             fi
             TA_TAD_LIBS="$TA_TAD_LIBS ${LIB_PATHNAME}"
         fi
@@ -193,7 +193,7 @@ AC_ARG_WITH([cli],,
     proto_specific cli;
     find_lib expect
     if test -z "${LIB_PATHNAME}" ; then
-        AC_ERROR([Cannot find static expect library])
+        AC_MSG_ERROR([Cannot find static expect library])
     fi
     TA_TAD_LIBS="$TA_TAD_LIBS ${LIB_PATHNAME}";
     AC_CONFIG_FILES([cli/Makefile])
