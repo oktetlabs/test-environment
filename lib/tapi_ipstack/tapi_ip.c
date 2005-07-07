@@ -261,19 +261,19 @@ tapi_ip4_eth_recv_start_pkt(const char *ta_name, int sid,
     int   rc;
     FILE *f;
 
-    const uint8_t *b;
+    const uint8_t      *b;
     tapi_ip4_cb_data_t *cb_data;
 
     mktemp(template_fname);
 
-    f = fopen (template_fname, "w+");
+    f = fopen(template_fname, "w+");
     if (f == NULL)
     {
         ERROR("fopen() of %s failed(%d)", template_fname, errno);
         return TE_RC(TE_TAPI, errno); /* return system errno */
     }
 
-    fprintf(f,    "{{ pdus { ip4:{" );
+    fprintf(f, "{{ pdus { ip4:{" );
 
     if ((b = src_ip4_addr))
         fprintf(f, "src-addr plain:'%02x %02x %02x %02x'H", 
@@ -286,7 +286,7 @@ tapi_ip4_eth_recv_start_pkt(const char *ta_name, int sid,
         fprintf(f, " dst-addr plain:'%02x %02x %02x %02x'H", 
                 b[0], b[1], b[2], b[3]);
 
-    fprintf(f,    " },\n" ); /* closing  'ip4' */
+    fprintf(f, "   },\n" ); /* closing  'ip4' */
     fprintf(f, "   eth:{eth-type plain:2048");
 
     if ((b = src_mac_addr))
@@ -309,9 +309,9 @@ tapi_ip4_eth_recv_start_pkt(const char *ta_name, int sid,
         cb_data->user_data = userdata;
     }
     rc = rcf_ta_trrecv_start(ta_name, sid, csap, template_fname,
-                                (callback == NULL) ? NULL : ip4_pkt_handler,
-                                (callback == NULL) ? NULL : cb_data,
-                                timeout, num);
+                             (callback == NULL) ? NULL : ip4_pkt_handler,
+                             (callback == NULL) ? NULL : cb_data,
+                             timeout, num);
 
     RING("%s(): rc %x", __FUNCTION__, rc);
     unlink(template_fname); 
