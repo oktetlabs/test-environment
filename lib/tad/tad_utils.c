@@ -762,7 +762,8 @@ tad_data_unit_convert(const asn_value *pdu_val,
         }
         else
         {
-            ERROR("%s(): rc from get_child 0x%X", __FUNCTION__, rc);
+            ERROR("%s(tag %d, pdu name %s): rc from get_child 0x%X",
+                  __FUNCTION__, tag_value, asn_get_name(pdu_val), rc);
             return rc;
         }
     } 
@@ -770,14 +771,16 @@ tad_data_unit_convert(const asn_value *pdu_val,
     rc = asn_get_choice(ch_du_field, "", choice, sizeof(choice));
     if (rc != 0)
     {
-        F_ERROR("%s(): rc from get choice label: %x", __FUNCTION__, rc);
+        ERROR("%s(tag %d, pdu name %s): rc from get choice label: %x",
+              __FUNCTION__, tag_value, asn_get_name(pdu_val), rc);
         return rc;
     }
 
     rc = asn_get_choice_value(ch_du_field, &du_field, NULL, NULL);
     if (rc != 0)
     {
-        F_ERROR("%s(): rc from get choice val: %x", __FUNCTION__, rc);
+        ERROR("%s(tag %d, pdu name %s): rc from get choice val: %x",
+              __FUNCTION__, tag_value, asn_get_name(pdu_val), rc);
         return rc;
     }
 
@@ -820,7 +823,9 @@ tad_data_unit_convert(const asn_value *pdu_val,
                 return ETENOSUPP;
 
             default: 
-                ERROR("Strange syntax %d", plain_syntax);
+                ERROR("%s(tag %d, pdu name %s): strange syntax %d",
+                      __FUNCTION__, tag_value, asn_get_name(pdu_val),
+                      plain_syntax);
                 return EINVAL;
 
         }
