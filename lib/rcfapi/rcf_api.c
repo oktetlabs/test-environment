@@ -2973,7 +2973,7 @@ rcf_ta_call_rpc(const char *ta_name, int session,
     rcf_msg *ans = NULL;
     int      rc;
     size_t   anslen = sizeof(msg_buf);
-    int      len;
+    size_t   len;
     
     RCF_API_INIT;
 
