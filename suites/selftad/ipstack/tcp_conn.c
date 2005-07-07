@@ -63,10 +63,11 @@ uint8_t buffer[10000];
 
 int
 main(int argc, char *argv[])
+
 { 
     tapi_tcp_handler_t conn_hand;
 
-    rcf_rpc_server *rpc_srv;
+    rcf_rpc_server *rpc_srv = NULL;
 
     char  ta[32];
     char *agt_a = ta;
@@ -85,10 +86,11 @@ main(int argc, char *argv[])
     struct sockaddr_in sock_addr;
     struct sockaddr_in csap_addr;
 
-    uint8_t csap_mac[6] = {0x00, 0x05, 0x5D, 0x74, 0xAB, 0xB4};
+    // uint8_t csap_mac[6] = {0x00, 0x05, 0x5D, 0x74, 0xAB, 0xB4};
+    uint8_t csap_mac[6] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06};
     uint8_t sock_mac[6] = {0x00, 0x0D, 0x88, 0x4F, 0x55, 0xAF};
 
-    in_addr_t csap_ip_addr = inet_addr("192.168.72.18");
+    in_addr_t csap_ip_addr = inet_addr("192.168.72.28");
     in_addr_t sock_ip_addr = inet_addr("192.168.72.38");
 
     TEST_START; 
@@ -134,7 +136,7 @@ main(int argc, char *argv[])
     csap_addr.sin_addr.s_addr = csap_ip_addr;
     csap_addr.sin_port = htons(20000); 
 
-    
+#if 1    
     if ((socket = rpc_socket(rpc_srv, RPC_AF_INET, RPC_SOCK_STREAM, 
                                   RPC_IPPROTO_TCP)) < 0 ||
         rpc_srv->_errno != 0)
@@ -259,6 +261,7 @@ main(int argc, char *argv[])
         }
     } while (!(flags & TCP_FIN_FLAG) && !(flags & TCP_RST_FLAG));
 
+#endif
     TEST_SUCCESS;
 
 cleanup:
