@@ -26,9 +26,13 @@
  * @(#) $Id$
  */
 
+#define TE_LGR_USER "TAD ETH L3"
+
 #include <string.h>
 #include "tad_eth_impl.h"
 #include "te_defs.h"
+
+#include "logger_api.h"
 
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -374,3 +378,139 @@ userdata_to_udp( unsigned char *raw_pkt)
 
     return mi_payload_length;
 }
+
+
+/**
+ * Convert standard string presentatino of Ethernet MAC address
+ * to binary. 
+ *
+ * @param mac_str       string with address
+ * @param mac           location (6 bytes) for binary address (OUT)
+ *
+ * @return status code
+ */
+static int
+mac_str2addr(const char *mac_str, uint8_t *mac)
+{
+    char *endptr = NULL;
+    int i;
+
+    if (mac_str == NULL || mac == NULL)
+        return ETEWRONGPTR;
+
+    for (i = 0; i < ETH_ALEN; i++, mac_str = endptr)
+    {
+        if (i > 0)
+        {
+            if (*mac_str == ':')
+                mac_str++;
+            else
+            {
+                ERROR("not colon, <%c>", (int)*mac_str);
+                return EINVAL;
+            }
+        }
+        mac[i] = strtol(mac_str, &endptr, 16);
+        if (endptr == NULL)
+            break;
+    }
+
+    if (i < ETH_ALEN) /* parse error */ 
+    {
+        ERROR("too small index %d, NULL endptr", i);
+        return EINVAL;
+    }
+
+    return 0;
+}
+
+/**
+ * Function for make arp reply by arp request, catched by 'eth' raw CSAP.
+ * Prototype made according with 'tad_processing_pkt_method' function type.
+ * This method uses write_cb callback of passed 'eth' CSAP for send reply.
+ *
+ * @param csap_descr  CSAP descriptor structure.
+ * @param usr_param   String passed by user.
+ * @param pkt         Packet binary data, as it was caught from net.
+ * @param pkt_len     Length of pkt data.
+ *
+ * @return zero on success or error code.
+ */
+int 
+tad_eth_arp_reply(csap_p csap_descr, const char *usr_param, 
+                  const uint8_t *pkt, size_t pkt_len)
+{
+    uint8_t  my_mac[ETH_ALEN];
+    uint8_t *arp_reply_frame;
+    uint8_t *p;
+
+    int rc;
+
+    if (csap_descr == NULL || usr_param == NULL ||
+        pkt == NULL || pkt_len == 0)
+        return ETEWRONGPTR;
+
+    if (csap_descr->prepare_send_cb != NULL && 
+        (rc = csap_descr->prepare_send_cb(csap_descr)) != 0)
+    {
+        ERROR("%s(): prepare for recv failed %x", rc);
+        return rc;
+    }
+
+    if (strlen(usr_param) < (6 * 2 + 5)) 
+    {
+        ERROR("%s(): too small param <%s>, should be string with MAC",
+              __FUNCTION__, usr_param);
+        return ETADLESSDATA;
+    }
+
+    if ((rc = mac_str2addr(usr_param, my_mac)) != 0)
+    {
+        ERROR("%s(): MAC parse error, <%s> ,rc 0x%X",
+              __FUNCTION__, usr_param, rc);
+        return EINVAL;
+    } 
+
+    VERB("%s(): got user param %s; parsed MAC: %x:%x:%x:%x:%x:%x;",
+         __FUNCTION__, usr_param, 
+         (int)my_mac[0], (int)my_mac[1], (int)my_mac[2], 
+         (int)my_mac[3], (int)my_mac[4], (int)my_mac[5]); 
+
+    if ((p = arp_reply_frame = calloc(1, pkt_len)) == NULL)
+    {
+        ERROR("%s(): no memory!", __FUNCTION__);
+        return ENOMEM;
+    }
+    /* fill eth header */
+    memcpy(p, pkt + 6, 6);
+    memcpy(p + 6, pkt, 6);
+    memcpy(p + 12, pkt + 12, 2);
+
+    p += 14;
+    pkt += 14; 
+
+    memcpy(p, pkt, 6);
+    p += 7;
+    *p = 2; /* ARP reply */
+    p++;
+
+    pkt += 8;
+    memcpy(p, my_mac, 6);
+    memcpy(p + 6, pkt + 6 + 4 + 6, 4);
+
+
+
+    memcpy(p + 6 + 4, pkt, 6 + 4); 
+
+    rc = csap_descr->write_cb(csap_descr, arp_reply_frame, pkt_len);
+    RING("%s(): sent %d bytes", __FUNCTION__, rc);
+    if (rc < 0)
+    {
+        ERROR("%s() write error", __FUNCTION__);
+        return csap_descr->last_errno;
+    }
+
+    return 0;
+}
+
+
