@@ -125,8 +125,19 @@ AC_CHECK_SIZEOF([short])
 AC_CHECK_SIZEOF([int])
 AC_CHECK_SIZEOF([long])
 AC_CHECK_SIZEOF([long long])
-AC_CHECK_SIZEOF([size_t])
-AC_CHECK_SIZEOF([socklen_t])
+AC_CHECK_SIZEOF([size_t], [], [
+#if HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+])
+AC_CHECK_SIZEOF([socklen_t], [], [
+#if HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#if HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif
+])
 
 AC_C_INLINE
 
