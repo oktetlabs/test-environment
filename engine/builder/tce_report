@@ -22,6 +22,17 @@ HELP
     exit 1
 fi
 
+binaries="`which tce_merge`"
+if test -z "$binaries"; then
+    mydir=`dirname $0`
+    if test -x ${mydir}/tce_merge; then
+        export PATH=${mydir}:$PATH
+    else
+        echo "Supporting scripts not found!!!" >/dev/stderr
+        exit 1
+    fi
+fi
+
 tce_taname=$1 
 mergefile=$2
 outfile=${mergefile}.new
