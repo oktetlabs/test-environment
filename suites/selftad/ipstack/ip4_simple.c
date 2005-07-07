@@ -173,7 +173,7 @@ main(int argc, char *argv[])
 
 #if USE_TAPI
         rc = tapi_ip4_eth_csap_create(ta, sid, "eth0", NULL, NULL,
-                                      NULL, NULL, &csap);
+                                      0, 0, &csap);
 #else
         rc = asn_parse_value_text("{ ip4:{max-packet-size plain:100000},"
                                   " eth:{device-id plain:\"eth0\"}}", 

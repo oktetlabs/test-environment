@@ -87,8 +87,8 @@ extern int tapi_ip4_eth_csap_create(const char *ta_name, int sid,
                                     const char *eth_dev,
                                     const uint8_t *loc_mac_addr, 
                                     const uint8_t *rem_mac_addr, 
-                                    const uint8_t *loc_ip4_addr,
-                                    const uint8_t *rem_ip4_addr,
+                                    in_addr_t      loc_ip4_addr,
+                                    in_addr_t      rem_ip4_addr,
                                     csap_handle_t *ip4_csap);
 
 

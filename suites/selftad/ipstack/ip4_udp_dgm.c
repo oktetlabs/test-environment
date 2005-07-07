@@ -177,9 +177,7 @@ main(int argc, char *argv[])
         TEST_FAIL("set payload to template failed %X", rc);
 
     rc = tapi_ip4_eth_csap_create(agt_a, sid_a, "eth2", NULL, NULL,
-                                  (uint8_t *)&ip_addr_a,
-                                  (uint8_t *)&ip_addr_b,
-                                  &ip4_send_csap);
+                                  ip_addr_a, ip_addr_b, &ip4_send_csap);
     if (rc != 0)
         TEST_FAIL("CSAP create failed, rc from module %d is 0x%x\n", 
                     TE_RC_GET_MODULE(rc), TE_RC_GET_ERROR(rc)); 

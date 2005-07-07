@@ -201,8 +201,7 @@ main(int argc, char *argv[])
 
     /***************** Create 'ip4.eth' CSAP *****************/
     rc = tapi_ip4_eth_csap_create(agt_a, sid_a, "eth2", NULL, NULL,
-                                  (uint8_t *)&ip_addr_a,
-                                  (uint8_t *)&ip_addr_b,
+                                  ip_addr_a, ip_addr_b,
                                   &ip4_send_csap);
     if (rc != 0)
         TEST_FAIL("CSAP create failed, rc from module %d is 0x%x\n", 

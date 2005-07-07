@@ -139,8 +139,8 @@ int
 tapi_ip4_eth_csap_create(const char *ta_name, int sid, const char *eth_dev,
                          const uint8_t *loc_mac_addr,
                          const uint8_t *rem_mac_addr,
-                         const uint8_t *loc_ip4_addr, 
-                         const uint8_t *rem_ip4_addr,
+                         in_addr_t      loc_ip4_addr, 
+                         in_addr_t      rem_ip4_addr,
                          csap_handle_t *ip4_csap)
 {
     int         rc = 0;
@@ -159,15 +159,15 @@ tapi_ip4_eth_csap_create(const char *ta_name, int sid, const char *eth_dev,
 
 
     do {
-        if ((loc_ip4_addr != NULL) && 
+        if ((loc_ip4_addr != 0) && 
             (rc = asn_write_value_field(csap_ip4_level,
-                                        loc_ip4_addr, 4,
+                                        &loc_ip4_addr, 4,
                                         "local-addr.#plain")) != 0)
             break;
 
-        if ((rem_ip4_addr != NULL) &&
+        if ((rem_ip4_addr != 0) &&
             (rc = asn_write_value_field(csap_ip4_level,
-                                        rem_ip4_addr, 4,
+                                        &rem_ip4_addr, 4,
                                         "remote-addr.#plain")) != 0)
             break;
 
