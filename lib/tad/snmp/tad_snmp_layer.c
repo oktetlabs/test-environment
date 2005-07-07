@@ -127,7 +127,8 @@ snmp_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
     memset(pkts, 0, sizeof(*pkts));
 
     rc = asn_read_value_field(tmpl_pdu, &operation, &operation_len, "type");
-    if (rc) return rc;
+    if (rc != 0)
+        return rc;
 
     VERB("%s, operation %d", __FUNCTION__, operation);
     switch (operation)
@@ -149,10 +150,10 @@ snmp_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
     if (operation == NDN_SNMP_MSG_GETBULK) 
     {
         int repeats;
-        int r_len = sizeof(repeats);
+        size_t r_len = sizeof(repeats);
 
         rc = asn_read_value_field(tmpl_pdu, &repeats, &r_len, "repeats");
-        if (rc) 
+        if (rc != 0) 
             pdu->max_repetitions = SNMP_CSAP_DEF_REPEATS;
         else 
             pdu->max_repetitions = repeats;
@@ -167,7 +168,7 @@ snmp_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
     {
         asn_value_p var_bind = asn_read_indexed(tmpl_pdu, i, "variable-bindings");
         oid         oid[MAX_OID_LEN];
-        int         oid_len = MAX_OID_LEN;
+        size_t      oid_len = MAX_OID_LEN;
         
         if (var_bind == NULL)
         {
@@ -177,8 +178,7 @@ snmp_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
         }
 
         rc = asn_read_value_field(var_bind, oid, &oid_len, "name");
-        if (rc)
-            break;
+        if (rc != 0) break;
 
         switch (operation)
         {
@@ -196,17 +196,17 @@ snmp_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
             case NDN_SNMP_MSG_TRAP2:
             case NDN_SNMP_MSG_INFORM:
             {
-                const char* val_name;
-                asn_value_p value;
-                uint8_t buffer[1000];
-                int d_len = sizeof(buffer);
+                const char  *val_name;
+                asn_value_p  value;
+                uint8_t      buffer[1000];
+                size_t       d_len = sizeof(buffer);
 
 
                 rc = asn_read_component_value(var_bind, &value, "value");
-                if (rc) break; 
+                if (rc != 0) break; 
 
                 rc = asn_read_value_field(value, buffer, &d_len, "");
-                if (rc) break; 
+                if (rc != 0) break; 
 
                 val_name = asn_get_name(value);
                 if (val_name == NULL)
@@ -219,11 +219,11 @@ snmp_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
                                         buffer, d_len );
             }
         } 
-        if (rc) break;
+        if (rc != 0) break;
     }
 
 
-    if (rc)
+    if (rc != 0)
         snmp_free_pdu(pdu);
     else
     {
