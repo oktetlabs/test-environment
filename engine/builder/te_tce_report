@@ -1,0 +1,112 @@
+#!/bin/sh
+#
+# Test Coverage Estimation: TE wrapper for tce_report script
+#
+#
+# Copyright (C) 2005 Test Environment authors (see file AUTHORS in
+# the root directory of the distribution).
+#
+# Test Environment is free software; you can redistribute it and/or 
+# modify it under the terms of the GNU General Public License as 
+# published by the Free Software Foundation; either version 2 of 
+# the License, or (at your option) any later version.
+# 
+# Test Environment is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, 
+# MA  02111-1307  USA
+#
+#
+# Author: Artem Andreev <Artem.Andreev@oktetlabs.ru>
+#         Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
+#
+# $Id$
+#
+
+usage() {
+    if test -n "$1" ; then
+        echo -e "$1" >&2
+    fi
+    cat >&2 <<EOF
+
+USAGE: te_tce_report [--ignore-dirs] <TA-name> <output-file> \\
+                     [<data-dir> [<source-dir>]]
+
+Processes GCOV data contained in the file "<data-dir>/tce_<TA-name>.tar"
+which should correspond to sources in <source-dir>. Coverage results are put
+into <output-file>. If <output-file> exists and it matches the specified
+sources, the results are merged (the older <output-file> is saved as
+<output-file>.prev).
+
+If <data-dir> is not specified, TE_BUILD environment variable is used,
+in which case it must contain "builder.conf.processed" that determines
+the location to sources.
+
+--ignore-dirs causes treating files with the same base name as the same file.
+
+EOF
+    exit 1
+}
+
+tce_report_opts=
+if test "$1" = "--help" ; then
+    usage
+elif test "$1" = "--ignore-dirs"; then
+    tce_report_opts="${tce_report_opts} $1"
+    shift
+fi
+
+# 
+if test $# -lt 2 -o $# -gt 4 ; then
+    usage "Invalid number of arguments!"
+fi
+
+taname=$1 
+outfile=$2
+datadir=$3
+srcdir=$4
+
+if test -z "${datadir}" ; then
+    if test -z "${TE_BUILD}" ; then
+        usage "<data-dir> is not specified and TE_BUILD is not set"
+    fi
+    datadir="${TE_BUILD}"
+fi
+infile="${datadir}/tce_${taname}.tar"
+
+if test -z "${srcdir}" ; then
+    if test -z "${TE_BUILD}" ; then
+        usage "<source-dir> is not specified and TE_BUILD is not set"
+    fi
+    if test ! -r "${TE_BUILD}/builder.conf.processed" ; then
+        usage "<data-dir> is not specified and \\n"\
+              "TE_BUILD does not contain readable builder.conf.processed"
+    fi
+    . ${TE_BUILD}/builder.conf.processed
+    nut=`eval echo '$TCE_TANAME_'${taname}'_NUT'`
+    if test -z "${nut}"; then
+        usage "There is no NUT for TA \'${taname}\' in accordance with\\n"\
+              "${TE_BUILD}/builder.conf.processed"
+    fi
+    srcdir=`eval echo '$NUT_'${nut}'_SOURCES'` 
+    if test -z "${srcdir}"; then
+        usage "Sources are not specified for NUT \'${nut}\' in "
+              "accordance with\\n${TE_BUILD}/builder.conf.processed"
+    fi
+fi
+
+tce_report_script="`which tce_report`"
+if test -z "${tce_report_script}" ; then
+    tce_report_script="`dirname $0`/tce_report"
+    if test ! -x "${tce_report_script}" ; then
+        echo "tce_report script not found" >&2
+        exit 1
+    fi
+fi
+
+exec ${tce_report_script} ${tce_report_opts} ${infile} ${outfile} ${srcdir}
