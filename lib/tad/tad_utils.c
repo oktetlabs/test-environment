@@ -840,7 +840,7 @@ tad_data_unit_convert(const asn_value *pdu_val,
         if (strncmp(expr_label, script, sizeof(expr_label)-1) == 0)
         {
             tad_int_expr_t *expression;
-            char           *expr_string = script + sizeof(expr_label) - 1;
+            const char     *expr_string = script + sizeof(expr_label) - 1;
             int             syms;
 
             rc = tad_int_expr_parse(expr_string, &expression, &syms);

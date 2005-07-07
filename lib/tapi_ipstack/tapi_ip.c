@@ -262,7 +262,7 @@ tapi_ip4_eth_recv_start_pkt(const char *ta_name, int sid,
     FILE *f;
 
     const uint8_t      *b;
-    tapi_ip4_cb_data_t *cb_data;
+    tapi_ip4_cb_data_t *cb_data = NULL;
 
     mktemp(template_fname);
 

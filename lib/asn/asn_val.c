@@ -985,8 +985,8 @@ asn_impl_read_value_field(const asn_value *container,  void *data,
                           size_t *d_len, char *field_labels)
 {
     const asn_value *value;
-    int m_len;
-    int rc;
+    size_t           m_len;
+    int              rc;
 
     if (!container) return ETEWRONGPTR; 
 
@@ -1048,7 +1048,7 @@ asn_impl_read_value_field(const asn_value *container,  void *data,
                 return ETESMALLBUF;
 
             *d_len = value->len;
-            memcpy (data, value->data.other, m_len);
+            memcpy(data, value->data.other, m_len);
         }
         break;
 

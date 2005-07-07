@@ -982,6 +982,7 @@ tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode,
                          NULL, (uint8_t *)&(local_in_addr->sin_addr), 
                          &arp_pattern);
     CHECK_ERROR("%s(): create arp pattern fails %X", __FUNCTION__, rc);
+    UNUSED(broadcast_mac);
 
     func_len = snprintf(arp_reply_method, sizeof(arp_reply_method), 
                         "tad_eth_arp_reply:%02x:%02x:%02x:%02x:%02x:%02x",
