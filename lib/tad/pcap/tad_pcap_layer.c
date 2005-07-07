@@ -94,7 +94,19 @@ char* pcap_get_param_cb (csap_p csap_descr, int level, const char *param)
     if (strcmp (param, "total_bytes") == 0)
     {
         param_buf  = malloc(20);
-        sprintf(param_buf, "%u", spec_data->total_bytes);
+        sprintf(param_buf, "%lu", spec_data->total_bytes);
+        return param_buf;
+    }
+    else if (strcmp (param, "total_packets") == 0)
+    {
+        param_buf  = malloc(20);
+        sprintf(param_buf, "%lu", spec_data->total_packets);
+        return param_buf;
+    }
+    else if (strcmp (param, "filtered_packets") == 0)
+    {
+        param_buf  = malloc(20);
+        sprintf(param_buf, "%lu", spec_data->filtered_packets);
         return param_buf;
     }
 
@@ -119,7 +131,7 @@ int pcap_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
     pcap_csap_specific_data_p   spec_data; 
     csap_p                      csap_descr;
 
-    int                         val_len;
+    size_t                      val_len;
     char                       *pcap_str;
     int                         rc; 
 
@@ -223,7 +235,7 @@ pcap_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
     int                         bpf_id;
     struct bpf_program         *bpf_program;
     struct bpf_insn            *bpf_code;
-    int                         tmp_len;
+    size_t                      tmp_len;
 
     VERB("%s() started", __FUNCTION__);
 
@@ -277,7 +289,7 @@ pcap_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
 #if 1
     do {
         int filter_id;
-        int filter_len;
+        size_t filter_len;
         char *filter = NULL;
 
         VERB("Packet matches, try to get filter string");
@@ -330,7 +342,7 @@ pcap_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
             ERROR("write pcap filter to packet rc %x\n", rc);
     }
 
-    VERB("Try to copy payload of %d bytes", pkt->len);
+    VERB("Try to copy payload of %ld bytes", pkt->len);
 
     /* passing payload to upper layer */
     memset(payload, 0 , sizeof(*payload));
@@ -339,7 +351,7 @@ pcap_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
     payload->data = malloc(payload->len);
     memcpy(payload->data, pkt->data, payload->len);
 
-    F_VERB("PCAP csap N %d, packet matches, pkt len %d, pld len %d", 
+    F_VERB("PCAP csap N %d, packet matches, pkt len %ld, pld len %ld", 
            csap_id, pkt->len, payload->len);
     
     return 0;
