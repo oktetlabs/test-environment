@@ -24,7 +24,7 @@
  *
  * @author Artem V. Andreev <Artem.Andreev@oktetlabs.ru>
  *
- * $Id: te_tee.c 12322 2005-03-10 14:58:56Z artem $
+ * $Id$
  */
 
 #include "te_config.h"
@@ -32,6 +32,7 @@
 #define TE_LGR_USER "Self"
 #include <limits.h>
 #include <stdio.h>
+#include <ctype.h>
 #include <stdlib.h>
 #include "rcf_api.h"
 #include "logger_api.h"
@@ -54,6 +55,25 @@ main(int argc, char *argv[])
     char buffer2[PATH_MAX + 1];
 
     UNUSED(argc);
+
+    if (isdigit(*argv[1]))
+    {
+        extern pid_t tce_collector_pid;
+        extern int dump_tce_collector(void);
+        extern int stop_tce_collector(void);
+        int rc;
+        
+        tce_collector_pid = atol(argv[1]);
+        rc = dump_tce_collector();
+        stop_tce_collector();
+        if (rc != 0)
+        {
+            fprintf(stderr, "Error dumping TCE data from %d, code = %x", 
+                    tce_collector_pid, rc);
+            exit(EXIT_FAILURE);
+        }
+        exit(0);
+    }
 
     if (strcmp(argv[1], "--all") != 0)
     {
