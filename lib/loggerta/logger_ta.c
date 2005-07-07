@@ -34,6 +34,7 @@
 #include <netinet/in.h>
 #endif
 
+#include "te_printf.h"
 #include "logger_ta.h"
 #include "rcf_pch_mem.h"
 
