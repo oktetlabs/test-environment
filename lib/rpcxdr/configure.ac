@@ -1,8 +1,8 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-AC_PREREQ([2.59])
-AC_INIT([rpcxdr], [0.02], [Elena.Vengerova@oktetlabs.ru])
+AC_PREREQ(2.59)
+AC_INIT([rpcxdr],[0.02],[Elena.Vengerova@oktetlabs.ru])
 
 AC_CONFIG_SRCDIR([rpc_xdr.h])
 
@@ -64,43 +64,43 @@ AH_TEMPLATE([xdr_int8_t], [RPC XDR for signed 8bit width type])
 AC_CHECK_FUNC([xdr_int8_t], [],
     [AC_CHECK_FUNC([xdr_char],
         [AC_DEFINE([xdr_int8_t], [xdr_char])],
-        [AC_ERROR([There is no xdr_uint8_t or xdr_char!])])])
+        [AC_MSG_ERROR([There is no xdr_uint8_t or xdr_char!])])])
 
 AH_TEMPLATE([xdr_uint8_t], [RPC XDR for unsigned 8bit width type])
 AC_CHECK_FUNC([xdr_uint8_t], [],
     [AC_CHECK_FUNC([xdr_u_char],
         [AC_DEFINE([xdr_uint8_t], [xdr_u_char])],
-        [AC_ERROR([There is no xdr_uint8_t or xdr_u_char!])])])
+        [AC_MSG_ERROR([There is no xdr_uint8_t or xdr_u_char!])])])
 
 AH_TEMPLATE([xdr_int16_t], [RPC XDR for signed 16bit width type])
 AC_CHECK_FUNC([xdr_int16_t], [],
     [AC_CHECK_FUNC([xdr_short],
         [AC_DEFINE([xdr_int16_t], [xdr_short])],
-        [AC_ERROR([There is no xdr_uint16_t or xdr_short!])])])
+        [AC_MSG_ERROR([There is no xdr_uint16_t or xdr_short!])])])
 
 AH_TEMPLATE([xdr_uint16_t], [RPC XDR for unsigned 16bit width type])
 AC_CHECK_FUNC([xdr_uint16_t], [],
     [AC_CHECK_FUNC([xdr_u_short],
         [AC_DEFINE([xdr_uint16_t], [xdr_u_short])],
-        [AC_ERROR([There is no xdr_uint16_t or xdr_u_short!])])])
+        [AC_MSG_ERROR([There is no xdr_uint16_t or xdr_u_short!])])])
 
 AH_TEMPLATE([xdr_int32_t], [RPC XDR for signed 32bit width type])
 AC_CHECK_FUNC([xdr_int32_t], [],
     [AC_CHECK_FUNC([xdr_int],
         [AC_DEFINE([xdr_int32_t], [xdr_int])],
-        [AC_ERROR([There is no xdr_uint32_t or xdr_int!])])])
+        [AC_MSG_ERROR([There is no xdr_uint32_t or xdr_int!])])])
 
 AH_TEMPLATE([xdr_uint32_t], [RPC XDR for unsigned 32bit width type])
 AC_CHECK_FUNC([xdr_uint32_t], [],
     [AC_CHECK_FUNC([xdr_u_int],
         [AC_DEFINE([xdr_uint32_t], [xdr_u_int])],
-        [AC_ERROR([There is no xdr_uint32_t or xdr_u_int!])])])
+        [AC_MSG_ERROR([There is no xdr_uint32_t or xdr_u_int!])])])
 
 AH_TEMPLATE([xdr_uint64_t], [RPC XDR for unsigned 64bit width type])
 AC_CHECK_FUNC([xdr_uint64_t], [],
     [AC_CHECK_FUNC([xdr_u_int64_t],
         [AC_DEFINE([xdr_uint64_t], [xdr_u_int64_t])],
-        [AC_ERROR([There is no xdr_uint64_t or xdr_u_int64_t!])])])
+        [AC_MSG_ERROR([There is no xdr_uint64_t or xdr_u_int64_t!])])])
 
 AC_CHECK_LIB([expat], [XML_ParserCreate], [],
              AC_MSG_WARN([Cannot find expat]))

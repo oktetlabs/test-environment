@@ -3,7 +3,7 @@
  *
  * Definition of the API used by RCF RPC to encode/decode RPC data.
  *
- * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
+ * Copyright (C) 2005 Test Environment authors (see file AUTHORS in the
  * root directory of the distribution).
  *
  * This library is free software; you can redistribute it and/or
@@ -84,7 +84,7 @@ extern rpc_info *rpc_find_info(const char *name);
  * @retval ETESUNRPC    Buffer is too small or another encoding error
  *                      ocurred
  */
-extern int rpc_xdr_encode_call(const char *name, char *buf, size_t *buflen, 
+extern int rpc_xdr_encode_call(const char *name, void *buf, size_t *buflen, 
                                void *objp);
                                
 /**
@@ -102,7 +102,7 @@ extern int rpc_xdr_encode_call(const char *name, char *buf, size_t *buflen,
  *                      ocurred
  */
 extern int rpc_xdr_encode_result(char *name, te_bool rc, 
-                                 char *buf, size_t *buflen, void *objp);
+                                 void *buf, size_t *buflen, void *objp);
 
 
 /**
@@ -116,7 +116,7 @@ extern int rpc_xdr_encode_result(char *name, te_bool rc,
  *
  * @return Status code
  */
-extern int rpc_xdr_decode_call(char *buf, int buflen,
+extern int rpc_xdr_decode_call(void *buf, size_t buflen,
                                char *name, void **objp);
 
 /**
@@ -130,8 +130,8 @@ extern int rpc_xdr_decode_call(char *buf, int buflen,
  * @return Status code (if rc attribute of result is FALSE, an error should
  *         be returned)
  */
-extern int rpc_xdr_decode_result(const char *name, char *buf, 
-                                 int buflen, void *objp);
+extern int rpc_xdr_decode_result(const char *name, void *buf, 
+                                 size_t buflen, void *objp);
 
 /**
  * Free RPC C structure.
