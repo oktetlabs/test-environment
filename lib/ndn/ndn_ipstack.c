@@ -106,7 +106,7 @@ static asn_named_entry_t _ndn_ip4_header_ne_array [] =
     { "header-len",      &ndn_data_unit_int8_s,
         {PRIVATE, NDN_TAG_IP4_HLEN} },
     { "type-of-service", &ndn_data_unit_int8_s, 
-        {PRIVATE, NDN_TAG_IP4_TTL} },
+        {PRIVATE, NDN_TAG_IP4_TOS} },
     { "ip-len",          &ndn_data_unit_int16_s, 
         {PRIVATE, NDN_TAG_IP4_LEN} },
     { "ip-ident",        &ndn_data_unit_int16_s, 
