@@ -109,7 +109,7 @@ rpc_xdr_encode_call(const char *name, char *buf, size_t *buflen, void *objp)
 #else    
     /* Encode routine name */
     xdrmem_create(&xdrs, buf, *buflen, XDR_ENCODE);
-    xdrs.x_ops->x_putint32(&xdrs, &len);
+    xdrs.x_ops->x_putint32(&xdrs, (int32_t *)&len);
     xdrs.x_ops->x_putbytes(&xdrs, name, len);
 #endif
 
@@ -143,7 +143,7 @@ rpc_xdr_decode_result(const char *name, char *buf, int buflen, void *objp)
 {
     XDR xdrs;
     
-    uint32_t rc;
+    int32_t rc;
     
     rpc_info *info;
 
@@ -232,7 +232,7 @@ rpc_xdr_decode_call(char *buf, int buflen, char *name, void **objp_p)
     
     /* Decode routine name */
     xdrmem_create(&xdrs, buf, buflen, XDR_DECODE);
-    xdrs.x_ops->x_getint32(&xdrs, &len);
+    xdrs.x_ops->x_getint32(&xdrs, (int32_t *)&len);
     xdrs.x_ops->x_getbytes(&xdrs, name, len);
 #endif
 
@@ -297,7 +297,7 @@ rpc_xdr_encode_result(char *name, te_bool rc,
     xdrmem_create(&xdrs, buf, *buflen, XDR_ENCODE);
     /* Encode return code */
     {
-        uint32_t rc_int32 = rc;
+        int32_t rc_int32 = rc;
         
         xdrs.x_ops->x_putint32(&xdrs, &rc_int32);
     }    
