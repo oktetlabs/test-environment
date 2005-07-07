@@ -68,9 +68,9 @@ char* bridge_get_param_cb (int csap_id, int level, const char *param)
  */ 
 int bridge_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
 {
-    int rc = 0; 
-    csap_p                   csap_descr;
-    char buffer[8]; /* maximum length of field in Config BPDU*/
+    int    rc = 0; 
+    csap_p csap_descr;
+    char   buffer[8]; /* maximum length of field in Config BPDU*/
 
     UNUSED (layer);
 
@@ -89,25 +89,29 @@ int bridge_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
 
     } 
 
-#define CHECK_FIELD(label, val, len) \
-    do if (rc == 0) {\
-        char _buffer[100]; \
-        int _len = sizeof(_buffer); \
-        rc = asn_read_value_field(tmpl_pdu, _buffer, &_len, label ".#plain"); \
-        VERB("CHECK field %s, rc from asn read %x\n", \
-                label, rc);\
-        switch (rc) \
-        {\
-            case 0: \
-                break; /* TODO: compare with internal CSAP settings! */ \
-            case EASNOTHERCHOICE: \
-                /* TODO: process complex tmpl should be here*/\
-                asn_free_subvalue (tmpl_pdu, label); /* fall through! */ \
-            case EASNINCOMPLVAL: \
-                rc = asn_write_value_field(tmpl_pdu, val, len, label ".#plain");\
-        VERB("rc from asn write %x\n", \
-                 rc);\
-        }\
+#define CHECK_FIELD(label, val, len)    \
+    do if (rc == 0) {                                           \
+        char _buffer[100];                                      \
+        size_t _len = sizeof(_buffer);                          \
+                                                                \
+        rc = asn_read_value_field(tmpl_pdu, _buffer, &_len,     \
+                                  label ".#plain");             \
+        VERB("CHECK field %s, asn_read rc %x", label, rc);      \
+        switch (rc)                                             \
+        {                                                       \
+            case 0:                                             \
+            /* TODO: compare with internal CSAP settings! */    \
+                break;                                          \
+                                                                \
+            case EASNOTHERCHOICE:                               \
+            /* TODO: process complex tmpl should be here*/      \
+                asn_free_subvalue (tmpl_pdu, label);            \
+            /* fall through! */                                 \
+            case EASNINCOMPLVAL:                                \
+                rc = asn_write_value_field(tmpl_pdu, val, len,  \
+                                           label ".#plain");    \
+                VERB("rc from asn write %x\n", rc);             \
+        }                                                       \
     } while (0)
 
     CHECK_FIELD("proto-id", buffer, 2);

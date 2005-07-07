@@ -109,9 +109,9 @@ file_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
                 csap_pkts_p up_payload, csap_pkts_p pkts)
 {
     int rc;
-    int line_len;
 
-    char *line;
+    size_t line_len; 
+    char  *line;
 
     UNUSED(csap_descr);
     UNUSED(layer);

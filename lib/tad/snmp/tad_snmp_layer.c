@@ -109,10 +109,11 @@ snmp_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
 {
     int rc; 
     int operation;
-    int operation_len = sizeof(int);
     int ucd_snmp_op;
     int num_var_bind;
     int i;
+
+    size_t operation_len = sizeof(int); 
 
     struct snmp_pdu *pdu;
 
