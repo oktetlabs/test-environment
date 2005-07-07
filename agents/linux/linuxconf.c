@@ -2227,7 +2227,7 @@ link_addr_get(unsigned int gid, const char *oid, char *value,
         return TE_RC(TE_TA_LINUX, errno);
     }
     for (p = (struct ifreq *)ifc.ifc_buf;
-         ifc.ifc_len >= sizeof(*p);
+         ifc.ifc_len >= (int)sizeof(*p);
          p = (struct ifreq *)((caddr_t)p + _SIZEOF_ADDR_IFREQ(*p)))
     {
         if ((strcmp(p->ifr_name, ifname) == 0) &&
@@ -2755,7 +2755,6 @@ arp_del(unsigned int gid, const char *oid,
 static int
 arp_list(unsigned int gid, const char *oid, char **list)
 {
-
 #ifdef __linux__
     te_bool  volatile_entry = FALSE;
     char    *ptr = buf;
@@ -2794,6 +2793,8 @@ arp_list(unsigned int gid, const char *oid, char **list)
     }
     fclose(fp);
 #else
+    UNUSED(oid);
+
     *buf = '\0';
 #endif
 
