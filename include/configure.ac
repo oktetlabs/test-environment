@@ -88,8 +88,8 @@ termio.h \
 time.h \
 ucd-snmp/snmp_impl.h \
 unistd.h \
-], [], [],
-[#if HAVE_SYS_TYPES_H
+], [], [], [
+#if HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
 #if HAVE_SYS_SOCKET_H
@@ -100,8 +100,8 @@ unistd.h \
 dnl
 dnl Check for 'sa_len'-like members in 'struct sockaddr'-like structures.
 dnl
-AC_CHECK_MEMBERS([struct sockaddr.sa_len], [], [],
-[#if HAVE_SYS_TYPES_H
+AC_CHECK_MEMBERS([struct sockaddr.sa_len], [], [], [
+#if HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
 #if HAVE_SYS_SOCKET_H
@@ -113,8 +113,8 @@ AC_CHECK_HEADERS([net-snmp/net-snmp-config.h])
 AC_CHECK_HEADERS([\
 net-snmp/definitions.h \
 net-snmp/session_api.h \
-], [], [],
-[#if HAVE_NET_SNMP_NET_SNMP_CONFIG_H
+], [], [], [
+#if HAVE_NET_SNMP_NET_SNMP_CONFIG_H
 #include <net-snmp/net-snmp-config.h>
 #endif
 ])
