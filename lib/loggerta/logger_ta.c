@@ -743,11 +743,16 @@ log_message_print(const char *us, const char *fs, ...)
                              fprintf(stderr,"\n");
 
                          if (type == 1)
-                             fprintf(stderr, "%hhx ", addr[i]);
+                             fprintf(stderr, "%" TE_PRINTF_8 "x ",
+                                     addr[i]);
                          else if (type == 2)
-                             fprintf(stderr, "%hx ", ((uint16_t *)addr)[i]);
+                             fprintf(stderr, "%" TE_PRINTF_16 "x ",
+                                     ((uint16_t *)addr)[i]);
                          else if (type == 4)
-                             fprintf(stderr, "%x ", ((uint32_t *)addr)[i]);
+                             fprintf(stderr, "%" TE_PRINTF_32 "x ",
+                                     ((uint32_t *)addr)[i]);
+                         else
+                             assert(FALSE);
                     }
                     fprintf(stderr,"\n");
 
