@@ -303,12 +303,13 @@ pcap_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
             filter_id = -1;
         }
         
-        filter_len = asn_get_length(pattern_pdu, "filter");
-        if (filter_len < 0)
+        rc = asn_get_length(pattern_pdu, "filter");
+        if (rc < 0)
         {
             ERROR("Cannot get length of filter string");
             break;
         }
+        filter_len = rc;
         
         filter = (char *) malloc(filter_len + 1);
         if (filter == NULL)
