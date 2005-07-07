@@ -153,6 +153,18 @@ ip4_confirm_pdu_cb(int csap_id, int layer, asn_value *tmpl_pdu)
                           &spec_data->du_ip_offset); 
 
     CONFIRM_FIELD(du_protocol, NDN_TAG_IP4_PROTOCOL, "protocol");
+    if (spec_data->du_protocol.du_type == TAD_DU_UNDEF &&
+        spec_data->protocol != 0)
+    {
+        rc = ndn_du_write_plain_int(ip4_tmpl_pdu, NDN_TAG_IP4_PROTOCOL,
+                                    spec_data->protocol);
+        if (rc != 0)
+        {
+            ERROR("%s(): write protocol to ip4 pdu failed 0x%X",
+                  __FUNCTION__, rc);
+            return TE_RC(TE_TAD_CSAP, rc);
+        }
+    }
 
 #if 0
     /* this should be done in init of upper CSAP layer. */
