@@ -813,6 +813,7 @@ extern int run_tce_collector(int argc, char *argv[]);
 extern int stop_tce_collector(void);
 extern int dump_tce_collector(void);
 extern int init_tce_collector(int argc, char *argv[]);
+extern int obtain_principal_peer_id(void);
 
 int
 collect_tce(int argc, char *argv[])
@@ -847,7 +848,7 @@ obtain_tce_peer_id(int unused, char *argv[])
 {
     UNUSED(unused);
     UNUSED(argv);
-    return getpid();
+    return obtain_principal_peer_id();
 }
 #else    
 int

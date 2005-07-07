@@ -145,6 +145,7 @@ static void get_kernel_gcov_data(int core_file,
 static char **collector_args;
 static int data_lock = -1;
 static char *ksymtable;
+static int peers_counter;
 
 te_bool tce_standalone = FALSE;
 
@@ -171,6 +172,18 @@ const char *
 obtain_principal_tce_connect(void)
 {
     return collector_args ? collector_args[0] : NULL;
+}
+
+int
+obtain_principal_peer_id(void)
+{
+    static int peer_id;
+    
+    if (peer_id == 0)
+    {
+        peer_id = getpid();
+    }
+    return peer_id;
 }
 
 static
@@ -359,9 +372,16 @@ tce_collector(void)
             if (signo == SIGHUP)
                 dump_data();
             else if (signo == SIGUSR1)
-                clear_data();
+            {
+                peers_counter++;
+            }
             else if (signo == SIGTERM)
             {
+                if (peers_counter > 0)
+                {
+                    report_error("%d peers have not dumped data",
+                                 peers_counter);
+                }
                 if (!tce_standalone)
                     clear_data();
                 break;
@@ -412,7 +432,7 @@ tce_collector(void)
 }
 
 
-static pid_t tce_collector_pid;
+pid_t tce_collector_pid = 0;
 
 int
 run_tce_collector(int argc, char *argv[])
@@ -420,6 +440,7 @@ run_tce_collector(int argc, char *argv[])
     int rc;
     if (tce_collector_pid != 0)
         return TE_RC(TE_TA_LINUX, EALREADY);
+    obtain_principal_peer_id();
     rc = init_tce_collector(argc, argv);
     if (rc != 0)
         return rc;
@@ -472,6 +493,14 @@ stop_tce_collector(void)
         TE_RC(TE_TA_LINUX, ETESHCMD);
 }
 
+int 
+notify_tce_collector(void)
+{
+    if (tce_collector_pid == 0)
+        return 0;
+    if (kill(tce_collector_pid, SIGUSR1) != 0)
+        return TE_RC(TE_TA_LINUX, errno);    
+}
 
 static void
 counter_state(channel_data *ch)
@@ -677,6 +706,10 @@ read_data(int channel)
     if (found->state == NULL)
     {
         FD_CLR(found->fd, &active_channels);
+        if (peers_counter >= 0)
+            peers_counter--;
+        else
+            report_notice("unregistered peers detected");
         close(found->fd);
         if (dump_request && !are_there_working_channels())
             raise(SIGHUP);
@@ -1210,7 +1243,7 @@ get_kernel_gcov_data(int core_file, struct bb *object, void *extra)
         return;
     }
     real_start = strstr(name_buffer, "//");
-    oi = get_object_info(tce_standalone ? getpid() : getppid(), 
+    oi = get_object_info(obtain_principal_peer_id(), 
                          real_start ? real_start + 1 : name_buffer);
     oi->ncounts = object->ncounts;
     oi->object_functions = object_functions;

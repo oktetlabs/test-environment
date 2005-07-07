@@ -636,6 +636,8 @@ setlibname(const tarpc_setlibname_in *in)
     void (*tce_initializer)(const char *, int) = NULL;
 #endif
     extern const char *obtain_principal_tce_connect(void);
+    extern int obtain_principal_peer_id(void);
+    extern int notify_tce_collector(void);
 
     libname = (in->libname.libname_len == 0) ?
                   NULL : in->libname.libname_val;
@@ -675,7 +677,10 @@ setlibname(const tarpc_setlibname_in *in)
         if (ptc == NULL)
             WARN("init_tce_connect has not been called");
         else
-            tce_initializer(ptc, getppid()); 
+        {
+            notify_tce_collector();
+            tce_initializer(ptc, obtain_principal_peer_id());
+        }
     }
 #endif
 
