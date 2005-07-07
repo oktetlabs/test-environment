@@ -1323,7 +1323,7 @@ static int
 ds_ftpserver_server_set(unsigned int gid, const char *oid, 
                             const char *value)
 {
-    te_bool newval = (strncmp(value, "xinetd_", 7) != 0);
+    te_bool standalone = (strncmp(value, "xinetd_", 7) != 0);
     int     newkind;
     char    tmp[2];
 
@@ -1338,9 +1338,13 @@ ds_ftpserver_server_set(unsigned int gid, const char *oid,
     }
 
 
-    if (newval && ftp_xinetd_index < 0)
+    if (!standalone && ftp_xinetd_index < 0)
     {
-        ERROR("xinetd is not supported");
+#ifdef WITH_XINETD
+        ERROR("/etc/xinet.d/ftp not found");
+#else
+        ERROR("TA compiled without xinetd support")
+#endif
         return TE_RC(TE_TA_LINUX, ETENOSUPP);
     }
 
@@ -1361,7 +1365,9 @@ ds_ftpserver_server_set(unsigned int gid, const char *oid,
         return TE_RC(TE_TA_LINUX, ETENOSUPP);
     }
 
-    ftp_standalone = newval;
+    ftp_standalone  = standalone;
+    ftp_server_kind = newkind;
+    
     ds_ftpserver_update_config();
     UNUSED(gid);
     UNUSED(oid);
