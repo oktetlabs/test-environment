@@ -110,6 +110,8 @@ typedef struct pcap_csap_specific_data
     int   read_timeout; /**< Number of second to wait for data          */
 
     size_t total_bytes; /**< Total number of sent or received bytes     */ 
+    size_t total_packets; /**< Total amount of sent or received packets */ 
+    size_t filtered_packets; /**< Total amount of matched packets */ 
     
     /** Array of pre-compiled BPF programs */
     struct bpf_program *bpfs[PCAP_COMPILED_BPF_PROGRAMS_MAX];
