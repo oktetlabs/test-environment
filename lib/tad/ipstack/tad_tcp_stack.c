@@ -85,7 +85,7 @@ tcp_ip4_check_pdus(csap_p csap_descr, asn_value *traffic_nds)
  *      quantity of read octets, or -1 if error occured, 0 if timeout expired. 
  */ 
 int 
-tcp_read_cb (csap_p csap_descr, int timeout, char *buf, size_t buf_len)
+tcp_read_cb(csap_p csap_descr, int timeout, char *buf, size_t buf_len)
 {
 #if 0
     int    rc; 
@@ -132,7 +132,7 @@ tcp_read_cb (csap_p csap_descr, int timeout, char *buf, size_t buf_len)
         return -1;
     
     /* Note: possibly MSG_TRUNC and other flags are required */
-    return recv (spec_data->in, buf, buf_len, 0); 
+    return recv(spec_data->in, buf, buf_len, 0); 
 #else
     UNUSED(csap_descr);
     UNUSED(timeout);
@@ -153,7 +153,7 @@ tcp_read_cb (csap_p csap_descr, int timeout, char *buf, size_t buf_len)
  *      quantity of written octets, or -1 if error occured. 
  */ 
 int 
-tcp_write_cb (csap_p csap_descr, char *buf, size_t buf_len)
+tcp_write_cb(csap_p csap_descr, char *buf, size_t buf_len)
 {
 #if 0
     tcp_csap_specific_data_t * spec_data;
@@ -179,8 +179,8 @@ tcp_write_cb (csap_p csap_descr, char *buf, size_t buf_len)
         return -1;
     }
 
-    rc = sendto (spec_data->out, buf, buf_len, 0, 
-                 (struct sockaddr *)&dest, sizeof(dest));
+    rc = sendto(spec_data->out, buf, buf_len, 0, 
+                (struct sockaddr *)&dest, sizeof(dest));
     if (rc < 0) 
     {
         perror("tcp sendto fail");
@@ -211,9 +211,9 @@ tcp_write_cb (csap_p csap_descr, char *buf, size_t buf_len)
  *      quantity of read octets, or -1 if error occured, 0 if timeout expired. 
  */ 
 int 
-tcp_write_read_cb (csap_p csap_descr, int timeout,
-                   char *w_buf, size_t w_buf_len,
-                   char *r_buf, size_t r_buf_len)
+tcp_write_read_cb(csap_p csap_descr, int timeout,
+                  char *w_buf, size_t w_buf_len,
+                  char *r_buf, size_t r_buf_len)
 {
     int rc; 
 
@@ -236,7 +236,7 @@ tcp_write_read_cb (csap_p csap_descr, int timeout,
  * @return zero on success or error code.
  */ 
 int 
-tcp_single_init_cb (int csap_id, const asn_value *csap_nds, int layer)
+tcp_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
 {
 #if 0
     csap_p   csap_descr;          /**< csap description        */
@@ -251,11 +251,11 @@ tcp_single_init_cb (int csap_id, const asn_value *csap_nds, int layer)
                                        sizeof(struct sockaddr_storage) - 
                                        sizeof(struct sockaddr), 1); 
 
-    fprintf (stderr, "DHCP INIT called\n");
+    fprintf(stderr, "DHCP INIT called\n");
     if (csap_nds == NULL)
         return ETEWRONGPTR;
 
-    if ((csap_descr = csap_find (csap_id)) == NULL)
+    if ((csap_descr = csap_find(csap_id)) == NULL)
         return ETADCSAPNOTEX;
 
 
@@ -264,7 +264,7 @@ tcp_single_init_cb (int csap_id, const asn_value *csap_nds, int layer)
     if (rc)
         return rc; /* If this field is not set, then CSAP cannot process */ 
 
-    tcp_spec_data = malloc (sizeof(tcp_csap_specific_data_t));
+    tcp_spec_data = malloc(sizeof(tcp_csap_specific_data_t));
     
     if (tcp_spec_data == NULL)
     {
@@ -272,7 +272,7 @@ tcp_single_init_cb (int csap_id, const asn_value *csap_nds, int layer)
     }
     
     
-    tcp_spec_data->ipaddr = malloc (INET_ADDRSTRLEN + 1);
+    tcp_spec_data->ipaddr = malloc(INET_ADDRSTRLEN + 1);
 
     /* opening incoming socket */
     tcp_spec_data->in = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP); 
@@ -324,7 +324,7 @@ tcp_single_init_cb (int csap_id, const asn_value *csap_nds, int layer)
 
     if (bind(tcp_spec_data->in, &local, sizeof(local)) == -1)
     {
-        perror ("tcp csap socket bind");
+        perror("tcp csap socket bind");
         return errno;
     }
 
@@ -416,7 +416,7 @@ tcp_single_init_cb (int csap_id, const asn_value *csap_nds, int layer)
  * @return zero on success or error code.
  */ 
 int 
-tcp_single_destroy_cb (int csap_id, int layer)
+tcp_single_destroy_cb(int csap_id, int layer)
 {
 #if 0
     csap_p csap_descr = csap_find(csap_id);
@@ -448,7 +448,7 @@ tcp_single_destroy_cb (int csap_id, int layer)
  * @return zero on success or error code.
  */ 
 int 
-tcp_ip4_init_cb (int csap_id, const asn_value *csap_nds, int layer)
+tcp_ip4_init_cb(int csap_id, const asn_value *csap_nds, int layer)
 {
     csap_p                    csap_descr;      
     tcp_csap_specific_data_t *spec_data; 
@@ -562,7 +562,7 @@ tcp_ip4_init_cb (int csap_id, const asn_value *csap_nds, int layer)
  * @return zero on success or error code.
  */ 
 int 
-tcp_ip4_destroy_cb (int csap_id, int layer)
+tcp_ip4_destroy_cb(int csap_id, int layer)
 {
     UNUSED(csap_id);
     UNUSED(layer);
