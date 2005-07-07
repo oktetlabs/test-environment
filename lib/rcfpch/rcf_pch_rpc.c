@@ -555,7 +555,8 @@ dispatch(void *arg)
                 /* Send as binary attachment */
                 char s[64];
                 
-                sprintf(s, "SID %d 0 attach %u", rpcs->last_sid, len);
+                snprintf(s, sizeof(s), "SID %d 0 attach %u",
+                         rpcs->last_sid, (unsigned)len);
                 rcf_comm_agent_reply(conn_saved, s, strlen(s) + 1);
                 rcf_comm_agent_reply(conn_saved, rpc_buf, len);
             }
