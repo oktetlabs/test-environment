@@ -45,6 +45,48 @@ typedef unsigned gcov_unsigned_t __attribute__ ((mode (SI)));
 typedef unsigned gcov_position_t __attribute__ ((mode (SI)));
 typedef signed gcov_type __attribute__ ((mode (DI)));
 
+/* File suffixes.  */
+#define GCOV_DATA_SUFFIX ".gcda"
+#define GCOV_NOTE_SUFFIX ".gcno"
+
+/* File magic. Must not be palindromes.  */
+#define GCOV_DATA_MAGIC ((gcov_unsigned_t)0x67636461) /* "gcda" */
+#define GCOV_NOTE_MAGIC ((gcov_unsigned_t)0x67636e6f) /* "gcno" */
+
+
+/* FIXME: must be calculated like in original libgcov */
+#define GCOV_VERSION ((gcov_unsigned_t)0x89abcdef)
+
+
+/* Convert a magic or version number to a 4 character string.  */
+#define GCOV_UNSIGNED2STRING(ARRAY,VALUE)   \
+  ((ARRAY)[0] = (char)((VALUE) >> 24),      \
+   (ARRAY)[1] = (char)((VALUE) >> 16),      \
+   (ARRAY)[2] = (char)((VALUE) >> 8),       \
+   (ARRAY)[3] = (char)((VALUE) >> 0))
+
+/* The record tags.  Values [1..3f] are for tags which may be in either
+   file.  Values [41..9f] for those in the note file and [a1..ff] for
+   the data file.  */
+
+#define GCOV_TAG_FUNCTION    ((gcov_unsigned_t)0x01000000)
+#define GCOV_TAG_FUNCTION_LENGTH (2)
+#define GCOV_TAG_BLOCKS      ((gcov_unsigned_t)0x01410000)
+#define GCOV_TAG_BLOCKS_LENGTH(NUM) (NUM)
+#define GCOV_TAG_BLOCKS_NUM(LENGTH) (LENGTH)
+#define GCOV_TAG_ARCS        ((gcov_unsigned_t)0x01430000)
+#define GCOV_TAG_ARCS_LENGTH(NUM)  (1 + (NUM) * 2)
+#define GCOV_TAG_ARCS_NUM(LENGTH)  (((LENGTH) - 1) / 2)
+#define GCOV_TAG_LINES       ((gcov_unsigned_t)0x01450000)
+#define GCOV_TAG_COUNTER_BASE    ((gcov_unsigned_t)0x01a10000)
+#define GCOV_TAG_COUNTER_LENGTH(NUM) ((NUM) * 2)
+#define GCOV_TAG_COUNTER_NUM(LENGTH) ((LENGTH) / 2)
+#define GCOV_TAG_OBJECT_SUMMARY  ((gcov_unsigned_t)0xa1000000)
+#define GCOV_TAG_PROGRAM_SUMMARY ((gcov_unsigned_t)0xa3000000)
+#define GCOV_TAG_SUMMARY_LENGTH  \
+    (1 + GCOV_COUNTERS_SUMMABLE * (2 + 3 * 2))
+
+
 /* Counters that are collected.  */
 #define GCOV_COUNTER_ARCS   0  /* Arc transitions.  */
 #define GCOV_COUNTERS_SUMMABLE  1  /* Counters which can be
