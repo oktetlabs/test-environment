@@ -38,11 +38,13 @@
 #define TE_LOG_LEVEL    0xff
 #endif
 
+#include "te_defs.h"
+#include "te_printf.h"
+
 #define TE_LGR_USER     "TAD Ethernet-PCAP"
 #include "logger_ta.h"
 
 #include "tad_pcap_impl.h"
-#include "te_defs.h"
 
 #if 1
 #define PCAP_DEBUG(args...) \
@@ -94,19 +96,22 @@ char* pcap_get_param_cb (csap_p csap_descr, int level, const char *param)
     if (strcmp (param, "total_bytes") == 0)
     {
         param_buf  = malloc(20);
-        sprintf(param_buf, "%lu", spec_data->total_bytes);
+        sprintf(param_buf, "%" TE_PRINTF_SIZE_T "u"
+                spec_data->total_bytes);
         return param_buf;
     }
     else if (strcmp (param, "total_packets") == 0)
     {
         param_buf  = malloc(20);
-        sprintf(param_buf, "%lu", spec_data->total_packets);
+        sprintf(param_buf, "%" TE_PRINTF_SIZE_T "u",
+                spec_data->total_packets);
         return param_buf;
     }
     else if (strcmp (param, "filtered_packets") == 0)
     {
         param_buf  = malloc(20);
-        sprintf(param_buf, "%lu", spec_data->filtered_packets);
+        sprintf(param_buf, "%" TE_PRINTF_SIZE_T "u",
+                spec_data->filtered_packets);
         return param_buf;
     }
 
@@ -343,7 +348,7 @@ pcap_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
             ERROR("write pcap filter to packet rc %x\n", rc);
     }
 
-    VERB("Try to copy payload of %ld bytes", pkt->len);
+    VERB("Try to copy payload of %u bytes", (unsigned)(pkt->len));
 
     /* passing payload to upper layer */
     memset(payload, 0 , sizeof(*payload));
