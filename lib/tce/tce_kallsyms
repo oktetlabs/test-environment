@@ -1,7 +1,0 @@
-#! /bin/sh
-
-for mfile in "$@"; do
-    module=`basename $mfile .ko`
-    offset=`grep ^$module' ' /proc/modules | awk '{ print $NF }'`
-    nm $mfile | grep GCOV | awk '{ printf "%8.8x %s %s %s\n", strtonum('$offset') + strtonum("0x" $1), $2, $3, $4 }'
-done
