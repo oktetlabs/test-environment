@@ -199,7 +199,8 @@ tapi_pcap_pkt_handler(char *fn, void *user_param)
     }
     pkt_len = rc;
     
-    VERB("%s: Packet payload length %ld bytes\n", __FUNCTION__, pkt_len);
+    VERB("%s: Packet payload length %u bytes\n",
+         __FUNCTION__, (unsigned)pkt_len);
 
     pkt = malloc(pkt_len);
     if (pkt == NULL)
