@@ -292,7 +292,7 @@ __gcov_exit (void)
     }
 
   /* Now merge each file.  */
-  for (gi_ptr = gcov_list; gi_ptr; gi_ptr = gi_ptr->next)
+  for (gi_ptr = __gcov_list; gi_ptr; gi_ptr = gi_ptr->next)
   {
       struct gcov_summary this_object;
       struct gcov_summary object, program;
@@ -440,7 +440,7 @@ __gcov_exit (void)
           gcov_read_summary (is_program ? &program : &object);
           if ((error = gcov_is_error ()))
         goto read_error;
-          if (is_program && program.checksum == gcov_crc32)
+          if (is_program && program.checksum == __gcov_crc32)
         {
           summary_pos = base;
           goto rewrite;
@@ -515,7 +515,7 @@ __gcov_exit (void)
         c_ix++;
       }
 
-      program.checksum = gcov_crc32;
+      program.checksum = __gcov_crc32;
       
       /* Write out the data.  */
       gcov_write_tag_length (GCOV_DATA_MAGIC, GCOV_VERSION);
