@@ -936,6 +936,12 @@ process_backup(cfg_backup_msg *msg)
         {
             char diff_file[RCF_MAX_PATH];
             
+            /* Check agents */
+            int rc = rcf_check_agents();
+            
+            if (TE_RC_GET_ERROR(rc) == ETAREBOOTED)
+                cfg_ta_sync("/:", TRUE);
+            
             if ((msg->rc = cfg_backup_create_file(filename)) != 0)
                 return;
             sprintf(diff_file, "%s/te_cs.diff", getenv("TE_TMP"));
