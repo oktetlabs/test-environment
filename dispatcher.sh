@@ -660,7 +660,7 @@ shutdown_daemon RCF
 shutdown_daemon LOGGER
 
 # Wait for RGT in live mode finish
-if test -n "$LIVE_LOG" ; then
+if test -n "${LIVE_LOG}" ; then
     wait ${LIVE_LOG_PID}
 fi
 
@@ -697,10 +697,10 @@ if test -n "${RGT_LOG_HTML}" ; then
 fi
 
 
-if test -n "$TESTER" -a -n "$TCE_AGENTS" ; then
+if test -n "${TESTER}" -a -n "${TCE_AGENTS}" ; then
     myecho "--->>> TCE processing"
-    for i in $TCE_AGENTS; do
-        te_tce_report $TCE_REPORT_OPTS $i ${TE_LOG_DIR}/${i}_coverage.log
+    for i in ${TCE_AGENTS} ; do
+        te_tce_report ${TCE_REPORT_OPTS} ${i} ${TE_LOG_DIR}/${i}_coverage.log
         tce_summary ${TCES_OPTS} ${TE_LOG_DIR}/${i}_coverage.log \
             >${TE_LOG_DIR}/${i}_coverage.html
     done
