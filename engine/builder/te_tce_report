@@ -1,4 +1,4 @@
-#!/bin/sh
+#! /bin/sh
 #
 # Test Coverage Estimation: TE wrapper for tce_report script
 #
