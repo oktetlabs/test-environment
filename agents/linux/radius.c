@@ -30,6 +30,7 @@
 #ifdef WITH_RADIUS_SERVER
 #include <stddef.h>
 #include "linuxconf_daemons.h"
+#include <sys/wait.h>
 
 /** RADIUS configuration parameter types */
 enum radius_parameters { 
@@ -85,6 +86,17 @@ typedef struct radius_user
     radius_user_reply *replies;
     struct radius_user *next;
 } radius_user;
+
+/** A supplicant <-> interface correspondence */
+typedef struct supplicant
+{
+    char *interface;          /** interface name */
+    pid_t process;            /** Xsupplicant process PID
+                                  (pid_t)-1 when not running
+                              */
+    radius_parameter *config; /** Supplicant config tree */
+    struct supplicant *next;  /** chain link */
+} supplicant;
 
 static FILE *radius_users_file;
 static struct radius_user *radius_users, *radius_last_user;
@@ -1587,6 +1599,325 @@ RCF_PCH_CFG_NODE_RW(node_ds_radiusserver, "radiusserver",
                     &node_ds_radiusserver_auth_port, NULL,
                     ds_radiusserver_get, ds_radiusserver_set);
 
+static supplicant *supplicant_list;
+
+static supplicant *
+make_supplicant (const char *ifname)
+{
+    static char conf_name[64];
+    supplicant *ns = malloc(sizeof(*ns));
+
+    ns->interface = strdup(ifname);
+    ns->process   = (pid_t)-1;
+    ns->next      = supplicant_list;
+    snprintf(conf_name, sizeof(conf_name), 
+             "/tmp/te_supp_%s.conf", ifname);
+    ns->config    = make_rp(RP_FILE, conf_name, NULL, NULL);
+    update_rp(ns->config, RP_ATTRIBUTE, 
+              "allow_interface", ifname);
+    write_radius(ns->config);
+    supplicant_list = ns;
+    return ns;
+}
+
+static supplicant *
+find_supplicant (const char *ifname)
+{
+    supplicant *found;
+    
+    for (found = supplicant_list; found != NULL; found = found->next)
+    {
+        if (strcmp(found->interface, ifname) == 0)
+            return found;
+    }
+    return NULL;
+}
+
+static int
+ds_supplicant_get(unsigned int gid, const char *oid,
+                  char *value, const char *instance, ...)
+{
+    supplicant *supp = find_supplicant(instance);
+
+    UNUSED(gid);
+    UNUSED(oid);
+    
+    if (supp == NULL)
+        return TE_RC(TE_TA_LINUX, ENOENT);
+    if (supp->process == (pid_t)-1)
+    {
+        *value    = '0';
+        value[1] = '\0';
+        return 0;
+    }
+    if (kill(supp->process, 0))
+    {
+        WARN("Supplicant (pid = %u), on interface %s apparently died",
+             (unsigned)supp->process, supp->interface);
+        supp->process = (pid_t)-1;
+        *value    = '0';
+        value[1] = '\0';
+    }
+    else
+    {
+        *value    = '1';
+        value[1] = '\0';
+    }
+    return 0;
+}
+
+static int
+ds_supplicant_set(unsigned int gid, const char *oid,
+                  const char *value, const char *instance, ...)
+{
+    supplicant *supp = find_supplicant(instance);
+
+    UNUSED(gid);
+    UNUSED(oid);
+    
+    if (supp == NULL)
+        return TE_RC(TE_TA_LINUX, ENOENT);
+    if (*value == '0')
+    {
+        if (supp->process == (pid_t)-1)
+        {
+            WARN("Supplicant for interface %s was not running", 
+                 supp->interface);
+        }
+        else
+        {
+            if (kill(supp->process, SIGTERM))
+            {
+                WARN("Unable to stop supplicant on interface %s, "
+                     "pid = %u: %s", supp->interface,
+                     (unsigned)supp->process, strerror(errno));
+            }
+            else
+            {
+                int status;
+                waitpid(supp->process, &status, 0);
+                INFO("Xsupplicant terminated with status %8.8x", status);
+            }
+            supp->process = (pid_t)-1;
+        }
+    }
+    else
+    {
+        if (supp->process != (pid_t)-1)
+        {
+            WARN("Supplicant for interface %s already running, pid = %u", 
+                 supp->interface, supp->process);
+        }
+        else
+        {
+            supp->process = fork();
+            if (supp->process == (pid_t)-1)
+            {
+                int rc = errno;
+                ERROR("Cannot fork a supplicant on interface %s: %s", 
+                      supp->interface, strerror(rc));
+                return TE_RC(TE_TA_LINUX, rc);
+            }
+            else if (supp->process == 0)
+            {
+                execl("xsupplicant", "xsupplicant", "-i", supp->interface, 
+                      "-C", supp->config->name, NULL);
+                _exit(EXIT_FAILURE);
+            }
+        }
+    }
+    return 0;
+}
+
+static int
+ds_supplicant_add(unsigned int gid, const char *oid,
+                  const char *value, const char *instance, ...)
+{   
+    if (find_supplicant(instance) != NULL)
+        return TE_RC(TE_TA_LINUX, EEXIST);
+    make_supplicant(instance);
+    if (*value == '1')
+        return ds_supplicant_set(gid, oid, value, instance);
+    else
+        return 0;
+}
+
+static void
+destroy_supplicant (supplicant *supp)
+{
+    supplicant *prev = NULL, *iter;
+
+    for (iter = supplicant_list; iter != NULL; prev = iter, iter = iter->next)
+    {
+        if (supp == iter)
+            break;
+    }
+    if (iter != NULL)
+    {
+        if (iter->process != (pid_t)-1)
+            ds_supplicant_set(0, NULL, "0", supp->interface);
+        destroy_rp(iter->config);
+        free(iter->interface);
+        if (prev != NULL)
+            prev->next      = iter->next;
+        else
+            supplicant_list = iter->next;
+        free(iter);
+    }
+}
+
+static int
+ds_supplicant_del(unsigned int gid, const char *oid,
+                  const char *instance, ...)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+    destroy_supplicant(find_supplicant(instance));
+    return 0;
+}
+
+static int
+ds_supplicant_list(unsigned int gid, const char *oid,
+                   char **value, const char *instance, ...)
+{
+    supplicant *iter;
+    int length = 0;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(instance);
+    
+    for (iter = supplicant_list; iter != NULL; iter = iter->next)
+    {
+        length += strlen(iter->interface) + 1;
+    }
+    *value = malloc(length + 1);
+    **value = '\0';
+    for (iter = supplicant_list; iter != NULL; iter = iter->next)
+    {
+        strcat(*value, iter->interface);
+        strcat(*value, " ");
+    }
+    return 0;
+}
+
+static char supplicant_buffer[256];
+
+static int
+ds_supplicant_cur_method_get(unsigned int gid, const char *oid,
+                           char *value, const char *instance, ...)
+{
+    supplicant *supp = find_supplicant(instance);
+    const char *type;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    
+    if (supp == NULL)
+        return TE_RC(TE_TA_LINUX, ENOENT);
+    retrieve_rp(supp->config, "default.allow_types", &type);
+    
+    if (type == NULL)
+        *value = '\0';
+    else
+    {
+        if (strncmp(type, "eap_", 4) == 0)
+            type += 4;
+        strcpy(value, type);
+    }
+    return 0;
+}
+
+static int
+ds_supplicant_cur_method_set(unsigned int gid, const char *oid,
+                             const char *value, const char *instance, ...)
+{
+    supplicant *supp = find_supplicant(instance);
+
+    UNUSED(gid);
+    UNUSED(oid);
+    
+    if (supp == NULL)
+        return TE_RC(TE_TA_LINUX, ENOENT);
+    snprintf(supplicant_buffer, sizeof(supplicant_buffer), "eap_%s", value);
+    update_rp(supp->config, RP_ATTRIBUTE, "allow_types", supplicant_buffer);
+    write_radius(supp->config);
+    return 0;
+}
+
+static int
+ds_supplicant_identity_get(unsigned int gid, const char *oid,
+                           char *value, const char *instance, ...)
+{
+    supplicant *supp = find_supplicant(instance);
+    const char *identity;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    
+    if (supp == NULL)
+        return TE_RC(TE_TA_LINUX, ENOENT);
+    retrieve_rp(supp->config, "default.identity", &identity);
+    
+    if (identity == NULL)
+        *value = '\0';
+    else
+    {
+        const char *subptr = strstr(identity, "<BEGIN_ID>");
+        if (subptr != NULL)
+            identity = subptr + 10;
+        strcpy(value, identity);
+        value = strstr(value, "<END_ID>");
+        if (value != NULL)
+            *value = '\0';
+    }
+    return 0;
+}
+
+static int
+ds_supplicant_identity_set(unsigned int gid, const char *oid,
+                           char *value, const char *instance, ...)
+{
+    supplicant *supp = find_supplicant(instance);
+    int rc;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    
+    if (supp == NULL)
+        return TE_RC(TE_TA_LINUX, ENOENT);
+    snprintf(supplicant_buffer, sizeof(supplicant_buffer),
+             "<BEGIN_ID>%s<END_ID>", value);
+    rc = update_rp(supp->config, RP_ATTRIBUTE, "default.identity", 
+                   supplicant_buffer);
+    if (rc != 0)
+        return rc;
+    write_radius(supp->config);
+    return 0;
+}
+
+RCF_PCH_CFG_NODE_RW(node_ds_supplicant_cur_method, "cur_method",
+                    NULL, NULL,
+                    ds_supplicant_cur_method_get, 
+                    ds_supplicant_cur_method_set);
+
+RCF_PCH_CFG_NODE_RW(node_ds_supplicant_identity, "identity",
+                    NULL, &node_ds_supplicant_cur_method,
+                    ds_supplicant_identity_get, 
+                    ds_supplicant_identity_set);
+
+static rcf_pch_cfg_object node_ds_supplicant = {
+    "supplicant", 0,
+    &node_ds_supplicant_identity, NULL,
+    (rcf_ch_cfg_get)ds_supplicant_get,
+    (rcf_ch_cfg_set)ds_supplicant_set,
+    (rcf_ch_cfg_add)ds_supplicant_add,
+    (rcf_ch_cfg_del)ds_supplicant_del,
+    ds_supplicant_list,
+    NULL, NULL
+};
+
+
 /** The list of parameters that must be deleted on startup */
 const char *radius_ignored_params[] = {"bind_address", 
                                        "port", 
@@ -1678,6 +2009,7 @@ ds_init_radius_server (rcf_pch_cfg_object **last)
         return;
     }
     DS_REGISTER(radiusserver);
+    DS_REGISTER(supplicant);
     for (ignored = radius_ignored_params; *ignored != NULL; ignored++)
     {
         find_rp(radius_conf, *ignored, FALSE, FALSE, rp_delete_all, NULL);
