@@ -96,7 +96,7 @@ char* pcap_get_param_cb (csap_p csap_descr, int level, const char *param)
     if (strcmp (param, "total_bytes") == 0)
     {
         param_buf  = malloc(20);
-        sprintf(param_buf, "%" TE_PRINTF_SIZE_T "u"
+        sprintf(param_buf, "%" TE_PRINTF_SIZE_T "u",
                 spec_data->total_bytes);
         return param_buf;
     }
