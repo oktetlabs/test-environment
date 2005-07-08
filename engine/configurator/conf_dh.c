@@ -226,12 +226,13 @@ cfg_dh_process_add(xmlNodePtr node)
  * and add them to dynamic history. 
  * Note: this routine does not reboot Test Agents.
  *
- * @param node  <history> node pointer
+ * @param node      <history> node pointer
+ * @param postsync  is processing performed after sync with TA
  *
  * @return status code (errno.h)
  */
 int 
-cfg_dh_process_file(xmlNodePtr node)
+cfg_dh_process_file(xmlNodePtr node, te_bool postsync)
 {
     xmlNodePtr cmd;
     int        len;
@@ -252,7 +253,7 @@ cfg_dh_process_file(xmlNodePtr node)
 
         if (xmlStrcmp(cmd->name , (const xmlChar *)"history") == 0)
         {
-            rc = cfg_dh_process_file(cmd);
+            rc = cfg_dh_process_file(cmd, postsync);
             if (rc != 0)
             {
                 ERROR("Processing of embedded history failed 0x%X", rc);
@@ -264,7 +265,10 @@ cfg_dh_process_file(xmlNodePtr node)
         if (xmlStrcmp(cmd->name , (const xmlChar *)"reboot") == 0)
         {
             cfg_reboot_msg *msg = NULL;
-            
+
+            if (!postsync)
+                continue;
+
             if ((attr = xmlGetProp(cmd, (const xmlChar *)"ta")) == NULL)
                 RETERR(EINVAL, "Incorrect reboot command format");
 
@@ -299,6 +303,9 @@ cfg_dh_process_file(xmlNodePtr node)
         if (xmlStrcmp(cmd->name , (const xmlChar *)"register") == 0)
         {
             cfg_register_msg *msg = NULL;
+
+            if (postsync)
+                continue;
 
             while (tmp != NULL &&
                    xmlStrcmp(tmp->name , (const xmlChar *)"object") == 0)
@@ -388,6 +395,9 @@ cfg_dh_process_file(xmlNodePtr node)
         }
         else if (xmlStrcmp(cmd->name , (const xmlChar *)"add") == 0)
         {
+            if (!postsync)
+                continue;
+
             rc = cfg_dh_process_add(tmp);
             if (rc != 0)
             {
@@ -401,7 +411,10 @@ cfg_dh_process_file(xmlNodePtr node)
             cfg_inst_val val;
             cfg_handle   handle;
             cfg_object  *obj;
-            
+
+            if (!postsync)
+                continue;
+
             while (tmp != NULL &&
                    xmlStrcmp(tmp->name , (const xmlChar *)"instance") == 0)
             {
@@ -460,7 +473,10 @@ cfg_dh_process_file(xmlNodePtr node)
         {
             cfg_del_msg *msg = NULL;
             cfg_handle   handle;
-            
+
+            if (!postsync)
+                continue;
+
             while (tmp != NULL &&
                    xmlStrcmp(tmp->name , (const xmlChar *)"ta") == 0)
             {

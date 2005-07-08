@@ -186,9 +186,12 @@ parse_config(const char *file, te_bool restore)
         rc = cfg_backup_process_file(root, restore);
     else if (xmlStrcmp(root->name, (const xmlChar *)"history") == 0)
     {
-        rc = cfg_dh_process_file(root);
+        rc = cfg_dh_process_file(root, FALSE);
         if (rc == 0 && (rc = cfg_ta_sync("/:", TRUE)) != 0)
             ERROR("Cannot synchronize database with Test Agents");
+        if ((rc = cfg_dh_process_file(root, TRUE)) != 0)
+            ERROR("Failed to modify database after synchronization: %x",
+                  rc);
     }
     else
     {

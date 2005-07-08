@@ -38,11 +38,12 @@ extern "C" {
  * and add them to dynamic history. 
  * Note: this routine does not reboot Test Agents.
  *
- * @param node  <history> node pointer
+ * @param node      <history> node pointer
+ * @param postsync  is processing performed after sync with TA
  *
  * @return status code (errno.h)
  */
-extern int cfg_dh_process_file(xmlNodePtr node);
+extern int cfg_dh_process_file(xmlNodePtr node, te_bool postsync);
 
 /**
  * Create "history" configuration file with specified name.
