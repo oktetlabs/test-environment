@@ -1,35 +1,35 @@
 #! /bin/bash
-# 
+#
 # Test Environment
 #
 # TCE_INSTRUMENT_SOURCES -- runs GCT on the specified set of C files.
 #
-# Usage: 
+# Usage:
 #
 #    tce_uninstrument_sources [-p <src_path>]
 #
-#                         
+#
 # Copyright (C) 2003 Test Environment authors (see file AUTHORS in
 # the root directory of the distribution).
 #
-# Test Environment is free software; you can redistribute it and/or 
-# modify it under the terms of the GNU General Public License as 
-# published by the Free Software Foundation; either version 2 of 
+# Test Environment is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation; either version 2 of
 # the License, or (at your option) any later version.
-# 
+#
 # Test Environment is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 59 Temple Place, Suite 330, Boston, 
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston,
 # MA  02111-1307  USA
 #
 #
 # Author Pavel A. Bolokhov <Pavel.Bolokhov@oktet.ru>
-# 
+#
 # $Id$
 #
 
@@ -81,20 +81,20 @@ done
 #
 control=$curr_path/gct_control
 backup=$curr_path/gct_backup
-[ -d $control ] || 
+[ -d $control ] ||
 {
     echo "$progname: $control: directory absent. Cannot proceed." 1>&2;
     exit 1;
 }
 
-[ -d $backup ] || 
+[ -d $backup ] ||
 {
     echo "$progname: $backup: directory absent. Cannot proceed." 1>&2;
     exit 1;
 }
 
 #
-# if the original version of the "restore-script" is absent, 
+# if the original version of the "restore-script" is absent,
 # try to restore it if there is a backup version
 #
 if [ ! -f $control/gct-rscript ]; then

@@ -1,10 +1,10 @@
 #! /bin/bash
-# 
+#
 # Test Environment
 #
 # TCE_INSTRUMENT_SOURCES -- runs GCT on the specified set of C files.
 #
-# Usage: 
+# Usage:
 #
 #    tce_instrument_sources [-t coverage_type1,coverage_type2,...]
 #                           [-p <src_path>]
@@ -17,24 +17,24 @@
 # Copyright (C) 2003 Test Environment authors (see file AUTHORS in
 # the root directory of the distribution).
 #
-# Test Environment is free software; you can redistribute it and/or 
-# modify it under the terms of the GNU General Public License as 
-# published by the Free Software Foundation; either version 2 of 
+# Test Environment is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation; either version 2 of
 # the License, or (at your option) any later version.
-# 
+#
 # Test Environment is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 59 Temple Place, Suite 330, Boston, 
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston,
 # MA  02111-1307  USA
 #
 #
 # Author Pavel A. Bolokhov <Pavel.Bolokhov@oktet.ru>
-# 
+#
 # $Id$
 #
 
@@ -71,9 +71,9 @@ GCT_INIT=${GCT_INIT:-gct-init}
 STD_INCLUDES=/usr/include
 
 all_gct_types="branch loop multi relational routine call" # all known types
-types="$all_gct_types" 
+types="$all_gct_types"
                   # space separated valid coverage types requested by the user
-logging_mode="logger"  
+logging_mode="logger"
                   # logging mode (logger or file)
 
 ##
@@ -89,12 +89,12 @@ function debug()
 
 ##
 # Prints the help and exits
-# 
+#
 # @param  n/a
-# 
+#
 # @return n/a
-# 
-function print_help() 
+#
+function print_help()
 {
     echo "$progname [-t coverage_type1,coverage_type2,...]" 1>&2
     echo "                       [-p <src_path>]" 1>&2
@@ -116,16 +116,16 @@ function print_help()
         1>&2
     echo "        or GCTLIB must be set properly"
     echo "" 1>&2
-    echo "        GCT_INIT can also be defined by the user to override " 1>&2 
+    echo "        GCT_INIT can also be defined by the user to override " 1>&2
     echo "        the default invocation of gct-init(1)" 1>&2
     exit 0
 }
 
 ##
 # Creates necessary configuration at the specified path
-# 
+#
 # @return n/a
-# 
+#
 function initialize_gct()
 {
     # this check can save some efforts
@@ -140,12 +140,12 @@ function initialize_gct()
     debug "initialize_gct: setting control directory to $GCT_CONTROL_DIR"
 
     [ -d  $GCT_CONTROL_DIR ] ||
-    { 
-      mkdir ${curr_path}/gct_control || 
+    {
+      mkdir ${curr_path}/gct_control ||
       {
         echo "$progname: cannot create the directory $curr_path/gct_control" \
-        1>&2; exit 2; 
-      } 
+        1>&2; exit 2;
+      }
     }
 
     # now we populate it with the control files
@@ -171,7 +171,7 @@ function initialize_gct()
     #
     # Create the control file
     # It's quite small, so we do it as a Here Document
-    # 
+    #
 
 #
 # Here Document
@@ -182,26 +182,26 @@ function initialize_gct()
 #
 # Created by tce_instrument_sources, a tool of the Test Environment
 #
-# Copyright (C) 2003 Test Environment authors (see file AUTHORS in the 
+# Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
 # root directory of the distribution).
 #
-# Test Environment is free software; you can redistribute it and/or 
-# modify it under the terms of the GNU General Public License as 
-# published by the Free Software Foundation; either version 2 of 
+# Test Environment is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation; either version 2 of
 # the License, or (at your option) any later version.
-# 
+#
 # Test Environment is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 59 Temple Place, Suite 330, Boston, 
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston,
 # MA  02111-1307  USA
 #
 # Author Pavel A. Bolokhov <Pavel.Bolokhov@oktet.ru>
-# 
+#
 # GCT (without Expansion Kits) is distributed under GPL
 #
 # Created on $date by
@@ -239,10 +239,10 @@ CTRL_EOF
     # Now run gct-init(1)
     #
     ( cd $GCT_CONTROL_DIR; ${GCT_INIT} ) ||
-        { 
+        {
             echo "$progname: error executing ${GCT_INIT}" 1>&2;
             exit 1;
-        } 
+        }
 
     if [ $logging_mode = 'logger' ]; then
         cp -f ${TCE_BASE}/gct-write.c.logger $GCT_CONTROL_DIR/gct-write.c ||
@@ -253,7 +253,7 @@ CTRL_EOF
     #
     # Now do some workaround with the first source file.
     #
-    
+
     # Save the original copy of the file
     debug "initialize_gct: adding standard includes to $first_file"
     if [ ! -d $GCT_CONTROL_DIR/first_file ]; then
@@ -268,19 +268,19 @@ CTRL_EOF
 
 ##
 # Instruments a particular set of files
-# 
+#
 # @param A space-separated list of files
-# 
+#
 # @return n/a
-# 
+#
 function instrument_files()
 {
     debug "instrument_files: instrumenting files $*"
     debug "instrument_files: CFLAGS = '$CFLAGS'"
 
-    ( 
+    (
       cd $curr_path;
-      ${GCT} -test-dir "$GCT_CONTROL_DIR" $CFLAGS $file_set || exit $?    
+      ${GCT} -test-dir "$GCT_CONTROL_DIR" $CFLAGS $file_set || exit $?
                               # hopefully! this will succeed
     ) ||
     {
@@ -294,17 +294,17 @@ function instrument_files()
 
 ##
 # Augments the first source file with the necessary code
-# 
+#
 # @param  the first source file
-# 
+#
 # @return n/a
-# 
+#
 function augment_sources()
 {
     # Concatenate the files in a special sequence.
     # We ignore their #includes, but add some necessary
     # standard ones.
-    
+
     debug "augment_sources: augmenting the first file $first_file"
 
     # Extract the correct table pointer for the first file
@@ -321,7 +321,7 @@ function augment_sources()
     debug "                 $ff_race_pointer"
 
     # save GCT service files
-    ( 
+    (
         cd $GCT_CONTROL_DIR
         cp -f gct-map save_gct-map
         cp -f gct-defs.h save_gct-defs.h
@@ -343,7 +343,7 @@ function augment_sources()
  *     Standard includes necessary for GCT logging,     *
  *           Added by tce_instrument_sources            *
  ********************************************************/" \
-         >> $first_file   # unfortunately, this comment will be erased 
+         >> $first_file   # unfortunately, this comment will be erased
                           # by the preprocessor
     echo "#include <stdio.h>" >> $first_file
     echo "#include <errno.h>" >> $first_file
@@ -390,7 +390,7 @@ function augment_sources()
                         >> $first_file
 
     # now instrument the file again
-    ( 
+    (
       cd $curr_path;
       ${GCT} -test-dir "$GCT_CONTROL_DIR" $first_file_CFLAGS $local_first_file
     ) ||
@@ -419,7 +419,7 @@ function augment_sources()
     debug "augment_sources: table pointers successfully replaced"
 
     # restore GCT headers
-    ( 
+    (
         cd $GCT_CONTROL_DIR
         cp -f save_gct-map gct-map
         cp -f save_gct-defs.h gct-defs.h
@@ -445,11 +445,11 @@ function augment_sources()
 
 ##
 # Checks user-provided coverage types for validity
-# 
+#
 # @param A space-separated list of coverage types
-# 
+#
 # @return n/a
-# 
+#
 function check_coverage_types()
 {
     if [ x$types = x"all" ]; then
@@ -458,7 +458,7 @@ function check_coverage_types()
     fi
     while [ $# -gt 0 ]; do
         case $1 in
-            branch|loop|multi|relational|call) 
+            branch|loop|multi|relational|call)
                 ;;
 
             *)
@@ -493,7 +493,7 @@ while [ $# -gt 0 ]; do
 
                 # empty the list of files
                 file_set="";
-            fi 
+            fi
             ;;
 
         -h)
@@ -517,7 +517,7 @@ while [ $# -gt 0 ]; do
             ;;
 
 # this is just a file
-        *) 
+        *)
             if [ $files_began = "no" ]; then
                 files_began="yes"
                 local_first_file="$1"
@@ -569,7 +569,7 @@ while [ $# -gt 0 ]; do
                echo "$progname: option '-x' expects a logging mode" 1>&2
                exit 1
             fi
-        
+
             logging_mode=$1
             if [ "$logging_mode" != "file" -a \
                  "$logging_mode" != "logger" ]; then
@@ -581,7 +581,7 @@ while [ $# -gt 0 ]; do
             ;;
 
     esac
-    
+
     shift
 done
 

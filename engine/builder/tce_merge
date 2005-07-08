@@ -62,7 +62,7 @@ if test -f "$mergefile"; then
                  }
                  else {
                      sourceline=""
-                     for(i = 3; i <= NF; i++) 
+                     for(i = 3; i <= NF; i++)
                      {
                          if(sourceline)  sourceline=sourceline ":";
                          sourceline=sourceline $i
@@ -70,7 +70,7 @@ if test -f "$mergefile"; then
                      sum = $1 + oldcount;
                      printf "%9s:%5s:%s\n", sum == 0 ? "#####" : sum, $2, sourceline
                  }
-             }' | 
+             }' |
         awk '/^(branch|call)/ {
                 oldcount=($3 == "never" ? $3 : $4)
                 getline
@@ -100,7 +100,7 @@ tce_count $resultfile '^[[:space:]]*#+:' '^[[:space:]]*[0-9]+:' |
     echo "$ratio% of $sum lines of code executed in file $source"
 )
 
-tce_count $resultfile '^branch[[:space:]]*[0-9]+ never executed' '^branch[[:space:]]*[0-9]+ taken' | 
+tce_count $resultfile '^branch[[:space:]]*[0-9]+ never executed' '^branch[[:space:]]*[0-9]+ taken' |
 (
     read ratio sum
     echo "$ratio% of $sum branches of code executed in file $source"
@@ -119,7 +119,7 @@ tce_count $resultfile '^call[[:space:]]*[0-9]+ never executed' '^call[[:space:]]
     echo "$ratio% of $sum calls executed in file $source"
 )
 
-echo "=== $stamp" 
+echo "=== $stamp"
 cat $resultfile
 echo "======"
 

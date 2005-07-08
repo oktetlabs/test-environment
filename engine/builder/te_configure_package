@@ -8,24 +8,24 @@
 # Copyright (C) 2004 Test Environment authors (see file AUTHORS in
 # the root directory of the distribution).
 #
-# Test Environment is free software; you can redistribute it and/or 
-# modify it under the terms of the GNU General Public License as 
-# published by the Free Software Foundation; either version 2 of 
+# Test Environment is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation; either version 2 of
 # the License, or (at your option) any later version.
-# 
+#
 # Test Environment is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 59 Temple Place, Suite 330, Boston, 
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston,
 # MA  02111-1307  USA
 #
 #
 # Author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
-# 
+#
 # $Id$
 #
 
@@ -66,7 +66,7 @@ process_libs()
             if test "$i" = "$l" ; then
                 if test "$KIND" = "TA" ; then
                     DEPENDENCIES="$DEPENDENCIES \$(DESTDIR)/\$(prefix)/../$PLATFORM/lib/lib${l}.a"
-                else                    
+                else
                     DEPENDENCIES="$DEPENDENCIES \$(DESTDIR)/\$(prefix)/lib/lib${l}.a"
                 fi
                 break
@@ -84,32 +84,32 @@ if test "$KIND" = TA ; then
     PREFIX=$PREFIX/agents
     mkdir -p $TE_INSTALL/agents
 else
-    PREFIX=$PREFIX/$PLATFORM    
-fi    
+    PREFIX=$PREFIX/$PLATFORM
+fi
 
 if test "$KIND" = LIB ; then
     mkdir -p lib
     cd lib
-fi    
+fi
 
 if test "$KIND" = APP ; then
     mkdir -p engine
     cd engine
-fi    
+fi
 
 if test "$KIND" = TOOL ; then
     mkdir -p tools
     cd tools
-fi    
+fi
 
 mkdir -p $PKGNAME ;
 cd $PKGNAME ;
 
 if test -e Makefile ; then
     make install-data || exit 1
-    exit 0 
-fi        
-    
+    exit 0
+fi
+
 process_libs
 
 PARMS="--with-name=$PACKAGE `eval echo '$'${PLATFORM_NAME}'_PARMS'` `eval echo '$TE_BS_'${KIND}'_'${PKGNAME}'_PARMS'`"
@@ -131,7 +131,7 @@ if test "$PLATFORM" = "$default_host" ; then
 else
     option="host"
     add_option="--build=$default_host"
-fi        
+fi
 
 echo ${PKGSRC}/configure -q --${option}=$PLATFORM $add_option \
                          --prefix=$PREFIX ${PARMS}
@@ -141,7 +141,7 @@ TE_LDFLAGS="${ADD_LDFLAGS} -L${PREFIX}/lib" \
 TE_LDADD="$LDADD" \
 TE_DEPENDENCIES="$DEPENDENCIES" \
 eval ${PKGSRC}/configure --${option}=$PLATFORM $add_option \
-                         '-q --prefix=$PREFIX' ${PARMS} 
+                         '-q --prefix=$PREFIX' ${PARMS}
 
 if test $? -ne 0 ; then
     exit 1 ;
