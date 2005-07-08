@@ -19,8 +19,8 @@ dist_mybin_SCRIPTS=\
     tce_summary \
     te_tce_report
 
-#    tce_instrument_sources \
-#    tce_uninstrument_sources \
+#    tce_instrument_sources
+#    tce_uninstrument_sources
 
 nobase_dist_data_DATA = bbhook.c modules/Makefile-2.6 modules/bbinit.c
 
