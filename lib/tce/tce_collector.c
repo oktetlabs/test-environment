@@ -499,7 +499,8 @@ notify_tce_collector(void)
     if (tce_collector_pid == 0)
         return 0;
     if (kill(tce_collector_pid, SIGUSR1) != 0)
-        return TE_RC(TE_TA_LINUX, errno);    
+        return TE_RC(TE_TA_LINUX, errno);
+    return 0;
 }
 
 static void
