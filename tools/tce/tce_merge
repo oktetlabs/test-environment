@@ -1,0 +1,127 @@
+#! /bin/sh
+#
+# Test Coverage Estimation
+#
+# Script to merge TCE results from different sources
+#
+#
+# Copyright (C) 2005 Test Environment authors (see file AUTHORS in
+# the root directory of the distribution).
+#
+# Test Environment is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation; either version 2 of
+# the License, or (at your option) any later version.
+#
+# Test Environment is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+# MA  02111-1307  USA
+#
+#
+# Author Artem V. Andreev <Artem.Andreev@oktetlabs.ru>
+#
+# $Id$
+#
+
+mergefile=$1
+gcovfile=$2
+ignoredir=$3
+oldfile=${gcovfile}.old
+resultfile=${gcovfile}.new
+
+source=`head -n1 $gcovfile | awk -F: '{ print $NF }'`
+if test -n "$ignoredir"; then
+    stamp=`basename $source | md5sum`
+else
+    stamp=`head -n2 $gcovfile | md5sum`
+fi
+if test -f "$mergefile"; then
+    (awk "/$stamp/ { do_print = 1; next }
+         /^===/ { do_print = 0; next }
+         do_print { print }" $mergefile >$oldfile
+        if test "`cat $oldfile | wc -l`" -ne "`cat $gcovfile | wc -l`"; then
+            exit 1
+        fi
+        awk "{ print; getline < \"$gcovfile\"; print }" $oldfile  |
+        awk -F: \
+            '/^(branch|call)/ {
+                 print
+                 next
+             }
+             {
+                 oldcount=$1
+                 getline
+                 if(oldcount ~ /-/) {
+                     printf "%s\n", $0
+                 }
+                 else {
+                     sourceline=""
+                     for(i = 3; i <= NF; i++)
+                     {
+                         if(sourceline)  sourceline=sourceline ":";
+                         sourceline=sourceline $i
+                     }
+                     sum = $1 + oldcount;
+                     printf "%9s:%5s:%s\n", sum == 0 ? "#####" : sum, $2, sourceline
+                 }
+             }' |
+        awk '/^(branch|call)/ {
+                oldcount=($3 == "never" ? $3 : $4)
+                getline
+                if (oldcount == "never" && $3 == "never")
+                {
+                    sum = ""
+                    taken = "never executed"
+                }
+                else
+                {
+                    sum = oldcount + $4
+                    taken = ($1 == "branch" ? "taken " : "returns ")
+                }
+                printf "%6s %2d %s%s\n", $1, $2, taken, sum
+                next
+             }
+             { print }'> $resultfile
+) || (  echo "$gcovfile: files mismatch, not merging" >2
+        cat $gcovfile >$resultfile )
+else
+    cat $gcovfile >$resultfile
+fi
+
+tce_count $resultfile '^[[:space:]]*#+:' '^[[:space:]]*[0-9]+:' |
+(
+    read ratio sum
+    echo "$ratio% of $sum lines of code executed in file $source"
+)
+
+tce_count $resultfile '^branch[[:space:]]*[0-9]+ never executed' '^branch[[:space:]]*[0-9]+ taken' |
+(
+    read ratio sum
+    echo "$ratio% of $sum branches of code executed in file $source"
+)
+
+tce_count $resultfile '^branch[[:space:]]*[0-9]+ (never executed|taken 0$)' \
+    '^branch[[:space:]]*[0-9]+ taken[[:space:]]*[1-9][0-9]*' |
+(
+    read ratio sum
+    echo "$ratio% of $sum branches of code taken at least once in file $source"
+)
+
+tce_count $resultfile '^call[[:space:]]*[0-9]+ never executed' '^call[[:space:]]*[0-9]+ returns' |
+(
+    read ratio sum
+    echo "$ratio% of $sum calls executed in file $source"
+)
+
+echo "=== $stamp"
+cat $resultfile
+echo "======"
+
+rm -f $resultfile
+rm -f $oldfile
