@@ -108,6 +108,7 @@ typedef signed gcov_type __attribute__ ((mode (DI)));
                       profiling.  */
 #define GCOV_COUNTERS       5
 
+#define GCOV_LOCKED 0
 
 /* Cumulative counter data.  */
 struct gcov_ctr_summary
