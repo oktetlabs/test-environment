@@ -825,7 +825,7 @@ conn_get_oldest_msg(tapi_tcp_connection_t *conn_descr)
 
 /* handler for data, see description of 'rcf_pkt_handler' type */
 static void 
-tapi_tad_pkt_handler(char *pkt_file, void *user_param)
+tcp_conn_pkt_handler(char *pkt_file, void *user_param)
 {
     tapi_tcp_connection_t *conn_descr = (tapi_tcp_connection_t *)user_param;
     asn_value             *tcp_message = NULL;
@@ -1110,7 +1110,7 @@ tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode,
 
     rc = tapi_tad_trrecv_start(agt, conn_descr->rcv_sid,
                                conn_descr->rcv_csap, syn_pattern, 
-                               tapi_tad_pkt_handler, conn_descr, 
+                               tcp_conn_pkt_handler, conn_descr, 
                                TAD_TIMEOUT_INF, 0); 
 
     /* send SYN - if we are client */
@@ -1231,6 +1231,9 @@ cleanup:
 
 #undef CHECK_ERROR
 
+/* automatci sending ACK with FIN as very strange operation.. disabled. */
+#define FIN_ACK 0
+
 int
 tapi_tcp_send_fin(tapi_tcp_handler_t handler, int timeout)
 {
@@ -1251,7 +1254,11 @@ tapi_tcp_send_fin(tapi_tcp_handler_t handler, int timeout)
     rcf_ta_trrecv_get(conn_descr->agt, conn_descr->rcv_sid,
                       conn_descr->rcv_csap, &num);
 
+#if FIN_ACK
     new_ackn = conn_next_ack(conn_descr);
+#else
+    new_ackn = conn_descr->ack_sent;
+#endif
     RING("%s(conn %d) new ack %u", __FUNCTION__, handler, new_ackn);
     tapi_tcp_template(conn_next_seq(conn_descr), new_ackn, FALSE, TRUE, 
                       NULL, 0, &fin_template);
@@ -1274,7 +1281,9 @@ tapi_tcp_send_fin(tapi_tcp_handler_t handler, int timeout)
         ERROR("%s(): send FIN failed 0x%X", __FUNCTION__, rc);
         return TE_RC(TE_TAPI, rc);
     } 
+#if FIN_ACK
     conn_descr->ack_sent = new_ackn;
+#endif
     conn_update_sent_seq(conn_descr, 1);
 
     RING("fin sent");
@@ -1290,8 +1299,6 @@ tapi_tcp_send_fin(tapi_tcp_handler_t handler, int timeout)
             return TE_RC(TE_TAPI, ETIMEDOUT);
         } 
     }
-    /* remove ACK for our FIN from msg queue */
-    tapi_tcp_clear_msg(conn_descr);
 
     return 0;
 }
@@ -1433,6 +1440,8 @@ tapi_tcp_recv_msg(tapi_tcp_handler_t handler, int timeout,
 
     if ((msg = conn_get_oldest_msg(conn_descr)) == NULL)
     {
+        VERB("%s(conn %d): wait for message, queue in TAPI is empty", 
+             __FUNCTION__, handler);
         conn_wait_msg(conn_descr, timeout);
         msg = conn_get_oldest_msg(conn_descr);
     }
@@ -1467,7 +1476,7 @@ tapi_tcp_recv_msg(tapi_tcp_handler_t handler, int timeout,
     }
     else
     {
-        WARN("%s(id %d) no message got", __FUNCTION__, conn_descr->id);
+        WARN("%s(id %d) no message got", __FUNCTION__, handler);
         return TE_RC(TE_TAPI, ETIMEDOUT);
     }
 
