@@ -1,6 +1,35 @@
 #! /bin/sh
+#
+# Test Coverage Estimation
+#
+# Script to generate HTML representation of the TCE report
+#
+#
+# Copyright (C) 2005 Test Environment authors (see file AUTHORS in
+# the root directory of the distribution).
+#
+# Test Environment is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation; either version 2 of
+# the License, or (at your option) any later version.
+#
+# Test Environment is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+# MA  02111-1307  USA
+#
+#
+# Author: Artem V. Andreev <Artem.Andreev@oktetlabs.ru>
+#
+# $Id$
+#
 
-usage () 
+usage ()
 {
     cat >&2 <<EOF
 USAGE: tce_summary <log-file-name> [<options>...] [<output-file>]
@@ -25,14 +54,14 @@ outputfile="/dev/stdout"
 sortmode='sort -k3,3g -k4,4nr'
 for arg; do
     case "$arg" in
-        --datadir=*) datadir=${arg#--datadir=}/; mkdir $datadir 
+        --datadir=*) datadir=${arg#--datadir=}/; mkdir $datadir
             ;;
         --sort-by=branches) sortmode='sort -k3,3g -k4,4nr' ;;
         --sort-by=lines) sortmode='sort -k1,1g -k2,2nr' ;;
         --sort-by=sources) sortmode='sort -k5,5' ;;
         --help) usage ;;
         --*) echo "Unrecognized option $arg" >&2; usage; exit 1 ;;
-        *) 
+        *)
         if test -z "$sourcefile"; then
             sourcefile="$arg"
         else
@@ -72,11 +101,11 @@ EOF
 
 awk '/^[0-9]+\.[0-9]+% of[[:space:]]*[0-9]+ lines of code executed/ { printf "%s %s ", $1, $3}
     /^[0-9]+\.[0-9]+% of[[:space:]]*[0-9]+ branches of code taken/ { printf "%s %s %s ", $1, $3, $NF }
-    /^=== / { print $2; }' $sourcefile | 
+    /^=== / { print $2; }' $sourcefile |
     $sortmode |
     awk -vSUBDIR=$datadir \
         '$2 != 0 { fname=$5; gsub(/\//, "-", fname);
-                   printf "<tr><td>%s<td>%s<td>%s<td>%s<td><a href=\"%s\">%s</a></tr>\n", 
+                   printf "<tr><td>%s<td>%s<td>%s<td>%s<td><a href=\"%s\">%s</a></tr>\n",
                    $3, $4, $1, $2, (SUBDIR ? SUBDIR fname ".html" : "#" $6) , $5 }' >>$outputfile
 
 echo "</TABLE>" >>$outputfile
@@ -86,16 +115,16 @@ if test -n "$datadir"; then
     echo "</HTML>" >>$outputfile
 fi
 
-awk -vSUBDIR=$datadir ' BEGIN { myfile = "/dev/stdout" } 
+awk -vSUBDIR=$datadir ' BEGIN { myfile = "/dev/stdout" }
       /^\*\*\*|[[:space:]]*-:[[:space:]]*0:/ { next }
-      /^======/ { print "</pre>" >>myfile; 
+      /^======/ { print "</pre>" >>myfile;
                   if (SUBDIR) {
                      print "</body>" >>myfile
                      print "</html>" >>myfile
                      close(myfile)
                   }
-                  next } 
-      /^=== / { 
+                  next }
+      /^=== / {
           if (SUBDIR) {
              name=filename
              gsub(/\//, "-", name)
@@ -114,12 +143,10 @@ awk -vSUBDIR=$datadir ' BEGIN { myfile = "/dev/stdout" }
           header = ""
           next
       }
-      /^[0-9]+\.[0-9]+%/ { 
+      /^[0-9]+\.[0-9]+%/ {
           filename=$NF
           header=header $0 "\n"
           next
       }
       { gsub(/&/, "\\&amp;"); gsub(/</, "\\&lt;"); gsub(/>/, "\\&gt;"); gsub(/"/, "\\&quot;"); print >> myfile}' $sourcefile >>$outputfile
 
-     
-     
