@@ -648,10 +648,10 @@ if test $START_OK -eq 0 -a -n "$TESTER" ; then
     myecho "--->>> Dump TCE"
     if test -n "$TCE_AGENTS"; then
         for i in $TCE_AGENTS; do
-            tce_dump $i "/tmp/tcedump" "${TE_BUILD}/tce_" >/dev/null
+            te_tce_dump $i "/tmp/tcedump" "${TE_BUILD}/tce_" >/dev/null
         done
     else
-        TCE_AGENTS=`tce_dump --all /tmp/tcedump "${TE_BUILD}/tce_"`
+        TCE_AGENTS=`te_tce_dump --all /tmp/tcedump "${TE_BUILD}/tce_"`
     fi
 fi
 
