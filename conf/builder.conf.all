@@ -2,6 +2,8 @@
 # This file contains ALL available Test Environment features
 #
 
+TE_TOOLS([rgt rpcgen trc tce millicom])
+
 #
 # Host platform
 #
