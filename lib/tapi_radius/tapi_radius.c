@@ -270,7 +270,7 @@ tapi_radius_attr_list_to_string(const tapi_radius_attr_list_t *list,
         char                            buf[INET_ADDRSTRLEN];
         const char                     *value;
         char                           *s;
-        size_t                          attr_strlen;
+        size_t                          attr_strlen = 0;
 
         if ((info = tapi_radius_dict_lookup(attr->type)) == NULL)
         {
@@ -298,13 +298,14 @@ tapi_radius_attr_list_to_string(const tapi_radius_attr_list_t *list,
                 break;
             case TAPI_RADIUS_TYPE_TEXT:
                 value = attr->string;
+                attr_strlen = 2;        /* enclosing quotes */
                 break;
             default:
                 WARN("%s: attribute '%s' type is unsupported, skipping",
                      __FUNCTION__, info->name);
                 continue;
         }
-        attr_strlen = strlen(info->name) + strlen(value) + 2;
+        attr_strlen += strlen(info->name) + strlen(value) + 2;
         s = realloc(result, len + attr_strlen);
         if (s == NULL)
         {
@@ -317,7 +318,14 @@ tapi_radius_attr_list_to_string(const tapi_radius_attr_list_t *list,
             strcat(result, ",");
         strcat(result, info->name);
         strcat(result, "=");
-        strcat(result, value);
+        if (attr->datatype == TAPI_RADIUS_TYPE_TEXT)
+        {
+            strcat(result, "\"");
+            strcat(result, value);
+            strcat(result, "\"");
+        }
+        else
+            strcat(result, value);
         len += attr_strlen;
     }
     *str = result;
@@ -758,7 +766,8 @@ tapi_radius_serv_add_user(const char *ta_name,
             return TE_RC(TE_TAPI, rc);                                      \
         }                                                                   \
         if ((rc = cfg_set_instance_fmt(CFG_VAL(STRING, attr_str),           \
-                    "/agent:%s/radiusserver:/user:%s/" _cfg_name ":")) != 0)\
+                    "/agent:%s/radiusserver:/user:%s/" _cfg_name ":",       \
+                    ta_name, user_name)) != 0)                              \
         {                                                                   \
             ERROR("Failed to add " _name " RADIUS attributes list '%s'"     \
                   "for user '%s'", attr_str, user_name);                    \
