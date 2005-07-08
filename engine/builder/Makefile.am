@@ -1,20 +1,29 @@
 
-SUBDIRS = coverage
+#SUBDIRS = coverage
 
-AM_CPPFLAGS=@TE_CFLAGS@ -I$(DESTDIR)/$(prefix)/include 
+AM_CPPFLAGS = @TE_CFLAGS@ -I$(DESTDIR)/$(prefix)/include 
 AM_CFLAGS = 
-AM_LDFLAGS=@TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/lib 
+AM_LDFLAGS = @TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/lib 
 
-bin_PROGRAMS=te_stdouterr
+bin_PROGRAMS = te_stdouterr te_tce_dump
 
-te_stdouterr_SOURCES=te_stdouterr.c
-te_stdouterr_LDADD=-llogger_ten -lipc @TE_LDADD@ -lpthread
-te_stdouterr_DEPENDENCIES=@TE_DEPENDENCIES@ \
-                          $(DESTDIR)/$(prefix)/lib/liblogger_ten.a \
-                          $(DESTDIR)/$(prefix)/lib/libipc.a
+te_stdouterr_SOURCES = te_stdouterr.c
+te_stdouterr_LDADD = -llogger_ten -lipc @TE_LDADD@ -lpthread
+te_stdouterr_DEPENDENCIES = @TE_DEPENDENCIES@ \
+                            $(DESTDIR)/$(prefix)/lib/liblogger_ten.a \
+                            $(DESTDIR)/$(prefix)/lib/libipc.a
+
+te_tce_dump_SOURCES = te_tce_dump.c
+te_tce_dump_LDADD = -lrcfapi -lrpcxdr -llogger_ten -lipc @TE_LDADD@ \
+                    -lpthread
+te_tce_dump_DEPENDENCIES = @TE_DEPENDENCIES@ \
+                           $(DESTDIR)/$(prefix)/lib/librcfapi.a \
+                           $(DESTDIR)/$(prefix)/lib/librpcxdr.a \
+                           $(DESTDIR)/$(prefix)/lib/liblogger_ten.a \
+                           $(DESTDIR)/$(prefix)/lib/libipc.a
 
 mybindir=$(prefix)/bin
-dist_mybin_SCRIPTS=\
+dist_mybin_SCRIPTS = \
     te_builder_log \
     te_builder_opts \
     te_create_inst_dirs \
@@ -27,6 +36,8 @@ dist_mybin_SCRIPTS=\
     te_build_nuts \
     te_build_nut \
     te_build_suite \
-    te_tests_info.sh
+    te_tests_info.sh \
+    te_tce_report
 
-EXTRA_DIST=builder.m4
+EXTRA_DIST = builder.m4
+
