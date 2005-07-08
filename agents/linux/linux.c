@@ -578,12 +578,12 @@ rcf_ch_kill_task(struct rcf_comm_connection *handle,
         }
         else
         {
-            RING("Sent SIGKILL to PID=%d");
+            RING("Sent SIGKILL to PID=%u", pid);
         }
     }
     else
     {
-        RING("Sent SIGTERM to PID=%d");
+        RING("Sent SIGTERM to PID=%u", pid);
     }
 
     SEND_ANSWER("%d", kill_errno);
