@@ -1,13 +1,14 @@
 #! /bin/sh
-
-# Test Environment
+#
+# Test Environment Builder
 #
 # Script for extracting of the test objective from .c file.
 #
-# Usage: te_test_objective <c file> <output file>
+# Usage: te_tests_info.sh <c file> <output file>
 #
-# Copyright (C) 2005 Test Environment authors (see file AUTHORS in the 
-# root directory of the distribution).
+#
+# Copyright (C) 2005 Test Environment authors (see file AUTHORS in
+# the root directory of the distribution).
 #
 # Test Environment is free software; you can redistribute it and/or 
 # modify it under the terms of the GNU General Public License as 
@@ -24,10 +25,11 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, 
 # MA  02111-1307  USA
 #
+#
 # Author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
 # 
-# $Id: $
-
+# $Id$
+#
 
 echo -en \
 "<?xml version=\"1.0\"?>\\n"\

@@ -1,11 +1,12 @@
 #! /bin/sh
-
-# Test Environment
+#
+# Test Environment Builder
 #
 # Script for creation of installation directories
 #
-# Copyright (C) 2004 Test Environment authors (see file AUTHORS in the 
-# root directory of the distribution).
+#
+# Copyright (C) 2004 Test Environment authors (see file AUTHORS in
+# the root directory of the distribution).
 #
 # Test Environment is free software; you can redistribute it and/or 
 # modify it under the terms of the GNU General Public License as 
@@ -22,9 +23,11 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, 
 # MA  02111-1307  USA
 #
+#
 # Author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
 # 
-# $Id: te_cross_build 8185 2004-12-07 15:50:30Z arybchik $
+# $Id$
+#
 
 pushd $1 >/dev/null
 PREFIX=`pwd`

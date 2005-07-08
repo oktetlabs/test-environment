@@ -1,11 +1,12 @@
 #! /bin/sh
-
-# Test Environment
+#
+# Test Environment Builder
 #
 # Process builder options passed to dispatcher.sh
 #
-# Copyright (C) 2005 Test Environment authors (see file AUTHORS in the 
-# root directory of the distribution).
+#
+# Copyright (C) 2005 Test Environment authors (see file AUTHORS in
+# the root directory of the distribution).
 #
 # Test Environment is free software; you can redistribute it and/or 
 # modify it under the terms of the GNU General Public License as 
@@ -22,9 +23,10 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, 
 # MA  02111-1307  USA
 #
+#
 # Author Elena Vengerova <Elena.Vengerova@oktet.ru>
 # 
-# $Id: te_build_nut 8504 2004-12-15 18:27:09Z helen $
+# $Id$
 #
 
 TE_BUILD_LOG=
