@@ -217,7 +217,6 @@ __bb_init_connection(const char *mode, int peer)
 static void
 __gcov_exit (void)
 {
-#if 0
   struct gcov_info *gi_ptr;
   struct gcov_summary this_program;
   struct gcov_summary all;
@@ -229,7 +228,7 @@ __gcov_exit (void)
   memset (&all, 0, sizeof (all));
   /* Find the totals for this execution.  */
   memset (&this_program, 0, sizeof (this_program));
-  for (gi_ptr = gcov_list; gi_ptr; gi_ptr = gi_ptr->next)
+  for (gi_ptr = __gcov_list; gi_ptr; gi_ptr = gi_ptr->next)
     {
       ci_ptr = gi_ptr->counts;
       for (t_ix = 0; t_ix < GCOV_COUNTERS_SUMMABLE; t_ix++)
@@ -251,7 +250,7 @@ __gcov_exit (void)
 
   /* Now merge each file.  */
   for (gi_ptr = gcov_list; gi_ptr; gi_ptr = gi_ptr->next)
-    {
+  {
       struct gcov_summary this_object;
       struct gcov_summary object, program;
       gcov_type *values[GCOV_COUNTERS];
@@ -269,66 +268,68 @@ __gcov_exit (void)
       /* Totals for this object file.  */
       ci_ptr = gi_ptr->counts;
       for (t_ix = 0; t_ix < GCOV_COUNTERS_SUMMABLE; t_ix++)
-    {
-      if (!((1 << t_ix) & gi_ptr->ctr_mask))
-        continue;
-
-      cs_ptr = &this_object.ctrs[t_ix];
-      cs_ptr->num += ci_ptr->num;
-      for (c_num = 0; c_num < ci_ptr->num; c_num++)
-        {
-          cs_ptr->sum_all += ci_ptr->values[c_num];
-          if (cs_ptr->run_max < ci_ptr->values[c_num])
-        cs_ptr->run_max = ci_ptr->values[c_num];
-        }
-
-      ci_ptr++;
-    }
+      {
+          if (!((1 << t_ix) & gi_ptr->ctr_mask))
+              continue;
+          
+          cs_ptr = &this_object.ctrs[t_ix];
+          cs_ptr->num += ci_ptr->num;
+          for (c_num = 0; c_num < ci_ptr->num; c_num++)
+          {
+              cs_ptr->sum_all += ci_ptr->values[c_num];
+              if (cs_ptr->run_max < ci_ptr->values[c_num])
+                  cs_ptr->run_max = ci_ptr->values[c_num];
+          }
+          
+          ci_ptr++;
+      }
 
       c_ix = 0;
       for (t_ix = 0; t_ix < GCOV_COUNTERS; t_ix++)
-    if ((1 << t_ix) & gi_ptr->ctr_mask)
       {
-        values[c_ix] = gi_ptr->counts[c_ix].values;
-        c_ix++;
+          if ((1 << t_ix) & gi_ptr->ctr_mask)
+          {
+              values[c_ix] = gi_ptr->counts[c_ix].values;
+              c_ix++;
+          }
       }
-
+      
       /* Calculate the function_info stride. This depends on the
-     number of counter types being measured.  */
+         number of counter types being measured.  */
       fi_stride = sizeof (struct gcov_fn_info) + c_ix * sizeof (unsigned);
       if (__alignof__ (struct gcov_fn_info) > sizeof (unsigned))
-    {
-      fi_stride += __alignof__ (struct gcov_fn_info) - 1;
-      fi_stride &= ~(__alignof__ (struct gcov_fn_info) - 1);
-    }
+      {
+          fi_stride += __alignof__ (struct gcov_fn_info) - 1;
+          fi_stride &= ~(__alignof__ (struct gcov_fn_info) - 1);
+      }
       
       if (!gcov_open (gi_ptr->filename))
-    {
-      fprintf (stderr, "profiling:%s:Cannot open\n", gi_ptr->filename);
-      continue;
-    }
-
+      {
+          fprintf (stderr, "profiling:%s:Cannot open\n", gi_ptr->filename);
+          continue;
+      }
+      
       tag = gcov_read_unsigned ();
       if (tag)
-    {
-      /* Merge data from file.  */
-      if (tag != GCOV_DATA_MAGIC)
-        {
-          fprintf (stderr, "profiling:%s:Not a gcov data file\n",
-               gi_ptr->filename);
-        read_fatal:;
-          gcov_close ();
-          continue;
-        }
-      length = gcov_read_unsigned ();
-      if (!gcov_version (gi_ptr, length))
-        goto read_fatal;
-
-      length = gcov_read_unsigned ();
-      if (length != gi_ptr->stamp)
-        {
-          /* Read from a different compilation. Overwrite the
-         file.  */
+      {
+          /* Merge data from file.  */
+          if (tag != GCOV_DATA_MAGIC)
+          {
+              fprintf (stderr, "profiling:%s:Not a gcov data file\n",
+                       gi_ptr->filename);
+          read_fatal:;
+              gcov_close ();
+              continue;
+          }
+          length = gcov_read_unsigned ();
+          if (!gcov_version (gi_ptr, length))
+              goto read_fatal;
+          
+          length = gcov_read_unsigned ();
+          if (length != gi_ptr->stamp)
+          {
+              /* Read from a different compilation. Overwrite the
+                 file.  */
           gcov_truncate ();
           goto rewrite;
         }
@@ -521,7 +522,6 @@ __gcov_exit (void)
            "profiling:%s:Error writing\n",
            gi_ptr->filename);
     }
-#endif
 }
 
 
