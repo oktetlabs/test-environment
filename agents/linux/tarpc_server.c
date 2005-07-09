@@ -2930,13 +2930,13 @@ msghdr2str(const struct msghdr *msg)
 
     char   *buf_end = buf + sizeof(buf);
     char   *p = buf;
-    size_t  i;
+    int     i;
 
     p += snprintf(p, buf_end - p, "{name={0x%lx,%u},{",
                   (long unsigned int)msg->msg_name, msg->msg_namelen);
     if (p >= buf_end)
         return "(too long)";
-    for (i = 0; i < msg->msg_iovlen; ++i)
+    for (i = 0; i < (int)msg->msg_iovlen; ++i)
     {
         p += snprintf(p, buf_end - p, "%s{0x%lx,%u}",
                       (i == 0) ? "" : ",",
