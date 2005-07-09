@@ -1,13 +1,8 @@
 
-AUTOMAKE_OPTIONS = foreign 
-
 AM_CPPFLAGS=@TE_CFLAGS@ -I$(DESTDIR)/$(prefix)/include
-AM_CFLAGS =
+AM_CFLAGS=$(SNMP_F)
 AM_LDFLAGS=@TE_LDFLAGS@ 
 
-
-
-CFLAGS=@CFLAGS@ $(SNMP_F)
 
 TESTS=parse_simple put_get parse_file
 check_PROGRAMS=$(TESTS)
@@ -28,5 +23,5 @@ write_ind1
 noinst_HEADERS=test_types.h
 
 # link flags for tests. 
-LDADD=-lasn -lndn
+LDADD=-lndn -lasn
 
