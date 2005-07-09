@@ -633,6 +633,7 @@ ret:
 }
 
 
+#if TALOGDEBUG
 /**
  * Print message in stderr (debug mode).
  *
@@ -778,3 +779,4 @@ log_message_print(const char *us, const char *fs, ...)
     fflush(stderr);
     va_end(ap);
 }
+#endif /* TALOGDEBUG */

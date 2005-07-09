@@ -828,7 +828,7 @@ log_message_fast(uint16_t level, const char *user_name,
     (void)ta_lgr_unlock(key);
 }
 
-
+#if TALOGDEBUG
 /*
  * Print message in stdout (debug mode).
  *
@@ -839,6 +839,7 @@ log_message_fast(uint16_t level, const char *user_name,
  *                        raw log format string description.
  */
 extern void log_message_print(const char *us, const char *fs, ...);
+#endif
 
 #ifdef __cplusplus
 } /* extern "C" */
