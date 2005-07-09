@@ -258,7 +258,7 @@ main(int argc, char *argv[])
         /* Read from stdin if available and write to TTY */
         DBG(fprintf(stderr, "\nstdin->tty\n"));
         while ((len = fread(buf, 1, BUF_SIZE, stdin)) > 0) {
-            DBG(fprintf(stderr, "\nRead from stdin: %d bytes", len));
+            DBG(fprintf(stderr, "\nRead from stdin: %d bytes", (int)len));
             if (write(tty_fd, buf, len) != len) {
                 fprintf(stderr, "I/O error: failed write to \"%s\"\n",
                         argv[1]);
@@ -275,7 +275,7 @@ main(int argc, char *argv[])
         /* Read from TTY if available and write to stdout */
         DBG(fprintf(stderr, "\ntty->stdout\n"));
         while ((len = read(tty_fd, buf, BUF_SIZE)) > 0) {
-            DBG(fprintf(stderr, "\nRead from tty: %d bytes", len));
+            DBG(fprintf(stderr, "\nRead from tty: %d bytes", (int)len));
             if (fwrite(buf, 1, len, stdout) != (size_t)len) {
                 fprintf(stderr, "I/O error: failed write stdout\n");
                 goto err;
@@ -285,7 +285,7 @@ main(int argc, char *argv[])
             fprintf(stderr,
                     "I/O error: failed read from \"%s\", rc=%d, "
                     "errno=%d\n",
-                   argv[1], len, errno);
+                   argv[1], (int)len, errno);
             goto err;
         }
     }
