@@ -14,7 +14,7 @@ Engine:
 - flex >= 2.5.31-31 from sourceforge; flex 2.5.4a from gnu.org will not work
 - gawk (mawk will not work)
 
-TA:
+Test Agent:
 
 - expect and expect-dev (for TAD CLI only)
 - libnetlink + iproute/ headers
