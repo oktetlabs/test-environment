@@ -7,14 +7,6 @@ AM_CFLAGS=@NET_SNMP_CFLAGS@
 AM_LDFLAGS=@TE_LDFLAGS@ 
 
 
-# Tests (incorrect)
-#VPATH=@srcdir@:@srcdir@/tests
-#TESTS=cdb01 cdb02
-#check_PROGRAMS=cdb01 cdb02
-#extra_DIST=tests/cdb01.c tests/cdb02.c
-#LDADD=-lasn @NET_SNMP_LIBS@
-#LDFLAGS=-static
-
 noinst_HEADERS=tad_snmp_impl.h
 
 noinst_LIBRARIES=libtad_snmp.a
