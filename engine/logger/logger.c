@@ -66,6 +66,7 @@
 /** Logger application command line options */
 enum {
     LOGGER_OPT_FOREGROUND = 1,
+    LOGGER_OPT_NO_RCF,
 };
 
 
@@ -83,7 +84,13 @@ const char *te_log_dir = NULL;
 /* Raw log file */
 static FILE *raw_file = NULL;
 
-static te_bool              foreground = FALSE;
+static unsigned int         lgr_flags = 0;
+/** @name Logger global context flags */
+#define LOGGER_FOREGROUND   0x01    /**< Run Logger in foreground */
+#define LOGGER_NO_RCF       0x02    /**< Run Logger without interaction
+                                         with RCF */
+/*@}*/
+
 static const char          *cfg_file = NULL;
 static struct ipc_server   *logger_ten_srv = NULL;
 
@@ -650,8 +657,15 @@ process_cmd_line_opts(int argc, const char **argv)
 
     /* Option Table */
     struct poptOption options_table[] = {
-        { "foreground", 'f', POPT_ARG_NONE, NULL, LOGGER_OPT_FOREGROUND,
-          "Run logger in foreground (usefull for Logger debugging).",
+        { "foreground", 'f',
+          POPT_ARG_NONE | POPT_BIT_SET, &lgr_flags, LOGGER_FOREGROUND,
+          "Run Logger in foreground (usefull for Logger debugging).",
+          NULL },
+
+        { "no-rcf", '\0',
+          POPT_ARG_NONE | POPT_BIT_SET, &lgr_flags, LOGGER_NO_RCF,
+          "Run Logger without interaction with RCF, "
+          "i.e. polling of Test Agents (usefull for Logger debugging).",
           NULL },
 
         POPT_AUTOHELP
@@ -667,11 +681,6 @@ process_cmd_line_opts(int argc, const char **argv)
     {
         switch (rc)
         {
-            case LOGGER_OPT_FOREGROUND:
-                fprintf(stderr, "LOGGER_OPT_FOREGROUND\n");
-                foreground = TRUE;
-                break;
-
             default:
                 fprintf(stderr, "Unexpected option number %d", rc);
                 poptFreeContext(optCon);
@@ -783,7 +792,7 @@ main(int argc, const char *argv[])
      * Go to background, if foreground mode is not requested.
      * No threads should be created before become a daemon.
      */
-    if (!foreground && daemon(TRUE, TRUE) != 0)
+    if ((~lgr_flags & LOGGER_FOREGROUND) && daemon(TRUE, TRUE) != 0)
     {
         ERROR("daemon() failed");
         goto exit;
@@ -802,58 +811,61 @@ main(int argc, const char *argv[])
     /* to be sure about completed in srvers starting */
     sleep(1);
 
-    INFO("Request RCF about list of active TA\n");
-    /* Get list of active TA */
-    do {
-        ++scale;
-        names_len = LGR_TANAMES_LEN * scale;
-        ta_names = (char *)realloc(ta_names, names_len * sizeof(char));
-        if (ta_names == NULL)
-        {
-            ERROR("Memory allocation failure");
-            goto join_te_srv;
-        }
-        memset(ta_names, 0, names_len * sizeof(char));
-        res = rcf_get_ta_list(ta_names, &names_len);
-
-    } while (TE_RC_GET_ERROR(res) == ETESMALLBUF);
-
-    if (res != 0)
+    if (~lgr_flags & LOGGER_NO_RCF)
     {
-        ERROR("Failed to get list of active TA from RCF\n");
-        /* Continue processing with empty list of Test Agents */
-        ta_names[0] = '\0';
-        names_len = 0;
-    }
+        INFO("Request RCF about list of active TA\n");
+        /* Get list of active TA */
+        do {
+            ++scale;
+            names_len = LGR_TANAMES_LEN * scale;
+            ta_names = (char *)realloc(ta_names, names_len * sizeof(char));
+            if (ta_names == NULL)
+            {
+                ERROR("Memory allocation failure");
+                goto join_te_srv;
+            }
+            memset(ta_names, 0, names_len * sizeof(char));
+            res = rcf_get_ta_list(ta_names, &names_len);
 
-    /* Create single linked list of active TA */
-    while (names_len != str_len)
-    {
-        char       *aux_str;
-        size_t      tmp_len;
+        } while (TE_RC_GET_ERROR(res) == ETESMALLBUF);
 
-        ta_el = (struct ta_inst *)malloc(sizeof(struct ta_inst));
-        memset(ta_el, 0, sizeof(struct ta_inst));
-        ta_el->thread_run = FALSE;
-        aux_str = ta_names + str_len;
-        tmp_len = strlen(aux_str) + 1;
-        memcpy(ta_el->agent, aux_str, tmp_len);
-        str_len += tmp_len;
-
-        ta_el->filters.next = ta_el->filters.last = &ta_el->filters;
-
-        res = rcf_ta_name2type(ta_el->agent, ta_el->type);
         if (res != 0)
         {
-            ERROR("Cannot interact with RCF\n");
-            free(ta_names);
-            goto join_te_srv;
+            ERROR("Failed to get list of active TA from RCF\n");
+            /* Continue processing with empty list of Test Agents */
+            ta_names[0] = '\0';
+            names_len = 0;
         }
 
-        ta_el->next = ta_list;
-        ta_list = ta_el;
+        /* Create single linked list of active TA */
+        while (names_len != str_len)
+        {
+            char       *aux_str;
+            size_t      tmp_len;
+
+            ta_el = (struct ta_inst *)malloc(sizeof(struct ta_inst));
+            memset(ta_el, 0, sizeof(struct ta_inst));
+            ta_el->thread_run = FALSE;
+            aux_str = ta_names + str_len;
+            tmp_len = strlen(aux_str) + 1;
+            memcpy(ta_el->agent, aux_str, tmp_len);
+            str_len += tmp_len;
+
+            ta_el->filters.next = ta_el->filters.last = &ta_el->filters;
+
+            res = rcf_ta_name2type(ta_el->agent, ta_el->type);
+            if (res != 0)
+            {
+                ERROR("Cannot interact with RCF\n");
+                free(ta_names);
+                goto join_te_srv;
+            }
+
+            ta_el->next = ta_list;
+            ta_list = ta_el;
+        }
+        free(ta_names);
     }
-    free(ta_names);
 
     /* 
      * FIXME:
