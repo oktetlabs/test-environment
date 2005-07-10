@@ -279,12 +279,12 @@ log_serial(void *ready, int argc, char *argv[])
 #else
     char           tmp[260];
 #endif
-    char          *buffer; 
-    char          *other_buffer;
+    char          * volatile buffer; 
+    char          * volatile other_buffer;
     char          *newline;
-    char          *rest = NULL;
-    char          *current;
-    char          *fence;
+    char          * volatile rest = NULL;
+    char          * volatile current;
+    char          * volatile fence;
     te_log_level_t level;
     int            interval;
     int            current_timeout = -1;
