@@ -2373,9 +2373,24 @@ main(int argc, const char *argv[])
                 if ((uint32_t)(now - req->sent) < req->timeout)
                     continue;
 
-                ERROR("Request '%s' sent to TA '%s' at '%s' is timed out",
-                      rcf_op_to_string(req->message->opcode),
-                      agent->name, ctime(&req->sent));
+                {
+                    size_t  ret;
+                    char    time_buf[9];    /* Sufficient for format
+                                               string used below */
+
+                    ret = strftime(time_buf, sizeof(time_buf), "%H:%M:%S",
+                                   localtime(&req->sent));
+                    if (ret == 0)
+                    {
+                        ERROR("%s:%d: Buffer is too small",
+                              __FILE__, __LINE__);
+                        time_buf[0] = '\0';
+                    }
+                    ERROR("Request '%s' sent to TA '%s' at '%s' is "
+                          "timed out",
+                          rcf_op_to_string(req->message->opcode),
+                          agent->name, time_buf);
+                }
                 req->message->error = TE_RC(TE_RCF, ETIMEDOUT);
                 answer_user_request(req);
                 set_ta_dead(agent);
