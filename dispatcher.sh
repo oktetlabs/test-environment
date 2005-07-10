@@ -111,12 +111,15 @@ Generic options:
                                 percentage (mode=branches, the default),
                                 covered line percentage (mode=lines),
                                 or source file names (mode=sources)
-  --tce-ignore-directories      Respect only base file names when doing TCE report
-                                (useful when a given file is used in different contexts,
-                                e. g. in a user-space library and a kernel module,
-                                and you want total statistics. Note, however, that this
-                                will lead to unexpected results if there are actually
-                                files with equal base names in different directories.
+  --tce-ignore-directories      Respect only base file names when doing TCE
+                                report (useful when a given file is used in
+                                different contexts, e. g. in a user-space
+                                library and a kernel module, and you want total
+                                statistics. Note, however, that this will lead
+                                to unexpected results if there are actually
+                                files with equal base names in different
+                                directories.
+
 EOF
 #    echo -e '  '--storage='<string>'\\t\\tconfiguration string for the storage
 #    echo -e \\t\\t\\t\\twith data to be updated by Dispatcher
