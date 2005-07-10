@@ -1650,7 +1650,9 @@ iterate_test(tester_ctx *ctx, run_item *test,
                     {
                         RING("Configuration successfully restored "
                              "using backup");
-                        TE_RC_UPDATE(test_result, ETESTCONF);
+                        if (TEST_RESULT(test_result) &&
+                            (test_result < ETESTCONF))
+                            test_result = ETESTCONF;
                     }
                 }
                 else if (rc != 0)
