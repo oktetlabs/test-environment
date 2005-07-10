@@ -2373,7 +2373,9 @@ main(int argc, const char *argv[])
                 if ((uint32_t)(now - req->sent) < req->timeout)
                     continue;
 
-                ERROR("Request to TA %s is timed out", agent->name);
+                ERROR("Request '%s' sent to TA '%s' at '%s' is timed out",
+                      rcf_op_to_string(req->message->opcode),
+                      agent->name, ctime(&req->sent));
                 req->message->error = TE_RC(TE_RCF, ETIMEDOUT);
                 answer_user_request(req);
                 set_ta_dead(agent);
