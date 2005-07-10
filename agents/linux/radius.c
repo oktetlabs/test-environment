@@ -1613,8 +1613,10 @@ make_supplicant (const char *ifname)
     snprintf(conf_name, sizeof(conf_name), 
              "/tmp/te_supp_%s.conf", ifname);
     ns->config    = make_rp(RP_FILE, conf_name, NULL, NULL);
+    update_rp(ns->config, RP_ATTRIBUTE,
+              "network_list", "tester");
     update_rp(ns->config, RP_ATTRIBUTE, 
-              "allow_interface", ifname);
+              "allow_interfaces", ifname);
     write_radius(ns->config);
     supplicant_list = ns;
     return ns;
@@ -1721,8 +1723,13 @@ ds_supplicant_set(unsigned int gid, const char *oid,
             else if (supp->process == 0)
             {
                 execl("xsupplicant", "xsupplicant", "-i", supp->interface, 
-                      "-C", supp->config->name, NULL);
+                      "-c", supp->config->name, NULL);
                 _exit(EXIT_FAILURE);
+            }
+            else
+            {
+                RING("Xsupplicant start on %s with pid = %u",
+                     supp->interface, (unsigned)supp->process);
             }
         }
     }
@@ -1737,7 +1744,10 @@ ds_supplicant_add(unsigned int gid, const char *oid,
         return TE_RC(TE_TA_LINUX, EEXIST);
     make_supplicant(instance);
     if (*value == '1')
+    {
+        RING("adding in started state");
         return ds_supplicant_set(gid, oid, value, instance);
+    }
     else
         return 0;
 }
@@ -1815,7 +1825,7 @@ ds_supplicant_cur_method_get(unsigned int gid, const char *oid,
     
     if (supp == NULL)
         return TE_RC(TE_TA_LINUX, ENOENT);
-    retrieve_rp(supp->config, "default.allow_types", &type);
+    retrieve_rp(supp->config, "tester.allow_types", &type);
     
     if (type == NULL)
         *value = '\0';
@@ -1840,7 +1850,7 @@ ds_supplicant_cur_method_set(unsigned int gid, const char *oid,
     if (supp == NULL)
         return TE_RC(TE_TA_LINUX, ENOENT);
     snprintf(supplicant_buffer, sizeof(supplicant_buffer), "eap_%s", value);
-    update_rp(supp->config, RP_ATTRIBUTE, "allow_types", supplicant_buffer);
+    update_rp(supp->config, RP_ATTRIBUTE, "tester.allow_types", supplicant_buffer);
     write_radius(supp->config);
     return 0;
 }
@@ -1857,7 +1867,7 @@ ds_supplicant_identity_get(unsigned int gid, const char *oid,
     
     if (supp == NULL)
         return TE_RC(TE_TA_LINUX, ENOENT);
-    retrieve_rp(supp->config, "default.identity", &identity);
+    retrieve_rp(supp->config, "tester.identity", &identity);
     
     if (identity == NULL)
         *value = '\0';
@@ -1888,7 +1898,7 @@ ds_supplicant_identity_set(unsigned int gid, const char *oid,
         return TE_RC(TE_TA_LINUX, ENOENT);
     snprintf(supplicant_buffer, sizeof(supplicant_buffer),
              "<BEGIN_ID>%s<END_ID>", value);
-    rc = update_rp(supp->config, RP_ATTRIBUTE, "default.identity", 
+    rc = update_rp(supp->config, RP_ATTRIBUTE, "tester.identity", 
                    supplicant_buffer);
     if (rc != 0)
         return rc;
