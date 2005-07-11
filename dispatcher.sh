@@ -583,11 +583,12 @@ CS_SHUT=te_cs_shutdown
 
 for i in LOGGER RCF CS ; do
     if test -n "`eval echo '$'$i`" ; then
-        DAEMON_NAME=`eval echo '${'$i'_NAME}'`
-        DAEMON_EXEC=`eval echo '${'$i'_EXEC}'`
-        DAEMON_OPTS=`eval echo '${'$i'_OPTS}'`
-        DAEMON_CONF=`eval echo '${CONF_'$i'}'`
-        te_log_message Engine Dispatcher "Start ${DAEMON_NAME}"
+        DAEMON_NAME="`eval echo '${'$i'_NAME}'`"
+        DAEMON_EXEC="`eval echo '${'$i'_EXEC}'`"
+        DAEMON_OPTS="`eval echo '${'$i'_OPTS}'`"
+        DAEMON_CONF="`eval echo '${CONF_'$i'}'`"
+        te_log_message Engine Dispatcher \
+            "Start ${DAEMON_NAME}: ${DAEMON_OPTS} ${DAEMON_CONF}"
         myecho -n "--->>> Starting ${DAEMON_NAME}... "
         if test -n "`eval echo '${VG_'$i'}'`" ; then
             # Run in foreground under valgrind
