@@ -163,7 +163,8 @@ init_tce_collector(int argc, char **argv)
     *ptr = NULL;
     sprintf(buf, "%s.lock", tar_file_prefix);
     data_lock = open(buf, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
-    remove(buf);
+    if (!tce_standalone)
+        remove(buf);
     return 0;
 }
 
