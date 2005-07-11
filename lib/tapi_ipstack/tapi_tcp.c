@@ -489,6 +489,22 @@ tapi_tcp_template(tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn,
     {
         ERROR("%s(): make tcp pdu eror: 0x%X", __FUNCTION__, rc);
         goto cleanup;
+    } 
+
+    if (data != NULL && pld_len > 0)
+    {
+        int32_t flags;
+
+        ndn_du_read_plain_int(tcp_pdu, NDN_TAG_TCP_FLAGS, &flags);
+        flags |= TCP_PSH_FLAG;
+        ndn_du_write_plain_int(tcp_pdu, NDN_TAG_TCP_FLAGS, flags);
+
+        rc = asn_write_value_field(*tmpl, data, pld_len, "payload.#bytes");
+        if (rc != 0)
+        {
+            ERROR("%s(): write payload eror: 0x%X", __FUNCTION__, rc);
+            goto cleanup;
+        }
     }
 
     rc = asn_insert_indexed(*tmpl, tcp_pdu, 0, "pdus");
@@ -496,16 +512,6 @@ tapi_tcp_template(tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn,
     {
         ERROR("%s(): insert tcp pdu eror: 0x%X", __FUNCTION__, rc);
         goto cleanup;
-    }
-
-    if (data != NULL && pld_len > 0)
-    {
-        rc = asn_write_value_field(*tmpl, data, pld_len, "payload.#bytes");
-        if (rc != 0)
-        {
-            ERROR("%s(): write payload eror: 0x%X", __FUNCTION__, rc);
-            goto cleanup;
-        }
     }
 
 cleanup:
@@ -1035,8 +1041,6 @@ tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode,
                          (uint8_t *)&(local_in_addr->sin_addr), 
                          &arp_pattern);
     CHECK_ERROR("%s(): create arp pattern fails 0x%X", __FUNCTION__, rc);
-
-    asn_save_to_file(arp_pattern, "/tmp/arp-pattern.asn");
 
     func_len = snprintf(arp_reply_method, sizeof(arp_reply_method), 
                         "tad_eth_arp_reply:%02x:%02x:%02x:%02x:%02x:%02x",
