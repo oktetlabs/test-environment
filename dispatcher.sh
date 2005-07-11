@@ -368,6 +368,7 @@ fi
 
 
 # Process command-line options
+CMD_LINE_OPTS="$@"
 process_opts "$@"
 
 if test -z "${LOG_STORAGE_DIR}" ; then
@@ -502,6 +503,7 @@ fi
 
 # Intitialize log
 te_log_init
+te_log_message Engine Dispatcher "Command-line options: ${CMD_LINE_OPTS}"
 
 # Build Test Environment
 TE_BUILD_LOG=${TE_RUN_DIR}/build.log
