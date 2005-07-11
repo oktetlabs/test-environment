@@ -35,31 +35,35 @@
 #include <ctype.h>
 #include <stdlib.h>
 
+typedef unsigned char te_bool;
+
 int 
 main(int argc, char *argv[])
 {
     int rc;
-    int result;
-    int peer_id;
-
-    if (isdigit(*argv[1]))
+    extern pid_t tce_collector_pid;
+    extern int dump_tce_collector(void);
+    extern int stop_tce_collector(void);
+    extern int init_tce_collector(int argc, char **argv);
+    extern te_bool tce_standalone;
+        
+    if (argc < 3)
     {
-        extern pid_t tce_collector_pid;
-        extern int dump_tce_collector(void);
-        extern int stop_tce_collector(void);
-        int rc;
-        
-        tce_collector_pid = atol(argv[1]);
-        rc = dump_tce_collector();
-        stop_tce_collector();
-        if (rc != 0)
-        {
-            fprintf(stderr, "Error dumping TCE data from %d, code = %x", 
-                    tce_collector_pid, rc);
-            exit(EXIT_FAILURE);
-        }
-        exit(0);
+        fputs("USAGE: tce_dump <collector_pid> <data_file_prefix>\n",
+              stderr);
+        return EXIT_FAILURE;
     }
-        
+
+    tce_standalone = 1;
+    init_tce_collector(argc - 2, argv + 2);
+    tce_collector_pid = atol(argv[1]);
+    rc = dump_tce_collector();
+    stop_tce_collector();
+    if (rc != 0)
+    {
+        fprintf(stderr, "Error dumping TCE data from %d, code = %x\n", 
+                tce_collector_pid, rc);
+        return EXIT_FAILURE;
+    }
     return 0;
 }
