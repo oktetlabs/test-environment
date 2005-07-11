@@ -29,6 +29,9 @@
 # $Id$
 #
 
+# Use 'gcc' by default
+test -z "${TCE_CC}" && TCE_CC="gcc"
+
 coverage_options=
 processed_options=
 for arg in "$@"; do
