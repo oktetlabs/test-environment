@@ -1371,6 +1371,7 @@ tapi_tcp_send_msg(tapi_tcp_handler_t handler, uint8_t *payload, size_t len,
 
         case TAPI_TCP_QUIET:
             new_ack = 0;
+            break;
 
         case TAPI_TCP_AUTO:
             return EINVAL; /* this is very hard to support */
