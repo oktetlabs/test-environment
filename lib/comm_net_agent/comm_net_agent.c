@@ -262,18 +262,19 @@ rcf_comm_agent_wait(struct rcf_comm_connection *rcc,
         errno = 0;
 
         r = recv(rcc->socket, buffer + l, 1, 0);
-
         if (r < 0)
         {
             if (errno == EINTR) /* Valgrind work-around */
                 continue;
-            perror("socket read");
+            perror("recv");
             return errno;
         }
         if (r == 0)
         {
-            printf ("recv 0, exit\n");
-            exit(1);
+            fprintf(stdout,
+                    "%s(): recv() returned 0, connection is closed",
+                    __FUNCTION__);
+            return EPIPE;
         }
 
         if (buffer[l] == 0
@@ -384,9 +385,13 @@ rcf_comm_agent_reply(struct rcf_comm_connection *rcc, const void *buffer,
     {
         sent_len = send(rcc->socket,
                         (const uint8_t *)buffer + total_sent_len,
-                        length, 0);
+                        length, 0 /* flags */);
         if (sent_len < 0)
+        {
+            fprintf(stderr, "%s(): send() failed - errno=%d",
+                    __FUNCTION__, errno)
             return errno;
+        }
 
         total_sent_len += sent_len;
         length -= sent_len;
@@ -552,7 +557,9 @@ read_socket(int socket, void *buffer, size_t len)
         }
         else if (r == 0)
         {
-            fprintf(stderr, "recv() returned 0, connection is closed");
+            fprintf(stdout,
+                    "%s(): recv() returned 0, connection is closed",
+                    __FUNCTION__);
             return EPIPE;
         }
         assert((size_t)r <= len);
