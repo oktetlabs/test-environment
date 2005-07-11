@@ -198,7 +198,7 @@ void report_error(const char *fmt, ...)
 }
 
 #define report_notice report_error
-#define DEBUGGING
+#define DEBUGGING(x) 
 
 int 
 tce_collector(void)
