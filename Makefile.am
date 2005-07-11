@@ -56,8 +56,8 @@ all: install-data
 te: install-data
 	. builder.conf.processed 
 	cd include ; make install
-	cd tools ; make install
 	cd lib ; make install 
+	cd tools ; make install
 	te_build_nuts nutlibs
 	cd engine ; make install
 	cd agents ; make install
