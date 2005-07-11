@@ -69,20 +69,14 @@ if test -n "`eval echo '$NUT_'$NUT'_TCE_TANAME'`" ; then
     export TCE_SRC=$tce_src
     export TCE_CC=`eval echo '$NUT_'$NUT'_TCE_CC'`
     export TCE_CFLAGS=`eval echo '$NUT_'$NUT'_TCE_CFLAGS'`
-    if test -z "${TCE_CC}" ; then
-        export TCE_CC=${CC:-gcc}
-    fi
     export TCE_CXX=`eval echo '$NUT_'$NUT'_TCE_CXX'`
     export TCE_CXXFLAGS=`eval echo '$NUT_'$NUT'_TCE_CXXFLAGS'`
-    if test -z "${TCE_CXX}" ; then
-        export TCE_CXX=${CXX:-g++}
-    fi
-    export CXX=`which tce_gxx`
     export CC=`which tce_gcc`
-    export CLINK=`which tce_gcc`
+    export CXX=`which tce_gxx`
 fi
 
-TE_INSTALL=${TE_INSTALL} TE_INSTALL_NUT=${TE_INSTALL_NUT} ${NUT_SCRIPT} ${NUT} ${NUT_PARMS}
+TE_INSTALL=${TE_INSTALL} TE_INSTALL_NUT=${TE_INSTALL_NUT} \
+    ${NUT_SCRIPT} ${NUT} ${NUT_PARMS}
 NUT_SCRIPT_RC=$?
 
 exit ${NUT_SCRIPT_RC}
