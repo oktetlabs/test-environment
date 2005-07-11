@@ -273,6 +273,35 @@ tce_collector(void)
                     close(listen_on);
                     listen_on = -1;
                 }
+                if (chmod(addr.sun_path, 0666) != 0)
+                {
+                    report_notice("can't change permissions for %s: %s",
+                                  addr.sun_path, strerror(errno));
+                }
+            }
+        }
+        else if (strncmp(*args, "abstract:", 9) == 0)
+        {
+            struct sockaddr_un addr;
+            is_socket = TRUE;
+            listen_on = socket(PF_UNIX, SOCK_STREAM, 0);
+            if (listen_on < 0)
+            {
+                report_error("can't create local socket (%s)", 
+                        strerror(errno));
+            }
+            else
+            {
+                addr.sun_family = AF_UNIX;
+                memset(addr.sun_path, 0, sizeof(addr.sun_path));
+                strcpy(addr.sun_path + 1, *args + 9);
+                if (bind(listen_on, (struct sockaddr *)&addr, sizeof(addr)))
+                {
+                    report_error("can't bind to abstract socket %s (%s)",
+                            *args + 9, strerror(errno));
+                    close(listen_on);
+                    listen_on = -1;
+                }
             }
         }
 #endif
