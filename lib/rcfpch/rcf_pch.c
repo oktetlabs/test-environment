@@ -1046,7 +1046,7 @@ rcf_pch_run(const char *confstr, const char *info)
     }
 
 communication_problem:
-    VERB("Fatal communication error %d", rc);
+    ERROR("Fatal communication error %d", rc);
     goto exit;
 
 exit:
