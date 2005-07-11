@@ -130,13 +130,13 @@ extern "C" {
 /**
  * Terminate a test with success status.
  */
-#define TEST_SUCCESS    (tapi_jmp_do(0))
+#define TEST_SUCCESS    (TAPI_JMP_DO(0))
 
 /**
  * Terminate a test with failure status. It is assumed that error is
  * already reported.
  */
-#define TEST_STOP       (tapi_jmp_do(ETESTFAIL))
+#define TEST_STOP       (TAPI_JMP_DO(ETESTFAIL))
 
 /**
  * Terminate a test with failure status, report an error.

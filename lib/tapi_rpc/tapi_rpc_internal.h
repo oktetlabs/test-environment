@@ -74,14 +74,14 @@
             if (!RPC_IS_CALL_OK(rpcs))                                  \
             {                                                           \
                 rpcs->iut_err_jump = TRUE;                              \
-                tapi_jmp_do(ETEFAIL);                                   \
+                TAPI_JMP_DO(ETEFAIL);                                   \
             }                                                           \
             if (_res)                                                   \
             {                                                           \
                 if (rpcs->iut_err_jump)                                 \
                 {                                                       \
                     rpcs->iut_err_jump = TRUE;                          \
-                    tapi_jmp_do(ETEFAIL);                               \
+                    TAPI_JMP_DO(ETEFAIL);                               \
                 }                                                       \
             }                                                           \
             rpcs->iut_err_jump = TRUE;                                  \
@@ -89,7 +89,7 @@
         else                                                            \
         {                                                               \
             /* Try to jump */                                           \
-            tapi_jmp_do(ETEFAIL);                                       \
+            TAPI_JMP_DO(ETEFAIL);                                       \
         }                                                               \
     } while (0)
 

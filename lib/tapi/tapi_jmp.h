@@ -93,6 +93,12 @@ typedef struct tapi_jmp_point {
 extern tapi_jmp_point *tapi_jmp_push(const char *file,
                                      unsigned int lineno);
 
+
+/**
+ * Macro for convinient use of tapi_jmp_do().
+ */
+#define TAPI_JMP_DO(_val) tapi_jmp_do((_val), __FILE__, __LINE__)
+
 /**
  * Do non-local goto a stack context saved using tapi_jmp_push().
  *
@@ -106,7 +112,7 @@ extern tapi_jmp_point *tapi_jmp_push(const char *file,
  *
  * @sa tapi_jmp_push
  */
-extern int tapi_jmp_do(int val);
+extern int tapi_jmp_do(int val, const char *file, unsigned int lineno);
 
 #ifdef __cplusplus
 } /* extern "C" */

@@ -201,13 +201,13 @@ tapi_jmp_push(const char *file, unsigned int lineno)
     p->file    = file;
     p->lineno  = lineno;
 
-    INFO("%s(): %s:%u", __FUNCTION__, file, lineno);
+    INFO("Set jump point %s:%u", __FUNCTION__, file, lineno);
     return p;
 }
 
 /* See description in tapi_jmp.h */
 int
-tapi_jmp_do(int val)
+tapi_jmp_do(int val, const char *file, unsigned int lineno)
 {
     tapi_jmp_ctx   *ctx;
     tapi_jmp_point *p;
@@ -244,8 +244,8 @@ tapi_jmp_do(int val)
      */
     LIST_INSERT_HEAD(&ctx->garbage, p, links);
 
-    INFO("%s(): GOTO %s:%u rc=%x",
-         __FUNCTION__, p->file, p->lineno, (unsigned int)val);
+    INFO("Jump from %s:%u to %s:%u rc=%x",
+         file, lineno, p->file, p->lineno, (unsigned int)val);
     longjmp(p->env, val);
 
     /* Unreachable */
