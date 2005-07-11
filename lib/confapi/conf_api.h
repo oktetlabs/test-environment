@@ -324,7 +324,7 @@ cfg_find_pattern_fmt(unsigned int *p_num, cfg_handle **p_set,
  * @param handle    handle of the object or object instance
  * @param son       pointer to oldest son of the object or object instance.
  *
- * @returns sun's handle or CFG_HANDLE_INVALID
+ * @returns Status code.
  */
 extern int cfg_get_son(cfg_handle handle, cfg_handle *son);
 
@@ -334,7 +334,7 @@ extern int cfg_get_son(cfg_handle handle, cfg_handle *son);
  * @param handle    handle of the object or object instance
  * @param brother   pointer to the brother's handle
  *
- * @returns brother's handle or CFG_HANDLE_INVALID
+ * @returns Status code.
  */
 extern int cfg_get_brother(cfg_handle handle, cfg_handle *brother);
 
@@ -344,7 +344,7 @@ extern int cfg_get_brother(cfg_handle handle, cfg_handle *brother);
  * @param handle    handle of the object or object instance
  * @param father    pointer to the father's handle 
  *
- * @returns father's handle or CFG_HANDLE_INVALID
+ * @returns Status code.
  */
 extern int cfg_get_father(cfg_handle handle, cfg_handle *father);
 
