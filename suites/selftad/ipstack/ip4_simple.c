@@ -111,7 +111,6 @@ main(int argc, char *argv[])
         TEST_FAIL("There is no second Test Agent");
 
     agt_b = ta + strlen(ta) + 1;
-
     INFO("Found second TA: %s", agt_b, len);
 
     /* Session */
@@ -173,11 +172,13 @@ main(int argc, char *argv[])
 
 #if USE_TAPI
         rc = tapi_ip4_eth_csap_create(ta, sid, "eth0", NULL, NULL,
-                                      0, 0, &csap);
+                                      htonl(INADDR_ANY), htonl(INADDR_ANY),
+                                      &csap);
 #else
         rc = asn_parse_value_text("{ ip4:{max-packet-size plain:100000},"
                                   " eth:{device-id plain:\"eth0\"}}", 
                                   ndn_csap_spec, &csap_spec, &num);
+
         VERB("CSAP spec parse rc %X, syms %d", rc, num);
         if (rc)
             TEST_FAIL("ASN error"); 
@@ -200,8 +201,8 @@ main(int argc, char *argv[])
 
 #if USE_TAPI
         
-        rc = tapi_ip4_eth_recv_start_pkt(ta, sid, csap, NULL, NULL, NULL, 
-                                     (uint8_t*)&my_addr, 5000, 4,
+        rc = tapi_ip4_eth_recv_start_pkt(ta, sid, csap, NULL, NULL,
+                                     htonl(INADDR_ANY), my_addr, 5000, 4,
                                      user_pkt_handler, NULL);
 #else
         strcpy(path, "/tmp/te_ip4_pattern.XXXXXX"); 
@@ -221,6 +222,7 @@ main(int argc, char *argv[])
         rc = rcf_ta_trrecv_start(ta, sid, csap, path, 0, NULL, NULL, 0);
         INFO("trrecv_start: 0x%X \n", rc);
 #endif /* USE_TAPI */
+
         if (rc) break;
 
 #if 1

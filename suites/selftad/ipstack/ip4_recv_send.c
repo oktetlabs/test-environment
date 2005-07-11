@@ -178,8 +178,8 @@ main(int argc, char *argv[])
                         TE_RC_GET_MODULE(rc), TE_RC_GET_ERROR(rc)); 
         
         rc = tapi_ip4_eth_recv_start(agt_b, sid_b, ip4_listen_csap,
-                                     NULL, NULL, NULL, NULL, 5000,
-                                     num_pkts);
+                                     NULL, NULL, INADDR_ANY, INADDR_ANY,
+                                     5000, num_pkts);
         if (rc != 0) 
             TEST_FAIL("recv start failed %X", rc); 
 

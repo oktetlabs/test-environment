@@ -182,10 +182,10 @@ main(int argc, char *argv[])
                               &template, &syms);
     if (rc != 0)
         TEST_FAIL("parse of template failed %X, syms %d", rc, syms);
-
-    rc = tapi_ip4_pdu((uint8_t *)&ip_addr_a, (uint8_t *)&ip_addr_b,
+    rc = tapi_ip4_pdu(ip_addr_a, ip_addr_b,
                       frags, sizeof(frags)/sizeof(frags[0]), 
                       64, IPPROTO_UDP, &ip4_pdu);
+
     if (rc != 0)
         TEST_FAIL("make IP PDU failed: %x", rc); 
 
@@ -213,19 +213,14 @@ main(int argc, char *argv[])
                                template, RCF_MODE_BLOCKING);
     if (rc != 0) 
         TEST_FAIL("send start failed %X", rc); 
-
     RPC_AWAIT_IUT_ERROR(srv_listen);
-
     sleep(1);
     rc = rpc_recvfrom(srv_listen, udp_socket,
                       rcv_buffer, sizeof(rcv_buffer), RPC_MSG_DONTWAIT, 
                       &from_sa, &from_len);
-
     if (rc <= 0)
         TEST_FAIL("wanted UDP datagram not received!");
-
     RING("receive %d bytes on UDP socket", rc); 
-
     TEST_SUCCESS;
 
 cleanup:

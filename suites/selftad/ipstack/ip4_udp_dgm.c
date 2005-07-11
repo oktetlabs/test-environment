@@ -175,30 +175,23 @@ main(int argc, char *argv[])
                                sizeof(udp_dgm_image), "payload.#bytes");
     if (rc != 0)
         TEST_FAIL("set payload to template failed %X", rc);
-
     rc = tapi_ip4_eth_csap_create(agt_a, sid_a, "eth2", NULL, NULL,
                                   ip_addr_a, ip_addr_b, &ip4_send_csap);
     if (rc != 0)
         TEST_FAIL("CSAP create failed, rc from module %d is 0x%x\n", 
                     TE_RC_GET_MODULE(rc), TE_RC_GET_ERROR(rc)); 
 
-
     rc = tapi_tad_trsend_start(agt_a, sid_a, ip4_send_csap,
                                template, RCF_MODE_BLOCKING);
     if (rc != 0) 
         TEST_FAIL("send start failed %X", rc); 
-
     RPC_AWAIT_IUT_ERROR(srv_listen);
-
     rc = rpc_recvfrom(srv_listen, udp_socket,
                       rcv_buffer, sizeof(rcv_buffer), RPC_MSG_DONTWAIT, 
                       &from_sa, &from_len);
-
     if (rc <= 0)
         TEST_FAIL("wanted UDP datagram not received!");
-
     RING("receive %d bytes on UDP socket", rc); 
-
     TEST_SUCCESS;
 
 cleanup:
