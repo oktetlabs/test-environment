@@ -389,7 +389,7 @@ rcf_comm_agent_reply(struct rcf_comm_connection *rcc, const void *buffer,
         if (sent_len < 0)
         {
             fprintf(stderr, "%s(): send() failed - errno=%d",
-                    __FUNCTION__, errno)
+                    __FUNCTION__, errno);
             return errno;
         }
 
