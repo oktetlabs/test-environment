@@ -42,6 +42,7 @@
 #include "te_stdint.h"
 #include "tad_common.h"
 #include "asn_usr.h"
+#include "rcf_api.h"
 
 #ifdef __cplusplus
 extern "C" {
