@@ -420,6 +420,7 @@ find_rp (radius_parameter *base, const char *name, te_bool create, te_bool creat
     const char *value = NULL;
     int         name_length;
     int         value_length  = 0;
+    te_bool     wildcard      = FALSE;
 
     VERB("looking for RADIUS parameter %s", name);
     for (next = name; *next != '\0' && *next != '.'; next++)
@@ -462,6 +463,11 @@ find_rp (radius_parameter *base, const char *name, te_bool create, te_bool creat
     }
     
     name_length = (value == NULL ? next : value - 1) - name;
+    if (name[name_length - 1] == '*')
+    {
+        wildcard = TRUE;
+        name_length--;
+    }
     for (iter = base->children; iter != NULL; iter = iter->next)
     {
         if (iter->kind == RP_FILE)
@@ -475,7 +481,7 @@ find_rp (radius_parameter *base, const char *name, te_bool create, te_bool creat
             if (create || !iter->deleted)
             {
                 if (strncmp(iter->name, name, name_length) == 0 &&
-                    iter->name[name_length] == '\0')
+                    (wildcard || iter->name[name_length] == '\0'))
                 {
                     if (value == NULL || 
                         (iter->value != NULL && 
@@ -1654,8 +1660,11 @@ ds_supplicant_get(unsigned int gid, const char *oid,
     }
     if (kill(supp->process, 0))
     {
-        WARN("Supplicant (pid = %u), on interface %s apparently died",
-             (unsigned)supp->process, supp->interface);
+        int status = 0;
+        waitpid(supp->process, &status, 0);
+        WARN("Supplicant (pid = %u), on interface %s apparently died "
+             "with status = %8.8x",
+             (unsigned)supp->process, supp->interface, status);
         supp->process = (pid_t)-1;
         *value    = '0';
         value[1] = '\0';
@@ -1786,6 +1795,7 @@ ds_supplicant_del(unsigned int gid, const char *oid,
     return 0;
 }
 
+
 static int
 ds_supplicant_list(unsigned int gid, const char *oid,
                    char **value, const char *instance, ...)
@@ -1812,6 +1822,212 @@ ds_supplicant_list(unsigned int gid, const char *oid,
 }
 
 static char supplicant_buffer[256];
+static char supplicant_buffer2[256];
+
+static int
+ds_supp_method_username_set(unsigned int gid, const char *oid,
+                            const char *value, const char *instance, 
+                            const char *method, ...)
+{
+    supplicant *supp = find_supplicant(instance);
+    int rc;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    
+    if (supp == NULL)
+        return TE_RC(TE_TA_LINUX, ENOENT);
+
+    snprintf(supplicant_buffer2, sizeof(supplicant_buffer2),
+             "tester.eap_%s.username", method);
+    snprintf(supplicant_buffer, sizeof(supplicant_buffer),
+             "<BEGIN_UNAME>%s<END_UNAME>", value);
+    rc = update_rp(supp->config, RP_ATTRIBUTE, supplicant_buffer2,
+                   supplicant_buffer);
+    if (rc != 0)
+        return rc;
+    write_radius(supp->config);
+    return 0;
+}
+
+static int
+ds_supp_method_username_get(unsigned int gid, const char *oid,
+                            char *value, const char *instance, 
+                            const char *method, ...)
+{
+    supplicant *supp = find_supplicant(instance);
+    const char *username;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    
+    if (supp == NULL)
+        return TE_RC(TE_TA_LINUX, ENOENT);
+
+    snprintf(supplicant_buffer, sizeof(supplicant_buffer),
+             "tester.eap_%s.username", method);
+    retrieve_rp(supp->config, supplicant_buffer, &username);
+    
+    if (username == NULL)
+        *value = '\0';
+    else
+    {
+        const char *subptr = strstr(username, "<BEGIN_UNAME>");
+        if (subptr != NULL)
+            username = subptr + 13;
+        strcpy(value, username);
+        value = strstr(value, "<END_UNAME>");
+        if (value != NULL)
+            *value = '\0';
+    }
+    return 0;
+}
+
+static int
+ds_supp_method_passwd_set(unsigned int gid, const char *oid,
+                          const char *value, const char *instance, 
+                          const char *method, ...)
+{
+    supplicant *supp = find_supplicant(instance);
+    int rc;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    
+    if (supp == NULL)
+        return TE_RC(TE_TA_LINUX, ENOENT);
+
+    snprintf(supplicant_buffer2, sizeof(supplicant_buffer2),
+             "tester.eap_%s.password", method);
+    snprintf(supplicant_buffer, sizeof(supplicant_buffer),
+             "<BEGIN_PASS>%s<END_PASS>", value);
+    rc = update_rp(supp->config, RP_ATTRIBUTE, supplicant_buffer2,
+                   supplicant_buffer);
+    if (rc != 0)
+        return rc;
+    write_radius(supp->config);
+    return 0;
+}
+
+static int
+ds_supp_method_passwd_get(unsigned int gid, const char *oid,
+                          char *value, const char *instance, 
+                          const char *method, ...)
+{
+    supplicant *supp = find_supplicant(instance);
+    const char *password;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    
+    if (supp == NULL)
+        return TE_RC(TE_TA_LINUX, ENOENT);
+
+    snprintf(supplicant_buffer, sizeof(supplicant_buffer),
+             "tester.eap_%s.password", method);
+    retrieve_rp(supp->config, supplicant_buffer, &password);
+    
+    if (password == NULL)
+        *value = '\0';
+    else
+    {
+        const char *subptr = strstr(password, "<BEGIN_PASS>");
+        if (subptr != NULL)
+            password = subptr + 12;
+        strcpy(value, password);
+        value = strstr(value, "<END_PASS>");
+        if (value != NULL)
+            *value = '\0';
+    }
+    return 0;
+}
+
+static int
+ds_supplicant_method_del(unsigned int gid, const char *oid,
+                         const char *instance, 
+                         const char *method, ...)
+{
+    supplicant *supp = find_supplicant(instance);
+
+    UNUSED(gid);
+    UNUSED(oid);
+    
+    if (supp == NULL)
+        return TE_RC(TE_TA_LINUX, ENOENT);
+    snprintf(supplicant_buffer, sizeof(supplicant_buffer),
+             "eap_%s", method);
+    update_rp(supp->config, RP_SECTION, method, RP_DELETE_VALUE);
+    write_radius(supp->config);
+    return 0;
+}
+
+
+static int
+ds_supplicant_method_add(unsigned int gid, const char *oid,
+                         const char *value, const char *instance, 
+                         const char *method, ...)
+{
+    supplicant *supp = find_supplicant(instance);
+ 
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(value);
+   
+    if (supp == NULL)
+        return TE_RC(TE_TA_LINUX, ENOENT);
+    snprintf(supplicant_buffer, sizeof(supplicant_buffer),
+             "eap_%s", method);
+    update_rp(supp->config, RP_SECTION, method, NULL);
+    write_radius(supp->config);
+    return 0;
+}
+
+static te_bool 
+method_count(radius_parameter *rp, void *extra)
+{
+    int *count = extra;
+    UNUSED(rp);
+    if (rp->kind == RP_SECTION && rp->value != NULL)
+        (*count) += strlen(rp->value) - 4 + 1;
+    return FALSE;
+}
+
+static te_bool 
+method_list(radius_parameter *rp, void *extra)
+{
+    char **iter = extra;
+    if (rp->kind == RP_SECTION && rp->value != NULL)
+    {
+        int len = strlen(rp->value + 4);
+        memcpy(*iter, rp->value + 4, len);
+        (*iter)[len] = ' ';
+        (*iter) += len + 1;
+    }
+    return FALSE;
+}
+
+static int
+ds_supplicant_method_list(unsigned int gid, const char *oid,
+                         char **list,
+                         const char *instance, ...)
+{
+    supplicant *supp = find_supplicant(instance);
+    int size;
+    char *c_iter;
+    
+    if (supp == NULL)
+        return TE_RC(TE_TA_LINUX, ENOENT);
+
+    UNUSED(gid);
+    UNUSED(oid);
+    
+    find_rp(supp->config, "tester.eap_*", FALSE, FALSE, method_count, &size);
+    c_iter = *list = malloc(size + 1);
+    find_rp(supp->config, "tester.eap_*", FALSE, FALSE, method_list, &c_iter);
+    *c_iter = '\0';
+    return 0;
+
+}
 
 static int
 ds_supplicant_cur_method_get(unsigned int gid, const char *oid,
@@ -1906,8 +2122,25 @@ ds_supplicant_identity_set(unsigned int gid, const char *oid,
     return 0;
 }
 
-RCF_PCH_CFG_NODE_RW(node_ds_supplicant_cur_method, "cur_method",
+RCF_PCH_CFG_NODE_RW(node_ds_supp_method_passwd, "passwd",
                     NULL, NULL,
+                    ds_supp_method_passwd_get, 
+                    ds_supp_method_passwd_set);
+
+RCF_PCH_CFG_NODE_RW(node_ds_supp_method_username, "username",
+                    NULL, &node_ds_supp_method_passwd,
+                    ds_supp_method_username_get, 
+                    ds_supp_method_username_set);
+
+RCF_PCH_CFG_NODE_COLLECTION(node_ds_supplicant_method, "method",
+                            &node_ds_supp_method_username, NULL,
+                            ds_supplicant_method_add,
+                            ds_supplicant_method_del,
+                            ds_supplicant_method_list, 
+                            NULL);
+                            
+RCF_PCH_CFG_NODE_RW(node_ds_supplicant_cur_method, "cur_method",
+                    NULL, &node_ds_supplicant_method,
                     ds_supplicant_cur_method_get, 
                     ds_supplicant_cur_method_set);
 
