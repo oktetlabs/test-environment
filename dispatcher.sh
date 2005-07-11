@@ -583,20 +583,21 @@ CS_SHUT=te_cs_shutdown
 
 for i in LOGGER RCF CS ; do
     if test -n "`eval echo '$'$i`" ; then
-        DAEMON_NAME=`eval echo '$'$i'_NAME'`
-        DAEMON_EXEC=`eval echo '$'$i'_EXEC'`
-        DAEMON_CONF=`eval echo '$CONF_'$i`
-        te_log_message Engine Dispatcher "Start $DAEMON_NAME"
-        myecho -n "--->>> Starting $DAEMON_NAME... "
-        if test -n "`eval echo '$VG_'$i`" ; then
+        DAEMON_NAME=`eval echo '${'$i'_NAME}'`
+        DAEMON_EXEC=`eval echo '${'$i'_EXEC}'`
+        DAEMON_OPTS=`eval echo '${'$i'_OPTS}'`
+        DAEMON_CONF=`eval echo '${CONF_'$i'}'`
+        te_log_message Engine Dispatcher "Start ${DAEMON_NAME}"
+        myecho -n "--->>> Starting ${DAEMON_NAME}... "
+        if test -n "`eval echo '${VG_'$i'}'`" ; then
             # Run in foreground under valgrind
-            valgrind $VG_OPTIONS $DAEMON_EXEC "$DAEMON_CONF" \
-                2>valgrind.$DAEMON_EXEC
+            valgrind ${VG_OPTIONS} ${DAEMON_EXEC} ${DAEMON_OPTS} \
+                "${DAEMON_CONF}" 2>valgrind.${DAEMON_EXEC}
         else
-            $DAEMON_EXEC "$DAEMON_CONF"
+            ${DAEMON_EXEC} ${DAEMON_OPTS} "${DAEMON_CONF}"
         fi
         START_OK=$?
-        if test $START_OK -eq 0 ; then
+        if test ${START_OK} -eq 0 ; then
             myecho "done"
             eval `echo $i'_OK'`=yes
         else
