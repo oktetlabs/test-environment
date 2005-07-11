@@ -666,6 +666,13 @@ answer_user_request(usrreq *req)
              (unsigned)req->message->seqno, req->message->sid,
              rcf_op_to_string(req->message->opcode),
              ipc_server_client_name(req->user));
+#if 1
+        if (req->message->opcode == RCFOP_GET_LOG)
+            RING("Send reply for %u:%d:'%s' to user '%s'",
+                 (unsigned)req->message->seqno, req->message->sid,
+                 rcf_op_to_string(req->message->opcode),
+                 ipc_server_client_name(req->user));
+#endif
 
         rc = ipc_send_answer(server, req->user, (char *)req->message,
                              sizeof(rcf_msg) + req->message->data_len);
@@ -1258,6 +1265,10 @@ process_reply(ta *agent)
                 break;
 
             case RCFOP_GET_LOG:
+#if 1
+                RING("Answer \"%s\" is received from TA '%s'",
+                     cmd, agent->name);
+#endif
             case RCFOP_FGET:
                 if (ba == NULL)
                     goto bad_protocol;
@@ -1406,8 +1417,12 @@ transmit_cmd(ta *agent, usrreq *req)
         sprintf(cmd + strlen(cmd), " attach %u", (unsigned int)st.st_size);
     }
 
-    VERB("Command \"%s\" is transmitted to the Test Agent "
-                     "'%s'", cmd, agent->name);
+    VERB("Command \"%s\" is transmitted to TA '%s'", cmd, agent->name);
+#if 1
+    if (req->message->opcode == RCFOP_GET_LOG)
+        RING("Command \"%s\" is transmitted to TA '%s'",
+             cmd, agent->name);
+#endif
 
     len = strlen(cmd) + 1;
     while (TRUE)
@@ -2347,6 +2362,13 @@ main(int argc, const char *argv[])
                  (unsigned)req->message->seqno, req->message->sid,
                  rcf_op_to_string(req->message->opcode),
                  ipc_server_client_name(req->user));
+#if 1
+            if (req->message->opcode == RCFOP_GET_LOG)
+                RING("Got request %u:%d:'%s' from user '%s'",
+                     (unsigned)req->message->seqno, req->message->sid,
+                     rcf_op_to_string(req->message->opcode),
+                     ipc_server_client_name(req->user));
+#endif
 
             if (req->message->opcode == RCFOP_SHUTDOWN)
             {
@@ -2386,8 +2408,9 @@ main(int argc, const char *argv[])
                               __FILE__, __LINE__);
                         time_buf[0] = '\0';
                     }
-                    ERROR("Request '%s' sent to TA '%s' at '%s' is "
+                    ERROR("Request %u:%d:'%s' sent to TA '%s' at '%s' is "
                           "timed out",
+                          (unsigned)req->message->seqno, req->message->sid,
                           rcf_op_to_string(req->message->opcode),
                           agent->name, time_buf);
                 }
