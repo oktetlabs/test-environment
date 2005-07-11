@@ -80,8 +80,8 @@ ip4_confirm_pdu_cb(int csap_id, int layer, asn_value *tmpl_pdu)
     csap_p csap_descr = csap_find(csap_id);
 
     const asn_value *ip4_csap_pdu;
-    const asn_value *ip4_tmpl_pdu;
     const asn_value *du_field;
+    asn_value       *ip4_tmpl_pdu;
 
     ip4_csap_specific_data_t * spec_data = 
         (ip4_csap_specific_data_t *) csap_descr->layers[layer].specific_data; 
@@ -89,7 +89,9 @@ ip4_confirm_pdu_cb(int csap_id, int layer, asn_value *tmpl_pdu)
 
     if (asn_get_syntax(tmpl_pdu, "") == CHOICE)
     {
-        if ((rc = asn_get_choice_value(tmpl_pdu, &ip4_tmpl_pdu, NULL, NULL))
+        if ((rc = asn_get_choice_value(tmpl_pdu,
+                                       (const asn_value **)&ip4_tmpl_pdu,
+                                       NULL, NULL))
              != 0)
             return rc;
     }
