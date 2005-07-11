@@ -637,13 +637,7 @@ shutdown_daemon CS
 if test -n "$LOGGER_OK" ; then
     te_log_message Engine Dispatcher "Flush log"
     myecho "--->>> Flush Logs"
-    te_log_flush &
-    PID=$!
-    for ((i = 0 ; i < 20 ; i++)) ; do
-        if ! kill -cont $PID >/dev/null 2>&1 ; then  break ; fi
-        sleep 1 ;
-    done    
-    kill $PID >/dev/null 2>&1
+    te_log_flush
 fi
 
 if test $START_OK -eq 0 -a -n "$TESTER" ; then
