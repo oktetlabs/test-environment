@@ -42,8 +42,6 @@ main(int argc, char *argv[])
     int result;
     int peer_id;
 
-    UNUSED(argc);
-
     if (isdigit(*argv[1]))
     {
         extern pid_t tce_collector_pid;
