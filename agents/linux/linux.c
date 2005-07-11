@@ -168,14 +168,22 @@ rcf_ch_init()
 void
 rcf_ch_lock()
 {
-    pthread_mutex_lock(&ta_lock);
+    int rc = pthread_mutex_lock(&ta_lock);
+
+    if (rc != 0)
+        ERROR("%s(): pthread_mutex_lock() failed - rc=%d, errno=%d",
+              __FUNCTION__, rc, errno);
 }
 
 /* See description in rcf_ch_api.h */
 void
 rcf_ch_unlock()
 {
-    pthread_mutex_unlock(&ta_lock);
+    int rc = pthread_mutex_unlock(&ta_lock);
+
+    if (rc != 0)
+        ERROR("%s(): pthread_mutex_unlock() failed - rc=%d, errno=%d",
+              __FUNCTION__, rc, errno);
 }
 
 
