@@ -211,5 +211,10 @@ cleanup:
     if (udp_socket > 0)
         rpc_close(srv_listen, udp_socket);
 
+    if (srv_listen != NULL && (rcf_rpc_server_destroy(srv_listen) != 0))
+    {
+        WARN("Cannot delete listen RPC server\n");
+    }
+
     TEST_END;
 }
