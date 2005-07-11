@@ -116,8 +116,8 @@ extern int tapi_ip4_eth_recv_start(const char *ta_name, int sid,
                                    csap_handle_t csap,
                                    const uint8_t *src_mac_addr,
                                    const uint8_t *dst_mac_addr,
-                                   const uint8_t *src_ip4_addr,
-                                   const uint8_t *dst_ip4_addr,
+                                   in_addr_t      src_ip4_addr,
+                                   in_addr_t      dst_ip4_addr,
                                    unsigned int timeout, int num);
 
 /**
@@ -146,8 +146,8 @@ extern int tapi_ip4_eth_recv_start_pkt(const char *ta_name, int sid,
                                        csap_handle_t csap,
                                        const uint8_t *src_mac_addr,
                                        const uint8_t *dst_mac_addr,
-                                       const uint8_t *src_ip4_addr,
-                                       const uint8_t *dst_ip4_addr,
+                                       in_addr_t      src_ip4_addr,
+                                       in_addr_t      dst_ip4_addr,
                                        unsigned int timeout, int num, 
                                        ip4_callback callback,
                                        void *userdata);
@@ -165,8 +165,8 @@ extern int tapi_ip4_eth_recv_start_pkt(const char *ta_name, int sid,
  * 
  * @return status code.
  */
-extern int tapi_ip4_pdu(const uint8_t *src_ip4_addr,
-                        const uint8_t *dst_ip4_addr,
+extern int tapi_ip4_pdu(in_addr_t            src_ip4_addr,
+                        in_addr_t            dst_ip4_addr,
                         tapi_ip_frag_spec_t *fragments,
                         size_t num_frags,
                         int ttl, int protocol, 
@@ -186,8 +186,8 @@ extern int tapi_ip4_pdu(const uint8_t *src_ip4_addr,
  */
 extern int tapi_ip4_eth_pattern_unit(const uint8_t *src_mac_addr,
                                      const uint8_t *dst_mac_addr,
-                                     const uint8_t *src_ip4_addr,
-                                     const uint8_t *dst_ip4_addr,
+                                     in_addr_t      src_ip4_addr,
+                                     in_addr_t      dst_ip4_addr,
                                      asn_value **result_value);
 
 
@@ -226,8 +226,8 @@ extern int tapi_pattern_unit_ip4_mask(asn_value *pattern_unit,
  */ 
 extern int tapi_ip4_eth_template(const uint8_t *src_mac_addr,
                                  const uint8_t *dst_mac_addr,
-                                 const uint8_t *src_ip4_addr,
-                                 const uint8_t *dst_ip4_addr,
+                                 in_addr_t      src_ip4_addr,
+                                 in_addr_t      dst_ip4_addr,
                                  tapi_ip_frag_spec_t *fragments,
                                  size_t num_frags,
                                  int ttl, int protocol, 

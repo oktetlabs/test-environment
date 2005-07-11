@@ -207,7 +207,7 @@ tapi_tcp_ip4_eth_csap_create(const char *ta_name, int sid,
 
 /* see description in tapi_tcp.h */
 int 
-tapi_tcp_ip4_pattern_unit(const uint8_t *src_addr, const uint8_t *dst_addr,
+tapi_tcp_ip4_pattern_unit(in_addr_t  src_addr, in_addr_t  dst_addr,
                         uint16_t src_port, uint16_t dst_port,
                         asn_value **result_value)
 {
@@ -219,12 +219,12 @@ tapi_tcp_ip4_pattern_unit(const uint8_t *src_addr, const uint8_t *dst_addr,
     struct in_addr in_dst_addr;
 
     if (src_addr) 
-        in_src_addr.s_addr = *(unsigned long *)src_addr;
+        in_src_addr.s_addr = src_addr;
     else
         in_src_addr.s_addr = 0;
 
     if (dst_addr) 
-        in_dst_addr.s_addr = *(unsigned long *)dst_addr;
+        in_dst_addr.s_addr = dst_addr;
     else
         in_dst_addr.s_addr = 0;
 
@@ -240,11 +240,11 @@ tapi_tcp_ip4_pattern_unit(const uint8_t *src_addr, const uint8_t *dst_addr,
 
         if (rc) break;
         if (src_addr)
-            rc = asn_write_value_field(pu, src_addr, 4, 
+            rc = asn_write_value_field(pu, &src_addr, 4, 
                                        "pdus.1.#ip4.src-addr.#plain");
 
         if (dst_addr)
-            rc = asn_write_value_field(pu, dst_addr, 4, 
+            rc = asn_write_value_field(pu, &dst_addr, 4, 
                                        "pdus.1.#ip4.dst-addr.#plain");
 
         if (src_port)
@@ -273,8 +273,8 @@ tapi_tcp_ip4_pattern_unit(const uint8_t *src_addr, const uint8_t *dst_addr,
 int
 tapi_tcp_ip4_eth_recv_start(const char *ta_name, int sid, 
                             csap_handle_t csap,
-                            const uint8_t *src_addr,
-                            const uint8_t *dst_addr,
+                            in_addr_t      src_addr,
+                            in_addr_t      dst_addr,
                             uint16_t src_port, uint16_t dst_port,
                             unsigned int timeout, int num,
                             tcp_row_callback callback, void *userdata)
@@ -1386,8 +1386,8 @@ tapi_tcp_send_msg(tapi_tcp_handler_t handler, uint8_t *payload, size_t len,
 
     if (frags != NULL)
     {
-        rc = tapi_ip4_pdu(NULL, NULL, frags, frag_num, 64, IPPROTO_TCP, 
-                          &ip_pdu);
+        rc = tapi_ip4_pdu(INADDR_ANY, INADDR_ANY, frags, frag_num, 64,
+                          IPPROTO_TCP, &ip_pdu);
         if (rc != 0)
         {
             ERROR("%s: make ip pdu error 0x%X", __FUNCTION__, rc);

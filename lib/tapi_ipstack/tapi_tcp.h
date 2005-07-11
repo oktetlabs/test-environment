@@ -105,8 +105,8 @@ extern int tapi_tcp_ip4_eth_csap_create(const char *ta_name, int sid,
  */
 extern int tapi_tcp_ip4_eth_recv_start(const char *ta_name, int sid, 
                                        csap_handle_t csap,
-                                       const uint8_t *src_addr,
-                                       const uint8_t *dst_addr,
+                                       in_addr_t  src_addr,
+                                       in_addr_t  dst_addr,
                                        uint16_t src_port, uint16_t dst_port,
                                        unsigned int timeout, int num,
                                        tcp_row_callback callback,
@@ -125,7 +125,7 @@ extern int tapi_tcp_ip4_eth_recv_start(const char *ta_name, int sid,
  * @return Zero on success or error code.
  */
 extern int tapi_tcp_ip4_pattern_unit(
-                        const uint8_t *src_addr, const uint8_t *dst_addr,
+                        in_addr_t  src_addr, in_addr_t  dst_addr,
                         uint16_t src_port, uint16_t dst_port,
                         asn_value **result_value);
 

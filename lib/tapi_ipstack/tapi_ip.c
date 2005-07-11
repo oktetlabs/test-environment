@@ -81,7 +81,7 @@ ip4_pkt_handler(char *pkt_fname, void *user_param)
 
     RING("%s called file %s", __FUNCTION__, pkt_fname);
 
-    if (user_param == NULL) 
+    if (user_param == NULL)
     {
         WARN("%s called with NULL user param", __FUNCTION__);
         return;
@@ -235,8 +235,8 @@ int
 tapi_ip4_eth_recv_start(const char *ta_name, int sid, csap_handle_t csap,
                         const uint8_t *src_mac_addr,
                         const uint8_t *dst_mac_addr,
-                        const uint8_t *src_ip4_addr,
-                        const uint8_t *dst_ip4_addr,
+                        in_addr_t      src_ip4_addr,
+                        in_addr_t      dst_ip4_addr,
                         unsigned int timeout, int num)
 {
     return tapi_ip4_eth_recv_start_pkt(ta_name, sid, csap, 
@@ -251,8 +251,8 @@ tapi_ip4_eth_recv_start_pkt(const char *ta_name, int sid,
                             csap_handle_t csap,
                             const uint8_t *src_mac_addr,
                             const uint8_t *dst_mac_addr,
-                            const uint8_t *src_ip4_addr,
-                            const uint8_t *dst_ip4_addr,
+                            in_addr_t      src_ip4_addr,
+                            in_addr_t      dst_ip4_addr,
                             unsigned int timeout, int num, 
                             ip4_callback callback,
                             void *userdata)
@@ -274,17 +274,23 @@ tapi_ip4_eth_recv_start_pkt(const char *ta_name, int sid,
     }
 
     fprintf(f, "{{ pdus { ip4:{" );
-
-    if ((b = src_ip4_addr))
+    
+    if (src_ip4_addr != INADDR_ANY)
+    {
+        b = (uint8_t *)&(src_ip4_addr);
         fprintf(f, "src-addr plain:'%02x %02x %02x %02x'H", 
                 b[0], b[1], b[2], b[3]);
+    }
 
     if (src_ip4_addr && dst_ip4_addr)
         fprintf(f, ",\n   ");
 
-    if ((b = dst_ip4_addr))
+    if (dst_ip4_addr != INADDR_ANY)
+    {
+        b = (uint8_t *)&(dst_ip4_addr);
         fprintf(f, " dst-addr plain:'%02x %02x %02x %02x'H", 
                 b[0], b[1], b[2], b[3]);
+    }
 
     fprintf(f, "   },\n" ); /* closing  'ip4' */
     fprintf(f, "   eth:{eth-type plain:2048");
@@ -321,7 +327,7 @@ tapi_ip4_eth_recv_start_pkt(const char *ta_name, int sid,
 
 /* see description in tapi_ip.h */
 int
-tapi_ip4_pdu(const uint8_t *src_ip4_addr, const uint8_t *dst_ip4_addr,
+tapi_ip4_pdu(in_addr_t  src_ip4_addr, in_addr_t  dst_ip4_addr,
              tapi_ip_frag_spec_t *fragments, size_t num_frags,
              int ttl, int protocol, asn_value **result_value)
 {
@@ -347,17 +353,17 @@ tapi_ip4_pdu(const uint8_t *src_ip4_addr, const uint8_t *dst_ip4_addr,
         return TE_RC(TE_TAPI, rc);
     }
 
-    if (src_ip4_addr != NULL &&
+    if (src_ip4_addr != INADDR_ANY &&
         (rc = ndn_du_write_plain_oct(ip4_pdu, NDN_TAG_IP4_SRC_ADDR,
-                                     src_ip4_addr, 4)) != 0)
+                                     (uint8_t *)&src_ip4_addr, 4)) != 0)
     {
         ERROR("%s(): set IP4 src failed 0x%X", __FUNCTION__, rc);
         return TE_RC(TE_TAPI, rc);
     }
 
-    if (dst_ip4_addr != NULL &&
+    if (dst_ip4_addr != INADDR_ANY &&
         (rc = ndn_du_write_plain_oct(ip4_pdu, NDN_TAG_IP4_DST_ADDR,
-                                     dst_ip4_addr, 4)) != 0)
+                                     (uint8_t *)&dst_ip4_addr, 4)) != 0)
     {
         ERROR("%s(): set IP4 dst failed 0x%X", __FUNCTION__, rc);
         return TE_RC(TE_TAPI, rc);
@@ -409,8 +415,8 @@ tapi_ip4_pdu(const uint8_t *src_ip4_addr, const uint8_t *dst_ip4_addr,
 int
 tapi_ip4_eth_pattern_unit(const uint8_t *src_mac_addr,
                           const uint8_t *dst_mac_addr,
-                          const uint8_t *src_ip4_addr,
-                          const uint8_t *dst_ip4_addr,
+                          in_addr_t      src_ip4_addr,
+                          in_addr_t      dst_ip4_addr,
                           asn_value **pattern_unit)
 {
     int rc = 0;
@@ -429,31 +435,49 @@ tapi_ip4_eth_pattern_unit(const uint8_t *src_mac_addr,
               __FUNCTION__, rc, num);
     }
 
-#define FILL_ADDR(dir_, atype_, len_, pos_) \
-    do {                                                                \
-        if (dir_ ## _ ## atype_ ## _addr != NULL)                       \
-        {                                                               \
-            rc = asn_write_value_field(*pattern_unit,                   \
-                                       dir_ ## _ ## atype_ ## _addr,    \
-                                       len_, "pdus." #pos_ "." #dir_    \
-                                       "-addr.#plain");                 \
-            if (rc != 0)                                                \
-            {                                                           \
-                ERROR("%s: write " #dir_ " " #atype_ " addr fails %X",   \
-                      __FUNCTION__, rc);                                \
-                asn_free_value(*pattern_unit);                          \
-                *pattern_unit = NULL;                                   \
-                return TE_RC(TE_TAPI, rc);                              \
-            }                                                           \
-        }                                                               \
+#define CHECK_ERROR(dir_, atype_) \
+    do {                                                            \
+        if (rc != 0)                                                \
+        {                                                           \
+            ERROR("%s(): write " #dir_ " " #atype_ " addr fails %X",\
+                  __FUNCTION__, rc);                                \
+            asn_free_value(*pattern_unit);                          \
+            *pattern_unit = NULL;                                   \
+            return TE_RC(TE_TAPI, rc);                              \
+        }                                                           \
     } while (0)
 
-    FILL_ADDR(src, ip4, 4, 0);
-    FILL_ADDR(dst, ip4, 4, 0); 
-    FILL_ADDR(src, mac, 6, 1);
-    FILL_ADDR(dst, mac, 6, 1);
+#define FILL_IP4_ADDR(dir_) \
+    do {                                                                  \
+        if (dir_ ## _ip4_addr != INADDR_ANY)                              \
+        {                                                                 \
+            rc = asn_write_value_field(*pattern_unit,                     \
+                                       &( dir_ ## _ip4_addr),             \
+                                       4, "pdus.0." #dir_ "-addr.#plain");\
+            CHECK_ERROR(dir_, ip4);                                       \
+        }                                                                 \
+    } while (0)
 
-#undef FILL_ADDR
+#define FILL_MAC_ADDR(dir_) \
+    do {                                                                  \
+        if (dir_ ## _mac_addr != NULL)                                    \
+        {                                                                 \
+            rc = asn_write_value_field(*pattern_unit,                     \
+                                       dir_ ## _mac_addr,                 \
+                                       6, "pdus.1." #dir_ "-addr.#plain");\
+            CHECK_ERROR(dir_, mac);                                       \
+        }                                                                 \
+    } while (0)
+
+    FILL_IP4_ADDR(src);
+    FILL_IP4_ADDR(dst); 
+    FILL_MAC_ADDR(src);
+    FILL_MAC_ADDR(dst);
+
+#undef CHECK_ERROR
+#undef FILL_IP4_ADDR
+#undef FILL_MAC_ADDR
+
     return TE_RC(TE_TAPI, rc);
 }
 
@@ -462,8 +486,8 @@ tapi_ip4_eth_pattern_unit(const uint8_t *src_mac_addr,
 int
 tapi_ip4_eth_template(const uint8_t *src_mac_addr,
                       const uint8_t *dst_mac_addr,
-                      const uint8_t *src_ip4_addr,
-                      const uint8_t *dst_ip4_addr,
+                      in_addr_t      src_ip4_addr,
+                      in_addr_t      dst_ip4_addr,
                       tapi_ip_frag_spec_t *fragments,
                       size_t num_frags,
                       int ttl, int protocol, 
