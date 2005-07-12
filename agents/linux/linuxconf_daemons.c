@@ -1453,7 +1453,7 @@ ds_init_ftp_server(rcf_pch_cfg_object **last)
     ds_ftpserver_update_config();
     if (ta_system("mkdir -p /var/ftp/pub") != 0)
     {
-        ERROR("Cannot create /var/ftp/pub");
+        WARN("Cannot create /var/ftp/pub");
         return;
     }
     if (ta_system("chmod o+w /var/ftp/pub") !=0)
