@@ -201,7 +201,7 @@ tapi_jmp_push(const char *file, unsigned int lineno)
     p->file    = file;
     p->lineno  = lineno;
 
-    INFO("Set jump point %s:%u", __FUNCTION__, file, lineno);
+    INFO("Set jump point %s:%u", file, lineno);
     return p;
 }
 
