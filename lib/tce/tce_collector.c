@@ -397,7 +397,8 @@ tce_collector(void)
         if (caught_signo != 0)
         {
             int signo = caught_signo;
-            report_notice("TCE collector caught signal %d", signo);
+            DEBUGGING(report_notice("TCE collector caught signal %d", 
+                                    signo));
             caught_signo = 0;
             if (signo == SIGHUP)
                 dump_data();
@@ -728,6 +729,7 @@ read_data(int channel)
         channels = found;
         found->bufptr = found->buffer;
         found->remaining = sizeof(found->buffer) - 1;
+        report_notice("new peer connected");
     }
 
     if (found->state == NULL)
