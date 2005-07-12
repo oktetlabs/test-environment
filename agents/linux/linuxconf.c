@@ -2806,7 +2806,6 @@ arp_list(unsigned int gid, const char *oid, char **list)
     return 0;
 }
 
-
 /**
  * Parses instance name and converts its value into routing table entry 
  * data structure.
@@ -2947,9 +2946,9 @@ route_parse_inst_name(const char *inst_name,
         rt->rt_metric = int_val;
     }
     
-    if ((ptr = strstr(tmp, "mss=")) != NULL)
+    if ((ptr = strstr(tmp, "mtu=")) != NULL)
     {
-        end_ptr = ptr += strlen("mss=");
+        end_ptr = ptr += strlen("mtu=");
         while (*end_ptr != ',' && *end_ptr != '\0')
             end_ptr++;
         *end_ptr = '\0';
@@ -2957,13 +2956,13 @@ route_parse_inst_name(const char *inst_name,
         if (*ptr == '\0' || *ptr == '-' ||
             (int_val = strtol(ptr, &end_ptr, 10), *end_ptr != '\0'))
         {
-            ERROR("Incorrect 'route mss' value in route %s", inst_name);
+            ERROR("Incorrect 'route mtu' value in route %s", inst_name);
             return TE_RC(TE_TA_LINUX, EINVAL);
         }
         if (term_byte != end_ptr)
             *end_ptr = ',';
 
-        /* Don't be confused the structure does not have mss field */
+        /* Don't be confused the structure does not have mtu field */
         rt->rt_mtu = int_val;
         rt->rt_flags |= RTF_MSS;
     }
@@ -3013,127 +3012,404 @@ route_parse_inst_name(const char *inst_name,
     return 0;
 }
 
-/**
- * Get route value (gateway IP address).
- *
- * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
- * @param value         value location (IPv4 address is returned in
- *                      dotted notation)
- * @param route         route instance name: see doc/cm_cm_base.xml 
- *                      for the format
- *
- * @return error code
- */
-static int
-route_get(unsigned int gid, const char *oid, char *value,
-          const char *route)
-{
-#ifdef __linux__
-    int       rc;
-    FILE     *fp;
-    char      ifname[IF_NAMESIZE];
-    uint32_t  route_addr;
-    uint32_t  route_mask;
-    uint32_t  route_gw;
+#ifdef USE_NETLINK_ROUTE
+struct nl_request {
+    struct nlmsghdr n;
+    struct rtmsg    r;
+    char            buf[1024];
+};
 
-    struct rtentry  rt;
+int 
+nl_get_unsigned(unsigned *val, const char *arg, int base)
+{
+    unsigned long res;
+    char *ptr;
+
+    if (!arg || !*arg)
+        return -1;
+    res = strtoul(arg, &ptr, base);
+    if (!ptr || ptr == arg || *ptr || res > UINT_MAX)
+        return -1;
+    *val = res;
+    return 0;
+}
+
+int 
+nl_get_addr(inet_prefix *addr, const char *name, int family)
+{
+    const char *cp;
+    unsigned char *ap = (unsigned char*)addr->data;
+    int i;
+
+    UNUSED(family);
+
+    memset(addr, 0, sizeof(*addr));
+
+    addr->bytelen = 4;
+    addr->bitlen = -1;
+
+    addr->family = AF_INET;
+    for (cp=name, i=0; *cp; cp++) {
+        if (*cp <= '9' && *cp >= '0') {
+            ap[i] = 10*ap[i] + (*cp-'0');
+            continue;
+        }
+        if (*cp == '.' && ++i <= 3)
+            continue;
+        return -1;
+    }
+    return 0;
+}
+
+int 
+nl_get_integer(int *val, const char *arg, int base)
+{
+    long res;
+    char *ptr;
+
+    if (!arg || !*arg)
+        return -1;
+    res = strtol(arg, &ptr, base);
+    if (!ptr || ptr == arg || *ptr || res > INT_MAX || res < INT_MIN)
+        return -1;
+    *val = res;
+    return 0;
+}
+
+int 
+nl_get_prefix(inet_prefix *dst, const char *arg, int family)
+{
+    int         err;
+    unsigned    plen;
+    char       *slash;
+    char       *tmp = strdup(arg);
+        
+    if (tmp == NULL)
+        return ENOMEM;
+    
+    memset(dst, 0, sizeof(*dst));
+
+    slash = strchr(tmp, '|');
+    if (slash)
+        *slash = 0;
+
+    err = nl_get_addr(dst, tmp, family);
+    if (err == 0) {
+        dst->bitlen = 32;
+        if (slash) {
+            if (nl_get_integer(&plen, slash + 1, 0) || 
+                plen > (unsigned)dst->bitlen) {
+                err = -1;
+                goto done;
+            }
+            dst->bitlen = plen;
+        }
+    }
+done:
+    if (slash)
+        *slash = '|';
+
+    free(tmp);
+    return err;
+}
+
+static int
+route_change(unsigned int gid, const char *oid, const char *value,
+          const char *route, int action, unsigned flags)
+{
+    struct nl_request    req;    
+    inet_prefix          dst;
+    struct rtnl_handle   rth;
+    char                 mxbuf[256];
+    struct rtattr       *mxrta = (void*)mxbuf;
+    inet_prefix          addr;
+
+    char                *c;
+    char                 dev[10];
+    int                  gw_ok = 0;
 
     UNUSED(gid);
     UNUSED(oid);
 
     ENTRY("%s", route);
 
-    if ((rc = route_parse_inst_name(route, &rt)) != 0)
-        return 0;
 
-    memcpy(&route_addr, &(((struct sockaddr_in *)&(rt.rt_dst))->sin_addr),
-           sizeof(route_addr));
+    memset(&req, 0, sizeof(req));
+    memset(&dev, 0, sizeof(dev));
 
-    route_mask = ((struct sockaddr_in *)&(rt.rt_genmask))->sin_addr.s_addr;
-    route_gw = ((struct sockaddr_in *)&(rt.rt_gateway))->sin_addr.s_addr;
+    req.n.nlmsg_len = NLMSG_LENGTH(sizeof(struct rtmsg));
+    req.n.nlmsg_flags = NLM_F_REQUEST | flags;
+    req.n.nlmsg_type = action;
 
-    if ((fp = fopen("/proc/net/route", "r")) == NULL)
+    req.r.rtm_protocol = RTPROT_BOOT;
+    req.r.rtm_family = AF_INET;
+    req.r.rtm_table = RT_TABLE_MAIN;
+    req.r.rtm_scope = RT_SCOPE_NOWHERE;
+    req.r.rtm_type = RTN_UNICAST;
+
+    if (action != RTM_DELROUTE)
     {
-        ERROR("Failed to open /proc/net/route for reading: %s",
-              strerror(errno));
+        req.r.rtm_protocol = RTPROT_BOOT;
+        req.r.rtm_scope = RT_SCOPE_UNIVERSE;
+        req.r.rtm_type = RTN_UNICAST;
+    }
+
+    mxrta->rta_type = RTA_METRICS;
+    mxrta->rta_len = RTA_LENGTH(0);
+
+    {
+        c = strchr(route, ',');
+        if (c != NULL)
+            *c = 0;
+
+        if (nl_get_prefix(&dst, route, req.r.rtm_family) != 0)
+            return TE_RC(TE_TA_LINUX, EINVAL);
+
+        req.r.rtm_dst_len = dst.bitlen;
+        if (dst.bytelen)
+        {
+            if (addattr_l(&req.n, sizeof(req), RTA_DST, &dst.data, 
+                          dst.bytelen) != 0)
+                return TE_RC(TE_TA_LINUX, EINVAL);
+        }
+        if (c != NULL)
+            *c = ',';
+    }
+
+    if ((c = strstr(route, "gw=")) != NULL)
+    {
+        char *d = strchr(c, ',');
+
+        if (d != NULL)
+            *d = 0;
+
+        if (nl_get_addr(&addr, c + strlen("gw="), req.r.rtm_family) != 0)
+            return TE_RC(TE_TA_LINUX, EINVAL);
+
+        if (addattr_l(&req.n, sizeof(req), RTA_GATEWAY, &addr.data, 
+                      addr.bytelen) != 0)
+            return TE_RC(TE_TA_LINUX, EINVAL);
+
+        gw_ok = 1;
+        if (d != NULL)
+            *d = ',';
+    }
+
+    if ((c = strstr(route, "dev=")) != NULL)
+    {
+        char     *d = strchr(c, ',');
+
+        if (d != NULL)
+            *d = 0;
+
+        strcpy(dev, c + strlen("dev="));
+        if (dev == NULL)
+            return TE_RC(TE_TA_LINUX, EINVAL);
+
+        if (d != NULL)
+            *d = ',';
+    }
+    
+    if ((c = strstr(route, "metric=")) != NULL)
+    {
+        unsigned  metric= 1500;
+        char     *d = strchr(c, ',');
+
+        if (d != NULL)
+            *d = 0;
+
+        if (nl_get_unsigned(&metric, c + strlen("metric="), 0))
+            return TE_RC(TE_TA_LINUX, EINVAL);
+
+        addattr32(&req.n, sizeof(req), RTA_PRIORITY, metric);
+
+        if (d != NULL)
+            *d = ',';
+    }   
+
+    if ((c = strstr(value, "mtu=")) != NULL)
+    {
+        unsigned  mtu = 1500;
+        char     *d = strchr(c, ',');
+
+        if (d != NULL)
+            *d = 0;
+
+        if (nl_get_unsigned(&mtu, c + strlen("mtu="), 0))
+            return TE_RC(TE_TA_LINUX, EINVAL);
+
+        rta_addattr32(mxrta, sizeof(mxbuf), RTAX_MTU, mtu);
+
+        if (d != NULL)
+            *d = ',';
+    }
+
+    if ((c = strstr(value, "window=")) != NULL)
+    {
+        unsigned  window = 1500;
+        char     *d = strchr(c, ',');
+
+        if (d != NULL)
+            *d = 0;
+
+        if (nl_get_unsigned(&window, c + strlen("window="), 0))
+            return TE_RC(TE_TA_LINUX, EINVAL);
+
+        rta_addattr32(mxrta, sizeof(mxbuf), RTAX_WINDOW, window);
+
+        if (d != NULL)
+            *d = ',';
+    }
+
+    if ((c = strstr(value, "irtt=")) != NULL)
+    {
+        unsigned  rtt = 1500;
+        char     *d = strchr(c, ',');
+
+        if (d != NULL)
+            *d = 0;
+
+        if (nl_get_unsigned(&rtt, c + strlen("irtt="), 0))
+            return TE_RC(TE_TA_LINUX, EINVAL);
+
+        rta_addattr32(mxrta, sizeof(mxbuf), RTAX_RTT, rtt);
+
+        if (d != NULL)
+            *d = ',';
+    }
+
+
+    
+    /* Sending the netlink message */
+    if (rtnl_open(&rth, 0) < 0)
+    {
+        ERROR("Failed to open the netlink socket");
         return TE_RC(TE_TA_LINUX, errno);
     }
 
-    fgets(trash, sizeof(trash), fp);
-    while (fscanf(fp, "%s", ifname) != EOF)
+    if (*dev != '\0')
     {
-        uint32_t     addr;
-        uint32_t     mask;
-        uint32_t     gateway = 0;
-        unsigned int flags = 0;
-        unsigned int metric;
-        int          mtu;
-        int          win;
-        int          irtt;
+        int idx;
 
-        fscanf(fp, "%x %x %x %d %d %d %x %d %d %d", &addr, &gateway,
-               &flags, (int *)trash, (int *)trash, &metric, &mask,
-               &mtu, &win, &irtt);
-        VERB("%s: Route %s %x %x %x %d %d %d %x %d %d %d", __FUNCTION__,
-             ifname, addr, gateway, flags, 0, 0, metric, mask,
-             mtu, win, irtt);
+        ll_init_map(&rth);
 
-        if ((rt.rt_dev != NULL && strcmp(rt.rt_dev, ifname) != 0) ||
-            addr != route_addr ||
-            gateway != route_gw || 
-            (unsigned int)rt.rt_metric != metric ||
-            mask != route_mask ||
-            rt.rt_mtu != (unsigned long int)mtu ||
-            rt.rt_window != (unsigned long int)win ||
-            rt.rt_irtt != irtt ||
-            ((rt.rt_flags & RTF_REJECT) ^ (flags & RTF_REJECT)))
+
+        if ((idx = ll_name_to_index(dev)) == 0) 
         {
-            fgets(trash, sizeof(trash), fp);
-            VERB("Continue processing ...");
-            continue;
+            ERROR("Cannot find device");
+            return TE_RC(TE_TA_LINUX, EINVAL);
         }
-
-        if ((flags & RTF_UP) == 0)
-            break;
-
-        fclose(fp);
-        
-        VERB("It's what we wanted");
-
-        value[0] = '\0';
-
-#define TE_LC_RTF_SET_FLAG(flg_, name_) \
-        do {                                           \
-            if (flags & flg_)                          \
-            {                                          \
-                snprintf(value + strlen(value),        \
-                         RCF_MAX_VAL - strlen(value),  \
-                         " " name_);                   \
-            }                                          \
-        } while (0)
-
-        TE_LC_RTF_SET_FLAG(RTF_MODIFIED, "mod");
-        TE_LC_RTF_SET_FLAG(RTF_DYNAMIC, "dyn");
-        TE_LC_RTF_SET_FLAG(RTF_REINSTATE, "reinstate");
-
-#undef TE_LC_RTF_SET_FLAG
-
-        return 0;
+        addattr32(&req.n, sizeof(req), RTA_OIF, idx);
     }
 
-    fclose(fp);
+    if (mxrta->rta_len > RTA_LENGTH(0)) 
+    {
+        addattr_l(&req.n, sizeof(req), RTA_METRICS, RTA_DATA(mxrta), 
+                  RTA_PAYLOAD(mxrta));
+    }
 
-    return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
-#else
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(value);
-    UNUSED(route);
+    {
+        if (req.r.rtm_type == RTN_LOCAL ||
+            req.r.rtm_type == RTN_NAT)
+            req.r.rtm_scope = RT_SCOPE_HOST;
+        else if (req.r.rtm_type == RTN_BROADCAST ||
+                 req.r.rtm_type == RTN_MULTICAST ||
+                 req.r.rtm_type == RTN_ANYCAST)
+            req.r.rtm_scope = RT_SCOPE_LINK;
+        else if (req.r.rtm_type == RTN_UNICAST ||
+                 req.r.rtm_type == RTN_UNSPEC) 
+        {
+            if (action == RTM_DELROUTE)
+                req.r.rtm_scope = RT_SCOPE_NOWHERE;
+            else if (gw_ok == 0)
+                req.r.rtm_scope = RT_SCOPE_LINK;
+        }
+    }
 
-    return TE_RC(TE_TA_LINUX, EOPNOTSUPP);
-#endif
+    if (rtnl_talk(&rth, &req.n, 0, 0, NULL, NULL, NULL) < 0)
+    {
+        ERROR("Failed to send the netlink message");
+        return TE_RC(TE_TA_LINUX, errno);
+    }
+
+    return 0;
 }
+
+/********************************************************************/
+
+/**
+ * Add a new route.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instence identifier (unused)
+ * @param value         value string (unused)
+ * @param route         route instance name: see doc/cm_cm_base.xml 
+ *                      for the format
+ *
+ * @return error code
+ */
+static int
+route_add(unsigned int gid, const char *oid, const char *value,
+          const char *route)
+{
+    ENTRY("%s", route);
+    fprintf(stderr, "\nadding route: %s = %s\n", route, value);
+
+    return route_change(gid, oid, value, route, 
+                        RTM_NEWROUTE, NLM_F_CREATE|NLM_F_EXCL);
+}
+
+/**
+ * Change already existing route.
+ *
+ * @param gid           group identifier 
+ * @param oid           full object instence identifier (unused)
+ * @param value         value string (unused)
+ * @param route         route instance name: see doc/cm_cm_base.xml 
+ *                      for the format
+ *
+ * @return error code
+ */
+static int
+route_set(unsigned int gid, const char *oid, const char *value,
+          const char *route)
+{
+    ENTRY("%s", route);
+    UNUSED(oid);
+    UNUSED(gid);
+    fprintf(stderr, "\nchanging route: %s = %s\n", route, value);
+
+    return route_change(gid, oid, value, route, RTM_NEWROUTE, 
+                        NLM_F_REPLACE);
+}
+
+/**
+ * Delete a route.
+ *
+ * @param gid           group identifier 
+ * @param oid           full object instence identifier (unused)
+ * @param route         route instance name: see doc/cm_cm_base.xml 
+ *                      for the format
+ *
+ * @return error code
+ */
+static int
+route_del(unsigned int gid, const char *oid, const char *route)
+{
+    char            value[RCF_MAX_VAL];
+
+    ENTRY("%s", route);
+    UNUSED(oid);
+    UNUSED(gid);
+    
+    fprintf(stderr, "deleting route: %s\n", route);
+
+    return route_change(gid, oid, value, route,
+                        RTM_DELROUTE, 0);
+
+}
+
+#else
 
 /**
  * Change already existing route.
@@ -3276,6 +3552,131 @@ route_del(unsigned int gid, const char *oid, const char *route)
     return TE_RC(TE_TA_LINUX, EOPNOTSUPP);
 #endif
 }
+#endif /* USE_NETLINK_ROUTE */
+
+
+
+/**
+ * Get route value (gateway IP address).
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instence identifier (unused)
+ * @param value         value location (IPv4 address is returned in
+ *                      dotted notation)
+ * @param route         route instance name: see doc/cm_cm_base.xml 
+ *                      for the format
+ *
+ * @return error code
+ */
+static int
+route_get(unsigned int gid, const char *oid, char *value,
+          const char *route)
+{
+#ifdef __linux__
+    int       rc;
+    FILE     *fp;
+    char      ifname[IF_NAMESIZE];
+    uint32_t  route_addr;
+    uint32_t  route_mask;
+    uint32_t  route_gw;
+
+    struct rtentry  rt;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    ENTRY("%s", route);
+
+    if ((rc = route_parse_inst_name(route, &rt)) != 0)
+        return 0;
+
+    memcpy(&route_addr, &(((struct sockaddr_in *)&(rt.rt_dst))->sin_addr),
+           sizeof(route_addr));
+
+    route_mask = ((struct sockaddr_in *)&(rt.rt_genmask))->sin_addr.s_addr;
+    route_gw = ((struct sockaddr_in *)&(rt.rt_gateway))->sin_addr.s_addr;
+
+    if ((fp = fopen("/proc/net/route", "r")) == NULL)
+    {
+        ERROR("Failed to open /proc/net/route for reading: %s",
+              strerror(errno));
+        return TE_RC(TE_TA_LINUX, errno);
+    }
+
+    fgets(trash, sizeof(trash), fp);
+    while (fscanf(fp, "%s", ifname) != EOF)
+    {
+        uint32_t     addr;
+        uint32_t     mask;
+        uint32_t     gateway = 0;
+        unsigned int flags = 0;
+        unsigned int metric;
+        int          mtu;
+        int          win;
+        int          irtt;
+
+        fscanf(fp, "%x %x %x %d %d %d %x %d %d %d", &addr, &gateway,
+               &flags, (int *)trash, (int *)trash, &metric, &mask,
+               &mtu, &win, &irtt);
+        VERB("%s: Route %s %x %x %x %d %d %d %x %d %d %d", __FUNCTION__,
+             ifname, addr, gateway, flags, 0, 0, metric, mask,
+             mtu, win, irtt);
+
+        if ((rt.rt_dev != NULL && strcmp(rt.rt_dev, ifname) != 0) ||
+            addr != route_addr ||
+            gateway != route_gw || 
+            (unsigned int)rt.rt_metric != metric ||
+            mask != route_mask ||
+            rt.rt_mtu != (unsigned long int)mtu ||
+            rt.rt_window != (unsigned long int)win ||
+            rt.rt_irtt != irtt ||
+            ((rt.rt_flags & RTF_REJECT) ^ (flags & RTF_REJECT)))
+        {
+            fgets(trash, sizeof(trash), fp);
+            VERB("Continue processing ...");
+            continue;
+        }
+
+        if ((flags & RTF_UP) == 0)
+            break;
+
+        fclose(fp);
+        
+        VERB("It's what we wanted");
+
+        value[0] = '\0';
+
+#define TE_LC_RTF_SET_FLAG(flg_, name_) \
+        do {                                           \
+            if (flags & flg_)                          \
+            {                                          \
+                snprintf(value + strlen(value),        \
+                         RCF_MAX_VAL - strlen(value),  \
+                         " " name_);                   \
+            }                                          \
+        } while (0)
+
+        TE_LC_RTF_SET_FLAG(RTF_MODIFIED, "mod");
+        TE_LC_RTF_SET_FLAG(RTF_DYNAMIC, "dyn");
+        TE_LC_RTF_SET_FLAG(RTF_REINSTATE, "reinstate");
+
+#undef TE_LC_RTF_SET_FLAG
+
+        return 0;
+    }
+
+    fclose(fp);
+
+    return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
+#else
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(value);
+    UNUSED(route);
+
+    return TE_RC(TE_TA_LINUX, EOPNOTSUPP);
+#endif
+}
 
 /**
  * Get instance list for object "agent/route".
@@ -3352,9 +3753,10 @@ route_list(unsigned int gid, const char *oid, char **list)
                 snprintf(ptr, end_ptr - ptr, ",metric=%d", metric);
                 ptr += strlen(ptr);
             }
+#ifndef USE_NETLINK_ROUTE
             if (mtu != 0)
             {
-                snprintf(ptr, end_ptr - ptr, ",mss=%d", mtu);
+                snprintf(ptr, end_ptr - ptr, ",mtu=%d", mtu);
                 ptr += strlen(ptr);
             }
             if (win != 0)
@@ -3367,6 +3769,7 @@ route_list(unsigned int gid, const char *oid, char **list)
                 snprintf(ptr, end_ptr - ptr, ",irtt=%d", irtt);
                 ptr += strlen(ptr);
             }
+#endif
             if (flags & RTF_REJECT)
             {
                 snprintf(ptr, end_ptr - ptr, "rejected");

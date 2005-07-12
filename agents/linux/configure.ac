@@ -277,7 +277,10 @@ if test -n "$with_netlink" ; then
     fi        
     CPPFLAGS="$CPPFLAGS -DUSE_NETLINK"
     AC_CHECK_LIB([netlink], [rtnl_open], [],
-            AC_MSG_ERROR([Cannot find libnetlink!]))
+                 AC_MSG_ERROR([Cannot find libnetlink!]))
+    if test -n "$with_netlink_route" ; then
+        CPPFLAGS="$CPPFLAGS -DUSE_NETLINK_ROUTE"
+    fi
 
 else
     if test -n "$with_ifconfig" ; then
