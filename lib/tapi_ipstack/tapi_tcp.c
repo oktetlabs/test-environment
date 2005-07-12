@@ -29,6 +29,8 @@
 
 #include "te_config.h"
 
+#define TE_LGR_USER "TAPI TCP"
+
 #ifdef HAVE_STDLIB_H
 #include <stdlib.h>
 #endif
@@ -725,7 +727,7 @@ tapi_tcp_destroy_conn_descr(tapi_tcp_connection_t *conn_descr)
 
         if (rc != 0)
         {
-            WARN("%s(id %d): rcv CSAP %d on agt %s trrecv_stop failed 0x%X",
+            WARN("%s(conn %d): rcv CSAP %d on agt %s stop failed 0x%X",
                  __FUNCTION__, conn_descr->id, conn_descr->rcv_csap,
                  conn_descr->agt, rc);
         }
@@ -734,10 +736,14 @@ tapi_tcp_destroy_conn_descr(tapi_tcp_connection_t *conn_descr)
                                  conn_descr->rcv_csap);
         if (rc != 0)
         {
-            WARN("%s(id %d): rcv CSAP %d on agt %s destroy failed 0x%X", 
+            WARN("%s(conn %d): rcv CSAP %d on agt %s destroy failed 0x%X", 
                  __FUNCTION__, conn_descr->id, conn_descr->rcv_csap,
                  conn_descr->agt, rc);
         }
+        else 
+            RING("%s(conn %d): rcv CSAP %d on agt %s destroyed",
+                 __FUNCTION__, conn_descr->id, conn_descr->rcv_csap,
+                 conn_descr->agt);
     } 
 
     if (conn_descr->snd_csap != CSAP_INVALID_HANDLE)
@@ -746,10 +752,14 @@ tapi_tcp_destroy_conn_descr(tapi_tcp_connection_t *conn_descr)
                                      conn_descr->snd_csap);
         if (rc != 0)
         {
-            WARN("%s(id %d): snd CSAP %d on agt %s destroy failed 0x%X", 
+            WARN("%s(conn %d): snd CSAP %d on agt %s destroy failed 0x%X", 
                  __FUNCTION__, conn_descr->id, conn_descr->snd_csap,
                  conn_descr->agt, rc);
         }
+        else
+            RING("%s(conn %d): snd CSAP %d on agt %s destroyed",
+                 __FUNCTION__, conn_descr->id, conn_descr->rcv_csap,
+                 conn_descr->agt);
     } 
 
     if (conn_descr->arp_csap != CSAP_INVALID_HANDLE)
@@ -772,9 +782,14 @@ tapi_tcp_destroy_conn_descr(tapi_tcp_connection_t *conn_descr)
                  __FUNCTION__, conn_descr->id, conn_descr->arp_csap,
                  conn_descr->agt, rc);
         }
+        else
+            RING("%s(conn %d): arp CSAP %d on agt %s destroyed",
+                 __FUNCTION__, conn_descr->id, conn_descr->rcv_csap,
+                 conn_descr->agt);
     } 
 
     CIRCLEQ_REMOVE(conns_root, conn_descr, link);
+    RING("%s(conn %d) finished", __FUNCTION__, conn_descr->id);
     free(conn_descr);
     return 0;
 }
