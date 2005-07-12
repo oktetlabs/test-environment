@@ -221,11 +221,11 @@ main(int argc, char *argv[])
 
         RING("msg received: %d bytes, seq %u", len, seq);
     }
-#if 0
+#if 1
     rc = tapi_tcp_send_msg(conn_hand, buffer, 50, TAPI_TCP_AUTO, 0, 
                            TAPI_TCP_QUIET, 0, NULL, 0);
     if (rc != 0)
-        TEST_FAIL("recv_msg() failed: %X", rc); 
+        TEST_FAIL("tapi_tcp_send_msg() failed: %X", rc); 
 
     rc = rpc_recv(rpc_srv, socket, buffer, sizeof(buffer), 0);
 #endif
