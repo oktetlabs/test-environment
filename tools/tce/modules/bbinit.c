@@ -60,6 +60,20 @@ void
 __gcov_init(void *unused)
 {
 }
+
+void __gcov_merge_add (long long *counters, unsigned n_counters)
+{
+}
+
+void __gcov_merge_single (long long *counters, unsigned n_counters)
+{
+}
+
+void __gcov_merge_delta (long long *counters, unsigned n_counters)
+{
+}
+
+
 #endif
 
 #if 0
@@ -81,6 +95,9 @@ EXPORT_SYMBOL(htons);
 
 #ifdef GCC_IS_3_4P
 EXPORT_SYMBOL(__gcov_init);
+EXPORT_SYMBOL(__gcov_merge_add);
+EXPORT_SYMBOL(__gcov_merge_single);
+EXPORT_SYMBOL(__gcov_merge_delta);
 EXPORT_SYMBOL(__gcov_version_magic);
 #else
 EXPORT_SYMBOL(__bb_init_func);

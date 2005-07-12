@@ -27,6 +27,13 @@
  *
  * $Id$
  */
+#ifndef TCE_COLLECTOR_H
+#define TCE_COLLECTOR_H
 
+#ifndef IN_TCE_COLLECTOR
 extern pid_t tce_collector_pid;
+#endif
 
+extern int obtain_principal_peer_id(void);
+
+#endif

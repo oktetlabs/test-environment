@@ -61,48 +61,10 @@
 #include <te_errno.h>
 #include "posix_tar.h"
 #include "gcov-io.h"
+#include "tce_internal.h"
 
 static char tar_file_prefix[PATH_MAX + 1];
 
-typedef struct bb_function_info 
-{
-    long checksum;
-    int arc_count;
-    const char *name;
-    long long *counts;
-    struct bb_function_info *next;
-} bb_function_info;
-
-typedef struct bb_object_info
-{
-    int peer_id;
-    const char *filename;
-    long long object_max;
-    long long object_sum;
-    long object_functions;
-    long long program_sum;
-    long long program_max;
-    long program_arcs;
-    long ncounts;
-    struct bb_object_info *next;
-    struct bb_function_info *function_infos;
-} bb_object_info;
-
-
-typedef struct channel_data channel_data;
-struct channel_data
-{
-    int fd;
-    void (*state)(channel_data *me);
-    char buffer[256];
-    char *bufptr;
-    int remaining;
-    int peer_id;
-    bb_object_info *object;
-    long long *counter;
-    int counter_guard;
-    channel_data *next;
-};
 static channel_data *channels;
 
 
@@ -122,29 +84,15 @@ static void function_header_state(channel_data *ch);
 static void object_header_state(channel_data *ch);
 static void read_data(int channel);
 static void collect_line(channel_data *ch);
-static bb_object_info * get_object_info(int peer_id, const char *filename);
-static bb_function_info *get_function_info(bb_object_info *oi,
-                                           const char *name, 
-                                           long arc_count, long checksum);
 static void dump_data(void);
 static void dump_object(bb_object_info *oi);
 static te_bool dump_object_data(bb_object_info *oi, FILE *tar_file);
 static void clear_data(void);
 
-static void get_kernel_coverage(void);
-struct bb;
-static void process_gcov_syms(FILE *symfile, int core_file,
-                              void (*functor)(int, struct bb *, void *), 
-                              void *extra);
-static void do_gcov_sum(int core_file, struct bb *object, void *extra);
-static void get_kernel_gcov_data(int core_file, 
-                                 struct bb *object, void *extra);
-
 
 
 static char **collector_args;
 static int data_lock = -1;
-static char *ksymtable;
 static int peers_counter;
 
 te_bool tce_standalone = FALSE;
@@ -187,8 +135,8 @@ obtain_principal_peer_id(void)
     return peer_id;
 }
 
-static
-void report_error(const char *fmt, ...)
+void 
+tce_report_error(const char *fmt, ...)
 {
     va_list args;
     va_start(args, fmt);
@@ -198,8 +146,6 @@ void report_error(const char *fmt, ...)
     va_end(args);
 }
 
-#define report_notice report_error
-#define DEBUGGING(x) 
 
 int 
 tce_collector(void)
@@ -212,10 +158,11 @@ tce_collector(void)
     char **args;
     static struct sigaction on_signals;
 
-    report_notice("Starting TCE collector, pid = %u", (unsigned)getpid());
+    tce_report_notice("Starting TCE collector, pid = %u", 
+                      (unsigned)getpid());
     if (collector_args == NULL)
     {
-        report_error("init_tce_collector has not been called");
+        tce_report_error("init_tce_collector has not been called");
         return EXIT_FAILURE;
     }
 
@@ -241,12 +188,12 @@ tce_collector(void)
         if (strncmp(*args, "fifo:", 5) == 0)
         {
             remove(*args + 5);
-            report_notice("opening %s", *args + 5);
+            tce_report_notice("opening %s", *args + 5);
             mkfifo(*args + 5, S_IRUSR | S_IWUSR);
             listen_on = open(*args + 5, O_RDONLY | O_NONBLOCK, 0);
             if (listen_on < 0)
             {
-                report_error("can't open '%s' (%s), skipping", 
+                tce_report_error("can't open '%s' (%s), skipping", 
                       *args + 5, strerror(errno));
             }
         }
@@ -260,7 +207,7 @@ tce_collector(void)
             listen_on = socket(PF_UNIX, SOCK_STREAM, 0);
             if (listen_on < 0)
             {
-                report_error("can't create local socket (%s)", 
+                tce_report_error("can't create local socket (%s)", 
                         strerror(errno));
             }
             else
@@ -269,14 +216,14 @@ tce_collector(void)
                 strcpy(addr.sun_path, *args + 5);
                 if (bind(listen_on, (struct sockaddr *)&addr, sizeof(addr)))
                 {
-                    report_error("can't bind to local socket %s (%s)",
+                    tce_report_error("can't bind to local socket %s (%s)",
                             *args + 5, strerror(errno));
                     close(listen_on);
                     listen_on = -1;
                 }
                 if (chmod(addr.sun_path, 0666) != 0)
                 {
-                    report_notice("can't change permissions for %s: %s",
+                    tce_report_notice("can't change permissions for %s: %s",
                                   addr.sun_path, strerror(errno));
                 }
             }
@@ -288,7 +235,7 @@ tce_collector(void)
             listen_on = socket(PF_UNIX, SOCK_STREAM, 0);
             if (listen_on < 0)
             {
-                report_error("can't create local socket (%s)", 
+                tce_report_error("can't create local socket (%s)", 
                         strerror(errno));
             }
             else
@@ -298,8 +245,9 @@ tce_collector(void)
                 strcpy(addr.sun_path + 1, *args + 9);
                 if (bind(listen_on, (struct sockaddr *)&addr, sizeof(addr)))
                 {
-                    report_error("can't bind to abstract socket %s (%s)",
-                            *args + 9, strerror(errno));
+                    tce_report_error("can't bind to abstract socket " 
+                                     "%s (%s)",
+                                     *args + 9, strerror(errno));
                     close(listen_on);
                     listen_on = -1;
                 }
@@ -315,7 +263,7 @@ tce_collector(void)
             listen_on = socket(PF_INET, SOCK_STREAM, 0);
             if (listen_on < 0)
             {
-                report_error("can't create TCP socket (%s)", 
+                tce_report_error("can't create TCP socket (%s)", 
                         strerror(errno));
             }
             else
@@ -325,7 +273,7 @@ tce_collector(void)
                 
                 if (addr.sin_port == 0)
                 {
-                    report_error("no port specified at '%'", *args);
+                    tce_report_error("no port specified at '%'", *args);
                     return EXIT_FAILURE;
                 }
 
@@ -340,7 +288,7 @@ tce_collector(void)
                 setsockopt(listen_on, SOL_SOCKET, SO_REUSEADDR, NULL, 0);
                 if (bind(listen_on, (struct sockaddr *)&addr, sizeof(addr)))
                 {
-                    report_error("can't bind to TCP socket %d:%s (%s)",
+                    tce_report_error("can't bind to TCP socket %d:%s (%s)",
                             ntohs(addr.sin_port),
                             *tmp ? tmp + 1 : "*", strerror(errno));
                     close(listen_on);
@@ -352,11 +300,11 @@ tce_collector(void)
 #endif /* HAVE_SYS_SOCKET_H */
         else if (strncmp(*args, "kallsyms:", 9) == 0)
         {
-            ksymtable = *args + 9;
+            tce_set_ksymtable(*args + 9);
         }
         else
         {
-            report_error("invalid argument '%s'", *args);
+            tce_report_error("invalid argument '%s'", *args);
             return EXIT_FAILURE;
         }
         if (listen_on >= 0)
@@ -367,7 +315,7 @@ tce_collector(void)
                       O_NONBLOCK | fcntl(listen_on, F_GETFL));
                 if (listen(listen_on, 5))
                 {
-                    report_error("can't listen at '%s'", *args);
+                    tce_report_error("can't listen at '%s'", *args);
                     close(listen_on);
                     continue;
                 }
@@ -381,10 +329,10 @@ tce_collector(void)
 
     if (max_fd < 0)
     {
-        report_error("no channels specified");
+        tce_report_error("no channels specified");
         return EXIT_FAILURE;
     }
-    report_notice("TCE collector started");
+    tce_report_notice("TCE collector started");
     for (;;)
     {
         int result = 0;
@@ -397,7 +345,7 @@ tce_collector(void)
         if (caught_signo != 0)
         {
             int signo = caught_signo;
-            DEBUGGING(report_notice("TCE collector caught signal %d", 
+            DEBUGGING(tce_report_notice("TCE collector caught signal %d", 
                                     signo));
             caught_signo = 0;
             if (signo == SIGHUP)
@@ -410,7 +358,7 @@ tce_collector(void)
             {
                 if (peers_counter > 0)
                 {
-                    report_error("%d peers have not dumped data",
+                    tce_report_error("%d peers have not dumped data",
                                  peers_counter);
                 }
                 if (!tce_standalone)
@@ -423,7 +371,7 @@ tce_collector(void)
         {            
             if (errno != 0)
             {
-                report_error("select error %s", strerror(errno));
+                tce_report_error("select error %s", strerror(errno));
             }
         }
         else
@@ -439,7 +387,7 @@ tce_collector(void)
                         listen_on = accept(fd, NULL, NULL);
                         if (listen_on < 0)
                         {
-                            report_error("accept error %s", 
+                            tce_report_error("accept error %s", 
                                          strerror(errno));
                         }
                         else
@@ -548,13 +496,13 @@ counter_state(channel_data *ch)
         long long count = strtoll(ch->buffer, &tmp, 10);
         if (*tmp != '\0')
         {
-            report_error("peer id %d, error near '%s'",
+            tce_report_error("peer id %d, error near '%s'",
                     ch->peer_id, ch->buffer);
             ch->state = NULL;
         }
         else if (ch->counter_guard == 0)
         {
-            report_error("too many arcs for peer %d", ch->peer_id);
+            tce_report_error("too many arcs for peer %d", ch->peer_id);
             ch->state = NULL;
         }
         else
@@ -580,7 +528,7 @@ function_header_state(channel_data *ch)
         space = strchr(ch->buffer,  ' ');
         if (space == NULL )
         {
-            report_error("peer %d, error near '%s'", 
+            tce_report_error("peer %d, error near '%s'", 
                     ch->peer_id, space);
             ch->state = NULL;
         }
@@ -630,7 +578,7 @@ object_header_state(channel_data *ch)
     space = strchr(ch->buffer,  ' ');
     if (space == NULL )
     {
-        report_error("peer %d, error near '%s'", 
+        tce_report_error("peer %d, error near '%s'", 
                 ch->peer_id, ch->buffer);
         ch->state = NULL;
     }
@@ -656,7 +604,7 @@ object_header_state(channel_data *ch)
                   &object_sum, 
                   &object_max) != 7)
         {
-            report_error("error parsing '%s' for peer %d", 
+            tce_report_error("error parsing '%s' for peer %d", 
                          space, ch->peer_id);
             ch->state = NULL;
             return;
@@ -664,7 +612,7 @@ object_header_state(channel_data *ch)
         
         if (oi->ncounts && oi->ncounts != ncounts)
         {
-            report_error("peer %d, error near '%s'", 
+            tce_report_error("peer %d, error near '%s'", 
                 ch->peer_id, space);
             ch->state = NULL;
         }
@@ -703,7 +651,7 @@ are_there_working_channels(void)
     {
         if (iter->state != NULL)
         {
-            report_notice("there are working channels");
+            tce_report_notice("there are working channels");
             return TRUE;
         }
     }
@@ -729,7 +677,7 @@ read_data(int channel)
         channels = found;
         found->bufptr = found->buffer;
         found->remaining = sizeof(found->buffer) - 1;
-        report_notice("new peer connected");
+        tce_report_notice("new peer connected");
     }
 
     if (found->state == NULL)
@@ -742,7 +690,7 @@ read_data(int channel)
         if (peers_counter >= 0)
             peers_counter--;
         else
-            report_notice("unregistered peers detected");
+            tce_report_notice("unregistered peers detected");
         close(found->fd);
         if (dump_request && !are_there_working_channels())
             raise(SIGHUP);
@@ -753,13 +701,13 @@ static void
 collect_line(channel_data *ch)
 {
     int len;
-    DEBUGGING(report_notice("requesting %d bytes on %d", 
+    DEBUGGING(tce_report_notice("requesting %d bytes on %d", 
                             ch->remaining, ch->fd));
     len = read(ch->fd, ch->bufptr, ch->remaining);
-    DEBUGGING(report_notice("read %d bytes from %d", len, ch->fd));
+    DEBUGGING(tce_report_notice("read %d bytes from %d", len, ch->fd));
     if (len <= 0)
     {
-        report_error("read error on %d: %s", ch->fd,
+        tce_report_error("read error on %d: %s", ch->fd,
                      strerror(errno));
         ch->state = NULL;
     }
@@ -777,11 +725,11 @@ collect_line(channel_data *ch)
             {
                 *found_newline = '\0';
 #if 0
-                report_notice("got %s", ch->buffer);
+                tce_report_notice("got %s", ch->buffer);
 #endif
                 ch->state(ch);
 #if 0
-                report_notice("processed");
+                tce_report_notice("processed");
 #endif
                 len = ch->bufptr - found_newline - 1;
                 memmove(ch->buffer, found_newline + 1, len);
@@ -790,7 +738,7 @@ collect_line(channel_data *ch)
             }
             else if (ch->remaining == 0)
             {
-                report_error("too long line on %d", ch->fd);
+                tce_report_error("too long line on %d", ch->fd);
                 ch->state = NULL;
             }
         } while (found_newline != NULL && ch->state != NULL);
@@ -816,7 +764,7 @@ hash(int peer_id, const char *str)
 }
 
 
-static bb_object_info *
+bb_object_info *
 get_object_info(int peer_id, const char *filename)
 {
     unsigned key = hash(peer_id, filename);
@@ -840,7 +788,7 @@ get_object_info(int peer_id, const char *filename)
     return found;
 }
 
-static bb_function_info *
+bb_function_info *
 get_function_info(bb_object_info *oi, const char *name, 
                   long arc_count, long checksum)
 {
@@ -864,13 +812,13 @@ get_function_info(bb_object_info *oi, const char *name,
     {
         if (fi->arc_count != arc_count)
         {
-            report_error("arc count mismatch for function %s", 
+            tce_report_error("arc count mismatch for function %s", 
                          fi->name);
             return NULL;
         }
         if (fi->checksum != checksum)
         {
-            report_error("arc count mismatch for function %s", 
+            tce_report_error("arc count mismatch for function %s", 
                          fi->name);
             return NULL;
         }
@@ -897,11 +845,8 @@ dump_data(void)
 
     dump_request = FALSE;
     clear_data();
-    report_notice("Dumping TCE data");
-    if (ksymtable != NULL)
-    {
-        get_kernel_coverage();
-    }
+    tce_report_notice("Dumping TCE data");
+    get_kernel_coverage();
     for (idx = 0; idx < BB_HASH_SIZE; idx++)
     {
         for (iter = bb_hash_table[idx]; iter != NULL; iter = iter->next)
@@ -913,7 +858,7 @@ dump_data(void)
     lock.l_start = 0;
     lock.l_len = 0;
     fcntl(data_lock, F_SETLK, &lock);
-    report_notice("TCE data dumped");
+    tce_report_notice("TCE data dumped");
     already_dumped = TRUE;
 }
 
@@ -929,14 +874,15 @@ dump_object(bb_object_info *oi)
     unsigned idx;
 
     sprintf(tar_name, "%s%d.tar", tar_file_prefix, oi->peer_id);
-    DEBUGGING(report_notice("dumping to %s", tar_name));
+    DEBUGGING(tce_report_notice("dumping to %s", tar_name));
     tar_file = fopen(tar_name, "r+");
     if (tar_file == NULL)
     {
         tar_file = fopen(tar_name, "w+");
         if (tar_file == NULL)
         {
-            report_error("cannot open %s: %s", tar_name, strerror(errno));
+            tce_report_error("cannot open %s: %s", 
+                             tar_name, strerror(errno));
             return;
         }
     }
@@ -984,7 +930,8 @@ dump_object(bb_object_info *oi)
     }
     else
     {
-        report_error("error writing to %s: %s", tar_name, strerror(errno));
+        tce_report_error("error writing to %s: %s", 
+                         tar_name, strerror(errno));
         fclose(tar_file);
         remove(tar_name);
     }
@@ -1021,7 +968,7 @@ dump_object_data(bb_object_info *oi, FILE *tar_file)
         /* maximal counter.  */
         || __write_gcov_type (oi->object_max, tar_file, 8))
     {
-        report_error("error writing output file");
+        tce_report_error("error writing output file");
         return FALSE;
     }
 
@@ -1032,7 +979,7 @@ dump_object_data(bb_object_info *oi, FILE *tar_file)
             || __write_long(fi->checksum, tar_file, 4)
             || __write_long(fi->arc_count, tar_file, 4))
         {
-            report_error("error writing output file");
+            tce_report_error("error writing output file");
             return FALSE;
         }
         for (arc_count = fi->arc_count, ci = fi->counts; 
@@ -1041,7 +988,7 @@ dump_object_data(bb_object_info *oi, FILE *tar_file)
         {
             if (__write_gcov_type (*ci, tar_file, 8))
             {
-                report_error("error writing output file");
+                tce_report_error("error writing output file");
                 return FALSE;
             }
         }
@@ -1063,261 +1010,6 @@ clear_data(void)
         {
             sprintf(buffer, "%s%d.tar", tar_file_prefix, iter->peer_id);
             remove(buffer);
-        }
-    }
-
-}
-
-
-struct bb_raw_function_info 
-{
-    long checksum;
-    int arc_count;
-    const char *name;
-};
-
-/* Structure emitted by --profile-arcs  */
-struct bb
-{
-    long zero_word;
-    const char *filename;
-    long long *counts;
-    long ncounts;
-    struct bb *next;
-    
-    /* Older GCC's did not emit these fields.  */
-    long sizeof_bb;
-    struct bb_raw_function_info *function_infos;
-};
-
-
-typedef struct summary_data
-{
-    long long sum;
-    long long max;
-    long arcs;
-} summary_data;
-
-static void
-get_kernel_coverage(void)
-{
-    FILE *symfile = fopen(ksymtable, "r");
-    int core_file;
-    summary_data summary = {0, 0, 0};
-    
-    if (symfile == NULL)
-    {
-        report_error("Cannot open kernel symtable file %s: %s", 
-                     ksymtable, strerror(errno));
-        return;
-    }
-    core_file = open("/dev/kmem", O_RDONLY);
-    if (core_file < 0)
-    {
-        report_error("Cannot open kernel memory file: %s", strerror(errno));
-        fclose(symfile);
-        return;
-    }
-
-    process_gcov_syms(symfile, core_file, do_gcov_sum, &summary);
-    process_gcov_syms(symfile, core_file, get_kernel_gcov_data, &summary);
-    close(core_file);
-    fclose(symfile);
-}
-
-
-static ssize_t
-read_at(int fildes, off_t offset, void *buffer, size_t size)
-{
-    if(lseek(fildes, offset, SEEK_SET) == (off_t)-1)
-        return (ssize_t)-1;
-    return read(fildes, buffer, size);
-}
-
-static int
-read_str(int fildes, off_t offset, char *buffer, size_t maxlen)
-{
-    if(lseek(fildes, offset, SEEK_SET) == (off_t)-1)
-        return -1;
-    while(--maxlen)
-    {
-        if(read(fildes, buffer, 1) <= 0)
-            return -1;
-        if(*buffer++ == '\0')
-            return 0;
-    }
-    *buffer = '\0';
-    errno = ENAMETOOLONG;
-    return -1;
-}
-
-static void
-process_gcov_syms(FILE *symfile, int core_file,
-                  void (*functor)(int, struct bb *, void *), void *extra)
-{
-    size_t offset;
-    static char symbuf[256];
-    char *token;
-    
-    rewind(symfile);
-    while (fgets(symbuf, sizeof(symbuf) - 1, symfile) != NULL)
-    {
-        offset = strtoul(symbuf, &token, 16);
-        strtok(token, " \t\n");
-        token = strtok(NULL, "\t\n");
-        if (strstr(token, "GCOV") != NULL)
-        {
-            /* This is a very crude hack relying on internals of GCC */
-            /* It is necessary because GCOV symbols are pointing to
-               constructors, rather than actual data. 
-               On x86, the pointer to the actual data happen to be
-               4 bytes later (an immediate argument to mov).
-               Most probably, this won't work on x86-64 :(
-            */
-            unsigned long tmp;
-            struct bb bb_buf;
-            
-            DEBUGGING(report_notice("offset is %lu", 
-                                    (unsigned long)offset));
-            if(read_at(core_file, offset + 4, &tmp, sizeof(tmp)) < 
-               (ssize_t)sizeof(tmp))
-            {
-                report_error("read error on /dev/kmem: %s", 
-                             strerror(errno));
-                continue;
-            }
-            DEBUGGING(report_notice("new offset is %lu", tmp));
-            if(read_at(core_file, tmp, &bb_buf, sizeof(bb_buf)) < 
-               (ssize_t)sizeof(bb_buf))
-            {
-                report_error("read error on /dev/kmem: %s", 
-                             strerror(errno));
-                continue;
-            }
-            
-            functor(core_file, &bb_buf, extra);
-        }
-    }
-
-}
-
-static void
-do_gcov_sum(int core_file, struct bb *object, void *extra)
-{
-    summary_data *summary = extra;
-    int i;
-    long long counter;
-
-    if(lseek(core_file, (size_t)object->counts, SEEK_SET) == (off_t)-1)
-    {
-        report_error("seeking error on /dev/kmem: %s", strerror(errno));
-        return;
-    }
-    for (i = 0; i < object->ncounts; i++)
-    {
-        if(read(core_file, &counter, sizeof(counter)) < 
-           (ssize_t)sizeof(counter))
-        {
-            report_error("error reading from /dev/kmem: %s", 
-                         strerror(errno));
-            return;
-        }
-        summary->sum += counter;
-        
-        if (counter > summary->max)
-            summary->max = counter;
-    }
-    summary->arcs += object->ncounts;
-}
-
-
-static void
-get_kernel_gcov_data(int core_file, struct bb *object, void *extra)
-{
-    summary_data *summary = extra;
-    summary_data object_summary = {0, 0, 0};
-    long object_functions = 0;
-    struct bb_raw_function_info fn_info;
-    bb_function_info *fi;
-    bb_object_info *oi;
-    long long *target_counters;
-    long long counter;
-    int i;
-    static char name_buffer[PATH_MAX + 1];
-    char *real_start;
-        
-
-    if (lseek(core_file, (size_t)object->function_infos, SEEK_SET) == 
-        (off_t)-1)
-    {
-        report_error("seeking error on /dev/kmem: %s", strerror(errno));
-        return;
-    }
-    for (;;)
-    {
-        if(read(core_file, &fn_info, sizeof(fn_info)) < 
-           (ssize_t)sizeof(fn_info))
-        {
-            report_error("error reading from /dev/kmem: %s", 
-                         strerror(errno));
-            return;
-        }
-        if (fn_info.arc_count < 0)
-            break;
-        
-        object_functions++;
-    }
-
-    do_gcov_sum(core_file, object, &object_summary);
-    if (read_str(core_file, (size_t)object->filename, 
-                 name_buffer, sizeof(name_buffer)) != 0)
-    {
-        report_error("error reading from /dev/kmem: %s", strerror(errno));
-        return;
-    }
-    real_start = strstr(name_buffer, "//");
-    oi = get_object_info(obtain_principal_peer_id(), 
-                         real_start ? real_start + 1 : name_buffer);
-    oi->ncounts = object->ncounts;
-    oi->object_functions = object_functions;
-    oi->object_sum += object_summary.sum;
-    oi->program_sum += summary->sum;
-    oi->program_arcs += summary->arcs;
-    if (object_summary.max > oi->object_max)
-        oi->object_max = object_summary.max;
-    if (summary->max > oi->program_max)
-        oi->program_max = summary->max;
-
-    for(;;)
-    {          
-        if(read_at(core_file, (size_t)object->function_infos++, 
-                   &fn_info, sizeof(fn_info)) < (ssize_t)sizeof(fn_info))
-        {
-            report_error("error reading from /dev/kmem: %s", 
-                         strerror(errno));
-            return;
-        }
-        if (fn_info.arc_count < 0)
-            break;
-        if (read_str(core_file, (size_t)fn_info.name, 
-                     name_buffer, sizeof(name_buffer)) != 0)
-        {
-            report_error("error reading from /dev/kmem: %s", 
-                         strerror(errno));
-            return;
-        }
-        fi = get_function_info(oi, name_buffer, 
-                               fn_info.arc_count, fn_info.checksum);
-        if (fi != NULL)
-        {
-            for (i = fn_info.arc_count, target_counters = fi->counts;
-                 i > 0; 
-                 i--, object->counts++, target_counters++)
-            {
-                read_at(core_file, (size_t)object->counts, 
-                        &counter, sizeof(counter));
-                *target_counters += counter;
-            }
         }
     }
 

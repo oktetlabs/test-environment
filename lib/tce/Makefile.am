@@ -6,7 +6,7 @@ AM_LDFLAGS=@TE_LDFLAGS@
 include_HEADERS = tce_collector.h
 lib_LIBRARIES = libtce.a
 
-libtce_a_SOURCES = tce_collector.c gcov-io.h posix_tar.h
+libtce_a_SOURCES = tce_collector.c kernel.c tce_internal.h gcov-io.h posix_tar.h
 
 install-exec-hook:
 	touch -c -r libtce.a $(DESTDIR)/$(prefix)/lib/libtce.a

@@ -52,9 +52,9 @@
 #endif
 
 #ifdef GCC_IS_3_4P
-typedef unsigned gcov_unsigned_t __attribute__ ((mode (SI)));
-typedef unsigned gcov_position_t __attribute__ ((mode (SI)));
-typedef signed gcov_type __attribute__ ((mode (DI)));
+typedef unsigned gcov_unsigned_t;
+typedef unsigned gcov_position_t;
+typedef signed long long gcov_type;
 
 /* File suffixes.  */
 #define GCOV_DATA_SUFFIX ".gcda"
@@ -507,9 +507,10 @@ EXIT_GCOV()
       
         /* Write out the data.  */
 
-        sprintf(buffer, "!%s %u %u %u %u\n", gi_ptr->filename, 
-                gcov_version, gi_ptr->stamp,
-                object.checksum, program.checksum);
+        snprintf(buffer, sizeof(buffer), "!%s %u %u %u %u\n", 
+                 gi_ptr->filename, 
+                 gcov_version, gi_ptr->stamp,
+                 object.checksum, program.checksum);
         write(fd, buffer, strlen(buffer));
 
         for (s_ix = 0; s_ix < GCOV_COUNTERS_SUMMABLE; s_ix++)
@@ -526,6 +527,7 @@ EXIT_GCOV()
                      program.ctrs[s_ix].sum_all,
                      program.ctrs[s_ix].run_max,
                      program.ctrs[s_ix].sum_max);
+            write(fd, buffer, strlen(buffer));
         }
         
         /* Write execution counts for each function.  */
@@ -535,23 +537,34 @@ EXIT_GCOV()
                 ((const char *) gi_ptr->functions + f_ix * fi_stride);
 
             /* Announce function.  */
-            sprintf(buffer, "*%u %u\n", fi_ptr->ident, fi_ptr->checksum);
+            snprintf(buffer, sizeof(buffer), "*%u %u\n", 
+                     fi_ptr->ident, fi_ptr->checksum);
             write(fd, buffer, strlen(buffer));
 
             c_ix = 0;
             for (t_ix = 0; t_ix < GCOV_COUNTERS; t_ix++)
             {
                 gcov_type *c_ptr;
+                gcov_merge_fn merge;
 
                 if (!((1 << t_ix) & gi_ptr->ctr_mask))
                     continue;
 
                 n_counts = fi_ptr->n_ctrs[c_ix];
+                merge = gi_ptr->counts[c_ix].merge;
+                sprintf(buffer, "~%s %d\n", merge == __gcov_merge_add ?
+                        "add" : (merge == __gcov_merge_single ?
+                                 "single" : 
+                                 (merge == __gcov_merge_delta ?
+                                  "delta" : "unknown")),
+                        n_counts);
+                write(fd, buffer, strlen(buffer));
             
                 c_ptr = values[c_ix];
                 while (n_counts--)
                 {
                     sprintf(buffer, "+%Lu\n", *c_ptr++);
+                    write(fd, buffer, strlen(buffer));
                 }
                 
                 values[c_ix] = c_ptr;
@@ -604,7 +617,8 @@ EXIT_GCOV()
                 object_max = ptr->counts[i];
         }
 
-        sprintf(buffer, "%s %d %d %Ld %Ld %d %Ld %Ld\n", 
+        snprintf(buffer, sizeof(buffer), 
+                 "%s %d %d %Ld %Ld %d %Ld %Ld\n", 
                 ptr->filename,
                 object_functions, 
                 program_arcs,
@@ -621,7 +635,8 @@ EXIT_GCOV()
         for (fn_info = ptr->function_infos; fn_info->arc_count >= 0;
              fn_info++)
         {          
-            sprintf(buffer, "*%s %d %d\n", fn_info->name,
+            snprintf(buffer, sizeof(buffer), 
+                     "*%s %d %d\n", fn_info->name,
                     fn_info->checksum, fn_info->arc_count);
             write(fd, buffer, strlen(buffer));
             for (i = fn_info->arc_count; i > 0; i--, count_ptr++)
