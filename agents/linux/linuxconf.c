@@ -120,6 +120,15 @@ static int env_del(unsigned int, const char *,
                    const char *);
 static int env_list(unsigned int, const char *, char **);
 
+/** Environment variables hidden in list operation */
+static const char * const env_hidden[] = {
+    "SSH_CLIENT",
+    "SSH_CONNECTION",
+    "SUDO_COMMAND",
+    "TE_RPC_PORT"
+};
+
+
 static int ip4_fw_get(unsigned int, const char *, char *);
 static int ip4_fw_set(unsigned int, const char *, const char *);
 
@@ -3836,6 +3845,28 @@ nameserver_get(unsigned int gid, const char *oid, char *result,
     return rc;
 }
 
+
+/**
+ * Is Environment variable with such name hidden?
+ *
+ * @param name      Variable name
+ * @param name_len  -1, if @a name is a NUL-terminated string;
+ *                  >= 0, if length of the @a name is @a name_len
+ */
+static te_bool
+env_is_hidden(const char *name, int name_len)
+{
+    unsigned int    i;
+
+    for (i = 0; i < sizeof(env_hidden) / sizeof(env_hidden[0]); ++i)
+    {
+        if (memcmp(env_hidden[i], name,
+                   (name_len < 0) ? strlen(name) : (size_t)name_len) == 0)
+            return TRUE;
+    }
+    return FALSE;
+}
+
 /**
  * Get Environment variable value.
  *
@@ -3855,7 +3886,7 @@ env_get(unsigned int gid, const char *oid, char *value,
     UNUSED(gid);
     UNUSED(oid);
 
-    if (tmp != NULL)
+    if (!env_is_hidden(name, -1) && (tmp != NULL))
     {
         if (strlen(tmp) >= RCF_MAX_VAL)
             WARN("Environment variable '%s' value truncated", name);
@@ -3869,7 +3900,7 @@ env_get(unsigned int gid, const char *oid, char *value,
 }
 
 /**
- * Change already existing ARP entry.
+ * Change already existing Environment variable.
  *
  * @param gid       Request's group identifier (unused)
  * @param oid       Full object instence identifier (unused)
@@ -3884,6 +3915,9 @@ env_set(unsigned int gid, const char *oid, const char *value,
 {
     UNUSED(gid);
     UNUSED(oid);
+
+    if (env_is_hidden(name, -1))
+        return TE_RC(TE_TA_LINUX, EPERM);
 
     if (setenv(name, value, TRUE) == 0)
     {
@@ -3915,6 +3949,9 @@ env_add(unsigned int gid, const char *oid, const char *value,
 {
     UNUSED(gid);
     UNUSED(oid);
+
+    if (env_is_hidden(name, -1))
+        return TE_RC(TE_TA_LINUX, EPERM);
 
     if (getenv(name) == NULL)
     {
@@ -3951,6 +3988,9 @@ env_del(unsigned int gid, const char *oid, const char *name)
 {
     UNUSED(gid);
     UNUSED(oid);
+
+    if (env_is_hidden(name, -1))
+        return TE_RC(TE_TA_LINUX, EPERM);
 
     if (getenv(name) != NULL)
     {
@@ -4000,6 +4040,9 @@ env_list(unsigned int gid, const char *oid, char **list)
             return TE_RC(TE_TA_LINUX, ETEFMT);
         }
         name_len = s - *env;
+        if (env_is_hidden(*env, name_len))
+            continue;
+
         if (ptr != buf)
             *ptr++ = ' ';
         if ((buf_end - ptr) <= name_len)
