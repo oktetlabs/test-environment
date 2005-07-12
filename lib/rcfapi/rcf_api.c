@@ -2182,7 +2182,8 @@ rcf_ta_trsend_stop(const char *ta_name, int session,
     if (rc == 0 && (rc = msg.error) == 0)
     {
         remove_traffic_op(ta_name, csap_id);
-        *num = msg.num;
+        if (num != NULL)
+            *num = msg.num;
     }
     
     return rc;
