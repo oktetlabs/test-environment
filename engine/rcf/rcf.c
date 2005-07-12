@@ -620,8 +620,8 @@ synchronize_time(ta *agent)
                   (unsigned)tv.tv_sec, (unsigned)tv.tv_usec);
     if ((rc = (agent->transmit)(agent->handle, cmd, strlen(cmd) + 1)) != 0)
     {
-        VERB("Failed to transmit command to TA '%s' errno %d", 
-             agent->name, rc);
+        ERROR("Failed to transmit command to TA '%s' errno %d", 
+              agent->name, rc);
         return -1;
     }
 
@@ -666,13 +666,6 @@ answer_user_request(usrreq *req)
              (unsigned)req->message->seqno, req->message->sid,
              rcf_op_to_string(req->message->opcode),
              ipc_server_client_name(req->user));
-#if 1
-        if (req->message->opcode == RCFOP_GET_LOG)
-            RING("Send reply for %u:%d:'%s' to user '%s'",
-                 (unsigned)req->message->seqno, req->message->sid,
-                 rcf_op_to_string(req->message->opcode),
-                 ipc_server_client_name(req->user));
-#endif
 
         rc = ipc_send_answer(server, req->user, (char *)req->message,
                              sizeof(rcf_msg) + req->message->data_len);
@@ -795,10 +788,10 @@ init_agent(ta *agent)
 
     answer_all_requests(&(agent->sent), ETAREBOOTED);
     answer_all_requests(&(agent->pending), ETAREBOOTED);
-    VERB("Start TA %s type=%s confstr='%s'",
+    INFO("Start TA '%s' type=%s confstr='%s'",
          agent->name, agent->type, agent->conf);
     if (agent->flags & TA_FAKE)
-        VERB("TA %s has been already started");
+        RING("TA '%s' has been already started");
     if ((rc = (agent->start)(agent->name, agent->type,
                              agent->conf, &(agent->handle),
                              &(agent->flags))) != 0)
@@ -807,7 +800,7 @@ init_agent(ta *agent)
         agent->dead = TRUE;
         return -1;
     }
-    VERB("TA %s started, trying to connect", agent->name);
+    INFO("TA '%s' started, trying to connect", agent->name);
     if ((rc = (agent->connect)(agent->handle, &set0, &tv0)) != 0)
     {
         ERROR("Cannot connect to TA '%s' error %d", agent->name, rc);
@@ -815,7 +808,7 @@ init_agent(ta *agent)
         agent->dead = TRUE;
         return -1;
     }
-    VERB("Connected with TA %s", agent->name);
+    INFO("Connected with TA '%s'", agent->name);
     rc = (agent->enable_synch_time ? synchronize_time(agent) : 0);
     if (rc == 0)
     {
@@ -1194,7 +1187,7 @@ process_reply(ta *agent)
     {
         if (error == 0)
         {
-            VERB("Reboot of TA '%s' finished", agent->name);
+            INFO("Reboot of TA '%s' finished", agent->name);
             reboot_num--;
             agent->reboot_timestamp = 0;
             if (!(agent->flags & TA_PROXY))
@@ -1265,10 +1258,6 @@ process_reply(ta *agent)
                 break;
 
             case RCFOP_GET_LOG:
-#if 1
-                RING("Answer \"%s\" is received from TA '%s'",
-                     cmd, agent->name);
-#endif
             case RCFOP_FGET:
                 if (ba == NULL)
                     goto bad_protocol;
@@ -1418,11 +1407,6 @@ transmit_cmd(ta *agent, usrreq *req)
     }
 
     VERB("Command \"%s\" is transmitted to TA '%s'", cmd, agent->name);
-#if 1
-    if (req->message->opcode == RCFOP_GET_LOG)
-        RING("Command \"%s\" is transmitted to TA '%s'",
-             cmd, agent->name);
-#endif
 
     len = strlen(cmd) + 1;
     while (TRUE)
@@ -1847,7 +1831,10 @@ rcf_ta_check()
                 sprintf(answer, "SID %d 0", agent->sid);
 
                 if (strncmp(cmd, answer, strlen(answer)) != 0)
+                {
+                    /* Reply for previously sent request */
                     continue;
+                }
 
                 VERB("Test Agent '%s' is checked", agent->name);
                 agent->flags |= TA_CHECKED;
@@ -2078,7 +2065,7 @@ rcf_shutdown()
                 if (strcmp(cmd, answer) != 0)
                     continue;
 
-                VERB("Test Agent '%s' is down", agent->name);
+                INFO("Test Agent '%s' is down", agent->name);
                 agent->flags |= TA_DOWN;
                 (agent->close)(agent->handle, &set0);
                 shutdown_num--;
@@ -2244,7 +2231,7 @@ main(int argc, const char *argv[])
     tv0.tv_sec = RCF_SELECT_TIMEOUT;
     tv0.tv_usec = 0;
 
-    VERB("Starting...\n");
+    INFO("Starting...\n");
 
     if ((tmp_dir = getenv("TE_TMP")) == NULL)
     {
@@ -2362,17 +2349,10 @@ main(int argc, const char *argv[])
                  (unsigned)req->message->seqno, req->message->sid,
                  rcf_op_to_string(req->message->opcode),
                  ipc_server_client_name(req->user));
-#if 1
-            if (req->message->opcode == RCFOP_GET_LOG)
-                RING("Got request %u:%d:'%s' from user '%s'",
-                     (unsigned)req->message->seqno, req->message->sid,
-                     rcf_op_to_string(req->message->opcode),
-                     ipc_server_client_name(req->user));
-#endif
 
             if (req->message->opcode == RCFOP_SHUTDOWN)
             {
-                VERB("Shutdown command is recieved");
+                INFO("Shutdown command is recieved");
                 break;
             }
             process_user_request(req);
