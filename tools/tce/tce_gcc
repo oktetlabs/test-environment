@@ -70,7 +70,7 @@ if test -z "$nobbhook"; then
         tmpcc=$i
     done
     selfpath=`cd \`dirname \\\`which $tmpcc\\\`\` && pwd && cd -`
-    ${TCE_CC} -c ${TCE_CFLAGS} -o $BBHOOK_O -I${selfpath}/../include ${selfpath}/../share/bbhook.c
+    ${TCE_CC} -c ${TCE_CFLAGS} -o $BBHOOK_O -I${selfpath}/../include ${selfpath}/../share/tce/bbhook.c
 else
     BBHOOK_O=""
 fi
