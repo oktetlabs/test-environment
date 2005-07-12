@@ -904,7 +904,7 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
     if (metric != 0)
         PUT_INTO_BUF(route_inst_name, ",metric=%d", metric);
     if (mtu != 0)
-        PUT_INTO_BUF(rt_val, ",mtu=%d", mtu);
+        PUT_INTO_BUF(rt_val, "mtu=%d", mtu);
     if (win != 0)
         PUT_INTO_BUF(rt_val, ",window=%d", win);
     if (irtt != 0)
@@ -932,8 +932,6 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
                       rt_val, ta, rc);
                 break;
             }
-            if (cfg_hndl != NULL)
-                *cfg_hndl = handle;
             break;
         case OP_ADD:
             if ((rc = cfg_add_instance_fmt(&handle, CFG_VAL(STRING, rt_val),
