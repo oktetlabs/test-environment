@@ -76,9 +76,10 @@
 
 /** Operations with routing/ARP table */
 enum tapi_cfg_oper {
-    OP_ADD, /**< Add operation */
-    OP_DEL, /**< Delete operation */
-    OP_GET  /**< Get operation */
+    OP_ADD,   /**< Add operation */
+    OP_DEL,   /**< Delete operation */
+    OP_GET,   /**< Get operation */
+    OP_MODIFY /**< Modify operation */
 };
 
 /* Forward declarations */
@@ -86,7 +87,7 @@ static int tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta,
                              int addr_family,
                              const void *dst_addr, int prefix,
                              const void *gw_addr, const char *dev,
-                             uint32_t flags, int metric, int mss, 
+                             uint32_t flags, int metric, int mtu, 
                              int win, int irtt, cfg_handle *cfg_hndl);
 
 static int tapi_cfg_arp_op(enum tapi_cfg_oper op, const char *ta,
@@ -497,9 +498,9 @@ route_parse_inst_name(const char *inst_name,
         rt->rt_metric = int_val;
     }
     
-    if ((ptr = strstr(tmp, "mss=")) != NULL)
+    if ((ptr = strstr(tmp, "mtu=")) != NULL)
     {
-        end_ptr = ptr += strlen("mss=");
+        end_ptr = ptr += strlen("mtu=");
         while (*end_ptr != ',' && *end_ptr != '\0')
             end_ptr++;
         *end_ptr = '\0';
@@ -507,13 +508,13 @@ route_parse_inst_name(const char *inst_name,
         if (*ptr == '\0' || *ptr == '-' ||
             (int_val = strtol(ptr, &end_ptr, 10), *end_ptr != '\0'))
         {
-            ERROR("Incorrect 'route mss' value in route %s", inst_name);
+            ERROR("Incorrect 'route mtu' value in route %s", inst_name);
             return TE_RC(TE_TA_LINUX, EINVAL);
         }
         if (term_byte != end_ptr)
             *end_ptr = ',';
 
-        /* Don't be confused the structure does not have mss field */
+        /* Don't be confused the structure does not have mtu field */
         rt->rt_mtu = int_val;
         rt->rt_flags |= RTF_MSS;
     }
@@ -635,7 +636,7 @@ tapi_cfg_get_route_table(const char *ta, int addr_family,
 
         tbl[i].flags = rt.rt_flags;
         tbl[i].metric = rt.rt_metric;
-        tbl[i].mss = rt.rt_mtu;
+        tbl[i].mtu = rt.rt_mtu;
         tbl[i].win = rt.rt_window;
         tbl[i].irtt = rt.rt_irtt;
 
@@ -664,13 +665,27 @@ int
 tapi_cfg_add_route(const char *ta, int addr_family,
                    const void *dst_addr, int prefix,
                    const void *gw_addr, const char *dev,
-                   uint32_t flags, int metric, int mss, int win, int irtt,
+                   uint32_t flags, int metric, int mtu, int win, int irtt,
                    cfg_handle *cfg_hndl)
 {
     return tapi_cfg_route_op(OP_ADD, ta, addr_family,
                              dst_addr, prefix, gw_addr, dev,
-                             flags, metric, mss, win, irtt, cfg_hndl);
+                             flags, metric, mtu, win, irtt, cfg_hndl);
 }
+
+/* See the description in tapi_cfg.h */
+int
+tapi_cfg_modify_route(const char *ta, int addr_family,
+                   const void *dst_addr, int prefix,
+                   const void *gw_addr, const char *dev,
+                   uint32_t flags, int metric, int mtu, int win, int irtt,
+                   cfg_handle *cfg_hndl)
+{
+    return tapi_cfg_route_op(OP_MODIFY, ta, addr_family,
+                             dst_addr, prefix, gw_addr, dev,
+                             flags, metric, mtu, win, irtt, cfg_hndl);
+}
+
 
 /* See the description in tapi_cfg.h */
 int
@@ -678,11 +693,11 @@ tapi_cfg_del_route_tmp(const char *ta, int addr_family,
                        const void *dst_addr, int prefix, 
                        const void *gw_addr, const char *dev,
                        uint32_t flags, int metric,
-                       int mss, int win, int irtt)
+                       int mtu, int win, int irtt)
 {
     return tapi_cfg_route_op(OP_DEL, ta, addr_family,
                              dst_addr, prefix, gw_addr, dev,
-                             flags, metric, mss, win, irtt, NULL);
+                             flags, metric, mtu, win, irtt, NULL);
 }
 
 /* See the description in tapi_cfg.h */
@@ -776,7 +791,7 @@ static int
 tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
                   const void *dst_addr, int prefix, const void *gw_addr,
                   const char *dev, uint32_t flags,
-                  int metric, int mss, int win, int irtt,
+                  int metric, int mtu, int win, int irtt,
                   cfg_handle *cfg_hndl)
 {
     cfg_handle  handle;
@@ -882,30 +897,44 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
         }
         PUT_INTO_BUF(route_inst_name, ",gw=%s", gw_addr_str);
     }
+    rt_val[0] = '\0';
+
     if (dev != NULL)
         PUT_INTO_BUF(route_inst_name, ",dev=%s", dev);
     if (metric != 0)
         PUT_INTO_BUF(route_inst_name, ",metric=%d", metric);
-    if (mss != 0)
-        PUT_INTO_BUF(route_inst_name, ",mss=%d", mss);
+    if (mtu != 0)
+        PUT_INTO_BUF(rt_val, ",mtu=%d", mtu);
     if (win != 0)
-        PUT_INTO_BUF(route_inst_name, ",window=%d", win);
+        PUT_INTO_BUF(rt_val, ",window=%d", win);
     if (irtt != 0)
-        PUT_INTO_BUF(route_inst_name, ",irtt=%d", irtt);
+        PUT_INTO_BUF(rt_val, ",irtt=%d", irtt);
     if (flags & RTF_REJECT)
         PUT_INTO_BUF(route_inst_name, ",reject");
 
-    rt_val[0] = '\0';
 
     if (flags & RTF_MODIFIED)
-        PUT_INTO_BUF(rt_val, " mod");
+        PUT_INTO_BUF(rt_val, ",mod");
     if (flags & RTF_DYNAMIC)
-        PUT_INTO_BUF(rt_val, " dyn");
+        PUT_INTO_BUF(rt_val, ",dyn");
     if (flags & RTF_REINSTATE)
-        PUT_INTO_BUF(rt_val, " reinstate");
+        PUT_INTO_BUF(rt_val, ",reinstate");
 
     switch (op)
     {
+        case OP_MODIFY:
+            if ((rc = cfg_set_instance_fmt(CFG_VAL(STRING, rt_val),
+                                           "/agent:%s/route:%s",
+                                           ta, route_inst_name)) != 0)
+            {
+                ERROR("%s() fails adding a new route %s %s on '%s' Agent "
+                      "errno = %X", __FUNCTION__, route_inst_name,
+                      rt_val, ta, rc);
+                break;
+            }
+            if (cfg_hndl != NULL)
+                *cfg_hndl = handle;
+            break;
         case OP_ADD:
             if ((rc = cfg_add_instance_fmt(&handle, CFG_VAL(STRING, rt_val),
                                            "/agent:%s/route:%s",
