@@ -37,20 +37,26 @@ extern "C" {
 
     
 /** Handle returned by the "start" method and used to control the TA */
-typedef void * rcf_talib_handle;
+typedef void *rcf_talib_handle;
 
 
 /** @name Test Agent flags */
-#define TA_LOCAL       1   /**< Test Agent runs on the same station with 
-                                TEN, so it's prohibited to reboot it 
-                                if it is not proxy */
-#define TA_PROXY       2   /**< Test Agent is proxy agent, so reboot should
-                                not lead to loss of the connectivity */
-
-#define TA_REBOOTABLE  4   /**< Test Agent host may be rebooted */
-#define TA_FAKE        8   /**< TA is started manually */
-#define TA_DOWN        16  /**< For internal RCF use */
-#define TA_CHECKED     32  /**< For internal RCF use */
+#define TA_LOCAL        0x01    /**< Test Agent runs on the same station
+                                     with TEN, so it's prohibited to
+                                     reboot it if it is not proxy */
+#define TA_PROXY        0x02    /**< Test Agent is proxy agent, so reboot
+                                     should not lead to loss of
+                                     the connectivity */
+#define TA_REBOOTABLE   0x04    /**< Test Agent host may be rebooted */
+#define TA_FAKE         0x08    /**< TA is started manually */
+/*@}*/
+/** @name Test Agent flags for RCF engine internal use */
+#define TA_DOWN         0x0100  /**< For internal RCF use */
+#define TA_CHECKING     0x0200  /**< TA checking is in progress, to not
+                                     forward new requests */
+#define TA_CHECKED      0x0400  /**< TA has just been checked */
+#define TA_DEAD         0x0800  /**< TA is dead, but can be recovered */
+#define TA_UNRECOVER    0x1000  /**< TA is dead, but can't be recovered */
 /*@}*/
 
 
