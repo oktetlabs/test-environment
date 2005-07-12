@@ -54,9 +54,8 @@ typedef void *rcf_talib_handle;
 #define TA_DOWN         0x0100  /**< For internal RCF use */
 #define TA_CHECKING     0x0200  /**< TA checking is in progress, to not
                                      forward new requests */
-#define TA_CHECKED      0x0400  /**< TA has just been checked */
-#define TA_DEAD         0x0800  /**< TA is dead, but can be recovered */
-#define TA_UNRECOVER    0x1000  /**< TA is dead, but can't be recovered */
+#define TA_DEAD         0x0400  /**< TA is dead, but can be recovered */
+#define TA_UNRECOVER    0x0800  /**< TA is dead, but can't be recovered */
 /*@}*/
 
 
