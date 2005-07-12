@@ -709,6 +709,7 @@ static inline int
 tapi_tcp_destroy_conn_descr(tapi_tcp_connection_t *conn_descr)
 { 
     tapi_tcp_conns_db_init();
+    int num;
 
     if (conn_descr == NULL || conn_descr == (void *)conns_root)
         return 0;
@@ -723,7 +724,7 @@ tapi_tcp_destroy_conn_descr(tapi_tcp_connection_t *conn_descr)
     if (conn_descr->rcv_csap != CSAP_INVALID_HANDLE)
     {
         int rc = rcf_ta_trrecv_stop(conn_descr->agt, conn_descr->rcv_sid,
-                                     conn_descr->rcv_csap, NULL);
+                                     conn_descr->rcv_csap, &num);
 
         if (rc != 0)
         {
@@ -765,7 +766,7 @@ tapi_tcp_destroy_conn_descr(tapi_tcp_connection_t *conn_descr)
     if (conn_descr->arp_csap != CSAP_INVALID_HANDLE)
     {
         int rc = rcf_ta_trrecv_stop(conn_descr->agt, conn_descr->rcv_sid,
-                                    conn_descr->arp_csap, NULL);
+                                    conn_descr->arp_csap, &num);
 
         if (rc != 0)
         {
