@@ -2106,8 +2106,10 @@ process_user_request(usrreq *req)
     }
 
     /* Usual commands */
-    if (find_user_request(&(agent->sent), msg->sid) != NULL ||
-        shutdown_num > 0 || agent->reboot_timestamp > 0)
+    if (shutdown_num > 0 ||
+        agent->reboot_timestamp > 0 ||
+        (agent->flags & TA_CHECKING) ||
+        find_user_request(&(agent->sent), msg->sid) != NULL)
     {
         VERB("Pending user request for TA %s:%d", agent->name, msg->sid);
         QEL_INSERT(&(agent->pending), req);
