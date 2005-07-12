@@ -107,7 +107,15 @@
 #define RCF_REBOOT_TIMEOUT      60  /**< TA reboot timeout in seconds */
 #define RCF_SHUTDOWN_TIMEOUT    5   /**< TA shutdown timeout in seconds */
 
-#define LOG_SID                 1   /**< Session used for Log gathering */
+
+/** Special session identifiers */
+enum {
+    RCF_SID_GET_LOG = 1,    /**< Session used for Log gathering */
+    RCF_SID_TACHECK,        /**< Session used for TA check */
+
+    /** Unused SID, must be the last in the enum */
+    RCF_SID_UNUSED,
+};
 
 
 
@@ -202,6 +210,18 @@ typedef struct ta {
 
 DEFINE_LGR_ENTITY("RCF");
 
+
+/**
+ * TA check initiator data.
+ */
+typedef struct ta_check {
+    usrreq         *req;    /**< User request */
+    unsigned int    active; /**< Number of active checks */
+} ta_check;
+
+static ta_check ta_checker;
+
+
 #define RCF_FOREGROUND  0x01    /**< Flag to run RCF in foreground */
 static unsigned int flags = 0;  /**< Global flags */
 
@@ -232,6 +252,7 @@ static char *tmp_dir;
 
 /* Forward decraration */
 static int send_cmd(ta *agent, usrreq *req);
+static void rcf_ta_check_done(usrreq *req);
 
 /*
  * Release memory allocated for Test Agents structures.
@@ -407,7 +428,7 @@ parse_config(const char *filename)
         if (xmlStrcmp(cur->name , (const xmlChar *)"ta") != 0)
             continue;
 
-        if ((agent = (ta *)calloc(sizeof(ta), 1)) == NULL)
+        if ((agent = (ta *)calloc(1, sizeof(ta))) == NULL)
             return -1;
 
         agent->next = agents;
@@ -539,7 +560,7 @@ parse_config(const char *filename)
         agent->sent.prev = agent->sent.next = &(agent->sent);
         agent->pending.prev = agent->pending.next = &(agent->pending);
 
-        agent->sid = LOG_SID;
+        agent->sid = RCF_SID_UNUSED;
 
         ta_num++;
     }
@@ -678,6 +699,14 @@ answer_user_request(usrreq *req)
                  req->message->sid, 
                  req->message->file);
         }
+    }
+    else if (req->message->sid == RCF_SID_TACHECK)
+    {
+        if (ta_checker.req != NULL)
+            rcf_ta_check_done(req);
+        else
+            ERROR("Unexpected answer with TA checker SID=%d",
+                  req->message->sid);
     }
     if (!(req->message->flags & INTERMEDIATE_ANSWER))
     {
@@ -1550,13 +1579,13 @@ send_cmd(ta *agent, usrreq *req)
     rcf_msg *msg = req->message;
 
     sprintf(cmd, "SID %d ", msg->sid);
-    req->timeout = RCF_CMD_TIMEOUT_HUGE;
     switch (msg->opcode)
     {
         case RCFOP_REBOOT:
             strcat(cmd, TE_PROTO_REBOOT);
             if (msg->data_len > 0)
                 write_str(msg->data, msg->data_len);
+            req->timeout = RCF_CMD_TIMEOUT_HUGE;
             break;
 
         case RCFOP_CONFGET:
@@ -1600,9 +1629,10 @@ send_cmd(ta *agent, usrreq *req)
             break;
 
         case RCFOP_GET_LOG:
-            if (msg->sid != LOG_SID)
+            if (msg->sid != RCF_SID_GET_LOG)
             {
                 msg->error = TE_RC(TE_RCF, EINVAL);
+                answer_user_request(req);
                 return -1;
             }
             strcat(cmd, TE_PROTO_GET_LOG);
@@ -1613,7 +1643,8 @@ send_cmd(ta *agent, usrreq *req)
             strcat(cmd, TE_PROTO_VREAD);
             sprintf(cmd + strlen(cmd), " %s %s", msg->id,
                     rcf_types[msg->intparm]);
-            req->timeout = RCF_CMD_TIMEOUT;
+            if (req->timeout == 0)
+                req->timeout = RCF_CMD_TIMEOUT;
             break;
 
         case RCFOP_VWRITE:
@@ -1635,6 +1666,7 @@ send_cmd(ta *agent, usrreq *req)
                                                     TE_PROTO_FGET);
             strcat(cmd, " ");
             strncat(cmd, msg->data, RCF_MAX_PATH);
+            req->timeout = RCF_CMD_TIMEOUT_HUGE;
             break;
 
         case RCFOP_CSAP_CREATE:
@@ -1643,27 +1675,32 @@ send_cmd(ta *agent, usrreq *req)
             strncat(cmd, msg->id, RCF_MAX_ID);
             if (msg->data_len > 0)
                 write_str(msg->data, msg->data_len);
+            req->timeout = RCF_CMD_TIMEOUT;
             break;
 
         case RCFOP_CSAP_DESTROY:
             strcat(cmd, TE_PROTO_CSAP_DESTROY);
             sprintf(cmd + strlen(cmd), " %u", msg->handle);
+            req->timeout = RCF_CMD_TIMEOUT;
             break;
 
         case RCFOP_CSAP_PARAM:
             strcat(cmd, TE_PROTO_CSAP_PARAM);
             sprintf(cmd + strlen(cmd), " %u %s", msg->handle, msg->id);
+            req->timeout = RCF_CMD_TIMEOUT;
             break;
 
         case RCFOP_TRSEND_START:
             strcat(cmd, TE_PROTO_TRSEND_START);
             sprintf(cmd + strlen(cmd), " %u %s", msg->handle,
                     (msg->intparm & TR_POSTPONED) ? "postponed" : "");
+            req->timeout = RCF_CMD_TIMEOUT_HUGE;
             break;
 
         case RCFOP_TRSEND_STOP:
             strcat(cmd, TE_PROTO_TRSEND_STOP);
             sprintf(cmd + strlen(cmd), " %u", msg->handle);
+            req->timeout = RCF_CMD_TIMEOUT_HUGE;
             break;
 
         case RCFOP_TRRECV_START:
@@ -1671,11 +1708,13 @@ send_cmd(ta *agent, usrreq *req)
             sprintf(cmd + strlen(cmd), " %u %u %u%s", msg->handle,
                     msg->num, msg->timeout,
                     (msg->intparm & TR_RESULTS) ? " results" : "");
+            req->timeout = RCF_CMD_TIMEOUT_HUGE;
             break;
 
         case RCFOP_TRRECV_WAIT:
             strcat(cmd, TE_PROTO_TRRECV_WAIT);
             sprintf(cmd + strlen(cmd), " %u", msg->handle);
+            req->timeout = RCF_CMD_TIMEOUT_HUGE;
             break;
 
         case RCFOP_TRRECV_STOP:
@@ -1683,6 +1722,7 @@ send_cmd(ta *agent, usrreq *req)
             strcat(cmd, msg->opcode == RCFOP_TRRECV_STOP ?
                             TE_PROTO_TRRECV_STOP : TE_PROTO_TRRECV_GET);
             sprintf(cmd + strlen(cmd), " %u", msg->handle);
+            req->timeout = RCF_CMD_TIMEOUT_HUGE;
             break;
 
         case RCFOP_TRSEND_RECV:
@@ -1691,12 +1731,13 @@ send_cmd(ta *agent, usrreq *req)
                     msg->handle, msg->timeout,
                     (msg->intparm & TR_RESULTS) ? " results" : "");
             msg->num = 0;
+            req->timeout = RCF_CMD_TIMEOUT_HUGE;
             break;
 
         case RCFOP_EXECUTE:
             strcat(cmd, TE_PROTO_EXECUTE);
             strcat(cmd, " ");
-            switch((enum rcf_start_modes)msg->handle)
+            switch ((enum rcf_start_modes)msg->handle)
             {
                 case RCF_START_FUNC:
                     strcat(cmd, "function ");
@@ -1743,6 +1784,7 @@ send_cmd(ta *agent, usrreq *req)
                     }
                 }
             }
+            req->timeout = RCF_CMD_TIMEOUT_HUGE;
             break;
             
         case RCFOP_RPC:
@@ -1779,91 +1821,137 @@ send_cmd(ta *agent, usrreq *req)
     return transmit_cmd(agent, req);
 }
 
+
 /**
- * This function is used to check that all running TA are still
- * working.
+ * Allocate memory for user request.
  */
-static int
-rcf_ta_check()
+static usrreq *
+alloc_usrreq(void)
 {
-    te_bool   reboot = FALSE;
-    te_bool   dead = FALSE;
-    te_bool   reb_success = FALSE;
-    ta        *agent;
+    usrreq *req;
     
-    struct timeval tv;
-    fd_set         set;
-    int            num_live = 0;
+    if ((req = (usrreq *)calloc(1, sizeof(usrreq))) == NULL)
+        return NULL;
 
-    time_t t = time(NULL);
+    if ((req->message = (rcf_msg *)calloc(1, sizeof(rcf_msg))) == NULL)
+    {
+        free(req);
+        return NULL;
+    }
 
+    return req;
+}
+
+
+/**
+ * This function is used to finish check that all running TA are
+ * still working.
+ */
+static void
+rcf_ta_check_all_done(void)
+{
+    if (ta_checker.req != NULL && ta_checker.active == 0)
+    {
+        te_bool     rebooted = FALSE;
+        te_bool     remain_dead = FALSE;
+        te_bool     reboot_ok;
+        ta         *agent;
+
+        for (agent = agents; agent != NULL; agent = agent->next)
+        {
+            if (((agent->flags & TA_CHECKED) == 0) || (agent->dead))
+            {
+                ERROR("Reboot TA '%s'", agent->name);
+                rebooted = TRUE;
+                agent->reboot_timestamp = 0;
+                reboot_ok = ((agent->finish)(agent->handle, NULL) == 0) &&
+                            (init_agent(agent) == 0);
+                if (reboot_ok)
+                {
+                    agent->dead = FALSE;
+                }
+                else
+                {
+                    ERROR("Cannot reboot TA '%s'", agent->name);
+                    set_ta_dead(agent);
+                    remain_dead = TRUE;
+                }
+            }
+            agent->flags &= ~TA_CHECKED;
+        }
+
+        ta_checker.req->message->error =
+            remain_dead ? ETADEAD : rebooted ? ETAREBOOTED : 0;
+
+        answer_user_request(ta_checker.req);
+        ta_checker.req = NULL;
+    }
+}
+
+/**
+ * Process reply to TA check request. Mark TA as checked on success.
+ *
+ * @param req       User request with reply
+ */
+static void
+rcf_ta_check_done(usrreq *req)
+{
+    ta *agent;
+
+    agent = find_ta_by_name(req->message->ta);
+    if (agent == NULL)
+    {
+        ERROR("Failed to find TA by name '%s'", req->message->ta);
+        return;
+    }
+
+    if (req->message->error == 0)
+        agent->flags |= TA_CHECKED;
+
+    ta_checker.active--;
+}
+
+/**
+ * This function is used to initiate check that all running TA are
+ * still working.
+ */
+static void
+rcf_ta_check_start(void)
+{
+    ta             *agent;
+    usrreq         *req;
+    int             rc = 0;
+
+    assert(ta_checker.active == 0);
     for (agent = agents; agent != NULL; agent = agent->next)
     {
         if (agent->dead)
             continue;
 
-        num_live++;
-        sprintf(cmd, "SID %d %s time string", ++agent->sid, TE_PROTO_VREAD);
-        (agent->transmit)(agent->handle, cmd, strlen(cmd) + 1);        
-    }
-    while (num_live > 0 && time(NULL) - t < RCF_SHUTDOWN_TIMEOUT)
-    {
-        tv = tv0;
-        set = set0;
-        select(FD_SETSIZE, &set, NULL, NULL, &tv);
-
-        for (agent = agents; agent != NULL; agent = agent->next)
+        req = alloc_usrreq();
+        if (req == NULL)
         {
-            if ((agent->flags & TA_CHECKED) || (agent->dead))
-                continue;
-
-            if ((agent->is_ready)(agent->handle))
-            {
-                char    answer[16];
-                char   *ba;
-                size_t  len = sizeof(cmd);
-
-                VERB("Receiving");
-                if ((agent->receive)(agent->handle, cmd, &len, &ba) != 0)
-                    continue;
-                VERB("Received %s", cmd);
-                
-                sprintf(answer, "SID %d 0", agent->sid);
-
-                if (strncmp(cmd, answer, strlen(answer)) != 0)
-                {
-                    /* Reply for previously sent request */
-                    continue;
-                }
-
-                VERB("Test Agent '%s' is checked", agent->name);
-                agent->flags |= TA_CHECKED;
-                num_live--;
-            }
+            rc = TE_RC(TE_RCF, ENOMEM);
+            break;
         }
-    }
 
-    for (agent = agents; agent != NULL; agent = agent->next)
-    {
-        if (((agent->flags & TA_CHECKED) == 0) || (agent->dead))
-        {
-            ERROR("Reboot TA '%s'", agent->name);
-            reboot = TRUE;
-            agent->reboot_timestamp = 0;
-            reb_success = ((agent->finish)(agent->handle, NULL) != 0) || 
-                          (init_agent(agent) != 0);
-            if (reb_success)
-            {
-                ERROR("Cannot reboot TA '%s'", agent->name);
-                set_ta_dead(agent);
-            }
-            else
-                agent->dead = FALSE;
-        }
-        agent->flags &= ~TA_CHECKED;
+        req->user = NULL;
+        req->timeout = RCF_SHUTDOWN_TIMEOUT;
+
+        strcpy(req->message->ta, agent->name);
+        req->message->sid = RCF_SID_TACHECK;
+        req->message->opcode = RCFOP_VREAD;
+        req->message->intparm = RCF_STRING;
+        strcpy(req->message->id, "time");
+
+        /* Prepared request is answered in any case */
+        ta_checker.active++;
+        if ((rc = send_cmd(agent, req)) == 0)
+            QEL_INSERT(&(agent->sent), req);
     }
-    return dead? ETADEAD : reboot ? ETAREBOOTED : 0;
+    rcf_ta_check_all_done();
 }
+
 
 /**
  * Process a request from the user: send the command to the Test Agent or
@@ -1878,31 +1966,45 @@ process_user_request(usrreq *req)
     rcf_msg *msg = req->message;
     int rc;
 
-    if (msg->opcode == RCFOP_TALIST)
+    /* Process non-TA commands */
+    switch (msg->opcode)
     {
-        rcf_msg *new_msg = (rcf_msg *)malloc(sizeof(rcf_msg) + names_len);
-        
-        if (new_msg == NULL)
+        case RCFOP_TALIST:
         {
-            msg->error = TE_RC(TE_RCF, ENOMEM);
+            rcf_msg *new_msg;
+
+            new_msg = (rcf_msg *)calloc(1, sizeof(rcf_msg) + names_len);
+            if (new_msg == NULL)
+            {
+                msg->error = TE_RC(TE_RCF, ENOMEM);
+                answer_user_request(req);
+                return;
+            }
+            *new_msg = *msg;
+            free(msg);
+            msg = req->message = new_msg;
+            msg->data_len = names_len;
+            memcpy(msg->data, names, names_len);
             answer_user_request(req);
             return;
         }
-        *new_msg = *msg;
-        free(msg);
-        msg = req->message = new_msg;
-        msg->data_len = names_len;
-        memcpy(msg->data, names, names_len);
-        answer_user_request(req);
-        return;
-    }
 
-    if (msg->opcode == RCFOP_TACHECK)
-    {
-        rc = rcf_ta_check();
-        msg->error = TE_RC(TE_RCF, rc);
-        answer_user_request(req);
-        return;
+        case RCFOP_TACHECK:
+            if (ta_checker.req == NULL)
+            {
+                ta_checker.req = req;
+                rcf_ta_check_start();
+            }
+            else
+            {
+                msg->error = TE_RC(TE_RCF, EINPROGRESS);
+                answer_user_request(req);
+            }
+            return;
+
+        default:
+            /* The rest of commands are processed below */
+            break;
     }
     
     if ((agent = find_ta_by_name(msg->ta)) == NULL)
@@ -2093,14 +2195,8 @@ wait_shutdown()
         size_t  len;
         int     rc;
 
-        if ((req = (usrreq *)calloc(sizeof(usrreq), 1)) == NULL)
+        if ((req = alloc_usrreq()) == NULL)
             return;
-
-        if ((req->message = (rcf_msg *)malloc(RCF_MAX_LEN)) == NULL)
-        {
-            free(req);
-            return;
-        }
 
         len = RCF_MAX_LEN;
         if ((rc = ipc_receive_message(server, (char *)req->message,
@@ -2298,14 +2394,8 @@ main(int argc, const char *argv[])
         {
             len = sizeof(rcf_msg);
             
-            if ((req = (usrreq *)calloc(1, sizeof(usrreq))) == NULL)
+            if ((req = alloc_usrreq()) == NULL)
                 goto error;
-
-            if ((req->message = (rcf_msg *)calloc(1, len)) == NULL)
-            {
-                free(req);
-                goto error;
-            }
 
             rc = ipc_receive_message(server, req->message,
                                      &len, &(req->user));
@@ -2400,6 +2490,9 @@ main(int argc, const char *argv[])
                 break;
             }
         }
+
+        /* If TA check is in progress, may be all checks are done? */
+        rcf_ta_check_all_done();
 
         if (rcf_wait_shutdown)
         {
