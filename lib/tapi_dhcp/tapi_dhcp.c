@@ -979,6 +979,8 @@ dhcp_pkt_handler(char *pkt_fname, void *user_param)
     asn_value_p               pkt;
     asn_value_p               dhcp_pkt;
 
+    VERB("%s called", __FUNCTION__);
+
     rc = asn_parse_dvalue_in_file(pkt_fname, ndn_raw_packet, &pkt,
                                   &s_parsed);
     if (rc != 0)
@@ -1004,6 +1006,7 @@ dhcp_pkt_handler(char *pkt_fname, void *user_param)
     }
 
     rcv_pkt->dhcp_msg = dhcp_msg;
+    VERB("%s msg op %d", __FUNCTION__, dhcp_msg->op);
 }
 
 
@@ -1152,7 +1155,7 @@ tapi_dhcpv4_send_recv(const char *ta_name, csap_handle_t dhcp_csap,
         if (rc == ETADNOTMATCH && timeout == 1)
             *err_msg = "DHCP answer doesn't come";
         else
-            *err_msg = "rcf_ta_trsend_recv rails";
+            *err_msg = "rcf_ta_trsend_recv fails";
     }
     else
     {
