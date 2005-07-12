@@ -2359,7 +2359,7 @@ simple_sender(tarpc_simple_sender_in *in, tarpc_simple_sender_out *out)
         return -1;
     }
 
-    memset(buf, 0xDEADBEEF, sizeof(buf));
+    memset(buf, 0xAB, sizeof(buf));
 
     for (start = now = time(NULL);
          now - start <= (time_t)in->time2run;
@@ -2379,15 +2379,19 @@ simple_sender(tarpc_simple_sender_in *in, tarpc_simple_sender_out *out)
         usleep(delay);
 
         len = send(in->s, buf, size, 0);
-
+        
         if (len < 0)
         {
+            if (in->ignore_err)
+                continue;
             ERROR("send() failed in simple_sender(): errno %x", errno);
             return -1;
         }
 
         if (len < size)
         {
+            if (in->ignore_err)
+                continue;
             ERROR("send() returned %d instead %d in simple_sender()",
                   len, size);
             return -1;
@@ -2413,7 +2417,7 @@ simple_sender(tarpc_simple_sender_in *in, tarpc_simple_sender_out *out)
     {
         char buf[64] = {0,};
         sprintf(buf, "Sent %llu", sent);
-        ERROR(buf);
+        RING(buf);
     }
 
     out->bytes = sent;
