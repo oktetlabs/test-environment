@@ -483,7 +483,7 @@ tad_eth_arp_reply(csap_p csap_descr, const char *usr_param,
     }
     /* fill eth header */
     memcpy(p, pkt + 6, 6);
-    memcpy(p + 6, pkt, 6);
+    memcpy(p + 6, my_mac, 6);
     memcpy(p + 12, pkt + 12, 2);
 
     p += 14;
@@ -510,6 +510,7 @@ tad_eth_arp_reply(csap_p csap_descr, const char *usr_param,
         return csap_descr->last_errno;
     }
 
+    free(arp_reply_frame);
     return 0;
 }
 
