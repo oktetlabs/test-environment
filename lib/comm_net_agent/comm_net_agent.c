@@ -62,6 +62,9 @@
 #if HAVE_NETINET_IN_H
 #include <netinet/in.h>
 #endif
+#if HAVE_NETINET_TCP_H
+#include <netinet/tcp.h>
+#endif
 #if HAVE_FCNTL_H
 #include <fcntl.h>
 #endif
@@ -99,8 +102,9 @@ rcf_comm_agent_init(const char *config_str,
                     struct rcf_comm_connection **p_rcc)
 {
     struct sockaddr_in addr;
-    int s, s1, rc;
-    int optval = 1;
+    int                 s, s1;
+    int                 rc;
+    int                 optval = 1;
 
     *p_rcc = NULL;
     addr.sin_family = AF_INET;
@@ -115,45 +119,47 @@ rcf_comm_agent_init(const char *config_str,
         return errno;
     }
 
-    rc = setsockopt(s, SOL_SOCKET, SO_REUSEADDR,
-                    &optval, sizeof(optval));
-    if (rc < 0)
+    if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR,
+                   &optval, sizeof(optval)) != 0)
     {
-        perror("setsockopt() error");
+        rc = errno;
+        perror("setsockopt(SOL_SOCKET, SO_REUSEADDR, enabled)");
         (void)close(s);
-        return errno;
+        return rc;
     }
 
-    rc = bind(s, (struct sockaddr *)&addr, sizeof(addr));
-    if (rc < 0)
+    if (bind(s, (struct sockaddr *)&addr, sizeof(addr)) != 0)
     {
+        rc = errno;
         perror("bind() error");
         (void)close(s);
-        return errno;
+        return rc;
     }
 
-    rc = listen(s, 5);
-    if (rc != 0)
+    if (listen(s, 5) != 0)
     {
+        rc = errno;
         perror("listen() error");
         (void)close(s);
-        return errno;
+        return rc;
     }
 
     s1 = accept(s, NULL, NULL);
     if (s1 < 0)
     {
+        rc = errno;
         perror("accept() error");
         (void)close(s);
-        return errno;
+        return rc;
     }
-
     /* Connection established */
-    if (close(s) < 0)
+
+    if (close(s) != 0)
     {
+        rc = errno;
         perror("close(s) error");
         (void)close(s1);
-        return errno;
+        return rc;
     }
 
 #if HAVE_FCNTL_H
@@ -163,15 +169,25 @@ rcf_comm_agent_init(const char *config_str,
      */
     (void)fcntl(s1, F_SETFD, FD_CLOEXEC);
 #endif
+#if HAVE_NETINET_TCP_H
+    /* Set TCE_NODELAY=1 to force TCP to send all data ASAP. */
+    if (setsockopt(s1, SOL_TCP, TCP_NODELAY, &optval, sizeof(optval)) != 0)
+    {
+        rc = errno;
+        perror("setsockopt(SOL_TCP, TCP_NODELAY, enabled)");
+        (void)close(s1);
+        return rc;
+    }
+#endif
 
     /* It's time to allocate memory for rcc and fill it */
     *p_rcc = (struct rcf_comm_connection*)calloc(1, sizeof(**p_rcc));
-
     if ((*p_rcc) == NULL)
     {
+        rc = errno;
         perror("memory allocation error");
         (void)close(s1);
-        return errno;
+        return rc;
     }
 
     /* All field is set to zero. Just set the socket */
