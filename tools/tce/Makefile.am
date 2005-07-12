@@ -15,7 +15,7 @@ tce_dump_LDADD = -ltce @TE_LDADD@
 tce_dump_DEPENDENCIES = @TE_DEPENDENCIES@ \
                         $(DESTDIR)/$(prefix)/lib/libtce.a
 
-mybindir=$(prefix)/bin
+mybindir=$(bindir)
 dist_mybin_SCRIPTS=\
     tce_kallsyms \
     tce_gcc \
@@ -26,4 +26,5 @@ dist_mybin_SCRIPTS=\
     tce_report \
     tce_summary
 
-nobase_dist_data_DATA = bbhook.c modules/Makefile-2.6 modules/bbinit.c
+mydatadir=$(datadir)/@PACKAGE_NAME@
+nobase_dist_mydata_DATA = bbhook.c modules/Makefile-2.6 modules/bbinit.c
