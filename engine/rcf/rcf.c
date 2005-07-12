@@ -1859,7 +1859,7 @@ rcf_ta_check_all_done(void)
 
         for (agent = agents; agent != NULL; agent = agent->next)
         {
-            if (((agent->flags & TA_CHECKED) == 0) || (agent->dead))
+            if (agent->dead)
             {
                 ERROR("Reboot TA '%s'", agent->name);
                 rebooted = TRUE;
@@ -1877,7 +1877,6 @@ rcf_ta_check_all_done(void)
                     remain_dead = TRUE;
                 }
             }
-            agent->flags &= ~TA_CHECKED;
         }
 
         ta_checker.req->message->error =
@@ -1905,10 +1904,11 @@ rcf_ta_check_done(usrreq *req)
         return;
     }
 
-    if (req->message->error == 0)
-        agent->flags |= TA_CHECKED;
-
     ta_checker.active--;
+    agent->flags &= ~TA_CHECKING;
+
+    if (req->message->error == 0)
+        send_all_pending_commands(agent);
 }
 
 /**
@@ -1945,6 +1945,9 @@ rcf_ta_check_start(void)
         strcpy(req->message->id, "time");
 
         /* Prepared request is answered in any case */
+        if (agent->flags & TA_CHECKING)
+            ERROR("TA '%s' checking is already in progress", agent->name);
+        agent->flags |= TA_CHECKING;
         ta_checker.active++;
         if ((rc = send_cmd(agent, req)) == 0)
             QEL_INSERT(&(agent->sent), req);
