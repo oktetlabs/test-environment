@@ -494,10 +494,14 @@ tapi_tcp_template(tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn,
     if (data != NULL && pld_len > 0)
     {
         int32_t flags;
+        asn_value *raw_tcp_pdu = NULL;
 
-        ndn_du_read_plain_int(tcp_pdu, NDN_TAG_TCP_FLAGS, &flags);
+        asn_get_choice_value(tcp_pdu, (const asn_value **)&raw_tcp_pdu,
+                                  NULL, NULL);
+
+        ndn_du_read_plain_int(raw_tcp_pdu, NDN_TAG_TCP_FLAGS, &flags);
         flags |= TCP_PSH_FLAG;
-        ndn_du_write_plain_int(tcp_pdu, NDN_TAG_TCP_FLAGS, flags);
+        ndn_du_write_plain_int(raw_tcp_pdu, NDN_TAG_TCP_FLAGS, flags);
 
         rc = asn_write_value_field(*tmpl, data, pld_len, "payload.#bytes");
         if (rc != 0)
@@ -505,12 +509,12 @@ tapi_tcp_template(tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn,
             ERROR("%s(): write payload eror: 0x%X", __FUNCTION__, rc);
             goto cleanup;
         }
+
     }
 
     rc = asn_insert_indexed(*tmpl, tcp_pdu, 0, "pdus");
     if (rc != 0)
-    {
-        ERROR("%s(): insert tcp pdu eror: 0x%X", __FUNCTION__, rc);
+    { ERROR("%s(): insert tcp pdu eror: 0x%X", __FUNCTION__, rc);
         goto cleanup;
     }
 
