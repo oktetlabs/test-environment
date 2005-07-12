@@ -432,23 +432,28 @@ proto_h2rpc(int proto)
  * TA-independent receive flags. 
  */
 typedef enum rpc_recv_flags {
-    RPC_MSG_OOB       = 1,     /**< Receive out-of-band data */
-    RPC_MSG_PEEK      = 2,     /**< Do not remove data from the queue */
-    RPC_MSG_DONTROUTE = 4,     /**< Send to directly connected network */
-    RPC_MSG_DONTWAIT  = 8,     /**< Do not block */
-    RPC_MSG_WAITALL   = 0x10,  /**< Block until full request is specified */
-    RPC_MSG_NOSIGNAL  = 0x20,  /**< Turn off raising of SIGPIPE */
-    RPC_MSG_TRUNC     = 0x40,  /**< Return the real length of the packet,
-                                    even when it was longer than the passed
-                                    buffer */
-    RPC_MSG_CTRUNC    = 0x80,  /**< Control data lost before delivery */
-    RPC_MSG_ERRQUEUE  = 0x100, /**< Queued errors should be received from
-                                    the socket error queue */
-    RPC_MSG_MCAST     = 0x200, /**< Datagram was received as a link-layer 
-                                    multicast */
-    RPC_MSG_BCAST     = 0x400, /**< Datagram was received as a link-layer 
-                                    broadcast */
-    RPC_MSG_UNKNOWN   = 0x200  /**< Incorrect flag */
+    RPC_MSG_OOB       = 1,      /**< Receive out-of-band data */
+    RPC_MSG_PEEK      = 2,      /**< Do not remove data from the queue */
+    RPC_MSG_DONTROUTE = 4,      /**< Send to directly connected network */
+    RPC_MSG_DONTWAIT  = 8,      /**< Do not block */
+    RPC_MSG_WAITALL   = 0x10,   /**< Block until full request is
+                                     specified */
+    RPC_MSG_NOSIGNAL  = 0x20,   /**< Turn off raising of SIGPIPE */
+    RPC_MSG_TRUNC     = 0x40,   /**< Return the real length of the packet,
+                                     even when it was longer than the passed
+                                     buffer */
+    RPC_MSG_CTRUNC    = 0x80,   /**< Control data lost before delivery */
+    RPC_MSG_ERRQUEUE  = 0x100,  /**< Queued errors should be received from
+                                     the socket error queue */
+    RPC_MSG_MCAST     = 0x200,  /**< Datagram was received as a link-layer 
+                                     multicast */
+    RPC_MSG_BCAST     = 0x400,  /**< Datagram was received as a link-layer 
+                                     broadcast */
+    RPC_MSG_MORE      = 0x800,  /**< The caller has more data to send */
+    RPC_MSG_CONFIRM   = 0x1000, /**< Tell the link layer that forward
+                                     progress happened */
+    RPC_MSG_EOR       = 0x2000, /**< Terminates a record */
+    RPC_MSG_UNKNOWN   = 0x8000  /**< Incorrect flag */
 } rpc_send_recv_flags;
 
 /** Bitmask of all possible receive flags  */
@@ -456,6 +461,7 @@ typedef enum rpc_recv_flags {
                          RPC_MSG_DONTWAIT | RPC_MSG_WAITALL |             \
                          RPC_MSG_NOSIGNAL | RPC_MSG_TRUNC |               \
                          RPC_MSG_CTRUNC | RPC_MSG_ERRQUEUE |              \
+                         RPC_MSG_MORE | RPC_MSG_CONFIRM | RPC_MSG_EOR |   \
                          RPC_MSG_MCAST | RPC_MSG_BCAST)
 
 #ifdef MSG_OOB
@@ -540,6 +546,27 @@ typedef enum rpc_recv_flags {
 #define MSG_BCAST           0
 #endif
 
+#ifdef MSG_MORE
+#define HAVE_MSG_MORE       1
+#else
+#define HAVE_MSG_MORE       0
+#define MSG_MORE            0
+#endif
+
+#ifdef MSG_CONFIRM
+#define HAVE_MSG_CONFIRM    1
+#else
+#define HAVE_MSG_CONFIRM    0
+#define MSG_CONFIRM         0
+#endif
+
+#ifdef MSG_EOR
+#define HAVE_MSG_EOR        1
+#else
+#define HAVE_MSG_EOR        0
+#define MSG_EOR             0
+#endif
+
 #define SEND_RECV_FLAGS_MAPPING_LIST \
             RPC_BIT_MAP_ENTRY(MSG_OOB),         \
             RPC_BIT_MAP_ENTRY(MSG_PEEK),        \
@@ -552,6 +579,9 @@ typedef enum rpc_recv_flags {
             RPC_BIT_MAP_ENTRY(MSG_ERRQUEUE),    \
             RPC_BIT_MAP_ENTRY(MSG_MCAST),       \
             RPC_BIT_MAP_ENTRY(MSG_BCAST),       \
+            RPC_BIT_MAP_ENTRY(MSG_MORE),        \
+            RPC_BIT_MAP_ENTRY(MSG_CONFIRM),     \
+            RPC_BIT_MAP_ENTRY(MSG_EOR),         \
             RPC_BIT_MAP_ENTRY(MSG_UNKNOWN)
 
 #define MSG_MAX         0xFFFFFFFF
@@ -561,6 +591,7 @@ typedef enum rpc_recv_flags {
                          MSG_DONTWAIT | MSG_WAITALL |           \
                          MSG_NOSIGNAL | MSG_TRUNC |             \
                          MSG_CTRUNC | MSG_ERRQUEUE |            \
+                         MSG_MORE | MSG_CONFIRM | MSG_EOR |     \
                          MSG_MCAST | MSG_BCAST)
 
 /**
@@ -599,6 +630,9 @@ send_recv_flags_rpc2h(rpc_send_recv_flags flags)
            (!!(flags & RPC_MSG_ERRQUEUE) * MSG_ERRQUEUE) |
            (!!(flags & RPC_MSG_MCAST) * MSG_MCAST) |
            (!!(flags & RPC_MSG_BCAST) * MSG_BCAST) |
+           (!!(flags & RPC_MSG_MORE) * MSG_MORE) |
+           (!!(flags & RPC_MSG_CONFIRM) * MSG_CONFIRM) |
+           (!!(flags & RPC_MSG_EOR) * MSG_EOR) |
            (!!(flags & RPC_MSG_UNKNOWN) * MSG_MAX) |
            (!!(flags & ~RPC_MSG_ALL) * MSG_MAX);
 }
@@ -617,9 +651,20 @@ send_recv_flags_h2rpc(int flags)
            (!!(flags & MSG_CTRUNC) * RPC_MSG_CTRUNC) |
            (!!(flags & MSG_MCAST) * RPC_MSG_MCAST) |
            (!!(flags & MSG_BCAST) * RPC_MSG_BCAST) |
+           (!!(flags & MSG_MORE) * RPC_MSG_MORE) |
+           (!!(flags & MSG_CONFIRM) * RPC_MSG_CONFIRM) |
+           (!!(flags & MSG_EOR) * RPC_MSG_EOR) |
            (!!(flags & MSG_ERRQUEUE) * RPC_MSG_ERRQUEUE) |
            (!!(flags & ~MSG_ALL) * RPC_MSG_UNKNOWN);
 }
+
+#undef HAVE_MSG_NOSIGNAL
+#undef HAVE_MSG_ERRQUEUE
+#undef HAVE_MSG_MCAST
+#undef HAVE_MSG_BCAST
+#undef HAVE_MSG_MORE
+#undef HAVE_MSG_CONFIRM
+#undef HAVE_MSG_EOR
 
 
 /**
@@ -1096,11 +1141,6 @@ typedef enum rpc_cf_flags_attributes {
  * send_recv_flags_rpc2str()
  */
 RPCBITMAP2STR(send_recv_flags, SEND_RECV_FLAGS_MAPPING_LIST)
-
-#undef HAVE_MSG_NOSIGNAL
-#undef HAVE_MSG_ERRQUEUE
-#undef HAVE_MSG_MCAST
-#undef HAVE_MSG_BCAST
 
 
 /**
