@@ -3310,6 +3310,7 @@ route_change(unsigned int gid, const char *oid, const char *value,
         if ((idx = ll_name_to_index(dev)) == 0) 
         {
             ERROR("Cannot find device");
+            rtnl_close(&rth);
             return TE_RC(TE_TA_LINUX, EINVAL);
         }
         addattr32(&req.n, sizeof(req), RTA_OIF, idx);
@@ -3342,6 +3343,7 @@ route_change(unsigned int gid, const char *oid, const char *value,
     if (rtnl_talk(&rth, &req.n, 0, 0, NULL, NULL, NULL) < 0)
     {
         ERROR("Failed to send the netlink message");
+        rtnl_close(&rth);
         return TE_RC(TE_TA_LINUX, errno);
     }
 
