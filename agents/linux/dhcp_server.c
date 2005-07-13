@@ -1063,7 +1063,10 @@ ds_lease_list(unsigned int gid, const char *oid, char **list)
         return TE_RC(TE_TA_LINUX, errno);
 
     if ((*list = (char *)malloc(ADDR_LIST_BULK)) == NULL)
+    {
+        fclose(f);
         return TE_RC(TE_TA_LINUX, ENOMEM);
+    }
 
     **list = 0;
 

@@ -447,6 +447,7 @@ xinetd_set(unsigned int gid, const char *oid, const char *value)
     {
         rc = TE_RC(TE_TA_LINUX, errno);
         ERROR("Cannot open file %s for writing", ds_config(index));
+        fclose(f);
         return rc;                                            
     }
     ds_config_touch(index);
@@ -1988,6 +1989,7 @@ ds_init_vncserver(rcf_pch_cfg_object **last)
     {
         WARN("write() failed for the file /tmp/.vnc/passwd; errno %x", 
              errno);
+        close(fd);
         return;
     }
     
@@ -2049,6 +2051,7 @@ update_etc_hosts(char *ip)
     {
         rc = TE_RC(TE_TA_LINUX, errno);
         ERROR("Cannot open file %s for writing", ds_config(hosts_index));
+        fclose(f);
         return rc;                                            
     }
     ds_config_touch(hosts_index);
@@ -2087,7 +2090,6 @@ sendmail_smarthost_get(te_bool *enable)
         rc = TE_RC(TE_TA_LINUX, errno);
         ERROR("Cannot open file %s for reading",
               ds_config(sendmail_index));
-        fclose(f);
         return rc;
     }
 
@@ -2132,6 +2134,7 @@ sendmail_smarthost_set(te_bool enable)
     {
         rc = TE_RC(TE_TA_LINUX, errno);
         ERROR("Cannot open file %s for writing", ds_config(sendmail_index));
+        fclose(f);
         return rc;                                            
     }
 
@@ -2217,6 +2220,7 @@ postfix_smarthost_set(te_bool enable)
     {
         rc = TE_RC(TE_TA_LINUX, errno);
         ERROR("Cannot open file %s for writing", ds_config(postfix_index));
+        fclose(f);
         return rc;                                            
     }
 
@@ -2261,7 +2265,6 @@ exim_smarthost_get(te_bool *enable)
     {
         rc = TE_RC(TE_TA_LINUX, errno);
         ERROR("Cannot open file %s for reading", ds_config(exim_index));
-        fclose(f);
         return rc;
     }
 
@@ -2306,6 +2309,7 @@ exim_smarthost_set(te_bool enable)
     {
         rc = TE_RC(TE_TA_LINUX, errno);
         ERROR("Cannot open file %s for writing", ds_config(exim_index));
+        fclose(f);
         return rc;                                            
     }
 
