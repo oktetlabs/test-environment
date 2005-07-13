@@ -417,7 +417,6 @@ sync_ta_subtree(char *ta, char *oid)
  * Synchronize object instances tree with Test Agents.
  *
  * @param oid           identifier of the object instance or subtree
- *                      or NULL if whole database should be synchronized
  * @param subtree       1 if the subtree of the specified node should
  *                      be synchronized
  *
