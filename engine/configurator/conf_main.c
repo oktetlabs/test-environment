@@ -372,7 +372,7 @@ process_add(cfg_add_msg *msg, te_bool update_dh)
         if (update_dh)
             cfg_dh_delete_last_command();
             
-        ERROR("Failed to add a new instance %s with value %s into TA "
+        ERROR("Failed to add a new instance %s with value '%s' into TA "
               "error=0x%X", oid, val_str, msg->rc);
         if (obj->type != CVT_NONE)
             free(val_str);
