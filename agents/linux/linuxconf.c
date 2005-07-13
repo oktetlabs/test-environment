@@ -3032,7 +3032,7 @@ struct nl_request {
     char            buf[1024];
 };
 
-int 
+static int 
 nl_get_unsigned(unsigned *val, const char *arg, int base)
 {
     unsigned long res;
@@ -3047,7 +3047,7 @@ nl_get_unsigned(unsigned *val, const char *arg, int base)
     return 0;
 }
 
-int 
+static int 
 nl_get_addr(inet_prefix *addr, const char *name, int family)
 {
     const char *cp;
@@ -3074,7 +3074,7 @@ nl_get_addr(inet_prefix *addr, const char *name, int family)
     return 0;
 }
 
-int 
+static int 
 nl_get_integer(int *val, const char *arg, int base)
 {
     long res;
@@ -3089,7 +3089,7 @@ nl_get_integer(int *val, const char *arg, int base)
     return 0;
 }
 
-int 
+static int 
 nl_get_prefix(inet_prefix *dst, const char *arg, int family)
 {
     int         err;
