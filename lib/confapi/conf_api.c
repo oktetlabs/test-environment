@@ -1717,7 +1717,6 @@ cfg_get_instance_sync(cfg_handle handle, cfg_val_type *type, ...)
  * Synchronize Configurator database with managed objects.
  *
  * @param oid           object identifier of the object instance or subtree
- *                      or NULL if whole database should be synchronized
  * @param subtree       1 if the subtree of the specified node should
  *                      be synchronized
  *
@@ -1730,6 +1729,9 @@ cfg_synchronize(const char *oid, te_bool subtree)
 
     size_t  len;
     int     ret_val = 0;
+    
+    if (oid == NULL)
+        return EINVAL;
 
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_lock(&cfgl_lock);
