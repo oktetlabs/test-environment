@@ -90,13 +90,6 @@ tad_icmp_error(csap_p csap_descr, const char *usr_param,
     endptr++;
     code = strtol(endptr, &endptr, 10);
 
-    if (type != 3 || code != 4)
-    {
-        ERROR("%s(): only Dest.Unreachable/Fragm.Needed supported", 
-              __FUNCTION__);
-        return ETENOSUPP;
-    }
-
     if ((endptr == NULL) || (*endptr != ':'))
     {
         ERROR("%s(): wrong usr_param, for 'Frag.Needed' should be MTU",
