@@ -119,7 +119,8 @@ open_packet_socket(const char *ifname, int *sock)
     rc = eth_find_interface(ifname,  &ifdescr);
     if (rc != 0)
     {
-        ERROR("%s(): find interface failed %X", __FUNCTION__, rc);
+        ERROR("%s(): find interface %s failed 0x%X", 
+              __FUNCTION__, ifname, rc);
         return rc;
     }
 
