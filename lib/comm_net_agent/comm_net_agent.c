@@ -171,7 +171,13 @@ rcf_comm_agent_init(const char *config_str,
 #endif
 #if HAVE_NETINET_TCP_H
     /* Set TCE_NODELAY=1 to force TCP to send all data ASAP. */
-    if (setsockopt(s1, SOL_TCP, TCP_NODELAY, &optval, sizeof(optval)) != 0)
+    if (setsockopt(s1,
+#ifdef SOL_TCP
+                   SOL_TCP,
+#else
+                   IPPROTO_TCP,
+#endif
+                   TCP_NODELAY, &optval, sizeof(optval)) != 0)
     {
         rc = errno;
         perror("setsockopt(SOL_TCP, TCP_NODELAY, enabled)");
