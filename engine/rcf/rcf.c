@@ -186,14 +186,13 @@ typedef struct ta {
     usrreq              sent;               /**< User requests sent
                                                  to the TA */
     usrreq              pending;            /**< Pending user requests */
-    int                 flags;              /**< Test Agent flags */
+    unsigned int        flags;              /**< Test Agent flags */
     int                 reboot_timestamp;   /**< Time of reboot command
                                                  sending (in seconds) */
     int                 sid;                /**< Free session identifier 
                                                  (starts from 2) */
 
     void               *dlhandle;           /**< Dynamic library handle */
-    te_bool             dead;               /**< TA is dead */
     ta_initial_task    *initial_tasks;      /**< Startup tasks */
 
     /** @name Methods */
@@ -791,62 +790,115 @@ startup_tasks(ta *agent)
     return 0;
 }
 
+/**
+ * Mark test agent as recoverable dead.
+ *
+ * @param agent     Test Agent
+ */
 static void
 set_ta_dead(ta *agent)
 {
-    if (!agent->dead)
+    if (~agent->flags & TA_DEAD)
     {
-        agent->dead = TRUE;
-        (agent->close)(agent->handle, &set0);
+        int rc;
+
+        ERROR("TA '%s' is dead", agent->name);
+        answer_all_requests(&(agent->sent), ETADEAD);
+        rc = (agent->close)(agent->handle, &set0);
+        if (rc != 0)
+            ERROR("Failed to close connection with TA '%s': rc=0x%x",
+                  agent->name, rc);
+        agent->flags |= TA_DEAD;
+    }
+}
+
+/**
+ * Mark test agent as unrecoverable dead.
+ *
+ * @param agent     Test Agent
+ */
+static void
+set_ta_unrecoverable(ta *agent)
+{
+    if (~agent->flags & TA_UNRECOVER)
+    {
+        ERROR("TA '%s' is unrecoverable dead", agent->name);
         answer_all_requests(&(agent->sent), ETADEAD);
         answer_all_requests(&(agent->pending), ETADEAD);
+        if (agent->handle != NULL)
+        {
+            int rc;
+
+            if (~agent->flags & TA_DEAD)
+            {
+                rc = (agent->close)(agent->handle, &set0);
+                if (rc != 0)
+                    ERROR("Failed to close connection with TA '%s': "
+                          "rc=0x%x", agent->name, rc);
+            }
+            rc = (agent->finish)(agent->handle, NULL);
+            if (rc != 0)
+                ERROR("Failed to finish TA '%s': rc=0x%x",
+                      agent->name, rc);
+            agent->handle = NULL;
+        }
+        agent->flags |= (TA_DEAD | TA_UNRECOVER);
     }
 }
 
 /**
  * Initialize Test Agent or recovery it after reboot.
+ * Test Agent is marked as "unrecoverable dead" in the case of failure.
  *
  * @param agent         Test Agent structure
  *
- * @return 0 (success) or -1 (failure)
+ * @return Status code
  */
 static int
 init_agent(ta *agent)
 {
     int rc;
 
-    answer_all_requests(&(agent->sent), ETAREBOOTED);
-    answer_all_requests(&(agent->pending), ETAREBOOTED);
     INFO("Start TA '%s' type=%s confstr='%s'",
          agent->name, agent->type, agent->conf);
     if (agent->flags & TA_FAKE)
         RING("TA '%s' has been already started");
+
+    /* Initially mark TA as dead - no valid connection */
+    agent->flags |= TA_DEAD;
+
     if ((rc = (agent->start)(agent->name, agent->type,
                              agent->conf, &(agent->handle),
                              &(agent->flags))) != 0)
     {
         ERROR("Cannot (re-)initialize TA '%s' error %d", agent->name, rc);
-        agent->dead = TRUE;
-        return -1;
+        set_ta_unrecoverable(agent);
+        return rc;
     }
     INFO("TA '%s' started, trying to connect", agent->name);
     if ((rc = (agent->connect)(agent->handle, &set0, &tv0)) != 0)
     {
         ERROR("Cannot connect to TA '%s' error %d", agent->name, rc);
-        (agent->finish)(agent->handle, NULL);
-        agent->dead = TRUE;
-        return -1;
+        set_ta_unrecoverable(agent);
+        return rc;
     }
+    agent->flags &= ~TA_DEAD;
     INFO("Connected with TA '%s'", agent->name);
+
     rc = (agent->enable_synch_time ? synchronize_time(agent) : 0);
     if (rc == 0)
     {
         rc = startup_tasks(agent);
     }
+
     if (rc != 0)
     {
-        (agent->close)(agent->handle, &set0);
-        agent->dead = TRUE;
+        set_ta_unrecoverable(agent);
+    }
+    else
+    {
+        answer_all_requests(&(agent->sent), ETAREBOOTED);
+        answer_all_requests(&(agent->pending), ETAREBOOTED);
     }
 
     return rc;
@@ -854,29 +906,50 @@ init_agent(ta *agent)
 
 /**
  * Force reboot of the Test Agent via RCF library method.
+ * Test Agent is marked as "unrecoverable dead" in the case of failure.
  *
  * @param agent         Test Agent structure
  * @param req           user reboot request
  *
- * @return 0 (success) or -1 (failure)
+ * @return Status code
  */
 static int
 force_reboot(ta *agent, usrreq *req)
 {
     int rc;
-    
-    reboot_num--;
+
     agent->reboot_timestamp = 0;
+
+    if (req != NULL)
+    {
+        reboot_num--;
+    }
+
+    if (~agent->flags & TA_DEAD)
+    {
+        rc = (agent->close)(agent->handle, &set0);
+        if (rc != 0)
+            ERROR("Failed to close connection with TA '%s': rc=0x%x",
+                  agent->name, rc);
+        agent->flags |= TA_DEAD;
+    }
+
     rc = (agent->finish)(agent->handle,
-                         req->message->data_len > 0 ? req->message->data
-                                                    : NULL);
+                         (req == NULL) ? NULL :
+                         (req->message->data_len > 0) ?
+                            req->message->data : NULL);
     if (rc != 0)
     {
-         ERROR("Cannot reboot TA %s\n", agent->name);
-         set_ta_dead(agent);
-         return -1;
+        ERROR("Cannot reboot TA %s", agent->name);
+        agent->handle = NULL;
+        set_ta_unrecoverable(agent);
+        return rc;
     }
-    answer_user_request(req);
+    agent->handle = NULL;
+
+    if (req != NULL)
+        answer_user_request(req);
+
     return init_agent(agent);
 }
 
@@ -1585,7 +1658,7 @@ send_cmd(ta *agent, usrreq *req)
             strcat(cmd, TE_PROTO_REBOOT);
             if (msg->data_len > 0)
                 write_str(msg->data, msg->data_len);
-            req->timeout = RCF_CMD_TIMEOUT_HUGE;
+            req->timeout = RCF_REBOOT_TIMEOUT;
             break;
 
         case RCFOP_CONFGET:
@@ -1854,28 +1927,22 @@ rcf_ta_check_all_done(void)
     {
         te_bool     rebooted = FALSE;
         te_bool     remain_dead = FALSE;
-        te_bool     reboot_ok;
         ta         *agent;
 
         for (agent = agents; agent != NULL; agent = agent->next)
         {
-            if (agent->dead)
+            if (agent->flags & TA_UNRECOVER)
+            {
+                remain_dead = TRUE;
+                continue;
+            }
+
+            if (agent->flags & TA_DEAD)
             {
                 ERROR("Reboot TA '%s'", agent->name);
                 rebooted = TRUE;
-                agent->reboot_timestamp = 0;
-                reboot_ok = ((agent->finish)(agent->handle, NULL) == 0) &&
-                            (init_agent(agent) == 0);
-                if (reboot_ok)
-                {
-                    agent->dead = FALSE;
-                }
-                else
-                {
-                    ERROR("Cannot reboot TA '%s'", agent->name);
-                    set_ta_dead(agent);
+                if (force_reboot(agent, NULL) != 0)
                     remain_dead = TRUE;
-                }
             }
         }
 
@@ -1925,7 +1992,7 @@ rcf_ta_check_start(void)
     assert(ta_checker.active == 0);
     for (agent = agents; agent != NULL; agent = agent->next)
     {
-        if (agent->dead)
+        if (agent->flags & TA_DEAD)
             continue;
 
         req = alloc_usrreq();
@@ -2019,7 +2086,7 @@ process_user_request(usrreq *req)
         return;
     }
     
-    if (agent->dead)
+    if (agent->flags & TA_DEAD)
     {
         ERROR("Request '%s' to dead TA '%s'",
               rcf_op_to_string(msg->opcode), msg->ta);
@@ -2031,7 +2098,7 @@ process_user_request(usrreq *req)
     if (msg->opcode == RCFOP_TADEAD)
     {
         answer_user_request(req);
-        set_ta_dead(agent);
+        set_ta_unrecoverable(agent);
         return;
     }
     
@@ -2090,6 +2157,7 @@ process_user_request(usrreq *req)
                     answer_user_request(req);
                     return;
                 }
+                agent->handle = NULL;
                 answer_user_request(req);
                 init_agent(agent);
                 return;
@@ -2140,8 +2208,9 @@ rcf_shutdown()
 
     for (agent = agents; agent != NULL; agent = agent->next)
     {
-        if (agent->dead)
+        if (agent->flags & TA_DEAD)
             continue;
+
         sprintf(cmd, "SID %d %s", ++agent->sid, TE_PROTO_SHUTDOWN);
         (agent->transmit)(agent->handle, cmd, strlen(cmd) + 1);
         answer_all_requests(&(agent->sent), EIO);
@@ -2155,7 +2224,7 @@ rcf_shutdown()
         select(FD_SETSIZE, &set, NULL, NULL, &tv);
         for (agent = agents; agent != NULL; agent = agent->next)
         {
-            if (agent->flags & TA_DOWN)
+            if (agent->flags & (TA_DOWN | TA_DEAD))
                 continue;
 
             if ((agent->is_ready)(agent->handle))
@@ -2183,8 +2252,12 @@ rcf_shutdown()
     {
         if ((agent->flags & TA_DOWN) == 0)
             ERROR("Soft shutdown of TA '%s' failed", agent->name);
-        if ((agent->finish)(agent->handle, NULL) != 0)
-            ERROR("Cannot reboot TA '%s'", agent->name);
+        if (agent->handle != NULL)
+        {
+            if ((agent->finish)(agent->handle, NULL) != 0)
+                ERROR("Cannot finish TA '%s'", agent->name);
+            agent->handle = NULL;
+        }
     }
     RING("Test Agents are stopped");
 }

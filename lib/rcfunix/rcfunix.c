@@ -59,6 +59,7 @@
 #include <sys/stat.h>
 #endif
 
+#include "te_defs.h"
 #include "te_stdint.h"
 #include "te_errno.h"
 #include "rcf_api.h"
@@ -426,6 +427,9 @@ rcfunix_finish(rcf_talib_handle handle, char *parms)
     
     (void)parms;
 
+    if (ta == NULL)
+        return EINVAL;
+
     RING("Finish method is called for TA %s", ta->ta_name);
     
     if (ta->flags & TA_FAKE)
@@ -570,10 +574,11 @@ rcfunix_transmit(rcf_talib_handle handle, char *data, size_t len)
  *
  * @return TRUE, if data are pending; FALSE otherwise
  */
-int
+te_bool
 rcfunix_is_ready(rcf_talib_handle handle)
 {
-    return rcf_net_engine_is_ready(((unix_ta *)handle)->conn);
+    return (handle == NULL) ? FALSE :
+               rcf_net_engine_is_ready(((unix_ta *)handle)->conn);
 }
 
 /**

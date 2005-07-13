@@ -271,8 +271,8 @@ rcf_net_engine_transmit(struct rcf_net_connection *rnc,
  * @param rnc   Handler received from rcf_net_engine_connect.
  *
  * @return Status code.
- * @retval 1    Data are pending.
- * @retval 0    No data are pending.
+ * @retval TRUE     Data are pending.
+ * @retval FALSE    No data are pending.
  */
 te_bool
 rcf_net_engine_is_ready(struct rcf_net_connection *rnc)
@@ -281,10 +281,10 @@ rcf_net_engine_is_ready(struct rcf_net_connection *rnc)
     struct timeval  tv;
 
     if (rnc == NULL)
-        return 0;
+        return FALSE;
 
     if (rnc->bytes_to_read > 0)
-        return 1;
+        return TRUE;
 
     FD_ZERO(&rfds);
     FD_SET(rnc->socket, &rfds);
@@ -293,7 +293,7 @@ rcf_net_engine_is_ready(struct rcf_net_connection *rnc)
 
     select(rnc->socket + 1, &rfds, NULL, NULL, &tv);
 
-    return FD_ISSET(rnc->socket, &rfds);
+    return FD_ISSET(rnc->socket, &rfds) ? TRUE : FALSE;
 }
 
 /**

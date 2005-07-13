@@ -31,6 +31,8 @@
 #ifndef __TE_RCF_METHODS_H__
 #define __TE_RCF_METHODS_H__
 
+#include "te_defs.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -130,7 +132,7 @@ typedef int (* rcf_talib_transmit)(rcf_talib_handle handle,
  *
  * @return TRUE, if data are pending; FALSE otherwise
  */
-typedef int (* rcf_talib_is_ready)(rcf_talib_handle handle);
+typedef te_bool (* rcf_talib_is_ready)(rcf_talib_handle handle);
 
 /**
  * Receive one command (possibly with attachment) from the Test Agent 
