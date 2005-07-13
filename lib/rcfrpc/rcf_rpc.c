@@ -313,6 +313,13 @@ rcf_rpc_server_exec(rcf_rpc_server *rpcs)
     if (pthread_mutex_unlock(&rpcs->lock) != 0)
         ERROR("pthread_mutex_unlock() failed");
 
+    if (rc == 0)
+        RING("RPC (%s,%s): execve() -> (%s)",
+             rpcs->ta, rpcs->name, errno_rpc2str(RPC_ERRNO(rpcs)));
+    else
+        ERROR("RPC (%s,%s): execve() -> (%s), rc=0x%x",
+              rpcs->ta, rpcs->name, errno_rpc2str(RPC_ERRNO(rpcs)), rc);
+
     return rc;
 }
 
