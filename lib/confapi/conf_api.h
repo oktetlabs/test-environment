@@ -615,8 +615,7 @@ cfg_get_instance_sync_fmt(cfg_val_type *type, void *val,
 /**
  * Synchronize Configurator database with managed objects.
  *
- * @param oid        identifier of the object instance or subtree or
- *                   NULL if whole database should be synchronized
+ * @param oid        identifier of the object instance or subtree 
  * @param subtree    1 if the subtree of the specified node should
  *                   be synchronized
  *
