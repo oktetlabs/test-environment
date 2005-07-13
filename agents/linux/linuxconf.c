@@ -3341,6 +3341,7 @@ route_change(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_LINUX, errno);
     }
 
+    rtnl_close(&rth);
     return 0;
 }
 
