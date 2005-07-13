@@ -848,9 +848,9 @@ rcf_ch_trrecv_stop(struct rcf_comm_connection *handle,
     }
     else
     {
-        F_ERROR("%s: inappropriate command, CSAP %d is not receiving; "
-                "command %d; state %x ", __FUNCTION__, csap_descr_p->id, 
-                (int)csap_descr_p->command, (int)csap_descr_p->state);
+        WARN("%s: inappropriate command, CSAP %d is not receiving; "
+             "command %d; state %x ", __FUNCTION__, csap_descr_p->id, 
+             (int)csap_descr_p->command, (int)csap_descr_p->state);
         CSAP_DA_UNLOCK(csap_descr_p);
         SEND_ANSWER("%d 0", TE_RC(TE_TAD_CH, ETADCSAPSTATE));
     }
