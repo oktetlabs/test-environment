@@ -146,7 +146,7 @@ tad_icmp_error(csap_p csap_descr, const char *usr_param,
         ~calculate_checksum(msg + 14 + 20, ICMP_PLD_SIZE + 8);
 
     rc = csap_descr->write_cb(csap_descr, msg, msg_len);
-    RING("%s(): sent %d bytes", __FUNCTION__, rc);
+    INFO("%s(): sent %d bytes", __FUNCTION__, rc);
     if (rc < 0)
     {
         ERROR("%s() write error", __FUNCTION__);
