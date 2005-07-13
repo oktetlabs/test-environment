@@ -391,6 +391,7 @@ logfork_register_user(const char *name)
     {
         fprintf(stderr, "logfork_register_user() - cannot send "
                 "notification: %s\n", strerror(errno));
+        close(clt_sockd);
         clt_sockd = -1;
 #ifdef HAVE_PTHREAD_H
         pthread_mutex_unlock(&lock_sockd);
