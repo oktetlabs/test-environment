@@ -96,12 +96,12 @@ static int find_attach(char *buf, size_t len);
 static int read_socket(int socket, char *buffer, size_t len);
 
 
-/** 
+/**
  * Connects to the Test Agent side of Network Communication library.
  *
  * @param  addr         network address of the test agent
  * @param  port         port of the test agent
- * @param  p_rnc        pointer to to pointer to the rcf_net_connection 
+ * @param  p_rnc        pointer to to pointer to the rcf_net_connection
  *                      structure to be filled, used as handler
  * @param  p_select_set pointer to the fdset for reading to be modified
  *
@@ -109,9 +109,9 @@ static int read_socket(int socket, char *buffer, size_t len);
  * @retval 0            Success.
  * @retval other value  errno.
  */
-int 
-rcf_net_engine_connect(const char *addr, const char *port, 
-                       struct rcf_net_connection **p_rnc, 
+int
+rcf_net_engine_connect(const char *addr, const char *port,
+                       struct rcf_net_connection **p_rnc,
                        fd_set *p_select_set)
 {
     int                 s;
@@ -130,14 +130,14 @@ rcf_net_engine_connect(const char *addr, const char *port,
     }
 
     s = socket(AF_INET, SOCK_STREAM, 0);
-    
+
     if (s < 0)
         return errno;
 
     peer.sin_family = AF_INET;
     peer.sin_port = htons(atoi(port));
     peer.sin_addr = *(struct in_addr *)(hs->h_addr_list[0]);
-   
+
     do {
 
         rc = connect(s, (struct sockaddr *)&peer, sizeof(peer));
@@ -152,7 +152,7 @@ rcf_net_engine_connect(const char *addr, const char *port,
                 __FUNCTION__, strerror(errno), addr, port);
         return errno;
     }
-        
+
 //#ifdef SO_KEEPALIVE
     {
         int optval;
@@ -197,7 +197,7 @@ rcf_net_engine_connect(const char *addr, const char *port,
 //#endif
     }
 //#endif /* SO_KEEPALIVE */
-    
+
     FD_SET(s, p_select_set);
 
     /* Connection established. Let's allocate memory for rnc and fill it*/
@@ -210,7 +210,7 @@ rcf_net_engine_connect(const char *addr, const char *port,
 
     /* All field is set to zero. Just set the socket */
     (*p_rnc)->socket = s;
-        
+
     return 0;
 }
 
@@ -225,7 +225,7 @@ rcf_net_engine_connect(const char *addr, const char *port,
  * @retval 0            Success.
  * @retval other value  errno.
  */
-int 
+int
 rcf_net_engine_transmit(struct rcf_net_connection *rnc,
                         const char *data, size_t length)
 {
@@ -238,11 +238,11 @@ rcf_net_engine_transmit(struct rcf_net_connection *rnc,
     {
         if ((len = send(rnc->socket, data, length, 0)) < 0)
             return errno;
-            
+
         length -= len;
         data += len;
     }
-    
+
     return 0;
 }
 
@@ -257,7 +257,7 @@ rcf_net_engine_transmit(struct rcf_net_connection *rnc,
  * @retval 1    Data are pending.
  * @retval 0    No data are pending.
  */
-te_bool 
+te_bool
 rcf_net_engine_is_ready(struct rcf_net_connection *rnc)
 {
     fd_set          rfds;
@@ -275,7 +275,7 @@ rcf_net_engine_is_ready(struct rcf_net_connection *rnc)
     tv.tv_usec = 0;
 
     select(rnc->socket + 1, &rfds, NULL, NULL, &tv);
-    
+
     return FD_ISSET(rnc->socket, &rfds);
 }
 
@@ -290,7 +290,7 @@ rcf_net_engine_is_ready(struct rcf_net_connection *rnc)
  *                      number of bytes really written if 0 returned
  *                      (success);
  *                      unchanged if ETESMALLBUF returned;
- *                      number of bytes in the message (with attachment) 
+ *                      number of bytes in the message (with attachment)
  *                      if ETEPENDING returned. (Note: If the function
  *                      called a number of times to receive one big
  *                      message, a full number of bytes will be returned
@@ -299,9 +299,9 @@ rcf_net_engine_is_ready(struct rcf_net_connection *rnc)
  *                      minus number of bytes previously read by this
  *                      function will be returned);
  *                      undefined if other errno returned.
- * @param pba           Address of the pointer that will hold on return 
- *                      an address of the first byte of the attachment (or 
- *                      NULL if no attachment attached to the command). If 
+ * @param pba           Address of the pointer that will hold on return
+ *                      an address of the first byte of the attachment (or
+ *                      NULL if no attachment attached to the command). If
  *                      this function called more than once (to receive big
  *                      attachment) this pointer will be not touched.
  *
@@ -311,7 +311,7 @@ rcf_net_engine_is_ready(struct rcf_net_connection *rnc)
  * @retval ETESMALLBUF  Buffer is too small for the message. The part of
  *                      the message is written to the buffer. Other part(s)
  *                      of the message can be read by the next calls to the
- *                      rcf_net_engine_receive. The ETSMALLBUF will be 
+ *                      rcf_net_engine_receive. The ETSMALLBUF will be
  *                      returned until last part of the message will be
  *                      read.
  * @retval ETEPENDING   Attachment is too big to fit into the buffer.
@@ -322,8 +322,8 @@ rcf_net_engine_is_ready(struct rcf_net_connection *rnc)
  *                      of the message will be read.
  * @retval other value  errno.
  */
-int 
-rcf_net_engine_receive(struct rcf_net_connection *rnc, char *buffer, 
+int
+rcf_net_engine_receive(struct rcf_net_connection *rnc, char *buffer,
                        size_t *pbytes, char **pba)
 {
     int     ret;
@@ -332,7 +332,7 @@ rcf_net_engine_receive(struct rcf_net_connection *rnc, char *buffer,
     if (rnc == NULL)
         return EINVAL;
 
-    if (rnc->bytes_to_read > 0) 
+    if (rnc->bytes_to_read > 0)
     {
         /* Some data from previous message should be returned */
         if (rnc->bytes_to_read <= *pbytes)
@@ -341,8 +341,8 @@ rcf_net_engine_receive(struct rcf_net_connection *rnc, char *buffer,
             *pbytes = rnc->bytes_to_read;
             rnc->bytes_to_read = 0;
             return read_socket(rnc->socket, buffer, *pbytes);
-        } 
-        else 
+        }
+        else
         {
             /* Buffer is too small for the attachment */
             if ((ret = read_socket(rnc->socket, buffer, *pbytes)) != 0)
@@ -356,7 +356,7 @@ rcf_net_engine_receive(struct rcf_net_connection *rnc, char *buffer,
             }
             return ETEPENDING;
         }
-    }        
+    }
 
     while (1)
     {
@@ -367,7 +367,7 @@ rcf_net_engine_receive(struct rcf_net_connection *rnc, char *buffer,
             return r == 0 ? EPIPE : errno;
         }
 
-        if (buffer[l] == 0 
+        if (buffer[l] == 0
 #ifdef TE_COMM_DEBUG_PROTO
             || buffer[l] == '\n'
 #endif
@@ -377,7 +377,7 @@ rcf_net_engine_receive(struct rcf_net_connection *rnc, char *buffer,
             int attach_size;
 
 #ifdef TE_COMM_DEBUG_PROTO
-            if (buffer[l] == '\n') 
+            if (buffer[l] == '\n')
             {
                 buffer[l] = 0;           /* Change '\n' to zero... */
 
@@ -393,7 +393,7 @@ rcf_net_engine_receive(struct rcf_net_connection *rnc, char *buffer,
 
             attach_size = find_attach(buffer, l);
 
-            if (attach_size == -1) 
+            if (attach_size == -1)
             {
                 /* No attachment */
                 *pbytes = l;
@@ -403,8 +403,8 @@ rcf_net_engine_receive(struct rcf_net_connection *rnc, char *buffer,
                     *pba = NULL;
 
                 return 0;
-            } 
-            else 
+            }
+            else
             {
                 /* Attachment found. */
 
@@ -412,14 +412,14 @@ rcf_net_engine_receive(struct rcf_net_connection *rnc, char *buffer,
                 if (pba != NULL)
                     *pba = buffer + l;
 
-                if (*pbytes >= l + attach_size) 
+                if (*pbytes >= l + attach_size)
                 {
                     /* Buffer is enought to write attachment */
                     *pbytes = l + attach_size;
                     return read_socket(rnc->socket, buffer + l,
                                        attach_size);
-                } 
-                else 
+                }
+                else
                 {
                     /* Buffer is too small to write attachment */
                     int to_read = *pbytes - l;
@@ -446,10 +446,10 @@ rcf_net_engine_receive(struct rcf_net_connection *rnc, char *buffer,
 
 
 /**
- * Close connection (socket) to the Test Agent and release the memory used 
+ * Close connection (socket) to the Test Agent and release the memory used
  * by struct rcf_net_connection *rnc.
  *
- * @param p_rnc         Pointer to variable with  handler received from 
+ * @param p_rnc         Pointer to variable with  handler received from
  *                      rcf_net_engine_connect
  * @param p_select_set  Pointer to the fdset for reading to be modified
  *
@@ -457,7 +457,7 @@ rcf_net_engine_receive(struct rcf_net_connection *rnc, char *buffer,
  * @retval 0            Success.
  * @retval other value  errno.
  */
-int 
+int
 rcf_net_engine_close(struct rcf_net_connection **p_rnc,
                      fd_set *p_select_set)
 {
@@ -499,7 +499,7 @@ static int
 find_attach(char *buf, size_t len)
 {
     /* Pointer tmp will scan the buffer */
-    char       *tmp; 
+    char       *tmp;
     /* Pointer number will hold the address of the "<number>" entry */
     const char *number;
 
@@ -515,13 +515,13 @@ find_attach(char *buf, size_t len)
         tmp--; /* Skip the \x00 at the end */
 
     /* Skip whitespaces at the end (if any) */
-    while (isspace(*tmp)) 
+    while (isspace(*tmp))
     {
         tmp--;
         if (tmp == buf) /* Begining of the buf */
             return -1;
     }
-    
+
     /* Check that last non-whitespace character is digit */
     if (!isdigit(*tmp))
         return -1;
@@ -529,12 +529,12 @@ find_attach(char *buf, size_t len)
     tmp --;
 
     /* Scan all digits */
-    while (isdigit(*tmp)) 
+    while (isdigit(*tmp))
     {
         tmp--;
         if (tmp == buf) /* Begining of the buf */
             return -1;
-    }    
+    }
 
     /* Check that before group of digits is whitespace character */
     if (!isspace(*tmp))
@@ -544,21 +544,21 @@ find_attach(char *buf, size_t len)
 
     /* Make a number point to the begining of the group of numbers */
     number = tmp+1;
-    
+
     tmp--;
-    
+
     /* Skip whitespace characters */
-    while (isspace(*tmp)) 
+    while (isspace(*tmp))
     {
         tmp--;
         if (tmp == buf) /* Begining of the buf */
             return -1;
-    }    
+    }
 
     /* Check that more than 5+1 characters left */
     if ((tmp-buf) < 7)
         return -1;
-    
+
     tmp -= 5;
 
     /* Is it 'attach' string ? */
@@ -567,7 +567,7 @@ find_attach(char *buf, size_t len)
         tmp[2] != 't' ||
         tmp[3] != 'a' ||
         tmp[4] != 'c' ||
-        tmp[5] != 'h') 
+        tmp[5] != 'h')
     {
         /* No */
         return -1;
@@ -580,7 +580,7 @@ find_attach(char *buf, size_t len)
     return atol(number);
 }
 
-/** 
+/**
  * Read specified number of bytes (not less) from the connection
  *
  * @param socket        Connection socket.
