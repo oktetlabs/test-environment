@@ -239,6 +239,14 @@ extern int tapi_tcp_send_fin(tapi_tcp_handler_t handler, int timeout);
 
 /**
  * Send TCP message via established connection.
+ * With seq_mode = TAPI_TCP_AUTO it should be used ONLY for sending
+ * subsequent flow of data. If user need to send some strange
+ * sequence numbers, he have to use TAPI_TCP_EXPLICIT. 
+ * First seqn for 'explicit' data block should be get 
+ * with method 'tapi_tcp_next_seqn'.
+ * To send some more data in automatic mode after explicit mode
+ * user have to store total length of all data,
+ * sent in explicit mode, by method 'tapi_tcp_set_next_sent'
  *
  * @param handler       TAPI handler of TCP connection;     
  * @param payload       data for message payload;
@@ -354,6 +362,7 @@ extern tapi_tcp_pos_t tapi_tcp_next_ackn(tapi_tcp_handler_t handler);
 /**
  * Update internal TAPI TCP connection fields according with 
  * next sent data in connection.
+ * This is necessary ONLY after sending data in 'explicit' mode.
  *
  * @param handler       TAPI handler of TCP connection
  * @param new_sent_len  length of sent data
@@ -362,6 +371,7 @@ extern tapi_tcp_pos_t tapi_tcp_next_ackn(tapi_tcp_handler_t handler);
  */
 extern int tapi_tcp_update_sent_seq(tapi_tcp_handler_t handler,
                                     size_t new_sent_len);
+
 
 /**
  * Correct fill TCP header by specified parameter values.

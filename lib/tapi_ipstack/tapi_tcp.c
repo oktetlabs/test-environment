@@ -759,19 +759,19 @@ tapi_tcp_destroy_conn_descr(tapi_tcp_connection_t *conn_descr)
         }
         else
             RING("%s(conn %d): snd CSAP %d on agt %s destroyed",
-                 __FUNCTION__, conn_descr->id, conn_descr->rcv_csap,
+                 __FUNCTION__, conn_descr->id, conn_descr->snd_csap,
                  conn_descr->agt);
     } 
 
     if (conn_descr->arp_csap != CSAP_INVALID_HANDLE)
     {
-        int rc = rcf_ta_trrecv_stop(conn_descr->agt, conn_descr->rcv_sid,
+        int rc = rcf_ta_trrecv_stop(conn_descr->agt, conn_descr->arp_sid,
                                     conn_descr->arp_csap, &num);
 
         if (rc != 0)
         {
             WARN("%s(id %d): arp CSAP %d on agt %s trrecv_stop failed 0x%X",
-                 __FUNCTION__, conn_descr->id, conn_descr->rcv_csap,
+                 __FUNCTION__, conn_descr->id, conn_descr->arp_csap,
                  conn_descr->agt, rc);
         }
 
@@ -785,7 +785,7 @@ tapi_tcp_destroy_conn_descr(tapi_tcp_connection_t *conn_descr)
         }
         else
             RING("%s(conn %d): arp CSAP %d on agt %s destroyed",
-                 __FUNCTION__, conn_descr->id, conn_descr->rcv_csap,
+                 __FUNCTION__, conn_descr->id, conn_descr->arp_csap,
                  conn_descr->agt);
     } 
 
@@ -1398,7 +1398,7 @@ tapi_tcp_send_msg(tapi_tcp_handler_t handler, uint8_t *payload, size_t len,
             break;
 
         case TAPI_TCP_AUTO:
-            return EINVAL; /* this is very hard to support */
+            return ETENOSUPP; /* this is very hard to support */
     }
 
     rc = tapi_tcp_template(new_seq, new_ack, FALSE, (new_ack != 0), 
@@ -1438,10 +1438,11 @@ tapi_tcp_send_msg(tapi_tcp_handler_t handler, uint8_t *payload, size_t len,
     {
         INFO("%s(conn %d) sent msg %d bytes, %u seq, %u ack", 
              __FUNCTION__, handler, len, new_seq, new_ack);
-        conn_descr->seq_sent = new_seq;
         if (new_ack != 0)
             conn_descr->ack_sent = new_ack;
-        conn_descr->last_len_sent = len;
+
+        if (seq_mode == TAPI_TCP_AUTO)
+            conn_update_sent_seq(conn_descr, len);
     }
     return rc;
 }
@@ -1646,7 +1647,7 @@ conn_update_sent_seq(tapi_tcp_connection_t *conn_descr,
     conn_descr->seq_sent += conn_descr->last_len_sent;
     conn_descr->last_len_sent = new_sent_len;
 
-    RING("%s() last seq sent %u, new sent len %d", 
+    VERB("%s() last seq sent %u, new sent len %d", 
          __FUNCTION__, conn_descr->seq_sent,
          conn_descr->last_len_sent);
 
