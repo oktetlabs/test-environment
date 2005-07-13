@@ -346,7 +346,11 @@ rcf_ch_conf_root()
 #ifdef USE_NETLINK
         memset(&rth, 0, sizeof(rth));
         if (rtnl_open(&rth, 0) < 0)
-            exit(1);
+        {
+            ERROR("Failed to open a netlink socket");
+            return NULL;
+        }
+
         ll_init_map(&rth);
         rtnl_close(&rth);
 #endif
