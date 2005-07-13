@@ -152,6 +152,7 @@ tad_icmp_error(csap_p csap_descr, const char *usr_param,
         ERROR("%s() write error", __FUNCTION__);
         return csap_descr->last_errno;
     }
+    usleep(100000); /* Avoid flooding */
 
     return 0;
 }
