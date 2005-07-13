@@ -130,7 +130,6 @@ rcf_net_engine_connect(const char *addr, const char *port,
     }
 
     s = socket(AF_INET, SOCK_STREAM, 0);
-
     if (s < 0)
         return errno;
 
@@ -153,50 +152,68 @@ rcf_net_engine_connect(const char *addr, const char *port,
         return errno;
     }
 
-//#ifdef SO_KEEPALIVE
+#if defined(TCP_NODELAY) || defined(SO_KEEPALIVE)
     {
         int optval;
 
+#ifdef TCP_NODELAY
+        /* Set TCE_NODELAY=1 to force TCP to send all data ASAP. */
         optval = 1;
-        if (setsockopt(s, SOL_SOCKET, SO_KEEPALIVE,
+        if (setsockopt(s, SOL_TCP, TCP_NODELAY,
                        &optval, sizeof(optval)) != 0)
         {
-            perror("setsockopt(SOL_SOCKET, SO_KEEPALIVE)");
-            close(s);
-            return errno;
+            rc = errno;
+            perror("setsockopt(SOL_TCP, TCP_NODELAY, enabled)");
+            (void)close(s);
+            return rc;
         }
-//#ifdef TCP_KEEPIDLE
+#endif
+#ifdef SO_KEEPALIVE
+#ifdef TCP_KEEPIDLE
         optval = TE_COMM_NET_ENGINE_KEEPIDLE;
         if (setsockopt(s, SOL_TCP, TCP_KEEPIDLE,
                        &optval, sizeof(optval)) != 0)
         {
+            rc = errno;
             perror("setsockopt(SOL_TCP, TCP_KEEPIDLE)");
-            close(s);
-            return errno;
+            (void)close(s);
+            return rc;
         }
-//#endif
-//#ifdef TCP_KEEPINTVL
+#endif
+#ifdef TCP_KEEPINTVL
         optval = TE_COMM_NET_ENGINE_KEEPINTVL;
         if (setsockopt(s, SOL_TCP, TCP_KEEPINTVL,
                        &optval, sizeof(optval)) != 0)
         {
+            rc = errno;
             perror("setsockopt(SOL_TCP, TCP_KEEPINTVL)");
-            close(s);
-            return errno;
+            (void)close(s);
+            return rc;
         }
-//#endif
-//#ifdef TCP_KEEPCNT
+#endif
+#ifdef TCP_KEEPCNT
         optval = TE_COMM_NET_ENGINE_KEEPCNT;
         if (setsockopt(s, SOL_TCP, TCP_KEEPCNT,
                        &optval, sizeof(optval)) != 0)
         {
+            rc = errno;
             perror("setsockopt(SOL_TCP, TCP_KEEPCNT)");
-            close(s);
-            return errno;
+            (void)close(s);
+            return rc;
         }
-//#endif
+#endif
+        optval = 1;
+        if (setsockopt(s, SOL_SOCKET, SO_KEEPALIVE,
+                       &optval, sizeof(optval)) != 0)
+        {
+            rc = errno;
+            perror("setsockopt(SOL_SOCKET, SO_KEEPALIVE)");
+            (void)close(s);
+            return rc;
+        }
+#endif /* SO_KEEPALIVE */
     }
-//#endif /* SO_KEEPALIVE */
+#endif /* defined(TCP_NODELAY) || defined(SO_KEEPALIVE) */
 
     FD_SET(s, p_select_set);
 
