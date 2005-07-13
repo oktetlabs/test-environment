@@ -167,6 +167,34 @@ typedef unsigned char te_bool;
         (void)sleep(_to_sleep);                 \
     } while (0)
 
+/**
+ * Macro to log RING before sleep specified number of milliseconds and
+ * sleep.
+ *
+ * @param x     Microseconds to sleep
+ */
+#define MSLEEP(x) \
+    do {                                                \
+        unsigned int _to_sleep = (x);                   \
+                                                        \
+        RING("Sleeping %u milliseconds", _to_sleep);    \
+        (void)usleep(_to_sleep * 1000);                 \
+    } while (0)
+
+/**
+ * Macro to log RING before sleep specified number of microseconds and
+ * sleep.
+ *
+ * @param x     Microseconds to sleep
+ */
+#define USLEEP(x) \
+    do {                                                \
+        unsigned int _to_sleep = (x);                   \
+                                                        \
+        RING("Sleeping %u microseconds", _to_sleep);    \
+        (void)usleep(_to_sleep);                        \
+    } while (0)
+
 
 #ifdef __cplusplus
 extern "C" {
