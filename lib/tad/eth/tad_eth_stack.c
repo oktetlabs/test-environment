@@ -215,6 +215,9 @@ eth_prepare_send(csap_p csap_descr)
     layer = csap_descr->read_write_layer;
     
     spec_data = (eth_csap_specific_data_p) csap_descr->layers[layer].specific_data; 
+
+    if (spec_data->out > 0) 
+        return 0;
    
     /* outgoing socket */
     if ((rc = open_packet_socket(spec_data->interface->name,
