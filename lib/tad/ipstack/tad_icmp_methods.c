@@ -45,8 +45,9 @@
  * Prototype made according with 'tad_processing_pkt_method' function type.
  * This method uses write_cb callback of passed 'eth' CSAP for send reply.
  * User parameter should contain two numbers, separated by colon: 
- * "<type>:<code>". Not all  kinds of ICMP messages are supported. 
- * After <code> may present some details paramter.
+ * "<type>:<code>:<unused>". 
+ * <unused> contains number to be placed in the unused field of
+ * ICMP error (in host order).
  *
  * @param csap_descr  CSAP descriptor structure.
  * @param usr_param   String passed by user.
@@ -66,7 +67,7 @@ tad_icmp_error(csap_p csap_descr, const char *usr_param,
     size_t  msg_len;
 
     uint8_t *msg, *p;
-    uint16_t mtu;
+    uint32_t unused;
 
     if (csap_descr == NULL || usr_param == NULL ||
         orig_pkt == NULL || pkt_len == 0)
@@ -103,7 +104,7 @@ tad_icmp_error(csap_p csap_descr, const char *usr_param,
         return EINVAL;
     }
     endptr++;
-    mtu = strtol(endptr, &endptr, 10);
+    unused = strtol(endptr, &endptr, 10);
 
 #define ICMP_PLD_SIZE 28
     msg_len = 14 /* eth */ + 20 /* IP */ + 8 /* ICMP */
@@ -142,16 +143,14 @@ tad_icmp_error(csap_p csap_descr, const char *usr_param,
     *p++ = type;
     *p++ = code;
     p += 2; /* leave place for ICMP checksum */
-    p += 2; /* unused */
-    *(uint16_t *)p = htons(mtu); 
-    p += 2; 
+    *(uint32_t *)p = htonl(unused);
+    p += 4; 
 
     memcpy(p, orig_pkt, ICMP_PLD_SIZE);
 
     /* set ICMP checksum */
     *(uint16_t *)(msg + 14 + 20 + 2) = 
         ~calculate_checksum(msg + 14 + 20, ICMP_PLD_SIZE + 8);
-
 
     rc = csap_descr->write_cb(csap_descr, msg, msg_len);
     RING("%s(): sent %d bytes", __FUNCTION__, rc);
