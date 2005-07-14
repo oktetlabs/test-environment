@@ -1044,7 +1044,7 @@ asn_impl_read_value_field(const asn_value *container,  void *data,
     case OCT_STRING:
     case REAL:
         { 
-            if (*d_len < m_len)
+            if (*d_len < value->len)
                 return ETESMALLBUF;
 
             *d_len = value->len;
