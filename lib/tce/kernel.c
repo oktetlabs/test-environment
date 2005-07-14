@@ -30,6 +30,7 @@
 
 #include <te_config.h>
 #include <te_defs.h>
+#include "package.h"
 
 #include <limits.h>
 #include <stdarg.h>
@@ -156,36 +157,7 @@ tce_set_ksymtable(char *table)
     ksymtable = table;
 }
 
-void
-get_kernel_coverage(void)
-{
-    if (ksymtable != NULL)
-    {
-        FILE *symfile = fopen(ksymtable, "r");
-        int core_file;
-        summary_data summary = {0, 0, 0};
-        
-        if (symfile == NULL)
-        {
-            tce_report_error("Cannot open kernel symtable file %s: %s", 
-                             ksymtable, strerror(errno));
-            return;
-        }
-        core_file = open("/dev/kmem", O_RDONLY);
-        if (core_file < 0)
-        {
-            tce_report_error("Cannot open kernel memory file: %s", strerror(errno));
-            fclose(symfile);
-            return;
-        }
-        
-        process_gcov_syms(symfile, core_file, do_gcov_sum, &summary);
-        process_gcov_syms(symfile, core_file, get_kernel_gcov_data, &summary);
-        close(core_file);
-        fclose(symfile);
-    }
-}
-
+static unsigned kernel_gcov_version_magic = 0;
 
 static ssize_t
 read_at(int fildes, off_t offset, void *buffer, size_t size)
@@ -210,6 +182,59 @@ read_str(int fildes, off_t offset, char *buffer, size_t maxlen)
     *buffer = '\0';
     errno = ENAMETOOLONG;
     return -1;
+}
+
+static void
+detect_kernel_gcov_version(FILE *symfile, int core_file)
+{
+    size_t offset;
+    static char symbuf[256];
+    char *token;
+    
+    rewind(symfile);
+    while (fgets(symbuf, sizeof(symbuf) - 1, symfile) != NULL)
+    {
+        offset = strtoul(symbuf, &token, 16);
+        strtok(token, " \t\n");
+        token = strtok(NULL, "\t\n");
+        if (strcmp(token, "__gcov_version_magic") == 0)
+        {
+            read_at(core_file, offset, &kernel_gcov_version_magic,
+                    sizeof(kernel_gcov_version_magic));
+            return;
+        }
+    }
+}
+
+void
+get_kernel_coverage(void)
+{
+    if (ksymtable != NULL)
+    {
+        FILE *symfile = fopen(ksymtable, "r");
+        int core_file;
+        summary_data summary = {0, 0, 0};
+        
+        if (symfile == NULL)
+        {
+            tce_report_error("Cannot open kernel symtable file %s: %s", 
+                             ksymtable, strerror(errno));
+            return;
+        }
+        core_file = open("/dev/kmem", O_RDONLY);
+        if (core_file < 0)
+        {
+            tce_report_error("Cannot open kernel memory file: %s", strerror(errno));
+            fclose(symfile);
+            return;
+        }
+        
+        detect_kernel_gcov_version(symfile, core_file);
+        process_gcov_syms(symfile, core_file, do_gcov_sum, &summary);
+        process_gcov_syms(symfile, core_file, get_kernel_gcov_data, &summary);
+        close(core_file);
+        fclose(symfile);
+    }
 }
 
 static void

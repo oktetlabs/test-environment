@@ -482,35 +482,156 @@ notify_tce_collector(void)
     return 0;
 }
 
+static void counter_group_state(channel_data *ch);
+
 static void
 counter_state(channel_data *ch)
 {
-    if (*ch->buffer != '+')
+    if (*ch->buffer != '+' && *ch->buffer != '~')
     {
         ch->state = function_header_state;
+        ch->state(ch);
+    }
+    else if (*ch->buffer == '~')
+    {
+        ch->state = counter_group_state;
         ch->state(ch);
     }
     else
     {
         char *tmp;
-        long long count = strtoll(ch->buffer, &tmp, 10);
-        if (*tmp != '\0')
-        {
-            tce_report_error("peer id %d, error near '%s'",
-                    ch->peer_id, ch->buffer);
-            ch->state = NULL;
-        }
-        else if (ch->counter_guard == 0)
+        long long value = strtoll(ch->buffer, &tmp, 10);
+        if (ch->counter_guard <= 0)
         {
             tce_report_error("too many arcs for peer %d", ch->peer_id);
             ch->state = NULL;
         }
         else
         {
-            *ch->counter += count;
-            ch->counter++;
-            ch->counter_guard--;
+            switch(ch->function->groups[ch->the_group].mode)
+            {
+                case GCOV_MERGE_ADD:
+                    *ch->counter++ += value;
+                    ch->counter_guard--;
+                    break;
+                case GCOV_MERGE_SINGLE:
+                {
+                    long long counter, all;
+                    
+                    counter = strtoll(tmp, &tmp, 10);
+                    all     = strtoll(tmp, &tmp, 10);
+                    if (ch->counter[0] == value)
+                        ch->counter[1] += counter;
+                    else if (counter > ch->counter[1])
+                    {
+                        ch->counter[0] = value;
+                        ch->counter[1] = counter - ch->counter[1];
+                    }
+                    else
+                        ch->counter[1] -= counter;
+                    ch->counter[2] += all;
+                    ch->counter += 3;
+                    ch->counter_guard -= 3;
+                    break;
+                }
+                case GCOV_MERGE_DELTA:
+                {
+                    long long last, counter, all;
+
+                    last = value;
+                    value = strtoll(tmp, &tmp, 10);
+                    counter = strtoll(tmp, &tmp, 10);
+                    all = strtoll(tmp, &tmp, 10);
+                    
+                    if (ch->counter[1] == value)
+                        ch->counter[2] += counter;
+                    else if (counter > ch->counter[2])
+                    {
+                        ch->counter[1] = value;
+                        ch->counter[2] = counter - ch->counter[2];
+                    }
+                    else
+                        ch->counter[2] -= counter;
+                    ch->counter[3] += all;
+                    ch->counter += 4;
+                    ch->counter_guard -= 4;
+                    break;
+                }
+                default:
+                    tce_report_error("internal error: unknown merge mode");
+                    ch->state = NULL;
+                    return;
+            }
         }
+    }
+}
+
+static void
+counter_group_state(channel_data *ch)
+{
+    if (*ch->buffer != '~')
+    {
+        ch->state = function_header_state;
+        ch->state(ch);
+    }
+    else
+    {
+        char word[16];
+        enum gcov_merge_mode mode;
+        unsigned count;
+        
+        if (sscanf(ch->buffer + 1, "%15s %u", word, &count) != 2)
+        {
+            tce_report_error("error parsing '%s' for peer %d",
+                             ch->buffer, ch->peer_id);
+            ch->state = NULL;
+            return;
+        }
+        for (ch->the_group++; 
+             !((1 << ch->the_group) & ch->object->ctr_mask);
+             ch->the_group++)
+            ;
+        if (ch->the_group >= GCOV_COUNTER_GROUPS)
+        {
+            tce_report_error("too many counter groups for peer %d", 
+                             ch->peer_id);
+            ch->state = NULL;
+            return;
+        }
+        if (strcmp(word, "add") == 0)
+            mode = GCOV_MERGE_ADD;
+        else if (strcmp(word, "single") == 0)
+            mode = GCOV_MERGE_SINGLE;
+        else if (strcmp(word, "delta") == 0)
+            mode = GCOV_MERGE_DELTA;
+        else
+        {
+            tce_report_error("unknown merge mode '%s' for peer %d", 
+                             word, ch->peer_id);
+            ch->state = NULL;
+            return;
+        }
+        if (ch->function->groups[ch->the_group].number != 0 &&
+            ch->function->groups[ch->the_group].number != count)
+        {
+            tce_report_error("number of counters in a group "
+                             "mismatch for peer %d", 
+                      ch->peer_id);
+            ch->state = NULL;
+            return;
+        }
+        if (ch->function->groups[ch->the_group].mode != 
+            GCOV_MERGE_UNDEFINED && 
+            ch->function->groups[ch->the_group].mode != mode)
+        {
+            tce_report_error("merge mode mismatch for peer %d", 
+                      ch->peer_id);
+            ch->state = NULL;
+            return;
+        }
+        ch->function->groups[ch->the_group].number = count;
+        ch->function->groups[ch->the_group].mode = mode;
+        ch->state = counter_state;
     }
 }
 
@@ -550,7 +671,9 @@ function_header_state(channel_data *ch)
             {
                 ch->counter = fi->counts;
                 ch->counter_guard = fi->arc_count;
-                ch->state = counter_state;
+                ch->function = fi;
+                ch->the_group = -1;
+                ch->state = counter_group_state;
             }
         }
     }
@@ -561,10 +684,8 @@ summary_state(channel_data *ch)
 {
     if (*ch->buffer != '>')
     {
-/*
-        ch->state = new_function_header_state;
+        ch->state = function_header_state;
         ch->state(ch);
-*/
     }
     else
     {
@@ -611,10 +732,9 @@ summary_state(channel_data *ch)
             ch->object->program_max = program_max;
         if (object_max > ch->object->object_max)
             ch->object->object_max = object_max;
-        if (program_sum_max > ch->object->program_sum_max)
-            ch->object->program_sum_max = program_sum_max;
-        if (object_max > ch->object->object_sum_max)
-            ch->object->object_sum_max = object_sum_max;
+        ch->object->program_sum_max += program_sum_max;
+        ch->object->object_sum_max  += object_sum_max;
+        ch->state = function_header_state;
     }
 }
 
@@ -661,14 +781,15 @@ object_header_state(channel_data *ch)
         if (strncmp(space, "new ", 4) == 0)
         {
             unsigned gcov_version;
-            unsigned checksum, program_checksum;
+            unsigned checksum, program_checksum, ctr_mask;
 
             space += 4;
             if(sscanf(space, "%u %u %u %u %u %u",
                       &gcov_version, &oi->stamp, 
                       &checksum, 
                       &program_checksum,
-                      &object_functions) != 6)
+                      &object_functions, 
+                      &ctr_mask) != 6)
             {
                 tce_report_error("error parsing '%s' for peer %d", 
                                  space, ch->peer_id);
@@ -702,6 +823,7 @@ object_header_state(channel_data *ch)
                 return;
             }
             oi->object_functions = object_functions;
+            oi->ctr_mask |= ctr_mask;
             ch->state = summary_state;
             ch->object = oi;
         }
@@ -933,6 +1055,7 @@ get_function_info(bb_object_info *oi, const char *name,
         fi->checksum = checksum;
         fi->next = oi->function_infos;
         fi->counts = calloc(fi->arc_count, sizeof(*fi->counts));
+        memset(fi->groups, 0, sizeof(fi->groups));
         oi->function_infos = fi;
     }
     else
@@ -1065,12 +1188,74 @@ dump_object(bb_object_info *oi)
 }
 
 static te_bool
+dump_new_object_data(bb_object_info *oi, FILE *tar_file)
+{
+    const unsigned magic = GCOV_DATA_MAGIC;
+    const unsigned func_magic[2] = {GCOV_TAG_FUNCTION, 
+                                    GCOV_TAG_FUNCTION_LENGTH};
+    unsigned ident;
+    unsigned group_magic[2];
+    const unsigned obj_summary_magic[2] = {GCOV_TAG_OBJECT_SUMMARY,
+                                           GCOV_TAG_SUMMARY_LENGTH};
+    const unsigned prog_summary_magic[2] = {GCOV_TAG_PROGRAM_SUMMARY,
+                                           GCOV_TAG_SUMMARY_LENGTH};
+            
+
+    int group;
+    int c_offset = 0;
+    int count;
+    bb_function_info *fi;
+
+    fwrite(&magic, sizeof(magic), 1, tar_file);
+    fwrite(&oi->gcov_version, sizeof(oi->gcov_version), 1, tar_file);
+    fwrite(&oi->stamp, sizeof(oi->stamp), 1, tar_file);
+
+    for (fi = oi->function_infos; fi != NULL; fi = fi->next)
+    {
+        ident = strtoul(fi->name, NULL, 10);
+        fwrite(func_magic, sizeof(func_magic), 1, tar_file);
+        fwrite(&ident, sizeof(ident), 1, tar_file);
+        fwrite(&fi->checksum, sizeof(fi->checksum), 1, tar_file);
+        for (group = 0; group < GCOV_COUNTER_GROUPS; group++)
+        {
+            if (!((1 << group) & oi->ctr_mask))
+                continue;
+            group_magic[0] = GCOV_TAG_FOR_COUNTER (group);
+            count = fi->groups[group].number;
+            group_magic[1] = GCOV_TAG_COUNTER_LENGTH (count);
+            fwrite(group_magic, sizeof(group_magic), 1, tar_file);
+            fwrite(fi->counts + c_offset, sizeof(*fi->counts), count, 
+                   tar_file);
+            c_offset += count;
+        }
+    }
+    fwrite(obj_summary_magic, sizeof(obj_summary_magic), 1, tar_file);
+    fwrite(&oi->checksum, sizeof(oi->checksum), 1, tar_file);
+    fwrite(&oi->ncounts, sizeof(oi->ncounts), 1, tar_file);
+    fwrite(&oi->object_runs, sizeof(oi->object_runs), 1, tar_file);
+    fwrite(&oi->object_sum, sizeof(oi->object_sum), 1, tar_file);
+    fwrite(&oi->object_max, sizeof(oi->object_max), 1, tar_file);
+    fwrite(&oi->object_sum_max, sizeof(oi->object_sum_max), 1, tar_file);
+    fwrite(prog_summary_magic, sizeof(prog_summary_magic), 1, tar_file);
+    fwrite(&oi->program_checksum, sizeof(oi->program_checksum), 
+           1, tar_file);
+    fwrite(&oi->program_ncounts, sizeof(oi->program_ncounts), 1, tar_file);
+    fwrite(&oi->program_runs, sizeof(oi->program_runs), 1, tar_file);
+    fwrite(&oi->program_sum, sizeof(oi->program_sum), 1, tar_file);
+    fwrite(&oi->program_max, sizeof(oi->program_max), 1, tar_file);
+    fwrite(&oi->program_sum_max, sizeof(oi->program_sum_max), 1, tar_file);
+}
+
+static te_bool
 dump_object_data(bb_object_info *oi, FILE *tar_file)
 {
     bb_function_info *fi;
     long long *ci;
     long arc_count;
-    
+ 
+    if (oi->gcov_version != 0)
+        return dump_new_object_data(oi, tar_file);
+   
     if (/* magic */
         __write_long (-123, tar_file, 4)
         /* number of functions in object file.  */
