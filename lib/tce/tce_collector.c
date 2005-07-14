@@ -559,11 +559,12 @@ function_header_state(channel_data *ch)
 static void
 summary_state(channel_data *ch)
 {
-/*
     if (*ch->buffer != '>')
     {
+/*
         ch->state = new_function_header_state;
         ch->state(ch);
+*/
     }
     else
     {
@@ -572,13 +573,48 @@ summary_state(channel_data *ch)
         unsigned object_runs;
         unsigned program_runs;
         long long program_max;
-        long long program_sum
+        long long program_sum;
+        long long program_sum_max;
+        long long object_max;
+        long long object_sum_max;
+
         
-        sscanf(ch->buffer + 1, 
-               "%u %u %Lu %Lu %Lu %u %u %Lu %Lu %Lu",
-               
+        if (sscanf(ch->buffer + 1, 
+                   "%u %u %Ld %Ld %Ld %u %u %Ld %Ld %Ld",
+                   &n_counters, &object_runs, 
+                   &object_sum, &object_max, &object_sum_max,
+                   &program_n_counters, &program_runs,
+                   &program_sum, &program_max, &program_sum_max) != 10)
+        {
+            tce_report_error("error parsing '%s' for peer %d",
+                      ch->buffer, ch->peer_id);
+            ch->state = NULL;
+            return;
+        }
+        if (ch->object->ncounts != 0 &&
+            (ch->object->ncounts != n_counters ||
+             ch->object->program_ncounts != program_n_counters))
+        {
+            tce_report_error("counters number mismatch for '%s'", 
+                             ch->object->filename);
+            ch->state = NULL;
+            return;
+        }
+        ch->object->ncounts = n_counters;
+        ch->object->program_ncounts = program_n_counters;
+        ch->object->object_runs  += object_runs;
+        ch->object->program_runs += program_runs;
+        ch->object->program_sum  += program_sum;
+        ch->object->object_sum   += object_sum;
+        if (program_max > ch->object->program_max)
+            ch->object->program_max = program_max;
+        if (object_max > ch->object->object_max)
+            ch->object->object_max = object_max;
+        if (program_sum_max > ch->object->program_sum_max)
+            ch->object->program_sum_max = program_sum_max;
+        if (object_max > ch->object->object_sum_max)
+            ch->object->object_sum_max = object_sum_max;
     }
-*/
 }
 
 static void
@@ -865,6 +901,12 @@ get_object_info(int peer_id, const char *filename)
     found->program_ncounts  = 0;
     found->program_sum_max  = 0;
     found->object_sum_max   = 0;
+    found->object_sum       = 0;
+    found->program_sum      = 0;
+    found->object_max       = 0;
+    found->program_max      = 0;
+    found->object_runs      = 0;
+    found->program_runs     = 0;
     found->ctr_mask = 0;
     found->stamp    = 0;
     found->next = bb_hash_table[key];
