@@ -5287,7 +5287,7 @@ aio_suspend_test(tarpc_aio_suspend_test_in *in,
         in->signum == 0 ? 0 : signum_rpc2h(in->signum);
     if (aio_read_func(&cb1) < 0)
     {
-        DIAG("aio_read() returnred -1");
+        DIAG("aio_read() returned -1");
         return -1;
     }
     memset(&cb2, 0, sizeof(cb));
@@ -5298,7 +5298,7 @@ aio_suspend_test(tarpc_aio_suspend_test_in *in,
         in->signum == 0 ? 0 : signum_rpc2h(in->signum);
     if (aio_read_func(&cb2) < 0)
     {
-        DIAG("aio_read() returnred -1");
+        DIAG("aio_read() returned -1");
         return -1;
     }
 
