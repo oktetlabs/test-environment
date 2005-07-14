@@ -230,7 +230,7 @@ int
 ds_create_backup(const char *dir, const char *name, int *index)
 {
     const char *filename;
-    
+    FILE       *f;
     int rc;
 
     if (name == NULL)
@@ -255,13 +255,14 @@ ds_create_backup(const char *dir, const char *name, int *index)
     ds[n_ds].config_file = strdup(buf);
     if (ds[n_ds].config_file == NULL)
         return TE_RC(TE_TA_LINUX, ENOMEM);
-    if (!file_exists(ds[n_ds].config_file))
+    if ((f = fopen(ds[n_ds].config_file, "a")) == NULL)
     {
         WARN("Failed to create backup for %s - no such file", 
              ds[n_ds].config_file);
         free(ds[n_ds].config_file);
         return TE_RC(TE_TA_LINUX, ENOENT);
     }
+    fclose(f);
     
     TE_SPRINTF(buf, TE_TMP_PATH"%s"TE_TMP_BKP_SUFFIX, filename);
     /* Addition memory for pid */
@@ -465,6 +466,14 @@ xinetd_get(unsigned int gid, const char *oid, char *value)
     return 0;
 }
 
+/** 
+ * This global variable is set to value of server field in xinetd.d config
+ * and used by xinetd_set. It is cleared automatically after xinetd_set 
+ * finishing. 
+ * If it is NULL, server field is not updated.
+ */
+static char *xinetd_server;
+
 /* On/off xinetd service */
 static int
 xinetd_set(unsigned int gid, const char *oid, const char *value)
@@ -474,29 +483,23 @@ xinetd_set(unsigned int gid, const char *oid, const char *value)
     int   rc;
     
     te_bool inside = FALSE;
-
-    UNUSED(gid);
+    char   *server = xinetd_server;
     
-    PRINT("xinetd_set: %s %s", oid, value);
+    UNUSED(gid);
 
+    xinetd_server = NULL;
+    
+    PRINT("Server: %s", server);
+    
     if (index < 0)
         return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
         
-    PRINT("Backup is in %s", ds_backup(index));
-    {                                            
-        char buf[128];                           
-        
-        sprintf(buf, "ls -l %s", ds_backup(index));  
-        ta_system(buf);                          
-    }                                            
-
     if (strlen(value) != 1 || (*value != '0' && *value != '1'))
         return TE_RC(TE_TA_LINUX, EINVAL);
 
     if ((f = fopen(ds_backup(index), "r")) == NULL) 
     {
         rc = TE_RC(TE_TA_LINUX, errno);
-        PRINT("No backup");                          
         return rc;                                            
     }
 
@@ -511,13 +514,24 @@ xinetd_set(unsigned int gid, const char *oid, const char *value)
 
     while (fgets(buf, sizeof(buf), f) != NULL)
     {
-        if (strstr(buf, "disable") == NULL)
+        char *tmp = strstr(buf, "server");
+
+        if (tmp != NULL)
+            tmp += strlen("server");
+        
+        if (strstr(buf, "disable") == NULL &&
+            (server == NULL || tmp == NULL ||
+             (!isspace(tmp[0]) && tmp[0] != '=')))
+        {
             fwrite(buf, 1, strlen(buf), g);
+        }
             
         if (strstr(buf, "{") && !inside)
         {
             inside = TRUE;
-            fprintf(g, "disable = %s\n", *value == '0' ? "yes" : "no");
+            fprintf(g, "\tdisable = %s\n", *value == '0' ? "yes" : "no");
+            if (server != NULL)
+                fprintf(g, "\tserver = %s\n", server);
         }
     }
     fclose(f);
@@ -550,54 +564,37 @@ xinetd_set(unsigned int gid, const char *oid, const char *value)
 static int
 ds_xinetd_service_addr_set(const char *service, const char *value)
 {
-    unsigned int  addr;
-    char         *ds_path = NULL; /* Path to xinetd service
-                                          configuration file */
-    char         *tmp_path = NULL; /* Path to temporary file */
-    char         *cmd = NULL;
-    int           path_len;
-    const char   *fmt = "mv %s %s >/dev/null 2>&1";
-    FILE         *f;
-    FILE         *g;
+    in_addr_t  addr;
+    FILE      *f;
+    FILE      *g;
+    int        index = ds_lookup(XINETD_ETC_DIR, get_ds_name(oid));
+    int        rc;
 
+    UNUSED(gid);
+    
     if (inet_aton(value, (struct in_addr *)&addr) == 0)
         return EINVAL;
 
-    path_len = ((strlen(TE_TMP_PATH) > strlen(XINETD_ETC_DIR)) ?
-                strlen(TE_TMP_PATH) : strlen(XINETD_ETC_DIR)) +
-               strlen(service) + strlen(TE_TMP_FILE_SUFFIX) + 1;
+    if (index < 0)
+        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
+        
+    if (strlen(value) != 1 || (*value != '0' && *value != '1'))
+        return TE_RC(TE_TA_LINUX, EINVAL);
 
-#define FREE_BUFFERS \
-    do {                     \
-        free(ds_path);       \
-        free(tmp_path);      \
-        free(cmd);           \
-    } while (0)
-
-    if ((ds_path = (char *)malloc(path_len)) == NULL ||
-        (tmp_path = (char *)malloc(path_len)) == NULL ||
-        (cmd = (char *)malloc(2 * path_len + strlen(fmt))) == NULL)
+    if ((f = fopen(ds_backup(index), "r")) == NULL) 
     {
-        FREE_BUFFERS;
-        return TE_RC(TE_TA_LINUX, ENOMEM);
+        rc = TE_RC(TE_TA_LINUX, errno);
+        return rc;                                            
     }
 
-    snprintf(ds_path, path_len, "%s%s", XINETD_ETC_DIR, service);
-    snprintf(tmp_path, path_len, "%s%s%s",
-             TE_TMP_PATH, service, TE_TMP_FILE_SUFFIX);
-    snprintf(cmd, 2 * path_len + strlen(fmt), fmt, tmp_path, ds_path);
-
-    if ((f = fopen(ds_path, "r")) == NULL)
+    if ((g = fopen(ds_config(index), "w")) == NULL) 
     {
-        FREE_BUFFERS;
-        return TE_RC(TE_TA_LINUX, errno);
-    }
-    if ((g = fopen(tmp_path, "w")) == NULL)
-    {
-        FREE_BUFFERS;
+        rc = TE_RC(TE_TA_LINUX, errno);
+        ERROR("Cannot open file %s for writing", ds_config(index));
         fclose(f);
-        return 0;
+        return rc;                                            
     }
+    ds_config_touch(index);
 
     while (fgets(buf, sizeof(buf), f) != NULL)
     {
@@ -625,12 +622,7 @@ ds_xinetd_service_addr_set(const char *service, const char *value)
     fclose(g);
 
     /* Update service configuration file */
-    ta_system(cmd);
     ta_system("/etc/init.d/xinetd restart >/dev/null 2>&1");
-
-    FREE_BUFFERS;
-
-#undef FREE_BUFFERS
 
     return 0;
 }
@@ -1211,10 +1203,10 @@ ds_echoserver_addr_set(unsigned int gid, const char *oid, const char *value)
 enum ftp_server_kinds { FTP_VSFTPD, FTP_WUFTPD, FTP_PROFTPD };
 
 
-static int                    ftp_indices[] = {-1, -1, -1};
-static int                    ftp_xinetd_index = -1;
-static te_bool                ftp_standalone   = TRUE;
-static enum ftp_server_kinds  ftp_server_kind  = FTP_VSFTPD;
+static int                     ftp_indices[] = {-1, -1, -1};
+static int                     ftp_xinetd_index = -1;
+static te_bool                 ftp_standalone   = TRUE;
+static enum  ftp_server_kinds  ftp_server_kind  = FTP_VSFTPD;
 
 #define VSFTPD_CONF  "vsftpd.conf"
 #define WUFTPD_CONF  "ftpaccess"
@@ -1250,7 +1242,7 @@ ds_ftpserver_update_config(void)
     /* Enable anonymous upload for ftp */
     ds_config_touch(ftp_indices[ftp_server_kind]);
     OPEN_CONFIG(ftp_indices[ftp_server_kind], g);
-
+    
     switch (ftp_server_kind)
     {
         case FTP_VSFTPD:
@@ -1274,6 +1266,7 @@ ds_ftpserver_update_config(void)
             fprintf(g, "listen=%s\n", ftp_standalone ? "YES" : "NO");
             fclose(f);
             break;
+            
         case FTP_WUFTPD:
             fputs("passwd-check none\n"
                   "class all real,guest,anonymous *\n"
@@ -1282,6 +1275,7 @@ ds_ftpserver_update_config(void)
                   g);
 
             break;
+            
         case FTP_PROFTPD:
         {
             te_bool inside_anonymous = FALSE;
@@ -1342,6 +1336,13 @@ static int
 ds_ftpserver_set(unsigned int gid, const char *oid, const char *value)
 {
     UNUSED(oid);
+    
+    if (!ftp_standalone)
+        xinetd_server = (ftp_server_kind == FTP_VSFTPD) ? 
+                        "/usr/sbin/vsftpd" :
+                        (ftp_server_kind == FTP_PROFTPD) ? 
+                        "/usr/sbin/proftpd" : NULL;
+        
     return ftp_standalone ? daemon_set(gid, "ftpserver", value) : 
            xinetd_set(gid, "ftp", value);
 }

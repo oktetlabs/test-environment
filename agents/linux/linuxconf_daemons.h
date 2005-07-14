@@ -78,6 +78,7 @@ extern const char *get_ftp_daemon_name(void);
 #define get_ftp_daemon_name() "ftpd"
 #endif
 
+/** Get name of the service by the object identifier */
 static inline const char *
 get_ds_name(const char *oid)
 {
