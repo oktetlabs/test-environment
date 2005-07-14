@@ -557,6 +557,31 @@ function_header_state(channel_data *ch)
 }
 
 static void
+summary_state(channel_data *ch)
+{
+/*
+    if (*ch->buffer != '>')
+    {
+        ch->state = new_function_header_state;
+        ch->state(ch);
+    }
+    else
+    {
+        unsigned n_counters;
+        unsigned program_n_counters;
+        unsigned object_runs;
+        unsigned program_runs;
+        long long program_max;
+        long long program_sum
+        
+        sscanf(ch->buffer + 1, 
+               "%u %u %Lu %Lu %Lu %u %u %Lu %Lu %Lu",
+               
+    }
+*/
+}
+
+static void
 object_header_state(channel_data *ch)
 {
     char *space;
@@ -595,42 +620,93 @@ object_header_state(channel_data *ch)
 
         *space++ = '\0';
         oi = get_object_info(ch->peer_id, ch->buffer);
-        if(sscanf(space, "%ld %ld %Ld %Ld %ld %Ld %Ld",
-                  &object_functions, 
-                  &program_arcs, 
-                  &program_sum, 
-                  &program_max, 
-                  &ncounts, 
-                  &object_sum, 
-                  &object_max) != 7)
-        {
-            tce_report_error("error parsing '%s' for peer %d", 
-                         space, ch->peer_id);
-            ch->state = NULL;
-            return;
-        }
         
-        if (oi->ncounts && oi->ncounts != ncounts)
+        if (strncmp(space, "new ", 4) == 0)
         {
-            tce_report_error("peer %d, error near '%s'", 
-                ch->peer_id, space);
-            ch->state = NULL;
+            unsigned gcov_version;
+            unsigned checksum, program_checksum;
+
+            space += 4;
+            if(sscanf(space, "%u %u %u %u %u %u",
+                      &gcov_version, &oi->stamp, 
+                      &checksum, 
+                      &program_checksum,
+                      &object_functions) != 6)
+            {
+                tce_report_error("error parsing '%s' for peer %d", 
+                                 space, ch->peer_id);
+                ch->state = NULL;
+                return;
+            }
+            if (oi->gcov_version != 0 && oi->gcov_version != gcov_version)
+            {
+                tce_report_error("GCOV version mismatch for peer %d",
+                                 ch->peer_id);
+                ch->state = NULL;
+                return;
+            }
+            oi->gcov_version = gcov_version;
+            if (oi->checksum != 0 && 
+                (oi->checksum != checksum || 
+                 oi->program_checksum != checksum))
+            {
+                tce_report_error("checksum mismatch for peer %d",
+                                 ch->peer_id);
+                ch->state = NULL;
+                return;
+            }
+            oi->checksum = checksum;
+            oi->program_checksum = checksum;
+            if (object_functions != oi->object_functions)
+            {
+                tce_report_error("function number mismatch for peer %d",
+                                 ch->peer_id);
+                ch->state = NULL;
+                return;
+            }
+            oi->object_functions = object_functions;
+            ch->state = summary_state;
+            ch->object = oi;
         }
         else
         {
-            oi->ncounts = ncounts;
-            oi->program_arcs = program_arcs;
-            oi->object_functions = object_functions;
-            oi->object_sum = object_sum;
-            oi->program_sum += program_sum;
-            if (object_max > oi->object_max)
-                oi->object_max = object_max;
-            if (program_max > oi->program_max)
-                oi->program_max = program_max;
-            if (ncounts != 0)
+            if(sscanf(space, "%ld %ld %Ld %Ld %ld %Ld %Ld",
+                      &object_functions, 
+                      &program_arcs, 
+                      &program_sum, 
+                      &program_max, 
+                      &ncounts, 
+                      &object_sum, 
+                      &object_max) != 7)
             {
-                ch->state = function_header_state;
-                ch->object = oi;
+                tce_report_error("error parsing '%s' for peer %d", 
+                                 space, ch->peer_id);
+                ch->state = NULL;
+                return;
+            }
+            
+            if (oi->ncounts && oi->ncounts != ncounts)
+            {
+                tce_report_error("peer %d, error near '%s'", 
+                                 ch->peer_id, space);
+                ch->state = NULL;
+            }
+            else
+            {
+                oi->ncounts = ncounts;
+                oi->program_arcs = program_arcs;
+                oi->object_functions = object_functions;
+                oi->object_sum = object_sum;
+                oi->program_sum += program_sum;
+                if (object_max > oi->object_max)
+                    oi->object_max = object_max;
+                if (program_max > oi->program_max)
+                    oi->program_max = program_max;
+                if (ncounts != 0)
+                {
+                    ch->state = function_header_state;
+                    ch->object = oi;
+                }
             }
         }
     }
@@ -783,6 +859,14 @@ get_object_info(int peer_id, const char *filename)
     found->filename = strdup(filename);
     found->ncounts = 0;
     found->function_infos = NULL;
+    found->gcov_version = 0;
+    found->checksum = 0;
+    found->program_checksum = 0;
+    found->program_ncounts  = 0;
+    found->program_sum_max  = 0;
+    found->object_sum_max   = 0;
+    found->ctr_mask = 0;
+    found->stamp    = 0;
     found->next = bb_hash_table[key];
     bb_hash_table[key] = found;
     return found;

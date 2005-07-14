@@ -35,8 +35,6 @@ typedef struct bb_function_info
     const char *name;
     long long *counts;
     struct bb_function_info *next;
-/* GCC 3.4+ specific fields */
-    unsigned ident;
 } bb_function_info;
 
 typedef struct bb_object_info
@@ -55,7 +53,14 @@ typedef struct bb_object_info
 /* GCC-3.4+ specific fields: */
     unsigned gcov_version;
     unsigned checksum;
+    unsigned program_checksum;
+    unsigned ctr_mask;
     unsigned stamp;
+    unsigned program_ncounts;
+    long long program_sum_max;
+    long long object_sum_max;
+    unsigned program_runs;
+    unsigned object_runs;
 } bb_object_info;
 
 

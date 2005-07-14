@@ -507,10 +507,12 @@ EXIT_GCOV()
       
         /* Write out the data.  */
 
-        snprintf(buffer, sizeof(buffer), "!%s %u %u %u %u\n", 
+        snprintf(buffer, sizeof(buffer), 
+                 "%s new %u %u %u %u %u %u\n", 
                  gi_ptr->filename, 
                  gcov_version, gi_ptr->stamp,
-                 object.checksum, program.checksum);
+                 object.checksum, program.checksum,
+                 gi_ptr->n_functions, gi_ptr->ctr_mask);
         write(fd, buffer, strlen(buffer));
 
         for (s_ix = 0; s_ix < GCOV_COUNTERS_SUMMABLE; s_ix++)
