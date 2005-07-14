@@ -259,6 +259,8 @@ ftp_open(char *uri, int flags, int passive, int offset, int *sock)
     char passwd[FTP_TEST_PASSWD_MAX];
     char file[FTP_TEST_PATHNAME_MAX];
     
+    VERB("ftp_open %s %s", uri, passive ? "PASSIVE" : "");
+    
     if (parse_ftp_uri(uri, (struct sockaddr *)&addr,
                       user, passwd, file) != 0 ||
         (flags != O_RDONLY && flags != O_WRONLY))
@@ -308,6 +310,7 @@ ftp_open(char *uri, int flags, int passive, int offset, int *sock)
         s = socket(AF_INET, SOCK_STREAM, 0);
         if (connect(s, (struct sockaddr *)&addr, sizeof(addr)) < 0)
             RET_ERR("connect() failed; errno %d", errno);
+
         if (sock != NULL)
         {
             *sock = s;
@@ -384,18 +387,22 @@ ftp_open(char *uri, int flags, int passive, int offset, int *sock)
     
     if (passive)
     {
+        VERB("Connecting to data port");
         sd = socket(AF_INET, SOCK_STREAM, 0);
         if (connect(sd, (struct sockaddr *)&addr, sizeof(addr)) < 0)
              RET_ERR("connect() for data connection failed; "
                      "errno %d", errno);
+        VERB("Data connection is established");                     
         READ_ANS;
     }
     else
     {
         READ_ANS;
+        VERB("Accepting data connection");
         if ((sd = accept(sd1, NULL, NULL)) < 0)
             RET_ERR("accept() failed; errno %d", errno);
 
+        VERB("Data connection is established");                     
         close(sd1);
     }
     if (sock == NULL)
