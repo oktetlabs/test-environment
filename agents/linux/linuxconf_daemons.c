@@ -156,6 +156,66 @@ ds_config_touch(int index)
         ds[index].changed = TRUE;
 }
 
+/**
+ * Create a backup or rename unused backup.
+ *
+ * @param config        pathname of the configuration file
+ * @param backup        patname of the backup without pid postfix
+ *                      (updated by the routine)
+ *
+ * @return Status code
+ */
+static int
+copy_or_rename(const char *config, char *backup)
+{
+    FILE *f;
+    int   rc;
+    int   my_pid = getpid();
+    
+    TE_SPRINTF(buf, "ls %s* 2>/dev/null", backup);
+    if ((f = popen(buf, "r")) == NULL)
+    {
+        rc = errno;
+        ERROR("popen(%s) failed with errno %d", buf, rc);
+        return TE_RC(TE_TA_LINUX, rc);
+    }
+    if (fgets(buf, sizeof(buf), f) == NULL)
+    {
+        TE_SPRINTF(buf, "cp %s %s.%d", config, backup, my_pid);
+    }
+    else
+    {
+        char *tmp = strrchr(buf, '.');
+        int   pid = tmp == NULL ? 0 : atoi(tmp + 1);
+        
+        if (pid == 0)
+        {
+            ERROR("Backup %s of the old version of Linux TA is found", 
+                  buf);
+            return TE_RC(TE_TA_LINUX, EEXIST);
+        }
+        
+        if (kill(pid, SIGCONT) == 0)
+        {
+            WARN("Backup %s of running TA pid %d is found", buf, pid);
+            return TE_RC(TE_TA_LINUX, EEXIST);
+        }
+        else
+        {
+            WARN("Consider backup %s of dead TA with pid %d as ours", 
+                 buf, pid);
+            TE_SPRINTF(buf, "mv %s.%d %s.%d", backup, pid, backup, my_pid);
+        }
+    }
+    if (ta_system(buf) != 0)
+    {
+        ERROR("Cannot create backup: command '%s' failed", buf);
+        return TE_RC(TE_TA_LINUX, ETESHCMD);
+    }
+    sprintf(backup + strlen(backup), ".%d", my_pid);
+    return 0;
+}
+
 /*
  * Creates a copy of service configuration file in TMP directory
  * to restore it after Agent finishes
@@ -170,6 +230,8 @@ int
 ds_create_backup(const char *dir, const char *name, int *index)
 {
     const char *filename;
+    
+    int rc;
 
     if (name == NULL)
     {
@@ -185,49 +247,44 @@ ds_create_backup(const char *dir, const char *name, int *index)
 
     if (n_ds == sizeof(ds) / sizeof(ds[0]))          
     {                                                              
-        WARN("Too many services of xinetd are registered\n");     
+        WARN("Too many services are registered\n");     
         return TE_RC(TE_TA_LINUX, EMFILE);                         
     }
-    sprintf(buf, TE_TMP_PATH"%s"TE_TMP_BKP_SUFFIX, filename);
-    ds[n_ds].backup = strdup(buf);
-    sprintf(buf, "%s%s", dir ? : "", name);
+    
+    TE_SPRINTF(buf, "%s%s", dir ? : "", name);
     ds[n_ds].config_file = strdup(buf);
-    ds[n_ds].changed = FALSE;
-    
-    if (ds[n_ds].backup == NULL || ds[n_ds].config_file == NULL)
-    {
-        free(ds[n_ds].config_file);
-        free(ds[n_ds].backup);
+    if (ds[n_ds].config_file == NULL)
         return TE_RC(TE_TA_LINUX, ENOMEM);
-    }
-    
-    if (file_exists(ds[n_ds].backup))
-    {
-        ERROR("Failed to create backup %s - it's already exists", 
-             ds[n_ds].backup);
-        free(ds[n_ds].config_file);
-        free(ds[n_ds].backup);
-        return TE_RC(TE_TA_LINUX, EEXIST);
-    }
-
     if (!file_exists(ds[n_ds].config_file))
     {
         WARN("Failed to create backup for %s - no such file", 
              ds[n_ds].config_file);
         free(ds[n_ds].config_file);
-        free(ds[n_ds].backup);
         return TE_RC(TE_TA_LINUX, ENOENT);
     }
     
-    sprintf(buf, "cp %s %s", ds[n_ds].config_file, ds[n_ds].backup);
-        
-    if (ta_system(buf) != 0)
-    {                                                              
-        WARN("Cannot create backup file %s", ds[n_ds].backup);
+    TE_SPRINTF(buf, TE_TMP_PATH"%s"TE_TMP_BKP_SUFFIX, filename);
+    /* Addition memory for pid */
+    ds[n_ds].backup = malloc(strlen(buf) + 16); 
+    if (ds[n_ds].backup == NULL)
+    {
+        free(ds[n_ds].config_file);
+        return TE_RC(TE_TA_LINUX, ENOMEM);
+    }
+    strcpy(ds[n_ds].backup, buf);
+    
+    if ((rc = copy_or_rename(ds[n_ds].config_file, ds[n_ds].backup)) != 0)
+    {
         free(ds[n_ds].config_file);
         free(ds[n_ds].backup);
-        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME); 
+        return rc;
     }
+
+    TE_SPRINTF(buf, "diff -q %s %s >/dev/null 2>&1", 
+               ds[n_ds].config_file, ds[n_ds].backup);
+    
+    ds[n_ds].changed = (ta_system(buf) != 0);
+    
     if (index != NULL)                                        
         *index = n_ds;
     n_ds++;
