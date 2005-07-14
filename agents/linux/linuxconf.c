@@ -832,7 +832,6 @@ interface_list(unsigned int gid, const char *oid, char **list)
 static int
 aliases_list()
 {
-    FILE         *f;
     struct ifconf conf;
     struct ifreq *req;
     te_bool       first = TRUE;
@@ -864,41 +863,49 @@ aliases_list()
         ptr += sprintf(ptr, "%s ", name);
     }
 
-    if ((f = fopen("/proc/net/dev", "r")) == NULL)
+#ifdef __linux__
     {
-        ERROR("%s(): Failed to open /proc/net/dev for reading: %s",
-              __FUNCTION__, strerror(errno));
-        return TE_RC(TE_TA_LINUX, errno);
-    }
-        
-    while (fgets(trash, sizeof(trash), f) != NULL)
-    {
-        char *name = strchr(trash, ':');
-        char *tmp;
-        int   n;
-        
-        if (name == NULL)
-            continue;
-            
-        for (*name-- = 0; name != trash && *name != ' '; name--);
-        
-        if (*name == ' ')
-            name++;
-            
-        n = strlen(name);
-        for (tmp = strstr(buf, name); tmp != NULL; tmp = strstr(tmp, name))
+        FILE         *f;
+
+        if ((f = fopen("/proc/net/dev", "r")) == NULL)
         {
-            tmp += n;
-            if (*tmp == ' ')
-                break;
+            ERROR("%s(): Failed to open /proc/net/dev for reading: %s",
+                  __FUNCTION__, strerror(errno));
+            return TE_RC(TE_TA_LINUX, errno);
+        }
+            
+        while (fgets(trash, sizeof(trash), f) != NULL)
+        {
+            char *name = strchr(trash, ':');
+            char *tmp;
+            int   n;
+            
+            if (name == NULL)
+                continue;
+                
+            for (*name-- = 0; name != trash && *name != ' '; name--);
+            
+            if (*name == ' ')
+                name++;
+                
+            n = strlen(name);
+            for (tmp = strstr(buf, name); 
+                 tmp != NULL;
+                 tmp = strstr(tmp, name))
+            {
+                tmp += n;
+                if (*tmp == ' ')
+                    break;
+            }
+
+            if (tmp == NULL)
+                ptr += sprintf(ptr, "%s ", name);
         }
 
-        if (tmp == NULL)
-            ptr += sprintf(ptr, "%s ", name);
+        fclose(f);
     }
-    
-    fclose(f);
-    
+#endif
+
     return 0;
 }
 #endif
@@ -1399,11 +1406,12 @@ find_net_addr(const char *ifname, const char *addr, unsigned int *prefix)
 static char *
 find_net_addr(const char *ifname, const char *addr)
 {
-    uint32_t int_addr;
+    uint32_t      int_addr;
     unsigned int  tmp_addr;
     char         *cur;
     char         *next;
     int           rc;
+
     if (ifname != NULL && 
         (strlen(ifname) >= IF_NAMESIZE || strchr(ifname, ':') != NULL))
         return NULL;
