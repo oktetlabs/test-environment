@@ -860,7 +860,7 @@ tapi_snmp_pkt_handler(char *fn, void *p)
         snmp_message = asn_read_indexed(packet, 0, "pdus");
         rc = tapi_snmp_packet_to_plain(snmp_message, plain_msg);
 
-        VERB("packet to plain rc %d\n", rc);
+        VERB("packet to plain rc %x\n", rc);
 
         /* abnormal situation in SNMP message */
         if (plain_msg->num_var_binds == 0)
@@ -3122,7 +3122,7 @@ tapi_snmp_trap_handler(char *fn, void *user_param)
 
     snmp_message = asn_read_indexed(packet, 0, "pdus");
     rc = tapi_snmp_packet_to_plain(snmp_message, &plain_msg);
-    VERB("packet to plain rc %d\n", rc);
+    VERB("packet to plain rc %x\n", rc);
     asn_free_value(packet);
     asn_free_value(snmp_message);
 
