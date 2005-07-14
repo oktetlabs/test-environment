@@ -3666,8 +3666,6 @@ route_get(unsigned int gid, const char *oid, char *value,
 
         fclose(fp);
         
-        VERB("It's what we wanted");
-
         value[0] = '\0';
 
 #define TE_LC_RTF_SET_FLAG(flg_, name_) \
