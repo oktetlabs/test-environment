@@ -3794,7 +3794,7 @@ simple_sender(tarpc_simple_sender_in *in, tarpc_simple_sender_out *out)
     return 0;
 }
 
-/*-------------- simple_receiver() --------------------------*/
+/*--------------simple_receiver() --------------------------*/
 TARPC_FUNC(simple_receiver, {},
 {
     MAKE_CALL(out->retval = func_ptr(in, out));
@@ -3897,6 +3897,86 @@ simple_receiver(tarpc_simple_receiver_in *in,
     return 0;
 }
 
+#undef MAX_PKT
+
+/*-------------- recv_verify() --------------------------*/
+TARPC_FUNC(recv_verify, {},
+{
+    MAKE_CALL(out->retval = func_ptr(in, out));
+}
+)
+
+#define RCV_VF_BUF (1024)
+
+/**
+ * Simple receiver.
+ *
+ * @param in                input RPC argument
+ *
+ * @return number of received bytes or -1 in the case of failure
+ */
+int
+recv_verify(tarpc_recv_verify_in *in, tarpc_recv_verify_out *out)
+{
+    sock_api_func   recv_func;
+    char           *rcv_buf;
+    char           *pattern_buf;
+    int             rc;
+
+
+    out->retval = 0;
+
+    RING("%s() started", __FUNCTION__);
+
+    if (find_func(in->common.lib, "recv", &recv_func) != 0)
+    {
+        return -1;
+    }
+    
+    if ((rcv_buf = malloc(RCV_VF_BUF)) == NULL)
+    {
+        ERROR("Out of memory");
+        return -1;
+    } 
+
+    while (1)
+    {
+        rc = recv_func(in->s, rcv_buf, RCV_VF_BUF, MSG_DONTWAIT);
+        if (rc < 0)
+        {
+            if (errno == EAGAIN)
+            {
+                errno = 0;
+                RING("recv() returned -1(EGAIN) in recv_verify(), "
+                     "no more data just now");
+                break;
+            }
+            else
+            {
+                ERROR("recv() failed in recv_verify(): errno %x", errno);
+                free(rcv_buf);
+                out->retval = -1;
+                return -1;
+            }
+        }
+        if (rc == 0)
+        {
+            RING("recv() returned 0 in recv_verify() because of "
+                 "peer shutdown");
+            break;
+        }
+
+        /* TODO: check data here, set reval to -2 if not matched. */
+        out->retval += rc;
+    }
+
+    free(rcv_buf);
+    RING("recv_verify() stopped, received %d bytes", out->retval);
+
+    return 0;
+}
+
+#undef RCV_VF_BUF
 
 /*-------------- send_traffic() --------------------------*/
 TARPC_FUNC(send_traffic, {},

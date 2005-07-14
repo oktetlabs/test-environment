@@ -149,6 +149,26 @@ extern int rpc_simple_receiver(rcf_rpc_server *handle,
 extern int rpc_send_traffic(rcf_rpc_server *handle, int num, int *s,
                             const void *buf, size_t len, int flags,
                             struct sockaddr *to, socklen_t tolen);
+
+/**
+ * Receive and verify all acceptable data on socket.
+ * Verification made by function, which name is passed.
+ * This function should generate block of data by start sequence
+ * number (which is passed) and length. Then received and generated
+ * buffers are compared. 
+ * Socket method recv(..., MSG_DONTWAIT) used. 
+ *
+ * @param handle            RPC server
+ * @param s                 a socket to be user for receiving
+ * @param gen_data_fname    name of function to generate data
+ * @param start             sequence number of first byte will be 
+ *                          received. 
+ *
+ * @return number of received bytes, -1 if system error, -2 if data
+ *         not match.
+ */
+extern int rpc_recv_verify(rcf_rpc_server *handle, int s,
+                           const char *gen_data_fname, uint64_t start);
                             
 /**
  * For each address from addresses list routine sends UDP datagram,

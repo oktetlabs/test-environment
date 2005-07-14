@@ -2110,6 +2110,24 @@ struct tarpc_simple_receiver_out {
     uint64_t    bytes;      /**< Number of received bytes */
 };
 
+
+struct tarpc_recv_verify_in {
+    struct tarpc_in_arg common;
+    
+    tarpc_int   s;        /**< Socket to be used */
+    char        fname<>;  /**< Name of function to generate data */
+
+    uint64_t    start;    /**< Position in stream of first byte
+                               which should be received. */
+};
+
+struct tarpc_recv_verify_out {
+    struct tarpc_out_arg common;
+
+    tarpc_int   retval;     /**< bytes received (success) or -1 (failure) */
+};
+
+
 struct tarpc_send_traffic_in {
     struct tarpc_in_arg common;
     tarpc_int           num;    /**< Number of packets to be sent */
@@ -2718,6 +2736,7 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
 
         RPC_DEF(simple_sender)
         RPC_DEF(simple_receiver)
+        RPC_DEF(recv_verify)
         RPC_DEF(send_traffic)
         RPC_DEF(timely_round_trip)
         RPC_DEF(round_trip_echoer)

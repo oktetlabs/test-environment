@@ -50,6 +50,7 @@
 #include "te_printf.h"
 #include "tapi_rpc_internal.h"
 #include "tapi_rpc_unistd.h"
+#include "tapi_rpc_misc.h"
 
 
 /**
@@ -701,6 +702,55 @@ rpc_simple_receiver(rcf_rpc_server *rpcs,
                  (unsigned long)*received);
 
     RETVAL_INT(simple_receiver, out.retval);
+}
+
+
+/* See description in tapi_rpc_misc.h */
+int
+rpc_recv_verify(rcf_rpc_server *rpcs, int s,
+                const char *gen_data_fname, uint64_t start)
+{
+    rcf_rpc_op            op;
+    tarpc_recv_verify_in  in;
+    tarpc_recv_verify_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+    
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(recv_verify, -1);
+    }
+    if (gen_data_fname == NULL)
+    {
+        ERROR("%s(): NULL function name", __FUNCTION__);
+        RETVAL_INT(recv_verify, -1);
+    }
+
+    RING("%s(): fname %s", __FUNCTION__, gen_data_fname);
+
+    op = rpcs->op;
+
+    in.s = s;
+    in.start = start;
+
+#if 1
+    if (op != RCF_RPC_WAIT)
+    {
+        in.fname.fname_len = strlen(gen_data_fname) + 1;
+        in.fname.fname_val = strdup(gen_data_fname);
+    } 
+#endif
+
+    rcf_rpc_call(rpcs, "recv_verify", &in, &out);
+
+    TAPI_RPC_LOG("RPC (%s,%s)%s: recv_verify(%d, %d) -> %d (%s) ",
+                 rpcs->ta, rpcs->name, rpcop2str(op), s,
+                 (uint32_t)start, out.retval,
+                 errno_rpc2str(RPC_ERRNO(rpcs)));
+
+    RETVAL_INT(recv_verify, out.retval);
 }
 
 
