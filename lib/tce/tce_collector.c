@@ -575,6 +575,7 @@ summary_state(channel_data *ch)
         long long program_max;
         long long program_sum;
         long long program_sum_max;
+        long long object_sum;
         long long object_max;
         long long object_sum_max;
 
