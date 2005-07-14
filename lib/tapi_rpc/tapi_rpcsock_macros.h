@@ -796,10 +796,10 @@
  */
 #define CLEANUP_RPC_CLOSE(rpcs_, sockd_) \
     do {                                                            \
-        if ((sockd_) >= 0 && rpcs_ != NULL)                         \
+        if ((sockd_) >= 0 && (rpcs_) != NULL)                       \
         {                                                           \
             RPC_AWAIT_IUT_ERROR(rpcs_);                             \
-            if (rpc_close(rpcs_, sockd_) != 0)                      \
+            if (rpc_close((rpcs_), (sockd_)) != 0)                  \
                 MACRO_TEST_ERROR;                                   \
         }                                                           \
     } while (0)
