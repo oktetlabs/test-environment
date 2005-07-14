@@ -77,11 +77,13 @@ print_ts(uint32_t *ts)
 {
 #define TIME_BUF_LEN 40
 
+    time_t     time_block;
     char       time_buf[TIME_BUF_LEN];
     struct tm  tm, *tm_tmp;
     size_t     res;
 
-    if ((tm_tmp = localtime((time_t *)&(ts[0]))) == NULL)
+    time_block = ts[0];
+    if ((tm_tmp = localtime(&time_block)) == NULL)
     {
         fprintf(stderr, "Incorrect timestamp specified\n");
         THROW_EXCEPTION;
