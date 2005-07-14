@@ -31,16 +31,14 @@ outfile=$1
 nopattern="$2"
 yespattern="$3"
 
-non_execed=`egrep "$nopattern" $outfile | wc | awk '{ print $1 }'`
-execed=`egrep "$yespattern" $outfile | wc | awk '{ print $1 }'`
-sum=$((non_execed + execed))
-if test $sum -eq 0; then
-    percent=0
-    rem=0
-else
-    ratio=$((execed * 10000 / sum))
-    percent=$((ratio / 100))
-    rem=$((ratio % 100))
-fi
+awk " BEGIN { yescount = nocount = 0 }
+/$nopattern/ { nocount++ } 
+/$yespattern/ { yescount++ }
+END { sum = yescount + nocount
+      if (sum == 0)
+          print \"0.00 0\"
+      else
+          printf \"%.2f %d\\n\", (yescount * 100) / sum, sum; 
+}
+" $outfile
 
-echo "$percent.$rem $sum"
