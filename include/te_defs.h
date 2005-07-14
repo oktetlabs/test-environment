@@ -260,7 +260,7 @@ te_make_tmp_file(char *tmp_name)
 #endif
 
 /** Macro to make safe sprintf to character array */
-#define SPRINTF(_buf, _msg...) \
+#define TE_SPRINTF(_buf, _msg...) \
     do {                                                        \
         int _n = snprintf(_buf, sizeof(_buf), _msg);            \
                                                                 \
