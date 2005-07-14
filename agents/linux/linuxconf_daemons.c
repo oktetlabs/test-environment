@@ -1271,7 +1271,7 @@ ds_ftpserver_update_config(void)
             fputs("passwd-check none\n"
                   "class all real,guest,anonymous *\n"
                   "overwrite yes anonymous\n"
-                  "upload /var/ftp/ /pub yes ftp daemon 0666 dirs\n", 
+                  "upload * * yes * * 0666 dirs\n", 
                   g);
 
             break;
