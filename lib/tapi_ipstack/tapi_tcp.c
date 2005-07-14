@@ -667,7 +667,10 @@ tapi_tcp_insert_conn(tapi_tcp_connection_t *descr)
 {
     tapi_tcp_conns_db_init();
 
-    descr->id = conns_root->cqh_last->id + 1;
+    if (conns_root->cqh_last == (void *)conns_root)
+        descr->id = 1;
+    else
+        descr->id = conns_root->cqh_last->id + 1;
 
     CIRCLEQ_INSERT_TAIL(conns_root, descr, link);
 
