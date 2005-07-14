@@ -46,6 +46,8 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 
+#include "linux_internal.h"
+
 #define TE_LGR_USER      "FTP"
 #include "logger_ta.h"
 
@@ -65,28 +67,33 @@ sigint_handler(int n)
 }
 
 /**
- * Read one string from the socket. Parameters are the same as in read().
+ * Read the answer from the socket. Parameters are the same as in read().
  */
 static int
-read_string(int s, char *buf, int n)
+read_all(int s, char *buf, int n)
 {
     char *str = buf;
     int   len = 0;
-    
+
     *buf = 0;
-    while (len < n)
+    
+    while (TRUE)
     {
-        int l = read(s, str, n - len);
-        if (l < 0)
-            return l;
-        len += l;
+        struct timeval tv = { 0, 100000 };
+        fd_set         set;
+        int            l;
         
-        if (buf[len - 1] == '\n')
+        FD_ZERO(&set);
+        FD_SET(s, &set);
+        if (select(s + 1, &set, NULL, NULL, &tv) == 0)
             return len;
+
+        if ((l = read(s, str, n - len)) < 0)
+            return -1;
             
+        len += l;
         str += l;
     }
-    return len;
 }
 
 /**
@@ -242,9 +249,6 @@ ftp_open(char *uri, int flags, int passive, int offset, int *sock)
     int    sd = -1;
     int    sd1 = -1;
     int    new_sock = 0;
-    fd_set set;
-    
-    struct timeval tv;
 
     struct sockaddr_in addr;
     struct sockaddr_in addr1;
@@ -285,8 +289,8 @@ ftp_open(char *uri, int flags, int passive, int offset, int *sock)
 #define READ_ANS \
     do {                                           \
         memset(buf, 0, sizeof(buf));               \
-        if (read_string(s, buf, sizeof(buf)) < 0)  \
-            RET_ERR("read_string() failed");       \
+        if (read_all(s, buf, sizeof(buf)) < 0)     \
+            RET_ERR("read_all() failed");          \
         VERB("%s", buf);                           \
         if (*buf == '4' || *buf == '5')            \
             RET_ERR("Invalid answer: %s", buf);    \
@@ -315,12 +319,7 @@ ftp_open(char *uri, int flags, int passive, int offset, int *sock)
     {
         s = *sock;
         
-        FD_ZERO(&set);
-        FD_SET(s, &set);
-        tv.tv_sec = 1;
-        tv.tv_usec = 0;
-        if (select(s + 1, &set, NULL, NULL, &tv) > 0)
-            READ_ANS;
+        read_all(s, buf, sizeof(buf));
     }
     /* Determine parameters for PORT command */
     if (!passive)
