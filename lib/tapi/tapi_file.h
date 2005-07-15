@@ -153,6 +153,17 @@ extern int tapi_file_read_ta(const char *ta, const char *filename,
 extern int tapi_file_copy_ta(const char *ta_src, const char *src,
                              const char *ta_dst, const char *dst);
 
+/**
+ * Unlink file on the TA.
+ *
+ * @param ta            Test Agent name
+ * @param path_fmt      Format string to make path to be deleted
+ *
+ * @return Status code.
+ */
+extern int tapi_file_ta_unlink_fmt(const char *ta,
+                                   const char *path_fmt, ...);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

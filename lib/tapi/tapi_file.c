@@ -33,28 +33,21 @@
 #include "te_config.h"
 
 #include <stdio.h>
-
-#ifdef STDC_HEADERS
+#if STDC_HEADERS
+#include <string.h>
+#elif HAVE_STRING_H
 #include <string.h>
 #endif
-
-#ifdef HAVE_STRING_H
-#include <string.h>
-#endif
-
-#ifdef HAVE_UNISTD_H
+#if HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-
 #if HAVE_TIME_H
 #include <time.h>
 #endif
-
-#ifdef HAVE_STDARG_H
+#if HAVE_STDARG_H
 #include <stdarg.h>
 #endif
-
-#ifdef HAVE_SYS_STAT_H
+#if HAVE_SYS_STAT_H
 #include <sys/stat.h>
 #endif
 
@@ -300,5 +293,40 @@ tapi_file_read_ta(const char *ta, const char *filename, char **pbuf)
     
     *pbuf = buf;
     
+    return 0;
+}
+
+/* See description in tapi_file.h */
+int
+tapi_file_ta_unlink_fmt(const char *ta, const char *path_fmt, ...)
+{
+    va_list ap;
+    char    path[RCF_MAX_PATH];
+    int     rc, rc2;
+    
+    va_start(ap, path_fmt);
+    rc = vsnprintf(path, sizeof(path), path_fmt, ap);
+    va_end(ap);
+    if ((rc < 0) || ((size_t)rc >= sizeof(path)))
+    {
+        ERROR("Path to the file to be deleted too long, increase "
+              "RCF_MAX_PATH");
+        return TE_RC(TE_TAPI, ETESMALLBUF);
+    }
+
+    rc2 = rcf_ta_call(ta, 0, "ta_rtn_unlink", &rc, 1, FALSE,
+                      RCF_STRING, path);
+    if (rc2 != 0)
+    {
+        ERROR("%s(): rcf_ta_call() failed: 0x%X", __FUNCTION__, rc2);
+        return rc2;
+    }
+    if (rc != 0)
+    {
+        ERROR("%s(): ta_rtn_unlink(%s, %s) failed: 0x%X", __FUNCTION__,
+              ta, path, rc);
+        return rc;
+    }
+
     return 0;
 }
