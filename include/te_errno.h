@@ -236,6 +236,7 @@
 #define TE_TA_EXT         (0xe)
 #define TE_RCF_PCH        (0xf)
 #define TE_IPC           (0x10)
+#define TE_RCF_UNIX      (0x11)
 /*@}*/
 
 
