@@ -123,7 +123,8 @@ typedef struct unix_ta {
  * @param cmd           command to be executed
  * @param timeout       timeout in seconds
  *
- * @return 0 (success) or -1 (failure)
+ * @return Status code.
+ * @return ETIMEDOUT    Command timed out
  */   
 static int
 system_with_timeout(char *cmd, int timeout)
@@ -131,11 +132,13 @@ system_with_timeout(char *cmd, int timeout)
     FILE *f = popen(cmd, "r");
     int   fd;
     char  buf[64] = { 0, };
+    int   rc;
     
     if (f == NULL)
     {
+        rc = errno;
         ERROR("popen() for the command <%s> failed", cmd);
-        return -1;
+        return TE_RC(TE_RCF_UNIX, rc);
     }
     fd = fileno(f);
     
@@ -153,24 +156,23 @@ system_with_timeout(char *cmd, int timeout)
         if (select(fd + 1, &set, 0, 0, &tv) == 0)
         {
             ERROR("Command <%s> timed out", cmd);
-            return -1;
+            return TE_RC(TE_RCF_UNIX, ETIMEDOUT);
         }
         
         if (read(fd, buf, sizeof(buf)) == 0)
         {
-            int rc = pclose(f);
-            
+            rc = pclose(f);
             if (rc != 0)
             {
-                INFO("Command <%s> failed with return code %d", cmd, rc);
-                return -1;
+                rc = errno;
+                INFO("Command <%s> failed with errno %d", cmd, rc);
+                return TE_RC(TE_RCF_UNIX, rc);
             }
             return 0;
         }
     }
     
     /* Unreachable */
-    return -1;
 }
 
 
@@ -422,6 +424,7 @@ int
 rcfunix_finish(rcf_talib_handle handle, char *parms)
 {
     unix_ta *ta = (unix_ta *)handle;
+    int      rc;
 
     char  cmd[RCFUNIX_SHELL_CMD_MAX];
     
@@ -446,11 +449,15 @@ rcfunix_finish(rcf_talib_handle handle, char *parms)
         {
             sprintf(cmd, RCFUNIX_SSH " %s \"%skill %d\" >/dev/null 2>&1",
                     ta->host, ta->sudo ? "sudo " : "" , ta->pid);
-            system_with_timeout(cmd, RCFUNIX_KILL_TIMEOUT);
+            rc = system_with_timeout(cmd, RCFUNIX_KILL_TIMEOUT);
+            if (rc == TE_RC(TE_RCF_UNIX, ETIMEDOUT))
+                return rc;
     
             sprintf(cmd, RCFUNIX_SSH " %s \"%skill -9 %d\" >/dev/null 2>&1",
                     ta->host, ta->sudo ? "sudo " : "" , ta->pid);
-            system_with_timeout(cmd, RCFUNIX_KILL_TIMEOUT);
+            rc = system_with_timeout(cmd, RCFUNIX_KILL_TIMEOUT);
+            if (rc == TE_RC(TE_RCF_UNIX, ETIMEDOUT))
+                return rc;
         }
     }
 
@@ -460,7 +467,9 @@ rcfunix_finish(rcf_talib_handle handle, char *parms)
     else
         sprintf(cmd, RCFUNIX_SSH " %s \"%skillall %s\" >/dev/null 2>&1",
                 ta->host, ta->sudo ? "sudo " : "" , ta->exec_name);
-    system_with_timeout(cmd, RCFUNIX_KILL_TIMEOUT);
+    rc = system_with_timeout(cmd, RCFUNIX_KILL_TIMEOUT);
+    if (rc == TE_RC(TE_RCF_UNIX, ETIMEDOUT))
+        return rc;
 
     if (ta->is_local)
         sprintf(cmd, "%skillall -9 %s >/dev/null 2>&1",
@@ -468,14 +477,18 @@ rcfunix_finish(rcf_talib_handle handle, char *parms)
     else
         sprintf(cmd, RCFUNIX_SSH " %s \"%skillall -9 %s\" >/dev/null 2>&1",
                 ta->host, ta->sudo ? "sudo " : "" , ta->exec_name);
-    system_with_timeout(cmd, RCFUNIX_KILL_TIMEOUT);
+    rc = system_with_timeout(cmd, RCFUNIX_KILL_TIMEOUT);
+    if (rc == TE_RC(TE_RCF_UNIX, ETIMEDOUT))
+        return rc;
 
     if (ta->is_local)
         sprintf(cmd, "rm -f /tmp/%s", ta->exec_name);
     else
         sprintf(cmd, RCFUNIX_SSH " %s \"rm -f /tmp/%s\"",
                 ta->host, ta->exec_name);
-    system_with_timeout(cmd, RCFUNIX_KILL_TIMEOUT);
+    rc = system_with_timeout(cmd, RCFUNIX_KILL_TIMEOUT);
+    if (rc == TE_RC(TE_RCF_UNIX, ETIMEDOUT))
+        return rc;
 
     return 0;
 }
