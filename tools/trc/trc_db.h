@@ -224,12 +224,13 @@ enum trc_out_flags {
  * Prepare TRC report in HTML format.
  *
  * @param filename      Name of the file to put report
+ * @param header        File with HTML header or NULL
  * @param db            DB to be processed
  * @param flags         Flags to control content (trc_out_flags)
  *
  * @return Status code
  */
-extern int trc_report_to_html(const char *filename, trc_database *db,
-                              unsigned int flags);
+extern int trc_report_to_html(const char *filename, FILE *header,
+                              trc_database *db, unsigned int flags);
 
 #endif /* !__TE_TRC_DB_H__ */

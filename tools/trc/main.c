@@ -65,6 +65,8 @@ te_bool trc_quiet = FALSE;
 static char *trc_xml_log_fn = NULL;
 /** Name of the file with expected testing result database */
 static char *trc_db_fn = NULL;
+/** File with header for all reports in HTML format */
+static FILE *trc_html_header_f = NULL;
 /** Name of the file with report in HTML format */
 static char *trc_html_fn = NULL;
 /** Name of the file with brief report in HTML format */
@@ -75,11 +77,12 @@ static char *trc_txt_fn = NULL;
 
 /** TRC tool command line options */
 enum {
-    TRC_OPT_VERSION,
+    TRC_OPT_VERSION = 1,
     TRC_OPT_UPDATE,
     TRC_OPT_QUIET,
     TRC_OPT_INIT,
     TRC_OPT_DB,
+    TRC_OPT_HTML_HEADER,
     TRC_OPT_HTML,
     TRC_OPT_BRIEF_HTML,
     TRC_OPT_TXT,
@@ -146,10 +149,13 @@ process_cmd_line_opts(int argc, char **argv)
           "FILENAME" },
 
         { "html", 'h', POPT_ARG_STRING, NULL, TRC_OPT_HTML,
-          "Specify name of the file to report in HTML format.",
+          "Name of the file for report in HTML format.",
+          "FILENAME" },
+        { "html-header", '\0', POPT_ARG_STRING, NULL, TRC_OPT_HTML_HEADER,
+          "Name of the file with header for all HTML reports.",
           "FILENAME" },
         { "brief-html", '\0', POPT_ARG_STRING, NULL, TRC_OPT_BRIEF_HTML,
-          "Specify name of the file for brief report in HTML format",
+          "Name of the file for brief report in HTML format",
           "FILENAME" },
         { "txt", 't', POPT_ARG_STRING, NULL, TRC_OPT_TXT,
           "Specify name of the file to report in text format.",
@@ -189,18 +195,42 @@ process_cmd_line_opts(int argc, char **argv)
                 break;
 
             case TRC_OPT_DB:
+                free(trc_db_fn);
                 trc_db_fn = strdup(poptGetOptArg(optCon));
                 break;
 
+            case TRC_OPT_HTML_HEADER:
+            {
+                const char *trc_html_header_fn = poptGetOptArg(optCon);
+
+                if (trc_html_header_f != NULL)
+                {
+                    ERROR("File with HTML header is already specified");
+                    poptFreeContext(optCon);
+                    return EXIT_FAILURE;
+                }
+                trc_html_header_f = fopen(trc_html_header_fn, "r");
+                if (trc_html_header_f == NULL)
+                {
+                    ERROR("Failed to open file '%s'", trc_html_header_fn);
+                    poptFreeContext(optCon);
+                    return EXIT_FAILURE;
+                }
+                break;
+            }
+
             case TRC_OPT_HTML:
+                free(trc_html_fn);
                 trc_html_fn = strdup(poptGetOptArg(optCon));
                 break;
 
             case TRC_OPT_BRIEF_HTML:
+                free(trc_brief_html_fn);
                 trc_brief_html_fn = strdup(poptGetOptArg(optCon));
                 break;
             
             case TRC_OPT_TXT:
+                free(trc_txt_fn);
                 trc_txt_fn = strdup(poptGetOptArg(optCon));
                 break;
             
@@ -431,7 +461,7 @@ main(int argc, char *argv[])
 
     /* Generate brief report in HTML format */
     if (trc_brief_html_fn != NULL &&
-        trc_report_to_html(trc_brief_html_fn, &trc_db,
+        trc_report_to_html(trc_brief_html_fn, trc_html_header_f, &trc_db,
                            TRC_OUT_PACKAGES_ONLY_STATS) != 0)
     {
         ERROR("Failed to generate brief report in HTML format");
@@ -440,7 +470,8 @@ main(int argc, char *argv[])
 
     /* Generate report in HTML format */
     if (trc_html_fn != NULL &&
-        trc_report_to_html(trc_html_fn, &trc_db, TRC_OUT_ALL) != 0)
+        trc_report_to_html(trc_html_fn, trc_html_header_f, &trc_db,
+                           TRC_OUT_ALL) != 0)
     {
         ERROR("Failed to generate report in HTML format");
         goto exit;
@@ -459,6 +490,10 @@ exit:
 
     free(trc_db_fn);
     free(trc_xml_log_fn);
+    free(trc_html_fn);
+    free(trc_brief_html_fn);
+    if (trc_html_header_f != NULL)
+        (void)fclose(trc_html_header_f);
 
     return result;
 }

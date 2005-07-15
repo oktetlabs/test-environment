@@ -567,9 +567,35 @@ cleanup:
     return rc;
 }
 
+/**
+ * Copy all content of one file to another.
+ *
+ * @param dst       Destination file
+ * @param src       Source file
+ *
+ * @return Status code.
+ */
+static int
+file_to_file(FILE *dst, FILE *src)
+{
+    char    buf[4096];
+    size_t  r;
+
+    rewind(src);
+    do {
+        r = fread(buf, 1, sizeof(buf), src);
+        if (r > 0)
+           if (fwrite(buf, r, 1, dst) != 1)
+               return errno;
+    } while (r == sizeof(buf));
+
+    return 0;
+}
+
+
 /** See descriptino in trc_db.h */
 int
-trc_report_to_html(const char *filename, trc_database *db,
+trc_report_to_html(const char *filename, FILE *header, trc_database *db,
                    unsigned int flags)
 {
     int             rc;
@@ -590,6 +616,16 @@ trc_report_to_html(const char *filename, trc_database *db,
 
     /* HTML header */
     WRITE_STR(trc_html_doc_start);
+
+    if (header != NULL)
+    {
+        rc = file_to_file(f, header);
+        if (rc != 0)
+        {
+            ERROR("Failed to copy header to HTML report");
+            goto cleanup;
+        }
+    }
 
     if (flags & TRC_OUT_TOTAL_STATS)
     {

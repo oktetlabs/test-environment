@@ -89,6 +89,8 @@ Generic options:
   --trc-tag=<TAG>               Tag to get specific expected results
   --trc-html=<filename>         Name of the file for HTML report
   --trc-brief-html=<filename>   Name of the file for brief HTML report
+  --trc-html-header=<filename>  Name of the file with header for all HTML
+                                reports.
   --trc-txt=<filename>          Name of the file for text report
                                 (by default, it is generated to stdout)
   --trc-quiet                   Do not output total statistics to stdout
