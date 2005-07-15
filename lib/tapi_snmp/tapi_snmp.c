@@ -3630,6 +3630,35 @@ tapi_snmp_obj_status_h2str(enum tapi_snmp_mib_status obj_status)
 
 }
 
+/* Table of generic SNMP V1 traps */
+const struct tapi_snmp_v1_gen_trap_name
+tapi_snmp_v1_gen_trap_names[] = {
+    { TAPI_SNMP_TRAP_COLDSTART,          "coldStart" },
+    { TAPI_SNMP_TRAP_WARMSTART,          "warmStart" },
+    { TAPI_SNMP_TRAP_LINKDOWN,           "linkDown" },
+    { TAPI_SNMP_TRAP_LINKUP,             "linkUp" },
+    { TAPI_SNMP_TRAP_AUTHFAIL,           "authenticationFailure" },
+    { TAPI_SNMP_TRAP_EGPNEIGHBORLOSS,    "egpNeighborLoss" },
+    { TAPI_SNMP_TRAP_ENTERPRISESPECIFIC, "enterpriseSpecific" }
+};
+
+/* See description in tapi_snmp.h */
+tapi_snmp_gen_trap_t
+tapi_snmp_gen_trap_by_name(const char *trap_name)
+{
+    size_t i;
+
+    for (i = 0; i < sizeof(tapi_snmp_v1_gen_trap_names) /
+            sizeof(tapi_snmp_v1_gen_trap_names[0]); i++)
+    {
+        if (strcmp(trap_name, tapi_snmp_v1_gen_trap_names[i].name) == 0)
+        {
+            return tapi_snmp_v1_gen_trap_names[i].id;
+        }
+    }
+    return TAPI_SNMP_TRAP_ENTERPRISESPECIFIC;
+}
+
 const char *
 tapi_snmp_gen_trap_h2str(enum tapi_snmp_gen_trap_t type)
 {

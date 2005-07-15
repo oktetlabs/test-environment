@@ -288,6 +288,13 @@ typedef struct tapi_snmp_security_s {
     };
 } tapi_snmp_security_t;
 
+/* Element of SNMP V1 generic trap table */
+struct tapi_snmp_v1_gen_trap_name {
+    tapi_snmp_gen_trap_t  id;       /* Trap ID, see RFC 1157 */
+    const char           *name;     /* Trap human-readable name */
+};
+
+
 /**
  * Concatenate two object identifiers and put result into first one. 
  * Mainly intended for table indexes. 
@@ -1148,6 +1155,17 @@ extern const char *tapi_snmp_val_type_h2str(enum tapi_snmp_vartypes_t type);
 
 /** Convert SNMP Trap type constants to string format */
 extern const char *tapi_snmp_gen_trap_h2str(enum tapi_snmp_gen_trap_t type);
+
+/**
+ * Get SNMPv1 generic trap id by its name
+ *
+ * @param[in]   trap_name       Name of trap
+ *
+ * @return  Trap ID for generic traps or TAPI_SNMP_TRAP_ENTERPRISESPECIFIC
+ *          otherwise
+ */
+extern tapi_snmp_gen_trap_t
+tapi_snmp_gen_trap_by_name(const char *trap_name);
 
 #ifdef __cplusplus
 } /* extern "C" */
