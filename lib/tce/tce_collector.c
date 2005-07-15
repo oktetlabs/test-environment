@@ -714,7 +714,7 @@ summary_state(channel_data *ch)
             return;
         }
         if (ch->object->ncounts != 0 &&
-            (ch->object->ncounts != n_counters ||
+            (ch->object->ncounts != (long)n_counters ||
              ch->object->program_ncounts != program_n_counters))
         {
             tce_report_error("counters number mismatch for '%s'", 
@@ -784,7 +784,7 @@ object_header_state(channel_data *ch)
             unsigned checksum, program_checksum, ctr_mask;
 
             space += 4;
-            if(sscanf(space, "%u %u %u %u %u %u",
+            if(sscanf(space, "%u %u %u %u %ld %u",
                       &gcov_version, &oi->stamp, 
                       &checksum, 
                       &program_checksum,
@@ -1203,19 +1203,27 @@ dump_new_object_data(bb_object_info *oi, FILE *tar_file)
 
     int group;
     int c_offset = 0;
-    int count;
+    unsigned count;
     bb_function_info *fi;
 
-    fwrite(&magic, sizeof(magic), 1, tar_file);
-    fwrite(&oi->gcov_version, sizeof(oi->gcov_version), 1, tar_file);
-    fwrite(&oi->stamp, sizeof(oi->stamp), 1, tar_file);
+#define SAFE_FWRITE(data, size, count, stream)     \
+    if (fwrite(data, size, count, stream) < count) \
+    {                                              \
+       tce_report_error("error dumping data: %s",  \
+                        strerror(errno));          \
+       return FALSE;                               \
+    }
+
+    SAFE_FWRITE(&magic, sizeof(magic), 1, tar_file);
+    SAFE_FWRITE(&oi->gcov_version, sizeof(oi->gcov_version), 1, tar_file);
+    SAFE_FWRITE(&oi->stamp, sizeof(oi->stamp), 1, tar_file);
 
     for (fi = oi->function_infos; fi != NULL; fi = fi->next)
     {
         ident = strtoul(fi->name, NULL, 10);
-        fwrite(func_magic, sizeof(func_magic), 1, tar_file);
-        fwrite(&ident, sizeof(ident), 1, tar_file);
-        fwrite(&fi->checksum, sizeof(fi->checksum), 1, tar_file);
+        SAFE_FWRITE(func_magic, sizeof(func_magic), 1, tar_file);
+        SAFE_FWRITE(&ident, sizeof(ident), 1, tar_file);
+        SAFE_FWRITE(&fi->checksum, sizeof(fi->checksum), 1, tar_file);
         for (group = 0; group < GCOV_COUNTER_GROUPS; group++)
         {
             if (!((1 << group) & oi->ctr_mask))
@@ -1223,27 +1231,32 @@ dump_new_object_data(bb_object_info *oi, FILE *tar_file)
             group_magic[0] = GCOV_TAG_FOR_COUNTER (group);
             count = fi->groups[group].number;
             group_magic[1] = GCOV_TAG_COUNTER_LENGTH (count);
-            fwrite(group_magic, sizeof(group_magic), 1, tar_file);
-            fwrite(fi->counts + c_offset, sizeof(*fi->counts), count, 
+            SAFE_FWRITE(group_magic, sizeof(group_magic), 1, tar_file);
+            SAFE_FWRITE(fi->counts + c_offset, sizeof(*fi->counts), count, 
                    tar_file);
             c_offset += count;
         }
     }
-    fwrite(obj_summary_magic, sizeof(obj_summary_magic), 1, tar_file);
-    fwrite(&oi->checksum, sizeof(oi->checksum), 1, tar_file);
-    fwrite(&oi->ncounts, sizeof(oi->ncounts), 1, tar_file);
-    fwrite(&oi->object_runs, sizeof(oi->object_runs), 1, tar_file);
-    fwrite(&oi->object_sum, sizeof(oi->object_sum), 1, tar_file);
-    fwrite(&oi->object_max, sizeof(oi->object_max), 1, tar_file);
-    fwrite(&oi->object_sum_max, sizeof(oi->object_sum_max), 1, tar_file);
-    fwrite(prog_summary_magic, sizeof(prog_summary_magic), 1, tar_file);
-    fwrite(&oi->program_checksum, sizeof(oi->program_checksum), 
-           1, tar_file);
-    fwrite(&oi->program_ncounts, sizeof(oi->program_ncounts), 1, tar_file);
-    fwrite(&oi->program_runs, sizeof(oi->program_runs), 1, tar_file);
-    fwrite(&oi->program_sum, sizeof(oi->program_sum), 1, tar_file);
-    fwrite(&oi->program_max, sizeof(oi->program_max), 1, tar_file);
-    fwrite(&oi->program_sum_max, sizeof(oi->program_sum_max), 1, tar_file);
+    SAFE_FWRITE(obj_summary_magic, sizeof(obj_summary_magic), 1, tar_file);
+    SAFE_FWRITE(&oi->checksum, sizeof(oi->checksum), 1, tar_file);
+    SAFE_FWRITE(&oi->ncounts, sizeof(oi->ncounts), 1, tar_file);
+    SAFE_FWRITE(&oi->object_runs, sizeof(oi->object_runs), 1, tar_file);
+    SAFE_FWRITE(&oi->object_sum, sizeof(oi->object_sum), 1, tar_file);
+    SAFE_FWRITE(&oi->object_max, sizeof(oi->object_max), 1, tar_file);
+    SAFE_FWRITE(&oi->object_sum_max, sizeof(oi->object_sum_max), 
+                1, tar_file);
+    SAFE_FWRITE(prog_summary_magic, sizeof(prog_summary_magic), 
+                1, tar_file);
+    SAFE_FWRITE(&oi->program_checksum, sizeof(oi->program_checksum), 
+                1, tar_file);
+    SAFE_FWRITE(&oi->program_ncounts, sizeof(oi->program_ncounts), 
+                1, tar_file);
+    SAFE_FWRITE(&oi->program_runs, sizeof(oi->program_runs), 1, tar_file);
+    SAFE_FWRITE(&oi->program_sum, sizeof(oi->program_sum), 1, tar_file);
+    SAFE_FWRITE(&oi->program_max, sizeof(oi->program_max), 1, tar_file);
+    SAFE_FWRITE(&oi->program_sum_max, sizeof(oi->program_sum_max), 
+                1, tar_file);
+    return TRUE;
 }
 
 static te_bool
