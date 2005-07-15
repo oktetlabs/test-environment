@@ -29,7 +29,8 @@
 #ifndef __TE__TAPI_SNMP_DEFS_H__
 #define __TE__TAPI_SNMP_DEFS_H__ 
 
-#if 0
+#include "tapi_snmp.h"
+
 /** RFC1213-MIB::ifTable row */
 typedef struct tapi_snmp_if_table_row_t {
     tapi_snmp_oid_t *index_suffix;   /* index_suffix */
@@ -59,7 +60,6 @@ typedef struct tapi_snmp_if_table_row_t {
     tapi_snmp_oid_t *ifSpecific;     /*  OBJECT IDENTIFIER -- deprecated*/
 
 } tapi_snmp_if_table_row_t;
-#endif
 
 /** Possible values of ifAdminStatus and ifOperStatus fields of ifTable */
 typedef enum {
