@@ -3923,7 +3923,6 @@ recv_verify(tarpc_recv_verify_in *in, tarpc_recv_verify_out *out)
     char           *pattern_buf;
     int             rc;
 
-
     out->retval = 0;
 
     RING("%s() started", __FUNCTION__);
@@ -3967,6 +3966,7 @@ recv_verify(tarpc_recv_verify_in *in, tarpc_recv_verify_out *out)
         }
 
         /* TODO: check data here, set reval to -2 if not matched. */
+        UNUSED(pattern_buf);
         out->retval += rc;
     }
 
