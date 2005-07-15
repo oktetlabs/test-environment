@@ -34,7 +34,7 @@
 #include "config.h"
 
 #include <sys/time.h>
-#ifdef HAVE_SYS_RESOURCE_H
+#if HAVE_SYS_RESOURCE_H
 #include <sys/resource.h>
 #endif
 #include <sys/types.h>
@@ -59,6 +59,7 @@
 #include "logfork.h"
 
 #include "linux_internal.h"
+
 
 /** Send answer to the TEN */
 #define SEND_ANSWER(_fmt...) \
@@ -1003,11 +1004,14 @@ sig_handler(int s)
 int 
 ta_system(char *cmd)
 {
-    void *h = signal(SIGCHLD, sig_handler);
-    int   rc = system(cmd);
+    void   *h;
+    int     rc;
 
-    signal(SIGCHLD, h);    
-        
+    h = signal(SIGCHLD, sig_handler);
+    rc = system(cmd);
+    (void)signal(SIGCHLD, h);
+    INFO("CMD='%s' RC=%d", cmd, rc);
+
     return rc;
 }
 #endif
