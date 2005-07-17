@@ -44,10 +44,12 @@
  * raw CSAP.
  * Prototype made according with 'tad_processing_pkt_method' function type.
  * This method uses write_cb callback of passed 'eth' CSAP for send reply.
- * User parameter should contain two numbers, separated by colon: 
- * "<type>:<code>:<unused>". 
- * <unused> contains number to be placed in the unused field of
- * ICMP error (in host order).
+ * User parameter should contain integer numbers, separated by colon: 
+ * "<type>:<code>[:<unused>[:<rate>]]". 
+ * <unused> contains number to be placed in the 'unused' 32-bit field of
+ * ICMP error (in host order). Default value is zero.
+ * <rate> contains number of original packets per one ICMP error. 
+ * Default value is 1.
  *
  * @param csap_descr  CSAP descriptor structure.
  * @param usr_param   String passed by user.
@@ -67,18 +69,13 @@ tad_icmp_error(csap_p csap_descr, const char *usr_param,
     size_t  msg_len;
 
     uint8_t *msg, *p;
-    uint32_t unused;
+    uint32_t unused = 0;
+    int      rate;
 
     if (csap_descr == NULL || usr_param == NULL ||
         orig_pkt == NULL || pkt_len == 0)
         return ETEWRONGPTR;
 
-    if (csap_descr->prepare_send_cb != NULL && 
-        (rc = csap_descr->prepare_send_cb(csap_descr)) != 0)
-    {
-        ERROR("%s(): prepare for recv failed %x", __FUNCTION__, rc);
-        return rc;
-    }
 
     type = strtol(usr_param, &endptr, 10);
     if ((endptr == NULL) || (*endptr != ':'))
@@ -90,14 +87,43 @@ tad_icmp_error(csap_p csap_descr, const char *usr_param,
     endptr++;
     code = strtol(endptr, &endptr, 10);
 
-    if ((endptr == NULL) || (*endptr != ':'))
+    if (endptr != NULL)
     {
-        ERROR("%s(): wrong usr_param, for 'Frag.Needed' should be MTU",
-              __FUNCTION__);
-        return EINVAL;
+        if (*endptr != ':')
+        {
+            ERROR("%s(): wrong usr_param, shouls be colon.", __FUNCTION__);
+            return EINVAL;
+        }
+        endptr++;
+        unused = strtol(endptr, &endptr, 10);
+        if (endptr != NULL)
+        {
+            if (*endptr != ':')
+            {
+                ERROR("%s(): wrong usr_param, shouls be colon.",
+                      __FUNCTION__);
+                return EINVAL;
+            }
+            endptr++;
+            rate = atoi(endptr);
+            if (rate == 0)
+            {
+                ERROR("%s(): wrong rate in usr_param, shouls be non-zero",
+                      __FUNCTION__);
+                return EINVAL;
+            }
+        }
     }
-    endptr++;
-    unused = strtol(endptr, &endptr, 10);
+
+    if ((rand() % rate) != 0)
+        return 0;
+
+    if (csap_descr->prepare_send_cb != NULL && 
+        (rc = csap_descr->prepare_send_cb(csap_descr)) != 0)
+    {
+        ERROR("%s(): prepare for recv failed %x", __FUNCTION__, rc);
+        return rc;
+    }
 
 #define ICMP_PLD_SIZE 28
     msg_len = 14 /* eth */ + 20 /* IP */ + 8 /* ICMP */
@@ -152,7 +178,6 @@ tad_icmp_error(csap_p csap_descr, const char *usr_param,
         ERROR("%s() write error", __FUNCTION__);
         return csap_descr->last_errno;
     }
-    usleep(100000); /* Avoid flooding */
 
     return 0;
 }
