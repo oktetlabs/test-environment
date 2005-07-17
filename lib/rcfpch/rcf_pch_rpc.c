@@ -805,6 +805,8 @@ rpcserver_add(unsigned int gid, const char *oid, const char *value,
     if ((rpcs = (rpcserver *)calloc(1, sizeof(*rpcs))) == NULL)
     {
         rcf_ch_unlock();
+        ERROR("%s(): calloc(1, %u) failed", __FUNCTION__,
+              (unsigned)sizeof(*rpcs));
         return TE_RC(TE_RCF_PCH, ENOMEM);
     }
     
@@ -831,6 +833,7 @@ rpcserver_add(unsigned int gid, const char *oid, const char *value,
             rcf_ch_unlock();
             free(rpcs);
             ERROR("Failed to spawn RPC server process; errno 0x%X", err);
+            fprintf(stderr, "Failed to spawn RPC server process\n");
             return TE_RC(TE_RCF_PCH, err);
         }
     }
@@ -957,6 +960,7 @@ rpcserver_list(unsigned int gid, const char *oid, char **value)
     if ((*value = strdup(rpc_buf)) == NULL)
     {
         rcf_ch_unlock();
+        ERROR("%s(): strdup(%s) failed", __FUNCTION__, rpc_buf);
         return TE_RC(TE_RCF_PCH, ENOMEM);
     }
     rcf_ch_unlock();
