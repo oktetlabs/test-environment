@@ -80,6 +80,15 @@
 /** Obtain RCF RPC errno code */
 #define RPC_ERRNO errno_h2rpc(errno)
 
+#define TARPC_CHECK_RC(expr_) \
+    do {                                            \
+        int rc_ = (expr_);                          \
+                                                    \
+        if (rc_ != 0 && out->common._errno == 0)    \
+            out->common._errno = rc_;               \
+    } while (FALSE)
+        
+
 #define IN_SIGSET       ((sigset_t *)(rcf_pch_mem_get(in->set)))
 #define IN_FDSET        ((fd_set *)(rcf_pch_mem_get(in->set)))
 
@@ -176,6 +185,75 @@ sockaddr_h2rpc(struct sockaddr *addr, struct tarpc_sa *rpc_addr)
                rpc_addr->sa_data.sa_data_len);
     }
 }
+
+/**
+ * Convert 'struct timeval' to 'struct tarpc_timeval'.
+ * 
+ * @param tv_h      Pointer to 'struct timeval'
+ * @param tv_rpc    Pointer to 'struct tarpc_timeval'
+ */
+static int
+timeval_h2rpc(const struct timeval *tv_h, struct tarpc_timeval *tv_rpc)
+{
+    tv_rpc->tv_sec  = tv_h->tv_sec;
+    tv_rpc->tv_usec = tv_h->tv_usec;
+
+    return (tv_h->tv_sec  != tv_rpc->tv_sec ||
+            tv_h->tv_usec != tv_rpc->tv_usec) ?
+               TE_RC(TE_TA_LINUX, ETEH2RPC) : 0;
+}
+
+/**
+ * Convert 'struct tarpc_timeval' to 'struct timeval'.
+ * 
+ * @param tv_rpc    Pointer to 'struct tarpc_timeval'
+ * @param tv_h      Pointer to 'struct timeval'
+ */
+static int
+timeval_rpc2h(const struct tarpc_timeval *tv_rpc, struct timeval *tv_h)
+{
+    tv_h->tv_sec  = tv_rpc->tv_sec;
+    tv_h->tv_usec = tv_rpc->tv_usec;
+
+    return (tv_h->tv_sec  != tv_rpc->tv_sec ||
+            tv_h->tv_usec != tv_rpc->tv_usec) ?
+               TE_RC(TE_TA_LINUX, ETERPC2H) : 0;
+}
+
+/**
+ * Convert 'struct timezone' to 'struct tarpc_timezone'.
+ * 
+ * @param tz_h      Pointer to 'struct timezone'
+ * @param tz_rpc    Pointer to 'struct tarpc_timezone'
+ */
+static int
+timezone_h2rpc(const struct timezone *tz_h, struct tarpc_timezone *tz_rpc)
+{
+    tz_rpc->tz_minuteswest = tz_h->tz_minuteswest;
+    tz_rpc->tz_dsttime     = tz_h->tz_dsttime;
+
+    return (tz_h->tz_minuteswest != tz_rpc->tz_minuteswest ||
+            tz_h->tz_dsttime     != tz_rpc->tz_dsttime) ?
+               TE_RC(TE_TA_LINUX, ETEH2RPC) : 0;
+}
+
+/**
+ * Convert 'struct tarpc_timezone' to 'struct timezone'.
+ * 
+ * @param tz_rpc    Pointer to 'struct tarpc_timezone'
+ * @param tz_h      Pointer to 'struct timezone'
+ */
+static int
+timezone_rpc2h(const struct tarpc_timezone *tz_rpc, struct timezone *tz_h)
+{
+    tz_h->tz_minuteswest = tz_rpc->tz_minuteswest;
+    tz_h->tz_dsttime     = tz_rpc->tz_dsttime;
+
+    return (tz_h->tz_minuteswest != tz_rpc->tz_minuteswest ||
+            tz_h->tz_dsttime     != tz_rpc->tz_dsttime) ?
+               TE_RC(TE_TA_LINUX, ETERPC2H) : 0;
+}
+
 
 static te_bool dynamic_library_set = FALSE;
 static char *dynamic_library_name = NULL;
@@ -864,6 +942,39 @@ TARPC_FUNC(execve, {},
 /*-------------- getpid() --------------------------------*/
 TARPC_FUNC(getpid, {}, { MAKE_CALL(out->retval = func_void()); })
 
+/*-------------- gettimeofday() --------------------------------*/
+TARPC_FUNC(gettimeofday,
+{
+    COPY_ARG(tv);
+    COPY_ARG(tz);
+},
+{
+    struct timeval  tv;
+    struct timezone tz;
+
+    if (out->tv.tv_len != 0)
+        TARPC_CHECK_RC(timeval_rpc2h(out->tv.tv_val, &tv));
+    if (out->tz.tz_len != 0)
+        TARPC_CHECK_RC(timezone_rpc2h(out->tz.tz_val, &tz));
+
+    if (out->common._errno != 0)
+    {
+        out->retval = -1;
+    }
+    else
+    {
+        MAKE_CALL(out->retval = func_ptr(out->tv.tv_len == 0 ? NULL : &tv,
+                                         out->tz.tz_len == 0 ? NULL : &tz));
+
+        if (out->tv.tv_len != 0)
+            TARPC_CHECK_RC(timeval_h2rpc(&tv, out->tv.tv_val));
+        if (out->tz.tz_len != 0)
+            TARPC_CHECK_RC(timezone_h2rpc(&tz, out->tz.tz_val));
+        if (out->common._errno == ETEH2RPC)
+            out->retval = -1;
+    }
+}
+)
 
 /*-------------- socket() ------------------------------*/
 
@@ -1240,22 +1351,25 @@ TARPC_FUNC(select,
     struct timeval tv;
 
     if (out->timeout.timeout_len > 0)
+        TARPC_CHECK_RC(timeval_rpc2h(out->timeout.timeout_val, &tv));
+
+    if (out->common._errno != 0)
     {
-        tv.tv_sec = out->timeout.timeout_val[0].tv_sec;
-        tv.tv_usec = out->timeout.timeout_val[0].tv_usec;
+        out->retval = -1;
     }
-
-    MAKE_CALL(out->retval = func(in->n, 
-                                 (fd_set *)rcf_pch_mem_get(in->readfds),
-                                 (fd_set *)rcf_pch_mem_get(in->writefds),
-                                 (fd_set *)rcf_pch_mem_get(in->exceptfds),
-                                 out->timeout.timeout_len == 0 ? NULL :
-                                 &tv));
-
-    if (out->timeout.timeout_len > 0)
+    else
     {
-        out->timeout.timeout_val[0].tv_sec = tv.tv_sec;
-        out->timeout.timeout_val[0].tv_usec = tv.tv_usec;
+        MAKE_CALL(out->retval = func(in->n, 
+                      (fd_set *)rcf_pch_mem_get(in->readfds),
+                      (fd_set *)rcf_pch_mem_get(in->writefds),
+                      (fd_set *)rcf_pch_mem_get(in->exceptfds),
+                      out->timeout.timeout_len == 0 ? NULL :
+                      &tv));
+
+        if (out->timeout.timeout_len > 0)
+            TARPC_CHECK_RC(timeval_h2rpc(&tv, out->timeout.timeout_val));
+        if (out->common._errno == ETEH2RPC)
+            out->retval = -1;
     }
 }
 )

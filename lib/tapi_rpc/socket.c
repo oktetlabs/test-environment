@@ -1700,7 +1700,7 @@ int
 tapi_rpc_get_rw_ability(te_bool *answer, rcf_rpc_server *rpcs,
                         int s, int timeout, char *type)
 {
-    struct timeval  tv = { 0 , 0 };
+    tarpc_timeval   tv = { 0 , 0 };
     rpc_fd_set_p    fds = RPC_NULL;
     int             rc = -1; 
     int             result = -1;

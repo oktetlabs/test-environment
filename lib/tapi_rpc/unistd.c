@@ -692,13 +692,13 @@ rpc_do_fd_isset(rcf_rpc_server *rpcs, int fd, rpc_fd_set_p set)
 int
 rpc_select(rcf_rpc_server *rpcs,
            int n, rpc_fd_set_p readfds, rpc_fd_set_p writefds,
-           rpc_fd_set_p exceptfds, struct timeval *timeout)
+           rpc_fd_set_p exceptfds, struct tarpc_timeval *timeout)
 {
-    rcf_rpc_op       op;
-    tarpc_select_in  in;
-    tarpc_select_out out;
-    struct timeval   timeout_in;
-    struct timeval  *timeout_in_ptr = NULL;
+    rcf_rpc_op              op;
+    tarpc_select_in         in;
+    tarpc_select_out        out;
+    struct tarpc_timeval    timeout_in;
+    struct tarpc_timeval   *timeout_in_ptr = NULL;
 
     struct tarpc_timeval tv;
 
@@ -743,7 +743,8 @@ rpc_select(rcf_rpc_server *rpcs,
     TAPI_RPC_LOG("RPC (%s,%s)%s: select(%d, %p, %p, %p, %s (%s)) "
                  "-> %d (%s)", rpcs->ta, rpcs->name, rpcop2str(op),
                  n, readfds, writefds, exceptfds,
-                 timeval2str(timeout_in_ptr), timeval2str(timeout),
+                 tarpc_timeval2str(timeout_in_ptr),
+                 tarpc_timeval2str(timeout),
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_INT(select, out.retval);
@@ -1136,3 +1137,62 @@ rpc_getpwnam(rcf_rpc_server *rpcs, const char *name)
     RETVAL_PTR(getpwnam, res);
 }
 
+int
+rpc_gettimeofday(rcf_rpc_server *rpcs,
+                 tarpc_timeval *tv, tarpc_timezone *tz)
+{
+    tarpc_gettimeofday_in  in;
+    tarpc_gettimeofday_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(gettimeofday, -1);
+    }
+
+    rpcs->op = RCF_RPC_CALL_WAIT;
+
+    if (tv != NULL)
+    {
+        in.tv.tv_len = 1;
+        in.tv.tv_val = tv;
+    }
+    if (tz != NULL)
+    {
+        in.tz.tz_len = 1;
+        in.tz.tz_val = tz;
+    }
+
+    rcf_rpc_call(rpcs, "gettimeofday", &in, &out);
+
+    if (RPC_IS_CALL_OK(rpcs))
+    {
+        if (tv != NULL && out.tv.tv_val != NULL)
+        {
+            tv->tv_sec  = out.tv.tv_val->tv_sec;
+            tv->tv_usec = out.tv.tv_val->tv_usec;
+        }
+        if (tz != NULL && out.tz.tz_val != NULL)
+        {
+            tz->tz_minuteswest = out.tz.tz_val->tz_minuteswest;
+            tz->tz_dsttime     = out.tz.tz_val->tz_dsttime;
+        }
+    }
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(gettimeofday, out.retval);
+
+    TAPI_RPC_LOG("RPC (%s,%s): gettimeofday(%p, %p) -> "
+                 "%d (%s) tv=%s tz={%d,%d}",
+                 rpcs->ta, rpcs->name, tv, tz,
+                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)),
+                 tarpc_timeval2str(tv),
+                 (out.retval != 0 || tz == NULL) ? 0 :
+                     (int)tz->tz_minuteswest, 
+                 (out.retval != 0 || tz == NULL) ? 0 :
+                     (int)tz->tz_dsttime);
+
+    RETVAL_INT(gettimeofday, out.retval);
+}

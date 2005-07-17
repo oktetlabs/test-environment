@@ -69,7 +69,7 @@ extern int rpc_setlibname(rcf_rpc_server *rpcs, const char *libname);
  *
  * @return null-terminated string
  */
-extern const char *timeval2str(const struct timeval *tv);
+extern const char *tarpc_timeval2str(const struct tarpc_timeval *tv);
 
 /**
  * Convert 'struct timespec' to string.

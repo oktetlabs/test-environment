@@ -34,6 +34,11 @@
 #ifndef __TE_TAPI_RPC_UNISTD_H__
 #define __TE_TAPI_RPC_UNISTD_H__
 
+#include "rcf_rpc.h"
+
+#include "tarpc.h"
+
+
 /**
  *  Close file descriptor on RPC server side
  *
@@ -323,7 +328,8 @@ extern int  rpc_do_fd_isset(rcf_rpc_server *rpcs,
  */
 extern int rpc_select(rcf_rpc_server *rpcs,
                       int n, rpc_fd_set_p readfds, rpc_fd_set_p writefds,
-                      rpc_fd_set_p exceptfds, struct timeval *timeout);
+                      rpc_fd_set_p exceptfds,
+                      struct tarpc_timeval *timeout);
 
 /**
  * Examine the file descriptor sets whose addresses are passed in the 
@@ -425,7 +431,7 @@ rpc_poll(rcf_rpc_server *rpcs,
  * Routine which copies data from file descriptor opened for reading
  * to the file descriptor opened for writing (processing in kernel land).
  *
- * @param handle        RPC server
+ * @param rpcs          RPC server
  * @param out_fd        file descriptor opened for writing
  * @param in_fd         file descriptor opened for reading
  * @param offset        pointer to input file pointer position
@@ -434,7 +440,7 @@ rpc_poll(rcf_rpc_server *rpcs,
  * @return    number of bytes written to out_fd
  *            or -1 in the case of failure and appropriate errno
  */
-extern ssize_t rpc_sendfile(rcf_rpc_server *handle,
+extern ssize_t rpc_sendfile(rcf_rpc_server *rpcs,
                             int out_fd, int in_fd,
                             off_t *offset, size_t count);
 
@@ -472,8 +478,8 @@ extern int rpc_ioctl(rcf_rpc_server *rpcs,
  * @return The returned value depends on the specified operation
  *         See @b fcntl manual page for more information.
  */
-extern int rpc_fcntl(rcf_rpc_server *rpcs, int fd,
-                     int cmd, int arg);
+extern int rpc_fcntl(rcf_rpc_server *rpcs,
+                     int fd, int cmd, int arg);
 
 /**
  * Create a pair file descriptor on RPC server side, pointing to a pipe 
@@ -487,7 +493,8 @@ extern int rpc_fcntl(rcf_rpc_server *rpcs, int fd,
  * @return Upon successful completion this function returns 0.
  *         On error -1 is returned.
  */
-extern int rpc_pipe(rcf_rpc_server *rpcs, int filedes[2]);
+extern int rpc_pipe(rcf_rpc_server *rpcs,
+                    int filedes[2]);
 
 /**
  * Create a unnamed pair of connected socket on RPC server side.
@@ -555,7 +562,8 @@ extern int rpc_setuid(rcf_rpc_server *rpcs,
  * @return Upon successful completion a pointer to a structure containing
  *         the broken out fields, otherwise a @b NULL pointer is returned.
  */
-extern struct passwd *rpc_getpwnam(rcf_rpc_server *rpcs, const char *name);
+extern struct passwd *rpc_getpwnam(rcf_rpc_server *rpcs,
+                                   const char *name);
 
 
 /**
@@ -590,7 +598,8 @@ extern int rpc_seteuid(rcf_rpc_server *rpcs, uid_t uid);
  * @return   pointer to the allocated buffer upon successful completion
  *           otherwise NULL is retruned.
  */
-extern rpc_ptr rpc_malloc(rcf_rpc_server *rpcs, size_t size);
+extern rpc_ptr rpc_malloc(rcf_rpc_server *rpcs,
+                          size_t size);
 
 /**
  * Free the specified buffer in TA address space
@@ -598,6 +607,11 @@ extern rpc_ptr rpc_malloc(rcf_rpc_server *rpcs, size_t size);
  * @param rpcs   RPC server handle
  * @param buf    pointer to the buffer to be freed
  */
-extern void rpc_free(rcf_rpc_server *rpcs, rpc_ptr buf);
+extern void rpc_free(rcf_rpc_server *rpcs,
+                     rpc_ptr buf);
+
+
+extern int rpc_gettimeofday(rcf_rpc_server *rpcs,
+                            tarpc_timeval *tv, tarpc_timezone *tz);
 
 #endif /* !__TE_TAPI_RPC_UNISTD_H__ */

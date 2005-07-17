@@ -29,6 +29,8 @@
  * $Id$
  */
 
+%#include "te_config.h"
+
 
 typedef int32_t     tarpc_int;
 typedef uint32_t    tarpc_uint;
@@ -50,6 +52,10 @@ typedef tarpc_ptr   tarpc_sigset_t;
 typedef tarpc_ptr   tarpc_fd_set;
 /** RPC off_t analog */
 typedef int32_t     tarpc_off_t;
+/** RPC time_t analogue */
+typedef int64_t     tarpc_time_t;
+/** RPC suseconds_t analogue */
+typedef int64_t     tarpc_suseconds_t;
 
 /** Handle of the 'WSAEvent' or 0 */
 typedef tarpc_ptr   tarpc_wsaevent;
@@ -116,8 +122,32 @@ struct tarpc_sa {
 
 /** struct timeval */
 struct tarpc_timeval {
-    int32_t tv_sec;
-    int32_t tv_usec;
+    tarpc_time_t        tv_sec;
+    tarpc_suseconds_t   tv_usec;
+};
+
+/** struct timezone */
+struct tarpc_timezone {
+    tarpc_int   tz_minuteswest;
+    tarpc_int   tz_dsttime;
+};
+
+
+/* gettimeofday() */
+struct tarpc_gettimeofday_in {
+    struct tarpc_in_arg common;
+
+    struct tarpc_timeval    tv<>;
+    struct tarpc_timezone   tz<>;
+};
+   
+struct tarpc_gettimeofday_out {
+    struct tarpc_out_arg common;
+
+    tarpc_int               retval;
+
+    struct tarpc_timeval    tv<>;
+    struct tarpc_timezone   tz<>;
 };
 
 
@@ -2645,6 +2675,7 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(pthread_cancel)
         RPC_DEF(execve)
         RPC_DEF(getpid)
+        RPC_DEF(gettimeofday)
         
         RPC_DEF(socket)
         RPC_DEF(duplicate_socket)

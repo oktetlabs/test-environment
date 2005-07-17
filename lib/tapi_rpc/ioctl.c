@@ -76,6 +76,8 @@
 #include "tapi_rpc_unistd.h"
 #include "tapi_rpc_misc.h"
 
+#include "tarpc.h"
+
 
 int
 rpc_ioctl(rcf_rpc_server *rpcs,
@@ -123,9 +125,9 @@ rpc_ioctl(rcf_rpc_server *rpcs,
             {
                 in.req.req_val[0].type = IOCTL_TIMEVAL;
                 in.req.req_val[0].ioctl_request_u.req_timeval.tv_sec =
-                    ((struct timeval *)arg)->tv_sec;
+                    ((struct tarpc_timeval *)arg)->tv_sec;
                 in.req.req_val[0].ioctl_request_u.req_timeval.tv_usec =
-                    ((struct timeval *)arg)->tv_usec;
+                    ((struct tarpc_timeval *)arg)->tv_usec;
             }
             break;
 
@@ -321,9 +323,9 @@ rpc_ioctl(rcf_rpc_server *rpcs,
                 break;
 
             case IOCTL_TIMEVAL:
-                ((struct timeval *)arg)->tv_sec =
+                ((struct tarpc_timeval *)arg)->tv_sec =
                     out.req.req_val[0].ioctl_request_u.req_timeval.tv_sec;
-                ((struct timeval *)arg)->tv_usec =
+                ((struct tarpc_timeval *)arg)->tv_usec =
                     out.req.req_val[0].ioctl_request_u.req_timeval.tv_usec;
                 break;
 
@@ -433,7 +435,7 @@ rpc_ioctl(rcf_rpc_server *rpcs,
     switch (in.req.req_val[0].type)
     {
         case IOCTL_TIMEVAL:
-            req_val = timeval2str((struct timeval *)arg);
+            req_val = tarpc_timeval2str((struct tarpc_timeval *)arg);
             break;
 
         case IOCTL_INT:

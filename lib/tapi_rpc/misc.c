@@ -123,16 +123,16 @@ rpc_iovec_cmp(size_t v1len, const struct rpc_iovec *v1, size_t v1cnt,
 
 
 /**
- * Convert 'struct timeval' to string.
+ * Convert 'struct tarpc_timeval' to string.
  *
  * @note Static buffer is used for return value.
  *
- * @param tv    - pointer to 'struct timeval'
+ * @param tv        Pointer to 'struct tarpc_timeval'
  *
- * @return null-terminated string
+ * @return NUL-terminated string
  */
 const char *
-timeval2str(const struct timeval *tv)
+tarpc_timeval2str(const struct tarpc_timeval *tv)
 {
 
 /* Number of buffers used in the function */
@@ -161,7 +161,8 @@ timeval2str(const struct timeval *tv)
     }
     else
     {
-        snprintf(ptr, BUF_SIZE, "{%ld,%ld}", tv->tv_sec, tv->tv_usec);
+        snprintf(ptr, BUF_SIZE, "{%ld,%ld}",
+                 (long)tv->tv_sec, (long)tv->tv_usec);
     }
 
 #undef BUF_SIZE
