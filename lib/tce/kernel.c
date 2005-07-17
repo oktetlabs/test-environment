@@ -106,7 +106,7 @@ struct gcov_summary
 /* Information about a single function.  This uses the trailing array
    idiom. The number of counters is determined from the counter_mask
    in gcov_info.  We hold an array of function info, so have to
-   explicitly calculate the correct array stride.  */
+       explicitly calculate the correct array stride.  */
 struct gcov_fn_info
 {
   unsigned ident;    /* unique ident of function */
@@ -141,13 +141,18 @@ struct gcov_info
                      is.  */
 };
 
-struct bb;
+typedef union object_coverage
+{
+    struct bb old;
+    struct gcov_info new;
+} object_coverage;
+
 static void process_gcov_syms(FILE *symfile, int core_file,
-                              void (*functor)(int, struct bb *, void *), 
+                              void (*functor)(int, object_coverage *, void *), 
                               void *extra);
-static void do_gcov_sum(int core_file, struct bb *object, void *extra);
+static void do_gcov_sum(int core_file, object_coverage *object, void *extra);
 static void get_kernel_gcov_data(int core_file, 
-                                 struct bb *object, void *extra);
+                                 object_coverage *object, void *extra);
 
 static char *ksymtable;
 
@@ -158,6 +163,7 @@ tce_set_ksymtable(char *table)
 }
 
 static unsigned kernel_gcov_version_magic = 0;
+static size_t sizeof_object_coverage = sizeof(struct bb);
 
 static ssize_t
 read_at(int fildes, off_t offset, void *buffer, size_t size)
@@ -201,6 +207,7 @@ detect_kernel_gcov_version(FILE *symfile, int core_file)
         {
             read_at(core_file, offset, &kernel_gcov_version_magic,
                     sizeof(kernel_gcov_version_magic));
+            sizeof_object_coverage = sizeof(struct gcov_info);
             return;
         }
     }
@@ -239,7 +246,7 @@ get_kernel_coverage(void)
 
 static void
 process_gcov_syms(FILE *symfile, int core_file,
-                  void (*functor)(int, struct bb *, void *), void *extra)
+                  void (*functor)(int, object_coverage *, void *), void *extra)
 {
     size_t offset;
     static char symbuf[256];
@@ -261,7 +268,7 @@ process_gcov_syms(FILE *symfile, int core_file,
                Most probably, this won't work on x86-64 :(
             */
             unsigned long tmp;
-            struct bb bb_buf;
+            object_coverage bb_buf;
             
             DEBUGGING(tce_report_notice("offset is %lu", 
                                     (unsigned long)offset));
@@ -273,8 +280,8 @@ process_gcov_syms(FILE *symfile, int core_file,
                 continue;
             }
             DEBUGGING(tce_report_notice("new offset is %lu", tmp));
-            if(read_at(core_file, tmp, &bb_buf, sizeof(bb_buf)) < 
-               (ssize_t)sizeof(bb_buf))
+            if(read_at(core_file, tmp, &bb_buf, sizeof_object_coverage) < 
+               (ssize_t)sizeof_object_coverage)
             {
                 tce_report_error("read error on /dev/kmem: %s", 
                              strerror(errno));
@@ -288,24 +295,23 @@ process_gcov_syms(FILE *symfile, int core_file,
 }
 
 static void
-do_gcov_sum(int core_file, struct bb *object, void *extra)
+summarize_counters(int core_file, unsigned ncounts, off_t values, summary_data *summary)
 {
-    summary_data *summary = extra;
-    int i;
-    long long counter;
-
-    if(lseek(core_file, (size_t)object->counts, SEEK_SET) == (off_t)-1)
+    unsigned i;
+    
+    if(lseek(core_file, values, SEEK_SET) == (off_t)-1)
     {
         tce_report_error("seeking error on /dev/kmem: %s", strerror(errno));
         return;
     }
-    for (i = 0; i < object->ncounts; i++)
+    for (i = 0; i < ncounts; i++)
     {
+        long long counter;
         if(read(core_file, &counter, sizeof(counter)) < 
            (ssize_t)sizeof(counter))
         {
             tce_report_error("error reading from /dev/kmem: %s", 
-                         strerror(errno));
+                             strerror(errno));
             return;
         }
         summary->sum += counter;
@@ -313,12 +319,33 @@ do_gcov_sum(int core_file, struct bb *object, void *extra)
         if (counter > summary->max)
             summary->max = counter;
     }
-    summary->arcs += object->ncounts;
+    summary->arcs += ncounts;
+}
+
+static void
+do_gcov_sum(int core_file, object_coverage *object, void *extra)
+{
+    summary_data *summary = extra;
+
+    if (kernel_gcov_version_magic != 0)
+    {
+        if (object->new.ctr_mask & 1)
+        {
+            struct gcov_ctr_info summable;
+            read(core_file, &summable, sizeof(summable));
+            summarize_counters(core_file, summable.num, (off_t)summable.values, summary);
+        }
+    }
+    else
+    {
+        summarize_counters(core_file, object->old.ncounts, 
+                           (off_t)object->old.counts, summary);
+    }
 }
 
 
 static void
-get_kernel_gcov_data(int core_file, struct bb *object, void *extra)
+get_kernel_gcov_data(int core_file, object_coverage *object, void *extra)
 {
     summary_data *summary = extra;
     summary_data object_summary = {0, 0, 0};
@@ -333,29 +360,39 @@ get_kernel_gcov_data(int core_file, struct bb *object, void *extra)
     char *real_start;
         
 
-    if (lseek(core_file, (size_t)object->function_infos, SEEK_SET) == 
-        (off_t)-1)
+    if (kernel_gcov_version_magic != 0)
     {
-        tce_report_error("seeking error on /dev/kmem: %s", strerror(errno));
-        return;
+        object_functions = object->new.n_functions;
     }
-    for (;;)
+    else
     {
-        if(read(core_file, &fn_info, sizeof(fn_info)) < 
-           (ssize_t)sizeof(fn_info))
+        if (lseek(core_file, (size_t)object->old.function_infos, SEEK_SET) == 
+            (off_t)-1)
         {
-            tce_report_error("error reading from /dev/kmem: %s", 
-                         strerror(errno));
+            tce_report_error("seeking error on /dev/kmem: %s", strerror(errno));
             return;
         }
-        if (fn_info.arc_count < 0)
-            break;
         
-        object_functions++;
+        for (;;)
+        {
+            if(read(core_file, &fn_info, sizeof(fn_info)) < 
+               (ssize_t)sizeof(fn_info))
+            {
+                tce_report_error("error reading from /dev/kmem: %s", 
+                                 strerror(errno));
+                return;
+            }
+            if (fn_info.arc_count < 0)
+                break;
+            
+            object_functions++;
+        }
     }
 
     do_gcov_sum(core_file, object, &object_summary);
-    if (read_str(core_file, (size_t)object->filename, 
+    if (read_str(core_file, kernel_gcov_version_magic == 0 ? 
+                 (size_t)object->old.filename :
+                 (size_t)object->new.filename, 
                  name_buffer, sizeof(name_buffer)) != 0)
     {
         tce_report_error("error reading from /dev/kmem: %s", strerror(errno));
@@ -364,7 +401,7 @@ get_kernel_gcov_data(int core_file, struct bb *object, void *extra)
     real_start = strstr(name_buffer, "//");
     oi = get_object_info(obtain_principal_peer_id(), 
                          real_start ? real_start + 1 : name_buffer);
-    oi->ncounts = object->ncounts;
+    oi->ncounts = object->old.ncounts;
     oi->object_functions = object_functions;
     oi->object_sum += object_summary.sum;
     oi->program_sum += summary->sum;
@@ -376,7 +413,7 @@ get_kernel_gcov_data(int core_file, struct bb *object, void *extra)
 
     for(;;)
     {          
-        if(read_at(core_file, (size_t)object->function_infos++, 
+        if(read_at(core_file, (size_t)object->old.function_infos++, 
                    &fn_info, sizeof(fn_info)) < (ssize_t)sizeof(fn_info))
         {
             tce_report_error("error reading from /dev/kmem: %s", 
@@ -398,14 +435,13 @@ get_kernel_gcov_data(int core_file, struct bb *object, void *extra)
         {
             for (i = fn_info.arc_count, target_counters = fi->counts;
                  i > 0; 
-                 i--, object->counts++, target_counters++)
+                 i--, object->old.counts++, target_counters++)
             {
-                read_at(core_file, (size_t)object->counts, 
+                read_at(core_file, (size_t)object->old.counts, 
                         &counter, sizeof(counter));
                 *target_counters += counter;
             }
         }
     }
-
 }
 
