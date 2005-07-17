@@ -65,14 +65,17 @@ char* ip4_get_param_cb (csap_p csap_descr, int level, const char *param)
 /**
  * Callback for confirm PDU with IPv4 CSAP parameters and possibilities.
  *
+ * SEND: pass info from Template & CSAP NDS -> DU gen-bin fields.
+ * RECV: pass info from CSAP NDS & csap_spec_data -> traffic PDU
+ *
  * @param csap_id       identifier of CSAP
  * @param layer         numeric index of layer in CSAP type to be processed.
- * @param tmpl_pdu      asn_value with PDU (IN/OUT)
+ * @param pdu      asn_value with PDU (IN/OUT)
  *
  * @return zero on success or error code.
  */ 
 int 
-ip4_confirm_pdu_cb(int csap_id, int layer, asn_value *tmpl_pdu)
+ip4_confirm_pdu_cb(int csap_id, int layer, asn_value *pdu)
 { 
     int    rc;
     size_t len;
@@ -81,22 +84,22 @@ ip4_confirm_pdu_cb(int csap_id, int layer, asn_value *tmpl_pdu)
 
     const asn_value *ip4_csap_pdu;
     const asn_value *du_field;
-    asn_value       *ip4_tmpl_pdu;
+    asn_value       *ip4_pdu;
 
     ip4_csap_specific_data_t * spec_data = 
         (ip4_csap_specific_data_t *) csap_descr->layers[layer].specific_data; 
 
 
-    if (asn_get_syntax(tmpl_pdu, "") == CHOICE)
+    if (asn_get_syntax(pdu, "") == CHOICE)
     {
-        if ((rc = asn_get_choice_value(tmpl_pdu,
-                                       (const asn_value **)&ip4_tmpl_pdu,
+        if ((rc = asn_get_choice_value(pdu,
+                                       (const asn_value **)&ip4_pdu,
                                        NULL, NULL))
              != 0)
             return rc;
     }
     else
-        ip4_tmpl_pdu = tmpl_pdu; 
+        ip4_pdu = pdu; 
 
 
 
@@ -119,19 +122,19 @@ ip4_confirm_pdu_cb(int csap_id, int layer, asn_value *tmpl_pdu)
      * Clever choose of defaults and checks to pdu fields 
      * should be done manually. 
      *
-     * Be careful! ASN tag (passed in this macro) should be same in
+     * Be careful: ASN tag (passed in this macro) should be same in
      * CSAP specification pdu and traffic PDU for the PDU field. 
      */
 #define CONFIRM_FIELD(du_field_name_, tag_, label_) \
     do {                                                                \
-        rc = tad_data_unit_convert(ip4_tmpl_pdu, tag_,                  \
+        rc = tad_data_unit_convert(ip4_pdu, tag_,                       \
                                    &(spec_data-> du_field_name_ ));     \
         if (rc == 0 &&                                                  \
             spec_data-> du_field_name_ .du_type == TAD_DU_UNDEF &&      \
             asn_get_child_value(ip4_csap_pdu, &du_field,                \
                                 PRIVATE, tag_) == 0)                    \
         {                                                               \
-            asn_write_component_value(tmpl_pdu, du_field, label_);      \
+            asn_write_component_value(pdu, du_field, label_);           \
             rc = tad_data_unit_convert(ip4_csap_pdu, tag_,              \
                                        &(spec_data-> du_field_name_ )); \
         }                                                               \
@@ -145,12 +148,12 @@ ip4_confirm_pdu_cb(int csap_id, int layer, asn_value *tmpl_pdu)
 
     CONFIRM_FIELD(du_version, NDN_TAG_IP4_VERSION, "version");
 
-    tad_data_unit_convert(tmpl_pdu, NDN_TAG_IP4_HLEN,
+    tad_data_unit_convert(pdu, NDN_TAG_IP4_HLEN,
                           &spec_data->du_header_len);
 
     CONFIRM_FIELD(du_tos, NDN_TAG_IP4_TOS, "type-of-service");
 
-    tad_data_unit_convert(tmpl_pdu, NDN_TAG_IP4_LEN,
+    tad_data_unit_convert(pdu, NDN_TAG_IP4_LEN,
                           &spec_data->du_ip_len);
 
     CONFIRM_FIELD(du_ip_ident, NDN_TAG_IP4_IDENT, "ip-ident");
@@ -158,14 +161,15 @@ ip4_confirm_pdu_cb(int csap_id, int layer, asn_value *tmpl_pdu)
     CONFIRM_FIELD(du_flags, NDN_TAG_IP4_FLAGS, "flags");
     CONFIRM_FIELD(du_ttl, NDN_TAG_IP4_TTL, "time-to-live");
 
-    tad_data_unit_convert(tmpl_pdu, NDN_TAG_IP4_OFFSET,
+    tad_data_unit_convert(pdu, NDN_TAG_IP4_OFFSET,
                           &spec_data->du_ip_offset); 
 
     CONFIRM_FIELD(du_protocol, NDN_TAG_IP4_PROTOCOL, "protocol");
+
     if (spec_data->du_protocol.du_type == TAD_DU_UNDEF &&
         spec_data->protocol != 0)
     {
-        rc = ndn_du_write_plain_int(ip4_tmpl_pdu, NDN_TAG_IP4_PROTOCOL,
+        rc = ndn_du_write_plain_int(ip4_pdu, NDN_TAG_IP4_PROTOCOL,
                                     spec_data->protocol);
         if (rc != 0)
         {
@@ -199,34 +203,46 @@ ip4_confirm_pdu_cb(int csap_id, int layer, asn_value *tmpl_pdu)
     }
 #endif
 
-    tad_data_unit_convert(tmpl_pdu, NDN_TAG_IP4_H_CHECKSUM,
+    tad_data_unit_convert(pdu, NDN_TAG_IP4_H_CHECKSUM,
                           &spec_data->du_h_checksum);
 
     /* Source address */
 
-    rc = tad_data_unit_convert(tmpl_pdu, NDN_TAG_IP4_SRC_ADDR, &spec_data->du_src_addr);
+    rc = tad_data_unit_convert(pdu, NDN_TAG_IP4_SRC_ADDR,
+                               &spec_data->du_src_addr);
 
     len = sizeof(struct in_addr);
-    rc = asn_read_value_field(tmpl_pdu, &spec_data->src_addr, 
-                                &len, "src-addr");
+    rc = asn_read_value_field(pdu, &spec_data->src_addr, &len, "src-addr");
     if (rc == EASNINCOMPLVAL)
     {
         spec_data->src_addr.s_addr = INADDR_ANY;
+        if (csap_descr->state & TAD_STATE_RECV && 
+            (rc = asn_get_child_value(ip4_csap_pdu, &du_field, PRIVATE,
+                                      NDN_TAG_IP4_REMOTE_ADDR)) == 0)
+        { 
+            rc = asn_write_component_value(ip4_pdu, du_field, "src-addr");
+            if (rc != 0)
+            {
+                ERROR("%s(): write src-aѕdr to ip4 pdu failed 0x%X",
+                      __FUNCTION__, rc);
+                return TE_RC(TE_TAD_CSAP, rc);
+            }
+        }
         rc = 0;
     }
 
     /* Destination address */
-    rc = tad_data_unit_convert(tmpl_pdu, NDN_TAG_IP4_DST_ADDR,
+    rc = tad_data_unit_convert(pdu, NDN_TAG_IP4_DST_ADDR,
                                &spec_data->du_dst_addr);
 
     if (rc == 0)
-        rc = asn_read_value_field(tmpl_pdu, &spec_data->dst_addr, 
+        rc = asn_read_value_field(pdu, &spec_data->dst_addr, 
                                 &len, "dst-addr");
     if (rc == EASNINCOMPLVAL)
     {
         spec_data->dst_addr.s_addr = INADDR_ANY;
 
-        if (csap_descr->state & TAD_OP_SEND)
+        if (csap_descr->state & TAD_STATE_SEND)
         { 
             if (spec_data->remote_addr.s_addr == INADDR_ANY)
             {
@@ -237,8 +253,18 @@ ip4_confirm_pdu_cb(int csap_id, int layer, asn_value *tmpl_pdu)
             else
                 rc = 0;
         }
-        else
+        else if ((rc = asn_get_child_value(ip4_csap_pdu, &du_field, PRIVATE,
+                                           NDN_TAG_IP4_LOCAL_ADDR)) == 0)
+        {
+            rc = asn_write_component_value(ip4_pdu, du_field, "dst-addr");
+            if (rc != 0)
+            {
+                ERROR("%s(): write dst-aѕdr to ip4 pdu failed 0x%X",
+                      __FUNCTION__, rc);
+                return TE_RC(TE_TAD_CSAP, rc);
+            }
             rc = 0;
+        }
     } 
 
     return TE_RC(TE_TAD_CSAP, rc);

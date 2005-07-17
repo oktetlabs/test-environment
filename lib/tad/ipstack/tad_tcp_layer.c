@@ -69,25 +69,45 @@ char* tcp_get_param_cb (csap_p csap_descr, int level, const char *param)
 /**
  * Callback for confirm PDU with DHCP CSAP parameters and possibilities.
  *
+ * SEND: pass info from Template & CSAP NDS -> DU gen-bin fields.
+ * RECV: pass info from CSAP NDS & csap_spec_data -> traffic PDU
+ *
  * @param csap_id       identifier of CSAP
  * @param layer         numeric index of layer in CSAP type to be processed.
- * @param tmpl_pdu      asn_value with PDU (IN/OUT)
+ * @param pdu           asn_value with traffic PDU (IN/OUT)
  *
  * @return zero on success or error code.
  */ 
 int 
-tcp_confirm_pdu_cb(int csap_id, int layer, asn_value_p tmpl_pdu)
+tcp_confirm_pdu_cb(int csap_id, int layer, asn_value_p pdu)
 { 
     int rc = 0;
     csap_p csap_descr = csap_find(csap_id);
 
+    const asn_value *tcp_csap_pdu;
+    const asn_value *du_field;
+    asn_value       *tcp_pdu;
+
     tcp_csap_specific_data_t *spec_data = 
         (tcp_csap_specific_data_t *)csap_descr->layers[layer].specific_data;
 
+    if (asn_get_syntax(pdu, "") == CHOICE)
+    {
+        if ((rc = asn_get_choice_value(pdu,
+                                       (const asn_value **)&tcp_pdu,
+                                       NULL, NULL))
+             != 0)
+            return rc;
+    }
+    else
+        tcp_pdu = pdu; 
+
+    tcp_csap_pdu = csap_descr->layers[layer].csap_layer_pdu; 
+
 #define CONVERT_FIELD(tag_, du_field_)                                  \
     do {                                                                \
-        rc = tad_data_unit_convert(tmpl_pdu, tag_,                      \
-                           &(spec_data->du_field_));                    \
+        rc = tad_data_unit_convert(tcp_pdu, tag_,                       \
+                                   &(spec_data->du_field_));            \
         if (rc != 0)                                                    \
         {                                                               \
             ERROR("%s(csap %d),line %d, convert %s failed,rc 0x%X",     \
@@ -97,7 +117,63 @@ tcp_confirm_pdu_cb(int csap_id, int layer, asn_value_p tmpl_pdu)
     } while (0) 
 
     CONVERT_FIELD(NDN_TAG_TCP_SRC_PORT, du_src_port); 
+    if (spec_data->du_src_port.du_type == TAD_DU_UNDEF)
+    {
+        if (csap_descr->state & TAD_STATE_SEND)
+        {
+            rc = tad_data_unit_convert(tcp_csap_pdu,
+                                       NDN_TAG_TCP_LOCAL_PORT,
+                                       &(spec_data->du_src_port));
+            if (rc != 0)
+            {          
+                ERROR("%s(csap %d), local_port to src failed, rc 0x%X",
+                      __FUNCTION__, csap_id, rc);
+                return rc;
+            }
+        }
+        else
+        {
+            if (asn_get_child_value(tcp_csap_pdu, &du_field, PRIVATE,
+                                    NDN_TAG_TCP_REMOTE_PORT) == 0 &&
+                (rc = asn_write_component_value(tcp_pdu, du_field,
+                                               "src-port")) != 0)
+            {
+                ERROR("%s(): write src-port to tcp pdu failed 0x%X",
+                      __FUNCTION__, rc);
+                return TE_RC(TE_TAD_CSAP, rc);
+            }
+        }
+    }
+
     CONVERT_FIELD(NDN_TAG_TCP_DST_PORT, du_dst_port);
+    if (spec_data->du_dst_port.du_type == TAD_DU_UNDEF)
+    {
+        if (csap_descr->state & TAD_STATE_SEND)
+        {
+            rc = tad_data_unit_convert(tcp_csap_pdu,
+                                       NDN_TAG_TCP_REMOTE_PORT,
+                                       &(spec_data->du_dst_port));
+            if (rc != 0)
+            {          
+                ERROR("%s(csap %d), remote port to dst failed, rc 0x%X",
+                      __FUNCTION__, csap_id, rc);
+                return rc;
+            }
+        }
+        else
+        {
+            if (asn_get_child_value(tcp_csap_pdu, &du_field, PRIVATE,
+                                    NDN_TAG_TCP_LOCAL_PORT) == 0 &&
+                (rc = asn_write_component_value(tcp_pdu, du_field,
+                                               "dst-port")) != 0)
+            {
+                ERROR("%s(): write dst-port to tcp pdu failed 0x%X",
+                      __FUNCTION__, rc);
+                return TE_RC(TE_TAD_CSAP, rc);
+            }
+        }
+    }
+
     CONVERT_FIELD(NDN_TAG_TCP_SEQN, du_seqn);
     CONVERT_FIELD(NDN_TAG_TCP_ACKN, du_ackn);
     CONVERT_FIELD(NDN_TAG_TCP_HLEN, du_hlen);
