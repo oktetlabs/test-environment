@@ -26,8 +26,12 @@
  * $Id$
  */
 
+#include "te_config.h"
+
 #include <stdio.h>
+#if HAVE_STDLIB_H
 #include <stdlib.h>
+#endif
 
 #include "te_errno.h"
 #include "te_builder_nuts.h"

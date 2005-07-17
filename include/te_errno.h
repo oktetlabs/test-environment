@@ -31,7 +31,17 @@
 #ifndef __TE_ERRNO_H__
 #define __TE_ERRNO_H__
 
+#include "te_config.h"
+
+#if HAVE_ERRNO_H
 #include <errno.h>
+#endif
+
+#include "te_stdint.h"
+
+
+/** Type to store TE error numbers */
+typedef uint32_t    te_errno;
 
 /*
  * Errno may be either system (< TE_BASE) or TE-specific.
@@ -39,8 +49,11 @@
  * and module-specific error code defined in corresponding header.
  */
 
+/** Shift of the domain ID in 'int' (at least 32 bit) error code */
+#define TE_RC_DOMAIN_SHIFT  16
+
 /** @name Common Test Environment errno's */
-#define TE_BASE         (1 << 16)
+#define TE_BASE         (1 << TE_RC_DOMAIN_SHIFT)
 #define ETEOK           (TE_BASE | 0)  /* Success when 0 can't be used */
 #define ETEFAIL         (TE_BASE | 1)  /* Generic failure */
 #define ETESMALLBUF     (TE_BASE | 2)  /* Too small buffer is provided
@@ -63,7 +76,7 @@
 /*@}*/
 
 /** @name Remote Control Facility errno's */
-#define RCF_ERRNO_BASE  (2 << 16)
+#define RCF_ERRNO_BASE  (2 << TE_RC_DOMAIN_SHIFT)
 #define ETAREBOOTED     (RCF_ERRNO_BASE | 1) /* Test Agent is rebooted */
 #define ETEBADFORMAT    (RCF_ERRNO_BASE | 2) /* Data of bad format are
                                                 returned from the TA */
@@ -88,11 +101,11 @@
 
 
 /** @name Logger errno's */
-#define LOGGER_ERRNO_BASE   (3 << 16)
+#define LOGGER_ERRNO_BASE   (3 << TE_RC_DOMAIN_SHIFT)
 /*@}*/
 
 
-#define ASN_ERRNO_BASE    (4 << 16)
+#define ASN_ERRNO_BASE    (4 << TE_RC_DOMAIN_SHIFT)
 
 #define EASNGENERAL       (ASN_ERRNO_BASE | 1)
 #define EASNWRONGLABEL    (ASN_ERRNO_BASE | 2)  /**< Wrong ASN label */
@@ -126,7 +139,7 @@
 /*@}*/
 
 /** @name Traffic Application Domain errno's */
-#define TAD_ERRNO_BASE  (5 << 16)
+#define TAD_ERRNO_BASE  (5 << TE_RC_DOMAIN_SHIFT)
 #define ETADCSAPNOTEX   (TAD_ERRNO_BASE |1) /**< CSAP not exist. */
 #define ETADLOWER       (TAD_ERRNO_BASE |2) /**< Lower layer error,
                                                  usually from some
@@ -154,7 +167,7 @@
 /*@}*/
 
 /** @name Configurator errno's */
-#define CONF_ERRNO_BASE (6 << 16)
+#define CONF_ERRNO_BASE (6 << TE_RC_DOMAIN_SHIFT)
 #define ETEBACKUP       (CONF_ERRNO_BASE | 1) /**< Backup verification
                                                    failed */
 #define ETEISROOT       (CONF_ERRNO_BASE | 2) /**< Attempt to delete
@@ -168,7 +181,7 @@
 /*@}*/
 
 /** @name Tester errno's */
-#define TESTER_ERRNO_BASE   (7 << 16)
+#define TESTER_ERRNO_BASE   (7 << TE_RC_DOMAIN_SHIFT)
 /* 
  * Errno codes below are strictly ordered and
  * have ETESTRESULTMIN and ETESTRESULTMAX.
@@ -191,6 +204,12 @@
 
 #define ETESTRESULTMIN  ETESTEMPTY  /**< Minimum test result errno */
 #define ETESTRESULTMAX  ETESTUNEXP  /**< Maximum test result errno */
+/*@}*/
+
+/** @name TARPC errno's */
+#define TARPC_ERRNO_BASE    (8 << TE_RC_DOMAIN_SHIFT)
+#define ETERPC2H    (TARPC_ERRNO_BASE | 1)  /**< RPC to host conv failed */
+#define ETEH2RPC    (TARPC_ERRNO_BASE | 2)  /**< Host to RPC conv failed */
 /*@}*/
 
 
@@ -237,6 +256,7 @@
 #define TE_RCF_PCH        (0xf)
 #define TE_IPC           (0x10)
 #define TE_RCF_UNIX      (0x11)
+#define TE_TARPC         (0x12)
 /*@}*/
 
 

@@ -29,6 +29,8 @@
 #ifndef __TE_TAD_ETH_IMPL_H__
 #define __TE_TAD_ETH_IMPL_H__ 
 
+#include "te_config.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
