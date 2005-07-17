@@ -792,7 +792,7 @@ main(int argc, const char *argv[])
      * Go to background, if foreground mode is not requested.
      * No threads should be created before become a daemon.
      */
-    if ((~lgr_flags & LOGGER_FOREGROUND) && daemon(TRUE, TRUE) != 0)
+    if ((~lgr_flags & LOGGER_FOREGROUND) && (daemon(TRUE, TRUE) != 0))
     {
         ERROR("daemon() failed");
         goto exit;

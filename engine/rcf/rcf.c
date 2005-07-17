@@ -2434,7 +2434,7 @@ main(int argc, const char *argv[])
      * Go to background, if foreground mode is not requested.
      * No threads should be created before become a daemon.
      */
-    if ((~flags & RCF_FOREGROUND) && daemon(TRUE, TRUE) != 0)
+    if ((~flags & RCF_FOREGROUND) && (daemon(TRUE, TRUE) != 0))
     {
         ERROR("daemon() failed");
         goto exit;
