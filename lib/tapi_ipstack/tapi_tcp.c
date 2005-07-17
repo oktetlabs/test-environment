@@ -717,12 +717,6 @@ tapi_tcp_destroy_conn_descr(tapi_tcp_connection_t *conn_descr)
     if (conn_descr == NULL || conn_descr == (void *)conns_root)
         return 0;
 
-    if (conn_descr->messages != NULL)
-        while (conn_descr->messages->cqh_first != 
-               (void *)conn_descr->messages)
-            tapi_tcp_clear_msg(conn_descr);
-
-    free(conn_descr->messages);
 
     if (conn_descr->rcv_csap != CSAP_INVALID_HANDLE)
     {
@@ -773,7 +767,7 @@ tapi_tcp_destroy_conn_descr(tapi_tcp_connection_t *conn_descr)
 
         if (rc != 0)
         {
-            WARN("%s(id %d): arp CSAP %d on agt %s trrecv_stop failed 0x%X",
+            WARN("%s(id %d): arp CSAP %d on agt %s stop failed 0x%X",
                  __FUNCTION__, conn_descr->id, conn_descr->arp_csap,
                  conn_descr->agt, rc);
         }
@@ -791,6 +785,13 @@ tapi_tcp_destroy_conn_descr(tapi_tcp_connection_t *conn_descr)
                  __FUNCTION__, conn_descr->id, conn_descr->arp_csap,
                  conn_descr->agt);
     } 
+
+    if (conn_descr->messages != NULL)
+        while (conn_descr->messages->cqh_first != 
+               (void *)conn_descr->messages)
+            tapi_tcp_clear_msg(conn_descr);
+
+    free(conn_descr->messages);
 
     CIRCLEQ_REMOVE(conns_root, conn_descr, link);
     RING("%s(conn %d) finished", __FUNCTION__, conn_descr->id);
@@ -1011,8 +1012,8 @@ tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode,
     size_t func_len;
     uint16_t trafic_param;
 
-    asn_value *syn_pattern;
-    asn_value *arp_pattern;
+    asn_value *syn_pattern = NULL;
+    asn_value *arp_pattern = NULL;
 
     csap_handle_t arp_csap = CSAP_INVALID_HANDLE;
     csap_handle_t rcv_csap = CSAP_INVALID_HANDLE;
@@ -1160,11 +1161,14 @@ tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode,
         conn_update_sent_seq(conn_descr, 1);
     } 
 
-    return 0;
-
 cleanup:
-    tapi_tcp_destroy_conn_descr(conn_descr);
-    *handler = 0;
+    if (rc != 0)
+    {
+        tapi_tcp_destroy_conn_descr(conn_descr);
+        *handler = 0;
+    }
+    asn_free_value(arp_pattern);
+    asn_free_value(syn_pattern);
     return TE_RC(TE_TAPI, rc);
 }
 
@@ -1265,15 +1269,15 @@ int
 tapi_tcp_send_fin(tapi_tcp_handler_t handler, int timeout)
 {
     tapi_tcp_connection_t *conn_descr;
-    int num;
-    int rc;
-    asn_value *fin_template = NULL;
+    asn_value             *fin_template = NULL;
+    tapi_tcp_pos_t         new_ackn;
 
-    tapi_tcp_pos_t new_ackn;
-
+    int     num;
+    int     rc; 
     uint8_t flags;
 
     tapi_tcp_conns_db_init();
+
     if ((conn_descr = tapi_tcp_find_conn(handler)) == NULL)
         return TE_RC(TE_TAPI, EINVAL);
 
@@ -1334,22 +1338,21 @@ int
 tapi_tcp_destroy_connection(tapi_tcp_handler_t handler)
 {
     int rc = 0;
-    int num;
     tapi_tcp_connection_t *conn_descr;
 
     tapi_tcp_conns_db_init();
+
     if ((conn_descr = tapi_tcp_find_conn(handler)) == NULL)
         return TE_RC(TE_TAPI, EINVAL);
 
-    rc = rcf_ta_trrecv_stop(conn_descr->agt, conn_descr->rcv_sid,
-                            conn_descr->rcv_csap, &num);
+
+    rc = tapi_tcp_destroy_conn_descr(conn_descr);
+
     if (rc != 0)
-        WARN("$s(conn %d) trrecv_stop on CSAP %d failed 0x%X", 
-             __FUNCTION__, handler, conn_descr->rcv_csap, rc);
+        WARN("$s(conn %d) destroy connection failed 0x%X", 
+             __FUNCTION__, handler, rc);
 
-    tapi_tcp_destroy_conn_descr(conn_descr);
-
-    return 0;
+    return rc;
 }
 
 int
