@@ -70,7 +70,7 @@ tad_icmp_error(csap_p csap_descr, const char *usr_param,
 
     uint8_t *msg, *p;
     uint32_t unused = 0;
-    int      rate;
+    int      rate = 1;
 
     if (csap_descr == NULL || usr_param == NULL ||
         orig_pkt == NULL || pkt_len == 0)
