@@ -39,14 +39,14 @@
 #define GCOV_DATA_MAGIC (0x67636461U) /* "gcda" */
 #define GCOV_TAG_FUNCTION    (0x01000000U)
 #define GCOV_TAG_FUNCTION_LENGTH (2)
-#define GCOV_TAG_COUNTER_BASE 	 ((unsigned)0x01a10000)
+#define GCOV_TAG_COUNTER_BASE    ((unsigned)0x01a10000)
 #define GCOV_TAG_COUNTER_LENGTH(NUM) ((NUM) * 2)
-#define GCOV_TAG_FOR_COUNTER(COUNT)				\
-	(GCOV_TAG_COUNTER_BASE + ((unsigned)(COUNT) << 17))
+#define GCOV_TAG_FOR_COUNTER(COUNT)             \
+    (GCOV_TAG_COUNTER_BASE + ((unsigned)(COUNT) << 17))
 #define GCOV_TAG_OBJECT_SUMMARY  ((unsigned)0xa1000000)
 #define GCOV_TAG_PROGRAM_SUMMARY ((unsigned)0xa3000000)
 #define GCOV_TAG_SUMMARY_LENGTH  \
-	(1 + (2 + 3 * 2))
+    (1 + (2 + 3 * 2))
 
 
 /** Merge modes corresponding to different merge
@@ -140,7 +140,8 @@ extern tce_object_info   *tce_get_object_info(int peer_id,
                                               const char *filename);
 extern tce_function_info *tce_get_function_info(tce_object_info *oi,
                                                 const char *name, 
-                                                long arc_count, long checksum);
+                                                long arc_count, 
+                                                long checksum);
 
 extern void tce_set_ksymtable(char *table);
 extern void tce_obtain_kernel_coverage(void);
