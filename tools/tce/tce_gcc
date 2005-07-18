@@ -65,12 +65,17 @@ for arg in "$@"; do
 done
 
 if test -z "$nobbhook"; then
-    BBHOOK_O=/tmp/bbhook$$.o
+    TCELIB=/tmp/tcelib$$
+    BBHOOK_O=$TCELIB/bbhook.o
+    LIBGCOV_A=$TCELIB/libgcov.a
+    mkdir $TCELIB
     for i in $CC; do
         tmpcc=$i
     done
     selfpath=`cd \`dirname \\\`which $tmpcc\\\`\` && pwd && cd -`
     ${TCE_CC} -c ${TCE_CFLAGS} -o $BBHOOK_O -I${selfpath}/../include ${selfpath}/../share/tce/bbhook.c
+    ar crs $LIBGCOV_A $BBHOOK_O
+    BBHOOK_O="-L$TCELIB -lgcov"
 else
     BBHOOK_O=""
 fi
@@ -79,7 +84,7 @@ ${TCE_CC} $coverage_options $processed_options $BBHOOK_O
 gccstatus=$?
 
 if test -z "$nobbhook"; then
-    rm -f $BBHOOK_O
+    rm -rf $TCELIB
 fi
 
 exit $gccstatus

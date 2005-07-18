@@ -81,9 +81,12 @@ fi
 
 echo "*** Test coverage report for $infile:" >$outfile
 echo "*** Sources are at $srcdir:" >>$outfile
-find $srcdir -follow \( -name '*.gcov' -o -name '*.da' \) -exec rm -f '{}' ';'
+for pattern in '*.gcov' '*.da' '*.gcda' '.[a-z]*.da' '.[a-z]*.gcda'; do
+    find $srcdir -follow -name "$pattern" -exec rm -f '{}' ';'
+done
     tar -x -P -f $infile
     find $srcdir -follow \( -name '*.da' -o -name '.[a-z]*.da' \) -exec tce_gcov '{}' ';' && 
+        find $srcdir -follow \( -name '*.gcda' -o -name '.[a-z]*.gcda' \) -exec tce_gcov '{}' ';' && 
         (
             if test -n "$ignoredir" -a ! -f "$mergefile"; then
                 auxfile=$mergefile.aux
