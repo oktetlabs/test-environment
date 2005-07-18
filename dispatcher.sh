@@ -30,6 +30,7 @@ Generic options:
   --conf-rcf=<filename>         RCF config file (rcf.conf by default)
   --conf-rgt=<filename>         RGT config file (rgt.conf by default)
   --conf-tester=<filename>      Tester config file (tester.conf by default)
+  --conf-nut=<filename>         NUT config file (nut.conf by default)
 
   --env=<filename>              Name of the file to get shell variables
 
@@ -106,7 +107,6 @@ Generic options:
                                 (without by default)
   --vg-tester                   Run Tester under valgrind (without by default)
 
-  --tce=<agent>                 Do Test Coverage Estimation for <agent>
   --tces-datadir=<dir>          Directory for TCE summary results splitted
                                 into many files
   --tces-sort-by=<mode>         Sort TCE summary table by covered branch
@@ -123,14 +123,6 @@ Generic options:
                                 directories.
 
 EOF
-#    echo -e '  '--storage='<string>'\\t\\tconfiguration string for the storage
-#    echo -e \\t\\t\\t\\twith data to be updated by Dispatcher
-#    echo -e '  '--update-files='<list>'\\t\\tupdate files and directories specified
-#    echo -e \\t\\t\\t\\tin the '<list>' from the storage
-#    echo
-#    echo -e '  '--log-storage\\t\\t\\tconfiguration string for the storage
-#    echo -e \\t\\t\\t\\twhere raw log should be submitted
-#    echo -e '  '--log-storage-dir='<directory>'\\traw log directory in the storage
 #    echo -e '  '--log-dir='<directory>'\\t\\t'local directory for raw log (. by default)'
 #    echo -e '  '--log-online\\t\\t\\tconvert and print log on stdout during work
 #    echo
@@ -144,8 +136,6 @@ EOF
 
 exit_with_log()
 {
-    #te_log_archive --storage="${LOG_STORAGE}" \
-    #               --storage-dir="${LOG_STORAGE_DIR}" ;
     rm -rf ${TE_TMP}
     popd >/dev/null
     exit 1
@@ -204,18 +194,7 @@ CONF_TESTER=tester.conf
 CONF_CS=configurator.conf
 CONF_RCF=rcf.conf
 CONF_RGT=
-
-# Storage initialization string for files/directories to be updated
-STORAGE=
-
-# Storage files/directories to be updated from the storage
-UPDATE_FILES=
-
-# Storage initialization string for log
-LOG_STORAGE=
-
-# Location of the log in the storage
-LOG_STORAGE_DIR=
+CONF_NUT=nut.conf
 
 # If yes, generate on-line log in the logging directory
 LOG_ONLINE=
@@ -280,7 +259,6 @@ process_opts()
                          VG_LOGGER=yes ;
                          VG_TESTER=yes ;;
         
-            --tce=*) TCE_AGENTS="$TCE_AGENTS ${1##--tce=}" ;;
             --tces-*) TCES_OPTS="${TCES_OPTS} --${1#--tces-}" ;;
             --tce-ignore-directories) TCE_REPORT_OPTS=--ignore-directories ;;
             --no-builder) BUILDER= ;;
@@ -297,12 +275,8 @@ process_opts()
             --conf-cs=*) CONF_CS="${1#--conf-cs=}" ;;
             --conf-rcf=*) CONF_RCF=${1#--conf-rcf=} ;;
             --conf-rgt=*) CONF_RGT=${1#--conf-rgt=} ;;
+            --conf-nut=*) CONF_TESTER="${1#--conf-nut=}" ;;
             
-            --storage=*) STORAGE="${1#--storage=}" ;;
-            --update-files=*) UPDATE_FILES="${1#--update-files=}" ;;
-            
-            --log-storage=*) LOG_STORAGE="${1#--log-storage=}" ; ;;
-            --log-storage-dir=*) LOG_STORAGE_DIR="${1#--log-storage-dir=}" ;;
             --log-dir=*) TE_LOG_DIR="${1#--log-dir=}" ;;
             --log-online) LOG_ONLINE=yes ;;
             
@@ -373,15 +347,7 @@ fi
 CMD_LINE_OPTS="$@"
 process_opts "$@"
 
-if test -z "${LOG_STORAGE_DIR}" ; then
-    LOG_STORAGE=
-fi
-
-if test -z "${LOG_STORAGE}" ; then
-    LOG_STORAGE_DIR=
-fi
-
-for i in BUILDER LOGGER TESTER CS RCF RGT ; do
+for i in BUILDER LOGGER TESTER CS RCF RGT NUT ; do
     CONF_FILE=`eval echo '$CONF_'$i` ;
     if test -n "${CONF_FILE}" -a "${CONF_FILE:0:1}" != "/" ; then
         eval CONF_$i="${CONF_DIR}/${CONF_FILE}" ;
@@ -497,11 +463,9 @@ if test -z "$TMP" ; then
         echo "TE core executables are not installed - exiting." >&2
         exit_with_log
     fi
-    #Export path to logging, building and storage scripts, which are not installed yet
-    export PATH=$PATH:${TE_BASE}/engine/logger:${TE_BASE}/engine/builder:${TE_BASE}/lib/storage
+    #Export path to logging and building scripts, which are not installed yet
+    export PATH=$PATH:${TE_BASE}/engine/logger:${TE_BASE}/engine/builder
 fi
-
-# TODO: update directories from storage
 
 # Intitialize log
 te_log_init
@@ -547,6 +511,10 @@ cd ${TE_RUN_DIR}
 
 if test -n "${SUITE_SOURCES}" -a -n "${BUILD_TS}" ; then
     te_build_suite `basename ${SUITE_SOURCES}` $SUITE_SOURCES || exit_with_log
+fi
+
+if test -e ${CONF_NUT} ; then
+    te_build_nuts ${CONF_NUT} || exit_with_log
 fi    
 
 rm -f valgrind.* vg.*
@@ -649,13 +617,7 @@ fi
 if test $START_OK -eq 0 -a -n "$TESTER" ; then
     te_log_message Engine Dispatcher "Dumping TCE"
     myecho "--->>> Dump TCE"
-    if test -n "$TCE_AGENTS"; then
-        for i in $TCE_AGENTS; do
-            te_tce_dump $i "/tmp/tcedump" "${TE_BUILD}/tce_" >/dev/null
-        done
-    else
-        TCE_AGENTS=`te_tce_dump --all /tmp/tcedump "${TE_BUILD}/tce_"`
-    fi
+    te_tce_dump --all /tmp/tcedump "${TE_TMP}/tce_"
 fi
 
 shutdown_daemon RCF 
@@ -666,8 +628,6 @@ shutdown_daemon LOGGER
 if test -n "${LIVE_LOG}" ; then
     wait ${LIVE_LOG_PID}
 fi
-
-#te_log_archive --storage="${LOG_STORAGE}" --storage-dir=="${LOG_STORAGE_DIR}" ;
 
 #
 # RGT processing of the raw log
@@ -699,14 +659,10 @@ if test -n "${RGT_LOG_HTML}" ; then
     fi
 fi
 
-
-if test -n "${TESTER}" -a -n "${TCE_AGENTS}" ; then
+if test -n "${TESTER}" -a -e "${CONF_NUT}" ; then
     myecho "--->>> TCE processing"
-    for i in ${TCE_AGENTS} ; do
-        te_tce_report ${TCE_REPORT_OPTS} ${i} ${TE_LOG_DIR}/${i}_coverage.log
-        tce_summary ${TCES_OPTS} ${TE_LOG_DIR}/${i}_coverage.log \
-            >${TE_LOG_DIR}/${i}_coverage.html
-    done
+    TCE_REPORT_OPTS="$TCE_REPORT_OPTS" TCES_OPTS="$TCES_OPTS" \
+        te_tce_process ${CONF_NUT}
 fi
 
 # Run TRC, if any its option is provided

@@ -58,11 +58,9 @@ te: install-data
 	cd include ; make install
 	cd lib ; make install 
 	cd tools ; make install
-	te_build_nuts nutlibs
 	cd engine ; make install
 	cd agents ; make install
 	te_cross_build $(prefix)
-	te_build_nuts nuts
 
 dist-hook:
 	cp -pR @TE_CONF_DIR@ $(distdir)

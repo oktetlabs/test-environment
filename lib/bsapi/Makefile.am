@@ -3,7 +3,7 @@ AM_CPPFLAGS=@TE_CFLAGS@ -I$(DESTDIR)/$(prefix)/include
 AM_LDFLAGS=@TE_LDFLAGS@ 
 
 
-include_HEADERS=te_builder_nuts.h te_builder_ts.h
+include_HEADERS=te_builder_ts.h
 
 lib_LTLIBRARIES=libbsapi.la
 

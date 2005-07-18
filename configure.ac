@@ -60,10 +60,6 @@ TE_BS_PLATFORMS=
 # TE_BS_TOOLS - what tools should be built by "make all" command.
 TE_BS_TOOLS=rgt
 
-# List of NUTs to be built by "make all" command.
-TE_BS_NUTS=
-TE_BS_NUTLIBS=
-
 # List of TEN applications
 TE_BS_APP="builder rcf logger tester configurator"
 
@@ -248,9 +244,6 @@ for i in ${SUITE_SCRIPTS} ; do
 done
 AC_SUBST([SUITE_SCRIPTS_EXTRA_DIST])
 AC_SUBST([SUITE_SCRIPTS])
-
-AC_SUBST([TE_BS_NUTS])
-AC_SUBST([TE_BS_NUTLIBS])
 
 if test -z "$no_create" ; then
     mkdir -p ${TE_BUILD}/suites

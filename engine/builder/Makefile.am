@@ -1,6 +1,4 @@
 
-#SUBDIRS = coverage
-
 AM_CPPFLAGS = @TE_CFLAGS@ -I$(DESTDIR)/$(prefix)/include 
 AM_CFLAGS = 
 AM_LDFLAGS = @TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/lib 
@@ -34,10 +32,11 @@ dist_mybin_SCRIPTS = \
     te_generate_rpctbl \
     te_rpc_supported \
     te_build_nuts \
-    te_build_nut \
     te_build_suite \
     te_tests_info.sh \
-    te_tce_report
+    te_tce_process
 
 EXTRA_DIST = builder.m4
 
+mydatadir=$(datadir)/@PACKAGE_NAME@
+dist_mydata_DATA = nut.m4

@@ -1,11 +1,9 @@
 #! /bin/sh
 #
-# Test Environment Builder
+# Test Coverage Estimation
+# Process TCE for all NUT images
 #
-# Script for building of NUT libraries and images
-# Usage: te_build_nut <configuration file>
-#
-# Copyright (C) 2004 Test Environment authors (see file AUTHORS in
+# Copyright (C) 2005 Test Environment authors (see file AUTHORS in
 # the root directory of the distribution).
 #
 # Test Environment is free software; you can redistribute it and/or
@@ -24,7 +22,8 @@
 # MA  02111-1307  USA
 #
 #
-# Author Elena Vengerova <Elena.Vengerova@oktet.ru>
+# Author: Artem Andreev <Artem.Andreev@oktetlabs.ru>
+#         Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
 #
 # $Id$
 #
@@ -33,14 +32,18 @@ PARSER=`dirname $0`/../share/te_builder/nut.m4
 cat $PARSER $1 | m4 > ${TE_TMP}/nut.conf.processed
 . ${TE_TMP}/nut.conf.processed
 
-mkdir -p ${TE_INSTALL_NUT}
+echo Before loop $NUTS
 for i in $NUTS ; do
+    echo NUT $i
     NUT_SOURCES=`eval echo '$NUT_'$i'_SOURCES'`
-    NUT_SCRIPT=`eval echo '$NUT_'$i'_SCRIPT'`
-    NUT_PARMS=`eval echo '$NUT_'$i'_PARMS'`
-    TCE_SRC=`eval echo '$NUT_'$i'_TCE_SRC'`
-    TE_INSTALL=${TE_INSTALL} TE_INSTALL_NUT=${TE_INSTALL_NUT} \
-       ${NUT_SCRIPT} ${NUT} ${NUT_PARMS} || exit 1
+    TA_LIST=`eval echo '$NUT_'$i'_TCE_TA'`
+    if test -z "$TA_LIST" ; then continue; fi
+    for ta in $TA_LIST ; do
+        tce_report ${TCE_REPORT_OPTS} ${TE_TMP}/tce_${ta} \
+                   ${TE_LOG_DIR}/${i}_coverage.log \
+                   ${NUT_SOURCES} || exit 1
+    done                                      
+    tce_summary ${TCES_OPTS} ${TE_LOG_DIR}/${i}_coverage.log \
+                >${TE_LOG_DIR}/${i}_coverage.html || exit 1
 done
 
-exit 0
