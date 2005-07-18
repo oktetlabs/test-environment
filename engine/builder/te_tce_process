@@ -32,13 +32,13 @@ PARSER=`dirname $0`/../share/te_builder/nut.m4
 cat $PARSER $1 | m4 > ${TE_TMP}/nut.conf.processed
 . ${TE_TMP}/nut.conf.processed
 
-echo Before loop $NUTS
 for i in $NUTS ; do
-    echo NUT $i
     NUT_SOURCES=`eval echo '$NUT_'$i'_SOURCES'`
+    if test -z "$NUT_SOURCES" ; then continue; fi
     TA_LIST=`eval echo '$NUT_'$i'_TCE_TA'`
     if test -z "$TA_LIST" ; then continue; fi
     for ta in $TA_LIST ; do
+        echo TE $ta
         tce_report ${TCE_REPORT_OPTS} ${TE_TMP}/tce_${ta} \
                    ${TE_LOG_DIR}/${i}_coverage.log \
                    ${NUT_SOURCES} || exit 1
