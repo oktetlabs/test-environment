@@ -113,14 +113,6 @@ fi
 process_libs
 
 PARMS="--with-name=$PACKAGE `eval echo '$'${PLATFORM_NAME}'_PARMS'` `eval echo '$TE_BS_'${KIND}'_'${PKGNAME}'_PARMS'`"
-if test "$KIND" = TA ; then
-    for i in $TE_BS_NUTS $TE_BS_NUTLIBS ; do
-        NUT_TATYPE=`eval echo '$NUT_'${i}'_TCE_TATYPE'` ;
-        if test "$PACKAGE" = "$NUT_TATYPE" ; then
-            PARMS="$PARMS --enable-tce" ;
-        fi
-    done
-fi
 
 ADD_CFLAGS="`eval echo '$'${PLATFORM_NAME}'_CFLAGS'` `eval echo '$TE_BS_'${KIND}'_'${PKGNAME}'_CFLAGS'`"
 ADD_LDFLAGS="`eval echo '$'${PLATFORM_NAME}'_LDFLAGS'` `eval echo '$TE_BS_'${KIND}'_'${PKGNAME}'_LDFLAGS'`"
