@@ -238,7 +238,7 @@ read_radius(FILE *conf, radius_parameter *top)
             read_radius_file(fname, top);
             free(fname);
         }
-        else if(buffer[skip_spaces] == '#')
+        else if (buffer[skip_spaces] == '#')
         {
             continue;
         }
@@ -301,9 +301,9 @@ write_radius_parameter (FILE *outfile, radius_parameter *parm, int indent)
     {
         int i;
         
-        for(i = indent; i > 0; i--)
+        for (i = indent; i > 0; i--)
             putc(' ', outfile);
-        switch(parm->kind)
+        switch (parm->kind)
         {
             case RP_FLAG:
                 fputs(parm->name, outfile);
@@ -320,7 +320,7 @@ write_radius_parameter (FILE *outfile, radius_parameter *parm, int indent)
                         parm->value == NULL || *parm->value == '#' ? "" : parm->value);
                 for (child = parm->children; child != NULL; child = child->next)
                     write_radius_parameter(outfile, child, indent + 4);
-                for(i = indent; i > 0; i--)
+                for (i = indent; i > 0; i--)
                     putc(' ', outfile);
                 fputs("}\n", outfile);
                 break;
@@ -842,7 +842,7 @@ set_user_checks(const char *name, const char *checks)
             user->checks[user->n_checks - 1].value     = strdup(value);
             user->checks[user->n_checks].attribute = NULL;
         }
-    } while(checks != NULL);
+    } while (checks != NULL);
     return 0;
 }
 
@@ -917,7 +917,7 @@ set_user_replies(const char *name, const char *replies, te_bool in_accept)
             }
             user->replies[user->n_replies].attribute = NULL;
         }
-    } while(replies != NULL);
+    } while (replies != NULL);
     return 0;
 }
 
@@ -1447,7 +1447,7 @@ ds_radius_secret_get(unsigned int gid, const char *oid,
     UNUSED(instance);
     VERB("getting client secret");
     snprintf(client_buffer, sizeof(client_buffer), "client(%s).secret", client_name);
-    if(!retrieve_rp(radius_conf, client_buffer, &val))
+    if (!retrieve_rp(radius_conf, client_buffer, &val))
     {
         ERROR("Client %s not found", client_name);
         return TE_RC(TE_TA_LINUX, ENOENT);
