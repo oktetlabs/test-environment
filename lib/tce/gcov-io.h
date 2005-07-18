@@ -1,4 +1,18 @@
-/* Machine-independent I/O routines for gcov.
+/* This file has been grabbed from GCC 3.3.5 sources (gcc subdir).
+   It provides helpers to read/write GCOV data files in a
+   platform-independed way (wrt endianness).
+
+   No subtantial changes has been made to this file; however, it
+   is not identical to GCC-supplied one, because the latter would
+   not even compile outside the GCC tree.
+
+   It is very unwise to make any changes to this file, as it may
+   break TCE in unpredicted and poorly detectable ways.
+
+   This file is only relevant for coverage data produced by GCC <3.4.
+   If at some point in the future, the support for pre-GCC-3.4 will
+   be dropped, this file may be safely removed.
+
    Copyright (C) 1996, 1997, 1998, 2000 Free Software Foundation, Inc.
    Contributed by Bob Manson <manson@cygnus.com>.
 

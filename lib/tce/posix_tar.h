@@ -1,4 +1,7 @@
 /* Extended tar format from POSIX.1.
+   This is a modified version of the POSIX.1 tar.h differing
+   in constants for TAR header field offsets.
+
    Copyright (C) 1992, 1996 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Written by David J. MacKenzie.
