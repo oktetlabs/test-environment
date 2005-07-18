@@ -502,8 +502,9 @@ dispatch(void *arg)
 
         if ((rc = select(FD_SETSIZE, &set0, NULL, NULL, &tv)) < 0)
         {
-            ERROR("select() failed");
-            return NULL;
+            int err = errno;
+            
+            WARN("select() failed; errno %d", err);
         }
         
         FD_ZERO(&set1);
