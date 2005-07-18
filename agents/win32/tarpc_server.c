@@ -2347,7 +2347,6 @@ simple_sender(tarpc_simple_sender_in *in, tarpc_simple_sender_out *out)
 
     time_t start;
     time_t now;
-
 #ifdef TA_DEBUG
     uint64_t control = 0;
 #endif
@@ -2379,12 +2378,14 @@ simple_sender(tarpc_simple_sender_in *in, tarpc_simple_sender_out *out)
         usleep(delay);
 
         len = send(in->s, buf, size, 0);
-        
+    
         if (len < 0)
         {
+            int err = 0;
             if (in->ignore_err)
                 continue;
-            ERROR("send() failed in simple_sender(): errno %x", errno);
+            err = WSAGetLastError();
+            ERROR("send() failed in simple_sender(): errno %d", err);
             return -1;
         }
 
@@ -2462,7 +2463,11 @@ simple_receiver(tarpc_simple_receiver_in *in,
         FD_SET((unsigned int)in->s, &set);
         if (select(in->s + 1, &set, NULL, NULL, &tv) < 0)
         {
-            ERROR("select() failed in simple_receiver(): errno %x", errno);
+            int err = 0;
+            if (in->ignore_err)
+                continue;
+            err = WSAGetLastError();
+            ERROR("select() failed in simple_receiver(): errno %d", err);
             return -1;
         }
         if (!FD_ISSET(in->s, &set))
@@ -2477,7 +2482,11 @@ simple_receiver(tarpc_simple_receiver_in *in,
 
         if (len < 0)
         {
-            ERROR("recv() failed in simple_receiver(): errno %x", errno);
+            int err = 0;
+            if (in->ignore_err)
+                continue;
+            err = WSAGetLastError();
+            ERROR("recv() failed in simple_receiver(): errno %d", err);
             return -1;
         }
 
