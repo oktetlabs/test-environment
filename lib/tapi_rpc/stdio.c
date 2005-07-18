@@ -318,6 +318,8 @@ rpc_shell_get_all(rcf_rpc_server *rpcs, char **pbuf, const char *cmd, ...)
         free(buf);
         return -1;
     }
+
+    sleep(1);
     
     while (TRUE)
     {
@@ -344,6 +346,7 @@ rpc_shell_get_all(rcf_rpc_server *rpcs, char **pbuf, const char *cmd, ...)
         memset(buf + offset, 0, buflen - offset);
     }
     rpc_close(rpcs, fd);
+
     if (rc == 0)
         *pbuf = buf;
     else
