@@ -33,14 +33,26 @@ PARSER=`dirname $0`/../share/te_builder/nut.m4
 cat $PARSER $1 | m4 > ${TE_TMP}/nut.conf.processed
 . ${TE_TMP}/nut.conf.processed
 
+DEF_CC=$CC
+DEF_CXX=$CXX
+
 mkdir -p ${TE_INSTALL_NUT}
 for i in $NUTS ; do
     NUT_SOURCES=`eval echo '$NUT_'$i'_SOURCES'`
     NUT_SCRIPT=`eval echo '$NUT_'$i'_SCRIPT'`
     NUT_PARMS=`eval echo '$NUT_'$i'_PARMS'`
     TCE_SRC=`eval echo '$NUT_'$i'_TCE_SRC'`
-    TE_INSTALL=${TE_INSTALL} TE_INSTALL_NUT=${TE_INSTALL_NUT} \
-       ${NUT_SCRIPT} ${NUT} ${NUT_PARMS} || exit 1
+    TA=`eval echo '$NUT_'$i'_TCE_TA'`
+    export TE_INSTALL_NUT=${TE_INSTALL_NUT}
+    export TCE_SRC
+    if test -z "$TA" ; then
+        export CC=$DEF_CC
+        export CXX=$DEF_CXX
+    else
+        export CC=`which tce_gcc`
+        export CXX=`which tce_gxx`
+    fi
+    ${NUT_SCRIPT} ${NUT} ${NUT_PARMS} || exit 1
 done
 
 exit 0
