@@ -196,6 +196,9 @@ CONF_RCF=rcf.conf
 CONF_RGT=
 CONF_NUT=nut.conf
 
+# Whether NUT should be built
+BUILD_NUT=
+
 # If yes, generate on-line log in the logging directory
 LOG_ONLINE=
 
@@ -275,7 +278,7 @@ process_opts()
             --conf-cs=*) CONF_CS="${1#--conf-cs=}" ;;
             --conf-rcf=*) CONF_RCF=${1#--conf-rcf=} ;;
             --conf-rgt=*) CONF_RGT=${1#--conf-rgt=} ;;
-            --conf-nut=*) CONF_TESTER="${1#--conf-nut=}" ;;
+            --conf-nut=*) BUILD_NUT=yes ; CONF_NUT="${1#--conf-nut=}" ;;
             
             --log-dir=*) TE_LOG_DIR="${1#--log-dir=}" ;;
             --log-online) LOG_ONLINE=yes ;;
@@ -513,8 +516,11 @@ if test -n "${SUITE_SOURCES}" -a -n "${BUILD_TS}" ; then
     te_build_suite `basename ${SUITE_SOURCES}` $SUITE_SOURCES || exit_with_log
 fi
 
-if test -e ${CONF_NUT} ; then
-    te_build_nuts ${CONF_NUT} || exit_with_log
+# If NUT configuration file is not specified explicitly,
+# but default exists use it
+test -z "${BUILD_NUT}" -a -e "${CONF_NUT}" && BUILD_NUT=yes
+if test -n "${BUILD_NUT}" ; then
+    te_build_nuts "${CONF_NUT}" || exit_with_log
 fi    
 
 rm -f valgrind.* vg.*
@@ -659,10 +665,10 @@ if test -n "${RGT_LOG_HTML}" ; then
     fi
 fi
 
-if test -n "${TESTER}" -a -e "${CONF_NUT}" ; then
+if test -n "${BUILD_NUT}" ; then
     myecho "--->>> TCE processing"
     TCE_REPORT_OPTS="$TCE_REPORT_OPTS" TCES_OPTS="$TCES_OPTS" \
-        te_tce_process ${CONF_NUT}
+        te_tce_process "${CONF_NUT}"
 fi
 
 # Run TRC, if any its option is provided
