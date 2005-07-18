@@ -98,7 +98,7 @@ tad_confirm_pdus(csap_p csap_descr, asn_value *pdus)
 
         if (rc != 0)
         {
-            ERROR("template does not confirm to CSAP; "
+            ERROR("pdus do not confirm to CSAP; "
                   "rc: 0x%x, csap id: %d, level: %d\n", 
                   rc, csap_descr->id, level);
             break;
