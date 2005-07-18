@@ -99,4 +99,8 @@ extern int ta_system(char *cmd);
  */
 extern void signal_registrar(int signum);
 
+/**
+ * TCE-related pointers
+ */
+
 #endif /* __TE_TA_LINUX_INTERNAL_H__ */

@@ -710,12 +710,10 @@ int
 setlibname(const tarpc_setlibname_in *in)
 {
     const char *libname;
-#ifdef WITH_TCE
     void (*tce_initializer)(const char *, int) = NULL;
-#endif
-    extern const char *obtain_principal_tce_connect(void);
-    extern int obtain_principal_peer_id(void);
-    extern int notify_tce_collector(void);
+    extern int (*tce_notify_function)(void);
+    extern int (*tce_get_peer_function)(void);
+    extern const char *(*tce_get_conn_function)(void);
 
     libname = (in->libname.libname_len == 0) ?
                   NULL : in->libname.libname_val;
@@ -743,24 +741,29 @@ setlibname(const tarpc_setlibname_in *in)
         return TE_RC(TE_TA_LINUX, ENOMEM);
     }
     dynamic_library_set = TRUE;
-#ifdef WITH_TCE
-    tce_initializer = dlsym(dynamic_library_handle, "__bb_init_connection");
-    if (tce_initializer == NULL)
+    
+    if (tce_get_peer_function != NULL)
     {
-        WARN("%s is compiled without TCE support", dynamic_library_name);
-    }
-    else
-    {
-        const char *ptc = tce_obtain_principal_tce_connect();
-        if (ptc == NULL)
-            WARN("init_tce_connect has not been called");
+        tce_initializer = dlsym(dynamic_library_handle, 
+                                "__bb_init_connection");
+        if (tce_initializer == NULL)
+        {
+            WARN("%s is compiled without TCE support", 
+                 dynamic_library_name);
+        }
         else
         {
-            tce_notify_tce_collector();
-            tce_initializer(ptc, tce_obtain_principal_peer_id());
+            const char *ptc = tce_get_conn_function();
+            if (ptc == NULL)
+                WARN("init_tce_connect has not been called");
+            else
+            {
+                if (tce_notify_function != NULL)
+                    tce_notify_function();
+                tce_initializer(ptc, tce_get_peer_function());
+            }
         }
     }
-#endif
 
     return 0;
 }

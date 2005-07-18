@@ -817,91 +817,24 @@ signal_registrar(int signum)
     sigaddset(&rpcs_received_signals, signum);
 }
 
-#ifdef WITH_TCE
-extern int tce_run_tce_collector(int argc, char *argv[]);
-extern int tce_stop_tce_collector(void);
-extern int tce_dump_tce_collector(void);
-extern int tce_init_tce_collector(int argc, char *argv[]);
-extern int tce_obtain_principal_peer_id(void);
+int (*tce_stop_function)(void);
+int (*tce_notify_function)(void);
+int (*tce_get_peer_function)(void);
+const char *(*tce_get_conn_function)(void);
 
-int
-collect_tce(int argc, char *argv[])
+static void 
+init_tce_subsystem(void)
 {
-    return tce_run_tce_collector(argc, argv);
+    tce_stop_function     = rcf_ch_symbol_addr("tce_stop_collector", 
+                                               TRUE);
+    tce_notify_function   = rcf_ch_symbol_addr("tce_notify_collector", 
+                                               TRUE);
+    tce_get_peer_function = 
+        rcf_ch_symbol_addr("tce_obtain_principal_peer_id", TRUE);
+    tce_get_conn_function = 
+        rcf_ch_symbol_addr("tce_obtain_principal_connect", TRUE);
+    
 }
-
-int
-init_collect_tce(int argc, char *argv[])
-{
-    return tce_init_tce_collector(argc, argv);
-}
-
-int
-dump_collected_tce(int argc, char *argv[])
-{
-    UNUSED(argc);
-    UNUSED(argv);
-    return tce_dump_tce_collector();
-}
-
-int
-stop_collect_tce(int argc, char *argv[])
-{
-    UNUSED(argc);
-    UNUSED(argv);
-    return tce_stop_tce_collector();
-}
-
-int
-obtain_tce_peer_id(int unused, char *argv[])
-{
-    UNUSED(unused);
-    UNUSED(argv);
-    return tce_obtain_principal_peer_id();
-}
-#else    
-int
-collect_tce(int argc, char *argv[])
-{
-    UNUSED(argc);
-    UNUSED(argv);
-    return 0;
-}
-
-int
-init_collect_tce(int argc, char *argv[])
-{
-    UNUSED(argc);
-    UNUSED(argv);
-    return 0;
-}
-
-int
-dump_collected_tce(int argc, char *argv[])
-{
-    UNUSED(argc);
-    UNUSED(argv);
-    return 0;
-}
-
-int
-stop_collect_tce(int argc, char *argv[])
-{
-    UNUSED(argc);
-    UNUSED(argv);
-    return 0;
-}
-
-int
-obtain_tce_peer_id(int unused, char *argv[])
-{
-    UNUSED(unused);
-    UNUSED(argv);
-    return 0;
-}
-
-#endif
-
 
 /**
  * Entry point of the Linux Test Agent.
@@ -960,6 +893,8 @@ main(int argc, char **argv)
 
     pthread_create(&tid, NULL, (void *)logfork_entry, NULL);
 
+    init_tce_subsystem();
+    
     rc = rcf_pch_run(argv[2], buf);
     if (rc != 0)
     {
@@ -968,9 +903,8 @@ main(int argc, char **argv)
             retval = rc;
     }
 
-#ifdef WITH_TCE
-    tce_stop_tce_collector();
-#endif
+    if (tce_stop_function != NULL)
+        tce_stop_function();
     kill_tasks();
     kill_threads();
 
