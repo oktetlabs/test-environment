@@ -489,8 +489,6 @@ xinetd_set(unsigned int gid, const char *oid, const char *value)
 
     xinetd_server = NULL;
     
-    PRINT("Server: %s", server);
-    
     if (index < 0)
         return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
         
