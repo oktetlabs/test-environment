@@ -187,9 +187,17 @@ gcov_unsigned_t __gcov_crc32;
 
 static gcov_unsigned_t gcov_version;
 
-extern void __gcov_merge_add (gcov_type *counters, unsigned n_counters);
-extern void __gcov_merge_single (gcov_type *counters, unsigned n_counters);
-extern void __gcov_merge_delta (gcov_type *counters, unsigned n_counters);
+void __gcov_merge_add (gcov_type *counters, unsigned n_counters)
+{
+}
+
+void __gcov_merge_single (gcov_type *counters, unsigned n_counters)
+{
+}
+
+void __gcov_merge_delta (gcov_type *counters, unsigned n_counters)
+{
+}
 
 #else 
 
