@@ -223,7 +223,7 @@ ip4_confirm_pdu_cb(int csap_id, int layer, asn_value *pdu)
             rc = asn_write_component_value(ip4_pdu, du_field, "src-addr");
             if (rc != 0)
             {
-                ERROR("%s(): write src-aѕdr to ip4 pdu failed 0x%X",
+                ERROR("%s(): write src-addr to ip4 pdu failed 0x%X",
                       __FUNCTION__, rc);
                 return TE_RC(TE_TAD_CSAP, rc);
             }
@@ -237,7 +237,7 @@ ip4_confirm_pdu_cb(int csap_id, int layer, asn_value *pdu)
 
     if (rc == 0)
         rc = asn_read_value_field(pdu, &spec_data->dst_addr, 
-                                &len, "dst-addr");
+                                  &len, "dst-addr");
     if (rc == EASNINCOMPLVAL)
     {
         spec_data->dst_addr.s_addr = INADDR_ANY;
@@ -259,12 +259,12 @@ ip4_confirm_pdu_cb(int csap_id, int layer, asn_value *pdu)
             rc = asn_write_component_value(ip4_pdu, du_field, "dst-addr");
             if (rc != 0)
             {
-                ERROR("%s(): write dst-aѕdr to ip4 pdu failed 0x%X",
+                ERROR("%s(): write dst-addr to ip4 pdu failed 0x%X",
                       __FUNCTION__, rc);
                 return TE_RC(TE_TAD_CSAP, rc);
             }
-            rc = 0;
         }
+        rc = 0;
     } 
 
     return TE_RC(TE_TAD_CSAP, rc);
