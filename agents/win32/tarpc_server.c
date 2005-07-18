@@ -2464,8 +2464,7 @@ simple_receiver(tarpc_simple_receiver_in *in,
         if (select(in->s + 1, &set, NULL, NULL, &tv) < 0)
         {
             int err = 0;
-            if (in->ignore_err)
-                continue;
+            
             err = WSAGetLastError();
             ERROR("select() failed in simple_receiver(): errno %d", err);
             return -1;
@@ -2483,8 +2482,7 @@ simple_receiver(tarpc_simple_receiver_in *in,
         if (len < 0)
         {
             int err = 0;
-            if (in->ignore_err)
-                continue;
+            
             err = WSAGetLastError();
             ERROR("recv() failed in simple_receiver(): errno %d", err);
             return -1;
