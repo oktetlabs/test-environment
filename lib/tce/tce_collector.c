@@ -815,7 +815,8 @@ object_header_state(tce_channel_data *ch)
             }
             oi->checksum = checksum;
             oi->program_checksum = checksum;
-            if (object_functions != oi->object_functions)
+            if (oi->object_functions != 0 && 
+                object_functions != oi->object_functions)
             {
                 tce_report_error("function number mismatch for peer %d",
                                  ch->peer_id);
@@ -960,9 +961,7 @@ collect_line(tce_channel_data *ch)
             if (found_newline != NULL)
             {
                 *found_newline = '\0';
-#if 0
-                tce_report_notice("got %s", ch->buffer);
-#endif
+                DEBUGGING(tce_report_notice("got %s", ch->buffer));
                 ch->state(ch);
 #if 0
                 tce_report_notice("processed");

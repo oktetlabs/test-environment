@@ -28,7 +28,10 @@
 #
 
 cd `dirname "$1"`
-objname=`basename "$1" .da`.o
+case "$1" in
+    *.da)   objname=`basename "$1" .da`.o ;;
+    *.gcda) objname=`basename "$1" .gcda`.o ;;
+esac
 objname=${objname#.tmp_}
 for file in `objdump -l -d "$objname" | sed -e '/^.*\.c:[0-9][0-9]*$/s/:[0-9][0-9]*$//
 t
