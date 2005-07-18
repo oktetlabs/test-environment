@@ -92,10 +92,6 @@ if CFG_LINUX_WIFI
 MY_SOURCES+=linuxconf_wifi.c
 endif
 
-if CFG_WITH_TCE
-MY_LDADD+=-ltce
-endif
-
 LIBS+=@TAD_LIBS@
 
 AM_CPPFLAGS=$(MY_CPPFLAGS)
@@ -115,18 +111,13 @@ nodist_talinuxtmpl_SOURCES=$(MY_NODIST_SOURCES)
 
 talinuxtmpl_LDADD=$(MY_LDADD)
 
-if CFG_WITH_TCE
-libtce=$(DESTDIR)/$(prefix)/../@host@/lib/libtce.a 
-endif
-
 talinuxtmpl_DEPENDENCIES=@TE_DEPENDENCIES@ symtbl.o \
     $(DESTDIR)/$(prefix)/../@host@/lib/librcfpch.a \
     $(DESTDIR)/$(prefix)/../@host@/lib/librpcxdr.a \
     $(DESTDIR)/$(prefix)/../@host@/lib/liblogfork.a \
     $(DESTDIR)/$(prefix)/../@host@/lib/lib@TAD@.a \
     $(DESTDIR)/$(prefix)/../@host@/lib/libconf_oid.a \
-    $(DESTDIR)/$(prefix)/../@host@/lib/libloggerta.a \
-	$(libtce)
+    $(DESTDIR)/$(prefix)/../@host@/lib/libloggerta.a
 
 
 SYMTBL_LIBS= $(DESTDIR)/$(prefix)/../@host@/lib/lib@TAD@.a
