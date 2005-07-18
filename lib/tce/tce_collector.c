@@ -68,7 +68,7 @@ static char tar_file_prefix[PATH_MAX + 1];
 static tce_channel_data *channels;
 
 
-static sig_atomic_t caught_signo;
+static sig_atomic_t caught_signo = 0;
 static void signal_handler(int no)
 {
     caught_signo = no;
@@ -77,7 +77,7 @@ static void signal_handler(int no)
 
 static fd_set active_channels;
 static te_bool already_dumped = FALSE;
-static te_bool dump_request = TRUE;
+static te_bool dump_request = FALSE;
 
 /* forward declarations */
 static void function_header_state(tce_channel_data *ch);
@@ -98,7 +98,7 @@ static int peers_counter;
 te_bool tce_standalone = FALSE;
 
 int 
-tce_init_tce_collector(int argc, char **argv)
+tce_init_collector(int argc, char **argv)
 {
     char buf[PATH_MAX + 1];
     char **ptr;
@@ -118,7 +118,7 @@ tce_init_tce_collector(int argc, char **argv)
 
 
 const char *
-tce_obtain_principal_tce_connect(void)
+tce_obtain_principal_connect(void)
 {
     return collector_args ? collector_args[0] : NULL;
 }
@@ -162,7 +162,7 @@ tce_collector(void)
                       (unsigned)getpid());
     if (collector_args == NULL)
     {
-        tce_report_error("init_tce_collector has not been called");
+        tce_report_error("tce_init_collector has not been called");
         return EXIT_FAILURE;
     }
 
@@ -414,13 +414,13 @@ tce_collector(void)
 pid_t tce_collector_pid = 0;
 
 int
-tce_run_tce_collector(int argc, char *argv[])
+tce_run_collector(int argc, char *argv[])
 {
     int rc;
     if (tce_collector_pid != 0)
         return TE_RC(TE_TA_LINUX, EALREADY);
     tce_obtain_principal_peer_id();
-    rc = tce_init_tce_collector(argc, argv);
+    rc = tce_init_collector(argc, argv);
     if (rc != 0)
         return rc;
     tce_collector_pid = fork();
@@ -435,7 +435,7 @@ tce_run_tce_collector(int argc, char *argv[])
 
 
 int
-tce_dump_tce_collector(void)
+tce_dump_collector(void)
 {
     struct flock lock;
     if (tce_collector_pid == 0)
@@ -457,7 +457,7 @@ tce_dump_tce_collector(void)
 }
 
 int
-tce_stop_tce_collector(void)
+tce_stop_collector(void)
 {
     int tce_status;
     
@@ -473,7 +473,7 @@ tce_stop_tce_collector(void)
 }
 
 int 
-tce_notify_tce_collector(void)
+tce_notify_collector(void)
 {
     if (tce_collector_pid == 0)
         return 0;
@@ -758,7 +758,7 @@ object_header_state(tce_channel_data *ch)
     fcntl(data_lock, F_SETLKW, &lock);
 
     space = strchr(ch->buffer,  ' ');
-    if (space == NULL )
+    if (space == NULL)
     {
         tce_report_error("peer %d, error near '%s'", 
                 ch->peer_id, ch->buffer);
@@ -861,6 +861,7 @@ object_header_state(tce_channel_data *ch)
                     oi->object_max = object_max;
                 if (program_max > oi->program_max)
                     oi->program_max = program_max;
+                oi->ctr_mask = 1;
                 if (ncounts != 0)
                 {
                     ch->state = function_header_state;

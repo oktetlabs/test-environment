@@ -32,9 +32,12 @@
 #define  __TE_LIB_TCE_INTERNAL_H 1
 
 /** The following macros are grabbed from gcc-3.4.4 sources,
-    namely 'gcc/gcov-io.h' and 'gcc/libgcov.c'.
-    They relate to the structure of the GCOV data file
-**/
+ *   namely 'gcc/gcov-io.h' and 'gcc/libgcov.c'.
+ *   They relate to the structure of the GCOV data file.
+ *   They should never be touched; if some future GCC
+ *   versions provide different values for them, 
+ *   new macros should be created.
+ */
 #define GCOV_COUNTER_GROUPS 5 
 #define GCOV_DATA_MAGIC (0x67636461U) /* "gcda" */
 #define GCOV_TAG_FUNCTION    (0x01000000U)
@@ -50,10 +53,10 @@
 
 
 /** Merge modes corresponding to different merge
-    functions in gcc 3.4+ gcov-related code.
-    See 'gcc/libgcov.c'(__gcov_merge_add,
-    __gcov_merge_single, __gcov_merge_delta)
-*/
+ *   functions in gcc 3.4+ gcov-related code.
+ *   See 'gcc/libgcov.c'(__gcov_merge_add,
+ *   __gcov_merge_single, __gcov_merge_delta)
+ */
 enum tce_merge_mode { 
     TCE_MERGE_UNDEFINED, 
     TCE_MERGE_ADD,     /**< == __gcov_merge_add */
@@ -84,12 +87,12 @@ typedef struct tce_function_info {
 
 /** A record for an object file coverage data */
 typedef struct tce_object_info {
-    int                       peer_id;    /**> the data are for that peer */
-    const char               *filename;   /**> data filename */
+    int                       peer_id;    /**< the data are for that peer */
+    const char               *filename;   /**< data filename */
     struct tce_object_info   *next;
     struct tce_function_info *function_infos;
 /* The following fields directly map to gcc/gcov internal data.
-   See 'bbhook.c'
+   See 'bbhook.c'.
  */
     long long                 object_max;
     long long                 object_sum;
@@ -116,34 +119,50 @@ typedef void (*tce_state_function)(tce_channel_data *self);
 
 /** TCE collector connection state */
 struct tce_channel_data {
-    int                    fd;            /**> connection handle */
-    tce_state_function     state;         /**> current state */
-    char                   buffer[256];   /**> current input line */
-    char                  *bufptr;        /**> the pointer beyond the
+    int                    fd;            /**< connection handle */
+    tce_state_function     state;         /**< current state */
+    char                   buffer[256];   /**< current input line */
+    char                  *bufptr;        /**< the pointer beyond the
                                            last byte read in buffer */
-    int                    remaining;     /**> bytes remaining in buffer */
-    int                    peer_id;       /**> current peer ID */
-    tce_object_info       *object;        /**> current object file record */
-    tce_function_info     *function;      /**> current function record */
-    long long             *counter;       /**> current counter */
-    int                    the_group;     /**> current counter group */
-    int                    counter_guard; /**> remaining counters */
-    tce_channel_data      *next;          /**> chain pointer */
+    int                    remaining;     /**< bytes remaining in buffer */
+    int                    peer_id;       /**< current peer ID */
+    tce_object_info       *object;        /**< current object file record */
+    tce_function_info     *function;      /**< current function record */
+    long long             *counter;       /**< current counter */
+    int                    the_group;     /**< current counter group */
+    int                    counter_guard; /**< remaining counters */
+    tce_channel_data      *next;          /**< chain pointer */
 };
 
+/** Reports a TCE error (printf-like interface */
 extern void tce_report_error(const char *fmt, ...);
 
 #define tce_report_notice tce_report_error
 #define DEBUGGING(x)
 
+/** Find a record for an object file 'filename', peer 'peer_id'.
+ *   If there is no such record, it is created 
+ */
 extern tce_object_info   *tce_get_object_info(int peer_id, 
                                               const char *filename);
+
+/** Find a record for a function 'name' in a object file denoted by 'oi'.
+ *  If there is no such record, it is created and 'arc_count' and
+ *  'checksum' fields are set. 
+ *   If the record is found, 'arc_count' and 'checksum' must match those
+ *   of the record.
+ */
 extern tce_function_info *tce_get_function_info(tce_object_info *oi,
                                                 const char *name, 
                                                 long arc_count, 
                                                 long checksum);
 
+/**  Sets a name of a file containg kernel symbol table 
+ *   a la /proc/kallsyms 
+ */
 extern void tce_set_ksymtable(char *table);
+
+/** Causes the coverage data from the kernel to be obtained */
 extern void tce_obtain_kernel_coverage(void);
 
 #endif  /* __TE_LIB_TCE_INTERNAL_H */
