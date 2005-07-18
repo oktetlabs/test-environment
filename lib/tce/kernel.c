@@ -50,7 +50,7 @@
 
 /* The following are data structures for GCC 3.3.x and earlier */
 
-struct bb_raw_function_info 
+struct bb_function_info 
 {
     long checksum;
     int arc_count;
@@ -68,16 +68,9 @@ struct bb
     
     /* Older GCC's did not emit these fields.  */
     long sizeof_bb;
-    struct bb_raw_function_info *function_infos;
+    struct bb_function_info *function_infos;
 };
 
-
-typedef struct summary_data
-{
-    long long sum;
-    long long max;
-    long arcs;
-} summary_data;
 
 /* Following are structures for GCC 3.4+ */
 
@@ -141,6 +134,14 @@ struct gcov_info
                      is.  */
 };
 
+typedef struct summary_data
+{
+    long long sum;
+    long long max;
+    long arcs;
+    struct gcov_ctr_info groups[GCOV_COUNTER_GROUPS];
+} summary_data;
+
 typedef union object_coverage
 {
     struct bb old;
@@ -164,6 +165,7 @@ tce_set_ksymtable(char *table)
 
 static unsigned kernel_gcov_version_magic = 0;
 static size_t sizeof_object_coverage = sizeof(struct bb);
+static size_t kernel_merge_functions[TCE_MERGE_MAX];
 
 static ssize_t
 read_at(int fildes, off_t offset, void *buffer, size_t size)
@@ -208,19 +210,30 @@ detect_kernel_gcov_version(FILE *symfile, int core_file)
             read_at(core_file, offset, &kernel_gcov_version_magic,
                     sizeof(kernel_gcov_version_magic));
             sizeof_object_coverage = sizeof(struct gcov_info);
-            return;
         }
+        else if (strcmp(token, "__gcov_merge_add") == 0)
+        {
+            kernel_merge_functions[TCE_MERGE_ADD] = offset;
+        }
+        else if (strcmp(token, "__gcov_merge_single") == 0)
+        {
+            kernel_merge_functions[TCE_MERGE_SINGLE] = offset;
+        }
+        else if (strcmp(token, "__gcov_merge_delta") == 0)
+        {
+            kernel_merge_functions[TCE_MERGE_DELTA] = offset;
+        }            
     }
 }
 
 void
-get_kernel_coverage(void)
+tce_obtain_kernel_coverage(void)
 {
     if (ksymtable != NULL)
     {
         FILE *symfile = fopen(ksymtable, "r");
         int core_file;
-        summary_data summary = {0, 0, 0};
+        summary_data summary = {0, 0, 0, {{0, 0, 0}}};
         
         if (symfile == NULL)
         {
@@ -329,11 +342,20 @@ do_gcov_sum(int core_file, object_coverage *object, void *extra)
 
     if (kernel_gcov_version_magic != 0)
     {
+        unsigned i;
+        
         if (object->new.ctr_mask & 1)
         {
-            struct gcov_ctr_info summable;
-            read(core_file, &summable, sizeof(summable));
-            summarize_counters(core_file, summable.num, (off_t)summable.values, summary);
+            read(core_file, &summary->groups, sizeof(*summary->groups));
+            summarize_counters(core_file, summary->groups->num, 
+                               (off_t)summary->groups->values, summary);
+        }
+        for (i = 1; i < GCOV_COUNTER_GROUPS; i++)
+        {
+            if ((1 << i) & object->new.ctr_mask)
+            {
+                read(core_file, summary->groups + i, sizeof(*summary->groups));             
+            }
         }
     }
     else
@@ -348,11 +370,11 @@ static void
 get_kernel_gcov_data(int core_file, object_coverage *object, void *extra)
 {
     summary_data *summary = extra;
-    summary_data object_summary = {0, 0, 0};
+    summary_data object_summary = {0, 0, 0, {{0, 0, 0}}};
     long object_functions = 0;
-    struct bb_raw_function_info fn_info;
-    bb_function_info *fi;
-    bb_object_info *oi;
+    struct bb_function_info fn_info;
+    tce_function_info *fi;
+    tce_object_info *oi;
     long long *target_counters;
     long long counter;
     int i;
@@ -399,8 +421,8 @@ get_kernel_gcov_data(int core_file, object_coverage *object, void *extra)
         return;
     }
     real_start = strstr(name_buffer, "//");
-    oi = get_object_info(obtain_principal_peer_id(), 
-                         real_start ? real_start + 1 : name_buffer);
+    oi = tce_get_object_info(tce_obtain_principal_peer_id(), 
+                             real_start ? real_start + 1 : name_buffer);
     oi->ncounts = object->old.ncounts;
     oi->object_functions = object_functions;
     oi->object_sum += object_summary.sum;
@@ -410,36 +432,154 @@ get_kernel_gcov_data(int core_file, object_coverage *object, void *extra)
         oi->object_max = object_summary.max;
     if (summary->max > oi->program_max)
         oi->program_max = summary->max;
+    oi->program_sum_max += summary->max;
+    oi->object_sum_max  += object_summary.max;
 
-    for(;;)
-    {          
-        if(read_at(core_file, (size_t)object->old.function_infos++, 
-                   &fn_info, sizeof(fn_info)) < (ssize_t)sizeof(fn_info))
+    if (kernel_gcov_version_magic != 0)
+    {
+        unsigned fn;
+        struct gcov_fn_info new_fn_info;
+        unsigned n_counts = 0;
+        unsigned n_sub_counts[GCOV_COUNTER_GROUPS] = {0};
+        unsigned fi_stride;
+
+        for (i = 0; i < GCOV_COUNTER_GROUPS; i++)
         {
-            tce_report_error("error reading from /dev/kmem: %s", 
-                         strerror(errno));
-            return;
+            if ((1 << i) & object->new.ctr_mask)
+                n_counts++;
         }
-        if (fn_info.arc_count < 0)
-            break;
-        if (read_str(core_file, (size_t)fn_info.name, 
-                     name_buffer, sizeof(name_buffer)) != 0)
+        fi_stride = sizeof (struct gcov_fn_info) + 
+            n_counts * sizeof (unsigned);
+        if (__alignof__ (struct gcov_fn_info) > sizeof (unsigned))
         {
-            tce_report_error("error reading from /dev/kmem: %s", 
-                         strerror(errno));
-            return;
+            fi_stride += __alignof__ (struct gcov_fn_info) - 1;
+            fi_stride &= ~(__alignof__ (struct gcov_fn_info) - 1);
         }
-        fi = get_function_info(oi, name_buffer, 
-                               fn_info.arc_count, fn_info.checksum);
-        if (fi != NULL)
+        
+        for (fn = object_functions; fn != 0; fn--)
         {
-            for (i = fn_info.arc_count, target_counters = fi->counts;
-                 i > 0; 
-                 i--, object->old.counts++, target_counters++)
+            if(read_at(core_file, (size_t)object->new.functions, 
+                       &new_fn_info, sizeof(struct gcov_fn_info)) < 
+               (ssize_t)sizeof(struct gcov_fn_info))
             {
-                read_at(core_file, (size_t)object->old.counts, 
-                        &counter, sizeof(counter));
-                *target_counters += counter;
+                tce_report_error("error reading from /dev/kmem: %s", 
+                                 strerror(errno));
+                return;
+            }            
+            for (n_counts = 0, i = 0; i < GCOV_COUNTER_GROUPS; i++)
+            {
+                if ((1 << i) & object->new.ctr_mask)
+                {
+                    read(core_file, n_sub_counts + i, sizeof(*n_sub_counts));
+                    n_counts += n_sub_counts[i];               
+                }           
+            }
+            snprintf(name_buffer, sizeof(name_buffer), "%u",
+                     new_fn_info.ident);
+            fi = tce_get_function_info(oi, name_buffer, 
+                                       n_counts, new_fn_info.checksum);
+            if (fi != NULL)
+            {
+                target_counters = fi->counts;              
+                for (i = 0; i < GCOV_COUNTER_GROUPS; i++)
+                {                  
+                    if ((1 << i) & object->new.ctr_mask)
+                    {
+                        unsigned j;
+                        long long ctr_value[4];                       
+        
+                        lseek(core_file, (size_t)summary->groups[i].values, SEEK_SET);
+                        if ((size_t)summary->groups[i].values == 
+                            kernel_merge_functions[TCE_MERGE_ADD])
+                        {                          
+                            for (j = 0; j < n_sub_counts[i]; j++)
+                            {
+                                read(core_file, ctr_value, sizeof(*ctr_value));
+                                (*target_counters++) += ctr_value[0];                              
+                            }
+                        }
+                        else if ((size_t)summary->groups[i].values == 
+                                 kernel_merge_functions[TCE_MERGE_SINGLE])
+                        {
+                            for (j = 0; j < n_sub_counts[i]; j += 3)
+                            {
+                                read(core_file, ctr_value, 3 * sizeof(ctr_value));
+                                if (target_counters[0] == ctr_value[0])
+                                    target_counters[1] += ctr_value[1];
+                                else if (ctr_value[1] > target_counters[1])
+                                {
+                                    target_counters[0] = ctr_value[0];
+                                    target_counters[1] = ctr_value[1] - target_counters[1];
+                                }
+                                else
+                                    target_counters[1] -= ctr_value[1];
+                                target_counters[2] += ctr_value[2];
+
+                                target_counters += 3;                               
+                            }
+                        }
+                        else if ((size_t)summary->groups[i].values == 
+                                 kernel_merge_functions[TCE_MERGE_DELTA])
+                        {
+                            for (j = 0; j < n_sub_counts[i]; j += 4)
+                            {
+                                read(core_file, ctr_value, 4 * sizeof(ctr_value));
+                                if (target_counters[1] == ctr_value[1])
+                                    target_counters[2] += ctr_value[2];
+                                else if (ctr_value[2] > target_counters[2])
+                                {
+                                    target_counters[1] = ctr_value[1];
+                                    target_counters[2] = ctr_value[2] - target_counters[2];
+                                }
+                                else
+                                    target_counters[2] -= ctr_value[2];
+                                target_counters[3] += ctr_value[3];
+
+                                target_counters += 4;
+                            }
+                        }
+                       
+                        summary->groups[i].values += n_sub_counts[i];                      
+                    }                 
+                }             
+            }
+            
+            object->new.functions = (struct gcov_fn_info *) 
+                ((char *)object->new.functions + fi_stride);
+        }
+    }
+    else
+    {
+        for (;;)
+        {          
+            if(read_at(core_file, (size_t)object->old.function_infos++, 
+                       &fn_info, sizeof(fn_info)) < (ssize_t)sizeof(fn_info))
+            {
+                tce_report_error("error reading from /dev/kmem: %s", 
+                                 strerror(errno));
+                return;
+            }
+            if (fn_info.arc_count < 0)
+                break;
+            if (read_str(core_file, (size_t)fn_info.name, 
+                         name_buffer, sizeof(name_buffer)) != 0)
+            {
+                tce_report_error("error reading from /dev/kmem: %s", 
+                                 strerror(errno));
+                return;
+            }
+            fi = tce_get_function_info(oi, name_buffer, 
+                                       fn_info.arc_count, fn_info.checksum);
+            if (fi != NULL)
+            {
+                for (i = fn_info.arc_count, target_counters = fi->counts;
+                     i > 0; 
+                     i--, object->old.counts++, target_counters++)
+                {
+                    read_at(core_file, (size_t)object->old.counts, 
+                            &counter, sizeof(counter));
+                    *target_counters += counter;
+                }
             }
         }
     }

@@ -818,22 +818,22 @@ signal_registrar(int signum)
 }
 
 #ifdef WITH_TCE
-extern int run_tce_collector(int argc, char *argv[]);
-extern int stop_tce_collector(void);
-extern int dump_tce_collector(void);
-extern int init_tce_collector(int argc, char *argv[]);
-extern int obtain_principal_peer_id(void);
+extern int tce_run_tce_collector(int argc, char *argv[]);
+extern int tce_stop_tce_collector(void);
+extern int tce_dump_tce_collector(void);
+extern int tce_init_tce_collector(int argc, char *argv[]);
+extern int tce_obtain_principal_peer_id(void);
 
 int
 collect_tce(int argc, char *argv[])
 {
-    return run_tce_collector(argc, argv);
+    return tce_run_tce_collector(argc, argv);
 }
 
 int
 init_collect_tce(int argc, char *argv[])
 {
-    return init_tce_collector(argc, argv);
+    return tce_init_tce_collector(argc, argv);
 }
 
 int
@@ -841,7 +841,7 @@ dump_collected_tce(int argc, char *argv[])
 {
     UNUSED(argc);
     UNUSED(argv);
-    return dump_tce_collector();
+    return tce_dump_tce_collector();
 }
 
 int
@@ -849,7 +849,7 @@ stop_collect_tce(int argc, char *argv[])
 {
     UNUSED(argc);
     UNUSED(argv);
-    return stop_tce_collector();
+    return tce_stop_tce_collector();
 }
 
 int
@@ -857,7 +857,7 @@ obtain_tce_peer_id(int unused, char *argv[])
 {
     UNUSED(unused);
     UNUSED(argv);
-    return obtain_principal_peer_id();
+    return tce_obtain_principal_peer_id();
 }
 #else    
 int
@@ -969,7 +969,7 @@ main(int argc, char **argv)
     }
 
 #ifdef WITH_TCE
-    stop_tce_collector();
+    tce_stop_tce_collector();
 #endif
     kill_tasks();
     kill_threads();

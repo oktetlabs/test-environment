@@ -751,13 +751,13 @@ setlibname(const tarpc_setlibname_in *in)
     }
     else
     {
-        const char *ptc = obtain_principal_tce_connect();
+        const char *ptc = tce_obtain_principal_tce_connect();
         if (ptc == NULL)
             WARN("init_tce_connect has not been called");
         else
         {
-            notify_tce_collector();
-            tce_initializer(ptc, obtain_principal_peer_id());
+            tce_notify_tce_collector();
+            tce_initializer(ptc, tce_obtain_principal_peer_id());
         }
     }
 #endif

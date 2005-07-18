@@ -28,7 +28,14 @@
  * $Id$
  */
 
-#define GCOV_COUNTER_GROUPS 5 /* this value is defined by gcc */
+#ifndef  __TE_LIB_TCE_INTERNAL_H
+#define  __TE_LIB_TCE_INTERNAL_H 1
+
+/** The following macros are grabbed from gcc-3.4.4 sources,
+    namely 'gcc/gcov-io.h' and 'gcc/libgcov.c'.
+    They relate to the structure of the GCOV data file
+**/
+#define GCOV_COUNTER_GROUPS 5 
 #define GCOV_DATA_MAGIC (0x67636461U) /* "gcda" */
 #define GCOV_TAG_FUNCTION    (0x01000000U)
 #define GCOV_TAG_FUNCTION_LENGTH (2)
@@ -42,67 +49,86 @@
 	(1 + (2 + 3 * 2))
 
 
-enum gcov_merge_mode { GCOV_MERGE_UNDEFINED, 
-                       GCOV_MERGE_ADD, GCOV_MERGE_SINGLE, GCOV_MERGE_DELTA };
+/** Merge modes corresponding to different merge
+    functions in gcc 3.4+ gcov-related code.
+    See 'gcc/libgcov.c'(__gcov_merge_add,
+    __gcov_merge_single, __gcov_merge_delta)
+*/
+enum tce_merge_mode { 
+    TCE_MERGE_UNDEFINED, 
+    TCE_MERGE_ADD,     /**< == __gcov_merge_add */
+    TCE_MERGE_SINGLE,  /**< == __gcov_merge_single */
+    TCE_MERGE_DELTA,   /**< == __gcov_merge_delta */
+    TCE_MERGE_MAX
+};
 
-typedef struct bb_counter_group
-{
-    unsigned number;
-    enum gcov_merge_mode mode;
-} bb_counter_group;
+/** A record for a counter group
+    (only relevant for gcc3.4+; for earlier
+    versions there's always a single group
+    with mode == TCE_MERGE_ADD
+ */
+typedef struct tce_counter_group {
+    unsigned             number;
+    enum tce_merge_mode  mode;
+} tce_counter_group;
 
-typedef struct bb_function_info 
-{
-    long checksum;
-    long arc_count;
-    const char *name;
-    long long *counts;
-    bb_counter_group groups[GCOV_COUNTER_GROUPS];
-    struct bb_function_info *next;
-} bb_function_info;
+/** A record for a function coverage data */
+typedef struct tce_function_info {
+    long                      checksum;
+    long                      arc_count;
+    const char               *name;
+    long long                *counts;
+    tce_counter_group         groups[GCOV_COUNTER_GROUPS];
+    struct tce_function_info *next;
+} tce_function_info;
 
-typedef struct bb_object_info
-{
-    int peer_id;
-    const char *filename;
-    long long object_max;
-    long long object_sum;
-    long object_functions;
-    long long program_sum;
-    long long program_max;
-    long program_arcs;
-    long ncounts;
-    struct bb_object_info *next;
-    struct bb_function_info *function_infos;
+/** A record for an object file coverage data */
+typedef struct tce_object_info {
+    int                       peer_id;    /**> the data are for that peer */
+    const char               *filename;   /**> data filename */
+    struct tce_object_info   *next;
+    struct tce_function_info *function_infos;
+/* The following fields directly map to gcc/gcov internal data.
+   See 'bbhook.c'
+ */
+    long long                 object_max;
+    long long                 object_sum;
+    long                      object_functions;
+    long long                 program_sum;
+    long long                 program_max;
+    long                      program_arcs;
+    long                      ncounts;
 /* GCC-3.4+ specific fields: */
-    unsigned gcov_version;
-    unsigned checksum;
-    unsigned program_checksum;
-    unsigned ctr_mask;
-    unsigned stamp;
-    unsigned program_ncounts;
-    long long program_sum_max;
-    long long object_sum_max;
-    unsigned program_runs;
-    unsigned object_runs;
-} bb_object_info;
+    unsigned                  gcov_version;
+    unsigned                  checksum;
+    unsigned                  program_checksum;
+    unsigned                  ctr_mask;
+    unsigned                  stamp;
+    unsigned                  program_ncounts;
+    long long                 program_sum_max;
+    long long                 object_sum_max;
+    unsigned                  program_runs;
+    unsigned                  object_runs;
+} tce_object_info;
 
+typedef struct tce_channel_data tce_channel_data;
+typedef void (*tce_state_function)(tce_channel_data *self);
 
-typedef struct channel_data channel_data;
-struct channel_data
-{
-    int fd;
-    void (*state)(channel_data *me);
-    char buffer[256];
-    char *bufptr;
-    int remaining;
-    int peer_id;
-    bb_object_info *object;
-    bb_function_info *function;
-    long long *counter;
-    int the_group;
-    int counter_guard;
-    channel_data *next;
+/** TCE collector connection state */
+struct tce_channel_data {
+    int                    fd;            /**> connection handle */
+    tce_state_function     state;         /**> current state */
+    char                   buffer[256];   /**> current input line */
+    char                  *bufptr;        /**> the pointer beyond the
+                                           last byte read in buffer */
+    int                    remaining;     /**> bytes remaining in buffer */
+    int                    peer_id;       /**> current peer ID */
+    tce_object_info       *object;        /**> current object file record */
+    tce_function_info     *function;      /**> current function record */
+    long long             *counter;       /**> current counter */
+    int                    the_group;     /**> current counter group */
+    int                    counter_guard; /**> remaining counters */
+    tce_channel_data      *next;          /**> chain pointer */
 };
 
 extern void tce_report_error(const char *fmt, ...);
@@ -110,12 +136,13 @@ extern void tce_report_error(const char *fmt, ...);
 #define tce_report_notice tce_report_error
 #define DEBUGGING(x)
 
-extern bb_object_info   *get_object_info(int peer_id, 
-                                         const char *filename);
-extern bb_function_info *get_function_info(bb_object_info *oi,
-                                           const char *name, 
-                                           long arc_count, long checksum);
+extern tce_object_info   *tce_get_object_info(int peer_id, 
+                                              const char *filename);
+extern tce_function_info *tce_get_function_info(tce_object_info *oi,
+                                                const char *name, 
+                                                long arc_count, long checksum);
 
 extern void tce_set_ksymtable(char *table);
-extern void get_kernel_coverage(void);
+extern void tce_obtain_kernel_coverage(void);
 
+#endif  /* __TE_LIB_TCE_INTERNAL_H */

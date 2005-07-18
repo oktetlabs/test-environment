@@ -42,9 +42,9 @@ main(int argc, char *argv[])
 {
     int rc;
     extern pid_t tce_collector_pid;
-    extern int dump_tce_collector(void);
-    extern int stop_tce_collector(void);
-    extern int init_tce_collector(int argc, char **argv);
+    extern int tce_dump_tce_collector(void);
+    extern int tce_stop_tce_collector(void);
+    extern int tce_init_tce_collector(int argc, char **argv);
     extern te_bool tce_standalone;
         
     if (argc < 3)
@@ -55,10 +55,10 @@ main(int argc, char *argv[])
     }
 
     tce_standalone = 1;
-    init_tce_collector(argc - 2, argv + 2);
+    tce_init_tce_collector(argc - 2, argv + 2);
     tce_collector_pid = atol(argv[1]);
-    rc = dump_tce_collector();
-    stop_tce_collector();
+    rc = tce_dump_tce_collector();
+    tce_stop_tce_collector();
     if (rc != 0)
     {
         fprintf(stderr, "Error dumping TCE data from %d, code = %x\n", 
