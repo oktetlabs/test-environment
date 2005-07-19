@@ -565,7 +565,7 @@ ds_xinetd_service_addr_set(const char *service, const char *value)
     in_addr_t  addr;
     FILE      *f;
     FILE      *g;
-    int        index = ds_lookup(XINETD_ETC_DIR, get_ds_name(oid));
+    int        index = ds_lookup(XINETD_ETC_DIR, service);
     int        rc;
 
     UNUSED(gid);
@@ -638,21 +638,11 @@ static int
 ds_xinetd_service_addr_get(const char *service, char *value)
 {
     unsigned int  addr;
-    int           path_len;
-    char         *path;
     FILE         *f;
-
-    path_len = strlen(XINETD_ETC_DIR) + strlen(service) + 1;
-    if ((path = (char *)malloc(path_len)) == NULL)
-        return TE_RC(TE_TA_LINUX, ENOMEM);
-
-    snprintf(path, path_len, "%s%s", XINETD_ETC_DIR, service);
-    if ((f = fopen(path, "r")) == NULL)
-    {
-        free(path);
+    int           index = ds_lookup(XINETD_ETC_DIR, service);
+    
+    if ((f = fopen(ds_config(index), "r")) == NULL)
         return TE_RC(TE_TA_LINUX, errno);
-    }
-    free(path);
 
     while (fgets(buf, sizeof(buf), f) != NULL)
     {

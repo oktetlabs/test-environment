@@ -85,7 +85,7 @@ get_ds_name(const char *oid)
     return
          (strstr(oid, "dhcpserver") != NULL) ? "dhcpd" :       
          (strstr(oid, "dnsserver") != NULL) ? "named" :        
-         (strstr(oid, "todudpserver") != NULL) ? "time-udp" :  
+         (strstr(oid, "todudpserver") != NULL) ? "daytime-udp" :  
          (strstr(oid, "tftpserver") != NULL) ? "tftp" :        
          (strstr(oid, "ftpserver") != NULL) ? get_ftp_daemon_name() :       
          (strstr(oid, "telnetd") != NULL) ? "telnet" :         
