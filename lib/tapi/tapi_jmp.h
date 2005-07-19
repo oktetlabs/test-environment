@@ -81,7 +81,33 @@ typedef struct tapi_jmp_point {
     } while (0)
 
 
-#define TAPI_ON_JMP_DO_SAFE_VOID
+/**
+ * Set jump point in case some function raise an exception.
+ * We should capture it here and then decide whether to
+ * push it back to user with jump, or just return.
+ *
+ * Should be used at the beginning of functions that return void.
+ */
+#define TAPI_ON_JMP_DO_SAFE_VOID \
+    TAPI_ON_JMP(                        \
+        if (!tapi_jmp_stack_is_empty()) \
+            TAPI_JMP_DO(jmp_rc);        \
+        else                            \
+            return;                     \
+    )
+
+/**
+ * The same as TAPI_ON_JMP_DO_SAFE_VOID.
+ *
+ * Should be used at the beginning of functions that return int.
+ */
+#define TAPI_ON_JMP_DO_SAFE_RC \
+    TAPI_ON_JMP(                        \
+        if (!tapi_jmp_stack_is_empty()) \
+            TAPI_JMP_DO(jmp_rc);        \
+        else                            \
+            return jmp_rc;              \
+    )
 
 
 /**
