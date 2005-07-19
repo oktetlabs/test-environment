@@ -61,6 +61,9 @@ Template-Parameter ::= CHOICE -- type for defingn of template argument.
     ints SEQUENCE OF INTEGER,            -- | explicit list of values 
     strings SEQUENCE OF UniversalString, -- |   to be iterated.
 
+    ints-assoc SEQUENCE OF INTEGER, -- | explicit list of values,
+                                    -- | but not be iterated separately.  
+
     simple-for SEQUENCE 
         { begin INTEGER, end INTEGER, step INTEGER OPTIONAL},
     ...
@@ -82,6 +85,14 @@ Raw-Packet ::= SEQUENCE -- values of this type are passed from CSAP to test
     payload     Payload OPTIONAL
 } 
 
+Packet-Action ::= CHOICE
+{
+    echo        NULL,
+    function    UniversalString,
+    file        UniversalString
+}
+
+
 Traffic-Template ::= SEQUENCE 
 {
     arg-sets    SEQUENCE OF Template-Parameter OPTIONAL,
@@ -93,7 +104,8 @@ Traffic-Template ::= SEQUENCE
 Traffic-Pattern ::= SEQUENCE OF SEQUENCE
 {
     pdus        SEQUENCE OF Generic-PDU,
-    payload     Payload OPTIONAL
+    payload     Payload OPTIONAL,
+    action      Packet-Action
 }
 
 AllowFragments ::= INTEGER {always(0), never(1), presense-depended(2)}
