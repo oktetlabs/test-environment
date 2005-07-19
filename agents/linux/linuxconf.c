@@ -389,6 +389,8 @@ rcf_ch_conf_release()
 #ifdef CFG_LINUX_DAEMONS
     linux_daemons_release();
 #endif
+    if (cfg_socket >= 0)
+        (void)close(cfg_socket);
 }
 
 
