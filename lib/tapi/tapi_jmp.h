@@ -42,6 +42,9 @@
 #error Required setjmp.h not found
 #endif
 
+#include "te_defs.h"
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -113,6 +116,14 @@ extern tapi_jmp_point *tapi_jmp_push(const char *file,
  * @sa tapi_jmp_push
  */
 extern int tapi_jmp_do(int val, const char *file, unsigned int lineno);
+
+/**
+ * Is stack of jumps empty?
+ *
+ * @retval TRUE     Stack of jumps is empty
+ * @retval FALSE    Stack of jumps is not empty
+ */
+extern te_bool tapi_jmp_stack_is_empty(void);
 
 #ifdef __cplusplus
 } /* extern "C" */

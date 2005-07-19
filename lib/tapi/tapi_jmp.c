@@ -251,3 +251,14 @@ tapi_jmp_do(int val, const char *file, unsigned int lineno)
     /* Unreachable */
     assert(FALSE);
 }
+
+/* See description in tapi_jmp.h */
+te_bool
+tapi_jmp_stack_is_empty(void)
+{
+    tapi_jmp_ctx   *ctx;
+
+    ctx = tapi_jmp_get_ctx(FALSE);
+
+    return (ctx == NULL) || (ctx->stack.lh_first == NULL);
+}
