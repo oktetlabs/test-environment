@@ -3136,7 +3136,7 @@ done:
 
 static int
 route_change(unsigned int gid, const char *oid, const char *value,
-          const char *route, int action, unsigned flags)
+             const char *route, int action, unsigned flags)
 {
     struct nl_request    req;    
     inet_prefix          dst;
@@ -3162,11 +3162,8 @@ route_change(unsigned int gid, const char *oid, const char *value,
     req.n.nlmsg_flags = NLM_F_REQUEST | flags;
     req.n.nlmsg_type = action;
 
-    req.r.rtm_protocol = RTPROT_BOOT;
     req.r.rtm_family = AF_INET;
     req.r.rtm_table = RT_TABLE_MAIN;
-    req.r.rtm_scope = RT_SCOPE_NOWHERE;
-    req.r.rtm_type = RTN_UNICAST;
 
     if (action != RTM_DELROUTE)
     {
