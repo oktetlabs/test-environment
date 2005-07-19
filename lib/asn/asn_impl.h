@@ -174,23 +174,36 @@ extern int asn_impl_find_subvalue(const asn_value *container,
                                   asn_value const **found_val);
 
 /**
- * Insert one-depth subvalue into ASN value tree by its label (if applicable).
+ * Determine numeric index of field label in structure presenting ASN.1 type.
  * This method is applicable only to values with CONSTRAINT syntax with named
- * components: 'SEQUENCE', 'SET',  'CHOICE' and 'TAGGED'. 
- * Passed value is not copied, but inserted into ASN tree of 'container' as is.
- * Passed value may be NULL, this means that specified subvalue is allready
- * destroyed and pointer to it should be removed from 'container'. 
+ * components: 'SEQUENCE', 'SET' and 'CHOICE'. 
  *
- * Method for internal usage. 
- *
- * @param container  pointer to ASN value which leaf field is interested;
- * @param label      textual field label, specifying subvalue of 'container'. 
- * @param new_value  value to be inserted. 
+ * @param type       ASN type which subvalue is interested. 
+ * @param label      textual field label, specifying subvalue in type. 
+ * @param index      found index, unchanged if error occurred (OUT).
  *
  * @return zero on success, otherwise error code. 
- */ 
-extern int asn_impl_insert_subvalue(asn_value_p container, const char *label, 
-                                    asn_value_p new_value);
+ */
+extern int asn_impl_named_subvalue_index(const asn_type *type,
+                                         const char *label, int *index);
+
+/**
+ * Determine numeric index of field in structure presenting ASN.1 type
+ * by tag of subvalue.
+ * This method is applicable only to values with CONSTRAINT syntax with
+ * named components: 'SEQUENCE', 'SET' and 'CHOICE'. 
+ *
+ * @param type       ASN type which subvalue is interested. 
+ * @param tag_class  class of ASN tag
+ * @param tag_val    value of ASN tag
+ * @param index      found index, unchanged if error occurred (OUT).
+ *
+ * @return zero on success, otherwise error code. 
+ */
+extern int asn_child_tag_index(const asn_type *type,
+                               asn_tag_class tag_class, uint16_t tag_val,
+                               int *index);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

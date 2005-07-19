@@ -46,11 +46,7 @@ extern int number_of_digits(int value);
  * Declarations of local methods, for descriptions see their definition.
  */ 
 
-int asn_impl_named_subvalue_index(const asn_type *type, const char *label,
-                                  int *index);
 
-int asn_child_tag_index(const asn_type *type, asn_tag_class tag_class,
-                        uint16_t tag_val, int *index);
 
 int asn_impl_fall_down_to_tree_nc(const asn_value *, char *,
                                   asn_value const **);
@@ -60,9 +56,6 @@ int asn_impl_write_value_field(asn_value_p , const void *, size_t , char *);
 int asn_impl_read_value_field(const asn_value *, void *, size_t *, char *);
 
 int asn_impl_write_component_value(asn_value_p , const asn_value *,  char *);
-
-int asn_impl_insert_subvalue(asn_value_p container, const char *label, 
-                             asn_value_p new_value);
 
 
 static int asn_put_child_value_by_index(asn_value *container,
@@ -483,19 +476,6 @@ asn_get_name(const asn_value *value)
     return value->name;
 }
 
-/**
- * Determine numeric index of field in structure presenting ASN.1 type
- * by tag of subvalue.
- * This method is applicable only to values with CONSTRAINT syntax with
- * named components: 'SEQUENCE', 'SET' and 'CHOICE'. 
- *
- * @param type       ASN type which subvalue is interested. 
- * @param tag_class  class of ASN tag
- * @param tag_val    value of ASN tag
- * @param index      found index, unchanged if error occurred (OUT).
- *
- * @return zero on success, otherwise error code. 
- */
 int 
 asn_child_tag_index(const asn_type *type, asn_tag_class tag_class,
                     uint16_t tag_val, int *index)
@@ -525,17 +505,6 @@ asn_child_tag_index(const asn_type *type, asn_tag_class tag_class,
     return EASNWRONGLABEL;
 }
 
-/**
- * Determine numeric index of field label in structure presenting ASN.1 type.
- * This method is applicable only to values with CONSTRAINT syntax with named
- * components: 'SEQUENCE', 'SET' and 'CHOICE'. 
- *
- * @param type       ASN type which subvalue is interested. 
- * @param label      textual field label, specifying subvalue in type. 
- * @param index      found index, unchanged if error occurred (OUT).
- *
- * @return zero on success, otherwise error code. 
- */
 int 
 asn_impl_named_subvalue_index(const asn_type *type, const char *label,
                               int *index)
