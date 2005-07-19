@@ -53,6 +53,8 @@ typedef struct tapi_ip4_packet_t {
     in_addr_t   src_addr;
     in_addr_t   dst_addr;
 
+    uint8_t     ip_proto;
+
     uint8_t    *payload;
     size_t      pld_len;
 } tapi_ip4_packet_t;

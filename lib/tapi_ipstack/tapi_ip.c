@@ -79,6 +79,8 @@ ip4_pkt_handler(char *pkt_fname, void *user_param)
     int s_parsed = 0;
     int rc = 0;
 
+    int32_t hdr_field;
+
     RING("%s called file %s", __FUNCTION__, pkt_fname);
 
     if (user_param == NULL)
@@ -93,7 +95,7 @@ ip4_pkt_handler(char *pkt_fname, void *user_param)
         return; 
     }
 
-#define TEST_FAIL(msg_...) \
+#define CHECK_FAIL(msg_...) \
     do {                        \
         if (rc != 0)            \
         {                       \
@@ -104,24 +106,28 @@ ip4_pkt_handler(char *pkt_fname, void *user_param)
 
     rc = asn_parse_dvalue_in_file(pkt_fname, ndn_raw_packet,
                                   &pkt, &s_parsed);
-    TEST_FAIL("%s(): parse packet fails, rc = 0x%X,sym %d",
+    CHECK_FAIL("%s(): parse packet fails, rc = 0x%X,sym %d",
               __FUNCTION__, rc, s_parsed);
 
     rc = asn_get_subvalue(pkt, &ip_pdu, "pdus.0.#ip4");
-    TEST_FAIL("%s(): get IP4 PDU fails, rc = 0x%X",
+    CHECK_FAIL("%s(): get IP4 PDU fails, rc = 0x%X",
               __FUNCTION__, rc);
 
     len = sizeof(plain_pkt.src_addr);
     rc = ndn_du_read_plain_oct(ip_pdu, NDN_TAG_IP4_SRC_ADDR, 
                                (uint8_t *)&(plain_pkt.src_addr), &len);
-    TEST_FAIL("%s(): get IP4 src fails, rc = 0x%X",
+    CHECK_FAIL("%s(): get IP4 src fails, rc = 0x%X",
               __FUNCTION__, rc);
 
     len = sizeof(plain_pkt.dst_addr);
     rc = ndn_du_read_plain_oct(ip_pdu, NDN_TAG_IP4_DST_ADDR, 
                                (uint8_t *)&(plain_pkt.dst_addr), &len);
-    TEST_FAIL("%s(): get IP4 dst fails, rc = 0x%X",
+    CHECK_FAIL("%s(): get IP4 dst fails, rc = 0x%X",
               __FUNCTION__, rc);
+
+    rc = ndn_du_read_plain_int(ip_pdu, NDN_TAG_IP4_PROTOCOL, &hdr_field);
+    CHECK_FAIL("%s(): get IP4 proto fails, rc = 0x%X", __FUNCTION__, rc);
+    plain_pkt.ip_proto = hdr_field;
 
     len = plain_pkt.pld_len = asn_get_length(pkt, "payload");
     plain_pkt.payload = malloc(len);
@@ -131,7 +137,7 @@ ip4_pkt_handler(char *pkt_fname, void *user_param)
     cb_data->user_cb(&plain_pkt, cb_data->user_data);
 
     free(plain_pkt.payload);
-#undef TEST_FAIL
+#undef CHECK_FAIL
 }
 
 /* see description in tapi_ip.h */
