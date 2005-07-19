@@ -643,7 +643,7 @@ fi
 if test $START_OK -eq 0 -a -n "${DO_NUTS}" ; then
     te_log_message Engine Dispatcher "Dumping TCE"
     myecho "--->>> Dump TCE"
-    te_tce_dump --all /tmp/tcedump "${TE_TMP}/tce_"
+    te_tce_dump.sh "${CONF_NUT}"
 fi
 
 shutdown_daemon RCF 

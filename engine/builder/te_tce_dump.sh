@@ -1,7 +1,7 @@
 #! /bin/sh
 #
 # Test Coverage Estimation
-# Process TCE for all NUT images
+# Gather TCE dumps for all NUT images
 #
 #
 # Copyright (C) 2005 Test Environment authors (see file AUTHORS in
@@ -23,7 +23,7 @@
 # MA  02111-1307  USA
 #
 #
-# Author: Elena Vengerova <Elena.Vengerova@oktetlabs.ru>
+# Author: Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
 #
 # $Id$
 #
@@ -33,17 +33,10 @@ cat "$PARSER" "$1" | m4 > "${TE_TMP}/nut.conf.processed"
 . "${TE_TMP}/nut.conf.processed"
 
 for nut in $NUTS ; do
-    NUT_SOURCES="`eval echo '$NUT_'$nut'_SOURCES'`"
-    if test -z "$NUT_SOURCES" ; then continue; fi
-    tas="`eval echo '$NUT_'$nut'_TCE_TA'`"
+    tas="`eval echo '$NUT_'${nut}'_TCE_TA'`"
     if test -z "$tas" ; then continue; fi
     for ta in $tas ; do
-        tce_report ${TCE_REPORT_OPTS} \
-                   "${TE_LOG_DIR}/tce_${nut}_${ta}.tar" \
-                   "${TE_LOG_DIR}/tce_${nut}.log" \
-                   "${NUT_SOURCES}" || exit 1
+        te_tce_dump "${nut}" "${ta}" "${TE_LOG_DIR}/tce_${nut}_${ta}.tar"
     done                                      
-    tce_summary ${TCES_OPTS} "${TE_LOG_DIR}/tce_${nut}.log" \
-                >"${TE_LOG_DIR}/tce_${nut}.html" || exit 1
 done
 

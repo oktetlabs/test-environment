@@ -42,79 +42,69 @@
 DEFINE_LGR_ENTITY("TCE dump");
 
 
-int 
+int
 main(int argc, char *argv[])
 {
+    const char *nut = argv[1];
+    const char *ta = argv[2];
+    const char *filename = argv[3];
+
     int rc;
     int result;
     int peer_id;
 
-    static char ta_list[4096];
-    size_t ta_list_len = sizeof(ta_list);
-    char *ta;
-
     char buffer[PATH_MAX + 1];
-    char buffer2[PATH_MAX + 1];
 
-    UNUSED(argc);
 
-    if (strcmp(argv[1], "--all") != 0)
+    if (argc != 4)
     {
-        strcpy(ta_list, argv[1]);        
+        ERROR("Invalid number of arguments");
+        return EXIT_FAILURE;
     }
-    else
+
+    VERB("Obtain principal peer ID for %s on TA %s", nut, ta);
+    rc = rcf_ta_call(ta, 0, "tce_obtain_principal_peer_id", &peer_id,
+                     0, FALSE, NULL);
+    if (rc != 0)
     {
-        rc = rcf_get_ta_list(ta_list, &ta_list_len);
-        if (rc != 0)
+        ERROR("Unable to obtain TCE peer id, error code = %d", rc);
+        return EXIT_FAILURE;
+    }
+    RING("TCE principal peer ID for '%s' on TA '%s' is %d",
+         nut, ta, peer_id);
+
+    if (peer_id != 0)
+    {
+        VERB("Dump TCE collector for peer ID %d on TA %s", peer_id, ta);
+        rc = rcf_ta_call(ta, 0, "tce_dump_collector", &result,
+                         0, FALSE, NULL);
+        if (rc != 0 || result != 0)
         {
-            ERROR("Unable to obtain TA list, error code = %d", rc);
+            ERROR("Unable to dump TCE, error code = %d",
+                  (rc != 0) ? rc : result);
             return EXIT_FAILURE;
         }
-    }
-    
+        sleep(5);
 
-    for (ta = ta_list; *ta; ta += strlen(ta) + 1)
-    {
-        VERB("Forcing TCE");
-        rc = rcf_ta_call(ta, 0, "obtain_tce_peer_id", &peer_id, 0, 
-                         FALSE, NULL);
-        if (rc != 0)
+        VERB("Get TCE dump for peer ID %d from TA %s, put in %s",
+             peer_id, ta, filename);
+        sprintf(buffer, "/tmp/tcedump%d.tar", peer_id);
+        if ((rc = rcf_ta_get_file(ta, 0, buffer, filename)) != 0)
         {
-            ERROR("Unable to obtain TCE peer id, error code = %d", rc);
+            ERROR("Unable to obtain TCE data file (%s -> %s), "
+                  "error code = %d", buffer, filename, rc);
             return EXIT_FAILURE;
         }
-        
-        if (peer_id != 0)
+
+        VERB("Stop TCE collector for peer ID %d on TA %s", peer_id, ta);
+        rc = rcf_ta_call(ta, 0, "tce_stop_collector", &result,
+                         0, FALSE, NULL);
+        if (rc != 0 || result != 0)
         {
-            rc = rcf_ta_call(ta, 0, "dump_collected_tce", &result, 0, 
-                             FALSE, NULL);
-            if (rc != 0 || result != 0)
-            {
-                ERROR("Unable to dump TCE, error code = %d", 
-                      rc ? rc : result);
-                return EXIT_FAILURE;
-            }
-            
-            sprintf(buffer, "%s%d.tar", argv[2], peer_id);
-            sprintf(buffer2, "%s%s.tar", argv[3], ta);
-            if ((rc = rcf_ta_get_file(ta, 0, buffer, buffer2)) != 0)
-            {
-                ERROR("Unable to obtain TCE data file (%s -> %s), "
-                      "error code = %d", 
-                      buffer, buffer2, rc);
-                return EXIT_FAILURE;
-            }
-            
-            rc = rcf_ta_call(ta, 0, "stop_collect_tce", &result, 0, 
-                             FALSE, NULL);
-            if (rc != 0 || result != 0)
-            {
-                WARN("Unable to stop TCE, error code = %d", 
-                      rc ? rc : result);
-            }
-            puts(ta);
-        }    
+            WARN("Unable to stop TCE, error code = %d",
+                  rc ? rc : result);
+        }
     }
-        
+
     return 0;
 }
