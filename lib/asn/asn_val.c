@@ -403,7 +403,6 @@ asn_free_subvalue(asn_value_p value, const char* labels)
 
     if (rc == 0)
     {
-        asn_free_value(subvalue);
         asn_put_child_value_by_label(value, NULL, low_label);
 
         value->txt_len = -1;
@@ -1209,7 +1208,6 @@ asn_impl_write_component_value(asn_value_p container,
         {
             case 0: 
                 /* there is subvalue on that place, should be freed first.*/
-                asn_free_value(subvalue);
                 asn_put_child_value_by_label(container, NULL, cur_label);
                 /* pass through ... */
             case EASNINCOMPLVAL:
