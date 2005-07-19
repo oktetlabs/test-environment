@@ -189,8 +189,8 @@ extern int asn_impl_find_subvalue(const asn_value *container,
  *
  * @return zero on success, otherwise error code. 
  */ 
-extern int asn_impl_insert_subvalue (asn_value_p container, const char *label, 
-                              asn_value_p new_value);
+extern int asn_impl_insert_subvalue(asn_value_p container, const char *label, 
+                                    asn_value_p new_value);
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

@@ -46,7 +46,7 @@ extern int number_of_digits(int value);
  * Declarations of local methods, for descriptions see their definition.
  */ 
 
-int asn_impl_named_subvalue_index(const asn_type * type, const char *label,
+int asn_impl_named_subvalue_index(const asn_type *type, const char *label,
                                   int *index);
 
 int asn_child_tag_index(const asn_type *type, asn_tag_class tag_class,
@@ -63,6 +63,11 @@ int asn_impl_write_component_value(asn_value_p , const asn_value *,  char *);
 
 int asn_impl_insert_subvalue(asn_value_p container, const char *label, 
                              asn_value_p new_value);
+
+
+static int asn_put_child_value_by_index(asn_value *container,
+                                        asn_value *subvalue, 
+                                        int index);
 
 /*
  * Implementation of static inline functions 
@@ -399,7 +404,7 @@ asn_free_subvalue(asn_value_p value, const char* labels)
     if (rc == 0)
     {
         asn_free_value(subvalue);
-        asn_impl_insert_subvalue(value, low_label, NULL);
+        asn_put_child_value_by_label(value, NULL, low_label);
 
         value->txt_len = -1;
     }
@@ -600,11 +605,11 @@ asn_impl_find_subtype(const asn_type * type, const char *label,
 
 /* see description in asn_usr.h */
 int
-asn_put_child_value(asn_value *container, asn_value *new_value, 
+asn_put_child_value(asn_value *container, asn_value *subvalue, 
                     asn_tag_class tag_class, uint16_t tag_val)
 {
     int rc;
-    int index = 0, leaf_type_index;
+    int index;
 
     if (container == NULL) 
         return ETEWRONGPTR; 
@@ -612,9 +617,53 @@ asn_put_child_value(asn_value *container, asn_value *new_value,
     container->txt_len = -1;
 
     rc = asn_child_tag_index(container->asn_type, tag_class, tag_val,
-                             &leaf_type_index);
+                             &index);
     if (rc != 0)
         return rc; 
+
+    return asn_put_child_value_by_index(container, subvalue, index);
+}
+
+/* see description in asn_usr.h */
+int
+asn_put_child_value_by_label(asn_value *container, asn_value *subvalue,
+                             const char *label)
+{
+    int index;
+    int rc;
+
+
+    if(label == NULL || container == NULL)
+        return ETEWRONGPTR; 
+
+    rc = asn_impl_named_subvalue_index(container->asn_type, 
+                                       label, &index); 
+    if (rc != 0) 
+        return rc;
+
+    return asn_put_child_value_by_index(container, subvalue, index);
+}
+
+/**
+ * Internal static method for implementation of 
+ * 'asn_put_child_value' and 'asn_put_child_value_by_label'.
+ * Insert by child index in container type named-array. 
+ *
+ * @param container     ASN value which child should be updated, 
+ *                      have to be of syntax SEQUENCE, SET, or CHOICE
+ * @param subvalue      new ASN value for child
+ * @param index         index of child
+ *
+ *
+ * @return zero on success, otherwise error code.
+ */
+static int
+asn_put_child_value_by_index(asn_value *container, asn_value *new_value, 
+                             int leaf_type_index)
+{
+    int index = 0;
+
+    container->txt_len = -1;
 
     switch (container->syntax)
     {
@@ -636,99 +685,22 @@ asn_put_child_value(asn_value *container, asn_value *new_value,
     }
 
     /* now set name of new subvalue, if it is. */
-    if (new_value)
+    if (new_value != NULL)
     {
+        const asn_named_entry_t *ne =
+            (container->asn_type->sp.named_entries) + leaf_type_index;
+
         if (new_value->syntax & CONSTRAINT)
             new_value->txt_len = -1;
 
-        if (new_value->name) 
-            free(new_value->name); 
-
-        new_value->name = asn_strdup(container->asn_type->
-                                sp.named_entries[leaf_type_index].name);
-        if (container->syntax == CHOICE)
-        {
-            container->tag.cl = tag_class;
-            container->tag.val = tag_val;
-        }
+        free(new_value->name); 
+        new_value->name = asn_strdup(ne->name);
+        new_value->tag  = ne->tag;
     }
 
     return 0;
 }
 
-
-/**
- * Insert one-depth subvalue into ASN value tree by its label (if applicable).
- * This method is applicable only to values with CONSTRAINT syntax with named
- * components: 'SEQUENCE', 'SET',  'CHOICE' and 'TAGGED'. 
- * Passed value is not copied, but inserted into ASN tree of 'container' as is.
- * Passed value may be NULL, this means that specified subvalue is allready
- * destroyed and pointer to it should be removed from 'container'. 
- *
- * @param container  pointer to ASN value which leaf field is interested;
- * @param label      textual field label, specifying subvalue of 'container'. 
- * @param new_value  value to be inserted. 
- *
- * @return zero on success, otherwise error code. 
- */ 
-int
-asn_impl_insert_subvalue(asn_value_p container, const char *label, 
-                         asn_value_p new_value)
-{ 
-    int index;
-    int rc;
-
-
-    if(!label || !container)
-        return ETEWRONGPTR; 
-
-    rc = asn_impl_named_subvalue_index(container->asn_type, 
-                                       label, &index); 
-    if (rc) 
-        return rc;
-
-    container->txt_len = -1;
-
-    switch (container->syntax)
-    {
-        case SEQUENCE:
-        case SET:
-            container->data.array[index] = new_value; 
-            break;
-
-        case CHOICE:
-            if (container->data.array[0] && new_value)
-                return EASNOTHERCHOICE;
-            /* pass through ... */
-        case TAGGED:
-            container->data.array[0] = new_value;
-            break;
-
-        default:
-            return EASNGENERAL; 
-    }
-
-    /* now set name of new subvalue, if it is. */
-    if (new_value)
-    {
-        if (new_value->syntax & CONSTRAINT)
-            new_value->txt_len = -1;
-
-        if (new_value->name) 
-            free(new_value->name); 
-
-        if (label && *label)  
-            new_value->name = asn_strdup(label);
-        else                  
-            new_value->name = NULL;
-
-        if (container->syntax == CHOICE)
-            container->tag =
-                container->asn_type->sp.named_entries[index].tag;
-    }
-
-    return 0;
-}
 
 
 
@@ -908,23 +880,20 @@ asn_impl_write_value_field(asn_value_p container,
 
                 case EASNINCOMPLVAL:
                 { 
-                    const asn_type * subtype;
+                    const asn_type *subtype;
 
                     rc = asn_impl_find_subtype(container->asn_type, 
-                                                     cur_label, &subtype);
+                                               cur_label, &subtype);
                     if (rc) break;
 
-                    subvalue = asn_init_value(subtype);
-
-                    if (container->syntax != TAGGED)
-                        subvalue->name = asn_strdup(cur_label); 
+                    subvalue = asn_init_value(subtype); 
 
                     rc = asn_impl_write_value_field(subvalue, data, d_len,
                                                     rest_field_labels);
                     if (rc) break; 
 
-                    rc = asn_impl_insert_subvalue(container, cur_label, 
-                                                  subvalue);
+                    rc = asn_put_child_value_by_label(container, subvalue,
+                                                      cur_label);
                 } 
             } 
 
@@ -1238,9 +1207,10 @@ asn_impl_write_component_value(asn_value_p container,
     { /* no more labels, subvalue should be changed at this level */
         switch(rc)
         {
-            case 0: /* there is subvalue on that place, should be freed first.*/
+            case 0: 
+                /* there is subvalue on that place, should be freed first.*/
                 asn_free_value(subvalue);
-                asn_impl_insert_subvalue(container, cur_label, NULL);
+                asn_put_child_value_by_label(container, NULL, cur_label);
                 /* pass through ... */
             case EASNINCOMPLVAL:
             {
@@ -1299,8 +1269,9 @@ asn_impl_write_component_value(asn_value_p container,
 
                 if (new_value == NULL) 
                     return EASNGENERAL;
-                rc = asn_impl_insert_subvalue(container, cur_label, 
-                                              new_value);
+
+                rc = asn_put_child_value_by_label(container, new_value,
+                                                  cur_label);
 
             }
             default:

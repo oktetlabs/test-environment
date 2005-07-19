@@ -319,10 +319,12 @@ extern asn_value_p asn_decode(const void *data);
 
 
 /**
- * Put ASN value to the named leaf to the ASN value,
- * free old subvalue, if there was one. 
+ * Put ASN value to the named one-depth leaf to the ASN value.
+ * Free old leaf subvalue, if there was one. 
+ * Subvalue is not copied, but inserted into ASN tree of 'container' as is.
  *
- * @param container     ASN value which child should be updated
+ * @param container     ASN value which child should be updated, 
+ *                      have to be of syntax SEQUENCE, SET, or CHOICE
  * @param subvalue      new ASN value for child
  * @param tag_class     class of ASN tag
  * @param tag_val       value of ASN tag
@@ -331,6 +333,21 @@ extern asn_value_p asn_decode(const void *data);
  */
 extern int asn_put_child_value(asn_value *container, asn_value *subvalue, 
                                asn_tag_class tag_class, uint16_t tag_val);
+
+/**
+ * The same as 'asn_put_child_value', but take as child specificator
+ * its character label instead of tag. 
+ *
+ * @param container     ASN value which child should be updated, 
+ *                      have to be of syntax SEQUENCE, SET, or CHOICE
+ * @param subvalue      new ASN value for child
+ * @param label         character label of child
+ *
+ * @return zero on success, otherwise error code.
+ */
+extern int asn_put_child_value_by_label(asn_value *container,
+                                        asn_value *subvalue, 
+                                        const char *label);
 
 /**
  * Write data into primitive syntax leaf in specified ASN value.
@@ -798,8 +815,8 @@ extern size_t asn_count_txt_len(const asn_value *value, unsigned int indent);
 /**
  * Find ASN.1 tag value by textual label.
  *
- * @param type          ASN type descriptor, must have SEQUENCE of SET
- *                      syntax 
+ * @param type          ASN type descriptor, must have SEQUENCE, SET
+ *                      or CHOICE syntax 
  * @param label         textual label of desired field
  * @param tag           location for ASN.1 tag (OUT)
  *

@@ -636,7 +636,7 @@ asn_impl_pt_named_array(const char *text, const asn_type *type,
         if (rc) 
             return rc; 
 
-        rc = asn_impl_insert_subvalue(*parsed, label_buf, subval); 
+        rc = asn_put_child_value_by_label(*parsed, subval, label_buf); 
         if (rc) 
             return rc; 
 
@@ -805,7 +805,7 @@ asn_impl_pt_choice(const char*text, const asn_type *type,
         return rc; 
     }
 
-    rc = asn_impl_insert_subvalue(*parsed, l_b, subval);
+    rc = asn_put_child_value_by_label(*parsed, subval, l_b);
 
     if (rc)
     {
