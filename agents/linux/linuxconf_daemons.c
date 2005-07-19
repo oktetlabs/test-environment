@@ -169,6 +169,7 @@ static int
 copy_or_rename(const char *config, char *backup)
 {
     FILE *f;
+    char *s;
     int   rc;
     int   my_pid = getpid();
     
@@ -179,7 +180,10 @@ copy_or_rename(const char *config, char *backup)
         ERROR("popen(%s) failed with errno %d", buf, rc);
         return TE_RC(TE_TA_LINUX, rc);
     }
-    if (fgets(buf, sizeof(buf), f) == NULL)
+    s = fgets(buf, sizeof(buf), f);
+    (void)pclose(f);
+
+    if (s == NULL)
     {
         TE_SPRINTF(buf, "cp %s %s.%d", config, backup, my_pid);
     }
@@ -231,7 +235,7 @@ ds_create_backup(const char *dir, const char *name, int *index)
 {
     const char *filename;
     FILE       *f;
-    int rc;
+    int         rc;
 
     if (name == NULL)
     {
