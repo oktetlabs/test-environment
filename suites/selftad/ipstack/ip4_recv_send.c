@@ -71,6 +71,8 @@ main(int argc, char *argv[])
     char *agt_b;
     unsigned  len = sizeof(ta);
 
+    te_bool enum_iterator;
+
     csap_handle_t ip4_send_csap = CSAP_INVALID_HANDLE;
     csap_handle_t ip4_listen_csap = CSAP_INVALID_HANDLE;
     csap_handle_t eth_listen_csap_1 = CSAP_INVALID_HANDLE;
@@ -87,6 +89,7 @@ main(int argc, char *argv[])
 
     TEST_GET_INT_PARAM(num_pkts);
     TEST_GET_INT_PARAM(pld_len);
+    TEST_GET_BOOL_PARAM(enum_iterator);
     
     if ((rc = rcf_get_ta_list(ta, &len)) != 0)
         TEST_FAIL("rcf_get_ta_list failed: %X", rc);
@@ -120,17 +123,49 @@ main(int argc, char *argv[])
         TEST_FAIL("parse of pattern failed %X, syms %d", rc, syms);
 
     /* Fill in value for iteration */
-    rc = asn_parse_value_text("{ arg-sets { simple-for:{begin 1} }, "
-                              "  pdus     { ip4:{}, eth:{}} }",
-                              ndn_traffic_template,
-                              &template, &syms);
+    if (enum_iterator)
+    {
+        rc = asn_parse_value_text("{ arg-sets { ints:{}, ints-assoc:{} }, "
+                                  "  pdus     { ip4:{}, eth:{}} }",
+                                  ndn_traffic_template,
+                                  &template, &syms);
+    }
+    else
+    {
+        rc = asn_parse_value_text("{ arg-sets { simple-for:{begin 1} }, "
+                                  "  pdus     { ip4:{}, eth:{}} }",
+                                  ndn_traffic_template,
+                                  &template, &syms);
+    }
     if (rc != 0)
         TEST_FAIL("parse of template failed %X, syms %d", rc, syms);
 
-    rc = asn_write_value_field(template, &num_pkts, sizeof(num_pkts),
-                               "arg-sets.0.#simple-for.end");
-    if (rc != 0)
-        TEST_FAIL("write num_pkts failed %X", rc);
+    if (enum_iterator)
+    {
+        int j;
+        for (j = 0; j < num_pkts && rc == 0; j++)
+        {
+            asn_value *int_val = asn_init_value(asn_base_integer);
+
+            asn_write_int32(int_val, j * 2 + 10, "");
+            rc = asn_insert_indexed(template, int_val, -1,
+                                    "arg-sets.0.#ints");
+
+            asn_write_int32(int_val, j * 2 + 41, "");
+            rc = asn_insert_indexed(template, int_val, -1,
+                                    "arg-sets.1.#ints-assoc");
+        }
+        if (rc != 0)
+            TEST_FAIL("write enum failed %X", rc);
+    }
+    else
+    {
+        rc = asn_write_value_field(template, &num_pkts, sizeof(num_pkts),
+                                   "arg-sets.0.#simple-for.end");
+        if (rc != 0)
+            TEST_FAIL("write num_pkts failed %X", rc);
+    }
+    asn_save_to_file(template, "/tmp/traffic_template.asn");
 
     rc = asn_write_value_field(template, &pld_len, sizeof(pld_len),
                                "payload.#length");
@@ -225,6 +260,9 @@ cleanup:
                       csap_tmp, ta_, rc);                               \
     } while (0)                                                         \
                                                                     
+    if (ip4_send_csap != CSAP_INVALID_HANDLE)
+        rcf_ta_trsend_stop(agt_a, sid_a, ip4_send_csap, NULL);
+
     CLEANUP_CSAP(agt_a, sid_a, ip4_send_csap);
     CLEANUP_CSAP(agt_b, sid_b, ip4_listen_csap);
     CLEANUP_CSAP(agt_b, sid_b, eth_listen_csap_1);
