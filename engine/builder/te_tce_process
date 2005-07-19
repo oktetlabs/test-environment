@@ -3,6 +3,7 @@
 # Test Coverage Estimation
 # Process TCE for all NUT images
 #
+#
 # Copyright (C) 2005 Test Environment authors (see file AUTHORS in
 # the root directory of the distribution).
 #
@@ -22,8 +23,7 @@
 # MA  02111-1307  USA
 #
 #
-# Author: Artem Andreev <Artem.Andreev@oktetlabs.ru>
-#         Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
+# Author: Elena Vengerova <Elena.Vengerova@oktetlabs.ru>
 #
 # $Id$
 #
