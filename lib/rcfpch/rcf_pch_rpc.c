@@ -604,6 +604,7 @@ rcf_pch_rpc_init()
         if (lsock >= 0)   \
             close(lsock); \
         free(rpc_buf);    \
+        rpc_buf = NULL;   \
         return;           \
     } while (0)
 
@@ -700,6 +701,9 @@ rcf_pch_rpc_shutdown()
         free(rpcs);
     }
     rcf_ch_unlock();
+
+    free(rpc_buf);
+    rpc_buf = NULL;
 }
 
 
