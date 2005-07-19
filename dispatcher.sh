@@ -44,6 +44,7 @@ Generic options:
                                 to be generated (log.txt by default)
 
   --no-builder                  Do not build TE
+  --no-nuts-build               Do not build NUTs
   --no-tester                   Do not run Tester
   --no-cs                       Do not run Configurator
   --no-rcf                      Do not run RCF
@@ -196,8 +197,10 @@ CONF_RCF=rcf.conf
 CONF_RGT=
 CONF_NUT=nut.conf
 
-# Whether NUT should be built
-BUILD_NUT=
+# Whether NUTs processing is requested
+DO_NUTS=
+# Whether NUTs should be built
+NUTS_BUILD=yes
 
 # If yes, generate on-line log in the logging directory
 LOG_ONLINE=
@@ -265,6 +268,7 @@ process_opts()
             --tces-*) TCES_OPTS="${TCES_OPTS} --${1#--tces-}" ;;
             --tce-ignore-directories) TCE_REPORT_OPTS=--ignore-directories ;;
             --no-builder) BUILDER= ;;
+            --no-nuts-build) NUTS_BUILD= ;;
             --no-tester) TESTER= ;;
             --no-cs) CS= ;;
             --no-rcf) RCF= ;;
@@ -278,7 +282,7 @@ process_opts()
             --conf-cs=*) CONF_CS="${1#--conf-cs=}" ;;
             --conf-rcf=*) CONF_RCF=${1#--conf-rcf=} ;;
             --conf-rgt=*) CONF_RGT=${1#--conf-rgt=} ;;
-            --conf-nut=*) BUILD_NUT=yes ; CONF_NUT="${1#--conf-nut=}" ;;
+            --conf-nut=*) DO_NUTS=yes ; CONF_NUT="${1#--conf-nut=}" ;;
             
             --log-dir=*) TE_LOG_DIR="${1#--log-dir=}" ;;
             --log-online) LOG_ONLINE=yes ;;
@@ -475,13 +479,13 @@ te_log_init
 te_log_message Engine Dispatcher "Command-line options: ${CMD_LINE_OPTS}"
 
 # Build Test Environment
-TE_BUILD_LOG=${TE_RUN_DIR}/build.log
+TE_BUILD_LOG="${TE_RUN_DIR}/build.log"
 if test -n "$BUILDER" ; then
     cd ${TE_BASE}
     if test ! -e configure ; then
         if test -n "${QUIET}" ; then
             echo "Calling aclocal/autoconf/automake in `pwd`" \
-                >>${TE_BUILD_LOG}
+                >>"${TE_BUILD_LOG}"
         else
             echo "Calling aclocal/autoconf/automake in `pwd`"
         fi
@@ -493,9 +497,9 @@ if test -n "$BUILDER" ; then
     # FINAL ${TE_BASE}/configure --prefix=${TE_INSTALL} --with-config=${CONF_BUILDER} 2>&1 | te_builder_log
     if test -n "${QUIET}" ; then
         ${TE_BASE}/configure -q --prefix=${TE_INSTALL} \
-            --with-config=${CONF_BUILDER} >${TE_BUILD_LOG} || \
+            --with-config=${CONF_BUILDER} >"${TE_BUILD_LOG}" || \
             exit_with_log ;
-        make te >>${TE_BUILD_LOG} || exit_with_log ;
+        make te >>"${TE_BUILD_LOG}" || exit_with_log ;
     else
         ${TE_BASE}/configure -q --prefix=${TE_INSTALL} \
             --with-config=${CONF_BUILDER} || exit_with_log ;
@@ -504,7 +508,7 @@ if test -n "$BUILDER" ; then
 fi
 
 if test -n "${QUIET}" ; then
-    te_builder_opts --quiet=${TE_BUILD_LOG} $BUILDER_OPTS || exit_with_log
+    te_builder_opts --quiet="${TE_BUILD_LOG}" $BUILDER_OPTS || exit_with_log
 else
     te_builder_opts $BUILDER_OPTS || exit_with_log
 fi
@@ -516,12 +520,28 @@ if test -n "${SUITE_SOURCES}" -a -n "${BUILD_TS}" ; then
     te_build_suite `basename ${SUITE_SOURCES}` $SUITE_SOURCES || exit_with_log
 fi
 
-# If NUT configuration file is not specified explicitly,
-# but default exists use it
-test -z "${BUILD_NUT}" -a -e "${CONF_NUT}" && BUILD_NUT=yes
-if test -n "${BUILD_NUT}" ; then
-    te_build_nuts "${CONF_NUT}" || exit_with_log
+
+if test -n "${DO_NUTS}" ; then
+    if test ! -e "${CONF_NUT}" ; then
+        echo "Specified NUTs configuration file does not exists:" >&2
+        echo '    '"${CONF_NUT}" >&2
+        exit_with_log
+    fi
+elif test -e "${CONF_NUT}" ; then
+    # If NUT configuration file is not specified explicitly,
+    # but default exists, then use it
+    DO_NUTS=yes
+fi
+
+if test -n "${DO_NUTS}" -a -n "${BUILD_NUTS}" ; then
+    if test -z "${QUIET}" ; then
+        te_build_nuts "${CONF_NUT}" || exit_with_log
+    else
+        TE_BUILD_NUTS_LOG="${TE_RUN_DIR}/build_nuts.log"
+        te_build_nuts "${CONF_NUT}" >"${TE_BUILD_NUTS_LOG}" || exit_with_log
+    fi
 fi    
+
 
 rm -f valgrind.* vg.*
 
@@ -614,13 +634,13 @@ shutdown_daemon() {
 
 shutdown_daemon CS
 
-if test -n "$LOGGER_OK" ; then
+if test -n "$LOGGER_OK" -a -n "$RCF_OK" ; then
     te_log_message Engine Dispatcher "Flush log"
     myecho "--->>> Flush Logs"
     te_log_flush
 fi
 
-if test $START_OK -eq 0 -a -n "$TESTER" ; then
+if test $START_OK -eq 0 -a -n "${DO_NUTS}" ; then
     te_log_message Engine Dispatcher "Dumping TCE"
     myecho "--->>> Dump TCE"
     te_tce_dump --all /tmp/tcedump "${TE_TMP}/tce_"
@@ -665,7 +685,7 @@ if test -n "${RGT_LOG_HTML}" ; then
     fi
 fi
 
-if test -n "${BUILD_NUT}" ; then
+if test -n "${DO_NUTS}" ; then
     myecho "--->>> TCE processing"
     TCE_REPORT_OPTS="$TCE_REPORT_OPTS" TCES_OPTS="$TCES_OPTS" \
         te_tce_process "${CONF_NUT}"
