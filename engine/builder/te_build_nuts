@@ -3,7 +3,8 @@
 # Test Environment Builder
 #
 # Script for building of NUT libraries and images
-# Usage: te_build_nut <configuration file>
+# Usage: te_build_nuts <configuration file>
+#
 #
 # Copyright (C) 2004 Test Environment authors (see file AUTHORS in
 # the root directory of the distribution).
@@ -24,35 +25,51 @@
 # MA  02111-1307  USA
 #
 #
-# Author Elena Vengerova <Elena.Vengerova@oktet.ru>
+# Author: Elena Vengerova <Elena.Vengerova@oktetlabs.ru>
 #
 # $Id$
 #
 
-PARSER=`dirname $0`/../share/te_builder/nut.m4
-cat $PARSER $1 | m4 > ${TE_TMP}/nut.conf.processed
-. ${TE_TMP}/nut.conf.processed
+PARSER="`dirname $0`/../share/te_builder/nut.m4"
+cat "$PARSER" "$1" | m4 > "${TE_TMP}/nut.conf.processed"
+. "${TE_TMP}/nut.conf.processed"
 
-DEF_CC=$CC
-DEF_CXX=$CXX
+mkdir -p "${TE_INSTALL_NUT}"
 
-mkdir -p ${TE_INSTALL_NUT}
 for i in $NUTS ; do
-    NUT_SOURCES=`eval echo '$NUT_'$i'_SOURCES'`
-    NUT_SCRIPT=`eval echo '$NUT_'$i'_SCRIPT'`
-    NUT_PARMS=`eval echo '$NUT_'$i'_PARMS'`
-    TCE_SRC=`eval echo '$NUT_'$i'_TCE_SRC'`
-    TA=`eval echo '$NUT_'$i'_TCE_TA'`
-    export TE_INSTALL_NUT=${TE_INSTALL_NUT}
-    export TCE_SRC
-    if test -z "$TA" ; then
-        export CC=$DEF_CC
-        export CXX=$DEF_CXX
-    else
-        export CC=`which tce_gcc`
-        export CXX=`which tce_gxx`
+    NUT_SCRIPT="`eval echo '$NUT_'$i'_SCRIPT'`"
+    NUT_SOURCES="`eval echo '$NUT_'$i'_SOURCES'`"
+    NUT_PARMS="`eval echo '$NUT_'$i'_PARMS'`"
+    if test -n "`eval echo '$NUT_'$i'_TCE'`" ; then
+        test -n "$CC" && export TCE_CC="$CC"
+        test -n "$CXX" && export TCE_CXX="$CXX"
+        export CC="`which tce_gcc`"
+        export CXX="`which tce_gxx`"
+    
+        tce_src="`eval echo '$NUT_'$NUT'_TCE_SRC'`"
+        if test -z "${NUT_SOURCES}" ; then
+            # Can do nothing with TCE_SRC
+            TCE_SRC=$tce_src
+        else
+            # Path to NUT sources is specified
+            if test -z "$tce_src" ; then
+                # Set TCE_SRC to all NUT sources
+                TCE_SRC=${NUT_SOURCES}
+            else
+                # Append path to NUT sources as prefix if necessary
+                TCE_SRC=
+                for i in $tce_src ; do
+                    if test "${i:0:1}" != "/" ; then
+                        TCE_SRC="${TCE_SRC} ${NUT_SOURCES}/$i"
+                    else
+                        TCE_SRC="${TCE_SRC} $i"
+                    fi
+                done
+            fi
+        fi
+        export TCE_SRC
     fi
-    ${NUT_SCRIPT} ${NUT} ${NUT_PARMS} || exit 1
+    ${NUT_SCRIPT} "${NUT}" "${NUT_SOURCES}" ${NUT_PARMS} || exit 1
 done
 
 exit 0
