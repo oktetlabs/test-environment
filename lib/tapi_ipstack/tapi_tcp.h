@@ -191,8 +191,8 @@ typedef uint32_t tapi_tcp_pos_t;
  * @return Status code
  */
 extern int tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode, 
-                                    struct sockaddr *local_addr, 
-                                    struct sockaddr *remote_addr, 
+                                    const struct sockaddr *local_addr, 
+                                    const struct sockaddr *remote_addr, 
                                     const char *local_iface,
                                     uint8_t *local_mac,
                                     uint8_t *remote_mac,

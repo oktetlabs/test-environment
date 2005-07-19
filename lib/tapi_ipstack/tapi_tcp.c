@@ -995,8 +995,8 @@ uint8_t broadcast_mac[] = {0xff,0xff,0xff,0xff,0xff,0xff};
 /* See description in tapi_tcp.h */
 int
 tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode, 
-                         struct sockaddr *local_addr, 
-                         struct sockaddr *remote_addr, 
+                         const struct sockaddr *local_addr, 
+                         const struct sockaddr *remote_addr, 
                          const char *local_iface,
                          uint8_t *local_mac, uint8_t *remote_mac,
                          int window, tapi_tcp_handler_t *handler)
@@ -1243,7 +1243,7 @@ tapi_tcp_wait_open(tapi_tcp_handler_t handler, int timeout)
     }
 
     /* check if we got ACK for our SYN */
-    if (conn_descr->ack_got <= conn_descr->our_isn)
+    if (conn_descr->ack_got != conn_descr->our_isn + 1)
     {
         ERROR("%s(id %d): ACK for our SYN dont got",
                 __FUNCTION__, conn_descr->id);
@@ -1320,10 +1320,10 @@ tapi_tcp_send_fin(tapi_tcp_handler_t handler, int timeout)
     RING("fin sent");
     rcf_ta_trrecv_get(conn_descr->agt, conn_descr->rcv_sid,
                       conn_descr->rcv_csap, &num);
-    if (conn_descr->ack_got <= conn_descr->seq_sent)
+    if (conn_descr->ack_got != conn_descr->seq_sent + 1)
     {
         conn_wait_msg(conn_descr, timeout);
-        if (conn_descr->ack_got <= conn_descr->seq_sent)
+        if (conn_descr->ack_got != conn_descr->seq_sent + 1)
         {
             WARN("%s(conn %d): wait ACK for our FIN timed out", 
                  __FUNCTION__, handler);
