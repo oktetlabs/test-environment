@@ -722,6 +722,17 @@ ta_rtn_unlink(char *arg)
 
 
 /**
+ * Dummy signal handler.
+ *
+ * @param sig   Signal number
+ */
+static void
+ta_sig_handler_dummy(int sig)
+{
+    UNUSED(sig);
+}
+
+/**
  * Signal handler to be registered for SIGINT signal.
  * 
  * @param sig   Signal number
@@ -817,6 +828,11 @@ signal_registrar(int signum)
     sigaddset(&rpcs_received_signals, signum);
 }
 
+
+/*
+ * TCE support
+ */
+
 int (*tce_stop_function)(void);
 int (*tce_notify_function)(void);
 int (*tce_get_peer_function)(void);
@@ -825,16 +841,16 @@ const char *(*tce_get_conn_function)(void);
 static void 
 init_tce_subsystem(void)
 {
-    tce_stop_function     = rcf_ch_symbol_addr("tce_stop_collector", 
-                                               TRUE);
-    tce_notify_function   = rcf_ch_symbol_addr("tce_notify_collector", 
-                                               TRUE);
+    tce_stop_function =
+        rcf_ch_symbol_addr("tce_stop_collector", TRUE);
+    tce_notify_function =
+        rcf_ch_symbol_addr("tce_notify_collector", TRUE);
     tce_get_peer_function = 
         rcf_ch_symbol_addr("tce_obtain_principal_peer_id", TRUE);
     tce_get_conn_function = 
         rcf_ch_symbol_addr("tce_obtain_principal_connect", TRUE);
-    
 }
+
 
 /**
  * Entry point of the Linux Test Agent.
@@ -905,6 +921,7 @@ main(int argc, char **argv)
 
     if (tce_stop_function != NULL)
         tce_stop_function();
+
     kill_tasks();
     kill_threads();
 
@@ -919,20 +936,6 @@ main(int argc, char **argv)
     return retval;
 }
 
-/** Print environment to the console */
-int
-env()
-{
-    ta_system("env");
-    return 0;
-}
-
-static void
-sig_handler(int s)
-{
-    UNUSED(s);
-}
-
 
 #if 1 /* This is work-around, additional investigation is necessary */
 int 
@@ -941,7 +944,7 @@ ta_system(char *cmd)
     void   *h;
     int     rc;
 
-    h = signal(SIGCHLD, sig_handler);
+    h = signal(SIGCHLD, ta_sig_handler_dummy);
     rc = system(cmd);
     (void)signal(SIGCHLD, h);
     INFO("CMD='%s' RC=%d", cmd, rc);
@@ -950,3 +953,9 @@ ta_system(char *cmd)
 }
 #endif
 
+/** Print environment to the console */
+int
+env(void)
+{
+    return ta_system("env");
+}
