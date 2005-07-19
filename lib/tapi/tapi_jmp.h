@@ -80,6 +80,10 @@ typedef struct tapi_jmp_point {
         }                                                       \
     } while (0)
 
+
+#define TAPI_ON_JMP_DO_SAFE_VOID
+
+
 /**
  * Allocate and push long jump point in a stack (saved stack context
  * for non-local goto).
