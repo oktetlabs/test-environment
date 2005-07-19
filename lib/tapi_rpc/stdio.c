@@ -319,7 +319,9 @@ rpc_shell_get_all(rcf_rpc_server *rpcs, char **pbuf, const char *cmd, ...)
         return -1;
     }
 
+#if 1
     sleep(1);
+#endif
     
     while (TRUE)
     {
