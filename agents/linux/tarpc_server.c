@@ -741,26 +741,24 @@ setlibname(const tarpc_setlibname_in *in)
         return TE_RC(TE_TA_LINUX, ENOMEM);
     }
     dynamic_library_set = TRUE;
-    
+
     if (tce_get_peer_function != NULL)
     {
         tce_initializer = dlsym(dynamic_library_handle, 
                                 "__bb_init_connection");
-        if (tce_initializer == NULL)
-        {
-            WARN("%s is compiled without TCE support", 
-                 dynamic_library_name);
-        }
-        else
+        if (tce_initializer != NULL)
         {
             const char *ptc = tce_get_conn_function();
+
             if (ptc == NULL)
-                WARN("init_tce_connect has not been called");
+                WARN("tce_init_connect() has not been called");
             else
             {
                 if (tce_notify_function != NULL)
                     tce_notify_function();
                 tce_initializer(ptc, tce_get_peer_function());
+                RING("TCE initialized for dynamic library '%s'", 
+                     dynamic_library_name);
             }
         }
     }
