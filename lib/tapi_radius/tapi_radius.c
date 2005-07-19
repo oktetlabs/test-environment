@@ -262,15 +262,17 @@ tapi_radius_attr_list_to_string(const tapi_radius_attr_list_t *list,
     size_t       len = 0;
 
     assert(str != NULL);
+
     *str = NULL;
+
     for (i = 0; i < list->len; i++)
     {
-        const tapi_radius_attr_t       *attr = &list->attr[i];
-        const tapi_radius_attr_info_t  *info;
-        char                            buf[INET_ADDRSTRLEN];
-        const char                     *value;
-        char                           *s;
-        size_t                          attr_strlen = 0;
+        const tapi_radius_attr_t      *attr = &list->attr[i];
+        const tapi_radius_attr_info_t *info;
+        char                           buf[INET_ADDRSTRLEN];
+        const char                    *value;
+        char                          *s;
+        size_t                         attr_strlen = 0;
 
         if ((info = tapi_radius_dict_lookup(attr->type)) == NULL)
         {
@@ -316,6 +318,9 @@ tapi_radius_attr_list_to_string(const tapi_radius_attr_list_t *list,
         result = s;
         if (len > 0)
             strcat(result, ",");
+        else
+            result[0] = '\0';
+
         strcat(result, info->name);
         strcat(result, "=");
         if (attr->datatype == TAPI_RADIUS_TYPE_TEXT)
@@ -329,6 +334,7 @@ tapi_radius_attr_list_to_string(const tapi_radius_attr_list_t *list,
         len += attr_strlen;
     }
     *str = result;
+    
     return 0;
 }
 
@@ -801,3 +807,31 @@ tapi_radius_serv_del_user(const char *ta_name, const char *user_name)
     return rc;
 }
 
+/* Supplicant related functions @todo Should not be here */
+
+/* See the description in tapi_radius.h */
+int
+tapi_supp_set_md5(const char *ta_name, const char *if_name,
+                  tapi_supp_auth_md5_info_t *info)
+{
+    int rc;
+
+    /* Set MD5 related parameters */
+    rc = cfg_set_instance_fmt(CVT_STRING, (void *)info->user,
+                              "/agent:%s/supplicant:%s/method:%s/username:",
+                              ta_name, if_name, "md5");
+    if (rc != 0)
+        return rc;
+
+    rc = cfg_set_instance_fmt(CVT_STRING, (void *)info->passwd,
+                              "/agent:%s/supplicant:%s/method:%s/passwd:",
+                              ta_name, if_name, "md5");
+    if (rc != 0)
+        return rc;
+    
+    /* Now set current authentication method to MD5 */
+    rc = cfg_set_instance_fmt(CVT_STRING, (void *)"md5",
+                              "/agent:%s/supplicant:%s/cur_method:",
+                              ta_name, if_name);
+    return rc;
+}

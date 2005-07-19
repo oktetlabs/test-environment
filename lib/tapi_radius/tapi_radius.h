@@ -59,13 +59,15 @@ typedef enum {
 
 /** Type of RADIUS attribute data, see RFC 2865 */
 typedef enum {
-    TAPI_RADIUS_TYPE_TEXT,      /* UTF-8 encoded text string, 1-253 octets */
-    TAPI_RADIUS_TYPE_STRING,    /* Binary data, 1-253 octets */
-    TAPI_RADIUS_TYPE_ADDRESS,   /* IPv4 address, 32 bit value */
-    TAPI_RADIUS_TYPE_INTEGER,   /* 32 bit unsigned value */
-    TAPI_RADIUS_TYPE_TIME,      /* 32 bit unsigned value,
-                                   seconds since 19700101T000000Z */
-    TAPI_RADIUS_TYPE_UNKNOWN
+    TAPI_RADIUS_TYPE_TEXT,      /**< UTF-8 encoded text string,
+                                     1-253 octets */
+    TAPI_RADIUS_TYPE_STRING,    /**< Binary data, 1-253 octets */
+    TAPI_RADIUS_TYPE_ADDRESS,   /**< IPv4 address, 32 bit value */
+    TAPI_RADIUS_TYPE_INTEGER,   /**< 32 bit unsigned value */
+    TAPI_RADIUS_TYPE_TIME,      /**< 32 bit unsigned value,
+                                     seconds since 19700101T000000Z */
+    TAPI_RADIUS_TYPE_UNKNOWN    /**< Attribute is not from 
+                                     TAPI RADIUS dictionary */
 } tapi_radius_type_t;
 
 /** Type of RADIUS attribute */
@@ -402,6 +404,38 @@ extern int tapi_radius_serv_add_user(
  */
 extern int tapi_radius_serv_del_user(const char *ta_name,
                                      const char *user_name);
+
+/** Authentication methods supported by supplicant */
+typedef enum {
+    TAPI_SUPP_AUTH_MD5, /**< EAP-MD5 authentication */
+    TAPI_SUPP_AUTH_TLS, /**< EAP-TLS authentication */
+} tapi_supp_auth_method_t;
+
+/** Maximum allowed length for user name */
+#define TAPI_SUPP_USER_MAX_LEN   24
+
+/** Maximum allowed length for user's password */
+#define TAPI_SUPP_PASSWD_MAX_LEN 24
+
+/** Configuration parameters for EAP-MD5 authentication */
+typedef struct tapi_supp_auth_md5_info_s {
+    char user[TAPI_SUPP_USER_MAX_LEN]; /**< User name */
+    char passwd[TAPI_SUPP_PASSWD_MAX_LEN]; /**< User's password */
+} tapi_supp_auth_md5_info_t;
+
+/**
+ * Configure supplicant to use EAP-MD5 authentication and set
+ * MD5-specific parameters on the Agent.
+ *
+ * @param ta_name  Test Agent name where supplicant reside
+ * @param if_name  Interface name
+ * @param info     MD5-specific information
+ *
+ * @return Status of the operation
+ */
+extern int tapi_supp_set_md5(const char *ta_name,
+                             const char *if_name,
+                             tapi_supp_auth_md5_info_t *info);
 
 #ifdef __cplusplus
 } /* extern "C" */
