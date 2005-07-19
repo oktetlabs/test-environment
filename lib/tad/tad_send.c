@@ -614,8 +614,8 @@ tad_iterate_tmpl_args(tad_tmpl_iter_spec_t *arg_specs,
                       size_t arg_specs_num, 
                       tad_tmpl_arg_t *arg_iterated)
 {
-    int dep = arg_specs_num - 1;
-    int performed = 0;
+    int     dep = arg_specs_num - 1;
+    te_bool performed = FALSE;
 
     tad_tmpl_iter_spec_t *arg_spec_p;
 
@@ -636,26 +636,48 @@ tad_iterate_tmpl_args(tad_tmpl_iter_spec_t *arg_specs,
                 { 
                     arg_iterated[dep].arg_int += 
                         arg_spec_p->simple_for.step;
-                    performed = 1;
+                    performed = TRUE;
                 }
                 else
                 {
                     arg_iterated[dep].arg_int = 
                         arg_spec_p->simple_for.begin;
-                    continue; 
                     /* formally, it's unnecessary here, but algorithm
                        is more clear with this operator. */
                 }
+                VERB("for, value %d, dep %d, performed %d", 
+                     arg_iterated[dep].arg_int, dep, (int)performed); 
                 break;
+
+            case TAD_TMPL_ITER_INT_ASSOC:
             case TAD_TMPL_ITER_INT_SEQ:
+                {
+                    int new_index = arg_spec_p->int_seq.last_index + 1;
+
+                    if ((size_t)new_index == arg_spec_p->int_seq.length) 
+                        new_index = 0;
+                    else if (arg_spec_p->type == TAD_TMPL_ITER_INT_SEQ)
+                        performed = TRUE;
+
+                    arg_iterated[dep].arg_int =
+                        arg_spec_p->int_seq.ints[new_index];
+
+                    VERB("ints, index %d, value %d, dep %d, performed %d", 
+                         new_index, arg_iterated[dep].arg_int,
+                         dep, (int)performed); 
+
+                    arg_spec_p->int_seq.last_index = new_index;
+                }
+                break;
+
             case TAD_TMPL_ITER_STR_SEQ:
                 /* TODO: implement other choices in template argument */
-                return ETENOSUPP;
+                return -ETENOSUPP;
                 break;
         }
     }
 
-    return performed;
+    return (int)performed;
 }
 
 /**
@@ -675,58 +697,82 @@ int
 tad_get_tmpl_arg_specs(const asn_value *arg_set, 
                        tad_tmpl_iter_spec_t *arg_specs, size_t arg_num)
 {
-    const asn_value *arg_val;
     unsigned i; 
-    int rc = 0;
-    char lab[20];
-    char choice[20];
+    int      rc = 0;
+    int32_t  arg_param = 0;
+    size_t   enum_len;
+
+    uint16_t      t_val;
+    asn_tag_class t_class;
 
     if (arg_set == NULL || arg_specs == NULL)
         return -1; 
 
-
     for (i = 0; i < arg_num; i++)
     { 
-        snprintf (lab, sizeof(lab), "%d", i);
-        rc = asn_get_choice(arg_set, lab, choice, sizeof(choice));
+        const asn_value *arg_val;
+        const asn_value *arg_spec_elem;
+        rc = asn_get_indexed(arg_set, &arg_spec_elem, i);
         if (rc) break;
 
-        rc = asn_get_subvalue(arg_set, &arg_val, lab);
-        if (rc) break; 
-        VERB("get_template_arg_specs, choice for %d: <%s>\n",
-                    i, choice);
-        if (strcmp(choice, "simple-for") == 0)
+        rc = asn_get_choice_value(arg_spec_elem, &arg_val,
+                                  &t_class, &t_val);
+        if (rc) break;
+
+        VERB("iter tag class %d, tag val %d", (int)t_class, (int)t_val);
+
+
+        switch (t_val)
         {
-            size_t v_len;
-            arg_specs[i].type = TAD_TMPL_ITER_FOR;
-            v_len = sizeof(arg_specs[i].simple_for.begin);
-            rc = asn_read_value_field (arg_val, 
-                                       &(arg_specs[i].simple_for.begin),
-                                       &v_len, "begin");
-            if (rc)
-                arg_specs[i].simple_for.begin = 
-                    TAD_ARG_SIMPLE_FOR_BEGIN_DEF;
+            case NDN_ITER_INTS:
+            case NDN_ITER_INTS_ASSOC:
+                arg_specs[i].type = ((t_val == NDN_ITER_INTS) ? 
+                        TAD_TMPL_ITER_INT_SEQ : TAD_TMPL_ITER_INT_ASSOC);
+                enum_len = arg_specs[i].int_seq.length =
+                                                asn_get_length(arg_val, "");
+                arg_specs[i].int_seq.last_index = -1;
+                arg_specs[i].int_seq.ints = calloc(enum_len,
+                                                   sizeof(int32_t));
 
-            v_len = sizeof(arg_specs[i].simple_for.step);
-            rc = asn_read_value_field(arg_val, 
-                                      &(arg_specs[i].simple_for.step),
-                                      &v_len, "step");
-            if (rc)
-                arg_specs[i].simple_for.step = 
-                    TAD_ARG_SIMPLE_FOR_STEP_DEF; 
+                {
+                    unsigned j;
+                    for (j = 0; j < enum_len; j++)
+                    {
+                        const asn_value *int_val;
+                        asn_get_indexed(arg_val, &int_val, j);
+                        asn_read_int32(int_val, &arg_param, "");
+                        arg_specs[i].int_seq.ints[j] = arg_param;
+                    }
+                }
+                break;
 
-            v_len = sizeof(arg_specs[i].simple_for.end);
-            rc = asn_read_value_field(arg_val, 
-                                      &(arg_specs[i].simple_for.end),
-                                      &v_len, "end");
-            if (rc)
-                break; /* There is no default for end of 'simple-for' */
+            case NDN_ITER_FOR:
+                arg_specs[i].type = TAD_TMPL_ITER_FOR;
+                rc = asn_read_int32(arg_val, &arg_param, "begin");
+                arg_specs[i].simple_for.begin = ((rc == 0) ? arg_param : 
+                                            TAD_ARG_SIMPLE_FOR_BEGIN_DEF);
+
+                VERB("simple-for, begin %d", arg_specs[i].simple_for.begin);
+
+                rc = asn_read_int32(arg_val, &arg_param, "step");
+                arg_specs[i].simple_for.step = ((rc == 0) ? arg_param :
+                                            TAD_ARG_SIMPLE_FOR_STEP_DEF); 
+                VERB("simple-for, step %d", arg_specs[i].simple_for.step);
+
+                rc = asn_read_int32(arg_val, &arg_param, "end");
+                if (rc != 0)
+                    break; /* There is no default for end of 'simple-for' */
+                arg_specs[i].simple_for.end = arg_param;
+                VERB("simple-for, end %d", arg_specs[i].simple_for.end);
+                break;
+
+            default:
+            /* TODO: implement other choices in template argument */
+                rc = ETENOSUPP;
+                break;
         }
-        else /* TODO: implement other choices in template argument */
-        {
-            rc = ETENOSUPP;
+        if (rc != 0)
             break;
-        }
     }
     return rc;
 }
@@ -754,15 +800,18 @@ tad_init_tmpl_args(tad_tmpl_iter_spec_t *arg_specs, size_t arg_specs_num,
     { 
         switch (arg_specs[i].type)
         {
-            case TAD_TMPL_ITER_FOR:
-                arg_iterated[i].arg_int = arg_specs[i].simple_for.begin;
-                /* fall through! */
-
-                /* TODO: init of first iteration parameters to other 
-                 * template argument types */
             case TAD_TMPL_ITER_INT_SEQ:
+            case TAD_TMPL_ITER_INT_ASSOC:
+                arg_iterated[i].arg_int = arg_specs[i].int_seq.ints[0];
+                arg_specs[i].int_seq.last_index = 0;
                 arg_iterated[i].type = TAD_TMPL_ARG_INT;
                 break;
+
+            case TAD_TMPL_ITER_FOR:
+                arg_iterated[i].arg_int = arg_specs[i].simple_for.begin; 
+                arg_iterated[i].type = TAD_TMPL_ARG_INT;
+                break;
+
             case TAD_TMPL_ITER_STR_SEQ:
                 arg_iterated[i].type = TAD_TMPL_ARG_STR;
                 break;

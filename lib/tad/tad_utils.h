@@ -96,9 +96,12 @@ typedef struct tad_tmpl_arg_t {
  * Type of template iterator.
  */
 typedef enum {
-    TAD_TMPL_ITER_INT_SEQ,   /**< Explicit sequence of int values */
-    TAD_TMPL_ITER_STR_SEQ,   /**< Explicit sequence of string values */
-    TAD_TMPL_ITER_FOR,       /**< Simple for - arithmetical progression */
+    TAD_TMPL_ITER_INT_SEQ,   /**< explicit sequence of int values */
+    TAD_TMPL_ITER_INT_ASSOC, /**< explicit sequence of int values, 
+                                    not iterated separately, but associated
+                                    with previour iterator */
+    TAD_TMPL_ITER_STR_SEQ,   /**< explicit sequence of string values */
+    TAD_TMPL_ITER_FOR,       /**< simple for - arithmetical progression */
 } tad_tmpl_iter_type_t;   
 
 
@@ -115,12 +118,12 @@ typedef struct {
     union {
         struct {
             size_t length;     /**< Length of sequence */
-            int    last_index; /**< Index of last value */ 
-            int  **ints;       /**< Array with sequence */
+            int    last_index; /**< Index of last value, -1 means none */ 
+            int   *ints;       /**< Array with sequence */
         } int_seq;             /**< Explicit integer sequence */
         struct {
             size_t length;     /**< Length of sequence */
-            int    last_index; /**< Index of last value */ 
+            int    last_index; /**< Index of last value, -1 means none */ 
             char **strings;    /**< Array with sequence */
         } str_seq;             /**< Explicit string sequence */
         struct {
