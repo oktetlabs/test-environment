@@ -128,6 +128,7 @@ typedef enum {
     NDN_FOR_END,
     NDN_FOR_STEP,
     NDN_ITER_INTS,
+    NDN_ITER_INTS_ASSOC,
     NDN_ITER_STRINGS,
     NDN_ITER_FOR,
 } ndn_tmpl_iter_tags_t;

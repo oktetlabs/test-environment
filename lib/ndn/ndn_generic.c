@@ -184,6 +184,12 @@ static asn_type ndn_integer_seq_s =
     {subtype: &asn_base_integer_s} 
 };
 
+static asn_type ndn_integer_seq_assoc_s = 
+{ 
+    "SEQENCE OF INTEGER", {PRIVATE, NDN_ITER_INTS_ASSOC}, SEQUENCE_OF, 0,
+    {subtype: &asn_base_integer_s} 
+};
+
 static asn_type ndn_chstring_seq_s = 
 { 
     "SEQENCE OF UniversalString",
@@ -211,6 +217,8 @@ static asn_type ndn_template_parameter_simple_for_s =
 static asn_named_entry_t _ndn_template_parameter_ne_array[] = 
 {
     { "ints",       &ndn_integer_seq_s, {PRIVATE, NDN_ITER_INTS} },
+    { "ints-assoc", &ndn_integer_seq_assoc_s,
+        {PRIVATE, NDN_ITER_INTS_ASSOC} },
     { "strings",    &ndn_chstring_seq_s, {PRIVATE, NDN_ITER_STRINGS} },
     { "simple-for", &ndn_template_parameter_simple_for_s,
         {PRIVATE, NDN_ITER_FOR} },
