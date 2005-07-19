@@ -103,7 +103,7 @@ static struct ifreq req;
 
 static char buf[4096];
 static char trash[128];
-static int  s = -1;
+static int  cfg_socket = -1;
 
 
 /*
@@ -290,7 +290,7 @@ static char *find_net_addr(const char *ifname,
  * @return root pointer
  */
 rcf_pch_cfg_object *
-rcf_ch_conf_root()
+rcf_ch_conf_root(void)
 {
 #ifdef USE_NETLINK
     struct rtnl_handle rth;
@@ -330,15 +330,20 @@ rcf_ch_conf_root()
         }
 #endif
 
-        if ((s = socket(AF_INET, SOCK_DGRAM, IPPROTO_IP)) < 0)
+        if ((cfg_socket = socket(AF_INET, SOCK_DGRAM, IPPROTO_IP)) < 0)
         {
             return NULL;
+        }
+        if (fcntl(cfg_socket, F_SETFD, FD_CLOEXEC) != 0)
+        {
+            ERROR("Failed to set close-on-exec flag on configuration "
+                  "socket: 0x%X", errno);
         }
 
 #ifdef CFG_LINUX_DAEMONS
         if (linuxconf_daemons_init(&tail) != 0)
         {
-            close(s);
+            close(cfg_socket);
             return NULL;
         }
         assert(tail->brother == NULL);
@@ -655,7 +660,7 @@ static int
 get_addr(const char *ifname, struct in_addr *addr)
 {
     strcpy(req.ifr_name, ifname);
-    if (ioctl(s, SIOCGIFADDR, (int)&req) < 0)
+    if (ioctl(cfg_socket, SIOCGIFADDR, (int)&req) < 0)
     {
         /* It's not always called for correct arguments */
         VERB("ioctl(SIOCGIFADDR) for '%s' failed: %s",
@@ -697,7 +702,7 @@ set_prefix(const char *ifname, unsigned int prefix)
 
     req.ifr_addr.sa_family = AF_INET;
     SIN(&(req.ifr_addr))->sin_addr.s_addr = htonl(mask);
-    if (ioctl(s, SIOCSIFNETMASK, (int)&req) < 0)
+    if (ioctl(cfg_socket, SIOCSIFNETMASK, (int)&req) < 0)
     {
         ERROR("ioctl(SIOCSIFNETMASK) failed: %s", strerror(errno));
         return TE_RC(TE_TA_LINUX, errno);
@@ -842,7 +847,7 @@ aliases_list()
     conf.ifc_buf = buf;
 
     memset(buf, 0, sizeof(buf));
-    if (ioctl(s, SIOCGIFCONF, &conf) < 0)
+    if (ioctl(cfg_socket, SIOCGIFCONF, &conf) < 0)
     {
         ERROR("ioctl(SIOCGIFCONF) failed: %s", strerror(errno));
         return TE_RC(TE_TA_LINUX, errno);
@@ -1208,7 +1213,7 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
     sin.sin_family = AF_INET;
     sin.sin_addr.s_addr = new_addr;
     memcpy(&req.ifr_addr, &sin, sizeof(struct sockaddr));
-    if (ioctl(s, SIOCSIFADDR, &req) < 0)
+    if (ioctl(cfg_socket, SIOCSIFADDR, &req) < 0)
     {
         ERROR("ioctl(SIOCSIFADDR) failed: %s", strerror(errno));
         return TE_RC(TE_TA_LINUX, errno);
@@ -1226,7 +1231,7 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
             ERROR("inet_pton() failed");
             return TE_RC(TE_TA_LINUX, ETEFMT);
         }
-        if (ioctl(s, SIOCALIFADDR, &lreq) < 0)
+        if (ioctl(cfg_socket, SIOCALIFADDR, &lreq) < 0)
         {
             ERROR("ioctl(SIOCALIFADDR) failed: %s", strerror(errno));
             return TE_RC(TE_TA_LINUX, errno);
@@ -1520,7 +1525,7 @@ net_addr_del(unsigned int gid, const char *oid,
         sin.sin_addr.s_addr = INADDR_ANY;
         memcpy(&req.ifr_addr, &sin, sizeof(struct sockaddr));
 
-        if (ioctl(s, SIOCSIFADDR, (int)&req) < 0)
+        if (ioctl(cfg_socket, SIOCSIFADDR, (int)&req) < 0)
         {
             ERROR("ioctl(SIOCSIFADDR) failed: %s", strerror(errno));
             return TE_RC(TE_TA_LINUX, errno);
@@ -1529,7 +1534,7 @@ net_addr_del(unsigned int gid, const char *oid,
     else
     {
         strncpy(req.ifr_name, name, IFNAMSIZ);
-        if (ioctl(s, SIOCGIFFLAGS, &req) < 0)
+        if (ioctl(cfg_socket, SIOCGIFFLAGS, &req) < 0)
         {
             ERROR("ioctl(SIOCGIFFLAGS) failed: %s", strerror(errno));
             return TE_RC(TE_TA_LINUX, errno);
@@ -1537,7 +1542,7 @@ net_addr_del(unsigned int gid, const char *oid,
 
         strncpy(req.ifr_name, name, IFNAMSIZ);
         req.ifr_flags &= ~(IFF_UP | IFF_RUNNING);
-        if (ioctl(s, SIOCSIFFLAGS, &req) < 0)
+        if (ioctl(cfg_socket, SIOCSIFFLAGS, &req) < 0)
         {
             ERROR("ioctl(SIOCSIFFLAGS) failed: %s", strerror(errno));
             return TE_RC(TE_TA_LINUX, errno);
@@ -1709,7 +1714,7 @@ net_addr_list(unsigned int gid, const char *oid, char **list,
     conf.ifc_buf = buf;
 
     memset(buf, 0, sizeof(buf));
-    if (ioctl(s, SIOCGIFCONF, &conf) < 0)
+    if (ioctl(cfg_socket, SIOCGIFCONF, &conf) < 0)
     {
         ERROR("ioctl(SIOCGIFCONF) failed: %d", errno);
         return TE_RC(TE_TA_LINUX, errno);
@@ -1862,7 +1867,7 @@ prefix_get(unsigned int gid, const char *oid, char *value,
         ERROR("inet_pton() failed");
         return TE_RC(TE_TA_LINUX, ETEFMT);
     }
-    if (ioctl(s, SIOCGIFNETMASK, &req) < 0)
+    if (ioctl(cfg_socket, SIOCGIFNETMASK, &req) < 0)
     {
         ERROR("ioctl(SIOCGIFNETMASK) failed for if=%s addr=%s: %s",
               ifname, addr, strerror(errno));
@@ -2082,7 +2087,7 @@ broadcast_get(unsigned int gid, const char *oid, char *value,
         ERROR("inet_pton() failed");
         return TE_RC(TE_TA_LINUX, ETEFMT);
     }
-    if (ioctl(s, SIOCGIFBRDADDR, &req) < 0)
+    if (ioctl(cfg_socket, SIOCGIFBRDADDR, &req) < 0)
     {
         ERROR("ioctl(SIOCGIFBRDADDR) failed for if=%s addr=%s: %s",
               ifname, addr, strerror(errno));
@@ -2192,7 +2197,7 @@ broadcast_set(unsigned int gid, const char *oid, const char *value,
     strcpy(req.ifr_name, name);
     req.ifr_addr.sa_family = AF_INET;
     SIN(&(req.ifr_addr))->sin_addr.s_addr = baddr;
-    if (ioctl(s, SIOCSIFBRDADDR, (int)&req) < 0)
+    if (ioctl(cfg_socket, SIOCSIFBRDADDR, (int)&req) < 0)
     {
         ERROR("ioctl(SIOCSIFBRDADDR) failed: %s", strerror(errno));
         return TE_RC(TE_TA_LINUX, errno);
@@ -2224,7 +2229,7 @@ link_addr_get(unsigned int gid, const char *oid, char *value,
 
 #ifdef SIOCGIFHWADDR
     strcpy(req.ifr_name, ifname);
-    if (ioctl(s, SIOCGIFHWADDR, (int)&req) < 0)
+    if (ioctl(cfg_socket, SIOCGIFHWADDR, (int)&req) < 0)
     {
         ERROR("ioctl(SIOCGIFHWADDR) failed: %s", strerror(errno));
         /* FIXME Mapping to ETENOSUCHNAME */
@@ -2242,7 +2247,7 @@ link_addr_get(unsigned int gid, const char *oid, char *value,
     ifc.ifc_len = sizeof(buf);
     ifc.ifc_buf = (caddr_t)buf;
     memset(buf, 0, sizeof(buf));
-    if (ioctl(s, SIOCGIFCONF, &ifc) < 0)
+    if (ioctl(cfg_socket, SIOCGIFCONF, &ifc) < 0)
     {
         ERROR("ioctl(SIOCGIFCONF) failed: %s", strerror(errno));
         return TE_RC(TE_TA_LINUX, errno);
@@ -2304,7 +2309,7 @@ mtu_get(unsigned int gid, const char *oid, char *value,
     UNUSED(oid);
 
     strcpy(req.ifr_name, ifname);
-    if (ioctl(s, SIOCGIFMTU, (int)&req) != 0)
+    if (ioctl(cfg_socket, SIOCGIFMTU, (int)&req) != 0)
     {
         int err = errno;
         
@@ -2340,7 +2345,7 @@ mtu_set(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_LINUX, EINVAL);
 
     strcpy(req.ifr_name, ifname);
-    if (ioctl(s, SIOCSIFMTU, (int)&req) != 0)
+    if (ioctl(cfg_socket, SIOCSIFMTU, (int)&req) != 0)
     {
         ERROR("ioctl(SIOCSIFMTU) failed: %s", strerror(errno));
         /* FIXME Mapping to ETENOSUCHNAME */
@@ -2369,7 +2374,7 @@ arp_use_get(unsigned int gid, const char *oid, char *value,
     UNUSED(oid);
 
     strcpy(req.ifr_name, ifname);
-    if (ioctl(s, SIOCGIFFLAGS, (int)&req) != 0)
+    if (ioctl(cfg_socket, SIOCGIFFLAGS, (int)&req) != 0)
     {
         ERROR("ioctl(SIOCGIFFLAGS) failed: %s", strerror(errno));
         /* FIXME Mapping to ETENOSUCHNAME */
@@ -2399,7 +2404,7 @@ arp_use_set(unsigned int gid, const char *oid, const char *value,
     UNUSED(oid);
 
     strncpy(req.ifr_name, ifname, IFNAMSIZ);
-    if (ioctl(s, SIOCGIFFLAGS, &req) < 0)
+    if (ioctl(cfg_socket, SIOCGIFFLAGS, &req) < 0)
     {
         ERROR("ioctl(SIOCGIFFLAGS) failed: %s", strerror(errno));
         /* FIXME Mapping to ETENOSUCHNAME */
@@ -2414,7 +2419,7 @@ arp_use_set(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_LINUX, EINVAL);
     
     strncpy(req.ifr_name, ifname, IFNAMSIZ);
-    if (ioctl(s, SIOCSIFFLAGS, &req) < 0)
+    if (ioctl(cfg_socket, SIOCSIFFLAGS, &req) < 0)
     {
         ERROR("ioctl(SIOCSIFFLAGS) failed: %s", strerror(errno));
         return TE_RC(TE_TA_LINUX, errno);
@@ -2440,7 +2445,7 @@ status_get(unsigned int gid, const char *oid, char *value,
     UNUSED(oid);
 
     strcpy(req.ifr_name, ifname);
-    if (ioctl(s, SIOCGIFFLAGS, (int)&req) != 0)
+    if (ioctl(cfg_socket, SIOCGIFFLAGS, (int)&req) != 0)
     {
         ERROR("ioctl(SIOCGIFFLAGS) failed: %s", strerror(errno));
         /* FIXME Mapping to ETENOSUCHNAME */
@@ -2501,7 +2506,7 @@ status_set(unsigned int gid, const char *oid, const char *value,
     UNUSED(oid);
 
     strncpy(req.ifr_name, ifname, IFNAMSIZ);
-    if (ioctl(s, SIOCGIFFLAGS, &req) < 0)
+    if (ioctl(cfg_socket, SIOCGIFFLAGS, &req) < 0)
     {
         ERROR("ioctl(SIOCGIFFLAGS) failed: %s", strerror(errno));
         /* FIXME Mapping to ETENOSUCHNAME */
@@ -2516,7 +2521,7 @@ status_set(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_LINUX, EINVAL);
     
     strncpy(req.ifr_name, ifname, IFNAMSIZ);
-    if (ioctl(s, SIOCSIFFLAGS, &req) < 0)
+    if (ioctl(cfg_socket, SIOCSIFFLAGS, &req) < 0)
     {
         ERROR("ioctl(SIOCSIFFLAGS) failed: %s", strerror(errno));
         return TE_RC(TE_TA_LINUX, errno);
@@ -2692,7 +2697,7 @@ arp_add(unsigned int gid, const char *oid, const char *value,
         arp_req.arp_flags |= ATF_PERM;
 
 #ifdef SIOCSARP
-    if (ioctl(s, SIOCSARP, &arp_req) < 0)
+    if (ioctl(cfg_socket, SIOCSARP, &arp_req) < 0)
     {
         ERROR("ioctl(SIOCSARP) failed: %s", strerror(errno));
         return TE_RC(TE_TA_LINUX, errno);
@@ -2747,7 +2752,7 @@ arp_del(unsigned int gid, const char *oid,
 
 #ifdef SIOCDARP
     
-    if (ioctl(s, SIOCDARP, &arp_req) < 0)
+    if (ioctl(cfg_socket, SIOCDARP, &arp_req) < 0)
     {
         int err = errno;
         
@@ -3502,7 +3507,7 @@ route_add(unsigned int gid, const char *oid, const char *value,
 
     rt.rt_flags |= (RTF_UP | RTF_STATIC);
 
-    if (ioctl(s, SIOCADDRT, &rt) < 0)
+    if (ioctl(cfg_socket, SIOCADDRT, &rt) < 0)
     {
         ERROR("ioctl(SIOCADDRT) failed: %s", strerror(errno));
         return TE_RC(TE_TA_LINUX, errno);
@@ -3558,7 +3563,7 @@ route_del(unsigned int gid, const char *oid, const char *route)
         rt.rt_metric++;
     }
 
-    if (ioctl(s, SIOCDELRT, &rt) < 0)
+    if (ioctl(cfg_socket, SIOCDELRT, &rt) < 0)
     {
         ERROR("ioctl(SIOCDELRT) failed: %s", strerror(errno));
         return TE_RC(TE_TA_LINUX, errno);
