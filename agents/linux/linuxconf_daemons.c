@@ -568,8 +568,6 @@ ds_xinetd_service_addr_set(const char *service, const char *value)
     int        index = ds_lookup(XINETD_ETC_DIR, service);
     int        rc;
 
-    UNUSED(gid);
-    
     if (inet_aton(value, (struct in_addr *)&addr) == 0)
         return EINVAL;
 
