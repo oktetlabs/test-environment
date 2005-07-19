@@ -2,7 +2,7 @@ dnl Test Environment
 dnl
 dnl Nut configuration macros definitions
 dnl
-dnl Copyright (C) 2003 Test Environment authors (see file AUTHORS in the 
+dnl Copyright (C) 2005 Test Environment authors (see file AUTHORS in the 
 dnl root directory of the distribution).
 dnl
 dnl Test Environment is free software; you can redistribute it and/or 
@@ -27,37 +27,70 @@ dnl $Id$
 changequote([,])
 
 dnl Specifies parameters for NUT bootable image building.
-dnl Moreover the NUT image name is included to the list of NUT images
-dnl to be built by "make all" command.
 dnl May be called once for each NUT image name. Source location may
 dnl be the same for several NUT image names.
 dnl
 dnl Parameters:
 dnl       NUT image name
-dnl       source directory pathname
-dnl       building script pathname
-dnl       additional parameters to the building script 
-dnl       list of Test Agents for TCE gathering
-dnl       list of TCE sources
+dnl       build script pathname (absolute or related to the source
+dnl                              directory pathname, if specified)
+dnl       source directory pathname (optional)
+dnl       additional parameters to the building script (optional)
 dnl       
 define([TE_NUT],
 [
 [
-if test -n "$NUT_$1_SOURCES" ;
-then
-    echo "Definition of the NUT $1 appears twice" ;
+if test -n "$NUT_$1_SCRIPT" ; then
+    echo "Definition of the NUT $1 appears twice" >&2 ;
     exit 1 ;
 fi
 ]
 NUTS="$NUTS $1"
-NUT_$1_SOURCES=$2
-SCRIPT=$3
-if test "${SCRIPT:0:1}" != "/" ; then 
-    NUT_$1_SCRIPT=$2/$3
+SCRIPT="$2"
+if test -z "$SCRIPT" ; then
+    echo "Build script pathname for the NUT $1 must be specified" >&2 ;
+    exit 1 ;
+fi
+NUT_$1_SOURCES="$3"
+if test "${SCRIPT:0:1}" != "/" -a -n "$3" ; then 
+    NUT_$1_SCRIPT="$3/$SCRIPT"
 else    
-    NUT_$1_SCRIPT=$3
+    NUT_$1_SCRIPT="$SCRIPT"
 fi
 NUT_$1_PARMS="$4"
-NUT_$1_TCE_TA="$5"
-NUT_$1_TCE_SRC="$6"
+])
+
+dnl Request TCE for the NUT sources.
+dnl
+dnl Parameters:
+dnl       NUT image name
+dnl       list of Test Agents for TCE gathering
+dnl       
+define([TE_NUT_TCE],
+[
+[
+if test -z "$NUT_$1_SCRIPT" ; then
+    echo "Definition of the NUT $1 has not appeared yet" >&2 ;
+    exit 1 ;
+fi
+]
+NUT_$1_TCE=yes
+NUT_$1_TCE_TA="$NUT_$1_TCE_TA $2"
+])
+
+dnl Specifiy sources for TCE gathering for the NUT.
+dnl
+dnl Parameters:
+dnl       NUT image name
+dnl       path to sources for TCE (absolute or relative to NUT sources)
+dnl       
+define([TE_NUT_TCE_SRC],
+[
+[
+if test -z "$NUT_$1_SCRIPT" ; then
+    echo "Definition of the NUT $1 has not appeared yet" >&2 ;
+    exit 1 ;
+fi
+]
+NUT_$1_TCE_SRC="$NUT_$1_TCE_SRC $2"
 ])
