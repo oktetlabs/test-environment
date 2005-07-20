@@ -37,6 +37,8 @@
 #include <string.h>
 #endif
 
+#define TE_LGR_USER "NDN"
+
 #include "te_defs.h"
 #include "te_errno.h" 
 
@@ -417,7 +419,10 @@ ndn_match_mask(const asn_value *mask_pat, uint8_t *data, size_t d_len)
     const uint8_t *m, *d, *p;
 
     if (mask_pat->asn_type != &ndn_data_unit_mask_s)
+    {
+        ERROR("%s(): wrong asn type of masḵ_pat", __FUNCTION__);
         return EASNWRONGTYPE;
+    }
 
     rc = asn_child_tag_index(&ndn_data_unit_mask_s,
                              PRIVATE, NDN_MASK_VALUE, &val_index);
@@ -448,7 +453,11 @@ ndn_match_mask(const asn_value *mask_pat, uint8_t *data, size_t d_len)
                     ? FALSE : TRUE);
 
     if (exact_len && mask_len != d_len)
+    {
+        VERB("%s(): mask_len %d not equal d_len %d",
+             __FUNCTION__, mask_len, d_len);
         return ETADNOTMATCH;
+    }
 
     if (d_len < mask_len)
         cmp_len = d_len;
@@ -464,7 +473,7 @@ ndn_match_mask(const asn_value *mask_pat, uint8_t *data, size_t d_len)
          cmp_len > 0; 
          d++, p++, m++, cmp_len--)
         if ((*d & *m) != (*p & *m))
-        {
+        { 
             rc = ETADNOTMATCH;
             break;
         }
