@@ -44,6 +44,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <te_errno.h>
+#include <rcf_common.h>
 #define IN_TCE_COLLECTOR 1
 #include <tce_collector.h>
 #include "tce_internal.h"
@@ -378,7 +379,7 @@ get_kernel_gcov_data(int core_file, object_coverage *object, void *extra)
     long long *target_counters;
     long long counter;
     int i;
-    static char name_buffer[PATH_MAX + 1];
+    static char name_buffer[RCF_MAX_PATH + 1];
     char *real_start;
         
 

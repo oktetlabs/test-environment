@@ -53,7 +53,7 @@ main(int argc, char *argv[])
     int result;
     int peer_id;
 
-    char buffer[PATH_MAX + 1];
+    char buffer[RCF_MAX_PATH + 1];
 
 
     if (argc != 4)
