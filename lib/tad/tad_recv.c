@@ -197,64 +197,24 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
     {
         if (strcmp(label, "mask") == 0)
         {
-            const uint8_t *mask = NULL;
-            const uint8_t *pat = NULL;
-            unsigned int   mask_len;
-
-            int fixed_len_flag;
-            size_t fl_sz = sizeof(fixed_len_flag);
-
-            rc = asn_read_value_field(pattern_unit, &fixed_len_flag, 
-                                      &fl_sz, "payload.#mask.exact-len");
-            if (rc != 0) /* set default value */
-                fixed_len_flag  = 1;
-
-            F_RING("%s(): fix len flag: %d", __FUNCTION__, fixed_len_flag);
-
-            rc = asn_get_field_data(pattern_unit, &mask, 
-                                    "payload.#mask.m");
-
-            if (rc == 0)
-                rc = asn_get_field_data(pattern_unit, &pat, 
-                                        "payload.#mask.v");
-
-            if (rc != 0 || mask == NULL || pat == NULL)
+            const asn_value *mask_pat;
+            rc = asn_get_subvalue(pattern_unit, &mask_pat,
+                                  "payload.#mask");
+            if (rc != 0)
             {
-                if (rc == 0) 
-                    rc = ETEWRONGPTR;
-                ERROR("Error getting mask of payload, %X", rc);
+                ERROR("%s(): get mask failed %X", __FUNCTION__, rc);
                 return rc;
             }
-            mask_len = asn_get_length(pattern_unit, "payload.#mask.m");
-            if (mask_len > data_to_check.len || 
-                (fixed_len_flag && mask_len < data_to_check.len))
-            {
-                F_RING("Match payload fails, got pld len %d, mask len %d", 
-                        data_to_check.len, mask_len);
-                rc = ETADNOTMATCH;
-            }
-            else 
-            {
-                size_t i;
-                const uint8_t *d = data_to_check.data; 
-
-                for (i = 0; i < mask_len && i < data_to_check.len; 
-                        i++, mask++, pat++, d++)
-                    if ((*d & *mask) != (*pat & *mask))
-                    {
-                        rc = ETADNOTMATCH;
-                        break;
-                    }
-                if (rc != 0)
-                    F_VERB("Match payload fails, byte [%u] got %x;"
-                           " expected %x, mask %x",
-                           i, (int)*d, (int)(*pat), (int)(*mask));
-            }
+            rc = ndn_match_mask(mask_pat,
+                                data_to_check.data, data_to_check.len);
+            VERB("CSAP %d, rc from ndn_match_mask %X",
+                 csap_descr->id, rc);
         }
 
         if (rc != 0)
         {
-            F_INFO("Error matching pattern, rc %X", rc);
+            F_VERB("CSAP %d, Error matching pattern, rc %X, COUNT %d",
+                   csap_descr->id, rc);
             if (*packet && csap_descr->state & TAD_STATE_RESULTS)
                 asn_free_value(*packet);
         }
@@ -900,7 +860,7 @@ tad_tr_recv_thread(void *arg)
                 rc = tad_tr_recv_match_with_unit(read_buffer, d_len, 
                                                  csap_descr,
                                                  pattern_unit, &result); 
-                F_VERB("csap %d, Match pkt return %x, unit %d", 
+                F_INFO("CSAP %d, Match pkt return %x, unit %d", 
                        csap_descr->id, rc, unit);
                 switch (rc)
                 {
@@ -939,7 +899,6 @@ tad_tr_recv_thread(void *arg)
 
             if ((rc == 0) && (csap_descr->state & TAD_STATE_RESULTS))
             { 
-                F_VERB("result wanted, will be sent\n");
                 if (csap_descr->state & TAD_STATE_FOREGROUND)
                 {
                     F_VERB("in foreground mode\n");
@@ -1013,7 +972,7 @@ tad_tr_recv_thread(void *arg)
     csap_descr->last_errno       = 0;
     CSAP_DA_UNLOCK(csap_descr);
 
-    F_VERB("CSAP %d recv process finished, %d pkts got",
+    F_RING("CSAP %d recv process finished, %d pkts got",
            csap_descr->id, pkt_count);
 
     free(context);
