@@ -200,7 +200,7 @@ CONF_NUT=nut.conf
 # Whether NUTs processing is requested
 DO_NUTS=
 # Whether NUTs should be built
-NUTS_BUILD=yes
+BUILD_NUTS=yes
 
 # If yes, generate on-line log in the logging directory
 LOG_ONLINE=
