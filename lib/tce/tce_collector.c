@@ -687,11 +687,18 @@ function_header_state(tce_channel_data *ch)
         }
         else
         {
-            long arc_count, checksum;
+            unsigned arc_count, checksum;
             tce_function_info *fi;
 
             *space++ = '\0';
-            sscanf(space, "%ld %ld", &checksum, &arc_count);
+            if (sscanf(space, "%u %u", &checksum, &arc_count) != 2)
+            {
+                tce_report_error("parse error near '%s'", space);
+                ch->state = NULL;
+                return;
+            }
+            tce_report_notice("at %s %ld", space, checksum);
+            
             fi = tce_get_function_info(ch->object, ch->buffer + 1, 
                                        arc_count, checksum);
             if (fi == NULL)
@@ -808,6 +815,7 @@ object_header_state(tce_channel_data *ch)
             unsigned gcov_version;
             unsigned checksum, program_checksum, ctr_mask;
 
+            tce_report_notice("new format peer detected");
             space += 4;
             if(sscanf(space, "%u %u %u %u %ld %u",
                       &gcov_version, &oi->stamp, 
@@ -831,7 +839,7 @@ object_header_state(tce_channel_data *ch)
             oi->gcov_version = gcov_version;
             if (oi->checksum != 0 && 
                 (oi->checksum != checksum || 
-                 oi->program_checksum != checksum))
+                 oi->program_checksum != program_checksum))
             {
                 tce_report_error("checksum mismatch for peer %d",
                                  ch->peer_id);
@@ -839,7 +847,7 @@ object_header_state(tce_channel_data *ch)
                 return;
             }
             oi->checksum = checksum;
-            oi->program_checksum = checksum;
+            oi->program_checksum = program_checksum;
             if (oi->object_functions != 0 && 
                 object_functions != oi->object_functions)
             {
@@ -1172,7 +1180,8 @@ dump_object(tce_object_info *oi)
         memcpy(tar_header + TAR_PREFIX, oi->filename, 
                last_slash - oi->filename);
     }
-    sprintf(tar_header + TAR_MODE, "%#7.7o", TUREAD | TGREAD | TOREAD);
+    sprintf(tar_header + TAR_MODE, "%#7.7o", TUREAD | TUWRITE | 
+            TGREAD | TOREAD);
     memcpy(tar_header + TAR_UID, "0000000", 7);
     memcpy(tar_header + TAR_GID, "0000000", 7);
     sprintf(tar_header + TAR_MTIME, "%#11.11lo", (long)time(NULL));
@@ -1253,6 +1262,7 @@ dump_new_object_data(tce_object_info *oi, FILE *tar_file)
         {
             if (!((1 << group) & oi->ctr_mask))
                 continue;
+            tce_report_notice("dumping counter group %d", group);
             group_magic[0] = GCOV_TAG_FOR_COUNTER (group);
             count = fi->groups[group].number;
             group_magic[1] = GCOV_TAG_COUNTER_LENGTH (count);

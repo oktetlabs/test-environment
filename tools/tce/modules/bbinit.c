@@ -33,7 +33,8 @@ init_module(void)
         v[0] = (major < 10 ? '0' : 'A' - 10) + major;
         v[1] = (minor / 10) + '0';
         v[2] = (minor % 10) + '0';
-        v[3] = strchr(ptr, '(') != NULL ? '(' : '*';
+        ptr  = strchr(ptr, '(');
+        v[3] = (ptr == NULL ? '*' : ptr[1]);
         
         for (ix = 0; ix != 4; ix++)
             __gcov_version_magic = (__gcov_version_magic << 8) | v[ix];

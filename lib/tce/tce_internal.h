@@ -138,7 +138,7 @@ struct tce_channel_data {
 extern void tce_report_error(const char *fmt, ...);
 
 #define tce_report_notice tce_report_error
-#define DEBUGGING(x) 
+#define DEBUGGING(x) x
 
 /** Find a record for an object file 'filename', peer 'peer_id'.
  *   If there is no such record, it is created 

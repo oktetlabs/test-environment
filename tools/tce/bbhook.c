@@ -520,7 +520,7 @@ EXIT_GCOV()
                  gi_ptr->filename, 
                  gcov_version, gi_ptr->stamp,
                  object.checksum, program.checksum,
-                 gi_ptr->n_functions);
+                 gi_ptr->n_functions, gi_ptr->ctr_mask);
         write(fd, buffer, strlen(buffer));
 
         for (s_ix = 0; s_ix < GCOV_COUNTERS_SUMMABLE; s_ix++)
@@ -678,8 +678,9 @@ EXIT_GCOV()
              fn_info++)
         {          
             snprintf(buffer, sizeof(buffer), 
-                     "*%s %d %d\n~add %d\n", fn_info->name,
-                    fn_info->checksum, fn_info->arc_count, 
+                     "*%s %u %u\n~add %d\n", fn_info->name,
+                     (unsigned)fn_info->checksum, 
+                     (unsigned)fn_info->arc_count, 
                      fn_info->arc_count);
             write(fd, buffer, strlen(buffer));
             for (i = fn_info->arc_count; i > 0; i--, count_ptr++)
@@ -704,13 +705,12 @@ EXIT_GCOV()
 static
 void calc_gcov_version(void)
 {
-    if (gcov_version != 0)
+    if (gcov_version == 0)
     {
         unsigned char v[4];
         unsigned ix;
         char *ptr = __VERSION__;
         unsigned major, minor = 0;
-        char s = 0;
         
         major = strtoul(ptr, &ptr, 10);
         if (*ptr)
@@ -719,7 +719,8 @@ void calc_gcov_version(void)
         v[0] = (major < 10 ? '0' : 'A' - 10) + major;
         v[1] = (minor / 10) + '0';
         v[2] = (minor % 10) + '0';
-        v[3] = strchr(ptr, '(') != NULL ? '(' : '*';
+        ptr  = strchr(ptr, '(');
+        v[3] = (ptr == NULL ? '*' : ptr[1]);
         
         for (ix = 0; ix != 4; ix++)
             gcov_version = (gcov_version << 8) | v[ix];
