@@ -21,6 +21,8 @@ te_tce_dump_DEPENDENCIES = @TE_DEPENDENCIES@ \
                            $(DESTDIR)/$(prefix)/lib/libipc.a
 
 # Scripts to be installed by 'install-data' (required for TE build)
+# Test Suites are build on distcheck, therefore 'te_build_suite' and
+# 'te_tests_info.sh' should be installed by 'install-data'.
 mybindir=$(prefix)/bin
 dist_mybin_SCRIPTS = \
     te_builder_log \
@@ -31,13 +33,13 @@ dist_mybin_SCRIPTS = \
     te_cross_build \
     te_generate_symtbl \
     te_generate_rpctbl \
-    te_rpc_supported
+    te_rpc_supported \
+    te_build_suite \
+    te_tests_info.sh
 
 # Scripts to be installed by 'install'
 dist_bin_SCRIPTS = \
     te_build_nuts \
-    te_build_suite \
-    te_tests_info.sh \
     te_tce_dump.sh \
     te_tce_process
 
