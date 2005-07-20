@@ -101,7 +101,7 @@ te_bool tce_standalone = FALSE;
 int 
 tce_init_collector(int argc, char **argv)
 {
-    char buf[PATH_MAX + 1];
+    char buf[RCF_MAX_PATH + 16];
     char **ptr;
     strcpy(tar_file_prefix, *argv);
     collector_args = malloc(sizeof(*collector_args) * argc);
@@ -1123,7 +1123,7 @@ dump_data(void)
 static void
 dump_object(tce_object_info *oi)
 {
-    static char tar_name[RCF_MAX_PATH + 1];
+    static char tar_name[RCF_MAX_PATH + 16];
     static char tar_header[512];
     FILE *tar_file;
     long pos, len;
@@ -1335,7 +1335,7 @@ clear_data(void)
     int idx;
     tce_object_info *iter;
     
-    char buffer[RCF_MAX_PATH + 1];
+    char buffer[RCF_MAX_PATH + 16];
     for (idx = 0; idx < TCE_HASH_SIZE; idx++)
     {
         for (iter = tce_hash_table[idx]; iter != NULL; iter = iter->next)
