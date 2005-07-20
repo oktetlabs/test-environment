@@ -696,7 +696,7 @@ rcf_pch_rpc_shutdown()
     {
         next = rpcs->next;
         close(rpcs->sock);
-        usleep(100);
+        usleep(100000);
         kill_rpcserver(rpcs);
         free(rpcs);
     }
@@ -1176,7 +1176,7 @@ rcf_pch_rpc_server(const char *name)
         {
             send(s, "OK", sizeof("OK"), 0);
             RING("RPC server '%s' finished", name);
-            sleep(1);
+            usleep(100000);
             goto cleanup;
         }
         
