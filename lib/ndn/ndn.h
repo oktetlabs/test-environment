@@ -73,6 +73,7 @@ typedef enum {
  * ($TE_BASE/doc/ndn/ndn-gen.asn).
  */
 typedef enum { 
+    NDN_DU_UNDEF, 
     NDN_DU_PLAIN, 
     NDN_DU_SCRIPT, 
     NDN_DU_ENUM, 
@@ -297,19 +298,31 @@ extern int ndn_du_read_plain_oct(const asn_value *pdu, uint16_t tag,
 /**
  * Match data with DATA-UNIT pattern.  
  *
- * @param pat           ASN value with pattern PDU. 
+ * @param pat           ASN value with pattern PDU
  * @param pkt_pdu       ASN value with parsed packet PDU, may be NULL 
- *                      if parsed packet is not need (OUT). 
- * @param data          binary data to be matched.
- * @param d_len         length of data packet to be matched, in bytes. 
+ *                      if parsed packet is not need (OUT)
+ * @param data          binary data to be matched
+ * @param d_len         length of data packet to be matched, in bytes
  * @param label         textual label of desired field, which should be 
- *                      DATA-UNIT{}type.
+ *                      DATA-UNIT{} type
  *
  * @return zero if matches, errno otherwise.
  */ 
 extern int ndn_match_data_units(const asn_value *pat, asn_value *pkt_pdu,
                                 uint8_t *data, size_t d_len, 
                                 const char *label);
+
+/**
+ * Match data with mask pattern.
+ *
+ * @param mask_pat      ASN value with mask pattern
+ * @param data          binary data to be matched
+ * @param d_len         length of data packet to be matched, in bytes
+ *
+ * @return zero if matches, errno otherwise.
+ */ 
+extern int ndn_match_mask(const asn_value *mask_pat,
+                          uint8_t *data, size_t d_len);
 
 /**
  * Get timestamp from recieved Raw-Packet

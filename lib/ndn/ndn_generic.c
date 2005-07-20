@@ -397,18 +397,95 @@ const asn_type * const  ndn_raw_packet = &ndn_raw_packet_s;
 
 
 
+/* See description in ndn.h */ 
+int
+ndn_match_mask(const asn_value *mask_pat, uint8_t *data, size_t d_len)
+{
+    int exact_len_index, pat_index, val_index;
+    int rc = 0;
+
+    te_bool exact_len;
+
+    size_t           mask_len;
+    size_t           cmp_len;
+
+    const asn_value *leaf_m = NULL;
+    const asn_value *leaf_v = NULL;
+
+    const uint8_t *data_m;
+    const uint8_t *data_v;
+    const uint8_t *m, *d, *p;
+
+    if (mask_pat->asn_type != &ndn_data_unit_mask_s)
+        return EASNWRONGTYPE;
+
+    rc = asn_child_tag_index(&ndn_data_unit_mask_s,
+                             PRIVATE, NDN_MASK_VALUE, &val_index);
+    if (rc == 0)
+        rc = asn_child_tag_index(&ndn_data_unit_mask_s,
+                                 PRIVATE, NDN_MASK_PATTERN, &pat_index);
+    if (rc == 0)
+        rc = asn_child_tag_index(&ndn_data_unit_mask_s,
+                                 PRIVATE, NDN_MASK_EXACT_LEN,
+                                 &exact_len_index);
+    if (rc != 0)
+    {
+        ERROR("%s(): get indexes of leafs in mask type fails %X",
+              __FUNCTION__, rc);
+        return EASNGENERAL;
+    }
+
+    if ((leaf_m = mask_pat->data.array[pat_index]) == NULL ||
+        (leaf_v = mask_pat->data.array[val_index]) == NULL)
+    {
+        ERROR("%s(): no sufficient data to match with mask", __FUNCTION__);
+        return EASNINCOMPLVAL;
+    }
+
+    cmp_len = mask_len = leaf_m->len;
+
+    exact_len = ((mask_pat->data.array[exact_len_index]->data.integer == 0)
+                    ? FALSE : TRUE);
+
+    if (exact_len && mask_len != d_len)
+        return ETADNOTMATCH;
+
+    if (d_len < mask_len)
+        cmp_len = d_len;
+
+    if ((data_m = leaf_m->data.other) == NULL || 
+        (data_v = leaf_v->data.other) == NULL)
+    {
+        ERROR("%s(): no sufficient data to match with mask", __FUNCTION__);
+        return EASNINCOMPLVAL;
+    }
+
+    for (d = data, m = data_m, p = data_v;
+         cmp_len > 0; 
+         d++, p++, m++, cmp_len--)
+        if ((*d & *m) != (*p & *m))
+        {
+            rc = ETADNOTMATCH;
+            break;
+        }
+    return rc;
+}
 
 /* See description in ndn.h */ 
 int 
 ndn_match_data_units(const asn_value *pattern, asn_value *pkt_pdu,
                      uint8_t *data, size_t d_len, const char *label)
 {
+    int               field_index;
     asn_syntax        plain_syntax;
-    const asn_value  *du_val;
-    const asn_type   *val_type;
+    const asn_value  *du_ch_val = NULL;
+    const asn_value  *du_val = NULL;
     const asn_type   *du_type;
     const asn_type   *du_sub_type;
-    const char       *choice_ptr = NULL;
+    asn_tag_class     t_class;
+    uint16_t          t_val = NDN_DU_UNDEF;
+    const uint8_t *pat_data;
+    size_t pat_d_len;
 
     int      rc = 0;
     uint32_t user_int;
@@ -416,26 +493,38 @@ ndn_match_data_units(const asn_value *pattern, asn_value *pkt_pdu,
     if (pattern == NULL || data == NULL || label == NULL)
         return ETEWRONGPTR; 
 
-    rc = asn_impl_find_subvalue(pattern, label, &du_val);
-    if (rc && rc != EASNINCOMPLVAL)
+    rc = asn_impl_named_subvalue_index(pattern->asn_type, label,
+                                       &field_index);
+    if (rc != 0)
+    {
+        ERROR("%s(): find field %s index failed 0x%X",
+              __FUNCTION__, label, rc);
         return rc;
+    }
 
-    if (rc == 0)
-        choice_ptr = asn_get_choice_ptr(du_val);
+    du_ch_val = pattern->data.array[field_index];
+    if(du_ch_val == NULL && pkt_pdu == NULL)
+        /* data matches, no value should be saved into packet */
+        return 0; 
 
-    if (choice_ptr == NULL && pkt_pdu == NULL)
-        return 0; /* data matches, no value should be saved into packet */
+    if (du_ch_val != NULL)
+    {
+        rc = asn_get_choice_value(du_ch_val, &du_val, &t_class, &t_val);
+        if (rc != 0)
+            return rc;
+    } 
 
-    val_type = asn_get_type(pattern);
-    rc = asn_impl_find_subtype(val_type, label, &du_type);
-    if (rc)
-        return rc;
+    /* 
+     * since rc from 'asn_impl_named_subvalue_index' was zero,
+     * we may be sure that named_entries field here is correct;
+     * get first subtype in Data-Unit, that is "plain" allways.
+     */
+    du_type = pattern->asn_type->sp.named_entries[field_index].type;
 
-    if (du_type == NULL || 
-        du_type->sp.named_entries == NULL || 
+    if (du_type->sp.named_entries == NULL || 
         (du_sub_type = du_type->sp.named_entries[0].type) == NULL)
     {
-        WARN("%s: Wrong type of subleaf passed", __FUNCTION__);
+        ERROR("%s: Wrong type of subleaf passed", __FUNCTION__);
         return EASNGENERAL;
     }
 
@@ -465,46 +554,63 @@ ndn_match_data_units(const asn_value *pattern, asn_value *pkt_pdu,
             break; /* No any preliminary actions needed. */
     }
 
-    if (choice_ptr == NULL) 
+    switch (t_val)
     {
-        /* do nothing, data is matched */
-        rc = 0;
-    }
-    else if (strcmp(choice_ptr, "plain") == 0)
-    {
-        const uint8_t *pat_data;
-        size_t pat_d_len;
+        case NDN_DU_UNDEF:
+            /* do nothing, data is matched */
+            break;
 
-        rc = asn_get_field_data(du_val, &pat_data, "#plain"); 
-        if (rc) 
-            return rc;
-
-        switch (plain_syntax)
-        {
-            case INTEGER:
-            case ENUMERATED:
+        case NDN_DU_PLAIN:
+            switch (plain_syntax)
             {
-                uint32_t pat_int = *((uint32_t *)pat_data);
-                if (pat_int != user_int)
-                    rc = ETADNOTMATCH;
+                case INTEGER:
+                case ENUMERATED:
+                    if ((uint32_t)du_val->data.integer != user_int)
+                        rc = ETADNOTMATCH;
+                    break;
+
+                case BIT_STRING:
+                    rc = ETENOSUPP; /* TODO */
+                    break;
+
+                case OCT_STRING:
+                case CHAR_STRING: 
+                    pat_data = du_val->data.other;
+                    pat_d_len = du_val->len;
+
+                    if (pat_d_len != d_len || 
+                        memcmp(data, pat_data, d_len) != 0)
+                        rc = ETADNOTMATCH;
+                    break;
+
+                default:
+                    WARN("%s, compare with plain of syntax %d"
+                         " unsupported yet",
+                         __FUNCTION__, plain_syntax);
+                    break;
             }
             break;
-            case BIT_STRING:
-                rc = ETENOSUPP; /* TODO */
-                break;
-            case OCT_STRING:
-            case CHAR_STRING: 
-                pat_d_len = asn_get_length(du_val, "");
-                if (pat_d_len != d_len || 
-                    memcmp(data, pat_data, d_len) != 0)
-                    rc = ETADNOTMATCH;
-                break;
-            default:
-                WARN("%s, compare with plain of syntax %d unsupported yet",
-                     __FUNCTION__, plain_syntax);
-                break;
-        }
+
+        case NDN_DU_MASK:
+            rc = ndn_match_mask(du_val, data, d_len);
+            break;
+        case NDN_DU_SCRIPT:
+        case NDN_DU_ENUM:
+        case NDN_DU_INTERVALS:
+            WARN("%s, DATA-UNIT tag %d unsupported", 
+                 __FUNCTION__, (int)t_val);
+            rc = ETENOSUPP;
+            break;
+
+        case NDN_DU_ENV:
+        case NDN_DU_FUNC:
+        default:
+            WARN("%s, this Data-Unit fields may not present for match",
+                 __FUNCTION__);
+            rc = ETENOSUPP;
+            break;
     }
+#if 0
     else if (strcmp(choice_ptr, "mask") == 0)
     { 
         const asn_value *mask_val;
@@ -542,6 +648,7 @@ ndn_match_data_units(const asn_value *pattern, asn_value *pkt_pdu,
              __FUNCTION__, choice_ptr);
         rc = ETENOSUPP;
     }
+#endif
 
     if (rc == 0 && pkt_pdu)
     {
