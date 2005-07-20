@@ -65,15 +65,15 @@ AC_CONFIG_HEADERS([config.h])
 
 AC_CHECK_TYPES([xmlError], [], [], [#include <libxml/xmlerror.h>])
 
-AM_CONDITIONAL(CONFIGURATOR_DEBUG, test -n "$with_tests")
+#AM_CONDITIONAL(CONFIGURATOR_DEBUG, test -n "$with_tests")
 
 AC_CONFIG_FILES([Makefile])
 
-if test -n "$with_tests"; then
-    AC_SUBST([prefix])
-    AC_SUBST([srcdir])
-    AC_CONFIG_FILES([tests/Makefile tests/db/Makefile tests/paths.c \
-                    tests/rcf_emul/Makefile tests/suites/Makefile])
-fi
+#if test -n "$with_tests"; then
+#    AC_SUBST([prefix])
+#    AC_SUBST([srcdir])
+#    AC_CONFIG_FILES([tests/Makefile tests/db/Makefile tests/paths.c \
+#                    tests/rcf_emul/Makefile tests/suites/Makefile])
+#fi
 
 AC_OUTPUT

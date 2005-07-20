@@ -4,11 +4,11 @@ AM_CPPFLAGS = @TE_CFLAGS@ -I$(DESTDIR)/$(prefix)/include \
 AM_CFLAGS = @XML2_CFLAGS@
 AM_LDFLAGS = @TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/lib 
 
-if CONFIGURATOR_DEBUG
-SUBDIRS = . tests
-else
-EXTRA_DIST = tests
-endif
+#if CONFIGURATOR_DEBUG
+#SUBDIRS = . tests
+#else
+#EXTRA_DIST = tests
+#endif
 
 bin_PROGRAMS = te_cs te_cs_shutdown 
 
