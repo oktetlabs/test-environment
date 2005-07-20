@@ -268,7 +268,7 @@ process_opts()
             --tces-*) TCES_OPTS="${TCES_OPTS} --${1#--tces-}" ;;
             --tce-ignore-directories) TCE_REPORT_OPTS=--ignore-directories ;;
             --no-builder) BUILDER= ;;
-            --no-nuts-build) NUTS_BUILD= ;;
+            --no-nuts-build) BUILD_NUTS= ;;
             --no-tester) TESTER= ;;
             --no-cs) CS= ;;
             --no-rcf) RCF= ;;
