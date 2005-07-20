@@ -579,7 +579,8 @@ eth_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
                               data, ETH_ALEN, "dst-addr");
     data += ETH_ALEN; 
 
-    VERB("%s(): univ match for dst rc %x\n", __FUNCTION__, rc);
+    VERB("%s(CSAP %d): univ match for dst rc %x\n",
+         __FUNCTION__, csap_id, rc);
 
     if (rc == 0)
     {
@@ -587,7 +588,8 @@ eth_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
         rc = ndn_match_data_units(pattern_pdu, eth_hdr_pdu, 
                                   data, ETH_ALEN, "src-addr");
         data += ETH_ALEN;
-        VERB("%s(): univ match for src rc %x\n", __FUNCTION__, rc);
+        VERB("%s(CSAP %d): univ match for src rc %x\n",
+             __FUNCTION__, csap_id, rc);
     }
 
     if (rc == 0 && *((uint16_t *)data) == htons(ETH_TAGGED_TYPE_LEN))
@@ -637,7 +639,8 @@ eth_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
     { 
         rc = ndn_match_data_units(pattern_pdu, eth_hdr_pdu, 
                                   data, ETH_TYPE_LEN, "eth-type");
-        VERB("%s(): univ match for eth-type rc %x\n", __FUNCTION__, rc);
+        VERB("%s(CSAP %d): univ match for eth-type rc %x\n",
+             __FUNCTION__, csap_id, rc);
     }
 
     if (rc == 0 && eth_hdr_pdu)
@@ -667,8 +670,8 @@ eth_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
     memcpy(payload->data, pkt->data + ETH_HLEN, payload->len); 
 
     gettimeofday(&moment, NULL);
-    F_VERB("Eth csap %d, packet matches, pkt len %d, pld len %d, mcs %d", 
-           csap_id, pkt->len, payload->len, moment.tv_usec);
+    F_VERB("%s(CSAP %d), packet matches, pkt len %d, pld len %d, mcs %d", 
+           __FUNCTION__, csap_id, pkt->len, payload->len, moment.tv_usec);
 
     asn_free_value(eth_hdr_pdu);
     
