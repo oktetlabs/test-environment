@@ -273,9 +273,7 @@ static const char * const trc_tests_stats_row =
 "      <TD class=\"C\">\n"
 "        %u\n"
 "      </TD>\n"
-"      <TD>\n"
-"        %s\n"
-"      </TD>\n"
+"      <TD>%s</TD>\n"
 "    </TR>\n";
 
 static const char * const trc_test_exp_got_start =
@@ -310,18 +308,10 @@ static const char * const trc_test_exp_got_row =
 "      <TD>\n"
 "        %s<B><A %s%s%shref=\"#%s\">%s</A></B>\n"
 "      </TD>\n"
-"      <TD>\n"
-"        %s\n"
-"      </TD>\n"
-"      <TD>\n"
-"        %s\n"
-"      </TD>\n"
-"      <TD>\n"
-"        %s\n"
-"      </TD>\n"
-"      <TD>"
-"        %s\n"
-"      </TD>\n"
+"      <TD>%s</TD>\n"
+"      <TD>%s</TD>\n"
+"      <TD>%s</TD>\n"
+"      <TD>%s</TD>\n"
 "    </TR>\n";
 
 
