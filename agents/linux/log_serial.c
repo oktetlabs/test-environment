@@ -56,6 +56,7 @@
 #include "te_defs.h"
 #include "te_errno.h"
 #include "comm_agent.h"
+#include "rcf_common.h"
 #include "rcf_ch_api.h"
 #include "rcf_pch.h"
 
@@ -274,11 +275,8 @@ int
 log_serial(void *ready, int argc, char *argv[])
 {
     char           user[64] = "";
-#ifdef PATH_MAX /* to prevent compilation error on CygWin */
-    char           tmp[PATH_MAX + 16];
-#else
-    char           tmp[260];
-#endif
+    char           tmp[RCF_MAX_PATH + 16];
+
     /*
      * 'volatile' is used below to avoid warnings in AMD-64 build.
      * If 'volatile' is not no specified, the following warning is

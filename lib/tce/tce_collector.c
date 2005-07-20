@@ -59,11 +59,12 @@
 #endif
 #include <unistd.h>
 #include <te_errno.h>
+#include <rcf_common.h>
 #include "posix_tar.h"
 #include "gcov-io.h"
 #include "tce_internal.h"
 
-static char tar_file_prefix[PATH_MAX + 1];
+static char tar_file_prefix[RCF_MAX_PATH + 1];
 
 static tce_channel_data *channels;
 
