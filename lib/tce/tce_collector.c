@@ -448,7 +448,13 @@ tce_dump_collector(void)
     lock.l_whence = SEEK_SET;
     lock.l_start = 0;
     lock.l_len = 0;
-    fcntl(data_lock, F_SETLKW, &lock);
+    if (fcntl(data_lock, F_SETLKW, &lock) != 0)
+    {
+        int rc = errno;
+        tce_report_error("Unable to obtain data lock: %s",
+                         strerror(rc));
+        return rc;
+    }
     lock.l_type = F_UNLCK;
     lock.l_whence = SEEK_SET;
     lock.l_start = 0;

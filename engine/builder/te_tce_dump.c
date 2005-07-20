@@ -84,7 +84,6 @@ main(int argc, char *argv[])
                   (rc != 0) ? rc : result);
             return EXIT_FAILURE;
         }
-        sleep(5);
 
         VERB("Get TCE dump for peer ID %d from TA %s, put in %s",
              peer_id, ta, filename);
