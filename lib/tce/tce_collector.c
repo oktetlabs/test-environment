@@ -77,7 +77,7 @@ static void signal_handler(int no)
 
 
 static fd_set active_channels;
-static te_bool already_dumped = FALSE;
+static te_bool already_dumped = TRUE;
 static te_bool dump_request = FALSE;
 
 /* forward declarations */
@@ -147,6 +147,28 @@ tce_report_error(const char *fmt, ...)
     va_end(args);
 }
 
+static int
+lock_data(void)
+{
+    if (already_dumped)
+    {
+        struct flock lock;
+
+        already_dumped = FALSE;
+        lock.l_type = F_WRLCK;
+        lock.l_whence = SEEK_SET;
+        lock.l_start = 0;
+        lock.l_len = 0;
+        if (fcntl(data_lock, F_SETLKW, &lock) != 0)
+        {
+            int rc = errno;
+            tce_report_error("Cannot obtain data lock: %s",
+                             strerror(rc));
+            return rc;
+        }
+    }
+    return 0;
+}
 
 int 
 tce_collector(void)
@@ -301,6 +323,7 @@ tce_collector(void)
 #endif /* HAVE_SYS_SOCKET_H */
         else if (strncmp(*args, "kallsyms:", 9) == 0)
         {
+            lock_data();
             tce_set_ksymtable(*args + 9);
         }
         else
@@ -353,6 +376,7 @@ tce_collector(void)
                 dump_data();
             else if (signo == SIGUSR1)
             {
+                lock_data();
                 peers_counter++;
             }
             else if (signo == SIGTERM)
@@ -439,6 +463,7 @@ int
 tce_dump_collector(void)
 {
     struct flock lock;
+
     if (tce_collector_pid == 0)
         return 0;
 
@@ -749,7 +774,6 @@ static void
 object_header_state(tce_channel_data *ch)
 {
     char *space;
-    struct flock lock;
 
     if (strcmp(ch->buffer, "end") == 0)
     {
@@ -757,13 +781,7 @@ object_header_state(tce_channel_data *ch)
         return;
     }
 
-    already_dumped = FALSE;
-    lock.l_type = F_WRLCK;
-    lock.l_whence = SEEK_SET;
-    lock.l_start = 0;
-    lock.l_len = 0;
-    fcntl(data_lock, F_SETLKW, &lock);
-
+    lock_data();
     space = strchr(ch->buffer,  ' ');
     if (space == NULL)
     {
