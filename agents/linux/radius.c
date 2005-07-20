@@ -2207,7 +2207,7 @@ const char *radius_predefined_params[] = {
     "authenticate.Auth-Type(CHAP).chap", NULL,
     "authenticate.Auth-Type(MS-CHAP).mschap", NULL,
     "authenticate.eap", NULL,
-    /* "post-auth.files", NULL, */ 
+    "post-auth.files", NULL,
     NULL, NULL
 };
 
