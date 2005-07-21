@@ -37,46 +37,50 @@
 #include <stdarg.h>
 #include <string.h>
 #endif
-#ifdef HAVE_STRINGS_H
+#if HAVE_STRINGS_H
 #include <strings.h>
 #endif
-#ifdef HAVE_CTYPE_H
+#if HAVE_CTYPE_H
 #include <ctype.h>
 #endif
-#ifdef HAVE_ASSERT_H
+#if HAVE_ASSERT_H
 #include <assert.h>
 #endif
-#ifdef HAVE_SYS_TYPES_H
+#if HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
-#ifdef HAVE_TIME_H
+#if HAVE_TIME_H
 #include <time.h>
 #endif
-#ifdef HAVE_SYS_TIME_H
+#if HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
 
-#ifdef HAVE_SIGNAL_H
+#if HAVE_SIGNAL_H
 #include <signal.h>
 #endif
 
-#ifdef HAVE_SYS_SOCKET_H
+#if HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif
 
-#ifdef HAVE_SYS_SELECT_H
+#if HAVE_SYS_SELECT_H
 #include <sys/select.h>
+#endif
+
+#if HAVE_NETINET_TCP_H
+#include <netinet/tcp.h>
 #endif
 
 #ifdef TCP_TRANSPORT
 
-#ifdef HAVE_NETINET_IN_H
+#if HAVE_NETINET_IN_H
 #include <netinet/in.h>
 #endif
 
 #else
 
-#ifdef HAVE_SYS_UN_H
+#if HAVE_SYS_UN_H
 #include <sys/un.h>
 #endif
 
@@ -137,6 +141,45 @@ static rcf_pch_cfg_object node_rpcserver =
 
 static struct rcf_comm_connection *conn_saved;
 
+
+#ifdef TCP_TRANSPORT
+/**
+ * Enable TCP_NODEALY on the socket. If TCP_NODELAY is not supported,
+ * just return OK.
+ *
+ * @param sock      A socket
+ *
+ * @return errno or 0
+ */
+static int
+tcp_nodelay_enable(int sock)
+{
+#ifdef TCP_NODELAY
+    int nodelay = 1;
+
+    if (setsockopt(sock,
+#ifdef SOL_TCP
+                   SOL_TCP,
+#else
+                   IPPROTO_TCP
+#endif
+                   TCP_NODELAY, &nodelay, sizeof(nodelay)) != 0)
+    {
+        int err = errno;
+
+        ERROR("Failed to enable TCP_NODELAY on RPC server socket; "
+              "errno = %d", err);
+        return err;
+    }
+    return 0;
+#else
+#error Temporary error for debugging
+    UNUSED(sock);
+    return EOPNOTSUPP;
+#endif
+}
+#endif /* TCP_TRANSPORT */
+ 
 /** 
  * Receive data with specified timeout.
  *
@@ -647,6 +690,9 @@ rcf_pch_rpc_init()
         RETERR("listen() failed for listening socket for RPC servers");
 
 #ifdef TCP_TRANSPORT    
+    /* TCP_NODEALY is not critical */
+    (void)tcp_nodelay_enable(lsock);
+
     if (getsockname(lsock, (struct sockaddr *)&addr, &len) < 0)
         RETERR("getsockname() failed for listening socket for RPC servers");
 
@@ -1035,7 +1081,7 @@ rcf_pch_rpc(struct rcf_comm_connection *conn, int sid,
     rpcs->timeout = timeout == 0xFFFFFFFF ? timeout : timeout / 1000;
     
     /* Send encoded data to server */
-    if (send(rpcs->sock, &rpc_data_len, sizeof(rpc_data_len), 0) != 
+    if (send(rpcs->sock, &rpc_data_len, sizeof(rpc_data_len), MSG_MORE) != 
         sizeof(rpc_data_len) ||
         send(rpcs->sock, data, rpc_data_len, 0) != (ssize_t)rpc_data_len)
     {
@@ -1084,6 +1130,7 @@ rcf_pch_rpc_server(const char *name)
 
     char *buf = NULL;
     int   s = -1;
+    int   err;
     int   sock_len;
 
 #define STOP(msg...)    \
@@ -1136,13 +1183,29 @@ rcf_pch_rpc_server(const char *name)
         goto cleanup;
     }
 
-    if (connect(s, (struct sockaddr *)&addr, sizeof(addr)) < 0)
+    if (connect(s, (struct sockaddr *)&addr, sizeof(addr)) != 0)
     {
-        int err = errno;
-        
+        err = errno;
         STOP("Failed to connect to TA; errno = %d", err);
     }
-    
+
+    /* Enable linger with positive timeout on the socket  */
+    {
+        struct linger l = { 1, 1 };
+
+        if (setsockopt(s, SOL_SOCKET, SO_LINGER, &l, sizeof(l)) != 0)
+        {
+            err = errno;
+            STOP("Failed to enable linger on RPC server socket; "
+                 "errno = %d", err);
+        }
+    }
+
+#ifdef TCP_TRANSPORT    
+    /* TCP_NODEALY is not critical */
+    (void)tcp_nodelay_enable(s);
+#endif
+
     RING("RPC server '%s' (re-)started (PID %d, TID %u)",
          name, (int)getpid(), (unsigned int)pthread_self());
 
@@ -1174,9 +1237,11 @@ rcf_pch_rpc_server(const char *name)
         
         if (strcmp((char *)&len, "FIN") == 0)
         {
-            send(s, "OK", sizeof("OK"), 0);
-            RING("RPC server '%s' finished", name);
-            usleep(100000);
+            if (send(s, "OK", sizeof("OK"), 0) == (ssize_t)sizeof("OK"))
+                RING("RPC server '%s' finished", name);
+            else
+                ERROR("RPC server '%s' failed to send 'OK' in response "
+                      "to 'FIN'", name);
             goto cleanup;
         }
         
@@ -1209,7 +1274,7 @@ rcf_pch_rpc_server(const char *name)
         
         result = (info->rpc)(in, out, NULL);
         
-        result: /* Send an answer */
+    result: /* Send an answer */
         
         if (in != NULL && info != NULL)
             rpc_xdr_free(info->in, in);
@@ -1225,7 +1290,7 @@ rcf_pch_rpc_server(const char *name)
         free(out);
         
         len = buflen;
-        if (send(s, &len, sizeof(len), 0) < (ssize_t)sizeof(len) ||
+        if (send(s, &len, sizeof(len), MSG_MORE) < (ssize_t)sizeof(len) ||
             send(s, buf, len, 0) < (ssize_t)len)
         {
             STOP("send() failed");
