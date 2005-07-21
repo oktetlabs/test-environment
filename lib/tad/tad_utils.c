@@ -868,8 +868,9 @@ tad_data_unit_convert(const asn_value *pdu_val,
     }
     else
     {
-        ERROR("No support for choice: %s", choice);
-        return ETENOSUPP;
+        WARN("%s(): No support for choice: %s at sending",
+             __FUNCTION__, choice);
+        return 0;
     }
 
     /* process string values */ 
