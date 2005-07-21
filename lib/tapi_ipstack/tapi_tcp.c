@@ -1356,6 +1356,22 @@ tapi_tcp_destroy_connection(tapi_tcp_handler_t handler)
 }
 
 int
+tapi_tcp_send_template(tapi_tcp_handler_t handler, 
+                       const asn_value *template,
+                       rcf_call_mode_t blk_mode)
+{
+    tapi_tcp_connection_t *conn_descr;
+
+    tapi_tcp_conns_db_init();
+    if ((conn_descr = tapi_tcp_find_conn(handler)) == NULL)
+        return TE_RC(TE_TAPI, EINVAL);
+
+    return tapi_tad_trsend_start(conn_descr->agt, conn_descr->snd_sid,
+                                 conn_descr->snd_csap, 
+                                 template, blk_mode);
+}
+
+int
 tapi_tcp_send_msg(tapi_tcp_handler_t handler, uint8_t *payload, size_t len,
                   tapi_tcp_protocol_mode_t seq_mode, 
                   tapi_tcp_pos_t seqn,

@@ -270,6 +270,25 @@ extern int tapi_tcp_send_msg(tapi_tcp_handler_t handler,
                              size_t frag_num);
 
 /**
+ * Send explicitely formed traffic template. 
+ * Note, that template should be prepareed accurately,
+ * if you want to send valid TCP message in connection.
+ * IP addresses and TCP pors should NOT be mentioned in template.
+ *
+ * @param handler       TAPI handler of TCP connection;     
+ * @param template      ASN value of type Traffic-Template;
+ * @param blk_mode      mode of the operation:
+ *                      in blocking mode it suspends the caller
+ *                      until sending of all the traffic finishes
+
+ *
+ * @return Status code
+ */
+extern int tapi_tcp_send_template(tapi_tcp_handler_t handler, 
+                                  const asn_value *template,
+                                  rcf_call_mode_t blk_mode);
+
+/**
  * Wait for next incoming TCP message in connection, if buffer is empty,
  * or get oldest received message in buffer queue.
  *
