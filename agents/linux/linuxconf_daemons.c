@@ -1558,7 +1558,7 @@ sshd_exists(char *port)
         
         if (strncmp(tmp, port, len) == 0 && !isdigit(*(tmp + len)))
         {
-            fclose(f);
+            pclose(f);
             return atoi(line);
         }
     }
@@ -1713,7 +1713,7 @@ xvfb_exists(char *number)
         
         if (strncmp(tmp, number, len) == 0 && !isdigit(*(tmp + len)))
         {
-            fclose(f);
+            pclose(f);
             return atoi(line);
         }
     }
