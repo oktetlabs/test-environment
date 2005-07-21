@@ -73,7 +73,7 @@ enum {
     TRC_OPT_NO_SCRIPTS,
     TRC_OPT_NO_UNSPEC,
     TRC_OPT_NO_SKIPPED,
-    TRC_OPT_NO_PASSED_AS_EXPECTED,
+    TRC_OPT_NO_EXP_PASSED,
     TRC_OPT_NO_EXPECTED,
 };
 
@@ -200,7 +200,7 @@ process_cmd_line_opts(int argc, char **argv)
         { "no-expected", '\0', POPT_ARG_NONE, NULL, TRC_OPT_NO_EXPECTED,
           "Do not include scripts with expected results.",
           NULL },
-        { "no-exp-passed", '\0', POPT_ARG_NONE, NULL, TRC_OPT_NO_EXPECTED,
+        { "no-exp-passed", '\0', POPT_ARG_NONE, NULL, TRC_OPT_NO_EXP_PASSED,
           "Do not include scripts with passed as expected results.",
           NULL },
 
@@ -303,7 +303,7 @@ process_cmd_line_opts(int argc, char **argv)
             TRC_OPT_FLAG(NO_SCRIPTS);
             TRC_OPT_FLAG(NO_UNSPEC);
             TRC_OPT_FLAG(NO_SKIPPED);
-            TRC_OPT_FLAG(NO_PASSED_AS_EXPECTED);
+            TRC_OPT_FLAG(NO_EXP_PASSED);
             TRC_OPT_FLAG(NO_EXPECTED);
 
 #undef TRC_OPT_FLAG

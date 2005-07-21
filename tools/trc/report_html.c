@@ -60,6 +60,8 @@
         }                                               \
     } while (0)
 
+#define PRINT_STR(str_)  (((str_) != NULL) ? (str_) : "")
+
 
 static FILE   *f;
 static int     fd;
@@ -384,14 +386,26 @@ iters_to_html(te_bool stats, unsigned int flags, const test_run *test,
 
     for (p = iters->head.tqh_first; p != NULL; p = p->links.tqe_next)
     {
-        if ((!stats) &&
-            ((test->type == TRC_TEST_PACKAGE) ||
-             (~flags & TRC_OUT_PACKAGES_ONLY_STATS)) &&
-            ((~flags & TRC_OUT_NO_UNSPEC) ||
+        if ((!stats) && /* It is NOT a statistics report */
+            /* Do output, if ... */
+            (/* NO_SCRIPTS is clear or it is NOT a script */
+             (~flags & TRC_OUT_NO_SCRIPTS) ||
+             (test->type != TRC_TEST_SCRIPT)) &&
+            (/* NO_UNSPEC is clear or got result is not UNSPEC */
+             (~flags & TRC_OUT_NO_UNSPEC) ||
              (p->got_result != TRC_TEST_UNSPEC)) &&
-            ((~flags & TRC_OUT_NO_SKIPPED) ||
+            (/* NO_SKIPPED is clear or got result is not SKIPPED */
+             (~flags & TRC_OUT_NO_SKIPPED) ||
              (p->got_result != TRC_TEST_SKIPPED)) &&
-            ((~flags & TRC_OUT_NO_EXPECTED) ||
+            (/*
+              * NO_EXP_PASSED is clear or
+              * got result is not PASSED as expected
+              */
+             (~flags & TRC_OUT_NO_EXP_PASSED) ||
+             (p->exp_result != TRC_TEST_PASSED) ||
+             (p->got_result != TRC_TEST_PASSED)) &&
+            (/* NO_EXPECTED is clear or got result is equal to expected */
+             (~flags & TRC_OUT_NO_EXPECTED) ||
              (p->exp_result != p->got_result))
            )
         {
@@ -407,7 +421,7 @@ iters_to_html(te_bool stats, unsigned int flags, const test_run *test,
                     trc_test_args_to_string(&p->args),
                     trc_test_result_to_string(p->exp_result),
                     trc_test_result_to_string(p->got_result),
-                    p->notes ? : "");
+                    PRINT_STR(p->notes));
         }
         rc = tests_to_html(stats, flags, test, &p->tests, level);
         if (rc != 0)
@@ -438,24 +452,35 @@ tests_to_html(te_bool stats, unsigned int flags,
         s += sprintf(s, "*-");
     for (p = tests->head.tqh_first; p != NULL; p = p->links.tqe_next)
     {
-        if (stats &&
-            ((p->type == TRC_TEST_PACKAGE) ||
-             (~flags & TRC_OUT_PACKAGES_ONLY_STATS)) &&
-            ((~flags & TRC_OUT_NO_UNSPEC) ||
-             (TRC_STATS_SPEC(&p->stats) != 0)) &&
-            ((~flags & TRC_OUT_NO_SKIPPED) ||
-             (TRC_STATS_RUN(&p->stats) != 0) ||
-             (TRC_STATS_NOT_RUN(&p->stats) != 
+        te_bool output = 
+            (/* It is a script. Do output, if ... */
+             /* NO_SCRIPTS is clear */
+             (~flags & TRC_OUT_NO_SCRIPTS) &&
+             /* NO_UNSPEC is clear or tests with specified result */
+             ((~flags & TRC_OUT_NO_UNSPEC) ||
+              (TRC_STATS_SPEC(&p->stats) != 0)) &&
+             /* NO_SKIPPED is clear or tests are run or unspec */
+             ((~flags & TRC_OUT_NO_SKIPPED) ||
+              (TRC_STATS_RUN(&p->stats) != 0) ||
+              (TRC_STATS_NOT_RUN(&p->stats) != 
                (p->stats.skip_exp + p->stats.skip_une))) &&
-            ((~flags & TRC_OUT_NO_EXPECTED) ||
-             (TRC_STATS_UNEXP(&p->stats) != 0))
-           )
+             /* NO_EXP_PASSED or not all tests are passed as expected */
+             ((~flags & TRC_OUT_NO_EXP_PASSED) ||
+              (TRC_STATS_RUN(&p->stats) != p->stats.pass_exp) ||
+              (TRC_STATS_NOT_RUN(&p->stats) != 0)) &&
+             /* NO_EXPECTED or unexpected results are got */
+             ((~flags & TRC_OUT_NO_EXPECTED) ||
+              (TRC_STATS_UNEXP(&p->stats) != 0)));
+
+        if (stats &&
+            (((p->type == TRC_TEST_PACKAGE) &&
+              (flags & TRC_OUT_NO_SCRIPTS)) || output))
         {
             te_bool name_link;
             char *obj_link = NULL;
 
-            name_link = ((flags & TRC_OUT_PACKAGES_ONLY_STATS) ||
-                         ((~flags & TRC_OUT_PACKAGES_ONLY_STATS) &&
+            name_link = ((flags & TRC_OUT_NO_SCRIPTS) ||
+                         ((~flags & TRC_OUT_NO_SCRIPTS) &&
                          (p->type == TRC_TEST_SCRIPT)));
 
             if (p->obj_link == NULL)
@@ -482,21 +507,21 @@ tests_to_html(te_bool stats, unsigned int flags,
                     name_link ? "#" : "",
                     p->name,
                     p->name,
-                    obj_link ? "<A name=\"" : "",
-                    obj_link ? : "",
-                    obj_link ? "\">": "",
-                    p->objective ? : "",
-                    obj_link ? "</A>": "",
+                    obj_link != NULL ? "<A name=\"" : "",
+                    PRINT_STR(obj_link),
+                    obj_link != NULL ? "\">": "",
+                    PRINT_STR(p->objective),
+                    obj_link != NULL ? "</A>": "",
                     TRC_STATS_RUN(&p->stats),
                     p->stats.pass_exp, p->stats.fail_exp,
                     p->stats.pass_une, p->stats.fail_une,
                     p->stats.aborted + p->stats.new_run,
                     TRC_STATS_NOT_RUN(&p->stats),
                     p->stats.skip_exp, p->stats.skip_une,
-                    p->notes ? : "");
+                    PRINT_STR(p->notes));
         }
         if ((p->type != TRC_TEST_SCRIPT) ||
-            (~flags & TRC_OUT_PACKAGES_ONLY_STATS))
+            (~flags & TRC_OUT_NO_SCRIPTS))
         {
             rc = iters_to_html(stats, flags, p, &p->iters, level + 1);
             if (rc != 0)
@@ -585,7 +610,7 @@ trc_report_to_html(const char *filename, FILE *header, trc_database *db,
     }
 
     /* Report for packages */
-    rc = tests_to_html(TRUE, flags | TRC_OUT_PACKAGES_ONLY_STATS,
+    rc = tests_to_html(TRUE, flags | TRC_OUT_NO_SCRIPTS,
                        NULL, &db->tests, 0);
     if (rc != 0)
         goto cleanup;

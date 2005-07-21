@@ -217,14 +217,13 @@ extern int trc_parse_log(const char *filename);
 
 /** Output flags */
 enum trc_out_flags {
-    TRC_OUT_NO_TOTAL_STATS          = 0x01,
-    TRC_OUT_PACKAGES_ONLY_STATS     = 0x02,
-    TRC_OUT_NO_SCRIPTS              = TRC_OUT_PACKAGES_ONLY_STATS,
-    TRC_OUT_STATS_ONLY              = 0x08,
-    TRC_OUT_NO_UNSPEC               = 0x10,
-    TRC_OUT_NO_SKIPPED              = 0x20,
-    TRC_OUT_NO_PASSED_AS_EXPECTED   = 0x40,
-    TRC_OUT_NO_EXPECTED             = 0x80,
+    TRC_OUT_NO_TOTAL_STATS      = 0x01,
+    TRC_OUT_NO_SCRIPTS          = 0x02,
+    TRC_OUT_STATS_ONLY          = 0x08,
+    TRC_OUT_NO_UNSPEC           = 0x10,
+    TRC_OUT_NO_SKIPPED          = 0x20,
+    TRC_OUT_NO_EXP_PASSED       = 0x40,
+    TRC_OUT_NO_EXPECTED         = 0x80,
 };
 
 /**
