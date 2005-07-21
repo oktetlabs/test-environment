@@ -156,6 +156,7 @@ system_with_timeout(char *cmd, int timeout)
         if (select(fd + 1, &set, 0, 0, &tv) == 0)
         {
             ERROR("Command <%s> timed out", cmd);
+            (void)pclose(f);
             return TE_RC(TE_RCF_UNIX, ETIMEDOUT);
         }
         
