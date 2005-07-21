@@ -41,6 +41,11 @@
 #if HAVE_ERRNO_H
 #include <errno.h>
 #endif
+#if HAVE_SYS_QUEUE_H
+#include <sys/queue.h>
+#else
+#error sys/queue.h is required for TRC tool
+#endif
 #if HAVE_POPT_H
 #include <popt.h>
 #else
@@ -51,6 +56,34 @@
 #include "trc_log.h"
 #include "trc_db.h"
 
+
+/** TRC tool command line options */
+enum {
+    TRC_OPT_VERSION = 1,
+    TRC_OPT_UPDATE,
+    TRC_OPT_QUIET,
+    TRC_OPT_INIT,
+    TRC_OPT_DB,
+    TRC_OPT_TAG,
+    TRC_OPT_TXT,
+    TRC_OPT_HTML,
+    TRC_OPT_HTML_HEADER,
+    TRC_OPT_NO_TOTAL_STATS,
+    TRC_OPT_STATS_ONLY,
+    TRC_OPT_NO_SCRIPTS,
+    TRC_OPT_NO_UNSPEC,
+    TRC_OPT_NO_SKIPPED,
+    TRC_OPT_NO_PASSED_AS_EXPECTED,
+    TRC_OPT_NO_EXPECTED,
+};
+
+/** HTML report data */
+typedef struct trc_html_report {
+    TAILQ_ENTRY(trc_html_report)    links;  /**< List links */
+
+    char           *filename;   /**< Name of the file for report */
+    unsigned int    flags;      /**< Report options */
+} trc_html_report;
 
 /** Should database be update */
 te_bool trc_update_db = FALSE;
@@ -65,29 +98,15 @@ te_bool trc_quiet = FALSE;
 static char *trc_xml_log_fn = NULL;
 /** Name of the file with expected testing result database */
 static char *trc_db_fn = NULL;
-/** File with header for all reports in HTML format */
-static FILE *trc_html_header_f = NULL;
-/** Name of the file with report in HTML format */
-static char *trc_html_fn = NULL;
-/** Name of the file with brief report in HTML format */
-static char *trc_brief_html_fn = NULL;
 /** Name of the file with report in TXT format */
 static char *trc_txt_fn = NULL;
 
+/** File with header for all reports in HTML format */
+static FILE *trc_html_header_f = NULL;
 
-/** TRC tool command line options */
-enum {
-    TRC_OPT_VERSION = 1,
-    TRC_OPT_UPDATE,
-    TRC_OPT_QUIET,
-    TRC_OPT_INIT,
-    TRC_OPT_DB,
-    TRC_OPT_HTML_HEADER,
-    TRC_OPT_HTML,
-    TRC_OPT_BRIEF_HTML,
-    TRC_OPT_TXT,
-    TRC_OPT_TAG,
-};
+/** List of HTML reports to generate */
+static TAILQ_HEAD(trc_html_reports, trc_html_report) html_reports;
+
 
 /**
  * Add tag in the end of the TRC tags list.
@@ -129,8 +148,9 @@ trc_add_tag(const char *name)
 static int
 process_cmd_line_opts(int argc, char **argv)
 {
-    poptContext  optCon;
-    int          rc;
+    poptContext         optCon;
+    int                 rc;
+    trc_html_report    *html_report = NULL;
 
     /* Option Table */
     struct poptOption options_table[] = {
@@ -148,22 +168,41 @@ process_cmd_line_opts(int argc, char **argv)
           "database.",
           "FILENAME" },
 
+        { "tag", 'T', POPT_ARG_STRING, NULL, TRC_OPT_TAG,
+          "Name of the tag to get specific expected result.",
+          "TAG" },
+
+        { "txt", 't', POPT_ARG_STRING, NULL, TRC_OPT_TXT,
+          "Specify name of the file to report in text format.",
+          "FILENAME" },
+
         { "html", 'h', POPT_ARG_STRING, NULL, TRC_OPT_HTML,
           "Name of the file for report in HTML format.",
           "FILENAME" },
         { "html-header", '\0', POPT_ARG_STRING, NULL, TRC_OPT_HTML_HEADER,
           "Name of the file with header for all HTML reports.",
           "FILENAME" },
-        { "brief-html", '\0', POPT_ARG_STRING, NULL, TRC_OPT_BRIEF_HTML,
-          "Name of the file for brief report in HTML format",
-          "FILENAME" },
-        { "txt", 't', POPT_ARG_STRING, NULL, TRC_OPT_TXT,
-          "Specify name of the file to report in text format.",
-          "FILENAME" },
-
-        { "tag", 'T', POPT_ARG_STRING, NULL, TRC_OPT_TAG,
-          "Name of the tag to get specific expected result.",
-          "TAG" },
+        { "no-total", '\0', POPT_ARG_NONE, NULL, TRC_OPT_NO_TOTAL_STATS,
+          "Do not include grand total statistics.",
+          NULL },
+        { "stats-only", '\0', POPT_ARG_NONE, NULL, TRC_OPT_STATS_ONLY,
+          "Do not include details about iterations, statistics only.",
+          NULL },
+        { "no-scripts", '\0', POPT_ARG_NONE, NULL, TRC_OPT_NO_SCRIPTS,
+          "Do not include information about scripts in the report.",
+          NULL },
+        { "no-unspec", '\0', POPT_ARG_NONE, NULL, TRC_OPT_NO_UNSPEC,
+          "Do not include scripts with got unspecified result.",
+          NULL },
+        { "no-skipped", '\0', POPT_ARG_NONE, NULL, TRC_OPT_NO_SKIPPED,
+          "Do not include skipped scripts.",
+          NULL },
+        { "no-expected", '\0', POPT_ARG_NONE, NULL, TRC_OPT_NO_EXPECTED,
+          "Do not include scripts with expected results.",
+          NULL },
+        { "no-exp-passed", '\0', POPT_ARG_NONE, NULL, TRC_OPT_NO_EXPECTED,
+          "Do not include scripts with passed as expected results.",
+          NULL },
 
         { "version", '\0', POPT_ARG_NONE, NULL, TRC_OPT_VERSION, 
           "Display version information.", NULL },
@@ -198,6 +237,19 @@ process_cmd_line_opts(int argc, char **argv)
                 free(trc_db_fn);
                 trc_db_fn = strdup(poptGetOptArg(optCon));
                 break;
+            
+            case TRC_OPT_TAG:
+                if (trc_add_tag(poptGetOptArg(optCon)) != 0)
+                {
+                    poptFreeContext(optCon);
+                    return EXIT_FAILURE;
+                }
+                break;
+
+            case TRC_OPT_TXT:
+                free(trc_txt_fn);
+                trc_txt_fn = strdup(poptGetOptArg(optCon));
+                break;
 
             case TRC_OPT_HTML_HEADER:
             {
@@ -220,28 +272,42 @@ process_cmd_line_opts(int argc, char **argv)
             }
 
             case TRC_OPT_HTML:
-                free(trc_html_fn);
-                trc_html_fn = strdup(poptGetOptArg(optCon));
-                break;
-
-            case TRC_OPT_BRIEF_HTML:
-                free(trc_brief_html_fn);
-                trc_brief_html_fn = strdup(poptGetOptArg(optCon));
-                break;
-            
-            case TRC_OPT_TXT:
-                free(trc_txt_fn);
-                trc_txt_fn = strdup(poptGetOptArg(optCon));
-                break;
-            
-            case TRC_OPT_TAG:
-                if (trc_add_tag(poptGetOptArg(optCon)) != 0)
+            {
+                html_report = calloc(1, sizeof(*html_report));
+                if (html_report == NULL)
                 {
+                    ERROR("calloc() failed");
                     poptFreeContext(optCon);
                     return EXIT_FAILURE;
                 }
+                TAILQ_INSERT_TAIL(&html_reports, html_report, links);
+                html_report->filename = strdup(poptGetOptArg(optCon));
+                html_report->flags = 0;
                 break;
-            
+            }
+
+#define TRC_OPT_FLAG(flag_) \
+            case TRC_OPT_##flag_:                                       \
+                if (html_report == NULL)                                \
+                {                                                       \
+                    ERROR("HTML report modifiers should be specified "  \
+                          "after the file name for report");            \
+                    poptFreeContext(optCon);                            \
+                    return EXIT_FAILURE;                                \
+                }                                                       \
+                html_report->flags |= TRC_OUT_##flag_;                  \
+                break;
+
+            TRC_OPT_FLAG(NO_TOTAL_STATS);
+            TRC_OPT_FLAG(STATS_ONLY);
+            TRC_OPT_FLAG(NO_SCRIPTS);
+            TRC_OPT_FLAG(NO_UNSPEC);
+            TRC_OPT_FLAG(NO_SKIPPED);
+            TRC_OPT_FLAG(NO_PASSED_AS_EXPECTED);
+            TRC_OPT_FLAG(NO_EXPECTED);
+
+#undef TRC_OPT_FLAG
+
             case TRC_OPT_VERSION:
                 printf("Test Environment: %s\n\n%s\n", PACKAGE_STRING,
                        TE_COPYRIGHT);
@@ -390,11 +456,13 @@ trc_stats_to_txt(FILE *f, const trc_stats *stats)
 int
 main(int argc, char *argv[])
 {
-    int         result = EXIT_FAILURE;
+    int                 result = EXIT_FAILURE;
+    trc_html_report    *html_report;
 
     memset(&trc_db, 0, sizeof(trc_db));
     TAILQ_INIT(&trc_db.tests.head);
     TAILQ_INIT(&tags);
+    TAILQ_INIT(&html_reports);
 
     /* Process and validate command-line options */
     if (process_cmd_line_opts(argc, argv) != EXIT_SUCCESS)
@@ -459,22 +527,17 @@ main(int argc, char *argv[])
         }
     }
 
-    /* Generate brief report in HTML format */
-    if (trc_brief_html_fn != NULL &&
-        trc_report_to_html(trc_brief_html_fn, trc_html_header_f, &trc_db,
-                           TRC_OUT_PACKAGES_ONLY_STATS) != 0)
+    /* Generate reports in HTML format */
+    for (html_report = html_reports.tqh_first;
+         html_report != NULL;
+         html_report = html_report->links.tqe_next)
     {
-        ERROR("Failed to generate brief report in HTML format");
-        goto exit;
-    }
-
-    /* Generate report in HTML format */
-    if (trc_html_fn != NULL &&
-        trc_report_to_html(trc_html_fn, trc_html_header_f, &trc_db,
-                           TRC_OUT_ALL) != 0)
-    {
-        ERROR("Failed to generate report in HTML format");
-        goto exit;
+        if (trc_report_to_html(html_report->filename, trc_html_header_f,
+                               &trc_db, html_report->flags) != 0)
+        {
+            ERROR("Failed to generate report in HTML format");
+            goto exit;
+        }
     }
 
     /* Update expected testing results database, if requested */
@@ -490,8 +553,11 @@ exit:
 
     free(trc_db_fn);
     free(trc_xml_log_fn);
-    free(trc_html_fn);
-    free(trc_brief_html_fn);
+    while ((html_report = html_reports.tqh_first) != NULL)
+    {
+        TAILQ_REMOVE(&html_reports, html_report, links);
+        free(html_report->filename);
+    }
     if (trc_html_header_f != NULL)
         (void)fclose(trc_html_header_f);
 

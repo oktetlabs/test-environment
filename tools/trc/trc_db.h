@@ -87,6 +87,13 @@ typedef struct trc_stats {
     ((s)->pass_exp + (s)->pass_une + (s)->fail_exp + (s)->fail_une + \
      (s)->aborted + (s)->new_run)
 
+#define TRC_STATS_SPEC(s) \
+    (TRC_STATS_RUN(s) + (s)->skip_exp + (s)->skip_une)
+
+#define TRC_STATS_UNEXP(s) \
+    ((s)->pass_une + (s)->fail_une + (s)->skip_une + (s)->aborted + \
+     (s)->new_run + (s)->not_run + (s)->new_not_run)
+
 #define TRC_STATS_NOT_RUN(s) \
     ((s)->not_run + (s)->skip_exp + (s)->skip_une + (s)->new_not_run)
 
@@ -210,15 +217,15 @@ extern int trc_parse_log(const char *filename);
 
 /** Output flags */
 enum trc_out_flags {
-    TRC_OUT_TOTAL_STATS         = 0x01,
-    TRC_OUT_PACKAGES_ONLY_STATS = 0x02,
-    TRC_OUT_FULL_STATS          = 0x04,
-    TRC_OUT_FULL                = 0x08,
+    TRC_OUT_NO_TOTAL_STATS          = 0x01,
+    TRC_OUT_PACKAGES_ONLY_STATS     = 0x02,
+    TRC_OUT_NO_SCRIPTS              = TRC_OUT_PACKAGES_ONLY_STATS,
+    TRC_OUT_STATS_ONLY              = 0x08,
+    TRC_OUT_NO_UNSPEC               = 0x10,
+    TRC_OUT_NO_SKIPPED              = 0x20,
+    TRC_OUT_NO_PASSED_AS_EXPECTED   = 0x40,
+    TRC_OUT_NO_EXPECTED             = 0x80,
 };
-
-/** All output flags */
-#define TRC_OUT_ALL (TRC_OUT_TOTAL_STATS | TRC_OUT_PACKAGES_ONLY_STATS | \
-                     TRC_OUT_FULL_STATS | TRC_OUT_FULL)
 
 /**
  * Prepare TRC report in HTML format.

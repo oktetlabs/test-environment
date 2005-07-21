@@ -60,10 +60,6 @@
         }                                               \
     } while (0)
 
-enum {
-    TRC_HTML_OUT_STATS         = 0x01,
-    TRC_HTML_OUT_PACKAGES_ONLY = 0x02,
-};
 
 static FILE   *f;
 static int     fd;
@@ -329,8 +325,9 @@ stats_to_html(const trc_stats *stats)
 }
 
 
-static int tests_to_html(const test_run *parent, const test_runs *tests,
-                         unsigned int level, unsigned int flags);
+static int tests_to_html(te_bool stats, unsigned int flags,
+                         const test_run *parent, const test_runs *tests,
+                         unsigned int level);
 
 const char *
 trc_test_result_to_string(trc_test_result result)
@@ -373,8 +370,8 @@ trc_test_args_to_string(const test_args *args)
 
 
 static int
-iters_to_html(const test_run *test, const test_iters *iters,
-              unsigned int level, unsigned int flags)
+iters_to_html(te_bool stats, unsigned int flags, const test_run *test,
+              const test_iters *iters, unsigned int level)
 {
     int         rc;
     test_iter  *p;
@@ -387,9 +384,16 @@ iters_to_html(const test_run *test, const test_iters *iters,
 
     for (p = iters->head.tqh_first; p != NULL; p = p->links.tqe_next)
     {
-        if ((~flags & TRC_HTML_OUT_STATS) &&
+        if ((!stats) &&
             ((test->type == TRC_TEST_PACKAGE) ||
-             (~flags & TRC_HTML_OUT_PACKAGES_ONLY)))
+             (~flags & TRC_OUT_PACKAGES_ONLY_STATS)) &&
+            ((~flags & TRC_OUT_NO_UNSPEC) ||
+             (p->got_result != TRC_TEST_UNSPEC)) &&
+            ((~flags & TRC_OUT_NO_SKIPPED) ||
+             (p->got_result != TRC_TEST_SKIPPED)) &&
+            ((~flags & TRC_OUT_NO_EXPECTED) ||
+             (p->exp_result != p->got_result))
+           )
         {
             te_bool name_anchor = (p == iters->head.tqh_first);
 
@@ -405,7 +409,7 @@ iters_to_html(const test_run *test, const test_iters *iters,
                     trc_test_result_to_string(p->got_result),
                     p->notes ? : "");
         }
-        rc = tests_to_html(test, &p->tests, level, flags);
+        rc = tests_to_html(stats, flags, test, &p->tests, level);
         if (rc != 0)
             return rc;
     }
@@ -413,8 +417,9 @@ iters_to_html(const test_run *test, const test_iters *iters,
 }
 
 static int
-tests_to_html(const test_run *parent, const test_runs *tests,
-              unsigned int level, unsigned int flags)
+tests_to_html(te_bool stats, unsigned int flags,
+              const test_run *parent, const test_runs *tests,
+              unsigned int level)
 {
     int         rc;
     test_run   *p;
@@ -424,7 +429,7 @@ tests_to_html(const test_run *parent, const test_runs *tests,
 
     if (level == 0)
     {
-        if (flags & TRC_HTML_OUT_STATS)
+        if (stats)
             WRITE_STR(trc_tests_stats_start);
         else
             WRITE_STR(trc_test_exp_got_start);
@@ -433,15 +438,24 @@ tests_to_html(const test_run *parent, const test_runs *tests,
         s += sprintf(s, "*-");
     for (p = tests->head.tqh_first; p != NULL; p = p->links.tqe_next)
     {
-        if ((flags & TRC_HTML_OUT_STATS) &&
+        if (stats &&
             ((p->type == TRC_TEST_PACKAGE) ||
-             (~flags & TRC_HTML_OUT_PACKAGES_ONLY)))
+             (~flags & TRC_OUT_PACKAGES_ONLY_STATS)) &&
+            ((~flags & TRC_OUT_NO_UNSPEC) ||
+             (TRC_STATS_SPEC(&p->stats) != 0)) &&
+            ((~flags & TRC_OUT_NO_SKIPPED) ||
+             (TRC_STATS_RUN(&p->stats) != 0) ||
+             (TRC_STATS_NOT_RUN(&p->stats) != 
+               (p->stats.skip_exp + p->stats.skip_une))) &&
+            ((~flags & TRC_OUT_NO_EXPECTED) ||
+             (TRC_STATS_UNEXP(&p->stats) != 0))
+           )
         {
             te_bool name_link;
             char *obj_link = NULL;
 
-            name_link = ((flags & TRC_HTML_OUT_PACKAGES_ONLY) ||
-                         ((~flags & TRC_HTML_OUT_PACKAGES_ONLY) &&
+            name_link = ((flags & TRC_OUT_PACKAGES_ONLY_STATS) ||
+                         ((~flags & TRC_OUT_PACKAGES_ONLY_STATS) &&
                          (p->type == TRC_TEST_SCRIPT)));
 
             if (p->obj_link == NULL)
@@ -482,16 +496,16 @@ tests_to_html(const test_run *parent, const test_runs *tests,
                     p->notes ? : "");
         }
         if ((p->type != TRC_TEST_SCRIPT) ||
-            (~flags & TRC_HTML_OUT_PACKAGES_ONLY))
+            (~flags & TRC_OUT_PACKAGES_ONLY_STATS))
         {
-            rc = iters_to_html(p, &p->iters, level + 1, flags);
+            rc = iters_to_html(stats, flags, p, &p->iters, level + 1);
             if (rc != 0)
                 goto cleanup;
         }
     }
     if (level == 0)
     {
-        if (flags & TRC_HTML_OUT_STATS)
+        if (stats)
             WRITE_STR(trc_tests_stats_end);
         else
             WRITE_STR(trc_test_exp_got_end);
@@ -562,7 +576,7 @@ trc_report_to_html(const char *filename, FILE *header, trc_database *db,
         }
     }
 
-    if (flags & TRC_OUT_TOTAL_STATS)
+    if (~flags & TRC_OUT_NO_TOTAL_STATS)
     {
         /* Grand total */
         rc = stats_to_html(&db->stats);
@@ -570,27 +584,25 @@ trc_report_to_html(const char *filename, FILE *header, trc_database *db,
             goto cleanup;
     }
 
-    if (flags & TRC_OUT_PACKAGES_ONLY_STATS)
-    {
-        /* Report for packages */
-        rc = tests_to_html(NULL, &db->tests, 0,
-                 TRC_HTML_OUT_PACKAGES_ONLY | TRC_HTML_OUT_STATS);
-        if (rc != 0)
-            goto cleanup;
-    }
+    /* Report for packages */
+    rc = tests_to_html(TRUE, flags | TRC_OUT_PACKAGES_ONLY_STATS,
+                       NULL, &db->tests, 0);
+    if (rc != 0)
+        goto cleanup;
 
-    if (flags & TRC_OUT_FULL_STATS)
+    if (~flags & TRC_OUT_NO_SCRIPTS)
     {
         /* Report with iterations of packages and w/o iterations of tests */
-        rc = tests_to_html(NULL, &db->tests, 0, TRC_HTML_OUT_STATS);
+        rc = tests_to_html(TRUE, flags, NULL, &db->tests, 0);
         if (rc != 0)
             goto cleanup;
     }
 
-    if (flags & TRC_OUT_FULL)
+    if ((~flags & TRC_OUT_STATS_ONLY) &&
+        (~flags & TRC_OUT_NO_SCRIPTS))
     {
         /* Full report */
-        rc = tests_to_html(NULL, &db->tests, 0, 0);
+        rc = tests_to_html(FALSE, flags, NULL, &db->tests, 0);
         if (rc != 0)
             goto cleanup;
     }
