@@ -50,6 +50,8 @@
 
 #include "rcf_api.h"
 #include "conf_api.h"
+
+#define TE_LGR_USER "TAPI IPv4"
 #include "logger_api.h"
 
 #include "tapi_ip.h"
