@@ -605,10 +605,58 @@ ndn_match_data_units(const asn_value *pattern, asn_value *pkt_pdu,
             break;
         case NDN_DU_SCRIPT:
         case NDN_DU_ENUM:
-        case NDN_DU_INTERVALS:
             WARN("%s, DATA-UNIT tag %d unsupported", 
                  __FUNCTION__, (int)t_val);
             rc = ETENOSUPP;
+            break;
+
+        case NDN_DU_INTERVALS:
+            {
+                const asn_value *interval;
+                const asn_value *i_begin;
+                const asn_value *i_end;
+                unsigned int i; 
+
+                if (plain_syntax != INTEGER &&
+                    plain_syntax != ENUMERATED)
+                {
+                    ERROR("%s(): intervals pattern may be applied "
+                          "only with integer plain syntax", __FUNCTION__);
+                    return ETADWRONGNDS;
+                }
+
+                if (du_val->asn_type != ndn_interval_sequence)
+                {
+                    ERROR("%s(): Wrong type of interval choice leaf",
+                          __FUNCTION__);
+                    return ETADWRONGNDS;
+                }
+
+                rc = ETADNOTMATCH;
+                for (i = 0; i < du_val->len; i++)
+                {
+                    interval = du_val->data.array[i];
+                    if (interval == NULL)
+                        continue;
+                    /* 
+                     * hardcode offsets of 'b' and 'e' fields in
+                     * Interval type
+                     */
+                    if ((i_begin = interval->data.array[0]) == NULL ||
+                        (i_end   = interval->data.array[1]) == NULL)
+                    {
+                        WARN("%s(): wrong begin or end in interval");
+                        continue; 
+                    } 
+
+                    if ((unsigned)i_begin->data.integer <= user_int &&
+                        (unsigned)i_end->data.integer >= user_int)
+                    {
+                        rc = 0;
+                        break;
+                    }
+                }
+            }
             break;
 
         case NDN_DU_ENV:
@@ -619,45 +667,6 @@ ndn_match_data_units(const asn_value *pattern, asn_value *pkt_pdu,
             rc = ETENOSUPP;
             break;
     }
-#if 0
-    else if (strcmp(choice_ptr, "mask") == 0)
-    { 
-        const asn_value *mask_val;
-        size_t           mask_len;
-
-        const uint8_t *mask_data;
-        const uint8_t *pat_data;
-        const uint8_t *m, *d, *p;
-
-
-        rc = asn_get_subvalue(du_val, &mask_val, "");
-        if (rc)
-            return rc; 
-        mask_len = asn_get_length(mask_val, "m");
-        if (mask_len != d_len)
-            return ETADNOTMATCH;
-
-        rc = asn_get_field_data(mask_val, &mask_data, "m");
-        if (rc == 0)
-            rc = asn_get_field_data(mask_val, &pat_data, "v");
-        if (rc)
-            return rc; 
-        for (d = data, m = mask_data, p = pat_data;
-             mask_len > 0; 
-             d++, p++, m++)
-            if ((*d & *m) != (*p & *m))
-            {
-                rc = ETADNOTMATCH;
-                break;
-            }
-    }
-    else
-    {
-        WARN("%s, DATA-UNIT choice %s unsupported", 
-             __FUNCTION__, choice_ptr);
-        rc = ETENOSUPP;
-    }
-#endif
 
     if (rc == 0 && pkt_pdu)
     {
