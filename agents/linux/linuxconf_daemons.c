@@ -1563,7 +1563,7 @@ sshd_exists(char *port)
         }
     }
     
-    fclose(f);
+    pclose(f);
 
     return 0;
 }
@@ -1671,7 +1671,7 @@ ds_sshd_list(unsigned int gid, const char *oid, char **list)
         s += sprintf(s, "%u ", atoi(tmp));
     }
     
-    fclose(f);
+    pclose(f);
 
     if ((*list = strdup(buf)) == NULL)
         return TE_RC(TE_TA_LINUX, ENOMEM);
@@ -1718,7 +1718,7 @@ xvfb_exists(char *number)
         }
     }
     
-    fclose(f);
+    pclose(f);
 
     return 0;
 }
@@ -1833,7 +1833,7 @@ ds_xvfb_list(unsigned int gid, const char *oid, char **list)
         s += sprintf(s, "%u ", n);
     }
     
-    fclose(f);
+    pclose(f);
     
     if ((*list = strdup(buf)) == NULL)
         return TE_RC(TE_TA_LINUX, ENOMEM);
@@ -1992,7 +1992,7 @@ ds_vncserver_list(unsigned int gid, const char *oid, char **list)
         
         s += sprintf(s, "%u ", n);
     }
-    fclose(f);
+    pclose(f);
     
     if ((*list = strdup(buf)) == NULL)
         return TE_RC(TE_TA_LINUX, ENOMEM);

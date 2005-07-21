@@ -486,9 +486,9 @@ rcfunix_finish(rcf_talib_handle handle, char *parms)
     else
         sprintf(cmd, RCFUNIX_SSH " %s \"rm -f /tmp/%s\"",
                 ta->host, ta->exec_name);
-    rc = system_with_timeout(cmd, RCFUNIX_KILL_TIMEOUT);
-    if (rc == TE_RC(TE_RCF_UNIX, ETIMEDOUT))
-        return rc;
+//    rc = system_with_timeout(cmd, RCFUNIX_KILL_TIMEOUT);
+//    if (rc == TE_RC(TE_RCF_UNIX, ETIMEDOUT))
+//        return rc;
 
     return 0;
 }

@@ -111,12 +111,12 @@ rpc_fclose(rcf_rpc_server *rpcs, rpc_file_p file)
     RETVAL_INT(fclose, out.retval);
 }
 
-rpc_file_p
-rpc_popen(rcf_rpc_server *rpcs,
-          const char *cmd, const char *mode)
+int
+rpc_popen_fd(rcf_rpc_server *rpcs,
+             const char *cmd, const char *mode)
 {
-    tarpc_popen_in  in;
-    tarpc_popen_out out;
+    tarpc_popen_fd_in  in;
+    tarpc_popen_fd_out out;
     
     char *cmd_dup = strdup(cmd);
     char *mode_dup = strdup(mode);
@@ -129,7 +129,7 @@ rpc_popen(rcf_rpc_server *rpcs,
         ERROR("%s(): Invalid RPC parameter", __FUNCTION__);
         free(cmd_dup);
         free(mode_dup);
-        RETVAL_RPC_PTR(popen, RPC_NULL);
+        RETVAL_INT(popen_fd, -1);
     }
 
     rpcs->op = RCF_RPC_CALL_WAIT;
@@ -138,16 +138,16 @@ rpc_popen(rcf_rpc_server *rpcs,
     in.mode.mode_len = strlen(mode) + 1;
     in.mode.mode_val = (char *)mode_dup;
 
-    rcf_rpc_call(rpcs, "popen", &in, &out);
+    rcf_rpc_call(rpcs, "popen_fd", &in, &out);
                  
     free(cmd_dup);
     free(mode_dup);  
 
-    TAPI_RPC_LOG("RPC (%s,%s): popen(%s, %s) -> %p (%s)",
+    TAPI_RPC_LOG("RPC (%s,%s): popen_fd(%s, %s) -> %d (%s)",
                  rpcs->ta, rpcs->name,
-                 cmd, mode, out.mem_ptr, errno_rpc2str(RPC_ERRNO(rpcs)));
+                 cmd, mode, out.fd, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_RPC_PTR(popen, out.mem_ptr);
+    RETVAL_INT(popen_fd, out.fd);
 }
 
 int
@@ -193,7 +193,6 @@ rpc_fileno(rcf_rpc_server *rpcs,
 int 
 rpc_cmd_spawn(rcf_rpc_server *rpcs, const char *mode, const char *cmd, ...)
 {
-    rpc_file_p  f;
     int         fd;
     char        cmdline[RPC_SHELL_CMDLINE_MAX];
 
@@ -203,18 +202,12 @@ rpc_cmd_spawn(rcf_rpc_server *rpcs, const char *mode, const char *cmd, ...)
     vsnprintf(cmdline, sizeof(cmdline), cmd, ap);
     va_end(ap);
     
-    if ((f = rpc_popen(rpcs, cmdline, mode)) == RPC_NULL)
+    if ((fd = rpc_popen_fd(rpcs, cmdline, mode)) < 0)
     {
-        ERROR("Cannot execute the command: rpc_popen() failed");
+        ERROR("Cannot execute the command: rpc_popen_fd() failed");
         return -1;
     }
     
-    if ((fd = rpc_fileno(rpcs, f)) < 0)
-    {
-        ERROR("Cannot read command output: rpc_fileno failed");
-        return -1;
-    }
-
     return fd;
 }
 
@@ -232,7 +225,6 @@ int
 rpc_shell(rcf_rpc_server *rpcs,
           char *buf, int buflen, const char *cmd, ...)
 {
-    rpc_file_p  f;
     int         fd;
     int         rc = 0;
     char        cmdline[RPC_SHELL_CMDLINE_MAX];
@@ -243,15 +235,9 @@ rpc_shell(rcf_rpc_server *rpcs,
     vsnprintf(cmdline, sizeof(cmdline), cmd, ap);
     va_end(ap);
     
-    if ((f = rpc_popen(rpcs, cmdline, "r")) == RPC_NULL)
+    if ((fd = rpc_popen_fd(rpcs, cmdline, "r")) < 0)
     {
-        ERROR("Cannot execute the command: rpc_popen() failed");
-        return -1;
-    }
-    
-    if ((fd = rpc_fileno(rpcs, f)) < 0)
-    {
-        ERROR("Cannot read command output: rpc_fileno failed");
+        ERROR("Cannot execute the command: rpc_popen_fd() failed");
         return -1;
     }
     
@@ -289,7 +275,6 @@ rpc_shell_get_all(rcf_rpc_server *rpcs, char **pbuf, const char *cmd, ...)
     int         buflen = RPC_SHELL_BUF_CHUNK;
     int         offset = 0;
     char        cmdline[RPC_SHELL_CMDLINE_MAX];
-    rpc_file_p  f;
     int         fd;
     int         rc = -1;
 
@@ -305,20 +290,13 @@ rpc_shell_get_all(rcf_rpc_server *rpcs, char **pbuf, const char *cmd, ...)
     vsnprintf(cmdline, sizeof(cmdline), cmd, ap);
     va_end(ap);
     
-    if ((f = rpc_popen(rpcs, cmdline, "r")) == RPC_NULL)
+    if ((fd = rpc_popen_fd(rpcs, cmdline, "r")) < 0)
     {
-        ERROR("Cannot execute the command: rpc_popen() failed");
+        ERROR("Cannot execute the command: rpc_popen_fd() failed");
         free(buf);
         return -1;
     }
     
-    if ((fd = rpc_fileno(rpcs, f)) < 0)
-    {
-        ERROR("Cannot read command output: rpc_fileno failed");
-        free(buf);
-        return -1;
-    }
-
 #if 1
     sleep(1);
 #endif

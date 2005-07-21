@@ -951,7 +951,61 @@ ta_system(char *cmd)
 
     return rc;
 }
+
 #endif
+/**
+ * Self-made implementation of popen() to avoid problems with pclose().
+ */
+int
+popen_fd(const char *command, const char *type)
+{
+    int     p[2];
+    int     rc;
+    int     stdfile, child, parent;
+    int     pid;
+
+    rc = pipe(p);
+    if (rc != 0)
+        return -1;
+    if (type[0] == 'r' && type[1] == 0)
+    {
+        stdfile = 1;
+        child = p[1];
+        parent = p[0];
+    } 
+    else if (type[0] == 'w' && type[1] == 0)
+    {
+        stdfile = 0;
+        child = p[0];
+        parent = p[1];
+    } else {
+        errno = EINVAL;
+        return -1;
+    }
+
+    pid = fork();
+    if (pid == 0)
+    {
+        close(parent);
+        if (child != stdfile)
+        {
+            close(stdfile);
+            dup2(child, stdfile);
+        }
+        execl("/bin/sh", "sh", "-c", command, (char *) 0);
+        return 0;
+    }
+
+    close(child);
+    if (pid < 0)
+    {
+        close(parent);
+        return -1;
+    }
+    PRINT("popen CMD='%s' T='%s' FD=%d", command, type, parent);
+
+    return parent;
+}
 
 /** Print environment to the console */
 int

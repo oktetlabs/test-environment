@@ -92,6 +92,9 @@ extern int ftp_open(char *uri, int flags, int passive, int
 /** Work-around for system/waitpid problem */
 extern int ta_system(char *cmd);
 
+/** popen-like function returning fd */
+extern int popen_fd(const char *command, const char *type);
+
 /**
  * Special signal handler which registers signals.
  * 

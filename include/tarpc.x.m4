@@ -1976,17 +1976,17 @@ struct tarpc_fclose_out {
 };
 
 /* popen() */
-struct tarpc_popen_in {
+struct tarpc_popen_fd_in {
     struct tarpc_in_arg common;
     
     char cmd<>;
     char mode<>;
 };
 
-struct tarpc_popen_out {
+struct tarpc_popen_fd_out {
     struct tarpc_out_arg common;
     
-    tarpc_ptr   mem_ptr;
+    tarpc_int fd;
 };
 
 /* getenv() */
@@ -2755,7 +2755,7 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(socketpair)
         RPC_DEF(fopen)
         RPC_DEF(fclose)
-        RPC_DEF(popen)
+        RPC_DEF(popen_fd)
         RPC_DEF(fileno)
         RPC_DEF(getpwnam)
         RPC_DEF(getuid)

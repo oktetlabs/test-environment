@@ -3712,12 +3712,11 @@ TARPC_FUNC(fopen, {},
 )
 
 /*-------------- popen() --------------------------------*/
-TARPC_FUNC(popen, {},
+TARPC_FUNC(popen_fd, {},
 {
-    func = (sock_api_func)popen;
-    MAKE_CALL(out->mem_ptr = 
-                  rcf_pch_mem_alloc(func_ptr_ret_ptr(in->cmd.cmd_val,
-                                                     in->mode.mode_val)));
+    func = (sock_api_func)popen_fd;
+    MAKE_CALL(out->fd = 
+                  func_ptr(in->cmd.cmd_val, in->mode.mode_val));
 }
 )
 
