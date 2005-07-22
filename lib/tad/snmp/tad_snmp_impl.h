@@ -281,6 +281,12 @@ extern int snmp_gen_pattern_cb(int csap_id, int layer,
                                const asn_value *tmpl_pdu, 
                                asn_value_p *pattern_pdu);
 
+/**
+ * Free snmp pdu
+ */
+extern void tad_snmp_free_pdu(void *ptr);
+
+
 struct snmp_csap_specific_data;
 typedef struct snmp_csap_specific_data *snmp_csap_specific_data_p;
 typedef struct snmp_csap_specific_data

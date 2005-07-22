@@ -91,6 +91,30 @@ print_oid(unsigned long * subids, size_t len)
 #define TIMED_OUT NETSNMP_CALLBACK_OP_TIMED_OUT
 #endif
 
+
+void 
+tad_snmp_free_pdu(void *ptr)
+{
+    struct snmp_pdu *pdu = (struct snmp_pdu *)ptr;
+    struct variable_list *vars, *n_vars = NULL;
+    static int counter = 0;
+
+    VERB("%s(), COUNT %d", __FUNCTION__, counter++);
+
+    if (pdu == NULL) 
+        return; 
+
+
+    for (vars = pdu->variables; vars != NULL; vars = n_vars)
+    {
+        n_vars = vars->next_variable;
+        snmp_free_var(vars); 
+    }
+    pdu->variables = NULL;
+
+    snmp_free_pdu(pdu);
+}
+
 int
 snmp_csap_input(
     int op,
@@ -109,8 +133,11 @@ snmp_csap_input(
 
     if (op == RECEIVED_MESSAGE)
     {
+        static int counter = 0;
         struct variable_list *vars, *t_vars = NULL;
         spec_data->pdu = snmp_clone_pdu(pdu); 
+
+        VERB("%s(): CLONE COUNT %d", __FUNCTION__, counter++); 
 
         for (vars = pdu->variables; vars; vars = vars->next_variable)
         {
@@ -134,6 +161,27 @@ snmp_csap_input(
     return 1; 
 }
 
+
+/**
+ * Callback for release internal data after traffic processing. 
+ *
+ * @param csap_descr    pointer to CSAP descriptor structure
+ *
+ * @return Status code
+ */
+int 
+snmp_release_cb(csap_p csap_descr)
+{
+    int layer = csap_descr->read_write_layer;
+    snmp_csap_specific_data_p spec_data = 
+        (snmp_csap_specific_data_p) csap_descr->layers[layer].specific_data;
+
+    if (spec_data->pdu != NULL)
+        tad_snmp_free_pdu(spec_data->pdu);
+    spec_data->pdu = NULL;
+
+    return 0;
+}
 
 /**
  * Callback for read data from media of 'snmp' CSAP. 
@@ -183,8 +231,9 @@ snmp_read_cb (csap_p csap_descr, int timeout, char *buf, size_t buf_len)
         n_fds = spec_data->sock + 1;
     }
     
-    if (spec_data->pdu) snmp_free_pdu(spec_data->pdu); 
-    spec_data->pdu = 0;
+    if (spec_data->pdu) 
+        tad_snmp_free_pdu(spec_data->pdu); 
+    spec_data->pdu = NULL;
 
     rc = select(n_fds, &fdset, 0, 0, &sel_timeout);
     VERB("%s(): CSAP %d, after select, rc %d\n",
@@ -315,9 +364,9 @@ snmp_write_read_cb(csap_p csap_descr, int timeout,
     }
 
     if (spec_data->pdu)
-        snmp_free_pdu(spec_data->pdu);
+        tad_snmp_free_pdu(spec_data->pdu);
 
-    spec_data->pdu = 0;
+    spec_data->pdu = NULL;
 
     rc = select(n_fds, &fdset, 0, 0, &sel_timeout);
     
@@ -759,6 +808,7 @@ snmp_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
     csap_descr->write_cb         = snmp_write_cb; 
     csap_descr->read_cb          = snmp_read_cb; 
     csap_descr->write_read_cb    = snmp_write_read_cb; 
+    csap_descr->release_cb       = snmp_release_cb;
     csap_descr->read_write_layer = layer; 
     csap_descr->timeout          = 2000000; 
 
@@ -857,6 +907,8 @@ snmp_single_destroy_cb (int csap_id, int layer)
         (snmp_csap_specific_data_p) csap_descr->layers[layer].specific_data;
 
     VERB("Destroy callback, id %d\n", csap_id);
+    if (spec_data->pdu != NULL)
+        tad_snmp_free_pdu(spec_data->pdu);
 
     if (spec_data->ss)
     {
@@ -866,5 +918,6 @@ snmp_single_destroy_cb (int csap_id, int layer)
     }
     return 0;
 }
+
 
 

@@ -36,11 +36,6 @@
 #include <string.h>
 #include "te_stdint.h"
 
-void
-tad_snmp_free_pdu(void *ptr)
-{
-    snmp_free_pdu((struct snmp_pdu *)ptr);
-}
 
 /**
  * Callback for read parameter value of "snmp" CSAP.
