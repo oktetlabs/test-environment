@@ -478,6 +478,11 @@ fi
 te_log_init
 te_log_message Engine Dispatcher "Command-line options: ${CMD_LINE_OPTS}"
 
+# Log TRC tool options
+if test -n "${TRC_OPTS}" ; then
+    te_log_message Engine Dispatcher "TRC options:${TRC_OPTS}"
+fi
+
 # Build Test Environment
 TE_BUILD_LOG="${TE_RUN_DIR}/build.log"
 if test -n "$BUILDER" ; then
@@ -605,6 +610,8 @@ for i in LOGGER RCF CS ; do
 done
 
 if test $START_OK -eq 0 -a -n "$TESTER" ; then
+    te_log_message Engine Dispatcher \
+        "Start Tester:${TESTER_OPTS} ${CONF_TESTER}"
     myecho "--->>> Start Tester"
     if test -n "$VG_TESTER" ; then
         VG_TESTS=$VG_TESTS valgrind $VG_OPTIONS te_tester${TESTER_EXT} \
