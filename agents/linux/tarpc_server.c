@@ -776,10 +776,10 @@ _setlibname_1_svc(tarpc_setlibname_in *in, tarpc_setlibname_out *out,
     VERB("PID=%d TID=%d: Entry %s",
          (int)getpid(), (int)pthread_self(), "setlibname");
 
-    errno = 0;
-    out->retval = setlibname(in);
-    out->common._errno = RPC_ERRNO;
+    out->common._errno = setlibname(in);
+    out->retval = (out->common._errno == 0) ? 0 : -1;
     out->common.duration = 0;
+
     return TRUE;
 }
 
