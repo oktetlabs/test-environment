@@ -377,14 +377,6 @@ logfork_register_user(const char *name)
             return -1;
         }
 
-#if HAVE_FCNTL_H
-        /* 
-         * Try to set close-on-exec flag, but ignore failures, 
-         * since it's not critical.
-         */
-        (void)fcntl(clt_sockd, F_SETFD, FD_CLOEXEC);
-#endif
-
         if (connect(clt_sockd, (struct sockaddr *)&logfork_saddr, 
                     sizeof(logfork_saddr)) < 0)
         {
