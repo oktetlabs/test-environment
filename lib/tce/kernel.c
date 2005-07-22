@@ -317,7 +317,7 @@ process_gcov_syms(FILE *symfile, int core_file,
     {
         offset = strtoul(symbuf, &token, 16);
         strtok(token, " \t\n");
-        token = strtok(NULL, "\t\n");
+        token = strtok(NULL, " \t\n");
         if (strstr(token, "GCOV") != NULL)
         {
             /* This is a very crude hack relying on internals of GCC */
