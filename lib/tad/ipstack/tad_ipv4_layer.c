@@ -697,9 +697,6 @@ ip4_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
 
     asn_value *ip4_header_pdu = NULL;
 
-    if (parsed_packet)
-        ip4_header_pdu = asn_init_value(ndn_ip4_header);
-
     if ((csap_descr = csap_find(csap_id)) == NULL)
     {
         ERROR("null csap_descr for csap id %d", csap_id);
@@ -707,17 +704,20 @@ ip4_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
     } 
     spec_data = (ip4_csap_specific_data_t*)csap_descr->layers[layer].specific_data; 
 
+    if (parsed_packet != NULL)
+        ip4_header_pdu = asn_init_value(ndn_ip4_header); 
+
     data = pkt->data; 
 
 #define CHECK_FIELD(_asn_label, _size) \
     do {                                                        \
         rc = ndn_match_data_units(pattern_pdu, ip4_header_pdu,  \
                                   data, _size, _asn_label);     \
-        if (rc)                                                 \
+        if (rc != 0)                                            \
         {                                                       \
             F_VERB("%s: csap %d field %s not match, rc %X",     \
                     csap_id, __FUNCTION__, _asn_label, rc);     \
-            return rc;                                          \
+            goto cleanup;                                       \
         }                                                       \
         data += _size;                                          \
     } while(0)
@@ -729,7 +729,7 @@ ip4_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
     if (rc) 
     {
         F_VERB("%s: field version not match, rc %X", __FUNCTION__, rc); 
-        return rc;
+        goto cleanup;
     }
 
     h_len = tmp8 = (*data) & 0x0f;
@@ -738,7 +738,7 @@ ip4_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
     if (rc) 
     {
         F_VERB("%s: field verxion not match, rc %X", __FUNCTION__, rc); 
-        return rc;
+        goto cleanup;
     }
     data++;
 
@@ -751,7 +751,8 @@ ip4_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
     tmp8 = (*data) >> 5;
     rc = ndn_match_data_units(pattern_pdu, ip4_header_pdu, 
                               &tmp8, 1, "flags");
-    if (rc) return rc;
+    if (rc != 0) 
+        goto cleanup;
 
     *data &= 0x1f; 
     CHECK_FIELD("ip-offset", 2);
@@ -781,10 +782,10 @@ ip4_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
                   __FUNCTION__, rc);
     } 
 
-    asn_free_value(ip4_header_pdu);
-
     VERB("%s, return %X", __FUNCTION__, rc);
     
+cleanup:
+    asn_free_value(ip4_header_pdu); 
 
     return rc;
 }

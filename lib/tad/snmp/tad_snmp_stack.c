@@ -96,21 +96,9 @@ void
 tad_snmp_free_pdu(void *ptr)
 {
     struct snmp_pdu *pdu = (struct snmp_pdu *)ptr;
-    struct variable_list *vars, *n_vars = NULL;
-    static int counter = 0;
-
-    VERB("%s(), COUNT %d", __FUNCTION__, counter++);
 
     if (pdu == NULL) 
         return; 
-
-
-    for (vars = pdu->variables; vars != NULL; vars = n_vars)
-    {
-        n_vars = vars->next_variable;
-        snmp_free_var(vars); 
-    }
-    pdu->variables = NULL;
 
     snmp_free_pdu(pdu);
 }
@@ -132,27 +120,7 @@ snmp_csap_input(
     VERB("input callback, operation: %d", op); 
 
     if (op == RECEIVED_MESSAGE)
-    {
-        static int counter = 0;
-        struct variable_list *vars, *t_vars = NULL;
         spec_data->pdu = snmp_clone_pdu(pdu); 
-
-        VERB("%s(): CLONE COUNT %d", __FUNCTION__, counter++); 
-
-        for (vars = pdu->variables; vars; vars = vars->next_variable)
-        {
-            if (vars == pdu->variables)
-                t_vars = spec_data->pdu->variables = snmp_clone_varbind(vars);
-            else 
-                t_vars = t_vars->next_variable = snmp_clone_varbind(vars); 
-#ifdef SNMPDEBUG
-            printf ("\nvar :");
-            print_oid( vars->name, vars->name_length);
-            printf ("\ntype: %d, val: ", vars->type);
-#endif
-        }
-    }
-
 
     if ( op == TIMED_OUT )
     {
@@ -461,7 +429,7 @@ snmp_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
     struct snmp_session        *ss = NULL; 
 
     snmp_csap_specific_data_p   snmp_spec_data;
-    asn_value_p                 snmp_csap_spec;
+    const asn_value            *snmp_csap_spec;
 
     char                        security_model_name[32];
     ndn_snmp_sec_model_t        security_model;
@@ -480,7 +448,12 @@ snmp_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
     if (!csap_nds || (csap_id <=0))
         return ETEWRONGPTR;
 
-    snmp_csap_spec = asn_read_indexed(csap_nds, layer, "");
+    rc = asn_get_indexed(csap_nds, &snmp_csap_spec, layer);
+    if (rc != 0)
+    {
+        ERROR("%s(): get csap spec layer failed %X", __FUNCTION__, rc);
+        return rc;
+    }
     
 #if NEW_SNMP_API
     snmp_sess_init(&csap_session);

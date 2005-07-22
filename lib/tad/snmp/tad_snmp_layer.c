@@ -111,6 +111,7 @@ snmp_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
     size_t operation_len = sizeof(int); 
 
     struct snmp_pdu *pdu;
+    const asn_value *var_bind_list;
 
     UNUSED(args);
     UNUSED(arg_num);
@@ -158,22 +159,31 @@ snmp_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
         pdu->non_repeaters = 0;
     }
 
-    num_var_bind = asn_get_length(tmpl_pdu, "variable-bindings"); 
+    rc = asn_get_subvalue(tmpl_pdu, &var_bind_list, "variable-bindings");
+    if (rc != 0)
+    {
+        ERROR("%s(): get subvalue 'variable-bindings' list failed %X", 
+              __FUNCTION__, rc);
+        return rc;
+    }
+
+    num_var_bind = asn_get_length(var_bind_list, ""); 
+
     for (i = 0; i < num_var_bind; i++)
     {
-        asn_value_p var_bind = asn_read_indexed(tmpl_pdu, i, "variable-bindings");
-        oid         oid[MAX_OID_LEN];
-        size_t      oid_len = MAX_OID_LEN;
-        
-        if (var_bind == NULL)
+        const asn_value *var_bind;
+        oid              oid[MAX_OID_LEN];
+        size_t           oid_len = MAX_OID_LEN;
+
+        if ((rc = asn_get_indexed(var_bind_list, &var_bind, i)) != 0) 
         {
-            ERROR("Cannot get VarBind %d from PDU", i);
-            rc = EASNGENERAL;
+            ERROR("Cannot get VarBind %d from PDU, rc %X", i, rc);
             break;
         }
 
         rc = asn_read_value_field(var_bind, oid, &oid_len, "name");
-        if (rc != 0) break;
+        if (rc != 0)
+            break;
 
         switch (operation)
         {
@@ -209,9 +219,9 @@ snmp_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
                     rc = EASNGENERAL;
                     break;
                 } 
-                snmp_pdu_add_variable ( pdu, oid, oid_len, 
-                                        snmp_asn_syntaxes[asn_get_tag(value)], 
-                                        buffer, d_len );
+                snmp_pdu_add_variable(pdu, oid, oid_len, 
+                                      snmp_asn_syntaxes[asn_get_tag(value)],
+                                      buffer, d_len );
             }
         } 
         if (rc != 0) break;
@@ -370,6 +380,8 @@ int snmp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
         if (rc)
             ERROR("%s, write SNMP message to packet fails %X\n", 
                   __FUNCTION__, rc);
+        asn_free_value(snmp_msg);
+        snmp_msg = NULL;
     } 
 
     do { /* Match VarBinds */

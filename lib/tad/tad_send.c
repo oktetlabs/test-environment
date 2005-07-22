@@ -536,6 +536,10 @@ tad_tr_send_thread(void * arg)
                 pkt->data = 0;
                 rc = 0;
             }
+            for (pkt = packets_root.next; pkt != NULL;
+                 packets_root.next = pkt->next, free(pkt),
+                 pkt = packets_root.next);
+
             if (rc)
                 break;
             

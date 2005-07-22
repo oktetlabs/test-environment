@@ -448,8 +448,8 @@ cleanup:
  * @return zero on success or error code.
  */
 int tcp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
-                     const csap_pkts *  pkt, csap_pkts * payload, 
-                     asn_value_p  parsed_packet )
+                     const csap_pkts *pkt, csap_pkts *payload, 
+                     asn_value_p parsed_packet)
 { 
     csap_p                    csap_descr;
     tcp_csap_specific_data_t *spec_data;
@@ -459,19 +459,17 @@ int tcp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
     int      rc;
     size_t   h_len = 0;
 
-    UNUSED(pattern_pdu);
-    UNUSED(parsed_packet);
-
     asn_value *tcp_header_pdu = NULL;
-
-    if (parsed_packet)
-        tcp_header_pdu = asn_init_value(ndn_tcp_header);
 
     if ((csap_descr = csap_find(csap_id)) == NULL)
     {
         ERROR("null csap_descr for csap id %d", csap_id);
         return ETADCSAPNOTEX;
     } 
+
+    if (parsed_packet)
+        tcp_header_pdu = asn_init_value(ndn_tcp_header);
+
     spec_data = (tcp_csap_specific_data_t*)csap_descr->layers[layer].specific_data; 
 
     data = pkt->data; 
@@ -484,7 +482,7 @@ int tcp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
         {                                                       \
             F_VERB("%s: field %s not match, rc %X",             \
                     __FUNCTION__, _asn_label, rc);              \
-            return rc;                                          \
+            goto cleanup;                                       \
         }                                                       \
         data += _size;                                          \
     } while(0)
@@ -497,13 +495,15 @@ int tcp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
     h_len = tmp8 = (*data) >> 4;
     rc = ndn_match_data_units(pattern_pdu, tcp_header_pdu, 
                               &tmp8, 1, "hlen");
-    if (rc) return rc;
+    if (rc)
+        goto cleanup;
     data ++;
 
     tmp8 = (*data) & 0x3f;
     rc = ndn_match_data_units(pattern_pdu, tcp_header_pdu, 
                               &tmp8, 1, "flags");
-    if (rc) return rc;
+    if (rc)
+        goto cleanup;
     data++;
 
     CHECK_FIELD("win-size", 2); 
@@ -522,12 +522,14 @@ int tcp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
 
     if (parsed_packet)
     {
-        rc = asn_write_component_value(parsed_packet, tcp_header_pdu, "#tcp"); 
+        rc = asn_write_component_value(parsed_packet, tcp_header_pdu,
+                                       "#tcp"); 
         if (rc)
             ERROR("%s, write TCP header to packet fails %X\n", 
                   __FUNCTION__, rc);
     } 
 
+cleanup:
     asn_free_value(tcp_header_pdu);
 
     return rc;

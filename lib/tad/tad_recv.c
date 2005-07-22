@@ -76,11 +76,11 @@
  * Try match binary data with Traffic-Pattern-Unit and prepare ASN value 
  * with packet if it satisfies to the pattern unit.
  *
- * @param data          binary data to be matched.
- * @param d_len         length of data.
- * @param csap_descr    CSAP instance.
- * @param pattern_unit  'Traffic-Pattern-Unit' ASN value.
- * @param packet        parsed packet.
+ * @param data          binary data to be matched
+ * @param d_len         length of data
+ * @param csap_descr    CSAP instance
+ * @param pattern_unit  ASN value of 'Traffic-Pattern-Unit' type
+ * @param packet        parsed packet (OUT)
  *
  * @return zero on success, otherwise error code.  
  */
@@ -105,6 +105,7 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
     memset(&data_to_check, 0, sizeof(data_to_check));
 
 
+    *packet = NULL;
     if (csap_descr->state & TAD_STATE_RESULTS)
     {
         asn_value_p pdus = asn_init_value(ndn_generic_pdu_sequence);
@@ -161,6 +162,7 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
         {
             asn_free_value(*packet);
             asn_free_value(parsed_pdu);
+            *packet = NULL;
             return rc;
         }
 
@@ -215,8 +217,8 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
         {
             F_VERB("CSAP %d, Error matching pattern, rc %X, COUNT %d",
                    csap_descr->id, rc);
-            if (*packet && csap_descr->state & TAD_STATE_RESULTS)
-                asn_free_value(*packet);
+            asn_free_value(*packet);
+            *packet = NULL;
         }
     }
     else if (rc == EASNINCOMPLVAL)
@@ -232,6 +234,7 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
             {
                 ERROR( "ASN error in add rest payload 0x%x\n", rc);
                 asn_free_value(*packet);
+                *packet = NULL;
                 return rc;
             }
         } 
@@ -489,6 +492,7 @@ tad_tr_sr_generate_pattern(csap_p csap_descr, asn_value_p template,
         rc = asn_insert_indexed(*pattern, pattern_unit, 0, "");
     }
     VERB("%s, returns %X", __FUNCTION__, rc);
+    asn_free_value(pattern_unit);
     return rc;
 }
 
@@ -643,8 +647,9 @@ tad_tr_recv_thread(void *arg)
          (csap_descr->command == TAD_OP_SEND_RECV))
     { 
         do {
-            asn_value_p pattern_unit;
+            const asn_value *pattern_unit;
             csap_pkts   packets_root;
+
             asn_value_p pattern = NULL;
 
             const asn_value *pdus;
@@ -702,7 +707,7 @@ tad_tr_recv_thread(void *arg)
             if (d_len == 0)
                 break;
 
-            pattern_unit = asn_read_indexed(pattern, 0, "");
+            asn_get_indexed(pattern, &pattern_unit, 0);
             rc = tad_tr_recv_match_with_unit(read_buffer, d_len, csap_descr,
                                              pattern_unit, &result); 
 
@@ -725,7 +730,6 @@ tad_tr_recv_thread(void *arg)
             }
             csap_descr->state |= TAD_STATE_COMPLETE;
             csap_descr->total_bytes += d_len;
-            asn_free_value(pattern_unit);
         } while (0); 
     } /* finish of 'trsend_recv' special actions */
 
