@@ -55,19 +55,18 @@
 #if HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
-
 #if HAVE_SIGNAL_H
 #include <signal.h>
 #endif
-
+#if HAVE_FCNTL_H
+#include <fcntl.h>
+#endif
 #if HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif
-
 #if HAVE_SYS_SELECT_H
 #include <sys/select.h>
 #endif
-
 #if HAVE_NETINET_TCP_H
 #include <netinet/tcp.h>
 #endif
@@ -103,6 +102,15 @@
 #include "rpc_xdr.h"
 #include "rcf_rpc_defs.h"
 #include "tarpc.h"
+
+/* 
+ * MSG_MORE is used for performance reasons.
+ * If it is not supported, it is not critical.
+ */
+#ifndef MSG_MORE
+#define MSG_MORE    0
+#endif
+
 
 /** Data corresponding to one RPC server */
 typedef struct rpcserver {
@@ -484,7 +492,15 @@ connect_getpid(rpcserver *rpcs)
               rpcs->name, err);
         return TE_RC(TE_RCF_PCH, err);
     }
-    
+
+#if HAVE_FCNTL_H
+    /* 
+     * Try to set close-on-exec flag, but ignore failures, 
+     * since it's not critical.
+     */
+    (void)fcntl(rpcs->sock, F_SETFD, FD_CLOEXEC);
+#endif
+
     /* Call getpid() RPC to verify that the server is usable */
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
@@ -661,6 +677,14 @@ rcf_pch_rpc_init()
     if ((lsock = socket(AF_UNIX, SOCK_STREAM, 0)) < 0)
         RETERR("Failed to open listening socket for RPC servers");
 #endif        
+
+#if HAVE_FCNTL_H
+    /* 
+     * Try to set close-on-exec flag, but ignore failures, 
+     * since it's not critical.
+     */
+    (void)fcntl(lsock, F_SETFD, FD_CLOEXEC);
+#endif
 
     memset(&addr, 0, sizeof(addr));
 #ifdef TCP_TRANSPORT    
