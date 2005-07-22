@@ -860,7 +860,10 @@ tarpc_init(int argc, char **argv)
     
     if (name == NULL || log_sock == NULL || (sock = atoi(log_sock)) <= 0)
     {
-        PRINT("%s(): Invalid argument", __FUNCTION__);
+        PRINT("%s(): Invalid argument: name=%s log_sock=%s",
+              __FUNCTION__,
+              (name == NULL) ? "(nil)" : name,
+              (log_sock == NULL) ? "(nil)" : log_sock);
         return;
     }
     
