@@ -50,17 +50,6 @@
 
 
 /**
- * Set dynamic library name to be used for additional name resolution.
- *
- * @param rpcs          existing RPC server handle
- * @param libname       name of the dynamic library or NULL
- *
- * @return Status code
- */
-extern int rpc_setlibname(rcf_rpc_server *rpcs, const char *libname);
-
-
-/**
  * Convert 'struct timeval' to string.
  *
  * @note Static buffer is used for return value.

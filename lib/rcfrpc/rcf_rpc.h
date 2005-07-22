@@ -93,9 +93,11 @@ typedef struct rcf_rpc_server {
                                      RPC server - it is unusable
                                      unless someone has restarted it */
 
-    char        lib[RCF_MAX_NAME]; /**< Library name to be used for the 
-                                        call (is set to empty line after
-                                        each call) */
+    char   *nv_lib;             /**< Library name set for the server */
+
+    char    lib[RCF_MAX_PATH];  /**< Library name to be used for the call
+                                     (is set to empty line after each
+                                     call) */
 
     /* Read-only fields filled by API internals when server is created */
     char        ta[RCF_MAX_NAME];   /**< Test Agent name */
@@ -208,6 +210,16 @@ rcf_rpc_server_fork(rcf_rpc_server *rpcs, const char *name,
 extern int rcf_rpc_server_exec(rcf_rpc_server *rpcs);
 
 /**
+ * Set dynamic library name to be used for additional name resolution.
+ *
+ * @param rpcs          existing RPC server handle
+ * @param libname       name of the dynamic library or NULL
+ *
+ * @return Status code
+ */
+extern int rcf_rpc_setlibname(rcf_rpc_server *rpcs, const char *libname);
+
+/**
  * Restart RPC server.
  *
  * @param rpcs          RPC server handle
@@ -225,11 +237,18 @@ rcf_rpc_server_restart(rcf_rpc_server *rpcs)
     
     rc = rcf_rpc_server_get(rpcs->ta, rpcs->name, NULL, FALSE, FALSE,
                             TRUE, &new_rpcs);
-                            
     if (rc == 0)
     {
+        char *lib = rpcs->nv_lib;
+
         *rpcs = *new_rpcs;
         free(new_rpcs);
+
+        if (lib != NULL)
+        {
+            rcf_rpc_setlibname(rpcs, lib);
+            free(lib);
+        }
     }
      
     return rc;       

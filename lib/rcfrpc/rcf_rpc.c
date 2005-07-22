@@ -355,6 +355,7 @@ rcf_rpc_server_destroy(rcf_rpc_server *rpcs)
         return rc;
     }
 
+    free(rpcs->nv_lib);
     free(rpcs);
     
     VERB("RPC server is destroyed successfully");
@@ -511,4 +512,41 @@ rcf_rpc_server_is_op_done(rcf_rpc_server *rpcs, te_bool *done)
     *done = (out.common.done != 0);
 
     return 0;
+}
+
+/* See description in rcf_rpc.h */
+int
+rcf_rpc_setlibname(rcf_rpc_server *rpcs, const char *libname)
+{
+    tarpc_setlibname_in  in;
+    tarpc_setlibname_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        return -1;
+    }
+
+    in.libname.libname_len = (libname == NULL) ? 0 : (strlen(libname) + 1);
+    in.libname.libname_val = (char *)libname;
+
+    rpcs->op = RCF_RPC_CALL_WAIT;
+    rcf_rpc_call(rpcs, "setlibname", &in, &out);
+
+    LGR_MESSAGE(out.retval != 0 ? TE_LL_ERROR : TE_LL_RING, TE_LGR_USER,
+                "RPC (%s,%s) setlibname(%s) -> %d (%s)",
+                rpcs->ta, rpcs->name, libname ? : "(NULL)",
+                out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
+
+    if (out.retval == 0)
+    {
+        free(rpcs->nv_lib);
+        rpcs->nv_lib = (libname != NULL) ? strdup(libname) : NULL;
+        assert((rpcs->nv_lib == NULL) == (libname == NULL));
+    }
+
+    return out.retval;
 }

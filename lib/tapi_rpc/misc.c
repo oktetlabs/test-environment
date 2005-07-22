@@ -196,45 +196,6 @@ timespec2str(const struct timespec *tv)
     return buf;
 }
 
-
-/**
- * Set dynamic library name to be used for additional name resolution.
- *
- * @param rpcs          Existing RPC server handle
- * @param libname       Name of the dynamic library or NULL
- *
- * @return 0 (success) or -1 (failure)
- */
-int
-rpc_setlibname(rcf_rpc_server *rpcs, const char *libname)
-{
-    tarpc_setlibname_in  in;
-    tarpc_setlibname_out out;
-
-    memset(&in, 0, sizeof(in));
-    memset(&out, 0, sizeof(out));
-
-    if (rpcs == NULL)
-    {
-        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        RETVAL_INT(setlibname, -1);
-    }
-
-    in.libname.libname_len = (libname == NULL) ? 0 : (strlen(libname) + 1);
-    in.libname.libname_val = (char *)libname;
-
-    rpcs->op = RCF_RPC_CALL_WAIT;
-    rcf_rpc_call(rpcs, "setlibname", &in, &out);
-
-    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(setlibname, out.retval);
-
-    TAPI_RPC_LOG("RPC (%s,%s) setlibname(%s) -> %d (%s)",
-                 rpcs->ta, rpcs->name, libname ? : "(NULL)",
-                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
-
-    RETVAL_INT(setlibname, out.retval);
-}
-
 int
 rpc_timely_round_trip(rcf_rpc_server *rpcs, int sock_num, int *s,
                       size_t size, size_t vector_len,
