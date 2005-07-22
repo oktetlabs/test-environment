@@ -48,7 +48,7 @@
 #include "tad_utils.h"
 #include "ndn.h" 
 
-#define TE_LGR_USER     "TAD CH"
+#define TE_LGR_USER     "TAD Recv"
 
 #include "logger_ta.h"
 
