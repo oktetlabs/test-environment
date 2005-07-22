@@ -36,49 +36,43 @@
 #if HAVE_STDIO_H
 #include <stdio.h>
 #endif
-
 #if HAVE_SYS_TYPES_H
 #include <sys/socket.h>
 #endif
-
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-
 #if HAVE_STDLIB_H
 #include <stdlib.h>
 #endif
-
 #if HAVE_STRING_H
 #include <string.h>
 #endif 
-
 #if HAVE_STRINGS_H
 #include <strings.h>
 #endif 
-
 #if HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif
-
 #if HAVE_NETINET_IN_H
 #include <netinet/in.h>
 #endif
-
 #ifdef HAVE_PTHREAD_H
 #include <pthread.h>
 #endif
-
 #ifdef HAVE_STDARG_H
 #include <stdarg.h>
 #endif
-
+#if HAVE_FCNTL_H
+#include <fcntl.h>
+#endif
 
 #include "te_defs.h"
 #include "te_stdint.h"
 #include "te_errno.h"
 #include "logger_ta.h"
 #include "logfork.h"
+
 
 /** Common information in the message */
 typedef struct udp_msg {
@@ -273,6 +267,14 @@ logfork_entry(void)
         return;
     }
 
+#if HAVE_FCNTL_H
+    /* 
+     * Try to set close-on-exec flag, but ignore failures, 
+     * since it's not critical.
+     */
+    (void)fcntl(sockd, F_SETFD, FD_CLOEXEC);
+#endif
+
     memset(&servaddr, 0, sizeof(servaddr));
     servaddr.sin_family = AF_INET;
     servaddr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
@@ -374,6 +376,15 @@ logfork_register_user(const char *name)
 #endif
             return -1;
         }
+
+#if HAVE_FCNTL_H
+        /* 
+         * Try to set close-on-exec flag, but ignore failures, 
+         * since it's not critical.
+         */
+        (void)fcntl(clt_sockd, F_SETFD, FD_CLOEXEC);
+#endif
+
         if (connect(clt_sockd, (struct sockaddr *)&logfork_saddr, 
                     sizeof(logfork_saddr)) < 0)
         {
