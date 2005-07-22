@@ -28,6 +28,7 @@
  * $Id$
  */
 
+#define _FILE_OFFSET_BITS 64
 #include <te_config.h>
 #include <te_defs.h>
 #include "package.h"
@@ -170,9 +171,19 @@ static size_t kernel_merge_functions[TCE_MERGE_MAX];
 static ssize_t
 read_at(int fildes, off_t offset, void *buffer, size_t size)
 {
+    ssize_t nsize;
+    
+    DEBUGGING(tce_report_notice("reading %lu at %lx", (unsigned long)size, (unsigned long)offset));
     if(lseek(fildes, offset, SEEK_SET) == (off_t)-1)
+    {
+        tce_report_error("seek error: %s", strerror(errno));
         return (ssize_t)-1;
-    return read(fildes, buffer, size);
+    }
+    nsize = read(fildes, buffer, size);
+    DEBUGGING(tce_report_notice("read %d bytes", (int)nsize));
+    if (nsize < (ssize_t)size)
+        tce_report_error("reading error: %s", strerror(errno));
+    return nsize;
 }
 
 static int
@@ -257,6 +268,42 @@ tce_obtain_kernel_coverage(void)
     }
 }
 
+static te_bool 
+check_module_offset(const char *module, unsigned long offset)
+{
+    FILE *modules = fopen("/proc/modules", "r");
+    char buffer[256];
+    char *token;
+    unsigned long size, start;
+    
+    if (modules == NULL)
+    {
+        tce_report_error("cannot open /proc/modules: %s", strerror(errno));
+        return FALSE;
+    }
+    while (fgets(buffer, sizeof(buffer) - 1, modules) != NULL)
+    {
+        token = strtok(buffer, " \t\n");
+        if (token != NULL && strcmp(token, module) == 0)
+        {
+            token = strtok(NULL, " \t\n");
+            size = strtoul(token, NULL, 10);
+            strtok(NULL, " \t\n"); /* skip refcnt */
+            strtok(NULL, " \t\n");
+            strtok(NULL, " \t\n"); /* skip alive status */
+            token = strtok(NULL, " \t\n");
+            if (token != NULL)
+            {
+                start = strtoul(token, NULL, 0);
+                DEBUGGING(tce_report_notice("module code is at %lx..%lx", start, start + size));
+                return offset >= start && offset < start + size;
+            }
+        }
+    }
+    tce_report_error("module %s not found", module);
+    return FALSE;
+}
+
 static void
 process_gcov_syms(FILE *symfile, int core_file,
                   void (*functor)(int, object_coverage *, void *), void *extra)
@@ -282,22 +329,64 @@ process_gcov_syms(FILE *symfile, int core_file,
             */
             unsigned long tmp;
             object_coverage bb_buf;
+            static int address_offset = -1;
             
-            DEBUGGING(tce_report_notice("offset is %lu", 
-                                    (unsigned long)offset));
-            if(read_at(core_file, offset + 4, &tmp, sizeof(tmp)) < 
-               (ssize_t)sizeof(tmp))
+            token = strtok(NULL, " \t\n"); 
+            if (token == NULL) /* not a module symbol */
             {
-                tce_report_error("read error on /dev/kmem: %s", 
-                             strerror(errno));
-                continue;
+                tce_report_notice("GCOV symbol not in a module, ignoring");
+                continue; 
+            }
+            token[strlen(token) - 1] = '\0'; /* eliminate brackets */
+            token++;
+
+            DEBUGGING(tce_report_notice("offset is %lx for %d", 
+                                        (unsigned long)offset,
+                      core_file));
+            if (address_offset < 0)
+            {
+                for (address_offset = 0; address_offset < 16; 
+                     address_offset++)
+                {
+                    DEBUGGING(tce_report_notice("trying offset %lx", offset + address_offset));
+                    if(read_at(core_file, offset + address_offset, &tmp, sizeof(tmp)) < 
+                       (ssize_t)sizeof(tmp))
+                    {
+                        tce_report_error("read error on /dev/kmem");
+                        tmp = 0;
+                        break;
+                    }
+                    if (check_module_offset(token, tmp))
+                        break;
+                }
+                if (address_offset >= 16)
+                {
+                    tce_report_error("data pointer not found");
+                    address_offset = -1;
+                    continue;
+                }
+                if (tmp == 0) 
+                {
+                    address_offset = -1;
+                    continue;
+                }
+                tce_report_notice("data pointer is %d bytes after the symbol",
+                                  address_offset);
+            }
+            else
+            {
+                if(read_at(core_file, offset + address_offset, &tmp, sizeof(tmp)) < 
+                   (ssize_t)sizeof(tmp))
+                {
+                    tce_report_error("read error on /dev/kmem");
+                    continue;
+                }
             }
             DEBUGGING(tce_report_notice("new offset is %lu", tmp));
             if(read_at(core_file, tmp, &bb_buf, sizeof_object_coverage) < 
                (ssize_t)sizeof_object_coverage)
             {
-                tce_report_error("read error on /dev/kmem: %s", 
-                             strerror(errno));
+                tce_report_error("read error on /dev/kmem");
                 continue;
             }
             
@@ -311,20 +400,15 @@ static void
 summarize_counters(int core_file, unsigned ncounts, off_t values, summary_data *summary)
 {
     unsigned i;
-    
-    if(lseek(core_file, values, SEEK_SET) == (off_t)-1)
-    {
-        tce_report_error("seeking error on /dev/kmem: %s", strerror(errno));
-        return;
-    }
-    for (i = 0; i < ncounts; i++)
+
+    for (i = 0; i < ncounts; i++, values += sizeof(long long))
     {
         long long counter;
-        if(read(core_file, &counter, sizeof(counter)) < 
+
+        if(read_at(core_file, values, &counter, sizeof(counter)) < 
            (ssize_t)sizeof(counter))
         {
-            tce_report_error("error reading from /dev/kmem: %s", 
-                             strerror(errno));
+            tce_report_error("read error on /dev/kmem");
             return;
         }
         summary->sum += counter;
@@ -348,7 +432,7 @@ do_gcov_sum(int core_file, object_coverage *object, void *extra)
         {
             read(core_file, &summary->groups, sizeof(*summary->groups));
             summarize_counters(core_file, summary->groups->num, 
-                               (off_t)summary->groups->values, summary);
+                               (size_t)summary->groups->values, summary);
         }
         for (i = 1; i < GCOV_COUNTER_GROUPS; i++)
         {
@@ -361,7 +445,7 @@ do_gcov_sum(int core_file, object_coverage *object, void *extra)
     else
     {
         summarize_counters(core_file, object->old.ncounts, 
-                           (off_t)object->old.counts, summary);
+                           (size_t)object->old.counts, summary);
     }
 }
 
@@ -462,8 +546,7 @@ get_kernel_gcov_data(int core_file, object_coverage *object, void *extra)
                        &new_fn_info, sizeof(struct gcov_fn_info)) < 
                (ssize_t)sizeof(struct gcov_fn_info))
             {
-                tce_report_error("error reading from /dev/kmem: %s", 
-                                 strerror(errno));
+                tce_report_error("error reading from /dev/kmem");
                 return;
             }            
             for (n_counts = 0, i = 0; i < GCOV_COUNTER_GROUPS; i++)
@@ -489,7 +572,7 @@ get_kernel_gcov_data(int core_file, object_coverage *object, void *extra)
                         long long ctr_value[4];                       
         
                         lseek(core_file, (size_t)summary->groups[i].values, SEEK_SET);
-                        if ((size_t)summary->groups[i].values == 
+                        if ((size_t)summary->groups[i].merge == 
                             kernel_merge_functions[TCE_MERGE_ADD])
                         {                          
                             for (j = 0; j < n_sub_counts[i]; j++)
@@ -498,7 +581,7 @@ get_kernel_gcov_data(int core_file, object_coverage *object, void *extra)
                                 (*target_counters++) += ctr_value[0];                              
                             }
                         }
-                        else if ((size_t)summary->groups[i].values == 
+                        else if ((size_t)summary->groups[i].merge == 
                                  kernel_merge_functions[TCE_MERGE_SINGLE])
                         {
                             for (j = 0; j < n_sub_counts[i]; j += 3)
@@ -518,7 +601,7 @@ get_kernel_gcov_data(int core_file, object_coverage *object, void *extra)
                                 target_counters += 3;                               
                             }
                         }
-                        else if ((size_t)summary->groups[i].values == 
+                        else if ((size_t)summary->groups[i].merge == 
                                  kernel_merge_functions[TCE_MERGE_DELTA])
                         {
                             for (j = 0; j < n_sub_counts[i]; j += 4)
@@ -555,8 +638,7 @@ get_kernel_gcov_data(int core_file, object_coverage *object, void *extra)
             if(read_at(core_file, (size_t)object->old.function_infos++, 
                        &fn_info, sizeof(fn_info)) < (ssize_t)sizeof(fn_info))
             {
-                tce_report_error("error reading from /dev/kmem: %s", 
-                                 strerror(errno));
+                tce_report_error("error reading from /dev/kmem");
                 return;
             }
             if (fn_info.arc_count < 0)
