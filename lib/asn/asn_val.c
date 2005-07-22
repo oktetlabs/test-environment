@@ -1922,15 +1922,15 @@ asn_get_choice(const asn_value *container, const char *subval_labels,
     int rc;
     int len = strlen (subval_labels);
     static char suffix [] = {'.', '#', '\1', '\0'};
-    char *corrected_labels = malloc (len + sizeof(suffix));
 
     if (len)
     { 
-        memcpy (corrected_labels, subval_labels, len); 
-        memcpy (corrected_labels + len, suffix, sizeof(suffix)); 
+        char *corrected_labels = malloc(len + sizeof(suffix));
+        memcpy(corrected_labels, subval_labels, len); 
+        memcpy(corrected_labels + len, suffix, sizeof(suffix)); 
 
         rc = asn_impl_fall_down_to_tree_nc(container, corrected_labels, &val); 
-        free (corrected_labels);
+        free(corrected_labels);
 
         if (rc != 0 && rc != ASN_STOP_AT_CHOICE)
             return rc; 
@@ -2009,7 +2009,6 @@ asn_get_syntax(const asn_value *value, const char *subval_labels)
     int rc;
     int len;
     static char suffix [] = {'.', '#', '\1', '\0'};
-    char *corrected_labels;
 
     if (value == NULL)
         return SYNTAX_UNDEFINED;
@@ -2020,7 +2019,7 @@ asn_get_syntax(const asn_value *value, const char *subval_labels)
     len = strlen (subval_labels);
     if (len)
     { 
-        corrected_labels = malloc (len + sizeof(suffix));
+        char *corrected_labels = malloc (len + sizeof(suffix));
 
         memcpy (corrected_labels, subval_labels, len); 
         memcpy (corrected_labels + len, suffix, sizeof(suffix)); 
