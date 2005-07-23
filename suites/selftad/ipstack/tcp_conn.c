@@ -122,7 +122,7 @@ main(int argc, char *argv[])
 
     rpc_srv->def_timeout = 5000;
     
-    rpc_setlibname(rpc_srv, NULL); 
+    rcf_rpc_setlibname(rpc_srv, NULL); 
 
     memset(&sock_addr, 0, sizeof(sock_addr)); 
 

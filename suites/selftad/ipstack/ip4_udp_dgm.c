@@ -142,7 +142,7 @@ main(int argc, char *argv[])
         TEST_FAIL("Cannot create server %x", rc); 
 
     srv_listen->def_timeout = 5000; 
-    rpc_setlibname(srv_listen, NULL); 
+    rcf_rpc_setlibname(srv_listen, NULL); 
 
     udp_socket = rpc_socket(srv_listen, RPC_PF_INET,
                             RPC_SOCK_DGRAM, RPC_PROTO_DEF);

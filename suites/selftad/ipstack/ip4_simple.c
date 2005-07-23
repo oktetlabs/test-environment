@@ -130,7 +130,7 @@ main(int argc, char *argv[])
     }
     srv_src->def_timeout = 5000;
     
-    rpc_setlibname(srv_src, NULL);
+    rcf_rpc_setlibname(srv_src, NULL);
 
 
     if ((rc = rcf_rpc_server_create(agt_a, "SECOND", &srv_dst)) != 0)
@@ -139,7 +139,7 @@ main(int argc, char *argv[])
     }
     srv_dst->def_timeout = 5000;
     
-    rpc_setlibname(srv_dst, NULL);
+    rcf_rpc_setlibname(srv_dst, NULL);
 #endif
  
     do {
