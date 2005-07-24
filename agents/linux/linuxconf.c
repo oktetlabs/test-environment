@@ -1968,7 +1968,7 @@ broadcast_get(unsigned int gid, const char *oid, char *value,
         /* FIXME Mapping to ETENOSUCHNAME */
         return TE_RC(TE_TA_LINUX, errno);
     }
-    bcast = SIN(&req.ifr_addr)->sin_addr;
+    bcast = SIN(&req.ifr_addr)->sin_addr.s_addr;
 #else
 #error Way to work with network addresses is not defined.
 #endif
