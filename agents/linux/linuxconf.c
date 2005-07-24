@@ -17,7 +17,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public 
+ * You should have received a copy of the GNU Lesser General Public
  * License along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
@@ -195,7 +195,7 @@ static int route_del(unsigned int, const char *,
                      const char *);
 static int route_list(unsigned int, const char *, char **);
 
-static int nameserver_get(unsigned int, const char *, char *, 
+static int nameserver_get(unsigned int, const char *, char *,
                           const char *, ...);
 
 static int user_list(unsigned int, const char *, char **);
@@ -226,7 +226,7 @@ static rcf_pch_cfg_object node_arp =
       (rcf_ch_cfg_add)arp_add, (rcf_ch_cfg_del)arp_del,
       (rcf_ch_cfg_list)arp_list, NULL, NULL};
 
-RCF_PCH_CFG_NODE_RO(node_dns, "dns", 
+RCF_PCH_CFG_NODE_RO(node_dns, "dns",
                     NULL, &node_arp,
                     (rcf_ch_cfg_list)nameserver_get);
 
@@ -244,11 +244,9 @@ RCF_PCH_CFG_NODE_RO(node_link_addr, "link_addr", NULL, &node_arp_use,
 
 RCF_PCH_CFG_NODE_RW(node_broadcast, "broadcast", NULL, NULL,
                     broadcast_get, broadcast_set);
-RCF_PCH_CFG_NODE_RW(node_prefix, "prefix", NULL, &node_broadcast,
-                    prefix_get, prefix_set);
 
 static rcf_pch_cfg_object node_net_addr =
-    { "net_addr", 0, &node_prefix, &node_link_addr,
+    { "net_addr", 0, &node_broadcast, &node_link_addr,
       (rcf_ch_cfg_get)prefix_get, (rcf_ch_cfg_set)prefix_set,
       (rcf_ch_cfg_add)net_addr_add, (rcf_ch_cfg_del)net_addr_del,
       (rcf_ch_cfg_list)net_addr_list, NULL, NULL };
@@ -278,11 +276,7 @@ RCF_PCH_CFG_NODE_COLLECTION(node_user, "user",
 RCF_PCH_CFG_NODE_AGENT(node_agent, &node_user);
 
 static te_bool init = FALSE;
-#ifdef USE_NETLINK
-static char *find_net_addr(const char *ifname, 
-                           const char *addr, 
-                           unsigned int *prefix);
-#endif
+
 
 /**
  * Get root of the tree of supported objects.
@@ -311,7 +305,7 @@ rcf_ch_conf_root(void)
     if (!init)
     {
         init = TRUE;
-        
+
 #ifdef ENABLE_WIFI_SUPPORT
         rcf_pch_cfg_object *agt_if_tail = &node_status;
 
@@ -323,7 +317,7 @@ rcf_ch_conf_root(void)
                   agt_if_tail->sub_id, __FILE__, __LINE__);
             return NULL;
         }
-        
+
         if (linuxconf_wifi_init(&agt_if_tail) != 0)
         {
             return NULL;
@@ -363,7 +357,7 @@ rcf_ch_conf_root(void)
 #ifdef RCF_RPC
         /* Link RPC nodes */
         rcf_pch_rpc_init();
-#endif        
+#endif
     }
 
     return &node_agent;
@@ -479,10 +473,10 @@ ip4_fw_set(unsigned int gid, const char *oid, const char *value)
  * @arg                location for nlmsg list
  *
  * @return error code
- */ 
-static int 
-store_nlmsg(const struct sockaddr_nl *who, 
-            const struct nlmsghdr *n, 
+ */
+static int
+store_nlmsg(const struct sockaddr_nl *who,
+            const struct nlmsghdr *n,
             void *arg)
 {
     struct nlmsg_list **linfo = (struct nlmsg_list**)arg;
@@ -518,7 +512,7 @@ free_nlmsg(struct nlmsg_list *linfo)
     {
         next = cur->next;
         free (cur);
-    }    
+    }
     return;
 }
 
@@ -530,13 +524,13 @@ free_nlmsg(struct nlmsg_list *linfo)
  *                 containing address information
  *
  * @return error code
- */ 
+ */
 static int
 ip_addr_get(int family, struct nlmsg_list **list)
 {
     struct rtnl_handle rth;
     int                type;
-    
+
     memset(&rth, 0, sizeof(rth));
     if (rtnl_open(&rth, 0) < 0)
     {
@@ -548,15 +542,15 @@ ip_addr_get(int family, struct nlmsg_list **list)
     ll_init_map(&rth);
     type = (family == AF_INET) ? RTM_GETADDR : RTM_GETLINK;
 
-    if (rtnl_wilddump_request(&rth, family, type) < 0) 
+    if (rtnl_wilddump_request(&rth, family, type) < 0)
     {
-        ERROR("%s: Cannot send dump request, %s", 
+        ERROR("%s: Cannot send dump request, %s",
               __FUNCTION__, strerror(errno));
         rtnl_close(&rth);
         return TE_RC(TE_TA_LINUX, errno);
     }
 
-    if (rtnl_dump_filter(&rth, store_nlmsg, list, NULL, NULL) < 0) 
+    if (rtnl_dump_filter(&rth, store_nlmsg, list, NULL, NULL) < 0)
     {
         ERROR("%s: Dump terminated, %s",
               __FUNCTION__, strerror(errno));
@@ -568,68 +562,169 @@ ip_addr_get(int family, struct nlmsg_list **list)
 }
 
 /**
- * Modify AF_INET address
+ * Find name of the interface with specified address.
  *
- * @param cmd         RTM_NEWADDR or RTM_DELADDR
- * @param ifname      interface name
- * @param addr        address
- * @param broadcast   broadcast
- * @param prefix      prefix
+ * @param str_addr  Address in dotted notation
+ * @param ifname    Name the interface or NULL
+ * @param addr      Location for the address or NULL
+ * @param prefix    Location for prefix or NULL
+ * @param bcast     Location for broadcast address or NULL
+ *
+ * @return pointer to interface name in ll_map static buffer or NULL
+ */
+static const char *
+nl_find_net_addr(const char *str_addr, const char *ifname,
+                 uint32_t *addr, unsigned int *prefix, uint32_t *bcast)
+{
+    uint32_t           int_addr;
+    struct nlmsg_list *ainfo = NULL;
+    struct nlmsg_list *a = NULL;
+    struct nlmsghdr   *n = NULL;
+    struct ifaddrmsg  *ifa = NULL;
+    struct rtattr     *rta_tb[IFA_MAX + 1];
+    int                ifindex = 0;
+
+
+    if (ifname != NULL && (strlen(ifname) >= IF_NAMESIZE))
+    {
+        ERROR("Interface name '%s' too long", ifname);
+        return NULL;
+    }
+
+    if (inet_pton(AF_INET, str_addr, (void *)&int_addr) <= 0)
+    {
+        ERROR("%s(): inet_pton() failed for address '%s'",
+              __FUNCTION__, str_addr);
+        return NULL;
+    }
+
+    if (ip_addr_get(AF_INET, &ainfo) != 0)
+    {
+        ERROR("%s(): Cannot get addresses list", __FUNCTION__);
+        return NULL;
+    }
+
+    for (a = ainfo;  a; a = a->next)
+    {
+        n = &a->h;
+        ifa = NLMSG_DATA(n);
+
+        if (n->nlmsg_len < NLMSG_LENGTH(sizeof(ifa)))
+        {
+            ERROR("%s(): Bad netlink mesg hdr length", __FUNCTION__);
+            free_nlmsg(ainfo);
+            return NULL;
+        }
+
+        memset(rta_tb, 0, sizeof(rta_tb));
+        parse_rtattr(rta_tb, IFA_MAX, IFA_RTA(ifa),
+                     n->nlmsg_len - NLMSG_LENGTH(sizeof(*ifa)));
+        if (!rta_tb[IFA_LOCAL])
+            rta_tb[IFA_LOCAL] = rta_tb[IFA_ADDRESS];
+        if (!rta_tb[IFA_ADDRESS])
+             rta_tb[IFA_ADDRESS] = rta_tb[IFA_LOCAL];
+        if (rta_tb[IFA_LOCAL])
+        {
+            if (*(unsigned int *)(RTA_DATA(rta_tb[IFA_LOCAL])) ==
+                int_addr)
+            {
+                if (ifname == NULL ||
+                    (ll_name_to_index(ifname) == ifa->ifa_index))
+                    break;
+
+                WARN("Interfaces '%s' and '%s' have the same address '%s'",
+                     ifname, ll_index_to_name(ifa->ifa_index), str_addr);
+            }
+        }
+    }
+
+    if (a != NULL)
+    {
+        ifindex = ifa->ifa_index;
+        if (addr != NULL)
+            *addr   = int_addr;
+        if (prefix != NULL)
+            *prefix = ifa->ifa_prefixlen;
+        if (bcast != NULL)
+            *bcast = (rta_tb[IFA_BROADCAST]) ?
+                     *(uint32_t *)RTA_DATA(rta_tb[IFA_BROADCAST]) :
+                     htonl(INADDR_BROADCAST);
+    }
+
+    free_nlmsg(ainfo);
+
+    return (a == NULL) ? NULL :
+           (ifname != NULL) ? ifname :
+                              (const char *)ll_index_to_name(ifindex);
+}
+
+
+/**
+ * Add/delete AF_INET address.
+ *
+ * @param cmd           Command (see enum net_addr_ops)
+ * @param ifname        Interface name
+ * @param addr          Address
+ * @param prefix        Prefix to set or 0
+ * @param bcast         Broadcast to set or 0
  *
  * @return error code
- */ 
+ */
 static int
-ip_addr_modify(int cmd, const char * ifname, 
-               unsigned int addr, unsigned int broadcast, int prefix)
+nl_ip4_addr_add_del(int cmd, const char *ifname, uint32_t addr,
+                    unsigned int prefix, uint32_t bcast)
 {
-    struct rtnl_handle rth;
+    int                 rc;
+    struct rtnl_handle  rth;
     struct {
         struct nlmsghdr  n;
         struct ifaddrmsg ifa;
         char             buf[256];
     } req;
-    
+
     inet_prefix  lcl;
     inet_prefix  brd;
 
 #define AF_INET_DEFAULT_BITLEN   32
 #define AF_INET_DEFAULT_BYTELEN  4
-    
+
+    ENTRY("cmd=%d ifname=%s addr=0x%x prefix=%u bcast=0x%x",
+          cmd, ifname, addr, prefix, bcast);
+
     memset(&req, 0, sizeof(req));
     memset(&lcl, 0, sizeof(lcl));
     memset(&brd, 0, sizeof(brd));
     memset(&rth, 0, sizeof(rth));
 
+    lcl.family = AF_INET;
+    lcl.bytelen = AF_INET_DEFAULT_BYTELEN;
+    lcl.bitlen = (prefix != 0) ? prefix : AF_INET_DEFAULT_BITLEN;
+    lcl.data[0] = addr;
+
     req.n.nlmsg_len = NLMSG_LENGTH(sizeof(struct ifaddrmsg));
     req.n.nlmsg_flags = NLM_F_REQUEST;
     req.n.nlmsg_type = cmd;
     req.ifa.ifa_family = AF_INET;
-    
-    lcl.family = AF_INET;
-    lcl.bytelen = AF_INET_DEFAULT_BYTELEN;
-    lcl.bitlen = (prefix) ? prefix : AF_INET_DEFAULT_BITLEN;
-    lcl.data[0] = addr; 
-    
-    if (broadcast)
+    req.ifa.ifa_prefixlen = lcl.bitlen;
+
+    addattr_l(&req.n, sizeof(req), IFA_LOCAL, &lcl.data, lcl.bytelen);
+
+    if (bcast != 0)
     {
         brd.family = AF_INET;
         brd.bytelen = AF_INET_DEFAULT_BYTELEN;
         brd.bitlen = lcl.bitlen;
-        brd.data[0] = broadcast; 
-        addattr_l(&req.n, sizeof(req), IFA_BROADCAST, 
+        brd.data[0] = bcast;
+        addattr_l(&req.n, sizeof(req), IFA_BROADCAST,
                   &brd.data, brd.bytelen);
-    }    
-    
-    addattr_l(&req.n, sizeof(req), IFA_LOCAL, &lcl.data, lcl.bytelen);
-
-    req.ifa.ifa_prefixlen = lcl.bitlen;
-    req.ifa.ifa_family = lcl.family;
+    }
 
     memset(&rth, 0, sizeof(rth));
     if (rtnl_open(&rth, 0) < 0)
     {
-        ERROR("%s: Cannot open netlink socket", __FUNCTION__);
-        return TE_RC(TE_TA_LINUX, errno);
+        rc = TE_RC(TE_TA_LINUX, errno);
+        ERROR("%s(): Cannot open netlink socket", __FUNCTION__);
+        return rc;
     }
 
     ll_init_map(&rth);
@@ -637,15 +732,79 @@ ip_addr_modify(int cmd, const char * ifname,
 
     if (rtnl_talk(&rth, &req.n, 0, 0, NULL, NULL, NULL) < 0)
     {
-        ERROR("%s: rtnl_talk() failed", __FUNCTION__);
+        rc = TE_RC(TE_TA_LINUX, errno);
+        ERROR("%s(): rtnl_talk() failed", __FUNCTION__);
         rtnl_close(&rth);
-        return TE_RC(TE_TA_LINUX, errno);
+        return rc;
     }
     rtnl_close(&rth);
+
+    EXIT("OK");
+
     return 0;
 }
 
-#endif
+
+/** Operations over network addresses */
+enum net_addr_ops {
+    NET_ADDR_ADD,       /**< Add a new address */
+    NET_ADDR_DELETE,    /**< Delete an existing address */
+    NET_ADDR_MODIFY     /**< Modify an existing address */
+};
+
+/**
+ * Modify AF_INET address.
+ *
+ * @param cmd           Command (see enum net_addr_ops)
+ * @param ifname        Interface name
+ * @param addr          Address as string
+ * @param new_prefix    Pointer to the prefix to set or NULL
+ * @param new_bcast     Pointer to the broadcast address to set or NULL
+ *
+ * @return error code
+ */
+static int
+nl_ip4_addr_modify(enum net_addr_ops cmd,
+                   const char *ifname, const char *addr,
+                   unsigned int *new_prefix, uint32_t *new_bcast)
+{
+    uint32_t        int_addr = 0;
+    unsigned int    prefix = 0;
+    uint32_t        bcast = 0;
+    int             rc = 0;
+
+    if (cmd == NET_ADDR_ADD)
+    {
+        if (inet_pton(AF_INET, addr, &int_addr) <= 0)
+        {
+            ERROR("Failed to convert addrss '%s' from string", addr);
+            return TE_RC(TE_TA_LINUX, EINVAL);
+        }
+    }
+    else if (nl_find_net_addr(addr, ifname,
+                              &int_addr, &prefix, &bcast) == NULL)
+    {
+        ERROR("Address '%s' on interface '%s' not found", addr, ifname);
+        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
+    }
+
+    if (new_prefix != NULL)
+        prefix = *new_prefix;
+    if (new_bcast != NULL)
+        bcast = *new_bcast;
+
+    if (cmd != NET_ADDR_ADD)
+        rc = nl_ip4_addr_add_del(RTM_DELADDR, ifname, int_addr, 0, 0);
+
+    if (rc == 0 && cmd != NET_ADDR_DELETE)
+        rc = nl_ip4_addr_add_del(RTM_NEWADDR, ifname, int_addr,
+                                 prefix, bcast);
+
+    return rc;
+}
+
+#endif /* USE_NETLINK */
+
 
 #ifdef USE_IOCTL
 /**
@@ -731,30 +890,30 @@ interface_exists(const char *ifname)
               __FUNCTION__, strerror(errno));
         return TE_RC(TE_TA_LINUX, errno);
     }
-        
+
     buf[0] = 0;
 
     while (fgets(trash, sizeof(trash), f) != NULL)
     {
         char *s = strchr(trash, ':');
-        
+
         if (s == NULL)
             continue;
-            
+
         for (*s-- = 0; s != trash && *s != ' '; s--);
-        
+
         if (*s == ' ')
             s++;
-            
+
         if (strcmp(s, ifname) == 0)
         {
             fclose(f);
             return TRUE;
         }
     }
-    
+
     fclose(f);
-    
+
     return FALSE;
 }
 
@@ -790,22 +949,22 @@ interface_list(unsigned int gid, const char *oid, char **list)
                   __FUNCTION__, strerror(errno));
             return TE_RC(TE_TA_LINUX, errno);
         }
-        
+
         while (fgets(trash, sizeof(trash), f) != NULL)
         {
             char *s = strchr(trash, ':');
-            
+
             if (s == NULL)
                 continue;
-                
+
             for (*s-- = 0; s != trash && *s != ' '; s--);
-            
+
             if (*s == ' ')
                 s++;
-                
+
             off += snprintf(buf + off, sizeof(buf) - off, "%s ", s);
         }
-        
+
         fclose(f);
     }
 #else
@@ -844,7 +1003,7 @@ aliases_list()
     te_bool       first = TRUE;
     char         *name = NULL;
     char         *ptr = buf;
-    
+
     conf.ifc_len = sizeof(buf);
     conf.ifc_buf = buf;
 
@@ -880,23 +1039,23 @@ aliases_list()
                   __FUNCTION__, strerror(errno));
             return TE_RC(TE_TA_LINUX, errno);
         }
-            
+
         while (fgets(trash, sizeof(trash), f) != NULL)
         {
             char *name = strchr(trash, ':');
             char *tmp;
             int   n;
-            
+
             if (name == NULL)
                 continue;
-                
+
             for (*name-- = 0; name != trash && *name != ' '; name--);
-            
+
             if (*name == ' ')
                 name++;
-                
+
             n = strlen(name);
-            for (tmp = strstr(buf, name); 
+            for (tmp = strstr(buf, name);
                  tmp != NULL;
                  tmp = strstr(tmp, name))
             {
@@ -927,42 +1086,42 @@ aliases_list()
  *
  * @return error code
  */
-static int 
-interface_add(unsigned int gid, const char *oid, const char *value, 
+static int
+interface_add(unsigned int gid, const char *oid, const char *value,
               const char *ifname)
 {
     char    *devname;
     char    *vlan;
     char    *tmp;
     uint16_t vid;
-    
+
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(value);
-    
+
     if (interface_exists(ifname))
         return TE_RC(TE_TA_LINUX, EEXIST);
-        
+
     if ((devname = strdup(ifname)) == NULL)
         return TE_RC(TE_TA_LINUX, ENOMEM);
-        
+
     if ((vlan = strchr(devname, '.')) == NULL)
     {
         free(devname);
         return TE_RC(TE_TA_LINUX, EINVAL);
     }
     *vlan++ = 0;
-    
+
     vid = strtol(vlan, &tmp, 10);
     if (tmp == vlan || *tmp != 0 || !interface_exists(devname))
     {
         free(devname);
         return TE_RC(TE_TA_LINUX, EINVAL);
     }
-   
-    sprintf(buf, "/sbin/vconfig add %s %d", devname, vid); 
+
+    sprintf(buf, "/sbin/vconfig add %s %d", devname, vid);
     free(devname);
-    
+
     return ta_system(buf) != 0 ? TE_RC(TE_TA_LINUX, ETESHCMD) : 0;
 }
 
@@ -975,17 +1134,17 @@ interface_add(unsigned int gid, const char *oid, const char *value,
  *
  * @return error code
  */
-static int 
+static int
 interface_del(unsigned int gid, const char *oid, const char *ifname)
 {
     UNUSED(gid);
     UNUSED(oid);
-    
+
     if (!interface_exists(ifname))
         return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
-        
+
     sprintf(buf, "/sbin/vconfig rem %s", ifname);
-    
+
     return (ta_system(buf) != 0) ? TE_RC(TE_TA_LINUX, ETESHCMD) : 0;
 }
 
@@ -1045,21 +1204,21 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(value);
-    
+
     /* FIXME */
     if (strlen(ifname) >= IF_NAMESIZE || strchr(ifname, ':') != NULL)
     {
         /* Alias does not exist from Configurator point of view */
         return FALSE;
     }
-    
+
     if (inet_pton(AF_INET, addr, (void *)&new_addr) <= 0 ||
         new_addr == 0 ||
         (new_addr & 0xe0000000) == 0xe0000000)
     {
         return TE_RC(TE_TA_LINUX, EINVAL);
     }
-    
+
     if ((rc = aliases_list()) != 0)
         return TE_RC(TE_TA_LINUX, rc);
 
@@ -1069,7 +1228,7 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
         next = strchr(cur, ' ');
         if (next != NULL)
             *next++ = 0;
-            
+
         rc = get_addr(cur, (struct in_addr *)&tmp_addr);
 
         if (rc == 0 && tmp_addr == new_addr)
@@ -1079,23 +1238,23 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
         {
             if (rc != 0)
                 break;
-            else 
+            else
                 goto next;
-            
+
         }
-        
+
         if (!is_alias_of(cur, ifname))
             goto next;
 
         if (rc != 0)
             break;
-            
+
         slots[atoi(strchr(cur, ':') + 1)] = 1;
-        
+
         next:
         cur = next;
     }
-    
+
     if (cur != NULL)
     {
         sprintf(trash, "/sbin/ifconfig %s %s up", cur, addr);
@@ -1105,7 +1264,7 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
         unsigned int n;
 
         for (n = 0; n < sizeof(slots) && slots[n] != 0; n++);
-        
+
         if (n == sizeof(slots))
             return TE_RC(TE_TA_LINUX, EPERM);
 
@@ -1114,7 +1273,7 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
 
     if (ta_system(trash) != 0)
         return TE_RC(TE_TA_LINUX, ETESHCMD);
-        
+
     if (*value != 0)
     {
         if ((rc = prefix_set(gid, oid, value, ifname, addr)) != 0)
@@ -1123,7 +1282,7 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
             return rc;
         }
     }
-        
+
     return 0;
 }
 #else
@@ -1150,7 +1309,7 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
     {
         return TE_RC(TE_TA_LINUX, EINVAL);
     }
-    
+
 #ifdef __linux__
     /* FIXME */
     if (strlen(ifname) >= IF_NAMESIZE || strchr(ifname, ':') != NULL)
@@ -1172,7 +1331,7 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
             if (strlen(cur) == 0)
                 continue;
         }
-            
+
         rc = get_addr(cur, (struct in_addr *)&tmp_addr);
         if (rc == 0 && tmp_addr == new_addr)
             return TE_RC(TE_TA_LINUX, EEXIST);
@@ -1181,19 +1340,19 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
         {
             if (rc != 0)
                 break;
-            else 
+            else
                 continue;
         }
-        
+
         if (!is_alias_of(cur, ifname))
             continue;
 
         if (rc != 0)
             break;
-            
+
         slots[atoi(strchr(cur, ':') + 1)] = 1;
     }
-    
+
     if (strlen(cur) != 0)
     {
         strncpy(req.ifr_name, cur, IFNAMSIZ);
@@ -1203,7 +1362,7 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
         unsigned int n;
 
         for (n = 0; n < sizeof(slots) && slots[n] != 0; n++);
-        
+
         if (n == sizeof(slots))
             return TE_RC(TE_TA_LINUX, EPERM);
 
@@ -1262,51 +1421,48 @@ static int
 net_addr_add(unsigned int gid, const char *oid, const char *value,
              const char *ifname, const char *addr)
 {
-    uint32_t     new_addr;
-    uint32_t     mask;
-    uint32_t     broadcast;
-    unsigned int prefix;
-    char        *name;
-    char        *end;
+    const char     *name;
+    uint32_t        new_addr;
+    unsigned int    prefix;
+    char           *end;
+    uint32_t        mask;
+    uint32_t        broadcast;
 
     UNUSED(gid);
     UNUSED(oid);
-    
-    if (strlen(ifname) >= IF_NAMESIZE || strchr(ifname, ':') != NULL)
+
+    /* Check that address has not already been assigned to any interface */
+    name = nl_find_net_addr(addr, NULL, &new_addr, NULL, NULL);
+    if (name != NULL)
     {
-        /* Alias does not exist from Configurator point of view */
-        return FALSE;
+        ERROR("%s(): Address '%s' already exists on interface '%s'",
+              __FUNCTION__, addr, name);
+        return TE_RC(TE_TA_LINUX, EEXIST);
     }
-    
+
+    /* Validate address to be added */
     if (inet_pton(AF_INET, addr, (void *)&new_addr) <= 0 ||
         new_addr == 0 ||
         (ntohl(new_addr) & 0xe0000000) == 0xe0000000)
     {
         return TE_RC(TE_TA_LINUX, EINVAL);
     }
-    
+
+    /* Validate specified address prefix */
     prefix = strtol(value, &end, 10);
     if (value == end)
     {
         ERROR("Invalid value '%s' of prefix length", value);
         return TE_RC(TE_TA_LINUX, ETEFMT);
     }
-
     if (prefix > 32)
     {
         ERROR("Invalid prefix '%s' to be set", value);
         return TE_RC(TE_TA_LINUX, EINVAL);
     }
-    
-    if ((name = find_net_addr(NULL, addr, &prefix)) != NULL)
-    {
-        ERROR("%s: address %s already exists on interface %s",
-              __FUNCTION__, addr, name);
-        return TE_RC(TE_TA_LINUX, EEXIST);
-    }
-    
     if (prefix == 0)
     {
+        /* Use default prefix in the cast of 0 */
         mask = ((new_addr) & htonl(0x80000000)) == 0 ? htonl(0xFF000000) :
                ((new_addr) & htonl(0xC0000000)) == htonl(0x80000000) ?
                htonl(0xFFFF0000) : htonl(0xFFFFFF00);
@@ -1316,90 +1472,15 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
     {
         mask = htonl(PREFIX2MASK(prefix));
     }
+    /* Prepare broadcast address to be set */
     broadcast = (~mask) | new_addr;
 
-    return ip_addr_modify(RTM_NEWADDR, ifname, new_addr, broadcast, prefix);
+    return nl_ip4_addr_modify(NET_ADDR_ADD, ifname, addr,
+                              &prefix, &broadcast);
 }
 #endif
 
 
-#ifdef USE_NETLINK
-/**
- * Find name of the interface with specified address.
- *
- * @param ifname    name of "master" (non-alias) interface
- * @param addr      address in dotted notation
- * @param prefix    location for prefix (INT/OUT)
- *
- * @return pointer to interface name in buf or NULL
- */
-static char *
-find_net_addr(const char *ifname, const char *addr, unsigned int *prefix)
-{
-    uint32_t           int_addr;
-    struct nlmsg_list *ainfo = NULL;
-    struct nlmsg_list *a     = NULL;
-    struct nlmsghdr   *n = NULL;
-    struct ifaddrmsg  *ifa = NULL;
-    struct rtattr     *rta_tb[IFA_MAX+1];
-    int                ifindex;
-
-    if (ifname != NULL && 
-        (strlen(ifname) >= IF_NAMESIZE || strchr(ifname, ':') != NULL))
-        return NULL;
-
-    if (inet_pton(AF_INET, addr, (void *)&int_addr) <= 0)
-    {
-        ERROR("inet_pton() failed for address %s", addr);
-        return NULL;
-    }
-
-    if (ip_addr_get(AF_INET, &ainfo) != 0)
-    {
-        ERROR("%s: Cannot get addresses list");
-        return NULL;
-    }
-
-    for (a = ainfo;  a; a = a->next)
-    {
-        n = &a->h;
-        ifa = NLMSG_DATA(n);
-
-        if (n->nlmsg_len < NLMSG_LENGTH(sizeof(ifa)))
-        {
-            ERROR("%s: Bad netlink mesg hdr length");
-            return NULL;
-        }
-
-        memset(rta_tb, 0, sizeof(rta_tb));
-        parse_rtattr(rta_tb, IFA_MAX, IFA_RTA(ifa), 
-                     n->nlmsg_len - NLMSG_LENGTH(sizeof(*ifa)));
-        if (!rta_tb[IFA_LOCAL])
-            rta_tb[IFA_LOCAL] = rta_tb[IFA_ADDRESS];
-        if (!rta_tb[IFA_ADDRESS])
-             rta_tb[IFA_ADDRESS] = rta_tb[IFA_LOCAL];
-        if (rta_tb[IFA_LOCAL])
-        {
-            if (*(unsigned int *)(RTA_DATA(rta_tb[IFA_LOCAL])) == 
-                int_addr)
-            {
-                if ((ifname == NULL || 
-                    (ll_name_to_index(ifname) == ifa->ifa_index)) &&
-                    (*prefix == 0 || (*prefix == ifa->ifa_prefixlen)))
-                    break;    
-                WARN("Interfaces %s and %s have the same address %s",
-                     ifname, ll_index_to_name(ifa->ifa_index), addr);    
-            }
-        }
-    }
-    ifindex = (a != NULL) ? ifa->ifa_index : 0;
-    if (a != NULL)
-        *prefix = ifa->ifa_prefixlen;
-    free_nlmsg(ainfo);
-    
-    return (ifindex != 0) ? (char *)ll_index_to_name(ifindex) : NULL;
-}
-#endif
 
 #ifdef USE_IOCTL
 /**
@@ -1419,7 +1500,7 @@ find_net_addr(const char *ifname, const char *addr)
     char         *next;
     int           rc;
 
-    if (ifname != NULL && 
+    if (ifname != NULL &&
         (strlen(ifname) >= IF_NAMESIZE || strchr(ifname, ':') != NULL))
         return NULL;
 
@@ -1440,7 +1521,7 @@ find_net_addr(const char *ifname, const char *addr)
             if (strlen(cur) == 0)
                 continue;
         }
-            
+
         if (strcmp(cur, ifname) != 0 && !is_alias_of(cur, ifname))
         {
             continue;
@@ -1477,7 +1558,7 @@ net_addr_del(unsigned int gid, const char *oid,
 
     UNUSED(gid);
     UNUSED(oid);
-    
+
     /* FIXME */
     if (strlen(ifname) >= IF_NAMESIZE || strchr(ifname, ':') != NULL)
     {
@@ -1487,7 +1568,7 @@ net_addr_del(unsigned int gid, const char *oid,
 
     if ((name = find_net_addr(ifname, addr)) == NULL)
         return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
-        
+
     if (strcmp(name, ifname) == 0)
         sprintf(trash, "/sbin/ifconfig %s 0.0.0.0", ifname);
     else
@@ -1559,34 +1640,10 @@ static int
 net_addr_del(unsigned int gid, const char *oid,
              const char *ifname, const char *addr)
 {
-    char        *name;
-    uint32_t     int_addr;
-    unsigned int prefix = 0;
-
     UNUSED(gid);
     UNUSED(oid);
 
-    /* FIXME */
-    if (strlen(ifname) >= IF_NAMESIZE || strchr(ifname, ':') != NULL)
-    {
-        /* Alias does not exist from Configurator point of view */
-        return FALSE;
-    }
-
-    if ((name = find_net_addr(ifname, addr, &prefix)) == NULL)    
-    {
-        ERROR("Address %s on interface %s not found", addr, ifname);
-        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
-    }
-    if (inet_pton(AF_INET, addr, (void *)&int_addr) <= 0 ||
-        int_addr == 0 ||
-        (ntohl(int_addr) & 0xe0000000) == 0xe0000000)
-    {
-        return TE_RC(TE_TA_LINUX, EINVAL);
-    }
-    
-    return ip_addr_modify(RTM_DELADDR,
-                          ifname, int_addr, 0, 0);
+    return nl_ip4_addr_modify(NET_ADDR_DELETE, ifname, addr, NULL, NULL);
 }
 #endif
 
@@ -1639,13 +1696,13 @@ net_addr_list(unsigned int gid, const char *oid, char **list,
     }
 
     ifindex = ll_name_to_index(ifname);
-    if (ifindex <= 0) 
+    if (ifindex <= 0)
     {
         ERROR("Device \"%s\" does not exist", ifname);
         return TE_RC(TE_TA_LINUX, ENODEV);
     }
-    
-    for (n = ainfo; n; n = n->next) 
+
+    for (n = ainfo; n; n = n->next)
     {
         struct nlmsghdr *hdr = &n->h;
         struct ifaddrmsg *ifa = NLMSG_DATA(hdr);
@@ -1660,7 +1717,7 @@ net_addr_list(unsigned int gid, const char *oid, char **list,
             continue;
 
         memset(rta_tb, 0, sizeof(rta_tb));
-        parse_rtattr(rta_tb, IFA_MAX, IFA_RTA(ifa), 
+        parse_rtattr(rta_tb, IFA_MAX, IFA_RTA(ifa),
                      hdr->nlmsg_len - NLMSG_LENGTH(sizeof(*ifa)));
 
         if (!rta_tb[IFA_LOCAL])
@@ -1731,7 +1788,7 @@ net_addr_list(unsigned int gid, const char *oid, char **list,
     {
         if (name != NULL && strcmp(req->ifr_name, name) == 0)
             continue;
-    
+
         name = req->ifr_name;
 
         if (strcmp(name, ifname) != 0 && !is_alias_of(name, ifname))
@@ -1777,92 +1834,23 @@ net_addr_list(unsigned int gid, const char *oid, char **list,
  *
  * @return error code
  */
-#ifdef USE_NETLINK
-static int
-prefix_get(unsigned int gid, const char *oid, char *value,
-            const char *ifname, const char *addr)
-{
-    struct nlmsg_list *ainfo = NULL;
-    struct nlmsg_list *a = NULL;
-    struct nlmsghdr   *n = NULL;
-    struct ifaddrmsg  *ifa = NULL;
-    struct rtattr     *rta_tb[IFA_MAX+1];
-    uint32_t           int_addr;
-    int                ifindex;
-    int                rc;
-
-    UNUSED(gid);
-    UNUSED(oid);
-   
-    if (strlen(ifname) >= IF_NAMESIZE || strchr(ifname, ':') != NULL)
-        return -1;
-
-    if (inet_pton(AF_INET, addr, (void *)&int_addr) <= 0)
-    {
-        ERROR("inet_pton() failed for address %s", addr);
-        return TE_RC(TE_TA_LINUX, EINVAL);
-    }
-    if ((rc = ip_addr_get(AF_INET, &ainfo)) != 0)
-    {
-        ERROR("%s: Cannot get addresses list");
-        return rc;
-    }
-
-    if ((ifindex = ll_name_to_index(ifname)) <= 0)
-    {
-        ERROR("%s: Cannot find device %s", __FUNCTION__, ifname);
-        return TE_RC(TE_TA_LINUX, EINVAL);
-    }
-
-    for (a = ainfo; a; a = a->next)
-    {
-        n = &a->h;
-        ifa = NLMSG_DATA(n);
-
-        if (n->nlmsg_len < NLMSG_LENGTH(sizeof(ifa)))
-        {
-            ERROR("%s: Bad netlink mesg hdr length");
-            return -1;
-        }
-
-        memset(rta_tb, 0, sizeof(rta_tb));
-        parse_rtattr(rta_tb, IFA_MAX, IFA_RTA(ifa), 
-                     n->nlmsg_len - NLMSG_LENGTH(sizeof(*ifa)));
-        if (!rta_tb[IFA_LOCAL])
-            rta_tb[IFA_LOCAL] = rta_tb[IFA_ADDRESS];
-        if (!rta_tb[IFA_ADDRESS])
-             rta_tb[IFA_ADDRESS] = rta_tb[IFA_LOCAL];
-        if (rta_tb[IFA_LOCAL])
-        {
-             if (*(uint32_t *)(RTA_DATA(rta_tb[IFA_LOCAL])) == int_addr  
-                 && ifindex == ifa->ifa_index)
-                break;
-        }
-    }
-    if (a == NULL)
-    {
-        ERROR("%s: Cannot find address %s on interface %s",
-              __FUNCTION__, addr, ifname);
-        free_nlmsg(ainfo);
-        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
-    }
-    sprintf(value, "%u", ifa->ifa_prefixlen);
-    free_nlmsg(ainfo);
-    
-    return 0;
-}
-#endif
-
-#ifdef USE_IOCTL
 static int
 prefix_get(unsigned int gid, const char *oid, char *value,
             const char *ifname, const char *addr)
 {
     unsigned int    prefix;
-    
+
     UNUSED(gid);
     UNUSED(oid);
 
+#if defined(USE_NETLINK)
+    if (nl_find_net_addr(addr, ifname, NULL, &prefix, NULL) == NULL)
+    {
+        ERROR("Address '%s' on interface '%s' to get prefix not found",
+              addr, ifname);
+        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
+    }
+#elif defined(USE_IOCTL)
     strncpy(req.ifr_name, ifname, sizeof(req.ifr_name));
     if (inet_pton(AF_INET, addr, &SIN(&req.ifr_addr)->sin_addr) <= 0)
     {
@@ -1876,12 +1864,15 @@ prefix_get(unsigned int gid, const char *oid, char *value,
         /* FIXME Mapping to ETENOSUCHNAME */
         return TE_RC(TE_TA_LINUX, errno);
     }
-
     MASK2PREFIX(ntohl(SIN(&req.ifr_addr)->sin_addr.s_addr), prefix);
+#else
+#error Way to work with network addresses is not defined.
+#endif
+
     sprintf(value, "%u", prefix);
+
     return 0;
 }
-#endif
 
 /**
  * Change prefix of the interface.
@@ -1894,84 +1885,46 @@ prefix_get(unsigned int gid, const char *oid, char *value,
  *
  * @return error code
  */
-#ifdef USE_NETLINK
 static int
 prefix_set(unsigned int gid, const char *oid, const char *value,
            const char *ifname, const char *addr)
 {
-    unsigned int prefix;
-    char        *name;
-    char        *end;
-    unsigned int old_prefix = 0;
-    uint32_t     int_addr;
-    int          rc;
+    unsigned int    prefix;
+    char           *end;
+
     UNUSED(gid);
     UNUSED(oid);
-    
-    if ((name = find_net_addr(ifname, addr, &old_prefix)) == NULL)    
-    {
-        ERROR("Address '%s' on interface '%s' to set prefix not found",
-              addr, ifname);
-        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
-    }
-    prefix = strtol(value, &end, 10);
+
+    prefix = strtoul(value, &end, 10);
     if (value == end)
     {
         ERROR("Invalid value '%s' of prefix length", value);
         return TE_RC(TE_TA_LINUX, ETEFMT);
     }
-
     if (prefix > 32)
     {
         ERROR("Invalid prefix '%s' to be set", value);
         return TE_RC(TE_TA_LINUX, EINVAL);
     }
-    if (inet_pton(AF_INET, addr, (void *)&int_addr) <= 0)
-    {
-        ERROR("inet_pton() failed for address %s", addr);
-        return TE_RC(TE_TA_LINUX, EINVAL);
-    }
-    rc = ip_addr_modify(RTM_DELADDR, ifname, int_addr, 0, 0);
-    if (rc != 0)
-    {
-        ERROR("%s: Cannot delete address %s on interface %s",
-              __FUNCTION__, addr, ifname);
-    }
-    return ip_addr_modify(RTM_NEWADDR, ifname, int_addr, 0, prefix);
-}
-#endif
-#ifdef USE_IOCTL
-static int
-prefix_set(unsigned int gid, const char *oid, const char *value,
-           const char *ifname, const char *addr)
-{
-    unsigned int prefix;
-    char        *name;
-    char        *end;
-    UNUSED(gid);
-    UNUSED(oid);
-    
-    if ((name = find_net_addr(ifname, addr)) == NULL)
-    {
-        ERROR("Address '%s' on interface '%s' to set prefix not found",
-              addr, ifname);
-        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
-    }
-    prefix = strtol(value, &end, 10);
-    if (value == end)
-    {
-        ERROR("Invalid value '%s' of prefix length", value);
-        return TE_RC(TE_TA_LINUX, ETEFMT);
-    }
 
-    if (prefix > 32)
+#if defined(USE_NETLINK)
+    return nl_ip4_addr_modify(NET_ADDR_MODIFY, ifname, addr, &prefix, NULL);
+#elif defined(USE_IOCTL)
     {
-        ERROR("Invalid prefix '%s' to be set", value);
-        return TE_RC(TE_TA_LINUX, EINVAL);
+        const char *name;
+
+        if ((name = find_net_addr(ifname, addr)) == NULL)
+        {
+            ERROR("Address '%s' on interface '%s' to set prefix not found",
+                  addr, ifname);
+            return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
+        }
+        return set_prefix(name, prefix);
     }
-    return set_prefix(name, prefix);
-}
+#else
+#error Way to work with network addresses is not defined.
 #endif
+}
 
 
 /**
@@ -1985,104 +1938,23 @@ prefix_set(unsigned int gid, const char *oid, const char *value,
  *
  * @return error code
  */
-#ifdef USE_NETLINK
 static int
 broadcast_get(unsigned int gid, const char *oid, char *value,
             const char *ifname, const char *addr)
 {
-    struct nlmsg_list *ainfo = NULL;
-    struct nlmsg_list *a = NULL;
-    struct nlmsghdr   *n = NULL;
-    struct ifaddrmsg  *ifa = NULL;
-    struct rtattr     *rta_tb[IFA_MAX+1];
-    uint32_t           int_addr;
-    int                ifindex;
+    uint32_t    bcast;
+
     UNUSED(gid);
     UNUSED(oid);
-    if (strlen(ifname) >= IF_NAMESIZE || strchr(ifname, ':') != NULL)
+
+#if defined(USE_NETLINK)
+    if (nl_find_net_addr(addr, ifname, NULL, NULL, &bcast) == NULL)
     {
-        printf("%s passed to get_broadcast", ifname);
-        return TE_RC(TE_TA_LINUX, EINVAL);
-    }    
-
-    if (inet_pton(AF_INET, addr, (void *)&int_addr) <= 0)
-    {
-        ERROR("inet_pton() failed for address %s", addr);
-        return TE_RC(TE_TA_LINUX, EINVAL);
-    }
-
-    if (ip_addr_get(AF_INET, &ainfo) != 0)
-    {
-        ERROR("%s: Cannot get addresses list", __FUNCTION__);
-        return TE_RC(TE_TA_LINUX, EINVAL);
-    }
-
-    if ((ifindex = ll_name_to_index(ifname)) <= 0)
-    {
-        ERROR("%s: Device %s not found", __FUNCTION__, ifname);
-        return TE_RC(TE_TA_LINUX, EINVAL);
-    }
-
-    for (a = ainfo; a; a = a->next)
-    {
-        n = &a->h;
-        ifa = NLMSG_DATA(n);
-
-        if (n->nlmsg_len < NLMSG_LENGTH(sizeof(ifa)))
-        {
-            ERROR("%s: Bad netlink mesg hdr length", __FUNCTION__);
-            return TE_RC(TE_TA_LINUX, EINVAL);
-        }
-
-        if (ifa->ifa_index != ifindex)
-            continue;
-
-        memset(rta_tb, 0, sizeof(rta_tb));
-        parse_rtattr(rta_tb, IFA_MAX, IFA_RTA(ifa), 
-                     n->nlmsg_len - NLMSG_LENGTH(sizeof(*ifa)));
-        if (!rta_tb[IFA_LOCAL])
-            rta_tb[IFA_LOCAL] = rta_tb[IFA_ADDRESS];
-        if (!rta_tb[IFA_ADDRESS])
-            rta_tb[IFA_ADDRESS] = rta_tb[IFA_LOCAL];
-        if (rta_tb[IFA_LOCAL])
-        {
-            if (*(uint32_t *)(RTA_DATA(rta_tb[IFA_LOCAL])) == int_addr)
-                break;
-        }
-    }
-    if (a == NULL)
-    {
-        ERROR("%s: Cannot find address %s on interface %s",
-              __FUNCTION__, addr, ifname);
-        free_nlmsg(ainfo);
+        ERROR("Address '%s' on interface '%s' to get broadcast address "
+              "not found", addr, ifname);
         return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
     }
-    if (rta_tb[IFA_BROADCAST])
-    {    
-        if (inet_ntop(AF_INET, RTA_DATA(rta_tb[IFA_BROADCAST]), value,
-                      RCF_MAX_VAL) == NULL)
-        {
-            ERROR("%s: inet_ntop() failed", __FUNCTION__);
-            free_nlmsg(ainfo);
-            return TE_RC(TE_TA_LINUX, errno);
-        }
-    }
-    else
-    {
-        sprintf(value, "255.255.255.255");  
-    }
-    free_nlmsg(ainfo);
-    return 0;
-}
-#endif
-#ifdef USE_IOCTL
-static int
-broadcast_get(unsigned int gid, const char *oid, char *value,
-            const char *ifname, const char *addr)
-{
-    UNUSED(gid);
-    UNUSED(oid);
-    
+#elif defined(USE_IOCTL)
     strncpy(req.ifr_name, ifname, sizeof(req.ifr_name));
     if (inet_pton(AF_INET, addr, &SIN(&req.ifr_addr)->sin_addr) <= 0)
     {
@@ -2096,17 +1968,19 @@ broadcast_get(unsigned int gid, const char *oid, char *value,
         /* FIXME Mapping to ETENOSUCHNAME */
         return TE_RC(TE_TA_LINUX, errno);
     }
+    bcast = SIN(&req.ifr_addr)->sin_addr;
+#else
+#error Way to work with network addresses is not defined.
+#endif
 
-    if (inet_ntop(AF_INET, &SIN(&req.ifr_addr)->sin_addr, value,
-                  RCF_MAX_VAL) == NULL)
+    if (inet_ntop(AF_INET, &bcast, value, RCF_MAX_VAL) == NULL)
     {
         ERROR("inet_ntop() failed");
         return TE_RC(TE_TA_LINUX, errno);
     }
+
     return 0;
 }
-#endif
-
 
 /**
  * Change broadcast of the interface.
@@ -2120,93 +1994,51 @@ broadcast_get(unsigned int gid, const char *oid, char *value,
  *
  * @return error code
  */
-#ifdef USE_NETLINK
 static int
 broadcast_set(unsigned int gid, const char *oid, const char *value,
             const char *ifname, const char *addr)
 {
-    uint32_t     baddr;
-    char        *name;
-    uint32_t     int_addr;
-    unsigned int prefix = 0;
-    int          rc = 0;
+    uint32_t     bcast;
 
     UNUSED(gid);
     UNUSED(oid);
-    if ((name = find_net_addr(ifname, addr, &prefix)) == NULL)     
+
+    if (inet_pton(AF_INET, value, (void *)&bcast) <= 0 ||
+        bcast == 0 ||
+        (ntohl(bcast) & 0xe0000000) == 0xe0000000)
     {
-        ERROR("Address '%s' on interface '%s' to set broadcast not found",
-              addr, ifname);
-        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
-    }
-    if (inet_pton(AF_INET, value, (void *)&baddr) <= 0 ||
-        baddr == 0 ||
-        (ntohl(baddr) & 0xe0000000) == 0xe0000000)
-    {
-        ERROR("%s: invalid broadcast %s", __FUNCTION__, value);
+        ERROR("%s(): Invalid broadcast %s", __FUNCTION__, value);
         return TE_RC(TE_TA_LINUX, EINVAL);
     }
-    if (inet_pton(AF_INET, addr, (void *)&int_addr) <= 0 ||
-        int_addr == 0 ||
-        (ntohl(int_addr) & 0xe0000000) == 0xe0000000)
- 
+
+#if defined(USE_NETLINK)
+    return nl_ip4_addr_modify(NET_ADDR_MODIFY, ifname, addr, NULL, &bcast);
+#elif defined(USE_IOCTL)
     {
-        ERROR("%s: invalid address %s", __FUNCTION__, addr);
-        return TE_RC(TE_TA_LINUX, EINVAL);
+        const char *name;
+
+        if ((name = find_net_addr(ifname, addr)) == NULL)
+        {
+            ERROR("Address '%s' on interface '%s' to set broadcast "
+                  "not found", addr, ifname);
+            return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
+        }
+
+        strcpy(req.ifr_name, name);
+        req.ifr_addr.sa_family = AF_INET;
+        SIN(&(req.ifr_addr))->sin_addr.s_addr = bcast;
+        if (ioctl(cfg_socket, SIOCSIFBRDADDR, (int)&req) < 0)
+        {
+            ERROR("ioctl(SIOCSIFBRDADDR) failed: %s", strerror(errno));
+            return TE_RC(TE_TA_LINUX, errno);
+        }
+        return 0;
     }
-    rc = ip_addr_modify(RTM_DELADDR, ifname, int_addr, 0, 0);
-    if (rc != 0)
-    {
-        ERROR("%s: Cannot delete address %s on interface %s",
-              __FUNCTION__, addr, ifname);
-        return rc;
-    }
-    return ip_addr_modify(RTM_NEWADDR,
-                          ifname, int_addr, 
-                          baddr, prefix);
-}
+#else
+#error Way to work with network addresses is not defined.
 #endif
-
-#ifdef USE_IOCTL
-static int
-broadcast_set(unsigned int gid, const char *oid, const char *value,
-            const char *ifname, const char *addr)
-{
-    uint32_t     baddr;
-    char        *name;
-
-    UNUSED(gid);
-    UNUSED(oid);
-    if ((name = find_net_addr(ifname, addr)) == NULL)
-    {
-        ERROR("Address '%s' on interface '%s' to set broadcast not found",
-              addr, ifname);
-        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
-    }
-    if (inet_pton(AF_INET, value, (void *)&baddr) <= 0 ||
-        baddr == 0 ||
-        (ntohl(baddr) & 0xe0000000) == 0xe0000000)
-    {
-        ERROR("%s: invalid broadcast %s", __FUNCTION__, value);
-        return TE_RC(TE_TA_LINUX, EINVAL);
-    }
-    if (inet_pton(AF_INET, value, (void *)&baddr) <= 0)
-    {
-        ERROR("Failed to convert string '%s' to IPv4 address", value);
-        return TE_RC(TE_TA_LINUX, EINVAL);
-    }
-
-    strcpy(req.ifr_name, name);
-    req.ifr_addr.sa_family = AF_INET;
-    SIN(&(req.ifr_addr))->sin_addr.s_addr = baddr;
-    if (ioctl(cfg_socket, SIOCSIFBRDADDR, (int)&req) < 0)
-    {
-        ERROR("ioctl(SIOCSIFBRDADDR) failed: %s", strerror(errno));
-        return TE_RC(TE_TA_LINUX, errno);
-    }
-    return 0;
 }
-#endif
+
 
 /**
  * Get hardware address of the interface.
@@ -2314,7 +2146,7 @@ mtu_get(unsigned int gid, const char *oid, char *value,
     if (ioctl(cfg_socket, SIOCGIFMTU, (int)&req) != 0)
     {
         int err = errno;
-        
+
         ERROR("ioctl(SIOCGIFMTU) failed: %s", strerror(err));
         /* FIXME Mapping to ETENOSUCHNAME */
         return TE_RC(TE_TA_LINUX, err);
@@ -2419,7 +2251,7 @@ arp_use_set(unsigned int gid, const char *oid, const char *value,
         req.ifr_flags |= (IFF_NOARP);
     else
         return TE_RC(TE_TA_LINUX, EINVAL);
-    
+
     strncpy(req.ifr_name, ifname, IFNAMSIZ);
     if (ioctl(cfg_socket, SIOCSIFFLAGS, &req) < 0)
     {
@@ -2521,7 +2353,7 @@ status_set(unsigned int gid, const char *oid, const char *value,
         req.ifr_flags |= (IFF_UP | IFF_RUNNING);
     else
         return TE_RC(TE_TA_LINUX, EINVAL);
-    
+
     strncpy(req.ifr_name, ifname, IFNAMSIZ);
     if (ioctl(cfg_socket, SIOCSIFFLAGS, &req) < 0)
     {
@@ -2556,7 +2388,7 @@ arp_get(unsigned int gid, const char *oid, char *value,
 
     UNUSED(gid);
 
-    /* 
+    /*
      * Determine which subtree we are working with
      * (volatile or non-volatile).
      */
@@ -2595,7 +2427,7 @@ arp_get(unsigned int gid, const char *oid, char *value,
                 return TE_RC(TE_TA_LINUX, EFAULT);
             }
             fclose(fp);
-            
+
             if (flags == 0)
             {
                 return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
@@ -2693,7 +2525,7 @@ arp_add(unsigned int gid, const char *oid, const char *value,
     arp_req.arp_ha.sa_family = AF_LOCAL;
     for (i = 0; i < 6; i++)
         (arp_req.arp_ha.sa_data)[i] = (unsigned char)(int_addr[i]);
-    
+
     arp_req.arp_flags = ATF_COM;
     if (!volatile_entry)
         arp_req.arp_flags |= ATF_PERM;
@@ -2708,7 +2540,7 @@ arp_add(unsigned int gid, const char *oid, const char *value,
     return 0;
 #else
     return TE_RC(TE_TA_LINUX, EOPNOTSUPP);
-#endif 
+#endif
 }
 
 /**
@@ -2743,7 +2575,7 @@ arp_del(unsigned int gid, const char *oid,
         }
         return rc;
     }
-        
+
     if (strstr(oid, node_volatile.sub_id) != NULL)
         addr = addr_volatile;
 
@@ -2753,11 +2585,11 @@ arp_del(unsigned int gid, const char *oid,
         return TE_RC(TE_TA_LINUX, EINVAL);
 
 #ifdef SIOCDARP
-    
+
     if (ioctl(cfg_socket, SIOCDARP, &arp_req) < 0)
     {
         int err = errno;
-        
+
         ERROR("Here: %d", err);
         if (err == ENXIO || err == ENETDOWN || err == ENETUNREACH)
             return 0;
@@ -2768,7 +2600,7 @@ arp_del(unsigned int gid, const char *oid,
     return 0;
 #else
     return TE_RC(TE_TA_LINUX, EOPNOTSUPP);
-#endif 
+#endif
 }
 
 /**
@@ -2788,7 +2620,7 @@ arp_list(unsigned int gid, const char *oid, char **list)
     char    *ptr = buf;
     FILE    *fp;
 
-    /* 
+    /*
      * Determine which subtree we are working with
      * (volatile or non-volatile).
      */
@@ -2835,19 +2667,19 @@ arp_list(unsigned int gid, const char *oid, char **list)
 }
 
 /**
- * Parses instance name and converts its value into routing table entry 
+ * Parses instance name and converts its value into routing table entry
  * data structure.
  *
  * @param inst_name  Instance name that keeps route information
  * @param rt         Routing entry location to be filled in (OUT)
  *
- * @note The function is not thread safe - it uses static memory for 
+ * @note The function is not thread safe - it uses static memory for
  * 'rt_dev' field in 'rt' structure.
  *
  * ATENTION - read the text below!
  * @todo This function is used in both places agent/linux/linuxconf.c
  * and lib/tapi/tapi_cfg.c, which is very ugly!
- * We couldn't find the right place to put it in so that it 
+ * We couldn't find the right place to put it in so that it
  * is accessible from both places. If you modify it you should modify
  * the same function in the second place!
  */
@@ -2867,7 +2699,7 @@ route_parse_inst_name(const char *inst_name,
 #endif
     char        *ptr;
     char        *end_ptr;
-    char        *term_byte; /* Pointer to the trailing zero byte 
+    char        *term_byte; /* Pointer to the trailing zero byte
                                in 'inst_name' */
     static char  inst_copy[RCF_MAX_VAL];
 #ifdef __linux__
@@ -2961,7 +2793,7 @@ route_parse_inst_name(const char *inst_name,
         while (*end_ptr != ',' && *end_ptr != '\0')
             end_ptr++;
         *end_ptr = '\0';
-        
+
         if (*ptr == '\0' || *ptr == '-' ||
             (int_val = strtol(ptr, &end_ptr, 10), *end_ptr != '\0'))
         {
@@ -2973,7 +2805,7 @@ route_parse_inst_name(const char *inst_name,
             *end_ptr = ',';
         rt->rt_metric = int_val;
     }
-    
+
     if ((ptr = strstr(tmp, "mtu=")) != NULL)
     {
         end_ptr = ptr += strlen("mtu=");
@@ -3047,7 +2879,7 @@ struct nl_request {
     char            buf[1024];
 };
 
-static int 
+static int
 nl_get_unsigned(unsigned *val, const char *arg, int base)
 {
     unsigned long res;
@@ -3062,7 +2894,7 @@ nl_get_unsigned(unsigned *val, const char *arg, int base)
     return 0;
 }
 
-static int 
+static int
 nl_get_addr(inet_prefix *addr, const char *name, int family)
 {
     const char *cp;
@@ -3089,7 +2921,7 @@ nl_get_addr(inet_prefix *addr, const char *name, int family)
     return 0;
 }
 
-static int 
+static int
 nl_get_integer(int *val, const char *arg, int base)
 {
     long res;
@@ -3104,17 +2936,17 @@ nl_get_integer(int *val, const char *arg, int base)
     return 0;
 }
 
-static int 
+static int
 nl_get_prefix(inet_prefix *dst, const char *arg, int family)
 {
     int         err;
     unsigned    plen;
     char       *slash;
     char       *tmp = strdup(arg);
-        
+
     if (tmp == NULL)
         return ENOMEM;
-    
+
     memset(dst, 0, sizeof(*dst));
 
     slash = strchr(tmp, '|');
@@ -3125,7 +2957,7 @@ nl_get_prefix(inet_prefix *dst, const char *arg, int family)
     if (err == 0) {
         dst->bitlen = 32;
         if (slash) {
-            if (nl_get_integer(&plen, slash + 1, 0) || 
+            if (nl_get_integer(&plen, slash + 1, 0) ||
                 plen > (unsigned)dst->bitlen) {
                 err = -1;
                 goto done;
@@ -3145,7 +2977,7 @@ static int
 route_change(unsigned int gid, const char *oid, const char *value,
              const char *route, int action, unsigned flags)
 {
-    struct nl_request    req;    
+    struct nl_request    req;
     inet_prefix          dst;
     struct rtnl_handle   rth;
     char                 mxbuf[256];
@@ -3193,7 +3025,7 @@ route_change(unsigned int gid, const char *oid, const char *value,
         req.r.rtm_dst_len = dst.bitlen;
         if (dst.bytelen)
         {
-            if (addattr_l(&req.n, sizeof(req), RTA_DST, &dst.data, 
+            if (addattr_l(&req.n, sizeof(req), RTA_DST, &dst.data,
                           dst.bytelen) != 0)
                 return TE_RC(TE_TA_LINUX, EINVAL);
         }
@@ -3211,7 +3043,7 @@ route_change(unsigned int gid, const char *oid, const char *value,
         if (nl_get_addr(&addr, c + strlen("gw="), req.r.rtm_family) != 0)
             return TE_RC(TE_TA_LINUX, EINVAL);
 
-        if (addattr_l(&req.n, sizeof(req), RTA_GATEWAY, &addr.data, 
+        if (addattr_l(&req.n, sizeof(req), RTA_GATEWAY, &addr.data,
                       addr.bytelen) != 0)
             return TE_RC(TE_TA_LINUX, EINVAL);
 
@@ -3234,7 +3066,7 @@ route_change(unsigned int gid, const char *oid, const char *value,
         if (d != NULL)
             *d = ',';
     }
-    
+
     if ((c = strstr(route, "metric=")) != NULL)
     {
         unsigned  metric= 1500;
@@ -3250,7 +3082,7 @@ route_change(unsigned int gid, const char *oid, const char *value,
 
         if (d != NULL)
             *d = ',';
-    }   
+    }
 
     if ((c = strstr(value, "mtu=")) != NULL)
     {
@@ -3304,7 +3136,7 @@ route_change(unsigned int gid, const char *oid, const char *value,
     }
 
 
-    
+
     /* Sending the netlink message */
     if (rtnl_open(&rth, 0) < 0)
     {
@@ -3319,7 +3151,7 @@ route_change(unsigned int gid, const char *oid, const char *value,
         ll_init_map(&rth);
 
 
-        if ((idx = ll_name_to_index(dev)) == 0) 
+        if ((idx = ll_name_to_index(dev)) == 0)
         {
             ERROR("Cannot find device");
             rtnl_close(&rth);
@@ -3328,9 +3160,9 @@ route_change(unsigned int gid, const char *oid, const char *value,
         addattr32(&req.n, sizeof(req), RTA_OIF, idx);
     }
 
-    if (mxrta->rta_len > RTA_LENGTH(0)) 
+    if (mxrta->rta_len > RTA_LENGTH(0))
     {
-        addattr_l(&req.n, sizeof(req), RTA_METRICS, RTA_DATA(mxrta), 
+        addattr_l(&req.n, sizeof(req), RTA_METRICS, RTA_DATA(mxrta),
                   RTA_PAYLOAD(mxrta));
     }
 
@@ -3343,7 +3175,7 @@ route_change(unsigned int gid, const char *oid, const char *value,
                  req.r.rtm_type == RTN_ANYCAST)
             req.r.rtm_scope = RT_SCOPE_LINK;
         else if (req.r.rtm_type == RTN_UNICAST ||
-                 req.r.rtm_type == RTN_UNSPEC) 
+                 req.r.rtm_type == RTN_UNSPEC)
         {
             if (action == RTM_DELROUTE)
                 req.r.rtm_scope = RT_SCOPE_NOWHERE;
@@ -3371,7 +3203,7 @@ route_change(unsigned int gid, const char *oid, const char *value,
  * @param gid           group identifier (unused)
  * @param oid           full object instence identifier (unused)
  * @param value         value string (unused)
- * @param route         route instance name: see doc/cm_cm_base.xml 
+ * @param route         route instance name: see doc/cm_cm_base.xml
  *                      for the format
  *
  * @return error code
@@ -3383,17 +3215,17 @@ route_add(unsigned int gid, const char *oid, const char *value,
     ENTRY("%s", route);
     fprintf(stderr, "\nadding route: %s = %s\n", route, value);
 
-    return route_change(gid, oid, value, route, 
+    return route_change(gid, oid, value, route,
                         RTM_NEWROUTE, NLM_F_CREATE|NLM_F_EXCL);
 }
 
 /**
  * Change already existing route.
  *
- * @param gid           group identifier 
+ * @param gid           group identifier
  * @param oid           full object instence identifier (unused)
  * @param value         value string (unused)
- * @param route         route instance name: see doc/cm_cm_base.xml 
+ * @param route         route instance name: see doc/cm_cm_base.xml
  *                      for the format
  *
  * @return error code
@@ -3407,16 +3239,16 @@ route_set(unsigned int gid, const char *oid, const char *value,
     UNUSED(gid);
     fprintf(stderr, "\nchanging route: %s = %s\n", route, value);
 
-    return route_change(gid, oid, value, route, RTM_NEWROUTE, 
+    return route_change(gid, oid, value, route, RTM_NEWROUTE,
                         NLM_F_REPLACE);
 }
 
 /**
  * Delete a route.
  *
- * @param gid           group identifier 
+ * @param gid           group identifier
  * @param oid           full object instence identifier (unused)
- * @param route         route instance name: see doc/cm_cm_base.xml 
+ * @param route         route instance name: see doc/cm_cm_base.xml
  *                      for the format
  *
  * @return error code
@@ -3429,7 +3261,7 @@ route_del(unsigned int gid, const char *oid, const char *route)
     ENTRY("%s", route);
     UNUSED(oid);
     UNUSED(gid);
-    
+
     fprintf(stderr, "deleting route: %s\n", route);
 
     return route_change(gid, oid, value, route,
@@ -3442,10 +3274,10 @@ route_del(unsigned int gid, const char *oid, const char *route)
 /**
  * Change already existing route.
  *
- * @param gid           group identifier 
+ * @param gid           group identifier
  * @param oid           full object instence identifier (unused)
  * @param value         value string (unused)
- * @param route         route instance name: see doc/cm_cm_base.xml 
+ * @param route         route instance name: see doc/cm_cm_base.xml
  *                      for the format
  *
  * @return error code
@@ -3470,7 +3302,7 @@ route_set(unsigned int gid, const char *oid, const char *value,
  * @param gid           group identifier (unused)
  * @param oid           full object instence identifier (unused)
  * @param value         value string (unused)
- * @param route         route instance name: see doc/cm_cm_base.xml 
+ * @param route         route instance name: see doc/cm_cm_base.xml
  *                      for the format
  *
  * @return error code
@@ -3530,9 +3362,9 @@ route_add(unsigned int gid, const char *oid, const char *value,
 /**
  * Delete a route.
  *
- * @param gid           group identifier 
+ * @param gid           group identifier
  * @param oid           full object instence identifier (unused)
- * @param route         route instance name: see doc/cm_cm_base.xml 
+ * @param route         route instance name: see doc/cm_cm_base.xml
  *                      for the format
  *
  * @return error code
@@ -3591,7 +3423,7 @@ route_del(unsigned int gid, const char *oid, const char *route)
  * @param oid           full object instence identifier (unused)
  * @param value         value location (IPv4 address is returned in
  *                      dotted notation)
- * @param route         route instance name: see doc/cm_cm_base.xml 
+ * @param route         route instance name: see doc/cm_cm_base.xml
  *                      for the format
  *
  * @return error code
@@ -3652,7 +3484,7 @@ route_get(unsigned int gid, const char *oid, char *value,
 
         if ((rt.rt_dev != NULL && strcmp(rt.rt_dev, ifname) != 0) ||
             addr != route_addr ||
-            gateway != route_gw || 
+            gateway != route_gw ||
             (unsigned int)rt.rt_metric != metric ||
             mask != route_mask ||
             rt.rt_mtu != (unsigned long int)mtu ||
@@ -3669,7 +3501,7 @@ route_get(unsigned int gid, const char *oid, char *value,
             break;
 
         fclose(fp);
-        
+
         value[0] = '\0';
 
 #define TE_LC_RTF_SET_FLAG(flg_, name_) \
@@ -3816,14 +3648,14 @@ route_list(unsigned int gid, const char *oid, char **list)
 }
 
 static int
-nameserver_get(unsigned int gid, const char *oid, char *result, 
+nameserver_get(unsigned int gid, const char *oid, char *result,
                const char *instance, ...)
 {
     FILE *resolver = NULL;
     char  buf[256];
     char *found = NULL, *endaddr = NULL;
     int   rc = TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
-    
+
     static const char ip_symbols[] = "0123456789.";
 
     UNUSED(gid);
@@ -3912,7 +3744,7 @@ env_get(unsigned int gid, const char *oid, char *value,
     }
     else
     {
-        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME); 
+        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
     }
 }
 
@@ -4094,14 +3926,14 @@ user_list(unsigned int gid, const char *oid, char **list)
 {
     FILE *f;
     char *s = buf;
-    
+
     UNUSED(gid);
     UNUSED(oid);
-    
+
     if ((f = fopen("/etc/passwd", "r")) == NULL)
     {
         int rc = errno;
-        
+
         ERROR("Failed to open file /etc/passwd; errno %d", rc);
         return TE_RC(TE_TA_LINUX, rc);
     }
@@ -4112,12 +3944,12 @@ user_list(unsigned int gid, const char *oid, char **list)
     {
         char *tmp = strstr(trash, TE_USER_PREFIX);
         char *tmp1;
-        
+
         unsigned int uid;
-        
+
         if (tmp == NULL)
             continue;
-            
+
         tmp += strlen(TE_USER_PREFIX);
         uid = strtol(tmp, &tmp1, 10);
         if (tmp1 == tmp || *tmp1 != ':')
@@ -4125,7 +3957,7 @@ user_list(unsigned int gid, const char *oid, char **list)
         s += sprintf(s, TE_USER_PREFIX "%u", uid);
     }
     fclose(f);
-    
+
     if ((*list = strdup(buf)) == NULL)
         return TE_RC(TE_TA_LINUX, ENOMEM);
 
@@ -4137,7 +3969,7 @@ static te_bool
 user_exists(const char *user)
 {
     FILE *f;
-    
+
     if ((f = fopen("/etc/passwd", "r")) == NULL)
     {
         ERROR("Failed to open file /etc/passwd; errno %d", errno);
@@ -4147,10 +3979,10 @@ user_exists(const char *user)
     while (fgets(trash, sizeof(trash), f) != NULL)
     {
         char *tmp = strstr(trash, user);
-        
+
         if (tmp == NULL)
             continue;
-            
+
         if (*(tmp + strlen(user)) == ':')
         {
             fclose(f);
@@ -4158,7 +3990,7 @@ user_exists(const char *user)
         }
     }
     fclose(f);
-    
+
     return FALSE;
 }
 
@@ -4172,49 +4004,49 @@ user_exists(const char *user)
  *
  * @return error code
  */
-static int 
-user_add(unsigned int gid, const char *oid, const char *value, 
+static int
+user_add(unsigned int gid, const char *oid, const char *value,
          const char *user)
 {
     char *tmp;
     char *tmp1;
-    
+
     unsigned int uid;
-    
+
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(value);
-    
+
     if (user_exists(user))
         return TE_RC(TE_TA_LINUX, EEXIST);
-        
+
     if (strncmp(user, TE_USER_PREFIX, strlen(TE_USER_PREFIX)) != 0)
         return TE_RC(TE_TA_LINUX, EINVAL);
-        
+
     tmp = (char *)user + strlen(TE_USER_PREFIX);
     uid = strtol(tmp, &tmp1, 10);
     if (tmp == tmp1 || *tmp1 != 0)
         return TE_RC(TE_TA_LINUX, EINVAL);
-    
+
     if (ta_system("adduser --help >/dev/null 2>&1") != 0)
     {
         /* Red Hat/Fedora */
-        sprintf(buf, "/usr/sbin/adduser -d /tmp/%s -u %u -m %s ", 
+        sprintf(buf, "/usr/sbin/adduser -d /tmp/%s -u %u -m %s ",
                 user, uid, user);
-        if (ta_system(buf) != 0) 
+        if (ta_system(buf) != 0)
             return TE_RC(TE_TA_LINUX, ETESHCMD);
     }
-    else    
+    else
     {
         /* Debian */
         sprintf(buf, "/usr/sbin/adduser --home /tmp/%s --force-badname "
                      "--disabled-password --gecos \"\" "
-                     "--uid %u %s >/dev/null 2>&1", user, uid, user);     
-        if (ta_system(buf) != 0) 
+                     "--uid %u %s >/dev/null 2>&1", user, uid, user);
+        if (ta_system(buf) != 0)
             return TE_RC(TE_TA_LINUX, ETESHCMD);
     }
     sprintf(buf, "echo %s:%s | /usr/sbin/chpasswd", user, user);
-    if (ta_system(buf) != 0) 
+    if (ta_system(buf) != 0)
     {
         user_del(gid, oid, user);
         return TE_RC(TE_TA_LINUX, ETESHCMD);
@@ -4222,16 +4054,16 @@ user_add(unsigned int gid, const char *oid, const char *value,
     ta_system("sync");
     sleep(1);
     ta_system("sync");
-            
+
     sprintf(buf, "su - %s -c 'ssh-keygen -t dsa -N \"\" "
                  "-f /tmp/%s/.ssh/id_dsa' >/dev/null 2>&1", user, user);
-            
-    if (ta_system(buf) != 0) 
+
+    if (ta_system(buf) != 0)
     {
         user_del(gid, oid, user);
         return TE_RC(TE_TA_LINUX, ETESHCMD);
     }
-    
+
     return 0;
 }
 
@@ -4244,17 +4076,17 @@ user_add(unsigned int gid, const char *oid, const char *value,
  *
  * @return error code
  */
-static int 
+static int
 user_del(unsigned int gid, const char *oid, const char *user)
 {
     UNUSED(gid);
     UNUSED(oid);
-    
+
     if (!user_exists(user))
         return TE_RC(TE_TA_LINUX, EEXIST);
 
     sprintf(buf, "/usr/sbin/userdel -r %s", user);
     ta_system(buf);
-        
+
     return 0;
 }
