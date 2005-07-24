@@ -74,8 +74,11 @@ max-pdus ::= INTEGER 100 -- quite dummy value
 Payload ::= 
 {
     bytes       OCTET STRING,
+    mask        SEQUENCE {  -- | bitmask for patterns. Let's "a" denote name 
+        v OCTET STRING,     -- | of variable to be checked. 
+        m OCTET STRING      -- | then result of matching is:  ((a&m) == (v&m)) 
+    },                      -- |   in C notation 
     function    PrintableString,
-    filename    PrintableString,
     script      PrintableString
 }
 
