@@ -808,8 +808,8 @@ main(int argc, const char *argv[])
     }
     /* Further we must goto 'join_te_srv' in the case of failure */
 
-    /* to be sure about completed in srvers starting */
-    sleep(1);
+    /* to be sure about completed in servers starting */
+    sleep(3);
 
     if (~lgr_flags & LOGGER_NO_RCF)
     {
