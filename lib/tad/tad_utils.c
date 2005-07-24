@@ -66,6 +66,22 @@ tad_payload_asn_label_to_enum(const char *label)
 /**
  * Description see in tad_utils.h
  */
+tad_payload_type 
+tad_payload_asn_tag_to_enum(uint16_t tag)
+{
+    switch (tag)
+    {
+        case NDN_PLD_BYTES:  return TAD_PLD_BYTES;
+        case NDN_PLD_FUNC:   return TAD_PLD_FUNCTION;
+        case NDN_PLD_LEN:    return TAD_PLD_LENGTH;
+        case NDN_PLD_STREAM: return TAD_PLD_STREAM;
+        default: return TAD_PLD_UNKNOWN;
+    }
+}
+
+/**
+ * Description see in tad_utils.h
+ */
 int 
 tad_confirm_pdus(csap_p csap_descr, asn_value *pdus)
 {
@@ -732,32 +748,26 @@ tad_data_unit_convert_by_label(const asn_value *pdu_val,
 }
 
 
+
 /* See description in tad_utils.h */ 
 int 
 tad_data_unit_convert(const asn_value *pdu_val,
                       uint16_t tag_value,
                       tad_data_unit_t *location)
 {
-    char choice[20]; 
-    int  rc;
+    int rc;
 
-    const asn_value *du_field;
     const asn_value *ch_du_field;
 
     if (pdu_val == NULL || location == NULL)
         return ETEWRONGPTR;
 
-    if (location ->du_type != TAD_DU_UNDEF)
-        tad_data_unit_clear(location);
-
     rc = asn_get_child_value(pdu_val, &ch_du_field, PRIVATE, tag_value);
-
     if (rc != 0)
     {
         if (rc == EASNINCOMPLVAL)
         {
-            memset(location, 0, sizeof(*location));
-            location->du_type = TAD_DU_UNDEF; 
+            tad_data_unit_clear(location);
             return 0;
         }
         else
@@ -768,140 +778,151 @@ tad_data_unit_convert(const asn_value *pdu_val,
         }
     } 
 
-    rc = asn_get_choice(ch_du_field, "", choice, sizeof(choice));
+    rc = tad_data_unit_convert_simple(ch_du_field, location);
     if (rc != 0)
-    {
         ERROR("%s(tag %d, pdu name %s): rc from get choice label: %x",
               __FUNCTION__, tag_value, asn_get_name(pdu_val), rc);
-        return rc;
-    }
+    return rc;
+}
 
-    rc = asn_get_choice_value(ch_du_field, &du_field, NULL, NULL);
+int
+tad_data_unit_convert_simple(const asn_value *ch_du_field, 
+                             tad_data_unit_t *location)
+{
+    int  rc;
+
+    const asn_value *du_field;
+    asn_tag_class    t_class;
+    uint16_t         t_val; 
+    asn_syntax       plain_syntax;
+
+    if (ch_du_field == NULL || location == NULL)
+        return ETEWRONGPTR;
+
+    if (location->du_type != TAD_DU_UNDEF)
+        tad_data_unit_clear(location);
+
+    rc = asn_get_choice_value(ch_du_field, &du_field, &t_class, &t_val); 
     if (rc != 0)
     {
-        ERROR("%s(tag %d, pdu name %s): rc from get choice val: %x",
-              __FUNCTION__, tag_value, asn_get_name(pdu_val), rc);
+        ERROR("%s(field name %s): rc from get choice: %x",
+              __FUNCTION__, asn_get_name(ch_du_field), rc);
         return rc;
     }
 
-    if (strcmp(choice, "plain") == 0)
+    switch (t_val)
     {
-        asn_syntax plain_syntax = asn_get_syntax(du_field, "");
+        case NDN_DU_PLAIN:
+            plain_syntax = asn_get_syntax(du_field, "");
 
-        switch (plain_syntax)
-        {
-            case BOOL:
-            case INTEGER:
-            case ENUMERATED:
-                {
-                    size_t val_len = sizeof(location->val_i32);
+            switch (plain_syntax)
+            {
+                case BOOL:
+                case INTEGER:
+                case ENUMERATED:
                     location->du_type = TAD_DU_I32; 
-                    rc = asn_read_value_field(du_field, 
-                            &location->val_i32, &val_len, "");
+                    rc = asn_read_int32(du_field, &(location->val_i32), "");
                     if (rc != 0)
-                        ERROR("%s(): read integer value rc %X", 
-                              __FUNCTION__, rc);
+                        ERROR("%s(): read integer rc %X", __FUNCTION__, rc);
+                    break;
+
+                case BIT_STRING:
+                case OCT_STRING:
+                    location->du_type = TAD_DU_OCTS;
+                    /* get data later */
+                    break;
+
+                case CHAR_STRING:
+                    location->du_type = TAD_DU_STRING;
+                    /* get data later */
+                    break;
+
+                case LONG_INT:
+                case REAL:
+                case OID:
+                    ERROR("No yet support for syntax %d", plain_syntax);
+                    return ETENOSUPP;
+
+                default: 
+                    ERROR("%s(field name %s): strange syntax %d",
+                          __FUNCTION__, asn_get_name(ch_du_field),
+                          plain_syntax);
+                    return EINVAL;
+
+            }
+            /* process string values */ 
+            if (location->du_type != TAD_DU_I32)
+            {
+                size_t  len = asn_get_length(du_field, "");
+                void   *d_ptr;
+
+                if (len <= 0)
+                {
+                    ERROR("wrong length");
+                    return EINVAL;
+                }
+
+                if ((d_ptr = calloc(len, 1)) == NULL)
+                    return ENOMEM; 
+
+                rc = asn_read_value_field(du_field, d_ptr, &len, "");
+                if (rc)
+                {
+                    free(d_ptr);
+                    ERROR("rc from asn_read for some string: %x", rc);
+                    return rc;
+                } 
+
+                location->val_data.len = len;
+
+                if (location->du_type == TAD_DU_OCTS)
+                    location->val_data.oct_str = d_ptr;
+                else
+                    location->val_data.char_str = d_ptr;
+            }
+            break;
+
+        case NDN_DU_SCRIPT:
+            {
+                const uint8_t *script;
+                char expr_label[] = "expr:";
+
+                rc = asn_get_field_data(du_field, &script, "");
+                if (rc != 0)
+                {
+                    ERROR("rc from asn_get for 'script': %x", rc);
                     return rc;
                 }
-                break;
 
-            case BIT_STRING:
-            case OCT_STRING:
-                location->du_type = TAD_DU_OCTS;
-                /* get data later */
-                break;
+                if (strncmp(expr_label, script, sizeof(expr_label)-1) == 0)
+                {
+                    tad_int_expr_t *expr;
+                    const char     *expr_string = script +
+                                                  sizeof(expr_label) - 1;
+                    int             syms;
 
-            case CHAR_STRING:
-                location->du_type = TAD_DU_STRING;
-                /* get data later */
-                break;
-
-            case LONG_INT:
-            case REAL:
-            case OID:
-                ERROR("No yet support for syntax %d", plain_syntax);
-                return ETENOSUPP;
-
-            default: 
-                ERROR("%s(tag %d, pdu name %s): strange syntax %d",
-                      __FUNCTION__, tag_value, asn_get_name(pdu_val),
-                      plain_syntax);
-                return EINVAL;
-
-        }
-    }
-    else if (strcmp(choice, "script") == 0)
-    {
-        const uint8_t *script;
-        char expr_label[] = "expr:";
-
-        rc = asn_get_field_data(du_field, &script, "");
-        if (rc != 0)
-        {
-            ERROR("rc from asn_get for 'script': %x", rc);
-            return rc;
-        }
-
-        if (strncmp(expr_label, script, sizeof(expr_label)-1) == 0)
-        {
-            tad_int_expr_t *expression;
-            const char     *expr_string = script + sizeof(expr_label) - 1;
-            int             syms;
-
-            rc = tad_int_expr_parse(expr_string, &expression, &syms);
-            if (rc != 0)
-            {
-                ERROR("expr script parse error %x, script '%s', syms %d",
-                      rc, expr_string, syms);
-                return rc;
+                    rc = tad_int_expr_parse(expr_string, &expr, &syms);
+                    if (rc != 0)
+                    {
+                        ERROR("expr script parse error %x,"
+                              " script '%s', syms %d",
+                              rc, expr_string, syms);
+                        return rc;
+                    }
+                    location->du_type = TAD_DU_EXPR;
+                    location->val_int_expr = expr;
+                }
+                else
+                {
+                    ERROR("not supported type of script");
+                    return ETENOSUPP;
+                }
             }
-            location->du_type = TAD_DU_EXPR;
-            location->val_int_expr = expression;
 
-            return 0;
-        }
-        else
-        {
-            ERROR("not supported type of script");
-            return ETENOSUPP;
-        }
-    }
-    else
-    {
-        WARN("%s(): No support for choice: %s at sending",
-             __FUNCTION__, choice);
-        return 0;
-    }
-
-    /* process string values */ 
-    {
-        size_t len = asn_get_length(du_field, "");
-        void *d_ptr;
-
-        if (len <= 0)
-        {
-            ERROR("wrong length");
-            return EINVAL;
-        }
-
-        if ((d_ptr = calloc(len, 1)) == NULL)
-            return ENOMEM; 
-
-        rc = asn_read_value_field(du_field, d_ptr, &len, "");
-        if (rc)
-        {
-            free(d_ptr);
-            ERROR("rc from asn_read for some string: %x", rc);
-            return rc;
-        } 
-
-        location->val_data.len = len;
-
-        if (location->du_type == TAD_DU_OCTS)
-            location->val_data.oct_str = d_ptr;
-        else
-            location->val_data.char_str = d_ptr;
-    }
+        default:
+            WARN("%s(): No support for choice: tag %d at sending",
+                 __FUNCTION__, t_val);
+    } 
 
     return 0;
 }
@@ -939,6 +960,7 @@ tad_data_unit_clear(tad_data_unit_t *du)
     }
 
     memset(du, 0, sizeof(*du));
+    du->du_type = TAD_DU_UNDEF;
 }
 
 

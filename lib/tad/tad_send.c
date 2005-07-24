@@ -74,6 +74,10 @@
     } while (0)
 
 
+struct stream_payload {
+    tad_data_unit_t du_stream_offset;
+    tad_data_unit_t du_stream_length;
+};
 
 /* see description in tad_utils.h */
 int
@@ -366,7 +370,6 @@ tad_tr_send_thread(void * arg)
                     pld_data = (uint8_t *) function_addr;
                 }
                 break;
-            case TAD_PLD_SCRIPT:
             case TAD_PLD_UNKNOWN:
             default: 
                 pld_data = NULL;
@@ -466,7 +469,7 @@ tad_tr_send_thread(void * arg)
             }
             else if (delay > 0)
             {
-                struct timeval tv_delay = {0,0};
+                struct timeval tv_delay = {0, 0};
                 struct timeval cm;
 
                 gettimeofday(&cm, NULL);

@@ -52,8 +52,6 @@
 #include "tad_common.h"
 
 
-
-
 /* ============= Macros definitions =============== */
 
 

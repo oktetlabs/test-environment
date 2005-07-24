@@ -59,7 +59,6 @@ extern "C" {
 
 
 
-
 /* ============= Types and structures definitions =============== */
 
 
@@ -140,11 +139,11 @@ typedef struct {
  * Type of payload specification in traffic template.
  */
 typedef enum {
-    TAD_PLD_UNKNOWN,  /**< Undefined, used when there is no pld spec. */
-    TAD_PLD_BYTES,    /**< Byte sequence */
-    TAD_PLD_LENGTH,   /**< Only length specified, bytes are random */
-    TAD_PLD_SCRIPT,   /**< Special script for generation */
-    TAD_PLD_FUNCTION, /**< Name of function, which generate payload */
+    TAD_PLD_UNKNOWN,  /**< undefined, used when there is no pld spec. */
+    TAD_PLD_BYTES,    /**< byte sequence */
+    TAD_PLD_LENGTH,   /**< only length specified, bytes are random */
+    TAD_PLD_FUNCTION, /**< name of function, which generate payload */
+    TAD_PLD_STREAM,   /**< parameters for data stream generating */
 } tad_payload_type;
 
 
@@ -422,25 +421,42 @@ extern int tad_data_unit_convert_by_label(const asn_value *pdu_val,
 
 /**
  * Convert DATA-UNIT ASN field of PDU to plain C structure.
- * Memory need to store dynamic data, is allocated in this method and
- * should be freed with 'tad_data_unit_clear'. 
- * Template specifications, which was stored in plain C structure 
- * at the call of this method, will be cleared.
- * 
+ * Uses tad_data_unit_convert_simple' method, see notes to it.
  *
  * @param pdu_val       ASN value with pdu, which DATA-UNIT field 
- *                      should be converted.
- * @param tag_value     ASN.1 tag value of field, tag class is
- *                      assumed to be PRIVATE. 
- * @param location      Location for converted structure, should not
+ *                      should be converted
+ * @param tag_value     ASN tag value of field, tag class is
+ *                      assumed to be PRIVATE
+ * @param location      location for converted structure, should not
  *                      contain any 'data staff' - i.e. should be 
- *                      correctly filled or zeroed (OUT). 
+ *                      correctly filled or zeroed (OUT) 
  *
  * @return zero on success or error code. 
  */ 
 extern int tad_data_unit_convert(const asn_value *pdu_val, 
                                  uint16_t tag_value,
                                  tad_data_unit_t *location);
+
+/**
+ * Convert DATA-UNIT ASN value to plain C structure.
+ * Process only template (traffic-generating related) choices 
+ * in DATA-UNIT.
+ * Memory need to store dynamic data, is allocated in this method and
+ * should be freed with 'tad_data_unit_clear'. 
+ * Template specifications, which was stored in passed location 
+ * before the call of this method, will be cleared.
+ * 
+ *
+ * @param du_field      ASN value of DATA-UNIT type to  be converted
+ * @param location      location for converted structure, should not
+ *                      contain any 'data staff' - i.e. should be 
+ *                      correctly filled or zeroed (OUT)
+ *
+ * @return zero on success or error code. 
+ */ 
+extern int tad_data_unit_convert_simple(const asn_value *du_field, 
+                                        tad_data_unit_t *location);
+
 
 /**
  * Constract data-unit structure from specified binary data for 
