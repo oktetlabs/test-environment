@@ -149,6 +149,18 @@ NDN_DATA_UNIT_TYPE(objid,         asn_base_objid_s,      OBJECT IDENTIFIER);
 
 
 
+static asn_named_entry_t _ndn_pld_stream_ne_array[] = 
+{
+    { "function", &asn_base_charstring_s, {PRIVATE, NDN_PLD_STR_FUNC} },
+    { "offset",   &ndn_data_unit_int32_s, {PRIVATE, NDN_PLD_STR_OFF} },
+    { "length",   &ndn_data_unit_int32_s, {PRIVATE, NDN_PLD_STR_LEN} },
+};
+
+asn_type ndn_pld_stream_s =
+{ "Payload-Stream", {PRIVATE, NDN_PLD_STREAM}, SEQUENCE, 
+  sizeof(_ndn_pld_stream_ne_array) / sizeof(_ndn_pld_stream_ne_array[0]), 
+  {_ndn_pld_stream_ne_array} 
+};
 
 
 static asn_named_entry_t _ndn_payload_ne_array[] = 
@@ -157,7 +169,8 @@ static asn_named_entry_t _ndn_payload_ne_array[] =
     { "mask",     &ndn_data_unit_mask_s,  {PRIVATE, NDN_PLD_MASK} },
     { "function", &asn_base_charstring_s, {PRIVATE, NDN_PLD_FUNC} },
     { "filename", &asn_base_charstring_s, {PRIVATE, NDN_PLD_FILE} },
-    { "length",   &asn_base_integer_s,    {PRIVATE, NDN_PLD_LEN} }
+    { "length",   &asn_base_integer_s,    {PRIVATE, NDN_PLD_LEN} },
+    { "stream",   &ndn_pld_stream_s,      {PRIVATE, NDN_PLD_STREAM} },
 }; 
 
 asn_type ndn_payload_s =

@@ -71,7 +71,7 @@ Template-Parameter ::= CHOICE -- type for defingn of template argument.
 
 max-pdus ::= INTEGER 100 -- quite dummy value
 
-Payload ::= 
+Payload ::= CHOICE
 {
     bytes       OCTET STRING,
     mask        SEQUENCE {  -- | bitmask for patterns. Let's "a" denote name 
@@ -79,7 +79,12 @@ Payload ::=
         m OCTET STRING      -- | then result of matching is:  ((a&m) == (v&m)) 
     },                      -- |   in C notation 
     function    PrintableString,
-    script      PrintableString
+    length      INTEGER,
+    stream      SEQUENCE {
+        function PrintableString, 
+        offset   DATA-UNIT(INTEGER),
+        length   DATA-UNIT(INTEGER)
+    }
 }
 
 Raw-Packet ::= SEQUENCE -- values of this type are passed from CSAP to test

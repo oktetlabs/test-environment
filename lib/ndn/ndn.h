@@ -119,6 +119,10 @@ typedef enum {
     NDN_PLD_FUNC,
     NDN_PLD_FILE,
     NDN_PLD_LEN,
+    NDN_PLD_STREAM,
+    NDN_PLD_STR_FUNC,
+    NDN_PLD_STR_OFF,
+    NDN_PLD_STR_LEN,
 } ndn_pld_tags_t;
 
 /**
