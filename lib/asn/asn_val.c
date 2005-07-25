@@ -156,9 +156,11 @@ asn_init_value(const asn_type * type)
 
     if (type == NULL) return NULL;
 
-    new_value = malloc (sizeof (asn_value));
-    if (!new_value) { return NULL; } 
-    memset (new_value, 0, sizeof(asn_value));
+    new_value = malloc(sizeof(asn_value));
+    if (new_value == NULL)
+        return NULL;
+
+    memset(new_value, 0, sizeof(asn_value));
 
     new_value->asn_type = type;
     new_value->syntax   = type->syntax;
@@ -170,26 +172,28 @@ asn_init_value(const asn_type * type)
 
     switch (type->syntax)
     {
-    case CHOICE:
-    case TAGGED:
-        arr_len = 1;
-    case SEQUENCE:
-    case SET:
-        {
-            int sz    = arr_len * sizeof(asn_value_p);
-            void *ptr = malloc(sz);
+        case CHOICE:
+        case TAGGED:
+            arr_len = 1;
+            /* fall through */
+        case SEQUENCE:
+        case SET:
+            {
+                size_t  sz = arr_len * sizeof(asn_value_p);
+                void   *ptr = malloc(sz);
 
-            new_value->len = arr_len;
-            new_value->data.array = ptr; 
+                new_value->len = arr_len;
+                new_value->data.array = ptr; 
 
-            memset(ptr, 0, sz);
-        }
-        break;
+                memset(ptr, 0, sz);
+            }
+            break;
 
-    case INTEGER:
-        new_value->txt_len = 1;
-    default:
-        new_value->data.integer = 0;
+        case INTEGER:
+            new_value->txt_len = 1;
+            /* fall through */
+        default:
+            new_value->data.integer = 0;
     }
 
     return new_value;
