@@ -1068,4 +1068,5 @@ void
 rcf_pch_detach(void)
 {
     rcf_comm_agent_close(&conn);
+    rcf_pch_rpc_atfork();
 }

@@ -742,34 +742,86 @@ rcf_pch_rpc_init()
 #undef RETERR    
 }
 
+
+/** 
+ * Close all RCF RPC sockets.
+ */
+static void 
+rcf_pch_rpc_close_sockets(void)
+{
+    rpcserver *rpcs;
+    
+    if (lsock >= 0)
+    {
+        if (close(lsock) != 0)
+        {
+            ERROR("%s(): Failed to close RPC listening socket: %d",
+                  __FUNCTION__, strerror(errno));
+        }
+        lsock = -1;
+    }
+        
+    rcf_ch_lock();
+    for (rpcs = list; rpcs != NULL; rpcs = rpcs->next)
+    {
+        if (close(rpcs->sock) != 0)
+        {
+            ERROR("%s(): Failed to close RPC accepted socket: %d",
+                  __FUNCTION__, strerror(errno));
+        }
+        rpcs->sock = -1;
+    }
+    rcf_ch_unlock();
+}
+
+/* See description in rcf_pch.h */
+void 
+rcf_pch_rpc_atfork(void)
+{
+    rpcserver *rpcs, *next;
+    
+    rcf_pch_rpc_close_sockets();
+        
+    rcf_ch_lock();
+    for (rpcs = list; rpcs != NULL; rpcs = next)
+    {
+        next = rpcs->next;
+        free(rpcs);
+    }
+    list = NULL;
+    rcf_ch_unlock();
+
+    free(rpc_buf);
+    rpc_buf = NULL;
+}
+
 /** 
  * Cleanup RCF RPC server structures.
  */
 void 
-rcf_pch_rpc_shutdown()
+rcf_pch_rpc_shutdown(void)
 {
     rpcserver *rpcs, *next;
 #ifndef TCP_TRANSPORT
     char *pipename = getenv("TE_RPC_PORT");
 #endif        
     
-    if (lsock >= 0)
-        close(lsock);
+    rcf_pch_rpc_close_sockets();
         
 #ifndef TCP_TRANSPORT
     if (pipename != NULL)
         unlink(pipename);
 #endif        
         
+    usleep(100000);
     rcf_ch_lock();
     for (rpcs = list; rpcs != NULL; rpcs = next)
     {
         next = rpcs->next;
-        close(rpcs->sock);
-        usleep(100000);
         kill_rpcserver(rpcs);
         free(rpcs);
     }
+    list = NULL;
     rcf_ch_unlock();
 
     free(rpc_buf);

@@ -226,12 +226,22 @@ extern int rcf_pch_rpc(struct rcf_comm_connection *conn, int sid,
  * Initialize RCF RPC server structures and link RPC configuration
  * nodes to the root.
  */
-extern void rcf_pch_rpc_init();
+extern void rcf_pch_rpc_init(void);
+
+/** 
+ * Cleanup RCF RPC server structures. Close all sockets. Release all
+ * allocated memory. Do NOT kill any RPC servers.
+ *
+ * @param This function is intended to be used after fork in child
+ *        process to release all resources allocated by RCF PCH RPC
+ *        support.
+ */
+extern void rcf_pch_rpc_atfork(void);
 
 /** 
  * Cleanup RCF RPC server structures.
  */
-extern void rcf_pch_rpc_shutdown();
+extern void rcf_pch_rpc_shutdown(void);
 
 /**
  * Entry function for RPC server. 
