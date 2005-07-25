@@ -142,7 +142,7 @@ ta_lgr_trylock(ta_lgr_lock_key key)
     rc = pthread_mutex_trylock(&ta_lgr_mutex);
     if ((rc != 0) && (errno != EBUSY))
     {
-        fprintf(stderr, "%s(): pthread_mutex_trylock() failed: errno=%d",
+        fprintf(stderr, "%s(): pthread_mutex_trylock() failed: errno=%d\n",
                 __FUNCTION__, errno);
     }
 
