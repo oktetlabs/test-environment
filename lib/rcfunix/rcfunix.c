@@ -382,7 +382,7 @@ rcfunix_start(char *ta_name, char *ta_type, char *conf_str,
     {
         sprintf(cmd + strlen(cmd), "\"");
     }
-    sprintf(cmd + strlen(cmd), " 2>&1 | te_tee %s %s 100 >ta.%s ", 
+    sprintf(cmd + strlen(cmd), " 2>&1 | te_tee %s %s 10 >ta.%s ", 
             TE_LGR_ENTITY, ta->ta_name, ta->ta_name);
 
     /* Always run in background */
