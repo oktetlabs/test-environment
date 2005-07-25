@@ -316,6 +316,19 @@ ip4_single_destroy_cb(int csap_id, int layer)
     if(spec_data->socket >= 0)
         close(spec_data->socket);    
 
+    tad_data_unit_clear(&spec_data->du_version);
+    tad_data_unit_clear(&spec_data->du_header_len);
+    tad_data_unit_clear(&spec_data->du_tos);
+    tad_data_unit_clear(&spec_data->du_ip_len);
+    tad_data_unit_clear(&spec_data->du_ip_ident);
+    tad_data_unit_clear(&spec_data->du_flags);
+    tad_data_unit_clear(&spec_data->du_ip_offset);
+    tad_data_unit_clear(&spec_data->du_ttl);
+    tad_data_unit_clear(&spec_data->du_protocol);
+    tad_data_unit_clear(&spec_data->du_h_checksum);
+    tad_data_unit_clear(&spec_data->du_src_addr);
+    tad_data_unit_clear(&spec_data->du_dst_addr);
+
     spec_data->socket = -1;
 
     return 0;

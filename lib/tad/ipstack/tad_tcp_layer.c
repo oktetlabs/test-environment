@@ -517,8 +517,11 @@ int tcp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
     /* passing payload to upper layer */ 
     memset(payload, 0 , sizeof(*payload));
     payload->len = pkt->len - (h_len * 4);
-    payload->data = malloc (payload->len);
-    memcpy(payload->data, pkt->data + (h_len * 4), payload->len);
+    if (payload->len > 0)
+    {
+        payload->data = malloc(payload->len);
+        memcpy(payload->data, pkt->data + (h_len * 4), payload->len); 
+    }
 
     if (parsed_packet)
     {
