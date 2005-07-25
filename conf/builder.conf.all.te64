@@ -22,7 +22,7 @@ TE_LIB_PARMS([tad], [], [],
              [--with-file --with-pcap --with-eth --with-bridge \
               --with-ipstack --with-dhcp --with-snmp --with-cli], [])
 
-TE_TA_TYPE([linux64], [], [],
+TE_TA_TYPE([linux64], [], [linux],
            [--with-rcf-rpc --with-cfg-linux-daemons='ftp echo'],
            [], [], [comm_net_agent ndn asn])
 
