@@ -65,7 +65,9 @@ int
 main(int argc, char *argv[])
 
 { 
+    int syms = 0;
     tapi_tcp_handler_t conn_hand;
+    asn_value *tcp_template;
 
     rcf_rpc_server *rpc_srv = NULL;
 
@@ -103,6 +105,20 @@ main(int argc, char *argv[])
         gettimeofday(&now, NULL);
         srand(now.tv_usec);
     }
+
+    rc = asn_parse_value_text(
+              "{ arg-sets { ints:{0}, ints-assoc:{0} },"
+              "  pdus { tcp:{seqn script:\"expr:$0\"}, "
+              "         ip4:{}, eth:{}},"
+              "  payload stream:{offset script:\"expr:$0\", "
+              "                  length script:\"expr:$1\", "
+              "                  function \"arithm_progr\""
+              "                 },"
+              "}",
+              ndn_traffic_template, &tcp_template, &syms);
+    if (rc != 0)
+        TEST_FAIL("parse complex template failed %X syms %d", rc, syms); 
+
     
     if ((rc = rcf_get_ta_list(ta, &len)) != 0)
         TEST_FAIL("rcf_get_ta_list failed: %X", rc);
@@ -229,6 +245,28 @@ main(int argc, char *argv[])
 
     rc = rpc_recv(rpc_srv, socket, buffer, sizeof(buffer), 0);
 #endif
+    {
+        tapi_tcp_pos_t seqn = tapi_tcp_next_seqn(conn_hand);
+        uint32_t length = 120;
+
+
+        rc = asn_write_int32(tcp_template, seqn, "arg-sets.0.#ints.0");
+        if (rc != 0)
+            TEST_FAIL("write arg seqn failed %X", rc);
+        rc = asn_write_int32(tcp_template, length,
+                             "arg-sets.1.#ints-assoc.0"); 
+        if (rc != 0)
+            TEST_FAIL("write arg len failed %X", rc);
+
+        rc = tapi_tcp_send_template(conn_hand, tcp_template,
+                                    RCF_MODE_BLOCKING);
+        if (rc != 0)
+            TEST_FAIL("send template failed %X", rc);
+
+        rpc_recv(rpc_srv, socket, buffer, sizeof(buffer), 0);
+
+        tapi_tcp_update_sent_seq(conn_hand, length);
+    }
 
     /*
      * Closing connection
