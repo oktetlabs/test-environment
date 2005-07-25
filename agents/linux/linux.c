@@ -1013,3 +1013,29 @@ env(void)
 {
     return ta_system("env");
 }
+
+
+
+/**
+ * Method for generating stream of data.
+ * Prototype is according with callback type 'tad_stream_callback'
+ *
+ * @param offset        offset in stream of first byte in buffer
+ * @param length        length of buffer
+ * @param buffer        location for generated data (OUT)
+ *
+ * @return status code
+ */
+int
+arithm_progr(uint64_t offset, uint32_t length, uint8_t *buffer)
+{
+    unsigned i;
+
+    if (buffer == NULL)
+        return ETEWRONGPTR;
+
+    for (i = 0; i < length; i++)
+        buffer[i] = offset + i;
+
+    return 0;
+}
