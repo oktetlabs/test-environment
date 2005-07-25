@@ -480,6 +480,7 @@ tad_convert_payload(const asn_value *ndn_payload,
                                           "function");
                 if (rc != 0)
                     break;
+                RING("%s(): stream function <%s>", __FUNCTION__, func_name);
                 if ((pld_spec->stream.func = (tad_stream_callback) 
                                     rcf_ch_symbol_addr(func_name, 1)) 
                     == NULL)
@@ -592,6 +593,12 @@ tad_tr_send_prepare_bin(csap_p csap_descr, asn_value_p nds,
             size_t d_len = asn_get_length(nds, "payload.#bytes");
             void  *data = malloc(d_len);
 
+            if (pld_data->func == NULL)
+            {
+                ERROR("%s(): null function pointer, error", __FUNCTION__);
+                return TE_RC(TE_TAD_CH, ETADMISSNDS);
+            }
+
             rc = pld_data->func(csap_descr->id, -1 /* payload */,
                                 nds); 
             if (rc)
@@ -641,6 +648,12 @@ tad_tr_send_prepare_bin(csap_p csap_descr, asn_value_p nds,
                 offset = ntohl(offset);
 
                 up_packets->data = malloc(up_packets->len = length);
+                if (pld_data->stream.func == NULL)
+                {
+                    ERROR("%s(): null stream function pointer, error",
+                          __FUNCTION__);
+                    return TE_RC(TE_TAD_CH, ETADMISSNDS);
+                }
                 rc = pld_data->stream.func(offset, length, 
                                            up_packets->data);
             }
