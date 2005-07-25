@@ -1322,13 +1322,20 @@ tapi_tcp_send_fin(tapi_tcp_handler_t handler, int timeout)
                       conn_descr->rcv_csap, &num);
     if (conn_descr->ack_got != conn_descr->seq_sent + 1)
     {
-        conn_wait_msg(conn_descr, timeout);
-        if (conn_descr->ack_got != conn_descr->seq_sent + 1)
+        if (conn_descr->reset_got)
         {
-            WARN("%s(conn %d): wait ACK for our FIN timed out", 
-                 __FUNCTION__, handler);
-            return TE_RC(TE_TAPI, ETIMEDOUT);
-        } 
+            RING("%s(conn %d) got reset", __FUNCTION__, handler);
+        }
+        else
+        {
+            conn_wait_msg(conn_descr, timeout);
+            if (conn_descr->ack_got != conn_descr->seq_sent + 1)
+            {
+                WARN("%s(conn %d): wait ACK for our FIN timed out", 
+                     __FUNCTION__, handler);
+                return TE_RC(TE_TAPI, ETIMEDOUT);
+            }
+        }
     }
 
     return 0;
