@@ -1154,9 +1154,8 @@ TARPC_FUNC(readv,
     COPY_ARG(vector);
 },
 {
-    struct iovec iovec_arr[RCF_RPC_MAX_IOVEC];
-
-    unsigned int i;
+    struct iovec    iovec_arr[RCF_RPC_MAX_IOVEC];
+    unsigned int    i;
 
     memset(iovec_arr, 0, sizeof(iovec_arr));
     for (i = 0; i < out->vector.vector_len; i++)
@@ -1171,11 +1170,6 @@ TARPC_FUNC(readv,
     INIT_CHECKED_ARG((char *)iovec_arr, sizeof(iovec_arr), 0);
 
     MAKE_CALL(out->retval = func(in->fd, iovec_arr, in->count));
-
-    for (i = 0; i < out->vector.vector_len; i++)
-    {
-        out->vector.vector_val[i].iov_len = iovec_arr[i].iov_len;
-    }
 }
 )
 
@@ -1191,9 +1185,8 @@ TARPC_FUNC(writev,
     }
 },
 {
-    struct iovec iovec_arr[RCF_RPC_MAX_IOVEC];
-
-    unsigned int i;
+    struct iovec    iovec_arr[RCF_RPC_MAX_IOVEC];
+    unsigned int    i;
 
     memset(iovec_arr, 0, sizeof(iovec_arr));
     for (i = 0; i < in->vector.vector_len; i++)
