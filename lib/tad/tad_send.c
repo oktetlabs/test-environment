@@ -74,75 +74,179 @@
     } while (0)
 
 
-struct stream_payload {
-    tad_data_unit_t du_stream_offset;
-    tad_data_unit_t du_stream_length;
-};
+/* see description in tad_utils.h */
+int
+tad_convert_payload(const asn_value *ndn_payload, 
+                    tad_payload_spec_t *pld_spec)
+{
+    const asn_value *payload;
+
+    asn_tag_class t_class;
+    uint16_t      t_val;
+
+    int rc = 0;
+
+    if (ndn_payload == NULL || pld_spec == NULL)
+        return ETEWRONGPTR;
+
+    rc = asn_get_choice_value(ndn_payload, &payload, &t_class, &t_val);
+    if (rc != 0)
+    {
+        ERROR("%s(): get choice of Payload failed %X", __FUNCTION__, rc);
+        return rc;
+    }
+
+    switch (t_val)
+    {
+        case NDN_PLD_BYTES:  
+            pld_spec->type = TAD_PLD_BYTES;
+            {
+                size_t d_len = asn_get_length(payload, "");
+                void  *data = malloc(d_len);
+
+                rc = asn_read_value_field(payload, data, &d_len, "");
+                if (rc)
+                {
+                    free(data);
+                    return TE_RC(TE_TAD_CH, rc);
+                }
+                pld_spec->plain.length = d_len;
+                pld_spec->plain.data = data;
+            }
+            break;
+
+        case NDN_PLD_FUNC:  
+            {
+                char   func_name[256];
+                size_t fn_len = sizeof(func_name);
+
+                pld_spec->type = TAD_PLD_FUNCTION;
+                rc = asn_read_value_field(payload, func_name, &fn_len, "");
+
+                if (rc == 0 && 
+                    (pld_spec->func = (tad_user_generate_method) 
+                            rcf_ch_symbol_addr(func_name, 1)) 
+                    == NULL)
+                {
+                    ERROR("Function %s for pld generation NOT found",
+                          func_name);
+                    rc = TE_RC(TE_TAD_CH, ETENOSUCHNAME); 
+                }
+            }
+            break;
+
+        case NDN_PLD_LEN:   
+            pld_spec->type = TAD_PLD_LENGTH;
+            {
+                int32_t len;
+                asn_read_int32(payload, &len, "");
+                pld_spec->plain.length = len;
+                pld_spec->plain.data = NULL;
+            }
+            break;
+
+        case NDN_PLD_STREAM:
+            {
+                char   func_name[256];
+                size_t fn_len = sizeof(func_name);
+
+                const asn_value *du_field;
+
+                pld_spec->type = TAD_PLD_STREAM;
+                rc = asn_read_value_field(payload, func_name, &fn_len,
+                                          "function");
+                if (rc != 0)
+                    break;
+                if ((pld_spec->stream.func = (tad_stream_callback) 
+                                    rcf_ch_symbol_addr(func_name, 1)) 
+                    == NULL)
+                {
+                    ERROR("Function %s for stream NOT found",
+                          func_name);
+                    rc = TE_RC(TE_TAD_CH, ETENOSUCHNAME); 
+                }
+
+                if ((rc = asn_get_child_value(payload, &du_field, PRIVATE,
+                                              NDN_PLD_STR_OFF)) != 0)
+                    break;
+
+                tad_data_unit_convert_simple(du_field, 
+                                             &(pld_spec->stream.offset));
+
+                if ((rc = asn_get_child_value(payload, &du_field, PRIVATE,
+                                              NDN_PLD_STR_LEN)) != 0)
+                    break;
+
+                tad_data_unit_convert_simple(du_field, 
+                                             &(pld_spec->stream.length));
+            }
+            break;
+
+        default: 
+            pld_spec->type = TAD_PLD_UNKNOWN;
+    }
+
+    if (rc != 0)
+        ERROR("%s failed %X", __FUNCTION__, rc);
+
+    return rc;
+}
+
 
 /* see description in tad_utils.h */
 int
 tad_tr_send_prepare_bin(csap_p csap_descr, asn_value_p nds, 
-                        struct rcf_comm_connection *handle, 
                         const tad_tmpl_arg_t *args, size_t arg_num,
-                        tad_payload_type pld_type, const void *pld_data,
+                        tad_payload_spec_t *pld_data,
                         csap_pkts_p pkts)
-{
+{ 
+    tad_payload_spec_t local_pld_data;
+
     csap_pkts *up_packets  = NULL;
     csap_pkts *low_packets = NULL;
 
     int  level = 0;
     int  rc = 0;
-    char pld_label[10] = "";
 
-    UNUSED(handle);
-
-    if (pld_type == TAD_PLD_UNKNOWN || pld_data == NULL)
+    if (pld_data == NULL)
     {
-        rc = asn_get_choice(nds, "payload", pld_label, sizeof(pld_label));
+        const asn_value *ndn_payload;
+
+        pld_data = &local_pld_data;
+
+        rc = asn_get_child_value(nds, &ndn_payload, PRIVATE,
+                                 NDN_TMPL_PAYLOAD);
         if (rc == EASNINCOMPLVAL)
+        {
+            pld_data->type = TAD_PLD_UNKNOWN;
             rc = 0;
-        else if (rc)
+        }
+        else if (rc != 0)
             return TE_RC(TE_TAD_CH, rc);
         else 
-        {
-            pld_type = tad_payload_asn_label_to_enum(pld_label);
-            if (pld_data == NULL)
-            {
-                size_t   pld_data_len = asn_get_length(nds, "payload");
-                uint8_t *pld_data_local = malloc(pld_data_len);
-
-                if (pld_data_local == NULL) 
-                    return ENOMEM;
-                rc = asn_read_value_field(nds, pld_data_local,
-                                          &pld_data_len, "payload");
-                if (rc)
-                    return TE_RC(TE_TAD_CH, rc);
-                pld_data = pld_data_local;
-            }
+        { 
+            if ((rc = tad_convert_payload(ndn_payload, pld_data)) != 0)
+                return TE_RC(TE_TAD_CH, rc); 
         }
     }
 
-    switch (pld_type)
+    if (pld_data->type != TAD_PLD_UNKNOWN)
+    { 
+        up_packets = malloc(sizeof(csap_pkts));
+        memset(up_packets, 0, sizeof(csap_pkts));
+    }
+
+    switch (pld_data->type)
     {
         case TAD_PLD_FUNCTION:
         { 
-            tad_user_generate_method function_addr = pld_data;
-
-            /* pld_data is really 'char *' with function name */
-            if (pld_data == NULL)
-                return EINVAL;
-
-
-            rc = function_addr(csap_descr->id, -1 /* payload */,
-                               nds); 
-            if (rc)
-                return TE_RC(TE_TAD_CH, rc); 
-
-        } /* fall through! */
-        case TAD_PLD_BYTES:
-        {
             size_t d_len = asn_get_length(nds, "payload.#bytes");
             void  *data = malloc(d_len);
+
+            rc = pld_data->func(csap_descr->id, -1 /* payload */,
+                                nds); 
+            if (rc)
+                return TE_RC(TE_TAD_CH, rc); 
 
             rc = asn_read_value_field(nds, data, &d_len, "payload.#bytes");
             if (rc)
@@ -150,36 +254,27 @@ tad_tr_send_prepare_bin(csap_p csap_descr, asn_value_p nds,
                 free(data);
                 return TE_RC(TE_TAD_CH, rc);
             }
-            up_packets = malloc(sizeof(csap_pkts));
-            memset(up_packets, 0, sizeof(csap_pkts));
             up_packets->data = data;
             up_packets->len  = d_len;
             break;
-        }
+        } 
+        case TAD_PLD_BYTES: 
+            up_packets->data = malloc(up_packets->len = 
+                                      pld_data->plain.length);
+            memcpy(up_packets->data, pld_data->plain.data, up_packets->len);
+            break;
+        
         case TAD_PLD_LENGTH:
         {
-            size_t d_len, l;
-            void *data;
-
-            l = sizeof(d_len);
-            rc = asn_read_value_field(nds, &d_len, &l, "payload.#length");
-            if (rc)
-                return TE_RC(TE_TAD_CH, rc);
-
-            data = malloc(d_len);
-            up_packets = malloc(sizeof(csap_pkts));
-            memset(up_packets, 0, sizeof(csap_pkts));
-            up_packets->data = data;
-            up_packets->len  = d_len;
-            memset(data, 0x5a, d_len);
+            up_packets->data = malloc(up_packets->len = 
+                                      pld_data->plain.length);
+            memset(up_packets->data, 0x5a, up_packets->len);
             break;
         }
         default:
             break;
         /* TODO: processing of other choices should be inserted here. */
     } 
-
-    VERB("called\n");
 
     for (level = 0; rc == 0 && level < csap_descr->depth; level ++)
     { 
@@ -260,16 +355,19 @@ tad_tr_send_thread(void * arg)
     tad_task_context  *context = arg; 
     csap_pkts          packets_root; 
 
+    uint32_t    sent = 0;
     uint32_t    delay;
     int         rc = 0;
     csap_p      csap_descr;
     char        answer_buffer[RBUF];  
     int         ans_len;
-    asn_value  *nds; 
-    const asn_value *pdus;
-    uint32_t    sent = 0;
-    tad_payload_type pld_type = TAD_PLD_UNKNOWN;
-    uint8_t     *pld_data = NULL;
+
+    asn_value        *nds; 
+
+    const asn_value  *nds_pdus;
+    const asn_value  *nds_payload;
+
+    tad_payload_spec_t    pld_spec;
 
     tad_tmpl_iter_spec_t *arg_set_specs = NULL;
     tad_tmpl_arg_t       *arg_iterated = NULL;
@@ -277,12 +375,15 @@ tad_tr_send_thread(void * arg)
 
     struct timeval npt; /* Next packet time moment */
 
+
     if (arg == NULL)
     {
         ERROR("tr_send thread start point: null argument! exit");
         return NULL;
     }
     handle = context->rcf_handle;
+
+    memset(&pld_spec, 0, sizeof(pld_spec));
 
     csap_descr = context->csap;
     nds        = context->nds; 
@@ -299,9 +400,6 @@ tad_tr_send_thread(void * arg)
     do {
         const asn_value *arg_sets;
 
-        char pld_label[10] = "";
-        size_t pld_spec_len; 
-
         if (csap_descr->prepare_send_cb)
         {
             rc = csap_descr->prepare_send_cb(csap_descr);
@@ -312,72 +410,31 @@ tad_tr_send_thread(void * arg)
             }
         }
 
-        rc = asn_get_subvalue(nds, &pdus, "pdus");
+        rc = asn_get_child_value(nds, &nds_pdus, PRIVATE, NDN_TMPL_PDUS);
         if (rc)
             break;
 
-        rc = tad_confirm_pdus(csap_descr, (asn_value *)pdus); 
+        rc = tad_confirm_pdus(csap_descr, (asn_value *)nds_pdus); 
         if (rc)
             break;
 
-        rc = asn_get_choice(nds, "payload", pld_label, sizeof(pld_label));
-
-        VERB("get_choice rc: %x, choice: <%s>\n", rc, pld_label);
-
+        rc = asn_get_child_value(nds, &nds_payload, PRIVATE,
+                                 NDN_TMPL_PAYLOAD); 
         if (rc == 0)
-            pld_type = tad_payload_asn_label_to_enum(pld_label);
-
-        if (rc == EASNINCOMPLVAL)
+        {
+            rc = tad_convert_payload(nds_payload, &pld_spec);
+        }
+        else if (rc == EASNINCOMPLVAL)
         {
             rc = 0; /* there is no payload */
-            pld_type = TAD_PLD_UNKNOWN;
-        }
+            pld_spec.type = TAD_PLD_UNKNOWN;
+        } 
 
-        if (rc)
+        if (rc != 0)
         {
-            F_ERROR("get payload type in trsend thread rc %x", rc);
+            ERROR("%s(): prepare payload failed rc %X", __FUNCTION__, rc);
             break;
-        }
-
-        pld_spec_len = sizeof(int); /* pass through */
-        switch (pld_type)
-        {
-            case TAD_PLD_BYTES:
-            case TAD_PLD_FUNCTION:
-                pld_spec_len = asn_get_length(nds, "payload"); 
-                /* pass through */
-            case TAD_PLD_LENGTH:
-                if (pld_spec_len <= 0)
-                    break;
-                pld_data = calloc(1, pld_spec_len); 
-
-                rc = asn_read_value_field(nds, pld_data, &pld_spec_len,
-                                          "payload");
-                if (pld_type == TAD_PLD_FUNCTION)
-                {
-                    tad_user_generate_method function_addr;
-
-                    function_addr = (tad_user_generate_method) 
-                                    rcf_ch_symbol_addr((char *)pld_data, 1);
-
-                    if (function_addr == NULL)
-                    {
-                        ERROR("Function %s for pld generation NOT found",
-                              (char *)pld_data);
-                        rc = TE_RC(TE_TAD_CH, ETENOSUCHNAME); 
-                    }
-                    free(pld_data);
-                    pld_data = (uint8_t *) function_addr;
-                }
-                break;
-            case TAD_PLD_UNKNOWN:
-            default: 
-                pld_data = NULL;
-                break;
-        }
-
-        if (rc)
-            break;
+        } 
 
         rc = asn_get_subvalue(nds, &arg_sets, "arg-sets");
 
@@ -407,8 +464,7 @@ tad_tr_send_thread(void * arg)
             break;
         
         rc = tad_init_tmpl_args(arg_set_specs, arg_num, arg_iterated);
-        VERB("tad_init_arg_specs rc: %x\n", rc);
-
+        VERB("tad_init_arg_specs rc: %x\n", rc); 
 
         {
             size_t v_len = sizeof(delay);
@@ -452,9 +508,9 @@ tad_tr_send_thread(void * arg)
                 break;
             }
 
-            rc = tad_tr_send_prepare_bin(csap_descr, nds, handle, 
-                                         arg_iterated, arg_num, pld_type,
-                                         pld_data, &packets_root);
+            rc = tad_tr_send_prepare_bin(csap_descr, nds, 
+                                         arg_iterated, arg_num, 
+                                         &pld_spec, &packets_root);
             F_VERB("send_prepare_bin rc: %X\n", rc);
 
             if (rc)
@@ -558,10 +614,6 @@ tad_tr_send_thread(void * arg)
     asn_free_value(nds); 
     free(arg_iterated);
     free(arg_set_specs);
-
-    if (pld_type != TAD_PLD_FUNCTION)
-        free(pld_data);
-
 
     if ((csap_descr->state   & TAD_STATE_FOREGROUND) || 
         (csap_descr->command == TAD_OP_STOP) )

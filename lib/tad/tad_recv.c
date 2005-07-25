@@ -672,8 +672,8 @@ tad_tr_recv_thread(void *arg)
             if (rc != 0)
                 break;
 
-            rc = tad_tr_send_prepare_bin(csap_descr, nds, handle, 
-                    NULL, 0, TAD_PLD_UNKNOWN, NULL, &packets_root);
+            rc = tad_tr_send_prepare_bin(csap_descr, nds, 
+                                         NULL, 0, NULL, &packets_root);
             if (rc != 0)
                 break;
 

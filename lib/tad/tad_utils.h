@@ -225,9 +225,46 @@ typedef struct {
 
 
 
+/**
+ * Preprocessed payload specification, ready for iteration 
+ * and binary generating. 
+ */
+typedef struct {
+    tad_payload_type type;      /**< Type of payload spec */
+
+    union {
+        /* specs for 'bytes' and 'length' choices */
+        struct {
+            size_t   length;    /**< Payload length */
+            uint8_t *data;      /**< Byte array */
+        } plain;                
+
+        /* 'stream' */
+        struct {
+            tad_data_unit_t     offset;
+            tad_data_unit_t     length;
+            tad_stream_callback func;
+        } stream; 
+
+        /* function */
+        tad_user_generate_method func;
+    };
+} tad_payload_spec_t;
 
 
 /* ============= Function prototypes declarations =============== */
+
+/**
+ * Convert ASN specification of payload from Traffic-Template
+ * to plain C sturcture. 
+ *
+ * @param ndn_payload   ASN value of Payload type
+ * @param pld_spec      locaion for converted data (OUT)
+ *
+ * @return Status code.
+ */
+extern int tad_convert_payload(const asn_value *ndn_payload, 
+                               tad_payload_spec_t *pld_spec);
 
 /**
  * Prepare binary data by NDS.
@@ -236,7 +273,6 @@ typedef struct {
  * @param nds           ASN value with traffic-template NDS, should be
  *                      preprocessed (all iteration and function calls
  *                      performed)
- * @param handle        handle of RCF connection
  * @param args          array with template iteration parameter values,
  *                      may be used to prepare binary data, 
  *                      references to interation parameter values may
@@ -250,12 +286,11 @@ typedef struct {
  * @return zero on success, otherwise error code.  
  */
 extern int tad_tr_send_prepare_bin(csap_p csap_descr, asn_value *nds, 
-                                   struct rcf_comm_connection *handle, 
                                    const tad_tmpl_arg_t *args, 
                                    size_t arg_num, 
-                                   tad_payload_type pld_type, 
-                                   const void *pld_data, 
+                                   tad_payload_spec_t *pld_data,
                                    csap_pkts_p pkts);
+
 
 
 /**
