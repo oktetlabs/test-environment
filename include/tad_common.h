@@ -98,4 +98,17 @@ calculate_checksum(const void *data, size_t length)
     return (checksum & 0xffff) + (checksum >> 16);
 }
 
+/**
+ * Callback type for methods generating fully determined stream of data,
+ * depending only from length and offset.
+ *
+ * @param offset        offset in stream of first byte in buffer
+ * @param length        length of buffer
+ * @param buffer        location for generated data (OUT)
+ *
+ * @return status code
+ */
+typedef int (*tad_stream_callback)(uint64_t offset, uint32_t length,
+                                   uint8_t *buffer);
+
 #endif /* !__TE_TAD_COMMON_H__ */
