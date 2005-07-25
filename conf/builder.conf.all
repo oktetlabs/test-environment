@@ -24,7 +24,7 @@ TE_LIB_PARMS([tad], [], [],
 
 TE_TA_TYPE([linux], [], [],
            [--with-rcf-rpc --with-cfg-linux-daemons='ftp echo'],
-           [], [], [tad ndn asn comm_net_agent])
+           [], [], [comm_net_agent ndn asn])
 
 TE_LIB_PARMS([tad_dummy], [], [tad], [], [])
 
