@@ -1092,8 +1092,9 @@ rpc_malloc(rcf_rpc_server *rpcs, size_t size)
     rcf_rpc_call(rpcs, "malloc", &in, &out);
 
     TAPI_RPC_LOG("RPC (%s,%s)%s: malloc(%" TE_PRINTF_SIZE_T "u) -> "
-                 "%p (%s %s)", rpcs->ta, rpcs->name, rpcop2str(op),
-                 size, out.retval, errno_rpc2str(RPC_ERRNO(rpcs)),
+                 "0x%x (%s %s)", rpcs->ta, rpcs->name, rpcop2str(op),
+                 size,
+                 (unsigned)out.retval, errno_rpc2str(RPC_ERRNO(rpcs)),
                  win_error_rpc2str(out.common.win_error));
 
     RETVAL_RPC_PTR(malloc, (rpc_ptr)out.retval);
@@ -1124,8 +1125,9 @@ rpc_free(rcf_rpc_server *rpcs, rpc_ptr buf)
 
     rcf_rpc_call(rpcs, "free", &in, &out);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: free(%p) -> (%s %s)",
-                 rpcs->ta, rpcs->name, rpcop2str(op), buf,
+    TAPI_RPC_LOG("RPC (%s,%s)%s: free(0x%x) -> (%s %s)",
+                 rpcs->ta, rpcs->name, rpcop2str(op),
+                 (unsigned)buf,
                  errno_rpc2str(RPC_ERRNO(rpcs)),
                  win_error_rpc2str(out.common.win_error));
 

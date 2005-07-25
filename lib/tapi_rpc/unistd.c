@@ -535,9 +535,9 @@ rpc_fd_set_new(rcf_rpc_server *rpcs)
 
     rcf_rpc_call(rpcs, "fd_set_new", &in, &out);
 
-    TAPI_RPC_LOG("RPC (%s,%s): fd_set_new() -> %p (%s)",
+    TAPI_RPC_LOG("RPC (%s,%s): fd_set_new() -> 0x%x (%s)",
                  rpcs->ta, rpcs->name,
-                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
+                 (unsigned)out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_RPC_PTR(fd_set_new, out.retval);
 }
@@ -564,9 +564,9 @@ rpc_fd_set_delete(rcf_rpc_server *rpcs, rpc_fd_set_p set)
 
     rcf_rpc_call(rpcs, "fd_set_delete", &in, &out);
 
-    TAPI_RPC_LOG("RPC (%s,%s): fd_set_delete(%p) -> (%s)",
+    TAPI_RPC_LOG("RPC (%s,%s): fd_set_delete(0x%x) -> (%s)",
                  rpcs->ta, rpcs->name,
-                 set, errno_rpc2str(RPC_ERRNO(rpcs)));
+                 (unsigned)set, errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_VOID(fd_set_delete);
 }
@@ -592,9 +592,9 @@ rpc_do_fd_zero(rcf_rpc_server *rpcs, rpc_fd_set_p set)
 
     rcf_rpc_call(rpcs, "do_fd_zero", &in, &out);
 
-    TAPI_RPC_LOG("RPC (%s,%s): do_fd_zero(%p) -> (%s)",
+    TAPI_RPC_LOG("RPC (%s,%s): do_fd_zero(0x%x) -> (%s)",
                  rpcs->ta, rpcs->name,
-                 set, errno_rpc2str(RPC_ERRNO(rpcs)));
+                 (unsigned)set, errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_VOID(do_fd_zero);
 }
@@ -621,9 +621,9 @@ rpc_do_fd_set(rcf_rpc_server *rpcs, int fd, rpc_fd_set_p set)
 
     rcf_rpc_call(rpcs, "do_fd_set", &in, &out);
 
-    TAPI_RPC_LOG("RPC (%s,%s): do_fd_set(%d, %p) -> (%s)",
+    TAPI_RPC_LOG("RPC (%s,%s): do_fd_set(%d, 0x%x) -> (%s)",
                  rpcs->ta, rpcs->name,
-                 fd, set, errno_rpc2str(RPC_ERRNO(rpcs)));
+                 fd, (unsigned)set, errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_VOID(do_fd_set);
 }
@@ -650,9 +650,9 @@ rpc_do_fd_clr(rcf_rpc_server *rpcs, int fd, rpc_fd_set_p set)
 
     rcf_rpc_call(rpcs, "do_fd_clr", &in, &out);
 
-    TAPI_RPC_LOG("RPC (%s,%s): do_fd_clr(%d, %p) -> (%s)",
+    TAPI_RPC_LOG("RPC (%s,%s): do_fd_clr(%d, 0x%x) -> (%s)",
                  rpcs->ta, rpcs->name,
-                 fd, set, errno_rpc2str(RPC_ERRNO(rpcs)));
+                 fd, (unsigned)set, errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_VOID(do_fd_clr);
 }
@@ -682,8 +682,8 @@ rpc_do_fd_isset(rcf_rpc_server *rpcs, int fd, rpc_fd_set_p set)
     CHECK_RETVAL_VAR(do_fd_isset, out.retval,
                      (out.retval != 0 && out.retval != 1), -1);
 
-    TAPI_RPC_LOG("RPC (%s,%s): do_fd_isset(%d, %p) -> %d (%s)",
-                 rpcs->ta, rpcs->name, fd, set,
+    TAPI_RPC_LOG("RPC (%s,%s): do_fd_isset(%d, 0x%x) -> %d (%s)",
+                 rpcs->ta, rpcs->name, fd, (unsigned)set,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_INT(do_fd_isset, out.retval);
@@ -740,10 +740,10 @@ rpc_select(rcf_rpc_server *rpcs,
 
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(select, out.retval);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: select(%d, %p, %p, %p, %s (%s)) "
+    TAPI_RPC_LOG("RPC (%s,%s)%s: select(%d, 0x%x, 0x%x, 0x%x, %s (%s)) "
                  "-> %d (%s)", rpcs->ta, rpcs->name, rpcop2str(op),
-                 n, readfds, writefds, exceptfds,
-                 tarpc_timeval2str(timeout_in_ptr),
+                 n, (unsigned)readfds, (unsigned)writefds,
+                 (unsigned)exceptfds, tarpc_timeval2str(timeout_in_ptr),
                  tarpc_timeval2str(timeout),
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
@@ -791,10 +791,11 @@ rpc_pselect(rcf_rpc_server *rpcs,
 
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(pselect, out.retval);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: pselect(%d, %p, %p, %p, %s, %p) "
+    TAPI_RPC_LOG("RPC (%s,%s)%s: pselect(%d, 0x%x, 0x%x, 0x%x, %s, 0x%x) "
                  "-> %d (%s)", rpcs->ta, rpcs->name,
-                 rpcop2str(op), n, readfds, writefds, exceptfds,
-                 timespec2str(timeout), sigmask,
+                 rpcop2str(op), n, (unsigned)readfds, (unsigned)writefds,
+                 (unsigned)exceptfds, timespec2str(timeout),
+                 (unsigned)sigmask,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_INT(pselect, out.retval);

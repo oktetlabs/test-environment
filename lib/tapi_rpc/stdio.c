@@ -77,9 +77,10 @@ rpc_fopen(rcf_rpc_server *rpcs,
 
     rcf_rpc_call(rpcs, "fopen", &in, &out);
 
-    TAPI_RPC_LOG("RPC (%s,%s): fopen(%s, %s) -> %p (%s)",
+    TAPI_RPC_LOG("RPC (%s,%s): fopen(%s, %s) -> 0x%x (%s)",
                  rpcs->ta, rpcs->name,
-                 path, mode, out.mem_ptr, errno_rpc2str(RPC_ERRNO(rpcs)));
+                 path, mode,
+                 (unsigned)out.mem_ptr, errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_RPC_PTR(fopen, out.mem_ptr);
 }
@@ -173,9 +174,9 @@ rpc_fileno(rcf_rpc_server *rpcs,
 
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(fileno, out.fd);
 
-    TAPI_RPC_LOG("RPC (%s,%s): fileno(%p) -> %d (%s)",
+    TAPI_RPC_LOG("RPC (%s,%s): fileno(0x%x) -> %d (%s)",
                  rpcs->ta, rpcs->name,
-                 f, out.fd, errno_rpc2str(RPC_ERRNO(rpcs)));
+                 (unsigned)f, out.fd, errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_INT(fileno, out.fd);
 }
