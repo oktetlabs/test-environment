@@ -582,20 +582,21 @@ eth_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
     VERB("%s(CSAP %d): univ match for dst rc %x\n",
          __FUNCTION__, csap_id, rc);
 
-    if (rc == 0)
-    {
-    /* source  */ 
-        rc = ndn_match_data_units(pattern_pdu, eth_hdr_pdu, 
-                                  data, ETH_ALEN, "src-addr");
-        data += ETH_ALEN;
-        VERB("%s(CSAP %d): univ match for src rc %x\n",
-             __FUNCTION__, csap_id, rc);
-    }
+    if (rc != 0)
+        goto cleanup;
 
-    if (rc == 0 && *((uint16_t *)data) == htons(ETH_TAGGED_TYPE_LEN))
+    /* source  */ 
+    rc = ndn_match_data_units(pattern_pdu, eth_hdr_pdu, 
+                              data, ETH_ALEN, "src-addr");
+    data += ETH_ALEN;
+    VERB("%s(CSAP %d): univ match for src rc %x\n",
+         __FUNCTION__, csap_id, rc);
+
+    if (rc == 0 && (ntohs(*((uint16_t *)data)) == ETH_TAGGED_TYPE_LEN))
     {
         uint8_t prio;
         uint8_t cfi;
+        int32_t cfi_pattern;
 
         VERB("VLan info found in Ethernet frame");
 
@@ -607,21 +608,27 @@ eth_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
 
         *data &= 0x0f; 
 
-
-        rc = ndn_match_data_units(pattern_pdu, eth_hdr_pdu, 
-                                  &cfi, 1, "cfi");
-
-        if (rc != 0)
+        rc = asn_read_int32(pattern_pdu, &cfi_pattern, "cfi"); 
+        if (rc == 0)
         {
-            WARN("match of cfi failed %X", rc);
-            rc = ETADNOTMATCH;
+            if (cfi_pattern != cfi)
+            {
+                rc = ETADNOTMATCH;
+                goto cleanup;
+            }
         }
+        else if (rc != EASNINCOMPLVAL)
+        {
+            WARN("read cfi from pattern failed %X", rc);
+            goto cleanup;
+        }
+
         rc = ndn_match_data_units(pattern_pdu, eth_hdr_pdu, 
                                   &prio, 1, "priority");
         if (rc != 0)
         {
             WARN("match of priority failed %X", rc);
-            rc = ETADNOTMATCH;
+            goto cleanup;
         }
         
         rc = ndn_match_data_units(pattern_pdu, eth_hdr_pdu, 
@@ -629,7 +636,7 @@ eth_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
         if (rc != 0)
         {
             WARN("match of vlan-id failed %X", rc);
-            rc = ETADNOTMATCH;
+            goto cleanup;
         }
 
         data += ETH_TAG_EXC_LEN; 
@@ -650,11 +657,8 @@ eth_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
             ERROR("write eth header to packet rc %x\n", rc);
     }
 
-    if (rc)
-    {
-        asn_free_value(eth_hdr_pdu);
-        return rc; 
-    }
+    if (rc != 0)
+        goto cleanup;
 
     /* passing payload to upper layer */
     memset(payload, 0 , sizeof(*payload));
@@ -670,12 +674,13 @@ eth_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
     memcpy(payload->data, pkt->data + ETH_HLEN, payload->len); 
 
     gettimeofday(&moment, NULL);
-    F_VERB("%s(CSAP %d), packet matches, pkt len %d, pld len %d, mcs %d", 
-           __FUNCTION__, csap_id, pkt->len, payload->len, moment.tv_usec);
+    VERB("%s(CSAP %d), packet matches, pkt len %d, pld len %d, mcs %d", 
+         __FUNCTION__, csap_id, pkt->len, payload->len, moment.tv_usec);
 
+cleanup:
     asn_free_value(eth_hdr_pdu);
     
-    return 0;
+    return rc;
 }
 
 /**
