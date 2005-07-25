@@ -266,6 +266,16 @@ typedef struct {
 extern int tad_convert_payload(const asn_value *ndn_payload, 
                                tad_payload_spec_t *pld_spec);
 
+
+/**
+ * Clear payload specification, free all data, allocated for it
+ * internally. 
+ * Does NOT free passed struct itself. 
+ *
+ * @param pld_spec      pointer to payload spec to be cleared
+ */
+extern void tad_payload_spec_clear(tad_payload_spec_t *pld_spec);
+
 /**
  * Prepare binary data by NDS.
  *
@@ -420,6 +430,14 @@ extern int tad_init_tmpl_args(tad_tmpl_iter_spec_t *arg_specs,
 extern int tad_iterate_tmpl_args(tad_tmpl_iter_spec_t *arg_specs,
                                  size_t arg_specs_num, 
                                  tad_tmpl_arg_t *arg_iterated);
+
+/**
+ * Clear internal data in template iterate args specı
+ *
+ * @return nothing.
+ */
+extern void tad_tmpl_args_clear(tad_tmpl_iter_spec_t *arg_specs,
+                                size_t arg_num);
 
 /**
  * Get argument set from template ASN value and put it into plain-C array

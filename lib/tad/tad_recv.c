@@ -158,7 +158,7 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
             free(data_to_check.data);
 
         memset(&data_to_check, 0, sizeof(data_to_check));
-        if (rc)
+        if (rc != 0)
         {
             asn_free_value(*packet);
             asn_free_value(parsed_pdu);
@@ -169,12 +169,13 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
         if (csap_descr->state & TAD_STATE_RESULTS)
         {
             rc = asn_insert_indexed(*packet, parsed_pdu, 0, "pdus");
-            if (rc)
+            asn_free_value(parsed_pdu);
+            if (rc != 0)
             {
                 ERROR("ASN error in add next pdu 0x%x\n", rc);
+                asn_free_value(*packet);
                 return rc;
             } 
-            asn_free_value(parsed_pdu);
 
 #ifdef TALOGDEBUG 
             {
@@ -205,6 +206,7 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
             if (rc != 0)
             {
                 ERROR("%s(): get mask failed %X", __FUNCTION__, rc);
+                asn_free_value(*packet);
                 return rc;
             }
             rc = ndn_match_mask(mask_pat,
@@ -319,6 +321,12 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
     else
         free(data_to_check.data); 
 
+    if ((rc != 0) && (csap_descr->state & TAD_STATE_RESULTS))
+    {
+        asn_free_value(*packet);
+        *packet = NULL;
+    }
+
     return rc; 
 }
 
@@ -403,7 +411,7 @@ tad_tr_recv_send_results(received_packets_queue_t *queue_root,
 
     for (pkt_qelem = queue_root->next; pkt_qelem != queue_root; 
          pkt_qelem = queue_root->next)
-    {
+   {
         if(pkt_qelem->pkt != NULL)
         {
             rc = tad_report_packet(pkt_qelem->pkt, handle, 
