@@ -9,15 +9,17 @@
 TE_PLATFORM([], [], [], [], \
             [ipc bsapi loggerten rpcxdr rcfapi conf_oid confapi tapi \
              comm_net_engine rcfunix loggerta comm_net_agent rcfpch \
-             rcfrpc tapi_rpc tapi_tad tapi_eth tapi_bridge tapi_arp \
+             rcfrpc tce tapi_rpc tapi_tad tapi_eth tapi_bridge tapi_arp \
              tapi_ipstack tapi_dhcp tapi_snmp tapi_cli \
              asn ndn tad logfork \
             ])
 
 TE_APP_PARMS([rcf], [--enable-ltdl-install], [], [], [])
 
+TE_TOOLS([rgt rpcgen trc tce millicom])
+
 TE_LIB_PARMS([tad], [], [], \
-             [--with-file --with-eth --with-bridge \
+             [--with-file --with-eth --with-bridge --with-iscsi\
               --with-ipstack --with-dhcp --with-snmp --with-cli], [])
 
 TE_TA_TYPE([linux], [], [], [--with-rcf-rpc], [], [], \
