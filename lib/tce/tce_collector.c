@@ -64,6 +64,8 @@
 #include "gcov-io.h"
 #include "tce_internal.h"
 
+te_bool tce_debugging = FALSE;
+
 static char tar_file_prefix[RCF_MAX_PATH + 1];
 
 static tce_channel_data *channels;
@@ -136,16 +138,44 @@ tce_obtain_principal_peer_id(void)
     return peer_id;
 }
 
-void 
+static void 
+tce_generic_report(const char *level, const char *fmt, va_list args)
+{
+    fprintf(stderr, "tce_collector: %s%s", 
+            level != NULL ? level : "", 
+            level != NULL ? ":" : "");
+    vfprintf(stderr, fmt, args);
+    fputc('\n', stderr);
+}
+
+void
 tce_report_error(const char *fmt, ...)
 {
     va_list args;
     va_start(args, fmt);
-    fputs("tce_collector: ", stderr);
-    vfprintf(stderr, fmt, args);
-    fputc('\n', stderr);
+    tce_generic_report("ERROR", fmt, args);
     va_end(args);
 }
+
+void
+tce_report_notice(const char *fmt, ...)
+{
+    va_list args;
+    va_start(args, fmt);
+    tce_generic_report(NULL, fmt, args);
+    va_end(args);
+}
+
+void
+tce_print_debug(const char *fmt, ...)
+{
+    va_list args;
+    va_start(args, fmt);
+    if (tce_debugging)
+        tce_generic_report("DEBUG", fmt, args);
+    va_end(args);
+}
+
 
 static int
 lock_data(void)
@@ -211,13 +241,13 @@ tce_collector(void)
         if (strncmp(*args, "fifo:", 5) == 0)
         {
             remove(*args + 5);
-            tce_report_notice("opening %s", *args + 5);
+            tce_print_debug("opening %s", *args + 5);
             mkfifo(*args + 5, S_IRUSR | S_IWUSR);
             listen_on = open(*args + 5, O_RDONLY | O_NONBLOCK, 0);
             if (listen_on < 0)
             {
                 tce_report_error("can't open '%s' (%s), skipping", 
-                      *args + 5, strerror(errno));
+                                 *args + 5, strerror(errno));
             }
         }
 #ifdef HAVE_SYS_SOCKET_H
@@ -326,6 +356,10 @@ tce_collector(void)
             lock_data();
             tce_set_ksymtable(*args + 9);
         }
+        else if (strcmp(*args, "debug") == 0)
+        {
+            tce_debugging = TRUE;
+        }
         else
         {
             tce_report_error("invalid argument '%s'", *args);
@@ -369,8 +403,7 @@ tce_collector(void)
         if (caught_signo != 0)
         {
             int signo = caught_signo;
-            DEBUGGING(tce_report_notice("TCE collector caught signal %d", 
-                                    signo));
+            tce_print_debug("TCE collector caught signal %d", signo);
             caught_signo = 0;
             if (signo == SIGHUP)
                 dump_data();
@@ -697,7 +730,7 @@ function_header_state(tce_channel_data *ch)
                 ch->state = NULL;
                 return;
             }
-            tce_report_notice("at %s %ld", space, checksum);
+            tce_print_debug("at %s %ld", space, checksum);
             
             fi = tce_get_function_info(ch->object, ch->buffer + 1, 
                                        arc_count, checksum);
@@ -815,7 +848,7 @@ object_header_state(tce_channel_data *ch)
             unsigned gcov_version;
             unsigned checksum, program_checksum, ctr_mask;
 
-            tce_report_notice("new format peer detected");
+            tce_print_debug("new format peer detected");
             space += 4;
             if(sscanf(space, "%u %u %u %u %ld %u",
                       &gcov_version, &oi->stamp, 
@@ -971,10 +1004,9 @@ static void
 collect_line(tce_channel_data *ch)
 {
     int len;
-    DEBUGGING(tce_report_notice("requesting %d bytes on %d", 
-                            ch->remaining, ch->fd));
+    tce_print_debug("requesting %d bytes on %d", ch->remaining, ch->fd);
     len = read(ch->fd, ch->bufptr, ch->remaining);
-    DEBUGGING(tce_report_notice("read %d bytes from %d", len, ch->fd));
+    tce_print_debug("read %d bytes from %d", len, ch->fd);
     if (len <= 0)
     {
         tce_report_error("read error on %d: %s", ch->fd,
@@ -994,7 +1026,7 @@ collect_line(tce_channel_data *ch)
             if (found_newline != NULL)
             {
                 *found_newline = '\0';
-                DEBUGGING(tce_report_notice("got %s", ch->buffer));
+                tce_print_debug("got %s", ch->buffer);
                 ch->state(ch);
 #if 0
                 tce_report_notice("processed");
@@ -1157,7 +1189,7 @@ dump_object(tce_object_info *oi)
     unsigned idx;
 
     sprintf(tar_name, "%s%d.tar", tar_file_prefix, oi->peer_id);
-    DEBUGGING(tce_report_notice("dumping to %s", tar_name));
+    tce_print_debug("dumping to %s", tar_name);
     tar_file = fopen(tar_name, "r+");
     if (tar_file == NULL)
     {
@@ -1262,7 +1294,7 @@ dump_new_object_data(tce_object_info *oi, FILE *tar_file)
         {
             if (!((1 << group) & oi->ctr_mask))
                 continue;
-            tce_report_notice("dumping counter group %d", group);
+            tce_print_debug("dumping counter group %d", group);
             group_magic[0] = GCOV_TAG_FOR_COUNTER (group);
             count = fi->groups[group].number;
             group_magic[1] = GCOV_TAG_COUNTER_LENGTH (count);

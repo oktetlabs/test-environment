@@ -173,14 +173,14 @@ read_at(int fildes, off_t offset, void *buffer, size_t size)
 {
     ssize_t nsize;
     
-    DEBUGGING(tce_report_notice("reading %lu at %lx", (unsigned long)size, (unsigned long)offset));
+    tce_print_debug(tce_report_notice("reading %lu at %lx", (unsigned long)size, (unsigned long)offset));
     if(lseek(fildes, offset, SEEK_SET) == (off_t)-1)
     {
         tce_report_error("seek error: %s", strerror(errno));
         return (ssize_t)-1;
     }
     nsize = read(fildes, buffer, size);
-    DEBUGGING(tce_report_notice("read %d bytes", (int)nsize));
+    tce_print_debug(tce_report_notice("read %d bytes", (int)nsize));
     if (nsize < (ssize_t)size)
         tce_report_error("reading error: %s", strerror(errno));
     return nsize;
@@ -295,7 +295,7 @@ check_module_offset(const char *module, unsigned long offset)
             if (token != NULL)
             {
                 start = strtoul(token, NULL, 0);
-                DEBUGGING(tce_report_notice("module code is at %lx..%lx", start, start + size));
+                tce_print_debug(tce_report_notice("module code is at %lx..%lx", start, start + size));
                 return offset >= start && offset < start + size;
             }
         }
@@ -340,7 +340,7 @@ process_gcov_syms(FILE *symfile, int core_file,
             token[strlen(token) - 1] = '\0'; /* eliminate brackets */
             token++;
 
-            DEBUGGING(tce_report_notice("offset is %lx for %d", 
+            tce_print_debug(tce_report_notice("offset is %lx for %d", 
                                         (unsigned long)offset,
                       core_file));
             if (address_offset < 0)
@@ -348,7 +348,7 @@ process_gcov_syms(FILE *symfile, int core_file,
                 for (address_offset = 0; address_offset < 16; 
                      address_offset++)
                 {
-                    DEBUGGING(tce_report_notice("trying offset %lx", offset + address_offset));
+                    tce_print_debug(tce_report_notice("trying offset %lx", offset + address_offset));
                     if(read_at(core_file, offset + address_offset, &tmp, sizeof(tmp)) < 
                        (ssize_t)sizeof(tmp))
                     {
@@ -382,7 +382,7 @@ process_gcov_syms(FILE *symfile, int core_file,
                     continue;
                 }
             }
-            DEBUGGING(tce_report_notice("new offset is %lu", tmp));
+            tce_print_debug(tce_report_notice("new offset is %lu", tmp));
             if(read_at(core_file, tmp, &bb_buf, sizeof_object_coverage) < 
                (ssize_t)sizeof_object_coverage)
             {
