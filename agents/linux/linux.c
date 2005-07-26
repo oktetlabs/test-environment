@@ -812,8 +812,18 @@ ta_sigchld_handler(int sig)
     else
     {
         CHECK_LGR_LOCK;
-        if (errno != EINTR)
+        if ((errno != EINTR) 
+#if 1 
+            /* 
+             * Ideally, it is necessary to consider ECHILD as an error,
+             * but it happens too often in practice. I don't know why.
+             */
+            && (errno != ECHILD)
+#endif
+            )
+        {
             ERROR("waitpid() failed with errno %d", errno);
+        }
     }
 #undef CHECK_LGR_LOCK
 }
