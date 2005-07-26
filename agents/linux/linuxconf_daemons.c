@@ -189,24 +189,32 @@ copy_or_rename(const char *config, char *backup)
     }
     else
     {
-        char *tmp = strrchr(buf, '.');
-        int   pid = tmp == NULL ? 0 : atoi(tmp + 1);
-        
+        size_t  len = strlen(buf);
+        char   *tmp = strrchr(buf, '.');
+        int     pid = (tmp == NULL) ? 0 : atoi(tmp + 1);
+
+        if (buf[len - 1] == '\n')
+        {
+            buf[len - 1] = '\0';
+            --len;
+        }
+
         if (pid == 0)
         {
-            ERROR("Backup %s of the old version of Linux TA is found", 
+            ERROR("Backup '%s' of the old version of Linux TA is found", 
                   buf);
             return TE_RC(TE_TA_LINUX, EEXIST);
         }
         
         if (kill(pid, SIGCONT) == 0)
         {
-            WARN("Backup %s of running TA pid %d is found", buf, pid);
+            WARN("Backup '%s' of running TA with PID=%d is found",
+                 buf, pid);
             return TE_RC(TE_TA_LINUX, EEXIST);
         }
         else
         {
-            WARN("Consider backup %s of dead TA with pid %d as ours", 
+            WARN("Consider backup '%s' of dead TA with PID=%d as ours", 
                  buf, pid);
             TE_SPRINTF(buf, "mv %s.%d %s.%d", backup, pid, backup, my_pid);
         }
