@@ -173,14 +173,14 @@ read_at(int fildes, off_t offset, void *buffer, size_t size)
 {
     ssize_t nsize;
     
-    tce_print_debug(tce_report_notice("reading %lu at %lx", (unsigned long)size, (unsigned long)offset));
+    tce_print_debug("reading %lu at %lx", (unsigned long)size, (unsigned long)offset);
     if(lseek(fildes, offset, SEEK_SET) == (off_t)-1)
     {
         tce_report_error("seek error: %s", strerror(errno));
         return (ssize_t)-1;
     }
     nsize = read(fildes, buffer, size);
-    tce_print_debug(tce_report_notice("read %d bytes", (int)nsize));
+    tce_print_debug("read %d bytes", (int)nsize);
     if (nsize < (ssize_t)size)
         tce_report_error("reading error: %s", strerror(errno));
     return nsize;
@@ -255,9 +255,13 @@ tce_obtain_kernel_coverage(void)
         core_file = open("/dev/kmem", O_RDONLY);
         if (core_file < 0)
         {
-            tce_report_error("Cannot open kernel memory file: %s", strerror(errno));
-            fclose(symfile);
-            return;
+            core_file = open("/dev/olkmem", O_RDONLY);
+            if (core_file < 0)
+            {
+                tce_report_error("Cannot open kernel memory file: %s", strerror(errno));
+                fclose(symfile);
+                return;
+            }
         }
         
         detect_kernel_gcov_version(symfile, core_file);
@@ -295,7 +299,7 @@ check_module_offset(const char *module, unsigned long offset)
             if (token != NULL)
             {
                 start = strtoul(token, NULL, 0);
-                tce_print_debug(tce_report_notice("module code is at %lx..%lx", start, start + size));
+                tce_print_debug("module code is at %lx..%lx", start, start + size);
                 return offset >= start && offset < start + size;
             }
         }
@@ -340,15 +344,15 @@ process_gcov_syms(FILE *symfile, int core_file,
             token[strlen(token) - 1] = '\0'; /* eliminate brackets */
             token++;
 
-            tce_print_debug(tce_report_notice("offset is %lx for %d", 
-                                        (unsigned long)offset,
-                      core_file));
+            tce_print_debug("offset is %lx for %d", 
+                            (unsigned long)offset,
+                            core_file);
             if (address_offset < 0)
             {
                 for (address_offset = 0; address_offset < 16; 
                      address_offset++)
                 {
-                    tce_print_debug(tce_report_notice("trying offset %lx", offset + address_offset));
+                    tce_print_debug("trying offset %lx", offset + address_offset);
                     if(read_at(core_file, offset + address_offset, &tmp, sizeof(tmp)) < 
                        (ssize_t)sizeof(tmp))
                     {
@@ -382,7 +386,7 @@ process_gcov_syms(FILE *symfile, int core_file,
                     continue;
                 }
             }
-            tce_print_debug(tce_report_notice("new offset is %lu", tmp));
+            tce_print_debug("new offset is %lu", tmp);
             if(read_at(core_file, tmp, &bb_buf, sizeof_object_coverage) < 
                (ssize_t)sizeof_object_coverage)
             {
