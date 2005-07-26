@@ -42,6 +42,7 @@
 #include "ndn_pcap.h"
 #include "ndn_ipstack.h"
 #include "ndn_cli.h"
+#include "ndn_iscsi.h"
 #include "ndn_bridge.h"
 
 /* Add here declaraions of protocol-specific CSAP init params */ 
@@ -59,6 +60,8 @@ extern asn_type ndn_udp_csap_s;
 extern asn_type ndn_tcp_csap_s;
 
 extern asn_type ndn_cli_csap_s;
+
+extern asn_type ndn_iscsi_csap_s;
 
 extern asn_type ndn_dhcpv4_csap_s;
 
@@ -78,6 +81,7 @@ static asn_named_entry_t _ndn_generic_csap_level_ne_array[] =
     { "udp",    &ndn_udp_csap_s,        {PRIVATE, NDN_TAD_UDP} },
     { "tcp",    &ndn_tcp_csap_s,        {PRIVATE, NDN_TAD_TCP} }, 
     { "cli",    &ndn_cli_csap_s,        {PRIVATE, NDN_TAD_CLI} },
+    { "iscsi",  &ndn_iscsi_csap_s,      {PRIVATE, NDN_TAD_ISCSI} },
     { "dhcp",   &ndn_dhcpv4_csap_s,     {PRIVATE, NDN_TAD_DHCP} }, 
     { "bridge", &ndn_bridge_csap_s,     {PRIVATE, NDN_TAD_BRIDGE} },
 };
@@ -103,6 +107,7 @@ extern asn_type ndn_icmp4_message_s;
 extern asn_type ndn_udp_header_s;
 extern asn_type ndn_tcp_header_s; 
 extern asn_type ndn_cli_message_s; 
+extern asn_type ndn_iscsi_message_s; 
 extern asn_type ndn_dhcpv4_message_s; 
 extern asn_type ndn_bridge_pdu_s;
 
@@ -120,6 +125,7 @@ static asn_named_entry_t _ndn_generic_pdu_ne_array[] =
     { "udp",    &ndn_udp_header_s,        {PRIVATE, NDN_TAD_UDP} },
     { "tcp",    &ndn_tcp_header_s,        {PRIVATE, NDN_TAD_TCP} }, 
     { "cli",    &ndn_cli_message_s,       {PRIVATE, NDN_TAD_CLI} },
+    { "iscsi",  &ndn_iscsi_message_s,     {PRIVATE, NDN_TAD_ISCSI} },
     { "dhcp",   &ndn_dhcpv4_message_s,    {PRIVATE, NDN_TAD_DHCP} }, 
     { "bridge", &ndn_bridge_pdu_s,        {PRIVATE, NDN_TAD_BRIDGE} },
 };

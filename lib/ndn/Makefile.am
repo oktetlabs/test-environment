@@ -19,11 +19,11 @@ lib_LIBRARIES=libndn.a
 
 include_HEADERS=ndn.h ndn_internal.h $(SNMP_H) ndn_file.h ndn_forw.h \
                 ndn_dhcp.h ndn_eth.h ndn_ipstack.h ndn_cli.h ndn_bridge.h \
-                ndn_pcap.h
+                ndn_pcap.h ndn_iscsi.h
 
 libndn_a_SOURCES=ndn_generic.c ndn_context.c $(SNMP_S) ndn_file.c \
                  ndn_dhcp.c ndn_eth.c ndn_ipstack.c ndn_cli.c \
-                 ndn_bridge.c ndn_forw.c ndn_pcap.c
+                 ndn_bridge.c ndn_forw.c ndn_pcap.c ndn_iscsi.c
 
 
 CFLAGS=@CFLAGS@ 

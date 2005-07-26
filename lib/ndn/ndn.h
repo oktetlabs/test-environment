@@ -61,6 +61,7 @@ typedef enum {
     NDN_TAD_FILE,
     NDN_TAD_ICMP4,
     NDN_TAD_IP4,
+    NDN_TAD_ISCSI,
     NDN_TAD_TCP,
     NDN_TAD_SNMP,
     NDN_TAD_UDP,
@@ -153,6 +154,7 @@ typedef enum {
  */ 
 typedef enum {
     NDN_ACT_ECHO,
+    NDN_ACT_FORWARD,
     NDN_ACT_FUNCTION,
     NDN_ACT_FILE,
 } ndn_packet_action_tags_t;
