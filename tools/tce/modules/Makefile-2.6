@@ -1,7 +1,20 @@
-obj-m += bbinit.o
+ifndef KPATH
+KPATH = /usr/src/linux
+endif
 
-all:
+ifndef MAPPATH
+MAPPATH := $(KPATH)
+$(warning Using $(KPATH)/System.map)
+endif
+
+obj-m += bbinit.o kmem.o
+
+all: kvread.h
 	make -C $(KPATH) M=$(PWD) modules
 
 clean:
+	rm -f kvread.h
 	make -C $(KPATH) M=$(PWD) clean
+
+kvread.h: $(MAPPATH)/System.map
+	awk '$$3 == "vread" { print "#define VREAD_OFFSET 0x" $$1 }' $(MAPPATH)/System.map >kvread.h
