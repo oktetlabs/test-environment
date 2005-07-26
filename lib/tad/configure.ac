@@ -209,6 +209,15 @@ AC_ARG_WITH([pcap],,
  fi
 ], [w_pcap=false])
 
+AC_ARG_WITH([iscsi],, 
+[if test "${withval}" = yes; then
+    w_iscsi=true;
+    proto_specific iscsi;
+    TA_TAD_LIBS="$TA_TAD_LIBS -liscsi";
+    AC_CONFIG_FILES([iscsi/Makefile])
+ fi
+], [w_iscsi=false])
+
 
 AC_SUBST([TAD_LIBLIST])
 AC_SUBST([TAD_SUBDIRS])
