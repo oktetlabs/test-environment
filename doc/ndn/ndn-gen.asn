@@ -96,6 +96,7 @@ Raw-Packet ::= SEQUENCE -- values of this type are passed from CSAP to test
 Packet-Action ::= CHOICE
 {
     echo        NULL,
+    forward     INTEGER, -- target CSAP id.
     function    UniversalString,
     file        UniversalString
 }

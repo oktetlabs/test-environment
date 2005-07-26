@@ -1,0 +1,23 @@
+TE-NDN-ISCSI
+DEFINITIONS ::=
+BEGIN
+
+IMPORTS DATA-UNIT FROM TE-NDN-General;
+
+EXPORTS  ISCSI-Message, ISCSI-CSAP;
+
+ISCSI-Message ::= IMPLICIT SEQUENCE { 
+    message OCTET STRING,
+    param INTEGER,
+    ...
+}
+
+
+ISCSI-CSAP ::= IMPLICIT SEQUENCE { 
+    type    INTEGER {server(0), net(1), target(2)},
+    port    INTEGER(1 .. 65536) OPTIONAL,
+    socket  INTEGER(1 .. 65536) OPTIONAL,
+    ...
+} 
+
+END
