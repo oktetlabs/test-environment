@@ -139,6 +139,8 @@ IMPORTS
         FROM TE-NDN-SNMP; 
     CLI-Message, CLI-CSAP 
         FROM TE-NDN-CLI; 
+    ISCSI-Message, ISCSI-CSAP 
+        FROM TE-NDN-ISCSI; 
     ATM-Header, ATM-CSAP 
         FROM TE-NDN-ATM; 
 
@@ -152,6 +154,7 @@ Generic-CSAP-Level ::= CHOICE
     snmp SNMP-CSAP,
     cli CLI-CSAP,
     atm ATM-CSAP,
+    iscsi ISCSI-CSAP,
     ...
 }
 
@@ -163,6 +166,7 @@ Generic-PDU ::= CHOICE
     udp UDP-Header,
     snmp SNMP-Message,
     cli CLI-Message,
+    iscsi ISCSI-Message,
     atm ATM-Header,
     ...,...
 }

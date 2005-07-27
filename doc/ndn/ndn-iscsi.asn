@@ -8,15 +8,17 @@ EXPORTS  ISCSI-Message, ISCSI-CSAP;
 
 ISCSI-Message ::= IMPLICIT SEQUENCE { 
     message OCTET STRING,
+    length INTEGER,
     param INTEGER,
     ...
 }
 
 
 ISCSI-CSAP ::= IMPLICIT SEQUENCE { 
-    type    INTEGER {server(0), net(1), target(2)},
-    port    INTEGER(1 .. 65536) OPTIONAL,
-    socket  INTEGER(1 .. 65536) OPTIONAL,
+    type     INTEGER {server(0), net(1), target(2)},
+    ip4-addr IpAddress OPTIONAL,
+    port     INTEGER(1 .. 65536) OPTIONAL,
+    socket   INTEGER(1 .. 65536) OPTIONAL,
     ...
 } 
 
