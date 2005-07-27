@@ -75,6 +75,13 @@ popt.h \
 
 AC_CHECK_TYPES([xmlError], [], [], [#include <libxml/xmlerror.h>])
 
+AC_CHECK_LIB([curses], [start_color],
+             [LIBS="-lcurses ${LIBS}" 
+              AC_DEFINE(HAVE_COLOR, 1,
+                        [ Define if your curses library supports color. ])],
+              [AC_MSG_WARN([Color terminal is not supported])])
+
+
 AC_CONFIG_FILES([Makefile])
 
 AC_OUTPUT

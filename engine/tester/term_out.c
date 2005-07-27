@@ -48,18 +48,16 @@
 #if HAVE_PTHREAD_H
 #include <pthread.h>
 #endif
+#ifdef HAVE_COLOR
+#include <curses.h>
+#include <term.h>
+#endif
 
 #include "te_defs.h"
 #include "logger_api.h"
 
 #include "internal.h"
 
-
-/** Default terminal used by Tester, if TERM is unset or empty */
-#define TESTER_TERM_DEF             "dumb"
-
-/** Default number of columns on terminal */
-#define TESTER_TERM_COLUMNS_DEF     80
 
 /** Log, if the result is not zero. */
 #define CHECK_RC_ZERO(_x) \
@@ -72,28 +70,27 @@
         }                           \
     } while (0)
 
+/** "PASSED" verdict for non-color terminal or non-terminal */
+#define TESTER_PASSED_VERDICT_NOCOLOR "passed"
 
-/** Colors */
-typedef enum {
-    TESTER_COLOR_BLACK      = 0,
-    TESTER_COLOR_DARK_RED   = 1,
-    TESTER_COLOR_LIGHT_RED  = 3,
-    TESTER_COLOR_GREEN      = 2,
-    TESTER_COLOR_DARK_BLUE  = 4,
-    TESTER_COLOR_LIGHT_BLUE = 5,
-    TESTER_COLOR_GRAY       = 6,
-    TESTER_COLOR_WHITE      = 8,
-} tester_color;
+#ifdef HAVE_COLOR
+/** Special value for term when it can't be initialised. */
+#define TESTER_TERM_UNKNOWN             ((char *)(-1))
 
-
-/** Number of columns on terminal. To be initialized once. */
-static int columns = 0;
-
-/** By default, assume that terminal may be colored */
-static te_bool tester_is_term_colored = TRUE;
+/** Type of terminal used. To be initialized once. */
+static char *term = NULL;
 
 /** Passed verdict */
 static const char *tester_verdict_passed = "PASSED";
+#else
+/** Passed verdict */
+static const char *tester_verdict_passed = 
+    TESTER_PASSED_VERDICT_NOCOLOR;
+
+/** Number of columns on terminal. 80 for hosts without curses. */
+static int columns = 80;
+#endif
+
 
 #if HAVE_PTHREAD_H
 
@@ -131,15 +128,24 @@ run_item_type_to_string(run_item_type type)
  * Colored output.
  */
 static void
-colored_verdict(tester_color color, const char *text)
+colored_verdict(int color, const char *text)
 {
-    char buf[32];
-
-    sprintf(buf, "tput setaf %d", color);
-    system(buf);
+#ifdef HAVE_COLOR
+    if (term == TESTER_TERM_UNKNOWN)
+    {
+        printf("%s\n", text);
+        fflush(stdout);
+    } else {
+        putp(tparm(tigetstr("setaf"), color));
+        printf("%s", text);
+        putp(tparm(tigetstr("sgr0")));
+        printf("\n");
+    }
+#else
+    UNUSED(color);
     printf("%s\n", text);
-    system("tput sgr0");
     fflush(stdout);
+#endif
 }
 
 
@@ -207,31 +213,31 @@ tester_out_done(run_item_type type, const char *name,
     char        msg_out[256];
     char        msg_in[256];
     char       *msg;
-    int         color;
+    int         color = 0; /* To avoid varnings for non-color build */
     const char *verdict;
 
     if ((~flags & TESTER_VERBOSE) ||
         ((~flags & TESTER_VVERB) && (type == RUN_ITEM_SESSION)))
         return;
 
+#ifdef HAVE_COLOR
     /* It's done only once */
-    if (columns == 0)
+    if (term == NULL)
     {
-        char       *term = getenv("TERM");
-        const char *cols = getenv("COLUMNS");
-        char       *end = NULL;
-        
-        if ((term == NULL) || (strlen(term) == 0))
+        int rc = 0;
+
+        term = getenv("TERM");
+        if ((term == NULL) || (strlen(term) == 0) || 
+            !isatty(STDOUT_FILENO) || 
+            setupterm(term, STDOUT_FILENO, &rc) != OK)
         {
-            setenv("TERM", TESTER_TERM_DEF, TRUE);
-            tester_is_term_colored = FALSE;
-            tester_verdict_passed = "passed";
+            term = TESTER_TERM_UNKNOWN;
+            tester_verdict_passed = TESTER_PASSED_VERDICT_NOCOLOR;
+            if (rc != 0) /* Warn only if setupterm failed. */
+                fprintf(stderr, "Failed to initialize terminal %s", term);
         }
-        if (cols != NULL)
-            columns = strtol(cols, &end, 10);
-        if ((end == cols) || (columns == 0))
-            columns = TESTER_TERM_COLUMNS_DEF;
     }
+#endif
 
     if (flags & TESTER_VVERB)
     {
@@ -271,7 +277,9 @@ tester_out_done(run_item_type type, const char *name,
     if (result == ETESTPASS)
     {
         verdict = tester_verdict_passed;
-        color = TESTER_COLOR_GREEN;
+#ifdef HAVE_COLOR
+        color = COLOR_GREEN;
+#endif
     }
     else
     {
@@ -279,58 +287,70 @@ tester_out_done(run_item_type type, const char *name,
         {
             case ETESTKILL:
                 verdict = "KILLED";
-                color = TESTER_COLOR_LIGHT_BLUE;
+#ifdef HAVE_COLOR
+                color = COLOR_MAGENTA;
+#endif
                 break;
 
             case ETESTCORE:
                 verdict = "CORED";
-                color = TESTER_COLOR_LIGHT_BLUE;
+#ifdef HAVE_COLOR
+                color = COLOR_MAGENTA;
+#endif
                 break;
 
             case ETESTSKIP:
                 verdict = "SKIPPED";
-                color = TESTER_COLOR_WHITE;
+#ifdef HAVE_COLOR
+                color = COLOR_WHITE;
+#endif
                 break;
 
             case ETESTFAKE:
                 verdict = "FAKED";
-                color = TESTER_COLOR_GRAY;
+#ifdef HAVE_COLOR
+                color = COLOR_CYAN;
+#endif
                 break;
 
             case ETESTEMPTY:
                 verdict = "EMPTY";
-                color = TESTER_COLOR_GRAY;
+#ifdef HAVE_COLOR
+                color = COLOR_CYAN;
+#endif
                 break;
 
             default:
             {
                 verdict = "FAILED";
+#ifdef HAVE_COLOR
                 switch (result)
                 {
                     case ETESTFAIL:
-                        color = TESTER_COLOR_DARK_RED;
+                        color = COLOR_RED;
                         break;
 
                     case ETESTCONF:
-                        color = TESTER_COLOR_LIGHT_RED;
+                        color = COLOR_YELLOW;
                         break;
 
                     case ETESTPROLOG:
-                        color = TESTER_COLOR_LIGHT_RED;
+                        color = COLOR_YELLOW;
                         break;
 
                     case ETESTEPILOG:
-                        color = TESTER_COLOR_LIGHT_RED;
+                        color = COLOR_YELLOW;
                         break;
 
                     case ETESTUNEXP:
-                        color = TESTER_COLOR_DARK_BLUE;
+                        color = COLOR_BLUE;
                         break;
 
                     default:
-                        color = TESTER_COLOR_DARK_BLUE;
+                        color = COLOR_BLUE;
                         break;
                 }
+#endif
                 break;
             }
         }
@@ -342,7 +362,7 @@ tester_out_done(run_item_type type, const char *name,
 #endif
 
     msg = (self == prev_id) ? msg_in : msg_out;
-    if (write(1, msg, strlen(msg)) != (ssize_t)strlen(msg))
+    if (write(STDOUT_FILENO, msg, strlen(msg)) != (ssize_t)strlen(msg))
     {
         ERROR("Write to 'stdout' failed");
     }
