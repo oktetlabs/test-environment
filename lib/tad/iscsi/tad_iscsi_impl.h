@@ -60,6 +60,8 @@ extern "C" {
  */
 typedef struct iscsi_csap_specific_data
 { 
+    ndn_iscsi_type_t type;
+
     int sock;
 } iscsi_csap_specific_data_t;
 
@@ -224,6 +226,22 @@ extern int iscsi_match_bin_cb(int csap_id, int layer,
 extern int iscsi_gen_pattern_cb(int csap_id, int layer, 
                                const asn_value *tmpl_pdu, 
                                asn_value **pattern_pdu);
+
+
+typedef struct {
+    int send_recv_handle;
+} iscsi_target_thread_params_t;
+
+
+/**
+ * Target thread function.
+ *
+ * @param arg   start argument, should be pointer to
+ *              'iscsi_target_thread_params_t' struct
+ *
+ * @return NULL
+ */
+void *iscsi_server_rx_thread(void *arg);
 
 
 #ifdef __cplusplus

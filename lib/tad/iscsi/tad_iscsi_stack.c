@@ -174,31 +174,40 @@ iscsi_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
 {
     csap_p   csap_descr;          /**< csap description        */
 
-    iscsi_csap_specific_data_t *   iscsi_spec_data; 
+    const asn_value            *iscsi_nds;
+    iscsi_csap_specific_data_t *iscsi_spec_data; 
 
-    int             mode, rc;
-    size_t          len;
+    int     rc;
+    size_t  len;
+    int32_t field;
+
 
     if (csap_nds == NULL)
         return ETEWRONGPTR;
 
-    if ((csap_descr = csap_find (csap_id)) == NULL)
+    if ((csap_descr = csap_find(csap_id)) == NULL)
         return ETADCSAPNOTEX;
 
+    RING("%s(csap %ѕ, layer %d) called", __FUNCTION__, csap_id, layer); 
 
-    len = sizeof(mode);
-    rc = asn_read_value_field(csap_nds, &mode, &len, "0.mode");
-    if (rc)
-        return rc; /* If this field is not set, then CSAP cannot process */ 
-
-    iscsi_spec_data = malloc (sizeof(iscsi_csap_specific_data_t));
-    
-    if (iscsi_spec_data == NULL)
+    rc = asn_get_indexed(csap_nds, &iscsi_nds, 0);
+    if (rc != 0)
     {
-        return ENOMEM;
-    }
+        ERROR("%s() get iSCSI csap spec failed %X", __FUNCTION__, rc);
+        return rc;
+    } 
     
+    if ((iscsi_spec_data = calloc(1, sizeof(iscsi_csap_specific_data_t)))
+        == NULL)
+        return ENOMEM; 
 
+    iscsi_spec_data->sock = -1;
+    if ((rc = asn_read_int32(iscsi_nds, &field, "type")) != 0)
+    {
+        ERROR("%s(): read iSCSI csap type failed %X", __FUNCTION__, rc);
+        goto cleanup;
+    }
+    iscsi_spec_data->type = field; 
 
     csap_descr->layers[layer].specific_data = iscsi_spec_data;
     csap_descr->layers[layer].get_param_cb = iscsi_get_param_cb;
@@ -207,9 +216,66 @@ iscsi_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
     csap_descr->write_cb        = iscsi_write_cb;
     csap_descr->write_read_cb   = iscsi_write_read_cb;
     csap_descr->read_write_layer = layer; 
-    csap_descr->timeout          = 500000;
+    csap_descr->timeout          = 100 * 1000;
+
+    switch (iscsi_spec_data->type)
+    {
+        case NDN_ISCSI_SERVER:
+            iscsi_spec_data->sock = socket(AF_INET, SOCK_STREAM, 0);
+            if (iscsi_spec_data->sock < 0)
+            {
+                rc = errno;
+                goto cleanup;
+            }
+
+            {
+                struct sockaddr_in local;
+                len = sizeof(local.sin_addr.s_addr);
+
+                local.sin_family = AF_INET;
+                rc = asn_read_value_field(iscsi_nds,
+                                          (uint8_t *)&local.sin_addr.s_addr,
+                                          &len, "ip4-addr");
+                if (rc != 0)
+                    goto cleanup;
+
+                rc = asn_read_int32(iscsi_nds, &field, "port");
+                if (rc != 0)
+                    goto cleanup;
+
+                local.sin_port = htons(field); 
+
+                if (bind(iscsi_spec_data->sock, SA(&local), sizeof(local))
+                    < 0)
+                {
+                    rc = errno;
+                    goto cleanup;
+                } 
+            }
+            break;
+        case NDN_ISCSI_NET:
+            rc = asn_read_int32(iscsi_nds, &field, "socket");
+            if (rc != 0)
+                goto cleanup;
+            iscsi_spec_data->sock = field;
+            break;
+        case NDN_ISCSI_TARGET:
+            break;
+        default:
+            ERROR("%s(): invalid type of iSCSI csap passed: %d",
+                  __FUNCTION__, iscsi_spec_data->type);
+            rc = ETADWRONGNDS;
+            goto cleanup;
+    }
     
     return 0;
+cleanup:
+    if (iscsi_spec_data != NULL && iscsi_spec_data->sock > 0)
+        close(iscsi_spec_data->sock);
+    free(iscsi_spec_data);
+    csap_descr->layers[layer].specific_data = NULL;
+
+    return rc;
 }
 
 /**
