@@ -225,6 +225,22 @@ extern int rpc_round_trip_echoer(rcf_rpc_server *rpcs, int sock_num, int *s,
                                  uint32_t timeout, int flags);
 
 /**
+ * For given list of accepted sockets close some of them
+ * and accept again pending connections.
+ *
+ * @param rpcs         RPC server
+ * @param listening    listening socket
+ * @param conns        number of connections
+ * @param fd           list of accepted socket
+ * @param state        mask to close/open connections
+ * 
+ * @return 0 on success or -1 in the case of failure
+ */ 
+extern int rpc_close_and_accept(rcf_rpc_server *rpcs, 
+                                int listening, int conns,
+                                int *s, uint16_t state);
+
+/**
  * Routine which receives data from specified set of sockets and sends
  * data to specified set of sockets with maximum speed using I/O
  * multiplexing.

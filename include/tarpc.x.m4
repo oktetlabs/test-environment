@@ -2220,6 +2220,22 @@ struct tarpc_round_trip_echoer_out {
                                        were done */
 };
 
+struct tarpc_close_and_accept_in {
+    struct tarpc_in_arg common;
+    tarpc_int           listening;  /**< Listening socket */
+    tarpc_int           conns;      /**< Number of connections */
+    tarpc_int           fd<>;       /**< Accepted sockets list */
+    uint16_t            state;      /**< Mask to close sockets and 
+                                         to call accept again */
+};
+
+struct tarpc_close_and_accept_out {
+   struct tarpc_out_arg  common;
+   tarpc_int             fd<>;      /**< Accepted sockets list */
+   tarpc_ptr             mem_ptr;
+   tarpc_int             retval;    /**< Returned value */
+};   
+
 
 /*
  * IOMUX functions
@@ -2773,6 +2789,8 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(round_trip_echoer)
         RPC_DEF(flooder)
         RPC_DEF(echoer)
+        RPC_DEF(close_and_accept)
+
         
         RPC_DEF(aio_read_test)
         RPC_DEF(aio_error_test)

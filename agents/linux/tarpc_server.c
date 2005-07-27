@@ -3713,6 +3713,19 @@ TARPC_FUNC(popen_fd, {},
     func = (sock_api_func)popen_fd;
     MAKE_CALL(out->fd = 
                   func_ptr(in->cmd.cmd_val, in->mode.mode_val));
+#if 0
+    if (strcmp(in->cmd.cmd_val, "ip addr list") == 0)
+    {
+        char buf[1050];
+        
+        memset(buf, 0, 1050);
+        read(fileno(func_ptr_ret_ptr(in->cmd.cmd_val,
+                                           in->mode.mode_val)
+                    ), buf, 1050);
+        if (strlen(buf) < 550)
+            ERROR("!!!!!\n");
+    }
+#endif    
 }
 )
 
@@ -4490,6 +4503,118 @@ cleanup:
     return res;
 }
 
+
+/*-------------- close_and_accept() --------------------------*/
+TARPC_FUNC(close_and_accept, {},
+{
+    MAKE_CALL(out->retval = func_ptr(in, out));
+    if ((out->retval != 0) && (out->fd.fd_val != NULL))
+    {
+        out->common._errno = TE_RC(TE_TA_LINUX, ETECORRUPTED);
+        out->fd.fd_val = NULL;
+    }
+    if (out->fd.fd_val != NULL)
+    {
+        out->mem_ptr = rcf_pch_mem_alloc(out->fd.fd_val);
+    }
+}
+)
+
+/**
+ * For given list of accepted sockets close some of them
+ * and accept again pending connections.
+ *
+ * @param listening    listening socket
+ * @param conns        number of connections
+ * @param fd           list of accepted sockets
+ * @param state        mask to close/open connections
+ * 
+ * @return 0 on success or -1 in the case of failure
+ */ 
+int
+close_and_accept(tarpc_close_and_accept_in *in,
+                 tarpc_close_and_accept_out *out)
+{
+    sock_api_func         accept_func;
+    sock_api_func         close_func;
+    sock_api_func         select_func;
+
+    tarpc_int            *fd_array = NULL; 
+
+    int i;
+
+    struct timeval  timeout;
+
+    fd_set          rfds;
+    int             res = 0;
+
+    if ((find_func(in->common.lib, "select", &select_func) != 0)   ||
+        (find_func(in->common.lib, "accept", &accept_func) != 0) ||
+        (find_func(in->common.lib, "close", &close_func) != 0)
+       )
+    {
+        ERROR("Failed to resolve functions, %s", __FUNCTION__);
+        res = -1;
+        goto cleanup;
+    }
+
+    fd_array = (tarpc_int *)calloc(in->conns, sizeof(tarpc_int));
+    if (fd_array == NULL)
+    {
+        ERROR("No resources in %s", __FUNCTION__);
+        res = -1;
+        goto cleanup;
+    }
+    FD_ZERO(&rfds);
+    FD_SET(in->listening, &rfds);
+    
+    for (i = 0; i < in->conns; i++)
+    {
+        if (!((1 << i) & in->state))
+        {
+            fd_array[i] = in->fd.fd_val[i];  
+            continue;
+        }
+        res = close_func(in->fd.fd_val[i]);
+        if (res != 0)
+        {
+            ERROR("close on socket failed, %s", __FUNCTION__);
+            goto cleanup;
+        }
+        
+        timeout.tv_sec = 1;
+        timeout.tv_usec = 0;
+       
+        if (select_func(in->listening + 1, &rfds, 
+                        NULL, NULL, &timeout) <= 0)
+        {
+            ERROR("Timeout occuring while calling select "
+                  "or any othe error(), %s", __FUNCTION__);
+            res = -1;
+            goto cleanup;
+        }
+
+        fd_array[i] = accept_func(in->listening, NULL, NULL);
+        if (fd_array[i] == -1)
+        {
+            ERROR("accept failed, %s", __FUNCTION__);
+            goto cleanup;
+        }
+    }
+
+    out->fd.fd_val = (tarpc_int *)fd_array;
+    out->fd.fd_len = in->conns;
+    
+cleanup:
+    if (res != 0 && fd_array != NULL)
+    {
+        free(fd_array);
+        out->fd.fd_val = NULL;
+        out->fd.fd_len = 0;
+    }
+
+    return res;
+}
 
 #define FLOODER_ECHOER_WAIT_FOR_RX_EMPTY        1
 #define FLOODER_BUF                             4096

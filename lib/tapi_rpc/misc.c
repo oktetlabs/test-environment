@@ -197,6 +197,70 @@ timespec2str(const struct timespec *tv)
 }
 
 int
+rpc_close_and_accept(rcf_rpc_server *rpcs, 
+                     int listening, int conns,
+                     int *s, uint16_t state)
+{
+    rcf_rpc_op op;
+    int       *ss; 
+    
+    tarpc_close_and_accept_in  in;
+    tarpc_close_and_accept_out out;
+
+    int              i;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(close_and_accept, -1);
+    }
+    if (s == NULL)
+    {
+        ERROR("%s(): Invalid sockets list",
+              __FUNCTION__);
+        RETVAL_INT(close_and_accept, -1);
+    }
+    op = rpcs->op;
+
+    in.listening = listening;
+    /* Number of sockets */
+    in.conns = conns;
+    in.state = state;
+ 
+    /* Sockets */
+    ss = (int *)calloc(conns, sizeof(tarpc_int));
+    in.fd.fd_val = (tarpc_int *)ss;
+    if (in.fd.fd_val == NULL)
+    {
+        ERROR("%s(): Memory allocation failure", __FUNCTION__);
+        RETVAL_INT(close_and_accept, -1);
+    }
+    in.fd.fd_len = conns;
+    for (i = 0; i < conns; i++)
+        in.fd.fd_val[i] = *(s + i);
+
+    rcf_rpc_call(rpcs, "close_and_accept", &in, &out);
+
+    if (RPC_IS_CALL_OK(rpcs) && out.fd.fd_val != NULL)
+    {
+        for (i = 0; i < conns; i++)
+        {
+            *(s + i) = out.fd.fd_val[i];
+        }
+    }
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(close_and_accept, out.retval);
+
+    TAPI_RPC_LOG("RPC (%s,%s)%s: close_and_accept ->%d (%s)",
+                 rpcs->ta, rpcs->name, rpcop2str(op),
+                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
+    RETVAL_ZERO_INT(close_and_accept, out.retval);
+}
+
+int
 rpc_timely_round_trip(rcf_rpc_server *rpcs, int sock_num, int *s,
                       size_t size, size_t vector_len,
                       uint32_t timeout, uint32_t time2wait,
@@ -296,7 +360,7 @@ rpc_timely_round_trip(rcf_rpc_server *rpcs, int sock_num, int *s,
     }
     rcf_rpc_call(rpcs, "timely_round_trip", &in, &out);
 
-    CHECK_RETVAL_VAR(round_trip_echoer, out.retval,
+    CHECK_RETVAL_VAR(timely_round_trip, out.retval,
                      (out.retval < 0) || 
                      (out.retval > ROUND_TRIP_ERROR_TIME_EXPIRED),
                      -1);
