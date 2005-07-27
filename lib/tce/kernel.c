@@ -252,10 +252,10 @@ tce_obtain_kernel_coverage(void)
                              ksymtable, strerror(errno));
             return;
         }
-        core_file = open("/dev/kmem", O_RDONLY);
+        core_file = open("/dev/tce_kmem", O_RDONLY);
         if (core_file < 0)
         {
-            core_file = open("/dev/tce_kmem", O_RDONLY);
+            core_file = open("/dev/kmem", O_RDONLY);
             if (core_file < 0)
             {
                 tce_report_error("Cannot open kernel memory file: %s", strerror(errno));
