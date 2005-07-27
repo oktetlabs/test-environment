@@ -50,17 +50,38 @@
 #include "tad_csap_support.h"
 #include "tad_utils.h"
 
+#include <sys/queue.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/* 
+typedef struct packet_t {
+    CIRCLEQ_ENTRY(packet_t) link;
+
+    uint8_t *buffer;
+    size_t   length;
+} packet_t;
+
+/**
+ * iSCSI target CSAP specific parameters
+ */
+typedef struct {
+    CIRCLEQ_HEAD(packets_head, packet_t) packets_root;
+
+    int             conn_fd[2]; /* pipe for signalling */
+    pthread_mutex_t pkt_queue_lock;
+
+} iscsi_target_csap_params_t;
+    
+/**
  * iSCSI CSAP specific data
  */
 typedef struct iscsi_csap_specific_data
 { 
     ndn_iscsi_type_t type;
+
+    iscsi_target_csap_params_t *tgt_params;
 
     int sock;
 } iscsi_csap_specific_data_t;

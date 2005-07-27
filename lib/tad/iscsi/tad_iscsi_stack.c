@@ -63,6 +63,16 @@
 #include <errno.h>
 #include <string.h>
 
+#ifdef HAVE_PTHREAD_H
+#include <pthread.h>
+#else
+#error cannot compile without pthread library
+#endif
+
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+
 #include "tad_iscsi_impl.h"
 
 #define TE_LGR_USER     "TAD iSCSI stack"
@@ -253,14 +263,34 @@ iscsi_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
                 } 
             }
             break;
+
         case NDN_ISCSI_NET:
             rc = asn_read_int32(iscsi_nds, &field, "socket");
             if (rc != 0)
                 goto cleanup;
             iscsi_spec_data->sock = field;
             break;
+
         case NDN_ISCSI_TARGET:
+            if ((iscsi_spec_data->tgt_params = 
+                    calloc(1, sizeof(*(iscsi_spec_data->tgt_params))))
+                == NULL) 
+            {
+                rc = ENOMEM;
+                goto cleanup;
+            }
+
+            CIRCLEQ_INIT(&(iscsi_spec_data->tgt_params->packets_root));
+
+            {
+                pthread_mutex_t fastmutex = PTHREAD_MUTEX_INITIALIZER;
+                iscsi_spec_data->tgt_params->pkt_queue_lock = fastmutex;
+            }
+
+            pipe(iscsi_spec_data->tgt_params->conn_fd);
+
             break;
+
         default:
             ERROR("%s(): invalid type of iSCSI csap passed: %d",
                   __FUNCTION__, iscsi_spec_data->type);
