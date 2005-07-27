@@ -78,7 +78,7 @@ main(int argc, char *argv[])
 
     csap_handle_t ip4_send_csap = CSAP_INVALID_HANDLE;
 
-    rcf_rpc_server *srv_listen;
+    rcf_rpc_server *srv_listen = NULL;
 
     const char *eth_iface_a = "eth2";
     const char *eth_iface_b = "eth2";

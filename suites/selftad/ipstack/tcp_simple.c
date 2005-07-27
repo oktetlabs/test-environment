@@ -60,7 +60,7 @@
 int
 main(int argc, char *argv[])
 {
-    rcf_rpc_server *srv_src, *srv_dst;
+    rcf_rpc_server *srv_src = NULL, *srv_dst = NULL;
     int  sid;
     char ta[32];
     char *agt_a = ta;
