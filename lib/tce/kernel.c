@@ -209,31 +209,43 @@ detect_kernel_gcov_version(FILE *symfile, int core_file)
     size_t offset;
     static char symbuf[256];
     char *token;
+    int procfile = open("/proc/tce_gcov_magic", O_RDONLY);
     
-    rewind(symfile);
-    while (fgets(symbuf, sizeof(symbuf) - 1, symfile) != NULL)
+    if (procfile >= 0)
     {
-        offset = strtoul(symbuf, &token, 16);
-        strtok(token, " \t\n");
-        token = strtok(NULL, "\t\n");
-        if (strcmp(token, "__gcov_version_magic") == 0)
+        read(procfile, &kernel_gcov_version_magic, 
+             sizeof(kernel_gcov_version_magic));
+        close(procfile);
+        rewind(symfile);
+        while (fgets(symbuf, sizeof(symbuf) - 1, symfile) != NULL)
         {
-            read_at(core_file, offset, &kernel_gcov_version_magic,
-                    sizeof(kernel_gcov_version_magic));
-            sizeof_object_coverage = sizeof(struct gcov_info);
+            offset = strtoul(symbuf, &token, 16);
+            strtok(token, " \t\n");
+            token = strtok(NULL, " \t\n");
+            if (strcmp(token, "__gcov_merge_add") == 0)
+            {
+                kernel_merge_functions[TCE_MERGE_ADD] = offset;
+            }
+            else if (strcmp(token, "__gcov_merge_single") == 0)
+            {
+                kernel_merge_functions[TCE_MERGE_SINGLE] = offset;
+            }
+            else if (strcmp(token, "__gcov_merge_delta") == 0)
+            {
+                kernel_merge_functions[TCE_MERGE_DELTA] = offset;
+            }            
         }
-        else if (strcmp(token, "__gcov_merge_add") == 0)
-        {
-            kernel_merge_functions[TCE_MERGE_ADD] = offset;
-        }
-        else if (strcmp(token, "__gcov_merge_single") == 0)
-        {
-            kernel_merge_functions[TCE_MERGE_SINGLE] = offset;
-        }
-        else if (strcmp(token, "__gcov_merge_delta") == 0)
-        {
-            kernel_merge_functions[TCE_MERGE_DELTA] = offset;
-        }            
+    }
+    if (kernel_gcov_version_magic != 0)
+    {
+        tce_report_notice("kernel GCOV version is %#lx, record size is %d",
+                          kernel_gcov_version_magic ,
+                          (int)sizeof_object_coverage);
+    }
+    else
+    {
+        tce_report_notice("kernel GCOV is pre-3.4, record size is %d",
+                          (int)sizeof_object_coverage);
     }
 }
 
@@ -511,11 +523,14 @@ get_kernel_gcov_data(int core_file, object_coverage *object, void *extra)
     real_start = strstr(name_buffer, "//");
     oi = tce_get_object_info(tce_obtain_principal_peer_id(), 
                              real_start ? real_start + 1 : name_buffer);
+    oi->gcov_version = kernel_gcov_version_magic;
     oi->ncounts = object->old.ncounts;
     oi->object_functions = object_functions;
     oi->object_sum += object_summary.sum;
     oi->program_sum += summary->sum;
     oi->program_arcs += summary->arcs;
+    oi->program_runs = 1;
+    oi->object_runs  = 1;
     if (object_summary.max > oi->object_max)
         oi->object_max = object_summary.max;
     if (summary->max > oi->program_max)
@@ -530,6 +545,8 @@ get_kernel_gcov_data(int core_file, object_coverage *object, void *extra)
         unsigned n_counts = 0;
         unsigned n_sub_counts[GCOV_COUNTER_GROUPS] = {0};
         unsigned fi_stride;
+
+        oi->stamp = object->new.stamp;
 
         for (i = 0; i < GCOV_COUNTER_GROUPS; i++)
         {

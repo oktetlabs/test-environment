@@ -254,7 +254,8 @@ static const struct {
 
 static struct class_simple *kmem_class;
 
-static int __init chr_dev_init(void)
+int 
+init_module(void)
 {
 	if (register_chrdev(TCE_KMEM_MAJOR,"tce_kmem", &kmemory_fops))
 		printk("unable to get major %d for memory devs\n", TCE_KMEM_MAJOR);
@@ -269,16 +270,14 @@ static int __init chr_dev_init(void)
 	return 0;
 }
 
-static void chr_dev_cleanup(void)
+void 
+cleanup_module(void)
 {
     unregister_chrdev(TCE_KMEM_MAJOR, "tce_kmem");
     devfs_remove("tce_kmem");
     class_simple_device_remove(MKDEV(TCE_KMEM_MAJOR, kmem_device.minor));
     class_simple_destroy(kmem_class);
 }
-
-module_init(chr_dev_init);
-module_exit(chr_dev_cleanup);
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Artem V. Andreev");
