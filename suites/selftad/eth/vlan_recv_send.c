@@ -86,8 +86,8 @@ local_eth_frame_handler(const ndn_eth_header_plain *header,
 int
 main(int argc, char *argv[])
 {
-    char ta[32];
-    int  len = sizeof(ta);
+    char   ta[32];
+    size_t len = sizeof(ta);
     int  sid;
 
     csap_handle_t eth_csap = CSAP_INVALID_HANDLE;
@@ -119,7 +119,9 @@ main(int argc, char *argv[])
         asn_value *pattern;
 
         char eth_device[] = "eth0";
+#if 0
         char payload_fill_method[100] = "eth_udp_payload";
+#endif
 
         /* returned from CSAP total byte counter */
         unsigned long    tx_counter;

@@ -53,7 +53,7 @@
 int
 main(int argc, char *argv[])
 {
-    tapi_snmp_if_table_row_t * iftable_result;
+    tapi_snmp_if_table_row_t *iftable_result;
     int snmp_csap = 0;
     int sid;
     int snmp_version;

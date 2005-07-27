@@ -94,7 +94,7 @@ int main()
     /* Test configuration preambule */
 
     {
-        int len = 100, agt_a_len;
+        size_t len = 100, agt_a_len;
         agent_a = malloc (100);
         if (agent_a == NULL)
         {

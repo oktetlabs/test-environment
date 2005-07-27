@@ -92,7 +92,7 @@ main(int argc, char *argv[])
     char ta[32];
     char *agt_a = ta;
     char *agt_b;
-    unsigned  len = sizeof(ta);
+    size_t  len = sizeof(ta);
 
 #if !(USE_TAPI)
     char path[1000];

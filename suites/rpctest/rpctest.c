@@ -56,7 +56,7 @@ int
 main(int argc, char **argv)
 {
     char ta[32];
-    int  len = sizeof(ta);
+    size_t len = sizeof(ta);
     int  sid;
     
     rcf_rpc_server *srv1 = NULL, *srv2 = NULL, *srv3 = NULL;

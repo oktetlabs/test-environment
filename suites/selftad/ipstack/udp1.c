@@ -99,7 +99,7 @@ main(int argc, char *argv[])
     char ta[32];
     char *agt_a = ta;
     char *agt_b;
-    int  len = sizeof(ta);
+    size_t  len = sizeof(ta);
 
     char path[1000];
     int  path_prefix;

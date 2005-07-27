@@ -75,8 +75,8 @@ local_eth_frame_handler(const ndn_eth_header_plain *header,
 int
 main(int argc, char *argv[])
 {
-    char ta[32];
-    int  len = sizeof(ta);
+    char   ta[32];
+    size_t len = sizeof(ta);
     int  sid;
     int  num_pkts;
     int  timeout;

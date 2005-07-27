@@ -41,7 +41,7 @@ int
 main()
 {
     char ta[32];
-    int  len = sizeof(ta);
+    size_t len = sizeof(ta);
     int  sid;
     
     printf("Starting test\n");

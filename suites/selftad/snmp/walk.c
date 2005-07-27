@@ -48,7 +48,7 @@
 #include "tapi_snmp.h"
 
 int
-walk_cb(tapi_snmp_varbind_t *vb, void *userdata)
+walk_cb(const tapi_snmp_varbind_t *vb, void *userdata)
 {
     int *counter = (int *)userdata;
 

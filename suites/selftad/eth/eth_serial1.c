@@ -119,7 +119,7 @@ main(int argc, char *argv[])
     asn_value *pattern; /* eth frame pattern  for filtering */
     asn_value *template;/* eth frame template for traffic generation */ 
 
-    int len = 100;
+    size_t len = 100;
 
     TEST_START; 
 

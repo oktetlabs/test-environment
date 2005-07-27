@@ -56,7 +56,6 @@ local_eth_frame_handler(const ndn_eth_header_plain *header,
                    const uint8_t *payload, uint16_t plen, 
                    void *userdata)
 {
-    int i;
     UNUSED(payload);
     UNUSED(userdata);
 
@@ -71,8 +70,9 @@ local_eth_frame_handler(const ndn_eth_header_plain *header,
 int
 main(int argc, char *argv[])
 {
-    char ta[64];
-    int  len = sizeof(ta);
+    char   ta[64];
+    size_t len = sizeof(ta);
+
     int  sid_a;
     int  sid_b;
 

@@ -71,7 +71,7 @@ main(int argc, char *argv[])
     char ta[32];
     char *agt_a = ta;
     char *agt_b;
-    unsigned  len = sizeof(ta);
+    size_t  len = sizeof(ta);
 
     in_addr_t ip_addr_a = inet_addr("192.168.72.18");
     in_addr_t ip_addr_b = inet_addr("192.168.72.38");

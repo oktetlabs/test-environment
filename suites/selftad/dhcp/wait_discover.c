@@ -107,7 +107,7 @@ int
 main(int argc, char *argv[])
 {
     char   ta[32];
-    int    len = sizeof(ta); 
+    size_t len = sizeof(ta); 
     char  *pattern_fname;
     int    num = 0;
 
