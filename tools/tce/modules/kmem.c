@@ -30,7 +30,7 @@
 #include <asm/io.h>
 
 /** Major devno for alternate kernel memory access */
-#define OLKMEM_MAJOR 231
+#define TCE_KMEM_MAJOR 231
 
 #ifdef CONFIG_IA64
 # include <linux/efi.h>
@@ -272,20 +272,28 @@ static struct class_simple *kmem_class;
 
 static int __init chr_dev_init(void)
 {
-	if (register_chrdev(OLKMEM_MAJOR,"olkmem", &kmemory_fops))
-		printk("unable to get major %d for memory devs\n", OLKMEM_MAJOR);
+	if (register_chrdev(TCE_KMEM_MAJOR,"tce_kmem", &kmemory_fops))
+		printk("unable to get major %d for memory devs\n", TCE_KMEM_MAJOR);
 
-	kmem_class = class_simple_create(THIS_MODULE, "olkmem");
+	kmem_class = class_simple_create(THIS_MODULE, "tce_kmem");
     class_simple_device_add(kmem_class,
-                            MKDEV(OLKMEM_MAJOR, kmem_device.minor),
+                            MKDEV(TCE_KMEM_MAJOR, kmem_device.minor),
                             NULL, kmem_device.name);
-    devfs_mk_cdev(MKDEV(OLKMEM_MAJOR, kmem_device.minor),
+    devfs_mk_cdev(MKDEV(TCE_KMEM_MAJOR, kmem_device.minor),
                   S_IFCHR | kmem_device.mode, kmem_device.name);
 	
 	return 0;
 }
 
-fs_initcall(chr_dev_init);
+static void chr_dev_cleanup(void)
+{
+    unregister_chrdev(TCE_KMEM_MAJOR, "tce_kmem");
+    devfs_remove("tce_kmem", kmem_device.minor);
+    class_simple_device_remove(MKDEV(TCE_KMEM_MAJOR, kmem_device.minor));
+    class_simple_destroy(kmem_class);
+}
+
+module_init(chr_dev_init);
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Artem V. Andreev");
