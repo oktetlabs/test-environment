@@ -49,7 +49,7 @@ iscsi_server_rx_thread(void *arg)
     }
 
     RING("%s(): called with send_recv handle %d", __FUNCTION__, 
-         params->send_recv_handle);
+         params->send_recv_csap);
 
     return NULL;
 }

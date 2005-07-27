@@ -228,8 +228,35 @@ extern int iscsi_gen_pattern_cb(int csap_id, int layer,
                                asn_value **pattern_pdu);
 
 
+/**
+ * Method for receive data from iSCSI 'target' CSAP to emulator of iSCSI 
+ * target.
+ *
+ * @param csap          ♣SAP id, which should pass data to target
+ * @param buffer        location for read data
+ * @param len           length of buffer
+ *
+ * @return amount of passed bytes or -1 on error
+ */
+extern int iscsi_tad_recv(int csap, uint8_t *buffer, size_t len);
+
+/**
+ * Method for send data to iSCSI 'target' CSAP from emulator of iSCSI 
+ * target.
+ *
+ * @param csap          ♣SAP id, which should pass data from target
+ * @param buffer        location with data to be sent
+ * @param len           length of data
+ *
+ * @return amount of passed bytes or -1 on error
+ */
+extern int iscsi_tad_send(int csap, uint8_t *buffer, size_t len);
+
+/**
+ * Parameters for iSCSI target emulator thread
+ */
 typedef struct {
-    int send_recv_handle;
+    int send_recv_csap;
 } iscsi_target_thread_params_t;
 
 
@@ -241,7 +268,7 @@ typedef struct {
  *
  * @return NULL
  */
-void *iscsi_server_rx_thread(void *arg);
+extern void *iscsi_server_rx_thread(void *arg);
 
 
 #ifdef __cplusplus
