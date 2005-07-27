@@ -86,10 +86,10 @@ static const char *tester_verdict_passed = "PASSED";
 /** Passed verdict */
 static const char *tester_verdict_passed = 
     TESTER_PASSED_VERDICT_NOCOLOR;
+#endif
 
 /** Number of columns on terminal. 80 for hosts without curses. */
-static int columns = 80;
-#endif
+static int cols = 80;
 
 
 #if HAVE_PTHREAD_H
@@ -220,6 +220,7 @@ tester_out_done(run_item_type type, const char *name,
         ((~flags & TESTER_VVERB) && (type == RUN_ITEM_SESSION)))
         return;
 
+    fflush(stdout);
 #ifdef HAVE_COLOR
     /* It's done only once */
     if (term == NULL)
@@ -231,11 +232,16 @@ tester_out_done(run_item_type type, const char *name,
             !isatty(STDOUT_FILENO) || 
             setupterm(term, STDOUT_FILENO, &rc) != OK)
         {
+            char *c = getenv("COLUMNS");
+
             term = TESTER_TERM_UNKNOWN;
             tester_verdict_passed = TESTER_PASSED_VERDICT_NOCOLOR;
+            if (c != NULL)
+                cols = atoi(c);
             if (rc != 0) /* Warn only if setupterm failed. */
                 fprintf(stderr, "Failed to initialize terminal %s", term);
-        }
+        } else
+            cols = columns;
     }
 #endif
 
@@ -260,7 +266,7 @@ tester_out_done(run_item_type type, const char *name,
     /* We have a chance to output in the same line, prepare offset string */
     if (self == prev_id)
     {
-        int n_spaces = columns - 10 - prev_len;
+        int n_spaces = cols - 10 - prev_len;
 
         if (n_spaces < 1)
             n_spaces = 1;
