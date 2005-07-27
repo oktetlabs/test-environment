@@ -44,6 +44,7 @@ typedef enum {
     NDN_TAG_ISCSI_PORT,
     NDN_TAG_ISCSI_SOCKET,
     NDN_TAG_ISCSI_MESSAGE,
+    NDN_TAG_ISCSI_LEN,
     NDN_TAG_ISCSI_PARAM,
 } ndn_iscsi_tags_t;
 

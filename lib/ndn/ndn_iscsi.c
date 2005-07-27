@@ -36,6 +36,7 @@
 static asn_named_entry_t _ndn_iscsi_message_ne_array [] = 
 {
     { "message", &asn_base_octstring_s, {PRIVATE, NDN_TAG_ISCSI_MESSAGE} },
+    { "length",  &asn_base_integer_s, {PRIVATE, NDN_TAG_ISCSI_LEN} },
     { "param",   &asn_base_integer_s, {PRIVATE, NDN_TAG_ISCSI_PARAM} },
 };
 
