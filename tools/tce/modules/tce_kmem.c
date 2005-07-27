@@ -112,23 +112,7 @@ static int open_kmem(struct inode * inode, struct file * filp)
 
 static int mmap_kmem(struct file * file, struct vm_area_struct * vma)
 {
-#ifdef pgprot_noncached
-	unsigned long offset = vma->vm_pgoff << PAGE_SHIFT;
-	int uncached;
-
-	uncached = uncached_access(file, offset);
-	if (uncached)
-		vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
-#endif
-
-	/* Remap-pfn-range will mark the range VM_IO and VM_RESERVED */
-	if (remap_pfn_range(vma,
-			    vma->vm_start,
-			    vma->vm_pgoff,
-			    vma->vm_end-vma->vm_start,
-			    vma->vm_page_prot))
-		return -EAGAIN;
-	return 0;
+	return -ENOSYS;
 }
 
 /*
@@ -266,7 +250,7 @@ static const struct {
 	char			*name;
 	umode_t			mode;
 	struct file_operations	*fops;
-} kmem_device = {1, "olkmem", S_IRUSR | S_IWUSR | S_IRGRP, &kmem_fops};
+} kmem_device = {1, "tce_kmem", S_IRUSR | S_IWUSR | S_IRGRP, &kmem_fops};
 
 static struct class_simple *kmem_class;
 
@@ -288,12 +272,13 @@ static int __init chr_dev_init(void)
 static void chr_dev_cleanup(void)
 {
     unregister_chrdev(TCE_KMEM_MAJOR, "tce_kmem");
-    devfs_remove("tce_kmem", kmem_device.minor);
+    devfs_remove("tce_kmem");
     class_simple_device_remove(MKDEV(TCE_KMEM_MAJOR, kmem_device.minor));
     class_simple_destroy(kmem_class);
 }
 
 module_init(chr_dev_init);
+module_exit(chr_dev_cleanup);
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Artem V. Andreev");

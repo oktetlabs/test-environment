@@ -2,12 +2,12 @@ ifndef KPATH
 KPATH = /usr/src/linux
 endif
 
-ifndef MAPPATH
-MAPPATH := $(KPATH)
-$(warning Using $(KPATH)/System.map)
+ifndef MAPFILE
+MAPFILE := $(KPATH)/System.map
+$(warning Using $(MAPFILE))
 endif
 
-obj-m += bbinit.o kmem.o
+obj-m += tce_bbinit.o tce_kmem.o
 
 all: kvread.h
 	make -C $(KPATH) M=$(PWD) modules
@@ -16,5 +16,5 @@ clean:
 	rm -f kvread.h
 	make -C $(KPATH) M=$(PWD) clean
 
-kvread.h: $(MAPPATH)/System.map
-	awk '$$3 == "vread" { print "#define VREAD_OFFSET 0x" $$1 }' $(MAPPATH)/System.map >kvread.h
+kvread.h: $(MAPFILE)
+	awk '$$3 == "vread" { print "#define VREAD_OFFSET 0x" $$1 }' $(MAPFILE) >kvread.h

@@ -27,4 +27,4 @@ dist_mybin_SCRIPTS=\
     tce_summary
 
 mydatadir=$(datadir)/@PACKAGE_NAME@
-nobase_dist_mydata_DATA = bbhook.c modules/Makefile-2.6 modules/bbinit.c modules/kmem.c
+nobase_dist_mydata_DATA = bbhook.c modules/Makefile-2.6 modules/tce_bbinit.c modules/tce_kmem.c

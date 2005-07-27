@@ -356,7 +356,7 @@ tce_collector(void)
             lock_data();
             tce_set_ksymtable(*args + 9);
         }
-        else if (strcmp(*args, "debug") == 0)
+        else if (strcmp(*args, "--debug") == 0)
         {
             tce_debugging = TRUE;
         }
