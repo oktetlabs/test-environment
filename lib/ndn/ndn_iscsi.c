@@ -67,6 +67,7 @@ asn_type ndn_iscsi_type_s = {
 static asn_named_entry_t _ndn_iscsi_csap_ne_array [] = 
 {
     { "type",   &ndn_iscsi_type_s, {PRIVATE, NDN_TAG_ISCSI_TYPE} },
+    { "ip-addr",&ndn_ip_address_s, {PRIVATE, NDN_TAG_ISCSI_ADDR} },
     { "port",   &asn_base_int16_s, {PRIVATE, NDN_TAG_ISCSI_PORT} },
     { "socket", &asn_base_int16_s, {PRIVATE, NDN_TAG_ISCSI_SOCKET} },
 };
