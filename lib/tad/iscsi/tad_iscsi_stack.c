@@ -80,6 +80,80 @@
 
  
 /**
+ * Prepare send callback
+ *
+ * @param csap_descr    CSAP descriptor structure. 
+ *
+ * @return status code.
+ */ 
+int
+iscsi_prepare_send_cb(csap_p csap_descr)
+{
+    iscsi_csap_specific_data_t *iscsi_spec_data; 
+
+    if (csap_descr == NULL)
+        return ETADCSAPNOTEX;
+
+    iscsi_spec_data = csap_descr->layers[0].specific_data; 
+
+    switch (iscsi_spec_data->type)
+    {
+        case NDN_ISCSI_SERVER:
+            ERROR("%s(CSAP %d): send is not acceptable for iSCSI 'server'",
+                  __FUNCTION__, csap_descr->id);
+            return EFAULT;
+
+        case NDN_ISCSI_NET: 
+            break;
+
+        case NDN_ISCSI_TARGET:
+            break; 
+    }
+
+    return 0;
+}
+
+/**
+ * Prepare recv callback
+ *
+ * @param csap_descr    CSAP descriptor structure. 
+ *
+ * @return status code.
+ */ 
+int
+iscsi_prepare_recv_cb(csap_p csap_descr)
+{
+    iscsi_csap_specific_data_t *iscsi_spec_data; 
+    int rc;
+
+    if (csap_descr == NULL)
+        return ETADCSAPNOTEX;
+
+    iscsi_spec_data = csap_descr->layers[0].specific_data; 
+
+    switch (iscsi_spec_data->type)
+    {
+        case NDN_ISCSI_SERVER:
+            if (listen(iscsi_spec_data->sock, 5) < 0)
+            {
+                rc = errno;
+                ERROR("%s(CSAP %d) failed on listen(), errno %d", 
+                      __FUNCTION__, csap_descr->id, rc);
+                return rc;
+            }
+            break;
+
+        case NDN_ISCSI_NET: 
+            break;
+
+        case NDN_ISCSI_TARGET:
+            break; 
+    }
+
+    return 0;
+}
+
+/**
  * Callback for read data from media of iSCSI CSAP. 
  *
  * @param csap_id       identifier of CSAP.
@@ -93,7 +167,7 @@
 int 
 iscsi_read_cb (csap_p csap_descr, int timeout, char *buf, size_t buf_len)
 {
-    iscsi_csap_specific_data_t *spec_data;
+    iscsi_csap_specific_data_t *iscsi_spec_data;
     
     UNUSED(timeout);
     UNUSED(buf);
@@ -104,8 +178,19 @@ iscsi_read_cb (csap_p csap_descr, int timeout, char *buf, size_t buf_len)
         return -1;
     }
     
-    spec_data = (iscsi_csap_specific_data_t *)
-        csap_descr->layers[0].specific_data; 
+    iscsi_spec_data = csap_descr->layers[0].specific_data; 
+
+    switch (iscsi_spec_data->type)
+    {
+        case NDN_ISCSI_SERVER:
+            break;
+
+        case NDN_ISCSI_NET: 
+            break;
+
+        case NDN_ISCSI_TARGET:
+            break; 
+    }
 
     return 0;
 }
@@ -123,7 +208,7 @@ iscsi_read_cb (csap_p csap_descr, int timeout, char *buf, size_t buf_len)
 int 
 iscsi_write_cb (csap_p csap_descr, char *buf, size_t buf_len)
 {
-    iscsi_csap_specific_data_t * spec_data;
+    iscsi_csap_specific_data_t *iscsi_spec_data;
     int layer;    
     int rc = 0;
     
@@ -132,8 +217,19 @@ iscsi_write_cb (csap_p csap_descr, char *buf, size_t buf_len)
         return -1;
     }
     
-    spec_data = (iscsi_csap_specific_data_t *)
-        csap_descr->layers[layer].specific_data; 
+    iscsi_spec_data = csap_descr->layers[layer].specific_data; 
+
+    switch (iscsi_spec_data->type)
+    {
+        case NDN_ISCSI_SERVER:
+            break;
+
+        case NDN_ISCSI_NET: 
+            break;
+
+        case NDN_ISCSI_TARGET:
+            break; 
+    }
 
     UNUSED(buf);
     UNUSED(buf_len);
@@ -198,7 +294,7 @@ iscsi_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
     if ((csap_descr = csap_find(csap_id)) == NULL)
         return ETADCSAPNOTEX;
 
-    RING("%s(csap %ѕ, layer %d) called", __FUNCTION__, csap_id, layer); 
+    RING("%s(CSAP %d, layer %d) called", __FUNCTION__, csap_id, layer); 
 
     rc = asn_get_indexed(csap_nds, &iscsi_nds, 0);
     if (rc != 0)
@@ -225,8 +321,11 @@ iscsi_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
     csap_descr->read_cb         = iscsi_read_cb;
     csap_descr->write_cb        = iscsi_write_cb;
     csap_descr->write_read_cb   = iscsi_write_read_cb;
+    csap_descr->prepare_recv_cb = iscsi_prepare_recv_cb;
+    csap_descr->prepare_send_cb = iscsi_prepare_send_cb;
     csap_descr->read_write_layer = layer; 
     csap_descr->timeout          = 100 * 1000;
+
 
     switch (iscsi_spec_data->type)
     {
@@ -323,15 +422,29 @@ cleanup:
 int 
 iscsi_single_destroy_cb (int csap_id, int layer)
 {
+    int rc = 0;
     csap_p csap_descr = csap_find(csap_id);
 
-    iscsi_csap_specific_data_t * spec_data = 
-        (iscsi_csap_specific_data_t *)
-        csap_descr->layers[layer].specific_data; 
-     
-    UNUSED(spec_data);
+    iscsi_csap_specific_data_t *iscsi_spec_data; 
 
-    return 0;
+    if (csap_descr == NULL)
+        return ETADCSAPNOTEX;
+
+    iscsi_spec_data = csap_descr->layers[layer].specific_data; 
+
+    switch (iscsi_spec_data->type)
+    {
+        case NDN_ISCSI_SERVER:
+            break;
+
+        case NDN_ISCSI_NET: 
+            break;
+
+        case NDN_ISCSI_TARGET:
+            break; 
+    }
+     
+    return rc;
 }
 
 

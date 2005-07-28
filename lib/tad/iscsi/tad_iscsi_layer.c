@@ -63,20 +63,46 @@ char* iscsi_get_param_cb (csap_p csap_descr, int level, const char *param)
 }
 
 /**
- * Callback for confirm PDU with DHCP CSAP parameters and possibilities.
+ * Callback for confirm PDU with iSCSI CSAP parameters and possibilities.
  *
  * @param csap_id       identifier of CSAP
  * @param layer         numeric index of layer in CSAP type to be processed.
- * @param tmpl_pdu      asn_value with PDU (IN/OUT)
+ * @param nds_pdu      asn_value with PDU (IN/OUT)
  *
  * @return zero on success or error code.
  */ 
 int 
-iscsi_confirm_pdu_cb (int csap_id, int layer, asn_value *tmpl_pdu)
+iscsi_confirm_pdu_cb (int csap_id, int layer, asn_value *nds_pdu)
 { 
-    UNUSED (csap_id);
+    int rc = 0;
+    csap_p csap_descr = csap_find(csap_id);
+
+    iscsi_csap_specific_data_t *iscsi_spec_data; 
+
     UNUSED (layer);
-    UNUSED (tmpl_pdu);
+    if (csap_descr == NULL)
+        return ETADCSAPNOTEX;
+
+    iscsi_spec_data = csap_descr->layers[layer].specific_data;
+
+    switch (iscsi_spec_data->type)
+    {
+        case NDN_ISCSI_SERVER:
+            break;
+
+        case NDN_ISCSI_NET: 
+            rc = asn_read_int32(nds_pdu, &(iscsi_spec_data->length),
+                                "length");
+            if (rc != 0)
+                return rc;
+            RING("%s(): get length %d from nds",
+                 __FUNCTION__, iscsi_spec_data->length);
+            break;
+
+        case NDN_ISCSI_TARGET:
+            break; 
+    }
+
     return 0;
 }
 
