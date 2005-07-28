@@ -776,10 +776,10 @@ _setlibname_1_svc(tarpc_setlibname_in *in, tarpc_setlibname_out *out,
     VERB("PID=%d TID=%d: Entry %s",
          (int)getpid(), (int)pthread_self(), "setlibname");
 
-    out->common._errno = setlibname(in);
-    out->retval = (out->common._errno == 0) ? 0 : -1;
+    errno = 0;
+    out->retval = setlibname(in);
+    out->common._errno = RPC_ERRNO;
     out->common.duration = 0;
-
     return TRUE;
 }
 
@@ -860,10 +860,7 @@ tarpc_init(int argc, char **argv)
     
     if (name == NULL || log_sock == NULL || (sock = atoi(log_sock)) <= 0)
     {
-        PRINT("%s(): Invalid argument: name=%s log_sock=%s",
-              __FUNCTION__,
-              (name == NULL) ? "(nil)" : name,
-              (log_sock == NULL) ? "(nil)" : log_sock);
+        PRINT("%s(): Invalid argument", __FUNCTION__);
         return;
     }
     
@@ -1154,8 +1151,9 @@ TARPC_FUNC(readv,
     COPY_ARG(vector);
 },
 {
-    struct iovec    iovec_arr[RCF_RPC_MAX_IOVEC];
-    unsigned int    i;
+    struct iovec iovec_arr[RCF_RPC_MAX_IOVEC];
+
+    unsigned int i;
 
     memset(iovec_arr, 0, sizeof(iovec_arr));
     for (i = 0; i < out->vector.vector_len; i++)
@@ -1170,6 +1168,11 @@ TARPC_FUNC(readv,
     INIT_CHECKED_ARG((char *)iovec_arr, sizeof(iovec_arr), 0);
 
     MAKE_CALL(out->retval = func(in->fd, iovec_arr, in->count));
+
+    for (i = 0; i < out->vector.vector_len; i++)
+    {
+        out->vector.vector_val[i].iov_len = iovec_arr[i].iov_len;
+    }
 }
 )
 
@@ -1185,8 +1188,9 @@ TARPC_FUNC(writev,
     }
 },
 {
-    struct iovec    iovec_arr[RCF_RPC_MAX_IOVEC];
-    unsigned int    i;
+    struct iovec iovec_arr[RCF_RPC_MAX_IOVEC];
+
+    unsigned int i;
 
     memset(iovec_arr, 0, sizeof(iovec_arr));
     for (i = 0; i < in->vector.vector_len; i++)
@@ -4578,7 +4582,8 @@ close_and_accept(tarpc_close_and_accept_in *in,
         res = close_func(in->fd.fd_val[i]);
         if (res != 0)
         {
-            ERROR("close on socket failed, %s", __FUNCTION__);
+            ERROR("close on socket failed, %s, %s", 
+                  __FUNCTION__, strerror(errno));
             goto cleanup;
         }
         
