@@ -783,7 +783,6 @@ main(int argc, char *argv[])
         {
             ERROR("Run of configuration from file failed:\n%s",
                   cfg->filename);
-            goto exit;
         }
     }
 
