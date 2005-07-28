@@ -523,6 +523,7 @@ get_kernel_gcov_data(int core_file, object_coverage *object, void *extra)
     real_start = strstr(name_buffer, "//");
     oi = tce_get_object_info(tce_obtain_principal_peer_id(), 
                              real_start ? real_start + 1 : name_buffer);
+    tce_report_notice("dumping %s", name_buffer);
     oi->gcov_version = kernel_gcov_version_magic;
     oi->object_functions = object_functions;
     oi->object_sum += object_summary.sum;
@@ -611,7 +612,7 @@ get_kernel_gcov_data(int core_file, object_coverage *object, void *extra)
                             for (j = 0; j < fi->groups[i].number; j++)
                             {
                                 read(core_file, ctr_value, sizeof(*ctr_value));
-                                tce_print_debug("counter is %Ld", ctr_value[0]);
+                                tce_report_notice("counter is %Ld", ctr_value[0]);
                                 (*target_counters++) += ctr_value[0];                              
                             }
                         }
