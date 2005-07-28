@@ -243,6 +243,13 @@ tester_out_done(run_item_type type, const char *name,
         } else
             cols = columns;
     }
+#else
+    {
+        char *c = getenv("COLUMNS");
+
+        if (c != NULL)
+            cols = atoi(c);
+    }
 #endif
 
     if (flags & TESTER_VVERB)
