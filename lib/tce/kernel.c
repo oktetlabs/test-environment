@@ -169,21 +169,26 @@ static size_t sizeof_object_coverage = sizeof(struct bb);
 static size_t kernel_merge_functions[TCE_MERGE_MAX];
 
 static ssize_t
-read_at(int fildes, off_t offset, void *buffer, size_t size)
+read_safe(int fildes, void *buffer, size_t size)
 {
     ssize_t nsize;
-    
+    nsize = read(fildes, buffer, size);
+    tce_print_debug("read %d bytes", (int)nsize);
+    if (nsize < (ssize_t)size)
+        tce_report_error("reading error: %s", strerror(errno));
+    return nsize;
+}
+
+static ssize_t
+read_at(int fildes, off_t offset, void *buffer, size_t size)
+{
     tce_print_debug("reading %lu at %lx", (unsigned long)size, (unsigned long)offset);
     if(lseek(fildes, offset, SEEK_SET) == (off_t)-1)
     {
         tce_report_error("seek error: %s", strerror(errno));
         return (ssize_t)-1;
     }
-    nsize = read(fildes, buffer, size);
-    tce_print_debug("read %d bytes", (int)nsize);
-    if (nsize < (ssize_t)size)
-        tce_report_error("reading error: %s", strerror(errno));
-    return nsize;
+    return read_safe(fildes, buffer, size);
 }
 
 static int
@@ -193,7 +198,7 @@ read_str(int fildes, off_t offset, char *buffer, size_t maxlen)
         return -1;
     while(--maxlen)
     {
-        if(read(fildes, buffer, 1) <= 0)
+        if(read_safe(fildes, buffer, 1) <= 0)
             return -1;
         if(*buffer++ == '\0')
             return 0;
@@ -213,7 +218,7 @@ detect_kernel_gcov_version(FILE *symfile)
     
     if (procfile >= 0)
     {
-        read(procfile, &kernel_gcov_version_magic, 
+        read_safe(procfile, &kernel_gcov_version_magic, 
              sizeof(kernel_gcov_version_magic));
         close(procfile);
         rewind(symfile);
@@ -446,7 +451,7 @@ do_gcov_sum(int core_file, object_coverage *object, void *extra)
         
         if (object->new.ctr_mask & 1)
         {
-            read(core_file, &summary->groups, sizeof(*summary->groups));
+            read_safe(core_file, &summary->groups, sizeof(*summary->groups));
             summarize_counters(core_file, summary->groups->num, 
                                (size_t)summary->groups->values, summary);
         }
@@ -454,7 +459,7 @@ do_gcov_sum(int core_file, object_coverage *object, void *extra)
         {
             if ((1 << i) & object->new.ctr_mask)
             {
-                read(core_file, summary->groups + i, sizeof(*summary->groups));             
+                read_safe(core_file, summary->groups + i, sizeof(*summary->groups));             
             }
         }
     }
@@ -497,7 +502,7 @@ get_kernel_gcov_data(int core_file, object_coverage *object, void *extra)
         
         for (;;)
         {
-            if(read(core_file, &fn_info, sizeof(fn_info)) < 
+            if(read_safe(core_file, &fn_info, sizeof(fn_info)) < 
                (ssize_t)sizeof(fn_info))
             {
                 tce_report_error("error reading from /dev/kmem: %s", 
@@ -523,7 +528,7 @@ get_kernel_gcov_data(int core_file, object_coverage *object, void *extra)
     real_start = strstr(name_buffer, "//");
     oi = tce_get_object_info(tce_obtain_principal_peer_id(), 
                              real_start ? real_start + 1 : name_buffer);
-    tce_report_notice("accessing %s", name_buffer);
+    tce_print_debug("accessing %s", name_buffer);
     oi->gcov_version = kernel_gcov_version_magic;
     oi->object_functions = object_functions;
     oi->object_sum += object_summary.sum;
@@ -579,7 +584,7 @@ get_kernel_gcov_data(int core_file, object_coverage *object, void *extra)
             {
                 if ((1 << i) & object->new.ctr_mask)
                 {
-                    read(core_file, n_sub_counts + i, sizeof(n_sub_counts[0]));
+                    read_safe(core_file, n_sub_counts + i, sizeof(n_sub_counts[0]));
                     n_counts += n_sub_counts[i];
                 }           
             }
@@ -611,8 +616,8 @@ get_kernel_gcov_data(int core_file, object_coverage *object, void *extra)
                             fi->groups[i].mode = TCE_MERGE_ADD;
                             for (j = 0; j < fi->groups[i].number; j++)
                             {
-                                read(core_file, ctr_value, sizeof(*ctr_value));
-                                tce_report_notice("counter is %Ld", ctr_value[0]);
+                                read_safe(core_file, ctr_value, sizeof(*ctr_value));
+                                tce_print_debug("counter is %Ld", ctr_value[0]);
                                 (*target_counters++) += ctr_value[0];                              
                             }
                         }
@@ -622,7 +627,7 @@ get_kernel_gcov_data(int core_file, object_coverage *object, void *extra)
                             fi->groups[i].mode = TCE_MERGE_SINGLE;
                             for (j = 0; j < fi->groups[i].number; j += 3)
                             {
-                                read(core_file, ctr_value, 3 * sizeof(ctr_value));
+                                read_safe(core_file, ctr_value, 3 * sizeof(ctr_value));
                                 if (target_counters[0] == ctr_value[0])
                                     target_counters[1] += ctr_value[1];
                                 else if (ctr_value[1] > target_counters[1])
@@ -643,7 +648,7 @@ get_kernel_gcov_data(int core_file, object_coverage *object, void *extra)
                             fi->groups[i].mode = TCE_MERGE_DELTA;
                             for (j = 0; j < fi->groups[i].number; j += 4)
                             {
-                                read(core_file, ctr_value, 4 * sizeof(ctr_value));
+                                read_safe(core_file, ctr_value, 4 * sizeof(ctr_value));
                                 if (target_counters[1] == ctr_value[1])
                                     target_counters[2] += ctr_value[2];
                                 else if (ctr_value[2] > target_counters[2])
