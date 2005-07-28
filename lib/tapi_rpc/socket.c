@@ -1505,10 +1505,11 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(getsockopt, out.retval);
 
-    TAPI_RPC_LOG("RPC (%s,%s): getsockopt(%d, %s, %s, %p(%s), %d) "
+    TAPI_RPC_LOG("RPC (%s,%s): getsockopt(%d, %s, %s, %p(%s), %p(%d)) "
                  "-> %d (%s)", rpcs->ta, rpcs->name,
                  s, socklevel_rpc2str(level), sockopt_rpc2str(optname),
-                 optval, opt_val_str, optlen == NULL ? 0 : *optlen,
+                 optval, opt_val_str,
+                 optlen, optlen == NULL ? 0 : *optlen,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_INT(getsockopt, out.retval);
