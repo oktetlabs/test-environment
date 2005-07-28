@@ -204,7 +204,7 @@ read_str(int fildes, off_t offset, char *buffer, size_t maxlen)
 }
 
 static void
-detect_kernel_gcov_version(FILE *symfile, int core_file)
+detect_kernel_gcov_version(FILE *symfile)
 {
     size_t offset;
     static char symbuf[256];
@@ -276,7 +276,7 @@ tce_obtain_kernel_coverage(void)
             }
         }
         
-        detect_kernel_gcov_version(symfile, core_file);
+        detect_kernel_gcov_version(symfile);
         process_gcov_syms(symfile, core_file, do_gcov_sum, &summary);
         process_gcov_syms(symfile, core_file, get_kernel_gcov_data, &summary);
         close(core_file);
@@ -524,7 +524,6 @@ get_kernel_gcov_data(int core_file, object_coverage *object, void *extra)
     oi = tce_get_object_info(tce_obtain_principal_peer_id(), 
                              real_start ? real_start + 1 : name_buffer);
     oi->gcov_version = kernel_gcov_version_magic;
-    oi->ncounts = object->old.ncounts;
     oi->object_functions = object_functions;
     oi->object_sum += object_summary.sum;
     oi->program_sum += summary->sum;
@@ -543,10 +542,13 @@ get_kernel_gcov_data(int core_file, object_coverage *object, void *extra)
         unsigned fn;
         struct gcov_fn_info new_fn_info;
         unsigned n_counts = 0;
-        unsigned n_sub_counts[GCOV_COUNTER_GROUPS] = {0};
+        unsigned n_sub_counts[GCOV_COUNTER_GROUPS];
         unsigned fi_stride;
 
+        oi->ncounts = object_summary.arcs;
+        oi->program_ncounts = summary->arcs;
         oi->stamp = object->new.stamp;
+        oi->ctr_mask = object->new.ctr_mask;
 
         for (i = 0; i < GCOV_COUNTER_GROUPS; i++)
         {
@@ -570,20 +572,29 @@ get_kernel_gcov_data(int core_file, object_coverage *object, void *extra)
                 tce_report_error("error reading from /dev/kmem");
                 return;
             }            
+            snprintf(name_buffer, sizeof(name_buffer), "%u",
+                     new_fn_info.ident);
             for (n_counts = 0, i = 0; i < GCOV_COUNTER_GROUPS; i++)
             {
                 if ((1 << i) & object->new.ctr_mask)
                 {
-                    read(core_file, n_sub_counts + i, sizeof(*n_sub_counts));
-                    n_counts += n_sub_counts[i];               
+                    read(core_file, n_sub_counts + i, sizeof(n_sub_counts[0]));
+                    n_counts += n_sub_counts[i];
                 }           
             }
-            snprintf(name_buffer, sizeof(name_buffer), "%u",
-                     new_fn_info.ident);
+
             fi = tce_get_function_info(oi, name_buffer, 
                                        n_counts, new_fn_info.checksum);
+            for (i = 0; i < GCOV_COUNTER_GROUPS; i++)
+            {
+                if ((1 << i) & object->new.ctr_mask)
+                {
+                    fi->groups[i].number = n_sub_counts[i];
+                }           
+            }
             if (fi != NULL)
             {
+
                 target_counters = fi->counts;              
                 for (i = 0; i < GCOV_COUNTER_GROUPS; i++)
                 {                  
@@ -596,16 +607,19 @@ get_kernel_gcov_data(int core_file, object_coverage *object, void *extra)
                         if ((size_t)summary->groups[i].merge == 
                             kernel_merge_functions[TCE_MERGE_ADD])
                         {                          
-                            for (j = 0; j < n_sub_counts[i]; j++)
+                            fi->groups[i].mode = TCE_MERGE_ADD;
+                            for (j = 0; j < fi->groups[i].number; j++)
                             {
                                 read(core_file, ctr_value, sizeof(*ctr_value));
+                                tce_print_debug("counter is %Ld", ctr_value[0]);
                                 (*target_counters++) += ctr_value[0];                              
                             }
                         }
                         else if ((size_t)summary->groups[i].merge == 
                                  kernel_merge_functions[TCE_MERGE_SINGLE])
                         {
-                            for (j = 0; j < n_sub_counts[i]; j += 3)
+                            fi->groups[i].mode = TCE_MERGE_SINGLE;
+                            for (j = 0; j < fi->groups[i].number; j += 3)
                             {
                                 read(core_file, ctr_value, 3 * sizeof(ctr_value));
                                 if (target_counters[0] == ctr_value[0])
@@ -625,7 +639,8 @@ get_kernel_gcov_data(int core_file, object_coverage *object, void *extra)
                         else if ((size_t)summary->groups[i].merge == 
                                  kernel_merge_functions[TCE_MERGE_DELTA])
                         {
-                            for (j = 0; j < n_sub_counts[i]; j += 4)
+                            fi->groups[i].mode = TCE_MERGE_DELTA;
+                            for (j = 0; j < fi->groups[i].number; j += 4)
                             {
                                 read(core_file, ctr_value, 4 * sizeof(ctr_value));
                                 if (target_counters[1] == ctr_value[1])
@@ -642,8 +657,12 @@ get_kernel_gcov_data(int core_file, object_coverage *object, void *extra)
                                 target_counters += 4;
                             }
                         }
+                        else
+                        {
+                            tce_report_error("unknown merge function");
+                        }
                        
-                        summary->groups[i].values += n_sub_counts[i];                      
+                        summary->groups[i].values += fi->groups[i].number;                      
                     }                 
                 }             
             }
@@ -654,6 +673,7 @@ get_kernel_gcov_data(int core_file, object_coverage *object, void *extra)
     }
     else
     {
+        oi->ncounts = object->old.ncounts;
         for (;;)
         {          
             if(read_at(core_file, (size_t)object->old.function_infos++, 

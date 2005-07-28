@@ -1286,29 +1286,36 @@ dump_new_object_data(tce_object_info *oi, FILE *tar_file)
 
     for (fi = oi->function_infos; fi != NULL; fi = fi->next)
     {
+        tce_print_debug("dumping function %s %ld", fi->name, fi->arc_count);
         ident = strtoul(fi->name, NULL, 10);
         SAFE_FWRITE(func_magic, sizeof(func_magic), 1, tar_file);
         SAFE_FWRITE(&ident, sizeof(ident), 1, tar_file);
         SAFE_FWRITE(&fi->checksum, sizeof(fi->checksum), 1, tar_file);
-        for (group = 0; group < GCOV_COUNTER_GROUPS; group++)
+        for (c_offset = 0, group = 0; group < GCOV_COUNTER_GROUPS; group++)
         {
             if (!((1 << group) & oi->ctr_mask))
                 continue;
-            tce_print_debug("dumping counter group %d", group);
+            tce_print_debug("dumping counter group %d (#%d)", group,
+                            fi->groups[group].number);
             group_magic[0] = GCOV_TAG_FOR_COUNTER (group);
             count = fi->groups[group].number;
             group_magic[1] = GCOV_TAG_COUNTER_LENGTH (count);
             SAFE_FWRITE(group_magic, sizeof(group_magic), 1, tar_file);
-            SAFE_FWRITE(fi->counts + c_offset, sizeof(*fi->counts), count, 
-                   tar_file);
-            c_offset += count;
+            for (; count != 0; count--, c_offset++)
+            {
+                SAFE_FWRITE(fi->counts + c_offset, sizeof(*fi->counts), 
+                            1, tar_file);
+            }
         }
     }
     SAFE_FWRITE(obj_summary_magic, sizeof(obj_summary_magic), 1, tar_file);
     SAFE_FWRITE(&oi->checksum, sizeof(oi->checksum), 1, tar_file);
+    tce_print_debug("object counters: %d", oi->ncounts);
     SAFE_FWRITE(&oi->ncounts, sizeof(oi->ncounts), 1, tar_file);
     SAFE_FWRITE(&oi->object_runs, sizeof(oi->object_runs), 1, tar_file);
+    tce_print_debug("object sum: %ld", oi->object_sum);
     SAFE_FWRITE(&oi->object_sum, sizeof(oi->object_sum), 1, tar_file);
+    tce_print_debug("object max: %ld", oi->object_max);
     SAFE_FWRITE(&oi->object_max, sizeof(oi->object_max), 1, tar_file);
     SAFE_FWRITE(&oi->object_sum_max, sizeof(oi->object_sum_max), 
                 1, tar_file);
@@ -1316,6 +1323,7 @@ dump_new_object_data(tce_object_info *oi, FILE *tar_file)
                 1, tar_file);
     SAFE_FWRITE(&oi->program_checksum, sizeof(oi->program_checksum), 
                 1, tar_file);
+    tce_print_debug("program counters: %d", oi->program_ncounts);
     SAFE_FWRITE(&oi->program_ncounts, sizeof(oi->program_ncounts), 
                 1, tar_file);
     SAFE_FWRITE(&oi->program_runs, sizeof(oi->program_runs), 1, tar_file);
