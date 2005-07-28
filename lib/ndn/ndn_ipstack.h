@@ -73,6 +73,10 @@ typedef enum {
     NDN_TAG_TCP_URG,
     NDN_TAG_TCP_LOCAL_PORT,
     NDN_TAG_TCP_REMOTE_PORT,
+    NDN_TAG_TCP_DATA,
+    NDN_TAG_TCP_DATA_SERVER,
+    NDN_TAG_TCP_DATA_CLIENT,
+    NDN_TAG_TCP_DATA_SOCKET,
 } ndn_tcp_tags_t;
 
 typedef enum {

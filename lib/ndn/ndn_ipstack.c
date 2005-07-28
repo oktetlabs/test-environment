@@ -296,6 +296,23 @@ asn_type_p ndn_tcp_header = &ndn_tcp_header_s;
 
 
 
+static asn_named_entry_t _ndn_tcp_data_ne_array [] = 
+{
+    { "server", &asn_base_null_s,
+        {PRIVATE, NDN_TAG_TCP_DATA_SERVER} },
+    { "client", &asn_base_null_s,
+        {PRIVATE, NDN_TAG_TCP_DATA_CLIENT} },
+    { "socket", &asn_base_integer_s,
+        {PRIVATE, NDN_TAG_TCP_DATA_SOCKET} },
+};
+
+asn_type ndn_tcp_data_s =
+{
+    "TCP-CSAP", {PRIVATE, NDN_TAG_TCP_DATA}, CHOICE, 
+    sizeof(_ndn_tcp_data_ne_array)/sizeof(asn_named_entry_t),
+    {_ndn_tcp_data_ne_array}
+};
+
 
 static asn_named_entry_t _ndn_tcp_csap_ne_array [] = 
 {
@@ -303,6 +320,8 @@ static asn_named_entry_t _ndn_tcp_csap_ne_array [] =
         {PRIVATE, NDN_TAG_TCP_LOCAL_PORT} },
     { "remote-port",&ndn_data_unit_int16_s,
         {PRIVATE, NDN_TAG_TCP_REMOTE_PORT} },
+    { "data",&ndn_tcp_data_s,
+        {PRIVATE, NDN_TAG_TCP_DATA} },
 };
 
 asn_type ndn_tcp_csap_s =
