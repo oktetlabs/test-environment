@@ -1280,6 +1280,7 @@ dump_new_object_data(tce_object_info *oi, FILE *tar_file)
        return FALSE;                               \
     }
 
+    tce_report_notice("dumping %s", oi->filename);
     SAFE_FWRITE(&magic, sizeof(magic), 1, tar_file);
     SAFE_FWRITE(&oi->gcov_version, sizeof(oi->gcov_version), 1, tar_file);
     SAFE_FWRITE(&oi->stamp, sizeof(oi->stamp), 1, tar_file);
@@ -1303,6 +1304,8 @@ dump_new_object_data(tce_object_info *oi, FILE *tar_file)
             SAFE_FWRITE(group_magic, sizeof(group_magic), 1, tar_file);
             for (; count != 0; count--, c_offset++)
             {
+                tce_report_notice("written counter is %Ld", 
+                                  fi->counts[c_offset]);
                 SAFE_FWRITE(fi->counts + c_offset, sizeof(*fi->counts), 
                             1, tar_file);
             }
