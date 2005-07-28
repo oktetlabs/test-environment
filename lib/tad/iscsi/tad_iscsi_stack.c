@@ -124,7 +124,7 @@ int
 iscsi_prepare_recv_cb(csap_p csap_descr)
 {
     iscsi_csap_specific_data_t *iscsi_spec_data; 
-    int rc;
+    int rc = 0;
 
     if (csap_descr == NULL)
         return ETADCSAPNOTEX;
@@ -134,13 +134,6 @@ iscsi_prepare_recv_cb(csap_p csap_descr)
     switch (iscsi_spec_data->type)
     {
         case NDN_ISCSI_SERVER:
-            if (listen(iscsi_spec_data->sock, 5) < 0)
-            {
-                rc = errno;
-                ERROR("%s(CSAP %d) failed on listen(), errno %d", 
-                      __FUNCTION__, csap_descr->id, rc);
-                return rc;
-            }
             break;
 
         case NDN_ISCSI_NET: 
@@ -150,7 +143,7 @@ iscsi_prepare_recv_cb(csap_p csap_descr)
             break; 
     }
 
-    return 0;
+    return rc;
 }
 
 /**
@@ -360,6 +353,14 @@ iscsi_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
                     rc = errno;
                     goto cleanup;
                 } 
+
+                if (listen(iscsi_spec_data->sock, 5) < 0)
+                {
+                    rc = errno;
+                    ERROR("%s(CSAP %d) failed on listen(), errno %d", 
+                          __FUNCTION__, csap_descr->id, rc);
+                    return rc;
+                }
             }
             break;
 
