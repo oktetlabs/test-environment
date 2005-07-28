@@ -776,10 +776,10 @@ _setlibname_1_svc(tarpc_setlibname_in *in, tarpc_setlibname_out *out,
     VERB("PID=%d TID=%d: Entry %s",
          (int)getpid(), (int)pthread_self(), "setlibname");
 
-    errno = 0;
-    out->retval = setlibname(in);
-    out->common._errno = RPC_ERRNO;
+    out->common._errno = setlibname(in);
+    out->retval = (out->common._errno == 0) ? 0 : -1;
     out->common.duration = 0;
+
     return TRUE;
 }
 
@@ -860,7 +860,10 @@ tarpc_init(int argc, char **argv)
     
     if (name == NULL || log_sock == NULL || (sock = atoi(log_sock)) <= 0)
     {
-        PRINT("%s(): Invalid argument", __FUNCTION__);
+        PRINT("%s(): Invalid argument: name=%s log_sock=%s",
+              __FUNCTION__,
+              (name == NULL) ? "(nil)" : name,
+              (log_sock == NULL) ? "(nil)" : log_sock);
         return;
     }
     
@@ -1151,9 +1154,8 @@ TARPC_FUNC(readv,
     COPY_ARG(vector);
 },
 {
-    struct iovec iovec_arr[RCF_RPC_MAX_IOVEC];
-
-    unsigned int i;
+    struct iovec    iovec_arr[RCF_RPC_MAX_IOVEC];
+    unsigned int    i;
 
     memset(iovec_arr, 0, sizeof(iovec_arr));
     for (i = 0; i < out->vector.vector_len; i++)
@@ -1168,11 +1170,6 @@ TARPC_FUNC(readv,
     INIT_CHECKED_ARG((char *)iovec_arr, sizeof(iovec_arr), 0);
 
     MAKE_CALL(out->retval = func(in->fd, iovec_arr, in->count));
-
-    for (i = 0; i < out->vector.vector_len; i++)
-    {
-        out->vector.vector_val[i].iov_len = iovec_arr[i].iov_len;
-    }
 }
 )
 
@@ -1188,9 +1185,8 @@ TARPC_FUNC(writev,
     }
 },
 {
-    struct iovec iovec_arr[RCF_RPC_MAX_IOVEC];
-
-    unsigned int i;
+    struct iovec    iovec_arr[RCF_RPC_MAX_IOVEC];
+    unsigned int    i;
 
     memset(iovec_arr, 0, sizeof(iovec_arr));
     for (i = 0; i < in->vector.vector_len; i++)
@@ -3717,19 +3713,6 @@ TARPC_FUNC(popen_fd, {},
     func = (sock_api_func)popen_fd;
     MAKE_CALL(out->fd = 
                   func_ptr(in->cmd.cmd_val, in->mode.mode_val));
-#if 0
-    if (strcmp(in->cmd.cmd_val, "ip addr list") == 0)
-    {
-        char buf[1050];
-        
-        memset(buf, 0, 1050);
-        read(fileno(func_ptr_ret_ptr(in->cmd.cmd_val,
-                                           in->mode.mode_val)
-                    ), buf, 1050);
-        if (strlen(buf) < 550)
-            ERROR("!!!!!\n");
-    }
-#endif    
 }
 )
 
@@ -4507,7 +4490,6 @@ cleanup:
     return res;
 }
 
-
 /*-------------- close_and_accept() --------------------------*/
 TARPC_FUNC(close_and_accept, {},
 {
@@ -4620,6 +4602,7 @@ cleanup:
 
     return res;
 }
+
 
 #define FLOODER_ECHOER_WAIT_FOR_RX_EMPTY        1
 #define FLOODER_BUF                             4096
