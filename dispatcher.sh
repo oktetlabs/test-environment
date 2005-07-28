@@ -564,7 +564,7 @@ export TE_LOGGER="TE_LOGGER_"$$
 export TE_CS="TE_CS_"$$
 
 # Run RGT in live mode in background
-if test -n "$LIVE_LOG" ; then
+if test -n "${LIVE_LOG}" ; then
     rgt-conv -m live -f ${TE_LOG_RAW} &
     LIVE_LOG_PID=$!
 fi
@@ -609,19 +609,20 @@ for i in LOGGER RCF CS ; do
     fi
 done
 
-if test $START_OK -eq 0 -a -n "$TESTER" ; then
+if test ${START_OK} -eq 0 -a -n "${TESTER}" ; then
     te_log_message Engine Dispatcher \
         "Start Tester:${TESTER_OPTS} ${CONF_TESTER}"
     myecho "--->>> Start Tester"
     # Restore Ctrl-C handler while Tester is running
     trap - SIGINT
     if test -n "$VG_TESTER" ; then
-        VG_TESTS=$VG_TESTS valgrind $VG_OPTIONS te_tester${TESTER_EXT} \
+        VG_TESTS=${VG_TESTS} valgrind ${VG_OPTIONS} te_tester${TESTER_EXT} \
             ${TESTER_OPTS} "${CONF_TESTER}" 2>valgrind.te_tester
     else
-        VG_TESTS=$VG_TESTS te_tester${TESTER_EXT} ${TESTER_OPTS} \
+        VG_TESTS=${VG_TESTS} te_tester${TESTER_EXT} ${TESTER_OPTS} \
             "${CONF_TESTER}" 
     fi
+    START_OK=$?
     # Ignore Ctrl-C on TE shutdown
     trap "" SIGINT
 fi
@@ -629,12 +630,12 @@ fi
 
 shutdown_daemon() {
     DAEMON=$1
-    if test -n "`eval echo '$'$DAEMON'_OK'`" ; then
-        DAEMON_NAME=`eval echo '$'$DAEMON'_NAME'`
-        DAEMON_SHUT=`eval echo '$'$DAEMON'_SHUT'`
-        te_log_message Engine Dispatcher "Shutdown $DAEMON_NAME"
-        myecho -n "--->>> Shutdown $DAEMON_NAME... "
-        $DAEMON_SHUT
+    if test -n "`eval echo '${'$DAEMON'_OK}'`" ; then
+        DAEMON_NAME=`eval echo '${'$DAEMON'_NAME}'`
+        DAEMON_SHUT=`eval echo '${'$DAEMON'_SHUT}'`
+        te_log_message Engine Dispatcher "Shutdown ${DAEMON_NAME}"
+        myecho -n "--->>> Shutdown ${DAEMON_NAME}... "
+        ${DAEMON_SHUT}
         if test $? -eq 0 ; then
             myecho "done"
         else
@@ -645,13 +646,13 @@ shutdown_daemon() {
 
 shutdown_daemon CS
 
-if test -n "$LOGGER_OK" -a -n "$RCF_OK" ; then
+if test -n "${LOGGER_OK}" -a -n "${RCF_OK}" ; then
     te_log_message Engine Dispatcher "Flush log"
     myecho "--->>> Flush Logs"
     te_log_flush
 fi
 
-if test $START_OK -eq 0 -a -n "${DO_NUTS}" ; then
+if test ${START_OK} -eq 0 -a -n "${DO_NUTS}" ; then
     te_log_message Engine Dispatcher "Dumping TCE"
     myecho "--->>> Dump TCE"
     te_tce_dump.sh "${CONF_NUT}"
@@ -698,7 +699,7 @@ fi
 
 if test -n "${DO_NUTS}" ; then
     myecho "--->>> TCE processing"
-    TCE_REPORT_OPTS="$TCE_REPORT_OPTS" TCES_OPTS="$TCES_OPTS" \
+    TCE_REPORT_OPTS="${TCE_REPORT_OPTS}" TCES_OPTS="${TCES_OPTS}" \
         te_tce_process "${CONF_NUT}"
 fi
 
@@ -709,4 +710,4 @@ fi
 
 rm -rf ${TE_TMP}
 
-exit 0
+exit ${START_OK}
