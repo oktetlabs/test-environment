@@ -327,10 +327,25 @@ tcp_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
     if (pkt_list == NULL || tmpl_pdu == NULL)
         return TE_RC(TE_TAD_CSAP, ETEWRONGPTR);
 
-    if (csap_descr->type == TAD_CSAP_DATA) /* TODO */
-        return ETENOSUPP; 
+    if (csap_descr->type == TAD_CSAP_DATA) 
+    {
+        if (spec_data->data_tag != NDN_TAG_TCP_DATA_SERVER)
+        {
+            ERROR("%s(CSAP %d) write to TCP data 'server' is not allowed",
+                  __FUNCTION__, csap_descr->id);
+            return ETADLOWER;
+        } 
 
-    asn_save_to_file(tmpl_pdu, "/tmp/tcp­tmpl.asn");
+        pkt_list->data = up_payload->data;
+        pkt_list->len  = up_payload->len;
+        pkt_list->next = up_payload->next;
+
+        up_payload->data = NULL;
+        up_payload->len  = 0;
+        up_payload->next = NULL;
+
+        return 0;
+    }
 
     spec_data = (tcp_csap_specific_data_t *)
                 csap_descr->layers[layer].specific_data; 
@@ -469,7 +484,7 @@ int tcp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
 
     uint8_t *data;
     uint8_t  tmp8;
-    int      rc;
+    int      rc = 0;
     size_t   h_len = 0;
 
     asn_value *tcp_header_pdu = NULL;
@@ -486,6 +501,23 @@ int tcp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
     spec_data = (tcp_csap_specific_data_t*)csap_descr->layers[layer].specific_data; 
 
     data = pkt->data; 
+
+    if (csap_descr->type == TAD_CSAP_DATA) 
+    {
+        if (spec_data->data_tag == NDN_TAG_TCP_DATA_SERVER)
+        {
+            int acc_sock = *((int *)pkt->data);
+
+            if (parsed_packet != NULL)
+                asn_write_int32(tcp_header_pdu, acc_sock, "socket");
+            h_len = 1; /* ugly hack for generic payload processing */
+        }
+        else
+        {
+            h_len = 0; /* ugly hack for generic payload processing */
+        }
+        goto put_payload;
+    }
 
 #define CHECK_FIELD(_asn_label, _size) \
     do {                                                        \
@@ -527,6 +559,7 @@ int tcp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
 
     /* TODO: Process TCP options */
 
+put_payload:
     /* passing payload to upper layer */ 
     memset(payload, 0 , sizeof(*payload));
     payload->len = pkt->len - (h_len * 4);

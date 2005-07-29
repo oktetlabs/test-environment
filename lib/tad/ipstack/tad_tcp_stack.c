@@ -143,9 +143,25 @@ tcp_read_cb(csap_p csap_descr, int timeout, char *buf, size_t buf_len)
 
     if (rc < 0)
         return -1;
-    
-    /* Note: possibly MSG_TRUNC and other flags are required */
-    return recv(spec_data->socket, buf, buf_len, recv_flags); 
+
+    if (spec_data->data_tag == NDN_TAG_TCP_DATA_SERVER)
+    {
+        int acc_sock = accept(spec_data->socket, NULL, NULL);
+
+        if (acc_sock < 0)
+        {
+            csap_descr->last_errno = errno;
+            return -1;
+        }
+        RING("%s(CSAP %d) TCP 'server', accepted socket %d", 
+             __FUNCTION__, csap_descr->id, acc_sock);
+        *((int *)buf) = acc_sock;
+
+        return sizeof(int);
+    } 
+    else 
+        /* Note: possibly MSG_TRUNC and other flags are required */
+        return recv(spec_data->socket, buf, buf_len, recv_flags); 
 }
 
 /**
@@ -161,32 +177,29 @@ tcp_read_cb(csap_p csap_descr, int timeout, char *buf, size_t buf_len)
 int 
 tcp_write_cb(csap_p csap_descr, char *buf, size_t buf_len)
 {
-#if 0
     tcp_csap_specific_data_t * spec_data;
     int layer;    
     int rc;
-    struct sockaddr_in dest;
-    
-    
-    dest.sin_family = AF_INET;
-    dest.sin_port = htons(68);
-    dest.sin_addr.s_addr = INADDR_BROADCAST;
-    
+
+    if (csap_descr == NULL)
+        return -1;
+
     layer = csap_descr->read_write_layer;
     
-    spec_data = (tcp_csap_specific_data_t *) csap_descr->specific_data[layer]; 
+    spec_data = csap_descr->layers[layer].specific_data; 
 
-#ifdef TALOGDEBUG
-    printf("Writing data to socket: %d", spec_data->out);
-#endif        
+    if(spec_data->socket < 0)
+        return -1;
 
-    if(spec_data->out < 0)
+    if (spec_data->data_tag == NDN_TAG_TCP_DATA_SERVER)
     {
+        ERROR("%s(CSAP %d) write to TCP data 'server' is not allowed",
+              __FUNCTION__, csap_descr->id);
+        csap_descr->last_errno = ETADLOWER;
         return -1;
     }
 
-    rc = sendto(spec_data->out, buf, buf_len, 0, 
-                (struct sockaddr *)&dest, sizeof(dest));
+    rc = send(spec_data->socket, buf, buf_len, 0); 
     if (rc < 0) 
     {
         perror("tcp sendto fail");
@@ -194,12 +207,6 @@ tcp_write_cb(csap_p csap_descr, char *buf, size_t buf_len)
     }
 
     return rc;
-#else
-    UNUSED(csap_descr);
-    UNUSED(buf);
-    UNUSED(buf_len);
-    return 0;
-#endif
 }
 
 /**
