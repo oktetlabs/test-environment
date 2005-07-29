@@ -957,7 +957,7 @@ ta_system(char *cmd)
     h = signal(SIGCHLD, ta_sig_handler_dummy);
     rc = system(cmd);
     (void)signal(SIGCHLD, h);
-    INFO("CMD='%s' RC=%d", cmd, rc);
+    RING("CMD='%s' RC=%d", cmd, rc);
 
     return rc;
 }
