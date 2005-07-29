@@ -4564,8 +4564,8 @@ close_and_accept(tarpc_close_and_accept_in *in,
         res = close_func(in->fd.fd_val[i]);
         if (res != 0)
         {
-            ERROR("close on socket failed, %s, %s", 
-                  __FUNCTION__, strerror(errno));
+            ERROR("%s: close on socket %d failed, %s", 
+                  __FUNCTION__, in->fd.fd_val[i], strerror(errno));
             goto cleanup;
         }
         
