@@ -77,6 +77,7 @@ typedef enum {
     NDN_TAG_TCP_DATA_SERVER,
     NDN_TAG_TCP_DATA_CLIENT,
     NDN_TAG_TCP_DATA_SOCKET,
+    NDN_TAG_TCP_DATA_LENGTH,
 } ndn_tcp_tags_t;
 
 typedef enum {

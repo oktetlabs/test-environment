@@ -282,6 +282,8 @@ static asn_named_entry_t _ndn_tcp_header_ne_array [] =
     { "win-size", &ndn_data_unit_int16_s, {PRIVATE, NDN_TAG_TCP_WINDOW} },
     { "checksum", &ndn_data_unit_int16_s, {PRIVATE, NDN_TAG_TCP_CHECKSUM} },
     { "urg-p",    &ndn_data_unit_int16_s, {PRIVATE, NDN_TAG_TCP_URG} },
+    { "socket",   &asn_base_integer_s, {PRIVATE, NDN_TAG_TCP_DATA_SOCKET} },
+    { "length",   &asn_base_integer_s, {PRIVATE, NDN_TAG_TCP_DATA_LENGTH} },
 };
 
 asn_type ndn_tcp_header_s =

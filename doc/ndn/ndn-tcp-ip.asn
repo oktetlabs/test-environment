@@ -92,15 +92,22 @@ TCP-Header ::= SEQUENCE {
     acqn      [3] DATA-UNIT{INTEGER } OPTIONAL,
     hlen      [4] DATA-UNIT{INTEGER (0..15)} OPTIONAL,
     flags     [5] DATA-UNIT{INTEGER (0..63)} OPTIONAL,
-    win-size  [6] DATA-UNIT{INTEGER (0..65535)} OPTIONAL
-    checksum  [7] DATA-UNIT{INTEGER (0..65535)} OPTIONAL
-    urg-p     [8] DATA-UNIT{INTEGER (0..65535)} OPTIONAL
-
+    win-size  [6] DATA-UNIT{INTEGER (0..65535)} OPTIONAL,
+    checksum  [7] DATA-UNIT{INTEGER (0..65535)} OPTIONAL,
+    urg-p     [8] DATA-UNIT{INTEGER (0..65535)} OPTIONAL,
+    socket        INTEGER OPTIONAL, 
+    length        INTEGER OPTIONAL, 
+    ...
 }
 
 TCP-CSAP ::=  SEQUENCE {
     local-port   [0] DATA-UNIT{INTEGER (0..65535)} OPTIONAL,
     remote-port  [1] DATA-UNIT{INTEGER (0..65535)} OPTIONAL,
+    data         [2] CHOICE { 
+        server  NULL,
+        client  NULL,
+        socket  INTEGER
+    },
     ...
 }
 
