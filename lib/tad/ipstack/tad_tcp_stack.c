@@ -87,35 +87,47 @@ tcp_ip4_check_pdus(csap_p csap_descr, asn_value *traffic_nds)
 int 
 tcp_read_cb(csap_p csap_descr, int timeout, char *buf, size_t buf_len)
 {
-#if 0
     int    rc; 
     int    layer;    
+    int    recv_flags = 0;
     fd_set read_set;
-    tcp_csap_specific_data_t *spec_data;
-    
-    struct timeval timeout_val;
-    
+
+    tcp_csap_specific_data_t *spec_data; 
+    struct timeval            timeout_val; 
     
     layer = csap_descr->read_write_layer;
     
-    spec_data = (tcp_csap_specific_data_t *) csap_descr->specific_data[layer]; 
+    spec_data = csap_descr->layers[layer].specific_data; 
 
-#ifdef TALOGDEBUG
-    printf("Reading data from the socket: %d", spec_data->in);
-#endif       
 
-    if(spec_data->in < 0)
+    if(spec_data->socket < 0)
     {
         return -1;
     }
 
+    if (spec_data->wait_length > 0)
+    {
+        if (buf_len < spec_data->wait_length)
+        {
+            csap_descr->last_errno = ETESMALLBUF;
+            ERROR("%s(CSAP %d) wait buf passed %d, but buf_len %d",
+                  __FUNCTION__, csap_descr->id,
+                  spec_data->wait_length, buf_len);
+            return -1;
+        }
+        else
+        {
+            buf_len = spec_data->wait_length;
+            recv_flags |= MSG_WAITALL;
+        }
+    }
     FD_ZERO(&read_set);
-    FD_SET(spec_data->in, &read_set);
+    FD_SET(spec_data->socket, &read_set);
 
     if (timeout == 0)
     {
-        timeout_val.tv_sec = spec_data->read_timeout;
-        timeout_val.tv_usec = 0;
+        timeout_val.tv_sec = 0;
+        timeout_val.tv_usec = 100 * 1000; /* 0.1 sec */
     }
     else
     {
@@ -123,7 +135,8 @@ tcp_read_cb(csap_p csap_descr, int timeout, char *buf, size_t buf_len)
         timeout_val.tv_usec = timeout % 1000000L;
     }
     
-    rc = select(spec_data->in + 1, &read_set, NULL, NULL, &timeout_val); 
+    rc = select(spec_data->socket + 1, &read_set, NULL, NULL,
+                &timeout_val); 
     
     if (rc == 0)
         return 0;
@@ -132,14 +145,7 @@ tcp_read_cb(csap_p csap_descr, int timeout, char *buf, size_t buf_len)
         return -1;
     
     /* Note: possibly MSG_TRUNC and other flags are required */
-    return recv(spec_data->in, buf, buf_len, 0); 
-#else
-    UNUSED(csap_descr);
-    UNUSED(timeout);
-    UNUSED(buf);
-    UNUSED(buf_len);
-    return 0;
-#endif
+    return recv(spec_data->socket, buf, buf_len, recv_flags); 
 }
 
 /**
@@ -493,6 +499,50 @@ tcp_ip4_init_cb(int csap_id, const asn_value *csap_nds, int layer)
 
     if (ip4_spec_data != NULL && ip4_spec_data->protocol == 0)
         ip4_spec_data->protocol = IPPROTO_TCP;
+
+    if (csap_descr->type == TAD_CSAP_DATA)
+    {
+        const asn_value *data_csap_spec, *subval;
+        asn_tag_class    t_class;
+
+        csap_descr->read_cb         = tcp_read_cb;
+        csap_descr->write_cb        = tcp_write_cb;
+        csap_descr->write_read_cb   = tcp_write_read_cb;
+        csap_descr->read_write_layer = layer; 
+
+        rc = asn_get_child_value(tcp_pdu, &data_csap_spec, 
+                                 PRIVATE, NDN_TAG_TCP_DATA);
+        if (rc == EASNINCOMPLVAL)
+        {
+            ERROR("%s(CSAP %d) data TCP csap should have 'data' spec",
+                  __FUNCTION__, csap_descr->id); 
+            return ETADWRONGNDS;
+        }
+        else if (rc != 0)
+        {
+            ERROR("%s(CSAP %d): unexpected error reading 'data': %X", 
+                  __FUNCTION__, csap_descr->id, rc); 
+            return rc;
+        } 
+
+        rc = asn_get_choice_value(data_csap_spec, &subval, 
+                                  &t_class, &(spec_data->data_tag));
+        if (rc != 0)
+        {
+            ERROR("%s(CSAP %d): error reading choice of 'data': %X", 
+                  __FUNCTION__, csap_descr->id, rc); 
+            return rc;
+        } 
+
+        if (spec_data->data_tag == NDN_TAG_TCP_DATA_SOCKET)
+        {
+            asn_read_int32(subval, &(spec_data->socket), "");
+            /* nothing more to do */
+            return 0;
+        }
+    }
+
+
     /*
      * Set local port
      */
@@ -545,6 +595,75 @@ tcp_ip4_init_cb(int csap_id, const asn_value *csap_nds, int layer)
     else
         return rc;
 
+    if (csap_descr->type == TAD_CSAP_DATA)
+    {
+        /* TODO: support of TCP over IPv6 */
+        struct sockaddr_in local;
+
+        local.sin_family = AF_INET;
+        local.sin_addr = ip4_spec_data->local_addr;
+
+        if ((spec_data->socket = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+        {
+            rc = errno;
+            ERROR("%s(CSAP %d) socket create failed, errno %d", 
+                  __FUNCTION__, csap_descr->id, rc);
+            return rc;
+        }
+
+        if (bind(spec_data->socket, SA(&local), sizeof(local)) < 0)
+        {
+            rc = errno;
+            ERROR("%s(CSAP %d) socket bind failed, errno %d", 
+                  __FUNCTION__, csap_descr->id, rc);
+            return rc;
+        }
+
+        switch (spec_data->data_tag)
+        {
+            case NDN_TAG_TCP_DATA_SERVER:
+                if (listen(spec_data->socket, 10) < 0)
+                {
+                    rc = errno;
+                    ERROR("%s(CSAP %d) listen failed, errno %d", 
+                          __FUNCTION__, csap_descr->id, rc);
+                    return rc;
+                }
+                break;
+
+            case NDN_TAG_TCP_DATA_CLIENT: 
+                {
+                    struct sockaddr_in remote;
+
+                    if (spec_data->remote_port == 0 ||
+                        ip4_spec_data->remote_addr.s_addr == INADDR_ANY)
+                    {
+                        ERROR("%s(CSAP %d) client csap, remote need", 
+                              __FUNCTION__, csap_descr->id);
+                        return ETADWRONGNDS;
+                    }
+                    remote.sin_family = AF_INET;
+                    remote.sin_port = spec_data->remote_port;
+                    remote.sin_addr = ip4_spec_data->remote_addr;
+
+                    if (connect(spec_data->socket, SA(&remote), 
+                                sizeof(remote)) < 0)
+                    {
+                        rc = errno;
+                        ERROR("%s(CSAP %d) connect failed, errno %d", 
+                              __FUNCTION__, csap_descr->id, rc);
+                        return rc;
+                    }
+                }
+                break;
+
+            default:
+                ERROR("%s(CSAP %d) unexpected tag of 'data' field %d", 
+                      __FUNCTION__, csap_descr->id, spec_data->data_tag);
+                return ETADWRONGNDS;
+        }
+    }
+
     UNUSED(csap_nds);
     return 0;
 }
@@ -564,8 +683,24 @@ tcp_ip4_init_cb(int csap_id, const asn_value *csap_nds, int layer)
 int 
 tcp_ip4_destroy_cb(int csap_id, int layer)
 {
-    UNUSED(csap_id);
-    UNUSED(layer);
+    csap_p csap_descr;
+
+    tcp_csap_specific_data_t *spec_data; 
+
+    if ((csap_descr = csap_find(csap_id)) == NULL)
+        return ETADCSAPNOTEX;
+
+    spec_data = csap_descr->layers[layer].specific_data;
+
+    if (csap_descr->type == TAD_CSAP_DATA)
+    {
+        if (spec_data->socket > 0)
+        {
+            close(spec_data->socket);
+            spec_data->socket = -1;
+        }
+    }
+
     return 0;
 }
 

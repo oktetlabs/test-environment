@@ -27,8 +27,8 @@
  * @(#) $Id$
  */
 
-#ifndef __TE_TAD_DHCP_IMPL_H__
-#define __TE_TAD_DHCP_IMPL_H__ 
+#ifndef __TE_TAD_IPSTACK_IMPL_H__
+#define __TE_TAD_IPSTACK_IMPL_H__ 
 
 #include "config.h"
 
@@ -56,8 +56,6 @@
 #include "tad_utils.h"
 
 
-#define DHCP_SERVER_PORT 67
-#define DHCP_CLIENT_PORT 68
 
 #ifdef __cplusplus
 extern "C" {
@@ -134,6 +132,9 @@ typedef struct tcp_csap_specific_data
     struct sockaddr *low_sa_dest;   /**< Network sockaddr for 'data' CSAP,*/
     size_t           low_sa_dest_len;
 
+    uint16_t         data_tag;
+    size_t           wait_length;
+
     tad_data_unit_t  du_src_port;
     tad_data_unit_t  du_dst_port;
     tad_data_unit_t  du_seqn;
@@ -154,7 +155,7 @@ typedef struct tcp_csap_specific_data
  */ 
 
 /**
- * Callback for read parameter value of DHCP CSAP.
+ * Callback for read parameter value of IPv4 CSAP.
  *
  * @param csap_descr    CSAP descriptor structure.
  * @param level         Index of level in CSAP stack, which param is wanted.
@@ -167,7 +168,7 @@ typedef struct tcp_csap_specific_data
 extern char* ip4_get_param_cb (csap_p csap_descr, int level, const char *param);
 
 /**
- * Callback for read data from media of DHCP CSAP. 
+ * Callback for read data from media of IPv4 CSAP. 
  *
  * @param csap_id       identifier of CSAP.
  * @param timeout       timeout of waiting for data.
@@ -180,7 +181,7 @@ extern char* ip4_get_param_cb (csap_p csap_descr, int level, const char *param);
 extern int ip4_read_cb (csap_p csap_descr, int timeout, char *buf, size_t buf_len);
 
 /**
- * Callback for write data to media of DHCP CSAP. 
+ * Callback for write data to media of IPv4 CSAP. 
  *
  * @param csap_id       identifier of CSAP.
  * @param buf           buffer with data to be written.
@@ -192,7 +193,7 @@ extern int ip4_read_cb (csap_p csap_descr, int timeout, char *buf, size_t buf_le
 extern int ip4_write_cb (csap_p csap_descr, char *buf, size_t buf_len);
 
 /**
- * Callback for write data to media of DHCP CSAP and read
+ * Callback for write data to media of IPv4 CSAP and read
  *  data from media just after write, to get answer to sent request. 
  *
  * @param csap_id       identifier of CSAP.
@@ -346,7 +347,7 @@ extern int ip4_gen_pattern_cb (int csap_id, int layer, const asn_value *tmpl_pdu
  */ 
 
 /**
- * Callback for read parameter value of DHCP CSAP.
+ * Callback for read parameter value of ICMP CSAP.
  *
  * @param csap_descr    CSAP descriptor structure.
  * @param level         Index of level in CSAP stack, which param is wanted.
@@ -359,7 +360,7 @@ extern int ip4_gen_pattern_cb (int csap_id, int layer, const asn_value *tmpl_pdu
 extern char* icmp4_get_param_cb (csap_p csap_descr, int level, const char *param);
 
 /**
- * Callback for read data from media of DHCP CSAP. 
+ * Callback for read data from media of ICMP CSAP. 
  *
  * @param csap_id       identifier of CSAP.
  * @param timeout       timeout of waiting for data.
@@ -372,7 +373,7 @@ extern char* icmp4_get_param_cb (csap_p csap_descr, int level, const char *param
 extern int icmp4_read_cb (csap_p csap_descr, int timeout, char *buf, size_t buf_len);
 
 /**
- * Callback for write data to media of DHCP CSAP. 
+ * Callback for write data to media of ICMP CSAP. 
  *
  * @param csap_id       identifier of CSAP.
  * @param buf           buffer with data to be written.
@@ -384,7 +385,7 @@ extern int icmp4_read_cb (csap_p csap_descr, int timeout, char *buf, size_t buf_
 extern int icmp4_write_cb (csap_p csap_descr, char *buf, size_t buf_len);
 
 /**
- * Callback for write data to media of DHCP CSAP and read
+ * Callback for write data to media of ICMP CSAP and read
  *  data from media just after write, to get answer to sent request. 
  *
  * @param csap_id       identifier of CSAP.
@@ -510,7 +511,7 @@ extern int icmp4_gen_pattern_cb (int csap_id, int layer, const asn_value *tmpl_p
  */ 
 
 /**
- * Callback for read parameter value of DHCP CSAP.
+ * Callback for read parameter value of UDP CSAP.
  *
  * @param csap_descr    CSAP descriptor structure.
  * @param level         Index of level in CSAP stack, which param is wanted.
@@ -523,7 +524,7 @@ extern int icmp4_gen_pattern_cb (int csap_id, int layer, const asn_value *tmpl_p
 extern char* udp_get_param_cb (csap_p csap_descr, int level, const char *param);
 
 /**
- * Callback for read data from media of DHCP CSAP. 
+ * Callback for read data from media of UDP CSAP. 
  *
  * @param csap_id       identifier of CSAP.
  * @param timeout       timeout of waiting for data.
@@ -536,7 +537,7 @@ extern char* udp_get_param_cb (csap_p csap_descr, int level, const char *param);
 extern int udp_read_cb (csap_p csap_descr, int timeout, char *buf, size_t buf_len);
 
 /**
- * Callback for write data to media of DHCP CSAP. 
+ * Callback for write data to media of UDP CSAP. 
  *
  * @param csap_id       identifier of CSAP.
  * @param buf           buffer with data to be written.
@@ -548,7 +549,7 @@ extern int udp_read_cb (csap_p csap_descr, int timeout, char *buf, size_t buf_le
 extern int udp_ip4_write_cb (csap_p csap_descr, char *buf, size_t buf_len);
 
 /**
- * Callback for write data to media of DHCP CSAP and read
+ * Callback for write data to media of UDP CSAP and read
  *  data from media just after write, to get answer to sent request. 
  *
  * @param csap_id       identifier of CSAP.
@@ -673,7 +674,7 @@ extern int udp_gen_pattern_cb (int csap_id, int layer, const asn_value *tmpl_pdu
  */ 
 
 /**
- * Callback for read parameter value of DHCP CSAP.
+ * Callback for read parameter value of TCP CSAP.
  *
  * @param csap_descr    CSAP descriptor structure.
  * @param level         Index of level in CSAP stack, which param is wanted.
@@ -686,7 +687,7 @@ extern int udp_gen_pattern_cb (int csap_id, int layer, const asn_value *tmpl_pdu
 extern char* tcp_get_param_cb (csap_p csap_descr, int level, const char *param);
 
 /**
- * Callback for read data from media of DHCP CSAP. 
+ * Callback for read data from media of TCP CSAP. 
  *
  * @param csap_id       identifier of CSAP.
  * @param timeout       timeout of waiting for data.
@@ -699,7 +700,7 @@ extern char* tcp_get_param_cb (csap_p csap_descr, int level, const char *param);
 extern int tcp_read_cb (csap_p csap_descr, int timeout, char *buf, size_t buf_len);
 
 /**
- * Callback for write data to media of DHCP CSAP. 
+ * Callback for write data to media of TCP CSAP. 
  *
  * @param csap_id       identifier of CSAP.
  * @param buf           buffer with data to be written.
@@ -711,7 +712,7 @@ extern int tcp_read_cb (csap_p csap_descr, int timeout, char *buf, size_t buf_le
 extern int tcp_write_cb (csap_p csap_descr, char *buf, size_t buf_len);
 
 /**
- * Callback for write data to media of DHCP CSAP and read
+ * Callback for write data to media of TCP CSAP and read
  *  data from media just after write, to get answer to sent request. 
  *
  * @param csap_id       identifier of CSAP.
@@ -860,4 +861,4 @@ extern int tcp_ip4_destroy_cb (int csap_id, int layer);
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
-#endif /*  __TE__TAD_ETH_IMPL__H__ */
+#endif /*  __TE_TAD_IPSTACK_IMPL_H__ */

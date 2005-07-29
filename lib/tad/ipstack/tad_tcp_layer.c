@@ -104,6 +104,19 @@ tcp_confirm_pdu_cb(int csap_id, int layer, asn_value_p pdu)
 
     tcp_csap_pdu = csap_descr->layers[layer].csap_layer_pdu; 
 
+    if (csap_descr->type == TAD_CSAP_DATA)
+    {
+        if (spec_data->data_tag != NDN_TAG_TCP_DATA_SERVER)
+        {
+            uint32_t len;
+            rc = asn_read_int32(tcp_pdu, &len, "length");
+
+            if (rc == 0)
+                spec_data->wait_length = len;
+        }
+        return 0;
+    }
+
 #define CONVERT_FIELD(tag_, du_field_)                                  \
     do {                                                                \
         rc = tad_data_unit_convert(tcp_pdu, tag_,                       \
