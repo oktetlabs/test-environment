@@ -53,9 +53,108 @@
 typedef void (*tcp_row_callback)(const asn_value *pkt, void *userdata);
 
 
+
+/**
+ * Creates 'data.tcp.ip4' CSAP, 'server' mode: listening for incoming
+ * connections.
+ *
+ * @param ta_name       Test Agent name
+ * @param sid           RCF SID
+ * @param loc_addr      Local IP address in network order (or NULL)
+ * @param loc_port      Local TCP port in network byte order 
+ * @param tcp_csap      Location for the IPv4 CSAP handle (OUT)
+ *
+ * @return  Status of the operation
+ */
+extern int tapi_tcp_server_csap_create(const char *ta_name, int sid, 
+                                       in_addr_t loc_addr,
+                                       uint16_t loc_port,
+                                       csap_handle_t *tcp_csap);
+/**
+ * Creates 'data.tcp.ip4' CSAP, 'client' mode, connects to remote server.
+ *
+ * @param ta_name       Test Agent name
+ * @param sid           RCF SID
+ * @param loc_addr      Local IP address in network order (or NULL)
+ * @param rem_addr      Remote IP address in network order (or NULL)
+ * @param loc_port      Local TCP port in network byte order 
+ * @param rem_port      Remote TCP port in network byte order 
+ * @param tcp_csap      Location for the IPv4 CSAP handle (OUT)
+ *
+ * @return  Status of the operation
+ */
+extern int tapi_tcp_client_csap_create(const char *ta_name, int sid, 
+                                       in_addr_t loc_addr,
+                                       in_addr_t rem_addr,
+                                       uint16_t loc_port,
+                                       uint16_t rem_port,
+                                       csap_handle_t *tcp_csap);
+/**
+ * Creates 'data.tcp.ip4' CSAP, 'socket' mode, over socket, 
+ * accepted on TA from some 'server' CSAP.
+ *
+ * @param ta_name       Test Agent name
+ * @param sid           RCF SID
+ * @param socket        socket fd on TA
+ * @param tcp_csap      Location for the TCP CSAP handle (OUT)
+ *
+ * @return  Status of the operation
+ */
+extern int tapi_tcp_socket_csap_create(const char *ta_name, int sid, 
+                                       int socket,
+                                       csap_handle_t *tcp_csap);
+
+/**
+ * Wait new one connection from 'server' TCP CSAP.
+ *
+ * @param ta_name       Test Agent name
+ * @param sid           RCF SID
+ * @param tcp_csap      TCP CSAP handle
+ * @param timeout       timeout in milliseconds
+ * @param socket        location for accepted socket fd on TA (OUT)
+ *
+ * @return  Status of the operation
+ */
+extern int tapi_tcp_server_recv(const char *ta_name, int sid, 
+                                csap_handle_t tcp_csap, 
+                                unsigned int timeout, int *socket);
+
+/**
+ * Wait exactly specified amount of data on connected (non-server) 
+ * TCP data CSAP.
+ *
+ * @param ta_name       Test Agent name
+ * @param sid           RCF SID
+ * @param tcp_csap      TCP CSAP handle
+ * @param timeout       timeout in milliseconds
+ * @param buf           location for received data (OUT)
+ * @param length        size of buffer and length of data to wait
+ *
+ * @return  Status of the operation
+ */
+extern int tapi_tcp_buffer_recv(const char *ta_name, int sid, 
+                                csap_handle_t tcp_csap, 
+                                unsigned int timeout, 
+                                uint8_t *buf, size_t length);
+
+/**
+ * Send data via connected (non-server) TCP data CSAP.
+ *
+ * @param ta_name       Test Agent name
+ * @param sid           RCF SID
+ * @param tcp_csap      TCP CSAP handle
+ * @param buf           pointer to the data to be send 
+ * @param length        length of data
+ *
+ * @return  Status of the operation
+ */
+extern int tapi_tcp_buffer_send(const char *ta_name, int sid, 
+                                csap_handle_t tcp_csap, 
+                                uint8_t *buf, size_t length);
+
+
 /**
  * Creates 'tcp.ip4.eth' CSAP.
- * Created CSAP can catch only packets, incoming to TA host. 
  *
  * @param ta_name       Test Agent name
  * @param sid           RCF SID
@@ -212,7 +311,7 @@ extern int tapi_tcp_destroy_connection(tapi_tcp_handler_t handler);
 
 /**
  * Wait for complete process of opening TCP connection: blocks until
- * SYN and ACKs from peer will be recєived.
+ * SYN and ACKs from peer will be received.
  * If timed out, TAPI connection hanlder will be destroyed.
  * 
  * @param handler       TAPI handler of TCP connection;
@@ -226,7 +325,7 @@ extern int tapi_tcp_wait_open(tapi_tcp_handler_t hanlder, int timeout);
 /**
  * Send FIN in TCP connection, and wait ACK for it.
  * This is either part of close process, or shutdown for writing.
- * This meþhod blocks until ACK will be received. 
+ * This method blocks until ACK will be received. 
  *
  * @param handler       TAPI handler of TCP connection;
  * @param timeout       time in milliseconds, while TA should wait 

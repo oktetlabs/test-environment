@@ -1689,3 +1689,78 @@ tapi_tcp_update_sent_seq(tapi_tcp_handler_t handler, size_t new_sent_len)
     tapi_tcp_conns_db_init(); 
     return conn_update_sent_seq(tapi_tcp_find_conn(handler), new_sent_len);
 }
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+ * ======================= data TCP CSAP routines ==================
+ */
+
+
+#if 0
+/* see description in tapi_tcp.h */
+int
+tapi_tcp_server_csap_create(const char *ta_name, int sid, 
+                            in_addr_t loc_addr, uint16_t loc_port,
+                            csap_handle_t *tcp_csap)
+{
+    return 0;
+}
+
+/* see description in tapi_tcp.h */
+int
+tapi_tcp_client_csap_create(const char *ta_name, int sid, 
+                            in_addr_t loc_addr, in_addr_t rem_addr,
+                            uint16_t loc_port, uint16_t rem_port,
+                            csap_handle_t *tcp_csap)
+{
+    return 0;
+}
+
+/* see description in tapi_tcp.h */
+int
+tapi_tcp_socket_csap_create(const char *ta_name, int sid, 
+                            int socket, csap_handle_t *tcp_csap)
+{
+    return 0;
+}
+
+/* see description in tapi_tcp.h */
+int
+tapi_tcp_server_recv(const char *ta_name, int sid, 
+                     csap_handle_t tcp_csap, 
+                     unsigned int timeout, int *socket)
+{
+    return 0;
+}
+
+/* see description in tapi_tcp.h */
+int
+tapi_tcp_buffer_recv(const char *ta_name, int sid, 
+                     csap_handle_t tcp_csap, 
+                     unsigned int timeout, 
+                     uint8_t *buf, size_t length)
+{
+    return 0;
+}
+
+/* see description in tapi_tcp.h */
+int
+tapi_tcp_buffer_send(const char *ta_name, int sid, 
+                     csap_handle_t tcp_csap, 
+                     uint8_t *buf, size_t length)
+{
+    return 0;
+}
+
+
+#endif
