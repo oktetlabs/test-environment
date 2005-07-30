@@ -422,14 +422,14 @@ daemon_set(unsigned int gid, const char *oid, const char *value)
         return 0;
         
     if (strncmp(daemon_name, "exim", strlen("exim")) == 0)
-        sprintf(buf, "/etc/init.d/%s* %s >/dev/null 2>&1", daemon_name,
+        sprintf(buf, "/etc/init.d/%s* %s >/dev/null", daemon_name,
                *value == '0' ? "stop" : "start");
     else if (strcmp(daemon_name, "named") == 0 &&
              file_exists("/etc/init.d/bind9")) /* a hack for Debian */
-        sprintf(buf, "/etc/init.d/bind9 %s >/dev/null 2>&1", 
+        sprintf(buf, "/etc/init.d/bind9 %s >/dev/null", 
                *value == '0' ? "stop" : "start");
     else               
-        sprintf(buf, "/etc/init.d/%s %s >/dev/null 2>&1", daemon_name,
+        sprintf(buf, "/etc/init.d/%s %s >/dev/null", daemon_name,
                *value == '0' ? "stop" : "start");
 
     if (ta_system(buf) != 0)
@@ -547,7 +547,7 @@ xinetd_set(unsigned int gid, const char *oid, const char *value)
     fclose(f);
     fclose(g);
 
-    ta_system("/etc/init.d/xinetd restart >/dev/null 2>&1");
+    ta_system("/etc/init.d/xinetd restart >/dev/null");
 
     return 0;
 }
@@ -630,7 +630,7 @@ ds_xinetd_service_addr_set(const char *service, const char *value)
     fclose(g);
 
     /* Update service configuration file */
-    ta_system("/etc/init.d/xinetd restart >/dev/null 2>&1");
+    ta_system("/etc/init.d/xinetd restart >/dev/null");
 
     return 0;
 }
@@ -838,7 +838,7 @@ ds_tftpserver_addr_set(unsigned int gid, const char *oid, const char *value)
     fclose(f);
     fclose(g);
 
-    ta_system("/etc/init.d/xinetd restart >/dev/null 2>&1");
+    ta_system("/etc/init.d/xinetd restart >/dev/null");
 
     return 0;
 }
@@ -2999,6 +2999,6 @@ linux_daemons_release()
     ds_shutdown_radius_server();
 #endif
 
-    ta_system("/etc/init.d/xinetd restart >/dev/null 2>&1");
+    ta_system("/etc/init.d/xinetd restart >/dev/null");
 }
 
