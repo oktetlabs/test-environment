@@ -12,7 +12,7 @@ AM_LDFLAGS = @TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/lib
 
 
 tetest_PROGRAMS = tcp_simple ip4_simple ip4_recv_send ip4_udp_dgm \
-	ip4_fragments tcp_conn
+	ip4_fragments tcp_conn tcp_data
 
 LDADD = -ltapi_rpc -ltapi_tad -ltapi_ipstack -ltapi_arp -ltapi_eth -lndn \
 	-lasn -ltapi -lrcfrpc -lrcfapi -lrpcxdr -lconfapi -lconf_oid -lipc\

@@ -58,6 +58,12 @@
             </arg>
         </run> 
 
+        <run>
+            <script name="tcp_data">
+                <req id="TAD_TCP"/>
+            </script>
+        </run>
+
         <!--
         <run>
             <script name="tcp_simple">
