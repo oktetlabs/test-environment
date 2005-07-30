@@ -127,6 +127,8 @@ extern int tapi_tcp_server_recv(const char *ta_name, int sid,
  * @param sid           RCF SID
  * @param tcp_csap      TCP CSAP handle
  * @param timeout       timeout in milliseconds
+ * @param forward       id of CSAP to which forward recєived messages, 
+ *                      may be CSAP_INVALID_HANDLE for disabled forward
  * @param buf           location for received data (OUT)
  * @param length        size of buffer and length of data to wait
  *
@@ -135,6 +137,7 @@ extern int tapi_tcp_server_recv(const char *ta_name, int sid,
 extern int tapi_tcp_buffer_recv(const char *ta_name, int sid, 
                                 csap_handle_t tcp_csap, 
                                 unsigned int timeout, 
+                                csap_handle_t forward, 
                                 uint8_t *buf, size_t length);
 
 /**

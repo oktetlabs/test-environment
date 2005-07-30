@@ -1706,14 +1706,63 @@ tapi_tcp_update_sent_seq(tapi_tcp_handler_t handler, size_t new_sent_len)
  */
 
 
-#if 0
 /* see description in tapi_tcp.h */
 int
 tapi_tcp_server_csap_create(const char *ta_name, int sid, 
                             in_addr_t loc_addr, uint16_t loc_port,
                             csap_handle_t *tcp_csap)
 {
-    return 0;
+    asn_value *csap_spec = NULL;
+    int rc = 0, syms;
+
+    rc = asn_parse_value_text("{ pdus { tcp:{}, ip4:{} } }",
+                              ndn_traffic_template, 
+                              &csap_spec, &syms); 
+    if (rc != 0)
+    {
+        ERROR("%s(): parse ASN csap_spec failed %X, sym %d", 
+              __FUNCTION__, rc, syms);
+        return rc;
+    }
+
+    rc = asn_write_value_field(csap_spec, (uint8_t *)&loc_addr,
+                               sizeof(loc_addr),
+                               "pdus.1.#ip4.local-addr.#plain");
+    if (rc != 0)
+    {
+        ERROR("%s(): write ip addr failed, rc %X", __FUNCTION__, rc);
+        goto cleanup;
+    }
+    RING("addr written");
+
+    loc_port = ntohs(loc_port);
+    rc = asn_write_value_field(csap_spec, (uint8_t *)&loc_port,
+                               sizeof(loc_port),
+                               "pdus.0.#tcp.local-port.#plain");
+    if (rc != 0)
+    {
+        ERROR("%s(): write port failed, rc %X", __FUNCTION__, rc);
+        goto cleanup;
+    }
+    RING("port written");
+
+    rc = asn_write_value_field(csap_spec, NULL, 0,
+                               "pdus.0.#tcp.data.#server");
+    if (rc != 0)
+    {
+        ERROR("%s(): write server failed, rc %X", __FUNCTION__, rc);
+        goto cleanup;
+    }
+    RING("server written");
+
+    rc = tapi_tad_csap_create(ta_name, sid, "data.tcp.ip4", 
+                              csap_spec, tcp_csap); 
+    if (rc != 0)
+        ERROR("%s(): csap create failed, rc %X", __FUNCTION__, rc);
+
+cleanup:
+    asn_free_value(csap_spec);
+    return rc;
 }
 
 /* see description in tapi_tcp.h */
@@ -1723,7 +1772,14 @@ tapi_tcp_client_csap_create(const char *ta_name, int sid,
                             uint16_t loc_port, uint16_t rem_port,
                             csap_handle_t *tcp_csap)
 {
-    return 0;
+    UNUSED(ta_name);
+    UNUSED(sid);
+    UNUSED(loc_addr);
+    UNUSED(rem_addr);
+    UNUSED(loc_port);
+    UNUSED(rem_port);
+    UNUSED(tcp_csap);
+    return TE_RC(TE_TAPI, ETENOSUPP);
 }
 
 /* see description in tapi_tcp.h */
@@ -1731,7 +1787,69 @@ int
 tapi_tcp_socket_csap_create(const char *ta_name, int sid, 
                             int socket, csap_handle_t *tcp_csap)
 {
-    return 0;
+    asn_value *csap_spec = NULL;
+    int rc = 0, syms;
+
+    rc = asn_parse_value_text("{ pdus { tcp:{}, ip4:{} } }",
+                              ndn_traffic_template, 
+                              &csap_spec, &syms); 
+    if (rc != 0)
+    {
+        ERROR("%s(): parse ASN csap_spec failed %X, sym %d", 
+              __FUNCTION__, rc, syms);
+        return rc;
+    }
+
+    rc = asn_write_int32(csap_spec, socket, "pdus.0.#tcp.data.#socket");
+    if (rc != 0)
+    {
+        ERROR("%s(): write socket failed, rc %X", __FUNCTION__, rc);
+        goto cleanup;
+    } 
+
+    rc = tapi_tad_csap_create(ta_name, sid, "data.tcp.ip4", 
+                              csap_spec, tcp_csap); 
+    if (rc != 0)
+        ERROR("%s(): csap create failed, rc %X", __FUNCTION__, rc);
+
+cleanup:
+    asn_free_value(csap_spec);
+    return rc;
+}
+
+
+/* 
+ * Pkt handler for TCP packets 
+ */
+static void
+tcp_server_handler(char *pkt_fname, void *user_param)
+{
+    asn_value  *pkt = NULL;
+    int        *socket = user_param;
+
+    int s_parsed = 0;
+    int rc = 0;
+
+    if (user_param == NULL) 
+    {
+        ERROR("%s called with NULL user param", __FUNCTION__);
+        return;
+    } 
+
+    if ((rc = asn_parse_dvalue_in_file(pkt_fname, ndn_raw_packet,
+                                       &pkt, &s_parsed)) != 0)
+    {                                      
+        ERROR("%s(): parse packet fails, rc = 0x%X, sym %d",
+              __FUNCTION__, rc, s_parsed);
+        return;
+    }
+    rc = asn_read_int32(pkt, socket, "pdus.0.#tcp.ѕocket");
+    if (rc != 0)
+        ERROR("%s(): read socket failed, rc %X", __FUNCTION__, rc);
+
+    RING("%s(): received socket: %d", __FUNCTION__, *socket);
+
+    asn_free_value(pkt);
 }
 
 /* see description in tapi_tcp.h */
@@ -1740,17 +1858,148 @@ tapi_tcp_server_recv(const char *ta_name, int sid,
                      csap_handle_t tcp_csap, 
                      unsigned int timeout, int *socket)
 {
-    return 0;
+    asn_value *pattern = NULL;
+
+    int rc = 0, syms, num;
+
+    if (ta_name == NULL || socket == NULL)
+        return ETEWRONGPTR;
+
+    rc = asn_parse_value_text("{{pdus { tcp:{}, ip4:{} } }}",
+                              ndn_traffic_pattern, &pattern, &syms);
+    if (rc != 0)
+    {
+        ERROR("%s(): parse ASN csap_spec failed %X, sym %d", 
+              __FUNCTION__, rc, syms);
+        return rc;
+    }
+
+    rc = tapi_tad_trrecv_start(ta_name, sid, tcp_csap, pattern, 
+                               tcp_server_handler, socket, timeout, 1);
+    if (rc != 0)
+    {
+        ERROR("%s(): trrecv_start failed 0x%X", __FUNCTION__, rc);
+        goto cleanup;
+    }
+
+    rc = rcf_ta_trrecv_wait(ta_name, sid, tcp_csap, &num);
+    if (rc != 0)
+        WARN("%s() trrecv_wait failed: 0x%X", __FUNCTION__, rc);
+
+cleanup: 
+    asn_free_value(pattern);
+    return rc;
+} 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+struct data_message {
+    uint8_t *data;
+    size_t   length;
+};
+
+
+
+/* 
+ * Pkt handler for TCP packets 
+ */
+static void
+tcp_data_csap_handler(char *pkt_fname, void *user_param)
+{
+    asn_value  *pkt = NULL;
+    struct data_message *msg;
+
+    int s_parsed = 0;
+    int rc = 0;
+    size_t len;
+
+    if (user_param == NULL) 
+    {
+        ERROR("%s called with NULL user param", __FUNCTION__);
+        return;
+    } 
+    msg = user_param;
+
+    if ((rc = asn_parse_dvalue_in_file(pkt_fname, ndn_raw_packet,
+                                       &pkt, &s_parsed)) != 0)
+    {                                      
+        ERROR("%s(): parse packet fails, rc = 0x%X, sym %d",
+              __FUNCTION__, rc, s_parsed);
+        return;
+    }
+
+    len = asn_get_length(pkt, "payload.#bytes");
+
+    if (len > msg->length)
+        WARN("%s(): length of message greater then buffer", __FUNCTION__);
+
+    len = msg->length;
+    rc = asn_read_value_field(pkt, msg->data, &len, "paylaod.#bytes");
+    if (rc != 0)
+        ERROR("%s(): read payload failed %X", __FUNCTION__, rc);
+
+    asn_free_value(pkt);
 }
+
+
+
 
 /* see description in tapi_tcp.h */
 int
 tapi_tcp_buffer_recv(const char *ta_name, int sid, 
                      csap_handle_t tcp_csap, 
                      unsigned int timeout, 
+                     csap_handle_t forward, 
                      uint8_t *buf, size_t length)
 {
-    return 0;
+    asn_value *pattern = NULL;
+    struct data_message msg;
+
+    int rc = 0, syms, num;
+
+    if (ta_name == NULL || socket == NULL)
+        return ETEWRONGPTR;
+
+    rc = asn_parse_value_text("{{pdus { tcp:{}, ip4:{} } }}",
+                              ndn_traffic_pattern, &pattern, &syms);
+    if (rc != 0)
+    {
+        ERROR("%s(): parse ASN csap_spec failed %X, sym %d", 
+              __FUNCTION__, rc, syms);
+        return rc;
+    }
+
+    msg.data = buf;
+    msg.length = length;
+
+    rc = tapi_tad_trrecv_start(ta_name, sid, tcp_csap, pattern, 
+                               tcp_data_csap_handler, &msg, timeout, 1);
+    if (rc != 0)
+    {
+        ERROR("%s(): trrecv_start failed 0x%X", __FUNCTION__, rc);
+        goto cleanup;
+    }
+
+    rc = rcf_ta_trrecv_wait(ta_name, sid, tcp_csap, &num);
+    if (rc != 0)
+        WARN("%s() trrecv_wait failed: 0x%X", __FUNCTION__, rc);
+
+cleanup:
+    asn_free_value(pattern);
+    return rc;
 }
 
 /* see description in tapi_tcp.h */
@@ -1759,8 +2008,40 @@ tapi_tcp_buffer_send(const char *ta_name, int sid,
                      csap_handle_t tcp_csap, 
                      uint8_t *buf, size_t length)
 {
-    return 0;
+    asn_value *template = NULL;
+
+    int rc = 0, syms;
+
+    if (ta_name == NULL || socket == NULL)
+        return ETEWRONGPTR;
+
+    rc = asn_parse_value_text("{pdus { tcp:{}, ip4:{} } }",
+                              ndn_traffic_template, &template, &syms);
+    if (rc != 0)
+    {
+        ERROR("%s(): parse ASN csap_spec failed %X, sym %d", 
+              __FUNCTION__, rc, syms);
+        return rc;
+    }
+
+    rc = asn_write_value_field(template, buf, length, "payload.#bytes");
+    if (rc != 0)
+    {
+        ERROR("%s(): write payload failed 0x%X", __FUNCTION__, rc);
+        goto cleanup;
+    } 
+
+    rc = tapi_tad_trsend_start(ta_name, sid, tcp_csap, template,
+                               RCF_MODE_BLOCKING);
+    if (rc != 0)
+    {
+        ERROR("%s(): trsend_start failed 0x%X", __FUNCTION__, rc);
+        goto cleanup;
+    } 
+
+cleanup:
+    asn_free_value(template);
+    return rc;
 }
 
 
-#endif
