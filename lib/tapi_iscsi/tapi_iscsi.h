@@ -36,6 +36,7 @@
 #include "te_stdint.h"
 #include "tad_common.h"
 #include "asn_usr.h"
+#include "ndn_iscsi.h"
 
 
 
@@ -44,12 +45,12 @@
  *
  * @param ta_name       Test Agent name
  * @param sid           RCF SID
- * @param srv_csap      location for handle of new CSAP
+ * @param csap          location for handle of new CSAP
  *
  * @return  Status code of the operation
  */
 extern int tapi_iscsi_csap_create(const char *ta_name, int sid, 
-                                  csap_handle_t *srv_csap);
+                                  csap_handle_t *csap);
 
 
 /**
@@ -78,7 +79,6 @@ extern int tapi_iscsi_recv_pkt(const char *ta_name, int sid,
  * @param ta_name       test Agent name
  * @param sid           RCF SID
  * @param csap          identifier of CSAP
- * @param timeout       timeout of operation in milliseconds
  * @param params        iSCSI new params
  * @param buffer        data to be sent
  * @param length        length of buffer
@@ -87,7 +87,6 @@ extern int tapi_iscsi_recv_pkt(const char *ta_name, int sid,
  */
 extern int tapi_iscsi_send_pkt(const char *ta_name, int sid, 
                                csap_handle_t csap,
-                               int timeout,
                                iscsi_target_params_t *params,
                                uint8_t *buffer,
                                size_t  length);
