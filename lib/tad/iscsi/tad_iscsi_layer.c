@@ -74,35 +74,6 @@ char* iscsi_get_param_cb (csap_p csap_descr, int level, const char *param)
 int 
 iscsi_confirm_pdu_cb (int csap_id, int layer, asn_value *nds_pdu)
 { 
-    int rc = 0;
-    csap_p csap_descr = csap_find(csap_id);
-
-    iscsi_csap_specific_data_t *iscsi_spec_data; 
-
-    UNUSED (layer);
-    if (csap_descr == NULL)
-        return ETADCSAPNOTEX;
-
-    iscsi_spec_data = csap_descr->layers[layer].specific_data;
-
-    switch (iscsi_spec_data->type)
-    {
-        case NDN_ISCSI_SERVER:
-            break;
-
-        case NDN_ISCSI_NET: 
-            rc = asn_read_int32(nds_pdu, &(iscsi_spec_data->length),
-                                "length");
-            if (rc != 0)
-                return rc;
-            RING("%s(): get length %d from nds",
-                 __FUNCTION__, iscsi_spec_data->length);
-            break;
-
-        case NDN_ISCSI_TARGET:
-            break; 
-    }
-
     return 0;
 }
 

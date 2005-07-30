@@ -78,6 +78,31 @@
 #define TE_LGR_USER     "TAD iSCSI stack"
 #include "logger_ta.h"
 
+
+#define LOCK_QUEUE(_spec_data) \
+    do {                                                                \
+        int rc_;                                                        \
+                                                                        \
+        rc_ = pthread_mutex_trylock(&_spec_data->pkt_queue_lock);       \
+        if (rc_ == EBUSY)                                               \
+        {                                                               \
+            RING("mutex is locked, wait...");                           \
+            rc_ = pthread_mutex_lock(&_spec_data->pkt_queue_lock);      \
+        }                                                               \
+                                                                        \
+        if (rc_ != 0)                                                   \
+            ERROR("mutex operation failed %d", rc_);                    \
+    } while (0)
+
+#define UNLOCK_QUEUE(_spec_data) \
+    do {                                                                \
+        int rc_;                                                        \
+                                                                        \
+        rc_ = pthread_mutex_unlock(&_spec_data->pkt_queue_lock);        \
+                                                                        \
+        if (rc_ != 0)                                                   \
+            ERROR("mutex operation failed %d", rc_);                    \
+    } while (0)
  
 /**
  * Prepare send callback
@@ -89,6 +114,7 @@
 int
 iscsi_prepare_send_cb(csap_p csap_descr)
 {
+#if 0
     iscsi_csap_specific_data_t *iscsi_spec_data; 
 
     if (csap_descr == NULL)
@@ -96,20 +122,9 @@ iscsi_prepare_send_cb(csap_p csap_descr)
 
     iscsi_spec_data = csap_descr->layers[0].specific_data; 
 
-    switch (iscsi_spec_data->type)
-    {
-        case NDN_ISCSI_SERVER:
-            ERROR("%s(CSAP %d): send is not acceptable for iSCSI 'server'",
-                  __FUNCTION__, csap_descr->id);
-            return EFAULT;
-
-        case NDN_ISCSI_NET: 
-            break;
-
-        case NDN_ISCSI_TARGET:
-            break; 
-    }
-
+#else
+    UNUSED(csap_descr);
+#endif
     return 0;
 }
 
@@ -123,6 +138,7 @@ iscsi_prepare_send_cb(csap_p csap_descr)
 int
 iscsi_prepare_recv_cb(csap_p csap_descr)
 {
+#if 0
     iscsi_csap_specific_data_t *iscsi_spec_data; 
     int rc = 0;
 
@@ -131,19 +147,12 @@ iscsi_prepare_recv_cb(csap_p csap_descr)
 
     iscsi_spec_data = csap_descr->layers[0].specific_data; 
 
-    switch (iscsi_spec_data->type)
-    {
-        case NDN_ISCSI_SERVER:
-            break;
-
-        case NDN_ISCSI_NET: 
-            break;
-
-        case NDN_ISCSI_TARGET:
-            break; 
-    }
 
     return rc;
+#else
+    UNUSED(csap_descr);
+    return 0;
+#endif
 }
 
 /**
@@ -161,31 +170,47 @@ int
 iscsi_read_cb (csap_p csap_descr, int timeout, char *buf, size_t buf_len)
 {
     iscsi_csap_specific_data_t *iscsi_spec_data;
+    packet_t *recv_pkt = NULL;
+    size_t    len = 0;
+    int       i;
     
-    UNUSED(timeout);
-    UNUSED(buf);
-    UNUSED(buf_len);
-
     if (csap_descr == NULL)
     {
         return -1;
     }
-    
     iscsi_spec_data = csap_descr->layers[0].specific_data; 
 
-    switch (iscsi_spec_data->type)
+    for (i = 0; i < 2; i++)
     {
-        case NDN_ISCSI_SERVER:
-            break;
-
-        case NDN_ISCSI_NET: 
-            break;
-
-        case NDN_ISCSI_TARGET:
-            break; 
+        LOCK_QUEUE(iscsi_spec_data);
+        if (iscsi_spec_data->packets_from_tgt.cqh_first !=
+            (void *)(&iscsi_spec_data->packets_from_tgt))
+        {
+            recv_pkt = iscsi_spec_data->packets_from_tgt.cqh_first;
+            CIRCLEQ_REMOVE(&iscsi_spec_data->packets_from_tgt, 
+                           recv_pkt, link);
+        }
+        UNLOCK_QUEUE(iscsi_spec_data); 
+        if (recv_pkt == NULL && i == 0)
+            usleep(timeout); /* wait a bit */
     }
 
-    return 0;
+    if (recv_pkt != NULL)
+    {
+        len = recv_pkt->length;
+        if (buf_len < recv_pkt->length)
+        {
+            WARN("%s(): packet received is too long: %d > buffer %d",
+                 __FUNCTION__, recv_pkt->length, buf_len);
+            len = buf_len;
+        }
+        memcpy(buf, recv_pkt->buffer, len); 
+
+        free(recv_pkt->buffer);
+        free(recv_pkt);
+    }
+
+    return len;
 }
 
 /**
@@ -202,31 +227,33 @@ int
 iscsi_write_cb (csap_p csap_descr, char *buf, size_t buf_len)
 {
     iscsi_csap_specific_data_t *iscsi_spec_data;
-    int layer;    
-    int rc = 0;
+    packet_t *send_pkt;
     
     if (csap_descr == NULL)
     {
         return -1;
     }
-    
-    iscsi_spec_data = csap_descr->layers[layer].specific_data; 
 
-    switch (iscsi_spec_data->type)
+    iscsi_spec_data = csap_descr->layers[0].specific_data; 
+
+    if ((send_pkt = calloc(1, sizeof(*send_pkt))) == NULL)
     {
-        case NDN_ISCSI_SERVER:
-            break;
-
-        case NDN_ISCSI_NET: 
-            break;
-
-        case NDN_ISCSI_TARGET:
-            break; 
+        csap_descr->last_errno = ENOMEM;
+        return -1;
     }
+    send_pkt->buffer = malloc(buf_len);
+    send_pkt->length = buf_len;
+    memcpy(send_pkt->buffer, buf, buf_len);
+    
 
-    UNUSED(buf);
-    UNUSED(buf_len);
-    return rc;
+    LOCK_QUEUE(iscsi_spec_data);
+    CIRCLEQ_INSERT_TAIL(&iscsi_spec_data->packets_to_tgt,
+                        send_pkt, link);
+    UNLOCK_QUEUE(iscsi_spec_data);
+
+    write(iscsi_spec_data->conn_fd[1], "a", 1); 
+
+    return buf_len;
 }
 
 /**
@@ -248,6 +275,16 @@ iscsi_write_read_cb (csap_p csap_descr, int timeout,
                    char *w_buf, size_t w_buf_len,
                    char *r_buf, size_t r_buf_len)
 {
+#if 1
+    csap_descr->last_errno = ETENOSUPP;
+    ERROR("%s() not allowed for iSCSI", __FUNCTION__);
+    UNUSED(timeout);
+    UNUSED(w_buf);
+    UNUSED(w_buf_len);
+    UNUSED(r_buf);
+    UNUSED(r_buf_len);
+    return -1;
+#else
     int rc; 
     
     rc = iscsi_write_cb(csap_descr, w_buf, w_buf_len);
@@ -256,6 +293,7 @@ iscsi_write_read_cb (csap_p csap_descr, int timeout,
         return rc;
     else 
         return iscsi_read_cb(csap_descr, timeout, r_buf, r_buf_len);;
+#endif
 }
 
 /**
@@ -271,14 +309,11 @@ iscsi_write_read_cb (csap_p csap_descr, int timeout,
 int 
 iscsi_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
 {
-    csap_p   csap_descr;          /**< csap description        */
+    csap_p  csap_descr;
+    int     rc;
 
     const asn_value            *iscsi_nds;
     iscsi_csap_specific_data_t *iscsi_spec_data; 
-
-    int     rc;
-    size_t  len;
-    int32_t field;
 
 
     if (csap_nds == NULL)
@@ -300,14 +335,6 @@ iscsi_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
         == NULL)
         return ENOMEM; 
 
-    iscsi_spec_data->sock = -1;
-    if ((rc = asn_read_int32(iscsi_nds, &field, "type")) != 0)
-    {
-        ERROR("%s(): read iSCSI csap type failed %X", __FUNCTION__, rc);
-        goto cleanup;
-    }
-    iscsi_spec_data->type = field; 
-
     csap_descr->layers[layer].specific_data = iscsi_spec_data;
     csap_descr->layers[layer].get_param_cb = iscsi_get_param_cb;
 
@@ -319,93 +346,18 @@ iscsi_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
     csap_descr->read_write_layer = layer; 
     csap_descr->timeout          = 100 * 1000;
 
+    CIRCLEQ_INIT(&(iscsi_spec_data->packets_to_tgt));
+    CIRCLEQ_INIT(&(iscsi_spec_data->packets_from_tgt));
 
-    switch (iscsi_spec_data->type)
     {
-        case NDN_ISCSI_SERVER:
-            iscsi_spec_data->sock = socket(AF_INET, SOCK_STREAM, 0);
-            if (iscsi_spec_data->sock < 0)
-            {
-                rc = errno;
-                goto cleanup;
-            }
-
-            {
-                struct sockaddr_in local;
-                len = sizeof(local.sin_addr.s_addr);
-
-                local.sin_family = AF_INET;
-                rc = asn_read_value_field(iscsi_nds,
-                                          (uint8_t *)&local.sin_addr.s_addr,
-                                          &len, "ip4-addr");
-                if (rc != 0)
-                    goto cleanup;
-
-                rc = asn_read_int32(iscsi_nds, &field, "port");
-                if (rc != 0)
-                    goto cleanup;
-
-                local.sin_port = htons(field); 
-
-                if (bind(iscsi_spec_data->sock, SA(&local), sizeof(local))
-                    < 0)
-                {
-                    rc = errno;
-                    goto cleanup;
-                } 
-
-                if (listen(iscsi_spec_data->sock, 5) < 0)
-                {
-                    rc = errno;
-                    ERROR("%s(CSAP %d) failed on listen(), errno %d", 
-                          __FUNCTION__, csap_descr->id, rc);
-                    return rc;
-                }
-            }
-            break;
-
-        case NDN_ISCSI_NET:
-            rc = asn_read_int32(iscsi_nds, &field, "socket");
-            if (rc != 0)
-                goto cleanup;
-            iscsi_spec_data->sock = field;
-            break;
-
-        case NDN_ISCSI_TARGET:
-            if ((iscsi_spec_data->tgt_params = 
-                    calloc(1, sizeof(*(iscsi_spec_data->tgt_params))))
-                == NULL) 
-            {
-                rc = ENOMEM;
-                goto cleanup;
-            }
-
-            CIRCLEQ_INIT(&(iscsi_spec_data->tgt_params->packets_root));
-
-            {
-                pthread_mutex_t fastmutex = PTHREAD_MUTEX_INITIALIZER;
-                iscsi_spec_data->tgt_params->pkt_queue_lock = fastmutex;
-            }
-
-            pipe(iscsi_spec_data->tgt_params->conn_fd);
-
-            break;
-
-        default:
-            ERROR("%s(): invalid type of iSCSI csap passed: %d",
-                  __FUNCTION__, iscsi_spec_data->type);
-            rc = ETADWRONGNDS;
-            goto cleanup;
+        pthread_mutex_t fastmutex = PTHREAD_MUTEX_INITIALIZER;
+        iscsi_spec_data->pkt_queue_lock = fastmutex;
     }
+
+    pipe(iscsi_spec_data->conn_fd);
+
     
     return 0;
-cleanup:
-    if (iscsi_spec_data != NULL && iscsi_spec_data->sock > 0)
-        close(iscsi_spec_data->sock);
-    free(iscsi_spec_data);
-    csap_descr->layers[layer].specific_data = NULL;
-
-    return rc;
 }
 
 /**
@@ -433,17 +385,7 @@ iscsi_single_destroy_cb (int csap_id, int layer)
 
     iscsi_spec_data = csap_descr->layers[layer].specific_data; 
 
-    switch (iscsi_spec_data->type)
-    {
-        case NDN_ISCSI_SERVER:
-            break;
-
-        case NDN_ISCSI_NET: 
-            break;
-
-        case NDN_ISCSI_TARGET:
-            break; 
-    }
+    UNUSED(iscsi_spec_data);
      
     return rc;
 }

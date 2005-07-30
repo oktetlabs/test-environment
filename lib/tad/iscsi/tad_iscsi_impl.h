@@ -63,29 +63,17 @@ typedef struct packet_t {
     size_t   length;
 } packet_t;
 
-/**
- * iSCSI target CSAP specific parameters
- */
-typedef struct {
-    CIRCLEQ_HEAD(packets_head, packet_t) packets_root;
-
-    int             conn_fd[2]; /* pipe for signalling */
-    pthread_mutex_t pkt_queue_lock;
-
-} iscsi_target_csap_params_t;
     
 /**
  * iSCSI CSAP specific data
  */
 typedef struct iscsi_csap_specific_data
 { 
-    ndn_iscsi_type_t type;
+    CIRCLEQ_HEAD(packets_to_head,   packet_t) packets_to_tgt;
+    CIRCLEQ_HEAD(packets_from_head, packet_t) packets_from_tgt;
 
-    iscsi_target_csap_params_t *tgt_params;
-
-    int sock;
-
-    uint32_t length;
+    int             conn_fd[2]; /* pipe for signalling */
+    pthread_mutex_t pkt_queue_lock;
 } iscsi_csap_specific_data_t;
 
 
