@@ -60,6 +60,8 @@
 
 uint8_t buffer[10000];
 
+#define ENABLE_CSAP 0
+
 int
 main(int argc, char *argv[])
 
@@ -146,19 +148,20 @@ main(int argc, char *argv[])
     if (rc != 0)
         TEST_FAIL("bind failed");
 
-
+#if ENABLE_CSAP
 
     rc = tapi_tcp_server_csap_create(agt_a, 0, csap_ip_addr, 
                                      csap_addr.sin_port, &csap);
     if (rc != 0)
         TEST_FAIL("server csap create failed: %X", rc); 
-
+#endif
     rc = rpc_connect(rpc_srv, socket,
                      SA(&csap_addr), sizeof(csap_addr));
     if (rc != 0)
         TEST_FAIL("connect() 'call' failed: %X", rc); 
 
 
+#if ENABLE_CSAP
     rc = tapi_tcp_server_recv(agt_a, 0, csap, 1000, &acc_sock);
     if (rc != 0)
         TEST_FAIL("recv accepted socket failed: %X", rc); 
@@ -167,6 +170,7 @@ main(int argc, char *argv[])
     RING("acc socket: %d", acc_sock);
     opt_val = 1;
 
+#endif
     /*
      * Send data
      */
