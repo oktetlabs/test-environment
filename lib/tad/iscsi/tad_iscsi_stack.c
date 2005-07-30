@@ -309,6 +309,10 @@ iscsi_write_read_cb (csap_p csap_descr, int timeout,
 int 
 iscsi_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
 {
+    pthread_t                     send_thread; 
+    pthread_attr_t                pthread_attr; 
+    iscsi_target_thread_params_t *thread_params;
+
     csap_p  csap_descr;
     int     rc;
 
@@ -354,8 +358,26 @@ iscsi_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
         iscsi_spec_data->pkt_queue_lock = fastmutex;
     }
 
-    pipe(iscsi_spec_data->conn_fd);
+    pipe(iscsi_spec_data->conn_fd); 
 
+    thread_params = calloc(1, sizeof(*thread_params));
+    thread_params->send_recv_csap = csap_descr->id;
+
+    if ((rc = pthread_attr_init(&pthread_attr)) != 0 ||
+        (rc = pthread_attr_setdetachstate(&pthread_attr,
+                                          PTHREAD_CREATE_DETACHED)) != 0)
+    {
+        ERROR("Cannot initialize pthread attribute variable: 0x%X", rc);
+        return rc;
+    } 
+
+    rc = pthread_create(&send_thread, &pthread_attr,
+                        iscsi_server_rx_thread, thread_params);
+    if (rc != 0)
+    {
+        ERROR("Cannot create a new iSCSI thread: %d", rc);
+        return rc; 
+    } 
     
     return 0;
 }
@@ -391,3 +413,90 @@ iscsi_single_destroy_cb (int csap_id, int layer)
 }
 
 
+/* see description in tad-iscsi_impl.h */
+int
+iscsi_tad_recv(int csap, uint8_t *buffer, size_t buf_len)
+{
+    csap_p csap_descr = csap_find(csap);
+    iscsi_csap_specific_data_t *iscsi_spec_data;
+    packet_t *recv_pkt = NULL;
+    char b;
+    size_t len = 0;
+
+    if (csap_descr == NULL)
+        return -1;
+
+    iscsi_spec_data = csap_descr->layers[0].specific_data; 
+
+    read(iscsi_spec_data->conn_fd[0], &b, 1); 
+
+    LOCK_QUEUE(iscsi_spec_data);
+    if (iscsi_spec_data->packets_to_tgt.cqh_first !=
+        (void *)(&iscsi_spec_data->packets_to_tgt))
+    {
+        recv_pkt = iscsi_spec_data->packets_to_tgt.cqh_first;
+        CIRCLEQ_REMOVE(&iscsi_spec_data->packets_to_tgt, 
+                       recv_pkt, link);
+    }
+    UNLOCK_QUEUE(iscsi_spec_data); 
+
+    if (recv_pkt != NULL)
+    {
+        len = recv_pkt->length;
+        if (buf_len < recv_pkt->length)
+        {
+            WARN("%s(): packet received is too long: %d > buffer %d",
+                 __FUNCTION__, recv_pkt->length, buf_len);
+            len = buf_len;
+        }
+        if (buf_len > recv_pkt->length)
+        {
+            WARN("%s(): packet received is too shot: %d < wanted %d",
+                 __FUNCTION__, recv_pkt->length, buf_len);
+        }
+
+        memcpy(buffer, recv_pkt->buffer, len); 
+
+        free(recv_pkt->buffer);
+        free(recv_pkt);
+    }
+    else
+        ERROR("%s(): very strange, conn_fd read, but queue empty",
+              __FUNCTION__);
+
+    return len;
+
+}
+
+
+int
+iscsi_tad_send(int csap, uint8_t *buffer, size_t buf_len)
+{
+    csap_p csap_descr = csap_find(csap);
+    iscsi_csap_specific_data_t *iscsi_spec_data;
+    packet_t *send_pkt;
+    
+    if (csap_descr == NULL)
+    {
+        return -1;
+    }
+
+    iscsi_spec_data = csap_descr->layers[0].specific_data; 
+
+    if ((send_pkt = calloc(1, sizeof(*send_pkt))) == NULL)
+    {
+        csap_descr->last_errno = ENOMEM;
+        return -1;
+    }
+    send_pkt->buffer = malloc(buf_len);
+    send_pkt->length = buf_len;
+    memcpy(send_pkt->buffer, buffer, buf_len);
+    
+
+    LOCK_QUEUE(iscsi_spec_data);
+    CIRCLEQ_INSERT_TAIL(&iscsi_spec_data->packets_from_tgt,
+                        send_pkt, link);
+    UNLOCK_QUEUE(iscsi_spec_data);
+
+    return buf_len;
+}

@@ -72,8 +72,11 @@ char* iscsi_get_param_cb (csap_p csap_descr, int level, const char *param)
  * @return zero on success or error code.
  */ 
 int 
-iscsi_confirm_pdu_cb (int csap_id, int layer, asn_value *nds_pdu)
+iscsi_confirm_pdu_cb(int csap_id, int layer, asn_value *nds_pdu)
 { 
+    UNUSED(csap_id);
+    UNUSED(layer);
+    UNUSED(nds_pdu);
     return 0;
 }
 
@@ -105,15 +108,26 @@ iscsi_confirm_pdu_cb (int csap_id, int layer, asn_value *nds_pdu)
 int 
 iscsi_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
                 const tad_tmpl_arg_t *args, size_t arg_num,
-                csap_pkts_p up_payload, csap_pkts_p pkts)
+                csap_pkts_p up_payload, csap_pkts_p pkt_list)
 {
+    int32_t val;
     UNUSED(csap_descr);
     UNUSED(layer);
     UNUSED(tmpl_pdu);
     UNUSED(args);
     UNUSED(arg_num);
-    UNUSED(up_payload);
-    UNUSED(pkts);
+
+    pkt_list->data = up_payload->data;
+    pkt_list->len  = up_payload->len;
+    pkt_list->next = up_payload->next;
+
+    up_payload->data = NULL;
+    up_payload->len  = 0;
+    up_payload->next = NULL;
+
+    if (asn_read_int32(tmpl_pdu, &val, "param") == 0)
+        target_params.param = val;
+
     return 0;
 }
 
@@ -138,12 +152,20 @@ iscsi_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
                    const csap_pkts *pkt, csap_pkts *payload, 
                    asn_value *parsed_packet )
 { 
+    asn_value *iscsi_msg = asn_init_value(ndn_iscsi_message);
     UNUSED(csap_id);
     UNUSED(layer);
     UNUSED(pattern_pdu);
-    UNUSED(pkt);
-    UNUSED(payload);
-    UNUSED(parsed_packet);
+
+    memset(payload, 0 , sizeof(*payload));
+    payload->len = pkt->len;
+    payload->data = malloc(payload->len);
+    memcpy(payload->data, pkt->data, payload->len);
+
+    asn_write_int32(iscsi_msg, target_params.param, "param");
+
+    asn_write_component_value(parsed_packet, iscsi_msg, "#iscsi");
+
     return 0;
 }
 

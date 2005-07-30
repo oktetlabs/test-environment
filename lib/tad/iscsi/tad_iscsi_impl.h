@@ -76,6 +76,7 @@ typedef struct iscsi_csap_specific_data
     pthread_mutex_t pkt_queue_lock;
 } iscsi_csap_specific_data_t;
 
+extern iscsi_target_params_t target_params;
 
 /**
  * Callback for read parameter value of ISCSI CSAP.

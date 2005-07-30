@@ -54,3 +54,5 @@ iscsi_server_rx_thread(void *arg)
     return NULL;
 }
 
+iscsi_target_params_t target_params = { 0 };
+
