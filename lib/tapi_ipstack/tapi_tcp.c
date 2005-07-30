@@ -1737,7 +1737,7 @@ tapi_tcp_server_csap_create(const char *ta_name, int sid,
     loc_port = ntohs(loc_port);
     rc = asn_write_value_field(csap_spec, (uint8_t *)&loc_port,
                                sizeof(loc_port),
-                               "pdus.0.#tcp.local-port.#plain");
+                               "0.#tcp.local-port.#plain");
     if (rc != 0)
     {
         ERROR("%s(): write port failed, rc %X", __FUNCTION__, rc);
@@ -1746,7 +1746,7 @@ tapi_tcp_server_csap_create(const char *ta_name, int sid,
     RING("port written");
 
     rc = asn_write_value_field(csap_spec, NULL, 0,
-                               "pdus.0.#tcp.data.#server");
+                               "0.#tcp.data.#server");
     if (rc != 0)
     {
         ERROR("%s(): write server failed, rc %X", __FUNCTION__, rc);
@@ -1789,7 +1789,7 @@ tapi_tcp_socket_csap_create(const char *ta_name, int sid,
     asn_value *csap_spec = NULL;
     int rc = 0, syms;
 
-    rc = asn_parse_value_text("{ pdus { tcp:{}, ip4:{} } }",
+    rc = asn_parse_value_text("{ tcp:{}, ip4:{} }",
                               ndn_csap_spec, &csap_spec, &syms); 
     if (rc != 0)
     {
@@ -1798,7 +1798,7 @@ tapi_tcp_socket_csap_create(const char *ta_name, int sid,
         return rc;
     }
 
-    rc = asn_write_int32(csap_spec, socket, "pdus.0.#tcp.data.#socket");
+    rc = asn_write_int32(csap_spec, socket, "0.#tcp.data.#socket");
     if (rc != 0)
     {
         ERROR("%s(): write socket failed, rc %X", __FUNCTION__, rc);
@@ -1978,6 +1978,17 @@ tapi_tcp_buffer_recv(const char *ta_name, int sid,
         ERROR("%s(): parse ASN csap_spec failed %X, sym %d", 
               __FUNCTION__, rc, syms);
         return rc;
+    }
+
+    if (forward != CSAP_INVALID_HANDLE)
+    {
+        rc = asn_write_int32(pattern, forward, "0.action.#forward");
+        if (rc != 0)
+        {
+            ERROR("%s():  write forward csap failed: 0x%X",
+                  __FUNCTION__, rc);
+            goto cleanup;
+        }
     }
 
     msg.data = buf;
