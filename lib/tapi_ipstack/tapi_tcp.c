@@ -1716,8 +1716,7 @@ tapi_tcp_server_csap_create(const char *ta_name, int sid,
     int rc = 0, syms;
 
     rc = asn_parse_value_text("{ pdus { tcp:{}, ip4:{} } }",
-                              ndn_traffic_template, 
-                              &csap_spec, &syms); 
+                              ndn_csap_spec, &csap_spec, &syms); 
     if (rc != 0)
     {
         ERROR("%s(): parse ASN csap_spec failed %X, sym %d", 
@@ -1791,8 +1790,7 @@ tapi_tcp_socket_csap_create(const char *ta_name, int sid,
     int rc = 0, syms;
 
     rc = asn_parse_value_text("{ pdus { tcp:{}, ip4:{} } }",
-                              ndn_traffic_template, 
-                              &csap_spec, &syms); 
+                              ndn_csap_spec, &csap_spec, &syms); 
     if (rc != 0)
     {
         ERROR("%s(): parse ASN csap_spec failed %X, sym %d", 
