@@ -243,23 +243,38 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
     }
 
     /* process action, if it present. */
-    if (rc == 0)
-    {
-        rc = asn_get_choice(pattern_unit, "action", label, sizeof(label));
+    if (rc == 0) do
+    { 
+        const asn_value *action_val;
+        const asn_value *action_ch_val;
+        asn_tag_class    t_class;
+        uint16_t         t_val;
 
-        if (rc == 0)
+        rc = asn_get_child_value(pattern_unit, &action_val,
+                                 PRIVATE, NDN_PU_ACTION);
+        if (rc != 0)
         {
-            if ((strcmp(label, "echo") == 0) && csap_descr->echo_cb != NULL)
-            {
-                rc = csap_descr->echo_cb(csap_descr, data, d_len);
-                if (rc)
-                    ERROR("csap #%d, echo_cb returned %x code.", 
-                          csap_descr->id, rc);
-                    /* Have no reason to stop receiving. */
-                rc = 0;
-            }
+            INFO("asn read action rc %x", rc);
+            rc = 0;
+            break;
+        }
+        asn_get_choice_value(action_val, &action_ch_val,
+                             &t_class, &t_val);
+        switch (t_val)
+        {
+            case NDN_ACT_ECHO:
+                if (csap_descr->echo_cb != NULL)
+                {
+                    rc = csap_descr->echo_cb(csap_descr, data, d_len);
+                    if (rc)
+                        ERROR("csap #%d, echo_cb returned %x code.", 
+                              csap_descr->id, rc);
+                        /* Have no reason to stop receiving. */
+                    rc = 0;
+                }
+                break;
 
-            if ((strcmp(label, "function") == 0))
+            case NDN_ACT_FUNCTION: 
             {
                 tad_processing_pkt_method method_addr;
 
@@ -267,8 +282,8 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
                 char *usr_place;
                 size_t buf_len = sizeof(buffer);
 
-                rc = asn_read_value_field(pattern_unit, buffer, &buf_len, 
-                                          "action");
+                rc = asn_read_value_field(action_ch_val, buffer,
+                                          &buf_len, "");
                 if (rc != 0)
                     ERROR("csap #%d, ASN read value error %X", 
                           csap_descr->id, rc); 
@@ -306,13 +321,24 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
                     }
                 }
             }
+            break;
+
+            case NDN_ACT_FORWARD:
+            {
+                int32_t target_csap;
+                csap_p  target_csap_descr;
+
+                asn_read_int32(action_ch_val, &target_csap, "");
+                if ((target_csap_descr = csap_find(target_csap)) != NULL)
+                {
+                    int b = target_csap_descr->write_cb(target_csap_descr,
+                                                        data, d_len);
+                    RING("action forward processed, %d sent", b);
+                } 
+            }
+            break; 
         }
-        else if (rc)
-        {
-            INFO("asn read action rc %x", rc);
-            rc = 0;
-        }
-    }
+    } while (0);
 
     F_VERB("Packet to RX CSAP #%d matches", csap_descr->id);
 
