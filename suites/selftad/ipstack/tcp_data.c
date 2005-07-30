@@ -85,7 +85,7 @@ main(int argc, char *argv[])
     struct sockaddr_in csap_addr;
 
 
-    in_addr_t csap_ip_addr = inet_addr("192.168.72.28");
+    in_addr_t csap_ip_addr = inet_addr("192.168.72.18");
     in_addr_t sock_ip_addr = inet_addr("192.168.72.38");
 
     TEST_START; 
@@ -133,7 +133,7 @@ main(int argc, char *argv[])
 
     csap_addr.sin_family = AF_INET;
     csap_addr.sin_addr.s_addr = csap_ip_addr;
-    csap_addr.sin_port = htons(20000); 
+    csap_addr.sin_port = htons(rand_range(20000, 21000));
 
     if ((socket = rpc_socket(rpc_srv, RPC_AF_INET, RPC_SOCK_STREAM, 
                                   RPC_IPPROTO_TCP)) < 0 ||
