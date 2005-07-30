@@ -1715,7 +1715,7 @@ tapi_tcp_server_csap_create(const char *ta_name, int sid,
     asn_value *csap_spec = NULL;
     int rc = 0, syms;
 
-    rc = asn_parse_value_text("{ pdus { tcp:{}, ip4:{} } }",
+    rc = asn_parse_value_text("{  tcp:{}, ip4:{} }",
                               ndn_csap_spec, &csap_spec, &syms); 
     if (rc != 0)
     {
@@ -1726,7 +1726,7 @@ tapi_tcp_server_csap_create(const char *ta_name, int sid,
 
     rc = asn_write_value_field(csap_spec, (uint8_t *)&loc_addr,
                                sizeof(loc_addr),
-                               "pdus.1.#ip4.local-addr.#plain");
+                               "1.#ip4.local-addr.#plain");
     if (rc != 0)
     {
         ERROR("%s(): write ip addr failed, rc %X", __FUNCTION__, rc);
