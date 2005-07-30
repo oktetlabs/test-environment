@@ -141,14 +141,10 @@ main(int argc, char *argv[])
         TEST_FAIL("Calling of RPC socket() failed %x", rpc_srv->_errno);
 
     opt_val = 1;
-    rpc_setsockopt(rpc_srv, socket, RPC_SOL_SOCKET, RPC_SO_REUSEADDR,
-                   &opt_val, sizeof(opt_val));
-
 
     rc = rpc_bind(rpc_srv, socket, SA(&sock_addr), sizeof(sock_addr));
     if (rc != 0)
         TEST_FAIL("bind failed");
-
 
 
 
@@ -170,8 +166,6 @@ main(int argc, char *argv[])
 
     RING("acc socket: %d", acc_sock);
     opt_val = 1;
-    rpc_setsockopt(rpc_srv, socket, RPC_SOL_SOCKET, RPC_SO_REUSEADDR,
-                   &opt_val, sizeof(opt_val));
 
     /*
      * Send data
