@@ -35,8 +35,6 @@
 /* ISCSI-Message definitions */
 static asn_named_entry_t _ndn_iscsi_message_ne_array [] = 
 {
-    { "message", &asn_base_octstring_s, {PRIVATE, NDN_TAG_ISCSI_MESSAGE} },
-    { "length",  &asn_base_integer_s, {PRIVATE, NDN_TAG_ISCSI_LEN} },
     { "param",   &asn_base_integer_s, {PRIVATE, NDN_TAG_ISCSI_PARAM} },
 };
 
@@ -50,26 +48,9 @@ asn_type ndn_iscsi_message_s =
 const asn_type *ndn_iscsi_message = &ndn_iscsi_message_s;
 
 
-asn_enum_entry_t _ndn_iscsi_type_enum_entries[] =
-{
-    {"server", NDN_ISCSI_SERVER},
-    {"net",    NDN_ISCSI_NET},
-    {"target", NDN_ISCSI_TARGET},
-};
-
-asn_type ndn_iscsi_type_s = {
-    "ISCSI-Type", {PRIVATE, NDN_TAG_ISCSI_TYPE}, ENUMERATED,
-    sizeof(_ndn_iscsi_type_enum_entries)/sizeof(asn_enum_entry_t),
-    {enum_entries: _ndn_iscsi_type_enum_entries}
-};
-
-
 /* ISCSI-CSAP definitions */
 static asn_named_entry_t _ndn_iscsi_csap_ne_array [] = 
 {
-    { "type",   &ndn_iscsi_type_s, {PRIVATE, NDN_TAG_ISCSI_TYPE} },
-    { "ip-addr",&ndn_ip_address_s, {PRIVATE, NDN_TAG_ISCSI_ADDR} },
-    { "port",   &asn_base_int16_s, {PRIVATE, NDN_TAG_ISCSI_PORT} },
     { "socket", &asn_base_int16_s, {PRIVATE, NDN_TAG_ISCSI_SOCKET} },
 };
 

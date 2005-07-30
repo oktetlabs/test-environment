@@ -48,17 +48,14 @@ typedef enum {
     NDN_TAG_ISCSI_PARAM,
 } ndn_iscsi_tags_t;
 
-/** 
- * Constants for iSCSI CSAP types
- */
-typedef enum {
-    NDN_ISCSI_SERVER,
-    NDN_ISCSI_NET,
-    NDN_ISCSI_TARGET,
-} ndn_iscsi_type_t;
 
 extern const asn_type *ndn_iscsi_message;
 extern const asn_type *ndn_iscsi_csap;
+
+typedef struct iscsi_target_params_t {
+    int param;
+} iscsi_target_params_t;
+
 
 
 #ifdef __cplusplus
