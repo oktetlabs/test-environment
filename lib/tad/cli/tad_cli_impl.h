@@ -82,17 +82,17 @@
 #include "logger_api.h"
 
 typedef enum cli_conn_type {
-    CLI_CONN_TYPE_SERIAL, /**< Serial CLI connection (millicom) */
-    CLI_CONN_TYPE_TELNET, /**< Telnet CLI connection */
-    CLI_CONN_TYPE_SSH, /**< Ssh CLI connection */
-    CLI_CONN_TYPE_SHELL, /**< Shell (/bin/sh) CLI connection */
+    CLI_CONN_TYPE_SERIAL,   /**< Serial CLI connection (millicom) */
+    CLI_CONN_TYPE_TELNET,   /**< Telnet CLI connection */
+    CLI_CONN_TYPE_SSH,      /**< Ssh CLI connection */
+    CLI_CONN_TYPE_SHELL,    /**< Shell (/bin/sh) CLI connection */
 } cli_conn_type_t;
 
 #define CLI_MAX_PROMPTS             4 /**< Maximum number of allowed prompts */
 
 /* Define timeout used for waiting for prompt in CSAP creation procedure */
 #ifndef CLI_CSAP_DEFAULT_TIMEOUT
-#define CLI_CSAP_DEFAULT_TIMEOUT    10 /**< Seconds to wait for prompt */
+#define CLI_CSAP_DEFAULT_TIMEOUT    15 /**< Seconds to wait for prompt */
 #endif
 
 #define CLI_PROMPT_STATUS_COMMAND   0x1 /**< command-prompt present */
