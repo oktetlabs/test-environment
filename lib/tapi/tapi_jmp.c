@@ -207,6 +207,36 @@ tapi_jmp_push(const char *file, unsigned int lineno)
 
 /* See description in tapi_jmp.h */
 int
+tapi_jmp_pop(const char *file, unsigned int lineno)
+{
+    tapi_jmp_ctx   *ctx;
+    tapi_jmp_point *p;
+
+    ctx = tapi_jmp_get_ctx(FALSE);
+    if (ctx == NULL)
+    {
+        ERROR("%s(): No context", __FUNCTION__);
+        return TE_RC(TE_TAPI, ENOMEM);
+    }
+    tapi_jmp_ctx_free_garbage(ctx);
+
+    if ((p = ctx->stack.lh_first) == NULL)
+    {
+        ERROR("%s(): Jumps stack is empty", __FUNCTION__);
+        return TE_RC(TE_TAPI, ENOENT);
+    }
+    LIST_REMOVE(p, links);
+
+    INFO("Remove jump point %s:%u at %s:%u",
+         p->file, p->lineno, file, lineno);
+
+    free(p);
+
+    return 0;
+}
+
+/* See description in tapi_jmp.h */
+int
 tapi_jmp_do(int val, const char *file, unsigned int lineno)
 {
     tapi_jmp_ctx   *ctx;

@@ -121,10 +121,31 @@ typedef struct tapi_jmp_point {
  *
  * @return Pointer to allocated long jump point.
  *
- * @sa tapi_jmp_do
+ * @sa tapi_jmp_do, tapi_jmp_pop
  */
 extern tapi_jmp_point *tapi_jmp_push(const char *file,
                                      unsigned int lineno);
+
+
+/**
+ * Macro for convinient use of tapi_jmp_pop().
+ */
+#define TAPI_JMP_POP    tapi_jmp_pop(__FILE__, __LINE__)
+
+/**
+ * Remove jump point set using tapi_jmp_push().
+ *
+ * The routine is thread-safe using per thread stacks of jump points.
+ *
+ * @param file      Name of the file where jump point is removed
+ * @param lineno    Number of line in the file
+ *
+ * @return Status code
+ * @retval ENOENT   Stack of of jump points is empty
+ *
+ * @sa tapi_jmp_push, tapi_jmp_do
+ */
+extern int tapi_jmp_pop(const char *file, unsigned int lineno);
 
 
 /**
@@ -139,6 +160,8 @@ extern tapi_jmp_point *tapi_jmp_push(const char *file,
  *
  * @param val       Positive value to be returned by tapi_jmp_push
  *                  (0 is mapped to ETEOK)
+ * @param file      Name of the file where jump is done
+ * @param lineno    Number of line in the file
  *
  * @return Status code
  * @retval ENOENT   Stack of of jump points is empty
