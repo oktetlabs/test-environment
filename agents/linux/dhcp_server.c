@@ -315,10 +315,18 @@ ds_dhcpserver_save_conf(void)
     }
     fprintf(f, "\n");
 
+    if (fsync(fileno(f)) != 0)
+    {
+        int err = errno;
+
+        ERROR("%s(): fsync() failed: %s", __FUNCTION__, strerror(err));
+        (void)fclose(f);
+        return TE_RC(TE_TA_LINUX, err);
+    }
+
     if (fclose(f) != 0)
     {
-        ERROR("%s(): fclose() failed: %s", __FUNCTION__,
-              strerror(errno));
+        ERROR("%s(): fclose() failed: %s", __FUNCTION__, strerror(errno));
         return TE_RC(TE_TA_LINUX, errno);
     }
 
