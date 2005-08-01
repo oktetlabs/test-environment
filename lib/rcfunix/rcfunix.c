@@ -88,9 +88,9 @@
 
 #define RCFUNIX_SSH     "ssh -q -o BatchMode=yes "
 
-#define RCFUNIX_KILL_TIMEOUT    5
-#define RCFUNIX_COPY_TIMEOUT    20
-#define RCFUNIX_START_TIMEOUT   10
+#define RCFUNIX_KILL_TIMEOUT    15
+#define RCFUNIX_COPY_TIMEOUT    30
+#define RCFUNIX_START_TIMEOUT   20
 
 #define RCFUNIX_SHELL_CMD_MAX   2048
 
