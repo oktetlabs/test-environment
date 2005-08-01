@@ -547,10 +547,8 @@ xinetd_set(unsigned int gid, const char *oid, const char *value)
     fclose(f);
     fclose(g);
 
-    /*
-     * I don't know why, but xinetd does not start without this sleep.
-     */
-    MSLEEP(100);
+    /* Commit all changes in config files before restart of the service */
+    sync();
 
     ta_system("/etc/init.d/xinetd restart >/dev/null");
 
@@ -633,6 +631,9 @@ ds_xinetd_service_addr_set(const char *service, const char *value)
     }
     fclose(f);
     fclose(g);
+
+    /* Commit all changes in config files before restart of the service */
+    sync();
 
     /* Update service configuration file */
     ta_system("/etc/init.d/xinetd restart >/dev/null");
@@ -842,6 +843,9 @@ ds_tftpserver_addr_set(unsigned int gid, const char *oid, const char *value)
     }
     fclose(f);
     fclose(g);
+
+    /* Commit all changes in config files before restart of the service */
+    sync();
 
     ta_system("/etc/init.d/xinetd restart >/dev/null");
 
@@ -1332,6 +1336,9 @@ ds_ftpserver_update_config(void)
     }
     
     fclose(g);
+
+    /* Commit all changes in config files */
+    sync();
 }
 
 #ifdef WITH_XINETD
@@ -2126,6 +2133,9 @@ update_etc_hosts(char *ip)
     fclose(f);
     fclose(g);
     
+    /* Commit all changes in config files */
+    sync();
+
     return 0;
 }
 
@@ -2209,6 +2219,9 @@ sendmail_smarthost_set(te_bool enable)
 
     fclose(f);
     fclose(g);
+
+    /* Commit all changes in config files before restart of the service */
+    sync();
     
     ta_system("cd " SENDMAIL_CONF_DIR "; make >/dev/null 2>&1");
     
@@ -2300,6 +2313,9 @@ postfix_smarthost_set(te_bool enable)
     }
     fclose(f);
     fclose(g);
+
+    /* Commit all changes in config files */
+    sync();
     
     return 0;
 }
@@ -2385,6 +2401,9 @@ exim_smarthost_set(te_bool enable)
     }
     fclose(f);
     fclose(g);
+
+    /* Commit all changes in config files before restart of the service */
+    sync();
     
     sprintf(buf, "update-%s.conf >/dev/null 2>&1", exim_name);
     ta_system(buf);
@@ -2453,6 +2472,9 @@ qmail_smarthost_set(te_bool enable, const char *relay)
         fprintf(g, ":[%s]\n", relay);
     }
     fclose(g);
+
+    /* Commit all changes in config files */
+    sync();
     
     return 0;
 }
@@ -2973,6 +2995,9 @@ linuxconf_daemons_init(rcf_pch_cfg_object **last)
         
         pthread_create(&tid, NULL, supervise_backups, NULL);
     }
+
+    /* Commit all changes in config files */
+    sync();
 
     return 0;
 
