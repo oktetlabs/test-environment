@@ -65,6 +65,8 @@ dns_update_config(void)
         fprintf(config, "\tforwarders { %s; };\n", dns_forwarder);
     }
     fprintf(config, "\trecursion %s;\n};\n", dns_recursive ? "yes" : "no");
+
+    fsync(fileno(config));
     fclose(config);
 
     if (daemon_running("dnsserver"))
