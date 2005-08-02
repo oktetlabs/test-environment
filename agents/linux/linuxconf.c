@@ -855,7 +855,7 @@ is_alias_of(const char *candidate, const char *master)
 static int
 set_prefix(const char *ifname, unsigned int prefix)
 {
-    uint32_t mask = htonl(PREFIX2MASK(prefix));
+    uint32_t mask = PREFIX2MASK(prefix);
 
     memset(&req, 0, sizeof(req));
 
@@ -863,7 +863,7 @@ set_prefix(const char *ifname, unsigned int prefix)
 
     req.ifr_addr.sa_family = AF_INET;
     SIN(&(req.ifr_addr))->sin_addr.s_addr = htonl(mask);
-    if (ioctl(cfg_socket, SIOCSIFNETMASK, (int)&req) < 0)
+    if (ioctl(cfg_socket, SIOCSIFNETMASK, &req) < 0)
     {
         ERROR("ioctl(SIOCSIFNETMASK) failed: %s", strerror(errno));
         return TE_RC(TE_TA_LINUX, errno);
