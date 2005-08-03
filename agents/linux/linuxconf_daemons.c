@@ -549,6 +549,8 @@ xinetd_set(unsigned int gid, const char *oid, const char *value)
 
     /* Commit all changes in config files before restart of the service */
     sync();
+    /* I don't know why, but xinetd does not start without this sleep. */
+    MSLEEP(100);
 
     ta_system("/etc/init.d/xinetd restart >/dev/null");
 
